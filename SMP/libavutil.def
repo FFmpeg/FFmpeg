@@ -138,6 +138,7 @@ EXPORTS
     av_find_nearest_q_idx
     av_fopen_utf8
     av_force_cpu_flags
+    av_fourcc_make_string
     av_frame_alloc
     av_frame_clone
     av_frame_copy
@@ -238,8 +239,10 @@ EXPORTS
     av_hwdevice_hwconfig_alloc
     av_hwframe_constraints_free
     av_hwframe_ctx_alloc
+    av_hwframe_ctx_create_derived
     av_hwframe_ctx_init
     av_hwframe_get_buffer
+    av_hwframe_map
     av_hwframe_transfer_data
     av_hwframe_transfer_get_formats
     av_i2int
@@ -400,6 +403,8 @@ EXPORTS
     av_shr_i
     av_small_strptime
     av_spherical_alloc
+    av_spherical_from_name
+    av_spherical_projection_name
     av_spherical_tile_bounds
     av_stereo3d_alloc
     av_stereo3d_create_side_data
@@ -416,6 +421,7 @@ EXPORTS
     av_strncasecmp
     av_strndup
     av_strnstr
+    av_strreplace
     av_strstart
     av_strtod
     av_strtok

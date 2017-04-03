@@ -249,6 +249,7 @@
     <ClCompile Include="..\libavfilter\vf_stack.c" />
     <ClCompile Include="..\libavfilter\vf_hue.c" />
     <ClCompile Include="..\libavfilter\vf_hwdownload.c" />
+    <ClCompile Include="..\libavfilter\vf_hwmap.c" />
     <ClCompile Include="..\libavfilter\vf_hwupload_cuda.c" />
     <ClCompile Include="..\libavfilter\vf_hwupload.c" />
     <ClCompile Include="..\libavfilter\vf_hysteresis.c" />
@@ -557,7 +558,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\vsyasm.props" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\yasm.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -692,6 +693,7 @@
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(AdditionalOptions)' == '' and '$(VisualStudioVersion)' != '12.0'">/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FloatingPointModel>Precise</FloatingPointModel>
       <ProgramDataBaseFileName>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDataBaseFileName>
@@ -740,8 +742,8 @@ cd $(ProjectDir)
     </PreBuildEvent>
     <YASM>
       <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
-      <Debug>true</Debug>
+      <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -764,6 +766,7 @@ cd $(ProjectDir)
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(AdditionalOptions)' == '' and '$(VisualStudioVersion)' != '12.0'">/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FloatingPointModel>Precise</FloatingPointModel>
       <ProgramDataBaseFileName>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDataBaseFileName>
@@ -812,8 +815,8 @@ cd $(ProjectDir)
     </PreBuildEvent>
     <YASM>
       <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
-      <Debug>true</Debug>
+      <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -836,6 +839,7 @@ cd $(ProjectDir)
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(AdditionalOptions)' == '' and '$(VisualStudioVersion)' != '12.0'">/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FloatingPointModel>Precise</FloatingPointModel>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
@@ -890,8 +894,8 @@ cd $(ProjectDir)
     </PreBuildEvent>
     <YASM>
       <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
-      <Debug>true</Debug>
+      <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -914,6 +918,7 @@ cd $(ProjectDir)
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(AdditionalOptions)' == '' and '$(VisualStudioVersion)' != '12.0'">/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FloatingPointModel>Precise</FloatingPointModel>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
@@ -967,8 +972,8 @@ cd $(ProjectDir)
     </PreBuildEvent>
     <YASM>
       <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
-      <Debug>true</Debug>
+      <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -991,6 +996,7 @@ cd $(ProjectDir)
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(AdditionalOptions)' == '' and '$(VisualStudioVersion)' != '12.0'">/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FloatingPointModel>Precise</FloatingPointModel>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
@@ -1045,8 +1051,8 @@ cd $(ProjectDir)
     </PreBuildEvent>
     <YASM>
       <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
-      <Debug>true</Debug>
+      <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1069,6 +1075,7 @@ cd $(ProjectDir)
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(AdditionalOptions)' == '' and '$(VisualStudioVersion)' != '12.0'">/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FloatingPointModel>Precise</FloatingPointModel>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
@@ -1122,8 +1129,8 @@ cd $(ProjectDir)
     </PreBuildEvent>
     <YASM>
       <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
-      <Debug>true</Debug>
+      <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1154,6 +1161,7 @@ cd $(ProjectDir)
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(AdditionalOptions)' == '' and '$(VisualStudioVersion)' != '12.0'">/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <ProgramDataBaseFileName>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDataBaseFileName>
       <DisableSpecificWarnings>4244;4267;4018;4146;4028;4996;4090;4114;4308;4305;4005;4101;4554;4307;4273;4133;4544;4334;4293;4047;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
@@ -1200,8 +1208,8 @@ cd $(ProjectDir)
     </PreBuildEvent>
     <YASM>
       <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
-      <Debug>true</Debug>
+      <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1232,6 +1240,7 @@ cd $(ProjectDir)
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(AdditionalOptions)' == '' and '$(VisualStudioVersion)' != '12.0'">/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <ProgramDataBaseFileName>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDataBaseFileName>
       <DisableSpecificWarnings>4244;4267;4018;4146;4028;4996;4090;4114;4308;4305;4005;4101;4554;4307;4273;4133;4544;4334;4293;4047;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
@@ -1278,8 +1287,8 @@ cd $(ProjectDir)
     </PreBuildEvent>
     <YASM>
       <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
-      <Debug>true</Debug>
+      <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1310,6 +1319,7 @@ cd $(ProjectDir)
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(AdditionalOptions)' == '' and '$(VisualStudioVersion)' != '12.0'">/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <DisableSpecificWarnings>4244;4267;4018;4146;4028;4996;4090;4114;4308;4305;4005;4101;4554;4307;4273;4133;4544;4334;4293;4047;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <MinimumRequiredVersion>5.1</MinimumRequiredVersion>
@@ -1364,8 +1374,8 @@ cd $(ProjectDir)
     </PreBuildEvent>
     <YASM>
       <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
-      <Debug>true</Debug>
+      <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1396,6 +1406,7 @@ cd $(ProjectDir)
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(AdditionalOptions)' == '' and '$(VisualStudioVersion)' != '12.0'">/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <DisableSpecificWarnings>4244;4267;4018;4146;4028;4996;4090;4114;4308;4305;4005;4101;4554;4307;4273;4133;4544;4334;4293;4047;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <MinimumRequiredVersion>6.0</MinimumRequiredVersion>
@@ -1449,8 +1460,8 @@ cd $(ProjectDir)
     </PreBuildEvent>
     <YASM>
       <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
-      <Debug>true</Debug>
+      <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1481,6 +1492,7 @@ cd $(ProjectDir)
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(AdditionalOptions)' == '' and '$(VisualStudioVersion)' != '12.0'">/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <DisableSpecificWarnings>4244;4267;4018;4146;4028;4996;4090;4114;4308;4305;4005;4101;4554;4307;4273;4133;4544;4334;4293;4047;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <MinimumRequiredVersion>5.1</MinimumRequiredVersion>
@@ -1535,8 +1547,8 @@ cd $(ProjectDir)
     </PreBuildEvent>
     <YASM>
       <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
-      <Debug>true</Debug>
+      <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1567,6 +1579,7 @@ cd $(ProjectDir)
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(AdditionalOptions)' == '' and '$(VisualStudioVersion)' != '12.0'">/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
       <DisableSpecificWarnings>4244;4267;4018;4146;4028;4996;4090;4114;4308;4305;4005;4101;4554;4307;4273;4133;4544;4334;4293;4047;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <MinimumRequiredVersion>6.0</MinimumRequiredVersion>
@@ -1620,8 +1633,8 @@ cd $(ProjectDir)
     </PreBuildEvent>
     <YASM>
       <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
-      <Debug>true</Debug>
+      <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1652,6 +1665,7 @@ cd $(ProjectDir)
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(AdditionalOptions)' == '' and '$(VisualStudioVersion)' != '12.0'">/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <ProgramDataBaseFileName>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDataBaseFileName>
       <DisableSpecificWarnings>4244;4267;4018;4146;4028;4996;4090;4114;4308;4305;4005;4101;4554;4307;4273;4133;4544;4334;4293;4047;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
@@ -1698,8 +1712,8 @@ cd $(ProjectDir)
     </PreBuildEvent>
     <YASM>
       <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
-      <Debug>true</Debug>
+      <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1730,6 +1744,7 @@ cd $(ProjectDir)
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 14.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler XE 15.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(PlatformToolset)'=='Intel C++ Compiler 16.0'">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(AdditionalOptions)' == '' and '$(VisualStudioVersion)' != '12.0'">/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <ProgramDataBaseFileName>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDataBaseFileName>
       <DisableSpecificWarnings>4244;4267;4018;4146;4028;4996;4090;4114;4308;4305;4005;4101;4554;4307;4273;4133;4544;4334;4293;4047;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
@@ -1776,8 +1791,8 @@ cd $(ProjectDir)
     </PreBuildEvent>
     <YASM>
       <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
-      <PreIncludeFile>config.asm;%(PreIncludeFile)</PreIncludeFile>
-      <Debug>true</Debug>
+      <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </YASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -1786,6 +1801,6 @@ cd $(ProjectDir)
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\vsyasm.targets" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\yasm.targets" />
   </ImportGroup>
 </Project>

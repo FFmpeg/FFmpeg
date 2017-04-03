@@ -98,12 +98,9 @@ before_build:
     }
 
 # Download and install yasm integration
-- ps: (New-Object Net.WebClient).DownloadFile('http://www.tortall.net/projects/yasm/releases/vsyasm-1.3.0-win64.zip', "$pwd\yasm.zip")
+- ps: (New-Object Net.WebClient).DownloadFile('https://github.com/ShiftMediaProject/VSYASM/releases/download/0.1/VSYASM.zip', "$pwd\yasm.zip")
 - ps: Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory("$pwd\yasm.zip", "$pwd\TempYASMUnpack")
-- ps: New-Item -ItemType Directory -Force -Path "$env:VCINSTALLDIR\bin\"
-- ps: Move-Item -Force "TempYASMUnpack\*.exe" "$env:VCINSTALLDIR\bin\"
-- ps: (Get-Content "$pwd\TempYASMUnpack\vsyasm.props") -replace '\$\(Platform\)', 'win$(PlatformArchitecture)' | Set-Content "$pwd\TempYASMUnpack\vsyasm.props"
-- ps: Copy-Item -Force "TempYASMUnpack\*.*" "$env:VCTargetsPath\BuildCustomizations"
+- cmd: call ".\TempYASMUnpack\install_script.bat"
 # Additional yasm location in order to fix gitlink error
 - ps: if ($env:MSVC_VER -ne 15) { Copy-Item -Force "TempYASMUnpack\*.*" "$env:VCTargetsPath\..\BuildCustomizations" }
 

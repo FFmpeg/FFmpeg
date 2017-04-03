@@ -25,7 +25,7 @@
 #include "libavcodec/xvmc_internal.h"
 #include "libavcodec/xvididct.h"
 #include "libavcodec/wmv2dsp.h"
-#include "libavcodec/vp9.h"
+#include "libavcodec/vp9dsp.h"
 #include "libavcodec/vp8dsp.h"
 #include "libavcodec/vp56dsp.h"
 #include "libavcodec/vp3dsp.h"

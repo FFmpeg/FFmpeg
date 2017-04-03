@@ -1563,7 +1563,7 @@
     <ClCompile Include="..\libavcodec\mpeg12enc.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\qsvdec_mpeg2.c">
+    <ClCompile Include="..\libavcodec\qsvdec_other.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\qsvenc_mpeg2.c">
@@ -2040,9 +2040,6 @@
     <ClCompile Include="..\libavcodec\vc1data.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\qsvdec_vc1.c">
-      <Filter>Source Files\libavcodec</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\vc2enc.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -2098,6 +2095,9 @@
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\vp9dsp.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\vp9recon.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\vp9block.c">
@@ -2851,6 +2851,9 @@
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\vp6dsp.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\vp9lpf.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\g722dsp.c">
