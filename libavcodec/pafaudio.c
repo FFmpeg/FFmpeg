@@ -29,12 +29,13 @@
 
 static av_cold int paf_audio_init(AVCodecContext *avctx)
 {
-    if (avctx->channels != 2) {
+    if (avctx->ch_layout.nb_channels != 2) {
         av_log(avctx, AV_LOG_ERROR, "invalid number of channels\n");
         return AVERROR_INVALIDDATA;
     }
 
-    avctx->channel_layout = AV_CH_LAYOUT_STEREO;
+    av_channel_layout_uninit(&avctx->ch_layout);
+    avctx->ch_layout      = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
     avctx->sample_fmt     = AV_SAMPLE_FMT_S16;
 
     return 0;
