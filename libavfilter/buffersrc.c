@@ -196,16 +196,9 @@ static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
 
     s->nb_failed_requests = 0;
 
-    if (!frame) {
-        s->eof = 1;
-        ff_avfilter_link_set_in_status(ctx->outputs[0], AVERROR_EOF, AV_NOPTS_VALUE);
-        if ((flags & AV_BUFFERSRC_FLAG_PUSH)) {
-            ret = push_frame(ctx->graph);
-            if (ret < 0)
-                return ret;
-        }
-        return 0;
-    } else if (s->eof)
+    if (!frame)
+        return av_buffersrc_close(ctx, AV_NOPTS_VALUE, flags);
+    if (s->eof)
         return AVERROR(EINVAL);
 
     refcounted = !!frame->buf[0];
@@ -265,6 +258,15 @@ static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
     }
 
     return 0;
+}
+
+int av_buffersrc_close(AVFilterContext *ctx, int64_t pts, unsigned flags)
+{
+    BufferSourceContext *s = ctx->priv;
+
+    s->eof = 1;
+    ff_avfilter_link_set_in_status(ctx->outputs[0], AVERROR_EOF, pts);
+    return (flags & AV_BUFFERSRC_FLAG_PUSH) ? push_frame(ctx->graph) : 0;
 }
 
 static av_cold int init_video(AVFilterContext *ctx)
