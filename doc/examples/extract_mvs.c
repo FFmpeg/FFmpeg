@@ -31,13 +31,11 @@ static const char *src_filename = NULL;
 
 static int video_stream_idx = -1;
 static AVFrame *frame = NULL;
-static AVPacket pkt;
 static int video_frame_count = 0;
 
-static int decode_packet(void)
+static int decode_packet(const AVPacket *pkt)
 {
-    if (pkt.stream_index == video_stream_idx) {
-        int ret = avcodec_send_packet(video_dec_ctx, &pkt);
+        int ret = avcodec_send_packet(video_dec_ctx, pkt);
         if (ret < 0) {
             fprintf(stderr, "Error while sending a packet to the decoder: %s\n", av_err2str(ret));
             return ret;
@@ -71,7 +69,6 @@ static int decode_packet(void)
                 av_frame_unref(frame);
             }
         }
-    }
 
     return 0;
 }
@@ -124,6 +121,7 @@ static int open_codec_context(AVFormatContext *fmt_ctx, enum AVMediaType type)
 int main(int argc, char **argv)
 {
     int ret = 0;
+    AVPacket pkt = { 0 };
 
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <video>\n", argv[0]);
@@ -162,21 +160,17 @@ int main(int argc, char **argv)
 
     printf("framenum,source,blockw,blockh,srcx,srcy,dstx,dsty,flags\n");
 
-    /* initialize packet, set data to NULL, let the demuxer fill it */
-    av_init_packet(&pkt);
-
     /* read frames from the file */
     while (av_read_frame(fmt_ctx, &pkt) >= 0) {
-        ret = decode_packet();
+        if (pkt.stream_index == video_stream_idx)
+            ret = decode_packet(&pkt);
         av_packet_unref(&pkt);
         if (ret < 0)
             break;
     }
 
     /* flush cached frames */
-    pkt.data = NULL;
-    pkt.size = 0;
-    decode_packet();
+    decode_packet(NULL);
 
 end:
     avcodec_free_context(&video_dec_ctx);
