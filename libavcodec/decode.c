@@ -590,7 +590,7 @@ static int compat_decode(AVCodecContext *avctx, AVFrame *frame,
                          int *got_frame, AVPacket *pkt)
 {
     AVCodecInternal *avci = avctx->internal;
-    int ret;
+    int ret = 0;
 
     av_assert0(avci->compat_decode_consumed == 0);
 
