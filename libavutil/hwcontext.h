@@ -417,7 +417,7 @@ void *av_hwdevice_hwconfig_alloc(AVBufferRef *device_ctx);
  * configuration is provided, returns the maximum possible capabilities
  * of the device.
  *
- * @param device_ctx a reference to the associated AVHWDeviceContext.
+ * @param ref a reference to the associated AVHWDeviceContext.
  * @param hwconfig a filled HW-specific configuration structure, or NULL
  *        to return the maximum possible capabilities of the device.
  * @return AVHWFramesConstraints structure describing the constraints

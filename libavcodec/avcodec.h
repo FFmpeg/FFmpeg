@@ -4458,7 +4458,7 @@ AVPacket *av_packet_clone(const AVPacket *src);
  * Free the packet, if the packet is reference counted, it will be
  * unreferenced first.
  *
- * @param packet packet to be freed. The pointer will be set to NULL.
+ * @param pkt packet to be freed. The pointer will be set to NULL.
  * @note passing NULL is a no-op.
  */
 void av_packet_free(AVPacket **pkt);
