@@ -770,7 +770,7 @@ av_cold void ff_intrax8_common_end(IntraX8Context *w)
     av_freep(&w->prediction_table);
 }
 
-int ff_intrax8_decode_picture(IntraX8Context *const w, Picture *pict,
+int ff_intrax8_decode_picture(IntraX8Context *w, Picture *pict,
                               GetBitContext *gb, int *mb_x, int *mb_y,
                               int dquant, int quant_offset,
                               int loopfilter, int lowdelay)

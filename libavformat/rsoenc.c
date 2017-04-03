@@ -50,7 +50,7 @@ static int rso_write_header(AVFormatContext *s)
     }
 
     if (par->codec_id == AV_CODEC_ID_ADPCM_IMA_WAV) {
-        av_log(s, AV_LOG_ERROR, "ADPCM in RSO not implemented\n");
+        avpriv_report_missing_feature(s, "ADPCM in RSO");
         return AVERROR_PATCHWELCOME;
     }
 

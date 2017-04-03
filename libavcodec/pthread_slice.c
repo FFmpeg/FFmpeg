@@ -156,11 +156,7 @@ static int thread_execute(AVCodecContext *avctx, action_func* func, void *arg, i
     c->job_size = job_size;
     c->args = arg;
     c->func = func;
-    if (ret) {
-        c->rets = ret;
-    } else {
-        c->rets = NULL;
-    }
+    c->rets = ret;
     c->current_execute++;
     pthread_cond_broadcast(&c->current_job_cond);
 

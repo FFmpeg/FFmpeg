@@ -111,7 +111,7 @@ static int dnxhd_init_vlc(DNXHDContext *ctx, uint32_t cid, int bitdepth)
         int index;
 
         if ((index = ff_dnxhd_get_cid_table(cid)) < 0) {
-            av_log(ctx->avctx, AV_LOG_ERROR, "unsupported cid %d\n", cid);
+            av_log(ctx->avctx, AV_LOG_ERROR, "unsupported cid %"PRIu32"\n", cid);
             return AVERROR(ENOSYS);
         }
         if (ff_dnxhd_cid_table[index].bit_depth != bitdepth &&
@@ -120,7 +120,7 @@ static int dnxhd_init_vlc(DNXHDContext *ctx, uint32_t cid, int bitdepth)
             return AVERROR_INVALIDDATA;
         }
         ctx->cid_table = &ff_dnxhd_cid_table[index];
-        av_log(ctx->avctx, AV_LOG_VERBOSE, "Profile cid %d.\n", cid);
+        av_log(ctx->avctx, AV_LOG_VERBOSE, "Profile cid %"PRIu32".\n", cid);
 
         ff_free_vlc(&ctx->ac_vlc);
         ff_free_vlc(&ctx->dc_vlc);
@@ -145,6 +145,7 @@ static av_cold int dnxhd_decode_init_thread_copy(AVCodecContext *avctx)
 {
     DNXHDContext *ctx = avctx->priv_data;
 
+    ctx->avctx = avctx;
     // make sure VLC tables will be loaded when cid is parsed
     ctx->cid = -1;
 
@@ -316,10 +317,11 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
 
     for (i = 0; i < ctx->mb_height; i++) {
         ctx->mb_scan_index[i] = AV_RB32(buf + 0x170 + (i << 2));
-        ff_dlog(ctx->avctx, "mb scan index %d, pos %d: %u\n", i, 0x170 + (i << 2), ctx->mb_scan_index[i]);
+        ff_dlog(ctx->avctx, "mb scan index %d, pos %d: %"PRIu32"\n",
+                i, 0x170 + (i << 2), ctx->mb_scan_index[i]);
         if (buf_size - ctx->data_offset < ctx->mb_scan_index[i]) {
             av_log(ctx->avctx, AV_LOG_ERROR,
-                   "invalid mb scan index (%u vs %u).\n",
+                   "invalid mb scan index (%"PRIu32" vs %u).\n",
                    ctx->mb_scan_index[i], buf_size - ctx->data_offset);
             return AVERROR_INVALIDDATA;
         }

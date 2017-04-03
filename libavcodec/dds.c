@@ -117,7 +117,6 @@ static int parse_pixel_format(AVCodecContext *avctx)
 {
     DDSContext *ctx = avctx->priv_data;
     GetByteContext *gbc = &ctx->gbc;
-    char buf[32];
     uint32_t flags, fourcc, gimp_tag;
     enum DDSDXGIFormat dxgi;
     int size, bpp, r, g, b, a;
@@ -161,13 +160,10 @@ static int parse_pixel_format(AVCodecContext *avctx)
     bytestream2_skip(gbc, 4); // caps4
     bytestream2_skip(gbc, 4); // reserved2
 
-    av_get_codec_tag_string(buf, sizeof(buf), fourcc);
     av_log(avctx, AV_LOG_VERBOSE, "fourcc %s bpp %d "
-           "r 0x%x g 0x%x b 0x%x a 0x%x\n", buf, bpp, r, g, b, a);
-    if (gimp_tag) {
-        av_get_codec_tag_string(buf, sizeof(buf), gimp_tag);
-        av_log(avctx, AV_LOG_VERBOSE, "and GIMP-DDS tag %s\n", buf);
-    }
+           "r 0x%x g 0x%x b 0x%x a 0x%x\n", av_fourcc2str(fourcc), bpp, r, g, b, a);
+    if (gimp_tag)
+        av_log(avctx, AV_LOG_VERBOSE, "and GIMP-DDS tag %s\n", av_fourcc2str(gimp_tag));
 
     if (ctx->compressed)
         avctx->pix_fmt = AV_PIX_FMT_RGBA;
@@ -344,7 +340,7 @@ static int parse_pixel_format(AVCodecContext *avctx)
             }
             break;
         default:
-            av_log(avctx, AV_LOG_ERROR, "Unsupported %s fourcc.\n", buf);
+            av_log(avctx, AV_LOG_ERROR, "Unsupported %s fourcc.\n", av_fourcc2str(fourcc));
             return AVERROR_INVALIDDATA;
         }
     } else if (ctx->paletted) {

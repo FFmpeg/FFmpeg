@@ -159,7 +159,7 @@ static inline int atomic_compare_exchange_strong(intptr_t *object, intptr_t *exp
     atomic_fetch_or(object, operand)
 
 #define atomic_fetch_xor_explicit(object, operand, order) \
-    atomic_fetch_sub(object, operand)
+    atomic_fetch_xor(object, operand)
 
 #define atomic_fetch_and_explicit(object, operand, order) \
     atomic_fetch_and(object, operand)

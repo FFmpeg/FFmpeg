@@ -319,7 +319,7 @@ static int mp3_write_audio_packet(AVFormatContext *s, AVPacket *pkt)
             if ((mpah.bit_rate == 0) || (mp3->initial_bitrate != mpah.bit_rate))
                 mp3->has_variable_bitrate = 1;
         } else {
-            av_log(s, AV_LOG_WARNING, "Audio packet of size %d (starting with %08X...) "
+            av_log(s, AV_LOG_WARNING, "Audio packet of size %d (starting with %08"PRIX32"...) "
                    "is invalid, writing it anyway.\n", pkt->size, h);
         }
 

@@ -69,8 +69,7 @@ static int decode_packet(int *got_frame, int cached)
     return decoded;
 }
 
-static int open_codec_context(int *stream_idx,
-                              AVFormatContext *fmt_ctx, enum AVMediaType type)
+static int open_codec_context(AVFormatContext *fmt_ctx, enum AVMediaType type)
 {
     int ret;
     AVStream *st;
@@ -78,22 +77,25 @@ static int open_codec_context(int *stream_idx,
     AVCodec *dec = NULL;
     AVDictionary *opts = NULL;
 
-    ret = av_find_best_stream(fmt_ctx, type, -1, -1, NULL, 0);
+    ret = av_find_best_stream(fmt_ctx, type, -1, -1, &dec, 0);
     if (ret < 0) {
         fprintf(stderr, "Could not find %s stream in input file '%s'\n",
                 av_get_media_type_string(type), src_filename);
         return ret;
     } else {
-        *stream_idx = ret;
-        st = fmt_ctx->streams[*stream_idx];
+        int stream_idx = ret;
+        st = fmt_ctx->streams[stream_idx];
 
-        /* find decoder for the stream */
-        dec_ctx = st->codec;
-        dec = avcodec_find_decoder(dec_ctx->codec_id);
-        if (!dec) {
-            fprintf(stderr, "Failed to find %s codec\n",
-                    av_get_media_type_string(type));
+        dec_ctx = avcodec_alloc_context3(dec);
+        if (!dec_ctx) {
+            fprintf(stderr, "Failed to allocate codec\n");
             return AVERROR(EINVAL);
+        }
+
+        ret = avcodec_parameters_to_context(dec_ctx, st->codecpar);
+        if (ret < 0) {
+            fprintf(stderr, "Failed to copy codec parameters to codec context\n");
+            return ret;
         }
 
         /* Init the video decoder */
@@ -103,6 +105,10 @@ static int open_codec_context(int *stream_idx,
                     av_get_media_type_string(type));
             return ret;
         }
+
+        video_stream_idx = stream_idx;
+        video_stream = fmt_ctx->streams[video_stream_idx];
+        video_dec_ctx = dec_ctx;
     }
 
     return 0;
@@ -130,10 +136,7 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    if (open_codec_context(&video_stream_idx, fmt_ctx, AVMEDIA_TYPE_VIDEO) >= 0) {
-        video_stream = fmt_ctx->streams[video_stream_idx];
-        video_dec_ctx = video_stream->codec;
-    }
+    open_codec_context(fmt_ctx, AVMEDIA_TYPE_VIDEO);
 
     av_dump_format(fmt_ctx, 0, src_filename, 0);
 
@@ -178,7 +181,7 @@ int main(int argc, char **argv)
     } while (got_frame);
 
 end:
-    avcodec_close(video_dec_ctx);
+    avcodec_free_context(&video_dec_ctx);
     avformat_close_input(&fmt_ctx);
     av_frame_free(&frame);
     return ret < 0;

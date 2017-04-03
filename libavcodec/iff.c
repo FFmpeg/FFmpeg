@@ -934,7 +934,7 @@ static void decode_delta_j(uint8_t *dst,
                 offset = bytestream2_get_be16(&gb);
 
                 if (cols * bpp == 0 || bytestream2_get_bytes_left(&gb) < cols * bpp) {
-                    av_log(NULL, AV_LOG_ERROR, "cols*bpp is invalid (%d*%d)", cols, bpp);
+                    av_log(NULL, AV_LOG_ERROR, "cols*bpp is invalid (%"PRId32"*%d)", cols, bpp);
                     return;
                 }
 
@@ -982,7 +982,7 @@ static void decode_delta_j(uint8_t *dst,
                         unsigned noffset = offset + (r * pitch) + d * planepitch;
 
                         if (!bytes || bytestream2_get_bytes_left(&gb) < bytes) {
-                            av_log(NULL, AV_LOG_ERROR, "bytes %d is invalid", bytes);
+                            av_log(NULL, AV_LOG_ERROR, "bytes %"PRId32" is invalid", bytes);
                             return;
                         }
 

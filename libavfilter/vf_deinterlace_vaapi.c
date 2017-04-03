@@ -631,4 +631,5 @@ AVFilter ff_vf_deinterlace_vaapi = {
     .inputs         = deint_vaapi_inputs,
     .outputs        = deint_vaapi_outputs,
     .priv_class     = &deint_vaapi_class,
+    .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

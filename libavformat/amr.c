@@ -118,7 +118,7 @@ static int amr_read_packet(AVFormatContext *s, AVPacket *pkt)
     AMRContext *amr = s->priv_data;
 
     if (avio_feof(s->pb)) {
-        return AVERROR(EIO);
+        return AVERROR_EOF;
     }
 
     // FIXME this is wrong, this should rather be in an AVParser
@@ -156,6 +156,8 @@ static int amr_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (read != size - 1) {
         av_packet_unref(pkt);
+        if (read < 0)
+            return read;
         return AVERROR(EIO);
     }
 

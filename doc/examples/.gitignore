@@ -1,7 +1,10 @@
 /avio_dir_cmd
 /avio_reading
-/decoding_encoding
+/decode_audio
+/decode_video
 /demuxing_decoding
+/encode_audio
+/encode_video
 /extract_mvs
 /filter_audio
 /filtering_audio

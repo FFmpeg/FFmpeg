@@ -586,13 +586,13 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         break;
     default:
 unk_pixfmt:
-        av_log(s->avctx, AV_LOG_ERROR, "Unhandled pixel format 0x%x bits:%d\n", pix_fmt_id, s->bits);
+        avpriv_report_missing_feature(s->avctx, "Pixel format 0x%x bits:%d", pix_fmt_id, s->bits);
         memset(s->upscale_h, 0, sizeof(s->upscale_h));
         memset(s->upscale_v, 0, sizeof(s->upscale_v));
         return AVERROR_PATCHWELCOME;
     }
     if ((AV_RB32(s->upscale_h) || AV_RB32(s->upscale_v)) && s->avctx->lowres) {
-        av_log(s->avctx, AV_LOG_ERROR, "lowres not supported for weird subsampling\n");
+        avpriv_report_missing_feature(s->avctx, "Lowres for weird subsampling");
         return AVERROR_PATCHWELCOME;
     }
     if (s->ls) {
@@ -1483,8 +1483,9 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s, const uint8_t *mb_bitmask,
     len = get_bits(&s->gb, 16);
     nb_components = get_bits(&s->gb, 8);
     if (nb_components == 0 || nb_components > MAX_COMPONENTS) {
-        av_log(s->avctx, AV_LOG_ERROR,
-               "decode_sos: nb_components (%d) unsupported\n", nb_components);
+        avpriv_report_missing_feature(s->avctx,
+                                      "decode_sos: nb_components (%d)",
+                                      nb_components);
         return AVERROR_PATCHWELCOME;
     }
     if (len != 6 + 2 * nb_components) {
@@ -1649,11 +1650,9 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
     id   = get_bits_long(&s->gb, 32);
     len -= 6;
 
-    if (s->avctx->debug & FF_DEBUG_STARTCODE) {
-        char id_str[32];
-        av_get_codec_tag_string(id_str, sizeof(id_str), av_bswap32(id));
-        av_log(s->avctx, AV_LOG_DEBUG, "APPx (%s / %8X) len=%d\n", id_str, id, len);
-    }
+    if (s->avctx->debug & FF_DEBUG_STARTCODE)
+        av_log(s->avctx, AV_LOG_DEBUG, "APPx (%s / %8X) len=%d\n",
+               av_fourcc2str(av_bswap32(id)), id, len);
 
     /* Buggy AVID, it puts EOI only at every 10th frame. */
     /* Also, this fourcc is used by non-avid files too, it holds some

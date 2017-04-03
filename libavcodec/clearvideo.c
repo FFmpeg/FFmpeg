@@ -281,6 +281,7 @@ static int clv_decode_frame(AVCodecContext *avctx, void *data,
     uint32_t frame_type;
     int i, j;
     int ret;
+    int mb_ret = 0;
 
     bytestream2_init(&gb, buf, buf_size);
     if (avctx->codec_tag == MKTAG('C','L','V','1')) {
@@ -312,7 +313,9 @@ static int clv_decode_frame(AVCodecContext *avctx, void *data,
 
         for (j = 0; j < c->mb_height; j++) {
             for (i = 0; i < c->mb_width; i++) {
-                ret |= decode_mb(c, i, j);
+                ret = decode_mb(c, i, j);
+                if (ret < 0)
+                    mb_ret = ret;
             }
         }
     } else {
@@ -323,7 +326,7 @@ static int clv_decode_frame(AVCodecContext *avctx, void *data,
 
     *got_frame = 1;
 
-    return ret < 0 ? ret : buf_size;
+    return mb_ret < 0 ? mb_ret : buf_size;
 }
 
 static av_cold int clv_decode_init(AVCodecContext *avctx)

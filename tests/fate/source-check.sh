@@ -27,7 +27,7 @@ for f in `git ls-files | grep '\.h$'` ; do
         -e 's/_vaf_/_/' \
     | tr abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ`"
 
-    grep -L "^#define $macro$" $f
+    git grep -L "^#define $macro$" $f
 done
 
 echo "Use of av_clip() where av_clip_uintp2() could be used:"

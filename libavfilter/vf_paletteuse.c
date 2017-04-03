@@ -491,7 +491,7 @@ static void disp_node(AVBPrint *buf,
     av_bprintf(buf, "%*cnode%d ["
                "label=\"%c%02X%c%02X%c%02X%c\" "
                "fillcolor=\"#%02x%02x%02x\" "
-               "fontcolor=\"#%06X\"]\n",
+               "fontcolor=\"#%06"PRIX32"\"]\n",
                depth*INDENT, ' ', node->palette_id,
                "[  "[node->split], node->val[0],
                "][ "[node->split], node->val[1],
@@ -552,7 +552,7 @@ static int debug_accuracy(const struct color_node *node, const uint32_t *palette
                     const int d2 = diff(palrgb2, rgb);
                     if (d1 != d2) {
                         av_log(NULL, AV_LOG_ERROR,
-                               "/!\\ %02X%02X%02X: %d ! %d (%06X ! %06X) / dist: %d ! %d\n",
+                               "/!\\ %02X%02X%02X: %d ! %d (%06"PRIX32" ! %06"PRIX32") / dist: %d ! %d\n",
                                r, g, b, r1, r2, c1 & 0xffffff, c2 & 0xffffff, d1, d2);
                         ret = 1;
                     }

@@ -170,8 +170,8 @@ static int rpl_read_header(AVFormatContext *s)
             vst->codecpar->codec_id = AV_CODEC_ID_ESCAPE130;
             break;
         default:
-            avpriv_report_missing_feature(s, "Video format %i",
-                                          vst->codecpar->codec_tag);
+            avpriv_report_missing_feature(s, "Video format %s",
+                                          av_fourcc2str(vst->codecpar->codec_tag));
             vst->codecpar->codec_id = AV_CODEC_ID_NONE;
     }
 
@@ -233,8 +233,8 @@ static int rpl_read_header(AVFormatContext *s)
     rpl->frames_per_chunk = read_line_and_int(pb, &error);  // video frames per chunk
     if (rpl->frames_per_chunk > 1 && vst->codecpar->codec_tag != 124)
         av_log(s, AV_LOG_WARNING,
-               "Don't know how to split frames for video format %i. "
-               "Video stream will be broken!\n", vst->codecpar->codec_tag);
+               "Don't know how to split frames for video format %s. "
+               "Video stream will be broken!\n", av_fourcc2str(vst->codecpar->codec_tag));
 
     number_of_chunks = read_line_and_int(pb, &error);  // number of chunks in the file
     // The number in the header is actually the index of the last chunk.

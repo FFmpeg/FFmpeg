@@ -111,6 +111,7 @@ static void register_all(void)
     REGISTER_HWACCEL(VC1_QSV,           vc1_qsv);
     REGISTER_HWACCEL(VP8_CUVID,         vp8_cuvid);
     REGISTER_HWACCEL(VP8_MEDIACODEC,    vp8_mediacodec);
+    REGISTER_HWACCEL(VP8_QSV,           vp8_qsv);
     REGISTER_HWACCEL(VP9_CUVID,         vp9_cuvid);
     REGISTER_HWACCEL(VP9_D3D11VA,       vp9_d3d11va);
     REGISTER_HWACCEL(VP9_DXVA2,         vp9_dxva2);
@@ -668,6 +669,7 @@ static void register_all(void)
     REGISTER_DECODER(VC1_CUVID,         vc1_cuvid);
     REGISTER_DECODER(VP8_CUVID,         vp8_cuvid);
     REGISTER_DECODER(VP8_MEDIACODEC,    vp8_mediacodec);
+    REGISTER_DECODER(VP8_QSV,           vp8_qsv);
     REGISTER_ENCODER(VP8_VAAPI,         vp8_vaapi);
     REGISTER_DECODER(VP9_CUVID,         vp9_cuvid);
     REGISTER_DECODER(VP9_MEDIACODEC,    vp9_mediacodec);

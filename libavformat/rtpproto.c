@@ -512,7 +512,6 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
         if (h->flags & AVIO_FLAG_NONBLOCK)
             return AVERROR(EAGAIN);
     }
-    return len;
 }
 
 static int rtp_write(URLContext *h, const uint8_t *buf, int size)

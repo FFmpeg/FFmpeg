@@ -94,7 +94,7 @@ static int ircam_read_header(AVFormatContext *s)
 
     st->codecpar->codec_id = ff_codec_get_id(tags, tag);
     if (st->codecpar->codec_id == AV_CODEC_ID_NONE) {
-        av_log(s, AV_LOG_ERROR, "unknown tag %X\n", tag);
+        av_log(s, AV_LOG_ERROR, "unknown tag %"PRIx32"\n", tag);
         return AVERROR_INVALIDDATA;
     }
 

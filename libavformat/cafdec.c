@@ -298,11 +298,9 @@ static int read_header(AVFormatContext *s)
             break;
 
         default:
-#define _(x) ((x) >= ' ' ? (x) : ' ')
             av_log(s, AV_LOG_WARNING,
-                   "skipping CAF chunk: %08"PRIX32" (%c%c%c%c), size %"PRId64"\n",
-                tag, _(tag>>24), _((tag>>16)&0xFF), _((tag>>8)&0xFF), _(tag&0xFF), size);
-#undef _
+                   "skipping CAF chunk: %08"PRIX32" (%s), size %"PRId64"\n",
+                   tag, av_fourcc2str(av_bswap32(tag)), size);
         case MKBETAG('f','r','e','e'):
             if (size < 0)
                 return AVERROR_INVALIDDATA;

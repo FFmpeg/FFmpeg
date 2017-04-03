@@ -138,7 +138,11 @@ void ff_h264_direct_ref_list_init(const H264Context *const h, H264SliceContext *
         memcpy(cur->ref_poc[1],   cur->ref_poc[0],   sizeof(cur->ref_poc[0]));
     }
 
-    cur->mbaff = FRAME_MBAFF(h);
+    if (h->current_slice == 0) {
+        cur->mbaff = FRAME_MBAFF(h);
+    } else {
+        av_assert0(cur->mbaff == FRAME_MBAFF(h));
+    }
 
     sl->col_fieldoff = 0;
 

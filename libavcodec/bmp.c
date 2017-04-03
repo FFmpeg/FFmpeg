@@ -100,7 +100,8 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         height = bytestream_get_le16(&buf);
         break;
     default:
-        av_log(avctx, AV_LOG_ERROR, "unsupported BMP file, patch welcome\n");
+        avpriv_report_missing_feature(avctx, "Information header size %u",
+                                      ihsize);
         return AVERROR_PATCHWELCOME;
     }
 
@@ -149,7 +150,8 @@ static int bmp_decode_frame(AVCodecContext *avctx,
             else if (rgb[0] == 0x000000FF && rgb[1] == 0x0000FF00 && rgb[2] == 0x00FF0000)
                 avctx->pix_fmt = alpha ? AV_PIX_FMT_RGBA : AV_PIX_FMT_RGB0;
             else {
-                av_log(avctx, AV_LOG_ERROR, "Unknown bitfields %0X %0X %0X\n", rgb[0], rgb[1], rgb[2]);
+                av_log(avctx, AV_LOG_ERROR, "Unknown bitfields "
+                       "%0"PRIX32" %0"PRIX32" %0"PRIX32"\n", rgb[0], rgb[1], rgb[2]);
                 return AVERROR(EINVAL);
             }
         } else {

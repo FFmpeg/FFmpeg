@@ -1500,7 +1500,7 @@ static int read_diff_float_data(ALSDecContext *ctx, unsigned int ra_frame) {
 
                 tmp_32 = ff_mlz_decompression(ctx->mlz, gb, nchars, larray);
                 if(tmp_32 != nchars) {
-                    av_log(ctx->avctx, AV_LOG_ERROR, "Error in MLZ decompression (%d, %d).\n", tmp_32, nchars);
+                    av_log(ctx->avctx, AV_LOG_ERROR, "Error in MLZ decompression (%"PRId32", %d).\n", tmp_32, nchars);
                     return AVERROR_INVALIDDATA;
                 }
 
@@ -1543,7 +1543,7 @@ static int read_diff_float_data(ALSDecContext *ctx, unsigned int ra_frame) {
 
                 tmp_32 = ff_mlz_decompression(ctx->mlz, gb, nchars, larray);
                 if(tmp_32 != nchars) {
-                    av_log(ctx->avctx, AV_LOG_ERROR, "Error in MLZ decompression (%d, %d).\n", tmp_32, nchars);
+                    av_log(ctx->avctx, AV_LOG_ERROR, "Error in MLZ decompression (%"PRId32", %d).\n", tmp_32, nchars);
                     return AVERROR_INVALIDDATA;
                 }
 

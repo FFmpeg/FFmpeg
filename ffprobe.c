@@ -1856,12 +1856,12 @@ static void print_pkt_side_data(WriterContext *w,
 {
     int i;
 
-    writer_print_section_header(w, SECTION_ID_STREAM_SIDE_DATA_LIST);
+    writer_print_section_header(w, id_data_list);
     for (i = 0; i < nb_side_data; i++) {
         const AVPacketSideData *sd = &side_data[i];
         const char *name = av_packet_side_data_name(sd->type);
 
-        writer_print_section_header(w, SECTION_ID_STREAM_SIDE_DATA);
+        writer_print_section_header(w, id_data);
         print_str("side_data_type", name ? name : "unknown");
         if (sd->type == AV_PKT_DATA_DISPLAYMATRIX && sd->size >= 9*4) {
             writer_print_integers(w, "displaymatrix", sd->data, 9, " %11d", 3, 4, 1);
@@ -1872,22 +1872,18 @@ static void print_pkt_side_data(WriterContext *w,
             print_int("inverted", !!(stereo->flags & AV_STEREO3D_FLAG_INVERT));
         } else if (sd->type == AV_PKT_DATA_SPHERICAL) {
             const AVSphericalMapping *spherical = (AVSphericalMapping *)sd->data;
-            if (spherical->projection == AV_SPHERICAL_EQUIRECTANGULAR)
-                print_str("projection", "equirectangular");
-            else if (spherical->projection == AV_SPHERICAL_CUBEMAP) {
-                print_str("projection", "cubemap");
+            print_str("projection", av_spherical_projection_name(spherical->projection));
+            if (spherical->projection == AV_SPHERICAL_CUBEMAP) {
                 print_int("padding", spherical->padding);
             } else if (spherical->projection == AV_SPHERICAL_EQUIRECTANGULAR_TILE) {
                 size_t l, t, r, b;
                 av_spherical_tile_bounds(spherical, par->width, par->height,
                                          &l, &t, &r, &b);
-                print_str("projection", "tiled equirectangular");
                 print_int("bound_left", l);
                 print_int("bound_top", t);
                 print_int("bound_right", r);
                 print_int("bound_bottom", b);
-            } else
-                print_str("projection", "unknown");
+            }
 
             print_int("yaw", (double) spherical->yaw / (1 << 16));
             print_int("pitch", (double) spherical->pitch / (1 << 16));
@@ -2382,9 +2378,8 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
 #endif
 
     /* print AVI/FourCC tag */
-    av_get_codec_tag_string(val_str, sizeof(val_str), par->codec_tag);
-    print_str("codec_tag_string",    val_str);
-    print_fmt("codec_tag", "0x%04x", par->codec_tag);
+    print_str("codec_tag_string",    av_fourcc2str(par->codec_tag));
+    print_fmt("codec_tag", "0x%04"PRIx32, par->codec_tag);
 
     switch (par->codec_type) {
     case AVMEDIA_TYPE_VIDEO:

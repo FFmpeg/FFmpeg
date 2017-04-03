@@ -56,6 +56,10 @@ static const D3DPRESENT_PARAMETERS dxva2_present_params = {
     .Flags            = D3DPRESENTFLAG_VIDEO,
 };
 
+typedef struct DXVA2Mapping {
+    uint32_t palette_dummy[256];
+} DXVA2Mapping;
+
 typedef struct DXVA2FramesContext {
     IDirect3DSurface9 **surfaces_internal;
     int              nb_surfaces_used;
@@ -82,6 +86,7 @@ static const struct {
 } supported_formats[] = {
     { MKTAG('N', 'V', '1', '2'), AV_PIX_FMT_NV12 },
     { MKTAG('P', '0', '1', '0'), AV_PIX_FMT_P010 },
+    { D3DFMT_P8,                 AV_PIX_FMT_PAL8 },
 };
 
 DEFINE_GUID(video_decoder_service,   0xfc51a551, 0xd5e7, 0x11d9, 0xaf, 0x55, 0x00, 0x05, 0x4e, 0x43, 0xff, 0x02);
@@ -257,21 +262,25 @@ static int dxva2_transfer_get_formats(AVHWFramesContext *ctx,
     return 0;
 }
 
-static int dxva2_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
-                               const AVFrame *src)
+static void dxva2_unmap_frame(AVHWFramesContext *ctx, HWMapDescriptor *hwmap)
 {
-    IDirect3DSurface9 *surface;
+    IDirect3DSurface9 *surface = (IDirect3DSurface9*)hwmap->source->data[3];
+    IDirect3DSurface9_UnlockRect(surface);
+    av_freep(&hwmap->priv);
+}
+
+static int dxva2_map_frame(AVHWFramesContext *ctx, AVFrame *dst, const AVFrame *src,
+                           int flags)
+{
+    IDirect3DSurface9 *surface = (IDirect3DSurface9*)src->data[3];
+    DXVA2Mapping      *map;
     D3DSURFACE_DESC    surfaceDesc;
     D3DLOCKED_RECT     LockedRect;
     HRESULT            hr;
+    int i, err, nb_planes;
+    int lock_flags = 0;
 
-    uint8_t *surf_data[4]     = { NULL };
-    int      surf_linesize[4] = { 0 };
-    int i;
-
-    int download = !!src->hw_frames_ctx;
-
-    surface = (IDirect3DSurface9*)(download ? src->data[3] : dst->data[3]);
+    nb_planes = av_pix_fmt_count_planes(dst->format);
 
     hr = IDirect3DSurface9_GetDesc(surface, &surfaceDesc);
     if (FAILED(hr)) {
@@ -279,33 +288,115 @@ static int dxva2_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
         return AVERROR_UNKNOWN;
     }
 
-    hr = IDirect3DSurface9_LockRect(surface, &LockedRect, NULL,
-                                    download ? D3DLOCK_READONLY : D3DLOCK_DISCARD);
+    if (!(flags & AV_HWFRAME_MAP_WRITE))
+        lock_flags |= D3DLOCK_READONLY;
+    if (flags & AV_HWFRAME_MAP_OVERWRITE)
+        lock_flags |= D3DLOCK_DISCARD;
+
+    hr = IDirect3DSurface9_LockRect(surface, &LockedRect, NULL, lock_flags);
     if (FAILED(hr)) {
         av_log(ctx, AV_LOG_ERROR, "Unable to lock DXVA2 surface\n");
         return AVERROR_UNKNOWN;
     }
 
-    for (i = 0; download ? dst->data[i] : src->data[i]; i++)
-        surf_linesize[i] = LockedRect.Pitch;
+    map = av_mallocz(sizeof(*map));
+    if (!map)
+        goto fail;
 
-    av_image_fill_pointers(surf_data, ctx->sw_format, surfaceDesc.Height,
-                           (uint8_t*)LockedRect.pBits, surf_linesize);
-
-    if (download) {
-        ptrdiff_t src_linesize1[4], dst_linesize1[4];
-        for (i = 0; i < 4; i++) {
-            dst_linesize1[i] = dst->linesize[i];
-            src_linesize1[i] = surf_linesize[i];
-        }
-        av_image_copy_uc_from(dst->data, dst_linesize1, surf_data, src_linesize1,
-                              ctx->sw_format, src->width, src->height);
-    } else {
-        av_image_copy(surf_data, surf_linesize, src->data, src->linesize,
-                      ctx->sw_format, src->width, src->height);
+    err = ff_hwframe_map_create(src->hw_frames_ctx, dst, src,
+                                dxva2_unmap_frame, map);
+    if (err < 0) {
+        av_freep(&map);
+        goto fail;
     }
 
+    for (i = 0; i < nb_planes; i++)
+        dst->linesize[i] = LockedRect.Pitch;
+
+    av_image_fill_pointers(dst->data, dst->format, surfaceDesc.Height,
+                           (uint8_t*)LockedRect.pBits, dst->linesize);
+
+    if (dst->format == AV_PIX_FMT_PAL8)
+        dst->data[1] = (uint8_t*)map->palette_dummy;
+
+    return 0;
+fail:
     IDirect3DSurface9_UnlockRect(surface);
+    return err;
+}
+
+static int dxva2_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
+                                  const AVFrame *src)
+{
+    AVFrame *map;
+    int ret;
+
+    if (src->format != ctx->sw_format)
+        return AVERROR(ENOSYS);
+
+    map = av_frame_alloc();
+    if (!map)
+        return AVERROR(ENOMEM);
+    map->format = dst->format;
+
+    ret = dxva2_map_frame(ctx, map, dst, AV_HWFRAME_MAP_WRITE | AV_HWFRAME_MAP_OVERWRITE);
+    if (ret < 0)
+        goto fail;
+
+    av_image_copy(map->data, map->linesize, src->data, src->linesize,
+                  ctx->sw_format, src->width, src->height);
+
+fail:
+    av_frame_free(&map);
+    return ret;
+}
+
+static int dxva2_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
+                                    const AVFrame *src)
+{
+    AVFrame *map;
+    ptrdiff_t src_linesize[4], dst_linesize[4];
+    int ret, i;
+
+    if (dst->format != ctx->sw_format)
+        return AVERROR(ENOSYS);
+
+    map = av_frame_alloc();
+    if (!map)
+        return AVERROR(ENOMEM);
+    map->format = dst->format;
+
+    ret = dxva2_map_frame(ctx, map, src, AV_HWFRAME_MAP_READ);
+    if (ret < 0)
+        goto fail;
+
+    for (i = 0; i < 4; i++) {
+        dst_linesize[i] = dst->linesize[i];
+        src_linesize[i] = map->linesize[i];
+    }
+    av_image_copy_uc_from(dst->data, dst_linesize, map->data, src_linesize,
+                          ctx->sw_format, src->width, src->height);
+fail:
+    av_frame_free(&map);
+    return ret;
+}
+
+static int dxva2_map_from(AVHWFramesContext *ctx,
+                          AVFrame *dst, const AVFrame *src, int flags)
+{
+    int err;
+
+    if (dst->format != AV_PIX_FMT_NONE && dst->format != ctx->sw_format)
+        return AVERROR(ENOSYS);
+    dst->format = ctx->sw_format;
+
+    err = dxva2_map_frame(ctx, dst, src, flags);
+    if (err < 0)
+        return err;
+
+    err = av_frame_copy_props(dst, src);
+    if (err < 0)
+        return err;
 
     return 0;
 }
@@ -485,8 +576,9 @@ const HWContextType ff_hwcontext_type_dxva2 = {
     .frames_uninit        = dxva2_frames_uninit,
     .frames_get_buffer    = dxva2_get_buffer,
     .transfer_get_formats = dxva2_transfer_get_formats,
-    .transfer_data_to     = dxva2_transfer_data,
-    .transfer_data_from   = dxva2_transfer_data,
+    .transfer_data_to     = dxva2_transfer_data_to,
+    .transfer_data_from   = dxva2_transfer_data_from,
+    .map_from             = dxva2_map_from,
 
     .pix_fmts             = (const enum AVPixelFormat[]){ AV_PIX_FMT_DXVA2_VLD, AV_PIX_FMT_NONE },
 };

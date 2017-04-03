@@ -214,4 +214,5 @@ AVFilter ff_vf_hwdownload = {
     .priv_class    = &hwdownload_class,
     .inputs        = hwdownload_inputs,
     .outputs       = hwdownload_outputs,
+    .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

@@ -38,23 +38,37 @@
     (MFX_VERSION_MAJOR > (MAJOR) ||         \
      MFX_VERSION_MAJOR == (MAJOR) && MFX_VERSION_MINOR >= (MINOR))
 
+typedef struct QSVMid {
+    AVBufferRef *hw_frames_ref;
+    mfxHDL handle;
+
+    AVFrame *locked_frame;
+    AVFrame *hw_frame;
+    mfxFrameSurface1 surf;
+} QSVMid;
+
 typedef struct QSVFrame {
     AVFrame *frame;
-    mfxFrameSurface1 *surface;
+    mfxFrameSurface1 surface;
     mfxEncodeCtrl enc_ctrl;
 
-    mfxFrameSurface1 surface_internal;
-
     int queued;
+    int used;
 
     struct QSVFrame *next;
 } QSVFrame;
 
 typedef struct QSVFramesContext {
     AVBufferRef *hw_frames_ctx;
-    mfxFrameInfo info;
-    mfxMemId *mids;
-    int    nb_mids;
+    void *logctx;
+
+    /* The memory ids for the external frames.
+     * Refcounted, since we need one reference owned by the QSVFramesContext
+     * (i.e. by the encoder/decoder) and another one given to the MFX session
+     * from the frame allocator. */
+    AVBufferRef *mids_buf;
+    QSVMid *mids;
+    int  nb_mids;
 } QSVFramesContext;
 
 /**
@@ -79,5 +93,7 @@ int ff_qsv_init_internal_session(AVCodecContext *avctx, mfxSession *session,
 int ff_qsv_init_session_hwcontext(AVCodecContext *avctx, mfxSession *session,
                                   QSVFramesContext *qsv_frames_ctx,
                                   const char *load_plugins, int opaque);
+
+int ff_qsv_find_surface_idx(QSVFramesContext *ctx, QSVFrame *frame);
 
 #endif /* AVCODEC_QSV_INTERNAL_H */

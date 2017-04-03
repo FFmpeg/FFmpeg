@@ -2,6 +2,8 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+
+version 3.3:
 - CrystalHD decoder moved to new decode API
 - add internal ebur128 library, remove external libebur128 dependency
 - Pro-MPEG CoP #3-R2 FEC protocol
@@ -22,6 +24,7 @@ version <next>:
 - threshold filter
 - midequalizer filter
 - Optimal Huffman tables for (M)JPEG encoding
+- VAAPI-accelerated MPEG-2 and VP8 encoding
 - FM Screen Capture Codec decoder
 - native Opus encoder
 - ScreenPressor decoder
@@ -32,6 +35,7 @@ version <next>:
 - Removed the legacy X11 screen grabber, use XCB instead
 - MPEG-7 Video Signature filter
 - Removed asyncts filter (use af_aresample instead)
+- Intel QSV-accelerated VP8 video decoding
 
 
 version 3.2:
@@ -119,7 +123,6 @@ version 3.1:
 - libutvideo wrapper removed
 - YUY2 Lossless Codec decoder
 - VideoToolbox H.264 encoder
-- VAAPI-accelerated MPEG-2 and VP8 encoding
 
 
 version 3.0:

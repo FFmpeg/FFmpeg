@@ -19,7 +19,7 @@
  */
 
 #include <string.h>
-#include "libavcodec/vp9.h"
+#include "libavcodec/vp9dsp.h"
 #include "libavutil/mips/generic_macros_msa.h"
 #include "vp9dsp_mips.h"
 

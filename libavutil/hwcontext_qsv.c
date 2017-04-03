@@ -91,6 +91,7 @@ static const struct {
 } supported_pixel_formats[] = {
     { AV_PIX_FMT_NV12, MFX_FOURCC_NV12 },
     { AV_PIX_FMT_P010, MFX_FOURCC_P010 },
+    { AV_PIX_FMT_PAL8, MFX_FOURCC_P8   },
 };
 
 static int qsv_device_init(AVHWDeviceContext *ctx)
@@ -449,8 +450,10 @@ static int qsv_init_internal_session(AVHWFramesContext *ctx,
 
     err = MFXVideoVPP_Init(*session, &par);
     if (err != MFX_ERR_NONE) {
-        av_log(ctx, AV_LOG_ERROR, "Error opening the internal VPP session\n");
-        return AVERROR_UNKNOWN;
+        av_log(ctx, AV_LOG_VERBOSE, "Error opening the internal VPP session."
+               "Surface upload/download will not be possible\n");
+        MFXClose(*session);
+        *session = NULL;
     }
 
     return 0;
@@ -556,6 +559,76 @@ static int qsv_transfer_get_formats(AVHWFramesContext *ctx,
     return 0;
 }
 
+static int qsv_map_from(AVHWFramesContext *ctx,
+                        AVFrame *dst, const AVFrame *src, int flags)
+{
+    QSVFramesContext *s = ctx->internal->priv;
+    mfxFrameSurface1 *surf = (mfxFrameSurface1*)src->data[3];
+    AVHWFramesContext *child_frames_ctx;
+
+    AVFrame *dummy;
+    int ret = 0;
+
+    if (!s->child_frames_ref)
+        return AVERROR(ENOSYS);
+    child_frames_ctx = (AVHWFramesContext*)s->child_frames_ref->data;
+
+    dummy = av_frame_alloc();
+    if (!dummy)
+        return AVERROR(ENOMEM);
+
+    dummy->buf[0]        = av_buffer_ref(src->buf[0]);
+    dummy->hw_frames_ctx = av_buffer_ref(s->child_frames_ref);
+    if (!dummy->buf[0] || !dummy->hw_frames_ctx)
+        goto fail;
+
+    dummy->format        = child_frames_ctx->format;
+    dummy->width         = src->width;
+    dummy->height        = src->height;
+    dummy->data[3]       = surf->Data.MemId;
+
+    ret = av_hwframe_map(dst, dummy, flags);
+
+fail:
+    av_frame_free(&dummy);
+
+    return ret;
+}
+
+static int qsv_transfer_data_child(AVHWFramesContext *ctx, AVFrame *dst,
+                                   const AVFrame *src)
+{
+    QSVFramesContext *s = ctx->internal->priv;
+    AVHWFramesContext *child_frames_ctx = (AVHWFramesContext*)s->child_frames_ref->data;
+    int download = !!src->hw_frames_ctx;
+    mfxFrameSurface1 *surf = (mfxFrameSurface1*)(download ? src->data[3] : dst->data[3]);
+
+    AVFrame *dummy;
+    int ret;
+
+    dummy = av_frame_alloc();
+    if (!dummy)
+        return AVERROR(ENOMEM);
+
+    dummy->format        = child_frames_ctx->format;
+    dummy->width         = src->width;
+    dummy->height        = src->height;
+    dummy->buf[0]        = download ? src->buf[0] : dst->buf[0];
+    dummy->data[3]       = surf->Data.MemId;
+    dummy->hw_frames_ctx = s->child_frames_ref;
+
+    ret = download ? av_hwframe_transfer_data(dst, dummy, 0) :
+                     av_hwframe_transfer_data(dummy, src, 0);
+
+    dummy->buf[0]        = NULL;
+    dummy->data[3]       = NULL;
+    dummy->hw_frames_ctx = NULL;
+
+    av_frame_free(&dummy);
+
+    return ret;
+}
+
 static int qsv_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
                                   const AVFrame *src)
 {
@@ -565,6 +638,14 @@ static int qsv_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
 
     mfxSyncPoint sync = NULL;
     mfxStatus err;
+
+    if (!s->session_download) {
+        if (s->child_frames_ref)
+            return qsv_transfer_data_child(ctx, dst, src);
+
+        av_log(ctx, AV_LOG_ERROR, "Surface download not possible\n");
+        return AVERROR(ENOSYS);
+    }
 
     out.Info = in->Info;
     out.Data.PitchLow = dst->linesize[0];
@@ -604,6 +685,14 @@ static int qsv_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
 
     mfxSyncPoint sync = NULL;
     mfxStatus err;
+
+    if (!s->session_upload) {
+        if (s->child_frames_ref)
+            return qsv_transfer_data_child(ctx, dst, src);
+
+        av_log(ctx, AV_LOG_ERROR, "Surface upload not possible\n");
+        return AVERROR(ENOSYS);
+    }
 
     in.Info = out->Info;
     in.Data.PitchLow = src->linesize[0];
@@ -787,6 +876,7 @@ const HWContextType ff_hwcontext_type_qsv = {
     .transfer_get_formats   = qsv_transfer_get_formats,
     .transfer_data_to       = qsv_transfer_data_to,
     .transfer_data_from     = qsv_transfer_data_from,
+    .map_from               = qsv_map_from,
 
     .pix_fmts = (const enum AVPixelFormat[]){ AV_PIX_FMT_QSV, AV_PIX_FMT_NONE },
 };

@@ -244,12 +244,13 @@ static int update_context_from_thread(AVCodecContext *dst, AVCodecContext *src, 
 {
     int err = 0;
 
-    if (dst != src) {
+    if (dst != src && (for_user || !(av_codec_get_codec_descriptor(src)->props & AV_CODEC_PROP_INTRA_ONLY))) {
         dst->time_base = src->time_base;
         dst->framerate = src->framerate;
         dst->width     = src->width;
         dst->height    = src->height;
         dst->pix_fmt   = src->pix_fmt;
+        dst->sw_pix_fmt = src->sw_pix_fmt;
 
         dst->coded_width  = src->coded_width;
         dst->coded_height = src->coded_height;
@@ -468,7 +469,7 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
     FrameThreadContext *fctx = avctx->internal->thread_ctx;
     int finished = fctx->next_finished;
     PerThreadContext *p;
-    int err, ret = 0;
+    int err;
 
     /* release the async lock, permitting blocked hwaccel threads to
      * go forward while we are in this function */
@@ -496,7 +497,7 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
     if (fctx->delaying) {
         *got_picture_ptr=0;
         if (avpkt->size) {
-            ret = avpkt->size;
+            err = avpkt->size;
             goto finish;
         }
     }
@@ -542,21 +543,12 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
 
     fctx->next_finished = finished;
 
-    /*
-     * When no frame was found while flushing, but an error occurred in
-     * any thread, return it instead of 0.
-     * Otherwise the error can get lost.
-     */
-    if (!avpkt->size && !*got_picture_ptr)
-        goto finish;
-
     /* return the size of the consumed packet if no error occurred */
-    ret = (p->result >= 0) ? avpkt->size : p->result;
+    if (err >= 0)
+        err = avpkt->size;
 finish:
     async_lock(fctx);
-    if (err < 0)
-        return err;
-    return ret;
+    return err;
 }
 
 void ff_thread_report_progress(ThreadFrame *f, int n, int field)

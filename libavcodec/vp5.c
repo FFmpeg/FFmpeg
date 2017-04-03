@@ -53,7 +53,7 @@ static int vp5_parse_header(VP56Context *s, const uint8_t *buf, int buf_size)
             return AVERROR_INVALIDDATA;
         vp56_rac_gets(c, 2);
         if (vp56_rac_get(c)) {
-            av_log(s->avctx, AV_LOG_ERROR, "interlacing not supported\n");
+            avpriv_report_missing_feature(s->avctx, "Interlacing");
             return AVERROR_PATCHWELCOME;
         }
         rows = vp56_rac_gets(c, 8);  /* number of stored macroblock rows */

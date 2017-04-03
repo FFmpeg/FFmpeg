@@ -1075,6 +1075,8 @@ SMPTE ST 428-1
 SMPTE 431-2
 @item smpte432
 SMPTE 432-1
+@item jedec-p22
+JEDEC P22
 @end table
 
 @item color_trc @var{integer} (@emph{decoding/encoding,video})

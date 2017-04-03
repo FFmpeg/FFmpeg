@@ -434,13 +434,11 @@ static int process_frame(AVFilterContext *ctx, const AVFrame *in,
     mfxStatus err;
     int ret, again = 0;
 
-    out = av_frame_alloc();
-    if (!out)
-        return AVERROR(ENOMEM);
-
-    ret = av_hwframe_get_buffer(s->hw_frames_ctx, out, 0);
-    if (ret < 0)
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+    if (!out) {
+        ret = AVERROR(ENOMEM);
         goto fail;
+    }
 
     surf_out = (mfxFrameSurface1*)out->data[3];
     surf_out->Info.CropW     = outlink->w;
@@ -529,7 +527,7 @@ static int qsvdeint_request_frame(AVFilterLink *outlink)
 }
 
 #define OFFSET(x) offsetof(QSVDeintContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption options[] = {
     { NULL },
 };
@@ -572,4 +570,6 @@ AVFilter ff_vf_deinterlace_qsv = {
 
     .inputs    = qsvdeint_inputs,
     .outputs   = qsvdeint_outputs,
+
+    .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

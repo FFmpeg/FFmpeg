@@ -3256,12 +3256,9 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
                  ", %d reference frame%s",
                  enc->refs, enc->refs > 1 ? "s" : "");
 
-    if (enc->codec_tag) {
-        char tag_buf[32];
-        av_get_codec_tag_string(tag_buf, sizeof(tag_buf), enc->codec_tag);
-        snprintf(buf + strlen(buf), buf_size - strlen(buf),
-                 " (%s / 0x%04X)", tag_buf, enc->codec_tag);
-    }
+    if (enc->codec_tag)
+        snprintf(buf + strlen(buf), buf_size - strlen(buf), " (%s / 0x%04X)",
+                 av_fourcc2str(enc->codec_tag), enc->codec_tag);
 
     switch (enc->codec_type) {
     case AVMEDIA_TYPE_VIDEO:

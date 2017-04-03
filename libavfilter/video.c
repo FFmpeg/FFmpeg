@@ -25,6 +25,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/buffer.h"
+#include "libavutil/hwcontext.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
 
@@ -46,6 +47,21 @@ AVFrame *ff_default_get_video_buffer(AVFilterLink *link, int w, int h)
     int pool_height = 0;
     int pool_align = 0;
     enum AVPixelFormat pool_format = AV_PIX_FMT_NONE;
+
+    if (link->hw_frames_ctx &&
+        ((AVHWFramesContext*)link->hw_frames_ctx->data)->format == link->format) {
+        int ret;
+        AVFrame *frame = av_frame_alloc();
+
+        if (!frame)
+            return NULL;
+
+        ret = av_hwframe_get_buffer(link->hw_frames_ctx, frame, 0);
+        if (ret < 0)
+            av_frame_free(&frame);
+
+        return frame;
+    }
 
     if (!link->frame_pool) {
         link->frame_pool = ff_frame_pool_video_init(av_buffer_allocz, w, h,

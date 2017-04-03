@@ -1324,6 +1324,9 @@ int avfilter_graph_queue_command(AVFilterGraph *graph, const char *target, const
                 queue = &(*queue)->next;
             next = *queue;
             *queue = av_mallocz(sizeof(AVFilterCommand));
+            if (!*queue)
+                return AVERROR(ENOMEM);
+
             (*queue)->command = av_strdup(command);
             (*queue)->arg     = av_strdup(arg);
             (*queue)->time    = ts;

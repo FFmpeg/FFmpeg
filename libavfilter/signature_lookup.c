@@ -551,20 +551,27 @@ static MatchingInfo lookup_signatures(AVFilterContext *ctx, SignatureContext *sc
     if (find_next_coarsecandidate(sc, second->coarsesiglist, &cs, &cs2, 1) == 0)
         return bestmatch; /* no candidate found */
     do {
-        av_log(ctx, AV_LOG_DEBUG, "Stage 1: got coarsesignature pair. indices of first frame: %d and %d\n", cs->first->index, cs2->first->index);
+        av_log(ctx, AV_LOG_DEBUG, "Stage 1: got coarsesignature pair. "
+               "indices of first frame: %"PRIu32" and %"PRIu32"\n",
+               cs->first->index, cs2->first->index);
         /* stage 2: l1-distance and hough-transform */
         av_log(ctx, AV_LOG_DEBUG, "Stage 2: calculate matching parameters\n");
         infos = get_matching_parameters(ctx, sc, cs->first, cs2->first);
         if (av_log_get_level() == AV_LOG_DEBUG) {
             for (i = infos; i != NULL; i = i->next) {
-                av_log(ctx, AV_LOG_DEBUG, "Stage 2: matching pair at %d and %d, ratio %f, offset %d\n", i->first->index, i->second->index, i->framerateratio, i->offset);
+                av_log(ctx, AV_LOG_DEBUG, "Stage 2: matching pair at %"PRIu32" and %"PRIu32", "
+                       "ratio %f, offset %d\n", i->first->index, i->second->index,
+                       i->framerateratio, i->offset);
             }
         }
         /* stage 3: evaluation */
         av_log(ctx, AV_LOG_DEBUG, "Stage 3: evaluate\n");
         if (infos) {
             bestmatch = evaluate_parameters(ctx, sc, infos, bestmatch, mode);
-            av_log(ctx, AV_LOG_DEBUG, "Stage 3: best matching pair at %d and %d, ratio %f, offset %d, score %d, %d frames matching\n", bestmatch.first->index, bestmatch.second->index, bestmatch.framerateratio, bestmatch.offset, bestmatch.score, bestmatch.matchframes);
+            av_log(ctx, AV_LOG_DEBUG, "Stage 3: best matching pair at %"PRIu32" and %"PRIu32", "
+                   "ratio %f, offset %d, score %d, %d frames matching\n",
+                   bestmatch.first->index, bestmatch.second->index,
+                   bestmatch.framerateratio, bestmatch.offset, bestmatch.score, bestmatch.matchframes);
             sll_free(infos);
         }
     } while (find_next_coarsecandidate(sc, second->coarsesiglist, &cs, &cs2, 0) && !bestmatch.whole);

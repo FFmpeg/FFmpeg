@@ -592,4 +592,6 @@ AVFilter ff_vf_scale_npp = {
 
     .inputs    = nppscale_inputs,
     .outputs   = nppscale_outputs,
+
+    .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

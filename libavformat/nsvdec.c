@@ -228,7 +228,7 @@ static int nsv_resync(AVFormatContext *s)
         v <<= 8;
         v |= avio_r8(pb);
         if (i < 8) {
-            av_log(s, AV_LOG_TRACE, "NSV resync: [%d] = %02x\n", i, v & 0x0FF);
+            av_log(s, AV_LOG_TRACE, "NSV resync: [%d] = %02"PRIx32"\n", i, v & 0x0FF);
         }
 
         if ((v & 0x0000ffff) == 0xefbe) { /* BEEF */
@@ -543,7 +543,7 @@ null_chunk_retry:
     asize = avio_rl16(pb);
     vsize = (vsize << 4) | (auxcount >> 4);
     auxcount &= 0x0f;
-    av_log(s, AV_LOG_TRACE, "NSV CHUNK %d aux, %u bytes video, %d bytes audio\n", auxcount, vsize, asize);
+    av_log(s, AV_LOG_TRACE, "NSV CHUNK %d aux, %"PRIu32" bytes video, %d bytes audio\n", auxcount, vsize, asize);
     /* skip aux stuff */
     for (i = 0; i < auxcount; i++) {
         uint32_t av_unused auxtag;

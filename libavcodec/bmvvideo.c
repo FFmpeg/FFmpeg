@@ -193,7 +193,6 @@ static int decode_bmv_frame(const uint8_t *source, int src_len, uint8_t *frame, 
         if (dst == dst_end)
             return 0;
     }
-    return 0;
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,

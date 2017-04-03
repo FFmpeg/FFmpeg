@@ -311,8 +311,6 @@ static int set_string_number(void *obj, void *target_obj, const AVOption *o, con
         if (!i || !*val)
             return 0;
     }
-
-    return 0;
 }
 
 static int set_string_image_size(void *obj, const AVOption *o, const char *val, int *dst)

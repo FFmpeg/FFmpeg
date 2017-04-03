@@ -978,13 +978,10 @@ static int process_frame_obj(SANMVideoContext *ctx)
     case 1:
     case 3:
         return old_codec1(ctx, top, left, w, h);
-        break;
     case 37:
         return old_codec37(ctx, top, left, w, h);
-        break;
     case 47:
         return old_codec47(ctx, top, left, w, h);
-        break;
     default:
         avpriv_request_sample(ctx->avctx, "Subcodec %d", codec);
         return AVERROR_PATCHWELCOME;

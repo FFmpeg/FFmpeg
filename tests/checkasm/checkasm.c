@@ -204,6 +204,7 @@ static struct {
     int nop_time;
     int cpu_flag;
     const char *cpu_flag_name;
+    const char *test_name;
 } state;
 
 /* PRNG state */
@@ -495,6 +496,8 @@ static void check_cpu_flag(const char *name, int flag)
 
         state.cpu_flag_name = name;
         for (i = 0; tests[i].func; i++) {
+            if (state.test_name && strcmp(tests[i].name, state.test_name))
+                continue;
             state.current_test_name = tests[i].name;
             tests[i].func();
         }
@@ -512,7 +515,7 @@ static void print_cpu_name(void)
 
 int main(int argc, char *argv[])
 {
-    unsigned int seed;
+    unsigned int seed = av_get_random_seed();
     int i, ret = 0;
 
 #if ARCH_ARM && HAVE_ARMV5TE_EXTERNAL
@@ -525,22 +528,27 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    if (argc > 1 && !strncmp(argv[1], "--bench", 7)) {
+    while (argc > 1) {
+        if (!strncmp(argv[1], "--bench", 7)) {
 #ifndef AV_READ_TIME
-        fprintf(stderr, "checkasm: --bench is not supported on your system\n");
-        return 1;
+            fprintf(stderr, "checkasm: --bench is not supported on your system\n");
+            return 1;
 #endif
-        if (argv[1][7] == '=') {
-            state.bench_pattern = argv[1] + 8;
-            state.bench_pattern_len = strlen(state.bench_pattern);
-        } else
-            state.bench_pattern = "";
+            if (argv[1][7] == '=') {
+                state.bench_pattern = argv[1] + 8;
+                state.bench_pattern_len = strlen(state.bench_pattern);
+            } else
+                state.bench_pattern = "";
+        } else if (!strncmp(argv[1], "--test=", 7)) {
+            state.test_name = argv[1] + 7;
+        } else {
+            seed = strtoul(argv[1], NULL, 10);
+        }
 
         argc--;
         argv++;
     }
 
-    seed = (argc > 1) ? strtoul(argv[1], NULL, 10) : av_get_random_seed();
     fprintf(stderr, "checkasm: using random seed %u\n", seed);
     av_lfg_init(&checkasm_lfg, seed);
 

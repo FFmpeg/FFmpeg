@@ -70,9 +70,7 @@ static int rsd_read_header(AVFormatContext *s)
     par->codec_tag  = avio_rl32(pb);
     par->codec_id   = ff_codec_get_id(rsd_tags, par->codec_tag);
     if (!par->codec_id) {
-        char tag_buf[32];
-
-        av_get_codec_tag_string(tag_buf, sizeof(tag_buf), par->codec_tag);
+        const char *tag_buf = av_fourcc2str(par->codec_tag);
         for (i=0; i < FF_ARRAY_ELEMS(rsd_unsupported_tags); i++) {
             if (par->codec_tag == rsd_unsupported_tags[i]) {
                 avpriv_request_sample(s, "Codec tag: %s", tag_buf);

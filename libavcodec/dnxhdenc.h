@@ -26,6 +26,8 @@
 
 #include <stdint.h>
 
+#include "config.h"
+
 #include "mpegvideo.h"
 #include "dnxhddata.h"
 
@@ -46,6 +48,8 @@ typedef struct DNXHDEncContext {
 
     int cid;
     int profile;
+    int bit_depth;
+    int is_444;
     const CIDEntry *cid_table;
     uint8_t *msip; ///< Macroblock Scan Indexes Payload
     uint32_t *slice_size;
@@ -70,9 +74,9 @@ typedef struct DNXHDEncContext {
     unsigned min_padding;
     int intra_quant_bias;
 
-    DECLARE_ALIGNED(16, int16_t, blocks)[8][64];
+    DECLARE_ALIGNED(16, int16_t, blocks)[12][64];
     DECLARE_ALIGNED(16, uint8_t, edge_buf_y)[256];
-    DECLARE_ALIGNED(16, uint8_t, edge_buf_uv)[2][128];
+    DECLARE_ALIGNED(16, uint8_t, edge_buf_uv)[2][256];
 
     int      (*qmatrix_c)     [64];
     int      (*qmatrix_l)     [64];
@@ -99,8 +103,8 @@ typedef struct DNXHDEncContext {
     RCCMPEntry *mb_cmp_tmp;
     RCEntry    *mb_rc;
 
-    void (*get_pixels_8x4_sym)(int16_t * /* align 16 */,
-                               const uint8_t *, ptrdiff_t);
+    void (*get_pixels_8x4_sym)(int16_t *av_restrict /* align 16 */ block,
+                               const uint8_t *pixels, ptrdiff_t line_size);
 } DNXHDEncContext;
 
 void ff_dnxhdenc_init_x86(DNXHDEncContext *ctx);

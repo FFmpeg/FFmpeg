@@ -47,6 +47,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/samplefmt.h"
 #include "libavutil/fifo.h"
+#include "libavutil/hwcontext.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
@@ -2175,8 +2176,10 @@ static int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame)
 
                 if (!av_fifo_space(ifilter->frame_queue)) {
                     ret = av_fifo_realloc2(ifilter->frame_queue, 2 * av_fifo_size(ifilter->frame_queue));
-                    if (ret < 0)
+                    if (ret < 0) {
+                        av_frame_free(&tmp);
                         return ret;
+                    }
                 }
                 av_fifo_generic_write(ifilter->frame_queue, &tmp, sizeof(tmp), NULL);
                 return 0;
@@ -2509,7 +2512,7 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output,
                              1000, AV_TIME_BASE);
             if (end < ist->prev_sub.subtitle.end_display_time) {
                 av_log(ist->dec_ctx, AV_LOG_DEBUG,
-                       "Subtitle duration reduced from %d to %d%s\n",
+                       "Subtitle duration reduced from %"PRId32" to %d%s\n",
                        ist->prev_sub.subtitle.end_display_time, end,
                        end <= 0 ? ", dropping it" : "");
                 ist->prev_sub.subtitle.end_display_time = end;
@@ -3421,7 +3424,9 @@ static int init_output_stream(OutputStream *ost, char *error, int error_len)
             !av_dict_get(ost->encoder_opts, "ab", NULL, 0))
             av_dict_set(&ost->encoder_opts, "b", "128000", 0);
 
-        if (ost->filter && av_buffersink_get_hw_frames_ctx(ost->filter->filter)) {
+        if (ost->filter && av_buffersink_get_hw_frames_ctx(ost->filter->filter) &&
+            ((AVHWFramesContext*)av_buffersink_get_hw_frames_ctx(ost->filter->filter)->data)->format ==
+            av_buffersink_get_format(ost->filter->filter)) {
             ost->enc_ctx->hw_frames_ctx = av_buffer_ref(av_buffersink_get_hw_frames_ctx(ost->filter->filter));
             if (!ost->enc_ctx->hw_frames_ctx)
                 return AVERROR(ENOMEM);

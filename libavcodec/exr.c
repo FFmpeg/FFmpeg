@@ -3,7 +3,7 @@
  * Copyright (c) 2006 Industrial Light & Magic, a division of Lucas Digital Ltd. LLC
  * Copyright (c) 2009 Jimmy Christensen
  *
- * B44/B44A, Tile added by Jokyo Images support by CNC - French National Center for Cinema
+ * B44/B44A, Tile, UINT32 added by Jokyo Images support by CNC - French National Center for Cinema
  *
  * This file is part of FFmpeg.
  *
@@ -1236,7 +1236,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
                         *ptr_x++ = exr_flt2uint(bytestream_get_le32(&a));
                 }
             }
-        } else {
+        } else if (s->pixel_type == EXR_HALF) {
             // 16-bit
             for (x = 0; x < td->xsize; x++) {
                 int c;
@@ -1246,6 +1246,15 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
 
                 if (channel_buffer[3])
                     *ptr_x++ = exr_halflt2uint(bytestream_get_le16(&a));
+            }
+        } else if (s->pixel_type == EXR_UINT) {
+            for (x = 0; x < td->xsize; x++) {
+                for (c = 0; c < rgb_channel_count; c++) {
+                    *ptr_x++ = bytestream_get_le32(&rgb[c]) >> 16;
+                }
+
+                if (channel_buffer[3])
+                    *ptr_x++ = bytestream_get_le32(&a) >> 16;
             }
         }
 
@@ -1638,7 +1647,10 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     int y, ret;
     int out_line_size;
-    int nb_blocks;/* nb scanline or nb tile */
+    int nb_blocks;   /* nb scanline or nb tile */
+    uint64_t start_offset_table;
+    uint64_t start_next_scanline;
+    PutByteContext offset_table_writer;
 
     bytestream2_init(&s->gb, avpkt->data, avpkt->size);
 
@@ -1648,6 +1660,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     switch (s->pixel_type) {
     case EXR_FLOAT:
     case EXR_HALF:
+    case EXR_UINT:
         if (s->channel_offsets[3] >= 0) {
             if (!s->is_luma) {
                 avctx->pix_fmt = AV_PIX_FMT_RGBA64;
@@ -1662,9 +1675,6 @@ static int decode_frame(AVCodecContext *avctx, void *data,
             }
         }
         break;
-    case EXR_UINT:
-        avpriv_request_sample(avctx, "32-bit unsigned int");
-        return AVERROR_PATCHWELCOME;
     default:
         av_log(avctx, AV_LOG_ERROR, "Missing channel list.\n");
         return AVERROR_INVALIDDATA;
@@ -1725,6 +1735,25 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     if (bytestream2_get_bytes_left(&s->gb) < nb_blocks * 8)
         return AVERROR_INVALIDDATA;
+
+    // check offset table and recreate it if need
+    if (!s->is_tile && bytestream2_peek_le64(&s->gb) == 0) {
+        av_log(s->avctx, AV_LOG_DEBUG, "recreating invalid scanline offset table\n");
+
+        start_offset_table = bytestream2_tell(&s->gb);
+        start_next_scanline = start_offset_table + nb_blocks * 8;
+        bytestream2_init_writer(&offset_table_writer, &avpkt->data[start_offset_table], nb_blocks * 8);
+
+        for (y = 0; y < nb_blocks; y++) {
+            /* write offset of prev scanline in offset table */
+            bytestream2_put_le64(&offset_table_writer, start_next_scanline);
+
+            /* get len of next scanline */
+            bytestream2_seek(&s->gb, start_next_scanline + 4, SEEK_SET);/* skip line number */
+            start_next_scanline += (bytestream2_get_le32(&s->gb) + 8);
+        }
+        bytestream2_seek(&s->gb, start_offset_table, SEEK_SET);
+    }
 
     // save pointer we are going to use in decode_block
     s->buf      = avpkt->data;

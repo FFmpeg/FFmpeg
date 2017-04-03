@@ -112,10 +112,10 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
 
     // Set the logging callback function to one that uses av_log() (see implementation above).
     callback_function = (WelsTraceCallback) ff_libopenh264_trace_callback;
-    (*s->encoder)->SetOption(s->encoder, ENCODER_OPTION_TRACE_CALLBACK, (void *)&callback_function);
+    (*s->encoder)->SetOption(s->encoder, ENCODER_OPTION_TRACE_CALLBACK, &callback_function);
 
     // Set the AVCodecContext as the libopenh264 callback context so that it can be passed to av_log().
-    (*s->encoder)->SetOption(s->encoder, ENCODER_OPTION_TRACE_CALLBACK_CONTEXT, (void *)&avctx);
+    (*s->encoder)->SetOption(s->encoder, ENCODER_OPTION_TRACE_CALLBACK_CONTEXT, &avctx);
 
     (*s->encoder)->GetDefaultParams(s->encoder, &param);
 

@@ -370,12 +370,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
             }
             if (par->codec_tag) {
                 if (!validate_codec_tag(s, st)) {
-                    char tagbuf[32], tagbuf2[32];
-                    av_get_codec_tag_string(tagbuf, sizeof(tagbuf), par->codec_tag);
-                    av_get_codec_tag_string(tagbuf2, sizeof(tagbuf2), av_codec_get_tag(s->oformat->codec_tag, par->codec_id));
+                    const uint32_t otag = av_codec_get_tag(s->oformat->codec_tag, par->codec_id);
                     av_log(s, AV_LOG_ERROR,
-                           "Tag %s/0x%08x incompatible with output codec id '%d' (%s)\n",
-                           tagbuf, par->codec_tag, par->codec_id, tagbuf2);
+                           "Tag %s incompatible with output codec id '%d' (%s)\n",
+                           av_fourcc2str(par->codec_tag), par->codec_id, av_fourcc2str(otag));
                     ret = AVERROR_INVALIDDATA;
                     goto fail;
                 }
@@ -885,8 +883,11 @@ static int do_packet_auto_bsf(AVFormatContext *s, AVPacket *pkt) {
 
 #if FF_API_LAVF_MERGE_SD
 FF_DISABLE_DEPRECATION_WARNINGS
-    if (st->internal->nb_bsfcs)
-        av_packet_split_side_data(pkt);
+    if (st->internal->nb_bsfcs) {
+        ret = av_packet_split_side_data(pkt);
+        if (ret < 0)
+            av_log(s, AV_LOG_WARNING, "Failed to split side data before bitstream filter\n");
+    }
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
