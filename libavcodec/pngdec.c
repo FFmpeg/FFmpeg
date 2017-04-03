@@ -701,11 +701,11 @@ static int decode_idat_chunk(AVCodecContext *avctx, PNGDecContext *s,
             if ((ret = ff_thread_get_buffer(avctx, &s->previous_picture, AV_GET_BUFFER_FLAG_REF)) < 0)
                 return ret;
         }
-        ff_thread_finish_setup(avctx);
-
         p->pict_type        = AV_PICTURE_TYPE_I;
         p->key_frame        = 1;
         p->interlaced_frame = !!s->interlace_type;
+
+        ff_thread_finish_setup(avctx);
 
         /* compute the compressed row size */
         if (!s->interlace_type) {
