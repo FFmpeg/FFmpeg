@@ -585,7 +585,7 @@ static int hls_slice_header(HEVCContext *s)
         }
 
         /* 8.3.1 */
-        if (s->temporal_id == 0 &&
+        if (sh->first_slice_in_pic_flag && s->temporal_id == 0 &&
             s->nal_unit_type != HEVC_NAL_TRAIL_N &&
             s->nal_unit_type != HEVC_NAL_TSA_N   &&
             s->nal_unit_type != HEVC_NAL_STSA_N  &&
@@ -2771,25 +2771,25 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
         if (ret < 0)
             return ret;
 
-        if (s->max_ra == INT_MAX) {
-            if (s->nal_unit_type == HEVC_NAL_CRA_NUT || IS_BLA(s)) {
-                s->max_ra = s->poc;
+        if (s->sh.first_slice_in_pic_flag) {
+            if (s->max_ra == INT_MAX) {
+                if (s->nal_unit_type == HEVC_NAL_CRA_NUT || IS_BLA(s)) {
+                    s->max_ra = s->poc;
+                } else {
+                    if (IS_IDR(s))
+                        s->max_ra = INT_MIN;
+                }
+            }
+
+            if ((s->nal_unit_type == HEVC_NAL_RASL_R || s->nal_unit_type == HEVC_NAL_RASL_N) &&
+                s->poc <= s->max_ra) {
+                s->is_decoded = 0;
+                break;
             } else {
-                if (IS_IDR(s))
+                if (s->nal_unit_type == HEVC_NAL_RASL_R && s->poc > s->max_ra)
                     s->max_ra = INT_MIN;
             }
-        }
 
-        if ((s->nal_unit_type == HEVC_NAL_RASL_R || s->nal_unit_type == HEVC_NAL_RASL_N) &&
-            s->poc <= s->max_ra) {
-            s->is_decoded = 0;
-            break;
-        } else {
-            if (s->nal_unit_type == HEVC_NAL_RASL_R && s->poc > s->max_ra)
-                s->max_ra = INT_MIN;
-        }
-
-        if (s->sh.first_slice_in_pic_flag) {
             ret = hevc_frame_start(s);
             if (ret < 0)
                 return ret;
