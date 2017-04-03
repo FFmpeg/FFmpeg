@@ -127,6 +127,12 @@ enum AVFrameSideDataType {
      * libavutil/spherical.h.
      */
     AV_FRAME_DATA_SPHERICAL,
+
+    /**
+     * Content light level (based on CTA-861.3). This payload contains data in
+     * the form of the AVContentLightMetadata struct.
+     */
+    AV_FRAME_DATA_CONTENT_LIGHT_LEVEL,
 };
 
 enum AVActiveFormatDescription {
