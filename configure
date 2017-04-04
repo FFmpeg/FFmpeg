@@ -3865,7 +3865,7 @@ msvc_flags(){
                                        -wd4146 -wd4057 -wd4204 -wd4706 -wd4305 \
                                        -wd4152 -wd4324 -we4013 -wd4100 -wd4214 \
                                        -wd4307 \
-                                       -wd4273 -wd4554 -wd4701 ;;
+                                       -wd4273 -wd4554 -wd4701 -wd4703 ;;
         esac
     done
 }
