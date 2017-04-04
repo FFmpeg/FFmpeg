@@ -63,6 +63,7 @@ typedef struct FDKAACDecContext {
     int flush_samples;
     int delay_samples;
 #endif
+    AVChannelLayout downmix_layout;
 } FDKAACDecContext;
 
 
@@ -97,6 +98,7 @@ static const AVOption fdk_aac_dec_options[] = {
     { "album_mode","Dynamic Range Control: album mode, where [0] is off and [1] is on",
                      OFFSET(album_mode),     AV_OPT_TYPE_INT,   { .i64 = -1},  -1, 1,   AD, NULL    },
 #endif
+    { "downmix", "Request a specific channel layout from the decoder", OFFSET(downmix_layout), AV_OPT_TYPE_CHLAYOUT, {.str = NULL}, .flags = AD },
     { NULL }
 };
 
@@ -211,17 +213,15 @@ static int get_stream_info(AVCodecContext *avctx)
             ch_error = 1;
         }
     }
-    if (!ch_error &&
-        av_get_channel_layout_nb_channels(ch_layout) != info->numChannels) {
+
+    av_channel_layout_uninit(&avctx->ch_layout);
+    av_channel_layout_from_mask(&avctx->ch_layout, ch_layout);
+    if (!ch_error && avctx->ch_layout.nb_channels != info->numChannels) {
         av_log(avctx, AV_LOG_WARNING, "unsupported channel configuration\n");
         ch_error = 1;
     }
     if (ch_error)
-        avctx->channel_layout = 0;
-    else
-        avctx->channel_layout = ch_layout;
-
-    avctx->channels = info->numChannels;
+        avctx->ch_layout.order = AV_CHANNEL_ORDER_UNSPEC;
 
     return 0;
 }
@@ -263,11 +263,19 @@ static av_cold int fdk_aac_decode_init(AVCodecContext *avctx)
         return AVERROR_UNKNOWN;
     }
 
-    if (avctx->request_channel_layout > 0 &&
-        avctx->request_channel_layout != AV_CH_LAYOUT_NATIVE) {
+#if FF_API_OLD_CHANNEL_LAYOUT
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->request_channel_layout) {
+        av_channel_layout_uninit(&s->downmix_layout);
+        av_channel_layout_from_mask(&s->downmix_layout, avctx->request_channel_layout);
+    }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+    if (s->downmix_layout.nb_channels > 0 &&
+        s->downmix_layout.order != AV_CHANNEL_ORDER_NATIVE) {
         int downmix_channels = -1;
 
-        switch (avctx->request_channel_layout) {
+        switch (s->downmix_layout.u.mask) {
         case AV_CH_LAYOUT_STEREO:
         case AV_CH_LAYOUT_STEREO_DOWNMIX:
             downmix_channels = 2;
@@ -276,7 +284,7 @@ static av_cold int fdk_aac_decode_init(AVCodecContext *avctx)
             downmix_channels = 1;
             break;
         default:
-            av_log(avctx, AV_LOG_WARNING, "Invalid request_channel_layout\n");
+            av_log(avctx, AV_LOG_WARNING, "Invalid downmix option\n");
             break;
         }
 
@@ -434,7 +442,7 @@ static int fdk_aac_decode_frame(AVCodecContext *avctx, void *data,
                                     drop_samples, s->delay_samples);
             s->delay_samples  -= drop_samples;
             frame->nb_samples -= drop_samples;
-            input_offset = drop_samples * avctx->channels;
+            input_offset = drop_samples * avctx->ch_layout.nb_channels;
             if (frame->nb_samples <= 0)
                 return 0;
         }
@@ -445,7 +453,7 @@ static int fdk_aac_decode_frame(AVCodecContext *avctx, void *data,
         goto end;
 
     memcpy(frame->extended_data[0], s->decoder_buffer + input_offset,
-           avctx->channels * frame->nb_samples *
+           avctx->ch_layout.nb_channels * frame->nb_samples *
            av_get_bytes_per_sample(avctx->sample_fmt));
 
     *got_frame_ptr = 1;
