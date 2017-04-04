@@ -39,28 +39,28 @@ static void j_rev_dct_arm_put(uint8_t *dest, ptrdiff_t line_size,
                               int16_t *block)
 {
     ff_j_rev_dct_arm(block);
-    ff_put_pixels_clamped(block, dest, line_size);
+    ff_put_pixels_clamped_c(block, dest, line_size);
 }
 
 static void j_rev_dct_arm_add(uint8_t *dest, ptrdiff_t line_size,
                               int16_t *block)
 {
     ff_j_rev_dct_arm(block);
-    ff_add_pixels_clamped(block, dest, line_size);
+    ff_add_pixels_clamped_arm(block, dest, line_size);
 }
 
 static void simple_idct_arm_put(uint8_t *dest, ptrdiff_t line_size,
                                 int16_t *block)
 {
     ff_simple_idct_arm(block);
-    ff_put_pixels_clamped(block, dest, line_size);
+    ff_put_pixels_clamped_c(block, dest, line_size);
 }
 
 static void simple_idct_arm_add(uint8_t *dest, ptrdiff_t line_size,
                                 int16_t *block)
 {
     ff_simple_idct_arm(block);
-    ff_add_pixels_clamped(block, dest, line_size);
+    ff_add_pixels_clamped_arm(block, dest, line_size);
 }
 
 av_cold void ff_idctdsp_init_arm(IDCTDSPContext *c, AVCodecContext *avctx,
