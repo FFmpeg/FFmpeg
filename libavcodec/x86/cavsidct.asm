@@ -29,11 +29,16 @@ cextern pw_64
 
 SECTION .text
 
-%macro CAVS_IDCT8_1D 2 ; source, round
+%macro CAVS_IDCT8_1D 2-3 1 ; source, round, init_load
+%if %3 == 1
     mova            m4, [%1+7*16]       ; m4 = src7
     mova            m5, [%1+1*16]       ; m5 = src1
     mova            m2, [%1+5*16]       ; m2 = src5
     mova            m7, [%1+3*16]       ; m7 = src3
+%else
+    SWAP             1, 7
+    SWAP             4, 6
+%endif
     mova            m0, m4
     mova            m3, m5
     mova            m6, m2
@@ -162,4 +167,45 @@ cglobal cavs_idct8, 2, 4, 8, 8 * 16, out, in, cnt, tmp
     dec           cntd
     jg .loop_2
 
+    RET
+
+INIT_XMM sse2
+cglobal cavs_idct8, 2, 2, 8 + ARCH_X86_64, 0 - 8 * 16, out, in
+    CAVS_IDCT8_1D  inq, [pw_4]
+    psraw           m7, 3
+    psraw           m6, 3
+    psraw           m5, 3
+    psraw           m4, 3
+    psraw           m3, 3
+    psraw           m2, 3
+    psraw           m1, 3
+    psraw           m0, 3
+%if ARCH_X86_64
+    TRANSPOSE8x8W    7, 5, 3, 1, 0, 2, 4, 6, 8
+    mova    [rsp+4*16], m0
+%else
+    mova    [rsp+0*16], m4
+    TRANSPOSE8x8W    7, 5, 3, 1, 0, 2, 4, 6, [rsp+0*16], [rsp+4*16], 1
+%endif
+    mova    [rsp+0*16], m7
+    mova    [rsp+2*16], m3
+    mova    [rsp+6*16], m4
+    CAVS_IDCT8_1D  rsp, [pw_64], 0
+    psraw           m7, 7
+    psraw           m6, 7
+    psraw           m5, 7
+    psraw           m4, 7
+    psraw           m3, 7
+    psraw           m2, 7
+    psraw           m1, 7
+    psraw           m0, 7
+
+    mova   [outq+0*16], m7
+    mova   [outq+1*16], m5
+    mova   [outq+2*16], m3
+    mova   [outq+3*16], m1
+    mova   [outq+4*16], m0
+    mova   [outq+5*16], m2
+    mova   [outq+6*16], m4
+    mova   [outq+7*16], m6
     RET

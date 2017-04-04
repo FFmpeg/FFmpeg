@@ -29,6 +29,7 @@
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/cavsdsp.h"
 #include "libavcodec/idctdsp.h"
+#include "libavcodec/x86/idctdsp.h"
 #include "constants.h"
 #include "fpel.h"
 #include "idctdsp.h"
@@ -43,7 +44,16 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, ptrdiff_t stride)
 {
     LOCAL_ALIGNED(16, int16_t, b2, [64]);
     ff_cavs_idct8_mmx(b2, block);
-    ff_add_pixels_clamped(b2, dst, stride);
+    ff_add_pixels_clamped_mmx(b2, dst, stride);
+}
+
+void ff_cavs_idct8_sse2(int16_t *out, const int16_t *in);
+
+static void cavs_idct8_add_sse2(uint8_t *dst, int16_t *block, ptrdiff_t stride)
+{
+    LOCAL_ALIGNED(16, int16_t, b2, [64]);
+    ff_cavs_idct8_sse2(b2, block);
+    ff_add_pixels_clamped_sse2(b2, dst, stride);
 }
 
 #endif /* HAVE_MMX_EXTERNAL */
@@ -446,6 +456,9 @@ av_cold void ff_cavsdsp_init_x86(CAVSDSPContext *c, AVCodecContext *avctx)
     if (EXTERNAL_SSE2(cpu_flags)) {
         c->put_cavs_qpel_pixels_tab[0][0] = put_cavs_qpel16_mc00_sse2;
         c->avg_cavs_qpel_pixels_tab[0][0] = avg_cavs_qpel16_mc00_sse2;
+
+        c->cavs_idct8_add = cavs_idct8_add_sse2;
+        c->idct_perm      = FF_IDCT_PERM_TRANSPOSE;
     }
 #endif
 }
