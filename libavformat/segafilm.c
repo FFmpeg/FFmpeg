@@ -177,20 +177,20 @@ static int film_read_header(AVFormatContext *s)
         st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codecpar->codec_id = film->audio_type;
         st->codecpar->codec_tag = 1;
-        st->codecpar->channels = film->audio_channels;
+        st->codecpar->ch_layout.nb_channels = film->audio_channels;
         st->codecpar->sample_rate = film->audio_samplerate;
 
         if (film->audio_type == AV_CODEC_ID_ADPCM_ADX) {
             st->codecpar->bits_per_coded_sample = 18 * 8 / 32;
-            st->codecpar->block_align = st->codecpar->channels * 18;
+            st->codecpar->block_align = film->audio_channels * 18;
             ffstream(st)->need_parsing = AVSTREAM_PARSE_FULL;
         } else {
             st->codecpar->bits_per_coded_sample = film->audio_bits;
-            st->codecpar->block_align = st->codecpar->channels *
+            st->codecpar->block_align = film->audio_channels *
                 st->codecpar->bits_per_coded_sample / 8;
         }
 
-        st->codecpar->bit_rate = st->codecpar->channels * st->codecpar->sample_rate *
+        st->codecpar->bit_rate = film->audio_channels * st->codecpar->sample_rate *
             st->codecpar->bits_per_coded_sample;
     }
 
