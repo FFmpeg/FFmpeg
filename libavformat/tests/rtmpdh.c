@@ -16,6 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavformat/avformat.h"
 #include "libavformat/rtmpdh.c"
 
 #include <stdio.h>
@@ -150,6 +151,7 @@ fail:
 
 int main(void)
 {
+    avformat_network_init();
     if (test_random_shared_secret() < 0)
         return 1;
     if (test_ref_data() < 0)
