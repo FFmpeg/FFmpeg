@@ -48,43 +48,47 @@ static void pgm_save(unsigned char *buf, int wrap, int xsize, int ysize,
     fclose(f);
 }
 
-static int decode_write_frame(const char *outfilename, AVCodecContext *avctx,
-                              AVFrame *frame, int *frame_count, AVPacket *pkt, int last)
+static void decode(AVCodecContext *dec_ctx, AVFrame *frame, AVPacket *pkt,
+                   const char *filename)
 {
-    int len, got_frame;
     char buf[1024];
+    int ret, got_picture;
 
-    len = avcodec_decode_video2(avctx, frame, &got_frame, pkt);
-    if (len < 0) {
-        fprintf(stderr, "Error while decoding frame %d\n", *frame_count);
-        return len;
-    }
-    if (got_frame) {
-        printf("Saving %sframe %3d\n", last ? "last " : "", *frame_count);
-        fflush(stdout);
+    while (pkt->size > 0) {
+        ret = avcodec_decode_video2(dec_ctx, frame, &got_picture, pkt);
+        if (ret < 0) {
+            fprintf(stderr, "Error while decoding frame %d\n", dec_ctx->frame_number);
+            exit(1);
+        }
+        if (got_picture) {
+            printf("saving frame %3d\n", dec_ctx->frame_number);
+            fflush(stdout);
 
-        /* the picture is allocated by the decoder, no need to free it */
-        snprintf(buf, sizeof(buf), outfilename, *frame_count);
-        pgm_save(frame->data[0], frame->linesize[0],
-                 frame->width, frame->height, buf);
-        (*frame_count)++;
+            /* the picture is allocated by the decoder. no need to
+               free it */
+            snprintf(buf, sizeof(buf), filename, dec_ctx->frame_number);
+            pgm_save(frame->data[0], frame->linesize[0],
+                     frame->width, frame->height, buf);
+        }
+        if (pkt->data) {
+            pkt->size -= ret;
+            pkt->data += ret;
+        }
     }
-    if (pkt->data) {
-        pkt->size -= len;
-        pkt->data += len;
-    }
-    return 0;
 }
 
 int main(int argc, char **argv)
 {
     const char *filename, *outfilename;
     const AVCodec *codec;
+    AVCodecParserContext *parser;
     AVCodecContext *c= NULL;
-    int frame_count;
     FILE *f;
     AVFrame *frame;
     uint8_t inbuf[INBUF_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
+    uint8_t *data;
+    size_t   data_size;
+    int ret;
     AVPacket avpkt;
 
     if (argc <= 2) {
@@ -108,14 +112,17 @@ int main(int argc, char **argv)
         exit(1);
     }
 
+    parser = av_parser_init(codec->id);
+    if (!parser) {
+        fprintf(stderr, "parser not found\n");
+        exit(1);
+    }
+
     c = avcodec_alloc_context3(codec);
     if (!c) {
         fprintf(stderr, "Could not allocate video codec context\n");
         exit(1);
     }
-
-    if (codec->capabilities & AV_CODEC_CAP_TRUNCATED)
-        c->flags |= AV_CODEC_FLAG_TRUNCATED; // we do not send complete frames
 
     /* For some codecs, such as msmpeg4 and mpeg4, width and height
        MUST be initialized there because this information is not
@@ -139,42 +146,37 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    frame_count = 0;
-    for (;;) {
-        avpkt.size = fread(inbuf, 1, INBUF_SIZE, f);
-        if (avpkt.size == 0)
+    while (!feof(f)) {
+        /* read raw data from the input file */
+        data_size = fread(inbuf, 1, INBUF_SIZE, f);
+        if (!data_size)
             break;
 
-        /* NOTE1: some codecs are stream based (mpegvideo, mpegaudio)
-           and this is the only method to use them because you cannot
-           know the compressed data size before analysing it.
-
-           BUT some other codecs (msmpeg4, mpeg4) are inherently frame
-           based, so you must call them with all the data for one
-           frame exactly. You must also initialize 'width' and
-           'height' before initializing them. */
-
-        /* NOTE2: some codecs allow the raw parameters (frame size,
-           sample rate) to be changed at any frame. We handle this, so
-           you should also take care of it */
-
-        /* here, we use a stream based decoder (mpeg1video), so we
-           feed decoder and see if it could decode a frame */
-        avpkt.data = inbuf;
-        while (avpkt.size > 0)
-            if (decode_write_frame(outfilename, c, frame, &frame_count, &avpkt, 0) < 0)
+        /* use the parser to split the data into frames */
+        data = inbuf;
+        while (data_size > 0) {
+            ret = av_parser_parse2(parser, c, &avpkt.data, &avpkt.size,
+                                   data, data_size, AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
+            if (ret < 0) {
+                fprintf(stderr, "Error while parsing\n");
                 exit(1);
-    }
+            }
+            data      += ret;
+            data_size -= ret;
 
-    /* Some codecs, such as MPEG, transmit the I- and P-frame with a
-       latency of one frame. You must do the following to have a
-       chance to get the last frame of the video. */
+            if (avpkt.size)
+                decode(c, frame, &avpkt, outfilename);
+         }
+     }
+
+    /* flush the decoder */
     avpkt.data = NULL;
     avpkt.size = 0;
-    decode_write_frame(outfilename, c, frame, &frame_count, &avpkt, 1);
+    decode(c, frame, &avpkt, outfilename);
 
     fclose(f);
 
+    av_parser_close(parser);
     avcodec_free_context(&c);
     av_frame_free(&frame);
 
