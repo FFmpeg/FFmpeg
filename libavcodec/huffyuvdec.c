@@ -579,6 +579,8 @@ static av_cold int decode_init_thread_copy(AVCodecContext *avctx)
     HYuvContext *s = avctx->priv_data;
     int i, ret;
 
+    s->avctx = avctx;
+
     if ((ret = ff_huffyuv_alloc_temp(s)) < 0) {
         ff_huffyuv_common_end(s);
         return ret;
