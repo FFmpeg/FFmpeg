@@ -26,6 +26,9 @@ void ff_simple_idct_mmx(int16_t *block);
 void ff_simple_idct_add_mmx(uint8_t *dest, ptrdiff_t line_size, int16_t *block);
 void ff_simple_idct_put_mmx(uint8_t *dest, ptrdiff_t line_size, int16_t *block);
 
+void ff_simple_idct_add_sse2(uint8_t *dest, ptrdiff_t line_size, int16_t *block);
+void ff_simple_idct_put_sse2(uint8_t *dest, ptrdiff_t line_size, int16_t *block);
+
 void ff_simple_idct10_sse2(int16_t *block);
 void ff_simple_idct10_avx(int16_t *block);
 
