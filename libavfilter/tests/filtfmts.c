@@ -28,7 +28,7 @@
 
 int main(int argc, char **argv)
 {
-    AVFilter *filter;
+    const AVFilter *filter;
     AVFilterContext *filter_ctx;
     AVFilterGraph *graph_ctx;
     const char *filter_name;
