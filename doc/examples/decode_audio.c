@@ -84,7 +84,7 @@ int main(int argc, char **argv)
     uint8_t inbuf[AUDIO_INBUF_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
     uint8_t *data;
     size_t   data_size;
-    AVPacket avpkt;
+    AVPacket *pkt;
     AVFrame *decoded_frame = NULL;
 
     if (argc <= 2) {
@@ -97,7 +97,7 @@ int main(int argc, char **argv)
     /* register all the codecs */
     avcodec_register_all();
 
-    av_init_packet(&avpkt);
+    pkt = av_packet_alloc();
 
     /* find the MPEG audio decoder */
     codec = avcodec_find_decoder(AV_CODEC_ID_MP2);
@@ -147,7 +147,7 @@ int main(int argc, char **argv)
             }
         }
 
-        ret = av_parser_parse2(parser, c, &avpkt.data, &avpkt.size,
+        ret = av_parser_parse2(parser, c, &pkt->data, &pkt->size,
                                data, data_size,
                                AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
         if (ret < 0) {
@@ -157,8 +157,8 @@ int main(int argc, char **argv)
         data      += ret;
         data_size -= ret;
 
-        if (avpkt.size)
-            decode(c, &avpkt, decoded_frame, outfile);
+        if (pkt->size)
+            decode(c, pkt, decoded_frame, outfile);
 
         if (data_size < AUDIO_REFILL_THRESH) {
             memmove(inbuf, data, data_size);
@@ -176,6 +176,7 @@ int main(int argc, char **argv)
     avcodec_free_context(&c);
     av_parser_close(parser);
     av_frame_free(&decoded_frame);
+    av_packet_free(&pkt);
 
     return 0;
 }
