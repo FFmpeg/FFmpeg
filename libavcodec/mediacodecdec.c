@@ -552,7 +552,7 @@ AVCodec ff_h264_mediacodec_decoder = {
     .decode         = mediacodec_decode_frame,
     .flush          = mediacodec_decode_flush,
     .close          = mediacodec_decode_close,
-    .capabilities   = CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY,
     .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
 };
 #endif
@@ -568,7 +568,7 @@ AVCodec ff_hevc_mediacodec_decoder = {
     .decode         = mediacodec_decode_frame,
     .flush          = mediacodec_decode_flush,
     .close          = mediacodec_decode_close,
-    .capabilities   = CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY,
     .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
 };
 #endif
@@ -584,7 +584,7 @@ AVCodec ff_mpeg4_mediacodec_decoder = {
     .decode         = mediacodec_decode_frame,
     .flush          = mediacodec_decode_flush,
     .close          = mediacodec_decode_close,
-    .capabilities   = CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY,
     .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
 };
 #endif
@@ -600,7 +600,7 @@ AVCodec ff_vp8_mediacodec_decoder = {
     .decode         = mediacodec_decode_frame,
     .flush          = mediacodec_decode_flush,
     .close          = mediacodec_decode_close,
-    .capabilities   = CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY,
     .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
 };
 #endif
@@ -616,7 +616,7 @@ AVCodec ff_vp9_mediacodec_decoder = {
     .decode         = mediacodec_decode_frame,
     .flush          = mediacodec_decode_flush,
     .close          = mediacodec_decode_close,
-    .capabilities   = CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY,
     .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
 };
 #endif
