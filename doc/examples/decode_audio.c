@@ -97,7 +97,6 @@ int main(int argc, char **argv)
     avpkt.size = fread(inbuf, 1, AUDIO_INBUF_SIZE, f);
 
     while (avpkt.size > 0) {
-        int i, ch;
         int got_frame = 0;
 
         if (!decoded_frame) {
@@ -113,6 +112,7 @@ int main(int argc, char **argv)
             exit(1);
         }
         if (got_frame) {
+            int i, ch;
             /* if a frame has been decoded, output it */
             int data_size = av_get_bytes_per_sample(c->sample_fmt);
             if (data_size < 0) {
