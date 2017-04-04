@@ -69,6 +69,7 @@ version <next>:
 - scdet filter
 - NotchLC decoder
 - gradients source video filter
+- MediaFoundation encoder wrapper
 
 
 version 4.2:

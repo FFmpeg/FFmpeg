@@ -2725,6 +2725,14 @@ fastest.
 
 @end table
 
+@section MediaFoundation
+
+This provides wrappers to encoders (both audio and video) in the
+MediaFoundation framework. It can access both SW and HW encoders.
+Video encoders can take input in either of nv12 or yuv420p form
+(some encoders support both, some support only either - in practice,
+nv12 is the safer choice, especially among HW encoders).
+
 @section mpeg2
 
 MPEG-2 video encoder.

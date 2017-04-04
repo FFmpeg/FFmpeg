@@ -170,12 +170,14 @@ OBJS-$(CONFIG_AAC_ENCODER)             += aacenc.o aaccoder.o aacenctab.o    \
                                           aacenc_ltp.o \
                                           aacenc_pred.o \
                                           psymodel.o mpeg4audio.o kbdwin.o cbrt_data.o
+OBJS-$(CONFIG_AAC_MF_ENCODER)          += mfenc.o mf_utils.o
 OBJS-$(CONFIG_AASC_DECODER)            += aasc.o msrledec.o
 OBJS-$(CONFIG_AC3_DECODER)             += ac3dec_float.o ac3dec_data.o ac3.o kbdwin.o ac3tab.o
 OBJS-$(CONFIG_AC3_FIXED_DECODER)       += ac3dec_fixed.o ac3dec_data.o ac3.o kbdwin.o ac3tab.o
 OBJS-$(CONFIG_AC3_ENCODER)             += ac3enc_float.o ac3enc.o ac3tab.o \
                                           ac3.o kbdwin.o
 OBJS-$(CONFIG_AC3_FIXED_ENCODER)       += ac3enc_fixed.o ac3enc.o ac3tab.o ac3.o
+OBJS-$(CONFIG_AC3_MF_ENCODER)          += mfenc.o mf_utils.o
 OBJS-$(CONFIG_ACELP_KELVIN_DECODER)    += g729dec.o lsp.o celp_math.o celp_filters.o acelp_filters.o acelp_pitch_delay.o acelp_vectors.o g729postfilter.o
 OBJS-$(CONFIG_AGM_DECODER)             += agm.o
 OBJS-$(CONFIG_AIC_DECODER)             += aic.o
@@ -356,6 +358,7 @@ OBJS-$(CONFIG_H264_DECODER)            += h264dec.o h264_cabac.o h264_cavlc.o \
 OBJS-$(CONFIG_H264_AMF_ENCODER)        += amfenc_h264.o
 OBJS-$(CONFIG_H264_CUVID_DECODER)      += cuviddec.o
 OBJS-$(CONFIG_H264_MEDIACODEC_DECODER) += mediacodecdec.o
+OBJS-$(CONFIG_H264_MF_ENCODER)         += mfenc.o mf_utils.o
 OBJS-$(CONFIG_H264_MMAL_DECODER)       += mmaldec.o
 OBJS-$(CONFIG_H264_NVENC_ENCODER)      += nvenc_h264.o
 OBJS-$(CONFIG_NVENC_ENCODER)           += nvenc_h264.o
@@ -378,6 +381,7 @@ OBJS-$(CONFIG_HEVC_DECODER)            += hevcdec.o hevc_mvs.o \
 OBJS-$(CONFIG_HEVC_AMF_ENCODER)        += amfenc_hevc.o
 OBJS-$(CONFIG_HEVC_CUVID_DECODER)      += cuviddec.o
 OBJS-$(CONFIG_HEVC_MEDIACODEC_DECODER) += mediacodecdec.o
+OBJS-$(CONFIG_HEVC_MF_ENCODER)         += mfenc.o mf_utils.o
 OBJS-$(CONFIG_HEVC_NVENC_ENCODER)      += nvenc_hevc.o
 OBJS-$(CONFIG_NVENC_HEVC_ENCODER)      += nvenc_hevc.o
 OBJS-$(CONFIG_HEVC_QSV_DECODER)        += qsvdec_h2645.o
@@ -455,6 +459,7 @@ OBJS-$(CONFIG_MP2FIXED_ENCODER)        += mpegaudioenc_fixed.o mpegaudio.o \
                                           mpegaudiodata.o mpegaudiodsp_data.o
 OBJS-$(CONFIG_MP2FLOAT_DECODER)        += mpegaudiodec_float.o
 OBJS-$(CONFIG_MP3_DECODER)             += mpegaudiodec_fixed.o
+OBJS-$(CONFIG_MP3_MF_ENCODER)          += mfenc.o mf_utils.o
 OBJS-$(CONFIG_MP3ADU_DECODER)          += mpegaudiodec_fixed.o
 OBJS-$(CONFIG_MP3ADUFLOAT_DECODER)     += mpegaudiodec_float.o
 OBJS-$(CONFIG_MP3FLOAT_DECODER)        += mpegaudiodec_float.o
@@ -1156,6 +1161,7 @@ SKIPHEADERS-$(CONFIG_JNI)              += ffjni.h
 SKIPHEADERS-$(CONFIG_LIBVPX)           += libvpx.h
 SKIPHEADERS-$(CONFIG_LIBWEBP_ENCODER)  += libwebpenc_common.h
 SKIPHEADERS-$(CONFIG_MEDIACODEC)       += mediacodecdec_common.h mediacodec_surface.h mediacodec_wrapper.h mediacodec_sw_buffer.h
+SKIPHEADERS-$(CONFIG_MEDIAFOUNDATION)  += mf_utils.h
 SKIPHEADERS-$(CONFIG_NVDEC)            += nvdec.h
 SKIPHEADERS-$(CONFIG_NVENC)            += nvenc.h
 SKIPHEADERS-$(CONFIG_QSV)              += qsv.h qsv_internal.h
