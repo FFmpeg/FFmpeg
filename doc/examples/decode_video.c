@@ -92,7 +92,7 @@ int main(int argc, char **argv)
     uint8_t *data;
     size_t   data_size;
     int ret;
-    AVPacket avpkt;
+    AVPacket *pkt;
 
     if (argc <= 2) {
         fprintf(stderr, "Usage: %s <input file> <output file>\n", argv[0]);
@@ -103,7 +103,9 @@ int main(int argc, char **argv)
 
     avcodec_register_all();
 
-    av_init_packet(&avpkt);
+    pkt = av_packet_alloc();
+    if (!pkt)
+        exit(1);
 
     /* set end of buffer to 0 (this ensures that no overreading happens for damaged MPEG streams) */
     memset(inbuf + INBUF_SIZE, 0, AV_INPUT_BUFFER_PADDING_SIZE);
@@ -158,7 +160,7 @@ int main(int argc, char **argv)
         /* use the parser to split the data into frames */
         data = inbuf;
         while (data_size > 0) {
-            ret = av_parser_parse2(parser, c, &avpkt.data, &avpkt.size,
+            ret = av_parser_parse2(parser, c, &pkt->data, &pkt->size,
                                    data, data_size, AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
             if (ret < 0) {
                 fprintf(stderr, "Error while parsing\n");
@@ -167,10 +169,10 @@ int main(int argc, char **argv)
             data      += ret;
             data_size -= ret;
 
-            if (avpkt.size)
-                decode(c, frame, &avpkt, outfilename);
-         }
-     }
+            if (pkt->size)
+                decode(c, frame, pkt, outfilename);
+        }
+    }
 
     /* flush the decoder */
     decode(c, frame, NULL, outfilename);
@@ -180,6 +182,7 @@ int main(int argc, char **argv)
     av_parser_close(parser);
     avcodec_free_context(&c);
     av_frame_free(&frame);
+    av_packet_free(&pkt);
 
     return 0;
 }
