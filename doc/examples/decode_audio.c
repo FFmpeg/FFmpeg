@@ -39,14 +39,46 @@
 #define AUDIO_INBUF_SIZE 20480
 #define AUDIO_REFILL_THRESH 4096
 
+static void decode(AVCodecContext *dec_ctx, AVPacket *pkt, AVFrame *frame,
+                   FILE *outfile)
+{
+    int len, got_frame;
+
+    while (pkt->size > 0) {
+        len = avcodec_decode_audio4(dec_ctx, frame, &got_frame, pkt);
+        if (len < 0) {
+            fprintf(stderr, "Error while decoding\n");
+            exit(1);
+        }
+        if (got_frame) {
+            int i, ch;
+            /* if a frame has been decoded, output it */
+            int data_size = av_get_bytes_per_sample(dec_ctx->sample_fmt);
+            if (data_size < 0) {
+                /* This should not occur, checking just for paranoia */
+                fprintf(stderr, "Failed to calculate data size\n");
+                exit(1);
+            }
+            for (i = 0; i < frame->nb_samples; i++)
+                for (ch = 0; ch < dec_ctx->channels; ch++)
+                    fwrite(frame->data[ch] + data_size*i, 1, data_size, outfile);
+        }
+        pkt->size -= len;
+        pkt->data += len;
+    }
+}
+
 int main(int argc, char **argv)
 {
     const char *outfilename, *filename;
     const AVCodec *codec;
     AVCodecContext *c= NULL;
-    int len;
+    AVCodecParserContext *parser = NULL;
+    int len, ret;
     FILE *f, *outfile;
     uint8_t inbuf[AUDIO_INBUF_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
+    uint8_t *data;
+    size_t   data_size;
     AVPacket avpkt;
     AVFrame *decoded_frame = NULL;
 
@@ -66,6 +98,12 @@ int main(int argc, char **argv)
     codec = avcodec_find_decoder(AV_CODEC_ID_MP2);
     if (!codec) {
         fprintf(stderr, "Codec not found\n");
+        exit(1);
+    }
+
+    parser = av_parser_init(codec->id);
+    if (!parser) {
+        fprintf(stderr, "Parser not found\n");
         exit(1);
     }
 
@@ -93,12 +131,10 @@ int main(int argc, char **argv)
     }
 
     /* decode until eof */
-    avpkt.data = inbuf;
-    avpkt.size = fread(inbuf, 1, AUDIO_INBUF_SIZE, f);
+    data      = inbuf;
+    data_size = fread(inbuf, 1, AUDIO_INBUF_SIZE, f);
 
-    while (avpkt.size > 0) {
-        int got_frame = 0;
-
+    while (data_size > 0) {
         if (!decoded_frame) {
             if (!(decoded_frame = av_frame_alloc())) {
                 fprintf(stderr, "Could not allocate audio frame\n");
@@ -106,39 +142,26 @@ int main(int argc, char **argv)
             }
         }
 
-        len = avcodec_decode_audio4(c, decoded_frame, &got_frame, &avpkt);
-        if (len < 0) {
-            fprintf(stderr, "Error while decoding\n");
+        ret = av_parser_parse2(parser, c, &avpkt.data, &avpkt.size,
+                               data, data_size,
+                               AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
+        if (ret < 0) {
+            fprintf(stderr, "Error while parsing\n");
             exit(1);
         }
-        if (got_frame) {
-            int i, ch;
-            /* if a frame has been decoded, output it */
-            int data_size = av_get_bytes_per_sample(c->sample_fmt);
-            if (data_size < 0) {
-                /* This should not occur, checking just for paranoia */
-                fprintf(stderr, "Failed to calculate data size\n");
-                exit(1);
-            }
-            for (i=0; i<decoded_frame->nb_samples; i++)
-                for (ch=0; ch<c->channels; ch++)
-                    fwrite(decoded_frame->data[ch] + data_size*i, 1, data_size, outfile);
-        }
-        avpkt.size -= len;
-        avpkt.data += len;
-        avpkt.dts =
-        avpkt.pts = AV_NOPTS_VALUE;
-        if (avpkt.size < AUDIO_REFILL_THRESH) {
-            /* Refill the input buffer, to avoid trying to decode
-             * incomplete frames. Instead of this, one could also use
-             * a parser, or use a proper container format through
-             * libavformat. */
-            memmove(inbuf, avpkt.data, avpkt.size);
-            avpkt.data = inbuf;
-            len = fread(avpkt.data + avpkt.size, 1,
-                        AUDIO_INBUF_SIZE - avpkt.size, f);
+        data      += ret;
+        data_size -= ret;
+
+        if (avpkt.size)
+            decode(c, &avpkt, decoded_frame, outfile);
+
+        if (data_size < AUDIO_REFILL_THRESH) {
+            memmove(inbuf, data, data_size);
+            data = inbuf;
+            len = fread(data + data_size, 1,
+                        AUDIO_INBUF_SIZE - data_size, f);
             if (len > 0)
-                avpkt.size += len;
+                data_size += len;
         }
     }
 
@@ -146,6 +169,7 @@ int main(int argc, char **argv)
     fclose(f);
 
     avcodec_free_context(&c);
+    av_parser_close(parser);
     av_frame_free(&decoded_frame);
 
     return 0;
