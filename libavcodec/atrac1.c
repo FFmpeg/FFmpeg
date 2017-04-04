@@ -279,11 +279,12 @@ static int atrac1_decode_frame(AVCodecContext *avctx, void *data,
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     AT1Ctx *q          = avctx->priv_data;
+    int channels       = avctx->ch_layout.nb_channels;
     int ch, ret;
     GetBitContext gb;
 
 
-    if (buf_size < 212 * avctx->channels) {
+    if (buf_size < 212 * channels) {
         av_log(avctx, AV_LOG_ERROR, "Not enough data to decode!\n");
         return AVERROR_INVALIDDATA;
     }
@@ -293,7 +294,7 @@ static int atrac1_decode_frame(AVCodecContext *avctx, void *data,
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
-    for (ch = 0; ch < avctx->channels; ch++) {
+    for (ch = 0; ch < channels; ch++) {
         AT1SUCtx* su = &q->SUs[ch];
 
         init_get_bits(&gb, &buf[212 * ch], 212 * 8);
@@ -335,13 +336,14 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
 {
     AT1Ctx *q = avctx->priv_data;
     AVFloatDSPContext *fdsp;
+    int channels = avctx->ch_layout.nb_channels;
     int ret;
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
 
-    if (avctx->channels < 1 || avctx->channels > AT1_MAX_CHANNELS) {
+    if (channels < 1 || channels > AT1_MAX_CHANNELS) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported number of channels: %d\n",
-               avctx->channels);
+               channels);
         return AVERROR(EINVAL);
     }
 
