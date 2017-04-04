@@ -214,7 +214,7 @@ static void init_fps(int bf, int audio_preroll, int fps)
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id = AV_CODEC_ID_AAC;
     st->codecpar->sample_rate = 44100;
-    st->codecpar->channels = 2;
+    st->codecpar->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
     st->time_base.num = 1;
     st->time_base.den = 44100;
     st->codecpar->extradata_size = sizeof(aac_extradata);
