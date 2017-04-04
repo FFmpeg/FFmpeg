@@ -38,7 +38,7 @@ void ff_adx_calculate_coeffs(int cutoff, int sample_rate, int bits, int *coeff)
 int ff_adx_decode_header(AVCodecContext *avctx, const uint8_t *buf,
                          int bufsize, int *header_size, int *coeff)
 {
-    int offset, cutoff;
+    int offset, cutoff, channels;
 
     if (bufsize < 24)
         return AVERROR_INVALIDDATA;
@@ -58,18 +58,24 @@ int ff_adx_decode_header(AVCodecContext *avctx, const uint8_t *buf,
     }
 
     /* channels */
-    avctx->channels = buf[7];
-    if (avctx->channels <= 0 || avctx->channels > 2)
+    channels = buf[7];
+    if (channels <= 0 || channels > 2)
         return AVERROR_INVALIDDATA;
+
+    if (avctx->ch_layout.nb_channels != channels) {
+        av_channel_layout_uninit(&avctx->ch_layout);
+        avctx->ch_layout.order = AV_CHANNEL_ORDER_UNSPEC;
+        avctx->ch_layout.nb_channels = channels;
+    }
 
     /* sample rate */
     avctx->sample_rate = AV_RB32(buf + 8);
     if (avctx->sample_rate < 1 ||
-        avctx->sample_rate > INT_MAX / (avctx->channels * BLOCK_SIZE * 8))
+        avctx->sample_rate > INT_MAX / (channels * BLOCK_SIZE * 8))
         return AVERROR_INVALIDDATA;
 
     /* bit rate */
-    avctx->bit_rate = avctx->sample_rate * avctx->channels * BLOCK_SIZE * 8 / BLOCK_SAMPLES;
+    avctx->bit_rate = avctx->sample_rate * channels * BLOCK_SIZE * 8 / BLOCK_SAMPLES;
 
     /* LPC coefficients */
     if (coeff) {

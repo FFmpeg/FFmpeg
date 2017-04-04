@@ -107,7 +107,7 @@ static int adx_encode_header(AVCodecContext *avctx, uint8_t *buf, int bufsize)
     bytestream_put_byte(&buf, 3);                   /* encoding */
     bytestream_put_byte(&buf, BLOCK_SIZE);          /* block size */
     bytestream_put_byte(&buf, 4);                   /* sample size */
-    bytestream_put_byte(&buf, avctx->channels);     /* channels */
+    bytestream_put_byte(&buf, avctx->ch_layout.nb_channels); /* channels */
     bytestream_put_be32(&buf, avctx->sample_rate);  /* sample rate */
     bytestream_put_be32(&buf, 0);                   /* total sample count */
     bytestream_put_be16(&buf, c->cutoff);           /* cutoff frequency */
@@ -125,7 +125,7 @@ static av_cold int adx_encode_init(AVCodecContext *avctx)
 {
     ADXContext *c = avctx->priv_data;
 
-    if (avctx->channels > 2) {
+    if (avctx->ch_layout.nb_channels > 2) {
         av_log(avctx, AV_LOG_ERROR, "Invalid number of channels\n");
         return AVERROR(EINVAL);
     }
@@ -144,6 +144,7 @@ static int adx_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     ADXContext *c          = avctx->priv_data;
     const int16_t *samples = frame ? (const int16_t *)frame->data[0] : NULL;
     uint8_t *dst;
+    int channels = avctx->ch_layout.nb_channels;
     int ch, out_size, ret;
 
     if (!samples) {
@@ -162,7 +163,7 @@ static int adx_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         return 0;
     }
 
-    out_size = BLOCK_SIZE * avctx->channels + !c->header_parsed * HEADER_SIZE;
+    out_size = BLOCK_SIZE * channels + !c->header_parsed * HEADER_SIZE;
     if ((ret = ff_get_encode_buffer(avctx, avpkt, out_size, 0)) < 0)
         return ret;
     dst = avpkt->data;
@@ -177,8 +178,8 @@ static int adx_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         c->header_parsed = 1;
     }
 
-    for (ch = 0; ch < avctx->channels; ch++) {
-        adx_encode(c, dst, samples + ch, &c->prev[ch], avctx->channels);
+    for (ch = 0; ch < channels; ch++) {
+        adx_encode(c, dst, samples + ch, &c->prev[ch], channels);
         dst += BLOCK_SIZE;
     }
 
