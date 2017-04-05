@@ -1,0 +1,12 @@
+1.FFmpeg 是一个多媒体编解码库。它能够实现很多文件格式的编解码.avi这种常用的视频格式 ffmpeg 里面已经自带了解码库，xvid、x264等格式的文件需要添加 xvid 和 x264 的库来支持。当我们调用 ffmpeg里面的库(主要是libavformat和libavcodec文件)来解码视频文件后，我们可以通过 SDL库 或者 QT 库
+将解码出的数字信息转化成图像画在屏幕上。
+
+2.計劃由幾個元件組成：
+ffmpeg是一個命令列工具，用來對視訊檔案轉換格式，也支援對電視卡即時編碼
+ffserver是一個HTTP多媒體即時廣播串流伺服器，支援時光平移
+ffplay是一個簡單的播放器，基於SDL與FFmpeg函式庫
+libavcodec包含了全部FFmpeg音訊／視訊編解碼函式庫
+libavformat包含demuxers和muxer函式庫
+libavutil包含一些工具函式庫
+libpostproc對於視訊做前處理的函式庫
+libswscale對於影像作縮放的函式庫
