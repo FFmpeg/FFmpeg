@@ -641,7 +641,11 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
         hpos = put_header(pb, &ff_asf_stream_header);
         if (par->codec_type == AVMEDIA_TYPE_AUDIO) {
             ff_put_guid(pb, &ff_asf_audio_stream);
-            ff_put_guid(pb, &ff_asf_audio_conceal_spread);
+            if (enc->codec_id == AV_CODEC_ID_MP3) {
+                ff_put_guid(pb, &ff_asf_audio_conceal_none);
+            } else {
+                ff_put_guid(pb, &ff_asf_audio_conceal_spread);
+            }
         } else {
             ff_put_guid(pb, &ff_asf_video_stream);
             ff_put_guid(pb, &ff_asf_video_conceal_none);
