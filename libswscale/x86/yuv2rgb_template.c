@@ -60,10 +60,10 @@
 
 #define YUV2RGB_INITIAL_LOAD          \
     __asm__ volatile (                \
+        "1: \n\t"                     \
         "movq (%5, %0, 2), %%mm6\n\t" \
         "movd    (%2, %0), %%mm0\n\t" \
         "movd    (%3, %0), %%mm1\n\t" \
-        "1: \n\t"                     \
 
 /* YUV2RGB core
  * Conversion is performed in usual way:
@@ -132,9 +132,6 @@
     "punpcklbw %%mm7, %%mm2\n\t"                 \
 
 #define YUV2RGB_ENDLOOP(depth)                   \
-    "movq 8 (%5, %0, 2), %%mm6\n\t"              \
-    "movd 4 (%3, %0),    %%mm1\n\t"              \
-    "movd 4 (%2, %0),    %%mm0\n\t"              \
     "add $"AV_STRINGIFY(depth * 8)", %1\n\t"     \
     "add  $4, %0\n\t"                            \
     "js   1b\n\t"                                \
