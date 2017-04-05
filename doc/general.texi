@@ -196,7 +196,7 @@ For Linux and OS X, the supported AviSynth variant is
 
 @float NOTE
 There is currently a regression in AviSynth+'s @code{capi.h} header as of
-October 2016, which interferes with the ability for builds of Libav to use
+October 2016, which interferes with the ability for builds of FFmpeg to use
 MSVC-built binaries of AviSynth. Until this is resolved, you can make sure
 a known good version is installed by checking out a version from before
 the regression occurred:
