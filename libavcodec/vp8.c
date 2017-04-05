@@ -2247,15 +2247,15 @@ static void vp8_decode_mv_mb_modes(AVCodecContext *avctx, VP8Frame *cur_frame,
 #define check_thread_pos(td, otd, mb_x_check, mb_y_check)                     \
     do {                                                                      \
         int tmp = (mb_y_check << 16) | (mb_x_check & 0xFFFF);                 \
-        if (otd->thread_mb_pos < tmp) {                                       \
+        if (atomic_load(&otd->thread_mb_pos) < tmp) {                         \
             pthread_mutex_lock(&otd->lock);                                   \
-            td->wait_mb_pos = tmp;                                            \
+            atomic_store(&td->wait_mb_pos, tmp);                              \
             do {                                                              \
-                if (otd->thread_mb_pos >= tmp)                                \
+                if (atomic_load(&otd->thread_mb_pos) >= tmp)                  \
                     break;                                                    \
                 pthread_cond_wait(&otd->cond, &otd->lock);                    \
             } while (1);                                                      \
-            td->wait_mb_pos = INT_MAX;                                        \
+            atomic_store(&td->wait_mb_pos, INT_MAX);                          \
             pthread_mutex_unlock(&otd->lock);                                 \
         }                                                                     \
     } while (0)
@@ -2266,12 +2266,10 @@ static void vp8_decode_mv_mb_modes(AVCodecContext *avctx, VP8Frame *cur_frame,
         int sliced_threading = (avctx->active_thread_type == FF_THREAD_SLICE) && \
                                (num_jobs > 1);                                \
         int is_null          = !next_td || !prev_td;                          \
-        int pos_check        = (is_null) ? 1                                  \
-                                         : (next_td != td &&                  \
-                                            pos >= next_td->wait_mb_pos) ||   \
-                                           (prev_td != td &&                  \
-                                            pos >= prev_td->wait_mb_pos);     \
-        td->thread_mb_pos = pos;                                              \
+        int pos_check        = (is_null) ? 1 :                                \
+            (next_td != td && pos >= atomic_load(&next_td->wait_mb_pos)) ||   \
+            (prev_td != td && pos >= atomic_load(&prev_td->wait_mb_pos));     \
+        atomic_store(&td->thread_mb_pos, pos);                                \
         if (sliced_threading && pos_check) {                                  \
             pthread_mutex_lock(&td->lock);                                    \
             pthread_cond_broadcast(&td->cond);                                \
@@ -2288,7 +2286,7 @@ static av_always_inline int decode_mb_row_no_filter(AVCodecContext *avctx, void 
 {
     VP8Context *s = avctx->priv_data;
     VP8ThreadData *prev_td, *next_td, *td = &s->thread_data[threadnr];
-    int mb_y = td->thread_mb_pos >> 16;
+    int mb_y = atomic_load(&td->thread_mb_pos) >> 16;
     int mb_x, mb_xy = mb_y * s->mb_width;
     int num_jobs = s->num_jobs;
     VP8Frame *curframe = s->curframe, *prev_frame = s->prev_frame;
@@ -2428,7 +2426,7 @@ static av_always_inline void filter_mb_row(AVCodecContext *avctx, void *tdata,
 {
     VP8Context *s = avctx->priv_data;
     VP8ThreadData *td = &s->thread_data[threadnr];
-    int mb_x, mb_y = td->thread_mb_pos >> 16, num_jobs = s->num_jobs;
+    int mb_x, mb_y = atomic_load(&td->thread_mb_pos) >> 16, num_jobs = s->num_jobs;
     AVFrame *curframe = s->curframe->tf.f;
     VP8Macroblock *mb;
     VP8ThreadData *prev_td, *next_td;
@@ -2507,7 +2505,7 @@ int vp78_decode_mb_row_sliced(AVCodecContext *avctx, void *tdata, int jobnr,
 
     td->thread_nr = threadnr;
     for (mb_y = jobnr; mb_y < s->mb_height; mb_y += num_jobs) {
-        td->thread_mb_pos = mb_y << 16;
+        atomic_store(&td->thread_mb_pos, mb_y << 16);
         ret = s->decode_mb_row_no_filter(avctx, tdata, jobnr, threadnr);
         if (ret < 0) {
             update_pos(td, s->mb_height, INT_MAX & 0xFFFF);
@@ -2667,8 +2665,9 @@ int vp78_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     s->mv_min.y   = -MARGIN;
     s->mv_max.y   = ((s->mb_height - 1) << 6) + MARGIN;
     for (i = 0; i < MAX_THREADS; i++) {
-        s->thread_data[i].thread_mb_pos = 0;
-        s->thread_data[i].wait_mb_pos   = INT_MAX;
+        VP8ThreadData *td = &s->thread_data[i];
+        atomic_init(&td->thread_mb_pos, 0);
+        atomic_init(&td->wait_mb_pos, INT_MAX);
     }
     if (is_vp7)
         avctx->execute2(avctx, vp7_decode_mb_row_sliced, s->thread_data, NULL,
