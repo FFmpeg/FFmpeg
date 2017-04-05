@@ -59,7 +59,7 @@ static int bitpacked_decode_yuv422p10(AVCodecContext *avctx, AVFrame *frame,
                                       AVPacket *avpkt)
 {
     uint64_t frame_size = (uint64_t)avctx->width * (uint64_t)avctx->height * 20;
-    uint64_t packet_size = avpkt->size * 8;
+    uint64_t packet_size = (uint64_t)avpkt->size * 8;
     GetBitContext bc;
     uint16_t *y, *u, *v;
     int ret, i;
