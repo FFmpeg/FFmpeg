@@ -1140,8 +1140,6 @@ IDCT_DC_DEQUANT 0
 INIT_MMX sse2
 IDCT_DC_DEQUANT 7
 
-INIT_XMM avx
-
 ; %unmacro STORE_DIFFx2 8 ; remove macro from x86util.asm but yasm doesn't have this yet
 %macro STORE_DIFFx2 8 ; add1, add2, reg1, reg2, zero, shift, source, stride
     movd       %3, [%7]
@@ -1170,6 +1168,10 @@ INIT_XMM avx
     packuswb m1, m1
 %endmacro
 
+%macro IDCT_XMM 1
+
+INIT_XMM %1
+
 cglobal h264_idct_add_8, 3, 3, 8, dst_, block_, stride_
     movsxdifnidn stride_q, stride_d
     IDCT4_ADD    dst_q, block_q, stride_q
@@ -1182,3 +1184,8 @@ cglobal h264_idct_dc_add_8, 3, 4, 6, dst_, block_, stride_
     DC_ADD_INIT r3
     DC_ADD_MMXEXT_OP movd, dst_q, stride_q, r3
 RET
+
+%endmacro
+
+IDCT_XMM sse2
+IDCT_XMM avx
