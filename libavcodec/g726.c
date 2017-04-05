@@ -327,11 +327,11 @@ static av_cold int g726_encode_init(AVCodecContext *avctx)
     }
 
     if (avctx->bit_rate)
-        c->code_size = (avctx->bit_rate + avctx->sample_rate/2) / avctx->sample_rate;
+        c->code_size = ((avctx->bit_rate + avctx->sample_rate/2) / avctx->sample_rate) / 8;
 
     c->code_size = av_clip(c->code_size, 2, 5);
-    avctx->bit_rate = c->code_size * avctx->sample_rate;
-    avctx->bits_per_coded_sample = c->code_size;
+    avctx->bits_per_coded_sample = c->code_size * 8;
+    avctx->bit_rate = avctx->bits_per_coded_sample * avctx->sample_rate;
 
     g726_reset(c);
 
@@ -368,7 +368,7 @@ static int g726_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 #define OFFSET(x) offsetof(G726Context, x)
 #define AE AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "code_size", "Bits per code", OFFSET(code_size), AV_OPT_TYPE_INT, { .i64 = 4 }, 2, 5, AE },
+    { "code_size", "Bytes per sample", OFFSET(code_size), AV_OPT_TYPE_INT, { .i64 = 4 }, 2, 5, AE },
     { NULL },
 };
 
@@ -414,9 +414,9 @@ static av_cold int g726_decode_init(AVCodecContext *avctx)
 
     c->little_endian = !strcmp(avctx->codec->name, "g726le");
 
-    c->code_size = avctx->bits_per_coded_sample;
+    c->code_size = avctx->bits_per_coded_sample / 8;
     if (c->code_size < 2 || c->code_size > 5) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid number of bits %d\n", c->code_size);
+        av_log(avctx, AV_LOG_ERROR, "Invalid number of bits %d\n", avctx->bits_per_coded_sample);
         return AVERROR(EINVAL);
     }
     g726_reset(c);
