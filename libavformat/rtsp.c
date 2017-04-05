@@ -50,11 +50,8 @@
 #include "rtpenc.h"
 #include "mpegts.h"
 
-/* Timeout values for socket poll, in ms,
- * and read_packet(), in seconds  */
+/* Timeout values for socket poll, in ms */
 #define POLL_TIMEOUT_MS 100
-#define READ_PACKET_TIMEOUT_S 10
-#define MAX_TIMEOUTS READ_PACKET_TIMEOUT_S * 1000 / POLL_TIMEOUT_MS
 #define SDP_MAX_SIZE 16384
 #define RECVBUF_SIZE 10 * RTP_MAX_PACKET_LENGTH
 #define DEFAULT_REORDERING_DELAY 100000
@@ -93,7 +90,7 @@ const AVOption ff_rtsp_options[] = {
     RTSP_MEDIATYPE_OPTS("allowed_media_types", "set media types to accept from the server"),
     { "min_port", "set minimum local UDP port", OFFSET(rtp_port_min), AV_OPT_TYPE_INT, {.i64 = RTSP_RTP_PORT_MIN}, 0, 65535, DEC|ENC },
     { "max_port", "set maximum local UDP port", OFFSET(rtp_port_max), AV_OPT_TYPE_INT, {.i64 = RTSP_RTP_PORT_MAX}, 0, 65535, DEC|ENC },
-    { "timeout", "set maximum timeout (in seconds) to wait for incoming connections (-1 is infinite, imply flag listen)", OFFSET(initial_timeout), AV_OPT_TYPE_INT, {.i64 = -1}, INT_MIN, INT_MAX, DEC },
+    { "timeout", "set maximum timeout (in seconds) to wait for incoming connections (-1 is infinite), or to abort an inactive connection to a server (by default 10 seconds)", OFFSET(initial_timeout), AV_OPT_TYPE_INT, {.i64 = -1}, INT_MIN, INT_MAX, DEC },
     { "stimeout", "set timeout (in microseconds) of socket TCP I/O operations", OFFSET(stimeout), AV_OPT_TYPE_INT, {.i64 = 0}, INT_MIN, INT_MAX, DEC },
     COMMON_OPTS(),
     { "user-agent", "override User-Agent header", OFFSET(user_agent), AV_OPT_TYPE_STRING, {.str = LIBAVFORMAT_IDENT}, 0, 0, DEC },
@@ -1927,6 +1924,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
     RTSPState *rt = s->priv_data;
     RTSPStream *rtsp_st;
     int n, i, ret, tcp_fd, timeout_cnt = 0;
+    int max_timeouts = rt->initial_timeout * 1000 / POLL_TIMEOUT_MS;
     int max_p = 0;
     struct pollfd *p = rt->p;
     int *fds = NULL, fdsnum, fdsidx;
@@ -1965,6 +1963,11 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
             }
         }
         n = poll(p, max_p, POLL_TIMEOUT_MS);
+        if (n == 0) {
+            av_log(s, AV_LOG_DEBUG,
+                   "udp poll timeout occurred (%d of max %d)\n",
+                   timeout_cnt, max_timeouts);
+        }
         if (n > 0) {
             int j = 1 - (tcp_fd == -1);
             timeout_cnt = 0;
@@ -2003,7 +2006,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
                 }
             }
 #endif
-        } else if (n == 0 && ++timeout_cnt >= MAX_TIMEOUTS) {
+        } else if (n == 0 && ++timeout_cnt >= max_timeouts) {
             return AVERROR(ETIMEDOUT);
         } else if (n < 0 && errno != EINTR)
             return AVERROR(errno);

@@ -716,14 +716,14 @@ static int rtsp_read_header(AVFormatContext *s)
     RTSPState *rt = s->priv_data;
     int ret;
 
-    if (rt->initial_timeout > 0)
-        rt->rtsp_flags |= RTSP_FLAG_LISTEN;
-
     if (rt->rtsp_flags & RTSP_FLAG_LISTEN) {
         ret = rtsp_listen(s);
         if (ret)
             return ret;
     } else {
+        if (rt->initial_timeout == -1)
+            rt->initial_timeout = RTSP_DEFAULT_READ_PACKET_TIMEOUT_S;
+
         ret = ff_rtsp_connect(s);
         if (ret)
             return ret;

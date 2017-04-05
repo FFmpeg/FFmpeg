@@ -78,6 +78,9 @@ enum RTSPControlTransport {
 #define RTSP_RTP_PORT_MIN 5000
 #define RTSP_RTP_PORT_MAX 65000
 
+/* Default timeout values for read_packet(), in seconds. */
+#define RTSP_DEFAULT_READ_PACKET_TIMEOUT_S 10
+
 /**
  * This describes a single item in the "Transport:" line of one stream as
  * negotiated by the SETUP RTSP command. Multiple transports are comma-
