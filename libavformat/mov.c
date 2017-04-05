@@ -5794,6 +5794,7 @@ static int mov_read_close(AVFormatContext *s)
     av_freep(&mov->fragment_index_data);
 
     av_freep(&mov->aes_decrypt);
+    av_freep(&mov->chapter_tracks);
 
     return 0;
 }
