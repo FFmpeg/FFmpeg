@@ -204,6 +204,9 @@ int ff_mlp_read_major_sync(void *log, MLPHeaderInfo *mh, GetBitContext *gb)
         channel_arrangement            = get_bits(gb, 13);
         mh->channels_thd_stream2       = truehd_channels(channel_arrangement);
         mh->channel_layout_thd_stream2 = ff_truehd_layout(channel_arrangement);
+
+        if (gb->buffer[25] & 1)
+            mh->num_extensions         = gb->buffer[26] >> 4;
     } else
         return AVERROR_INVALIDDATA;
 
