@@ -102,22 +102,22 @@ av_cold void ff_idctdsp_init_x86(IDCTDSPContext *c, AVCodecContext *avctx,
 
     if (ARCH_X86_64 && avctx->lowres == 0) {
         if (avctx->bits_per_raw_sample == 10 &&
-        (avctx->idct_algo == FF_IDCT_AUTO ||
-         avctx->idct_algo == FF_IDCT_SIMPLEAUTO ||
-         avctx->idct_algo == FF_IDCT_SIMPLE)) {
-        if (EXTERNAL_SSE2(cpu_flags)) {
-            c->idct_put  = ff_simple_idct10_put_sse2;
-            c->idct_add  = NULL;
-            c->idct      = ff_simple_idct10_sse2;
-            c->perm_type = FF_IDCT_PERM_TRANSPOSE;
+            (avctx->idct_algo == FF_IDCT_AUTO ||
+             avctx->idct_algo == FF_IDCT_SIMPLEAUTO ||
+             avctx->idct_algo == FF_IDCT_SIMPLE)) {
+            if (EXTERNAL_SSE2(cpu_flags)) {
+                c->idct_put  = ff_simple_idct10_put_sse2;
+                c->idct_add  = NULL;
+                c->idct      = ff_simple_idct10_sse2;
+                c->perm_type = FF_IDCT_PERM_TRANSPOSE;
 
-        }
-        if (EXTERNAL_AVX(cpu_flags)) {
-            c->idct_put  = ff_simple_idct10_put_avx;
-            c->idct_add  = NULL;
-            c->idct      = ff_simple_idct10_avx;
-            c->perm_type = FF_IDCT_PERM_TRANSPOSE;
-        }
+            }
+            if (EXTERNAL_AVX(cpu_flags)) {
+                c->idct_put  = ff_simple_idct10_put_avx;
+                c->idct_add  = NULL;
+                c->idct      = ff_simple_idct10_avx;
+                c->perm_type = FF_IDCT_PERM_TRANSPOSE;
+            }
         }
 
         if (avctx->bits_per_raw_sample == 12 &&
