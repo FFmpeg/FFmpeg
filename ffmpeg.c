@@ -2617,7 +2617,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
 
     // while we have more to decode or while the decoder did output something on EOF
     while (ist->decoding_needed) {
-        int duration = 0;
+        int64_t duration = 0;
         int got_output = 0;
         int decode_failed = 0;
 
