@@ -861,6 +861,7 @@ void ff_thread_flush(AVCodecContext *avctx)
         // Make sure decode flush calls with size=0 won't return old frames
         p->got_frame = 0;
         av_frame_unref(p->frame);
+        p->result = 0;
 
         release_delayed_buffers(p);
 
