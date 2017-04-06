@@ -1574,7 +1574,7 @@ enum AVPacketSideDataType {
 
     /**
      * Mastering display metadata (based on SMPTE-2086:2014). This metadata
-     * should be associated with a video stream and containts data in the form
+     * should be associated with a video stream and contains data in the form
      * of the AVMasteringDisplayMetadata struct.
      */
     AV_PKT_DATA_MASTERING_DISPLAY_METADATA,
@@ -1587,7 +1587,7 @@ enum AVPacketSideDataType {
 
     /**
      * Content light level (based on CTA-861.3). This metadata should be
-     * associated with a video stream and containts data in the form of the
+     * associated with a video stream and contains data in the form of the
      * AVContentLightMetadata struct.
      */
     AV_PKT_DATA_CONTENT_LIGHT_LEVEL,
