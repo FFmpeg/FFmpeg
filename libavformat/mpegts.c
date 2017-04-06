@@ -1142,7 +1142,10 @@ skip:
                 pes->pts = AV_NOPTS_VALUE;
                 pes->dts = AV_NOPTS_VALUE;
                 if ((flags & 0xc0) == 0x80) {
-                    pes->dts = pes->pts = ff_parse_pes_pts(r);
+                    pes->pts = ff_parse_pes_pts(r);
+                    /* video pts is not monotonic, can't be used for dts */
+                    if (pes->st->codec->codec_type != AVMEDIA_TYPE_VIDEO)
+                        pes->dts = pes->pts;
                     r += 5;
                 } else if ((flags & 0xc0) == 0xc0) {
                     pes->pts = ff_parse_pes_pts(r);
