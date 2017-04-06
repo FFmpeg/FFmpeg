@@ -433,7 +433,7 @@ filter(){
     pat=$1
     shift
     for v; do
-        eval "case $v in $pat) printf '%s ' $v ;; esac"
+        eval "case '$v' in $pat) printf '%s ' '$v' ;; esac"
     done
 }
 
@@ -441,7 +441,7 @@ filter_out(){
     pat=$1
     shift
     for v; do
-        eval "case $v in $pat) ;; *) printf '%s ' $v ;; esac"
+        eval "case '$v' in $pat) ;; *) printf '%s ' '$v' ;; esac"
     done
 }
 
