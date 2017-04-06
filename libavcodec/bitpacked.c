@@ -62,7 +62,7 @@ static int bitpacked_decode_yuv422p10(AVCodecContext *avctx, AVFrame *frame,
     uint64_t packet_size = (uint64_t)avpkt->size * 8;
     GetBitContext bc;
     uint16_t *y, *u, *v;
-    int ret, i;
+    int ret, i, j;
 
     ret = ff_get_buffer(avctx, frame, 0);
     if (ret < 0)
@@ -87,7 +87,7 @@ static int bitpacked_decode_yuv422p10(AVCodecContext *avctx, AVFrame *frame,
         u = (uint16_t*)(frame->data[1] + i * frame->linesize[1]);
         v = (uint16_t*)(frame->data[2] + i * frame->linesize[2]);
 
-        for (int j = 0; j < avctx->width; j += 2) {
+        for (j = 0; j < avctx->width; j += 2) {
             *u++ = get_bits(&bc, 10);
             *y++ = get_bits(&bc, 10);
             *v++ = get_bits(&bc, 10);
