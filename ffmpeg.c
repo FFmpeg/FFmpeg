@@ -2223,14 +2223,14 @@ static int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame)
     return 0;
 }
 
-static int ifilter_send_eof(InputFilter *ifilter)
+static int ifilter_send_eof(InputFilter *ifilter, int64_t pts)
 {
     int i, j, ret;
 
     ifilter->eof = 1;
 
     if (ifilter->filter) {
-        ret = av_buffersrc_add_frame_flags(ifilter->filter, NULL, AV_BUFFERSRC_FLAG_PUSH);
+        ret = av_buffersrc_close(ifilter->filter, pts, AV_BUFFERSRC_FLAG_PUSH);
         if (ret < 0)
             return ret;
     } else {
@@ -2581,8 +2581,12 @@ out:
 static int send_filter_eof(InputStream *ist)
 {
     int i, ret;
+    /* TODO keep pts also in stream time base to avoid converting back */
+    int64_t pts = av_rescale_q_rnd(ist->pts, AV_TIME_BASE_Q, ist->st->time_base,
+                                   AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX);
+
     for (i = 0; i < ist->nb_filters; i++) {
-        ret = ifilter_send_eof(ist->filters[i]);
+        ret = ifilter_send_eof(ist->filters[i], pts);
         if (ret < 0)
             return ret;
     }
