@@ -804,8 +804,16 @@ static int get_audio_frame_duration(enum AVCodecID id, int sr, int ch, int ba,
 
 int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes)
 {
-    int duration = get_audio_frame_duration(avctx->codec_id, avctx->sample_rate,
-                                    avctx->channels, avctx->block_align,
+   int channels = avctx->ch_layout.nb_channels;
+   int duration;
+#if FF_API_OLD_CHANNEL_LAYOUT
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (!channels)
+        channels = avctx->channels;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+    duration = get_audio_frame_duration(avctx->codec_id, avctx->sample_rate,
+                                    channels, avctx->block_align,
                                     avctx->codec_tag, avctx->bits_per_coded_sample,
                                     avctx->bit_rate, avctx->extradata, avctx->frame_size,
                                     frame_bytes);

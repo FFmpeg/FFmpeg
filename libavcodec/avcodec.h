@@ -990,7 +990,15 @@ typedef struct AVCodecContext {
 
     /* audio only */
     int sample_rate; ///< samples per second
-    int channels;    ///< number of audio channels
+
+#if FF_API_OLD_CHANNEL_LAYOUT
+    /**
+     * number of audio channels
+     * @deprecated use ch_layout.nb_channels
+     */
+    attribute_deprecated
+    int channels;
+#endif
 
     /**
      * audio sample format
@@ -1035,19 +1043,25 @@ typedef struct AVCodecContext {
      */
     int cutoff;
 
+#if FF_API_OLD_CHANNEL_LAYOUT
     /**
      * Audio channel layout.
      * - encoding: set by user.
      * - decoding: set by user, may be overwritten by libavcodec.
+     * @deprecated use ch_layout
      */
+    attribute_deprecated
     uint64_t channel_layout;
 
     /**
      * Request decoder to use this channel layout if it can (0 for default)
      * - encoding: unused
      * - decoding: Set by user.
+     * @deprecated use "downmix" codec private option
      */
+    attribute_deprecated
     uint64_t request_channel_layout;
+#endif
 
     /**
      * Type of service that the audio stream conveys.
@@ -2027,6 +2041,14 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int (*get_encode_buffer)(struct AVCodecContext *s, AVPacket *pkt, int flags);
+
+    /**
+     * Audio channel layout.
+     * - encoding: must be set by the caller, to one of AVCodec.ch_layouts.
+     * - decoding: may be set by the caller if known e.g. from the container.
+     *             The decoder can then override during decoding as needed.
+     */
+    AVChannelLayout ch_layout;
 } AVCodecContext;
 
 /**

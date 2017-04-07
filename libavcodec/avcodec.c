@@ -119,7 +119,7 @@ static int64_t get_bit_rate(AVCodecContext *ctx)
     case AVMEDIA_TYPE_AUDIO:
         bits_per_sample = av_get_bits_per_sample(ctx->codec_id);
         if (bits_per_sample) {
-            bit_rate = ctx->sample_rate * (int64_t)ctx->channels;
+            bit_rate = ctx->sample_rate * (int64_t)ctx->ch_layout.nb_channels;
             if (bit_rate > INT64_MAX / bits_per_sample) {
                 bit_rate = 0;
             } else
@@ -137,6 +137,8 @@ static int64_t get_bit_rate(AVCodecContext *ctx)
 int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options)
 {
     int ret = 0;
+    int orig_channels;
+    uint64_t orig_channel_layout;
     AVCodecInternal *avci;
 
     if (avcodec_is_open(avctx))
@@ -246,12 +248,6 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         }
     }
 
-    if (avctx->channels > FF_SANE_NB_CHANNELS || avctx->channels < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Too many or invalid channels: %d\n", avctx->channels);
-        ret = AVERROR(EINVAL);
-        goto free_and_end;
-    }
-
     if (avctx->sample_rate < 0) {
         av_log(avctx, AV_LOG_ERROR, "Invalid sample rate: %d\n", avctx->sample_rate);
         ret = AVERROR(EINVAL);
@@ -259,6 +255,39 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     }
     if (avctx->block_align < 0) {
         av_log(avctx, AV_LOG_ERROR, "Invalid block align: %d\n", avctx->block_align);
+        ret = AVERROR(EINVAL);
+        goto free_and_end;
+    }
+
+#if FF_API_OLD_CHANNEL_LAYOUT
+FF_DISABLE_DEPRECATION_WARNINGS
+    /* compat wrapper for old-style callers */
+    if (avctx->channel_layout && !avctx->channels)
+        avctx->channels = av_popcount64(avctx->channel_layout);
+
+    if ((avctx->channels > 0 && avctx->ch_layout.nb_channels != avctx->channels) ||
+        (avctx->channel_layout && (avctx->ch_layout.order != AV_CHANNEL_ORDER_NATIVE ||
+                                   avctx->ch_layout.u.mask != avctx->channel_layout))) {
+        if (avctx->channel_layout) {
+            av_channel_layout_from_mask(&avctx->ch_layout, avctx->channel_layout);
+        } else {
+            avctx->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
+            avctx->ch_layout.nb_channels = avctx->channels;
+        }
+    }
+
+    /* temporary compat wrapper for new-style callers and old-style codecs;
+     * to be removed once all the codecs have been converted */
+    if (avctx->ch_layout.nb_channels) {
+        avctx->channels = avctx->ch_layout.nb_channels;
+        avctx->channel_layout = avctx->ch_layout.order == AV_CHANNEL_ORDER_NATIVE ?
+                                avctx->ch_layout.u.mask : 0;
+    }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+    if (avctx->ch_layout.nb_channels > FF_SANE_NB_CHANNELS) {
+        av_log(avctx, AV_LOG_ERROR, "Too many channels: %d\n", avctx->ch_layout.nb_channels);
         ret = AVERROR(EINVAL);
         goto free_and_end;
     }
@@ -317,6 +346,13 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     if (!HAVE_THREADS && !(codec->caps_internal & FF_CODEC_CAP_AUTO_THREADS))
         avctx->thread_count = 1;
 
+#if FF_API_OLD_CHANNEL_LAYOUT
+FF_DISABLE_DEPRECATION_WARNINGS
+    orig_channels = avctx->channels;
+    orig_channel_layout = avctx->channel_layout;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
     if (!(avctx->active_thread_type & FF_THREAD_FRAME) ||
         avci->frame_thread_encoder) {
         if (avctx->codec->init) {
@@ -336,6 +372,26 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     if (av_codec_is_decoder(avctx->codec)) {
         if (!avctx->bit_rate)
             avctx->bit_rate = get_bit_rate(avctx);
+
+#if FF_API_OLD_CHANNEL_LAYOUT
+FF_DISABLE_DEPRECATION_WARNINGS
+        /* decoder setting the old-style fields */
+        if (avctx->channels != orig_channels ||
+            avctx->channel_layout != orig_channel_layout) {
+            av_channel_layout_uninit(&avctx->ch_layout);
+            if (avctx->channel_layout) {
+                av_channel_layout_from_mask(&avctx->ch_layout, avctx->channel_layout);
+            } else {
+                avctx->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
+                avctx->ch_layout.nb_channels = avctx->channels;
+            }
+        }
+
+        /* update the deprecated fields for old-style callers */
+        avctx->channels = avctx->ch_layout.nb_channels;
+        avctx->channel_layout = avctx->ch_layout.order == AV_CHANNEL_ORDER_NATIVE ?
+                                avctx->ch_layout.u.mask : 0;
+
         /* validate channel layout from the decoder */
         if (avctx->channel_layout) {
             int channels = av_get_channel_layout_nb_channels(avctx->channel_layout);
@@ -360,6 +416,8 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
             ret = AVERROR(EINVAL);
             goto free_and_end;
         }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
 #if FF_API_AVCTX_TIMEBASE
         if (avctx->framerate.num > 0 && avctx->framerate.den > 0)
@@ -478,6 +536,8 @@ av_cold int avcodec_close(AVCodecContext *avctx)
         av_freep(&avci->hwaccel_priv_data);
 
         av_bsf_free(&avci->bsf);
+
+        av_channel_layout_uninit(&avci->initial_ch_layout);
 
         av_freep(&avctx->internal);
     }
@@ -661,7 +721,12 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         if (enc->sample_rate) {
             av_bprintf(&bprint, "%d Hz, ", enc->sample_rate);
         }
-        av_bprint_channel_layout(&bprint, enc->channels, enc->channel_layout);
+        {
+            char buf[512];
+            int ret = av_channel_layout_describe(&enc->ch_layout, buf, sizeof(buf));
+            if (ret >= 0)
+                av_bprintf(&bprint, "%s", buf);
+        }
         if (enc->sample_fmt != AV_SAMPLE_FMT_NONE &&
             (str = av_get_sample_fmt_name(enc->sample_fmt))) {
             av_bprintf(&bprint, ", %s", str);

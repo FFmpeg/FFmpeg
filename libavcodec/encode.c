@@ -114,9 +114,10 @@ static int pad_last_frame(AVCodecContext *s, AVFrame *frame, const AVFrame *src)
     int ret;
 
     frame->format         = src->format;
-    frame->channel_layout = src->channel_layout;
-    frame->channels       = src->channels;
     frame->nb_samples     = s->frame_size;
+    ret = av_channel_layout_copy(&frame->ch_layout, &s->ch_layout);
+    if (ret < 0)
+        goto fail;
     ret = av_frame_get_buffer(frame, 0);
     if (ret < 0)
         goto fail;
@@ -126,11 +127,12 @@ static int pad_last_frame(AVCodecContext *s, AVFrame *frame, const AVFrame *src)
         goto fail;
 
     if ((ret = av_samples_copy(frame->extended_data, src->extended_data, 0, 0,
-                               src->nb_samples, s->channels, s->sample_fmt)) < 0)
+                               src->nb_samples, s->ch_layout.nb_channels,
+                               s->sample_fmt)) < 0)
         goto fail;
     if ((ret = av_samples_set_silence(frame->extended_data, src->nb_samples,
                                       frame->nb_samples - src->nb_samples,
-                                      s->channels, s->sample_fmt)) < 0)
+                                      s->ch_layout.nb_channels, s->sample_fmt)) < 0)
         goto fail;
 
     return 0;
@@ -419,7 +421,7 @@ int ff_encode_preinit(AVCodecContext *avctx)
         for (i = 0; avctx->codec->sample_fmts[i] != AV_SAMPLE_FMT_NONE; i++) {
             if (avctx->sample_fmt == avctx->codec->sample_fmts[i])
                 break;
-            if (avctx->channels == 1 &&
+            if (avctx->ch_layout.nb_channels == 1 &&
                 av_get_planar_sample_fmt(avctx->sample_fmt) ==
                 av_get_planar_sample_fmt(avctx->codec->sample_fmts[i])) {
                 avctx->sample_fmt = avctx->codec->sample_fmts[i];
@@ -467,7 +469,27 @@ int ff_encode_preinit(AVCodecContext *avctx)
                 avctx->sample_rate);
         return AVERROR(EINVAL);
     }
-    if (avctx->codec->channel_layouts) {
+    if (avctx->codec->ch_layouts) {
+        if (!av_channel_layout_check(&avctx->ch_layout)) {
+            av_log(avctx, AV_LOG_WARNING, "Channel layout not specified correctly\n");
+            return AVERROR(EINVAL);
+        }
+
+        for (i = 0; avctx->codec->ch_layouts[i].nb_channels; i++) {
+            if (!av_channel_layout_compare(&avctx->ch_layout, &avctx->codec->ch_layouts[i]))
+                break;
+        }
+        if (!avctx->codec->ch_layouts[i].nb_channels) {
+            char buf[512];
+            int ret = av_channel_layout_describe(&avctx->ch_layout, buf, sizeof(buf));
+            if (ret > 0)
+                av_log(avctx, AV_LOG_ERROR, "Specified channel layout '%s' is not supported\n", buf);
+            return AVERROR(EINVAL);
+        }
+FF_DISABLE_DEPRECATION_WARNINGS
+    }
+#if FF_API_OLD_CHANNEL_LAYOUT
+    else if (avctx->codec->channel_layouts) {
         if (!avctx->channel_layout) {
             av_log(avctx, AV_LOG_WARNING, "Channel layout not specified\n");
         } else {
@@ -500,6 +522,8 @@ int ff_encode_preinit(AVCodecContext *avctx)
                 avctx->channels);
         return AVERROR(EINVAL);
     }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     if(avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
         const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(avctx->pix_fmt);
         if (    avctx->bits_per_raw_sample < 0

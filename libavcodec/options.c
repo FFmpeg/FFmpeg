@@ -103,6 +103,8 @@ static int init_context_defaults(AVCodecContext *s, const AVCodec *codec)
         flags= AV_OPT_FLAG_SUBTITLE_PARAM;
     av_opt_set_defaults2(s, flags, flags);
 
+    av_channel_layout_uninit(&s->ch_layout);
+
     s->time_base           = (AVRational){0,1};
     s->framerate           = (AVRational){ 0, 1 };
     s->pkt_timebase        = (AVRational){ 0, 1 };
@@ -112,6 +114,7 @@ static int init_context_defaults(AVCodecContext *s, const AVCodec *codec)
     s->execute             = avcodec_default_execute;
     s->execute2            = avcodec_default_execute2;
     s->sample_aspect_ratio = (AVRational){0,1};
+    s->ch_layout.order     = AV_CHANNEL_ORDER_UNSPEC;
     s->pix_fmt             = AV_PIX_FMT_NONE;
     s->sw_pix_fmt          = AV_PIX_FMT_NONE;
     s->sample_fmt          = AV_SAMPLE_FMT_NONE;
@@ -167,6 +170,7 @@ void avcodec_free_context(AVCodecContext **pavctx)
     av_freep(&avctx->intra_matrix);
     av_freep(&avctx->inter_matrix);
     av_freep(&avctx->rc_override);
+    av_channel_layout_uninit(&avctx->ch_layout);
 
     av_freep(pavctx);
 }
@@ -177,6 +181,7 @@ const AVClass *avcodec_get_class(void)
 }
 
 #if FF_API_GET_FRAME_CLASS
+FF_DISABLE_DEPRECATION_WARNINGS
 #define FOFFSET(x) offsetof(AVFrame,x)
 
 static const AVOption frame_options[]={
@@ -187,7 +192,9 @@ static const AVOption frame_options[]={
 {"width", "", FOFFSET(width), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, 0},
 {"height", "", FOFFSET(height), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, 0},
 {"format", "", FOFFSET(format), AV_OPT_TYPE_INT, {.i64 = -1 }, 0, INT_MAX, 0},
+#if FF_API_OLD_CHANNEL_LAYOUT
 {"channel_layout", "", FOFFSET(channel_layout), AV_OPT_TYPE_INT64, {.i64 = 0 }, 0, INT64_MAX, 0},
+#endif
 {"sample_rate", "", FOFFSET(sample_rate), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, INT_MAX, 0},
 {NULL},
 };
@@ -203,6 +210,7 @@ const AVClass *avcodec_get_frame_class(void)
 {
     return &av_frame_class;
 }
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
 #define SROFFSET(x) offsetof(AVSubtitleRect,x)

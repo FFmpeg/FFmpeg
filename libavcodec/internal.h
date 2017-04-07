@@ -208,8 +208,11 @@ typedef struct AVCodecInternal {
     int initial_format;
     int initial_width, initial_height;
     int initial_sample_rate;
+#if FF_API_OLD_CHANNEL_LAYOUT
     int initial_channels;
     uint64_t initial_channel_layout;
+#endif
+    AVChannelLayout initial_ch_layout;
 } AVCodecInternal;
 
 struct AVCodecDefault {

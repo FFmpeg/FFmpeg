@@ -294,10 +294,18 @@ static int update_context_from_thread(AVCodecContext *dst, AVCodecContext *src, 
         dst->hwaccel = src->hwaccel;
         dst->hwaccel_context = src->hwaccel_context;
 
-        dst->channels       = src->channels;
         dst->sample_rate    = src->sample_rate;
         dst->sample_fmt     = src->sample_fmt;
+#if FF_API_OLD_CHANNEL_LAYOUT
+FF_DISABLE_DEPRECATION_WARNINGS
+        dst->channels       = src->channels;
         dst->channel_layout = src->channel_layout;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+        err = av_channel_layout_copy(&dst->ch_layout, &src->ch_layout);
+        if (err < 0)
+            return err;
+
         dst->internal->hwaccel_priv_data = src->internal->hwaccel_priv_data;
 
         if (!!dst->hw_frames_ctx != !!src->hw_frames_ctx ||
