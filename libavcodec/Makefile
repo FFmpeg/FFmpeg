@@ -33,6 +33,7 @@ OBJS = allcodecs.o                                                      \
        d3d11va.o                                                        \
        dirac.o                                                          \
        dv_profile.o                                                     \
+       encode.o                                                         \
        imgconvert.o                                                     \
        jni.o                                                            \
        mathtables.o                                                     \
