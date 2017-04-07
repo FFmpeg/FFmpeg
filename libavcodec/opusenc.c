@@ -630,19 +630,20 @@ static void ff_celt_enc_bitalloc(OpusRangeCoder *rc, CeltFrame *f)
     }
 }
 
-static void celt_quant_coarse(OpusEncContext *s, OpusRangeCoder *rc, CeltFrame *f)
+static void exp_quant_coarse(OpusRangeCoder *rc, CeltFrame *f,
+                             float last_energy[][CELT_MAX_BANDS], int intra)
 {
     int i, ch;
     float alpha, beta, prev[2] = { 0, 0 };
-    const uint8_t *pmod = ff_celt_coarse_energy_dist[f->size][f->intra];
+    const uint8_t *pmod = ff_celt_coarse_energy_dist[f->size][intra];
 
     /* Inter is really just differential coding */
     if (opus_rc_tell(rc) + 3 <= f->framebits)
-        ff_opus_rc_enc_log(rc, f->intra, 3);
+        ff_opus_rc_enc_log(rc, intra, 3);
     else
-        f->intra = 0;
+        intra = 0;
 
-    if (f->intra) {
+    if (intra) {
         alpha = 0.0f;
         beta  = 1.0f - 4915.0f/32768.0f;
     } else {
@@ -654,7 +655,7 @@ static void celt_quant_coarse(OpusEncContext *s, OpusRangeCoder *rc, CeltFrame *
         for (ch = 0; ch < f->channels; ch++) {
             CeltBlock *block = &f->block[ch];
             const int left = f->framebits - opus_rc_tell(rc);
-            const float last = FFMAX(-9.0f, s->last_quantized_energy[ch][i]);
+            const float last = FFMAX(-9.0f, last_energy[ch][i]);
             float diff = block->energy[i] - prev[ch] - last*alpha;
             int q_en = lrintf(diff);
             if (left >= 15) {
@@ -670,6 +671,26 @@ static void celt_quant_coarse(OpusEncContext *s, OpusRangeCoder *rc, CeltFrame *
             block->error_energy[i] = q_en - diff;
             prev[ch] += beta * q_en;
         }
+    }
+}
+
+static void celt_quant_coarse(OpusRangeCoder *rc, CeltFrame *f,
+                              float last_energy[][CELT_MAX_BANDS])
+{
+    uint32_t inter, intra;
+    OPUS_RC_CHECKPOINT_SPAWN(rc);
+
+    exp_quant_coarse(rc, f, last_energy, 1);
+    intra = OPUS_RC_CHECKPOINT_BITS(rc);
+
+    OPUS_RC_CHECKPOINT_ROLLBACK(rc);
+
+    exp_quant_coarse(rc, f, last_energy, 0);
+    inter = OPUS_RC_CHECKPOINT_BITS(rc);
+
+    if (inter > intra) { /* Unlikely */
+        OPUS_RC_CHECKPOINT_ROLLBACK(rc);
+        exp_quant_coarse(rc, f, last_energy, 1);
     }
 }
 
@@ -823,7 +844,7 @@ static void celt_encode_frame(OpusEncContext *s, OpusRangeCoder *rc, CeltFrame *
     if (f->size && opus_rc_tell(rc) + 3 <= f->framebits)
         ff_opus_rc_enc_log(rc, f->transient, 3);
 
-    celt_quant_coarse (s, rc, f);
+    celt_quant_coarse(rc, f, s->last_quantized_energy);
     celt_enc_tf      (rc, f);
     ff_celt_enc_bitalloc(rc, f);
     celt_quant_fine  (rc, f);
@@ -871,7 +892,6 @@ static void ff_opus_psy_celt_frame_setup(OpusEncContext *s, CeltFrame *f, int in
     f->silence = 0;
     f->pfilter = 0;
     f->transient = 0;
-    f->intra = 1;
     f->tf_select = 0;
     f->anticollapse = 0;
     f->alloc_trim = 5;

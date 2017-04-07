@@ -100,7 +100,6 @@ struct CeltFrame {
     int end_band;
     int coded_bands;
     int transient;
-    int intra;
     int pfilter;
     int skip_band_floor;
     int tf_select;
