@@ -36,18 +36,6 @@
 #include "ac3enc.h"
 #include "eac3enc.h"
 
-/* prototypes for static functions in ac3enc_fixed.c and ac3enc_float.c */
-
-static void scale_coefficients(AC3EncodeContext *s);
-
-static void clip_coefficients(AudioDSPContext *adsp, CoefType *coef,
-                              unsigned int len);
-
-static CoefType calc_cpl_coord(CoefSumType energy_ch, CoefSumType energy_cpl);
-
-static void sum_square_butterfly(AC3EncodeContext *s, CoefSumType sum[4],
-                                 const CoefType *coef0, const CoefType *coef1,
-                                 int len);
 
 int AC3_NAME(allocate_sample_buffers)(AC3EncodeContext *s)
 {
