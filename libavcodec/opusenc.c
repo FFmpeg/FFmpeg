@@ -280,7 +280,7 @@ static int celt_frame_map_norm_bands(OpusEncContext *s, CeltFrame *f)
     return !noise;
 }
 
-static void celt_enc_tf(OpusEncContext *s, OpusRangeCoder *rc, CeltFrame *f)
+static void celt_enc_tf(OpusRangeCoder *rc, CeltFrame *f)
 {
     int i, tf_select = 0, diff = 0, tf_changed = 0, tf_select_needed;
     int bits = f->transient ? 2 : 4;
@@ -307,7 +307,7 @@ static void celt_enc_tf(OpusEncContext *s, OpusRangeCoder *rc, CeltFrame *f)
         f->tf_change[i] = ff_celt_tf_select[f->size][f->transient][tf_select][f->tf_change[i]];
 }
 
-static void celt_bitalloc(OpusEncContext *s, OpusRangeCoder *rc, CeltFrame *f)
+static void ff_celt_enc_bitalloc(OpusRangeCoder *rc, CeltFrame *f)
 {
     int i, j, low, high, total, done, bandbits, remaining, tbits_8ths;
     int skip_startband      = f->start_band;
@@ -675,7 +675,7 @@ static void celt_quant_coarse(OpusEncContext *s, OpusRangeCoder *rc, CeltFrame *
     }
 }
 
-static void celt_quant_fine(OpusEncContext *s, OpusRangeCoder *rc, CeltFrame *f)
+static void celt_quant_fine(OpusRangeCoder *rc, CeltFrame *f)
 {
     int i, ch;
     for (i = f->start_band; i < f->end_band; i++) {
@@ -712,7 +712,7 @@ static void celt_quant_final(OpusEncContext *s, OpusRangeCoder *rc, CeltFrame *f
     }
 }
 
-static void celt_quant_bands(OpusEncContext *s, OpusRangeCoder *rc, CeltFrame *f)
+static void celt_quant_bands(OpusRangeCoder *rc, CeltFrame *f)
 {
     float lowband_scratch[8 * 22];
     float norm[2 * 8 * 100];
@@ -725,6 +725,7 @@ static void celt_quant_bands(OpusEncContext *s, OpusRangeCoder *rc, CeltFrame *f
     int i, j;
 
     for (i = f->start_band; i < f->end_band; i++) {
+        uint32_t cm[2] = { (1 << f->blocks) - 1, (1 << f->blocks) - 1 };
         int band_offset = ff_celt_freq_bands[i] << f->size;
         int band_size   = ff_celt_freq_range[i] << f->size;
         float *X = f->block[0].coeffs + band_offset;
@@ -733,8 +734,7 @@ static void celt_quant_bands(OpusEncContext *s, OpusRangeCoder *rc, CeltFrame *f
         int consumed = opus_rc_tell_frac(rc);
         float *norm2 = norm + 8 * 100;
         int effective_lowband = -1;
-        unsigned int cm[2];
-        int b;
+        int b = 0;
 
         /* Compute how many bits we want to allocate to this band */
         if (i != f->start_band)
@@ -743,8 +743,7 @@ static void celt_quant_bands(OpusEncContext *s, OpusRangeCoder *rc, CeltFrame *f
         if (i <= f->coded_bands - 1) {
             int curr_balance = f->remaining / FFMIN(3, f->coded_bands-i);
             b = av_clip_uintp2(FFMIN(f->remaining2 + 1, f->pulses[i] + curr_balance), 14);
-        } else
-            b = 0;
+        }
 
         if (ff_celt_freq_bands[i] - ff_celt_freq_range[i] >= ff_celt_freq_bands[f->start_band] &&
             (update_lowband || lowband_offset == 0))
@@ -769,10 +768,7 @@ static void celt_quant_bands(OpusEncContext *s, OpusRangeCoder *rc, CeltFrame *f
                 cm[0] |= f->block[0].collapse_masks[j];
                 cm[1] |= f->block[f->channels - 1].collapse_masks[j];
             }
-        } else
-            /* Otherwise, we'll be using the LCG to fold, so all blocks will (almost
-            always) be non-zero.*/
-            cm[0] = cm[1] = (1 << f->blocks) - 1;
+        }
 
         if (f->dual_stereo && i == f->intensity_stereo) {
             /* Switch off dual stereo to do intensity */
@@ -786,13 +782,13 @@ static void celt_quant_bands(OpusEncContext *s, OpusRangeCoder *rc, CeltFrame *f
                                         effective_lowband != -1 ? norm + (effective_lowband << f->size) : NULL, f->size,
                                         norm + band_offset, 0, 1.0f, lowband_scratch, cm[0]);
 
-            cm[1] = ff_celt_encode_band(f, rc, i, Y, NULL, band_size, b/2, f->blocks,
+            cm[1] = ff_celt_encode_band(f, rc, i, Y, NULL, band_size, b / 2, f->blocks,
                                         effective_lowband != -1 ? norm2 + (effective_lowband << f->size) : NULL, f->size,
                                         norm2 + band_offset, 0, 1.0f, lowband_scratch, cm[1]);
         } else {
             cm[0] = ff_celt_encode_band(f, rc, i, X, Y, band_size, b, f->blocks,
                                         effective_lowband != -1 ? norm + (effective_lowband << f->size) : NULL, f->size,
-                                        norm + band_offset, 0, 1.0f, lowband_scratch, cm[0]|cm[1]);
+                                        norm + band_offset, 0, 1.0f, lowband_scratch, cm[0] | cm[1]);
             cm[1] = cm[0];
         }
 
@@ -834,10 +830,10 @@ static void celt_encode_frame(OpusEncContext *s, OpusRangeCoder *rc, CeltFrame *
         ff_opus_rc_enc_log(rc, f->transient, 3);
 
     celt_quant_coarse (s, rc, f);
-    celt_enc_tf       (s, rc, f);
-    celt_bitalloc     (s, rc, f);
-    celt_quant_fine   (s, rc, f);
-    celt_quant_bands  (s, rc, f);
+    celt_enc_tf      (rc, f);
+    ff_celt_enc_bitalloc(rc, f);
+    celt_quant_fine  (rc, f);
+    celt_quant_bands (rc, f);
 
     if (f->anticollapse_needed)
         ff_opus_rc_put_raw(rc, f->anticollapse, 1);
