@@ -30,9 +30,8 @@
 #    define NDEBUG
 #endif
 
-#if defined(DEBUG) && !defined(CHECKED)
-#    define CHECKED
-#endif
+// This can be enabled to allow detection of additional integer overflows with ubsan
+//#define CHECKED
 
 #include <limits.h>
 #include <stdint.h>
