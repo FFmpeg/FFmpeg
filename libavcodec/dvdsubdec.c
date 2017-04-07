@@ -189,12 +189,12 @@ static void guess_palette(DVDSubContext* ctx,
                 r = (((subtitle_color >> 16) & 0xff) * level) >> 8;
                 g = (((subtitle_color >> 8) & 0xff) * level) >> 8;
                 b = (((subtitle_color >> 0) & 0xff) * level) >> 8;
-                rgba_palette[i] = b | (g << 8) | (r << 16) | ((alpha[i] * 17) << 24);
+                rgba_palette[i] = b | (g << 8) | (r << 16) | ((alpha[i] * 17U) << 24);
                 color_used[colormap[i]] = (i + 1);
                 j++;
             } else {
                 rgba_palette[i] = (rgba_palette[color_used[colormap[i]] - 1] & 0x00ffffff) |
-                                    ((alpha[i] * 17) << 24);
+                                    ((alpha[i] * 17U) << 24);
             }
         }
     }
