@@ -40,8 +40,6 @@
 
 static void scale_coefficients(AC3EncodeContext *s);
 
-static int normalize_samples(AC3EncodeContext *s);
-
 static void clip_coefficients(AudioDSPContext *adsp, CoefType *coef,
                               unsigned int len);
 
@@ -113,10 +111,10 @@ static void apply_mdct(AC3EncodeContext *s)
 #else
             s->ac3dsp.apply_window_int16(s->windowed_samples, input_samples,
                                          s->mdct_window, AC3_WINDOW_SIZE);
-#endif
 
             if (s->fixed_point)
                 block->coeff_shift[ch+1] = normalize_samples(s);
+#endif
 
             s->mdct.mdct_calcw(&s->mdct, block->mdct_coef[ch+1],
                                s->windowed_samples);

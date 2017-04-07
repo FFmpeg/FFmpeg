@@ -43,6 +43,8 @@ static const AVClass ac3enc_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
+static int normalize_samples(AC3EncodeContext *s);
+
 #include "ac3enc_template.c"
 
 
