@@ -2144,7 +2144,8 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             /* APP fields */
         } else if (start_code >= APP0 && start_code <= APP15) {
             if ((ret = mjpeg_decode_app(s)) < 0)
-                return ret;
+                av_log(avctx, AV_LOG_ERROR, "unable to decode APP fields: %s\n",
+                       av_err2str(ret));
             /* Comment */
         } else if (start_code == COM) {
             ret = mjpeg_decode_com(s);
