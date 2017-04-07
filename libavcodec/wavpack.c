@@ -157,7 +157,7 @@ static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb,
         } else {
             t = get_unary_0_33(gb);
             if (t >= 2) {
-                if (get_bits_left(gb) < t - 1)
+                if (t >= 32 || get_bits_left(gb) < t - 1)
                     goto error;
                 t = get_bits_long(gb, t - 1) | (1 << (t - 1));
             } else {
