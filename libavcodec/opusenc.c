@@ -249,9 +249,9 @@ static void celt_frame_mdct(OpusEncContext *s, CeltFrame *f)
 }
 
 /* Fills the bands and normalizes them */
-static int celt_frame_map_norm_bands(OpusEncContext *s, CeltFrame *f)
+static void celt_frame_map_norm_bands(OpusEncContext *s, CeltFrame *f)
 {
-    int i, j, ch, noise = 0;
+    int i, j, ch;
 
     for (ch = 0; ch < f->channels; ch++) {
         CeltBlock *block = &f->block[ch];
@@ -274,10 +274,8 @@ static int celt_frame_map_norm_bands(OpusEncContext *s, CeltFrame *f)
 
             /* CELT_ENERGY_SILENCE is what the decoder uses and its not -infinity */
             block->energy[i] = FFMAX(block->energy[i], CELT_ENERGY_SILENCE);
-            noise |= block->energy[i] > CELT_ENERGY_SILENCE;
         }
     }
-    return !noise;
 }
 
 static void celt_enc_tf(OpusRangeCoder *rc, CeltFrame *f)
@@ -811,11 +809,7 @@ static void celt_encode_frame(OpusEncContext *s, OpusRangeCoder *rc, CeltFrame *
         /* Not implemented */
     }
     celt_frame_mdct(s, f);
-    f->silence = celt_frame_map_norm_bands(s, f);
-    if (f->silence) {
-        f->framebits = 1;
-        return;
-    }
+    celt_frame_map_norm_bands(s, f);
 
     ff_opus_rc_enc_log(rc, f->silence, 15);
 
