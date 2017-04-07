@@ -686,7 +686,7 @@ static int mkv_write_video_projection(AVFormatContext *s, AVIOContext *pb,
         avio_wb32(&b, spherical->bound_left);
         avio_wb32(&b, spherical->bound_right);
         put_ebml_binary(dyn_cp, MATROSKA_ID_VIDEOPROJECTIONPRIVATE,
-                        private, sizeof(private));
+                        private, avio_tell(&b));
         break;
     case AV_SPHERICAL_CUBEMAP:
         ffio_init_context(&b, private, 12, 1, NULL, NULL, NULL, NULL);
@@ -696,7 +696,7 @@ static int mkv_write_video_projection(AVFormatContext *s, AVIOContext *pb,
         avio_wb32(&b, 0); // layout
         avio_wb32(&b, spherical->padding);
         put_ebml_binary(dyn_cp, MATROSKA_ID_VIDEOPROJECTIONPRIVATE,
-                        private, sizeof(private));
+                        private, avio_tell(&b));
         break;
     default:
         av_log(s, AV_LOG_WARNING, "Unknown projection type\n");
