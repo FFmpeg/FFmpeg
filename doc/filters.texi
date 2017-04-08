@@ -17192,6 +17192,11 @@ event in time domain is represented more accurately (such as fast bass drum),
 otherwise event in frequency domain is represented more accurately
 (such as bass guitar). Acceptable range is @code{[0.002, 1]}. Default value is @code{0.17}.
 
+@item attack
+Set attack time in seconds. The default is @code{0} (disabled). Otherwise, it
+limits future samples by applying asymmetric windowing in time domain, useful
+when low latency is required. Accepted range is @code{[0, 1]}.
+
 @item basefreq
 Specify the transform base frequency. Default value is @code{20.01523126408007475},
 which is frequency 50 cents below E0. Acceptable range is @code{[10, 100000]}.
