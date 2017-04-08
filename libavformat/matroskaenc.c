@@ -2223,7 +2223,7 @@ static int mkv_check_new_extra_data(AVFormatContext *s, AVPacket *pkt)
 
     switch (par->codec_id) {
     case AV_CODEC_ID_FLAC:
-        if (side_data_size && (s->pb->seekable & AVIO_SEEKABLE_NORMAL)) {
+        if (side_data_size && (s->pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live) {
             AVCodecParameters *codecpriv_par;
             int64_t curpos;
             if (side_data_size != par->extradata_size) {
