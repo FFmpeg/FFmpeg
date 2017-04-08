@@ -1,0 +1,3 @@
+*.sln              text=auto
+*.vcxproj          text=auto
+*.vcxproj.filters  text=auto

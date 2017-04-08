@@ -1,0 +1,1819 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="DebugDLL|Win32">
+      <Configuration>DebugDLL</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="DebugDLL|x64">
+      <Configuration>DebugDLL</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="DebugDLLStaticDeps|Win32">
+      <Configuration>DebugDLLStaticDeps</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="DebugDLLStaticDeps|x64">
+      <Configuration>DebugDLLStaticDeps</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleaseDLL|Win32">
+      <Configuration>ReleaseDLL</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleaseDLL|x64">
+      <Configuration>ReleaseDLL</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleaseDLLStaticDeps|Win32">
+      <Configuration>ReleaseDLLStaticDeps</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleaseDLLStaticDeps|x64">
+      <Configuration>ReleaseDLLStaticDeps</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleaseLTO|Win32">
+      <Configuration>ReleaseLTO</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleaseLTO|x64">
+      <Configuration>ReleaseLTO</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <YASM Include="..\libavfilter\x86\vf_fspp.asm" />
+    <YASM Include="..\libavfilter\x86\vf_gradfun.asm" />
+    <YASM Include="..\libavfilter\x86\vf_hqdn3d.asm" />
+    <YASM Include="..\libavfilter\x86\vf_idet.asm" />
+    <YASM Include="..\libavfilter\x86\vf_interlace.asm" />
+    <YASM Include="..\libavfilter\x86\vf_pp7.asm" />
+    <YASM Include="..\libavfilter\x86\vf_psnr.asm" />
+    <YASM Include="..\libavfilter\x86\vf_pullup.asm" />
+    <YASM Include="..\libavfilter\x86\vf_removegrain.asm" />
+    <YASM Include="..\libavfilter\x86\vf_ssim.asm" />
+    <YASM Include="..\libavfilter\x86\af_volume.asm" />
+    <YASM Include="..\libavfilter\x86\vf_yadif.asm" />
+    <YASM Include="..\libavfilter\x86\yadif-16.asm" />
+    <YASM Include="..\libavfilter\x86\yadif-10.asm" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\libavfilter\allfilters.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\audio.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\avfilter.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\avfiltergraph.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\buffersink.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\buffersrc.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\drawutils.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\fifo.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\formats.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\graphdump.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\graphparser.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\opencl_allkernels.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\transform.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\video.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_afade.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_adelay.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_aecho.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\aeval.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_aformat.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\f_interleave.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_biquads.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_amerge.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_amix.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_anull.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_apad.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\f_perms.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_aphaser.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\generate_wave_table.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_aresample.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\f_reverse.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\f_select.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\f_sendcmd.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_asetnsamples.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\setpts.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_asetrate.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\settb.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_ashowinfo.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\split.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_astats.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_astreamsync.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_atempo.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\trim.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_channelmap.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_channelsplit.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_chorus.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_compand.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_dcshift.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_dynaudnorm.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_earwax.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\f_ebur128.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_extrastereo.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_flanger.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_join.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_pan.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_replaygain.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_sidechaincompress.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_silencedetect.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_silenceremove.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_volume.c">
+      <ObjectFileName>$(IntDir)\libavfilter_af_volume.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\af_volumedetect.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\asrc_anullsrc.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\asrc_sine.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\asink_anullsink.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_subtitles.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_extractplanes.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_alphamerge.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_atadenoise.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\bbox.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_bbox.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_blackdetect.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_blackframe.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_blend.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\dualinput.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\framesync.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_boxblur.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_codecview.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_colorbalance.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_colorchannelmixer.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_colorkey.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_colorlevels.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_colormatrix.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_copy.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_cover_rect.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\lavfutils.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_crop.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_cropdetect.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_curves.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_dctdnoiz.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_deband.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_decimate.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_neighbor.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_dejudder.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_delogo.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_deshake.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_detelecine.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_drawbox.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\f_drawgraph.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_drawtext.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_elbg.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_edgedetect.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_eq.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_fade.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_fftfilt.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_field.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_fieldmatch.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_fieldorder.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_find_rect.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_format.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_fps.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_framepack.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_framerate.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_framestep.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_fspp.c">
+      <ObjectFileName>$(IntDir)\libavfilter_vf_fspp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_geq.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_gradfun.c">
+      <ObjectFileName>$(IntDir)\libavfilter_vf_gradfun.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_lut3d.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_hflip.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_histeq.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_histogram.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_hqdn3d.c">
+      <ObjectFileName>$(IntDir)\libavfilter_vf_hqdn3d.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_hqx.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_stack.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_hue.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_idet.c">
+      <ObjectFileName>$(IntDir)\libavfilter_vf_idet.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_il.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_interlace.c">
+      <ObjectFileName>$(IntDir)\libavfilter_vf_interlace.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_kerndeint.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_lenscorrection.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_lut.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_mcdeint.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_mergeplanes.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_mpdecimate.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_noise.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_null.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\deshake_opencl.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\unsharp_opencl.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_overlay.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_owdenoise.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_pad.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_palettegen.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_paletteuse.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_perspective.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_phase.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_pixdesctest.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_pp.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_pp7.c">
+      <ObjectFileName>$(IntDir)\libavfilter_vf_pp7.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_psnr.c">
+      <ObjectFileName>$(IntDir)\libavfilter_vf_psnr.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_pullup.c">
+      <ObjectFileName>$(IntDir)\libavfilter_vf_pullup.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_qp.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_random.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_removegrain.c">
+      <ObjectFileName>$(IntDir)\libavfilter_vf_removegrain.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\lswsutils.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_removelogo.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_repeatfields.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_rotate.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_separatefields.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_sab.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_scale.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_aspect.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_setfield.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_showinfo.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_showpalette.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_shuffleplanes.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_signalstats.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_smartblur.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_spp.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_ssim.c">
+      <ObjectFileName>$(IntDir)\libavfilter_vf_ssim.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_stereo3d.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_super2xsai.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_swapuv.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_telecine.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_thumbnail.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_tile.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_tinterlace.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_transpose.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_unsharp.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_uspp.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_vectorscope.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_vflip.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_vignette.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_w3fdif.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_waveform.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_xbr.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_yadif.c">
+      <ObjectFileName>$(IntDir)\libavfilter_vf_yadif.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_zoompan.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vsrc_testsrc.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vsrc_cellauto.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vsrc_life.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vsrc_mandelbrot.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vsrc_mptestsrc.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vsink_nullsink.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\avf_aphasemeter.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\avf_avectorscope.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\avf_concat.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\avf_showcqt.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\avf_showfreqs.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\avf_showspectrum.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\avf_showvolume.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\avf_showwaves.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\src_movie.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\pthread.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\log2_tab.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_eq.c">
+      <ObjectFileName>$(IntDir)\libavfilter_x86_vf_eq.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_fspp_init.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_gradfun_init.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_hqdn3d_init.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_idet_init.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_interlace_init.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_noise.c">
+      <ObjectFileName>$(IntDir)\libavfilter_x86_vf_noise.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_pp7_init.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_psnr_init.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_pullup_init.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_removegrain_init.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_spp.c">
+      <ObjectFileName>$(IntDir)\libavfilter_x86_vf_spp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_ssim_init.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_tinterlace_init.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\af_volume_init.c">
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_yadif_init.c">
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\libavfilter\avfilter.h" />
+    <ClInclude Include="..\libavfilter\avfiltergraph.h" />
+    <ClInclude Include="..\libavfilter\buffersink.h" />
+    <ClInclude Include="..\libavfilter\buffersrc.h" />
+    <ClInclude Include="..\libavfilter\version.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".\libavfilter.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\libavfilter\avfilterres.rc">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseLTO|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseLTO|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ResourceCompile>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{BC2E1028-66CD-41A0-AF90-EEBD8CC52787}</ProjectGuid>
+    <RootNamespace>libavfilter</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLLStaticDeps|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLLStaticDeps|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLLStaticDeps|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLLStaticDeps|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseLTO|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseLTO|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\vsyasm.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLLStaticDeps|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLLStaticDeps|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLLStaticDeps|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLLStaticDeps|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseLTO|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseLTO|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|Win32'">
+    <TargetName>libavfilterd</TargetName>
+    <IntDir>$(SolutionDir)\obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+    <OutDir>..\..\..\msvc32\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|x64'">
+    <TargetName>libavfilterd</TargetName>
+    <OutDir>..\..\..\msvc64\</OutDir>
+    <IntDir>$(SolutionDir)\obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLLStaticDeps|Win32'">
+    <TargetName>libavfilterd</TargetName>
+    <IntDir>$(SolutionDir)\obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+    <OutDir>..\..\..\msvc32\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLLStaticDeps|x64'">
+    <TargetName>libavfilterd</TargetName>
+    <OutDir>..\..\..\msvc64\</OutDir>
+    <IntDir>$(SolutionDir)\obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|Win32'">
+    <TargetName>libavfilter</TargetName>
+    <IntDir>$(SolutionDir)\obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+    <OutDir>..\..\..\msvc32\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|x64'">
+    <TargetName>libavfilter</TargetName>
+    <OutDir>..\..\..\msvc64\</OutDir>
+    <IntDir>$(SolutionDir)\obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLLStaticDeps|Win32'">
+    <TargetName>libavfilter</TargetName>
+    <IntDir>$(SolutionDir)\obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+    <OutDir>..\..\..\msvc32\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLLStaticDeps|x64'">
+    <TargetName>libavfilter</TargetName>
+    <OutDir>..\..\..\msvc64\</OutDir>
+    <IntDir>$(SolutionDir)\obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <TargetName>libavfilterd</TargetName>
+    <IntDir>$(SolutionDir)\obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+    <OutDir>..\..\..\msvc32\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <TargetName>libavfilterd</TargetName>
+    <OutDir>..\..\..\msvc64\</OutDir>
+    <IntDir>$(SolutionDir)\obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <TargetName>libavfilter</TargetName>
+    <IntDir>$(SolutionDir)\obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+    <OutDir>..\..\..\msvc32\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <TargetName>libavfilter</TargetName>
+    <OutDir>..\..\..\msvc64\</OutDir>
+    <IntDir>$(SolutionDir)\obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseLTO|Win32'">
+    <TargetName>libavfilter</TargetName>
+    <IntDir>$(SolutionDir)\obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+    <OutDir>..\..\..\msvc32\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseLTO|x64'">
+    <TargetName>libavfilter</TargetName>
+    <OutDir>..\..\..\msvc64\</OutDir>
+    <IntDir>$(SolutionDir)\obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_LIB;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <ExceptionHandling>false</ExceptionHandling>
+      <C99Support>true</C99Support>
+      <ForcedIncludeFiles>compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <AdditionalOptions>/Oy- /Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <ProgramDataBaseFileName>$(OutDir)\lib\$(TargetName).pdb</ProgramDataBaseFileName>
+    </ClCompile>
+    <Lib>
+      <TargetMachine>MachineX86</TargetMachine>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalDependencies>libassd.lib;libfontconfigd.lib;libfreetyped.lib;libfribidid.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x86;$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
+    <PostBuildEvent>
+      <Command>mkdir $(OutDir)\include
+mkdir $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
+mkdir $(OutDir)\licenses
+copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>if exist ..\config.h (
+del ..\config.h
+)
+if exist ..\version.h (
+del ..\version.h
+)
+if exist ..\config.asm (
+del ..\config.asm
+)
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
+)
+if exist $(OutDir)\include\libavfilter (
+rd /s /q $(OutDir)\include\libavfilter
+cd ../
+cd $(ProjectDir)
+)</Command>
+    </PreBuildEvent>
+    <YASM>
+      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
+    </YASM>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_LIB;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>false</ExceptionHandling>
+      <C99Support>true</C99Support>
+      <ForcedIncludeFiles>compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <AdditionalOptions>/Oy- /Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <ProgramDataBaseFileName>$(OutDir)\lib\$(TargetName).pdb</ProgramDataBaseFileName>
+    </ClCompile>
+    <Lib>
+      <TargetMachine>MachineX64</TargetMachine>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalDependencies>libassd.lib;libfontconfigd.lib;libfreetyped.lib;libfribidid.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x64;$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
+    <PostBuildEvent>
+      <Command>mkdir $(OutDir)\include
+mkdir $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
+mkdir $(OutDir)\licenses
+copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>if exist ..\config.h (
+del ..\config.h
+)
+if exist ..\version.h (
+del ..\version.h
+)
+if exist ..\config.asm (
+del ..\config.asm
+)
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
+)
+if exist $(OutDir)\include\libavfilter (
+rd /s /q $(OutDir)\include\libavfilter
+cd ../
+cd $(ProjectDir)
+)</Command>
+    </PreBuildEvent>
+    <YASM>
+      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
+    </YASM>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <ExceptionHandling>false</ExceptionHandling>
+      <C99Support>true</C99Support>
+      <ForcedIncludeFiles>compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <AdditionalOptions>/Oy- /Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>$(OutDir)\bin\$(TargetName)$(TargetExt)</OutputFile>
+      <ImportLibrary>$(OutDir)\bin\$(TargetName).lib</ImportLibrary>
+      <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
+      <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
+      <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
+      <AdditionalDependencies>libavutild.lib;libavformatd.lib;libavcodecd.lib;libswresampled.lib;libpostprocd.lib;libswscaled.lib;libassd.lib;libfontconfigd.lib;libfreetyped.lib;libfribidid.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x86;$(OutDir)\bin\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <LargeAddressAware>true</LargeAddressAware>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
+    </Link>
+    <PostBuildEvent>
+      <Command>mkdir $(OutDir)\include
+mkdir $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
+mkdir $(OutDir)\licenses
+copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>if exist ..\config.h (
+del ..\config.h
+)
+if exist ..\version.h (
+del ..\version.h
+)
+if exist ..\config.asm (
+del ..\config.asm
+)
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
+)
+if exist $(OutDir)\include\libavfilter (
+rd /s /q $(OutDir)\include\libavfilter
+cd ../
+cd $(ProjectDir)
+)</Command>
+    </PreBuildEvent>
+    <YASM>
+      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
+    </YASM>
+    <PreLinkEvent>
+      <Command>echo Note: Any linker warning about missing symbols can be ignored!
+echo            A output file will be generated anyway.
+echo            These errors are the result of dead code elimination not being performed in debug builds.</Command>
+    </PreLinkEvent>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;$(OutDir)\include;$(OutDir)\include\opus;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>false</ExceptionHandling>
+      <C99Support>true</C99Support>
+      <ForcedIncludeFiles>compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <AdditionalOptions>/Oy- /Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>$(OutDir)\bin\$(TargetName)$(TargetExt)</OutputFile>
+      <ImportLibrary>$(OutDir)\bin\$(TargetName).lib</ImportLibrary>
+      <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
+      <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
+      <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
+      <AdditionalDependencies>libavutild.lib;libavformatd.lib;libavcodecd.lib;libswresampled.lib;libpostprocd.lib;libswscaled.lib;libassd.lib;libfontconfigd.lib;libfreetyped.lib;libfribidid.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x64;$(OutDir)\bin\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
+    </Link>
+    <PostBuildEvent>
+      <Command>mkdir $(OutDir)\include
+mkdir $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
+mkdir $(OutDir)\licenses
+copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>if exist ..\config.h (
+del ..\config.h
+)
+if exist ..\version.h (
+del ..\version.h
+)
+if exist ..\config.asm (
+del ..\config.asm
+)
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
+)
+if exist $(OutDir)\include\libavfilter (
+rd /s /q $(OutDir)\include\libavfilter
+cd ../
+cd $(ProjectDir)
+)</Command>
+    </PreBuildEvent>
+    <YASM>
+      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
+    </YASM>
+    <PreLinkEvent>
+      <Command>echo Note: Any linker warning about missing symbols can be ignored!
+echo            A output file will be generated anyway.
+echo            These errors are the result of dead code elimination not being performed in debug builds.</Command>
+    </PreLinkEvent>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLLStaticDeps|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <ExceptionHandling>false</ExceptionHandling>
+      <C99Support>true</C99Support>
+      <ForcedIncludeFiles>compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <AdditionalOptions>/Oy- /Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>$(OutDir)\bin\$(TargetName)$(TargetExt)</OutputFile>
+      <ImportLibrary>$(OutDir)\bin\$(TargetName).lib</ImportLibrary>
+      <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
+      <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
+      <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
+      <AdditionalDependencies>libavutild.lib;libavformatd.lib;libavcodecd.lib;libswresampled.lib;libpostprocd.lib;libswscaled.lib;libassd.lib;libfontconfigd.lib;libfreetyped.lib;libfribidid.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x86;$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <LargeAddressAware>true</LargeAddressAware>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
+    </Link>
+    <PostBuildEvent>
+      <Command>mkdir $(OutDir)\include
+mkdir $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
+mkdir $(OutDir)\licenses
+copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>if exist ..\config.h (
+del ..\config.h
+)
+if exist ..\version.h (
+del ..\version.h
+)
+if exist ..\config.asm (
+del ..\config.asm
+)
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
+)
+if exist $(OutDir)\include\libavfilter (
+rd /s /q $(OutDir)\include\libavfilter
+cd ../
+cd $(ProjectDir)
+)</Command>
+    </PreBuildEvent>
+    <YASM>
+      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
+    </YASM>
+    <PreLinkEvent>
+      <Command>echo Note: Any linker warning about missing symbols can be ignored!
+echo            A output file will be generated anyway.
+echo            These errors are the result of dead code elimination not being performed in debug builds.</Command>
+    </PreLinkEvent>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLLStaticDeps|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;$(OutDir)\include;$(OutDir)\include\opus;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>false</ExceptionHandling>
+      <C99Support>true</C99Support>
+      <ForcedIncludeFiles>compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <AdditionalOptions>/Oy- /Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>$(OutDir)\bin\$(TargetName)$(TargetExt)</OutputFile>
+      <ImportLibrary>$(OutDir)\bin\$(TargetName).lib</ImportLibrary>
+      <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
+      <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
+      <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
+      <AdditionalDependencies>libavutild.lib;libavformatd.lib;libavcodecd.lib;libswresampled.lib;libpostprocd.lib;libswscaled.lib;libassd.lib;libfontconfigd.lib;libfreetyped.lib;libfribidid.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x64;$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ForceFileOutput>UndefinedSymbolOnly</ForceFileOutput>
+    </Link>
+    <PostBuildEvent>
+      <Command>mkdir $(OutDir)\include
+mkdir $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
+mkdir $(OutDir)\licenses
+copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>if exist ..\config.h (
+del ..\config.h
+)
+if exist ..\version.h (
+del ..\version.h
+)
+if exist ..\config.asm (
+del ..\config.asm
+)
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
+)
+if exist $(OutDir)\include\libavfilter (
+rd /s /q $(OutDir)\include\libavfilter
+cd ../
+cd $(ProjectDir)
+)</Command>
+    </PreBuildEvent>
+    <YASM>
+      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
+    </YASM>
+    <PreLinkEvent>
+      <Command>echo Note: Any linker warning about missing symbols can be ignored!
+echo            A output file will be generated anyway.
+echo            These errors are the result of dead code elimination not being performed in debug builds.</Command>
+    </PreLinkEvent>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <FloatingPointExceptions>false</FloatingPointExceptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>false</ExceptionHandling>
+      <C99Support>true</C99Support>
+      <ForcedIncludeFiles>compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <AdditionalOptions>/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+    </ClCompile>
+    <Lib>
+      <TargetMachine>MachineX86</TargetMachine>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalDependencies>libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x86;$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
+    <PostBuildEvent>
+      <Command>mkdir $(OutDir)\include
+mkdir $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
+mkdir $(OutDir)\licenses
+copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>if exist ..\config.h (
+del ..\config.h
+)
+if exist ..\version.h (
+del ..\version.h
+)
+if exist ..\config.asm (
+del ..\config.asm
+)
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
+)
+if exist $(OutDir)\include\libavfilter (
+rd /s /q $(OutDir)\include\libavfilter
+cd ../
+cd $(ProjectDir)
+)</Command>
+    </PreBuildEvent>
+    <YASM>
+      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
+    </YASM>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FloatingPointExceptions>false</FloatingPointExceptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>false</ExceptionHandling>
+      <C99Support>true</C99Support>
+      <ForcedIncludeFiles>compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <AdditionalOptions>/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+    </ClCompile>
+    <Lib>
+      <TargetMachine>MachineX64</TargetMachine>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalDependencies>libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x64;$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
+    <PostBuildEvent>
+      <Command>mkdir $(OutDir)\include
+mkdir $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
+mkdir $(OutDir)\licenses
+copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>if exist ..\config.h (
+del ..\config.h
+)
+if exist ..\version.h (
+del ..\version.h
+)
+if exist ..\config.asm (
+del ..\config.asm
+)
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
+)
+if exist $(OutDir)\include\libavfilter (
+rd /s /q $(OutDir)\include\libavfilter
+cd ../
+cd $(ProjectDir)
+)</Command>
+    </PreBuildEvent>
+    <YASM>
+      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
+    </YASM>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <FloatingPointExceptions>false</FloatingPointExceptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>false</ExceptionHandling>
+      <C99Support>true</C99Support>
+      <ForcedIncludeFiles>compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <AdditionalOptions>/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>$(OutDir)\bin\$(TargetName)$(TargetExt)</OutputFile>
+      <ImportLibrary>$(OutDir)\bin\$(TargetName).lib</ImportLibrary>
+      <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
+      <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
+      <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
+      <AdditionalDependencies>libavutil.lib;libavformat.lib;libavcodec.lib;libswresample.lib;libpostproc.lib;libswscale.lib;libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x86;$(OutDir)\bin\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <LargeAddressAware>true</LargeAddressAware>
+    </Link>
+    <PostBuildEvent>
+      <Command>mkdir $(OutDir)\include
+mkdir $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
+mkdir $(OutDir)\licenses
+copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>if exist ..\config.h (
+del ..\config.h
+)
+if exist ..\version.h (
+del ..\version.h
+)
+if exist ..\config.asm (
+del ..\config.asm
+)
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
+)
+if exist $(OutDir)\include\libavfilter (
+rd /s /q $(OutDir)\include\libavfilter
+cd ../
+cd $(ProjectDir)
+)</Command>
+    </PreBuildEvent>
+    <YASM>
+      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
+    </YASM>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FloatingPointExceptions>false</FloatingPointExceptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>false</ExceptionHandling>
+      <C99Support>true</C99Support>
+      <ForcedIncludeFiles>compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <AdditionalOptions>/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>$(OutDir)\bin\$(TargetName)$(TargetExt)</OutputFile>
+      <ImportLibrary>$(OutDir)\bin\$(TargetName).lib</ImportLibrary>
+      <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
+      <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
+      <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
+      <AdditionalDependencies>libavutil.lib;libavformat.lib;libavcodec.lib;libswresample.lib;libpostproc.lib;libswscale.lib;libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x64;$(OutDir)\bin\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+    <PostBuildEvent>
+      <Command>mkdir $(OutDir)\include
+mkdir $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
+mkdir $(OutDir)\licenses
+copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>if exist ..\config.h (
+del ..\config.h
+)
+if exist ..\version.h (
+del ..\version.h
+)
+if exist ..\config.asm (
+del ..\config.asm
+)
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
+)
+if exist $(OutDir)\include\libavfilter (
+rd /s /q $(OutDir)\include\libavfilter
+cd ../
+cd $(ProjectDir)
+)</Command>
+    </PreBuildEvent>
+    <YASM>
+      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
+    </YASM>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLLStaticDeps|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <FloatingPointExceptions>false</FloatingPointExceptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>false</ExceptionHandling>
+      <C99Support>true</C99Support>
+      <ForcedIncludeFiles>compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <AdditionalOptions>/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>$(OutDir)\bin\$(TargetName)$(TargetExt)</OutputFile>
+      <ImportLibrary>$(OutDir)\bin\$(TargetName).lib</ImportLibrary>
+      <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
+      <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
+      <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
+      <AdditionalDependencies>libavutil.lib;libavformat.lib;libavcodec.lib;libswresample.lib;libpostproc.lib;libswscale.lib;libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x86;$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <LargeAddressAware>true</LargeAddressAware>
+    </Link>
+    <PostBuildEvent>
+      <Command>mkdir $(OutDir)\include
+mkdir $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
+mkdir $(OutDir)\licenses
+copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>if exist ..\config.h (
+del ..\config.h
+)
+if exist ..\version.h (
+del ..\version.h
+)
+if exist ..\config.asm (
+del ..\config.asm
+)
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
+)
+if exist $(OutDir)\include\libavfilter (
+rd /s /q $(OutDir)\include\libavfilter
+cd ../
+cd $(ProjectDir)
+)</Command>
+    </PreBuildEvent>
+    <YASM>
+      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
+    </YASM>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLLStaticDeps|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FloatingPointExceptions>false</FloatingPointExceptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>false</ExceptionHandling>
+      <C99Support>true</C99Support>
+      <ForcedIncludeFiles>compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <InterproceduralOptimization>SingleFile</InterproceduralOptimization>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <AdditionalOptions>/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>$(OutDir)\bin\$(TargetName)$(TargetExt)</OutputFile>
+      <ImportLibrary>$(OutDir)\bin\$(TargetName).lib</ImportLibrary>
+      <ProgramDatabaseFile>$(OutDir)\bin\$(TargetName).pdb</ProgramDatabaseFile>
+      <ModuleDefinitionFile>.\libavfilter.def</ModuleDefinitionFile>
+      <ProfileGuidedDatabase>$(OutDir)\bin\$(TargetName).pgd</ProfileGuidedDatabase>
+      <AdditionalDependencies>libavutil.lib;libavformat.lib;libavcodec.lib;libswresample.lib;libpostproc.lib;libswscale.lib;libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x64;$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+    <PostBuildEvent>
+      <Command>mkdir $(OutDir)\include
+mkdir $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
+mkdir $(OutDir)\licenses
+copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>if exist ..\config.h (
+del ..\config.h
+)
+if exist ..\version.h (
+del ..\version.h
+)
+if exist ..\config.asm (
+del ..\config.asm
+)
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
+)
+if exist $(OutDir)\include\libavfilter (
+rd /s /q $(OutDir)\include\libavfilter
+cd ../
+cd $(ProjectDir)
+)</Command>
+    </PreBuildEvent>
+    <YASM>
+      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
+    </YASM>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseLTO|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <FloatingPointExceptions>false</FloatingPointExceptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>false</ExceptionHandling>
+      <C99Support>true</C99Support>
+      <ForcedIncludeFiles>compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <AdditionalOptions>/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+    </ClCompile>
+    <Lib>
+      <TargetMachine>MachineX86</TargetMachine>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalDependencies>libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x86;$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
+    <PostBuildEvent>
+      <Command>mkdir $(OutDir)\include
+mkdir $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
+mkdir $(OutDir)\licenses
+copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>if exist ..\config.h (
+del ..\config.h
+)
+if exist ..\version.h (
+del ..\version.h
+)
+if exist ..\config.asm (
+del ..\config.asm
+)
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
+)
+if exist $(OutDir)\include\libavfilter (
+rd /s /q $(OutDir)\include\libavfilter
+cd ../
+cd $(ProjectDir)
+)</Command>
+    </PreBuildEvent>
+    <YASM>
+      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
+    </YASM>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseLTO|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;inline=__inline;strtod=avpriv_strtod;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FloatingPointExceptions>false</FloatingPointExceptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;$(OutDir)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>false</ExceptionHandling>
+      <C99Support>true</C99Support>
+      <ForcedIncludeFiles>compat\msvcrt\snprintf.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <AdditionalOptions>/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
+      <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+    </ClCompile>
+    <Lib>
+      <TargetMachine>MachineX64</TargetMachine>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>$(OutDir)\lib\$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalDependencies>libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)\lib\x64;$(OutDir)\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
+    <PostBuildEvent>
+      <Command>mkdir $(OutDir)\include
+mkdir $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
+copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
+mkdir $(OutDir)\licenses
+copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>if exist ..\config.h (
+del ..\config.h
+)
+if exist ..\version.h (
+del ..\version.h
+)
+if exist ..\config.asm (
+del ..\config.asm
+)
+if exist ..\libavutil\avconfig.h (
+del ..\libavutil\avconfig.h
+)
+if exist ..\libavutil\ffversion.h (
+del ..\libavutil\ffversion.h
+)
+if exist $(OutDir)\include\libavfilter (
+rd /s /q $(OutDir)\include\libavfilter
+cd ../
+cd $(ProjectDir)
+)</Command>
+    </PreBuildEvent>
+    <YASM>
+      <IncludePaths>..\;.\;..\libavcodec;%(IncludePaths)</IncludePaths>
+      <PreIncludeFile>config.asm</PreIncludeFile>
+      <Debug>true</Debug>
+    </YASM>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(OutDir)\include\fribidi;$(INTELOCLSDKROOT)\include\;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\vsyasm.targets" />
+  </ImportGroup>
+</Project>
