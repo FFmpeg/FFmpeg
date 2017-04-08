@@ -28,6 +28,7 @@
 #include "get_bits.h"
 #include "avcodec.h"
 #include "internal.h"
+#include "thread.h"
 
 typedef struct CLLCContext {
     AVCodecContext *avctx;
@@ -357,6 +358,7 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
 {
     CLLCContext *ctx = avctx->priv_data;
     AVFrame *pic = data;
+    ThreadFrame frame = { .f = data };
     uint8_t *src = avpkt->data;
     uint32_t info_tag, info_offset;
     int data_size;
@@ -417,7 +419,7 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
         avctx->pix_fmt             = AV_PIX_FMT_YUV422P;
         avctx->bits_per_raw_sample = 8;
 
-        if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
+        if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
             return ret;
 
         ret = decode_yuv_frame(ctx, &gb, pic);
@@ -430,7 +432,7 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
         avctx->pix_fmt             = AV_PIX_FMT_RGB24;
         avctx->bits_per_raw_sample = 8;
 
-        if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
+        if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
             return ret;
 
         ret = decode_rgb24_frame(ctx, &gb, pic);
@@ -442,7 +444,7 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
         avctx->pix_fmt             = AV_PIX_FMT_ARGB;
         avctx->bits_per_raw_sample = 8;
 
-        if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
+        if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
             return ret;
 
         ret = decode_argb_frame(ctx, &gb, pic);
@@ -462,6 +464,19 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
 
     return avpkt->size;
 }
+
+#if HAVE_THREADS
+static int cllc_init_thread_copy(AVCodecContext *avctx)
+{
+    CLLCContext *ctx = avctx->priv_data;
+
+    ctx->avctx            = avctx;
+    ctx->swapped_buf      = NULL;
+    ctx->swapped_buf_size = 0;
+
+    return 0;
+}
+#endif
 
 static av_cold int cllc_decode_close(AVCodecContext *avctx)
 {
@@ -493,8 +508,9 @@ AVCodec ff_cllc_decoder = {
     .id             = AV_CODEC_ID_CLLC,
     .priv_data_size = sizeof(CLLCContext),
     .init           = cllc_decode_init,
+    .init_thread_copy = ONLY_IF_THREADS_ENABLED(cllc_init_thread_copy),
     .decode         = cllc_decode_frame,
     .close          = cllc_decode_close,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
