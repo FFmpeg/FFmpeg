@@ -3458,22 +3458,14 @@ static int init_output_stream(OutputStream *ost, char *error, int error_len)
         if (ost->enc_ctx->nb_coded_side_data) {
             int i;
 
-            ost->st->side_data = av_realloc_array(NULL, ost->enc_ctx->nb_coded_side_data,
-                                                  sizeof(*ost->st->side_data));
-            if (!ost->st->side_data)
-                return AVERROR(ENOMEM);
-
             for (i = 0; i < ost->enc_ctx->nb_coded_side_data; i++) {
                 const AVPacketSideData *sd_src = &ost->enc_ctx->coded_side_data[i];
-                AVPacketSideData *sd_dst = &ost->st->side_data[i];
+                uint8_t *dst_data;
 
-                sd_dst->data = av_malloc(sd_src->size);
-                if (!sd_dst->data)
+                dst_data = av_stream_new_side_data(ost->st, sd_src->type, sd_src->size);
+                if (!dst_data)
                     return AVERROR(ENOMEM);
-                memcpy(sd_dst->data, sd_src->data, sd_src->size);
-                sd_dst->size = sd_src->size;
-                sd_dst->type = sd_src->type;
-                ost->st->nb_side_data++;
+                memcpy(dst_data, sd_src->data, sd_src->size);
             }
         }
 
