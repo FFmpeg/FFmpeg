@@ -87,6 +87,8 @@ void ff_mjpegenc_huffman_compute_bits(PTable *prob_table, HuffTable *distincts, 
 
     int min;
 
+    av_assert0(max_length > 0);
+
     to->nitems = 0;
     from->nitems = 0;
     to->item_idx[0] = 0;
