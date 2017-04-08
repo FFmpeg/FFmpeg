@@ -204,7 +204,7 @@ static int tcp_accept(URLContext *s, URLContext **c)
     cc = (*c)->priv_data;
     ret = ff_accept(sc->fd, sc->listen_timeout, s);
     if (ret < 0)
-        return ff_neterrno();
+        return ret;
     cc->fd = ret;
     return 0;
 }
