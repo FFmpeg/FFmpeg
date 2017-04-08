@@ -173,7 +173,7 @@ static int read_low_coeffs(AVCodecContext *avctx, int16_t *dst, int size, int wi
             }
         }
 
-        if (i + rlen > size)
+        if (rlen > size - i)
             return AVERROR_INVALIDDATA;
         i += rlen;
 
