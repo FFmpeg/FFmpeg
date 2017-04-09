@@ -336,10 +336,19 @@ static int output_frame(AVFilterLink *outlink)
             plane_size = nb_samples * (s->planar ? 1 : s->nb_channels);
             plane_size = FFALIGN(plane_size, 16);
 
-            for (p = 0; p < planes; p++) {
-                s->fdsp->vector_fmac_scalar((float *)out_buf->extended_data[p],
-                                           (float *) in_buf->extended_data[p],
-                                           s->input_scale[i], plane_size);
+            if (out_buf->format == AV_SAMPLE_FMT_FLT ||
+                out_buf->format == AV_SAMPLE_FMT_FLTP) {
+                for (p = 0; p < planes; p++) {
+                    s->fdsp->vector_fmac_scalar((float *)out_buf->extended_data[p],
+                                                (float *) in_buf->extended_data[p],
+                                                s->input_scale[i], plane_size);
+                }
+            } else {
+                for (p = 0; p < planes; p++) {
+                    s->fdsp->vector_dmac_scalar((double *)out_buf->extended_data[p],
+                                                (double *) in_buf->extended_data[p],
+                                                s->input_scale[i], plane_size);
+                }
             }
         }
     }
@@ -529,6 +538,8 @@ static int query_formats(AVFilterContext *ctx)
 
     if ((ret = ff_add_format(&formats, AV_SAMPLE_FMT_FLT ))          < 0 ||
         (ret = ff_add_format(&formats, AV_SAMPLE_FMT_FLTP))          < 0 ||
+        (ret = ff_add_format(&formats, AV_SAMPLE_FMT_DBL ))          < 0 ||
+        (ret = ff_add_format(&formats, AV_SAMPLE_FMT_DBLP))          < 0 ||
         (ret = ff_set_common_formats        (ctx, formats))          < 0 ||
         (ret = ff_set_common_channel_layouts(ctx, layouts))          < 0 ||
         (ret = ff_set_common_samplerates(ctx, ff_all_samplerates())) < 0)
