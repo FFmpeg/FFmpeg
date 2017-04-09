@@ -1233,12 +1233,12 @@ check_lib_cpp(){
 
 check_pkg_config(){
     log check_pkg_config "$@"
-    pkgandversion="$1"
+    pkg_version="$1"
     pkg="${1%% *}"
     headers="$2"
     funcs="$3"
     shift 3
-    check_cmd $pkg_config --exists --print-errors $pkgandversion || return
+    check_cmd $pkg_config --exists --print-errors $pkg_version || return
     pkg_cflags=$($pkg_config --cflags $pkg_config_flags $pkg)
     pkg_libs=$($pkg_config --libs $pkg_config_flags $pkg)
     check_func_headers "$headers" "$funcs" $pkg_cflags $pkg_libs "$@" &&
@@ -1323,11 +1323,11 @@ check_compile_assert(){
 
 require(){
     log require "$@"
-    name="$1"
+    name_version="$1"
     headers="$2"
     func="$3"
     shift 3
-    check_lib "$headers" $func "$@" || die "ERROR: $name not found"
+    check_lib "$headers" $func "$@" || die "ERROR: $name_version not found"
 }
 
 require_cpp(){
