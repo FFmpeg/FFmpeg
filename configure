@@ -1423,7 +1423,7 @@ EOF
 cp_if_changed(){
     cmp -s "$1" "$2" && { test "$quiet" != "yes" && echo "$2 is unchanged"; } && return
     mkdir -p "$(dirname $2)"
-    $cp_f "$1" "$2"
+    cp -f "$1" "$2"
 }
 
 # CONFIG_LIST contains configurable options, while HAVE_LIST is for
@@ -3236,7 +3236,6 @@ ar_default="ar"
 cc_default="gcc"
 cxx_default="g++"
 host_cc_default="gcc"
-cp_f="cp -f"
 doxygen_default="doxygen"
 install="install"
 ln_s_default="ln -s -f"
@@ -4984,18 +4983,6 @@ case $target_os in
         ;;
     minix)
         ;;
-    plan9)
-        add_cppflags -D_C99_SNPRINTF_EXTENSION  \
-                     -D_REENTRANT_SOURCE        \
-                     -D_RESEARCH_SOURCE         \
-                     -DFD_SETSIZE=96            \
-                     -DHAVE_SOCK_OPTS
-        add_compat strtod.o strtod=avpriv_strtod
-        network_extralibs='-lbsd'
-        exeobjs=compat/plan9/main.o
-        disable ffserver
-        cp_f='cp'
-        ;;
     none)
         ;;
     *)
@@ -6374,9 +6361,6 @@ case $target_os in
     osf1)
         enabled ccc && add_ldflags '-Wl,-expect_unresolved,*'
     ;;
-    plan9)
-        add_cppflags -Dmain=plan9_main
-    ;;
 esac
 
 enable frame_thread_encoder
@@ -6745,7 +6729,6 @@ ZLIB=$($ldflags_filter -lz)
 LIB_INSTALL_EXTRA_CMD=$LIB_INSTALL_EXTRA_CMD
 EXTRALIBS=$extralibs
 COMPAT_OBJS=$compat_objs
-EXEOBJS=$exeobjs
 INSTALL=$install
 LIBTARGET=${LIBTARGET}
 SLIBNAME=${SLIBNAME}
