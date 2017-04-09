@@ -2063,8 +2063,6 @@ HAVE_LIST="
     dxva2_lib
     dxva2api_cobj
     libc_msvcrt
-    libdc1394_1
-    libdc1394_2
     makeinfo
     makeinfo_html
     MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS
@@ -5771,6 +5769,7 @@ enabled libcelt           && require libcelt celt/celt.h celt_decode -lcelt0 &&
                              { check_lib celt/celt.h celt_decoder_create_custom -lcelt0 ||
                                die "ERROR: libcelt must be installed and version must be >= 0.11.0."; }
 enabled libcaca           && require_pkg_config caca caca.h caca_create_canvas
+enabled libdc1394         && require_pkg_config libdc1394-2 dc1394/dc1394.h dc1394_new
 enabled libfdk_aac        && { use_pkg_config fdk-aac "fdk-aac/aacenc_lib.h" aacEncOpen ||
                                { require libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-aac &&
                                  warn "using libfdk without pkg-config"; } }
@@ -5915,15 +5914,6 @@ enabled openssl           && { use_pkg_config openssl openssl/ssl.h OPENSSL_init
                                check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
                                die "ERROR: openssl not found"; }
 enabled qtkit_indev      && { check_header_objcc QTKit/QTKit.h || disable qtkit_indev; }
-
-# libdc1394 check
-if enabled libdc1394; then
-    { require_pkg_config libdc1394-2 dc1394/dc1394.h dc1394_new &&
-        enable libdc1394_2; } ||
-    { check_lib libdc1394/dc1394_control.h dc1394_create_handle -ldc1394_control -lraw1394 &&
-        enable libdc1394_1; } ||
-    die "ERROR: No version of libdc1394 found "
-fi
 
 if enabled gcrypt; then
     GCRYPT_CONFIG="${cross_prefix}libgcrypt-config"
