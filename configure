@@ -2711,6 +2711,7 @@ wmv3_vdpau_hwaccel_select="vc1_vdpau_hwaccel"
 # hardware-accelerated codecs
 omx_deps="dlopen pthreads"
 omx_extralibs='$ldl'
+omx_rpi_select="omx"
 qsvdec_select="qsv"
 qsvenc_select="qsv"
 vaapi_encode_deps="vaapi"
@@ -5895,12 +5896,10 @@ enabled opengl            && { check_lib GL/glx.h glXGetProcAddress "-lGL" ||
                                check_lib ES2/gl.h glGetError "-isysroot=${sysroot} -Wl,-framework,OpenGLES" ||
                                die "ERROR: opengl not found."
                              }
-enabled omx_rpi && enable omx
-enabled omx               && { check_header OMX_Core.h ||
-                                { ! enabled cross_compile && enabled omx_rpi && {
-                                    add_cflags -isystem/opt/vc/include/IL ; }
-                                check_header OMX_Core.h ; } ||
+enabled omx_rpi           && { check_header OMX_Core.h ||
+                               { ! enabled cross_compile && add_cflags -isystem/opt/vc/include/IL && check_header OMX_Core.h ; } ||
                                die "ERROR: OpenMAX IL headers not found"; }
+enabled omx               && { check_header OMX_Core.h || die "ERROR: OpenMAX IL headers not found"; }
 enabled openssl           && { use_pkg_config openssl openssl/ssl.h OPENSSL_init_ssl ||
                                use_pkg_config openssl openssl/ssl.h SSL_library_init ||
                                check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto ||
