@@ -1678,8 +1678,8 @@ SUBSYSTEM_LIST="
     rdft
 "
 
+# COMPONENT_LIST needs to come last to ensure correct dependency checking
 CONFIG_LIST="
-    $COMPONENT_LIST
     $DOCUMENT_LIST
     $EXAMPLE_LIST
     $EXTERNAL_LIBRARY_LIST
@@ -1697,6 +1697,7 @@ CONFIG_LIST="
     thumb
     valgrind_backtrace
     xmm_clobber_test
+    $COMPONENT_LIST
 "
 
 THREADS_LIST="
