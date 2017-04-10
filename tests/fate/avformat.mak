@@ -93,14 +93,14 @@ tests/data/mp4-to-ts.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 tests/data/adts-to-mkv.m3u8: TAG = GEN
 tests/data/adts-to-mkv.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
-        -i $(TARGET_SAMPLES)/audiomatch/tones_afconvert_16000_mono_aac_lc.adts \
+        -i $(TARGET_SAMPLES)/audiomatch/tones_afconvert_16000_mono_aac_lc.m4a \
         -f segment -segment_time 1 -map 0 -flags +bitexact -codec copy -segment_format_options live=1 \
         -segment_list $(TARGET_PATH)/$@ -y $(TARGET_PATH)/tests/data/adts-to-mkv-%03d.mkv 2>/dev/null
 
 tests/data/adts-to-mkv-header.mkv: TAG = GEN
 tests/data/adts-to-mkv-header.mkv: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
-        -i $(TARGET_SAMPLES)/audiomatch/tones_afconvert_16000_mono_aac_lc.adts \
+        -i $(TARGET_SAMPLES)/audiomatch/tones_afconvert_16000_mono_aac_lc.m4a \
         -f segment -segment_time 1 -map 0 -flags +bitexact -codec copy -segment_format_options live=1 \
         -segment_header_filename $(TARGET_PATH)/tests/data/adts-to-mkv-header.mkv \
         -y $(TARGET_PATH)/tests/data/adts-to-mkv-header-%03d.mkv 2>/dev/null
