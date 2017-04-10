@@ -144,6 +144,26 @@ static int test_vector_fmul_scalar(AVFloatDSPContext *fdsp, AVFloatDSPContext *c
     return ret;
 }
 
+#define ARBITRARY_DMAC_SCALAR_CONST 0.005
+static int test_vector_dmac_scalar(AVFloatDSPContext *fdsp, AVFloatDSPContext *cdsp,
+                                   const double *v1, const double *src0, double scale)
+{
+    LOCAL_ALIGNED(32, double, cdst, [LEN]);
+    LOCAL_ALIGNED(32, double, odst, [LEN]);
+    int ret;
+
+    memcpy(cdst, v1, LEN * sizeof(*v1));
+    memcpy(odst, v1, LEN * sizeof(*v1));
+
+    cdsp->vector_dmac_scalar(cdst, src0, scale, LEN);
+    fdsp->vector_dmac_scalar(odst, src0, scale, LEN);
+
+    if (ret = compare_doubles(cdst, odst, LEN, ARBITRARY_DMAC_SCALAR_CONST))
+        av_log(NULL, AV_LOG_ERROR, "vector_dmac_scalar failed\n");
+
+    return ret;
+}
+
 static int test_vector_dmul_scalar(AVFloatDSPContext *fdsp, AVFloatDSPContext *cdsp,
                                    const double *v1, double scale)
 {
@@ -262,6 +282,7 @@ int main(int argc, char **argv)
     LOCAL_ALIGNED(32, float, src2, [LEN]);
     LOCAL_ALIGNED(32, double, dbl_src0, [LEN]);
     LOCAL_ALIGNED(32, double, dbl_src1, [LEN]);
+    LOCAL_ALIGNED(32, double, dbl_src2, [LEN]);
 
     for (;;) {
         int arg = getopt(argc, argv, "s:c:");
@@ -306,6 +327,7 @@ int main(int argc, char **argv)
 
     fill_double_array(&lfg, dbl_src0, LEN);
     fill_double_array(&lfg, dbl_src1, LEN);
+    fill_double_array(&lfg, dbl_src2, LEN);
 
     if (test_vector_fmul(fdsp, cdsp, src0, src1))
         ret -= 1 << 0;
@@ -325,6 +347,8 @@ int main(int argc, char **argv)
         ret -= 1 << 7;
     if (test_vector_dmul_scalar(fdsp, cdsp, dbl_src0, dbl_src1[0]))
         ret -= 1 << 8;
+    if (test_vector_dmac_scalar(fdsp, cdsp, dbl_src2, dbl_src0, dbl_src1[0]))
+        ret -= 1 << 9;
 
 end:
     av_freep(&fdsp);
