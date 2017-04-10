@@ -3538,11 +3538,17 @@ void ff_simple_idct12_sse2(int16_t *block) {return;}
 #if !(HAVE_MMX_INLINE)
 void ff_simple_idct_add_mmx(uint8_t *dest, ptrdiff_t line_size, int16_t *block) {return;}
 #endif
+#if !(HAVE_SSE2_INLINE)
+void ff_simple_idct_add_sse2(uint8_t *dest, ptrdiff_t line_size, int16_t *block) {return;}
+#endif
 #if !(HAVE_MMX_INLINE)
 void ff_simple_idct_mmx(int16_t *block) {return;}
 #endif
 #if !(HAVE_MMX_INLINE)
 void ff_simple_idct_put_mmx(uint8_t *dest, ptrdiff_t line_size, int16_t *block) {return;}
+#endif
+#if !(HAVE_SSE2_INLINE)
+void ff_simple_idct_put_sse2(uint8_t *dest, ptrdiff_t line_size, int16_t *block) {return;}
 #endif
 void ff_svq1enc_init_ppc(SVQ1EncContext *c) {return;}
 void ff_synth_filter_init_aarch64(SynthFilterContext *c) {return;}

@@ -79,6 +79,8 @@ EXPORTS
     av_color_transfer_name
     av_compare_mod
     av_compare_ts
+    av_content_light_metadata_alloc
+    av_content_light_metadata_create_side_data
     av_cpu_count
     av_crc
     av_crc_get_table

@@ -115,6 +115,7 @@
     <ClCompile Include="..\libavformat\rtpdec_qcelp.c" />
     <ClCompile Include="..\libavformat\rtpdec_qdm2.c" />
     <ClCompile Include="..\libavformat\rtpdec_qt.c" />
+    <ClCompile Include="..\libavformat\rtpdec_rfc4175.c" />
     <ClCompile Include="..\libavformat\rtpdec_svq3.c" />
     <ClCompile Include="..\libavformat\rtpdec_vc2hq.c" />
     <ClCompile Include="..\libavformat\rtpdec_vp8.c" />

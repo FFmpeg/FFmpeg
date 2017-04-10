@@ -118,6 +118,7 @@
     <YASM Include="..\libavcodec\x86\g722dsp.asm" />
     <YASM Include="..\libavcodec\x86\alacdsp.asm" />
     <YASM Include="..\libavcodec\x86\pngdsp.asm" />
+    <YASM Include="..\libavcodec\x86\cavsidct.asm" />
     <YASM Include="..\libavcodec\x86\dcadsp.asm" />
     <YASM Include="..\libavcodec\x86\synth_filter.asm" />
     <YASM Include="..\libavcodec\x86\diracdsp.asm" />
@@ -166,8 +167,10 @@
     <ClCompile Include="..\libavcodec\bsf.c" />
     <ClCompile Include="..\libavcodec\codec_desc.c" />
     <ClCompile Include="..\libavcodec\d3d11va.c" />
+    <ClCompile Include="..\libavcodec\decode.c" />
     <ClCompile Include="..\libavcodec\dirac.c" />
     <ClCompile Include="..\libavcodec\dv_profile.c" />
+    <ClCompile Include="..\libavcodec\encode.c" />
     <ClCompile Include="..\libavcodec\imgconvert.c" />
     <ClCompile Include="..\libavcodec\jni.c" />
     <ClCompile Include="..\libavcodec\mathtables.c" />
@@ -213,6 +216,8 @@
     <ClCompile Include="..\libavcodec\h264_ps.c" />
     <ClCompile Include="..\libavcodec\h264pred.c" />
     <ClCompile Include="..\libavcodec\h264qpel.c" />
+    <ClCompile Include="..\libavcodec\hevc_parse.c" />
+    <ClCompile Include="..\libavcodec\hevc_ps.c" />
     <ClCompile Include="..\libavcodec\huffman.c" />
     <ClCompile Include="..\libavcodec\simple_idct.c" />
     <ClCompile Include="..\libavcodec\jrevdct.c" />
@@ -231,12 +236,12 @@
     <ClCompile Include="..\libavcodec\mdct_fixed_32.c" />
     <ClCompile Include="..\libavcodec\mpeg_er.c" />
     <ClCompile Include="..\libavcodec\mpegaudio.c" />
-    <ClCompile Include="..\libavcodec\mpegaudiodata.c" />
-    <ClCompile Include="..\libavcodec\mpegaudiodecheader.c" />
     <ClCompile Include="..\libavcodec\mpegaudiodsp.c" />
     <ClCompile Include="..\libavcodec\mpegaudiodsp_data.c" />
     <ClCompile Include="..\libavcodec\mpegaudiodsp_fixed.c" />
     <ClCompile Include="..\libavcodec\mpegaudiodsp_float.c" />
+    <ClCompile Include="..\libavcodec\mpegaudiodecheader.c" />
+    <ClCompile Include="..\libavcodec\mpegaudiodata.c" />
     <ClCompile Include="..\libavcodec\mpegvideo.c" />
     <ClCompile Include="..\libavcodec\mpegvideodsp.c" />
     <ClCompile Include="..\libavcodec\rl.c" />
@@ -357,6 +362,7 @@
     <ClCompile Include="..\libavcodec\binkdsp.c" />
     <ClCompile Include="..\libavcodec\binkaudio.c" />
     <ClCompile Include="..\libavcodec\bintext.c" />
+    <ClCompile Include="..\libavcodec\bitpacked.c" />
     <ClCompile Include="..\libavcodec\bmp.c" />
     <ClCompile Include="..\libavcodec\bmpenc.c" />
     <ClCompile Include="..\libavcodec\bmvaudio.c" />
@@ -503,7 +509,6 @@
     <ClCompile Include="..\libavcodec\hap.c" />
     <ClCompile Include="..\libavcodec\hevcdec.c" />
     <ClCompile Include="..\libavcodec\hevc_mvs.c" />
-    <ClCompile Include="..\libavcodec\hevc_ps.c" />
     <ClCompile Include="..\libavcodec\hevc_sei.c" />
     <ClCompile Include="..\libavcodec\hevc_cabac.c" />
     <ClCompile Include="..\libavcodec\hevc_refs.c" />
