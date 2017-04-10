@@ -58,7 +58,7 @@ typedef struct DNXHDContext {
     unsigned int width, height;
     enum AVPixelFormat pix_fmt;
     unsigned int mb_width, mb_height;
-    uint32_t mb_scan_index[256];
+    uint32_t mb_scan_index[512];
     int data_offset;                    // End of mb_scan_index, where macroblocks start
     int cur_field;                      ///< current interlaced field
     VLC ac_vlc, dc_vlc, run_vlc;
@@ -285,7 +285,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
     }
 
     ctx->mb_width  = (ctx->width + 15)>> 4;
-    ctx->mb_height = buf[0x16d];
+    ctx->mb_height = AV_RB16(buf + 0x16c);
 
     if ((ctx->height + 15) >> 4 == ctx->mb_height && frame->interlaced_frame)
         ctx->height <<= 1;
@@ -313,7 +313,11 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
         return AVERROR_INVALIDDATA;
     }
 
-    av_assert0((unsigned)ctx->mb_height <= FF_ARRAY_ELEMS(ctx->mb_scan_index));
+    if (ctx->mb_height > FF_ARRAY_ELEMS(ctx->mb_scan_index)) {
+        av_log(ctx->avctx, AV_LOG_ERROR,
+               "mb_height too big (%d > %"PRIu64").\n", ctx->mb_height, FF_ARRAY_ELEMS(ctx->mb_scan_index));
+        return AVERROR_INVALIDDATA;
+    }
 
     for (i = 0; i < ctx->mb_height; i++) {
         ctx->mb_scan_index[i] = AV_RB32(buf + 0x170 + (i << 2));
