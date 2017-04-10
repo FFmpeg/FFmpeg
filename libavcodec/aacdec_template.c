@@ -406,11 +406,15 @@ static uint64_t sniff_channel_order(uint8_t (*layout_map)[3], int tags)
 /**
  * Save current output configuration if and only if it has been locked.
  */
-static void push_output_configuration(AACContext *ac) {
+static int push_output_configuration(AACContext *ac) {
+    int pushed = 0;
+
     if (ac->oc[1].status == OC_LOCKED || ac->oc[0].status == OC_NONE) {
         ac->oc[0] = ac->oc[1];
+        pushed = 1;
     }
     ac->oc[1].status = OC_NONE;
+    return pushed;
 }
 
 /**
@@ -3002,7 +3006,13 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
         case TYPE_PCE: {
             uint8_t layout_map[MAX_ELEM_ID*4][3];
             int tags;
-            push_output_configuration(ac);
+
+            int pushed = push_output_configuration(ac);
+            if (pce_found && !pushed) {
+                err = AVERROR_INVALIDDATA;
+                goto fail;
+            }
+
             tags = decode_pce(avctx, &ac->oc[1].m4ac, layout_map, gb);
             if (tags < 0) {
                 err = tags;
