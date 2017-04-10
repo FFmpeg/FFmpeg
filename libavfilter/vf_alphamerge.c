@@ -54,6 +54,7 @@ static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat main_fmts[] = {
         AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA420P,
+        AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_RGBA, AV_PIX_FMT_BGRA, AV_PIX_FMT_ARGB, AV_PIX_FMT_ABGR,
         AV_PIX_FMT_NONE
     };
@@ -85,7 +86,8 @@ static int config_input_main(AVFilterLink *inlink)
 {
     AlphaMergeContext *merge = inlink->dst->priv;
     merge->is_packed_rgb =
-        ff_fill_rgba_map(merge->rgba_map, inlink->format) >= 0;
+        ff_fill_rgba_map(merge->rgba_map, inlink->format) >= 0 &&
+        inlink->format != AV_PIX_FMT_GBRAP;
     return 0;
 }
 
