@@ -458,7 +458,6 @@ typedef struct OutputStream {
     AVRational enc_timebase;
 
     int                    nb_bitstream_filters;
-    uint8_t                  *bsf_extradata_updated;
     AVBSFContext            **bsf_ctx;
 
     AVCodecContext *enc_ctx;
