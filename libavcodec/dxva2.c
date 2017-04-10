@@ -83,7 +83,7 @@ int ff_dxva2_commit_buffer(AVCodecContext *avctx,
                                             &dxva_data, &dxva_size);
 #endif
     if (FAILED(hr)) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to get a buffer for %u: 0x%lx\n",
+        av_log(avctx, AV_LOG_ERROR, "Failed to get a buffer for %u: 0x%x\n",
                type, hr);
         return -1;
     }
@@ -125,7 +125,7 @@ int ff_dxva2_commit_buffer(AVCodecContext *avctx,
 #endif
     if (FAILED(hr)) {
         av_log(avctx, AV_LOG_ERROR,
-               "Failed to release buffer type %u: 0x%lx\n",
+               "Failed to release buffer type %u: 0x%x\n",
                type, hr);
         result = -1;
     }
@@ -179,7 +179,7 @@ int ff_dxva2_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
     } while(1);
 
     if (FAILED(hr)) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to begin frame: 0x%lx\n", hr);
+        av_log(avctx, AV_LOG_ERROR, "Failed to begin frame: 0x%x\n", hr);
 #if CONFIG_D3D11VA
         if (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD)
             if (D3D11VA_CONTEXT(ctx)->context_mutex != INVALID_HANDLE_VALUE)
@@ -278,7 +278,7 @@ int ff_dxva2_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
     }
 #endif
     if (FAILED(hr)) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to execute: 0x%lx\n", hr);
+        av_log(avctx, AV_LOG_ERROR, "Failed to execute: 0x%x\n", hr);
         result = -1;
     }
 
@@ -295,7 +295,7 @@ end:
         hr = IDirectXVideoDecoder_EndFrame(DXVA2_CONTEXT(ctx)->decoder, NULL);
 #endif
     if (FAILED(hr)) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to end frame: 0x%lx\n", hr);
+        av_log(avctx, AV_LOG_ERROR, "Failed to end frame: 0x%x\n", hr);
         result = -1;
     }
 

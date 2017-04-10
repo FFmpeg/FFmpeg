@@ -24,6 +24,8 @@
  * video padding filter
  */
 
+#include <float.h>  /* DBL_MAX */
+
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
@@ -87,6 +89,7 @@ typedef struct PadContext {
     int x, y;               ///< offsets of the input area with respect to the padded area
     int in_w, in_h;         ///< width and height for the padded input video, which has to be aligned to the chroma values in order to avoid chroma issues
     int inlink_w, inlink_h;
+    AVRational aspect;
 
     char *w_expr;           ///< width  expression string
     char *h_expr;           ///< height expression string
@@ -103,6 +106,7 @@ static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     PadContext *s = ctx->priv;
+    AVRational adjusted_aspect = s->aspect;
     int ret;
     double var_values[VARS_NB], res;
     char *expr;
@@ -143,6 +147,15 @@ static int config_input(AVFilterLink *inlink)
     if (!s->w)
         var_values[VAR_OUT_W] = var_values[VAR_OW] = s->w = inlink->w;
 
+    if (adjusted_aspect.num && adjusted_aspect.den) {
+        adjusted_aspect = av_div_q(adjusted_aspect, inlink->sample_aspect_ratio);
+        if (s->h < av_rescale(s->w, adjusted_aspect.den, adjusted_aspect.num)) {
+            s->h = var_values[VAR_OUT_H] = var_values[VAR_OH] = av_rescale(s->w, adjusted_aspect.den, adjusted_aspect.num);
+        } else {
+            s->w = var_values[VAR_OUT_W] = var_values[VAR_OW] = av_rescale(s->h, adjusted_aspect.num, adjusted_aspect.den);
+        }
+    }
+
     /* evaluate x and y */
     av_expr_parse_and_eval(&res, (expr = s->x_expr),
                            var_names, var_values,
@@ -160,8 +173,13 @@ static int config_input(AVFilterLink *inlink)
         goto eval_fail;
     s->x = var_values[VAR_X] = res;
 
+    if (s->x < 0 || s->x + inlink->w > s->w)
+        s->x = var_values[VAR_X] = (s->w - inlink->w) / 2;
+    if (s->y < 0 || s->y + inlink->h > s->h)
+        s->y = var_values[VAR_Y] = (s->h - inlink->h) / 2;
+
     /* sanity check params */
-    if (s->w < 0 || s->h < 0 || s->x < 0 || s->y < 0) {
+    if (s->w < 0 || s->h < 0) {
         av_log(ctx, AV_LOG_ERROR, "Negative values are not acceptable.\n");
         return AVERROR(EINVAL);
     }
@@ -179,10 +197,7 @@ static int config_input(AVFilterLink *inlink)
            inlink->w, inlink->h, s->w, s->h, s->x, s->y,
            s->rgba_color[0], s->rgba_color[1], s->rgba_color[2], s->rgba_color[3]);
 
-    if (s->x <  0 || s->y <  0                      ||
-        s->w <= 0 || s->h <= 0                      ||
-        (unsigned)s->x + (unsigned)inlink->w > s->w ||
-        (unsigned)s->y + (unsigned)inlink->h > s->h) {
+    if (s->w <= 0 || s->h <= 0) {
         av_log(ctx, AV_LOG_ERROR,
                "Input area %d:%d:%d:%d not within the padded area 0:0:%d:%d or zero-sized\n",
                s->x, s->y, s->x + inlink->w, s->y + inlink->h, s->w, s->h);
@@ -409,6 +424,7 @@ static const AVOption pad_options[] = {
     { "eval",   "specify when to evaluate expressions",    OFFSET(eval_mode), AV_OPT_TYPE_INT, {.i64 = EVAL_MODE_INIT}, 0, EVAL_MODE_NB-1, FLAGS, "eval" },
          { "init",  "eval expressions once during initialization", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_INIT},  .flags = FLAGS, .unit = "eval" },
          { "frame", "eval expressions during initialization and per-frame", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_FRAME}, .flags = FLAGS, .unit = "eval" },
+    { "aspect",  "pad to fit an aspect instead of a resolution", OFFSET(aspect), AV_OPT_TYPE_RATIONAL, {.dbl = 0}, 0, DBL_MAX, FLAGS },
     { NULL }
 };
 

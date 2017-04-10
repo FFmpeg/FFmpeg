@@ -35,63 +35,6 @@
 
 #define cm (ff_crop_tab + MAX_NEG_CROP)
 
-#ifdef DEBUG
-static void png_save(const char *filename, uint32_t *bitmap, int w, int h)
-{
-    int x, y, v;
-    FILE *f;
-    char fname[40], fname2[40];
-    char command[1024];
-
-    snprintf(fname, sizeof(fname), "%s.ppm", filename);
-
-    f = fopen(fname, "w");
-    if (!f) {
-        perror(fname);
-        return;
-    }
-    fprintf(f, "P6\n"
-            "%d %d\n"
-            "%d\n",
-            w, h, 255);
-    for(y = 0; y < h; y++) {
-        for(x = 0; x < w; x++) {
-            v = bitmap[y * w + x];
-            putc((v >> 16) & 0xff, f);
-            putc((v >> 8) & 0xff, f);
-            putc((v >> 0) & 0xff, f);
-        }
-    }
-    fclose(f);
-
-
-    snprintf(fname2, sizeof(fname2), "%s-a.pgm", filename);
-
-    f = fopen(fname2, "w");
-    if (!f) {
-        perror(fname2);
-        return;
-    }
-    fprintf(f, "P5\n"
-            "%d %d\n"
-            "%d\n",
-            w, h, 255);
-    for(y = 0; y < h; y++) {
-        for(x = 0; x < w; x++) {
-            v = bitmap[y * w + x];
-            putc((v >> 24) & 0xff, f);
-        }
-    }
-    fclose(f);
-
-    snprintf(command, sizeof(command), "pnmtopng -alpha %s %s > %s.png 2> /dev/null", fname2, fname, filename);
-    system(command);
-
-    snprintf(command, sizeof(command), "rm %s %s", fname, fname2);
-    system(command);
-}
-#endif
-
 #define RGBA(r,g,b,a) (((unsigned)(a) << 24) | ((r) << 16) | ((g) << 8) | (b))
 
 typedef struct DVBSubCLUT {
@@ -1389,6 +1332,67 @@ static int dvbsub_parse_page_segment(AVCodecContext *avctx,
 
 
 #ifdef DEBUG
+static void png_save(DVBSubContext *ctx, const char *filename, uint32_t *bitmap, int w, int h)
+{
+    int x, y, v;
+    FILE *f;
+    char fname[40], fname2[40];
+    char command[1024];
+
+    snprintf(fname, sizeof(fname), "%s.ppm", filename);
+
+    f = fopen(fname, "w");
+    if (!f) {
+        perror(fname);
+        return;
+    }
+    fprintf(f, "P6\n"
+            "%d %d\n"
+            "%d\n",
+            w, h, 255);
+    for(y = 0; y < h; y++) {
+        for(x = 0; x < w; x++) {
+            v = bitmap[y * w + x];
+            putc((v >> 16) & 0xff, f);
+            putc((v >> 8) & 0xff, f);
+            putc((v >> 0) & 0xff, f);
+        }
+    }
+    fclose(f);
+
+
+    snprintf(fname2, sizeof(fname2), "%s-a.pgm", filename);
+
+    f = fopen(fname2, "w");
+    if (!f) {
+        perror(fname2);
+        return;
+    }
+    fprintf(f, "P5\n"
+            "%d %d\n"
+            "%d\n",
+            w, h, 255);
+    for(y = 0; y < h; y++) {
+        for(x = 0; x < w; x++) {
+            v = bitmap[y * w + x];
+            putc((v >> 24) & 0xff, f);
+        }
+    }
+    fclose(f);
+
+    snprintf(command, sizeof(command), "pnmtopng -alpha %s %s > %s.png 2> /dev/null", fname2, fname, filename);
+    if (system(command) != 0) {
+        av_log(ctx, AV_LOG_ERROR, "Error running pnmtopng\n");
+        return;
+    }
+
+    snprintf(command, sizeof(command), "rm %s %s", fname, fname2);
+    if (system(command) != 0) {
+        av_log(ctx, AV_LOG_ERROR, "Error removing %s and %s\n", fname, fname2);
+        return;
+    }
+}
+
 static int save_display_set(DVBSubContext *ctx)
 {
     DVBSubRegion *region;
@@ -1482,7 +1486,7 @@ static int save_display_set(DVBSubContext *ctx)
 
         snprintf(filename, sizeof(filename), "dvbs.%d", fileno_index);
 
-        png_save(filename, pbuf, width, height);
+        png_save(ctx, filename, pbuf, width, height);
 
         av_freep(&pbuf);
     }
@@ -1490,7 +1494,7 @@ static int save_display_set(DVBSubContext *ctx)
     fileno_index++;
     return 0;
 }
-#endif
+#endif /* DEBUG */
 
 static int dvbsub_parse_display_definition_segment(AVCodecContext *avctx,
                                                    const uint8_t *buf,

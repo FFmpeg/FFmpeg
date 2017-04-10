@@ -442,6 +442,7 @@ enum AVCodecID {
     AV_CODEC_ID_CLEARVIDEO,
     AV_CODEC_ID_XPM,
     AV_CODEC_ID_AV1,
+    AV_CODEC_ID_BITPACKED,
 
     /* various PCM "codecs" */
     AV_CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs
@@ -724,7 +725,7 @@ typedef struct AVCodecDescriptor {
 
 /**
  * Codec uses only intra compression.
- * Video codecs only.
+ * Video and audio codecs only.
  */
 #define AV_CODEC_PROP_INTRA_ONLY    (1 << 0)
 /**
@@ -1573,7 +1574,7 @@ enum AVPacketSideDataType {
 
     /**
      * Mastering display metadata (based on SMPTE-2086:2014). This metadata
-     * should be associated with a video stream and containts data in the form
+     * should be associated with a video stream and contains data in the form
      * of the AVMasteringDisplayMetadata struct.
      */
     AV_PKT_DATA_MASTERING_DISPLAY_METADATA,
@@ -1583,6 +1584,13 @@ enum AVPacketSideDataType {
      * to the AVSphericalMapping structure.
      */
     AV_PKT_DATA_SPHERICAL,
+
+    /**
+     * Content light level (based on CTA-861.3). This metadata should be
+     * associated with a video stream and contains data in the form of the
+     * AVContentLightMetadata struct.
+     */
+    AV_PKT_DATA_CONTENT_LIGHT_LEVEL,
 };
 
 #define AV_PKT_DATA_QUALITY_FACTOR AV_PKT_DATA_QUALITY_STATS //DEPRECATED
@@ -4458,7 +4466,7 @@ AVPacket *av_packet_clone(const AVPacket *src);
  * Free the packet, if the packet is reference counted, it will be
  * unreferenced first.
  *
- * @param packet packet to be freed. The pointer will be set to NULL.
+ * @param pkt packet to be freed. The pointer will be set to NULL.
  * @note passing NULL is a no-op.
  */
 void av_packet_free(AVPacket **pkt);
@@ -4902,13 +4910,13 @@ int avcodec_decode_video2(AVCodecContext *avctx, AVFrame *picture,
  * and reusing a get_buffer written for video codecs would probably perform badly
  * due to a potentially very different allocation pattern.
  *
- * Some decoders (those marked with CODEC_CAP_DELAY) have a delay between input
+ * Some decoders (those marked with AV_CODEC_CAP_DELAY) have a delay between input
  * and output. This means that for some packets they will not immediately
  * produce decoded output and need to be flushed at the end of decoding to get
  * all the decoded data. Flushing is done by calling this function with packets
  * with avpkt->data set to NULL and avpkt->size set to 0 until it stops
  * returning subtitles. It is safe to flush even those decoders that are not
- * marked with CODEC_CAP_DELAY, then no subtitles will be returned.
+ * marked with AV_CODEC_CAP_DELAY, then no subtitles will be returned.
  *
  * @note The AVCodecContext MUST have been opened with @ref avcodec_open2()
  * before packets may be fed to the decoder.

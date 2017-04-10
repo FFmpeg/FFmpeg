@@ -283,7 +283,7 @@ static int ffmal_update_format(AVCodecContext *avctx)
         ret = AVERROR(ENOMEM);
         goto fail;
     }
-    atomic_store(&ctx->pool_out->refcount, 1);
+    atomic_init(&ctx->pool_out->refcount, 1);
 
     if (!format_out)
         goto fail;

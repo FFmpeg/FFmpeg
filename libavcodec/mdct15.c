@@ -33,17 +33,12 @@
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
 
-#include "avfft.h"
 #include "mdct15.h"
 
-// complex c = a * b
-#define CMUL3(cre, cim, are, aim, bre, bim)          \
-do {                                                 \
-    cre = are * bre - aim * bim;                     \
-    cim = are * bim + aim * bre;                     \
-} while (0)
+#define FFT_FLOAT 1
+#include "fft-internal.h"
 
-#define CMUL(c, a, b) CMUL3((c).re, (c).im, (a).re, (a).im, (b).re, (b).im)
+#define CMUL3(c, a, b) CMUL((c).re, (c).im, (a).re, (a).im, (b).re, (b).im)
 
 av_cold void ff_mdct15_uninit(MDCT15Context **ps)
 {
@@ -236,18 +231,18 @@ static void fft15(const FFTComplex exptab[22], FFTComplex *out, const FFTComplex
     for (k = 0; k < 5; k++) {
         FFTComplex t[2];
 
-        CMUL(t[0], tmp2[k], exptab[k]);
-        CMUL(t[1], tmp3[k], exptab[2 * k]);
+        CMUL3(t[0], tmp2[k], exptab[k]);
+        CMUL3(t[1], tmp3[k], exptab[2 * k]);
         out[stride*k].re = tmp1[k].re + t[0].re + t[1].re;
         out[stride*k].im = tmp1[k].im + t[0].im + t[1].im;
 
-        CMUL(t[0], tmp2[k], exptab[k + 5]);
-        CMUL(t[1], tmp3[k], exptab[2 * (k + 5)]);
+        CMUL3(t[0], tmp2[k], exptab[k + 5]);
+        CMUL3(t[1], tmp3[k], exptab[2 * (k + 5)]);
         out[stride*(k + 5)].re = tmp1[k].re + t[0].re + t[1].re;
         out[stride*(k + 5)].im = tmp1[k].im + t[0].im + t[1].im;
 
-        CMUL(t[0], tmp2[k], exptab[k + 10]);
-        CMUL(t[1], tmp3[k], exptab[2 * k + 5]);
+        CMUL3(t[0], tmp2[k], exptab[k + 10]);
+        CMUL3(t[1], tmp3[k], exptab[2 * k + 5]);
         out[stride*(k + 10)].re = tmp1[k].re + t[0].re + t[1].re;
         out[stride*(k + 10)].im = tmp1[k].im + t[0].im + t[1].im;
     }
@@ -272,7 +267,7 @@ static void mdct15(MDCT15Context *s, float *dst, const float *src, ptrdiff_t str
                 re =  src[2*k-len4] - src[1*len3-1-2*k];
                 im = -src[2*k+len4] - src[5*len4-1-2*k];
             }
-            CMUL3(fft15in[j].re, fft15in[j].im, re, im, s->twiddle_exptab[k].re, -s->twiddle_exptab[k].im);
+            CMUL(fft15in[j].re, fft15in[j].im, re, im, s->twiddle_exptab[k].re, -s->twiddle_exptab[k].im);
         }
         fft15(s->exptab, s->tmp + s->ptwo_fft.revtab[i], fft15in, l_ptwo);
     }
@@ -287,9 +282,8 @@ static void mdct15(MDCT15Context *s, float *dst, const float *src, ptrdiff_t str
         const int i0 = len8 + i, i1 = len8 - i - 1;
         const int s0 = s->pfa_postreindex[i0], s1 = s->pfa_postreindex[i1];
 
-        CMUL3(im1, re0, s->tmp[s1].re, s->tmp[s1].im, s->twiddle_exptab[i1].im, s->twiddle_exptab[i1].re);
-        CMUL3(im0, re1, s->tmp[s0].re, s->tmp[s0].im, s->twiddle_exptab[i0].im, s->twiddle_exptab[i0].re);
-
+        CMUL(im1, re0, s->tmp[s1].re, s->tmp[s1].im, s->twiddle_exptab[i1].im, s->twiddle_exptab[i1].re);
+        CMUL(im0, re1, s->tmp[s0].re, s->tmp[s0].im, s->twiddle_exptab[i0].im, s->twiddle_exptab[i0].re);
         dst[2*i1*stride         ] = re0;
         dst[2*i1*stride + stride] = im0;
         dst[2*i0*stride         ] = re1;
@@ -310,7 +304,7 @@ static void imdct15_half(MDCT15Context *s, float *dst, const float *src,
         for (j = 0; j < 15; j++) {
             const int k = s->pfa_prereindex[i*15 + j];
             FFTComplex tmp = { *(in2 - 2*k*stride), *(in1 + 2*k*stride) };
-            CMUL(fft15in[j], tmp, s->twiddle_exptab[k]);
+            CMUL3(fft15in[j], tmp, s->twiddle_exptab[k]);
         }
         fft15(s->exptab, s->tmp + s->ptwo_fft.revtab[i], fft15in, l_ptwo);
     }
@@ -325,8 +319,8 @@ static void imdct15_half(MDCT15Context *s, float *dst, const float *src,
         const int i0 = len8 + i, i1 = len8 - i - 1;
         const int s0 = s->pfa_postreindex[i0], s1 = s->pfa_postreindex[i1];
 
-        CMUL3(re0, im1, s->tmp[s1].im, s->tmp[s1].re,  s->twiddle_exptab[i1].im, s->twiddle_exptab[i1].re);
-        CMUL3(re1, im0, s->tmp[s0].im, s->tmp[s0].re,  s->twiddle_exptab[i0].im, s->twiddle_exptab[i0].re);
+        CMUL(re0, im1, s->tmp[s1].im, s->tmp[s1].re,  s->twiddle_exptab[i1].im, s->twiddle_exptab[i1].re);
+        CMUL(re1, im0, s->tmp[s0].im, s->tmp[s0].re,  s->twiddle_exptab[i0].im, s->twiddle_exptab[i0].re);
         z[i1].re = scale * re0;
         z[i1].im = scale * im0;
         z[i0].re = scale * re1;

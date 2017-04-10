@@ -55,6 +55,7 @@ typedef struct {
     AVRational          step_frac;
     int                 remaining_frac;
     int                 remaining_fill;
+    int                 remaining_fill_max;
     int64_t             next_pts;
     double              *freq;
     FFTContext          *fft_ctx;
@@ -62,6 +63,7 @@ typedef struct {
     FFTComplex          *fft_data;
     FFTComplex          *fft_result;
     FFTComplex          *cqt_result;
+    float               *attack_data;
     int                 fft_bits;
     int                 fft_len;
     int                 cqt_len;
@@ -104,6 +106,7 @@ typedef struct {
     float               bar_g;
     float               bar_t;
     double              timeclamp;
+    double              attack;
     double              basefreq;
     double              endfreq;
     float               coeffclamp; /* deprecated - ignored */

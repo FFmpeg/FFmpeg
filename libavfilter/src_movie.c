@@ -37,7 +37,11 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/timestamp.h"
+
+#include "libavcodec/avcodec.h"
+
 #include "libavformat/avformat.h"
+
 #include "audio.h"
 #include "avfilter.h"
 #include "formats.h"

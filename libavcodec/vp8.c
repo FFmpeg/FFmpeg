@@ -772,7 +772,7 @@ static int vp8_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
 }
 
 static av_always_inline
-void clamp_mv(VP8Context *s, VP56mv *dst, const VP56mv *src)
+void clamp_mv(VP8mvbounds *s, VP56mv *dst, const VP56mv *src)
 {
     dst->x = av_clip(src->x, av_clip(s->mv_min.x, INT16_MIN, INT16_MAX),
                              av_clip(s->mv_max.x, INT16_MIN, INT16_MAX));
@@ -1031,7 +1031,7 @@ void vp7_decode_mvs(VP8Context *s, VP8Macroblock *mb,
 }
 
 static av_always_inline
-void vp8_decode_mvs(VP8Context *s, VP8Macroblock *mb,
+void vp8_decode_mvs(VP8Context *s, VP8mvbounds *mv_bounds, VP8Macroblock *mb,
                     int mb_x, int mb_y, int layout)
 {
     VP8Macroblock *mb_edge[3] = { 0      /* top */,
@@ -1102,7 +1102,7 @@ void vp8_decode_mvs(VP8Context *s, VP8Macroblock *mb,
         if (vp56_rac_get_prob_branchy(c, vp8_mode_contexts[cnt[CNT_NEAREST]][1])) {
             if (vp56_rac_get_prob_branchy(c, vp8_mode_contexts[cnt[CNT_NEAR]][2])) {
                 /* Choose the best mv out of 0,0 and the nearest mv */
-                clamp_mv(s, &mb->mv, &near_mv[CNT_ZERO + (cnt[CNT_NEAREST] >= cnt[CNT_ZERO])]);
+                clamp_mv(mv_bounds, &mb->mv, &near_mv[CNT_ZERO + (cnt[CNT_NEAREST] >= cnt[CNT_ZERO])]);
                 cnt[CNT_SPLITMV] = ((mb_edge[VP8_EDGE_LEFT]->mode    == VP8_MVMODE_SPLIT) +
                                     (mb_edge[VP8_EDGE_TOP]->mode     == VP8_MVMODE_SPLIT)) * 2 +
                                     (mb_edge[VP8_EDGE_TOPLEFT]->mode == VP8_MVMODE_SPLIT);
@@ -1116,11 +1116,11 @@ void vp8_decode_mvs(VP8Context *s, VP8Macroblock *mb,
                     mb->bmv[0] = mb->mv;
                 }
             } else {
-                clamp_mv(s, &mb->mv, &near_mv[CNT_NEAR]);
+                clamp_mv(mv_bounds, &mb->mv, &near_mv[CNT_NEAR]);
                 mb->bmv[0] = mb->mv;
             }
         } else {
-            clamp_mv(s, &mb->mv, &near_mv[CNT_NEAREST]);
+            clamp_mv(mv_bounds, &mb->mv, &near_mv[CNT_NEAREST]);
             mb->bmv[0] = mb->mv;
         }
     } else {
@@ -1166,7 +1166,8 @@ void decode_intra4x4_modes(VP8Context *s, VP56RangeCoder *c, VP8Macroblock *mb,
 }
 
 static av_always_inline
-void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
+void decode_mb_mode(VP8Context *s, VP8mvbounds *mv_bounds,
+                    VP8Macroblock *mb, int mb_x, int mb_y,
                     uint8_t *segment, uint8_t *ref, int layout, int is_vp7)
 {
     VP56RangeCoder *c = &s->c;
@@ -1230,7 +1231,7 @@ void decode_mb_mode(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y,
         if (is_vp7)
             vp7_decode_mvs(s, mb, mb_x, mb_y, layout);
         else
-            vp8_decode_mvs(s, mb, mb_x, mb_y, layout);
+            vp8_decode_mvs(s, mv_bounds, mb, mb_x, mb_y, layout);
     } else {
         // intra MB, 16.1
         mb->mode = vp8_rac_get_tree(c, vp8_pred16x16_tree_inter, s->prob->pred16x16);
@@ -2205,8 +2206,8 @@ void vp78_decode_mv_mb_modes(AVCodecContext *avctx, VP8Frame *curframe,
     VP8Context *s = avctx->priv_data;
     int mb_x, mb_y;
 
-    s->mv_min.y = -MARGIN;
-    s->mv_max.y = ((s->mb_height - 1) << 6) + MARGIN;
+    s->mv_bounds.mv_min.y = -MARGIN;
+    s->mv_bounds.mv_max.y = ((s->mb_height - 1) << 6) + MARGIN;
     for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
         VP8Macroblock *mb = s->macroblocks_base +
                             ((s->mb_width + 1) * (mb_y + 1) + 1);
@@ -2214,20 +2215,20 @@ void vp78_decode_mv_mb_modes(AVCodecContext *avctx, VP8Frame *curframe,
 
         AV_WN32A(s->intra4x4_pred_mode_left, DC_PRED * 0x01010101);
 
-        s->mv_min.x = -MARGIN;
-        s->mv_max.x = ((s->mb_width - 1) << 6) + MARGIN;
+        s->mv_bounds.mv_min.x = -MARGIN;
+        s->mv_bounds.mv_max.x = ((s->mb_width - 1) << 6) + MARGIN;
         for (mb_x = 0; mb_x < s->mb_width; mb_x++, mb_xy++, mb++) {
             if (mb_y == 0)
                 AV_WN32A((mb - s->mb_width - 1)->intra4x4_pred_mode_top,
                          DC_PRED * 0x01010101);
-            decode_mb_mode(s, mb, mb_x, mb_y, curframe->seg_map->data + mb_xy,
+            decode_mb_mode(s, &s->mv_bounds, mb, mb_x, mb_y, curframe->seg_map->data + mb_xy,
                            prev_frame && prev_frame->seg_map ?
                            prev_frame->seg_map->data + mb_xy : NULL, 1, is_vp7);
-            s->mv_min.x -= 64;
-            s->mv_max.x -= 64;
+            s->mv_bounds.mv_min.x -= 64;
+            s->mv_bounds.mv_max.x -= 64;
         }
-        s->mv_min.y -= 64;
-        s->mv_max.y -= 64;
+        s->mv_bounds.mv_min.y -= 64;
+        s->mv_bounds.mv_max.y -= 64;
     }
 }
 
@@ -2247,15 +2248,15 @@ static void vp8_decode_mv_mb_modes(AVCodecContext *avctx, VP8Frame *cur_frame,
 #define check_thread_pos(td, otd, mb_x_check, mb_y_check)                     \
     do {                                                                      \
         int tmp = (mb_y_check << 16) | (mb_x_check & 0xFFFF);                 \
-        if (otd->thread_mb_pos < tmp) {                                       \
+        if (atomic_load(&otd->thread_mb_pos) < tmp) {                         \
             pthread_mutex_lock(&otd->lock);                                   \
-            td->wait_mb_pos = tmp;                                            \
+            atomic_store(&td->wait_mb_pos, tmp);                              \
             do {                                                              \
-                if (otd->thread_mb_pos >= tmp)                                \
+                if (atomic_load(&otd->thread_mb_pos) >= tmp)                  \
                     break;                                                    \
                 pthread_cond_wait(&otd->cond, &otd->lock);                    \
             } while (1);                                                      \
-            td->wait_mb_pos = INT_MAX;                                        \
+            atomic_store(&td->wait_mb_pos, INT_MAX);                          \
             pthread_mutex_unlock(&otd->lock);                                 \
         }                                                                     \
     } while (0)
@@ -2266,12 +2267,10 @@ static void vp8_decode_mv_mb_modes(AVCodecContext *avctx, VP8Frame *cur_frame,
         int sliced_threading = (avctx->active_thread_type == FF_THREAD_SLICE) && \
                                (num_jobs > 1);                                \
         int is_null          = !next_td || !prev_td;                          \
-        int pos_check        = (is_null) ? 1                                  \
-                                         : (next_td != td &&                  \
-                                            pos >= next_td->wait_mb_pos) ||   \
-                                           (prev_td != td &&                  \
-                                            pos >= prev_td->wait_mb_pos);     \
-        td->thread_mb_pos = pos;                                              \
+        int pos_check        = (is_null) ? 1 :                                \
+            (next_td != td && pos >= atomic_load(&next_td->wait_mb_pos)) ||   \
+            (prev_td != td && pos >= atomic_load(&prev_td->wait_mb_pos));     \
+        atomic_store(&td->thread_mb_pos, pos);                                \
         if (sliced_threading && pos_check) {                                  \
             pthread_mutex_lock(&td->lock);                                    \
             pthread_cond_broadcast(&td->cond);                                \
@@ -2288,7 +2287,7 @@ static av_always_inline int decode_mb_row_no_filter(AVCodecContext *avctx, void 
 {
     VP8Context *s = avctx->priv_data;
     VP8ThreadData *prev_td, *next_td, *td = &s->thread_data[threadnr];
-    int mb_y = td->thread_mb_pos >> 16;
+    int mb_y = atomic_load(&td->thread_mb_pos) >> 16;
     int mb_x, mb_xy = mb_y * s->mb_width;
     int num_jobs = s->num_jobs;
     VP8Frame *curframe = s->curframe, *prev_frame = s->prev_frame;
@@ -2327,8 +2326,8 @@ static av_always_inline int decode_mb_row_no_filter(AVCodecContext *avctx, void 
     if (!is_vp7 || mb_y == 0)
         memset(td->left_nnz, 0, sizeof(td->left_nnz));
 
-    s->mv_min.x = -MARGIN;
-    s->mv_max.x = ((s->mb_width - 1) << 6) + MARGIN;
+    td->mv_bounds.mv_min.x = -MARGIN;
+    td->mv_bounds.mv_max.x = ((s->mb_width - 1) << 6) + MARGIN;
 
     for (mb_x = 0; mb_x < s->mb_width; mb_x++, mb_xy++, mb++) {
         if (c->end <= c->buffer && c->bits >= 0)
@@ -2352,7 +2351,7 @@ static av_always_inline int decode_mb_row_no_filter(AVCodecContext *avctx, void 
                          dst[2] - dst[1], 2);
 
         if (!s->mb_layout)
-            decode_mb_mode(s, mb, mb_x, mb_y, curframe->seg_map->data + mb_xy,
+            decode_mb_mode(s, &td->mv_bounds, mb, mb_x, mb_y, curframe->seg_map->data + mb_xy,
                            prev_frame && prev_frame->seg_map ?
                            prev_frame->seg_map->data + mb_xy : NULL, 0, is_vp7);
 
@@ -2399,8 +2398,8 @@ static av_always_inline int decode_mb_row_no_filter(AVCodecContext *avctx, void 
         dst[0]      += 16;
         dst[1]      += 8;
         dst[2]      += 8;
-        s->mv_min.x -= 64;
-        s->mv_max.x -= 64;
+        td->mv_bounds.mv_min.x -= 64;
+        td->mv_bounds.mv_max.x -= 64;
 
         if (mb_x == s->mb_width + 1) {
             update_pos(td, mb_y, s->mb_width + 3);
@@ -2428,7 +2427,7 @@ static av_always_inline void filter_mb_row(AVCodecContext *avctx, void *tdata,
 {
     VP8Context *s = avctx->priv_data;
     VP8ThreadData *td = &s->thread_data[threadnr];
-    int mb_x, mb_y = td->thread_mb_pos >> 16, num_jobs = s->num_jobs;
+    int mb_x, mb_y = atomic_load(&td->thread_mb_pos) >> 16, num_jobs = s->num_jobs;
     AVFrame *curframe = s->curframe->tf.f;
     VP8Macroblock *mb;
     VP8ThreadData *prev_td, *next_td;
@@ -2506,8 +2505,10 @@ int vp78_decode_mb_row_sliced(AVCodecContext *avctx, void *tdata, int jobnr,
     int ret;
 
     td->thread_nr = threadnr;
+    td->mv_bounds.mv_min.y   = -MARGIN - 64 * threadnr;
+    td->mv_bounds.mv_max.y   = ((s->mb_height - 1) << 6) + MARGIN - 64 * threadnr;
     for (mb_y = jobnr; mb_y < s->mb_height; mb_y += num_jobs) {
-        td->thread_mb_pos = mb_y << 16;
+        atomic_store(&td->thread_mb_pos, mb_y << 16);
         ret = s->decode_mb_row_no_filter(avctx, tdata, jobnr, threadnr);
         if (ret < 0) {
             update_pos(td, s->mb_height, INT_MAX & 0xFFFF);
@@ -2517,8 +2518,8 @@ int vp78_decode_mb_row_sliced(AVCodecContext *avctx, void *tdata, int jobnr,
             s->filter_mb_row(avctx, tdata, jobnr, threadnr);
         update_pos(td, mb_y, INT_MAX & 0xFFFF);
 
-        s->mv_min.y -= 64;
-        s->mv_max.y -= 64;
+        td->mv_bounds.mv_min.y -= 64 * num_jobs;
+        td->mv_bounds.mv_max.y -= 64 * num_jobs;
 
         if (avctx->active_thread_type == FF_THREAD_FRAME)
             ff_thread_report_progress(&curframe->tf, mb_y, 0);
@@ -2664,11 +2665,12 @@ int vp78_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     s->num_jobs   = num_jobs;
     s->curframe   = curframe;
     s->prev_frame = prev_frame;
-    s->mv_min.y   = -MARGIN;
-    s->mv_max.y   = ((s->mb_height - 1) << 6) + MARGIN;
+    s->mv_bounds.mv_min.y   = -MARGIN;
+    s->mv_bounds.mv_max.y   = ((s->mb_height - 1) << 6) + MARGIN;
     for (i = 0; i < MAX_THREADS; i++) {
-        s->thread_data[i].thread_mb_pos = 0;
-        s->thread_data[i].wait_mb_pos   = INT_MAX;
+        VP8ThreadData *td = &s->thread_data[i];
+        atomic_init(&td->thread_mb_pos, 0);
+        atomic_init(&td->wait_mb_pos, INT_MAX);
     }
     if (is_vp7)
         avctx->execute2(avctx, vp7_decode_mb_row_sliced, s->thread_data, NULL,

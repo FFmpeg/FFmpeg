@@ -700,6 +700,7 @@ static void celt_decode_bands(CeltFrame *f, OpusRangeCoder *rc)
     memset(f->block[1].coeffs, 0, sizeof(f->block[0].coeffs));
 
     for (i = f->start_band; i < f->end_band; i++) {
+        uint32_t cm[2] = { (1 << f->blocks) - 1, (1 << f->blocks) - 1 };
         int band_offset = ff_celt_freq_bands[i] << f->size;
         int band_size   = ff_celt_freq_range[i] << f->size;
         float *X = f->block[0].coeffs + band_offset;
@@ -708,8 +709,7 @@ static void celt_decode_bands(CeltFrame *f, OpusRangeCoder *rc)
         int consumed = opus_rc_tell_frac(rc);
         float *norm2 = norm + 8 * 100;
         int effective_lowband = -1;
-        unsigned int cm[2];
-        int b;
+        int b = 0;
 
         /* Compute how many bits we want to allocate to this band */
         if (i != f->start_band)
@@ -718,15 +718,14 @@ static void celt_decode_bands(CeltFrame *f, OpusRangeCoder *rc)
         if (i <= f->coded_bands - 1) {
             int curr_balance = f->remaining / FFMIN(3, f->coded_bands-i);
             b = av_clip_uintp2(FFMIN(f->remaining2 + 1, f->pulses[i] + curr_balance), 14);
-        } else
-            b = 0;
+        }
 
         if (ff_celt_freq_bands[i] - ff_celt_freq_range[i] >= ff_celt_freq_bands[f->start_band] &&
             (update_lowband || lowband_offset == 0))
             lowband_offset = i;
 
         /* Get a conservative estimate of the collapse_mask's for the bands we're
-        going to be folding from. */
+           going to be folding from. */
         if (lowband_offset != 0 && (f->spread != CELT_SPREAD_AGGRESSIVE ||
                                     f->blocks > 1 || f->tf_change[i] < 0)) {
             int foldstart, foldend;
@@ -744,10 +743,7 @@ static void celt_decode_bands(CeltFrame *f, OpusRangeCoder *rc)
                 cm[0] |= f->block[0].collapse_masks[j];
                 cm[1] |= f->block[f->channels - 1].collapse_masks[j];
             }
-        } else
-            /* Otherwise, we'll be using the LCG to fold, so all blocks will (almost
-            always) be non-zero.*/
-            cm[0] = cm[1] = (1 << f->blocks) - 1;
+        }
 
         if (f->dual_stereo && i == f->intensity_stereo) {
             /* Switch off dual stereo to do intensity */

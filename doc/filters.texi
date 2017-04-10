@@ -10430,6 +10430,9 @@ expression, and vice versa.
 
 The default value of @var{x} and @var{y} is 0.
 
+If @var{x} or @var{y} evaluate to a negative number, they'll be changed
+so the input image is centered on the padded area.
+
 @item color
 Specify the color of the padded area. For the syntax of this option,
 check the "Color" section in the ffmpeg-utils manual.
@@ -10452,6 +10455,9 @@ Evaluate expressions for each incoming frame.
 @end table
 
 Default value is @samp{init}.
+
+@item aspect
+Pad to aspect instead to a resolution.
 
 @end table
 
@@ -17185,6 +17191,11 @@ accuracy in time domain and frequency domain. If timeclamp is lower,
 event in time domain is represented more accurately (such as fast bass drum),
 otherwise event in frequency domain is represented more accurately
 (such as bass guitar). Acceptable range is @code{[0.002, 1]}. Default value is @code{0.17}.
+
+@item attack
+Set attack time in seconds. The default is @code{0} (disabled). Otherwise, it
+limits future samples by applying asymmetric windowing in time domain, useful
+when low latency is required. Accepted range is @code{[0, 1]}.
 
 @item basefreq
 Specify the transform base frequency. Default value is @code{20.01523126408007475},

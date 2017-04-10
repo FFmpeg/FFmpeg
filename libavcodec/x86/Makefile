@@ -142,6 +142,7 @@ YASM-OBJS-$(CONFIG_ADPCM_G722_DECODER) += x86/g722dsp.o
 YASM-OBJS-$(CONFIG_ADPCM_G722_ENCODER) += x86/g722dsp.o
 YASM-OBJS-$(CONFIG_ALAC_DECODER)       += x86/alacdsp.o
 YASM-OBJS-$(CONFIG_APNG_DECODER)       += x86/pngdsp.o
+YASM-OBJS-$(CONFIG_CAVS_DECODER)       += x86/cavsidct.o
 YASM-OBJS-$(CONFIG_DCA_DECODER)        += x86/dcadsp.o x86/synth_filter.o
 YASM-OBJS-$(CONFIG_DIRAC_DECODER)      += x86/diracdsp.o                \
                                           x86/dirac_dwt.o

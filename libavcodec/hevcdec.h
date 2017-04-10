@@ -564,7 +564,7 @@ typedef struct HEVCContext {
     uint8_t is_md5;
 
     uint8_t context_initialized;
-    uint8_t is_nalff;       ///< this flag is != 0 if bitstream is encapsulated
+    int is_nalff;           ///< this flag is != 0 if bitstream is encapsulated
                             ///< as a format defined in 14496-15
     int apply_defdispwin;
 
@@ -595,6 +595,11 @@ typedef struct HEVCContext {
     uint16_t white_point[2];
     uint32_t max_mastering_luminance;
     uint32_t min_mastering_luminance;
+
+    /* content light level */
+    int sei_content_light_present;
+    uint16_t max_content_light_level;
+    uint16_t max_pic_average_light_level;
 
 } HEVCContext;
 

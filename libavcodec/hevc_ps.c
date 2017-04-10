@@ -568,11 +568,11 @@ static void decode_vui(GetBitContext *gb, AVCodecContext *avctx,
             vui->matrix_coeffs           = get_bits(gb, 8);
 
             // Set invalid values to "unspecified"
-            if (vui->colour_primaries >= AVCOL_PRI_NB)
+            if (!av_color_primaries_name(vui->colour_primaries))
                 vui->colour_primaries = AVCOL_PRI_UNSPECIFIED;
-            if (vui->transfer_characteristic >= AVCOL_TRC_NB)
+            if (!av_color_transfer_name(vui->transfer_characteristic))
                 vui->transfer_characteristic = AVCOL_TRC_UNSPECIFIED;
-            if (vui->matrix_coeffs >= AVCOL_SPC_NB)
+            if (!av_color_space_name(vui->matrix_coeffs))
                 vui->matrix_coeffs = AVCOL_SPC_UNSPECIFIED;
             if (vui->matrix_coeffs == AVCOL_SPC_RGB) {
                 switch (sps->pix_fmt) {

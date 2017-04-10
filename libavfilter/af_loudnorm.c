@@ -682,6 +682,7 @@ static int request_frame(AVFilterLink *outlink)
 
 static int query_formats(AVFilterContext *ctx)
 {
+    LoudNormContext *s = ctx->priv;
     AVFilterFormats *formats;
     AVFilterChannelLayouts *layouts;
     AVFilterLink *inlink = ctx->inputs[0];
@@ -707,15 +708,17 @@ static int query_formats(AVFilterContext *ctx)
     if (ret < 0)
         return ret;
 
-    formats = ff_make_format_list(input_srate);
-    if (!formats)
-        return AVERROR(ENOMEM);
-    ret = ff_formats_ref(formats, &inlink->out_samplerates);
-    if (ret < 0)
-        return ret;
-    ret = ff_formats_ref(formats, &outlink->in_samplerates);
-    if (ret < 0)
-        return ret;
+    if (s->frame_type != LINEAR_MODE) {
+        formats = ff_make_format_list(input_srate);
+        if (!formats)
+            return AVERROR(ENOMEM);
+        ret = ff_formats_ref(formats, &inlink->out_samplerates);
+        if (ret < 0)
+            return ret;
+        ret = ff_formats_ref(formats, &outlink->in_samplerates);
+        if (ret < 0)
+            return ret;
+    }
 
     return 0;
 }
@@ -754,21 +757,6 @@ static int config_input(AVFilterLink *inlink)
 
     init_gaussian_filter(s);
 
-    s->frame_type = FIRST_FRAME;
-
-    if (s->linear) {
-        double offset, offset_tp;
-        offset    = s->target_i - s->measured_i;
-        offset_tp = s->measured_tp + offset;
-
-        if (s->measured_tp != 99 && s->measured_thresh != -70 && s->measured_lra != 0 && s->measured_i != 0) {
-            if ((offset_tp <= s->target_tp) && (s->measured_lra <= s->target_lra)) {
-                s->frame_type = LINEAR_MODE;
-                s->offset = offset;
-            }
-        }
-    }
-
     if (s->frame_type != LINEAR_MODE) {
         inlink->min_samples =
         inlink->max_samples =
@@ -786,6 +774,27 @@ static int config_input(AVFilterLink *inlink)
     s->target_tp = pow(10., s->target_tp / 20.);
     s->attack_length = frame_size(inlink->sample_rate, 10);
     s->release_length = frame_size(inlink->sample_rate, 100);
+
+    return 0;
+}
+
+static av_cold int init(AVFilterContext *ctx)
+{
+    LoudNormContext *s = ctx->priv;
+    s->frame_type = FIRST_FRAME;
+
+    if (s->linear) {
+        double offset, offset_tp;
+        offset    = s->target_i - s->measured_i;
+        offset_tp = s->measured_tp + offset;
+
+        if (s->measured_tp != 99 && s->measured_thresh != -70 && s->measured_lra != 0 && s->measured_i != 0) {
+            if ((offset_tp <= s->target_tp) && (s->measured_lra <= s->target_lra)) {
+                s->frame_type = LINEAR_MODE;
+                s->offset = offset;
+            }
+        }
+    }
 
     return 0;
 }
@@ -914,6 +923,7 @@ AVFilter ff_af_loudnorm = {
     .priv_size     = sizeof(LoudNormContext),
     .priv_class    = &loudnorm_class,
     .query_formats = query_formats,
+    .init          = init,
     .uninit        = uninit,
     .inputs        = avfilter_af_loudnorm_inputs,
     .outputs       = avfilter_af_loudnorm_outputs,

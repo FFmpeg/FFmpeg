@@ -1,3 +1,10 @@
+FATE_FILTER_SAMPLES-$(call ALLYES, SMJPEG_DEMUXER MJPEG_DECODER PERMS_FILTER OWDENOISE_FILTER) += fate-filter-owdenoise-sample
+fate-filter-owdenoise-sample: CMD = ffmpeg -idct simple -i $(TARGET_SAMPLES)/smjpeg/scenwin.mjpg -vf "trim=duration=0.5,perms=random,owdenoise=10:20:20:enable=not(between(t\,0.2\,1.2))" -an -f rawvideo -
+fate-filter-owdenoise-sample: REF = $(TARGET_SAMPLES)/filter-reference/owdenoise-scenwin.raw
+fate-filter-owdenoise-sample: CMP_TARGET = 1
+fate-filter-owdenoise-sample: FUZZ = 3539
+fate-filter-owdenoise-sample: CMP = oneoff
+
 FATE_FILTER_SAMPLES-$(call ALLYES, PERMS_FILTER DELOGO_FILTER RM_DEMUXER RV30_DECODER) += fate-filter-delogo
 fate-filter-delogo: CMD = framecrc -i $(TARGET_SAMPLES)/real/rv30.rm -vf perms=random,delogo=show=0:x=290:y=25:w=26:h=16 -an
 

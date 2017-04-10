@@ -363,6 +363,7 @@ static void register_all(void)
     REGISTER_DECODER(VP8,               vp8);
     REGISTER_DECODER(VP9,               vp9);
     REGISTER_DECODER(VQA,               vqa);
+    REGISTER_DECODER(BITPACKED,         bitpacked);
     REGISTER_DECODER(WEBP,              webp);
     REGISTER_ENCODER(WRAPPED_AVFRAME,   wrapped_avframe);
     REGISTER_ENCDEC (WMV1,              wmv1);

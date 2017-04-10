@@ -20,26 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config.h"
-
-#if HAVE_LIBDC1394_2
 #include <dc1394/dc1394.h>
-#elif HAVE_LIBDC1394_1
-#include <libraw1394/raw1394.h>
-#include <libdc1394/dc1394_control.h>
-
-#define DC1394_VIDEO_MODE_320x240_YUV422 MODE_320x240_YUV422
-#define DC1394_VIDEO_MODE_640x480_YUV411 MODE_640x480_YUV411
-#define DC1394_VIDEO_MODE_640x480_YUV422 MODE_640x480_YUV422
-#define DC1394_FRAMERATE_1_875 FRAMERATE_1_875
-#define DC1394_FRAMERATE_3_75  FRAMERATE_3_75
-#define DC1394_FRAMERATE_7_5   FRAMERATE_7_5
-#define DC1394_FRAMERATE_15    FRAMERATE_15
-#define DC1394_FRAMERATE_30    FRAMERATE_30
-#define DC1394_FRAMERATE_60    FRAMERATE_60
-#define DC1394_FRAMERATE_120   FRAMERATE_120
-#define DC1394_FRAMERATE_240   FRAMERATE_240
-#endif
 
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
@@ -54,15 +35,9 @@
 
 typedef struct dc1394_data {
     AVClass *class;
-#if HAVE_LIBDC1394_1
-    raw1394handle_t handle;
-    dc1394_cameracapture camera;
-    int channel;
-#elif HAVE_LIBDC1394_2
     dc1394_t *d;
     dc1394camera_t *camera;
     dc1394video_frame_t *frame;
-#endif
     int current_frame;
     int  frame_rate;        /**< frames per 1000 seconds (fps * 1000) */
     char *video_size;       /**< String describing video size, set by a private option. */
@@ -104,9 +79,6 @@ static const struct dc1394_frame_rate {
 #define OFFSET(x) offsetof(dc1394_data, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
-#if HAVE_LIBDC1394_1
-    { "channel", "", offsetof(dc1394_data, channel), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
-#endif
     { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), AV_OPT_TYPE_STRING, {.str = "qvga"}, 0, 0, DEC },
     { "pixel_format", "", OFFSET(pixel_format), AV_OPT_TYPE_STRING, {.str = "uyvy422"}, 0, 0, DEC },
     { "framerate", "", OFFSET(framerate), AV_OPT_TYPE_STRING, {.str = "ntsc"}, 0, 0, DEC },
@@ -192,102 +164,7 @@ out:
     return ret;
 }
 
-#if HAVE_LIBDC1394_1
-static int dc1394_v1_read_header(AVFormatContext *c)
-{
-    dc1394_data* dc1394 = c->priv_data;
-    AVStream* vst;
-    nodeid_t* camera_nodes;
-    int res;
-    struct dc1394_frame_format *fmt = NULL;
-    struct dc1394_frame_rate *fps = NULL;
-
-    if (dc1394_read_common(c, &fmt, &fps) != 0)
-        return -1;
-
-    /* Now let us prep the hardware. */
-    dc1394->handle = dc1394_create_handle(0); /* FIXME: gotta have ap->port */
-    if (!dc1394->handle) {
-        av_log(c, AV_LOG_ERROR, "Can't acquire dc1394 handle on port %d\n", 0 /* ap->port */);
-        goto out;
-    }
-    camera_nodes = dc1394_get_camera_nodes(dc1394->handle, &res, 1);
-    if (!camera_nodes || camera_nodes[dc1394->channel] == DC1394_NO_CAMERA) {
-        av_log(c, AV_LOG_ERROR, "There's no IIDC camera on the channel %d\n", dc1394->channel);
-        goto out_handle;
-    }
-    res = dc1394_dma_setup_capture(dc1394->handle, camera_nodes[dc1394->channel],
-                                   0,
-                                   FORMAT_VGA_NONCOMPRESSED,
-                                   fmt->frame_size_id,
-                                   SPEED_400,
-                                   fps->frame_rate_id, 8, 1,
-                                   c->filename,
-                                   &dc1394->camera);
-    dc1394_free_camera_nodes(camera_nodes);
-    if (res != DC1394_SUCCESS) {
-        av_log(c, AV_LOG_ERROR, "Can't prepare camera for the DMA capture\n");
-        goto out_handle;
-    }
-
-    res = dc1394_start_iso_transmission(dc1394->handle, dc1394->camera.node);
-    if (res != DC1394_SUCCESS) {
-        av_log(c, AV_LOG_ERROR, "Can't start isochronous transmission\n");
-        goto out_handle_dma;
-    }
-
-    return 0;
-
-out_handle_dma:
-    dc1394_dma_unlisten(dc1394->handle, &dc1394->camera);
-    dc1394_dma_release_camera(dc1394->handle, &dc1394->camera);
-out_handle:
-    dc1394_destroy_handle(dc1394->handle);
-out:
-    return -1;
-}
-
-static int dc1394_v1_read_packet(AVFormatContext *c, AVPacket *pkt)
-{
-    struct dc1394_data *dc1394 = c->priv_data;
-    int res;
-
-    /* discard stale frame */
-    if (dc1394->current_frame++) {
-        if (dc1394_dma_done_with_buffer(&dc1394->camera) != DC1394_SUCCESS)
-            av_log(c, AV_LOG_ERROR, "failed to release %d frame\n", dc1394->current_frame);
-    }
-
-    res = dc1394_dma_single_capture(&dc1394->camera);
-
-    if (res == DC1394_SUCCESS) {
-        pkt->data = (uint8_t *)dc1394->camera.capture_buffer;
-        pkt->size = dc1394->size;
-        pkt->pts = (dc1394->current_frame * 1000000) / dc1394->frame_rate;
-        pkt->flags |= AV_PKT_FLAG_KEY;
-        pkt->stream_index = dc1394->stream_index;
-    } else {
-        av_log(c, AV_LOG_ERROR, "DMA capture failed\n");
-        return AVERROR_INVALIDDATA;
-    }
-
-    return pkt->size;
-}
-
-static int dc1394_v1_close(AVFormatContext * context)
-{
-    struct dc1394_data *dc1394 = context->priv_data;
-
-    dc1394_stop_iso_transmission(dc1394->handle, dc1394->camera.node);
-    dc1394_dma_unlisten(dc1394->handle, &dc1394->camera);
-    dc1394_dma_release_camera(dc1394->handle, &dc1394->camera);
-    dc1394_destroy_handle(dc1394->handle);
-
-    return 0;
-}
-
-#elif HAVE_LIBDC1394_2
-static int dc1394_v2_read_header(AVFormatContext *c)
+static int dc1394_read_header(AVFormatContext *c)
 {
     dc1394_data* dc1394 = c->priv_data;
     dc1394camera_list_t *list;
@@ -365,7 +242,7 @@ out:
     return -1;
 }
 
-static int dc1394_v2_read_packet(AVFormatContext *c, AVPacket *pkt)
+static int dc1394_read_packet(AVFormatContext *c, AVPacket *pkt)
 {
     struct dc1394_data *dc1394 = c->priv_data;
     int res;
@@ -391,7 +268,7 @@ static int dc1394_v2_read_packet(AVFormatContext *c, AVPacket *pkt)
     return pkt->size;
 }
 
-static int dc1394_v2_close(AVFormatContext * context)
+static int dc1394_close(AVFormatContext * context)
 {
     struct dc1394_data *dc1394 = context->priv_data;
 
@@ -407,23 +284,9 @@ AVInputFormat ff_libdc1394_demuxer = {
     .name           = "libdc1394",
     .long_name      = NULL_IF_CONFIG_SMALL("dc1394 v.2 A/V grab"),
     .priv_data_size = sizeof(struct dc1394_data),
-    .read_header    = dc1394_v2_read_header,
-    .read_packet    = dc1394_v2_read_packet,
-    .read_close     = dc1394_v2_close,
+    .read_header    = dc1394_read_header,
+    .read_packet    = dc1394_read_packet,
+    .read_close     = dc1394_close,
     .flags          = AVFMT_NOFILE,
     .priv_class     = &libdc1394_class,
 };
-
-#endif
-#if HAVE_LIBDC1394_1
-AVInputFormat ff_libdc1394_demuxer = {
-    .name           = "libdc1394",
-    .long_name      = NULL_IF_CONFIG_SMALL("dc1394 v.1 A/V grab"),
-    .priv_data_size = sizeof(struct dc1394_data),
-    .read_header    = dc1394_v1_read_header,
-    .read_packet    = dc1394_v1_read_packet,
-    .read_close     = dc1394_v1_close,
-    .flags          = AVFMT_NOFILE,
-    .priv_class     = &libdc1394_class,
-};
-#endif

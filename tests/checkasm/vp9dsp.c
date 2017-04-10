@@ -368,12 +368,6 @@ static void check_itxfm(void)
                         bench_new(dst, sz * SIZEOF_PIXEL, coef, eob);
                     }
                 }
-                if (txtp == 0 && tx != 4) {
-                    if (check_func(dsp.itxfm_add[tx][txtp], "vp9_inv_%s_%dx%d_dc_add_%d",
-                                   txtp_types[txtp], sz, sz, bit_depth)) {
-                        bench_new(dst, sz * SIZEOF_PIXEL, coef, 1);
-                    }
-                }
             }
         }
     }

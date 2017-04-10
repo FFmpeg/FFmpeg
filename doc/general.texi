@@ -101,6 +101,14 @@ Go to @url{http://www.wavpack.com/} and follow the instructions for
 installing the library. Then pass @code{--enable-libwavpack} to configure to
 enable it.
 
+@section libxavs
+
+FFmpeg can make use of the libxavs library for Xavs encoding.
+
+Go to @url{http://xavs.sf.net/} and follow the instructions for
+installing the library. Then pass @code{--enable-libxavs} to configure to
+enable it.
+
 @section OpenH264
 
 FFmpeg can make use of the OpenH264 library for H.264 encoding and decoding.
@@ -188,7 +196,7 @@ For Linux and OS X, the supported AviSynth variant is
 
 @float NOTE
 There is currently a regression in AviSynth+'s @code{capi.h} header as of
-October 2016, which interferes with the ability for builds of Libav to use
+October 2016, which interferes with the ability for builds of FFmpeg to use
 MSVC-built binaries of AviSynth. Until this is resolved, you can make sure
 a known good version is installed by checking out a version from before
 the regression occurred:

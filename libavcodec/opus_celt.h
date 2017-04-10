@@ -67,9 +67,6 @@ typedef struct CeltBlock {
 
     uint8_t collapse_masks[CELT_MAX_BANDS];
 
-    int band_bins[CELT_MAX_BANDS]; /* MDCT bins per band */
-    float *band_coeffs[CELT_MAX_BANDS];
-
     /* buffer for mdct output + postfilter */
     DECLARE_ALIGNED(32, float, buf)[2048];
     DECLARE_ALIGNED(32, float, coeffs)[CELT_MAX_FRAME_SIZE];
@@ -103,7 +100,6 @@ struct CeltFrame {
     int end_band;
     int coded_bands;
     int transient;
-    int intra;
     int pfilter;
     int skip_band_floor;
     int tf_select;

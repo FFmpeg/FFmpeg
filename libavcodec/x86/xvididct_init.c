@@ -30,25 +30,25 @@
 static void xvid_idct_mmx_put(uint8_t *dest, ptrdiff_t line_size, short *block)
 {
     ff_xvid_idct_mmx(block);
-    ff_put_pixels_clamped(block, dest, line_size);
+    ff_put_pixels_clamped_mmx(block, dest, line_size);
 }
 
 static void xvid_idct_mmx_add(uint8_t *dest, ptrdiff_t line_size, short *block)
 {
     ff_xvid_idct_mmx(block);
-    ff_add_pixels_clamped(block, dest, line_size);
+    ff_add_pixels_clamped_mmx(block, dest, line_size);
 }
 
 static void xvid_idct_mmxext_put(uint8_t *dest, ptrdiff_t line_size, short *block)
 {
     ff_xvid_idct_mmxext(block);
-    ff_put_pixels_clamped(block, dest, line_size);
+    ff_put_pixels_clamped_mmx(block, dest, line_size);
 }
 
 static void xvid_idct_mmxext_add(uint8_t *dest, ptrdiff_t line_size, short *block)
 {
     ff_xvid_idct_mmxext(block);
-    ff_add_pixels_clamped(block, dest, line_size);
+    ff_add_pixels_clamped_mmx(block, dest, line_size);
 }
 #endif
 

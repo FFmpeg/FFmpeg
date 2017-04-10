@@ -109,7 +109,6 @@ int ff_h264_ref_picture(H264Context *h, H264Picture *dst, H264Picture *src)
     dst->poc           = src->poc;
     dst->frame_num     = src->frame_num;
     dst->mmco_reset    = src->mmco_reset;
-    dst->pic_id        = src->pic_id;
     dst->long_ref      = src->long_ref;
     dst->mbaff         = src->mbaff;
     dst->field_picture = src->field_picture;

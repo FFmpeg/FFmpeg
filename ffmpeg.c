@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <limits.h>
+#include <stdatomic.h>
 #include <stdint.h>
 
 #if HAVE_IO_H
@@ -319,7 +320,7 @@ void term_exit(void)
 
 static volatile int received_sigterm = 0;
 static volatile int received_nb_signals = 0;
-static volatile int transcode_init_done = 0;
+static atomic_int transcode_init_done = ATOMIC_VAR_INIT(0);
 static volatile int ffmpeg_exited = 0;
 static int main_return_code = 0;
 
@@ -457,7 +458,7 @@ static int read_key(void)
 
 static int decode_interrupt_cb(void *ctx)
 {
-    return received_nb_signals > transcode_init_done;
+    return received_nb_signals > atomic_load(&transcode_init_done);
 }
 
 const AVIOInterruptCB int_cb = { decode_interrupt_cb, NULL };
@@ -612,7 +613,7 @@ static void ffmpeg_cleanup(int ret)
     if (received_sigterm) {
         av_log(NULL, AV_LOG_INFO, "Exiting normally, received signal %d.\n",
                (int) received_sigterm);
-    } else if (ret && transcode_init_done) {
+    } else if (ret && atomic_load(&transcode_init_done)) {
         av_log(NULL, AV_LOG_INFO, "Conversion failed!\n");
     }
     term_exit();
@@ -2616,7 +2617,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
 
     // while we have more to decode or while the decoder did output something on EOF
     while (ist->decoding_needed) {
-        int duration = 0;
+        int64_t duration = 0;
         int got_output = 0;
         int decode_failed = 0;
 
@@ -3061,23 +3062,14 @@ static int init_output_stream_streamcopy(OutputStream *ost)
     ost->st->disposition = ist->st->disposition;
 
     if (ist->st->nb_side_data) {
-        ost->st->side_data = av_realloc_array(NULL, ist->st->nb_side_data,
-                                              sizeof(*ist->st->side_data));
-        if (!ost->st->side_data)
-            return AVERROR(ENOMEM);
-
-        ost->st->nb_side_data = 0;
         for (i = 0; i < ist->st->nb_side_data; i++) {
             const AVPacketSideData *sd_src = &ist->st->side_data[i];
-            AVPacketSideData *sd_dst = &ost->st->side_data[ost->st->nb_side_data];
+            uint8_t *dst_data;
 
-            sd_dst->data = av_malloc(sd_src->size);
-            if (!sd_dst->data)
+            dst_data = av_stream_new_side_data(ost->st, sd_src->type, sd_src->size);
+            if (!dst_data)
                 return AVERROR(ENOMEM);
-            memcpy(sd_dst->data, sd_src->data, sd_src->size);
-            sd_dst->size = sd_src->size;
-            sd_dst->type = sd_src->type;
-            ost->st->nb_side_data++;
+            memcpy(dst_data, sd_src->data, sd_src->size);
         }
     }
 
@@ -3466,22 +3458,14 @@ static int init_output_stream(OutputStream *ost, char *error, int error_len)
         if (ost->enc_ctx->nb_coded_side_data) {
             int i;
 
-            ost->st->side_data = av_realloc_array(NULL, ost->enc_ctx->nb_coded_side_data,
-                                                  sizeof(*ost->st->side_data));
-            if (!ost->st->side_data)
-                return AVERROR(ENOMEM);
-
             for (i = 0; i < ost->enc_ctx->nb_coded_side_data; i++) {
                 const AVPacketSideData *sd_src = &ost->enc_ctx->coded_side_data[i];
-                AVPacketSideData *sd_dst = &ost->st->side_data[i];
+                uint8_t *dst_data;
 
-                sd_dst->data = av_malloc(sd_src->size);
-                if (!sd_dst->data)
+                dst_data = av_stream_new_side_data(ost->st, sd_src->type, sd_src->size);
+                if (!dst_data)
                     return AVERROR(ENOMEM);
-                memcpy(sd_dst->data, sd_src->data, sd_src->size);
-                sd_dst->size = sd_src->size;
-                sd_dst->type = sd_src->type;
-                ost->st->nb_side_data++;
+                memcpy(dst_data, sd_src->data, sd_src->size);
             }
         }
 
@@ -3758,7 +3742,7 @@ static int transcode_init(void)
         return ret;
     }
 
-    transcode_init_done = 1;
+    atomic_store(&transcode_init_done, 1);
 
     return 0;
 }

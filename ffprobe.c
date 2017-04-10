@@ -2130,7 +2130,8 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
 
 static av_always_inline int process_frame(WriterContext *w,
                                           InputFile *ifile,
-                                          AVFrame *frame, AVPacket *pkt)
+                                          AVFrame *frame, AVPacket *pkt,
+                                          int *packet_new)
 {
     AVFormatContext *fmt_ctx = ifile->fmt_ctx;
     AVCodecContext *dec_ctx = ifile->streams[pkt->stream_index].dec_ctx;
@@ -2142,24 +2143,39 @@ static av_always_inline int process_frame(WriterContext *w,
     if (dec_ctx && dec_ctx->codec) {
         switch (par->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
-            ret = avcodec_decode_video2(dec_ctx, frame, &got_frame, pkt);
-            break;
-
         case AVMEDIA_TYPE_AUDIO:
-            ret = avcodec_decode_audio4(dec_ctx, frame, &got_frame, pkt);
+            if (*packet_new) {
+                ret = avcodec_send_packet(dec_ctx, pkt);
+                if (ret == AVERROR(EAGAIN)) {
+                    ret = 0;
+                } else if (ret >= 0 || ret == AVERROR_EOF) {
+                    ret = 0;
+                    *packet_new = 0;
+                }
+            }
+            if (ret >= 0) {
+                ret = avcodec_receive_frame(dec_ctx, frame);
+                if (ret >= 0) {
+                    got_frame = 1;
+                } else if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+                    ret = 0;
+                }
+            }
             break;
 
         case AVMEDIA_TYPE_SUBTITLE:
             ret = avcodec_decode_subtitle2(dec_ctx, &sub, &got_frame, pkt);
+            *packet_new = 0;
             break;
+        default:
+            *packet_new = 0;
         }
+    } else {
+        *packet_new = 0;
     }
 
     if (ret < 0)
         return ret;
-    ret = FFMIN(ret, pkt->size); /* guard against bogus return values */
-    pkt->data += ret;
-    pkt->size -= ret;
     if (got_frame) {
         int is_sub = (par->codec_type == AVMEDIA_TYPE_SUBTITLE);
         nb_streams_frames[pkt->stream_index]++;
@@ -2171,7 +2187,7 @@ static av_always_inline int process_frame(WriterContext *w,
         if (is_sub)
             avsubtitle_free(&sub);
     }
-    return got_frame;
+    return got_frame || *packet_new;
 }
 
 static void log_read_interval(const ReadInterval *interval, void *log_ctx, int log_level)
@@ -2202,7 +2218,7 @@ static int read_interval_packets(WriterContext *w, InputFile *ifile,
                                  const ReadInterval *interval, int64_t *cur_ts)
 {
     AVFormatContext *fmt_ctx = ifile->fmt_ctx;
-    AVPacket pkt, pkt1;
+    AVPacket pkt;
     AVFrame *frame = NULL;
     int ret = 0, i = 0, frame_count = 0;
     int64_t start = -INT64_MAX, end = interval->end;
@@ -2279,8 +2295,8 @@ static int read_interval_packets(WriterContext *w, InputFile *ifile,
                 nb_streams_packets[pkt.stream_index]++;
             }
             if (do_read_frames) {
-                pkt1 = pkt;
-                while (pkt1.size && process_frame(w, ifile, frame, &pkt1) > 0);
+                int packet_new = 1;
+                while (process_frame(w, ifile, frame, &pkt, &packet_new) > 0);
             }
         }
         av_packet_unref(&pkt);
@@ -2292,7 +2308,7 @@ static int read_interval_packets(WriterContext *w, InputFile *ifile,
     for (i = 0; i < fmt_ctx->nb_streams; i++) {
         pkt.stream_index = i;
         if (do_read_frames)
-            while (process_frame(w, ifile, frame, &pkt) > 0);
+            while (process_frame(w, ifile, frame, &pkt, &(int){1}) > 0);
     }
 
 end:

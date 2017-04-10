@@ -22,12 +22,9 @@
 /**
  * @file
  * H.264 / AVC / MPEG-4 part10 codec.
- * non-MMX i386-specific optimizations for H.264
+ * non-SIMD x86-specific optimizations for H.264
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
-
-#ifndef AVCODEC_X86_H264_I386_H
-#define AVCODEC_X86_H264_I386_H
 
 #include <stddef.h>
 
@@ -209,4 +206,3 @@ static int decode_significance_8x8_x86(CABACContext *c,
 #endif /* HAVE_7REGS && BROKEN_COMPILER */
 
 #endif /* HAVE_INLINE_ASM */
-#endif /* AVCODEC_X86_H264_I386_H */

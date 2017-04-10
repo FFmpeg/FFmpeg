@@ -602,6 +602,189 @@ static void restore_median_packed_il(uint8_t *src, int step, ptrdiff_t stride,
     }
 }
 
+static void restore_gradient_planar(UtvideoContext *c, uint8_t *src, ptrdiff_t stride,
+                                    int width, int height, int slices, int rmode)
+{
+    int i, j, slice;
+    int A, B, C;
+    uint8_t *bsrc;
+    int slice_start, slice_height;
+    const int cmask = ~rmode;
+
+    for (slice = 0; slice < slices; slice++) {
+        slice_start  = ((slice * height) / slices) & cmask;
+        slice_height = ((((slice + 1) * height) / slices) & cmask) -
+                       slice_start;
+
+        if (!slice_height)
+            continue;
+        bsrc = src + slice_start * stride;
+
+        // first line - left neighbour prediction
+        bsrc[0] += 0x80;
+        c->llviddsp.add_left_pred(bsrc, bsrc, width, 0);
+        bsrc += stride;
+        if (slice_height <= 1)
+            continue;
+        for (j = 1; j < slice_height; j++) {
+            // second line - first element has top prediction, the rest uses gradient
+            bsrc[0] = (bsrc[0] + bsrc[-stride]) & 0xFF;
+            for (i = 1; i < width; i++) {
+                A = bsrc[i - stride];
+                B = bsrc[i - (stride + 1)];
+                C = bsrc[i - 1];
+                bsrc[i] = (A - B + C + bsrc[i]) & 0xFF;
+            }
+            bsrc += stride;
+        }
+    }
+}
+
+static void restore_gradient_planar_il(UtvideoContext *c, uint8_t *src, ptrdiff_t stride,
+                                      int width, int height, int slices, int rmode)
+{
+    int i, j, slice;
+    int A, B, C;
+    uint8_t *bsrc;
+    int slice_start, slice_height;
+    const int cmask   = ~(rmode ? 3 : 1);
+    const ptrdiff_t stride2 = stride << 1;
+
+    for (slice = 0; slice < slices; slice++) {
+        slice_start    = ((slice * height) / slices) & cmask;
+        slice_height   = ((((slice + 1) * height) / slices) & cmask) -
+                         slice_start;
+        slice_height >>= 1;
+        if (!slice_height)
+            continue;
+
+        bsrc = src + slice_start * stride;
+
+        // first line - left neighbour prediction
+        bsrc[0] += 0x80;
+        A = c->llviddsp.add_left_pred(bsrc, bsrc, width, 0);
+        c->llviddsp.add_left_pred(bsrc + stride, bsrc + stride, width, A);
+        bsrc += stride2;
+        if (slice_height <= 1)
+            continue;
+        for (j = 1; j < slice_height; j++) {
+            // second line - first element has top prediction, the rest uses gradient
+            bsrc[0] = (bsrc[0] + bsrc[-stride2]) & 0xFF;
+            for (i = 1; i < width; i++) {
+                A = bsrc[i - stride2];
+                B = bsrc[i - (stride2 + 1)];
+                C = bsrc[i - 1];
+                bsrc[i] = (A - B + C + bsrc[i]) & 0xFF;
+            }
+            for (i = 0; i < width; i++) {
+                A = bsrc[i - stride];
+                B = bsrc[i - (1 + stride)];
+                C = bsrc[i - 1 + stride];
+                bsrc[i + stride] = (A - B + C + bsrc[i + stride]) & 0xFF;
+            }
+            bsrc += stride2;
+        }
+    }
+}
+
+static void restore_gradient_packed(uint8_t *src, int step, ptrdiff_t stride,
+                                    int width, int height, int slices, int rmode)
+{
+    int i, j, slice;
+    int A, B, C;
+    uint8_t *bsrc;
+    int slice_start, slice_height;
+    const int cmask = ~rmode;
+
+    for (slice = 0; slice < slices; slice++) {
+        slice_start  = ((slice * height) / slices) & cmask;
+        slice_height = ((((slice + 1) * height) / slices) & cmask) -
+                       slice_start;
+
+        if (!slice_height)
+            continue;
+        bsrc = src + slice_start * stride;
+
+        // first line - left neighbour prediction
+        bsrc[0] += 0x80;
+        A = bsrc[0];
+        for (i = step; i < width * step; i += step) {
+            bsrc[i] += A;
+            A        = bsrc[i];
+        }
+        bsrc += stride;
+        if (slice_height <= 1)
+            continue;
+        for (j = 1; j < slice_height; j++) {
+            // second line - first element has top prediction, the rest uses gradient
+            C        = bsrc[-stride];
+            bsrc[0] += C;
+            for (i = step; i < width * step; i += step) {
+                A = bsrc[i - stride];
+                B = bsrc[i - (stride + step)];
+                C = bsrc[i - step];
+                bsrc[i] = (A - B + C + bsrc[i]) & 0xFF;
+            }
+            bsrc += stride;
+        }
+    }
+}
+
+static void restore_gradient_packed_il(uint8_t *src, int step, ptrdiff_t stride,
+                                       int width, int height, int slices, int rmode)
+{
+    int i, j, slice;
+    int A, B, C;
+    uint8_t *bsrc;
+    int slice_start, slice_height;
+    const int cmask   = ~(rmode ? 3 : 1);
+    const ptrdiff_t stride2 = stride << 1;
+
+    for (slice = 0; slice < slices; slice++) {
+        slice_start    = ((slice * height) / slices) & cmask;
+        slice_height   = ((((slice + 1) * height) / slices) & cmask) -
+                         slice_start;
+        slice_height >>= 1;
+        if (!slice_height)
+            continue;
+
+        bsrc = src + slice_start * stride;
+
+        // first line - left neighbour prediction
+        bsrc[0] += 0x80;
+        A        = bsrc[0];
+        for (i = step; i < width * step; i += step) {
+            bsrc[i] += A;
+            A        = bsrc[i];
+        }
+        for (i = 0; i < width * step; i += step) {
+            bsrc[stride + i] += A;
+            A                 = bsrc[stride + i];
+        }
+        bsrc += stride2;
+        if (slice_height <= 1)
+            continue;
+        for (j = 1; j < slice_height; j++) {
+            // second line - first element has top prediction, the rest uses gradient
+            C        = bsrc[-stride2];
+            bsrc[0] += C;
+            for (i = step; i < width * step; i += step) {
+                A = bsrc[i - stride2];
+                B = bsrc[i - (stride2 + step)];
+                C = bsrc[i - step];
+                bsrc[i] = (A - B + C + bsrc[i]) & 0xFF;
+            }
+            for (i = 0; i < width * step; i += step) {
+                A = bsrc[i - stride];
+                B = bsrc[i - (step + stride)];
+                C = bsrc[i - step + stride];
+                bsrc[i + stride] = (A - B + C + bsrc[i + stride]) & 0xFF;
+            }
+            bsrc += stride2;
+        }
+    }
+}
+
 static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                         AVPacket *avpkt)
 {
@@ -687,11 +870,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     c->frame_pred = (c->frame_info >> 8) & 3;
 
-    if (c->frame_pred == PRED_GRADIENT) {
-        avpriv_request_sample(avctx, "Frame with gradient prediction");
-        return AVERROR_PATCHWELCOME;
-    }
-
     av_fast_malloc(&c->slice_bits, &c->slice_bits_size,
                    max_slice_size + AV_INPUT_BUFFER_PADDING_SIZE);
 
@@ -720,6 +898,17 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                                              c->planes, frame.f->linesize[0],
                                              avctx->width, avctx->height, c->slices,
                                              0);
+                }
+            } else if (c->frame_pred == PRED_GRADIENT) {
+                if (!c->interlaced) {
+                    restore_gradient_packed(frame.f->data[0] + ff_ut_rgb_order[i],
+                                            c->planes, frame.f->linesize[0], avctx->width,
+                                            avctx->height, c->slices, 0);
+                } else {
+                    restore_gradient_packed_il(frame.f->data[0] + ff_ut_rgb_order[i],
+                                               c->planes, frame.f->linesize[0],
+                                               avctx->width, avctx->height, c->slices,
+                                               0);
                 }
             }
         }
@@ -757,6 +946,17 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                                              avctx->height >> !!i,
                                              c->slices, !i);
                 }
+            } else if (c->frame_pred == PRED_GRADIENT) {
+                if (!c->interlaced) {
+                    restore_gradient_planar(c, frame.f->data[i], frame.f->linesize[i],
+                                            avctx->width >> !!i, avctx->height >> !!i,
+                                            c->slices, !i);
+                } else {
+                    restore_gradient_planar_il(c, frame.f->data[i], frame.f->linesize[i],
+                                               avctx->width  >> !!i,
+                                               avctx->height >> !!i,
+                                               c->slices, !i);
+                }
             }
         }
         break;
@@ -777,6 +977,16 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                                              avctx->width >> !!i, avctx->height,
                                              c->slices, 0);
                 }
+            } else if (c->frame_pred == PRED_GRADIENT) {
+                if (!c->interlaced) {
+                    restore_gradient_planar(c, frame.f->data[i], frame.f->linesize[i],
+                                            avctx->width >> !!i, avctx->height,
+                                            c->slices, 0);
+                } else {
+                    restore_gradient_planar_il(c, frame.f->data[i], frame.f->linesize[i],
+                                               avctx->width  >> !!i, avctx->height,
+                                               c->slices, 0);
+                }
             }
         }
         break;
@@ -796,6 +1006,16 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                     restore_median_planar_il(c, frame.f->data[i], frame.f->linesize[i],
                                              avctx->width, avctx->height,
                                              c->slices, 0);
+                }
+            } else if (c->frame_pred == PRED_GRADIENT) {
+                if (!c->interlaced) {
+                    restore_gradient_planar(c, frame.f->data[i], frame.f->linesize[i],
+                                            avctx->width, avctx->height,
+                                            c->slices, 0);
+                } else {
+                    restore_gradient_planar_il(c, frame.f->data[i], frame.f->linesize[i],
+                                               avctx->width, avctx->height,
+                                               c->slices, 0);
                 }
             }
         }

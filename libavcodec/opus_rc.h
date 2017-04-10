@@ -109,4 +109,18 @@ void     ff_opus_rc_dec_raw_init(OpusRangeCoder *rc, const uint8_t *rightend, ui
 void     ff_opus_rc_enc_end(OpusRangeCoder *rc, uint8_t *dst, int size);
 void     ff_opus_rc_enc_init(OpusRangeCoder *rc);
 
+#define OPUS_RC_CHECKPOINT_UPDATE(rc) \
+    rc_rollback_bits = opus_rc_tell_frac(rc); \
+    rc_rollback_ctx  = *rc
+
+#define OPUS_RC_CHECKPOINT_SPAWN(rc) \
+    uint32_t rc_rollback_bits = opus_rc_tell_frac(rc); \
+    OpusRangeCoder rc_rollback_ctx = *rc \
+
+#define OPUS_RC_CHECKPOINT_BITS(rc) \
+    (opus_rc_tell_frac(rc) - rc_rollback_bits)
+
+#define OPUS_RC_CHECKPOINT_ROLLBACK(rc) \
+    memcpy(rc, &rc_rollback_ctx, sizeof(OpusRangeCoder)); \
+
 #endif /* AVCODEC_OPUS_RC_H */
