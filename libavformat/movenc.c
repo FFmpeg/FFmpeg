@@ -5313,6 +5313,24 @@ static int mov_write_single_packet(AVFormatContext *s, AVPacket *pkt)
             mov->flags &= ~FF_MOV_FLAG_FRAG_DISCONT;
         }
 
+        if (trk->par->codec_id == AV_CODEC_ID_MP4ALS ||
+            trk->par->codec_id == AV_CODEC_ID_AAC ||
+            trk->par->codec_id == AV_CODEC_ID_FLAC) {
+            int side_size = 0;
+            uint8_t *side = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA, &side_size);
+            if (side && side_size > 0 && (side_size != par->extradata_size || memcmp(side, par->extradata, side_size))) {
+                void *newextra = av_mallocz(side_size + AV_INPUT_BUFFER_PADDING_SIZE);
+                if (!newextra)
+                    return AVERROR(ENOMEM);
+                av_free(par->extradata);
+                par->extradata = newextra;
+                memcpy(par->extradata, side, side_size);
+                par->extradata_size = side_size;
+                if (!pkt->size) // Flush packet
+                    mov->need_rewrite_extradata = 1;
+            }
+        }
+
         if (!pkt->size) {
             if (trk->start_dts == AV_NOPTS_VALUE && trk->frag_discont) {
                 trk->start_dts = pkt->dts;
@@ -5320,22 +5338,6 @@ static int mov_write_single_packet(AVFormatContext *s, AVPacket *pkt)
                     trk->start_cts = pkt->pts - pkt->dts;
                 else
                     trk->start_cts = 0;
-            }
-
-            if (trk->par->codec_id == AV_CODEC_ID_MP4ALS ||
-                trk->par->codec_id == AV_CODEC_ID_FLAC) {
-                int side_size = 0;
-                uint8_t *side = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA, &side_size);
-                if (side && side_size > 0 && (side_size != par->extradata_size || memcmp(side, par->extradata, side_size))) {
-                    void *newextra = av_mallocz(side_size + AV_INPUT_BUFFER_PADDING_SIZE);
-                    if (!newextra)
-                        return AVERROR(ENOMEM);
-                    av_free(par->extradata);
-                    par->extradata = newextra;
-                    memcpy(par->extradata, side, side_size);
-                    par->extradata_size = side_size;
-                    mov->need_rewrite_extradata = 1;
-                }
             }
 
             return 0;             /* Discard 0 sized packets */
