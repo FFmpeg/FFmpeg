@@ -315,7 +315,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
 
     if (ctx->mb_height > FF_ARRAY_ELEMS(ctx->mb_scan_index)) {
         av_log(ctx->avctx, AV_LOG_ERROR,
-               "mb_height too big (%d > %"PRIu64").\n", ctx->mb_height, FF_ARRAY_ELEMS(ctx->mb_scan_index));
+               "mb_height too big (%d > %"SIZE_SPECIFIER").\n", ctx->mb_height, FF_ARRAY_ELEMS(ctx->mb_scan_index));
         return AVERROR_INVALIDDATA;
     }
 
