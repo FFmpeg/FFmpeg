@@ -39,6 +39,7 @@ void checkasm_check_bswapdsp(void);
 void checkasm_check_colorspace(void);
 void checkasm_check_fixed_dsp(void);
 void checkasm_check_flacdsp(void);
+void checkasm_check_float_dsp(void);
 void checkasm_check_fmtconvert(void);
 void checkasm_check_h264dsp(void);
 void checkasm_check_h264pred(void);
@@ -70,6 +71,9 @@ int float_near_abs_eps_array(const float *a, const float *b, float eps,
                              unsigned len);
 int float_near_abs_eps_array_ulp(const float *a, const float *b, float eps,
                                  unsigned max_ulp, unsigned len);
+int double_near_abs_eps(double a, double b, double eps);
+int double_near_abs_eps_array(const double *a, const double *b, double eps,
+                              unsigned len);
 
 extern AVLFG checkasm_lfg;
 #define rnd() av_lfg_get(&checkasm_lfg)
