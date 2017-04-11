@@ -3435,12 +3435,6 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         }
     }
 
-    // close codecs which were opened in try_decode_frame()
-    for (i = 0; i < ic->nb_streams; i++) {
-        st = ic->streams[i];
-        avcodec_close(st->codec);
-    }
-
     ff_rfps_calculate(ic);
 
     for (i = 0; i < ic->nb_streams; i++) {
@@ -3556,6 +3550,7 @@ find_stream_info_err:
             ic->streams[i]->codec->thread_count = 0;
         if (st->info)
             av_freep(&st->info->duration_error);
+        avcodec_close(st->codec);
         av_freep(&ic->streams[i]->info);
     }
     if (ic->pb)
