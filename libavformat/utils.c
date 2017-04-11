@@ -3737,12 +3737,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
 
-    // close codecs which were opened in try_decode_frame()
-    for (i = 0; i < ic->nb_streams; i++) {
-        st = ic->streams[i];
-        avcodec_close(st->internal->avctx);
-    }
-
     ff_rfps_calculate(ic);
 
     for (i = 0; i < ic->nb_streams; i++) {
@@ -3923,6 +3917,7 @@ find_stream_info_err:
         st = ic->streams[i];
         if (st->info)
             av_freep(&st->info->duration_error);
+        avcodec_close(ic->streams[i]->internal->avctx);
         av_freep(&ic->streams[i]->info);
     }
     if (ic->pb)
