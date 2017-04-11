@@ -290,16 +290,12 @@ static inline int get_ur_golomb_jpegls(BitstreamContext *bc, int k, int limit,
         return buf;
     } else {
         int i;
-        for (i = 0; i < limit && bitstream_peek(bc, 1) == 0 && bitstream_bits_left(bc) > 0; i++)
-            bitstream_skip(bc, 1);
-        bitstream_skip(bc, 1);
+        for (i = 0;
+             i < limit && bitstream_read_bit(bc) == 0 && bitstream_bits_left(bc) > 0;
+             i++);
 
         if (i < limit - 1) {
-            if (k) {
-                buf = bitstream_read(bc, k);
-            } else {
-                buf = 0;
-            }
+            buf = bitstream_read(bc, k);
 
             return buf + (i << k);
         } else if (i == limit - 1) {
