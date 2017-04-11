@@ -2,6 +2,7 @@ FATE_CHECKASM = fate-checkasm-alacdsp                                   \
                 fate-checkasm-audiodsp                                  \
                 fate-checkasm-blockdsp                                  \
                 fate-checkasm-bswapdsp                                  \
+                fate-checkasm-fixed_dsp                                 \
                 fate-checkasm-flacdsp                                   \
                 fate-checkasm-fmtconvert                                \
                 fate-checkasm-h264dsp                                   \
