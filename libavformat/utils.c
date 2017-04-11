@@ -2466,11 +2466,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         count++;
     }
 
-    // close codecs which were opened in try_decode_frame()
-    for (i = 0; i < ic->nb_streams; i++) {
-        st = ic->streams[i];
-        avcodec_close(st->internal->avctx);
-    }
     for (i = 0; i < ic->nb_streams; i++) {
         st = ic->streams[i];
         avctx = st->internal->avctx;
@@ -2570,6 +2565,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 find_stream_info_err:
     for (i = 0; i < ic->nb_streams; i++) {
+        avcodec_close(ic->streams[i]->internal->avctx);
         av_freep(&ic->streams[i]->info);
         av_bsf_free(&ic->streams[i]->internal->extract_extradata.bsf);
         av_packet_free(&ic->streams[i]->internal->extract_extradata.pkt);
