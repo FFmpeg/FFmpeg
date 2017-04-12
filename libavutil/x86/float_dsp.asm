@@ -22,6 +22,9 @@
 
 %include "x86util.asm"
 
+SECTION_RODATA 32
+pd_reverse: dd 7, 6, 5, 4, 3, 2, 1, 0
+
 SECTION .text
 
 ;-----------------------------------------------------------------------------
@@ -359,10 +362,16 @@ VECTOR_FMUL_ADD
 ;-----------------------------------------------------------------------------
 %macro VECTOR_FMUL_REVERSE 0
 cglobal vector_fmul_reverse, 4,4,2, dst, src0, src1, len
+%if cpuflag(avx2)
+    mova    m2, [pd_reverse]
+%endif
     lea       lenq, [lend*4 - 2*mmsize]
 ALIGN 16
 .loop:
-%if cpuflag(avx)
+%if cpuflag(avx2)
+    vpermd  m0, m2, [src1q]
+    vpermd  m1, m2, [src1q+mmsize]
+%elif cpuflag(avx)
     vmovaps     xmm0, [src1q + 16]
     vinsertf128 m0, m0, [src1q], 1
     vshufps     m0, m0, m0, q0123
@@ -389,6 +398,10 @@ INIT_XMM sse
 VECTOR_FMUL_REVERSE
 %if HAVE_AVX_EXTERNAL
 INIT_YMM avx
+VECTOR_FMUL_REVERSE
+%endif
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
 VECTOR_FMUL_REVERSE
 %endif
 
