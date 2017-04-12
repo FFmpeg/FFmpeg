@@ -182,14 +182,19 @@ static int write_representation(AVFormatContext *s, AVStream *stream, char *id,
     AVDictionaryEntry *cues_end = av_dict_get(stream->metadata, CUES_END, NULL, 0);
     AVDictionaryEntry *filename = av_dict_get(stream->metadata, FILENAME, NULL, 0);
     AVDictionaryEntry *bandwidth = av_dict_get(stream->metadata, BANDWIDTH, NULL, 0);
+    const char *bandwidth_str;
     if ((w->is_live && (!filename)) ||
         (!w->is_live && (!irange || !cues_start || !cues_end || !filename || !bandwidth))) {
         return AVERROR_INVALIDDATA;
     }
     avio_printf(s->pb, "<Representation id=\"%s\"", id);
-    // FIXME: For live, This should be obtained from the input file or as an AVOption.
-    avio_printf(s->pb, " bandwidth=\"%s\"",
-                w->is_live ? (stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO ? "128000" : "1000000") : bandwidth->value);
+    // if bandwidth for live was not provided, use a default
+    if (w->is_live && !bandwidth) {
+        bandwidth_str = (stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) ? "128000" : "1000000";
+    } else {
+        bandwidth_str = bandwidth->value;
+    }
+    avio_printf(s->pb, " bandwidth=\"%s\"", bandwidth_str);
     if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && output_width)
         avio_printf(s->pb, " width=\"%d\"", stream->codecpar->width);
     if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && output_height)
