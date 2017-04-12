@@ -2286,8 +2286,10 @@ static int mov_preroll_write_stbl_atoms(AVIOContext *pb, MOVTrack *track)
     }
     entries++;
 
-    if (!group)
+    if (!group) {
+        av_free(sgpd_entries);
         return 0;
+    }
 
     /* Write sgpd tag */
     avio_wb32(pb, 24 + (group * 2)); /* size */
