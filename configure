@@ -1513,6 +1513,7 @@ EXTERNAL_LIBRARY_GPL_LIST="
 "
 
 EXTERNAL_LIBRARY_NONFREE_LIST="
+    decklink
     libfdk_aac
     openssl
 "
@@ -1536,7 +1537,6 @@ EXTERNAL_LIBRARY_LIST="
     $EXTERNAL_LIBRARY_GPLV3_LIST
     chromaprint
     crystalhd
-    decklink
     gcrypt
     gnutls
     jni
