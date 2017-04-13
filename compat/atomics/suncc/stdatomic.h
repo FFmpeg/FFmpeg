@@ -108,7 +108,7 @@ static inline int atomic_compare_exchange_strong(intptr_t *object, intptr_t *exp
                                                  intptr_t desired)
 {
     intptr_t  old = *expected;
-    *expected = atomic_cas_ptr(object, old, desired);
+    *expected = (intptr_t)atomic_cas_ptr(object, (void *)old, (void *)desired);
     return *expected == old;
 }
 
