@@ -62,6 +62,9 @@ EXAMPLES_FILES := $(wildcard $(SRC_PATH)/doc/examples/*.c) $(SRC_PATH)/doc/examp
 SKIPHEADERS = cmdutils_common_opts.h                                    \
               compat/w32pthreads.h
 
+# first so "all" becomes default target
+all: all-yes
+
 include $(SRC_PATH)/tools/Makefile
 include $(SRC_PATH)/common.mak
 
