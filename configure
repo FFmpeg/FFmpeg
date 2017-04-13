@@ -3640,8 +3640,10 @@ case "$toolchain" in
         cl_major_ver=$(cl 2>&1 | sed -n 's/.*Version \([[:digit:]]\{1,\}\)\..*/\1/p')
         if [ -z "$cl_major_ver" ] || [ $cl_major_ver -ge 18 ]; then
             cc_default="cl"
+            cxx_default="cl"
         else
             cc_default="c99wrap cl"
+            cxx_default="c99wrap cl"
         fi
         ld_default="$source_path/compat/windows/mslink"
         nm_default="dumpbin -symbols"
@@ -3852,6 +3854,7 @@ msvc_common_flags(){
             -lz)                  echo zlib.lib ;;
             -lavicap32)           echo vfw32.lib user32.lib ;;
             -lx264)               echo libx264.lib ;;
+            -lstdc++)             ;;
             -l*)                  echo ${flag#-l}.lib ;;
             -LARGEADDRESSAWARE)   echo $flag ;;
             -L*)                  echo -libpath:${flag#-L} ;;
@@ -4197,6 +4200,7 @@ cflags_noopt=$_cflags_noopt
 add_cflags $_flags $_cflags
 cc_ldflags=$_ldflags
 set_ccvars CC
+set_ccvars CXX
 
 probe_cc hostcc "$host_cc"
 host_cflags_filter=$_flags_filter
