@@ -828,6 +828,10 @@ add_cflags(){
     append CFLAGS $($cflags_filter "$@")
 }
 
+add_cflags_headers(){
+    append CFLAGS_HEADERS $($cflags_filter "$@")
+}
+
 add_cxxflags(){
     append CXXFLAGS $($cflags_filter "$@")
 }
@@ -6128,7 +6132,7 @@ check_disable_warning -Wno-unused-const-variable
 
 check_disable_warning_headers(){
     warning_flag=-W${1#-Wno-}
-    test_cflags $warning_flag && append cflags_headers $1
+    test_cflags $warning_flag && add_cflags_headers $1
 }
 
 check_disable_warning_headers -Wno-deprecated-declarations
@@ -6730,7 +6734,7 @@ TARGET_EXEC=$target_exec $target_exec_args
 TARGET_PATH=$target_path
 TARGET_SAMPLES=${target_samples:-\$(SAMPLES)}
 CFLAGS-ffplay=${sdl2_cflags}
-CFLAGS_HEADERS=$cflags_headers
+CFLAGS_HEADERS=$CFLAGS_HEADERS
 ZLIB=$($ldflags_filter -lz)
 LIB_INSTALL_EXTRA_CMD=$LIB_INSTALL_EXTRA_CMD
 EXTRALIBS=$extralibs
