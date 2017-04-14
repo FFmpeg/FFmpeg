@@ -25,8 +25,8 @@
  */
 
 #include "avcodec.h"
+#include "bitstream.h"
 #include "bytestream.h"
-#include "get_bits.h"
 #include "idctdsp.h"
 #include "internal.h"
 
@@ -123,7 +123,7 @@ typedef struct CLVContext {
     AVCodecContext *avctx;
     IDCTDSPContext idsp;
     AVFrame        *pic;
-    GetBitContext  gb;
+    BitstreamContext bc;
     int            mb_width, mb_height;
     VLC            dc_vlc, ac_vlc;
     int            luma_dc_quant, chroma_dc_quant, ac_quant;
@@ -135,11 +135,11 @@ typedef struct CLVContext {
 static inline int decode_block(CLVContext *ctx, int16_t *blk, int has_ac,
                                int ac_quant)
 {
-    GetBitContext *gb = &ctx->gb;
+    BitstreamContext *bc = &ctx->bc;
     int idx = 1, last = 0, val, skip;
 
     memset(blk, 0, sizeof(*blk) * 64);
-    blk[0] = get_vlc2(gb, ctx->dc_vlc.table, 9, 3);
+    blk[0] = bitstream_read_vlc(bc, ctx->dc_vlc.table, 9, 3);
     if (blk[0] < 0)
         return AVERROR_INVALIDDATA;
     blk[0] -= 63;
@@ -148,19 +148,19 @@ static inline int decode_block(CLVContext *ctx, int16_t *blk, int has_ac,
         return 0;
 
     while (idx < 64 && !last) {
-        val = get_vlc2(gb, ctx->ac_vlc.table, 9, 2);
+        val = bitstream_read_vlc(bc, ctx->ac_vlc.table, 9, 2);
         if (val < 0)
             return AVERROR_INVALIDDATA;
         if (val != 0x1BFF) {
             last =  val >> 12;
             skip = (val >> 4) & 0xFF;
             val &= 0xF;
-            if (get_bits1(gb))
+            if (bitstream_read_bit(bc))
                 val = -val;
         } else {
-            last = get_bits1(gb);
-            skip = get_bits(gb, 6);
-            val  = get_sbits(gb, 8);
+            last = bitstream_read_bit(bc);
+            skip = bitstream_read(bc, 6);
+            val  = bitstream_read_signed(bc, 8);
         }
         if (val) {
             int aval = FFABS(val), sign = val < 0;
@@ -229,7 +229,7 @@ static int decode_mb(CLVContext *c, int x, int y)
     int i, has_ac[6], off;
 
     for (i = 0; i < 6; i++)
-        has_ac[i] = get_bits1(&c->gb);
+        has_ac[i] = bitstream_read_bit(&c->bc);
 
     off = x * 16 + y * 16 * c->pic->linesize[0];
     for (i = 0; i < 4; i++) {
@@ -301,8 +301,8 @@ static int clv_decode_frame(AVCodecContext *avctx, void *data,
         c->luma_dc_quant   = 32;
         c->chroma_dc_quant = 32;
 
-        if ((ret = init_get_bits8(&c->gb, buf + bytestream2_tell(&gb),
-                                  buf_size - bytestream2_tell(&gb))) < 0)
+        if ((ret = bitstream_init8(&c->bc, buf + bytestream2_tell(&gb),
+                                   buf_size - bytestream2_tell(&gb))) < 0)
             return ret;
 
         for (i = 0; i < 3; i++)
