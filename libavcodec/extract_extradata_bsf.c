@@ -65,7 +65,7 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
     int extradata_size = 0;
     const int *extradata_nal_types;
     int nb_extradata_nal_types;
-    int i, ret = 0;
+    int i, has_sps = 0, has_vps = 0, ret = 0;
 
     if (ctx->par_in->codec_id == AV_CODEC_ID_HEVC) {
         extradata_nal_types    = extradata_nal_types_hevc;
@@ -82,11 +82,20 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
 
     for (i = 0; i < h2645_pkt.nb_nals; i++) {
         H2645NAL *nal = &h2645_pkt.nals[i];
-        if (val_in_array(extradata_nal_types, nb_extradata_nal_types, nal->type))
+        if (val_in_array(extradata_nal_types, nb_extradata_nal_types, nal->type)) {
             extradata_size += nal->raw_size + 3;
+            if (ctx->par_in->codec_id == AV_CODEC_ID_HEVC) {
+                if (nal->type == HEVC_NAL_SPS) has_sps = 1;
+                if (nal->type == HEVC_NAL_VPS) has_vps = 1;
+            } else {
+                if (nal->type == H264_NAL_SPS) has_sps = 1;
+            }
+        }
     }
 
-    if (extradata_size) {
+    if (extradata_size &&
+        ((ctx->par_in->codec_id == AV_CODEC_ID_HEVC && has_sps && has_vps) ||
+         (ctx->par_in->codec_id == AV_CODEC_ID_H264 && has_sps))) {
         AVBufferRef *filtered_buf;
         uint8_t *extradata, *filtered_data;
 
