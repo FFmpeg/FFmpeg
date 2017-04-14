@@ -26,10 +26,18 @@
 #include <unistd.h>
 #endif
 
+#if CONFIG_GCRYPT
+#include <gcrypt.h>
+#elif CONFIG_OPENSSL
+#include <openssl/rand.h>
+#endif
+
 #include "libavutil/avassert.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/avstring.h"
+#include "libavutil/intreadwrite.h"
+#include "libavutil/random_seed.h"
 #include "libavutil/opt.h"
 #include "libavutil/log.h"
 #include "libavutil/time_internal.h"
@@ -138,6 +146,12 @@ typedef struct HLSContext {
     char *vtt_format_options_str;
     char *subtitle_filename;
     AVDictionary *format_options;
+
+    int encrypt;
+    char *key;
+    char *key_url;
+    char *iv;
+    char *key_basename;
 
     char *key_info_file;
     char key_file[LINE_BUFFER_SIZE + 1];
@@ -348,6 +362,89 @@ fail:
 
     return ret;
 }
+
+static int randomize(uint8_t *buf, int len)
+{
+#if CONFIG_GCRYPT
+    gcry_randomize(buf, len, GCRY_VERY_STRONG_RANDOM);
+    return 0;
+#elif CONFIG_OPENSSL
+    if (RAND_bytes(buf, len))
+        return 0;
+#else
+    return AVERROR(ENOSYS);
+#endif
+    return AVERROR(EINVAL);
+}
+
+static int do_encrypt(AVFormatContext *s)
+{
+    HLSContext *hls = s->priv_data;
+    int ret;
+    int len;
+    AVIOContext *pb;
+    uint8_t key[KEYSIZE];
+
+    len = strlen(hls->basename) + 4 + 1;
+    hls->key_basename = av_mallocz(len);
+    if (!hls->key_basename)
+        return AVERROR(ENOMEM);
+
+    av_strlcpy(hls->key_basename, s->filename, len);
+    av_strlcat(hls->key_basename, ".key", len);
+
+    if (hls->key_url) {
+        strncpy(hls->key_file, hls->key_url, sizeof(hls->key_file));
+        strncpy(hls->key_uri, hls->key_url, sizeof(hls->key_uri));
+    } else {
+        strncpy(hls->key_file, hls->key_basename, sizeof(hls->key_file));
+        strncpy(hls->key_uri, hls->key_basename, sizeof(hls->key_uri));
+    }
+
+    if (!*hls->iv_string) {
+        uint8_t iv[16] = { 0 };
+        char buf[33];
+
+        if (!hls->iv) {
+            AV_WB64(iv + 8, hls->sequence);
+        } else {
+            memcpy(iv, hls->iv, sizeof(iv));
+        }
+        ff_data_to_hex(buf, iv, sizeof(iv), 0);
+        buf[32] = '\0';
+        memcpy(hls->iv_string, buf, sizeof(hls->iv_string));
+    }
+
+    if (!*hls->key_uri) {
+        av_log(hls, AV_LOG_ERROR, "no key URI specified in key info file\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (!*hls->key_file) {
+        av_log(hls, AV_LOG_ERROR, "no key file specified in key info file\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (!*hls->key_string) {
+        if (!hls->key) {
+            if ((ret = randomize(key, sizeof(key))) < 0) {
+                av_log(s, AV_LOG_ERROR, "Cannot generate a strong random key\n");
+                return ret;
+            }
+        } else {
+            memcpy(key, hls->key, sizeof(key));
+        }
+
+        ff_data_to_hex(hls->key_string, key, sizeof(key), 0);
+        if ((ret = s->io_open(s, &pb, hls->key_file, AVIO_FLAG_WRITE, NULL)) < 0)
+            return ret;
+        avio_seek(pb, 0, SEEK_CUR);
+        avio_write(pb, key, KEYSIZE);
+        avio_close(pb);
+    }
+    return 0;
+}
+
 
 static int hls_encryption_start(AVFormatContext *s)
 {
@@ -662,7 +759,7 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls, double
         hls->discontinuity = 0;
     }
 
-    if (hls->key_info_file) {
+    if (hls->key_info_file || hls->encrypt) {
         av_strlcpy(en->key_uri, hls->key_uri, sizeof(en->key_uri));
         av_strlcpy(en->iv_string, hls->iv_string, sizeof(en->iv_string));
     }
@@ -865,7 +962,7 @@ static int hls_window(AVFormatContext *s, int last)
         hls->discontinuity_set = 1;
     }
     for (en = hls->segments; en; en = en->next) {
-        if (hls->key_info_file && (!key_uri || strcmp(en->key_uri, key_uri) ||
+        if ((hls->encrypt || hls->key_info_file) && (!key_uri || strcmp(en->key_uri, key_uri) ||
                                     av_strcasecmp(en->iv_string, iv_string))) {
             avio_printf(out, "#EXT-X-KEY:METHOD=AES-128,URI=\"%s\"", en->key_uri);
             if (*en->iv_string)
@@ -1031,9 +1128,18 @@ static int hls_start(AVFormatContext *s)
         av_strlcat(oc->filename, ".tmp", sizeof(oc->filename));
     }
 
-    if (c->key_info_file) {
-        if ((err = hls_encryption_start(s)) < 0)
-            goto fail;
+    if (c->key_info_file || c->encrypt) {
+        if (c->key_info_file && c->encrypt) {
+            av_log(s, AV_LOG_WARNING, "Cannot use both -hls_key_info_file and -hls_enc,"
+                  " will use -hls_key_info_file priority\n");
+        }
+        if (c->key_info_file) {
+            if ((err = hls_encryption_start(s)) < 0)
+                goto fail;
+        } else {
+            if ((err = do_encrypt(s)) < 0)
+                goto fail;
+        }
         if ((err = av_dict_set(&options, "encryption_key", c->key_string, 0))
                 < 0)
             goto fail;
@@ -1300,6 +1406,7 @@ fail:
     if (ret < 0) {
         av_freep(&hls->basename);
         av_freep(&hls->vtt_basename);
+        av_freep(&hls->key_basename);
         if (hls->avf)
             avformat_free_context(hls->avf);
         if (hls->vtt_avf)
@@ -1469,6 +1576,7 @@ static int hls_write_trailer(struct AVFormatContext *s)
         ff_format_io_close(s, &vtt_oc->pb);
     }
     av_freep(&hls->basename);
+    av_freep(&hls->key_basename);
     avformat_free_context(oc);
 
     hls->avf = NULL;
@@ -1503,6 +1611,10 @@ static const AVOption options[] = {
     {"hls_segment_filename", "filename template for segment files", OFFSET(segment_filename),   AV_OPT_TYPE_STRING, {.str = NULL},            0,       0,         E},
     {"hls_segment_size", "maximum size per segment file, (in bytes)",  OFFSET(max_seg_size),    AV_OPT_TYPE_INT,    {.i64 = 0},               0,       INT_MAX,   E},
     {"hls_key_info_file",    "file with key URI and key file path", OFFSET(key_info_file),      AV_OPT_TYPE_STRING, {.str = NULL},            0,       0,         E},
+    {"hls_enc",    "enable AES128 encryption support", OFFSET(encrypt),      AV_OPT_TYPE_BOOL, {.i64 = 0},            0,       1,         E},
+    {"hls_enc_key",    "hex-coded 16 byte key to encrypt the segments", OFFSET(key),      AV_OPT_TYPE_STRING, .flags = E},
+    {"hls_enc_key_url",    "url to access the key to decrypt the segments", OFFSET(key_url),      AV_OPT_TYPE_STRING, {.str = NULL},            0,       0,         E},
+    {"hls_enc_iv",    "hex-coded 16 byte initialization vector", OFFSET(iv),      AV_OPT_TYPE_STRING, .flags = E},
     {"hls_subtitle_path",     "set path of hls subtitles", OFFSET(subtitle_filename), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
     {"hls_flags",     "set flags affecting HLS playlist and media file generation", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64 = 0 }, 0, UINT_MAX, E, "flags"},
     {"single_file",   "generate a single media file indexed with byte ranges", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_SINGLE_FILE }, 0, UINT_MAX,   E, "flags"},
