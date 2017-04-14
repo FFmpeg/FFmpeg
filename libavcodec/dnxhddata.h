@@ -91,6 +91,19 @@ static av_always_inline uint64_t ff_dnxhd_parse_header_prefix(const uint8_t *buf
     return ff_dnxhd_check_header_prefix(prefix);
 }
 
+static av_always_inline int ff_dnxhd_get_hr_frame_size(int cid, int w, int h)
+{
+    int result, i = ff_dnxhd_get_cid_table(cid);
+
+    if (i < 0)
+        return i;
+
+    result = ((h + 15) / 16) * ((w + 15) / 16) * (int64_t)ff_dnxhd_cid_table[i].packet_scale.num / ff_dnxhd_cid_table[i].packet_scale.den;
+    result = (result + 2048) / 4096 * 4096;
+
+    return FFMAX(result, 8192);
+}
+
 int avpriv_dnxhd_get_frame_size(int cid);
 int avpriv_dnxhd_get_interlaced(int cid);
 #if LIBAVCODEC_VERSION_MAJOR < 58

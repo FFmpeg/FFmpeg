@@ -362,13 +362,6 @@ fail:
     return AVERROR(ENOMEM);
 }
 
-static int dnxhd_get_hr_frame_size(const CIDEntry* profile, int mb_num)
-{
-    int result = mb_num * profile->packet_scale.num / profile->packet_scale.den;
-    result = (result + 2048) / 4096 * 4096;
-    return FFMAX(result, 8192);
-}
-
 static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
 {
     DNXHDEncContext *ctx = avctx->priv_data;
@@ -483,8 +476,8 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
     ctx->m.mb_num = ctx->m.mb_height * ctx->m.mb_width;
 
     if (ctx->cid_table->frame_size == DNXHD_VARIABLE) {
-        ctx->frame_size = dnxhd_get_hr_frame_size(ctx->cid_table,
-                                                  ctx->m.mb_num);
+        ctx->frame_size = ff_dnxhd_get_hr_frame_size(ctx->cid,
+                                                     ctx->m.mb_width, ctx->m.mb_height);
         ctx->coding_unit_size = ctx->frame_size;
     } else {
         ctx->frame_size = ctx->cid_table->frame_size;
