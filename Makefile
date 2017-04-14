@@ -77,6 +77,10 @@ all: $(AVPROGS)
 $(TOOLS): %$(EXESUF): %.o
 	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $^ $(ELIBS)
 
+tools/cws2fws$(EXESUF): ELIBS = $(ZLIB)
+tools/uncoded_frame$(EXESUF): $(FF_DEP_LIBS)
+tools/uncoded_frame$(EXESUF): ELIBS = $(FF_EXTRALIBS)
+
 CONFIGURABLE_COMPONENTS =                                           \
     $(wildcard $(FFLIBS:%=$(SRC_PATH)/lib%/all*.c))                 \
     $(wildcard $(FFLIBS:%=$(SRC_PATH)/lib%/version.h))              \
