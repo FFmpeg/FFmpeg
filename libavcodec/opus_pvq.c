@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2007-2008 CSIRO
+ * Copyright (c) 2007-2009 Xiph.Org Foundation
+ * Copyright (c) 2008-2009 Gregory Maxwell
  * Copyright (c) 2012 Andrew D'Addesio
  * Copyright (c) 2013-2014 Mozilla Corporation
  * Copyright (c) 2017 Rostislav Pehlivanov <atomnuker@gmail.com>
