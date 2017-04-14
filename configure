@@ -5134,7 +5134,6 @@ test -n "$host_libc_type" && enable host_libc_$host_libc_type
 
 case $libc_type in
     bionic)
-        add_compat strtod.o strtod=avpriv_strtod
         ;;
 esac
 
