@@ -582,7 +582,7 @@ static int dnxhd_write_header(AVCodecContext *avctx, uint8_t *buf)
 
     buf[0x167] = 0x02; // reserved
     AV_WB16(buf + 0x16a, ctx->m.mb_height * 4 + 4); // MSIPS
-    buf[0x16d] = ctx->m.mb_height; // Ns
+    AV_WB16(buf + 0x16c, ctx->m.mb_height); // Ns
     buf[0x16f] = 0x10; // reserved
 
     ctx->msip = buf + 0x170;
