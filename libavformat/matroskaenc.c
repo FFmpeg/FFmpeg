@@ -662,10 +662,8 @@ static int mkv_write_video_projection(AVFormatContext *s, AVIOContext *pb,
         (const AVSphericalMapping *)av_stream_get_side_data(st, AV_PKT_DATA_SPHERICAL,
                                                             &side_data_size);
 
-    if (!side_data_size) {
-        av_log(NULL, AV_LOG_WARNING, "Unknown spherical metadata\n");
+    if (!side_data_size)
         return 0;
-    }
 
     ret = avio_open_dyn_buf(&dyn_cp);
     if (ret < 0)
