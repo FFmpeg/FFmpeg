@@ -24,6 +24,7 @@
 
 #include <DeckLinkAPIVersion.h>
 
+#include "libavutil/thread.h"
 #include "decklink_common_c.h"
 
 class decklink_output_callback;
@@ -89,7 +90,9 @@ struct decklink_ctx {
     int frames_preroll;
     int frames_buffer;
 
-    sem_t semaphore;
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    int frames_buffer_available_spots;
 
     int channels;
 };
