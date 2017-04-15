@@ -2063,10 +2063,12 @@ HAVE_LIST="
     $THREADS_LIST
     $TOOLCHAIN_FEATURES
     $TYPES_LIST
+    alsa
     atomics_native
     dos_paths
     dxva2_lib
     dxva2api_cobj
+    jack
     libc_msvcrt
     makeinfo
     makeinfo_html
@@ -2075,6 +2077,7 @@ HAVE_LIST="
     pod2man
     sdl2
     section_data_rel_ro
+    sndio
     texi2html
     threads
     vaapi_drm
@@ -2987,8 +2990,8 @@ xmv_demuxer_select="riffdec"
 xwma_demuxer_select="riffdec"
 
 # indevs / outdevs
-alsa_indev_deps="alsa_asoundlib_h snd_pcm_htimestamp"
-alsa_outdev_deps="alsa_asoundlib_h"
+alsa_indev_deps="alsa"
+alsa_outdev_deps="alsa"
 avfoundation_indev_deps="pthreads"
 avfoundation_indev_extralibs="-framework Foundation -framework AVFoundation -framework CoreVideo -framework CoreMedia"
 bktr_indev_deps_any="dev_bktr_ioctl_bt848_h machine_ioctl_bt848_h dev_video_bktr_ioctl_bt848_h dev_ic_bt8xx_h"
@@ -3007,7 +3010,7 @@ gdigrab_indev_deps="CreateDIBSection"
 gdigrab_indev_extralibs="-lgdi32"
 gdigrab_indev_select="bmp_decoder"
 iec61883_indev_deps="libiec61883"
-jack_indev_deps="jack_jack_h"
+jack_indev_deps="jack"
 jack_indev_deps_any="sem_timedwait dispatch_dispatch_h"
 lavfi_indev_deps="avfilter"
 libcdio_indev_deps="libcdio"
@@ -3022,8 +3025,8 @@ pulse_outdev_deps="libpulse"
 qtkit_indev_extralibs="-framework QTKit -framework Foundation -framework QuartzCore"
 qtkit_indev_select="qtkit"
 sdl2_outdev_deps="sdl2"
-sndio_indev_deps="sndio_h"
-sndio_outdev_deps="sndio_h"
+sndio_indev_deps="sndio"
+sndio_outdev_deps="sndio"
 v4l_indev_deps="linux_videodev_h"
 v4l2_indev_deps_any="linux_videodev2_h sys_videoio_h"
 v4l2_outdev_deps_any="linux_videodev2_h sys_videoio_h"
@@ -5986,7 +5989,6 @@ check_type "dshow.h" IBaseFilter
   check_header dev/video/bktr/ioctl_bt848.h; } ||
 check_header dev/ic/bt8xx.h
 
-check_header sndio.h
 if check_struct sys/soundcard.h audio_buf_info bytes; then
     enable_safe sys/soundcard.h
 else
@@ -5998,12 +6000,12 @@ fi
 check_header soundcard.h
 
 enabled_any alsa_indev alsa_outdev &&
-    check_lib alsa/asoundlib.h snd_pcm_htimestamp -lasound
+    check_lib alsa/asoundlib.h snd_pcm_htimestamp -lasound && enable alsa
 
-enabled jack_indev && check_lib jack/jack.h jack_client_open -ljack &&
+enabled jack_indev && check_lib jack/jack.h jack_client_open -ljack && enable jack &&
     check_func jack_port_get_latency_range -ljack
 
-enabled_any sndio_indev sndio_outdev && check_lib sndio.h sio_open -lsndio
+enabled_any sndio_indev sndio_outdev && check_lib sndio.h sio_open -lsndio && enable sndio
 
 if enabled libcdio; then
     check_lib "cdio/cdda.h cdio/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio ||
