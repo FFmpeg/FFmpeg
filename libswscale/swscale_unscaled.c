@@ -1190,20 +1190,19 @@ static void reset_ptr(const uint8_t *src[], enum AVPixelFormat format)
     }
 }
 
-static int check_image_pointers(uint8_t *data[4], enum AVPixelFormat pix_fmt,
-                                const int linesizes[4])
-{
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
-    int i;
-
-    for (i = 0; i < 4; i++) {
-        int plane = desc->comp[i].plane;
-        if (!data[plane] || !linesizes[plane])
-            return 0;
-    }
-
-    return 1;
-}
+#define CHECK_IMAGE_POINTERS(data, pix_fmt, linesizes, msg)            \
+    do {                                                               \
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt); \
+        int i;                                                         \
+                                                                       \
+        for (i = 0; i < 4; i++) {                                      \
+            int plane = desc->comp[i].plane;                           \
+            if (!data[plane] || !linesizes[plane]) {                   \
+                av_log(c, AV_LOG_ERROR, msg);                          \
+                return 0;                                              \
+            }                                                          \
+        }                                                              \
+    } while (0)
 
 /**
  * swscale wrapper, so we don't need to export the SwsContext.
@@ -1223,14 +1222,8 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
     if (srcSliceH == 0)
         return 0;
 
-    if (!check_image_pointers(srcSlice, c->srcFormat, srcStride)) {
-        av_log(c, AV_LOG_ERROR, "bad src image pointers\n");
-        return 0;
-    }
-    if (!check_image_pointers(dst, c->dstFormat, dstStride)) {
-        av_log(c, AV_LOG_ERROR, "bad dst image pointers\n");
-        return 0;
-    }
+    CHECK_IMAGE_POINTERS(srcSlice, c->srcFormat, srcStride, "bad src image pointers\n");
+    CHECK_IMAGE_POINTERS(dst, c->dstFormat, dstStride, "bad dst image pointers\n");
 
     if (c->sliceDir == 0 && srcSliceY != 0 && srcSliceY + srcSliceH != c->srcH) {
         av_log(c, AV_LOG_ERROR, "Slices start in the middle!\n");
