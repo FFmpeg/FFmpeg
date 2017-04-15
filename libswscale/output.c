@@ -130,6 +130,9 @@ DECLARE_ALIGNED(8, const uint8_t, ff_dither_8x8_220)[8][8] = {
         AV_WL16(pos, bias + av_clip_ ## signedness ## 16(val >> shift)); \
     }
 
+// Shifting negative amounts is undefined in C
+#define SHIFT_LEFT(val, shift) ((val) * (1 << (shift)))
+
 static av_always_inline void
 yuv2plane1_16_c_template(const int32_t *src, uint16_t *dest, int dstW,
                          int big_endian, int output_bits)
@@ -601,8 +604,8 @@ yuv2rgb48_X_c_template(SwsContext *c, const int16_t *lumFilter,
         int j;
         int Y1 = -0x40000000;
         int Y2 = -0x40000000;
-        int U  = -128 << 23; // 19
-        int V  = -128 << 23;
+        int U  = SHIFT_LEFT(-128, 23); // 19
+        int V  = SHIFT_LEFT(-128, 23);
         int R, G, B;
 
         for (j = 0; j < lumFilterSize; j++) {
@@ -663,8 +666,8 @@ yuv2rgb48_2_c_template(SwsContext *c, const int32_t *buf[2],
     for (i = 0; i < ((dstW + 1) >> 1); i++) {
         int Y1 = (buf0[i * 2]     * yalpha1  + buf1[i * 2]     * yalpha) >> 14;
         int Y2 = (buf0[i * 2 + 1] * yalpha1  + buf1[i * 2 + 1] * yalpha) >> 14;
-        int U  = (ubuf0[i]        * uvalpha1 + ubuf1[i]        * uvalpha + (-128 << 23)) >> 14;
-        int V  = (vbuf0[i]        * uvalpha1 + vbuf1[i]        * uvalpha + (-128 << 23)) >> 14;
+        int U  = (ubuf0[i]        * uvalpha1 + ubuf1[i]        * uvalpha + SHIFT_LEFT(-128, 23)) >> 14;
+        int V  = (vbuf0[i]        * uvalpha1 + vbuf1[i]        * uvalpha + SHIFT_LEFT(-128, 23)) >> 14;
         int R, G, B;
 
         Y1 -= c->yuv2rgb_y_offset;
@@ -701,8 +704,8 @@ yuv2rgb48_1_c_template(SwsContext *c, const int32_t *buf0,
         for (i = 0; i < ((dstW + 1) >> 1); i++) {
             int Y1 = (buf0[i * 2]    ) >> 2;
             int Y2 = (buf0[i * 2 + 1]) >> 2;
-            int U  = (ubuf0[i] + (-128 << 11)) >> 2;
-            int V  = (vbuf0[i] + (-128 << 11)) >> 2;
+            int U  = (ubuf0[i] + SHIFT_LEFT(-128, 11)) >> 2;
+            int V  = (vbuf0[i] + SHIFT_LEFT(-128, 11)) >> 2;
             int R, G, B;
 
             Y1 -= c->yuv2rgb_y_offset;
@@ -729,8 +732,8 @@ yuv2rgb48_1_c_template(SwsContext *c, const int32_t *buf0,
         for (i = 0; i < ((dstW + 1) >> 1); i++) {
             int Y1 = (buf0[i * 2]    ) >> 2;
             int Y2 = (buf0[i * 2 + 1]) >> 2;
-            int U  = (ubuf0[i] + ubuf1[i] + (-128 << 12)) >> 3;
-            int V  = (vbuf0[i] + vbuf1[i] + (-128 << 12)) >> 3;
+            int U  = (ubuf0[i] + ubuf1[i] + SHIFT_LEFT(-128, 12)) >> 3;
+            int V  = (vbuf0[i] + vbuf1[i] + SHIFT_LEFT(-128, 12)) >> 3;
             int R, G, B;
 
             Y1 -= c->yuv2rgb_y_offset;
@@ -1172,8 +1175,8 @@ yuv2rgb_full_X_c_template(SwsContext *c, const int16_t *lumFilter,
     for (i = 0; i < dstW; i++) {
         int j;
         int Y = 0;
-        int U = -128 << 19;
-        int V = -128 << 19;
+        int U = SHIFT_LEFT(-128, 19);
+        int V = SHIFT_LEFT(-128, 19);
         int R, G, B, A;
 
         for (j = 0; j < lumFilterSize; j++) {
