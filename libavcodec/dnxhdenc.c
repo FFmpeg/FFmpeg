@@ -477,7 +477,7 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
 
     if (ctx->cid_table->frame_size == DNXHD_VARIABLE) {
         ctx->frame_size = ff_dnxhd_get_hr_frame_size(ctx->cid,
-                                                     ctx->m.mb_width, ctx->m.mb_height);
+                                                     avctx->width, avctx->height);
         ctx->coding_unit_size = ctx->frame_size;
     } else {
         ctx->frame_size = ctx->cid_table->frame_size;
