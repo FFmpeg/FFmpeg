@@ -2596,12 +2596,10 @@ cuvid_deps="cuda"
 d3d11va_deps="d3d11_h dxva_h ID3D11VideoDecoder ID3D11VideoContext"
 dxva2_deps="dxva2api_h DXVA2_ConfigPictureDecode"
 dxva2_extralibs="-luser32"
-vaapi_deps="va_va_h"
 vda_framework_deps="VideoDecodeAcceleration_VDADecoder_h"
 vda_framework_extralibs="-framework VideoDecodeAcceleration"
 vda_deps="vda_framework pthreads"
 vda_extralibs="-framework CoreFoundation -framework QuartzCore"
-vdpau_deps="vdpau_vdpau_h vdpau_vdpau_x11_h"
 videotoolbox_hwaccel_deps="videotoolbox pthreads"
 videotoolbox_hwaccel_extralibs="-framework QuartzCore"
 xvmc_deps="X11_extensions_XvMClib_h"
@@ -5644,8 +5642,6 @@ check_header sys/un.h
 check_header termios.h
 check_header unistd.h
 check_header valgrind/valgrind.h
-check_header vdpau/vdpau.h
-check_header vdpau/vdpau_x11.h
 check_header VideoDecodeAcceleration/VDADecoder.h
 check_header VideoToolbox/VideoToolbox.h
 check_func_headers VideoToolbox/VTCompressionSession.h VTCompressionSessionPrepareToEncodeFrames -framework VideoToolbox
