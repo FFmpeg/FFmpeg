@@ -129,6 +129,9 @@ static const struct {
         { "vf_colorspace", checkasm_check_colorspace },
     #endif
 #endif
+#if CONFIG_AVUTIL
+        { "fixed_dsp", checkasm_check_fixed_dsp },
+#endif
     { NULL }
 };
 

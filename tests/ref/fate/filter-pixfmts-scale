@@ -37,10 +37,10 @@ gbrp16le            1b3e0b63d47a3e1b6b20931316883bf2
 gbrp9be             d9c88968001e1452ff31fbc8d16b18a0
 gbrp9le             2ccfed0816bf6bd4bb3a5b7591d9603a
 gray                221201cc7cfc4964eacd8b3e426fd276
-gray10be            1fdb541df1b2de6753df69fea9da628e
-gray10le            b17d2f13cc3af22ea5e9d2d50b6292dd
-gray12be            7ae04a6e966d23df34f95dc66507d334
-gray12le            255a75f40496c3adcd07700441dfc307
+gray10be            9452756d0b37f4f5c7cae7635e22d747
+gray10le            37fd2e1ec6b66410212d39a342e864df
+gray12be            950de5d1b6b943a26c51f6a157e19a14
+gray12le            9c3b154a8bb0a73a3b465892dbc23b36
 gray16be            32891cb0928b1119d8d43a6e1bef0e2b
 gray16le            f96cfb5652b090dad52615930f0ce65f
 monob               f01cb0b623357387827902d9d0963435

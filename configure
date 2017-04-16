@@ -828,6 +828,10 @@ add_cflags(){
     append CFLAGS $($cflags_filter "$@")
 }
 
+add_cflags_headers(){
+    append CFLAGS_HEADERS $($cflags_filter "$@")
+}
+
 add_cxxflags(){
     append CXXFLAGS $($cflags_filter "$@")
 }
@@ -1513,6 +1517,7 @@ EXTERNAL_LIBRARY_GPL_LIST="
 "
 
 EXTERNAL_LIBRARY_NONFREE_LIST="
+    decklink
     libfdk_aac
     openssl
 "
@@ -1536,7 +1541,6 @@ EXTERNAL_LIBRARY_LIST="
     $EXTERNAL_LIBRARY_GPLV3_LIST
     chromaprint
     crystalhd
-    decklink
     gcrypt
     gnutls
     jni
@@ -2344,6 +2348,7 @@ error_resilience_select="me_cmp"
 faandct_deps="faan fdctdsp"
 faanidct_deps="faan idctdsp"
 h264dsp_select="startcode"
+hevcparse_select="golomb"
 frame_thread_encoder_deps="encoders threads"
 intrax8_select="blockdsp idctdsp"
 mdct_select="fft"
@@ -2410,13 +2415,13 @@ eamad_decoder_select="aandcttables blockdsp bswapdsp idctdsp mpegvideo"
 eatgq_decoder_select="aandcttables"
 eatqi_decoder_select="aandcttables blockdsp bswapdsp idctdsp"
 exr_decoder_select="zlib"
-ffv1_decoder_select="golomb rangecoder"
+ffv1_decoder_select="rangecoder"
 ffv1_encoder_select="rangecoder"
 ffvhuff_decoder_select="huffyuv_decoder"
 ffvhuff_encoder_select="huffyuv_encoder"
 fic_decoder_select="golomb"
-flac_decoder_select="flacdsp golomb"
-flac_encoder_select="bswapdsp flacdsp golomb lpc"
+flac_decoder_select="flacdsp"
+flac_encoder_select="bswapdsp flacdsp lpc"
 flashsv2_decoder_select="zlib"
 flashsv2_encoder_select="zlib"
 flashsv_decoder_select="zlib"
@@ -2448,12 +2453,10 @@ indeo3_decoder_select="hpeldsp"
 indeo4_decoder_select="ividsp"
 indeo5_decoder_select="ividsp"
 interplay_video_decoder_select="hpeldsp"
-jpegls_decoder_select="golomb mjpeg_decoder"
-jpegls_encoder_select="golomb"
+jpegls_decoder_select="mjpeg_decoder"
 jv_decoder_select="blockdsp"
 lagarith_decoder_select="llviddsp"
 ljpeg_encoder_select="aandcttables idctdsp jpegtables mpegvideoenc"
-loco_decoder_select="golomb"
 magicyuv_decoder_select="llviddsp"
 mdec_decoder_select="blockdsp idctdsp mpegvideo"
 metasound_decoder_select="lsp mdct sinewin"
@@ -2519,7 +2522,7 @@ rv20_encoder_select="h263_encoder"
 rv30_decoder_select="golomb h264pred h264qpel mpegvideo rv34dsp"
 rv40_decoder_select="golomb h264pred h264qpel mpegvideo rv34dsp"
 screenpresso_decoder_select="zlib"
-shorten_decoder_select="golomb bswapdsp"
+shorten_decoder_select="bswapdsp"
 sipr_decoder_select="lsp"
 snow_decoder_select="dwt h264qpel hpeldsp me_cmp rangecoder videodsp"
 snow_encoder_select="aandcttables dwt h264qpel hpeldsp me_cmp mpegvideoenc rangecoder"
@@ -2593,12 +2596,10 @@ cuvid_deps="cuda"
 d3d11va_deps="d3d11_h dxva_h ID3D11VideoDecoder ID3D11VideoContext"
 dxva2_deps="dxva2api_h DXVA2_ConfigPictureDecode"
 dxva2_extralibs="-luser32"
-vaapi_deps="va_va_h"
 vda_framework_deps="VideoDecodeAcceleration_VDADecoder_h"
 vda_framework_extralibs="-framework VideoDecodeAcceleration"
 vda_deps="vda_framework pthreads"
 vda_extralibs="-framework CoreFoundation -framework QuartzCore"
-vdpau_deps="vdpau_vdpau_h vdpau_vdpau_x11_h"
 videotoolbox_hwaccel_deps="videotoolbox pthreads"
 videotoolbox_hwaccel_extralibs="-framework QuartzCore"
 xvmc_deps="X11_extensions_XvMClib_h"
@@ -2777,8 +2778,8 @@ mpeg4_vdpau_decoder_select="mpeg4_decoder"
 mpeg_vdpau_decoder_deps="vdpau"
 mpeg_vdpau_decoder_select="mpeg2video_decoder"
 msmpeg4_crystalhd_decoder_select="crystalhd"
-nvenc_h264_encoder_deps="nvenc"
-nvenc_hevc_encoder_deps="nvenc"
+nvenc_h264_encoder_select="h264_nvenc_encoder"
+nvenc_hevc_encoder_select="hevc_nvenc_encoder"
 vc1_crystalhd_decoder_select="crystalhd"
 vc1_cuvid_decoder_deps="cuda cuvid"
 vc1_mmal_decoder_deps="mmal"
@@ -2797,7 +2798,7 @@ wmv3_vdpau_decoder_select="vc1_vdpau_decoder"
 
 # parsers
 h264_parser_select="golomb h264dsp h264parse"
-hevc_parser_select="golomb hevcparse"
+hevc_parser_select="hevcparse"
 mpegaudio_parser_select="mpegaudioheader"
 mpegvideo_parser_select="mpegvideo"
 mpeg4video_parser_select="h263dsp mpegvideo qpeldsp"
@@ -2992,9 +2993,9 @@ avfoundation_indev_deps="pthreads"
 avfoundation_indev_extralibs="-framework Foundation -framework AVFoundation -framework CoreVideo -framework CoreMedia"
 bktr_indev_deps_any="dev_bktr_ioctl_bt848_h machine_ioctl_bt848_h dev_video_bktr_ioctl_bt848_h dev_ic_bt8xx_h"
 caca_outdev_deps="libcaca"
-decklink_indev_deps="decklink pthreads"
+decklink_indev_deps="decklink threads"
 decklink_indev_extralibs="-lstdc++"
-decklink_outdev_deps="decklink pthreads"
+decklink_outdev_deps="decklink threads"
 decklink_outdev_extralibs="-lstdc++"
 dshow_indev_deps="IBaseFilter"
 dshow_indev_extralibs="-lpsapi -lole32 -lstrmiids -luuid -loleaut32 -lshlwapi"
@@ -3637,8 +3638,10 @@ case "$toolchain" in
         cl_major_ver=$(cl 2>&1 | sed -n 's/.*Version \([[:digit:]]\{1,\}\)\..*/\1/p')
         if [ -z "$cl_major_ver" ] || [ $cl_major_ver -ge 18 ]; then
             cc_default="cl"
+            cxx_default="cl"
         else
             cc_default="c99wrap cl"
+            cxx_default="c99wrap cl"
         fi
         ld_default="$source_path/compat/windows/mslink"
         nm_default="dumpbin -symbols"
@@ -3849,6 +3852,7 @@ msvc_common_flags(){
             -lz)                  echo zlib.lib ;;
             -lavicap32)           echo vfw32.lib user32.lib ;;
             -lx264)               echo libx264.lib ;;
+            -lstdc++)             ;;
             -l*)                  echo ${flag#-l}.lib ;;
             -LARGEADDRESSAWARE)   echo $flag ;;
             -L*)                  echo -libpath:${flag#-L} ;;
@@ -4194,6 +4198,7 @@ cflags_noopt=$_cflags_noopt
 add_cflags $_flags $_cflags
 cc_ldflags=$_ldflags
 set_ccvars CC
+set_ccvars CXX
 
 probe_cc hostcc "$host_cc"
 host_cflags_filter=$_flags_filter
@@ -5637,8 +5642,6 @@ check_header sys/un.h
 check_header termios.h
 check_header unistd.h
 check_header valgrind/valgrind.h
-check_header vdpau/vdpau.h
-check_header vdpau/vdpau_x11.h
 check_header VideoDecodeAcceleration/VDADecoder.h
 check_header VideoToolbox/VideoToolbox.h
 check_func_headers VideoToolbox/VTCompressionSession.h VTCompressionSessionPrepareToEncodeFrames -framework VideoToolbox
@@ -6128,7 +6131,7 @@ check_disable_warning -Wno-unused-const-variable
 
 check_disable_warning_headers(){
     warning_flag=-W${1#-Wno-}
-    test_cflags $warning_flag && append cflags_headers $1
+    test_cflags $warning_flag && add_cflags_headers $1
 }
 
 check_disable_warning_headers -Wno-deprecated-declarations
@@ -6730,7 +6733,7 @@ TARGET_EXEC=$target_exec $target_exec_args
 TARGET_PATH=$target_path
 TARGET_SAMPLES=${target_samples:-\$(SAMPLES)}
 CFLAGS-ffplay=${sdl2_cflags}
-CFLAGS_HEADERS=$cflags_headers
+CFLAGS_HEADERS=$CFLAGS_HEADERS
 ZLIB=$($ldflags_filter -lz)
 LIB_INSTALL_EXTRA_CMD=$LIB_INSTALL_EXTRA_CMD
 EXTRALIBS=$extralibs

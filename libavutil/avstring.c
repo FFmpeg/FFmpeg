@@ -231,80 +231,26 @@ int av_strncasecmp(const char *a, const char *b, size_t n)
     return c1 - c2;
 }
 
-char *av_strreplace(const char *str, const char *from, const char *to)
+char *av_strireplace(const char *str, const char *from, const char *to)
 {
-    /* Adjust each of the below values to suit your needs. */
-    /* Increment positions cache size initially by this number. */
-    size_t cache_sz_inc = 16;
-    /* Thereafter, each time capacity needs to be increased,
-     * multiply the increment by this factor. */
-    const size_t cache_sz_inc_factor = 3;
-    /* But never increment capacity by more than this number. */
-    const size_t cache_sz_inc_max = 1048576;
-
-    char *pret, *ret = NULL;
+    char *ret = NULL;
     const char *pstr2, *pstr = str;
-    size_t i, count = 0;
-    uintptr_t *pos_cache_tmp, *pos_cache = NULL;
-    size_t cache_sz = 0;
-    size_t cpylen, orglen, retlen, tolen, fromlen = strlen(from);
+    size_t tolen = strlen(to), fromlen = strlen(from);
+    AVBPrint pbuf;
 
-    /* Find all matches and cache their positions. */
+    av_bprint_init(&pbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
     while ((pstr2 = av_stristr(pstr, from))) {
-        count++;
-        /* Increase the cache size when necessary. */
-        if (cache_sz < count) {
-            cache_sz += cache_sz_inc;
-            pos_cache_tmp = av_realloc(pos_cache, sizeof(*pos_cache) * cache_sz);
-            if (!pos_cache_tmp) {
-                goto end_strreplace;
-            } else pos_cache = pos_cache_tmp;
-            cache_sz_inc *= cache_sz_inc_factor;
-            if (cache_sz_inc > cache_sz_inc_max) {
-                cache_sz_inc = cache_sz_inc_max;
-            }
-        }
-
-        pos_cache[count-1] = pstr2 - str;
+        av_bprint_append_data(&pbuf, pstr, pstr2 - pstr);
         pstr = pstr2 + fromlen;
+        av_bprint_append_data(&pbuf, to, tolen);
     }
-    orglen = pstr - str + strlen(pstr);
-    /* Allocate memory for the post-replacement string. */
-    if (count > 0) {
-        tolen = strlen(to);
-        retlen = orglen + (tolen - fromlen) * count;
+    av_bprint_append_data(&pbuf, pstr, strlen(pstr));
+    if (!av_bprint_is_complete(&pbuf)) {
+        av_bprint_finalize(&pbuf, NULL);
     } else {
-        retlen = orglen;
-    }
-    ret = av_malloc(retlen + 1);
-    if (!ret) {
-        goto end_strreplace;
+        av_bprint_finalize(&pbuf, &ret);
     }
 
-    if (!count) {
-        /* If no matches, then just duplicate the string. */
-        av_strlcpy(ret, str, retlen + 1);
-    } else {
-        /* Otherwise, duplicate the string whilst performing
-         * the replacements using the position cache. */
-        pret = ret;
-        memcpy(pret, str, pos_cache[0]);
-        pret += pos_cache[0];
-        for (i = 0; i < count; i++) {
-            memcpy(pret, to, tolen);
-            pret += tolen;
-            pstr = str + pos_cache[i] + fromlen;
-            cpylen = (i == count-1 ? orglen : pos_cache[i+1]) - pos_cache[i] - fromlen;
-            memcpy(pret, pstr, cpylen);
-            pret += cpylen;
-        }
-        ret[retlen] = '\0';
-    }
-
-end_strreplace:
-    /* Free the cache and return the post-replacement string,
-     * which will be NULL in the event of an error. */
-    av_free(pos_cache);
     return ret;
 }
 

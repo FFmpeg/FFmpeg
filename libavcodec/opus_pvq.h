@@ -38,4 +38,7 @@ uint32_t ff_celt_encode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
                              float *lowband, int duration, float *lowband_out, int level,
                              float gain, float *lowband_scratch, int fill);
 
+float ff_celt_quant_band_cost(CeltFrame *f, OpusRangeCoder *rc, int band,
+                              float *bits, float lambda);
+
 #endif /* AVCODEC_OPUS_PVQ_H */

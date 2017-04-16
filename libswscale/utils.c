@@ -1016,6 +1016,10 @@ static int handle_jpeg(enum AVPixelFormat *format)
         return 1;
     case AV_PIX_FMT_GRAY8:
     case AV_PIX_FMT_YA8:
+    case AV_PIX_FMT_GRAY10LE:
+    case AV_PIX_FMT_GRAY10BE:
+    case AV_PIX_FMT_GRAY12LE:
+    case AV_PIX_FMT_GRAY12BE:
     case AV_PIX_FMT_GRAY16LE:
     case AV_PIX_FMT_GRAY16BE:
     case AV_PIX_FMT_YA16BE:

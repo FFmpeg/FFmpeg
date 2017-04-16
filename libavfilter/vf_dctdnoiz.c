@@ -63,9 +63,9 @@ typedef struct DCTdnoizContext {
                              float *dst, int dst_linesize,
                              int thread_id);
     void (*color_decorrelation)(float **dst, int dst_linesize,
-                                const uint8_t *src, int src_linesize,
+                                const uint8_t **src, int src_linesize,
                                 int w, int h);
-    void (*color_correlation)(uint8_t *dst, int dst_linesize,
+    void (*color_correlation)(uint8_t **dst, int dst_linesize,
                               float **src, int src_linesize,
                               int w, int h);
 } DCTdnoizContext;
@@ -408,7 +408,7 @@ DEF_FILTER_FREQ_FUNCS(16)
 #define DCT3X3_2_2  0.4082482904638631f /*  1/sqrt(6) */
 
 static av_always_inline void color_decorrelation(float **dst, int dst_linesize,
-                                                 const uint8_t *src, int src_linesize,
+                                                 const uint8_t **src, int src_linesize,
                                                  int w, int h,
                                                  int r, int g, int b)
 {
@@ -416,24 +416,23 @@ static av_always_inline void color_decorrelation(float **dst, int dst_linesize,
     float *dstp_r = dst[0];
     float *dstp_g = dst[1];
     float *dstp_b = dst[2];
+    const uint8_t *srcp = src[0];
 
     for (y = 0; y < h; y++) {
-        const uint8_t *srcp = src;
-
         for (x = 0; x < w; x++) {
             dstp_r[x] = srcp[r] * DCT3X3_0_0 + srcp[g] * DCT3X3_0_1 + srcp[b] * DCT3X3_0_2;
             dstp_g[x] = srcp[r] * DCT3X3_1_0 +                        srcp[b] * DCT3X3_1_2;
             dstp_b[x] = srcp[r] * DCT3X3_2_0 + srcp[g] * DCT3X3_2_1 + srcp[b] * DCT3X3_2_2;
             srcp += 3;
         }
-        src += src_linesize;
+        srcp   += src_linesize - w * 3;
         dstp_r += dst_linesize;
         dstp_g += dst_linesize;
         dstp_b += dst_linesize;
     }
 }
 
-static av_always_inline void color_correlation(uint8_t *dst, int dst_linesize,
+static av_always_inline void color_correlation(uint8_t **dst, int dst_linesize,
                                                float **src, int src_linesize,
                                                int w, int h,
                                                int r, int g, int b)
@@ -442,17 +441,16 @@ static av_always_inline void color_correlation(uint8_t *dst, int dst_linesize,
     const float *src_r = src[0];
     const float *src_g = src[1];
     const float *src_b = src[2];
+    uint8_t *dstp = dst[0];
 
     for (y = 0; y < h; y++) {
-        uint8_t *dstp = dst;
-
         for (x = 0; x < w; x++) {
             dstp[r] = av_clip_uint8(src_r[x] * DCT3X3_0_0 + src_g[x] * DCT3X3_1_0 + src_b[x] * DCT3X3_2_0);
             dstp[g] = av_clip_uint8(src_r[x] * DCT3X3_0_1 +                         src_b[x] * DCT3X3_2_1);
             dstp[b] = av_clip_uint8(src_r[x] * DCT3X3_0_2 + src_g[x] * DCT3X3_1_2 + src_b[x] * DCT3X3_2_2);
             dstp += 3;
         }
-        dst += dst_linesize;
+        dstp  += dst_linesize - w * 3;
         src_r += src_linesize;
         src_g += src_linesize;
         src_b += src_linesize;
@@ -461,13 +459,13 @@ static av_always_inline void color_correlation(uint8_t *dst, int dst_linesize,
 
 #define DECLARE_COLOR_FUNCS(name, r, g, b)                                          \
 static void color_decorrelation_##name(float **dst, int dst_linesize,               \
-                                       const uint8_t *src, int src_linesize,        \
+                                       const uint8_t **src, int src_linesize,       \
                                        int w, int h)                                \
 {                                                                                   \
     color_decorrelation(dst, dst_linesize, src, src_linesize, w, h, r, g, b);       \
 }                                                                                   \
                                                                                     \
-static void color_correlation_##name(uint8_t *dst, int dst_linesize,                \
+static void color_correlation_##name(uint8_t **dst, int dst_linesize,               \
                                      float **src, int src_linesize,                 \
                                      int w, int h)                                  \
 {                                                                                   \
@@ -476,6 +474,60 @@ static void color_correlation_##name(uint8_t *dst, int dst_linesize,            
 
 DECLARE_COLOR_FUNCS(rgb, 0, 1, 2)
 DECLARE_COLOR_FUNCS(bgr, 2, 1, 0)
+
+static av_always_inline void color_decorrelation_gbrp(float **dst, int dst_linesize,
+                                                      const uint8_t **src, int src_linesize,
+                                                      int w, int h)
+{
+    int x, y;
+    float *dstp_r = dst[0];
+    float *dstp_g = dst[1];
+    float *dstp_b = dst[2];
+    const uint8_t *srcp_r = src[2];
+    const uint8_t *srcp_g = src[0];
+    const uint8_t *srcp_b = src[1];
+
+    for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            dstp_r[x] = srcp_r[x] * DCT3X3_0_0 + srcp_g[x] * DCT3X3_0_1 + srcp_b[x] * DCT3X3_0_2;
+            dstp_g[x] = srcp_r[x] * DCT3X3_1_0 +                          srcp_b[x] * DCT3X3_1_2;
+            dstp_b[x] = srcp_r[x] * DCT3X3_2_0 + srcp_g[x] * DCT3X3_2_1 + srcp_b[x] * DCT3X3_2_2;
+        }
+        srcp_r += src_linesize;
+        srcp_g += src_linesize;
+        srcp_b += src_linesize;
+        dstp_r += dst_linesize;
+        dstp_g += dst_linesize;
+        dstp_b += dst_linesize;
+    }
+}
+
+static av_always_inline void color_correlation_gbrp(uint8_t **dst, int dst_linesize,
+                                                    float **src, int src_linesize,
+                                                    int w, int h)
+{
+    int x, y;
+    const float *src_r = src[0];
+    const float *src_g = src[1];
+    const float *src_b = src[2];
+    uint8_t *dstp_r = dst[2];
+    uint8_t *dstp_g = dst[0];
+    uint8_t *dstp_b = dst[1];
+
+    for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            dstp_r[x] = av_clip_uint8(src_r[x] * DCT3X3_0_0 + src_g[x] * DCT3X3_1_0 + src_b[x] * DCT3X3_2_0);
+            dstp_g[x] = av_clip_uint8(src_r[x] * DCT3X3_0_1 +                         src_b[x] * DCT3X3_2_1);
+            dstp_b[x] = av_clip_uint8(src_r[x] * DCT3X3_0_2 + src_g[x] * DCT3X3_1_2 + src_b[x] * DCT3X3_2_2);
+        }
+        dstp_r += dst_linesize;
+        dstp_g += dst_linesize;
+        dstp_b += dst_linesize;
+        src_r += src_linesize;
+        src_g += src_linesize;
+        src_b += src_linesize;
+    }
+}
 
 static int config_input(AVFilterLink *inlink)
 {
@@ -492,6 +544,10 @@ static int config_input(AVFilterLink *inlink)
     case AV_PIX_FMT_RGB24:
         s->color_decorrelation = color_decorrelation_rgb;
         s->color_correlation   = color_correlation_rgb;
+        break;
+    case AV_PIX_FMT_GBRP:
+        s->color_decorrelation = color_decorrelation_gbrp;
+        s->color_correlation   = color_correlation_gbrp;
         break;
     default:
         av_assert0(0);
@@ -598,6 +654,7 @@ static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_BGR24, AV_PIX_FMT_RGB24,
+        AV_PIX_FMT_GBRP,
         AV_PIX_FMT_NONE
     };
     AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
@@ -680,7 +737,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     s->color_decorrelation(s->cbuf[0], s->p_linesize,
-                           in->data[0], in->linesize[0],
+                           (const uint8_t **)in->data, in->linesize[0],
                            s->pr_width, s->pr_height);
     for (plane = 0; plane < 3; plane++) {
         ThreadData td = {
@@ -689,7 +746,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         };
         ctx->internal->execute(ctx, filter_slice, &td, NULL, s->nb_threads);
     }
-    s->color_correlation(out->data[0], out->linesize[0],
+    s->color_correlation(out->data, out->linesize[0],
                          s->cbuf[1], s->p_linesize,
                          s->pr_width, s->pr_height);
 

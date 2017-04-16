@@ -29,6 +29,9 @@ AVFILTEROBJS-$(CONFIG_COLORSPACE_FILTER) += vf_colorspace.o
 
 CHECKASMOBJS-$(CONFIG_AVFILTER) += $(AVFILTEROBJS-yes)
 
+AVUTILOBJS                              += fixed_dsp.o
+
+CHECKASMOBJS-$(CONFIG_AVUTIL)  += $(AVUTILOBJS)
 
 CHECKASMOBJS-$(ARCH_AARCH64)            += aarch64/checkasm.o
 CHECKASMOBJS-$(HAVE_ARMV5TE_EXTERNAL)   += arm/checkasm.o

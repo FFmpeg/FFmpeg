@@ -327,6 +327,8 @@ typedef struct AVIOContext {
      * This is current internal only, do not use from outside.
      */
     int (*short_seek_get)(void *opaque);
+
+    int64_t written;
 } AVIOContext;
 
 /**

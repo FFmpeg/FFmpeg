@@ -105,7 +105,8 @@ static inline int atomic_compare_exchange_strong(intptr_t *object, intptr_t *exp
                                                  intptr_t desired)
 {
     intptr_t old = *expected;
-    *expected = InterlockedCompareExchangePointer(object, desired, old);
+    *expected = (intptr_t)InterlockedCompareExchangePointer(
+        (PVOID *)object, (PVOID)desired, (PVOID)old);
     return *expected == old;
 }
 

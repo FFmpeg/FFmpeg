@@ -120,6 +120,7 @@ int ffio_init_context(AVIOContext *s,
     s->current_type          = AVIO_DATA_MARKER_UNKNOWN;
     s->last_time             = AV_NOPTS_VALUE;
     s->short_seek_get        = NULL;
+    s->written               = 0;
 
     return 0;
 }
@@ -154,6 +155,9 @@ static void writeout(AVIOContext *s, const uint8_t *data, int len)
             ret = s->write_packet(s->opaque, (uint8_t *)data, len);
         if (ret < 0) {
             s->error = ret;
+        } else {
+            if (s->pos + len > s->written)
+                s->written = s->pos + len;
         }
     }
     if (s->current_type == AVIO_DATA_MARKER_SYNC_POINT ||
@@ -322,6 +326,9 @@ int64_t avio_size(AVIOContext *s)
 
     if (!s)
         return AVERROR(EINVAL);
+
+    if (s->written)
+        return s->written;
 
     if (!s->seek)
         return AVERROR(ENOSYS);

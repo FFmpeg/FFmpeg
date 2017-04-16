@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2007-2008 CSIRO
+ * Copyright (c) 2007-2009 Xiph.Org Foundation
+ * Copyright (c) 2008-2009 Gregory Maxwell
  * Copyright (c) 2012 Andrew D'Addesio
  * Copyright (c) 2013-2014 Mozilla Corporation
  * Copyright (c) 2017 Rostislav Pehlivanov <atomnuker@gmail.com>
@@ -389,10 +392,10 @@ static inline float celt_decode_pulses(OpusRangeCoder *rc, int *y, uint32_t N, u
  * Faster than libopus's search, operates entirely in the signed domain.
  * Slightly worse/better depending on N, K and the input vector.
  */
-static void celt_pvq_search(float *X, int *y, int K, int N)
+static int celt_pvq_search(float *X, int *y, int K, int N)
 {
-    int i;
-    float res = 0.0f, y_norm = 0.0f, xy_norm = 0.0f;
+    int i, y_norm = 0;
+    float res = 0.0f, xy_norm = 0.0f;
 
     for (i = 0; i < N; i++)
         res += FFABS(X[i]);
@@ -407,8 +410,8 @@ static void celt_pvq_search(float *X, int *y, int K, int N)
     }
 
     while (K) {
-        int max_idx = 0, phase = FFSIGN(K);
-        float max_den = 1.0f, max_num = 0.0f;
+        int max_idx = 0, max_den = 1, phase = FFSIGN(K);
+        float max_num = 0.0f;
         y_norm += 1.0f;
 
         for (i = 0; i < N; i++) {
@@ -416,8 +419,8 @@ static void celt_pvq_search(float *X, int *y, int K, int N)
              * to it, attempting to decrease it further will actually increase the
              * sum. Prevent this by disregarding any 0 positions when decrementing. */
             const int ca = 1 ^ ((y[i] == 0) & (phase < 0));
+            const int y_new = y_norm  + 2*phase*FFABS(y[i]);
             float xy_new = xy_norm + 1*phase*FFABS(X[i]);
-            float y_new  = y_norm  + 2*phase*FFABS(y[i]);
             xy_new = xy_new * xy_new;
             if (ca && (max_den*xy_new) > (y_new*max_num)) {
                 max_den = y_new;
@@ -433,6 +436,8 @@ static void celt_pvq_search(float *X, int *y, int K, int N)
         y_norm  += 2*phase*y[max_idx];
         y[max_idx] += phase;
     }
+
+    return y_norm;
 }
 
 static uint32_t celt_alg_quant(OpusRangeCoder *rc, float *X, uint32_t N, uint32_t K,
@@ -441,8 +446,10 @@ static uint32_t celt_alg_quant(OpusRangeCoder *rc, float *X, uint32_t N, uint32_
     int y[176];
 
     celt_exp_rotation(X, N, blocks, K, spread, 1);
-    celt_pvq_search(X, y, K, N);
+    gain /= sqrtf(celt_pvq_search(X, y, K, N));
     celt_encode_pulses(rc, y,  N, K);
+    celt_normalize_residual(y, X, N, gain);
+    celt_exp_rotation(X, N, blocks, K, spread, 0);
     return celt_extract_collapse_mask(y, N, blocks);
 }
 
@@ -844,7 +851,7 @@ static void celt_stereo_is_decouple(float *X, float *Y, float e_l, float e_r, in
 static void celt_stereo_ms_decouple(float *X, float *Y, int N)
 {
     int i;
-    const float decouple_norm = 1.0f/sqrtf(2.0f);
+    const float decouple_norm = 1.0f/sqrtf(1.0f + 1.0f);
     for (i = 0; i < N; i++) {
         const float Xret = X[i];
         X[i] = (X[i] + Y[i])*decouple_norm;
@@ -860,9 +867,9 @@ uint32_t ff_celt_encode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
     const uint8_t *cache;
     int dualstereo, split;
     int imid = 0, iside = 0;
-    //uint32_t N0 = N;
+    uint32_t N0 = N;
     int N_B = N / blocks;
-    //int N_B0 = N_B;
+    int N_B0 = N_B;
     int B0 = blocks;
     int time_divide = 0;
     int recombine = 0;
@@ -883,6 +890,7 @@ uint32_t ff_celt_encode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
                 f->remaining2 -= 1 << 3;
                 b             -= 1 << 3;
             }
+            x[0] = 1.0f - 2.0f*(x[0] < 0);
             x = Y;
         }
         if (lowband_out)
@@ -922,7 +930,7 @@ uint32_t ff_celt_encode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
             tf_change++;
         }
         B0 = blocks;
-        //N_B0 = N_B;
+        N_B0 = N_B;
 
         /* Reorganize the samples in time order instead of frequency order */
         if (B0 > 1)
@@ -977,19 +985,20 @@ uint32_t ff_celt_encode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
 
             if (dualstereo) {
                 if (itheta == 0)
-                    celt_stereo_is_decouple(X, Y, f->block[0].lin_energy[band], f->block[1].lin_energy[band], N);
+                    celt_stereo_is_decouple(X, Y, f->block[0].lin_energy[band],
+                                            f->block[1].lin_energy[band], N);
                 else
                     celt_stereo_ms_decouple(X, Y, N);
             }
         } else if (dualstereo) {
              inv = itheta > 8192;
-             if (inv)
-             {
+             if (inv) {
                 int j;
-                for (j=0;j<N;j++)
+                for (j = 0; j < N; j++)
                    Y[j] = -Y[j];
              }
-             celt_stereo_is_decouple(X, Y, f->block[0].lin_energy[band], f->block[1].lin_energy[band], N);
+             celt_stereo_is_decouple(X, Y, f->block[0].lin_energy[band],
+                                     f->block[1].lin_energy[band], N);
 
             if (b > 2 << 3 && f->remaining2 > 2 << 3) {
                 ff_opus_rc_enc_log(rc, inv, 2);
@@ -1153,8 +1162,124 @@ uint32_t ff_celt_encode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
             /* Finally do the actual quantization */
             cm = celt_alg_quant(rc, X, N, (q < 8) ? q : (8 + (q & 7)) << ((q >> 3) - 1),
                                 f->spread, blocks, gain);
+        } else {
+            /* If there's no pulse, fill the band anyway */
+            int j;
+            uint32_t cm_mask = (1 << blocks) - 1;
+            fill &= cm_mask;
+            if (!fill) {
+                for (j = 0; j < N; j++)
+                    X[j] = 0.0f;
+            } else {
+                if (!lowband) {
+                    /* Noise */
+                    for (j = 0; j < N; j++)
+                        X[j] = (((int32_t)celt_rng(f)) >> 20);
+                    cm = cm_mask;
+                } else {
+                    /* Folded spectrum */
+                    for (j = 0; j < N; j++) {
+                        /* About 48 dB below the "normal" folding level */
+                        X[j] = lowband[j] + (((celt_rng(f)) & 0x8000) ? 1.0f / 256 : -1.0f / 256);
+                    }
+                    cm = fill;
+                }
+                celt_renormalize_vector(X, N, gain);
+            }
         }
     }
 
+    /* This code is used by the decoder and by the resynthesis-enabled encoder */
+    if (dualstereo) {
+        int j;
+        if (N != 2)
+            celt_stereo_merge(X, Y, mid, N);
+        if (inv) {
+            for (j = 0; j < N; j++)
+                Y[j] *= -1;
+        }
+    } else if (level == 0) {
+        int k;
+
+        /* Undo the sample reorganization going from time order to frequency order */
+        if (B0 > 1)
+            celt_interleave_hadamard(f->scratch, X, N_B >> recombine,
+                                     B0<<recombine, longblocks);
+
+        /* Undo time-freq changes that we did earlier */
+        N_B = N_B0;
+        blocks = B0;
+        for (k = 0; k < time_divide; k++) {
+            blocks >>= 1;
+            N_B <<= 1;
+            cm |= cm >> blocks;
+            celt_haar1(X, N_B, blocks);
+        }
+
+        for (k = 0; k < recombine; k++) {
+            cm = ff_celt_bit_deinterleave[cm];
+            celt_haar1(X, N0>>k, 1<<k);
+        }
+        blocks <<= recombine;
+
+        /* Scale output for later folding */
+        if (lowband_out) {
+            int j;
+            float n = sqrtf(N0);
+            for (j = 0; j < N0; j++)
+                lowband_out[j] = n * X[j];
+        }
+        cm = av_mod_uintp2(cm, blocks);
+    }
+
     return cm;
+}
+
+float ff_celt_quant_band_cost(CeltFrame *f, OpusRangeCoder *rc, int band, float *bits,
+                              float lambda)
+{
+    int i, b = 0;
+    uint32_t cm[2] = { (1 << f->blocks) - 1, (1 << f->blocks) - 1 };
+    const int band_size = ff_celt_freq_range[band] << f->size;
+    float buf[352], lowband_scratch[176], norm1[176], norm2[176];
+    float dist, cost, err_x = 0.0f, err_y = 0.0f;
+    float *X = buf;
+    float *X_orig = f->block[0].coeffs + (ff_celt_freq_bands[band] << f->size);
+    float *Y = (f->channels == 2) ? &buf[176] : NULL;
+    float *Y_orig = f->block[1].coeffs + (ff_celt_freq_bands[band] << f->size);
+    OPUS_RC_CHECKPOINT_SPAWN(rc);
+
+    memcpy(X, X_orig, band_size*sizeof(float));
+    if (Y)
+        memcpy(Y, Y_orig, band_size*sizeof(float));
+
+    f->remaining2 = ((f->framebits << 3) - f->anticollapse_needed) - opus_rc_tell_frac(rc) - 1;
+    if (band <= f->coded_bands - 1) {
+        int curr_balance = f->remaining / FFMIN(3, f->coded_bands - band);
+        b = av_clip_uintp2(FFMIN(f->remaining2 + 1, f->pulses[band] + curr_balance), 14);
+    }
+
+    if (f->dual_stereo) {
+        ff_celt_encode_band(f, rc, band, X, NULL, band_size, b / 2, f->blocks, NULL,
+                            f->size, norm1, 0, 1.0f, lowband_scratch, cm[0]);
+
+        ff_celt_encode_band(f, rc, band, Y, NULL, band_size, b / 2, f->blocks, NULL,
+                            f->size, norm2, 0, 1.0f, lowband_scratch, cm[1]);
+    } else {
+        ff_celt_encode_band(f, rc, band, X, Y, band_size, b, f->blocks, NULL, f->size,
+                            norm1, 0, 1.0f, lowband_scratch, cm[0] | cm[1]);
+    }
+
+    for (i = 0; i < band_size; i++) {
+        err_x += (X[i] - X_orig[i])*(X[i] - X_orig[i]);
+        err_y += (Y[i] - Y_orig[i])*(Y[i] - Y_orig[i]);
+    }
+
+    dist = sqrtf(err_x) + sqrtf(err_y);
+    cost = OPUS_RC_CHECKPOINT_BITS(rc)/8.0f;
+    *bits += cost;
+
+    OPUS_RC_CHECKPOINT_ROLLBACK(rc);
+
+    return lambda*dist*cost;
 }

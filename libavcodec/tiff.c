@@ -1362,10 +1362,11 @@ static int decode_frame(AVCodecContext *avctx,
         }
 
         if (s->photometric == TIFF_PHOTOMETRIC_WHITE_IS_ZERO) {
+            int c = (s->avctx->pix_fmt == AV_PIX_FMT_PAL8 ? (1<<s->bpp) - 1 : 255);
             dst = p->data[plane];
             for (i = 0; i < s->height; i++) {
                 for (j = 0; j < stride; j++)
-                    dst[j] = (s->avctx->pix_fmt == AV_PIX_FMT_PAL8 ? (1<<s->bpp) - 1 : 255) - dst[j];
+                    dst[j] = c - dst[j];
                 dst += stride;
             }
         }

@@ -21,13 +21,17 @@
  */
 
 #include <kvazaar.h>
+#include <stdint.h>
 #include <string.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/dict.h"
 #include "libavutil/error.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
+#include "libavutil/log.h"
+#include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
 

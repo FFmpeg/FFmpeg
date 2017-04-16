@@ -21,9 +21,6 @@
 
 #include <DeckLinkAPI.h>
 
-#include <pthread.h>
-#include <semaphore.h>
-
 extern "C" {
 #include "config.h"
 #include "libavformat/avformat.h"

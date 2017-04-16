@@ -108,7 +108,10 @@ ogm_header(AVFormatContext *s, int idx)
             if (size > 52) {
                 av_assert0(AV_INPUT_BUFFER_PADDING_SIZE <= 52);
                 size -= 52;
-                ff_alloc_extradata(st->codecpar, size);
+                if (bytestream2_get_bytes_left(&p) < size)
+                    return AVERROR_INVALIDDATA;
+                if (ff_alloc_extradata(st->codecpar, size) < 0)
+                    return AVERROR(ENOMEM);
                 bytestream2_get_buffer(&p, st->codecpar->extradata, st->codecpar->extradata_size);
             }
         }

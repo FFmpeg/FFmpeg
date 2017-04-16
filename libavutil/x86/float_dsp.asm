@@ -22,6 +22,9 @@
 
 %include "x86util.asm"
 
+SECTION_RODATA 32
+pd_reverse: dd 7, 6, 5, 4, 3, 2, 1, 0
+
 SECTION .text
 
 ;-----------------------------------------------------------------------------
@@ -147,6 +150,69 @@ cglobal vector_fmul_scalar, 4,4,3, dst, src, mul, len
 
 INIT_XMM sse
 VECTOR_FMUL_SCALAR
+
+;------------------------------------------------------------------------------
+; void ff_vector_dmac_scalar(double *dst, const double *src, double mul,
+;                            int len)
+;------------------------------------------------------------------------------
+
+%macro VECTOR_DMAC_SCALAR 0
+%if ARCH_X86_32
+cglobal vector_dmac_scalar, 2,4,5, dst, src, mul, len, lenaddr
+    mov          lenq, lenaddrm
+    VBROADCASTSD m0, mulm
+%else
+%if UNIX64
+cglobal vector_dmac_scalar, 3,3,5, dst, src, len
+%else
+cglobal vector_dmac_scalar, 4,4,5, dst, src, mul, len
+    SWAP 0, 2
+%endif
+    movlhps     xm0, xm0
+%if cpuflag(avx)
+    vinsertf128  m0, m0, xm0, 1
+%endif
+%endif
+    lea    lenq, [lend*8-mmsize*4]
+.loop:
+%if cpuflag(fma3)
+    movaps   m1,     [dstq+lenq]
+    movaps   m2,     [dstq+lenq+1*mmsize]
+    movaps   m3,     [dstq+lenq+2*mmsize]
+    movaps   m4,     [dstq+lenq+3*mmsize]
+    fmaddpd  m1, m0, [srcq+lenq], m1
+    fmaddpd  m2, m0, [srcq+lenq+1*mmsize], m2
+    fmaddpd  m3, m0, [srcq+lenq+2*mmsize], m3
+    fmaddpd  m4, m0, [srcq+lenq+3*mmsize], m4
+%else ; cpuflag
+    mulpd    m1, m0, [srcq+lenq]
+    mulpd    m2, m0, [srcq+lenq+1*mmsize]
+    mulpd    m3, m0, [srcq+lenq+2*mmsize]
+    mulpd    m4, m0, [srcq+lenq+3*mmsize]
+    addpd    m1, m1, [dstq+lenq]
+    addpd    m2, m2, [dstq+lenq+1*mmsize]
+    addpd    m3, m3, [dstq+lenq+2*mmsize]
+    addpd    m4, m4, [dstq+lenq+3*mmsize]
+%endif ; cpuflag
+    movaps [dstq+lenq], m1
+    movaps [dstq+lenq+1*mmsize], m2
+    movaps [dstq+lenq+2*mmsize], m3
+    movaps [dstq+lenq+3*mmsize], m4
+    sub    lenq, mmsize*4
+    jge .loop
+    REP_RET
+%endmacro
+
+INIT_XMM sse2
+VECTOR_DMAC_SCALAR
+%if HAVE_AVX_EXTERNAL
+INIT_YMM avx
+VECTOR_DMAC_SCALAR
+%endif
+%if HAVE_FMA3_EXTERNAL
+INIT_YMM fma3
+VECTOR_DMAC_SCALAR
+%endif
 
 ;------------------------------------------------------------------------------
 ; void ff_vector_dmul_scalar(double *dst, const double *src, double mul,
@@ -296,10 +362,16 @@ VECTOR_FMUL_ADD
 ;-----------------------------------------------------------------------------
 %macro VECTOR_FMUL_REVERSE 0
 cglobal vector_fmul_reverse, 4,4,2, dst, src0, src1, len
+%if cpuflag(avx2)
+    mova    m2, [pd_reverse]
+%endif
     lea       lenq, [lend*4 - 2*mmsize]
 ALIGN 16
 .loop:
-%if cpuflag(avx)
+%if cpuflag(avx2)
+    vpermd  m0, m2, [src1q]
+    vpermd  m1, m2, [src1q+mmsize]
+%elif cpuflag(avx)
     vmovaps     xmm0, [src1q + 16]
     vinsertf128 m0, m0, [src1q], 1
     vshufps     m0, m0, m0, q0123
@@ -326,6 +398,10 @@ INIT_XMM sse
 VECTOR_FMUL_REVERSE
 %if HAVE_AVX_EXTERNAL
 INIT_YMM avx
+VECTOR_FMUL_REVERSE
+%endif
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
 VECTOR_FMUL_REVERSE
 %endif
 

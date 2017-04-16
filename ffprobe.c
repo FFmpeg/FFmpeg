@@ -3458,8 +3458,6 @@ int main(int argc, char **argv)
         goto end;
     }
 #endif
-    av_log_set_callback(log_callback);
-
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
     register_exit(ffprobe_cleanup);
 
@@ -3474,6 +3472,9 @@ int main(int argc, char **argv)
 
     show_banner(argc, argv, options);
     parse_options(NULL, argc, argv, options, opt_input_file);
+
+    if (do_show_log)
+        av_log_set_callback(log_callback);
 
     /* mark things to show, based on -show_entries */
     SET_DO_SHOW(CHAPTERS, chapters);

@@ -226,8 +226,8 @@ TESTPROGS = adler32                                                     \
             xtea                                                        \
             tea                                                         \
 
+TESTPROGS-$(HAVE_THREADS)            += cpu_init
 TESTPROGS-$(HAVE_LZO1X_999_COMPRESS) += lzo
-TESTPROGS-$(HAVE_THREADS) += cpu_init
 
 TOOLS = crypto_bench ffhash ffeval ffescape
 

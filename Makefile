@@ -43,8 +43,6 @@ OBJS-ffserver                 += ffserver_config.o
 
 TESTTOOLS   = audiogen videogen rotozoom tiny_psnr tiny_ssim base64 audiomatch
 HOSTPROGS  := $(TESTTOOLS:%=tests/%) doc/print_options
-TOOLS       = qt-faststart trasher uncoded_frame
-TOOLS-$(CONFIG_ZLIB) += cws2fws
 
 # $(FFLIBS-yes) needs to be in linking order
 FFLIBS-$(CONFIG_AVDEVICE)   += avdevice
@@ -64,6 +62,10 @@ EXAMPLES_FILES := $(wildcard $(SRC_PATH)/doc/examples/*.c) $(SRC_PATH)/doc/examp
 SKIPHEADERS = cmdutils_common_opts.h                                    \
               compat/w32pthreads.h
 
+# first so "all" becomes default target
+all: all-yes
+
+include $(SRC_PATH)/tools/Makefile
 include $(SRC_PATH)/common.mak
 
 FF_EXTRALIBS := $(FFEXTRALIBS)
@@ -81,13 +83,14 @@ tools/uncoded_frame$(EXESUF): ELIBS = $(FF_EXTRALIBS)
 
 CONFIGURABLE_COMPONENTS =                                           \
     $(wildcard $(FFLIBS:%=$(SRC_PATH)/lib%/all*.c))                 \
+    $(wildcard $(FFLIBS:%=$(SRC_PATH)/lib%/version.h))              \
     $(SRC_PATH)/libavcodec/bitstream_filters.c                      \
     $(SRC_PATH)/libavformat/protocols.c                             \
 
 config.h: .config
 .config: $(CONFIGURABLE_COMPONENTS)
 	@-tput bold 2>/dev/null
-	@-printf '\nWARNING: $(?F) newer than config.h, rerun configure\n\n'
+	@-printf '\nWARNING: $(?) newer than config.h, rerun configure\n\n'
 	@-tput sgr0 2>/dev/null
 
 SUBDIR_VARS := CLEANFILES EXAMPLES FFLIBS HOSTPROGS TESTPROGS TOOLS      \
@@ -135,10 +138,6 @@ $(PROGS): %$(PROGSSUF)$(EXESUF): %$(PROGSSUF)_g$(EXESUF)
 %$(PROGSSUF)_g$(EXESUF): %.o $(FF_DEP_LIBS)
 	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $(OBJS-$*) $(FF_EXTRALIBS)
 
-OBJDIRS += tools
-
--include $(wildcard tools/*.d)
-
 VERSION_SH  = $(SRC_PATH)/version.sh
 GIT_LOG     = $(SRC_PATH)/.git/logs/HEAD
 
@@ -183,7 +182,6 @@ uninstall-data:
 clean::
 	$(RM) $(ALLAVPROGS) $(ALLAVPROGS_G)
 	$(RM) $(CLEANSUFFIXES)
-	$(RM) $(CLEANSUFFIXES:%=tools/%)
 	$(RM) $(CLEANSUFFIXES:%=compat/msvcrt/%)
 	$(RM) $(CLEANSUFFIXES:%=compat/atomics/pthread/%)
 	$(RM) $(CLEANSUFFIXES:%=compat/%)

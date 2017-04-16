@@ -270,7 +270,7 @@ int av_strncasecmp(const char *a, const char *b, size_t n);
  * Locale-independent strings replace.
  * @note This means only ASCII-range characters are replace
  */
-char *av_strreplace(const char *str, const char *from, const char *to);
+char *av_strireplace(const char *str, const char *from, const char *to);
 
 /**
  * Thread safe basename.
