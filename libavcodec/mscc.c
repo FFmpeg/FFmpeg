@@ -121,6 +121,8 @@ static int decode_frame(AVCodecContext *avctx,
 {
     MSCCContext *s = avctx->priv_data;
     AVFrame *frame = data;
+    uint8_t *buf = avpkt->data;
+    int buf_size = avpkt->size;
     GetByteContext gb;
     PutByteContext pb;
     int ret, j;
@@ -130,15 +132,19 @@ static int decode_frame(AVCodecContext *avctx,
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
-    avpkt->data[2] ^= avpkt->data[0];
+    if (avctx->codec_id == AV_CODEC_ID_MSCC) {
+        avpkt->data[2] ^= avpkt->data[0];
+        buf += 2;
+        buf_size -= 2;
+    }
 
     ret = inflateReset(&s->zstream);
     if (ret != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Inflate reset error: %d\n", ret);
         return AVERROR_UNKNOWN;
     }
-    s->zstream.next_in   = avpkt->data + 2;
-    s->zstream.avail_in  = avpkt->size - 2;
+    s->zstream.next_in   = buf;
+    s->zstream.avail_in  = buf_size;
     s->zstream.next_out  = s->decomp_buf;
     s->zstream.avail_out = s->decomp_size;
     ret = inflate(&s->zstream, Z_FINISH);
@@ -223,6 +229,18 @@ AVCodec ff_mscc_decoder = {
     .long_name        = NULL_IF_CONFIG_SMALL("Mandsoft Screen Capture Codec"),
     .type             = AVMEDIA_TYPE_VIDEO,
     .id               = AV_CODEC_ID_MSCC,
+    .priv_data_size   = sizeof(MSCCContext),
+    .init             = decode_init,
+    .close            = decode_close,
+    .decode           = decode_frame,
+    .capabilities     = AV_CODEC_CAP_DR1,
+};
+
+AVCodec ff_srgc_decoder = {
+    .name             = "srgc",
+    .long_name        = NULL_IF_CONFIG_SMALL("Screen Recorder Gold Codec"),
+    .type             = AVMEDIA_TYPE_VIDEO,
+    .id               = AV_CODEC_ID_SRGC,
     .priv_data_size   = sizeof(MSCCContext),
     .init             = decode_init,
     .close            = decode_close,
