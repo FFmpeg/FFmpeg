@@ -415,6 +415,7 @@ EXPORTS
     av_strcasecmp
     av_strdup
     av_strerror
+    av_strireplace
     av_stristart
     av_stristr
     av_strlcat
@@ -423,7 +424,6 @@ EXPORTS
     av_strncasecmp
     av_strndup
     av_strnstr
-    av_strreplace
     av_strstart
     av_strtod
     av_strtok

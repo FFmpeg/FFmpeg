@@ -171,7 +171,6 @@
     <ClCompile Include="..\libavformat\avienc.c" />
     <ClCompile Include="..\libavformat\mpegtsenc.c" />
     <ClCompile Include="..\libavformat\rawutils.c" />
-    <ClCompile Include="..\libavformat\avisynth.c" />
     <ClCompile Include="..\libavformat\swfenc.c" />
     <ClCompile Include="..\libavformat\swf.c" />
     <ClCompile Include="..\libavformat\avr.c" />
@@ -480,6 +479,7 @@
     <ClCompile Include="..\libavformat\yop.c" />
     <ClCompile Include="..\libavformat\yuv4mpegdec.c" />
     <ClCompile Include="..\libavformat\yuv4mpegenc.c" />
+    <ClCompile Include="..\libavformat\avisynth.c" />
     <ClCompile Include="..\libavformat\libgme.c" />
     <ClCompile Include="..\libavformat\libmodplug.c" />
     <ClCompile Include="..\libavformat\libssh.c" />
