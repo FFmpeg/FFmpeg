@@ -234,6 +234,9 @@ ffmpeg -i INPUT -c copy -bsf noise[=1] output.mkv
 @end example
 applies the modification to every byte.
 
+@section null
+This bitstream filter passes the packets through unchanged.
+
 @section remove_extra
 
 Remove extradata from packets.
