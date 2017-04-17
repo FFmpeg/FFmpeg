@@ -5587,7 +5587,6 @@ check_func_headers lzo/lzo1x.h lzo1x_999_compress
 check_func_headers stdlib.h getenv
 check_func_headers sys/stat.h lstat
 
-check_func_headers windows.h CoTaskMemFree -lole32
 check_func_headers windows.h GetProcessAffinityMask
 check_func_headers windows.h GetProcessTimes
 check_func_headers windows.h GetSystemTimeAsFileTime
@@ -6031,6 +6030,10 @@ enabled dxva2api_h &&
 int main(void) { IDirectXVideoDecoder *o = NULL; IDirectXVideoDecoder_Release(o); return 0; }
 EOF
 
+enabled dxva2 &&
+    check_lib windows.h CoTaskMemFree -lole32 &&
+    enable dxva2_lib
+
 enabled vaapi &&
     check_lib va/va.h vaInitialize -lva ||
     disable vaapi
@@ -6370,10 +6373,6 @@ if test $target_os = "haiku"; then
     disable memalign
     disable posix_memalign
 fi
-
-enabled_all dxva2 dxva2api_cobj CoTaskMemFree &&
-    prepend ffmpeg_extralibs $($ldflags_filter "-lole32") &&
-    enable dxva2_lib
 
 # add_dep lib dep
 # -> enable ${lib}_deps_${dep}
