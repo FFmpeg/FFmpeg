@@ -213,6 +213,7 @@ typedef struct PlayerState {
 
     AVFilterContext *in_video_filter;   // the first filter in the video chain
     AVFilterContext *out_video_filter;  // the last filter in the video chain
+    SDL_mutex *video_filter_mutex;
 
     float skip_frames;
     float skip_frames_index;
@@ -1201,6 +1202,7 @@ static void player_close(PlayerState *is)
             vp->bmp = NULL;
         }
     }
+    SDL_DestroyMutex(is->video_filter_mutex);
     SDL_DestroyMutex(is->pictq_mutex);
     SDL_DestroyCond(is->pictq_cond);
     SDL_DestroyMutex(is->subpq_mutex);
@@ -1617,6 +1619,9 @@ static int video_thread(void *arg)
                 stream_pause(player);
     }
  the_end:
+    SDL_LockMutex(is->video_filter_mutex);
+    is->out_video_filter = NULL;
+    SDL_UnlockMutex(is->video_filter_mutex);
     av_freep(&vfilters);
     avfilter_graph_free(&graph);
     av_packet_unref(&pkt);
@@ -2552,6 +2557,8 @@ static int stream_open(PlayerState *is,
         return ret;
     }
 
+    is->video_filter_mutex = SDL_CreateMutex();
+
     /* start video display */
     is->pictq_mutex = SDL_CreateMutex();
     is->pictq_cond  = SDL_CreateCond();
@@ -2827,8 +2834,12 @@ static void event_loop(void)
             do_exit();
             break;
         case FF_ALLOC_EVENT:
-            video_open(event.user.data1);
-            alloc_picture(event.user.data1);
+            SDL_LockMutex(player->video_filter_mutex);
+            if (player->out_video_filter) {
+                video_open(event.user.data1);
+                alloc_picture(event.user.data1);
+            }
+            SDL_UnlockMutex(player->video_filter_mutex);
             break;
         case FF_REFRESH_EVENT:
             video_refresh_timer(event.user.data1);
