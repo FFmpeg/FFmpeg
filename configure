@@ -5023,7 +5023,7 @@ probe_libc(){
     # MinGW headers can be installed on Cygwin, so check for newlib first.
     elif check_${pfx}cpp_condition newlib.h "defined _NEWLIB_VERSION"; then
         eval ${pfx}libc_type=newlib
-        add_${pfx}cppflags -U__STRICT_ANSI__
+        add_${pfx}cppflags -U__STRICT_ANSI__ -D_XOPEN_SOURCE=600
     # MinGW64 is backwards compatible with MinGW32, so check for it first.
     elif check_${pfx}cpp_condition _mingw.h "defined __MINGW64_VERSION_MAJOR"; then
         eval ${pfx}libc_type=mingw64
