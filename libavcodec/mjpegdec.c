@@ -1129,6 +1129,12 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s, const uint8_t *mb_bitmask,
     for (i = s->mjpb_skiptosod; i > 0; i--)
         skip_bits(&s->gb, 8);
 
+    if (s->lossless && s->rgb && nb_components != 3) {
+        avpriv_request_sample(s->avctx,
+                              "Lossless RGB image without 3 components");
+        return AVERROR_PATCHWELCOME;
+    }
+
 next_field:
     for (i = 0; i < nb_components; i++)
         s->last_dc[i] = 1024;
