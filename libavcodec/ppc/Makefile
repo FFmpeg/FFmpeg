@@ -24,6 +24,7 @@ OBJS-$(CONFIG_VP3DSP)                  += ppc/vp3dsp_altivec.o
 OBJS-$(CONFIG_VP8DSP)                  += ppc/vp8dsp_altivec.o
 
 # decoders/encoders
+OBJS-$(CONFIG_HEVC_DECODER)            += ppc/hevcdsp.o
 OBJS-$(CONFIG_LLAUDDSP)                += ppc/lossless_audiodsp_altivec.o
 OBJS-$(CONFIG_SVQ1_ENCODER)            += ppc/svq1enc_altivec.o
 OBJS-$(CONFIG_VORBIS_DECODER)          += ppc/vorbisdsp_altivec.o
