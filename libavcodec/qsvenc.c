@@ -366,8 +366,6 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         return AVERROR_BUG;
     q->param.mfx.CodecId = ret;
 
-    q->width_align = avctx->codec_id == AV_CODEC_ID_HEVC ? 32 : 16;
-
     if (avctx->level > 0)
         q->param.mfx.CodecLevel = avctx->level;
 
@@ -389,19 +387,38 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
 
     ff_qsv_map_pixfmt(sw_format, &q->param.mfx.FrameInfo.FourCC);
 
-    q->param.mfx.FrameInfo.Width          = FFALIGN(avctx->width, q->width_align);
-    q->param.mfx.FrameInfo.Height         = FFALIGN(avctx->height, 32);
     q->param.mfx.FrameInfo.CropX          = 0;
     q->param.mfx.FrameInfo.CropY          = 0;
     q->param.mfx.FrameInfo.CropW          = avctx->width;
     q->param.mfx.FrameInfo.CropH          = avctx->height;
     q->param.mfx.FrameInfo.AspectRatioW   = avctx->sample_aspect_ratio.num;
     q->param.mfx.FrameInfo.AspectRatioH   = avctx->sample_aspect_ratio.den;
-    q->param.mfx.FrameInfo.PicStruct      = MFX_PICSTRUCT_PROGRESSIVE;
     q->param.mfx.FrameInfo.ChromaFormat   = MFX_CHROMAFORMAT_YUV420;
     q->param.mfx.FrameInfo.BitDepthLuma   = desc->comp[0].depth;
     q->param.mfx.FrameInfo.BitDepthChroma = desc->comp[0].depth;
     q->param.mfx.FrameInfo.Shift          = desc->comp[0].depth > 8;
+
+    // TODO:  detect version of MFX--if the minor version is greater than
+    // or equal to 19, then can use the same alignment settings as H.264
+    // for HEVC
+    q->width_align = avctx->codec_id == AV_CODEC_ID_HEVC ? 32 : 16;
+    q->param.mfx.FrameInfo.Width = FFALIGN(avctx->width, q->width_align);
+
+    if (avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
+        // it is important that PicStruct be setup correctly from the
+        // start--otherwise, encoding doesn't work and results in a bunch
+        // of incompatible video parameter errors
+        q->param.mfx.FrameInfo.PicStruct = MFX_PICSTRUCT_FIELD_TFF;
+        // height alignment always must be 32 for interlaced video
+        q->height_align = 32;
+    } else {
+        q->param.mfx.FrameInfo.PicStruct = MFX_PICSTRUCT_PROGRESSIVE;
+        // for progressive video, the height should be aligned to 16 for
+        // H.264.  For HEVC, depending on the version of MFX, it should be
+        // either 32 or 16.  The lower number is better if possible.
+        q->height_align = avctx->codec_id == AV_CODEC_ID_HEVC ? 32 : 16;
+    }
+    q->param.mfx.FrameInfo.Height = FFALIGN(avctx->height, q->height_align);
 
     if (avctx->hw_frames_ctx) {
         AVHWFramesContext *frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
@@ -898,7 +915,7 @@ static int submit_frame(QSVEncContext *q, const AVFrame *frame,
     } else {
         /* make a copy if the input is not padded as libmfx requires */
         if (frame->height & 31 || frame->linesize[0] & (q->width_align - 1)) {
-            qf->frame->height = FFALIGN(frame->height, 32);
+            qf->frame->height = FFALIGN(frame->height, q->height_align);
             qf->frame->width  = FFALIGN(frame->width, q->width_align);
 
             ret = ff_get_buffer(q->avctx, qf->frame, AV_GET_BUFFER_FLAG_REF);
