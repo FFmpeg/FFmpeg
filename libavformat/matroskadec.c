@@ -362,7 +362,7 @@ typedef struct MatroskaDemuxContext {
     /* File has SSA subtitles which prevent incremental cluster parsing. */
     int contains_ssa;
 
-    /* WebM DASH Manifest live flag/ */
+    /* WebM DASH Manifest live flag */
     int is_live;
 
     /* Bandwidth value for WebM DASH Manifest */
@@ -3575,7 +3575,7 @@ typedef struct {
     int64_t end_offset;
 } CueDesc;
 
-/* This function searches all the Cues and returns the CueDesc corresponding the
+/* This function searches all the Cues and returns the CueDesc corresponding to
  * the timestamp ts. Returned CueDesc will be such that start_time_ns <= ts <
  * end_time_ns. All 4 fields will be set to -1 if ts >= file's duration.
  */
