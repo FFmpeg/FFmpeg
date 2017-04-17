@@ -1300,7 +1300,7 @@ static int set_channel_layout(AVCodecContext *avctx, int channels)
                 s->channel_order_tab = ff_dca_channel_reorder_nolfe[s->amode];
         }
 
-        if (channels < ff_dca_channels[s->amode])
+        if (channels < ff_dca_channels[s->amode] + !!s->lfe)
             return AVERROR_INVALIDDATA;
 
         if (channels > !!s->lfe &&
