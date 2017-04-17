@@ -123,7 +123,7 @@ OBJS-$(1) += $(1).o $(OBJS-$(1)-yes)
 $(1)$(PROGSSUF)_g$(EXESUF): $$(OBJS-$(1))
 $$(OBJS-$(1)): CFLAGS  += $(CFLAGS-$(1))
 $(1)$(PROGSSUF)_g$(EXESUF): LDFLAGS += $(LDFLAGS-$(1))
-$(1)$(PROGSSUF)_g$(EXESUF): FF_EXTRALIBS += $(LIBS-$(1))
+$(1)$(PROGSSUF)_g$(EXESUF): FF_EXTRALIBS += $(EXTRALIBS-$(1))
 -include $$(OBJS-$(1):.o=.d)
 endef
 

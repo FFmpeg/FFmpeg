@@ -1246,8 +1246,8 @@ check_pkg_config(){
     pkg_cflags=$($pkg_config --cflags $pkg_config_flags $pkg)
     pkg_libs=$($pkg_config --libs $pkg_config_flags $pkg)
     check_func_headers "$headers" "$funcs" $pkg_cflags $pkg_libs "$@" &&
-        set_safe "${pkg}_cflags" $pkg_cflags   &&
-        set_safe "${pkg}_libs"   $pkg_libs
+        set_safe "${pkg}_cflags"    $pkg_cflags &&
+        set_safe "${pkg}_extralibs" $pkg_libs
 }
 
 check_exec(){
@@ -1347,7 +1347,7 @@ use_pkg_config(){
     pkg="$1"
     check_pkg_config "$@" || return 1
     add_cflags    $(get_safe "${pkg}_cflags")
-    add_extralibs $(get_safe "${pkg}_libs")
+    add_extralibs $(get_safe "${pkg}_extralibs")
 }
 
 require_pkg_config(){
@@ -3198,7 +3198,7 @@ ffmpeg_select="aformat_filter anull_filter atrim_filter format_filter
                null_filter
                trim_filter"
 ffplay_deps="avcodec avformat swscale swresample sdl2"
-ffplay_libs='$sdl2_libs'
+ffplay_extralibs='$sdl2_extralibs'
 ffplay_select="rdft crop_filter transpose_filter hflip_filter vflip_filter rotate_filter"
 ffprobe_deps="avcodec avformat"
 ffserver_deps="avformat fork sarestart"
@@ -5756,8 +5756,8 @@ enabled libdc1394         && require_pkg_config libdc1394-2 dc1394/dc1394.h dc13
 enabled libfdk_aac        && { use_pkg_config fdk-aac "fdk-aac/aacenc_lib.h" aacEncOpen ||
                                { require libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-aac &&
                                  warn "using libfdk without pkg-config"; } }
-flite_libs="-lflite_cmu_time_awb -lflite_cmu_us_awb -lflite_cmu_us_kal -lflite_cmu_us_kal16 -lflite_cmu_us_rms -lflite_cmu_us_slt -lflite_usenglish -lflite_cmulex -lflite"
-enabled libflite          && require libflite "flite/flite.h" flite_init $flite_libs
+flite_extralibs="-lflite_cmu_time_awb -lflite_cmu_us_awb -lflite_cmu_us_kal -lflite_cmu_us_kal16 -lflite_cmu_us_rms -lflite_cmu_us_slt -lflite_usenglish -lflite_cmulex -lflite"
+enabled libflite          && require libflite "flite/flite.h" flite_init $flite_extralibs
 enabled fontconfig        && enable libfontconfig
 enabled libfontconfig     && require_pkg_config fontconfig "fontconfig/fontconfig.h" FcInit
 enabled libfreetype       && require_pkg_config freetype2 "ft2build.h FT_FREETYPE_H" FT_Init_FreeType
@@ -5865,8 +5865,8 @@ enabled mmal              && { check_lib interface/mmal/mmal.h mmal_port_connect
                                die "ERROR: mmal not found" &&
                                check_func_headers interface/mmal/mmal.h "MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS"; }
 enabled netcdf            && require_pkg_config netcdf netcdf.h nc_inq_libvers
-enabled openal            && { { for al_libs in "${OPENAL_LIBS}" "-lopenal" "-lOpenAL32"; do
-                               check_lib 'AL/al.h' alGetError "${al_libs}" && break; done } ||
+enabled openal            && { { for al_extralibs in "${OPENAL_LIBS}" "-lopenal" "-lOpenAL32"; do
+                               check_lib 'AL/al.h' alGetError "${al_extralibs}" && break; done } ||
                                die "ERROR: openal not found"; } &&
                              { check_cpp_condition "AL/al.h" "defined(AL_VERSION_1_1)" ||
                                die "ERROR: openal must be installed and version must be 1.1 or compatible"; }
@@ -5898,10 +5898,10 @@ if enabled gcrypt; then
     GCRYPT_CONFIG="${cross_prefix}libgcrypt-config"
     if "${GCRYPT_CONFIG}" --version > /dev/null 2>&1; then
         gcrypt_cflags=$("${GCRYPT_CONFIG}" --cflags)
-        gcrypt_libs=$("${GCRYPT_CONFIG}" --libs)
-        check_func_headers gcrypt.h gcry_mpi_new $gcrypt_cflags $gcrypt_libs ||
+        gcrypt_extralibs=$("${GCRYPT_CONFIG}" --libs)
+        check_func_headers gcrypt.h gcry_mpi_new $gcrypt_cflags $gcrypt_extralibs ||
             die "ERROR: gcrypt not found"
-        add_cflags $gcrypt_cflags && add_extralibs $gcrypt_libs
+        add_cflags $gcrypt_cflags && add_extralibs $gcrypt_extralibs
     else
         require gcrypt gcrypt.h gcry_mpi_new -lgcrypt
     fi
@@ -5913,21 +5913,21 @@ if ! disabled sdl2; then
     if check_pkg_config sdl2 SDL_events.h SDL_PollEvent; then
         check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x020001" $sdl2_cflags &&
         check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x020100" $sdl2_cflags &&
-        check_func SDL_Init $sdl2_libs $sdl2_cflags && enable sdl2
+        check_func SDL_Init $sdl2_extralibs $sdl2_cflags && enable sdl2
     else
       if "${SDL2_CONFIG}" --version > /dev/null 2>&1; then
         sdl2_cflags=$("${SDL2_CONFIG}" --cflags)
-        sdl2_libs=$("${SDL2_CONFIG}" --libs)
+        sdl2_extralibs=$("${SDL2_CONFIG}" --libs)
         check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x020001" $sdl2_cflags &&
         check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x020100" $sdl2_cflags &&
-        check_func SDL_Init $sdl2_libs $sdl2_cflags && enable sdl2
+        check_func SDL_Init $sdl2_extralibs $sdl2_cflags && enable sdl2
       fi
     fi
     if test $target_os = "mingw32"; then
-        sdl2_libs="$sdl2_libs -mconsole"
+        sdl2_extralibs="$sdl2_extralibs -mconsole"
     fi
 fi
-enabled sdl2 && enable sdl && add_cflags $sdl2_cflags && add_extralibs $sdl2_libs
+enabled sdl2 && enable sdl && add_cflags $sdl2_cflags && add_extralibs $sdl2_extralibs
 
 disabled securetransport || { check_func SecIdentityCreate "-Wl,-framework,CoreFoundation -Wl,-framework,Security" &&
     check_lib "Security/SecureTransport.h Security/Security.h" "SSLCreateContext SecItemImport" "-Wl,-framework,CoreFoundation -Wl,-framework,Security" &&
@@ -6015,7 +6015,7 @@ if enabled libxcb; then
         } && enable libxcb_shape; }
 
     add_cflags $xcb_cflags $xcb_shm_cflags $xcb_xfixes_cflags $xcb_shape_cflags
-    add_extralibs $xcb_libs $xcb_shm_libs $xcb_xfixes_libs $xcb_shape_libs
+    add_extralibs $xcb_extralibs $xcb_shm_extralibs $xcb_xfixes_extralibs $xcb_shape_extralibs
 fi
 fi
 
@@ -6372,7 +6372,7 @@ if test $target_os = "haiku"; then
 fi
 
 enabled_all dxva2 dxva2api_cobj CoTaskMemFree &&
-    prepend ffmpeg_libs $($ldflags_filter "-lole32") &&
+    prepend ffmpeg_extralibs $($ldflags_filter "-lole32") &&
     enable dxva2_lib
 
 # add_dep lib dep
@@ -6752,12 +6752,12 @@ map 'get_version $v' $LIBRARY_LIST
 
 map 'eval echo "${v}_FFLIBS=\$${v}_deps" >> config.mak' $LIBRARY_LIST
 
-print_program_libs(){
-    eval "program_libs=\$${1}_libs"
-    eval echo "LIBS-${1}=${program_libs}" >> config.mak
+print_program_extralibs(){
+    eval "program_extralibs=\$${1}_extralibs"
+    eval echo "EXTRALIBS-${1}=${program_extralibs}" >> config.mak
 }
 
-map 'print_program_libs $v' $PROGRAM_LIST
+map 'print_program_extralibs $v' $PROGRAM_LIST
 
 cat > $TMPH <<EOF
 /* Automatically generated by configure - do not modify! */
