@@ -174,6 +174,12 @@ static int read_packet(AVFormatContext *s,
             return 0;
 
         case MM_TYPE_AUDIO :
+            if (s->nb_streams != 2) {
+                av_log(s, AV_LOG_ERROR,
+                       "Unexpected audio packet, skipping\n");
+                avio_skip(pb, length);
+                return AVERROR_INVALIDDATA;
+            }
             if (av_get_packet(s->pb, pkt, length)<0)
                 return AVERROR(ENOMEM);
             pkt->size = length;
