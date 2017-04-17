@@ -609,6 +609,12 @@ static char *tag_string(char *buf, int buf_size, int tag)
     return buf;
 }
 
+static char *unknown_string(char *buf, int buf_size, int val)
+{
+    snprintf(buf, buf_size, "Unknown (%d)", val);
+    return buf;
+}
+
 static void show_packet(AVFormatContext *fmt_ctx, AVPacket *pkt)
 {
     char val_str[128];
@@ -660,6 +666,7 @@ static void show_stream(InputFile *ifile, InputStream *ist)
     char val_str[128];
     AVRational display_aspect_ratio, *sar = NULL;
     const AVPixFmtDescriptor *desc;
+    const char *val;
 
     probe_object_header("stream");
 
@@ -718,11 +725,30 @@ static void show_stream(InputFile *ifile, InputStream *ist)
         probe_str("pix_fmt", desc ? desc->name : "unknown");
         probe_int("level", par->level);
 
-        probe_str("color_range", av_color_range_name    (par->color_range));
-        probe_str("color_space", av_color_space_name    (par->color_space));
-        probe_str("color_trc",   av_color_transfer_name (par->color_trc));
-        probe_str("color_pri",   av_color_primaries_name(par->color_primaries));
-        probe_str("chroma_loc", av_chroma_location_name (par->chroma_location));
+        val = av_color_range_name(par->color_range);
+        if (!val)
+            val = unknown_string(val_str, sizeof(val_str), par->color_range);
+        probe_str("color_range", val);
+
+        val = av_color_space_name(par->color_space);
+        if (!val)
+            val = unknown_string(val_str, sizeof(val_str), par->color_space);
+        probe_str("color_space", val);
+
+        val = av_color_transfer_name(par->color_trc);
+        if (!val)
+            val = unknown_string(val_str, sizeof(val_str), par->color_trc);
+        probe_str("color_trc", val);
+
+        val = av_color_primaries_name(par->color_primaries);
+        if (!val)
+            val = unknown_string(val_str, sizeof(val_str), par->color_primaries);
+        probe_str("color_pri", val);
+
+        val = av_chroma_location_name(par->chroma_location);
+        if (!val)
+            val = unknown_string(val_str, sizeof(val_str), par->chroma_location);
+        probe_str("chroma_loc", val);
         break;
 
     case AVMEDIA_TYPE_AUDIO:
