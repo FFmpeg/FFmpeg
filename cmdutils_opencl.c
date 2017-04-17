@@ -129,7 +129,7 @@ static int64_t run_opencl_bench(AVOpenCLExternalEnv *ext_opencl_env)
     cl_int status;
     size_t kernel_len;
     char *inbuf;
-    int *mask;
+    int *mask = NULL;
     int buf_size = width * height * sizeof(char);
     int mask_size = sizeof(uint32_t) * 128;
 
