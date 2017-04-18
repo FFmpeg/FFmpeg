@@ -6253,6 +6253,44 @@ Limit the maximum change for each plane, default is 65535.
 If 0, plane will remain unchanged.
 @end table
 
+@section deflicker
+
+Remove temporal frame luminance variations.
+
+It accepts the following options:
+
+@table @option
+@item size, s
+Set moving-average filter size. Default is 5. Allowed range is 2 - 129.
+
+@item mode, m
+Set averaging mode to smooth temporal luminance variations.
+
+Available values are:
+@table @samp
+@item am
+Arithmetic mean
+
+@item gm
+Geometric mean
+
+@item hm
+Harmonic mean
+
+@item qm
+Quadratic mean
+
+@item cm
+Cubic mean
+
+@item pm
+Power mean
+
+@item median
+Median
+@end table
+@end table
+
 @section dejudder
 
 Remove judder produced by partially interlaced telecined content.
