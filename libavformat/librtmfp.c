@@ -44,6 +44,7 @@ typedef struct LibRTMFPContext {
     int                 p2pPublishing;
     char*               peerId;
     char*               publication;
+    unsigned short      streamId;
 
     // NetGroup members
     RTMFPGroupConfig    group;
@@ -79,7 +80,7 @@ static void rtmfp_log(unsigned int level, const char* fileName, long line, const
 }
 
 /*static void rtmfp_dump(const char* header, const void* data, unsigned int size) {
-    av_log(NULL, AV_LOG_DEBUG, "%s\n%s", header, (const char*)data);
+    av_log(NULL, AV_LOG_DEBUG, "%s\n%.*s", header, size, (const char*)data);
 }*/
 
 static int rtmfp_close(URLContext *s)
@@ -114,8 +115,7 @@ static void onStatusEvent(const char* code, const char* description) {
 static int rtmfp_open(URLContext *s, const char *uri, int flags)
 {
     LibRTMFPContext *ctx = s->priv_data;
-    int level = 0, res = 0;
-    char *token;
+    int level = 0;
 
     switch (av_log_get_level()) {
         case AV_LOG_FATAL:   level = 1; break;
@@ -138,42 +138,9 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
     RTMFP_DumpSetCallback(rtmfp_dump);*/
     RTMFP_InterruptSetCallback(s->interrupt_callback.callback, s->interrupt_callback.opaque);
 
-     // url
-    token = strtok(s->filename, " ");
-    if (!token) {
-        av_log(NULL, AV_LOG_ERROR, "Unable to read the url : %s\n", (s->filename? s->filename : "(empty)"));
-        return -1;
-    }
+    RTMFP_GetPublicationAndUrlFromUri(uri, &ctx->publication);
 
-    // value=key arguments (prefer passing arguments with -<option> <value> in command line)
-    token = strtok(NULL, " ");
-    while( token != NULL ) {
-
-        if (av_strncasecmp(token, "netgroup=", 9) == 0) // groupspec for NetGroup
-            ctx->netgroup = token + sizeof("netgroup=");
-        else if (av_strncasecmp(token, "peerId=", 7) == 0) // peerId
-            ctx->peerId = token + sizeof("peerId=");
-        else if (av_strcasecmp(token, "p2pPublishing=true") == 0) // is P2P publisher?
-            ctx->p2pPublishing = 1;
-        else if (av_strcasecmp(token, "audioUnbuffered=true") == 0) // audio unbuffered?
-            ctx->audioUnbuffered = 1;
-        else if (av_strcasecmp(token, "videoUnbuffered=true") == 0) // video unbuffered?
-            ctx->videoUnbuffered = 1;
-        else if (av_strncasecmp(token, "updatePeriod=", 13) == 0) // NetGroup update period option
-            ctx->updatePeriod = atoi(token + sizeof("updatePeriod="));
-        else if (av_strncasecmp(token, "windowDuration=", 15) == 0) // NetGroup window duration option
-            ctx->windowDuration = atoi(token + sizeof("windowDuration="));
-        else if (av_strncasecmp(token, "pushLimit=", 10) == 0) // NetGroup push limit option
-            ctx->pushLimit = atoi(token + sizeof("pushLimit="));
-        else
-            av_log(NULL, AV_LOG_INFO, "Unknown inline argument : %s\n", token);
-
-        token = strtok(NULL, " ");
-    }
-
-    RTMFP_GetPublicationAndUrlFromUri(s->filename, &ctx->publication);
-
-    if ((ctx->id = RTMFP_Connect(s->filename, &ctx->rtmfp)) == 0)
+    if ((ctx->id = RTMFP_Connect(uri, &ctx->rtmfp)) == 0)
         return -1;
 
     av_log(NULL, AV_LOG_INFO, "RTMFP Connect called : %d\n", ctx->id);
@@ -184,17 +151,17 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
         ctx->group.pushLimit = ctx->pushLimit;
         ctx->group.isPublisher = (flags & AVIO_FLAG_WRITE) > 1;
         ctx->group.isBlocking = 1;
-        res = RTMFP_Connect2Group(ctx->id, ctx->publication, &ctx->group);
+        ctx->streamId = RTMFP_Connect2Group(ctx->id, ctx->publication, &ctx->group);
     } else if (ctx->peerId)
-        res = RTMFP_Connect2Peer(ctx->id, ctx->peerId, ctx->publication, 1);
+        ctx->streamId = RTMFP_Connect2Peer(ctx->id, ctx->peerId, ctx->publication, 1);
     else if (ctx->p2pPublishing)
-        res = RTMFP_PublishP2P(ctx->id, ctx->publication, !ctx->audioUnbuffered, !ctx->videoUnbuffered, 1);
+        ctx->streamId = RTMFP_PublishP2P(ctx->id, ctx->publication, !ctx->audioUnbuffered, !ctx->videoUnbuffered, 1);
     else if (flags & AVIO_FLAG_WRITE)
-        res = RTMFP_Publish(ctx->id, ctx->publication, !ctx->audioUnbuffered, !ctx->videoUnbuffered, 1);
+        ctx->streamId = RTMFP_Publish(ctx->id, ctx->publication, !ctx->audioUnbuffered, !ctx->videoUnbuffered, 1);
     else
-        res = RTMFP_Play(ctx->id, ctx->publication);
+        ctx->streamId = RTMFP_Play(ctx->id, ctx->publication);
 
-    if (!res)
+    if (!ctx->streamId)
         return -1;
 
     s->is_streamed = 1;
@@ -218,7 +185,7 @@ static int rtmfp_read(URLContext *s, uint8_t *buf, int size)
     LibRTMFPContext *ctx = s->priv_data;
     int res = 0;
 
-    res = RTMFP_Read((ctx->peerId)? ctx->peerId : "", ctx->id, buf, size);
+    res = RTMFP_Read(ctx->streamId, ctx->id, buf, size);
     //av_log(NULL, AV_LOG_INFO, "RTMFP read called, %d/%d bytes read\n", res, size);
 
     return (res < 0)? AVERROR_UNKNOWN : res;
