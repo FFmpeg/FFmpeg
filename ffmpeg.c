@@ -482,7 +482,7 @@ static void ffmpeg_cleanup(int ret)
                                      sizeof(frame), NULL);
                 av_frame_free(&frame);
             }
-            av_fifo_free(fg->inputs[j]->frame_queue);
+            av_fifo_freep(&fg->inputs[j]->frame_queue);
             if (fg->inputs[j]->ist->sub2video.sub_queue) {
                 while (av_fifo_size(fg->inputs[j]->ist->sub2video.sub_queue)) {
                     AVSubtitle sub;
@@ -490,7 +490,7 @@ static void ffmpeg_cleanup(int ret)
                                          &sub, sizeof(sub), NULL);
                     avsubtitle_free(&sub);
                 }
-                av_fifo_free(fg->inputs[j]->ist->sub2video.sub_queue);
+                av_fifo_freep(&fg->inputs[j]->ist->sub2video.sub_queue);
             }
             av_buffer_unref(&fg->inputs[j]->hw_frames_ctx);
             av_freep(&fg->inputs[j]->name);
