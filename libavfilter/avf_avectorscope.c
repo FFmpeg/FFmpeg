@@ -267,6 +267,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             src[0] = samplesf[0];
             src[1] = samplesf[1];
             break;
+        default:
+            av_assert2(0);
         }
 
         switch (s->scale) {
