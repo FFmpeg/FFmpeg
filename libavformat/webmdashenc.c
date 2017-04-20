@@ -467,7 +467,11 @@ static int parse_adaptation_sets(AVFormatContext *s)
             if (as->streams == NULL)
                 return AVERROR(ENOMEM);
             as->streams[as->nb_streams - 1] = to_integer(p, q - p + 1);
-            if (as->streams[as->nb_streams - 1] < 0) return -1;
+            if (as->streams[as->nb_streams - 1] < 0 ||
+                as->streams[as->nb_streams - 1] >= s->nb_streams) {
+                av_log(s, AV_LOG_ERROR, "Invalid value for 'streams' in adapation_sets.\n");
+                return AVERROR(EINVAL);
+            }
             if (*q == '\0') break;
             if (*q == ' ') state = new_set;
             p = ++q;
