@@ -33,7 +33,7 @@ static inline int16_t celt_cos(int16_t x)
 {
     x = (MUL16(x, x) + 4096) >> 13;
     x = (32767-x) + ROUND_MUL16(x, (-7651 + ROUND_MUL16(x, (8277 + ROUND_MUL16(-626, x)))));
-    return 1+x;
+    return x + 1;
 }
 
 static inline int celt_log2tan(int isin, int icos)
@@ -163,7 +163,7 @@ static inline uint32_t celt_extract_collapse_mask(const int *iy, uint32_t N, uin
     collapse_mask = 0;
     for (i = 0; i < B; i++)
         for (j = 0; j < N0; j++)
-            collapse_mask |= (iy[i*N0+j]!=0)<<i;
+            collapse_mask |= (!!iy[i*N0+j]) << i;
     return collapse_mask;
 }
 
@@ -173,7 +173,7 @@ static inline void celt_stereo_merge(float *X, float *Y, float mid, int N)
     float xp = 0, side = 0;
     float E[2];
     float mid2;
-    float t, gain[2];
+    float gain[2];
 
     /* Compute the norm of X+Y and X-Y as |X|^2 + |Y|^2 +/- sum(xy) */
     for (i = 0; i < N; i++) {
@@ -192,10 +192,8 @@ static inline void celt_stereo_merge(float *X, float *Y, float mid, int N)
         return;
     }
 
-    t = E[0];
-    gain[0] = 1.0f / sqrtf(t);
-    t = E[1];
-    gain[1] = 1.0f / sqrtf(t);
+    gain[0] = 1.0f / sqrtf(E[0]);
+    gain[1] = 1.0f / sqrtf(E[1]);
 
     for (i = 0; i < N; i++) {
         float value[2];
@@ -210,43 +208,27 @@ static inline void celt_stereo_merge(float *X, float *Y, float mid, int N)
 static void celt_interleave_hadamard(float *tmp, float *X, int N0,
                                      int stride, int hadamard)
 {
-    int i, j;
-    int N = N0*stride;
+    int i, j, N = N0*stride;
+    const uint8_t *order = &ff_celt_hadamard_order[hadamard ? stride - 2 : 30];
 
-    if (hadamard) {
-        const uint8_t *ordery = ff_celt_hadamard_ordery + stride - 2;
-        for (i = 0; i < stride; i++)
-            for (j = 0; j < N0; j++)
-                tmp[j*stride+i] = X[ordery[i]*N0+j];
-    } else {
-        for (i = 0; i < stride; i++)
-            for (j = 0; j < N0; j++)
-                tmp[j*stride+i] = X[i*N0+j];
-    }
+    for (i = 0; i < stride; i++)
+        for (j = 0; j < N0; j++)
+            tmp[j*stride+i] = X[order[i]*N0+j];
 
-    for (i = 0; i < N; i++)
-        X[i] = tmp[i];
+    memcpy(X, tmp, N*sizeof(float));
 }
 
 static void celt_deinterleave_hadamard(float *tmp, float *X, int N0,
                                        int stride, int hadamard)
 {
-    int i, j;
-    int N = N0*stride;
+    int i, j, N = N0*stride;
+    const uint8_t *order = &ff_celt_hadamard_order[hadamard ? stride - 2 : 30];
 
-    if (hadamard) {
-        const uint8_t *ordery = ff_celt_hadamard_ordery + stride - 2;
-        for (i = 0; i < stride; i++)
-            for (j = 0; j < N0; j++)
-                tmp[ordery[i]*N0+j] = X[j*stride+i];
-    } else {
-        for (i = 0; i < stride; i++)
-            for (j = 0; j < N0; j++)
-                tmp[i*N0+j] = X[j*stride+i];
-    }
+    for (i = 0; i < stride; i++)
+        for (j = 0; j < N0; j++)
+            tmp[order[i]*N0+j] = X[j*stride+i];
 
-    for (i = 0; i < N; i++)
-        X[i] = tmp[i];
+    memcpy(X, tmp, N*sizeof(float));
 }
 
 static void celt_haar1(float *X, int N0, int stride)
@@ -264,11 +246,11 @@ static void celt_haar1(float *X, int N0, int stride)
 }
 
 static inline int celt_compute_qn(int N, int b, int offset, int pulse_cap,
-                                  int dualstereo)
+                                  int stereo)
 {
     int qn, qb;
     int N2 = 2 * N - 1;
-    if (dualstereo && N == 2)
+    if (stereo && N == 2)
         N2--;
 
     /* The upper limit ensures that in a stereo split with itheta==16384, we'll
@@ -471,12 +453,13 @@ uint32_t ff_celt_decode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
                              float *lowband, int duration, float *lowband_out, int level,
                              float gain, float *lowband_scratch, int fill)
 {
+    int i;
     const uint8_t *cache;
-    int dualstereo, split;
+    int stereo = !!Y, split = !!Y;
     int imid = 0, iside = 0;
     uint32_t N0 = N;
-    int N_B;
-    int N_B0;
+    int N_B = N / blocks;
+    int N_B0 = N_B;
     int B0 = blocks;
     int time_divide = 0;
     int recombine = 0;
@@ -485,14 +468,10 @@ uint32_t ff_celt_decode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
     int longblocks = (B0 == 1);
     uint32_t cm = 0;
 
-    N_B0 = N_B = N / blocks;
-    split = dualstereo = (Y != NULL);
-
     if (N == 1) {
         /* special case for one sample */
-        int i;
         float *x = X;
-        for (i = 0; i <= dualstereo; i++) {
+        for (i = 0; i <= stereo; i++) {
             int sign = 0;
             if (f->remaining2 >= 1<<3) {
                 sign           = ff_opus_rc_get_raw(rc, 1);
@@ -507,7 +486,7 @@ uint32_t ff_celt_decode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
         return 1;
     }
 
-    if (!dualstereo && level == 0) {
+    if (!stereo && level == 0) {
         int tf_change = f->tf_change[band];
         int k;
         if (tf_change > 0)
@@ -516,9 +495,8 @@ uint32_t ff_celt_decode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
 
         if (lowband &&
             (recombine || ((N_B & 1) == 0 && tf_change < 0) || B0 > 1)) {
-            int j;
-            for (j = 0; j < N; j++)
-                lowband_scratch[j] = lowband[j];
+            for (i = 0; i < N; i++)
+                lowband_scratch[i] = lowband[i];
             lowband = lowband_scratch;
         }
 
@@ -552,7 +530,7 @@ uint32_t ff_celt_decode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
     /* If we need 1.5 more bit than we can produce, split the band in two. */
     cache = ff_celt_cache_bits +
             ff_celt_cache_index[(duration + 1) * CELT_MAX_BANDS + band];
-    if (!dualstereo && duration >= 0 && b > cache[cache[0]] + 12 && N > 2) {
+    if (!stereo && duration >= 0 && b > cache[cache[0]] + 12 && N > 2) {
         N >>= 1;
         Y = X + N;
         split = 1;
@@ -574,24 +552,24 @@ uint32_t ff_celt_decode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
 
         /* Decide on the resolution to give to the split parameter theta */
         pulse_cap = ff_celt_log_freq_range[band] + duration * 8;
-        offset = (pulse_cap >> 1) - (dualstereo && N == 2 ? CELT_QTHETA_OFFSET_TWOPHASE :
+        offset = (pulse_cap >> 1) - (stereo && N == 2 ? CELT_QTHETA_OFFSET_TWOPHASE :
                                                           CELT_QTHETA_OFFSET);
-        qn = (dualstereo && band >= f->intensity_stereo) ? 1 :
-             celt_compute_qn(N, b, offset, pulse_cap, dualstereo);
+        qn = (stereo && band >= f->intensity_stereo) ? 1 :
+             celt_compute_qn(N, b, offset, pulse_cap, stereo);
         tell = opus_rc_tell_frac(rc);
         if (qn != 1) {
             /* Entropy coding of the angle. We use a uniform pdf for the
             time split, a step for stereo, and a triangular one for the rest. */
-            if (dualstereo && N > 2)
+            if (stereo && N > 2)
                 itheta = ff_opus_rc_dec_uint_step(rc, qn/2);
-            else if (dualstereo || B0 > 1)
+            else if (stereo || B0 > 1)
                 itheta = ff_opus_rc_dec_uint(rc, qn+1);
             else
                 itheta = ff_opus_rc_dec_uint_tri(rc, qn);
             itheta = itheta * 16384 / qn;
             /* NOTE: Renormalising X and Y *may* help fixed-point a bit at very high rate.
             Let's do that at higher complexity */
-        } else if (dualstereo) {
+        } else if (stereo) {
             inv = (b > 2 << 3 && f->remaining2 > 2 << 3) ? ff_opus_rc_dec_log(rc, 2) : 0;
             itheta = 0;
         }
@@ -623,7 +601,7 @@ uint32_t ff_celt_decode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
         /* This is a special case for N=2 that only works for stereo and takes
         advantage of the fact that mid and side are orthogonal to encode
         the side with just one bit. */
-        if (N == 2 && dualstereo) {
+        if (N == 2 && stereo) {
             int c;
             int sign = 0;
             float tmp;
@@ -668,7 +646,7 @@ uint32_t ff_celt_decode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
 
             /* Give more bits to low-energy MDCTs than they would
              * otherwise deserve */
-            if (B0 > 1 && !dualstereo && (itheta & 0x3fff)) {
+            if (B0 > 1 && !stereo && (itheta & 0x3fff)) {
                 if (itheta > 8192)
                     /* Rough approximation for pre-echo masking */
                     delta -= delta >> (4 - duration);
@@ -681,12 +659,12 @@ uint32_t ff_celt_decode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
             sbits = b - mbits;
             f->remaining2 -= qalloc;
 
-            if (lowband && !dualstereo)
+            if (lowband && !stereo)
                 next_lowband2 = lowband + N; /* >32-bit split case */
 
             /* Only stereo needs to pass on lowband_out.
              * Otherwise, it's handled at the end */
-            if (dualstereo)
+            if (stereo)
                 next_lowband_out1 = lowband_out;
             else
                 next_level = level + 1;
@@ -697,7 +675,7 @@ uint32_t ff_celt_decode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
                  * because we need the normalized mid for folding later */
                 cm = ff_celt_decode_band(f, rc, band, X, NULL, N, mbits, blocks,
                                          lowband, duration, next_lowband_out1,
-                                         next_level, dualstereo ? 1.0f : (gain * mid),
+                                         next_level, stereo ? 1.0f : (gain * mid),
                                          lowband_scratch, fill);
 
                 rebalance = mbits - (rebalance - f->remaining2);
@@ -709,14 +687,14 @@ uint32_t ff_celt_decode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
                 cm |= ff_celt_decode_band(f, rc, band, Y, NULL, N, sbits, blocks,
                                           next_lowband2, duration, NULL,
                                           next_level, gain * side, NULL,
-                                          fill >> blocks) << ((B0 >> 1) & (dualstereo - 1));
+                                          fill >> blocks) << ((B0 >> 1) & (stereo - 1));
             } else {
                 /* For a stereo split, the high bits of fill are always zero,
                  * so no folding will be done to the side. */
                 cm = ff_celt_decode_band(f, rc, band, Y, NULL, N, sbits, blocks,
                                          next_lowband2, duration, NULL,
                                          next_level, gain * side, NULL,
-                                         fill >> blocks) << ((B0 >> 1) & (dualstereo - 1));
+                                         fill >> blocks) << ((B0 >> 1) & (stereo - 1));
 
                 rebalance = sbits - (rebalance - f->remaining2);
                 if (rebalance > 3 << 3 && itheta != 16384)
@@ -726,7 +704,7 @@ uint32_t ff_celt_decode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
                  * we need the normalized mid for folding later */
                 cm |= ff_celt_decode_band(f, rc, band, X, NULL, N, mbits, blocks,
                                           lowband, duration, next_lowband_out1,
-                                          next_level, dualstereo ? 1.0f : (gain * mid),
+                                          next_level, stereo ? 1.0f : (gain * mid),
                                           lowband_scratch, fill);
             }
         }
@@ -749,47 +727,44 @@ uint32_t ff_celt_decode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
                                   f->spread, blocks, gain);
         } else {
             /* If there's no pulse, fill the band anyway */
-            int j;
             uint32_t cm_mask = (1 << blocks) - 1;
             fill &= cm_mask;
-            if (!fill) {
-                for (j = 0; j < N; j++)
-                    X[j] = 0.0f;
-            } else {
+            if (fill) {
                 if (!lowband) {
                     /* Noise */
-                    for (j = 0; j < N; j++)
-                        X[j] = (((int32_t)celt_rng(f)) >> 20);
+                    for (i = 0; i < N; i++)
+                        X[i] = (((int32_t)celt_rng(f)) >> 20);
                     cm = cm_mask;
                 } else {
                     /* Folded spectrum */
-                    for (j = 0; j < N; j++) {
+                    for (i = 0; i < N; i++) {
                         /* About 48 dB below the "normal" folding level */
-                        X[j] = lowband[j] + (((celt_rng(f)) & 0x8000) ? 1.0f / 256 : -1.0f / 256);
+                        X[i] = lowband[i] + (((celt_rng(f)) & 0x8000) ? 1.0f / 256 : -1.0f / 256);
                     }
                     cm = fill;
                 }
                 celt_renormalize_vector(X, N, gain);
+            } else {
+                memset(X, 0, N*sizeof(float));
             }
         }
     }
 
     /* This code is used by the decoder and by the resynthesis-enabled encoder */
-    if (dualstereo) {
-        int j;
-        if (N != 2)
+    if (stereo) {
+        if (N > 2)
             celt_stereo_merge(X, Y, mid, N);
         if (inv) {
-            for (j = 0; j < N; j++)
-                Y[j] *= -1;
+            for (i = 0; i < N; i++)
+                Y[i] *= -1;
         }
     } else if (level == 0) {
         int k;
 
         /* Undo the sample reorganization going from time order to frequency order */
         if (B0 > 1)
-            celt_interleave_hadamard(f->scratch, X, N_B>>recombine,
-                                     B0<<recombine, longblocks);
+            celt_interleave_hadamard(f->scratch, X, N_B >> recombine,
+                                     B0 << recombine, longblocks);
 
         /* Undo time-freq changes that we did earlier */
         N_B = N_B0;
@@ -809,10 +784,9 @@ uint32_t ff_celt_decode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
 
         /* Scale output for later folding */
         if (lowband_out) {
-            int j;
             float n = sqrtf(N0);
-            for (j = 0; j < N0; j++)
-                lowband_out[j] = n * X[j];
+            for (i = 0; i < N0; i++)
+                lowband_out[i] = n * X[i];
         }
         cm = av_mod_uintp2(cm, blocks);
     }
@@ -824,15 +798,17 @@ uint32_t ff_celt_decode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
  * big impact on the entire quantization and especially huge on transients */
 static int celt_calc_theta(const float *X, const float *Y, int coupling, int N)
 {
-    int j;
+    int i;
     float e[2] = { 0.0f, 0.0f };
-    for (j = 0; j < N; j++) {
-        if (coupling) { /* Coupling case */
-            e[0] += (X[j] + Y[j])*(X[j] + Y[j]);
-            e[1] += (X[j] - Y[j])*(X[j] - Y[j]);
-        } else {
-            e[0] += X[j]*X[j];
-            e[1] += Y[j]*Y[j];
+    if (coupling) { /* Coupling case */
+        for (i = 0; i < N; i++) {
+            e[0] += (X[i] + Y[i])*(X[i] + Y[i]);
+            e[1] += (X[i] - Y[i])*(X[i] - Y[i]);
+        }
+    } else {
+        for (i = 0; i < N; i++) {
+            e[0] += X[i]*X[i];
+            e[1] += Y[i]*Y[i];
         }
     }
     return lrintf(32768.0f*atan2f(sqrtf(e[1]), sqrtf(e[0]))/M_PI);
@@ -851,11 +827,10 @@ static void celt_stereo_is_decouple(float *X, float *Y, float e_l, float e_r, in
 static void celt_stereo_ms_decouple(float *X, float *Y, int N)
 {
     int i;
-    const float decouple_norm = 1.0f/sqrtf(1.0f + 1.0f);
     for (i = 0; i < N; i++) {
         const float Xret = X[i];
-        X[i] = (X[i] + Y[i])*decouple_norm;
-        Y[i] = (Y[i] - Xret)*decouple_norm;
+        X[i] = (X[i] + Y[i])*M_SQRT1_2;
+        Y[i] = (Y[i] - Xret)*M_SQRT1_2;
     }
 }
 
@@ -864,8 +839,9 @@ uint32_t ff_celt_encode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
                              float *lowband, int duration, float *lowband_out, int level,
                              float gain, float *lowband_scratch, int fill)
 {
+    int i;
     const uint8_t *cache;
-    int dualstereo, split;
+    int stereo = !!Y, split = !!Y;
     int imid = 0, iside = 0;
     uint32_t N0 = N;
     int N_B = N / blocks;
@@ -878,13 +854,10 @@ uint32_t ff_celt_encode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
     int longblocks = (B0 == 1);
     uint32_t cm = 0;
 
-    split = dualstereo = (Y != NULL);
-
     if (N == 1) {
         /* special case for one sample - the decoder's output will be +- 1.0f!!! */
-        int i;
         float *x = X;
-        for (i = 0; i <= dualstereo; i++) {
+        for (i = 0; i <= stereo; i++) {
             if (f->remaining2 >= 1<<3) {
                 ff_opus_rc_put_raw(rc, x[0] < 0, 1);
                 f->remaining2 -= 1 << 3;
@@ -898,7 +871,7 @@ uint32_t ff_celt_encode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
         return 1;
     }
 
-    if (!dualstereo && level == 0) {
+    if (!stereo && level == 0) {
         int tf_change = f->tf_change[band];
         int k;
         if (tf_change > 0)
@@ -907,9 +880,8 @@ uint32_t ff_celt_encode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
 
         if (lowband &&
             (recombine || ((N_B & 1) == 0 && tf_change < 0) || B0 > 1)) {
-            int j;
-            for (j = 0; j < N; j++)
-                lowband_scratch[j] = lowband[j];
+            for (i = 0; i < N; i++)
+                lowband_scratch[i] = lowband[i];
             lowband = lowband_scratch;
         }
 
@@ -941,7 +913,7 @@ uint32_t ff_celt_encode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
     /* If we need 1.5 more bit than we can produce, split the band in two. */
     cache = ff_celt_cache_bits +
             ff_celt_cache_index[(duration + 1) * CELT_MAX_BANDS + band];
-    if (!dualstereo && duration >= 0 && b > cache[cache[0]] + 12 && N > 2) {
+    if (!stereo && duration >= 0 && b > cache[cache[0]] + 12 && N > 2) {
         N >>= 1;
         Y = X + N;
         split = 1;
@@ -953,7 +925,7 @@ uint32_t ff_celt_encode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
 
     if (split) {
         int qn;
-        int itheta = celt_calc_theta(X, Y, dualstereo, N);
+        int itheta = celt_calc_theta(X, Y, stereo, N);
         int mbits, sbits, delta;
         int qalloc;
         int pulse_cap;
@@ -963,10 +935,10 @@ uint32_t ff_celt_encode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
 
         /* Decide on the resolution to give to the split parameter theta */
         pulse_cap = ff_celt_log_freq_range[band] + duration * 8;
-        offset = (pulse_cap >> 1) - (dualstereo && N == 2 ? CELT_QTHETA_OFFSET_TWOPHASE :
+        offset = (pulse_cap >> 1) - (stereo && N == 2 ? CELT_QTHETA_OFFSET_TWOPHASE :
                                                           CELT_QTHETA_OFFSET);
-        qn = (dualstereo && band >= f->intensity_stereo) ? 1 :
-             celt_compute_qn(N, b, offset, pulse_cap, dualstereo);
+        qn = (stereo && band >= f->intensity_stereo) ? 1 :
+             celt_compute_qn(N, b, offset, pulse_cap, stereo);
         tell = opus_rc_tell_frac(rc);
 
         if (qn != 1) {
@@ -975,27 +947,26 @@ uint32_t ff_celt_encode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
 
             /* Entropy coding of the angle. We use a uniform pdf for the
              * time split, a step for stereo, and a triangular one for the rest. */
-            if (dualstereo && N > 2)
+            if (stereo && N > 2)
                 ff_opus_rc_enc_uint_step(rc, itheta, qn / 2);
-            else if (dualstereo || B0 > 1)
+            else if (stereo || B0 > 1)
                 ff_opus_rc_enc_uint(rc, itheta, qn + 1);
             else
                 ff_opus_rc_enc_uint_tri(rc, itheta, qn);
             itheta = itheta * 16384 / qn;
 
-            if (dualstereo) {
+            if (stereo) {
                 if (itheta == 0)
                     celt_stereo_is_decouple(X, Y, f->block[0].lin_energy[band],
                                             f->block[1].lin_energy[band], N);
                 else
                     celt_stereo_ms_decouple(X, Y, N);
             }
-        } else if (dualstereo) {
+        } else if (stereo) {
              inv = itheta > 8192;
              if (inv) {
-                int j;
-                for (j = 0; j < N; j++)
-                   Y[j] = -Y[j];
+                for (i = 0; i < N; i++)
+                   Y[i] *= -1;
              }
              celt_stereo_is_decouple(X, Y, f->block[0].lin_energy[band],
                                      f->block[1].lin_energy[band], N);
@@ -1036,7 +1007,7 @@ uint32_t ff_celt_encode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
         /* This is a special case for N=2 that only works for stereo and takes
         advantage of the fact that mid and side are orthogonal to encode
         the side with just one bit. */
-        if (N == 2 && dualstereo) {
+        if (N == 2 && stereo) {
             int c;
             int sign = 0;
             float tmp;
@@ -1083,7 +1054,7 @@ uint32_t ff_celt_encode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
 
             /* Give more bits to low-energy MDCTs than they would
              * otherwise deserve */
-            if (B0 > 1 && !dualstereo && (itheta & 0x3fff)) {
+            if (B0 > 1 && !stereo && (itheta & 0x3fff)) {
                 if (itheta > 8192)
                     /* Rough approximation for pre-echo masking */
                     delta -= delta >> (4 - duration);
@@ -1096,12 +1067,12 @@ uint32_t ff_celt_encode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
             sbits = b - mbits;
             f->remaining2 -= qalloc;
 
-            if (lowband && !dualstereo)
+            if (lowband && !stereo)
                 next_lowband2 = lowband + N; /* >32-bit split case */
 
             /* Only stereo needs to pass on lowband_out.
              * Otherwise, it's handled at the end */
-            if (dualstereo)
+            if (stereo)
                 next_lowband_out1 = lowband_out;
             else
                 next_level = level + 1;
@@ -1112,7 +1083,7 @@ uint32_t ff_celt_encode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
                  * because we need the normalized mid for folding later */
                 cm = ff_celt_encode_band(f, rc, band, X, NULL, N, mbits, blocks,
                                          lowband, duration, next_lowband_out1,
-                                         next_level, dualstereo ? 1.0f : (gain * mid),
+                                         next_level, stereo ? 1.0f : (gain * mid),
                                          lowband_scratch, fill);
 
                 rebalance = mbits - (rebalance - f->remaining2);
@@ -1124,14 +1095,14 @@ uint32_t ff_celt_encode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
                 cm |= ff_celt_encode_band(f, rc, band, Y, NULL, N, sbits, blocks,
                                           next_lowband2, duration, NULL,
                                           next_level, gain * side, NULL,
-                                          fill >> blocks) << ((B0 >> 1) & (dualstereo - 1));
+                                          fill >> blocks) << ((B0 >> 1) & (stereo - 1));
             } else {
                 /* For a stereo split, the high bits of fill are always zero,
                  * so no folding will be done to the side. */
                 cm = ff_celt_encode_band(f, rc, band, Y, NULL, N, sbits, blocks,
                                          next_lowband2, duration, NULL,
                                          next_level, gain * side, NULL,
-                                         fill >> blocks) << ((B0 >> 1) & (dualstereo - 1));
+                                         fill >> blocks) << ((B0 >> 1) & (stereo - 1));
 
                 rebalance = sbits - (rebalance - f->remaining2);
                 if (rebalance > 3 << 3 && itheta != 16384)
@@ -1141,7 +1112,7 @@ uint32_t ff_celt_encode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
                  * we need the normalized mid for folding later */
                 cm |= ff_celt_encode_band(f, rc, band, X, NULL, N, mbits, blocks,
                                           lowband, duration, next_lowband_out1,
-                                          next_level, dualstereo ? 1.0f : (gain * mid),
+                                          next_level, stereo ? 1.0f : (gain * mid),
                                           lowband_scratch, fill);
             }
         }
@@ -1164,39 +1135,36 @@ uint32_t ff_celt_encode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
                                 f->spread, blocks, gain);
         } else {
             /* If there's no pulse, fill the band anyway */
-            int j;
             uint32_t cm_mask = (1 << blocks) - 1;
             fill &= cm_mask;
-            if (!fill) {
-                for (j = 0; j < N; j++)
-                    X[j] = 0.0f;
-            } else {
+            if (fill) {
                 if (!lowband) {
                     /* Noise */
-                    for (j = 0; j < N; j++)
-                        X[j] = (((int32_t)celt_rng(f)) >> 20);
+                    for (i = 0; i < N; i++)
+                        X[i] = (((int32_t)celt_rng(f)) >> 20);
                     cm = cm_mask;
                 } else {
                     /* Folded spectrum */
-                    for (j = 0; j < N; j++) {
+                    for (i = 0; i < N; i++) {
                         /* About 48 dB below the "normal" folding level */
-                        X[j] = lowband[j] + (((celt_rng(f)) & 0x8000) ? 1.0f / 256 : -1.0f / 256);
+                        X[i] = lowband[i] + (((celt_rng(f)) & 0x8000) ? 1.0f / 256 : -1.0f / 256);
                     }
                     cm = fill;
                 }
                 celt_renormalize_vector(X, N, gain);
+            } else {
+                memset(X, 0, N*sizeof(float));
             }
         }
     }
 
     /* This code is used by the decoder and by the resynthesis-enabled encoder */
-    if (dualstereo) {
-        int j;
-        if (N != 2)
+    if (stereo) {
+        if (N > 2)
             celt_stereo_merge(X, Y, mid, N);
         if (inv) {
-            for (j = 0; j < N; j++)
-                Y[j] *= -1;
+            for (i = 0; i < N; i++)
+                Y[i] *= -1;
         }
     } else if (level == 0) {
         int k;
@@ -1204,7 +1172,7 @@ uint32_t ff_celt_encode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
         /* Undo the sample reorganization going from time order to frequency order */
         if (B0 > 1)
             celt_interleave_hadamard(f->scratch, X, N_B >> recombine,
-                                     B0<<recombine, longblocks);
+                                     B0 << recombine, longblocks);
 
         /* Undo time-freq changes that we did earlier */
         N_B = N_B0;
@@ -1224,10 +1192,9 @@ uint32_t ff_celt_encode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
 
         /* Scale output for later folding */
         if (lowband_out) {
-            int j;
             float n = sqrtf(N0);
-            for (j = 0; j < N0; j++)
-                lowband_out[j] = n * X[j];
+            for (i = 0; i < N0; i++)
+                lowband_out[i] = n * X[i];
         }
         cm = av_mod_uintp2(cm, blocks);
     }

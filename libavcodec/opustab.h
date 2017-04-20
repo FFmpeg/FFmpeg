@@ -146,7 +146,7 @@ extern const uint8_t  ff_celt_log2_frac[];
 extern const uint8_t  ff_celt_bit_interleave[];
 extern const uint8_t  ff_celt_bit_deinterleave[];
 
-extern const uint8_t  ff_celt_hadamard_ordery[];
+extern const uint8_t  ff_celt_hadamard_order[];
 
 extern const uint16_t ff_celt_qn_exp2[];
 extern const uint32_t ff_celt_pvq_u[1272];
