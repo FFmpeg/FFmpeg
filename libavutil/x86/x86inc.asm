@@ -636,7 +636,7 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
 ; We can automatically detect "follows a branch", but not a branch target.
 ; (SSSE3 is a sufficient condition to know that your cpu doesn't have this problem.)
 %macro REP_RET 0
-    %if has_epilogue
+    %if has_epilogue || cpuflag(ssse3)
         RET
     %else
         rep ret
