@@ -3823,6 +3823,7 @@ static int webm_dash_manifest_cues(AVFormatContext *s)
     char *buf;
     int64_t cues_start = -1, cues_end = -1, before_pos, bandwidth;
     int i;
+    int end = 0;
 
     // determine cues start and end positions
     for (i = 0; i < seekhead_list->nb_elem; i++)
@@ -3868,10 +3869,17 @@ static int webm_dash_manifest_cues(AVFormatContext *s)
     if (!buf) return -1;
     strcpy(buf, "");
     for (i = 0; i < s->streams[0]->nb_index_entries; i++) {
-        snprintf(buf, (i + 1) * 20 * sizeof(char),
-                 "%s%" PRId64, buf, s->streams[0]->index_entries[i].timestamp);
-        if (i != s->streams[0]->nb_index_entries - 1)
+        int ret = snprintf(buf + end, 20 * sizeof(char),
+                           "%" PRId64, s->streams[0]->index_entries[i].timestamp);
+        if (ret <= 0 || (ret == 20 && i ==  s->streams[0]->nb_index_entries - 1)) {
+            av_log(s, AV_LOG_ERROR, "timestamp too long.\n");
+            return AVERROR_INVALIDDATA;
+        }
+        end += ret;
+        if (i != s->streams[0]->nb_index_entries - 1) {
             strncat(buf, ",", sizeof(char));
+            end++;
+        }
     }
     av_dict_set(&s->streams[0]->metadata, CUE_TIMESTAMPS, buf, 0);
     av_free(buf);
