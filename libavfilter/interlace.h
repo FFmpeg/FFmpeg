@@ -50,7 +50,7 @@ typedef struct InterlaceContext {
     int lowpass;           // enable or disable low pass filtering
     AVFrame *cur, *next;   // the two frames from which the new one is obtained
     void (*lowpass_line)(uint8_t *dstp, ptrdiff_t linesize, const uint8_t *srcp,
-                         const uint8_t *srcp_above, const uint8_t *srcp_below);
+                         ptrdiff_t mref, ptrdiff_t pref);
 } InterlaceContext;
 
 void ff_interlace_init_x86(InterlaceContext *interlace);

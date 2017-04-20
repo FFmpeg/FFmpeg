@@ -89,8 +89,10 @@ static int query_formats(AVFilterContext *ctx)
 }
 
 static void lowpass_line_c(uint8_t *dstp, ptrdiff_t width, const uint8_t *srcp,
-                           const uint8_t *srcp_above, const uint8_t *srcp_below)
+                           ptrdiff_t mref, ptrdiff_t pref)
 {
+    const uint8_t *srcp_above = srcp + mref;
+    const uint8_t *srcp_below = srcp + pref;
     int i;
     for (i = 0; i < width; i++) {
         // this calculation is an integer representation of
@@ -228,12 +230,12 @@ void copy_picture_field(TInterlaceContext *tinterlace,
             int srcp_linesize = src_linesize[plane] * k;
             int dstp_linesize = dst_linesize[plane] * (interleave ? 2 : 1);
             for (h = lines; h > 0; h--) {
-                const uint8_t *srcp_above = srcp - src_linesize[plane];
-                const uint8_t *srcp_below = srcp + src_linesize[plane];
-                if (h == lines) srcp_above = srcp; // there is no line above
-                if (h == 1) srcp_below = srcp;     // there is no line below
+                ptrdiff_t pref = src_linesize[plane];
+                ptrdiff_t mref = -pref;
+                if (h == lines)  mref = 0; // there is no line above
+                else if (h == 1) pref = 0; // there is no line below
 
-                tinterlace->lowpass_line(dstp, cols, srcp, srcp_above, srcp_below);
+                tinterlace->lowpass_line(dstp, cols, srcp, mref, pref);
                 dstp += dstp_linesize;
                 srcp += srcp_linesize;
             }
