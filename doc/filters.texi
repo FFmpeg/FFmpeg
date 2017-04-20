@@ -6261,7 +6261,7 @@ It accepts the following options:
 
 @table @option
 @item size, s
-Set moving-average filter size. Default is 5. Allowed range is 2 - 129.
+Set moving-average filter size in frames. Default is 5. Allowed range is 2 - 129.
 
 @item mode, m
 Set averaging mode to smooth temporal luminance variations.
