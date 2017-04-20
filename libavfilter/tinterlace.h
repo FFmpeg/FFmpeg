@@ -30,6 +30,10 @@
 #include "libavutil/opt.h"
 #include "avfilter.h"
 
+#define TINTERLACE_FLAG_VLPF 01
+#define TINTERLACE_FLAG_EXACT_TB 2
+#define TINTERLACE_FLAG_CVLPF 4
+
 enum TInterlaceMode {
     MODE_MERGE = 0,
     MODE_DROP_EVEN,

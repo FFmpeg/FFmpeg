@@ -44,6 +44,12 @@ enum FieldType {
     FIELD_LOWER = 1,
 };
 
+enum VLPFilter {
+    VLPF_OFF = 0,
+    VLPF_LIN = 1,
+    VLPF_CMP = 2,
+};
+
 typedef struct InterlaceContext {
     const AVClass *class;
     enum ScanMode scan;    // top or bottom field first scanning
