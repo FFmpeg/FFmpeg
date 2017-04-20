@@ -433,6 +433,10 @@ static int parse_adaptation_sets(AVFormatContext *s)
     char *p = w->adaptation_sets;
     char *q;
     enum { new_set, parsed_id, parsing_streams } state;
+    if (!w->adaptation_sets) {
+        av_log(s, AV_LOG_ERROR, "The 'adaptation_sets' option must be set.\n");
+        return AVERROR(EINVAL);
+    }
     // syntax id=0,streams=0,1,2 id=1,streams=3,4 and so on
     state = new_set;
     while (p < w->adaptation_sets + strlen(w->adaptation_sets)) {
