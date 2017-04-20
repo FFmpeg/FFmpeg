@@ -13,6 +13,9 @@ libavutil:     2017-03-23
 
 API changes, most recent first:
 
+2017-04-xx - xxxxxxx - lavu 56.1.0 - spherical.h
+  Add av_spherical_projection_name() and av_spherical_from_name().
+
 2017-04-26 - xxxxxxx - lavc 58.3.1 - avcodec.h
   Add AV_HWACCEL_FLAG_ALLOW_PROFILE_MISMATCH.
 
