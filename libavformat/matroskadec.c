@@ -3815,7 +3815,7 @@ static int64_t webm_dash_manifest_compute_bandwidth(AVFormatContext *s, int64_t 
     return (int64_t)bandwidth;
 }
 
-static int webm_dash_manifest_cues(AVFormatContext *s)
+static int webm_dash_manifest_cues(AVFormatContext *s, int64_t init_range)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
     EbmlList *seekhead_list = &matroska->seekhead;
@@ -3855,6 +3855,11 @@ static int webm_dash_manifest_cues(AVFormatContext *s)
     // cues end
     av_dict_set_int(&s->streams[0]->metadata, CUES_END, cues_end, 0);
 
+    // if the file has cues at the start, fix up the init range so tht
+    // it does not include it
+    if (cues_start <= init_range)
+        av_dict_set_int(&s->streams[0]->metadata, INITIALIZATION_RANGE, cues_start - 1, 0);
+
     // bandwidth
     bandwidth = webm_dash_manifest_compute_bandwidth(s, cues_start);
     if (bandwidth < 0) return -1;
@@ -3891,6 +3896,7 @@ static int webm_dash_manifest_read_header(AVFormatContext *s)
 {
     char *buf;
     int ret = matroska_read_header(s);
+    int64_t init_range;
     MatroskaTrack *tracks;
     MatroskaDemuxContext *matroska = s->priv_data;
     if (ret) {
@@ -3911,7 +3917,8 @@ static int webm_dash_manifest_read_header(AVFormatContext *s)
 
         // initialization range
         // 5 is the offset of Cluster ID.
-        av_dict_set_int(&s->streams[0]->metadata, INITIALIZATION_RANGE, avio_tell(s->pb) - 5, 0);
+        init_range = avio_tell(s->pb) - 5;
+        av_dict_set_int(&s->streams[0]->metadata, INITIALIZATION_RANGE, init_range, 0);
     }
 
     // basename of the file
@@ -3924,7 +3931,7 @@ static int webm_dash_manifest_read_header(AVFormatContext *s)
 
     // parse the cues and populate Cue related fields
     if (!matroska->is_live) {
-        ret = webm_dash_manifest_cues(s);
+        ret = webm_dash_manifest_cues(s, init_range);
         if (ret < 0) {
             av_log(s, AV_LOG_ERROR, "Error parsing Cues\n");
             return ret;
