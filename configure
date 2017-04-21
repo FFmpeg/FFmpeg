@@ -438,6 +438,8 @@ Developer options (useful when working on FFmpeg itself):
   --random-seed=VALUE      seed value for --enable/disable-random
   --disable-valgrind-backtrace do not print a backtrace under Valgrind
                            (only applies to --disable-optimizations builds)
+  --enable-osfuzz          Enable building fuzzer tool
+  --libfuzzer=PATH         path to libfuzzer
 
 NOTE: Object files are built at the place where configure is launched.
 EOF
@@ -1676,6 +1678,7 @@ CONFIG_LIST="
     fontconfig
     memory_poisoning
     neon_clobber_test
+    ossfuzz
     pic
     raise_major
     thumb
@@ -3509,6 +3512,9 @@ for opt do
         ;;
         --fatal-warnings) enable fatal_warnings
         ;;
+        --libfuzzer=*)
+            libfuzzer_path="$optval"
+        ;;
         *)
             optname="${opt%%=*}"
             optname="${optname#--}"
@@ -3576,6 +3582,11 @@ echo "# $0 $FFMPEG_CONFIGURATION" > $logfile
 set >> $logfile
 
 test -n "$valgrind" && toolchain="valgrind-memcheck"
+
+enabled ossfuzz && {
+    add_cflags  -fsanitize=address,undefined -fsanitize-coverage=trace-pc-guard,trace-cmp -fno-omit-frame-pointer
+    add_ldflags -fsanitize=address,undefined -fsanitize-coverage=trace-pc-guard,trace-cmp
+}
 
 case "$toolchain" in
     *-asan)
@@ -6737,6 +6748,7 @@ SLIB_INSTALL_EXTRA_SHLIB=${SLIB_INSTALL_EXTRA_SHLIB}
 VERSION_SCRIPT_POSTPROCESS_CMD=${VERSION_SCRIPT_POSTPROCESS_CMD}
 SAMPLES:=${samples:-\$(FATE_SAMPLES)}
 NOREDZONE_FLAGS=$noredzone_flags
+LIBFUZZER_PATH=$libfuzzer_path
 EOF
 
 get_version(){
