@@ -3728,9 +3728,7 @@ static void free_stream(AVStream **pst)
     av_dict_free(&st->metadata);
     av_freep(&st->probe_data.buf);
     av_freep(&st->index_entries);
-    av_freep(&st->codec->extradata);
-    av_freep(&st->codec->subtitle_header);
-    av_freep(&st->codec);
+    avcodec_free_context(&st->codec);
     av_freep(&st->priv_data);
     if (st->info)
         av_freep(&st->info->duration_error);
