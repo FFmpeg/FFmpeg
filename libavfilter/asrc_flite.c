@@ -255,8 +255,8 @@ static int request_frame(AVFilterLink *outlink)
     memcpy(samplesref->data[0], flite->wave_samples,
            nb_samples * flite->wave->num_channels * 2);
     samplesref->pts = flite->pts;
-    av_frame_set_pkt_pos(samplesref, -1);
-    av_frame_set_sample_rate(samplesref, flite->wave->sample_rate);
+    samplesref->pkt_pos = -1;
+    samplesref->sample_rate = flite->wave->sample_rate;
     flite->pts += nb_samples;
     flite->wave_samples += nb_samples * flite->wave->num_channels;
     flite->wave_nb_samples -= nb_samples;

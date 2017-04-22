@@ -386,7 +386,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     }
 
     av_frame_copy_props(out, in);
-    metadata = avpriv_frame_get_metadatap(out);
+    metadata = &out->metadata;
     if (metadata) {
         uint8_t value[128];
 

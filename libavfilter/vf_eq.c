@@ -254,7 +254,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterLink *outlink = inlink->dst->outputs[0];
     EQContext *eq = ctx->priv;
     AVFrame *out;
-    int64_t pos = av_frame_get_pkt_pos(in);
+    int64_t pos = in->pkt_pos;
     const AVPixFmtDescriptor *desc;
     int i;
 

@@ -155,7 +155,7 @@ int attribute_align_arg av_buffersrc_add_frame_flags(AVFilterContext *ctx, AVFra
     int ret = 0;
 
     if (frame && frame->channel_layout &&
-        av_get_channel_layout_nb_channels(frame->channel_layout) != av_frame_get_channels(frame)) {
+        av_get_channel_layout_nb_channels(frame->channel_layout) != frame->channels) {
         av_log(ctx, AV_LOG_ERROR, "Layout indicates a different number of channels than actually present\n");
         return AVERROR(EINVAL);
     }
@@ -222,7 +222,7 @@ static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
         if (!frame->channel_layout)
             frame->channel_layout = s->channel_layout;
         CHECK_AUDIO_PARAM_CHANGE(ctx, s, frame->sample_rate, frame->channel_layout,
-                                 av_frame_get_channels(frame), frame->format);
+                                 frame->channels, frame->format);
         break;
     default:
         return AVERROR(EINVAL);

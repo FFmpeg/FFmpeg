@@ -164,7 +164,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
             /* black starts here */
             blackdetect->black_started = 1;
             blackdetect->black_start = picref->pts;
-            av_dict_set(avpriv_frame_get_metadatap(picref), "lavfi.black_start",
+            av_dict_set(&picref->metadata, "lavfi.black_start",
                 av_ts2timestr(blackdetect->black_start, &inlink->time_base), 0);
         }
     } else if (blackdetect->black_started) {
@@ -172,7 +172,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
         blackdetect->black_started = 0;
         blackdetect->black_end = picref->pts;
         check_black_end(ctx);
-        av_dict_set(avpriv_frame_get_metadatap(picref), "lavfi.black_end",
+        av_dict_set(&picref->metadata, "lavfi.black_end",
             av_ts2timestr(blackdetect->black_end, &inlink->time_base), 0);
     }
 

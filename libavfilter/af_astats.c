@@ -305,7 +305,7 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
 static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 {
     AudioStatsContext *s = inlink->dst->priv;
-    AVDictionary **metadata = avpriv_frame_get_metadatap(buf);
+    AVDictionary **metadata = &buf->metadata;
     const int channels = s->nb_channels;
     int i, c;
 

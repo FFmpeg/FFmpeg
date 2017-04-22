@@ -62,7 +62,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *samples)
     AVFilterContext *ctx = inlink->dst;
     VolDetectContext *vd = ctx->priv;
     int nb_samples  = samples->nb_samples;
-    int nb_channels = av_frame_get_channels(samples);
+    int nb_channels = samples->channels;
     int nb_planes   = nb_channels;
     int plane, i;
     int16_t *pcm;

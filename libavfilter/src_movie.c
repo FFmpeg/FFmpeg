@@ -559,7 +559,7 @@ static int movie_push_frame(AVFilterContext *ctx, unsigned out_id)
         return 0;
     }
 
-    frame->pts = av_frame_get_best_effort_timestamp(frame);
+    frame->pts = frame->best_effort_timestamp;
     if (frame->pts != AV_NOPTS_VALUE) {
         if (movie->ts_offset)
             frame->pts += av_rescale_q_rnd(movie->ts_offset, AV_TIME_BASE_Q, outlink->time_base, AV_ROUND_UP);

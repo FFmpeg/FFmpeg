@@ -200,7 +200,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamplesref)
 
     av_frame_copy_props(outsamplesref, insamplesref);
     outsamplesref->format                = outlink->format;
-    av_frame_set_channels(outsamplesref, outlink->channels);
+    outsamplesref->channels              = outlink->channels;
     outsamplesref->channel_layout        = outlink->channel_layout;
     outsamplesref->sample_rate           = outlink->sample_rate;
 

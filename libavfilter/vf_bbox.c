@@ -84,7 +84,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
            av_ts2str(frame->pts), av_ts2timestr(frame->pts, &inlink->time_base));
 
     if (has_bbox) {
-        AVDictionary **metadata = avpriv_frame_get_metadatap(frame);
+        AVDictionary **metadata = &frame->metadata;
 
         SET_META("lavfi.bbox.x1", box.x1)
         SET_META("lavfi.bbox.x2", box.x2)

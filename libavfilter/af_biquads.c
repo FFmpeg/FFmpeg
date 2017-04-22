@@ -411,7 +411,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         av_frame_copy_props(out_buf, buf);
     }
 
-    for (ch = 0; ch < av_frame_get_channels(buf); ch++)
+    for (ch = 0; ch < buf->channels; ch++)
         s->filter(s, buf->extended_data[ch],
                   out_buf->extended_data[ch], nb_samples,
                   &s->cache[ch].i1, &s->cache[ch].i2,

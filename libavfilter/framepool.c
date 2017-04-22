@@ -240,7 +240,7 @@ AVFrame *ff_frame_pool_get(FFFramePool *pool)
         break;
     case AVMEDIA_TYPE_AUDIO:
         frame->nb_samples = pool->nb_samples;
-        av_frame_set_channels(frame, pool->channels);
+        frame->channels = pool->channels;
         frame->format = pool->format;
         frame->linesize[0] = pool->linesize[0];
 

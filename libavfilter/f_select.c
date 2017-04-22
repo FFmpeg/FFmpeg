@@ -284,7 +284,7 @@ static double get_scene_score(AVFilterContext *ctx, AVFrame *frame)
 
 static double get_concatdec_select(AVFrame *frame, int64_t pts)
 {
-    AVDictionary *metadata = av_frame_get_metadata(frame);
+    AVDictionary *metadata = frame->metadata;
     AVDictionaryEntry *start_time_entry = av_dict_get(metadata, "lavf.concatdec.start_time", NULL, 0);
     AVDictionaryEntry *duration_entry = av_dict_get(metadata, "lavf.concatdec.duration", NULL, 0);
     if (start_time_entry) {
@@ -321,7 +321,7 @@ static void select_frame(AVFilterContext *ctx, AVFrame *frame)
     select->var_values[VAR_N  ] = inlink->frame_count_out;
     select->var_values[VAR_PTS] = TS2D(frame->pts);
     select->var_values[VAR_T  ] = TS2D(frame->pts) * av_q2d(inlink->time_base);
-    select->var_values[VAR_POS] = av_frame_get_pkt_pos(frame) == -1 ? NAN : av_frame_get_pkt_pos(frame);
+    select->var_values[VAR_POS] = frame->pkt_pos == -1 ? NAN : frame->pkt_pos;
     select->var_values[VAR_KEY] = frame->key_frame;
     select->var_values[VAR_CONCATDEC_SELECT] = get_concatdec_select(frame, av_rescale_q(frame->pts, inlink->time_base, AV_TIME_BASE_Q));
 
@@ -340,7 +340,7 @@ static void select_frame(AVFilterContext *ctx, AVFrame *frame)
             select->var_values[VAR_SCENE] = get_scene_score(ctx, frame);
             // TODO: document metadata
             snprintf(buf, sizeof(buf), "%f", select->var_values[VAR_SCENE]);
-            av_dict_set(avpriv_frame_get_metadatap(frame), "lavfi.scene_score", buf, 0);
+            av_dict_set(&frame->metadata, "lavfi.scene_score", buf, 0);
         }
         break;
     }

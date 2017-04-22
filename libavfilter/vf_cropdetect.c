@@ -169,7 +169,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
     // ignore first 2 frames - they may be empty
     if (++s->frame_nb > 0) {
-        metadata = avpriv_frame_get_metadatap(frame);
+        metadata = &frame->metadata;
 
         // Reset the crop area every reset_count frames, if reset_count is > 0
         if (s->reset_count > 0 && s->frame_nb > s->reset_count) {

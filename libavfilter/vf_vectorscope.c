@@ -1212,7 +1212,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     if (s->colorspace) {
         s->cs = (s->depth - 8) * 2 + s->colorspace - 1;
     } else {
-        switch (av_frame_get_colorspace(in)) {
+        switch (in->colorspace) {
         case AVCOL_SPC_SMPTE170M:
         case AVCOL_SPC_BT470BG:
             s->cs = (s->depth - 8) * 2 + 0;

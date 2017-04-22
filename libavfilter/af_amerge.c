@@ -280,7 +280,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 
     outbuf->nb_samples     = nb_samples;
     outbuf->channel_layout = outlink->channel_layout;
-    av_frame_set_channels(outbuf, outlink->channels);
+    outbuf->channels       = outlink->channels;
 
     while (nb_samples) {
         ns = nb_samples;

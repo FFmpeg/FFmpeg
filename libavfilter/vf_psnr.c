@@ -148,7 +148,7 @@ static AVFrame *do_psnr(AVFilterContext *ctx, AVFrame *main,
     PSNRContext *s = ctx->priv;
     double comp_mse[4], mse = 0;
     int j, c;
-    AVDictionary **metadata = avpriv_frame_get_metadatap(main);
+    AVDictionary **metadata = &main->metadata;
 
     compute_images_mse(s, (const uint8_t **)main->data, main->linesize,
                           (const uint8_t **)ref->data, ref->linesize,

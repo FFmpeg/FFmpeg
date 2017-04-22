@@ -1452,7 +1452,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         NAN : frame->pts * av_q2d(inlink->time_base);
 
     s->var_values[VAR_PICT_TYPE] = frame->pict_type;
-    s->metadata = av_frame_get_metadata(frame);
+    s->metadata = frame->metadata;
 
     draw_text(ctx, frame, frame->width, frame->height);
 
