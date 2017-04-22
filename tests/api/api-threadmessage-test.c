@@ -95,7 +95,7 @@ static void *sender_thread(void *arg)
                 av_frame_free(&msg.frame);
                 break;
             }
-            av_frame_set_metadata(msg.frame, meta);
+            msg.frame->metadata = meta;
 
             /* allocate a real frame in order to simulate "real" work */
             msg.frame->format = AV_PIX_FMT_RGBA;
@@ -141,7 +141,7 @@ static void *receiver_thread(void *arg)
             if (ret < 0)
                 break;
             av_assert0(msg.magic == MAGIC);
-            meta = av_frame_get_metadata(msg.frame);
+            meta = msg.frame->metadata;
             e = av_dict_get(meta, "sig", NULL, 0);
             av_log(NULL, AV_LOG_INFO, "got \"%s\" (%p)\n", e->value, msg.frame);
             av_frame_free(&msg.frame);
