@@ -622,7 +622,7 @@ static int decode_picture(AVCodecContext *avctx)
         error += ctx->slices[i].ret < 0;
 
     if (error)
-        av_frame_set_decode_error_flags(ctx->frame, FF_DECODE_ERROR_INVALID_BITSTREAM);
+        ctx->frame->decode_error_flags = FF_DECODE_ERROR_INVALID_BITSTREAM;
     if (error < ctx->slice_count)
         return 0;
 

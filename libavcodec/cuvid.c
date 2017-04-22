@@ -604,9 +604,9 @@ FF_DISABLE_DEPRECATION_WARNINGS
         frame->pkt_pts = frame->pts;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-        av_frame_set_pkt_pos(frame, -1);
-        av_frame_set_pkt_duration(frame, 0);
-        av_frame_set_pkt_size(frame, -1);
+        frame->pkt_pos = -1;
+        frame->pkt_duration = 0;
+        frame->pkt_size = -1;
 
         frame->interlaced_frame = !parsed_frame.is_deinterlacing && !parsed_frame.dispinfo.progressive_frame;
 

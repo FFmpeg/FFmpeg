@@ -1630,7 +1630,7 @@ static int decode_header(EXRContext *s, AVFrame *frame)
         return AVERROR_INVALIDDATA;
     }
 
-    av_frame_set_metadata(frame, metadata);
+    frame->metadata = metadata;
 
     // aaand we are done
     bytestream2_skip(&s->gb, 1);

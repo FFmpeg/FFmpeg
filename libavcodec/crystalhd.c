@@ -634,9 +634,9 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     }
-    av_frame_set_pkt_pos(frame, -1);
-    av_frame_set_pkt_duration(frame, 0);
-    av_frame_set_pkt_size(frame, -1);
+    frame->pkt_pos = -1;
+    frame->pkt_duration = 0;
+    frame->pkt_size = -1;
 
     if (!priv->need_second_field) {
         *got_frame       = 1;

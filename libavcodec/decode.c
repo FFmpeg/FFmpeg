@@ -151,7 +151,7 @@ static int unrefcount_frame(AVCodecInternal *avci, AVFrame *frame)
     memcpy(frame->data,     avci->to_free->data,     sizeof(frame->data));
     memcpy(frame->linesize, avci->to_free->linesize, sizeof(frame->linesize));
     if (avci->to_free->extended_data != avci->to_free->data) {
-        int planes = av_frame_get_channels(avci->to_free);
+        int planes = avci->to_free->channels;
         int size   = planes * sizeof(*frame->extended_data);
 
         if (!size) {
@@ -174,7 +174,7 @@ static int unrefcount_frame(AVCodecInternal *avci, AVFrame *frame)
     frame->height         = avci->to_free->height;
     frame->channel_layout = avci->to_free->channel_layout;
     frame->nb_samples     = avci->to_free->nb_samples;
-    av_frame_set_channels(frame, av_frame_get_channels(avci->to_free));
+    frame->channels       = avci->to_free->channels;
 
     return 0;
 }
@@ -417,7 +417,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             if (!(avctx->codec->caps_internal & FF_CODEC_CAP_SETS_PKT_DTS))
                 frame->pkt_dts = pkt->dts;
             if(!avctx->has_b_frames)
-                av_frame_set_pkt_pos(frame, pkt->pos);
+                frame->pkt_pos = pkt->pos;
             //FIXME these should be under if(!avctx->has_b_frames)
             /* get_buffer is supposed to set frame parameters */
             if (!(avctx->codec->capabilities & AV_CODEC_CAP_DR1)) {
@@ -436,10 +436,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (frame->flags & AV_FRAME_FLAG_DISCARD)
             got_frame = 0;
         if (got_frame)
-            av_frame_set_best_effort_timestamp(frame,
-                                               guess_correct_pts(avctx,
-                                                                 frame->pts,
-                                                                 frame->pkt_dts));
+            frame->best_effort_timestamp = guess_correct_pts(avctx,
+                                                             frame->pts,
+                                                             frame->pkt_dts);
     } else if (avctx->codec->type == AVMEDIA_TYPE_AUDIO) {
         uint8_t *side;
         int side_size;
@@ -448,16 +447,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
         uint8_t discard_reason = 0;
 
         if (ret >= 0 && got_frame) {
-            av_frame_set_best_effort_timestamp(frame,
-                                               guess_correct_pts(avctx,
-                                                                 frame->pts,
-                                                                 frame->pkt_dts));
+            frame->best_effort_timestamp = guess_correct_pts(avctx,
+                                                             frame->pts,
+                                                             frame->pkt_dts);
             if (frame->format == AV_SAMPLE_FMT_NONE)
                 frame->format = avctx->sample_fmt;
             if (!frame->channel_layout)
                 frame->channel_layout = avctx->channel_layout;
-            if (!av_frame_get_channels(frame))
-                av_frame_set_channels(frame, avctx->channels);
+            if (!frame->channels)
+                frame->channels = avctx->channels;
             if (!frame->sample_rate)
                 frame->sample_rate = avctx->sample_rate;
         }
@@ -502,8 +500,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
                     if(frame->pkt_dts!=AV_NOPTS_VALUE)
                         frame->pkt_dts += diff_ts;
-                    if (av_frame_get_pkt_duration(frame) >= diff_ts)
-                        av_frame_set_pkt_duration(frame, av_frame_get_pkt_duration(frame) - diff_ts);
+                    if (frame->pkt_duration >= diff_ts)
+                        frame->pkt_duration -= diff_ts;
                 } else {
                     av_log(avctx, AV_LOG_WARNING, "Could not update timestamps for skipped samples.\n");
                 }
@@ -523,7 +521,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                     int64_t diff_ts = av_rescale_q(frame->nb_samples - discard_padding,
                                                    (AVRational){1, avctx->sample_rate},
                                                    avctx->pkt_timebase);
-                    av_frame_set_pkt_duration(frame, diff_ts);
+                    frame->pkt_duration = diff_ts;
                 } else {
                     av_log(avctx, AV_LOG_WARNING, "Could not update timestamps for discarded samples.\n");
                 }
@@ -1253,7 +1251,7 @@ static int update_frame_pool(AVCodecContext *avctx, AVFrame *frame)
         break;
         }
     case AVMEDIA_TYPE_AUDIO: {
-        int ch     = av_frame_get_channels(frame); //av_get_channel_layout_nb_channels(frame->channel_layout);
+        int ch     = frame->channels; //av_get_channel_layout_nb_channels(frame->channel_layout);
         int planar = av_sample_fmt_is_planar(frame->format);
         int planes = planar ? ch : 1;
 
@@ -1408,7 +1406,7 @@ static int add_metadata_from_side_data(const AVPacket *avpkt, AVFrame *frame)
     int size;
     const uint8_t *side_metadata;
 
-    AVDictionary **frame_md = avpriv_frame_get_metadatap(frame);
+    AVDictionary **frame_md = &frame->metadata;
 
     side_metadata = av_packet_get_side_data(avpkt,
                                             AV_PKT_DATA_STRINGS_METADATA, &size);
@@ -1439,9 +1437,9 @@ FF_DISABLE_DEPRECATION_WARNINGS
         frame->pkt_pts = pkt->pts;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-        av_frame_set_pkt_pos     (frame, pkt->pos);
-        av_frame_set_pkt_duration(frame, pkt->duration);
-        av_frame_set_pkt_size    (frame, pkt->size);
+        frame->pkt_pos      = pkt->pos;
+        frame->pkt_duration = pkt->duration;
+        frame->pkt_size     = pkt->size;
 
         for (i = 0; i < FF_ARRAY_ELEMS(sd); i++) {
             int size;
@@ -1470,10 +1468,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
         frame->color_primaries = avctx->color_primaries;
     if (frame->color_trc == AVCOL_TRC_UNSPECIFIED)
         frame->color_trc = avctx->color_trc;
-    if (av_frame_get_colorspace(frame) == AVCOL_SPC_UNSPECIFIED)
-        av_frame_set_colorspace(frame, avctx->colorspace);
-    if (av_frame_get_color_range(frame) == AVCOL_RANGE_UNSPECIFIED)
-        av_frame_set_color_range(frame, avctx->color_range);
+    if (frame->colorspace == AVCOL_SPC_UNSPECIFIED)
+        frame->colorspace = avctx->colorspace;
+    if (frame->color_range == AVCOL_RANGE_UNSPECIFIED)
+        frame->color_range = avctx->color_range;
     if (frame->chroma_location == AVCHROMA_LOC_UNSPECIFIED)
         frame->chroma_location = avctx->chroma_sample_location;
 
@@ -1516,7 +1514,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 }
             }
         }
-        av_frame_set_channels(frame, avctx->channels);
+        frame->channels = avctx->channels;
         break;
     }
     return 0;

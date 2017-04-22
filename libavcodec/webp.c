@@ -1489,7 +1489,7 @@ static int webp_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 goto exif_end;
             }
 
-            av_dict_copy(avpriv_frame_get_metadatap(data), exif_metadata, 0);
+            av_dict_copy(&((AVFrame *) data)->metadata, exif_metadata, 0);
 
 exif_end:
             av_dict_free(&exif_metadata);
