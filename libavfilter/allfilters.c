@@ -255,6 +255,7 @@ static void register_all(void)
     REGISTER_FILTER(PERSPECTIVE,    perspective,    vf);
     REGISTER_FILTER(PHASE,          phase,          vf);
     REGISTER_FILTER(PIXDESCTEST,    pixdesctest,    vf);
+    REGISTER_FILTER(PIXSCOPE,       pixscope,       vf);
     REGISTER_FILTER(PP,             pp,             vf);
     REGISTER_FILTER(PP7,            pp7,            vf);
     REGISTER_FILTER(PREMULTIPLY,    premultiply,    vf);
