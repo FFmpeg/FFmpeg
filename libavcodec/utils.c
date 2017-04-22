@@ -172,7 +172,7 @@ int av_codec_is_encoder(const AVCodec *codec)
 
 int av_codec_is_decoder(const AVCodec *codec)
 {
-    return codec && (codec->decode || codec->send_packet);
+    return codec && (codec->decode || codec->receive_frame);
 }
 
 av_cold void avcodec_register(AVCodec *codec)
@@ -672,6 +672,12 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         goto free_and_end;
     }
 
+    avctx->internal->compat_decode_frame = av_frame_alloc();
+    if (!avctx->internal->compat_decode_frame) {
+        ret = AVERROR(ENOMEM);
+        goto free_and_end;
+    }
+
     avctx->internal->buffer_frame = av_frame_alloc();
     if (!avctx->internal->buffer_frame) {
         ret = AVERROR(ENOMEM);
@@ -680,6 +686,12 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
 
     avctx->internal->buffer_pkt = av_packet_alloc();
     if (!avctx->internal->buffer_pkt) {
+        ret = AVERROR(ENOMEM);
+        goto free_and_end;
+    }
+
+    avctx->internal->ds.in_pkt = av_packet_alloc();
+    if (!avctx->internal->ds.in_pkt) {
         ret = AVERROR(ENOMEM);
         goto free_and_end;
     }
@@ -1114,9 +1126,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
     av_freep(&avctx->priv_data);
     if (avctx->internal) {
         av_frame_free(&avctx->internal->to_free);
+        av_frame_free(&avctx->internal->compat_decode_frame);
         av_frame_free(&avctx->internal->buffer_frame);
         av_packet_free(&avctx->internal->buffer_pkt);
         av_packet_free(&avctx->internal->last_pkt_props);
+
+        av_packet_free(&avctx->internal->ds.in_pkt);
+
         av_freep(&avctx->internal->pool);
     }
     av_freep(&avctx->internal);
@@ -1163,9 +1179,13 @@ av_cold int avcodec_close(AVCodecContext *avctx)
         avctx->internal->byte_buffer_size = 0;
         av_freep(&avctx->internal->byte_buffer);
         av_frame_free(&avctx->internal->to_free);
+        av_frame_free(&avctx->internal->compat_decode_frame);
         av_frame_free(&avctx->internal->buffer_frame);
         av_packet_free(&avctx->internal->buffer_pkt);
         av_packet_free(&avctx->internal->last_pkt_props);
+
+        av_packet_free(&avctx->internal->ds.in_pkt);
+
         for (i = 0; i < FF_ARRAY_ELEMS(pool->pools); i++)
             av_buffer_pool_uninit(&pool->pools[i]);
         av_freep(&avctx->internal->pool);
