@@ -376,7 +376,7 @@ static int create_subcc_packet(AVFormatContext *avctx, AVFrame *frame,
     memcpy(lavfi->subcc_packet.data, sd->data, sd->size);
     lavfi->subcc_packet.stream_index = stream_idx;
     lavfi->subcc_packet.pts = frame->pts;
-    lavfi->subcc_packet.pos = av_frame_get_pkt_pos(frame);
+    lavfi->subcc_packet.pos = frame->pkt_pos;
     return 0;
 }
 
@@ -440,15 +440,15 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
 
         av_image_copy_to_buffer(pkt->data, size, (const uint8_t **)frame->data, frame->linesize,
                                 frame->format, frame->width, frame->height, 1);
-    } else if (av_frame_get_channels(frame) /* FIXME test audio */) {
+    } else if (frame->channels /* FIXME test audio */) {
         size = frame->nb_samples * av_get_bytes_per_sample(frame->format) *
-                                   av_frame_get_channels(frame);
+                                   frame->channels;
         if ((ret = av_new_packet(pkt, size)) < 0)
             return ret;
         memcpy(pkt->data, frame->data[0], size);
     }
 
-    frame_metadata = av_frame_get_metadata(frame);
+    frame_metadata = frame->metadata;
     if (frame_metadata) {
         uint8_t *metadata;
         AVDictionaryEntry *e = NULL;
@@ -479,7 +479,7 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
 
     pkt->stream_index = stream_idx;
     pkt->pts = frame->pts;
-    pkt->pos = av_frame_get_pkt_pos(frame);
+    pkt->pos = frame->pkt_pos;
     pkt->size = size;
     av_frame_unref(frame);
     return size;
