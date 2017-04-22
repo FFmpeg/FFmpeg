@@ -2049,13 +2049,13 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
     print_time("pkt_pts_time",          frame->pts, &stream->time_base);
     print_ts  ("pkt_dts",               frame->pkt_dts);
     print_time("pkt_dts_time",          frame->pkt_dts, &stream->time_base);
-    print_ts  ("best_effort_timestamp", av_frame_get_best_effort_timestamp(frame));
-    print_time("best_effort_timestamp_time", av_frame_get_best_effort_timestamp(frame), &stream->time_base);
-    print_duration_ts  ("pkt_duration",      av_frame_get_pkt_duration(frame));
-    print_duration_time("pkt_duration_time", av_frame_get_pkt_duration(frame), &stream->time_base);
-    if (av_frame_get_pkt_pos (frame) != -1) print_fmt    ("pkt_pos", "%"PRId64, av_frame_get_pkt_pos(frame));
+    print_ts  ("best_effort_timestamp", frame->best_effort_timestamp);
+    print_time("best_effort_timestamp_time", frame->best_effort_timestamp, &stream->time_base);
+    print_duration_ts  ("pkt_duration",      frame->pkt_duration);
+    print_duration_time("pkt_duration_time", frame->pkt_duration, &stream->time_base);
+    if (frame->pkt_pos != -1) print_fmt    ("pkt_pos", "%"PRId64, frame->pkt_pos);
     else                      print_str_opt("pkt_pos", "N/A");
-    if (av_frame_get_pkt_size(frame) != -1) print_val    ("pkt_size", av_frame_get_pkt_size(frame), unit_byte_str);
+    if (frame->pkt_size != -1) print_val    ("pkt_size", frame->pkt_size, unit_byte_str);
     else                       print_str_opt("pkt_size", "N/A");
 
     switch (stream->codecpar->codec_type) {
@@ -2086,18 +2086,18 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
         if (s) print_str    ("sample_fmt", s);
         else   print_str_opt("sample_fmt", "unknown");
         print_int("nb_samples",         frame->nb_samples);
-        print_int("channels", av_frame_get_channels(frame));
-        if (av_frame_get_channel_layout(frame)) {
+        print_int("channels", frame->channels);
+        if (frame->channel_layout) {
             av_bprint_clear(&pbuf);
-            av_bprint_channel_layout(&pbuf, av_frame_get_channels(frame),
-                                     av_frame_get_channel_layout(frame));
+            av_bprint_channel_layout(&pbuf, frame->channels,
+                                     frame->channel_layout);
             print_str    ("channel_layout", pbuf.str);
         } else
             print_str_opt("channel_layout", "unknown");
         break;
     }
     if (do_show_frame_tags)
-        show_tags(w, av_frame_get_metadata(frame), SECTION_ID_FRAME_TAGS);
+        show_tags(w, frame->metadata, SECTION_ID_FRAME_TAGS);
     if (do_show_log)
         show_log(w, SECTION_ID_FRAME_LOGS, SECTION_ID_FRAME_LOG, do_show_log);
     if (frame->nb_side_data) {
