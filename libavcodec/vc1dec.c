@@ -270,7 +270,7 @@ static int vc1_decode_sprites(VC1Context *v, GetBitContext* gb)
 
     vc1_parse_sprites(v, gb, &sd);
 
-    if (!s->current_picture.f->data[0]) {
+    if (!s->current_picture.f || !s->current_picture.f->data[0]) {
         av_log(avctx, AV_LOG_ERROR, "Got no sprites\n");
         return -1;
     }
