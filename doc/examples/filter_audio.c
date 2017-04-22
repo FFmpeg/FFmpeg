@@ -64,13 +64,13 @@ static int init_filter_graph(AVFilterGraph **graph, AVFilterContext **src,
 {
     AVFilterGraph *filter_graph;
     AVFilterContext *abuffer_ctx;
-    AVFilter        *abuffer;
+    const AVFilter  *abuffer;
     AVFilterContext *volume_ctx;
-    AVFilter        *volume;
+    const AVFilter  *volume;
     AVFilterContext *aformat_ctx;
-    AVFilter        *aformat;
+    const AVFilter  *aformat;
     AVFilterContext *abuffersink_ctx;
-    AVFilter        *abuffersink;
+    const AVFilter  *abuffersink;
 
     AVDictionary *options_dict = NULL;
     uint8_t options_str[1024];
