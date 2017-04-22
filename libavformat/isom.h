@@ -196,6 +196,8 @@ typedef struct MOVStreamContext {
     AVSphericalMapping *spherical;
     size_t spherical_size;
     AVMasteringDisplayMetadata *mastering;
+    AVContentLightMetadata *coll;
+    size_t coll_size;
 
     uint32_t format;
 

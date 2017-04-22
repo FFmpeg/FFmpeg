@@ -4658,6 +4658,38 @@ static int mov_read_smdm(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+static int mov_read_coll(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    MOVStreamContext *sc;
+    int version;
+
+    if (c->fc->nb_streams < 1)
+        return AVERROR_INVALIDDATA;
+
+    sc = c->fc->streams[c->fc->nb_streams - 1]->priv_data;
+
+    if (atom.size < 5) {
+        av_log(c->fc, AV_LOG_ERROR, "Empty Content Light Level box\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    version = avio_r8(pb);
+    if (version) {
+        av_log(c->fc, AV_LOG_WARNING, "Unsupported Content Light Level box version %d\n", version);
+        return 0;
+    }
+    avio_skip(pb, 3); /* flags */
+
+    sc->coll = av_content_light_metadata_alloc(&sc->coll_size);
+    if (!sc->coll)
+        return AVERROR(ENOMEM);
+
+    sc->coll->MaxCLL  = avio_rb16(pb);
+    sc->coll->MaxFALL = avio_rb16(pb);
+
+    return 0;
+}
+
 static int mov_read_st3d(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
@@ -5445,6 +5477,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('s','v','3','d'), mov_read_sv3d }, /* spherical video box */
 { MKTAG('d','O','p','s'), mov_read_dops },
 { MKTAG('S','m','D','m'), mov_read_smdm },
+{ MKTAG('C','o','L','L'), mov_read_coll },
 { 0, NULL }
 };
 
@@ -5870,6 +5903,7 @@ static int mov_read_close(AVFormatContext *s)
         av_freep(&sc->stereo3d);
         av_freep(&sc->spherical);
         av_freep(&sc->mastering);
+        av_freep(&sc->coll);
     }
 
     if (mov->dv_demux) {
@@ -6228,6 +6262,15 @@ static int mov_read_header(AVFormatContext *s)
                     return err;
 
                 sc->mastering = NULL;
+            }
+            if (sc->coll) {
+                err = av_stream_add_side_data(st, AV_PKT_DATA_CONTENT_LIGHT_LEVEL,
+                                              (uint8_t *)sc->coll,
+                                              sc->coll_size);
+                if (err < 0)
+                    return err;
+
+                sc->coll = NULL;
             }
             break;
         }
