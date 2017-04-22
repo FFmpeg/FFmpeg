@@ -3,6 +3,7 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 - deflicker video filter
+- doubleweave video filter
 
 version 3.3:
 - CrystalHD decoder moved to new decode API

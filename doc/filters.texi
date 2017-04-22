@@ -14659,11 +14659,14 @@ Default is digital.
 Set background opacity.
 @end table
 
-@section weave
+@section weave, doubleweave
 
 The @code{weave} takes a field-based video input and join
 each two sequential fields into single frame, producing a new double
 height clip with half the frame rate and half the frame count.
+
+The @code{doubleweave} works same as @code{weave} but without
+halving frame rate and frame count.
 
 It accepts the following option:
 
