@@ -1112,7 +1112,7 @@ decode_intra_mb:
 
         dquant= get_se_golomb(&sl->gb);
 
-        sl->qscale += dquant;
+        sl->qscale += (unsigned)dquant;
 
         if (((unsigned)sl->qscale) > max_qp){
             if (sl->qscale < 0) sl->qscale += max_qp + 1;
