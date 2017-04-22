@@ -253,7 +253,7 @@ int main(int argc, char **argv)
                 }
 
                 if (ret >= 0) {
-                    frame->pts = av_frame_get_best_effort_timestamp(frame);
+                    frame->pts = frame->best_effort_timestamp;
 
                     /* push the decoded frame into the filtergraph */
                     if (av_buffersrc_add_frame_flags(buffersrc_ctx, frame, AV_BUFFERSRC_FLAG_KEEP_REF) < 0) {
