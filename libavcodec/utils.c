@@ -684,6 +684,12 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         goto free_and_end;
     }
 
+    avctx->internal->last_pkt_props = av_packet_alloc();
+    if (!avctx->internal->last_pkt_props) {
+        ret = AVERROR(ENOMEM);
+        goto free_and_end;
+    }
+
     avctx->internal->skip_samples_multiplier = 1;
 
     if (codec->priv_data_size > 0) {
@@ -1110,6 +1116,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         av_frame_free(&avctx->internal->to_free);
         av_frame_free(&avctx->internal->buffer_frame);
         av_packet_free(&avctx->internal->buffer_pkt);
+        av_packet_free(&avctx->internal->last_pkt_props);
         av_freep(&avctx->internal->pool);
     }
     av_freep(&avctx->internal);
@@ -1158,6 +1165,7 @@ av_cold int avcodec_close(AVCodecContext *avctx)
         av_frame_free(&avctx->internal->to_free);
         av_frame_free(&avctx->internal->buffer_frame);
         av_packet_free(&avctx->internal->buffer_pkt);
+        av_packet_free(&avctx->internal->last_pkt_props);
         for (i = 0; i < FF_ARRAY_ELEMS(pool->pools); i++)
             av_buffer_pool_uninit(&pool->pools[i]);
         av_freep(&avctx->internal->pool);

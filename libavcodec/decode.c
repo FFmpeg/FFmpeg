@@ -118,6 +118,19 @@ fail2:
     return 0;
 }
 
+static int extract_packet_props(AVCodecInternal *avci, const AVPacket *pkt)
+{
+    int ret = 0;
+
+    av_packet_unref(avci->last_pkt_props);
+    if (pkt) {
+        ret = av_packet_copy_props(avci->last_pkt_props, pkt);
+        if (!ret)
+            avci->last_pkt_props->size = pkt->size; // HACK: Needed for ff_init_buffer_info().
+    }
+    return ret;
+}
+
 static int unrefcount_frame(AVCodecInternal *avci, AVFrame *frame)
 {
     int ret;
@@ -394,7 +407,9 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
     if ((avctx->coded_width || avctx->coded_height) && av_image_check_size2(avctx->coded_width, avctx->coded_height, avctx->max_pixels, AV_PIX_FMT_NONE, 0, avctx))
         return AVERROR(EINVAL);
 
-    avctx->internal->pkt = avpkt;
+    ret = extract_packet_props(avci, avpkt);
+    if (ret < 0)
+        return ret;
     ret = apply_param_change(avctx, avpkt);
     if (ret < 0)
         return ret;
@@ -412,7 +427,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (ret < 0)
             goto fail;
 
-        avctx->internal->pkt = &tmp;
+        ret = extract_packet_props(avci, &tmp);
+        if (ret < 0)
+            return ret;
         if (HAVE_THREADS && avctx->active_thread_type & FF_THREAD_FRAME)
             ret = ff_thread_decode_frame(avctx, picture, got_picture_ptr,
                                          &tmp);
@@ -438,7 +455,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 fail:
         emms_c(); //needed to avoid an emms_c() call before every return;
 
-        avctx->internal->pkt = NULL;
 #if FF_API_MERGE_SD
         if (did_split) {
             av_packet_free_side_data(&tmp);
@@ -524,7 +540,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (ret < 0)
             goto fail;
 
-        avctx->internal->pkt = &tmp;
+        ret = extract_packet_props(avci, &tmp);
+        if (ret < 0)
+            return ret;
         if (HAVE_THREADS && avctx->active_thread_type & FF_THREAD_FRAME)
             ret = ff_thread_decode_frame(avctx, frame, got_frame_ptr, &tmp);
         else {
@@ -548,7 +566,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 frame->sample_rate = avctx->sample_rate;
         }
 
-        side= av_packet_get_side_data(avctx->internal->pkt, AV_PKT_DATA_SKIP_SAMPLES, &side_size);
+        side= av_packet_get_side_data(avci->last_pkt_props, AV_PKT_DATA_SKIP_SAMPLES, &side_size);
         if(side && side_size>=10) {
             avctx->internal->skip_samples = AV_RL32(side) * avctx->internal->skip_samples_multiplier;
             discard_padding = AV_RL32(side + 4);
@@ -630,7 +648,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
             }
         }
 fail:
-        avctx->internal->pkt = NULL;
 #if FF_API_MERGE_SD
         if (did_split) {
             av_packet_free_side_data(&tmp);
@@ -862,7 +879,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (ret < 0) {
             *got_sub_ptr = 0;
         } else {
-            avctx->internal->pkt = &pkt_recoded;
+             ret = extract_packet_props(avctx->internal, &pkt_recoded);
+             if (ret < 0)
+                return ret;
 
             if (avctx->pkt_timebase.num && avpkt->pts != AV_NOPTS_VALUE)
                 sub->pts = av_rescale_q(avpkt->pts,
@@ -912,7 +931,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
                 av_packet_unref(&pkt_recoded);
             }
-            avctx->internal->pkt = NULL;
         }
 
 #if FF_API_MERGE_SD
@@ -1292,7 +1310,7 @@ static int add_metadata_from_side_data(const AVPacket *avpkt, AVFrame *frame)
 
 int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
 {
-    const AVPacket *pkt = avctx->internal->pkt;
+    const AVPacket *pkt = avctx->internal->last_pkt_props;
     int i;
     static const struct {
         enum AVPacketSideDataType packet;
@@ -1338,16 +1356,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         } else {
             frame->flags = (frame->flags & ~AV_FRAME_FLAG_DISCARD);
         }
-    } else {
-        frame->pts = AV_NOPTS_VALUE;
-#if FF_API_PKT_PTS
-FF_DISABLE_DEPRECATION_WARNINGS
-        frame->pkt_pts = AV_NOPTS_VALUE;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-        av_frame_set_pkt_pos     (frame, -1);
-        av_frame_set_pkt_duration(frame, 0);
-        av_frame_set_pkt_size    (frame, -1);
     }
     frame->reordered_opaque = avctx->reordered_opaque;
 

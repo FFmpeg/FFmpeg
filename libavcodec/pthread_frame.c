@@ -800,7 +800,7 @@ int ff_frame_thread_init(AVCodecContext *avctx)
         }
         *copy->internal = *src->internal;
         copy->internal->thread_ctx = p;
-        copy->internal->pkt = &p->avpkt;
+        copy->internal->last_pkt_props = &p->avpkt;
 
         if (!i) {
             src = copy;
