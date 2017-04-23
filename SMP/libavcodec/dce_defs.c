@@ -21,7 +21,9 @@
 
 #include "config.h"
 
+#if !(CONFIG_VP9_D3D11VA_HWACCEL||CONFIG_VP9_DXVA2_HWACCEL)
 #include "libavcodec/avcodec.h"
+#endif
 #include "libavcodec/xvmc_internal.h"
 #include "libavcodec/xvididct.h"
 #include "libavcodec/wmv2dsp.h"
@@ -32,11 +34,15 @@
 #include "libavcodec/vorbisdsp.h"
 #include "libavcodec/videodsp.h"
 #include "libavcodec/vdpau_compat.h"
+#if !((HAVE_6REGS && HAVE_MMX_INLINE)||(HAVE_6REGS && HAVE_MMXEXT_INLINE))
 #include "libavcodec/x86/vc1dsp.h"
+#endif
 #include "libavcodec/vc1dsp.h"
 #include "libavcodec/synth_filter.h"
 #include "libavcodec/svq1enc.h"
+#if !(ARCH_X86_64||HAVE_MMX_INLINE||HAVE_SSE2_INLINE)
 #include "libavcodec/x86/simple_idct.h"
+#endif
 #include "libavcodec/sbrdsp.h"
 #include "libavcodec/rv34dsp.h"
 #include "libavcodec/rdft.h"
@@ -54,7 +60,9 @@
 #include "libavcodec/iirfilter.h"
 #include "libavcodec/idctdsp.h"
 #include "libavcodec/hpeldsp.h"
+#if !(ARCH_X86_64)
 #include "libavcodec/x86/hevcdsp.h"
+#endif
 #include "libavcodec/hevcpred.h"
 #include "libavcodec/hevcdsp.h"
 #include "libavcodec/h264qpel.h"
@@ -67,7 +75,9 @@
 #include "libavcodec/flacdsp.h"
 #include "libavcodec/fft.h"
 #include "libavcodec/fdctdsp.h"
+#if !(HAVE_MMX_INLINE||HAVE_MMXEXT_INLINE||HAVE_SSE2_INLINE)
 #include "libavcodec/x86/fdct.h"
+#endif
 #include "libavcodec/celp_math.h"
 #include "libavcodec/celp_filters.h"
 #include "libavcodec/blockdsp.h"
@@ -78,7 +88,9 @@
 #include "libavcodec/aacsbr.h"
 #include "libavcodec/aac.h"
 #include "libavcodec/aacenc.h"
+#if !(CONFIG_MSMPEG4_DECODER||CONFIG_MSMPEG4_ENCODER)
 #include "libavcodec/msmpeg4.h"
+#endif
 
 #if !(CONFIG_MSMPEG4_DECODER)
 int ff_msmpeg4_decode_picture_header(MpegEncContext *s) {return 0;}
@@ -183,6 +195,7 @@ void ff_h264qpel_init_arm(H264QpelContext *c, int bit_depth) {return;}
 void ff_h264qpel_init_mips(H264QpelContext *c, int bit_depth) {return;}
 void ff_h264qpel_init_ppc(H264QpelContext *c, int bit_depth) {return;}
 void ff_hevc_dsp_init_mips(HEVCDSPContext *c, const int bit_depth) {return;}
+void ff_hevc_dsp_init_ppc(HEVCDSPContext *c, const int bit_depth) {return;}
 #if !(ARCH_X86_64)
 void ff_hevc_h_loop_filter_luma_10_avx(uint8_t *pix, ptrdiff_t stride, int beta, int *tc, uint8_t *no_p, uint8_t *no_q) {return;}
 #endif

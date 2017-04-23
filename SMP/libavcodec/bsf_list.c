@@ -33,7 +33,9 @@ static const AVBitStreamFilter *bitstream_filters[] = {
     &ff_mpeg4_unpack_bframes_bsf,
     &ff_mov2textsub_bsf,
     &ff_noise_bsf,
+    &ff_null_bsf,
     &ff_remove_extradata_bsf,
     &ff_text2movsub_bsf,
     &ff_vp9_superframe_bsf,
+    &ff_vp9_superframe_split_bsf,
     NULL };
