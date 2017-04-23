@@ -92,15 +92,7 @@ typedef struct {
     AVCodecContext *avctx;
     HANDLE dev;
 
-    uint8_t *orig_extradata;
-    uint32_t orig_extradata_size;
-
-    AVBSFContext *bsfc;
-
     uint8_t is_70012;
-    uint8_t *sps_pps_buf;
-    uint32_t sps_pps_size;
-    uint8_t is_nal;
     uint8_t need_second_field;
     uint8_t draining;
 
@@ -140,7 +132,7 @@ static inline BC_MEDIA_SUBTYPE id2subtype(CHDContext *priv, enum AVCodecID id)
     case AV_CODEC_ID_WMV3:
         return BC_MSUBTYPE_WMV3;
     case AV_CODEC_ID_H264:
-        return priv->is_nal ? BC_MSUBTYPE_AVC1 : BC_MSUBTYPE_H264;
+        return BC_MSUBTYPE_H264;
     default:
         return BC_MSUBTYPE_INVALID;
     }
@@ -295,25 +287,6 @@ static av_cold int uninit(AVCodecContext *avctx)
     DtsCloseDecoder(device);
     DtsDeviceClose(device);
 
-    /*
-     * Restore original extradata, so that if the decoder is
-     * reinitialised, the bitstream detection and filtering
-     * will work as expected.
-     */
-    if (priv->orig_extradata) {
-        av_free(avctx->extradata);
-        avctx->extradata = priv->orig_extradata;
-        avctx->extradata_size = priv->orig_extradata_size;
-        priv->orig_extradata = NULL;
-        priv->orig_extradata_size = 0;
-    }
-
-    if (priv->bsfc) {
-        av_bsf_free(&priv->bsfc);
-    }
-
-    av_freep(&priv->sps_pps_buf);
-
     if (priv->head) {
        OpaqueList *node = priv->head;
        while (node) {
@@ -326,60 +299,9 @@ static av_cold int uninit(AVCodecContext *avctx)
     return 0;
 }
 
-
-static av_cold int init_bsf(AVCodecContext *avctx, const char *bsf_name)
-{
-    CHDContext *priv = avctx->priv_data;
-    const AVBitStreamFilter *bsf;
-    int avret;
-    void *extradata = NULL;
-    size_t size = 0;
-
-    bsf = av_bsf_get_by_name(bsf_name);
-    if (!bsf) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Cannot open the %s BSF!\n", bsf_name);
-        return AVERROR_BSF_NOT_FOUND;
-    }
-
-    avret = av_bsf_alloc(bsf, &priv->bsfc);
-    if (avret != 0) {
-        return avret;
-    }
-
-    avret = avcodec_parameters_from_context(priv->bsfc->par_in, avctx);
-    if (avret != 0) {
-        return avret;
-    }
-
-    avret = av_bsf_init(priv->bsfc);
-    if (avret != 0) {
-        return avret;
-    }
-
-    /* Back up the extradata so it can be restored at close time. */
-    priv->orig_extradata = avctx->extradata;
-    priv->orig_extradata_size = avctx->extradata_size;
-
-    size = priv->bsfc->par_out->extradata_size;
-    extradata = av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
-    if (!extradata) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Failed to allocate copy of extradata\n");
-        return AVERROR(ENOMEM);
-    }
-    memcpy(extradata, priv->bsfc->par_out->extradata, size);
-
-    avctx->extradata = extradata;
-    avctx->extradata_size = size;
-
-    return 0;
-}
-
 static av_cold int init(AVCodecContext *avctx)
 {
     CHDContext* priv;
-    int avret;
     BC_STATUS ret;
     BC_INFO_CRYSTAL version;
     BC_INPUT_FORMAT format = {
@@ -407,21 +329,10 @@ static av_cold int init(AVCodecContext *avctx)
     /* Initialize the library */
     priv               = avctx->priv_data;
     priv->avctx        = avctx;
-    priv->is_nal       = avctx->extradata_size > 0 && *(avctx->extradata) == 1;
     priv->draining     = 0;
 
     subtype = id2subtype(priv, avctx->codec->id);
     switch (subtype) {
-    case BC_MSUBTYPE_AVC1:
-        avret = init_bsf(avctx, "h264_mp4toannexb");
-        if (avret != 0) {
-            return avret;
-        }
-        subtype = BC_MSUBTYPE_H264;
-        format.startCodeSz = 4;
-        format.pMetaData  = avctx->extradata;
-        format.metaDataSz = avctx->extradata_size;
-        break;
     case BC_MSUBTYPE_H264:
         format.startCodeSz = 4;
         // Fall-through
@@ -781,34 +692,6 @@ static int crystalhd_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
             priv->bframe_bug = 0;
         }
 
-        if (priv->bsfc) {
-            AVPacket filter_packet = { 0 };
-
-            ret = av_packet_ref(&filter_packet, avpkt);
-            if (ret < 0) {
-                av_log(avctx, AV_LOG_ERROR, "CrystalHD: mpv4toannexb filter "
-                       "failed to ref input packet\n");
-                goto exit;
-            }
-
-            ret = av_bsf_send_packet(priv->bsfc, &filter_packet);
-            if (ret < 0) {
-                av_log(avctx, AV_LOG_ERROR, "CrystalHD: mpv4toannexb filter "
-                       "failed to send input packet\n");
-                goto exit;
-            }
-
-            ret = av_bsf_receive_packet(priv->bsfc, &filtered_packet);
-            if (ret < 0) {
-                av_log(avctx, AV_LOG_ERROR, "CrystalHD: mpv4toannexb filter "
-                       "failed to receive output packet\n");
-                goto exit;
-            }
-
-            avpkt = &filtered_packet;
-            av_packet_unref(&filter_packet);
-        }
-
         /*
          * Despite being notionally opaque, either libcrystalhd or
          * the hardware itself will mangle pts values that are too
@@ -911,7 +794,7 @@ static int crystalhd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     }
 }
 
-#define DEFINE_CRYSTALHD_DECODER(x, X) \
+#define DEFINE_CRYSTALHD_DECODER(x, X, bsf_name) \
     static const AVClass x##_crystalhd_class = { \
         .class_name = #x "_crystalhd", \
         .item_name = av_default_item_name, \
@@ -929,30 +812,31 @@ static int crystalhd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
         .close          = uninit, \
         .receive_frame  = crystalhd_receive_frame, \
         .flush          = flush, \
+        .bsfs           = bsf_name, \
         .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING, \
         .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUYV422, AV_PIX_FMT_NONE}, \
     };
 
 #if CONFIG_H264_CRYSTALHD_DECODER
-DEFINE_CRYSTALHD_DECODER(h264, H264)
+DEFINE_CRYSTALHD_DECODER(h264, H264, "h264_mp4toannexb")
 #endif
 
 #if CONFIG_MPEG2_CRYSTALHD_DECODER
-DEFINE_CRYSTALHD_DECODER(mpeg2, MPEG2VIDEO)
+DEFINE_CRYSTALHD_DECODER(mpeg2, MPEG2VIDEO, NULL)
 #endif
 
 #if CONFIG_MPEG4_CRYSTALHD_DECODER
-DEFINE_CRYSTALHD_DECODER(mpeg4, MPEG4)
+DEFINE_CRYSTALHD_DECODER(mpeg4, MPEG4, NULL)
 #endif
 
 #if CONFIG_MSMPEG4_CRYSTALHD_DECODER
-DEFINE_CRYSTALHD_DECODER(msmpeg4, MSMPEG4V3)
+DEFINE_CRYSTALHD_DECODER(msmpeg4, MSMPEG4V3, NULL)
 #endif
 
 #if CONFIG_VC1_CRYSTALHD_DECODER
-DEFINE_CRYSTALHD_DECODER(vc1, VC1)
+DEFINE_CRYSTALHD_DECODER(vc1, VC1, NULL)
 #endif
 
 #if CONFIG_WMV3_CRYSTALHD_DECODER
-DEFINE_CRYSTALHD_DECODER(wmv3, WMV3)
+DEFINE_CRYSTALHD_DECODER(wmv3, WMV3, NULL)
 #endif
