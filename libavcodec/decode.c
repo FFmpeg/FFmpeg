@@ -179,6 +179,116 @@ static int unrefcount_frame(AVCodecInternal *avci, AVFrame *frame)
     return 0;
 }
 
+static int bsfs_init(AVCodecContext *avctx)
+{
+    AVCodecInternal *avci = avctx->internal;
+    DecodeFilterContext *s = &avci->filter;
+    const char *bsfs_str;
+    int ret;
+
+    if (s->nb_bsfs)
+        return 0;
+
+    bsfs_str = avctx->codec->bsfs ? avctx->codec->bsfs : "null";
+    while (bsfs_str && *bsfs_str) {
+        AVBSFContext **tmp;
+        const AVBitStreamFilter *filter;
+        char *bsf;
+
+        bsf = av_get_token(&bsfs_str, ",");
+        if (!bsf) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+
+        filter = av_bsf_get_by_name(bsf);
+        if (!filter) {
+            av_log(avctx, AV_LOG_ERROR, "A non-existing bitstream filter %s "
+                   "requested by a decoder. This is a bug, please report it.\n",
+                   bsf);
+            ret = AVERROR_BUG;
+            av_freep(&bsf);
+            goto fail;
+        }
+        av_freep(&bsf);
+
+        tmp = av_realloc_array(s->bsfs, s->nb_bsfs + 1, sizeof(*s->bsfs));
+        if (!tmp) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+        s->bsfs = tmp;
+        s->nb_bsfs++;
+
+        ret = av_bsf_alloc(filter, &s->bsfs[s->nb_bsfs - 1]);
+        if (ret < 0)
+            goto fail;
+
+        if (s->nb_bsfs == 1) {
+            /* We do not currently have an API for passing the input timebase into decoders,
+             * but no filters used here should actually need it.
+             * So we make up some plausible-looking number (the MPEG 90kHz timebase) */
+            s->bsfs[s->nb_bsfs - 1]->time_base_in = (AVRational){ 1, 90000 };
+            ret = avcodec_parameters_from_context(s->bsfs[s->nb_bsfs - 1]->par_in,
+                                                  avctx);
+        } else {
+            s->bsfs[s->nb_bsfs - 1]->time_base_in = s->bsfs[s->nb_bsfs - 2]->time_base_out;
+            ret = avcodec_parameters_copy(s->bsfs[s->nb_bsfs - 1]->par_in,
+                                          s->bsfs[s->nb_bsfs - 2]->par_out);
+        }
+        if (ret < 0)
+            goto fail;
+
+        ret = av_bsf_init(s->bsfs[s->nb_bsfs - 1]);
+        if (ret < 0)
+            goto fail;
+    }
+
+    return 0;
+fail:
+    ff_decode_bsfs_uninit(avctx);
+    return ret;
+}
+
+/* try to get one output packet from the filter chain */
+static int bsfs_poll(AVCodecContext *avctx, AVPacket *pkt)
+{
+    DecodeFilterContext *s = &avctx->internal->filter;
+    int idx, ret;
+
+    /* start with the last filter in the chain */
+    idx = s->nb_bsfs - 1;
+    while (idx >= 0) {
+        /* request a packet from the currently selected filter */
+        ret = av_bsf_receive_packet(s->bsfs[idx], pkt);
+        if (ret == AVERROR(EAGAIN)) {
+            /* no packets available, try the next filter up the chain */
+            ret = 0;
+            idx--;
+            continue;
+        } else if (ret < 0 && ret != AVERROR_EOF) {
+            return ret;
+        }
+
+        /* got a packet or EOF -- pass it to the caller or to the next filter
+         * down the chain */
+        if (idx == s->nb_bsfs - 1) {
+            return ret;
+        } else {
+            idx++;
+            ret = av_bsf_send_packet(s->bsfs[idx], ret < 0 ? NULL : pkt);
+            if (ret < 0) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Error pre-processing a packet before decoding\n");
+                av_packet_unref(pkt);
+                return ret;
+            }
+        }
+    }
+
+    return AVERROR(EAGAIN);
+}
+
 int ff_decode_get_packet(AVCodecContext *avctx, AVPacket *pkt)
 {
     AVCodecInternal *avci = avctx->internal;
@@ -187,10 +297,11 @@ int ff_decode_get_packet(AVCodecContext *avctx, AVPacket *pkt)
     if (avci->draining)
         return AVERROR_EOF;
 
-    if (!avci->buffer_pkt->data && !avci->buffer_pkt->side_data_elems)
-        return AVERROR(EAGAIN);
-
-    av_packet_move_ref(pkt, avci->buffer_pkt);
+    ret = bsfs_poll(avctx, pkt);
+    if (ret == AVERROR_EOF)
+        avci->draining = 1;
+    if (ret < 0)
+        return ret;
 
     ret = extract_packet_props(avctx->internal, pkt);
     if (ret < 0)
@@ -525,18 +636,24 @@ int attribute_align_arg avcodec_send_packet(AVCodecContext *avctx, const AVPacke
     if (avctx->internal->draining)
         return AVERROR_EOF;
 
-    if (avci->buffer_pkt->data || avci->buffer_pkt->side_data_elems)
-        return AVERROR(EAGAIN);
-
     if (avpkt && !avpkt->size && avpkt->data)
         return AVERROR(EINVAL);
 
-    if (!avpkt || !avpkt->size) {
-        avctx->internal->draining = 1;
-    } else {
+    ret = bsfs_init(avctx);
+    if (ret < 0)
+        return ret;
+
+    av_packet_unref(avci->buffer_pkt);
+    if (avpkt && (avpkt->data || avpkt->side_data_elems)) {
         ret = av_packet_ref(avci->buffer_pkt, avpkt);
         if (ret < 0)
             return ret;
+    }
+
+    ret = av_bsf_send_packet(avci->filter.bsfs[0], avci->buffer_pkt);
+    if (ret < 0) {
+        av_packet_unref(avci->buffer_pkt);
+        return ret;
     }
 
     if (!avci->buffer_frame->buf[0]) {
@@ -557,6 +674,10 @@ int attribute_align_arg avcodec_receive_frame(AVCodecContext *avctx, AVFrame *fr
 
     if (!avcodec_is_open(avctx) || !av_codec_is_decoder(avctx->codec))
         return AVERROR(EINVAL);
+
+    ret = bsfs_init(avctx);
+    if (ret < 0)
+        return ret;
 
     if (avci->buffer_frame->buf[0]) {
         av_frame_move_ref(frame, avci->buffer_frame);
@@ -630,13 +751,18 @@ static int compat_decode(AVCodecContext *avctx, AVFrame *frame,
             }
         }
 
-        if (avci->draining || avci->compat_decode_consumed < pkt->size)
+        if (avci->draining || (!avctx->codec->bsfs && avci->compat_decode_consumed < pkt->size))
             break;
     }
 
 finish:
-    if (ret == 0)
-        ret = FFMIN(avci->compat_decode_consumed, pkt->size);
+    if (ret == 0) {
+        /* if there are any bsfs then assume full packet is always consumed */
+        if (avctx->codec->bsfs)
+            ret = pkt->size;
+        else
+            ret = FFMIN(avci->compat_decode_consumed, pkt->size);
+    }
     avci->compat_decode_consumed = 0;
     avci->compat_decode_partial_size = (ret >= 0) ? pkt->size - ret : 0;
 
@@ -1549,6 +1675,19 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
     avctx->pts_correction_last_pts =
     avctx->pts_correction_last_dts = INT64_MIN;
 
+    ff_decode_bsfs_uninit(avctx);
+
     if (!avctx->refcounted_frames)
         av_frame_unref(avctx->internal->to_free);
+}
+
+void ff_decode_bsfs_uninit(AVCodecContext *avctx)
+{
+    DecodeFilterContext *s = &avctx->internal->filter;
+    int i;
+
+    for (i = 0; i < s->nb_bsfs; i++)
+        av_bsf_free(&s->bsfs[i]);
+    av_freep(&s->bsfs);
+    s->nb_bsfs = 0;
 }

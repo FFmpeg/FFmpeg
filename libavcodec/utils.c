@@ -44,6 +44,7 @@
 #include "libavutil/dict.h"
 #include "libavutil/thread.h"
 #include "avcodec.h"
+#include "decode.h"
 #include "libavutil/opt.h"
 #include "me_cmp.h"
 #include "mpegvideo.h"
@@ -1193,6 +1194,8 @@ av_cold int avcodec_close(AVCodecContext *avctx)
         if (avctx->hwaccel && avctx->hwaccel->uninit)
             avctx->hwaccel->uninit(avctx);
         av_freep(&avctx->internal->hwaccel_priv_data);
+
+        ff_decode_bsfs_uninit(avctx);
 
         av_freep(&avctx->internal);
     }
