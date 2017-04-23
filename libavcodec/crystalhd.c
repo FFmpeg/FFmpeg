@@ -101,7 +101,6 @@ typedef struct {
 
     /* Options */
     uint32_t sWidth;
-    uint8_t bframe_bug;
 } CHDContext;
 
 static const AVOption options[] = {
@@ -631,16 +630,6 @@ static inline CopyRet receive_frame(AVCodecContext *avctx,
     } else if (ret == BC_STS_SUCCESS) {
         int copy_ret = -1;
         if (output.PoutFlags & BC_POUT_FLAGS_PIB_VALID) {
-            if (avctx->codec->id == AV_CODEC_ID_MPEG4 &&
-                output.PicInfo.timeStamp == 0 && priv->bframe_bug) {
-                if (!priv->bframe_bug) {
-                    av_log(avctx, AV_LOG_VERBOSE,
-                           "CrystalHD: Not returning packed frame twice.\n");
-                }
-                DtsReleaseOutputBuffs(dev, NULL, FALSE);
-                return RET_COPY_AGAIN;
-            }
-
             print_frame_info(priv, &output);
 
             copy_ret = copy_frame(avctx, &output, frame, got_frame);
@@ -675,21 +664,6 @@ static int crystalhd_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
 
     if (avpkt && avpkt->size) {
         uint64_t pts;
-        if (!priv->bframe_bug && (avpkt->size == 6 || avpkt->size == 7)) {
-            /*
-             * Drop frames trigger the bug
-             */
-            av_log(avctx, AV_LOG_WARNING,
-                   "CrystalHD: Enabling work-around for packed b-frame bug\n");
-            priv->bframe_bug = 1;
-        } else if (priv->bframe_bug && avpkt->size == 8) {
-            /*
-             * Delay frames don't trigger the bug
-             */
-            av_log(avctx, AV_LOG_WARNING,
-                   "CrystalHD: Disabling work-around for packed b-frame bug\n");
-            priv->bframe_bug = 0;
-        }
 
         /*
          * Despite being notionally opaque, either libcrystalhd or
@@ -825,7 +799,7 @@ DEFINE_CRYSTALHD_DECODER(mpeg2, MPEG2VIDEO, NULL)
 #endif
 
 #if CONFIG_MPEG4_CRYSTALHD_DECODER
-DEFINE_CRYSTALHD_DECODER(mpeg4, MPEG4, NULL)
+DEFINE_CRYSTALHD_DECODER(mpeg4, MPEG4, "mpeg4_unpack_bframes")
 #endif
 
 #if CONFIG_MSMPEG4_CRYSTALHD_DECODER
