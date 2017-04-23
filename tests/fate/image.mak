@@ -268,6 +268,9 @@ fate-exr-rgb-scanline-half-piz-dw-t01: CMD = framecrc -i $(TARGET_SAMPLES)/exr/r
 FATE_EXR += fate-exr-rgb-scanline-float-piz-48x32
 fate-exr-rgb-scanline-float-piz-48x32: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_float_piz_48x32.exr -pix_fmt rgb48le
 
+FATE_EXR += fate-exr-rgb-scanline-none-negative-red
+fate-exr-rgb-scanline-none-negative-red: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_none_negative_red.exr -pix_fmt rgb48le
+
 FATE_EXR-$(call DEMDEC, IMAGE2, EXR) += $(FATE_EXR)
 
 FATE_IMAGE += $(FATE_EXR-yes)
