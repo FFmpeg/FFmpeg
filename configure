@@ -4693,7 +4693,7 @@ if ! disabled pthreads && ! enabled w32threads; then
 fi
 
 enabled pthreads &&
-    check_builtin sem_timedwait semaphore.h "sem_t *s; sem_init(s,0,0); sem_timedwait(s,0); sem_destroy(s)"
+    check_builtin sem_timedwait semaphore.h "sem_t *s; sem_init(s,0,0); sem_timedwait(s,0); sem_destroy(s)" $pthreads_extralibs
 
 disabled  zlib || check_lib  zlib  zlib.h      zlibVersion -lz
 disabled bzlib || check_lib bzlib bzlib.h BZ2_bzlibVersion -lbz2
