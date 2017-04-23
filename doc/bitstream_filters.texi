@@ -273,4 +273,8 @@ Merge VP9 invisible (alt-ref) frames back into VP9 superframes. This
 fixes merging of split/segmented VP9 streams where the alt-ref frame
 was split from its visible counterpart.
 
+@section vp9_superframe_split
+
+Split VP9 superframes into single frames.
+
 @c man end BITSTREAM FILTERS
