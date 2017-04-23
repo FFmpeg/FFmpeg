@@ -11077,6 +11077,14 @@ of second stream as alpha.
 
 Both streams must have same dimensions and same pixel format.
 
+The filter accepts the following option:
+
+@table @option
+@item planes
+Set which planes will be processed, unprocessed planes will be copied.
+By default value 0xf, all planes will be processed.
+@end table
+
 @section prewitt
 Apply prewitt operator to input video stream.
 
