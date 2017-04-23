@@ -537,14 +537,13 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
     if (interlaced)
         frame->top_field_first = !bottom_first;
 
-    if (pkt_pts != AV_NOPTS_VALUE) {
-        frame->pts = pkt_pts;
+    frame->pts = pkt_pts;
 #if FF_API_PKT_PTS
 FF_DISABLE_DEPRECATION_WARNINGS
-        frame->pkt_pts = pkt_pts;
+    frame->pkt_pts = pkt_pts;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-    }
+
     frame->pkt_pos = -1;
     frame->pkt_duration = 0;
     frame->pkt_size = -1;
