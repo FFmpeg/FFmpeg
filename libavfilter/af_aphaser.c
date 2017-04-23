@@ -254,7 +254,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inbuf)
     }
 
     s->phaser(s, inbuf->extended_data, outbuf->extended_data,
-              outbuf->nb_samples, av_frame_get_channels(outbuf));
+              outbuf->nb_samples, outbuf->channels);
 
     if (inbuf != outbuf)
         av_frame_free(&inbuf);

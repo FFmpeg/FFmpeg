@@ -258,8 +258,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     s->var_values[VAR_N] = link->frame_count_out;
     s->var_values[VAR_T] = frame->pts == AV_NOPTS_VALUE ?
         NAN : frame->pts * av_q2d(link->time_base);
-    s->var_values[VAR_POS] = av_frame_get_pkt_pos(frame) == -1 ?
-        NAN : av_frame_get_pkt_pos(frame);
+    s->var_values[VAR_POS] = frame->pkt_pos == -1 ?
+        NAN : frame->pkt_pos;
     s->var_values[VAR_X] = av_expr_eval(s->x_pexpr, s->var_values, NULL);
     s->var_values[VAR_Y] = av_expr_eval(s->y_pexpr, s->var_values, NULL);
     s->var_values[VAR_X] = av_expr_eval(s->x_pexpr, s->var_values, NULL);

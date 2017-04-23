@@ -280,7 +280,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     MetadataContext *s = ctx->priv;
-    AVDictionary **metadata = avpriv_frame_get_metadatap(frame);
+    AVDictionary **metadata = &frame->metadata;
     AVDictionaryEntry *e;
 
     if (!*metadata)

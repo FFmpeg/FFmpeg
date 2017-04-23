@@ -55,6 +55,7 @@
 #include <libcrystalhd/libcrystalhd_if.h>
 
 #include "avcodec.h"
+#include "decode.h"
 #include "internal.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
@@ -633,9 +634,9 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     }
-    av_frame_set_pkt_pos(frame, -1);
-    av_frame_set_pkt_duration(frame, 0);
-    av_frame_set_pkt_size(frame, -1);
+    frame->pkt_pos = -1;
+    frame->pkt_duration = 0;
+    frame->pkt_size = -1;
 
     if (!priv->need_second_field) {
         *got_frame       = 1;
@@ -763,8 +764,7 @@ static int crystalhd_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
     av_log(avctx, AV_LOG_VERBOSE, "CrystalHD: decode_packet\n");
 
     if (avpkt && avpkt->size) {
-        int32_t tx_free = (int32_t)DtsTxFreeSize(dev);
-
+        uint64_t pts;
         if (!priv->bframe_bug && (avpkt->size == 6 || avpkt->size == 7)) {
             /*
              * Drop frames trigger the bug
@@ -809,38 +809,32 @@ static int crystalhd_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
             av_packet_unref(&filter_packet);
         }
 
-        if (avpkt->size < tx_free) {
-            /*
-             * Despite being notionally opaque, either libcrystalhd or
-             * the hardware itself will mangle pts values that are too
-             * small or too large. The docs claim it should be in units
-             * of 100ns. Given that we're nominally dealing with a black
-             * box on both sides, any transform we do has no guarantee of
-             * avoiding mangling so we need to build a mapping to values
-             * we know will not be mangled.
-             */
-            uint64_t pts = opaque_list_push(priv, avpkt->pts);
-            if (!pts) {
-                ret = AVERROR(ENOMEM);
-                goto exit;
-            }
-            av_log(priv->avctx, AV_LOG_VERBOSE,
-                   "input \"pts\": %"PRIu64"\n", pts);
-            bc_ret = DtsProcInput(dev, avpkt->data, avpkt->size, pts, 0);
-            if (bc_ret == BC_STS_BUSY) {
-                av_log(avctx, AV_LOG_WARNING,
-                       "CrystalHD: ProcInput returned busy\n");
-                ret = AVERROR(EAGAIN);
-                goto exit;
-            } else if (bc_ret != BC_STS_SUCCESS) {
-                av_log(avctx, AV_LOG_ERROR,
-                       "CrystalHD: ProcInput failed: %u\n", ret);
-                ret = -1;
-                goto exit;
-            }
-        } else {
-            av_log(avctx, AV_LOG_VERBOSE, "CrystalHD: Input buffer full\n");
+        /*
+         * Despite being notionally opaque, either libcrystalhd or
+         * the hardware itself will mangle pts values that are too
+         * small or too large. The docs claim it should be in units
+         * of 100ns. Given that we're nominally dealing with a black
+         * box on both sides, any transform we do has no guarantee of
+         * avoiding mangling so we need to build a mapping to values
+         * we know will not be mangled.
+         */
+        pts = opaque_list_push(priv, avpkt->pts);
+        if (!pts) {
+            ret = AVERROR(ENOMEM);
+            goto exit;
+        }
+        av_log(priv->avctx, AV_LOG_VERBOSE,
+               "input \"pts\": %"PRIu64"\n", pts);
+        bc_ret = DtsProcInput(dev, avpkt->data, avpkt->size, pts, 0);
+        if (bc_ret == BC_STS_BUSY) {
+            av_log(avctx, AV_LOG_WARNING,
+                   "CrystalHD: ProcInput returned busy\n");
             ret = AVERROR(EAGAIN);
+            goto exit;
+        } else if (bc_ret != BC_STS_SUCCESS) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "CrystalHD: ProcInput failed: %u\n", ret);
+            ret = -1;
             goto exit;
         }
     } else {
@@ -862,8 +856,34 @@ static int crystalhd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     CHDContext *priv   = avctx->priv_data;
     HANDLE dev         = priv->dev;
     int got_frame = 0;
+    int ret = 0;
+    AVPacket pkt = {0};
 
     av_log(avctx, AV_LOG_VERBOSE, "CrystalHD: receive_frame\n");
+
+    ret = ff_decode_get_packet(avctx, &pkt);
+    if (ret < 0 && ret != AVERROR_EOF) {
+        return ret;
+    }
+
+    while (pkt.size > DtsTxFreeSize(dev)) {
+        /*
+         * Block until there is space in the buffer for the next packet.
+         * We assume that the hardware will make forward progress at this
+         * point, although in pathological cases that may not happen.
+         */
+        av_log(avctx, AV_LOG_TRACE, "CrystalHD: Waiting for space in input buffer\n");
+    }
+
+    ret = crystalhd_decode_packet(avctx, &pkt);
+    av_packet_unref(&pkt);
+    // crystalhd_is_buffer_full() should avoid this.
+    if (ret == AVERROR(EAGAIN)) {
+        ret = AVERROR_EXTERNAL;
+    }
+    if (ret < 0 && ret != AVERROR_EOF) {
+        return ret;
+    }
 
     do {
         bc_ret = DtsGetDriverStatus(dev, &decoder_status);
@@ -873,7 +893,7 @@ static int crystalhd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
         }
 
         if (decoder_status.ReadyListCount == 0) {
-            av_log(avctx, AV_LOG_INFO, "CrystalHD: Insufficient frames ready. Returning\n");
+            av_log(avctx, AV_LOG_VERBOSE, "CrystalHD: Insufficient frames ready. Returning\n");
             got_frame = 0;
             rec_ret = RET_OK;
             break;
@@ -907,7 +927,6 @@ static int crystalhd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
         .priv_class     = &x##_crystalhd_class, \
         .init           = init, \
         .close          = uninit, \
-        .send_packet    = crystalhd_decode_packet, \
         .receive_frame  = crystalhd_receive_frame, \
         .flush          = flush, \
         .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING, \

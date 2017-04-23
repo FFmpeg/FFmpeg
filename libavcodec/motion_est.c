@@ -956,10 +956,10 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
             P_TOPRIGHT[1] = s->current_picture.motion_val[0][mot_xy - mot_stride + 2][1];
             if (P_TOP[1] > (c->ymax << shift))
                 P_TOP[1] =  c->ymax << shift;
-            if (P_TOPRIGHT[0] < (c->xmin << shift))
-                P_TOPRIGHT[0] =  c->xmin << shift;
-            if (P_TOPRIGHT[1] > (c->ymax << shift))
-                P_TOPRIGHT[1] =  c->ymax << shift;
+            if (P_TOPRIGHT[0] < (c->xmin * (1 << shift)))
+                P_TOPRIGHT[0] =  c->xmin * (1 << shift);
+            if (P_TOPRIGHT[1] > (c->ymax * (1 << shift)))
+                P_TOPRIGHT[1] =  c->ymax * (1 << shift);
 
             P_MEDIAN[0] = mid_pred(P_LEFT[0], P_TOP[0], P_TOPRIGHT[0]);
             P_MEDIAN[1] = mid_pred(P_LEFT[1], P_TOP[1], P_TOPRIGHT[1]);

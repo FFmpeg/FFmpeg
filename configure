@@ -1246,8 +1246,8 @@ check_pkg_config(){
     pkg_cflags=$($pkg_config --cflags $pkg_config_flags $pkg)
     pkg_libs=$($pkg_config --libs $pkg_config_flags $pkg)
     check_func_headers "$headers" "$funcs" $pkg_cflags $pkg_libs "$@" &&
-        set_safe "${pkg}_cflags" $pkg_cflags   &&
-        set_safe "${pkg}_libs"   $pkg_libs
+        set_safe "${pkg}_cflags"    $pkg_cflags &&
+        set_safe "${pkg}_extralibs" $pkg_libs
 }
 
 check_exec(){
@@ -1347,31 +1347,11 @@ use_pkg_config(){
     pkg="$1"
     check_pkg_config "$@" || return 1
     add_cflags    $(get_safe "${pkg}_cflags")
-    add_extralibs $(get_safe "${pkg}_libs")
+    add_extralibs $(get_safe "${pkg}_extralibs")
 }
 
 require_pkg_config(){
     use_pkg_config "$@" || die "ERROR: $pkg not found using pkg-config$pkg_config_fail_message"
-}
-
-require_libfreetype(){
-    log require_libfreetype "$@"
-    pkg="freetype2"
-    check_cmd $pkg_config --exists --print-errors $pkg \
-      || die "ERROR: $pkg not found"
-    pkg_cflags=$($pkg_config --cflags $pkg_config_flags $pkg)
-    pkg_libs=$($pkg_config --libs $pkg_config_flags $pkg)
-    {
-        echo "#include <ft2build.h>"
-        echo "#include FT_FREETYPE_H"
-        echo "long check_func(void) { return (long) FT_Init_FreeType; }"
-        echo "int main(void) { return 0; }"
-    } | check_ld "cc" $pkg_cflags $pkg_libs \
-      && set_safe "${pkg}_cflags" $pkg_cflags \
-      && set_safe "${pkg}_libs"   $pkg_libs \
-      || die "ERROR: $pkg not found"
-    add_cflags    $(get_safe "${pkg}_cflags")
-    add_extralibs $(get_safe "${pkg}_libs")
 }
 
 hostcc_e(){
@@ -2063,10 +2043,12 @@ HAVE_LIST="
     $THREADS_LIST
     $TOOLCHAIN_FEATURES
     $TYPES_LIST
+    alsa
     atomics_native
     dos_paths
     dxva2_lib
     dxva2api_cobj
+    jack
     libc_msvcrt
     makeinfo
     makeinfo_html
@@ -2075,6 +2057,7 @@ HAVE_LIST="
     pod2man
     sdl2
     section_data_rel_ro
+    sndio
     texi2html
     threads
     vaapi_drm
@@ -2215,9 +2198,9 @@ CMDLINE_SET="
     gas
     host_cc
     host_cflags
+    host_extralibs
     host_ld
     host_ldflags
-    host_libs
     host_os
     install
     ld
@@ -2488,6 +2471,7 @@ mpeg2video_encoder_select="aandcttables mpegvideoenc h263dsp"
 mpeg4_decoder_select="h263_decoder mpeg4video_parser"
 mpeg4_encoder_select="h263_encoder"
 msa1_decoder_select="mss34dsp"
+mscc_decoder_select="zlib"
 msmpeg4v1_decoder_select="h263_decoder"
 msmpeg4v2_decoder_select="h263_decoder"
 msmpeg4v2_encoder_select="h263_encoder"
@@ -2530,6 +2514,7 @@ sonic_decoder_select="golomb rangecoder"
 sonic_encoder_select="golomb rangecoder"
 sonic_ls_encoder_select="golomb rangecoder"
 sp5x_decoder_select="mjpeg_decoder"
+srgc_decoder_select="zlib"
 svq1_decoder_select="hpeldsp"
 svq1_encoder_select="aandcttables hpeldsp me_cmp mpegvideoenc"
 svq3_decoder_select="golomb h264dsp h264parse h264pred hpeldsp tpeldsp videodsp"
@@ -2596,6 +2581,7 @@ cuvid_deps="cuda"
 d3d11va_deps="d3d11_h dxva_h ID3D11VideoDecoder ID3D11VideoContext"
 dxva2_deps="dxva2api_h DXVA2_ConfigPictureDecode"
 dxva2_extralibs="-luser32"
+dxva2_lib_deps="dxva2"
 vda_framework_deps="VideoDecodeAcceleration_VDADecoder_h"
 vda_framework_extralibs="-framework VideoDecodeAcceleration"
 vda_deps="vda_framework pthreads"
@@ -2987,8 +2973,8 @@ xmv_demuxer_select="riffdec"
 xwma_demuxer_select="riffdec"
 
 # indevs / outdevs
-alsa_indev_deps="alsa_asoundlib_h snd_pcm_htimestamp"
-alsa_outdev_deps="alsa_asoundlib_h"
+alsa_indev_deps="alsa"
+alsa_outdev_deps="alsa"
 avfoundation_indev_deps="pthreads"
 avfoundation_indev_extralibs="-framework Foundation -framework AVFoundation -framework CoreVideo -framework CoreMedia"
 bktr_indev_deps_any="dev_bktr_ioctl_bt848_h machine_ioctl_bt848_h dev_video_bktr_ioctl_bt848_h dev_ic_bt8xx_h"
@@ -3007,7 +2993,7 @@ gdigrab_indev_deps="CreateDIBSection"
 gdigrab_indev_extralibs="-lgdi32"
 gdigrab_indev_select="bmp_decoder"
 iec61883_indev_deps="libiec61883"
-jack_indev_deps="jack_jack_h"
+jack_indev_deps="jack"
 jack_indev_deps_any="sem_timedwait dispatch_dispatch_h"
 lavfi_indev_deps="avfilter"
 libcdio_indev_deps="libcdio"
@@ -3022,8 +3008,8 @@ pulse_outdev_deps="libpulse"
 qtkit_indev_extralibs="-framework QTKit -framework Foundation -framework QuartzCore"
 qtkit_indev_select="qtkit"
 sdl2_outdev_deps="sdl2"
-sndio_indev_deps="sndio_h"
-sndio_outdev_deps="sndio_h"
+sndio_indev_deps="sndio"
+sndio_outdev_deps="sndio"
 v4l_indev_deps="linux_videodev_h"
 v4l2_indev_deps_any="linux_videodev2_h sys_videoio_h"
 v4l2_outdev_deps_any="linux_videodev2_h sys_videoio_h"
@@ -3201,6 +3187,7 @@ transcoding_example_deps="avfilter avcodec avformat avutil"
 
 # libraries, in linking order
 avcodec_deps="avutil"
+avcodec_select="null_bsf"
 avdevice_deps="avformat avcodec avutil"
 avfilter_deps="avutil"
 avformat_deps="avcodec avutil"
@@ -3215,7 +3202,7 @@ ffmpeg_select="aformat_filter anull_filter atrim_filter format_filter
                null_filter
                trim_filter"
 ffplay_deps="avcodec avformat swscale swresample sdl2"
-ffplay_libs='$sdl2_libs'
+ffplay_extralibs='$sdl2_extralibs'
 ffplay_select="rdft crop_filter transpose_filter hflip_filter vflip_filter rotate_filter"
 ffprobe_deps="avcodec avformat"
 ffserver_deps="avformat fork sarestart"
@@ -3332,7 +3319,7 @@ HOSTCC_E='-E -o $@'
 HOSTCC_O='-o $@'
 HOSTLD_O='-o $@'
 
-host_libs='-lm'
+host_extralibs='-lm'
 host_cflags_filter=echo
 host_ldflags_filter=echo
 
@@ -4775,7 +4762,7 @@ case $target_os in
     haiku)
         prefix_default="/boot/common"
         network_extralibs="-lnetwork"
-        host_libs=
+        host_extralibs=
         ;;
     sunos)
         SHFLAGS='-shared -Wl,-h,$$(@F)'
@@ -5040,7 +5027,7 @@ probe_libc(){
     # MinGW headers can be installed on Cygwin, so check for newlib first.
     elif check_${pfx}cpp_condition newlib.h "defined _NEWLIB_VERSION"; then
         eval ${pfx}libc_type=newlib
-        add_${pfx}cppflags -U__STRICT_ANSI__
+        add_${pfx}cppflags -U__STRICT_ANSI__ -D_XOPEN_SOURCE=600
     # MinGW64 is backwards compatible with MinGW32, so check for it first.
     elif check_${pfx}cpp_condition _mingw.h "defined __MINGW64_VERSION_MAJOR"; then
         eval ${pfx}libc_type=mingw64
@@ -5604,7 +5591,6 @@ check_func_headers lzo/lzo1x.h lzo1x_999_compress
 check_func_headers stdlib.h getenv
 check_func_headers sys/stat.h lstat
 
-check_func_headers windows.h CoTaskMemFree -lole32
 check_func_headers windows.h GetProcessAffinityMask
 check_func_headers windows.h GetProcessTimes
 check_func_headers windows.h GetSystemTimeAsFileTime
@@ -5773,11 +5759,11 @@ enabled libdc1394         && require_pkg_config libdc1394-2 dc1394/dc1394.h dc13
 enabled libfdk_aac        && { use_pkg_config fdk-aac "fdk-aac/aacenc_lib.h" aacEncOpen ||
                                { require libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-aac &&
                                  warn "using libfdk without pkg-config"; } }
-flite_libs="-lflite_cmu_time_awb -lflite_cmu_us_awb -lflite_cmu_us_kal -lflite_cmu_us_kal16 -lflite_cmu_us_rms -lflite_cmu_us_slt -lflite_usenglish -lflite_cmulex -lflite"
-enabled libflite          && require libflite "flite/flite.h" flite_init $flite_libs
+flite_extralibs="-lflite_cmu_time_awb -lflite_cmu_us_awb -lflite_cmu_us_kal -lflite_cmu_us_kal16 -lflite_cmu_us_rms -lflite_cmu_us_slt -lflite_usenglish -lflite_cmulex -lflite"
+enabled libflite          && require libflite "flite/flite.h" flite_init $flite_extralibs
 enabled fontconfig        && enable libfontconfig
 enabled libfontconfig     && require_pkg_config fontconfig "fontconfig/fontconfig.h" FcInit
-enabled libfreetype       && require_libfreetype
+enabled libfreetype       && require_pkg_config freetype2 "ft2build.h FT_FREETYPE_H" FT_Init_FreeType
 enabled libfribidi        && require_pkg_config fribidi fribidi.h fribidi_version_info
 enabled libgme            && require  libgme gme/gme.h gme_new_emu -lgme -lstdc++
 enabled libgsm            && { for gsm_hdr in "gsm.h" "gsm/gsm.h"; do
@@ -5882,8 +5868,8 @@ enabled mmal              && { check_lib interface/mmal/mmal.h mmal_port_connect
                                die "ERROR: mmal not found" &&
                                check_func_headers interface/mmal/mmal.h "MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS"; }
 enabled netcdf            && require_pkg_config netcdf netcdf.h nc_inq_libvers
-enabled openal            && { { for al_libs in "${OPENAL_LIBS}" "-lopenal" "-lOpenAL32"; do
-                               check_lib 'AL/al.h' alGetError "${al_libs}" && break; done } ||
+enabled openal            && { { for al_extralibs in "${OPENAL_LIBS}" "-lopenal" "-lOpenAL32"; do
+                               check_lib 'AL/al.h' alGetError "${al_extralibs}" && break; done } ||
                                die "ERROR: openal not found"; } &&
                              { check_cpp_condition "AL/al.h" "defined(AL_VERSION_1_1)" ||
                                die "ERROR: openal must be installed and version must be 1.1 or compatible"; }
@@ -5915,10 +5901,10 @@ if enabled gcrypt; then
     GCRYPT_CONFIG="${cross_prefix}libgcrypt-config"
     if "${GCRYPT_CONFIG}" --version > /dev/null 2>&1; then
         gcrypt_cflags=$("${GCRYPT_CONFIG}" --cflags)
-        gcrypt_libs=$("${GCRYPT_CONFIG}" --libs)
-        check_func_headers gcrypt.h gcry_mpi_new $gcrypt_cflags $gcrypt_libs ||
+        gcrypt_extralibs=$("${GCRYPT_CONFIG}" --libs)
+        check_func_headers gcrypt.h gcry_mpi_new $gcrypt_cflags $gcrypt_extralibs ||
             die "ERROR: gcrypt not found"
-        add_cflags $gcrypt_cflags && add_extralibs $gcrypt_libs
+        add_cflags $gcrypt_cflags && add_extralibs $gcrypt_extralibs
     else
         require gcrypt gcrypt.h gcry_mpi_new -lgcrypt
     fi
@@ -5930,21 +5916,21 @@ if ! disabled sdl2; then
     if check_pkg_config sdl2 SDL_events.h SDL_PollEvent; then
         check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x020001" $sdl2_cflags &&
         check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x020100" $sdl2_cflags &&
-        check_func SDL_Init $sdl2_libs $sdl2_cflags && enable sdl2
+        check_func SDL_Init $sdl2_extralibs $sdl2_cflags && enable sdl2
     else
       if "${SDL2_CONFIG}" --version > /dev/null 2>&1; then
         sdl2_cflags=$("${SDL2_CONFIG}" --cflags)
-        sdl2_libs=$("${SDL2_CONFIG}" --libs)
+        sdl2_extralibs=$("${SDL2_CONFIG}" --libs)
         check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x020001" $sdl2_cflags &&
         check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x020100" $sdl2_cflags &&
-        check_func SDL_Init $sdl2_libs $sdl2_cflags && enable sdl2
+        check_func SDL_Init $sdl2_extralibs $sdl2_cflags && enable sdl2
       fi
     fi
     if test $target_os = "mingw32"; then
-        sdl2_libs="$sdl2_libs -mconsole"
+        sdl2_extralibs="$sdl2_extralibs -mconsole"
     fi
 fi
-enabled sdl2 && enable sdl && add_cflags $sdl2_cflags && add_extralibs $sdl2_libs
+enabled sdl2 && enable sdl && add_cflags $sdl2_cflags && add_extralibs $sdl2_extralibs
 
 disabled securetransport || { check_func SecIdentityCreate "-Wl,-framework,CoreFoundation -Wl,-framework,Security" &&
     check_lib "Security/SecureTransport.h Security/Security.h" "SSLCreateContext SecItemImport" "-Wl,-framework,CoreFoundation -Wl,-framework,Security" &&
@@ -5986,7 +5972,6 @@ check_type "dshow.h" IBaseFilter
   check_header dev/video/bktr/ioctl_bt848.h; } ||
 check_header dev/ic/bt8xx.h
 
-check_header sndio.h
 if check_struct sys/soundcard.h audio_buf_info bytes; then
     enable_safe sys/soundcard.h
 else
@@ -5998,12 +5983,12 @@ fi
 check_header soundcard.h
 
 enabled_any alsa_indev alsa_outdev &&
-    check_lib alsa/asoundlib.h snd_pcm_htimestamp -lasound
+    check_lib alsa/asoundlib.h snd_pcm_htimestamp -lasound && enable alsa
 
-enabled jack_indev && check_lib jack/jack.h jack_client_open -ljack &&
+enabled jack_indev && check_lib jack/jack.h jack_client_open -ljack && enable jack &&
     check_func jack_port_get_latency_range -ljack
 
-enabled_any sndio_indev sndio_outdev && check_lib sndio.h sio_open -lsndio
+enabled_any sndio_indev sndio_outdev && check_lib sndio.h sio_open -lsndio && enable sndio
 
 if enabled libcdio; then
     check_lib "cdio/cdda.h cdio/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio ||
@@ -6033,7 +6018,7 @@ if enabled libxcb; then
         } && enable libxcb_shape; }
 
     add_cflags $xcb_cflags $xcb_shm_cflags $xcb_xfixes_cflags $xcb_shape_cflags
-    add_extralibs $xcb_libs $xcb_shm_libs $xcb_xfixes_libs $xcb_shape_libs
+    add_extralibs $xcb_extralibs $xcb_shm_extralibs $xcb_xfixes_extralibs $xcb_shape_extralibs
 fi
 fi
 
@@ -6048,6 +6033,10 @@ enabled dxva2api_h &&
 #include <dxva2api.h>
 int main(void) { IDirectXVideoDecoder *o = NULL; IDirectXVideoDecoder_Release(o); return 0; }
 EOF
+
+enabled dxva2 &&
+    check_lib windows.h CoTaskMemFree -lole32 &&
+    enable dxva2_lib
 
 enabled vaapi &&
     check_lib va/va.h vaInitialize -lva ||
@@ -6389,10 +6378,6 @@ if test $target_os = "haiku"; then
     disable posix_memalign
 fi
 
-enabled_all dxva2 dxva2api_cobj CoTaskMemFree &&
-    prepend ffmpeg_libs $($ldflags_filter "-lole32") &&
-    enable dxva2_lib
-
 # add_dep lib dep
 # -> enable ${lib}_deps_${dep}
 # -> add $dep to ${lib}_deps only once
@@ -6720,7 +6705,7 @@ HOSTCFLAGS=$host_cflags
 HOSTCPPFLAGS=$host_cppflags
 HOSTEXESUF=$HOSTEXESUF
 HOSTLDFLAGS=$host_ldflags
-HOSTLIBS=$host_libs
+HOSTEXTRALIBS=$host_extralibs
 DEPHOSTCC=$host_cc
 DEPHOSTCCFLAGS=$DEPHOSTCCFLAGS \$(HOSTCCFLAGS)
 HOSTCCDEP=$HOSTCCDEP
@@ -6770,12 +6755,12 @@ map 'get_version $v' $LIBRARY_LIST
 
 map 'eval echo "${v}_FFLIBS=\$${v}_deps" >> config.mak' $LIBRARY_LIST
 
-print_program_libs(){
-    eval "program_libs=\$${1}_libs"
-    eval echo "LIBS-${1}=${program_libs}" >> config.mak
+print_program_extralibs(){
+    eval "program_extralibs=\$${1}_extralibs"
+    eval echo "EXTRALIBS-${1}=${program_extralibs}" >> config.mak
 }
 
-map 'print_program_libs $v' $PROGRAM_LIST
+map 'print_program_extralibs $v' $PROGRAM_LIST
 
 cat > $TMPH <<EOF
 /* Automatically generated by configure - do not modify! */

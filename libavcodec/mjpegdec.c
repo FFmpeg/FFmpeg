@@ -2499,7 +2499,7 @@ the_end:
         av_freep(&s->stereo3d);
     }
 
-    av_dict_copy(avpriv_frame_get_metadatap(data), s->exif_metadata, 0);
+    av_dict_copy(&((AVFrame *) data)->metadata, s->exif_metadata, 0);
     av_dict_free(&s->exif_metadata);
 
 the_end_no_picture:

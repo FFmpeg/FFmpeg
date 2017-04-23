@@ -1679,6 +1679,8 @@ colorspaces:
 @item @samp{smpte240m} @emph{smpte240}
 @item @samp{bt2020_ncl} @emph{bt2020}
 @end table
+@item row-mt @var{boolean}
+Enable row based multi-threading.
 @end table
 
 @end table

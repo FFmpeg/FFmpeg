@@ -429,6 +429,7 @@ OBJS-$(CONFIG_MPEG4_MEDIACODEC_DECODER) += mediacodecdec.o
 OBJS-$(CONFIG_MPEG4_OMX_ENCODER)       += omx.o
 OBJS-$(CONFIG_MPL2_DECODER)            += mpl2dec.o ass.o
 OBJS-$(CONFIG_MSA1_DECODER)            += mss3.o
+OBJS-$(CONFIG_MSCC_DECODER)            += mscc.o
 OBJS-$(CONFIG_MSMPEG4V1_DECODER)       += msmpeg4dec.o msmpeg4.o msmpeg4data.o
 OBJS-$(CONFIG_MSMPEG4V2_DECODER)       += msmpeg4dec.o msmpeg4.o msmpeg4data.o
 OBJS-$(CONFIG_MSMPEG4V2_ENCODER)       += msmpeg4enc.o msmpeg4.o msmpeg4data.o
@@ -540,6 +541,7 @@ OBJS-$(CONFIG_SONIC_ENCODER)           += sonic.o
 OBJS-$(CONFIG_SONIC_LS_ENCODER)        += sonic.o
 OBJS-$(CONFIG_SPEEDHQ_DECODER)         += speedhq.o simple_idct.o
 OBJS-$(CONFIG_SP5X_DECODER)            += sp5xdec.o
+OBJS-$(CONFIG_SRGC_DECODER)            += mscc.o
 OBJS-$(CONFIG_SRT_DECODER)             += srtdec.o ass.o htmlsubtitles.o
 OBJS-$(CONFIG_SRT_ENCODER)             += srtenc.o ass_split.o
 OBJS-$(CONFIG_STL_DECODER)             += textdec.o ass.o
@@ -993,9 +995,11 @@ OBJS-$(CONFIG_MOV2TEXTSUB_BSF)            += movsub_bsf.o
 OBJS-$(CONFIG_MP3_HEADER_DECOMPRESS_BSF)  += mp3_header_decompress_bsf.o \
                                              mpegaudiodata.o
 OBJS-$(CONFIG_NOISE_BSF)                  += noise_bsf.o
+OBJS-$(CONFIG_NULL_BSF)                   += null_bsf.o
 OBJS-$(CONFIG_REMOVE_EXTRADATA_BSF)       += remove_extradata_bsf.o
 OBJS-$(CONFIG_TEXT2MOVSUB_BSF)            += movsub_bsf.o
 OBJS-$(CONFIG_VP9_SUPERFRAME_BSF)         += vp9_superframe_bsf.o
+OBJS-$(CONFIG_VP9_SUPERFRAME_SPLIT_BSF)   += vp9_superframe_split_bsf.o
 
 # thread libraries
 OBJS-$(HAVE_LIBC_MSVCRT)               += file_open.o

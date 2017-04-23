@@ -214,11 +214,11 @@ static void extract_line(AVFilterContext *ctx, AVFilterLink *inlink, AVFrame *in
 
         snprintf(key, sizeof(key), "lavfi.readeia608.%d.cc", s->nb_found);
         snprintf(value, sizeof(value), "0x%02X%02X", byte[0], byte[1]);
-        av_dict_set(avpriv_frame_get_metadatap(in), key, value, 0);
+        av_dict_set(&in->metadata, key, value, 0);
 
         snprintf(key, sizeof(key), "lavfi.readeia608.%d.line", s->nb_found);
         snprintf(value, sizeof(value), "%d", line);
-        av_dict_set(avpriv_frame_get_metadatap(in), key, value, 0);
+        av_dict_set(&in->metadata, key, value, 0);
     }
 
     s->nb_found++;

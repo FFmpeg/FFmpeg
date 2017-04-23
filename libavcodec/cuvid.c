@@ -31,6 +31,7 @@
 #include "libavutil/pixdesc.h"
 
 #include "avcodec.h"
+#include "decode.h"
 #include "internal.h"
 
 typedef struct CuvidContext
@@ -357,6 +358,13 @@ static int CUDAAPI cuvid_handle_picture_display(void *opaque, CUVIDPARSERDISPINF
     return 1;
 }
 
+static int cuvid_is_buffer_full(AVCodecContext *avctx)
+{
+    CuvidContext *ctx = avctx->priv_data;
+
+    return (av_fifo_size(ctx->frame_queue) / sizeof(CuvidParsedFrame)) + 2 > ctx->nb_surfaces;
+}
+
 static int cuvid_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
 {
     CuvidContext *ctx = avctx->priv_data;
@@ -373,7 +381,7 @@ static int cuvid_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
     if (is_flush && avpkt && avpkt->size)
         return AVERROR_EOF;
 
-    if ((av_fifo_size(ctx->frame_queue) / sizeof(CuvidParsedFrame)) + 2 > ctx->nb_surfaces && avpkt && avpkt->size)
+    if (cuvid_is_buffer_full(avctx) && avpkt && avpkt->size)
         return AVERROR(EAGAIN);
 
     if (ctx->bsf && avpkt && avpkt->size) {
@@ -460,6 +468,20 @@ static int cuvid_output_frame(AVCodecContext *avctx, AVFrame *frame)
 
     if (ctx->decoder_flushing) {
         ret = cuvid_decode_packet(avctx, NULL);
+        if (ret < 0 && ret != AVERROR_EOF)
+            return ret;
+    }
+
+    if (!cuvid_is_buffer_full(avctx)) {
+        AVPacket pkt = {0};
+        ret = ff_decode_get_packet(avctx, &pkt);
+        if (ret < 0 && ret != AVERROR_EOF)
+            return ret;
+        ret = cuvid_decode_packet(avctx, &pkt);
+        av_packet_unref(&pkt);
+        // cuvid_is_buffer_full() should avoid this.
+        if (ret == AVERROR(EAGAIN))
+            ret = AVERROR_EXTERNAL;
         if (ret < 0 && ret != AVERROR_EOF)
             return ret;
     }
@@ -582,9 +604,9 @@ FF_DISABLE_DEPRECATION_WARNINGS
         frame->pkt_pts = frame->pts;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-        av_frame_set_pkt_pos(frame, -1);
-        av_frame_set_pkt_duration(frame, 0);
-        av_frame_set_pkt_size(frame, -1);
+        frame->pkt_pos = -1;
+        frame->pkt_duration = 0;
+        frame->pkt_size = -1;
 
         frame->interlaced_frame = !parsed_frame.is_deinterlacing && !parsed_frame.dispinfo.progressive_frame;
 
@@ -1026,7 +1048,6 @@ static const AVOption options[] = {
         .init           = cuvid_decode_init, \
         .close          = cuvid_decode_end, \
         .decode         = cuvid_decode_frame, \
-        .send_packet    = cuvid_decode_packet, \
         .receive_frame  = cuvid_output_frame, \
         .flush          = cuvid_flush, \
         .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING, \

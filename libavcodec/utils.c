@@ -44,6 +44,7 @@
 #include "libavutil/dict.h"
 #include "libavutil/thread.h"
 #include "avcodec.h"
+#include "decode.h"
 #include "libavutil/opt.h"
 #include "me_cmp.h"
 #include "mpegvideo.h"
@@ -172,7 +173,7 @@ int av_codec_is_encoder(const AVCodec *codec)
 
 int av_codec_is_decoder(const AVCodec *codec)
 {
-    return codec && (codec->decode || codec->send_packet);
+    return codec && (codec->decode || codec->receive_frame);
 }
 
 av_cold void avcodec_register(AVCodec *codec)
@@ -672,6 +673,12 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         goto free_and_end;
     }
 
+    avctx->internal->compat_decode_frame = av_frame_alloc();
+    if (!avctx->internal->compat_decode_frame) {
+        ret = AVERROR(ENOMEM);
+        goto free_and_end;
+    }
+
     avctx->internal->buffer_frame = av_frame_alloc();
     if (!avctx->internal->buffer_frame) {
         ret = AVERROR(ENOMEM);
@@ -680,6 +687,18 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
 
     avctx->internal->buffer_pkt = av_packet_alloc();
     if (!avctx->internal->buffer_pkt) {
+        ret = AVERROR(ENOMEM);
+        goto free_and_end;
+    }
+
+    avctx->internal->ds.in_pkt = av_packet_alloc();
+    if (!avctx->internal->ds.in_pkt) {
+        ret = AVERROR(ENOMEM);
+        goto free_and_end;
+    }
+
+    avctx->internal->last_pkt_props = av_packet_alloc();
+    if (!avctx->internal->last_pkt_props) {
         ret = AVERROR(ENOMEM);
         goto free_and_end;
     }
@@ -1108,8 +1127,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
     av_freep(&avctx->priv_data);
     if (avctx->internal) {
         av_frame_free(&avctx->internal->to_free);
+        av_frame_free(&avctx->internal->compat_decode_frame);
         av_frame_free(&avctx->internal->buffer_frame);
         av_packet_free(&avctx->internal->buffer_pkt);
+        av_packet_free(&avctx->internal->last_pkt_props);
+
+        av_packet_free(&avctx->internal->ds.in_pkt);
+
         av_freep(&avctx->internal->pool);
     }
     av_freep(&avctx->internal);
@@ -1156,8 +1180,13 @@ av_cold int avcodec_close(AVCodecContext *avctx)
         avctx->internal->byte_buffer_size = 0;
         av_freep(&avctx->internal->byte_buffer);
         av_frame_free(&avctx->internal->to_free);
+        av_frame_free(&avctx->internal->compat_decode_frame);
         av_frame_free(&avctx->internal->buffer_frame);
         av_packet_free(&avctx->internal->buffer_pkt);
+        av_packet_free(&avctx->internal->last_pkt_props);
+
+        av_packet_free(&avctx->internal->ds.in_pkt);
+
         for (i = 0; i < FF_ARRAY_ELEMS(pool->pools); i++)
             av_buffer_pool_uninit(&pool->pools[i]);
         av_freep(&avctx->internal->pool);
@@ -1165,6 +1194,8 @@ av_cold int avcodec_close(AVCodecContext *avctx)
         if (avctx->hwaccel && avctx->hwaccel->uninit)
             avctx->hwaccel->uninit(avctx);
         av_freep(&avctx->internal->hwaccel_priv_data);
+
+        ff_decode_bsfs_uninit(avctx);
 
         av_freep(&avctx->internal);
     }
@@ -1691,6 +1722,9 @@ static int get_audio_frame_duration(enum AVCodecID id, int sr, int ch, int ba,
             if (id == AV_CODEC_ID_BINKAUDIO_DCT)
                 return (480 << (sr / 22050)) / ch;
         }
+
+        if (id == AV_CODEC_ID_MP3)
+            return sr <= 24000 ? 576 : 1152;
     }
 
     if (ba > 0) {

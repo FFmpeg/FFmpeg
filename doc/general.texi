@@ -789,6 +789,7 @@ following image formats are supported:
     @tab Used in LucasArts games / SMUSH animations.
 @item lossless MJPEG         @tab  X  @tab  X
 @item MagicYUV Video         @tab     @tab  X
+@item Mandsoft Screen Capture Codec  @tab     @tab  X
 @item Microsoft ATC Screen   @tab     @tab  X
     @tab Also known as Microsoft Screen 3.
 @item Microsoft Expression Encoder Screen  @tab     @tab  X
@@ -856,6 +857,7 @@ following image formats are supported:
     @tab used in some games by Entertainment Software Partners
 @item ScreenPressor          @tab     @tab  X
 @item Screenpresso           @tab     @tab  X
+@item Screen Recorder Gold Codec  @tab     @tab  X
 @item Sierra VMD video       @tab     @tab  X
     @tab Used in Sierra VMD files.
 @item Silicon Graphics Motion Video Compressor 1 (MVC1)  @tab     @tab  X

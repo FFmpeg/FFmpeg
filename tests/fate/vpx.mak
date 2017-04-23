@@ -70,6 +70,9 @@ fate-webm-dash-manifest-representations: CMD = run $(FFMPEG) -nostdin -f webm_da
 FATE_VP8-$(CONFIG_WEBM_DASH_MANIFEST_DEMUXER) += fate-webm-dash-manifest-live
 fate-webm-dash-manifest-live: CMD = run $(FFMPEG) -nostdin -f webm_dash_manifest -live 1 -i $(TARGET_SAMPLES)/vp8/dash_live_video_360.hdr -f webm_dash_manifest -live 1 -i $(TARGET_SAMPLES)/vp8/dash_live_audio_171.hdr -c copy -map 0 -map 1 -f webm_dash_manifest -live 1 -adaptation_sets "id=0,streams=0 id=1,streams=1" -chunk_start_index 1 -chunk_duration_ms 5000 -time_shift_buffer_depth 7200 -minimum_update_period 60 -debug_mode 1 -
 
+FATE_VP8-$(CONFIG_WEBM_DASH_MANIFEST_DEMUXER) += fate-webm-dash-manifest-live-bandwidth
+fate-webm-dash-manifest-live-bandwidth: CMD = run $(FFMPEG) -nostdin -f webm_dash_manifest -live 1 -bandwidth 100 -i $(TARGET_SAMPLES)/vp8/dash_live_video_360.hdr -f webm_dash_manifest -live 1 -bandwidth 200 -i $(TARGET_SAMPLES)/vp8/dash_live_audio_171.hdr -c copy -map 0 -map 1 -f webm_dash_manifest -live 1 -adaptation_sets "id=0,streams=0 id=1,streams=1" -chunk_start_index 1 -chunk_duration_ms 5000 -time_shift_buffer_depth 7200 -minimum_update_period 60 -debug_mode 1 -
+
 FATE_VP8-$(call DEMDEC, MATROSKA, VP8) += fate-vp8-2451
 fate-vp8-2451: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/vp8/RRSF49-short.webm -vsync cfr -an
 

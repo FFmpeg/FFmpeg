@@ -38,9 +38,11 @@ extern const AVBitStreamFilter ff_mp3_header_decompress_bsf;
 extern const AVBitStreamFilter ff_mpeg4_unpack_bframes_bsf;
 extern const AVBitStreamFilter ff_mov2textsub_bsf;
 extern const AVBitStreamFilter ff_noise_bsf;
+extern const AVBitStreamFilter ff_null_bsf;
 extern const AVBitStreamFilter ff_remove_extradata_bsf;
 extern const AVBitStreamFilter ff_text2movsub_bsf;
 extern const AVBitStreamFilter ff_vp9_superframe_bsf;
+extern const AVBitStreamFilter ff_vp9_superframe_split_bsf;
 
 #include "libavcodec/bsf_list.c"
 

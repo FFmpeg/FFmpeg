@@ -221,9 +221,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     int found;
 
     found = read_vitc_line(s, frame->data[0], frame->linesize[0], inlink->w, inlink->h);
-    av_dict_set(avpriv_frame_get_metadatap(frame), "lavfi.readvitc.found", (found ? "1" : "0"), 0);
+    av_dict_set(&frame->metadata, "lavfi.readvitc.found", (found ? "1" : "0"), 0);
     if (found)
-        av_dict_set(avpriv_frame_get_metadatap(frame), "lavfi.readvitc.tc_str", make_vitc_tc_string(s->tcbuf, s->line_data), 0);
+        av_dict_set(&frame->metadata, "lavfi.readvitc.tc_str", make_vitc_tc_string(s->tcbuf, s->line_data), 0);
 
     return ff_filter_frame(outlink, frame);
 }

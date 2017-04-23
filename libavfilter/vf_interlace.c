@@ -55,9 +55,10 @@ AVFILTER_DEFINE_CLASS(interlace);
 
 static void lowpass_line_c(uint8_t *dstp, ptrdiff_t linesize,
                            const uint8_t *srcp,
-                           const uint8_t *srcp_above,
-                           const uint8_t *srcp_below)
+                           ptrdiff_t mref, ptrdiff_t pref)
 {
+    const uint8_t *srcp_above = srcp + mref;
+    const uint8_t *srcp_below = srcp + pref;
     int i;
     for (i = 0; i < linesize; i++) {
         // this calculation is an integer representation of
@@ -154,13 +155,13 @@ static void copy_picture_field(InterlaceContext *s,
             int srcp_linesize = src_frame->linesize[plane] * 2;
             int dstp_linesize = dst_frame->linesize[plane] * 2;
             for (j = lines; j > 0; j--) {
-                const uint8_t *srcp_above = srcp - src_frame->linesize[plane];
-                const uint8_t *srcp_below = srcp + src_frame->linesize[plane];
+                ptrdiff_t pref = src_frame->linesize[plane];
+                ptrdiff_t mref = -pref;
                 if (j == lines)
-                    srcp_above = srcp; // there is no line above
-                if (j == 1)
-                    srcp_below = srcp; // there is no line below
-                s->lowpass_line(dstp, cols, srcp, srcp_above, srcp_below);
+                    mref = 0;    // there is no line above
+                else if (j == 1)
+                    pref = 0;    // there is no line below
+                s->lowpass_line(dstp, cols, srcp, mref, pref);
                 dstp += dstp_linesize;
                 srcp += srcp_linesize;
             }

@@ -558,7 +558,7 @@ int main(int argc, char **argv)
             }
 
             if (got_frame) {
-                frame->pts = av_frame_get_best_effort_timestamp(frame);
+                frame->pts = frame->best_effort_timestamp;
                 ret = filter_encode_write_frame(frame, stream_index);
                 av_frame_free(&frame);
                 if (ret < 0)

@@ -443,6 +443,8 @@ enum AVCodecID {
     AV_CODEC_ID_XPM,
     AV_CODEC_ID_AV1,
     AV_CODEC_ID_BITPACKED,
+    AV_CODEC_ID_MSCC,
+    AV_CODEC_ID_SRGC,
 
     /* various PCM "codecs" */
     AV_CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs
@@ -3762,20 +3764,22 @@ typedef struct AVCodec {
     int (*decode)(AVCodecContext *, void *outdata, int *outdata_size, AVPacket *avpkt);
     int (*close)(AVCodecContext *);
     /**
-     * Decode/encode API with decoupled packet/frame dataflow. The API is the
+     * Encode API with decoupled packet/frame dataflow. The API is the
      * same as the avcodec_ prefixed APIs (avcodec_send_frame() etc.), except
      * that:
      * - never called if the codec is closed or the wrong type,
-     * - AVPacket parameter change side data is applied right before calling
-     *   AVCodec->send_packet,
-     * - if AV_CODEC_CAP_DELAY is not set, drain packets or frames are never sent,
-     * - only one drain packet is ever passed down (until the next flush()),
-     * - a drain AVPacket is always NULL (no need to check for avpkt->size).
+     * - if AV_CODEC_CAP_DELAY is not set, drain frames are never sent,
+     * - only one drain frame is ever passed down,
      */
     int (*send_frame)(AVCodecContext *avctx, const AVFrame *frame);
-    int (*send_packet)(AVCodecContext *avctx, const AVPacket *avpkt);
-    int (*receive_frame)(AVCodecContext *avctx, AVFrame *frame);
     int (*receive_packet)(AVCodecContext *avctx, AVPacket *avpkt);
+
+    /**
+     * Decode API with decoupled packet/frame dataflow. This function is called
+     * to get one output frame. It should call ff_decode_get_packet() to obtain
+     * input data.
+     */
+    int (*receive_frame)(AVCodecContext *avctx, AVFrame *frame);
     /**
      * Flush buffers.
      * Will be called when seeking
@@ -3786,6 +3790,12 @@ typedef struct AVCodec {
      * See FF_CODEC_CAP_* in internal.h
      */
     int caps_internal;
+
+    /**
+     * Decoding only, a comma-separated list of bitstream filters to apply to
+     * packets before decoding.
+     */
+    const char *bsfs;
 } AVCodec;
 
 int av_codec_get_max_lowres(const AVCodec *codec);
@@ -6035,8 +6045,7 @@ int av_bsf_init(AVBSFContext *ctx);
  * av_bsf_receive_packet() repeatedly until it returns AVERROR(EAGAIN) or
  * AVERROR_EOF.
  *
- * @param pkt the packet to filter. pkt must contain some payload (i.e data or
- * side data must be present in pkt). The bitstream filter will take ownership of
+ * @param pkt the packet to filter. The bitstream filter will take ownership of
  * the packet and reset the contents of pkt. pkt is not touched if an error occurs.
  * This parameter may be NULL, which signals the end of the stream (i.e. no more
  * packets will be sent). That will cause the filter to output any packets it

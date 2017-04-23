@@ -36,7 +36,6 @@
 #if CONFIG_D3D11VA
 #include "d3d11va.h"
 #endif
-
 #if HAVE_DXVA_H
 /* When targeting WINAPI_FAMILY_PHONE_APP or WINAPI_FAMILY_APP, dxva.h
  * defines nothing. Force the struct definitions to be visible. */
@@ -60,12 +59,8 @@ typedef union {
 #endif
 } AVDXVAContext;
 
-#if CONFIG_D3D11VA
 #define D3D11VA_CONTEXT(ctx) (&ctx->d3d11va)
-#endif
-#if CONFIG_DXVA2
 #define DXVA2_CONTEXT(ctx)   (&ctx->dxva2)
-#endif
 
 #if CONFIG_D3D11VA && CONFIG_DXVA2
 #define DXVA_CONTEXT_WORKAROUND(avctx, ctx)     (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD ? ctx->d3d11va.workaround : ctx->dxva2.workaround)

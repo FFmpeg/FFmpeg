@@ -237,8 +237,8 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
     if (res < 0)
         return res;
 
-    av_frame_set_pkt_pos     (frame, avctx->internal->pkt->pos);
-    av_frame_set_pkt_duration(frame, avctx->internal->pkt->duration);
+    frame->pkt_pos      = avctx->internal->last_pkt_props->pos;
+    frame->pkt_duration = avctx->internal->last_pkt_props->duration;
 
     if (context->tff >= 0) {
         frame->interlaced_frame = 1;

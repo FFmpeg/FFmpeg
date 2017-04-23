@@ -275,7 +275,7 @@ static int push_frame(AVFilterContext *ctx)
     if (!out)
         return AVERROR(ENOMEM);
     out->pts += s->duration - s->start_pts;
-    pts = out->pts + av_frame_get_pkt_duration(out);
+    pts = out->pts + out->pkt_duration;
     ret = ff_filter_frame(outlink, out);
     s->current_frame++;
 
@@ -307,7 +307,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
                 return AVERROR(ENOMEM);
             }
             s->nb_frames++;
-            s->duration = frame->pts + av_frame_get_pkt_duration(frame);
+            s->duration = frame->pts + frame->pkt_duration;
             ret = ff_filter_frame(outlink, frame);
         } else {
             av_frame_free(&frame);

@@ -49,6 +49,7 @@
 #include "libavutil/intreadwrite.h"
 
 #include "libavcodec/avcodec.h"
+#include "libavcodec/bytestream.h"
 #include "libavformat/avformat.h"
 
 static void error(const char *err)
@@ -150,6 +151,18 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         error("Failed memory allocation");
 
     ctx->max_pixels = 4096 * 4096; //To reduce false positive OOM and hangs
+
+    if (size > 1024) {
+        GetByteContext gbc;
+        bytestream2_init(&gbc, data + size - 1024, 1024);
+        ctx->width                              = bytestream2_get_le32(&gbc);
+        ctx->height                             = bytestream2_get_le32(&gbc);
+        ctx->bit_rate                           = bytestream2_get_le64(&gbc);
+        ctx->bits_per_coded_sample              = bytestream2_get_le32(&gbc);
+        if (av_image_check_size(ctx->width, ctx->height, 0, ctx))
+            ctx->width = ctx->height = 0;
+        size -= 1024;
+    }
 
     int res = avcodec_open2(ctx, c, NULL);
     if (res < 0)

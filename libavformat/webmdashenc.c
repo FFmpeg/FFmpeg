@@ -182,14 +182,19 @@ static int write_representation(AVFormatContext *s, AVStream *stream, char *id,
     AVDictionaryEntry *cues_end = av_dict_get(stream->metadata, CUES_END, NULL, 0);
     AVDictionaryEntry *filename = av_dict_get(stream->metadata, FILENAME, NULL, 0);
     AVDictionaryEntry *bandwidth = av_dict_get(stream->metadata, BANDWIDTH, NULL, 0);
+    const char *bandwidth_str;
     if ((w->is_live && (!filename)) ||
         (!w->is_live && (!irange || !cues_start || !cues_end || !filename || !bandwidth))) {
         return AVERROR_INVALIDDATA;
     }
     avio_printf(s->pb, "<Representation id=\"%s\"", id);
-    // FIXME: For live, This should be obtained from the input file or as an AVOption.
-    avio_printf(s->pb, " bandwidth=\"%s\"",
-                w->is_live ? (stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO ? "128000" : "1000000") : bandwidth->value);
+    // if bandwidth for live was not provided, use a default
+    if (w->is_live && !bandwidth) {
+        bandwidth_str = (stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) ? "128000" : "1000000";
+    } else {
+        bandwidth_str = bandwidth->value;
+    }
+    avio_printf(s->pb, " bandwidth=\"%s\"", bandwidth_str);
     if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && output_width)
         avio_printf(s->pb, " width=\"%d\"", stream->codecpar->width);
     if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && output_height)
@@ -428,6 +433,10 @@ static int parse_adaptation_sets(AVFormatContext *s)
     char *p = w->adaptation_sets;
     char *q;
     enum { new_set, parsed_id, parsing_streams } state;
+    if (!w->adaptation_sets) {
+        av_log(s, AV_LOG_ERROR, "The 'adaptation_sets' option must be set.\n");
+        return AVERROR(EINVAL);
+    }
     // syntax id=0,streams=0,1,2 id=1,streams=3,4 and so on
     state = new_set;
     while (p < w->adaptation_sets + strlen(w->adaptation_sets)) {
@@ -458,7 +467,11 @@ static int parse_adaptation_sets(AVFormatContext *s)
             if (as->streams == NULL)
                 return AVERROR(ENOMEM);
             as->streams[as->nb_streams - 1] = to_integer(p, q - p + 1);
-            if (as->streams[as->nb_streams - 1] < 0) return -1;
+            if (as->streams[as->nb_streams - 1] < 0 ||
+                as->streams[as->nb_streams - 1] >= s->nb_streams) {
+                av_log(s, AV_LOG_ERROR, "Invalid value for 'streams' in adapation_sets.\n");
+                return AVERROR(EINVAL);
+            }
             if (*q == '\0') break;
             if (*q == ' ') state = new_set;
             p = ++q;

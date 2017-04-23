@@ -29,8 +29,6 @@
 
 typedef struct {
     ParseContext pc;
-    int interlaced;
-    int cur_field; /* first field is 0, second is 1 */
     int cur_byte;
     int remaining;
     int w, h;
@@ -43,8 +41,6 @@ static int dnxhd_find_frame_end(DNXHDParserContext *dctx,
     uint64_t state = pc->state64;
     int pic_found = pc->frame_start_found;
     int i = 0;
-    int interlaced = dctx->interlaced;
-    int cur_field = dctx->cur_field;
 
     if (!pic_found) {
         for (i = 0; i < buf_size; i++) {
@@ -52,8 +48,6 @@ static int dnxhd_find_frame_end(DNXHDParserContext *dctx,
             if (ff_dnxhd_check_header_prefix(state & 0xffffffffff00LL) != 0) {
                 i++;
                 pic_found = 1;
-                interlaced = (state&2)>>1; /* byte following the 5-byte header prefix */
-                cur_field = state&1;
                 dctx->cur_byte = 0;
                 dctx->remaining = 0;
                 break;
@@ -84,13 +78,11 @@ static int dnxhd_find_frame_end(DNXHDParserContext *dctx,
                     if (dctx->remaining <= 0)
                         return dctx->remaining;
                 }
-                if (buf_size - i >= dctx->remaining && (!dctx->interlaced || dctx->cur_field)) {
+                if (buf_size - i + 47 >= dctx->remaining) {
                     int remaining = dctx->remaining;
 
                     pc->frame_start_found = 0;
                     pc->state64 = -1;
-                    dctx->interlaced = interlaced;
-                    dctx->cur_field = 0;
                     dctx->cur_byte = 0;
                     dctx->remaining = 0;
                     return remaining;
@@ -107,8 +99,6 @@ static int dnxhd_find_frame_end(DNXHDParserContext *dctx,
 
             pc->frame_start_found = 0;
             pc->state64 = -1;
-            dctx->interlaced = interlaced;
-            dctx->cur_field = 0;
             dctx->cur_byte = 0;
             dctx->remaining = 0;
             return remaining;
@@ -116,8 +106,6 @@ static int dnxhd_find_frame_end(DNXHDParserContext *dctx,
     }
     pc->frame_start_found = pic_found;
     pc->state64 = state;
-    dctx->interlaced = interlaced;
-    dctx->cur_field = cur_field;
     return END_NOT_FOUND;
 }
 

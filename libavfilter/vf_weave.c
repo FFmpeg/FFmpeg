@@ -27,6 +27,7 @@
 typedef struct WeaveContext {
     const AVClass *class;
     int first_field;
+    int double_weave;
     int nb_planes;
     int planeheight[4];
     int linesize[4];
@@ -56,10 +57,12 @@ static int config_props_output(AVFilterLink *outlink)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     int ret;
 
-    outlink->time_base.num = inlink->time_base.num * 2;
-    outlink->time_base.den = inlink->time_base.den;
-    outlink->frame_rate.num = inlink->frame_rate.num;
-    outlink->frame_rate.den = inlink->frame_rate.den * 2;
+    if (!s->double_weave) {
+        outlink->time_base.num = inlink->time_base.num * 2;
+        outlink->time_base.den = inlink->time_base.den;
+        outlink->frame_rate.num = inlink->frame_rate.num;
+        outlink->frame_rate.den = inlink->frame_rate.den * 2;
+    }
     outlink->w = inlink->w;
     outlink->h = inlink->h * 2;
 
@@ -96,22 +99,36 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     av_frame_copy_props(out, in);
 
     for (i = 0; i < s->nb_planes; i++) {
-        av_image_copy_plane(out->data[i] + out->linesize[i] * s->first_field,
-                            out->linesize[i] * 2,
-                            in->data[i], in->linesize[i],
-                            s->linesize[i], s->planeheight[i]);
-        av_image_copy_plane(out->data[i] + out->linesize[i] * !s->first_field,
-                            out->linesize[i] * 2,
-                            s->prev->data[i], s->prev->linesize[i],
-                            s->linesize[i], s->planeheight[i]);
+        if (s->double_weave && !(inlink->frame_count_out & 1)) {
+            av_image_copy_plane(out->data[i] + out->linesize[i] * !s->first_field,
+                                out->linesize[i] * 2,
+                                in->data[i], in->linesize[i],
+                                s->linesize[i], s->planeheight[i]);
+            av_image_copy_plane(out->data[i] + out->linesize[i] * s->first_field,
+                                out->linesize[i] * 2,
+                                s->prev->data[i], s->prev->linesize[i],
+                                s->linesize[i], s->planeheight[i]);
+        } else {
+            av_image_copy_plane(out->data[i] + out->linesize[i] * s->first_field,
+                                out->linesize[i] * 2,
+                                in->data[i], in->linesize[i],
+                                s->linesize[i], s->planeheight[i]);
+            av_image_copy_plane(out->data[i] + out->linesize[i] * !s->first_field,
+                                out->linesize[i] * 2,
+                                s->prev->data[i], s->prev->linesize[i],
+                                s->linesize[i], s->planeheight[i]);
+        }
     }
 
-    out->pts = in->pts / 2;
+    out->pts = s->double_weave ? s->prev->pts : in->pts / 2;
     out->interlaced_frame = 1;
     out->top_field_first = !s->first_field;
 
-    av_frame_free(&in);
+    if (!s->double_weave)
+        av_frame_free(&in);
     av_frame_free(&s->prev);
+    if (s->double_weave)
+        s->prev = in;
     return ff_filter_frame(outlink, out);
 }
 
@@ -145,6 +162,30 @@ AVFilter ff_vf_weave = {
     .description   = NULL_IF_CONFIG_SMALL("Weave input video fields into frames."),
     .priv_size     = sizeof(WeaveContext),
     .priv_class    = &weave_class,
+    .uninit        = uninit,
+    .inputs        = weave_inputs,
+    .outputs       = weave_outputs,
+};
+
+static av_cold int init(AVFilterContext *ctx)
+{
+    WeaveContext *s = ctx->priv;
+
+    if (!strcmp(ctx->filter->name, "doubleweave"))
+        s->double_weave = 1;
+
+    return 0;
+}
+
+#define doubleweave_options weave_options
+AVFILTER_DEFINE_CLASS(doubleweave);
+
+AVFilter ff_vf_doubleweave = {
+    .name          = "doubleweave",
+    .description   = NULL_IF_CONFIG_SMALL("Weave input video fields into double number of frames."),
+    .priv_size     = sizeof(WeaveContext),
+    .priv_class    = &doubleweave_class,
+    .init          = init,
     .uninit        = uninit,
     .inputs        = weave_inputs,
     .outputs       = weave_outputs,

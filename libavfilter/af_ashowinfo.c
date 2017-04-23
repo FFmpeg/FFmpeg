@@ -199,7 +199,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
                        s->plane_checksums[0];
     }
 
-    av_get_channel_layout_string(chlayout_str, sizeof(chlayout_str), av_frame_get_channels(buf),
+    av_get_channel_layout_string(chlayout_str, sizeof(chlayout_str), buf->channels,
                                  buf->channel_layout);
 
     av_log(ctx, AV_LOG_INFO,
@@ -208,8 +208,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
            "checksum:%08"PRIX32" ",
            inlink->frame_count_out,
            av_ts2str(buf->pts), av_ts2timestr(buf->pts, &inlink->time_base),
-           av_frame_get_pkt_pos(buf),
-           av_get_sample_fmt_name(buf->format), av_frame_get_channels(buf), chlayout_str,
+           buf->pkt_pos,
+           av_get_sample_fmt_name(buf->format), buf->channels, chlayout_str,
            buf->sample_rate, buf->nb_samples,
            checksum);
 

@@ -28,32 +28,32 @@ SECTION_RODATA
 SECTION .text
 
 %macro LOWPASS_LINE 0
-cglobal lowpass_line, 5, 5, 7
-    add r0, r1
-    add r2, r1
-    add r3, r1
-    add r4, r1
-    neg r1
+cglobal lowpass_line, 5, 5, 7, dst, h, src, mref, pref
+    add dstq, hq
+    add srcq, hq
+    add mrefq, srcq
+    add prefq, srcq
+    neg hq
 
     pcmpeqb m6, m6
 
 .loop:
-    mova m0, [r3+r1]
-    mova m1, [r3+r1+mmsize]
-    pavgb m0, [r4+r1]
-    pavgb m1, [r4+r1+mmsize]
+    mova m0, [mrefq+hq]
+    mova m1, [mrefq+hq+mmsize]
+    pavgb m0, [prefq+hq]
+    pavgb m1, [prefq+hq+mmsize]
     pxor m0, m6
     pxor m1, m6
-    pxor m2, m6, [r2+r1]
-    pxor m3, m6, [r2+r1+mmsize]
+    pxor m2, m6, [srcq+hq]
+    pxor m3, m6, [srcq+hq+mmsize]
     pavgb m0, m2
     pavgb m1, m3
     pxor m0, m6
     pxor m1, m6
-    mova [r0+r1], m0
-    mova [r0+r1+mmsize], m1
+    mova [dstq+hq], m0
+    mova [dstq+hq+mmsize], m1
 
-    add r1, 2*mmsize
+    add hq, 2*mmsize
     jl .loop
 REP_RET
 %endmacro

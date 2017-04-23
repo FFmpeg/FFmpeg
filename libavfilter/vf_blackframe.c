@@ -85,7 +85,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
     pblack = s->nblack * 100 / (inlink->w * inlink->h);
     if (pblack >= s->bamount) {
-        metadata = avpriv_frame_get_metadatap(frame);
+        metadata = &frame->metadata;
 
         av_log(ctx, AV_LOG_INFO, "frame:%u pblack:%u pts:%"PRId64" t:%f "
                "type:%c last_keyframe:%d\n",

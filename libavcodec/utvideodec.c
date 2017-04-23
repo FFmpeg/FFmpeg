@@ -238,7 +238,7 @@ static int decode_plane(UtvideoContext *c, int plane_no,
     VLC vlc;
     GetBitContext gb;
     int prev, fsym;
-    const int cmask = ~(!plane_no && c->avctx->pix_fmt == AV_PIX_FMT_YUV420P);
+    const int cmask = c->interlaced ? ~(1 + 2 * (!plane_no && c->avctx->pix_fmt == AV_PIX_FMT_YUV420P)) : ~(!plane_no && c->avctx->pix_fmt == AV_PIX_FMT_YUV420P);
 
     if (build_huff(src, &vlc, &fsym)) {
         av_log(c->avctx, AV_LOG_ERROR, "Cannot build Huffman codes\n");
@@ -676,7 +676,11 @@ static void restore_gradient_planar_il(UtvideoContext *c, uint8_t *src, ptrdiff_
                 C = bsrc[i - 1];
                 bsrc[i] = (A - B + C + bsrc[i]) & 0xFF;
             }
-            for (i = 0; i < width; i++) {
+            A = bsrc[-stride];
+            B = bsrc[-(1 + stride + stride - width)];
+            C = bsrc[width - 1];
+            bsrc[stride] = (A - B + C + bsrc[stride]) & 0xFF;
+            for (i = 1; i < width; i++) {
                 A = bsrc[i - stride];
                 B = bsrc[i - (1 + stride)];
                 C = bsrc[i - 1 + stride];
@@ -774,7 +778,11 @@ static void restore_gradient_packed_il(uint8_t *src, int step, ptrdiff_t stride,
                 C = bsrc[i - step];
                 bsrc[i] = (A - B + C + bsrc[i]) & 0xFF;
             }
-            for (i = 0; i < width * step; i += step) {
+            A = bsrc[-stride];
+            B = bsrc[-(step + stride + stride - width * step)];
+            C = bsrc[width * step - step];
+            bsrc[stride] = (A - B + C + bsrc[stride]) & 0xFF;
+            for (i = step; i < width * step; i += step) {
                 A = bsrc[i - stride];
                 B = bsrc[i - (step + stride)];
                 C = bsrc[i - step + stride];

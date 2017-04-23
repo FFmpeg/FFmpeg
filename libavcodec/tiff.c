@@ -227,9 +227,9 @@ static int add_metadata(int count, int type,
                         const char *name, const char *sep, TiffContext *s, AVFrame *frame)
 {
     switch(type) {
-    case TIFF_DOUBLE: return ff_tadd_doubles_metadata(count, name, sep, &s->gb, s->le, avpriv_frame_get_metadatap(frame));
-    case TIFF_SHORT : return ff_tadd_shorts_metadata(count, name, sep, &s->gb, s->le, 0, avpriv_frame_get_metadatap(frame));
-    case TIFF_STRING: return ff_tadd_string_metadata(count, name, &s->gb, s->le, avpriv_frame_get_metadatap(frame));
+    case TIFF_DOUBLE: return ff_tadd_doubles_metadata(count, name, sep, &s->gb, s->le, &frame->metadata);
+    case TIFF_SHORT : return ff_tadd_shorts_metadata(count, name, sep, &s->gb, s->le, 0, &frame->metadata);
+    case TIFF_STRING: return ff_tadd_string_metadata(count, name, &s->gb, s->le, &frame->metadata);
     default         : return AVERROR_INVALIDDATA;
     };
 }
@@ -1255,7 +1255,7 @@ static int decode_frame(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_WARNING, "Type of GeoTIFF key %d is wrong\n", s->geotags[i].key);
             continue;
         }
-        ret = av_dict_set(avpriv_frame_get_metadatap(p), keyname, s->geotags[i].val, 0);
+        ret = av_dict_set(&p->metadata, keyname, s->geotags[i].val, 0);
         if (ret<0) {
             av_log(avctx, AV_LOG_ERROR, "Writing metadata with key '%s' failed\n", keyname);
             return ret;

@@ -283,7 +283,7 @@ static double ssim_db(double ssim, double weight)
 static AVFrame *do_ssim(AVFilterContext *ctx, AVFrame *main,
                         const AVFrame *ref)
 {
-    AVDictionary **metadata = avpriv_frame_get_metadatap(main);
+    AVDictionary **metadata = &main->metadata;
     SSIMContext *s = ctx->priv;
     float c[4], ssimv = 0.0;
     int i;

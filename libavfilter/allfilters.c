@@ -166,6 +166,7 @@ static void register_all(void)
     REGISTER_FILTER(DEBAND,         deband,         vf);
     REGISTER_FILTER(DECIMATE,       decimate,       vf);
     REGISTER_FILTER(DEFLATE,        deflate,        vf);
+    REGISTER_FILTER(DEFLICKER,      deflicker,      vf);
     REGISTER_FILTER(DEINTERLACE_QSV,deinterlace_qsv,vf);
     REGISTER_FILTER(DEINTERLACE_VAAPI, deinterlace_vaapi, vf);
     REGISTER_FILTER(DEJUDDER,       dejudder,       vf);
@@ -174,6 +175,7 @@ static void register_all(void)
     REGISTER_FILTER(DETELECINE,     detelecine,     vf);
     REGISTER_FILTER(DILATION,       dilation,       vf);
     REGISTER_FILTER(DISPLACE,       displace,       vf);
+    REGISTER_FILTER(DOUBLEWEAVE,    doubleweave,    vf);
     REGISTER_FILTER(DRAWBOX,        drawbox,        vf);
     REGISTER_FILTER(DRAWGRAPH,      drawgraph,      vf);
     REGISTER_FILTER(DRAWGRID,       drawgrid,       vf);

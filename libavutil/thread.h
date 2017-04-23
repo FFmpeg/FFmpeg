@@ -36,8 +36,11 @@
 #define ASSERT_PTHREAD_NORET(func, ...) do {                            \
     int ret = func(__VA_ARGS__);                                        \
     if (ret) {                                                          \
+        char errbuf[AV_ERROR_MAX_STRING_SIZE] = "";                     \
         av_log(NULL, AV_LOG_FATAL, AV_STRINGIFY(func)                   \
-               " failed with error: %s\n", av_err2str(AVERROR(ret)));   \
+               " failed with error: %s\n",                              \
+               av_make_error_string(errbuf, AV_ERROR_MAX_STRING_SIZE,   \
+                                    AVERROR(ret)));                     \
         abort();                                                        \
     }                                                                   \
 } while (0)

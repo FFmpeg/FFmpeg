@@ -1826,7 +1826,7 @@ static int get_cv_pixel_info(
 {
     VTEncContext *vtctx = avctx->priv_data;
     int av_format       = frame->format;
-    int av_color_range  = av_frame_get_color_range(frame);
+    int av_color_range  = frame->color_range;
     int i;
     int range_guessed;
     int status;
@@ -2073,7 +2073,7 @@ static int create_cv_pixel_buffer(AVCodecContext   *avctx,
             AV_LOG_ERROR,
             "Error: Cannot convert format %d color_range %d: %d\n",
             frame->format,
-            av_frame_get_color_range(frame),
+            frame->color_range,
             status
         );
 
@@ -2341,8 +2341,8 @@ static int vtenc_populate_extradata(AVCodecContext   *avctx,
     frame->format          = avctx->pix_fmt;
     frame->width           = avctx->width;
     frame->height          = avctx->height;
-    av_frame_set_colorspace(frame, avctx->colorspace);
-    av_frame_set_color_range(frame, avctx->color_range);
+    frame->colorspace      = avctx->colorspace;
+    frame->color_range     = avctx->color_range;
     frame->color_trc       = avctx->color_trc;
     frame->color_primaries = avctx->color_primaries;
 

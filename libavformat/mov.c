@@ -2321,7 +2321,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
         } else if (a.size > 0)
             avio_skip(pb, a.size);
 
-        if (sc->extradata) {
+        if (sc->extradata && st->codecpar->extradata) {
             int extra_size = st->codecpar->extradata_size;
 
             /* Move the current stream extradata to the stream context one. */

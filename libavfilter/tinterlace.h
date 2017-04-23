@@ -54,7 +54,7 @@ typedef struct {
     uint8_t *black_data[4];     ///< buffer used to fill padded lines
     int black_linesize[4];
     void (*lowpass_line)(uint8_t *dstp, ptrdiff_t width, const uint8_t *srcp,
-                         const uint8_t *srcp_above, const uint8_t *srcp_below);
+                         ptrdiff_t mref, ptrdiff_t pref);
 } TInterlaceContext;
 
 void ff_tinterlace_init_x86(TInterlaceContext *interlace);

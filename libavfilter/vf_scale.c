@@ -409,7 +409,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     char buf[32];
     int in_range;
 
-    if (av_frame_get_colorspace(in) == AVCOL_SPC_YCGCO)
+    if (in->colorspace == AVCOL_SPC_YCGCO)
         av_log(link->dst, AV_LOG_WARNING, "Detected unsupported YCgCo colorspace.\n");
 
     if(   in->width  != link->w
@@ -456,7 +456,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     if(scale->output_is_pal)
         avpriv_set_systematic_pal2((uint32_t*)out->data[1], outlink->format == AV_PIX_FMT_PAL8 ? AV_PIX_FMT_BGR8 : outlink->format);
 
-    in_range = av_frame_get_color_range(in);
+    in_range = in->color_range;
 
     if (   scale->in_color_matrix
         || scale->out_color_matrix
@@ -471,7 +471,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
                                  &brightness, &contrast, &saturation);
 
         if (scale->in_color_matrix)
-            inv_table = parse_yuv_type(scale->in_color_matrix, av_frame_get_colorspace(in));
+            inv_table = parse_yuv_type(scale->in_color_matrix, in->colorspace);
         if (scale->out_color_matrix)
             table     = parse_yuv_type(scale->out_color_matrix, AVCOL_SPC_UNSPECIFIED);
         else if (scale->in_color_matrix)
@@ -496,7 +496,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
                                      table, out_full,
                                      brightness, contrast, saturation);
 
-        av_frame_set_color_range(out, out_full ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG);
+        out->color_range = out_full ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
     }
 
     av_reduce(&out->sample_aspect_ratio.num, &out->sample_aspect_ratio.den,

@@ -1169,8 +1169,8 @@ static int plot_cqt(AVFilterContext *ctx, AVFrame **frameout)
         if (!out)
             return AVERROR(ENOMEM);
         out->sample_aspect_ratio = av_make_q(1, 1);
-        av_frame_set_color_range(out, AVCOL_RANGE_MPEG);
-        av_frame_set_colorspace(out, s->csp);
+        out->color_range = AVCOL_RANGE_MPEG;
+        out->colorspace = s->csp;
         UPDATE_TIME(s->alloc_time);
 
         if (s->bar_h) {

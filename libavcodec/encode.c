@@ -88,7 +88,7 @@ static int pad_last_frame(AVCodecContext *s, AVFrame **dst, const AVFrame *src)
 
     frame->format         = src->format;
     frame->channel_layout = src->channel_layout;
-    av_frame_set_channels(frame, av_frame_get_channels(src));
+    frame->channels       = src->channels;
     frame->nb_samples     = s->frame_size;
     ret = av_frame_get_buffer(frame, 32);
     if (ret < 0)
