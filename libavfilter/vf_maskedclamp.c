@@ -50,9 +50,9 @@ typedef struct MaskedClampContext {
 } MaskedClampContext;
 
 static const AVOption maskedclamp_options[] = {
-    { "undershoot", "set undershoot", OFFSET(undershoot), AV_OPT_TYPE_INT, {.i64=0},   0, INT_MAX, FLAGS },
-    { "overshoot",  "set overshoot",  OFFSET(overshoot),  AV_OPT_TYPE_INT, {.i64=0},   0, INT_MAX, FLAGS },
-    { "planes",     "set planes",     OFFSET(planes),     AV_OPT_TYPE_INT, {.i64=0xF}, 0, 0xF,     FLAGS },
+    { "undershoot", "set undershoot", OFFSET(undershoot), AV_OPT_TYPE_INT, {.i64=0},   0, UINT16_MAX, FLAGS },
+    { "overshoot",  "set overshoot",  OFFSET(overshoot),  AV_OPT_TYPE_INT, {.i64=0},   0, UINT16_MAX, FLAGS },
+    { "planes",     "set planes",     OFFSET(planes),     AV_OPT_TYPE_INT, {.i64=0xF}, 0, 0xF,        FLAGS },
     { NULL }
 };
 
