@@ -9278,6 +9278,26 @@ Interpolate values using a tetrahedron.
 @end table
 @end table
 
+@section lumakey
+
+Turn certain luma values into transparency.
+
+The filter accepts the following options:
+
+@table @option
+@item threshold
+Set the luma which will be used as base for transparency.
+Default value is @code{0}.
+
+@item tolerance
+Set the range of luma values to be keyed out.
+Default value is @code{0}.
+
+@item softness
+Set the range of softness. Default value is @code{0}.
+Use this to control gradual transition from zero to full transparency.
+@end table
+
 @section lut, lutrgb, lutyuv
 
 Compute a look-up table for binding each pixel component input value
