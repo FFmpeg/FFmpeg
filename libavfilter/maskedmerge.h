@@ -27,6 +27,7 @@
 typedef struct MaskedMergeContext {
     const AVClass *class;
     int width[4], height[4];
+    int linesize[4];
     int nb_planes;
     int planes;
     int half, depth;
