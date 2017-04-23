@@ -580,6 +580,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         pkt->data                += consumed;
         pkt->size                -= consumed;
+        avci->last_pkt_props->size -= consumed; // See extract_packet_props() comment.
         pkt->pts                  = AV_NOPTS_VALUE;
         pkt->dts                  = AV_NOPTS_VALUE;
         avci->last_pkt_props->pts = AV_NOPTS_VALUE;
