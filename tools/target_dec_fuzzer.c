@@ -45,12 +45,16 @@
    https://security.googleblog.com/2016/08/guided-in-process-fuzzing-of-chrome.html
 */
 
+#include "config.h"
 #include "libavutil/avassert.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 
 #include "libavcodec/avcodec.h"
 #include "libavcodec/bytestream.h"
 #include "libavformat/avformat.h"
+
+#include <FuzzerInterface.h>
 
 static void error(const char *err)
 {
@@ -96,16 +100,16 @@ typedef struct FuzzDataBuffer {
     uint8_t *data_;
 } FuzzDataBuffer;
 
-void FDBCreate(FuzzDataBuffer *FDB) {
+static void FDBCreate(FuzzDataBuffer *FDB) {
     FDB->size_ = 0x1000;
     FDB->data_ = av_malloc(FDB->size_);
     if (!FDB->data_)
         error("Failed memory allocation");
 }
 
-void FDBDesroy(FuzzDataBuffer *FDB) { av_free(FDB->data_); }
+static void FDBDesroy(FuzzDataBuffer *FDB) { av_free(FDB->data_); }
 
-void FDBRealloc(FuzzDataBuffer *FDB, size_t size) {
+static void FDBRealloc(FuzzDataBuffer *FDB, size_t size) {
     size_t needed = size + FF_INPUT_BUFFER_PADDING_SIZE;
     av_assert0(needed > size);
     if (needed > FDB->size_) {
@@ -117,7 +121,7 @@ void FDBRealloc(FuzzDataBuffer *FDB, size_t size) {
     }
 }
 
-void FDBPrepare(FuzzDataBuffer *FDB, AVPacket *dst, const uint8_t *data,
+static void FDBPrepare(FuzzDataBuffer *FDB, AVPacket *dst, const uint8_t *data,
                 size_t size)
 {
     FDBRealloc(FDB, size);
