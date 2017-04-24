@@ -932,7 +932,7 @@ static int dca_subsubframe(DCAContext *s, int base_channel, int block_index)
     return 0;
 }
 
-static int dca_filter_channels(DCAContext *s, int block_index, int upsample)
+static int dca_filter_channels(DCAContext *s, int block_index, int upsample, int downmix)
 {
     int k;
 
@@ -1000,8 +1000,7 @@ static int dca_filter_channels(DCAContext *s, int block_index, int upsample)
     /* FIXME: This downmixing is probably broken with upsample.
      * Probably totally broken also with XLL in general. */
     /* Downmixing to Stereo */
-    if (s->audio_header.prim_channels + !!s->lfe > 2 &&
-        s->avctx->request_channel_layout == AV_CH_LAYOUT_STEREO) {
+    if (downmix) {
         dca_downmix(s->samples_chanptr, s->amode, !!s->lfe, s->downmix_coef,
                     s->channel_order_tab);
     }
@@ -1378,6 +1377,7 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
     DCAContext *s = avctx->priv_data;
     int channels, full_channels;
     int upsample = 0;
+    int downmix;
 
     s->exss_ext_mask = 0;
     s->xch_present   = 0;
@@ -1488,6 +1488,9 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
             return ret;
     }
 
+    downmix = s->audio_header.prim_channels > 2 &&
+              avctx->request_channel_layout == AV_CH_LAYOUT_STEREO;
+
     /* filter to get final output */
     for (i = 0; i < (s->sample_blocks / SAMPLES_PER_SUBBAND); i++) {
         int ch;
@@ -1497,7 +1500,7 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
         for (; ch < full_channels; ch++)
             s->samples_chanptr[ch] = s->extra_channels[ch - channels] + i * block;
 
-        dca_filter_channels(s, i, upsample);
+        dca_filter_channels(s, i, upsample, downmix);
 
         /* If this was marked as a DTS-ES stream we need to subtract back- */
         /* channel from SL & SR to remove matrixed back-channel signal */
