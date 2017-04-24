@@ -182,6 +182,11 @@ void avcodec_free_context(AVCodecContext **pavctx)
 static void copy_context_reset(AVCodecContext *avctx)
 {
     av_opt_free(avctx);
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
+    av_frame_free(&avctx->coded_frame);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     av_freep(&avctx->rc_override);
     av_freep(&avctx->intra_matrix);
     av_freep(&avctx->inter_matrix);
