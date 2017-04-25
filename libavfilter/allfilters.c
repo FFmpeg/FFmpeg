@@ -246,6 +246,7 @@ static void register_all(void)
     REGISTER_FILTER(NULL,           null,           vf);
     REGISTER_FILTER(OCR,            ocr,            vf);
     REGISTER_FILTER(OCV,            ocv,            vf);
+    REGISTER_FILTER(OSCILLOSCOPE,   oscilloscope,   vf);
     REGISTER_FILTER(OVERLAY,        overlay,        vf);
     REGISTER_FILTER(OWDENOISE,      owdenoise,      vf);
     REGISTER_FILTER(PAD,            pad,            vf);
