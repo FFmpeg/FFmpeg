@@ -120,6 +120,11 @@ static uint64_t truehd_layout(int chanmap)
     return layout;
 }
 
+int ff_mlp_channel_layout_subset(uint64_t channel_layout, uint64_t mask)
+{
+    return channel_layout && ((channel_layout & mask) == channel_layout);
+}
+
 static int mlp_get_major_sync_size(const uint8_t * buf, int bufsize)
 {
     int has_extension, extensions = 0;
@@ -331,6 +336,8 @@ static int mlp_parse(AVCodecParserContext *s,
     } else {
         BitstreamContext bc;
         MLPHeaderInfo mh;
+        int stereo_requested = ff_mlp_channel_layout_subset(avctx->request_channel_layout,
+                                                            AV_CH_LAYOUT_STEREO);
 
         bitstream_init8(&bc, buf + 4, buf_size - 4);
         if (ff_mlp_read_major_sync(avctx, &mh, &bc) < 0)
@@ -346,10 +353,7 @@ static int mlp_parse(AVCodecParserContext *s,
 
         if (mh.stream_type == 0xbb) {
             /* MLP stream */
-            if (avctx->request_channel_layout &&
-                (avctx->request_channel_layout & AV_CH_LAYOUT_STEREO) ==
-                avctx->request_channel_layout &&
-                mh.num_substreams > 1) {
+            if (stereo_requested && mh.num_substreams > 1) {
                 avctx->channels       = 2;
                 avctx->channel_layout = AV_CH_LAYOUT_STEREO;
             } else {
@@ -358,16 +362,12 @@ static int mlp_parse(AVCodecParserContext *s,
             }
         } else { /* mh.stream_type == 0xba */
             /* TrueHD stream */
-                if (avctx->request_channel_layout &&
-                    (avctx->request_channel_layout & AV_CH_LAYOUT_STEREO) ==
-                    avctx->request_channel_layout &&
-                    mh.num_substreams > 1) {
+            if (stereo_requested && mh.num_substreams > 1) {
                 avctx->channels       = 2;
                 avctx->channel_layout = AV_CH_LAYOUT_STEREO;
             } else if (!mh.channels_thd_stream2 ||
-                       (avctx->request_channel_layout &&
-                        (avctx->request_channel_layout & mh.channel_layout_thd_stream1) ==
-                        avctx->request_channel_layout)) {
+                       ff_mlp_channel_layout_subset(avctx->request_channel_layout,
+                                                    mh.channel_layout_thd_stream1)) {
                 avctx->channels       = mh.channels_thd_stream1;
                 avctx->channel_layout = mh.channel_layout_thd_stream1;
             } else {

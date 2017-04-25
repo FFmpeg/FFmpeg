@@ -511,8 +511,8 @@ static int read_restart_header(MLPDecodeContext *m, BitstreamContext *bc,
     s->max_channel        = max_channel;
     s->max_matrix_channel = max_matrix_channel;
 
-    if (m->avctx->request_channel_layout && (s->mask & m->avctx->request_channel_layout) ==
-        m->avctx->request_channel_layout && m->max_decoded_substream > substr) {
+    if (ff_mlp_channel_layout_subset(m->avctx->request_channel_layout, s->mask) &&
+        m->max_decoded_substream > substr) {
         av_log(m->avctx, AV_LOG_DEBUG,
                "Extracting %d-channel downmix (0x%"PRIx64") from substream %d. "
                "Further substreams will be skipped.\n",
