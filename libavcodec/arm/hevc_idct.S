@@ -1,5 +1,7 @@
 /*
  * ARM NEON optimised IDCT functions for HEVC decoding
+ *
+ * Copyright (c) 2014 Seppo Tomperi <seppo.tomperi@vtt.fi>
  * Copyright (c) 2017 Alexandra Hájková
  *
  * This file is part of Libav.
@@ -27,6 +29,82 @@ const trans, align=4
         .short 90, 87, 80, 70
         .short 57, 43, 25, 9
 endconst
+
+function ff_hevc_idct_4x4_dc_8_neon, export=1
+        ldrsh           r1, [r0]
+        ldr             r2, =0x20
+        add             r1, #1
+        asr             r1, #1
+        add             r1, r2
+        asr             r1, #6
+        vdup.16         q0, r1
+        vdup.16         q1, r1
+        vst1.16         {q0, q1}, [r0, :128]
+        bx              lr
+endfunc
+
+function ff_hevc_idct_8x8_dc_8_neon, export=1
+        ldrsh           r1, [r0]
+        ldr             r2, =0x20
+        add             r1, #1
+        asr             r1, #1
+        add             r1, r2
+        asr             r1, #6
+        vdup.16         q8, r1
+        vdup.16         q9, r1
+        vmov.16         q10, q8
+        vmov.16         q11, q8
+        vmov.16         q12, q8
+        vmov.16         q13, q8
+        vmov.16         q14, q8
+        vmov.16         q15, q8
+        vstm            r0, {q8-q15}
+        bx              lr
+endfunc
+
+function ff_hevc_idct_16x16_dc_8_neon, export=1
+        ldrsh           r1, [r0]
+        ldr             r2, =0x20
+        add             r1, #1
+        asr             r1, #1
+        add             r1, r2
+        asr             r1, #6
+        vdup.16         q8, r1
+        vdup.16         q9, r1
+        vmov.16         q10, q8
+        vmov.16         q11, q8
+        vmov.16         q12, q8
+        vmov.16         q13, q8
+        vmov.16         q14, q8
+        vmov.16         q15, q8
+        vstm            r0!, {q8-q15}
+        vstm            r0!, {q8-q15}
+        vstm            r0!, {q8-q15}
+        vstm            r0, {q8-q15}
+        bx              lr
+endfunc
+
+function ff_hevc_idct_32x32_dc_8_neon, export=1
+        ldrsh           r1, [r0]
+        ldr             r2, =0x20
+        add             r1, #1
+        asr             r1, #1
+        add             r1, r2
+        asr             r1, #6
+        mov             r3, #16
+        vdup.16         q8, r1
+        vdup.16         q9, r1
+        vmov.16         q10, q8
+        vmov.16         q11, q8
+        vmov.16         q12, q8
+        vmov.16         q13, q8
+        vmov.16         q14, q8
+        vmov.16         q15, q8
+1:      subs            r3, #1
+        vstm            r0!, {q8-q15}
+        bne             1b
+        bx              lr
+endfunc
 
 .macro sum_sub out, in, c, op
   .ifc \op, +
