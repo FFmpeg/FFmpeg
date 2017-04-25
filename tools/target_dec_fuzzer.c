@@ -54,7 +54,7 @@
 #include "libavcodec/bytestream.h"
 #include "libavformat/avformat.h"
 
-#include <FuzzerInterface.h>
+int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size);
 
 static void error(const char *err)
 {
