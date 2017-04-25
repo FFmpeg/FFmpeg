@@ -1040,6 +1040,9 @@ slope
 
 @item width, w
 Specify the band-width of a filter in width_type units.
+
+@item channels, c
+Specify which channels to filter, by default all available are filtered.
 @end table
 
 @section aloop
@@ -1767,6 +1770,9 @@ slope
 
 @item width, w
 Specify the band-width of a filter in width_type units.
+
+@item channels, c
+Specify which channels to filter, by default all available are filtered.
 @end table
 
 @section bandreject
@@ -1796,6 +1802,9 @@ slope
 
 @item width, w
 Specify the band-width of a filter in width_type units.
+
+@item channels, c
+Specify which channels to filter, by default all available are filtered.
 @end table
 
 @section bass
@@ -1832,6 +1841,9 @@ slope
 
 @item width, w
 Determine how steep is the filter's shelf transition.
+
+@item channels, c
+Specify which channels to filter, by default all available are filtered.
 @end table
 
 @section biquad
@@ -1839,6 +1851,8 @@ Determine how steep is the filter's shelf transition.
 Apply a biquad IIR filter with the given coefficients.
 Where @var{b0}, @var{b1}, @var{b2} and @var{a0}, @var{a1}, @var{a2}
 are the numerator and denominator coefficients respectively.
+and @var{channels}, @var{c} specify which channels to filter, by default all
+available are filtered.
 
 @section bs2b
 Bauer stereo to binaural transformation, which improves headphone listening of
@@ -2417,6 +2431,9 @@ Specify the band-width of a filter in width_type units.
 @item gain, g
 Set the required gain or attenuation in dB.
 Beware of clipping when using a positive gain.
+
+@item channels, c
+Specify which channels to filter, by default all available are filtered.
 @end table
 
 @subsection Examples
@@ -2718,6 +2735,9 @@ slope
 Specify the band-width of a filter in width_type units.
 Applies only to double-pole filter.
 The default is 0.707q and gives a Butterworth response.
+
+@item channels, c
+Specify which channels to filter, by default all available are filtered.
 @end table
 
 @section join
@@ -2977,6 +2997,9 @@ slope
 Specify the band-width of a filter in width_type units.
 Applies only to double-pole filter.
 The default is 0.707q and gives a Butterworth response.
+
+@item channels, c
+Specify which channels to filter, by default all available are filtered.
 @end table
 
 @anchor{pan}
@@ -3663,6 +3686,9 @@ slope
 
 @item width, w
 Determine how steep is the filter's shelf transition.
+
+@item channels, c
+Specify which channels to filter, by default all available are filtered.
 @end table
 
 @section tremolo
