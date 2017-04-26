@@ -1844,6 +1844,7 @@ HEADERS_LIST="
     cdio_paranoia_h
     cdio_paranoia_paranoia_h
     cuda_h
+    d3d11_h
     dispatch_dispatch_h
     dev_bktr_ioctl_bt848_h
     dev_bktr_ioctl_meteor_h
@@ -1853,7 +1854,6 @@ HEADERS_LIST="
     direct_h
     dirent_h
     dlfcn_h
-    d3d11_h
     dxva_h
     ES2_gl_h
     gsm_h
@@ -5618,10 +5618,10 @@ enabled xlib &&
     check_func_headers "X11/Xlib.h X11/extensions/Xvlib.h" XvGetPortAttribute -lXv -lX11 -lXext
 
 check_header AudioToolbox/AudioToolbox.h
+check_header d3d11.h
 check_header direct.h
 check_header dirent.h
 check_header dlfcn.h
-check_header d3d11.h
 check_header dxva.h
 check_header dxva2api.h -D_WIN32_WINNT=0x0600
 check_header io.h
