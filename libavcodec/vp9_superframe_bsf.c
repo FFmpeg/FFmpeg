@@ -21,8 +21,8 @@
 
 #include "libavutil/avassert.h"
 #include "avcodec.h"
+#include "bitstream.h"
 #include "bsf.h"
-#include "get_bits.h"
 
 #define MAX_CACHE 8
 typedef struct VP9BSFContext {
@@ -101,7 +101,7 @@ static int merge_superframe(const struct CachedBuf *in, int n_in, AVPacket *out)
 
 static int vp9_superframe_filter(AVBSFContext *ctx, AVPacket *out)
 {
-    GetBitContext gb;
+    BitstreamContext bc;
     VP9BSFContext *s = ctx->priv_data;
     AVPacket *in;
     int res, invisible, profile, marker, uses_superframe_syntax = 0, n;
@@ -118,19 +118,21 @@ static int vp9_superframe_filter(AVBSFContext *ctx, AVPacket *out)
         uses_superframe_syntax = in->size >= idx_sz && in->data[in->size - idx_sz] == marker;
     }
 
-    if ((res = init_get_bits8(&gb, in->data, in->size)) < 0)
+    res = bitstream_init8(&bc, in->data, in->size);
+    if (res < 0)
         goto done;
 
-    get_bits(&gb, 2); // frame marker
-    profile  = get_bits1(&gb);
-    profile |= get_bits1(&gb) << 1;
-    if (profile == 3) profile += get_bits1(&gb);
+    bitstream_read(&bc, 2); // frame marker
+    profile  = bitstream_read(&bc, 1);
+    profile |= bitstream_read(&bc, 1) << 1;
+    if (profile == 3)
+        profile += bitstream_read(&bc, 1);
 
-    if (get_bits1(&gb)) {
+    if (bitstream_read(&bc, 1)) {
         invisible = 0;
     } else {
-        get_bits1(&gb); // keyframe
-        invisible = !get_bits1(&gb);
+        bitstream_read(&bc, 1); // keyframe
+        invisible = !bitstream_read(&bc, 1);
     }
 
     if (uses_superframe_syntax && s->n_cache > 0) {
