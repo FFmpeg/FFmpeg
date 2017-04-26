@@ -20,11 +20,12 @@
  */
 
 #include "config.h"
+
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/ppc/cpu.h"
-#include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
+
 #include "libavcodec/vc1dsp.h"
 
 #if HAVE_ALTIVEC

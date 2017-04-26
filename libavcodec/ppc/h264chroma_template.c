@@ -19,7 +19,6 @@
  */
 
 #include "libavutil/mem.h"
-#include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
 
 /* this code assume that stride % 16 == 0 */
