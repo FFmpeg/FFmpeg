@@ -459,23 +459,23 @@ static int hls_slice_header(HEVCContext *s)
         sh->no_output_of_prior_pics_flag = 1;
 
     if (s->ps.sps != (HEVCSPS*)s->ps.sps_list[s->ps.pps->sps_id]->data) {
-        const HEVCSPS* last_sps = s->ps.sps;
+        const HEVCSPS *sps = (HEVCSPS*)s->ps.sps_list[s->ps.pps->sps_id]->data;
+        const HEVCSPS *last_sps = s->ps.sps;
         enum AVPixelFormat pix_fmt;
 
-        s->ps.sps = (HEVCSPS*)s->ps.sps_list[s->ps.pps->sps_id]->data;
         if (last_sps && IS_IRAP(s) && s->nal_unit_type != HEVC_NAL_CRA_NUT) {
-            if (s->ps.sps->width !=  last_sps->width || s->ps.sps->height != last_sps->height ||
-                s->ps.sps->temporal_layer[s->ps.sps->max_sub_layers - 1].max_dec_pic_buffering !=
+            if (sps->width != last_sps->width || sps->height != last_sps->height ||
+                sps->temporal_layer[sps->max_sub_layers - 1].max_dec_pic_buffering !=
                 last_sps->temporal_layer[last_sps->max_sub_layers - 1].max_dec_pic_buffering)
                 sh->no_output_of_prior_pics_flag = 0;
         }
         ff_hevc_clear_refs(s);
 
-        pix_fmt = get_format(s, s->ps.sps);
+        pix_fmt = get_format(s, sps);
         if (pix_fmt < 0)
             return pix_fmt;
 
-        ret = set_sps(s, s->ps.sps, pix_fmt);
+        ret = set_sps(s, sps, pix_fmt);
         if (ret < 0)
             return ret;
 
