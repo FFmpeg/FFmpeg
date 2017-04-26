@@ -32,7 +32,7 @@
 #include "libavcodec/hevcdsp.h"
 
 #if HAVE_ALTIVEC
-static const vector int16_t trans4[4] = {
+static const vec_s16 trans4[4] = {
     { 64,  64, 64,  64, 64,  64, 64,  64 },
     { 83,  36, 83,  36, 83,  36, 83,  36 },
     { 64, -64, 64, -64, 64, -64, 64, -64 },
@@ -44,13 +44,13 @@ static const vec_u8 mask[2] = {
     { 0x04, 0x05, 0x0C, 0x0D, 0x14, 0x15, 0x1C, 0x1D, 0x06, 0x07, 0x0E, 0x0F, 0x16, 0x17, 0x1E, 0x1F },
 };
 
-static void transform4x4(vector int16_t src_01, vector int16_t src_23,
-                         vector int32_t res[4], const int shift, int16_t *coeffs)
+static void transform4x4(vec_s16 src_01, vec_s16 src_23, vec_s32 res[4],
+                         const int shift, int16_t *coeffs)
 {
-    vector int16_t src_02, src_13;
-    vector int32_t zero = vec_splat_s32(0);
-    vector int32_t e0, o0, e1, o1;
-    vector int32_t add;
+    vec_s16 src_02, src_13;
+    vec_s32 zero = vec_splat_s32(0);
+    vec_s32 e0, o0, e1, o1;
+    vec_s32 add;
 
     src_13 = vec_mergel(src_01, src_23);
     src_02 = vec_mergeh(src_01, src_23);
@@ -70,10 +70,10 @@ static void transform4x4(vector int16_t src_01, vector int16_t src_23,
     res[3] = vec_sub(e0, o0);
 }
 
-static void scale(vector int32_t res[4], vector int16_t res_packed[2], int shift)
+static void scale(vec_s32 res[4], vec_s16 res_packed[2], int shift)
 {
     int i;
-    vector unsigned int v_shift = vec_splat_u32(shift);
+    vec_u32 v_shift = vec_splat_u32(shift);
 
     for (i = 0; i < 4; i++)
         res[i] = vec_sra(res[i], v_shift);
