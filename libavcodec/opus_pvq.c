@@ -89,18 +89,16 @@ static void celt_exp_rotation_impl(float *X, uint32_t len, uint32_t stride,
 
     Xptr = X;
     for (i = 0; i < len - stride; i++) {
-        float x1, x2;
-        x1           = Xptr[0];
-        x2           = Xptr[stride];
+        float x1     = Xptr[0];
+        float x2     = Xptr[stride];
         Xptr[stride] = c * x2 + s * x1;
         *Xptr++      = c * x1 - s * x2;
     }
 
     Xptr = &X[len - 2 * stride - 1];
     for (i = len - 2 * stride - 1; i >= 0; i--) {
-        float x1, x2;
-        x1           = Xptr[0];
-        x2           = Xptr[stride];
+        float x1     = Xptr[0];
+        float x2     = Xptr[stride];
         Xptr[stride] = c * x2 + s * x1;
         *Xptr--      = c * x1 - s * x2;
     }
@@ -132,8 +130,6 @@ static inline void celt_exp_rotation(float *X, uint32_t len,
             stride2++;
     }
 
-    /*NOTE: As a minor optimization, we could be passing around log2(B), not B, for both this and for
-    extract_collapse_mask().*/
     len /= stride;
     for (i = 0; i < stride; i++) {
         if (encode) {
@@ -150,17 +146,12 @@ static inline void celt_exp_rotation(float *X, uint32_t len,
 
 static inline uint32_t celt_extract_collapse_mask(const int *iy, uint32_t N, uint32_t B)
 {
-    uint32_t collapse_mask;
-    int N0;
-    int i, j;
+    int i, j, N0 = N / B;
+    uint32_t collapse_mask = 0;
 
     if (B <= 1)
         return 1;
 
-    /*NOTE: As a minor optimization, we could be passing around log2(B), not B, for both this and for
-    exp_rotation().*/
-    N0 = N/B;
-    collapse_mask = 0;
     for (i = 0; i < B; i++)
         for (j = 0; j < N0; j++)
             collapse_mask |= (!!iy[i*N0+j]) << i;
@@ -277,13 +268,11 @@ static inline uint32_t celt_icwrsi(uint32_t N, uint32_t K, const int *y)
 static inline uint64_t celt_cwrsi(uint32_t N, uint32_t K, uint32_t i, int *y)
 {
     uint64_t norm = 0;
-    uint32_t p;
+    uint32_t q, p;
     int s, val;
     int k0;
 
     while (N > 2) {
-        uint32_t q;
-
         /*Lots of pulses case:*/
         if (K >= N) {
             const uint32_t *row = ff_celt_pvq_u_row[N];
