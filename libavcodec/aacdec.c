@@ -93,11 +93,11 @@
 #include "aac.h"
 #include "aactab.h"
 #include "aacdectab.h"
+#include "adts_header.h"
 #include "cbrt_tablegen.h"
 #include "sbr.h"
 #include "aacsbr.h"
 #include "mpeg4audio.h"
-#include "aacadtsdec.h"
 #include "libavutil/intfloat.h"
 
 #include <assert.h>
@@ -2705,7 +2705,7 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
     uint8_t layout_map[MAX_ELEM_ID*4][3];
     int layout_map_tags, ret;
 
-    size = avpriv_aac_parse_header(gb, &hdr_info);
+    size = ff_adts_header_parse(gb, &hdr_info);
     if (size > 0) {
         if (hdr_info.num_aac_frames != 1) {
             avpriv_report_missing_feature(ac->avctx,

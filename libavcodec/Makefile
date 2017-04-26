@@ -2,6 +2,7 @@ NAME = avcodec
 DESC = Libav codec library
 
 HEADERS = ac3_parser.h                                                  \
+          adts_parser.h                                                 \
           avcodec.h                                                     \
           avfft.h                                                       \
           d3d11va.h                                                     \
@@ -16,6 +17,7 @@ HEADERS = ac3_parser.h                                                  \
           vorbis_parser.h                                               \
 
 OBJS = ac3_parser.o                                                     \
+       adts_parser.o                                                    \
        allcodecs.o                                                      \
        avpacket.o                                                       \
        avpicture.o                                                      \
@@ -45,6 +47,7 @@ OBJS = ac3_parser.o                                                     \
 # subsystems
 OBJS-$(CONFIG_AANDCTTABLES)            += aandcttab.o
 OBJS-$(CONFIG_AC3DSP)                  += ac3dsp.o
+OBJS-$(CONFIG_ADTS_HEADER)             += adts_header.o mpeg4audio.o
 OBJS-$(CONFIG_AUDIO_FRAME_QUEUE)       += audio_frame_queue.o
 OBJS-$(CONFIG_AUDIODSP)                += audiodsp.o
 OBJS-$(CONFIG_BLOCKDSP)                += blockdsp.o
@@ -126,7 +129,7 @@ OBJS-$(CONFIG_WMV2DSP)                 += wmv2dsp.o
 OBJS-$(CONFIG_A64MULTI_ENCODER)        += a64multienc.o elbg.o
 OBJS-$(CONFIG_A64MULTI5_ENCODER)       += a64multienc.o elbg.o
 OBJS-$(CONFIG_AAC_DECODER)             += aacdec.o aactab.o aacsbr.o aacps.o \
-                                          aacadtsdec.o mpeg4audio.o kbdwin.o \
+                                          mpeg4audio.o kbdwin.o \
                                           sbrdsp.o aacpsdsp.o
 OBJS-$(CONFIG_AAC_ENCODER)             += aacenc.o aaccoder.o    \
                                           aacpsy.o aactab.o      \
@@ -666,7 +669,6 @@ OBJS-$(CONFIG_MATROSKA_AUDIO_MUXER)    += mpeg4audio.o
 OBJS-$(CONFIG_MATROSKA_MUXER)          += mpeg4audio.o
 OBJS-$(CONFIG_MOV_DEMUXER)             += ac3tab.o
 OBJS-$(CONFIG_NUT_MUXER)               += mpegaudiodata.o
-OBJS-$(CONFIG_SPDIF_DEMUXER)           += aacadtsdec.o mpeg4audio.o
 OBJS-$(CONFIG_SPDIF_MUXER)             += dca.o
 OBJS-$(CONFIG_TAK_DEMUXER)             += tak.o
 OBJS-$(CONFIG_WEBM_MUXER)              += mpeg4audio.o
@@ -722,7 +724,7 @@ OBJS-$(CONFIG_LIBXVID_ENCODER)            += libxvid.o
 # parsers
 OBJS-$(CONFIG_AAC_LATM_PARSER)         += latm_parser.o
 OBJS-$(CONFIG_AAC_PARSER)              += aac_parser.o aac_ac3_parser.o \
-                                          aacadtsdec.o mpeg4audio.o
+                                          mpeg4audio.o
 OBJS-$(CONFIG_AC3_PARSER)              += ac3tab.o aac_ac3_parser.o
 OBJS-$(CONFIG_ADX_PARSER)              += adx_parser.o adx.o
 OBJS-$(CONFIG_BMP_PARSER)              += bmp_parser.o
@@ -760,8 +762,7 @@ OBJS-$(CONFIG_VP3_PARSER)              += vp3_parser.o
 OBJS-$(CONFIG_VP8_PARSER)              += vp8_parser.o
 
 # bitstream filters
-OBJS-$(CONFIG_AAC_ADTSTOASC_BSF)          += aac_adtstoasc_bsf.o aacadtsdec.o \
-                                             mpeg4audio.o
+OBJS-$(CONFIG_AAC_ADTSTOASC_BSF)          += aac_adtstoasc_bsf.o mpeg4audio.o
 OBJS-$(CONFIG_CHOMP_BSF)                  += chomp_bsf.o
 OBJS-$(CONFIG_DUMP_EXTRADATA_BSF)         += dump_extradata_bsf.o
 OBJS-$(CONFIG_EXTRACT_EXTRADATA_BSF)      += extract_extradata_bsf.o    \

@@ -1728,6 +1728,7 @@ HAVE_LIST="
 CONFIG_EXTRA="
     aandcttables
     ac3dsp
+    adts_header
     audio_frame_queue
     audiodsp
     blockdsp
@@ -1966,7 +1967,7 @@ mpegvideoenc_select="me_cmp mpegvideo pixblockdsp qpeldsp"
 vc1dsp_select="h264chroma qpeldsp startcode"
 
 # decoders / encoders
-aac_decoder_select="imdct15 mdct sinewin"
+aac_decoder_select="adts_header imdct15 mdct sinewin"
 aac_encoder_select="audio_frame_queue iirfilter mdct sinewin"
 aac_latm_decoder_select="aac_decoder aac_latm_parser"
 ac3_decoder_select="ac3_parser ac3dsp bswapdsp fmtconvert mdct"
@@ -2280,6 +2281,7 @@ nvenc_h264_encoder_select="h264_nvenc_encoder"
 nvenc_hevc_encoder_select="hevc_nvenc_encoder"
 
 # parsers
+aac_parser_select="adts_header"
 h264_parser_select="golomb h264dsp h264parse"
 hevc_parser_select="hevc_ps"
 mpegaudio_parser_select="mpegaudioheader"
@@ -2288,6 +2290,7 @@ mpeg4video_parser_select="error_resilience h263dsp mpegvideo qpeldsp"
 vc1_parser_select="vc1dsp"
 
 # bitstream_filters
+aac_adtstoasc_bsf_select="adts_header"
 mjpeg2jpeg_bsf_select="jpegtables"
 
 # external libraries
@@ -2396,7 +2399,8 @@ sap_demuxer_select="sdp_demuxer"
 sap_muxer_select="rtp_muxer rtp_protocol rtpenc_chain"
 sdp_demuxer_select="rtpdec"
 smoothstreaming_muxer_select="ismv_muxer"
-spdif_muxer_select="aac_parser"
+spdif_demuxer_select="adts_header"
+spdif_muxer_select="adts_header"
 spx_muxer_select="ogg_muxer"
 swf_demuxer_suggest="zlib"
 tak_demuxer_select="tak_parser"

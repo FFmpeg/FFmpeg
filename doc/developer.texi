@@ -218,7 +218,7 @@ e.g. @samp{ff_w64_demuxer}.
 @item
 For variables and functions visible outside of file scope, used internally
 across multiple libraries, use @code{avpriv_} as prefix, for example,
-@samp{avpriv_aac_parse_header}.
+@samp{avpriv_report_missing_feature}.
 
 @item
 For externally visible symbols, each library has its own prefix. Check
