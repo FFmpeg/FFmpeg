@@ -3017,7 +3017,6 @@ v4l_indev_deps="linux_videodev_h"
 v4l2_indev_deps_any="linux_videodev2_h sys_videoio_h"
 v4l2_outdev_deps_any="linux_videodev2_h sys_videoio_h"
 vfwcap_indev_deps="capCreateCaptureWindow vfwcap_defines"
-vfwcap_indev_extralibs="-lavicap32"
 xcbgrab_indev_deps="libxcb"
 xv_outdev_deps="X11_extensions_Xvlib_h XvGetPortAttribute"
 xv_outdev_extralibs="-lXv -lX11 -lXext"
@@ -3848,7 +3847,6 @@ msvc_common_flags(){
             -mthumb)              ;;
             -march=*)             ;;
             -lz)                  echo zlib.lib ;;
-            -lavicap32)           echo vfw32.lib user32.lib ;;
             -lx264)               echo libx264.lib ;;
             -lstdc++)             ;;
             -l*)                  echo ${flag#-l}.lib ;;
@@ -5968,7 +5966,8 @@ check_code cc linux/videodev2.h "struct v4l2_frmsizeenum vfse; vfse.discrete.wid
 check_header sys/videoio.h
 check_code cc sys/videoio.h "struct v4l2_frmsizeenum vfse; vfse.discrete.width = 0;" && enable_safe struct_v4l2_frmivalenum_discrete
 
-check_func_headers "windows.h vfw.h" capCreateCaptureWindow "$vfwcap_indev_extralibs"
+check_lib "windows.h winuser.h" GetShellWindow -luser32
+check_lib "windows.h vfw.h" capCreateCaptureWindow -lvfw32
 # check that WM_CAP_DRIVER_CONNECT is defined to the proper value
 # w32api 3.12 had it defined wrong
 check_cpp_condition vfw.h "WM_CAP_DRIVER_CONNECT > WM_USER" && enable vfwcap_defines
