@@ -4149,6 +4149,7 @@ probe_cc(){
         _DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -showIncludes -Zs'
         _cflags_speed="-O2"
         _cflags_size="-O1"
+        _cflags_noopt="-O1"
         if $_cc -nologo- 2>&1 | grep -q Linker; then
             _ld_o='-out:$@'
         else
