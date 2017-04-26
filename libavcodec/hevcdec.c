@@ -367,7 +367,7 @@ static enum AVPixelFormat get_format(HEVCContext *s, const HEVCSPS *sps)
     *fmt++ = sps->pix_fmt;
     *fmt = AV_PIX_FMT_NONE;
 
-    return ff_get_format(s->avctx, pix_fmts);
+    return ff_thread_get_format(s->avctx, pix_fmts);
 }
 
 static int set_sps(HEVCContext *s, const HEVCSPS *sps,
