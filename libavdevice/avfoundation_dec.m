@@ -449,11 +449,11 @@ static int get_video_config(AVFormatContext *s)
     image_buffer      = ctx->current_frame;
     image_buffer_size = CVImageBufferGetEncodedSize(image_buffer);
 
-    stream->codec->codec_id   = AV_CODEC_ID_RAWVIDEO;
-    stream->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    stream->codec->width      = (int)image_buffer_size.width;
-    stream->codec->height     = (int)image_buffer_size.height;
-    stream->codec->pix_fmt    = av_get_pix_fmt(ctx->pixel_format);
+    stream->codecpar->codec_id   = AV_CODEC_ID_RAWVIDEO;
+    stream->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    stream->codecpar->width      = (int)image_buffer_size.width;
+    stream->codecpar->height     = (int)image_buffer_size.height;
+    stream->codecpar->format     = av_get_pix_fmt(ctx->pixel_format);
 
     CFRelease(ctx->current_frame);
     ctx->current_frame = nil;
