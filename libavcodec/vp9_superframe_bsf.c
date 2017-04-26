@@ -27,20 +27,17 @@
 #define MAX_CACHE 8
 typedef struct VP9BSFContext {
     int n_cache;
-    struct CachedBuf {
-        uint8_t *data;
-        int size;
-    } cache[MAX_CACHE];
+    AVPacket *cache[MAX_CACHE];
 } VP9BSFContext;
 
-static void stats(const struct CachedBuf *in, int n_in,
+static void stats(AVPacket * const *in, int n_in,
                   unsigned *_max, unsigned *_sum)
 {
     int n;
     unsigned max = 0, sum = 0;
 
     for (n = 0; n < n_in; n++) {
-        unsigned sz = in[n].size;
+        unsigned sz = in[n]->size;
 
         if (sz > max)
             max = sz;
@@ -51,7 +48,7 @@ static void stats(const struct CachedBuf *in, int n_in,
     *_sum = sum;
 }
 
-static int merge_superframe(const struct CachedBuf *in, int n_in, AVPacket *out)
+static int merge_superframe(AVPacket * const *in, int n_in, AVPacket *out)
 {
     unsigned max, sum, mag, marker, n, sz;
     uint8_t *ptr;
@@ -66,8 +63,8 @@ static int merge_superframe(const struct CachedBuf *in, int n_in, AVPacket *out)
         return res;
     ptr = out->data;
     for (n = 0; n < n_in; n++) {
-        memcpy(ptr, in[n].data, in[n].size);
-        ptr += in[n].size;
+        memcpy(ptr, in[n]->data, in[n]->size);
+        ptr += in[n]->size;
     }
 
 #define wloop(mag, wr) do { \
@@ -81,16 +78,16 @@ static int merge_superframe(const struct CachedBuf *in, int n_in, AVPacket *out)
     *ptr++ = marker;
     switch (mag) {
     case 0:
-        wloop(mag, *ptr = in[n].size);
+        wloop(mag, *ptr = in[n]->size);
         break;
     case 1:
-        wloop(mag, AV_WL16(ptr, in[n].size));
+        wloop(mag, AV_WL16(ptr, in[n]->size));
         break;
     case 2:
-        wloop(mag, AV_WL24(ptr, in[n].size));
+        wloop(mag, AV_WL24(ptr, in[n]->size));
         break;
     case 3:
-        wloop(mag, AV_WL32(ptr, in[n].size));
+        wloop(mag, AV_WL32(ptr, in[n]->size));
         break;
     }
     *ptr++ = marker;
@@ -151,33 +148,25 @@ static int vp9_superframe_filter(AVBSFContext *ctx, AVPacket *out)
         goto done;
     }
 
+    s->cache[s->n_cache++] = in;
+    in                     = NULL;
     if (invisible) {
-        s->cache[s->n_cache].data = av_malloc(in->size);
-        if (!s->cache[s->n_cache].data) {
-            res = AVERROR(ENOMEM);
-            goto done;
-        }
-        memcpy(s->cache[s->n_cache].data, in->data, in->size);
-        s->cache[s->n_cache++].size = in->size;
         res = AVERROR(EAGAIN);
         goto done;
     }
     av_assert0(s->n_cache > 0);
 
-    s->cache[s->n_cache].data = in->data;
-    s->cache[s->n_cache].size = in->size;
-
     // build superframe
-    if ((res = merge_superframe(s->cache, s->n_cache + 1, out)) < 0)
+    if ((res = merge_superframe(s->cache, s->n_cache, out)) < 0)
+        goto done;
+
+    res = av_packet_copy_props(out, s->cache[s->n_cache - 1]);
+    if (res < 0)
         goto done;
 
     for (n = 0; n < s->n_cache; n++)
-        av_freep(&s->cache[n].data);
+        av_packet_free(&s->cache[n]);
     s->n_cache = 0;
-
-    res = av_packet_copy_props(out, in);
-    if (res < 0)
-        goto done;
 
 done:
     if (res < 0)
@@ -193,7 +182,7 @@ static void vp9_superframe_close(AVBSFContext *ctx)
 
     // free cached data
     for (n = 0; n < s->n_cache; n++)
-        av_freep(&s->cache[n].data);
+        av_packet_free(&s->cache[n]);
 }
 
 static const enum AVCodecID codec_ids[] = {
