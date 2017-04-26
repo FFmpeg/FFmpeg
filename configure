@@ -1223,10 +1223,13 @@ EOF
 
 check_lib(){
     log check_lib "$@"
-    headers="$1"
-    funcs="$2"
-    shift 2
-    check_func_headers "$headers" "$funcs" "$@" && add_extralibs "$@"
+    name="$1"
+    headers="$2"
+    funcs="$3"
+    shift 3
+    disable $name
+    check_func_headers "$headers" "$funcs" "$@" &&
+        enable $name && add_extralibs "$@"
 }
 
 check_lib_cpp(){
@@ -1330,10 +1333,11 @@ check_compile_assert(){
 require(){
     log require "$@"
     name_version="$1"
+    name="${1%% *}"
     headers="$2"
     func="$3"
     shift 3
-    check_lib "$headers" $func "$@" || die "ERROR: $name_version not found"
+    check_lib $name "$headers" $func "$@" || die "ERROR: $name_version not found"
 }
 
 require_cpp(){
@@ -3016,7 +3020,7 @@ sndio_outdev_deps="sndio"
 v4l_indev_deps="linux_videodev_h"
 v4l2_indev_deps_any="linux_videodev2_h sys_videoio_h"
 v4l2_outdev_deps_any="linux_videodev2_h sys_videoio_h"
-vfwcap_indev_deps="capCreateCaptureWindow vfwcap_defines"
+vfwcap_indev_deps="vfw32 vfwcap_defines"
 xcbgrab_indev_deps="libxcb"
 xv_outdev_deps="X11_extensions_Xvlib_h XvGetPortAttribute"
 xv_outdev_extralibs="-lXv -lX11 -lXext"
@@ -5572,7 +5576,7 @@ check_func  ${malloc_prefix}posix_memalign      && enable posix_memalign
 check_func  access
 check_func_headers stdlib.h arc4random
 check_func_headers time.h clock_gettime ||
-    { check_lib time.h clock_gettime -lrt && LIBRT="-lrt"; }
+    { check_lib clock_gettime time.h clock_gettime -lrt && LIBRT="-lrt"; }
 check_func  fcntl
 check_func  fork
 check_func  gethrtime
@@ -5586,7 +5590,7 @@ check_func  mmap
 check_func  mprotect
 # Solaris has nanosleep in -lrt, OpenSolaris no longer needs that
 check_func_headers time.h nanosleep ||
-    { check_lib time.h nanosleep -lrt && LIBRT="-lrt"; }
+    { check_lib nanosleep time.h nanosleep -lrt && LIBRT="-lrt"; }
 check_func  sched_getaffinity
 check_func  setrlimit
 check_struct "sys/stat.h" "struct stat" st_mtim.tv_nsec -D_BSD_SOURCE
@@ -5651,11 +5655,11 @@ check_header asm/types.h
 # so we also check that atomics actually work here
 check_builtin stdatomic_h stdatomic.h "atomic_int foo, bar = ATOMIC_VAR_INIT(-1); atomic_store(&foo, 0)"
 
-check_lib "windows.h shellapi.h" CommandLineToArgvW   -lshell32
-check_lib "windows.h wincrypt.h" CryptGenRandom       -ladvapi32
-check_lib "windows.h psapi.h"    GetProcessMemoryInfo -lpsapi
+check_lib shell32  "windows.h shellapi.h" CommandLineToArgvW   -lshell32
+check_lib wincrypt "windows.h wincrypt.h" CryptGenRandom       -ladvapi32
+check_lib psapi    "windows.h psapi.h"    GetProcessMemoryInfo -lpsapi
 
-check_lib "CoreServices/CoreServices.h" UTGetOSTypeFromString "-framework CoreServices"
+check_lib coreservices "CoreServices/CoreServices.h" UTGetOSTypeFromString "-framework CoreServices"
 
 check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
 
@@ -5690,22 +5694,23 @@ fi
 # check for some common methods of building with pthread support
 # do this before the optional library checks as some of them require pthreads
 if ! disabled pthreads && ! enabled w32threads && ! enabled os2threads; then
-    enable pthreads
-    if check_func pthread_join -pthread && check_func pthread_create -pthread; then
+    if check_lib pthreads pthread.h pthread_join   -pthread &&
+       check_lib pthreads pthread.h pthread_create -pthread; then
         add_cflags -pthread
-        add_extralibs -pthread
-    elif check_func pthread_join -pthreads && check_func pthread_create -pthreads; then
+    elif check_lib pthreads pthread.h pthread_join   -pthreads &&
+         check_lib pthreads pthread.h pthread_create -pthreads; then
         add_cflags -pthreads
-        add_extralibs -pthreads
-    elif check_func pthread_join -ldl -pthread && check_func pthread_create -ldl -pthread; then
+    elif check_lib pthreads pthread.h pthread_join   -ldl -pthread &&
+         check_lib pthreads pthread.h pthread_create -ldl -pthread; then
         add_cflags -ldl -pthread
-        add_extralibs -ldl -pthread
-    elif check_func pthread_join -lpthreadGC2 && check_func pthread_create -lpthreadGC2; then
-        add_extralibs -lpthreadGC2
-    elif check_lib pthread.h pthread_join -lpthread && check_lib pthread.h pthread_create -lpthread; then
+    elif check_lib pthreads pthread.h pthread_join   -lpthreadGC2 &&
+         check_lib pthreads pthread.h pthread_create -lpthreadGC2; then
         :
-    elif ! check_func pthread_join && ! check_func pthread_create; then
-        disable pthreads
+    elif check_lib pthreads pthread.h pthread_join   -lpthread &&
+         check_lib pthreads pthread.h pthread_create -lpthread; then
+        :
+    elif check_func pthread_join && check_func pthread_create; then
+        enable pthreads
     fi
     check_code cc "pthread.h" "static pthread_mutex_t atomic_lock = PTHREAD_MUTEX_INITIALIZER" || disable pthreads
 fi
@@ -5718,12 +5723,12 @@ fi
 enabled pthreads &&
     check_builtin sem_timedwait semaphore.h "sem_t *s; sem_init(s,0,0); sem_timedwait(s,0); sem_destroy(s)"
 
-disabled  zlib || check_lib  zlib.h      zlibVersion    -lz    || disable  zlib
-disabled bzlib || check_lib bzlib.h BZ2_bzlibVersion    -lbz2  || disable bzlib
-disabled  lzma || check_lib  lzma.h lzma_version_number -llzma || disable lzma
+disabled  zlib || check_lib zlib   zlib.h      zlibVersion    -lz
+disabled bzlib || check_lib bzlib bzlib.h BZ2_bzlibVersion    -lbz2
+disabled  lzma || check_lib lzma   lzma.h lzma_version_number -llzma
 
-check_lib math.h sin -lm && LIBM="-lm"
-disabled crystalhd || check_lib "stdint.h libcrystalhd/libcrystalhd_if.h" DtsCrystalHDVersion -lcrystalhd || disable crystalhd
+check_lib libm math.h sin -lm && LIBM="-lm"
+disabled crystalhd || check_lib crystalhd "stdint.h libcrystalhd/libcrystalhd_if.h" DtsCrystalHDVersion -lcrystalhd
 
 atan2f_args=2
 copysign_args=2
@@ -5741,8 +5746,8 @@ done
 
 # these are off by default, so fail if requested and not available
 enabled avfoundation_indev && { check_header_objcc AVFoundation/AVFoundation.h || disable avfoundation_indev; }
-enabled avfoundation_indev && { check_lib CoreGraphics/CoreGraphics.h CGGetActiveDisplayList -framework CoreGraphics ||
-                                check_lib ApplicationServices/ApplicationServices.h CGGetActiveDisplayList -framework ApplicationServices; }
+enabled avfoundation_indev && { check_lib avfoundation_indev CoreGraphics/CoreGraphics.h CGGetActiveDisplayList -framework CoreGraphics ||
+                                check_lib avfoundation_indev ApplicationServices/ApplicationServices.h CGGetActiveDisplayList -framework ApplicationServices; }
 enabled cuda              && check_header cuda.h # this is not a dependency
 enabled cuvid             && { enabled cuda ||
                                die "ERROR: CUVID requires CUDA"; }
@@ -5755,14 +5760,14 @@ enabled frei0r            && { check_header frei0r.h || die "ERROR: frei0r.h hea
 enabled gmp               && require gmp gmp.h mpz_export -lgmp
 enabled gnutls            && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
 enabled jni               && { [ $target_os = "android" ] && check_header jni.h && enabled pthreads &&
-                               check_lib "dlfcn.h" dlopen -ldl || die "ERROR: jni not found"; }
+                               check_lib jni "dlfcn.h" dlopen -ldl || die "ERROR: jni not found"; }
 enabled ladspa            && { check_header ladspa.h || die "ERROR: ladspa.h header not found"; }
 enabled libiec61883       && require libiec61883 libiec61883/iec61883.h iec61883_cmp_connect -lraw1394 -lavc1394 -lrom1394 -liec61883
 enabled libass            && require_pkg_config libass ass/ass.h ass_library_init
 enabled libbluray         && require_pkg_config libbluray libbluray/bluray.h bd_open
 enabled libbs2b           && require_pkg_config libbs2b bs2b.h bs2b_open
 enabled libcelt           && require libcelt celt/celt.h celt_decode -lcelt0 &&
-                             { check_lib celt/celt.h celt_decoder_create_custom -lcelt0 ||
+                             { check_lib libcelt celt/celt.h celt_decoder_create_custom -lcelt0 ||
                                die "ERROR: libcelt must be installed and version must be >= 0.11.0."; }
 enabled libcaca           && require_pkg_config caca caca.h caca_create_canvas
 enabled libdc1394         && require_pkg_config libdc1394-2 dc1394/dc1394.h dc1394_new
@@ -5777,7 +5782,7 @@ enabled libfreetype       && require_pkg_config freetype2 "ft2build.h FT_FREETYP
 enabled libfribidi        && require_pkg_config fribidi fribidi.h fribidi_version_info
 enabled libgme            && require  libgme gme/gme.h gme_new_emu -lgme -lstdc++
 enabled libgsm            && { for gsm_hdr in "gsm.h" "gsm/gsm.h"; do
-                                   check_lib "${gsm_hdr}" gsm_create -lgsm && break;
+                                   check_lib libgsm "${gsm_hdr}" gsm_create -lgsm && break;
                                done || die "ERROR: libgsm not found"; }
 enabled libilbc           && require libilbc ilbc.h WebRtcIlbcfix_InitDecode -lilbc
 enabled libkvazaar        && require_pkg_config "kvazaar >= 0.8.1" kvazaar.h kvz_api_get
@@ -5793,11 +5798,11 @@ enabled libopencv         && { check_header opencv2/core/core_c.h &&
                                  require opencv opencv2/core/core_c.h cvCreateImageHeader -lopencv_core -lopencv_imgproc; } ||
                                require_pkg_config opencv opencv/cxcore.h cvCreateImageHeader; }
 enabled libopenh264       && require_pkg_config openh264 wels/codec_api.h WelsGetCodecVersion
-enabled libopenjpeg       && { { check_lib openjpeg-2.1/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
-                               check_lib openjpeg-2.1/openjpeg.h opj_version -lopenjp2 ||
-                               { check_lib openjpeg-2.0/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
-                               { check_lib openjpeg-1.5/openjpeg.h opj_version -lopenjpeg -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
-                               { check_lib openjpeg.h opj_version -lopenjpeg -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
+enabled libopenjpeg       && { { check_lib libopenjpeg openjpeg-2.1/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
+                               check_lib libopenjpeg openjpeg-2.1/openjpeg.h opj_version -lopenjp2 ||
+                               { check_lib libopenjpeg openjpeg-2.0/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
+                               { check_lib libopenjpeg openjpeg-1.5/openjpeg.h opj_version -lopenjpeg -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
+                               { check_lib libopenjpeg openjpeg.h opj_version -lopenjpeg -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
                                die "ERROR: libopenjpeg not found"; }
 enabled libopenmpt        && require_pkg_config "libopenmpt >= 0.2.6557" libopenmpt/libopenmpt.h openmpt_module_create
 enabled libopus           && require_pkg_config opus opus_multistream.h opus_multistream_decoder_create
@@ -5815,7 +5820,7 @@ enabled libspeex          && require_pkg_config speex speex/speex.h speex_decode
 enabled libtesseract      && require_pkg_config tesseract tesseract/capi.h TessBaseAPICreate
 enabled libtheora         && require libtheora theora/theoraenc.h th_info_init -ltheoraenc -ltheoradec -logg
 enabled libtwolame        && require libtwolame twolame.h twolame_init -ltwolame &&
-                             { check_lib twolame.h twolame_encode_buffer_float32_interleaved -ltwolame ||
+                             { check_lib libtwolame twolame.h twolame_encode_buffer_float32_interleaved -ltwolame ||
                                die "ERROR: libtwolame must be installed and version must be >= 0.3.10"; }
 enabled libv4l2           && require_pkg_config libv4l2 libv4l2.h v4l2_ioctl
 enabled libvidstab        && require_pkg_config "vidstab >= 0.98" vid.stab/libvidstab.h vsMotionDetectInit
@@ -5825,23 +5830,21 @@ enabled libvorbis         && require libvorbis vorbis/vorbisenc.h vorbis_info_in
 enabled libvpx            && {
     enabled libvpx_vp8_decoder && {
         use_pkg_config "vpx >= 0.9.1" "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_vp8_dx ||
-            check_lib "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_dec_init_ver -lvpx ||
+            check_lib libvpx_vp8_decoder "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_dec_init_ver -lvpx ||
                 die "ERROR: libvpx decoder version must be >=0.9.1";
     }
     enabled libvpx_vp8_encoder && {
         use_pkg_config "vpx >= 0.9.7" "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_vp8_cx ||
-            check_lib "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_enc_init_ver VP8E_SET_MAX_INTRA_BITRATE_PCT" -lvpx ||
+            check_lib libvpx_vp8_encoder "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_enc_init_ver VP8E_SET_MAX_INTRA_BITRATE_PCT" -lvpx ||
                 die "ERROR: libvpx encoder version must be >=0.9.7";
     }
     enabled libvpx_vp9_decoder && {
         use_pkg_config "vpx >= 1.3.0" "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_vp9_dx ||
-            check_lib "vpx/vpx_decoder.h vpx/vp8dx.h" "vpx_codec_vp9_dx" -lvpx ||
-                disable libvpx_vp9_decoder;
+            check_lib libvpx_vp9_decoder "vpx/vpx_decoder.h vpx/vp8dx.h" "vpx_codec_vp9_dx" -lvpx
     }
     enabled libvpx_vp9_encoder && {
         use_pkg_config "vpx >= 1.3.0" "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_vp9_cx ||
-            check_lib "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_vp9_cx VP9E_SET_AQ_MODE" -lvpx ||
-                disable libvpx_vp9_encoder;
+            check_lib libvpx_vp9_encoder "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_vp9_cx VP9E_SET_AQ_MODE" -lvpx
     }
     if disabled_all libvpx_vp8_decoder libvpx_vp9_decoder libvpx_vp8_encoder libvpx_vp9_encoder; then
         die "libvpx enabled but no supported decoders found"
@@ -5870,29 +5873,29 @@ enabled libzvbi           && require libzvbi libzvbi.h vbi_decoder_new -lzvbi &&
                              { check_cpp_condition libzvbi.h "VBI_VERSION_MAJOR > 0 || VBI_VERSION_MINOR > 2 || VBI_VERSION_MINOR == 2 && VBI_VERSION_MICRO >= 28" ||
                                enabled gpl || die "ERROR: libzvbi requires version 0.2.28 or --enable-gpl."; }
 enabled mediacodec        && { enabled jni || die "ERROR: mediacodec requires --enable-jni"; }
-enabled mmal              && { check_lib interface/mmal/mmal.h mmal_port_connect -lmmal_core -lmmal_util -lmmal_vc_client -lbcm_host ||
+enabled mmal              && { check_lib mmal interface/mmal/mmal.h mmal_port_connect -lmmal_core -lmmal_util -lmmal_vc_client -lbcm_host ||
                                { ! enabled cross_compile &&
                                  add_cflags -isystem/opt/vc/include/ -isystem/opt/vc/include/interface/vmcs_host/linux -isystem/opt/vc/include/interface/vcos/pthreads -fgnu89-inline &&
                                  add_ldflags -L/opt/vc/lib/ &&
-                                 check_lib interface/mmal/mmal.h mmal_port_connect -lmmal_core -lmmal_util -lmmal_vc_client -lbcm_host; } ||
+                                 check_lib mmal interface/mmal/mmal.h mmal_port_connect -lmmal_core -lmmal_util -lmmal_vc_client -lbcm_host; } ||
                                die "ERROR: mmal not found" &&
                                check_func_headers interface/mmal/mmal.h "MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS"; }
 enabled netcdf            && require_pkg_config netcdf netcdf.h nc_inq_libvers
 enabled openal            && { { for al_extralibs in "${OPENAL_LIBS}" "-lopenal" "-lOpenAL32"; do
-                               check_lib 'AL/al.h' alGetError "${al_extralibs}" && break; done } ||
+                               check_lib openal 'AL/al.h' alGetError "${al_extralibs}" && break; done } ||
                                die "ERROR: openal not found"; } &&
                              { check_cpp_condition "AL/al.h" "defined(AL_VERSION_1_1)" ||
                                die "ERROR: openal must be installed and version must be 1.1 or compatible"; }
-enabled opencl            && { check_lib OpenCL/cl.h clEnqueueNDRangeKernel -Wl,-framework,OpenCL ||
-                               check_lib CL/cl.h clEnqueueNDRangeKernel -lOpenCL ||
+enabled opencl            && { check_lib opencl OpenCL/cl.h clEnqueueNDRangeKernel -Wl,-framework,OpenCL ||
+                               check_lib opencl CL/cl.h clEnqueueNDRangeKernel -lOpenCL ||
                                die "ERROR: opencl not found"; } &&
                              { check_cpp_condition "OpenCL/cl.h" "defined(CL_VERSION_1_2)" ||
                                check_cpp_condition "CL/cl.h" "defined(CL_VERSION_1_2)" ||
                                die "ERROR: opencl must be installed and version must be 1.2 or compatible"; }
-enabled opengl            && { check_lib GL/glx.h glXGetProcAddress "-lGL" ||
-                               check_lib windows.h wglGetProcAddress "-lopengl32 -lgdi32" ||
-                               check_lib OpenGL/gl3.h glGetError "-Wl,-framework,OpenGL" ||
-                               check_lib ES2/gl.h glGetError "-isysroot=${sysroot} -Wl,-framework,OpenGLES" ||
+enabled opengl            && { check_lib opengl GL/glx.h glXGetProcAddress "-lGL" ||
+                               check_lib opengl windows.h wglGetProcAddress "-lopengl32 -lgdi32" ||
+                               check_lib opengl OpenGL/gl3.h glGetError "-Wl,-framework,OpenGL" ||
+                               check_lib opengl ES2/gl.h glGetError "-isysroot=${sysroot} -Wl,-framework,OpenGLES" ||
                                die "ERROR: opengl not found."
                              }
 enabled omx_rpi           && { check_header OMX_Core.h ||
@@ -5901,9 +5904,9 @@ enabled omx_rpi           && { check_header OMX_Core.h ||
 enabled omx               && { check_header OMX_Core.h || die "ERROR: OpenMAX IL headers not found"; }
 enabled openssl           && { use_pkg_config openssl openssl/ssl.h OPENSSL_init_ssl ||
                                use_pkg_config openssl openssl/ssl.h SSL_library_init ||
-                               check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto ||
-                               check_lib openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
-                               check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
+                               check_lib openssl openssl/ssl.h SSL_library_init -lssl -lcrypto ||
+                               check_lib openssl openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
+                               check_lib openssl openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
                                die "ERROR: openssl not found"; }
 enabled qtkit_indev      && { check_header_objcc QTKit/QTKit.h || disable qtkit_indev; }
 
@@ -5943,8 +5946,7 @@ fi
 enabled sdl2 && enable sdl && add_cflags $sdl2_cflags && add_extralibs $sdl2_extralibs
 
 disabled securetransport || { check_func SecIdentityCreate "-Wl,-framework,CoreFoundation -Wl,-framework,Security" &&
-    check_lib "Security/SecureTransport.h Security/Security.h" "SSLCreateContext SecItemImport" "-Wl,-framework,CoreFoundation -Wl,-framework,Security" &&
-    enable securetransport; }
+    check_lib securetransport "Security/SecureTransport.h Security/Security.h" "SSLCreateContext SecItemImport" "-Wl,-framework,CoreFoundation -Wl,-framework,Security"; }
 
 disabled schannel || { check_func_headers "windows.h security.h" InitializeSecurityContext -DSECURITY_WIN32 -lsecur32 &&
                        check_cpp_condition winerror.h "defined(SEC_I_CONTEXT_EXPIRED)" && enable schannel && add_extralibs -lsecur32; }
@@ -5966,8 +5968,8 @@ check_code cc linux/videodev2.h "struct v4l2_frmsizeenum vfse; vfse.discrete.wid
 check_header sys/videoio.h
 check_code cc sys/videoio.h "struct v4l2_frmsizeenum vfse; vfse.discrete.width = 0;" && enable_safe struct_v4l2_frmivalenum_discrete
 
-check_lib "windows.h winuser.h" GetShellWindow -luser32
-check_lib "windows.h vfw.h" capCreateCaptureWindow -lvfw32
+check_lib user32 "windows.h winuser.h" GetShellWindow -luser32
+check_lib vfw32 "windows.h vfw.h" capCreateCaptureWindow -lvfw32
 # check that WM_CAP_DRIVER_CONNECT is defined to the proper value
 # w32api 3.12 had it defined wrong
 check_cpp_condition vfw.h "WM_CAP_DRIVER_CONNECT > WM_USER" && enable vfwcap_defines
@@ -5994,16 +5996,16 @@ fi
 check_header soundcard.h
 
 enabled_any alsa_indev alsa_outdev &&
-    check_lib alsa/asoundlib.h snd_pcm_htimestamp -lasound && enable alsa
+    check_lib alsa alsa/asoundlib.h snd_pcm_htimestamp -lasound
 
-enabled jack_indev && check_lib jack/jack.h jack_client_open -ljack && enable jack &&
+enabled jack_indev && check_lib jack jack/jack.h jack_client_open -ljack &&
     check_func jack_port_get_latency_range -ljack
 
-enabled_any sndio_indev sndio_outdev && check_lib sndio.h sio_open -lsndio && enable sndio
+enabled_any sndio_indev sndio_outdev && check_lib sndio sndio.h sio_open -lsndio
 
 if enabled libcdio; then
-    check_lib "cdio/cdda.h cdio/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio ||
-    check_lib "cdio/paranoia/cdda.h cdio/paranoia/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio ||
+    check_lib libcdio "cdio/cdda.h cdio/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio ||
+    check_lib libcdio "cdio/paranoia/cdda.h cdio/paranoia/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio ||
     die "ERROR: No usable libcdio/cdparanoia found"
 fi
 
@@ -6046,32 +6048,27 @@ int main(void) { IDirectXVideoDecoder *o = NULL; IDirectXVideoDecoder_Release(o)
 EOF
 
 enabled dxva2 &&
-    check_lib windows.h CoTaskMemFree -lole32 &&
-    enable dxva2_lib
+    check_lib dxva2_lib windows.h CoTaskMemFree -lole32
 
 enabled vaapi &&
-    check_lib va/va.h vaInitialize -lva ||
-    disable vaapi
+    check_lib vaapi va/va.h vaInitialize -lva
 
 enabled vaapi &&
     check_code cc "va/va.h" "vaCreateSurfaces(0, 0, 0, 0, 0, 0, 0, 0)" ||
     disable vaapi
 
 enabled vaapi &&
-    check_lib "va/va.h va/va_drm.h" vaGetDisplayDRM -lva -lva-drm &&
-    enable vaapi_drm
+    check_lib vaapi_drm "va/va.h va/va_drm.h" vaGetDisplayDRM -lva -lva-drm
 
 enabled vaapi &&
-    check_lib "va/va.h va/va_x11.h" vaGetDisplay -lva -lva-x11 -lX11 &&
-    enable vaapi_x11
+    check_lib vaapi_x11 "va/va.h va/va_x11.h" vaGetDisplay -lva -lva-x11 -lX11
 
 enabled vdpau &&
     check_cpp_condition vdpau/vdpau.h "defined VDP_DECODER_PROFILE_MPEG4_PART2_ASP" ||
     disable vdpau
 
 enabled vdpau &&
-    check_lib "vdpau/vdpau.h vdpau/vdpau_x11.h" vdp_device_create_x11 -lvdpau -lX11 &&
-    enable vdpau_x11
+    check_lib vdpau_x11 "vdpau/vdpau.h vdpau/vdpau_x11.h" vdp_device_create_x11 -lvdpau -lX11
 
 if enabled x86; then
     case $target_os in
@@ -6094,7 +6091,7 @@ int main(void) { return 0; }
 EOF
 
 # Funny iconv installations are not unusual, so check it after all flags have been set
-disabled iconv || check_func_headers iconv.h iconv || check_lib iconv.h iconv -liconv || disable iconv
+disabled iconv || check_func_headers iconv.h iconv || check_lib iconv iconv.h iconv -liconv
 
 enabled debug && add_cflags -g"$debuglevel" && add_asflags -g"$debuglevel"
 
