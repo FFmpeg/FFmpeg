@@ -1321,12 +1321,21 @@ static AVRational find_fps(AVFormatContext *s, AVStream *st)
     return rate;
 }
 
+static int defined_frame_rate(AVFormatContext *s, AVStream *st)
+{
+    AVRational rational_framerate = find_fps(s, st);
+    int rate = 0;
+    if (rational_framerate.den != 0)
+        rate = av_q2d(rational_framerate);
+    return rate;
+}
+
 static int mov_get_mpeg2_xdcam_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
     int tag = track->par->codec_tag;
     int interlaced = track->par->field_order > AV_FIELD_PROGRESSIVE;
     AVStream *st = track->st;
-    int rate = av_q2d(find_fps(s, st));
+    int rate = defined_frame_rate(s, st);
 
     if (!tag)
         tag = MKTAG('m', '2', 'v', '1'); //fallback tag
@@ -1388,7 +1397,7 @@ static int mov_get_h264_codec_tag(AVFormatContext *s, MOVTrack *track)
     int tag = track->par->codec_tag;
     int interlaced = track->par->field_order > AV_FIELD_PROGRESSIVE;
     AVStream *st = track->st;
-    int rate = av_q2d(find_fps(s, st));
+    int rate = defined_frame_rate(s, st);
 
     if (!tag)
         tag = MKTAG('a', 'v', 'c', 'i'); //fallback tag
@@ -1850,7 +1859,7 @@ static void find_compressor(char * compressor_name, int len, MOVTrack *track)
     } else if (track->par->codec_id == AV_CODEC_ID_MPEG2VIDEO && xdcam_res) {
         int interlaced = track->par->field_order > AV_FIELD_PROGRESSIVE;
         AVStream *st = track->st;
-        int rate = av_q2d(find_fps(NULL, st));
+        int rate = defined_frame_rate(NULL, st);
         av_strlcatf(compressor_name, len, "XDCAM");
         if (track->par->format == AV_PIX_FMT_YUV422P) {
             av_strlcatf(compressor_name, len, " HD422");
