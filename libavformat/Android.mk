@@ -20,9 +20,7 @@ LOCAL_C_INCLUDES +=			\
 LOCAL_SHARED_LIBRARIES +=		\
 	libcrypto			\
 	libssl				\
-	libz                \
-	libavutil           \
-	libavcodec
+	libz
 
 LOCAL_MULTILIB := $(FFMPEG_MULTILIB)
 include $(BUILD_SHARED_LIBRARY)
@@ -37,9 +35,7 @@ LOCAL_C_INCLUDES +=			\
 LOCAL_SHARED_LIBRARIES +=		\
 	libcrypto			\
 	libssl				\
-	libz                \
-	libavutil           \
-	libavcodec
+	libz
 
 LOCAL_MULTILIB := $(FFMPEG_MULTILIB)
 include $(BUILD_SHARED_LIBRARY)

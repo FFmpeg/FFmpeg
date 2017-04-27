@@ -13,17 +13,11 @@ LOCAL_PATH := $(call my-dir)
 FFMPEG_MULTILIB := 32
 include $(LOCAL_PATH)/../android/build.mk
 
-LOCAL_SHARED_LIBRARIES += \
-	libavutil
-
 LOCAL_MULTILIB := $(FFMPEG_MULTILIB)
 include $(BUILD_SHARED_LIBRARY)
 
 FFMPEG_MULTILIB := 64
 include $(LOCAL_PATH)/../android/build.mk
-
-LOCAL_SHARED_LIBRARIES += \
-	libavutil
 
 LOCAL_MULTILIB := $(FFMPEG_MULTILIB)
 include $(BUILD_SHARED_LIBRARY)

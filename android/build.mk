@@ -90,4 +90,4 @@ LOCAL_LDFLAGS := -Wl,--no-fatal-warnings -Wl,-Bsymbolic
 
 LOCAL_CLANG_ASFLAGS += -no-integrated-as
 
-LOCAL_SHARED_LIBRARIES := $(sort $(FFLIBS-yes:%=lib%) $(FFLIBS:%=lib%))
+LOCAL_SHARED_LIBRARIES := $($(NAME)_FFLIBS:%=lib%)

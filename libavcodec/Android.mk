@@ -18,8 +18,6 @@ LOCAL_C_INCLUDES +=		\
 
 LOCAL_SHARED_LIBRARIES +=	\
 	libz \
-	libavutil \
-	libswresample \
 	libva
 
 ifneq ($(ARCH_ARM_HAVE_NEON),)
@@ -37,8 +35,6 @@ LOCAL_C_INCLUDES +=		\
 
 LOCAL_SHARED_LIBRARIES +=	\
 	libz \
-	libavutil \
-	libswresample \
 	libva
 
 ifneq ($(ARCH_ARM_HAVE_NEON),)
