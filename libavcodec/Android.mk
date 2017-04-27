@@ -14,8 +14,7 @@ FFMPEG_MULTILIB := 32
 include $(LOCAL_PATH)/../android/build.mk
 
 LOCAL_C_INCLUDES +=		\
-	external/zlib \
-	$(TARGET_OUT_HEADERS)/libva
+	external/zlib
 
 LOCAL_SHARED_LIBRARIES +=	\
 	libz \
@@ -34,8 +33,7 @@ FFMPEG_MULTILIB := 64
 include $(LOCAL_PATH)/../android/build.mk
 
 LOCAL_C_INCLUDES +=		\
-	external/zlib \
-	$(TARGET_OUT_HEADERS)/libva
+	external/zlib
 
 LOCAL_SHARED_LIBRARIES +=	\
 	libz \
