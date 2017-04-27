@@ -551,7 +551,7 @@ static inline int svq3_mc_dir(SVQ3Context *s, int size, int mode,
                 dy = get_interleaved_se_golomb(&s->gb_slice);
                 dx = get_interleaved_se_golomb(&s->gb_slice);
 
-                if (dx == INVALID_VLC || dy == INVALID_VLC) {
+                if (dx != (int16_t)dx || dy != (int16_t)dy) {
                     av_log(s->avctx, AV_LOG_ERROR, "invalid MV vlc\n");
                     return -1;
                 }
