@@ -89,8 +89,10 @@ const HWAccel hwaccels[] = {
 #endif
     { 0 },
 };
+#ifndef ANDROID
 int hwaccel_lax_profile_check = 0;
 AVBufferRef *hw_device_ctx;
+#endif
 
 char *vstats_filename;
 char *sdp_filename;
