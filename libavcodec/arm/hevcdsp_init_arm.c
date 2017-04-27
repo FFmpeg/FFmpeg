@@ -25,6 +25,16 @@
 
 #include "libavcodec/hevcdsp.h"
 
+
+void ff_hevc_add_residual_4x4_8_neon(uint8_t *_dst, int16_t *coeffs,
+                                     ptrdiff_t stride);
+void ff_hevc_add_residual_8x8_8_neon(uint8_t *_dst, int16_t *coeffs,
+                                     ptrdiff_t stride);
+void ff_hevc_add_residual_16x16_8_neon(uint8_t *_dst, int16_t *coeffs,
+                                       ptrdiff_t stride);
+void ff_hevc_add_residual_32x32_8_neon(uint8_t *_dst, int16_t *coeffs,
+                                       ptrdiff_t stride);
+
 void ff_hevc_idct_4x4_dc_8_neon(int16_t *coeffs);
 void ff_hevc_idct_8x8_dc_8_neon(int16_t *coeffs);
 void ff_hevc_idct_16x16_dc_8_neon(int16_t *coeffs);
@@ -47,6 +57,11 @@ av_cold void ff_hevc_dsp_init_arm(HEVCDSPContext *c, int bit_depth)
 
     if (have_neon(cpu_flags)) {
         if (bit_depth == 8) {
+            c->add_residual[0] = ff_hevc_add_residual_4x4_8_neon;
+            c->add_residual[1] = ff_hevc_add_residual_8x8_8_neon;
+            c->add_residual[2] = ff_hevc_add_residual_16x16_8_neon;
+            c->add_residual[3] = ff_hevc_add_residual_32x32_8_neon;
+
             c->idct_dc[0] = ff_hevc_idct_4x4_dc_8_neon;
             c->idct_dc[1] = ff_hevc_idct_8x8_dc_8_neon;
             c->idct_dc[2] = ff_hevc_idct_16x16_dc_8_neon;
