@@ -477,6 +477,14 @@ static void celt_stereo_ms_decouple(float *X, float *Y, int N)
     }
 }
 
+#define QUANT_FN(name) uint32_t (*name)(CeltFrame *f, OpusRangeCoder *rc,      \
+                                        const int band, float *X, float *Y,    \
+                                        int N, int b, uint32_t blocks,         \
+                                        float *lowband, int duration,          \
+                                        float *lowband_out, int level,         \
+                                        float gain, float *lowband_scratch,    \
+                                        int fill)
+
 static av_always_inline uint32_t quant_band_template(CeltFrame *f, OpusRangeCoder *rc, const int band,
                                                      float *X, float *Y, int N, int b, uint32_t blocks,
                                                      float *lowband, int duration, float *lowband_out,
@@ -497,6 +505,7 @@ static av_always_inline uint32_t quant_band_template(CeltFrame *f, OpusRangeCode
     float mid = 0, side = 0;
     int longblocks = (B0 == 1);
     uint32_t cm = 0;
+    QUANT_FN(rec) = quant ? ff_celt_encode_band : ff_celt_decode_band;
 
     if (N == 1) {
         float *x = X;
@@ -693,9 +702,8 @@ static av_always_inline uint32_t quant_band_template(CeltFrame *f, OpusRangeCode
             sign = 1 - 2 * sign;
             /* We use orig_fill here because we want to fold the side, but if
             itheta==16384, we'll have cleared the low bits of fill. */
-            cm = ff_celt_decode_band(f, rc, band, x2, NULL, N, mbits, blocks,
-                                     lowband, duration, lowband_out, level, gain,
-                                     lowband_scratch, orig_fill);
+            cm = rec(f, rc, band, x2, NULL, N, mbits, blocks, lowband, duration,
+                     lowband_out, level, gain, lowband_scratch, orig_fill);
             /* We don't split N=2 bands, so cm is either 1 or 0 (for a fold-collapse),
             and there's no need to worry about mixing with the other channel. */
             y2[0] = -sign * x2[1];
@@ -716,6 +724,7 @@ static av_always_inline uint32_t quant_band_template(CeltFrame *f, OpusRangeCode
             float *next_lowband_out1 = NULL;
             int next_level = 0;
             int rebalance;
+            uint32_t cmt;
 
             /* Give more bits to low-energy MDCTs than they would
              * otherwise deserve */
@@ -746,55 +755,34 @@ static av_always_inline uint32_t quant_band_template(CeltFrame *f, OpusRangeCode
             if (mbits >= sbits) {
                 /* In stereo mode, we do not apply a scaling to the mid
                  * because we need the normalized mid for folding later */
-                cm = quant ? ff_celt_encode_band(f, rc, band, X, NULL, N, mbits, blocks,
-                                                 lowband, duration, next_lowband_out1,
-                                                 next_level, stereo ? 1.0f : (gain * mid),
-                                                 lowband_scratch, fill) :
-                             ff_celt_decode_band(f, rc, band, X, NULL, N, mbits, blocks,
-                                                 lowband, duration, next_lowband_out1,
-                                                 next_level, stereo ? 1.0f : (gain * mid),
-                                                 lowband_scratch, fill);
-
+                cm = rec(f, rc, band, X, NULL, N, mbits, blocks, lowband,
+                         duration, next_lowband_out1, next_level,
+                         stereo ? 1.0f : (gain * mid), lowband_scratch, fill);
                 rebalance = mbits - (rebalance - f->remaining2);
                 if (rebalance > 3 << 3 && itheta != 0)
                     sbits += rebalance - (3 << 3);
 
                 /* For a stereo split, the high bits of fill are always zero,
                  * so no folding will be done to the side. */
-                cm |= quant ? ff_celt_encode_band(f, rc, band, Y, NULL, N, sbits, blocks,
-                                                  next_lowband2, duration, NULL,
-                                                  next_level, gain * side, NULL,
-                                                  fill >> blocks) << ((B0 >> 1) & (stereo - 1)) :
-                              ff_celt_decode_band(f, rc, band, Y, NULL, N, sbits, blocks,
-                                                  next_lowband2, duration, NULL,
-                                                  next_level, gain * side, NULL,
-                                                  fill >> blocks) << ((B0 >> 1) & (stereo - 1));
+                cmt = rec(f, rc, band, Y, NULL, N, sbits, blocks, next_lowband2,
+                          duration, NULL, next_level, gain * side, NULL,
+                          fill >> blocks);
+                cm |= cmt << ((B0 >> 1) & (stereo - 1));
             } else {
                 /* For a stereo split, the high bits of fill are always zero,
                  * so no folding will be done to the side. */
-                cm = quant ? ff_celt_encode_band(f, rc, band, Y, NULL, N, sbits, blocks,
-                                                 next_lowband2, duration, NULL,
-                                                 next_level, gain * side, NULL,
-                                                 fill >> blocks) << ((B0 >> 1) & (stereo - 1)) :
-                             ff_celt_decode_band(f, rc, band, Y, NULL, N, sbits, blocks,
-                                                 next_lowband2, duration, NULL,
-                                                 next_level, gain * side, NULL,
-                                                 fill >> blocks) << ((B0 >> 1) & (stereo - 1));
-
+                cm = rec(f, rc, band, Y, NULL, N, sbits, blocks, next_lowband2,
+                         duration, NULL, next_level, gain * side, NULL, fill >> blocks);
+                cm <<= ((B0 >> 1) & (stereo - 1));
                 rebalance = sbits - (rebalance - f->remaining2);
                 if (rebalance > 3 << 3 && itheta != 16384)
                     mbits += rebalance - (3 << 3);
 
                 /* In stereo mode, we do not apply a scaling to the mid because
                  * we need the normalized mid for folding later */
-                cm |= quant ? ff_celt_encode_band(f, rc, band, X, NULL, N, mbits, blocks,
-                                                  lowband, duration, next_lowband_out1,
-                                                  next_level, stereo ? 1.0f : (gain * mid),
-                                                  lowband_scratch, fill) :
-                              ff_celt_decode_band(f, rc, band, X, NULL, N, mbits, blocks,
-                                                  lowband, duration, next_lowband_out1,
-                                                  next_level, stereo ? 1.0f : (gain * mid),
-                                                  lowband_scratch, fill);
+                cm |= rec(f, rc, band, X, NULL, N, mbits, blocks, lowband, duration,
+                          next_lowband_out1, next_level, stereo ? 1.0f : (gain * mid),
+                          lowband_scratch, fill);
             }
         }
     } else {
