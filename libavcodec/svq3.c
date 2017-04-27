@@ -562,8 +562,8 @@ static inline int svq3_mc_dir(SVQ3Context *s, int size, int mode,
                 int fx, fy;
                 mx  = (mx + 1 >> 1) + dx;
                 my  = (my + 1 >> 1) + dy;
-                fx  = (unsigned)(mx + 0x3000) / 3 - 0x1000;
-                fy  = (unsigned)(my + 0x3000) / 3 - 0x1000;
+                fx  = (unsigned)(mx + 0x30000) / 3 - 0x10000;
+                fy  = (unsigned)(my + 0x30000) / 3 - 0x10000;
                 dxy = (mx - 3 * fx) + 4 * (my - 3 * fy);
 
                 svq3_mc_dir_part(s, x, y, part_width, part_height,
@@ -571,8 +571,8 @@ static inline int svq3_mc_dir(SVQ3Context *s, int size, int mode,
                 mx += mx;
                 my += my;
             } else if (mode == HALFPEL_MODE || mode == PREDICT_MODE) {
-                mx  = (unsigned)(mx + 1 + 0x3000) / 3 + dx - 0x1000;
-                my  = (unsigned)(my + 1 + 0x3000) / 3 + dy - 0x1000;
+                mx  = (unsigned)(mx + 1 + 0x30000) / 3 + dx - 0x10000;
+                my  = (unsigned)(my + 1 + 0x30000) / 3 + dy - 0x10000;
                 dxy = (mx & 1) + 2 * (my & 1);
 
                 svq3_mc_dir_part(s, x, y, part_width, part_height,
@@ -580,8 +580,8 @@ static inline int svq3_mc_dir(SVQ3Context *s, int size, int mode,
                 mx *= 3;
                 my *= 3;
             } else {
-                mx = (unsigned)(mx + 3 + 0x6000) / 6 + dx - 0x1000;
-                my = (unsigned)(my + 3 + 0x6000) / 6 + dy - 0x1000;
+                mx = (unsigned)(mx + 3 + 0x60000) / 6 + dx - 0x10000;
+                my = (unsigned)(my + 3 + 0x60000) / 6 + dy - 0x10000;
 
                 svq3_mc_dir_part(s, x, y, part_width, part_height,
                                  mx, my, 0, 0, dir, avg);
