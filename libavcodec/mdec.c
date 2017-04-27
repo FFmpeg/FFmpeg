@@ -73,7 +73,7 @@ static inline int mdec_decode_block_intra(MDECContext *a, int16_t *block, int n)
         if (diff >= 0xffff)
             return AVERROR_INVALIDDATA;
         a->last_dc[component] += diff;
-        block[0] = a->last_dc[component] << 3;
+        block[0] = a->last_dc[component] * (1 << 3);
     }
 
     i = 0;
