@@ -394,11 +394,11 @@ static int do_encrypt(AVFormatContext *s)
     av_strlcat(hls->key_basename, ".key", len);
 
     if (hls->key_url) {
-        strncpy(hls->key_file, hls->key_url, sizeof(hls->key_file));
-        strncpy(hls->key_uri, hls->key_url, sizeof(hls->key_uri));
+        av_strlcpy(hls->key_file, hls->key_url, sizeof(hls->key_file));
+        av_strlcpy(hls->key_uri, hls->key_url, sizeof(hls->key_uri));
     } else {
-        strncpy(hls->key_file, hls->key_basename, sizeof(hls->key_file));
-        strncpy(hls->key_uri, hls->key_basename, sizeof(hls->key_uri));
+        av_strlcpy(hls->key_file, hls->key_basename, sizeof(hls->key_file));
+        av_strlcpy(hls->key_uri, hls->key_basename, sizeof(hls->key_uri));
     }
 
     if (!*hls->iv_string) {
