@@ -568,8 +568,24 @@ FF_ENABLE_DEPRECATION_WARNINGS
         avctx->time_base = av_inv_q(av_mul_q(avctx->framerate, (AVRational){avctx->ticks_per_frame, 1}));
 #endif
 
-    if (avctx->internal->draining && !got_frame)
-        avci->draining_done = 1;
+    /* do not stop draining when got_frame != 0 or ret < 0 */
+    if (avctx->internal->draining && !got_frame) {
+        if (ret < 0) {
+            /* prevent infinite loop if a decoder wrongly always return error on draining */
+            /* reasonable nb_errors_max = maximum b frames + thread count */
+            int nb_errors_max = 20 + (HAVE_THREADS && avctx->active_thread_type & FF_THREAD_FRAME ?
+                                avctx->thread_count : 1);
+
+            if (avci->nb_draining_errors++ >= nb_errors_max) {
+                av_log(avctx, AV_LOG_ERROR, "Too many errors when draining, this is a bug. "
+                       "Stop draining and force EOF.\n");
+                avci->draining_done = 1;
+                ret = AVERROR_BUG;
+            }
+        } else {
+            avci->draining_done = 1;
+        }
+    }
 
     avci->compat_decode_consumed += ret;
 
@@ -1659,6 +1675,7 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
 {
     avctx->internal->draining      = 0;
     avctx->internal->draining_done = 0;
+    avctx->internal->nb_draining_errors = 0;
     av_frame_unref(avctx->internal->buffer_frame);
     av_frame_unref(avctx->internal->compat_decode_frame);
     av_packet_unref(avctx->internal->buffer_pkt);
