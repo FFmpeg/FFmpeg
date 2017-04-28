@@ -810,6 +810,7 @@ static int parse_playlist(AVFormatContext *s, const char *url)
     int64_t new_start_pos;
     char line[1024];
     const char *ptr;
+    const char *end;
 
     if ((ret = ffio_open_whitelist(&in, url, AVIO_FLAG_READ,
                                    &s->interrupt_callback, NULL,
@@ -842,6 +843,29 @@ static int parse_playlist(AVFormatContext *s, const char *url)
         } else if (av_strstart(line, "#EXTINF:", &ptr)) {
             is_segment = 1;
             hls->duration = atof(ptr);
+        } else if (av_stristart(line, "#EXT-X-KEY:", &ptr)) {
+            ptr = av_stristr(line, "URI=\"");
+            if (ptr) {
+                ptr += strlen("URI=\"");
+                end = av_stristr(ptr, ",");
+                if (end) {
+                    av_strlcpy(hls->key_uri, ptr, end - ptr);
+                } else {
+                    av_strlcpy(hls->key_uri, ptr, sizeof(hls->key_uri));
+                }
+            }
+
+            ptr = av_stristr(line, "IV=0x");
+            if (ptr) {
+                ptr += strlen("IV=0x");
+                end = av_stristr(ptr, ",");
+                if (end) {
+                    av_strlcpy(hls->iv_string, ptr, end - ptr);
+                } else {
+                    av_strlcpy(hls->iv_string, ptr, sizeof(hls->iv_string));
+                }
+            }
+
         } else if (av_strstart(line, "#", NULL)) {
             continue;
         } else if (line[0]) {
