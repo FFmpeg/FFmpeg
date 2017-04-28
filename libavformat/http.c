@@ -682,11 +682,43 @@ static int parse_icy(HTTPContext *s, const char *tag, const char *p)
 
 static int parse_cookie(HTTPContext *s, const char *p, AVDictionary **cookies)
 {
-    char *eql, *name;
+    char *eql, *name, *expiry;
 
     // duplicate the cookie name (dict will dupe the value)
     if (!(eql = strchr(p, '='))) return AVERROR(EINVAL);
     if (!(name = av_strndup(p, eql - p))) return AVERROR(ENOMEM);
+
+    // ensure the expiry is sane
+    if ((expiry = strstr(eql, "Expires="))) {
+        struct tm tm_buf = {0};
+        char *end;
+
+        // get the start & the end of the expiry ('11 Feb 2017 09:41:35 GMT')
+        // this skips past the day of the week by finding the space following it
+        expiry += 8 * sizeof(char);
+        while (*expiry != ' ') expiry++;
+        expiry++;
+        end = expiry+1;
+        while (*end != ';') end++;
+
+        // ensure the time is parsable
+        end = strptime(expiry, "%d %b %Y %H:%M:%S %Z", &tm_buf);
+
+        // ensure neulion's different format is parsable
+        if (!end) end = strptime(expiry, "%d-%b-%Y %H:%M:%S %Z", &tm_buf);
+
+        // if the expire is specified but unparsable, this cookie is invalid
+        if (!end) {
+            av_log(s, AV_LOG_ERROR, "Unable to parse expiry for cookie '%s'\n", p);
+            return AVERROR(EINVAL);
+        }
+
+        // no cookies from the past (neulion)
+        if (mktime(&tm_buf) < time(NULL)) {
+            av_log(s, AV_LOG_ERROR, "Ignoring cookie from the past '%s'\n", p);
+            return AVERROR(EINVAL);
+        }
+    }
 
     // add the cookie to the dictionary
     av_dict_set(cookies, name, eql, AV_DICT_DONT_STRDUP_KEY);
