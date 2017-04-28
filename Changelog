@@ -8,6 +8,7 @@ version 5.1:
 - DFPWM audio encoder/decoder and raw muxer/demuxer
 - SITI filter
 - Vizrt Binary Image encoder/decoder
+- avsynctest source filter
 
 
 version 5.0:

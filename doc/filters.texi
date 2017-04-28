@@ -29282,6 +29282,43 @@ Below is a description of the currently available multimedia sources.
 This is the same as @ref{movie} source, except it selects an audio
 stream by default.
 
+@section avsynctest
+Generate an Audio/Video Sync Test.
+
+Generated stream periodically shows flash video frame and emits beep in audio.
+Useful to inspect A/V sync issues.
+
+It accepts the following options:
+
+@table @option
+@item size, s
+Set output video size. Default value is @code{hd720}.
+
+@item framerate, fr
+Set output video frame rate. Default value is @code{30}.
+
+@item samplerate, sr
+Set output audio sample rate. Default value is @code{44100}.
+
+@item amplitude, a
+Set output audio beep amplitude. Default value is @code{0.7}.
+
+@item period, p
+Set output audio beep period in seconds. Default value is @code{3}.
+
+@item delay, dl
+Set output video flash delay in number of frames. Default value is @code{0}.
+
+@item cycle, c
+Enable cycling of video delays, by default is disabled.
+
+@item duration, d
+Set stream output duration. By default duration is unlimited.
+
+@item fg, bg, ag
+Set foreground/background/additional color.
+@end table
+
 @anchor{movie}
 @section movie
 
