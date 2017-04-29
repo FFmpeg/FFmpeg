@@ -3002,6 +3002,15 @@ The default is 0.707q and gives a Butterworth response.
 Specify which channels to filter, by default all available are filtered.
 @end table
 
+@subsection Examples
+@itemize
+@item
+Lowpass only LFE channel, it LFE is not present it does nothing:
+@example
+lowpass=c=LFE
+@end example
+@end itemize
+
 @anchor{pan}
 @section pan
 
