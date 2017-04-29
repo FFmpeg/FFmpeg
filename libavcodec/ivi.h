@@ -33,6 +33,7 @@
 
 #include "avcodec.h"
 #include "bitstream.h"
+#include "vlc.h"
 
 /**
  *  Indeo 4 frame types.

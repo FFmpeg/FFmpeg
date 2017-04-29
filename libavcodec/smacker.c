@@ -39,6 +39,7 @@
 #include "bytestream.h"
 #include "internal.h"
 #include "mathops.h"
+#include "vlc.h"
 
 #define SMKTREE_BITS 9
 #define SMK_NODE 0x80000000

@@ -29,6 +29,7 @@
 
 #include "avcodec.h"
 #include "bitstream.h"
+#include "vlc.h"
 #include "atrac3plus.h"
 #include "atrac3plus_data.h"
 

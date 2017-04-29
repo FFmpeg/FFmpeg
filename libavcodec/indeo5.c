@@ -33,6 +33,7 @@
 #include "ivi.h"
 #include "ivi_dsp.h"
 #include "indeo5data.h"
+#include "vlc.h"
 
 /**
  *  Indeo5 frame types.

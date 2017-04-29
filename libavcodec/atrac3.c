@@ -44,6 +44,7 @@
 #include "bytestream.h"
 #include "fft.h"
 #include "internal.h"
+#include "vlc.h"
 
 #include "atrac.h"
 #include "atrac3data.h"

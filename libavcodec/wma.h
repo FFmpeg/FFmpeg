@@ -28,6 +28,7 @@
 #include "bitstream.h"
 #include "fft.h"
 #include "put_bits.h"
+#include "vlc.h"
 
 /* size of blocks */
 #define BLOCK_MIN_BITS 7

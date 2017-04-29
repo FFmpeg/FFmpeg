@@ -34,6 +34,7 @@
 #include "internal.h"
 #include "ivi.h"
 #include "ivi_dsp.h"
+#include "vlc.h"
 
 #define IVI4_PIC_SIZE_ESC   7
 

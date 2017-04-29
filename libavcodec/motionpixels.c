@@ -23,6 +23,7 @@
 #include "bitstream.h"
 #include "bswapdsp.h"
 #include "internal.h"
+#include "vlc.h"
 
 #define MAX_HUFF_CODES 16
 

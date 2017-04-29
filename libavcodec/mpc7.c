@@ -33,6 +33,7 @@
 #include "bitstream.h"
 #include "internal.h"
 #include "mpegaudiodsp.h"
+#include "vlc.h"
 
 #include "mpc.h"
 #include "mpc7data.h"

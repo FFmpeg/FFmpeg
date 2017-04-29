@@ -28,6 +28,7 @@
 
 #include "bitstream.h"
 #include "hqxdsp.h"
+#include "vlc.h"
 
 enum HQXACMode {
     HQX_AC_Q0 = 0,

@@ -44,6 +44,7 @@
 #include "mpegaudio.h"
 #include "mpegaudiodsp.h"
 #include "rdft.h"
+#include "vlc.h"
 
 #include "qdm2data.h"
 #include "qdm2_tablegen.h"

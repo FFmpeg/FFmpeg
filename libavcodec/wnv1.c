@@ -28,6 +28,7 @@
 #include "bitstream.h"
 #include "internal.h"
 #include "mathops.h"
+#include "vlc.h"
 
 
 typedef struct WNV1Context {

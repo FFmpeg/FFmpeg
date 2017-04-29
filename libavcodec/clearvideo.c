@@ -29,6 +29,7 @@
 #include "bytestream.h"
 #include "idctdsp.h"
 #include "internal.h"
+#include "vlc.h"
 
 #define NUM_DC_CODES 127
 #define NUM_AC_CODES 103

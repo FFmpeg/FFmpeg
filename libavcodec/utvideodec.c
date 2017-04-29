@@ -36,6 +36,7 @@
 #include "internal.h"
 #include "thread.h"
 #include "utvideo.h"
+#include "vlc.h"
 
 static int build_huff10(const uint8_t *src, VLC *vlc, int *fsym)
 {

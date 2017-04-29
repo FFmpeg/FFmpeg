@@ -36,6 +36,7 @@
 #include "bswapdsp.h"
 #include "bytestream.h"
 #include "internal.h"
+#include "vlc.h"
 
 #define BLOCK_TYPE_VLC_BITS 5
 #define ACDC_VLC_BITS 9

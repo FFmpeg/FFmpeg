@@ -52,6 +52,7 @@
 #include "fft.h"
 #include "internal.h"
 #include "sinewin.h"
+#include "vlc.h"
 
 #include "cookdata.h"
 

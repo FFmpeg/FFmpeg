@@ -31,6 +31,7 @@
 #include "bswapdsp.h"
 #include "bytestream.h"
 #include "internal.h"
+#include "vlc.h"
 
 #define TM2_ESCAPE 0x80000000
 #define TM2_DELTAS 64

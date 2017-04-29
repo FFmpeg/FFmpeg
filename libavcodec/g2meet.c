@@ -39,6 +39,7 @@
 #include "internal.h"
 #include "jpegtables.h"
 #include "mjpeg.h"
+#include "vlc.h"
 
 #define EPIC_PIX_STACK_SIZE 1024
 #define EPIC_PIX_STACK_MAX  (EPIC_PIX_STACK_SIZE - 1)

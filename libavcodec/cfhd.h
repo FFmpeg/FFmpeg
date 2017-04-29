@@ -25,6 +25,7 @@
 
 #include "avcodec.h"
 #include "bitstream.h"
+#include "vlc.h"
 
 #define VLC_BITS       9
 #define SUBBAND_COUNT 10

@@ -32,6 +32,7 @@
 #include "indeo2data.h"
 #include "internal.h"
 #include "mathops.h"
+#include "vlc.h"
 
 typedef struct Ir2Context{
     AVCodecContext *avctx;

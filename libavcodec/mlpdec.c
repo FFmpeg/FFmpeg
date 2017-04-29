@@ -39,6 +39,7 @@
 #include "mlpdsp.h"
 #include "mlp.h"
 #include "config.h"
+#include "vlc.h"
 
 /** number of bits used for VLC lookup - longest Huffman code is 9 */
 #if ARCH_ARM

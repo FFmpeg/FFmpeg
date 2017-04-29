@@ -43,6 +43,7 @@
 #include "dct.h"
 #include "rdft.h"
 #include "sinewin.h"
+#include "vlc.h"
 
 #define MAX_BLOCKS           8   ///< maximum number of blocks per frame
 #define MAX_LSPS             16  ///< maximum filter order

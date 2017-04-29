@@ -33,6 +33,7 @@
 #include "internal.h"
 #include "mathops.h"
 #include "tscc2data.h"
+#include "vlc.h"
 
 typedef struct TSCC2Context {
     AVCodecContext *avctx;

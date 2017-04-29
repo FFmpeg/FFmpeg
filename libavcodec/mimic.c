@@ -32,6 +32,7 @@
 #include "hpeldsp.h"
 #include "idctdsp.h"
 #include "thread.h"
+#include "vlc.h"
 
 #define MIMIC_HEADER_SIZE   20
 
