@@ -39,6 +39,7 @@ version 3.3:
 - MPEG-7 Video Signature filter
 - Removed asyncts filter (use af_aresample instead)
 - Intel QSV-accelerated VP8 video decoding
+- VAAPI-accelerated deinterlacing
 
 
 version 3.2:
