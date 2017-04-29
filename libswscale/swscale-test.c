@@ -298,10 +298,10 @@ static int fileTest(uint8_t *ref[4], int refStride[4], int w, int h, FILE *fp,
         struct Results r;
         enum AVPixelFormat srcFormat;
         char srcStr[12];
-        int srcW, srcH;
+        int srcW = 0, srcH = 0;
         enum AVPixelFormat dstFormat;
         char dstStr[12];
-        int dstW, dstH;
+        int dstW = 0, dstH = 0;
         int flags;
         int ret;
 
