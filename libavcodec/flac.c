@@ -22,8 +22,9 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/crc.h"
 #include "libavutil/log.h"
+
+#include "bitstream.h"
 #include "bytestream.h"
-#include "get_bits.h"
 #include "flac.h"
 #include "flacdata.h"
 
@@ -40,33 +41,33 @@ static const uint64_t flac_channel_layouts[8] = {
     AV_CH_LAYOUT_7POINT1
 };
 
-static int64_t get_utf8(GetBitContext *gb)
+static int64_t get_utf8(BitstreamContext *bc)
 {
     int64_t val;
-    GET_UTF8(val, get_bits(gb, 8), return -1;)
+    GET_UTF8(val, bitstream_read(bc, 8), return -1;)
     return val;
 }
 
-int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
+int ff_flac_decode_frame_header(AVCodecContext *avctx, BitstreamContext *bc,
                                 FLACFrameInfo *fi, int log_level_offset)
 {
     int bs_code, sr_code, bps_code;
 
     /* frame sync code */
-    if ((get_bits(gb, 15) & 0x7FFF) != 0x7FFC) {
+    if ((bitstream_read(bc, 15) & 0x7FFF) != 0x7FFC) {
         av_log(avctx, AV_LOG_ERROR + log_level_offset, "invalid sync code\n");
         return AVERROR_INVALIDDATA;
     }
 
     /* variable block size stream code */
-    fi->is_var_size = get_bits1(gb);
+    fi->is_var_size = bitstream_read_bit(bc);
 
     /* block size and sample rate codes */
-    bs_code = get_bits(gb, 4);
-    sr_code = get_bits(gb, 4);
+    bs_code = bitstream_read(bc, 4);
+    sr_code = bitstream_read(bc, 4);
 
     /* channels and decorrelation */
-    fi->ch_mode = get_bits(gb, 4);
+    fi->ch_mode = bitstream_read(bc, 4);
     if (fi->ch_mode < FLAC_MAX_CHANNELS) {
         fi->channels = fi->ch_mode + 1;
         fi->ch_mode = FLAC_CHMODE_INDEPENDENT;
@@ -80,7 +81,7 @@ int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
     }
 
     /* bits per sample */
-    bps_code = get_bits(gb, 3);
+    bps_code = bitstream_read(bc, 3);
     if (bps_code == 3 || bps_code == 7) {
         av_log(avctx, AV_LOG_ERROR + log_level_offset,
                "invalid sample size code (%d)\n",
@@ -90,14 +91,14 @@ int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
     fi->bps = sample_size_table[bps_code];
 
     /* reserved bit */
-    if (get_bits1(gb)) {
+    if (bitstream_read_bit(bc)) {
         av_log(avctx, AV_LOG_ERROR + log_level_offset,
                "broken stream, invalid padding\n");
         return AVERROR_INVALIDDATA;
     }
 
     /* sample or frame count */
-    fi->frame_or_sample_num = get_utf8(gb);
+    fi->frame_or_sample_num = get_utf8(bc);
     if (fi->frame_or_sample_num < 0) {
         av_log(avctx, AV_LOG_ERROR + log_level_offset,
                "sample/frame number invalid; utf8 fscked\n");
@@ -110,9 +111,9 @@ int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
                "reserved blocksize code: 0\n");
         return AVERROR_INVALIDDATA;
     } else if (bs_code == 6) {
-        fi->blocksize = get_bits(gb, 8) + 1;
+        fi->blocksize = bitstream_read(bc, 8) + 1;
     } else if (bs_code == 7) {
-        fi->blocksize = get_bits(gb, 16) + 1;
+        fi->blocksize = bitstream_read(bc, 16) + 1;
     } else {
         fi->blocksize = ff_flac_blocksize_table[bs_code];
     }
@@ -121,11 +122,11 @@ int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
     if (sr_code < 12) {
         fi->samplerate = ff_flac_sample_rate_table[sr_code];
     } else if (sr_code == 12) {
-        fi->samplerate = get_bits(gb, 8) * 1000;
+        fi->samplerate = bitstream_read(bc, 8) * 1000;
     } else if (sr_code == 13) {
-        fi->samplerate = get_bits(gb, 16);
+        fi->samplerate = bitstream_read(bc, 16);
     } else if (sr_code == 14) {
-        fi->samplerate = get_bits(gb, 16) * 10;
+        fi->samplerate = bitstream_read(bc, 16) * 10;
     } else {
         av_log(avctx, AV_LOG_ERROR + log_level_offset,
                "illegal sample rate code %d\n",
@@ -134,9 +135,9 @@ int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
     }
 
     /* header CRC-8 check */
-    skip_bits(gb, 8);
-    if (av_crc(av_crc_get_table(AV_CRC_8_ATM), 0, gb->buffer,
-               get_bits_count(gb)/8)) {
+    bitstream_skip(bc, 8);
+    if (av_crc(av_crc_get_table(AV_CRC_8_ATM), 0, bc->buffer,
+               bitstream_tell(bc) / 8)) {
         av_log(avctx, AV_LOG_ERROR + log_level_offset,
                "header crc mismatch\n");
         return AVERROR_INVALIDDATA;
@@ -204,23 +205,22 @@ void ff_flac_set_channel_layout(AVCodecContext *avctx)
 void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
                               const uint8_t *buffer)
 {
-    GetBitContext gb;
-    init_get_bits(&gb, buffer, FLAC_STREAMINFO_SIZE*8);
+    BitstreamContext bc;
+    bitstream_init8(&bc, buffer, FLAC_STREAMINFO_SIZE);
 
-    skip_bits(&gb, 16); /* skip min blocksize */
-    s->max_blocksize = get_bits(&gb, 16);
+    bitstream_skip(&bc, 16); /* skip min blocksize */
+    s->max_blocksize = bitstream_read(&bc, 16);
     if (s->max_blocksize < FLAC_MIN_BLOCKSIZE) {
         av_log(avctx, AV_LOG_WARNING, "invalid max blocksize: %d\n",
                s->max_blocksize);
         s->max_blocksize = 16;
     }
 
-    skip_bits(&gb, 24); /* skip min frame size */
-    s->max_framesize = get_bits_long(&gb, 24);
-
-    s->samplerate = get_bits_long(&gb, 20);
-    s->channels = get_bits(&gb, 3) + 1;
-    s->bps = get_bits(&gb, 5) + 1;
+    bitstream_skip(&bc, 24); /* skip min frame size */
+    s->max_framesize = bitstream_read(&bc, 24);
+    s->samplerate    = bitstream_read(&bc, 20);
+    s->channels      = bitstream_read(&bc, 3) + 1;
+    s->bps           = bitstream_read(&bc, 5) + 1;
 
     avctx->channels = s->channels;
     avctx->sample_rate = s->samplerate;
@@ -230,11 +230,11 @@ void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
         av_get_channel_layout_nb_channels(avctx->channel_layout) != avctx->channels)
         ff_flac_set_channel_layout(avctx);
 
-    s->samples  = get_bits_long(&gb, 32) << 4;
-    s->samples |= get_bits(&gb, 4);
+    s->samples  = bitstream_read(&bc, 32) << 4;
+    s->samples |= bitstream_read(&bc, 4);
 
-    skip_bits_long(&gb, 64); /* md5 sum */
-    skip_bits_long(&gb, 64); /* md5 sum */
+    bitstream_skip(&bc, 64); /* md5 sum */
+    bitstream_skip(&bc, 64); /* md5 sum */
 }
 
 #if LIBAVCODEC_VERSION_MAJOR < 57
