@@ -204,26 +204,27 @@ static int decode_residuals(FLACContext *s, int32_t *decoded, int pred_order)
     int samples;
 
     method_type = bitstream_read(&s->bc, 2);
+    rice_order  = bitstream_read(&s->bc, 4);
+
+    samples   = s->blocksize >> rice_order;
+    rice_bits = 4 + method_type;
+    rice_esc  = (1 << rice_bits) - 1;
+
+    decoded += pred_order;
+    i        = pred_order;
+
     if (method_type > 1) {
         av_log(s->avctx, AV_LOG_ERROR, "illegal residual coding method %d\n",
                method_type);
         return AVERROR_INVALIDDATA;
     }
 
-    rice_order = bitstream_read(&s->bc, 4);
-
-    samples= s->blocksize >> rice_order;
     if (pred_order > samples) {
         av_log(s->avctx, AV_LOG_ERROR, "invalid predictor order: %i > %i\n",
                pred_order, samples);
         return AVERROR_INVALIDDATA;
     }
 
-    rice_bits = 4 + method_type;
-    rice_esc  = (1 << rice_bits) - 1;
-
-    decoded += pred_order;
-    i= pred_order;
     for (partition = 0; partition < (1 << rice_order); partition++) {
         tmp = bitstream_read(&s->bc, rice_bits);
         if (tmp == rice_esc) {
