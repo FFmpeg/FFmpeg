@@ -199,12 +199,13 @@ static int get_metadata_size(const uint8_t *buf, int buf_size)
 
 static int decode_residuals(FLACContext *s, int32_t *decoded, int pred_order)
 {
+    BitstreamContext bc = s->bc;
     int i, tmp, partition, method_type, rice_order;
     int rice_bits, rice_esc;
     int samples;
 
-    method_type = bitstream_read(&s->bc, 2);
-    rice_order  = bitstream_read(&s->bc, 4);
+    method_type = bitstream_read(&bc, 2);
+    rice_order  = bitstream_read(&bc, 4);
 
     samples   = s->blocksize >> rice_order;
     rice_bits = 4 + method_type;
@@ -226,18 +227,20 @@ static int decode_residuals(FLACContext *s, int32_t *decoded, int pred_order)
     }
 
     for (partition = 0; partition < (1 << rice_order); partition++) {
-        tmp = bitstream_read(&s->bc, rice_bits);
+        tmp = bitstream_read(&bc, rice_bits);
         if (tmp == rice_esc) {
-            tmp = bitstream_read(&s->bc, 5);
+            tmp = bitstream_read(&bc, 5);
             for (; i < samples; i++)
-                *decoded++ = bitstream_read_signed(&s->bc, tmp);
+                *decoded++ = bitstream_read_signed(&bc, tmp);
         } else {
             for (; i < samples; i++) {
-                *decoded++ = get_sr_golomb_flac(&s->bc, tmp, INT_MAX, 0);
+                *decoded++ = get_sr_golomb_flac(&bc, tmp, INT_MAX, 0);
             }
         }
         i= 0;
     }
+
+    s->bc = bc;
 
     return 0;
 }
