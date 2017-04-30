@@ -26,7 +26,6 @@
 #include <stdatomic.h>
 
 #include "libavutil/buffer.h"
-#include "libavutil/md5.h"
 
 #include "avcodec.h"
 #include "bswapdsp.h"
@@ -36,6 +35,7 @@
 #include "h2645_parse.h"
 #include "hevc.h"
 #include "hevc_ps.h"
+#include "hevc_sei.h"
 #include "hevcdsp.h"
 #include "internal.h"
 #include "thread.h"
@@ -464,59 +464,6 @@ typedef struct HEVCLocalContext {
     int boundary_flags;
 } HEVCLocalContext;
 
-typedef struct HEVCSEIPictureHash {
-    struct AVMD5 *md5_ctx;
-    uint8_t       md5[3][16];
-    uint8_t is_md5;
-} HEVCSEIPictureHash;
-
-typedef struct HEVCSEIFramePacking {
-    int present;
-    int arrangement_type;
-    int content_interpretation_type;
-    int quincunx_subsampling;
-} HEVCSEIFramePacking;
-
-typedef struct HEVCSEIDisplayOrientation {
-    int present;
-    int anticlockwise_rotation;
-    int hflip, vflip;
-} HEVCSEIDisplayOrientation;
-
-typedef struct HEVCSEIPictureTiming {
-    int picture_struct;
-} HEVCSEIPictureTiming;
-
-typedef struct HEVCSEIA53Caption {
-    int a53_caption_size;
-    uint8_t *a53_caption;
-} HEVCSEIA53Caption;
-
-typedef struct HEVCSEIMasteringDisplay {
-    int present;
-    uint16_t display_primaries[3][2];
-    uint16_t white_point[2];
-    uint32_t max_luminance;
-    uint32_t min_luminance;
-} HEVCSEIMasteringDisplay;
-
-typedef struct HEVCSEIContentLight {
-    int present;
-    uint16_t max_content_light_level;
-    uint16_t max_pic_average_light_level;
-} HEVCSEIContentLight;
-
-typedef struct HEVCSEIContext {
-    HEVCSEIPictureHash picture_hash;
-    HEVCSEIFramePacking frame_packing;
-    HEVCSEIDisplayOrientation display_orientation;
-    HEVCSEIPictureTiming picture_timing;
-    HEVCSEIA53Caption a53_caption;
-    HEVCSEIMasteringDisplay mastering_display;
-    HEVCSEIContentLight content_light;
-    int active_seq_parameter_set_id;
-} HEVCSEIContext;
-
 typedef struct HEVCContext {
     const AVClass *c;  // needed by private avoptions
     AVCodecContext *avctx;
@@ -622,9 +569,6 @@ typedef struct HEVCContext {
     HEVCSEIContext sei;
 } HEVCContext;
 
-int ff_hevc_decode_nal_sei(GetBitContext *gb, void *logctx, HEVCSEIContext *s,
-                           const HEVCParamSets *ps, int type);
-
 /**
  * Mark all frames in DPB as unused for reference.
  */
@@ -727,15 +671,6 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                                  int c_idx);
 
 void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size);
-
-/**
- * Reset SEI values that are stored on the Context.
- * e.g. Caption data that was extracted during NAL
- * parsing.
- *
- * @param s HEVCContext.
- */
-void ff_hevc_reset_sei(HEVCSEIContext *s);
 
 extern const uint8_t ff_hevc_qpel_extra_before[4];
 extern const uint8_t ff_hevc_qpel_extra_after[4];

@@ -23,35 +23,8 @@
  */
 
 #include "golomb.h"
-#include "hevcdec.h"
-
-enum HEVC_SEI_TYPE {
-    SEI_TYPE_BUFFERING_PERIOD                     = 0,
-    SEI_TYPE_PICTURE_TIMING                       = 1,
-    SEI_TYPE_PAN_SCAN_RECT                        = 2,
-    SEI_TYPE_FILLER_PAYLOAD                       = 3,
-    SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35       = 4,
-    SEI_TYPE_USER_DATA_UNREGISTERED               = 5,
-    SEI_TYPE_RECOVERY_POINT                       = 6,
-    SEI_TYPE_SCENE_INFO                           = 9,
-    SEI_TYPE_FULL_FRAME_SNAPSHOT                  = 15,
-    SEI_TYPE_PROGRESSIVE_REFINEMENT_SEGMENT_START = 16,
-    SEI_TYPE_PROGRESSIVE_REFINEMENT_SEGMENT_END   = 17,
-    SEI_TYPE_FILM_GRAIN_CHARACTERISTICS           = 19,
-    SEI_TYPE_POST_FILTER_HINT                     = 22,
-    SEI_TYPE_TONE_MAPPING_INFO                    = 23,
-    SEI_TYPE_FRAME_PACKING                        = 45,
-    SEI_TYPE_DISPLAY_ORIENTATION                  = 47,
-    SEI_TYPE_SOP_DESCRIPTION                      = 128,
-    SEI_TYPE_ACTIVE_PARAMETER_SETS                = 129,
-    SEI_TYPE_DECODING_UNIT_INFO                   = 130,
-    SEI_TYPE_TEMPORAL_LEVEL0_INDEX                = 131,
-    SEI_TYPE_DECODED_PICTURE_HASH                 = 132,
-    SEI_TYPE_SCALABLE_NESTING                     = 133,
-    SEI_TYPE_REGION_REFRESH_INFO                  = 134,
-    SEI_TYPE_MASTERING_DISPLAY_INFO               = 137,
-    SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO             = 144,
-};
+#include "hevc_ps.h"
+#include "hevc_sei.h"
 
 static int decode_nal_sei_decoded_picture_hash(HEVCSEIPictureHash *s, GetBitContext *gb)
 {
@@ -294,26 +267,26 @@ static int decode_nal_sei_prefix(GetBitContext *gb, HEVCSEIContext *s, const HEV
     switch (type) {
     case 256:  // Mismatched value from HM 8.1
         return decode_nal_sei_decoded_picture_hash(&s->picture_hash, gb);
-    case SEI_TYPE_FRAME_PACKING:
+    case HEVC_SEI_TYPE_FRAME_PACKING:
         return decode_nal_sei_frame_packing_arrangement(&s->frame_packing, gb);
-    case SEI_TYPE_DISPLAY_ORIENTATION:
+    case HEVC_SEI_TYPE_DISPLAY_ORIENTATION:
         return decode_nal_sei_display_orientation(&s->display_orientation, gb);
-    case SEI_TYPE_PICTURE_TIMING:
+    case HEVC_SEI_TYPE_PICTURE_TIMING:
         {
             int ret = decode_pic_timing(s, gb, ps, logctx);
             av_log(logctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", type);
             skip_bits(gb, 8 * size);
             return ret;
         }
-    case SEI_TYPE_MASTERING_DISPLAY_INFO:
+    case HEVC_SEI_TYPE_MASTERING_DISPLAY_INFO:
         return decode_nal_sei_mastering_display_info(&s->mastering_display, gb);
-    case SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO:
+    case HEVC_SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO:
         return decode_nal_sei_content_light_info(&s->content_light, gb);
-    case SEI_TYPE_ACTIVE_PARAMETER_SETS:
+    case HEVC_SEI_TYPE_ACTIVE_PARAMETER_SETS:
         active_parameter_sets(s, gb, logctx);
         av_log(logctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", type);
         return 0;
-    case SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35:
+    case HEVC_SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35:
         return decode_nal_sei_user_data_registered_itu_t_t35(s, gb, size);
     default:
         av_log(logctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", type);
@@ -326,7 +299,7 @@ static int decode_nal_sei_suffix(GetBitContext *gb, HEVCSEIContext *s,
                                  int type, int size, void *logctx)
 {
     switch (type) {
-    case SEI_TYPE_DECODED_PICTURE_HASH:
+    case HEVC_SEI_TYPE_DECODED_PICTURE_HASH:
         return decode_nal_sei_decoded_picture_hash(&s->picture_hash, gb);
     default:
         av_log(logctx, AV_LOG_DEBUG, "Skipped SUFFIX SEI %d\n", type);
