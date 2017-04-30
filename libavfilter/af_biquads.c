@@ -105,12 +105,14 @@ typedef struct BiquadsContext {
     double gain;
     double frequency;
     double width;
+    uint64_t channels;
 
     double a0, a1, a2;
     double b0, b1, b2;
 
     ChanCache *cache;
     int clippings;
+    int block_align;
 
     void (*filter)(struct BiquadsContext *s, const void *ibuf, void *obuf, int len,
                    double *i1, double *i2, double *o1, double *o2,
@@ -388,6 +390,8 @@ static int config_output(AVFilterLink *outlink)
     default: av_assert0(0);
     }
 
+    s->block_align = av_get_bytes_per_sample(inlink->format);
+
     return 0;
 }
 
@@ -411,12 +415,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         av_frame_copy_props(out_buf, buf);
     }
 
-    for (ch = 0; ch < buf->channels; ch++)
+    for (ch = 0; ch < buf->channels; ch++) {
+        if (!((av_channel_layout_extract_channel(inlink->channel_layout, ch) & s->channels))) {
+            if (buf != out_buf)
+                memcpy(out_buf->extended_data[ch], buf->extended_data[ch], nb_samples * s->block_align);
+            continue;
+        }
         s->filter(s, buf->extended_data[ch],
                   out_buf->extended_data[ch], nb_samples,
                   &s->cache[ch].i1, &s->cache[ch].i2,
                   &s->cache[ch].o1, &s->cache[ch].o2,
                   s->b0, s->b1, s->b2, s->a1, s->a2);
+    }
 
     if (s->clippings > 0)
         av_log(ctx, AV_LOG_WARNING, "clipping %d times. Please reduce gain.\n", s->clippings);
@@ -491,6 +501,8 @@ static const AVOption equalizer_options[] = {
     {"w",     "set band-width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0, 999, FLAGS},
     {"gain", "set gain", OFFSET(gain), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, FLAGS},
     {"g",    "set gain", OFFSET(gain), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, FLAGS},
+    {"channels", "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
+    {"c",        "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
     {NULL}
 };
 
@@ -509,6 +521,8 @@ static const AVOption bass_options[] = {
     {"w",     "set shelf transition steep", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 99999, FLAGS},
     {"gain", "set gain", OFFSET(gain), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, FLAGS},
     {"g",    "set gain", OFFSET(gain), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, FLAGS},
+    {"channels", "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
+    {"c",        "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
     {NULL}
 };
 
@@ -527,6 +541,8 @@ static const AVOption treble_options[] = {
     {"w",     "set shelf transition steep", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 99999, FLAGS},
     {"gain", "set gain", OFFSET(gain), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, FLAGS},
     {"g",    "set gain", OFFSET(gain), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, FLAGS},
+    {"channels", "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
+    {"c",        "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
     {NULL}
 };
 
@@ -544,6 +560,8 @@ static const AVOption bandpass_options[] = {
     {"width", "set band-width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 999, FLAGS},
     {"w",     "set band-width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 999, FLAGS},
     {"csg",   "use constant skirt gain", OFFSET(csg), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS},
+    {"channels", "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
+    {"c",        "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
     {NULL}
 };
 
@@ -560,6 +578,8 @@ static const AVOption bandreject_options[] = {
     {"s", "slope", 0, AV_OPT_TYPE_CONST, {.i64=SLOPE}, 0, 0, FLAGS, "width_type"},
     {"width", "set band-width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 999, FLAGS},
     {"w",     "set band-width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 999, FLAGS},
+    {"channels", "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
+    {"c",        "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
     {NULL}
 };
 
@@ -578,6 +598,8 @@ static const AVOption lowpass_options[] = {
     {"w",     "set width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.707}, 0, 99999, FLAGS},
     {"poles", "set number of poles", OFFSET(poles), AV_OPT_TYPE_INT, {.i64=2}, 1, 2, FLAGS},
     {"p",     "set number of poles", OFFSET(poles), AV_OPT_TYPE_INT, {.i64=2}, 1, 2, FLAGS},
+    {"channels", "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
+    {"c",        "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
     {NULL}
 };
 
@@ -596,6 +618,8 @@ static const AVOption highpass_options[] = {
     {"w",     "set width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.707}, 0, 99999, FLAGS},
     {"poles", "set number of poles", OFFSET(poles), AV_OPT_TYPE_INT, {.i64=2}, 1, 2, FLAGS},
     {"p",     "set number of poles", OFFSET(poles), AV_OPT_TYPE_INT, {.i64=2}, 1, 2, FLAGS},
+    {"channels", "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
+    {"c",        "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
     {NULL}
 };
 
@@ -612,6 +636,8 @@ static const AVOption allpass_options[] = {
     {"s", "slope", 0, AV_OPT_TYPE_CONST, {.i64=SLOPE}, 0, 0, FLAGS, "width_type"},
     {"width", "set filter-width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=707.1}, 0, 99999, FLAGS},
     {"w",     "set filter-width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=707.1}, 0, 99999, FLAGS},
+    {"channels", "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
+    {"c",        "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
     {NULL}
 };
 
@@ -625,6 +651,8 @@ static const AVOption biquad_options[] = {
     {"b0", NULL, OFFSET(b0), AV_OPT_TYPE_DOUBLE, {.dbl=1}, INT16_MIN, INT16_MAX, FLAGS},
     {"b1", NULL, OFFSET(b1), AV_OPT_TYPE_DOUBLE, {.dbl=1}, INT16_MIN, INT16_MAX, FLAGS},
     {"b2", NULL, OFFSET(b2), AV_OPT_TYPE_DOUBLE, {.dbl=1}, INT16_MIN, INT16_MAX, FLAGS},
+    {"channels", "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
+    {"c",        "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
     {NULL}
 };
 

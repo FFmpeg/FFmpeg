@@ -1666,7 +1666,7 @@ option to 2.
 Enable frame parallel decodability features.
 @item aq-mode
 Set adaptive quantization mode (0: off (default), 1: variance 2: complexity, 3:
-cyclic refresh).
+cyclic refresh, 4: equator360).
 @item colorspace @emph{color-space}
 Set input color space. The VP9 bitstream supports signaling the following
 colorspaces:

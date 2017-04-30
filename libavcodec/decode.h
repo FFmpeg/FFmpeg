@@ -21,6 +21,8 @@
 #ifndef AVCODEC_DECODE_H
 #define AVCODEC_DECODE_H
 
+#include "avcodec.h"
+
 /**
  * Called by decoders to get the next packet for decoding.
  *

@@ -200,6 +200,9 @@ typedef struct AVCodecInternal {
     int showed_multi_packet_warning;
 
     int skip_samples_multiplier;
+
+    /* to prevent infinite loop on errors when draining */
+    int nb_draining_errors;
 } AVCodecInternal;
 
 struct AVCodecDefault {

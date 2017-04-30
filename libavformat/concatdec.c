@@ -199,8 +199,11 @@ static int detect_stream_specific(AVFormatContext *avf, int idx)
     AVBitStreamFilterContext *bsf;
     int ret;
 
-    if (cat->auto_convert && st->codecpar->codec_id == AV_CODEC_ID_H264 &&
-        (st->codecpar->extradata_size < 4 || AV_RB32(st->codecpar->extradata) != 1)) {
+    if (cat->auto_convert && st->codecpar->codec_id == AV_CODEC_ID_H264) {
+        if (!st->codecpar->extradata_size                                                ||
+            (st->codecpar->extradata_size >= 3 && AV_RB24(st->codecpar->extradata) == 1) ||
+            (st->codecpar->extradata_size >= 4 && AV_RB32(st->codecpar->extradata) == 1))
+            return 0;
         av_log(cat->avf, AV_LOG_INFO,
                "Auto-inserting h264_mp4toannexb bitstream filter\n");
         if (!(bsf = av_bitstream_filter_init("h264_mp4toannexb"))) {

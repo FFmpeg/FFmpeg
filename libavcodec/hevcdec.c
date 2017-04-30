@@ -330,24 +330,10 @@ static void export_stream_params(AVCodecContext *avctx, const HEVCParamSets *ps,
                   num, den, 1 << 30);
 }
 
-static int set_sps(HEVCContext *s, const HEVCSPS *sps, enum AVPixelFormat pix_fmt)
+static enum AVPixelFormat get_format(HEVCContext *s, const HEVCSPS *sps)
 {
     #define HWACCEL_MAX (CONFIG_HEVC_DXVA2_HWACCEL + CONFIG_HEVC_D3D11VA_HWACCEL + CONFIG_HEVC_VAAPI_HWACCEL + CONFIG_HEVC_VDPAU_HWACCEL)
     enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmt = pix_fmts;
-    int ret, i;
-
-    pic_arrays_free(s);
-    s->ps.sps = NULL;
-    s->ps.vps = NULL;
-
-    if (!sps)
-        return 0;
-
-    ret = pic_arrays_init(s, sps);
-    if (ret < 0)
-        goto fail;
-
-    export_stream_params(s->avctx, &s->ps, sps);
 
     switch (sps->pix_fmt) {
     case AV_PIX_FMT_YUV420P:
@@ -378,18 +364,31 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps, enum AVPixelFormat pix_fm
         break;
     }
 
-    if (pix_fmt == AV_PIX_FMT_NONE) {
-        *fmt++ = sps->pix_fmt;
-        *fmt = AV_PIX_FMT_NONE;
+    *fmt++ = sps->pix_fmt;
+    *fmt = AV_PIX_FMT_NONE;
 
-        ret = ff_thread_get_format(s->avctx, pix_fmts);
-        if (ret < 0)
-            goto fail;
-        s->avctx->pix_fmt = ret;
-    }
-    else {
-        s->avctx->pix_fmt = pix_fmt;
-    }
+    return ff_thread_get_format(s->avctx, pix_fmts);
+}
+
+static int set_sps(HEVCContext *s, const HEVCSPS *sps,
+                   enum AVPixelFormat pix_fmt)
+{
+    int ret, i;
+
+    pic_arrays_free(s);
+    s->ps.sps = NULL;
+    s->ps.vps = NULL;
+
+    if (!sps)
+        return 0;
+
+    ret = pic_arrays_init(s, sps);
+    if (ret < 0)
+        goto fail;
+
+    export_stream_params(s->avctx, &s->ps, sps);
+
+    s->avctx->pix_fmt = pix_fmt;
 
     ff_hevc_pred_init(&s->hpc,     sps->bit_depth);
     ff_hevc_dsp_init (&s->hevcdsp, sps->bit_depth);
@@ -460,16 +459,23 @@ static int hls_slice_header(HEVCContext *s)
         sh->no_output_of_prior_pics_flag = 1;
 
     if (s->ps.sps != (HEVCSPS*)s->ps.sps_list[s->ps.pps->sps_id]->data) {
-        const HEVCSPS* last_sps = s->ps.sps;
-        s->ps.sps = (HEVCSPS*)s->ps.sps_list[s->ps.pps->sps_id]->data;
+        const HEVCSPS *sps = (HEVCSPS*)s->ps.sps_list[s->ps.pps->sps_id]->data;
+        const HEVCSPS *last_sps = s->ps.sps;
+        enum AVPixelFormat pix_fmt;
+
         if (last_sps && IS_IRAP(s) && s->nal_unit_type != HEVC_NAL_CRA_NUT) {
-            if (s->ps.sps->width !=  last_sps->width || s->ps.sps->height != last_sps->height ||
-                s->ps.sps->temporal_layer[s->ps.sps->max_sub_layers - 1].max_dec_pic_buffering !=
+            if (sps->width != last_sps->width || sps->height != last_sps->height ||
+                sps->temporal_layer[sps->max_sub_layers - 1].max_dec_pic_buffering !=
                 last_sps->temporal_layer[last_sps->max_sub_layers - 1].max_dec_pic_buffering)
                 sh->no_output_of_prior_pics_flag = 0;
         }
         ff_hevc_clear_refs(s);
-        ret = set_sps(s, s->ps.sps, AV_PIX_FMT_NONE);
+
+        pix_fmt = get_format(s, sps);
+        if (pix_fmt < 0)
+            return pix_fmt;
+
+        ret = set_sps(s, sps, pix_fmt);
         if (ret < 0)
             return ret;
 

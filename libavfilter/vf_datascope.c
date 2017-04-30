@@ -76,7 +76,7 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, ff_draw_supported_pixel_formats(0));
 }
 
-static void draw_text(DatascopeContext *s, AVFrame *frame, FFDrawColor *color,
+static void draw_text(FFDrawContext *draw, AVFrame *frame, FFDrawColor *color,
                       int x0, int y0, const uint8_t *text, int vertical)
 {
     int x = x0;
@@ -87,7 +87,7 @@ static void draw_text(DatascopeContext *s, AVFrame *frame, FFDrawColor *color,
             y0 += 8;
             continue;
         }
-        ff_blend_mask(&s->draw, color, frame->data, frame->linesize,
+        ff_blend_mask(draw, color, frame->data, frame->linesize,
                       frame->width, frame->height,
                       avpriv_cga_font + *text * 8, 1, 8, 8, 0, 0, x, y0);
         if (vertical) {
@@ -201,7 +201,7 @@ static int filter_color2(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
                 char text[256];
 
                 snprintf(text, sizeof(text), format[C>>2], value[p]);
-                draw_text(s, out, &reverse, xoff + x * C * 10 + 2, yoff + y * P * 12 + p * 10 + 2, text, 0);
+                draw_text(&s->draw, out, &reverse, xoff + x * C * 10 + 2, yoff + y * P * 12 + p * 10 + 2, text, 0);
             }
         }
     }
@@ -239,7 +239,7 @@ static int filter_color(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                 char text[256];
 
                 snprintf(text, sizeof(text), format[C>>2], value[p]);
-                draw_text(s, out, &color, xoff + x * C * 10 + 2, yoff + y * P * 12 + p * 10 + 2, text, 0);
+                draw_text(&s->draw, out, &color, xoff + x * C * 10 + 2, yoff + y * P * 12 + p * 10 + 2, text, 0);
             }
         }
     }
@@ -276,7 +276,7 @@ static int filter_mono(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                 char text[256];
 
                 snprintf(text, sizeof(text), format[C>>2], value[p]);
-                draw_text(s, out, &s->white, xoff + x * C * 10 + 2, yoff + y * P * 12 + p * 10 + 2, text, 0);
+                draw_text(&s->draw, out, &s->white, xoff + x * C * 10 + 2, yoff + y * P * 12 + p * 10 + 2, text, 0);
             }
         }
     }
@@ -328,7 +328,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             ff_fill_rectangle(&s->draw, &s->gray, out->data, out->linesize,
                               0, xmaxlen + y * P * 12 + (P + 1) * P - 2, ymaxlen, 10);
 
-            draw_text(s, out, &s->yellow, 2, xmaxlen + y * P * 12 + (P + 1) * P, text, 0);
+            draw_text(&s->draw, out, &s->yellow, 2, xmaxlen + y * P * 12 + (P + 1) * P, text, 0);
         }
 
         for (x = 0; x < X; x++) {
@@ -337,7 +337,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             ff_fill_rectangle(&s->draw, &s->gray, out->data, out->linesize,
                               ymaxlen + x * C * 10 + 2 * C - 2, 0, 10, xmaxlen);
 
-            draw_text(s, out, &s->yellow, ymaxlen + x * C * 10 + 2 * C, 2, text, 1);
+            draw_text(&s->draw, out, &s->yellow, ymaxlen + x * C * 10 + 2 * C, 2, text, 1);
         }
     }
 
@@ -418,4 +418,607 @@ AVFilter ff_vf_datascope = {
     .inputs        = inputs,
     .outputs       = outputs,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
+};
+
+typedef struct PixscopeContext {
+    const AVClass *class;
+
+    float xpos, ypos;
+    int w, h;
+    float o;
+
+    int x, y;
+    int ww, wh;
+
+    int nb_planes;
+    int nb_comps;
+    int is_rgb;
+    uint8_t rgba_map[4];
+    FFDrawContext draw;
+    FFDrawColor   dark;
+    FFDrawColor   black;
+    FFDrawColor   white;
+    FFDrawColor   green;
+    FFDrawColor   blue;
+    FFDrawColor   red;
+    FFDrawColor  *colors[4];
+
+    void (*pick_color)(FFDrawContext *draw, FFDrawColor *color, AVFrame *in, int x, int y, int *value);
+} PixscopeContext;
+
+#define POFFSET(x) offsetof(PixscopeContext, x)
+
+static const AVOption pixscope_options[] = {
+    { "x", "set scope x offset", POFFSET(xpos), AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0,  1, FLAGS },
+    { "y", "set scope y offset", POFFSET(ypos), AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0,  1, FLAGS },
+    { "w", "set scope width",    POFFSET(w),    AV_OPT_TYPE_INT,   {.i64=7},   1, 80, FLAGS },
+    { "h", "set scope height",   POFFSET(h),    AV_OPT_TYPE_INT,   {.i64=7},   1, 80, FLAGS },
+    { "o", "set window opacity", POFFSET(o),    AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0,  1, FLAGS },
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(pixscope);
+
+static int pixscope_config_input(AVFilterLink *inlink)
+{
+    PixscopeContext *s = inlink->dst->priv;
+
+    s->nb_planes = av_pix_fmt_count_planes(inlink->format);
+    ff_draw_init(&s->draw, inlink->format, 0);
+    ff_draw_color(&s->draw, &s->dark,  (uint8_t[]){ 0, 0, 0, s->o * 255} );
+    ff_draw_color(&s->draw, &s->black, (uint8_t[]){ 0, 0, 0, 255} );
+    ff_draw_color(&s->draw, &s->white, (uint8_t[]){ 255, 255, 255, 255} );
+    ff_draw_color(&s->draw, &s->green, (uint8_t[]){   0, 255,   0, 255} );
+    ff_draw_color(&s->draw, &s->blue,  (uint8_t[]){   0,   0, 255, 255} );
+    ff_draw_color(&s->draw, &s->red,   (uint8_t[]){ 255,   0,   0, 255} );
+    s->nb_comps = s->draw.desc->nb_components;
+    s->is_rgb   = s->draw.desc->flags & AV_PIX_FMT_FLAG_RGB;
+
+    if (s->is_rgb) {
+        s->colors[0] = &s->red;
+        s->colors[1] = &s->green;
+        s->colors[2] = &s->blue;
+        s->colors[3] = &s->white;
+        ff_fill_rgba_map(s->rgba_map, inlink->format);
+    } else {
+        s->colors[0] = &s->white;
+        s->colors[1] = &s->blue;
+        s->colors[2] = &s->red;
+        s->colors[3] = &s->white;
+        s->rgba_map[0] = 0;
+        s->rgba_map[1] = 1;
+        s->rgba_map[2] = 2;
+        s->rgba_map[3] = 3;
+    }
+
+    if (s->draw.desc->comp[0].depth <= 8) {
+        s->pick_color = pick_color8;
+    } else {
+        s->pick_color = pick_color16;
+    }
+
+    if (inlink->w < 640 || inlink->h < 480) {
+        av_log(inlink->dst, AV_LOG_ERROR, "min supported resolution is 640x480\n");
+        return AVERROR(EINVAL);
+    }
+
+    s->ww = 300;
+    s->wh = 300 * 1.6180;
+    s->x = s->xpos * (inlink->w - 1);
+    s->y = s->ypos * (inlink->h - 1);
+    if (s->x + s->w >= inlink->w || s->y + s->h >= inlink->h) {
+        av_log(inlink->dst, AV_LOG_WARNING, "scope position is out of range, clipping\n");
+        s->x = FFMIN(s->x, inlink->w - s->w);
+        s->y = FFMIN(s->y, inlink->h - s->h);
+    }
+
+    return 0;
+}
+
+static int pixscope_filter_frame(AVFilterLink *inlink, AVFrame *in)
+{
+    AVFilterContext *ctx  = inlink->dst;
+    PixscopeContext *s = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+    int max[4] = { 0 }, min[4] = { INT_MAX, INT_MAX, INT_MAX, INT_MAX };
+    float average[4] = { 0 };
+    double rms[4] = { 0 };
+    const char rgba[4] = { 'R', 'G', 'B', 'A' };
+    const char yuva[4] = { 'Y', 'U', 'V', 'A' };
+    int x, y, X, Y, i, w, h;
+    char text[128];
+
+    w = s->ww / s->w;
+    h = s->ww / s->h;
+
+    if (s->x <= s->ww && s->y <= s->wh) {
+        X = in->width - s->ww;
+        Y = in->height - s->wh;
+    } else {
+        X = 0;
+        Y = 0;
+    }
+
+    ff_blend_rectangle(&s->draw, &s->dark, in->data, in->linesize,
+                       in->width, in->height,
+                       X,
+                       Y,
+                       s->ww,
+                       s->wh);
+
+    for (y = 0; y < s->h; y++) {
+        for (x = 0; x < s->w; x++) {
+            FFDrawColor color = { { 0 } };
+            int value[4] = { 0 };
+
+            s->pick_color(&s->draw, &color, in, x + s->x, y + s->y, value);
+            ff_fill_rectangle(&s->draw, &color, in->data, in->linesize,
+                              x * w + (s->ww - 4 - (s->w * w)) / 2 + X, y * h + 2 + Y, w, h);
+            for (i = 0; i < 4; i++) {
+                rms[i]     += (double)value[i] * (double)value[i];
+                average[i] += value[i];
+                min[i]      = FFMIN(min[i], value[i]);
+                max[i]      = FFMAX(max[i], value[i]);
+            }
+        }
+    }
+
+    ff_blend_rectangle(&s->draw, &s->black, in->data, in->linesize,
+                       in->width, in->height,
+                       s->x - 2, s->y - 2, s->w + 4, 1);
+
+    ff_blend_rectangle(&s->draw, &s->white, in->data, in->linesize,
+                       in->width, in->height,
+                       s->x - 1, s->y - 1, s->w + 2, 1);
+
+    ff_blend_rectangle(&s->draw, &s->white, in->data, in->linesize,
+                       in->width, in->height,
+                       s->x - 1, s->y - 1, 1, s->h + 2);
+
+    ff_blend_rectangle(&s->draw, &s->black, in->data, in->linesize,
+                       in->width, in->height,
+                       s->x - 2, s->y - 2, 1, s->h + 4);
+
+    ff_blend_rectangle(&s->draw, &s->white, in->data, in->linesize,
+                       in->width, in->height,
+                       s->x - 1, s->y + 1 + s->h, s->w + 3, 1);
+
+    ff_blend_rectangle(&s->draw, &s->black, in->data, in->linesize,
+                       in->width, in->height,
+                       s->x - 2, s->y + 2 + s->h, s->w + 4, 1);
+
+    ff_blend_rectangle(&s->draw, &s->white, in->data, in->linesize,
+                       in->width, in->height,
+                       s->x + 1 + s->w, s->y - 1, 1, s->h + 2);
+
+    ff_blend_rectangle(&s->draw, &s->black, in->data, in->linesize,
+                       in->width, in->height,
+                       s->x + 2 + s->w, s->y - 2, 1, s->h + 5);
+
+    for (i = 0; i < 4; i++) {
+        rms[i] /= s->w * s->h;
+        rms[i]  = sqrt(rms[i]);
+        average[i] /= s->w * s->h;
+    }
+
+    snprintf(text, sizeof(text), "CH   AVG    MIN    MAX    RMS\n");
+    draw_text(&s->draw, in, &s->white,        X + 28, Y + s->ww + 20,           text, 0);
+    for (i = 0; i < s->nb_comps; i++) {
+        int c = s->rgba_map[i];
+
+        snprintf(text, sizeof(text), "%c  %07.1f %05d %05d %07.1f\n", s->is_rgb ? rgba[i] : yuva[i], average[c], min[c], max[c], rms[c]);
+        draw_text(&s->draw, in, s->colors[i], X + 28, Y + s->ww + 20 * (i + 2), text, 0);
+    }
+
+    return ff_filter_frame(outlink, in);
+}
+
+static const AVFilterPad pixscope_inputs[] = {
+    {
+        .name           = "default",
+        .type           = AVMEDIA_TYPE_VIDEO,
+        .filter_frame   = pixscope_filter_frame,
+        .config_props   = pixscope_config_input,
+        .needs_writable = 1,
+    },
+    { NULL }
+};
+
+static const AVFilterPad pixscope_outputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
+
+AVFilter ff_vf_pixscope = {
+    .name          = "pixscope",
+    .description   = NULL_IF_CONFIG_SMALL("Pixel data analysis."),
+    .priv_size     = sizeof(PixscopeContext),
+    .priv_class    = &pixscope_class,
+    .query_formats = query_formats,
+    .inputs        = pixscope_inputs,
+    .outputs       = pixscope_outputs,
+};
+
+typedef struct PixelValues {
+    uint16_t p[4];
+} PixelValues;
+
+typedef struct OscilloscopeContext {
+    const AVClass *class;
+
+    float xpos, ypos;
+    float tx, ty;
+    float size;
+    float tilt;
+    float theight, twidth;
+    float o;
+    int components;
+    int grid;
+    int statistics;
+    int scope;
+
+    int x1, y1, x2, y2;
+    int ox, oy;
+    int height, width;
+
+    int max;
+    int nb_planes;
+    int nb_comps;
+    int is_rgb;
+    uint8_t rgba_map[4];
+    FFDrawContext draw;
+    FFDrawColor   dark;
+    FFDrawColor   black;
+    FFDrawColor   white;
+    FFDrawColor   green;
+    FFDrawColor   blue;
+    FFDrawColor   red;
+    FFDrawColor   cyan;
+    FFDrawColor   magenta;
+    FFDrawColor   gray;
+    FFDrawColor  *colors[4];
+
+    int nb_values;
+    PixelValues  *values;
+
+    void (*pick_color)(FFDrawContext *draw, FFDrawColor *color, AVFrame *in, int x, int y, int *value);
+    void (*draw_trace)(struct OscilloscopeContext *s, AVFrame *frame);
+} OscilloscopeContext;
+
+#define OOFFSET(x) offsetof(OscilloscopeContext, x)
+
+static const AVOption oscilloscope_options[] = {
+    { "x",  "set scope x position",    OOFFSET(xpos),       AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1,  FLAGS },
+    { "y",  "set scope y position",    OOFFSET(ypos),       AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1,  FLAGS },
+    { "s",  "set scope size",          OOFFSET(size),       AV_OPT_TYPE_FLOAT, {.dbl=0.8}, 0, 1,  FLAGS },
+    { "t",  "set scope tilt",          OOFFSET(tilt),       AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1,  FLAGS },
+    { "o",  "set trace opacity",       OOFFSET(o),          AV_OPT_TYPE_FLOAT, {.dbl=0.8}, 0, 1,  FLAGS },
+    { "tx", "set trace x position",    OOFFSET(tx),         AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1,  FLAGS },
+    { "ty", "set trace y position",    OOFFSET(ty),         AV_OPT_TYPE_FLOAT, {.dbl=0.9}, 0, 1,  FLAGS },
+    { "tw", "set trace width",         OOFFSET(twidth),     AV_OPT_TYPE_FLOAT, {.dbl=0.8},.1, 1,  FLAGS },
+    { "th", "set trace height",        OOFFSET(theight),    AV_OPT_TYPE_FLOAT, {.dbl=0.3},.1, 1,  FLAGS },
+    { "c",  "set components to trace", OOFFSET(components), AV_OPT_TYPE_INT,   {.i64=7},   0, 15, FLAGS },
+    { "g",  "draw trace grid",         OOFFSET(grid),       AV_OPT_TYPE_BOOL,  {.i64=1},   0, 1,  FLAGS },
+    { "st", "draw statistics",         OOFFSET(statistics), AV_OPT_TYPE_BOOL,  {.i64=1},   0, 1,  FLAGS },
+    { "sc", "draw scope",              OOFFSET(scope),      AV_OPT_TYPE_BOOL,  {.i64=1},   0, 1,  FLAGS },
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(oscilloscope);
+
+static void oscilloscope_uninit(AVFilterContext *ctx)
+{
+    OscilloscopeContext *s = ctx->priv;
+
+    av_freep(&s->values);
+}
+
+static void draw_line(FFDrawContext *draw, int x0, int y0, int x1, int y1,
+                      AVFrame *out, FFDrawColor *color)
+{
+    int dx = FFABS(x1 - x0), sx = x0 < x1 ? 1 : -1;
+    int dy = FFABS(y1 - y0), sy = y0 < y1 ? 1 : -1;
+    int err = (dx > dy ? dx : -dy) / 2, e2;
+    int p, i;
+
+    for (;;) {
+        if (x0 >= 0 && y0 >= 0 && x0 < out->width && y0 < out->height) {
+            for (p = 0; p < draw->nb_planes; p++) {
+                if (draw->desc->comp[p].depth == 8) {
+                    if (draw->nb_planes == 1) {
+                        for (i = 0; i < 4; i++) {
+                            out->data[0][y0 * out->linesize[0] + x0 * draw->pixelstep[0] + i] = color->comp[0].u8[i];
+                        }
+                    } else {
+                        out->data[p][out->linesize[p] * (y0 >> draw->vsub[p]) + (x0 >> draw->hsub[p])] = color->comp[p].u8[0];
+                    }
+                } else {
+                    if (draw->nb_planes == 1) {
+                        for (i = 0; i < 4; i++) {
+                            AV_WN16(out->data[0] + y0 * out->linesize[0] + 2 * (x0 * draw->pixelstep[0] + i), color->comp[0].u16[i]);
+                        }
+                    } else {
+                        AV_WN16(out->data[p] + out->linesize[p] * (y0 >> draw->vsub[p]) + (x0 >> draw->hsub[p]) * 2, color->comp[p].u16[0]);
+                    }
+                }
+            }
+        }
+
+        if (x0 == x1 && y0 == y1)
+            break;
+
+        e2 = err;
+
+        if (e2 >-dx) {
+            err -= dy;
+            x0 += sx;
+        }
+
+        if (e2 < dy) {
+            err += dx;
+            y0 += sy;
+        }
+    }
+}
+
+static void draw_trace8(OscilloscopeContext *s, AVFrame *frame)
+{
+    int i, c;
+
+    for (i = 1; i < s->nb_values; i++) {
+        for (c = 0; c < s->nb_comps; c++) {
+            if ((1 << c) & s->components) {
+                int x = i * s->width / s->nb_values;
+                int px = (i - 1) * s->width / s->nb_values;
+                int py = s->height - s->values[i-1].p[c] * s->height / 256;
+                int y = s->height - s->values[i].p[c] * s->height / 256;
+
+                draw_line(&s->draw, s->ox + x, s->oy + y, s->ox + px, s->oy + py, frame, s->colors[c]);
+            }
+        }
+    }
+}
+
+
+static void draw_trace16(OscilloscopeContext *s, AVFrame *frame)
+{
+    int i, c;
+
+    for (i = 1; i < s->nb_values; i++) {
+        for (c = 0; c < s->nb_comps; c++) {
+            if ((1 << c) & s->components) {
+                int x = i * s->width / s->nb_values;
+                int px = (i - 1) * s->width / s->nb_values;
+                int py = s->height - s->values[i-1].p[c] * s->height / s->max;
+                int y = s->height - s->values[i].p[c] * s->height / s->max;
+
+                draw_line(&s->draw, s->ox + x, s->oy + y, s->ox + px, s->oy + py, frame, s->colors[c]);
+            }
+        }
+    }
+}
+
+static int oscilloscope_config_input(AVFilterLink *inlink)
+{
+    OscilloscopeContext *s = inlink->dst->priv;
+    int cx, cy, size;
+    double tilt;
+
+    s->nb_planes = av_pix_fmt_count_planes(inlink->format);
+    ff_draw_init(&s->draw, inlink->format, 0);
+    ff_draw_color(&s->draw, &s->dark,    (uint8_t[]){   0,   0,   0, s->o * 255} );
+    ff_draw_color(&s->draw, &s->black,   (uint8_t[]){   0,   0,   0, 255} );
+    ff_draw_color(&s->draw, &s->white,   (uint8_t[]){ 255, 255, 255, 255} );
+    ff_draw_color(&s->draw, &s->green,   (uint8_t[]){   0, 255,   0, 255} );
+    ff_draw_color(&s->draw, &s->blue,    (uint8_t[]){   0,   0, 255, 255} );
+    ff_draw_color(&s->draw, &s->red,     (uint8_t[]){ 255,   0,   0, 255} );
+    ff_draw_color(&s->draw, &s->cyan,    (uint8_t[]){   0, 255, 255, 255} );
+    ff_draw_color(&s->draw, &s->magenta, (uint8_t[]){ 255,   0, 255, 255} );
+    ff_draw_color(&s->draw, &s->gray,    (uint8_t[]){ 128, 128, 128, 255} );
+    s->nb_comps = s->draw.desc->nb_components;
+    s->is_rgb   = s->draw.desc->flags & AV_PIX_FMT_FLAG_RGB;
+
+    if (s->is_rgb) {
+        s->colors[0] = &s->red;
+        s->colors[1] = &s->green;
+        s->colors[2] = &s->blue;
+        s->colors[3] = &s->white;
+        ff_fill_rgba_map(s->rgba_map, inlink->format);
+    } else {
+        s->colors[0] = &s->white;
+        s->colors[1] = &s->cyan;
+        s->colors[2] = &s->magenta;
+        s->colors[3] = &s->white;
+        s->rgba_map[0] = 0;
+        s->rgba_map[1] = 1;
+        s->rgba_map[2] = 2;
+        s->rgba_map[3] = 3;
+    }
+
+    if (s->draw.desc->comp[0].depth <= 8) {
+        s->pick_color = pick_color8;
+        s->draw_trace = draw_trace8;
+    } else {
+        s->pick_color = pick_color16;
+        s->draw_trace = draw_trace16;
+    }
+
+    s->max = (1 << s->draw.desc->comp[0].depth);
+    cx = s->xpos * (inlink->w - 1);
+    cy = s->ypos * (inlink->h - 1);
+    s->height = s->theight * inlink->h;
+    s->width = s->twidth * inlink->w;
+    size = hypot(inlink->w, inlink->h);
+
+    s->values = av_calloc(size, sizeof(*s->values));
+    if (!s->values)
+        return AVERROR(ENOMEM);
+
+    size *= s->size;
+    tilt  = (s->tilt - 0.5) * M_PI;
+    s->x1 = cx - size / 2.0 * cos(tilt);
+    s->x2 = cx + size / 2.0 * cos(tilt);
+    s->y1 = cy - size / 2.0 * sin(tilt);
+    s->y2 = cy + size / 2.0 * sin(tilt);
+    s->ox = (inlink->w - s->width) * s->tx;
+    s->oy = (inlink->h - s->height) * s->ty;
+
+    return 0;
+}
+
+static void draw_scope(OscilloscopeContext *s, int x0, int y0, int x1, int y1,
+                       AVFrame *out, PixelValues *p, int state)
+{
+    int dx = FFABS(x1 - x0), sx = x0 < x1 ? 1 : -1;
+    int dy = FFABS(y1 - y0), sy = y0 < y1 ? 1 : -1;
+    int err = (dx > dy ? dx : -dy) / 2, e2;
+
+    for (;;) {
+        if (x0 >= 0 && y0 >= 0 && x0 < out->width && y0 < out->height) {
+            FFDrawColor color = { { 0 } };
+            int value[4] = { 0 };
+
+            s->pick_color(&s->draw, &color, out, x0, y0, value);
+            s->values[s->nb_values].p[0] = value[0];
+            s->values[s->nb_values].p[1] = value[1];
+            s->values[s->nb_values].p[2] = value[2];
+            s->values[s->nb_values].p[3] = value[3];
+            s->nb_values++;
+
+            if (s->scope) {
+                if (s->draw.desc->comp[0].depth == 8) {
+                    if (s->draw.nb_planes == 1) {
+                        int i;
+
+                        for (i = 0; i < s->draw.pixelstep[0]; i++)
+                            out->data[0][out->linesize[0] * y0 + x0 * s->draw.pixelstep[0] + i] = 255 * ((s->nb_values + state) & 1);
+                    } else {
+                        out->data[0][out->linesize[0] * y0 + x0] = 255 * ((s->nb_values + state) & 1);
+                    }
+                } else {
+                    if (s->draw.nb_planes == 1) {
+                        int i;
+
+                        for (i = 0; i < s->draw.pixelstep[0]; i++)
+                            AV_WN16(out->data[0] + out->linesize[0] * y0 + 2 * x0 * (s->draw.pixelstep[0] + i), (s->max - 1) * ((s->nb_values + state) & 1));
+                    } else {
+                        AV_WN16(out->data[0] + out->linesize[0] * y0 + 2 * x0, (s->max - 1) * ((s->nb_values + state) & 1));
+                    }
+                }
+            }
+        }
+
+        if (x0 == x1 && y0 == y1)
+            break;
+
+        e2 = err;
+
+        if (e2 >-dx) {
+            err -= dy;
+            x0 += sx;
+        }
+
+        if (e2 < dy) {
+            err += dx;
+            y0 += sy;
+        }
+    }
+}
+
+static int oscilloscope_filter_frame(AVFilterLink *inlink, AVFrame *frame)
+{
+    AVFilterContext *ctx  = inlink->dst;
+    OscilloscopeContext *s = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+    float average[4] = { 0 };
+    int max[4] = { 0 };
+    int min[4] = { INT_MAX, INT_MAX, INT_MAX, INT_MAX };
+    int i, c;
+
+    s->nb_values = 0;
+    draw_scope(s, s->x1, s->y1, s->x2, s->y2, frame, s->values, inlink->frame_count_in & 1);
+    ff_blend_rectangle(&s->draw, &s->dark, frame->data, frame->linesize,
+                       frame->width, frame->height,
+                       s->ox, s->oy, s->width, s->height + 20 * s->statistics);
+
+    if (s->grid) {
+        ff_fill_rectangle(&s->draw, &s->gray, frame->data, frame->linesize,
+                          s->ox, s->oy, s->width - 1, 1);
+
+        for (i = 1; i < 5; i++) {
+            ff_fill_rectangle(&s->draw, &s->gray, frame->data, frame->linesize,
+                              s->ox, s->oy + i * (s->height - 1) / 4, s->width, 1);
+        }
+
+        for (i = 0; i < 10; i++) {
+            ff_fill_rectangle(&s->draw, &s->gray, frame->data, frame->linesize,
+                              s->ox + i * (s->width - 1) / 10, s->oy, 1, s->height);
+        }
+
+        ff_fill_rectangle(&s->draw, &s->gray, frame->data, frame->linesize,
+                          s->ox + s->width - 1, s->oy, 1, s->height);
+    }
+
+    s->draw_trace(s, frame);
+
+    for (i = 0; i < s->nb_values; i++) {
+        for (c = 0; c < s->nb_comps; c++) {
+            if ((1 << c) & s->components) {
+                max[c] = FFMAX(max[c], s->values[i].p[c]);
+                min[c] = FFMIN(min[c], s->values[i].p[c]);
+                average[c] += s->values[i].p[c];
+            }
+        }
+    }
+    for (c = 0; c < s->nb_comps; c++) {
+        average[c] /= s->nb_values;
+    }
+
+    if (s->statistics && s->height > 10 && s->width > 280 * av_popcount(s->components)) {
+        for (c = 0, i = 0; c < s->nb_comps; c++) {
+            if ((1 << c) & s->components) {
+                const char rgba[4] = { 'R', 'G', 'B', 'A' };
+                const char yuva[4] = { 'Y', 'U', 'V', 'A' };
+                char text[128];
+
+                snprintf(text, sizeof(text), "%c avg:%.1f min:%d max:%d\n", s->is_rgb ? rgba[c] : yuva[c], average[s->rgba_map[c]], min[s->rgba_map[c]], max[s->rgba_map[c]]);
+                draw_text(&s->draw, frame, &s->white, s->ox +  2 + 280 * i++, s->oy + s->height + 4, text, 0);
+            }
+        }
+    }
+
+    return ff_filter_frame(outlink, frame);
+}
+
+static const AVFilterPad oscilloscope_inputs[] = {
+    {
+        .name           = "default",
+        .type           = AVMEDIA_TYPE_VIDEO,
+        .filter_frame   = oscilloscope_filter_frame,
+        .config_props   = oscilloscope_config_input,
+        .needs_writable = 1,
+    },
+    { NULL }
+};
+
+static const AVFilterPad oscilloscope_outputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
+
+AVFilter ff_vf_oscilloscope = {
+    .name          = "oscilloscope",
+    .description   = NULL_IF_CONFIG_SMALL("2D Video Oscilloscope."),
+    .priv_size     = sizeof(OscilloscopeContext),
+    .priv_class    = &oscilloscope_class,
+    .query_formats = query_formats,
+    .uninit        = oscilloscope_uninit,
+    .inputs        = oscilloscope_inputs,
+    .outputs       = oscilloscope_outputs,
 };

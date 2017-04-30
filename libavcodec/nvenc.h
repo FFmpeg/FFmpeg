@@ -44,7 +44,6 @@ typedef struct NvencSurface
     NV_ENC_OUTPUT_PTR output_surface;
     NV_ENC_BUFFER_FORMAT format;
     int size;
-    int lockCount;
 } NvencSurface;
 
 typedef struct NvencDynLoadFunctions
@@ -110,6 +109,7 @@ typedef struct NvencContext
     int nb_surfaces;
     NvencSurface *surfaces;
 
+    AVFifoBuffer *unused_surface_queue;
     AVFifoBuffer *output_surface_queue;
     AVFifoBuffer *output_surface_ready_queue;
     AVFifoBuffer *timestamp_list;

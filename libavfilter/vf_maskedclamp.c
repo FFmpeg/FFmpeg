@@ -37,6 +37,7 @@ typedef struct MaskedClampContext {
     int undershoot;
     int overshoot;
 
+    int linesize[4];
     int width[4], height[4];
     int nb_planes;
     int depth;
@@ -50,9 +51,9 @@ typedef struct MaskedClampContext {
 } MaskedClampContext;
 
 static const AVOption maskedclamp_options[] = {
-    { "undershoot", "set undershoot", OFFSET(undershoot), AV_OPT_TYPE_INT, {.i64=0},   0, INT_MAX, FLAGS },
-    { "overshoot",  "set overshoot",  OFFSET(overshoot),  AV_OPT_TYPE_INT, {.i64=0},   0, INT_MAX, FLAGS },
-    { "planes",     "set planes",     OFFSET(planes),     AV_OPT_TYPE_INT, {.i64=0xF}, 0, 0xF,     FLAGS },
+    { "undershoot", "set undershoot", OFFSET(undershoot), AV_OPT_TYPE_INT, {.i64=0},   0, UINT16_MAX, FLAGS },
+    { "overshoot",  "set overshoot",  OFFSET(overshoot),  AV_OPT_TYPE_INT, {.i64=0},   0, UINT16_MAX, FLAGS },
+    { "planes",     "set planes",     OFFSET(planes),     AV_OPT_TYPE_INT, {.i64=0xF}, 0, 0xF,        FLAGS },
     { NULL }
 };
 
@@ -112,7 +113,7 @@ static int process_frame(FFFrameSync *fs)
         for (p = 0; p < s->nb_planes; p++) {
             if (!((1 << p) & s->planes)) {
                 av_image_copy_plane(out->data[p], out->linesize[p], base->data[p], base->linesize[p],
-                                    s->width[p], s->height[p]);
+                                    s->linesize[p], s->height[p]);
                 continue;
             }
 
@@ -195,9 +196,12 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     MaskedClampContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    int vsub, hsub;
+    int vsub, hsub, ret;
 
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
+
+    if ((ret = av_image_fill_linesizes(s->linesize, inlink->format, inlink->w)) < 0)
+        return ret;
 
     hsub = desc->log2_chroma_w;
     vsub = desc->log2_chroma_h;

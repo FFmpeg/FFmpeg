@@ -98,6 +98,7 @@ Stuff that didn't reach the codebase:
 - Removal of the custom atomic API (5cc0057f49, see http://ffmpeg.org/pipermail/ffmpeg-devel/2017-March/209003.html)
 - Read aac_adtstoasc extradata updates from packet side data on Matroska once mov and the bsf in question are fixed (See 13a211e632 and 5ef1959080)
 - new bistream reader (see http://ffmpeg.org/pipermail/ffmpeg-devel/2017-April/209609.html)
+- use of the bsf instead of our parser for vp9 superframes (see fa1749dd34)
 
 Collateral damage that needs work locally:
 ------------------------------------------

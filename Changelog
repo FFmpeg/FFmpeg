@@ -4,6 +4,9 @@ releases are sorted from youngest to oldest.
 version <next>:
 - deflicker video filter
 - doubleweave video filter
+- lumakey video filter
+- pixscope video filter
+- oscilloscope video filter
 
 version 3.3:
 - CrystalHD decoder moved to new decode API
@@ -38,6 +41,7 @@ version 3.3:
 - MPEG-7 Video Signature filter
 - Removed asyncts filter (use af_aresample instead)
 - Intel QSV-accelerated VP8 video decoding
+- VAAPI-accelerated deinterlacing
 
 
 version 3.2:

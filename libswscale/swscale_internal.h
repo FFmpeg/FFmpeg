@@ -22,11 +22,6 @@
 #define SWSCALE_SWSCALE_INTERNAL_H
 
 #include "config.h"
-
-#if HAVE_ALTIVEC_H
-#include <altivec.h>
-#endif
-
 #include "version.h"
 
 #include "libavutil/avassert.h"
@@ -36,6 +31,7 @@
 #include "libavutil/log.h"
 #include "libavutil/pixfmt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/ppc/util_altivec.h"
 
 #define STR(s) AV_TOSTRING(s) // AV_STRINGIFY is too long
 

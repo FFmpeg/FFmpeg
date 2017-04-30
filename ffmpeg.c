@@ -2213,7 +2213,8 @@ static int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame)
 
     ret = av_buffersrc_add_frame_flags(ifilter->filter, frame, AV_BUFFERSRC_FLAG_PUSH);
     if (ret < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Error while filtering\n");
+        if (ret != AVERROR_EOF)
+            av_log(NULL, AV_LOG_ERROR, "Error while filtering: %s\n", av_err2str(ret));
         return ret;
     }
 

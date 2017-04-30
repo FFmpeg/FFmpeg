@@ -1040,6 +1040,9 @@ slope
 
 @item width, w
 Specify the band-width of a filter in width_type units.
+
+@item channels, c
+Specify which channels to filter, by default all available are filtered.
 @end table
 
 @section aloop
@@ -1767,6 +1770,9 @@ slope
 
 @item width, w
 Specify the band-width of a filter in width_type units.
+
+@item channels, c
+Specify which channels to filter, by default all available are filtered.
 @end table
 
 @section bandreject
@@ -1796,6 +1802,9 @@ slope
 
 @item width, w
 Specify the band-width of a filter in width_type units.
+
+@item channels, c
+Specify which channels to filter, by default all available are filtered.
 @end table
 
 @section bass
@@ -1832,6 +1841,9 @@ slope
 
 @item width, w
 Determine how steep is the filter's shelf transition.
+
+@item channels, c
+Specify which channels to filter, by default all available are filtered.
 @end table
 
 @section biquad
@@ -1839,6 +1851,8 @@ Determine how steep is the filter's shelf transition.
 Apply a biquad IIR filter with the given coefficients.
 Where @var{b0}, @var{b1}, @var{b2} and @var{a0}, @var{a1}, @var{a2}
 are the numerator and denominator coefficients respectively.
+and @var{channels}, @var{c} specify which channels to filter, by default all
+available are filtered.
 
 @section bs2b
 Bauer stereo to binaural transformation, which improves headphone listening of
@@ -2417,6 +2431,9 @@ Specify the band-width of a filter in width_type units.
 @item gain, g
 Set the required gain or attenuation in dB.
 Beware of clipping when using a positive gain.
+
+@item channels, c
+Specify which channels to filter, by default all available are filtered.
 @end table
 
 @subsection Examples
@@ -2718,6 +2735,9 @@ slope
 Specify the band-width of a filter in width_type units.
 Applies only to double-pole filter.
 The default is 0.707q and gives a Butterworth response.
+
+@item channels, c
+Specify which channels to filter, by default all available are filtered.
 @end table
 
 @section join
@@ -2977,7 +2997,19 @@ slope
 Specify the band-width of a filter in width_type units.
 Applies only to double-pole filter.
 The default is 0.707q and gives a Butterworth response.
+
+@item channels, c
+Specify which channels to filter, by default all available are filtered.
 @end table
+
+@subsection Examples
+@itemize
+@item
+Lowpass only LFE channel, it LFE is not present it does nothing:
+@example
+lowpass=c=LFE
+@end example
+@end itemize
 
 @anchor{pan}
 @section pan
@@ -3663,6 +3695,9 @@ slope
 
 @item width, w
 Determine how steep is the filter's shelf transition.
+
+@item channels, c
+Specify which channels to filter, by default all available are filtered.
 @end table
 
 @section tremolo
@@ -9278,6 +9313,26 @@ Interpolate values using a tetrahedron.
 @end table
 @end table
 
+@section lumakey
+
+Turn certain luma values into transparency.
+
+The filter accepts the following options:
+
+@table @option
+@item threshold
+Set the luma which will be used as base for transparency.
+Default value is @code{0}.
+
+@item tolerance
+Set the range of luma values to be keyed out.
+Default value is @code{0}.
+
+@item softness
+Set the range of softness. Default value is @code{0}.
+Use this to control gradual transition from zero to full transparency.
+@end table
+
 @section lut, lutrgb, lutyuv
 
 Compute a look-up table for binding each pixel component input value
@@ -10178,6 +10233,84 @@ other parameters is 0.
 These parameters correspond to the parameters assigned to the
 libopencv function @code{cvSmooth}.
 
+@section oscilloscope
+
+2D Video Oscilloscope.
+
+Useful to measure spatial impulse, step responses, chroma delays, etc.
+
+It accepts the following parameters:
+
+@table @option
+@item x
+Set scope center x position.
+
+@item y
+Set scope center y position.
+
+@item s
+Set scope size, relative to frame diagonal.
+
+@item t
+Set scope tilt/rotation.
+
+@item o
+Set trace opacity.
+
+@item tx
+Set trace center x position.
+
+@item ty
+Set trace center y position.
+
+@item tw
+Set trace width, relative to width of frame.
+
+@item th
+Set trace height, relative to height of frame.
+
+@item c
+Set which components to trace. By default it traces first three components.
+
+@item g
+Draw trace grid. By default is enabled.
+
+@item st
+Draw some statistics. By default is enabled.
+
+@item sc
+Draw scope. By default is enabled.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Inspect full first row of video frame.
+@example
+oscilloscope=x=0.5:y=0:s=1
+@end example
+
+@item
+Inspect full last row of video frame.
+@example
+oscilloscope=x=0.5:y=1:s=1
+@end example
+
+@item
+Inspect full 5th line of video frame of height 1080.
+@example
+oscilloscope=x=0.5:y=5/1080:s=1
+@end example
+
+@item
+Inspect full last column of video frame.
+@example
+oscilloscope=x=1:y=0.5:s=1:t=1
+@end example
+
+@end itemize
+
 @anchor{overlay}
 @section overlay
 
@@ -10870,6 +11003,29 @@ format=monow, pixdesctest
 
 can be used to test the monowhite pixel format descriptor definition.
 
+@section pixscope
+
+Display sample values of color channels. Mainly useful for checking color and levels.
+
+The filters accept the following options:
+
+@table @option
+@item x
+Set scope X position, offset on X axis.
+
+@item y
+Set scope Y position, offset on Y axis.
+
+@item w
+Set scope width.
+
+@item h
+Set scope height.
+
+@item o
+Set window opacity. This window also holds statistics about pixel area.
+@end table
+
 @section pp
 
 Enable the specified chain of postprocessing subfilters using libpostproc. This
@@ -11076,6 +11232,14 @@ Apply alpha premultiply effect to input video stream using first plane
 of second stream as alpha.
 
 Both streams must have same dimensions and same pixel format.
+
+The filter accepts the following option:
+
+@table @option
+@item planes
+Set which planes will be processed, unprocessed planes will be copied.
+By default value 0xf, all planes will be processed.
+@end table
 
 @section prewitt
 Apply prewitt operator to input video stream.

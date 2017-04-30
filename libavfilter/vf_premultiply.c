@@ -30,6 +30,7 @@
 typedef struct PreMultiplyContext {
     const AVClass *class;
     int width[4], height[4];
+    int linesize[4];
     int nb_planes;
     int planes;
     int half, depth, offset;
@@ -47,6 +48,7 @@ typedef struct PreMultiplyContext {
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
 static const AVOption premultiply_options[] = {
+    { "planes", "set planes", OFFSET(planes), AV_OPT_TYPE_INT, {.i64=0xF}, 0, 0xF, FLAGS },
     { NULL }
 };
 
@@ -269,6 +271,12 @@ static int process_frame(FFFrameSync *fs)
         }
 
         for (p = 0; p < s->nb_planes; p++) {
+            if (!((1 << p) & s->planes)) {
+                av_image_copy_plane(out->data[p], out->linesize[p], base->data[p], base->linesize[p],
+                                    s->linesize[p], s->height[p]);
+                continue;
+            }
+
             s->premultiply[p](base->data[p], alpha->data[0],
                               out->data[p],
                               base->linesize[p], alpha->linesize[0],
@@ -287,9 +295,12 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     PreMultiplyContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    int vsub, hsub;
+    int vsub, hsub, ret;
 
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
+
+    if ((ret = av_image_fill_linesizes(s->linesize, inlink->format, inlink->w)) < 0)
+        return ret;
 
     hsub = desc->log2_chroma_w;
     vsub = desc->log2_chroma_h;

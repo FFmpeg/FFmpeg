@@ -509,8 +509,8 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
     /*
      * Return the next available frame from the oldest thread.
      * If we're at the end of the stream, then we have to skip threads that
-     * didn't output a frame, because we don't want to accidentally signal
-     * EOF (avpkt->size == 0 && *got_picture_ptr == 0).
+     * didn't output a frame/error, because we don't want to accidentally signal
+     * EOF (avpkt->size == 0 && *got_picture_ptr == 0 && err >= 0).
      */
 
     do {
@@ -526,20 +526,19 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
         av_frame_move_ref(picture, p->frame);
         *got_picture_ptr = p->got_frame;
         picture->pkt_dts = p->avpkt.dts;
-
-        if (p->result < 0)
-            err = p->result;
+        err = p->result;
 
         /*
          * A later call with avkpt->size == 0 may loop over all threads,
-         * including this one, searching for a frame to return before being
+         * including this one, searching for a frame/error to return before being
          * stopped by the "finished != fctx->next_finished" condition.
-         * Make sure we don't mistakenly return the same frame again.
+         * Make sure we don't mistakenly return the same frame/error again.
          */
         p->got_frame = 0;
+        p->result = 0;
 
         if (finished >= avctx->thread_count) finished = 0;
-    } while (!avpkt->size && !*got_picture_ptr && finished != fctx->next_finished);
+    } while (!avpkt->size && !*got_picture_ptr && err >= 0 && finished != fctx->next_finished);
 
     update_context_from_thread(avctx, p->avctx, 1);
 

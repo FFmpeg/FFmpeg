@@ -57,6 +57,8 @@ typedef struct {
 } HilightcolorBox;
 
 typedef struct {
+    AVCodecContext *avctx;
+
     ASSSplitContext *ass_ctx;
     AVBPrint buffer;
     StyleBox **style_attributes;
@@ -187,6 +189,7 @@ static av_cold int mov_text_encode_init(AVCodecContext *avctx)
     };
 
     MovTextContext *s = avctx->priv_data;
+    s->avctx = avctx;
 
     avctx->extradata_size = sizeof text_sample_entry;
     avctx->extradata = av_mallocz(avctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
@@ -247,6 +250,9 @@ static void mov_text_style_cb(void *priv, const char style, int close)
             s->style_attributes_temp->style_flag |= STYLE_FLAG_UNDERLINE;
             break;
         }
+    } else if (!s->style_attributes_temp) {
+        av_log(s->avctx, AV_LOG_WARNING, "Ignoring unmatched close tag\n");
+        return;
     } else {
         s->style_attributes_temp->style_end = AV_RB16(&s->text_pos);
         av_dynarray_add(&s->style_attributes, &s->count, s->style_attributes_temp);
