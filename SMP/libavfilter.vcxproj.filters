@@ -597,6 +597,9 @@
     <ClCompile Include="..\libavfilter\vf_lenscorrection.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_lumakey.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_lut.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>

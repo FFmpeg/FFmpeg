@@ -258,6 +258,7 @@
     <ClCompile Include="..\libavfilter\vf_il.c" />
     <ClCompile Include="..\libavfilter\vf_kerndeint.c" />
     <ClCompile Include="..\libavfilter\vf_lenscorrection.c" />
+    <ClCompile Include="..\libavfilter\vf_lumakey.c" />
     <ClCompile Include="..\libavfilter\vf_lut.c" />
     <ClCompile Include="..\libavfilter\vf_lut2.c" />
     <ClCompile Include="..\libavfilter\vf_maskedclamp.c" />
