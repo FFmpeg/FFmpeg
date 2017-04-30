@@ -3005,7 +3005,7 @@ static int hevc_decode_extradata(HEVCContext *s, uint8_t *buf, int length)
 {
     int ret, i;
 
-    ret = ff_hevc_decode_extradata(buf, length, &s->ps, &s->is_nalff,
+    ret = ff_hevc_decode_extradata(buf, length, &s->ps, &s->sei, &s->is_nalff,
                                    &s->nal_length_size, s->avctx->err_recognition,
                                    s->apply_defdispwin, s->avctx);
     if (ret < 0)
