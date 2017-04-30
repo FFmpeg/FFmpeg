@@ -193,11 +193,8 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
     SliceHeader        *sh = &h->sh;
     HEVCParamSets *ps = &h->ps;
     HEVCSEIContext *sei = &h->sei;
-    H2645Packet   *pkt = &ctx->pkt;
-    const uint8_t *buf_end = buf + buf_size;
-    int state = -1, i;
-    H2645NAL *nal;
     int is_global = buf == avctx->extradata;
+    int i, ret;
 
     if (!h->HEVClc)
         h->HEVClc = av_mallocz(sizeof(HEVCLocalContext));
@@ -215,44 +212,18 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
 
     ff_hevc_reset_sei(sei);
 
-    if (!buf_size)
-        return 0;
+    ret = ff_h2645_packet_split(&ctx->pkt, buf, buf_size, avctx, 0, 0,
+                                AV_CODEC_ID_HEVC, 1);
+    if (ret < 0)
+        return ret;
 
-    if (pkt->nals_allocated < 1) {
-        H2645NAL *tmp = av_realloc_array(pkt->nals, 1, sizeof(*tmp));
-        if (!tmp)
-            return AVERROR(ENOMEM);
-        pkt->nals = tmp;
-        memset(pkt->nals, 0, sizeof(*tmp));
-        pkt->nals_allocated = 1;
-    }
-
-    nal = &pkt->nals[0];
-
-    for (;;) {
-        int src_length, consumed;
-        int ret;
+    for (i = 0; i < ctx->pkt.nb_nals; i++) {
+        H2645NAL *nal = &ctx->pkt.nals[i];
         int num = 0, den = 0;
-        buf = avpriv_find_start_code(buf, buf_end, &state);
-        if (--buf + 2 >= buf_end)
-            break;
-        src_length = buf_end - buf;
 
-        h->nal_unit_type = (*buf >> 1) & 0x3f;
-        h->temporal_id   = (*(buf + 1) & 0x07) - 1;
-        if (h->nal_unit_type <= HEVC_NAL_CRA_NUT) {
-            // Do not walk the whole buffer just to decode slice segment header
-            if (src_length > 20)
-                src_length = 20;
-        }
-
-        consumed = ff_h2645_extract_rbsp(buf, src_length, nal, 1);
-        if (consumed < 0)
-            return consumed;
-
-        ret = init_get_bits8(gb, nal->data + 2, nal->size);
-        if (ret < 0)
-            return ret;
+        h->nal_unit_type = nal->type;
+        h->temporal_id   = nal->temporal_id;
+        *gb = nal->gb;
 
         switch (h->nal_unit_type) {
         case HEVC_NAL_VPS:
@@ -395,7 +366,6 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
 
             return 0; /* no need to evaluate the rest */
         }
-        buf += consumed;
     }
     /* didn't find a picture! */
     if (!is_global)
