@@ -74,11 +74,6 @@ static AVCodec *AVCodecInitialize(enum AVCodecID codec_id)
     return res;
 }
 
-#if defined(FUZZ_FFMPEG_VIDEO)
-#define decode_handler avcodec_decode_video2
-#elif defined(FUZZ_FFMPEG_AUDIO)
-#define decode_handler avcodec_decode_audio4
-#elif defined(FUZZ_FFMPEG_SUBTITLE)
 static int subtitle_handler(AVCodecContext *avctx, void *frame,
                             int *got_sub_ptr, AVPacket *avpkt)
 {
@@ -88,11 +83,6 @@ static int subtitle_handler(AVCodecContext *avctx, void *frame,
         avsubtitle_free(&sub);
     return ret;
 }
-
-#define decode_handler subtitle_handler
-#else
-#error "Specify encoder type"  // To catch mistakes
-#endif
 
 // Class to handle buffer allocation and resize for each frame
 typedef struct FuzzDataBuffer {
@@ -146,9 +136,18 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     const uint8_t *last = data;
     const uint8_t *end = data + size;
     uint32_t it = 0;
+    int (*decode_handler)(AVCodecContext *avctx, AVFrame *picture,
+                          int *got_picture_ptr,
+                          const AVPacket *avpkt) = NULL;
 
     if (!c)
         c = AVCodecInitialize(FFMPEG_CODEC);  // Done once.
+
+    switch (c->type) {
+    case AVMEDIA_TYPE_AUDIO   : decode_handler = avcodec_decode_audio4; break;
+    case AVMEDIA_TYPE_VIDEO   : decode_handler = avcodec_decode_video2; break;
+    case AVMEDIA_TYPE_SUBTITLE: decode_handler = subtitle_handler     ; break;
+    }
 
     AVCodecContext* ctx = avcodec_alloc_context3(NULL);
     if (!ctx)
