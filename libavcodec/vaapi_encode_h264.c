@@ -154,14 +154,6 @@ typedef struct VAAPIEncodeH264Context {
 
     // Rate control configuration.
     int send_timing_sei;
-
-#if VA_CHECK_VERSION(0, 36, 0)
-    // Speed-quality tradeoff setting.
-    struct {
-        VAEncMiscParameterBuffer misc;
-        VAEncMiscParameterBufferQualityLevel quality;
-    } quality_params;
-#endif
 } VAAPIEncodeH264Context;
 
 typedef struct VAAPIEncodeH264Options {
@@ -1141,21 +1133,8 @@ static av_cold int vaapi_encode_h264_configure(AVCodecContext *avctx)
         av_assert0(0 && "Invalid RC mode.");
     }
 
-    if (opt->quality > 0) {
-#if VA_CHECK_VERSION(0, 36, 0)
-        priv->quality_params.misc.type =
-            VAEncMiscParameterTypeQualityLevel;
-        priv->quality_params.quality.quality_level = opt->quality;
-
-        ctx->global_params[ctx->nb_global_params] =
-            &priv->quality_params.misc;
-        ctx->global_params_size[ctx->nb_global_params++] =
-            sizeof(priv->quality_params);
-#else
-        av_log(avctx, AV_LOG_WARNING, "The encode quality option is not "
-               "supported with this VAAPI version.\n");
-#endif
-    }
+    if (avctx->compression_level == FF_COMPRESSION_DEFAULT)
+        avctx->compression_level = opt->quality;
 
     return 0;
 }

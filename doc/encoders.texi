@@ -948,7 +948,13 @@ The following standard libavcodec options are used:
 @item
 @option{rc_init_occupancy} / @option{rc_initial_buffer_occupancy}
 @item
+@option{compression_level}
+
+Speed / quality tradeoff: higher values are faster / worse quality.
+@item
 @option{q} / @option{global_quality}
+
+Size / quality tradeoff: higher values are smaller / worse quality.
 @item
 @option{qmin}
 (only: @option{qmax} is not supported)
@@ -969,9 +975,6 @@ The following standard libavcodec options are used:
 @option{level} sets the value of @emph{level_idc}.
 
 @table @option
-@item quality
-Set the local encoding quality/speed tradeoff (range 1-8, higher values are faster; not all
-systems implement all levels).
 @item low_power
 Use low-power encoding mode.
 @end table
