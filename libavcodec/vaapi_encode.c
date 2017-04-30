@@ -1429,6 +1429,41 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
             goto fail;
     }
 
+    if (avctx->compression_level >= 0) {
+#if VA_CHECK_VERSION(0, 36, 0)
+        VAConfigAttrib attr = { VAConfigAttribEncQualityRange };
+
+        vas = vaGetConfigAttributes(ctx->hwctx->display,
+                                    ctx->va_profile,
+                                    ctx->va_entrypoint,
+                                    &attr, 1);
+        if (vas != VA_STATUS_SUCCESS) {
+            av_log(avctx, AV_LOG_WARNING, "Failed to query quality "
+                   "attribute: will use default compression level.\n");
+        } else {
+            if (avctx->compression_level > attr.value) {
+                av_log(avctx, AV_LOG_WARNING, "Invalid compression "
+                       "level: valid range is 0-%d, using %d.\n",
+                       attr.value, attr.value);
+                avctx->compression_level = attr.value;
+            }
+
+            ctx->quality_params.misc.type =
+                VAEncMiscParameterTypeQualityLevel;
+            ctx->quality_params.quality.quality_level =
+                avctx->compression_level;
+
+            ctx->global_params[ctx->nb_global_params] =
+                &ctx->quality_params.misc;
+            ctx->global_params_size[ctx->nb_global_params++] =
+                sizeof(ctx->quality_params);
+        }
+#else
+        av_log(avctx, AV_LOG_WARNING, "The encode compression level "
+               "option is not supported with this VAAPI version.\n");
+#endif
+    }
+
     ctx->input_order  = 0;
     ctx->output_delay = avctx->max_b_frames;
     ctx->decode_delay = 1;
