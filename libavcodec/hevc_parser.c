@@ -192,6 +192,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
     GetBitContext      *gb;
     SliceHeader        *sh = &h->sh;
     HEVCParamSets *ps = &h->ps;
+    HEVCSEIContext *sei = &h->sei;
     H2645Packet   *pkt = &ctx->pkt;
     const uint8_t *buf_end = buf + buf_size;
     int state = -1, i;
@@ -212,7 +213,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
 
     h->avctx = avctx;
 
-    ff_hevc_reset_sei(h);
+    ff_hevc_reset_sei(sei);
 
     if (!buf_size)
         return 0;
@@ -265,7 +266,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
             break;
         case HEVC_NAL_SEI_PREFIX:
         case HEVC_NAL_SEI_SUFFIX:
-            ff_hevc_decode_nal_sei(h);
+            ff_hevc_decode_nal_sei(gb, avctx, sei, ps, h->nal_unit_type);
             break;
         case HEVC_NAL_TRAIL_N:
         case HEVC_NAL_TRAIL_R:
@@ -290,8 +291,8 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
             }
 
             sh->first_slice_in_pic_flag = get_bits1(gb);
-            s->picture_structure = h->picture_struct;
-            s->field_order = h->picture_struct;
+            s->picture_structure = h->sei.picture_timing.picture_struct;
+            s->field_order = h->sei.picture_timing.picture_struct;
 
             if (IS_IRAP(h)) {
                 s->key_frame = 1;

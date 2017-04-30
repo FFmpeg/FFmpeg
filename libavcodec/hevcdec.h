@@ -464,6 +464,59 @@ typedef struct HEVCLocalContext {
     int boundary_flags;
 } HEVCLocalContext;
 
+typedef struct HEVCSEIPictureHash {
+    struct AVMD5 *md5_ctx;
+    uint8_t       md5[3][16];
+    uint8_t is_md5;
+} HEVCSEIPictureHash;
+
+typedef struct HEVCSEIFramePacking {
+    int present;
+    int arrangement_type;
+    int content_interpretation_type;
+    int quincunx_subsampling;
+} HEVCSEIFramePacking;
+
+typedef struct HEVCSEIDisplayOrientation {
+    int present;
+    int anticlockwise_rotation;
+    int hflip, vflip;
+} HEVCSEIDisplayOrientation;
+
+typedef struct HEVCSEIPictureTiming {
+    int picture_struct;
+} HEVCSEIPictureTiming;
+
+typedef struct HEVCSEIA53Caption {
+    int a53_caption_size;
+    uint8_t *a53_caption;
+} HEVCSEIA53Caption;
+
+typedef struct HEVCSEIMasteringDisplay {
+    int present;
+    uint16_t display_primaries[3][2];
+    uint16_t white_point[2];
+    uint32_t max_luminance;
+    uint32_t min_luminance;
+} HEVCSEIMasteringDisplay;
+
+typedef struct HEVCSEIContentLight {
+    int present;
+    uint16_t max_content_light_level;
+    uint16_t max_pic_average_light_level;
+} HEVCSEIContentLight;
+
+typedef struct HEVCSEIContext {
+    HEVCSEIPictureHash picture_hash;
+    HEVCSEIFramePacking frame_packing;
+    HEVCSEIDisplayOrientation display_orientation;
+    HEVCSEIPictureTiming picture_timing;
+    HEVCSEIA53Caption a53_caption;
+    HEVCSEIMasteringDisplay mastering_display;
+    HEVCSEIContentLight content_light;
+    int active_seq_parameter_set_id;
+} HEVCSEIContext;
+
 typedef struct HEVCContext {
     const AVClass *c;  // needed by private avoptions
     AVCodecContext *avctx;
@@ -558,52 +611,19 @@ typedef struct HEVCContext {
     // type of the first VCL NAL of the current frame
     enum HEVCNALUnitType first_nal_type;
 
-    // for checking the frame checksums
-    struct AVMD5 *md5_ctx;
-    uint8_t       md5[3][16];
-    uint8_t is_md5;
-
     uint8_t context_initialized;
     int is_nalff;           ///< this flag is != 0 if bitstream is encapsulated
                             ///< as a format defined in 14496-15
     int apply_defdispwin;
 
-    int active_seq_parameter_set_id;
-
     int nal_length_size;    ///< Number of bytes used for nal length (1, 2 or 4)
     int nuh_layer_id;
 
-    /** frame packing arrangement variables */
-    int sei_frame_packing_present;
-    int frame_packing_arrangement_type;
-    int content_interpretation_type;
-    int quincunx_subsampling;
-
-    /** display orientation */
-    int sei_display_orientation_present;
-    int sei_anticlockwise_rotation;
-    int sei_hflip, sei_vflip;
-
-    int picture_struct;
-
-    uint8_t* a53_caption;
-    int a53_caption_size;
-
-    /** mastering display */
-    int sei_mastering_display_info_present;
-    uint16_t display_primaries[3][2];
-    uint16_t white_point[2];
-    uint32_t max_mastering_luminance;
-    uint32_t min_mastering_luminance;
-
-    /* content light level */
-    int sei_content_light_present;
-    uint16_t max_content_light_level;
-    uint16_t max_pic_average_light_level;
-
+    HEVCSEIContext sei;
 } HEVCContext;
 
-int ff_hevc_decode_nal_sei(HEVCContext *s);
+int ff_hevc_decode_nal_sei(GetBitContext *gb, void *logctx, HEVCSEIContext *s,
+                           const HEVCParamSets *ps, int type);
 
 /**
  * Mark all frames in DPB as unused for reference.
@@ -715,7 +735,7 @@ void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size);
  *
  * @param s HEVCContext.
  */
-void ff_hevc_reset_sei(HEVCContext *s);
+void ff_hevc_reset_sei(HEVCSEIContext *s);
 
 extern const uint8_t ff_hevc_qpel_extra_before[4];
 extern const uint8_t ff_hevc_qpel_extra_after[4];
