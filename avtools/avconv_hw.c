@@ -287,6 +287,10 @@ int hw_device_setup_for_decode(InputStream *ist)
             type = hw_device_match_type_in_name(ist->dec->name);
         if (type != AV_HWDEVICE_TYPE_NONE) {
             dev = hw_device_get_by_type(type);
+            if (!dev) {
+                hw_device_init_from_string(av_hwdevice_get_type_name(type),
+                                           &dev);
+            }
         } else {
             // No device required.
             return 0;
