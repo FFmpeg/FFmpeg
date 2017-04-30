@@ -579,11 +579,6 @@ void ff_hevc_clear_refs(HEVCContext *s);
  */
 void ff_hevc_flush_dpb(HEVCContext *s);
 
-/**
- * Compute POC of the current frame and return it.
- */
-int ff_hevc_compute_poc(HEVCContext *s, int poc_lsb);
-
 RefPicList *ff_hevc_get_ref_list(HEVCContext *s, HEVCFrame *frame,
                                  int x0, int y0);
 

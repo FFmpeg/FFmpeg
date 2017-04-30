@@ -344,4 +344,9 @@ int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
 int ff_hevc_encode_nal_vps(HEVCVPS *vps, unsigned int id,
                            uint8_t *buf, int buf_size);
 
+/**
+ * Compute POC of the current frame and return it.
+ */
+int ff_hevc_compute_poc(const HEVCSPS *sps, int pocTid0, int poc_lsb, int nal_unit_type);
+
 #endif /* AVCODEC_HEVC_PS_H */

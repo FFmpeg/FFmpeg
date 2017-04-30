@@ -379,7 +379,7 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
 
             if (!IS_IDR(h)) {
                 sh->pic_order_cnt_lsb = get_bits(gb, ps->sps->log2_max_poc_lsb);
-                s->output_picture_number = h->poc = ff_hevc_compute_poc(h, sh->pic_order_cnt_lsb);
+                s->output_picture_number = h->poc = ff_hevc_compute_poc(h->ps.sps, h->pocTid0, sh->pic_order_cnt_lsb, h->nal_unit_type);
             } else
                 s->output_picture_number = h->poc = 0;
 
