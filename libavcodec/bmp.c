@@ -133,8 +133,11 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         alpha = bytestream_get_le32(&buf);
     }
 
-    avctx->width  = width;
-    avctx->height = height > 0 ? height : -(unsigned)height;
+    ret = ff_set_dimensions(avctx, width, height > 0 ? height : -(unsigned)height);
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to set dimensions %d %d\n", width, height);
+        return AVERROR_INVALIDDATA;
+    }
 
     avctx->pix_fmt = AV_PIX_FMT_NONE;
 
