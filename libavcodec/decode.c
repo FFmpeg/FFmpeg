@@ -369,7 +369,7 @@ static int decode_simple_internal(AVCodecContext *avctx, AVFrame *frame)
     AVPacket           *pkt = ds->in_pkt;
     // copy to ensure we do not change pkt
     AVPacket tmp;
-    int got_frame, did_split;
+    int got_frame, actual_got_frame, did_split;
     int ret;
 
     if (!pkt->data && !avci->draining) {
@@ -431,6 +431,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
     emms_c();
+    actual_got_frame = got_frame;
 
     if (avctx->codec->type == AVMEDIA_TYPE_VIDEO) {
         if (frame->flags & AV_FRAME_FLAG_DISCARD)
@@ -568,8 +569,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
         avctx->time_base = av_inv_q(av_mul_q(avctx->framerate, (AVRational){avctx->ticks_per_frame, 1}));
 #endif
 
-    /* do not stop draining when got_frame != 0 or ret < 0 */
-    if (avctx->internal->draining && !got_frame) {
+    /* do not stop draining when actual_got_frame != 0 or ret < 0 */
+    /* got_frame == 0 but actual_got_frame != 0 when frame is discarded */
+    if (avctx->internal->draining && !actual_got_frame) {
         if (ret < 0) {
             /* prevent infinite loop if a decoder wrongly always return error on draining */
             /* reasonable nb_errors_max = maximum b frames + thread count */
