@@ -413,9 +413,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
     } else {
         ret = avctx->codec->decode(avctx, frame, &got_frame, &tmp);
 
+        if (!(avctx->codec->caps_internal & FF_CODEC_CAP_SETS_PKT_DTS))
+            frame->pkt_dts = pkt->dts;
         if (avctx->codec->type == AVMEDIA_TYPE_VIDEO) {
-            if (!(avctx->codec->caps_internal & FF_CODEC_CAP_SETS_PKT_DTS))
-                frame->pkt_dts = pkt->dts;
             if(!avctx->has_b_frames)
                 frame->pkt_pos = pkt->pos;
             //FIXME these should be under if(!avctx->has_b_frames)
@@ -426,8 +426,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 if (!frame->height)                   frame->height              = avctx->height;
                 if (frame->format == AV_PIX_FMT_NONE) frame->format              = avctx->pix_fmt;
             }
-        } else if (avctx->codec->type == AVMEDIA_TYPE_AUDIO) {
-            frame->pkt_dts = pkt->dts;
         }
     }
     emms_c();
