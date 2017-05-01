@@ -2,15 +2,21 @@ Testing av_channel_name
 With AV_CHAN_FRONT_LEFT:                          FL
 With AV_CHAN_FRONT_RIGHT:                         FR
 With 63:                                       USR63
+With AV_CHAN_AMBISONIC_BASE:                   AMBI0
+With AV_CHAN_AMBISONIC_END:                 AMBI1023
 Testing av_channel_description
 With AV_CHAN_FRONT_LEFT:                  front left
 With AV_CHAN_FRONT_RIGHT:                front right
 With 63:                                     user 63
+With AV_CHAN_AMBISONIC_BASE:         ambisonic ACN 0
+With AV_CHAN_AMBISONIC_END:       ambisonic ACN 1023
 
 Testing av_channel_from_string
 With "FL":                                         0
 With "FR":                                         1
 With "USR63":                                     63
+With "AMBI0":                                   1024
+With "AMBI1023":                                2047
 
 ==Native layouts==
 
@@ -71,6 +77,7 @@ On 5.1(side) layout with "BC":                    -1
 Testing av_channel_layout_from_string
 With "FL+FR+FC+BL+BR+LFE":    6 channels (FL+FR+FC+BL+BR+LFE)
 With "2 channels (FR+FL)":                 2 channels (FR+FL)
+With "ambisonic 1+FR+FL":      ambisonic 1+2 channels (FR+FL)
 With "FL@Foo+FR@Bar":              2 channels (FL@Foo+FR@Bar)
 With "FR+FL@Foo+USR63@Foo":  3 channels (FR+FL@Foo+USR63@Foo)
 
@@ -107,3 +114,21 @@ On "FR+FL@Foo+USR63@Foo" layout with 0:                     1
 On "FR+FL@Foo+USR63@Foo" layout with 1:                     0
 On "FR+FL@Foo+USR63@Foo" layout with 2:                    63
 On "FR+FL@Foo+USR63@Foo" layout with 3:                    -1
+
+==Ambisonic layouts==
+
+Testing av_channel_layout_from_string
+With "ambisonic 1":                               ambisonic 1
+With "ambisonic 2+stereo":                 ambisonic 2+stereo
+
+Testing av_channel_layout_index_from_channel
+On "ambisonic 2+stereo" layout with AV_CHAN_AMBISONIC_BASE: 0
+On "ambisonic 2+stereo" layout with AV_CHAN_FRONT_LEFT:     9
+On "ambisonic 2+stereo" layout with AV_CHAN_FRONT_RIGHT:   10
+On "ambisonic 2+stereo" layout with AV_CHAN_BACK_CENTER:   -1
+
+Testing av_channel_layout_channel_from_index
+On "ambisonic 2+stereo" layout with 0:                   1024
+On "ambisonic 2+stereo" layout with 9:                      0
+On "ambisonic 2+stereo" layout with 10:                     1
+On "ambisonic 2+stereo" layout with 11:                    -1

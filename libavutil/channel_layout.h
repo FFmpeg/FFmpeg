@@ -79,6 +79,23 @@ enum AVChannel {
 
     /** Channel contains data, but its position is unknown. */
     AV_CHAN_UNKNOWN = 0x300,
+
+    /**
+     * Range of channels between AV_CHAN_AMBISONIC_BASE and
+     * AV_CHAN_AMBISONIC_END represent Ambisonic components using the ACN system.
+     *
+     * Given a channel id <i> between AV_CHAN_AMBISONIC_BASE and
+     * AV_CHAN_AMBISONIC_END (inclusive), the ACN index of the channel <n> is
+     * <n> = <i> - AV_CHAN_AMBISONIC_BASE.
+     *
+     * @note these values are only used for AV_CHANNEL_ORDER_CUSTOM channel
+     * orderings, the AV_CHANNEL_ORDER_AMBISONIC ordering orders the channels
+     * implicitly by their position in the stream.
+     */
+    AV_CHAN_AMBISONIC_BASE = 0x400,
+    // leave space for 1024 ids, which correspond to maximum order-32 harmonics,
+    // which should be enough for the foreseeable use cases
+    AV_CHAN_AMBISONIC_END  = 0x7ff,
 };
 
 enum AVChannelOrder {
@@ -100,6 +117,29 @@ enum AVChannelOrder {
      * channels at arbitrary positions.
      */
     AV_CHANNEL_ORDER_CUSTOM,
+    /**
+     * The audio is represented as the decomposition of the sound field into
+     * spherical harmonics. Each channel corresponds to a single expansion
+     * component. Channels are ordered according to ACN (Ambisonic Channel
+     * Number).
+     *
+     * The channel with the index n in the stream contains the spherical
+     * harmonic of degree l and order m given by
+     * @code{.unparsed}
+     *   l   = floor(sqrt(n)),
+     *   m   = n - l * (l + 1).
+     * @endcode
+     *
+     * Conversely given a spherical harmonic of degree l and order m, the
+     * corresponding channel index n is given by
+     * @code{.unparsed}
+     *   n = l * (l + 1) + m.
+     * @endcode
+     *
+     * Normalization is assumed to be SN3D (Schmidt Semi-Normalization)
+     * as defined in AmbiX format $ 2.1.
+     */
+    AV_CHANNEL_ORDER_AMBISONIC,
 };
 
 
@@ -266,7 +306,8 @@ typedef struct AVChannelLayout {
      */
     union {
         /**
-         * This member must be used for AV_CHANNEL_ORDER_NATIVE.
+         * This member must be used for AV_CHANNEL_ORDER_NATIVE, and may be used
+         * for AV_CHANNEL_ORDER_AMBISONIC to signal non-diegetic channels.
          * It is a bitmask, where the position of each set bit means that the
          * AVChannel with the corresponding value is present.
          *
@@ -287,6 +328,11 @@ typedef struct AVChannelLayout {
          *
          * I.e. when map[i].id is equal to AV_CHAN_FOO, then AV_CH_FOO is the
          * i-th channel in the audio data.
+         *
+         * When map[i].id is in the range between AV_CHAN_AMBISONIC_BASE and
+         * AV_CHAN_AMBISONIC_END (inclusive), the channel contains an ambisonic
+         * component with ACN index (as defined above)
+         * n = map[i].id - AV_CHAN_AMBISONIC_BASE.
          *
          * map[i].name may be filled with a 0-terminated string, in which case
          * it will be used for the purpose of identifying the channel with the
@@ -333,6 +379,8 @@ typedef struct AVChannelLayout {
 #define AV_CHANNEL_LAYOUT_HEXADECAGONAL     AV_CHANNEL_LAYOUT_MASK(16, AV_CH_LAYOUT_HEXADECAGONAL)
 #define AV_CHANNEL_LAYOUT_STEREO_DOWNMIX    AV_CHANNEL_LAYOUT_MASK(2,  AV_CH_LAYOUT_STEREO_DOWNMIX)
 #define AV_CHANNEL_LAYOUT_22POINT2          AV_CHANNEL_LAYOUT_MASK(24, AV_CH_LAYOUT_22POINT2)
+#define AV_CHANNEL_LAYOUT_AMBISONIC_FIRST_ORDER \
+    { .order = AV_CHANNEL_ORDER_AMBISONIC, .nb_channels = 4, .u = { .mask = 0 }}
 
 struct AVBPrint;
 
@@ -532,6 +580,8 @@ int av_channel_layout_from_mask(AVChannelLayout *channel_layout, uint64_t mask);
  *  - a decimal or hexadecimal value of a native channel layout (eg. "4" or "0x4")
  *  - the number of channels with default layout (eg. "4c")
  *  - the number of unordered channels (eg. "4C" or "4 channels")
+ *  - the ambisonic order followed by optional non-diegetic channels (eg.
+ *    "ambisonic 2+stereo")
  *
  * @param channel_layout input channel layout
  * @param str string describing the channel layout
