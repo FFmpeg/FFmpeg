@@ -1071,6 +1071,9 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
 
     s->dct_tokens[0][0] = s->dct_tokens_base;
 
+    if (get_bits_left(gb) < 16)
+        return AVERROR_INVALIDDATA;
+
     /* fetch the DC table indexes */
     dc_y_table = get_bits(gb, 4);
     dc_c_table = get_bits(gb, 4);
@@ -1080,6 +1083,8 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
                                    0, residual_eob_run);
     if (residual_eob_run < 0)
         return residual_eob_run;
+    if (get_bits_left(gb) < 8)
+        return AVERROR_INVALIDDATA;
 
     /* reverse prediction of the Y-plane DC coefficients */
     reverse_dc_prediction(s, 0, s->fragment_width[0], s->fragment_height[0]);
@@ -1102,6 +1107,8 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
                               s->fragment_width[1], s->fragment_height[1]);
     }
 
+    if (get_bits_left(gb) < 8)
+        return AVERROR_INVALIDDATA;
     /* fetch the AC table indexes */
     ac_y_table = get_bits(gb, 4);
     ac_c_table = get_bits(gb, 4);
