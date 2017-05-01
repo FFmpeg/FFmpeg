@@ -52,6 +52,7 @@
  * Reference: libavcodec/iirfilter.c
  */
 
+#include "config.h"
 #include "libavcodec/iirfilter.h"
 
 #if HAVE_INLINE_ASM
