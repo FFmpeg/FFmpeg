@@ -764,9 +764,7 @@ end:
      * past end by one (callers fault) and resync_mb_y != 0
      * causes problems for the first MB line, too.
      */
-    if (!FIELD_PICTURE(h) && h->current_slice &&
-        h->ps.sps == (const SPS*)h->ps.sps_list[h->ps.pps->sps_id]->data &&
-        h->enable_er) {
+    if (!FIELD_PICTURE(h) && h->current_slice && h->enable_er) {
 
         H264SliceContext *sl = h->slice_ctx;
         int use_last_pic = h->last_pic_for_ec.f->buf[0] && !sl->ref_count[0];

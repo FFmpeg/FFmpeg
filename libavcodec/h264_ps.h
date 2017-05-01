@@ -135,6 +135,9 @@ typedef struct PPS {
     uint32_t dequant8_buffer[6][QP_MAX_NUM + 1][64];
     uint32_t(*dequant4_coeff[6])[16];
     uint32_t(*dequant8_coeff[6])[64];
+
+    AVBufferRef *sps_ref;
+    const SPS   *sps;
 } PPS;
 
 typedef struct H264ParamSets {
@@ -142,7 +145,6 @@ typedef struct H264ParamSets {
     AVBufferRef *pps_list[MAX_PPS_COUNT];
 
     AVBufferRef *pps_ref;
-    AVBufferRef *sps_ref;
     /* currently active parameters sets */
     const PPS *pps;
     const SPS *sps;

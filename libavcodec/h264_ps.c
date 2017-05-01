@@ -324,7 +324,6 @@ void ff_h264_ps_uninit(H264ParamSets *ps)
     for (i = 0; i < MAX_PPS_COUNT; i++)
         av_buffer_unref(&ps->pps_list[i]);
 
-    av_buffer_unref(&ps->sps_ref);
     av_buffer_unref(&ps->pps_ref);
 
     ps->pps = NULL;
@@ -738,6 +737,15 @@ static int more_rbsp_data_in_pps(const SPS *sps, void *logctx)
     return 1;
 }
 
+static void pps_free(void *opaque, uint8_t *data)
+{
+    PPS *pps = (PPS*)data;
+
+    av_buffer_unref(&pps->sps_ref);
+
+    av_freep(&data);
+}
+
 int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
                                          H264ParamSets *ps, int bit_length)
 {
@@ -754,10 +762,15 @@ int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avct
         return AVERROR_INVALIDDATA;
     }
 
-    pps_buf = av_buffer_allocz(sizeof(*pps));
-    if (!pps_buf)
+    pps = av_mallocz(sizeof(*pps));
+    if (!pps)
         return AVERROR(ENOMEM);
-    pps = (PPS*)pps_buf->data;
+    pps_buf = av_buffer_create((uint8_t*)pps, sizeof(*pps),
+                               pps_free, NULL, 0);
+    if (!pps_buf) {
+        av_freep(&pps);
+        return AVERROR(ENOMEM);
+    }
 
     pps->data_size = gb->buffer_end - gb->buffer;
     if (pps->data_size > sizeof(pps->data)) {
@@ -775,7 +788,14 @@ int ff_h264_decode_picture_parameter_set(GetBitContext *gb, AVCodecContext *avct
         ret = AVERROR_INVALIDDATA;
         goto fail;
     }
-    sps = (const SPS*)ps->sps_list[pps->sps_id]->data;
+    pps->sps_ref = av_buffer_ref(ps->sps_list[pps->sps_id]);
+    if (!pps->sps_ref) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+    pps->sps = (const SPS*)pps->sps_ref->data;
+    sps      = pps->sps;
+
     if (sps->bit_depth_luma > 14) {
         av_log(avctx, AV_LOG_ERROR,
                "Invalid luma bit depth=%d\n",
