@@ -66,7 +66,7 @@ static AVCodec *c = NULL;
 static AVCodec *AVCodecInitialize(enum AVCodecID codec_id)
 {
     AVCodec *res;
-    av_register_all();
+    avcodec_register_all();
     av_log_set_level(AV_LOG_PANIC);
     res = avcodec_find_decoder(codec_id);
     if (!res)
