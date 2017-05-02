@@ -23,15 +23,18 @@ OPTS_x86_64="--arch=x86_64 --cpu=generic --build_suffix= --cross-prefix=${TOOLS_
 
 for TARGET in $TARGETS;do
     echo "Generating configuration for: ${TARGET}"
-    rm -f config.mak config.h
     ARCH_OPTS=OPTS_`echo $TARGET | tr "-" "_"`
     echo "configure ${!ARCH_OPTS} $BASE_CONFIG"
     ./configure ${!ARCH_OPTS} $BASE_CONFIG
+    if [ "$TARGET" = "x86" -o "$TARGET" = "x86_64" ]; then
+        cp config.asm android/include/config-${TARGET}.asm
+        TARGET=$TARGET-$TARGET
+    fi
     cp config.mak android/config-${TARGET}.mak
     cat config.h | sed -e "s/^#define \(ARCH_.*\|HAVE_.*\) \(.*\)/#ifdef \1\n#undef \1\n#endif\n#define \1 \2/g" > android/include/config-${TARGET}.h
+    rm -f config.asm config.mak config.h
 done
 
-cp config.asm android/include/config-${TARGET}.asm
 cp libavutil/avconfig.h android/include/libavutil/
 
 # Not sure why this gets configured wrong..
