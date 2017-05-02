@@ -1982,6 +1982,7 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
                 atom2_end  = bytestream2_tell(&s->g) + atom2_size - 8;
                 if (atom2_size < 8 || atom2_end > atom_end || atom2_end < atom2_size)
                     break;
+                atom2_size -= 8;
                 if (atom2 == JP2_CODESTREAM) {
                     return 1;
                 } else if (atom2 == MKBETAG('c','o','l','r') && atom2_size >= 7) {
