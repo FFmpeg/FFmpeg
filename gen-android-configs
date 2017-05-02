@@ -35,7 +35,9 @@ for TARGET in $TARGETS;do
     rm -f config.asm config.mak config.h
 done
 
-cp libavutil/avconfig.h android/include/libavutil/
+mv libavutil/avconfig.h android/include/libavutil/
+mv libavcodec/bsf_list.c android/include/libavcodec/
+mv libavformat/protocol_list.c android/include/libavformat/
 
 # Not sure why this gets configured wrong..
 perl -pi -e "s/define HAVE_EBP_AVAILABLE 1/define HAVE_EBP_AVAILABLE 0/g" android/include/config-silvermont.h android/include/config-x86.h android/include/config.asm
