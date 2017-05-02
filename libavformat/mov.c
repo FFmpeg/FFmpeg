@@ -7334,6 +7334,100 @@ cleanup:
     return ret;
 }
 
+static int mov_read_SA3D(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    AVStream *st;
+    int i, version, type;
+    int ambisonic_order, channel_order, normalization, channel_count;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+
+    st = c->fc->streams[c->fc->nb_streams - 1];
+
+    if (atom.size < 16) {
+        av_log(c->fc, AV_LOG_ERROR, "SA3D audio box too small\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    version = avio_r8(pb);
+    if (version) {
+        av_log(c->fc, AV_LOG_WARNING, "Unsupported SA3D box version %d\n", version);
+        return 0;
+    }
+
+    type = avio_r8(pb);
+    if (type) {
+        av_log(c->fc, AV_LOG_WARNING,
+               "Unsupported ambisonic type %d\n", type);
+        return 0;
+    }
+
+    ambisonic_order = avio_rb32(pb);
+
+    channel_order = avio_r8(pb);
+    if (channel_order) {
+        av_log(c->fc, AV_LOG_WARNING,
+               "Unsupported channel_order %d\n", channel_order);
+        return 0;
+    }
+
+    normalization = avio_r8(pb);
+    if (normalization) {
+        av_log(c->fc, AV_LOG_WARNING,
+               "Unsupported normalization %d\n", normalization);
+        return 0;
+    }
+
+    channel_count = avio_rb32(pb);
+    if (channel_count != (ambisonic_order + 1) * (ambisonic_order + 1)) {
+        av_log(c->fc, AV_LOG_ERROR,
+               "Invalid number of channels (%d / %d)\n",
+               channel_count, ambisonic_order);
+        return 0;
+    }
+
+    for (i = 0; i < channel_count; i++) {
+        if (i != avio_rb32(pb)) {
+            av_log(c->fc, AV_LOG_WARNING,
+                   "Ambisonic channel reordering is not supported\n");
+            return 0;
+        }
+    }
+
+    av_channel_layout_uninit(&st->codecpar->ch_layout);
+    st->codecpar->ch_layout.order = AV_CHANNEL_ORDER_AMBISONIC;
+    st->codecpar->ch_layout.nb_channels = channel_count;
+
+    return 0;
+}
+
+static int mov_read_SAND(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    AVStream *st;
+    int version;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+
+    st = c->fc->streams[c->fc->nb_streams - 1];
+
+    if (atom.size < 5) {
+        av_log(c->fc, AV_LOG_ERROR, "Empty SAND audio box\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    version = avio_r8(pb);
+    if (version) {
+        av_log(c->fc, AV_LOG_WARNING, "Unsupported SAND box version %d\n", version);
+        return 0;
+    }
+
+    st->disposition |= AV_DISPOSITION_NON_DIEGETIC;
+
+    return 0;
+}
+
 static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('A','C','L','R'), mov_read_aclr },
 { MKTAG('A','P','R','G'), mov_read_avid },
@@ -7434,6 +7528,8 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('d','v','v','C'), mov_read_dvcc_dvvc },
 { MKTAG('d','v','w','C'), mov_read_dvcc_dvvc },
 { MKTAG('k','i','n','d'), mov_read_kind },
+{ MKTAG('S','A','3','D'), mov_read_SA3D }, /* ambisonic audio box */
+{ MKTAG('S','A','N','D'), mov_read_SAND }, /* non diegetic audio box */
 { 0, NULL }
 };
 
