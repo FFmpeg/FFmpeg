@@ -3234,6 +3234,30 @@ static void parse_forced_key_frames(char *kf, OutputStream *ost,
     ost->forced_kf_pts   = pts;
 }
 
+static void init_encoder_time_base(OutputStream *ost, AVRational default_time_base)
+{
+    InputStream *ist = get_input_stream(ost);
+    AVCodecContext *enc_ctx = ost->enc_ctx;
+    AVFormatContext *oc;
+
+    if (ost->enc_timebase.num > 0) {
+        enc_ctx->time_base = ost->enc_timebase;
+        return;
+    }
+
+    if (ost->enc_timebase.num < 0) {
+        if (ist) {
+            enc_ctx->time_base = ist->st->time_base;
+            return;
+        }
+
+        oc = output_files[ost->file_index]->ctx;
+        av_log(oc, AV_LOG_WARNING, "Input stream data not available, using default time base\n");
+    }
+
+    enc_ctx->time_base = default_time_base;
+}
+
 static int init_output_stream_encode(OutputStream *ost)
 {
     InputStream *ist = get_input_stream(ost);
@@ -3304,10 +3328,13 @@ static int init_output_stream_encode(OutputStream *ost)
         enc_ctx->sample_rate    = av_buffersink_get_sample_rate(ost->filter->filter);
         enc_ctx->channel_layout = av_buffersink_get_channel_layout(ost->filter->filter);
         enc_ctx->channels       = av_buffersink_get_channels(ost->filter->filter);
-        enc_ctx->time_base      = (AVRational){ 1, enc_ctx->sample_rate };
+
+        init_encoder_time_base(ost, av_make_q(1, enc_ctx->sample_rate));
         break;
+
     case AVMEDIA_TYPE_VIDEO:
-        enc_ctx->time_base = av_inv_q(ost->frame_rate);
+        init_encoder_time_base(ost, av_inv_q(ost->frame_rate));
+
         if (!(enc_ctx->time_base.num && enc_ctx->time_base.den))
             enc_ctx->time_base = av_buffersink_get_time_base(ost->filter->filter);
         if (   av_q2d(enc_ctx->time_base) < 0.001 && video_sync_method != VSYNC_PASSTHROUGH
