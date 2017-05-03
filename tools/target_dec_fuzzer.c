@@ -66,7 +66,7 @@ static AVCodec *c = NULL;
 static AVCodec *AVCodecInitialize(enum AVCodecID codec_id)
 {
     AVCodec *res;
-    avcodec_register_all();
+
     av_log_set_level(AV_LOG_PANIC);
     res = avcodec_find_decoder(codec_id);
     if (!res)
@@ -140,8 +140,20 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
                           int *got_picture_ptr,
                           const AVPacket *avpkt) = NULL;
 
-    if (!c)
+    if (!c) {
+#ifdef FFMPEG_DECODER
+#define DECODER_SYMBOL0(CODEC) ff_##CODEC##_decoder
+#define DECODER_SYMBOL(CODEC) DECODER_SYMBOL0(CODEC)
+        extern AVCodec DECODER_SYMBOL(FFMPEG_DECODER);
+        avcodec_register(&DECODER_SYMBOL(FFMPEG_DECODER));
+        int codec_id = DECODER_SYMBOL(FFMPEG_DECODER).id;
+
+        c = AVCodecInitialize(codec_id);  // Done once.
+#else
+        avcodec_register_all();
         c = AVCodecInitialize(FFMPEG_CODEC);  // Done once.
+#endif
+    }
 
     switch (c->type) {
     case AVMEDIA_TYPE_AUDIO   : decode_handler = avcodec_decode_audio4; break;
