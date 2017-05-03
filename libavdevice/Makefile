@@ -1,4 +1,4 @@
-include $(SUBDIR)../config.mak
+include $(SUBDIR)../ffbuild/config.mak
 
 NAME    = avdevice
 

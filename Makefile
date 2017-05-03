@@ -1,5 +1,5 @@
 MAIN_MAKEFILE=1
-include config.mak
+include ffbuild/config.mak
 
 vpath %.c    $(SRC_PATH)
 vpath %.cpp  $(SRC_PATH)
@@ -66,7 +66,7 @@ SKIPHEADERS = cmdutils_common_opts.h                                    \
 all: all-yes
 
 include $(SRC_PATH)/tools/Makefile
-include $(SRC_PATH)/common.mak
+include $(SRC_PATH)/ffbuild/common.mak
 
 FF_EXTRALIBS := $(FFEXTRALIBS)
 FF_DEP_LIBS  := $(DEP_LIBS)
@@ -91,8 +91,8 @@ CONFIGURABLE_COMPONENTS =                                           \
     $(SRC_PATH)/libavcodec/bitstream_filters.c                      \
     $(SRC_PATH)/libavformat/protocols.c                             \
 
-config.h: .config
-.config: $(CONFIGURABLE_COMPONENTS)
+config.h: ffbuild/.config
+ffbuild/.config: $(CONFIGURABLE_COMPONENTS)
 	@-tput bold 2>/dev/null
 	@-printf '\nWARNING: $(?) newer than config.h, rerun configure\n\n'
 	@-tput sgr0 2>/dev/null
@@ -115,7 +115,7 @@ SUBDIR := $(1)/
 include $(SRC_PATH)/$(1)/Makefile
 -include $(SRC_PATH)/$(1)/$(ARCH)/Makefile
 -include $(SRC_PATH)/$(1)/$(INTRINSICS)/Makefile
-include $(SRC_PATH)/library.mak
+include $(SRC_PATH)/ffbuild/library.mak
 endef
 
 $(foreach D,$(FFLIBS),$(eval $(call DOSUBDIR,lib$(D))))
@@ -142,10 +142,10 @@ $(PROGS): %$(PROGSSUF)$(EXESUF): %$(PROGSSUF)_g$(EXESUF)
 %$(PROGSSUF)_g$(EXESUF): %.o $(FF_DEP_LIBS)
 	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $(OBJS-$*) $(FF_EXTRALIBS)
 
-VERSION_SH  = $(SRC_PATH)/version.sh
+VERSION_SH  = $(SRC_PATH)/ffbuild/version.sh
 GIT_LOG     = $(SRC_PATH)/.git/logs/HEAD
 
-.version: $(wildcard $(GIT_LOG)) $(VERSION_SH) config.mak
+.version: $(wildcard $(GIT_LOG)) $(VERSION_SH) ffbuild/config.mak
 .version: M=@
 
 libavutil/ffversion.h .version:
@@ -194,7 +194,10 @@ clean::
 
 distclean::
 	$(RM) $(DISTCLEANSUFFIXES)
-	$(RM) config.* .config libavutil/avconfig.h .version mapfile avversion.h version.h libavutil/ffversion.h libavcodec/codec_names.h libavcodec/bsf_list.c libavformat/protocol_list.c
+	$(RM) .version avversion.h config.asm config.h mapfile  \
+		ffbuild/.config ffbuild/config.* libavutil/avconfig.h \
+		version.h libavutil/ffversion.h libavcodec/codec_names.h \
+		libavcodec/bsf_list.c libavformat/protocol_list.c
 ifeq ($(SRC_LINK),src)
 	$(RM) src
 endif

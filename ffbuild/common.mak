@@ -103,7 +103,7 @@ COMPILE_HOSTC = $(call COMPILE,HOSTCC)
 $(OBJS):
 endif
 
-include $(SRC_PATH)/arch.mak
+include $(SRC_PATH)/ffbuild/arch.mak
 
 OBJS      += $(OBJS-yes)
 SLIBOBJS  += $(SLIBOBJS-yes)

@@ -1,4 +1,4 @@
-include $(SRC_PATH)/common.mak
+include $(SRC_PATH)/ffbuild/common.mak
 
 LIBVERSION := $(lib$(NAME)_VERSION)
 LIBMAJOR   := $(lib$(NAME)_VERSION_MAJOR)
