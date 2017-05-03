@@ -178,6 +178,7 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
     int min_ab, i, w2, h2, w3, h3;
     int sprite_ref[4][2];
     int virtual_ref[2][2];
+    int64_t sprite_offset[2][2];
 
     // only true for rectangle shapes
     const int vop_ref[4][2] = { { 0, 0 },         { s->width, 0 },
@@ -257,10 +258,10 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
 
     switch (ctx->num_sprite_warping_points) {
     case 0:
-        s->sprite_offset[0][0] =
-        s->sprite_offset[0][1] =
-        s->sprite_offset[1][0] =
-        s->sprite_offset[1][1] = 0;
+        sprite_offset[0][0]    =
+        sprite_offset[0][1]    =
+        sprite_offset[1][0]    =
+        sprite_offset[1][1]    = 0;
         s->sprite_delta[0][0]  = a;
         s->sprite_delta[0][1]  =
         s->sprite_delta[1][0]  = 0;
@@ -269,11 +270,11 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
         ctx->sprite_shift[1]   = 0;
         break;
     case 1:     // GMC only
-        s->sprite_offset[0][0] = sprite_ref[0][0] - a * vop_ref[0][0];
-        s->sprite_offset[0][1] = sprite_ref[0][1] - a * vop_ref[0][1];
-        s->sprite_offset[1][0] = ((sprite_ref[0][0] >> 1) | (sprite_ref[0][0] & 1)) -
+        sprite_offset[0][0]    = sprite_ref[0][0] - a * vop_ref[0][0];
+        sprite_offset[0][1]    = sprite_ref[0][1] - a * vop_ref[0][1];
+        sprite_offset[1][0]    = ((sprite_ref[0][0] >> 1) | (sprite_ref[0][0] & 1)) -
                                  a * (vop_ref[0][0] / 2);
-        s->sprite_offset[1][1] = ((sprite_ref[0][1] >> 1) | (sprite_ref[0][1] & 1)) -
+        sprite_offset[1][1]    = ((sprite_ref[0][1] >> 1) | (sprite_ref[0][1] & 1)) -
                                  a * (vop_ref[0][1] / 2);
         s->sprite_delta[0][0]  = a;
         s->sprite_delta[0][1]  =
@@ -283,22 +284,22 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
         ctx->sprite_shift[1]   = 0;
         break;
     case 2:
-        s->sprite_offset[0][0] = (sprite_ref[0][0] * (1 << alpha + rho)) +
+        sprite_offset[0][0]    = (sprite_ref[0][0] * (1 << alpha + rho)) +
                                  (-r * sprite_ref[0][0] + virtual_ref[0][0]) *
                                  (-vop_ref[0][0]) +
                                  (r * sprite_ref[0][1] - virtual_ref[0][1]) *
                                  (-vop_ref[0][1]) + (1 << (alpha + rho - 1));
-        s->sprite_offset[0][1] = (sprite_ref[0][1] * (1 << alpha + rho)) +
+        sprite_offset[0][1]    = (sprite_ref[0][1] * (1 << alpha + rho)) +
                                  (-r * sprite_ref[0][1] + virtual_ref[0][1]) *
                                  (-vop_ref[0][0]) +
                                  (-r * sprite_ref[0][0] + virtual_ref[0][0]) *
                                  (-vop_ref[0][1]) + (1 << (alpha + rho - 1));
-        s->sprite_offset[1][0] = ((-r * sprite_ref[0][0] + virtual_ref[0][0]) *
+        sprite_offset[1][0]    = ((-r * sprite_ref[0][0] + virtual_ref[0][0]) *
                                   (-2 * vop_ref[0][0] + 1) +
                                   (r * sprite_ref[0][1] - virtual_ref[0][1]) *
                                   (-2 * vop_ref[0][1] + 1) + 2 * w2 * r *
                                   sprite_ref[0][0] - 16 * w2 + (1 << (alpha + rho + 1)));
-        s->sprite_offset[1][1] = ((-r * sprite_ref[0][1] + virtual_ref[0][1]) *
+        sprite_offset[1][1]    = ((-r * sprite_ref[0][1] + virtual_ref[0][1]) *
                                   (-2 * vop_ref[0][0] + 1) +
                                   (-r * sprite_ref[0][0] + virtual_ref[0][0]) *
                                   (-2 * vop_ref[0][1] + 1) + 2 * w2 * r *
@@ -315,30 +316,22 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
         min_ab = FFMIN(alpha, beta);
         w3     = w2 >> min_ab;
         h3     = h2 >> min_ab;
-        s->sprite_offset[0][0] = (sprite_ref[0][0] * (1<<(alpha + beta + rho - min_ab))) +
-                                 (-r * sprite_ref[0][0] + virtual_ref[0][0]) *
-                                 h3 * (-vop_ref[0][0]) +
-                                 (-r * sprite_ref[0][0] + virtual_ref[1][0]) *
-                                 w3 * (-vop_ref[0][1]) +
-                                 (1 << (alpha + beta + rho - min_ab - 1));
-        s->sprite_offset[0][1] = (sprite_ref[0][1] * (1 << (alpha + beta + rho - min_ab))) +
-                                 (-r * sprite_ref[0][1] + virtual_ref[0][1]) *
-                                 h3 * (-vop_ref[0][0]) +
-                                 (-r * sprite_ref[0][1] + virtual_ref[1][1]) *
-                                 w3 * (-vop_ref[0][1]) +
-                                 (1 << (alpha + beta + rho - min_ab - 1));
-        s->sprite_offset[1][0] = (-r * sprite_ref[0][0] + virtual_ref[0][0]) *
-                                 h3 * (-2 * vop_ref[0][0] + 1) +
-                                 (-r * sprite_ref[0][0] + virtual_ref[1][0]) *
-                                 w3 * (-2 * vop_ref[0][1] + 1) + 2 * w2 * h3 *
-                                 r * sprite_ref[0][0] - 16 * w2 * h3 +
-                                 (1 << (alpha + beta + rho - min_ab + 1));
-        s->sprite_offset[1][1] = (-r * sprite_ref[0][1] + virtual_ref[0][1]) *
-                                 h3 * (-2 * vop_ref[0][0] + 1) +
-                                 (-r * sprite_ref[0][1] + virtual_ref[1][1]) *
-                                 w3 * (-2 * vop_ref[0][1] + 1) + 2 * w2 * h3 *
-                                 r * sprite_ref[0][1] - 16 * w2 * h3 +
-                                 (1 << (alpha + beta + rho - min_ab + 1));
+        sprite_offset[0][0]    = ((int64_t)sprite_ref[0][0] * (1 << (alpha + beta + rho - min_ab))) +
+                                 ((int64_t)-r * sprite_ref[0][0] + virtual_ref[0][0]) * h3 * (-vop_ref[0][0]) +
+                                 ((int64_t)-r * sprite_ref[0][0] + virtual_ref[1][0]) * w3 * (-vop_ref[0][1]) +
+                                 ((int64_t)1 << (alpha + beta + rho - min_ab - 1));
+        sprite_offset[0][1]    = ((int64_t)sprite_ref[0][1] * (1 << (alpha + beta + rho - min_ab))) +
+                                 ((int64_t)-r * sprite_ref[0][1] + virtual_ref[0][1]) * h3 * (-vop_ref[0][0]) +
+                                 ((int64_t)-r * sprite_ref[0][1] + virtual_ref[1][1]) * w3 * (-vop_ref[0][1]) +
+                                 ((int64_t)1 << (alpha + beta + rho - min_ab - 1));
+        sprite_offset[1][0]    = ((int64_t)-r * sprite_ref[0][0] + virtual_ref[0][0]) * h3 * (-2 * vop_ref[0][0] + 1) +
+                                 ((int64_t)-r * sprite_ref[0][0] + virtual_ref[1][0]) * w3 * (-2 * vop_ref[0][1] + 1) +
+                                  (int64_t)2 * w2 * h3 * r * sprite_ref[0][0] - 16 * w2 * h3 +
+                                 ((int64_t)1 << (alpha + beta + rho - min_ab + 1));
+        sprite_offset[1][1]    = ((int64_t)-r * sprite_ref[0][1] + virtual_ref[0][1]) * h3 * (-2 * vop_ref[0][0] + 1) +
+                                 ((int64_t)-r * sprite_ref[0][1] + virtual_ref[1][1]) * w3 * (-2 * vop_ref[0][1] + 1) +
+                                  (int64_t)2 * w2 * h3 * r * sprite_ref[0][1] - 16 * w2 * h3 +
+                                 ((int64_t)1 << (alpha + beta + rho - min_ab + 1));
         s->sprite_delta[0][0] = (-r * sprite_ref[0][0] + virtual_ref[0][0]) * h3;
         s->sprite_delta[0][1] = (-r * sprite_ref[0][0] + virtual_ref[1][0]) * w3;
         s->sprite_delta[1][0] = (-r * sprite_ref[0][1] + virtual_ref[0][1]) * h3;
@@ -353,10 +346,10 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
         s->sprite_delta[0][1] == 0 &&
         s->sprite_delta[1][0] == 0 &&
         s->sprite_delta[1][1] == a << ctx->sprite_shift[0]) {
-        s->sprite_offset[0][0] >>= ctx->sprite_shift[0];
-        s->sprite_offset[0][1] >>= ctx->sprite_shift[0];
-        s->sprite_offset[1][0] >>= ctx->sprite_shift[1];
-        s->sprite_offset[1][1] >>= ctx->sprite_shift[1];
+        sprite_offset[0][0] >>= ctx->sprite_shift[0];
+        sprite_offset[0][1] >>= ctx->sprite_shift[0];
+        sprite_offset[1][0] >>= ctx->sprite_shift[1];
+        sprite_offset[1][1] >>= ctx->sprite_shift[1];
         s->sprite_delta[0][0] = a;
         s->sprite_delta[0][1] = 0;
         s->sprite_delta[1][0] = 0;
@@ -369,18 +362,18 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
         int shift_c = 16 - ctx->sprite_shift[1];
 
         if (shift_c < 0 || shift_y < 0 ||
-            FFABS(s->sprite_offset[0][0]) >= INT_MAX >> shift_y  ||
-            FFABS(s->sprite_offset[1][0]) >= INT_MAX >> shift_c  ||
-            FFABS(s->sprite_offset[0][1]) >= INT_MAX >> shift_y  ||
-            FFABS(s->sprite_offset[1][1]) >= INT_MAX >> shift_c
+            FFABS(sprite_offset[0][0]) >= INT_MAX >> shift_y  ||
+            FFABS(sprite_offset[1][0]) >= INT_MAX >> shift_c  ||
+            FFABS(sprite_offset[0][1]) >= INT_MAX >> shift_y  ||
+            FFABS(sprite_offset[1][1]) >= INT_MAX >> shift_c
         ) {
             avpriv_request_sample(s->avctx, "Too large sprite shift or offset");
             goto overflow;
         }
 
         for (i = 0; i < 2; i++) {
-            s->sprite_offset[0][i] *= 1 << shift_y;
-            s->sprite_offset[1][i] *= 1 << shift_c;
+            sprite_offset[0][i]    *= 1 << shift_y;
+            sprite_offset[1][i]    *= 1 << shift_c;
             s->sprite_delta[0][i]  *= 1 << shift_y;
             s->sprite_delta[1][i]  *= 1 << shift_y;
             ctx->sprite_shift[i]     = 16;
@@ -392,16 +385,16 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
                 s->sprite_delta[i][1] - a * (1LL<<16)
             };
 
-            if (llabs(s->sprite_offset[0][i] + s->sprite_delta[i][0] * (w+16LL)) >= INT_MAX ||
-                llabs(s->sprite_offset[0][i] + s->sprite_delta[i][1] * (h+16LL)) >= INT_MAX ||
-                llabs(s->sprite_offset[0][i] + s->sprite_delta[i][0] * (w+16LL) + s->sprite_delta[i][1] * (h+16LL)) >= INT_MAX ||
+            if (llabs(sprite_offset[0][i] + s->sprite_delta[i][0] * (w+16LL)) >= INT_MAX ||
+                llabs(sprite_offset[0][i] + s->sprite_delta[i][1] * (h+16LL)) >= INT_MAX ||
+                llabs(sprite_offset[0][i] + s->sprite_delta[i][0] * (w+16LL) + s->sprite_delta[i][1] * (h+16LL)) >= INT_MAX ||
                 llabs(s->sprite_delta[i][0] * (w+16LL)) >= INT_MAX ||
                 llabs(s->sprite_delta[i][1] * (w+16LL)) >= INT_MAX ||
                 llabs(sd[0]) >= INT_MAX ||
                 llabs(sd[1]) >= INT_MAX ||
-                llabs(s->sprite_offset[0][i] + sd[0] * (w+16LL)) >= INT_MAX ||
-                llabs(s->sprite_offset[0][i] + sd[1] * (h+16LL)) >= INT_MAX ||
-                llabs(s->sprite_offset[0][i] + sd[0] * (w+16LL) + sd[1] * (h+16LL)) >= INT_MAX
+                llabs(sprite_offset[0][i] + sd[0] * (w+16LL)) >= INT_MAX ||
+                llabs(sprite_offset[0][i] + sd[1] * (h+16LL)) >= INT_MAX ||
+                llabs(sprite_offset[0][i] + sd[0] * (w+16LL) + sd[1] * (h+16LL)) >= INT_MAX
             ) {
                 avpriv_request_sample(s->avctx, "Overflow on sprite points");
                 goto overflow;
@@ -409,6 +402,11 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
         }
         s->real_sprite_warping_points = ctx->num_sprite_warping_points;
     }
+
+    s->sprite_offset[0][0] = sprite_offset[0][0];
+    s->sprite_offset[0][1] = sprite_offset[0][1];
+    s->sprite_offset[1][0] = sprite_offset[1][0];
+    s->sprite_offset[1][1] = sprite_offset[1][1];
 
     return 0;
 overflow:
