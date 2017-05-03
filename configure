@@ -2069,6 +2069,7 @@ HAVE_LIST="
     sndio
     texi2html
     threads
+    vaapi_android
     vaapi_drm
     vaapi_x11
     vdpau_x11
@@ -6103,6 +6104,11 @@ if enabled x86; then
     case $target_os in
         mingw32*|mingw64*|win32|win64|linux|cygwin*)
             ;;
+        android)
+            hevc_vaapi_hwaccel_deps="vaapi"
+            vp9_vaapi_hwaccel_deps="vaapi"
+            enable vaapi vaapi_android
+            ;&
         *)
             disable cuda cuvid nvenc
             ;;
