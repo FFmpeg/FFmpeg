@@ -1661,6 +1661,7 @@ SYSTEM_FUNCS="
 "
 
 TOOLCHAIN_FEATURES="
+    as_arch_directive
     as_dn_directive
     as_fpu_directive
     as_func
@@ -4376,6 +4377,9 @@ EOF
 
     check_inline_asm asm_mod_q '"add r0, %Q0, %R0" :: "r"((long long)0)'
 
+    check_as <<EOF && enable as_arch_directive
+.arch armv7-a
+EOF
     check_as <<EOF && enable as_dn_directive
 ra .dn d0.i16
 .unreq ra
