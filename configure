@@ -5806,7 +5806,14 @@ enabled libopenjpeg       && { { check_lib libopenjpeg openjpeg-2.1/openjpeg.h o
                                { check_lib libopenjpeg openjpeg.h opj_version -lopenjpeg -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
                                die "ERROR: libopenjpeg not found"; }
 enabled libopenmpt        && require_pkg_config "libopenmpt >= 0.2.6557" libopenmpt/libopenmpt.h openmpt_module_create
-enabled libopus           && require_pkg_config opus opus_multistream.h opus_multistream_decoder_create
+enabled libopus           && {
+    enabled libopus_decoder && {
+        require_pkg_config opus opus_multistream.h opus_multistream_decoder_create
+    }
+    enabled libopus_encoder && {
+        require_pkg_config opus opus_multistream.h opus_multistream_surround_encoder_create
+    }
+}
 enabled libpulse          && require_pkg_config libpulse pulse/pulseaudio.h pa_context_new
 enabled librtmp           && require_pkg_config librtmp librtmp/rtmp.h RTMP_Socket
 enabled librubberband     && require_pkg_config "rubberband >= 1.8.1" rubberband/rubberband-c.h rubberband_new
