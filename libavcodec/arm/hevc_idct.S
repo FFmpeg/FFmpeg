@@ -536,10 +536,10 @@ endfunc
         butterfly       q10, q14, q2, q5
         butterfly       q11, q15, q3, q4
         add             r4,  sp,  #512
-        vst1.s16        {q0-q1}, [r4, :128]!
-        vst1.s16        {q2-q3}, [r4, :128]!
-        vst1.s16        {q4-q5}, [r4, :128]!
-        vst1.s16        {q6-q7}, [r4, :128]
+        vst1.s32        {q0-q1}, [r4, :128]!
+        vst1.s32        {q2-q3}, [r4, :128]!
+        vst1.s32        {q4-q5}, [r4, :128]!
+        vst1.s32        {q6-q7}, [r4, :128]
 .endm
 
 .macro load16 in0, in1, in2, in3, in4, in5, in6, in7
@@ -631,8 +631,8 @@ function func_tr_16x4_\name
         add_member      d7, d1[3], d1[2], d1[1], d1[0], d0[3], d0[2], d0[1], d0[0], +, -, +, -, +, -, +, -
 
         add             r4, sp, #512
-        vld1.s16        {q0-q1}, [r4, :128]!
-        vld1.s16        {q2-q3}, [r4, :128]!
+        vld1.s32        {q0-q1}, [r4, :128]!
+        vld1.s32        {q2-q3}, [r4, :128]!
 
         butterfly16     q0, q5, q1, q6, q2, q7, q3, q8
         scale           d26, d27, d28, d29, d30, d31, d16, d17, q4, q0, q5, q1, q6, q2, q7, q3, \shift
@@ -645,8 +645,8 @@ function func_tr_16x4_\name
         store16         d26, d27, d28, d29, d30, d31, d16, d17
 
         add             r4, sp, #576
-        vld1.s16        {q0-q1}, [r4, :128]!
-        vld1.s16        {q2-q3}, [r4, :128]
+        vld1.s32        {q0-q1}, [r4, :128]!
+        vld1.s32        {q2-q3}, [r4, :128]
         butterfly16     q0, q9, q1, q10, q2, q11, q3, q12
         scale           d26, d27, d28, d29, d30, d31, d8, d9, q4, q0, q9, q1, q10, q2, q11, q3, \shift
         transpose8_4x4  d26, d28, d30, d8
