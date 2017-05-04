@@ -1739,6 +1739,7 @@ CONFIG_EXTRA="
     blockdsp
     bswapdsp
     cabac
+    cbs
     dirac_parse
     dvprofile
     faandct

@@ -53,6 +53,7 @@ OBJS-$(CONFIG_AUDIODSP)                += audiodsp.o
 OBJS-$(CONFIG_BLOCKDSP)                += blockdsp.o
 OBJS-$(CONFIG_BSWAPDSP)                += bswapdsp.o
 OBJS-$(CONFIG_CABAC)                   += cabac.o
+OBJS-$(CONFIG_CBS)                     += cbs.o
 OBJS-$(CONFIG_DCT)                     += dct.o dct32_fixed.o dct32_float.o
 OBJS-$(CONFIG_ERROR_RESILIENCE)        += error_resilience.o
 OBJS-$(CONFIG_FAANDCT)                 += faandct.o
