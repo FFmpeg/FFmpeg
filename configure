@@ -2914,6 +2914,7 @@ vc1_parser_select="vc1dsp"
 
 # bitstream_filters
 mjpeg2jpeg_bsf_select="jpegtables"
+trace_headers_bsf_select="cbs_h264 cbs_h265 cbs_mpeg2"
 
 # external libraries
 aac_at_decoder_deps="audiotoolbox"

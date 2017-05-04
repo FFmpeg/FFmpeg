@@ -275,6 +275,14 @@ codec) with metadata headers.
 
 See also the @ref{mov2textsub} filter.
 
+@section trace_headers
+
+Log trace output containing all syntax elements in the coded stream
+headers (everything above the level of individual coded blocks).
+This can be useful for debugging low-level stream issues.
+
+Supports H.264, H.265 and MPEG-2.
+
 @section vp9_superframe
 
 Merge VP9 invisible (alt-ref) frames back into VP9 superframes. This
