@@ -2323,6 +2323,7 @@ vc1_parser_select="vc1dsp"
 
 # bitstream_filters
 aac_adtstoasc_bsf_select="adts_header"
+h264_metadata_bsf_select="cbs_h264"
 mjpeg2jpeg_bsf_select="jpegtables"
 trace_headers_bsf_select="cbs_h264 cbs_h265"
 
