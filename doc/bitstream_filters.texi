@@ -104,6 +104,15 @@ insert the string ``hello'' associated with the given UUID.
 
 @section h264_mp4toannexb
 
+@section h264_redundant_pps
+
+This applies a specific fixup to some Bluray streams which contain
+redundant PPSs modifying irrelevant parameters of the stream which
+confuse other transformations which require correct extradata.
+
+A new single global PPS is created, and all of the redundant PPSs
+within the stream are removed.
+
 @section imx_dump_header
 
 @section mjpeg2jpeg
