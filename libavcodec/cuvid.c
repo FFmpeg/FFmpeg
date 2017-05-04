@@ -802,9 +802,17 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
             goto error;
         }
     } else {
-        ret = av_hwdevice_ctx_create(&ctx->hwdevice, AV_HWDEVICE_TYPE_CUDA, ctx->cu_gpu, NULL, 0);
-        if (ret < 0)
-            goto error;
+        if (avctx->hw_device_ctx) {
+            ctx->hwdevice = av_buffer_ref(avctx->hw_device_ctx);
+            if (!ctx->hwdevice) {
+                ret = AVERROR(ENOMEM);
+                goto error;
+            }
+        } else {
+            ret = av_hwdevice_ctx_create(&ctx->hwdevice, AV_HWDEVICE_TYPE_CUDA, ctx->cu_gpu, NULL, 0);
+            if (ret < 0)
+                goto error;
+        }
 
         ctx->hwframe = av_hwframe_ctx_alloc(ctx->hwdevice);
         if (!ctx->hwframe) {

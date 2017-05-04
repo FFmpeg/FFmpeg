@@ -15,6 +15,11 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2017-05-05 - xxxxxxxxxx - lavc 57.94.100 - avcodec.h
+  The cuvid decoders now support AVCodecContext.hw_device_ctx, which removes
+  the requirement to set an incomplete AVCodecContext.hw_frames_ctx only to
+  set the Cuda device handle.
+
 2017-04-11 - 8378466507 - lavu 55.61.100 - avstring.h
   Add av_strireplace().
 
