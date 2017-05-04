@@ -3260,6 +3260,8 @@ int ffmpeg_parse_options(int argc, char **argv)
         goto fail;
     }
 
+    check_filter_outputs();
+
 fail:
     uninit_parse_context(&octx);
     if (ret < 0) {
