@@ -95,6 +95,14 @@ This bitstream filter passes the packets through unchanged.
 
 @section remove_extradata
 
+@section trace_headers
+
+Log trace output containing all syntax elements in the coded stream
+headers (everything above the level of individual coded blocks).
+This can be useful for debugging low-level stream issues.
+
+Supports H.264 and H.265.
+
 @section vp9_superframe
 
 Combine VP9 frames into superframes.
