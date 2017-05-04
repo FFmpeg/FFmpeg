@@ -240,7 +240,7 @@ static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb,
         if (get_bits_left(gb) <= 0)
             goto error;
     } else {
-        int mid = (base * 2 + add + 1) >> 1;
+        int mid = (base * 2U + add + 1) >> 1;
         while (add > c->error_limit) {
             if (get_bits_left(gb) <= 0)
                 goto error;
@@ -249,7 +249,7 @@ static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb,
                 base = mid;
             } else
                 add = mid - base - 1;
-            mid = (base * 2 + add + 1) >> 1;
+            mid = (base * 2U + add + 1) >> 1;
         }
         ret = mid;
     }
