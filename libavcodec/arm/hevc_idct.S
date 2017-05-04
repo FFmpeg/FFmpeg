@@ -28,6 +28,10 @@ const trans, align=4
         .short 89, 75, 50, 18
         .short 90, 87, 80, 70
         .short 57, 43, 25, 9
+        .short 90, 90, 88, 85
+        .short 82, 78, 73, 67
+        .short 61, 54, 46, 38
+        .short 31, 22, 13, 4
 endconst
 
 .macro clip10 in1, in2, c1, c2
@@ -509,7 +513,7 @@ endfunc
         vsub.s32        \tmp_m, \e, \o
 .endm
 
-.macro tr16_8x4 in0, in1, in2, in3, in4, in5, in6, in7
+.macro tr16_8x4 in0, in1, in2, in3, in4, in5, in6, in7, offset
         tr_4x4_8        \in0, \in2, \in4, \in6, q8, q9, q10, q11, q12, q13, q14, q15
 
         vmull.s16       q12, \in1, \in0[0]
@@ -535,7 +539,7 @@ endfunc
         butterfly       q9,  q13, q1, q6
         butterfly       q10, q14, q2, q5
         butterfly       q11, q15, q3, q4
-        add             r4,  sp,  #512
+        add             r4,  sp,  #\offset
         vst1.s32        {q0-q1}, [r4, :128]!
         vst1.s32        {q2-q3}, [r4, :128]!
         vst1.s32        {q4-q5}, [r4, :128]!
@@ -575,15 +579,15 @@ endfunc
         vsub.s32        \in6, \in6, \in7
 .endm
 
-.macro store16 in0, in1, in2, in3, in4, in5, in6, in7
+.macro store16 in0, in1, in2, in3, in4, in5, in6, in7, rx
         vst1.s16        \in0, [r1, :64], r2
-        vst1.s16        \in1, [r3, :64], r4
+        vst1.s16        \in1, [r3, :64], \rx
         vst1.s16        \in2, [r1, :64], r2
-        vst1.s16        \in3, [r3, :64], r4
+        vst1.s16        \in3, [r3, :64], \rx
         vst1.s16        \in4, [r1, :64], r2
-        vst1.s16        \in5, [r3, :64], r4
+        vst1.s16        \in5, [r3, :64], \rx
         vst1.s16        \in6, [r1, :64], r2
-        vst1.s16        \in7, [r3, :64], r4
+        vst1.s16        \in7, [r3, :64], \rx
 .endm
 
 .macro scale out0, out1, out2, out3, out4, out5, out6, out7, in0, in1, in2, in3, in4, in5, in6, in7, shift
@@ -597,19 +601,35 @@ endfunc
         vqrshrn.s32     \out7, \in7, \shift
 .endm
 
-.macro tr_16x4 name, shift
+@stores in1, in2, in4, in6 ascending from off1 and
+@stores in1, in3, in5, in7 descending from off2
+.macro store_to_stack off1, off2, in0, in2, in4, in6, in7, in5, in3, in1
+        add             r1, sp, #\off1
+        add             r3, sp, #\off2
+        mov             r2, #-16
+        vst1.s32        {\in0}, [r1, :128]!
+        vst1.s32        {\in1}, [r3, :128], r2
+        vst1.s32        {\in2}, [r1, :128]!
+        vst1.s32        {\in3}, [r3, :128], r2
+        vst1.s32        {\in4}, [r1, :128]!
+        vst1.s32        {\in5}, [r3, :128], r2
+        vst1.s32        {\in6}, [r1, :128]
+        vst1.s32        {\in7}, [r3, :128]
+.endm
+
+.macro tr_16x4 name, shift, offset, step
 function func_tr_16x4_\name
         mov             r1,  r5
-        add             r3,  r5, #64
-        mov             r2,  #128
+        add             r3, r5, #(\step * 64)
+        mov             r2, #(\step * 128)
         load16          d0, d1, d2, d3, d4, d5, d6, d7
         movrel          r1, trans
 
-        tr16_8x4        d0, d1, d2, d3, d4, d5, d6, d7
+        tr16_8x4        d0, d1, d2, d3, d4, d5, d6, d7, \offset
 
-        add             r1,  r5, #32
-        add             r3,  r5, #(64 + 32)
-        mov             r2,  #128
+        add             r1,  r5, #(\step * 32)
+        add             r3,  r5, #(\step * 3 *32)
+        mov             r2,  #(\step * 128)
         load16          d8, d9, d2, d3, d4, d5, d6, d7
         movrel          r1, trans + 16
         vld1.s16        {q0}, [r1, :128]
@@ -630,11 +650,12 @@ function func_tr_16x4_\name
         add_member      d6, d1[2], d0[3], d0[0], d0[2], d1[1], d1[3], d1[0], d0[1], +, -, +, -, +, +, -, +
         add_member      d7, d1[3], d1[2], d1[1], d1[0], d0[3], d0[2], d0[1], d0[0], +, -, +, -, +, -, +, -
 
-        add             r4, sp, #512
+        add             r4, sp, #\offset
         vld1.s32        {q0-q1}, [r4, :128]!
         vld1.s32        {q2-q3}, [r4, :128]!
 
         butterfly16     q0, q5, q1, q6, q2, q7, q3, q8
+    .if \shift > 0
         scale           d26, d27, d28, d29, d30, d31, d16, d17, q4, q0, q5, q1, q6, q2, q7, q3, \shift
         transpose8_4x4  d26, d28, d30, d16
         transpose8_4x4  d17, d31, d29, d27
@@ -642,12 +663,16 @@ function func_tr_16x4_\name
         add             r3, r6, #(24 +3*32)
         mov             r2, #32
         mov             r4, #-32
-        store16         d26, d27, d28, d29, d30, d31, d16, d17
+        store16         d26, d27, d28, d29, d30, d31, d16, d17, r4
+    .else
+        store_to_stack  \offset, (\offset + 240), q4, q5, q6, q7, q3, q2, q1, q0
+    .endif
 
-        add             r4, sp, #576
+        add             r4, sp, #(\offset + 64)
         vld1.s32        {q0-q1}, [r4, :128]!
         vld1.s32        {q2-q3}, [r4, :128]
         butterfly16     q0, q9, q1, q10, q2, q11, q3, q12
+    .if \shift > 0
         scale           d26, d27, d28, d29, d30, d31, d8, d9, q4, q0, q9, q1, q10, q2, q11, q3, \shift
         transpose8_4x4  d26, d28, d30, d8
         transpose8_4x4  d9, d31, d29, d27
@@ -656,7 +681,10 @@ function func_tr_16x4_\name
         add             r3, r6, #(16 + 3 * 32)
         mov             r2, #32
         mov             r4, #-32
-        store16         d26, d27, d28, d29, d30, d31, d8, d9
+        store16         d26, d27, d28, d29, d30, d31, d8, d9, r4
+    .else
+        store_to_stack (\offset + 64), (\offset + 176), q4, q9, q10, q11, q3, q2, q1, q0
+    .endif
 
         bx              lr
 endfunc
@@ -694,9 +722,248 @@ A       and             r7,  sp,  #15
 endfunc
 .endm
 
-tr_16x4 firstpass, 7
-tr_16x4 secondpass_8, 20 - 8
-tr_16x4 secondpass_10, 20 - 10
+.macro load32
+        add             r1,  r5, #64
+        add             r3,  r1, #128
+        mov             r2,  #256
+        vld1.s16        {d4}, [r1, :64], r2
+        vld1.s16        {d5}, [r3, :64], r2
+        vld1.s16        {d6}, [r1, :64], r2
+        vld1.s16        {d7}, [r3, :64], r2
+        vld1.s16        {d8}, [r1, :64], r2
+        vld1.s16        {d9}, [r3, :64], r2
+        vld1.s16        {d10}, [r1, :64], r2
+        vld1.s16        {d11}, [r3, :64], r2
+        vld1.s16        {d12}, [r1, :64], r2
+        vld1.s16        {d13}, [r3, :64], r2
+        vld1.s16        {d14}, [r1, :64], r2
+        vld1.s16        {d15}, [r3, :64], r2
+        vld1.s16        {d16}, [r1, :64], r2
+        vld1.s16        {d17}, [r3, :64], r2
+        vld1.s16        {d18}, [r1, :64], r2
+        vld1.s16        {d19}, [r3, :64], r2
+.endm
+
+.macro add_member32 in, t0, t1, t2, t3, op0, op1, op2, op3
+        sum_sub q10,     \in, \t0, \op0
+        sum_sub q11,     \in, \t1, \op1
+        sum_sub q12,     \in, \t2, \op2
+        sum_sub q13,     \in, \t3, \op3
+.endm
+
+.macro butterfly32 in0, in1, in2, in3
+        vadd.s32        q1, \in0, \in1
+        vsub.s32        \in0, \in0, \in1
+        vadd.s32        \in1, \in2, \in3
+        vsub.s32        \in2, \in2, \in3
+.endm
+
+.macro scale32 out0, out1, out2, out3, in0, in1, in2, in3, shift
+        vqrshrn.s32     \out0, \in0, \shift
+        vqrshrn.s32     \out1, \in1, \shift
+        vqrshrn.s32     \out2, \in2, \shift
+        vqrshrn.s32     \out3, \in3, \shift
+.endm
+
+.macro multiply in
+        vmull.s16       q10, d4, \in[0]
+        vmull.s16       q11, d4, \in[1]
+        vmull.s16       q12, d4, \in[2]
+        vmull.s16       q13, d4, \in[3]
+.endm
+
+.macro scale_store shift
+        vld1.s16        {q14-q15}, [r4, :128]!
+        butterfly32     q14, q10, q15, q11
+        scale32         d22, d23, d20, d21, q1, q14, q10, q15, \shift
+
+        vld1.s16        {q14-q15}, [r4, :128]!
+        butterfly32     q14, q12, q15, q13
+        scale32         d2, d3, d28, d29, q1, q14, q12, q15, \shift
+        transpose8_4x4  d22, d20, d2, d28
+        transpose8_4x4  d29, d3, d21, d23
+        store16         d22, d23, d20, d21, d2, d3, d28, d29, r8
+
+        @ reload multiplication coefficiens to q1
+        vld1.s16        {q1}, [r9, :128]
+.endm
+
+function tr_block1
+        multiply        d0
+        add_member32    d5,  d0[1], d1[0], d1[3], d2[2], +, +, +, +
+        add_member32    d6,  d0[2], d1[3], d3[0], d3[2], +, +, +, -
+        add_member32    d7,  d0[3], d2[2], d3[2], d1[3], +, +, -, -
+        add_member32    d8,  d1[0], d3[1], d2[1], d0[0], +, +, -, -
+        add_member32    d9,  d1[1], d3[3], d1[0], d1[2], +, -, -, -
+        add_member32    d10, d1[2], d3[0], d0[0], d3[1], +, -, -, -
+        add_member32    d11, d1[3], d2[1], d1[1], d2[3], +, -, -, +
+        add_member32    d12, d2[0], d1[2], d2[2], d1[0], +, -, -, +
+        add_member32    d13, d2[1], d0[3], d3[3], d0[2], +, -, -, +
+        add_member32    d14, d2[2], d0[1], d2[3], d2[1], +, -, +, +
+        add_member32    d15, d2[3], d0[2], d1[2], d3[3], +, -, +, -
+        add_member32    d16, d3[0], d1[1], d0[1], d2[0], +, -, +, -
+        add_member32    d17, d3[1], d2[0], d0[3], d0[1], +, -, +, -
+        add_member32    d18, d3[2], d2[3], d2[0], d1[1], +, -, +, -
+        add_member32    d19, d3[3], d3[2], d3[1], d3[0], +, -, +, -
+        bx              lr
+endfunc
+
+function tr_block2
+        multiply        d1
+        add_member32    d5,  d3[1], d3[3], d3[0], d2[1], +, -, -, -
+        add_member32    d6,  d2[1], d1[0], d0[0], d1[1], -, -, -, -
+        add_member32    d7,  d0[0], d1[2], d3[1], d2[3], -, -, -, +
+        add_member32    d8,  d2[0], d3[2], d1[1], d0[3], -, +, +, +
+        add_member32    d9,  d3[2], d0[3], d1[3], d3[1], +, +, +, -
+        add_member32    d10, d1[1], d1[3], d2[3], d0[0], +, +, -, -
+        add_member32    d11, d0[3], d3[1], d0[1], d3[3], +, -, -, +
+        add_member32    d12, d3[0], d0[2], d3[2], d0[1], +, -, -, +
+        add_member32    d13, d2[2], d2[0], d1[0], d3[2], -, -, +, +
+        add_member32    d14, d0[1], d3[0], d2[0], d0[2], -, +, +, -
+        add_member32    d15, d1[3], d0[1], d2[2], d3[0], -, +, -, -
+        add_member32    d16, d3[3], d2[1], d0[2], d1[0], +, +, -, +
+        add_member32    d17, d1[2], d2[3], d3[3], d2[2], +, -, -, +
+        add_member32    d18, d0[2], d0[1], d0[3], d1[2], +, -, +, -
+        add_member32    d19, d2[3], d2[2], d2[1], d2[0], +, -, +, -
+        bx              lr
+endfunc
+
+function tr_block3
+        multiply        d2
+        add_member32    d5,  d1[2], d0[3], d0[0], d0[2], -, -, -, -
+        add_member32    d6,  d2[2], d3[3], d2[3], d1[2], -, -, +, +
+        add_member32    d7,  d1[0], d0[2], d2[1], d3[3], +, +, +, -
+        add_member32    d8,  d3[0], d2[2], d0[1], d1[3], +, -, -, -
+        add_member32    d9,  d0[2], d2[0], d3[0], d0[0], -, -, +, +
+        add_member32    d10, d3[2], d1[0], d2[0], d2[2], -, +, +, -
+        add_member32    d11, d0[0], d3[2], d0[2], d3[0], +, +, -, -
+        add_member32    d12, d3[3], d0[1], d3[1], d0[3], -, -, +, +
+        add_member32    d13, d0[1], d2[3], d1[3], d1[1], -, +, +, -
+        add_member32    d14, d3[1], d1[3], d0[3], d3[2], +, +, -, +
+        add_member32    d15, d0[3], d1[1], d3[2], d2[0], +, -, +, +
+        add_member32    d16, d2[3], d3[1], d1[2], d0[1], -, -, +, -
+        add_member32    d17, d1[1], d0[0], d1[0], d2[1], -, +, -, +
+        add_member32    d18, d2[1], d3[0], d3[3], d3[1], +, -, +, +
+        add_member32    d19, d1[3], d1[2], d1[1], d1[0], +, -, +, -
+        bx              lr
+endfunc
+
+function tr_block4
+        multiply        d3
+        add_member32    d5,  d1[1], d2[0], d2[3], d3[2], -, -, -, -
+        add_member32    d6,  d0[0], d0[3], d2[0], d3[1], +, +, +, +
+        add_member32    d7,  d2[0], d0[0], d1[1], d3[0], -, -, -, -
+        add_member32    d8,  d3[3], d1[2], d0[2], d2[3], +, +, +, +
+        add_member32    d9,  d2[1], d2[3], d0[0], d2[2], +, -, -, -
+        add_member32    d10, d0[2], d3[3], d0[3], d2[1], -, -, +, +
+        add_member32    d11, d1[0], d2[2], d1[2], d2[0], +, +, -, -
+        add_member32    d12, d2[3], d1[1], d2[1], d1[3], -, -, +, +
+        add_member32    d13, d3[1], d0[1], d3[0], d1[2], -, +, -, -
+        add_member32    d14, d1[2], d1[0], d3[3], d1[1], +, -, +, +
+        add_member32    d15, d0[1], d2[1], d3[1], d1[0], -, +, +, -
+        add_member32    d16, d1[3], d3[2], d2[2], d0[3], +, -, -, +
+        add_member32    d17, d3[2], d3[0], d1[3], d0[2], -, -, +, -
+        add_member32    d18, d2[2], d1[3], d1[0], d0[1], -, +, -, +
+        add_member32    d19, d0[3], d0[2], d0[1], d0[0], +, -, +, -
+        bx              lr
+endfunc
+
+.macro tr_32x4 name, shift
+function func_tr_32x4_\name
+        mov             r10, lr
+        bl              func_tr_16x4_noscale
+
+        load32
+        movrel          r9, trans + 32
+        vld1.s16        {q0}, [r9, :128]!
+        vld1.s16        {q1}, [r9, :128]
+
+        bl              tr_block1
+
+        add             r4, sp, #2048
+        vld1.s16        {q14-q15}, [r4, :128]!
+        butterfly32     q14, q10, q15, q11
+        scale32         d22, d23, d20, d21, q1, q14, q10, q15, \shift
+
+        vld1.s16        {q14-q15}, [r4, :128]!
+        butterfly32     q14, q12, q15, q13
+        scale32         d2, d3, d28, d29, q1, q14, q12, q15, \shift
+
+        transpose8_4x4  d22, d20, d2, d28
+        transpose8_4x4  d29, d3, d21, d23
+        mov             r1, r11
+        mov             r2, #64
+        mov             r8, #-64
+        add             r3, r11, #(56 + 3 * 64)
+        store16         d22, d23, d20, d21, d2, d3, d28, d29, r8
+
+        @ reload multiplication coefficiens to q1
+        vld1.s16        {q1}, [r9, :128]
+
+        bl              tr_block2
+        add             r1, r11, #8
+        add             r3, r11, #(48 + 3 * 64)
+        mov             r2, #64
+        mov             r8, #-64
+        scale_store     \shift
+
+        bl              tr_block3
+        add             r1, r11, #16
+        add             r3, r11, #(40 + 3 * 64)
+        mov             r2, #64
+        mov             r8, #-64
+        scale_store     \shift
+
+        bl              tr_block4
+        add             r1, r11, #24
+        add             r3, r11, #(32 + 3 * 64)
+        mov             r2, #64
+        mov             r8, #-64
+        scale_store     \shift
+
+        bx               r10
+endfunc
+.endm
+
+.macro idct_32x32 bitdepth
+function ff_hevc_idct_32x32_\bitdepth\()_neon, export=1
+@r0 - coeffs
+        push            {r4-r11, lr}
+        vpush           {q4-q7}
+
+        @ Align the stack, allocate a temp buffer
+T       mov             r7,  sp
+T       and             r7,  r7,  #15
+A       and             r7,  sp,  #15
+        add             r7,  r7,  #2432
+        sub             sp,  sp,  r7
+
+.irp i, 0, 1, 2, 3, 4, 5, 6, 7
+        add             r5, r0, #(8 * \i)
+        add             r11, sp, #(8 * \i * 32)
+        bl              func_tr_32x4_firstpass
+.endr
+
+.irp i, 0, 1, 2, 3, 4, 5, 6, 7
+        add             r5, sp, #(8 * \i)
+        add             r11, r0, #(8 * \i * 32)
+        bl              func_tr_32x4_secondpass_\bitdepth
+.endr
+
+        add             sp,  sp,  r7
+        vpop            {q4-q7}
+        pop             {r4-r11, pc}
+endfunc
+.endm
+
+tr_16x4 firstpass, 7, 512, 1
+tr_16x4 secondpass_8, 20 - 8, 512, 1
+tr_16x4 secondpass_10, 20 - 10, 512, 1
+tr_16x4 noscale, 0, 2048, 4
+.ltorg
+tr_32x4 firstpass, 7
+tr_32x4 secondpass_8, 20 - 8
+tr_32x4 secondpass_10, 20 - 10
 .ltorg
 
 idct_4x4 8
@@ -711,5 +978,7 @@ idct_16x16 8
 idct_16x16_dc 8
 idct_16x16 10
 idct_16x16_dc 10
+idct_32x32 8
 idct_32x32_dc 8
+idct_32x32 10
 idct_32x32_dc 10
