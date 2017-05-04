@@ -880,6 +880,13 @@ typedef struct AVIndexEntry {
 #define AV_DISPOSITION_TIMED_THUMBNAILS     (1 << 11)
 
 /**
+ * The stream is intended to be mixed with a spatial audio track. For example,
+ * it could be used for narration or stereo music, and may remain unchanged by
+ * listener head rotation.
+ */
+#define AV_DISPOSITION_NON_DIEGETIC         (1 << 12)
+
+/**
  * The subtitle stream contains captions, providing a transcription and possibly
  * a translation of audio. Typically intended for hearing-impaired audiences.
  */
