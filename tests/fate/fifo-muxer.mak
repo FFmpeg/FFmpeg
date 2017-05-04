@@ -13,7 +13,7 @@ FATE_SAMPLES_FIFO_MUXER-$(call ALLYES, FIFO_MUXER, WAV_DEMUXER) += fate-fifo-mux
 
 fate-fifo-muxer-tst: libavformat/tests/fifo_muxer$(EXESUF)
 fate-fifo-muxer-tst: CMD = run libavformat/tests/fifo_muxer$(EXESUF)
-FATE_FIFO_MUXER-$(CONFIG_FIFO_MUXER) += fate-fifo-muxer-tst
+FATE_FIFO_MUXER-$(call ALLYES, FIFO_MUXER NETWORK) += fate-fifo-muxer-tst
 
 FATE_SAMPLES_FFMPEG += $(FATE_SAMPLES_FIFO_MUXER-yes)
 FATE_FFMPEG += $(FATE_FIFO_MUXER-yes)
