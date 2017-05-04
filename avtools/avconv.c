@@ -1127,6 +1127,12 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     int64_t ost_tb_start_time = av_rescale_q(start_time, AV_TIME_BASE_Q, ost->mux_timebase);
     AVPacket opkt;
 
+    // EOF: flush output bitstream filters.
+    if (!pkt) {
+        output_packet(of, &opkt, ost, 1);
+        return;
+    }
+
     av_init_packet(&opkt);
 
     if ((!ost->frame_number && !(pkt->flags & AV_PKT_FLAG_KEY)) &&
@@ -1590,7 +1596,7 @@ static void process_input_packet(InputStream *ist, const AVPacket *pkt, int no_e
             break;
         }
     }
-    for (i = 0; pkt && i < nb_output_streams; i++) {
+    for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
 
         if (!check_output_constraints(ist, ost) || ost->encoding_needed)
@@ -2779,7 +2785,7 @@ static int transcode(void)
     /* at the end of stream, we must flush the decoder buffers */
     for (i = 0; i < nb_input_streams; i++) {
         ist = input_streams[i];
-        if (!input_files[ist->file_index]->eof_reached && ist->decoding_needed) {
+        if (!input_files[ist->file_index]->eof_reached) {
             process_input_packet(ist, NULL, 0);
         }
     }
