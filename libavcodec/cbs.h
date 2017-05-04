@@ -45,6 +45,7 @@ struct CodedBitstreamType;
  *
  * H.264 / AVC: nal_unit_type
  * H.265 / HEVC: nal_unit_type
+ * MPEG-2: start code value (without prefix)
  */
 typedef uint32_t CodedBitstreamUnitType;
 
