@@ -22,7 +22,7 @@
 
 #include "libavutil/aarch64/asm.S"
 
-const register_init
+const register_init, align=4
     .quad 0x21f86d66c8ca00ce
     .quad 0x75b6ba21077c48ad
     .quad 0xed56bb2dcb3c7736
