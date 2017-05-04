@@ -1,6 +1,5 @@
-include $(SUBDIR)../ffbuild/config.mak
-
 NAME    = avdevice
+DESC    = FFmpeg device handling library
 
 HEADERS = avdevice.h                                                    \
           version.h                                                     \

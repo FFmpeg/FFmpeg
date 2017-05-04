@@ -1,6 +1,5 @@
-include $(SUBDIR)../ffbuild/config.mak
-
 NAME = swscale
+DESC = FFmpeg image rescaling library
 
 HEADERS = swscale.h                                                     \
           version.h                                                     \

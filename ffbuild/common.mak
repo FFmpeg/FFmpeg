@@ -89,7 +89,7 @@ COMPILE_HOSTC = $(call COMPILE,HOSTCC)
 %.h.c:
 	$(Q)echo '#include "$*.h"' >$@
 
-%.c %.h %.ver: TAG = GEN
+%.c %.h %.pc %.ver %.version: TAG = GEN
 
 # Dummy rule to stop make trying to rebuild removed or renamed headers
 %.h:
@@ -154,7 +154,7 @@ $(TOOLOBJS): | tools
 
 OBJDIRS := $(OBJDIRS) $(dir $(OBJS) $(HOBJS) $(HOSTOBJS) $(SLIBOBJS) $(TESTOBJS))
 
-CLEANSUFFIXES     = *.d *.o *~ *.h.c *.gcda *.gcno *.map *.ver *.ho *$(DEFAULT_YASMD).asm
+CLEANSUFFIXES     = *.d *.o *~ *.h.c *.gcda *.gcno *.map *.ver *.version *.ho *$(DEFAULT_YASMD).asm
 DISTCLEANSUFFIXES = *.pc
 LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a
 

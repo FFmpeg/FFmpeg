@@ -87,7 +87,6 @@ tools/target_dec_%_fuzzer$(EXESUF): $(FF_DEP_LIBS)
 
 CONFIGURABLE_COMPONENTS =                                           \
     $(wildcard $(FFLIBS:%=$(SRC_PATH)/lib%/all*.c))                 \
-    $(wildcard $(FFLIBS:%=$(SRC_PATH)/lib%/version.h))              \
     $(SRC_PATH)/libavcodec/bitstream_filters.c                      \
     $(SRC_PATH)/libavformat/protocols.c                             \
 
@@ -108,6 +107,12 @@ define RESET
 $(1) :=
 $(1)-yes :=
 endef
+
+ifdef CONFIG_RAISE_MAJOR
+RAISE_MAJOR = 100
+else
+RAISE_MAJOR = 0
+endif
 
 define DOSUBDIR
 $(foreach V,$(SUBDIR_VARS),$(eval $(call RESET,$(V))))
