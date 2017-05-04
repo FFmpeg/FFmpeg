@@ -2913,6 +2913,7 @@ mpeg4video_parser_select="h263dsp mpegvideo qpeldsp"
 vc1_parser_select="vc1dsp"
 
 # bitstream_filters
+h264_metadata_bsf_select="cbs_h264"
 mjpeg2jpeg_bsf_select="jpegtables"
 trace_headers_bsf_select="cbs_h264 cbs_h265 cbs_mpeg2"
 
