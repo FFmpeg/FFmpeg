@@ -112,6 +112,7 @@ static int trace_headers(AVBSFContext *bsf, AVPacket *out)
 static const enum AVCodecID trace_headers_codec_ids[] = {
     AV_CODEC_ID_H264,
     AV_CODEC_ID_HEVC,
+    AV_CODEC_ID_MPEG2VIDEO,
     AV_CODEC_ID_NONE,
 };
 
