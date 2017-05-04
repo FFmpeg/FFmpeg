@@ -392,7 +392,9 @@ static int decode_simple_internal(AVCodecContext *avctx, AVFrame *frame)
     tmp = *pkt;
 #if FF_API_MERGE_SD
 FF_DISABLE_DEPRECATION_WARNINGS
-    did_split = av_packet_split_side_data(&tmp);
+    did_split = avci->compat_decode_partial_size ?
+                ff_packet_split_and_drop_side_data(&tmp) :
+                av_packet_split_side_data(&tmp);
 
     if (did_split) {
         ret = extract_packet_props(avctx->internal, &tmp);
@@ -961,6 +963,7 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
                              AVPacket *avpkt)
 {
     int i, ret = 0;
+    AVCodecInternal *avci = avctx->internal;
 
     if (!avpkt->data && avpkt->size) {
         av_log(avctx, AV_LOG_ERROR, "invalid packet: NULL data, size != 0\n");
@@ -981,7 +984,9 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
         AVPacket tmp = *avpkt;
 #if FF_API_MERGE_SD
 FF_DISABLE_DEPRECATION_WARNINGS
-        int did_split = av_packet_split_side_data(&tmp);
+        int did_split = avci->compat_decode_partial_size ?
+                        ff_packet_split_and_drop_side_data(&tmp) :
+                        av_packet_split_side_data(&tmp);
         //apply_param_change(avctx, &tmp);
 
         if (did_split) {
