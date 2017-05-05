@@ -16,7 +16,7 @@ libavutil:     2015-08-28
 API changes, most recent first:
 
 2017-xx-xx - xxxxxxxxxx
-  Change av_sha_update() and av_md5_sum()/av_md5_update() length
+  Change av_sha_update(), av_sha512_update() and av_md5_sum()/av_md5_update() length
   parameter type to size_t at next major bump.
 
 2017-05-05 - xxxxxxxxxx - lavc 57.94.100 - avcodec.h
