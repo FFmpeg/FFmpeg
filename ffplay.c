@@ -3512,7 +3512,7 @@ static int opt_codec(void *optctx, const char *opt, const char *arg)
 static int dummy;
 
 static const OptionDef options[] = {
-#include "cmdutils_common_opts.h"
+    CMDUTILS_COMMON_OPTIONS
     { "x", HAS_ARG, { .func_arg = opt_width }, "force displayed width", "width" },
     { "y", HAS_ARG, { .func_arg = opt_height }, "force displayed height", "height" },
     { "s", HAS_ARG | OPT_VIDEO, { .func_arg = opt_frame_size }, "set frame size (WxH or abbreviation)", "size" },

@@ -3379,7 +3379,7 @@ DEFINE_OPT_SHOW_SECTION(streams,          STREAMS)
 DEFINE_OPT_SHOW_SECTION(programs,         PROGRAMS)
 
 static const OptionDef real_options[] = {
-#include "cmdutils_common_opts.h"
+    CMDUTILS_COMMON_OPTIONS
     { "f", HAS_ARG, {.func_arg = opt_format}, "force format", "format" },
     { "unit", OPT_BOOL, {&show_value_unit}, "show unit of the displayed values" },
     { "prefix", OPT_BOOL, {&use_value_prefix}, "use SI prefixes for the displayed values" },
