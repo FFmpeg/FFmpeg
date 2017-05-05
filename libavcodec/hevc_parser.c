@@ -173,14 +173,14 @@ static int hevc_parse_slice_header(AVCodecParserContext *s, H2645NAL *nal,
  * @param buf buffer with field/frame data.
  * @param buf_size size of the buffer.
  */
-static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
+static int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
                            int buf_size, AVCodecContext *avctx)
 {
     HEVCParserContext *ctx = s->priv_data;
     HEVCParamSets *ps = &ctx->ps;
     HEVCSEIContext *sei = &ctx->sei;
     int is_global = buf == avctx->extradata;
-    int i, ret;
+    int ret, i;
 
     /* set some sane default values */
     s->pict_type         = AV_PICTURE_TYPE_I;
@@ -218,16 +218,16 @@ static inline int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
         case HEVC_NAL_TSA_R:
         case HEVC_NAL_STSA_N:
         case HEVC_NAL_STSA_R:
-        case HEVC_NAL_RADL_N:
-        case HEVC_NAL_RADL_R:
-        case HEVC_NAL_RASL_N:
-        case HEVC_NAL_RASL_R:
         case HEVC_NAL_BLA_W_LP:
         case HEVC_NAL_BLA_W_RADL:
         case HEVC_NAL_BLA_N_LP:
         case HEVC_NAL_IDR_W_RADL:
         case HEVC_NAL_IDR_N_LP:
         case HEVC_NAL_CRA_NUT:
+        case HEVC_NAL_RADL_N:
+        case HEVC_NAL_RADL_R:
+        case HEVC_NAL_RASL_N:
+        case HEVC_NAL_RASL_R:
 
             if (is_global) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid NAL unit: %d\n", nal->type);
@@ -290,8 +290,7 @@ static int hevc_find_frame_end(AVCodecParserContext *s, const uint8_t *buf,
     return END_NOT_FOUND;
 }
 
-static int hevc_parse(AVCodecParserContext *s,
-                      AVCodecContext *avctx,
+static int hevc_parse(AVCodecParserContext *s, AVCodecContext *avctx,
                       const uint8_t **poutbuf, int *poutbuf_size,
                       const uint8_t *buf, int buf_size)
 {
