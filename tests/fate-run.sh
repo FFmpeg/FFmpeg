@@ -364,7 +364,7 @@ if test -e "$ref" || test $cmp = "oneline" || test $cmp = "grep" ; then
     cmperr=$?
     test $err = 0 && err=$cmperr
     if [ "$report_type" = "ignore" ]; then
-        test $err = 0 || echo "IGNORE  fate-${test}" && err=0 && unset sig
+        test $err = 0 || echo "IGNORE\t${test}" && err=0 && unset sig
     else
         test $err = 0 || cat $cmpfile
     fi
