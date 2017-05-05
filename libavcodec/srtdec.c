@@ -49,11 +49,12 @@ typedef struct SrtStack {
 
 static void rstrip_spaces_buf(AVBPrint *buf)
 {
-    while (buf->len > 0 && buf->str[buf->len - 1] == ' ')
-        buf->str[--buf->len] = 0;
+    if (av_bprint_is_complete(buf))
+        while (buf->len > 0 && buf->str[buf->len - 1] == ' ')
+            buf->str[--buf->len] = 0;
 }
 
-static void srt_to_ass(AVCodecContext *avctx, AVBPrint *dst,
+static int srt_to_ass(AVCodecContext *avctx, AVBPrint *dst,
                        const char *in, int x1, int y1, int x2, int y2)
 {
     char *param, buffer[128], tmp[128];
@@ -191,10 +192,15 @@ static void srt_to_ass(AVCodecContext *avctx, AVBPrint *dst,
             line_start = 0;
     }
 
+    if (!av_bprint_is_complete(dst))
+        return AVERROR(ENOMEM);
+
     while (dst->len >= 2 && !strncmp(&dst->str[dst->len - 2], "\\N", 2))
         dst->len -= 2;
     dst->str[dst->len] = 0;
     rstrip_spaces_buf(dst);
+
+    return 0;
 }
 
 static int srt_decode_frame(AVCodecContext *avctx,
