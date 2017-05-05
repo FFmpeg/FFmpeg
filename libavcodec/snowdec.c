@@ -395,6 +395,11 @@ static int decode_header(SnowContext *s){
         s->block_max_depth= 0;
         return AVERROR_INVALIDDATA;
     }
+    if (FFABS(s->qbias) > 127) {
+        av_log(s->avctx, AV_LOG_ERROR, "qbias %d is too large\n", s->qbias);
+        s->qbias = 0;
+        return AVERROR_INVALIDDATA;
+    }
 
     return 0;
 }
