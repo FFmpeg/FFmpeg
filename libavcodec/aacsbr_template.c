@@ -639,6 +639,7 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
             av_log(ac->avctx, AV_LOG_ERROR,
                    "Invalid bitstream, too many SBR envelopes in FIXFIX type SBR frame: %d\n",
                    ch_data->bs_num_env);
+            ch_data->bs_num_env = 2;
             return -1;
         }
 
@@ -694,6 +695,7 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
             av_log(ac->avctx, AV_LOG_ERROR,
                    "Invalid bitstream, too many SBR envelopes in VARVAR type SBR frame: %d\n",
                    ch_data->bs_num_env);
+            ch_data->bs_num_env = 2;
             return -1;
         }
 
