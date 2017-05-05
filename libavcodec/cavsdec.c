@@ -465,7 +465,7 @@ static inline void mv_pred_direct(AVSContext *h, cavs_vector *pmv_fw,
                                   cavs_vector *col_mv)
 {
     cavs_vector *pmv_bw = pmv_fw + MV_BWD_OFFS;
-    int den = h->direct_den[col_mv->ref];
+    unsigned den = h->direct_den[col_mv->ref];
     int m = FF_SIGNBIT(col_mv->x);
 
     pmv_fw->dist = h->dist[1];
