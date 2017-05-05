@@ -900,7 +900,7 @@ static void stereo_processing(PSContext *ps, float (*l)[32][2], float (*r)[32][2
                 h_step[1][3] = (H22[1][e+1][b] - h[1][3]) * width;
             }
             ps->dsp.stereo_interpolate[!PS_BASELINE && ps->enable_ipdopd](
-                l[k] + start + 1, r[k] + start + 1,
+                l[k] + 1 + start, r[k] + 1 + start,
                 h, h_step, stop - start);
         }
     }
