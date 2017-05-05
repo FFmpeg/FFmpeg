@@ -440,6 +440,8 @@ Developer options (useful when working on FFmpeg itself):
                            (only applies to --disable-optimizations builds)
   --enable-osfuzz          Enable building fuzzer tool
   --libfuzzer=PATH         path to libfuzzer
+  --ignore-tests=TESTS     comma-separated list (without "fate-" prefix
+                           in the name) of tests whose result is ignored
 
 NOTE: Object files are built at the place where configure is launched.
 EOF
@@ -2209,6 +2211,7 @@ CMDLINE_SET="
     host_ld
     host_ldflags
     host_os
+    ignore_tests
     install
     ld
     ln_s
@@ -6617,6 +6620,13 @@ for type in decoder encoder hwaccel parser demuxer muxer protocol filter bsf ind
     echo
 done
 
+if test -n "$ignore_tests"; then
+    ignore_tests=$(echo $ignore_tests | tr ',' ' ')
+    echo "Ignored FATE tests:"
+    echo $ignore_tests | print_in_columns
+    echo
+fi
+
 echo "License: $license"
 
 echo "Creating configuration files ..."
@@ -6754,6 +6764,7 @@ VERSION_SCRIPT_POSTPROCESS_CMD=${VERSION_SCRIPT_POSTPROCESS_CMD}
 SAMPLES:=${samples:-\$(FATE_SAMPLES)}
 NOREDZONE_FLAGS=$noredzone_flags
 LIBFUZZER_PATH=$libfuzzer_path
+IGNORE_TESTS=$ignore_tests
 EOF
 
 map 'eval echo "${v}_FFLIBS=\$${v}_deps" >> ffbuild/config.mak' $LIBRARY_LIST
