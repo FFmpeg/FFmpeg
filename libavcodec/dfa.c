@@ -175,7 +175,7 @@ static int decode_dds1(GetByteContext *gb, uint8_t *frame, int width, int height
                 return AVERROR_INVALIDDATA;
             frame += v;
         } else {
-            if (frame_end - frame < width + 3)
+            if (frame_end - frame < width + 4)
                 return AVERROR_INVALIDDATA;
             frame[0] = frame[1] =
             frame[width] = frame[width + 1] =  bytestream2_get_byte(gb);
