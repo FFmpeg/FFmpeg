@@ -37,6 +37,7 @@
 #include <float.h>
 #include <zlib.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intfloat.h"
@@ -276,21 +277,17 @@ static void predictor(uint8_t *src, int size)
 
 static void reorder_pixels(uint8_t *src, uint8_t *dst, int size)
 {
-    const int8_t *t1 = src;
-    const int8_t *t2 = src + (size + 1) / 2;
-    int8_t *s        = dst;
-    int8_t *stop     = s + size;
+    const uint8_t *t1 = src;
+    int half_size     = size / 2;
+    const uint8_t *t2 = src + half_size;
+    uint8_t *s        = dst;
+    int i;
 
-    while (1) {
-        if (s < stop)
-            *(s++) = *(t1++);
-        else
-            break;
+    av_assert1(size % 2 == 0);
 
-        if (s < stop)
-            *(s++) = *(t2++);
-        else
-            break;
+    for (i = 0; i < half_size; i++) {
+        *(s++) = *(t1++);
+        *(s++) = *(t2++);
     }
 }
 
