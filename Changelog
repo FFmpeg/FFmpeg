@@ -7,6 +7,7 @@ version <next>:
 - lumakey video filter
 - pixscope video filter
 - oscilloscope video filter
+- config.log and other configuration files moved into ffbuild/ directory
 
 version 3.3:
 - CrystalHD decoder moved to new decode API
