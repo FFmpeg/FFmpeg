@@ -52,7 +52,7 @@ static inline int wnv1_get_code(WNV1Context *w, int base_value)
     if (v == 15)
         return ff_reverse[get_bits(&w->gb, 8 - w->shift)];
     else
-        return base_value + ((v - 7) << w->shift);
+        return base_value + ((v - 7U) << w->shift);
 }
 
 static int decode_frame(AVCodecContext *avctx,
