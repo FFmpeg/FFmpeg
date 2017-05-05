@@ -46,11 +46,12 @@ typedef struct SrtStack {
 
 static void rstrip_spaces_buf(AVBPrint *buf)
 {
-    while (buf->len > 0 && buf->str[buf->len - 1] == ' ')
-        buf->str[--buf->len] = 0;
+    if (av_bprint_is_complete(buf))
+        while (buf->len > 0 && buf->str[buf->len - 1] == ' ')
+            buf->str[--buf->len] = 0;
 }
 
-void ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
+int ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
 {
     char *param, buffer[128], tmp[128];
     int len, tag_close, sptr = 1, line_start = 1, an = 0, end = 0;
@@ -171,8 +172,13 @@ void ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
             line_start = 0;
     }
 
+    if (!av_bprint_is_complete(dst))
+        return AVERROR(ENOMEM);
+
     while (dst->len >= 2 && !strncmp(&dst->str[dst->len - 2], "\\N", 2))
         dst->len -= 2;
     dst->str[dst->len] = 0;
     rstrip_spaces_buf(dst);
+
+    return 0;
 }
