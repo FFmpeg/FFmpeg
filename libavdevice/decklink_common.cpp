@@ -19,6 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/* Include internal.h first to avoid conflict between winsock.h (used by
+ * DeckLink headers) and winsock2.h (used by libavformat) in MSVC++ builds */
+extern "C" {
+#include "libavformat/internal.h"
+}
+
 #include <DeckLinkAPI.h>
 #ifdef _WIN32
 #include <DeckLinkAPI_i.c>
@@ -28,7 +34,6 @@
 
 extern "C" {
 #include "libavformat/avformat.h"
-#include "libavformat/internal.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/bswap.h"

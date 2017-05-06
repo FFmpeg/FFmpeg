@@ -19,12 +19,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/* Include internal.h first to avoid conflict between winsock.h (used by
+ * DeckLink headers) and winsock2.h (used by libavformat) in MSVC++ builds */
+extern "C" {
+#include "libavformat/internal.h"
+}
+
 #include <DeckLinkAPI.h>
 
 extern "C" {
 #include "config.h"
 #include "libavformat/avformat.h"
-#include "libavformat/internal.h"
 #include "libavutil/avutil.h"
 #include "libavutil/common.h"
 #include "libavutil/imgutils.h"
@@ -262,8 +267,15 @@ static int64_t get_pkt_pts(IDeckLinkVideoInputFrame *videoFrame,
                 res = videoFrame->GetHardwareReferenceTimestamp(time_base.den, &bmd_pts, &bmd_duration);
             break;
         case PTS_SRC_WALLCLOCK:
-            pts = av_rescale_q(wallclock, AV_TIME_BASE_Q, time_base);
+        {
+            /* MSVC does not support compound literals like AV_TIME_BASE_Q
+             * in C++ code (compiler error C4576) */
+            AVRational timebase;
+            timebase.num = 1;
+            timebase.den = AV_TIME_BASE;
+            pts = av_rescale_q(wallclock, timebase, time_base);
             break;
+        }
     }
     if (res == S_OK)
         pts = bmd_pts / time_base.num;
