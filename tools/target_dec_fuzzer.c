@@ -67,7 +67,6 @@ static AVCodec *AVCodecInitialize(enum AVCodecID codec_id)
 {
     AVCodec *res;
 
-    av_log_set_level(AV_LOG_PANIC);
     res = avcodec_find_decoder(codec_id);
     if (!res)
         error("Failed to find decoder");
@@ -146,13 +145,13 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 #define DECODER_SYMBOL(CODEC) DECODER_SYMBOL0(CODEC)
         extern AVCodec DECODER_SYMBOL(FFMPEG_DECODER);
         avcodec_register(&DECODER_SYMBOL(FFMPEG_DECODER));
-        int codec_id = DECODER_SYMBOL(FFMPEG_DECODER).id;
 
-        c = AVCodecInitialize(codec_id);  // Done once.
+        c = &DECODER_SYMBOL(FFMPEG_DECODER);
 #else
         avcodec_register_all();
         c = AVCodecInitialize(FFMPEG_CODEC);  // Done once.
 #endif
+        av_log_set_level(AV_LOG_PANIC);
     }
 
     switch (c->type) {
