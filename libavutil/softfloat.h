@@ -113,8 +113,15 @@ static inline av_const SoftFloat av_mul_sf(SoftFloat a, SoftFloat b){
  * @return Will not be more denormalized than a.
  */
 static inline av_const SoftFloat av_div_sf(SoftFloat a, SoftFloat b){
+    int64_t temp = (int64_t)a.mant * (1<<(ONE_BITS+1));
+    temp /= b.mant;
     a.exp -= b.exp;
-    a.mant = ((int64_t)a.mant<<(ONE_BITS+1)) / b.mant;
+    a.mant = temp;
+    while (a.mant != temp) {
+        temp /= 2;
+        a.exp--;
+        a.mant = temp;
+    }
     a = av_normalize1_sf(a);
     if (!a.mant || a.exp < MIN_EXP)
         return FLOAT_0;
