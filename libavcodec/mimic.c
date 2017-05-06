@@ -262,7 +262,7 @@ static int vlc_decode_block(MimicContext *ctx, int num_coeffs, int qscale)
 
         coeff = vlcdec_lookup[num_bits][value];
         if (pos < 3)
-            coeff <<= 4;
+            coeff *= 16;
         else /* TODO Use >> 10 instead of / 1001 */
             coeff = (coeff * qscale) / 1001;
 
