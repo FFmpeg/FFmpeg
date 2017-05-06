@@ -34,7 +34,7 @@ $(TESTPROGS) $(TOOLS): %$(EXESUF): %.o
 	$$(LD) $(LDFLAGS) $(LDEXEFLAGS) $$(LD_O) $$(filter %.o,$$^) $$(THISLIB) $(FFEXTRALIBS) $$(ELIBS)
 
 $(SUBDIR)lib$(NAME).version: $(SUBDIR)version.h | $(SUBDIR)
-	$$(M) $$(SRC_PATH)/ffbuild/libversion.sh $(NAME) $$< $(RAISE_MAJOR) > $$@
+	$$(M) $$(SRC_PATH)/ffbuild/libversion.sh $(NAME) $$< > $$@
 
 $(SUBDIR)lib$(FULLNAME).pc: $(SUBDIR)version.h | $(SUBDIR)
 	$$(M) $$(SRC_PATH)/ffbuild/pkgconfig_generate.sh $(NAME) "$(DESC)"

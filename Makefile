@@ -109,12 +109,6 @@ $(1) :=
 $(1)-yes :=
 endef
 
-ifdef CONFIG_RAISE_MAJOR
-RAISE_MAJOR = 100
-else
-RAISE_MAJOR = 0
-endif
-
 define DOSUBDIR
 $(foreach V,$(SUBDIR_VARS),$(eval $(call RESET,$(V))))
 SUBDIR := $(1)/

@@ -109,7 +109,6 @@ Configuration options:
   --enable-gray            enable full grayscale support (slower color)
   --disable-swscale-alpha  disable alpha channel support in swscale
   --disable-all            disable building components, libraries and programs
-  --enable-raise-major     increase major version numbers in sonames [no]
 
 Program options:
   --disable-programs       do not build command line programs
@@ -1692,7 +1691,6 @@ CONFIG_LIST="
     neon_clobber_test
     ossfuzz
     pic
-    raise_major
     thumb
     valgrind_backtrace
     xmm_clobber_test
