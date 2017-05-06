@@ -517,7 +517,7 @@ static void residual_interp(int16_t *buf, int16_t *out, int lag,
                       (iir_coef)[n - 1] * ((dest)[m - n] >> in_shift);\
         }\
 \
-        (dest)[m] = av_clipl_int32(((src)[m] << 16) + (filter << 3) +\
+        (dest)[m] = av_clipl_int32(((src)[m] * 65536) + (filter * 8) +\
                                    (1 << 15)) >> res_shift;\
     }\
 }
@@ -904,7 +904,7 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
                                              &p->subframe[i], p->cur_rate);
                 /* Get the total excitation */
                 for (j = 0; j < SUBFRAME_LEN; j++) {
-                    int v = av_clip_int16(vector_ptr[j] << 1);
+                    int v = av_clip_int16(vector_ptr[j] * 2);
                     vector_ptr[j] = av_clip_int16(v + acb_vector[j]);
                 }
                 vector_ptr += SUBFRAME_LEN;
