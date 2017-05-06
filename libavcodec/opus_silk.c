@@ -851,8 +851,7 @@ static inline void silk_stabilize_lsf(int16_t nlsf[16], int order, const uint16_
     if (nlsf[0] < min_delta[0])
         nlsf[0] = min_delta[0];
     for (i = 1; i < order; i++)
-        if (nlsf[i] < nlsf[i - 1] + min_delta[i])
-            nlsf[i] = nlsf[i - 1] + min_delta[i];
+        nlsf[i] = FFMAX(nlsf[i], FFMIN(nlsf[i - 1] + min_delta[i], 32767));
 
     /* push backwards to increase distance */
     if (nlsf[order-1] > 32768 - min_delta[order])
