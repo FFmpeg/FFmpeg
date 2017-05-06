@@ -264,7 +264,7 @@ static inline int read_huff_channels(MLPDecodeContext *m, GetBitContext *gbp,
             result = (result << lsb_bits) + get_bits(gbp, lsb_bits);
 
         result  += cp->sign_huff_offset;
-        result <<= quant_step_size;
+        result *= 1 << quant_step_size;
 
         m->sample_buffer[pos + s->blockpos][channel] = result;
     }
