@@ -39,7 +39,7 @@
 
 #define DDPF_FOURCC    (1 <<  2)
 #define DDPF_PALETTE   (1 <<  5)
-#define DDPF_NORMALMAP (1 << 31)
+#define DDPF_NORMALMAP (1U << 31)
 
 enum DDSPostProc {
     DDS_NONE = 0,
