@@ -124,8 +124,8 @@ static int decode_nal_sei_display_orientation(HEVCSEIDisplayOrientation *s, GetB
     return 0;
 }
 
-static int decode_pic_timing(HEVCSEIContext *s, GetBitContext *gb, const HEVCParamSets *ps,
-                             void *logctx)
+static int decode_nal_sei_pic_timing(HEVCSEIContext *s, GetBitContext *gb, const HEVCParamSets *ps,
+                                     void *logctx, int size)
 {
     HEVCSEIPictureTiming *h = &s->picture_timing;
     HEVCSPS *sps;
@@ -146,8 +146,12 @@ static int decode_pic_timing(HEVCSEIContext *s, GetBitContext *gb, const HEVCPar
         }
         get_bits(gb, 2);                   // source_scan_type
         get_bits(gb, 1);                   // duplicate_flag
+        skip_bits1(gb);
+        size--;
     }
-    return 1;
+    skip_bits_long(gb, 8 * size);
+
+    return 0;
 }
 
 static int decode_registered_user_data_closed_caption(HEVCSEIA53Caption *s, GetBitContext *gb,
@@ -272,12 +276,7 @@ static int decode_nal_sei_prefix(GetBitContext *gb, HEVCSEIContext *s, const HEV
     case HEVC_SEI_TYPE_DISPLAY_ORIENTATION:
         return decode_nal_sei_display_orientation(&s->display_orientation, gb);
     case HEVC_SEI_TYPE_PICTURE_TIMING:
-        {
-            int ret = decode_pic_timing(s, gb, ps, logctx);
-            av_log(logctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", type);
-            skip_bits(gb, 8 * size);
-            return ret;
-        }
+        return decode_nal_sei_pic_timing(s, gb, ps, logctx, size);
     case HEVC_SEI_TYPE_MASTERING_DISPLAY_INFO:
         return decode_nal_sei_mastering_display_info(&s->mastering_display, gb);
     case HEVC_SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO:
