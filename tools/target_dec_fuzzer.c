@@ -147,6 +147,10 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         avcodec_register(&DECODER_SYMBOL(FFMPEG_DECODER));
 
         c = &DECODER_SYMBOL(FFMPEG_DECODER);
+
+        // Unsupported
+        if (c->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU)
+            return 0;
 #else
         avcodec_register_all();
         c = AVCodecInitialize(FFMPEG_CODEC);  // Done once.
