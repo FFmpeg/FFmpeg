@@ -67,7 +67,8 @@ static int decode_tsw1(GetByteContext *gb, uint8_t *frame, int width, int height
     const uint8_t *frame_start = frame;
     const uint8_t *frame_end   = frame + width * height;
     int mask = 0x10000, bitbuf = 0;
-    int v, count, segments;
+    int v, count;
+    unsigned segments;
     unsigned offset;
 
     segments = bytestream2_get_le32(gb);
