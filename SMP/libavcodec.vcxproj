@@ -218,6 +218,7 @@
     <ClCompile Include="..\libavcodec\h264qpel.c" />
     <ClCompile Include="..\libavcodec\hevc_parse.c" />
     <ClCompile Include="..\libavcodec\hevc_ps.c" />
+    <ClCompile Include="..\libavcodec\hevc_sei.c" />
     <ClCompile Include="..\libavcodec\huffman.c" />
     <ClCompile Include="..\libavcodec\simple_idct.c" />
     <ClCompile Include="..\libavcodec\jrevdct.c" />
@@ -509,7 +510,6 @@
     <ClCompile Include="..\libavcodec\hap.c" />
     <ClCompile Include="..\libavcodec\hevcdec.c" />
     <ClCompile Include="..\libavcodec\hevc_mvs.c" />
-    <ClCompile Include="..\libavcodec\hevc_sei.c" />
     <ClCompile Include="..\libavcodec\hevc_cabac.c" />
     <ClCompile Include="..\libavcodec\hevc_refs.c" />
     <ClCompile Include="..\libavcodec\hevcpred.c" />
