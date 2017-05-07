@@ -53,6 +53,7 @@ typedef struct VAAPIEncodeH264Context {
     int fixed_qp_p;
     int fixed_qp_b;
 
+    H264RawAUD aud;
     H264RawSPS sps;
     H264RawPPS pps;
     H264RawSEI sei;
@@ -77,6 +78,7 @@ typedef struct VAAPIEncodeH264Context {
 
     CodedBitstreamContext cbc;
     CodedBitstreamFragment current_access_unit;
+    int aud_needed;
     int sei_needed;
 } VAAPIEncodeH264Context;
 
@@ -84,6 +86,7 @@ typedef struct VAAPIEncodeH264Options {
     int qp;
     int quality;
     int low_power;
+    int aud;
     int sei;
 } VAAPIEncodeH264Options;
 
@@ -143,6 +146,13 @@ static int vaapi_encode_h264_write_sequence_header(AVCodecContext *avctx,
     CodedBitstreamFragment   *au = &priv->current_access_unit;
     int err;
 
+    if (priv->aud_needed) {
+        err = vaapi_encode_h264_add_nal(avctx, au, &priv->aud);
+        if (err < 0)
+            goto fail;
+        priv->aud_needed = 0;
+    }
+
     err = vaapi_encode_h264_add_nal(avctx, au, &priv->sps);
     if (err < 0)
         goto fail;
@@ -167,6 +177,13 @@ static int vaapi_encode_h264_write_slice_header(AVCodecContext *avctx,
     CodedBitstreamFragment   *au = &priv->current_access_unit;
     int err;
 
+    if (priv->aud_needed) {
+        err = vaapi_encode_h264_add_nal(avctx, au, &priv->aud);
+        if (err < 0)
+            goto fail;
+        priv->aud_needed = 0;
+    }
+
     err = vaapi_encode_h264_add_nal(avctx, au, &priv->slice);
     if (err < 0)
         goto fail;
@@ -189,6 +206,11 @@ static int vaapi_encode_h264_write_extra_header(AVCodecContext *avctx,
     int err, i;
 
     if (priv->sei_needed) {
+        if (priv->aud_needed) {
+            vaapi_encode_h264_add_nal(avctx, au, &priv->aud);
+            priv->aud_needed = 0;
+        }
+
         memset(&priv->sei, 0, sizeof(priv->sei));
         priv->sei.nal_unit_header.nal_unit_type = H264_NAL_SEI;
 
@@ -569,6 +591,14 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
     priv->pic_order_cnt = pic->display_order - priv->last_idr_frame;
     priv->dpb_delay     = pic->display_order - pic->encode_order + 1;
 
+    if (opt->aud) {
+        priv->aud_needed = 1;
+        priv->aud.nal_unit_header.nal_unit_type = H264_NAL_AUD;
+        priv->aud.primary_pic_type = priv->primary_pic_type;
+    } else {
+        priv->aud_needed = 0;
+    }
+
     if (opt->sei & SEI_IDENTIFIER && pic->encode_order == 0)
         priv->sei_needed = 1;
 
@@ -914,6 +944,9 @@ static const AVOption vaapi_encode_h264_options[] = {
     { "low_power", "Use low-power encoding mode (experimental: only supported "
       "on some platforms, does not support all features)",
       OFFSET(low_power), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
+
+    { "aud", "Include AUD",
+      OFFSET(aud), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
 
     { "sei", "Set SEI to include",
       OFFSET(sei), AV_OPT_TYPE_FLAGS,
