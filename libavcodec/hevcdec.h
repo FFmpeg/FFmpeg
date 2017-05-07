@@ -444,6 +444,31 @@ typedef struct HEVCLocalContext {
     int boundary_flags;
 } HEVCLocalContext;
 
+typedef struct HEVCSEIPictureHash {
+    struct AVMD5 *md5_ctx;
+    uint8_t       md5[3][16];
+    uint8_t is_md5;
+} HEVCSEIPictureHash;
+
+typedef struct HEVCSEIFramePacking {
+    int present;
+    int arrangement_type;
+    int content_interpretation_type;
+    int quincunx_subsampling;
+} HEVCSEIFramePacking;
+
+typedef struct HEVCSEIDisplayOrientation {
+    int present;
+    int anticlockwise_rotation;
+    int hflip, vflip;
+} HEVCSEIDisplayOrientation;
+
+typedef struct HEVCSEI {
+    HEVCSEIPictureHash picture_hash;
+    HEVCSEIFramePacking frame_packing;
+    HEVCSEIDisplayOrientation display_orientation;
+} HEVCSEI;
+
 typedef struct HEVCContext {
     const AVClass *c;  // needed by private avoptions
     AVCodecContext *avctx;
@@ -461,6 +486,7 @@ typedef struct HEVCContext {
     AVFrame *output_frame;
 
     HEVCParamSets ps;
+    HEVCSEI sei;
 
     AVBufferPool *tab_mvf_pool;
     AVBufferPool *rpl_tab_pool;
@@ -522,11 +548,6 @@ typedef struct HEVCContext {
     // type of the first VCL NAL of the current frame
     enum HEVCNALUnitType first_nal_type;
 
-    // for checking the frame checksums
-    struct AVMD5 *md5_ctx;
-    uint8_t       md5[3][16];
-    uint8_t is_md5;
-
     uint8_t context_initialized;
     uint8_t is_nalff;       ///< this flag is != 0 if bitstream is encapsulated
                             ///< as a format defined in 14496-15
@@ -534,20 +555,10 @@ typedef struct HEVCContext {
 
     int nal_length_size;    ///< Number of bytes used for nal length (1, 2 or 4)
     int nuh_layer_id;
-
-    /** frame packing arrangement variables */
-    int sei_frame_packing_present;
-    int frame_packing_arrangement_type;
-    int content_interpretation_type;
-    int quincunx_subsampling;
-
-    /** display orientation */
-    int sei_display_orientation_present;
-    int sei_anticlockwise_rotation;
-    int sei_hflip, sei_vflip;
 } HEVCContext;
 
-int ff_hevc_decode_nal_sei(HEVCContext *s);
+int ff_hevc_decode_nal_sei(GetBitContext *gb, void *logctx, HEVCSEI *s,
+                           int type);
 
 /**
  * Mark all frames in DPB as unused for reference.

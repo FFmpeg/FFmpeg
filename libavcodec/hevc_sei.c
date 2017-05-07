@@ -53,10 +53,9 @@ enum HEVC_SEI_TYPE {
     SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO             = 144,
 };
 
-static int decode_nal_sei_decoded_picture_hash(HEVCContext *s)
+static int decode_nal_sei_decoded_picture_hash(HEVCSEIPictureHash *s, GetBitContext *gb)
 {
     int cIdx, i;
-    GetBitContext *gb = &s->HEVClc.gb;
     uint8_t hash_type = get_bits(gb, 8);
 
     for (cIdx = 0; cIdx < 3; cIdx++) {
@@ -75,15 +74,13 @@ static int decode_nal_sei_decoded_picture_hash(HEVCContext *s)
     return 0;
 }
 
-static int decode_nal_sei_frame_packing_arrangement(HEVCContext *s)
+static int decode_nal_sei_frame_packing_arrangement(HEVCSEIFramePacking *s, GetBitContext *gb)
 {
-    GetBitContext *gb = &s->HEVClc.gb;
-
     get_ue_golomb(gb);                  // frame_packing_arrangement_id
-    s->sei_frame_packing_present = !get_bits1(gb);
+    s->present = !get_bits1(gb);
 
-    if (s->sei_frame_packing_present) {
-        s->frame_packing_arrangement_type = get_bits(gb, 7);
+    if (s->present) {
+        s->arrangement_type               = get_bits(gb, 7);
         s->quincunx_subsampling           = get_bits1(gb);
         s->content_interpretation_type    = get_bits(gb, 6);
 
@@ -92,7 +89,7 @@ static int decode_nal_sei_frame_packing_arrangement(HEVCContext *s)
         // frame0_self_contained_flag frame1_self_contained_flag
         skip_bits(gb, 6);
 
-        if (!s->quincunx_subsampling && s->frame_packing_arrangement_type != 5)
+        if (!s->quincunx_subsampling && s->arrangement_type != 5)
             skip_bits(gb, 16);  // frame[01]_grid_position_[xy]
         skip_bits(gb, 8);       // frame_packing_arrangement_reserved_byte
         skip_bits1(gb);         // frame_packing_arrangement_persistence_flag
@@ -101,63 +98,58 @@ static int decode_nal_sei_frame_packing_arrangement(HEVCContext *s)
     return 0;
 }
 
-static int decode_nal_sei_display_orientation(HEVCContext *s)
+static int decode_nal_sei_display_orientation(HEVCSEIDisplayOrientation *s, GetBitContext *gb)
 {
-    GetBitContext *gb = &s->HEVClc.gb;
+    s->present = !get_bits1(gb);
 
-    s->sei_display_orientation_present = !get_bits1(gb);
+    if (s->present) {
+        s->hflip = get_bits1(gb);     // hor_flip
+        s->vflip = get_bits1(gb);     // ver_flip
 
-    if (s->sei_display_orientation_present) {
-        s->sei_hflip = get_bits1(gb);     // hor_flip
-        s->sei_vflip = get_bits1(gb);     // ver_flip
-
-        s->sei_anticlockwise_rotation = get_bits(gb, 16);
+        s->anticlockwise_rotation = get_bits(gb, 16);
         skip_bits1(gb);     // display_orientation_persistence_flag
     }
 
     return 0;
 }
 
-static int decode_nal_sei_prefix(HEVCContext *s, int type, int size)
+static int decode_nal_sei_prefix(GetBitContext *gb, void *logctx, HEVCSEI *s,
+                                 int type, int size)
 {
-    GetBitContext *gb = &s->HEVClc.gb;
-
     switch (type) {
     case 256:  // Mismatched value from HM 8.1
-        return decode_nal_sei_decoded_picture_hash(s);
+        return decode_nal_sei_decoded_picture_hash(&s->picture_hash, gb);
     case SEI_TYPE_FRAME_PACKING:
-        return decode_nal_sei_frame_packing_arrangement(s);
+        return decode_nal_sei_frame_packing_arrangement(&s->frame_packing, gb);
     case SEI_TYPE_DISPLAY_ORIENTATION:
-        return decode_nal_sei_display_orientation(s);
+        return decode_nal_sei_display_orientation(&s->display_orientation, gb);
     default:
-        av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", type);
+        av_log(logctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", type);
         skip_bits_long(gb, 8 * size);
         return 0;
     }
 }
 
-static int decode_nal_sei_suffix(HEVCContext *s, int type, int size)
+static int decode_nal_sei_suffix(GetBitContext *gb, void *logctx, HEVCSEI *s,
+                                 int type, int size)
 {
-    GetBitContext *gb = &s->HEVClc.gb;
-
     switch (type) {
     case SEI_TYPE_DECODED_PICTURE_HASH:
-        return decode_nal_sei_decoded_picture_hash(s);
+        return decode_nal_sei_decoded_picture_hash(&s->picture_hash, gb);
     default:
-        av_log(s->avctx, AV_LOG_DEBUG, "Skipped SUFFIX SEI %d\n", type);
+        av_log(logctx, AV_LOG_DEBUG, "Skipped SUFFIX SEI %d\n", type);
         skip_bits_long(gb, 8 * size);
         return 0;
     }
 }
 
-static int decode_nal_sei_message(HEVCContext *s)
+static int decode_nal_sei_message(GetBitContext *gb, void *logctx, HEVCSEI *s,
+                                  int type)
 {
-    GetBitContext *gb = &s->HEVClc.gb;
-
     int payload_type = 0;
     int payload_size = 0;
     int byte = 0xFF;
-    av_log(s->avctx, AV_LOG_DEBUG, "Decoding SEI\n");
+    av_log(logctx, AV_LOG_DEBUG, "Decoding SEI\n");
 
     while (byte == 0xFF) {
         byte          = get_bits(gb, 8);
@@ -168,10 +160,10 @@ static int decode_nal_sei_message(HEVCContext *s)
         byte          = get_bits(gb, 8);
         payload_size += byte;
     }
-    if (s->nal_unit_type == HEVC_NAL_SEI_PREFIX) {
-        return decode_nal_sei_prefix(s, payload_type, payload_size);
+    if (type == HEVC_NAL_SEI_PREFIX) {
+        return decode_nal_sei_prefix(gb, logctx, s, payload_type, payload_size);
     } else { /* nal_unit_type == NAL_SEI_SUFFIX */
-        return decode_nal_sei_suffix(s, payload_type, payload_size);
+        return decode_nal_sei_suffix(gb, logctx, s, payload_type, payload_size);
     }
 }
 
@@ -180,10 +172,11 @@ static int more_rbsp_data(GetBitContext *gb)
     return get_bits_left(gb) > 0 && show_bits(gb, 8) != 0x80;
 }
 
-int ff_hevc_decode_nal_sei(HEVCContext *s)
+int ff_hevc_decode_nal_sei(GetBitContext *gb, void *logctx, HEVCSEI *s,
+                           int type)
 {
     do {
-        decode_nal_sei_message(s);
-    } while (more_rbsp_data(&s->HEVClc.gb));
+        decode_nal_sei_message(gb, logctx, s, type);
+    } while (more_rbsp_data(gb));
     return 0;
 }
