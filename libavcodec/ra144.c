@@ -1598,7 +1598,7 @@ void ff_eval_coefs(int *coefs, const int *refl)
     int i, j;
 
     for (i=0; i < LPC_ORDER; i++) {
-        b1[i] = refl[i] << 4;
+        b1[i] = refl[i] * 16;
 
         for (j=0; j < i; j++)
             b1[j] = ((refl[i] * b2[i-j-1]) >> 12) + b2[j];
