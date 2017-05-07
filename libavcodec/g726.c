@@ -269,7 +269,7 @@ static int16_t g726_decode(G726Context* c, int I)
         c->se += mult(i2f(c->a[i] >> 2, &f), &c->sr[i]);
     c->se >>= 1;
 
-    return av_clip(re_signal << 2, -0xffff, 0xffff);
+    return av_clip(re_signal * 4, -0xffff, 0xffff);
 }
 
 static av_cold int g726_reset(G726Context *c)
