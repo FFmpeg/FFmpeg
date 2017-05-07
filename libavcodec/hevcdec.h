@@ -27,7 +27,6 @@
 #include <stdint.h>
 
 #include "libavutil/buffer.h"
-#include "libavutil/md5.h"
 
 #include "avcodec.h"
 #include "bswapdsp.h"
@@ -36,6 +35,7 @@
 #include "h2645_parse.h"
 #include "hevc.h"
 #include "hevc_ps.h"
+#include "hevc_sei.h"
 #include "hevcdsp.h"
 #include "internal.h"
 #include "thread.h"
@@ -444,31 +444,6 @@ typedef struct HEVCLocalContext {
     int boundary_flags;
 } HEVCLocalContext;
 
-typedef struct HEVCSEIPictureHash {
-    struct AVMD5 *md5_ctx;
-    uint8_t       md5[3][16];
-    uint8_t is_md5;
-} HEVCSEIPictureHash;
-
-typedef struct HEVCSEIFramePacking {
-    int present;
-    int arrangement_type;
-    int content_interpretation_type;
-    int quincunx_subsampling;
-} HEVCSEIFramePacking;
-
-typedef struct HEVCSEIDisplayOrientation {
-    int present;
-    int anticlockwise_rotation;
-    int hflip, vflip;
-} HEVCSEIDisplayOrientation;
-
-typedef struct HEVCSEI {
-    HEVCSEIPictureHash picture_hash;
-    HEVCSEIFramePacking frame_packing;
-    HEVCSEIDisplayOrientation display_orientation;
-} HEVCSEI;
-
 typedef struct HEVCContext {
     const AVClass *c;  // needed by private avoptions
     AVCodecContext *avctx;
@@ -556,9 +531,6 @@ typedef struct HEVCContext {
     int nal_length_size;    ///< Number of bytes used for nal length (1, 2 or 4)
     int nuh_layer_id;
 } HEVCContext;
-
-int ff_hevc_decode_nal_sei(GetBitContext *gb, void *logctx, HEVCSEI *s,
-                           int type);
 
 /**
  * Mark all frames in DPB as unused for reference.
