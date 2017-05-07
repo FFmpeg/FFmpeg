@@ -185,6 +185,7 @@ static int hevc_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
     int ret;
 
     HEVCParamSets ps;
+    HEVCSEIContext sei;
 
     const HEVCVPS *vps = NULL;
     const HEVCPPS *pps = NULL;
@@ -200,9 +201,10 @@ static int hevc_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
     int pps_data_size = 0;
 
     memset(&ps, 0, sizeof(ps));
+    memset(&sei, 0, sizeof(sei));
 
     ret = ff_hevc_decode_extradata(avctx->extradata, avctx->extradata_size,
-                                   &ps, &is_nalff, &nal_length_size, 0, 1, avctx);
+                                   &ps, &sei, &is_nalff, &nal_length_size, 0, 1, avctx);
     if (ret < 0) {
         goto done;
     }

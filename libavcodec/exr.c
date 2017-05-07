@@ -45,6 +45,11 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+
+#if HAVE_BIGENDIAN
+#include "bswapdsp.h"
+#endif
+
 #include "get_bits.h"
 #include "internal.h"
 #include "mathops.h"
@@ -115,6 +120,10 @@ typedef struct EXRContext {
     AVClass *class;
     AVFrame *picture;
     AVCodecContext *avctx;
+
+#if HAVE_BIGENDIAN
+    BswapDSPContext bbdsp;
+#endif
 
     enum ExrCompr compression;
     enum ExrPixelType pixel_type;
@@ -751,7 +760,8 @@ static int piz_uncompress(EXRContext *s, const uint8_t *src, int ssize,
     uint16_t maxval, min_non_zero, max_non_zero;
     uint16_t *ptr;
     uint16_t *tmp = (uint16_t *)td->tmp;
-    uint8_t *out;
+    uint16_t *out;
+    uint16_t *in;
     int ret, i, j;
     int pixel_half_size;/* 1 for half, 2 for float and uint32 */
     EXRChannel *channel;
@@ -803,12 +813,11 @@ static int piz_uncompress(EXRContext *s, const uint8_t *src, int ssize,
 
     apply_lut(td->lut, tmp, dsize / sizeof(uint16_t));
 
-    out = td->uncompressed_data;
+    out = (uint16_t *)td->uncompressed_data;
     for (i = 0; i < td->ysize; i++) {
         tmp_offset = 0;
         for (j = 0; j < s->nb_channels; j++) {
-            uint16_t *in;
-            EXRChannel *channel = &s->channels[j];
+            channel = &s->channels[j];
             if (channel->pixel_type == EXR_HALF)
                 pixel_half_size = 1;
             else
@@ -816,8 +825,13 @@ static int piz_uncompress(EXRContext *s, const uint8_t *src, int ssize,
 
             in = tmp + tmp_offset * td->xsize * td->ysize + i * td->xsize * pixel_half_size;
             tmp_offset += pixel_half_size;
+
+#if HAVE_BIGENDIAN
+            s->bbdsp.bswap16_buf(out, in, td->xsize * pixel_half_size);
+#else
             memcpy(out, in, td->xsize * 2 * pixel_half_size);
-            out += td->xsize * 2 * pixel_half_size;
+#endif
+            out += td->xsize * pixel_half_size;
         }
     }
 
@@ -1792,6 +1806,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
     avpriv_trc_function trc_func = NULL;
 
     s->avctx              = avctx;
+
+#if HAVE_BIGENDIAN
+    ff_bswapdsp_init(&s->bbdsp);
+#endif
 
     trc_func = avpriv_get_trc_function_from_trc(s->apply_trc_type);
     if (trc_func) {

@@ -1,6 +1,5 @@
-include $(SUBDIR)../config.mak
-
 NAME = avcodec
+DESC = FFmpeg codec library
 
 HEADERS = avcodec.h                                                     \
           avdct.h                                                       \
@@ -80,7 +79,7 @@ OBJS-$(CONFIG_H264DSP)                 += h264dsp.o h264idct.o
 OBJS-$(CONFIG_H264PARSE)               += h264_parse.o h2645_parse.o h264_ps.o
 OBJS-$(CONFIG_H264PRED)                += h264pred.o
 OBJS-$(CONFIG_H264QPEL)                += h264qpel.o
-OBJS-$(CONFIG_HEVCPARSE)               += hevc_parse.o h2645_parse.o hevc_ps.o
+OBJS-$(CONFIG_HEVCPARSE)               += hevc_parse.o h2645_parse.o hevc_ps.o hevc_sei.o
 OBJS-$(CONFIG_HPELDSP)                 += hpeldsp.o
 OBJS-$(CONFIG_HUFFMAN)                 += huffman.o
 OBJS-$(CONFIG_HUFFYUVDSP)              += huffyuvdsp.o
@@ -338,7 +337,7 @@ OBJS-$(CONFIG_H264_VAAPI_ENCODER)      += vaapi_encode_h264.o vaapi_encode_h26x.
 OBJS-$(CONFIG_H264_VIDEOTOOLBOX_ENCODER) += videotoolboxenc.o
 OBJS-$(CONFIG_HAP_DECODER)             += hapdec.o hap.o
 OBJS-$(CONFIG_HAP_ENCODER)             += hapenc.o hap.o
-OBJS-$(CONFIG_HEVC_DECODER)            += hevcdec.o hevc_mvs.o hevc_sei.o \
+OBJS-$(CONFIG_HEVC_DECODER)            += hevcdec.o hevc_mvs.o \
                                           hevc_cabac.o hevc_refs.o hevcpred.o    \
                                           hevcdsp.o hevc_filter.o hevc_data.o
 OBJS-$(CONFIG_HEVC_CUVID_DECODER)      += cuvid.o

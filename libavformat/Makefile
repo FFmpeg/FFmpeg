@@ -1,6 +1,5 @@
-include $(SUBDIR)../config.mak
-
 NAME = avformat
+DESC = FFmpeg container format library
 
 HEADERS = avformat.h                                                    \
           avio.h                                                        \

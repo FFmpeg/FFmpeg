@@ -9158,8 +9158,21 @@ This determines whether the interlaced frame is taken from the even
 (tff - default) or odd (bff) lines of the progressive frame.
 
 @item lowpass
-Enable (default) or disable the vertical lowpass filter to avoid twitter
-interlacing and reduce moire patterns.
+Vertical lowpass filter to avoid twitter interlacing and
+reduce moire patterns.
+
+@table @samp
+@item 0, off
+Disable vertical lowpass filter
+
+@item 1, linear
+Enable linear filter (default)
+
+@item 2, complex
+Enable complex filter. This will slightly less reduce twitter and moire
+but better retain detail and subjective sharpness impression.
+
+@end table
 @end table
 
 @section kerndeint
@@ -13857,16 +13870,22 @@ Available value for @var{flags} is:
 
 @table @option
 @item low_pass_filter, vlfp
-Enable vertical low-pass filtering in the filter.
+Enable linear vertical low-pass filtering in the filter.
 Vertical low-pass filtering is required when creating an interlaced
 destination from a progressive source which contains high-frequency
 vertical detail. Filtering will reduce interlace 'twitter' and Moire
 patterning.
 
+@item complex_filter, cvlfp
+Enable complex vertical low-pass filtering.
+This will slightly less reduce interlace 'twitter' and Moire
+patterning but better retain detail and subjective sharpness impression.
+
+@end table
+
 Vertical low-pass filtering can only be enabled for @option{mode}
 @var{interleave_top} and @var{interleave_bottom}.
 
-@end table
 @end table
 
 @section transpose

@@ -160,8 +160,11 @@ static int allocate_buffers(ShortenContext *s)
 
 static inline unsigned int get_uint(ShortenContext *s, int k)
 {
-    if (s->version != 0)
+    if (s->version != 0) {
         k = get_ur_golomb_shorten(&s->gb, ULONGSIZE);
+        if (k > 31U)
+            return AVERROR_INVALIDDATA;
+    }
     return get_ur_golomb_shorten(&s->gb, k);
 }
 
@@ -658,6 +661,10 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
                  * of get_sr_golomb_shorten(). */
                 if (s->version == 0)
                     residual_size--;
+                if (residual_size > 30U) {
+                    av_log(avctx, AV_LOG_ERROR, "residual size unsupportd: %d\n", residual_size);
+                    return AVERROR_INVALIDDATA;
+                }
             }
 
             /* calculate sample offset using means from previous blocks */

@@ -77,7 +77,7 @@ Help options:
   --list-filters           show all available filters
 
 Standard options:
-  --logfile=FILE           log tests and output to FILE [config.log]
+  --logfile=FILE           log tests and output to FILE [ffbuild/config.log]
   --disable-logging        do not log configure debug information
   --fatal-warnings         fail if any configure warning is generated
   --prefix=PREFIX          install in PREFIX [$prefix_default]
@@ -440,6 +440,8 @@ Developer options (useful when working on FFmpeg itself):
                            (only applies to --disable-optimizations builds)
   --enable-osfuzz          Enable building fuzzer tool
   --libfuzzer=PATH         path to libfuzzer
+  --ignore-tests=TESTS     comma-separated list (without "fate-" prefix
+                           in the name) of tests whose result is ignored
 
 NOTE: Object files are built at the place where configure is launched.
 EOF
@@ -2209,6 +2211,7 @@ CMDLINE_SET="
     host_ld
     host_ldflags
     host_os
+    ignore_tests
     install
     ld
     ln_s
@@ -3095,6 +3098,7 @@ deinterlace_vaapi_filter_deps="vaapi"
 delogo_filter_deps="gpl"
 deshake_filter_select="pixelutils"
 drawtext_filter_deps="libfreetype"
+elbg_filter_deps="avcodec"
 eq_filter_deps="gpl"
 fftfilt_filter_deps="avcodec"
 fftfilt_filter_select="rdft"
@@ -3224,7 +3228,7 @@ doc_deps_any="manpages htmlpages podpages txtpages"
 
 # default parameters
 
-logfile="config.log"
+logfile="ffbuild/config.log"
 
 # installation paths
 prefix_default="/usr/local"
@@ -3581,6 +3585,7 @@ disable_components(){
 
 map 'disable_components $v' $LIBRARY_LIST
 
+mkdir -p ffbuild
 echo "# $0 $FFMPEG_CONFIGURATION" > $logfile
 set >> $logfile
 
@@ -5152,7 +5157,7 @@ esc(){
     echo "$*" | sed 's/%/%25/g;s/:/%3a/g'
 }
 
-echo "config:$arch:$subarch:$cpu:$target_os:$(esc $cc_ident):$(esc $FFMPEG_CONFIGURATION)" >config.fate
+echo "config:$arch:$subarch:$cpu:$target_os:$(esc $cc_ident):$(esc $FFMPEG_CONFIGURATION)" > ffbuild/config.fate
 
 check_cpp_condition stdlib.h "defined(__PIC__) || defined(__pic__) || defined(PIC)" && enable_weak pic
 
@@ -5174,7 +5179,7 @@ EOF
     exit 1
 fi
 
-disabled optimizations || check_cflags -fomit-frame-pointer
+disabled optimizations || enabled ossfuzz || check_cflags -fomit-frame-pointer
 
 enable_weak_pic() {
     disabled pic && return
@@ -5805,7 +5810,14 @@ enabled libopenjpeg       && { { check_lib libopenjpeg openjpeg-2.1/openjpeg.h o
                                { check_lib libopenjpeg openjpeg.h opj_version -lopenjpeg -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
                                die "ERROR: libopenjpeg not found"; }
 enabled libopenmpt        && require_pkg_config "libopenmpt >= 0.2.6557" libopenmpt/libopenmpt.h openmpt_module_create
-enabled libopus           && require_pkg_config opus opus_multistream.h opus_multistream_decoder_create
+enabled libopus           && {
+    enabled libopus_decoder && {
+        require_pkg_config opus opus_multistream.h opus_multistream_decoder_create
+    }
+    enabled libopus_encoder && {
+        require_pkg_config opus opus_multistream.h opus_multistream_surround_encoder_create
+    }
+}
 enabled libpulse          && require_pkg_config libpulse pulse/pulseaudio.h pa_context_new
 enabled librtmp           && require_pkg_config librtmp librtmp/rtmp.h RTMP_Socket
 enabled librubberband     && require_pkg_config "rubberband >= 1.8.1" rubberband/rubberband-c.h rubberband_new
@@ -6456,6 +6468,7 @@ enabled ebur128_filter && enabled swresample && prepend avfilter_deps "swresampl
 enabled elbg_filter         && prepend avfilter_deps "avcodec"
 enabled fftfilt_filter      && prepend avfilter_deps "avcodec"
 enabled find_rect_filter    && prepend avfilter_deps "avformat avcodec"
+enabled firequalizer_filter && prepend avfilter_deps "avcodec"
 enabled mcdeint_filter      && prepend avfilter_deps "avcodec"
 enabled movie_filter    && prepend avfilter_deps "avformat avcodec"
 enabled pan_filter          && prepend avfilter_deps "swresample"
@@ -6469,10 +6482,13 @@ enabled sofalizer_filter    && prepend avfilter_deps "avcodec"
 enabled showcqt_filter      && prepend avfilter_deps "avformat avcodec swscale"
 enabled showfreqs_filter    && prepend avfilter_deps "avcodec"
 enabled showspectrum_filter && prepend avfilter_deps "avcodec"
+enabled signature_filter    && prepend avfilter_deps "avcodec avformat"
 enabled smartblur_filter    && prepend avfilter_deps "swscale"
 enabled spectrumsynth_filter && prepend avfilter_deps "avcodec"
+enabled spp_filter          && prepend avfilter_deps "avcodec"
 enabled subtitles_filter    && prepend avfilter_deps "avformat avcodec"
 enabled uspp_filter         && prepend avfilter_deps "avcodec"
+enabled zoompan_filter      && prepend avfilter_deps "swscale"
 
 enabled lavfi_indev         && prepend avdevice_deps "avfilter"
 
@@ -6609,6 +6625,13 @@ for type in decoder encoder hwaccel parser demuxer muxer protocol filter bsf ind
     echo
 done
 
+if test -n "$ignore_tests"; then
+    ignore_tests=$(echo $ignore_tests | tr ',' ' ')
+    echo "Ignored FATE tests:"
+    echo $ignore_tests | print_in_columns
+    echo
+fi
+
 echo "License: $license"
 
 echo "Creating configuration files ..."
@@ -6619,9 +6642,9 @@ test -e Makefile || echo "include $source_path/Makefile" > Makefile
 
 enabled stripping || strip="echo skipping strip"
 
-config_files="$TMPH config.mak doc/config.texi"
+config_files="$TMPH ffbuild/config.mak doc/config.texi"
 
-cat > config.mak <<EOF
+cat > ffbuild/config.mak <<EOF
 # Automatically generated by configure - do not modify!
 ifndef FFMPEG_CONFIG_MAK
 FFMPEG_CONFIG_MAK=1
@@ -6746,27 +6769,14 @@ VERSION_SCRIPT_POSTPROCESS_CMD=${VERSION_SCRIPT_POSTPROCESS_CMD}
 SAMPLES:=${samples:-\$(FATE_SAMPLES)}
 NOREDZONE_FLAGS=$noredzone_flags
 LIBFUZZER_PATH=$libfuzzer_path
+IGNORE_TESTS=$ignore_tests
 EOF
 
-get_version(){
-    lcname=lib${1}
-    name=$(toupper $lcname)
-    file=$source_path/$lcname/version.h
-    eval $(awk "/#define ${name}_VERSION_M/ { print \$2 \"=\" \$3 }" "$file")
-    enabled raise_major && eval ${name}_VERSION_MAJOR=$((${name}_VERSION_MAJOR+100))
-    eval ${name}_VERSION=\$${name}_VERSION_MAJOR.\$${name}_VERSION_MINOR.\$${name}_VERSION_MICRO
-    eval echo "${lcname}_VERSION=\$${name}_VERSION" >> config.mak
-    eval echo "${lcname}_VERSION_MAJOR=\$${name}_VERSION_MAJOR" >> config.mak
-    eval echo "${lcname}_VERSION_MINOR=\$${name}_VERSION_MINOR" >> config.mak
-}
-
-map 'get_version $v' $LIBRARY_LIST
-
-map 'eval echo "${v}_FFLIBS=\$${v}_deps" >> config.mak' $LIBRARY_LIST
+map 'eval echo "${v}_FFLIBS=\$${v}_deps" >> ffbuild/config.mak' $LIBRARY_LIST
 
 print_program_extralibs(){
     eval "program_extralibs=\$${1}_extralibs"
-    eval echo "EXTRALIBS-${1}=${program_extralibs}" >> config.mak
+    eval echo "EXTRALIBS-${1}=${program_extralibs}" >> ffbuild/config.mak
 }
 
 map 'print_program_extralibs $v' $PROGRAM_LIST
@@ -6816,11 +6826,11 @@ print_config CONFIG_ "$config_files" $CONFIG_LIST       \
                                      $ALL_COMPONENTS    \
 
 echo "#endif /* FFMPEG_CONFIG_H */" >> $TMPH
-echo "endif # FFMPEG_CONFIG_MAK" >> config.mak
+echo "endif # FFMPEG_CONFIG_MAK" >> ffbuild/config.mak
 
 # Do not overwrite an unchanged config.h to avoid superfluous rebuilds.
 cp_if_changed $TMPH config.h
-touch .config
+touch ffbuild/.config
 
 enabled yasm && cp_if_changed $TMPASM config.asm
 
@@ -6858,64 +6868,32 @@ if test -n "$WARNINGS"; then
     enabled fatal_warnings && exit 1
 fi
 
-# build pkg-config files
+# Settings for pkg-config files
 
-lib_version(){
-    eval printf "\"lib${1}${build_suffix} >= \$LIB$(toupper ${1})_VERSION, \""
-}
-
-pkgconfig_generate(){
-    name=$1
-    shortname=${name#lib}${build_suffix}
-    comment=$2
-    version=$3
-    libs=$4
-    requires=$(map 'lib_version $v' $(eval echo \$${name#lib}_deps))
-    requires=${requires%, }
-    enabled ${name#lib} || return 0
-    mkdir -p $name
-    cat <<EOF > $name/$name${build_suffix}.pc
+cat > ffbuild/config.sh <<EOF
+# Automatically generated by configure - do not modify!
+shared=$shared
+build_suffix=$build_suffix
 prefix=$prefix
-exec_prefix=\${prefix}
 libdir=$libdir
-includedir=$incdir
+incdir=$incdir
+rpath=$(enabled rpath && echo "-Wl,-rpath,\${libdir}")
+source_path=${source_path}
+LIBPREF=${LIBPREF}
+LIBSUF=${LIBSUF}
 
-Name: $name
-Description: $comment
-Version: $version
-Requires: $(enabled shared || echo $requires)
-Requires.private: $(enabled shared && echo $requires)
-Conflicts:
-Libs: -L\${libdir} $(enabled rpath && echo "-Wl,-rpath,\${libdir}") -l${shortname} $(enabled shared || echo $libs)
-Libs.private: $(enabled shared && echo $libs)
-Cflags: -I\${includedir}
+extralibs_avutil="$LIBRT $LIBM"
+extralibs_avcodec="$extralibs"
+extralibs_avformat="$extralibs"
+extralibs_avdevice="$extralibs"
+extralibs_avfilter="$extralibs"
+extralibs_avresample="$LIBM"
+extralibs_postproc=""
+extralibs_swscale="$LIBM"
+extralibs_swresample="$LIBM $LIBSOXR"
 EOF
 
-mkdir -p doc/examples/pc-uninstalled
-includedir=${source_path}
-[ "$includedir" = . ] && includedir="\${pcfiledir}/../../.."
-    cat <<EOF > doc/examples/pc-uninstalled/${name}-uninstalled.pc
-prefix=
-exec_prefix=
-libdir=\${pcfiledir}/../../../$name
-includedir=${includedir}
-
-Name: $name
-Description: $comment
-Version: $version
-Requires: $requires
-Conflicts:
-Libs: -L\${libdir} -Wl,-rpath,\${libdir} -l${shortname} $(enabled shared || echo $libs)
-Cflags: -I\${includedir}
-EOF
-}
-
-pkgconfig_generate libavutil     "FFmpeg utility library"               "$LIBAVUTIL_VERSION"     "$LIBRT $LIBM"
-pkgconfig_generate libavcodec    "FFmpeg codec library"                 "$LIBAVCODEC_VERSION"    "$extralibs"
-pkgconfig_generate libavformat   "FFmpeg container format library"      "$LIBAVFORMAT_VERSION"   "$extralibs"
-pkgconfig_generate libavdevice   "FFmpeg device handling library"       "$LIBAVDEVICE_VERSION"   "$extralibs"
-pkgconfig_generate libavfilter   "FFmpeg audio/video filtering library" "$LIBAVFILTER_VERSION"   "$extralibs"
-pkgconfig_generate libpostproc   "FFmpeg postprocessing library"        "$LIBPOSTPROC_VERSION"   ""
-pkgconfig_generate libavresample "Libav audio resampling library"       "$LIBAVRESAMPLE_VERSION" "$LIBM"
-pkgconfig_generate libswscale    "FFmpeg image rescaling library"       "$LIBSWSCALE_VERSION"    "$LIBM"
-pkgconfig_generate libswresample "FFmpeg audio resampling library"      "$LIBSWRESAMPLE_VERSION" "$LIBM $LIBSOXR"
+for lib in $LIBRARY_LIST; do
+    lib_deps="$(eval echo \$${lib}_deps)"
+    echo ${lib}_deps=\"$lib_deps\" >> ffbuild/config.sh
+done

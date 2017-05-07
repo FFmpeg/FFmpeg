@@ -109,8 +109,8 @@ static HEVCFrame *alloc_frame(HEVCContext *s)
         for (j = 0; j < frame->ctb_count; j++)
             frame->rpl_tab[j] = (RefPicListTab *)frame->rpl_buf->data;
 
-        frame->frame->top_field_first  = s->picture_struct == AV_PICTURE_STRUCTURE_TOP_FIELD;
-        frame->frame->interlaced_frame = (s->picture_struct == AV_PICTURE_STRUCTURE_TOP_FIELD) || (s->picture_struct == AV_PICTURE_STRUCTURE_BOTTOM_FIELD);
+        frame->frame->top_field_first  = s->sei.picture_timing.picture_struct == AV_PICTURE_STRUCTURE_TOP_FIELD;
+        frame->frame->interlaced_frame = (s->sei.picture_timing.picture_struct == AV_PICTURE_STRUCTURE_TOP_FIELD) || (s->sei.picture_timing.picture_struct == AV_PICTURE_STRUCTURE_BOTTOM_FIELD);
 
         if (s->avctx->hwaccel) {
             const AVHWAccel *hwaccel = s->avctx->hwaccel;
@@ -514,29 +514,6 @@ fail:
         ff_hevc_unref_frame(s, &s->DPB[i], 0);
 
     return ret;
-}
-
-int ff_hevc_compute_poc(HEVCContext *s, int poc_lsb)
-{
-    int max_poc_lsb  = 1 << s->ps.sps->log2_max_poc_lsb;
-    int prev_poc_lsb = s->pocTid0 % max_poc_lsb;
-    int prev_poc_msb = s->pocTid0 - prev_poc_lsb;
-    int poc_msb;
-
-    if (poc_lsb < prev_poc_lsb && prev_poc_lsb - poc_lsb >= max_poc_lsb / 2)
-        poc_msb = prev_poc_msb + max_poc_lsb;
-    else if (poc_lsb > prev_poc_lsb && poc_lsb - prev_poc_lsb > max_poc_lsb / 2)
-        poc_msb = prev_poc_msb - max_poc_lsb;
-    else
-        poc_msb = prev_poc_msb;
-
-    // For BLA picture types, POCmsb is set to 0.
-    if (s->nal_unit_type == HEVC_NAL_BLA_W_LP   ||
-        s->nal_unit_type == HEVC_NAL_BLA_W_RADL ||
-        s->nal_unit_type == HEVC_NAL_BLA_N_LP)
-        poc_msb = 0;
-
-    return poc_msb + poc_lsb;
 }
 
 int ff_hevc_frame_nb_refs(HEVCContext *s)

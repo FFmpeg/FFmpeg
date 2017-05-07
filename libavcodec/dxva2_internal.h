@@ -72,7 +72,7 @@ typedef union {
 #define DXVA_CONTEXT_CFG_INTRARESID(avctx, ctx) (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD ? ctx->d3d11va.cfg->ConfigIntraResidUnsigned : ctx->dxva2.cfg->ConfigIntraResidUnsigned)
 #define DXVA_CONTEXT_CFG_RESIDACCEL(avctx, ctx) (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD ? ctx->d3d11va.cfg->ConfigResidDiffAccelerator : ctx->dxva2.cfg->ConfigResidDiffAccelerator)
 #define DXVA_CONTEXT_VALID(avctx, ctx)          (DXVA_CONTEXT_DECODER(avctx, ctx) && \
-                                                 DXVA_CONTEXT_CFG(avctx, ctx) && \
+                                                 DXVA_CONTEXT_CFG(avctx, ctx)     && \
                                                  (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD || ctx->dxva2.surface_count))
 #elif CONFIG_DXVA2
 #define DXVA_CONTEXT_WORKAROUND(avctx, ctx)     (ctx->dxva2.workaround)

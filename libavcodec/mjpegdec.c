@@ -776,7 +776,8 @@ static int decode_block_progressive(MJpegDecodeContext *s, int16_t *block,
                                     uint16_t *quant_matrix,
                                     int ss, int se, int Al, int *EOBRUN)
 {
-    int code, i, j, level, val, run;
+    int code, i, j, val, run;
+    unsigned level;
 
     if (*EOBRUN) {
         (*EOBRUN)--;

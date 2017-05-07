@@ -123,6 +123,9 @@ fate-filter-hqdn3d: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf hqdn3d
 FATE_FILTER_VSYNTH-$(CONFIG_INTERLACE_FILTER) += fate-filter-interlace
 fate-filter-interlace: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf interlace
 
+FATE_FILTER_VSYNTH-$(CONFIG_INTERLACE_FILTER) += fate-filter-interlace-complex
+fate-filter-interlace-complex: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf interlace=lowpass=complex
+
 FATE_FILTER_VSYNTH-$(call ALLYES, NEGATE_FILTER PERMS_FILTER) += fate-filter-negate
 fate-filter-negate: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf perms=random,negate
 

@@ -48,8 +48,8 @@
 #define FF_CODEC_CAP_INIT_CLEANUP           (1 << 1)
 /**
  * Decoders marked with FF_CODEC_CAP_SETS_PKT_DTS want to set
- * AVFrame.pkt_dts manually. If the flag is set, utils.c won't overwrite
- * this field. If it's unset, utils.c tries to guess the pkt_dts field
+ * AVFrame.pkt_dts manually. If the flag is set, decode.c won't overwrite
+ * this field. If it's unset, decode.c tries to guess the pkt_dts field
  * from the input AVPacket.
  */
 #define FF_CODEC_CAP_SETS_PKT_DTS           (1 << 2)
@@ -355,6 +355,10 @@ int ff_set_sar(AVCodecContext *avctx, AVRational sar);
  */
 int ff_side_data_update_matrix_encoding(AVFrame *frame,
                                         enum AVMatrixEncoding matrix_encoding);
+
+#if FF_API_MERGE_SD
+int ff_packet_split_and_drop_side_data(AVPacket *pkt);
+#endif
 
 /**
  * Select the (possibly hardware accelerated) pixel format.

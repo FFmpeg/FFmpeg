@@ -1206,6 +1206,9 @@ av_cold int ff_ivi_decode_close(AVCodecContext *avctx)
     if (ctx->mb_vlc.cust_tab.table)
         ff_free_vlc(&ctx->mb_vlc.cust_tab);
 
+    if (ctx->blk_vlc.cust_tab.table)
+        ff_free_vlc(&ctx->blk_vlc.cust_tab);
+
     av_frame_free(&ctx->p_frame);
 
     return 0;

@@ -3950,7 +3950,7 @@ void show_help_default(const char *opt, const char *arg)
 }
 
 static const OptionDef options[] = {
-#include "cmdutils_common_opts.h"
+    CMDUTILS_COMMON_OPTIONS
     { "n", OPT_BOOL, {(void *)&no_launch }, "enable no-launch mode" },
     { "d", 0, {(void*)opt_debug}, "enable debug mode" },
     { "f", HAS_ARG | OPT_STRING, {(void*)&config.filename }, "use configfile instead of /etc/ffserver.conf", "configfile" },

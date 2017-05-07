@@ -66,19 +66,13 @@ static AVCodec *c = NULL;
 static AVCodec *AVCodecInitialize(enum AVCodecID codec_id)
 {
     AVCodec *res;
-    av_register_all();
-    av_log_set_level(AV_LOG_PANIC);
+
     res = avcodec_find_decoder(codec_id);
     if (!res)
         error("Failed to find decoder");
     return res;
 }
 
-#if defined(FUZZ_FFMPEG_VIDEO)
-#define decode_handler avcodec_decode_video2
-#elif defined(FUZZ_FFMPEG_AUDIO)
-#define decode_handler avcodec_decode_audio4
-#elif defined(FUZZ_FFMPEG_SUBTITLE)
 static int subtitle_handler(AVCodecContext *avctx, void *frame,
                             int *got_sub_ptr, AVPacket *avpkt)
 {
@@ -88,11 +82,6 @@ static int subtitle_handler(AVCodecContext *avctx, void *frame,
         avsubtitle_free(&sub);
     return ret;
 }
-
-#define decode_handler subtitle_handler
-#else
-#error "Specify encoder type"  // To catch mistakes
-#endif
 
 // Class to handle buffer allocation and resize for each frame
 typedef struct FuzzDataBuffer {
@@ -146,9 +135,34 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     const uint8_t *last = data;
     const uint8_t *end = data + size;
     uint32_t it = 0;
+    int (*decode_handler)(AVCodecContext *avctx, AVFrame *picture,
+                          int *got_picture_ptr,
+                          const AVPacket *avpkt) = NULL;
 
-    if (!c)
+    if (!c) {
+#ifdef FFMPEG_DECODER
+#define DECODER_SYMBOL0(CODEC) ff_##CODEC##_decoder
+#define DECODER_SYMBOL(CODEC) DECODER_SYMBOL0(CODEC)
+        extern AVCodec DECODER_SYMBOL(FFMPEG_DECODER);
+        avcodec_register(&DECODER_SYMBOL(FFMPEG_DECODER));
+
+        c = &DECODER_SYMBOL(FFMPEG_DECODER);
+
+        // Unsupported
+        if (c->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU)
+            return 0;
+#else
+        avcodec_register_all();
         c = AVCodecInitialize(FFMPEG_CODEC);  // Done once.
+#endif
+        av_log_set_level(AV_LOG_PANIC);
+    }
+
+    switch (c->type) {
+    case AVMEDIA_TYPE_AUDIO   : decode_handler = avcodec_decode_audio4; break;
+    case AVMEDIA_TYPE_VIDEO   : decode_handler = avcodec_decode_video2; break;
+    case AVMEDIA_TYPE_SUBTITLE: decode_handler = subtitle_handler     ; break;
+    }
 
     AVCodecContext* ctx = avcodec_alloc_context3(NULL);
     if (!ctx)
@@ -169,8 +183,10 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     }
 
     int res = avcodec_open2(ctx, c, NULL);
-    if (res < 0)
+    if (res < 0) {
+        av_free(ctx);
         return 0; // Failure of avcodec_open2() does not imply that a issue was found
+    }
 
     FDBCreate(&buffer);
     int got_frame;

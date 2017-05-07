@@ -111,11 +111,11 @@ static inline int mdec_decode_block_intra(MDECContext *a, int16_t *block, int n)
                 j = scantable[i];
                 if (level < 0) {
                     level = -level;
-                    level = (level * qscale * quant_matrix[j]) >> 3;
+                    level = (level * (unsigned)qscale * quant_matrix[j]) >> 3;
                     level = (level - 1) | 1;
                     level = -level;
                 } else {
-                    level = (level * qscale * quant_matrix[j]) >> 3;
+                    level = (level * (unsigned)qscale * quant_matrix[j]) >> 3;
                     level = (level - 1) | 1;
                 }
             }

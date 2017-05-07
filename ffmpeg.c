@@ -669,11 +669,27 @@ static void close_all_output_streams(OutputStream *ost, OSTFinished this_stream,
     }
 }
 
-static void write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
+static void write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost, int unqueue)
 {
     AVFormatContext *s = of->ctx;
     AVStream *st = ost->st;
     int ret;
+
+    /*
+     * Audio encoders may split the packets --  #frames in != #packets out.
+     * But there is no reordering, so we can limit the number of output packets
+     * by simply dropping them here.
+     * Counting encoded video frames needs to be done separately because of
+     * reordering, see do_video_out().
+     * Do not count the packet when unqueued because it has been counted when queued.
+     */
+    if (!(st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && ost->encoding_needed) && !unqueue) {
+        if (ost->frame_number >= ost->max_frames) {
+            av_packet_unref(pkt);
+            return;
+        }
+        ost->frame_number++;
+    }
 
     if (!of->header_written) {
         AVPacket tmp_pkt = {0};
@@ -703,20 +719,6 @@ static void write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
         (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && audio_sync_method < 0))
         pkt->pts = pkt->dts = AV_NOPTS_VALUE;
 
-    /*
-     * Audio encoders may split the packets --  #frames in != #packets out.
-     * But there is no reordering, so we can limit the number of output packets
-     * by simply dropping them here.
-     * Counting encoded video frames needs to be done separately because of
-     * reordering, see do_video_out()
-     */
-    if (!(st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && ost->encoding_needed)) {
-        if (ost->frame_number >= ost->max_frames) {
-            av_packet_unref(pkt);
-            return;
-        }
-        ost->frame_number++;
-    }
     if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         int i;
         uint8_t *sd = av_packet_get_side_data(pkt, AV_PKT_DATA_QUALITY_STATS,
@@ -861,10 +863,10 @@ static void output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
                     goto finish;
                 idx++;
             } else
-                write_packet(of, pkt, ost);
+                write_packet(of, pkt, ost, 0);
         }
     } else
-        write_packet(of, pkt, ost);
+        write_packet(of, pkt, ost, 0);
 
 finish:
     if (ret < 0 && ret != AVERROR_EOF) {
@@ -2972,7 +2974,7 @@ static int check_init_output_file(OutputFile *of, int file_index)
         while (av_fifo_size(ost->muxing_queue)) {
             AVPacket pkt;
             av_fifo_generic_read(ost->muxing_queue, &pkt, sizeof(pkt), NULL);
-            write_packet(of, &pkt, ost);
+            write_packet(of, &pkt, ost, 1);
         }
     }
 

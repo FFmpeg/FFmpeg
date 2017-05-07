@@ -26,7 +26,6 @@
 #include <stdatomic.h>
 
 #include "libavutil/buffer.h"
-#include "libavutil/md5.h"
 
 #include "avcodec.h"
 #include "bswapdsp.h"
@@ -36,6 +35,7 @@
 #include "h2645_parse.h"
 #include "hevc.h"
 #include "hevc_ps.h"
+#include "hevc_sei.h"
 #include "hevcdsp.h"
 #include "internal.h"
 #include "thread.h"
@@ -227,12 +227,6 @@ enum ScanType {
     SCAN_VERT,
 };
 
-typedef struct LongTermRPS {
-    int     poc[32];
-    uint8_t used[32];
-    uint8_t nb_refs;
-} LongTermRPS;
-
 typedef struct RefPicList {
     struct HEVCFrame *ref[HEVC_MAX_REFS];
     int list[HEVC_MAX_REFS];
@@ -243,83 +237,6 @@ typedef struct RefPicList {
 typedef struct RefPicListTab {
     RefPicList refPicList[2];
 } RefPicListTab;
-
-typedef struct SliceHeader {
-    unsigned int pps_id;
-
-    ///< address (in raster order) of the first block in the current slice segment
-    unsigned int   slice_segment_addr;
-    ///< address (in raster order) of the first block in the current slice
-    unsigned int   slice_addr;
-
-    enum HEVCSliceType slice_type;
-
-    int pic_order_cnt_lsb;
-
-    uint8_t first_slice_in_pic_flag;
-    uint8_t dependent_slice_segment_flag;
-    uint8_t pic_output_flag;
-    uint8_t colour_plane_id;
-
-    ///< RPS coded in the slice header itself is stored here
-    int short_term_ref_pic_set_sps_flag;
-    int short_term_ref_pic_set_size;
-    ShortTermRPS slice_rps;
-    const ShortTermRPS *short_term_rps;
-    int long_term_ref_pic_set_size;
-    LongTermRPS long_term_rps;
-    unsigned int list_entry_lx[2][32];
-
-    uint8_t rpl_modification_flag[2];
-    uint8_t no_output_of_prior_pics_flag;
-    uint8_t slice_temporal_mvp_enabled_flag;
-
-    unsigned int nb_refs[2];
-
-    uint8_t slice_sample_adaptive_offset_flag[3];
-    uint8_t mvd_l1_zero_flag;
-
-    uint8_t cabac_init_flag;
-    uint8_t disable_deblocking_filter_flag; ///< slice_header_disable_deblocking_filter_flag
-    uint8_t slice_loop_filter_across_slices_enabled_flag;
-    uint8_t collocated_list;
-
-    unsigned int collocated_ref_idx;
-
-    int slice_qp_delta;
-    int slice_cb_qp_offset;
-    int slice_cr_qp_offset;
-
-    uint8_t cu_chroma_qp_offset_enabled_flag;
-
-    int beta_offset;    ///< beta_offset_div2 * 2
-    int tc_offset;      ///< tc_offset_div2 * 2
-
-    unsigned int max_num_merge_cand; ///< 5 - 5_minus_max_num_merge_cand
-
-    unsigned *entry_point_offset;
-    int * offset;
-    int * size;
-    int num_entry_point_offsets;
-
-    int8_t slice_qp;
-
-    uint8_t luma_log2_weight_denom;
-    int16_t chroma_log2_weight_denom;
-
-    int16_t luma_weight_l0[16];
-    int16_t chroma_weight_l0[16][2];
-    int16_t chroma_weight_l1[16][2];
-    int16_t luma_weight_l1[16];
-
-    int16_t luma_offset_l0[16];
-    int16_t chroma_offset_l0[16][2];
-
-    int16_t luma_offset_l1[16];
-    int16_t chroma_offset_l1[16][2];
-
-    int slice_ctb_addr_rs;
-} SliceHeader;
 
 typedef struct CodingUnit {
     int x;
@@ -558,52 +475,16 @@ typedef struct HEVCContext {
     // type of the first VCL NAL of the current frame
     enum HEVCNALUnitType first_nal_type;
 
-    // for checking the frame checksums
-    struct AVMD5 *md5_ctx;
-    uint8_t       md5[3][16];
-    uint8_t is_md5;
-
     uint8_t context_initialized;
     int is_nalff;           ///< this flag is != 0 if bitstream is encapsulated
                             ///< as a format defined in 14496-15
     int apply_defdispwin;
 
-    int active_seq_parameter_set_id;
-
     int nal_length_size;    ///< Number of bytes used for nal length (1, 2 or 4)
     int nuh_layer_id;
 
-    /** frame packing arrangement variables */
-    int sei_frame_packing_present;
-    int frame_packing_arrangement_type;
-    int content_interpretation_type;
-    int quincunx_subsampling;
-
-    /** display orientation */
-    int sei_display_orientation_present;
-    int sei_anticlockwise_rotation;
-    int sei_hflip, sei_vflip;
-
-    int picture_struct;
-
-    uint8_t* a53_caption;
-    int a53_caption_size;
-
-    /** mastering display */
-    int sei_mastering_display_info_present;
-    uint16_t display_primaries[3][2];
-    uint16_t white_point[2];
-    uint32_t max_mastering_luminance;
-    uint32_t min_mastering_luminance;
-
-    /* content light level */
-    int sei_content_light_present;
-    uint16_t max_content_light_level;
-    uint16_t max_pic_average_light_level;
-
+    HEVCSEIContext sei;
 } HEVCContext;
-
-int ff_hevc_decode_nal_sei(HEVCContext *s);
 
 /**
  * Mark all frames in DPB as unused for reference.
@@ -614,11 +495,6 @@ void ff_hevc_clear_refs(HEVCContext *s);
  * Drop all frames currently in DPB.
  */
 void ff_hevc_flush_dpb(HEVCContext *s);
-
-/**
- * Compute POC of the current frame and return it.
- */
-int ff_hevc_compute_poc(HEVCContext *s, int poc_lsb);
 
 RefPicList *ff_hevc_get_ref_list(HEVCContext *s, HEVCFrame *frame,
                                  int x0, int y0);
@@ -707,15 +583,6 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                                  int c_idx);
 
 void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size);
-
-/**
- * Reset SEI values that are stored on the Context.
- * e.g. Caption data that was extracted during NAL
- * parsing.
- *
- * @param s HEVCContext.
- */
-void ff_hevc_reset_sei(HEVCContext *s);
 
 extern const uint8_t ff_hevc_qpel_extra_before[4];
 extern const uint8_t ff_hevc_qpel_extra_after[4];

@@ -1869,6 +1869,21 @@ static int mkv_parse_video_color(AVStream *st, const MatroskaTrack *track) {
             avcodec_chroma_pos_to_enum((color->chroma_siting_horz - 1) << 7,
                                        (color->chroma_siting_vert - 1) << 7);
     }
+    if (color->max_cll && color->max_fall) {
+        size_t size = 0;
+        int ret;
+        AVContentLightMetadata *metadata = av_content_light_metadata_alloc(&size);
+        if (!metadata)
+            return AVERROR(ENOMEM);
+        ret = av_stream_add_side_data(st, AV_PKT_DATA_CONTENT_LIGHT_LEVEL,
+                                      (uint8_t *)metadata, size);
+        if (ret < 0) {
+            av_freep(&metadata);
+            return ret;
+        }
+        metadata->MaxCLL  = color->max_cll;
+        metadata->MaxFALL = color->max_fall;
+    }
 
     if (has_mastering_primaries || has_mastering_luminance) {
         // Use similar rationals as other standards.
@@ -3878,6 +3893,7 @@ static int webm_dash_manifest_cues(AVFormatContext *s, int64_t init_range)
                            "%" PRId64, s->streams[0]->index_entries[i].timestamp);
         if (ret <= 0 || (ret == 20 && i ==  s->streams[0]->nb_index_entries - 1)) {
             av_log(s, AV_LOG_ERROR, "timestamp too long.\n");
+            av_free(buf);
             return AVERROR_INVALIDDATA;
         }
         end += ret;

@@ -24,10 +24,13 @@
 #ifndef AVCODEC_HEVC_PARSE_H
 #define AVCODEC_HEVC_PARSE_H
 
-#include "hevcdec.h"
+#include <stdint.h>
+
+#include "hevc_ps.h"
+#include "hevc_sei.h"
 
 int ff_hevc_decode_extradata(const uint8_t *data, int size, HEVCParamSets *ps,
-                             int *is_nalff, int *nal_length_size, int err_recognition,
-                             int apply_defdispwin, void *logctx);
+                             HEVCSEIContext *sei, int *is_nalff, int *nal_length_size,
+                             int err_recognition, int apply_defdispwin, void *logctx);
 
 #endif /* AVCODEC_HEVC_PARSE_H */

@@ -223,7 +223,7 @@ static int svq3_decode_end(AVCodecContext *avctx);
 
 static void svq3_luma_dc_dequant_idct_c(int16_t *output, int16_t *input, int qp)
 {
-    const int qmul = svq3_dequant_coeff[qp];
+    const unsigned qmul = svq3_dequant_coeff[qp];
 #define stride 16
     int i;
     int temp[16];
@@ -248,10 +248,10 @@ static void svq3_luma_dc_dequant_idct_c(int16_t *output, int16_t *input, int qp)
         const int z2     =  7 *  temp[4 * 1 + i] - 17 * temp[4 * 3 + i];
         const int z3     = 17 *  temp[4 * 1 + i] +  7 * temp[4 * 3 + i];
 
-        output[stride *  0 + offset] = (z0 + z3) * qmul + 0x80000 >> 20;
-        output[stride *  2 + offset] = (z1 + z2) * qmul + 0x80000 >> 20;
-        output[stride *  8 + offset] = (z1 - z2) * qmul + 0x80000 >> 20;
-        output[stride * 10 + offset] = (z0 - z3) * qmul + 0x80000 >> 20;
+        output[stride *  0 + offset] = (int)((z0 + z3) * qmul + 0x80000) >> 20;
+        output[stride *  2 + offset] = (int)((z1 + z2) * qmul + 0x80000) >> 20;
+        output[stride *  8 + offset] = (int)((z1 - z2) * qmul + 0x80000) >> 20;
+        output[stride * 10 + offset] = (int)((z0 - z3) * qmul + 0x80000) >> 20;
     }
 }
 #undef stride
@@ -551,7 +551,7 @@ static inline int svq3_mc_dir(SVQ3Context *s, int size, int mode,
                 dy = get_interleaved_se_golomb(&s->gb_slice);
                 dx = get_interleaved_se_golomb(&s->gb_slice);
 
-                if (dx == INVALID_VLC || dy == INVALID_VLC) {
+                if (dx != (int16_t)dx || dy != (int16_t)dy) {
                     av_log(s->avctx, AV_LOG_ERROR, "invalid MV vlc\n");
                     return -1;
                 }
@@ -562,8 +562,8 @@ static inline int svq3_mc_dir(SVQ3Context *s, int size, int mode,
                 int fx, fy;
                 mx  = (mx + 1 >> 1) + dx;
                 my  = (my + 1 >> 1) + dy;
-                fx  = (unsigned)(mx + 0x3000) / 3 - 0x1000;
-                fy  = (unsigned)(my + 0x3000) / 3 - 0x1000;
+                fx  = (unsigned)(mx + 0x30000) / 3 - 0x10000;
+                fy  = (unsigned)(my + 0x30000) / 3 - 0x10000;
                 dxy = (mx - 3 * fx) + 4 * (my - 3 * fy);
 
                 svq3_mc_dir_part(s, x, y, part_width, part_height,
@@ -571,8 +571,8 @@ static inline int svq3_mc_dir(SVQ3Context *s, int size, int mode,
                 mx += mx;
                 my += my;
             } else if (mode == HALFPEL_MODE || mode == PREDICT_MODE) {
-                mx  = (unsigned)(mx + 1 + 0x3000) / 3 + dx - 0x1000;
-                my  = (unsigned)(my + 1 + 0x3000) / 3 + dy - 0x1000;
+                mx  = (unsigned)(mx + 1 + 0x30000) / 3 + dx - 0x10000;
+                my  = (unsigned)(my + 1 + 0x30000) / 3 + dy - 0x10000;
                 dxy = (mx & 1) + 2 * (my & 1);
 
                 svq3_mc_dir_part(s, x, y, part_width, part_height,
@@ -580,8 +580,8 @@ static inline int svq3_mc_dir(SVQ3Context *s, int size, int mode,
                 mx *= 3;
                 my *= 3;
             } else {
-                mx = (unsigned)(mx + 3 + 0x6000) / 6 + dx - 0x1000;
-                my = (unsigned)(my + 3 + 0x6000) / 6 + dy - 0x1000;
+                mx = (unsigned)(mx + 3 + 0x60000) / 6 + dx - 0x10000;
+                my = (unsigned)(my + 3 + 0x60000) / 6 + dy - 0x10000;
 
                 svq3_mc_dir_part(s, x, y, part_width, part_height,
                                  mx, my, 0, 0, dir, avg);

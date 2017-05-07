@@ -3,6 +3,7 @@
  * Copyright (c) 2010 Baptiste Coudurier
  * Copyright (c) 2011 Stefano Sabatini
  * Copyright (c) 2013 Vittorio Giovara <vittorio.giovara@gmail.com>
+ * Copyright (c) 2017 Thomas Mundt <tmundt75@gmail.com>
  *
  * This file is part of FFmpeg.
  *
@@ -47,7 +48,13 @@ static const AVOption interlace_options[] = {
     { "bff", "bottom field first", 0,
         AV_OPT_TYPE_CONST, {.i64 = MODE_BFF }, INT_MIN, INT_MAX, .flags = FLAGS, .unit = "scan" },
     { "lowpass", "set vertical low-pass filter", OFFSET(lowpass),
-        AV_OPT_TYPE_BOOL,  {.i64 = 1 },        0, 1, .flags = FLAGS },
+        AV_OPT_TYPE_INT,   {.i64 = VLPF_LIN }, 0, 2, .flags = FLAGS, .unit = "lowpass" },
+    { "off",     "disable vertical low-pass filter", 0,
+        AV_OPT_TYPE_CONST, {.i64 = VLPF_OFF }, INT_MIN, INT_MAX, .flags = FLAGS, .unit = "lowpass" },
+    { "linear",  "linear vertical low-pass filter",  0,
+        AV_OPT_TYPE_CONST, {.i64 = VLPF_LIN }, INT_MIN, INT_MAX, .flags = FLAGS, .unit = "lowpass" },
+    { "complex", "complex vertical low-pass filter", 0,
+        AV_OPT_TYPE_CONST, {.i64 = VLPF_CMP }, INT_MIN, INT_MAX, .flags = FLAGS, .unit = "lowpass" },
     { NULL }
 };
 
@@ -65,6 +72,25 @@ static void lowpass_line_c(uint8_t *dstp, ptrdiff_t linesize,
         // '0.5 * current + 0.25 * above + 0.25 * below'
         // '1 +' is for rounding.
         dstp[i] = (1 + srcp[i] + srcp[i] + srcp_above[i] + srcp_below[i]) >> 2;
+    }
+}
+
+static void lowpass_line_complex_c(uint8_t *dstp, ptrdiff_t linesize,
+                                   const uint8_t *srcp,
+                                   ptrdiff_t mref, ptrdiff_t pref)
+{
+    const uint8_t *srcp_above = srcp + mref;
+    const uint8_t *srcp_below = srcp + pref;
+    const uint8_t *srcp_above2 = srcp + mref * 2;
+    const uint8_t *srcp_below2 = srcp + pref * 2;
+    int i;
+    for (i = 0; i < linesize; i++) {
+        // this calculation is an integer representation of
+        // '0.75 * current + 0.25 * above + 0.25 * below - 0.125 * above2 - 0.125 * below2'
+        // '4 +' is for rounding.
+        dstp[i] = av_clip_uint8((4 + (srcp[i] << 2)
+                  + ((srcp[i] + srcp_above[i] + srcp_below[i]) << 1)
+                  - srcp_above2[i] - srcp_below2[i]) >> 3);
     }
 }
 
@@ -117,7 +143,10 @@ static int config_out_props(AVFilterLink *outlink)
 
 
     if (s->lowpass) {
-        s->lowpass_line = lowpass_line_c;
+        if (s->lowpass == VLPF_LIN)
+            s->lowpass_line = lowpass_line_c;
+        else if (s->lowpass == VLPF_CMP)
+            s->lowpass_line = lowpass_line_complex_c;
         if (ARCH_X86)
             ff_interlace_init_x86(s);
     }
@@ -151,7 +180,7 @@ static void copy_picture_field(InterlaceContext *s,
             srcp += src_frame->linesize[plane];
             dstp += dst_frame->linesize[plane];
         }
-        if (lowpass) {
+        if (lowpass == VLPF_LIN) {
             int srcp_linesize = src_frame->linesize[plane] * 2;
             int dstp_linesize = dst_frame->linesize[plane] * 2;
             for (j = lines; j > 0; j--) {
@@ -161,6 +190,20 @@ static void copy_picture_field(InterlaceContext *s,
                     mref = 0;    // there is no line above
                 else if (j == 1)
                     pref = 0;    // there is no line below
+                s->lowpass_line(dstp, cols, srcp, mref, pref);
+                dstp += dstp_linesize;
+                srcp += srcp_linesize;
+            }
+        } else if (lowpass == VLPF_CMP) {
+            int srcp_linesize = src_frame->linesize[plane] * 2;
+            int dstp_linesize = dst_frame->linesize[plane] * 2;
+            for (j = lines; j > 0; j--) {
+                ptrdiff_t pref = src_frame->linesize[plane];
+                ptrdiff_t mref = -pref;
+                if (j >= (lines - 1))
+                    mref = 0;
+                else if (j <= 2)
+                    pref = 0;
                 s->lowpass_line(dstp, cols, srcp, mref, pref);
                 dstp += dstp_linesize;
                 srcp += srcp_linesize;

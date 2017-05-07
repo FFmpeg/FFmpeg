@@ -330,7 +330,7 @@ static void hevc_idct_4x4_msa(int16_t *coeffs)
 
 static void hevc_idct_8x8_msa(int16_t *coeffs)
 {
-    int16_t *filter = &gt8x8_cnst[0];
+    const int16_t *filter = &gt8x8_cnst[0];
     v8i16 in0, in1, in2, in3, in4, in5, in6, in7;
 
     LD_SH8(coeffs, 8, in0, in1, in2, in3, in4, in5, in6, in7);
@@ -349,7 +349,7 @@ static void hevc_idct_16x16_msa(int16_t *coeffs)
     int16_t buf[256];
     int16_t *buf_ptr = &buf[0];
     int16_t *src = coeffs;
-    int16_t *filter = &gt16x16_cnst[0];
+    const int16_t *filter = &gt16x16_cnst[0];
     v8i16 in0, in1, in2, in3, in4, in5, in6, in7;
     v8i16 in8, in9, in10, in11, in12, in13, in14, in15;
     v8i16 vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7;
@@ -429,10 +429,10 @@ static void hevc_idct_8x32_column_msa(int16_t *coeffs, uint8_t buf_pitch,
                                       uint8_t round)
 {
     uint8_t i;
-    int16_t *filter_ptr0 = &gt32x32_cnst0[0];
-    int16_t *filter_ptr1 = &gt32x32_cnst1[0];
-    int16_t *filter_ptr2 = &gt32x32_cnst2[0];
-    int16_t *filter_ptr3 = &gt32x32_cnst3[0];
+    const int16_t *filter_ptr0 = &gt32x32_cnst0[0];
+    const int16_t *filter_ptr1 = &gt32x32_cnst1[0];
+    const int16_t *filter_ptr2 = &gt32x32_cnst2[0];
+    const int16_t *filter_ptr3 = &gt32x32_cnst3[0];
     int16_t *src0 = (coeffs + buf_pitch);
     int16_t *src1 = (coeffs + 2 * buf_pitch);
     int16_t *src2 = (coeffs + 4 * buf_pitch);

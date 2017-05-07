@@ -49,6 +49,7 @@ configure()(
         --enable-gpl                                                    \
         --enable-memory-poisoning                                       \
         --enable-avresample                                             \
+        ${ignore_tests:+--ignore-tests="$ignore_tests"}                 \
         ${arch:+--arch=$arch}                                           \
         ${cpu:+--cpu="$cpu"}                                            \
         ${toolchain:+--toolchain="$toolchain"}                          \
@@ -85,7 +86,7 @@ clean(){
 report(){
     date=$(date -u +%Y%m%d%H%M%S)
     echo "fate:1:${date}:${slot}:${version}:$1:$2:${branch}:${comment}" >report
-    cat ${build}/config.fate >>report
+    cat ${build}/ffbuild/config.fate >>report
     cat ${build}/tests/data/fate/*.rep >>report 2>/dev/null || for i in ${build}/tests/data/fate/*.rep ; do cat "$i" >>report 2>/dev/null; done
     test -n "$fate_recv" && $tar report *.log | gzip | $fate_recv
 }
@@ -108,7 +109,7 @@ test -d "$src" && update || checkout || die "Error fetching source"
 
 cd ${workdir}
 
-version=$(${src}/version.sh ${src})
+version=$(${src}/ffbuild/version.sh ${src})
 test "$version" = "$(cat version-$slot 2>/dev/null)" && exit 0
 echo ${version} >version-$slot
 

@@ -1,6 +1,5 @@
-include $(SUBDIR)../config.mak
-
 NAME = avfilter
+DESC = FFmpeg audio/video filtering library
 
 HEADERS = avfilter.h                                                    \
           avfiltergraph.h                                               \

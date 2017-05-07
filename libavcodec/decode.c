@@ -369,7 +369,7 @@ static int decode_simple_internal(AVCodecContext *avctx, AVFrame *frame)
     AVPacket           *pkt = ds->in_pkt;
     // copy to ensure we do not change pkt
     AVPacket tmp;
-    int got_frame, did_split;
+    int got_frame, actual_got_frame, did_split;
     int ret;
 
     if (!pkt->data && !avci->draining) {
@@ -392,7 +392,9 @@ static int decode_simple_internal(AVCodecContext *avctx, AVFrame *frame)
     tmp = *pkt;
 #if FF_API_MERGE_SD
 FF_DISABLE_DEPRECATION_WARNINGS
-    did_split = av_packet_split_side_data(&tmp);
+    did_split = avci->compat_decode_partial_size ?
+                ff_packet_split_and_drop_side_data(&tmp) :
+                av_packet_split_side_data(&tmp);
 
     if (did_split) {
         ret = extract_packet_props(avctx->internal, &tmp);
@@ -413,9 +415,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
     } else {
         ret = avctx->codec->decode(avctx, frame, &got_frame, &tmp);
 
+        if (!(avctx->codec->caps_internal & FF_CODEC_CAP_SETS_PKT_DTS))
+            frame->pkt_dts = pkt->dts;
         if (avctx->codec->type == AVMEDIA_TYPE_VIDEO) {
-            if (!(avctx->codec->caps_internal & FF_CODEC_CAP_SETS_PKT_DTS))
-                frame->pkt_dts = pkt->dts;
             if(!avctx->has_b_frames)
                 frame->pkt_pos = pkt->pos;
             //FIXME these should be under if(!avctx->has_b_frames)
@@ -426,11 +428,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 if (!frame->height)                   frame->height              = avctx->height;
                 if (frame->format == AV_PIX_FMT_NONE) frame->format              = avctx->pix_fmt;
             }
-        } else if (avctx->codec->type == AVMEDIA_TYPE_AUDIO) {
-            frame->pkt_dts = pkt->dts;
         }
     }
     emms_c();
+    actual_got_frame = got_frame;
 
     if (avctx->codec->type == AVMEDIA_TYPE_VIDEO) {
         if (frame->flags & AV_FRAME_FLAG_DISCARD)
@@ -568,8 +569,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
         avctx->time_base = av_inv_q(av_mul_q(avctx->framerate, (AVRational){avctx->ticks_per_frame, 1}));
 #endif
 
-    /* do not stop draining when got_frame != 0 or ret < 0 */
-    if (avctx->internal->draining && !got_frame) {
+    /* do not stop draining when actual_got_frame != 0 or ret < 0 */
+    /* got_frame == 0 but actual_got_frame != 0 when frame is discarded */
+    if (avctx->internal->draining && !actual_got_frame) {
         if (ret < 0) {
             /* prevent infinite loop if a decoder wrongly always return error on draining */
             /* reasonable nb_errors_max = maximum b frames + thread count */
@@ -961,6 +963,7 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
                              AVPacket *avpkt)
 {
     int i, ret = 0;
+    AVCodecInternal *avci = avctx->internal;
 
     if (!avpkt->data && avpkt->size) {
         av_log(avctx, AV_LOG_ERROR, "invalid packet: NULL data, size != 0\n");
@@ -981,7 +984,9 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
         AVPacket tmp = *avpkt;
 #if FF_API_MERGE_SD
 FF_DISABLE_DEPRECATION_WARNINGS
-        int did_split = av_packet_split_side_data(&tmp);
+        int did_split = avci->compat_decode_partial_size ?
+                        ff_packet_split_and_drop_side_data(&tmp) :
+                        av_packet_split_side_data(&tmp);
         //apply_param_change(avctx, &tmp);
 
         if (did_split) {
