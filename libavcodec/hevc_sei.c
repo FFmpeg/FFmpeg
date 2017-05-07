@@ -346,7 +346,7 @@ int ff_hevc_decode_nal_sei(GetBitContext *gb, void *logctx, HEVCSEIContext *s,
     do {
         ret = decode_nal_sei_message(gb, s, ps, type, logctx);
         if (ret < 0)
-            return(AVERROR(ENOMEM));
+            return ret;
     } while (more_rbsp_data(gb));
     return 1;
 }
