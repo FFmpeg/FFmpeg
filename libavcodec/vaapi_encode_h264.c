@@ -37,6 +37,7 @@
 enum {
     SEI_TIMING         = 0x01,
     SEI_IDENTIFIER     = 0x02,
+    SEI_RECOVERY_POINT = 0x04,
 };
 
 // Random (version 4) ISO 11578 UUID.
@@ -61,6 +62,7 @@ typedef struct VAAPIEncodeH264Context {
 
     H264RawSEIBufferingPeriod buffering_period;
     H264RawSEIPicTiming pic_timing;
+    H264RawSEIRecoveryPoint recovery_point;
     H264RawSEIUserDataUnregistered identifier;
     char *identifier_string;
 
@@ -228,6 +230,11 @@ static int vaapi_encode_h264_write_extra_header(AVCodecContext *avctx,
             }
             priv->sei.payload[i].payload_type = H264_SEI_TYPE_PIC_TIMING;
             priv->sei.payload[i].payload.pic_timing = priv->pic_timing;
+            ++i;
+        }
+        if (opt->sei & SEI_RECOVERY_POINT && pic->type == PICTURE_TYPE_I) {
+            priv->sei.payload[i].payload_type = H264_SEI_TYPE_RECOVERY_POINT;
+            priv->sei.payload[i].payload.recovery_point = priv->recovery_point;
             ++i;
         }
 
@@ -613,6 +620,14 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
         priv->sei_needed = 1;
     }
 
+    if (opt->sei & SEI_RECOVERY_POINT && pic->type == PICTURE_TYPE_I) {
+        priv->recovery_point.recovery_frame_cnt = 0;
+        priv->recovery_point.exact_match_flag   = 1;
+        priv->recovery_point.broken_link_flag   = ctx->b_per_p > 0;
+
+        priv->sei_needed = 1;
+    }
+
     vpic->CurrPic = (VAPictureH264) {
         .picture_id          = pic->recon_surface,
         .frame_idx           = priv->frame_num,
@@ -950,13 +965,16 @@ static const AVOption vaapi_encode_h264_options[] = {
 
     { "sei", "Set SEI to include",
       OFFSET(sei), AV_OPT_TYPE_FLAGS,
-      { .i64 = SEI_IDENTIFIER | SEI_TIMING },
+      { .i64 = SEI_IDENTIFIER | SEI_TIMING | SEI_RECOVERY_POINT },
       0, INT_MAX, FLAGS, "sei" },
     { "identifier", "Include encoder version identifier",
       0, AV_OPT_TYPE_CONST, { .i64 = SEI_IDENTIFIER },
       INT_MIN, INT_MAX, FLAGS, "sei" },
     { "timing", "Include timing parameters (buffering_period and pic_timing)",
       0, AV_OPT_TYPE_CONST, { .i64 = SEI_TIMING },
+      INT_MIN, INT_MAX, FLAGS, "sei" },
+    { "recovery_point", "Include recovery points where appropriate",
+      0, AV_OPT_TYPE_CONST, { .i64 = SEI_RECOVERY_POINT },
       INT_MIN, INT_MAX, FLAGS, "sei" },
     { NULL },
 };
