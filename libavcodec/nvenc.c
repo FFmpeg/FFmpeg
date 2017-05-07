@@ -1408,7 +1408,7 @@ static int nvenc_register_frame(AVCodecContext *avctx, const AVFrame *frame)
     NvencDynLoadFunctions *dl_fn = &ctx->nvenc_dload_funcs;
     NV_ENCODE_API_FUNCTION_LIST *p_nvenc = &dl_fn->nvenc_funcs;
 
-    AVHWFramesContext *frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
+    AVHWFramesContext *frames_ctx = (AVHWFramesContext*)frame->hw_frames_ctx->data;
     NV_ENC_REGISTER_RESOURCE reg;
     int i, idx, ret;
 
