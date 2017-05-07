@@ -243,7 +243,7 @@ void ff_ivi_recompose_haar(const IVIPlaneDesc *plane, uint8_t *dst,
 #define INV_HAAR8(s1, s5, s3, s7, s2, s4, s6, s8,\
                   d1, d2, d3, d4, d5, d6, d7, d8,\
                   t0, t1, t2, t3, t4, t5, t6, t7, t8) {\
-    t1 = (s1) << 1; t5 = (s5) << 1;\
+    t1 = (s1) * 2; t5 = (s5) * 2;\
     IVI_HAAR_BFLY(t1, t5, t1, t5, t0); IVI_HAAR_BFLY(t1, s3, t1, t3, t0);\
     IVI_HAAR_BFLY(t5, s7, t5, t7, t0); IVI_HAAR_BFLY(t1, s2, t1, t2, t0);\
     IVI_HAAR_BFLY(t3, s4, t3, t4, t0); IVI_HAAR_BFLY(t5, s6, t5, t6, t0);\
@@ -284,10 +284,10 @@ void ff_ivi_inverse_haar_8x8(const int32_t *in, int16_t *out, uint32_t pitch,
         if (flags[i]) {
             /* pre-scaling */
             shift = !(i & 4);
-            sp1 = src[ 0] << shift;
-            sp2 = src[ 8] << shift;
-            sp3 = src[16] << shift;
-            sp4 = src[24] << shift;
+            sp1 = src[ 0] * (1 << shift);
+            sp2 = src[ 8] * (1 << shift);
+            sp3 = src[16] * (1 << shift);
+            sp4 = src[24] * (1 << shift);
             INV_HAAR8(    sp1,     sp2,     sp3,     sp4,
                       src[32], src[40], src[48], src[56],
                       dst[ 0], dst[ 8], dst[16], dst[24],
