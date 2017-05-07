@@ -223,7 +223,7 @@ static int svq3_decode_end(AVCodecContext *avctx);
 
 static void svq3_luma_dc_dequant_idct_c(int16_t *output, int16_t *input, int qp)
 {
-    const int qmul = svq3_dequant_coeff[qp];
+    const unsigned qmul = svq3_dequant_coeff[qp];
 #define stride 16
     int i;
     int temp[16];
@@ -248,10 +248,10 @@ static void svq3_luma_dc_dequant_idct_c(int16_t *output, int16_t *input, int qp)
         const int z2     =  7 *  temp[4 * 1 + i] - 17 * temp[4 * 3 + i];
         const int z3     = 17 *  temp[4 * 1 + i] +  7 * temp[4 * 3 + i];
 
-        output[stride *  0 + offset] = (z0 + z3) * qmul + 0x80000 >> 20;
-        output[stride *  2 + offset] = (z1 + z2) * qmul + 0x80000 >> 20;
-        output[stride *  8 + offset] = (z1 - z2) * qmul + 0x80000 >> 20;
-        output[stride * 10 + offset] = (z0 - z3) * qmul + 0x80000 >> 20;
+        output[stride *  0 + offset] = (int)((z0 + z3) * qmul + 0x80000) >> 20;
+        output[stride *  2 + offset] = (int)((z1 + z2) * qmul + 0x80000) >> 20;
+        output[stride *  8 + offset] = (int)((z1 - z2) * qmul + 0x80000) >> 20;
+        output[stride * 10 + offset] = (int)((z0 - z3) * qmul + 0x80000) >> 20;
     }
 }
 #undef stride
