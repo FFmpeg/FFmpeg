@@ -400,16 +400,21 @@ static av_cold int nvenc_setup_device(AVCodecContext *avctx)
         return AVERROR_BUG;
     }
 
-    if (avctx->pix_fmt == AV_PIX_FMT_CUDA) {
+    if (avctx->pix_fmt == AV_PIX_FMT_CUDA || avctx->hw_frames_ctx || avctx->hw_device_ctx) {
         AVHWFramesContext   *frames_ctx;
+        AVHWDeviceContext   *hwdev_ctx;
         AVCUDADeviceContext *device_hwctx;
         int ret;
 
-        if (!avctx->hw_frames_ctx)
+        if (avctx->hw_frames_ctx) {
+            frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
+            device_hwctx = frames_ctx->device_ctx->hwctx;
+        } else if (avctx->hw_device_ctx) {
+            hwdev_ctx = (AVHWDeviceContext*)avctx->hw_device_ctx->data;
+            device_hwctx = hwdev_ctx->hwctx;
+        } else {
             return AVERROR(EINVAL);
-
-        frames_ctx   = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
-        device_hwctx = frames_ctx->device_ctx->hwctx;
+        }
 
         ctx->cu_context = device_hwctx->cuda_ctx;
 
