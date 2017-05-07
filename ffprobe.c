@@ -57,11 +57,11 @@
 #  ifdef pthread_mutex_lock
 #    undef pthread_mutex_lock
 #  endif
-#  define pthread_mutex_lock(a)
+#  define pthread_mutex_lock(a) do{}while(0)
 #  ifdef pthread_mutex_unlock
 #    undef pthread_mutex_unlock
 #  endif
-#  define pthread_mutex_unlock(a)
+#  define pthread_mutex_unlock(a) do{}while(0)
 #endif
 
 typedef struct InputStream {
