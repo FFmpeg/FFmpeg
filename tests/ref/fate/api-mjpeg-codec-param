@@ -149,6 +149,7 @@ stream=0, decode=0
     sub_text_format=1
     refcounted_frames=false
     side_data_only_packets=true
+    apply_cropping=true
     skip_alpha=false
     field_order=0
     dump_separator=
@@ -307,6 +308,7 @@ stream=0, decode=1
     sub_text_format=1
     refcounted_frames=false
     side_data_only_packets=true
+    apply_cropping=true
     skip_alpha=false
     field_order=0
     dump_separator=
