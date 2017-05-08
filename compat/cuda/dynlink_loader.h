@@ -125,6 +125,7 @@ typedef struct CudaFunctions CudaFunctions;
 #endif
 
 typedef struct CuvidFunctions {
+    tcuvidGetDecoderCaps *cuvidGetDecoderCaps;
     tcuvidCreateDecoder *cuvidCreateDecoder;
     tcuvidDestroyDecoder *cuvidDestroyDecoder;
     tcuvidDecodePicture *cuvidDecodePicture;
@@ -201,6 +202,7 @@ static inline int cuvid_load_functions(CuvidFunctions **functions)
 {
     GENERIC_LOAD_FUNC_PREAMBLE(CuvidFunctions, cuvid, NVCUVID_LIBNAME);
 
+    LOAD_SYMBOL(cuvidGetDecoderCaps, "cuvidGetDecoderCaps");
     LOAD_SYMBOL(cuvidCreateDecoder, "cuvidCreateDecoder");
     LOAD_SYMBOL(cuvidDestroyDecoder, "cuvidDestroyDecoder");
     LOAD_SYMBOL(cuvidDecodePicture, "cuvidDecodePicture");

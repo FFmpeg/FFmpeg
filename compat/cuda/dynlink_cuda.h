@@ -43,6 +43,7 @@
 typedef int CUdevice;
 typedef void* CUarray;
 typedef void* CUcontext;
+typedef void* CUstream;
 #if defined(__x86_64) || defined(AMD64) || defined(_M_AMD64)
 typedef unsigned long long CUdeviceptr;
 #else
