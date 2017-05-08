@@ -445,6 +445,7 @@ enum AVCodecID {
     AV_CODEC_ID_BITPACKED,
     AV_CODEC_ID_MSCC,
     AV_CODEC_ID_SRGC,
+    AV_CODEC_ID_SVG,
 
     /* various PCM "codecs" */
     AV_CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs
