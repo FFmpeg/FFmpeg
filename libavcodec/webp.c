@@ -1423,6 +1423,10 @@ static int webp_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             bytestream2_skip(&gb, chunk_size);
             break;
         case MKTAG('V', 'P', '8', 'X'):
+            if (s->width || s->height || *got_frame) {
+                av_log(avctx, AV_LOG_ERROR, "Canvas dimensions are already set\n");
+                return AVERROR_INVALIDDATA;
+            }
             vp8x_flags = bytestream2_get_byte(&gb);
             bytestream2_skip(&gb, 3);
             s->width  = bytestream2_get_le24(&gb) + 1;
