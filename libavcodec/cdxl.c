@@ -279,7 +279,7 @@ static int cdxl_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     if (!encoding && c->palette_size && c->bpp <= 8 && c->format != CHUNKY) {
         avctx->pix_fmt = AV_PIX_FMT_PAL8;
-    } else if (encoding == 1 && (c->bpp == 6 || c->bpp == 8)) {
+    } else if (encoding == 1 && (c->bpp == 6 || c->bpp == 8) && c->format != CHUNKY) {
         if (c->palette_size != (1 << (c->bpp - 1)))
             return AVERROR_INVALIDDATA;
         avctx->pix_fmt = AV_PIX_FMT_BGR24;
