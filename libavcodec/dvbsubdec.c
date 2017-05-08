@@ -23,6 +23,7 @@
 #include "get_bits.h"
 #include "bytestream.h"
 #include "libavutil/colorspace.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 
 #define DVBSUB_PAGE_SEGMENT     0x10
@@ -1138,6 +1139,7 @@ static void dvbsub_parse_region_segment(AVCodecContext *avctx,
     DVBSubObject *object;
     DVBSubObjectDisplay *display;
     int fill;
+    int ret;
 
     if (buf_size < 10)
         return;
@@ -1163,6 +1165,12 @@ static void dvbsub_parse_region_segment(AVCodecContext *avctx,
     buf += 2;
     region->height = AV_RB16(buf);
     buf += 2;
+
+    ret = av_image_check_size(region->width, region->height, 0, avctx);
+    if (ret < 0) {
+        region->width= region->height= 0;
+        return;
+    }
 
     if (region->width * region->height != region->buf_size) {
         av_free(region->pbuf);
