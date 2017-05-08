@@ -971,6 +971,26 @@ AVInputFormat ff_image_ ## imgname ## _pipe_demuxer = {\
     .raw_codec_id   = codecid,\
 };
 
+static const AVClass svg_class = {
+    .class_name = "svg demuxer",
+    .item_name  = av_default_item_name,
+    .option     = ff_img_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+AVInputFormat ff_image_svg_pipe_demuxer = {
+    .name           = "svg_pipe",
+    .long_name      = NULL_IF_CONFIG_SMALL("piped svg sequence"),
+    .priv_data_size = sizeof(VideoDemuxData),
+    .read_header    = ff_img_read_header,
+    .read_packet    = ff_img_read_packet,
+    .priv_class     = &svg_class,
+    .mime_type      = "image/svg+xml",
+    .extensions     = "svg,svgz",
+    .flags          = AVFMT_GENERIC_INDEX,
+    .raw_codec_id   = AV_CODEC_ID_SVG,
+};
+
 IMAGEAUTO_DEMUXER(bmp,     AV_CODEC_ID_BMP)
 IMAGEAUTO_DEMUXER(dds,     AV_CODEC_ID_DDS)
 IMAGEAUTO_DEMUXER(dpx,     AV_CODEC_ID_DPX)
