@@ -378,6 +378,8 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
     h->avctx->coded_width   = h1->avctx->coded_width;
     h->avctx->width         = h1->avctx->width;
     h->avctx->height        = h1->avctx->height;
+    h->width_from_caller    = h1->width_from_caller;
+    h->height_from_caller   = h1->height_from_caller;
     h->coded_picture_number = h1->coded_picture_number;
     h->first_field          = h1->first_field;
     h->picture_structure    = h1->picture_structure;
@@ -874,13 +876,17 @@ static int init_dimensions(H264Context *h)
     av_assert0(sps->crop_top + sps->crop_bottom < (unsigned)h->height);
 
     /* handle container cropping */
-    if (FFALIGN(h->avctx->width,  16) == FFALIGN(width,  16) &&
-        FFALIGN(h->avctx->height, 16) == FFALIGN(height, 16) &&
-        h->avctx->width  <= width &&
-        h->avctx->height <= height
-    ) {
-        width  = h->avctx->width;
-        height = h->avctx->height;
+    if (h->width_from_caller > 0 && h->height_from_caller > 0     &&
+        !sps->crop_top && !sps->crop_left                         &&
+        FFALIGN(h->width_from_caller,  16) == FFALIGN(width,  16) &&
+        FFALIGN(h->height_from_caller, 16) == FFALIGN(height, 16) &&
+        h->width_from_caller  <= width &&
+        h->height_from_caller <= height) {
+        width  = h->width_from_caller;
+        height = h->height_from_caller;
+    } else {
+        h->width_from_caller  = 0;
+        h->height_from_caller = 0;
     }
 
     h->avctx->coded_width  = h->width;

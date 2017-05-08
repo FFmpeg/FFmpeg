@@ -309,6 +309,9 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
     h->avctx                 = avctx;
     h->cur_chroma_format_idc = -1;
 
+    h->width_from_caller     = avctx->width;
+    h->height_from_caller    = avctx->height;
+
     h->picture_structure     = PICT_FRAME;
     h->workaround_bugs       = avctx->workaround_bugs;
     h->flags                 = avctx->flags;
