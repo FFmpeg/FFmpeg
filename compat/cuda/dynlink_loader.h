@@ -66,9 +66,9 @@
         av_log(NULL, AV_LOG_TRACE, "Loaded lib: %s\n", path);     \
     } while (0)
 
-#define LOAD_SYMBOL(fun, symbol)                                    \
+#define LOAD_SYMBOL(fun, tp, symbol)                                \
     do {                                                            \
-        if (!((f->fun) = dlsym(f->lib, symbol))) {                  \
+        if (!((f->fun) = (tp*)dlsym(f->lib, symbol))) {             \
             av_log(NULL, AV_LOG_ERROR, "Cannot load %s\n", symbol); \
             ret = AVERROR_UNKNOWN;                                  \
             goto error;                                             \
@@ -150,9 +150,12 @@ typedef struct CuvidFunctions {
     LIB_HANDLE lib;
 } CuvidFunctions;
 
+typedef NVENCSTATUS NVENCAPI tNvEncodeAPICreateInstance(NV_ENCODE_API_FUNCTION_LIST *functionList);
+typedef NVENCSTATUS NVENCAPI tNvEncodeAPIGetMaxSupportedVersion(uint32_t* version);
+
 typedef struct NvencFunctions {
-    NVENCSTATUS (NVENCAPI *NvEncodeAPICreateInstance)(NV_ENCODE_API_FUNCTION_LIST *functionList);
-    NVENCSTATUS (NVENCAPI *NvEncodeAPIGetMaxSupportedVersion)(uint32_t* version);
+    tNvEncodeAPICreateInstance *NvEncodeAPICreateInstance;
+    tNvEncodeAPIGetMaxSupportedVersion *NvEncodeAPIGetMaxSupportedVersion;
 
     LIB_HANDLE lib;
 } NvencFunctions;
@@ -179,20 +182,20 @@ static inline int cuda_load_functions(CudaFunctions **functions)
 {
     GENERIC_LOAD_FUNC_PREAMBLE(CudaFunctions, cuda, CUDA_LIBNAME);
 
-    LOAD_SYMBOL(cuInit, "cuInit");
-    LOAD_SYMBOL(cuDeviceGetCount, "cuDeviceGetCount");
-    LOAD_SYMBOL(cuDeviceGet, "cuDeviceGet");
-    LOAD_SYMBOL(cuDeviceGetName, "cuDeviceGetName");
-    LOAD_SYMBOL(cuDeviceComputeCapability, "cuDeviceComputeCapability");
-    LOAD_SYMBOL(cuCtxCreate, "cuCtxCreate_v2");
-    LOAD_SYMBOL(cuCtxPushCurrent, "cuCtxPushCurrent_v2");
-    LOAD_SYMBOL(cuCtxPopCurrent, "cuCtxPopCurrent_v2");
-    LOAD_SYMBOL(cuCtxDestroy, "cuCtxDestroy_v2");
-    LOAD_SYMBOL(cuMemAlloc, "cuMemAlloc_v2");
-    LOAD_SYMBOL(cuMemFree, "cuMemFree_v2");
-    LOAD_SYMBOL(cuMemcpy2D, "cuMemcpy2D_v2");
-    LOAD_SYMBOL(cuGetErrorName, "cuGetErrorName");
-    LOAD_SYMBOL(cuGetErrorString, "cuGetErrorString");
+    LOAD_SYMBOL(cuInit, tcuInit, "cuInit");
+    LOAD_SYMBOL(cuDeviceGetCount, tcuDeviceGetCount, "cuDeviceGetCount");
+    LOAD_SYMBOL(cuDeviceGet, tcuDeviceGet, "cuDeviceGet");
+    LOAD_SYMBOL(cuDeviceGetName, tcuDeviceGetName, "cuDeviceGetName");
+    LOAD_SYMBOL(cuDeviceComputeCapability, tcuDeviceComputeCapability, "cuDeviceComputeCapability");
+    LOAD_SYMBOL(cuCtxCreate, tcuCtxCreate_v2, "cuCtxCreate_v2");
+    LOAD_SYMBOL(cuCtxPushCurrent, tcuCtxPushCurrent_v2, "cuCtxPushCurrent_v2");
+    LOAD_SYMBOL(cuCtxPopCurrent, tcuCtxPopCurrent_v2, "cuCtxPopCurrent_v2");
+    LOAD_SYMBOL(cuCtxDestroy, tcuCtxDestroy_v2, "cuCtxDestroy_v2");
+    LOAD_SYMBOL(cuMemAlloc, tcuMemAlloc_v2, "cuMemAlloc_v2");
+    LOAD_SYMBOL(cuMemFree, tcuMemFree_v2, "cuMemFree_v2");
+    LOAD_SYMBOL(cuMemcpy2D, tcuMemcpy2D_v2, "cuMemcpy2D_v2");
+    LOAD_SYMBOL(cuGetErrorName, tcuGetErrorName, "cuGetErrorName");
+    LOAD_SYMBOL(cuGetErrorString, tcuGetErrorString, "cuGetErrorString");
 
     GENERIC_LOAD_FUNC_FINALE(cuda);
 }
@@ -202,32 +205,32 @@ static inline int cuvid_load_functions(CuvidFunctions **functions)
 {
     GENERIC_LOAD_FUNC_PREAMBLE(CuvidFunctions, cuvid, NVCUVID_LIBNAME);
 
-    LOAD_SYMBOL(cuvidGetDecoderCaps, "cuvidGetDecoderCaps");
-    LOAD_SYMBOL(cuvidCreateDecoder, "cuvidCreateDecoder");
-    LOAD_SYMBOL(cuvidDestroyDecoder, "cuvidDestroyDecoder");
-    LOAD_SYMBOL(cuvidDecodePicture, "cuvidDecodePicture");
+    LOAD_SYMBOL(cuvidGetDecoderCaps, tcuvidGetDecoderCaps, "cuvidGetDecoderCaps");
+    LOAD_SYMBOL(cuvidCreateDecoder, tcuvidCreateDecoder, "cuvidCreateDecoder");
+    LOAD_SYMBOL(cuvidDestroyDecoder, tcuvidDestroyDecoder, "cuvidDestroyDecoder");
+    LOAD_SYMBOL(cuvidDecodePicture, tcuvidDecodePicture, "cuvidDecodePicture");
 #ifdef __CUVID_DEVPTR64
-    LOAD_SYMBOL(cuvidMapVideoFrame, "cuvidMapVideoFrame64");
-    LOAD_SYMBOL(cuvidUnmapVideoFrame, "cuvidUnmapVideoFrame64");
+    LOAD_SYMBOL(cuvidMapVideoFrame, tcuvidMapVideoFrame, "cuvidMapVideoFrame64");
+    LOAD_SYMBOL(cuvidUnmapVideoFrame, tcuvidUnmapVideoFrame, "cuvidUnmapVideoFrame64");
 #else
-    LOAD_SYMBOL(cuvidMapVideoFrame, "cuvidMapVideoFrame");
-    LOAD_SYMBOL(cuvidUnmapVideoFrame, "cuvidUnmapVideoFrame");
+    LOAD_SYMBOL(cuvidMapVideoFrame, tcuvidMapVideoFrame, "cuvidMapVideoFrame");
+    LOAD_SYMBOL(cuvidUnmapVideoFrame, tcuvidUnmapVideoFrame, "cuvidUnmapVideoFrame");
 #endif
-    LOAD_SYMBOL(cuvidCtxLockCreate, "cuvidCtxLockCreate");
-    LOAD_SYMBOL(cuvidCtxLockDestroy, "cuvidCtxLockDestroy");
-    LOAD_SYMBOL(cuvidCtxLock, "cuvidCtxLock");
-    LOAD_SYMBOL(cuvidCtxUnlock, "cuvidCtxUnlock");
+    LOAD_SYMBOL(cuvidCtxLockCreate, tcuvidCtxLockCreate, "cuvidCtxLockCreate");
+    LOAD_SYMBOL(cuvidCtxLockDestroy, tcuvidCtxLockDestroy, "cuvidCtxLockDestroy");
+    LOAD_SYMBOL(cuvidCtxLock, tcuvidCtxLock, "cuvidCtxLock");
+    LOAD_SYMBOL(cuvidCtxUnlock, tcuvidCtxUnlock, "cuvidCtxUnlock");
 
-    LOAD_SYMBOL(cuvidCreateVideoSource, "cuvidCreateVideoSource");
-    LOAD_SYMBOL(cuvidCreateVideoSourceW, "cuvidCreateVideoSourceW");
-    LOAD_SYMBOL(cuvidDestroyVideoSource, "cuvidDestroyVideoSource");
-    LOAD_SYMBOL(cuvidSetVideoSourceState, "cuvidSetVideoSourceState");
-    LOAD_SYMBOL(cuvidGetVideoSourceState, "cuvidGetVideoSourceState");
-    LOAD_SYMBOL(cuvidGetSourceVideoFormat, "cuvidGetSourceVideoFormat");
-    LOAD_SYMBOL(cuvidGetSourceAudioFormat, "cuvidGetSourceAudioFormat");
-    LOAD_SYMBOL(cuvidCreateVideoParser, "cuvidCreateVideoParser");
-    LOAD_SYMBOL(cuvidParseVideoData, "cuvidParseVideoData");
-    LOAD_SYMBOL(cuvidDestroyVideoParser, "cuvidDestroyVideoParser");
+    LOAD_SYMBOL(cuvidCreateVideoSource, tcuvidCreateVideoSource, "cuvidCreateVideoSource");
+    LOAD_SYMBOL(cuvidCreateVideoSourceW, tcuvidCreateVideoSourceW, "cuvidCreateVideoSourceW");
+    LOAD_SYMBOL(cuvidDestroyVideoSource, tcuvidDestroyVideoSource, "cuvidDestroyVideoSource");
+    LOAD_SYMBOL(cuvidSetVideoSourceState, tcuvidSetVideoSourceState, "cuvidSetVideoSourceState");
+    LOAD_SYMBOL(cuvidGetVideoSourceState, tcuvidGetVideoSourceState, "cuvidGetVideoSourceState");
+    LOAD_SYMBOL(cuvidGetSourceVideoFormat, tcuvidGetSourceVideoFormat, "cuvidGetSourceVideoFormat");
+    LOAD_SYMBOL(cuvidGetSourceAudioFormat, tcuvidGetSourceAudioFormat, "cuvidGetSourceAudioFormat");
+    LOAD_SYMBOL(cuvidCreateVideoParser, tcuvidCreateVideoParser, "cuvidCreateVideoParser");
+    LOAD_SYMBOL(cuvidParseVideoData, tcuvidParseVideoData, "cuvidParseVideoData");
+    LOAD_SYMBOL(cuvidDestroyVideoParser, tcuvidDestroyVideoParser, "cuvidDestroyVideoParser");
 
     GENERIC_LOAD_FUNC_FINALE(cuvid);
 }
@@ -236,8 +239,8 @@ static inline int nvenc_load_functions(NvencFunctions **functions)
 {
     GENERIC_LOAD_FUNC_PREAMBLE(NvencFunctions, nvenc, NVENC_LIBNAME);
 
-    LOAD_SYMBOL(NvEncodeAPICreateInstance, "NvEncodeAPICreateInstance");
-    LOAD_SYMBOL(NvEncodeAPIGetMaxSupportedVersion, "NvEncodeAPIGetMaxSupportedVersion");
+    LOAD_SYMBOL(NvEncodeAPICreateInstance, tNvEncodeAPICreateInstance, "NvEncodeAPICreateInstance");
+    LOAD_SYMBOL(NvEncodeAPIGetMaxSupportedVersion, tNvEncodeAPIGetMaxSupportedVersion, "NvEncodeAPIGetMaxSupportedVersion");
 
     GENERIC_LOAD_FUNC_FINALE(nvenc);
 }
