@@ -15,6 +15,10 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2017-xx-xx - xxxxxxx - lavu 55.62.100 / 55.30.0 - frame.h
+  Add AVFrame.crop_left/right/top/bottom fields for attaching cropping
+  information to video frames.
+
 2017-xx-xx - xxxxxxxxxx
   Change av_sha_update(), av_sha512_update() and av_md5_sum()/av_md5_update() length
   parameter type to size_t at next major bump.
