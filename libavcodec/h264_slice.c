@@ -197,10 +197,6 @@ static int alloc_picture(H264Context *h, H264Picture *pic)
     if (ret < 0)
         goto fail;
 
-    pic->crop     = h->ps.sps->crop;
-    pic->crop_top = h->ps.sps->crop_top;
-    pic->crop_left= h->ps.sps->crop_left;
-
     if (h->avctx->hwaccel) {
         const AVHWAccel *hwaccel = h->avctx->hwaccel;
         av_assert0(!pic->hwaccel_picture_private);
@@ -494,6 +490,11 @@ static int h264_frame_start(H264Context *h)
     pic->sei_recovery_frame_cnt = h->sei.recovery_point.recovery_frame_cnt;
 
     pic->f->pict_type = h->slice_ctx[0].slice_type;
+
+    pic->f->crop_left   = h->crop_left;
+    pic->f->crop_right  = h->crop_right;
+    pic->f->crop_top    = h->crop_top;
+    pic->f->crop_bottom = h->crop_bottom;
 
     if ((ret = alloc_picture(h, pic)) < 0)
         return ret;
@@ -870,8 +871,12 @@ static enum AVPixelFormat get_pixel_format(H264Context *h, int force_callback)
 static int init_dimensions(H264Context *h)
 {
     const SPS *sps = (const SPS*)h->ps.sps;
-    int width  = h->width  - (sps->crop_right + sps->crop_left);
-    int height = h->height - (sps->crop_top   + sps->crop_bottom);
+    int cr = sps->crop_right;
+    int cl = sps->crop_left;
+    int ct = sps->crop_top;
+    int cb = sps->crop_bottom;
+    int width  = h->width  - (cr + cl);
+    int height = h->height - (ct + cb);
     av_assert0(sps->crop_right + sps->crop_left < (unsigned)h->width);
     av_assert0(sps->crop_top + sps->crop_bottom < (unsigned)h->height);
 
@@ -884,6 +889,10 @@ static int init_dimensions(H264Context *h)
         h->height_from_caller <= height) {
         width  = h->width_from_caller;
         height = h->height_from_caller;
+        cl = 0;
+        ct = 0;
+        cr = h->width - width;
+        cb = h->height - height;
     } else {
         h->width_from_caller  = 0;
         h->height_from_caller = 0;
@@ -893,6 +902,10 @@ static int init_dimensions(H264Context *h)
     h->avctx->coded_height = h->height;
     h->avctx->width        = width;
     h->avctx->height       = height;
+    h->crop_right          = cr;
+    h->crop_left           = cl;
+    h->crop_top            = ct;
+    h->crop_bottom         = cb;
 
     return 0;
 }

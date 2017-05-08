@@ -161,10 +161,6 @@ typedef struct H264Picture {
     int recovered;          ///< picture at IDR or recovery point + recovery count
     int invalid_gap;
     int sei_recovery_frame_cnt;
-
-    int crop;
-    int crop_left;
-    int crop_top;
 } H264Picture;
 
 typedef struct H264Ref {
@@ -379,6 +375,11 @@ typedef struct H264Context {
      * Set to 1 when the current picture is IDR, 0 otherwise.
      */
     int picture_idr;
+
+    int crop_left;
+    int crop_right;
+    int crop_top;
+    int crop_bottom;
 
     int8_t(*intra4x4_pred_mode);
     H264PredContext hpc;

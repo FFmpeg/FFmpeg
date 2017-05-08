@@ -113,9 +113,6 @@ int ff_h264_ref_picture(H264Context *h, H264Picture *dst, H264Picture *src)
     dst->mbaff         = src->mbaff;
     dst->field_picture = src->field_picture;
     dst->reference     = src->reference;
-    dst->crop          = src->crop;
-    dst->crop_left     = src->crop_left;
-    dst->crop_top      = src->crop_top;
     dst->recovered     = src->recovered;
     dst->invalid_gap   = src->invalid_gap;
     dst->sei_recovery_frame_cnt = src->sei_recovery_frame_cnt;
