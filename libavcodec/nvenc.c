@@ -1132,7 +1132,6 @@ static av_cold int nvenc_alloc_surface(AVCodecContext *avctx, int idx)
         allocSurf.version = NV_ENC_CREATE_INPUT_BUFFER_VER;
         allocSurf.width = (avctx->width + 31) & ~31;
         allocSurf.height = (avctx->height + 31) & ~31;
-        allocSurf.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_CACHED;
         allocSurf.bufferFmt = ctx->surfaces[idx].format;
 
         nv_status = p_nvenc->nvEncCreateInputBuffer(ctx->nvencoder, &allocSurf);
@@ -1144,12 +1143,6 @@ static av_cold int nvenc_alloc_surface(AVCodecContext *avctx, int idx)
         ctx->surfaces[idx].width = allocSurf.width;
         ctx->surfaces[idx].height = allocSurf.height;
     }
-
-    /* 1MB is large enough to hold most output frames.
-     * NVENC increases this automaticaly if it is not enough. */
-    allocOut.size = 1024 * 1024;
-
-    allocOut.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_CACHED;
 
     nv_status = p_nvenc->nvEncCreateBitstreamBuffer(ctx->nvencoder, &allocOut);
     if (nv_status != NV_ENC_SUCCESS) {
