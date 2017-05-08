@@ -319,6 +319,7 @@ static void register_all(void)
     REGISTER_DECODER(SPEEDHQ,           speedhq);
     REGISTER_DECODER(SRGC,              srgc);
     REGISTER_ENCDEC (SUNRAST,           sunrast);
+    REGISTER_DECODER(LIBRSVG,           librsvg);
     REGISTER_ENCDEC (SVQ1,              svq1);
     REGISTER_DECODER(SVQ3,              svq3);
     REGISTER_ENCDEC (TARGA,             targa);
