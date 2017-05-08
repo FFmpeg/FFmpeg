@@ -1,3 +1,7 @@
+#ifdef ANDROID
+URLProtocol ff_android_protocol;
+#endif
+
 static const URLProtocol *url_protocols[] = {
     &ff_async_protocol,
     &ff_cache_protocol,
@@ -27,4 +31,7 @@ static const URLProtocol *url_protocols[] = {
     &ff_udp_protocol,
     &ff_udplite_protocol,
     &ff_unix_protocol,
+#ifdef ANDROID
+    &ff_android_protocol,
+#endif
     NULL };
