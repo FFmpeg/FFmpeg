@@ -1351,6 +1351,9 @@ static int vp8_lossy_decode_frame(AVCodecContext *avctx, AVFrame *p,
     ret = ff_vp8_decode_frame(avctx, p, got_frame, &pkt);
     if (ret < 0)
         return ret;
+
+    update_canvas_size(avctx, avctx->width, avctx->height);
+
     if (s->has_alpha) {
         ret = vp8_lossy_decode_alpha(avctx, p, s->alpha_data,
                                      s->alpha_data_size);
