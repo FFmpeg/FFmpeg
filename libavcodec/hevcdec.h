@@ -317,8 +317,6 @@ typedef struct HEVCFrame {
     int poc;
     struct HEVCFrame *collocated_ref;
 
-    HEVCWindow window;
-
     AVBufferRef *tab_mvf_buf;
     AVBufferRef *rpl_tab_buf;
     AVBufferRef *rpl_buf;

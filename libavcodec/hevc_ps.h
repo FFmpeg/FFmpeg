@@ -227,8 +227,6 @@ typedef struct HEVCSPS {
     int chroma_format_idc;
     uint8_t separate_colour_plane_flag;
 
-    ///< output (i.e. cropped) values
-    int output_width, output_height;
     HEVCWindow output_window;
 
     HEVCWindow pic_conf_win;
