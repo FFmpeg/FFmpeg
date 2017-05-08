@@ -1099,6 +1099,21 @@ static int apply_color_indexing_transform(WebPContext *s)
     return 0;
 }
 
+static void update_canvas_size(AVCodecContext *avctx, int w, int h)
+{
+    WebPContext *s = avctx->priv_data;
+    if (s->width && s->width != w) {
+        av_log(avctx, AV_LOG_WARNING, "Width mismatch. %d != %d\n",
+               s->width, w);
+    }
+    s->width = w;
+    if (s->height && s->height != h) {
+        av_log(avctx, AV_LOG_WARNING, "Height mismatch. %d != %d\n",
+               s->height, h);
+    }
+    s->height = h;
+}
+
 static int vp8_lossless_decode_frame(AVCodecContext *avctx, AVFrame *p,
                                      int *got_frame, uint8_t *data_start,
                                      unsigned int data_size, int is_alpha_chunk)
@@ -1123,16 +1138,8 @@ static int vp8_lossless_decode_frame(AVCodecContext *avctx, AVFrame *p,
 
         w = get_bits(&s->gb, 14) + 1;
         h = get_bits(&s->gb, 14) + 1;
-        if (s->width && s->width != w) {
-            av_log(avctx, AV_LOG_WARNING, "Width mismatch. %d != %d\n",
-                   s->width, w);
-        }
-        s->width = w;
-        if (s->height && s->height != h) {
-            av_log(avctx, AV_LOG_WARNING, "Height mismatch. %d != %d\n",
-                   s->width, w);
-        }
-        s->height = h;
+
+        update_canvas_size(avctx, w, h);
 
         ret = ff_set_dimensions(avctx, s->width, s->height);
         if (ret < 0)
