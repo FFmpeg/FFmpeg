@@ -433,19 +433,19 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
 
     s->predictors[0] = get_sbits(gb, 10);
     s->predictors[1] = get_sbits(gb, 10);
-    s->predictors[2] = get_sbits(gb, size) << (10 - size);
-    s->predictors[3] = get_sbits(gb, size) << (10 - size);
+    s->predictors[2] = get_sbits(gb, size) * (1 << (10 - size));
+    s->predictors[3] = get_sbits(gb, size) * (1 << (10 - size));
     if (filter_order > 4) {
         int tmp = size - get_bits1(gb);
 
         for (i = 4; i < filter_order; i++) {
             if (!(i & 3))
                 x = tmp - get_bits(gb, 2);
-            s->predictors[i] = get_sbits(gb, x) << (10 - size);
+            s->predictors[i] = get_sbits(gb, x) * (1 << (10 - size));
         }
     }
 
-    tfilter[0] = s->predictors[0] << 6;
+    tfilter[0] = s->predictors[0] * 64;
     for (i = 1; i < filter_order; i++) {
         int32_t *p1 = &tfilter[0];
         int32_t *p2 = &tfilter[i - 1];
@@ -457,7 +457,7 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
             p2--;
         }
 
-        tfilter[i] = s->predictors[i] << 6;
+        tfilter[i] = s->predictors[i] * 64;
     }
 
     x = 1 << (32 - (15 - filter_quant));
@@ -491,7 +491,7 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
                      s->residues[i + j + 1] * s->filter[j + 1] +
                      s->residues[i + j    ] * s->filter[j    ];
             }
-            v = (av_clip_intp2(v >> filter_quant, 13) << dshift) - *decoded;
+            v = (av_clip_intp2(v >> filter_quant, 13) * (1 << dshift)) - *decoded;
             *decoded++ = v;
             s->residues[filter_order + i] = v >> dshift;
         }
