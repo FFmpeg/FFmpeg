@@ -30,9 +30,9 @@ for TARGET in $TARGETS;do
         cp config.asm android/include/config-${TARGET}.asm
         TARGET=$TARGET-$TARGET
     fi
-    cp config.mak android/config-${TARGET}.mak
+    mv ffbuild/config.mak android/config-${TARGET}.mak
     cat config.h | sed -e "s/^#define \(ARCH_.*\|HAVE_.*\) \(.*\)/#ifdef \1\n#undef \1\n#endif\n#define \1 \2/g" > android/include/config-${TARGET}.h
-    rm -f config.asm config.mak config.h
+    rm -f config.asm config.h
 done
 
 mv libavutil/avconfig.h android/include/libavutil/

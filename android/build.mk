@@ -24,8 +24,9 @@ $(foreach V,$(FF_VARS),$(eval $(call RESET,$(V))))
 #$(warning INCLUDING $(wildcard $(LOCAL_PATH)/$(FFMPEG_ARCH)/Makefile) for $(FFMPEG_2ND_ARCH) - $(NEON-OBJS) - $(FF_VARS))
 
 SUBDIR := $(FFDROID_DIR)/include/
+include $(FFDROID_DIR)/config.mak
 include $(LOCAL_PATH)/Makefile $(wildcard $(LOCAL_PATH)/$(FFMPEG_ARCH_DIR)/Makefile)
-include $(FFMPEG_DIR)arch.mak
+include $(FFMPEG_DIR)ffbuild/arch.mak
 
 # remove duplicate objects
 OBJS := $(sort $(OBJS) $(OBJS-yes))
