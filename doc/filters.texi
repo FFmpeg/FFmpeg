@@ -395,6 +395,11 @@ How much to use compressed signal in output. Default is 1.
 Range is between 0 and 1.
 @end table
 
+@section acopy
+
+Copy the input audio source unchanged to the output. This is mainly useful for
+testing purposes.
+
 @section acrossfade
 
 Apply cross fade from one input audio stream to another input audio stream.
@@ -5665,7 +5670,7 @@ convolution="-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2:-2 -
 
 @section copy
 
-Copy the input source unchanged to the output. This is mainly useful for
+Copy the input video source unchanged to the output. This is mainly useful for
 testing purposes.
 
 @anchor{coreimage}
