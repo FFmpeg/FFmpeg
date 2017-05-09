@@ -57,26 +57,7 @@ else
 LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_SHARED_LIBRARIES)
 endif
 
-LOCAL_SRC_FILES := $(C_FILES) $(if $(filter S,$(ASM_SUFFIX)),$(S_FILES))
-
-intermediates := $(local-intermediates-dir)
-ifeq ($(FFMPEG_ARCH),x86)
-GEN := $(S_OBJS:%=$(intermediates)/$(FFMPEG_ARCH)/%)
-$(GEN): YASM := prebuilts/misc/$(BUILD_OS)-$(HOST_PREBUILT_ARCH)/yasm/yasm
-$(GEN): YASMFLAGS := -felf -DPIC $(LOCAL_C_INCLUDES:%=-I%)
-$(GEN): PRIVATE_CUSTOM_TOOL = $(YASM) $(YASMFLAGS) -Pconfig-x86.asm -o $@ $<
-$(GEN): $(intermediates)/$(FFMPEG_ARCH)/%.o: $(LOCAL_PATH)/%.asm $(SUBDIR)config-x86.asm
-	$(transform-generated-source)
-LOCAL_GENERATED_SOURCES_x86 += $(GEN)
-else ifeq ($(FFMPEG_ARCH),x86_64)
-GEN64 := $(S_OBJS:%=$(intermediates)/$(FFMPEG_ARCH)/%)
-$(GEN64): YASM := prebuilts/misc/$(BUILD_OS)-$(HOST_PREBUILT_ARCH)/yasm/yasm
-$(GEN64): YASMFLAGS := -felf -DPIC $(LOCAL_C_INCLUDES:%=-I%) -m amd64
-$(GEN64): PRIVATE_CUSTOM_TOOL = $(YASM) $(YASMFLAGS) -Pconfig-x86_64.asm -o $@ $<
-$(GEN64): $(intermediates)/$(FFMPEG_ARCH)/%.o: $(LOCAL_PATH)/%.asm $(SUBDIR)config-x86_64.asm
-	$(transform-generated-source)
-LOCAL_GENERATED_SOURCES_x86_64 += $(GEN64)
-endif
+LOCAL_SRC_FILES := $(C_FILES) $(S_FILES)
 
 LOCAL_CFLAGS += \
 	-O3 -std=c99 -fno-math-errno -fno-signed-zeros -fomit-frame-pointer \
@@ -86,8 +67,11 @@ LOCAL_CFLAGS += \
 	-Werror=format-security -Werror=implicit-function-declaration -Werror=missing-prototypes \
 	-Werror=return-type -Werror=vla -Wformat -Wno-maybe-uninitialized -fPIC
 
+LOCAL_ASFLAGS_x86 := -Pconfig-x86.asm
+LOCAL_ASFLAGS_x86_64 := -Pconfig-x86_64.asm
+
 LOCAL_LDFLAGS := -Wl,--no-fatal-warnings -Wl,-Bsymbolic
 
-LOCAL_CLANG_ASFLAGS += -no-integrated-as
+LOCAL_CLANG_ASFLAGS += $(if $(filter x86,$(FFMPEG_ARCH_DIR)),,-no-integrated-as)
 
 LOCAL_SHARED_LIBRARIES := $($(NAME)_FFLIBS:%=lib%)
