@@ -384,6 +384,10 @@ static int decode_header(SnowContext *s){
         av_log(s->avctx, AV_LOG_ERROR, "spatial_decomposition_count %d too large for size\n", s->spatial_decomposition_count);
         return AVERROR_INVALIDDATA;
     }
+    if (s->avctx->width > 65536-4) {
+        av_log(s->avctx, AV_LOG_ERROR, "Width %d is too large\n", s->avctx->width);
+        return AVERROR_INVALIDDATA;
+    }
 
 
     s->qlog           += get_symbol(&s->c, s->header_state, 1);
