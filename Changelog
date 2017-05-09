@@ -8,6 +8,7 @@ version <next>:
 - pixscope video filter
 - oscilloscope video filter
 - config.log and other configuration files moved into ffbuild/ directory
+- update cuvid/nvenc headers to Video Codec SDK 8.0.14
 
 version 3.3:
 - CrystalHD decoder moved to new decode API
