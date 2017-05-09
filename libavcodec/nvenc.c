@@ -298,6 +298,12 @@ static int nvenc_check_capabilities(AVCodecContext *avctx)
         return AVERROR(ENOSYS);
     }
 
+    ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_WEIGHTED_PREDICTION);
+    if (ctx->weighted_pred > 0 && ret <= 0) {
+        av_log (avctx, AV_LOG_VERBOSE, "Weighted Prediction not supported\n");
+        return AVERROR(ENOSYS);
+    }
+
     return 0;
 }
 
@@ -1031,6 +1037,9 @@ static av_cold int nvenc_setup_encoder(AVCodecContext *avctx)
 
     ctx->init_encode_params.enableEncodeAsync = 0;
     ctx->init_encode_params.enablePTD = 1;
+
+    if (ctx->weighted_pred == 1)
+        ctx->init_encode_params.enableWeightedPrediction = 1;
 
     if (ctx->bluray_compat) {
         ctx->aud = 1;

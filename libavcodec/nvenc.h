@@ -161,6 +161,7 @@ typedef struct NvencContext
     int init_qp_b;
     int init_qp_i;
     int cqp;
+    int weighted_pred;
 } NvencContext;
 
 int ff_nvenc_encode_init(AVCodecContext *avctx);

@@ -114,6 +114,8 @@ static const AVOption options[] = {
     { "init_qpI",     "Initial QP value for I frame",       OFFSET(init_qp_i),    AV_OPT_TYPE_INT,   { .i64 = -1 }, -1, 51, VE },
     { "qp",           "Constant quantization parameter rate control method",
                                                             OFFSET(cqp),          AV_OPT_TYPE_INT,   { .i64 = -1 }, -1, 51, VE },
+    { "weighted_pred","Set 1 to enable weighted prediction",
+                                                            OFFSET(weighted_pred),AV_OPT_TYPE_INT,   { .i64 = 0 }, 0, 1, VE },
     { NULL }
 };
 
