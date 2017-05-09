@@ -1279,6 +1279,16 @@ ffprobe -dump_separator "
 Maximum number of pixels per image. This value can be used to avoid out of
 memory failures due to large images.
 
+@item apply_cropping @var{bool} (@emph{decoding,video})
+Enable cropping if cropping parameters are multiples of the required
+alignment for the left and top parameters. If the alignment is not met the
+cropping will be partially applied to maintain alignment.
+Default is 1 (enabled).
+Note: The required alignment depends on if @code{AV_CODEC_FLAG_UNALIGNED} is set and the
+CPU. @code{AV_CODEC_FLAG_UNALIGNED} cannot be changed from the command line. Also hardware
+decoders will not apply left/top Cropping.
+
+
 @end table
 
 @c man end CODEC OPTIONS
