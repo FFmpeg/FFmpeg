@@ -8757,15 +8757,18 @@ Allowed range is [0, 40].
 Set display mode.
 It accepts the following values:
 @table @samp
-@item parade
+@item stack
 Per color component graphs are placed below each other.
+
+@item parade
+Per color component graphs are placed side by side.
 
 @item overlay
 Presents information identical to that in the @code{parade}, except
 that the graphs representing color components are superimposed directly
 over one another.
 @end table
-Default is @code{parade}.
+Default is @code{stack}.
 
 @item levels_mode
 Set mode. Can be either @code{linear}, or @code{logarithmic}.
