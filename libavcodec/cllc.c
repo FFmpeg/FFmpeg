@@ -71,6 +71,10 @@ static int read_code_table(CLLCContext *ctx, GetBitContext *gb, VLC *vlc)
 
             count++;
         }
+        if (prefix > (65535 - 256)/2) {
+            vlc->table = NULL;
+            return AVERROR_INVALIDDATA;
+        }
 
         prefix <<= 1;
     }
