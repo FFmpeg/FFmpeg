@@ -77,8 +77,8 @@ with them are not covered by ShiftMediaProject and so they should be used with d
 
 *** Building with YASM ***
 
-In order to build gmp using msvc you must first download and install YASM.
-YASM is required to compile all gmp assembly files.
+In order to build FFmpeg using msvc you must first download and install YASM.
+YASM is required to compile all assembly files.
 
 1) Visual Studio YASM integration can be downloaded from https://github.com/ShiftMediaProject/VSYASM/releases/latest
 
