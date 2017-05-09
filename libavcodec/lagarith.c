@@ -191,7 +191,9 @@ static int lag_read_prob_header(lag_rac *rac, GetBitContext *gb)
         }
 
         scale_factor++;
-        cumulative_target = 1 << scale_factor;
+        if (scale_factor >= 32U)
+            return AVERROR_INVALIDDATA;
+        cumulative_target = 1U << scale_factor;
 
         if (scaled_cumul_prob > cumulative_target) {
             av_log(rac->avctx, AV_LOG_ERROR,
