@@ -291,7 +291,7 @@ static inline void dxt5_block_internal(uint8_t *dst, ptrdiff_t stride,
                     }
                 }
             }
-            pixel = colors[code & 3] | (alpha << 24);
+            pixel = colors[code & 3] | ((unsigned)alpha << 24);
             code >>= 2;
             AV_WL32(dst + x * 4, pixel);
         }
