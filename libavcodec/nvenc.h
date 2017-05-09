@@ -30,6 +30,8 @@
 #include "avcodec.h"
 
 #define MAX_REGISTERED_FRAMES 64
+#define RC_MODE_DEPRECATED 0x800000
+#define RCD(rc_mode) ((rc_mode) | RC_MODE_DEPRECATED)
 
 typedef struct NvencSurface
 {

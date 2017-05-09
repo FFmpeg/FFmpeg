@@ -32,9 +32,9 @@
 #include "internal.h"
 
 #define NVENC_CAP 0x30
-#define IS_CBR(rc) (rc == NV_ENC_PARAMS_RC_CBR ||               \
-                    rc == NV_ENC_PARAMS_RC_2_PASS_QUALITY ||    \
-                    rc == NV_ENC_PARAMS_RC_2_PASS_FRAMESIZE_CAP)
+#define IS_CBR(rc) (rc == NV_ENC_PARAMS_RC_CBR ||             \
+                    rc == NV_ENC_PARAMS_RC_CBR_LOWDELAY_HQ || \
+                    rc == NV_ENC_PARAMS_RC_CBR_HQ)
 
 const enum AVPixelFormat ff_nvenc_pix_fmts[] = {
     AV_PIX_FMT_YUV420P,
@@ -633,13 +633,13 @@ static void nvenc_override_rate_control(AVCodecContext *avctx)
             return;
         }
         /* fall through */
-    case NV_ENC_PARAMS_RC_2_PASS_VBR:
+    case NV_ENC_PARAMS_RC_VBR_HQ:
     case NV_ENC_PARAMS_RC_VBR:
         set_vbr(avctx);
         break;
     case NV_ENC_PARAMS_RC_CBR:
-    case NV_ENC_PARAMS_RC_2_PASS_QUALITY:
-    case NV_ENC_PARAMS_RC_2_PASS_FRAMESIZE_CAP:
+    case NV_ENC_PARAMS_RC_CBR_HQ:
+    case NV_ENC_PARAMS_RC_CBR_LOWDELAY_HQ:
         break;
     }
 
@@ -715,17 +715,27 @@ static av_cold void nvenc_setup_rate_control(AVCodecContext *avctx)
 
         if (ctx->cbr) {
             if (ctx->twopass) {
-                ctx->rc = NV_ENC_PARAMS_RC_2_PASS_QUALITY;
+                ctx->rc = NV_ENC_PARAMS_RC_CBR_LOWDELAY_HQ;
             } else {
                 ctx->rc = NV_ENC_PARAMS_RC_CBR;
             }
         } else if (ctx->cqp >= 0) {
             ctx->rc = NV_ENC_PARAMS_RC_CONSTQP;
         } else if (ctx->twopass) {
-            ctx->rc = NV_ENC_PARAMS_RC_2_PASS_VBR;
+            ctx->rc = NV_ENC_PARAMS_RC_VBR_HQ;
         } else if (avctx->qmin >= 0 && avctx->qmax >= 0) {
             ctx->rc = NV_ENC_PARAMS_RC_VBR_MINQP;
         }
+    }
+
+    if (ctx->rc >= 0 && ctx->rc & RC_MODE_DEPRECATED) {
+        av_log(avctx, AV_LOG_WARNING, "Specified rc mode is deprecated.\n");
+        av_log(avctx, AV_LOG_WARNING, "\tll_2pass_quality -> cbr_ld_hq\n");
+        av_log(avctx, AV_LOG_WARNING, "\tll_2pass_size -> cbr_hq\n");
+        av_log(avctx, AV_LOG_WARNING, "\tvbr_2pass -> vbr_hq\n");
+        av_log(avctx, AV_LOG_WARNING, "\tvbr_minqp -> (no replacement)\n");
+
+        ctx->rc &= ~RC_MODE_DEPRECATED;
     }
 
     if (ctx->flags & NVENC_LOSSLESS) {
@@ -830,9 +840,9 @@ static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
         h264->outputPictureTimingSEI   = 1;
     }
 
-    if (cc->rcParams.rateControlMode == NV_ENC_PARAMS_RC_2_PASS_QUALITY ||
-        cc->rcParams.rateControlMode == NV_ENC_PARAMS_RC_2_PASS_FRAMESIZE_CAP ||
-        cc->rcParams.rateControlMode == NV_ENC_PARAMS_RC_2_PASS_VBR) {
+    if (cc->rcParams.rateControlMode == NV_ENC_PARAMS_RC_CBR_LOWDELAY_HQ ||
+        cc->rcParams.rateControlMode == NV_ENC_PARAMS_RC_CBR_HQ ||
+        cc->rcParams.rateControlMode == NV_ENC_PARAMS_RC_VBR_HQ) {
         h264->adaptiveTransformMode = NV_ENC_H264_ADAPTIVE_TRANSFORM_ENABLE;
         h264->fmoMode = NV_ENC_H264_FMO_DISABLE;
     }
