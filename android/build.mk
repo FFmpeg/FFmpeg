@@ -64,7 +64,7 @@ LOCAL_CFLAGS += \
 	-O3 -std=c99 -fno-math-errno -fno-signed-zeros -fomit-frame-pointer \
 	-Wno-pointer-to-int-cast -Wstrict-prototypes -Wempty-body -Wno-parentheses \
 	-Wno-switch -Wno-format-zero-length -Wno-pointer-sign -Wno-unused-parameter \
-	-Wno-unknown-attributes -Wno-missing-field-initializers -Wno-sign-compare \
+	-Wno-deprecated-declarations -Wno-missing-field-initializers -Wno-sign-compare \
 	-Werror=format-security -Werror=implicit-function-declaration -Werror=missing-prototypes \
 	-Werror=return-type -Werror=vla -Wformat -Wno-maybe-uninitialized -fPIC
 
@@ -73,6 +73,7 @@ LOCAL_ASFLAGS_x86_64 := -Pconfig-x86_64.asm
 
 LOCAL_LDFLAGS := -Wl,--no-fatal-warnings -Wl,-Bsymbolic
 
+LOCAL_CLANG_CFLAGS += -Wno-unknown-attributes
 LOCAL_CLANG_ASFLAGS += $(if $(filter x86,$(FFMPEG_ARCH_DIR)),,-no-integrated-as)
 
 LOCAL_SHARED_LIBRARIES := $($(NAME)_FFLIBS:%=lib%)
