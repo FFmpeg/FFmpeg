@@ -98,7 +98,7 @@ static uint32_t softfloat_mul(uint32_t x, uint64_t mantissa)
 
 static uint8_t lag_calc_zero_run(int8_t x)
 {
-    return (x << 1) ^ (x >> 7);
+    return (x * 2) ^ (x >> 7);
 }
 
 static int lag_decode_prob(GetBitContext *gb, uint32_t *value)
