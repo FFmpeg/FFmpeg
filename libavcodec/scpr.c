@@ -161,7 +161,7 @@ static int get_freq(RangeCoder *rc, unsigned total_freq, unsigned *freq)
 
 static int decode0(GetByteContext *gb, RangeCoder *rc, unsigned cumFreq, unsigned freq, unsigned total_freq)
 {
-    int t;
+    unsigned t;
 
     if (total_freq == 0)
         return AVERROR_INVALIDDATA;
