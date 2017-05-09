@@ -1662,7 +1662,6 @@ SYSTEM_FUNCS="
 
 TOOLCHAIN_FEATURES="
     as_arch_directive
-    as_dn_directive
     as_fpu_directive
     as_func
     as_object_arch
@@ -4379,10 +4378,6 @@ EOF
 
     check_as <<EOF && enable as_arch_directive
 .arch armv7-a
-EOF
-    check_as <<EOF && enable as_dn_directive
-ra .dn d0.i16
-.unreq ra
 EOF
     check_as <<EOF && enable as_fpu_directive
 .fpu neon

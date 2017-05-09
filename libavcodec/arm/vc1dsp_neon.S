@@ -663,7 +663,6 @@ function ff_vc1_inv_trans_4x4_neon, export=1
         bx              lr
 endfunc
 
-#if HAVE_AS_DN_DIRECTIVE
 @ The absolute value of multiplication constants from vc1_mspel_filter and vc1_mspel_{ver,hor}_filter_16bits.
 @ The sign is embedded in the code below that carries out the multiplication (mspel_filter{,.16}).
 #define MSPEL_MODE_1_MUL_CONSTANTS  4 53 18 3
@@ -689,22 +688,18 @@ endfunc
 
 @ Setup constants in registers for a subsequent use of mspel_filter{,.16}.
 .macro mspel_constants typesize reg_a reg_b reg_c reg_d filter_a filter_b filter_c filter_d reg_add filter_add_register
-  @ Define double-word register aliases. Typesize should be i8 or i16.
-  ra .dn \reg_a\().\typesize
-  rb .dn \reg_b\().\typesize
-  rc .dn \reg_c\().\typesize
-  rd .dn \reg_d\().\typesize
+  @ Typesize should be i8 or i16.
 
   @ Only set the register if the value is not 1 and unique
   .if \filter_a != 1
-        vmov            ra,  #\filter_a              @ ra = filter_a
+        vmov.\typesize  \reg_a,  #\filter_a          @ reg_a = filter_a
   .endif
-        vmov            rb,  #\filter_b              @ rb = filter_b
+        vmov.\typesize  \reg_b,  #\filter_b          @ reg_b = filter_b
   .if \filter_b != \filter_c
-        vmov            rc,  #\filter_c              @ rc = filter_c
+        vmov.\typesize  \reg_c,  #\filter_c          @ reg_c = filter_c
   .endif
   .if \filter_d != 1
-        vmov            rd,  #\filter_d              @ rd = filter_d
+        vmov.\typesize  \reg_d,  #\filter_d          @ reg_d = filter_d
   .endif
   @ vdup to double the size of typesize
   .ifc \typesize,i8
@@ -712,11 +707,6 @@ endfunc
   .else
         vdup.32         \reg_add,  \filter_add_register     @ reg_add = filter_add_register
   .endif
-
-  .unreq ra
-  .unreq rb
-  .unreq rc
-  .unreq rd
 .endm
 
 @ After mspel_constants has been used, do the filtering.
@@ -987,7 +977,6 @@ PUT_VC1_MSPEL_MC_V_ONLY(2)
 PUT_VC1_MSPEL_MC_V_ONLY(3)
 
 #undef PUT_VC1_MSPEL_MC_V_ONLY
-#endif
 
 function ff_put_pixels8x8_neon, export=1
         vld1.64         {d0}, [r1], r2
