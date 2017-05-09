@@ -2886,6 +2886,8 @@ static int probe_file(WriterContext *wctx, const char *filename)
         } else {
             selected_streams[i] = 1;
         }
+        if (!selected_streams[i])
+            ifile.fmt_ctx->streams[i]->discard = AVDISCARD_ALL;
     }
 
     if (do_read_frames || do_read_packets) {
