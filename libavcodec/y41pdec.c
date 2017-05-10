@@ -43,7 +43,7 @@ static int y41p_decode_frame(AVCodecContext *avctx, void *data,
     uint8_t *y, *u, *v;
     int i, j, ret;
 
-    if (avpkt->size < 3LL * avctx->height * avctx->width / 2) {
+    if (avpkt->size < 3LL * avctx->height * FFALIGN(avctx->width, 8) / 2) {
         av_log(avctx, AV_LOG_ERROR, "Insufficient input data.\n");
         return AVERROR(EINVAL);
     }
