@@ -2550,6 +2550,8 @@ int vp78_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     enum AVDiscard skip_thresh;
     VP8Frame *av_uninit(curframe), *prev_frame;
 
+    av_assert0(avctx->pix_fmt == AV_PIX_FMT_YUVA420P || avctx->pix_fmt == AV_PIX_FMT_YUV420P);
+
     if (is_vp7)
         ret = vp7_decode_frame_header(s, avpkt->data, avpkt->size);
     else
