@@ -303,6 +303,11 @@ int ff_jni_init_jfields(JNIEnv *env, void *jfields, const struct FFJniField *jfi
 
             last_clazz = *(jclass*)((uint8_t*)jfields + jfields_mapping[i].offset) =
                     global ? (*env)->NewGlobalRef(env, clazz) : clazz;
+
+            if (global) {
+                (*env)->DeleteLocalRef(env, clazz);
+            }
+
         } else {
 
             if (!last_clazz) {
