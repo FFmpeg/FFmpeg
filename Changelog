@@ -10,6 +10,7 @@ version <next>:
 - config.log and other configuration files moved into ffbuild/ directory
 - update cuvid/nvenc headers to Video Codec SDK 8.0.14
 - afir audio filter
+- scale_cuda CUDA based video scale filter
 
 version 3.3:
 - CrystalHD decoder moved to new decode API
