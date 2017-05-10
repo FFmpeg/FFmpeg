@@ -154,7 +154,7 @@ typedef struct NvencContext
     int nonref_p;
     int strict_gop;
     int aq_strength;
-    int quality;
+    float quality;
     int aud;
     int bluray_compat;
     int init_qp_p;

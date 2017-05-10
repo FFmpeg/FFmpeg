@@ -796,7 +796,12 @@ static av_cold void nvenc_setup_rate_control(AVCodecContext *avctx)
         ctx->encode_config.rcParams.zeroReorderDelay = 1;
 
     if (ctx->quality)
-        ctx->encode_config.rcParams.targetQuality = ctx->quality;
+    {
+        //convert from float to fixed point 8.8
+        int tmp_quality = (int)(ctx->quality * 256.0f);
+        ctx->encode_config.rcParams.targetQuality = (uint8_t)(tmp_quality >> 8);
+        ctx->encode_config.rcParams.targetQualityLSB = (uint8_t)(tmp_quality & 0xff);
+    }
 }
 
 static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
