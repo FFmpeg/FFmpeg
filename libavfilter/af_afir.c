@@ -68,7 +68,7 @@ static int fir_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
     block = s->block[ch] + s->part_index * s->block_size;
     memset(block, 0, sizeof(*block) * s->fft_length);
 
-    s->fdsp->vector_fmul_scalar(block + s->part_size, src, s->dry_gain, s->nb_samples);
+    s->fdsp->vector_fmul_scalar(block + s->part_size, src, s->dry_gain, FFALIGN(s->nb_samples, 4));
     emms_c();
 
     av_rdft_calc(s->rdft[ch], block);
@@ -105,7 +105,7 @@ static int fir_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
 
     if (out) {
         float *ptr = (float *)out->extended_data[ch];
-        s->fdsp->vector_fmul_scalar(ptr, dst, s->gain * s->wet_gain, out->nb_samples);
+        s->fdsp->vector_fmul_scalar(ptr, dst, s->gain * s->wet_gain, FFALIGN(out->nb_samples, 4));
         emms_c();
     }
 
