@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef  AVFILTER_AFIR_H
-#define  AVFILTER_AFIR_H
+#ifndef AVFILTER_AFIR_H
+#define AVFILTER_AFIR_H
 
 #include "libavutil/audio_fifo.h"
 #include "libavutil/common.h"
