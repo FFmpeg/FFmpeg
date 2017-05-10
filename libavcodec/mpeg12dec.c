@@ -1242,7 +1242,8 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
 
     if (avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO) {
         // MPEG-1 aspect
-        avctx->sample_aspect_ratio = av_d2q(1.0 / ff_mpeg1_aspect[s->aspect_ratio_info], 255);
+        AVRational aspect_inv = av_d2q(ff_mpeg1_aspect[s->aspect_ratio_info], 255);
+        avctx->sample_aspect_ratio = (AVRational) { aspect_inv.den, aspect_inv.num };
     } else { // MPEG-2
         // MPEG-2 aspect
         if (s->aspect_ratio_info > 1) {
