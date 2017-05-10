@@ -236,7 +236,7 @@ static int decode_nal_sei_user_data_registered_itu_t_t35(HEVCSEIContext *s, GetB
     return 0;
 }
 
-static int active_parameter_sets(HEVCSEIContext *s, GetBitContext *gb, void *logctx)
+static int decode_nal_sei_active_parameter_sets(HEVCSEIContext *s, GetBitContext *gb, void *logctx)
 {
     int num_sps_ids_minus1;
     int i;
@@ -282,9 +282,7 @@ static int decode_nal_sei_prefix(GetBitContext *gb, HEVCSEIContext *s, const HEV
     case HEVC_SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO:
         return decode_nal_sei_content_light_info(&s->content_light, gb);
     case HEVC_SEI_TYPE_ACTIVE_PARAMETER_SETS:
-        active_parameter_sets(s, gb, logctx);
-        av_log(logctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", type);
-        return 0;
+        return decode_nal_sei_active_parameter_sets(s, gb, logctx);
     case HEVC_SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35:
         return decode_nal_sei_user_data_registered_itu_t_t35(s, gb, size);
     default:
