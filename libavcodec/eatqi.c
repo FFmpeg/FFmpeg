@@ -112,7 +112,7 @@ static inline void tqi_idct_put(AVCodecContext *avctx, AVFrame *frame,
 
 static void tqi_calculate_qtable(TqiContext *t, int quant)
 {
-    const int qscale = (215 - 2*quant)*5;
+    const int64_t qscale = (215 - 2*quant)*5;
     int i;
 
     t->intra_matrix[0] = (ff_inv_aanscales[0] * ff_mpeg1_default_intra_matrix[0]) >> 11;
