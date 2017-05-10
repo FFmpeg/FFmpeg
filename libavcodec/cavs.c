@@ -614,8 +614,15 @@ void ff_cavs_mv(AVSContext *h, enum cavs_mv_loc nP, enum cavs_mv_loc nC,
         mv_pred_median(h, mvP, mvA, mvB, mvC);
 
     if (mode < MV_PRED_PSKIP) {
-        mvP->x += get_se_golomb(&h->gb);
-        mvP->y += get_se_golomb(&h->gb);
+        int mx = get_se_golomb(&h->gb) + (unsigned)mvP->x;
+        int my = get_se_golomb(&h->gb) + (unsigned)mvP->y;
+
+        if (mx != (int16_t)mx || my != (int16_t)my) {
+            av_log(h->avctx, AV_LOG_ERROR, "MV %d %d out of supported range\n", mx, my);
+        } else {
+            mvP->x = mx;
+            mvP->y = my;
+        }
     }
     set_mvs(mvP, size);
 }
