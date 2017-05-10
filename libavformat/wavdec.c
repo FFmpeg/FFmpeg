@@ -747,6 +747,8 @@ static int w64_read_header(AVFormatContext *s)
                 chunk_key[4] = 0;
                 avio_read(pb, chunk_key, 4);
                 chunk_size = avio_rl32(pb);
+                if (chunk_size == UINT32_MAX)
+                    return AVERROR_INVALIDDATA;
 
                 value = av_mallocz(chunk_size + 1);
                 if (!value)
