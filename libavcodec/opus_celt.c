@@ -753,15 +753,15 @@ static void celt_decode_bands(CeltFrame *f, OpusRangeCoder *rc)
         }
 
         if (f->dual_stereo) {
-            cm[0] = ff_celt_decode_band(f, rc, i, X, NULL, band_size, b / 2, f->blocks,
+            cm[0] = f->pvq->decode_band(f->pvq, f, rc, i, X, NULL, band_size, b / 2, f->blocks,
                                         effective_lowband != -1 ? norm + (effective_lowband << f->size) : NULL, f->size,
                                         norm + band_offset, 0, 1.0f, lowband_scratch, cm[0]);
 
-            cm[1] = ff_celt_decode_band(f, rc, i, Y, NULL, band_size, b/2, f->blocks,
+            cm[1] = f->pvq->decode_band(f->pvq, f, rc, i, Y, NULL, band_size, b/2, f->blocks,
                                         effective_lowband != -1 ? norm2 + (effective_lowband << f->size) : NULL, f->size,
                                         norm2 + band_offset, 0, 1.0f, lowband_scratch, cm[1]);
         } else {
-            cm[0] = ff_celt_decode_band(f, rc, i, X, Y, band_size, b, f->blocks,
+            cm[0] = f->pvq->decode_band(f->pvq, f, rc, i, X, Y, band_size, b, f->blocks,
                                         effective_lowband != -1 ? norm + (effective_lowband << f->size) : NULL, f->size,
                                         norm + band_offset, 0, 1.0f, lowband_scratch, cm[0]|cm[1]);
             cm[1] = cm[0];
@@ -984,6 +984,8 @@ void ff_celt_free(CeltFrame **f)
     for (i = 0; i < FF_ARRAY_ELEMS(frm->imdct); i++)
         ff_mdct15_uninit(&frm->imdct[i]);
 
+    ff_celt_pvq_uninit(&frm->pvq);
+
     av_freep(&frm->dsp);
     av_freep(f);
 }
@@ -1006,11 +1008,12 @@ int ff_celt_init(AVCodecContext *avctx, CeltFrame **f, int output_channels)
     frm->avctx           = avctx;
     frm->output_channels = output_channels;
 
-    for (i = 0; i < FF_ARRAY_ELEMS(frm->imdct); i++) {
-        ret = ff_mdct15_init(&frm->imdct[i], 1, i + 3, -1.0f);
-        if (ret < 0)
+    for (i = 0; i < FF_ARRAY_ELEMS(frm->imdct); i++)
+        if ((ret = ff_mdct15_init(&frm->imdct[i], 1, i + 3, -1.0f)) < 0)
             goto fail;
-    }
+
+    if ((ret = ff_celt_pvq_init(&frm->pvq)) < 0)
+        goto fail;
 
     frm->dsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!frm->dsp) {

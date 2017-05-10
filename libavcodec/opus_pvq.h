@@ -23,22 +23,28 @@
 #ifndef AVCODEC_OPUS_PVQ_H
 #define AVCODEC_OPUS_PVQ_H
 
-#include "opus.h"
 #include "opus_celt.h"
 
-/* Decodes a band using PVQ */
-uint32_t ff_celt_decode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
-                             float *X, float *Y, int N, int b, uint32_t blocks,
-                             float *lowband, int duration, float *lowband_out, int level,
-                             float gain, float *lowband_scratch, int fill);
+#define QUANT_FN(name) uint32_t (name)(struct CeltPVQ *pvq, CeltFrame *f,            \
+                                       OpusRangeCoder *rc, const int band, float *X, \
+                                       float *Y, int N, int b, uint32_t blocks,      \
+                                       float *lowband, int duration,                 \
+                                       float *lowband_out, int level, float gain,    \
+                                       float *lowband_scratch, int fill)
 
-/* Encodes a band using PVQ */
-uint32_t ff_celt_encode_band(CeltFrame *f, OpusRangeCoder *rc, const int band,
-                             float *X, float *Y, int N, int b, uint32_t blocks,
-                             float *lowband, int duration, float *lowband_out, int level,
-                             float gain, float *lowband_scratch, int fill);
+struct CeltPVQ {
+    DECLARE_ALIGNED(32, int,   qcoeff      )[176];
+    DECLARE_ALIGNED(32, float, hadamard_tmp)[176];
 
-float ff_celt_quant_band_cost(CeltFrame *f, OpusRangeCoder *rc, int band,
-                              float *bits, float lambda);
+    float (*pvq_search)(float *X, int *y, int K, int N);
+
+    QUANT_FN(*decode_band);
+    QUANT_FN(*encode_band);
+    float (*band_cost)(struct CeltPVQ *pvq, CeltFrame *f, OpusRangeCoder *rc,
+                       int band, float *bits, float lambda);
+};
+
+int  ff_celt_pvq_init  (struct CeltPVQ **pvq);
+void ff_celt_pvq_uninit(struct CeltPVQ **pvq);
 
 #endif /* AVCODEC_OPUS_PVQ_H */
