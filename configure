@@ -4447,7 +4447,14 @@ EOF
 
     if enabled vsx; then
         check_cflags -mvsx &&
-        check_builtin vec_vsx_ld "altivec.h" "__builtin_vec_vsx_ld" || disable vsx
+        check_cc <<EOF || disable vsx
+$inc_altivec_h
+int main(void) {
+    int v[4] = { 0 };
+    vector signed int v1 = vec_vsx_ld(0, v);
+    return 0;
+}
+EOF
     fi
 
     if enabled power8; then
