@@ -529,7 +529,7 @@ static void dss_sp_shift_sq_sub(const int32_t *filter_buf,
         for (i = 14; i > 0; i--)
             error_buf[i] = error_buf[i - 1];
 
-        tmp = (tmp + 4096) >> 13;
+        tmp = (int)(tmp + 4096U) >> 13;
 
         error_buf[1] = tmp;
 
