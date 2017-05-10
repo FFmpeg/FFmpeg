@@ -19,6 +19,8 @@ LOCAL_SHARED_LIBRARIES +=	\
 	libva-android
 endif
 
+LOCAL_C_INCLUDES += bionic/libc/include
+
 LOCAL_MULTILIB := $(FFMPEG_MULTILIB)
 
 include $(BUILD_SHARED_LIBRARY)
@@ -33,6 +35,8 @@ LOCAL_SHARED_LIBRARIES +=	\
 	libva \
 	libva-android
 endif
+
+LOCAL_C_INCLUDES += bionic/libc/include
 
 LOCAL_MULTILIB := $(FFMPEG_MULTILIB)
 

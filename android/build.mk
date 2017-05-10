@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2013 The Android-x86 Open Source Project
+# Copyright (C) 2013-2017 The Android-x86 Open Source Project
 #
 # Licensed under the GNU General Public License Version 2 or later.
 # You may not use this file except in compliance with the License.
@@ -51,14 +51,15 @@ LOCAL_MODULE := lib$(NAME)
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE_CLASS := SHARED_LIBRARIES
 LOCAL_ARM_MODE := arm
-ifdef TARGET_2ND_ARCH
-LOCAL_MODULE_PATH_32 := $(TARGET_OUT_VENDOR)/lib
-LOCAL_MODULE_PATH_64 := $(TARGET_OUT_VENDOR)/lib64
-else
-LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR_SHARED_LIBRARIES)
-endif
+LOCAL_PROPRIETARY_MODULE := true
 
 LOCAL_SRC_FILES := $(C_FILES) $(S_FILES)
+
+LOCAL_C_INCLUDES := \
+	$(FFMPEG_DIR)android/include \
+	$(FFMPEG_DIR)
+
+LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_C_INCLUDES)
 
 LOCAL_CFLAGS += \
 	-O3 -std=c99 -fno-math-errno -fno-signed-zeros -fomit-frame-pointer \
