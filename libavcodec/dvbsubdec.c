@@ -1103,9 +1103,9 @@ static int dvbsub_parse_clut_segment(AVCodecContext *avctx,
                 return AVERROR_INVALIDDATA;
         }
 
-        if (depth & 0x80)
+        if (depth & 0x80 && entry_id < 4)
             clut->clut4[entry_id] = RGBA(r,g,b,255 - alpha);
-        else if (depth & 0x40)
+        else if (depth & 0x40 && entry_id < 16)
             clut->clut16[entry_id] = RGBA(r,g,b,255 - alpha);
         else if (depth & 0x20)
             clut->clut256[entry_id] = RGBA(r,g,b,255 - alpha);
