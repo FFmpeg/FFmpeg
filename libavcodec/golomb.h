@@ -352,7 +352,7 @@ static inline int get_ur_golomb_jpegls(GetBitContext *gb, int k, int limit,
                 buf = 0;
             }
 
-            buf += (i << k);
+            buf += ((SUINT)i << k);
         } else if (i == limit - 1) {
             buf = SHOW_UBITS(re, gb, esc_len);
             LAST_SKIP_BITS(re, gb, esc_len);
