@@ -331,6 +331,9 @@ static int decompress_i(AVCodecContext *avctx, uint32_t *dst, int linesize)
         clr = (b << 16) + (g << 8) + r;
         k += run;
         while (run-- > 0) {
+            if (y >= avctx->height)
+                return AVERROR_INVALIDDATA;
+
             dst[y * linesize + x] = clr;
             lx = x;
             ly = y;
