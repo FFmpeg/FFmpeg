@@ -338,6 +338,7 @@ Toolchain options:
   --cxx=CXX                use C compiler CXX [$cxx_default]
   --objcc=OCC              use ObjC compiler OCC [$cc_default]
   --dep-cc=DEPCC           use dependency generator DEPCC [$cc_default]
+  --nvcc=NVCC              use Nvidia CUDA compiler NVCC [$nvcc_default]
   --ld=LD                  use linker LD [$ld_default]
   --pkg-config=PKGCONFIG   use pkg-config tool PKGCONFIG [$pkg_config_default]
   --pkg-config-flags=FLAGS pass additional flags to pkgconf []
@@ -359,6 +360,7 @@ Toolchain options:
   --extra-libs=ELIBS       add ELIBS [$ELIBS]
   --extra-version=STRING   version string suffix []
   --optflags=OPTFLAGS      override optimization-related compiler flags
+  --nvccflags=NVCCFLAGS    override nvcc flags [$nvccflags_default]
   --build-suffix=SUFFIX    library name suffix []
   --enable-pic             build position-independent code
   --enable-thumb           compile for Thumb instruction set
@@ -2221,6 +2223,7 @@ CMDLINE_SET="
     malloc_prefix
     nm
     optflags
+    nvccflags
     pkg_config
     pkg_config_flags
     progs_suffix
@@ -2719,6 +2722,7 @@ vaapi_encode_deps="vaapi"
 
 hwupload_cuda_filter_deps="cuda"
 scale_npp_filter_deps="cuda_sdk libnpp"
+scale_cuda_filter_deps="cuda_sdk"
 
 nvenc_deps="cuda"
 nvenc_deps_any="dlopen LoadLibrary"
@@ -3261,6 +3265,8 @@ strip_default="strip"
 version_script='--version-script'
 yasmexe_default="yasm"
 windres_default="windres"
+nvcc_default="nvcc"
+nvccflags_default="-gencode arch=compute_30,code=sm_30 -O2"
 
 # OS
 target_os_default=$(tolower $(uname -s))
@@ -3334,6 +3340,8 @@ HOSTCC_C='-c'
 HOSTCC_E='-E -o $@'
 HOSTCC_O='-o $@'
 HOSTLD_O='-o $@'
+NVCC_C='-c'
+NVCC_O='-o $@'
 
 host_extralibs='-lm'
 host_cflags_filter=echo
@@ -3721,7 +3729,7 @@ windres_default="${cross_prefix}${windres_default}"
 sysinclude_default="${sysroot}/usr/include"
 
 set_default arch cc cxx doxygen pkg_config ranlib strip sysinclude \
-    target_exec target_os yasmexe
+    target_exec target_os yasmexe nvcc
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
@@ -6241,6 +6249,16 @@ if [ -z "$optflags" ]; then
     fi
 fi
 
+if [ -z "$nvccflags" ]; then
+    nvccflags=$nvccflags_default
+fi
+
+if enabled x86_64 || enabled ppc64 || enabled aarch64; then
+    nvccflags="$nvccflags -m64"
+else
+    nvccflags="$nvccflags -m32"
+fi
+
 check_optflags(){
     check_cflags "$@"
     enabled lto && check_ldflags "$@"
@@ -6704,6 +6722,7 @@ ARFLAGS=$arflags
 AR_O=$ar_o
 RANLIB=$ranlib
 STRIP=$strip
+NVCC=$nvcc
 CP=cp -p
 LN_S=$ln_s
 CPPFLAGS=$CPPFLAGS
@@ -6711,6 +6730,7 @@ CFLAGS=$CFLAGS
 CXXFLAGS=$CXXFLAGS
 OBJCFLAGS=$OBJCFLAGS
 ASFLAGS=$ASFLAGS
+NVCCFLAGS=$nvccflags
 AS_C=$AS_C
 AS_O=$AS_O
 OBJCC_C=$OBJCC_C
@@ -6721,6 +6741,8 @@ CC_E=$CC_E
 CC_O=$CC_O
 CXX_C=$CXX_C
 CXX_O=$CXX_O
+NVCC_C=$NVCC_C
+NVCC_O=$NVCC_O
 LD_O=$LD_O
 LD_LIB=$LD_LIB
 LD_PATH=$LD_PATH

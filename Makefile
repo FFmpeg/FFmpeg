@@ -11,6 +11,8 @@ vpath %.asm  $(SRC_PATH)
 vpath %.rc   $(SRC_PATH)
 vpath %.v    $(SRC_PATH)
 vpath %.texi $(SRC_PATH)
+vpath %.cu   $(SRC_PATH)
+vpath %.ptx  $(SRC_PATH)
 vpath %/fate_config.sh.template $(SRC_PATH)
 
 AVPROGS-$(CONFIG_FFMPEG)   += ffmpeg
