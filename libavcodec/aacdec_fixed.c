@@ -171,7 +171,11 @@ static void subband_scale(int *dst, int *src, int scale, int offset, int len)
 
     s = offset - (s >> 2);
 
-    if (s > 0) {
+    if (s > 31) {
+        for (i=0; i<len; i++) {
+            dst[i] = 0;
+        }
+    } else if (s > 0) {
         round = 1 << (s-1);
         for (i=0; i<len; i++) {
             out = (int)(((int64_t)src[i] * c) >> 32);
