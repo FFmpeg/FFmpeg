@@ -1236,8 +1236,8 @@ static int mov_read_mdhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     sc->time_scale = avio_rb32(pb);
     if (sc->time_scale <= 0) {
-        av_log(c->fc, AV_LOG_ERROR, "Invalid mdhd time scale %d\n", sc->time_scale);
-        return AVERROR_INVALIDDATA;
+        av_log(c->fc, AV_LOG_ERROR, "Invalid mdhd time scale %d, defaulting to 1\n", sc->time_scale);
+        sc->time_scale = 1;
     }
     st->duration = (version == 1) ? avio_rb64(pb) : avio_rb32(pb); /* duration */
 
@@ -1266,8 +1266,8 @@ static int mov_read_mvhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     mov_metadata_creation_time(&c->fc->metadata, creation_time);
     c->time_scale = avio_rb32(pb); /* time scale */
     if (c->time_scale <= 0) {
-        av_log(c->fc, AV_LOG_ERROR, "Invalid mvhd time scale %d\n", c->time_scale);
-        return AVERROR_INVALIDDATA;
+        av_log(c->fc, AV_LOG_ERROR, "Invalid mvhd time scale %d, defaulting to 1\n", c->time_scale);
+        c->time_scale = 1;
     }
     av_log(c->fc, AV_LOG_TRACE, "time scale = %i\n", c->time_scale);
 
