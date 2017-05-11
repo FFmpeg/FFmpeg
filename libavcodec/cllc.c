@@ -30,6 +30,10 @@
 #include "internal.h"
 #include "thread.h"
 
+#define VLC_BITS 7
+#define VLC_DEPTH 2
+
+
 typedef struct CLLCContext {
     AVCodecContext *avctx;
     BswapDSPContext bdsp;
@@ -79,7 +83,7 @@ static int read_code_table(CLLCContext *ctx, GetBitContext *gb, VLC *vlc)
         prefix <<= 1;
     }
 
-    return ff_init_vlc_sparse(vlc, 7, count, bits, 1, 1,
+    return ff_init_vlc_sparse(vlc, VLC_BITS, count, bits, 1, 1,
                               codes, 2, 2, symbols, 1, 1, 0);
 }
 
@@ -106,7 +110,7 @@ static int read_argb_line(CLLCContext *ctx, GetBitContext *gb, int *top_left,
     for (i = 0; i < ctx->avctx->width; i++) {
         /* Always get the alpha component */
         UPDATE_CACHE(bits, gb);
-        GET_VLC(code, bits, gb, vlc[0].table, 7, 2);
+        GET_VLC(code, bits, gb, vlc[0].table, VLC_BITS, VLC_DEPTH);
 
         pred[0] += code;
         dst[0]   = pred[0];
@@ -115,21 +119,21 @@ static int read_argb_line(CLLCContext *ctx, GetBitContext *gb, int *top_left,
         if (dst[0]) {
             /* Red */
             UPDATE_CACHE(bits, gb);
-            GET_VLC(code, bits, gb, vlc[1].table, 7, 2);
+            GET_VLC(code, bits, gb, vlc[1].table, VLC_BITS, VLC_DEPTH);
 
             pred[1] += code;
             dst[1]   = pred[1];
 
             /* Green */
             UPDATE_CACHE(bits, gb);
-            GET_VLC(code, bits, gb, vlc[2].table, 7, 2);
+            GET_VLC(code, bits, gb, vlc[2].table, VLC_BITS, VLC_DEPTH);
 
             pred[2] += code;
             dst[2]   = pred[2];
 
             /* Blue */
             UPDATE_CACHE(bits, gb);
-            GET_VLC(code, bits, gb, vlc[3].table, 7, 2);
+            GET_VLC(code, bits, gb, vlc[3].table, VLC_BITS, VLC_DEPTH);
 
             pred[3] += code;
             dst[3]   = pred[3];
@@ -171,7 +175,7 @@ static int read_rgb24_component_line(CLLCContext *ctx, GetBitContext *gb,
     /* Simultaneously read and restore the line */
     for (i = 0; i < ctx->avctx->width; i++) {
         UPDATE_CACHE(bits, gb);
-        GET_VLC(code, bits, gb, vlc->table, 7, 2);
+        GET_VLC(code, bits, gb, vlc->table, VLC_BITS, VLC_DEPTH);
 
         pred  += code;
         dst[0] = pred;
@@ -200,7 +204,7 @@ static int read_yuv_component_line(CLLCContext *ctx, GetBitContext *gb,
     /* Simultaneously read and restore the line */
     for (i = 0; i < ctx->avctx->width >> is_chroma; i++) {
         UPDATE_CACHE(bits, gb);
-        GET_VLC(code, bits, gb, vlc->table, 7, 2);
+        GET_VLC(code, bits, gb, vlc->table, VLC_BITS, VLC_DEPTH);
 
         pred     += code;
         outbuf[i] = pred;
