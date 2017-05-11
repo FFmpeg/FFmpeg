@@ -297,6 +297,7 @@ External library support:
   The following libraries provide various hardware acceleration features:
   --disable-audiotoolbox   disable Apple AudioToolbox code [autodetect]
   --disable-cuda           disable dynamically linked Nvidia CUDA code [autodetect]
+  --enable-cuda-sdk        enable CUDA features that require the CUDA SDK [no]
   --disable-cuvid          disable Nvidia CUVID support [autodetect]
   --disable-d3d11va        disable Microsoft Direct3D 11 video acceleration code [autodetect]
   --disable-dxva2          disable Microsoft DirectX 9 video acceleration code [autodetect]
@@ -1598,6 +1599,7 @@ HWACCEL_AUTODETECT_LIBRARY_LIST="
 "
 
 HWACCEL_LIBRARY_NONFREE_LIST="
+    cuda_sdk
     libnpp
 "
 
@@ -2716,7 +2718,7 @@ qsvenc_select="qsv"
 vaapi_encode_deps="vaapi"
 
 hwupload_cuda_filter_deps="cuda"
-scale_npp_filter_deps="cuda libnpp"
+scale_npp_filter_deps="cuda_sdk libnpp"
 
 nvenc_deps="cuda"
 nvenc_deps_any="dlopen LoadLibrary"
@@ -5755,7 +5757,7 @@ done
 enabled avfoundation_indev && { check_header_objcc AVFoundation/AVFoundation.h || disable avfoundation_indev; }
 enabled avfoundation_indev && { check_lib avfoundation_indev CoreGraphics/CoreGraphics.h CGGetActiveDisplayList -framework CoreGraphics ||
                                 check_lib avfoundation_indev ApplicationServices/ApplicationServices.h CGGetActiveDisplayList -framework ApplicationServices; }
-enabled cuda              && check_header cuda.h # this is not a dependency
+enabled cuda_sdk          && require cuda_sdk cuda.h cuCtxCreate -lcuda
 enabled cuvid             && { enabled cuda ||
                                die "ERROR: CUVID requires CUDA"; }
 enabled chromaprint       && require chromaprint chromaprint.h chromaprint_get_version -lchromaprint
