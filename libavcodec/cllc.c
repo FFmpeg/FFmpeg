@@ -56,6 +56,13 @@ static int read_code_table(CLLCContext *ctx, GetBitContext *gb, VLC *vlc)
 
     num_lens = get_bits(gb, 5);
 
+    if (num_lens > VLC_BITS * VLC_DEPTH) {
+        vlc->table = NULL;
+
+        av_log(ctx->avctx, AV_LOG_ERROR, "To long VLCs %d\n", num_lens);
+        return AVERROR_INVALIDDATA;
+    }
+
     for (i = 0; i < num_lens; i++) {
         num_codes      = get_bits(gb, 9);
         num_codes_sum += num_codes;
