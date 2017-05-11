@@ -67,7 +67,7 @@ static const struct algo fdct_tab_arch[] = {
 };
 
 static const struct algo idct_tab_arch[] = {
-#if HAVE_MMX_INLINE
+#if HAVE_MMX_EXTERNAL
     { "SIMPLE-MMX",  ff_simple_idct_mmx,  FF_IDCT_PERM_SIMPLE, AV_CPU_FLAG_MMX },
 #endif
 #if CONFIG_MPEG4_DECODER && HAVE_YASM
