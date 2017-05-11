@@ -1549,14 +1549,13 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
             sls_flag_file_rename(hls, old_filename);
             ret = hls_start(s);
         }
+        av_free(old_filename);
 
         if (ret < 0) {
-            av_free(old_filename);
             return ret;
         }
 
         if ((ret = hls_window(s, 0)) < 0) {
-            av_free(old_filename);
             return ret;
         }
     }
