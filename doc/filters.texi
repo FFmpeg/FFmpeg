@@ -1614,6 +1614,7 @@ Max_level
 Min_difference
 Max_difference
 Mean_difference
+RMS_difference
 Peak_level
 RMS_peak
 RMS_trough
@@ -1629,6 +1630,7 @@ Max_level
 Min_difference
 Max_difference
 Mean_difference
+RMS_difference
 Peak_level
 RMS_level
 RMS_peak
@@ -1669,6 +1671,9 @@ Maximal difference between two consecutive samples.
 @item Mean difference
 Mean difference between two consecutive samples.
 The average of each difference between two consecutive samples.
+
+@item RMS difference
+Root Mean Square difference between two consecutive samples.
 
 @item Peak level dB
 @item RMS level dB
