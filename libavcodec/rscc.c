@@ -211,6 +211,12 @@ static int rscc_decode_frame(AVCodecContext *avctx, void *data,
         ctx->tiles[i].y = bytestream2_get_le16(gbc);
         ctx->tiles[i].h = bytestream2_get_le16(gbc);
 
+        if (pixel_size + ctx->tiles[i].w * (int64_t)ctx->tiles[i].h * ctx->component_size > INT_MAX) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid tile dimensions\n");
+            ret = AVERROR_INVALIDDATA;
+            goto end;
+        }
+
         pixel_size += ctx->tiles[i].w * ctx->tiles[i].h * ctx->component_size;
 
         ff_dlog(avctx, "tile %d orig(%d,%d) %dx%d.\n", i,
