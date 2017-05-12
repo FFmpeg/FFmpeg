@@ -27,6 +27,7 @@
 #include <stdint.h>
 
 #include "libavutil/buffer.h"
+#include "libavutil/md5.h"
 
 #include "avcodec.h"
 #include "bswapdsp.h"
@@ -462,6 +463,7 @@ typedef struct HEVCContext {
 
     HEVCParamSets ps;
     HEVCSEI sei;
+    struct AVMD5 *md5_ctx;
 
     AVBufferPool *tab_mvf_pool;
     AVBufferPool *rpl_tab_pool;
