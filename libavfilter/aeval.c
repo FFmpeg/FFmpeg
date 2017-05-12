@@ -427,7 +427,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     double t0;
     int i, j;
 
-    /* do volume scaling in-place if input buffer is writable */
     out = ff_get_audio_buffer(outlink, nb_samples);
     if (!out) {
         av_frame_free(&in);
