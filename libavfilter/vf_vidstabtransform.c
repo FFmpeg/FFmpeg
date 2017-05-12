@@ -30,7 +30,7 @@
 
 #include "vidstabutils.h"
 
-typedef struct {
+typedef struct TransformContext {
     const AVClass *class;
 
     VSTransformData td;

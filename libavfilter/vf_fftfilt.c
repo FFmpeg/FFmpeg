@@ -33,7 +33,7 @@
 
 #define MAX_PLANES 4
 
-typedef struct {
+typedef struct FFTFILTContext {
     const AVClass *class;
 
     RDFTContext *rdft;

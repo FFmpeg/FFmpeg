@@ -69,7 +69,7 @@ enum MCDeintParity {
     PARITY_BFF  =  1, ///< bottom field first
 };
 
-typedef struct {
+typedef struct MCDeintContext {
     const AVClass *class;
     int mode;           ///< MCDeintMode
     int parity;         ///< MCDeintParity

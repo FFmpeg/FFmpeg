@@ -33,7 +33,7 @@
 #include "libavutil/pixdesc.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct GEQContext {
     const AVClass *class;
     AVExpr *e[4];               ///< expressions for each plane
     char *expr_str[4+3];        ///< expression strings for each plane

@@ -42,7 +42,7 @@ VSPixelFormat ff_av2vs_pixfmt(AVFilterContext *ctx, enum AVPixelFormat pf)
 }
 
 /** struct to hold a valid context for logging from within vid.stab lib */
-typedef struct {
+typedef struct VS2AVLogCtx {
     const AVClass *class;
 } VS2AVLogCtx;
 

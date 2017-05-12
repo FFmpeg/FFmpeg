@@ -34,7 +34,7 @@
 #include "avfilter.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct OWDenoiseContext {
     const AVClass *class;
     double luma_strength;
     double chroma_strength;

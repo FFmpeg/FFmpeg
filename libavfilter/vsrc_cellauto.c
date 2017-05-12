@@ -37,7 +37,7 @@
 #include "formats.h"
 #include "video.h"
 
-typedef struct {
+typedef struct CellAutoContext {
     const AVClass *class;
     int w, h;
     char *filename;

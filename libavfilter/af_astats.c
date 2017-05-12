@@ -42,7 +42,7 @@ typedef struct ChannelStats {
     uint64_t nb_samples;
 } ChannelStats;
 
-typedef struct {
+typedef struct AudioStatsContext {
     const AVClass *class;
     ChannelStats *chstats;
     int nb_channels;

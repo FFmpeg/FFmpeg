@@ -25,7 +25,7 @@
 #include "libavutil/lfg.h"
 #include "libavutil/random_seed.h"
 
-typedef struct {
+typedef struct ANoiseSrcContext {
     const AVClass *class;
     int sample_rate;
     double amplitude;

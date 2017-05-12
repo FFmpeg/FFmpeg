@@ -46,7 +46,7 @@ enum TInterlaceMode {
     MODE_NB,
 };
 
-typedef struct {
+typedef struct TInterlaceContext {
     const AVClass *class;
     int mode;                   ///< TInterlaceMode, interlace mode selected
     AVRational preout_time_base;

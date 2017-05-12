@@ -33,7 +33,7 @@
 
 #if CONFIG_OPENCL
 
-typedef struct {
+typedef struct UnsharpOpenclContext {
     cl_command_queue command_queue;
     cl_program program;
     cl_kernel kernel_default;

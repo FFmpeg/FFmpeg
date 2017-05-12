@@ -37,17 +37,17 @@ enum SearchMethod {
     SEARCH_COUNT
 };
 
-typedef struct {
+typedef struct IntMotionVector {
     int x;             ///< Horizontal shift
     int y;             ///< Vertical shift
 } IntMotionVector;
 
-typedef struct {
+typedef struct MotionVector {
     double x;             ///< Horizontal shift
     double y;             ///< Vertical shift
 } MotionVector;
 
-typedef struct {
+typedef struct Transform {
     MotionVector vec;     ///< Motion vector
     double angle;         ///< Angle of rotation
     double zoom;          ///< Zoom percentage
@@ -55,7 +55,7 @@ typedef struct {
 
 #if CONFIG_OPENCL
 
-typedef struct {
+typedef struct DeshakeOpenclContext {
     cl_command_queue command_queue;
     cl_program program;
     cl_kernel kernel_luma;
@@ -73,7 +73,7 @@ typedef struct {
 
 #define MAX_R 64
 
-typedef struct {
+typedef struct DeshakeContext {
     const AVClass *class;
     int counts[2*MAX_R+1][2*MAX_R+1]; /// < Scratch buffer for motion search
     double *angles;            ///< Scratch buffer for block angles

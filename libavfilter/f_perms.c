@@ -33,7 +33,7 @@ enum mode {
     NB_MODES
 };
 
-typedef struct {
+typedef struct PermsContext {
     const AVClass *class;
     AVLFG lfg;
     int64_t random_seed;

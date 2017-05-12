@@ -51,17 +51,17 @@ enum formats {
     NB_FORMATS
 };
 
-typedef struct {
+typedef struct Point {
     uint8_t x;
     uint8_t y;
 } Point;
 
-typedef struct {
+typedef struct Block {
     Point up;
     Point to;
 } Block;
 
-typedef struct {
+typedef struct ElemCat {
     int av_elem; /* average element category */
     short left_count; /* count of blocks that will be added together */
     short block_count; /* count of blocks per element */
@@ -99,7 +99,7 @@ typedef struct MatchingInfo {
     struct MatchingInfo* next;
 } MatchingInfo;
 
-typedef struct {
+typedef struct StreamContext {
     AVRational time_base;
     /* needed for xml_export */
     int w; /* height */
@@ -124,7 +124,7 @@ typedef struct {
     int exported; /* boolean whether stream already exported */
 } StreamContext;
 
-typedef struct {
+typedef struct SignatureContext {
     const AVClass *class;
     /* input parameters */
     int mode;

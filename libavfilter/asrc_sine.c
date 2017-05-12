@@ -28,7 +28,7 @@
 #include "avfilter.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct SineContext {
     const AVClass *class;
     double frequency;
     double beep_factor;

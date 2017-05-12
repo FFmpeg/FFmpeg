@@ -34,7 +34,7 @@ struct qitem {
     int64_t totdiff;
 };
 
-typedef struct {
+typedef struct DecimateContext {
     const AVClass *class;
     struct qitem *queue;    ///< window of cycle frames and the associated data diff
     int fid;                ///< current frame id in the queue

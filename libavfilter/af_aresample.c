@@ -34,7 +34,7 @@
 #include "audio.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct AResampleContext {
     const AVClass *class;
     int sample_rate_arg;
     double ratio;

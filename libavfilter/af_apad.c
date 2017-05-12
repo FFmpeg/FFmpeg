@@ -34,7 +34,7 @@
 #include "audio.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct APadContext {
     const AVClass *class;
     int64_t next_pts;
 

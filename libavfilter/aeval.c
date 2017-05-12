@@ -53,7 +53,7 @@ enum var_name {
     VAR_VARS_NB
 };
 
-typedef struct {
+typedef struct EvalContext {
     const AVClass *class;
     char *sample_rate_str;
     int sample_rate;

@@ -29,7 +29,7 @@
 #include "framesync.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct FFDualInputContext {
     FFFrameSync fs;
 
     AVFrame *(*process)(AVFilterContext *ctx, AVFrame *main, const AVFrame *second);

@@ -32,7 +32,7 @@
 #include "internal.h"
 #include "video.h"
 
-typedef struct {
+typedef struct DetelecineContext {
     const AVClass *class;
     int first_field;
     char *pattern;

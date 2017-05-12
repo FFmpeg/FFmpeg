@@ -36,7 +36,7 @@
 
 enum { Y, U, V, A };
 
-typedef struct {
+typedef struct AlphaMergeContext {
     int is_packed_rgb;
     uint8_t rgba_map[4];
     struct FFBufQueue queue_main;

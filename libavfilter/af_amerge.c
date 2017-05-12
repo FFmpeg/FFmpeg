@@ -37,7 +37,7 @@
 
 #define SWR_CH_MAX 64
 
-typedef struct {
+typedef struct AMergeContext {
     const AVClass *class;
     int nb_inputs;
     int route[SWR_CH_MAX]; /**< channels routing, see copy_samples */

@@ -37,7 +37,7 @@
 #define MAX_LEVEL 8 /* quality levels */
 #define BLOCK 16
 
-typedef struct {
+typedef struct USPPContext {
     const AVClass *av_class;
     int log2_count;
     int hsub, vsub;
