@@ -429,8 +429,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     /* do volume scaling in-place if input buffer is writable */
     out = ff_get_audio_buffer(outlink, nb_samples);
-    if (!out)
+    if (!out) {
+        av_frame_free(&in);
         return AVERROR(ENOMEM);
+    }
     av_frame_copy_props(out, in);
 
     t0 = TS2T(in->pts, inlink->time_base);
