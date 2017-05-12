@@ -695,13 +695,13 @@ static int estimate_sid_gain(G723_1_Context *p)
     if (y <= 0) {
         t = seg * 32 + (val + 1 << seg2);
         t = t * t - x;
-        val = (seg2 - 1 << 4) + val;
+        val = (seg2 - 1) * 16 + val;
         if (t >= y)
             val++;
     } else {
         t = seg * 32 + (val - 1 << seg2);
         t = t * t - x;
-        val = (seg2 - 1 << 4) + val;
+        val = (seg2 - 1) * 16 + val;
         if (t >= y)
             val--;
     }
