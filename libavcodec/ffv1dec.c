@@ -45,7 +45,8 @@ static inline av_flatten int get_symbol_inline(RangeCoder *c, uint8_t *state,
     if (get_rac(c, state + 0))
         return 0;
     else {
-        int i, e, a;
+        int i, e;
+        unsigned a;
         e = 0;
         while (get_rac(c, state + 1 + FFMIN(e, 9))) { // 1..10
             e++;
