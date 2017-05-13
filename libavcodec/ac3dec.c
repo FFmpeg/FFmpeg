@@ -761,30 +761,31 @@ static void ac3_upmix_delay(AC3DecodeContext *s)
  * @param[in] default_band_struct default band structure table
  * @param[out] num_bands number of bands (optionally NULL)
  * @param[out] band_sizes array containing the number of bins in each band (optionally NULL)
+ * @param[in,out] band_struct current band structure
  */
 static void decode_band_structure(GetBitContext *gbc, int blk, int eac3,
                                   int ecpl, int start_subband, int end_subband,
                                   const uint8_t *default_band_struct,
-                                  int *num_bands, uint8_t *band_sizes)
+                                  int *num_bands, uint8_t *band_sizes,
+                                  uint8_t *band_struct, int band_struct_size)
 {
     int subbnd, bnd, n_subbands, n_bands=0;
     uint8_t bnd_sz[22];
-    uint8_t coded_band_struct[22];
-    const uint8_t *band_struct;
 
     n_subbands = end_subband - start_subband;
+
+    if (!blk)
+        memcpy(band_struct, default_band_struct, band_struct_size);
+
+    av_assert0(band_struct_size >= start_subband + n_subbands);
+
+    band_struct += start_subband + 1;
 
     /* decode band structure from bitstream or use default */
     if (!eac3 || get_bits1(gbc)) {
         for (subbnd = 0; subbnd < n_subbands - 1; subbnd++) {
-            coded_band_struct[subbnd] = get_bits1(gbc);
+            band_struct[subbnd] = get_bits1(gbc);
         }
-        band_struct = coded_band_struct;
-    } else if (!blk) {
-        band_struct = &default_band_struct[start_subband+1];
-    } else {
-        /* no change in band structure */
-        return;
     }
 
     /* calculate number of bands and band sizes based on band structure.
@@ -863,7 +864,8 @@ static inline int spx_strategy(AC3DecodeContext *s, int blk)
                           start_subband, end_subband,
                           ff_eac3_default_spx_band_struct,
                           &s->num_spx_bands,
-                          s->spx_band_sizes);
+                          s->spx_band_sizes,
+                          s->spx_band_struct, sizeof(s->spx_band_struct));
     return 0;
 }
 
@@ -1000,7 +1002,8 @@ static inline int coupling_strategy(AC3DecodeContext *s, int blk,
         decode_band_structure(bc, blk, s->eac3, 0, cpl_start_subband,
                               cpl_end_subband,
                               ff_eac3_default_cpl_band_struct,
-                              &s->num_cpl_bands, s->cpl_band_sizes);
+                              &s->num_cpl_bands, s->cpl_band_sizes,
+                              s->cpl_band_struct, sizeof(s->cpl_band_struct));
     } else {
         /* coupling not in use */
         for (ch = 1; ch <= fbw_channels; ch++) {
