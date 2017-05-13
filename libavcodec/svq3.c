@@ -263,7 +263,7 @@ static void svq3_add_idct_c(uint8_t *dst, int16_t *block,
     int i;
 
     if (dc) {
-        dc       = 13 * 13 * (dc == 1 ? 1538 * block[0]
+        dc       = 13 * 13 * (dc == 1 ? 1538U* block[0]
                                       : qmul * (block[0] >> 3) / 2);
         block[0] = 0;
     }
