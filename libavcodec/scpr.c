@@ -261,6 +261,9 @@ static int decode_unit(SCPRContext *s, PixelModel *pixel, unsigned step, unsigne
             break;
         c++;
     }
+    if (x >= 16 || c >= 256) {
+        return AVERROR_INVALIDDATA;
+    }
 
     if ((ret = s->decode(gb, rc, cumfr, cnt_c, totfr)) < 0)
         return ret;
