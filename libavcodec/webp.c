@@ -1043,7 +1043,7 @@ static int apply_color_indexing_transform(WebPContext *s)
         uint8_t *line;
         int pixel_bits = 8 >> pal->size_reduction;
 
-        line = av_malloc(img->frame->linesize[0]);
+        line = av_malloc(img->frame->linesize[0] + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!line)
             return AVERROR(ENOMEM);
 
