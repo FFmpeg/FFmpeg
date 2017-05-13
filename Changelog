@@ -15,6 +15,7 @@ version <next>:
 - Raw aptX muxer and demuxer
 - NVIDIA NVDEC-accelerated H.264, HEVC, VC1 and VP9 hwaccel decoding
 - Intel QSV-accelerated overlay filter
+- mcompand audio filter
 
 
 version 3.4:
