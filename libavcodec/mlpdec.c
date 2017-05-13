@@ -1162,6 +1162,11 @@ static int read_access_unit(AVCodecContext *avctx, void* data,
             substr_header_size += 2;
         }
 
+        if (length < header_size + substr_header_size) {
+            av_log(m->avctx, AV_LOG_ERROR, "Insuffient data for headers\n");
+            goto error;
+        }
+
         if (!(nonrestart_substr ^ m->is_major_sync_unit)) {
             av_log(m->avctx, AV_LOG_ERROR, "Invalid nonrestart_substr.\n");
             goto error;
