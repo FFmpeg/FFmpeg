@@ -488,7 +488,7 @@ static void residual_interp(int16_t *buf, int16_t *out, int lag,
                           (FRAME_LEN - lag) * sizeof(*out));
     } else {  /* Unvoiced */
         for (i = 0; i < FRAME_LEN; i++) {
-            *rseed = *rseed * 521 + 259;
+            *rseed = (int16_t)(*rseed * 521 + 259);
             out[i] = gain * *rseed >> 15;
         }
         memset(buf, 0, (FRAME_LEN + PITCH_MAX) * sizeof(*buf));
