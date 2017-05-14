@@ -31,6 +31,9 @@ static const CodedBitstreamType *cbs_type_table[] = {
 #if CONFIG_CBS_H264
     &ff_cbs_type_h264,
 #endif
+#if CONFIG_CBS_H265
+    &ff_cbs_type_h265,
+#endif
 };
 
 int ff_cbs_init(CodedBitstreamContext **ctx_ptr,

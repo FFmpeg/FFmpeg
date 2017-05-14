@@ -61,6 +61,7 @@ OBJS-$(CONFIG_BSWAPDSP)                += bswapdsp.o
 OBJS-$(CONFIG_CABAC)                   += cabac.o
 OBJS-$(CONFIG_CBS)                     += cbs.o
 OBJS-$(CONFIG_CBS_H264)                += cbs_h2645.o h2645_parse.o
+OBJS-$(CONFIG_CBS_H265)                += cbs_h2645.o h2645_parse.o
 OBJS-$(CONFIG_CRYSTALHD)               += crystalhd.o
 OBJS-$(CONFIG_DCT)                     += dct.o dct32_fixed.o dct32_float.o
 OBJS-$(CONFIG_ERROR_RESILIENCE)        += error_resilience.o
