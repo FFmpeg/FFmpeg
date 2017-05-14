@@ -2080,7 +2080,7 @@ the following syntax: @code{x0/y0|x1/y1|x2/y2|....} or
 The input values must be in strictly increasing order but the transfer function
 does not have to be monotonically rising. The point @code{0/0} is assumed but
 may be overridden (by @code{0/out-dBn}). Typical values for the transfer
-function are @code{-70/-70|-60/-20}.
+function are @code{-70/-70|-60/-20|1/0}.
 
 @item soft-knee
 Set the curve radius in dB for all joints. It defaults to 0.01.
