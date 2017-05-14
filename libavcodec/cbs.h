@@ -42,6 +42,8 @@ struct CodedBitstreamType;
 
 /**
  * The codec-specific type of a bitstream unit.
+ *
+ * H.264 / AVC: nal_unit_type
  */
 typedef uint32_t CodedBitstreamUnitType;
 
