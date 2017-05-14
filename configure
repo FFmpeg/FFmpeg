@@ -1741,6 +1741,7 @@ CONFIG_EXTRA="
     cabac
     cbs
     cbs_h264
+    cbs_h265
     dirac_parse
     dvprofile
     faandct
@@ -1968,6 +1969,7 @@ threads_if_any="$THREADS_LIST"
 
 # subsystems
 cbs_h264_select="cbs golomb"
+cbs_h265_select="cbs golomb"
 dct_select="rdft"
 dirac_parse_select="golomb"
 error_resilience_select="me_cmp"
