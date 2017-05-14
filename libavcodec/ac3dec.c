@@ -1389,7 +1389,7 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
     for (ch = 1; ch <= s->channels; ch++) {
         int audio_channel = 0;
         INTFLOAT gain;
-        if (s->channel_mode == AC3_CHMODE_DUALMONO)
+        if (s->channel_mode == AC3_CHMODE_DUALMONO && ch <= 2)
             audio_channel = 2-ch;
         if (s->heavy_compression && s->compression_exists[audio_channel])
             gain = s->heavy_dynamic_range[audio_channel];
