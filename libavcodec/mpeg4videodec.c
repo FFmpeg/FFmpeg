@@ -2455,16 +2455,20 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         ff_init_scantable(s->idsp.idct_permutation, &s->intra_v_scantable, ff_alternate_vertical_scan);
     }
 
-    if (s->pict_type == AV_PICTURE_TYPE_S &&
-        (ctx->vol_sprite_usage == STATIC_SPRITE ||
-         ctx->vol_sprite_usage == GMC_SPRITE)) {
-        if (mpeg4_decode_sprite_trajectory(ctx, gb) < 0)
-            return AVERROR_INVALIDDATA;
-        if (ctx->sprite_brightness_change)
-            av_log(s->avctx, AV_LOG_ERROR,
-                   "sprite_brightness_change not supported\n");
-        if (ctx->vol_sprite_usage == STATIC_SPRITE)
-            av_log(s->avctx, AV_LOG_ERROR, "static sprite not supported\n");
+    if (s->pict_type == AV_PICTURE_TYPE_S) {
+        if((ctx->vol_sprite_usage == STATIC_SPRITE ||
+            ctx->vol_sprite_usage == GMC_SPRITE)) {
+            if (mpeg4_decode_sprite_trajectory(ctx, gb) < 0)
+                return AVERROR_INVALIDDATA;
+            if (ctx->sprite_brightness_change)
+                av_log(s->avctx, AV_LOG_ERROR,
+                    "sprite_brightness_change not supported\n");
+            if (ctx->vol_sprite_usage == STATIC_SPRITE)
+                av_log(s->avctx, AV_LOG_ERROR, "static sprite not supported\n");
+        } else {
+            memset(s->sprite_offset, 0, sizeof(s->sprite_offset));
+            memset(s->sprite_delta, 0, sizeof(s->sprite_delta));
+        }
     }
 
     if (ctx->shape != BIN_ONLY_SHAPE) {
