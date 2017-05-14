@@ -119,6 +119,23 @@ version 3.3.1:
 - avformat/concatdec: fix the h264 annexb extradata check
 - avcodec/dnxhd_parser: fix parsing interlaced video, simplify code
 - ffmpeg; check return code of avcodec_send_frame when flushing encoders
+- avcodec/g723_1dec: Fix LCG type
+- avcodec/hqxdsp: Fix runtime error: signed integer overflow: -196264 * 11585 cannot be represented in type 'int'
+- avcodec/ac3dec: Fix: runtime error: index -1 out of bounds for type 'INTFLOAT [2]'
+- avcodec/mpeg4videodec: Clear sprite wraping on unsupported cases in VOP decode
+- avcodec/pixlet: Fixes: runtime error: signed integer overflow: 9203954323419769657 + 29897660706736950 cannot be represented in type 'long'
+- avcodec/dds: Fix runtime error: left shift of 210 by 24 places cannot be represented in type 'int'
+- avcodec/rscc: Check pixel_size for overflow
+- avcodec/fmvc: Check nb_blocks
+- avcodec/cllc: Check prefix
+- avcodec/webp: Factor update_canvas_size() out
+- avcodec/webp: Update canvas size in vp8_lossy_decode_frame() as in vp8_lossless_decode_frame()
+- avcodec/snowdec: Check width
+- avcodec/flacdec: Return error code instead of 0 for failures
+- avcodec/opus_silk: Fix integer overflow and out of array read
+- avcodec/aacps: Fix undefined behavior
+- avcodec/pixlet: Fix shift exponent 4294967268 is too large for 32-bit type 'int'
+- doc/general: fix project name after 2b1a6b1ae
 
 
 version 3.3:
