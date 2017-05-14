@@ -94,6 +94,7 @@ static void register_all(void)
     REGISTER_FILTER(CHORUS,         chorus,         af);
     REGISTER_FILTER(COMPAND,        compand,        af);
     REGISTER_FILTER(COMPENSATIONDELAY, compensationdelay, af);
+    REGISTER_FILTER(CROSSFEED,      crossfeed,      af);
     REGISTER_FILTER(CRYSTALIZER,    crystalizer,    af);
     REGISTER_FILTER(DCSHIFT,        dcshift,        af);
     REGISTER_FILTER(DYNAUDNORM,     dynaudnorm,     af);

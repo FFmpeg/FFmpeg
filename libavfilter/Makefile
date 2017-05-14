@@ -81,6 +81,7 @@ OBJS-$(CONFIG_CHANNELSPLIT_FILTER)           += af_channelsplit.o
 OBJS-$(CONFIG_CHORUS_FILTER)                 += af_chorus.o generate_wave_table.o
 OBJS-$(CONFIG_COMPAND_FILTER)                += af_compand.o
 OBJS-$(CONFIG_COMPENSATIONDELAY_FILTER)      += af_compensationdelay.o
+OBJS-$(CONFIG_CROSSFEED_FILTER)              += af_crossfeed.o
 OBJS-$(CONFIG_CRYSTALIZER_FILTER)            += af_crystalizer.o
 OBJS-$(CONFIG_DCSHIFT_FILTER)                += af_dcshift.o
 OBJS-$(CONFIG_DYNAUDNORM_FILTER)             += af_dynaudnorm.o

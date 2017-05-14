@@ -2251,6 +2251,35 @@ Set temperature degree in Celsius. This is the temperature of the environment.
 Default is 20.
 @end table
 
+@section crossfeed
+Apply headphone crossfeed filter.
+
+Crossfeed is the process of blending the left and right channels of stereo
+audio recording.
+It is mainly used to reduce extreme stereo separation of low frequencies.
+
+The intent is to produce more speaker like sound to the listener.
+
+The filter accepts the following options:
+
+@table @option
+@item strength
+Set strength of crossfeed. Default is 0.2. Allowed range is from 0 to 1.
+This sets gain of low shelf filter for side part of stereo image.
+Default is -6dB. Max allowed is -30db when strength is set to 1.
+
+@item range
+Set soundstage wideness. Default is 0.5. Allowed range is from 0 to 1.
+This sets cut off frequency of low shelf filter. Default is cut off near
+1550 Hz. With range set to 1 cut off frequency is set to 2100 Hz.
+
+@item level_in
+Set input gain. Default is 0.9.
+
+@item level_out
+Set output gain. Default is 1.
+@end table
+
 @section crystalizer
 Simple algorithm to expand audio dynamic range.
 
