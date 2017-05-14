@@ -47,8 +47,8 @@ static inline void idct_col(int16_t *blk, const uint8_t *quant)
     t5  = t1 * 2 + t3;
     t6  = t2 - t3;
     t7  = t3 * 2 + t6;
-    t8  = (t6 * 11585) >> 14;
-    t9  = (t7 * 11585) >> 14;
+    t8  = (int)(t6 * 11585U) >> 14;
+    t9  = (int)(t7 * 11585U) >> 14;
     tA  = (int)(s2 * 8867U - s6 * 21407U) >> 14;
     tB  = (int)(s6 * 8867U + s2 * 21407U) >> 14;
     tC  = (s0 >> 1) - (s4 >> 1);
