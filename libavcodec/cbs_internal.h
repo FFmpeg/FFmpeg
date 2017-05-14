@@ -80,4 +80,7 @@ int ff_cbs_write_unsigned(CodedBitstreamContext *ctx, PutBitContext *pbc,
                           uint32_t range_min, uint32_t range_max);
 
 
+extern const CodedBitstreamType ff_cbs_type_h264;
+
+
 #endif /* AVCODEC_CBS_INTERNAL_H */
