@@ -45,7 +45,8 @@ static inline av_flatten int get_symbol_inline(RangeCoder *c, uint8_t *state,
     if (get_rac(c, state + 0))
         return 0;
     else {
-        int i, e, a;
+        int i, e;
+        unsigned a;
         e = 0;
         while (get_rac(c, state + 1 + FFMIN(e, 9))) { // 1..10
             e++;
@@ -898,7 +899,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
             const uint8_t *src[4];
             uint8_t *dst[4];
             ff_thread_await_progress(&f->last_picture, INT_MAX, 0);
-            for (j = 0; j < 4; j++) {
+            for (j = 0; j < desc->nb_components; j++) {
                 int pixshift = desc->comp[j].depth > 8;
                 int sh = (j == 1 || j == 2) ? f->chroma_h_shift : 0;
                 int sv = (j == 1 || j == 2) ? f->chroma_v_shift : 0;
@@ -906,6 +907,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
                          (fs->slice_y >> sv) + ((fs->slice_x >> sh) << pixshift);
                 src[j] = f->last_picture.f->data[j] + f->last_picture.f->linesize[j] *
                          (fs->slice_y >> sv) + ((fs->slice_x >> sh) << pixshift);
+
+            }
+            if (desc->flags & AV_PIX_FMT_FLAG_PAL ||
+                desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL) {
+                dst[1] = p->data[1];
+                src[1] = f->last_picture.f->data[1];
             }
             av_image_copy(dst, p->linesize, src,
                           f->last_picture.f->linesize,

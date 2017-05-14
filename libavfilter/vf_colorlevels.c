@@ -32,12 +32,12 @@
 #define B 2
 #define A 3
 
-typedef struct {
+typedef struct Range {
     double in_min, in_max;
     double out_min, out_max;
 } Range;
 
-typedef struct {
+typedef struct ColorLevelsContext {
     const AVClass *class;
     Range range[4];
     int nb_comp;

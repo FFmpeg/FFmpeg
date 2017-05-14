@@ -18,6 +18,7 @@
 *.so.*
 *.swp
 *.ver
+*.version
 *_g
 \#*
 .\#*

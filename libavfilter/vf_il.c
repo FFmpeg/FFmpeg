@@ -36,7 +36,7 @@ enum FilterMode {
     MODE_DEINTERLEAVE
 };
 
-typedef struct {
+typedef struct IlContext {
     const AVClass *class;
     int luma_mode, chroma_mode, alpha_mode; ///<FilterMode
     int luma_swap, chroma_swap, alpha_swap;

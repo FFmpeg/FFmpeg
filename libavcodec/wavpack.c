@@ -240,7 +240,7 @@ static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb,
         if (get_bits_left(gb) <= 0)
             goto error;
     } else {
-        int mid = (base * 2 + add + 1) >> 1;
+        int mid = (base * 2U + add + 1) >> 1;
         while (add > c->error_limit) {
             if (get_bits_left(gb) <= 0)
                 goto error;
@@ -249,7 +249,7 @@ static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb,
                 base = mid;
             } else
                 add = mid - base - 1;
-            mid = (base * 2 + add + 1) >> 1;
+            mid = (base * 2U + add + 1) >> 1;
         }
         ret = mid;
     }
@@ -433,8 +433,8 @@ static inline int wv_unpack_stereo(WavpackFrameContext *s, GetBitContext *gb,
                     L2 = L + ((s->decorr[i].weightA * (int64_t)A + 512) >> 10);
                     R2 = R + ((s->decorr[i].weightB * (int64_t)B + 512) >> 10);
                 } else {
-                    L2 = L + ((s->decorr[i].weightA * A + 512) >> 10);
-                    R2 = R + ((s->decorr[i].weightB * B + 512) >> 10);
+                    L2 = L + ((int)(s->decorr[i].weightA * A + 512U) >> 10);
+                    R2 = R + ((int)(s->decorr[i].weightB * B + 512U) >> 10);
                 }
                 if (A && L)
                     s->decorr[i].weightA -= ((((L ^ A) >> 30) & 2) - 1) * s->decorr[i].delta;

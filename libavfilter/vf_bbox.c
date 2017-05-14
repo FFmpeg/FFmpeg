@@ -30,7 +30,7 @@
 #include "bbox.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct BBoxContext {
     const AVClass *class;
     int min_val;
 } BBoxContext;

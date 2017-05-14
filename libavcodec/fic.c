@@ -150,9 +150,13 @@ static int fic_decode_block(FICContext *ctx, GetBitContext *gb,
     if (num_coeff > 64)
         return AVERROR_INVALIDDATA;
 
-    for (i = 0; i < num_coeff; i++)
-        block[ff_zigzag_direct[i]] = get_se_golomb(gb) *
+    for (i = 0; i < num_coeff; i++) {
+        int v = get_se_golomb(gb);
+        if (v < -2048 || v > 2048)
+             return AVERROR_INVALIDDATA;
+        block[ff_zigzag_direct[i]] = v *
                                      ctx->qmat[ff_zigzag_direct[i]];
+    }
 
     fic_idct_put(dst, stride, block);
 

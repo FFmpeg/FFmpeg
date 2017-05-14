@@ -284,7 +284,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     if (avctx->width != width || avctx->height != height) {
         av_frame_unref(s->last_frame);
-        if((width * height)/2048*7 > bytestream2_get_bytes_left(&gb))
+        if((width * (int64_t)height)/2048*7 > bytestream2_get_bytes_left(&gb))
             return AVERROR_INVALIDDATA;
         if ((ret = ff_set_dimensions(avctx, width, height)) < 0)
             return ret;

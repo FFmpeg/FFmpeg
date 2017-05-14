@@ -72,7 +72,7 @@ enum comb_dbg {
     NB_COMBDBG
 };
 
-typedef struct {
+typedef struct FieldMatchContext {
     const AVClass *class;
 
     AVFrame *prv,  *src,  *nxt;     ///< main sliding window of 3 frames

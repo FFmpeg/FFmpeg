@@ -55,7 +55,7 @@ struct frame_node {
     struct frame_node *next;
 };
 
-typedef struct {
+typedef struct ShowWavesContext {
     const AVClass *class;
     int w, h;
     AVRational rate;

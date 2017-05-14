@@ -57,7 +57,7 @@ enum EvalMode {
     EVAL_MODE_NB
 };
 
-typedef struct {
+typedef struct VignetteContext {
     const AVClass *class;
     const AVPixFmtDescriptor *desc;
     int backward;

@@ -1,3 +1,4 @@
+OBJS-$(CONFIG_AFIR_FILTER)                   += x86/af_afir_init.o
 OBJS-$(CONFIG_BLEND_FILTER)                  += x86/vf_blend_init.o
 OBJS-$(CONFIG_BWDIF_FILTER)                  += x86/vf_bwdif_init.o
 OBJS-$(CONFIG_COLORSPACE_FILTER)             += x86/colorspacedsp_init.o
@@ -23,6 +24,7 @@ OBJS-$(CONFIG_VOLUME_FILTER)                 += x86/af_volume_init.o
 OBJS-$(CONFIG_W3FDIF_FILTER)                 += x86/vf_w3fdif_init.o
 OBJS-$(CONFIG_YADIF_FILTER)                  += x86/vf_yadif_init.o
 
+YASM-OBJS-$(CONFIG_AFIR_FILTER)              += x86/af_afir.o
 YASM-OBJS-$(CONFIG_BLEND_FILTER)             += x86/vf_blend.o
 YASM-OBJS-$(CONFIG_BWDIF_FILTER)             += x86/vf_bwdif.o
 YASM-OBJS-$(CONFIG_COLORSPACE_FILTER)        += x86/colorspacedsp.o

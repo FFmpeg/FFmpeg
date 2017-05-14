@@ -37,7 +37,7 @@
 #define MAX_LEVEL 8 /* quality levels */
 #define BLOCK 16
 
-typedef struct {
+typedef struct USPPContext {
     const AVClass *av_class;
     int log2_count;
     int hsub, vsub;
@@ -228,8 +228,8 @@ static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
         p->frame->quality = ff_norm_qscale((qpsum + qpcount/2) / qpcount, p->qscale_type) * FF_QP2LAMBDA;
     }
 //    init per MB qscale stuff FIXME
-    p->frame->height = height;
-    p->frame->width  = width;
+    p->frame->height = height + BLOCK;
+    p->frame->width  = width + BLOCK;
 
     for (i = 0; i < count; i++) {
         const int x1 = offset[i+count-1][0];

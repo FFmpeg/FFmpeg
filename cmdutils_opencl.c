@@ -129,11 +129,11 @@ static int64_t run_opencl_bench(AVOpenCLExternalEnv *ext_opencl_env)
     cl_int status;
     size_t kernel_len;
     char *inbuf;
-    int *mask;
+    int *mask = NULL;
     int buf_size = width * height * sizeof(char);
     int mask_size = sizeof(uint32_t) * 128;
 
-    cl_mem cl_mask, cl_inbuf, cl_outbuf;
+    cl_mem cl_mask = NULL, cl_inbuf = NULL, cl_outbuf = NULL;
     cl_kernel kernel = NULL;
     cl_program program = NULL;
     size_t local_work_size_2d[2] = {16, 16};

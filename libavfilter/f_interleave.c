@@ -37,7 +37,7 @@
 #include "audio.h"
 #include "video.h"
 
-typedef struct {
+typedef struct InterleaveContext {
     const AVClass *class;
     int nb_inputs;
     struct FFBufQueue *queues;

@@ -271,6 +271,19 @@ fate-exr-rgb-scanline-float-piz-48x32: CMD = framecrc -i $(TARGET_SAMPLES)/exr/r
 FATE_EXR += fate-exr-rgb-scanline-none-negative-red
 fate-exr-rgb-scanline-none-negative-red: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_none_negative_red.exr -pix_fmt rgb48le
 
+
+FATE_EXR += fate-exr-rgb-b44a-half-negative-4x4
+fate-exr-rgb-b44a-half-negative-4x4: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_b44a_half_negative_4x4.exr -pix_fmt rgb48le
+
+FATE_EXR += fate-exr-y-tile-zip-half-12x8
+fate-exr-y-tile-zip-half-12x8: CMD = framecrc -i $(TARGET_SAMPLES)/exr/y_tile_zip_half_12x8.exr -pix_fmt gray16le
+
+FATE_EXR += fate-exr-y-scanline-zip-half-12x8
+fate-exr-y-scanline-zip-half-12x8: CMD = framecrc -i $(TARGET_SAMPLES)/exr/y_scanline_zip_half_12x8.exr -pix_fmt gray16le
+
+FATE_EXR += fate-exr-rgb-scanline-half-piz-dw-t08
+fate-exr-rgb-scanline-half-piz-dw-t08: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_half_piz_dw_t08.exr -pix_fmt rgb48le
+
 FATE_EXR-$(call DEMDEC, IMAGE2, EXR) += $(FATE_EXR)
 
 FATE_IMAGE += $(FATE_EXR-yes)

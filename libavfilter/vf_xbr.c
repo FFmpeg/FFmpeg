@@ -43,7 +43,7 @@
 
 typedef int (*xbrfunc_t)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 
-typedef struct {
+typedef struct XBRContext {
     const AVClass *class;
     int n;
     xbrfunc_t func;

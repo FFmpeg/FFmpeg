@@ -22,7 +22,7 @@
 #include "avfilter.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct SeparateFieldsContext {
     int nb_planes;
     AVFrame *second;
 } SeparateFieldsContext;

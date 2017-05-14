@@ -58,7 +58,7 @@ enum ColorMode {
     COLOR_MODE_COUNT
 };
 
-typedef struct {
+typedef struct ColorMatrixContext {
     const AVClass *class;
     int yuv_convert[25][3][3];
     int interlaced;

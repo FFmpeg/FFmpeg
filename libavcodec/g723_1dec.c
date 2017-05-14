@@ -664,7 +664,7 @@ static int estimate_sid_gain(G723_1_Context *p)
         t = p->sid_gain << shift;
     else
         t = p->sid_gain >> -shift;
-    x = t * cng_filt[0] >> 16;
+    x = av_clipl_int32(t * (int64_t)cng_filt[0] >> 16);
 
     if (x >= cng_bseg[2])
         return 0x3F;
@@ -695,13 +695,13 @@ static int estimate_sid_gain(G723_1_Context *p)
     if (y <= 0) {
         t = seg * 32 + (val + 1 << seg2);
         t = t * t - x;
-        val = (seg2 - 1 << 4) + val;
+        val = (seg2 - 1) * 16 + val;
         if (t >= y)
             val++;
     } else {
         t = seg * 32 + (val - 1 << seg2);
         t = t * t - x;
-        val = (seg2 - 1 << 4) + val;
+        val = (seg2 - 1) * 16 + val;
         if (t >= y)
             val--;
     }
@@ -733,7 +733,7 @@ static void generate_noise(G723_1_Context *p)
         off[i * 2 + 1] = ((t >> 1) & 1) + SUBFRAME_LEN;
         t >>= 2;
         for (j = 0; j < 11; j++) {
-            signs[i * 11 + j] = (t & 1) * 2 - 1 << 14;
+            signs[i * 11 + j] = ((t & 1) * 2 - 1)  * (1 << 14);
             t >>= 1;
         }
     }
@@ -777,7 +777,7 @@ static void generate_noise(G723_1_Context *p)
         sum = 0;
         if (shift < 0) {
            for (j = 0; j < SUBFRAME_LEN * 2; j++) {
-               t      = vector_ptr[j] << -shift;
+               t      = vector_ptr[j] * (1 << -shift);
                sum   += t * t;
                tmp[j] = t;
            }
@@ -815,7 +815,7 @@ static void generate_noise(G723_1_Context *p)
         if (shift < 0)
            x >>= -shift;
         else
-           x <<= shift;
+           x *= 1 << shift;
         x = av_clip(x, -10000, 10000);
 
         for (j = 0; j < 11; j++) {

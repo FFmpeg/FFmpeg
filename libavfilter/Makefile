@@ -29,6 +29,7 @@ OBJS-$(HAVE_THREADS)                         += pthread.o
 # audio filters
 OBJS-$(CONFIG_ABENCH_FILTER)                 += f_bench.o
 OBJS-$(CONFIG_ACOMPRESSOR_FILTER)            += af_sidechaincompress.o
+OBJS-$(CONFIG_ACOPY_FILTER)                  += af_acopy.o
 OBJS-$(CONFIG_ACROSSFADE_FILTER)             += af_afade.o
 OBJS-$(CONFIG_ACRUSHER_FILTER)               += af_acrusher.o
 OBJS-$(CONFIG_ADELAY_FILTER)                 += af_adelay.o
@@ -37,6 +38,7 @@ OBJS-$(CONFIG_AEMPHASIS_FILTER)              += af_aemphasis.o
 OBJS-$(CONFIG_AEVAL_FILTER)                  += aeval.o
 OBJS-$(CONFIG_AFADE_FILTER)                  += af_afade.o
 OBJS-$(CONFIG_AFFTFILT_FILTER)               += af_afftfilt.o window_func.o
+OBJS-$(CONFIG_AFIR_FILTER)                   += af_afir.o
 OBJS-$(CONFIG_AFORMAT_FILTER)                += af_aformat.o
 OBJS-$(CONFIG_AGATE_FILTER)                  += af_agate.o
 OBJS-$(CONFIG_AINTERLEAVE_FILTER)            += f_interleave.o

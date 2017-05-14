@@ -28,7 +28,7 @@ enum BenchAction {
     NB_ACTION
 };
 
-typedef struct {
+typedef struct BenchContext {
     const AVClass *class;
     int action;
     int64_t max, min;

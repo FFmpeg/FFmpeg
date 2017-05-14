@@ -71,7 +71,7 @@ static const int8_t filt[NUMTAPS] = {
     0,   -5,
     4,    0};
 
-typedef struct {
+typedef struct EarwaxContext {
     int16_t taps[NUMTAPS * 2];
 } EarwaxContext;
 

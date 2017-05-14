@@ -53,7 +53,7 @@
 /**
  * A fragment of audio waveform
  */
-typedef struct {
+typedef struct AudioFragment {
     // index of the first sample of this fragment in the overall waveform;
     // 0: input sample position
     // 1: output sample position
@@ -84,7 +84,7 @@ typedef enum {
 /**
  * Filter state machine
  */
-typedef struct {
+typedef struct ATempoContext {
     const AVClass *class;
 
     // ring-buffer of input samples, necessary because some times

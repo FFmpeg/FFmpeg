@@ -28,7 +28,7 @@
 #include "internal.h"
 #include "video.h"
 
-typedef struct {
+typedef struct ShowPaletteContext {
     const AVClass *class;
     int size;
 } ShowPaletteContext;

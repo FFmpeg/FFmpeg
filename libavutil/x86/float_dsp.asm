@@ -243,8 +243,8 @@ cglobal vector_dmul_scalar, 4,4,3, dst, src, mul, len
 .loop:
     mulpd          m1, m0, [srcq+lenq       ]
     mulpd          m2, m0, [srcq+lenq+mmsize]
-    mova   [dstq+lenq       ], m1
-    mova   [dstq+lenq+mmsize], m2
+    movaps [dstq+lenq       ], m1
+    movaps [dstq+lenq+mmsize], m2
     sub          lenq, 2*mmsize
     jge .loop
     REP_RET
@@ -363,14 +363,14 @@ VECTOR_FMUL_ADD
 %macro VECTOR_FMUL_REVERSE 0
 cglobal vector_fmul_reverse, 4,4,2, dst, src0, src1, len
 %if cpuflag(avx2)
-    mova    m2, [pd_reverse]
+    movaps  m2, [pd_reverse]
 %endif
     lea       lenq, [lend*4 - 2*mmsize]
 ALIGN 16
 .loop:
 %if cpuflag(avx2)
-    vpermd  m0, m2, [src1q]
-    vpermd  m1, m2, [src1q+mmsize]
+    vpermps m0, m2, [src1q]
+    vpermps m1, m2, [src1q+mmsize]
 %elif cpuflag(avx)
     vmovaps     xmm0, [src1q + 16]
     vinsertf128 m0, m0, [src1q], 1
@@ -386,8 +386,8 @@ ALIGN 16
 %endif
     mulps   m0, m0, [src0q + lenq + mmsize]
     mulps   m1, m1, [src0q + lenq]
-    mova    [dstq + lenq + mmsize], m0
-    mova    [dstq + lenq], m1
+    movaps  [dstq + lenq + mmsize], m0
+    movaps  [dstq + lenq], m1
     add     src1q, 2*mmsize
     sub     lenq,  2*mmsize
     jge     .loop

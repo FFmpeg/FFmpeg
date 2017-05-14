@@ -55,13 +55,13 @@ static inline char *make_command_flags_str(AVBPrint *pbuf, int flags)
     return pbuf->str;
 }
 
-typedef struct {
+typedef struct Command {
     int flags;
     char *target, *command, *arg;
     int index;
 } Command;
 
-typedef struct {
+typedef struct Interval {
     int64_t start_ts;          ///< start timestamp expressed as microseconds units
     int64_t end_ts;            ///< end   timestamp expressed as microseconds units
     int index;                 ///< unique index for these interval commands
@@ -70,7 +70,7 @@ typedef struct {
     int enabled;               ///< current time detected inside this interval
 } Interval;
 
-typedef struct {
+typedef struct SendCmdContext {
     const AVClass *class;
     Interval *intervals;
     int   nb_intervals;

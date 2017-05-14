@@ -248,15 +248,15 @@ static VLC chroma422_dc_coeff_token_vlc;
 static VLC_TYPE chroma422_dc_coeff_token_vlc_table[8192][2];
 static const int chroma422_dc_coeff_token_vlc_table_size = 8192;
 
-static VLC total_zeros_vlc[15];
+static VLC total_zeros_vlc[15+1];
 static VLC_TYPE total_zeros_vlc_tables[15][512][2];
 static const int total_zeros_vlc_tables_size = 512;
 
-static VLC chroma_dc_total_zeros_vlc[3];
+static VLC chroma_dc_total_zeros_vlc[3+1];
 static VLC_TYPE chroma_dc_total_zeros_vlc_tables[3][8][2];
 static const int chroma_dc_total_zeros_vlc_tables_size = 8;
 
-static VLC chroma422_dc_total_zeros_vlc[7];
+static VLC chroma422_dc_total_zeros_vlc[7+1];
 static VLC_TYPE chroma422_dc_total_zeros_vlc_tables[7][32][2];
 static const int chroma422_dc_total_zeros_vlc_tables_size = 32;
 
@@ -364,9 +364,9 @@ av_cold void ff_h264_decode_init_vlc(void){
         av_assert0(offset == FF_ARRAY_ELEMS(coeff_token_vlc_tables));
 
         for(i=0; i<3; i++){
-            chroma_dc_total_zeros_vlc[i].table = chroma_dc_total_zeros_vlc_tables[i];
-            chroma_dc_total_zeros_vlc[i].table_allocated = chroma_dc_total_zeros_vlc_tables_size;
-            init_vlc(&chroma_dc_total_zeros_vlc[i],
+            chroma_dc_total_zeros_vlc[i+1].table = chroma_dc_total_zeros_vlc_tables[i];
+            chroma_dc_total_zeros_vlc[i+1].table_allocated = chroma_dc_total_zeros_vlc_tables_size;
+            init_vlc(&chroma_dc_total_zeros_vlc[i+1],
                      CHROMA_DC_TOTAL_ZEROS_VLC_BITS, 4,
                      &chroma_dc_total_zeros_len [i][0], 1, 1,
                      &chroma_dc_total_zeros_bits[i][0], 1, 1,
@@ -374,9 +374,9 @@ av_cold void ff_h264_decode_init_vlc(void){
         }
 
         for(i=0; i<7; i++){
-            chroma422_dc_total_zeros_vlc[i].table = chroma422_dc_total_zeros_vlc_tables[i];
-            chroma422_dc_total_zeros_vlc[i].table_allocated = chroma422_dc_total_zeros_vlc_tables_size;
-            init_vlc(&chroma422_dc_total_zeros_vlc[i],
+            chroma422_dc_total_zeros_vlc[i+1].table = chroma422_dc_total_zeros_vlc_tables[i];
+            chroma422_dc_total_zeros_vlc[i+1].table_allocated = chroma422_dc_total_zeros_vlc_tables_size;
+            init_vlc(&chroma422_dc_total_zeros_vlc[i+1],
                      CHROMA422_DC_TOTAL_ZEROS_VLC_BITS, 8,
                      &chroma422_dc_total_zeros_len [i][0], 1, 1,
                      &chroma422_dc_total_zeros_bits[i][0], 1, 1,
@@ -384,9 +384,9 @@ av_cold void ff_h264_decode_init_vlc(void){
         }
 
         for(i=0; i<15; i++){
-            total_zeros_vlc[i].table = total_zeros_vlc_tables[i];
-            total_zeros_vlc[i].table_allocated = total_zeros_vlc_tables_size;
-            init_vlc(&total_zeros_vlc[i],
+            total_zeros_vlc[i+1].table = total_zeros_vlc_tables[i];
+            total_zeros_vlc[i+1].table_allocated = total_zeros_vlc_tables_size;
+            init_vlc(&total_zeros_vlc[i+1],
                      TOTAL_ZEROS_VLC_BITS, 16,
                      &total_zeros_len [i][0], 1, 1,
                      &total_zeros_bits[i][0], 1, 1,
@@ -570,13 +570,13 @@ static int decode_residual(const H264Context *h, H264SliceContext *sl,
     else{
         if (max_coeff <= 8) {
             if (max_coeff == 4)
-                zeros_left = get_vlc2(gb, (chroma_dc_total_zeros_vlc-1)[total_coeff].table,
+                zeros_left = get_vlc2(gb, chroma_dc_total_zeros_vlc[total_coeff].table,
                                       CHROMA_DC_TOTAL_ZEROS_VLC_BITS, 1);
             else
-                zeros_left = get_vlc2(gb, (chroma422_dc_total_zeros_vlc-1)[total_coeff].table,
+                zeros_left = get_vlc2(gb, chroma422_dc_total_zeros_vlc[total_coeff].table,
                                       CHROMA422_DC_TOTAL_ZEROS_VLC_BITS, 1);
         } else {
-            zeros_left= get_vlc2(gb, (total_zeros_vlc-1)[ total_coeff ].table, TOTAL_ZEROS_VLC_BITS, 1);
+            zeros_left= get_vlc2(gb, total_zeros_vlc[ total_coeff ].table, TOTAL_ZEROS_VLC_BITS, 1);
         }
     }
 

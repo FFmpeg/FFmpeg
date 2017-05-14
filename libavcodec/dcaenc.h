@@ -24,6 +24,8 @@
 
 #include <stdint.h>
 
+#include "dcamath.h"
+
 typedef struct {
     int32_t m;
     int32_t e;
@@ -143,5 +145,14 @@ static const int8_t channel_reorder_nolfe[16][9] = {
     { 4,  5,  0,  1,  6,  2,  7,  3, -1 },
     { 3,  2,  4,  0,  1,  5,  7,  6, -1 },
 };
+
+static inline int32_t quantize_value(int32_t value, softfloat quant)
+{
+    int32_t offset = 1 << (quant.e - 1);
+
+    value = mul32(value, quant.m) + offset;
+    value = value >> quant.e;
+    return value;
+}
 
 #endif /* AVCODEC_DCAENC_H */

@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "dcaadpcm.h"
 #include "dcadec.h"
 #include "dcadata.h"
 #include "dcahuff.h"
@@ -670,46 +671,21 @@ static inline int extract_audio(DCACoreDecoder *s, int32_t *audio, int abits, in
     return 0;
 }
 
-static inline void dequantize(int32_t *output, const int32_t *input,
-                              int32_t step_size, int32_t scale, int residual)
-{
-    // Account for quantizer step size
-    int64_t step_scale = (int64_t)step_size * scale;
-    int n, shift = 0;
-
-    // Limit scale factor resolution to 22 bits
-    if (step_scale > (1 << 23)) {
-        shift = av_log2(step_scale >> 23) + 1;
-        step_scale >>= shift;
-    }
-
-    // Scale the samples
-    if (residual) {
-        for (n = 0; n < DCA_SUBBAND_SAMPLES; n++)
-            output[n] += clip23(norm__(input[n] * step_scale, 22 - shift));
-    } else {
-        for (n = 0; n < DCA_SUBBAND_SAMPLES; n++)
-            output[n]  = clip23(norm__(input[n] * step_scale, 22 - shift));
-    }
-}
-
 static inline void inverse_adpcm(int32_t **subband_samples,
                                  const int16_t *vq_index,
                                  const int8_t *prediction_mode,
                                  int sb_start, int sb_end,
                                  int ofs, int len)
 {
-    int i, j, k;
+    int i, j;
 
     for (i = sb_start; i < sb_end; i++) {
         if (prediction_mode[i]) {
-            const int16_t *coeff = ff_dca_adpcm_vb[vq_index[i]];
+            const int pred_id = vq_index[i];
             int32_t *ptr = subband_samples[i] + ofs;
             for (j = 0; j < len; j++) {
-                int64_t err = 0;
-                for (k = 0; k < DCA_ADPCM_COEFFS; k++)
-                    err += (int64_t)ptr[j - k - 1] * coeff[k];
-                ptr[j] = clip23(ptr[j] + clip23(norm13(err)));
+                int32_t x = ff_dcaadpcm_predict(pred_id, ptr + j - DCA_ADPCM_COEFFS);
+                ptr[j] = clip23(ptr[j] + x);
             }
         }
     }
@@ -817,8 +793,8 @@ static int parse_subframe_audio(DCACoreDecoder *s, int sf, enum HeaderType heade
                     scale = clip23(adj * scale >> 22);
                 }
 
-                dequantize(s->subband_samples[ch][band] + ofs,
-                           audio, step_size, scale, 0);
+                ff_dca_core_dequantize(s->subband_samples[ch][band] + ofs,
+                           audio, step_size, scale, 0, DCA_SUBBAND_SAMPLES);
             }
         }
 
@@ -1146,8 +1122,8 @@ static int parse_xbr_subframe(DCACoreDecoder *s, int xbr_base_ch, int xbr_nchann
                 else
                     scale = xbr_scale_factors[ch][band][1];
 
-                dequantize(s->subband_samples[ch][band] + ofs,
-                           audio, step_size, scale, 1);
+                ff_dca_core_dequantize(s->subband_samples[ch][band] + ofs,
+                           audio, step_size, scale, 1, DCA_SUBBAND_SAMPLES);
             }
         }
 
@@ -1326,8 +1302,8 @@ static int parse_x96_subframe_audio(DCACoreDecoder *s, int sf, int xch_base, int
                 // Get the scale factor
                 scale = s->scale_factors[ch][band >> 1][band & 1];
 
-                dequantize(s->x96_subband_samples[ch][band] + ofs,
-                           audio, step_size, scale, 0);
+                ff_dca_core_dequantize(s->x96_subband_samples[ch][band] + ofs,
+                           audio, step_size, scale, 0, DCA_SUBBAND_SAMPLES);
             }
         }
 

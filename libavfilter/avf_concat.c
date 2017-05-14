@@ -36,7 +36,7 @@
 
 #define TYPE_ALL 2
 
-typedef struct {
+typedef struct ConcatContext {
     const AVClass *class;
     unsigned nb_streams[TYPE_ALL]; /**< number of out streams of each type */
     unsigned nb_segments;

@@ -24,7 +24,7 @@
 #include "avfilter.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct VolDetectContext {
     /**
      * Number of samples at each PCM value.
      * histogram[0x8000 + i] is the number of samples at value i.

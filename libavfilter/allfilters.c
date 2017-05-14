@@ -42,6 +42,7 @@ static void register_all(void)
 {
     REGISTER_FILTER(ABENCH,         abench,         af);
     REGISTER_FILTER(ACOMPRESSOR,    acompressor,    af);
+    REGISTER_FILTER(ACOPY,          acopy,          af);
     REGISTER_FILTER(ACROSSFADE,     acrossfade,     af);
     REGISTER_FILTER(ACRUSHER,       acrusher,       af);
     REGISTER_FILTER(ADELAY,         adelay,         af);
@@ -50,6 +51,7 @@ static void register_all(void)
     REGISTER_FILTER(AEVAL,          aeval,          af);
     REGISTER_FILTER(AFADE,          afade,          af);
     REGISTER_FILTER(AFFTFILT,       afftfilt,       af);
+    REGISTER_FILTER(AFIR,           afir,           af);
     REGISTER_FILTER(AFORMAT,        aformat,        af);
     REGISTER_FILTER(AGATE,          agate,          af);
     REGISTER_FILTER(AINTERLEAVE,    ainterleave,    af);

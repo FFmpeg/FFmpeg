@@ -58,6 +58,12 @@
  * skipped due to the skip_frame setting.
  */
 #define FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM  (1 << 3)
+/**
+ * The decoder sets the cropping fields in the output frames manually.
+ * If this cap is set, the generic code will initialize output frame
+ * dimensions to coded rather than display values.
+ */
+#define FF_CODEC_CAP_EXPORTS_CROPPING       (1 << 4)
 
 #ifdef TRACE
 #   define ff_tlog(ctx, ...) av_log(ctx, AV_LOG_TRACE, __VA_ARGS__)

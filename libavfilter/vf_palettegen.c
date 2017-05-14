@@ -60,7 +60,7 @@ enum {
 #define NBITS 5
 #define HIST_SIZE (1<<(3*NBITS))
 
-typedef struct {
+typedef struct PaletteGenContext {
     const AVClass *class;
 
     int max_colors;

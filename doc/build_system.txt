@@ -45,6 +45,9 @@ libswscale/swscale-test
 config
     Reconfigure the project with the current configuration.
 
+tools/target_dec_<decoder>_fuzzer
+    Build fuzzer to fuzz the specified decoder.
+
 
 Useful standard make commands:
 make -t <target>

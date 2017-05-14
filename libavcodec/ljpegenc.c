@@ -40,7 +40,6 @@
 #include "jpegtables.h"
 #include "mjpegenc_common.h"
 #include "mjpeg.h"
-#include "mjpegenc.h"
 
 typedef struct LJpegEncContext {
     AVClass *class;

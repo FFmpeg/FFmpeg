@@ -24,6 +24,7 @@
 #include "bytestream.h"
 #include "internal.h"
 #include "libavutil/colorspace.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 
 #define DVBSUB_PAGE_SEGMENT     0x10
@@ -1102,9 +1103,9 @@ static int dvbsub_parse_clut_segment(AVCodecContext *avctx,
                 return AVERROR_INVALIDDATA;
         }
 
-        if (depth & 0x80)
+        if (depth & 0x80 && entry_id < 4)
             clut->clut4[entry_id] = RGBA(r,g,b,255 - alpha);
-        else if (depth & 0x40)
+        else if (depth & 0x40 && entry_id < 16)
             clut->clut16[entry_id] = RGBA(r,g,b,255 - alpha);
         else if (depth & 0x20)
             clut->clut256[entry_id] = RGBA(r,g,b,255 - alpha);
@@ -1127,6 +1128,7 @@ static int dvbsub_parse_region_segment(AVCodecContext *avctx,
     DVBSubObject *object;
     DVBSubObjectDisplay *display;
     int fill;
+    int ret;
 
     if (buf_size < 10)
         return AVERROR_INVALIDDATA;
@@ -1154,6 +1156,12 @@ static int dvbsub_parse_region_segment(AVCodecContext *avctx,
     buf += 2;
     region->height = AV_RB16(buf);
     buf += 2;
+
+    ret = av_image_check_size(region->width, region->height, 0, avctx);
+    if (ret < 0) {
+        region->width= region->height= 0;
+        return ret;
+    }
 
     if (region->width * region->height != region->buf_size) {
         av_free(region->pbuf);

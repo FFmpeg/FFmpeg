@@ -47,7 +47,7 @@ struct weighted_avg {
 #define WEIGHT_LUT_NBITS 9
 #define WEIGHT_LUT_SIZE  (1<<WEIGHT_LUT_NBITS)
 
-typedef struct {
+typedef struct NLMeansContext {
     const AVClass *class;
     int nb_planes;
     int chroma_w, chroma_h;

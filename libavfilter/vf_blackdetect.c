@@ -30,7 +30,7 @@
 #include "avfilter.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct BlackDetectContext {
     const AVClass *class;
     double  black_min_duration_time; ///< minimum duration of detected black, in seconds
     int64_t black_min_duration;      ///< minimum duration of detected black, expressed in timebase units

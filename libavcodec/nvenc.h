@@ -30,6 +30,8 @@
 #include "avcodec.h"
 
 #define MAX_REGISTERED_FRAMES 64
+#define RC_MODE_DEPRECATED 0x800000
+#define RCD(rc_mode) ((rc_mode) | RC_MODE_DEPRECATED)
 
 typedef struct NvencSurface
 {
@@ -152,13 +154,14 @@ typedef struct NvencContext
     int nonref_p;
     int strict_gop;
     int aq_strength;
-    int quality;
+    float quality;
     int aud;
     int bluray_compat;
     int init_qp_p;
     int init_qp_b;
     int init_qp_i;
     int cqp;
+    int weighted_pred;
 } NvencContext;
 
 int ff_nvenc_encode_init(AVCodecContext *avctx);

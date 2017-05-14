@@ -197,7 +197,10 @@ static int config_input(AVFilterLink *inlink)
            inlink->w, inlink->h, s->w, s->h, s->x, s->y,
            s->rgba_color[0], s->rgba_color[1], s->rgba_color[2], s->rgba_color[3]);
 
-    if (s->w <= 0 || s->h <= 0) {
+    if (s->x <  0 || s->y <  0                      ||
+        s->w <= 0 || s->h <= 0                      ||
+        (unsigned)s->x + (unsigned)inlink->w > s->w ||
+        (unsigned)s->y + (unsigned)inlink->h > s->h) {
         av_log(ctx, AV_LOG_ERROR,
                "Input area %d:%d:%d:%d not within the padded area 0:0:%d:%d or zero-sized\n",
                s->x, s->y, s->x + inlink->w, s->y + inlink->h, s->w, s->h);

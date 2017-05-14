@@ -694,7 +694,7 @@ static int decode_entropy_coded_image(WebPContext *s, enum ImageRole role,
                 length = offset + get_bits(&s->gb, extra_bits) + 1;
             }
             prefix_code = huff_reader_get_symbol(&hg[HUFF_IDX_DIST], &s->gb);
-            if (prefix_code > 39) {
+            if (prefix_code > 39U) {
                 av_log(s->avctx, AV_LOG_ERROR,
                        "distance prefix code too large: %d\n", prefix_code);
                 return AVERROR_INVALIDDATA;
@@ -1043,7 +1043,7 @@ static int apply_color_indexing_transform(WebPContext *s)
         uint8_t *line;
         int pixel_bits = 8 >> pal->size_reduction;
 
-        line = av_malloc(img->frame->linesize[0]);
+        line = av_malloc(img->frame->linesize[0] + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!line)
             return AVERROR(ENOMEM);
 
@@ -1099,6 +1099,21 @@ static int apply_color_indexing_transform(WebPContext *s)
     return 0;
 }
 
+static void update_canvas_size(AVCodecContext *avctx, int w, int h)
+{
+    WebPContext *s = avctx->priv_data;
+    if (s->width && s->width != w) {
+        av_log(avctx, AV_LOG_WARNING, "Width mismatch. %d != %d\n",
+               s->width, w);
+    }
+    s->width = w;
+    if (s->height && s->height != h) {
+        av_log(avctx, AV_LOG_WARNING, "Height mismatch. %d != %d\n",
+               s->height, h);
+    }
+    s->height = h;
+}
+
 static int vp8_lossless_decode_frame(AVCodecContext *avctx, AVFrame *p,
                                      int *got_frame, uint8_t *data_start,
                                      unsigned int data_size, int is_alpha_chunk)
@@ -1123,16 +1138,8 @@ static int vp8_lossless_decode_frame(AVCodecContext *avctx, AVFrame *p,
 
         w = get_bits(&s->gb, 14) + 1;
         h = get_bits(&s->gb, 14) + 1;
-        if (s->width && s->width != w) {
-            av_log(avctx, AV_LOG_WARNING, "Width mismatch. %d != %d\n",
-                   s->width, w);
-        }
-        s->width = w;
-        if (s->height && s->height != h) {
-            av_log(avctx, AV_LOG_WARNING, "Height mismatch. %d != %d\n",
-                   s->width, w);
-        }
-        s->height = h;
+
+        update_canvas_size(avctx, w, h);
 
         ret = ff_set_dimensions(avctx, s->width, s->height);
         if (ret < 0)
@@ -1327,9 +1334,8 @@ static int vp8_lossy_decode_frame(AVCodecContext *avctx, AVFrame *p,
     if (!s->initialized) {
         ff_vp8_decode_init(avctx);
         s->initialized = 1;
-        if (s->has_alpha)
-            avctx->pix_fmt = AV_PIX_FMT_YUVA420P;
     }
+    avctx->pix_fmt = s->has_alpha ? AV_PIX_FMT_YUVA420P : AV_PIX_FMT_YUV420P;
     s->lossless = 0;
 
     if (data_size > INT_MAX) {
@@ -1344,6 +1350,9 @@ static int vp8_lossy_decode_frame(AVCodecContext *avctx, AVFrame *p,
     ret = ff_vp8_decode_frame(avctx, p, got_frame, &pkt);
     if (ret < 0)
         return ret;
+
+    update_canvas_size(avctx, avctx->width, avctx->height);
+
     if (s->has_alpha) {
         ret = vp8_lossy_decode_alpha(avctx, p, s->alpha_data,
                                      s->alpha_data_size);
@@ -1423,6 +1432,10 @@ static int webp_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             bytestream2_skip(&gb, chunk_size);
             break;
         case MKTAG('V', 'P', '8', 'X'):
+            if (s->width || s->height || *got_frame) {
+                av_log(avctx, AV_LOG_ERROR, "Canvas dimensions are already set\n");
+                return AVERROR_INVALIDDATA;
+            }
             vp8x_flags = bytestream2_get_byte(&gb);
             bytestream2_skip(&gb, 3);
             s->width  = bytestream2_get_le24(&gb) + 1;

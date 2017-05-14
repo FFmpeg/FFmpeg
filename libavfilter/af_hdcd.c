@@ -837,7 +837,7 @@ static const int32_t gaintab[] = {
 /** tone generator: sample_number, frequency, sample_rate, amplitude */
 #define TONEGEN16(sn, f, sr, a) (int16_t)(sin((6.28318530718 * (sn) * (f)) /(sr)) * (a) * 0x7fff)
 
-typedef struct {
+typedef struct hdcd_state {
     uint64_t window;
     unsigned char readahead;
 
@@ -904,7 +904,7 @@ static const char * const pf_str[] = {
     "?", "A", "B", "A+B"
 };
 
-typedef struct {
+typedef struct hdcd_detection_data {
     hdcd_dv hdcd_detected;
     hdcd_pf packet_type;
     int total_packets;         /**< valid packets */

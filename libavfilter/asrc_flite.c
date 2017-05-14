@@ -32,7 +32,7 @@
 #include "formats.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct FliteContext {
     const AVClass *class;
     char *voice_str;
     char *textfile;

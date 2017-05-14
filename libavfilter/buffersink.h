@@ -62,7 +62,7 @@ int av_buffersink_get_frame_flags(AVFilterContext *ctx, AVFrame *frame, int flag
 /**
  * Struct to use for initializing a buffersink context.
  */
-typedef struct {
+typedef struct AVBufferSinkParams {
     const enum AVPixelFormat *pixel_fmts; ///< list of allowed pixel formats, terminated by AV_PIX_FMT_NONE
 } AVBufferSinkParams;
 
@@ -76,7 +76,7 @@ AVBufferSinkParams *av_buffersink_params_alloc(void);
 /**
  * Struct to use for initializing an abuffersink context.
  */
-typedef struct {
+typedef struct AVABufferSinkParams {
     const enum AVSampleFormat *sample_fmts; ///< list of allowed sample formats, terminated by AV_SAMPLE_FMT_NONE
     const int64_t *channel_layouts;         ///< list of allowed channel layouts, terminated by -1
     const int *channel_counts;              ///< list of allowed channel counts, terminated by -1

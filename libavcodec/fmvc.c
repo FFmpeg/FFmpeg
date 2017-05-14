@@ -561,6 +561,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     s->nb_blocks = s->xb * s->yb;
+    if (!s->nb_blocks)
+        return AVERROR_INVALIDDATA;
+
     s->blocks = av_calloc(s->nb_blocks, sizeof(*s->blocks));
     if (!s->blocks)
         return AVERROR(ENOMEM);

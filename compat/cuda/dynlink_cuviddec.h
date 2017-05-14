@@ -1,7 +1,7 @@
 /*
  * This copyright notice applies to this header file only:
  *
- * Copyright (c) 2010-2016 NVIDIA Corporation
+ * Copyright (c) 2010-2017 NVIDIA Corporation
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -25,17 +25,17 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/**
- * \file cuviddec.h
- * NvCuvid API provides Video Decoding interface to NVIDIA GPU devices.
- * \date 2015-2016
- * This file contains constants, structure definitions and function prototypes used for decoding.
- */
+/*****************************************************************************************************/
+//! \file cuviddec.h
+//! NVDECODE API provides video decoding interface to NVIDIA GPU devices.
+//! \date 2015-2017
+//! This file contains constants, structure definitions and function prototypes used for decoding.
+/*****************************************************************************************************/
 
 #if !defined(__CUDA_VIDEO_H__)
 #define __CUDA_VIDEO_H__
 
-#if defined(__x86_64) || defined(AMD64) || defined(_M_AMD64)
+#if defined(_WIN64) || defined(__LP64__) || defined(__x86_64) || defined(AMD64) || defined(_M_AMD64)
 #if (CUDA_VERSION >= 3020) && (!defined(CUDA_FORCE_API_VERSION) || (CUDA_FORCE_API_VERSION >= 3020))
 #define __CUVID_DEVPTR64
 #endif
@@ -54,93 +54,126 @@ typedef unsigned long tcu_ulong;
 typedef void *CUvideodecoder;
 typedef struct _CUcontextlock_st *CUvideoctxlock;
 
-/**
- * \addtogroup VIDEO_DECODER Video Decoder
- * @{
- */
-
-/*!
- * \enum cudaVideoCodec
- * Video Codec Enums
- */
+/*********************************************************************************/
+//! \enum cudaVideoCodec
+//! Video codec enums
+//! These enums are used in CUVIDDECODECREATEINFO and CUVIDDECODECAPS structures
+/*********************************************************************************/
 typedef enum cudaVideoCodec_enum {
-    cudaVideoCodec_MPEG1=0,                 /**<  MPEG1   */
-    cudaVideoCodec_MPEG2,                   /**<  MPEG2  */
-    cudaVideoCodec_MPEG4,                   /**<  MPEG4   */
-    cudaVideoCodec_VC1,                     /**<  VC1   */
-    cudaVideoCodec_H264,                    /**<  H264   */
-    cudaVideoCodec_JPEG,                    /**<  JPEG   */
-    cudaVideoCodec_H264_SVC,                /**<  H264-SVC   */
-    cudaVideoCodec_H264_MVC,                /**<  H264-MVC   */
-    cudaVideoCodec_HEVC,                    /**<  HEVC   */
-    cudaVideoCodec_VP8,                     /**<  VP8   */
-    cudaVideoCodec_VP9,                     /**<  VP9   */
-    cudaVideoCodec_NumCodecs,               /**<  Max COdecs   */
+    cudaVideoCodec_MPEG1=0,                                         /**<  MPEG1             */
+    cudaVideoCodec_MPEG2,                                           /**<  MPEG2             */
+    cudaVideoCodec_MPEG4,                                           /**<  MPEG4             */
+    cudaVideoCodec_VC1,                                             /**<  VC1               */
+    cudaVideoCodec_H264,                                            /**<  H264              */
+    cudaVideoCodec_JPEG,                                            /**<  JPEG              */
+    cudaVideoCodec_H264_SVC,                                        /**<  H264-SVC          */
+    cudaVideoCodec_H264_MVC,                                        /**<  H264-MVC          */
+    cudaVideoCodec_HEVC,                                            /**<  HEVC              */
+    cudaVideoCodec_VP8,                                             /**<  VP8               */
+    cudaVideoCodec_VP9,                                             /**<  VP9               */
+    cudaVideoCodec_NumCodecs,                                       /**<  Max codecs        */
     // Uncompressed YUV
-    cudaVideoCodec_YUV420 = (('I'<<24)|('Y'<<16)|('U'<<8)|('V')),   /**< Y,U,V (4:2:0)  */
-    cudaVideoCodec_YV12   = (('Y'<<24)|('V'<<16)|('1'<<8)|('2')),   /**< Y,V,U (4:2:0)  */
-    cudaVideoCodec_NV12   = (('N'<<24)|('V'<<16)|('1'<<8)|('2')),   /**< Y,UV  (4:2:0)  */
+    cudaVideoCodec_YUV420 = (('I'<<24)|('Y'<<16)|('U'<<8)|('V')),   /**< Y,U,V (4:2:0)      */
+    cudaVideoCodec_YV12   = (('Y'<<24)|('V'<<16)|('1'<<8)|('2')),   /**< Y,V,U (4:2:0)      */
+    cudaVideoCodec_NV12   = (('N'<<24)|('V'<<16)|('1'<<8)|('2')),   /**< Y,UV  (4:2:0)      */
     cudaVideoCodec_YUYV   = (('Y'<<24)|('U'<<16)|('Y'<<8)|('V')),   /**< YUYV/YUY2 (4:2:2)  */
-    cudaVideoCodec_UYVY   = (('U'<<24)|('Y'<<16)|('V'<<8)|('Y'))    /**< UYVY (4:2:2)  */
+    cudaVideoCodec_UYVY   = (('U'<<24)|('Y'<<16)|('V'<<8)|('Y'))    /**< UYVY (4:2:2)       */
 } cudaVideoCodec;
 
-/*!
- * \enum cudaVideoSurfaceFormat
- * Video Surface Formats Enums
- */
+/*********************************************************************************/
+//! \enum cudaVideoSurfaceFormat
+//! Video surface format enums used for output format of decoded output
+//! These enums are used in CUVIDDECODECREATEINFO structure
+/*********************************************************************************/
 typedef enum cudaVideoSurfaceFormat_enum {
-    cudaVideoSurfaceFormat_NV12=0,      /**< NV12  */
-    cudaVideoSurfaceFormat_P016=1       /**< P016  */
+    cudaVideoSurfaceFormat_NV12=0,       /**< NV12 format          */
+    cudaVideoSurfaceFormat_P016=1        /**< 16 bit semiplaner format. Can be used for 10 bit(6LSB bits 0),
+                                              12 bit (4LSB bits 0) */
 } cudaVideoSurfaceFormat;
 
-/*!
- * \enum cudaVideoDeinterlaceMode
- * Deinterlacing Modes Enums
- */
+/******************************************************************************************************************/
+//! \enum cudaVideoDeinterlaceMode
+//! Deinterlacing mode enums
+//! These enums are used in CUVIDDECODECREATEINFO structure
+//! Use cudaVideoDeinterlaceMode_Weave for progressive content and for content that doesn't need deinterlacing
+//! cudaVideoDeinterlaceMode_Adaptive needs more video memory than other DImodes
+/******************************************************************************************************************/
 typedef enum cudaVideoDeinterlaceMode_enum {
     cudaVideoDeinterlaceMode_Weave=0,   /**< Weave both fields (no deinterlacing) */
-    cudaVideoDeinterlaceMode_Bob,       /**< Drop one field  */
-    cudaVideoDeinterlaceMode_Adaptive   /**< Adaptive deinterlacing  */
+    cudaVideoDeinterlaceMode_Bob,       /**< Drop one field                       */
+    cudaVideoDeinterlaceMode_Adaptive   /**< Adaptive deinterlacing               */
 } cudaVideoDeinterlaceMode;
 
-/*!
- * \enum cudaVideoChromaFormat
- * Chroma Formats Enums
- */
+/**************************************************************************************************************/
+//! \enum cudaVideoChromaFormat
+//! Chroma format enums
+//! These enums are used in CUVIDDECODECREATEINFO and CUVIDDECODECAPS structures
+//! JPEG supports Monochrome, YUV 4:2:0, YUV 4:2:2 and YUV 4:4:4 chroma formats.
+//! H264, HEVC, VP9, VP8, VC1, MPEG1, MPEG2 and MPEG4 support YUV 4:2:0 chroma format only.
+/**************************************************************************************************************/
 typedef enum cudaVideoChromaFormat_enum {
     cudaVideoChromaFormat_Monochrome=0,  /**< MonoChrome */
-    cudaVideoChromaFormat_420,           /**< 4:2:0 */
-    cudaVideoChromaFormat_422,           /**< 4:2:2 */
-    cudaVideoChromaFormat_444            /**< 4:4:4 */
+    cudaVideoChromaFormat_420,           /**< YUV 4:2:0  */
+    cudaVideoChromaFormat_422,           /**< YUV 4:2:2  */
+    cudaVideoChromaFormat_444            /**< YUV 4:4:4  */
 } cudaVideoChromaFormat;
 
-/*!
- * \enum cudaVideoCreateFlags
- * Decoder Flags Enums
- */
+/*************************************************************************************************************/
+//! \enum cudaVideoCreateFlags
+//! Decoder flag enums to select preferred decode path
+//! cudaVideoCreate_Default and cudaVideoCreate_PreferCUVID are most optimized, use these whenever possible
+/*************************************************************************************************************/
 typedef enum cudaVideoCreateFlags_enum {
-    cudaVideoCreate_Default = 0x00,     /**< Default operation mode: use dedicated video engines */
-    cudaVideoCreate_PreferCUDA = 0x01,  /**< Use a CUDA-based decoder if faster than dedicated engines (requires a valid vidLock object for multi-threading) */
-    cudaVideoCreate_PreferDXVA = 0x02,  /**< Go through DXVA internally if possible (requires D3D9 interop) */
-    cudaVideoCreate_PreferCUVID = 0x04  /**< Use dedicated video engines directly */
+    cudaVideoCreate_Default     = 0x00,     /**< Default operation mode: use dedicated video engines                        */
+    cudaVideoCreate_PreferCUDA  = 0x01,     /**< Use CUDA-based decoder (requires valid vidLock object for multi-threading) */
+    cudaVideoCreate_PreferDXVA  = 0x02,     /**< Go through DXVA internally if possible (requires D3D9 interop)             */
+    cudaVideoCreate_PreferCUVID = 0x04      /**< Use dedicated video engines directly                                       */
 } cudaVideoCreateFlags;
 
-/*!
- * \struct CUVIDDECODECREATEINFO
- * Struct used in create decoder
- */
+
+/**************************************************************************************************************/
+//! \struct CUVIDDECODECAPS;
+//! This structure is used in cuvidGetDecoderCaps API
+/**************************************************************************************************************/
+typedef struct _CUVIDDECODECAPS
+{
+    cudaVideoCodec          eCodecType;                 /**< IN: cudaVideoCodec_XXX                                 */
+    cudaVideoChromaFormat   eChromaFormat;              /**< IN: cudaVideoChromaFormat_XXX                          */
+    unsigned int            nBitDepthMinus8;            /**< IN: The Value "BitDepth minus 8"                       */
+    unsigned int            reserved1[3];               /**< Reserved for future use - set to zero                  */
+
+    unsigned char           bIsSupported;               /**< OUT: 1 if codec supported, 0 if not supported          */
+    unsigned char           reserved2[3];               /**< Reserved for future use - set to zero                  */
+    unsigned int            nMaxWidth;                  /**< OUT: Max supported coded width in pixels               */
+    unsigned int            nMaxHeight;                 /**< OUT: Max supported coded height in pixels              */
+    unsigned int            nMaxMBCount;                /**< OUT: Max supported macroblock count
+                                                                  CodedWidth*CodedHeight/256 must be <= nMaxMBCount */
+    unsigned short          nMinWidth;                  /**< OUT: Min supported coded width in pixels               */
+    unsigned short          nMinHeight;                 /**< OUT: Min supported coded height in pixels              */
+    unsigned int            reserved3[11];              /**< Reserved for future use - set to zero                  */
+} CUVIDDECODECAPS;
+
+/**************************************************************************************************************/
+//! \struct CUVIDDECODECREATEINFO
+//! This structure is used in cuvidCreateDecoder API
+/**************************************************************************************************************/
 typedef struct _CUVIDDECODECREATEINFO
 {
-    tcu_ulong ulWidth;                  /**< Coded Sequence Width */
-    tcu_ulong ulHeight;                 /**< Coded Sequence Height */
-    tcu_ulong ulNumDecodeSurfaces;      /**< Maximum number of internal decode surfaces */
-    cudaVideoCodec CodecType;           /**< cudaVideoCodec_XXX */
-    cudaVideoChromaFormat ChromaFormat; /**< cudaVideoChromaFormat_XXX (only 4:2:0 is currently supported) */
-    tcu_ulong ulCreationFlags;          /**< Decoder creation flags (cudaVideoCreateFlags_XXX) */
-    tcu_ulong bitDepthMinus8;
-    tcu_ulong Reserved1[4];             /**< Reserved for future use - set to zero */
+    tcu_ulong ulWidth;                  /**< IN: Coded sequence width in pixels                                             */
+    tcu_ulong ulHeight;                 /**< IN: Coded sequence height in pixels                                            */
+    tcu_ulong ulNumDecodeSurfaces;      /**< IN: Maximum number of internal decode surfaces                                 */
+    cudaVideoCodec CodecType;           /**< IN: cudaVideoCodec_XXX                                                         */
+    cudaVideoChromaFormat ChromaFormat; /**< IN: cudaVideoChromaFormat_XXX                                                  */
+    tcu_ulong ulCreationFlags;          /**< IN: Decoder creation flags (cudaVideoCreateFlags_XXX)                          */
+    tcu_ulong bitDepthMinus8;           /**< IN: The value "BitDepth minus 8"                                               */
+    tcu_ulong ulIntraDecodeOnly;        /**< IN: Set 1 only if video has all intra frames (default value is 0). This will
+                                             optimize video memory for Intra frames only decoding. The support is limited
+                                             to specific codecs(H264 rightnow), the flag will be ignored for codecs which
+                                             are not supported. However decoding might fail if the flag is enabled in case
+                                             of supported codecs for regular bit streams having P and/or B frames.          */
+    tcu_ulong Reserved1[3];             /**< Reserved for future use - set to zero                                          */
     /**
-    * area of the frame that should be displayed
+    * IN: area of the frame that should be displayed
     */
     struct {
         short left;
@@ -149,14 +182,15 @@ typedef struct _CUVIDDECODECREATEINFO
         short bottom;
     } display_area;
 
-    cudaVideoSurfaceFormat OutputFormat;       /**< cudaVideoSurfaceFormat_XXX */
-    cudaVideoDeinterlaceMode DeinterlaceMode;  /**< cudaVideoDeinterlaceMode_XXX */
-    tcu_ulong ulTargetWidth;                   /**< Post-processed Output Width (Should be aligned to 2) */
-    tcu_ulong ulTargetHeight;                  /**< Post-processed Output Height (Should be aligbed to 2) */
-    tcu_ulong ulNumOutputSurfaces;             /**< Maximum number of output surfaces simultaneously mapped */
-    CUvideoctxlock vidLock;                    /**< If non-NULL, context lock used for synchronizing ownership of the cuda context */
+    cudaVideoSurfaceFormat OutputFormat;       /**< IN: cudaVideoSurfaceFormat_XXX                                     */
+    cudaVideoDeinterlaceMode DeinterlaceMode;  /**< IN: cudaVideoDeinterlaceMode_XXX                                   */
+    tcu_ulong ulTargetWidth;                   /**< IN: Post-processed output width (Should be aligned to 2)           */
+    tcu_ulong ulTargetHeight;                  /**< IN: Post-processed output height (Should be aligbed to 2)          */
+    tcu_ulong ulNumOutputSurfaces;             /**< IN: Maximum number of output surfaces simultaneously mapped        */
+    CUvideoctxlock vidLock;                    /**< IN: If non-NULL, context lock used for synchronizing ownership of
+                                                    the cuda context. Needed for cudaVideoCreate_PreferCUDA decode     */
     /**
-    * target rectangle in the output frame (for aspect ratio conversion)
+    * IN: target rectangle in the output frame (for aspect ratio conversion)
     * if a null rectangle is specified, {0,0,ulTargetWidth,ulTargetHeight} will be used
     */
     struct {
@@ -168,40 +202,43 @@ typedef struct _CUVIDDECODECREATEINFO
     tcu_ulong Reserved2[5];                    /**< Reserved for future use - set to zero */
 } CUVIDDECODECREATEINFO;
 
-/*!
- * \struct CUVIDH264DPBENTRY
- * H.264 DPB Entry
- */
+/*********************************************************/
+//! \struct CUVIDH264DPBENTRY
+//! H.264 DPB entry
+//! This structure is used in CUVIDH264PICPARAMS structure
+/*********************************************************/
 typedef struct _CUVIDH264DPBENTRY
 {
-    int PicIdx;                 /**< picture index of reference frame */
-    int FrameIdx;               /**< frame_num(short-term) or LongTermFrameIdx(long-term) */
-    int is_long_term;           /**< 0=short term reference, 1=long term reference */
+    int PicIdx;                 /**< picture index of reference frame                                        */
+    int FrameIdx;               /**< frame_num(short-term) or LongTermFrameIdx(long-term)                    */
+    int is_long_term;           /**< 0=short term reference, 1=long term reference                           */
     int not_existing;           /**< non-existing reference frame (corresponding PicIdx should be set to -1) */
-    int used_for_reference;     /**< 0=unused, 1=top_field, 2=bottom_field, 3=both_fields */
-    int FieldOrderCnt[2];       /**< field order count of top and bottom fields */
+    int used_for_reference;     /**< 0=unused, 1=top_field, 2=bottom_field, 3=both_fields                    */
+    int FieldOrderCnt[2];       /**< field order count of top and bottom fields                              */
 } CUVIDH264DPBENTRY;
 
-/*!
- * \struct CUVIDH264MVCEXT
- * H.264 MVC Picture Parameters Ext
- */
+/************************************************************/
+//! \struct CUVIDH264MVCEXT
+//! H.264 MVC picture parameters ext
+//! This structure is used in CUVIDH264PICPARAMS structure
+/************************************************************/
 typedef struct _CUVIDH264MVCEXT
 {
-    int num_views_minus1;
-    int view_id;
-    unsigned char inter_view_flag;
-    unsigned char num_inter_view_refs_l0;
-    unsigned char num_inter_view_refs_l1;
-    unsigned char MVCReserved8Bits;
-    int InterViewRefsL0[16];
-    int InterViewRefsL1[16];
+    int num_views_minus1;                  /**< Max number of coded views minus 1 in video : Range - 0 to 1023              */
+    int view_id;                           /**< view identifier                                                             */
+    unsigned char inter_view_flag;         /**< 1 if used for inter-view prediction, 0 if not                               */
+    unsigned char num_inter_view_refs_l0;  /**< number of inter-view ref pics in RefPicList0                                */
+    unsigned char num_inter_view_refs_l1;  /**< number of inter-view ref pics in RefPicList1                                */
+    unsigned char MVCReserved8Bits;        /**< Reserved bits                                                               */
+    int InterViewRefsL0[16];               /**< view id of the i-th view component for inter-view prediction in RefPicList0 */
+    int InterViewRefsL1[16];               /**< view id of the i-th view component for inter-view prediction in RefPicList1 */
 } CUVIDH264MVCEXT;
 
-/*!
- * \struct CUVIDH264SVCEXT
- * H.264 SVC Picture Parameters Ext
- */
+/*********************************************************/
+//! \struct CUVIDH264SVCEXT
+//! H.264 SVC picture parameters ext
+//! This structure is used in CUVIDH264PICPARAMS structure
+/*********************************************************/
 typedef struct _CUVIDH264SVCEXT
 {
     unsigned char profile_idc;
@@ -227,22 +264,22 @@ typedef struct _CUVIDH264SVCEXT
     unsigned char store_ref_base_pic_flag;
     unsigned char Reserved8BitsA;
     unsigned char Reserved8BitsB;
-    // For the 4 scaled_ref_layer_XX fields below,
-    // if (extended_spatial_scalability_idc == 1), SPS field, G.7.3.2.1.4, add prefix "seq_"
-    // if (extended_spatial_scalability_idc == 2), SLH field, G.7.3.3.4,
+
     short scaled_ref_layer_left_offset;
     short scaled_ref_layer_top_offset;
     short scaled_ref_layer_right_offset;
     short scaled_ref_layer_bottom_offset;
     unsigned short Reserved16Bits;
-    struct _CUVIDPICPARAMS *pNextLayer; /**< Points to the picparams for the next layer to be decoded. Linked list ends at the target layer. */
+    struct _CUVIDPICPARAMS *pNextLayer; /**< Points to the picparams for the next layer to be decoded.
+                                             Linked list ends at the target layer. */
     int bRefBaseLayer;                  /**< whether to store ref base pic */
 } CUVIDH264SVCEXT;
 
-/*!
- * \struct CUVIDH264PICPARAMS
- * H.264 Picture Parameters
- */
+/******************************************************/
+//! \struct CUVIDH264PICPARAMS
+//! H.264 picture parameters
+//! This structure is used in CUVIDPICPARAMS structure
+/******************************************************/
 typedef struct _CUVIDH264PICPARAMS
 {
     // SPS
@@ -291,20 +328,21 @@ typedef struct _CUVIDH264PICPARAMS
         unsigned long long slice_group_map_addr;
         const unsigned char *pMb2SliceGroupMap;
     } fmo;
-    unsigned int  Reserved[12];
+    unsigned int Reserved[12];
     // SVC/MVC
     union
     {
         CUVIDH264MVCEXT mvcext;
         CUVIDH264SVCEXT svcext;
-    } svcmvc;
+    };
 } CUVIDH264PICPARAMS;
 
 
-/*!
- * \struct CUVIDMPEG2PICPARAMS
- * MPEG-2 Picture Parameters
- */
+/********************************************************/
+//! \struct CUVIDMPEG2PICPARAMS
+//! MPEG-2 picture parameters
+//! This structure is used in CUVIDPICPARAMS structure
+/********************************************************/
 typedef struct _CUVIDMPEG2PICPARAMS
 {
     int ForwardRefIdx;          // Picture index of forward reference (P/B-frames)
@@ -325,21 +363,17 @@ typedef struct _CUVIDMPEG2PICPARAMS
     unsigned char QuantMatrixInter[64];
 } CUVIDMPEG2PICPARAMS;
 
-////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// MPEG-4 Picture Parameters
-//
-
 // MPEG-4 has VOP types instead of Picture types
 #define I_VOP 0
 #define P_VOP 1
 #define B_VOP 2
 #define S_VOP 3
 
-/*!
- * \struct CUVIDMPEG4PICPARAMS
- * MPEG-4 Picture Parameters
- */
+/*******************************************************/
+//! \struct CUVIDMPEG4PICPARAMS
+//! MPEG-4 picture parameters
+//! This structure is used in CUVIDPICPARAMS structure
+/*******************************************************/
 typedef struct _CUVIDMPEG4PICPARAMS
 {
     int ForwardRefIdx;          // Picture index of forward reference (P/B-frames)
@@ -370,20 +404,21 @@ typedef struct _CUVIDMPEG4PICPARAMS
     int gmc_enabled;
 } CUVIDMPEG4PICPARAMS;
 
-/*!
- * \struct CUVIDVC1PICPARAMS
- * VC1 Picture Parameters
- */
+/********************************************************/
+//! \struct CUVIDVC1PICPARAMS
+//! VC1 picture parameters
+//! This structure is used in CUVIDPICPARAMS structure
+/********************************************************/
 typedef struct _CUVIDVC1PICPARAMS
 {
     int ForwardRefIdx;      /**< Picture index of forward reference (P/B-frames) */
-    int BackwardRefIdx;     /**< Picture index of backward reference (B-frames) */
-    int FrameWidth;         /**< Actual frame width */
-    int FrameHeight;        /**< Actual frame height */
+    int BackwardRefIdx;     /**< Picture index of backward reference (B-frames)  */
+    int FrameWidth;         /**< Actual frame width                              */
+    int FrameHeight;        /**< Actual frame height                             */
     // PICTURE
     int intra_pic_flag;     /**< Set to 1 for I,BI frames */
-    int ref_pic_flag;       /**< Set to 1 for I,P frames */
-    int progressive_fcm;    /**< Progressive frame */
+    int ref_pic_flag;       /**< Set to 1 for I,P frames  */
+    int progressive_fcm;    /**< Progressive frame        */
     // SEQUENCE
     int profile;
     int postprocflag;
@@ -414,20 +449,22 @@ typedef struct _CUVIDVC1PICPARAMS
     int rangeredfrm;    // range reduction state
 } CUVIDVC1PICPARAMS;
 
-/*!
- * \struct CUVIDJPEGPICPARAMS
- * JPEG Picture Parameters
- */
+/***********************************************************/
+//! \struct CUVIDJPEGPICPARAMS
+//! JPEG picture parameters
+//! This structure is used in CUVIDPICPARAMS structure
+/***********************************************************/
 typedef struct _CUVIDJPEGPICPARAMS
 {
     int Reserved;
 } CUVIDJPEGPICPARAMS;
 
 
- /*!
- * \struct CUVIDHEVCPICPARAMS
- * HEVC Picture Parameters
- */
+/*******************************************************/
+//! \struct CUVIDHEVCPICPARAMS
+//! HEVC picture parameters
+//! This structure is used in CUVIDPICPARAMS structure
+/*******************************************************/
 typedef struct _CUVIDHEVCPICPARAMS
 {
     // sps
@@ -494,8 +531,8 @@ typedef struct _CUVIDHEVCPICPARAMS
 
     unsigned char deblocking_filter_override_enabled_flag;
     unsigned char pps_deblocking_filter_disabled_flag;
-    signed char pps_beta_offset_div2;
-    signed char pps_tc_offset_div2;
+    signed char   pps_beta_offset_div2;
+    signed char   pps_tc_offset_div2;
     unsigned char tiles_enabled_flag;
     unsigned char uniform_spacing_flag;
     unsigned char num_tile_columns_minus1;
@@ -503,7 +540,7 @@ typedef struct _CUVIDHEVCPICPARAMS
 
     unsigned short column_width_minus1[21];
     unsigned short row_height_minus1[21];
-    unsigned int reserved3[15];
+    unsigned int   reserved3[15];
 
     // RefPicSets
     int NumBitsForShortTermRPSInSlice;
@@ -513,15 +550,15 @@ typedef struct _CUVIDHEVCPICPARAMS
     int NumPocStCurrAfter;
     int NumPocLtCurr;
     int CurrPicOrderCntVal;
-    int RefPicIdx[16];                  // [refpic] Indices of valid reference pictures (-1 if unused for reference)
-    int PicOrderCntVal[16];             // [refpic]
-    unsigned char IsLongTerm[16];       // [refpic] 0=not a long-term reference, 1=long-term reference
+    int RefPicIdx[16];                      // [refpic] Indices of valid reference pictures (-1 if unused for reference)
+    int PicOrderCntVal[16];                 // [refpic]
+    unsigned char IsLongTerm[16];           // [refpic] 0=not a long-term reference, 1=long-term reference
     unsigned char RefPicSetStCurrBefore[8]; // [0..NumPocStCurrBefore-1] -> refpic (0..15)
     unsigned char RefPicSetStCurrAfter[8];  // [0..NumPocStCurrAfter-1] -> refpic (0..15)
     unsigned char RefPicSetLtCurr[8];       // [0..NumPocLtCurr-1] -> refpic (0..15)
     unsigned char RefPicSetInterLayer0[8];
     unsigned char RefPicSetInterLayer1[8];
-    unsigned int reserved4[12];
+    unsigned int  reserved4[12];
 
     // scaling lists (diag order)
     unsigned char ScalingList4x4[6][16];       // [matrixId][i]
@@ -533,10 +570,11 @@ typedef struct _CUVIDHEVCPICPARAMS
 } CUVIDHEVCPICPARAMS;
 
 
-/*!
- * \struct CUVIDVP8PICPARAMS
- * VP8 Picture Parameters
- */
+/***********************************************************/
+//! \struct CUVIDVP8PICPARAMS
+//! VP8 picture parameters
+//! This structure is used in CUVIDPICPARAMS structure
+/***********************************************************/
 typedef struct _CUVIDVP8PICPARAMS
 {
     int width;
@@ -555,15 +593,16 @@ typedef struct _CUVIDVP8PICPARAMS
             unsigned char Reserved2Bits : 2;
         };
         unsigned char wFrameTagFlags;
-    } tagflags;
+    };
     unsigned char Reserved1[4];
     unsigned int  Reserved2[3];
 } CUVIDVP8PICPARAMS;
 
-/*!
- * \struct CUVIDVP9PICPARAMS
- * VP9 Picture Parameters
- */
+/***********************************************************/
+//! \struct CUVIDVP9PICPARAMS
+//! VP9 picture parameters
+//! This structure is used in CUVIDPICPARAMS structure
+/***********************************************************/
 typedef struct _CUVIDVP9PICPARAMS
 {
     unsigned int width;
@@ -609,7 +648,7 @@ typedef struct _CUVIDVP9PICPARAMS
 
 
     unsigned char segmentFeatureEnable[8][4];
-    short segmentFeatureData[8][4];
+    short         segmentFeatureData[8][4];
     unsigned char mb_segment_tree_probs[7];
     unsigned char segment_pred_probs[3];
     unsigned char reservedSegment16Bits[2];
@@ -631,136 +670,163 @@ typedef struct _CUVIDVP9PICPARAMS
 } CUVIDVP9PICPARAMS;
 
 
-/*!
- * \struct CUVIDPICPARAMS
- * Picture Parameters for Decoding
- */
+/******************************************************************************************/
+//! \struct CUVIDPICPARAMS
+//! Picture parameters for decoding
+//! This structure is used in cuvidDecodePicture API
+//! IN  for cuvidDecodePicture
+/******************************************************************************************/
 typedef struct _CUVIDPICPARAMS
 {
-    int PicWidthInMbs;                    /**< Coded Frame Size */
-    int FrameHeightInMbs;                 /**< Coded Frame Height */
-    int CurrPicIdx;                       /**< Output index of the current picture */
-    int field_pic_flag;                   /**< 0=frame picture, 1=field picture */
-    int bottom_field_flag;                /**< 0=top field, 1=bottom field (ignored if field_pic_flag=0) */
-    int second_field;                     /**< Second field of a complementary field pair */
+    int PicWidthInMbs;                     /**< IN: Coded frame size in macroblocks                           */
+    int FrameHeightInMbs;                  /**< IN: Coded frame height in macroblocks                         */
+    int CurrPicIdx;                        /**< IN: Output index of the current picture                       */
+    int field_pic_flag;                    /**< IN: 0=frame picture, 1=field picture                          */
+    int bottom_field_flag;                 /**< IN: 0=top field, 1=bottom field (ignored if field_pic_flag=0) */
+    int second_field;                      /**< IN: Second field of a complementary field pair                */
     // Bitstream data
-    unsigned int nBitstreamDataLen;        /**< Number of bytes in bitstream data buffer */
-    const unsigned char *pBitstreamData;   /**< Ptr to bitstream data for this picture (slice-layer) */
-    unsigned int nNumSlices;               /**< Number of slices in this picture */
-    const unsigned int *pSliceDataOffsets; /**< nNumSlices entries, contains offset of each slice within the bitstream data buffer */
-    int ref_pic_flag;                      /**< This picture is a reference picture */
-    int intra_pic_flag;                    /**< This picture is entirely intra coded */
-    unsigned int Reserved[30];             /**< Reserved for future use */
-    // Codec-specific data
+    unsigned int nBitstreamDataLen;        /**< IN: Number of bytes in bitstream data buffer                  */
+    const unsigned char *pBitstreamData;   /**< IN: Ptr to bitstream data for this picture (slice-layer)      */
+    unsigned int nNumSlices;               /**< IN: Number of slices in this picture                          */
+    const unsigned int *pSliceDataOffsets; /**< IN: nNumSlices entries, contains offset of each slice within
+                                                        the bitstream data buffer                             */
+    int ref_pic_flag;                      /**< IN: This picture is a reference picture                       */
+    int intra_pic_flag;                    /**< IN: This picture is entirely intra coded                      */
+    unsigned int Reserved[30];             /**< Reserved for future use                                       */
+    // IN: Codec-specific data
     union {
         CUVIDMPEG2PICPARAMS mpeg2;         /**< Also used for MPEG-1 */
-        CUVIDH264PICPARAMS h264;
-        CUVIDVC1PICPARAMS vc1;
+        CUVIDH264PICPARAMS  h264;
+        CUVIDVC1PICPARAMS   vc1;
         CUVIDMPEG4PICPARAMS mpeg4;
-        CUVIDJPEGPICPARAMS jpeg;
-        CUVIDHEVCPICPARAMS hevc;
-        CUVIDVP8PICPARAMS vp8;
-        CUVIDVP9PICPARAMS vp9;
+        CUVIDJPEGPICPARAMS  jpeg;
+        CUVIDHEVCPICPARAMS  hevc;
+        CUVIDVP8PICPARAMS   vp8;
+        CUVIDVP9PICPARAMS   vp9;
         unsigned int CodecReserved[1024];
     } CodecSpecific;
 } CUVIDPICPARAMS;
 
 
-/*!
- * \struct CUVIDPROCPARAMS
- * Picture Parameters for Postprocessing
- */
+/******************************************************/
+//! \struct CUVIDPROCPARAMS
+//! Picture parameters for postprocessing
+//! This structure is used in cuvidMapVideoFrame API
+/******************************************************/
 typedef struct _CUVIDPROCPARAMS
 {
-    int progressive_frame;  /**< Input is progressive (deinterlace_mode will be ignored)  */
-    int second_field;       /**< Output the second field (ignored if deinterlace mode is Weave) */
-    int top_field_first;    /**< Input frame is top field first (1st field is top, 2nd field is bottom) */
-    int unpaired_field;     /**< Input only contains one field (2nd field is invalid) */
+    int progressive_frame;              /**< IN: Input is progressive (deinterlace_mode will be ignored)                */
+    int second_field;                   /**< IN: Output the second field (ignored if deinterlace mode is Weave)         */
+    int top_field_first;                /**< IN: Input frame is top field first (1st field is top, 2nd field is bottom) */
+    int unpaired_field;                 /**< IN: Input only contains one field (2nd field is invalid)                   */
     // The fields below are used for raw YUV input
-    unsigned int reserved_flags;        /**< Reserved for future use (set to zero) */
-    unsigned int reserved_zero;         /**< Reserved (set to zero) */
-    unsigned long long raw_input_dptr;  /**< Input CUdeviceptr for raw YUV extensions */
-    unsigned int raw_input_pitch;       /**< pitch in bytes of raw YUV input (should be aligned appropriately) */
-    unsigned int raw_input_format;      /**< Reserved for future use (set to zero) */
-    unsigned long long raw_output_dptr; /**< Reserved for future use (set to zero) */
-    unsigned int raw_output_pitch;      /**< Reserved for future use (set to zero) */
-    unsigned int Reserved[48];
-    void *Reserved3[3];
+    unsigned int reserved_flags;        /**< Reserved for future use (set to zero)                                      */
+    unsigned int reserved_zero;         /**< Reserved (set to zero)                                                     */
+    unsigned long long raw_input_dptr;  /**< IN: Input CUdeviceptr for raw YUV extensions                               */
+    unsigned int raw_input_pitch;       /**< IN: pitch in bytes of raw YUV input (should be aligned appropriately)      */
+    unsigned int raw_input_format;      /**< IN: Input YUV format (cudaVideoCodec_enum)                                 */
+    unsigned long long raw_output_dptr; /**< IN: Output CUdeviceptr for raw YUV extensions                              */
+    unsigned int raw_output_pitch;      /**< IN: pitch in bytes of raw YUV output (should be aligned appropriately)     */
+    unsigned int Reserved1;             /**< Reserved for future use (set to zero)                                      */
+    CUstream output_stream;             /**< IN: stream object used by cuvidMapVideoFrame                               */
+    unsigned int Reserved[46];          /**< Reserved for future use (set to zero)                                      */
+    void *Reserved2[2];                 /**< Reserved for future use (set to zero)                                      */
 } CUVIDPROCPARAMS;
 
 
-/**
- *
- * In order to minimize decode latencies, there should be always at least 2 pictures in the decode
- * queue at any time, in order to make sure that all decode engines are always busy.
- *
- * Overall data flow:
- *  - cuvidCreateDecoder(...)
- *  For each picture:
- *  - cuvidDecodePicture(N)
- *  - cuvidMapVideoFrame(N-4)
- *  - do some processing in cuda
- *  - cuvidUnmapVideoFrame(N-4)
- *  - cuvidDecodePicture(N+1)
- *  - cuvidMapVideoFrame(N-3)
- *    ...
- *  - cuvidDestroyDecoder(...)
- *
- * NOTE:
- * - When the cuda context is created from a D3D device, the D3D device must also be created
- *   with the D3DCREATE_MULTITHREADED flag.
- * - There is a limit to how many pictures can be mapped simultaneously (ulNumOutputSurfaces)
- * - cuVidDecodePicture may block the calling thread if there are too many pictures pending
- *   in the decode queue
- */
+/***********************************************************************************************************/
+//! VIDEO_DECODER
+//!
+//! In order to minimize decode latencies, there should be always at least 2 pictures in the decode
+//! queue at any time, in order to make sure that all decode engines are always busy.
+//!
+//! Overall data flow:
+//!  - cuvidGetDecoderCaps(...)
+//!  - cuvidCreateDecoder(...)
+//!  - For each picture:
+//!    + cuvidDecodePicture(N)
+//!    + cuvidMapVideoFrame(N-4)
+//!    + do some processing in cuda
+//!    + cuvidUnmapVideoFrame(N-4)
+//!    + cuvidDecodePicture(N+1)
+//!    + cuvidMapVideoFrame(N-3)
+//!    + ...
+//!  - cuvidDestroyDecoder(...)
+//!
+//! NOTE:
+//! - When the cuda context is created from a D3D device, the D3D device must also be created
+//!   with the D3DCREATE_MULTITHREADED flag.
+//! - There is a limit to how many pictures can be mapped simultaneously (ulNumOutputSurfaces)
+//! - cuvidDecodePicture may block the calling thread if there are too many pictures pending
+//!   in the decode queue
+/***********************************************************************************************************/
 
-/**
- * \fn CUresult CUDAAPI cuvidCreateDecoder(CUvideodecoder *phDecoder, CUVIDDECODECREATEINFO *pdci)
- * Create the decoder object
- */
+
+/**********************************************************************************************************************/
+//! \fn CUresult CUDAAPI cuvidGetDecoderCaps(CUVIDDECODECAPS *pdc)
+//! Queries decode capabilities of NVDEC-HW based on CodecType, ChromaFormat and BitDepthMinus8 parameters.
+//! 1. Application fills IN parameters CodecType, ChromaFormat and BitDepthMinus8 of CUVIDDECODECAPS structure
+//! 2. On calling cuvidGetDecoderCaps, driver fills OUT parameters if the IN parameters are supported
+//!    If IN parameters passed to the driver are not supported by NVDEC-HW, then all OUT params are set to 0.
+//! E.g. on Geforce GTX 960:
+//!   App fills - eCodecType = cudaVideoCodec_H264; eChromaFormat = cudaVideoChromaFormat_420; nBitDepthMinus8 = 0;
+//!   Given IN parameters are supported, hence driver fills: bIsSupported = 1; nMinWidth   = 48; nMinHeight  = 16;
+//!   nMaxWidth = 4096; nMaxHeight = 4096; nMaxMBCount = 65536;
+//! CodedWidth*CodedHeight/256 must be less than or equal to nMaxMBCount
+/**********************************************************************************************************************/
+typedef CUresult CUDAAPI tcuvidGetDecoderCaps(CUVIDDECODECAPS *pdc);
+
+/********************************************************************************************************************/
+//! \fn CUresult CUDAAPI cuvidCreateDecoder(CUvideodecoder *phDecoder, CUVIDDECODECREATEINFO *pdci)
+//! Create the decoder object based on pdci. A handle to the created decoder is returned
+/********************************************************************************************************************/
 typedef CUresult CUDAAPI tcuvidCreateDecoder(CUvideodecoder *phDecoder, CUVIDDECODECREATEINFO *pdci);
-
-/**
- * \fn CUresult CUDAAPI cuvidDestroyDecoder(CUvideodecoder hDecoder)
- * Destroy the decoder object
- */
+/********************************************************************************************************************/
+//! \fn CUresult CUDAAPI cuvidDestroyDecoder(CUvideodecoder hDecoder)
+//! Destroy the decoder object.
+/********************************************************************************************************************/
 typedef CUresult CUDAAPI tcuvidDestroyDecoder(CUvideodecoder hDecoder);
 
-/**
- * \fn CUresult CUDAAPI cuvidDecodePicture(CUvideodecoder hDecoder, CUVIDPICPARAMS *pPicParams)
- * Decode a single picture (field or frame)
- */
+/********************************************************************************************************************/
+//! \fn CUresult CUDAAPI cuvidDecodePicture(CUvideodecoder hDecoder, CUVIDPICPARAMS *pPicParams)
+//! Decode a single picture (field or frame)
+//! Kicks off HW decoding
+/********************************************************************************************************************/
 typedef CUresult CUDAAPI tcuvidDecodePicture(CUvideodecoder hDecoder, CUVIDPICPARAMS *pPicParams);
 
 
 #if !defined(__CUVID_DEVPTR64) || defined(__CUVID_INTERNAL)
-/**
- * \fn CUresult CUDAAPI cuvidMapVideoFrame(CUvideodecoder hDecoder, int nPicIdx, unsigned int *pDevPtr, unsigned int *pPitch, CUVIDPROCPARAMS *pVPP);
- * Post-process and map a video frame for use in cuda
- */
+/************************************************************************************************************************/
+//! \fn CUresult CUDAAPI cuvidMapVideoFrame(CUvideodecoder hDecoder, int nPicIdx, unsigned int *pDevPtr,
+//!                                         unsigned int  *pPitch, CUVIDPROCPARAMS *pVPP);
+//! Post-process and map video frame corresponding to nPicIdx for use in cuda. Returns cuda device pointer and associated
+//! pitch of the video frame
+/************************************************************************************************************************/
 typedef CUresult CUDAAPI tcuvidMapVideoFrame(CUvideodecoder hDecoder, int nPicIdx,
-                                             unsigned int *pDevPtr, unsigned int *pPitch,
-                                             CUVIDPROCPARAMS *pVPP);
+                                           unsigned int *pDevPtr, unsigned int *pPitch,
+                                           CUVIDPROCPARAMS *pVPP);
 
-/**
- * \fn CUresult CUDAAPI cuvidUnmapVideoFrame(CUvideodecoder hDecoder, unsigned int DevPtr)
- * Unmap a previously mapped video frame
- */
+/********************************************************************************************************************/
+//! \fn CUresult CUDAAPI cuvidUnmapVideoFrame(CUvideodecoder hDecoder, unsigned int DevPtr)
+//! Unmap a previously mapped video frame
+/********************************************************************************************************************/
 typedef CUresult CUDAAPI tcuvidUnmapVideoFrame(CUvideodecoder hDecoder, unsigned int DevPtr);
 #endif
 
-#if defined(WIN64) || defined(_WIN64) || defined(__x86_64) || defined(AMD64) || defined(_M_AMD64)
-/**
- * \fn CUresult CUDAAPI cuvidMapVideoFrame64(CUvideodecoder hDecoder, int nPicIdx, unsigned long long *pDevPtr, unsigned int *pPitch, CUVIDPROCPARAMS *pVPP);
- * map a video frame
- */
+#if defined(_WIN64) || defined(__LP64__) || defined(__x86_64) || defined(AMD64) || defined(_M_AMD64)
+/************************************************************************************************************************/
+//! \fn CUresult CUDAAPI cuvidMapVideoFrame64(CUvideodecoder hDecoder, int nPicIdx, unsigned long long *pDevPtr,
+//!                                           unsigned int *pPitch, CUVIDPROCPARAMS *pVPP);
+//! Post-process and map video frame corresponding to nPicIdx for use in cuda. Returns cuda device pointer and associated
+//! pitch of the video frame
+/************************************************************************************************************************/
 typedef CUresult CUDAAPI tcuvidMapVideoFrame64(CUvideodecoder hDecoder, int nPicIdx, unsigned long long *pDevPtr,
-                                               unsigned int *pPitch, CUVIDPROCPARAMS *pVPP);
+                                             unsigned int *pPitch, CUVIDPROCPARAMS *pVPP);
 
-/**
- * \fn CUresult CUDAAPI cuvidUnmapVideoFrame64(CUvideodecoder hDecoder, unsigned long long DevPtr);
- * Unmap a previously mapped video frame
- */
+/********************************************************************************************************************/
+//! \fn CUresult CUDAAPI cuvidUnmapVideoFrame64(CUvideodecoder hDecoder, unsigned long long DevPtr);
+//! Unmap a previously mapped video frame
+/********************************************************************************************************************/
 typedef CUresult CUDAAPI tcuvidUnmapVideoFrame64(CUvideodecoder hDecoder, unsigned long long DevPtr);
 
 #if defined(__CUVID_DEVPTR64) && !defined(__CUVID_INTERNAL)
@@ -770,43 +836,48 @@ typedef CUresult CUDAAPI tcuvidUnmapVideoFrame64(CUvideodecoder hDecoder, unsign
 #endif
 
 
-/**
- *
- * Context-locking: to facilitate multi-threaded implementations, the following 4 functions
- * provide a simple mutex-style host synchronization. If a non-NULL context is specified
- * in CUVIDDECODECREATEINFO, the codec library will acquire the mutex associated with the given
- * context before making any cuda calls.
- * A multi-threaded application could create a lock associated with a context handle so that
- * multiple threads can safely share the same cuda context:
- *  - use cuCtxPopCurrent immediately after context creation in order to create a 'floating' context
- *    that can be passed to cuvidCtxLockCreate.
- *  - When using a floating context, all cuda calls should only be made within a cuvidCtxLock/cuvidCtxUnlock section.
- *
- * NOTE: This is a safer alternative to cuCtxPushCurrent and cuCtxPopCurrent, and is not related to video
- * decoder in any way (implemented as a critical section associated with cuCtx{Push|Pop}Current calls).
-*/
 
-/**
- * \fn CUresult CUDAAPI cuvidCtxLockCreate(CUvideoctxlock *pLock, CUcontext ctx)
- */
+/********************************************************************************************************************/
+//!
+//! Context-locking: to facilitate multi-threaded implementations, the following 4 functions
+//! provide a simple mutex-style host synchronization. If a non-NULL context is specified
+//! in CUVIDDECODECREATEINFO, the codec library will acquire the mutex associated with the given
+//! context before making any cuda calls.
+//! A multi-threaded application could create a lock associated with a context handle so that
+//! multiple threads can safely share the same cuda context:
+//!  - use cuCtxPopCurrent immediately after context creation in order to create a 'floating' context
+//!    that can be passed to cuvidCtxLockCreate.
+//!  - When using a floating context, all cuda calls should only be made within a cuvidCtxLock/cuvidCtxUnlock section.
+//!
+//! NOTE: This is a safer alternative to cuCtxPushCurrent and cuCtxPopCurrent, and is not related to video
+//! decoder in any way (implemented as a critical section associated with cuCtx{Push|Pop}Current calls).
+/********************************************************************************************************************/
+
+/********************************************************************************************************************/
+//! \fn CUresult CUDAAPI cuvidCtxLockCreate(CUvideoctxlock *pLock, CUcontext ctx)
+//! This API is used to create CtxLock object
+/********************************************************************************************************************/
 typedef CUresult CUDAAPI tcuvidCtxLockCreate(CUvideoctxlock *pLock, CUcontext ctx);
 
-/**
- * \fn CUresult CUDAAPI cuvidCtxLockDestroy(CUvideoctxlock lck)
- */
+/********************************************************************************************************************/
+//! \fn CUresult CUDAAPI cuvidCtxLockDestroy(CUvideoctxlock lck)
+//! This API is used to free CtxLock object
+/********************************************************************************************************************/
 typedef CUresult CUDAAPI tcuvidCtxLockDestroy(CUvideoctxlock lck);
 
-/**
- * \fn CUresult CUDAAPI cuvidCtxLock(CUvideoctxlock lck, unsigned int reserved_flags)
- */
+/********************************************************************************************************************/
+//! \fn CUresult CUDAAPI cuvidCtxLock(CUvideoctxlock lck, unsigned int reserved_flags)
+//! This API is used to acquire ctxlock
+/********************************************************************************************************************/
 typedef CUresult CUDAAPI tcuvidCtxLock(CUvideoctxlock lck, unsigned int reserved_flags);
 
-/**
- * \fn CUresult CUDAAPI cuvidCtxUnlock(CUvideoctxlock lck, unsigned int reserved_flags)
- */
+/********************************************************************************************************************/
+//! \fn CUresult CUDAAPI cuvidCtxUnlock(CUvideoctxlock lck, unsigned int reserved_flags)
+//! This API is used to release ctxlock
+/********************************************************************************************************************/
 typedef CUresult CUDAAPI tcuvidCtxUnlock(CUvideoctxlock lck, unsigned int reserved_flags);
 
-/** @} */  /* End VIDEO_DECODER */
+/**********************************************************************************************/
 
 #if defined(__cplusplus)
 }

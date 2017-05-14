@@ -44,7 +44,7 @@
 #include "formats.h"
 #include "video.h"
 
-typedef struct {
+typedef struct AssContext {
     const AVClass *class;
     ASS_Library  *library;
     ASS_Renderer *renderer;

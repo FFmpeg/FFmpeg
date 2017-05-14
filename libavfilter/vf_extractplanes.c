@@ -38,7 +38,7 @@
 #define PLANE_U 0x20
 #define PLANE_V 0x40
 
-typedef struct {
+typedef struct ExtractPlanesContext {
     const AVClass *class;
     int requested_planes;
     int map[4];

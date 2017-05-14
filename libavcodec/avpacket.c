@@ -296,9 +296,20 @@ int av_packet_add_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
                             uint8_t *data, size_t size)
 {
     AVPacketSideData *tmp;
-    int elems = pkt->side_data_elems;
+    int i, elems = pkt->side_data_elems;
 
-    if ((unsigned)elems + 1 > INT_MAX / sizeof(*pkt->side_data))
+    for (i = 0; i < elems; i++) {
+        AVPacketSideData *sd = &pkt->side_data[i];
+
+        if (sd->type == type) {
+            av_free(sd->data);
+            sd->data = data;
+            sd->size = size;
+            return 0;
+        }
+    }
+
+    if ((unsigned)elems + 1 > AV_PKT_DATA_NB)
         return AVERROR(ERANGE);
 
     tmp = av_realloc(pkt->side_data, (elems + 1) * sizeof(*tmp));
@@ -436,6 +447,9 @@ int av_packet_split_side_data(AVPacket *pkt){
                 return 0;
             p-= size+5;
         }
+
+        if (i > AV_PKT_DATA_NB)
+            return AVERROR(ERANGE);
 
         pkt->side_data = av_malloc_array(i, sizeof(*pkt->side_data));
         if (!pkt->side_data)

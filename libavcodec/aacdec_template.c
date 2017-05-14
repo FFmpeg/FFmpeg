@@ -406,11 +406,15 @@ static uint64_t sniff_channel_order(uint8_t (*layout_map)[3], int tags)
 /**
  * Save current output configuration if and only if it has been locked.
  */
-static void push_output_configuration(AACContext *ac) {
+static int push_output_configuration(AACContext *ac) {
+    int pushed = 0;
+
     if (ac->oc[1].status == OC_LOCKED || ac->oc[0].status == OC_NONE) {
         ac->oc[0] = ac->oc[1];
+        pushed = 1;
     }
     ac->oc[1].status = OC_NONE;
+    return pushed;
 }
 
 /**
@@ -2792,9 +2796,9 @@ static void spectral_to_sample(AACContext *ac, int samples)
                     int j;
                     /* preparation for resampler */
                     for(j = 0; j<samples; j++){
-                        che->ch[0].ret[j] = (int32_t)av_clipl_int32((int64_t)che->ch[0].ret[j]<<7)+0x8000;
+                        che->ch[0].ret[j] = (int32_t)av_clip64((int64_t)che->ch[0].ret[j]<<7, INT32_MIN, INT32_MAX-0x8000)+0x8000;
                         if(type == TYPE_CPE)
-                            che->ch[1].ret[j] = (int32_t)av_clipl_int32((int64_t)che->ch[1].ret[j]<<7)+0x8000;
+                            che->ch[1].ret[j] = (int32_t)av_clip64((int64_t)che->ch[1].ret[j]<<7, INT32_MIN, INT32_MAX-0x8000)+0x8000;
                     }
                 }
 #endif /* USE_FIXED */
@@ -3026,7 +3030,13 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
         case TYPE_PCE: {
             uint8_t layout_map[MAX_ELEM_ID*4][3];
             int tags;
-            push_output_configuration(ac);
+
+            int pushed = push_output_configuration(ac);
+            if (pce_found && !pushed) {
+                err = AVERROR_INVALIDDATA;
+                goto fail;
+            }
+
             tags = decode_pce(avctx, &ac->oc[1].m4ac, layout_map, gb,
                               payload_alignment);
             if (tags < 0) {

@@ -1258,7 +1258,7 @@ Interlaced video, top coded first, bottom displayed first
 Interlaced video, bottom coded first, top displayed first
 @end table
 
-@item skip_alpha @var{integer} (@emph{decoding,video})
+@item skip_alpha @var{bool} (@emph{decoding,video})
 Set to 1 to disable processing alpha (transparency). This works like the
 @samp{gray} flag in the @option{flags} option which skips chroma information
 instead of alpha. Default is 0.
@@ -1278,6 +1278,16 @@ ffprobe -dump_separator "
 @item max_pixels @var{integer} (@emph{decoding/encoding,video})
 Maximum number of pixels per image. This value can be used to avoid out of
 memory failures due to large images.
+
+@item apply_cropping @var{bool} (@emph{decoding,video})
+Enable cropping if cropping parameters are multiples of the required
+alignment for the left and top parameters. If the alignment is not met the
+cropping will be partially applied to maintain alignment.
+Default is 1 (enabled).
+Note: The required alignment depends on if @code{AV_CODEC_FLAG_UNALIGNED} is set and the
+CPU. @code{AV_CODEC_FLAG_UNALIGNED} cannot be changed from the command line. Also hardware
+decoders will not apply left/top Cropping.
+
 
 @end table
 

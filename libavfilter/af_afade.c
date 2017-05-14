@@ -29,7 +29,7 @@
 #include "avfilter.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct AudioFadeContext {
     const AVClass *class;
     int type;
     int curve, curve2;

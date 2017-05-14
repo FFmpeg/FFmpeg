@@ -61,7 +61,7 @@ const uint8_t ff_dca_quant_index_group_size[DCA_CODE_BOOKS] = {
 /* ADPCM data */
 
 /* 16 bits signed fractional Q13 binary codes */
-const int16_t ff_dca_adpcm_vb[4096][4] = {
+const int16_t ff_dca_adpcm_vb[DCA_ADPCM_VQCODEBOOK_SZ][DCA_ADPCM_COEFFS] = {
     {   9928,  -2618,  -1093, -1263 },
     {  11077,  -2876,  -1747,  -308 },
     {  10503,  -1082,  -1426, -1167 },

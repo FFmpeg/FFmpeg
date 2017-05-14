@@ -187,7 +187,7 @@ static MatchingInfo* get_matching_parameters(AVFilterContext *ctx, SignatureCont
         FineSignature *b[COARSE_SIZE];
     } pairs[COARSE_SIZE];
 
-    typedef struct {
+    typedef struct hspace_elem {
         int dist;
         size_t score;
         FineSignature *a;

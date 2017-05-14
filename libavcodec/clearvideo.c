@@ -189,8 +189,8 @@ static inline int decode_block(CLVContext *ctx, int16_t *blk, int has_ac,
     const int t7 = ((blk[0 * step] - blk[4 * step]) * (1 << dshift)) + bias;  \
     const int t8 = t0 + t2;                                             \
     const int t9 = t0 - t2;                                             \
-    const int tA = 181 * (t9 + (t1 - t3)) + 0x80 >> 8;                  \
-    const int tB = 181 * (t9 - (t1 - t3)) + 0x80 >> 8;                  \
+    const int tA = (int)(181U * (t9 + (t1 - t3)) + 0x80) >> 8;          \
+    const int tB = (int)(181U * (t9 - (t1 - t3)) + 0x80) >> 8;          \
     const int tC = t1 + t3;                                             \
                                                                         \
     blk[0 * step] = (t6 + t5 + t8) >> shift;                            \

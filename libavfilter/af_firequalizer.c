@@ -52,17 +52,17 @@ enum Scale {
 };
 
 #define NB_GAIN_ENTRY_MAX 4096
-typedef struct {
+typedef struct GainEntry {
     double  freq;
     double  gain;
 } GainEntry;
 
-typedef struct {
+typedef struct OverlapIndex {
     int buf_idx;
     int overlap_idx;
 } OverlapIndex;
 
-typedef struct {
+typedef struct FIREqualizerContext {
     const AVClass *class;
 
     RDFTContext   *analysis_rdft;

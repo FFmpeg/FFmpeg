@@ -84,6 +84,7 @@ typedef struct QSVEncContext {
 
     int packet_size;
     int width_align;
+    int height_align;
 
     mfxVideoParam param;
     mfxFrameAllocRequest req;

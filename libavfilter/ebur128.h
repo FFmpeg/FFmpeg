@@ -100,7 +100,7 @@ struct FFEBUR128StateInternal;
  *
  *  You should not need to modify this struct directly.
  */
-typedef struct {
+typedef struct FFEBUR128State {
     int mode;                         /**< The current mode. */
     unsigned int channels;            /**< The number of channels. */
     unsigned long samplerate;         /**< The sample rate. */

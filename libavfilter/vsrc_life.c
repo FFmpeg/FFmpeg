@@ -38,7 +38,7 @@
 #include "formats.h"
 #include "video.h"
 
-typedef struct {
+typedef struct LifeContext {
     const AVClass *class;
     int w, h;
     char *filename;

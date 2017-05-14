@@ -77,7 +77,7 @@ typedef struct ThreadData {
     AVFrame *in, *out;
 } ThreadData;
 
-typedef struct {
+typedef struct SelectiveColorContext {
     const AVClass *class;
     int correction_method;
     char *opt_cmyk_adjust[NB_RANGES];

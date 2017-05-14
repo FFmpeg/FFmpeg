@@ -57,7 +57,7 @@ enum var_name {
     VAR_NB
 };
 
-typedef struct {
+typedef struct HueContext {
     const    AVClass *class;
     float    hue_deg; /* hue expressed in degrees */
     float    hue; /* hue expressed in radians */

@@ -389,9 +389,10 @@ static int rac_get_model_sym(RangeCoder *c, Model *m)
 
 static int rac_get_model256_sym(RangeCoder *c, Model256 *m)
 {
-    int prob, prob2, helper, val;
+    int val;
     int start, end;
     int ssym;
+    unsigned prob, prob2, helper;
 
     prob2      = c->range;
     c->range >>= MODEL_SCALE;
