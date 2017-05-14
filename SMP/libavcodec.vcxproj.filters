@@ -1026,6 +1026,9 @@
     <ClCompile Include="..\libavcodec\dcaenc.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\dcaadpcm.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\dds.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>

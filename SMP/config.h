@@ -21,7 +21,7 @@
 
 #ifndef SMP_CONFIG_H
 #define SMP_CONFIG_H
-#define FFMPEG_CONFIGURATION "--enable-gpl --enable-version3 --enable-avisynth --enable-libmp3lame --enable-libvorbis --enable-libspeex --enable-libopus --enable-libilbc --enable-libtheora --enable-libx264 --enable-libx265 --enable-libxvid --enable-libvpx --enable-libgme --enable-libmodplug --enable-libsoxr --enable-libfreetype --enable-fontconfig --enable-libfribidi --enable-libass --enable-gnutls --disable-schannel --enable-gmp --enable-libssh --enable-libcdio --enable-libbluray --enable-opengl --enable-nvenc --enable-libmfx --toolchain=msvc"
+#define FFMPEG_CONFIGURATION "--enable-gpl --enable-version3 --enable-avisynth --enable-libmp3lame --enable-libvorbis --enable-libspeex --enable-libopus --enable-libilbc --enable-libtheora --enable-libx264 --enable-libx265 --enable-libxvid --enable-libvpx --enable-libgme --enable-libmodplug --enable-libsoxr --enable-libfreetype --enable-fontconfig --enable-libfribidi --enable-libass --enable-gnutls --disable-schannel --enable-gmp --enable-libssh --enable-libcdio --enable-libbluray --enable-opengl --enable-libmfx --toolchain=msvc"
 #define FFMPEG_LICENSE "GPL version 3 or later"
 #define CONFIG_THIS_YEAR 2017
 #define FFMPEG_DATADIR "."
@@ -1715,6 +1715,7 @@
 #define CONFIG_VP8_VAAPI_ENCODER 0
 #define CONFIG_ABENCH_FILTER 1
 #define CONFIG_ACOMPRESSOR_FILTER 1
+#define CONFIG_ACOPY_FILTER 1
 #define CONFIG_ACROSSFADE_FILTER 1
 #define CONFIG_ACRUSHER_FILTER 1
 #define CONFIG_ADELAY_FILTER 1
@@ -1723,6 +1724,7 @@
 #define CONFIG_AEVAL_FILTER 1
 #define CONFIG_AFADE_FILTER 1
 #define CONFIG_AFFTFILT_FILTER 1
+#define CONFIG_AFIR_FILTER 1
 #define CONFIG_AFORMAT_FILTER 1
 #define CONFIG_AGATE_FILTER 1
 #define CONFIG_AINTERLEAVE_FILTER 1

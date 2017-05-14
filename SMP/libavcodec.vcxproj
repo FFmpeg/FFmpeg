@@ -401,6 +401,7 @@
     <ClCompile Include="..\libavcodec\dca_lbr.c" />
     <ClCompile Include="..\libavcodec\dcadct.c" />
     <ClCompile Include="..\libavcodec\dcaenc.c" />
+    <ClCompile Include="..\libavcodec\dcaadpcm.c" />
     <ClCompile Include="..\libavcodec\dds.c" />
     <ClCompile Include="..\libavcodec\diracdec.c" />
     <ClCompile Include="..\libavcodec\diractab.c" />

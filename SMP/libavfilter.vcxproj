@@ -69,6 +69,7 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
+    <YASM Include="..\libavfilter\x86\af_afir.asm" />
     <YASM Include="..\libavfilter\x86\vf_blend.asm" />
     <YASM Include="..\libavfilter\x86\vf_bwdif.asm" />
     <YASM Include="..\libavfilter\x86\colorspacedsp.asm" />
@@ -111,6 +112,7 @@
     <ClCompile Include="..\libavfilter\pthread.c" />
     <ClCompile Include="..\libavfilter\f_bench.c" />
     <ClCompile Include="..\libavfilter\af_sidechaincompress.c" />
+    <ClCompile Include="..\libavfilter\af_acopy.c" />
     <ClCompile Include="..\libavfilter\af_afade.c" />
     <ClCompile Include="..\libavfilter\af_acrusher.c" />
     <ClCompile Include="..\libavfilter\af_adelay.c" />
@@ -343,6 +345,7 @@
     <ClCompile Include="..\libavfilter\avf_showwaves.c" />
     <ClCompile Include="..\libavfilter\vaf_spectrumsynth.c" />
     <ClCompile Include="..\libavfilter\src_movie.c" />
+    <ClCompile Include="..\libavfilter\x86\af_afir_init.c" />
     <ClCompile Include="..\libavfilter\x86\vf_blend_init.c" />
     <ClCompile Include="..\libavfilter\x86\vf_bwdif_init.c" />
     <ClCompile Include="..\libavfilter\x86\colorspacedsp_init.c" />
@@ -365,6 +368,9 @@
     <ClCompile Include="..\libavfilter\x86\vf_yadif_init.c" />
     <ClCompile Include="libavfilter\log2_tab_wrap.c" />
     <ClCompile Include="libavfilter\dce_defs.c" />
+    <ClCompile Include="..\libavfilter\af_afir.c">
+      <ObjectFileName>$(IntDir)\libavfilter_af_afir.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\af_volume.c">
       <ObjectFileName>$(IntDir)\libavfilter_af_volume.obj</ObjectFileName>
     </ClCompile>
