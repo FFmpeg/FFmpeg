@@ -3669,6 +3669,23 @@ Set S/C level. Default is 1. Allowed range is from 1 to 100.
 
 @item phase
 Set the stereo phase in degrees. Default is 0. Allowed range is from 0 to 360.
+
+@item bmode_in, bmode_out
+Set balance mode for balance_in/balance_out option.
+
+Can be one of the following:
+
+@table @samp
+@item balance
+Classic balance mode. Attenuate one channel at time.
+Gain is raised up to 1.
+
+@item amplitude
+Similar as classic mode above but gain is raised up to 2.
+
+@item power
+Equal power distribution, from -6dB to +6dB range.
+@end table
 @end table
 
 @subsection Examples
