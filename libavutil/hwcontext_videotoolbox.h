@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVUTIL_HWCONTEXT_VT_H
-#define AVUTIL_HWCONTEXT_VT_H
+#ifndef AVUTIL_HWCONTEXT_VIDEOTOOLBOX_H
+#define AVUTIL_HWCONTEXT_VIDEOTOOLBOX_H
 
 #include <stdint.h>
 
@@ -51,4 +51,4 @@ enum AVPixelFormat av_map_videotoolbox_format_to_pixfmt(uint32_t cv_fmt);
  */
 uint32_t av_map_videotoolbox_format_from_pixfmt(enum AVPixelFormat pix_fmt);
 
-#endif /* AVUTIL_HWCONTEXT_VT_H */
+#endif /* AVUTIL_HWCONTEXT_VIDEOTOOLBOX_H */
