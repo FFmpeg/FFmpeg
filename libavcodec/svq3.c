@@ -524,8 +524,8 @@ static inline int svq3_mc_dir(SVQ3Context *s, int size, int mode,
             if (mode != PREDICT_MODE) {
                 svq3_pred_motion(s, k, part_width >> 2, dir, 1, &mx, &my);
             } else {
-                mx = s->next_pic->motion_val[0][b_xy][0] << 1;
-                my = s->next_pic->motion_val[0][b_xy][1] << 1;
+                mx = s->next_pic->motion_val[0][b_xy][0] * 2;
+                my = s->next_pic->motion_val[0][b_xy][1] * 2;
 
                 if (dir == 0) {
                     mx = mx * s->frame_num_offset /
