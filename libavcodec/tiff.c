@@ -1018,6 +1018,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             s->subsampling[i] = ff_tget(&s->gb, type, s->le);
             if (s->subsampling[i] <= 0) {
                 av_log(s->avctx, AV_LOG_ERROR, "subsampling %d is invalid\n", s->subsampling[i]);
+                s->subsampling[i] = 1;
                 return AVERROR_INVALIDDATA;
             }
         }
