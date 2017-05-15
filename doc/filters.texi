@@ -1911,6 +1911,9 @@ available are filtered.
 Bauer stereo to binaural transformation, which improves headphone listening of
 stereo audio records.
 
+To enable compilation of this filter you need to configure FFmpeg with
+@code{--enable-libbs2b}.
+
 It accepts the following parameters:
 @table @option
 
