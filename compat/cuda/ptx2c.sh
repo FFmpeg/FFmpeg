@@ -1,3 +1,5 @@
+#!/bin/sh
+
 # Copyright (c) 2017, NVIDIA CORPORATION. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,15 +24,13 @@ set -e
 
 OUT="$1"
 IN="$2"
-NAME="$(basename "$IN")"
-NAME="${NAME/.ptx/}"
+NAME="$(basename "$IN" | sed 's/\..*//')"
 
-echo -n "const char ${NAME}_ptx[] = \\" > "$OUT"
+printf "const char %s_ptx[] = \\" "$NAME" > "$OUT"
 while read LINE
 do
-echo -ne "\n\t\"$LINE\\\n\"" >> "$OUT"
+    printf "\n\t\"%s\\\n\"" "$(printf "%s" "$LINE" | sed 's/["\\]/\\&/g')" >> "$OUT"
 done < "$IN"
-echo ";" >> "$OUT"
+printf ";\n" >> "$OUT"
 
 exit 0
-
