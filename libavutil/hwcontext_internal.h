@@ -144,5 +144,6 @@ extern const HWContextType ff_hwcontext_type_dxva2;
 extern const HWContextType ff_hwcontext_type_qsv;
 extern const HWContextType ff_hwcontext_type_vaapi;
 extern const HWContextType ff_hwcontext_type_vdpau;
+extern const HWContextType ff_hwcontext_type_videotoolbox;
 
 #endif /* AVUTIL_HWCONTEXT_INTERNAL_H */
