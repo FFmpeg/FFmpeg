@@ -650,18 +650,18 @@ static void vaapi_encode_h264_write_sei(PutBitContext *pbc,
 
     for (payload_type = 0; payload_type < 64; payload_type++) {
         switch (payload_type) {
-        case SEI_TYPE_BUFFERING_PERIOD:
+        case H264_SEI_TYPE_BUFFERING_PERIOD:
             if (!priv->send_timing_sei ||
                 pic->type != PICTURE_TYPE_IDR)
                 continue;
             write_payload = &vaapi_encode_h264_write_buffering_period;
             break;
-        case SEI_TYPE_PIC_TIMING:
+        case H264_SEI_TYPE_PIC_TIMING:
             if (!priv->send_timing_sei)
                 continue;
             write_payload = &vaapi_encode_h264_write_pic_timing;
             break;
-        case SEI_TYPE_USER_DATA_UNREGISTERED:
+        case H264_SEI_TYPE_USER_DATA_UNREGISTERED:
             if (pic->encode_order != 0)
                 continue;
             write_payload = &vaapi_encode_h264_write_identifier;

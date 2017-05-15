@@ -1007,37 +1007,37 @@ static int h264_export_frame_props(H264Context *h)
     if (sps->pic_struct_present_flag && h->sei.picture_timing.present) {
         H264SEIPictureTiming *pt = &h->sei.picture_timing;
         switch (pt->pic_struct) {
-        case SEI_PIC_STRUCT_FRAME:
+        case H264_SEI_PIC_STRUCT_FRAME:
             break;
-        case SEI_PIC_STRUCT_TOP_FIELD:
-        case SEI_PIC_STRUCT_BOTTOM_FIELD:
+        case H264_SEI_PIC_STRUCT_TOP_FIELD:
+        case H264_SEI_PIC_STRUCT_BOTTOM_FIELD:
             cur->f->interlaced_frame = 1;
             break;
-        case SEI_PIC_STRUCT_TOP_BOTTOM:
-        case SEI_PIC_STRUCT_BOTTOM_TOP:
+        case H264_SEI_PIC_STRUCT_TOP_BOTTOM:
+        case H264_SEI_PIC_STRUCT_BOTTOM_TOP:
             if (FIELD_OR_MBAFF_PICTURE(h))
                 cur->f->interlaced_frame = 1;
             else
                 // try to flag soft telecine progressive
                 cur->f->interlaced_frame = h->prev_interlaced_frame;
             break;
-        case SEI_PIC_STRUCT_TOP_BOTTOM_TOP:
-        case SEI_PIC_STRUCT_BOTTOM_TOP_BOTTOM:
+        case H264_SEI_PIC_STRUCT_TOP_BOTTOM_TOP:
+        case H264_SEI_PIC_STRUCT_BOTTOM_TOP_BOTTOM:
             /* Signal the possibility of telecined film externally
              * (pic_struct 5,6). From these hints, let the applications
              * decide if they apply deinterlacing. */
             cur->f->repeat_pict = 1;
             break;
-        case SEI_PIC_STRUCT_FRAME_DOUBLING:
+        case H264_SEI_PIC_STRUCT_FRAME_DOUBLING:
             cur->f->repeat_pict = 2;
             break;
-        case SEI_PIC_STRUCT_FRAME_TRIPLING:
+        case H264_SEI_PIC_STRUCT_FRAME_TRIPLING:
             cur->f->repeat_pict = 4;
             break;
         }
 
         if ((pt->ct_type & 3) &&
-            pt->pic_struct <= SEI_PIC_STRUCT_BOTTOM_TOP)
+            pt->pic_struct <= H264_SEI_PIC_STRUCT_BOTTOM_TOP)
             cur->f->interlaced_frame = (pt->ct_type & (1 << 1)) != 0;
     } else {
         /* Derive interlacing flag from used decoding process. */
@@ -1053,8 +1053,8 @@ static int h264_export_frame_props(H264Context *h)
             (sps->pic_struct_present_flag && h->sei.picture_timing.present)) {
             /* Use picture timing SEI information. Even if it is a
              * information of a past frame, better than nothing. */
-            if (h->sei.picture_timing.pic_struct == SEI_PIC_STRUCT_TOP_BOTTOM ||
-                h->sei.picture_timing.pic_struct == SEI_PIC_STRUCT_TOP_BOTTOM_TOP)
+            if (h->sei.picture_timing.pic_struct == H264_SEI_PIC_STRUCT_TOP_BOTTOM ||
+                h->sei.picture_timing.pic_struct == H264_SEI_PIC_STRUCT_TOP_BOTTOM_TOP)
                 cur->f->top_field_first = 1;
             else
                 cur->f->top_field_first = 0;
