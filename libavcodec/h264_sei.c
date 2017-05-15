@@ -81,7 +81,7 @@ static int decode_picture_timing(H264SEIPictureTiming *h, GetBitContext *gb,
         h->pic_struct = get_bits(gb, 4);
         h->ct_type    = 0;
 
-        if (h->pic_struct > SEI_PIC_STRUCT_FRAME_TRIPLING)
+        if (h->pic_struct > H264_SEI_PIC_STRUCT_FRAME_TRIPLING)
             return AVERROR_INVALIDDATA;
 
         num_clock_ts = sei_num_clock_ts_table[h->pic_struct];
@@ -421,31 +421,31 @@ int ff_h264_sei_decode(H264SEIContext *h, GetBitContext *gb,
         next = get_bits_count(gb) + 8 * size;
 
         switch (type) {
-        case SEI_TYPE_PIC_TIMING: // Picture timing SEI
+        case H264_SEI_TYPE_PIC_TIMING: // Picture timing SEI
             ret = decode_picture_timing(&h->picture_timing, gb, ps, logctx);
             break;
-        case SEI_TYPE_USER_DATA_REGISTERED:
+        case H264_SEI_TYPE_USER_DATA_REGISTERED:
             ret = decode_registered_user_data(h, gb, logctx, size);
             break;
-        case SEI_TYPE_USER_DATA_UNREGISTERED:
+        case H264_SEI_TYPE_USER_DATA_UNREGISTERED:
             ret = decode_unregistered_user_data(&h->unregistered, gb, logctx, size);
             break;
-        case SEI_TYPE_RECOVERY_POINT:
+        case H264_SEI_TYPE_RECOVERY_POINT:
             ret = decode_recovery_point(&h->recovery_point, gb);
             break;
-        case SEI_TYPE_BUFFERING_PERIOD:
+        case H264_SEI_TYPE_BUFFERING_PERIOD:
             ret = decode_buffering_period(&h->buffering_period, gb, ps, logctx);
             break;
-        case SEI_TYPE_FRAME_PACKING:
+        case H264_SEI_TYPE_FRAME_PACKING:
             ret = decode_frame_packing_arrangement(&h->frame_packing, gb);
             break;
-        case SEI_TYPE_DISPLAY_ORIENTATION:
+        case H264_SEI_TYPE_DISPLAY_ORIENTATION:
             ret = decode_display_orientation(&h->display_orientation, gb);
             break;
-        case SEI_TYPE_GREEN_METADATA:
+        case H264_SEI_TYPE_GREEN_METADATA:
             ret = decode_green_metadata(&h->green_metadata, gb);
             break;
-        case SEI_TYPE_ALTERNATIVE_TRANSFER:
+        case H264_SEI_TYPE_ALTERNATIVE_TRANSFER:
             ret = decode_alternative_transfer(&h->alternative_transfer, gb);
             break;
         default:

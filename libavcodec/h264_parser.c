@@ -473,23 +473,23 @@ static inline int parse_nal_units(AVCodecParserContext *s,
 
             if (sps->pic_struct_present_flag && p->sei.picture_timing.present) {
                 switch (p->sei.picture_timing.pic_struct) {
-                case SEI_PIC_STRUCT_TOP_FIELD:
-                case SEI_PIC_STRUCT_BOTTOM_FIELD:
+                case H264_SEI_PIC_STRUCT_TOP_FIELD:
+                case H264_SEI_PIC_STRUCT_BOTTOM_FIELD:
                     s->repeat_pict = 0;
                     break;
-                case SEI_PIC_STRUCT_FRAME:
-                case SEI_PIC_STRUCT_TOP_BOTTOM:
-                case SEI_PIC_STRUCT_BOTTOM_TOP:
+                case H264_SEI_PIC_STRUCT_FRAME:
+                case H264_SEI_PIC_STRUCT_TOP_BOTTOM:
+                case H264_SEI_PIC_STRUCT_BOTTOM_TOP:
                     s->repeat_pict = 1;
                     break;
-                case SEI_PIC_STRUCT_TOP_BOTTOM_TOP:
-                case SEI_PIC_STRUCT_BOTTOM_TOP_BOTTOM:
+                case H264_SEI_PIC_STRUCT_TOP_BOTTOM_TOP:
+                case H264_SEI_PIC_STRUCT_BOTTOM_TOP_BOTTOM:
                     s->repeat_pict = 2;
                     break;
-                case SEI_PIC_STRUCT_FRAME_DOUBLING:
+                case H264_SEI_PIC_STRUCT_FRAME_DOUBLING:
                     s->repeat_pict = 3;
                     break;
-                case SEI_PIC_STRUCT_FRAME_TRIPLING:
+                case H264_SEI_PIC_STRUCT_FRAME_TRIPLING:
                     s->repeat_pict = 5;
                     break;
                 default:
@@ -504,12 +504,12 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                 s->picture_structure = AV_PICTURE_STRUCTURE_FRAME;
                 if (sps->pic_struct_present_flag && p->sei.picture_timing.present) {
                     switch (p->sei.picture_timing.pic_struct) {
-                    case SEI_PIC_STRUCT_TOP_BOTTOM:
-                    case SEI_PIC_STRUCT_TOP_BOTTOM_TOP:
+                    case H264_SEI_PIC_STRUCT_TOP_BOTTOM:
+                    case H264_SEI_PIC_STRUCT_TOP_BOTTOM_TOP:
                         s->field_order = AV_FIELD_TT;
                         break;
-                    case SEI_PIC_STRUCT_BOTTOM_TOP:
-                    case SEI_PIC_STRUCT_BOTTOM_TOP_BOTTOM:
+                    case H264_SEI_PIC_STRUCT_BOTTOM_TOP:
+                    case H264_SEI_PIC_STRUCT_BOTTOM_TOP_BOTTOM:
                         s->field_order = AV_FIELD_BB;
                         break;
                     default:
