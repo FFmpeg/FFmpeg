@@ -6394,6 +6394,9 @@ Power mean
 @item median
 Median
 @end table
+
+@item bypass
+Do not actually modify frame. Useful when one only wants metadata.
 @end table
 
 @section dejudder
