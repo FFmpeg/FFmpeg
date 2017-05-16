@@ -319,7 +319,6 @@ static void register_all(void)
     REGISTER_DECODER(SPEEDHQ,           speedhq);
     REGISTER_DECODER(SRGC,              srgc);
     REGISTER_ENCDEC (SUNRAST,           sunrast);
-    REGISTER_DECODER(LIBRSVG,           librsvg);
     REGISTER_ENCDEC (SVQ1,              svq1);
     REGISTER_DECODER(SVQ3,              svq3);
     REGISTER_ENCDEC (TARGA,             targa);
@@ -617,6 +616,7 @@ static void register_all(void)
     REGISTER_DECODER(LIBOPENCORE_AMRWB, libopencore_amrwb);
     REGISTER_ENCDEC (LIBOPENJPEG,       libopenjpeg);
     REGISTER_ENCDEC (LIBOPUS,           libopus);
+    REGISTER_DECODER(LIBRSVG,           librsvg);
     REGISTER_ENCDEC (LIBSCHROEDINGER,   libschroedinger);
     REGISTER_ENCODER(LIBSHINE,          libshine);
     REGISTER_ENCDEC (LIBSPEEX,          libspeex);
