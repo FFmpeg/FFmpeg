@@ -143,6 +143,7 @@ dshow_try_setup_crossbar_options(ICaptureGraphBuilder2 *graph_builder2,
     struct dshow_ctx *ctx = avctx->priv_data;
     IAMCrossbar *cross_bar = NULL;
     IBaseFilter *cross_bar_base_filter = NULL;
+    IPersistFile *p_stream=NULL;
     IAMTVTuner *tv_tuner_filter = NULL;
     IBaseFilter *tv_tuner_base_filter = NULL;
     IAMAudioInputMixer *tv_audio_filter = NULL;
@@ -194,6 +195,24 @@ dshow_try_setup_crossbar_options(ICaptureGraphBuilder2 *graph_builder2,
     hr = setup_crossbar_options(cross_bar, devtype, avctx);
     if (hr != S_OK)
         goto end;
+         hr = setup_crossbar_options(cross_bar, devtype, avctx);
+    if (hr != S_OK)
+        goto end;
+  
+     hr=cross_bar_QueryInterface(&IID_IBaseFilter , (void **) &device_filter);
+      if(hr!=S_OK)
+         goto end;
+// QUERY FOR THE IPERSISTFILE INTERFACE
+   hr = device_filter_QueryInterface(&IID_IPersistFile , (void **) &p_file);
+         if(hr!=S_OK)
+         goto end;
+       // SAVE THE OBJECT TO A FILE saveo.txt AND MAKE IT A CURRENT FILE    
+      hr=p_file_Save( C:\Users\sourabh\Desktop\saveo.txt ,  FALSE);
+      if(hr!=S_OK)
+          av_log(avctx, AV_LOG_WARNING, "SAVE UNSUCCESSFUL");
+ 
+          hr = p_file_load(  C:\Users\sourabh\Desktop\saveo.txt , 0 );
+        
 
 end:
     if (cross_bar)
@@ -204,5 +223,9 @@ end:
         IAMTVTuner_Release(tv_tuner_filter);
     if (tv_tuner_base_filter)
         IBaseFilter_Release(tv_tuner_base_filter);
+    if(p_stream)
+       IPersistStream_Release(p_stream);
+    if (device_filter)
+        IBaseFilter_Release( device_filter );
     return hr;
 }
