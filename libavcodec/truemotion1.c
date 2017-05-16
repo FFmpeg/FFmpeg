@@ -180,7 +180,7 @@ static int make_ydt15_entry(int p1, int p2, int16_t *ydt)
     lo += (lo * 32) + (lo * 1024);
     hi = ydt[p2];
     hi += (hi * 32) + (hi * 1024);
-    return (lo + (hi * (1 << 16))) * 2;
+    return (lo + (hi * (1U << 16))) * 2;
 }
 
 static int make_cdt15_entry(int p1, int p2, int16_t *cdt)
@@ -190,7 +190,7 @@ static int make_cdt15_entry(int p1, int p2, int16_t *cdt)
     b = cdt[p2];
     r = cdt[p1] * 1024;
     lo = b + r;
-    return (lo + (lo * (1 << 16))) * 2;
+    return (lo + (lo * (1U << 16))) * 2;
 }
 
 #if HAVE_BIGENDIAN
