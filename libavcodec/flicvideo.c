@@ -202,6 +202,9 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
     num_chunks = bytestream2_get_le16(&g2);
     bytestream2_skip(&g2, 8);  /* skip padding */
 
+    if (frame_size < 16)
+        return AVERROR_INVALIDDATA;
+
     frame_size -= 16;
 
     /* iterate through the chunks */
@@ -520,6 +523,8 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
     if (frame_size > buf_size)
         frame_size = buf_size;
 
+    if (frame_size < 16)
+        return AVERROR_INVALIDDATA;
     frame_size -= 16;
 
     /* iterate through the chunks */
