@@ -67,7 +67,7 @@ static int librsvg_decode_frame(AVCodecContext *avctx, void *data, int *got_fram
 
     if ((ret = ff_set_dimensions(avctx, dimensions.width, dimensions.height)))
         return ret;
-    avctx->pix_fmt = AV_PIX_FMT_BGRA;
+    avctx->pix_fmt = AV_PIX_FMT_RGB32;
 
     if ((ret = ff_get_buffer(avctx, frame, 0)))
         return ret;
