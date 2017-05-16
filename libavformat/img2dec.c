@@ -873,6 +873,13 @@ static int sunrast_probe(AVProbeData *p)
     return 0;
 }
 
+static int svg_probe(AVProbeData *p)
+{
+    if (av_match_ext(p->filename, "svg") || av_match_ext(p->filename, "svgz"))
+        return AVPROBE_SCORE_EXTENSION;
+    return 0;
+}
+
 static int tiff_probe(AVProbeData *p)
 {
     const uint8_t *b = p->buf;
@@ -971,26 +978,6 @@ AVInputFormat ff_image_ ## imgname ## _pipe_demuxer = {\
     .raw_codec_id   = codecid,\
 };
 
-static const AVClass svg_class = {
-    .class_name = "svg demuxer",
-    .item_name  = av_default_item_name,
-    .option     = ff_img_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-AVInputFormat ff_image_svg_pipe_demuxer = {
-    .name           = "svg_pipe",
-    .long_name      = NULL_IF_CONFIG_SMALL("piped svg sequence"),
-    .priv_data_size = sizeof(VideoDemuxData),
-    .read_header    = ff_img_read_header,
-    .read_packet    = ff_img_read_packet,
-    .priv_class     = &svg_class,
-    .mime_type      = "image/svg+xml",
-    .extensions     = "svg,svgz",
-    .flags          = AVFMT_GENERIC_INDEX,
-    .raw_codec_id   = AV_CODEC_ID_SVG,
-};
-
 IMAGEAUTO_DEMUXER(bmp,     AV_CODEC_ID_BMP)
 IMAGEAUTO_DEMUXER(dds,     AV_CODEC_ID_DDS)
 IMAGEAUTO_DEMUXER(dpx,     AV_CODEC_ID_DPX)
@@ -1010,6 +997,7 @@ IMAGEAUTO_DEMUXER(psd,     AV_CODEC_ID_PSD)
 IMAGEAUTO_DEMUXER(qdraw,   AV_CODEC_ID_QDRAW)
 IMAGEAUTO_DEMUXER(sgi,     AV_CODEC_ID_SGI)
 IMAGEAUTO_DEMUXER(sunrast, AV_CODEC_ID_SUNRAST)
+IMAGEAUTO_DEMUXER(svg,     AV_CODEC_ID_SVG)
 IMAGEAUTO_DEMUXER(tiff,    AV_CODEC_ID_TIFF)
 IMAGEAUTO_DEMUXER(webp,    AV_CODEC_ID_WEBP)
 IMAGEAUTO_DEMUXER(xpm,     AV_CODEC_ID_XPM)
