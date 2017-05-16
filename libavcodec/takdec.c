@@ -267,11 +267,11 @@ static int decode_segment(TAKDecContext *s, int8_t mode, int32_t *decoded, int l
     code = xcodes[mode - 1];
 
     for (i = 0; i < len; i++) {
-        int x = get_bits_long(gb, code.init);
+        unsigned x = get_bits_long(gb, code.init);
         if (x >= code.escape && get_bits1(gb)) {
             x |= 1 << code.init;
             if (x >= code.aescape) {
-                int scale = get_unary(gb, 1, 9);
+                unsigned scale = get_unary(gb, 1, 9);
                 if (scale == 9) {
                     int scale_bits = get_bits(gb, 3);
                     if (scale_bits > 0) {
