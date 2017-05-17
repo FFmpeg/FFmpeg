@@ -260,7 +260,7 @@ static VLC chroma422_dc_total_zeros_vlc[7+1];
 static VLC_TYPE chroma422_dc_total_zeros_vlc_tables[7][32][2];
 static const int chroma422_dc_total_zeros_vlc_tables_size = 32;
 
-static VLC run_vlc[6];
+static VLC run_vlc[6+1];
 static VLC_TYPE run_vlc_tables[6][8][2];
 static const int run_vlc_tables_size = 8;
 
@@ -394,9 +394,9 @@ av_cold void ff_h264_decode_init_vlc(void){
         }
 
         for(i=0; i<6; i++){
-            run_vlc[i].table = run_vlc_tables[i];
-            run_vlc[i].table_allocated = run_vlc_tables_size;
-            init_vlc(&run_vlc[i],
+            run_vlc[i+1].table = run_vlc_tables[i];
+            run_vlc[i+1].table_allocated = run_vlc_tables_size;
+            init_vlc(&run_vlc[i+1],
                      RUN_VLC_BITS, 7,
                      &run_len [i][0], 1, 1,
                      &run_bits[i][0], 1, 1,
@@ -586,7 +586,7 @@ static int decode_residual(const H264Context *h, H264SliceContext *sl,
         ((type*)block)[*scantable] = level[0]; \
         for(i=1;i<total_coeff && zeros_left > 0;i++) { \
             if(zeros_left < 7) \
-                run_before= get_vlc2(gb, (run_vlc-1)[zeros_left].table, RUN_VLC_BITS, 1); \
+                run_before= get_vlc2(gb, run_vlc[zeros_left].table, RUN_VLC_BITS, 1); \
             else \
                 run_before= get_vlc2(gb, run7_vlc.table, RUN7_VLC_BITS, 2); \
             zeros_left -= run_before; \
@@ -601,7 +601,7 @@ static int decode_residual(const H264Context *h, H264SliceContext *sl,
         ((type*)block)[*scantable] = ((int)(level[0] * qmul[*scantable] + 32))>>6; \
         for(i=1;i<total_coeff && zeros_left > 0;i++) { \
             if(zeros_left < 7) \
-                run_before= get_vlc2(gb, (run_vlc-1)[zeros_left].table, RUN_VLC_BITS, 1); \
+                run_before= get_vlc2(gb, run_vlc[zeros_left].table, RUN_VLC_BITS, 1); \
             else \
                 run_before= get_vlc2(gb, run7_vlc.table, RUN7_VLC_BITS, 2); \
             zeros_left -= run_before; \
