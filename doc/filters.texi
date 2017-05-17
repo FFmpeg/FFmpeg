@@ -130,11 +130,11 @@ filterchains is represented by a list of ";"-separated filterchain
 descriptions.
 
 A filter is represented by a string of the form:
-[@var{in_link_1}]...[@var{in_link_N}]@var{filter_name}=@var{arguments}[@var{out_link_1}]...[@var{out_link_M}]
+[@var{in_link_1}]...[@var{in_link_N}]@var{filter_name}@@@var{id}=@var{arguments}[@var{out_link_1}]...[@var{out_link_M}]
 
 @var{filter_name} is the name of the filter class of which the
 described filter is an instance of, and has to be the name of one of
-the filter classes registered in the program.
+the filter classes registered in the program optionally followed by "@@@var{id}".
 The name of the filter class is optionally followed by a string
 "=@var{arguments}".
 
@@ -212,10 +212,11 @@ to the filtergraph description.
 Here is a BNF description of the filtergraph syntax:
 @example
 @var{NAME}             ::= sequence of alphanumeric characters and '_'
+@var{FILTER_NAME}      ::= @var{NAME}["@@"@var{NAME}]
 @var{LINKLABEL}        ::= "[" @var{NAME} "]"
 @var{LINKLABELS}       ::= @var{LINKLABEL} [@var{LINKLABELS}]
 @var{FILTER_ARGUMENTS} ::= sequence of chars (possibly quoted)
-@var{FILTER}           ::= [@var{LINKLABELS}] @var{NAME} ["=" @var{FILTER_ARGUMENTS}] [@var{LINKLABELS}]
+@var{FILTER}           ::= [@var{LINKLABELS}] @var{FILTER_NAME} ["=" @var{FILTER_ARGUMENTS}] [@var{LINKLABELS}]
 @var{FILTERCHAIN}      ::= @var{FILTER} [,@var{FILTERCHAIN}]
 @var{FILTERGRAPH}      ::= [sws_flags=@var{flags};] @var{FILTERCHAIN} [;@var{FILTERGRAPH}]
 @end example
@@ -17244,6 +17245,12 @@ follows:
 Specify audio tempo change at second 4:
 @example
 asendcmd=c='4.0 atempo tempo 1.5',atempo
+@end example
+
+@item
+Target a specific filter instance:
+@example
+asendcmd=c='4.0 atempo@@my tempo 1.5',atempo@@my
 @end example
 
 @item

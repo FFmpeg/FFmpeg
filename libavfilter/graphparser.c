@@ -88,20 +88,36 @@ static char *parse_link_name(const char **buf, void *log_ctx)
  * @param filt_ctx put here a filter context in case of successful creation and configuration, NULL otherwise.
  * @param ctx the filtergraph context
  * @param index an index which is supposed to be unique for each filter instance added to the filtergraph
- * @param filt_name the name of the filter to create
+ * @param name the name of the filter to create, can be filter name or filter_name\@id as instance name
  * @param args the arguments provided to the filter during its initialization
  * @param log_ctx the log context to use
  * @return >= 0 in case of success, a negative AVERROR code otherwise
  */
 static int create_filter(AVFilterContext **filt_ctx, AVFilterGraph *ctx, int index,
-                         const char *filt_name, const char *args, void *log_ctx)
+                         const char *name, const char *args, void *log_ctx)
 {
     AVFilter *filt;
-    char inst_name[30];
+    char name2[30];
+    const char *inst_name = NULL, *filt_name = NULL;
     char *tmp_args = NULL;
-    int ret;
+    int ret, k;
 
-    snprintf(inst_name, sizeof(inst_name), "Parsed_%s_%d", filt_name, index);
+    av_strlcpy(name2, name, sizeof(name2));
+
+    for (k = 0; name2[k]; k++) {
+        if (name2[k] == '@' && name[k+1]) {
+            name2[k] = 0;
+            inst_name = name;
+            filt_name = name2;
+            break;
+        }
+    }
+
+    if (!inst_name) {
+        snprintf(name2, sizeof(name2), "Parsed_%s_%d", name, index);
+        inst_name = name2;
+        filt_name = name;
+    }
 
     filt = avfilter_get_by_name(filt_name);
 
