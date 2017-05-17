@@ -2155,7 +2155,11 @@ static int decode_cce(AACContext *ac, GetBitContext *gb, ChannelElement *che)
     coup->coupling_point += get_bits1(gb) || (coup->coupling_point >> 1);
 
     sign  = get_bits(gb, 1);
-    scale = AAC_RENAME(cce_scale)[get_bits(gb, 2)];
+#if USE_FIXED
+    scale = get_bits(gb, 2);
+#else
+    scale = cce_scale[get_bits(gb, 2)];
+#endif
 
     if ((ret = decode_ics(ac, sce, gb, 0, 0)))
         return ret;
