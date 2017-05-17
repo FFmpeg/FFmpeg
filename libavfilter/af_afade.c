@@ -33,7 +33,7 @@ typedef struct AudioFadeContext {
     const AVClass *class;
     int type;
     int curve, curve2;
-    int nb_samples;
+    int64_t nb_samples;
     int64_t start_sample;
     int64_t duration;
     int64_t start_time;
@@ -45,7 +45,7 @@ typedef struct AudioFadeContext {
 
     void (*fade_samples)(uint8_t **dst, uint8_t * const *src,
                          int nb_samples, int channels, int direction,
-                         int64_t start, int range, int curve);
+                         int64_t start, int64_t range, int curve);
     void (*crossfade_samples)(uint8_t **dst, uint8_t * const *cf0,
                               uint8_t * const *cf1,
                               int nb_samples, int channels,
@@ -90,7 +90,7 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_samplerates(ctx, formats);
 }
 
-static double fade_gain(int curve, int64_t index, int range)
+static double fade_gain(int curve, int64_t index, int64_t range)
 {
 #define CUBE(a) ((a)*(a)*(a))
     double gain;
@@ -154,7 +154,7 @@ static double fade_gain(int curve, int64_t index, int range)
 #define FADE_PLANAR(name, type)                                             \
 static void fade_samples_## name ##p(uint8_t **dst, uint8_t * const *src,   \
                                      int nb_samples, int channels, int dir, \
-                                     int64_t start, int range, int curve)   \
+                                     int64_t start, int64_t range, int curve) \
 {                                                                           \
     int i, c;                                                               \
                                                                             \
@@ -172,7 +172,7 @@ static void fade_samples_## name ##p(uint8_t **dst, uint8_t * const *src,   \
 #define FADE(name, type)                                                    \
 static void fade_samples_## name (uint8_t **dst, uint8_t * const *src,      \
                                   int nb_samples, int channels, int dir,    \
-                                  int64_t start, int range, int curve)      \
+                                  int64_t start, int64_t range, int curve)  \
 {                                                                           \
     type *d = (type *)dst[0];                                               \
     const type *s = (type *)src[0];                                         \
@@ -228,10 +228,10 @@ static const AVOption afade_options[] = {
     { "out",          "fade-out",                                    0,                    AV_OPT_TYPE_CONST,  {.i64 = 1    }, 0, 0, FLAGS, "type" },
     { "start_sample", "set number of first sample to start fading",  OFFSET(start_sample), AV_OPT_TYPE_INT64,  {.i64 = 0    }, 0, INT64_MAX, FLAGS },
     { "ss",           "set number of first sample to start fading",  OFFSET(start_sample), AV_OPT_TYPE_INT64,  {.i64 = 0    }, 0, INT64_MAX, FLAGS },
-    { "nb_samples",   "set number of samples for fade duration",     OFFSET(nb_samples),   AV_OPT_TYPE_INT,    {.i64 = 44100}, 1, INT32_MAX, FLAGS },
-    { "ns",           "set number of samples for fade duration",     OFFSET(nb_samples),   AV_OPT_TYPE_INT,    {.i64 = 44100}, 1, INT32_MAX, FLAGS },
-    { "start_time",   "set time to start fading",                    OFFSET(start_time),   AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, INT32_MAX, FLAGS },
-    { "st",           "set time to start fading",                    OFFSET(start_time),   AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, INT32_MAX, FLAGS },
+    { "nb_samples",   "set number of samples for fade duration",     OFFSET(nb_samples),   AV_OPT_TYPE_INT64,  {.i64 = 44100}, 1, INT64_MAX, FLAGS },
+    { "ns",           "set number of samples for fade duration",     OFFSET(nb_samples),   AV_OPT_TYPE_INT64,  {.i64 = 44100}, 1, INT64_MAX, FLAGS },
+    { "start_time",   "set time to start fading",                    OFFSET(start_time),   AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, INT64_MAX, FLAGS },
+    { "st",           "set time to start fading",                    OFFSET(start_time),   AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, INT64_MAX, FLAGS },
     { "duration",     "set fade duration",                           OFFSET(duration),     AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, INT32_MAX, FLAGS },
     { "d",            "set fade duration",                           OFFSET(duration),     AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, INT32_MAX, FLAGS },
     { "curve",        "set fade curve type",                         OFFSET(curve),        AV_OPT_TYPE_INT,    {.i64 = TRI  }, 0, NB_CURVES - 1, FLAGS, "curve" },
