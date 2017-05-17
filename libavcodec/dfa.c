@@ -250,7 +250,7 @@ static int decode_wdlt(GetByteContext *gb, uint8_t *frame, int width, int height
         segments = bytestream2_get_le16u(gb);
         while ((segments & 0xC000) == 0xC000) {
             unsigned skip_lines = -(int16_t)segments;
-            unsigned delta = -((int16_t)segments * width);
+            int64_t delta = -((int16_t)segments * (int64_t)width);
             if (frame_end - frame <= delta || y + lines + skip_lines > height)
                 return AVERROR_INVALIDDATA;
             frame    += delta;
