@@ -13,6 +13,7 @@ version <next>:
 - scale_cuda CUDA based video scale filter
 - librsvg support for svg rasterization
 - crossfeed audio filter
+- spec compliant VP9 muxing support in MP4
 
 version 3.3:
 - CrystalHD decoder moved to new decode API

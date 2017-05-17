@@ -5996,13 +5996,6 @@ static int mov_init(AVFormatContext *s)
                     av_log(s, AV_LOG_ERROR, "VP9 only supported in MP4.\n");
                     return AVERROR(EINVAL);
                 }
-                if (s->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
-                    av_log(s, AV_LOG_ERROR,
-                           "VP9 in MP4 support is experimental, add "
-                           "'-strict %d' if you want to use it.\n",
-                           FF_COMPLIANCE_EXPERIMENTAL);
-                    return AVERROR_EXPERIMENTAL;
-                }
             }
         } else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             track->timescale = st->codecpar->sample_rate;
