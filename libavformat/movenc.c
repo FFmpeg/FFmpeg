@@ -2353,7 +2353,7 @@ static int mov_write_stbl_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext
     mov_write_stsc_tag(pb, track);
     mov_write_stsz_tag(pb, track);
     mov_write_stco_tag(pb, track);
-    if (mov->encryption_scheme == MOV_ENC_CENC_AES_CTR) {
+    if (track->cenc.aes_ctr) {
         ff_mov_cenc_write_stbl_atoms(&track->cenc, pb);
     }
     if (track->par->codec_id == AV_CODEC_ID_OPUS) {
@@ -5114,7 +5114,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
                                        &size);
             avio_write(pb, reformatted_data, size);
         } else {
-            if (mov->encryption_scheme == MOV_ENC_CENC_AES_CTR) {
+            if (trk->cenc.aes_ctr) {
                 size = ff_mov_cenc_avc_parse_nal_units(&trk->cenc, pb, pkt->data, size);
                 if (size < 0) {
                     ret = size;
@@ -5143,7 +5143,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         avio_write(pb, pkt->data, size);
 #endif
     } else {
-        if (mov->encryption_scheme == MOV_ENC_CENC_AES_CTR) {
+        if (trk->cenc.aes_ctr) {
             if (par->codec_id == AV_CODEC_ID_H264 && par->extradata_size > 4) {
                 int nal_size_length = (par->extradata[4] & 0x3) + 1;
                 ret = ff_mov_cenc_avc_write_nal_units(s, &trk->cenc, nal_size_length, pb, pkt->data, size);
