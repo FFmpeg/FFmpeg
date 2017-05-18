@@ -2979,6 +2979,31 @@ Attenuate low frequencies using Multiband EQ from Steve Harris
 @example
 ladspa=mbeq_1197:mbeq:-24|-24|-24|0|0|0|0|0|0|0|0|0|0|0|0
 @end example
+
+@item
+Reduce stereo image using @code{Narrower} from the @code{C* Audio Plugin Suite}
+(CAPS) library:
+@example
+ladspa=caps:Narrower
+@end example
+
+@item
+Another white noise, now using @code{C* Audio Plugin Suite} (CAPS) library:
+@example
+ladspa=caps:White:.2
+@end example
+
+@item
+Some fractal noise, using @code{C* Audio Plugin Suite} (CAPS) library:
+@example
+ladspa=caps:Fractal:c=c1=1
+@end example
+
+@item
+Dynamic volume normalization using @code{VLevel} plugin:
+@example
+ladspa=vlevel-ladspa:vlevel_mono
+@end example
 @end itemize
 
 @subsection Commands
