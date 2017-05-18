@@ -390,9 +390,11 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
             return AVERROR_INVALIDDATA;
         }
 
+        res = ff_set_dimensions(avctx, width, height);
+        if (res < 0)
+            return res;
+
         ctx->avctx     = avctx;
-        avctx->width   = width;
-        avctx->height  = height;
         avctx->pix_fmt = AV_PIX_FMT_YUV420P;
         for (i = 0; i < 3; i++) {
             ctx->num_vblocks[i] = AV_CEIL_RSHIFT(height,   3 + !!i);
