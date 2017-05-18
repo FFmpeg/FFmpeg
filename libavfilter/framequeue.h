@@ -100,6 +100,11 @@ typedef struct FFFrameQueue {
      */
     uint64_t total_samples_tail;
 
+    /**
+     * Indicate that samples are skipped
+     */
+    int samples_skipped;
+
 } FFFrameQueue;
 
 /**
