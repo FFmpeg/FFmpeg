@@ -383,13 +383,13 @@ static int parse_channel_name(char **arg, int *rchannel, char *buf)
         layout0 = layout = av_get_channel_layout(buf);
         /* channel_id <- first set bit in layout */
         for (i = 32; i > 0; i >>= 1) {
-            if (layout >= (int64_t)1 << i) {
+            if (layout >= 1LL << i) {
                 channel_id += i;
                 layout >>= i;
             }
         }
         /* reject layouts that are not a single channel */
-        if (channel_id >= 64 || layout0 != (int64_t)1 << channel_id)
+        if (channel_id >= 64 || layout0 != 1LL << channel_id)
             return AVERROR(EINVAL);
         *rchannel = channel_id;
         *arg += len;
