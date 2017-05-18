@@ -3606,6 +3606,9 @@ Each virtual loudspeaker description is separated by '|'.
 For example to override front left and front right channel positions use:
 'speakers=FL 45 15|FR 345 15'.
 Descriptions with unrecognised channel names are ignored.
+
+@item lfegain
+Set custom gain for LFE channels. Value is in dB. Default is 0.
 @end table
 
 @subsection Examples

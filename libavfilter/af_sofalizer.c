@@ -70,6 +70,7 @@ typedef struct SOFAlizerContext {
     float *speaker_azim;        /* azimuth of the virtual loudspeakers */
     float *speaker_elev;        /* elevation of the virtual loudspeakers */
     char *speakers_pos;         /* custom positions of the virtual loudspeakers */
+    float lfe_gain;             /* initial gain for the LFE channel */
     float gain_lfe;             /* gain applied to LFE channel */
     int lfe_channel;            /* LFE channel position in channel layout */
 
@@ -1067,7 +1068,7 @@ static int config_input(AVFilterLink *inlink)
     }
 
     /* gain -3 dB per channel, -6 dB to get LFE on a similar level */
-    s->gain_lfe = expf((s->gain - 3 * inlink->channels - 6) / 20 * M_LN10);
+    s->gain_lfe = expf((s->gain - 3 * inlink->channels - 6 + s->lfe_gain) / 20 * M_LN10);
 
     s->n_conv = nb_input_channels;
 
@@ -1197,6 +1198,7 @@ static const AVOption sofalizer_options[] = {
     { "time",      "time domain",      0,               AV_OPT_TYPE_CONST,  {.i64=0},       0,   0, .flags = FLAGS, "type" },
     { "freq",      "frequency domain", 0,               AV_OPT_TYPE_CONST,  {.i64=1},       0,   0, .flags = FLAGS, "type" },
     { "speakers",  "set speaker custom positions", OFFSET(speakers_pos), AV_OPT_TYPE_STRING,  {.str=0},    0, 0, .flags = FLAGS },
+    { "lfegain",   "set lfe gain",                 OFFSET(lfe_gain),     AV_OPT_TYPE_FLOAT,   {.dbl=0},   -9, 9, .flags = FLAGS },
     { NULL }
 };
 
