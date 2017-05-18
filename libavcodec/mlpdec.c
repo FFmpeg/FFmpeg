@@ -759,7 +759,7 @@ static int read_matrix_params(MLPDecodeContext *m, unsigned int substr, GetBitCo
             if (get_bits1(gbp))
                 coeff_val = get_sbits(gbp, frac_bits + 2);
 
-            s->matrix_coeff[mat][ch] = coeff_val << (14 - frac_bits);
+            s->matrix_coeff[mat][ch] = coeff_val * (1 << (14 - frac_bits));
         }
 
         if (s->noise_type)
