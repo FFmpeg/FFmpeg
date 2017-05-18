@@ -229,6 +229,8 @@ static int read_high_coeffs(AVCodecContext *avctx, uint8_t *src, int16_t *dst, i
             cnt1 = get_bits(b, nbits);
         } else {
             pfx = 14 + ((((uint64_t)(value - 14)) >> 32) & (value - 14));
+            if (pfx < 1 || pfx > 25)
+                return AVERROR_INVALIDDATA;
             cnt1 *= (1 << pfx) - 1;
             shbits = show_bits(b, pfx);
             if (shbits <= 1) {
