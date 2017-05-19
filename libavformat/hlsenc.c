@@ -119,7 +119,7 @@ static int setup_encryption(AVFormatContext *s)
     AVIOContext *out = NULL;
     int len, ret;
     uint8_t buf[16];
-    uint8_t *k;
+    uint8_t *k = NULL;
 
     len = strlen(hls->basename) + 4 + 1;
     hls->key_basename = av_mallocz(len);
@@ -141,9 +141,22 @@ static int setup_encryption(AVFormatContext *s)
             return ret;
         k = hls->key;
     } else {
-        if ((ret = randomize(buf, sizeof(buf))) < 0) {
-            av_log(s, AV_LOG_ERROR, "Cannot generate a strong random key\n");
-            return ret;
+        if (hls->start_sequence < 0) {
+            ret = s->io_open(s, &out, hls->key_basename, AVIO_FLAG_READ, NULL);
+            if (ret < 0) {
+                av_log(s, AV_LOG_WARNING,
+                       "Cannot recover the key, generating a new one.\n");
+            } else {
+                avio_read(out, buf, 16);
+                k = buf;
+                avio_close(out);
+            }
+        }
+        if (!k) {
+            if ((ret = randomize(buf, sizeof(buf))) < 0) {
+                av_log(s, AV_LOG_ERROR, "Cannot generate a strong random key\n");
+                return ret;
+            }
         }
 
         if ((ret = dict_set_bin(&hls->enc_opts, "key", buf, sizeof(buf))) < 0)
@@ -201,14 +214,14 @@ static int hls_mux_init(AVFormatContext *s)
     return 0;
 }
 
-static int append_entry(HLSContext *hls, int64_t duration)
+static int append_entry(HLSContext *hls, int64_t duration, const char *name)
 {
     ListEntry *en = av_malloc(sizeof(*en));
 
     if (!en)
         return AVERROR(ENOMEM);
 
-    av_strlcpy(en->name, av_basename(hls->avf->filename), sizeof(en->name));
+    av_strlcpy(en->name, name, sizeof(en->name));
 
     en->duration = duration;
     en->next     = NULL;
@@ -356,12 +369,67 @@ fail:
     return err;
 }
 
+static int read_chomp_line(AVIOContext *s, char *buf, int maxlen)
+{
+    int len = ff_get_line(s, buf, maxlen);
+    while (len > 0 && av_isspace(buf[len - 1]))
+        buf[--len] = '\0';
+    return len;
+}
+
+static int hls_recover(AVFormatContext *s)
+{
+    HLSContext *hls = s->priv_data;
+    char line[1024];
+    AVIOContext *io;
+    const char *ptr;
+    int ret, is_segment = 0;
+    int64_t duration = 0;
+
+    ret = s->io_open(s, &io, s->filename, AVIO_FLAG_READ, NULL);
+    if (ret < 0) {
+        av_log(s, AV_LOG_WARNING,
+               "Cannot recover the playlist, generating a new one.\n");
+        hls->start_sequence = 0;
+        hls->sequence = 0;
+        return 0;
+    }
+
+    read_chomp_line(io, line, sizeof(line));
+    if (strcmp(line, "#EXTM3U")) {
+        av_log(s, AV_LOG_ERROR,
+               "The playlist file is present but unparsable."
+               " Please remove it.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    while (!io->eof_reached) {
+        read_chomp_line(io, line, sizeof(line));
+        if (av_strstart(line, "#EXT-X-MEDIA-SEQUENCE:", &ptr)) {
+            hls->sequence = hls->start_sequence = atoi(ptr);
+        } else if (av_strstart(line, "#EXTINF:", &ptr)) {
+            is_segment = 1;
+            duration   = atof(ptr) * AV_TIME_BASE;
+        } else if (av_strstart(line, "#", NULL)) {
+            continue;
+        } else if (line[0]) {
+            if (is_segment) {
+                append_entry(hls, duration, av_basename(line));
+                is_segment = 0;
+            }
+        }
+    }
+
+    return 0;
+}
+
 static int hls_setup(AVFormatContext *s)
 {
     HLSContext *hls = s->priv_data;
     const char *pattern = "%d.ts";
     int basename_size = strlen(s->filename) + strlen(pattern) + 1;
     char *p;
+    int ret;
 
     if (hls->encrypt)
         basename_size += 7;
@@ -382,7 +450,13 @@ static int hls_setup(AVFormatContext *s)
         *p = '\0';
 
     if (hls->encrypt) {
-        int ret = setup_encryption(s);
+        ret = setup_encryption(s);
+        if (ret < 0)
+            return ret;
+    }
+
+    if (hls->start_sequence < 0) {
+        ret = hls_recover(s);
         if (ret < 0)
             return ret;
     }
@@ -465,7 +539,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         hls->duration = pts - hls->end_pts;
 
     if (can_split && pts - hls->start_pts >= end_pts) {
-        ret = append_entry(hls, hls->duration);
+        ret = append_entry(hls, hls->duration, av_basename(hls->avf->filename));
         if (ret)
             return ret;
 
@@ -500,7 +574,7 @@ static int hls_write_trailer(struct AVFormatContext *s)
     ff_format_io_close(s, &oc->pb);
     avformat_free_context(oc);
     av_free(hls->basename);
-    append_entry(hls, hls->duration);
+    append_entry(hls, hls->duration, av_basename(hls->avf->filename));
     hls_window(s, 1);
 
     free_entries(hls);
@@ -511,7 +585,8 @@ static int hls_write_trailer(struct AVFormatContext *s)
 #define OFFSET(x) offsetof(HLSContext, x)
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    {"start_number",  "first number in the sequence",            OFFSET(start_sequence),AV_OPT_TYPE_INT64,  {.i64 = 0},     0, INT64_MAX, E},
+    {"start_number",  "first number in the sequence",            OFFSET(start_sequence),AV_OPT_TYPE_INT64,  {.i64 = 0},     -1, INT64_MAX, E, "start_number"},
+    {"recover", "If there is already a m3u8 file in the path, populate the sequence from it", 0, AV_OPT_TYPE_CONST, {.i64 = -1}, 0, 0, E, "start_number"},
     {"hls_time",      "segment length in seconds",               OFFSET(time),    AV_OPT_TYPE_FLOAT,  {.dbl = 2},     0, FLT_MAX, E},
     {"hls_list_size", "maximum number of playlist entries",      OFFSET(size),    AV_OPT_TYPE_INT,    {.i64 = 5},     0, INT_MAX, E},
     {"hls_wrap",      "number after which the index wraps",      OFFSET(wrap),    AV_OPT_TYPE_INT,    {.i64 = 0},     0, INT_MAX, E},
