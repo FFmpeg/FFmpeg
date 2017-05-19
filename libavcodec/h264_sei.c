@@ -407,9 +407,9 @@ int ff_h264_sei_decode(H264SEIContext *h, GetBitContext *gb,
     int master_ret = 0;
 
     while (get_bits_left(gb) > 16 && show_bits(gb, 16)) {
+        GetBitContext gb_payload;
         int type = 0;
         unsigned size = 0;
-        unsigned next;
         int ret  = 0;
 
         do {
@@ -429,35 +429,38 @@ int ff_h264_sei_decode(H264SEIContext *h, GetBitContext *gb,
                    type, 8*size, get_bits_left(gb));
             return AVERROR_INVALIDDATA;
         }
-        next = get_bits_count(gb) + 8 * size;
+
+        ret = init_get_bits8(&gb_payload, gb->buffer + get_bits_count(gb) / 8, size);
+        if (ret < 0)
+            return ret;
 
         switch (type) {
         case H264_SEI_TYPE_PIC_TIMING: // Picture timing SEI
-            ret = decode_picture_timing(&h->picture_timing, gb, ps, logctx);
+            ret = decode_picture_timing(&h->picture_timing, &gb_payload, ps, logctx);
             break;
         case H264_SEI_TYPE_USER_DATA_REGISTERED:
-            ret = decode_registered_user_data(h, gb, logctx, size);
+            ret = decode_registered_user_data(h, &gb_payload, logctx, size);
             break;
         case H264_SEI_TYPE_USER_DATA_UNREGISTERED:
-            ret = decode_unregistered_user_data(&h->unregistered, gb, logctx, size);
+            ret = decode_unregistered_user_data(&h->unregistered, &gb_payload, logctx, size);
             break;
         case H264_SEI_TYPE_RECOVERY_POINT:
-            ret = decode_recovery_point(&h->recovery_point, gb, logctx);
+            ret = decode_recovery_point(&h->recovery_point, &gb_payload, logctx);
             break;
         case H264_SEI_TYPE_BUFFERING_PERIOD:
-            ret = decode_buffering_period(&h->buffering_period, gb, ps, logctx);
+            ret = decode_buffering_period(&h->buffering_period, &gb_payload, ps, logctx);
             break;
         case H264_SEI_TYPE_FRAME_PACKING:
-            ret = decode_frame_packing_arrangement(&h->frame_packing, gb);
+            ret = decode_frame_packing_arrangement(&h->frame_packing, &gb_payload);
             break;
         case H264_SEI_TYPE_DISPLAY_ORIENTATION:
-            ret = decode_display_orientation(&h->display_orientation, gb);
+            ret = decode_display_orientation(&h->display_orientation, &gb_payload);
             break;
         case H264_SEI_TYPE_GREEN_METADATA:
-            ret = decode_green_metadata(&h->green_metadata, gb);
+            ret = decode_green_metadata(&h->green_metadata, &gb_payload);
             break;
         case H264_SEI_TYPE_ALTERNATIVE_TRANSFER:
-            ret = decode_alternative_transfer(&h->alternative_transfer, gb);
+            ret = decode_alternative_transfer(&h->alternative_transfer, &gb_payload);
             break;
         default:
             av_log(logctx, AV_LOG_DEBUG, "unknown SEI type %d\n", type);
@@ -467,10 +470,12 @@ int ff_h264_sei_decode(H264SEIContext *h, GetBitContext *gb,
         if (ret < 0)
             master_ret = ret;
 
-        skip_bits_long(gb, next - get_bits_count(gb));
+        if (get_bits_left(&gb_payload) < 0) {
+            av_log(logctx, AV_LOG_WARNING, "SEI type %d overread by %d bits\n",
+                   type, -get_bits_left(&gb_payload));
+        }
 
-        // FIXME check bits here
-        align_get_bits(gb);
+        skip_bits_long(gb, 8 * size);
     }
 
     return master_ret;
