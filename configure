@@ -6265,6 +6265,9 @@ check_optflags(){
     enabled lto && check_ldflags "$@"
 }
 
+check_optflags $optflags
+check_optflags -fno-math-errno
+check_optflags -fno-signed-zeros
 
 if enabled lto; then
     test "$cc_type" != "$ld_type" && die "LTO requires same compiler and linker"
@@ -6272,10 +6275,6 @@ if enabled lto; then
     check_ldflags -flto $cpuflags
     disable inline_asm_direct_symbol_refs
 fi
-
-check_optflags $optflags
-check_optflags -fno-math-errno
-check_optflags -fno-signed-zeros
 
 enabled ftrapv && check_cflags -ftrapv
 
