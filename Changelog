@@ -16,6 +16,7 @@ version <next>:
 - spec compliant VP9 muxing support in MP4
 - remove the libnut muxer/demuxer wrappers
 - remove the libschroedinger encoder/decoder wrappers
+- surround audio filter
 
 version 3.3:
 - CrystalHD decoder moved to new decode API

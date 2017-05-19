@@ -3792,6 +3792,36 @@ channels. Default is 0.3.
 Set level of input signal of original channel. Default is 0.8.
 @end table
 
+@section surround
+Apply audio surround upmix filter.
+
+This filter allows to produce multichannel output from stereo audio stream.
+
+The filter accepts the following options:
+
+@table @option
+@item chl_out
+Set output channel layout. By default, this is @var{5.1}.
+
+See @ref{channel layout syntax,,the Channel Layout section in the ffmpeg-utils(1) manual,ffmpeg-utils}
+for the required syntax.
+
+@item level_in
+Set input volume level. By default, this is @var{1}.
+
+@item level_out
+Set output volume level. By default, this is @var{1}.
+
+@item lfe
+Enable LFE channel output if output channel layout has it. By default, this is enabled.
+
+@item lfe_low
+Set LFE low cut off frequency. By default, this is @var{128} Hz.
+
+@item lfe_high
+Set LFE high cut off frequency. By default, this is @var{256} Hz.
+@end table
+
 @section treble
 
 Boost or cut treble (upper) frequencies of the audio using a two-pole
