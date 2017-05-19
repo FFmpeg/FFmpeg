@@ -481,6 +481,15 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                 }
             }
 
+            if (p->sei.picture_timing.present) {
+                ret = ff_h264_sei_process_picture_timing(&p->sei.picture_timing,
+                                                         sps, avctx);
+                if (ret < 0) {
+                    av_log(avctx, AV_LOG_ERROR, "Error processing the picture timing SEI\n");
+                    p->sei.picture_timing.present = 0;
+                }
+            }
+
             if (sps->pic_struct_present_flag && p->sei.picture_timing.present) {
                 switch (p->sei.picture_timing.pic_struct) {
                 case H264_SEI_PIC_STRUCT_TOP_FIELD:

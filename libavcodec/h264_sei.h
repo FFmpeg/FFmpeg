@@ -20,6 +20,7 @@
 #define AVCODEC_H264_SEI_H
 
 #include "get_bits.h"
+#include "h264_ps.h"
 
 /**
  * SEI message types
@@ -79,6 +80,10 @@ typedef struct H264SEITimeCode {
 } H264SEITimeCode;
 
 typedef struct H264SEIPictureTiming {
+    // maximum size of pic_timing according to the spec should be 274 bits
+    uint8_t payload[40];
+    int     payload_size_bits;
+
     int present;
     H264_SEI_PicStructType pic_struct;
 
@@ -201,5 +206,11 @@ void ff_h264_sei_uninit(H264SEIContext *h);
  * Get stereo_mode string from the h264 frame_packing_arrangement
  */
 const char *ff_h264_sei_stereo_mode(const H264SEIFramePacking *h);
+
+/**
+ * Parse the contents of a picture timing message given an active SPS.
+ */
+int ff_h264_sei_process_picture_timing(H264SEIPictureTiming *h, const SPS *sps,
+                                       void *logctx);
 
 #endif /* AVCODEC_H264_SEI_H */
