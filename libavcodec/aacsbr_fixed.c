@@ -289,7 +289,7 @@ static void sbr_hf_inverse_filter(SBRDSPContext *dsp,
         if (shift >= 3)
             alpha0[k][0] = 0x7fffffff;
         else {
-            a00.mant <<= 1;
+            a00.mant *= 2;
             shift = 2-shift;
             if (shift == 0)
                 alpha0[k][0] = a00.mant;
@@ -303,7 +303,7 @@ static void sbr_hf_inverse_filter(SBRDSPContext *dsp,
         if (shift >= 3)
             alpha0[k][1] = 0x7fffffff;
         else {
-            a01.mant <<= 1;
+            a01.mant *= 2;
             shift = 2-shift;
             if (shift == 0)
                 alpha0[k][1] = a01.mant;
@@ -316,7 +316,7 @@ static void sbr_hf_inverse_filter(SBRDSPContext *dsp,
         if (shift >= 3)
             alpha1[k][0] = 0x7fffffff;
         else {
-            a10.mant <<= 1;
+            a10.mant *= 2;
             shift = 2-shift;
             if (shift == 0)
                 alpha1[k][0] = a10.mant;
@@ -330,7 +330,7 @@ static void sbr_hf_inverse_filter(SBRDSPContext *dsp,
         if (shift >= 3)
             alpha1[k][1] = 0x7fffffff;
         else {
-            a11.mant <<= 1;
+            a11.mant *= 2;
             shift = 2-shift;
             if (shift == 0)
                 alpha1[k][1] = a11.mant;
