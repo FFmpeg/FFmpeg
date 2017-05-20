@@ -763,7 +763,7 @@ static int apply_cropping(AVCodecContext *avctx, AVFrame *frame)
 
     /* adjust the offsets to avoid breaking alignment */
     if (!(avctx->flags & AV_CODEC_FLAG_UNALIGNED)) {
-        int log2_crop_align = frame->crop_left ? av_ctz(frame->crop_left) : INT_MAX;
+        int log2_crop_align = frame->crop_left ? ff_ctz(frame->crop_left) : INT_MAX;
         int min_log2_align = INT_MAX;
 
         for (i = 0; frame->data[i]; i++) {
