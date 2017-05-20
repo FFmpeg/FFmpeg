@@ -447,12 +447,12 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
 
     tfilter[0] = s->predictors[0] * 64;
     for (i = 1; i < filter_order; i++) {
-        int32_t *p1 = &tfilter[0];
-        int32_t *p2 = &tfilter[i - 1];
+        uint32_t *p1 = &tfilter[0];
+        uint32_t *p2 = &tfilter[i - 1];
 
         for (j = 0; j < (i + 1) / 2; j++) {
-            x     = *p1 + (s->predictors[i] * *p2 + 256 >> 9);
-            *p2  += s->predictors[i] * *p1 + 256 >> 9;
+            x     = *p1 + ((int32_t)(s->predictors[i] * *p2 + 256) >> 9);
+            *p2  += (int32_t)(s->predictors[i] * *p1 + 256) >> 9;
             *p1++ = x;
             p2--;
         }
