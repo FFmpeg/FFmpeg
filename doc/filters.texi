@@ -357,8 +357,8 @@ The filter accepts the following options:
 Set input gain. Default is 1. Range is between 0.015625 and 64.
 
 @item threshold
-If a signal of second stream rises above this level it will affect the gain
-reduction of the first stream.
+If a signal of stream rises above this level it will affect the gain
+reduction.
 By default it is 0.125. Range is between 0.00097563 and 1.
 
 @item ratio
@@ -376,7 +376,7 @@ reduction is decreased again. Default is 250. Range is between 0.01 and 9000.
 
 @item makeup
 Set the amount by how much signal will be amplified after processing.
-Default is 2. Range is from 1 and 64.
+Default is 1. Range is from 1 to 64.
 
 @item knee
 Curve the sharp knee around the threshold to enter gain reduction more softly.
@@ -3340,7 +3340,7 @@ reduction is decreased again. Default is 250. Range is between 0.01 and 9000.
 
 @item makeup
 Set the amount by how much signal will be amplified after processing.
-Default is 2. Range is from 1 and 64.
+Default is 1. Range is from 1 to 64.
 
 @item knee
 Curve the sharp knee around the threshold to enter gain reduction more softly.
