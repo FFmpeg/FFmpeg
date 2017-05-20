@@ -3788,6 +3788,7 @@ tmpfile(){
 }
 
 trap 'rm -rf -- "$FFTMPDIR"' EXIT
+trap 'exit 2' INT
 
 tmpfile TMPASM .asm
 tmpfile TMPC   .c
