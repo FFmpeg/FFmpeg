@@ -443,7 +443,7 @@ static int write_manifest(AVFormatContext *s, int final)
     DASHContext *c = s->priv_data;
     AVIOContext *out;
     char temp_filename[1024];
-    int ret, i;
+    int ret, i, as_id = 0;
     const char *proto = avio_find_protocol_name(s->filename);
     int use_rename = proto && !strcmp(proto, "file");
     static unsigned int warned_non_file = 0;
@@ -504,15 +504,15 @@ static int write_manifest(AVFormatContext *s, int final)
         OutputStream *os = &c->streams[0];
         int start_index = FFMAX(os->nb_segments - c->window_size, 0);
         int64_t start_time = av_rescale_q(os->segments[start_index]->time, s->streams[0]->time_base, AV_TIME_BASE_Q);
-        avio_printf(out, "\t<Period start=\"");
+        avio_printf(out, "\t<Period id=\"0\" start=\"");
         write_time(out, start_time);
         avio_printf(out, "\">\n");
     } else {
-        avio_printf(out, "\t<Period start=\"PT0.0S\">\n");
+        avio_printf(out, "\t<Period id=\"0\" start=\"PT0.0S\">\n");
     }
 
     if (c->has_video) {
-        avio_printf(out, "\t\t<AdaptationSet contentType=\"video\" segmentAlignment=\"true\" bitstreamSwitching=\"true\"");
+        avio_printf(out, "\t\t<AdaptationSet id=\"%d\" contentType=\"video\" segmentAlignment=\"true\" bitstreamSwitching=\"true\"", as_id++);
         if (c->max_frame_rate.num && !c->ambiguous_frame_rate)
             avio_printf(out, " %s=\"%d/%d\"", (av_cmp_q(c->min_frame_rate, c->max_frame_rate) < 0) ? "maxFrameRate" : "frameRate", c->max_frame_rate.num, c->max_frame_rate.den);
         avio_printf(out, ">\n");
@@ -535,7 +535,7 @@ static int write_manifest(AVFormatContext *s, int final)
         avio_printf(out, "\t\t</AdaptationSet>\n");
     }
     if (c->has_audio) {
-        avio_printf(out, "\t\t<AdaptationSet contentType=\"audio\" segmentAlignment=\"true\" bitstreamSwitching=\"true\">\n");
+        avio_printf(out, "\t\t<AdaptationSet id=\"%d\" contentType=\"audio\" segmentAlignment=\"true\" bitstreamSwitching=\"true\">\n", as_id++);
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];
             OutputStream *os = &c->streams[i];
