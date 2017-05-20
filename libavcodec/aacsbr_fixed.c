@@ -575,20 +575,25 @@ static void sbr_hf_assemble(int Y1[38][64][2],
 
                 SoftFloat *in  = sbr->s_m[e];
                 for (m = 0; m+1 < m_max; m+=2) {
-                  shift = 22 - in[m  ].exp;
-                  round = 1 << (shift-1);
-                  out[2*m  ] += (in[m  ].mant * A + round) >> shift;
+                    shift = 22 - in[m  ].exp;
+                    if (shift < 32) {
+                        round = 1 << (shift-1);
+                        out[2*m  ] += (in[m  ].mant * A + round) >> shift;
+                    }
 
-                  shift = 22 - in[m+1].exp;
-                  round = 1 << (shift-1);
-                  out[2*m+2] += (in[m+1].mant * B + round) >> shift;
+                    shift = 22 - in[m+1].exp;
+                    if (shift < 32) {
+                        round = 1 << (shift-1);
+                        out[2*m+2] += (in[m+1].mant * B + round) >> shift;
+                    }
                 }
                 if(m_max&1)
                 {
-                  shift = 22 - in[m  ].exp;
-                  round = 1 << (shift-1);
-
-                  out[2*m  ] += (in[m  ].mant * A + round) >> shift;
+                    shift = 22 - in[m  ].exp;
+                    if (shift < 32) {
+                        round = 1 << (shift-1);
+                        out[2*m  ] += (in[m  ].mant * A + round) >> shift;
+                    }
                 }
             }
             indexnoise = (indexnoise + m_max) & 0x1ff;
