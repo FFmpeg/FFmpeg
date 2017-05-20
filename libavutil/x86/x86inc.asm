@@ -475,41 +475,42 @@ DECLARE_REG 14, R13, 120
     WIN64_PUSH_XMM
 %endmacro
 
-%macro WIN64_RESTORE_XMM_INTERNAL 1
+%macro WIN64_RESTORE_XMM_INTERNAL 0
     %assign %%pad_size 0
     %if xmm_regs_used > 8
         %assign %%i xmm_regs_used
         %rep xmm_regs_used-8
             %assign %%i %%i-1
-            movaps xmm %+ %%i, [%1 + (%%i-8)*16 + stack_size + 32]
+            movaps xmm %+ %%i, [rsp + (%%i-8)*16 + stack_size + 32]
         %endrep
     %endif
     %if stack_size_padded > 0
         %if stack_size > 0 && required_stack_alignment > STACK_ALIGNMENT
             mov rsp, rstkm
         %else
-            add %1, stack_size_padded
+            add rsp, stack_size_padded
             %assign %%pad_size stack_size_padded
         %endif
     %endif
     %if xmm_regs_used > 7
-        movaps xmm7, [%1 + stack_offset - %%pad_size + 24]
+        movaps xmm7, [rsp + stack_offset - %%pad_size + 24]
     %endif
     %if xmm_regs_used > 6
-        movaps xmm6, [%1 + stack_offset - %%pad_size +  8]
+        movaps xmm6, [rsp + stack_offset - %%pad_size +  8]
     %endif
 %endmacro
 
-%macro WIN64_RESTORE_XMM 1
-    WIN64_RESTORE_XMM_INTERNAL %1
+%macro WIN64_RESTORE_XMM 0
+    WIN64_RESTORE_XMM_INTERNAL
     %assign stack_offset (stack_offset-stack_size_padded)
+    %assign stack_size_padded 0
     %assign xmm_regs_used 0
 %endmacro
 
 %define has_epilogue regs_used > 7 || xmm_regs_used > 6 || mmsize == 32 || stack_size > 0
 
 %macro RET 0
-    WIN64_RESTORE_XMM_INTERNAL rsp
+    WIN64_RESTORE_XMM_INTERNAL
     POP_IF_USED 14, 13, 12, 11, 10, 9, 8, 7
     %if mmsize == 32
         vzeroupper
@@ -625,7 +626,7 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
 %if WIN64 == 0
     %macro WIN64_SPILL_XMM 1
     %endmacro
-    %macro WIN64_RESTORE_XMM 1
+    %macro WIN64_RESTORE_XMM 0
     %endmacro
     %macro WIN64_PUSH_XMM 0
     %endmacro
