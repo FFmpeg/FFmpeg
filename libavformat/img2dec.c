@@ -876,7 +876,7 @@ static int sunrast_probe(AVProbeData *p)
 static int svg_probe(AVProbeData *p)
 {
     if (av_match_ext(p->filename, "svg") || av_match_ext(p->filename, "svgz"))
-        return AVPROBE_SCORE_EXTENSION;
+        return AVPROBE_SCORE_EXTENSION + 1;
     return 0;
 }
 
