@@ -123,8 +123,9 @@
 #define ADD(a, b) val##a += val##b
 
 /* DCT32 without 1/sqrt(2) coef zero scaling. */
-void dct32(INTFLOAT *out, const INTFLOAT *tab)
+void dct32(INTFLOAT *out, const INTFLOAT *tab_arg)
 {
+    const SUINTFLOAT *tab = tab_arg;
     SUINTFLOAT tmp0, tmp1;
 
     SUINTFLOAT val0 , val1 , val2 , val3 , val4 , val5 , val6 , val7 ,
