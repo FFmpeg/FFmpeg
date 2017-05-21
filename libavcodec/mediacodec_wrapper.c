@@ -66,7 +66,7 @@ struct JNIAMediaCodecListFields {
     jfieldID hevc_profile_main10_id;
     jfieldID hevc_profile_main10_hdr10_id;
 
-} JNIAMediaCodecListFields;
+};
 
 static const struct FFJniField jni_amediacodeclist_mapping[] = {
     { "android/media/MediaCodecList", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaCodecListFields, mediacodec_list_class), 1 },
@@ -125,7 +125,7 @@ struct JNIAMediaFormatFields {
 
     jmethodID to_string_id;
 
-} JNIAMediaFormatFields;
+};
 
 static const struct FFJniField jni_amediaformat_mapping[] = {
     { "android/media/MediaFormat", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaFormatFields, mediaformat_class), 1 },
@@ -210,7 +210,7 @@ struct JNIAMediaCodecFields {
     jfieldID presentation_time_us_id;
     jfieldID size_id;
 
-} JNIAMediaCodecFields;
+};
 
 static const struct FFJniField jni_amediacodec_mapping[] = {
     { "android/media/MediaCodec", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaCodecFields, mediacodec_class), 1 },
