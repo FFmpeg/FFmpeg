@@ -107,6 +107,7 @@ AVFrame *ff_framequeue_take(FFFrameQueue *fq)
     fq->tail &= fq->allocated - 1;
     fq->total_frames_tail++;
     fq->total_samples_tail += b->frame->nb_samples;
+    fq->samples_skipped = 0;
     check_consistency(fq);
     return b->frame;
 }
@@ -146,5 +147,6 @@ void ff_framequeue_skip_samples(FFFrameQueue *fq, size_t samples, AVRational tim
     for (i = 0; i < planes && i < AV_NUM_DATA_POINTERS; i++)
         b->frame->data[i] = b->frame->extended_data[i];
     fq->total_samples_tail += samples;
+    fq->samples_skipped = 1;
     ff_framequeue_update_peeked(fq, 0);
 }

@@ -459,7 +459,7 @@ static int decode_frame(AVCodecContext *avctx,
             int size, offset, start = 0;
 
             offset = bytestream2_get_le16(gb);
-            if (offset > s->nb_blocks)
+            if (offset >= s->nb_blocks)
                 return AVERROR_INVALIDDATA;
 
             size = bytestream2_get_le16(gb);

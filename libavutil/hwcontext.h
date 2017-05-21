@@ -30,6 +30,7 @@ enum AVHWDeviceType {
     AV_HWDEVICE_TYPE_VAAPI,
     AV_HWDEVICE_TYPE_DXVA2,
     AV_HWDEVICE_TYPE_QSV,
+    AV_HWDEVICE_TYPE_VIDEOTOOLBOX,
 };
 
 typedef struct AVHWDeviceInternal AVHWDeviceInternal;

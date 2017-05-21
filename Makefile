@@ -11,6 +11,8 @@ vpath %.asm  $(SRC_PATH)
 vpath %.rc   $(SRC_PATH)
 vpath %.v    $(SRC_PATH)
 vpath %.texi $(SRC_PATH)
+vpath %.cu   $(SRC_PATH)
+vpath %.ptx  $(SRC_PATH)
 vpath %/fate_config.sh.template $(SRC_PATH)
 
 AVPROGS-$(CONFIG_FFMPEG)   += ffmpeg
@@ -106,12 +108,6 @@ define RESET
 $(1) :=
 $(1)-yes :=
 endef
-
-ifdef CONFIG_RAISE_MAJOR
-RAISE_MAJOR = 100
-else
-RAISE_MAJOR = 0
-endif
 
 define DOSUBDIR
 $(foreach V,$(SUBDIR_VARS),$(eval $(call RESET,$(V))))

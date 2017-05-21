@@ -1191,7 +1191,7 @@ static int take_samples(AVFilterLink *link, unsigned min, unsigned max,
        called with enough samples. */
     av_assert1(samples_ready(link, link->min_samples));
     frame0 = frame = ff_framequeue_peek(&link->fifo, 0);
-    if (frame->nb_samples >= min && frame->nb_samples < max) {
+    if (!link->fifo.samples_skipped && frame->nb_samples >= min && frame->nb_samples <= max) {
         *rframe = ff_framequeue_take(&link->fifo);
         return 0;
     }
@@ -1522,6 +1522,12 @@ int ff_inlink_consume_frame(AVFilterLink *link, AVFrame **rframe)
     *rframe = NULL;
     if (!ff_inlink_check_available_frame(link))
         return 0;
+
+    if (link->fifo.samples_skipped) {
+        frame = ff_framequeue_peek(&link->fifo, 0);
+        return ff_inlink_consume_samples(link, frame->nb_samples, frame->nb_samples, rframe);
+    }
+
     frame = ff_framequeue_take(&link->fifo);
     consume_update(link, frame);
     *rframe = frame;

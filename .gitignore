@@ -19,6 +19,8 @@
 *.swp
 *.ver
 *.version
+*.ptx
+*.ptx.c
 *_g
 \#*
 .\#*

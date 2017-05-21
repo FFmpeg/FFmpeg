@@ -55,6 +55,7 @@ typedef struct OpusEncContext {
     AudioFrameQueue afq;
     AVFloatDSPContext *dsp;
     MDCT15Context *mdct[CELT_BLOCK_NB];
+    CeltPVQ *pvq;
     struct FFBufQueue bufqueue;
 
     enum OpusMode mode;
@@ -797,15 +798,15 @@ static void celt_quant_bands(OpusRangeCoder *rc, CeltFrame *f)
         }
 
         if (f->dual_stereo) {
-            cm[0] = ff_celt_encode_band(f, rc, i, X, NULL, band_size, b / 2, f->blocks,
+            cm[0] = f->pvq->encode_band(f->pvq, f, rc, i, X, NULL, band_size, b / 2, f->blocks,
                                         effective_lowband != -1 ? norm + (effective_lowband << f->size) : NULL, f->size,
                                         norm + band_offset, 0, 1.0f, lowband_scratch, cm[0]);
 
-            cm[1] = ff_celt_encode_band(f, rc, i, Y, NULL, band_size, b / 2, f->blocks,
+            cm[1] = f->pvq->encode_band(f->pvq, f, rc, i, Y, NULL, band_size, b / 2, f->blocks,
                                         effective_lowband != -1 ? norm2 + (effective_lowband << f->size) : NULL, f->size,
                                         norm2 + band_offset, 0, 1.0f, lowband_scratch, cm[1]);
         } else {
-            cm[0] = ff_celt_encode_band(f, rc, i, X, Y, band_size, b, f->blocks,
+            cm[0] = f->pvq->encode_band(f->pvq, f, rc, i, X, Y, band_size, b, f->blocks,
                                         effective_lowband != -1 ? norm + (effective_lowband << f->size) : NULL, f->size,
                                         norm + band_offset, 0, 1.0f, lowband_scratch, cm[0] | cm[1]);
             cm[1] = cm[0];
@@ -883,6 +884,7 @@ static void ff_opus_psy_celt_frame_setup(OpusEncContext *s, CeltFrame *f, int in
 
     f->avctx = s->avctx;
     f->dsp = s->dsp;
+    f->pvq = s->pvq;
     f->start_band = (s->mode == OPUS_MODE_HYBRID) ? 17 : 0;
     f->end_band = ff_celt_band_end[s->bandwidth];
     f->channels = s->channels;
@@ -1019,6 +1021,7 @@ static av_cold int opus_encode_end(AVCodecContext *avctx)
     for (i = 0; i < CELT_BLOCK_NB; i++)
         ff_mdct15_uninit(&s->mdct[i]);
 
+    ff_celt_pvq_uninit(&s->pvq);
     av_freep(&s->dsp);
     av_freep(&s->frame);
     av_freep(&s->rc);
@@ -1075,6 +1078,9 @@ static av_cold int opus_encode_init(AVCodecContext *avctx)
 
     ff_af_queue_init(avctx, &s->afq);
 
+    if ((ret = ff_celt_pvq_init(&s->pvq)) < 0)
+        return ret;
+
     if (!(s->dsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT)))
         return AVERROR(ENOMEM);
 
@@ -1083,8 +1089,10 @@ static av_cold int opus_encode_init(AVCodecContext *avctx)
         if ((ret = ff_mdct15_init(&s->mdct[i], 0, i + 3, 68 << (CELT_BLOCK_NB - 1 - i))))
             return AVERROR(ENOMEM);
 
-    for (i = 0; i < OPUS_MAX_FRAMES_PER_PACKET; i++)
+    for (i = 0; i < OPUS_MAX_FRAMES_PER_PACKET; i++) {
         s->frame[i].block[0].emph_coeff = s->frame[i].block[1].emph_coeff = 0.0f;
+        s->frame[i].seed = 0;
+    }
 
     /* Zero out previous energy (matters for inter first frame) */
     for (ch = 0; ch < s->channels; ch++)

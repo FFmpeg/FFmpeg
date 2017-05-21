@@ -65,7 +65,15 @@ SECTION .text
 
     IDCT4_1D      w, 0, 1, 2, 3, 4, 5
     mova         m6, [pw_32]
-    TRANSPOSE4x4W 0, 1, 2, 3, 4
+    %if mmsize == 8
+        TRANSPOSE4x4W 0, 1, 2, 3, 4
+    %else
+        punpcklwd m0, m1
+        punpcklwd m2, m3
+        SBUTTERFLY dq, 0, 2, 4
+        MOVHL m1, m0
+        MOVHL m3, m2
+    %endif
     paddw        m0, m6
     IDCT4_1D      w, 0, 1, 2, 3, 4, 5
     pxor         m7, m7
@@ -87,10 +95,9 @@ cglobal h264_idct_add_8, 3, 3, 0
     RET
 
 %macro IDCT8_1D 2
-    mova         m0, m1
-    psraw        m1, 1
-    mova         m4, m5
-    psraw        m4, 1
+    psraw        m0, m1, 1
+    SWAP 0, 1
+    psraw        m4, m5, 1
     paddw        m4, m5
     paddw        m1, m0
     paddw        m4, m7
@@ -107,10 +114,9 @@ cglobal h264_idct_add_8, 3, 3, 0
     psubw        m0, m3
     psubw        m5, m7
 
-    mova         m7, m1
-    psraw        m1, 2
-    mova         m3, m4
-    psraw        m3, 2
+    psraw        m7, m1, 2
+    SWAP 7,1
+    psraw        m3, m4, 2
     paddw        m3, m0
     psraw        m0, 2
     paddw        m1, m5
@@ -118,10 +124,9 @@ cglobal h264_idct_add_8, 3, 3, 0
     psubw        m0, m4
     psubw        m7, m5
 
-    mova         m5, m6
-    psraw        m6, 1
-    mova         m4, m2
-    psraw        m4, 1
+    psraw        m5, m6, 1
+    SWAP 5,6
+    psraw        m4, m2, 1
     paddw        m6, m2
     psubw        m4, m5
 
@@ -695,7 +700,7 @@ cglobal h264_idct_add8_8, 5, 8 + npicregs, 0, dst1, block_offset, block, stride,
     add        r0mp, gprsize
 %endif
     call         h264_idct_add8_mmx_plane
-    RET
+    RET ; TODO: check rep ret after a function call
 
 cglobal h264_idct_add8_422_8, 5, 8 + npicregs, 0, dst1, block_offset, block, stride, nnzc, cntr, coeff, dst2, picreg
 ; dst1, block_offset, block, stride, nnzc, cntr, coeff, dst2, picreg
@@ -727,7 +732,7 @@ cglobal h264_idct_add8_422_8, 5, 8 + npicregs, 0, dst1, block_offset, block, str
     add r5, 4
     call         h264_idct_add8_mmx_plane
 
-    RET
+    RET ; TODO: check rep ret after a function call
 
 h264_idct_add8_mmxext_plane:
     movsxdifnidn r3, r3d
@@ -795,7 +800,7 @@ cglobal h264_idct_add8_8, 5, 8 + npicregs, 0, dst1, block_offset, block, stride,
     add        r0mp, gprsize
 %endif
     call h264_idct_add8_mmxext_plane
-    RET
+    RET ; TODO: check rep ret after a function call
 
 ; r0 = uint8_t *dst, r2 = int16_t *block, r3 = int stride, r6=clobbered
 h264_idct_dc_add8_mmxext:
@@ -878,7 +883,7 @@ cglobal h264_idct_add16_8, 5, 5 + ARCH_X86_64, 8
     add16_sse2_cycle 5, 0x24
     add16_sse2_cycle 6, 0x1e
     add16_sse2_cycle 7, 0x26
-    RET
+REP_RET
 
 %macro add16intra_sse2_cycle 2
     movzx       r0, word [r4+%2]
@@ -925,7 +930,7 @@ cglobal h264_idct_add16intra_8, 5, 7 + ARCH_X86_64, 8
     add16intra_sse2_cycle 5, 0x24
     add16intra_sse2_cycle 6, 0x1e
     add16intra_sse2_cycle 7, 0x26
-    RET
+REP_RET
 
 %macro add8_sse2_cycle 2
     movzx       r0, word [r4+%2]
@@ -980,7 +985,7 @@ cglobal h264_idct_add8_8, 5, 7 + ARCH_X86_64, 8
 %endif
     add8_sse2_cycle 2, 0x5c
     add8_sse2_cycle 3, 0x64
-    RET
+REP_RET
 
 ;void ff_h264_luma_dc_dequant_idct_mmx(int16_t *output, int16_t *input, int qmul)
 
@@ -1134,3 +1139,53 @@ INIT_MMX mmx
 IDCT_DC_DEQUANT 0
 INIT_MMX sse2
 IDCT_DC_DEQUANT 7
+
+; %unmacro STORE_DIFFx2 8 ; remove macro from x86util.asm but yasm doesn't have this yet
+%macro STORE_DIFFx2 8 ; add1, add2, reg1, reg2, zero, shift, source, stride
+    movd       %3, [%7]
+    movd       %4, [%7+%8]
+    psraw      %1, %6
+    psraw      %2, %6
+    punpcklbw  %3, %5
+    punpcklbw  %4, %5
+    paddw      %3, %1
+    paddw      %4, %2
+    packuswb   %3, %5
+    packuswb   %4, %5
+    movd     [%7], %3
+    movd  [%7+%8], %4
+%endmacro
+
+%macro DC_ADD_INIT 1
+    add      %1d, 32
+    sar      %1d, 6
+    movd     m0, %1d
+    pshuflw  m0, m0, 0
+    lea      %1, [3*stride_q]
+    pxor     m1, m1
+    psubw    m1, m0
+    packuswb m0, m0
+    packuswb m1, m1
+%endmacro
+
+%macro IDCT_XMM 1
+
+INIT_XMM %1
+
+cglobal h264_idct_add_8, 3, 3, 8, dst_, block_, stride_
+    movsxdifnidn stride_q, stride_d
+    IDCT4_ADD    dst_q, block_q, stride_q
+RET
+
+cglobal h264_idct_dc_add_8, 3, 4, 6, dst_, block_, stride_
+    movsxdifnidn stride_q, stride_d
+    movsx             r3d, word [block_q]
+    mov   dword [block_q], 0
+    DC_ADD_INIT r3
+    DC_ADD_MMXEXT_OP movd, dst_q, stride_q, r3
+RET
+
+%endmacro
+
+IDCT_XMM sse2
+IDCT_XMM avx

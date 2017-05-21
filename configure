@@ -109,7 +109,6 @@ Configuration options:
   --enable-gray            enable full grayscale support (slower color)
   --disable-swscale-alpha  disable alpha channel support in swscale
   --disable-all            disable building components, libraries and programs
-  --enable-raise-major     increase major version numbers in sonames [no]
 
 Program options:
   --disable-programs       do not build command line programs
@@ -245,6 +244,7 @@ External library support:
   --enable-libopenmpt      enable decoding tracked files via libopenmpt [no]
   --enable-libopus         enable Opus de/encoding via libopus [no]
   --enable-libpulse        enable Pulseaudio input via libpulse [no]
+  --enable-librsvg         enable SVG rasterization via librsvg [no]
   --enable-librubberband   enable rubberband needed for rubberband filter [no]
   --enable-librtmp         enable RTMP[E] support via librtmp [no]
   --enable-libschroedinger enable Dirac de/encoding via libschroedinger [no]
@@ -297,6 +297,7 @@ External library support:
   The following libraries provide various hardware acceleration features:
   --disable-audiotoolbox   disable Apple AudioToolbox code [autodetect]
   --disable-cuda           disable dynamically linked Nvidia CUDA code [autodetect]
+  --enable-cuda-sdk        enable CUDA features that require the CUDA SDK [no]
   --disable-cuvid          disable Nvidia CUVID support [autodetect]
   --disable-d3d11va        disable Microsoft Direct3D 11 video acceleration code [autodetect]
   --disable-dxva2          disable Microsoft DirectX 9 video acceleration code [autodetect]
@@ -337,6 +338,7 @@ Toolchain options:
   --cxx=CXX                use C compiler CXX [$cxx_default]
   --objcc=OCC              use ObjC compiler OCC [$cc_default]
   --dep-cc=DEPCC           use dependency generator DEPCC [$cc_default]
+  --nvcc=NVCC              use Nvidia CUDA compiler NVCC [$nvcc_default]
   --ld=LD                  use linker LD [$ld_default]
   --pkg-config=PKGCONFIG   use pkg-config tool PKGCONFIG [$pkg_config_default]
   --pkg-config-flags=FLAGS pass additional flags to pkgconf []
@@ -358,6 +360,7 @@ Toolchain options:
   --extra-libs=ELIBS       add ELIBS [$ELIBS]
   --extra-version=STRING   version string suffix []
   --optflags=OPTFLAGS      override optimization-related compiler flags
+  --nvccflags=NVCCFLAGS    override nvcc flags [$nvccflags_default]
   --build-suffix=SUFFIX    library name suffix []
   --enable-pic             build position-independent code
   --enable-thumb           compile for Thumb instruction set
@@ -1557,6 +1560,7 @@ EXTERNAL_LIBRARY_LIST="
     libopenmpt
     libopus
     libpulse
+    librsvg
     librtmp
     libschroedinger
     libshine
@@ -1598,6 +1602,7 @@ HWACCEL_AUTODETECT_LIBRARY_LIST="
 "
 
 HWACCEL_LIBRARY_NONFREE_LIST="
+    cuda_sdk
     libnpp
 "
 
@@ -1686,7 +1691,6 @@ CONFIG_LIST="
     neon_clobber_test
     ossfuzz
     pic
-    raise_major
     thumb
     valgrind_backtrace
     xmm_clobber_test
@@ -2000,6 +2004,7 @@ TOOLCHAIN_FEATURES="
     asm_mod_q
     attribute_may_alias
     attribute_packed
+    blocks_extension
     ebp_available
     ebx_available
     gnu_as
@@ -2219,6 +2224,7 @@ CMDLINE_SET="
     malloc_prefix
     nm
     optflags
+    nvccflags
     pkg_config
     pkg_config_flags
     progs_suffix
@@ -2594,7 +2600,7 @@ d3d11va_deps="d3d11_h dxva_h ID3D11VideoDecoder ID3D11VideoContext"
 dxva2_deps="dxva2api_h DXVA2_ConfigPictureDecode"
 dxva2_extralibs="-luser32"
 dxva2_lib_deps="dxva2"
-vda_framework_deps="VideoDecodeAcceleration_VDADecoder_h"
+vda_framework_deps="VideoDecodeAcceleration_VDADecoder_h blocks_extension"
 vda_framework_extralibs="-framework VideoDecodeAcceleration"
 vda_deps="vda_framework pthreads"
 vda_extralibs="-framework CoreFoundation -framework QuartzCore"
@@ -2716,7 +2722,8 @@ qsvenc_select="qsv"
 vaapi_encode_deps="vaapi"
 
 hwupload_cuda_filter_deps="cuda"
-scale_npp_filter_deps="cuda libnpp"
+scale_npp_filter_deps="cuda_sdk libnpp"
+scale_cuda_filter_deps="cuda_sdk"
 
 nvenc_deps="cuda"
 nvenc_deps_any="dlopen LoadLibrary"
@@ -2869,6 +2876,7 @@ libopenmpt_demuxer_deps="libopenmpt"
 libopus_decoder_deps="libopus"
 libopus_encoder_deps="libopus"
 libopus_encoder_select="audio_frame_queue"
+librsvg_decoder_deps="librsvg"
 libschroedinger_decoder_deps="libschroedinger"
 libschroedinger_encoder_deps="libschroedinger"
 libshine_encoder_deps="libshine"
@@ -3259,6 +3267,8 @@ strip_default="strip"
 version_script='--version-script'
 yasmexe_default="yasm"
 windres_default="windres"
+nvcc_default="nvcc"
+nvccflags_default="-gencode arch=compute_30,code=sm_30 -O2"
 
 # OS
 target_os_default=$(tolower $(uname -s))
@@ -3332,6 +3342,8 @@ HOSTCC_C='-c'
 HOSTCC_E='-E -o $@'
 HOSTCC_O='-o $@'
 HOSTLD_O='-o $@'
+NVCC_C='-c'
+NVCC_O='-o $@'
 
 host_extralibs='-lm'
 host_cflags_filter=echo
@@ -3719,7 +3731,7 @@ windres_default="${cross_prefix}${windres_default}"
 sysinclude_default="${sysroot}/usr/include"
 
 set_default arch cc cxx doxygen pkg_config ranlib strip sysinclude \
-    target_exec target_os yasmexe
+    target_exec target_os yasmexe nvcc
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
@@ -3753,25 +3765,32 @@ HOSTEXESUF=$(exesuf $host_os)
 
 if [ -n "$tempprefix" ] ; then
     mktemp(){
-        echo $tempprefix.${HOSTNAME}.${UID}
+        tmpname="$tempprefix.${HOSTNAME}.${UID}"
+        echo "$tmpname"
+        mkdir "$tmpname"
     }
 elif ! check_cmd mktemp -u XXXXXX; then
     # simple replacement for missing mktemp
     # NOT SAFE FOR GENERAL USE
     mktemp(){
-        echo "${2%%XXX*}.${HOSTNAME}.${UID}.$$"
+        tmpname="${2%%XXX*}.${HOSTNAME}.${UID}.$$"
+        echo "$tmpname"
+        mkdir "$tmpname"
     }
 fi
 
+FFTMPDIR=$(mktemp -d "${TMPDIR}/ffconf.XXXXXXXX" 2> /dev/null) ||
+    die "Unable to create temporary directory in $TMPDIR."
+
 tmpfile(){
-    tmp=$(mktemp -u "${TMPDIR}/ffconf.XXXXXXXX")$2 &&
-        (set -C; exec > $tmp) 2>/dev/null ||
-        die "Unable to create temporary file in $TMPDIR."
-    append TMPFILES $tmp
+    tmp="${FFTMPDIR}/test"$2
+    (set -C; exec > $tmp) 2> /dev/null ||
+        die "Unable to create temporary file in $FFTMPDIR."
     eval $1=$tmp
 }
 
-trap 'rm -f -- $TMPFILES' EXIT
+trap 'rm -rf -- "$FFTMPDIR"' EXIT
+trap 'exit 2' INT
 
 tmpfile TMPASM .asm
 tmpfile TMPC   .c
@@ -3849,6 +3868,7 @@ msvc_common_flags(){
             # specific filters, they must be specified here as well or else the
             # generic catch all at the bottom will print the original flag.
             -Wall)                ;;
+            -Wextra)              ;;
             -std=c99)             ;;
             # Common flags
             -fomit-frame-pointer) ;;
@@ -3874,7 +3894,9 @@ msvc_flags(){
     msvc_common_flags "$@"
     for flag; do
         case $flag in
-            -Wall)                echo -W4 -wd4244 -wd4127 -wd4018 -wd4389     \
+            -Wall)                echo -W3 -wd4018 -wd4146 -wd4244 -wd4305     \
+                                       -wd4554 ;;
+            -Wextra)              echo -W4 -wd4244 -wd4127 -wd4018 -wd4389     \
                                        -wd4146 -wd4057 -wd4204 -wd4706 -wd4305 \
                                        -wd4152 -wd4324 -we4013 -wd4100 -wd4214 \
                                        -wd4307 \
@@ -4212,6 +4234,7 @@ set_ccvars CXX
 
 probe_cc hostcc "$host_cc"
 host_cflags_filter=$_flags_filter
+host_cflags_speed=$_cflags_speed
 add_host_cflags  $_flags $_cflags
 set_ccvars HOSTCC
 
@@ -4715,7 +4738,7 @@ EOF
 add_host_cppflags -D_ISOC99_SOURCE
 check_host_cflags -std=c99
 check_host_cflags -Wall
-check_host_cflags -O3
+check_host_cflags $host_cflags_speed
 
 check_64bit(){
     arch32=$1
@@ -4960,7 +4983,7 @@ case $target_os in
         strip="lxlite -CS"
         objformat="aout"
         add_cppflags -D_GNU_SOURCE
-        add_ldflags -Zomf -Zbin-files -Zargs-wild -Zmap
+        add_ldflags -Zomf -Zbin-files -Zargs-wild -Zhigh-mem -Zmap
         SHFLAGS='$(SUBDIR)$(NAME).def -Zdll -Zomf'
         LIBSUF="_s.a"
         SLIBPREF=""
@@ -5755,7 +5778,7 @@ done
 enabled avfoundation_indev && { check_header_objcc AVFoundation/AVFoundation.h || disable avfoundation_indev; }
 enabled avfoundation_indev && { check_lib avfoundation_indev CoreGraphics/CoreGraphics.h CGGetActiveDisplayList -framework CoreGraphics ||
                                 check_lib avfoundation_indev ApplicationServices/ApplicationServices.h CGGetActiveDisplayList -framework ApplicationServices; }
-enabled cuda              && check_header cuda.h # this is not a dependency
+enabled cuda_sdk          && require cuda_sdk cuda.h cuCtxCreate -lcuda
 enabled cuvid             && { enabled cuda ||
                                die "ERROR: CUVID requires CUDA"; }
 enabled chromaprint       && require chromaprint chromaprint.h chromaprint_get_version -lchromaprint
@@ -5766,8 +5789,7 @@ enabled decklink          && { { check_header DeckLinkAPI.h || die "ERROR: DeckL
 enabled frei0r            && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
 enabled gmp               && require gmp gmp.h mpz_export -lgmp
 enabled gnutls            && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
-enabled jni               && { [ $target_os = "android" ] && check_header jni.h && enabled pthreads &&
-                               check_lib jni "dlfcn.h" dlopen -ldl || die "ERROR: jni not found"; }
+enabled jni               && { [ $target_os = "android" ] && check_header jni.h && enabled pthreads || die "ERROR: jni not found"; }
 enabled ladspa            && { check_header ladspa.h || die "ERROR: ladspa.h header not found"; }
 enabled libiec61883       && require libiec61883 libiec61883/iec61883.h iec61883_cmp_connect -lraw1394 -lavc1394 -lrom1394 -liec61883
 enabled libass            && require_pkg_config libass ass/ass.h ass_library_init
@@ -5828,6 +5850,7 @@ enabled libopus           && {
     }
 }
 enabled libpulse          && require_pkg_config libpulse pulse/pulseaudio.h pa_context_new
+enabled librsvg           && require_pkg_config librsvg-2.0 librsvg-2.0/librsvg/rsvg.h rsvg_handle_render_cairo
 enabled librtmp           && require_pkg_config librtmp librtmp/rtmp.h RTMP_Socket
 enabled librubberband     && require_pkg_config "rubberband >= 1.8.1" rubberband/rubberband-c.h rubberband_new
 enabled libschroedinger   && require_pkg_config schroedinger-1.0 schroedinger/schro.h schro_init
@@ -6164,6 +6187,10 @@ check_disable_warning_headers(){
 check_disable_warning_headers -Wno-deprecated-declarations
 check_disable_warning_headers -Wno-unused-variable
 
+check_cc <<EOF && enable blocks_extension
+void (^block)(void);
+EOF
+
 # add some linker flags
 check_ldflags -Wl,--warn-common
 check_ldflags -Wl,-rpath-link=libpostproc:libswresample:libswscale:libavfilter:libavdevice:libavformat:libavcodec:libavutil:libavresample
@@ -6239,11 +6266,24 @@ if [ -z "$optflags" ]; then
     fi
 fi
 
+if [ -z "$nvccflags" ]; then
+    nvccflags=$nvccflags_default
+fi
+
+if enabled x86_64 || enabled ppc64 || enabled aarch64; then
+    nvccflags="$nvccflags -m64"
+else
+    nvccflags="$nvccflags -m32"
+fi
+
 check_optflags(){
     check_cflags "$@"
     enabled lto && check_ldflags "$@"
 }
 
+check_optflags $optflags
+check_optflags -fno-math-errno
+check_optflags -fno-signed-zeros
 
 if enabled lto; then
     test "$cc_type" != "$ld_type" && die "LTO requires same compiler and linker"
@@ -6251,10 +6291,6 @@ if enabled lto; then
     check_ldflags -flto $cpuflags
     disable inline_asm_direct_symbol_refs
 fi
-
-check_optflags $optflags
-check_optflags -fno-math-errno
-check_optflags -fno-signed-zeros
 
 enabled ftrapv && check_cflags -ftrapv
 
@@ -6374,7 +6410,7 @@ fi
 for pfx in "" host_; do
     varname=${pfx%_}cc_type
     eval "type=\$$varname"
-    if [ $type = "msvc" ]; then
+    if [ "$type" = "msvc" ]; then
         check_${pfx}cc <<EOF || add_${pfx}cflags -Dinline=__inline
 static inline int foo(int a) { return a; }
 EOF
@@ -6702,6 +6738,7 @@ ARFLAGS=$arflags
 AR_O=$ar_o
 RANLIB=$ranlib
 STRIP=$strip
+NVCC=$nvcc
 CP=cp -p
 LN_S=$ln_s
 CPPFLAGS=$CPPFLAGS
@@ -6709,6 +6746,7 @@ CFLAGS=$CFLAGS
 CXXFLAGS=$CXXFLAGS
 OBJCFLAGS=$OBJCFLAGS
 ASFLAGS=$ASFLAGS
+NVCCFLAGS=$nvccflags
 AS_C=$AS_C
 AS_O=$AS_O
 OBJCC_C=$OBJCC_C
@@ -6719,6 +6757,8 @@ CC_E=$CC_E
 CC_O=$CC_O
 CXX_C=$CXX_C
 CXX_O=$CXX_O
+NVCC_C=$NVCC_C
+NVCC_O=$NVCC_O
 LD_O=$LD_O
 LD_LIB=$LD_LIB
 LD_PATH=$LD_PATH

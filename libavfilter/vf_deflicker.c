@@ -49,6 +49,7 @@ typedef struct DeflickerContext {
 
     int size;
     int mode;
+    int bypass;
 
     int eof;
     int depth;
@@ -84,6 +85,7 @@ static const AVOption deflicker_options[] = {
         { "cm",      "cubic mean",      0, AV_OPT_TYPE_CONST, {.i64=CUBIC_MEAN},       0, 0, FLAGS, "mode" },
         { "pm",      "power mean",      0, AV_OPT_TYPE_CONST, {.i64=POWER_MEAN},       0, 0, FLAGS, "mode" },
         { "median",  "median",          0, AV_OPT_TYPE_CONST, {.i64=MEDIAN},           0, 0, FLAGS, "mode" },
+    { "bypass", "leave frames unchanged",  OFFSET(bypass), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -377,9 +379,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     }
 
     s->get_factor(ctx, &f);
-    s->deflicker(ctx, in->data[0], in->linesize[0], out->data[0], out->linesize[0],
-                 outlink->w, outlink->h, f);
-    for (y = 1; y < s->nb_planes; y++) {
+    if (!s->bypass)
+        s->deflicker(ctx, in->data[0], in->linesize[0], out->data[0], out->linesize[0],
+                     outlink->w, outlink->h, f);
+    for (y = 1 - s->bypass; y < s->nb_planes; y++) {
         av_image_copy_plane(out->data[y], out->linesize[y],
                             in->data[y], in->linesize[y],
                             s->planewidth[y] * (1 + (s->depth > 8)), s->planeheight[y]);

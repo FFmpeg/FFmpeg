@@ -656,7 +656,6 @@ static void adpcm_analysis(DCAEncContext *c)
 
 static const int snr_fudge = 128;
 #define USED_1ABITS 1
-#define USED_NABITS 2
 #define USED_26ABITS 4
 
 static inline int32_t get_step_size(const DCAEncContext *c, int ch, int band)
@@ -794,7 +793,7 @@ static uint32_t set_best_abits_code(int abits[DCAENC_SUBBANDS], int bands, int32
 
     /* Check do we have subband which cannot be encoded by Huffman tables */
     for (i = 0; i < bands; i++) {
-        if (abits[i] > 12) {
+        if (abits[i] > 12 || abits[i] == 0) {
             *res = best_sel;
             return best_bits;
         }
@@ -812,9 +811,9 @@ static uint32_t set_best_abits_code(int abits[DCAENC_SUBBANDS], int bands, int32
     return best_bits;
 }
 
-static int init_quantization_noise(DCAEncContext *c, int noise)
+static int init_quantization_noise(DCAEncContext *c, int noise, int forbid_zero)
 {
-    int ch, band, ret = 0;
+    int ch, band, ret = USED_26ABITS | USED_1ABITS;
     uint32_t huff_bit_count_accum[MAX_CHANNELS][DCA_CODE_BOOKS][7];
     uint32_t clc_bit_count_accum[MAX_CHANNELS][DCA_CODE_BOOKS];
     uint32_t bits_counter = 0;
@@ -831,16 +830,19 @@ static int init_quantization_noise(DCAEncContext *c, int noise)
 
             if (snr_cb >= 1312) {
                 c->abits[ch][band] = 26;
-                ret |= USED_26ABITS;
+                ret &= ~USED_1ABITS;
             } else if (snr_cb >= 222) {
                 c->abits[ch][band] = 8 + mul32(snr_cb - 222, 69000000);
-                ret |= USED_NABITS;
+                ret &= ~(USED_26ABITS | USED_1ABITS);
             } else if (snr_cb >= 0) {
                 c->abits[ch][band] = 2 + mul32(snr_cb, 106000000);
-                ret |= USED_NABITS;
-            } else {
+                ret &= ~(USED_26ABITS | USED_1ABITS);
+            } else if (forbid_zero || snr_cb >= -140) {
                 c->abits[ch][band] = 1;
-                ret |= USED_1ABITS;
+                ret &= ~USED_26ABITS;
+            } else {
+                c->abits[ch][band] = 0;
+                ret &= ~(USED_26ABITS | USED_1ABITS);
             }
         }
         c->consumed_bits += set_best_abits_code(c->abits[ch], 32, &c->bit_allocation_sel[ch]);
@@ -888,15 +890,19 @@ static void assign_bits(DCAEncContext *c)
     /* Find the bounds where the binary search should work */
     int low, high, down;
     int used_abits = 0;
-
-    init_quantization_noise(c, c->worst_quantization_noise);
+    int forbid_zero = 1;
+restart:
+    init_quantization_noise(c, c->worst_quantization_noise, forbid_zero);
     low = high = c->worst_quantization_noise;
     if (c->consumed_bits > c->frame_bits) {
         while (c->consumed_bits > c->frame_bits) {
-            av_assert0(used_abits != USED_1ABITS);
+            if (used_abits == USED_1ABITS && forbid_zero) {
+                forbid_zero = 0;
+                goto restart;
+            }
             low = high;
             high += snr_fudge;
-            used_abits = init_quantization_noise(c, high);
+            used_abits = init_quantization_noise(c, high, forbid_zero);
         }
     } else {
         while (c->consumed_bits <= c->frame_bits) {
@@ -904,17 +910,17 @@ static void assign_bits(DCAEncContext *c)
             if (used_abits == USED_26ABITS)
                 goto out; /* The requested bitrate is too high, pad with zeros */
             low -= snr_fudge;
-            used_abits = init_quantization_noise(c, low);
+            used_abits = init_quantization_noise(c, low, forbid_zero);
         }
     }
 
     /* Now do a binary search between low and high to see what fits */
     for (down = snr_fudge >> 1; down; down >>= 1) {
-        init_quantization_noise(c, high - down);
+        init_quantization_noise(c, high - down, forbid_zero);
         if (c->consumed_bits <= c->frame_bits)
             high -= down;
     }
-    init_quantization_noise(c, high);
+    init_quantization_noise(c, high, forbid_zero);
 out:
     c->worst_quantization_noise = high;
     if (high > c->worst_noise_ever)
@@ -1173,13 +1179,15 @@ static void put_subframe(DCAEncContext *c, int subframe)
         /* Transition mode: none for each channel and subband */
         for (ch = 0; ch < c->fullband_channels; ch++)
             for (band = 0; band < DCAENC_SUBBANDS; band++)
-                put_bits(&c->pb, 1, 0); /* codebook A4 */
+                if (c->abits[ch][band])
+                    put_bits(&c->pb, 1, 0); /* codebook A4 */
     }
 
     /* Scale factors */
     for (ch = 0; ch < c->fullband_channels; ch++)
         for (band = 0; band < DCAENC_SUBBANDS; band++)
-            put_bits(&c->pb, 7, c->scale_factor[ch][band]);
+            if (c->abits[ch][band])
+                put_bits(&c->pb, 7, c->scale_factor[ch][band]);
 
     /* Joint subband scale factor codebook select: not transmitted */
     /* Scale factors for joint subband coding: not transmitted */
@@ -1199,6 +1207,7 @@ static void put_subframe(DCAEncContext *c, int subframe)
     for (ss = 0; ss < SUBSUBFRAMES ; ss++)
         for (ch = 0; ch < c->fullband_channels; ch++)
             for (band = 0; band < DCAENC_SUBBANDS; band++)
+                if (c->abits[ch][band])
                     put_subframe_samples(c, ss, band, ch);
 
     /* DSYNC */

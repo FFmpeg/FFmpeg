@@ -369,6 +369,7 @@ static void hevc_parser_close(AVCodecParserContext *s)
     ctx->ps.sps = NULL;
 
     ff_h2645_packet_uninit(&ctx->pkt);
+    ff_hevc_reset_sei(&ctx->sei);
 
     av_freep(&ctx->pc.buffer);
 }

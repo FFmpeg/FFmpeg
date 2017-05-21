@@ -44,6 +44,9 @@ static const HWContextType *hw_table[] = {
 #if CONFIG_VDPAU
     &ff_hwcontext_type_vdpau,
 #endif
+#if CONFIG_VIDEOTOOLBOX
+    &ff_hwcontext_type_videotoolbox,
+#endif
     NULL,
 };
 

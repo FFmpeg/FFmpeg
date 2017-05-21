@@ -763,6 +763,7 @@ static int apply_cropping(AVCodecContext *avctx, AVFrame *frame)
 
     /* adjust the offsets to avoid breaking alignment */
     if (!(avctx->flags & AV_CODEC_FLAG_UNALIGNED)) {
+        int log2_crop_align = frame->crop_left ? ff_ctz(frame->crop_left) : INT_MAX;
         int min_log2_align = INT_MAX;
 
         for (i = 0; frame->data[i]; i++) {
@@ -770,8 +771,13 @@ static int apply_cropping(AVCodecContext *avctx, AVFrame *frame)
             min_log2_align = FFMIN(log2_align, min_log2_align);
         }
 
+        /* we assume, and it should always be true, that the data alignment is
+         * related to the cropping alignment by a constant power-of-2 factor */
+        if (log2_crop_align < min_log2_align)
+            return AVERROR_BUG;
+
         if (min_log2_align < 5) {
-            frame->crop_left &= ~((1 << min_log2_align) - 1);
+            frame->crop_left &= ~((1 << (5 + log2_crop_align - min_log2_align)) - 1);
             calc_cropping_offsets(offsets, frame, desc);
         }
     }

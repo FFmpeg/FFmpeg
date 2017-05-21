@@ -2181,7 +2181,11 @@ static int decode_cce(AACContext *ac, GetBitContext *gb, ChannelElement *che)
     coup->coupling_point += get_bits1(gb) || (coup->coupling_point >> 1);
 
     sign  = get_bits(gb, 1);
-    scale = AAC_RENAME(cce_scale)[get_bits(gb, 2)];
+#if USE_FIXED
+    scale = get_bits(gb, 2);
+#else
+    scale = cce_scale[get_bits(gb, 2)];
+#endif
 
     if ((ret = decode_ics(ac, sce, gb, 0, 0)))
         return ret;
@@ -2796,9 +2800,9 @@ static void spectral_to_sample(AACContext *ac, int samples)
                     int j;
                     /* preparation for resampler */
                     for(j = 0; j<samples; j++){
-                        che->ch[0].ret[j] = (int32_t)av_clip64((int64_t)che->ch[0].ret[j]<<7, INT32_MIN, INT32_MAX-0x8000)+0x8000;
+                        che->ch[0].ret[j] = (int32_t)av_clip64((int64_t)che->ch[0].ret[j]*128, INT32_MIN, INT32_MAX-0x8000)+0x8000;
                         if(type == TYPE_CPE)
-                            che->ch[1].ret[j] = (int32_t)av_clip64((int64_t)che->ch[1].ret[j]<<7, INT32_MIN, INT32_MAX-0x8000)+0x8000;
+                            che->ch[1].ret[j] = (int32_t)av_clip64((int64_t)che->ch[1].ret[j]*128, INT32_MIN, INT32_MAX-0x8000)+0x8000;
                     }
                 }
 #endif /* USE_FIXED */

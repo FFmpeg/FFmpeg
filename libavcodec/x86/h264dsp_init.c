@@ -32,8 +32,12 @@ void ff_h264_idct ## NUM ## _add_ ## DEPTH ## _ ## OPT(uint8_t *dst,    \
                                                        int stride);
 
 IDCT_ADD_FUNC(, 8, mmx)
+IDCT_ADD_FUNC(, 8, sse2)
+IDCT_ADD_FUNC(, 8, avx)
 IDCT_ADD_FUNC(, 10, sse2)
 IDCT_ADD_FUNC(_dc, 8, mmxext)
+IDCT_ADD_FUNC(_dc, 8, sse2)
+IDCT_ADD_FUNC(_dc, 8, avx)
 IDCT_ADD_FUNC(_dc, 10, mmxext)
 IDCT_ADD_FUNC(8_dc, 8, mmxext)
 IDCT_ADD_FUNC(8_dc, 10, sse2)
@@ -314,6 +318,9 @@ av_cold void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
                 c->h264_h_loop_filter_chroma       = ff_deblock_h_chroma422_8_sse2;
                 c->h264_h_loop_filter_chroma_intra = ff_deblock_h_chroma422_intra_8_sse2;
             }
+
+            c->h264_idct_add        = ff_h264_idct_add_8_sse2;
+            c->h264_idct_dc_add     = ff_h264_idct_dc_add_8_sse2;
         }
         if (EXTERNAL_SSSE3(cpu_flags)) {
             c->biweight_h264_pixels_tab[0] = ff_h264_biweight_16_ssse3;
@@ -337,6 +344,9 @@ av_cold void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth,
                 c->h264_h_loop_filter_chroma       = ff_deblock_h_chroma422_8_avx;
                 c->h264_h_loop_filter_chroma_intra = ff_deblock_h_chroma422_intra_8_avx;
             }
+
+            c->h264_idct_add        = ff_h264_idct_add_8_avx;
+            c->h264_idct_dc_add     = ff_h264_idct_dc_add_8_avx;
         }
     } else if (bit_depth == 10) {
         if (EXTERNAL_MMXEXT(cpu_flags)) {

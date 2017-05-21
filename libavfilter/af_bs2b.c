@@ -45,7 +45,7 @@ typedef struct Bs2bContext {
 } Bs2bContext;
 
 #define OFFSET(x) offsetof(Bs2bContext, x)
-#define A AV_OPT_FLAG_AUDIO_PARAM
+#define A AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption bs2b_options[] = {
     { "profile", "Apply a pre-defined crossfeed level",
