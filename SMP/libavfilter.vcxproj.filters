@@ -297,6 +297,9 @@
     <ClCompile Include="..\libavfilter\af_compensationdelay.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\af_crossfeed.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\af_crystalizer.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>

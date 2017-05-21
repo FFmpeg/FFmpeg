@@ -3661,6 +3661,7 @@ AVCodec ff_libopenh264_encoder = {0};
 AVCodec ff_libopenjpeg_decoder = {0};
 AVCodec ff_libopenjpeg_encoder = {0};
 AVCodec ff_libopus_decoder = {0};
+AVCodec ff_librsvg_decoder = {0};
 AVCodec ff_libschroedinger_decoder = {0};
 AVCodec ff_libschroedinger_encoder = {0};
 AVCodec ff_libshine_encoder = {0};

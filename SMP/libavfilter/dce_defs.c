@@ -199,6 +199,7 @@ AVFilter ff_vf_deinterlace_vaapi = {0};
 AVFilter ff_vf_frei0r = {0};
 AVFilter ff_vf_ocr = {0};
 AVFilter ff_vf_ocv = {0};
+AVFilter ff_vf_scale_cuda = {0};
 AVFilter ff_vf_scale_npp = {0};
 AVFilter ff_vf_scale_vaapi = {0};
 AVFilter ff_vf_vidstabdetect = {0};
