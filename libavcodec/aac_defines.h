@@ -45,7 +45,7 @@ typedef int                 AAC_SIGNE;
 #define Q30(x)              (int)((x)*1073741824.0 + 0.5)
 #define Q31(x)              (int)((x)*2147483648.0 + 0.5)
 #define RANGE15(x)          x
-#define GET_GAIN(x, y)      (-(y) << (x)) + 1024
+#define GET_GAIN(x, y)      (-(y) * (1 << (x))) + 1024
 #define AAC_MUL16(x, y)     (int)(((int64_t)(x) * (y) + 0x8000) >> 16)
 #define AAC_MUL26(x, y)     (int)(((int64_t)(x) * (y) + 0x2000000) >> 26)
 #define AAC_MUL30(x, y)     (int)(((int64_t)(x) * (y) + 0x20000000) >> 30)
