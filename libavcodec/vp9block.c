@@ -915,9 +915,9 @@ skip_eob:
         if (!--band_left)
             band_left = band_counts[++band];
         if (is_tx32x32)
-            STORE_COEF(coef, rc, ((vp8_rac_get(c) ? -val : val) * qmul[!!i]) / 2);
+            STORE_COEF(coef, rc, (int)((vp8_rac_get(c) ? -val : val) * (unsigned)qmul[!!i]) / 2);
         else
-            STORE_COEF(coef, rc, (vp8_rac_get(c) ? -val : val) * qmul[!!i]);
+            STORE_COEF(coef, rc, (vp8_rac_get(c) ? -val : val) * (unsigned)qmul[!!i]);
         nnz = (1 + cache[nb[i][0]] + cache[nb[i][1]]) >> 1;
         tp = p[band][nnz];
     } while (++i < n_coeffs);
