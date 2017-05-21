@@ -207,7 +207,11 @@ static void noise_scale(int *coefs, int scale, int band_energy, int len)
     c /= band_energy;
     s = 21 + nlz - (s >> 2);
 
-    if (s > 0) {
+    if (s > 31) {
+        for (i=0; i<len; i++) {
+            coefs[i] = 0;
+        }
+    } else if (s > 0) {
         round = 1 << (s-1);
         for (i=0; i<len; i++) {
             out = (int)(((int64_t)coefs[i] * c) >> 32);
