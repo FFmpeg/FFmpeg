@@ -2566,6 +2566,7 @@ int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     MpegEncContext *s = &ctx->m;
     unsigned startcode, v;
     int ret;
+    int vol = 0;
 
     /* search next start code */
     align_get_bits(gb);
@@ -2654,6 +2655,11 @@ int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         }
 
         if (startcode >= 0x120 && startcode <= 0x12F) {
+            if (vol) {
+                av_log(s->avctx, AV_LOG_ERROR, "Multiple VOL headers");
+                return AVERROR_INVALIDDATA;
+            }
+            vol++;
             if ((ret = decode_vol_header(ctx, gb)) < 0)
                 return ret;
         } else if (startcode == USER_DATA_STARTCODE) {
