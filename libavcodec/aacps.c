@@ -196,8 +196,13 @@ int AAC_RENAME(ff_ps_read_data)(AVCodecContext *avctx, GetBitContext *gb_host, P
 
     ps->border_position[0] = -1;
     if (ps->frame_class) {
-        for (e = 1; e <= ps->num_env; e++)
+        for (e = 1; e <= ps->num_env; e++) {
             ps->border_position[e] = get_bits(gb, 5);
+            if (ps->border_position[e] < ps->border_position[e-1]) {
+                av_log(avctx, AV_LOG_ERROR, "border_position non monotone.\n");
+                goto err;
+            }
+        }
     } else
         for (e = 1; e <= ps->num_env; e++)
             ps->border_position[e] = (e * numQMFSlots >> ff_log2_tab[ps->num_env]) - 1;
