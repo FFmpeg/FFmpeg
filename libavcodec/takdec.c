@@ -862,7 +862,7 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
 
             if (s->sample_shift[chan] > 0)
                 for (i = 0; i < s->nb_samples; i++)
-                    decoded[i] <<= s->sample_shift[chan];
+                    decoded[i] *= 1 << s->sample_shift[chan];
         }
     }
 
