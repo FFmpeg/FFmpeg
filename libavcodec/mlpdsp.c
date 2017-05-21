@@ -114,7 +114,7 @@ int32_t ff_mlp_pack_output(int32_t lossless_check_data,
         for (out_ch = 0; out_ch <= max_matrix_channel; out_ch++) {
             int mat_ch = ch_assign[out_ch];
             int32_t sample = sample_buffer[i][mat_ch] *
-                          (1 << output_shift[mat_ch]);
+                          (1U << output_shift[mat_ch]);
             lossless_check_data ^= (sample & 0xffffff) << mat_ch;
             if (is32)
                 *data_32++ = sample << 8;
