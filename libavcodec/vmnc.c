@@ -374,6 +374,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         w   = bytestream2_get_be16(gb);
         h   = bytestream2_get_be16(gb);
         enc = bytestream2_get_be32(gb);
+        if ((dx + w > c->width) || (dy + h > c->height)) {
+            av_log(avctx, AV_LOG_ERROR,
+                    "Incorrect frame size: %ix%i+%ix%i of %ix%i\n",
+                    w, h, dx, dy, c->width, c->height);
+            return AVERROR_INVALIDDATA;
+        }
         outptr = c->pic->data[0] + dx * c->bpp2 + dy * c->pic->linesize[0];
         size_left = bytestream2_get_bytes_left(gb);
         switch (enc) {
@@ -451,12 +457,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             bytestream2_skip(gb, 2);
             break;
         case 0x00000000: // raw rectangle data
-            if ((dx + w > c->width) || (dy + h > c->height)) {
-                av_log(avctx, AV_LOG_ERROR,
-                       "Incorrect frame size: %ix%i+%ix%i of %ix%i\n",
-                       w, h, dx, dy, c->width, c->height);
-                return AVERROR_INVALIDDATA;
-            }
             if (size_left < w * h * c->bpp2) {
                 av_log(avctx, AV_LOG_ERROR,
                        "Premature end of data! (need %i got %i)\n",
@@ -467,12 +467,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                       c->pic->linesize[0]);
             break;
         case 0x00000005: // HexTile encoded rectangle
-            if ((dx + w > c->width) || (dy + h > c->height)) {
-                av_log(avctx, AV_LOG_ERROR,
-                       "Incorrect frame size: %ix%i+%ix%i of %ix%i\n",
-                       w, h, dx, dy, c->width, c->height);
-                return AVERROR_INVALIDDATA;
-            }
             res = decode_hextile(c, outptr, gb, w, h, c->pic->linesize[0]);
             if (res < 0)
                 return res;
