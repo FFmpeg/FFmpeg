@@ -3765,7 +3765,9 @@ HOSTEXESUF=$(exesuf $host_os)
 
 if [ -n "$tempprefix" ] ; then
     mktemp(){
-        echo $tempprefix.${HOSTNAME}.${UID}
+        tmpname="$tempprefix.${HOSTNAME}.${UID}"
+        echo "$tmpname"
+        mkdir "$tmpname"
     }
 elif ! check_cmd mktemp -u XXXXXX; then
     # simple replacement for missing mktemp
