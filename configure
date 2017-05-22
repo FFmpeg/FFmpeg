@@ -4509,13 +4509,15 @@ EOF
             x86asm_debug="-g dwarf2"
             X86ASMDEP='$(DEPX86ASM) $(X86ASMFLAGS) -M $(X86ASM_O) $< > $(@:.o=.d)'
         fi
+        check_x86asm "movbe ecx, [5]" && enable x86asm
     }
 
     if ! disabled_any asm mmx x86asm; then
+        disable x86asm
         for program in $x86asmexe nasm yasm; do
-            probe_x86asm $program
-            test -n "$x86asm_type" && break
+            probe_x86asm $program && break
         done
+        disabled x86asm && die "nasm/yasm not found or too old. Use --disable-x86asm for a crippled build."
         X86ASMFLAGS="-f $objformat"
         enabled pic               && append X86ASMFLAGS "-DPIC"
         test -n "$extern_prefix"  && append X86ASMFLAGS "-DPREFIX"
@@ -4523,8 +4525,6 @@ EOF
             elf*) enabled debug && append X86ASMFLAGS $x86asm_debug ;;
         esac
 
-        check_x86asm "movbe ecx, [5]" && enable x86asm ||
-            die "nasm/yasm not found or too old. Use --disable-x86asm for a crippled build."
         check_x86asm "vextracti128 xmm0, ymm0, 0"      || disable avx2_external
         check_x86asm "vpmacsdd xmm0, xmm1, xmm2, xmm3" || disable xop_external
         check_x86asm "vfmadd132ps ymm0, ymm1, ymm2"    || disable fma3_external
