@@ -73,7 +73,7 @@ static void register_all(void)
 
 void avdevice_register_all(void)
 {
-    AVOnce control = AV_ONCE_INIT;
+    static AVOnce control = AV_ONCE_INIT;
 
     ff_thread_once(&control, register_all);
 }
