@@ -113,10 +113,10 @@ static int update_error_limit(WavpackFrameContext *ctx)
     if (ctx->stereo_in && ctx->hybrid_bitrate) {
         int balance = (sl[1] - sl[0] + br[1] + 1) >> 1;
         if (balance > br[0]) {
-            br[1] = br[0] << 1;
+            br[1] = br[0] * 2;
             br[0] = 0;
         } else if (-balance > br[0]) {
-            br[0] <<= 1;
+            br[0]  *= 2;
             br[1]   = 0;
         } else {
             br[1] = br[0] + balance;
