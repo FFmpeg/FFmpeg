@@ -390,6 +390,10 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
         av_log(s->avctx, AV_LOG_DEBUG, "JPEG params: ILV=%i Pt=%i BPP=%i, scan = %i\n",
                 ilv, point_transform, s->bits, s->cur_scan);
     }
+    if (get_bits_left(&s->gb) < s->height) {
+        ret = AVERROR_INVALIDDATA;
+        goto end;
+    }
     if (ilv == 0) { /* separate planes */
         if (s->cur_scan > s->nb_components) {
             ret = AVERROR_INVALIDDATA;
