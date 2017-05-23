@@ -2616,6 +2616,8 @@ static int mpegts_read_header(AVFormatContext *s)
     int len;
     int64_t pos, probesize = s->probesize;
 
+    s->internal->prefer_codec_framerate = 1;
+
     if (ffio_ensure_seekback(pb, probesize) < 0)
         av_log(s, AV_LOG_WARNING, "Failed to allocate buffers for seekback\n");
 

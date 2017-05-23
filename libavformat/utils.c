@@ -3904,6 +3904,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 st->info->codec_info_duration) {
                 int best_fps      = 0;
                 double best_error = 0.01;
+                AVRational codec_frame_rate = avctx->framerate;
 
                 if (st->info->codec_info_duration        >= INT64_MAX / st->time_base.num / 2||
                     st->info->codec_info_duration_fields >= INT64_MAX / st->time_base.den ||
@@ -3923,6 +3924,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
                     if (error < best_error) {
                         best_error = error;
                         best_fps   = std_fps.num;
+                    }
+
+                    if (ic->internal->prefer_codec_framerate && codec_frame_rate.num > 0 && codec_frame_rate.den > 0) {
+                        error       = fabs(av_q2d(codec_frame_rate) /
+                                           av_q2d(std_fps) - 1);
+                        if (error < best_error) {
+                            best_error = error;
+                            best_fps   = std_fps.num;
+                        }
                     }
                 }
                 if (best_fps)
