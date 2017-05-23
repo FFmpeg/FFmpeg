@@ -11,7 +11,8 @@ OBJS-$(CONFIG_NEON_CLOBBER_TEST)        += aarch64/neontest.o
 OBJS-$(CONFIG_VIDEODSP)                 += aarch64/videodsp_init.o
 
 # decoders/encoders
-OBJS-$(CONFIG_AAC_DECODER)              += aarch64/aacpsdsp_init_aarch64.o
+OBJS-$(CONFIG_AAC_DECODER)              += aarch64/aacpsdsp_init_aarch64.o \
+                                           aarch64/sbrdsp_init_aarch64.o
 OBJS-$(CONFIG_DCA_DECODER)              += aarch64/synth_filter_init.o
 OBJS-$(CONFIG_RV40_DECODER)             += aarch64/rv40dsp_init_aarch64.o
 OBJS-$(CONFIG_VC1DSP)                   += aarch64/vc1dsp_init_aarch64.o
@@ -28,6 +29,7 @@ ARMV8-OBJS-$(CONFIG_VIDEODSP)           += aarch64/videodsp.o
 # NEON optimizations
 
 # subsystems
+NEON-OBJS-$(CONFIG_AAC_DECODER)         += aarch64/sbrdsp_neon.o
 NEON-OBJS-$(CONFIG_FFT)                 += aarch64/fft_neon.o
 NEON-OBJS-$(CONFIG_FMTCONVERT)          += aarch64/fmtconvert_neon.o
 NEON-OBJS-$(CONFIG_H264CHROMA)          += aarch64/h264cmc_neon.o
