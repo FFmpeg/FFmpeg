@@ -542,9 +542,9 @@ static inline int wv_unpack_mono(WavpackFrameContext *s, GetBitContext *gb,
             t = s->decorr[i].value;
             if (t > 8) {
                 if (t & 1)
-                    A =  2 * s->decorr[i].samplesA[0] - s->decorr[i].samplesA[1];
+                    A =  2U * s->decorr[i].samplesA[0] - s->decorr[i].samplesA[1];
                 else
-                    A = (3 * s->decorr[i].samplesA[0] - s->decorr[i].samplesA[1]) >> 1;
+                    A = (int)(3U * s->decorr[i].samplesA[0] - s->decorr[i].samplesA[1]) >> 1;
                 s->decorr[i].samplesA[1] = s->decorr[i].samplesA[0];
                 j                        = 0;
             } else {
