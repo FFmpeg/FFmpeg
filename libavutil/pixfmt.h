@@ -467,8 +467,6 @@ enum AVColorSpace {
     AVCOL_SPC_SMPTE2085   = 11, ///< SMPTE 2085, Y'D'zD'x
     AVCOL_SPC_NB                ///< Not part of ABI
 };
-#define AVCOL_SPC_YCGCO AVCOL_SPC_YCOCG
-
 
 /**
  * MPEG vs JPEG YUV range.
