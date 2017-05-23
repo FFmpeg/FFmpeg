@@ -117,6 +117,57 @@ align 16
 .ret:
     REP_RET
 
+;***************************************************************************
+;void ps_stereo_interpolate_ipdopd_sse3(float (*l)[2], float (*r)[2],
+;                                       float h[2][4], float h_step[2][4],
+;                                       int len);
+;***************************************************************************
+INIT_XMM sse3
+cglobal ps_stereo_interpolate_ipdopd, 5, 5, 10, l, r, h, h_step, n
+    cmp      nd, 0
+    jle .ret
+    movaps   m0, [hq]
+    movaps   m1, [hq+mmsize]
+%if ARCH_X86_64
+    movaps   m8, [h_stepq]
+    movaps   m9, [h_stepq+mmsize]
+    %define  H_STEP0 m8
+    %define  H_STEP1 m9
+%else
+    %define  H_STEP0 [h_stepq]
+    %define  H_STEP1 [h_stepq+mmsize]
+%endif
+    shl      nd, 3
+    add      lq, nq
+    add      rq, nq
+    neg      nq
+
+align 16
+.loop:
+    addps    m0, H_STEP0
+    addps    m1, H_STEP1
+    movddup  m2, [lq+nq]
+    movddup  m3, [rq+nq]
+    shufps   m4, m2, m2, q2301
+    shufps   m5, m3, m3, q2301
+    unpcklps m6, m0, m0
+    unpckhps m7, m0, m0
+    mulps    m2, m6
+    mulps    m3, m7
+    unpcklps m6, m1, m1
+    unpckhps m7, m1, m1
+    mulps    m4, m6
+    mulps    m5, m7
+    addps    m2, m3
+    addsubps m4, m5
+    addsubps m2, m4
+    movsd  [lq+nq], m2
+    movhps [rq+nq], m2
+    add      nq, 8
+    jl .loop
+.ret:
+    REP_RET
+
 ;*******************************************************************
 ;void ff_ps_hybrid_analysis_<opt>(float (*out)[2], float (*in)[2],
 ;                                 const float (*filter)[8][2],
