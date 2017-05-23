@@ -596,8 +596,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->bpp = avctx->bits_per_coded_sample >> 3;
     s->buffer_size = avctx->width * avctx->height * 4;
     s->pbuffer_size = avctx->width * avctx->height * 4;
-    s->buffer = av_malloc(s->buffer_size);
-    s->pbuffer = av_malloc(s->pbuffer_size);
+    s->buffer = av_mallocz(s->buffer_size);
+    s->pbuffer = av_mallocz(s->pbuffer_size);
     if (!s->buffer || !s->pbuffer)
         return AVERROR(ENOMEM);
 
