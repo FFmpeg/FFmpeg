@@ -1118,8 +1118,8 @@ static av_cold int nvenc_alloc_surface(AVCodecContext *avctx, int idx)
     } else {
         NV_ENC_CREATE_INPUT_BUFFER allocSurf = { 0 };
         allocSurf.version = NV_ENC_CREATE_INPUT_BUFFER_VER;
-        allocSurf.width = (avctx->width + 31) & ~31;
-        allocSurf.height = (avctx->height + 31) & ~31;
+        allocSurf.width = avctx->width;
+        allocSurf.height = avctx->height;
         allocSurf.memoryHeap = NV_ENC_MEMORY_HEAP_SYSMEM_CACHED;
         allocSurf.bufferFmt = ctx->surfaces[idx].format;
 
@@ -1729,8 +1729,8 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
         pic_params.inputBuffer = inSurf->input_surface;
         pic_params.bufferFmt = inSurf->format;
-        pic_params.inputWidth = avctx->width;
-        pic_params.inputHeight = avctx->height;
+        pic_params.inputWidth = inSurf->width;
+        pic_params.inputHeight = inSurf->height;
         pic_params.inputPitch = inSurf->pitch;
         pic_params.outputBitstream = inSurf->output_surface;
 
