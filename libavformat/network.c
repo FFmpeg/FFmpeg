@@ -27,21 +27,25 @@
 
 void ff_tls_init(void)
 {
-#if CONFIG_TLS_OPENSSL_PROTOCOL
+#if CONFIG_TLS_PROTOCOL
+#if CONFIG_OPENSSL
     ff_openssl_init();
 #endif
-#if CONFIG_TLS_GNUTLS_PROTOCOL
+#if CONFIG_GNUTLS
     ff_gnutls_init();
+#endif
 #endif
 }
 
 void ff_tls_deinit(void)
 {
-#if CONFIG_TLS_OPENSSL_PROTOCOL
+#if CONFIG_TLS_PROTOCOL
+#if CONFIG_OPENSSL
     ff_openssl_deinit();
 #endif
-#if CONFIG_TLS_GNUTLS_PROTOCOL
+#if CONFIG_GNUTLS
     ff_gnutls_deinit();
+#endif
 #endif
 }
 
