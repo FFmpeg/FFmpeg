@@ -89,7 +89,7 @@ int main(int argc, char **argv)
     /* find the mpeg1video encoder */
     codec = avcodec_find_encoder_by_name(codec_name);
     if (!codec) {
-        fprintf(stderr, "Codec not found\n");
+        fprintf(stderr, "Codec '%s' not found\n", codec_name);
         exit(1);
     }
 
@@ -126,8 +126,9 @@ int main(int argc, char **argv)
         av_opt_set(c->priv_data, "preset", "slow", 0);
 
     /* open it */
-    if (avcodec_open2(c, codec, NULL) < 0) {
-        fprintf(stderr, "Could not open codec\n");
+    ret = avcodec_open2(c, codec, NULL);
+    if (ret < 0) {
+        fprintf(stderr, "Could not open codec: %s\n", av_err2str(ret));
         exit(1);
     }
 
