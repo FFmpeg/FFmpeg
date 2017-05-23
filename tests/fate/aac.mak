@@ -46,6 +46,10 @@ FATE_AAC += fate-aac-al_sbr_hq_sr_48_2_fsaac48
 fate-aac-al_sbr_hq_sr_48_2_fsaac48: CMD = pcm -i $(TARGET_SAMPLES)/aac/al_sbr_sr_48_2_fsaac48.mp4
 fate-aac-al_sbr_hq_sr_48_2_fsaac48: REF = $(SAMPLES)/aac/al_sbr_hq_sr_48_2_fsaac48.s16
 
+FATE_AAC += fate-aac-al_sbr_ps_04_ur
+fate-aac-al_sbr_ps_04_ur: CMD = pcm -i $(TARGET_SAMPLES)/aac/al_sbr_ps_04_new.mp4
+fate-aac-al_sbr_ps_04_ur: REF = $(SAMPLES)/aac/al_sbr_ps_04_ur.s16
+
 FATE_AAC += fate-aac-al_sbr_ps_06_ur
 fate-aac-al_sbr_ps_06_ur: CMD = pcm -i $(TARGET_SAMPLES)/aac/al_sbr_ps_06_new.mp4
 fate-aac-al_sbr_ps_06_ur: REF = $(SAMPLES)/aac/al_sbr_ps_06_ur.s16
