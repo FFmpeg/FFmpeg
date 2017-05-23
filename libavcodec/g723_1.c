@@ -150,8 +150,8 @@ static void lsp2lpc(int16_t *lpc)
      * each iteration for a final scaling factor of Q25
      */
     for (i = 2; i < LPC_ORDER / 2; i++) {
-        f1[i + 1] = f1[i - 1] + MULL2(f1[i], lpc[2 * i]);
-        f2[i + 1] = f2[i - 1] + MULL2(f2[i], lpc[2 * i + 1]);
+        f1[i + 1] = av_clipl_int32(f1[i - 1] + (int64_t)MULL2(f1[i], lpc[2 * i]));
+        f2[i + 1] = av_clipl_int32(f2[i - 1] + (int64_t)MULL2(f2[i], lpc[2 * i + 1]));
 
         for (j = i; j >= 2; j--) {
             f1[j] = MULL2(f1[j - 1], lpc[2 * i]) +
