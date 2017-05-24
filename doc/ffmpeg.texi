@@ -12,7 +12,7 @@
 
 @chapter Synopsis
 
-ffmpeg [@var{global_options}] @{[@var{input_file_options}] -i @file{input_file}@} ... @{[@var{output_file_options}] @file{output_file}@} ...
+ffmpeg [@var{global_options}] @{[@var{input_file_options}] -i @file{input_url}@} ... @{[@var{output_file_options}] @file{output_url}@} ...
 
 @chapter Description
 @c man begin DESCRIPTION
@@ -24,10 +24,10 @@ rates and resize video on the fly with a high quality polyphase filter.
 @command{ffmpeg} reads from an arbitrary number of input "files" (which can be regular
 files, pipes, network streams, grabbing devices, etc.), specified by the
 @code{-i} option, and writes to an arbitrary number of output "files", which are
-specified by a plain output filename. Anything found on the command line which
-cannot be interpreted as an option is considered to be an output filename.
+specified by a plain output url. Anything found on the command line which
+cannot be interpreted as an option is considered to be an output url.
 
-Each input or output file can, in principle, contain any number of streams of
+Each input or output url can, in principle, contain any number of streams of
 different types (video/audio/subtitle/attachment/data). The allowed number and/or
 types of streams may be limited by the container format. Selecting which
 streams from which inputs will go into which output is either done automatically
@@ -223,7 +223,7 @@ with the highest resolution, for audio, it is the stream with the most channels,
 subtitles, it is the first subtitle stream. In the case where several streams of
 the same type rate equally, the stream with the lowest index is chosen.
 
-You can disable some of those defaults by using the @code{-vn/-an/-sn} options. For
+You can disable some of those defaults by using the @code{-vn/-an/-sn/-dn} options. For
 full manual control, use the @code{-map} option, which disables the defaults just
 described.
 
@@ -243,8 +243,8 @@ Force input or output file format. The format is normally auto detected for inpu
 files and guessed from the file extension for output files, so this option is not
 needed in most cases.
 
-@item -i @var{filename} (@emph{input})
-input file name
+@item -i @var{url} (@emph{input})
+input file url
 
 @item -y (@emph{global})
 Overwrite output files without asking.
@@ -281,7 +281,7 @@ libx264, and the 138th audio, which will be encoded with libvorbis.
 When used as an input option (before @code{-i}), limit the @var{duration} of
 data read from the input file.
 
-When used as an output option (before an output filename), stop writing the
+When used as an output option (before an output url), stop writing the
 output after its duration reaches @var{duration}.
 
 @var{duration} must be a time duration specification,
@@ -297,7 +297,9 @@ see @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) 
 -to and -t are mutually exclusive and -t has priority.
 
 @item -fs @var{limit_size} (@emph{output})
-Set the file size limit, expressed in bytes.
+Set the file size limit, expressed in bytes. No further chunk of bytes is written
+after the limit is exceeded. The size of the output file is slightly more than the
+requested file size.
 
 @item -ss @var{position} (@emph{input/output})
 When used as an input option (before @code{-i}), seeks in this input file to
@@ -308,7 +310,7 @@ extra segment between the seek point and @var{position} will be decoded and
 discarded. When doing stream copy or when @option{-noaccurate_seek} is used, it
 will be preserved.
 
-When used as an output option (before an output filename), decodes but discards
+When used as an output option (before an output url), decodes but discards
 input until the timestamps reach @var{position}.
 
 @var{position} must be a time duration specification,
@@ -339,8 +341,8 @@ see @ref{date syntax,,the Date section in the ffmpeg-utils(1) manual,ffmpeg-util
 Set a metadata key/value pair.
 
 An optional @var{metadata_specifier} may be given to set metadata
-on streams or chapters. See @code{-map_metadata} documentation for
-details.
+on streams, chapters or programs. See @code{-map_metadata}
+documentation for details.
 
 This option overrides metadata set with @code{-map_metadata}. It is
 also possible to delete metadata by using an empty value.
@@ -353,6 +355,40 @@ ffmpeg -i in.avi -metadata title="my title" out.flv
 To set the language of the first audio stream:
 @example
 ffmpeg -i INPUT -metadata:s:a:0 language=eng OUTPUT
+@end example
+
+@item -disposition[:stream_specifier] @var{value} (@emph{output,per-stream})
+Sets the disposition for a stream.
+
+This option overrides the disposition copied from the input stream. It is also
+possible to delete the disposition by setting it to 0.
+
+The following dispositions are recognized:
+@table @option
+@item default
+@item dub
+@item original
+@item comment
+@item lyrics
+@item karaoke
+@item forced
+@item hearing_impaired
+@item visual_impaired
+@item clean_effects
+@item captions
+@item descriptions
+@item metadata
+@end table
+
+For example, to make the second audio stream the default stream:
+@example
+ffmpeg -i in.mkv -disposition:a:1 default out.mkv
+@end example
+
+To make the second subtitle stream the default stream and remove the default
+disposition from the first subtitle stream:
+@example
+ffmpeg -i INPUT -disposition:s:0 0 -disposition:s:1 default OUTPUT
 @end example
 
 @item -program [title=@var{title}:][program_num=@var{program_num}:]st=@var{stream}[:st=@var{stream}...] (@emph{output})
@@ -378,7 +414,8 @@ ffmpeg -i myfile.avi -target vcd -bf 2 /tmp/vcd.mpg
 @end example
 
 @item -dframes @var{number} (@emph{output})
-Set the number of data frames to output. This is an alias for @code{-frames:d}.
+Set the number of data frames to output. This is an obsolete alias for
+@code{-frames:d}, which you should use instead.
 
 @item -frames[:@var{stream_specifier}] @var{framecount} (@emph{output,per-stream})
 Stop writing to the stream after @var{framecount} frames.
@@ -412,6 +449,11 @@ want to create filtergraphs with multiple inputs and/or outputs.
 This option is similar to @option{-filter}, the only difference is that its
 argument is the name of the file from which a filtergraph description is to be
 read.
+
+@item -filter_threads @var{nb_threads} (@emph{global})
+Defines how many threads are used to process a filter pipeline. Each pipeline
+will produce a thread pool with this many threads available for parallel processing.
+The default is the number of available CPUs.
 
 @item -pre[:@var{stream_specifier}] @var{preset_name} (@emph{output,per-stream})
 Specify the preset for matching stream(s).
@@ -488,7 +530,8 @@ Disable automatically rotating video based on file metadata.
 
 @table @option
 @item -vframes @var{number} (@emph{output})
-Set the number of video frames to output. This is an alias for @code{-frames:v}.
+Set the number of video frames to output. This is an obsolete alias for
+@code{-frames:v}, which you should use instead.
 @item -r[:@var{stream_specifier}] @var{fps} (@emph{input/output,per-stream})
 Set frame rate (Hz value, fraction or abbreviation).
 
@@ -595,6 +638,16 @@ Calculate PSNR of compressed frames.
 Dump video coding statistics to @file{vstats_HHMMSS.log}.
 @item -vstats_file @var{file}
 Dump video coding statistics to @var{file}.
+@item -vstats_version @var{file}
+Specifies which version of the vstats format to use. Default is 2.
+
+version = 1 :
+
+@code{frame= %5d q= %2.1f PSNR= %6.2f f_size= %6d s_size= %8.0fkB time= %0.3f br= %7.1fkbits/s avg_br= %7.1fkbits/s}
+
+version > 1:
+
+@code{out= %2d st= %2d frame= %5d q= %2.1f PSNR= %6.2f f_size= %6d s_size= %8.0fkB time= %0.3f br= %7.1fkbits/s avg_br= %7.1fkbits/s}
 @item -top[:@var{stream_specifier}] @var{n} (@emph{output,per-stream})
 top=1/bottom=0/auto=-1 field first
 @item -dc @var{precision}
@@ -718,7 +771,7 @@ For DXVA2, this option should contain the number of the display adapter to use.
 If this option is not specified, the default adapter is used.
 
 @item qsv
-For QSV, this option corresponds to the valus of MFX_IMPL_* . Allowed values
+For QSV, this option corresponds to the values of MFX_IMPL_* . Allowed values
 are:
 @table @option
 @item auto
@@ -741,7 +794,8 @@ List all hardware acceleration methods supported in this build of ffmpeg.
 
 @table @option
 @item -aframes @var{number} (@emph{output})
-Set the number of audio frames to output. This is an alias for @code{-frames:a}.
+Set the number of audio frames to output. This is an obsolete alias for
+@code{-frames:a}, which you should use instead.
 @item -ar[:@var{stream_specifier}] @var{freq} (@emph{input/output,per-stream})
 Set the audio sampling frequency. For output streams it is set by
 default to the frequency of the corresponding input stream. For input
@@ -820,7 +874,7 @@ Set the size of the canvas used to render subtitles.
 @section Advanced options
 
 @table @option
-@item -map [-]@var{input_file_id}[:@var{stream_specifier}][,@var{sync_file_id}[:@var{stream_specifier}]] | @var{[linklabel]} (@emph{output})
+@item -map [-]@var{input_file_id}[:@var{stream_specifier}][?][,@var{sync_file_id}[:@var{stream_specifier}]] | @var{[linklabel]} (@emph{output})
 
 Designate one or more input streams as a source for the output file. Each input
 stream is identified by the input file index @var{input_file_id} and
@@ -835,6 +889,11 @@ the source for output stream 1, etc.
 
 A @code{-} character before the stream identifier creates a "negative" mapping.
 It disables matching streams from already created mappings.
+
+A trailing @code{?} after the stream index will allow the map to be
+optional: if the map matches no streams the map will be ignored instead
+of failing. Note the map will still fail if an invalid input file index
+is used; such as if the map refers to a non-existant input.
 
 An alternative @var{[linklabel]} form will map outputs from complex filter
 graphs (see the @option{-filter_complex} option) to the output file.
@@ -871,6 +930,13 @@ ffmpeg -i INPUT -map 0:v -map 0:a:2 OUTPUT
 To map all the streams except the second audio, use negative mappings
 @example
 ffmpeg -i INPUT -map 0 -map -0:a:1 OUTPUT
+@end example
+
+To map the video and audio streams from the first input, and using the
+trailing @code{?}, ignore the audio mapping if no audio streams exist in
+the first input:
+@example
+ffmpeg -i INPUT -map 0:v -map 0:a? OUTPUT
 @end example
 
 To pick the English audio stream:
@@ -1006,7 +1072,7 @@ Dump each input packet to stderr.
 @item -hex (@emph{global})
 When dumping packets, also dump the payload.
 @item -re (@emph{input})
-Read input at native frame rate. Mainly used to simulate a grab device.
+Read input at native frame rate. Mainly used to simulate a grab device,
 or live input stream (e.g. when reading from a file). Should not be used
 with actual grab devices or live input streams (where it can cause packet
 loss).
@@ -1110,6 +1176,30 @@ Try to make the choice automatically, in order to generate a sane output.
 
 Default value is -1.
 
+@item -enc_time_base[:@var{stream_specifier}] @var{timebase} (@emph{output,per-stream})
+Set the encoder timebase. @var{timebase} is a floating point number,
+and can assume one of the following values:
+
+@table @option
+@item 0
+Assign a default value according to the media type.
+
+For video - use 1/framerate, for audio - use 1/samplerate.
+
+@item -1
+Use the input stream timebase when possible.
+
+If an input stream is not available, the default timebase will be used.
+
+@item >0
+Use the provided number as the timebase.
+
+This field can be provided as a ratio of two integers (e.g. 1:24, 1:48000)
+or as a floating point number (e.g. 0.04166, 2.0833e-5)
+@end table
+
+Default value is 0.
+
 @item -shortest (@emph{output})
 Finish encoding when the shortest input stream ends.
 @item -dts_delta_threshold
@@ -1127,7 +1217,7 @@ may be reassigned to a different value.
 For example, to set the stream 0 PID to 33 and the stream 1 PID to 36 for
 an output mpegts file:
 @example
-ffmpeg -i infile -streamid 0:33 -streamid 1:36 out.ts
+ffmpeg -i inurl -streamid 0:33 -streamid 1:36 out.ts
 @end example
 
 @item -bsf[:@var{stream_specifier}] @var{bitstream_filters} (@emph{output,per-stream})
@@ -1198,6 +1288,11 @@ To generate 5 seconds of pure red video using lavfi @code{color} source:
 @example
 ffmpeg -filter_complex 'color=c=red' -t 5 out.mkv
 @end example
+
+@item -filter_complex_threads @var{nb_threads} (@emph{global})
+Defines how many threads are used to process a filter_complex graph.
+Similar to filter_threads but used for @code{-filter_complex} graphs only.
+The default is the number of available CPUs.
 
 @item -lavfi @var{filtergraph} (@emph{global})
 Define a complex filtergraph, i.e. one with arbitrary number of inputs and/or
@@ -1276,6 +1371,15 @@ No packets were passed to the muxer, the output is empty.
 
 @item -xerror (@emph{global})
 Stop and exit on error
+
+@item -max_muxing_queue_size @var{packets} (@emph{output,per-stream})
+When transcoding audio and/or video streams, ffmpeg will not begin writing into
+the output until it has one packet for each such stream. While waiting for that
+to happen, packets for other streams are buffered. This option sets the size of
+this buffer, in packets, for the matching output stream.
+
+The default value of this option should be high enough for most uses, so only
+touch this option if you are sure that you need it.
 
 @end table
 
@@ -1482,7 +1586,7 @@ to enable LAME support by passing @code{--enable-libmp3lame} to configure.
 The mapping is particularly useful for DVD transcoding
 to get the desired audio language.
 
-NOTE: To see the supported input formats, use @code{ffmpeg -formats}.
+NOTE: To see the supported input formats, use @code{ffmpeg -demuxers}.
 
 @item
 You can extract images from a video, or create a video from many images:
@@ -1497,8 +1601,8 @@ output them in files named @file{foo-001.jpeg}, @file{foo-002.jpeg},
 etc. Images will be rescaled to fit the new WxH values.
 
 If you want to extract just a limited number of frames, you can use the
-above command in combination with the -vframes or -t option, or in
-combination with -ss to start extracting from a certain point in time.
+above command in combination with the @code{-frames:v} or @code{-t} option,
+or in combination with -ss to start extracting from a certain point in time.
 
 For creating a video from many images:
 @example

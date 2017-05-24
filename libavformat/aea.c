@@ -32,7 +32,7 @@ static int aea_read_probe(AVProbeData *p)
     if (p->buf_size <= 2048+212)
         return 0;
 
-    /* Magic is '00 08 00 00' in Little Endian*/
+    /* Magic is '00 08 00 00' in little-endian*/
     if (AV_RL32(p->buf)==0x800) {
         int ch, i;
         ch = p->buf[264];
@@ -67,29 +67,29 @@ static int aea_read_header(AVFormatContext *s)
 
     /* Parse the amount of channels and skip to pos 2048(0x800) */
     avio_skip(s->pb, 264);
-    st->codec->channels = avio_r8(s->pb);
+    st->codecpar->channels = avio_r8(s->pb);
     avio_skip(s->pb, 1783);
 
 
-    st->codec->codec_type     = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id       = AV_CODEC_ID_ATRAC1;
-    st->codec->sample_rate    = 44100;
-    st->codec->bit_rate       = 292000;
+    st->codecpar->codec_type     = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id       = AV_CODEC_ID_ATRAC1;
+    st->codecpar->sample_rate    = 44100;
+    st->codecpar->bit_rate       = 292000;
 
-    if (st->codec->channels != 1 && st->codec->channels != 2) {
-        av_log(s,AV_LOG_ERROR,"Channels %d not supported!\n",st->codec->channels);
+    if (st->codecpar->channels != 1 && st->codecpar->channels != 2) {
+        av_log(s, AV_LOG_ERROR, "Channels %d not supported!\n", st->codecpar->channels);
         return AVERROR_INVALIDDATA;
     }
 
-    st->codec->channel_layout = (st->codec->channels == 1) ? AV_CH_LAYOUT_MONO : AV_CH_LAYOUT_STEREO;
+    st->codecpar->channel_layout = (st->codecpar->channels == 1) ? AV_CH_LAYOUT_MONO : AV_CH_LAYOUT_STEREO;
 
-    st->codec->block_align = AT1_SU_SIZE * st->codec->channels;
+    st->codecpar->block_align = AT1_SU_SIZE * st->codecpar->channels;
     return 0;
 }
 
 static int aea_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret = av_get_packet(s->pb, pkt, s->streams[0]->codec->block_align);
+    int ret = av_get_packet(s->pb, pkt, s->streams[0]->codecpar->block_align);
 
     pkt->stream_index = 0;
     if (ret <= 0)

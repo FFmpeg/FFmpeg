@@ -85,11 +85,11 @@ static int read_header(AVFormatContext *s)
     if (!ast || !vst)
         return AVERROR(ENOMEM);
 
-    vst->codec->codec_type  = AVMEDIA_TYPE_VIDEO;
-    vst->codec->codec_id    = AV_CODEC_ID_JV;
-    vst->codec->codec_tag   = 0; /* no fourcc */
-    vst->codec->width       = avio_rl16(pb);
-    vst->codec->height      = avio_rl16(pb);
+    vst->codecpar->codec_type  = AVMEDIA_TYPE_VIDEO;
+    vst->codecpar->codec_id    = AV_CODEC_ID_JV;
+    vst->codecpar->codec_tag   = 0; /* no fourcc */
+    vst->codecpar->width       = avio_rl16(pb);
+    vst->codecpar->height      = avio_rl16(pb);
     vst->duration           =
     vst->nb_frames          =
     ast->nb_index_entries   = avio_rl16(pb);
@@ -97,13 +97,13 @@ static int read_header(AVFormatContext *s)
 
     avio_skip(pb, 4);
 
-    ast->codec->codec_type     = AVMEDIA_TYPE_AUDIO;
-    ast->codec->codec_id       = AV_CODEC_ID_PCM_U8;
-    ast->codec->codec_tag      = 0; /* no fourcc */
-    ast->codec->sample_rate    = avio_rl16(pb);
-    ast->codec->channels       = 1;
-    ast->codec->channel_layout = AV_CH_LAYOUT_MONO;
-    avpriv_set_pts_info(ast, 64, 1, ast->codec->sample_rate);
+    ast->codecpar->codec_type     = AVMEDIA_TYPE_AUDIO;
+    ast->codecpar->codec_id       = AV_CODEC_ID_PCM_U8;
+    ast->codecpar->codec_tag      = 0; /* no fourcc */
+    ast->codecpar->sample_rate    = avio_rl16(pb);
+    ast->codecpar->channels       = 1;
+    ast->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
+    avpriv_set_pts_info(ast, 64, 1, ast->codecpar->sample_rate);
 
     avio_skip(pb, 10);
 

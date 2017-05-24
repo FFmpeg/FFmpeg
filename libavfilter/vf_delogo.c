@@ -226,6 +226,20 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
+static int config_input(AVFilterLink *inlink)
+{
+    DelogoContext *s = inlink->dst->priv;
+
+    /* Check whether the logo area fits in the frame */
+    if (s->x + (s->band - 1) < 0 || s->x + s->w - (s->band*2 - 2) > inlink->w ||
+        s->y + (s->band - 1) < 0 || s->y + s->h - (s->band*2 - 2) > inlink->h) {
+        av_log(s, AV_LOG_ERROR, "Logo area is outside of the frame.\n");
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     DelogoContext *s = inlink->dst->priv;
@@ -262,13 +276,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
         apply_delogo(out->data[plane], out->linesize[plane],
                      in ->data[plane], in ->linesize[plane],
-                     FF_CEIL_RSHIFT(inlink->w, hsub),
-                     FF_CEIL_RSHIFT(inlink->h, vsub),
+                     AV_CEIL_RSHIFT(inlink->w, hsub),
+                     AV_CEIL_RSHIFT(inlink->h, vsub),
                      sar, s->x>>hsub, s->y>>vsub,
                      /* Up and left borders were rounded down, inject lost bits
                       * into width and height to avoid error accumulation */
-                     FF_CEIL_RSHIFT(s->w + (s->x & ((1<<hsub)-1)), hsub),
-                     FF_CEIL_RSHIFT(s->h + (s->y & ((1<<vsub)-1)), vsub),
+                     AV_CEIL_RSHIFT(s->w + (s->x & ((1<<hsub)-1)), hsub),
+                     AV_CEIL_RSHIFT(s->h + (s->y & ((1<<vsub)-1)), vsub),
                      s->band>>FFMIN(hsub, vsub),
                      s->show, direct);
     }
@@ -284,6 +298,7 @@ static const AVFilterPad avfilter_vf_delogo_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
+        .config_props = config_input,
     },
     { NULL }
 };

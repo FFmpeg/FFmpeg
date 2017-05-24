@@ -127,4 +127,5 @@ AVCodec ff_avui_decoder = {
     .init         = avui_decode_init,
     .decode       = avui_decode_frame,
     .capabilities = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

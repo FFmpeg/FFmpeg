@@ -60,7 +60,7 @@ static void yuv_a_to_rgba(const uint8_t *ycbcr, const uint8_t *alpha, uint32_t *
         cb = *ycbcr++;
         YUV_TO_RGB1_CCIR(cb, cr);
         YUV_TO_RGB2_CCIR(r, g, b, y);
-        *rgba++ = (*alpha++ << 24) | (r << 16) | (g << 8) | b;
+        *rgba++ = ((unsigned)*alpha++ << 24) | (r << 16) | (g << 8) | b;
     }
 }
 
@@ -185,16 +185,16 @@ static void guess_palette(DVDSubContext* ctx,
     for(i = 0; i < 4; i++) {
         if (alpha[i] != 0) {
             if (!color_used[colormap[i]])  {
-                level = level_map[nb_opaque_colors][j];
+                level = level_map[nb_opaque_colors - 1][j];
                 r = (((subtitle_color >> 16) & 0xff) * level) >> 8;
                 g = (((subtitle_color >> 8) & 0xff) * level) >> 8;
                 b = (((subtitle_color >> 0) & 0xff) * level) >> 8;
-                rgba_palette[i] = b | (g << 8) | (r << 16) | ((alpha[i] * 17) << 24);
+                rgba_palette[i] = b | (g << 8) | (r << 16) | ((alpha[i] * 17U) << 24);
                 color_used[colormap[i]] = (i + 1);
                 j++;
             } else {
                 rgba_palette[i] = (rgba_palette[color_used[colormap[i]] - 1] & 0x00ffffff) |
-                                    ((alpha[i] * 17) << 24);
+                                    ((alpha[i] * 17U) << 24);
             }
         }
     }
@@ -368,7 +368,7 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
             h = y2 - y1 + 1;
             if (h < 0)
                 h = 0;
-            if (w > 0 && h > 0) {
+            if (w > 0 && h > 1) {
                 reset_rects(sub_header);
 
                 sub_header->rects = av_mallocz(sizeof(*sub_header->rects));
@@ -548,7 +548,8 @@ static int append_to_cached_buf(AVCodecContext *avctx,
 {
     DVDSubContext *ctx = avctx->priv_data;
 
-    if (ctx->buf_size >= sizeof(ctx->buf) - buf_size) {
+    av_assert0(buf_size >= 0 && ctx->buf_size <= sizeof(ctx->buf));
+    if (buf_size >= sizeof(ctx->buf) - ctx->buf_size) {
         av_log(avctx, AV_LOG_WARNING, "Attempt to reconstruct "
                "too large SPU packets aborted.\n");
         ctx->buf_size = 0;
@@ -746,7 +747,7 @@ static av_cold int dvdsub_init(AVCodecContext *avctx)
         int i;
         av_log(avctx, AV_LOG_DEBUG, "palette:");
         for(i=0;i<16;i++)
-            av_log(avctx, AV_LOG_DEBUG, " 0x%06x", ctx->palette[i]);
+            av_log(avctx, AV_LOG_DEBUG, " 0x%06"PRIx32, ctx->palette[i]);
         av_log(avctx, AV_LOG_DEBUG, "\n");
     }
 

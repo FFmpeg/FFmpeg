@@ -42,9 +42,9 @@ typedef struct MLPHeaderInfo
 
     int channel_arrangement;
 
-    int channel_modifier_thd_stream0;       ///< Channel modifier for substream 0 of TrueHD sreams ("2-channel presentation")
-    int channel_modifier_thd_stream1;       ///< Channel modifier for substream 1 of TrueHD sreams ("6-channel presentation")
-    int channel_modifier_thd_stream2;       ///< Channel modifier for substream 2 of TrueHD sreams ("8-channel presentation")
+    int channel_modifier_thd_stream0;       ///< Channel modifier for substream 0 of TrueHD streams ("2-channel presentation")
+    int channel_modifier_thd_stream1;       ///< Channel modifier for substream 1 of TrueHD streams ("6-channel presentation")
+    int channel_modifier_thd_stream2;       ///< Channel modifier for substream 2 of TrueHD streams ("8-channel presentation")
 
     int channels_mlp;                       ///< Channel count for MLP streams
     int channels_thd_stream1;               ///< Channel count for substream 1 of TrueHD streams ("6-channel presentation")

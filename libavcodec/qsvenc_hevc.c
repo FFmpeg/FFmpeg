@@ -31,6 +31,8 @@
 #include "bytestream.h"
 #include "get_bits.h"
 #include "hevc.h"
+#include "hevcdec.h"
+#include "h2645_parse.h"
 #include "internal.h"
 #include "qsv.h"
 #include "qsv_internal.h"
@@ -54,7 +56,7 @@ static int generate_fake_vps(QSVEncContext *q, AVCodecContext *avctx)
     PutByteContext pbc;
 
     GetBitContext gb;
-    HEVCNAL sps_nal = { NULL };
+    H2645NAL sps_nal = { NULL };
     HEVCSPS sps = { 0 };
     HEVCVPS vps = { 0 };
     uint8_t vps_buf[128], vps_rbsp_buf[128];
@@ -68,7 +70,7 @@ static int generate_fake_vps(QSVEncContext *q, AVCodecContext *avctx)
     }
 
     /* parse the SPS */
-    ret = ff_hevc_extract_rbsp(NULL, avctx->extradata + 4, avctx->extradata_size - 4, &sps_nal);
+    ret = ff_h2645_extract_rbsp(avctx->extradata + 4, avctx->extradata_size - 4, &sps_nal, 1);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error unescaping the SPS buffer\n");
         return ret;
@@ -82,7 +84,7 @@ static int generate_fake_vps(QSVEncContext *q, AVCodecContext *avctx)
 
     get_bits(&gb, 1);
     type = get_bits(&gb, 6);
-    if (type != NAL_SPS) {
+    if (type != HEVC_NAL_SPS) {
         av_log(avctx, AV_LOG_ERROR, "Unexpected NAL type in the extradata: %d\n",
                type);
         av_freep(&sps_nal.rbsp_buffer);
@@ -102,7 +104,7 @@ static int generate_fake_vps(QSVEncContext *q, AVCodecContext *avctx)
     vps.vps_max_sub_layers = sps.max_sub_layers;
     memcpy(&vps.ptl, &sps.ptl, sizeof(vps.ptl));
     vps.vps_sub_layer_ordering_info_present_flag = 1;
-    for (i = 0; i < MAX_SUB_LAYERS; i++) {
+    for (i = 0; i < HEVC_MAX_SUB_LAYERS; i++) {
         vps.vps_max_dec_pic_buffering[i] = sps.temporal_layer[i].max_dec_pic_buffering;
         vps.vps_num_reorder_pics[i]      = sps.temporal_layer[i].num_reorder_pics;
         vps.vps_max_latency_increase[i]  = sps.temporal_layer[i].max_latency_increase;
@@ -126,9 +128,9 @@ static int generate_fake_vps(QSVEncContext *q, AVCodecContext *avctx)
     bytestream2_init(&gbc, vps_rbsp_buf, ret);
     bytestream2_init_writer(&pbc, vps_buf, sizeof(vps_buf));
 
-    bytestream2_put_be32(&pbc, 1);              // startcode
-    bytestream2_put_byte(&pbc, NAL_VPS << 1);   // NAL
-    bytestream2_put_byte(&pbc, 1);              // header
+    bytestream2_put_be32(&pbc, 1);                 // startcode
+    bytestream2_put_byte(&pbc, HEVC_NAL_VPS << 1); // NAL
+    bytestream2_put_byte(&pbc, 1);                 // header
 
     while (bytestream2_get_bytes_left(&gbc)) {
         uint32_t b = bytestream2_peek_be24(&gbc);
@@ -244,7 +246,9 @@ static const AVCodecDefault qsv_enc_defaults[] = {
     { "bf",        "8"     },
 
     { "flags",     "+cgop" },
+#if FF_API_PRIVATE_OPT
     { "b_strategy", "-1"   },
+#endif
     { NULL },
 };
 
@@ -259,6 +263,7 @@ AVCodec ff_hevc_qsv_encoder = {
     .close          = qsv_enc_close,
     .capabilities   = AV_CODEC_CAP_DELAY,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
+                                                    AV_PIX_FMT_P010,
                                                     AV_PIX_FMT_QSV,
                                                     AV_PIX_FMT_NONE },
     .priv_class     = &class,

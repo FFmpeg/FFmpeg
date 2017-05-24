@@ -35,7 +35,7 @@ typedef struct FilmstripMuxContext {
 
 static int write_header(AVFormatContext *s)
 {
-    if (s->streams[0]->codec->pix_fmt != AV_PIX_FMT_RGBA) {
+    if (s->streams[0]->codecpar->format != AV_PIX_FMT_RGBA) {
         av_log(s, AV_LOG_ERROR, "only AV_PIX_FMT_RGBA is supported\n");
         return AVERROR_INVALIDDATA;
     }
@@ -61,8 +61,8 @@ static int write_trailer(AVFormatContext *s)
     avio_wb32(pb, film->nb_frames);
     avio_wb16(pb, 0);  // packing method
     avio_wb16(pb, 0);  // reserved
-    avio_wb16(pb, st->codec->width);
-    avio_wb16(pb, st->codec->height);
+    avio_wb16(pb, st->codecpar->width);
+    avio_wb16(pb, st->codecpar->height);
     avio_wb16(pb, 0);  // leading
     // TODO: should be avg_frame_rate
     avio_wb16(pb, st->time_base.den / st->time_base.num);

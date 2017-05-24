@@ -113,7 +113,7 @@ int av_fifo_grow(AVFifoBuffer *f, unsigned int size)
     size += av_fifo_size(f);
 
     if (old_size < size)
-        return av_fifo_realloc2(f, FFMAX(size, 2*size));
+        return av_fifo_realloc2(f, FFMAX(size, 2*old_size));
     return 0;
 }
 
@@ -238,60 +238,3 @@ void av_fifo_drain(AVFifoBuffer *f, int size)
         f->rptr -= f->end - f->buffer;
     f->rndx += size;
 }
-
-#ifdef TEST
-
-int main(void)
-{
-    /* create a FIFO buffer */
-    AVFifoBuffer *fifo = av_fifo_alloc(13 * sizeof(int));
-    int i, j, n;
-
-    /* fill data */
-    for (i = 0; av_fifo_space(fifo) >= sizeof(int); i++)
-        av_fifo_generic_write(fifo, &i, sizeof(int), NULL);
-
-    /* peek at FIFO */
-    n = av_fifo_size(fifo) / sizeof(int);
-    for (i = -n + 1; i < n; i++) {
-        int *v = (int *)av_fifo_peek2(fifo, i * sizeof(int));
-        printf("%d: %d\n", i, *v);
-    }
-    printf("\n");
-
-    /* peek_at at FIFO */
-    n = av_fifo_size(fifo) / sizeof(int);
-    for (i = 0; i < n; i++) {
-        av_fifo_generic_peek_at(fifo, &j, i * sizeof(int), sizeof(j), NULL);
-        printf("%d: %d\n", i, j);
-    }
-    printf("\n");
-
-    /* read data */
-    for (i = 0; av_fifo_size(fifo) >= sizeof(int); i++) {
-        av_fifo_generic_read(fifo, &j, sizeof(int), NULL);
-        printf("%d ", j);
-    }
-    printf("\n");
-
-    /* test *ndx overflow */
-    av_fifo_reset(fifo);
-    fifo->rndx = fifo->wndx = ~(uint32_t)0 - 5;
-
-    /* fill data */
-    for (i = 0; av_fifo_space(fifo) >= sizeof(int); i++)
-        av_fifo_generic_write(fifo, &i, sizeof(int), NULL);
-
-    /* peek_at at FIFO */
-    n = av_fifo_size(fifo) / sizeof(int);
-    for (i = 0; i < n; i++) {
-        av_fifo_generic_peek_at(fifo, &j, i * sizeof(int), sizeof(j), NULL);
-        printf("%d: %d\n", i, j);
-    }
-
-    av_fifo_free(fifo);
-
-    return 0;
-}
-
-#endif

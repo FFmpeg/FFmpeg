@@ -65,12 +65,12 @@ static void memset_zero_16width_msa(uint8_t *src, int32_t stride,
     }
 }
 
-void ff_fill_block16_msa(uint8_t *src, uint8_t val, int stride, int height)
+void ff_fill_block16_msa(uint8_t *src, uint8_t val, ptrdiff_t stride, int height)
 {
     copy_8bit_value_width16_msa(src, val, stride, height);
 }
 
-void ff_fill_block8_msa(uint8_t *src, uint8_t val, int stride, int height)
+void ff_fill_block8_msa(uint8_t *src, uint8_t val, ptrdiff_t stride, int height)
 {
     copy_8bit_value_width8_msa(src, val, stride, height);
 }

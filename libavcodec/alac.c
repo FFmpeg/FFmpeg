@@ -29,20 +29,20 @@
  * passed through the extradata[_size] fields. This atom is tacked onto
  * the end of an 'alac' stsd atom and has the following format:
  *
- * 32bit  atom size
- * 32bit  tag                  ("alac")
- * 32bit  tag version          (0)
- * 32bit  samples per frame    (used when not set explicitly in the frames)
- *  8bit  compatible version   (0)
- *  8bit  sample size
- *  8bit  history mult         (40)
- *  8bit  initial history      (10)
- *  8bit  rice param limit     (14)
- *  8bit  channels
- * 16bit  maxRun               (255)
- * 32bit  max coded frame size (0 means unknown)
- * 32bit  average bitrate      (0 means unknown)
- * 32bit  samplerate
+ * 32 bits  atom size
+ * 32 bits  tag                  ("alac")
+ * 32 bits  tag version          (0)
+ * 32 bits  samples per frame    (used when not set explicitly in the frames)
+ *  8 bits  compatible version   (0)
+ *  8 bits  sample size
+ *  8 bits  history mult         (40)
+ *  8 bits  initial history      (10)
+ *  8 bits  rice param limit     (14)
+ *  8 bits  channels
+ * 16 bits  maxRun               (255)
+ * 32 bits  max coded frame size (0 means unknown)
+ * 32 bits  average bitrate      (0 means unknown)
+ * 32 bits  samplerate
  */
 
 #include <inttypes.h>
@@ -76,6 +76,7 @@ typedef struct ALACContext {
     uint8_t  rice_history_mult;
     uint8_t  rice_initial_history;
     uint8_t  rice_limit;
+    int      sample_rate;
 
     int extra_bits;     /**< number of extra bits beyond 16-bit */
     int nb_samples;     /**< number of samples in the current frame */
@@ -250,7 +251,7 @@ static int decode_element(AVCodecContext *avctx, AVFrame *frame, int ch_index,
     alac->extra_bits = get_bits(&alac->gb, 2) << 3;
     bps = alac->sample_size - alac->extra_bits + channels - 1;
     if (bps > 32U) {
-        av_log(avctx, AV_LOG_ERROR, "bps is unsupported: %d\n", bps);
+        avpriv_report_missing_feature(avctx, "bps %d", bps);
         return AVERROR_PATCHWELCOME;
     }
 
@@ -391,6 +392,12 @@ static int decode_element(AVCodecContext *avctx, AVFrame *frame, int ch_index,
                 *outbuffer++ = alac->output_samples_buffer[ch][i];
         }}
         break;
+    case 20: {
+        for (ch = 0; ch < channels; ch++) {
+            for (i = 0; i < alac->nb_samples; i++)
+                alac->output_samples_buffer[ch][i] <<= 12;
+        }}
+        break;
     case 24: {
         for (ch = 0; ch < channels; ch++) {
             for (i = 0; i < alac->nb_samples; i++)
@@ -424,7 +431,7 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
             break;
         }
         if (element > TYPE_CPE && element != TYPE_LFE) {
-            av_log(avctx, AV_LOG_ERROR, "syntax element unsupported: %d\n", element);
+            avpriv_report_missing_feature(avctx, "Syntax element %d", element);
             return AVERROR_PATCHWELCOME;
         }
 
@@ -453,7 +460,7 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
                avpkt->size * 8 - get_bits_count(&alac->gb));
     }
 
-    if (alac->channels == ch)
+    if (alac->channels == ch && alac->nb_samples)
         *got_frame_ptr = 1;
     else
         av_log(avctx, AV_LOG_WARNING, "Failed to decode all channels\n");
@@ -532,7 +539,7 @@ static int alac_set_info(ALACContext *alac)
     bytestream2_get_be16u(&gb); // maxRun
     bytestream2_get_be32u(&gb); // max coded frame size
     bytestream2_get_be32u(&gb); // average bitrate
-    bytestream2_get_be32u(&gb); // samplerate
+    alac->sample_rate          = bytestream2_get_be32u(&gb);
 
     return 0;
 }
@@ -556,6 +563,7 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
     switch (alac->sample_size) {
     case 16: avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
              break;
+    case 20:
     case 24:
     case 32: avctx->sample_fmt = AV_SAMPLE_FMT_S32P;
              break;
@@ -563,6 +571,7 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
              return AVERROR_PATCHWELCOME;
     }
     avctx->bits_per_raw_sample = alac->sample_size;
+    avctx->sample_rate         = alac->sample_rate;
 
     if (alac->channels < 1) {
         av_log(avctx, AV_LOG_WARNING, "Invalid channel count\n");
@@ -574,8 +583,8 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
             avctx->channels = alac->channels;
     }
     if (avctx->channels > ALAC_MAX_CHANNELS || avctx->channels <= 0 ) {
-        av_log(avctx, AV_LOG_ERROR, "Unsupported channel count: %d\n",
-               avctx->channels);
+        avpriv_report_missing_feature(avctx, "Channel count %d",
+                                      avctx->channels);
         return AVERROR_PATCHWELCOME;
     }
     avctx->channel_layout = ff_alac_channel_layouts[alac->channels - 1];

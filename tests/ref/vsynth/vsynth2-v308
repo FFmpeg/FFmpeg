@@ -1,4 +1,4 @@
-a07c9e12508dec90a414a4a6119c5ae4 *tests/data/fate/vsynth2-v308.avi
+866fb5095976d62279c402023526d7a9 *tests/data/fate/vsynth2-v308.avi
 15213252 tests/data/fate/vsynth2-v308.avi
 8394327c14ef0b6fbaae3b69fcc5572a *tests/data/fate/vsynth2-v308.out.rawvideo
 stddev:    0.50 PSNR: 54.10 MAXDIFF:   13 bytes:  7603200/  7603200

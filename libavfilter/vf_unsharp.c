@@ -109,9 +109,9 @@ static int apply_unsharp_c(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
     int i, plane_w[3], plane_h[3];
     UnsharpFilterParam *fp[3];
     plane_w[0] = inlink->w;
-    plane_w[1] = plane_w[2] = FF_CEIL_RSHIFT(inlink->w, s->hsub);
+    plane_w[1] = plane_w[2] = AV_CEIL_RSHIFT(inlink->w, s->hsub);
     plane_h[0] = inlink->h;
-    plane_h[1] = plane_h[2] = FF_CEIL_RSHIFT(inlink->h, s->vsub);
+    plane_h[1] = plane_h[2] = AV_CEIL_RSHIFT(inlink->h, s->vsub);
     fp[0] = &s->luma;
     fp[1] = fp[2] = &s->chroma;
     for (i = 0; i < 3; i++) {
@@ -141,6 +141,10 @@ static av_cold int init(AVFilterContext *ctx)
     set_filter_param(&s->luma,   s->lmsize_x, s->lmsize_y, s->lamount);
     set_filter_param(&s->chroma, s->cmsize_x, s->cmsize_y, s->camount);
 
+    if (s->luma.scalebits >= 26 || s->chroma.scalebits >= 26) {
+        av_log(ctx, AV_LOG_ERROR, "luma or chroma matrix size too big\n");
+        return AVERROR(EINVAL);
+    }
     s->apply_unsharp = apply_unsharp_c;
     if (!CONFIG_OPENCL && s->opencl) {
         av_log(ctx, AV_LOG_ERROR, "OpenCL support was not enabled in this build, cannot be selected\n");
@@ -204,7 +208,7 @@ static int config_props(AVFilterLink *link)
     ret = init_filter_param(link->dst, &s->luma,   "luma",   link->w);
     if (ret < 0)
         return ret;
-    ret = init_filter_param(link->dst, &s->chroma, "chroma", FF_CEIL_RSHIFT(link->w, s->hsub));
+    ret = init_filter_param(link->dst, &s->chroma, "chroma", AV_CEIL_RSHIFT(link->w, s->hsub));
     if (ret < 0)
         return ret;
 
@@ -254,15 +258,17 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
 end:
     av_frame_free(&in);
 
-    if (ret < 0)
+    if (ret < 0) {
+        av_frame_free(&out);
         return ret;
+    }
     return ff_filter_frame(outlink, out);
 }
 
 #define OFFSET(x) offsetof(UnsharpContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 #define MIN_SIZE 3
-#define MAX_SIZE 63
+#define MAX_SIZE 23
 static const AVOption unsharp_options[] = {
     { "luma_msize_x",   "set luma matrix horizontal size",   OFFSET(lmsize_x), AV_OPT_TYPE_INT,   { .i64 = 5 }, MIN_SIZE, MAX_SIZE, FLAGS },
     { "lx",             "set luma matrix horizontal size",   OFFSET(lmsize_x), AV_OPT_TYPE_INT,   { .i64 = 5 }, MIN_SIZE, MAX_SIZE, FLAGS },

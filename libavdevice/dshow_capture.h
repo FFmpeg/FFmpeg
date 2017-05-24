@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVDEVICE_DSHOW_H
-#define AVDEVICE_DSHOW_H
+#ifndef AVDEVICE_DSHOW_CAPTURE_H
+#define AVDEVICE_DSHOW_CAPTURE_H
 
 #define DSHOWDEBUG 0
 
@@ -289,6 +289,8 @@ struct dshow_ctx {
     IGraphBuilder *graph;
 
     char *device_name[2];
+    char *device_unique_name[2];
+
     int video_device_number;
     int audio_device_number;
 
@@ -349,4 +351,4 @@ HRESULT dshow_try_setup_crossbar_options(ICaptureGraphBuilder2 *graph_builder2,
 
 void dshow_show_filter_properties(IBaseFilter *pFilter, AVFormatContext *avctx);
 
-#endif /* AVDEVICE_DSHOW_H */
+#endif /* AVDEVICE_DSHOW_CAPTURE_H */

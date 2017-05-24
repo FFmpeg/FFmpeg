@@ -109,7 +109,9 @@ static av_cold int flac_decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
 
     /* initialize based on the demuxer-supplied streamdata header */
-    ff_flac_parse_streaminfo(avctx, &s->flac_stream_info, streaminfo);
+    ret = ff_flac_parse_streaminfo(avctx, &s->flac_stream_info, streaminfo);
+    if (ret < 0)
+        return ret;
     ret = allocate_buffers(s);
     if (ret < 0)
         return ret;
@@ -175,7 +177,9 @@ static int parse_streaminfo(FLACContext *s, const uint8_t *buf, int buf_size)
         metadata_size != FLAC_STREAMINFO_SIZE) {
         return AVERROR_INVALIDDATA;
     }
-    ff_flac_parse_streaminfo(s->avctx, &s->flac_stream_info, &buf[8]);
+    ret = ff_flac_parse_streaminfo(s->avctx, &s->flac_stream_info, &buf[8]);
+    if (ret < 0)
+        return ret;
     ret = allocate_buffers(s);
     if (ret < 0)
         return ret;
@@ -201,12 +205,12 @@ static int get_metadata_size(const uint8_t *buf, int buf_size)
     buf += 4;
     do {
         if (buf_end - buf < 4)
-            return 0;
+            return AVERROR_INVALIDDATA;
         flac_parse_block_header(buf, &metadata_last, NULL, &metadata_size);
         buf += 4;
         if (buf_end - buf < metadata_size) {
             /* need more data in order to read the complete header */
-            return 0;
+            return AVERROR_INVALIDDATA;
         }
         buf += metadata_size;
     } while (!metadata_last);
@@ -254,8 +258,15 @@ static int decode_residuals(FLACContext *s, int32_t *decoded, int pred_order)
             for (; i < samples; i++)
                 *decoded++ = get_sbits_long(&s->gb, tmp);
         } else {
+            int real_limit = tmp ? (INT_MAX >> tmp) + 2 : INT_MAX;
             for (; i < samples; i++) {
-                *decoded++ = get_sr_golomb_flac(&s->gb, tmp, INT_MAX, 0);
+                int v = get_sr_golomb_flac(&s->gb, tmp, real_limit, 0);
+                if (v == 0x80000000){
+                    av_log(s->avctx, AV_LOG_ERROR, "invalid residual\n");
+                    return AVERROR_INVALIDDATA;
+                }
+
+                *decoded++ = v;
             }
         }
         i= 0;
@@ -268,7 +279,8 @@ static int decode_subframe_fixed(FLACContext *s, int32_t *decoded,
                                  int pred_order, int bps)
 {
     const int blocksize = s->blocksize;
-    int av_uninit(a), av_uninit(b), av_uninit(c), av_uninit(d), i;
+    unsigned av_uninit(a), av_uninit(b), av_uninit(c), av_uninit(d);
+    int i;
     int ret;
 
     /* warm up samples */
@@ -315,7 +327,7 @@ static int decode_subframe_fixed(FLACContext *s, int32_t *decoded,
     return 0;
 }
 
-static void lpc_analyze_remodulate(int32_t *decoded, const int coeffs[32],
+static void lpc_analyze_remodulate(SUINT32 *decoded, const int coeffs[32],
                                    int order, int qlevel, int len, int bps)
 {
     int i, j;
@@ -331,7 +343,7 @@ static void lpc_analyze_remodulate(int32_t *decoded, const int coeffs[32],
     for (i = len - 1; i >= order; i--) {
         int64_t p = 0;
         for (j = 0; j < order; j++)
-            p += coeffs[j] * (int64_t)decoded[i-order+j];
+            p += coeffs[j] * (int64_t)(int32_t)decoded[i-order+j];
         decoded[i] -= p >> qlevel;
     }
     for (i = order; i < len; i++, decoded++) {
@@ -447,7 +459,7 @@ static inline int decode_subframe(FLACContext *s, int channel)
     if (wasted) {
         int i;
         for (i = 0; i < s->blocksize; i++)
-            decoded[i] <<= wasted;
+            decoded[i] = (unsigned)decoded[i] << wasted;
     }
 
     return 0;

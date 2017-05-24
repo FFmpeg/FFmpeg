@@ -30,6 +30,9 @@
 #    define NDEBUG
 #endif
 
+// This can be enabled to allow detection of additional integer overflows with ubsan
+//#define CHECKED
+
 #include <limits.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -244,6 +247,7 @@ void avpriv_request_sample(void *avc,
 #endif
 
 #define avpriv_open ff_open
+#define avpriv_tempfile ff_tempfile
 #define PTRDIFF_SPECIFIER "Id"
 #define SIZE_SPECIFIER "Iu"
 #else
@@ -255,6 +259,16 @@ void avpriv_request_sample(void *avc,
 #   define ff_dlog(ctx, ...) av_log(ctx, AV_LOG_DEBUG, __VA_ARGS__)
 #else
 #   define ff_dlog(ctx, ...) do { if (0) av_log(ctx, AV_LOG_DEBUG, __VA_ARGS__); } while (0)
+#endif
+
+// For debuging we use signed operations so overflows can be detected (by ubsan)
+// For production we use unsigned so there are no undefined operations
+#ifdef CHECKED
+#define SUINT   int
+#define SUINT32 int32_t
+#else
+#define SUINT   unsigned
+#define SUINT32 uint32_t
 #endif
 
 /**
@@ -294,30 +308,23 @@ static av_always_inline av_const int64_t ff_rint64_clip(double a, int64_t amin, 
 }
 
 /**
- * Compute 10^x for floating point values. Note: this function is by no means
- * "correctly rounded", and is meant as a fast, reasonably accurate approximation.
- * For instance, maximum relative error for the double precision variant is
- * ~ 1e-13 for very small and very large values.
- * This is ~2x faster than GNU libm's approach, which is still off by 2ulp on
- * some inputs.
- * @param x exponent
- * @return 10^x
- */
-static av_always_inline double ff_exp10(double x)
-{
-    return exp2(M_LOG2_10 * x);
-}
-
-static av_always_inline float ff_exp10f(float x)
-{
-    return exp2f(M_LOG2_10 * x);
-}
-
-/**
  * A wrapper for open() setting O_CLOEXEC.
  */
 av_warn_unused_result
 int avpriv_open(const char *filename, int flags, ...);
+
+/**
+ * Wrapper to work around the lack of mkstemp() on mingw.
+ * Also, tries to create file in /tmp first, if possible.
+ * *prefix can be a character constant; *filename will be allocated internally.
+ * @return file descriptor of opened file (or negative value corresponding to an
+ * AVERROR code on error)
+ * and opened file name in **filename.
+ * @note On very old libcs it is necessary to set a secure umask before
+ *       calling this, av_tempfile() can't call umask itself as it is used in
+ *       libraries and could interfere with the calling application.
+ */
+int avpriv_tempfile(const char *prefix, char **filename, int log_offset, void *log_ctx);
 
 int avpriv_set_systematic_pal2(uint32_t pal[256], enum AVPixelFormat pix_fmt);
 
@@ -336,6 +343,14 @@ static av_always_inline av_const int avpriv_mirror(int x, int w)
 
 void ff_check_pixfmt_descriptors(void);
 
-extern const uint8_t ff_reverse[256];
+/**
+ * Set a dictionary value to an ISO-8601 compliant timestamp string.
+ *
+ * @param s AVFormatContext
+ * @param key metadata key
+ * @param timestamp unix timestamp in microseconds
+ * @return <0 on error
+ */
+int avpriv_dict_set_timestamp(AVDictionary **dict, const char *key, int64_t timestamp);
 
 #endif /* AVUTIL_INTERNAL_H */

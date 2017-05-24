@@ -18,18 +18,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdint.h>
-
 #include "config.h"
-#if HAVE_ALTIVEC_H
-#include <altivec.h>
-#endif
+
+#include <stdint.h>
 
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/ppc/cpu.h"
-#include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
+
 #include "libavcodec/svq1enc.h"
 
 #if HAVE_ALTIVEC

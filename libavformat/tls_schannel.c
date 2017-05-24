@@ -28,6 +28,7 @@
 #include "tls.h"
 
 #define SECURITY_WIN32
+#include <windows.h>
 #include <security.h>
 #include <schnlsp.h>
 
@@ -576,6 +577,12 @@ done:
     return ret < 0 ? ret : outbuf[1].cbBuffer;
 }
 
+static int tls_get_file_handle(URLContext *h)
+{
+    TLSContext *c = h->priv_data;
+    return ffurl_get_file_handle(c->tls_shared.tcp);
+}
+
 static const AVOption options[] = {
     TLS_COMMON_OPTIONS(TLSContext, tls_shared),
     { NULL }
@@ -588,12 +595,13 @@ static const AVClass tls_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-URLProtocol ff_tls_schannel_protocol = {
+const URLProtocol ff_tls_schannel_protocol = {
     .name           = "tls",
     .url_open2      = tls_open,
     .url_read       = tls_read,
     .url_write      = tls_write,
     .url_close      = tls_close,
+    .url_get_file_handle = tls_get_file_handle,
     .priv_data_size = sizeof(TLSContext),
     .flags          = URL_PROTOCOL_FLAG_NETWORK,
     .priv_data_class = &tls_class,

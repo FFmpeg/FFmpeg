@@ -19,8 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVDEVICE_DECKLINK_COMMON_H
+#define AVDEVICE_DECKLINK_COMMON_H
+
 #include <DeckLinkAPIVersion.h>
 
+#include "libavutil/thread.h"
 #include "decklink_common_c.h"
 
 class decklink_output_callback;
@@ -41,6 +45,8 @@ struct decklink_ctx {
     IDeckLink *dl;
     IDeckLinkOutput *dlo;
     IDeckLinkInput *dli;
+    IDeckLinkConfiguration *cfg;
+    IDeckLinkAttributes *attr;
     decklink_output_callback *output_callback;
     decklink_input_callback *input_callback;
 
@@ -48,6 +54,8 @@ struct decklink_ctx {
     BMDTimeValue bmd_tb_den;
     BMDTimeValue bmd_tb_num;
     BMDDisplayMode bmd_mode;
+    BMDVideoConnection video_input;
+    BMDAudioConnection audio_input;
     int bmd_width;
     int bmd_height;
     int bmd_field_dominance;
@@ -67,16 +75,24 @@ struct decklink_ctx {
     unsigned int dropped;
     AVStream *audio_st;
     AVStream *video_st;
+    AVStream *teletext_st;
 
     /* Options */
     int list_devices;
     int list_formats;
+    int64_t teletext_lines;
     double preroll;
+    int duplex_mode;
+    DecklinkPtsSource audio_pts_source;
+    DecklinkPtsSource video_pts_source;
+    int draw_bars;
 
     int frames_preroll;
     int frames_buffer;
 
-    sem_t semaphore;
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    int frames_buffer_available_spots;
 
     int channels;
 };
@@ -94,10 +110,32 @@ IDeckLinkIterator *CreateDeckLinkIteratorInstance(void);
 typedef uint32_t buffercount_type;
 #endif
 
+static const BMDAudioConnection decklink_audio_connection_map[] = {
+    (BMDAudioConnection)0,
+    bmdAudioConnectionEmbedded,
+    bmdAudioConnectionAESEBU,
+    bmdAudioConnectionAnalog,
+    bmdAudioConnectionAnalogXLR,
+    bmdAudioConnectionAnalogRCA,
+    bmdAudioConnectionMicrophone,
+};
+
+static const BMDVideoConnection decklink_video_connection_map[] = {
+    (BMDVideoConnection)0,
+    bmdVideoConnectionSDI,
+    bmdVideoConnectionHDMI,
+    bmdVideoConnectionOpticalSDI,
+    bmdVideoConnectionComponent,
+    bmdVideoConnectionComposite,
+    bmdVideoConnectionSVideo,
+};
 
 HRESULT ff_decklink_get_display_name(IDeckLink *This, const char **displayName);
-int ff_decklink_set_format(AVFormatContext *avctx, int width, int height, int tb_num, int tb_den, decklink_direction_t direction = DIRECTION_OUT, int num = 0);
+int ff_decklink_set_format(AVFormatContext *avctx, int width, int height, int tb_num, int tb_den, enum AVFieldOrder field_order, decklink_direction_t direction = DIRECTION_OUT, int num = 0);
 int ff_decklink_set_format(AVFormatContext *avctx, decklink_direction_t direction, int num);
 int ff_decklink_list_devices(AVFormatContext *avctx);
 int ff_decklink_list_formats(AVFormatContext *avctx, decklink_direction_t direction = DIRECTION_OUT);
+void ff_decklink_cleanup(AVFormatContext *avctx);
+int ff_decklink_init_device(AVFormatContext *avctx, const char* name);
 
+#endif /* AVDEVICE_DECKLINK_COMMON_H */

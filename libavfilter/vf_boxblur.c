@@ -326,7 +326,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFrame *out;
     int plane;
-    int cw = FF_CEIL_RSHIFT(inlink->w, s->hsub), ch = FF_CEIL_RSHIFT(in->height, s->vsub);
+    int cw = AV_CEIL_RSHIFT(inlink->w, s->hsub), ch = AV_CEIL_RSHIFT(in->height, s->vsub);
     int w[4] = { inlink->w, cw, cw, inlink->w };
     int h[4] = { in->height, ch, ch, in->height };
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);

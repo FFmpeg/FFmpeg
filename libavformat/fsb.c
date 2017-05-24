@@ -39,7 +39,7 @@ static int fsb_read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     unsigned format, version, c;
     int64_t offset;
-    AVCodecContext *codec;
+    AVCodecParameters *par;
     AVStream *st = avformat_new_stream(s, NULL);
 
     avio_skip(pb, 3); // "FSB"
@@ -53,9 +53,9 @@ static int fsb_read_header(AVFormatContext *s)
 
     if (!st)
         return AVERROR(ENOMEM);
-    codec = st->codec;
-    codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-    codec->codec_tag   = 0;
+    par = st->codecpar;
+    par->codec_type  = AVMEDIA_TYPE_AUDIO;
+    par->codec_tag   = 0;
 
     if (version == 3) {
         offset = avio_rl32(pb) + 0x18;
@@ -63,35 +63,35 @@ static int fsb_read_header(AVFormatContext *s)
         st->duration = avio_rl32(pb);
         avio_skip(pb, 12);
         format = avio_rl32(pb);
-        codec->sample_rate = avio_rl32(pb);
-        if (codec->sample_rate <= 0)
+        par->sample_rate = avio_rl32(pb);
+        if (par->sample_rate <= 0)
             return AVERROR_INVALIDDATA;
         avio_skip(pb, 6);
-        codec->channels    = avio_rl16(pb);
-        if (!codec->channels)
+        par->channels    = avio_rl16(pb);
+        if (!par->channels)
             return AVERROR_INVALIDDATA;
 
         if (format & 0x00000100) {
-            codec->codec_id    = AV_CODEC_ID_PCM_S16LE;
-            codec->block_align = 4096 * codec->channels;
+            par->codec_id    = AV_CODEC_ID_PCM_S16LE;
+            par->block_align = 4096 * par->channels;
         } else if (format & 0x00400000) {
-            codec->bits_per_coded_sample = 4;
-            codec->codec_id    = AV_CODEC_ID_ADPCM_IMA_WAV;
-            codec->block_align = 36 * codec->channels;
+            par->bits_per_coded_sample = 4;
+            par->codec_id    = AV_CODEC_ID_ADPCM_IMA_WAV;
+            par->block_align = 36 * par->channels;
         } else if (format & 0x00800000) {
-            codec->codec_id    = AV_CODEC_ID_ADPCM_PSX;
-            codec->block_align = 16 * codec->channels;
+            par->codec_id    = AV_CODEC_ID_ADPCM_PSX;
+            par->block_align = 16 * par->channels;
         } else if (format & 0x02000000) {
-            codec->codec_id    = AV_CODEC_ID_ADPCM_THP;
-            codec->block_align = 8 * codec->channels;
-            if (codec->channels > INT_MAX / 32)
+            par->codec_id    = AV_CODEC_ID_ADPCM_THP;
+            par->block_align = 8 * par->channels;
+            if (par->channels > INT_MAX / 32)
                 return AVERROR_INVALIDDATA;
-            ff_alloc_extradata(codec, 32 * codec->channels);
-            if (!codec->extradata)
+            ff_alloc_extradata(par, 32 * par->channels);
+            if (!par->extradata)
                 return AVERROR(ENOMEM);
             avio_seek(pb, 0x68, SEEK_SET);
-            for (c = 0; c < codec->channels; c++) {
-                avio_read(pb, codec->extradata + 32 * c, 32);
+            for (c = 0; c < par->channels; c++) {
+                avio_read(pb, par->extradata + 32 * c, 32);
                 avio_skip(pb, 14);
             }
         } else {
@@ -109,45 +109,45 @@ static int fsb_read_header(AVFormatContext *s)
         case 0x00001005:
         case 0x40001081:
         case 0x40200001:
-            codec->codec_id = AV_CODEC_ID_XMA2;
+            par->codec_id = AV_CODEC_ID_XMA2;
             break;
         case 0x40000802:
-            codec->codec_id = AV_CODEC_ID_ADPCM_THP;
+            par->codec_id = AV_CODEC_ID_ADPCM_THP;
             break;
         default:
             avpriv_request_sample(s, "format 0x%X", format);
             return AVERROR_PATCHWELCOME;
         }
 
-        codec->sample_rate = avio_rl32(pb);
-        if (codec->sample_rate <= 0)
+        par->sample_rate = avio_rl32(pb);
+        if (par->sample_rate <= 0)
             return AVERROR_INVALIDDATA;
         avio_skip(pb, 6);
 
-        codec->channels    = avio_rl16(pb);
-        if (!codec->channels)
+        par->channels    = avio_rl16(pb);
+        if (!par->channels)
             return AVERROR_INVALIDDATA;
 
-        switch (codec->codec_id) {
+        switch (par->codec_id) {
         case AV_CODEC_ID_XMA2:
-            ff_alloc_extradata(codec, 34);
-            if (!codec->extradata)
+            ff_alloc_extradata(par, 34);
+            if (!par->extradata)
                 return AVERROR(ENOMEM);
-            memset(codec->extradata, 0, 34);
-            codec->block_align = 2048;
+            memset(par->extradata, 0, 34);
+            par->block_align = 2048;
             break;
         case AV_CODEC_ID_ADPCM_THP:
-            if (codec->channels > INT_MAX / 32)
+            if (par->channels > INT_MAX / 32)
                 return AVERROR_INVALIDDATA;
-            ff_alloc_extradata(codec, 32 * codec->channels);
-            if (!codec->extradata)
+            ff_alloc_extradata(par, 32 * par->channels);
+            if (!par->extradata)
                 return AVERROR(ENOMEM);
             avio_seek(pb, 0x80, SEEK_SET);
-            for (c = 0; c < codec->channels; c++) {
-                avio_read(pb, codec->extradata + 32 * c, 32);
+            for (c = 0; c < par->channels; c++) {
+                avio_read(pb, par->extradata + 32 * c, 32);
                 avio_skip(pb, 14);
             }
-            codec->block_align = 8 * codec->channels;
+            par->block_align = 8 * par->channels;
             break;
         }
     } else {
@@ -157,14 +157,14 @@ static int fsb_read_header(AVFormatContext *s)
     avio_skip(pb, offset - avio_tell(pb));
     s->internal->data_offset = avio_tell(pb);
 
-    avpriv_set_pts_info(st, 64, 1, codec->sample_rate);
+    avpriv_set_pts_info(st, 64, 1, par->sample_rate);
 
     return 0;
 }
 
 static int fsb_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    AVCodecContext *codec = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
     int64_t pos;
     int ret;
 
@@ -172,25 +172,25 @@ static int fsb_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR_EOF;
 
     pos = avio_tell(s->pb);
-    if (codec->codec_id == AV_CODEC_ID_ADPCM_THP &&
-               codec->channels > 1) {
+    if (par->codec_id == AV_CODEC_ID_ADPCM_THP &&
+               par->channels > 1) {
         int i, ch;
 
-        ret = av_new_packet(pkt, codec->block_align);
+        ret = av_new_packet(pkt, par->block_align);
         if (ret < 0)
             return ret;
         for (i = 0; i < 4; i++) {
-            for (ch = 0; ch < codec->channels; ch++) {
+            for (ch = 0; ch < par->channels; ch++) {
                 pkt->data[ch * 8 + i * 2 + 0] = avio_r8(s->pb);
                 pkt->data[ch * 8 + i * 2 + 1] = avio_r8(s->pb);
             }
         }
         ret = 0;
     } else {
-        ret = av_get_packet(s->pb, pkt, codec->block_align);
+        ret = av_get_packet(s->pb, pkt, par->block_align);
     }
 
-    if (codec->codec_id == AV_CODEC_ID_XMA2 && pkt->size >= 1)
+    if (par->codec_id == AV_CODEC_ID_XMA2 && pkt->size >= 1)
         pkt->duration = (pkt->data[0] >> 2) * 512;
 
     pkt->pos = pos;

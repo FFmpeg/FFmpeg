@@ -97,7 +97,7 @@ function ff_hevc_idct_32x32_dc_neon_8, export=1
         bx lr
 endfunc
 
-function ff_hevc_transform_add_4x4_neon_8, export=1
+function ff_hevc_add_residual_4x4_neon_8, export=1
         vldm        r1, {q0-q1}
         vld1.32     d4[0], [r0], r2
         vld1.32     d4[1], [r0], r2
@@ -117,7 +117,7 @@ function ff_hevc_transform_add_4x4_neon_8, export=1
         bx          lr
 endfunc
 
-function ff_hevc_transform_add_8x8_neon_8, export=1
+function ff_hevc_add_residual_8x8_neon_8, export=1
         mov         r3,   #8
 1:      subs        r3,   #1
         vld1.16     {q0}, [r1]!
@@ -130,7 +130,7 @@ function ff_hevc_transform_add_8x8_neon_8, export=1
         bx          lr
 endfunc
 
-function ff_hevc_transform_add_16x16_neon_8, export=1
+function ff_hevc_add_residual_16x16_neon_8, export=1
         mov         r3,   #16
 1:      subs        r3,   #1
         vld1.16     {q0, q1}, [r1]!
@@ -146,7 +146,7 @@ function ff_hevc_transform_add_16x16_neon_8, export=1
         bx          lr
 endfunc
 
-function ff_hevc_transform_add_32x32_neon_8, export=1
+function ff_hevc_add_residual_32x32_neon_8, export=1
         mov         r3,   #32
 1:      subs        r3,   #1
         vldm        r1!, {q0-q3}

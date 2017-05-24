@@ -28,11 +28,11 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/mathematics.h"
-#include "avcodec.h"
+
 #define BITSTREAM_READER_LE
+#include "avcodec.h"
 #include "get_bits.h"
 #include "internal.h"
-
 #include "lsp.h"
 #include "acelp_vectors.h"
 #include "acelp_pitch_delay.h"

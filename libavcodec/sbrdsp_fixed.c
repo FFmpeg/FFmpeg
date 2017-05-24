@@ -34,8 +34,9 @@
 static SoftFloat sbr_sum_square_c(int (*x)[2], int n)
 {
     SoftFloat ret;
-    int64_t accu = 0;
-    int i, nz, round;
+    uint64_t accu = 0, round;
+    int i, nz;
+    unsigned u;
 
     for (i = 0; i < n; i += 2) {
         // Larger values are inavlid and could cause overflows of accu.
@@ -49,22 +50,22 @@ static SoftFloat sbr_sum_square_c(int (*x)[2], int n)
         accu += (int64_t)x[i + 1][1] * x[i + 1][1];
     }
 
-    i = (int)(accu >> 32);
-    if (i == 0) {
+    u = accu >> 32;
+    if (u == 0) {
         nz = 1;
     } else {
-        nz = 0;
-        while (FFABS(i) < 0x40000000) {
-            i <<= 1;
+        nz = -1;
+        while (u < 0x80000000U) {
+            u <<= 1;
             nz++;
         }
         nz = 32 - nz;
     }
 
-    round = 1 << (nz-1);
-    i = (int)((accu + round) >> nz);
-    i >>= 1;
-    ret = av_int2sf(i, 15 - nz);
+    round = 1ULL << (nz-1);
+    u = ((accu + round) >> nz);
+    u >>= 1;
+    ret = av_int2sf(u, 15 - nz);
 
     return ret;
 }
@@ -107,23 +108,24 @@ static void sbr_qmf_deint_neg_c(int *v, const int *src)
 
 static av_always_inline SoftFloat autocorr_calc(int64_t accu)
 {
-        int nz, mant, expo, round;
+        int nz, mant, expo;
+        unsigned round;
         int i = (int)(accu >> 32);
         if (i == 0) {
             nz = 1;
         } else {
             nz = 0;
             while (FFABS(i) < 0x40000000) {
-                i <<= 1;
+                i *= 2;
                 nz++;
             }
             nz = 32-nz;
         }
 
-        round = 1 << (nz-1);
+        round = 1U << (nz-1);
         mant = (int)((accu + round) >> nz);
         mant = (mant + 0x40)>>7;
-        mant <<= 6;
+        mant *= 64;
         expo = nz + 15;
         return av_int2sf(mant, 30 - expo);
 }
@@ -229,11 +231,11 @@ static void sbr_hf_gen_c(int (*X_high)[2], const int (*X_low)[2],
 static void sbr_hf_g_filt_c(int (*Y)[2], const int (*X_high)[40][2],
                           const SoftFloat *g_filt, int m_max, intptr_t ixh)
 {
-    int m, r;
+    int m;
     int64_t accu;
 
     for (m = 0; m < m_max; m++) {
-        r = 1 << (22-g_filt[m].exp);
+        int64_t r = 1LL << (22-g_filt[m].exp);
         accu = (int64_t)X_high[m][ixh][0] * ((g_filt[m].mant + 0x40)>>7);
         Y[m][0] = (int)((accu + r) >> (23-g_filt[m].exp));
 

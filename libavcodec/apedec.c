@@ -339,10 +339,10 @@ static inline void range_dec_normalize(APEContext *ctx)
 }
 
 /**
- * Calculate culmulative frequency for next symbol. Does NO update!
+ * Calculate cumulative frequency for next symbol. Does NO update!
  * @param ctx decoder context
  * @param tot_f is the total frequency or (code_value)1<<shift
- * @return the culmulative frequency
+ * @return the cumulative frequency
  */
 static inline int range_decode_culfreq(APEContext *ctx, int tot_f)
 {
@@ -495,7 +495,7 @@ static inline int ape_decode_value_3860(APEContext *ctx, GetBitContext *gb,
     else if(rice->k <= MIN_CACHE_BITS) {
         x = (overflow << rice->k) + get_bits(gb, rice->k);
     } else {
-        av_log(ctx->avctx, AV_LOG_ERROR, "Too many bits: %d\n", rice->k);
+        av_log(ctx->avctx, AV_LOG_ERROR, "Too many bits: %"PRIu32"\n", rice->k);
         return AVERROR_INVALIDDATA;
     }
     rice->ksum += x - (rice->ksum + 8 >> 4);
@@ -1284,8 +1284,16 @@ static void do_apply_filter(APEContext *ctx, int version, APEFilter *f,
             /* Update the adaption coefficients */
             absres = FFABS(res);
             if (absres)
-                *f->adaptcoeffs = ((res & INT32_MIN) ^ (-(1<<30))) >>
-                                  (25 + (absres <= f->avg*3) + (absres <= f->avg*4/3));
+                *f->adaptcoeffs = APESIGN(res) *
+                                  (8 << ((absres > f->avg * 3) + (absres > f->avg * 4 / 3)));
+                /* equivalent to the following code
+                    if (absres <= f->avg * 4 / 3)
+                        *f->adaptcoeffs = APESIGN(res) * 8;
+                    else if (absres <= f->avg * 3)
+                        *f->adaptcoeffs = APESIGN(res) * 16;
+                    else
+                        *f->adaptcoeffs = APESIGN(res) * 32;
+                */
             else
                 *f->adaptcoeffs = 0;
 
@@ -1372,7 +1380,7 @@ static void ape_unpack_stereo(APEContext *ctx, int count)
     int32_t *decoded0 = ctx->decoded[0];
     int32_t *decoded1 = ctx->decoded[1];
 
-    if (ctx->frameflags & APE_FRAMECODE_STEREO_SILENCE) {
+    if ((ctx->frameflags & APE_FRAMECODE_STEREO_SILENCE) == APE_FRAMECODE_STEREO_SILENCE) {
         /* We are pure silence, so we're done. */
         av_log(ctx->avctx, AV_LOG_DEBUG, "pure silence stereo\n");
         return;

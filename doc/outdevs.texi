@@ -131,8 +131,8 @@ and @code{--extra-ldflags}.
 On Windows, you need to run the IDL files through @command{widl}.
 
 DeckLink is very picky about the formats it supports. Pixel format is always
-uyvy422, framerate and video size must be determined for your device with
-@command{-list_formats 1}. Audio sample rate is always 48 kHz.
+uyvy422, framerate, field order and video size must be determined for your
+device with @command{-list_formats 1}. Audio sample rate is always 48 kHz.
 
 @subsection Options
 

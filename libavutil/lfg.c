@@ -23,7 +23,9 @@
 #include <limits.h>
 #include <math.h>
 #include "lfg.h"
+#include "crc.h"
 #include "md5.h"
+#include "error.h"
 #include "intreadwrite.h"
 #include "attributes.h"
 
@@ -59,44 +61,27 @@ void av_bmg_get(AVLFG *lfg, double out[2])
     out[1] = x2 * w;
 }
 
-#ifdef TEST
-#include "log.h"
-#include "timer.h"
+int av_lfg_init_from_data(AVLFG *c, const uint8_t *data, unsigned int length) {
+    unsigned int beg, end, segm;
+    const AVCRC *avcrc;
+    uint32_t crc = 1;
 
-int main(void)
-{
-    int x = 0;
-    int i, j;
-    AVLFG state;
+    /* avoid integer overflow in the loop below. */
+    if (length > (UINT_MAX / 128U)) return AVERROR(EINVAL);
 
-    av_lfg_init(&state, 0xdeadbeef);
-    for (j = 0; j < 10000; j++) {
-        START_TIMER
-        for (i = 0; i < 624; i++) {
-            //av_log(NULL, AV_LOG_ERROR, "%X\n", av_lfg_get(&state));
-            x += av_lfg_get(&state);
-        }
-        STOP_TIMER("624 calls of av_lfg_get");
-    }
-    av_log(NULL, AV_LOG_ERROR, "final value:%X\n", x);
+    c->index = 0;
+    avcrc = av_crc_get_table(AV_CRC_32_IEEE); /* This can't fail. It's a well-defined table in crc.c */
 
-    /* BMG usage example */
-    {
-        double mean   = 1000;
-        double stddev = 53;
-
-        av_lfg_init(&state, 42);
-
-        for (i = 0; i < 1000; i += 2) {
-            double bmg_out[2];
-            av_bmg_get(&state, bmg_out);
-            av_log(NULL, AV_LOG_INFO,
-                   "%f\n%f\n",
-                   bmg_out[0] * stddev + mean,
-                   bmg_out[1] * stddev + mean);
-        }
+    /* across 64 segments of the incoming data,
+     * do a running crc of each segment and store the crc as the state for that slot.
+     * this works even if the length of the segment is 0 bytes. */
+    beg = 0;
+    for (segm = 0;segm < 64;segm++) {
+        end = (((segm + 1) * length) / 64);
+        crc = av_crc(avcrc, crc, data + beg, end - beg);
+        c->state[segm] = (unsigned int)crc;
+        beg = end;
     }
 
     return 0;
 }
-#endif

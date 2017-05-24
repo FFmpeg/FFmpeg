@@ -46,7 +46,7 @@
 #include "resample_template.c"
 
 
-/* 0th order modified bessel function of the first kind. */
+/* 0th order modified Bessel function of the first kind. */
 static double bessel(double x)
 {
     double v     = 1;

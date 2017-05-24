@@ -252,7 +252,7 @@ static void ff_eac3_decode_transform_coeffs_aht_ch(AC3DecodeContext *s, int ch)
             /* Vector Quantization */
             int v = get_bits(gbc, bits);
             for (blk = 0; blk < 6; blk++) {
-                s->pre_mantissa[ch][bin][blk] = ff_eac3_mantissa_vq[hebap][v][blk] << 8;
+                s->pre_mantissa[ch][bin][blk] = ff_eac3_mantissa_vq[hebap][v][blk] * (1 << 8);
             }
         } else {
             /* Gain Adaptive Quantization */
@@ -271,16 +271,16 @@ static void ff_eac3_decode_transform_coeffs_aht_ch(AC3DecodeContext *s, int ch)
                     int b;
                     int mbits = bits - (2 - log_gain);
                     mant = get_sbits(gbc, mbits);
-                    mant <<= (23 - (mbits - 1));
+                    mant = ((unsigned)mant) << (23 - (mbits - 1));
                     /* remap mantissa value to correct for asymmetric quantization */
                     if (mant >= 0)
                         b = 1 << (23 - log_gain);
                     else
-                        b = ff_eac3_gaq_remap_2_4_b[hebap-8][log_gain-1] << 8;
+                        b = ff_eac3_gaq_remap_2_4_b[hebap-8][log_gain-1] * (1 << 8);
                     mant += ((ff_eac3_gaq_remap_2_4_a[hebap-8][log_gain-1] * (int64_t)mant) >> 15) + b;
                 } else {
                     /* small mantissa, no GAQ, or Gk=1 */
-                    mant <<= 24 - bits;
+                    mant *= (1 << 24 - bits);
                     if (!log_gain) {
                         /* remap mantissa value for no GAQ or Gk=1 */
                         mant += (ff_eac3_gaq_remap_1[hebap-8] * (int64_t)mant) >> 15;
@@ -305,7 +305,10 @@ static int ff_eac3_parse_header(AC3DecodeContext *s)
        application can select from. each independent stream can also contain
        dependent streams which are used to add or replace channels. */
     if (s->frame_type == EAC3_FRAME_TYPE_DEPENDENT) {
-        avpriv_request_sample(s->avctx, "Dependent substream decoding");
+        if (!s->eac3_frame_dependent_found) {
+            s->eac3_frame_dependent_found = 1;
+            avpriv_request_sample(s->avctx, "Dependent substream decoding");
+        }
         return AAC_AC3_PARSE_ERROR_FRAME_TYPE;
     } else if (s->frame_type == EAC3_FRAME_TYPE_RESERVED) {
         av_log(s->avctx, AV_LOG_ERROR, "Reserved frame type\n");
@@ -317,7 +320,10 @@ static int ff_eac3_parse_header(AC3DecodeContext *s)
        associated to an independent stream have matching substream id's. */
     if (s->substreamid) {
         /* only decode substream with id=0. skip any additional substreams. */
-        avpriv_request_sample(s->avctx, "Additional substreams");
+        if (!s->eac3_subsbtreamid_found) {
+            s->eac3_subsbtreamid_found = 1;
+            avpriv_request_sample(s->avctx, "Additional substreams");
+        }
         return AAC_AC3_PARSE_ERROR_FRAME_TYPE;
     }
 
@@ -333,9 +339,17 @@ static int ff_eac3_parse_header(AC3DecodeContext *s)
 
     /* volume control params */
     for (i = 0; i < (s->channel_mode ? 1 : 2); i++) {
-        skip_bits(gbc, 5); // skip dialog normalization
-        if (get_bits1(gbc)) {
-            skip_bits(gbc, 8); // skip compression gain word
+        s->dialog_normalization[i] = -get_bits(gbc, 5);
+        if (s->dialog_normalization[i] == 0) {
+            s->dialog_normalization[i] = -31;
+        }
+        if (s->target_level != 0) {
+            s->level_gain[i] = powf(2.0f,
+                (float)(s->target_level - s->dialog_normalization[i])/6.0f);
+        }
+        s->compression_exists[i] = get_bits1(gbc);
+        if (s->compression_exists[i]) {
+            s->heavy_dynamic_range[i] = AC3_HEAVY_RANGE(get_bits(gbc, 8));
         }
     }
 

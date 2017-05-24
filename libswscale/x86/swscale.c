@@ -25,7 +25,6 @@
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
-#include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
 #include "libavutil/cpu.h"
 #include "libavutil/pixdesc.h"
@@ -85,18 +84,12 @@ void ff_updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrB
 {
     const int dstH= c->dstH;
     const int flags= c->flags;
-#ifdef NEW_FILTER
+
     SwsPlane *lumPlane = &c->slice[c->numSlice-2].plane[0];
     SwsPlane *chrUPlane = &c->slice[c->numSlice-2].plane[1];
     SwsPlane *alpPlane = &c->slice[c->numSlice-2].plane[3];
-#else
-    int16_t **lumPixBuf= c->lumPixBuf;
-    int16_t **chrUPixBuf= c->chrUPixBuf;
-    int16_t **alpPixBuf= c->alpPixBuf;
-    const int vLumBufSize= c->vLumBufSize;
-    const int vChrBufSize= c->vChrBufSize;
-#endif
-    int hasAlpha = c->alpPixBuf != NULL;
+
+    int hasAlpha = c->needAlpha;
     int32_t *vLumFilterPos= c->vLumFilterPos;
     int32_t *vChrFilterPos= c->vChrFilterPos;
     int16_t *vLumFilter= c->vLumFilter;
@@ -117,22 +110,14 @@ void ff_updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrB
         c->greenDither= ff_dither4[dstY&1];
     c->redDither= ff_dither8[(dstY+1)&1];
     if (dstY < dstH - 2) {
-#ifdef NEW_FILTER
         const int16_t **lumSrcPtr  = (const int16_t **)(void*) lumPlane->line + firstLumSrcY - lumPlane->sliceY;
         const int16_t **chrUSrcPtr = (const int16_t **)(void*) chrUPlane->line + firstChrSrcY - chrUPlane->sliceY;
-        const int16_t **alpSrcPtr  = (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) ? (const int16_t **)(void*) alpPlane->line + firstLumSrcY - alpPlane->sliceY : NULL;
-#else
-        const int16_t **lumSrcPtr= (const int16_t **)(void*) lumPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
-        const int16_t **chrUSrcPtr= (const int16_t **)(void*) chrUPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
-        const int16_t **alpSrcPtr= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? (const int16_t **)(void*) alpPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize : NULL;
-#endif
+        const int16_t **alpSrcPtr  = (CONFIG_SWSCALE_ALPHA && hasAlpha) ? (const int16_t **)(void*) alpPlane->line + firstLumSrcY - alpPlane->sliceY : NULL;
+
         int i;
         if (firstLumSrcY < 0 || firstLumSrcY + vLumFilterSize > c->srcH) {
-#ifdef NEW_FILTER
             const int16_t **tmpY = (const int16_t **) lumPlane->tmp;
-#else
-            const int16_t **tmpY = (const int16_t **) lumPixBuf + 2 * vLumBufSize;
-#endif
+
             int neg = -firstLumSrcY, i, end = FFMIN(c->srcH - firstLumSrcY, vLumFilterSize);
             for (i = 0; i < neg;            i++)
                 tmpY[i] = lumSrcPtr[neg];
@@ -143,11 +128,7 @@ void ff_updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrB
             lumSrcPtr = tmpY;
 
             if (alpSrcPtr) {
-#ifdef NEW_FILTER
                 const int16_t **tmpA = (const int16_t **) alpPlane->tmp;
-#else
-                const int16_t **tmpA = (const int16_t **) alpPixBuf + 2 * vLumBufSize;
-#endif
                 for (i = 0; i < neg;            i++)
                     tmpA[i] = alpSrcPtr[neg];
                 for (     ; i < end;            i++)
@@ -158,11 +139,7 @@ void ff_updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrB
             }
         }
         if (firstChrSrcY < 0 || firstChrSrcY + vChrFilterSize > c->chrSrcH) {
-#ifdef NEW_FILTER
             const int16_t **tmpU = (const int16_t **) chrUPlane->tmp;
-#else
-            const int16_t **tmpU = (const int16_t **) chrUPixBuf + 2 * vChrBufSize;
-#endif
             int neg = -firstChrSrcY, i, end = FFMIN(c->chrSrcH - firstChrSrcY, vChrFilterSize);
             for (i = 0; i < neg;            i++) {
                 tmpU[i] = chrUSrcPtr[neg];
@@ -243,16 +220,16 @@ static void yuv2yuvX_sse3(const int16_t *filter, int filterSize,
         "movdqa     %%xmm3, %%xmm4 \n\t" \
         "movdqa     %%xmm3, %%xmm7 \n\t" \
         "movl           %3, %%ecx  \n\t" \
-        "mov                                 %0, %%"REG_d"  \n\t"\
-        "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
+        "mov                                 %0, %%"FF_REG_d"        \n\t"\
+        "mov                        (%%"FF_REG_d"), %%"FF_REG_S"     \n\t"\
         ".p2align                             4             \n\t" /* FIXME Unroll? */\
         "1:                                                 \n\t"\
-        "movddup                  8(%%"REG_d"), %%xmm0      \n\t" /* filterCoeff */\
-        "movdqa              (%%"REG_S", %%"REG_c", 2), %%xmm2      \n\t" /* srcData */\
-        "movdqa            16(%%"REG_S", %%"REG_c", 2), %%xmm5      \n\t" /* srcData */\
-        "add                                $16, %%"REG_d"  \n\t"\
-        "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
-        "test                         %%"REG_S", %%"REG_S"  \n\t"\
+        "movddup                  8(%%"FF_REG_d"), %%xmm0   \n\t" /* filterCoeff */\
+        "movdqa              (%%"FF_REG_S", %%"FF_REG_c", 2), %%xmm2 \n\t" /* srcData */\
+        "movdqa            16(%%"FF_REG_S", %%"FF_REG_c", 2), %%xmm5 \n\t" /* srcData */\
+        "add                                $16, %%"FF_REG_d"        \n\t"\
+        "mov                        (%%"FF_REG_d"), %%"FF_REG_S"     \n\t"\
+        "test                         %%"FF_REG_S", %%"FF_REG_S"     \n\t"\
         "pmulhw                           %%xmm0, %%xmm2      \n\t"\
         "pmulhw                           %%xmm0, %%xmm5      \n\t"\
         "paddw                            %%xmm2, %%xmm3      \n\t"\
@@ -261,13 +238,13 @@ static void yuv2yuvX_sse3(const int16_t *filter, int filterSize,
         "psraw                               $3, %%xmm3      \n\t"\
         "psraw                               $3, %%xmm4      \n\t"\
         "packuswb                         %%xmm4, %%xmm3      \n\t"\
-        "movntdq                          %%xmm3, (%1, %%"REG_c")\n\t"\
-        "add                         $16, %%"REG_c"         \n\t"\
-        "cmp                          %2, %%"REG_c"         \n\t"\
+        "movntdq                          %%xmm3, (%1, %%"FF_REG_c") \n\t"\
+        "add                         $16, %%"FF_REG_c"        \n\t"\
+        "cmp                          %2, %%"FF_REG_c"        \n\t"\
         "movdqa                   %%xmm7, %%xmm3            \n\t" \
         "movdqa                   %%xmm7, %%xmm4            \n\t" \
-        "mov                                 %0, %%"REG_d"  \n\t"\
-        "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
+        "mov                                 %0, %%"FF_REG_d"        \n\t"\
+        "mov                        (%%"FF_REG_d"), %%"FF_REG_S"     \n\t"\
         "jb                                  1b             \n\t"
 
     if (offset) {
@@ -282,7 +259,7 @@ static void yuv2yuvX_sse3(const int16_t *filter, int filterSize,
               "r" (dest-offset), "g" ((x86_reg)(dstW+offset)), "m" (offset),
               "m"(filterSize), "m"(((uint64_t *) dither)[0])
               : XMM_CLOBBERS("%xmm0" , "%xmm1" , "%xmm2" , "%xmm3" , "%xmm4" , "%xmm5" , "%xmm7" ,)
-                "%"REG_d, "%"REG_S, "%"REG_c
+                "%"FF_REG_d, "%"FF_REG_S, "%"FF_REG_c
               );
     } else {
         __asm__ volatile(
@@ -292,7 +269,7 @@ static void yuv2yuvX_sse3(const int16_t *filter, int filterSize,
               "r" (dest-offset), "g" ((x86_reg)(dstW+offset)), "m" (offset),
               "m"(filterSize), "m"(((uint64_t *) dither)[0])
               : XMM_CLOBBERS("%xmm0" , "%xmm1" , "%xmm2" , "%xmm3" , "%xmm4" , "%xmm5" , "%xmm7" ,)
-                "%"REG_d, "%"REG_S, "%"REG_c
+                "%"FF_REG_d, "%"FF_REG_S, "%"FF_REG_c
               );
     }
 }
@@ -452,14 +429,14 @@ av_cold void ff_sws_init_swscale_x86(SwsContext *c)
 #define ASSIGN_VSCALEX_FUNC(vscalefn, opt, do_16_case, condition_8bit) \
 switch(c->dstBpc){ \
     case 16:                          do_16_case;                          break; \
-    case 10: if (!isBE(c->dstFormat)) vscalefn = ff_yuv2planeX_10_ ## opt; break; \
+    case 10: if (!isBE(c->dstFormat) && c->dstFormat != AV_PIX_FMT_P010LE) vscalefn = ff_yuv2planeX_10_ ## opt; break; \
     case 9:  if (!isBE(c->dstFormat)) vscalefn = ff_yuv2planeX_9_  ## opt; break; \
     case 8: if ((condition_8bit) && !c->use_mmx_vfilter) vscalefn = ff_yuv2planeX_8_  ## opt; break; \
     }
 #define ASSIGN_VSCALE_FUNC(vscalefn, opt1, opt2, opt2chk) \
     switch(c->dstBpc){ \
     case 16: if (!isBE(c->dstFormat))            vscalefn = ff_yuv2plane1_16_ ## opt1; break; \
-    case 10: if (!isBE(c->dstFormat) && opt2chk) vscalefn = ff_yuv2plane1_10_ ## opt2; break; \
+    case 10: if (!isBE(c->dstFormat) && c->dstFormat != AV_PIX_FMT_P010LE && opt2chk) vscalefn = ff_yuv2plane1_10_ ## opt2; break; \
     case 9:  if (!isBE(c->dstFormat) && opt2chk) vscalefn = ff_yuv2plane1_9_  ## opt2;  break; \
     case 8:                                      vscalefn = ff_yuv2plane1_8_  ## opt1;  break; \
     default: av_assert0(c->dstBpc>8); \
@@ -479,7 +456,7 @@ switch(c->dstBpc){ \
         switch (c->srcFormat) {
         case AV_PIX_FMT_YA8:
             c->lumToYV12 = ff_yuyvToY_mmx;
-            if (c->alpPixBuf)
+            if (c->needAlpha)
                 c->alpToYV12 = ff_uyvyToY_mmx;
             break;
         case AV_PIX_FMT_YUYV422:
@@ -528,7 +505,7 @@ switch(c->dstBpc){ \
         switch (c->srcFormat) {
         case AV_PIX_FMT_YA8:
             c->lumToYV12 = ff_yuyvToY_sse2;
-            if (c->alpPixBuf)
+            if (c->needAlpha)
                 c->alpToYV12 = ff_uyvyToY_sse2;
             break;
         case AV_PIX_FMT_YUYV422:

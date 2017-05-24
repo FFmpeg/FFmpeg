@@ -165,7 +165,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     }
     setpts->var_values[VAR_PTS       ] = TS2D(frame->pts);
     setpts->var_values[VAR_T         ] = TS2T(frame->pts, inlink->time_base);
-    setpts->var_values[VAR_POS       ] = av_frame_get_pkt_pos(frame) == -1 ? NAN : av_frame_get_pkt_pos(frame);
+    setpts->var_values[VAR_POS       ] = frame->pkt_pos == -1 ? NAN : frame->pkt_pos;
     setpts->var_values[VAR_RTCTIME   ] = av_gettime();
 
     if (inlink->type == AVMEDIA_TYPE_VIDEO) {

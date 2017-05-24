@@ -65,7 +65,7 @@ CONST_DEC  w7_min_w5,    W7sh2, -W5sh2
 
 %include "libavcodec/x86/simple_idct10_template.asm"
 
-section .text align=16
+SECTION .text
 
 %macro idct_fn 0
 cglobal simple_idct10, 1, 1, 16

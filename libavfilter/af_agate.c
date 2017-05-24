@@ -295,6 +295,7 @@ static int scfilter_frame(AVFilterLink *link, AVFrame *frame)
         if (!in[i]) {
             av_frame_free(&in[0]);
             av_frame_free(&in[1]);
+            av_frame_free(&out);
             return AVERROR(ENOMEM);
         }
         av_audio_fifo_read(s->fifo[i], (void **)in[i]->data, nb_samples);

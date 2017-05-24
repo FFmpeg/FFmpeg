@@ -28,36 +28,36 @@
 static int rso_write_header(AVFormatContext *s)
 {
     AVIOContext  *pb  = s->pb;
-    AVCodecContext *enc = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
 
-    if (!enc->codec_tag)
+    if (!par->codec_tag)
         return AVERROR_INVALIDDATA;
 
-    if (enc->channels != 1) {
+    if (par->channels != 1) {
         av_log(s, AV_LOG_ERROR, "RSO only supports mono\n");
         return AVERROR_INVALIDDATA;
     }
 
-    if (!s->pb->seekable) {
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL)) {
         av_log(s, AV_LOG_ERROR, "muxer does not support non seekable output\n");
         return AVERROR_INVALIDDATA;
     }
 
     /* XXX: find legal sample rates (if any) */
-    if (enc->sample_rate >= 1u<<16) {
+    if (par->sample_rate >= 1u<<16) {
         av_log(s, AV_LOG_ERROR, "Sample rate must be < 65536\n");
         return AVERROR_INVALIDDATA;
     }
 
-    if (enc->codec_id == AV_CODEC_ID_ADPCM_IMA_WAV) {
-        av_log(s, AV_LOG_ERROR, "ADPCM in RSO not implemented\n");
+    if (par->codec_id == AV_CODEC_ID_ADPCM_IMA_WAV) {
+        avpriv_report_missing_feature(s, "ADPCM in RSO");
         return AVERROR_PATCHWELCOME;
     }
 
     /* format header */
-    avio_wb16(pb, enc->codec_tag);   /* codec ID */
+    avio_wb16(pb, par->codec_tag);   /* codec ID */
     avio_wb16(pb, 0);                /* data size, will be written at EOF */
-    avio_wb16(pb, enc->sample_rate);
+    avio_wb16(pb, par->sample_rate);
     avio_wb16(pb, 0x0000);           /* play mode ? (0x0000 = don't loop) */
 
     avio_flush(pb);

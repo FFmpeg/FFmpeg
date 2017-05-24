@@ -27,7 +27,6 @@
 
 const AVCodecTag ff_nut_subtitle_tags[] = {
     { AV_CODEC_ID_TEXT,             MKTAG('U', 'T', 'F', '8') },
-    { AV_CODEC_ID_SSA,              MKTAG('S', 'S', 'A',  0 ) },
     { AV_CODEC_ID_DVD_SUBTITLE,     MKTAG('D', 'V', 'D', 'S') },
     { AV_CODEC_ID_DVB_SUBTITLE,     MKTAG('D', 'V', 'B', 'S') },
     { AV_CODEC_ID_DVB_TELETEXT,     MKTAG('D', 'V', 'B', 'T') },
@@ -43,6 +42,7 @@ const AVCodecTag ff_nut_video_tags[] = {
     { AV_CODEC_ID_GIF,              MKTAG('G', 'I', 'F',  0 ) },
     { AV_CODEC_ID_XFACE,            MKTAG('X', 'F', 'A', 'C') },
     { AV_CODEC_ID_VP9,              MKTAG('V', 'P', '9', '0') },
+    { AV_CODEC_ID_HEVC,             MKTAG('H', 'E', 'V', 'C') },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG('R', 'G', 'B', 15 ) },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG('B', 'G', 'R', 15 ) },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG('R', 'G', 'B', 16 ) },
@@ -88,6 +88,12 @@ const AVCodecTag ff_nut_video_tags[] = {
     { AV_CODEC_ID_RAWVIDEO,         MKTAG('B', 'R', 'A', 64 ) },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG(64 , 'R', 'B', 'A') },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG(64 , 'B', 'R', 'A') },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG('Y', '3', 11 ,  9 ) },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG( 9 , 11 , '3', 'Y') },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG('Y', '3', 10 ,  9 ) },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG( 9 , 10 , '3', 'Y') },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG('Y', '3',  0 ,  9 ) },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG( 9 ,  0 , '3', 'Y') },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG('Y', '3', 11 , 10 ) },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG(10 , 11 , '3', 'Y') },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG('Y', '3', 10 , 10 ) },
@@ -137,6 +143,8 @@ const AVCodecTag ff_nut_video_tags[] = {
     { AV_CODEC_ID_RAWVIDEO,         MKTAG('Y', '4',   0,  10) },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG(10,    0, '4', 'Y') },
 
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG('Y', '1',   0,  12) },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG(12,    0, '1', 'Y') },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG('Y', '1',   0,  16) },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG(16,    0, '1', 'Y') },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG('Y', '4',  11,  16) },
@@ -159,8 +167,19 @@ const AVCodecTag ff_nut_video_tags[] = {
     { AV_CODEC_ID_RAWVIDEO,         MKTAG('G', '3',   0,  16) },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG(16,    0, '3', 'G') },
 
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG('G', '4',   0,   8) },
+
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG('G', '4', 00 , 10 ) },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG(10 , 00 , '4', 'G') },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG('G', '4', 00 , 12 ) },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG(12 , 00 , '4', 'G') },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG('G', '4', 00 , 16 ) },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG(16 , 00 , '4', 'G') },
+
     { AV_CODEC_ID_RAWVIDEO,         MKTAG('X', 'Y', 'Z' , 36 ) },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG(36 , 'Z' , 'Y', 'X') },
+
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG('P', 'A', 'L', 8 ) },
 
     { AV_CODEC_ID_RAWVIDEO, MKTAG(0xBA, 'B', 'G', 8   ) },
     { AV_CODEC_ID_RAWVIDEO, MKTAG(0xBA, 'B', 'G', 16  ) },
@@ -183,6 +202,7 @@ const AVCodecTag ff_nut_audio_extra_tags[] = {
     { AV_CODEC_ID_PCM_ALAW,         MKTAG('A', 'L', 'A', 'W') },
     { AV_CODEC_ID_PCM_MULAW,        MKTAG('U', 'L', 'A', 'W') },
     { AV_CODEC_ID_MP3,              MKTAG('M', 'P', '3', ' ') },
+    { AV_CODEC_ID_OPUS,             MKTAG('O', 'p', 'u', 's') },
     { AV_CODEC_ID_WAVPACK,          MKTAG('w', 'v', 'p', 'k') },
     { AV_CODEC_ID_NONE,             0                         }
 };
@@ -282,8 +302,10 @@ static int enu_free(void *opaque, void *elem)
 
 void ff_nut_free_sp(NUTContext *nut)
 {
-    av_tree_enumerate(nut->syncpoints, NULL, NULL, enu_free);
-    av_tree_destroy(nut->syncpoints);
+    if (nut->syncpoints) {
+        av_tree_enumerate(nut->syncpoints, NULL, NULL, enu_free);
+        av_tree_destroy(nut->syncpoints);
+    }
 }
 
 const Dispositions ff_nut_dispositions[] = {

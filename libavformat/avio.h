@@ -34,7 +34,15 @@
 
 #include "libavformat/version.h"
 
-#define AVIO_SEEKABLE_NORMAL 0x0001 /**< Seeking works like for a local file */
+/**
+ * Seeking works like for a local file.
+ */
+#define AVIO_SEEKABLE_NORMAL (1 << 0)
+
+/**
+ * Seeking by timestamp with avio_seek_time() is possible.
+ */
+#define AVIO_SEEKABLE_TIME   (1 << 1)
 
 /**
  * Callback for checking whether to abort blocking functions.
@@ -95,6 +103,42 @@ typedef struct AVIODirEntry {
 typedef struct AVIODirContext {
     struct URLContext *url_context;
 } AVIODirContext;
+
+/**
+ * Different data types that can be returned via the AVIO
+ * write_data_type callback.
+ */
+enum AVIODataMarkerType {
+    /**
+     * Header data; this needs to be present for the stream to be decodeable.
+     */
+    AVIO_DATA_MARKER_HEADER,
+    /**
+     * A point in the output bytestream where a decoder can start decoding
+     * (i.e. a keyframe). A demuxer/decoder given the data flagged with
+     * AVIO_DATA_MARKER_HEADER, followed by any AVIO_DATA_MARKER_SYNC_POINT,
+     * should give decodeable results.
+     */
+    AVIO_DATA_MARKER_SYNC_POINT,
+    /**
+     * A point in the output bytestream where a demuxer can start parsing
+     * (for non self synchronizing bytestream formats). That is, any
+     * non-keyframe packet start point.
+     */
+    AVIO_DATA_MARKER_BOUNDARY_POINT,
+    /**
+     * This is any, unlabelled data. It can either be a muxer not marking
+     * any positions at all, it can be an actual boundary/sync point
+     * that the muxer chooses not to mark, or a later part of a packet/fragment
+     * that is cut into multiple write callbacks due to limited IO buffer size.
+     */
+    AVIO_DATA_MARKER_UNKNOWN,
+    /**
+     * Trailer data, which doesn't contain actual content, but only for
+     * finalizing the output file.
+     */
+    AVIO_DATA_MARKER_TRAILER
+};
 
 /**
  * Bytestream IO Context.
@@ -249,9 +293,43 @@ typedef struct AVIOContext {
      * This is current internal only, do not use from outside.
      */
     int short_seek_threshold;
-} AVIOContext;
 
-/* unbuffered I/O */
+    /**
+     * ',' separated list of allowed protocols.
+     */
+    const char *protocol_whitelist;
+
+    /**
+     * ',' separated list of disallowed protocols.
+     */
+    const char *protocol_blacklist;
+
+    /**
+     * A callback that is used instead of write_packet.
+     */
+    int (*write_data_type)(void *opaque, uint8_t *buf, int buf_size,
+                           enum AVIODataMarkerType type, int64_t time);
+    /**
+     * If set, don't call write_data_type separately for AVIO_DATA_MARKER_BOUNDARY_POINT,
+     * but ignore them and treat them as AVIO_DATA_MARKER_UNKNOWN (to avoid needlessly
+     * small chunks of data returned from the callback).
+     */
+    int ignore_boundary_point;
+
+    /**
+     * Internal, not meant to be used from outside of AVIOContext.
+     */
+    enum AVIODataMarkerType current_type;
+    int64_t last_time;
+
+    /**
+     * A callback that is used instead of short_seek_threshold.
+     * This is current internal only, do not use from outside.
+     */
+    int (*short_seek_get)(void *opaque);
+
+    int64_t written;
+} AVIOContext;
 
 /**
  * Return the name of the protocol that will handle the passed URL.
@@ -404,14 +482,26 @@ int avio_put_str16le(AVIOContext *s, const char *str);
 int avio_put_str16be(AVIOContext *s, const char *str);
 
 /**
- * Passing this as the "whence" parameter to a seek function causes it to
+ * Mark the written bytestream as a specific type.
+ *
+ * Zero-length ranges are omitted from the output.
+ *
+ * @param time the stream time the current bytestream pos corresponds to
+ *             (in AV_TIME_BASE units), or AV_NOPTS_VALUE if unknown or not
+ *             applicable
+ * @param type the kind of data written starting at the current pos
+ */
+void avio_write_marker(AVIOContext *s, int64_t time, enum AVIODataMarkerType type);
+
+/**
+ * ORing this as the "whence" parameter to a seek function causes it to
  * return the filesize without seeking anywhere. Supporting this is optional.
  * If it is not supported then the seek function will return <0.
  */
 #define AVSEEK_SIZE 0x10000
 
 /**
- * Oring this flag as into the "whence" parameter to a seek function causes it to
+ * Passing this flag as the "whence" parameter to a seek function causes it to
  * seek by any means (like reopening and linear reading) or other normally unreasonable
  * means that can be extremely slow.
  * This may be ignored by the seek code.
@@ -628,6 +718,18 @@ int avio_closep(AVIOContext **s);
  * @return zero if no error.
  */
 int avio_open_dyn_buf(AVIOContext **s);
+
+/**
+ * Return the written size and a pointer to the buffer.
+ * The AVIOContext stream is left intact.
+ * The buffer must NOT be freed.
+ * No padding is added to the buffer.
+ *
+ * @param s IO context
+ * @param pbuffer pointer to a byte buffer
+ * @return the length of the byte buffer
+ */
+int avio_get_dyn_buf(AVIOContext *s, uint8_t **pbuffer);
 
 /**
  * Return the written size and a pointer to the buffer. The buffer

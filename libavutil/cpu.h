@@ -39,6 +39,7 @@
 #define AV_CPU_FLAG_SSE3SLOW 0x20000000 ///< SSE3 supported, but usually not faster
                                         ///< than regular MMX/SSE (e.g. Core1)
 #define AV_CPU_FLAG_SSSE3        0x0080 ///< Conroe SSSE3 functions
+#define AV_CPU_FLAG_SSSE3SLOW 0x4000000 ///< SSSE3 supported, but usually not faster
 #define AV_CPU_FLAG_ATOM     0x10000000 ///< Atom processor, some SSSE3 instructions are slower
 #define AV_CPU_FLAG_SSE4         0x0100 ///< Penryn SSE4.1 functions
 #define AV_CPU_FLAG_SSE42        0x0200 ///< Nehalem SSE4.2 functions
@@ -70,7 +71,7 @@
 /**
  * Return the flags which specify extensions supported by the CPU.
  * The returned value is affected by av_force_cpu_flags() if that was used
- * before. So av_get_cpu_flags() can easily be used in a application to
+ * before. So av_get_cpu_flags() can easily be used in an application to
  * detect the enabled cpu flags.
  */
 int av_get_cpu_flags(void);
@@ -85,8 +86,6 @@ void av_force_cpu_flags(int flags);
  * Set a mask on flags returned by av_get_cpu_flags().
  * This function is mainly useful for testing.
  * Please use av_force_cpu_flags() and av_get_cpu_flags() instead which are more flexible
- *
- * @warning this function is not thread safe.
  */
 attribute_deprecated void av_set_cpu_flags_mask(int mask);
 

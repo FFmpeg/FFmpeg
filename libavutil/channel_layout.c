@@ -94,7 +94,7 @@ static const struct {
     { "6.0(front)",  6,  AV_CH_LAYOUT_6POINT0_FRONT },
     { "hexagonal",   6,  AV_CH_LAYOUT_HEXAGONAL },
     { "6.1",         7,  AV_CH_LAYOUT_6POINT1 },
-    { "6.1",         7,  AV_CH_LAYOUT_6POINT1_BACK },
+    { "6.1(back)",   7,  AV_CH_LAYOUT_6POINT1_BACK },
     { "6.1(front)",  7,  AV_CH_LAYOUT_6POINT1_FRONT },
     { "7.0",         7,  AV_CH_LAYOUT_7POINT0 },
     { "7.0(front)",  7,  AV_CH_LAYOUT_7POINT0_FRONT },
@@ -150,6 +150,28 @@ uint64_t av_get_channel_layout(const char *name)
         layout |= layout_single;
     }
     return layout;
+}
+
+int av_get_extended_channel_layout(const char *name, uint64_t* channel_layout, int* nb_channels)
+{
+    int nb = 0;
+    char *end;
+    uint64_t layout = av_get_channel_layout(name);
+
+    if (layout) {
+        *channel_layout = layout;
+        *nb_channels = av_get_channel_layout_nb_channels(layout);
+        return 0;
+    }
+
+    nb = strtol(name, &end, 10);
+    if (!errno && *end  == 'C' && *(end + 1) == '\0' && nb > 0 && nb < 64) {
+        *channel_layout = 0;
+        *nb_channels = nb;
+        return 0;
+    }
+
+    return AVERROR(EINVAL);
 }
 
 void av_bprint_channel_layout(struct AVBPrint *bp,

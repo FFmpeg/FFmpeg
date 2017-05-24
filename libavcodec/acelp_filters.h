@@ -82,7 +82,6 @@ extern const int16_t ff_acelp_interp_filter[61];
  * filter_coeffs contains coefficients of the right half of the symmetric
  * interpolation filter. filter_coeffs[0] should the central (unpaired) coefficient.
  * See ff_acelp_interp_filter for an example.
- *
  */
 void ff_acelp_interpolate(int16_t* out, const int16_t* in,
                           const int16_t* filter_coeffs, int precision,

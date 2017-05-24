@@ -28,7 +28,7 @@
  */
 
 /**
- * @defgroup lavr Libavresample
+ * @defgroup lavr libavresample
  * @{
  *
  * Libavresample (lavr) is a library that handles audio resampling, sample
@@ -490,8 +490,8 @@ int avresample_convert_frame(AVAudioResampleContext *avr,
  * @see avresample_close();
  *
  * @param avr             audio resample context
- * @param output          output AVFrame
- * @param input           input AVFrame
+ * @param out             output AVFrame
+ * @param in              input AVFrame
  * @return                0 on success, AVERROR on failure.
  */
 int avresample_config(AVAudioResampleContext *avr, AVFrame *out, AVFrame *in);

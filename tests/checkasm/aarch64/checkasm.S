@@ -52,7 +52,20 @@ endconst
 // max number of args used by any asm function.
 #define MAX_ARGS 15
 
-#define ARG_STACK ((8*(MAX_ARGS - 7) + 15) & ~15)
+#define CLOBBER_STACK ((8*MAX_ARGS + 15) & ~15)
+
+function checkasm_stack_clobber, export=1
+    mov         x3,  sp
+    mov         x2,  #CLOBBER_STACK
+1:
+    stp         x0,  x1,  [sp, #-16]!
+    subs        x2,  x2,  #16
+    b.gt        1b
+    mov         sp,  x3
+    ret
+endfunc
+
+#define ARG_STACK ((8*(MAX_ARGS - 8) + 15) & ~15)
 
 function checkasm_checked_call, export=1
     stp         x29, x30, [sp, #-16]!
@@ -80,22 +93,18 @@ function checkasm_checked_call, export=1
 
     sub         sp,  sp,  #ARG_STACK
 .equ pos, 0
-// the first stacked arg is copied to x7
-.rept MAX_ARGS-7
-    ldr         x9, [x29, #16 + 8 + pos]
+.rept MAX_ARGS-8
+    // Skip the first 8 args, that are loaded into registers
+    ldr         x9, [x29, #16 + 8*8 + pos]
     str         x9, [sp, #pos]
 .equ pos, pos + 8
 .endr
 
     mov         x12, x0
-    mov         x0,  x1
-    mov         x1,  x2
-    mov         x2,  x3
-    mov         x3,  x4
-    mov         x4,  x5
-    mov         x5,  x6
-    mov         x6,  x7
-    ldr         x7,  [x29, #16]
+    ldp         x0,  x1,  [x29, #16]
+    ldp         x2,  x3,  [x29, #32]
+    ldp         x4,  x5,  [x29, #48]
+    ldp         x6,  x7,  [x29, #64]
     blr         x12
     add         sp,  sp,  #ARG_STACK
     stp         x0,  x1,  [sp, #-16]!

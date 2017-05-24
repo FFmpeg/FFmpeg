@@ -89,6 +89,7 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 #include "postprocess.h"
 #include "postprocess_internal.h"
 #include "libavutil/avstring.h"
+#include "libavutil/ppc/util_altivec.h"
 
 #include "libavutil/ffversion.h"
 const char postproc_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
@@ -109,10 +110,6 @@ const char *postproc_license(void)
 #define LICENSE_PREFIX "libpostproc license: "
     return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
 }
-
-#if HAVE_ALTIVEC_H
-#include <altivec.h>
-#endif
 
 #define GET_MODE_BUFFER_SIZE 500
 #define OPTIONS_ARRAY_SIZE 10
@@ -973,7 +970,7 @@ void  pp_postprocess(const uint8_t * src[3], const int srcStride[3],
         int i;
         const int count= FFMAX(mbHeight * absQPStride, mbWidth);
         for(i=0; i<(count>>2); i++){
-            ((uint32_t*)c->stdQPTable)[i] = (((const uint32_t*)QP_store)[i]>>1) & 0x7F7F7F7F;
+            AV_WN32(c->stdQPTable + (i<<2), AV_RN32(QP_store + (i<<2)) >> 1 & 0x7F7F7F7F);
         }
         for(i<<=2; i<count; i++){
             c->stdQPTable[i] = QP_store[i]>>1;

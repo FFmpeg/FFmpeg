@@ -1,5 +1,4 @@
 /*
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -24,8 +23,8 @@
  * Determines the duration for each packet.
  */
 
-#ifndef AVCODEC_VORBIS_PARSE_H
-#define AVCODEC_VORBIS_PARSE_H
+#ifndef AVCODEC_VORBIS_PARSER_H
+#define AVCODEC_VORBIS_PARSER_H
 
 #include <stdint.h>
 
@@ -33,9 +32,6 @@ typedef struct AVVorbisParseContext AVVorbisParseContext;
 
 /**
  * Allocate and initialize the Vorbis parser using headers in the extradata.
- *
- * @param avctx codec context
- * @param s     Vorbis parser context
  */
 AVVorbisParseContext *av_vorbis_parse_init(const uint8_t *extradata,
                                            int extradata_size);
@@ -75,4 +71,4 @@ int av_vorbis_parse_frame(AVVorbisParseContext *s, const uint8_t *buf,
 
 void av_vorbis_parse_reset(AVVorbisParseContext *s);
 
-#endif /* AVCODEC_VORBIS_PARSE_H */
+#endif /* AVCODEC_VORBIS_PARSER_H */

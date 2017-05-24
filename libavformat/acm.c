@@ -41,24 +41,24 @@ static int acm_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id   = AV_CODEC_ID_INTERPLAY_ACM;
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id   = AV_CODEC_ID_INTERPLAY_ACM;
 
-    ff_alloc_extradata(st->codec, 14);
-    if (!st->codec->extradata)
+    ff_alloc_extradata(st->codecpar, 14);
+    if (!st->codecpar->extradata)
         return AVERROR(ENOMEM);
-    ret = avio_read(s->pb, st->codec->extradata, 14);
+    ret = avio_read(s->pb, st->codecpar->extradata, 14);
     if (ret < 10)
         return ret < 0 ? ret : AVERROR_EOF;
 
-    st->codec->channels    = AV_RL16(st->codec->extradata +  8);
-    st->codec->sample_rate = AV_RL16(st->codec->extradata + 10);
-    if (st->codec->channels <= 0 || st->codec->sample_rate <= 0)
+    st->codecpar->channels    = AV_RL16(st->codecpar->extradata +  8);
+    st->codecpar->sample_rate = AV_RL16(st->codecpar->extradata + 10);
+    if (st->codecpar->channels <= 0 || st->codecpar->sample_rate <= 0)
         return AVERROR_INVALIDDATA;
     st->start_time         = 0;
-    st->duration           = AV_RL32(st->codec->extradata +  4) / st->codec->channels;
+    st->duration           = AV_RL32(st->codecpar->extradata +  4) / st->codecpar->channels;
     st->need_parsing       = AVSTREAM_PARSE_FULL_RAW;
-    avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
 
     return 0;
 }

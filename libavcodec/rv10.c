@@ -265,7 +265,7 @@ static int rv10_decode_picture_header(MpegEncContext *s)
     ff_dlog(s->avctx, "pict_type=%d pb_frame=%d\n", s->pict_type, pb_frame);
 
     if (pb_frame) {
-        avpriv_request_sample(s->avctx, "pb frame");
+        avpriv_request_sample(s->avctx, "PB-frame");
         return AVERROR_PATCHWELCOME;
     }
 
@@ -431,7 +431,7 @@ static int rv20_decode_picture_header(RVDecContext *rv)
     if (s->pict_type == AV_PICTURE_TYPE_B) {
         if (s->pp_time <=s->pb_time || s->pp_time <= s->pp_time - s->pb_time || s->pp_time<=0) {
             av_log(s->avctx, AV_LOG_DEBUG,
-                   "messed up order, possible from seeking? skipping current b frame\n");
+                   "messed up order, possible from seeking? skipping current B-frame\n");
 #define ERROR_SKIP_FRAME -123
             return ERROR_SKIP_FRAME;
         }

@@ -22,26 +22,32 @@
 #include "libavutil/cpu.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"
-#include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
 
 #include "libavfilter/interlace.h"
 
 void ff_lowpass_line_sse2(uint8_t *dstp, ptrdiff_t linesize,
                           const uint8_t *srcp,
-                          const uint8_t *srcp_above,
-                          const uint8_t *srcp_below);
+                          ptrdiff_t mref, ptrdiff_t pref);
 void ff_lowpass_line_avx (uint8_t *dstp, ptrdiff_t linesize,
                           const uint8_t *srcp,
-                          const uint8_t *srcp_above,
-                          const uint8_t *srcp_below);
+                          ptrdiff_t mref, ptrdiff_t pref);
+
+void ff_lowpass_line_complex_sse2(uint8_t *dstp, ptrdiff_t linesize,
+                                  const uint8_t *srcp,
+                                  ptrdiff_t mref, ptrdiff_t pref);
 
 av_cold void ff_interlace_init_x86(InterlaceContext *s)
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (EXTERNAL_SSE2(cpu_flags))
-        s->lowpass_line = ff_lowpass_line_sse2;
+    if (EXTERNAL_SSE2(cpu_flags)) {
+        if (s->lowpass == VLPF_LIN)
+            s->lowpass_line = ff_lowpass_line_sse2;
+        else if (s->lowpass == VLPF_CMP)
+            s->lowpass_line = ff_lowpass_line_complex_sse2;
+    }
     if (EXTERNAL_AVX(cpu_flags))
-        s->lowpass_line = ff_lowpass_line_avx;
+        if (s->lowpass == VLPF_LIN)
+            s->lowpass_line = ff_lowpass_line_avx;
 }

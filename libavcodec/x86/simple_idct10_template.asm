@@ -211,7 +211,7 @@
     SUMSUB_SHPK m2,  m3,  m4,  m5,  m6,  m7,  %2
 %endmacro
 
-; void ff_prores_idct_put_10_<opt>(uint8_t *pixels, int stride,
+; void ff_prores_idct_put_10_<opt>(uint8_t *pixels, ptrdiff_t stride,
 ;                                  int16_t *block, const int16_t *qmat);
 
 ; %1 = row shift

@@ -20,7 +20,7 @@
  */
 
 #include "libavutil/attributes.h"
-#include "libavutil/internal.h"
+#include "libavutil/ffmath.h"
 
 #include "avcodec.h"
 #include "internal.h"
@@ -33,6 +33,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     WMACodecContext *s = avctx->priv_data;
     int i, flags1, flags2, block_align;
     uint8_t *extradata;
+    int ret;
 
     s->avctx = avctx;
 
@@ -56,7 +57,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    /* extract flag infos */
+    /* extract flag info */
     flags1 = 0;
     flags2 = 1;
     if (avctx->codec->id == AV_CODEC_ID_WMAV1) {
@@ -83,7 +84,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if (avctx->channels == 2)
         s->ms_stereo = 1;
 
-    ff_wma_init(avctx, flags2);
+    if ((ret = ff_wma_init(avctx, flags2)) < 0)
+        return ret;
 
     /* init MDCT */
     for (i = 0; i < s->nb_block_sizes; i++)

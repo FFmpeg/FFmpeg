@@ -23,7 +23,6 @@
 #define AVCODEC_AACENC_H
 
 #include "libavutil/float_dsp.h"
-#include "libavutil/lfg.h"
 #include "avcodec.h"
 #include "put_bits.h"
 
@@ -34,8 +33,7 @@
 #include "lpc.h"
 
 typedef enum AACCoder {
-    AAC_CODER_FAAC = 0,
-    AAC_CODER_ANMR,
+    AAC_CODER_ANMR = 0,
     AAC_CODER_TWOLOOP,
     AAC_CODER_FAST,
 
@@ -85,10 +83,10 @@ extern AACCoefficientsEncoder ff_aac_coders[];
 typedef struct AACQuantizeBandCostCacheEntry {
     float rd;
     float energy;
-    int bits; ///< -1 means uninitialized entry
+    int bits;
     char cb;
     char rtz;
-    char padding[2]; ///< Keeps the entry size a multiple of 32 bits
+    uint16_t generation;
 } AACQuantizeBandCostCacheEntry;
 
 /**
@@ -101,7 +99,6 @@ typedef struct AACEncContext {
     FFTContext mdct1024;                         ///< long (1024 samples) frame transform context
     FFTContext mdct128;                          ///< short (128 samples) frame transform context
     AVFloatDSPContext *fdsp;
-    AVLFG lfg;                                   ///< PRNG needed for PNS
     float *planar_samples[8];                    ///< saved preprocessed input
 
     int profile;                                 ///< copied from avctx
@@ -115,7 +112,6 @@ typedef struct AACEncContext {
     struct FFPsyPreprocessContext* psypp;
     AACCoefficientsEncoder *coder;
     int cur_channel;                             ///< current channel for coder context
-    int last_frame;
     int random_state;
     float lambda;
     int last_frame_pb_count;                     ///< number of bits for the previous frame
@@ -127,13 +123,20 @@ typedef struct AACEncContext {
     DECLARE_ALIGNED(16, int,   qcoefs)[96];      ///< quantized coefficients
     DECLARE_ALIGNED(32, float, scoefs)[1024];    ///< scaled coefficients
 
+    uint16_t quantize_band_cost_cache_generation;
     AACQuantizeBandCostCacheEntry quantize_band_cost_cache[256][128]; ///< memoization area for quantize_band_cost
+
+    void (*abs_pow34)(float *out, const float *in, const int size);
+    void (*quant_bands)(int *out, const float *in, const float *scaled,
+                        int size, int is_signed, int maxval, const float Q34,
+                        const float rounding);
 
     struct {
         float *samples;
     } buffer;
 } AACEncContext;
 
+void ff_aac_dsp_init_x86(AACEncContext *s);
 void ff_aac_coder_init_mips(AACEncContext *c);
 void ff_quantize_band_cost_cache_init(struct AACEncContext *s);
 

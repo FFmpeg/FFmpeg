@@ -25,7 +25,7 @@
 #include "libavutil/lfg.h"
 #include "libavutil/random_seed.h"
 
-typedef struct {
+typedef struct ANoiseSrcContext {
     const AVClass *class;
     int sample_rate;
     double amplitude;
@@ -103,7 +103,7 @@ static av_cold int query_formats(AVFilterContext *ctx)
 static double white_filter(double white, double *buf)
 {
     return white;
-};
+}
 
 static double pink_filter(double white, double *buf)
 {

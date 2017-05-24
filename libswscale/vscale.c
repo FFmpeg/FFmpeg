@@ -70,7 +70,7 @@ static int chr_planar_vscale(SwsContext *c, SwsFilterDescriptor *desc, int slice
         return 0;
     else {
         VScalerContext *inst = desc->instance;
-        int dstW = FF_CEIL_RSHIFT(desc->dst->width, desc->dst->h_chr_sub_sample);
+        int dstW = AV_CEIL_RSHIFT(desc->dst->width, desc->dst->h_chr_sub_sample);
         int chrSliceY = sliceY >> desc->dst->v_chr_sub_sample;
 
         int first = FFMAX(1-inst->filter_size, inst->filter_pos[chrSliceY]);
@@ -218,7 +218,7 @@ int ff_init_vscale(SwsContext *c, SwsFilterDescriptor *desc, SwsSlice *src, SwsS
         desc[0].instance = lumCtx;
         desc[0].src = src;
         desc[0].dst = dst;
-        desc[0].alpha = c->alpPixBuf != 0;
+        desc[0].alpha = c->needAlpha;
 
         if (!isGray(c->dstFormat)) {
             chrCtx = av_mallocz(sizeof(VScalerContext));
@@ -239,7 +239,7 @@ int ff_init_vscale(SwsContext *c, SwsFilterDescriptor *desc, SwsSlice *src, SwsS
         desc[0].instance = lumCtx;
         desc[0].src = src;
         desc[0].dst = dst;
-        desc[0].alpha = c->alpPixBuf != 0;
+        desc[0].alpha = c->needAlpha;
     }
 
     ff_init_vscale_pfn(c, c->yuv2plane1, c->yuv2planeX, c->yuv2nv12cX,

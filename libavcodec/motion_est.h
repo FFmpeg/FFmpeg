@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_MOTIONEST_H
-#define AVCODEC_MOTIONEST_H
+#ifndef AVCODEC_MOTION_EST_H
+#define AVCODEC_MOTION_EST_H
 
 #include <stdint.h>
 
@@ -132,4 +132,4 @@ void ff_fix_long_mvs(struct MpegEncContext *s, uint8_t *field_select_table,
                      int field_select, int16_t (*mv_table)[2], int f_code,
                      int type, int truncate);
 
-#endif /* AVCODEC_MOTIONEST_H */
+#endif /* AVCODEC_MOTION_EST_H */

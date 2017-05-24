@@ -63,7 +63,7 @@ int ff_rtp_chain_mux_open(AVFormatContext **out, AVFormatContext *s,
     /* Get the payload type from the codec */
     if (st->id < RTP_PT_PRIVATE)
         rtpctx->streams[0]->id =
-            ff_rtp_get_payload_type(s, st->codec, idx);
+            ff_rtp_get_payload_type(s, st->codecpar, idx);
     else
         rtpctx->streams[0]->id = st->id;
 
@@ -74,7 +74,7 @@ int ff_rtp_chain_mux_open(AVFormatContext **out, AVFormatContext *s,
     /* Set the synchronized start time. */
     rtpctx->start_time_realtime = s->start_time_realtime;
 
-    avcodec_copy_context(rtpctx->streams[0]->codec, st->codec);
+    avcodec_parameters_copy(rtpctx->streams[0]->codecpar, st->codecpar);
     rtpctx->streams[0]->time_base = st->time_base;
 
     if (handle) {

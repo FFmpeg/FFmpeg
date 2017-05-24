@@ -83,7 +83,7 @@ static int gif_image_write_image(AVCodecContext *avctx,
     GIFContext *s = avctx->priv_data;
     int len = 0, height = avctx->height, width = avctx->width, x, y;
     int x_start = 0, y_start = 0, trans = s->transparent_index;
-    int honor_transparency = (s->flags & GF_TRANSDIFF) && s->last_frame;
+    int honor_transparency = (s->flags & GF_TRANSDIFF) && s->last_frame && !palette;
     const uint8_t *ptr;
 
     /* Crop image */

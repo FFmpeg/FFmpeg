@@ -2495,21 +2495,21 @@ void ff_h264_h_loop_filter_luma_mbaff_intra_msa(uint8_t *src,
     avc_h_loop_filter_luma_mbaff_intra_msa(src, ystride, alpha, beta);
 }
 
-void ff_weight_h264_pixels16_8_msa(uint8_t *src, int stride,
+void ff_weight_h264_pixels16_8_msa(uint8_t *src, ptrdiff_t stride,
                                    int height, int log2_denom,
                                    int weight_src, int offset)
 {
     avc_wgt_16width_msa(src, stride, height, log2_denom, weight_src, offset);
 }
 
-void ff_weight_h264_pixels8_8_msa(uint8_t *src, int stride,
+void ff_weight_h264_pixels8_8_msa(uint8_t *src, ptrdiff_t stride,
                                   int height, int log2_denom,
                                   int weight_src, int offset)
 {
     avc_wgt_8width_msa(src, stride, height, log2_denom, weight_src, offset);
 }
 
-void ff_weight_h264_pixels4_8_msa(uint8_t *src, int stride,
+void ff_weight_h264_pixels4_8_msa(uint8_t *src, ptrdiff_t stride,
                                   int height, int log2_denom,
                                   int weight_src, int offset)
 {
@@ -2517,7 +2517,7 @@ void ff_weight_h264_pixels4_8_msa(uint8_t *src, int stride,
 }
 
 void ff_biweight_h264_pixels16_8_msa(uint8_t *dst, uint8_t *src,
-                                     int stride, int height,
+                                     ptrdiff_t stride, int height,
                                      int log2_denom, int weight_dst,
                                      int weight_src, int offset)
 {
@@ -2526,7 +2526,7 @@ void ff_biweight_h264_pixels16_8_msa(uint8_t *dst, uint8_t *src,
 }
 
 void ff_biweight_h264_pixels8_8_msa(uint8_t *dst, uint8_t *src,
-                                    int stride, int height,
+                                    ptrdiff_t stride, int height,
                                     int log2_denom, int weight_dst,
                                     int weight_src, int offset)
 {
@@ -2535,7 +2535,7 @@ void ff_biweight_h264_pixels8_8_msa(uint8_t *dst, uint8_t *src,
 }
 
 void ff_biweight_h264_pixels4_8_msa(uint8_t *dst, uint8_t *src,
-                                    int stride, int height,
+                                    ptrdiff_t stride, int height,
                                     int log2_denom, int weight_dst,
                                     int weight_src, int offset)
 {

@@ -1,6 +1,6 @@
 /*
  * Interplay MVE Video Decoder
- * Copyright (c) 2003 The FFmpeg Project
+ * Copyright (C) 2003 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -39,11 +39,12 @@
 #include <string.h>
 
 #include "libavutil/intreadwrite.h"
+
+#define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "bytestream.h"
-#include "hpeldsp.h"
-#define BITSTREAM_READER_LE
 #include "get_bits.h"
+#include "hpeldsp.h"
 #include "internal.h"
 
 #define PALETTE_COUNT 256
@@ -927,6 +928,8 @@ static void ipvideo_decode_opcodes(IpvideoContext *s, AVFrame *frame)
     init_get_bits(&gb, s->decoding_map, s->decoding_map_size * 8);
     for (y = 0; y < s->avctx->height; y += 8) {
         for (x = 0; x < s->avctx->width; x += 8) {
+            if (get_bits_left(&gb) < 4)
+                return;
             opcode = get_bits(&gb, 4);
 
             ff_tlog(s->avctx,
@@ -988,6 +991,11 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
     AVFrame *frame = data;
     int ret;
 
+    if (av_packet_get_side_data(avpkt, AV_PKT_DATA_PARAM_CHANGE, NULL)) {
+        av_frame_unref(s->last_frame);
+        av_frame_unref(s->second_last_frame);
+    }
+
     if (buf_size < 2)
         return AVERROR_INVALIDDATA;
 
@@ -999,10 +1007,6 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
     if (buf_size < s->decoding_map_size + 2)
         return buf_size;
 
-    if (av_packet_get_side_data(avpkt, AV_PKT_DATA_PARAM_CHANGE, NULL)) {
-        av_frame_unref(s->last_frame);
-        av_frame_unref(s->second_last_frame);
-    }
 
     s->decoding_map = buf + 2;
     bytestream2_init(&s->stream_ptr, buf + 2 + s->decoding_map_size,
@@ -1012,10 +1016,13 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
         return ret;
 
     if (!s->is_16bpp) {
-        const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
-        if (pal) {
+        int size;
+        const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, &size);
+        if (pal && size == AVPALETTE_SIZE) {
             frame->palette_has_changed = 1;
             memcpy(s->pal, pal, AVPALETTE_SIZE);
+        } else if (pal) {
+            av_log(avctx, AV_LOG_ERROR, "Palette size %d is wrong\n", size);
         }
     }
 

@@ -28,7 +28,7 @@
 typedef struct {
     AVCodecContext *mjpeg_avctx;
     int is_mjpeg;
-    int interlace; //FIXME use frame.interlaced_frame
+    int interlace;
     int tff;
 } AVRnContext;
 
@@ -170,4 +170,5 @@ AVCodec ff_avrn_decoder = {
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
     .max_lowres     = 3,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

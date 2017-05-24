@@ -33,35 +33,29 @@ SECTION .text
 ;*************************************************************************
 %macro PS_ADD_SQUARES 1
 cglobal ps_add_squares, 3, 3, %1, dst, src, n
+    shl    nd, 3
+    add  srcq, nq
+    neg    nq
+
+align 16
 .loop:
-    movaps m0, [srcq]
-    movaps m1, [srcq+mmsize]
+    movaps m0, [srcq+nq]
+    movaps m1, [srcq+nq+mmsize]
     mulps  m0, m0
     mulps  m1, m1
-%if cpuflag(sse3)
-    haddps m0, m1
-%else
-    movaps m3, m0
-    movaps m4, m1
-    shufps m3, m3, q0301
-    shufps m4, m4, q0301
-    addps  m0, m3
-    addps  m1, m4
-    shufps m0, m1, q2020
-%endif
+    HADDPS m0, m1, m2
     addps  m0, [dstq]
     movaps [dstq], m0
     add  dstq, mmsize
-    add  srcq, mmsize*2
-    sub    nd, mmsize/4
-    jg .loop
+    add    nq, mmsize*2
+    jl .loop
     REP_RET
 %endmacro
 
 INIT_XMM sse
-PS_ADD_SQUARES 3
+PS_ADD_SQUARES 2
 INIT_XMM sse3
-PS_ADD_SQUARES 5
+PS_ADD_SQUARES 3
 
 ;*******************************************************************
 ;void ff_ps_mul_pair_single_sse(float (*dst)[2], float (*src0)[2],

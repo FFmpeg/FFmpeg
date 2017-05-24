@@ -1,5 +1,4 @@
 /*
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -24,6 +23,7 @@
 
 extern const AVProfile ff_aac_profiles[];
 extern const AVProfile ff_dca_profiles[];
+extern const AVProfile ff_dnxhd_profiles[];
 extern const AVProfile ff_h264_profiles[];
 extern const AVProfile ff_hevc_profiles[];
 extern const AVProfile ff_jpeg2000_profiles[];
@@ -32,4 +32,4 @@ extern const AVProfile ff_mpeg4_video_profiles[];
 extern const AVProfile ff_vc1_profiles[];
 extern const AVProfile ff_vp9_profiles[];
 
-#endif
+#endif /* AVCODEC_PROFILES_H */

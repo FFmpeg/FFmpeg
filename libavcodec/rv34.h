@@ -101,12 +101,12 @@ typedef struct RV34DecContext{
     int is16;                ///< current block has additional 16x16 specific features or not
     int dmv[4][2];           ///< differential motion vectors for the current macroblock
 
-    int rv30;                ///< indicates which RV variasnt is currently decoded
+    int rv30;                ///< indicates which RV variant is currently decoded
     int max_rpr;
 
     int cur_pts, last_pts, next_pts;
     int scaled_weight;
-    int weight1, weight2;    ///< B frame distance fractions (0.14) used in motion compensation
+    int weight1, weight2;    ///< B-frame distance fractions (0.14) used in motion compensation
     int mv_weight1, mv_weight2;
 
     int orig_width, orig_height;

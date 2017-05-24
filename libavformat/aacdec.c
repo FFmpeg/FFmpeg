@@ -70,7 +70,7 @@ static int adts_aac_probe(AVProbeData *p)
         return AVPROBE_SCORE_EXTENSION;
     else if (max_frames >= 3)
         return AVPROBE_SCORE_EXTENSION / 2;
-    else if (max_frames >= 1)
+    else if (first_frames >= 1)
         return 1;
     else
         return 0;
@@ -84,12 +84,12 @@ static int adts_aac_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id   = s->iformat->raw_codec_id;
-    st->need_parsing      = AVSTREAM_PARSE_FULL_RAW;
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id   = s->iformat->raw_codec_id;
+    st->need_parsing         = AVSTREAM_PARSE_FULL_RAW;
 
     ff_id3v1_read(s);
-    if (s->pb->seekable &&
+    if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) &&
         !av_dict_get(s->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX)) {
         int64_t cur = avio_tell(s->pb);
         ff_ape_parse_tag(s);

@@ -57,6 +57,11 @@ typedef struct {
     int is_cbr;
 } MP3DecContext;
 
+enum CheckRet {
+    CHECK_WRONG_HEADER = -1,
+    CHECK_SEEK_FAILED  = -2,
+};
+
 static int check(AVIOContext *pb, int64_t pos, uint32_t *header);
 
 /* mp3 read */
@@ -64,6 +69,7 @@ static int check(AVIOContext *pb, int64_t pos, uint32_t *header);
 static int mp3_read_probe(AVProbeData *p)
 {
     int max_frames, first_frames = 0;
+    int whole_used = 0;
     int frames, ret;
     uint32_t header;
     const uint8_t *buf, *buf0, *buf2, *end;
@@ -88,8 +94,11 @@ static int mp3_read_probe(AVProbeData *p)
             buf2 += h.frame_size;
         }
         max_frames = FFMAX(max_frames, frames);
-        if(buf == buf0)
+        if(buf == buf0) {
             first_frames= frames;
+            if (buf2 == end + sizeof(uint32_t))
+                whole_used = 1;
+        }
     }
     // keep this in sync with ac3 probe, both need to avoid
     // issues with MPEG-files!
@@ -98,6 +107,7 @@ static int mp3_read_probe(AVProbeData *p)
     else if(max_frames>=4 && max_frames >= p->buf_size/10000) return AVPROBE_SCORE_EXTENSION / 2;
     else if(ff_id3v2_match(buf0, ID3v2_DEFAULT_MAGIC) && 2*ff_id3v2_tag_len(buf0) >= p->buf_size)
                            return p->buf_size < PROBE_BUF_MAX ? AVPROBE_SCORE_EXTENSION / 4 : AVPROBE_SCORE_EXTENSION - 2;
+    else if(first_frames > 1 && whole_used) return 5;
     else if(max_frames>=1 && max_frames >= p->buf_size/10000) return 1;
     else                   return 0;
 //mpegps_mp3_unrecognized_format.mpg has max_frames=3
@@ -326,7 +336,7 @@ static int mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
         st->duration = av_rescale_q(mp3->frames, (AVRational){spf, c.sample_rate},
                                     st->time_base);
     if (mp3->header_filesize && mp3->frames && !mp3->is_cbr)
-        st->codec->bit_rate = av_rescale(mp3->header_filesize, 8 * c.sample_rate, mp3->frames * (int64_t)spf);
+        st->codecpar->bit_rate = av_rescale(mp3->header_filesize, 8 * c.sample_rate, mp3->frames * (int64_t)spf);
 
     return 0;
 }
@@ -339,12 +349,15 @@ static int mp3_read_header(AVFormatContext *s)
     int ret;
     int i;
 
+    s->metadata = s->internal->id3v2_meta;
+    s->internal->id3v2_meta = NULL;
+
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = AV_CODEC_ID_MP3;
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id = AV_CODEC_ID_MP3;
     st->need_parsing = AVSTREAM_PARSE_FULL_RAW;
     st->start_time = 0;
 
@@ -357,7 +370,7 @@ static int mp3_read_header(AVFormatContext *s)
     if (!av_dict_get(s->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX))
         ff_id3v1_read(s);
 
-    if(s->pb->seekable)
+    if(s->pb->seekable & AVIO_SEEKABLE_NORMAL)
         mp3->filesize = avio_size(s->pb);
 
     if (mp3_parse_vbr_tags(s, st, off) < 0)
@@ -375,17 +388,30 @@ static int mp3_read_header(AVFormatContext *s)
             ffio_ensure_seekback(s->pb, i + 1024 + 4);
         frame_size = check(s->pb, off + i, &header);
         if (frame_size > 0) {
-            avio_seek(s->pb, off, SEEK_SET);
+            ret = avio_seek(s->pb, off, SEEK_SET);
+            if (ret < 0)
+                return ret;
             ffio_ensure_seekback(s->pb, i + 1024 + frame_size + 4);
-            if (check(s->pb, off + i + frame_size, &header2) >= 0 &&
+            ret = check(s->pb, off + i + frame_size, &header2);
+            if (ret >= 0 &&
                 (header & SAME_HEADER_MASK) == (header2 & SAME_HEADER_MASK))
             {
-                av_log(s, AV_LOG_INFO, "Skipping %d bytes of junk at %"PRId64".\n", i, off);
-                avio_seek(s->pb, off + i, SEEK_SET);
+                av_log(s, i > 0 ? AV_LOG_INFO : AV_LOG_VERBOSE, "Skipping %d bytes of junk at %"PRId64".\n", i, off);
+                ret = avio_seek(s->pb, off + i, SEEK_SET);
+                if (ret < 0)
+                    return ret;
                 break;
+            } else if (ret == CHECK_SEEK_FAILED) {
+                av_log(s, AV_LOG_ERROR, "Invalid frame size (%d): Could not seek to %"PRId64".\n", frame_size, off + i + frame_size);
+                return AVERROR(EINVAL);
             }
+        } else if (frame_size == CHECK_SEEK_FAILED) {
+            av_log(s, AV_LOG_ERROR, "Failed to read frame size: Could not seek to %"PRId64".\n", (int64_t) (i + 1024 + frame_size + 4));
+            return AVERROR(EINVAL);
         }
-        avio_seek(s->pb, off, SEEK_SET);
+        ret = avio_seek(s->pb, off, SEEK_SET);
+        if (ret < 0)
+            return ret;
     }
 
     // the seek index is relative to the end of the xing vbr headers
@@ -427,16 +453,22 @@ static int mp3_read_packet(AVFormatContext *s, AVPacket *pkt)
 static int check(AVIOContext *pb, int64_t pos, uint32_t *ret_header)
 {
     int64_t ret = avio_seek(pb, pos, SEEK_SET);
+    uint8_t header_buf[4];
     unsigned header;
     MPADecodeHeader sd;
     if (ret < 0)
-        return ret;
+        return CHECK_SEEK_FAILED;
 
-    header = avio_rb32(pb);
+    ret = avio_read(pb, &header_buf[0], 4);
+    /* We should always find four bytes for a valid mpa header. */
+    if (ret < 4)
+        return CHECK_SEEK_FAILED;
+
+    header = AV_RB32(&header_buf[0]);
     if (ff_mpa_check_header(header) < 0)
-        return -1;
+        return CHECK_WRONG_HEADER;
     if (avpriv_mpegaudio_decode_header(&sd, header) == 1)
-        return -1;
+        return CHECK_WRONG_HEADER;
 
     if (ret_header)
         *ret_header = header;
@@ -468,8 +500,14 @@ static int64_t mp3_sync(AVFormatContext *s, int64_t target_pos, int flags)
 
         for(j=0; j<MIN_VALID; j++) {
             ret = check(s->pb, pos, NULL);
-            if(ret < 0)
-                break;
+            if(ret < 0) {
+                if (ret == CHECK_WRONG_HEADER) {
+                    break;
+                } else if (ret == CHECK_SEEK_FAILED) {
+                    av_log(s, AV_LOG_ERROR, "Could not seek to %"PRId64".\n", pos);
+                    return AVERROR(EINVAL);
+                }
+            }
             if ((target_pos - pos)*dir <= 0 && abs(MIN_VALID/2-j) < score) {
                 candidate = pos;
                 score = abs(MIN_VALID/2-j);

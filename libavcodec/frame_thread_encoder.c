@@ -89,7 +89,9 @@ static void * attribute_align_arg worker(void *v){
         pthread_mutex_unlock(&c->buffer_mutex);
         av_frame_free(&frame);
         if(got_packet) {
-            av_dup_packet(pkt);
+            int ret2 = av_dup_packet(pkt);
+            if (ret >= 0 && ret2 < 0)
+                ret = ret2;
         } else {
             pkt->data = NULL;
             pkt->size = 0;
@@ -136,9 +138,15 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
     if (avctx->codec_id == AV_CODEC_ID_HUFFYUV ||
         avctx->codec_id == AV_CODEC_ID_FFVHUFF) {
         int warn = 0;
+        int context_model = 0;
+        AVDictionaryEntry *con = av_dict_get(options, "context", NULL, AV_DICT_MATCH_CASE);
+
+        if (con && con->value)
+            context_model = atoi(con->value);
+
         if (avctx->flags & AV_CODEC_FLAG_PASS1)
             warn = 1;
-        else if(avctx->context_model > 0) {
+        else if(context_model > 0) {
             AVDictionaryEntry *t = av_dict_get(options, "non_deterministic",
                                                NULL, AV_DICT_MATCH_CASE);
             warn = !t || !t->value || !atoi(t->value) ? 1 : 0;

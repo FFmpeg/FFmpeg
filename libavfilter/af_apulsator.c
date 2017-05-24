@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "internal.h"
@@ -46,7 +47,7 @@ typedef struct AudioPulsatorContext {
     double offset_r;
     double pwidth;
     double bpm;
-    double hz;
+    double hertz;
     int ms;
     int timing;
 
@@ -75,7 +76,7 @@ static const AVOption apulsator_options[] = {
     {   "hz",                   NULL, 0,                 AV_OPT_TYPE_CONST,  {.i64=UNIT_HZ},   0,          0, FLAGS, "timing" },
     { "bpm",               "set BPM", OFFSET(bpm),       AV_OPT_TYPE_DOUBLE, {.dbl=120},    30,          300, FLAGS },
     { "ms",                 "set ms", OFFSET(ms),        AV_OPT_TYPE_INT,    {.i64=500},    10,         2000, FLAGS },
-    { "hz",          "set frequency", OFFSET(hz),        AV_OPT_TYPE_DOUBLE, {.dbl=2},    0.01,          100, FLAGS },
+    { "hz",          "set frequency", OFFSET(hertz),     AV_OPT_TYPE_DOUBLE, {.dbl=2},    0.01,          100, FLAGS },
     { NULL }
 };
 
@@ -117,6 +118,7 @@ static double lfo_get_value(SimpleLFO *lfo)
     case SAWDOWN:
         val = 1 - phs * 2;
         break;
+    default: av_assert0(0);
     }
 
     return val * lfo->amount;
@@ -206,7 +208,8 @@ static int config_input(AVFilterLink *inlink)
     switch (s->timing) {
     case UNIT_BPM:  freq = s->bpm / 60;         break;
     case UNIT_MS:   freq = 1 / (s->ms / 1000.); break;
-    case UNIT_HZ:   freq = s->hz;               break;
+    case UNIT_HZ:   freq = s->hertz;            break;
+    default: av_assert0(0);
     }
 
     s->lfoL.freq   = freq;

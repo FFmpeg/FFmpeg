@@ -1,6 +1,6 @@
 /*
  * copyright (c) 2000,2001 Fabrice Bellard
- * H263+ support
+ * H.263+ support
  * copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
  *
  * This file is part of FFmpeg.
@@ -22,7 +22,7 @@
 
 /**
  * @file
- * mpeg4 tables.
+ * MPEG-4 tables.
  */
 
 #ifndef AVCODEC_MPEG4DATA_H
@@ -31,7 +31,7 @@
 #include <stdint.h>
 #include "mpegvideo.h"
 
-/* dc encoding for mpeg4 */
+/* dc encoding for MPEG-4 */
 const uint8_t ff_mpeg4_DCtab_lum[13][2] =
 {
     {3,3}, {3,2}, {2,2}, {2,3}, {1,3}, {1,4}, {1,5}, {1,6}, {1,7},

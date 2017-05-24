@@ -48,7 +48,7 @@ static av_cold int fbdev_write_header(AVFormatContext *h)
     int ret, flags = O_RDWR;
     const char* device;
 
-    if (h->nb_streams != 1 || h->streams[0]->codec->codec_type != AVMEDIA_TYPE_VIDEO) {
+    if (h->nb_streams != 1 || h->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
         av_log(fbdev, AV_LOG_ERROR, "Only a single video stream is supported.\n");
         return AVERROR(EINVAL);
     }
@@ -105,11 +105,11 @@ static int fbdev_write_packet(AVFormatContext *h, AVPacket *pkt)
     enum AVPixelFormat fb_pix_fmt;
     int disp_height;
     int bytes_to_copy;
-    AVCodecContext *codec_ctx = h->streams[0]->codec;
-    enum AVPixelFormat video_pix_fmt = codec_ctx->pix_fmt;
-    int video_width = codec_ctx->width;
-    int video_height = codec_ctx->height;
-    int bytes_per_pixel = ((codec_ctx->bits_per_coded_sample + 7) >> 3);
+    AVCodecParameters *par = h->streams[0]->codecpar;
+    enum AVPixelFormat video_pix_fmt = par->format;
+    int video_width = par->width;
+    int video_height = par->height;
+    int bytes_per_pixel = ((par->bits_per_coded_sample + 7) >> 3);
     int src_line_size = video_width * bytes_per_pixel;
     int i;
 

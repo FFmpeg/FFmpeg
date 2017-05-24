@@ -29,25 +29,24 @@ static int roq_write_header(struct AVFormatContext *s)
         0x84, 0x10, 0xFF, 0xFF, 0xFF, 0xFF, /* fps: */ 0x1E, 0x00
     };
     int n;
-    AVCodecContext *avctx;
 
 // set the actual fps
     for(n=0;n<s->nb_streams;n++) {
-        if ((avctx=s->streams[n]->codec)->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if (s->streams[n]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
             unsigned int fps;
 
-            if (avctx->time_base.num != 1) {
-                av_log(avctx, AV_LOG_ERROR, "Frame rate must be integer\n");
+            if (s->streams[n]->avg_frame_rate.den != 1) {
+                av_log(s, AV_LOG_ERROR, "Frame rate must be integer\n");
                 return AVERROR(EINVAL);
             }
 
-            if ((fps=avctx->time_base.den) > 255) {
-                av_log(avctx, AV_LOG_ERROR, "Frame rate may not exceed 255fps\n");
+            if ((fps=s->streams[n]->avg_frame_rate.num) > 255) {
+                av_log(s, AV_LOG_ERROR, "Frame rate may not exceed 255fps\n");
                 return AVERROR(EINVAL);
             }
 
             if (fps != 30) {
-                av_log(avctx, AV_LOG_WARNING, "For vintage compatibility fps must be 30\n");
+                av_log(s, AV_LOG_WARNING, "For vintage compatibility fps must be 30\n");
             }
 
             header[6] = fps;

@@ -38,7 +38,7 @@
  *
  * Only past frames are used, we should ideally use future frames too,
  * something like filtering the whole movie in forward and then
- * backward direction seems like a interesting idea but the current
+ * backward direction seems like an interesting idea but the current
  * filter framework is FAR from supporting such things.
  *
  * Combining the motion compensated image with the input image also is
@@ -69,7 +69,7 @@ enum MCDeintParity {
     PARITY_BFF  =  1, ///< bottom field first
 };
 
-typedef struct {
+typedef struct MCDeintContext {
     const AVClass *class;
     int mode;           ///< MCDeintMode
     int parity;         ///< MCDeintParity
@@ -122,7 +122,7 @@ static int config_props(AVFilterLink *inlink)
     enc_ctx->gop_size = INT_MAX;
     enc_ctx->max_b_frames = 0;
     enc_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
-    enc_ctx->flags = AV_CODEC_FLAG_QSCALE | CODEC_FLAG_LOW_DELAY;
+    enc_ctx->flags = AV_CODEC_FLAG_QSCALE | AV_CODEC_FLAG_LOW_DELAY;
     enc_ctx->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
     enc_ctx->global_quality = 1;
     enc_ctx->me_cmp = enc_ctx->me_sub_cmp = FF_CMP_SAD;
@@ -197,8 +197,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
 
     for (i = 0; i < 3; i++) {
         int is_chroma = !!i;
-        int w = FF_CEIL_RSHIFT(inlink->w, is_chroma);
-        int h = FF_CEIL_RSHIFT(inlink->h, is_chroma);
+        int w = AV_CEIL_RSHIFT(inlink->w, is_chroma);
+        int h = AV_CEIL_RSHIFT(inlink->h, is_chroma);
         int fils = frame_dec->linesize[i];
         int srcs = inpic    ->linesize[i];
         int dsts = outpic   ->linesize[i];

@@ -1,0 +1,4 @@
+fa0cc58e64c981a45d1c6d667ba4e584 *tests/data/fate/vsynth3-dnxhd-2k-hr-hq.dnxhd
+4894720 tests/data/fate/vsynth3-dnxhd-2k-hr-hq.dnxhd
+1128a9cf1a6ccb4614be69adef557bf1 *tests/data/fate/vsynth3-dnxhd-2k-hr-hq.out.rawvideo
+stddev:    6.91 PSNR: 31.33 MAXDIFF:   50 bytes:    86700/     8670

@@ -120,7 +120,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         buf_out->data[0] = buf_out->extended_data[0] = buf_out->extended_data[i];
         buf_out->channel_layout =
             av_channel_layout_extract_channel(buf->channel_layout, i);
-        av_frame_set_channels(buf_out, 1);
+        buf_out->channels = 1;
 
         ret = ff_filter_frame(ctx->outputs[i], buf_out);
         if (ret < 0)

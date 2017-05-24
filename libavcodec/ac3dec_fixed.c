@@ -139,7 +139,7 @@ static void scale_coefs (
  * Downmix samples from original signal to stereo or mono (this is for 16-bit samples
  * and fixed point decoder - original (for 32-bit samples) is in ac3dsp.c).
  */
-static void ac3_downmix_c_fixed16(int16_t **samples, int16_t (*matrix)[2],
+static void ac3_downmix_c_fixed16(int16_t **samples, int16_t **matrix,
                                   int out_ch, int in_ch, int len)
 {
     int i, j;
@@ -148,8 +148,8 @@ static void ac3_downmix_c_fixed16(int16_t **samples, int16_t (*matrix)[2],
         for (i = 0; i < len; i++) {
             v0 = v1 = 0;
             for (j = 0; j < in_ch; j++) {
-                v0 += samples[j][i] * matrix[j][0];
-                v1 += samples[j][i] * matrix[j][1];
+                v0 += samples[j][i] * matrix[0][j];
+                v1 += samples[j][i] * matrix[1][j];
             }
             samples[0][i] = (v0+2048)>>12;
             samples[1][i] = (v1+2048)>>12;
@@ -158,7 +158,7 @@ static void ac3_downmix_c_fixed16(int16_t **samples, int16_t (*matrix)[2],
         for (i = 0; i < len; i++) {
             v0 = 0;
             for (j = 0; j < in_ch; j++)
-                v0 += samples[j][i] * matrix[j][0];
+                v0 += samples[j][i] * matrix[0][j];
             samples[0][i] = (v0+2048)>>12;
         }
     }
@@ -168,6 +168,7 @@ static void ac3_downmix_c_fixed16(int16_t **samples, int16_t (*matrix)[2],
 #include "ac3dec.c"
 
 static const AVOption options[] = {
+    { "cons_noisegen", "enable consistent noise generation", OFFSET(consistent_noise_generation), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, PAR },
     { "drc_scale", "percentage of dynamic range compression to apply", OFFSET(drc_scale), AV_OPT_TYPE_FLOAT, {.dbl = 1.0}, 0.0, 6.0, PAR },
     { "heavy_compr", "enable heavy dynamic range compression", OFFSET(heavy_compression), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, PAR },
     { NULL},

@@ -52,11 +52,13 @@ enum HapHeaderLength {
     HAP_HDR_LONG = 8,
 };
 
-static void compress_texture(AVCodecContext *avctx, const AVFrame *f)
+static int compress_texture(AVCodecContext *avctx, uint8_t *out, int out_length, const AVFrame *f)
 {
     HapContext *ctx = avctx->priv_data;
-    uint8_t *out = ctx->tex_buf;
     int i, j;
+
+    if (ctx->tex_size > out_length)
+        return AVERROR_BUFFER_TOO_SMALL;
 
     for (j = 0; j < avctx->height; j += 4) {
         for (i = 0; i < avctx->width; i += 4) {
@@ -65,6 +67,8 @@ static void compress_texture(AVCodecContext *avctx, const AVFrame *f)
             out += step;
         }
     }
+
+    return 0;
 }
 
 /* section_length does not include the header */
@@ -118,7 +122,7 @@ static int hap_compress_frame(AVCodecContext *avctx, uint8_t *dst)
         /* If there is no gain from snappy, just use the raw texture. */
         if (chunk->compressed_size >= chunk->uncompressed_size) {
             av_log(avctx, AV_LOG_VERBOSE,
-                   "Snappy buffer bigger than uncompressed (%lu >= %lu bytes).\n",
+                   "Snappy buffer bigger than uncompressed (%"SIZE_SPECIFIER" >= %"SIZE_SPECIFIER" bytes).\n",
                    chunk->compressed_size, chunk->uncompressed_size);
             memcpy(chunk_dst, chunk_src, chunk->uncompressed_size);
             chunk->compressor = HAP_COMP_NONE;
@@ -200,13 +204,25 @@ static int hap_encode(AVCodecContext *avctx, AVPacket *pkt,
     if (ret < 0)
         return ret;
 
-    /* DXTC compression. */
-    compress_texture(avctx, frame);
+    if (ctx->opt_compressor == HAP_COMP_NONE) {
+        /* DXTC compression directly to the packet buffer. */
+        ret = compress_texture(avctx, pkt->data + header_length, pkt->size - header_length, frame);
+        if (ret < 0)
+            return ret;
 
-    /* Compress (using Snappy) the frame */
-    final_data_size = hap_compress_frame(avctx, pkt->data + header_length);
-    if (final_data_size < 0)
-        return final_data_size;
+        ctx->chunks[0].compressor = HAP_COMP_NONE;
+        final_data_size = ctx->tex_size;
+    } else {
+        /* DXTC compression. */
+        ret = compress_texture(avctx, ctx->tex_buf, ctx->tex_size, frame);
+        if (ret < 0)
+            return ret;
+
+        /* Compress (using Snappy) the frame */
+        final_data_size = hap_compress_frame(avctx, pkt->data + header_length);
+        if (final_data_size < 0)
+            return final_data_size;
+    }
 
     /* Write header at the start. */
     hap_write_frame_header(ctx, pkt->data, final_data_size + header_length);
@@ -267,10 +283,30 @@ static av_cold int hap_init(AVCodecContext *avctx)
     ctx->tex_size   = FFALIGN(avctx->width,  TEXTURE_BLOCK_W) *
                       FFALIGN(avctx->height, TEXTURE_BLOCK_H) * 4 / ratio;
 
-    /* Round the chunk count to divide evenly on DXT block edges */
-    corrected_chunk_count = av_clip(ctx->opt_chunk_count, 1, HAP_MAX_CHUNKS);
-    while ((ctx->tex_size / (64 / ratio)) % corrected_chunk_count != 0) {
-        corrected_chunk_count--;
+    switch (ctx->opt_compressor) {
+    case HAP_COMP_NONE:
+        /* No benefit chunking uncompressed data */
+        corrected_chunk_count = 1;
+
+        ctx->max_snappy = ctx->tex_size;
+        ctx->tex_buf = NULL;
+        break;
+    case HAP_COMP_SNAPPY:
+        /* Round the chunk count to divide evenly on DXT block edges */
+        corrected_chunk_count = av_clip(ctx->opt_chunk_count, 1, HAP_MAX_CHUNKS);
+        while ((ctx->tex_size / (64 / ratio)) % corrected_chunk_count != 0) {
+            corrected_chunk_count--;
+        }
+
+        ctx->max_snappy = snappy_max_compressed_length(ctx->tex_size / corrected_chunk_count);
+        ctx->tex_buf = av_malloc(ctx->tex_size);
+        if (!ctx->tex_buf) {
+            return AVERROR(ENOMEM);
+        }
+        break;
+    default:
+        av_log(avctx, AV_LOG_ERROR, "Invalid compresor %02X\n", ctx->opt_compressor);
+        return AVERROR_INVALIDDATA;
     }
     if (corrected_chunk_count != ctx->opt_chunk_count) {
         av_log(avctx, AV_LOG_INFO, "%d chunks requested but %d used.\n",
@@ -279,12 +315,6 @@ static av_cold int hap_init(AVCodecContext *avctx)
     ret = ff_hap_set_chunk_count(ctx, corrected_chunk_count, 1);
     if (ret != 0)
         return ret;
-
-    ctx->max_snappy = snappy_max_compressed_length(ctx->tex_size / corrected_chunk_count);
-
-    ctx->tex_buf  = av_malloc(ctx->tex_size);
-    if (!ctx->tex_buf)
-        return AVERROR(ENOMEM);
 
     return 0;
 }
@@ -306,6 +336,9 @@ static const AVOption options[] = {
         { "hap_alpha", "Hap Alpha (DXT5 textures)", 0, AV_OPT_TYPE_CONST, { .i64 = HAP_FMT_RGBADXT5  }, 0, 0, FLAGS, "format" },
         { "hap_q",     "Hap Q (DXT5-YCoCg textures)", 0, AV_OPT_TYPE_CONST, { .i64 = HAP_FMT_YCOCGDXT5 }, 0, 0, FLAGS, "format" },
     { "chunks", "chunk count", OFFSET(opt_chunk_count), AV_OPT_TYPE_INT, {.i64 = 1 }, 1, HAP_MAX_CHUNKS, FLAGS, },
+    { "compressor", "second-stage compressor", OFFSET(opt_compressor), AV_OPT_TYPE_INT, { .i64 = HAP_COMP_SNAPPY }, HAP_COMP_NONE, HAP_COMP_SNAPPY, FLAGS, "compressor" },
+        { "none",       "None", 0, AV_OPT_TYPE_CONST, { .i64 = HAP_COMP_NONE }, 0, 0, FLAGS, "compressor" },
+        { "snappy",     "Snappy", 0, AV_OPT_TYPE_CONST, { .i64 = HAP_COMP_SNAPPY }, 0, 0, FLAGS, "compressor" },
     { NULL },
 };
 
@@ -318,7 +351,7 @@ static const AVClass hapenc_class = {
 
 AVCodec ff_hap_encoder = {
     .name           = "hap",
-    .long_name      = NULL_IF_CONFIG_SMALL("Vidvox Hap encoder"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Vidvox Hap"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_HAP,
     .priv_data_size = sizeof(HapContext),

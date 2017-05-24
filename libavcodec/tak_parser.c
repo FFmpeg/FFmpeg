@@ -24,8 +24,9 @@
  * TAK parser
  **/
 
-#include "tak.h"
+#define BITSTREAM_READER_LE
 #include "parser.h"
+#include "tak.h"
 
 typedef struct TAKParseContext {
     ParseContext  pc;
@@ -59,7 +60,7 @@ static int tak_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 
     while (buf_size || t->index + needed <= pc->index) {
         if (buf_size && t->index + TAK_MAX_FRAME_HEADER_BYTES > pc->index) {
-            int tmp_buf_size       = FFMIN(2 * TAK_MAX_FRAME_HEADER_BYTES,
+            int tmp_buf_size       = FFMIN(TAK_MAX_FRAME_HEADER_BYTES,
                                            buf_size);
             const uint8_t *tmp_buf = buf;
 

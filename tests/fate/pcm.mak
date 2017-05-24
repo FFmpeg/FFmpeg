@@ -25,7 +25,7 @@ fate-w64: CMD = crc -i $(TARGET_SAMPLES)/w64/w64-pcm16.w64
 FATE_PCM-$(call ENCMUX, PCM_S24DAUD, DAUD) += fate-dcinema-encode
 fate-dcinema-encode: tests/data/asynth-96000-6.wav
 fate-dcinema-encode: SRC = tests/data/asynth-96000-6.wav
-fate-dcinema-encode: CMD = enc_dec_pcm daud framemd5 s16le $(SRC) -c:a pcm_s24daud -aframes 20
+fate-dcinema-encode: CMD = enc_dec_pcm daud framemd5 s16le $(SRC) -c:a pcm_s24daud -frames:a 20
 
 FATE_FFMPEG += $(FATE_PCM-yes)
 FATE_SAMPLES_AVCONV += $(FATE_SAMPLES_PCM-yes)

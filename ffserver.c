@@ -32,16 +32,10 @@
 #include <stdio.h>
 #include "libavformat/avformat.h"
 /* FIXME: those are internal headers, ffserver _really_ shouldn't use them */
-#include "libavformat/ffm.h"
-#include "libavformat/network.h"
-#include "libavformat/os_support.h"
-#include "libavformat/rtpdec.h"
 #include "libavformat/rtpproto.h"
 #include "libavformat/rtsp.h"
-#include "libavformat/rtspcodes.h"
 #include "libavformat/avio_internal.h"
 #include "libavformat/internal.h"
-#include "libavformat/url.h"
 
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
@@ -50,6 +44,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/random_seed.h"
+#include "libavutil/rational.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
@@ -161,7 +156,7 @@ typedef struct HTTPContext {
     int feed_streams[FFSERVER_MAX_STREAMS]; /* index of streams in the feed */
     int switch_feed_streams[FFSERVER_MAX_STREAMS]; /* index of streams in the feed */
     int switch_pending;
-    AVFormatContext fmt_ctx; /* instance of FFServerStream for one user */
+    AVFormatContext *pfmt_ctx; /* instance of FFServerStream for one user */
     int last_packet_sent; /* true if last data packet was sent */
     int suppress_log;
     DataRateData datarate;
@@ -169,6 +164,7 @@ typedef struct HTTPContext {
     char protocol[16];
     char method[16];
     char url[128];
+    char clean_url[128*7];
     int buffer_size;
     uint8_t *buffer;
     int is_packetized; /* if true, the stream is packetized */
@@ -191,11 +187,6 @@ typedef struct HTTPContext {
     struct HTTPContext *rtsp_c;
     uint8_t *packet_buffer, *packet_buffer_ptr, *packet_buffer_end;
 } HTTPContext;
-
-typedef struct FeedData {
-    long long data_count;
-    float avg_frame_size;   /* frame size averaged over last frames with exponential mean */
-} FeedData;
 
 static HTTPContext *first_http_ctx;
 
@@ -245,8 +236,7 @@ static int rtp_new_av_stream(HTTPContext *c,
 /* utils */
 static size_t htmlencode (const char *src, char **dest);
 static inline void cp_html_entity (char *buffer, const char *entity);
-static inline int check_codec_match(AVCodecContext *ccf, AVCodecContext *ccs,
-                                    int stream);
+static inline int check_codec_match(LayeredAVStream *ccf, AVStream *ccs, int stream);
 
 static const char *my_program_name;
 
@@ -264,6 +254,21 @@ static int64_t cur_time;
 static AVLFG random_state;
 
 static FILE *logfile = NULL;
+
+static void unlayer_stream(AVStream *st, LayeredAVStream *lst)
+{
+    avcodec_free_context(&st->codec);
+    avcodec_parameters_free(&st->codecpar);
+#define COPY(a) st->a = lst->a;
+    COPY(index)
+    COPY(id)
+    COPY(codec)
+    COPY(codecpar)
+    COPY(time_base)
+    COPY(pts_wrap_bits)
+    COPY(sample_aspect_ratio)
+    COPY(recommended_encoder_configuration)
+}
 
 static inline void cp_html_entity (char *buffer, const char *entity) {
     if (!buffer || !entity)
@@ -373,8 +378,8 @@ static void ffm_set_write_index(AVFormatContext *s, int64_t pos,
                                 int64_t file_size)
 {
     av_opt_set_int(s, "server_attached", 1, AV_OPT_SEARCH_CHILDREN);
-    av_opt_set_int(s, "write_index", pos, AV_OPT_SEARCH_CHILDREN);
-    av_opt_set_int(s, "file_size", file_size, AV_OPT_SEARCH_CHILDREN);
+    av_opt_set_int(s, "ffm_write_index", pos, AV_OPT_SEARCH_CHILDREN);
+    av_opt_set_int(s, "ffm_file_size", file_size, AV_OPT_SEARCH_CHILDREN);
 }
 
 static char *ctime1(char *buf2, size_t buf_size)
@@ -490,20 +495,22 @@ static void start_children(FFServerStream *feed)
         return;
     }
 
-    pathname = av_strdup (my_program_name);
+    slash = strrchr(my_program_name, '/');
+    if (!slash) {
+        pathname = av_mallocz(sizeof("ffmpeg"));
+    } else {
+        pathname = av_mallocz(slash - my_program_name + sizeof("ffmpeg"));
+        if (pathname != NULL) {
+            memcpy(pathname, my_program_name, slash - my_program_name);
+        }
+    }
     if (!pathname) {
         http_log("Could not allocate memory for children cmd line\n");
         return;
     }
-   /* replace "ffserver" with "ffmpeg" in the path of current
-    * program. Ignore user provided path */
+   /* use "ffmpeg" in the path of current program. Ignore user provided path */
 
-    slash = strrchr(pathname, '/');
-    if (!slash)
-        slash = pathname;
-    else
-        slash++;
-    strcpy(slash, "ffmpeg");
+    strcat(pathname, "ffmpeg");
 
     for (; feed; feed = feed->next) {
 
@@ -936,21 +943,22 @@ static void close_connection(HTTPContext *c)
         ffurl_close(c->rtp_handles[i]);
     }
 
-    ctx = &c->fmt_ctx;
+    ctx = c->pfmt_ctx;
 
-    if (!c->last_packet_sent && c->state == HTTPSTATE_SEND_DATA_TRAILER) {
-        /* prepare header */
-        if (ctx->oformat && avio_open_dyn_buf(&ctx->pb) >= 0) {
-            av_write_trailer(ctx);
-            av_freep(&c->pb_buffer);
-            avio_close_dyn_buf(ctx->pb, &c->pb_buffer);
+    if (ctx) {
+        if (!c->last_packet_sent && c->state == HTTPSTATE_SEND_DATA_TRAILER) {
+            /* prepare header */
+            if (ctx->oformat && avio_open_dyn_buf(&ctx->pb) >= 0) {
+                av_write_trailer(ctx);
+                av_freep(&c->pb_buffer);
+                avio_close_dyn_buf(ctx->pb, &c->pb_buffer);
+            }
         }
-    }
-
-    for(i=0; i<ctx->nb_streams; i++)
-        av_freep(&ctx->streams[i]);
-    av_freep(&ctx->streams);
-    av_freep(&ctx->priv_data);
+        for(i=0; i<ctx->nb_streams; i++)
+            av_freep(&ctx->streams[i]);
+        av_freep(&ctx->streams);
+        av_freep(&ctx->priv_data);
+        }
 
     if (c->stream && !c->post && c->stream->stream_type == STREAM_TYPE_LIVE)
         current_bandwidth -= c->stream->bandwidth;
@@ -1196,7 +1204,7 @@ static int extract_rates(char *rates, int ratelen, const char *request)
     return 0;
 }
 
-static int find_stream_in_feed(FFServerStream *feed, AVCodecContext *codec,
+static int find_stream_in_feed(FFServerStream *feed, AVCodecParameters *codec,
                                int bit_rate)
 {
     int i;
@@ -1204,7 +1212,7 @@ static int find_stream_in_feed(FFServerStream *feed, AVCodecContext *codec,
     int best = -1;
 
     for (i = 0; i < feed->nb_streams; i++) {
-        AVCodecContext *feed_codec = feed->streams[i]->codec;
+        AVCodecParameters *feed_codec = feed->streams[i]->codecpar;
 
         if (feed_codec->codec_id != codec->codec_id ||
             feed_codec->sample_rate != codec->sample_rate ||
@@ -1245,7 +1253,7 @@ static int modify_current_stream(HTTPContext *c, char *rates)
         return 0;
 
     for (i = 0; i < req->nb_streams; i++) {
-        AVCodecContext *codec = req->streams[i]->codec;
+        AVCodecParameters *codec = req->streams[i]->codecpar;
 
         switch(rates[i]) {
             case 0:
@@ -1278,6 +1286,8 @@ static void get_word(char *buf, int buf_size, const char **pp)
 {
     const char *p;
     char *q;
+
+#define SPACE_CHARS " \t\r\n"
 
     p = *pp;
     p += strspn(p, SPACE_CHARS);
@@ -1692,7 +1702,7 @@ static int http_parse_request(HTTPContext *c)
                                 memcpy(q, sdp_data, sdp_data_size);
                                 q += sdp_data_size;
                                 *q = '\0';
-                                av_free(sdp_data);
+                                av_freep(&sdp_data);
                             }
                         }
                         break;
@@ -1872,45 +1882,73 @@ static inline void print_stream_params(AVIOContext *pb, FFServerStream *stream)
     int i, stream_no;
     const char *type = "unknown";
     char parameters[64];
-    AVStream *st;
+    LayeredAVStream *st;
     AVCodec *codec;
 
     stream_no = stream->nb_streams;
 
-    avio_printf(pb, "<table cellspacing=0 cellpadding=4><tr><th>Stream<th>"
-                    "type<th>kbit/s<th align=left>codec<th align=left>"
+    avio_printf(pb, "<table><tr><th>Stream<th>"
+                    "type<th>kbit/s<th>codec<th>"
                     "Parameters\n");
 
     for (i = 0; i < stream_no; i++) {
         st = stream->streams[i];
-        codec = avcodec_find_encoder(st->codec->codec_id);
+        codec = avcodec_find_encoder(st->codecpar->codec_id);
 
         parameters[0] = 0;
 
-        switch(st->codec->codec_type) {
+        switch(st->codecpar->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
             type = "audio";
             snprintf(parameters, sizeof(parameters), "%d channel(s), %d Hz",
-                     st->codec->channels, st->codec->sample_rate);
+                     st->codecpar->channels, st->codecpar->sample_rate);
             break;
         case AVMEDIA_TYPE_VIDEO:
             type = "video";
             snprintf(parameters, sizeof(parameters),
-                     "%dx%d, q=%d-%d, fps=%d", st->codec->width,
-                     st->codec->height, st->codec->qmin, st->codec->qmax,
-                     st->codec->time_base.den / st->codec->time_base.num);
+                     "%dx%d, q=%d-%d, fps=%d", st->codecpar->width,
+                     st->codecpar->height, st->codec->qmin, st->codec->qmax,
+                     st->time_base.den / st->time_base.num);
             break;
         default:
             abort();
         }
 
-        avio_printf(pb, "<tr><td align=right>%d<td>%s<td align=right>%"PRId64
+        avio_printf(pb, "<tr><td>%d<td>%s<td>%"PRId64
                         "<td>%s<td>%s\n",
-                    i, type, (int64_t)st->codec->bit_rate/1000,
+                    i, type, (int64_t)st->codecpar->bit_rate/1000,
                     codec ? codec->name : "", parameters);
      }
 
      avio_printf(pb, "</table>\n");
+}
+
+static void clean_html(char *clean, int clean_len, char *dirty)
+{
+    int i, o;
+
+    for (o = i = 0; o+10 < clean_len && dirty[i];) {
+        int len = strspn(dirty+i, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$-_.+!*(),?/ :;%");
+        if (len) {
+            if (o + len >= clean_len)
+                break;
+            memcpy(clean + o, dirty + i, len);
+            i += len;
+            o += len;
+        } else {
+            int c = dirty[i++];
+            switch (c) {
+            case  '&': av_strlcat(clean+o, "&amp;"  , clean_len - o); break;
+            case  '<': av_strlcat(clean+o, "&lt;"   , clean_len - o); break;
+            case  '>': av_strlcat(clean+o, "&gt;"   , clean_len - o); break;
+            case '\'': av_strlcat(clean+o, "&apos;" , clean_len - o); break;
+            case '\"': av_strlcat(clean+o, "&quot;" , clean_len - o); break;
+            default:   av_strlcat(clean+o, "&#9785;", clean_len - o); break;
+            }
+            o += strlen(clean+o);
+        }
+    }
+    clean[o] = 0;
 }
 
 static void compute_status(HTTPContext *c)
@@ -1943,8 +1981,8 @@ static void compute_status(HTTPContext *c)
     avio_printf(pb, "<h1>%s Status</h1>\n", program_name);
     /* format status */
     avio_printf(pb, "<h2>Available Streams</h2>\n");
-    avio_printf(pb, "<table cellspacing=0 cellpadding=4>\n");
-    avio_printf(pb, "<tr><th valign=top>Path<th align=left>Served<br>Conns<th><br>bytes<th valign=top>Format<th>Bit rate<br>kbit/s<th align=left>Video<br>kbit/s<th><br>Codec<th align=left>Audio<br>kbit/s<th><br>Codec<th align=left valign=top>Feed\n");
+    avio_printf(pb, "<table>\n");
+    avio_printf(pb, "<tr><th>Path<th>Served<br>Conns<th><br>bytes<th>Format<th>Bit rate<br>kbit/s<th>Video<br>kbit/s<th><br>Codec<th>Audio<br>kbit/s<th><br>Codec<th>Feed\n");
     stream = config.first_stream;
     while (stream) {
         char sfilename[1024];
@@ -1978,9 +2016,11 @@ static void compute_status(HTTPContext *c)
 
         avio_printf(pb, "<tr><td><a href=\"/%s\">%s</a> ",
                     sfilename, stream->filename);
-        avio_printf(pb, "<td align=right> %d <td align=right> ",
+        avio_printf(pb, "<td> %d <td> ",
                     stream->conns_served);
-        fmt_bytecount(pb, stream->bytes_served);
+        // TODO: Investigate if we can make http bitexact so it always produces the same count of bytes
+        if (!config.bitexact)
+            fmt_bytecount(pb, stream->bytes_served);
 
         switch(stream->stream_type) {
         case STREAM_TYPE_LIVE: {
@@ -1992,12 +2032,12 @@ static void compute_status(HTTPContext *c)
             const char *video_codec_name_extra = "";
 
             for(i=0;i<stream->nb_streams;i++) {
-                AVStream *st = stream->streams[i];
-                AVCodec *codec = avcodec_find_encoder(st->codec->codec_id);
+                LayeredAVStream *st = stream->streams[i];
+                AVCodec *codec = avcodec_find_encoder(st->codecpar->codec_id);
 
-                switch(st->codec->codec_type) {
+                switch(st->codecpar->codec_type) {
                 case AVMEDIA_TYPE_AUDIO:
-                    audio_bit_rate += st->codec->bit_rate;
+                    audio_bit_rate += st->codecpar->bit_rate;
                     if (codec) {
                         if (*audio_codec_name)
                             audio_codec_name_extra = "...";
@@ -2005,7 +2045,7 @@ static void compute_status(HTTPContext *c)
                     }
                     break;
                 case AVMEDIA_TYPE_VIDEO:
-                    video_bit_rate += st->codec->bit_rate;
+                    video_bit_rate += st->codecpar->bit_rate;
                     if (codec) {
                         if (*video_codec_name)
                             video_codec_name_extra = "...";
@@ -2013,15 +2053,14 @@ static void compute_status(HTTPContext *c)
                     }
                     break;
                 case AVMEDIA_TYPE_DATA:
-                    video_bit_rate += st->codec->bit_rate;
+                    video_bit_rate += st->codecpar->bit_rate;
                     break;
                 default:
                     abort();
                 }
             }
 
-            avio_printf(pb, "<td align=center> %s <td align=right> %d "
-                            "<td align=right> %d <td> %s %s <td align=right> "
+            avio_printf(pb, "<td> %s <td> %d <td> %d <td> %s %s <td> "
                             "%d <td> %s %s",
                         stream->fmt->name, stream->bandwidth,
                         video_bit_rate / 1000, video_codec_name,
@@ -2036,8 +2075,8 @@ static void compute_status(HTTPContext *c)
         }
             break;
         default:
-            avio_printf(pb, "<td align=center> - <td align=right> - "
-                            "<td align=right> - <td><td align=right> - <td>\n");
+            avio_printf(pb, "<td> - <td> - "
+                            "<td> - <td><td> - <td>\n");
             break;
         }
         stream = stream->next;
@@ -2098,7 +2137,7 @@ static void compute_status(HTTPContext *c)
                 current_bandwidth, config.max_bandwidth);
 
     avio_printf(pb, "<table>\n");
-    avio_printf(pb, "<tr><th>#<th>File<th>IP<th>Proto<th>State<th>Target "
+    avio_printf(pb, "<tr><th>#<th>File<th>IP<th>URL<th>Proto<th>State<th>Target "
                     "bit/s<th>Actual bit/s<th>Bytes transferred\n");
     c1 = first_http_ctx;
     i = 0;
@@ -2110,33 +2149,38 @@ static void compute_status(HTTPContext *c)
         if (c1->stream) {
             for (j = 0; j < c1->stream->nb_streams; j++) {
                 if (!c1->stream->feed)
-                    bitrate += c1->stream->streams[j]->codec->bit_rate;
+                    bitrate += c1->stream->streams[j]->codecpar->bit_rate;
                 else if (c1->feed_streams[j] >= 0)
-                    bitrate += c1->stream->feed->streams[c1->feed_streams[j]]->codec->bit_rate;
+                    bitrate += c1->stream->feed->streams[c1->feed_streams[j]]->codecpar->bit_rate;
             }
         }
 
         i++;
         p = inet_ntoa(c1->from_addr.sin_addr);
-        avio_printf(pb, "<tr><td><b>%d</b><td>%s%s<td>%s<td>%s<td>%s"
-                        "<td align=right>",
+        clean_html(c1->clean_url, sizeof(c1->clean_url), c1->url);
+        avio_printf(pb, "<tr><td><b>%d</b><td>%s%s<td>%s<td>%s<td>%s<td>%s"
+                        "<td>",
                     i, c1->stream ? c1->stream->filename : "",
-                    c1->state == HTTPSTATE_RECEIVE_DATA ? "(input)" : "", p,
+                    c1->state == HTTPSTATE_RECEIVE_DATA ? "(input)" : "",
+                    p,
+                    c1->clean_url,
                     c1->protocol, http_state[c1->state]);
         fmt_bytecount(pb, bitrate);
-        avio_printf(pb, "<td align=right>");
+        avio_printf(pb, "<td>");
         fmt_bytecount(pb, compute_datarate(&c1->datarate, c1->data_count) * 8);
-        avio_printf(pb, "<td align=right>");
+        avio_printf(pb, "<td>");
         fmt_bytecount(pb, c1->data_count);
         avio_printf(pb, "\n");
         c1 = c1->next;
     }
     avio_printf(pb, "</table>\n");
 
-    /* date */
-    ti = time(NULL);
-    p = ctime(&ti);
-    avio_printf(pb, "<hr size=1 noshade>Generated at %s", p);
+    if (!config.bitexact) {
+        /* date */
+        ti = time(NULL);
+        p = ctime(&ti);
+        avio_printf(pb, "<hr>Generated at %s", p);
+    }
     avio_printf(pb, "</body>\n</html>\n");
 
     len = avio_close_dyn_buf(pb, &c->pb_buffer);
@@ -2262,17 +2306,14 @@ static int http_prepare_data(HTTPContext *c)
         ctx = avformat_alloc_context();
         if (!ctx)
             return AVERROR(ENOMEM);
-        c->fmt_ctx = *ctx;
-        av_freep(&ctx);
-        av_dict_copy(&(c->fmt_ctx.metadata), c->stream->metadata, 0);
-        c->fmt_ctx.streams = av_mallocz_array(c->stream->nb_streams,
-                                              sizeof(AVStream *));
-        if (!c->fmt_ctx.streams)
-            return AVERROR(ENOMEM);
+        c->pfmt_ctx = ctx;
+        av_dict_copy(&(c->pfmt_ctx->metadata), c->stream->metadata, 0);
 
         for(i=0;i<c->stream->nb_streams;i++) {
-            AVStream *src;
-            c->fmt_ctx.streams[i] = av_mallocz(sizeof(AVStream));
+            LayeredAVStream *src;
+            AVStream *st = avformat_new_stream(c->pfmt_ctx, NULL);
+            if (!st)
+                return AVERROR(ENOMEM);
 
             /* if file or feed, then just take streams from FFServerStream
              * struct */
@@ -2282,39 +2323,40 @@ static int http_prepare_data(HTTPContext *c)
             else
                 src = c->stream->feed->streams[c->stream->feed_streams[i]];
 
-            *(c->fmt_ctx.streams[i]) = *src;
-            c->fmt_ctx.streams[i]->priv_data = 0;
-            /* XXX: should be done in AVStream, not in codec */
-            c->fmt_ctx.streams[i]->codec->frame_number = 0;
+            unlayer_stream(c->pfmt_ctx->streams[i], src); //TODO we no longer copy st->internal, does this matter?
+            av_assert0(!c->pfmt_ctx->streams[i]->priv_data);
+
+            if (src->codec->flags & AV_CODEC_FLAG_BITEXACT)
+                c->pfmt_ctx->flags |= AVFMT_FLAG_BITEXACT;
         }
         /* set output format parameters */
-        c->fmt_ctx.oformat = c->stream->fmt;
-        c->fmt_ctx.nb_streams = c->stream->nb_streams;
+        c->pfmt_ctx->oformat = c->stream->fmt;
+        av_assert0(c->pfmt_ctx->nb_streams == c->stream->nb_streams);
 
         c->got_key_frame = 0;
 
         /* prepare header and save header data in a stream */
-        if (avio_open_dyn_buf(&c->fmt_ctx.pb) < 0) {
+        if (avio_open_dyn_buf(&c->pfmt_ctx->pb) < 0) {
             /* XXX: potential leak */
             return -1;
         }
-        c->fmt_ctx.pb->seekable = 0;
+        c->pfmt_ctx->pb->seekable = 0;
 
         /*
          * HACK to avoid MPEG-PS muxer to spit many underflow errors
          * Default value from FFmpeg
          * Try to set it using configuration option
          */
-        c->fmt_ctx.max_delay = (int)(0.7*AV_TIME_BASE);
+        c->pfmt_ctx->max_delay = (int)(0.7*AV_TIME_BASE);
 
-        if ((ret = avformat_write_header(&c->fmt_ctx, NULL)) < 0) {
+        if ((ret = avformat_write_header(c->pfmt_ctx, NULL)) < 0) {
             http_log("Error writing output header for stream '%s': %s\n",
                      c->stream->filename, av_err2str(ret));
             return ret;
         }
-        av_dict_free(&c->fmt_ctx.metadata);
+        av_dict_free(&c->pfmt_ctx->metadata);
 
-        len = avio_close_dyn_buf(c->fmt_ctx.pb, &c->pb_buffer);
+        len = avio_close_dyn_buf(c->pfmt_ctx->pb, &c->pb_buffer);
         c->buffer_ptr = c->pb_buffer;
         c->buffer_end = c->pb_buffer + len;
 
@@ -2383,7 +2425,7 @@ static int http_prepare_data(HTTPContext *c)
                             AVStream *st = c->fmt_in->streams[source_index];
                             pkt.stream_index = i;
                             if (pkt.flags & AV_PKT_FLAG_KEY &&
-                                (st->codec->codec_type == AVMEDIA_TYPE_VIDEO ||
+                                (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ||
                                  c->stream->nb_streams == 1))
                                 c->got_key_frame = 1;
                             if (!c->stream->send_on_key || c->got_key_frame)
@@ -2391,7 +2433,6 @@ static int http_prepare_data(HTTPContext *c)
                         }
                     }
                 } else {
-                    AVCodecContext *codec;
                     AVStream *ist, *ost;
                 send_it:
                     ist = c->fmt_in->streams[source_index];
@@ -2412,13 +2453,11 @@ static int http_prepare_data(HTTPContext *c)
                             av_packet_unref(&pkt);
                             break;
                         }
-                        codec = ctx->streams[0]->codec;
                         /* only one stream per RTP connection */
                         pkt.stream_index = 0;
                     } else {
-                        ctx = &c->fmt_ctx;
+                        ctx = c->pfmt_ctx;
                         /* Fudge here */
-                        codec = ctx->streams[pkt.stream_index]->codec;
                     }
 
                     if (c->is_packetized) {
@@ -2460,7 +2499,6 @@ static int http_prepare_data(HTTPContext *c)
                     c->buffer_ptr = c->pb_buffer;
                     c->buffer_end = c->pb_buffer + len;
 
-                    codec->frame_number++;
                     if (len == 0) {
                         av_packet_unref(&pkt);
                         goto redo;
@@ -2475,13 +2513,13 @@ static int http_prepare_data(HTTPContext *c)
         /* last packet test ? */
         if (c->last_packet_sent || c->is_packetized)
             return -1;
-        ctx = &c->fmt_ctx;
+        ctx = c->pfmt_ctx;
         /* prepare header */
         if (avio_open_dyn_buf(&ctx->pb) < 0) {
             /* XXX: potential leak */
             return -1;
         }
-        c->fmt_ctx.pb->seekable = 0;
+        c->pfmt_ctx->pb->seekable = 0;
         av_write_trailer(ctx);
         len = avio_close_dyn_buf(ctx->pb, &c->pb_buffer);
         c->buffer_ptr = c->pb_buffer;
@@ -2622,6 +2660,7 @@ static int http_start_receive_data(HTTPContext *c)
 {
     int fd;
     int ret;
+    int64_t ret64;
 
     if (c->stream->feed_opened) {
         http_log("Stream feed '%s' was not opened\n",
@@ -2657,13 +2696,13 @@ static int http_start_receive_data(HTTPContext *c)
             return ret;
         }
     } else {
-        ret = ffm_read_write_index(fd);
-        if (ret < 0) {
+        ret64 = ffm_read_write_index(fd);
+        if (ret64 < 0) {
             http_log("Error reading write index from feed file '%s': %s\n",
                      c->stream->feed_filename, strerror(errno));
-            return ret;
+            return ret64;
         }
-        c->stream->feed_write_index = ret;
+        c->stream->feed_write_index = ret64;
     }
 
     c->stream->feed_write_index = FFMAX(ffm_read_write_index(fd),
@@ -2701,8 +2740,10 @@ static int http_receive_data(HTTPContext *c)
         } else if (c->buffer_ptr - c->buffer >= 2 &&
                    !memcmp(c->buffer_ptr - 1, "\r\n", 2)) {
             c->chunk_size = strtol(c->buffer, 0, 16);
-            if (c->chunk_size == 0) // end of stream
+            if (c->chunk_size <= 0) { // end of stream or invalid chunk size
+                c->chunk_size = 0;
                 goto fail;
+            }
             c->buffer_ptr = c->buffer;
             break;
         } else if (++loop_run > 10)
@@ -2724,6 +2765,7 @@ static int http_receive_data(HTTPContext *c)
             /* end of connection : close it */
             goto fail;
         else {
+            av_assert0(len <= c->chunk_size);
             c->chunk_size -= len;
             c->buffer_ptr += len;
             c->data_count += len;
@@ -2815,9 +2857,10 @@ static int http_receive_data(HTTPContext *c)
             }
 
             for (i = 0; i < s->nb_streams; i++) {
-                AVStream *fst = feed->streams[i];
+                LayeredAVStream *fst = feed->streams[i];
                 AVStream *st = s->streams[i];
-                avcodec_copy_context(fst->codec, st->codec);
+                avcodec_parameters_to_context(fst->codec, st->codecpar);
+                avcodec_parameters_from_context(fst->codecpar, fst->codec);
             }
 
             avformat_close_input(&s);
@@ -2962,7 +3005,6 @@ static int prepare_sdp_description(FFServerStream *stream, uint8_t **pbuffer,
                                    struct in_addr my_ip)
 {
     AVFormatContext *avc;
-    AVStream *avs = NULL;
     AVOutputFormat *rtp_format = av_guess_format("rtp", NULL, NULL);
     AVDictionaryEntry *entry = av_dict_get(stream->metadata, "title", NULL, 0);
     int i;
@@ -2976,7 +3018,6 @@ static int prepare_sdp_description(FFServerStream *stream, uint8_t **pbuffer,
     avc->oformat = rtp_format;
     av_dict_set(&avc->metadata, "title",
                 entry ? entry->value : "No Title", 0);
-    avc->nb_streams = stream->nb_streams;
     if (stream->is_multicast) {
         snprintf(avc->filename, 1024, "rtp://%s:%d?multicast=1?ttl=%d",
                  inet_ntoa(stream->multicast_ip),
@@ -2984,28 +3025,23 @@ static int prepare_sdp_description(FFServerStream *stream, uint8_t **pbuffer,
     } else
         snprintf(avc->filename, 1024, "rtp://0.0.0.0");
 
-    avc->streams = av_malloc_array(avc->nb_streams, sizeof(*avc->streams));
-    if (!avc->streams)
-        goto sdp_done;
-
-    avs = av_malloc_array(avc->nb_streams, sizeof(*avs));
-    if (!avs)
-        goto sdp_done;
-
     for(i = 0; i < stream->nb_streams; i++) {
-        avc->streams[i] = &avs[i];
-        avc->streams[i]->codec = stream->streams[i]->codec;
+        AVStream *st = avformat_new_stream(avc, NULL);
+        if (!st)
+            goto sdp_done;
+        avcodec_parameters_from_context(stream->streams[i]->codecpar, stream->streams[i]->codec);
+        unlayer_stream(st, stream->streams[i]);
     }
-    *pbuffer = av_mallocz(2048);
+#define PBUFFER_SIZE 2048
+    *pbuffer = av_mallocz(PBUFFER_SIZE);
     if (!*pbuffer)
         goto sdp_done;
-    av_sdp_create(&avc, 1, *pbuffer, 2048);
+    av_sdp_create(&avc, 1, *pbuffer, PBUFFER_SIZE);
 
  sdp_done:
     av_freep(&avc->streams);
     av_dict_free(&avc->metadata);
     av_free(avc);
-    av_free(avs);
 
     return *pbuffer ? strlen(*pbuffer) : AVERROR(ENOMEM);
 }
@@ -3429,19 +3465,16 @@ static int rtp_new_av_stream(HTTPContext *c,
     if (!st)
         goto fail;
 
-    av_freep(&st->codec);
-    av_freep(&st->info);
     st_internal = st->internal;
 
     if (!c->stream->feed ||
         c->stream->feed == c->stream)
-        memcpy(st, c->stream->streams[stream_index], sizeof(AVStream));
+        unlayer_stream(st, c->stream->streams[stream_index]);
     else
-        memcpy(st,
-               c->stream->feed->streams[c->stream->feed_streams[stream_index]],
-               sizeof(AVStream));
-    st->priv_data = NULL;
-    st->internal = st_internal;
+        unlayer_stream(st,
+               c->stream->feed->streams[c->stream->feed_streams[stream_index]]);
+    av_assert0(st->priv_data == NULL);
+    av_assert0(st->internal == st_internal);
 
     /* build destination RTP address */
     ipaddr = inet_ntoa(dest_addr->sin_addr);
@@ -3509,15 +3542,15 @@ static int rtp_new_av_stream(HTTPContext *c,
 /* ffserver initialization */
 
 /* FIXME: This code should use avformat_new_stream() */
-static AVStream *add_av_stream1(FFServerStream *stream,
+static LayeredAVStream *add_av_stream1(FFServerStream *stream,
                                 AVCodecContext *codec, int copy)
 {
-    AVStream *fst;
+    LayeredAVStream *fst;
 
     if(stream->nb_streams >= FF_ARRAY_ELEMS(stream->streams))
         return NULL;
 
-    fst = av_mallocz(sizeof(AVStream));
+    fst = av_mallocz(sizeof(*fst));
     if (!fst)
         return NULL;
     if (copy) {
@@ -3533,19 +3566,20 @@ static AVStream *add_av_stream1(FFServerStream *stream,
          */
         fst->codec = codec;
 
-    fst->priv_data = av_mallocz(sizeof(FeedData));
-    fst->internal = av_mallocz(sizeof(*fst->internal));
+    //NOTE we previously allocated internal & internal->avctx, these seemed uneeded though
+    fst->codecpar = avcodec_parameters_alloc();
     fst->index = stream->nb_streams;
-    avpriv_set_pts_info(fst, 33, 1, 90000);
+    fst->time_base = codec->time_base;
+    fst->pts_wrap_bits = 33;
     fst->sample_aspect_ratio = codec->sample_aspect_ratio;
     stream->streams[stream->nb_streams++] = fst;
     return fst;
 }
 
 /* return the stream number in the feed */
-static int add_av_stream(FFServerStream *feed, AVStream *st)
+static int add_av_stream(FFServerStream *feed, LayeredAVStream *st)
 {
-    AVStream *fst;
+    LayeredAVStream *fst;
     AVCodecContext *av, *av1;
     int i;
 
@@ -3579,9 +3613,9 @@ static int add_av_stream(FFServerStream *feed, AVStream *st)
     fst = add_av_stream1(feed, av, 0);
     if (!fst)
         return -1;
-    if (av_stream_get_recommended_encoder_configuration(st))
-        av_stream_set_recommended_encoder_configuration(fst,
-            av_strdup(av_stream_get_recommended_encoder_configuration(st)));
+    if (st->recommended_encoder_configuration)
+        fst->recommended_encoder_configuration =
+            av_strdup(st->recommended_encoder_configuration);
     return feed->nb_streams - 1;
 }
 
@@ -3594,57 +3628,6 @@ static void remove_stream(FFServerStream *stream)
             *ps = (*ps)->next;
         else
             ps = &(*ps)->next;
-    }
-}
-
-/* specific MPEG4 handling : we extract the raw parameters */
-static void extract_mpeg4_header(AVFormatContext *infile)
-{
-    int mpeg4_count, i, size;
-    AVPacket pkt;
-    AVStream *st;
-    const uint8_t *p;
-
-    infile->flags |= AVFMT_FLAG_NOFILLIN | AVFMT_FLAG_NOPARSE;
-
-    mpeg4_count = 0;
-    for(i=0;i<infile->nb_streams;i++) {
-        st = infile->streams[i];
-        if (st->codec->codec_id == AV_CODEC_ID_MPEG4 &&
-            st->codec->extradata_size == 0) {
-            mpeg4_count++;
-        }
-    }
-    if (!mpeg4_count)
-        return;
-
-    printf("MPEG4 without extra data: trying to find header in %s\n",
-           infile->filename);
-    while (mpeg4_count > 0) {
-        if (av_read_frame(infile, &pkt) < 0)
-            break;
-        st = infile->streams[pkt.stream_index];
-        if (st->codec->codec_id == AV_CODEC_ID_MPEG4 &&
-            st->codec->extradata_size == 0) {
-            av_freep(&st->codec->extradata);
-            /* fill extradata with the header */
-            /* XXX: we make hard suppositions here ! */
-            p = pkt.data;
-            while (p < pkt.data + pkt.size - 4) {
-                /* stop when vop header is found */
-                if (p[0] == 0x00 && p[1] == 0x00 &&
-                    p[2] == 0x01 && p[3] == 0xb6) {
-                    size = p - pkt.data;
-                    st->codec->extradata = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
-                    st->codec->extradata_size = size;
-                    memcpy(st->codec->extradata, pkt.data, size);
-                    break;
-                }
-                p++;
-            }
-            mpeg4_count--;
-        }
-        av_packet_unref(&pkt);
     }
 }
 
@@ -3698,7 +3681,6 @@ static void build_file_streams(void)
                 avformat_close_input(&infile);
                 goto fail;
             }
-            extract_mpeg4_header(infile);
 
             for(i=0;i<infile->nb_streams;i++)
                 add_av_stream1(stream, infile->streams[i]->codec, 1);
@@ -3709,26 +3691,25 @@ static void build_file_streams(void)
 }
 
 static inline
-int check_codec_match(AVCodecContext *ccf, AVCodecContext *ccs, int stream)
+int check_codec_match(LayeredAVStream *ccf, AVStream *ccs, int stream)
 {
     int matches = 1;
 
-#define CHECK_CODEC(x)  (ccf->x != ccs->x)
+/* FIXME: Missed check on AVCodecContext.flags */
+#define CHECK_CODEC(x)  (ccf->codecpar->x != ccs->codecpar->x)
     if (CHECK_CODEC(codec_id) || CHECK_CODEC(codec_type)) {
         http_log("Codecs do not match for stream %d\n", stream);
         matches = 0;
-    } else if (CHECK_CODEC(bit_rate) || CHECK_CODEC(flags)) {
+    } else if (CHECK_CODEC(bit_rate)) {
         http_log("Codec bitrates do not match for stream %d\n", stream);
         matches = 0;
-    } else if (ccf->codec_type == AVMEDIA_TYPE_VIDEO) {
-        if (CHECK_CODEC(time_base.den) ||
-            CHECK_CODEC(time_base.num) ||
-            CHECK_CODEC(width) ||
-            CHECK_CODEC(height)) {
+    } else if (ccf->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if (av_cmp_q(ccf->time_base, ccs->time_base) ||
+            CHECK_CODEC(width) || CHECK_CODEC(height)) {
             http_log("Codec width, height or framerate do not match for stream %d\n", stream);
             matches = 0;
         }
-    } else if (ccf->codec_type == AVMEDIA_TYPE_AUDIO) {
+    } else if (ccf->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         if (CHECK_CODEC(sample_rate) ||
             CHECK_CODEC(channels) ||
             CHECK_CODEC(frame_size)) {
@@ -3798,7 +3779,8 @@ static int build_feed_streams(void)
 
             matches = 1;
             for(i=0;i<s->nb_streams;i++) {
-                AVStream *sf, *ss;
+                AVStream *ss;
+                LayeredAVStream *sf;
 
                 sf = feed->streams[i];
                 ss = s->streams[i];
@@ -3810,7 +3792,7 @@ static int build_feed_streams(void)
                     break;
                 }
 
-                matches = check_codec_match (sf->codec, ss->codec, i);
+                matches = check_codec_match (sf, ss, i);
                 if (!matches)
                     break;
             }
@@ -3853,11 +3835,19 @@ drop:
                 goto bail;
             }
             s->oformat = feed->fmt;
-            s->nb_streams = feed->nb_streams;
-            s->streams = feed->streams;
+            for (i = 0; i<feed->nb_streams; i++) {
+                AVStream *st = avformat_new_stream(s, NULL); // FIXME free this
+                if (!st) {
+                    http_log("Failed to allocate stream\n");
+                    goto bail;
+                }
+                unlayer_stream(st, feed->streams[i]);
+            }
             if (avformat_write_header(s, NULL) < 0) {
                 http_log("Container doesn't support the required parameters\n");
                 avio_closep(&s->pb);
+                s->streams = NULL;
+                s->nb_streams = 0;
                 avformat_free_context(s);
                 goto bail;
             }
@@ -3902,7 +3892,7 @@ static void compute_bandwidth(void)
     for(stream = config.first_stream; stream; stream = stream->next) {
         bandwidth = 0;
         for(i=0;i<stream->nb_streams;i++) {
-            AVStream *st = stream->streams[i];
+            LayeredAVStream *st = stream->streams[i];
             switch(st->codec->codec_type) {
             case AVMEDIA_TYPE_AUDIO:
             case AVMEDIA_TYPE_VIDEO:
@@ -3960,7 +3950,7 @@ void show_help_default(const char *opt, const char *arg)
 }
 
 static const OptionDef options[] = {
-#include "cmdutils_common_opts.h"
+    CMDUTILS_COMMON_OPTIONS
     { "n", OPT_BOOL, {(void *)&no_launch }, "enable no-launch mode" },
     { "d", 0, {(void*)opt_debug}, "enable debug mode" },
     { "f", HAS_ARG | OPT_STRING, {(void*)&config.filename }, "use configfile instead of /etc/ffserver.conf", "configfile" },
@@ -3973,6 +3963,7 @@ int main(int argc, char **argv)
     int cfg_parsed;
     int ret = EXIT_FAILURE;
 
+    init_dynload();
 
     config.filename = av_strdup("/etc/ffserver.conf");
 

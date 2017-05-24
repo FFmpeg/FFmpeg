@@ -58,6 +58,7 @@
 #include "libavutil/mips/asmdefs.h"
 
 #if HAVE_INLINE_ASM
+#if !HAVE_MIPS32R6 && !HAVE_MIPS64R6
 static void ff_celp_lp_synthesis_filterf_mips(float *out,
                                   const float *filter_coeffs,
                                   const float* in, int buffer_length,
@@ -278,12 +279,15 @@ static void ff_celp_lp_zero_synthesis_filterf_mips(float *out,
         out[n] = sum_out1;
     }
 }
+#endif /* !HAVE_MIPS32R6 && !HAVE_MIPS64R6 */
 #endif /* HAVE_INLINE_ASM */
 
 void ff_celp_filter_init_mips(CELPFContext *c)
 {
 #if HAVE_INLINE_ASM
+#if !HAVE_MIPS32R6 && !HAVE_MIPS64R6
     c->celp_lp_synthesis_filterf        = ff_celp_lp_synthesis_filterf_mips;
     c->celp_lp_zero_synthesis_filterf   = ff_celp_lp_zero_synthesis_filterf_mips;
+#endif
 #endif
 }

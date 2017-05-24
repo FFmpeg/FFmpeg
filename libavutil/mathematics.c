@@ -115,15 +115,15 @@ int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding rnd)
         if (t1 > INT64_MAX)
             return INT64_MIN;
         return t1;
-    }
 #else
+        /* reference code doing (a*b + r) / c, requires libavutil/integer.h */
         AVInteger ai;
         ai = av_mul_i(av_int2i(a), av_int2i(b));
         ai = av_add_i(ai, av_int2i(r));
 
         return av_i2int(av_div_i(ai, av_int2i(c)));
-    }
 #endif
+    }
 }
 
 int64_t av_rescale(int64_t a, int64_t b, int64_t c)

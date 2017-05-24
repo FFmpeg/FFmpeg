@@ -24,6 +24,7 @@
 #include <vdpau/vdpau.h>
 
 #include "avcodec.h"
+#include "hwaccel.h"
 #include "mpeg4video.h"
 #include "vdpau.h"
 #include "vdpau_internal.h"
@@ -121,4 +122,5 @@ AVHWAccel ff_mpeg4_vdpau_hwaccel = {
     .init           = vdpau_mpeg4_init,
     .uninit         = ff_vdpau_common_uninit,
     .priv_data_size = sizeof(VDPAUContext),
+    .caps_internal  = HWACCEL_CAP_ASYNC_SAFE,
 };

@@ -123,7 +123,7 @@ static int process_frame(FFFrameSync *fs)
             return ret;
         }
 
-        height[1] = height[2] = FF_CEIL_RSHIFT(inlink->h, s->desc->log2_chroma_h);
+        height[1] = height[2] = AV_CEIL_RSHIFT(inlink->h, s->desc->log2_chroma_h);
         height[0] = height[3] = inlink->h;
 
         for (p = 0; p < s->nb_planes; p++) {
@@ -215,8 +215,13 @@ static int request_frame(AVFilterLink *outlink)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     StackContext *s = ctx->priv;
+    int i;
+
     ff_framesync_uninit(&s->fs);
     av_freep(&s->frames);
+
+    for (i = 0; i < ctx->nb_inputs; i++)
+        av_freep(&ctx->input_pads[i].name);
 }
 
 #define OFFSET(x) offsetof(StackContext, x)

@@ -24,6 +24,8 @@
 
 #include <stdint.h>
 
+#include "dcamath.h"
+
 typedef struct {
     int32_t m;
     int32_t e;
@@ -95,7 +97,6 @@ static const softfloat scalefactor_inv[128] = {
 
 /* manually derived from
  * Table B.5: Selection of quantization levels and codebooks
- * FIXME: will become invalid when Huffman codes are introduced.
  */
 static const int bit_consumption[27] = {
     -8, 28, 40, 48, 52, 60, 68, 76, 80, 96,
@@ -103,11 +104,55 @@ static const int bit_consumption[27] = {
     272, 288, 304, 320, 336, 352, 368,
 };
 
-/* Table B.5: Selection of quantization levels and codebooks */
-static const int quant_levels[27] = {
-    1, 3, 5, 7, 9, 13, 17, 25, 32, 64,
-    128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536,
-    131072, 262144, 524288, 1048576, 2097152, 4194304, 8388608,
+static const int8_t lfe_index[16] = {
+    1, 2, 2, 2, 2, 3, 2, 3, 2, 3, 2, 3, 1, 3, 2, 3
 };
+
+static const int8_t channel_reorder_lfe[16][9] = {
+    { 0, -1, -1, -1, -1, -1, -1, -1, -1 },
+    { 0,  1, -1, -1, -1, -1, -1, -1, -1 },
+    { 0,  1, -1, -1, -1, -1, -1, -1, -1 },
+    { 0,  1, -1, -1, -1, -1, -1, -1, -1 },
+    { 0,  1, -1, -1, -1, -1, -1, -1, -1 },
+    { 2,  0,  1, -1, -1, -1, -1, -1, -1 },
+    { 0,  1,  3, -1, -1, -1, -1, -1, -1 },
+    { 2,  0,  1,  4, -1, -1, -1, -1, -1 },
+    { 0,  1,  3,  4, -1, -1, -1, -1, -1 },
+    { 2,  0,  1,  4,  5, -1, -1, -1, -1 },
+    { 3,  4,  0,  1,  5,  6, -1, -1, -1 },
+    { 2,  0,  1,  4,  5,  6, -1, -1, -1 },
+    { 0,  6,  4,  5,  2,  3, -1, -1, -1 },
+    { 4,  2,  5,  0,  1,  6,  7, -1, -1 },
+    { 5,  6,  0,  1,  7,  3,  8,  4, -1 },
+    { 4,  2,  5,  0,  1,  6,  8,  7, -1 },
+};
+
+static const int8_t channel_reorder_nolfe[16][9] = {
+    { 0, -1, -1, -1, -1, -1, -1, -1, -1 },
+    { 0,  1, -1, -1, -1, -1, -1, -1, -1 },
+    { 0,  1, -1, -1, -1, -1, -1, -1, -1 },
+    { 0,  1, -1, -1, -1, -1, -1, -1, -1 },
+    { 0,  1, -1, -1, -1, -1, -1, -1, -1 },
+    { 2,  0,  1, -1, -1, -1, -1, -1, -1 },
+    { 0,  1,  2, -1, -1, -1, -1, -1, -1 },
+    { 2,  0,  1,  3, -1, -1, -1, -1, -1 },
+    { 0,  1,  2,  3, -1, -1, -1, -1, -1 },
+    { 2,  0,  1,  3,  4, -1, -1, -1, -1 },
+    { 2,  3,  0,  1,  4,  5, -1, -1, -1 },
+    { 2,  0,  1,  3,  4,  5, -1, -1, -1 },
+    { 0,  5,  3,  4,  1,  2, -1, -1, -1 },
+    { 3,  2,  4,  0,  1,  5,  6, -1, -1 },
+    { 4,  5,  0,  1,  6,  2,  7,  3, -1 },
+    { 3,  2,  4,  0,  1,  5,  7,  6, -1 },
+};
+
+static inline int32_t quantize_value(int32_t value, softfloat quant)
+{
+    int32_t offset = 1 << (quant.e - 1);
+
+    value = mul32(value, quant.m) + offset;
+    value = value >> quant.e;
+    return value;
+}
 
 #endif /* AVCODEC_DCAENC_H */

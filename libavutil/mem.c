@@ -77,22 +77,12 @@ void av_max_alloc(size_t max){
 void *av_malloc(size_t size)
 {
     void *ptr = NULL;
-#if CONFIG_MEMALIGN_HACK
-    long diff;
-#endif
 
     /* let's disallow possibly ambiguous cases */
     if (size > (max_alloc_size - 32))
         return NULL;
 
-#if CONFIG_MEMALIGN_HACK
-    ptr = malloc(size + ALIGN);
-    if (!ptr)
-        return ptr;
-    diff              = ((~(long)ptr)&(ALIGN - 1)) + 1;
-    ptr               = (char *)ptr + diff;
-    ((char *)ptr)[-1] = diff;
-#elif HAVE_POSIX_MEMALIGN
+#if HAVE_POSIX_MEMALIGN
     if (size) //OS X on SDK 10.6 has a broken posix_memalign implementation
     if (posix_memalign(&ptr, ALIGN, size))
         ptr = NULL;
@@ -144,25 +134,11 @@ void *av_malloc(size_t size)
 
 void *av_realloc(void *ptr, size_t size)
 {
-#if CONFIG_MEMALIGN_HACK
-    int diff;
-#endif
-
     /* let's disallow possibly ambiguous cases */
     if (size > (max_alloc_size - 32))
         return NULL;
 
-#if CONFIG_MEMALIGN_HACK
-    //FIXME this isn't aligned correctly, though it probably isn't needed
-    if (!ptr)
-        return av_malloc(size);
-    diff = ((char *)ptr)[-1];
-    av_assert0(diff>0 && diff<=ALIGN);
-    ptr = realloc((char *)ptr - diff, size + diff);
-    if (ptr)
-        ptr = (char *)ptr + diff;
-    return ptr;
-#elif HAVE_ALIGNED_MALLOC
+#if HAVE_ALIGNED_MALLOC
     return _aligned_realloc(ptr, size + !size, ALIGN);
 #else
     return realloc(ptr, size + !size);
@@ -179,7 +155,7 @@ void *av_realloc_f(void *ptr, size_t nelem, size_t elsize)
         return NULL;
     }
     r = av_realloc(ptr, size);
-    if (!r && size)
+    if (!r)
         av_free(ptr);
     return r;
 }
@@ -227,13 +203,7 @@ int av_reallocp_array(void *ptr, size_t nmemb, size_t size)
 
 void av_free(void *ptr)
 {
-#if CONFIG_MEMALIGN_HACK
-    if (ptr) {
-        int v= ((char *)ptr)[-1];
-        av_assert0(v>0 && v<=ALIGN);
-        free((char *)ptr - v);
-    }
-#elif HAVE_ALIGNED_MALLOC
+#if HAVE_ALIGNED_MALLOC
     _aligned_free(ptr);
 #else
     free(ptr);
@@ -312,7 +282,7 @@ int av_dynarray_add_nofree(void *tab_ptr, int *nb_ptr, void *elem)
     void **tab;
     memcpy(&tab, tab_ptr, sizeof(tab));
 
-    AV_DYNARRAY_ADD(INT_MAX, sizeof(*tab), tab, *nb_ptr, {
+    FF_DYNARRAY_ADD(INT_MAX, sizeof(*tab), tab, *nb_ptr, {
         tab[*nb_ptr] = elem;
         memcpy(tab_ptr, &tab, sizeof(tab));
     }, {
@@ -326,7 +296,7 @@ void av_dynarray_add(void *tab_ptr, int *nb_ptr, void *elem)
     void **tab;
     memcpy(&tab, tab_ptr, sizeof(tab));
 
-    AV_DYNARRAY_ADD(INT_MAX, sizeof(*tab), tab, *nb_ptr, {
+    FF_DYNARRAY_ADD(INT_MAX, sizeof(*tab), tab, *nb_ptr, {
         tab[*nb_ptr] = elem;
         memcpy(tab_ptr, &tab, sizeof(tab));
     }, {
@@ -340,7 +310,7 @@ void *av_dynarray2_add(void **tab_ptr, int *nb_ptr, size_t elem_size,
 {
     uint8_t *tab_elem_data = NULL;
 
-    AV_DYNARRAY_ADD(INT_MAX, elem_size, *tab_ptr, *nb_ptr, {
+    FF_DYNARRAY_ADD(INT_MAX, elem_size, *tab_ptr, *nb_ptr, {
         tab_elem_data = (uint8_t *)*tab_ptr + (*nb_ptr) * elem_size;
         if (elem_data)
             memcpy(tab_elem_data, elem_data, elem_size);

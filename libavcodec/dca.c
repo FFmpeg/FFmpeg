@@ -36,6 +36,15 @@ const uint32_t avpriv_dca_sample_rates[16] = {
     12000, 24000, 48000, 96000, 192000
 };
 
+const uint32_t ff_dca_sampling_freqs[16] = {
+      8000,  16000, 32000, 64000, 128000, 22050,  44100,  88200,
+    176400, 352800, 12000, 24000,  48000, 96000, 192000, 384000,
+};
+
+const uint8_t ff_dca_freq_ranges[16] = {
+    0, 1, 2, 3, 4, 1, 2, 3, 4, 4, 0, 1, 2, 3, 4, 4
+};
+
 int avpriv_dca_convert_bitstream(const uint8_t *src, int src_size, uint8_t *dst,
                              int max_size)
 {
@@ -49,6 +58,7 @@ int avpriv_dca_convert_bitstream(const uint8_t *src, int src_size, uint8_t *dst,
     mrk = AV_RB32(src);
     switch (mrk) {
     case DCA_SYNCWORD_CORE_BE:
+    case DCA_SYNCWORD_SUBSTREAM:
         memcpy(dst, src, src_size);
         return src_size;
     case DCA_SYNCWORD_CORE_LE:

@@ -1,6 +1,6 @@
 /*
  * Autodesk RLE Decoder
- * Copyright (c) 2005 The FFmpeg Project
+ * Copyright (C) 2005 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -159,4 +159,5 @@ AVCodec ff_aasc_decoder = {
     .close          = aasc_decode_end,
     .decode         = aasc_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

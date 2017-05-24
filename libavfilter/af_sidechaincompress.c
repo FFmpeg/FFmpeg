@@ -72,7 +72,7 @@ static const AVOption options[] = {
     { "ratio",     "set ratio",          OFFSET(ratio),     AV_OPT_TYPE_DOUBLE, {.dbl=2},               1,   20, A|F },
     { "attack",    "set attack",         OFFSET(attack),    AV_OPT_TYPE_DOUBLE, {.dbl=20},           0.01, 2000, A|F },
     { "release",   "set release",        OFFSET(release),   AV_OPT_TYPE_DOUBLE, {.dbl=250},          0.01, 9000, A|F },
-    { "makeup",    "set make up gain",   OFFSET(makeup),    AV_OPT_TYPE_DOUBLE, {.dbl=2},               1,   64, A|F },
+    { "makeup",    "set make up gain",   OFFSET(makeup),    AV_OPT_TYPE_DOUBLE, {.dbl=1},               1,   64, A|F },
     { "knee",      "set knee",           OFFSET(knee),      AV_OPT_TYPE_DOUBLE, {.dbl=2.82843},         1,    8, A|F },
     { "link",      "set link type",      OFFSET(link),      AV_OPT_TYPE_INT,    {.i64=0},               0,    1, A|F, "link" },
     {   "average", 0,                    0,                 AV_OPT_TYPE_CONST,  {.i64=0},               0,    0, A|F, "link" },
@@ -188,7 +188,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     AVFilterContext *ctx = link->dst;
     SidechainCompressContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    AVFrame *out, *in[2] = { NULL };
+    AVFrame *out = NULL, *in[2] = { NULL };
     double *dst;
     int nb_samples;
     int i;
@@ -213,6 +213,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
         if (!in[i]) {
             av_frame_free(&in[0]);
             av_frame_free(&in[1]);
+            av_frame_free(&out);
             return AVERROR(ENOMEM);
         }
         av_audio_fifo_read(s->fifo[i], (void **)in[i]->data, nb_samples);

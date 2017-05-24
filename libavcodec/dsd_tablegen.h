@@ -25,6 +25,7 @@
 
 #include <stdint.h>
 #include "libavutil/attributes.h"
+#include "dsd.h"
 
 #define HTAPS   48                /** number of FIR constants */
 #define CTABLES ((HTAPS + 7) / 8) /** number of "8 MACs" lookup tables */
@@ -71,21 +72,4 @@ static const double htaps[HTAPS] = {
 };
 
 static float ctables[CTABLES][256];
-
-static av_cold void dsd_ctables_tableinit(void)
-{
-    int t, e, m, sign;
-    double acc[CTABLES];
-    for (e = 0; e < 256; ++e) {
-        memset(acc, 0, sizeof(acc));
-        for (m = 0; m < 8; ++m) {
-            sign = (((e >> (7 - m)) & 1) * 2 - 1);
-            for (t = 0; t < CTABLES; ++t)
-                acc[t] += sign * htaps[t * 8 + m];
-        }
-        for (t = 0; t < CTABLES; ++t)
-            ctables[CTABLES - 1 - t][e] = acc[t];
-    }
-}
-
 #endif /* AVCODEC_DSD_TABLEGEN_H */

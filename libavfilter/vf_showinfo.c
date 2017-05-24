@@ -87,7 +87,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
     for (plane = 0; plane < 4 && frame->data[plane] && frame->linesize[plane]; plane++) {
         uint8_t *data = frame->data[plane];
-        int h = plane == 1 || plane == 2 ? FF_CEIL_RSHIFT(inlink->h, vsub) : inlink->h;
+        int h = plane == 1 || plane == 2 ? AV_CEIL_RSHIFT(inlink->h, vsub) : inlink->h;
         int linesize = av_image_get_linesize(frame->format, frame->width, plane);
 
         if (linesize < 0)
@@ -107,8 +107,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
            "n:%4"PRId64" pts:%7s pts_time:%-7s pos:%9"PRId64" "
            "fmt:%s sar:%d/%d s:%dx%d i:%c iskey:%d type:%c "
            "checksum:%08"PRIX32" plane_checksum:[%08"PRIX32,
-           inlink->frame_count,
-           av_ts2str(frame->pts), av_ts2timestr(frame->pts, &inlink->time_base), av_frame_get_pkt_pos(frame),
+           inlink->frame_count_out,
+           av_ts2str(frame->pts), av_ts2timestr(frame->pts, &inlink->time_base), frame->pkt_pos,
            desc->name,
            frame->sample_aspect_ratio.num, frame->sample_aspect_ratio.den,
            frame->width, frame->height,

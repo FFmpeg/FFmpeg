@@ -44,7 +44,7 @@ av_cold void ff_jpeg2000dsp_init_x86(Jpeg2000DSPContext *c)
         c->mct_decode[FF_DWT97] = ff_ict_float_avx;
     }
 
-    if (EXTERNAL_AVX2(cpu_flags)) {
+    if (EXTERNAL_AVX2_FAST(cpu_flags)) {
         c->mct_decode[FF_DWT53] = ff_rct_int_avx2;
     }
 }

@@ -26,6 +26,7 @@
 #endif
 
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "os_support.h"
 
@@ -139,7 +140,8 @@ static void hds_free(AVFormatContext *s)
         return;
     for (i = 0; i < s->nb_streams; i++) {
         OutputStream *os = &c->streams[i];
-        avio_closep(&os->out);
+        if (os->out)
+            ff_format_io_close(s, &os->out);
         if (os->ctx && os->ctx_inited)
             av_write_trailer(os->ctx);
         if (os->ctx)
@@ -169,8 +171,7 @@ static int write_manifest(AVFormatContext *s, int final)
 
     snprintf(filename, sizeof(filename), "%s/index.f4m", s->filename);
     snprintf(temp_filename, sizeof(temp_filename), "%s/index.f4m.tmp", s->filename);
-    ret = avio_open2(&out, temp_filename, AVIO_FLAG_WRITE,
-                     &s->interrupt_callback, NULL);
+    ret = s->io_open(s, &out, temp_filename, AVIO_FLAG_WRITE, NULL);
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", temp_filename);
         return ret;
@@ -188,7 +189,7 @@ static int write_manifest(AVFormatContext *s, int final)
         int b64_size = AV_BASE64_SIZE(os->metadata_size);
         char *base64 = av_malloc(b64_size);
         if (!base64) {
-            avio_close(out);
+            ff_format_io_close(s, &out);
             return AVERROR(ENOMEM);
         }
         av_base64_encode(base64, b64_size, os->metadata, os->metadata_size);
@@ -201,7 +202,7 @@ static int write_manifest(AVFormatContext *s, int final)
     }
     avio_printf(out, "</manifest>\n");
     avio_flush(out);
-    avio_close(out);
+    ff_format_io_close(s, &out);
     return ff_rename(temp_filename, filename, s);
 }
 
@@ -238,8 +239,7 @@ static int write_abst(AVFormatContext *s, OutputStream *os, int final)
              "%s/stream%d.abst", s->filename, index);
     snprintf(temp_filename, sizeof(temp_filename),
              "%s/stream%d.abst.tmp", s->filename, index);
-    ret = avio_open2(&out, temp_filename, AVIO_FLAG_WRITE,
-                     &s->interrupt_callback, NULL);
+    ret = s->io_open(s, &out, temp_filename, AVIO_FLAG_WRITE, NULL);
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", temp_filename);
         return ret;
@@ -282,15 +282,14 @@ static int write_abst(AVFormatContext *s, OutputStream *os, int final)
     }
     update_size(out, afrt_pos);
     update_size(out, 0);
-    avio_close(out);
+    ff_format_io_close(s, &out);
     return ff_rename(temp_filename, filename, s);
 }
 
 static int init_file(AVFormatContext *s, OutputStream *os, int64_t start_ts)
 {
     int ret, i;
-    ret = avio_open2(&os->out, os->temp_filename, AVIO_FLAG_WRITE,
-                     &s->interrupt_callback, NULL);
+    ret = s->io_open(s, &os->out, os->temp_filename, AVIO_FLAG_WRITE, NULL);
     if (ret < 0)
         return ret;
     avio_wb32(os->out, 0);
@@ -303,13 +302,13 @@ static int init_file(AVFormatContext *s, OutputStream *os, int64_t start_ts)
     return 0;
 }
 
-static void close_file(OutputStream *os)
+static void close_file(AVFormatContext *s, OutputStream *os)
 {
     int64_t pos = avio_tell(os->out);
     avio_seek(os->out, 0, SEEK_SET);
     avio_wb32(os->out, pos);
     avio_flush(os->out);
-    avio_closep(&os->out);
+    ff_format_io_close(s, &os->out);
 }
 
 static int hds_write_header(AVFormatContext *s)
@@ -341,18 +340,18 @@ static int hds_write_header(AVFormatContext *s)
         AVFormatContext *ctx;
         AVStream *st = s->streams[i];
 
-        if (!st->codec->bit_rate) {
+        if (!st->codecpar->bit_rate) {
             av_log(s, AV_LOG_ERROR, "No bit rate set for stream %d\n", i);
             ret = AVERROR(EINVAL);
             goto fail;
         }
-        if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
             if (os->has_video) {
                 c->nb_streams++;
                 os++;
             }
             os->has_video = 1;
-        } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+        } else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             if (os->has_audio) {
                 c->nb_streams++;
                 os++;
@@ -363,7 +362,7 @@ static int hds_write_header(AVFormatContext *s)
             ret = AVERROR(EINVAL);
             goto fail;
         }
-        os->bitrate += s->streams[i]->codec->bit_rate;
+        os->bitrate += s->streams[i]->codecpar->bit_rate;
 
         if (!os->ctx) {
             os->first_stream = i;
@@ -375,6 +374,7 @@ static int hds_write_header(AVFormatContext *s)
             os->ctx = ctx;
             ctx->oformat = oformat;
             ctx->interrupt_callback = s->interrupt_callback;
+            ctx->flags = s->flags;
 
             ctx->pb = avio_alloc_context(os->iobuf, sizeof(os->iobuf),
                                          AVIO_FLAG_WRITE, os,
@@ -392,8 +392,8 @@ static int hds_write_header(AVFormatContext *s)
             ret = AVERROR(ENOMEM);
             goto fail;
         }
-        avcodec_copy_context(st->codec, s->streams[i]->codec);
-        st->codec->codec_tag = 0;
+        avcodec_parameters_copy(st->codecpar, s->streams[i]->codecpar);
+        st->codecpar->codec_tag = 0;
         st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
         st->time_base = s->streams[i]->time_base;
     }
@@ -474,7 +474,7 @@ static int hds_flush(AVFormatContext *s, OutputStream *os, int final,
 
     avio_flush(os->ctx->pb);
     os->packets_written = 0;
-    close_file(os);
+    close_file(s, os);
 
     snprintf(target_filename, sizeof(target_filename),
              "%s/stream%dSeg1-Frag%d", s->filename, index, os->fragment_index);
@@ -520,7 +520,7 @@ static int hds_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (st->first_dts == AV_NOPTS_VALUE)
         st->first_dts = pkt->dts;
 
-    if ((!os->has_video || st->codec->codec_type == AVMEDIA_TYPE_VIDEO) &&
+    if ((!os->has_video || st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) &&
         av_compare_ts(pkt->dts - st->first_dts, st->time_base,
                       end_dts, AV_TIME_BASE_Q) >= 0 &&
         pkt->flags & AV_PKT_FLAG_KEY && os->packets_written) {

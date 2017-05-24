@@ -30,6 +30,8 @@
  * V4L2_PIX_FMT_* and AV_PIX_FMT_*
  */
 
+#include <stdatomic.h>
+
 #include "v4l2-common.h"
 #include <dirent.h>
 
@@ -78,7 +80,7 @@ struct video_data {
     int64_t last_time_m;
 
     int buffers;
-    volatile int buffers_queued;
+    atomic_int buffers_queued;
     void **buf_start;
     unsigned int *buf_len;
     char *standard;
@@ -402,7 +404,7 @@ static int enqueue_buffer(struct video_data *s, struct v4l2_buffer *buf)
         res = AVERROR(errno);
         av_log(NULL, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF): %s\n", av_err2str(res));
     } else {
-        avpriv_atomic_int_add_and_fetch(&s->buffers_queued, 1);
+        atomic_fetch_add(&s->buffers_queued, 1);
     }
 
     return res;
@@ -510,9 +512,9 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
         av_log(ctx, AV_LOG_ERROR, "Invalid buffer index received.\n");
         return AVERROR(EINVAL);
     }
-    avpriv_atomic_int_add_and_fetch(&s->buffers_queued, -1);
+    atomic_fetch_add(&s->buffers_queued, -1);
     // always keep at least one buffer queued
-    av_assert0(avpriv_atomic_int_get(&s->buffers_queued) >= 1);
+    av_assert0(atomic_load(&s->buffers_queued) >= 1);
 
 #ifdef V4L2_BUF_FLAG_ERROR
     if (buf.flags & V4L2_BUF_FLAG_ERROR) {
@@ -538,7 +540,7 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
     }
 
     /* Image is at s->buff_start[buf.index] */
-    if (avpriv_atomic_int_get(&s->buffers_queued) == FFMAX(s->buffers / 8, 1)) {
+    if (atomic_load(&s->buffers_queued) == FFMAX(s->buffers / 8, 1)) {
         /* when we start getting low on queued buffers, fall back on copying data */
         res = av_new_packet(pkt, buf.bytesused);
         if (res < 0) {
@@ -607,7 +609,7 @@ static int mmap_start(AVFormatContext *ctx)
             return res;
         }
     }
-    s->buffers_queued = s->buffers;
+    atomic_store(&s->buffers_queued, s->buffers);
 
     type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     if (v4l2_ioctl(s->fd, VIDIOC_STREAMON, &type) < 0) {
@@ -715,11 +717,8 @@ static int v4l2_set_parameters(AVFormatContext *ctx)
     streamparm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     if (v4l2_ioctl(s->fd, VIDIOC_G_PARM, &streamparm) < 0) {
         ret = AVERROR(errno);
-        av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_G_PARM): %s\n", av_err2str(ret));
-        return ret;
-    }
-
-    if (framerate_q.num && framerate_q.den) {
+        av_log(ctx, AV_LOG_WARNING, "ioctl(VIDIOC_G_PARM): %s\n", av_err2str(ret));
+    } else if (framerate_q.num && framerate_q.den) {
         if (streamparm.parm.capture.capability & V4L2_CAP_TIMEPERFRAME) {
             tpf = &streamparm.parm.capture.timeperframe;
 
@@ -885,14 +884,14 @@ static int v4l2_read_header(AVFormatContext *ctx)
     avpriv_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
 
     if (s->pixel_format) {
-        AVCodec *codec = avcodec_find_decoder_by_name(s->pixel_format);
+        const AVCodecDescriptor *desc = avcodec_descriptor_get_by_name(s->pixel_format);
 
-        if (codec)
-            ctx->video_codec_id = codec->id;
+        if (desc)
+            ctx->video_codec_id = desc->id;
 
         pix_fmt = av_get_pix_fmt(s->pixel_format);
 
-        if (pix_fmt == AV_PIX_FMT_NONE && !codec) {
+        if (pix_fmt == AV_PIX_FMT_NONE && !desc) {
             av_log(ctx, AV_LOG_ERROR, "No such input format: %s.\n",
                    s->pixel_format);
 
@@ -938,9 +937,10 @@ static int v4l2_read_header(AVFormatContext *ctx)
     if ((res = v4l2_set_parameters(ctx)) < 0)
         goto fail;
 
-    st->codec->pix_fmt = ff_fmt_v4l2ff(desired_format, codec_id);
-    s->frame_size = av_image_get_buffer_size(st->codec->pix_fmt,
-                                             s->width, s->height, 1);
+    st->codecpar->format = ff_fmt_v4l2ff(desired_format, codec_id);
+    if (st->codecpar->format != AV_PIX_FMT_NONE)
+        s->frame_size = av_image_get_buffer_size(st->codecpar->format,
+                                                 s->width, s->height, 1);
 
     if ((res = mmap_init(ctx)) ||
         (res = mmap_start(ctx)) < 0)
@@ -948,22 +948,22 @@ static int v4l2_read_header(AVFormatContext *ctx)
 
     s->top_field_first = first_field(s);
 
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = codec_id;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id = codec_id;
     if (codec_id == AV_CODEC_ID_RAWVIDEO)
-        st->codec->codec_tag =
-            avcodec_pix_fmt_to_codec_tag(st->codec->pix_fmt);
+        st->codecpar->codec_tag =
+            avcodec_pix_fmt_to_codec_tag(st->codecpar->format);
     else if (codec_id == AV_CODEC_ID_H264) {
         st->need_parsing = AVSTREAM_PARSE_FULL_ONCE;
     }
     if (desired_format == V4L2_PIX_FMT_YVU420)
-        st->codec->codec_tag = MKTAG('Y', 'V', '1', '2');
+        st->codecpar->codec_tag = MKTAG('Y', 'V', '1', '2');
     else if (desired_format == V4L2_PIX_FMT_YVU410)
-        st->codec->codec_tag = MKTAG('Y', 'V', 'U', '9');
-    st->codec->width = s->width;
-    st->codec->height = s->height;
+        st->codecpar->codec_tag = MKTAG('Y', 'V', 'U', '9');
+    st->codecpar->width = s->width;
+    st->codecpar->height = s->height;
     if (st->avg_frame_rate.den)
-        st->codec->bit_rate = s->frame_size * av_q2d(st->avg_frame_rate) * 8;
+        st->codecpar->bit_rate = s->frame_size * av_q2d(st->avg_frame_rate) * 8;
 
     return 0;
 
@@ -974,20 +974,19 @@ fail:
 
 static int v4l2_read_packet(AVFormatContext *ctx, AVPacket *pkt)
 {
-    struct video_data *s = ctx->priv_data;
-#if FF_API_CODED_FRAME
+#if FF_API_CODED_FRAME && FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
+    struct video_data *s = ctx->priv_data;
     AVFrame *frame = ctx->streams[0]->codec->coded_frame;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     int res;
 
-    av_init_packet(pkt);
     if ((res = mmap_read_frame(ctx, pkt)) < 0) {
         return res;
     }
 
-#if FF_API_CODED_FRAME
+#if FF_API_CODED_FRAME && FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
     if (frame && s->interlaced) {
         frame->interlaced_frame = 1;
@@ -1003,7 +1002,7 @@ static int v4l2_read_close(AVFormatContext *ctx)
 {
     struct video_data *s = ctx->priv_data;
 
-    if (avpriv_atomic_int_get(&s->buffers_queued) != s->buffers)
+    if (atomic_load(&s->buffers_queued) != s->buffers)
         av_log(ctx, AV_LOG_WARNING, "Some buffers are still owned by the caller on "
                "close.\n");
 

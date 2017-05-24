@@ -39,7 +39,7 @@ int ff_rv10_encode_picture_header(MpegEncContext *s, int picture_number)
 
     put_bits(&s->pb, 1, (s->pict_type == AV_PICTURE_TYPE_P));
 
-    put_bits(&s->pb, 1, 0);     /* not PB frame */
+    put_bits(&s->pb, 1, 0);     /* not PB-mframe */
 
     put_bits(&s->pb, 5, s->qscale);
 

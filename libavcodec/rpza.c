@@ -1,6 +1,6 @@
 /*
  * Quicktime Video (RPZA) Video Decoder
- * Copyright (c) 2003 The FFmpeg Project
+ * Copyright (C) 2003 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -92,7 +92,7 @@ static int rpza_decode_stream(RpzaContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "First chunk byte is 0x%02x instead of 0xe1\n",
                bytestream2_peek_byte(&s->gb));
 
-    /* Get chunk size, ingnoring first byte */
+    /* Get chunk size, ignoring first byte */
     chunk_size = bytestream2_get_be32(&s->gb) & 0x00FFFFFF;
 
     /* If length mismatch use size from MOV file and try to decode anyway */

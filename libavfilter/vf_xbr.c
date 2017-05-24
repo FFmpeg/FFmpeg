@@ -37,9 +37,13 @@
 #define RED_BLUE_MASK 0x00FF00FF
 #define GREEN_MASK    0x0000FF00
 
+#ifdef PI
+#undef PI
+#endif
+
 typedef int (*xbrfunc_t)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 
-typedef struct {
+typedef struct XBRContext {
     const AVClass *class;
     int n;
     xbrfunc_t func;
@@ -367,7 +371,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     td.in = in;
     td.out = out;
     td.rgbtoyuv = s->rgbtoyuv;
-    ctx->internal->execute(ctx, s->func, &td, NULL, FFMIN(inlink->h, ctx->graph->nb_threads));
+    ctx->internal->execute(ctx, s->func, &td, NULL, FFMIN(inlink->h, ff_filter_get_nb_threads(ctx)));
 
     out->width  = outlink->w;
     out->height = outlink->h;

@@ -59,9 +59,9 @@ struct AACISError ff_aac_is_encoding_err(AACEncContext *s, ChannelElement *cpe,
         float minthr = FFMIN(band0->threshold, band1->threshold);
         for (i = 0; i < sce0->ics.swb_sizes[g]; i++)
             IS[i] = (L[start+(w+w2)*128+i] + phase*R[start+(w+w2)*128+i])*sqrt(ener0/ener01);
-        abs_pow34_v(L34, &L[start+(w+w2)*128], sce0->ics.swb_sizes[g]);
-        abs_pow34_v(R34, &R[start+(w+w2)*128], sce0->ics.swb_sizes[g]);
-        abs_pow34_v(I34, IS,                   sce0->ics.swb_sizes[g]);
+        s->abs_pow34(L34, &L[start+(w+w2)*128], sce0->ics.swb_sizes[g]);
+        s->abs_pow34(R34, &R[start+(w+w2)*128], sce0->ics.swb_sizes[g]);
+        s->abs_pow34(I34, IS,                   sce0->ics.swb_sizes[g]);
         maxval = find_max_val(1, sce0->ics.swb_sizes[g], I34);
         is_band_type = find_min_book(maxval, is_sf_idx);
         dist1 += quantize_band_cost(s, &L[start + (w+w2)*128], L34,

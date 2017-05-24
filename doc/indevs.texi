@@ -218,7 +218,8 @@ On Windows, you need to run the IDL files through @command{widl}.
 DeckLink is very picky about the formats it supports. Pixel format is
 uyvy422 or v210, framerate and video size must be determined for your device with
 @command{-list_formats 1}. Audio sample rate is always 48 kHz and the number
-of channels can be 2, 8 or 16.
+of channels can be 2, 8 or 16. Note that all audio channels are bundled in one single
+audio track.
 
 @subsection Options
 
@@ -232,9 +233,55 @@ Defaults to @option{false}.
 If set to @option{true}, print a list of supported formats and exit.
 Defaults to @option{false}.
 
+@item format_code <FourCC>
+This sets the input video format to the format given by the FourCC. To see
+the supported values of your device(s) use @option{list_formats}.
+Note that there is a FourCC @option{'pal '} that can also be used
+as @option{pal} (3 letters).
+
 @item bm_v210
 If set to @samp{1}, video is captured in 10 bit v210 instead
 of uyvy422. Not all Blackmagic devices support this option.
+
+@item teletext_lines
+If set to nonzero, an additional teletext stream will be captured from the
+vertical ancillary data. This option is a bitmask of the VBI lines checked,
+specifically lines 6 to 22, and lines 318 to 335. Line 6 is the LSB in the mask.
+Selected lines which do not contain teletext information will be ignored. You
+can use the special @option{all} constant to select all possible lines, or
+@option{standard} to skip lines 6, 318 and 319, which are not compatible with all
+receivers. Capturing teletext only works for SD PAL sources in 8 bit mode.
+To use this option, ffmpeg needs to be compiled with @code{--enable-libzvbi}.
+
+@item channels
+Defines number of audio channels to capture. Must be @samp{2}, @samp{8} or @samp{16}.
+Defaults to @samp{2}.
+
+@item duplex_mode
+Sets the decklink device duplex mode. Must be @samp{unset}, @samp{half} or @samp{full}.
+Defaults to @samp{unset}.
+
+@item video_input
+Sets the video input source. Must be @samp{unset}, @samp{sdi}, @samp{hdmi},
+@samp{optical_sdi}, @samp{component}, @samp{composite} or @samp{s_video}.
+Defaults to @samp{unset}.
+
+@item audio_input
+Sets the audio input source. Must be @samp{unset}, @samp{embedded},
+@samp{aes_ebu}, @samp{analog}, @samp{analog_xlr}, @samp{analog_rca} or
+@samp{microphone}. Defaults to @samp{unset}.
+
+@item video_pts
+Sets the video packet timestamp source. Must be @samp{video}, @samp{audio},
+@samp{reference} or @samp{wallclock}. Defaults to @samp{video}.
+
+@item audio_pts
+Sets the audio packet timestamp source. Must be @samp{video}, @samp{audio},
+@samp{reference} or @samp{wallclock}. Defaults to @samp{audio}.
+
+@item draw_bars
+If set to @samp{true}, color bars are drawn in the event of a signal loss.
+Defaults to @samp{true}.
 
 @end table
 
@@ -255,15 +302,21 @@ ffmpeg -f decklink -list_formats 1 -i 'Intensity Pro'
 @end example
 
 @item
-Capture video clip at 1080i50 (format 11):
+Capture video clip at 1080i50:
 @example
-ffmpeg -f decklink -i 'Intensity Pro@@11' -acodec copy -vcodec copy output.avi
+ffmpeg -format_code Hi50 -f decklink -i 'Intensity Pro' -acodec copy -vcodec copy output.avi
 @end example
 
 @item
 Capture video clip at 1080i50 10 bit:
 @example
-ffmpeg -bm_v210 1 -f decklink -i 'UltraStudio Mini Recorder@@11' -acodec copy -vcodec copy output.avi
+ffmpeg -bm_v210 1 -format_code Hi50 -f decklink -i 'UltraStudio Mini Recorder' -acodec copy -vcodec copy output.avi
+@end example
+
+@item
+Capture video clip at 1080i50 with 16 audio channels:
+@example
+ffmpeg -channels 16 -format_code Hi50 -f decklink -i 'UltraStudio Mini Recorder' -acodec copy -vcodec copy output.avi
 @end example
 
 @end itemize
@@ -635,7 +688,7 @@ is an exact value. For HDV, it is not frame exact, since HDV does
 not have a fixed frame size.
 
 @item dvguid
-Select the capture device by specifying it's GUID. Capturing will only
+Select the capture device by specifying its GUID. Capturing will only
 be performed from the specified device and fails if no device with the
 given GUID is found. This is useful to select the input if multiple
 devices are connected at the same time.
@@ -1258,9 +1311,6 @@ To enable this input device during configuration you need libxcb
 installed on your system. It will be automatically detected during
 configuration.
 
-Alternatively, the configure option @option{--enable-x11grab} exists
-for legacy Xlib users.
-
 This device allows one to capture a region of an X11 display.
 
 The filename passed as input has the syntax:
@@ -1298,7 +1348,7 @@ ffmpeg -f x11grab -framerate 25 -video_size cif -i :0.0+10,20 out.mpg
 
 @table @option
 @item draw_mouse
-Specify whether to draw the mouse pointer. A value of @code{0} specify
+Specify whether to draw the mouse pointer. A value of @code{0} specifies
 not to draw the pointer. Default value is @code{1}.
 
 @item follow_mouse
@@ -1347,11 +1397,6 @@ ffmpeg -f x11grab -follow_mouse centered -show_region 1 -framerate 25 -video_siz
 
 @item video_size
 Set the video frame size. Default value is @code{vga}.
-
-@item use_shm
-Use the MIT-SHM extension for shared memory. Default value is @code{1}.
-It may be necessary to disable it for remote displays (legacy x11grab
-only).
 
 @item grab_x
 @item grab_y

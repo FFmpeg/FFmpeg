@@ -120,10 +120,10 @@ static int s302m_decode_frame(AVCodecContext *avctx, void *data,
     if (avctx->bits_per_raw_sample == 24) {
         uint32_t *o = (uint32_t *)frame->data[0];
         for (; buf_size > 6; buf_size -= 7) {
-            *o++ = (ff_reverse[buf[2]]        << 24) |
+            *o++ = ((unsigned)ff_reverse[buf[2]]        << 24) |
                    (ff_reverse[buf[1]]        << 16) |
                    (ff_reverse[buf[0]]        <<  8);
-            *o++ = (ff_reverse[buf[6] & 0xf0] << 28) |
+            *o++ = ((unsigned)ff_reverse[buf[6] & 0xf0] << 28) |
                    (ff_reverse[buf[5]]        << 20) |
                    (ff_reverse[buf[4]]        << 12) |
                    (ff_reverse[buf[3] & 0x0f] <<  4);
@@ -142,10 +142,10 @@ static int s302m_decode_frame(AVCodecContext *avctx, void *data,
     } else if (avctx->bits_per_raw_sample == 20) {
         uint32_t *o = (uint32_t *)frame->data[0];
         for (; buf_size > 5; buf_size -= 6) {
-            *o++ = (ff_reverse[buf[2] & 0xf0] << 28) |
+            *o++ = ((unsigned)ff_reverse[buf[2] & 0xf0] << 28) |
                    (ff_reverse[buf[1]]        << 20) |
                    (ff_reverse[buf[0]]        << 12);
-            *o++ = (ff_reverse[buf[5] & 0xf0] << 28) |
+            *o++ = ((unsigned)ff_reverse[buf[5] & 0xf0] << 28) |
                    (ff_reverse[buf[4]]        << 20) |
                    (ff_reverse[buf[3]]        << 12);
             buf += 6;

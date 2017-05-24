@@ -52,41 +52,41 @@ static int vpk_read_header(AVFormatContext *s)
     avio_skip(s->pb, 4);
     st->duration           = avio_rl32(s->pb) * 28 / 16;
     offset                 = avio_rl32(s->pb);
-    st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id    = AV_CODEC_ID_ADPCM_PSX;
-    st->codec->block_align = avio_rl32(s->pb);
-    st->codec->sample_rate = avio_rl32(s->pb);
-    if (st->codec->sample_rate <= 0)
+    st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id    = AV_CODEC_ID_ADPCM_PSX;
+    st->codecpar->block_align = avio_rl32(s->pb);
+    st->codecpar->sample_rate = avio_rl32(s->pb);
+    if (st->codecpar->sample_rate <= 0)
         return AVERROR_INVALIDDATA;
-    st->codec->channels    = avio_rl32(s->pb);
-    if (st->codec->channels <= 0)
+    st->codecpar->channels    = avio_rl32(s->pb);
+    if (st->codecpar->channels <= 0)
         return AVERROR_INVALIDDATA;
-    samples_per_block      = ((st->codec->block_align / st->codec->channels) * 28) / 16;
+    samples_per_block      = ((st->codecpar->block_align / st->codecpar->channels) * 28) / 16;
     if (samples_per_block <= 0)
         return AVERROR_INVALIDDATA;
     vpk->block_count       = (st->duration + (samples_per_block - 1)) / samples_per_block;
-    vpk->last_block_size   = (st->duration % samples_per_block) * 16 * st->codec->channels / 28;
+    vpk->last_block_size   = (st->duration % samples_per_block) * 16 * st->codecpar->channels / 28;
     avio_skip(s->pb, offset - avio_tell(s->pb));
-    avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
 
     return 0;
 }
 
 static int vpk_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    AVCodecContext *codec = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
     VPKDemuxContext *vpk = s->priv_data;
     int ret, i;
 
     vpk->current_block++;
     if (vpk->current_block == vpk->block_count) {
-        unsigned size = vpk->last_block_size / codec->channels;
-        unsigned skip = (codec->block_align - vpk->last_block_size) / codec->channels;
+        unsigned size = vpk->last_block_size / par->channels;
+        unsigned skip = (par->block_align - vpk->last_block_size) / par->channels;
 
         ret = av_new_packet(pkt, vpk->last_block_size);
         if (ret < 0)
             return ret;
-        for (i = 0; i < codec->channels; i++) {
+        for (i = 0; i < par->channels; i++) {
             ret = avio_read(s->pb, pkt->data + i * size, size);
             avio_skip(s->pb, skip);
             if (ret != size) {
@@ -97,7 +97,7 @@ static int vpk_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
         pkt->stream_index = 0;
     } else if (vpk->current_block < vpk->block_count) {
-        ret = av_get_packet(s->pb, pkt, codec->block_align);
+        ret = av_get_packet(s->pb, pkt, par->block_align);
         pkt->stream_index = 0;
     } else {
         return AVERROR_EOF;

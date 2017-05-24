@@ -1,7 +1,7 @@
 /*
- * ITU H263 bitstream encoder
+ * ITU H.263 bitstream encoder
  * Copyright (c) 2000,2001 Fabrice Bellard
- * H263+ support.
+ * H.263+ support.
  * Copyright (c) 2001 Juan J. Sierralta P
  * Copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
  *
@@ -24,7 +24,7 @@
 
 /**
  * @file
- * h263 bitstream encoder.
+ * H.263 bitstream encoder.
  */
 
 #include <limits.h>
@@ -37,7 +37,6 @@
 #include "h263data.h"
 #include "mathops.h"
 #include "mpegutils.h"
-#include "unary.h"
 #include "flv.h"
 #include "mpeg4video.h"
 #include "internal.h"
@@ -135,7 +134,7 @@ void ff_h263_encode_picture_header(MpegEncContext * s, int picture_number)
     put_sbits(&s->pb, 8, temp_ref); /* TemporalReference */
 
     put_bits(&s->pb, 1, 1);     /* marker */
-    put_bits(&s->pb, 1, 0);     /* h263 id */
+    put_bits(&s->pb, 1, 0);     /* H.263 id */
     put_bits(&s->pb, 1, 0);     /* split screen off */
     put_bits(&s->pb, 1, 0);     /* camera  off */
     put_bits(&s->pb, 1, 0);     /* freeze picture release off */
@@ -151,7 +150,7 @@ void ff_h263_encode_picture_header(MpegEncContext * s, int picture_number)
         put_bits(&s->pb, 1, 0);         /* Unrestricted Motion Vector: off */
         put_bits(&s->pb, 1, 0);         /* SAC: off */
         put_bits(&s->pb, 1, s->obmc);   /* Advanced Prediction */
-        put_bits(&s->pb, 1, 0);         /* only I/P frames, no PB frame */
+        put_bits(&s->pb, 1, 0);         /* only I/P-frames, no PB-frame */
         put_bits(&s->pb, 5, s->qscale);
         put_bits(&s->pb, 1, 0);         /* Continuous Presence Multipoint mode: off */
     } else {
@@ -262,7 +261,7 @@ void ff_h263_encode_gob_header(MpegEncContext * s, int mb_line)
 }
 
 /**
- * modify qscale so that encoding is actually possible in h263 (limit difference to -2..2)
+ * modify qscale so that encoding is actually possible in H.263 (limit difference to -2..2)
  */
 void ff_clean_h263_qscales(MpegEncContext *s){
     int i;
@@ -774,7 +773,7 @@ av_cold void ff_h263_encode_init(MpegEncContext *s)
 
         init_mv_penalty_and_fcode(s);
     }
-    s->me.mv_penalty= mv_penalty; //FIXME exact table for msmpeg4 & h263p
+    s->me.mv_penalty= mv_penalty; // FIXME exact table for MSMPEG4 & H.263+
 
     s->intra_ac_vlc_length     =s->inter_ac_vlc_length     = uni_h263_inter_rl_len;
     s->intra_ac_vlc_last_length=s->inter_ac_vlc_last_length= uni_h263_inter_rl_len + 128*64;
@@ -784,7 +783,7 @@ av_cold void ff_h263_encode_init(MpegEncContext *s)
     }
     s->ac_esc_length= 7+1+6+8;
 
-    // use fcodes >1 only for mpeg4 & h263 & h263p FIXME
+    // use fcodes >1 only for MPEG-4 & H.263 & H.263+ FIXME
     switch(s->codec_id){
     case AV_CODEC_ID_MPEG4:
         s->fcode_tab= fcode_tab;
@@ -800,7 +799,7 @@ av_cold void ff_h263_encode_init(MpegEncContext *s)
             s->max_qcoeff=  127;
         }
         break;
-        //Note for mpeg4 & h263 the dc-scale table will be set per frame as needed later
+        // Note for MPEG-4 & H.263 the dc-scale table will be set per frame as needed later
     case AV_CODEC_ID_FLV1:
         if (s->h263_flv > 1) {
             s->min_qcoeff= -1023;

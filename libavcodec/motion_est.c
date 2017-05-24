@@ -205,7 +205,7 @@ static av_always_inline int cmp_inline(MpegEncContext *s, const int x, const int
                     cx= (cx>>1)|(cx&1);
                     cy= (cy>>1)|(cy&1);
                     uvdxy= (cx&1) + 2*(cy&1);
-                    //FIXME x/y wrong, but mpeg4 qpel is sick anyway, we should drop as much of it as possible in favor for h264
+                    // FIXME x/y wrong, but MPEG-4 qpel is sick anyway, we should drop as much of it as possible in favor for H.264
                 }
             }else{
                 c->hpel_put[size][dxy](c->temp, ref[0] + x + y*stride, stride, h);
@@ -556,7 +556,7 @@ static inline void get_limits(MpegEncContext *s, int x, int y)
         c->xmax = - x + s->width;
         c->ymax = - y + s->height;
     } else if (s->out_format == FMT_H261){
-        // Search range of H261 is different from other codec standards
+        // Search range of H.261 is different from other codec standards
         c->xmin = (x > 15) ? - 15 : 0;
         c->ymin = (y > 15) ? - 15 : 0;
         c->xmax = (x < s->mb_width * 16 - 16) ? 15 : 0;
@@ -897,6 +897,7 @@ static inline int get_penalty_factor(int lambda, int lambda2, int type){
     case FF_CMP_NSSE:
         return lambda2>>FF_LAMBDA_SHIFT;
     case FF_CMP_BIT:
+    case FF_CMP_MEDIAN_SAD:
         return 1;
     }
 }
@@ -955,10 +956,10 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
             P_TOPRIGHT[1] = s->current_picture.motion_val[0][mot_xy - mot_stride + 2][1];
             if (P_TOP[1] > (c->ymax << shift))
                 P_TOP[1] =  c->ymax << shift;
-            if (P_TOPRIGHT[0] < (c->xmin << shift))
-                P_TOPRIGHT[0] =  c->xmin << shift;
-            if (P_TOPRIGHT[1] > (c->ymax << shift))
-                P_TOPRIGHT[1] =  c->ymax << shift;
+            if (P_TOPRIGHT[0] < (c->xmin * (1 << shift)))
+                P_TOPRIGHT[0] =  c->xmin * (1 << shift);
+            if (P_TOPRIGHT[1] > (c->ymax * (1 << shift)))
+                P_TOPRIGHT[1] =  c->ymax * (1 << shift);
 
             P_MEDIAN[0] = mid_pred(P_LEFT[0], P_TOP[0], P_TOPRIGHT[0]);
             P_MEDIAN[1] = mid_pred(P_LEFT[1], P_TOP[1], P_TOPRIGHT[1]);
@@ -966,7 +967,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
             if (s->out_format == FMT_H263) {
                 c->pred_x = P_MEDIAN[0];
                 c->pred_y = P_MEDIAN[1];
-            } else { /* mpeg1 at least */
+            } else { /* MPEG-1 at least */
                 c->pred_x = P_LEFT[0];
                 c->pred_y = P_LEFT[1];
             }
@@ -1536,7 +1537,7 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
         dmin= direct_search(s, mb_x, mb_y);
     else
         dmin= INT_MAX;
-//FIXME penalty stuff for non mpeg4
+// FIXME penalty stuff for non-MPEG-4
     c->skip=0;
     fmin = estimate_motion_b(s, mb_x, mb_y, s->b_forw_mv_table, 0, s->f_code) +
            3 * penalty_factor;
@@ -1714,7 +1715,6 @@ void ff_fix_long_p_mvs(MpegEncContext * s)
 }
 
 /**
- *
  * @param truncate 1 for truncation, 0 for using intra
  */
 void ff_fix_long_mvs(MpegEncContext * s, uint8_t *field_select_table, int field_select,

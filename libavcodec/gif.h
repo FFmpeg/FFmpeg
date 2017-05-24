@@ -26,8 +26,8 @@
  * GIF format definitions.
  */
 
-#ifndef AVCODEC_GIFDEFS_H
-#define AVCODEC_GIFDEFS_H
+#ifndef AVCODEC_GIF_H
+#define AVCODEC_GIF_H
 
 #include <stdint.h>
 
@@ -46,4 +46,4 @@ static const uint8_t gif89a_sig[6] = "GIF89a";
 #define GIF_APP_EXT_LABEL           0xff
 #define NETSCAPE_EXT_STR            "NETSCAPE2.0"
 
-#endif /* AVCODEC_GIFDEFS_H */
+#endif /* AVCODEC_GIF_H */

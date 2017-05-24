@@ -31,5 +31,6 @@
 #define    DCA_SYNCWORD_XLL                  0x41A29547U
 #define    DCA_SYNCWORD_SUBSTREAM            0x64582025U
 #define    DCA_SYNCWORD_SUBSTREAM_CORE       0x02B09261U
+#define    DCA_SYNCWORD_REV1AUX              0x9A1105A0U
 
 #endif /* AVCODEC_DCA_SYNCWORDS_H */

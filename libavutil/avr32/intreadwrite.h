@@ -27,7 +27,7 @@
 
 /*
  * AVR32 does not support unaligned memory accesses, except for the AP
- * series which suppports unaligned 32-bit loads and stores.  16-bit
+ * series which supports unaligned 32-bit loads and stores.  16-bit
  * and 64-bit accesses must be aligned to 16 and 32 bits, respectively.
  * This means we cannot use the byte-swapping load/store instructions
  * here.

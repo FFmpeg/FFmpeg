@@ -48,7 +48,7 @@ cextern w7_min_w5
 
 %include "libavcodec/x86/simple_idct10_template.asm"
 
-section .text align=16
+SECTION .text
 
 %macro idct_fn 0
 cglobal prores_idct_put_10, 4, 4, 15

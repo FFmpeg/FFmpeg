@@ -596,12 +596,12 @@ static int default_query_formats_common(AVFilterContext *ctx,
 
 int ff_default_query_formats(AVFilterContext *ctx)
 {
-    return default_query_formats_common(ctx, ff_all_channel_layouts);
+    return default_query_formats_common(ctx, ff_all_channel_counts);
 }
 
-int ff_query_formats_all(AVFilterContext *ctx)
+int ff_query_formats_all_layouts(AVFilterContext *ctx)
 {
-    return default_query_formats_common(ctx, ff_all_channel_counts);
+    return default_query_formats_common(ctx, ff_all_channel_layouts);
 }
 
 /* internal functions for parsing audio format arguments */
@@ -664,71 +664,26 @@ int ff_parse_channel_layout(int64_t *ret, int *nret, const char *arg,
 {
     char *tail;
     int64_t chlayout;
+    int nb_channels;
 
-    chlayout = av_get_channel_layout(arg);
-    if (chlayout == 0) {
-        chlayout = strtol(arg, &tail, 10);
-        if (!(*tail == '\0' || *tail == 'c' && *(tail + 1) == '\0') || chlayout <= 0 || chlayout > 63) {
+    if (av_get_extended_channel_layout(arg, &chlayout, &nb_channels) < 0) {
+        /* [TEMPORARY 2016-12 -> 2017-12]*/
+        nb_channels = strtol(arg, &tail, 10);
+        if (!errno && *tail == 'c' && *(tail + 1) == '\0' && nb_channels > 0 && nb_channels < 64) {
+            chlayout = 0;
+            av_log(log_ctx, AV_LOG_WARNING, "Deprecated channel count specification '%s'. This will stop working in releases made in 2018 and after.\n", arg);
+        } else {
             av_log(log_ctx, AV_LOG_ERROR, "Invalid channel layout '%s'\n", arg);
             return AVERROR(EINVAL);
         }
-        if (nret) {
-            *nret = chlayout;
-            *ret = 0;
-            return 0;
-        }
+    }
+    if (!chlayout && !nret) {
+        av_log(log_ctx, AV_LOG_ERROR, "Unknown channel layout '%s' is not supported.\n", arg);
+        return AVERROR(EINVAL);
     }
     *ret = chlayout;
     if (nret)
-        *nret = av_get_channel_layout_nb_channels(chlayout);
-    return 0;
-}
-
-#ifdef TEST
-
-#undef printf
-
-int main(void)
-{
-    const int64_t *cl;
-    char buf[512];
-    int i;
-    const char *teststrings[] ={
-        "blah",
-        "1",
-        "2",
-        "-1",
-        "60",
-        "65",
-        "1c",
-        "2c",
-        "-1c",
-        "60c",
-        "65c",
-        "5.1",
-        "stereo",
-        "1+1+1+1",
-        "1c+1c+1c+1c",
-        "2c+1c",
-        "0x3",
-    };
-
-    for (cl = avfilter_all_channel_layouts; *cl != -1; cl++) {
-        av_get_channel_layout_string(buf, sizeof(buf), -1, *cl);
-        printf("%s\n", buf);
-    }
-
-    for ( i = 0; i<FF_ARRAY_ELEMS(teststrings); i++) {
-        int64_t layout = -1;
-        int count = -1;
-        int ret;
-        ret = ff_parse_channel_layout(&layout, &count, teststrings[i], NULL);
-
-        printf ("%d = ff_parse_channel_layout(%016"PRIX64", %2d, %s);\n", ret ? -1 : 0, layout, count, teststrings[i]);
-    }
+        *nret = nb_channels;
 
     return 0;
 }
-
-#endif
-

@@ -22,18 +22,25 @@
  */
 
 #include <limits.h>
-#include "libavutil/avassert.h"
+
 #include "avcodec.h"
 #include "internal.h"
-#include "h264.h"
+#include "h264dec.h"
 #include "vc1.h"
-
-#undef NDEBUG
-#include <assert.h>
-
 #include "vdpau.h"
 #include "vdpau_compat.h"
 #include "vdpau_internal.h"
+
+// XXX: at the time of adding this ifdefery, av_assert* wasn't use outside.
+// When dropping it, make sure other av_assert* were not added since then.
+#if FF_API_BUFS_VDPAU
+#include "libavutil/avassert.h"
+#endif
+
+#if FF_API_VDPAU
+#undef NDEBUG
+#include <assert.h>
+#endif
 
 /**
  * @addtogroup VDPAU_Decoding
@@ -131,34 +138,75 @@ int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
     vdctx->width            = UINT32_MAX;
     vdctx->height           = UINT32_MAX;
 
-    if (!hwctx) {
-        vdctx->device  = VDP_INVALID_HANDLE;
-        av_log(avctx, AV_LOG_WARNING, "hwaccel_context has not been setup by the user application, cannot initialize\n");
-        return 0;
-    }
-
-    if (hwctx->context.decoder != VDP_INVALID_HANDLE) {
-        vdctx->decoder = hwctx->context.decoder;
-        vdctx->render  = hwctx->context.render;
-        vdctx->device  = VDP_INVALID_HANDLE;
-        return 0; /* Decoder created by user */
-    }
-    hwctx->reset            = 0;
-
-    vdctx->device           = hwctx->device;
-    vdctx->get_proc_address = hwctx->get_proc_address;
-
-    if (hwctx->flags & AV_HWACCEL_FLAG_IGNORE_LEVEL)
-        level = 0;
-    else if (level < 0)
-        return AVERROR(ENOTSUP);
-
     if (av_vdpau_get_surface_parameters(avctx, &type, &width, &height))
         return AVERROR(ENOSYS);
 
-    if (!(hwctx->flags & AV_HWACCEL_FLAG_ALLOW_HIGH_DEPTH) &&
-        type != VDP_CHROMA_TYPE_420)
-        return AVERROR(ENOSYS);
+    if (hwctx) {
+        hwctx->reset            = 0;
+
+        if (hwctx->context.decoder != VDP_INVALID_HANDLE) {
+            vdctx->decoder = hwctx->context.decoder;
+            vdctx->render  = hwctx->context.render;
+            vdctx->device  = VDP_INVALID_HANDLE;
+            return 0; /* Decoder created by user */
+        }
+
+        vdctx->device           = hwctx->device;
+        vdctx->get_proc_address = hwctx->get_proc_address;
+
+        if (hwctx->flags & AV_HWACCEL_FLAG_IGNORE_LEVEL)
+            level = 0;
+
+        if (!(hwctx->flags & AV_HWACCEL_FLAG_ALLOW_HIGH_DEPTH) &&
+            type != VDP_CHROMA_TYPE_420)
+            return AVERROR(ENOSYS);
+    } else {
+        AVHWFramesContext *frames_ctx = NULL;
+        AVVDPAUDeviceContext *dev_ctx;
+
+        // We assume the hw_frames_ctx always survives until ff_vdpau_common_uninit
+        // is called. This holds true as the user is not allowed to touch
+        // hw_device_ctx, or hw_frames_ctx after get_format (and ff_get_format
+        // itself also uninits before unreffing hw_frames_ctx).
+        if (avctx->hw_frames_ctx) {
+            frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
+        } else if (avctx->hw_device_ctx) {
+            int ret;
+
+            avctx->hw_frames_ctx = av_hwframe_ctx_alloc(avctx->hw_device_ctx);
+            if (!avctx->hw_frames_ctx)
+                return AVERROR(ENOMEM);
+
+            frames_ctx            = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
+            frames_ctx->format    = AV_PIX_FMT_VDPAU;
+            frames_ctx->sw_format = avctx->sw_pix_fmt;
+            frames_ctx->width     = avctx->coded_width;
+            frames_ctx->height    = avctx->coded_height;
+
+            ret = av_hwframe_ctx_init(avctx->hw_frames_ctx);
+            if (ret < 0) {
+                av_buffer_unref(&avctx->hw_frames_ctx);
+                return ret;
+            }
+        }
+
+        if (!frames_ctx) {
+            av_log(avctx, AV_LOG_ERROR, "A hardware frames context is "
+                   "required for VDPAU decoding.\n");
+            return AVERROR(EINVAL);
+        }
+
+        dev_ctx = frames_ctx->device_ctx->hwctx;
+
+        vdctx->device           = dev_ctx->device;
+        vdctx->get_proc_address = dev_ctx->get_proc_address;
+
+        if (avctx->hwaccel_flags & AV_HWACCEL_FLAG_IGNORE_LEVEL)
+            level = 0;
+    }
+
+    if (level < 0)
+        return AVERROR(ENOTSUP);
 
     status = vdctx->get_proc_address(vdctx->device,
                                      VDP_FUNC_ID_VIDEO_SURFACE_QUERY_CAPABILITIES,
@@ -256,7 +304,7 @@ static int ff_vdpau_common_reinit(AVCodecContext *avctx)
     if (vdctx->device == VDP_INVALID_HANDLE)
         return 0; /* Decoder created by user */
     if (avctx->coded_width == vdctx->width &&
-        avctx->coded_height == vdctx->height && !hwctx->reset)
+        avctx->coded_height == vdctx->height && (!hwctx || !hwctx->reset))
         return 0;
 
     avctx->hwaccel->uninit(avctx);
@@ -288,19 +336,21 @@ int ff_vdpau_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
 
 #if FF_API_BUFS_VDPAU
 FF_DISABLE_DEPRECATION_WARNINGS
+    if (hwctx) {
     av_assert0(sizeof(hwctx->info) <= sizeof(pic_ctx->info));
     memcpy(&hwctx->info, &pic_ctx->info, sizeof(hwctx->info));
     hwctx->bitstream_buffers = pic_ctx->bitstream_buffers;
     hwctx->bitstream_buffers_used = pic_ctx->bitstream_buffers_used;
     hwctx->bitstream_buffers_allocated = pic_ctx->bitstream_buffers_allocated;
+    }
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    if (!hwctx->render && hwctx->render2) {
+    if (hwctx && !hwctx->render && hwctx->render2) {
         status = hwctx->render2(avctx, frame, (void *)&pic_ctx->info,
                                 pic_ctx->bitstream_buffers_used, pic_ctx->bitstream_buffers);
     } else
-    status = vdctx->render(vdctx->decoder, surf, (void *)&pic_ctx->info,
+    status = vdctx->render(vdctx->decoder, surf, &pic_ctx->info,
                            pic_ctx->bitstream_buffers_used,
                            pic_ctx->bitstream_buffers);
 
@@ -308,9 +358,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 #if FF_API_BUFS_VDPAU
 FF_DISABLE_DEPRECATION_WARNINGS
+    if (hwctx) {
     hwctx->bitstream_buffers = NULL;
     hwctx->bitstream_buffers_used = 0;
     hwctx->bitstream_buffers_allocated = 0;
+    }
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
@@ -459,7 +511,7 @@ void ff_vdpau_h264_picture_start(H264Context *h)
         render->info.h264.field_order_cnt[i] = foc;
     }
 
-    render->info.h264.frame_num = h->frame_num;
+    render->info.h264.frame_num = h->poc.frame_num;
 }
 
 void ff_vdpau_h264_picture_complete(H264Context *h)
@@ -476,30 +528,30 @@ void ff_vdpau_h264_picture_complete(H264Context *h)
     render->info.h264.is_reference                           = (h->cur_pic_ptr->reference & 3) ? VDP_TRUE : VDP_FALSE;
     render->info.h264.field_pic_flag                         = h->picture_structure != PICT_FRAME;
     render->info.h264.bottom_field_flag                      = h->picture_structure == PICT_BOTTOM_FIELD;
-    render->info.h264.num_ref_frames                         = h->sps.ref_frame_count;
-    render->info.h264.mb_adaptive_frame_field_flag           = h->sps.mb_aff && !render->info.h264.field_pic_flag;
-    render->info.h264.constrained_intra_pred_flag            = h->pps.constrained_intra_pred;
-    render->info.h264.weighted_pred_flag                     = h->pps.weighted_pred;
-    render->info.h264.weighted_bipred_idc                    = h->pps.weighted_bipred_idc;
-    render->info.h264.frame_mbs_only_flag                    = h->sps.frame_mbs_only_flag;
-    render->info.h264.transform_8x8_mode_flag                = h->pps.transform_8x8_mode;
-    render->info.h264.chroma_qp_index_offset                 = h->pps.chroma_qp_index_offset[0];
-    render->info.h264.second_chroma_qp_index_offset          = h->pps.chroma_qp_index_offset[1];
-    render->info.h264.pic_init_qp_minus26                    = h->pps.init_qp - 26;
-    render->info.h264.num_ref_idx_l0_active_minus1           = h->pps.ref_count[0] - 1;
-    render->info.h264.num_ref_idx_l1_active_minus1           = h->pps.ref_count[1] - 1;
-    render->info.h264.log2_max_frame_num_minus4              = h->sps.log2_max_frame_num - 4;
-    render->info.h264.pic_order_cnt_type                     = h->sps.poc_type;
-    render->info.h264.log2_max_pic_order_cnt_lsb_minus4      = h->sps.poc_type ? 0 : h->sps.log2_max_poc_lsb - 4;
-    render->info.h264.delta_pic_order_always_zero_flag       = h->sps.delta_pic_order_always_zero_flag;
-    render->info.h264.direct_8x8_inference_flag              = h->sps.direct_8x8_inference_flag;
-    render->info.h264.entropy_coding_mode_flag               = h->pps.cabac;
-    render->info.h264.pic_order_present_flag                 = h->pps.pic_order_present;
-    render->info.h264.deblocking_filter_control_present_flag = h->pps.deblocking_filter_parameters_present;
-    render->info.h264.redundant_pic_cnt_present_flag         = h->pps.redundant_pic_cnt_present;
-    memcpy(render->info.h264.scaling_lists_4x4, h->pps.scaling_matrix4, sizeof(render->info.h264.scaling_lists_4x4));
-    memcpy(render->info.h264.scaling_lists_8x8[0], h->pps.scaling_matrix8[0], sizeof(render->info.h264.scaling_lists_8x8[0]));
-    memcpy(render->info.h264.scaling_lists_8x8[1], h->pps.scaling_matrix8[3], sizeof(render->info.h264.scaling_lists_8x8[0]));
+    render->info.h264.num_ref_frames                         = h->ps.sps->ref_frame_count;
+    render->info.h264.mb_adaptive_frame_field_flag           = h->ps.sps->mb_aff && !render->info.h264.field_pic_flag;
+    render->info.h264.constrained_intra_pred_flag            = h->ps.pps->constrained_intra_pred;
+    render->info.h264.weighted_pred_flag                     = h->ps.pps->weighted_pred;
+    render->info.h264.weighted_bipred_idc                    = h->ps.pps->weighted_bipred_idc;
+    render->info.h264.frame_mbs_only_flag                    = h->ps.sps->frame_mbs_only_flag;
+    render->info.h264.transform_8x8_mode_flag                = h->ps.pps->transform_8x8_mode;
+    render->info.h264.chroma_qp_index_offset                 = h->ps.pps->chroma_qp_index_offset[0];
+    render->info.h264.second_chroma_qp_index_offset          = h->ps.pps->chroma_qp_index_offset[1];
+    render->info.h264.pic_init_qp_minus26                    = h->ps.pps->init_qp - 26;
+    render->info.h264.num_ref_idx_l0_active_minus1           = h->ps.pps->ref_count[0] - 1;
+    render->info.h264.num_ref_idx_l1_active_minus1           = h->ps.pps->ref_count[1] - 1;
+    render->info.h264.log2_max_frame_num_minus4              = h->ps.sps->log2_max_frame_num - 4;
+    render->info.h264.pic_order_cnt_type                     = h->ps.sps->poc_type;
+    render->info.h264.log2_max_pic_order_cnt_lsb_minus4      = h->ps.sps->poc_type ? 0 : h->ps.sps->log2_max_poc_lsb - 4;
+    render->info.h264.delta_pic_order_always_zero_flag       = h->ps.sps->delta_pic_order_always_zero_flag;
+    render->info.h264.direct_8x8_inference_flag              = h->ps.sps->direct_8x8_inference_flag;
+    render->info.h264.entropy_coding_mode_flag               = h->ps.pps->cabac;
+    render->info.h264.pic_order_present_flag                 = h->ps.pps->pic_order_present;
+    render->info.h264.deblocking_filter_control_present_flag = h->ps.pps->deblocking_filter_parameters_present;
+    render->info.h264.redundant_pic_cnt_present_flag         = h->ps.pps->redundant_pic_cnt_present;
+    memcpy(render->info.h264.scaling_lists_4x4, h->ps.pps->scaling_matrix4, sizeof(render->info.h264.scaling_lists_4x4));
+    memcpy(render->info.h264.scaling_lists_8x8[0], h->ps.pps->scaling_matrix8[0], sizeof(render->info.h264.scaling_lists_8x8[0]));
+    memcpy(render->info.h264.scaling_lists_8x8[1], h->ps.pps->scaling_matrix8[3], sizeof(render->info.h264.scaling_lists_8x8[0]));
 
     ff_h264_draw_horiz_band(h, &h->slice_ctx[0], 0, h->avctx->height);
     render->bitstream_buffers_used = 0;
@@ -694,6 +746,7 @@ void ff_vdpau_mpeg4_decode_picture(Mpeg4DecContext *ctx, const uint8_t *buf,
 #endif /* CONFIG_MPEG4_VDPAU_DECODER */
 #endif /* FF_API_VDPAU */
 
+#if FF_API_VDPAU_PROFILE
 int av_vdpau_get_profile(AVCodecContext *avctx, VdpDecoderProfile *profile)
 {
 #define PROFILE(prof)                      \
@@ -740,6 +793,7 @@ do {                                       \
     return AVERROR(EINVAL);
 #undef PROFILE
 }
+#endif /* FF_API_VDPAU_PROFILE */
 
 AVVDPAUContext *av_vdpau_alloc_context(void)
 {

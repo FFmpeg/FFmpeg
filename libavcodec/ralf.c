@@ -479,7 +479,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     init_get_bits(&gb, src + 2, table_size);
     ctx->num_blocks = 0;
     while (get_bits_left(&gb) > 0) {
-        ctx->block_size[ctx->num_blocks] = get_bits(&gb, 15);
+        ctx->block_size[ctx->num_blocks] = get_bits(&gb, 13 + avctx->channels);
         if (get_bits1(&gb)) {
             ctx->block_pts[ctx->num_blocks] = get_bits(&gb, 9);
         } else {

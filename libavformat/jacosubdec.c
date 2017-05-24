@@ -167,8 +167,8 @@ static int jacosub_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
     avpriv_set_pts_info(st, 64, 1, 100);
-    st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-    st->codec->codec_id   = AV_CODEC_ID_JACOSUB;
+    st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
+    st->codecpar->codec_id   = AV_CODEC_ID_JACOSUB;
 
     jacosub->timeres = 30;
 
@@ -230,7 +230,7 @@ static int jacosub_read_header(AVFormatContext *s)
     }
 
     /* general/essential directives in the extradata */
-    ret = avpriv_bprint_to_extradata(st->codec, &header);
+    ret = ff_bprint_to_codecpar_extradata(st->codecpar, &header);
     if (ret < 0)
         goto fail;
 

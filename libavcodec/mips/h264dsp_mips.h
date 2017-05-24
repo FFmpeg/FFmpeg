@@ -19,10 +19,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef H264_DSP_MIPS_H
-#define H264_DSP_MIPS_H
+#ifndef AVCODEC_MIPS_H264DSP_MIPS_H
+#define AVCODEC_MIPS_H264DSP_MIPS_H
 
-#include "libavcodec/h264.h"
+#include "libavcodec/h264dec.h"
 #include "constants.h"
 
 void ff_h264_h_lpf_luma_inter_msa(uint8_t *src, int stride,
@@ -79,19 +79,19 @@ void ff_h264_h_loop_filter_luma_mbaff_intra_msa(uint8_t *src, int stride,
                                                 int alpha, int beta);
 
 void ff_biweight_h264_pixels16_8_msa(uint8_t *dst, uint8_t *src,
-                                     int stride, int height, int log2_denom,
+                                     ptrdiff_t stride, int height, int log2_denom,
                                      int weightd, int weights, int offset);
 void ff_biweight_h264_pixels8_8_msa(uint8_t *dst, uint8_t *src,
-                                    int stride, int height, int log2_denom,
+                                    ptrdiff_t stride, int height, int log2_denom,
                                     int weightd, int weights, int offset);
 void ff_biweight_h264_pixels4_8_msa(uint8_t *dst, uint8_t *src,
-                                    int stride, int height, int log2_denom,
+                                    ptrdiff_t stride, int height, int log2_denom,
                                     int weightd, int weights, int offset);
-void ff_weight_h264_pixels16_8_msa(uint8_t *src, int stride, int height,
+void ff_weight_h264_pixels16_8_msa(uint8_t *src, ptrdiff_t stride, int height,
                                    int log2_denom, int weight, int offset);
-void ff_weight_h264_pixels8_8_msa(uint8_t *src, int stride, int height,
+void ff_weight_h264_pixels8_8_msa(uint8_t *src, ptrdiff_t stride, int height,
                                   int log2_denom, int weight, int offset);
-void ff_weight_h264_pixels4_8_msa(uint8_t *src, int stride, int height,
+void ff_weight_h264_pixels4_8_msa(uint8_t *src, ptrdiff_t stride, int height,
                                   int log2_denom, int weight, int offset);
 
 void ff_put_h264_qpel16_mc00_msa(uint8_t *dst, const uint8_t *src,
@@ -339,23 +339,23 @@ void ff_h264_luma_dc_dequant_idct_8_mmi(int16_t *output, int16_t *input,
 void ff_h264_chroma_dc_dequant_idct_8_mmi(int16_t *block, int qmul);
 void ff_h264_chroma422_dc_dequant_idct_8_mmi(int16_t *block, int qmul);
 
-void ff_h264_weight_pixels16_8_mmi(uint8_t *block, int stride, int height,
+void ff_h264_weight_pixels16_8_mmi(uint8_t *block, ptrdiff_t stride, int height,
         int log2_denom, int weight, int offset);
 void ff_h264_biweight_pixels16_8_mmi(uint8_t *dst, uint8_t *src,
-        int stride, int height, int log2_denom, int weightd, int weights,
+        ptrdiff_t stride, int height, int log2_denom, int weightd, int weights,
         int offset);
-void ff_h264_weight_pixels8_8_mmi(uint8_t *block, int stride, int height,
+void ff_h264_weight_pixels8_8_mmi(uint8_t *block, ptrdiff_t stride, int height,
         int log2_denom, int weight, int offset);
 void ff_h264_biweight_pixels8_8_mmi(uint8_t *dst, uint8_t *src,
-        int stride, int height, int log2_denom, int weightd, int weights,
+        ptrdiff_t stride, int height, int log2_denom, int weightd, int weights,
         int offset);
-void ff_h264_weight_pixels4_8_mmi(uint8_t *block, int stride, int height,
+void ff_h264_weight_pixels4_8_mmi(uint8_t *block, ptrdiff_t stride, int height,
         int log2_denom, int weight, int offset);
 void ff_h264_biweight_pixels4_8_mmi(uint8_t *dst, uint8_t *src,
-        int stride, int height, int log2_denom, int weightd, int weights,
+        ptrdiff_t stride, int height, int log2_denom, int weightd, int weights,
         int offset);
 
-void ff_deblock_v_chroma_8_mmi(uint8_t *pix, int stride, int alpha, int beta,
+void ff_deblock_v_chroma_8_mmi(uint8_t *pix, ptrdiff_t stride, int alpha, int beta,
         int8_t *tc0);
 void ff_deblock_v_chroma_intra_8_mmi(uint8_t *pix, int stride, int alpha,
         int beta);
@@ -574,4 +574,4 @@ void ff_avg_h264_qpel4_mc23_mmi(uint8_t *dst, const uint8_t *src,
 void ff_avg_h264_qpel4_mc33_mmi(uint8_t *dst, const uint8_t *src,
         ptrdiff_t dst_stride);
 
-#endif  // #ifndef H264_DSP_MIPS_H
+#endif  // #ifndef AVCODEC_MIPS_H264DSP_MIPS_H

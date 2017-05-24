@@ -32,7 +32,11 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 
+#define FF_INTERNAL_FIELDS 1
+#include "framequeue.h"
+
 #include "avfilter.h"
+#include "buffersink.h"
 #include "formats.h"
 #include "internal.h"
 #include "thread.h"
@@ -87,18 +91,24 @@ AVFilterGraph *avfilter_graph_alloc(void)
 
     ret->av_class = &filtergraph_class;
     av_opt_set_defaults(ret);
+    ff_framequeue_global_init(&ret->internal->frame_queues);
 
     return ret;
 }
 
 void ff_filter_graph_remove_filter(AVFilterGraph *graph, AVFilterContext *filter)
 {
-    int i;
+    int i, j;
     for (i = 0; i < graph->nb_filters; i++) {
         if (graph->filters[i] == filter) {
             FFSWAP(AVFilterContext*, graph->filters[i],
                    graph->filters[graph->nb_filters - 1]);
             graph->nb_filters--;
+            filter->graph = NULL;
+            for (j = 0; j<filter->nb_outputs; j++)
+                if (filter->outputs[j])
+                    filter->outputs[j]->graph = NULL;
+
             return;
         }
     }
@@ -118,7 +128,9 @@ void avfilter_graph_free(AVFilterGraph **graph)
 
     av_freep(&(*graph)->scale_sws_opts);
     av_freep(&(*graph)->aresample_swr_opts);
+#if FF_API_LAVR_OPTS
     av_freep(&(*graph)->resample_lavr_opts);
+#endif
     av_freep(&(*graph)->filters);
     av_freep(&(*graph)->internal);
     av_freep(graph);
@@ -502,6 +514,14 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                 char scale_args[256];
                 char inst_name[30];
 
+                if (graph->disable_auto_convert) {
+                    av_log(log_ctx, AV_LOG_ERROR,
+                           "The filters '%s' and '%s' do not have a common format "
+                           "and automatic conversion is disabled.\n",
+                           link->src->name, link->dst->name);
+                    return AVERROR(EINVAL);
+                }
+
                 /* couldn't merge format lists. auto-insert conversion filter */
                 switch (link->type) {
                 case AVMEDIA_TYPE_VIDEO:
@@ -511,7 +531,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                         return AVERROR(EINVAL);
                     }
 
-                    snprintf(inst_name, sizeof(inst_name), "auto-inserted scaler %d",
+                    snprintf(inst_name, sizeof(inst_name), "auto_scaler_%d",
                              scaler_count++);
 
                     if ((ret = avfilter_graph_create_filter(&convert, filter,
@@ -526,7 +546,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                         return AVERROR(EINVAL);
                     }
 
-                    snprintf(inst_name, sizeof(inst_name), "auto-inserted resampler %d",
+                    snprintf(inst_name, sizeof(inst_name), "auto_resampler_%d",
                              resampler_count++);
                     scale_args[0] = '\0';
                     if (graph->aresample_swr_opts)
@@ -857,6 +877,8 @@ static void swap_samplerates_on_filter(AVFilterContext *filter)
 
         for (j = 0; j < outlink->in_samplerates->nb_formats; j++) {
             int diff = abs(sample_rate - outlink->in_samplerates->formats[j]);
+
+            av_assert0(diff < INT_MAX); // This would lead to the use of uninitialized best_diff but is only possible with invalid sample rates
 
             if (diff < best_diff) {
                 best_diff = diff;
@@ -1223,7 +1245,7 @@ static int graph_insert_fifos(AVFilterGraph *graph, AVClass *log_ctx)
                    avfilter_get_by_name("fifo") :
                    avfilter_get_by_name("afifo");
 
-            snprintf(name, sizeof(name), "auto-inserted fifo %d", fifo_count++);
+            snprintf(name, sizeof(name), "auto_fifo_%d", fifo_count++);
 
             ret = avfilter_graph_create_filter(&fifo_ctx, fifo, name, NULL,
                                                NULL, graph);
@@ -1302,6 +1324,9 @@ int avfilter_graph_queue_command(AVFilterGraph *graph, const char *target, const
                 queue = &(*queue)->next;
             next = *queue;
             *queue = av_mallocz(sizeof(AVFilterCommand));
+            if (!*queue)
+                return AVERROR(ENOMEM);
+
             (*queue)->command = av_strdup(command);
             (*queue)->arg     = av_strdup(arg);
             (*queue)->time    = ts;
@@ -1364,15 +1389,23 @@ void ff_avfilter_graph_update_heap(AVFilterGraph *graph, AVFilterLink *link)
     heap_bubble_down(graph, link, link->age_index);
 }
 
-
 int avfilter_graph_request_oldest(AVFilterGraph *graph)
 {
     AVFilterLink *oldest = graph->sink_links[0];
+    int64_t frame_count;
     int r;
 
     while (graph->sink_links_count) {
         oldest = graph->sink_links[0];
-        r = ff_request_frame(oldest);
+        if (oldest->dst->filter->activate) {
+            /* For now, buffersink is the only filter implementing activate. */
+            r = av_buffersink_get_frame_flags(oldest->dst, NULL,
+                                              AV_BUFFERSINK_FLAG_PEEK);
+            if (r != AVERROR_EOF)
+                return r;
+        } else {
+            r = ff_request_frame(oldest);
+        }
         if (r != AVERROR_EOF)
             break;
         av_log(oldest->dst, AV_LOG_DEBUG, "EOF on sink link %s:%s.\n",
@@ -1386,50 +1419,32 @@ int avfilter_graph_request_oldest(AVFilterGraph *graph)
     }
     if (!graph->sink_links_count)
         return AVERROR_EOF;
+    av_assert1(!oldest->dst->filter->activate);
     av_assert1(oldest->age_index >= 0);
-    while (oldest->frame_wanted_out) {
+    frame_count = oldest->frame_count_out;
+    while (frame_count == oldest->frame_count_out) {
         r = ff_filter_graph_run_once(graph);
-        if (r < 0)
+        if (r == AVERROR(EAGAIN) &&
+            !oldest->frame_wanted_out && !oldest->frame_blocked_in &&
+            !oldest->status_in)
+            ff_request_frame(oldest);
+        else if (r < 0)
             return r;
     }
     return 0;
 }
 
-static AVFilterLink *graph_run_once_find_filter(AVFilterGraph *graph)
-{
-    unsigned i, j;
-    AVFilterContext *f;
-
-    /* TODO: replace scanning the graph with a priority list */
-    for (i = 0; i < graph->nb_filters; i++) {
-        f = graph->filters[i];
-        for (j = 0; j < f->nb_outputs; j++)
-            if (f->outputs[j]->frame_wanted_in)
-                return f->outputs[j];
-    }
-    for (i = 0; i < graph->nb_filters; i++) {
-        f = graph->filters[i];
-        for (j = 0; j < f->nb_outputs; j++)
-            if (f->outputs[j]->frame_wanted_out)
-                return f->outputs[j];
-    }
-    return NULL;
-}
-
 int ff_filter_graph_run_once(AVFilterGraph *graph)
 {
-    AVFilterLink *link;
-    int ret;
+    AVFilterContext *filter;
+    unsigned i;
 
-    link = graph_run_once_find_filter(graph);
-    if (!link) {
-        av_log(NULL, AV_LOG_WARNING, "Useless run of a filter graph\n");
+    av_assert0(graph->nb_filters);
+    filter = graph->filters[0];
+    for (i = 1; i < graph->nb_filters; i++)
+        if (graph->filters[i]->ready > filter->ready)
+            filter = graph->filters[i];
+    if (!filter->ready)
         return AVERROR(EAGAIN);
-    }
-    ret = ff_request_frame_to_filter(link);
-    if (ret == AVERROR_EOF)
-        /* local EOF will be forwarded through request_frame() /
-           set_status() until it reaches the sink */
-        ret = 0;
-    return ret < 0 ? ret : 1;
+    return ff_filter_activate(filter);
 }

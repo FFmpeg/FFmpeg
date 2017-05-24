@@ -29,6 +29,8 @@
 #include <netcdf.h>
 
 #include "libavcodec/avfft.h"
+#include "libavutil/avstring.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/intmath.h"
 #include "libavutil/opt.h"
@@ -52,6 +54,12 @@ typedef struct NCSofa {  /* contains data of one SOFA file */
     float *data_ir;      /* IRs (time-domain) */
 } NCSofa;
 
+typedef struct VirtualSpeaker {
+    uint8_t set;
+    float azim;
+    float elev;
+} VirtualSpeaker;
+
 typedef struct SOFAlizerContext {
     const AVClass *class;
 
@@ -61,6 +69,8 @@ typedef struct SOFAlizerContext {
     int sample_rate;            /* sample rate from SOFA file */
     float *speaker_azim;        /* azimuth of the virtual loudspeakers */
     float *speaker_elev;        /* elevation of the virtual loudspeakers */
+    char *speakers_pos;         /* custom positions of the virtual loudspeakers */
+    float lfe_gain;             /* initial gain for the LFE channel */
     float gain_lfe;             /* gain applied to LFE channel */
     int lfe_channel;            /* LFE channel position in channel layout */
 
@@ -88,6 +98,8 @@ typedef struct SOFAlizerContext {
     float elevation;     /* elevation of virtual loudspeakers (in deg.) */
     float radius;        /* distance virtual loudspeakers to listener (in metres) */
     int type;            /* processing type */
+
+    VirtualSpeaker vspkrpos[64];
 
     FFTContext *fft[2], *ifft[2];
     FFTComplex *data_hrtf[2];
@@ -269,7 +281,7 @@ static int load_sofa(AVFilterContext *ctx, char *filename, int *samplingrate)
     sp_r = s->sofa.sp_r = av_malloc_array(m_dim, sizeof(float));
     /* delay and IR values required for each ear and measurement position: */
     data_delay = s->sofa.data_delay = av_calloc(m_dim, 2 * sizeof(int));
-    data_ir = s->sofa.data_ir = av_malloc_array(m_dim * n_samples, sizeof(float) * 2);
+    data_ir = s->sofa.data_ir = av_calloc(m_dim * FFALIGN(n_samples, 16), sizeof(float) * 2);
 
     if (!data_delay || !sp_a || !sp_e || !sp_r || !data_ir) {
         /* if memory could not be allocated */
@@ -316,6 +328,7 @@ static int load_sofa(AVFilterContext *ctx, char *filename, int *samplingrate)
     if (!strncmp(data_delay_dim_name, "I", 2)) {
         /* check 2 characters to assure string is 0-terminated after "I" */
         int delay[2]; /* delays get from SOFA file: */
+        int *data_delay_r;
 
         av_log(ctx, AV_LOG_DEBUG, "Data.Delay has dimension [I R]\n");
         status = nc_get_var_int(ncid, data_delay_id, &delay[0]);
@@ -324,7 +337,7 @@ static int load_sofa(AVFilterContext *ctx, char *filename, int *samplingrate)
             ret = AVERROR(EINVAL);
             goto error;
         }
-        int *data_delay_r = data_delay + m_dim;
+        data_delay_r = data_delay + m_dim;
         for (i = 0; i < m_dim; i++) { /* extend given dimension [I R] to [M R] */
             /* assign constant delay value for all measurements to data_delay fields */
             data_delay[i]   = delay[0];
@@ -352,11 +365,71 @@ static int load_sofa(AVFilterContext *ctx, char *filename, int *samplingrate)
     s->sofa.ncid = ncid; /* netCDF ID of SOFA file */
     nc_close(ncid); /* close SOFA file */
 
+    av_log(ctx, AV_LOG_DEBUG, "m_dim: %d n_samples %d\n", m_dim, n_samples);
+
     return 0;
 
 error:
     close_sofa(&s->sofa);
     return ret;
+}
+
+static int parse_channel_name(char **arg, int *rchannel, char *buf)
+{
+    int len, i, channel_id = 0;
+    int64_t layout, layout0;
+
+    /* try to parse a channel name, e.g. "FL" */
+    if (sscanf(*arg, "%7[A-Z]%n", buf, &len)) {
+        layout0 = layout = av_get_channel_layout(buf);
+        /* channel_id <- first set bit in layout */
+        for (i = 32; i > 0; i >>= 1) {
+            if (layout >= 1LL << i) {
+                channel_id += i;
+                layout >>= i;
+            }
+        }
+        /* reject layouts that are not a single channel */
+        if (channel_id >= 64 || layout0 != 1LL << channel_id)
+            return AVERROR(EINVAL);
+        *rchannel = channel_id;
+        *arg += len;
+        return 0;
+    }
+    return AVERROR(EINVAL);
+}
+
+static void parse_speaker_pos(AVFilterContext *ctx, int64_t in_channel_layout)
+{
+    SOFAlizerContext *s = ctx->priv;
+    char *arg, *tokenizer, *p, *args = av_strdup(s->speakers_pos);
+
+    if (!args)
+        return;
+    p = args;
+
+    while ((arg = av_strtok(p, "|", &tokenizer))) {
+        char buf[8];
+        float azim, elev;
+        int out_ch_id;
+
+        p = NULL;
+        if (parse_channel_name(&arg, &out_ch_id, buf)) {
+            av_log(ctx, AV_LOG_WARNING, "Failed to parse \'%s\' as channel name.\n", buf);
+            continue;
+        }
+        if (sscanf(arg, "%f %f", &azim, &elev) == 2) {
+            s->vspkrpos[out_ch_id].set = 1;
+            s->vspkrpos[out_ch_id].azim = azim;
+            s->vspkrpos[out_ch_id].elev = elev;
+        } else if (sscanf(arg, "%f", &azim) == 1) {
+            s->vspkrpos[out_ch_id].set = 1;
+            s->vspkrpos[out_ch_id].azim = azim;
+            s->vspkrpos[out_ch_id].elev = 0;
+        }
+    }
+
+    av_free(args);
 }
 
 static int get_speaker_pos(AVFilterContext *ctx,
@@ -373,9 +446,12 @@ static int get_speaker_pos(AVFilterContext *ctx,
 
     s->lfe_channel = -1;
 
+    if (s->speakers_pos)
+        parse_speaker_pos(ctx, channels_layout);
+
     /* set speaker positions according to input channel configuration: */
     for (m = 0, ch = 0; ch < n_conv && m < 64; m++) {
-        uint64_t mask = channels_layout & (1 << m);
+        uint64_t mask = channels_layout & (1ULL << m);
 
         switch (mask) {
         case AV_CH_FRONT_LEFT:            azim[ch] =  30;      break;
@@ -414,6 +490,12 @@ static int get_speaker_pos(AVFilterContext *ctx,
         default:
             return AVERROR(EINVAL);
         }
+
+        if (s->vspkrpos[m].set) {
+            azim[ch] = s->vspkrpos[m].azim;
+            elev[ch] = s->vspkrpos[m].elev;
+        }
+
         if (mask)
             ch++;
     }
@@ -488,8 +570,15 @@ static int compensate_volume(AVFilterContext *ctx)
         av_log(ctx, AV_LOG_DEBUG, "Compensate-factor: %f\n", compensate);
         ir = sofa->data_ir;
         /* apply volume compensation to IRs */
-        s->fdsp->vector_fmul_scalar(ir, ir, compensate, sofa->n_samples * sofa->m_dim * 2);
-        emms_c();
+        if (sofa->n_samples & 31) {
+            int i;
+            for (i = 0; i < sofa->n_samples * sofa->m_dim * 2; i++) {
+                ir[i] = ir[i] * compensate;
+            }
+        } else {
+            s->fdsp->vector_fmul_scalar(ir, ir, compensate, sofa->n_samples * sofa->m_dim * 2);
+            emms_c();
+        }
     }
 
     return 0;
@@ -554,7 +643,7 @@ static int sofalizer_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
                 /* LFE is an input channel but requires no convolution */
                 /* apply gain to LFE signal and add to output buffer */
                 *dst += *(buffer[s->lfe_channel] + wr) * s->gain_lfe;
-                temp_ir += n_samples;
+                temp_ir += FFALIGN(n_samples, 16);
                 continue;
             }
 
@@ -574,7 +663,7 @@ static int sofalizer_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
 
             /* multiply signal and IR, and add up the results */
             dst[0] += s->fdsp->scalarproduct_float(temp_ir, temp_src, n_samples);
-            temp_ir += n_samples;
+            temp_ir += FFALIGN(n_samples, 16);
         }
 
         /* clippings counter */
@@ -615,6 +704,8 @@ static int sofalizer_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
     FFTContext *fft = s->fft[jobnr];
     const int n_conv = s->n_conv;
     const int n_fft = s->n_fft;
+    const float fft_scale = 1.0f / s->n_fft;
+    FFTComplex *hrtf_offset;
     int wr = *write;
     int n_read;
     int i, j;
@@ -648,6 +739,7 @@ static int sofalizer_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
 
         /* outer loop: go through all input channels to be convolved */
         offset = i * n_fft; /* no. samples already processed */
+        hrtf_offset = hrtf + offset;
 
         /* fill FFT input with 0 (we want to zero-pad) */
         memset(fft_in, 0, sizeof(FFTComplex) * n_fft);
@@ -662,14 +754,15 @@ static int sofalizer_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
         av_fft_permute(fft, fft_in);
         av_fft_calc(fft, fft_in);
         for (j = 0; j < n_fft; j++) {
+            const FFTComplex *hcomplex = hrtf_offset + j;
             const float re = fft_in[j].re;
             const float im = fft_in[j].im;
 
             /* complex multiplication of input signal and HRTFs */
             /* output channel (real): */
-            fft_in[j].re = re * (hrtf + offset + j)->re - im * (hrtf + offset + j)->im;
+            fft_in[j].re = re * hcomplex->re - im * hcomplex->im;
             /* output channel (imag): */
-            fft_in[j].im = re * (hrtf + offset + j)->im + im * (hrtf + offset + j)->re;
+            fft_in[j].im = re * hcomplex->im + im * hcomplex->re;
         }
 
         /* transform output signal of current channel back to time domain */
@@ -678,14 +771,14 @@ static int sofalizer_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
 
         for (j = 0; j < in->nb_samples; j++) {
             /* write output signal of current channel to output buffer */
-            dst[2 * j] += fft_in[j].re / (float)n_fft;
+            dst[2 * j] += fft_in[j].re * fft_scale;
         }
 
         for (j = 0; j < n_samples - 1; j++) { /* overflow length is IR length - 1 */
             /* write the rest of output signal to overflow buffer */
             int write_pos = (wr + j) & modulo;
 
-            *(ringbuffer + write_pos) += fft_in[in->nb_samples + j].re / (float)n_fft;
+            *(ringbuffer + write_pos) += fft_in[in->nb_samples + j].re * fft_scale;
         }
     }
 
@@ -693,7 +786,7 @@ static int sofalizer_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
     for (i = 0; i < out->nb_samples; i++) {
         /* clippings counter */
         if (fabs(*dst) > 1) { /* if current output sample > 1 */
-            *n_clippings = *n_clippings + 1;
+            n_clippings[0]++;
         }
 
         /* move output buffer pointer by +2 to get to next sample of processed channel: */
@@ -812,8 +905,8 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius)
         s->temp_src[1] = av_calloc(FFALIGN(n_samples, 16), sizeof(float));
 
         /* get temporary IR for L and R channel */
-        data_ir_l = av_malloc_array(n_conv * n_samples, sizeof(*data_ir_l));
-        data_ir_r = av_malloc_array(n_conv * n_samples, sizeof(*data_ir_r));
+        data_ir_l = av_calloc(n_conv * FFALIGN(n_samples, 16), sizeof(*data_ir_l));
+        data_ir_r = av_calloc(n_conv * FFALIGN(n_samples, 16), sizeof(*data_ir_r));
         if (!data_ir_r || !data_ir_l || !s->temp_src[0] || !s->temp_src[1]) {
             av_free(data_ir_l);
             av_free(data_ir_r);
@@ -842,7 +935,7 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius)
         delay_r[i] = *(s->sofa.data_delay + 2 * m[i] + 1);
 
         if (s->type == TIME_DOMAIN) {
-            offset = i * n_samples; /* no. samples already written */
+            offset = i * FFALIGN(n_samples, 16); /* no. samples already written */
             for (j = 0; j < n_samples; j++) {
                 /* load reversed IRs of the specified source position
                  * sample-by-sample for left and right ear; and apply gain */
@@ -889,8 +982,8 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius)
 
     if (s->type == TIME_DOMAIN) {
         /* copy IRs and delays to allocated memory in the SOFAlizerContext struct: */
-        memcpy(s->data_ir[0], data_ir_l, sizeof(float) * n_conv * n_samples);
-        memcpy(s->data_ir[1], data_ir_r, sizeof(float) * n_conv * n_samples);
+        memcpy(s->data_ir[0], data_ir_l, sizeof(float) * n_conv * FFALIGN(n_samples, 16));
+        memcpy(s->data_ir[1], data_ir_r, sizeof(float) * n_conv * FFALIGN(n_samples, 16));
 
         av_freep(&data_ir_l); /* free temporary IR memory */
         av_freep(&data_ir_r);
@@ -927,6 +1020,11 @@ static av_cold int init(AVFilterContext *ctx)
 {
     SOFAlizerContext *s = ctx->priv;
     int ret;
+
+    if (!s->filename) {
+        av_log(ctx, AV_LOG_ERROR, "Valid SOFA filename must be set.\n");
+        return AVERROR(EINVAL);
+    }
 
     /* load SOFA file, */
     /* initialize file IDs to 0 before attempting to load SOFA files,
@@ -970,7 +1068,7 @@ static int config_input(AVFilterLink *inlink)
     }
 
     /* gain -3 dB per channel, -6 dB to get LFE on a similar level */
-    s->gain_lfe = expf((s->gain - 3 * inlink->channels - 6) / 20 * M_LN10);
+    s->gain_lfe = expf((s->gain - 3 * inlink->channels - 6 + s->lfe_gain) / 20 * M_LN10);
 
     s->n_conv = nb_input_channels;
 
@@ -999,15 +1097,15 @@ static int config_input(AVFilterLink *inlink)
         s->ifft[1] = av_fft_init(log2(s->n_fft), 1);
 
         if (!s->fft[0] || !s->fft[1] || !s->ifft[0] || !s->ifft[1]) {
-            av_log(ctx, AV_LOG_ERROR, "Unable to create FFT contexts.\n");
+            av_log(ctx, AV_LOG_ERROR, "Unable to create FFT contexts of size %d.\n", s->n_fft);
             return AVERROR(ENOMEM);
         }
     }
 
     /* Allocate memory for the impulse responses, delays and the ringbuffers */
     /* size: (longest IR) * (number of channels to convolute) */
-    s->data_ir[0] = av_malloc_array(n_max_ir, sizeof(float) * s->n_conv);
-    s->data_ir[1] = av_malloc_array(n_max_ir, sizeof(float) * s->n_conv);
+    s->data_ir[0] = av_calloc(FFALIGN(n_max_ir, 16), sizeof(float) * s->n_conv);
+    s->data_ir[1] = av_calloc(FFALIGN(n_max_ir, 16), sizeof(float) * s->n_conv);
     /* length:  number of channels to convolute */
     s->delay[0] = av_malloc_array(s->n_conv, sizeof(float));
     s->delay[1] = av_malloc_array(s->n_conv, sizeof(float));
@@ -1099,6 +1197,8 @@ static const AVOption sofalizer_options[] = {
     { "type",      "set processing", OFFSET(type),      AV_OPT_TYPE_INT,    {.i64=1},       0,   1, .flags = FLAGS, "type" },
     { "time",      "time domain",      0,               AV_OPT_TYPE_CONST,  {.i64=0},       0,   0, .flags = FLAGS, "type" },
     { "freq",      "frequency domain", 0,               AV_OPT_TYPE_CONST,  {.i64=1},       0,   0, .flags = FLAGS, "type" },
+    { "speakers",  "set speaker custom positions", OFFSET(speakers_pos), AV_OPT_TYPE_STRING,  {.str=0},    0, 0, .flags = FLAGS },
+    { "lfegain",   "set lfe gain",                 OFFSET(lfe_gain),     AV_OPT_TYPE_FLOAT,   {.dbl=0},   -9, 9, .flags = FLAGS },
     { NULL }
 };
 

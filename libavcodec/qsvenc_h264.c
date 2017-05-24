@@ -26,11 +26,11 @@
 
 #include <mfx/mfxvideo.h>
 
+#include "libavutil/common.h"
 #include "libavutil/opt.h"
 
 #include "avcodec.h"
 #include "internal.h"
-#include "h264.h"
 #include "qsv.h"
 #include "qsv_internal.h"
 #include "qsvenc.h"
@@ -43,63 +43,33 @@ typedef struct QSVH264EncContext {
 static int qsv_h264_set_encode_ctrl(AVCodecContext *avctx,
                                     const AVFrame *frame, mfxEncodeCtrl* enc_ctrl)
 {
-    AVFrameSideData *side_data = NULL;
     QSVH264EncContext *qh264 = avctx->priv_data;
     QSVEncContext *q = &qh264->qsv;
 
     if (q->a53_cc && frame) {
-        side_data = av_frame_get_side_data(frame, AV_FRAME_DATA_A53_CC);
-        if (side_data) {
+        mfxPayload* payload;
+        mfxU8* sei_data;
+        size_t sei_size;
+        int res;
 
-            int sei_payload_size = 0;
-            mfxU8* sei_data = NULL;
-            mfxPayload* payload = NULL;
+        res = ff_alloc_a53_sei(frame, sizeof(mfxPayload) + 2, (void**)&payload, &sei_size);
+        if (res < 0 || !payload)
+            return res;
 
-            sei_payload_size = side_data->size + 13;
+        sei_data = (mfxU8*)(payload + 1);
+        // SEI header
+        sei_data[0] = 4;
+        sei_data[1] = (mfxU8)sei_size; // size of SEI data
+        // SEI data filled in by ff_alloc_a53_sei
 
-            sei_data = av_mallocz(sei_payload_size);
-            if (!sei_data) {
-                av_log(avctx, AV_LOG_ERROR, "No memory for CC, skipping...\n");
-                return AVERROR(ENOMEM);
-            }
+        payload->BufSize = sei_size + 2;
+        payload->NumBit = payload->BufSize * 8;
+        payload->Type = 4;
+        payload->Data = sei_data;
 
-            // SEI header
-            sei_data[0] = 4;
-            sei_data[1] = sei_payload_size - 2; // size of SEI data
-
-            // country code
-            sei_data[2] = 181;
-            sei_data[3] = 0;
-            sei_data[4] = 49;
-
-            // ATSC_identifier - using 'GA94' only
-            AV_WL32(sei_data + 5,
-                MKTAG('G', 'A', '9', '4'));
-            sei_data[9] = 3;
-            sei_data[10] =
-                ((side_data->size/3) & 0x1f) | 0xC0;
-
-            sei_data[11] = 0xFF; // reserved
-
-            memcpy(sei_data + 12, side_data->data, side_data->size);
-
-            sei_data[side_data->size+12] = 255;
-
-            payload = av_mallocz(sizeof(mfxPayload));
-            if (!payload) {
-                av_log(avctx, AV_LOG_ERROR, "No memory, skipping captions\n");
-                av_freep(&sei_data);
-                return AVERROR(ENOMEM);
-            }
-            payload->BufSize = side_data->size + 13;
-            payload->NumBit = payload->BufSize * 8;
-            payload->Type = 4;
-            payload->Data = sei_data;
-
-            enc_ctrl->NumExtParam = 0;
-            enc_ctrl->NumPayload = 1;
-            enc_ctrl->Payload[0] = payload;
-        }
+        enc_ctrl->NumExtParam = 0;
+        enc_ctrl->NumPayload = 1;
+        enc_ctrl->Payload[0] = payload;
     }
     return 0;
 }
@@ -141,8 +111,7 @@ static const AVOption options[] = {
     { "look_ahead",       "Use VBR algorithm with look ahead",    OFFSET(qsv.look_ahead),       AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, VE },
     { "look_ahead_depth", "Depth of look ahead in number frames", OFFSET(qsv.look_ahead_depth), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 100, VE },
 #endif
-
-#if QSV_VERSION_ATLEAST(1,8)
+#if QSV_HAVE_LA_DS
     { "look_ahead_downsampling", NULL, OFFSET(qsv.look_ahead_downsampling), AV_OPT_TYPE_INT, { .i64 = MFX_LOOKAHEAD_DS_UNKNOWN }, MFX_LOOKAHEAD_DS_UNKNOWN, MFX_LOOKAHEAD_DS_2x, VE, "look_ahead_downsampling" },
     { "unknown"                , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_LOOKAHEAD_DS_UNKNOWN }, INT_MIN, INT_MAX,     VE, "look_ahead_downsampling" },
     { "off"                    , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_LOOKAHEAD_DS_OFF     }, INT_MIN, INT_MAX,     VE, "look_ahead_downsampling" },
@@ -168,7 +137,7 @@ static const AVOption options[] = {
     { "main"    , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_PROFILE_AVC_MAIN     }, INT_MIN, INT_MAX,     VE, "profile" },
     { "high"    , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_PROFILE_AVC_HIGH     }, INT_MIN, INT_MAX,     VE, "profile" },
 
-    { "a53cc" , "Use A53 Closed Captions (if available)", OFFSET(qsv.a53_cc), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, VE},
+    { "a53cc" , "Use A53 Closed Captions (if available)", OFFSET(qsv.a53_cc), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, VE},
     { NULL },
 };
 
@@ -188,7 +157,9 @@ static const AVCodecDefault qsv_enc_defaults[] = {
     { "coder",     "ac"    },
 
     { "flags",     "+cgop" },
+#if FF_API_PRIVATE_OPT
     { "b_strategy", "-1"   },
+#endif
     { NULL },
 };
 
@@ -203,6 +174,7 @@ AVCodec ff_h264_qsv_encoder = {
     .close          = qsv_enc_close,
     .capabilities   = AV_CODEC_CAP_DELAY,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
+                                                    AV_PIX_FMT_P010,
                                                     AV_PIX_FMT_QSV,
                                                     AV_PIX_FMT_NONE },
     .priv_class     = &class,

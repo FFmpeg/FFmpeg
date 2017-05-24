@@ -129,7 +129,8 @@ char *av_timecode_make_smpte_tc_string(char *buf, uint32_t tcsmpte, int prevent_
 
 char *av_timecode_make_mpeg_tc_string(char *buf, uint32_t tc25bit)
 {
-    snprintf(buf, AV_TIMECODE_STR_SIZE, "%02u:%02u:%02u%c%02u",
+    snprintf(buf, AV_TIMECODE_STR_SIZE,
+             "%02"PRIu32":%02"PRIu32":%02"PRIu32"%c%02"PRIu32,
              tc25bit>>19 & 0x1f,              // 5-bit hours
              tc25bit>>13 & 0x3f,              // 6-bit minutes
              tc25bit>>6  & 0x3f,              // 6-bit seconds

@@ -168,19 +168,19 @@ static void colored_fputs(int level, int tint, const char *str)
 #else
     if (local_use_color == 1) {
         fprintf(stderr,
-                "\033[%d;3%dm%s\033[0m",
+                "\033[%"PRIu32";3%"PRIu32"m%s\033[0m",
                 (color[level] >> 4) & 15,
                 color[level] & 15,
                 str);
     } else if (tint && use_color == 256) {
         fprintf(stderr,
-                "\033[48;5;%dm\033[38;5;%dm%s\033[0m",
+                "\033[48;5;%"PRIu32"m\033[38;5;%dm%s\033[0m",
                 (color[level] >> 16) & 0xff,
                 tint,
                 str);
     } else if (local_use_color == 256) {
         fprintf(stderr,
-                "\033[48;5;%dm\033[38;5;%dm%s\033[0m",
+                "\033[48;5;%"PRIu32"m\033[38;5;%"PRIu32"m%s\033[0m",
                 (color[level] >> 16) & 0xff,
                 (color[level] >> 8) & 0xff,
                 str);
@@ -284,10 +284,19 @@ static void format_line(void *avcl, int level, const char *fmt, va_list vl,
 void av_log_format_line(void *ptr, int level, const char *fmt, va_list vl,
                         char *line, int line_size, int *print_prefix)
 {
+    av_log_format_line2(ptr, level, fmt, vl, line, line_size, print_prefix);
+}
+
+int av_log_format_line2(void *ptr, int level, const char *fmt, va_list vl,
+                        char *line, int line_size, int *print_prefix)
+{
     AVBPrint part[4];
+    int ret;
+
     format_line(ptr, level, fmt, vl, part, print_prefix, NULL);
-    snprintf(line, line_size, "%s%s%s%s", part[0].str, part[1].str, part[2].str, part[3].str);
+    ret = snprintf(line, line_size, "%s%s%s%s", part[0].str, part[1].str, part[2].str, part[3].str);
     av_bprint_finalize(part+3, NULL);
+    return ret;
 }
 
 void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
@@ -430,26 +439,3 @@ void avpriv_report_missing_feature(void *avc, const char *msg, ...)
     missing_feature_sample(0, avc, msg, argument_list);
     va_end(argument_list);
 }
-
-#ifdef TEST
-// LCOV_EXCL_START
-#include <string.h>
-
-int main(int argc, char **argv)
-{
-    int i;
-    av_log_set_level(AV_LOG_DEBUG);
-    for (use_color=0; use_color<=256; use_color = 255*use_color+1) {
-        av_log(NULL, AV_LOG_FATAL, "use_color: %d\n", use_color);
-        for (i = AV_LOG_DEBUG; i>=AV_LOG_QUIET; i-=8) {
-            av_log(NULL, i, " %d", i);
-            av_log(NULL, AV_LOG_INFO, "e ");
-            av_log(NULL, i + 256*123, "C%d", i);
-            av_log(NULL, AV_LOG_INFO, "e");
-        }
-        av_log(NULL, AV_LOG_PANIC, "\n");
-    }
-    return 0;
-}
-// LCOV_EXCL_STOP
-#endif

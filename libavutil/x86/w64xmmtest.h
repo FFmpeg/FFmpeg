@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVUTIL_X86_W64XMMTEST_H
+#define AVUTIL_X86_W64XMMTEST_H
+
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -71,3 +74,5 @@
 int __real_ ## func;    \
 int __wrap_ ## func;    \
 int __wrap_ ## func
+
+#endif /* AVUTIL_X86_W64XMMTEST_H */

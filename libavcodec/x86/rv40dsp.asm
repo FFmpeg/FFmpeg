@@ -335,14 +335,14 @@ INIT_XMM ssse3
 FILTER_SSSE3  put
 FILTER_SSSE3  avg
 
-; %1=5bits weights?, %2=dst %3=src1 %4=src3 %5=stride if sse2
+; %1=5-bit weights?, %2=dst %3=src1 %4=src3 %5=stride if SSE2
 %macro RV40_WCORE  4-5
     movh       m4, [%3 + r6 + 0]
     movh       m5, [%4 + r6 + 0]
 %if %0 == 4
 %define OFFSET r6 + mmsize / 2
 %else
-    ; 8x8 block and sse2, stride was provided
+    ; 8x8 block and SSE2, stride was provided
 %define OFFSET r6
     add        r6, r5
 %endif
@@ -350,7 +350,7 @@ FILTER_SSSE3  avg
     movh       m7, [%4 + OFFSET]
 
 %if %1 == 0
-    ; 14bits weights
+    ; 14-bit weights
     punpcklbw  m4, m0
     punpcklbw  m5, m0
     punpcklbw  m6, m0
@@ -368,7 +368,7 @@ FILTER_SSSE3  avg
     paddw      m4, m5
     paddw      m6, m7
 %else
-    ; 5bits weights
+    ; 5-bit weights
 %if cpuflag(ssse3)
     punpcklbw  m4, m5
     punpcklbw  m6, m7
@@ -404,7 +404,7 @@ FILTER_SSSE3  avg
 
     packuswb   m4, m6
 %if %0 == 5
-    ; Only called for 8x8 blocks and sse2
+    ; Only called for 8x8 blocks and SSE2
     sub        r6, r5
     movh       [%2 + r6], m4
     add        r6, r5

@@ -25,20 +25,20 @@
 #include "pixblockdsp.h"
 
 static void get_pixels_16_c(int16_t *av_restrict block, const uint8_t *pixels,
-                            ptrdiff_t line_size)
+                            ptrdiff_t stride)
 {
-    AV_COPY128U(block + 0 * 8, pixels + 0 * line_size);
-    AV_COPY128U(block + 1 * 8, pixels + 1 * line_size);
-    AV_COPY128U(block + 2 * 8, pixels + 2 * line_size);
-    AV_COPY128U(block + 3 * 8, pixels + 3 * line_size);
-    AV_COPY128U(block + 4 * 8, pixels + 4 * line_size);
-    AV_COPY128U(block + 5 * 8, pixels + 5 * line_size);
-    AV_COPY128U(block + 6 * 8, pixels + 6 * line_size);
-    AV_COPY128U(block + 7 * 8, pixels + 7 * line_size);
+    AV_COPY128U(block + 0 * 8, pixels + 0 * stride);
+    AV_COPY128U(block + 1 * 8, pixels + 1 * stride);
+    AV_COPY128U(block + 2 * 8, pixels + 2 * stride);
+    AV_COPY128U(block + 3 * 8, pixels + 3 * stride);
+    AV_COPY128U(block + 4 * 8, pixels + 4 * stride);
+    AV_COPY128U(block + 5 * 8, pixels + 5 * stride);
+    AV_COPY128U(block + 6 * 8, pixels + 6 * stride);
+    AV_COPY128U(block + 7 * 8, pixels + 7 * stride);
 }
 
 static void get_pixels_8_c(int16_t *av_restrict block, const uint8_t *pixels,
-                           ptrdiff_t line_size)
+                           ptrdiff_t stride)
 {
     int i;
 
@@ -52,13 +52,13 @@ static void get_pixels_8_c(int16_t *av_restrict block, const uint8_t *pixels,
         block[5] = pixels[5];
         block[6] = pixels[6];
         block[7] = pixels[7];
-        pixels  += line_size;
+        pixels  += stride;
         block   += 8;
     }
 }
 
 static void diff_pixels_c(int16_t *av_restrict block, const uint8_t *s1,
-                          const uint8_t *s2, int stride)
+                          const uint8_t *s2, ptrdiff_t stride)
 {
     int i;
 

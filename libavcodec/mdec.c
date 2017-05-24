@@ -73,7 +73,7 @@ static inline int mdec_decode_block_intra(MDECContext *a, int16_t *block, int n)
         if (diff >= 0xffff)
             return AVERROR_INVALIDDATA;
         a->last_dc[component] += diff;
-        block[0] = a->last_dc[component] << 3;
+        block[0] = a->last_dc[component] * (1 << 3);
     }
 
     i = 0;
@@ -111,11 +111,11 @@ static inline int mdec_decode_block_intra(MDECContext *a, int16_t *block, int n)
                 j = scantable[i];
                 if (level < 0) {
                     level = -level;
-                    level = (level * qscale * quant_matrix[j]) >> 3;
+                    level = (level * (unsigned)qscale * quant_matrix[j]) >> 3;
                     level = (level - 1) | 1;
                     level = -level;
                 } else {
-                    level = (level * qscale * quant_matrix[j]) >> 3;
+                    level = (level * (unsigned)qscale * quant_matrix[j]) >> 3;
                     level = (level - 1) | 1;
                 }
             }

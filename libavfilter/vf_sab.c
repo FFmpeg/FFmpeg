@@ -31,7 +31,7 @@
 #include "formats.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct FilterParam {
     float radius;
     float pre_filter_radius;
     float strength;
@@ -46,7 +46,7 @@ typedef struct {
     int color_diff_coeff[COLOR_DIFF_COEFF_SIZE];
 } FilterParam;
 
-typedef struct {
+typedef struct SabContext {
     const AVClass *class;
     FilterParam  luma;
     FilterParam  chroma;
@@ -214,8 +214,8 @@ static int config_props(AVFilterLink *inlink)
 
     close_filter_param(&s->chroma);
     ret = open_filter_param(&s->chroma,
-                            FF_CEIL_RSHIFT(inlink->w, s->hsub),
-                            FF_CEIL_RSHIFT(inlink->h, s->vsub), s->sws_flags);
+                            AV_CEIL_RSHIFT(inlink->w, s->hsub),
+                            AV_CEIL_RSHIFT(inlink->h, s->vsub), s->sws_flags);
     return ret;
 }
 
@@ -295,8 +295,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
     blur(outpic->data[0], outpic->linesize[0], inpic->data[0],  inpic->linesize[0],
          inlink->w, inlink->h, &s->luma);
     if (inpic->data[2]) {
-        int cw = FF_CEIL_RSHIFT(inlink->w, s->hsub);
-        int ch = FF_CEIL_RSHIFT(inlink->h, s->vsub);
+        int cw = AV_CEIL_RSHIFT(inlink->w, s->hsub);
+        int ch = AV_CEIL_RSHIFT(inlink->h, s->vsub);
         blur(outpic->data[1], outpic->linesize[1], inpic->data[1], inpic->linesize[1], cw, ch, &s->chroma);
         blur(outpic->data[2], outpic->linesize[2], inpic->data[2], inpic->linesize[2], cw, ch, &s->chroma);
     }

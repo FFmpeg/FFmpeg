@@ -1,5 +1,13 @@
 #tb 0: 32767/982027
+#media_type 0: video
+#codec_id 0: vp6
+#dimensions 0: 64x64
+#sar 0: 0/1
 #tb 1: 32767/982027
+#media_type 1: video
+#codec_id 1: vp6
+#dimensions 1: 64x64
+#sar 1: 0/1
 0,          0,          0,        1,     1860, 0xbd548c4c
 1,          0,          0,        1,     1748, 0x96046284
 0,          1,          1,        1,     1044, 0x814efc86, F=0x0

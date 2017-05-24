@@ -262,9 +262,7 @@ static int dxva2_mpeg2_start_frame(AVCodecContext *avctx,
     struct dxva2_picture_context *ctx_pic =
         s->current_picture_ptr->hwaccel_picture_private;
 
-    if (DXVA_CONTEXT_DECODER(avctx, ctx) == NULL ||
-        DXVA_CONTEXT_CFG(avctx, ctx) == NULL ||
-        DXVA_CONTEXT_COUNT(avctx, ctx) <= 0)
+    if (!DXVA_CONTEXT_VALID(avctx, ctx))
         return -1;
     assert(ctx_pic);
 

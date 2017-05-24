@@ -27,13 +27,13 @@
     (VP56mv) { .x = ROUNDED_DIV(a.x + b.x + c.x + d.x, 4), \
                .y = ROUNDED_DIV(a.y + b.y + c.y + d.y, 4) }
 
-static void FN(inter_pred)(AVCodecContext *ctx)
+static void FN(inter_pred)(AVCodecContext *avctx)
 {
     static const uint8_t bwlog_tab[2][N_BS_SIZES] = {
         { 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4 },
         { 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4 },
     };
-    VP9Context *s = ctx->priv_data;
+    VP9Context *s = avctx->priv_data;
     VP9Block *b = s->b;
     int row = s->row, col = s->col;
     ThreadFrame *tref1 = &s->s.refs[s->s.h.refidx[b->ref[0]]], *tref2;
@@ -205,7 +205,9 @@ static void FN(inter_pred)(AVCodecContext *ctx)
         } else
 #endif
         {
+#if SCALED == 0
             av_assert2(b->bs == BS_4x4);
+#endif
 
             // FIXME if two horizontally adjacent blocks have the same MV,
             // do a w8 instead of a w4 call
@@ -403,8 +405,10 @@ static void FN(inter_pred)(AVCodecContext *ctx)
         }
     } else {
         int bwl = bwlog_tab[0][b->bs];
-        int bw = bwh_tab[0][b->bs][0] * 4, bh = bwh_tab[0][b->bs][1] * 4;
-        int uvbw = bwh_tab[s->ss_h][b->bs][0] * 4, uvbh = bwh_tab[s->ss_v][b->bs][1] * 4;
+        int bw = ff_vp9_bwh_tab[0][b->bs][0] * 4;
+        int bh = ff_vp9_bwh_tab[0][b->bs][1] * 4;
+        int uvbw = ff_vp9_bwh_tab[s->ss_h][b->bs][0] * 4;
+        int uvbh = ff_vp9_bwh_tab[s->ss_v][b->bs][1] * 4;
 
         mc_luma_dir(s, mc[bwl][b->filter][0], s->dst[0], ls_y,
                     ref1->data[0], ref1->linesize[0], tref1,

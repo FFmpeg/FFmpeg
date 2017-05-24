@@ -35,21 +35,12 @@
 #define CBRT(x) av_float2int((float)(x))
 #endif
 
-#if CONFIG_HARDCODED_TABLES
-#if USE_FIXED
-#define cbrt_tableinit_fixed()
-#include "libavcodec/cbrt_fixed_tables.h"
-#else
-#define cbrt_tableinit()
-#include "libavcodec/cbrt_tables.h"
-#endif
-#else
-static uint32_t cbrt_tab[1 << 13];
+uint32_t AAC_RENAME(ff_cbrt_tab)[1 << 13];
 
-static av_cold void AAC_RENAME(cbrt_tableinit)(void)
+av_cold void AAC_RENAME(ff_cbrt_tableinit)(void)
 {
     static double cbrt_tab_dbl[1 << 13];
-    if (!cbrt_tab[(1<<13) - 1]) {
+    if (!AAC_RENAME(ff_cbrt_tab)[(1<<13) - 1]) {
         int i, j, k;
         double cbrt_val;
 
@@ -75,9 +66,8 @@ static av_cold void AAC_RENAME(cbrt_tableinit)(void)
         }
 
         for (i = 0; i < 1<<13; i++)
-            cbrt_tab[i] = CBRT(cbrt_tab_dbl[i]);
+            AAC_RENAME(ff_cbrt_tab)[i] = CBRT(cbrt_tab_dbl[i]);
     }
 }
-#endif /* CONFIG_HARDCODED_TABLES */
 
 #endif /* AVCODEC_CBRT_TABLEGEN_H */

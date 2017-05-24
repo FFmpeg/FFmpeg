@@ -24,14 +24,6 @@
 
 #include "config.h"
 
-#if HAVE_PTHREADS
-#include <pthread.h>
-#elif HAVE_W32THREADS
-#include "compat/w32pthreads.h"
-#elif HAVE_OS2THREADS
-#include "compat/os2threads.h"
-#endif
-
 #include "avcodec.h"
 #include "internal.h"
 #include "pthread_internal.h"
@@ -41,6 +33,7 @@
 #include "libavutil/common.h"
 #include "libavutil/cpu.h"
 #include "libavutil/mem.h"
+#include "libavutil/thread.h"
 
 typedef int (action_func)(AVCodecContext *c, void *arg);
 typedef int (action_func2)(AVCodecContext *c, void *arg, int jobnr, int threadnr);
@@ -163,11 +156,7 @@ static int thread_execute(AVCodecContext *avctx, action_func* func, void *arg, i
     c->job_size = job_size;
     c->args = arg;
     c->func = func;
-    if (ret) {
-        c->rets = ret;
-    } else {
-        c->rets = NULL;
-    }
+    c->rets = ret;
     c->current_execute++;
     pthread_cond_broadcast(&c->current_job_cond);
 
@@ -192,6 +181,12 @@ int ff_slice_thread_init(AVCodecContext *avctx)
 #if HAVE_W32THREADS
     w32thread_init();
 #endif
+
+    // We cannot do this in the encoder init as the threads are created before
+    if (av_codec_is_encoder(avctx->codec) &&
+        avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO &&
+        avctx->height > 2800)
+        thread_count = avctx->thread_count = 1;
 
     if (!thread_count) {
         int nb_cpus = av_cpu_count();

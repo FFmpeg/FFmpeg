@@ -35,7 +35,7 @@
 #define RGBA(r, g, b, a) (((uint8_t)(r) <<  0) | \
                           ((uint8_t)(g) <<  8) | \
                           ((uint8_t)(b) << 16) | \
-                          ((uint8_t)(a) << 24))
+                          ((unsigned)(uint8_t)(a) << 24))
 
 static av_always_inline void extract_color(uint32_t colors[4],
                                            uint16_t color0,
@@ -158,7 +158,7 @@ static inline void dxt3_block_internal(uint8_t *dst, ptrdiff_t stride,
 
         for (x = 0; x < 4; x++) {
             uint8_t alpha = alpha_values[x];
-            uint32_t pixel = colors[code & 3] | (alpha << 24);
+            uint32_t pixel = colors[code & 3] | ((unsigned)alpha << 24);
             code >>= 2;
 
             AV_WL32(dst + x * 4, pixel);
@@ -167,7 +167,7 @@ static inline void dxt3_block_internal(uint8_t *dst, ptrdiff_t stride,
     }
 }
 
-/** Convert a premultiplied alpha pixel to a straigth alpha pixel. */
+/** Convert a premultiplied alpha pixel to a straight alpha pixel. */
 static av_always_inline void premult2straight(uint8_t *src)
 {
     int r = src[0];
@@ -291,7 +291,7 @@ static inline void dxt5_block_internal(uint8_t *dst, ptrdiff_t stride,
                     }
                 }
             }
-            pixel = colors[code & 3] | (alpha << 24);
+            pixel = colors[code & 3] | ((unsigned)alpha << 24);
             code >>= 2;
             AV_WL32(dst + x * 4, pixel);
         }

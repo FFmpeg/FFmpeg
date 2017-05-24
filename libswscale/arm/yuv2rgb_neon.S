@@ -22,186 +22,80 @@
 #include "libavutil/arm/asm.S"
 
 
-.macro compute_premult_16 half_u1, half_u2, half_v1, half_v2
-    vmov                d2, \half_u1                                   @ copy left q14 to left q1
-    vmov                d3, \half_u1                                   @ copy left q14 to right q1
-    vmov                d4, \half_u2                                   @ copy right q14 to left q2
-    vmov                d5, \half_u2                                   @ copy right q14 to right q2
-
-    vmov                d6, \half_v1                                   @ copy left q15 to left q3
-    vmov                d7, \half_v1                                   @ copy left q15 to right q3
-    vmov                d8, \half_v2                                   @ copy right q15 to left q4
-    vmov                d9, \half_v2                                   @ copy right q15 to right q4
-
-    vzip.16             d2, d3                                         @ U1U1U2U2U3U3U4U4
-    vzip.16             d4, d5                                         @ U5U5U6U6U7U7U8U8
-
-    vzip.16             d6, d7                                         @ V1V1V2V2V3V3V4V4
-    vzip.16             d8, d9                                         @ V5V5V6V6V7V7V8V8
-
-    vmul.s16            q8,  q3, d1[0]                                 @  V * v2r             (left,  red)
-    vmul.s16            q9,  q4, d1[0]                                 @  V * v2r             (right, red)
-    vmul.s16            q10, q1, d1[1]                                 @  U * u2g
-    vmul.s16            q11, q2, d1[1]                                 @  U * u2g
-    vmla.s16            q10, q3, d1[2]                                 @  U * u2g + V * v2g   (left,  green)
-    vmla.s16            q11, q4, d1[2]                                 @  U * u2g + V * v2g   (right, green)
-    vmul.s16            q12, q1, d1[3]                                 @  U * u2b             (left,  blue)
-    vmul.s16            q13, q2, d1[3]                                 @  U * u2b             (right, blue)
+.macro compute_premult
+    vsub.u16            q14,q11                                        @ q14 = U * (1 << 3) - 128 * (1 << 3)
+    vsub.u16            q15,q11                                        @ q15 = V * (1 << 3) - 128 * (1 << 3)
+    vqdmulh.s16         q8, q15, d1[0]                                 @ q8  = V * v2r
+    vqdmulh.s16         q9, q14, d1[1]                                 @ q9  = U * u2g
+    vqdmulh.s16         q5, q15, d1[2]                                 @ q5  = V * v2g
+    vadd.s16            q9, q5                                         @ q9  = U * u2g + V * v2g
+    vqdmulh.s16         q10,q14, d1[3]                                 @ q10 = U * u2b
 .endm
 
-.macro compute_premult_32 half_u half_v
-    vmov                d2, \half_u                                    @ copy left q14 to left q1
-    vmov                d3, \half_u                                    @ copy left q14 to right q1
-    vmov                d4, \half_v                                    @ copy left q15 to left q2
-    vmov                d5, \half_v                                    @ copy left q15 to right q2
-
-    vzip.16             d2, d3                                         @ U1U1U2U2U3U3U4U4
-    vzip.16             d4, d5                                         @ V1V1V2V2V3V3V4V4
-
-    vmull.s16           q8,  d4, d1[0]                                 @  V * v2r             (left,  red)
-    vmull.s16           q9,  d5, d1[0]                                 @  V * v2r             (right, red)
-    vmull.s16           q10, d2, d1[1]                                 @  U * u2g
-    vmull.s16           q11, d3, d1[1]                                 @  U * u2g
-    vmlal.s16           q10, d4, d1[2]                                 @  U * u2g + V * v2g   (left,  green)
-    vmlal.s16           q11, d5, d1[2]                                 @  U * u2g + V * v2g   (right, green)
-    vmull.s16           q12, d2, d1[3]                                 @  U * u2b             (left,  blue)
-    vmull.s16           q13, d3, d1[3]                                 @  U * u2b             (right, blue)
+.macro compute_color dst_comp1 dst_comp2 pre
+    vadd.s16            q1, q14, \pre
+    vadd.s16            q2, q15, \pre
+    vqrshrun.s16        \dst_comp1, q1, #1
+    vqrshrun.s16        \dst_comp2, q2, #1
 .endm
 
-.macro compute_color_16 dst_comp1 dst_comp2 pre1 pre2
-    vadd.s16            q1, q14, \pre1
-    vadd.s16            q2, q15, \pre2
-    vqrshrun.s16        \dst_comp1, q1, #6
-    vqrshrun.s16        \dst_comp2, q2, #6
-.endm
-
-.macro compute_color_32 dst_comp pre1 pre2
-    vadd.s32            q3, q1, \pre1
-    vadd.s32            q4, q2, \pre2
-    vqrshrun.s32        d10, q3, #13
-    vqrshrun.s32        d11, q4, #13                                   @ q5 = ({q3,q4} + (1<<12)) >> 13
-    vqmovn.u16          \dst_comp, q5                                  @ saturate 16bit -> 8bit
-.endm
-
-.macro compute_rgba_16 r1 r2 g1 g2 b1 b2 a1 a2
-    compute_color_16    \r1, \r2, q8,  q9
-    compute_color_16    \g1, \g2, q10, q11
-    compute_color_16    \b1, \b2, q12, q13
+.macro compute_rgba r1 g1 b1 a1 r2 g2 b2 a2
+    compute_color       \r1, \r2, q8
+    compute_color       \g1, \g2, q9
+    compute_color       \b1, \b2, q10
     vmov.u8             \a1, #255
     vmov.u8             \a2, #255
 .endm
 
-.macro compute_rgba_32 r g b a
-    compute_color_32    \r, q8,  q9
-    compute_color_32    \g, q10, q11
-    compute_color_32    \b, q12, q13
-    vmov.u8             \a, #255
-.endm
-
-.macro compute_16px_16 dst y0 y1 ofmt
-    vmovl.u8            q14, \y0                                       @ 8px of y
-    vmovl.u8            q15, \y1                                       @ 8px of y
-
-    vdup.16             q5, r9                                         @ q5  = y_offset
-    vmov                d14, d0                                        @ q7  = y_coeff
-    vmov                d15, d0                                        @ q7  = y_coeff
-
-    vsub.s16            q14, q5
-    vsub.s16            q15, q5
-
-    vmul.s16            q14, q7                                        @ q14 = (srcY - y_offset) * y_coeff (left)
-    vmul.s16            q15, q7                                        @ q15 = (srcY - y_offset) * y_coeff (right)
-
+.macro compute dst ofmt
+    vshll.u8            q14, d14, #3                                   @ q14 = Y * (1 << 3)
+    vshll.u8            q15, d15, #3                                   @ q15 = Y * (1 << 3)
+    vsub.s16            q14, q12                                       @ q14 = (Y - y_offset)
+    vsub.s16            q15, q12                                       @ q15 = (Y - y_offset)
+    vqdmulh.s16         q14, q13                                       @ q14 = (Y - y_offset) * y_coeff
+    vqdmulh.s16         q15, q13                                       @ q15 = (Y - y_offset) * y_coeff
 
 .ifc \ofmt,argb
-    compute_rgba_16     d7, d11, d8, d12, d9, d13, d6, d10
+    compute_rgba        d7, d8, d9, d6, d11, d12, d13, d10
 .endif
 
 .ifc \ofmt,rgba
-    compute_rgba_16     d6, d10, d7, d11, d8, d12, d9, d13
+    compute_rgba        d6, d7, d8, d9, d10, d11, d12, d13
 .endif
 
 .ifc \ofmt,abgr
-    compute_rgba_16     d9, d13, d8, d12, d7, d11, d6, d10
+    compute_rgba        d9, d8, d7, d6, d13, d12, d11, d10
 .endif
 
 .ifc \ofmt,bgra
-    compute_rgba_16     d8, d12, d7, d11, d6, d10, d9, d13
+    compute_rgba        d8, d7, d6, d9, d12, d11, d10, d13
 .endif
+
+    vzip.8              d6, d10                                        @ d6 = R1R2R3R4R5R6R7R8 d10 = R9R10R11R12R13R14R15R16
+    vzip.8              d7, d11                                        @ d7 = G1G2G3G4G5G6G7G8 d11 = G9G10G11G12G13G14G15G16
+    vzip.8              d8, d12                                        @ d8 = B1B2B3B4B5B6B7B8 d12 = B9B10B11B12B13B14B15B16
+    vzip.8              d9, d13                                        @ d9 = A1A2A3A4A5A6A7A8 d13 = A9A10A11A12A13A14A15A16
     vst4.8              {q3, q4}, [\dst,:128]!
     vst4.8              {q5, q6}, [\dst,:128]!
-
 .endm
 
-.macro compute_8px_32 dst half_y ofmt
-    vmovl.u8            q7, \half_y                                    @ 8px of Y
-    vdup.16             q5, r9
-    vsub.s16            q7, q5
-    vmull.s16           q1, d14, d0                                    @ q1 = (srcY - y_offset) * y_coeff (left)
-    vmull.s16           q2, d15, d0                                    @ q2 = (srcY - y_offset) * y_coeff (right)
-
-.ifc \ofmt,argb
-    compute_rgba_32     d13, d14, d15, d12
-.endif
-
-.ifc \ofmt,rgba
-    compute_rgba_32     d12, d13, d14, d15
-.endif
-
-.ifc \ofmt,abgr
-    compute_rgba_32     d15, d14, d13, d12
-.endif
-
-.ifc \ofmt,bgra
-    compute_rgba_32     d14, d13, d12, d15
-.endif
-
-    vst4.8              {q6, q7}, [\dst,:128]!
+.macro process_1l_internal dst src ofmt
+    vld2.8              {d14, d15}, [\src]!                            @ q7 = Y (interleaved)
+    compute             \dst, \ofmt
 .endm
 
-.macro process_1l_16px_16 ofmt
-    compute_premult_16  d28, d29, d30, d31
-    vld1.8              {q7}, [r4]!
-    compute_16px_16     r2, d14, d15, \ofmt
+.macro process_1l ofmt
+    compute_premult
+    process_1l_internal r2, r4, \ofmt
 .endm
 
-.macro process_1l_16px_32 ofmt
-    compute_premult_32  d28, d30
-    vld1.8              {q7}, [r4]!
-    vmov                d28, d15                                       @ save right of the line of luma for later use
-    compute_8px_32      r2, d14, \ofmt
-
-    compute_premult_32  d29, d31
-    compute_8px_32      r2,  d28, \ofmt
+.macro process_2l ofmt
+    compute_premult
+    process_1l_internal r2, r4, \ofmt
+    process_1l_internal r11,r12,\ofmt
 .endm
 
-.macro process_2l_16px_16 ofmt
-    compute_premult_16  d28, d29, d30, d31
-
-    vld1.8              {q7}, [r4]!                                    @ first line of luma
-    compute_16px_16     r2, d14, d15, \ofmt
-
-    vld1.8              {q7}, [r12]!                                   @ second line of luma
-    compute_16px_16     r11, d14, d15, \ofmt
-.endm
-
-.macro process_2l_16px_32 ofmt
-    compute_premult_32  d28, d30
-
-    vld1.8              {q7}, [r4]!                                    @ first line of luma
-    vmov                d28, d15                                       @ save right of the first line of luma for later use
-    compute_8px_32      r2, d14, \ofmt
-
-    vld1.8              {q7}, [r12]!                                   @ second line of luma
-    vmov                d30, d15                                       @ save right of the second line of luma for later use
-    compute_8px_32      r11, d14, \ofmt
-
-    compute_premult_32  d29, d31
-    compute_8px_32      r2,  d28, \ofmt
-    compute_8px_32      r11, d30, \ofmt
-.endm
-
-.macro load_args_nvx
+.macro load_args_nv12
     push                {r4-r12, lr}
     vpush               {q4-q7}
     ldr                 r4, [sp, #104]                                 @ r4  = srcY
@@ -217,10 +111,13 @@
     add                 r12, r4, r5                                    @ r12 = srcY + linesizeY (srcY2)
     lsl                 r3, r3, #1
     lsl                 r5, r5, #1
-    lsl                 r8, r0, #2
-    sub                 r3, r3, r8                                     @ r3 = linesize  * 2 - width * 4 (padding)
+    sub                 r3, r3, r0, lsl #2                             @ r3 = linesize  * 2 - width * 4 (padding)
     sub                 r5, r5, r0                                     @ r5 = linesizeY * 2 - width     (paddingY)
     sub                 r7, r7, r0                                     @ r7 = linesizeC     - width     (paddingC)
+.endm
+
+.macro load_args_nv21
+    load_args_nv12
 .endm
 
 .macro load_args_yuv420p
@@ -238,8 +135,7 @@
     add                 r12, r4, r5                                    @ r12 = srcY + linesizeY (srcY2)
     lsl                 r3, r3, #1
     lsl                 r5, r5, #1
-    lsl                 r8, r0, #2
-    sub                 r3, r3, r8                                     @ r3 = linesize  * 2 - width * 4 (padding)
+    sub                 r3, r3, r0, lsl #2                             @ r3 = linesize  * 2 - width * 4 (padding)
     sub                 r5, r5, r0                                     @ r5 = linesizeY * 2 - width     (paddingY)
     ldr                 r10,[sp, #120]                                 @ r10 = srcV
 .endm
@@ -257,151 +153,128 @@
     ldr                 r10,[sp, #136]                                 @ r10 = y_coeff
     vdup.16             d0, r10                                        @ d0  = y_coeff
     vld1.16             {d1}, [r8]                                     @ d1  = *table
-    add                 r11, r2, r3                                    @ r11 = dst + linesize (dst2)
-    lsl                 r8, r0, #2
-    sub                 r3, r3, r8                                     @ r3 = linesize  * 2 - width * 4 (padding)
-    sub                 r5, r5, r0                                     @ r5 = linesizeY * 2 - width     (paddingY)
-    sub                 r7, r7, r0, lsr #1                             @ r7 = linesizeU     - width / 2 (paddingU)
-    sub                 r12,r12,r0, lsr #1                             @ r12 = linesizeV    - width / 2 (paddingV)
+    sub                 r3, r3, r0, lsl #2                             @ r3  = linesize  - width * 4 (padding)
+    sub                 r5, r5, r0                                     @ r5  = linesizeY - width     (paddingY)
+    sub                 r7, r7, r0, lsr #1                             @ r7  = linesizeU - width / 2 (paddingU)
+    sub                 r12,r12,r0, lsr #1                             @ r12 = linesizeV - width / 2 (paddingV)
     ldr                 r10,[sp, #120]                                 @ r10 = srcV
 .endm
 
-.macro declare_func ifmt ofmt precision
-function ff_\ifmt\()_to_\ofmt\()_neon_\precision\(), export=1
+.macro load_chroma_nv12
+    pld [r12, #64*3]
 
-.ifc \ifmt,nv12
-    load_args_nvx
-.endif
+    vld2.8              {d2, d3}, [r6]!                                @ q1: interleaved chroma line
+    vshll.u8            q14, d2, #3                                    @ q14 = U * (1 << 3)
+    vshll.u8            q15, d3, #3                                    @ q15 = V * (1 << 3)
+.endm
 
-.ifc \ifmt,nv21
-    load_args_nvx
-.endif
+.macro load_chroma_nv21
+    pld [r12, #64*3]
 
-.ifc \ifmt,yuv420p
-    load_args_yuv420p
-.endif
+    vld2.8              {d2, d3}, [r6]!                                @ q1: interleaved chroma line
+    vshll.u8            q14, d3, #3                                    @ q14 = U * (1 << 3)
+    vshll.u8            q15, d2, #3                                    @ q15 = V * (1 << 3)
+.endm
 
+.macro load_chroma_yuv420p
+    pld [r10, #64*3]
+    pld [r12, #64*3]
 
-.ifc \ifmt,yuv422p
-    load_args_yuv422p
-.endif
+    vld1.8              d2, [r6]!                                      @ d2: chroma red line
+    vld1.8              d3, [r10]!                                     @ d3: chroma blue line
+    vshll.u8            q14, d2, #3                                    @ q14 = U * (1 << 3)
+    vshll.u8            q15, d3, #3                                    @ q15 = V * (1 << 3)
+.endm
 
+.macro load_chroma_yuv422p
+    pld [r10, #64*3]
+
+    vld1.8              d2, [r6]!                                      @ d2: chroma red line
+    vld1.8              d3, [r10]!                                     @ d3: chroma blue line
+    vshll.u8            q14, d2, #3                                    @ q14 = U * (1 << 3)
+    vshll.u8            q15, d3, #3                                    @ q15 = V * (1 << 3)
+.endm
+
+.macro increment_and_test_nv12
+    add                 r11, r11, r3                                   @ dst2  += padding
+    add                 r12, r12, r5                                   @ srcY2 += paddingY
+    add                 r6, r6, r7                                     @ srcC  += paddingC
+    subs                r1, r1, #2                                     @ height -= 2
+.endm
+
+.macro increment_and_test_nv21
+    increment_and_test_nv12
+.endm
+
+.macro increment_and_test_yuv420p
+    add                 r11, r11, r3                                   @ dst2  += padding
+    add                 r12, r12, r5                                   @ srcY2 += paddingY
+    ldr                 r7, [sp, #116]                                 @ r7     = linesizeU
+    sub                 r7, r7, r0, lsr #1                             @ r7     = linesizeU - width / 2 (paddingU)
+    add                 r6, r6, r7                                     @ srcU  += paddingU
+    ldr                 r7, [sp, #124]                                 @ r7     = linesizeV
+    sub                 r7, r7, r0, lsr #1                             @ r7     = linesizeV - width / 2 (paddingV)
+    add                 r10, r10, r7                                   @ srcV  += paddingV
+    subs                r1, r1, #2                                     @ height -= 2
+.endm
+
+.macro increment_and_test_yuv422p
+    add                 r6, r6, r7                                     @ srcU  += paddingU
+    add                 r10,r10,r12                                    @ srcV  += paddingV
+    subs                r1, r1, #1                                     @ height -= 1
+.endm
+
+.macro process_nv12 ofmt
+    process_2l \ofmt
+.endm
+
+.macro process_nv21 ofmt
+    process_2l \ofmt
+.endm
+
+.macro process_yuv420p ofmt
+    process_2l \ofmt
+.endm
+
+.macro process_yuv422p ofmt
+    process_1l \ofmt
+.endm
+
+.macro declare_func ifmt ofmt
+function ff_\ifmt\()_to_\ofmt\()_neon, export=1
+    load_args_\ifmt
+    vmov.u16            q11, #1024                                     @ q11 = 128 * (1 << 3)
+    vdup.16             q12, r9                                        @ q12 = y_offset
+    vmov                d26, d0                                        @ q13 = y_coeff
+    vmov                d27, d0                                        @ q13 = y_coeff
 1:
     mov                 r8, r0                                         @ r8 = width
 2:
     pld [r6, #64*3]
     pld [r4, #64*3]
-
     vmov.i8             d10, #128
-
-.ifc \ifmt,nv12
-    pld [r12, #64*3]
-
-    vld2.8              {d2, d3}, [r6]!                                @ q1: interleaved chroma line
-    vsubl.u8            q14, d2, d10                                   @ q14 = U - 128
-    vsubl.u8            q15, d3, d10                                   @ q15 = V - 128
-
-    process_2l_16px_\precision \ofmt
-.endif
-
-.ifc \ifmt,nv21
-    pld [r12, #64*3]
-
-    vld2.8              {d2, d3}, [r6]!                                @ q1: interleaved chroma line
-    vsubl.u8            q14, d3, d10                                   @ q14 = U - 128
-    vsubl.u8            q15, d2, d10                                   @ q15 = V - 128
-
-    process_2l_16px_\precision \ofmt
-.endif
-
-.ifc \ifmt,yuv420p
-    pld [r10, #64*3]
-    pld [r12, #64*3]
-
-    vld1.8              d2, [r6]!                                      @ d2: chroma red line
-    vld1.8              d3, [r10]!                                     @ d3: chroma blue line
-    vsubl.u8            q14, d2, d10                                   @ q14 = U - 128
-    vsubl.u8            q15, d3, d10                                   @ q15 = V - 128
-
-    process_2l_16px_\precision \ofmt
-.endif
-
-.ifc \ifmt,yuv422p
-    pld [r10, #64*3]
-
-    vld1.8              d2, [r6]!                                      @ d2: chroma red line
-    vld1.8              d3, [r10]!                                     @ d3: chroma blue line
-    vsubl.u8            q14, d2, d10                                   @ q14 = U - 128
-    vsubl.u8            q15, d3, d10                                   @ q15 = V - 128
-
-    process_1l_16px_\precision \ofmt
-.endif
-
+    load_chroma_\ifmt
+    process_\ifmt \ofmt
     subs                r8, r8, #16                                    @ width -= 16
     bgt                 2b
-
     add                 r2, r2, r3                                     @ dst   += padding
     add                 r4, r4, r5                                     @ srcY  += paddingY
-
-.ifc \ifmt,nv12
-    add                 r11, r11, r3                                   @ dst2  += padding
-    add                 r12, r12, r5                                   @ srcY2 += paddingY
-
-    add                 r6, r6, r7                                     @ srcC  += paddingC
-
-    subs                r1, r1, #2                                     @ height -= 2
-.endif
-
-.ifc \ifmt,nv21
-    add                 r11, r11, r3                                   @ dst2  += padding
-    add                 r12, r12, r5                                   @ srcY2 += paddingY
-
-    add                 r6, r6, r7                                     @ srcC  += paddingC
-    subs                r1, r1, #2                                     @ height -= 2
-.endif
-
-.ifc \ifmt,yuv420p
-    add                 r11, r11, r3                                   @ dst2  += padding
-    add                 r12, r12, r5                                   @ srcY2 += paddingY
-
-    ldr                 r7, [sp, #116]                                 @ r7     = linesizeU
-    sub                 r7, r7, r0, lsr #1                             @ r7     = linesizeU - width / 2 (paddingU)
-    add                 r6, r6, r7                                     @ srcU  += paddingU
-
-    ldr                 r7, [sp, #124]                                 @ r7     = linesizeV
-    sub                 r7, r7, r0, lsr #1                             @ r7     = linesizeV - width / 2 (paddingV)
-    add                 r10, r10, r7                                   @ srcV  += paddingV
-
-    subs                r1, r1, #2                                     @ height -= 2
-.endif
-
-.ifc \ifmt,yuv422p
-    add                 r6, r6, r7                                     @ srcU  += paddingU
-    add                 r10,r10,r12                                    @ srcV  += paddingV
-
-    subs                r1, r1, #1                                     @ height -= 1
-.endif
-
+    increment_and_test_\ifmt
     bgt                 1b
-
     vpop                {q4-q7}
     pop                 {r4-r12, lr}
     mov                 pc, lr
 endfunc
 .endm
 
-.macro declare_rgb_funcs ifmt precision
-    declare_func \ifmt, argb, \precision
-    declare_func \ifmt, rgba, \precision
-    declare_func \ifmt, abgr, \precision
-    declare_func \ifmt, bgra, \precision
+.macro declare_rgb_funcs ifmt
+    declare_func \ifmt, argb
+    declare_func \ifmt, rgba
+    declare_func \ifmt, abgr
+    declare_func \ifmt, bgra
 .endm
 
-declare_rgb_funcs nv12, 16
-declare_rgb_funcs nv21, 16
-declare_rgb_funcs nv12, 32
-declare_rgb_funcs nv21, 32
-declare_rgb_funcs yuv420p, 16
-declare_rgb_funcs yuv420p, 32
-declare_rgb_funcs yuv422p, 16
-declare_rgb_funcs yuv422p, 32
+declare_rgb_funcs nv12
+declare_rgb_funcs nv21
+declare_rgb_funcs yuv420p
+declare_rgb_funcs yuv422p

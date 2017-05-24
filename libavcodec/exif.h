@@ -164,7 +164,7 @@ static const struct exif_tag tag_list[] = { // JEITA CP-3451 EXIF specification:
 
 /** Recursively decodes all IFD's and
  *  adds included TAGS into the metadata dictionary. */
-int avpriv_exif_decode_ifd(AVCodecContext *avctx, GetByteContext *gbytes, int le,
+int avpriv_exif_decode_ifd(void *logctx, GetByteContext *gbytes, int le,
                            int depth, AVDictionary **metadata);
 
 #endif /* AVCODEC_EXIF_H */

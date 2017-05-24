@@ -3,6 +3,7 @@
 ;*
 ;* Copyright (C) 2014 Kieran Kunhya <kierank@obe.tv>
 ;* Copyright (c) 2014 Michael Niedermayer <michaelni@gmx.at>
+;* Copyright (c) 2017 Thomas Mundt <tmundt75@gmail.com>
 ;*
 ;* This file is part of FFmpeg.
 ;*
@@ -25,37 +26,93 @@
 
 SECTION_RODATA
 
+pw_4: times 8 dw 4
+
 SECTION .text
 
 %macro LOWPASS_LINE 0
-cglobal lowpass_line, 5, 5, 7
-    add r0, r1
-    add r2, r1
-    add r3, r1
-    add r4, r1
-    neg r1
+cglobal lowpass_line, 5, 5, 7, dst, h, src, mref, pref
+    add dstq, hq
+    add srcq, hq
+    add mrefq, srcq
+    add prefq, srcq
+    neg hq
 
     pcmpeqb m6, m6
 
 .loop:
-    mova m0, [r3+r1]
-    mova m1, [r3+r1+mmsize]
-    pavgb m0, [r4+r1]
-    pavgb m1, [r4+r1+mmsize]
+    mova m0, [mrefq+hq]
+    mova m1, [mrefq+hq+mmsize]
+    pavgb m0, [prefq+hq]
+    pavgb m1, [prefq+hq+mmsize]
     pxor m0, m6
     pxor m1, m6
-    pxor m2, m6, [r2+r1]
-    pxor m3, m6, [r2+r1+mmsize]
+    pxor m2, m6, [srcq+hq]
+    pxor m3, m6, [srcq+hq+mmsize]
     pavgb m0, m2
     pavgb m1, m3
     pxor m0, m6
     pxor m1, m6
-    mova [r0+r1], m0
-    mova [r0+r1+mmsize], m1
+    mova [dstq+hq], m0
+    mova [dstq+hq+mmsize], m1
 
-    add r1, 2*mmsize
+    add hq, 2*mmsize
     jl .loop
 REP_RET
+
+%endmacro
+
+%macro LOWPASS_LINE_COMPLEX 0
+cglobal lowpass_line_complex, 5, 5, 7, dst, h, src, mref, pref
+    pxor m6, m6
+.loop:
+    mova m0, [srcq+mrefq]
+    mova m2, [srcq+prefq]
+    mova m1, m0
+    mova m3, m2
+    punpcklbw m0, m6
+    punpcklbw m2, m6
+    punpckhbw m1, m6
+    punpckhbw m3, m6
+    paddw m0, m2
+    paddw m1, m3
+    mova m2, [srcq+mrefq*2]
+    mova m4, [srcq+prefq*2]
+    mova m3, m2
+    mova m5, m4
+    punpcklbw m2, m6
+    punpcklbw m4, m6
+    punpckhbw m3, m6
+    punpckhbw m5, m6
+    paddw m2, m4
+    paddw m3, m5
+    mova m4, [srcq]
+    mova m5, m4
+    punpcklbw m4, m6
+    punpckhbw m5, m6
+    paddw m0, m4
+    paddw m1, m5
+    psllw m0, 1
+    psllw m1, 1
+    psllw m4, 2
+    psllw m5, 2
+    paddw m0, m4
+    paddw m1, m5
+    paddw m0, [pw_4]
+    paddw m1, [pw_4]
+    psubusw m0, m2
+    psubusw m1, m3
+    psrlw m0, 3
+    psrlw m1, 3
+    packuswb m0, m1
+    mova [dstq], m0
+
+    add dstq, mmsize
+    add srcq, mmsize
+    sub hd, mmsize
+    jg .loop
+REP_RET
+
 %endmacro
 
 INIT_XMM sse2
@@ -63,3 +120,6 @@ LOWPASS_LINE
 
 INIT_XMM avx
 LOWPASS_LINE
+
+INIT_XMM sse2
+LOWPASS_LINE_COMPLEX

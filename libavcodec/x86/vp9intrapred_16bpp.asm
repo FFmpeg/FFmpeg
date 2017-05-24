@@ -847,6 +847,45 @@ DL_FUNCS
 INIT_XMM avx
 DL_FUNCS
 
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+cglobal vp9_ipred_dl_16x16_16, 2, 4, 5, dst, stride, l, a
+    movifnidn               aq, amp
+    mova                    m0, [aq]                   ; abcdefghijklmnop
+    vpbroadcastw           xm1, [aq+30]                ; pppppppp
+    vperm2i128              m2, m0, m1, q0201          ; ijklmnoppppppppp
+    vpalignr                m3, m2, m0, 2              ; bcdefghijklmnopp
+    vpalignr                m4, m2, m0, 4              ; cdefghijklmnoppp
+    LOWPASS                  0,  3,  4                 ; BCDEFGHIJKLMNOPp
+    vperm2i128              m2, m0, m1, q0201          ; JKLMNOPppppppppp
+    DEFINE_ARGS dst, stride, stride3, cnt
+    mov                   cntd, 2
+    lea               stride3q, [strideq*3]
+.loop:
+    mova      [dstq+strideq*0], m0
+    vpalignr                m3, m2, m0, 2
+    vpalignr                m4, m2, m0, 4
+    mova      [dstq+strideq*1], m3
+    mova      [dstq+strideq*2], m4
+    vpalignr                m3, m2, m0, 6
+    vpalignr                m4, m2, m0, 8
+    mova      [dstq+stride3q ], m3
+    lea                   dstq, [dstq+strideq*4]
+    mova      [dstq+strideq*0], m4
+    vpalignr                m3, m2, m0, 10
+    vpalignr                m4, m2, m0, 12
+    mova      [dstq+strideq*1], m3
+    mova      [dstq+strideq*2], m4
+    vpalignr                m3, m2, m0, 14
+    mova      [dstq+stride3q ], m3
+    lea                   dstq, [dstq+strideq*4]
+    mova                    m0, m2
+    vperm2i128              m2, m2, m2, q0101          ; pppppppppppppppp
+    dec                   cntd
+    jg .loop
+    RET
+%endif
+
 %macro DR_FUNCS 1 ; stack_mem_for_32x32_32bit_function
 cglobal vp9_ipred_dr_4x4_16, 4, 4, 3, dst, stride, l, a
     movh                    m0, [lq]                ; wxyz....

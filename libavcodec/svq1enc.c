@@ -104,7 +104,9 @@ static int encode_block(SVQ1EncContext *s, uint8_t *src, uint8_t *ref,
     best_score = 0;
     // FIXME: Optimize, this does not need to be done multiple times.
     if (intra) {
-        codebook_sum   = svq1_intra_codebook_sum[level];
+        // level is 5 when encode_block is called from svq1_encode_plane
+        // and always < 4 when called recursively from this function.
+        codebook_sum   = level < 4 ? svq1_intra_codebook_sum[level] : NULL;
         codebook       = ff_svq1_intra_codebooks[level];
         mean_vlc       = ff_svq1_intra_mean_vlc;
         multistage_vlc = ff_svq1_intra_multistage_vlc[level];
@@ -117,7 +119,8 @@ static int encode_block(SVQ1EncContext *s, uint8_t *src, uint8_t *ref,
             }
         }
     } else {
-        codebook_sum   = svq1_inter_codebook_sum[level];
+        // level is 5 or < 4, see above for details.
+        codebook_sum   = level < 4 ? svq1_inter_codebook_sum[level] : NULL;
         codebook       = ff_svq1_inter_codebooks[level];
         mean_vlc       = ff_svq1_inter_mean_vlc + 256;
         multistage_vlc = ff_svq1_inter_multistage_vlc[level];
@@ -149,7 +152,7 @@ static int encode_block(SVQ1EncContext *s, uint8_t *src, uint8_t *ref,
                 vector = codebook + stage * size * 16 + i * size;
                 sqr    = s->ssd_int8_vs_int16(vector, block[stage], size);
                 diff   = block_sum[stage] - sum;
-                score  = sqr - (diff * (int64_t)diff >> (level + 3)); // FIXME: 64bit slooow
+                score  = sqr - (diff * (int64_t)diff >> (level + 3)); // FIXME: 64 bits slooow
                 if (score < best_vector_score) {
                     int mean = diff + (size >> 1) >> (level + 3);
                     av_assert2(mean > -300 && mean < 300);
@@ -638,15 +641,17 @@ FF_ENABLE_DEPRECATION_WARNINGS
     ff_side_data_set_encoder_stats(pkt, pict->quality, NULL, 0, s->pict_type);
 
     svq1_write_header(s, s->pict_type);
-    for (i = 0; i < 3; i++)
-        if (svq1_encode_plane(s, i,
+    for (i = 0; i < 3; i++) {
+        int ret = svq1_encode_plane(s, i,
                               pict->data[i],
                               s->last_picture->data[i],
                               s->current_picture->data[i],
                               s->frame_width  / (i ? 4 : 1),
                               s->frame_height / (i ? 4 : 1),
                               pict->linesize[i],
-                              s->current_picture->linesize[i]) < 0) {
+                              s->current_picture->linesize[i]);
+        emms_c();
+        if (ret < 0) {
             int j;
             for (j = 0; j < i; j++) {
                 av_freep(&s->motion_val8[j]);
@@ -655,6 +660,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             av_freep(&s->scratchbuf);
             return -1;
         }
+    }
 
     // avpriv_align_put_bits(&s->pb);
     while (put_bits_count(&s->pb) & 31)

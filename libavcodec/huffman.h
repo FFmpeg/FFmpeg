@@ -27,7 +27,7 @@
 #define AVCODEC_HUFFMAN_H
 
 #include "avcodec.h"
-#include "get_bits.h"
+#include "vlc.h"
 
 typedef struct Node {
     int16_t  sym;

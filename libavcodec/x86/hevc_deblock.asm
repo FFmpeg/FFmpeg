@@ -39,11 +39,6 @@ cextern pw_m1
 SECTION .text
 INIT_XMM sse2
 
-; expands to [base],...,[base+7*stride]
-%define PASS8ROWS(base, base3, stride, stride3) \
-    [base], [base+stride], [base+stride*2], [base3], \
-    [base3+stride], [base3+stride*2], [base3+stride3], [base3+stride*4]
-
 ; in: 8 rows of 4 bytes in %4..%11
 ; out: 4 rows of 8 words in m0..m3
 %macro TRANSPOSE4x8B_LOAD 8

@@ -1,0 +1,29 @@
+firequalizer    =
+    fft2        = on:
+    gain        = 'sin(0.001*f) - 1':
+    delay       = 0.05,
+
+firequalizer    =
+    gain        = 'if (ch, -0.7 * sin(0.001*f), -0.2 * sin(0.001*f)) - 1':
+    delay       = 0.1:
+    fixed       = on:
+    multi       = on:
+    zero_phase  = on:
+    wfunc       = nuttall,
+
+firequalizer    =
+    fft2        = on:
+    gain_entry  = 'entry(1000, 0); entry(5000, 0.1); entry(10000, 0.2)',
+
+firequalizer    =
+    gain        = 'if (ch, -0.3 * sin(0.001*f), -0.8 * sin(0.001*f)) - 1':
+    delay       = 0.05:
+    multi       = on,
+
+firequalizer    =
+    gain_entry  = 'entry(1000, 0.2); entry(5000, 0.1); entry(10000, 0)',
+
+volume          = 2.8dB,
+
+atrim           =
+    start       = 0.12

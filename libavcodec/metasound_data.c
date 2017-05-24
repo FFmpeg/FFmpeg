@@ -14946,11 +14946,6 @@ static const uint16_t bark_tab_s16_128[] = {
     2, 2, 2, 3, 3, 5, 7, 12, 25, 67
 };
 
-/* unused
-static const uint16_t bark_tab_s16_64[] = {
-    1, 1, 2, 2, 3, 6, 11, 38
-}; */
-
 static const uint16_t bark_tab_l16s_1024[] = {
       9,   9,   8,   9,  10,   9,  10,  10,
      10,  12,  11,  13,  13,  14,  16,  17,

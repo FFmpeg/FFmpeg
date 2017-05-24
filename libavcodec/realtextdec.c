@@ -61,13 +61,12 @@ static int realtext_decode_frame(AVCodecContext *avctx,
     int ret = 0;
     AVSubtitle *sub = data;
     const char *ptr = avpkt->data;
+    FFASSDecoderContext *s = avctx->priv_data;
     AVBPrint buf;
 
     av_bprint_init(&buf, 0, 4096);
-    // note: no need to rescale pts & duration since they are in the same
-    // timebase as ASS (1/100)
     if (ptr && avpkt->size > 0 && !rt_event_to_ass(&buf, ptr))
-        ret = ff_ass_add_rect_bprint(sub, &buf, avpkt->pts, avpkt->duration);
+        ret = ff_ass_add_rect(sub, buf.str, s->readorder++, 0, NULL, NULL);
     av_bprint_finalize(&buf, NULL);
     if (ret < 0)
         return ret;
@@ -82,4 +81,6 @@ AVCodec ff_realtext_decoder = {
     .id             = AV_CODEC_ID_REALTEXT,
     .decode         = realtext_decode_frame,
     .init           = ff_ass_subtitle_header_default,
+    .flush          = ff_ass_decoder_flush,
+    .priv_data_size = sizeof(FFASSDecoderContext),
 };

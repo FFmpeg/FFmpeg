@@ -77,7 +77,8 @@ static inline void ea_idct_col(int16_t *dest, const int16_t *src) {
         IDCT_COL(dest, src);
 }
 
-void ff_ea_idct_put_c(uint8_t *dest, int linesize, int16_t *block) {
+void ff_ea_idct_put_c(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
+{
     int i;
     int16_t temp[64];
     block[0] += 4;

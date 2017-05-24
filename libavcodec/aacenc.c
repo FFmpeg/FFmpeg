@@ -78,11 +78,10 @@ static void put_audio_specific_config(AVCodecContext *avctx)
 
 void ff_quantize_band_cost_cache_init(struct AACEncContext *s)
 {
-    int sf, g;
-    for (sf = 0; sf < 256; sf++) {
-        for (g = 0; g < 128; g++) {
-            s->quantize_band_cost_cache[sf][g].bits = -1;
-        }
+    ++s->quantize_band_cost_cache_generation;
+    if (s->quantize_band_cost_cache_generation == 0) {
+        memset(s->quantize_band_cost_cache, 0, sizeof(s->quantize_band_cost_cache));
+        s->quantize_band_cost_cache_generation = 1;
     }
 }
 
@@ -521,13 +520,13 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     int chan_el_counter[4];
     FFPsyWindowInfo windows[AAC_MAX_CHANNELS];
 
-    if (s->last_frame == 2)
-        return 0;
-
     /* add current frame to queue */
     if (frame) {
         if ((ret = ff_af_queue_add(&s->afq, frame)) < 0)
             return ret;
+    } else {
+        if (!s->afq.remaining_samples || (!s->afq.frame_alloc && !s->afq.frame_count))
+            return 0;
     }
 
     copy_input_samples(s, frame);
@@ -544,6 +543,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         chans    = tag == TYPE_CPE ? 2 : 1;
         cpe      = &s->cpe[i];
         for (ch = 0; ch < chans; ch++) {
+            int k;
             float clip_avoidance_factor;
             sce = &cpe->ch[ch];
             ics = &sce->ics;
@@ -554,10 +554,11 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             if (!frame)
                 la = NULL;
             if (tag == TYPE_LFE) {
-                wi[ch].window_type[0] = ONLY_LONG_SEQUENCE;
+                wi[ch].window_type[0] = wi[ch].window_type[1] = ONLY_LONG_SEQUENCE;
                 wi[ch].window_shape   = 0;
                 wi[ch].num_windows    = 1;
                 wi[ch].grouping[0]    = 1;
+                wi[ch].clipping[0]    = 0;
 
                 /* Only the lowest 12 coefficients are used in a LFE channel.
                  * The expression below results in only the bottom 8 coefficients
@@ -582,9 +583,22 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             ics->tns_max_bands      = wi[ch].window_type[0] == EIGHT_SHORT_SEQUENCE ?
                                         ff_tns_max_bands_128 [s->samplerate_index]:
                                         ff_tns_max_bands_1024[s->samplerate_index];
-            clip_avoidance_factor = 0.0f;
+
             for (w = 0; w < ics->num_windows; w++)
                 ics->group_len[w] = wi[ch].grouping[w];
+
+            /* Calculate input sample maximums and evaluate clipping risk */
+            clip_avoidance_factor = 0.0f;
+            for (w = 0; w < ics->num_windows; w++) {
+                const float *wbuf = overlap + w * 128;
+                const int wlen = 2048 / ics->num_windows;
+                float max = 0;
+                int j;
+                /* mdct input is 2 * output */
+                for (j = 0; j < wlen; j++)
+                    max = FFMAX(max, fabsf(wbuf[j]));
+                wi[ch].clipping[w] = max;
+            }
             for (w = 0; w < ics->num_windows; w++) {
                 if (wi[ch].clipping[w] > CLIP_AVOIDANCE_FACTOR) {
                     ics->window_clipping[w] = 1;
@@ -607,17 +621,11 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 s->mdct1024.mdct_calc(&s->mdct1024, sce->lcoeffs, sce->ret_buf);
             }
 
-            if (!(isfinite(cpe->ch[ch].coeffs[    0]) &&
-                  isfinite(cpe->ch[ch].coeffs[  128]) &&
-                  isfinite(cpe->ch[ch].coeffs[2*128]) &&
-                  isfinite(cpe->ch[ch].coeffs[3*128]) &&
-                  isfinite(cpe->ch[ch].coeffs[4*128]) &&
-                  isfinite(cpe->ch[ch].coeffs[5*128]) &&
-                  isfinite(cpe->ch[ch].coeffs[6*128]) &&
-                  isfinite(cpe->ch[ch].coeffs[7*128]))
-            ) {
-                av_log(avctx, AV_LOG_ERROR, "Input contains NaN/+-Inf\n");
-                return AVERROR(EINVAL);
+            for (k = 0; k < 1024; k++) {
+                if (!(fabs(cpe->ch[ch].coeffs[k]) < 1E16)) { // Ensure headroom for energy calculation
+                    av_log(avctx, AV_LOG_ERROR, "Input contains (near) NaN/+-Inf\n");
+                    return AVERROR(EINVAL);
+                }
             }
             avoid_clipping(s, sce);
         }
@@ -761,7 +769,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             start_ch += chans;
         }
 
-        if (avctx->flags & CODEC_FLAG_QSCALE) {
+        if (avctx->flags & AV_CODEC_FLAG_QSCALE) {
             /* When using a constant Q-scale, don't mess with lambda */
             break;
         }
@@ -832,9 +840,6 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     s->lambda_sum += s->lambda;
     s->lambda_count++;
-
-    if (!frame)
-        s->last_frame++;
 
     ff_af_queue_remove(&s->afq, avctx->frame_size, &avpkt->pts,
                        &avpkt->duration);
@@ -913,40 +918,50 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     uint8_t grouping[AAC_MAX_CHANNELS];
     int lengths[2];
 
-    s->channels = avctx->channels;
-    s->chan_map = aac_chan_configs[s->channels-1];
-    s->lambda = avctx->global_quality > 0 ? avctx->global_quality : 120;
+    /* Constants */
     s->last_frame_pb_count = 0;
     avctx->extradata_size = 5;
     avctx->frame_size = 1024;
     avctx->initial_padding = 1024;
-    avctx->bit_rate = (int)FFMIN(
-        6144 * s->channels / 1024.0 * avctx->sample_rate,
-        avctx->bit_rate);
-    avctx->profile = avctx->profile == FF_PROFILE_UNKNOWN ? FF_PROFILE_AAC_LOW :
-                     avctx->profile;
+    s->lambda = avctx->global_quality > 0 ? avctx->global_quality : 120;
 
+    /* Channel map and unspecified bitrate guessing */
+    s->channels = avctx->channels;
+    ERROR_IF(s->channels > AAC_MAX_CHANNELS || s->channels == 7,
+             "Unsupported number of channels: %d\n", s->channels);
+    s->chan_map = aac_chan_configs[s->channels-1];
+    if (!avctx->bit_rate) {
+        for (i = 1; i <= s->chan_map[0]; i++) {
+            avctx->bit_rate += s->chan_map[i] == TYPE_CPE ? 128000 : /* Pair */
+                               s->chan_map[i] == TYPE_LFE ? 16000  : /* LFE  */
+                                                            69000  ; /* SCE  */
+        }
+    }
+
+    /* Samplerate */
     for (i = 0; i < 16; i++)
         if (avctx->sample_rate == avpriv_mpeg4audio_sample_rates[i])
             break;
     s->samplerate_index = i;
-
     ERROR_IF(s->samplerate_index == 16 ||
              s->samplerate_index >= ff_aac_swb_size_1024_len ||
              s->samplerate_index >= ff_aac_swb_size_128_len,
              "Unsupported sample rate %d\n", avctx->sample_rate);
-    ERROR_IF(s->channels > AAC_MAX_CHANNELS || s->channels == 7,
-             "Unsupported number of channels: %d\n", s->channels);
+
+    /* Bitrate limiting */
     WARN_IF(1024.0 * avctx->bit_rate / avctx->sample_rate > 6144 * s->channels,
              "Too many bits %f > %d per frame requested, clamping to max\n",
              1024.0 * avctx->bit_rate / avctx->sample_rate,
              6144 * s->channels);
+    avctx->bit_rate = (int64_t)FFMIN(6144 * s->channels / 1024.0 * avctx->sample_rate,
+                                     avctx->bit_rate);
 
+    /* Profile and option setting */
+    avctx->profile = avctx->profile == FF_PROFILE_UNKNOWN ? FF_PROFILE_AAC_LOW :
+                     avctx->profile;
     for (i = 0; i < FF_ARRAY_ELEMS(aacenc_profiles); i++)
         if (avctx->profile == aacenc_profiles[i])
             break;
-    ERROR_IF(i == FF_ARRAY_ELEMS(aacenc_profiles),
-             "Unsupported encoding profile: %d\n", avctx->profile);
     if (avctx->profile == FF_PROFILE_MPEG2_AAC_LOW) {
         avctx->profile = FF_PROFILE_AAC_LOW;
         ERROR_IF(s->options.pred,
@@ -978,16 +993,21 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
                  "LTP prediction unavailable in the \"aac_main\" profile\n");
     }
     s->profile = avctx->profile;
-    s->coder = &ff_aac_coders[s->options.coder];
 
-    if (s->options.coder != AAC_CODER_TWOLOOP) {
+    /* Coder limitations */
+    s->coder = &ff_aac_coders[s->options.coder];
+    if (s->options.coder == AAC_CODER_ANMR) {
         ERROR_IF(avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL,
-                 "Coders other than twoloop require -strict -2 and some may be removed in the future\n");
-        WARN_IF(s->options.coder == AAC_CODER_FAAC,
-                "The FAAC-like coder will be removed in the near future, please use twoloop!\n");
+                 "The ANMR coder is considered experimental, add -strict -2 to enable!\n");
         s->options.intensity_stereo = 0;
         s->options.pns = 0;
     }
+    ERROR_IF(s->options.ltp && avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL,
+             "The LPT profile requires experimental compliance, add -strict -2 to enable!\n");
+
+    /* M/S introduces horrible artifacts with multichannel files, this is temporary */
+    if (s->channels > 3)
+        s->options.mid_side = 0;
 
     if ((ret = dsp_init(avctx, s)) < 0)
         goto fail;
@@ -1008,7 +1028,13 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         goto fail;
     s->psypp = ff_psy_preprocess_init(avctx);
     ff_lpc_init(&s->lpc, 2*avctx->frame_size, TNS_MAX_ORDER, FF_LPC_TYPE_LEVINSON);
-    av_lfg_init(&s->lfg, 0x72adca55);
+    s->random_state = 0x1f2e3d4c;
+
+    s->abs_pow34   = abs_pow34_v;
+    s->quant_bands = quantize_bands;
+
+    if (ARCH_X86)
+        ff_aac_dsp_init_x86(s);
 
     if (HAVE_MIPSDSP)
         ff_aac_coder_init_mips(s);
@@ -1026,8 +1052,7 @@ fail:
 
 #define AACENC_FLAGS AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM
 static const AVOption aacenc_options[] = {
-    {"aac_coder", "Coding algorithm", offsetof(AACEncContext, options.coder), AV_OPT_TYPE_INT, {.i64 = AAC_CODER_TWOLOOP}, -1, AAC_CODER_NB-1, AACENC_FLAGS, "coder"},
-        {"faac",     "FAAC-inspired method",      0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_FAAC},    INT_MIN, INT_MAX, AACENC_FLAGS, "coder"},
+    {"aac_coder", "Coding algorithm", offsetof(AACEncContext, options.coder), AV_OPT_TYPE_INT, {.i64 = AAC_CODER_TWOLOOP}, 0, AAC_CODER_NB-1, AACENC_FLAGS, "coder"},
         {"anmr",     "ANMR method",               0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_ANMR},    INT_MIN, INT_MAX, AACENC_FLAGS, "coder"},
         {"twoloop",  "Two loop searching method", 0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_TWOLOOP}, INT_MIN, INT_MAX, AACENC_FLAGS, "coder"},
         {"fast",     "Constant quantizer",        0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_FAST},    INT_MIN, INT_MAX, AACENC_FLAGS, "coder"},
@@ -1047,6 +1072,11 @@ static const AVClass aacenc_class = {
     LIBAVUTIL_VERSION_INT,
 };
 
+static const AVCodecDefault aac_encode_defaults[] = {
+    { "b", "0" },
+    { NULL }
+};
+
 AVCodec ff_aac_encoder = {
     .name           = "aac",
     .long_name      = NULL_IF_CONFIG_SMALL("AAC (Advanced Audio Coding)"),
@@ -1056,6 +1086,7 @@ AVCodec ff_aac_encoder = {
     .init           = aac_encode_init,
     .encode2        = aac_encode_frame,
     .close          = aac_encode_end,
+    .defaults       = aac_encode_defaults,
     .supported_samplerates = mpeg4audio_sample_rates,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
     .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY,

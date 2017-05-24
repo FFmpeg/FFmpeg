@@ -28,6 +28,7 @@
 #ifndef AVCODEC_AACENC_UTILS_H
 #define AVCODEC_AACENC_UTILS_H
 
+#include "libavutil/ffmath.h"
 #include "aac.h"
 #include "aacenctab.h"
 #include "aactab.h"
@@ -62,17 +63,17 @@ static inline int quant(float coef, const float Q, const float rounding)
 }
 
 static inline void quantize_bands(int *out, const float *in, const float *scaled,
-                                  int size, float Q34, int is_signed, int maxval,
+                                  int size, int is_signed, int maxval, const float Q34,
                                   const float rounding)
 {
     int i;
-    double qc;
     for (i = 0; i < size; i++) {
-        qc = scaled[i] * Q34;
-        out[i] = (int)FFMIN(qc + rounding, (double)maxval);
+        float qc = scaled[i] * Q34;
+        int tmp = (int)FFMIN(qc + rounding, (float)maxval);
         if (is_signed && in[i] < 0.0f) {
-            out[i] = -out[i];
+            tmp = -tmp;
         }
+        out[i] = tmp;
     }
 }
 
@@ -90,8 +91,7 @@ static inline float find_max_val(int group_len, int swb_size, const float *scale
 
 static inline int find_min_book(float maxval, int sf)
 {
-    float Q = ff_aac_pow2sf_tab[POW_SF2_ZERO - sf + SCALE_ONE_POS - SCALE_DIV_512];
-    float Q34 = sqrtf(Q * sqrtf(Q));
+    float Q34 = ff_aac_pow34sf_tab[POW_SF2_ZERO - sf + SCALE_ONE_POS - SCALE_DIV_512];
     int qmaxval, cb;
     qmaxval = maxval * Q34 + C_QUANT;
     if (qmaxval >= (FF_ARRAY_ELEMS(aac_maxval_cb)))
@@ -123,7 +123,10 @@ static inline float find_form_factor(int group_len, int swb_size, float thresh,
             if (s >= ethresh) {
                 nzl += 1.0f;
             } else {
-                nzl += powf(s / ethresh, nzslope);
+                if (nzslope == 2.f)
+                    nzl += (s / ethresh) * (s / ethresh);
+                else
+                    nzl += ff_fast_powf(s / ethresh, nzslope);
             }
         }
         if (e2 > thresh) {
@@ -247,6 +250,19 @@ static inline int ff_sfdelta_can_replace(const SingleChannelElement *sce,
         && new_sf <= (prev_sf + SCALE_MAX_DIFF)
         && sce->sf_idx[nextband[band]] >= (new_sf - SCALE_MAX_DIFF)
         && sce->sf_idx[nextband[band]] <= (new_sf + SCALE_MAX_DIFF);
+}
+
+/**
+ * linear congruential pseudorandom number generator
+ *
+ * @param   previous_val    pointer to the current state of the generator
+ *
+ * @return  Returns a 32-bit pseudorandom integer
+ */
+static av_always_inline int lcg_random(unsigned previous_val)
+{
+    union { unsigned u; int s; } v = { previous_val * 1664525u + 1013904223 };
+    return v.s;
 }
 
 #define ERROR_IF(cond, ...) \

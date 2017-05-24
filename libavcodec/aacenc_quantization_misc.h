@@ -36,11 +36,12 @@ static inline float quantize_band_cost_cached(struct AACEncContext *s, int w, in
     AACQuantizeBandCostCacheEntry *entry;
     av_assert1(scale_idx >= 0 && scale_idx < 256);
     entry = &s->quantize_band_cost_cache[scale_idx][w*16+g];
-    if (entry->bits < 0 || entry->cb != cb || entry->rtz != rtz) {
+    if (entry->generation != s->quantize_band_cost_cache_generation || entry->cb != cb || entry->rtz != rtz) {
         entry->rd = quantize_band_cost(s, in, scaled, size, scale_idx,
                                        cb, lambda, uplim, &entry->bits, &entry->energy, rtz);
         entry->cb = cb;
         entry->rtz = rtz;
+        entry->generation = s->quantize_band_cost_cache_generation;
     }
     if (bits)
         *bits = entry->bits;

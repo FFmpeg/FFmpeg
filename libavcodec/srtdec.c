@@ -27,7 +27,7 @@
 #include "ass.h"
 #include "htmlsubtitles.h"
 
-static void srt_to_ass(AVCodecContext *avctx, AVBPrint *dst,
+static int srt_to_ass(AVCodecContext *avctx, AVBPrint *dst,
                        const char *in, int x1, int y1, int x2, int y2)
 {
     if (x1 >= 0 && y1 >= 0) {
@@ -38,18 +38,18 @@ static void srt_to_ass(AVCodecContext *avctx, AVBPrint *dst,
             /* text rectangle defined, write the text at the center of the rectangle */
             const int cx = x1 + (x2 - x1)/2;
             const int cy = y1 + (y2 - y1)/2;
-            const int scaled_x = cx * ASS_DEFAULT_PLAYRESX / 720;
-            const int scaled_y = cy * ASS_DEFAULT_PLAYRESY / 480;
+            const int scaled_x = cx * (int64_t)ASS_DEFAULT_PLAYRESX / 720;
+            const int scaled_y = cy * (int64_t)ASS_DEFAULT_PLAYRESY / 480;
             av_bprintf(dst, "{\\an5}{\\pos(%d,%d)}", scaled_x, scaled_y);
         } else {
             /* only the top left corner, assume the text starts in that corner */
-            const int scaled_x = x1 * ASS_DEFAULT_PLAYRESX / 720;
-            const int scaled_y = y1 * ASS_DEFAULT_PLAYRESY / 480;
+            const int scaled_x = x1 * (int64_t)ASS_DEFAULT_PLAYRESX / 720;
+            const int scaled_y = y1 * (int64_t)ASS_DEFAULT_PLAYRESY / 480;
             av_bprintf(dst, "{\\an1}{\\pos(%d,%d)}", scaled_x, scaled_y);
         }
     }
 
-    ff_htmlmarkup_to_ass(avctx, dst, in);
+    return ff_htmlmarkup_to_ass(avctx, dst, in);
 }
 
 static int srt_decode_frame(AVCodecContext *avctx,
@@ -57,9 +57,10 @@ static int srt_decode_frame(AVCodecContext *avctx,
 {
     AVSubtitle *sub = data;
     AVBPrint buffer;
-    int ts_start, ts_end, x1 = -1, y1 = -1, x2 = -1, y2 = -1;
+    int x1 = -1, y1 = -1, x2 = -1, y2 = -1;
     int size, ret;
     const uint8_t *p = av_packet_get_side_data(avpkt, AV_PKT_DATA_SUBTITLE_POSITION, &size);
+    FFASSDecoderContext *s = avctx->priv_data;
 
     if (p && size == 16) {
         x1 = AV_RL32(p     );
@@ -73,16 +74,9 @@ static int srt_decode_frame(AVCodecContext *avctx,
 
     av_bprint_init(&buffer, 0, AV_BPRINT_SIZE_UNLIMITED);
 
-    // Do final divide-by-10 outside rescale to force rounding down.
-    ts_start = av_rescale_q(avpkt->pts,
-                            avctx->time_base,
-                            (AVRational){1,100});
-    ts_end   = av_rescale_q(avpkt->pts + avpkt->duration,
-                            avctx->time_base,
-                            (AVRational){1,100});
-
-    srt_to_ass(avctx, &buffer, avpkt->data, x1, y1, x2, y2);
-    ret = ff_ass_add_rect_bprint(sub, &buffer, ts_start, ts_end-ts_start);
+    ret = srt_to_ass(avctx, &buffer, avpkt->data, x1, y1, x2, y2);
+    if (ret >= 0)
+        ret = ff_ass_add_rect(sub, buffer.str, s->readorder++, 0, NULL, NULL);
     av_bprint_finalize(&buffer, NULL);
     if (ret < 0)
         return ret;
@@ -100,6 +94,8 @@ AVCodec ff_srt_decoder = {
     .id           = AV_CODEC_ID_SUBRIP,
     .init         = ff_ass_subtitle_header_default,
     .decode       = srt_decode_frame,
+    .flush        = ff_ass_decoder_flush,
+    .priv_data_size = sizeof(FFASSDecoderContext),
 };
 #endif
 
@@ -111,5 +107,7 @@ AVCodec ff_subrip_decoder = {
     .id           = AV_CODEC_ID_SUBRIP,
     .init         = ff_ass_subtitle_header_default,
     .decode       = srt_decode_frame,
+    .flush        = ff_ass_decoder_flush,
+    .priv_data_size = sizeof(FFASSDecoderContext),
 };
 #endif

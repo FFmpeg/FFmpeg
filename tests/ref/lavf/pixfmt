@@ -28,9 +28,9 @@ efa7c0337cc00c796c6df615223716f1 *./tests/data/pixfmt/rgb565.yuv
 304128 ./tests/data/pixfmt/rgb555.yuv
 1e080c12bd9755c41ecb8e19b756f406 *./tests/data/pixfmt/gray.yuv
 304128 ./tests/data/pixfmt/gray.yuv
-6c719671e39f1bcf67b47eab98fa529b *./tests/data/pixfmt/monow.yuv
+d87cf0c2e7a13cc693fe6ece22461c83 *./tests/data/pixfmt/monow.yuv
 304128 ./tests/data/pixfmt/monow.yuv
-6c719671e39f1bcf67b47eab98fa529b *./tests/data/pixfmt/monob.yuv
+d87cf0c2e7a13cc693fe6ece22461c83 *./tests/data/pixfmt/monob.yuv
 304128 ./tests/data/pixfmt/monob.yuv
 00b85790df5740bab95e2559d81603a7 *./tests/data/pixfmt/yuv440p.yuv
 304128 ./tests/data/pixfmt/yuv440p.yuv

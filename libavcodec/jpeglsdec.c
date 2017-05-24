@@ -375,6 +375,11 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
     else
         shift = point_transform + (16 - s->bits);
 
+    if (shift >= 16) {
+        ret = AVERROR_INVALIDDATA;
+        goto end;
+    }
+
     if (s->avctx->debug & FF_DEBUG_PICT_INFO) {
         av_log(s->avctx, AV_LOG_DEBUG,
                "JPEG-LS params: %ix%i NEAR=%i MV=%i T(%i,%i,%i) "
@@ -384,6 +389,10 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
                 state->reset, state->limit, state->qbpp, state->range);
         av_log(s->avctx, AV_LOG_DEBUG, "JPEG params: ILV=%i Pt=%i BPP=%i, scan = %i\n",
                 ilv, point_transform, s->bits, s->cur_scan);
+    }
+    if (get_bits_left(&s->gb) < s->height) {
+        ret = AVERROR_INVALIDDATA;
+        goto end;
     }
     if (ilv == 0) { /* separate planes */
         if (s->cur_scan > s->nb_components) {

@@ -71,13 +71,13 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
 {
     int start = 0, i, w, w2, g, recomprd;
     int destbits = avctx->bit_rate * 1024.0 / avctx->sample_rate
-        / ((avctx->flags & CODEC_FLAG_QSCALE) ? 2.0f : avctx->channels)
+        / ((avctx->flags & AV_CODEC_FLAG_QSCALE) ? 2.0f : avctx->channels)
         * (lambda / 120.f);
     int refbits = destbits;
     int toomanybits, toofewbits;
     char nzs[128];
     uint8_t nextband[128];
-    int maxsf[128];
+    int maxsf[128], minsf[128];
     float dists[128] = { 0 }, qenergies[128] = { 0 }, uplims[128], euplims[128], energies[128];
     float maxvals[128], spread_thr_r[128];
     float min_spread_thr_r, max_spread_thr_r;
@@ -87,7 +87,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
      * will keep iterating until it fails to lower it or it reaches
      * ulimit * rdlambda. Keeping it low increases quality on difficult
      * signals, but lower it too much, and bits will be taken from weak
-     * signals, creating "holes". A balance is necesary.
+     * signals, creating "holes". A balance is necessary.
      * rdmax and rdmin specify the relative deviation from rdlambda
      * allowed for tonality compensation
      */
@@ -136,7 +136,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
             * (lambda / (avctx->global_quality ? avctx->global_quality : 120));
     }
 
-    if (avctx->flags & CODEC_FLAG_QSCALE) {
+    if (avctx->flags & AV_CODEC_FLAG_QSCALE) {
         /**
          * Constant Q-scale doesn't compensate MS coding on its own
          * No need to be overly precise, this only controls RD
@@ -184,7 +184,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
          * AAC_CUTOFF_FROM_BITRATE is calibrated for effective bitrate.
          */
         float rate_bandwidth_multiplier = 1.5f;
-        int frame_bit_rate = (avctx->flags & CODEC_FLAG_QSCALE)
+        int frame_bit_rate = (avctx->flags & AV_CODEC_FLAG_QSCALE)
             ? (refbits * rate_bandwidth_multiplier * avctx->sample_rate / 1024)
             : (avctx->bit_rate / avctx->channels);
 
@@ -291,14 +291,22 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
 
     if (!allz)
         return;
-    abs_pow34_v(s->scoefs, sce->coeffs, 1024);
+    s->abs_pow34(s->scoefs, sce->coeffs, 1024);
     ff_quantize_band_cost_cache_init(s);
 
+    for (i = 0; i < sizeof(minsf) / sizeof(minsf[0]); ++i)
+        minsf[i] = 0;
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
         start = w*128;
         for (g = 0;  g < sce->ics.num_swb; g++) {
             const float *scaled = s->scoefs + start;
+            int minsfidx;
             maxvals[w*16+g] = find_max_val(sce->ics.group_len[w], sce->ics.swb_sizes[g], scaled);
+            if (maxvals[w*16+g] > 0) {
+                minsfidx = coef2minsf(maxvals[w*16+g]);
+                for (w2 = 0; w2 < sce->ics.group_len[w]; w2++)
+                    minsf[(w+w2)*16+g] = minsfidx;
+            }
             start += sce->ics.swb_sizes[g];
         }
     }
@@ -324,7 +332,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                     sce->coeffs + start,
                     nzslope * cleanup_factor);
                 energy2uplim *= de_psy_factor;
-                if (!(avctx->flags & CODEC_FLAG_QSCALE)) {
+                if (!(avctx->flags & AV_CODEC_FLAG_QSCALE)) {
                     /** In ABR, we need to priorize less and let rate control do its thing */
                     energy2uplim = sqrtf(energy2uplim);
                 }
@@ -338,7 +346,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                     sce->coeffs + start,
                     2.0f);
                 energy2uplim *= de_psy_factor;
-                if (!(avctx->flags & CODEC_FLAG_QSCALE)) {
+                if (!(avctx->flags & AV_CODEC_FLAG_QSCALE)) {
                     /** In ABR, we need to priorize less and let rate control do its thing */
                     energy2uplim = sqrtf(energy2uplim);
                 }
@@ -425,7 +433,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                 recomprd = 1;
                 for (i = 0; i < 128; i++) {
                     if (sce->sf_idx[i] > SCALE_ONE_POS) {
-                        int new_sf = FFMAX(SCALE_ONE_POS, sce->sf_idx[i] - qstep);
+                        int new_sf = FFMAX3(minsf[i], SCALE_ONE_POS, sce->sf_idx[i] - qstep);
                         if (new_sf != sce->sf_idx[i]) {
                             sce->sf_idx[i] = new_sf;
                             changed = 1;
@@ -595,7 +603,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                     int cmb = find_min_book(maxvals[w*16+g], sce->sf_idx[w*16+g]);
                     int mindeltasf = FFMAX(0, prev - SCALE_MAX_DIFF);
                     int maxdeltasf = FFMIN(SCALE_MAX_POS - SCALE_DIV_512, prev + SCALE_MAX_DIFF);
-                    if ((!cmb || dists[w*16+g] > uplims[w*16+g]) && sce->sf_idx[w*16+g] > mindeltasf) {
+                    if ((!cmb || dists[w*16+g] > uplims[w*16+g]) && sce->sf_idx[w*16+g] > FFMAX(mindeltasf, minsf[w*16+g])) {
                         /* Try to make sure there is some energy in every nonzero band
                          * NOTE: This algorithm must be forcibly imbalanced, pushing harder
                          *  on holes or more distorted bands at first, otherwise there's

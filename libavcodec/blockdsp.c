@@ -35,7 +35,8 @@ static void clear_blocks_c(int16_t *blocks)
     memset(blocks, 0, sizeof(int16_t) * 6 * 64);
 }
 
-static void fill_block16_c(uint8_t *block, uint8_t value, int line_size, int h)
+static void fill_block16_c(uint8_t *block, uint8_t value, ptrdiff_t line_size,
+                           int h)
 {
     int i;
 
@@ -45,7 +46,8 @@ static void fill_block16_c(uint8_t *block, uint8_t value, int line_size, int h)
     }
 }
 
-static void fill_block8_c(uint8_t *block, uint8_t value, int line_size, int h)
+static void fill_block8_c(uint8_t *block, uint8_t value, ptrdiff_t line_size,
+                          int h)
 {
     int i;
 

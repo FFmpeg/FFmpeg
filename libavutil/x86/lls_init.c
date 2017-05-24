@@ -39,7 +39,7 @@ av_cold void ff_init_lls_x86(LLSModel *m)
     if (EXTERNAL_AVX_FAST(cpu_flags)) {
         m->update_lls = ff_update_lls_avx;
     }
-    if (EXTERNAL_FMA3(cpu_flags) && !(cpu_flags & AV_CPU_FLAG_AVXSLOW)) {
+    if (EXTERNAL_FMA3_FAST(cpu_flags)) {
         m->update_lls = ff_update_lls_fma3;
     }
 }

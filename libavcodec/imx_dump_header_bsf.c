@@ -26,35 +26,51 @@
  */
 
 #include "avcodec.h"
+#include "bsf.h"
 #include "bytestream.h"
 
 
-static int imx_dump_header(AVBitStreamFilterContext *bsfc, AVCodecContext *avctx, const char *args,
-                           uint8_t **poutbuf, int *poutbuf_size,
-                           const uint8_t *buf, int buf_size, int keyframe)
+static int imx_dump_header(AVBSFContext *ctx, AVPacket *out)
 {
     /* MXF essence element key */
     static const uint8_t imx_header[16] = { 0x06,0x0e,0x2b,0x34,0x01,0x02,0x01,0x01,0x0d,0x01,0x03,0x01,0x05,0x01,0x01,0x00 };
-    uint8_t *poutbufp;
 
-    if (avctx->codec_id != AV_CODEC_ID_MPEG2VIDEO) {
-        av_log(avctx, AV_LOG_ERROR, "imx bitstream filter only applies to mpeg2video codec\n");
-        return 0;
-    }
+    AVPacket *in;
+    int ret = 0;
+    uint8_t *out_buf;
 
-    *poutbuf = av_malloc(buf_size + 20 + AV_INPUT_BUFFER_PADDING_SIZE);
-    if (!*poutbuf)
-        return AVERROR(ENOMEM);
-    poutbufp = *poutbuf;
-    bytestream_put_buffer(&poutbufp, imx_header, 16);
-    bytestream_put_byte(&poutbufp, 0x83); /* KLV BER long form */
-    bytestream_put_be24(&poutbufp, buf_size);
-    bytestream_put_buffer(&poutbufp, buf, buf_size);
-    *poutbuf_size = poutbufp - *poutbuf;
-    return 1;
+    ret = ff_bsf_get_packet(ctx, &in);
+    if (ret < 0)
+        return ret;
+
+    ret = av_new_packet(out, in->size + 20);
+    if (ret < 0)
+        goto fail;
+
+    out_buf = out->data;
+
+    bytestream_put_buffer(&out_buf, imx_header, 16);
+    bytestream_put_byte(&out_buf, 0x83); /* KLV BER long form */
+    bytestream_put_be24(&out_buf, in->size);
+    bytestream_put_buffer(&out_buf, in->data, in->size);
+
+    ret = av_packet_copy_props(out, in);
+    if (ret < 0)
+        goto fail;
+
+fail:
+    if (ret < 0)
+        av_packet_unref(out);
+    av_packet_free(&in);
+    return ret;
 }
 
-AVBitStreamFilter ff_imx_dump_header_bsf = {
-    .name   = "imxdump",
-    .filter = imx_dump_header,
+static const enum AVCodecID codec_ids[] = {
+    AV_CODEC_ID_MPEG2VIDEO, AV_CODEC_ID_NONE,
+};
+
+const AVBitStreamFilter ff_imx_dump_header_bsf = {
+    .name      = "imxdump",
+    .filter    = imx_dump_header,
+    .codec_ids = codec_ids,
 };

@@ -26,6 +26,11 @@
  * common functions for use with the Xvid wrappers
  */
 
-int ff_tempfile(const char *prefix, char **filename);
+struct MpegEncContext;
+
+/* rate control */
+int ff_xvid_rate_control_init(struct MpegEncContext *s);
+void ff_xvid_rate_control_uninit(struct MpegEncContext *s);
+float ff_xvid_rate_estimate_qscale(struct MpegEncContext *s, int dry_run);
 
 #endif /* AVCODEC_LIBXVID_H */

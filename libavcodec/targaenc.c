@@ -89,10 +89,6 @@ static int targa_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int bpp, picsize, datasize = -1, ret, i;
     uint8_t *out;
 
-    if(avctx->width > 0xffff || avctx->height > 0xffff) {
-        av_log(avctx, AV_LOG_ERROR, "image dimensions too large\n");
-        return AVERROR(EINVAL);
-    }
     picsize = av_image_get_buffer_size(avctx->pix_fmt,
                                        avctx->width, avctx->height, 1);
     if ((ret = ff_alloc_packet2(avctx, pkt, picsize + 45, 0)) < 0)
@@ -190,6 +186,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 static av_cold int targa_encode_init(AVCodecContext *avctx)
 {
+    if (avctx->width > 0xffff || avctx->height > 0xffff) {
+        av_log(avctx, AV_LOG_ERROR, "image dimensions too large\n");
+        return AVERROR(EINVAL);
+    }
+
 #if FF_API_CODED_FRAME
 FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->key_frame = 1;

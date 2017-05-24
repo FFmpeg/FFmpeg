@@ -65,15 +65,15 @@ static int lmlm4_read_header(AVFormatContext *s)
 
     if (!(st = avformat_new_stream(s, NULL)))
         return AVERROR(ENOMEM);
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = AV_CODEC_ID_MPEG4;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id   = AV_CODEC_ID_MPEG4;
     st->need_parsing      = AVSTREAM_PARSE_HEADERS;
     avpriv_set_pts_info(st, 64, 1001, 30000);
 
     if (!(st = avformat_new_stream(s, NULL)))
         return AVERROR(ENOMEM);
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id   = AV_CODEC_ID_MP2;
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id   = AV_CODEC_ID_MP2;
     st->need_parsing      = AVSTREAM_PARSE_HEADERS;
 
     /* the parameters will be extracted from the compressed bitstream */

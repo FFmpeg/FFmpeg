@@ -35,8 +35,9 @@
 int ff_rle_count_pixels(const uint8_t *start, int len, int bpp, int same);
 
 /**
- * RLE compress the row, with maximum size of out_size. Value before repeated bytes is (count ^ xor_rep) + add_rep.
- *                                                      Value before raw bytes is      (count ^ xor_raw) + add_raw.
+ * RLE compress the row, with maximum size of out_size.
+ * Value before repeated bytes is (count ^ xor_rep) + add_rep.
+ * Value before raw bytes is (count ^ xor_raw) + add_raw.
  * @param outbuf Output buffer
  * @param out_size Maximum output size
  * @param inbuf Input buffer
@@ -44,7 +45,7 @@ int ff_rle_count_pixels(const uint8_t *start, int len, int bpp, int same);
  * @param w Image width
  * @return Size of output in bytes, or -1 if larger than out_size
  */
-int ff_rle_encode(uint8_t *outbuf, int out_size, const uint8_t *inbuf, int bpp, int w,
-                  int add_rep, int xor_rep, int add_raw, int xor_raw);
+int ff_rle_encode(uint8_t *outbuf, int out_size, const uint8_t *inbuf, int bpp,
+                  int w, int add_rep, int xor_rep, int add_raw, int xor_raw);
 
 #endif /* AVCODEC_RLE_H */

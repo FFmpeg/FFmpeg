@@ -39,6 +39,8 @@ typedef struct TCPContext {
     int open_timeout;
     int rw_timeout;
     int listen_timeout;
+    int recv_buffer_size;
+    int send_buffer_size;
 } TCPContext;
 
 #define OFFSET(x) offsetof(TCPContext, x)
@@ -48,6 +50,8 @@ static const AVOption options[] = {
     { "listen",          "Listen for incoming connections",  OFFSET(listen),         AV_OPT_TYPE_INT, { .i64 = 0 },     0,       2,       .flags = D|E },
     { "timeout",     "set timeout (in microseconds) of socket I/O operations", OFFSET(rw_timeout),     AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
     { "listen_timeout",  "Connection awaiting timeout (in milliseconds)",      OFFSET(listen_timeout), AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
+    { "send_buffer_size", "Socket send buffer size (in bytes)",                OFFSET(send_buffer_size), AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
+    { "recv_buffer_size", "Socket receive buffer size (in bytes)",             OFFSET(recv_buffer_size), AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
     { NULL }
 };
 
@@ -118,12 +122,31 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     cur_ai = ai;
 
  restart:
+#if HAVE_STRUCT_SOCKADDR_IN6
+    // workaround for IOS9 getaddrinfo in IPv6 only network use hardcode IPv4 address can not resolve port number.
+    if (cur_ai->ai_family == AF_INET6){
+        struct sockaddr_in6 * sockaddr_v6 = (struct sockaddr_in6 *)cur_ai->ai_addr;
+        if (!sockaddr_v6->sin6_port){
+            sockaddr_v6->sin6_port = htons(port);
+        }
+    }
+#endif
+
     fd = ff_socket(cur_ai->ai_family,
                    cur_ai->ai_socktype,
                    cur_ai->ai_protocol);
     if (fd < 0) {
         ret = ff_neterrno();
         goto fail;
+    }
+
+    /* Set the socket's send or receive buffer sizes, if specified.
+       If unspecified or setting fails, system default is used. */
+    if (s->recv_buffer_size > 0) {
+        setsockopt (fd, SOL_SOCKET, SO_RCVBUF, &s->recv_buffer_size, sizeof (s->recv_buffer_size));
+    }
+    if (s->send_buffer_size > 0) {
+        setsockopt (fd, SOL_SOCKET, SO_SNDBUF, &s->send_buffer_size, sizeof (s->send_buffer_size));
     }
 
     if (s->listen == 2) {
@@ -150,6 +173,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
 
     h->is_streamed = 1;
     s->fd = fd;
+
     freeaddrinfo(ai);
     return 0;
 
@@ -180,7 +204,7 @@ static int tcp_accept(URLContext *s, URLContext **c)
     cc = (*c)->priv_data;
     ret = ff_accept(sc->fd, sc->listen_timeout, s);
     if (ret < 0)
-        return ff_neterrno();
+        return ret;
     cc->fd = ret;
     return 0;
 }
@@ -242,7 +266,27 @@ static int tcp_get_file_handle(URLContext *h)
     return s->fd;
 }
 
-URLProtocol ff_tcp_protocol = {
+static int tcp_get_window_size(URLContext *h)
+{
+    TCPContext *s = h->priv_data;
+    int avail;
+    int avail_len = sizeof(avail);
+
+#if HAVE_WINSOCK2_H
+    /* SO_RCVBUF with winsock only reports the actual TCP window size when
+    auto-tuning has been disabled via setting SO_RCVBUF */
+    if (s->recv_buffer_size < 0) {
+        return AVERROR(ENOSYS);
+    }
+#endif
+
+    if (getsockopt(s->fd, SOL_SOCKET, SO_RCVBUF, &avail, &avail_len)) {
+        return ff_neterrno();
+    }
+    return avail;
+}
+
+const URLProtocol ff_tcp_protocol = {
     .name                = "tcp",
     .url_open            = tcp_open,
     .url_accept          = tcp_accept,
@@ -250,6 +294,7 @@ URLProtocol ff_tcp_protocol = {
     .url_write           = tcp_write,
     .url_close           = tcp_close,
     .url_get_file_handle = tcp_get_file_handle,
+    .url_get_short_seek  = tcp_get_window_size,
     .url_shutdown        = tcp_shutdown,
     .priv_data_size      = sizeof(TCPContext),
     .flags               = URL_PROTOCOL_FLAG_NETWORK,

@@ -33,7 +33,7 @@
 #include "formats.h"
 #include "video.h"
 
-typedef struct {
+typedef struct DecimateContext {
     const AVClass *class;
     int lo, hi;                    ///< lower and higher threshold number of differences
                                    ///< values for 8x8 blocks
@@ -130,8 +130,8 @@ static int decimate_frame(AVFilterContext *ctx,
         if (diff_planes(ctx,
                         cur->data[plane], cur->linesize[plane],
                         ref->data[plane], ref->linesize[plane],
-                        FF_CEIL_RSHIFT(ref->width,  hsub),
-                        FF_CEIL_RSHIFT(ref->height, vsub))) {
+                        AV_CEIL_RSHIFT(ref->width,  hsub),
+                        AV_CEIL_RSHIFT(ref->height, vsub))) {
             emms_c();
             return 0;
         }

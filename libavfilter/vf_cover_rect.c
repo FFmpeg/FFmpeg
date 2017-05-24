@@ -78,8 +78,8 @@ static void cover_rect(CoverContext *cover, AVFrame *in, int offx, int offy)
     for (p = 0; p < 3; p++) {
         uint8_t *data = in->data[p] + (offx>>!!p) + (offy>>!!p) * in->linesize[p];
         const uint8_t *src = cover->cover_frame->data[p];
-        int w = FF_CEIL_RSHIFT(cover->cover_frame->width , !!p);
-        int h = FF_CEIL_RSHIFT(cover->cover_frame->height, !!p);
+        int w = AV_CEIL_RSHIFT(cover->cover_frame->width , !!p);
+        int h = AV_CEIL_RSHIFT(cover->cover_frame->height, !!p);
         for (y = 0; y < h; y++) {
             for (x = 0; x < w; x++) {
                 data[x] = src[x];
@@ -98,10 +98,10 @@ static void blur(CoverContext *cover, AVFrame *in, int offx, int offy)
         int oy = offy>>!!p;
         int stride = in->linesize[p];
         uint8_t *data = in->data[p] + ox + oy * stride;
-        int w = FF_CEIL_RSHIFT(cover->width , !!p);
-        int h = FF_CEIL_RSHIFT(cover->height, !!p);
-        int iw = FF_CEIL_RSHIFT(in->width , !!p);
-        int ih = FF_CEIL_RSHIFT(in->height, !!p);
+        int w = AV_CEIL_RSHIFT(cover->width , !!p);
+        int h = AV_CEIL_RSHIFT(cover->height, !!p);
+        int iw = AV_CEIL_RSHIFT(in->width , !!p);
+        int ih = AV_CEIL_RSHIFT(in->height, !!p);
         for (y = 0; y < h; y++) {
             for (x = 0; x < w; x++) {
                 int c = 0;

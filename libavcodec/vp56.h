@@ -26,6 +26,7 @@
 #ifndef AVCODEC_VP56_H
 #define AVCODEC_VP56_H
 
+#include "avcodec.h"
 #include "get_bits.h"
 #include "hpeldsp.h"
 #include "bytestream.h"
@@ -72,9 +73,9 @@ typedef struct VP56mv {
 typedef void (*VP56ParseVectorAdjustment)(VP56Context *s,
                                           VP56mv *vect);
 typedef void (*VP56Filter)(VP56Context *s, uint8_t *dst, uint8_t *src,
-                           int offset1, int offset2, int stride,
+                           int offset1, int offset2, ptrdiff_t stride,
                            VP56mv mv, int mask, int select, int luma);
-typedef void (*VP56ParseCoeff)(VP56Context *s);
+typedef int  (*VP56ParseCoeff)(VP56Context *s);
 typedef void (*VP56DefaultModelsInit)(VP56Context *s);
 typedef void (*VP56ParseVectorModels)(VP56Context *s);
 typedef int  (*VP56ParseCoeffModels)(VP56Context *s);
@@ -179,7 +180,7 @@ struct vp56_context {
     int flip;  /* are we flipping ? */
     int frbi;  /* first row block index in MB */
     int srbi;  /* second row block index in MB */
-    int stride[4];  /* stride for each plan */
+    ptrdiff_t stride[4];  /* stride for each plan */
 
     const uint8_t *vp56_coord_div;
     VP56ParseVectorAdjustment parse_vector_adjustment;
@@ -203,6 +204,9 @@ struct vp56_context {
     VLC runv_vlc[2];
     VLC ract_vlc[2][3][6];
     unsigned int nb_null[2][2];       /* number of consecutive NULL DC/AC */
+
+    int have_undamaged_frame;
+    int discard_frame;
 };
 
 
@@ -221,7 +225,7 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
  */
 
 extern const uint8_t ff_vp56_norm_shift[256];
-void ff_vp56_init_range_decoder(VP56RangeCoder *c, const uint8_t *buf, int buf_size);
+int ff_vp56_init_range_decoder(VP56RangeCoder *c, const uint8_t *buf, int buf_size);
 
 static av_always_inline unsigned int vp56_rac_renorm(VP56RangeCoder *c)
 {

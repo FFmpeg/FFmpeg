@@ -30,7 +30,7 @@
 #include "bbox.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct BBoxContext {
     const AVClass *class;
     int min_val;
 } BBoxContext;
@@ -80,11 +80,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     h = box.y2 - box.y1 + 1;
 
     av_log(ctx, AV_LOG_INFO,
-           "n:%"PRId64" pts:%s pts_time:%s", inlink->frame_count,
+           "n:%"PRId64" pts:%s pts_time:%s", inlink->frame_count_out,
            av_ts2str(frame->pts), av_ts2timestr(frame->pts, &inlink->time_base));
 
     if (has_bbox) {
-        AVDictionary **metadata = avpriv_frame_get_metadatap(frame);
+        AVDictionary **metadata = &frame->metadata;
 
         SET_META("lavfi.bbox.x1", box.x1)
         SET_META("lavfi.bbox.x2", box.x2)

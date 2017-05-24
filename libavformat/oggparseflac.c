@@ -57,15 +57,15 @@ flac_header (AVFormatContext * s, int idx)
         if (get_bits_long(&gb, 32) != FLAC_STREAMINFO_SIZE)
             return -1;
 
-        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        st->codec->codec_id = AV_CODEC_ID_FLAC;
+        st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+        st->codecpar->codec_id = AV_CODEC_ID_FLAC;
         st->need_parsing = AVSTREAM_PARSE_HEADERS;
 
-        if (ff_alloc_extradata(st->codec, FLAC_STREAMINFO_SIZE) < 0)
+        if (ff_alloc_extradata(st->codecpar, FLAC_STREAMINFO_SIZE) < 0)
             return AVERROR(ENOMEM);
-        memcpy(st->codec->extradata, streaminfo_start, st->codec->extradata_size);
+        memcpy(st->codecpar->extradata, streaminfo_start, st->codecpar->extradata_size);
 
-        samplerate = AV_RB24(st->codec->extradata + 10) >> 4;
+        samplerate = AV_RB24(st->codecpar->extradata + 10) >> 4;
         if (!samplerate)
             return AVERROR_INVALIDDATA;
 
@@ -84,28 +84,45 @@ old_flac_header (AVFormatContext * s, int idx)
     AVStream *st = s->streams[idx];
     struct ogg_stream *os = ogg->streams + idx;
     AVCodecParserContext *parser = av_parser_init(AV_CODEC_ID_FLAC);
-    int size;
+    AVCodecContext *avctx;
+    int size, ret;
     uint8_t *data;
 
     if (!parser)
         return -1;
 
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = AV_CODEC_ID_FLAC;
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id = AV_CODEC_ID_FLAC;
+
+    avctx = avcodec_alloc_context3(NULL);
+    if (!avctx) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    ret = avcodec_parameters_to_context(avctx, st->codecpar);
+    if (ret < 0)
+        goto fail;
 
     parser->flags = PARSER_FLAG_COMPLETE_FRAMES;
-    av_parser_parse2(parser, st->codec,
+    av_parser_parse2(parser, avctx,
                      &data, &size, os->buf + os->pstart, os->psize,
                      AV_NOPTS_VALUE, AV_NOPTS_VALUE, -1);
 
     av_parser_close(parser);
 
-    if (st->codec->sample_rate) {
-        avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    if (avctx->sample_rate) {
+        avpriv_set_pts_info(st, 64, 1, avctx->sample_rate);
+        avcodec_free_context(&avctx);
         return 0;
     }
 
+    avcodec_free_context(&avctx);
     return 1;
+fail:
+    av_parser_close(parser);
+    avcodec_free_context(&avctx);
+    return ret;
 }
 
 const struct ogg_codec ff_flac_codec = {

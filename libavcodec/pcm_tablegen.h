@@ -36,10 +36,7 @@
 
 #define         BIAS            (0x84)      /* Bias for linear code. */
 
-/*
- * alaw2linear() - Convert an A-law value to 16-bit linear PCM
- *
- */
+/* alaw2linear() - Convert an A-law value to 16-bit linear PCM */
 static av_cold int alaw2linear(unsigned char a_val)
 {
         int t;

@@ -54,7 +54,7 @@ typedef struct BlockInfo {
     const uint32_t *factor_table;
     const uint8_t *scan_table;
     uint8_t pos; /* position in block */
-    void (*idct_put)(uint8_t *dest, int line_size, int16_t *block);
+    void (*idct_put)(uint8_t *dest, ptrdiff_t stride, int16_t *block);
     uint8_t partial_bit_count;
     uint32_t partial_bit_buffer;
     int shift_offset;
@@ -222,8 +222,8 @@ static void dv_decode_ac(GetBitContext *gb, BlockInfo *mb, int16_t *block)
 
     /* get the AC coefficients until last_index is reached */
     for (;;) {
-        ff_dlog(NULL, "%2d: bits=%04x index=%d\n", pos, SHOW_UBITS(re, gb, 16),
-                re_index);
+        ff_dlog(NULL, "%2d: bits=%04"PRIx32" index=%u\n",
+                pos, SHOW_UBITS(re, gb, 16), re_index);
         /* our own optimized GET_RL_VLC */
         index   = NEG_USR32(re_cache, TEX_VLC_BITS);
         vlc_len = ff_dv_rl_vlc[index].len;

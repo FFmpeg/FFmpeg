@@ -114,7 +114,7 @@ cglobal emu_edge_hvar, 5, 6, 1, dst, dst_stride, start_x, n_words, h, w
 .x_loop:                                        ;   do {
     movu    [dstq+wq*2], m0                     ;     write($reg, $mmsize)
     add              wq, mmsize/2               ;     w -= $mmsize/2
-    cmp              wq, -mmsize/2              ;   } while (w > $mmsize/2)
+    cmp              wq, -(mmsize/2)            ;   } while (w > $mmsize/2)
     jl .x_loop
     movu  [dstq-mmsize], m0                     ;   write($reg, $mmsize)
     add            dstq, dst_strideq            ;   dst += dst_stride

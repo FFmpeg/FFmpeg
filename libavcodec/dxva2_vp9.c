@@ -23,7 +23,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/pixdesc.h"
 
-#include "vp9.h"
+#include "vp9shared.h"
 
 // The headers above may include w32threads.h, which uses the original
 // _WIN32_WINNT define, while dxva2_internal.h redefines it to target a
@@ -261,9 +261,7 @@ static int dxva2_vp9_start_frame(AVCodecContext *avctx,
     AVDXVAContext *ctx = avctx->hwaccel_context;
     struct vp9_dxva2_picture_context *ctx_pic = h->frames[CUR_FRAME].hwaccel_picture_private;
 
-    if (DXVA_CONTEXT_DECODER(avctx, ctx) == NULL ||
-        DXVA_CONTEXT_CFG(avctx, ctx) == NULL ||
-        DXVA_CONTEXT_COUNT(avctx, ctx) <= 0)
+    if (!DXVA_CONTEXT_VALID(avctx, ctx))
         return -1;
     av_assert0(ctx_pic);
 

@@ -138,7 +138,7 @@ static void qtrle_encode_line(QtrleEncContext *s, const AVFrame *p, int line, ui
     int i;
     signed char rlecode;
 
-    /* This will be the number of pixels equal to the preivous frame one's
+    /* This will be the number of pixels equal to the previous frame one's
      * starting from the ith pixel */
     unsigned int skipcount;
     /* This will be the number of consecutive equal pixels in the current
@@ -264,7 +264,7 @@ static void qtrle_encode_line(QtrleEncContext *s, const AVFrame *p, int line, ui
         prev_line -= s->pixel_size;
     }
 
-    /* Good ! Now we have the best sequence for this line, let's output it */
+    /* Good! Now we have the best sequence for this line, let's output it. */
 
     /* We do a special case for the first pixel so that we avoid testing it in
      * the whole loop */
@@ -363,7 +363,6 @@ static int qtrle_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                               const AVFrame *pict, int *got_packet)
 {
     QtrleEncContext * const s = avctx->priv_data;
-    enum AVPictureType pict_type;
     int ret;
 
     if ((ret = ff_alloc_packet2(avctx, pkt, s->max_buf_size, 0)) < 0)
@@ -371,11 +370,9 @@ static int qtrle_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     if (avctx->gop_size == 0 || (s->avctx->frame_number % avctx->gop_size) == 0) {
         /* I-Frame */
-        pict_type = AV_PICTURE_TYPE_I;
         s->key_frame = 1;
     } else {
         /* P-Frame */
-        pict_type = AV_PICTURE_TYPE_P;
         s->key_frame = 0;
     }
 
@@ -392,7 +389,7 @@ static int qtrle_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 #if FF_API_CODED_FRAME
 FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->key_frame = s->key_frame;
-    avctx->coded_frame->pict_type = pict_type;
+    avctx->coded_frame->pict_type = s->key_frame ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 

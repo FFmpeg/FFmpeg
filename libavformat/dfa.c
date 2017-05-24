@@ -56,10 +56,10 @@ static int dfa_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = AV_CODEC_ID_DFA;
-    st->codec->width      = avio_rl16(pb);
-    st->codec->height     = avio_rl16(pb);
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id   = AV_CODEC_ID_DFA;
+    st->codecpar->width      = avio_rl16(pb);
+    st->codecpar->height     = avio_rl16(pb);
     mspf = avio_rl32(pb);
     if (!mspf) {
         av_log(s, AV_LOG_WARNING, "Zero FPS reported, defaulting to 10\n");
@@ -69,9 +69,9 @@ static int dfa_read_header(AVFormatContext *s)
     avio_skip(pb, 128 - 16); // padding
     st->duration = frames;
 
-    if (ff_alloc_extradata(st->codec, 2))
+    if (ff_alloc_extradata(st->codecpar, 2))
         return AVERROR(ENOMEM);
-    AV_WL16(st->codec->extradata, version);
+    AV_WL16(st->codecpar->extradata, version);
     if (version == 0x100)
         st->sample_aspect_ratio = (AVRational){2, 1};
 

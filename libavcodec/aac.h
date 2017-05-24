@@ -36,7 +36,7 @@
 #include "libavutil/fixed_dsp.h"
 #include "avcodec.h"
 #if !USE_FIXED
-#include "imdct15.h"
+#include "mdct15.h"
 #endif
 #include "fft.h"
 #include "mpeg4audio.h"
@@ -327,7 +327,7 @@ struct AACContext {
 #if USE_FIXED
     AVFixedDSPContext *fdsp;
 #else
-    IMDCT15Context *mdct480;
+    MDCT15Context *mdct480;
     AVFloatDSPContext *fdsp;
 #endif /* USE_FIXED */
     int random_state;

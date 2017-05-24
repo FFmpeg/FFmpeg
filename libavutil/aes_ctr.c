@@ -79,7 +79,7 @@ void av_aes_ctr_free(struct AVAESCTR *a)
 {
     if (a) {
         av_freep(&a->aes);
-        av_freep(a);
+        av_free(a);
     }
 }
 

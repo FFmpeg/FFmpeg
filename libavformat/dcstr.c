@@ -33,41 +33,47 @@ static int dcstr_probe(AVProbeData *p)
 static int dcstr_read_header(AVFormatContext *s)
 {
     unsigned codec, align;
+    int mult;
     AVStream *st;
 
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-    st->codec->channels    = avio_rl32(s->pb);
-    st->codec->sample_rate = avio_rl32(s->pb);
+    st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->channels    = avio_rl32(s->pb);
+    st->codecpar->sample_rate = avio_rl32(s->pb);
     codec                  = avio_rl32(s->pb);
     align                  = avio_rl32(s->pb);
     avio_skip(s->pb, 4);
     st->duration           = avio_rl32(s->pb);
-    st->codec->channels   *= avio_rl32(s->pb);
-    if (!align || align > INT_MAX / st->codec->channels)
+    mult                   = avio_rl32(s->pb);
+    if (st->codecpar->channels <= 0 || mult <= 0 || mult > INT_MAX / st->codecpar->channels) {
+        av_log(s, AV_LOG_ERROR, "invalid number of channels %d x %d\n", st->codecpar->channels, mult);
         return AVERROR_INVALIDDATA;
-    st->codec->block_align = align * st->codec->channels;
+    }
+    st->codecpar->channels *= mult;
+    if (!align || align > INT_MAX / st->codecpar->channels)
+        return AVERROR_INVALIDDATA;
+    st->codecpar->block_align = align * st->codecpar->channels;
 
     switch (codec) {
-    case  4: st->codec->codec_id = AV_CODEC_ID_ADPCM_AICA;       break;
-    case 16: st->codec->codec_id = AV_CODEC_ID_PCM_S16LE_PLANAR; break;
+    case  4: st->codecpar->codec_id = AV_CODEC_ID_ADPCM_AICA;       break;
+    case 16: st->codecpar->codec_id = AV_CODEC_ID_PCM_S16LE_PLANAR; break;
     default: avpriv_request_sample(s, "codec %X", codec);
              return AVERROR_PATCHWELCOME;
     }
 
     avio_skip(s->pb, 0x800 - avio_tell(s->pb));
-    avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
 
     return 0;
 }
 
 static int dcstr_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    AVCodecContext *codec = s->streams[0]->codec;
-    return av_get_packet(s->pb, pkt, codec->block_align);
+    AVCodecParameters *par    = s->streams[0]->codecpar;
+    return av_get_packet(s->pb, pkt, par->block_align);
 }
 
 AVInputFormat ff_dcstr_demuxer = {

@@ -28,11 +28,15 @@
 
 int main(void)
 {
-    AAC_RENAME(cbrt_tableinit)();
+    AAC_RENAME(ff_cbrt_tableinit)();
 
     write_fileheader();
 
-    WRITE_ARRAY("static const", uint32_t, cbrt_tab);
+#if USE_FIXED
+    WRITE_ARRAY("const", uint32_t, ff_cbrt_tab_fixed);
+#else
+    WRITE_ARRAY("const", uint32_t, ff_cbrt_tab);
+#endif
 
     return 0;
 }

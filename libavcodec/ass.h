@@ -43,6 +43,10 @@
 #define ASS_DEFAULT_BORDERSTYLE 1
 /** @} */
 
+typedef struct FFASSDecoderContext {
+    int readorder;
+} FFASSDecoderContext;
+
 /**
  * Generate a suitable AVCodecContext.subtitle_header for SUBTITLE_ASS.
  *
@@ -74,55 +78,23 @@ int ff_ass_subtitle_header(AVCodecContext *avctx,
 int ff_ass_subtitle_header_default(AVCodecContext *avctx);
 
 /**
- * Add an ASS dialog line to an AVSubtitle as a new AVSubtitleRect.
- *
- * @param sub pointer to the AVSubtitle
- * @param dialog ASS dialog to add to sub
- * @param ts_start start timestamp for this dialog (in 1/100 second unit)
- * @param duration duration for this dialog (in 1/100 second unit), can be -1
- *                 to last until the end of the presentation
- * @param raw when set to 2, it indicates that dialog contains an ASS
- *                           dialog line as muxed in Matroska
- *            when set to 1, it indicates that dialog contains a whole SSA
- *                           dialog line which should be copied as is.
- *            when set to 0, it indicates that dialog contains only the Text
- *                           part of the ASS dialog line, the rest of the line
- *                           will be generated.
- * @return number of characters read from dialog. It can be less than the whole
- *         length of dialog, if dialog contains several lines of text.
- *         A negative value indicates an error.
+ * Craft an ASS dialog string.
+ */
+char *ff_ass_get_dialog(int readorder, int layer, const char *style,
+                        const char *speaker, const char *text);
+
+/**
+ * Add an ASS dialog to a subtitle.
  */
 int ff_ass_add_rect(AVSubtitle *sub, const char *dialog,
-                    int ts_start, int duration, int raw);
+                    int readorder, int layer, const char *style,
+                    const char *speaker);
 
 /**
- * Same as ff_ass_add_rect, but taking an AVBPrint buffer instead of a
- * string, and assuming raw=0.
+ * Helper to flush a text subtitles decoder making use of the
+ * FFASSDecoderContext.
  */
-int ff_ass_add_rect_bprint(AVSubtitle *sub, AVBPrint *buf,
-                           int ts_start, int duration);
-
-/**
- * Add an ASS dialog line to an AVBPrint buffer.
- *
- * @param buf pointer to an initialized AVBPrint buffer
- * @param dialog ASS dialog to add to sub
- * @param ts_start start timestamp for this dialog (in 1/100 second unit)
- * @param duration duration for this dialog (in 1/100 second unit), can be -1
- *                 to last until the end of the presentation
- * @param raw when set to 2, it indicates that dialog contains an ASS
- *                           dialog line as muxed in Matroska
- *            when set to 1, it indicates that dialog contains a whole SSA
- *                           dialog line which should be copied as is.
- *            when set to 0, it indicates that dialog contains only the Text
- *                           part of the ASS dialog line, the rest of the line
- *                           will be generated.
- * @return number of characters read from dialog. It can be less than the whole
- *         length of dialog, if dialog contains several lines of text.
- *         A negative value indicates an error.
- */
-int ff_ass_bprint_dialog(AVBPrint *buf, const char *dialog,
-                         int ts_start, int duration, int raw);
+void ff_ass_decoder_flush(AVCodecContext *avctx);
 
 /**
  * Escape a text subtitle using ASS syntax into an AVBPrint buffer.

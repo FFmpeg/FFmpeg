@@ -166,8 +166,8 @@ int ff_init_desc_hscale(SwsFilterDescriptor *desc, SwsSlice *src, SwsSlice *dst,
 static int chr_h_scale(SwsContext *c, SwsFilterDescriptor *desc, int sliceY, int sliceH)
 {
     FilterContext *instance = desc->instance;
-    int srcW = FF_CEIL_RSHIFT(desc->src->width, desc->src->h_chr_sub_sample);
-    int dstW = FF_CEIL_RSHIFT(desc->dst->width, desc->dst->h_chr_sub_sample);
+    int srcW = AV_CEIL_RSHIFT(desc->src->width, desc->src->h_chr_sub_sample);
+    int dstW = AV_CEIL_RSHIFT(desc->dst->width, desc->dst->h_chr_sub_sample);
     int xInc = instance->xInc;
 
     uint8_t ** src1 = desc->src->plane[1].line;
@@ -201,7 +201,7 @@ static int chr_h_scale(SwsContext *c, SwsFilterDescriptor *desc, int sliceY, int
 
 static int chr_convert(SwsContext *c, SwsFilterDescriptor *desc, int sliceY, int sliceH)
 {
-    int srcW = FF_CEIL_RSHIFT(desc->src->width, desc->src->h_chr_sub_sample);
+    int srcW = AV_CEIL_RSHIFT(desc->src->width, desc->src->h_chr_sub_sample);
     ColorContext * instance = desc->instance;
     uint32_t * pal = instance->pal;
 

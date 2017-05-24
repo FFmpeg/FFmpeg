@@ -34,7 +34,7 @@ typedef struct StereoWidenContext {
     float drymix;
 
     float *buffer;
-    float *write;
+    float *cur;
     int length;
 } StereoWidenContext;
 
@@ -72,11 +72,12 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     StereoWidenContext *s = ctx->priv;
 
-    s->length = 2 * s->delay * inlink->sample_rate / 1000;
+    s->length = s->delay * inlink->sample_rate / 1000;
+    s->length *= 2;
     s->buffer = av_calloc(s->length, sizeof(*s->buffer));
     if (!s->buffer)
         return AVERROR(ENOMEM);
-    s->write = s->buffer;
+    s->cur = s->buffer;
 
     return 0;
 }
@@ -106,23 +107,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
     dst = (float *)out->data[0];
 
-    for (n = 0; n < in->nb_samples; n++, src += 2, dst += 2) {
+    for (n = 0; n < in->nb_samples; n++, src += 2, dst += 2, s->cur += 2) {
         const float left = src[0], right = src[1];
-        float *read = s->write + 2;
 
-        if (read > s->buffer + s->length)
-            read = s->buffer;
+        if (s->cur == s->buffer + s->length)
+            s->cur = s->buffer;
 
-        dst[0] = drymix * left - crossfeed * right - feedback * read[1];
-        dst[1] = drymix * right - crossfeed * left - feedback * read[0];
+        dst[0] = drymix * left - crossfeed * right - feedback * s->cur[1];
+        dst[1] = drymix * right - crossfeed * left - feedback * s->cur[0];
 
-        s->write[0] = left;
-        s->write[1] = right;
-
-        if (s->write == s->buffer + s->length)
-            s->write = s->buffer;
-        else
-            s->write += 2;
+        s->cur[0] = left;
+        s->cur[1] = right;
     }
 
     if (out != in)

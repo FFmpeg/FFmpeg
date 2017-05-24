@@ -192,7 +192,7 @@ function ff_vp8_luma_dc_wht_dc_armv6, export=1
         bx              lr
 endfunc
 
-@ void vp8_idct_add(uint8_t *dst, int16_t block[16], int stride)
+@ void vp8_idct_add(uint8_t *dst, int16_t block[16], ptrdiff_t stride)
 function ff_vp8_idct_add_armv6, export=1
         push            {r4-r12, lr}
         sub             sp,  sp,  #32
@@ -314,7 +314,7 @@ function ff_vp8_idct_add_armv6, export=1
         pop             {r4-r12, pc}
 endfunc
 
-@ void vp8_idct_dc_add(uint8_t *dst, int16_t block[16], int stride)
+@ void vp8_idct_dc_add(uint8_t *dst, int16_t block[16], ptrdiff_t stride)
 function ff_vp8_idct_dc_add_armv6, export=1
         push            {r4-r6, lr}
         add             r6,  r0,  r2,  lsl #1
@@ -355,7 +355,7 @@ function ff_vp8_idct_dc_add_armv6, export=1
         pop             {r4-r6, pc}
 endfunc
 
-@ void vp8_idct_dc_add4uv(uint8_t *dst, int16_t block[4][16], int stride)
+@ void vp8_idct_dc_add4uv(uint8_t *dst, int16_t block[4][16], ptrdiff_t stride)
 function ff_vp8_idct_dc_add4uv_armv6, export=1
         push            {r4, lr}
 
@@ -371,7 +371,7 @@ function ff_vp8_idct_dc_add4uv_armv6, export=1
         pop             {r4, pc}
 endfunc
 
-@ void vp8_idct_dc_add4y(uint8_t *dst, int16_t block[4][16], int stride)
+@ void vp8_idct_dc_add4y(uint8_t *dst, int16_t block[4][16], ptrdiff_t stride)
 function ff_vp8_idct_dc_add4y_armv6, export=1
         push            {r4, lr}
 
@@ -455,7 +455,7 @@ endfunc
         eor             r5,  r5,  r2            @ *oq0 = u ^ 0x80
 .endm
 
-@ void vp8_v_loop_filter16_simple(uint8_t *dst, int stride, int flim)
+@ void vp8_v_loop_filter16_simple(uint8_t *dst, ptrdiff_t stride, int flim)
 function ff_vp8_v_loop_filter16_simple_armv6, export=1
         push            {r4-r11, lr}
 
@@ -866,7 +866,7 @@ function ff_vp8_v_loop_filter8uv_armv6, export=1
         b               vp8_v_loop_filter_armv6
 endfunc
 
-@ void vp8_h_loop_filter16_simple(uint8_t *dst, int stride, int flim)
+@ void vp8_h_loop_filter16_simple(uint8_t *dst, ptrdiff_t stride, int flim)
 function ff_vp8_h_loop_filter16_simple_armv6, export=1
         push            {r4-r11, lr}
         orr             r12, r2,  r2,  lsl #16
@@ -1113,8 +1113,8 @@ endfunc
 
 @ MC
 
-@ void put_vp8_pixels16(uint8_t *dst, int dststride, uint8_t *src,
-@                       int srcstride, int h, int mx, int my)
+@ void put_vp8_pixels16(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+@                       ptrdiff_t srcstride, int h, int mx, int my)
 function ff_put_vp8_pixels16_armv6, export=1
         push            {r4-r11}
         ldr             r12, [sp, #32]          @ h
@@ -1137,8 +1137,8 @@ function ff_put_vp8_pixels16_armv6, export=1
         bx              lr
 endfunc
 
-@ void put_vp8_pixels8(uint8_t *dst, int dststride, uint8_t *src,
-@                      int srcstride, int h, int mx, int my)
+@ void put_vp8_pixels8(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+@                      ptrdiff_t srcstride, int h, int mx, int my)
 function ff_put_vp8_pixels8_armv6, export=1
         push            {r4-r11}
         ldr             r12, [sp, #32]          @ h
@@ -1161,8 +1161,8 @@ function ff_put_vp8_pixels8_armv6, export=1
         bx              lr
 endfunc
 
-@ void put_vp8_pixels4(uint8_t *dst, int dststride, uint8_t *src,
-@                      int srcstride, int h, int mx, int my)
+@ void put_vp8_pixels4(uint8_t *dst, ptrdiff_t dststride, uint8_t *src,
+@                      ptrdiff_t srcstride, int h, int mx, int my)
 function ff_put_vp8_pixels4_armv6, export=1
         ldr             r12, [sp, #0]           @ h
         push            {r4-r6,lr}
@@ -1181,7 +1181,7 @@ function ff_put_vp8_pixels4_armv6, export=1
 endfunc
 
 @ note: worst case sum of all 6-tap filter values * 255 is 0x7f80 so 16 bit
-@ arithmatic can be used to apply filters
+@ arithmetic can be used to apply filters
 const   sixtap_filters_13245600, align=4
         .short     2, 108, -11,  36,  -8, 1, 0, 0
         .short     3,  77, -16,  77, -16, 3, 0, 0
@@ -1226,13 +1226,8 @@ vp8_mc_1                bilin,  8, v
 vp8_mc_1                bilin,  4, h
 vp8_mc_1                bilin,  4, v
 
-/* True relational expressions have the value -1 in the GNU assembler,
-   +1 in Apple's. */
-#ifdef __APPLE__
-#   define TMPSIZE \size * (8 + 8*(\size > 4) + \ytaps - 1)
-#else
-#   define TMPSIZE \size * (8 - 8*(\size > 4) + \ytaps - 1)
-#endif
+@ 4 and 8 pixel wide mc blocks might have height of 8 or 16 lines
+#define TMPSIZE \size * (16 / ((16 / \size + 1) / 2) + \ytaps - 1)
 
 .macro  vp8_mc_hv       name, size, h, v, ytaps
 function ff_put_vp8_\name\size\()_\h\v\()_armv6, export=1

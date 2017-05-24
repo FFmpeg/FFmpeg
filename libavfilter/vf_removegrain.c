@@ -471,9 +471,9 @@ static int config_input(AVFilterLink *inlink)
 
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
-    s->planeheight[1] = s->planeheight[2] = FF_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
+    s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
     s->planeheight[0] = s->planeheight[3] = inlink->h;
-    s->planewidth[1]  = s->planewidth[2]  = FF_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
+    s->planewidth[1]  = s->planewidth[2]  = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
     s->planewidth[0]  = s->planewidth[3]  = inlink->w;
 
     for (i = 0; i < s->nb_planes; i++) {
@@ -619,7 +619,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
         td.in = in; td.out = out; td.plane = i;
         ctx->internal->execute(ctx, filter_slice, &td, NULL,
-                               FFMIN(s->planeheight[i], ctx->graph->nb_threads));
+                               FFMIN(s->planeheight[i], ff_filter_get_nb_threads(ctx)));
 
         src = in->data[i] + (s->planeheight[i] - 1) * in->linesize[i];
         dst = out->data[i] + (s->planeheight[i] - 1) * out->linesize[i];

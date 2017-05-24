@@ -22,7 +22,7 @@
 #include "avfilter.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct ASetRateContext {
     const AVClass *class;
     int sample_rate;
     int rescale_pts;

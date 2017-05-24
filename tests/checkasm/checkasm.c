@@ -68,11 +68,16 @@ static const struct {
     #if CONFIG_ALAC_DECODER
         { "alacdsp", checkasm_check_alacdsp },
     #endif
+    #if CONFIG_AUDIODSP
+        { "audiodsp", checkasm_check_audiodsp },
+    #endif
+    #if CONFIG_BLOCKDSP
+        { "blockdsp", checkasm_check_blockdsp },
+    #endif
     #if CONFIG_BSWAPDSP
         { "bswapdsp", checkasm_check_bswapdsp },
     #endif
     #if CONFIG_DCA_DECODER
-        { "dcadsp", checkasm_check_dcadsp },
         { "synth_filter", checkasm_check_synth_filter },
     #endif
     #if CONFIG_FLACDSP
@@ -81,14 +86,24 @@ static const struct {
     #if CONFIG_FMTCONVERT
         { "fmtconvert", checkasm_check_fmtconvert },
     #endif
+    #if CONFIG_H264DSP
+        { "h264dsp", checkasm_check_h264dsp },
+    #endif
     #if CONFIG_H264PRED
         { "h264pred", checkasm_check_h264pred },
     #endif
     #if CONFIG_H264QPEL
         { "h264qpel", checkasm_check_h264qpel },
     #endif
+    #if CONFIG_HEVC_DECODER
+        { "hevc_add_res", checkasm_check_hevc_add_res },
+        { "hevc_idct", checkasm_check_hevc_idct },
+    #endif
     #if CONFIG_JPEG2000_DECODER
         { "jpeg2000dsp", checkasm_check_jpeg2000dsp },
+    #endif
+    #if CONFIG_HUFFYUVDSP
+        { "llviddsp", checkasm_check_llviddsp },
     #endif
     #if CONFIG_PIXBLOCKDSP
         { "pixblockdsp", checkasm_check_pixblockdsp },
@@ -96,9 +111,26 @@ static const struct {
     #if CONFIG_V210_ENCODER
         { "v210enc", checkasm_check_v210enc },
     #endif
+    #if CONFIG_VP8DSP
+        { "vp8dsp", checkasm_check_vp8dsp },
+    #endif
     #if CONFIG_VP9_DECODER
         { "vp9dsp", checkasm_check_vp9dsp },
     #endif
+    #if CONFIG_VIDEODSP
+        { "videodsp", checkasm_check_videodsp },
+    #endif
+#endif
+#if CONFIG_AVFILTER
+    #if CONFIG_BLEND_FILTER
+        { "vf_blend", checkasm_check_blend },
+    #endif
+    #if CONFIG_COLORSPACE_FILTER
+        { "vf_colorspace", checkasm_check_colorspace },
+    #endif
+#endif
+#if CONFIG_AVUTIL
+        { "fixed_dsp", checkasm_check_fixed_dsp },
 #endif
     { NULL }
 };
@@ -175,6 +207,7 @@ static struct {
     int nop_time;
     int cpu_flag;
     const char *cpu_flag_name;
+    const char *test_name;
 } state;
 
 /* PRNG state */
@@ -198,7 +231,7 @@ int float_near_ulp(float a, float b, unsigned max_ulp)
         return a == b;
     }
 
-    if (abs(x.i - y.i) <= max_ulp)
+    if (llabs((int64_t)x.i - y.i) <= max_ulp)
         return 1;
 
     return 0;
@@ -466,6 +499,8 @@ static void check_cpu_flag(const char *name, int flag)
 
         state.cpu_flag_name = name;
         for (i = 0; tests[i].func; i++) {
+            if (state.test_name && strcmp(tests[i].name, state.test_name))
+                continue;
             state.current_test_name = tests[i].name;
             tests[i].func();
         }
@@ -483,7 +518,8 @@ static void print_cpu_name(void)
 
 int main(int argc, char *argv[])
 {
-    int i, seed, ret = 0;
+    unsigned int seed = av_get_random_seed();
+    int i, ret = 0;
 
 #if ARCH_ARM && HAVE_ARMV5TE_EXTERNAL
     if (have_vfp(av_get_cpu_flags()) || have_neon(av_get_cpu_flags()))
@@ -495,22 +531,27 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    if (argc > 1 && !strncmp(argv[1], "--bench", 7)) {
+    while (argc > 1) {
+        if (!strncmp(argv[1], "--bench", 7)) {
 #ifndef AV_READ_TIME
-        fprintf(stderr, "checkasm: --bench is not supported on your system\n");
-        return 1;
+            fprintf(stderr, "checkasm: --bench is not supported on your system\n");
+            return 1;
 #endif
-        if (argv[1][7] == '=') {
-            state.bench_pattern = argv[1] + 8;
-            state.bench_pattern_len = strlen(state.bench_pattern);
-        } else
-            state.bench_pattern = "";
+            if (argv[1][7] == '=') {
+                state.bench_pattern = argv[1] + 8;
+                state.bench_pattern_len = strlen(state.bench_pattern);
+            } else
+                state.bench_pattern = "";
+        } else if (!strncmp(argv[1], "--test=", 7)) {
+            state.test_name = argv[1] + 7;
+        } else {
+            seed = strtoul(argv[1], NULL, 10);
+        }
 
         argc--;
         argv++;
     }
 
-    seed = (argc > 1) ? atoi(argv[1]) : av_get_random_seed();
     fprintf(stderr, "checkasm: using random seed %u\n", seed);
     av_lfg_init(&checkasm_lfg, seed);
 

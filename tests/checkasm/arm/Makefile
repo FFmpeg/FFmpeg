@@ -1,1 +1,0 @@
-CHECKASMOBJS-$(HAVE_ARMV5TE_EXTERNAL) += arm/checkasm.o

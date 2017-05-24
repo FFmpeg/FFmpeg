@@ -31,6 +31,9 @@ static av_cold int v308_encode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
+    avctx->bits_per_coded_sample = 24;
+    avctx->bit_rate = ff_guess_coded_bitrate(avctx);
+
     return 0;
 }
 

@@ -1,5 +1,4 @@
 /*
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -42,7 +41,7 @@ typedef struct ERPicture {
     AVFrame *f;
     ThreadFrame *tf;
 
-    // it's the caller's responsibility to allocate these buffers
+    // it is the caller's responsibility to allocate these buffers
     int16_t (*motion_val[2])[2];
     int8_t *ref_index[2];
 
@@ -58,8 +57,8 @@ typedef struct ERContext {
     int *mb_index2xy;
     int mb_num;
     int mb_width, mb_height;
-    int mb_stride;
-    int b8_stride;
+    ptrdiff_t mb_stride;
+    ptrdiff_t b8_stride;
 
     volatile int error_count;
     int error_occurred;

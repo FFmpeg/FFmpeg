@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <float.h>
 #include <math.h>
 
 #include "libavcodec/avfft.h"
@@ -53,6 +54,7 @@ typedef struct ShowFreqsContext {
     float **avg_data;
     float *window_func_lut;
     float overlap;
+    float minamp;
     int hop_size;
     int nb_channels;
     int nb_freq;
@@ -112,12 +114,17 @@ static const AVOption showfreqs_options[] = {
         { "lanczos",  "Lanczos",          0, AV_OPT_TYPE_CONST, {.i64=WFUNC_LANCZOS},  0, 0, FLAGS, "win_func" },
         { "gauss",    "Gauss",            0, AV_OPT_TYPE_CONST, {.i64=WFUNC_GAUSS},    0, 0, FLAGS, "win_func" },
         { "tukey",    "Tukey",            0, AV_OPT_TYPE_CONST, {.i64=WFUNC_TUKEY},    0, 0, FLAGS, "win_func" },
+        { "dolph",    "Dolph-Chebyshev",  0, AV_OPT_TYPE_CONST, {.i64=WFUNC_DOLPH},    0, 0, FLAGS, "win_func" },
+        { "cauchy",   "Cauchy",           0, AV_OPT_TYPE_CONST, {.i64=WFUNC_CAUCHY},   0, 0, FLAGS, "win_func" },
+        { "parzen",   "Parzen",           0, AV_OPT_TYPE_CONST, {.i64=WFUNC_PARZEN},   0, 0, FLAGS, "win_func" },
+        { "poisson",  "Poisson",          0, AV_OPT_TYPE_CONST, {.i64=WFUNC_POISSON},  0, 0, FLAGS, "win_func" },
     { "overlap",  "set window overlap", OFFSET(overlap), AV_OPT_TYPE_FLOAT, {.dbl=1.}, 0., 1., FLAGS },
     { "averaging", "set time averaging", OFFSET(avg), AV_OPT_TYPE_INT, {.i64=1}, 0, INT32_MAX, FLAGS },
     { "colors", "set channels colors", OFFSET(colors), AV_OPT_TYPE_STRING, {.str = "red|green|blue|yellow|orange|lime|pink|magenta|brown" }, 0, 0, FLAGS },
     { "cmode", "set channel mode", OFFSET(cmode), AV_OPT_TYPE_INT, {.i64=COMBINED}, 0, NB_CMODES-1, FLAGS, "cmode" },
         { "combined", "show all channels in same window",  0, AV_OPT_TYPE_CONST, {.i64=COMBINED}, 0, 0, FLAGS, "cmode" },
         { "separate", "show each channel in own window",   0, AV_OPT_TYPE_CONST, {.i64=SEPARATE}, 0, 0, FLAGS, "cmode" },
+    { "minamp",  "set minimum amplitude", OFFSET(minamp), AV_OPT_TYPE_FLOAT, {.dbl=1e-6}, FLT_MIN, 1e-6, FLAGS },
     { NULL }
 };
 
@@ -150,6 +157,15 @@ static int query_formats(AVFilterContext *ctx)
     formats = ff_make_format_list(pix_fmts);
     if ((ret = ff_formats_ref(formats, &outlink->in_formats)) < 0)
         return ret;
+
+    return 0;
+}
+
+static av_cold int init(AVFilterContext *ctx)
+{
+    ShowFreqsContext *s = ctx->priv;
+
+    s->pts = AV_NOPTS_VALUE;
 
     return 0;
 }
@@ -272,6 +288,7 @@ static inline void plot_freq(ShowFreqsContext *s, int ch,
                              AVFrame *out, AVFilterLink *outlink)
 {
     const int w = s->w;
+    const float min = s->minamp;
     const float avg = s->avg_data[ch][f];
     const float bsize = get_bsize(s, f);
     const int sx = get_sx(s, f);
@@ -286,7 +303,7 @@ static inline void plot_freq(ShowFreqsContext *s, int ch,
         a = 1.0 - cbrt(a);
         break;
     case AS_LOG:
-        a = log(av_clipd(a, 1e-6, 1)) / log(1e-6);
+        a = log(av_clipd(a, min, 1)) / log(min);
         break;
     case AS_LINEAR:
         a = 1.0 - a;
@@ -301,18 +318,20 @@ static inline void plot_freq(ShowFreqsContext *s, int ch,
         end = (outlink->h / s->nb_channels) * (ch + 1);
         y = (outlink->h / s->nb_channels) * ch + a * (outlink->h / s->nb_channels) - 1;
         break;
+    default:
+        av_assert0(0);
     }
     if (y < 0)
         return;
 
     switch (s->avg) {
     case 0:
-        y = s->avg_data[ch][f] = !outlink->frame_count ? y : FFMIN(avg, y);
+        y = s->avg_data[ch][f] = !outlink->frame_count_in ? y : FFMIN(avg, y);
         break;
     case 1:
         break;
     default:
-        s->avg_data[ch][f] = avg + y * (y - avg) / (FFMIN(outlink->frame_count + 1, s->avg) * y);
+        s->avg_data[ch][f] = avg + y * (y - avg) / (FFMIN(outlink->frame_count_in + 1, s->avg) * y);
         y = s->avg_data[ch][f];
         break;
     }
@@ -423,7 +442,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterContext *ctx = inlink->dst;
     ShowFreqsContext *s = ctx->priv;
     AVFrame *fin = NULL;
+    int consumed = 0;
     int ret = 0;
+
+    if (s->pts == AV_NOPTS_VALUE)
+        s->pts = in->pts - av_audio_fifo_size(s->fifo);
 
     av_audio_fifo_write(s->fifo, (void **)in->extended_data, in->nb_samples);
     while (av_audio_fifo_size(s->fifo) >= s->win_size) {
@@ -433,8 +456,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             goto fail;
         }
 
-        fin->pts = s->pts;
-        s->pts += s->hop_size;
+        fin->pts = s->pts + consumed;
+        consumed += s->hop_size;
         ret = av_audio_fifo_peek(s->fifo, (void **)fin->extended_data, s->win_size);
         if (ret < 0)
             goto fail;
@@ -447,6 +470,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
 fail:
+    s->pts = AV_NOPTS_VALUE;
     av_frame_free(&fin);
     av_frame_free(&in);
     return ret;
@@ -491,6 +515,7 @@ static const AVFilterPad showfreqs_outputs[] = {
 AVFilter ff_avf_showfreqs = {
     .name          = "showfreqs",
     .description   = NULL_IF_CONFIG_SMALL("Convert input audio to a frequencies video output."),
+    .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
     .priv_size     = sizeof(ShowFreqsContext),

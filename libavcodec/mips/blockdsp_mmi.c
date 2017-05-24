@@ -22,126 +22,138 @@
  */
 
 #include "blockdsp_mips.h"
+#include "libavutil/mips/mmiutils.h"
 
-void ff_fill_block16_mmi(uint8_t *block, uint8_t value, int line_size, int h)
+void ff_fill_block16_mmi(uint8_t *block, uint8_t value, ptrdiff_t line_size, int h)
 {
+    double ftmp[1];
+    DECLARE_VAR_ALL64;
+
     __asm__ volatile (
-        "move $8, %3                \r\n"
-        "move $9, %0                \r\n"
-        "dmtc1 %1, $f2              \r\n"
-        "punpcklbh $f2, $f2, $f2    \r\n"
-        "punpcklbh $f2, $f2, $f2    \r\n"
-        "punpcklbh $f2, $f2, $f2    \r\n"
-        "1:                         \r\n"
-        "gssdlc1 $f2, 7($9)         \r\n"
-        "gssdrc1 $f2, 0($9)         \r\n"
-        "gssdlc1 $f2, 15($9)        \r\n"
-        "gssdrc1 $f2, 8($9)         \r\n"
-        "daddi $8, $8, -1           \r\n"
-        "daddu $9, $9, %2           \r\n"
-        "bnez $8, 1b                \r\n"
-        ::"r"(block),"r"(value),"r"(line_size),"r"(h)
-        : "$8","$9"
+        "mtc1       %[value],   %[ftmp0]                                \n\t"
+        "punpcklbh  %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "punpcklbh  %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "punpcklbh  %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "1:                                                             \n\t"
+        MMI_SDC1(%[ftmp0], %[block], 0x00)
+        PTR_ADDI   "%[h],       %[h],           -0x01                   \n\t"
+        MMI_SDC1(%[ftmp0], %[block], 0x08)
+        PTR_ADDU   "%[block],   %[block],       %[line_size]            \n\t"
+        "bnez       %[h],       1b                                      \n\t"
+        : [ftmp0]"=&f"(ftmp[0]),
+          RESTRICT_ASM_ALL64
+          [block]"+&r"(block),              [h]"+&r"(h)
+        : [value]"r"(value),                [line_size]"r"((mips_reg)line_size)
+        : "memory"
     );
 }
 
-void ff_fill_block8_mmi(uint8_t *block, uint8_t value, int line_size, int h)
+void ff_fill_block8_mmi(uint8_t *block, uint8_t value, ptrdiff_t line_size, int h)
 {
+    double ftmp0;
+    DECLARE_VAR_ALL64;
+
     __asm__ volatile (
-        "move $8, %3                \r\n"
-        "move $9, %0                \r\n"
-        "dmtc1 %1, $f2              \r\n"
-        "punpcklbh $f2, $f2, $f2    \r\n"
-        "punpcklbh $f2, $f2, $f2    \r\n"
-        "punpcklbh $f2, $f2, $f2    \r\n"
-        "1:                         \r\n"
-        "gssdlc1 $f2, 7($9)         \r\n"
-        "gssdrc1 $f2, 0($9)         \r\n"
-        "daddi $8, $8, -1           \r\n"
-        "daddu $9, $9, %2           \r\n"
-        "bnez $8, 1b                \r\n"
-        ::"r"(block),"r"(value),"r"(line_size),"r"(h)
-        : "$8","$9"
+        "mtc1       %[value],   %[ftmp0]                                \n\t"
+        "punpcklbh  %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "punpcklbh  %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "punpcklbh  %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "1:                                                             \n\t"
+        MMI_SDC1(%[ftmp0], %[block], 0x00)
+        PTR_ADDI   "%[h],       %[h],           -0x01                   \n\t"
+        PTR_ADDU   "%[block],   %[block],       %[line_size]            \n\t"
+        "bnez       %[h],       1b                                      \n\t"
+        : [ftmp0]"=&f"(ftmp0),
+          RESTRICT_ASM_ALL64
+          [block]"+&r"(block),              [h]"+&r"(h)
+        : [value]"r"(value),                [line_size]"r"((mips_reg)line_size)
+        : "memory"
     );
 }
 
 void ff_clear_block_mmi(int16_t *block)
 {
+    double ftmp[2];
+
     __asm__ volatile (
-        "xor $f0, $f0, $f0              \r\n"
-        "xor $f2, $f2, $f2              \r\n"
-        "gssqc1 $f0, $f2,   0(%0)       \r\n"
-        "gssqc1 $f0, $f2,  16(%0)       \r\n"
-        "gssqc1 $f0, $f2,  32(%0)       \r\n"
-        "gssqc1 $f0, $f2,  48(%0)       \r\n"
-        "gssqc1 $f0, $f2,  64(%0)       \r\n"
-        "gssqc1 $f0, $f2,  80(%0)       \r\n"
-        "gssqc1 $f0, $f2,  96(%0)       \r\n"
-        "gssqc1 $f0, $f2, 112(%0)       \r\n"
-        ::"r"(block)
+        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "xor        %[ftmp1],   %[ftmp1],       %[ftmp1]                \n\t"
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x00)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x10)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x20)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x30)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x40)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x50)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x60)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x70)
+        : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1])
+        : [block]"r"(block)
         : "memory"
     );
 }
 
 void ff_clear_blocks_mmi(int16_t *block)
 {
+    double ftmp[2];
+
     __asm__ volatile (
-        "xor $f0, $f0, $f0              \r\n"
-        "xor $f2, $f2, $f2              \r\n"
-        "gssqc1 $f0, $f2,   0(%0)       \r\n"
-        "gssqc1 $f0, $f2,  16(%0)       \r\n"
-        "gssqc1 $f0, $f2,  32(%0)       \r\n"
-        "gssqc1 $f0, $f2,  48(%0)       \r\n"
-        "gssqc1 $f0, $f2,  64(%0)       \r\n"
-        "gssqc1 $f0, $f2,  80(%0)       \r\n"
-        "gssqc1 $f0, $f2,  96(%0)       \r\n"
-        "gssqc1 $f0, $f2, 112(%0)       \r\n"
+        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
+        "xor        %[ftmp1],   %[ftmp1],       %[ftmp1]                \n\t"
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x00)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x10)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x20)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x30)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x40)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x50)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x60)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x70)
 
-        "gssqc1 $f0, $f2, 128(%0)       \r\n"
-        "gssqc1 $f0, $f2, 144(%0)       \r\n"
-        "gssqc1 $f0, $f2, 160(%0)       \r\n"
-        "gssqc1 $f0, $f2, 176(%0)       \r\n"
-        "gssqc1 $f0, $f2, 192(%0)       \r\n"
-        "gssqc1 $f0, $f2, 208(%0)       \r\n"
-        "gssqc1 $f0, $f2, 224(%0)       \r\n"
-        "gssqc1 $f0, $f2, 240(%0)       \r\n"
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x80)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x90)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0xa0)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0xb0)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0xc0)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0xd0)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0xe0)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0xf0)
 
-        "gssqc1 $f0, $f2, 256(%0)       \r\n"
-        "gssqc1 $f0, $f2, 272(%0)       \r\n"
-        "gssqc1 $f0, $f2, 288(%0)       \r\n"
-        "gssqc1 $f0, $f2, 304(%0)       \r\n"
-        "gssqc1 $f0, $f2, 320(%0)       \r\n"
-        "gssqc1 $f0, $f2, 336(%0)       \r\n"
-        "gssqc1 $f0, $f2, 352(%0)       \r\n"
-        "gssqc1 $f0, $f2, 368(%0)       \r\n"
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x100)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x110)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x120)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x130)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x140)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x150)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x160)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x170)
 
-        "gssqc1 $f0, $f2, 384(%0)       \r\n"
-        "gssqc1 $f0, $f2, 400(%0)       \r\n"
-        "gssqc1 $f0, $f2, 416(%0)       \r\n"
-        "gssqc1 $f0, $f2, 432(%0)       \r\n"
-        "gssqc1 $f0, $f2, 448(%0)       \r\n"
-        "gssqc1 $f0, $f2, 464(%0)       \r\n"
-        "gssqc1 $f0, $f2, 480(%0)       \r\n"
-        "gssqc1 $f0, $f2, 496(%0)       \r\n"
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x180)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x190)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x1a0)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x1b0)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x1c0)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x1d0)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x1e0)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x1f0)
 
-        "gssqc1 $f0, $f2, 512(%0)       \r\n"
-        "gssqc1 $f0, $f2, 528(%0)       \r\n"
-        "gssqc1 $f0, $f2, 544(%0)       \r\n"
-        "gssqc1 $f0, $f2, 560(%0)       \r\n"
-        "gssqc1 $f0, $f2, 576(%0)       \r\n"
-        "gssqc1 $f0, $f2, 592(%0)       \r\n"
-        "gssqc1 $f0, $f2, 608(%0)       \r\n"
-        "gssqc1 $f0, $f2, 624(%0)       \r\n"
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x200)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x210)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x220)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x230)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x240)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x250)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x260)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x270)
 
-        "gssqc1 $f0, $f2, 640(%0)       \r\n"
-        "gssqc1 $f0, $f2, 656(%0)       \r\n"
-        "gssqc1 $f0, $f2, 672(%0)       \r\n"
-        "gssqc1 $f0, $f2, 688(%0)       \r\n"
-        "gssqc1 $f0, $f2, 704(%0)       \r\n"
-        "gssqc1 $f0, $f2, 720(%0)       \r\n"
-        "gssqc1 $f0, $f2, 736(%0)       \r\n"
-        "gssqc1 $f0, $f2, 752(%0)       \r\n"
-        ::"r"(block)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x280)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x290)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x2a0)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x2b0)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x2c0)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x2d0)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x2e0)
+        MMI_SQC1(%[ftmp0], %[ftmp1], %[block], 0x2f0)
+        : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1])
+        : [block]"r"((uint64_t *)block)
         : "memory"
     );
 }

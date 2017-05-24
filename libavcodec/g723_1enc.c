@@ -57,7 +57,8 @@ static av_cold int g723_1_encode_init(AVCodecContext *avctx)
     if (avctx->bit_rate == 6300) {
         p->cur_rate = RATE_6300;
     } else if (avctx->bit_rate == 5300) {
-        av_log(avctx, AV_LOG_ERROR, "Bitrate not supported yet, use 6300\n");
+        av_log(avctx, AV_LOG_ERROR, "Use bitrate 6300 instead of 5300.\n");
+        avpriv_report_missing_feature(avctx, "Bitrate 5300");
         return AVERROR_PATCHWELCOME;
     } else {
         av_log(avctx, AV_LOG_ERROR, "Bitrate not supported, use 6300\n");

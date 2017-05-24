@@ -50,7 +50,7 @@ int ff_sws_alphablendaway(SwsContext *c, const uint8_t *src[],
             int w = plane ? c->chrSrcW : c->srcW;
             int x_subsample = plane ? desc->log2_chroma_w: 0;
             int y_subsample = plane ? desc->log2_chroma_h: 0;
-            for (y = srcSliceY >> y_subsample; y < FF_CEIL_RSHIFT(srcSliceH, y_subsample); y++) {
+            for (y = srcSliceY >> y_subsample; y < AV_CEIL_RSHIFT(srcSliceH, y_subsample); y++) {
                 if (x_subsample || y_subsample) {
                     int alpha;
                     unsigned u;

@@ -21,6 +21,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avstring.h"
+#include "libavutil/ffmath.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "avfilter.h"
@@ -585,6 +586,7 @@ static int config_input(AVFilterLink *inlink)
     s->filters = av_calloc(inlink->channels, 32 * sizeof(*s->filters));
     if (!s->filters) {
         s->nb_allocated = 0;
+        av_free(args);
         return AVERROR(ENOMEM);
     }
 
@@ -609,7 +611,7 @@ static int config_input(AVFilterLink *inlink)
         }
 
         if (s->filters[s->nb_filters].freq < 0 ||
-            s->filters[s->nb_filters].freq > inlink->sample_rate / 2)
+            s->filters[s->nb_filters].freq > inlink->sample_rate / 2.0)
             s->filters[s->nb_filters].ignore = 1;
 
         if (s->filters[s->nb_filters].channel < 0 ||
@@ -644,7 +646,7 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
         if (filter < 0 || filter >= s->nb_filters)
             return AVERROR(EINVAL);
 
-        if (freq < 0 || freq > inlink->sample_rate / 2)
+        if (freq < 0 || freq > inlink->sample_rate / 2.0)
             return AVERROR(EINVAL);
 
         s->filters[filter].freq  = freq;

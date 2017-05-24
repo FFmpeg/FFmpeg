@@ -1,5 +1,5 @@
 /*
- * Interface to xvidcore for mpeg4 encoding
+ * Interface to xvidcore for MPEG-4 encoding
  * Copyright (c) 2004 Adam Thayer <krevnik@comcast.net>
  *
  * This file is part of FFmpeg.
@@ -84,6 +84,7 @@ struct xvid_context {
     int ssim_acc;                  /**< SSIM accuracy. 0: accurate. 4: fast. */
     int gmc;
     int me_quality;                /**< Motion estimation quality. 0: fast 6: best. */
+    int mpeg_quant;                /**< Quantization type. 0: H.263, 1: MPEG */
 };
 
 /**
@@ -95,6 +96,9 @@ struct xvid_ff_pass1 {
 };
 
 static int xvid_encode_close(AVCodecContext *avctx);
+static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
+                             const AVFrame *picture, int *got_packet);
+
 
 /*
  * Xvid 2-Pass Kludge Section
@@ -141,7 +145,7 @@ static int xvid_ff_2pass_create(xvid_plg_create_t *param, void **handle)
  * Destroy the two-pass plugin context.
  *
  * @param ref Context pointer for the plugin
- * @param param Destrooy context
+ * @param param Destroy context
  * @return Returns 0, success guaranteed
  */
 static int xvid_ff_2pass_destroy(struct xvid_context *ref,
@@ -540,7 +544,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         rc2pass2.version = XVID_VERSION;
         rc2pass2.bitrate = avctx->bit_rate;
 
-        fd = av_tempfile("xvidff.", &x->twopassfile, 0, avctx);
+        fd = avpriv_tempfile("xvidff.", &x->twopassfile, 0, avctx);
         if (fd < 0) {
             av_log(avctx, AV_LOG_ERROR, "Xvid: Cannot write 2-pass pipe\n");
             return fd;
@@ -641,7 +645,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
     /* Quant Matrices */
     x->intra_matrix =
     x->inter_matrix = NULL;
+
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
     if (avctx->mpeg_quant)
+        x->mpeg_quant = avctx->mpeg_quant;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+    if (x->mpeg_quant)
         x->vol_flags |= XVID_VOL_MPEGQUANT;
     if ((avctx->intra_matrix || avctx->inter_matrix)) {
         x->vol_flags |= XVID_VOL_MPEGQUANT;
@@ -679,7 +691,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     avctx->extradata      = NULL;
     avctx->extradata_size = 0;
     if (xvid_flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
-        /* In this case, we are claiming to be MPEG4 */
+        /* In this case, we are claiming to be MPEG-4 */
         x->quicktime_format = 1;
         avctx->codec_id     = AV_CODEC_ID_MPEG4;
     } else {
@@ -697,6 +709,43 @@ FF_ENABLE_DEPRECATION_WARNINGS
         xvid_enc_create.global |= XVID_GLOBAL_PACKED;
 
     av_assert0(xvid_enc_create.num_plugins + (!!x->ssim) + (!!x->variance_aq) + (!!x->lumi_aq) <= FF_ARRAY_ELEMS(plugins));
+
+    /* Encode a dummy frame to get the extradata immediately */
+    if (x->quicktime_format) {
+        AVFrame *picture;
+        AVPacket packet = {0};
+        int size, got_packet, ret;
+
+        av_init_packet(&packet);
+
+        picture = av_frame_alloc();
+        if (!picture)
+            return AVERROR(ENOMEM);
+
+        xerr = xvid_encore(NULL, XVID_ENC_CREATE, &xvid_enc_create, NULL);
+        if( xerr ) {
+            av_frame_free(&picture);
+            av_log(avctx, AV_LOG_ERROR, "Xvid: Could not create encoder reference\n");
+            return AVERROR_EXTERNAL;
+        }
+        x->encoder_handle = xvid_enc_create.handle;
+        size = ((avctx->width + 1) & ~1) * ((avctx->height + 1) & ~1);
+        picture->data[0] = av_malloc(size + size / 2);
+        if (!picture->data[0]) {
+            av_frame_free(&picture);
+            return AVERROR(ENOMEM);
+        }
+        picture->data[1] = picture->data[0] + size;
+        picture->data[2] = picture->data[1] + size / 4;
+        memset(picture->data[0], 0, size);
+        memset(picture->data[1], 128, size / 2);
+        ret = xvid_encode_frame(avctx, &packet, picture, &got_packet);
+        if (!ret && got_packet)
+            av_packet_unref(&packet);
+        av_free(picture->data[0]);
+        av_frame_free(&picture);
+        xvid_encore(x->encoder_handle, XVID_ENC_DESTROY, NULL, NULL);
+    }
 
     /* Create encoder context */
     xerr = xvid_encore(NULL, XVID_ENC_CREATE, &xvid_enc_create, NULL);
@@ -890,6 +939,7 @@ static const AVOption options[] = {
     { "ssim_acc",    "SSIM accuracy",                   OFFSET(ssim_acc),    AV_OPT_TYPE_INT,   { .i64 = 2 },       0,       4, VE         },
     { "gmc",         "use GMC",                         OFFSET(gmc),         AV_OPT_TYPE_INT,   { .i64 = 0 },       0,       1, VE         },
     { "me_quality",  "Motion estimation quality",       OFFSET(me_quality),  AV_OPT_TYPE_INT,   { .i64 = 0 },       0,       6, VE         },
+    { "mpeg_quant",  "Use MPEG quantizers instead of H.263", OFFSET(mpeg_quant), AV_OPT_TYPE_INT, { .i64 = 0 },     0,       1, VE         },
     { NULL },
 };
 

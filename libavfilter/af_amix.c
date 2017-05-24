@@ -177,7 +177,7 @@ typedef struct MixContext {
 #define F AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption amix_options[] = {
     { "inputs", "Number of inputs.",
-            OFFSET(nb_inputs), AV_OPT_TYPE_INT, { .i64 = 2 }, 1, 32, A|F },
+            OFFSET(nb_inputs), AV_OPT_TYPE_INT, { .i64 = 2 }, 1, 1024, A|F },
     { "duration", "How to determine the end-of-stream.",
             OFFSET(duration_mode), AV_OPT_TYPE_INT, { .i64 = DURATION_LONGEST }, 0,  2, A|F, "duration" },
         { "longest",  "Duration of longest input.",  0, AV_OPT_TYPE_CONST, { .i64 = DURATION_LONGEST  }, INT_MIN, INT_MAX, A|F, "duration" },
@@ -235,7 +235,7 @@ static int config_output(AVFilterLink *outlink)
     if (!s->fifos)
         return AVERROR(ENOMEM);
 
-    s->nb_channels = av_get_channel_layout_nb_channels(outlink->channel_layout);
+    s->nb_channels = outlink->channels;
     for (i = 0; i < s->nb_inputs; i++) {
         s->fifos[i] = av_audio_fifo_alloc(outlink->format, s->nb_channels, 1024);
         if (!s->fifos[i])
@@ -312,6 +312,9 @@ static int output_frame(AVFilterLink *outlink)
 
     calculate_scales(s, nb_samples);
 
+    if (nb_samples == 0)
+        return 0;
+
     out_buf = ff_get_audio_buffer(outlink, nb_samples);
     if (!out_buf)
         return AVERROR(ENOMEM);
@@ -333,10 +336,19 @@ static int output_frame(AVFilterLink *outlink)
             plane_size = nb_samples * (s->planar ? 1 : s->nb_channels);
             plane_size = FFALIGN(plane_size, 16);
 
-            for (p = 0; p < planes; p++) {
-                s->fdsp->vector_fmac_scalar((float *)out_buf->extended_data[p],
-                                           (float *) in_buf->extended_data[p],
-                                           s->input_scale[i], plane_size);
+            if (out_buf->format == AV_SAMPLE_FMT_FLT ||
+                out_buf->format == AV_SAMPLE_FMT_FLTP) {
+                for (p = 0; p < planes; p++) {
+                    s->fdsp->vector_fmac_scalar((float *)out_buf->extended_data[p],
+                                                (float *) in_buf->extended_data[p],
+                                                s->input_scale[i], plane_size);
+                }
+            } else {
+                for (p = 0; p < planes; p++) {
+                    s->fdsp->vector_dmac_scalar((double *)out_buf->extended_data[p],
+                                                (double *) in_buf->extended_data[p],
+                                                s->input_scale[i], plane_size);
+                }
             }
         }
     }
@@ -518,7 +530,7 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterChannelLayouts *layouts;
     int ret;
 
-    layouts = ff_all_channel_layouts();
+    layouts = ff_all_channel_counts();
     if (!layouts) {
         ret = AVERROR(ENOMEM);
         goto fail;
@@ -526,6 +538,8 @@ static int query_formats(AVFilterContext *ctx)
 
     if ((ret = ff_add_format(&formats, AV_SAMPLE_FMT_FLT ))          < 0 ||
         (ret = ff_add_format(&formats, AV_SAMPLE_FMT_FLTP))          < 0 ||
+        (ret = ff_add_format(&formats, AV_SAMPLE_FMT_DBL ))          < 0 ||
+        (ret = ff_add_format(&formats, AV_SAMPLE_FMT_DBLP))          < 0 ||
         (ret = ff_set_common_formats        (ctx, formats))          < 0 ||
         (ret = ff_set_common_channel_layouts(ctx, layouts))          < 0 ||
         (ret = ff_set_common_samplerates(ctx, ff_all_samplerates())) < 0)

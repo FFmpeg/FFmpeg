@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef LIBAVCODEC_AACPSDSP_H
-#define LIBAVCODEC_AACPSDSP_H
+#ifndef AVCODEC_AACPSDSP_H
+#define AVCODEC_AACPSDSP_H
 
 #include "aac_defines.h"
 
@@ -54,4 +54,4 @@ void ff_psdsp_init_arm(PSDSPContext *s);
 void ff_psdsp_init_mips(PSDSPContext *s);
 void ff_psdsp_init_x86(PSDSPContext *s);
 
-#endif /* LIBAVCODEC_AACPSDSP_H */
+#endif /* AVCODEC_AACPSDSP_H */

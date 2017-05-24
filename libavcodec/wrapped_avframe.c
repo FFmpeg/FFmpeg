@@ -43,19 +43,31 @@ static int wrapped_avframe_encode(AVCodecContext *avctx, AVPacket *pkt,
                      const AVFrame *frame, int *got_packet)
 {
     AVFrame *wrapped = av_frame_clone(frame);
+    uint8_t *data;
+    int size = sizeof(*wrapped) + AV_INPUT_BUFFER_PADDING_SIZE;
 
     if (!wrapped)
         return AVERROR(ENOMEM);
 
-    pkt->buf = av_buffer_create((uint8_t *)wrapped, sizeof(*wrapped),
-                                wrapped_avframe_release_buffer, NULL,
-                                AV_BUFFER_FLAG_READONLY);
-    if (!pkt->buf) {
+    data = av_mallocz(size);
+    if (!data) {
         av_frame_free(&wrapped);
         return AVERROR(ENOMEM);
     }
 
-    pkt->data = (uint8_t *)wrapped;
+    pkt->buf = av_buffer_create(data, size,
+                                wrapped_avframe_release_buffer, NULL,
+                                AV_BUFFER_FLAG_READONLY);
+    if (!pkt->buf) {
+        av_frame_free(&wrapped);
+        av_freep(&data);
+        return AVERROR(ENOMEM);
+    }
+
+    av_frame_move_ref((AVFrame*)data, wrapped);
+    av_frame_free(&wrapped);
+
+    pkt->data = data;
     pkt->size = sizeof(*wrapped);
 
     pkt->flags |= AV_PKT_FLAG_KEY;

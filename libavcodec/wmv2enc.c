@@ -81,7 +81,7 @@ int ff_wmv2_encode_picture_header(MpegEncContext *s, int picture_number)
     put_bits(&s->pb, 5, s->qscale);
 
     s->dc_table_index  = 1;
-    s->mv_table_index  = 1; /* only if P frame */
+    s->mv_table_index  = 1; /* only if P-frame */
     s->per_mb_rl_table = 0;
     s->mspel           = 0;
     w->per_mb_abt      = 0;

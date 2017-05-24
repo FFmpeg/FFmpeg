@@ -73,7 +73,7 @@ ps_m1p1: dd 1<<31, 0
 cextern ps_neg
 
 %assign i 16
-%rep 13
+%rep 14
 cextern cos_ %+ i
 %assign i i<<1
 %endrep
@@ -756,7 +756,7 @@ DECL_PASS pass_interleave_3dnow, PASS_BIG 0
 %endif
 
 %assign n 1<<%1
-%rep 17-%1
+%rep 18-%1
 %assign n2 n/2
 %assign n4 n/4
 %xdefine list_of_fft list_of_fft, fft %+ n %+ fullsuffix SECTION_REL

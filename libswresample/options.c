@@ -70,7 +70,7 @@ static const AVOption options[]={
 
 {"dither_scale"         , "set dither scale"            , OFFSET(dither.scale   ), AV_OPT_TYPE_FLOAT, {.dbl=1                     }, 0      , INT_MAX   , PARAM},
 
-{"dither_method"        , "set dither method"           , OFFSET(dither.method  ), AV_OPT_TYPE_INT  , {.i64=0                     }, 0      , SWR_DITHER_NB-1, PARAM, "dither_method"},
+{"dither_method"        , "set dither method"           , OFFSET(user_dither_method),AV_OPT_TYPE_INT, {.i64=0                     }, 0      , SWR_DITHER_NB-1, PARAM, "dither_method"},
 {"rectangular"          , "select rectangular dither"   , 0                      , AV_OPT_TYPE_CONST, {.i64=SWR_DITHER_RECTANGULAR}, INT_MIN, INT_MAX   , PARAM, "dither_method"},
 {"triangular"           , "select triangular dither"    , 0                      , AV_OPT_TYPE_CONST, {.i64=SWR_DITHER_TRIANGULAR }, INT_MIN, INT_MAX   , PARAM, "dither_method"},
 {"triangular_hp"        , "select triangular dither with high pass" , 0          , AV_OPT_TYPE_CONST, {.i64=SWR_DITHER_TRIANGULAR_HIGHPASS }, INT_MIN, INT_MAX, PARAM, "dither_method"},
@@ -84,7 +84,8 @@ static const AVOption options[]={
 
 {"filter_size"          , "set swr resampling filter size", OFFSET(filter_size)  , AV_OPT_TYPE_INT  , {.i64=32                    }, 0      , INT_MAX   , PARAM },
 {"phase_shift"          , "set swr resampling phase shift", OFFSET(phase_shift)  , AV_OPT_TYPE_INT  , {.i64=10                    }, 0      , 24        , PARAM },
-{"linear_interp"        , "enable linear interpolation" , OFFSET(linear_interp)  , AV_OPT_TYPE_BOOL , {.i64=0                     }, 0      , 1         , PARAM },
+{"linear_interp"        , "enable linear interpolation" , OFFSET(linear_interp)  , AV_OPT_TYPE_BOOL , {.i64=1                     }, 0      , 1         , PARAM },
+{"exact_rational"       , "enable exact rational"       , OFFSET(exact_rational) , AV_OPT_TYPE_BOOL , {.i64=1                     }, 0      , 1         , PARAM },
 {"cutoff"               , "set cutoff frequency ratio"  , OFFSET(cutoff)         , AV_OPT_TYPE_DOUBLE,{.dbl=0.                    }, 0      , 1         , PARAM },
 
 /* duplicate option in order to work with avconv */

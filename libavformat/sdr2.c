@@ -47,16 +47,16 @@ static int sdr2_read_header(AVFormatContext *s)
 
     avio_skip(s->pb, 20);
     avpriv_set_pts_info(st, 64, 1, avio_rl32(s->pb));
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->width      = avio_rl32(s->pb);
-    st->codec->height     = avio_rl32(s->pb);
-    st->codec->codec_id   = AV_CODEC_ID_H264;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->width      = avio_rl32(s->pb);
+    st->codecpar->height     = avio_rl32(s->pb);
+    st->codecpar->codec_id   = AV_CODEC_ID_H264;
     st->need_parsing      = AVSTREAM_PARSE_FULL;
 
-    ast->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-    ast->codec->channels    = 1;
-    ast->codec->sample_rate = 8000;
-    ast->codec->codec_id    = AV_CODEC_ID_PCM_S16LE;
+    ast->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
+    ast->codecpar->channels    = 1;
+    ast->codecpar->sample_rate = 8000;
+    ast->codecpar->codec_id    = AV_CODEC_ID_PCM_S16LE;
     avpriv_set_pts_info(ast, 64, 1, 8000);
 
     avio_seek(s->pb, FIRST, SEEK_SET);

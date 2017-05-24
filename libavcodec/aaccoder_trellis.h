@@ -70,7 +70,7 @@ static void codebook_trellis_rate(AACEncContext *s, SingleChannelElement *sce,
     float next_minbits = INFINITY;
     int next_mincb = 0;
 
-    abs_pow34_v(s->scoefs, sce->coeffs, 1024);
+    s->abs_pow34(s->scoefs, sce->coeffs, 1024);
     start = win*128;
     for (cb = 0; cb < CB_TOT_ALL; cb++) {
         path[0][cb].cost     = run_bits+4;

@@ -74,17 +74,17 @@ static int msnwc_tcp_probe(AVProbeData *p)
 static int msnwc_tcp_read_header(AVFormatContext *ctx)
 {
     AVIOContext *pb = ctx->pb;
-    AVCodecContext *codec;
+    AVCodecParameters *par;
     AVStream *st;
 
     st = avformat_new_stream(ctx, NULL);
     if (!st)
         return AVERROR(ENOMEM);
 
-    codec             = st->codec;
-    codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    codec->codec_id   = AV_CODEC_ID_MIMIC;
-    codec->codec_tag  = MKTAG('M', 'L', '2', '0');
+    par             = st->codecpar;
+    par->codec_type = AVMEDIA_TYPE_VIDEO;
+    par->codec_id   = AV_CODEC_ID_MIMIC;
+    par->codec_tag  = MKTAG('M', 'L', '2', '0');
 
     avpriv_set_pts_info(st, 32, 1, 1000);
 

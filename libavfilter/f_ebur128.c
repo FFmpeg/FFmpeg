@@ -3,19 +3,19 @@
  *
  * This file is part of FFmpeg.
  *
- * FFmpeg is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
  * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License along
- * with FFmpeg; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 /**
@@ -33,6 +33,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/dict.h"
+#include "libavutil/ffmath.h"
 #include "libavutil/xga_font_data.h"
 #include "libavutil/opt.h"
 #include "libavutil/timestamp.h"
@@ -89,7 +90,7 @@ struct integrator {
 
 struct rect { int x, y, w, h; };
 
-typedef struct {
+typedef struct EBUR128Context {
     const AVClass *class;           ///< AVClass context for log and options purpose
 
     /* peak metering */
@@ -140,7 +141,7 @@ typedef struct {
     int loglevel;                   ///< log level for frame logging
     int metadata;                   ///< whether or not to inject loudness results in frames
     int dual_mono;                  ///< whether or not to treat single channel input files as dual-mono
-    double pan_law;                 ///< pan law value used to calulate dual-mono measurements
+    double pan_law;                 ///< pan law value used to calculate dual-mono measurements
 } EBUR128Context;
 
 enum {
