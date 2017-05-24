@@ -2890,6 +2890,7 @@ fail:
 static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
 {
     int i, ret = 0;
+    int eos_at_start = 1;
 
     s->ref = NULL;
     s->last_eos = s->eos;
@@ -2907,8 +2908,15 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
 
     for (i = 0; i < s->pkt.nb_nals; i++) {
         if (s->pkt.nals[i].type == HEVC_NAL_EOB_NUT ||
-            s->pkt.nals[i].type == HEVC_NAL_EOS_NUT)
-            s->eos = 1;
+            s->pkt.nals[i].type == HEVC_NAL_EOS_NUT) {
+            if (eos_at_start) {
+                s->last_eos = 1;
+            } else {
+                s->eos = 1;
+            }
+        } else {
+            eos_at_start = 0;
+        }
     }
 
     /* decode the NAL units */
