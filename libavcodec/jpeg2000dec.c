@@ -298,6 +298,14 @@ static int get_siz(Jpeg2000DecoderContext *s)
         return AVERROR_PATCHWELCOME;
     }
 
+    if (s->tile_offset_x < 0 || s->tile_offset_y < 0 ||
+        s->image_offset_x < s->tile_offset_x ||
+        s->image_offset_y < s->tile_offset_y) {
+        av_log(s->avctx, AV_LOG_ERROR, "Tile offsets are invalid\n",
+               s->ncomponents);
+        return AVERROR_INVALIDDATA;
+    }
+
     s->ncomponents = ncomponents;
 
     if (s->tile_width <= 0 || s->tile_height <= 0) {
