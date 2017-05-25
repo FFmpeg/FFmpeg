@@ -272,15 +272,16 @@ int ff_thread_video_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVF
         pthread_mutex_unlock(&c->task_fifo_mutex);
 
         c->task_index = (c->task_index+1) % BUFFER_SIZE;
-
-        if(!c->finished_tasks[c->finished_task_index].outdata && (c->task_index - c->finished_task_index) % BUFFER_SIZE <= avctx->thread_count)
-            return 0;
     }
 
-    if(c->task_index == c->finished_task_index)
-        return 0;
-
     pthread_mutex_lock(&c->finished_task_mutex);
+    if (c->task_index == c->finished_task_index ||
+        (frame && !c->finished_tasks[c->finished_task_index].outdata &&
+         (c->task_index - c->finished_task_index) % BUFFER_SIZE <= avctx->thread_count)) {
+            pthread_mutex_unlock(&c->finished_task_mutex);
+            return 0;
+        }
+
     while (!c->finished_tasks[c->finished_task_index].outdata) {
         pthread_cond_wait(&c->finished_task_cond, &c->finished_task_mutex);
     }
