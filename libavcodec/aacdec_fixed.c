@@ -187,7 +187,7 @@ static void subband_scale(int *dst, int *src, int scale, int offset, int len)
         round = 1U << (s-1);
         for (i=0; i<len; i++) {
             out = (int)((int64_t)((int64_t)src[i] * c + round) >> s);
-            dst[i] = out * ssign;
+            dst[i] = out * (unsigned)ssign;
         }
     }
 }
