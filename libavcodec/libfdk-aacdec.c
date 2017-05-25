@@ -235,7 +235,7 @@ static int fdk_aac_decode_frame(AVCodecContext *avctx, void *data,
             return AVERROR(ENOMEM);
     }
 
-    err = aacDecoder_DecodeFrame(s->handle, (INT_PCM *) buf, buf_size, 0);
+    err = aacDecoder_DecodeFrame(s->handle, (INT_PCM *) buf, buf_size / sizeof(INT_PCM), 0);
     if (err == AAC_DEC_NOT_ENOUGH_BITS) {
         ret = avpkt->size - valid;
         goto end;
