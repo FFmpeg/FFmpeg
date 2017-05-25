@@ -297,6 +297,11 @@ static int clv_decode_frame(AVCodecContext *avctx, void *data,
     c->pic->pict_type = frame_type & 0x20 ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
 
     if (frame_type & 0x2) {
+        if (buf_size < c->mb_width * c->mb_height) {
+            av_log(avctx, AV_LOG_ERROR, "Packet too small\n");
+            return AVERROR_INVALIDDATA;
+        }
+
         bytestream2_get_be32(&gb); // frame size;
         c->ac_quant        = bytestream2_get_byte(&gb);
         c->luma_dc_quant   = 32;
