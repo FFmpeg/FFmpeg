@@ -599,7 +599,8 @@ static av_cold void ffat_decode_flush(AVCodecContext *avctx)
 static av_cold int ffat_close_decoder(AVCodecContext *avctx)
 {
     ATDecodeContext *at = avctx->priv_data;
-    AudioConverterDispose(at->converter);
+    if (at->converter)
+        AudioConverterDispose(at->converter);
     av_bsf_free(&at->bsf);
     av_packet_unref(&at->new_in_pkt);
     av_packet_unref(&at->in_pkt);
@@ -628,7 +629,7 @@ static av_cold int ffat_close_decoder(AVCodecContext *avctx)
         .flush          = ffat_decode_flush, \
         .priv_class     = &ffat_##NAME##_dec_class, \
         .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY, \
-        .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE, \
+        .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP, \
     };
 
 FFAT_DEC(aac,          AV_CODEC_ID_AAC)
