@@ -504,8 +504,20 @@ static int ffat_decode(AVCodecContext *avctx, void *data,
         if ((ret = av_bsf_receive_packet(at->bsf, &filtered_packet)) < 0)
             return ret;
 
-        at->extradata = at->bsf->par_out->extradata;
-        at->extradata_size = at->bsf->par_out->extradata_size;
+        if (!at->extradata_size) {
+            uint8_t *side_data;
+            int side_data_size = 0;
+
+            side_data = av_packet_get_side_data(&filtered_packet, AV_PKT_DATA_NEW_EXTRADATA,
+                                                &side_data_size);
+            if (side_data_size) {
+                at->extradata = av_mallocz(side_data_size + AV_INPUT_BUFFER_PADDING_SIZE);
+                if (!at->extradata)
+                    return AVERROR(ENOMEM);
+                at->extradata_size = side_data_size;
+                memcpy(at->extradata, side_data, side_data_size);
+            }
+        }
 
         avpkt = &filtered_packet;
     }
