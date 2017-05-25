@@ -817,7 +817,7 @@ static int decode_hq_slice(DiracContext *s, DiracSlice *slice, uint8_t *tmp_buf)
     skip_bits_long(gb, 8*s->highquality.prefix_bytes);
     quant_idx = get_bits(gb, 8);
 
-    if (quant_idx > DIRAC_MAX_QUANT_INDEX) {
+    if (quant_idx > DIRAC_MAX_QUANT_INDEX - 1) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid quantization index - %i\n", quant_idx);
         return AVERROR_INVALIDDATA;
     }
