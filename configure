@@ -2887,6 +2887,9 @@ map "die_license_disabled version3" $EXTERNAL_LIBRARY_VERSION3_LIST
 
 enabled version3 && { enabled gpl && enable gplv3 || enable lgplv3; }
 
+enabled_all gnutls openssl &&
+    die "GnuTLS and OpenSSL must not be enabled at the same time."
+
 # Disable all the library-specific components if the library itself
 # is disabled, see AVCODEC_LIST and following _LIST variables.
 
