@@ -4445,29 +4445,19 @@ elif enabled ppc; then
         check_cflags -maltivec -mabi=altivec
 
         # check if our compiler supports Motorola AltiVec C API
-        check_cc <<EOF || disable altivec
-#include <altivec.h>
-int main(void) {
-    vector signed int v1 = (vector signed int) { 0 };
-    vector signed int v2 = (vector signed int) { 1 };
-    v1 = vec_add(v1, v2);
-    return 0;
-}
-EOF
+        check_code cc altivec.h "vector signed int v1 = (vector signed int) { 0 };
+                                 vector signed int v2 = (vector signed int) { 1 };
+                                 v1 = vec_add(v1, v2);" ||
+            disable altivec
 
         enabled altivec || warn "Altivec disabled, possibly missing --cpu flag"
     fi
 
     if enabled vsx; then
         check_cflags -mvsx &&
-        check_cc <<EOF || disable vsx
-#include <altivec.h>
-int main(void) {
-    int v[4] = { 0 };
-    vector signed int v1 = vec_vsx_ld(0, v);
-    return 0;
-}
-EOF
+        check_code cc altivec.h "int v[4] = { 0 };
+                                 vector signed int v1 = vec_vsx_ld(0, v);" ||
+            disable vsx
     fi
 
     if enabled power8; then
