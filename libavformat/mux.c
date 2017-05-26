@@ -632,7 +632,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
                 av_log(s, AV_LOG_WARNING, "failed to avoid negative "
                     "pts %s in stream %d.\n"
                     "Try -avoid_negative_ts 1 as a possible workaround.\n",
-                    av_ts2str(pkt->dts),
+                    av_ts2str(pkt->pts),
                     pkt->stream_index
                 );
             }
