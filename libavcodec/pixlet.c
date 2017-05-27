@@ -594,6 +594,10 @@ static int pixlet_decode_frame(AVCodecContext *avctx, void *data,
     width  = bytestream2_get_be32(&ctx->gb);
     height = bytestream2_get_be32(&ctx->gb);
 
+    if (    width > INT_MAX - (1U << (NB_LEVELS + 1))
+        || height > INT_MAX - (1U << (NB_LEVELS + 1)))
+        return AVERROR_INVALIDDATA;
+
     w = FFALIGN(width,  1 << (NB_LEVELS + 1));
     h = FFALIGN(height, 1 << (NB_LEVELS + 1));
 
