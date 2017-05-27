@@ -10598,7 +10598,7 @@ uses the reference video instead of the main input as basis.
 
 @itemize
 @item
-Scale a subtitle stream to match the main video in size before overlaying
+Scale a subtitle stream (b) to match the main video (a) in size before overlaying
 @example
 'scale2ref[b][a];[a][b]overlay'
 @end example
