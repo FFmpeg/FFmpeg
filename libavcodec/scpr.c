@@ -27,44 +27,13 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
+#include "scpr.h"
+#include "scpr3.h"
 
 #define TOP  0x01000000
 #define BOT    0x010000
 
-typedef struct RangeCoder {
-    unsigned   code;
-    unsigned   range;
-    unsigned   code1;
-} RangeCoder;
-
-typedef struct PixelModel {
-    unsigned    freq[256];
-    unsigned    lookup[16];
-    unsigned    total_freq;
-} PixelModel;
-
-typedef struct SCPRContext {
-    AVFrame        *last_frame;
-    AVFrame        *current_frame;
-    GetByteContext  gb;
-    RangeCoder      rc;
-    PixelModel      pixel_model[3][4096];
-    unsigned        op_model[6][7];
-    unsigned        run_model[6][257];
-    unsigned        range_model[257];
-    unsigned        count_model[257];
-    unsigned        fill_model[6];
-    unsigned        sxy_model[4][17];
-    unsigned        mv_model[2][513];
-    unsigned        nbx, nby;
-    unsigned        nbcount;
-    unsigned       *blocks;
-    unsigned        cbits;
-    int             cxshift;
-
-    int           (*get_freq)(RangeCoder *rc, unsigned total_freq, unsigned *freq);
-    int           (*decode)(GetByteContext *gb, RangeCoder *rc, unsigned cumFreq, unsigned freq, unsigned total_freq);
-} SCPRContext;
+#include "scpr3.c"
 
 static void init_rangecoder(RangeCoder *rc, GetByteContext *gb)
 {
@@ -90,14 +59,14 @@ static void reinit_tables(SCPRContext *s)
     }
 
     for (j = 0; j < 6; j++) {
-        unsigned *p = s->run_model[j];
+        uint32_t *p = s->run_model[j];
         for (i = 0; i < 256; i++)
             p[i] = 1;
         p[256] = 256;
     }
 
     for (j = 0; j < 6; j++) {
-        unsigned *op = s->op_model[j];
+        uint32_t *op = s->op_model[j];
         for (i = 0; i < 6; i++)
             op[i] = 1;
         op[6] = 6;
@@ -130,13 +99,13 @@ static void reinit_tables(SCPRContext *s)
     s->mv_model[1][512] = 512;
 }
 
-static int decode(GetByteContext *gb, RangeCoder *rc, unsigned cumFreq, unsigned freq, unsigned total_freq)
+static int decode(GetByteContext *gb, RangeCoder *rc, uint32_t cumFreq, uint32_t freq, uint32_t total_freq)
 {
     rc->code -= cumFreq * rc->range;
     rc->range *= freq;
 
     while (rc->range < TOP && bytestream2_get_bytes_left(gb) > 0) {
-        unsigned byte = bytestream2_get_byteu(gb);
+        uint32_t byte = bytestream2_get_byteu(gb);
         rc->code = (rc->code << 8) | byte;
         rc->range <<= 8;
     }
@@ -144,7 +113,7 @@ static int decode(GetByteContext *gb, RangeCoder *rc, unsigned cumFreq, unsigned
     return 0;
 }
 
-static int get_freq(RangeCoder *rc, unsigned total_freq, unsigned *freq)
+static int get_freq(RangeCoder *rc, uint32_t total_freq, uint32_t *freq)
 {
     if (total_freq == 0)
         return AVERROR_INVALIDDATA;
@@ -159,9 +128,9 @@ static int get_freq(RangeCoder *rc, unsigned total_freq, unsigned *freq)
     return 0;
 }
 
-static int decode0(GetByteContext *gb, RangeCoder *rc, unsigned cumFreq, unsigned freq, unsigned total_freq)
+static int decode0(GetByteContext *gb, RangeCoder *rc, uint32_t cumFreq, uint32_t freq, uint32_t total_freq)
 {
-    unsigned t;
+    uint32_t t;
 
     if (total_freq == 0)
         return AVERROR_INVALIDDATA;
@@ -172,7 +141,7 @@ static int decode0(GetByteContext *gb, RangeCoder *rc, unsigned cumFreq, unsigne
     rc->range = rc->range * (uint64_t)(freq + cumFreq) / total_freq - (t + 1);
 
     while (rc->range < TOP && bytestream2_get_bytes_left(gb) > 0) {
-        unsigned byte = bytestream2_get_byteu(gb);
+        uint32_t byte = bytestream2_get_byteu(gb);
         rc->code = (rc->code << 8) | byte;
         rc->code1 <<= 8;
         rc->range <<= 8;
@@ -181,7 +150,7 @@ static int decode0(GetByteContext *gb, RangeCoder *rc, unsigned cumFreq, unsigne
     return 0;
 }
 
-static int get_freq0(RangeCoder *rc, unsigned total_freq, unsigned *freq)
+static int get_freq0(RangeCoder *rc, uint32_t total_freq, uint32_t *freq)
 {
     if (rc->range == 0)
         return AVERROR_INVALIDDATA;
@@ -191,13 +160,13 @@ static int get_freq0(RangeCoder *rc, unsigned total_freq, unsigned *freq)
     return 0;
 }
 
-static int decode_value(SCPRContext *s, unsigned *cnt, unsigned maxc, unsigned step, unsigned *rval)
+static int decode_value(SCPRContext *s, uint32_t *cnt, uint32_t maxc, uint32_t step, uint32_t *rval)
 {
     GetByteContext *gb = &s->gb;
     RangeCoder *rc = &s->rc;
-    unsigned totfr = cnt[maxc];
-    unsigned value;
-    unsigned c = 0, cumfr = 0, cnt_c = 0;
+    uint32_t totfr = cnt[maxc];
+    uint32_t value;
+    uint32_t c = 0, cumfr = 0, cnt_c = 0;
     int i, ret;
 
     if ((ret = s->get_freq(rc, totfr, &value)) < 0)
@@ -223,7 +192,7 @@ static int decode_value(SCPRContext *s, unsigned *cnt, unsigned maxc, unsigned s
     if (totfr > BOT) {
         totfr = 0;
         for (i = 0; i < maxc; i++) {
-            unsigned nc = (cnt[i] >> 1) + 1;
+            uint32_t nc = (cnt[i] >> 1) + 1;
             cnt[i] = nc;
             totfr += nc;
         }
@@ -235,12 +204,12 @@ static int decode_value(SCPRContext *s, unsigned *cnt, unsigned maxc, unsigned s
     return 0;
 }
 
-static int decode_unit(SCPRContext *s, PixelModel *pixel, unsigned step, unsigned *rval)
+static int decode_unit(SCPRContext *s, PixelModel *pixel, uint32_t step, uint32_t *rval)
 {
     GetByteContext *gb = &s->gb;
     RangeCoder *rc = &s->rc;
-    unsigned totfr = pixel->total_freq;
-    unsigned value, x = 0, cumfr = 0, cnt_x = 0;
+    uint32_t totfr = pixel->total_freq;
+    uint32_t value, x = 0, cumfr = 0, cnt_x = 0;
     int i, j, ret, c, cnt_c;
 
     if ((ret = s->get_freq(rc, totfr, &value)) < 0)
@@ -278,13 +247,13 @@ static int decode_unit(SCPRContext *s, PixelModel *pixel, unsigned step, unsigne
     if (totfr > BOT) {
         totfr = 0;
         for (i = 0; i < 256; i++) {
-            unsigned nc = (pixel->freq[i] >> 1) + 1;
+            uint32_t nc = (pixel->freq[i] >> 1) + 1;
             pixel->freq[i] = nc;
             totfr += nc;
         }
         for (i = 0; i < 16; i++) {
-            unsigned sum = 0;
-            unsigned i16_17 = i << 4;
+            uint32_t sum = 0;
+            uint32_t i16_17 = i << 4;
             for (j = 0; j < 16; j++)
                 sum += pixel->freq[i16_17 + j];
             pixel->lookup[i] = sum;
@@ -297,7 +266,7 @@ static int decode_unit(SCPRContext *s, PixelModel *pixel, unsigned step, unsigne
     return 0;
 }
 
-static int decode_units(SCPRContext *s, unsigned *r, unsigned *g, unsigned *b,
+static int decode_units(SCPRContext *s, uint32_t *r, uint32_t *g, uint32_t *b,
                         int *cx, int *cx1)
 {
     const int cxshift = s->cxshift;
@@ -329,10 +298,10 @@ static int decompress_i(AVCodecContext *avctx, uint32_t *dst, int linesize)
 {
     SCPRContext *s = avctx->priv_data;
     GetByteContext *gb = &s->gb;
-    int cx = 0, cx1 = 0, k = 0, clr = 0;
-    int run, off, y = 0, x = 0, z, ret;
-    unsigned r, g, b, backstep = linesize - avctx->width;
-    unsigned lx, ly, ptype;
+    int cx = 0, cx1 = 0, k = 0;
+    int run, off, y = 0, x = 0, ret;
+    uint32_t clr = 0, r, g, b, backstep = linesize - avctx->width;
+    uint32_t lx, ly, ptype;
 
     reinit_tables(s);
     bytestream2_skip(gb, 2);
@@ -387,120 +356,11 @@ static int decompress_i(AVCodecContext *avctx, uint32_t *dst, int linesize)
         if (run <= 0)
             return AVERROR_INVALIDDATA;
 
-        switch (ptype) {
-        case 0:
-            while (run-- > 0) {
-                if (y >= avctx->height)
-                    return AVERROR_INVALIDDATA;
-
-                dst[y * linesize + x] = clr;
-                lx = x;
-                ly = y;
-                x++;
-                if (x >= avctx->width) {
-                    x = 0;
-                    y++;
-                }
-            }
-            break;
-        case 1:
-            while (run-- > 0) {
-                if (y >= avctx->height)
-                    return AVERROR_INVALIDDATA;
-
-                dst[y * linesize + x] = dst[ly * linesize + lx];
-                lx = x;
-                ly = y;
-                x++;
-                if (x >= avctx->width) {
-                    x = 0;
-                    y++;
-                }
-            }
-            clr = dst[ly * linesize + lx];
-            break;
-        case 2:
-            while (run-- > 0) {
-                if (y < 1 || y >= avctx->height)
-                    return AVERROR_INVALIDDATA;
-
-                clr = dst[y * linesize + x + off + 1];
-                dst[y * linesize + x] = clr;
-                lx = x;
-                ly = y;
-                x++;
-                if (x >= avctx->width) {
-                    x = 0;
-                    y++;
-                }
-            }
-            break;
-        case 4:
-            while (run-- > 0) {
-                uint8_t *odst = (uint8_t *)dst;
-
-                if (y < 1 || y >= avctx->height ||
-                    (y == 1 && x == 0))
-                    return AVERROR_INVALIDDATA;
-
-                if (x == 0) {
-                    z = backstep;
-                } else {
-                    z = 0;
-                }
-
-                r = odst[(ly * linesize + lx) * 4] +
-                    odst[((y * linesize + x) + off) * 4 + 4] -
-                    odst[((y * linesize + x) + off - z) * 4];
-                g = odst[(ly * linesize + lx) * 4 + 1] +
-                    odst[((y * linesize + x) + off) * 4 + 5] -
-                    odst[((y * linesize + x) + off - z) * 4 + 1];
-                b = odst[(ly * linesize + lx) * 4 + 2] +
-                    odst[((y * linesize + x) + off) * 4 + 6] -
-                    odst[((y * linesize + x) + off - z) * 4 + 2];
-                clr = ((b & 0xFF) << 16) + ((g & 0xFF) << 8) + (r & 0xFF);
-                dst[y * linesize + x] = clr;
-                lx = x;
-                ly = y;
-                x++;
-                if (x >= avctx->width) {
-                    x = 0;
-                    y++;
-                }
-            }
-            break;
-        case 5:
-            while (run-- > 0) {
-                if (y < 1 || y >= avctx->height ||
-                    (y == 1 && x == 0))
-                    return AVERROR_INVALIDDATA;
-
-                if (x == 0) {
-                    z = backstep;
-                } else {
-                    z = 0;
-                }
-
-                clr = dst[y * linesize + x + off - z];
-                dst[y * linesize + x] = clr;
-                lx = x;
-                ly = y;
-                x++;
-                if (x >= avctx->width) {
-                    x = 0;
-                    y++;
-                }
-            }
-            break;
-        }
-
-        if (avctx->bits_per_coded_sample == 16) {
-            cx1 = (clr & 0x3F00) >> 2;
-            cx = (clr & 0x3FFFFF) >> 16;
-        } else {
-            cx1 = (clr & 0xFC00) >> 4;
-            cx = (clr & 0xFFFFFF) >> 18;
-        }
+        ret = decode_run_i(avctx, ptype, run, &x, &y, clr,
+                           dst, linesize, &lx, &ly,
+                           backstep, off, &cx, &cx1);
+        if (run < 0)
+            return ret;
     }
 
     return 0;
@@ -589,8 +449,8 @@ static int decompress_p(AVCodecContext *avctx,
                     }
                 }
             } else {
-                int run, z, bx = x * 16 + sx1, by = y * 16 + sy1;
-                unsigned r, g, b, clr, ptype = 0;
+                int run, bx = x * 16 + sx1, by = y * 16 + sy1;
+                uint32_t r, g, b, clr, ptype = 0;
 
                 for (; by < y * 16 + sy2 && by < avctx->height;) {
                     ret = decode_value(s, s->op_model[ptype], 6, 1000, &ptype);
@@ -611,134 +471,11 @@ static int decompress_p(AVCodecContext *avctx,
                     if (run <= 0)
                         return AVERROR_INVALIDDATA;
 
-                    switch (ptype) {
-                    case 0:
-                        while (run-- > 0) {
-                            if (by >= avctx->height)
-                                return AVERROR_INVALIDDATA;
-
-                            dst[by * linesize + bx] = clr;
-                            bx++;
-                            if (bx >= x * 16 + sx2 || bx >= avctx->width) {
-                                bx = x * 16 + sx1;
-                                by++;
-                            }
-                        }
-                        break;
-                    case 1:
-                        while (run-- > 0) {
-                            if (bx == 0) {
-                                if (by < 1)
-                                    return AVERROR_INVALIDDATA;
-                                z = backstep;
-                            } else {
-                                z = 0;
-                            }
-
-                            if (by >= avctx->height)
-                                return AVERROR_INVALIDDATA;
-
-                            clr = dst[by * linesize + bx - 1 - z];
-                            dst[by * linesize + bx] = clr;
-                            bx++;
-                            if (bx >= x * 16 + sx2 || bx >= avctx->width) {
-                                bx = x * 16 + sx1;
-                                by++;
-                            }
-                        }
-                        break;
-                    case 2:
-                        while (run-- > 0) {
-                            if (by < 1 || by >= avctx->height)
-                                return AVERROR_INVALIDDATA;
-
-                            clr = dst[(by - 1) * linesize + bx];
-                            dst[by * linesize + bx] = clr;
-                            bx++;
-                            if (bx >= x * 16 + sx2 || bx >= avctx->width) {
-                                bx = x * 16 + sx1;
-                                by++;
-                            }
-                        }
-                        break;
-                    case 3:
-                        while (run-- > 0) {
-                            if (by >= avctx->height)
-                                return AVERROR_INVALIDDATA;
-
-                            clr = prev[by * plinesize + bx];
-                            dst[by * linesize + bx] = clr;
-                            bx++;
-                            if (bx >= x * 16 + sx2 || bx >= avctx->width) {
-                                bx = x * 16 + sx1;
-                                by++;
-                            }
-                        }
-                        break;
-                    case 4:
-                        while (run-- > 0) {
-                            uint8_t *odst = (uint8_t *)dst;
-
-                            if (by < 1 || by >= avctx->height)
-                                return AVERROR_INVALIDDATA;
-
-                            if (bx == 0) {
-                                if (by < 2)
-                                    return AVERROR_INVALIDDATA;
-                                z = backstep;
-                            } else {
-                                z = 0;
-                            }
-
-                            r = odst[((by - 1) * linesize + bx) * 4] +
-                                odst[(by * linesize + bx - 1 - z) * 4] -
-                                odst[((by - 1) * linesize + bx - 1 - z) * 4];
-                            g = odst[((by - 1) * linesize + bx) * 4 + 1] +
-                                odst[(by * linesize + bx - 1 - z) * 4 + 1] -
-                                odst[((by - 1) * linesize + bx - 1 - z) * 4 + 1];
-                            b = odst[((by - 1) * linesize + bx) * 4 + 2] +
-                                odst[(by * linesize + bx - 1 - z) * 4 + 2] -
-                                odst[((by - 1) * linesize + bx - 1 - z) * 4 + 2];
-                            clr = ((b & 0xFF) << 16) + ((g & 0xFF) << 8) + (r & 0xFF);
-                            dst[by * linesize + bx] = clr;
-                            bx++;
-                            if (bx >= x * 16 + sx2 || bx >= avctx->width) {
-                                bx = x * 16 + sx1;
-                                by++;
-                            }
-                        }
-                        break;
-                    case 5:
-                        while (run-- > 0) {
-                            if (by < 1 || by >= avctx->height)
-                                return AVERROR_INVALIDDATA;
-
-                            if (bx == 0) {
-                                if (by < 2)
-                                    return AVERROR_INVALIDDATA;
-                                z = backstep;
-                            } else {
-                                z = 0;
-                            }
-
-                            clr = dst[(by - 1) * linesize + bx - 1 - z];
-                            dst[by * linesize + bx] = clr;
-                            bx++;
-                            if (bx >= x * 16 + sx2 || bx >= avctx->width) {
-                                bx = x * 16 + sx1;
-                                by++;
-                            }
-                        }
-                        break;
-                    }
-
-                    if (avctx->bits_per_coded_sample == 16) {
-                        cx1 = (clr & 0x3F00) >> 2;
-                        cx = (clr & 0x3FFFFF) >> 16;
-                    } else {
-                        cx1 = (clr & 0xFC00) >> 4;
-                        cx = (clr & 0xFFFFFF) >> 18;
-                    }
+                    ret = decode_run_p(avctx, ptype, run, x, y, clr,
+                                       dst, prev, linesize, plinesize, &bx, &by,
+                                       backstep, sx1, sx2, &cx, &cx1);
+                    if (ret < 0)
+                        return ret;
                 }
             }
         }
@@ -768,18 +505,25 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     type = bytestream2_peek_byte(gb);
 
     if (type == 2) {
+        s->version = 1;
         s->get_freq = get_freq0;
         s->decode = decode0;
         frame->key_frame = 1;
         ret = decompress_i(avctx, (uint32_t *)s->current_frame->data[0],
                            s->current_frame->linesize[0] / 4);
     } else if (type == 18) {
+        s->version = 2;
         s->get_freq = get_freq;
         s->decode = decode;
         frame->key_frame = 1;
         ret = decompress_i(avctx, (uint32_t *)s->current_frame->data[0],
                            s->current_frame->linesize[0] / 4);
-    } else if (type == 17) {
+    } else if (type == 34) {
+        frame->key_frame = 1;
+        s->version = 3;
+        ret = decompress_i3(avctx, (uint32_t *)s->current_frame->data[0],
+                            s->current_frame->linesize[0] / 4);
+    } else if (type == 17 || type == 33) {
         uint32_t clr, *dst = (uint32_t *)s->current_frame->data[0];
         int x, y;
 
@@ -809,10 +553,16 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         if (ret < 0)
             return ret;
 
-        ret = decompress_p(avctx, (uint32_t *)s->current_frame->data[0],
-                           s->current_frame->linesize[0] / 4,
-                           (uint32_t *)s->last_frame->data[0],
-                           s->last_frame->linesize[0] / 4);
+        if (s->version == 1 || s->version == 2)
+            ret = decompress_p(avctx, (uint32_t *)s->current_frame->data[0],
+                               s->current_frame->linesize[0] / 4,
+                               (uint32_t *)s->last_frame->data[0],
+                               s->last_frame->linesize[0] / 4);
+        else
+            ret = decompress_p3(avctx, (uint32_t *)s->current_frame->data[0],
+                                s->current_frame->linesize[0] / 4,
+                                (uint32_t *)s->last_frame->data[0],
+                                s->last_frame->linesize[0] / 4);
         if (ret == 1)
             return avpkt->size;
     } else {
