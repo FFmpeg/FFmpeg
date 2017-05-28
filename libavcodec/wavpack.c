@@ -310,7 +310,7 @@ static float wv_get_value_float(WavpackFrameContext *s, uint32_t *crc, int S)
     }
 
     if (S) {
-        S  *= 1 << s->float_shift;
+        S  *= 1U << s->float_shift;
         sign = S < 0;
         if (sign)
             S = -S;
