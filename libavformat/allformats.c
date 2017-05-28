@@ -379,7 +379,6 @@ static void register_all(void)
     REGISTER_MUXER   (CHROMAPRINT,      chromaprint);
     REGISTER_DEMUXER (LIBGME,           libgme);
     REGISTER_DEMUXER (LIBMODPLUG,       libmodplug);
-    REGISTER_MUXDEMUX(LIBNUT,           libnut);
     REGISTER_DEMUXER (LIBOPENMPT,       libopenmpt);
 }
 

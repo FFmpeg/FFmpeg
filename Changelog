@@ -14,6 +14,7 @@ version <next>:
 - librsvg support for svg rasterization
 - crossfeed audio filter
 - spec compliant VP9 muxing support in MP4
+- remove the libnut muxer/demuxer wrappers
 
 version 3.3:
 - CrystalHD decoder moved to new decode API

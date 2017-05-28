@@ -416,7 +416,6 @@ Muxers/Demuxers:
   iss.c                                 Stefan Gehrer
   jvdec.c                               Peter Ross
   libmodplug.c                          Clément Bœsch
-  libnut.c                              Oded Shimon
   libopenmpt.c                          Josh de Kock
   lmlm4.c                               Ivo van Poorten
   lvfdec.c                              Paul B Mahol

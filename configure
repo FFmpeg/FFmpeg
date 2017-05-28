@@ -234,8 +234,6 @@ External library support:
   --enable-libkvazaar      enable HEVC encoding via libkvazaar [no]
   --enable-libmodplug      enable ModPlug via libmodplug [no]
   --enable-libmp3lame      enable MP3 encoding via libmp3lame [no]
-  --enable-libnut          enable NUT (de)muxing via libnut,
-                           native (de)muxer exists [no]
   --enable-libopencore-amrnb enable AMR-NB de/encoding via libopencore-amrnb [no]
   --enable-libopencore-amrwb enable AMR-WB decoding via libopencore-amrwb [no]
   --enable-libopencv       enable video filtering via libopencv [no]
@@ -1553,7 +1551,6 @@ EXTERNAL_LIBRARY_LIST="
     libkvazaar
     libmodplug
     libmp3lame
-    libnut
     libopencv
     libopenh264
     libopenjpeg
@@ -2940,8 +2937,6 @@ image2_alias_pix_demuxer_select="image2_demuxer"
 image2_brender_pix_demuxer_select="image2_demuxer"
 ipod_muxer_select="mov_muxer"
 ismv_muxer_select="mov_muxer"
-libnut_demuxer_deps="libnut"
-libnut_muxer_deps="libnut"
 matroska_audio_muxer_select="matroska_muxer"
 matroska_demuxer_select="iso_media riffdec"
 matroska_demuxer_suggest="bzlib lzo zlib"
@@ -5825,7 +5820,6 @@ enabled libmfx            && { use_pkg_config libmfx "mfx/mfxvideo.h" MFXInit ||
                                { require libmfx "mfx/mfxvideo.h" MFXInit -llibmfx && warn "using libmfx without pkg-config"; } }
 enabled libmodplug        && require_pkg_config libmodplug libmodplug/modplug.h ModPlug_Load
 enabled libmp3lame        && require "libmp3lame >= 3.98.3" lame/lame.h lame_set_VBR_quality -lmp3lame
-enabled libnut            && require libnut libnut.h nut_demuxer_init -lnut
 enabled libnpp            && require libnpp npp.h nppGetLibVersion -lnppi -lnppc
 enabled libopencore_amrnb && require libopencore_amrnb opencore-amrnb/interf_dec.h Decoder_Interface_init -lopencore-amrnb
 enabled libopencore_amrwb && require libopencore_amrwb opencore-amrwb/dec_if.h D_IF_init -lopencore-amrwb
