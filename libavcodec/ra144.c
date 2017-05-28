@@ -1573,7 +1573,7 @@ int ff_eval_refl(int *refl, const int16_t *coefs, AVCodecContext *avctx)
             if((int)(a*(unsigned)b) != a*(int64_t)b)
                 return 1;
 #endif
-            bp1[j] = ((bp2[j] - ((refl[i+1] * bp2[i-j]) >> 12)) * b) >> 12;
+            bp1[j] = (int)((bp2[j] - ((refl[i+1] * bp2[i-j]) >> 12)) * (unsigned)b) >> 12;
         }
 
         if ((unsigned) bp1[i] + 0x1000 > 0x1fff)
