@@ -370,7 +370,9 @@ static void apply_dependent_coupling_fixed(AACContext *ac,
                     shift = (gain-1024) >> 3;
                 }
 
-                if (shift < 0) {
+                if (shift < -31) {
+                    // Nothing to do
+                } else if (shift < 0) {
                     shift = -shift;
                     round = 1 << (shift - 1);
 
