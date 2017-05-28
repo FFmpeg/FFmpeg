@@ -1701,7 +1701,7 @@ void ff_subblock_synthesis(RA144Context *ractx, const int16_t *lpc_coefs,
     if (cba_idx) {
         cba_idx += BLOCKSIZE/2 - 1;
         ff_copy_and_dup(ractx->buffer_a, ractx->adapt_cb, cba_idx);
-        m[0] = (ff_irms(&ractx->adsp, ractx->buffer_a) * gval) >> 12;
+        m[0] = (ff_irms(&ractx->adsp, ractx->buffer_a) * (unsigned)gval) >> 12;
     } else {
         m[0] = 0;
     }
