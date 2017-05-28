@@ -146,20 +146,34 @@ static void latm_write_frame_header(AVFormatContext *s, PutBitContext *bs)
 static int latm_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     LATMContext *ctx = s->priv_data;
+    AVCodecParameters *par = s->streams[0]->codecpar;
     AVIOContext *pb = s->pb;
     PutBitContext bs;
     int i, len;
     uint8_t loas_header[] = "\x56\xe0\x00";
 
-    if (s->streams[0]->codecpar->codec_id == AV_CODEC_ID_AAC_LATM)
+    if (par->codec_id == AV_CODEC_ID_AAC_LATM)
         return ff_raw_write_packet(s, pkt);
 
-    if (!s->streams[0]->codecpar->extradata) {
+    if (!par->extradata) {
         if(pkt->size > 2 && pkt->data[0] == 0x56 && (pkt->data[1] >> 4) == 0xe &&
             (AV_RB16(pkt->data + 1) & 0x1FFF) + 3 == pkt->size)
             return ff_raw_write_packet(s, pkt);
-        else
-            return AVERROR_INVALIDDATA;
+        else {
+            uint8_t *side_data;
+            int side_data_size = 0, ret;
+
+            side_data = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
+                                                &side_data_size);
+            if (side_data_size) {
+                if (latm_decode_extradata(ctx, side_data, side_data_size) < 0)
+                    return AVERROR_INVALIDDATA;
+                ret = ff_alloc_extradata(par, side_data_size);
+                if (ret < 0)
+                    return ret;
+                memcpy(par->extradata, side_data, side_data_size);
+            }
+        }
     }
 
     if (pkt->size > 0x1fff)

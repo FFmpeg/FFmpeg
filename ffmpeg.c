@@ -536,7 +536,6 @@ static void ffmpeg_cleanup(int ret)
         for (j = 0; j < ost->nb_bitstream_filters; j++)
             av_bsf_free(&ost->bsf_ctx[j]);
         av_freep(&ost->bsf_ctx);
-        av_freep(&ost->bsf_extradata_updated);
 
         av_frame_free(&ost->filtered_frame);
         av_frame_free(&ost->last_frame);
@@ -837,27 +836,9 @@ static void output_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost)
                 continue;
             } else if (ret < 0)
                 goto finish;
-            /* HACK! - aac_adtstoasc updates extradata after filtering the first frame when
-             * the api states this shouldn't happen after init(). Propagate it here to the
-             * muxer and to the next filters in the chain to workaround this.
-             * TODO/FIXME - Make aac_adtstoasc use new packet side data instead of changing
-             * par_out->extradata and adapt muxers accordingly to get rid of this. */
-            if (!(ost->bsf_extradata_updated[idx - 1] & 1)) {
-                ret = avcodec_parameters_copy(ost->st->codecpar, ost->bsf_ctx[idx - 1]->par_out);
-                if (ret < 0)
-                    goto finish;
-                ost->bsf_extradata_updated[idx - 1] |= 1;
-            }
 
             /* send it to the next filter down the chain or to the muxer */
             if (idx < ost->nb_bitstream_filters) {
-                /* HACK/FIXME! - See above */
-                if (!(ost->bsf_extradata_updated[idx] & 2)) {
-                    ret = avcodec_parameters_copy(ost->bsf_ctx[idx]->par_out, ost->bsf_ctx[idx - 1]->par_out);
-                    if (ret < 0)
-                        goto finish;
-                    ost->bsf_extradata_updated[idx] |= 2;
-                }
                 ret = av_bsf_send_packet(ost->bsf_ctx[idx], pkt);
                 if (ret < 0)
                     goto finish;

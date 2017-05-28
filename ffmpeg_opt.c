@@ -1385,13 +1385,6 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
         if (*bsfs)
             bsfs++;
     }
-    if (ost->nb_bitstream_filters) {
-        ost->bsf_extradata_updated = av_mallocz_array(ost->nb_bitstream_filters, sizeof(*ost->bsf_extradata_updated));
-        if (!ost->bsf_extradata_updated) {
-            av_log(NULL, AV_LOG_FATAL, "Bitstream filter memory allocation failed\n");
-            exit_program(1);
-        }
-    }
 
     MATCH_PER_STREAM_OPT(codec_tags, str, codec_tag, oc, st);
     if (codec_tag) {

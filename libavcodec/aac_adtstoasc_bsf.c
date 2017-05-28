@@ -97,7 +97,8 @@ static int aac_adtstoasc_filter(AVBSFContext *bsfc, AVPacket *out)
             in->data += get_bits_count(&gb)/8;
         }
 
-        extradata = av_mallocz(2 + pce_size + AV_INPUT_BUFFER_PADDING_SIZE);
+        extradata = av_packet_new_side_data(in, AV_PKT_DATA_NEW_EXTRADATA,
+                                            2 + pce_size);
         if (!extradata) {
             ret = AVERROR(ENOMEM);
             goto fail;
@@ -115,8 +116,6 @@ static int aac_adtstoasc_filter(AVBSFContext *bsfc, AVPacket *out)
             memcpy(extradata + 2, pce_data, pce_size);
         }
 
-        bsfc->par_out->extradata = extradata;
-        bsfc->par_out->extradata_size = 2 + pce_size;
         ctx->first_frame_done = 1;
     }
 

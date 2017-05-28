@@ -46,6 +46,10 @@ FATE_AAC += fate-aac-al_sbr_hq_sr_48_2_fsaac48
 fate-aac-al_sbr_hq_sr_48_2_fsaac48: CMD = pcm -i $(TARGET_SAMPLES)/aac/al_sbr_sr_48_2_fsaac48.mp4
 fate-aac-al_sbr_hq_sr_48_2_fsaac48: REF = $(SAMPLES)/aac/al_sbr_hq_sr_48_2_fsaac48.s16
 
+FATE_AAC += fate-aac-al_sbr_ps_04_ur
+fate-aac-al_sbr_ps_04_ur: CMD = pcm -i $(TARGET_SAMPLES)/aac/al_sbr_ps_04_new.mp4
+fate-aac-al_sbr_ps_04_ur: REF = $(SAMPLES)/aac/al_sbr_ps_04_ur.s16
+
 FATE_AAC += fate-aac-al_sbr_ps_06_ur
 fate-aac-al_sbr_ps_06_ur: CMD = pcm -i $(TARGET_SAMPLES)/aac/al_sbr_ps_06_new.mp4
 fate-aac-al_sbr_ps_06_ur: REF = $(SAMPLES)/aac/al_sbr_ps_06_ur.s16
@@ -241,9 +245,8 @@ FATE_AAC_LATM += fate-aac-latm_stereo_to_51
 fate-aac-latm_stereo_to_51: CMD = pcm -i $(TARGET_SAMPLES)/aac/latm_stereo_to_51.ts -channel_layout 5.1
 fate-aac-latm_stereo_to_51: REF = $(SAMPLES)/aac/latm_stereo_to_51_ref.s16
 
-fate-aac-autobsf-adtstoasc: CMD = md5 -i $(TARGET_SAMPLES)/audiomatch/tones_afconvert_16000_mono_aac_lc.adts -acodec copy -fflags +bitexact -f matroska
-fate-aac-autobsf-adtstoasc: CMP = oneline
-fate-aac-autobsf-adtstoasc: REF = 8c76732bd04d9eb3468f9f842439774d
+fate-aac-autobsf-adtstoasc: CMD = transcode "aac" $(TARGET_SAMPLES)/audiomatch/tones_afconvert_16000_mono_aac_lc.adts \
+                                            matroska "-c:a copy" "-c:a copy"
 
 FATE_AAC-$(call      DEMDEC, AAC,    AAC)      += $(FATE_AAC_CT_RAW)
 FATE_AAC-$(call      DEMDEC, MOV,    AAC)      += $(FATE_AAC)

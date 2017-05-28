@@ -288,13 +288,14 @@ static void export_stream_params(AVCodecContext *avctx, const HEVCParamSets *ps,
                                  const HEVCSPS *sps)
 {
     const HEVCVPS *vps = (const HEVCVPS*)ps->vps_list[sps->vps_id]->data;
+    const HEVCWindow *ow = &sps->output_window;
     unsigned int num = 0, den = 0;
 
     avctx->pix_fmt             = sps->pix_fmt;
     avctx->coded_width         = sps->width;
     avctx->coded_height        = sps->height;
-    avctx->width               = sps->output_width;
-    avctx->height              = sps->output_height;
+    avctx->width               = sps->width  - ow->left_offset - ow->right_offset;
+    avctx->height              = sps->height - ow->top_offset  - ow->bottom_offset;
     avctx->has_b_frames        = sps->temporal_layer[sps->max_sub_layers - 1].num_reorder_pics;
     avctx->profile             = sps->ptl.general_ptl.profile_idc;
     avctx->level               = sps->ptl.general_ptl.level_idc;
@@ -2890,6 +2891,7 @@ fail:
 static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
 {
     int i, ret = 0;
+    int eos_at_start = 1;
 
     s->ref = NULL;
     s->last_eos = s->eos;
@@ -2907,8 +2909,15 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
 
     for (i = 0; i < s->pkt.nb_nals; i++) {
         if (s->pkt.nals[i].type == HEVC_NAL_EOB_NUT ||
-            s->pkt.nals[i].type == HEVC_NAL_EOS_NUT)
-            s->eos = 1;
+            s->pkt.nals[i].type == HEVC_NAL_EOS_NUT) {
+            if (eos_at_start) {
+                s->last_eos = 1;
+            } else {
+                s->eos = 1;
+            }
+        } else {
+            eos_at_start = 0;
+        }
     }
 
     /* decode the NAL units */
@@ -3110,7 +3119,6 @@ static int hevc_ref_frame(HEVCContext *s, HEVCFrame *dst, HEVCFrame *src)
 
     dst->poc        = src->poc;
     dst->ctb_count  = src->ctb_count;
-    dst->window     = src->window;
     dst->flags      = src->flags;
     dst->sequence   = src->sequence;
 
@@ -3396,6 +3404,6 @@ AVCodec ff_hevc_decoder = {
     .init_thread_copy      = hevc_init_thread_copy,
     .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                              AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
-    .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE,
+    .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_EXPORTS_CROPPING,
     .profiles              = NULL_IF_CONFIG_SMALL(ff_hevc_profiles),
 };

@@ -116,7 +116,7 @@ static int init_bsf(AVCodecContext *avctx)
     // packets through unchanged.
     filter = av_bsf_get_by_name("h264_mp4toannexb");
     if (!filter)
-        return AVERROR_BUG;
+        return AVERROR_BSF_NOT_FOUND;
 
     ret = av_bsf_alloc(filter, &s->bsf);
     if (ret < 0)

@@ -161,10 +161,6 @@ typedef struct H264Picture {
     int recovered;          ///< picture at IDR or recovery point + recovery count
     int invalid_gap;
     int sei_recovery_frame_cnt;
-
-    int crop;
-    int crop_left;
-    int crop_top;
 } H264Picture;
 
 typedef struct H264Ref {
@@ -380,6 +376,11 @@ typedef struct H264Context {
      */
     int picture_idr;
 
+    int crop_left;
+    int crop_right;
+    int crop_top;
+    int crop_bottom;
+
     int8_t(*intra4x4_pred_mode);
     H264PredContext hpc;
 
@@ -533,6 +534,11 @@ typedef struct H264Context {
     int cur_chroma_format_idc;
     int cur_bit_depth_luma;
     int16_t slice_row[MAX_SLICES]; ///< to detect when MAX_SLICES is too low
+
+    /* original AVCodecContext dimensions, used to handle container
+     * cropping */
+    int width_from_caller;
+    int height_from_caller;
 
     int enable_er;
 

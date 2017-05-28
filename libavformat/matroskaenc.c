@@ -93,6 +93,8 @@ typedef struct mkv_cues {
 typedef struct mkv_track {
     int             write_dts;
     int             has_cue;
+    int             sample_rate;
+    int64_t         sample_rate_offset;
     int64_t         codecpriv_offset;
     int64_t         ts_offset;
 } mkv_track;
@@ -715,24 +717,40 @@ static int put_flac_codecpriv(AVFormatContext *s,
     return 0;
 }
 
-static int get_aac_sample_rates(AVFormatContext *s, AVCodecParameters *par,
+static int get_aac_sample_rates(AVFormatContext *s, uint8_t *extradata, int extradata_size,
                                 int *sample_rate, int *output_sample_rate)
 {
     MPEG4AudioConfig mp4ac;
+    int ret;
 
-    if (avpriv_mpeg4audio_get_config(&mp4ac, par->extradata,
-                                     par->extradata_size * 8, 1) < 0) {
+    ret = avpriv_mpeg4audio_get_config(&mp4ac, extradata,
+                                       extradata_size * 8, 1);
+    /* Don't abort if the failure is because of missing extradata. Assume in that
+     * case a bitstream filter will provide the muxer with the extradata in the
+     * first packet.
+     * Abort however if s->pb is not seekable, as we would not be able to seek back
+     * to write the sample rate elements once the extradata shows up, anyway. */
+    if (ret < 0 && (extradata_size || !(s->pb->seekable & AVIO_SEEKABLE_NORMAL))) {
         av_log(s, AV_LOG_ERROR,
                "Error parsing AAC extradata, unable to determine samplerate.\n");
         return AVERROR(EINVAL);
     }
 
-    *sample_rate        = mp4ac.sample_rate;
-    *output_sample_rate = mp4ac.ext_sample_rate;
+    if (ret < 0) {
+        /* This will only happen when this function is called while writing the
+         * header and no extradata is available. The space for this element has
+         * to be reserved for when this function is called again after the
+         * extradata shows up in the first packet, as there's no way to know if
+         * output_sample_rate will be different than sample_rate or not. */
+        *output_sample_rate = *sample_rate;
+    } else {
+        *sample_rate        = mp4ac.sample_rate;
+        *output_sample_rate = mp4ac.ext_sample_rate;
+    }
     return 0;
 }
 
-static int mkv_write_native_codecprivate(AVFormatContext *s,
+static int mkv_write_native_codecprivate(AVFormatContext *s, AVIOContext *pb,
                                          AVCodecParameters *par,
                                          AVIOContext *dyn_cp)
 {
@@ -761,6 +779,12 @@ static int mkv_write_native_codecprivate(AVFormatContext *s,
             avio_write(dyn_cp, par->extradata + 12,
                        par->extradata_size - 12);
         break;
+    case AV_CODEC_ID_AAC:
+        if (par->extradata_size)
+            avio_write(dyn_cp, par->extradata, par->extradata_size);
+        else
+            put_ebml_void(pb, MAX_PCE_SIZE + 2 + 4);
+        break;
     default:
         if (par->codec_id == AV_CODEC_ID_PRORES &&
             ff_codec_get_id(ff_codec_movvideo_tags, par->codec_tag) == AV_CODEC_ID_PRORES) {
@@ -785,7 +809,7 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb,
         return ret;
 
     if (native_id) {
-        ret = mkv_write_native_codecprivate(s, par, dyn_cp);
+        ret = mkv_write_native_codecprivate(s, pb, par, dyn_cp);
     } else if (par->codec_type == AVMEDIA_TYPE_VIDEO) {
         if (qt_id) {
             if (!par->codec_tag)
@@ -1175,7 +1199,8 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
     }
 
     if (par->codec_id == AV_CODEC_ID_AAC) {
-        ret = get_aac_sample_rates(s, par, &sample_rate, &output_sample_rate);
+        ret = get_aac_sample_rates(s, par->extradata, par->extradata_size, &sample_rate,
+                                   &output_sample_rate);
         if (ret < 0)
             return ret;
     }
@@ -1370,6 +1395,8 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
 
         subinfo = start_ebml_master(pb, MATROSKA_ID_TRACKAUDIO, 0);
         put_ebml_uint  (pb, MATROSKA_ID_AUDIOCHANNELS    , par->channels);
+
+        mkv->tracks[i].sample_rate_offset = avio_tell(pb);
         put_ebml_float (pb, MATROSKA_ID_AUDIOSAMPLINGFREQ, sample_rate);
         if (output_sample_rate)
             put_ebml_float(pb, MATROSKA_ID_AUDIOOUTSAMPLINGFREQ, output_sample_rate);
@@ -2233,6 +2260,37 @@ static int mkv_check_new_extra_data(AVFormatContext *s, AVPacket *pkt)
                                         &side_data_size);
 
     switch (par->codec_id) {
+    case AV_CODEC_ID_AAC:
+        if (side_data_size && (s->pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live) {
+            int filler, output_sample_rate = 0;
+            int64_t curpos;
+            ret = get_aac_sample_rates(s, side_data, side_data_size, &track->sample_rate,
+                                       &output_sample_rate);
+            if (ret < 0)
+                return ret;
+            if (!output_sample_rate)
+                output_sample_rate = track->sample_rate; // Space is already reserved, so it's this or a void element.
+            av_freep(&par->extradata);
+            ret = ff_alloc_extradata(par, side_data_size);
+            if (ret < 0)
+                return ret;
+            memcpy(par->extradata, side_data, side_data_size);
+            curpos = avio_tell(mkv->tracks_bc);
+            avio_seek(mkv->tracks_bc, track->codecpriv_offset, SEEK_SET);
+            mkv_write_codecprivate(s, mkv->tracks_bc, par, 1, 0);
+            filler = MAX_PCE_SIZE + 2 + 4 - (avio_tell(mkv->tracks_bc) - track->codecpriv_offset);
+            if (filler)
+                put_ebml_void(mkv->tracks_bc, filler);
+            avio_seek(mkv->tracks_bc, track->sample_rate_offset, SEEK_SET);
+            put_ebml_float(mkv->tracks_bc, MATROSKA_ID_AUDIOSAMPLINGFREQ, track->sample_rate);
+            put_ebml_float(mkv->tracks_bc, MATROSKA_ID_AUDIOOUTSAMPLINGFREQ, output_sample_rate);
+            avio_seek(mkv->tracks_bc, curpos, SEEK_SET);
+        } else if (!par->extradata_size && !track->sample_rate) {
+            // No extradata (codecpar or packet side data).
+            av_log(s, AV_LOG_ERROR, "Error parsing AAC extradata, unable to determine samplerate.\n");
+            return AVERROR(EINVAL);
+        }
+        break;
     case AV_CODEC_ID_FLAC:
         if (side_data_size && (s->pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live) {
             AVCodecParameters *codecpriv_par;

@@ -96,14 +96,8 @@ Stuff that didn't reach the codebase:
   - e7078e842 hevcdsp: add x86 SIMD for MC
 - VAAPI VP8 decode hwaccel (currently under review: http://ffmpeg.org/pipermail/ffmpeg-devel/2017-February/thread.html#207348)
 - Removal of the custom atomic API (5cc0057f49, see http://ffmpeg.org/pipermail/ffmpeg-devel/2017-March/209003.html)
-- Read aac_adtstoasc extradata updates from packet side data on Matroska once mov and the bsf in question are fixed (See 13a211e632 and 5ef1959080)
 - new bitstream reader (see http://ffmpeg.org/pipermail/ffmpeg-devel/2017-April/209609.html)
 - use of the bsf instead of our parser for vp9 superframes (see fa1749dd34)
-- use of the new AVFrame crop fields in h264/hevc/theora (see https://ffmpeg.org/pipermail/ffmpeg-devel/2017-May/211239.html)
-  - a02ae1c683 hevcdec: export cropping information instead of handling it internally
-  - 4fded0480f h264dec: be more explicit in handling container cropping
-  - c3e84820d6 h264dec: export cropping information instead of handling it internally
-  - 1202b71269 theora: export cropping information instead of handling it internally
 
 Collateral damage that needs work locally:
 ------------------------------------------

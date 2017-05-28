@@ -91,6 +91,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     // we just ignore it
     bytestream_get_le16(&buf);
 
+    if (buf_end - buf < h + 3*4)
+        return AVERROR_INVALIDDATA;
+
     // allocate sub and set values
     sub->rects =  av_mallocz(sizeof(*sub->rects));
     if (!sub->rects)

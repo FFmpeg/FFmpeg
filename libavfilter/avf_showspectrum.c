@@ -299,6 +299,8 @@ static int config_output(AVFilterLink *outlink)
     int i, fft_bits, h, w;
     float overlap;
 
+    s->pts = AV_NOPTS_VALUE;
+
     if (!strcmp(ctx->filter->name, "showspectrumpic"))
         s->single_pic = 1;
 

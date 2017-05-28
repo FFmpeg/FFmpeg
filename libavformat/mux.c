@@ -732,7 +732,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
                 av_log(s, AV_LOG_WARNING, "failed to avoid negative "
                     "pts %s in stream %d.\n"
                     "Try -avoid_negative_ts 1 as a possible workaround.\n",
-                    av_ts2str(pkt->dts),
+                    av_ts2str(pkt->pts),
                     pkt->stream_index
                 );
             }
@@ -893,13 +893,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     for (i = 0; i < st->internal->nb_bsfcs; i++) {
         AVBSFContext *ctx = st->internal->bsfcs[i];
-        if (i > 0) {
-            AVBSFContext* prev_ctx = st->internal->bsfcs[i - 1];
-            if (prev_ctx->par_out->extradata_size != ctx->par_in->extradata_size) {
-                if ((ret = avcodec_parameters_copy(ctx->par_in, prev_ctx->par_out)) < 0)
-                    return ret;
-            }
-        }
         // TODO: when any bitstream filter requires flushing at EOF, we'll need to
         // flush each stream's BSF chain on write_trailer.
         if ((ret = av_bsf_send_packet(ctx, pkt)) < 0) {
@@ -918,12 +911,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
                     "Failed to send packet to filter %s for stream %d\n",
                     ctx->filter->name, pkt->stream_index);
             return ret;
-        }
-        if (i == st->internal->nb_bsfcs - 1) {
-            if (ctx->par_out->extradata_size != st->codecpar->extradata_size) {
-                if ((ret = avcodec_parameters_copy(st->codecpar, ctx->par_out)) < 0)
-                    return ret;
-            }
         }
     }
     return 1;

@@ -309,6 +309,9 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
     h->avctx                 = avctx;
     h->cur_chroma_format_idc = -1;
 
+    h->width_from_caller     = avctx->width;
+    h->height_from_caller    = avctx->height;
+
     h->picture_structure     = PICT_FRAME;
     h->workaround_bugs       = avctx->workaround_bugs;
     h->flags                 = avctx->flags;
@@ -845,8 +848,6 @@ static int get_consumed_bytes(int pos, int buf_size)
 static int output_frame(H264Context *h, AVFrame *dst, H264Picture *srcp)
 {
     AVFrame *src = srcp->f;
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(src->format);
-    int i;
     int ret;
 
     if (src->format == AV_PIX_FMT_VIDEOTOOLBOX && src->buf[0]->size == 1)
@@ -860,16 +861,7 @@ static int output_frame(H264Context *h, AVFrame *dst, H264Picture *srcp)
 
     if (srcp->sei_recovery_frame_cnt == 0)
         dst->key_frame = 1;
-    if (!srcp->crop)
-        return 0;
 
-    for (i = 0; i < desc->nb_components; i++) {
-        int hshift = (i > 0) ? desc->log2_chroma_w : 0;
-        int vshift = (i > 0) ? desc->log2_chroma_h : 0;
-        int off    = ((srcp->crop_left >> hshift) << h->pixel_shift) +
-                      (srcp->crop_top  >> vshift) * dst->linesize[i];
-        dst->data[i] += off;
-    }
     return 0;
 }
 
@@ -1078,7 +1070,7 @@ AVCodec ff_h264_decoder = {
     .capabilities          = /*AV_CODEC_CAP_DRAW_HORIZ_BAND |*/ AV_CODEC_CAP_DR1 |
                              AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS |
                              AV_CODEC_CAP_FRAME_THREADS,
-    .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE,
+    .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_EXPORTS_CROPPING,
     .flush                 = flush_dpb,
     .init_thread_copy      = ONLY_IF_THREADS_ENABLED(decode_init_thread_copy),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(ff_h264_update_thread_context),

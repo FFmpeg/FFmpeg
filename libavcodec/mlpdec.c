@@ -729,8 +729,7 @@ static int read_matrix_params(MLPDecodeContext *m, unsigned int substr, GetBitCo
         av_log(m->avctx, AV_LOG_ERROR,
                "Number of primitive matrices cannot be greater than %d.\n",
                max_primitive_matrices);
-        s->num_primitive_matrices = 0;
-        return AVERROR_INVALIDDATA;
+        goto error;
     }
 
     for (mat = 0; mat < s->num_primitive_matrices; mat++) {
@@ -743,12 +742,12 @@ static int read_matrix_params(MLPDecodeContext *m, unsigned int substr, GetBitCo
             av_log(m->avctx, AV_LOG_ERROR,
                     "Invalid channel %d specified as output from matrix.\n",
                     s->matrix_out_ch[mat]);
-            return AVERROR_INVALIDDATA;
+            goto error;
         }
         if (frac_bits > 14) {
             av_log(m->avctx, AV_LOG_ERROR,
                     "Too many fractional bits specified.\n");
-            return AVERROR_INVALIDDATA;
+            goto error;
         }
 
         max_chan = s->max_matrix_channel;
@@ -770,6 +769,11 @@ static int read_matrix_params(MLPDecodeContext *m, unsigned int substr, GetBitCo
     }
 
     return 0;
+error:
+    s->num_primitive_matrices = 0;
+    memset(s->matrix_out_ch, 0, sizeof(s->matrix_out_ch));
+
+    return AVERROR_INVALIDDATA;
 }
 
 /** Read channel parameters. */
@@ -861,8 +865,13 @@ static int read_decoding_params(MLPDecodeContext *m, GetBitContext *gbp,
 
     if (s->param_presence_flags & PARAM_OUTSHIFT)
         if (get_bits1(gbp)) {
-            for (ch = 0; ch <= s->max_matrix_channel; ch++)
+            for (ch = 0; ch <= s->max_matrix_channel; ch++) {
                 s->output_shift[ch] = get_sbits(gbp, 4);
+                if (s->output_shift[ch] < 0) {
+                    avpriv_request_sample(m->avctx, "Negative output_shift");
+                    s->output_shift[ch] = 0;
+                }
+            }
             if (substr == m->max_decoded_substream)
                 m->dsp.mlp_pack_output = m->dsp.mlp_select_pack_output(s->ch_assign,
                                                                        s->output_shift,

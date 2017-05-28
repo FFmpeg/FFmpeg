@@ -27,6 +27,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "libavutil/mastering_display_metadata.h"
 #include "libavutil/spherical.h"
 #include "libavutil/stereo3d.h"
 
@@ -194,6 +195,9 @@ typedef struct MOVStreamContext {
     AVStereo3D *stereo3d;
     AVSphericalMapping *spherical;
     size_t spherical_size;
+    AVMasteringDisplayMetadata *mastering;
+    AVContentLightMetadata *coll;
+    size_t coll_size;
 
     uint32_t format;
 
