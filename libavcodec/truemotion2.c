@@ -272,7 +272,7 @@ static int tm2_read_deltas(TM2Context *ctx, int stream_id)
     for (i = 0; i < d; i++) {
         v = get_bits_long(&ctx->gb, mb);
         if (v & (1 << (mb - 1)))
-            ctx->deltas[stream_id][i] = v - (1 << mb);
+            ctx->deltas[stream_id][i] = v - (1U << mb);
         else
             ctx->deltas[stream_id][i] = v;
     }
