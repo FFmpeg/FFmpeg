@@ -915,7 +915,8 @@ static int decode_frame(AVCodecContext *avctx,
                             buf_size - offset);
         if (t < 0) {
             int j = tm2_stream_order[i];
-            memset(l->tokens[j], 0, sizeof(**l->tokens) * l->tok_lens[j]);
+            if (l->tok_lens[j])
+                memset(l->tokens[j], 0, sizeof(**l->tokens) * l->tok_lens[j]);
             return t;
         }
         offset += t;
