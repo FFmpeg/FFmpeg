@@ -260,6 +260,7 @@ static int get_siz(Jpeg2000DecoderContext *s)
     uint32_t log2_chroma_wh = 0;
     const enum AVPixelFormat *possible_fmts = NULL;
     int possible_fmts_nb = 0;
+    int ret;
 
     if (bytestream2_get_bytes_left(&s->g) < 36) {
         av_log(s->avctx, AV_LOG_ERROR, "Insufficient space for SIZ\n");
@@ -359,10 +360,13 @@ static int get_siz(Jpeg2000DecoderContext *s)
     }
 
     /* compute image size with reduction factor */
-    s->avctx->width  = ff_jpeg2000_ceildivpow2(s->width  - s->image_offset_x,
-                                               s->reduction_factor);
-    s->avctx->height = ff_jpeg2000_ceildivpow2(s->height - s->image_offset_y,
-                                               s->reduction_factor);
+    ret = ff_set_dimensions(s->avctx,
+            ff_jpeg2000_ceildivpow2(s->width  - s->image_offset_x,
+                                               s->reduction_factor),
+            ff_jpeg2000_ceildivpow2(s->height - s->image_offset_y,
+                                               s->reduction_factor));
+    if (ret < 0)
+        return ret;
 
     if (s->avctx->profile == FF_PROFILE_JPEG2000_DCINEMA_2K ||
         s->avctx->profile == FF_PROFILE_JPEG2000_DCINEMA_4K) {
