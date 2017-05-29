@@ -1125,15 +1125,15 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     InputFile   *f = input_files [ist->file_index];
     int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ? 0 : of->start_time;
     int64_t ost_tb_start_time = av_rescale_q(start_time, AV_TIME_BASE_Q, ost->mux_timebase);
-    AVPacket opkt;
+    AVPacket opkt = { 0 };
+
+    av_init_packet(&opkt);
 
     // EOF: flush output bitstream filters.
     if (!pkt) {
         output_packet(of, &opkt, ost, 1);
         return;
     }
-
-    av_init_packet(&opkt);
 
     if ((!ost->frame_number && !(pkt->flags & AV_PKT_FLAG_KEY)) &&
         !ost->copy_initial_nonkeyframes)
