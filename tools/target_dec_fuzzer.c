@@ -147,16 +147,16 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         avcodec_register(&DECODER_SYMBOL(FFMPEG_DECODER));
 
         c = &DECODER_SYMBOL(FFMPEG_DECODER);
-
-        // Unsupported
-        if (c->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU)
-            return 0;
 #else
         avcodec_register_all();
         c = AVCodecInitialize(FFMPEG_CODEC);  // Done once.
 #endif
         av_log_set_level(AV_LOG_PANIC);
     }
+
+    // Unsupported
+    if (c->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU)
+        return 0;
 
     switch (c->type) {
     case AVMEDIA_TYPE_AUDIO   : decode_handler = avcodec_decode_audio4; break;
