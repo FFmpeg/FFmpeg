@@ -25,6 +25,7 @@
  */
 
 #include <float.h>
+#include "libavutil/float_dsp.h"
 
 #include "avcodec.h"
 #include "internal.h"
@@ -126,6 +127,8 @@ typedef struct vorbis_enc_context {
     vorbis_enc_mode *modes;
 
     int64_t next_pts;
+
+    AVFloatDSPContext *fdsp;
 } vorbis_enc_context;
 
 #define MAX_CHANNELS     2
@@ -233,6 +236,26 @@ static int ready_residue(vorbis_enc_residue *rc, vorbis_enc_context *venc)
         rc->maxes[i][0] += 0.8;
         rc->maxes[i][1] += 0.8;
     }
+    return 0;
+}
+
+static av_cold int dsp_init(AVCodecContext *avctx, vorbis_enc_context *venc)
+{
+    int ret = 0;
+
+    venc->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
+    if (!venc->fdsp)
+        return AVERROR(ENOMEM);
+
+    // init windows
+    venc->win[0] = ff_vorbis_vwin[venc->log2_blocksize[0] - 6];
+    venc->win[1] = ff_vorbis_vwin[venc->log2_blocksize[1] - 6];
+
+    if ((ret = ff_mdct_init(&venc->mdct[0], venc->log2_blocksize[0], 0, 1.0)) < 0)
+        return ret;
+    if ((ret = ff_mdct_init(&venc->mdct[1], venc->log2_blocksize[1], 0, 1.0)) < 0)
+        return ret;
+
     return 0;
 }
 
@@ -426,12 +449,7 @@ static int create_vorbis_context(vorbis_enc_context *venc,
     if (!venc->saved || !venc->samples || !venc->floor || !venc->coeffs)
         return AVERROR(ENOMEM);
 
-    venc->win[0] = ff_vorbis_vwin[venc->log2_blocksize[0] - 6];
-    venc->win[1] = ff_vorbis_vwin[venc->log2_blocksize[1] - 6];
-
-    if ((ret = ff_mdct_init(&venc->mdct[0], venc->log2_blocksize[0], 0, 1.0)) < 0)
-        return ret;
-    if ((ret = ff_mdct_init(&venc->mdct[1], venc->log2_blocksize[1], 0, 1.0)) < 0)
+    if ((ret = dsp_init(avctx, venc)) < 0)
         return ret;
 
     return 0;
@@ -1155,6 +1173,7 @@ static av_cold int vorbis_encode_close(AVCodecContext *avctx)
     av_freep(&venc->samples);
     av_freep(&venc->floor);
     av_freep(&venc->coeffs);
+    av_freep(&venc->fdsp);
 
     ff_mdct_end(&venc->mdct[0]);
     ff_mdct_end(&venc->mdct[1]);
