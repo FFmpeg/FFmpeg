@@ -1044,20 +1044,117 @@ static int apply_window_and_mdct(vorbis_enc_context *venc,
     return 1;
 }
 
+/* Used for padding the last encoded packet */
+static AVFrame *spawn_empty_frame(AVCodecContext *avctx, int channels)
+{
+    AVFrame *f = av_frame_alloc();
+
+    if (!f)
+        return NULL;
+
+    f->format = avctx->sample_fmt;
+    f->nb_samples = avctx->frame_size;
+    f->channel_layout = avctx->channel_layout;
+
+    if (av_frame_get_buffer(f, 4)) {
+        av_frame_free(&f);
+        return NULL;
+    }
+
+    for (int ch = 0; ch < channels; ch++) {
+        size_t bps = av_get_bytes_per_sample(f->format);
+        memset(f->extended_data[ch], 0, bps * f->nb_samples);
+    }
+    return f;
+}
+
+static float **alloc_audio_arrays(int channels, int frame_size)
+{
+    float **audio = av_mallocz_array(channels, sizeof(float *));
+    if (!audio)
+        return NULL;
+
+    for (int ch = 0; ch < channels; ch++) {
+        audio[ch] = av_mallocz_array(frame_size, sizeof(float));
+        if (!audio[ch]) {
+            // alloc has failed, free everything allocated thus far
+            for (ch--; ch >= 0; ch--)
+                av_free(audio[ch]);
+            av_free(audio);
+            return NULL;
+        }
+    }
+
+    return audio;
+}
+
+/* Concatenate audio frames into an appropriately sized array of samples */
+static void move_audio(vorbis_enc_context *venc, float **audio, int *samples, int sf_size)
+{
+    AVFrame *cur = NULL;
+    int frame_size = 1 << (venc->log2_blocksize[1] - 1);
+    int subframes = frame_size / sf_size;
+
+    for (int sf = 0; sf < subframes; sf++) {
+        cur = ff_bufqueue_get(&venc->bufqueue);
+        *samples += cur->nb_samples;
+
+        for (int ch = 0; ch < venc->channels; ch++) {
+            const float *input = (float *) cur->extended_data[ch];
+            const size_t len  = cur->nb_samples * sizeof(float);
+            memcpy(&audio[ch][sf*sf_size], input, len);
+        }
+        av_frame_free(&cur);
+    }
+}
+
 static int vorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                                const AVFrame *frame, int *got_packet_ptr)
 {
     vorbis_enc_context *venc = avctx->priv_data;
-    float **audio = frame ? (float **)frame->extended_data : NULL;
-    int samples = frame ? frame->nb_samples : 0;
+    float **audio = NULL;
+    int i, ret, need_more;
+    int samples = 0, frame_size = 1 << (venc->log2_blocksize[1] - 1);
     vorbis_enc_mode *mode;
     vorbis_enc_mapping *mapping;
     PutBitContext pb;
-    int i, ret;
+
+    if (frame) {
+        if ((ret = ff_af_queue_add(&venc->afq, frame)) < 0)
+            return ret;
+        ff_bufqueue_add(avctx, &venc->bufqueue, av_frame_clone(frame));
+    } else
+        if (!venc->afq.remaining_samples)
+            return 0;
+
+    need_more = venc->bufqueue.available * avctx->frame_size < frame_size;
+    need_more = frame && need_more;
+    if (need_more)
+        return 0;
+
+    audio = alloc_audio_arrays(venc->channels, frame_size);
+    if (!audio)
+        return AVERROR(ENOMEM);
+
+    /* Pad the bufqueue with empty frames for encoding the last packet. */
+    if (!frame) {
+        if (venc->bufqueue.available * avctx->frame_size < frame_size) {
+            int frames_needed = (frame_size/avctx->frame_size) - venc->bufqueue.available;
+
+            for (int i = 0; i < frames_needed; i++) {
+               AVFrame *empty = spawn_empty_frame(avctx, venc->channels);
+               if (!empty)
+                   return AVERROR(ENOMEM);
+
+               ff_bufqueue_add(avctx, &venc->bufqueue, empty);
+            }
+        }
+    }
+
+    move_audio(venc, audio, &samples, avctx->frame_size);
 
     if (!apply_window_and_mdct(venc, audio, samples))
         return 0;
-    samples = 1 << (venc->log2_blocksize[0] - 1);
 
     if ((ret = ff_alloc_packet2(avctx, avpkt, 8192, 0)) < 0)
         return ret;
@@ -1116,16 +1213,11 @@ static int vorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     flush_put_bits(&pb);
     avpkt->size = put_bits_count(&pb) >> 3;
 
-    avpkt->duration = ff_samples_to_time_base(avctx, avctx->frame_size);
-    if (frame) {
-        if (frame->pts != AV_NOPTS_VALUE)
-            avpkt->pts = ff_samples_to_time_base(avctx, frame->pts);
-    } else {
-        avpkt->pts = venc->next_pts;
-    }
-    if (avpkt->pts != AV_NOPTS_VALUE)
-        venc->next_pts = avpkt->pts + avpkt->duration;
+    for (int ch = 0; ch < venc->channels; ch++)
+        av_free(audio[ch]);
+    av_free(audio);
 
+    ff_af_queue_remove(&venc->afq, frame_size, &avpkt->pts, &avpkt->duration);
     *got_packet_ptr = 1;
     return 0;
 }
@@ -1217,7 +1309,7 @@ static av_cold int vorbis_encode_init(AVCodecContext *avctx)
         goto error;
     avctx->extradata_size = ret;
 
-    avctx->frame_size = 1 << (venc->log2_blocksize[0] - 1);
+    avctx->frame_size = 64;
 
     ff_af_queue_init(avctx, &venc->afq);
 
