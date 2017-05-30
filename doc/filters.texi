@@ -12459,7 +12459,31 @@ Supersampling
 Scale (resize) the input video, based on a reference video.
 
 See the scale filter for available options, scale2ref supports the same but
-uses the reference video instead of the main input as basis.
+uses the reference video instead of the main input as basis. scale2ref also
+supports the following additional constants for the @option{w} and
+@option{h} options:
+
+@table @var
+@item main_w
+@item main_h
+The main input video's width and height
+
+@item main_a
+The same as @var{main_w} / @var{main_h}
+
+@item main_sar
+The main input video's sample aspect ratio
+
+@item main_dar, mdar
+The main input video's display aspect ratio. Calculated from
+@code{(main_w / main_h) * main_sar}.
+
+@item main_hsub
+@item main_vsub
+The main input video's horizontal and vertical chroma subsample values.
+For example for the pixel format "yuv422p" @var{hsub} is 2 and @var{vsub}
+is 1.
+@end table
 
 @subsection Examples
 
