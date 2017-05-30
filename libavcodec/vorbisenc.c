@@ -988,11 +988,11 @@ static int residue_encode(vorbis_enc_context *venc, vorbis_enc_residue *rc,
 static int apply_window_and_mdct(vorbis_enc_context *venc,
                                  float **audio, int samples)
 {
-    int i, channel;
+    int channel;
     const float * win = venc->win[0];
     int window_len = 1 << (venc->log2_blocksize[0] - 1);
     float n = (float)(1 << venc->log2_blocksize[0]) / 4.0;
-    // FIXME use dsp
+    AVFloatDSPContext *fdsp = venc->fdsp;
 
     if (!venc->have_saved && !samples)
         return 0;
@@ -1009,9 +1009,10 @@ static int apply_window_and_mdct(vorbis_enc_context *venc,
 
     if (samples) {
         for (channel = 0; channel < venc->channels; channel++) {
-            float * offset = venc->samples + channel*window_len*2 + window_len;
-            for (i = 0; i < samples; i++)
-                offset[i] = audio[channel][i] / n * win[window_len - i - 1];
+            float *offset = venc->samples + channel * window_len * 2 + window_len;
+
+            fdsp->vector_fmul_reverse(offset, audio[channel], win, samples);
+            fdsp->vector_fmul_scalar(offset, offset, 1/n, samples);
         }
     } else {
         for (channel = 0; channel < venc->channels; channel++)
@@ -1026,8 +1027,9 @@ static int apply_window_and_mdct(vorbis_enc_context *venc,
     if (samples) {
         for (channel = 0; channel < venc->channels; channel++) {
             float *offset = venc->saved + channel * window_len;
-            for (i = 0; i < samples; i++)
-                offset[i] = audio[channel][i] / n * win[i];
+
+            fdsp->vector_fmul(offset, audio[channel], win, samples);
+            fdsp->vector_fmul_scalar(offset, offset, 1/n, samples);
         }
         venc->have_saved = 1;
     } else {
