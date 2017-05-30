@@ -35,6 +35,7 @@
 #include "libavutil/bprint.h"
 #include "libavutil/display.h"
 #include "libavutil/hash.h"
+#include "libavutil/mastering_display_metadata.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/spherical.h"
@@ -1893,6 +1894,25 @@ static void print_pkt_side_data(WriterContext *w,
             print_int("discard_padding", AV_RL32(sd->data + 4));
             print_int("skip_reason",     AV_RL8(sd->data + 8));
             print_int("discard_reason",  AV_RL8(sd->data + 9));
+        } else if (sd->type == AV_PKT_DATA_MASTERING_DISPLAY_METADATA) {
+            AVMasteringDisplayMetadata *metadata = (AVMasteringDisplayMetadata *)sd->data;
+
+            if (metadata->has_primaries) {
+                print_q("red_x", metadata->display_primaries[0][0], '/');
+                print_q("red_y", metadata->display_primaries[0][1], '/');
+                print_q("green_x", metadata->display_primaries[1][0], '/');
+                print_q("green_y", metadata->display_primaries[1][1], '/');
+                print_q("blue_x", metadata->display_primaries[2][0], '/');
+                print_q("blue_y", metadata->display_primaries[2][1], '/');
+
+                print_q("white_point_x", metadata->white_point[0], '/');
+                print_q("white_point_y", metadata->white_point[1], '/');
+            }
+
+            if (metadata->has_luminance) {
+                print_q("min_luminance", metadata->min_luminance, '/');
+                print_q("max_luminance", metadata->max_luminance, '/');
+            }
         }
         writer_print_section_footer(w);
     }
@@ -2116,6 +2136,25 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
                 char tcbuf[AV_TIMECODE_STR_SIZE];
                 av_timecode_make_mpeg_tc_string(tcbuf, *(int64_t *)(sd->data));
                 print_str("timecode", tcbuf);
+            } else if (sd->type == AV_FRAME_DATA_MASTERING_DISPLAY_METADATA) {
+                AVMasteringDisplayMetadata *metadata = (AVMasteringDisplayMetadata *)sd->data;
+
+                if (metadata->has_primaries) {
+                    print_q("red_x", metadata->display_primaries[0][0], '/');
+                    print_q("red_y", metadata->display_primaries[0][1], '/');
+                    print_q("green_x", metadata->display_primaries[1][0], '/');
+                    print_q("green_y", metadata->display_primaries[1][1], '/');
+                    print_q("blue_x", metadata->display_primaries[2][0], '/');
+                    print_q("blue_y", metadata->display_primaries[2][1], '/');
+
+                    print_q("white_point_x", metadata->white_point[0], '/');
+                    print_q("white_point_y", metadata->white_point[1], '/');
+                }
+
+                if (metadata->has_luminance) {
+                    print_q("min_luminance", metadata->min_luminance, '/');
+                    print_q("max_luminance", metadata->max_luminance, '/');
+                }
             }
             writer_print_section_footer(w);
         }
