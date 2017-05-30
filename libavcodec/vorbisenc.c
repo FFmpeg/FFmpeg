@@ -34,6 +34,9 @@
 #include "vorbis.h"
 #include "vorbis_enc_data.h"
 
+#include "audio_frame_queue.h"
+#include "libavfilter/bufferqueue.h"
+
 #define BITSTREAM_WRITER_LE
 #include "put_bits.h"
 
@@ -110,6 +113,9 @@ typedef struct vorbis_enc_context {
     float *floor;  // also used for tmp values for mdct
     float *coeffs; // also used for residue after floor
     float quality;
+
+    AudioFrameQueue afq;
+    struct FFBufQueue bufqueue;
 
     int ncodebooks;
     vorbis_enc_codebook *codebooks;
@@ -1179,6 +1185,8 @@ static av_cold int vorbis_encode_close(AVCodecContext *avctx)
 
     ff_mdct_end(&venc->mdct[0]);
     ff_mdct_end(&venc->mdct[1]);
+    ff_af_queue_close(&venc->afq);
+    ff_bufqueue_discard_all(&venc->bufqueue);
 
     av_freep(&avctx->extradata);
 
@@ -1210,6 +1218,8 @@ static av_cold int vorbis_encode_init(AVCodecContext *avctx)
     avctx->extradata_size = ret;
 
     avctx->frame_size = 1 << (venc->log2_blocksize[0] - 1);
+
+    ff_af_queue_init(avctx, &venc->afq);
 
     return 0;
 error:
