@@ -727,7 +727,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
             break;
         case MKTAG('s', 't', 'r', 'f'):
             /* stream header */
-            if (!size)
+            if (!size && (codec_type == AVMEDIA_TYPE_AUDIO ||
+                          codec_type == AVMEDIA_TYPE_VIDEO))
                 break;
             if (stream_index >= (unsigned)s->nb_streams || avi->dv_demux) {
                 avio_skip(pb, size);
