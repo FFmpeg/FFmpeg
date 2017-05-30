@@ -100,7 +100,7 @@ static int smacker_decode_tree(BitstreamContext *bc, HuffContext *hc,
     if (!bitstream_read_bit(bc)) { // Leaf
         if(hc->current >= 256){
             av_log(NULL, AV_LOG_ERROR, "Tree size exceeded!\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         if(length){
             hc->bits[hc->current] = prefix;
@@ -132,14 +132,14 @@ static int smacker_decode_bigtree(BitstreamContext *bc, HuffContext *hc,
 {
     if (hc->current + 1 >= hc->length) {
         av_log(NULL, AV_LOG_ERROR, "Tree size exceeded!\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if (!bitstream_read_bit(bc)) { // Leaf
         int val, i1, i2;
         i1 = ctx->v1->table ? bitstream_read_vlc(bc, ctx->v1->table, SMKTREE_BITS, 3) : 0;
         i2 = ctx->v2->table ? bitstream_read_vlc(bc, ctx->v2->table, SMKTREE_BITS, 3) : 0;
         if (i1 < 0 || i2 < 0)
-            return -1;
+            return AVERROR_INVALIDDATA;
         val = ctx->recode1[i1] | (ctx->recode2[i2] << 8);
         if(val == ctx->escapes[0]) {
             ctx->last[0] = hc->current;
@@ -186,7 +186,7 @@ static int smacker_decode_header_tree(SmackVContext *smk, BitstreamContext *bc,
 
     if(size >= UINT_MAX>>4){ // (((size + 3) >> 2) + 3) << 2 must not overflow
         av_log(smk->avctx, AV_LOG_ERROR, "size too large\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     tmp1.length = 256;
@@ -264,8 +264,8 @@ static int smacker_decode_header_tree(SmackVContext *smk, BitstreamContext *bc,
         goto error;
     }
 
-    if (smacker_decode_bigtree(bc, &huff, &ctx) < 0)
-        err = -1;
+    if ((res = smacker_decode_bigtree(bc, &huff, &ctx)) < 0)
+        err = res;
     bitstream_skip(bc, 1);
     if(ctx.last[0] == -1) ctx.last[0] = huff.current++;
     if(ctx.last[1] == -1) ctx.last[1] = huff.current++;
@@ -296,7 +296,7 @@ error:
 
 static int decode_header_trees(SmackVContext *smk) {
     BitstreamContext bc;
-    int mmap_size, mclr_size, full_size, type_size;
+    int mmap_size, mclr_size, full_size, type_size, ret;
 
     mmap_size = AV_RL32(smk->avctx->extradata);
     mclr_size = AV_RL32(smk->avctx->extradata + 4);
@@ -313,8 +313,8 @@ static int decode_header_trees(SmackVContext *smk) {
         smk->mmap_tbl[0] = 0;
         smk->mmap_last[0] = smk->mmap_last[1] = smk->mmap_last[2] = 1;
     } else {
-        if (smacker_decode_header_tree(smk, &bc, &smk->mmap_tbl, smk->mmap_last, mmap_size))
-            return -1;
+        if ((ret = smacker_decode_header_tree(smk, &bc, &smk->mmap_tbl, smk->mmap_last, mmap_size)) < 0)
+            return ret;
     }
     if (!bitstream_read_bit(&bc)) {
         av_log(smk->avctx, AV_LOG_INFO, "Skipping MCLR tree\n");
@@ -324,8 +324,8 @@ static int decode_header_trees(SmackVContext *smk) {
         smk->mclr_tbl[0] = 0;
         smk->mclr_last[0] = smk->mclr_last[1] = smk->mclr_last[2] = 1;
     } else {
-        if (smacker_decode_header_tree(smk, &bc, &smk->mclr_tbl, smk->mclr_last, mclr_size))
-            return -1;
+        if ((ret = smacker_decode_header_tree(smk, &bc, &smk->mclr_tbl, smk->mclr_last, mclr_size)) < 0)
+            return ret;
     }
     if (!bitstream_read_bit(&bc)) {
         av_log(smk->avctx, AV_LOG_INFO, "Skipping FULL tree\n");
@@ -335,8 +335,8 @@ static int decode_header_trees(SmackVContext *smk) {
         smk->full_tbl[0] = 0;
         smk->full_last[0] = smk->full_last[1] = smk->full_last[2] = 1;
     } else {
-        if (smacker_decode_header_tree(smk, &bc, &smk->full_tbl, smk->full_last, full_size))
-            return -1;
+        if ((ret = smacker_decode_header_tree(smk, &bc, &smk->full_tbl, smk->full_last, full_size)) < 0)
+            return ret;
     }
     if (!bitstream_read_bit(&bc)) {
         av_log(smk->avctx, AV_LOG_INFO, "Skipping TYPE tree\n");
@@ -346,8 +346,8 @@ static int decode_header_trees(SmackVContext *smk) {
         smk->type_tbl[0] = 0;
         smk->type_last[0] = smk->type_last[1] = smk->type_last[2] = 1;
     } else {
-        if (smacker_decode_header_tree(smk, &bc, &smk->type_tbl, smk->type_last, type_size))
-            return -1;
+        if ((ret = smacker_decode_header_tree(smk, &bc, &smk->type_tbl, smk->type_last, type_size)) < 0)
+            return ret;
     }
 
     return 0;
@@ -555,6 +555,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     SmackVContext * const c = avctx->priv_data;
+    int ret;
 
     c->avctx = avctx;
 
@@ -567,12 +568,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
     /* decode huffman trees from extradata */
     if(avctx->extradata_size < 16){
         av_log(avctx, AV_LOG_ERROR, "Extradata missing!\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
-    if (decode_header_trees(c)) {
+    if ((ret = decode_header_trees(c))) {
         decode_end(avctx);
-        return -1;
+        return ret;
     }
 
     return 0;
@@ -584,7 +585,7 @@ static av_cold int smka_decode_init(AVCodecContext *avctx)
 {
     if (avctx->channels < 1 || avctx->channels > 2) {
         av_log(avctx, AV_LOG_ERROR, "invalid number of channels\n");
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
     }
     avctx->channel_layout = (avctx->channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
     avctx->sample_fmt = avctx->bits_per_coded_sample == 8 ? AV_SAMPLE_FMT_U8 : AV_SAMPLE_FMT_S16;
@@ -614,7 +615,7 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
 
     if (buf_size <= 4) {
         av_log(avctx, AV_LOG_ERROR, "packet is too small\n");
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
     }
 
     unp_size = AV_RL32(buf);
@@ -630,16 +631,16 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
     bits   = bitstream_read_bit(&bc);
     if (stereo ^ (avctx->channels != 1)) {
         av_log(avctx, AV_LOG_ERROR, "channels mismatch\n");
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
     }
     if (bits && avctx->sample_fmt == AV_SAMPLE_FMT_U8) {
         av_log(avctx, AV_LOG_ERROR, "sample format mismatch\n");
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
     }
     if (unp_size % (avctx->channels * (bits + 1))) {
         av_log(avctx, AV_LOG_ERROR,
                "The buffer does not contain an integer number of samples\n");
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
     }
 
     /* get output buffer */
