@@ -1512,7 +1512,7 @@ static void add_wav(int16_t *dest, int n, int skip_first, int *m,
 
     v[0] = 0;
     for (i=!skip_first; i<3; i++)
-        v[i] = (ff_gain_val_tab[n][i] * m[i]) >> ff_gain_exp_tab[n];
+        v[i] = (ff_gain_val_tab[n][i] * (unsigned)m[i]) >> ff_gain_exp_tab[n];
 
     if (v[0]) {
         for (i=0; i < BLOCKSIZE; i++)
