@@ -1913,6 +1913,10 @@ static void print_pkt_side_data(WriterContext *w,
                 print_q("min_luminance", metadata->min_luminance, '/');
                 print_q("max_luminance", metadata->max_luminance, '/');
             }
+        } else if (sd->type == AV_PKT_DATA_CONTENT_LIGHT_LEVEL) {
+            AVContentLightMetadata *metadata = (AVContentLightMetadata *)sd->data;
+            print_int("max_content", metadata->MaxCLL);
+            print_int("max_average", metadata->MaxFALL);
         }
         writer_print_section_footer(w);
     }
@@ -2155,6 +2159,10 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
                     print_q("min_luminance", metadata->min_luminance, '/');
                     print_q("max_luminance", metadata->max_luminance, '/');
                 }
+            } else if (sd->type == AV_FRAME_DATA_CONTENT_LIGHT_LEVEL) {
+                AVContentLightMetadata *metadata = (AVContentLightMetadata *)sd->data;
+                print_int("max_content", metadata->MaxCLL);
+                print_int("max_average", metadata->MaxFALL);
             }
             writer_print_section_footer(w);
         }
