@@ -245,7 +245,7 @@ static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb,
             if (get_bits_left(gb) <= 0)
                 goto error;
             if (get_bits1(gb)) {
-                add -= (mid - base);
+                add -= (mid - (unsigned)base);
                 base = mid;
             } else
                 add = mid - base - 1;
