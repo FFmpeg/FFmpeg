@@ -751,7 +751,7 @@ static int scaling_list_data(GetBitContext *gb, AVCodecContext *avctx, ScalingLi
                                   ff_hevc_diag_scan8x8_x[i];
 
                     scaling_list_delta_coef = get_se_golomb(gb);
-                    next_coef = (next_coef + scaling_list_delta_coef + 256) % 256;
+                    next_coef = (next_coef + 256U + scaling_list_delta_coef) % 256;
                     sl->sl[size_id][matrix_id][pos] = next_coef;
                 }
             }
