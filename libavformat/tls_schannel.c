@@ -494,7 +494,7 @@ static int tls_read(URLContext *h, uint8_t *buf, int len)
             ret = AVERROR(EAGAIN);
             goto cleanup;
         } else {
-            av_log(h, AV_LOG_ERROR, "Unable to decrypt message\n");
+            av_log(h, AV_LOG_ERROR, "Unable to decrypt message (error 0x%x)\n", (unsigned)sspi_ret);
             ret = AVERROR(EIO);
             goto cleanup;
         }
