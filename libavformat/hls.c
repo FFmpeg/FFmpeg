@@ -630,8 +630,16 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
     ret = s->io_open(s, pb, url, AVIO_FLAG_READ, &tmp);
     if (ret >= 0) {
         // update cookies on http response with setcookies.
-        void *u = (s->flags & AVFMT_FLAG_CUSTOM_IO) ? NULL : s->pb;
-        update_options(&c->cookies, "cookies", u);
+        char *new_cookies = NULL;
+
+        if (!(s->flags & AVFMT_FLAG_CUSTOM_IO))
+            av_opt_get(*pb, "cookies", AV_OPT_SEARCH_CHILDREN, (uint8_t**)&new_cookies);
+
+        if (new_cookies) {
+            av_free(c->cookies);
+            c->cookies = new_cookies;
+        }
+
         av_dict_set(&opts, "cookies", c->cookies, 0);
     }
 
