@@ -112,6 +112,16 @@ static int nvenc_print_error(void *log_ctx, NVENCSTATUS err,
     return ret;
 }
 
+static void nvenc_print_driver_requirement(AVCodecContext *avctx, int level)
+{
+#if defined(_WIN32) || defined(__CYGWIN__)
+    const char *minver = "378.66";
+#else
+    const char *minver = "378.13";
+#endif
+    av_log(avctx, level, "The minimum required Nvidia driver for nvenc is %s or newer\n", minver);
+}
+
 static av_cold int nvenc_load_libraries(AVCodecContext *avctx)
 {
     NvencContext *ctx            = avctx->priv_data;
@@ -125,8 +135,10 @@ static av_cold int nvenc_load_libraries(AVCodecContext *avctx)
         return ret;
 
     ret = nvenc_load_functions(&dl_fn->nvenc_dl);
-    if (ret < 0)
+    if (ret < 0) {
+        nvenc_print_driver_requirement(avctx, AV_LOG_ERROR);
         return ret;
+    }
 
     err = dl_fn->nvenc_dl->NvEncodeAPIGetMaxSupportedVersion(&nvenc_max_ver);
     if (err != NV_ENC_SUCCESS)
@@ -139,6 +151,7 @@ static av_cold int nvenc_load_libraries(AVCodecContext *avctx)
                "Required: %d.%d Found: %d.%d\n",
                NVENCAPI_MAJOR_VERSION, NVENCAPI_MINOR_VERSION,
                nvenc_max_ver >> 4, nvenc_max_ver & 0xf);
+        nvenc_print_driver_requirement(avctx, AV_LOG_ERROR);
         return AVERROR(ENOSYS);
     }
 
