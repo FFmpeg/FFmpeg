@@ -83,12 +83,6 @@ FATE_LIBAVUTIL += fate-fifo
 fate-fifo: libavutil/tests/fifo$(EXESUF)
 fate-fifo: CMD = run libavutil/tests/fifo
 
-FATE_LIBAVUTIL += fate-float-dsp
-fate-float-dsp: libavutil/tests/float_dsp$(EXESUF)
-fate-float-dsp: CMD = run libavutil/tests/float_dsp $(CPUFLAGS:%=-c%)
-fate-float-dsp: CMP = null
-fate-float-dsp: REF = /dev/null
-
 FATE_LIBAVUTIL += fate-hash
 fate-hash: libavutil/tests/hash$(EXESUF)
 fate-hash: CMD = run libavutil/tests/hash
