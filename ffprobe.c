@@ -2474,9 +2474,10 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
         else
             print_str_opt("color_range", "N/A");
 
-        s = av_get_colorspace_name(par->color_space);
-        if (s) print_str    ("color_space", s);
-        else   print_str_opt("color_space", "unknown");
+        if (par->color_space != AVCOL_SPC_UNSPECIFIED)
+            print_str("color_space", av_color_space_name(par->color_space));
+        else
+            print_str_opt("color_space", av_color_space_name(par->color_space));
 
         if (par->color_trc != AVCOL_TRC_UNSPECIFIED)
             print_str("color_transfer", av_color_transfer_name(par->color_trc));
