@@ -84,6 +84,7 @@ static av_unused void *func_ref, *func_new;
 /* Declare the function prototype. The first argument is the return value, the remaining
  * arguments are the function parameters. Naming parameters is optional. */
 #define declare_func(ret, ...) declare_new(ret, __VA_ARGS__) typedef ret func_type(__VA_ARGS__)
+#define declare_func_float(ret, ...) declare_new_float(ret, __VA_ARGS__) typedef ret func_type(__VA_ARGS__)
 #define declare_func_emms(cpu_flags, ret, ...) declare_new_emms(cpu_flags, ret, __VA_ARGS__) typedef ret func_type(__VA_ARGS__)
 
 /* Indicate that the current test has failed */
@@ -102,6 +103,9 @@ void checkasm_checked_call(void *func, ...);
 /* Verifies that clobbered callee-saved registers are properly saved and restored
  * and issues emms for asm functions which are not required to do so */
 void checkasm_checked_call_emms(void *func, ...);
+/* Verifies that clobbered callee-saved registers are properly saved and restored
+ * but doesn't issue emms. Meant for dsp functions returning float or double */
+void checkasm_checked_call_float(void *func, ...);
 
 #if ARCH_X86_64
 /* Evil hack: detect incorrect assumptions that 32-bit ints are zero-extended to 64-bit.
@@ -116,6 +120,8 @@ void checkasm_checked_call_emms(void *func, ...);
 void checkasm_stack_clobber(uint64_t clobber, ...);
 #define declare_new(ret, ...) ret (*checked_call)(void *, int, int, int, int, int, __VA_ARGS__)\
                               = (void *)checkasm_checked_call;
+#define declare_new_float(ret, ...) ret (*checked_call)(void *, int, int, int, int, int, __VA_ARGS__)\
+                                    = (void *)checkasm_checked_call_float;
 #define declare_new_emms(cpu_flags, ret, ...) \
     ret (*checked_call)(void *, int, int, int, int, int, __VA_ARGS__) = \
         ((cpu_flags) & av_get_cpu_flags()) ? (void *)checkasm_checked_call_emms : \
@@ -126,6 +132,7 @@ void checkasm_stack_clobber(uint64_t clobber, ...);
                       checked_call(func_new, 0, 0, 0, 0, 0, __VA_ARGS__))
 #elif ARCH_X86_32
 #define declare_new(ret, ...) ret (*checked_call)(void *, __VA_ARGS__) = (void *)checkasm_checked_call;
+#define declare_new_float(ret, ...) ret (*checked_call)(void *, __VA_ARGS__) = (void *)checkasm_checked_call_float;
 #define declare_new_emms(cpu_flags, ret, ...) ret (*checked_call)(void *, __VA_ARGS__) = \
         ((cpu_flags) & av_get_cpu_flags()) ? (void *)checkasm_checked_call_emms :        \
                                              (void *)checkasm_checked_call;
@@ -151,6 +158,7 @@ void checkasm_checked_call(void *func, ...);
                       checked_call(func_new, 0, 0, 0, 0, 0, 0, 0, __VA_ARGS__))
 #else
 #define declare_new(ret, ...)
+#define declare_new_float(ret, ...)
 #define declare_new_emms(cpu_flags, ret, ...)
 /* Call the function */
 #define call_new(...) ((func_type *)func_new)(__VA_ARGS__)
@@ -158,6 +166,9 @@ void checkasm_checked_call(void *func, ...);
 
 #ifndef declare_new_emms
 #define declare_new_emms(cpu_flags, ret, ...) declare_new(ret, __VA_ARGS__)
+#endif
+#ifndef declare_new_float
+#define declare_new_float(ret, ...) declare_new(ret, __VA_ARGS__)
 #endif
 
 /* Benchmark the function */
