@@ -2717,7 +2717,7 @@ qsvenc_select="qsv"
 vaapi_encode_deps="vaapi"
 
 hwupload_cuda_filter_deps="cuda"
-scale_npp_filter_deps="cuda_sdk libnpp"
+scale_npp_filter_deps="cuda libnpp"
 scale_cuda_filter_deps="cuda_sdk"
 
 nvenc_deps="cuda"
