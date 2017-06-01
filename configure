@@ -5392,6 +5392,10 @@ elif enabled mips; then
     enabled mipsdsp && check_inline_asm_flags mipsdsp '"addu.qb $t0, $t1, $t2"' '-mdsp'
     enabled mipsdspr2 && check_inline_asm_flags mipsdspr2 '"absq_s.qb $t0, $t1"' '-mdspr2'
 
+    if enabled bigendian && enabled msa; then
+        disable msa
+    fi
+
 elif enabled parisc; then
 
     if enabled gcc; then
