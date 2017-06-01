@@ -51,7 +51,7 @@ cextern w7_min_w5
 SECTION .text
 
 %macro idct_fn 0
-cglobal prores_idct_put_10, 4, 4, 15
+cglobal prores_idct_put_10, 4, 4, 15, pixels, lsize, block, qmat
     IDCT_FN    pw_1, 15, pw_88, 18, pw_4, pw_1019, r3
     RET
 %endmacro
