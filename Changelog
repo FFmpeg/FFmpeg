@@ -18,6 +18,7 @@ version <next>:
 - remove the libschroedinger encoder/decoder wrappers
 - surround audio filter
 - sofalizer filter switched to libmysofa
+- Gremlin Digital Video demuxer and decoder
 
 version 3.3:
 - CrystalHD decoder moved to new decode API
