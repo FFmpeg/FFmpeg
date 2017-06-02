@@ -65,6 +65,9 @@ static const struct {
     void (*func)(void);
 } tests[] = {
 #if CONFIG_AVCODEC
+    #if CONFIG_AAC_DECODER
+        { "aacpsdsp", checkasm_check_aacpsdsp },
+    #endif
     #if CONFIG_ALAC_DECODER
         { "alacdsp", checkasm_check_alacdsp },
     #endif
