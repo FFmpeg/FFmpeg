@@ -520,6 +520,7 @@ static void register_all(void)
     REGISTER_DECODER(PCM_ZORK,          pcm_zork);
 
     /* DPCM codecs */
+    REGISTER_DECODER(GREMLIN_DPCM,      gremlin_dpcm);
     REGISTER_DECODER(INTERPLAY_DPCM,    interplay_dpcm);
     REGISTER_ENCDEC (ROQ_DPCM,          roq_dpcm);
     REGISTER_DECODER(SOL_DPCM,          sol_dpcm);
