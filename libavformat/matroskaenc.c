@@ -1483,8 +1483,10 @@ static int mkv_write_chapters(AVFormatContext *s)
     if (ret < 0) return ret;
 
     editionentry = start_ebml_master(dyn_cp, MATROSKA_ID_EDITIONENTRY, 0);
-    put_ebml_uint(dyn_cp, MATROSKA_ID_EDITIONFLAGDEFAULT, 1);
-    put_ebml_uint(dyn_cp, MATROSKA_ID_EDITIONFLAGHIDDEN , 0);
+    if (mkv->mode != MODE_WEBM) {
+        put_ebml_uint(dyn_cp, MATROSKA_ID_EDITIONFLAGDEFAULT, 1);
+        put_ebml_uint(dyn_cp, MATROSKA_ID_EDITIONFLAGHIDDEN , 0);
+    }
     for (i = 0; i < s->nb_chapters; i++) {
         ebml_master chapteratom, chapterdisplay;
         AVChapter *c     = s->chapters[i];
@@ -1502,8 +1504,10 @@ static int mkv_write_chapters(AVFormatContext *s)
         put_ebml_uint(dyn_cp, MATROSKA_ID_CHAPTERUID, c->id + mkv->chapter_id_offset);
         put_ebml_uint(dyn_cp, MATROSKA_ID_CHAPTERTIMESTART, chapterstart);
         put_ebml_uint(dyn_cp, MATROSKA_ID_CHAPTERTIMEEND, chapterend);
-        put_ebml_uint(dyn_cp, MATROSKA_ID_CHAPTERFLAGHIDDEN , 0);
-        put_ebml_uint(dyn_cp, MATROSKA_ID_CHAPTERFLAGENABLED, 1);
+        if (mkv->mode != MODE_WEBM) {
+            put_ebml_uint(dyn_cp, MATROSKA_ID_CHAPTERFLAGHIDDEN , 0);
+            put_ebml_uint(dyn_cp, MATROSKA_ID_CHAPTERFLAGENABLED, 1);
+        }
         if ((t = av_dict_get(c->metadata, "title", NULL, 0))) {
             chapterdisplay = start_ebml_master(dyn_cp, MATROSKA_ID_CHAPTERDISPLAY, 0);
             put_ebml_string(dyn_cp, MATROSKA_ID_CHAPSTRING, t->value);
@@ -1976,11 +1980,11 @@ static int mkv_write_header(AVFormatContext *s)
     for (i = 0; i < s->nb_chapters; i++)
         mkv->chapter_id_offset = FFMAX(mkv->chapter_id_offset, 1LL - s->chapters[i]->id);
 
-    if (mkv->mode != MODE_WEBM) {
-        ret = mkv_write_chapters(s);
-        if (ret < 0)
-            goto fail;
+    ret = mkv_write_chapters(s);
+    if (ret < 0)
+        goto fail;
 
+    if (mkv->mode != MODE_WEBM) {
         ret = mkv_write_attachments(s);
         if (ret < 0)
             goto fail;
@@ -2525,11 +2529,10 @@ static int mkv_write_trailer(AVFormatContext *s)
         end_ebml_master_crc32(pb, &mkv->dyn_bc, mkv, mkv->cluster);
     }
 
-    if (mkv->mode != MODE_WEBM) {
-        ret = mkv_write_chapters(s);
-        if (ret < 0)
-            return ret;
-    }
+    ret = mkv_write_chapters(s);
+    if (ret < 0)
+        return ret;
+
 
     if ((pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live) {
         if (mkv->cues->num_entries) {
