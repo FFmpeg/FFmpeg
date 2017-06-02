@@ -93,6 +93,10 @@ cglobal ps_stereo_interpolate, 5, 5, 6, l, r, h, h_step, n
     movaps   m1, [h_stepq]
     cmp      nd, 0
     jle .ret
+    unpcklps m4, m0, m0
+    unpckhps m0, m0
+    unpcklps m5, m1, m1
+    unpckhps m1, m1
     shl      nd, 3
     add      lq, nq
     add      rq, nq
@@ -100,15 +104,12 @@ cglobal ps_stereo_interpolate, 5, 5, 6, l, r, h, h_step, n
 
 align 16
 .loop:
+    addps    m4, m5
     addps    m0, m1
     movddup  m2, [lq+nq]
     movddup  m3, [rq+nq]
-    movaps   m4, m0
-    movaps   m5, m0
-    unpcklps m4, m4
-    unpckhps m5, m5
     mulps    m2, m4
-    mulps    m3, m5
+    mulps    m3, m0
     addps    m2, m3
     movsd  [lq+nq], m2
     movhps [rq+nq], m2
