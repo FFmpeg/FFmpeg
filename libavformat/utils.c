@@ -4097,7 +4097,9 @@ int av_find_best_stream(AVFormatContext *ic, enum AVMediaType type,
                         AVCodec **decoder_ret, int flags)
 {
     int i, nb_streams = ic->nb_streams;
-    int ret = AVERROR_STREAM_NOT_FOUND, best_count = -1, best_bitrate = -1, best_multiframe = -1, count, bitrate, multiframe;
+    int ret = AVERROR_STREAM_NOT_FOUND;
+    int best_count = -1, best_bitrate = -1, best_multiframe = -1, best_disposition = -1;
+    int count, bitrate, multiframe, disposition;
     unsigned *program = NULL;
     const AVCodec *decoder = NULL, *best_decoder = NULL;
 
@@ -4116,10 +4118,6 @@ int av_find_best_stream(AVFormatContext *ic, enum AVMediaType type,
             continue;
         if (wanted_stream_nb >= 0 && real_stream_index != wanted_stream_nb)
             continue;
-        if (wanted_stream_nb != real_stream_index &&
-            st->disposition & (AV_DISPOSITION_HEARING_IMPAIRED |
-                               AV_DISPOSITION_VISUAL_IMPAIRED))
-            continue;
         if (type == AVMEDIA_TYPE_AUDIO && !(par->channels && par->sample_rate))
             continue;
         if (decoder_ret) {
@@ -4130,13 +4128,16 @@ int av_find_best_stream(AVFormatContext *ic, enum AVMediaType type,
                 continue;
             }
         }
+        disposition = !(st->disposition & (AV_DISPOSITION_HEARING_IMPAIRED | AV_DISPOSITION_VISUAL_IMPAIRED));
         count = st->codec_info_nb_frames;
         bitrate = par->bit_rate;
         multiframe = FFMIN(5, count);
-        if ((best_multiframe >  multiframe) ||
-            (best_multiframe == multiframe && best_bitrate >  bitrate) ||
-            (best_multiframe == multiframe && best_bitrate == bitrate && best_count >= count))
+        if ((best_disposition >  disposition) ||
+            (best_disposition == disposition && best_multiframe >  multiframe) ||
+            (best_disposition == disposition && best_multiframe == multiframe && best_bitrate >  bitrate) ||
+            (best_disposition == disposition && best_multiframe == multiframe && best_bitrate == bitrate && best_count >= count))
             continue;
+        best_disposition = disposition;
         best_count   = count;
         best_bitrate = bitrate;
         best_multiframe = multiframe;
