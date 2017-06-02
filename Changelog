@@ -17,6 +17,7 @@ version <next>:
 - remove the libnut muxer/demuxer wrappers
 - remove the libschroedinger encoder/decoder wrappers
 - surround audio filter
+- sofalizer filter switched to libmysofa
 
 version 3.3:
 - CrystalHD decoder moved to new decode API

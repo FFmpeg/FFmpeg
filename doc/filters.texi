@@ -3571,7 +3571,7 @@ SOFAlizer is developed at the Acoustics Research Institute (ARI) of the
 Austrian Academy of Sciences.
 
 To enable compilation of this filter you need to configure FFmpeg with
-@code{--enable-netcdf}.
+@code{--enable-libmysofa}.
 
 The filter accepts the following options:
 

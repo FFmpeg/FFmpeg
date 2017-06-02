@@ -26,7 +26,7 @@
  *****************************************************************************/
 
 #include <math.h>
-#include <netcdf.h>
+#include <mysofa.h>
 
 #include "libavcodec/avfft.h"
 #include "libavutil/avstring.h"
@@ -41,18 +41,12 @@
 #define TIME_DOMAIN      0
 #define FREQUENCY_DOMAIN 1
 
-typedef struct NCSofa {  /* contains data of one SOFA file */
-    int ncid;            /* netCDF ID of the opened SOFA file */
+typedef struct MySofa {  /* contains data of one SOFA file */
+    struct MYSOFA_EASY *easy;
     int n_samples;       /* length of one impulse response (IR) */
-    int m_dim;           /* number of measurement positions */
-    int *data_delay;     /* broadband delay of each IR */
-                         /* all measurement positions for each receiver (i.e. ear): */
-    float *sp_a;         /* azimuth angles */
-    float *sp_e;         /* elevation angles */
-    float *sp_r;         /* radii */
-                         /* data at each measurement position for each receiver: */
-    float *data_ir;      /* IRs (time-domain) */
-} NCSofa;
+    float *lir, *rir;    /* IRs (time-domain) */
+    int max_delay;
+} MySofa;
 
 typedef struct VirtualSpeaker {
     uint8_t set;
@@ -64,7 +58,7 @@ typedef struct SOFAlizerContext {
     const AVClass *class;
 
     char *filename;             /* name of SOFA file */
-    NCSofa sofa;                /* contains data of the SOFA file */
+    MySofa sofa;                /* contains data of the SOFA file */
 
     int sample_rate;            /* sample rate from SOFA file */
     float *speaker_azim;        /* azimuth of the virtual loudspeakers */
@@ -107,271 +101,33 @@ typedef struct SOFAlizerContext {
     AVFloatDSPContext *fdsp;
 } SOFAlizerContext;
 
-static int close_sofa(struct NCSofa *sofa)
+static int close_sofa(struct MySofa *sofa)
 {
-    av_freep(&sofa->data_delay);
-    av_freep(&sofa->sp_a);
-    av_freep(&sofa->sp_e);
-    av_freep(&sofa->sp_r);
-    av_freep(&sofa->data_ir);
-    nc_close(sofa->ncid);
-    sofa->ncid = 0;
+    mysofa_close(sofa->easy);
+    sofa->easy = NULL;
 
     return 0;
 }
 
-static int load_sofa(AVFilterContext *ctx, char *filename, int *samplingrate)
+static int preload_sofa(AVFilterContext *ctx, char *filename, int *samplingrate)
 {
     struct SOFAlizerContext *s = ctx->priv;
-    /* variables associated with content of SOFA file: */
-    int ncid, n_dims, n_vars, n_gatts, n_unlim_dim_id, status;
-    char data_delay_dim_name[NC_MAX_NAME];
-    float *sp_a, *sp_e, *sp_r, *data_ir;
-    char *sofa_conventions;
-    char dim_name[NC_MAX_NAME];   /* names of netCDF dimensions */
-    size_t *dim_length;           /* lengths of netCDF dimensions */
-    char *text;
-    unsigned int sample_rate;
-    int data_delay_dim_id[2];
-    int samplingrate_id;
-    int data_delay_id;
-    int n_samples;
-    int m_dim_id = -1;
-    int n_dim_id = -1;
-    int data_ir_id;
-    size_t att_len;
-    int m_dim;
-    int *data_delay;
-    int sp_id;
-    int i, ret;
+    struct MYSOFA_HRTF *mysofa;
+    int ret;
 
-    s->sofa.ncid = 0;
-    status = nc_open(filename, NC_NOWRITE, &ncid); /* open SOFA file read-only */
-    if (status != NC_NOERR) {
+    mysofa = mysofa_load(filename, &ret);
+    if (ret || !mysofa) {
         av_log(ctx, AV_LOG_ERROR, "Can't find SOFA-file '%s'\n", filename);
         return AVERROR(EINVAL);
     }
 
-    /* get number of dimensions, vars, global attributes and Id of unlimited dimensions: */
-    nc_inq(ncid, &n_dims, &n_vars, &n_gatts, &n_unlim_dim_id);
-
-    /* -- get number of measurements ("M") and length of one IR ("N") -- */
-    dim_length = av_malloc_array(n_dims, sizeof(*dim_length));
-    if (!dim_length) {
-        nc_close(ncid);
-        return AVERROR(ENOMEM);
-    }
-
-    for (i = 0; i < n_dims; i++) { /* go through all dimensions of file */
-        nc_inq_dim(ncid, i, (char *)&dim_name, &dim_length[i]); /* get dimensions */
-        if (!strncmp("M", (const char *)&dim_name, 1)) /* get ID of dimension "M" */
-            m_dim_id = i;
-        if (!strncmp("N", (const char *)&dim_name, 1)) /* get ID of dimension "N" */
-            n_dim_id = i;
-    }
-
-    if ((m_dim_id == -1) || (n_dim_id == -1)) { /* dimension "M" or "N" couldn't be found */
-        av_log(ctx, AV_LOG_ERROR, "Can't find required dimensions in SOFA file.\n");
-        av_freep(&dim_length);
-        nc_close(ncid);
+    if (mysofa->DataSamplingRate.elements != 1)
         return AVERROR(EINVAL);
-    }
-
-    n_samples = dim_length[n_dim_id]; /* get length of one IR */
-    m_dim     = dim_length[m_dim_id]; /* get number of measurements */
-
-    av_freep(&dim_length);
-
-    /* -- check file type -- */
-    /* get length of attritube "Conventions" */
-    status = nc_inq_attlen(ncid, NC_GLOBAL, "Conventions", &att_len);
-    if (status != NC_NOERR) {
-        av_log(ctx, AV_LOG_ERROR, "Can't get length of attribute \"Conventions\".\n");
-        nc_close(ncid);
-        return AVERROR_INVALIDDATA;
-    }
-
-    /* check whether file is SOFA file */
-    text = av_malloc(att_len + 1);
-    if (!text) {
-        nc_close(ncid);
-        return AVERROR(ENOMEM);
-    }
-
-    nc_get_att_text(ncid, NC_GLOBAL, "Conventions", text);
-    *(text + att_len) = 0;
-    if (strncmp("SOFA", text, 4)) {
-        av_log(ctx, AV_LOG_ERROR, "Not a SOFA file!\n");
-        av_freep(&text);
-        nc_close(ncid);
-        return AVERROR(EINVAL);
-    }
-    av_freep(&text);
-
-    status = nc_inq_attlen(ncid, NC_GLOBAL, "License", &att_len);
-    if (status == NC_NOERR) {
-        text = av_malloc(att_len + 1);
-        if (text) {
-            nc_get_att_text(ncid, NC_GLOBAL, "License", text);
-            *(text + att_len) = 0;
-            av_log(ctx, AV_LOG_INFO, "SOFA file License: %s\n", text);
-            av_freep(&text);
-        }
-    }
-
-    status = nc_inq_attlen(ncid, NC_GLOBAL, "SourceDescription", &att_len);
-    if (status == NC_NOERR) {
-        text = av_malloc(att_len + 1);
-        if (text) {
-            nc_get_att_text(ncid, NC_GLOBAL, "SourceDescription", text);
-            *(text + att_len) = 0;
-            av_log(ctx, AV_LOG_INFO, "SOFA file SourceDescription: %s\n", text);
-            av_freep(&text);
-        }
-    }
-
-    status = nc_inq_attlen(ncid, NC_GLOBAL, "Comment", &att_len);
-    if (status == NC_NOERR) {
-        text = av_malloc(att_len + 1);
-        if (text) {
-            nc_get_att_text(ncid, NC_GLOBAL, "Comment", text);
-            *(text + att_len) = 0;
-            av_log(ctx, AV_LOG_INFO, "SOFA file Comment: %s\n", text);
-            av_freep(&text);
-        }
-    }
-
-    status = nc_inq_attlen(ncid, NC_GLOBAL, "SOFAConventions", &att_len);
-    if (status != NC_NOERR) {
-        av_log(ctx, AV_LOG_ERROR, "Can't get length of attribute \"SOFAConventions\".\n");
-        nc_close(ncid);
-        return AVERROR_INVALIDDATA;
-    }
-
-    sofa_conventions = av_malloc(att_len + 1);
-    if (!sofa_conventions) {
-        nc_close(ncid);
-        return AVERROR(ENOMEM);
-    }
-
-    nc_get_att_text(ncid, NC_GLOBAL, "SOFAConventions", sofa_conventions);
-    *(sofa_conventions + att_len) = 0;
-    if (strncmp("SimpleFreeFieldHRIR", sofa_conventions, att_len)) {
-        av_log(ctx, AV_LOG_ERROR, "Not a SimpleFreeFieldHRIR file!\n");
-        av_freep(&sofa_conventions);
-        nc_close(ncid);
-        return AVERROR(EINVAL);
-    }
-    av_freep(&sofa_conventions);
-
-    /* -- get sampling rate of HRTFs -- */
-    /* read ID, then value */
-    status  = nc_inq_varid(ncid, "Data.SamplingRate", &samplingrate_id);
-    status += nc_get_var_uint(ncid, samplingrate_id, &sample_rate);
-    if (status != NC_NOERR) {
-        av_log(ctx, AV_LOG_ERROR, "Couldn't read Data.SamplingRate.\n");
-        nc_close(ncid);
-        return AVERROR(EINVAL);
-    }
-    *samplingrate = sample_rate; /* remember sampling rate */
-
-    /* -- allocate memory for one value for each measurement position: -- */
-    sp_a = s->sofa.sp_a = av_malloc_array(m_dim, sizeof(float));
-    sp_e = s->sofa.sp_e = av_malloc_array(m_dim, sizeof(float));
-    sp_r = s->sofa.sp_r = av_malloc_array(m_dim, sizeof(float));
-    /* delay and IR values required for each ear and measurement position: */
-    data_delay = s->sofa.data_delay = av_calloc(m_dim, 2 * sizeof(int));
-    data_ir = s->sofa.data_ir = av_calloc(m_dim * FFALIGN(n_samples, 16), sizeof(float) * 2);
-
-    if (!data_delay || !sp_a || !sp_e || !sp_r || !data_ir) {
-        /* if memory could not be allocated */
-        close_sofa(&s->sofa);
-        return AVERROR(ENOMEM);
-    }
-
-    /* get impulse responses (HRTFs): */
-    /* get corresponding ID */
-    status = nc_inq_varid(ncid, "Data.IR", &data_ir_id);
-    status += nc_get_var_float(ncid, data_ir_id, data_ir); /* read and store IRs */
-    if (status != NC_NOERR) {
-        av_log(ctx, AV_LOG_ERROR, "Couldn't read Data.IR!\n");
-        ret = AVERROR(EINVAL);
-        goto error;
-    }
-
-    /* get source positions of the HRTFs in the SOFA file: */
-    status  = nc_inq_varid(ncid, "SourcePosition", &sp_id); /* get corresponding ID */
-    status += nc_get_vara_float(ncid, sp_id, (size_t[2]){ 0, 0 } ,
-                (size_t[2]){ m_dim, 1}, sp_a); /* read & store azimuth angles */
-    status += nc_get_vara_float(ncid, sp_id, (size_t[2]){ 0, 1 } ,
-                (size_t[2]){ m_dim, 1}, sp_e); /* read & store elevation angles */
-    status += nc_get_vara_float(ncid, sp_id, (size_t[2]){ 0, 2 } ,
-                (size_t[2]){ m_dim, 1}, sp_r); /* read & store radii */
-    if (status != NC_NOERR) { /* if any source position variable coudn't be read */
-        av_log(ctx, AV_LOG_ERROR, "Couldn't read SourcePosition.\n");
-        ret = AVERROR(EINVAL);
-        goto error;
-    }
-
-    /* read Data.Delay, check for errors and fit it to data_delay */
-    status  = nc_inq_varid(ncid, "Data.Delay", &data_delay_id);
-    status += nc_inq_vardimid(ncid, data_delay_id, &data_delay_dim_id[0]);
-    status += nc_inq_dimname(ncid, data_delay_dim_id[0], data_delay_dim_name);
-    if (status != NC_NOERR) {
-        av_log(ctx, AV_LOG_ERROR, "Couldn't read Data.Delay.\n");
-        ret = AVERROR(EINVAL);
-        goto error;
-    }
-
-    /* Data.Delay dimension check */
-    /* dimension of Data.Delay is [I R]: */
-    if (!strncmp(data_delay_dim_name, "I", 2)) {
-        /* check 2 characters to assure string is 0-terminated after "I" */
-        int delay[2]; /* delays get from SOFA file: */
-        int *data_delay_r;
-
-        av_log(ctx, AV_LOG_DEBUG, "Data.Delay has dimension [I R]\n");
-        status = nc_get_var_int(ncid, data_delay_id, &delay[0]);
-        if (status != NC_NOERR) {
-            av_log(ctx, AV_LOG_ERROR, "Couldn't read Data.Delay\n");
-            ret = AVERROR(EINVAL);
-            goto error;
-        }
-        data_delay_r = data_delay + m_dim;
-        for (i = 0; i < m_dim; i++) { /* extend given dimension [I R] to [M R] */
-            /* assign constant delay value for all measurements to data_delay fields */
-            data_delay[i]   = delay[0];
-            data_delay_r[i] = delay[1];
-        }
-        /* dimension of Data.Delay is [M R] */
-    } else if (!strncmp(data_delay_dim_name, "M", 2)) {
-        av_log(ctx, AV_LOG_ERROR, "Data.Delay in dimension [M R]\n");
-        /* get delays from SOFA file: */
-        status = nc_get_var_int(ncid, data_delay_id, data_delay);
-        if (status != NC_NOERR) {
-            av_log(ctx, AV_LOG_ERROR, "Couldn't read Data.Delay\n");
-            ret = AVERROR(EINVAL);
-            goto error;
-        }
-    } else { /* dimension of Data.Delay is neither [I R] nor [M R] */
-        av_log(ctx, AV_LOG_ERROR, "Data.Delay does not have the required dimensions [I R] or [M R].\n");
-        ret = AVERROR(EINVAL);
-        goto error;
-    }
-
-    /* save information in SOFA struct: */
-    s->sofa.m_dim = m_dim; /* no. measurement positions */
-    s->sofa.n_samples = n_samples; /* length on one IR */
-    s->sofa.ncid = ncid; /* netCDF ID of SOFA file */
-    nc_close(ncid); /* close SOFA file */
-
-    av_log(ctx, AV_LOG_DEBUG, "m_dim: %d n_samples %d\n", m_dim, n_samples);
+    *samplingrate = mysofa->DataSamplingRate.values[0];
+    s->sofa.n_samples = mysofa->N;
+    mysofa_free(mysofa);
 
     return 0;
-
-error:
-    close_sofa(&s->sofa);
-    return ret;
 }
 
 static int parse_channel_name(char **arg, int *rchannel, char *buf)
@@ -507,83 +263,6 @@ static int get_speaker_pos(AVFilterContext *ctx,
 
 }
 
-static int max_delay(struct NCSofa *sofa)
-{
-    int i, max = 0;
-
-    for (i = 0; i < sofa->m_dim * 2; i++) {
-        /* search maximum delay in given SOFA file */
-        max = FFMAX(max, sofa->data_delay[i]);
-    }
-
-    return max;
-}
-
-static int find_m(SOFAlizerContext *s, int azim, int elev, float radius)
-{
-    /* get source positions and M of currently selected SOFA file */
-    float *sp_a = s->sofa.sp_a; /* azimuth angle */
-    float *sp_e = s->sofa.sp_e; /* elevation angle */
-    float *sp_r = s->sofa.sp_r; /* radius */
-    int m_dim = s->sofa.m_dim; /* no. measurements */
-    int best_id = 0; /* index m currently closest to desired source pos. */
-    float delta = 1000; /* offset between desired and currently best pos. */
-    float current;
-    int i;
-
-    for (i = 0; i < m_dim; i++) {
-        /* search through all measurements in currently selected SOFA file */
-        /* distance of current to desired source position: */
-        current = fabs(sp_a[i] - azim) +
-                  fabs(sp_e[i] - elev) +
-                  fabs(sp_r[i] - radius);
-        if (current <= delta) {
-            /* if current distance is smaller than smallest distance so far */
-            delta = current;
-            best_id = i; /* remember index */
-        }
-    }
-
-    return best_id;
-}
-
-static int compensate_volume(AVFilterContext *ctx)
-{
-    struct SOFAlizerContext *s = ctx->priv;
-    float compensate;
-    float energy = 0;
-    float *ir;
-    int m;
-
-    if (s->sofa.ncid) {
-        /* find IR at front center position in the SOFA file (IR closest to 0°,0°,1m) */
-        struct NCSofa *sofa = &s->sofa;
-        m = find_m(s, 0, 0, 1);
-        /* get energy of that IR and compensate volume */
-        ir = sofa->data_ir + 2 * m * sofa->n_samples;
-        if (sofa->n_samples & 31) {
-            energy = avpriv_scalarproduct_float_c(ir, ir, sofa->n_samples);
-        } else {
-            energy = s->fdsp->scalarproduct_float(ir, ir, sofa->n_samples);
-        }
-        compensate = 256 / (sofa->n_samples * sqrt(energy));
-        av_log(ctx, AV_LOG_DEBUG, "Compensate-factor: %f\n", compensate);
-        ir = sofa->data_ir;
-        /* apply volume compensation to IRs */
-        if (sofa->n_samples & 31) {
-            int i;
-            for (i = 0; i < sofa->n_samples * sofa->m_dim * 2; i++) {
-                ir[i] = ir[i] * compensate;
-            }
-        } else {
-            s->fdsp->vector_fmul_scalar(ir, ir, compensate, sofa->n_samples * sofa->m_dim * 2);
-            emms_c();
-        }
-    }
-
-    return 0;
-}
-
 typedef struct ThreadData {
     AVFrame *in, *out;
     int *write;
@@ -629,10 +308,10 @@ static int sofalizer_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
     for (i = 0; i < in->nb_samples; i++) {
         const float *temp_ir = ir; /* using same set of IRs for each sample */
 
-        *dst = 0;
+        dst[0] = 0;
         for (l = 0; l < in_channels; l++) {
             /* write current input sample to ringbuffer (for each channel) */
-            *(buffer[l] + wr) = src[l];
+            buffer[l][wr] = src[l];
         }
 
         /* loop goes through all channels to be convolved */
@@ -643,31 +322,31 @@ static int sofalizer_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
                 /* LFE is an input channel but requires no convolution */
                 /* apply gain to LFE signal and add to output buffer */
                 *dst += *(buffer[s->lfe_channel] + wr) * s->gain_lfe;
-                temp_ir += FFALIGN(n_samples, 16);
+                temp_ir += FFALIGN(n_samples, 32);
                 continue;
             }
 
             /* current read position in ringbuffer: input sample write position
              * - delay for l-th ch. + diff. betw. IR length and buffer length
              * (mod buffer length) */
-            read = (wr - *(delay + l) - (n_samples - 1) + buffer_length) & modulo;
+            read = (wr - delay[l] - (n_samples - 1) + buffer_length) & modulo;
 
             if (read + n_samples < buffer_length) {
-                memcpy(temp_src, bptr + read, n_samples * sizeof(*temp_src));
+                memmove(temp_src, bptr + read, n_samples * sizeof(*temp_src));
             } else {
                 int len = FFMIN(n_samples - (read % n_samples), buffer_length - read);
 
-                memcpy(temp_src, bptr + read, len * sizeof(*temp_src));
-                memcpy(temp_src + len, bptr, (n_samples - len) * sizeof(*temp_src));
+                memmove(temp_src, bptr + read, len * sizeof(*temp_src));
+                memmove(temp_src + len, bptr, (n_samples - len) * sizeof(*temp_src));
             }
 
             /* multiply signal and IR, and add up the results */
             dst[0] += s->fdsp->scalarproduct_float(temp_ir, temp_src, n_samples);
-            temp_ir += FFALIGN(n_samples, 16);
+            temp_ir += FFALIGN(n_samples, 32);
         }
 
         /* clippings counter */
-        if (fabs(*dst) > 1)
+        if (fabs(dst[0]) > 1)
             *n_clippings += 1;
 
         /* move output buffer pointer by +2 to get to next sample of processed channel: */
@@ -875,14 +554,14 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_samplerates(ctx, formats);
 }
 
-static int load_data(AVFilterContext *ctx, int azim, int elev, float radius)
+static int load_data(AVFilterContext *ctx, int azim, int elev, float radius, int sample_rate)
 {
     struct SOFAlizerContext *s = ctx->priv;
-    const int n_samples = s->sofa.n_samples;
+    int n_samples;
     int n_conv = s->n_conv; /* no. channels to convolve */
-    int n_fft = s->n_fft;
-    int delay_l[16]; /* broadband delay for each IR */
-    int delay_r[16];
+    int n_fft;
+    float delay_l; /* broadband delay for each IR */
+    float delay_r;
     int nb_input_channels = ctx->inputs[0]->channels; /* no. input channels */
     float gain_lin = expf((s->gain - 3 * nb_input_channels) / 20 * M_LN10); /* gain - 3dB/channel */
     FFTComplex *data_hrtf_l = NULL;
@@ -892,68 +571,166 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius)
     float *data_ir_l = NULL;
     float *data_ir_r = NULL;
     int offset = 0; /* used for faster pointer arithmetics in for-loop */
-    int m[16]; /* measurement index m of IR closest to required source positions */
     int i, j, azim_orig = azim, elev_orig = elev;
+    int filter_length, ret = 0;
+    int n_current;
+    int n_max = 0;
 
-    if (!s->sofa.ncid) { /* if an invalid SOFA file has been selected */
+    s->sofa.easy = mysofa_open(s->filename, sample_rate, &filter_length, &ret);
+    if (!s->sofa.easy || ret) { /* if an invalid SOFA file has been selected */
         av_log(ctx, AV_LOG_ERROR, "Selected SOFA file is invalid. Please select valid SOFA file.\n");
         return AVERROR_INVALIDDATA;
     }
 
-    if (s->type == TIME_DOMAIN) {
-        s->temp_src[0] = av_calloc(FFALIGN(n_samples, 16), sizeof(float));
-        s->temp_src[1] = av_calloc(FFALIGN(n_samples, 16), sizeof(float));
+    n_samples = s->sofa.n_samples;
 
-        /* get temporary IR for L and R channel */
-        data_ir_l = av_calloc(n_conv * FFALIGN(n_samples, 16), sizeof(*data_ir_l));
-        data_ir_r = av_calloc(n_conv * FFALIGN(n_samples, 16), sizeof(*data_ir_r));
-        if (!data_ir_r || !data_ir_l || !s->temp_src[0] || !s->temp_src[1]) {
-            av_free(data_ir_l);
-            av_free(data_ir_r);
-            return AVERROR(ENOMEM);
+    s->data_ir[0] = av_calloc(FFALIGN(n_samples, 32), sizeof(float) * s->n_conv);
+    s->data_ir[1] = av_calloc(FFALIGN(n_samples, 32), sizeof(float) * s->n_conv);
+    s->delay[0] = av_calloc(s->n_conv, sizeof(int));
+    s->delay[1] = av_calloc(s->n_conv, sizeof(int));
+
+    if (!s->data_ir[0] || !s->data_ir[1] || !s->delay[0] || !s->delay[1]) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    /* get temporary IR for L and R channel */
+    data_ir_l = av_calloc(n_conv * FFALIGN(n_samples, 32), sizeof(*data_ir_l));
+    data_ir_r = av_calloc(n_conv * FFALIGN(n_samples, 32), sizeof(*data_ir_r));
+    if (!data_ir_r || !data_ir_l) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    if (s->type == TIME_DOMAIN) {
+        s->temp_src[0] = av_calloc(FFALIGN(n_samples, 32), sizeof(float));
+        s->temp_src[1] = av_calloc(FFALIGN(n_samples, 32), sizeof(float));
+        if (!s->temp_src[0] || !s->temp_src[1]) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
         }
+    }
+
+    s->speaker_azim = av_calloc(s->n_conv, sizeof(*s->speaker_azim));
+    s->speaker_elev = av_calloc(s->n_conv, sizeof(*s->speaker_elev));
+    if (!s->speaker_azim || !s->speaker_elev) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    /* get speaker positions */
+    if ((ret = get_speaker_pos(ctx, s->speaker_azim, s->speaker_elev)) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Couldn't get speaker positions. Input channel configuration not supported.\n");
+        goto fail;
+    }
+
+    for (i = 0; i < s->n_conv; i++) {
+        float coordinates[3];
+
+        /* load and store IRs and corresponding delays */
+        azim = (int)(s->speaker_azim[i] + azim_orig) % 360;
+        elev = (int)(s->speaker_elev[i] + elev_orig) % 90;
+
+        coordinates[0] = azim;
+        coordinates[1] = elev;
+        coordinates[2] = radius;
+
+        mysofa_s2c(coordinates);
+
+        /* get id of IR closest to desired position */
+        mysofa_getfilter_float(s->sofa.easy, coordinates[0], coordinates[1], coordinates[2],
+                               data_ir_l + FFALIGN(n_samples, 32) * i,
+                               data_ir_r + FFALIGN(n_samples, 32) * i,
+                               &delay_l, &delay_r);
+
+        s->delay[0][i] = delay_l * sample_rate;
+        s->delay[1][i] = delay_r * sample_rate;
+
+        s->sofa.max_delay = FFMAX3(s->sofa.max_delay, s->delay[0][i], s->delay[1][i]);
+    }
+
+    /* get size of ringbuffer (longest IR plus max. delay) */
+    /* then choose next power of 2 for performance optimization */
+    n_current = s->sofa.n_samples + s->sofa.max_delay;
+    /* length of longest IR plus max. delay */
+    n_max = FFMAX(n_max, n_current);
+
+    /* buffer length is longest IR plus max. delay -> next power of 2
+       (32 - count leading zeros gives required exponent)  */
+    s->buffer_length = 1 << (32 - ff_clz(n_max));
+    s->n_fft = n_fft = 1 << (32 - ff_clz(n_max + sample_rate));
+
+    if (s->type == FREQUENCY_DOMAIN) {
+        av_fft_end(s->fft[0]);
+        av_fft_end(s->fft[1]);
+        s->fft[0] = av_fft_init(log2(s->n_fft), 0);
+        s->fft[1] = av_fft_init(log2(s->n_fft), 0);
+        av_fft_end(s->ifft[0]);
+        av_fft_end(s->ifft[1]);
+        s->ifft[0] = av_fft_init(log2(s->n_fft), 1);
+        s->ifft[1] = av_fft_init(log2(s->n_fft), 1);
+
+        if (!s->fft[0] || !s->fft[1] || !s->ifft[0] || !s->ifft[1]) {
+            av_log(ctx, AV_LOG_ERROR, "Unable to create FFT contexts of size %d.\n", s->n_fft);
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+    }
+
+    if (s->type == TIME_DOMAIN) {
+        s->ringbuffer[0] = av_calloc(s->buffer_length, sizeof(float) * nb_input_channels);
+        s->ringbuffer[1] = av_calloc(s->buffer_length, sizeof(float) * nb_input_channels);
     } else {
         /* get temporary HRTF memory for L and R channel */
         data_hrtf_l = av_malloc_array(n_fft, sizeof(*data_hrtf_l) * n_conv);
         data_hrtf_r = av_malloc_array(n_fft, sizeof(*data_hrtf_r) * n_conv);
         if (!data_hrtf_r || !data_hrtf_l) {
-            av_free(data_hrtf_l);
-            av_free(data_hrtf_r);
-            return AVERROR(ENOMEM);
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+
+        s->ringbuffer[0] = av_calloc(s->buffer_length, sizeof(float));
+        s->ringbuffer[1] = av_calloc(s->buffer_length, sizeof(float));
+        s->temp_fft[0] = av_malloc_array(s->n_fft, sizeof(FFTComplex));
+        s->temp_fft[1] = av_malloc_array(s->n_fft, sizeof(FFTComplex));
+        if (!s->temp_fft[0] || !s->temp_fft[1]) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+    }
+
+    if (!s->ringbuffer[0] || !s->ringbuffer[1]) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    if (s->type == FREQUENCY_DOMAIN) {
+        fft_in_l = av_calloc(n_fft, sizeof(*fft_in_l));
+        fft_in_r = av_calloc(n_fft, sizeof(*fft_in_r));
+        if (!fft_in_l || !fft_in_r) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
         }
     }
 
     for (i = 0; i < s->n_conv; i++) {
-        /* load and store IRs and corresponding delays */
-        azim = (int)(s->speaker_azim[i] + azim_orig) % 360;
-        elev = (int)(s->speaker_elev[i] + elev_orig) % 90;
-        /* get id of IR closest to desired position */
-        m[i] = find_m(s, azim, elev, radius);
+        float *lir, *rir;
 
-        /* load the delays associated with the current IRs */
-        delay_l[i] = *(s->sofa.data_delay + 2 * m[i]);
-        delay_r[i] = *(s->sofa.data_delay + 2 * m[i] + 1);
+        offset = i * FFALIGN(n_samples, 32); /* no. samples already written */
+
+        lir = data_ir_l + offset;
+        rir = data_ir_r + offset;
 
         if (s->type == TIME_DOMAIN) {
-            offset = i * FFALIGN(n_samples, 16); /* no. samples already written */
             for (j = 0; j < n_samples; j++) {
                 /* load reversed IRs of the specified source position
                  * sample-by-sample for left and right ear; and apply gain */
-                *(data_ir_l + offset + j) = /* left channel */
-                *(s->sofa.data_ir + 2 * m[i] * n_samples + n_samples - 1 - j) * gain_lin;
-                *(data_ir_r + offset + j) = /* right channel */
-                *(s->sofa.data_ir + 2 * m[i] * n_samples + n_samples - 1 - j  + n_samples) * gain_lin;
+                s->data_ir[0][offset + j] = lir[n_samples - 1 - j] * gain_lin;
+                s->data_ir[1][offset + j] = rir[n_samples - 1 - j] * gain_lin;
             }
         } else {
-            fft_in_l = av_calloc(n_fft, sizeof(*fft_in_l));
-            fft_in_r = av_calloc(n_fft, sizeof(*fft_in_r));
-            if (!fft_in_l || !fft_in_r) {
-                av_free(data_hrtf_l);
-                av_free(data_hrtf_r);
-                av_free(fft_in_l);
-                av_free(fft_in_r);
-                return AVERROR(ENOMEM);
-            }
+            memset(fft_in_l, 0, n_fft * sizeof(*fft_in_l));
+            memset(fft_in_r, 0, n_fft * sizeof(*fft_in_r));
 
             offset = i * n_fft; /* no. samples already written */
             for (j = 0; j < n_samples; j++) {
@@ -961,10 +738,8 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius)
                  * sample-by-sample and apply gain,
                  * L channel is loaded to real part, R channel to imag part,
                  * IRs ared shifted by L and R delay */
-                fft_in_l[delay_l[i] + j].re = /* left channel */
-                *(s->sofa.data_ir + 2 * m[i] * n_samples + j) * gain_lin;
-                fft_in_r[delay_r[i] + j].re = /* right channel */
-                *(s->sofa.data_ir + (2 * m[i] + 1) * n_samples + j) * gain_lin;
+                fft_in_l[s->delay[0][i] + j].re = lir[j] * gain_lin;
+                fft_in_r[s->delay[1][i] + j].re = rir[j] * gain_lin;
             }
 
             /* actually transform to frequency domain (IRs -> HRTFs) */
@@ -975,45 +750,33 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius)
             av_fft_calc(s->fft[0], fft_in_r);
             memcpy(data_hrtf_r + offset, fft_in_r, n_fft * sizeof(*fft_in_r));
         }
-
-        av_log(ctx, AV_LOG_DEBUG, "Index: %d, Azimuth: %f, Elevation: %f, Radius: %f of SOFA file.\n",
-               m[i], *(s->sofa.sp_a + m[i]), *(s->sofa.sp_e + m[i]), *(s->sofa.sp_r + m[i]));
     }
 
-    if (s->type == TIME_DOMAIN) {
-        /* copy IRs and delays to allocated memory in the SOFAlizerContext struct: */
-        memcpy(s->data_ir[0], data_ir_l, sizeof(float) * n_conv * FFALIGN(n_samples, 16));
-        memcpy(s->data_ir[1], data_ir_r, sizeof(float) * n_conv * FFALIGN(n_samples, 16));
-
-        av_freep(&data_ir_l); /* free temporary IR memory */
-        av_freep(&data_ir_r);
-    } else {
+    if (s->type == FREQUENCY_DOMAIN) {
         s->data_hrtf[0] = av_malloc_array(n_fft * s->n_conv, sizeof(FFTComplex));
         s->data_hrtf[1] = av_malloc_array(n_fft * s->n_conv, sizeof(FFTComplex));
         if (!s->data_hrtf[0] || !s->data_hrtf[1]) {
-            av_freep(&data_hrtf_l);
-            av_freep(&data_hrtf_r);
-            av_freep(&fft_in_l);
-            av_freep(&fft_in_r);
-            return AVERROR(ENOMEM); /* memory allocation failed */
+            ret = AVERROR(ENOMEM);
+            goto fail;
         }
 
         memcpy(s->data_hrtf[0], data_hrtf_l, /* copy HRTF data to */
             sizeof(FFTComplex) * n_conv * n_fft); /* filter struct */
         memcpy(s->data_hrtf[1], data_hrtf_r,
             sizeof(FFTComplex) * n_conv * n_fft);
-
-        av_freep(&data_hrtf_l); /* free temporary HRTF memory */
-        av_freep(&data_hrtf_r);
-
-        av_freep(&fft_in_l); /* free temporary FFT memory */
-        av_freep(&fft_in_r);
     }
 
-    memcpy(s->delay[0], &delay_l[0], sizeof(int) * s->n_conv);
-    memcpy(s->delay[1], &delay_r[0], sizeof(int) * s->n_conv);
+fail:
+    av_freep(&data_hrtf_l); /* free temporary HRTF memory */
+    av_freep(&data_hrtf_r);
 
-    return 0;
+    av_freep(&data_ir_l); /* free temprary IR memory */
+    av_freep(&data_ir_r);
+
+    av_freep(&fft_in_l); /* free temporary FFT memory */
+    av_freep(&fft_in_r);
+
+    return ret;
 }
 
 static av_cold int init(AVFilterContext *ctx)
@@ -1026,12 +789,8 @@ static av_cold int init(AVFilterContext *ctx)
         return AVERROR(EINVAL);
     }
 
-    /* load SOFA file, */
-    /* initialize file IDs to 0 before attempting to load SOFA files,
-     * this assures that in case of error, only the memory of already
-     * loaded files is free'd */
-    s->sofa.ncid = 0;
-    ret = load_sofa(ctx, s->filename, &s->sample_rate);
+    /* preload SOFA file, */
+    ret = preload_sofa(ctx, s->filename, &s->sample_rate);
     if (ret) {
         /* file loading error */
         av_log(ctx, AV_LOG_ERROR, "Error while loading SOFA file: '%s'\n", s->filename);
@@ -1055,10 +814,6 @@ static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     SOFAlizerContext *s = ctx->priv;
-    int nb_input_channels = inlink->channels; /* no. input channels */
-    int n_max_ir = 0;
-    int n_current;
-    int n_max = 0;
     int ret;
 
     if (s->type == FREQUENCY_DOMAIN) {
@@ -1070,85 +825,14 @@ static int config_input(AVFilterLink *inlink)
     /* gain -3 dB per channel, -6 dB to get LFE on a similar level */
     s->gain_lfe = expf((s->gain - 3 * inlink->channels - 6 + s->lfe_gain) / 20 * M_LN10);
 
-    s->n_conv = nb_input_channels;
-
-    /* get size of ringbuffer (longest IR plus max. delay) */
-    /* then choose next power of 2 for performance optimization */
-    n_current = s->sofa.n_samples + max_delay(&s->sofa);
-    if (n_current > n_max) {
-        /* length of longest IR plus max. delay (in all SOFA files) */
-        n_max = n_current;
-        /* length of longest IR (without delay, in all SOFA files) */
-        n_max_ir = s->sofa.n_samples;
-    }
-    /* buffer length is longest IR plus max. delay -> next power of 2
-       (32 - count leading zeros gives required exponent)  */
-    s->buffer_length = 1 << (32 - ff_clz(n_max));
-    s->n_fft         = 1 << (32 - ff_clz(n_max + inlink->sample_rate));
-
-    if (s->type == FREQUENCY_DOMAIN) {
-        av_fft_end(s->fft[0]);
-        av_fft_end(s->fft[1]);
-        s->fft[0] = av_fft_init(log2(s->n_fft), 0);
-        s->fft[1] = av_fft_init(log2(s->n_fft), 0);
-        av_fft_end(s->ifft[0]);
-        av_fft_end(s->ifft[1]);
-        s->ifft[0] = av_fft_init(log2(s->n_fft), 1);
-        s->ifft[1] = av_fft_init(log2(s->n_fft), 1);
-
-        if (!s->fft[0] || !s->fft[1] || !s->ifft[0] || !s->ifft[1]) {
-            av_log(ctx, AV_LOG_ERROR, "Unable to create FFT contexts of size %d.\n", s->n_fft);
-            return AVERROR(ENOMEM);
-        }
-    }
-
-    /* Allocate memory for the impulse responses, delays and the ringbuffers */
-    /* size: (longest IR) * (number of channels to convolute) */
-    s->data_ir[0] = av_calloc(FFALIGN(n_max_ir, 16), sizeof(float) * s->n_conv);
-    s->data_ir[1] = av_calloc(FFALIGN(n_max_ir, 16), sizeof(float) * s->n_conv);
-    /* length:  number of channels to convolute */
-    s->delay[0] = av_malloc_array(s->n_conv, sizeof(float));
-    s->delay[1] = av_malloc_array(s->n_conv, sizeof(float));
-    /* length: (buffer length) * (number of input channels),
-     * OR: buffer length (if frequency domain processing)
-     * calloc zero-initializes the buffer */
-
-    if (s->type == TIME_DOMAIN) {
-        s->ringbuffer[0] = av_calloc(s->buffer_length, sizeof(float) * nb_input_channels);
-        s->ringbuffer[1] = av_calloc(s->buffer_length, sizeof(float) * nb_input_channels);
-    } else {
-        s->ringbuffer[0] = av_calloc(s->buffer_length, sizeof(float));
-        s->ringbuffer[1] = av_calloc(s->buffer_length, sizeof(float));
-        s->temp_fft[0] = av_malloc_array(s->n_fft, sizeof(FFTComplex));
-        s->temp_fft[1] = av_malloc_array(s->n_fft, sizeof(FFTComplex));
-        if (!s->temp_fft[0] || !s->temp_fft[1])
-            return AVERROR(ENOMEM);
-    }
-
-    /* length: number of channels to convolute */
-    s->speaker_azim = av_calloc(s->n_conv, sizeof(*s->speaker_azim));
-    s->speaker_elev = av_calloc(s->n_conv, sizeof(*s->speaker_elev));
-
-    /* memory allocation failed: */
-    if (!s->data_ir[0] || !s->data_ir[1] || !s->delay[1] ||
-        !s->delay[0] || !s->ringbuffer[0] || !s->ringbuffer[1] ||
-        !s->speaker_azim || !s->speaker_elev)
-        return AVERROR(ENOMEM);
-
-    compensate_volume(ctx);
-
-    /* get speaker positions */
-    if ((ret = get_speaker_pos(ctx, s->speaker_azim, s->speaker_elev)) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Couldn't get speaker positions. Input channel configuration not supported.\n");
-        return ret;
-    }
+    s->n_conv = inlink->channels;
 
     /* load IRs to data_ir[0] and data_ir[1] for required directions */
-    if ((ret = load_data(ctx, s->rotation, s->elevation, s->radius)) < 0)
+    if ((ret = load_data(ctx, s->rotation, s->elevation, s->radius, inlink->sample_rate)) < 0)
         return ret;
 
     av_log(ctx, AV_LOG_DEBUG, "Samplerate: %d Channels to convolute: %d, Length of ringbuffer: %d x %d\n",
-        inlink->sample_rate, s->n_conv, nb_input_channels, s->buffer_length);
+        inlink->sample_rate, s->n_conv, inlink->channels, s->buffer_length);
 
     return 0;
 }
@@ -1157,13 +841,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     SOFAlizerContext *s = ctx->priv;
 
-    if (s->sofa.ncid) {
-        av_freep(&s->sofa.sp_a);
-        av_freep(&s->sofa.sp_e);
-        av_freep(&s->sofa.sp_r);
-        av_freep(&s->sofa.data_delay);
-        av_freep(&s->sofa.data_ir);
-    }
+    close_sofa(&s->sofa);
     av_fft_end(s->ifft[0]);
     av_fft_end(s->ifft[1]);
     av_fft_end(s->fft[0]);
