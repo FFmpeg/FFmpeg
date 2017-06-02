@@ -72,6 +72,7 @@ static void ps_hybrid_analysis_c(INTFLOAT (*out)[2], INTFLOAT (*in)[2],
 #endif /* USE_FIXED */
     }
 }
+
 static void ps_hybrid_analysis_ileave_c(INTFLOAT (*out)[32][2], INTFLOAT L[2][38][64],
                                       int i, int len)
 {
@@ -165,10 +166,10 @@ static void ps_stereo_interpolate_c(INTFLOAT (*l)[2], INTFLOAT (*r)[2],
         h1 += hs1;
         h2 += hs2;
         h3 += hs3;
-        l[n][0] = AAC_MADD30(h0,  l_re,  h2, r_re);
-        l[n][1] = AAC_MADD30(h0,  l_im,  h2,  r_im);
-        r[n][0] = AAC_MADD30(h1,  l_re,  h3,  r_re);
-        r[n][1] = AAC_MADD30(h1,  l_im,  h3,  r_im);
+        l[n][0] = AAC_MADD30(h0, l_re, h2, r_re);
+        l[n][1] = AAC_MADD30(h0, l_im, h2, r_im);
+        r[n][0] = AAC_MADD30(h1, l_re, h3, r_re);
+        r[n][1] = AAC_MADD30(h1, l_im, h3, r_im);
     }
 }
 
