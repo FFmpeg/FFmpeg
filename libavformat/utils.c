@@ -4098,8 +4098,10 @@ int av_find_best_stream(AVFormatContext *ic, enum AVMediaType type,
 {
     int i, nb_streams = ic->nb_streams;
     int ret = AVERROR_STREAM_NOT_FOUND;
-    int best_count = -1, best_bitrate = -1, best_multiframe = -1, best_disposition = -1;
-    int count, bitrate, multiframe, disposition;
+    int best_count = -1, best_multiframe = -1, best_disposition = -1;
+    int count, multiframe, disposition;
+    int64_t best_bitrate = -1;
+    int64_t bitrate;
     unsigned *program = NULL;
     const AVCodec *decoder = NULL, *best_decoder = NULL;
 
