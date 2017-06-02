@@ -195,6 +195,7 @@ static void register_all(void)
     REGISTER_DECODER(FRAPS,             fraps);
     REGISTER_DECODER(FRWU,              frwu);
     REGISTER_DECODER(G2M,               g2m);
+    REGISTER_DECODER(GDV,               gdv);
     REGISTER_ENCDEC (GIF,               gif);
     REGISTER_ENCDEC (H261,              h261);
     REGISTER_ENCDEC (H263,              h263);
