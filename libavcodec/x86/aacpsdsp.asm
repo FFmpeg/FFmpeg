@@ -94,8 +94,6 @@ INIT_XMM sse3
 cglobal ps_stereo_interpolate, 5, 5, 6, l, r, h, h_step, n
     movaps   m0, [hq]
     movaps   m1, [h_stepq]
-    cmp      nd, 0
-    jle .ret
     unpcklps m4, m0, m0
     unpckhps m0, m0
     unpcklps m5, m1, m1
@@ -118,7 +116,6 @@ align 16
     movhps [rq+nq], m2
     add      nq, 8
     jl .loop
-.ret:
     REP_RET
 
 ;***************************************************************************
@@ -128,8 +125,6 @@ align 16
 ;***************************************************************************
 INIT_XMM sse3
 cglobal ps_stereo_interpolate_ipdopd, 5, 5, 10, l, r, h, h_step, n
-    cmp      nd, 0
-    jle .ret
     movaps   m0, [hq]
     movaps   m1, [hq+mmsize]
 %if ARCH_X86_64
@@ -169,7 +164,6 @@ align 16
     movhps [rq+nq], m2
     add      nq, 8
     jl .loop
-.ret:
     REP_RET
 
 ;*******************************************************************
