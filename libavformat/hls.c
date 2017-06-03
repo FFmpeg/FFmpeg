@@ -200,6 +200,7 @@ typedef struct HLSContext {
     char *http_proxy;                    ///< holds the address of the HTTP proxy server
     AVDictionary *avio_opts;
     int strict_std_compliance;
+    char *allowed_extensions;
 } HLSContext;
 
 static int read_chomp_line(AVIOContext *s, char *buf, int maxlen)
@@ -625,8 +626,19 @@ static int open_url(HLSContext *c, URLContext **uc, const char *url, AVDictionar
         return AVERROR_INVALIDDATA;
 
     // only http(s) & file are allowed
-    if (!av_strstart(proto_name, "http", NULL) && !av_strstart(proto_name, "file", NULL))
+    if (av_strstart(proto_name, "file", NULL)) {
+        if (strcmp(c->allowed_extensions, "ALL") && !av_match_ext(url, c->allowed_extensions)) {
+            av_log(c, AV_LOG_ERROR,
+                "Filename extension of \'%s\' is not a common multimedia extension, blocked for security reasons.\n"
+                "If you wish to override this adjust allowed_extensions, you can set it to \'ALL\' to allow all\n",
+                url);
+            return AVERROR_INVALIDDATA;
+        }
+    } else if (av_strstart(proto_name, "http", NULL)) {
+        ;
+    } else
         return AVERROR_INVALIDDATA;
+
     if (!strncmp(proto_name, url, strlen(proto_name)) && url[strlen(proto_name)] == ':')
         ;
     else if (strcmp(proto_name, "file") || !strncmp(url, "file,", 5))
@@ -2005,6 +2017,10 @@ static int hls_probe(AVProbeData *p)
 static const AVOption hls_options[] = {
     {"live_start_index", "segment index to start live streams at (negative values are from the end)",
         OFFSET(live_start_index), AV_OPT_TYPE_INT, {.i64 = -3}, INT_MIN, INT_MAX, FLAGS},
+    {"allowed_extensions", "List of file extensions that hls is allowed to access",
+        OFFSET(allowed_extensions), AV_OPT_TYPE_STRING,
+        {.str = "3gp,aac,avi,flac,mkv,m3u8,m4a,m4s,m4v,mpg,mov,mp2,mp3,mp4,mpeg,mpegts,ogg,ogv,oga,ts,vob,wav"},
+        INT_MIN, INT_MAX, FLAGS},
     {NULL}
 };
 
