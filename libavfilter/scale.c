@@ -115,7 +115,7 @@ int ff_scale_eval_dimensions(void *log_ctx,
     int factor_w, factor_h;
     int eval_w, eval_h;
     int ret;
-    const char scale2ref = outlink->src->inputs[1] == inlink;
+    const char scale2ref = outlink->src->nb_inputs == 2 && outlink->src->inputs[1] == inlink;
     double var_values[VARS_NB + VARS_S2R_NB], res;
     const AVPixFmtDescriptor *main_desc;
     const AVFilterLink *main_link;
