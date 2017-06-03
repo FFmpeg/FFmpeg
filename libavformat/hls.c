@@ -164,6 +164,7 @@ struct variant {
 };
 
 typedef struct HLSContext {
+    AVClass *class;
     int n_variants;
     struct variant **variants;
     int n_playlists;
@@ -179,6 +180,7 @@ typedef struct HLSContext {
     char *user_agent;                    ///< holds HTTP user agent set as an AVOption to the HTTP protocol context
     char *cookies;                       ///< holds HTTP cookie values set in either the initial response or as an AVOption to the HTTP protocol context
     char *headers;                       ///< holds HTTP headers set as an AVOption to the HTTP protocol context
+    char *allowed_extensions;
 } HLSContext;
 
 static int read_chomp_line(AVIOContext *s, char *buf, int maxlen)
@@ -901,13 +903,23 @@ static void intercept_id3(struct playlist *pls, uint8_t *buf,
 }
 
 
-static int check_url(const char *url) {
+static int check_url(HLSContext *c, const char *url) {
     const char *proto_name = avio_find_protocol_name(url);
 
     if (!proto_name)
         return AVERROR_INVALIDDATA;
 
-    if (!av_strstart(proto_name, "http", NULL) && !av_strstart(proto_name, "file", NULL))
+    if (av_strstart(proto_name, "file", NULL)) {
+        if (strcmp(c->allowed_extensions, "ALL") && !av_match_ext(url, c->allowed_extensions)) {
+            av_log(c, AV_LOG_ERROR,
+                "Filename extension of \'%s\' is not a common multimedia extension, blocked for security reasons.\n"
+                "If you wish to override this adjust allowed_extensions, you can set it to \'ALL\' to allow all\n",
+                url);
+            return AVERROR_INVALIDDATA;
+        }
+    } else if (av_strstart(proto_name, "http", NULL)) {
+        ;
+    } else
         return AVERROR_INVALIDDATA;
 
     if (!strncmp(proto_name, url, strlen(proto_name)) && url[strlen(proto_name)] == ':')
@@ -945,7 +957,7 @@ static int open_input(HLSContext *c, struct playlist *pls)
            seg->url, seg->url_offset, pls->index);
 
     if (seg->key_type == KEY_NONE) {
-        ret = check_url(seg->url);
+        ret = check_url(c, seg->url);
         if (ret < 0)
             goto cleanup;
 
@@ -956,7 +968,7 @@ static int open_input(HLSContext *c, struct playlist *pls)
         char iv[33], key[33], url[MAX_URL_SIZE];
         if (strcmp(seg->key, pls->key_url)) {
             URLContext *uc;
-            ret = check_url(seg->key);
+            ret = check_url(c, seg->key);
             if (ret < 0)
                 goto cleanup;
 
@@ -1728,6 +1740,23 @@ static int hls_probe(AVProbeData *p)
     return 0;
 }
 
+#define OFFSET(x) offsetof(HLSContext, x)
+#define FLAGS AV_OPT_FLAG_DECODING_PARAM
+static const AVOption hls_options[] = {
+    {"allowed_extensions", "List of file extensions that hls is allowed to access",
+        OFFSET(allowed_extensions), AV_OPT_TYPE_STRING,
+        {.str = "3gp,aac,avi,flac,mkv,m3u8,m4a,m4s,m4v,mpg,mov,mp2,mp3,mp4,mpeg,mpegts,ogg,ogv,oga,ts,vob,wav"},
+        INT_MIN, INT_MAX, FLAGS},
+    {NULL}
+};
+
+static const AVClass hls_class = {
+    .class_name = "hls,applehttp",
+    .item_name  = av_default_item_name,
+    .option     = hls_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVInputFormat ff_hls_demuxer = {
     .name           = "hls,applehttp",
     .long_name      = NULL_IF_CONFIG_SMALL("Apple HTTP Live Streaming"),
@@ -1737,4 +1766,5 @@ AVInputFormat ff_hls_demuxer = {
     .read_packet    = hls_read_packet,
     .read_close     = hls_close,
     .read_seek      = hls_read_seek,
+    .priv_class     = &hls_class,
 };
