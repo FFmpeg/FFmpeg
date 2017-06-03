@@ -1274,7 +1274,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     if (ret < 0)
         return ret;
 
-    avctx->internal = av_mallocz(sizeof(AVCodecInternal));
+    avctx->internal = av_mallocz(sizeof(*avctx->internal));
     if (!avctx->internal) {
         ret = AVERROR(ENOMEM);
         goto end;
@@ -2766,7 +2766,7 @@ void avsubtitle_free(AVSubtitle *sub)
 
     av_freep(&sub->rects);
 
-    memset(sub, 0, sizeof(AVSubtitle));
+    memset(sub, 0, sizeof(*sub));
 }
 
 static int do_decode(AVCodecContext *avctx, AVPacket *pkt)
