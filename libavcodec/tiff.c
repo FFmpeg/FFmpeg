@@ -74,6 +74,8 @@ typedef struct TiffContext {
     int deinvert_buf_size;
     uint8_t *yuv_line;
     unsigned int yuv_line_size;
+    uint8_t *fax_buffer;
+    unsigned int fax_buffer_size;
 
     int geotag_count;
     TiffGeoTag *geotags;
@@ -452,8 +454,10 @@ static int tiff_unpack_fax(TiffContext *s, uint8_t *dst, int stride,
 {
     int i, ret = 0;
     int line;
-    uint8_t *src2 = av_malloc((unsigned)size +
-                              AV_INPUT_BUFFER_PADDING_SIZE);
+    uint8_t *src2;
+
+    av_fast_padded_malloc(&s->fax_buffer, &s->fax_buffer_size, size);
+    src2 = s->fax_buffer;
 
     if (!src2) {
         av_log(s->avctx, AV_LOG_ERROR,
@@ -475,7 +479,6 @@ static int tiff_unpack_fax(TiffContext *s, uint8_t *dst, int stride,
             horizontal_fill(s->bpp, dst, 1, dst, 0, width, 0);
             dst += stride;
         }
-    av_free(src2);
     return ret;
 }
 
@@ -1408,6 +1411,8 @@ static av_cold int tiff_end(AVCodecContext *avctx)
 
     ff_lzw_decode_close(&s->lzw);
     av_freep(&s->deinvert_buf);
+    av_freep(&s->fax_buffer);
+    s->fax_buffer_size = 0;
     return 0;
 }
 
