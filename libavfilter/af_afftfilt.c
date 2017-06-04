@@ -371,6 +371,9 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->real);
     av_freep(&s->imag);
     av_frame_free(&s->buffer);
+    av_freep(&s->window_func_lut);
+
+    av_audio_fifo_free(s->fifo);
 }
 
 static const AVFilterPad inputs[] = {
