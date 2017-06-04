@@ -617,7 +617,6 @@ static void register_all(void)
     REGISTER_ENCDEC (LIBOPENJPEG,       libopenjpeg);
     REGISTER_ENCDEC (LIBOPUS,           libopus);
     REGISTER_DECODER(LIBRSVG,           librsvg);
-    REGISTER_ENCDEC (LIBSCHROEDINGER,   libschroedinger);
     REGISTER_ENCODER(LIBSHINE,          libshine);
     REGISTER_ENCDEC (LIBSPEEX,          libspeex);
     REGISTER_ENCODER(LIBTHEORA,         libtheora);

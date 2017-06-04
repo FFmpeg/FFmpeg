@@ -121,6 +121,7 @@ static void register_all(void)
     REGISTER_FILTER(SOFALIZER,      sofalizer,      af);
     REGISTER_FILTER(STEREOTOOLS,    stereotools,    af);
     REGISTER_FILTER(STEREOWIDEN,    stereowiden,    af);
+    REGISTER_FILTER(SURROUND,       surround,       af);
     REGISTER_FILTER(TREBLE,         treble,         af);
     REGISTER_FILTER(TREMOLO,        tremolo,        af);
     REGISTER_FILTER(VIBRATO,        vibrato,        af);

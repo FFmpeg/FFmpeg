@@ -727,7 +727,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
             break;
         case MKTAG('s', 't', 'r', 'f'):
             /* stream header */
-            if (!size)
+            if (!size && (codec_type == AVMEDIA_TYPE_AUDIO ||
+                          codec_type == AVMEDIA_TYPE_VIDEO))
                 break;
             if (stream_index >= (unsigned)s->nb_streams || avi->dv_demux) {
                 avio_skip(pb, size);
@@ -1096,6 +1097,9 @@ static int read_gab2_sub(AVFormatContext *s, AVStream *st, AVPacket *pkt)
         sub_demuxer = av_probe_input_format2(&pd, 1, &score);
         av_freep(&pd.buf);
         if (!sub_demuxer)
+            goto error;
+
+        if (strcmp(sub_demuxer->name, "srt") && strcmp(sub_demuxer->name, "ass"))
             goto error;
 
         if (!(ast->sub_ctx = avformat_alloc_context()))

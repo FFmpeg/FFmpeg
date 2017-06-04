@@ -72,7 +72,7 @@ typedef int                 AAC_SIGNE;
 #define AAC_MSUB31_V3(x, y, z)    (int)((((int64_t)(x) * (z)) - \
                                       ((int64_t)(y) * (z)) + \
                                         0x40000000) >> 31)
-#define AAC_HALF_SUM(x, y)  (x) >> 1 + (y) >> 1
+#define AAC_HALF_SUM(x, y)  (((x) >> 1) + ((y) >> 1))
 #define AAC_SRA_R(x, y)     (int)(((x) + (1 << ((y) - 1))) >> (y))
 
 #else

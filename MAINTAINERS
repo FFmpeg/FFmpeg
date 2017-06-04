@@ -192,7 +192,6 @@ Codecs:
   libkvazaar.c                          Arttu Ylä-Outinen
   libopenjpeg.c                         Jaikrishnan Menon
   libopenjpegenc.c                      Michael Bradshaw
-  libschroedinger*                      David Conrad
   libtheoraenc.c                        David Conrad
   libvorbis.c                           David Conrad
   libvpx*                               James Zern
@@ -416,7 +415,6 @@ Muxers/Demuxers:
   iss.c                                 Stefan Gehrer
   jvdec.c                               Peter Ross
   libmodplug.c                          Clément Bœsch
-  libnut.c                              Oded Shimon
   libopenmpt.c                          Josh de Kock
   lmlm4.c                               Ivo van Poorten
   lvfdec.c                              Paul B Mahol

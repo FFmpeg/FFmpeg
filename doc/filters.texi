@@ -3792,6 +3792,36 @@ channels. Default is 0.3.
 Set level of input signal of original channel. Default is 0.8.
 @end table
 
+@section surround
+Apply audio surround upmix filter.
+
+This filter allows to produce multichannel output from stereo audio stream.
+
+The filter accepts the following options:
+
+@table @option
+@item chl_out
+Set output channel layout. By default, this is @var{5.1}.
+
+See @ref{channel layout syntax,,the Channel Layout section in the ffmpeg-utils(1) manual,ffmpeg-utils}
+for the required syntax.
+
+@item level_in
+Set input volume level. By default, this is @var{1}.
+
+@item level_out
+Set output volume level. By default, this is @var{1}.
+
+@item lfe
+Enable LFE channel output if output channel layout has it. By default, this is enabled.
+
+@item lfe_low
+Set LFE low cut off frequency. By default, this is @var{128} Hz.
+
+@item lfe_high
+Set LFE high cut off frequency. By default, this is @var{256} Hz.
+@end table
+
 @section treble
 
 Boost or cut treble (upper) frequencies of the audio using a two-pole
@@ -12429,7 +12459,31 @@ Supersampling
 Scale (resize) the input video, based on a reference video.
 
 See the scale filter for available options, scale2ref supports the same but
-uses the reference video instead of the main input as basis.
+uses the reference video instead of the main input as basis. scale2ref also
+supports the following additional constants for the @option{w} and
+@option{h} options:
+
+@table @var
+@item main_w
+@item main_h
+The main input video's width and height
+
+@item main_a
+The same as @var{main_w} / @var{main_h}
+
+@item main_sar
+The main input video's sample aspect ratio
+
+@item main_dar, mdar
+The main input video's display aspect ratio. Calculated from
+@code{(main_w / main_h) * main_sar}.
+
+@item main_hsub
+@item main_vsub
+The main input video's horizontal and vertical chroma subsample values.
+For example for the pixel format "yuv422p" @var{hsub} is 2 and @var{vsub}
+is 1.
+@end table
 
 @subsection Examples
 

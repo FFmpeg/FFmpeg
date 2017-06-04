@@ -707,6 +707,21 @@ static int cuvid_test_capabilities(AVCodecContext *avctx,
     CUVIDDECODECAPS *caps;
     int res8 = 0, res10 = 0, res12 = 0;
 
+    if (!ctx->cvdl->cuvidGetDecoderCaps) {
+        av_log(avctx, AV_LOG_WARNING, "Used Nvidia driver is too old to perform a capability check.\n");
+        av_log(avctx, AV_LOG_WARNING, "The minimum required version is "
+#if defined(_WIN32) || defined(__CYGWIN__)
+            "378.66"
+#else
+            "378.13"
+#endif
+            ". Continuing blind.\n");
+        ctx->caps8.bIsSupported = ctx->caps10.bIsSupported = 1;
+        // 12 bit was not supported before the capability check was introduced, so disable it.
+        ctx->caps12.bIsSupported = 0;
+        return 0;
+    }
+
     ctx->caps8.eCodecType = ctx->caps10.eCodecType = ctx->caps12.eCodecType
         = cuparseinfo->CodecType;
     ctx->caps8.eChromaFormat = ctx->caps10.eChromaFormat = ctx->caps12.eChromaFormat

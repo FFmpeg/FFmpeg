@@ -109,7 +109,7 @@ static int build_vlc(AVCodecContext *avctx, VLC *vlc, const uint32_t *table)
             int new_node = j;
             int first_node = cur_node;
             int second_node = cur_node;
-            int nd, st;
+            unsigned nd, st;
 
             nodes[cur_node].count = -1;
 
@@ -133,6 +133,10 @@ static int build_vlc(AVCodecContext *avctx, VLC *vlc, const uint32_t *table)
             st = nodes[first_node].count;
             nodes[second_node].count = 0;
             nodes[first_node].count  = 0;
+            if (nd >= UINT32_MAX - st) {
+                av_log(avctx, AV_LOG_ERROR, "count overflow\n");
+                return AVERROR_INVALIDDATA;
+            }
             nodes[cur_node].count = nd + st;
             nodes[cur_node].sym = -1;
             nodes[cur_node].n0 = cur_node;

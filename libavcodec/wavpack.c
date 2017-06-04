@@ -188,7 +188,7 @@ static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb,
                     goto error;
                 t += t2;
             } else {
-                if (get_bits_left(gb) < t2 - 1)
+                if (t2 >= 32 || get_bits_left(gb) < t2 - 1)
                     goto error;
                 t += get_bits_long(gb, t2 - 1) | (1 << (t2 - 1));
             }
@@ -245,7 +245,7 @@ static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb,
             if (get_bits_left(gb) <= 0)
                 goto error;
             if (get_bits1(gb)) {
-                add -= (mid - base);
+                add -= (mid - (unsigned)base);
                 base = mid;
             } else
                 add = mid - base - 1;
@@ -310,7 +310,7 @@ static float wv_get_value_float(WavpackFrameContext *s, uint32_t *crc, int S)
     }
 
     if (S) {
-        S  *= 1 << s->float_shift;
+        S  *= 1U << s->float_shift;
         sign = S < 0;
         if (sign)
             S = -S;
@@ -554,7 +554,7 @@ static inline int wv_unpack_mono(WavpackFrameContext *s, GetBitContext *gb,
             if (type != AV_SAMPLE_FMT_S16P)
                 S = T + ((s->decorr[i].weightA * (int64_t)A + 512) >> 10);
             else
-                S = T + ((s->decorr[i].weightA * A + 512) >> 10);
+                S = T + ((int)(s->decorr[i].weightA * (unsigned)A + 512) >> 10);
             if (A && T)
                 s->decorr[i].weightA -= ((((T ^ A) >> 30) & 2) - 1) * s->decorr[i].delta;
             s->decorr[i].samplesA[j] = T = S;
@@ -887,6 +887,12 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
             s->float_flag    = bytestream2_get_byte(&gb);
             s->float_shift   = bytestream2_get_byte(&gb);
             s->float_max_exp = bytestream2_get_byte(&gb);
+            if (s->float_shift > 31) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Invalid FLOATINFO, shift = %d (> 31)\n", s->float_shift);
+                s->float_shift = 0;
+                continue;
+            }
             got_float        = 1;
             bytestream2_skip(&gb, 1);
             break;

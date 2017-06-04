@@ -315,7 +315,7 @@ These library packages are only available from
 
 @example
 yasm, libSDL-devel, libgsm-devel, libmp3lame-devel,
-libschroedinger1.0-devel, speex-devel, libtheora-devel, libxvidcore-devel
+speex-devel, libtheora-devel, libxvidcore-devel
 @end example
 
 The recommendation for x264 is to build it from source, as it evolves too

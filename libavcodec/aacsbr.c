@@ -241,6 +241,7 @@ static void sbr_gain_calc(AACContext *ac, SpectralBandReplication *sbr,
                                             ((1.0f + sbr->e_curr[e][m]) *
                                              (1.0f + sbr->q_mapped[e][m])));
                 }
+                sbr->gain[e][m] += FLT_MIN;
             }
             for (m = sbr->f_tablelim[k] - sbr->kx[1]; m < sbr->f_tablelim[k + 1] - sbr->kx[1]; m++) {
                 sum[0] += sbr->e_origmapped[e][m];

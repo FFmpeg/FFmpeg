@@ -272,7 +272,7 @@ static int tm2_read_deltas(TM2Context *ctx, int stream_id)
     for (i = 0; i < d; i++) {
         v = get_bits_long(&ctx->gb, mb);
         if (v & (1 << (mb - 1)))
-            ctx->deltas[stream_id][i] = v - (1 << mb);
+            ctx->deltas[stream_id][i] = v - (1U << mb);
         else
             ctx->deltas[stream_id][i] = v;
     }
@@ -915,7 +915,8 @@ static int decode_frame(AVCodecContext *avctx,
                             buf_size - offset);
         if (t < 0) {
             int j = tm2_stream_order[i];
-            memset(l->tokens[j], 0, sizeof(**l->tokens) * l->tok_lens[j]);
+            if (l->tok_lens[j])
+                memset(l->tokens[j], 0, sizeof(**l->tokens) * l->tok_lens[j]);
             return t;
         }
         offset += t;

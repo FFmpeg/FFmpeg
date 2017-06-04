@@ -76,6 +76,15 @@
         av_log(NULL, AV_LOG_TRACE, "Loaded sym: %s\n", symbol);     \
     } while (0)
 
+#define LOAD_SYMBOL_OPT(fun, tp, symbol)                                     \
+    do {                                                                     \
+        if (!((f->fun) = (tp*)dlsym(f->lib, symbol))) {                      \
+            av_log(NULL, AV_LOG_DEBUG, "Cannot load optional %s\n", symbol); \
+        } else {                                                             \
+            av_log(NULL, AV_LOG_TRACE, "Loaded sym: %s\n", symbol);          \
+        }                                                                    \
+    } while (0)
+
 #define GENERIC_LOAD_FUNC_PREAMBLE(T, n, N)  \
     T *f;                                    \
     int ret;                                 \
@@ -205,7 +214,7 @@ static inline int cuvid_load_functions(CuvidFunctions **functions)
 {
     GENERIC_LOAD_FUNC_PREAMBLE(CuvidFunctions, cuvid, NVCUVID_LIBNAME);
 
-    LOAD_SYMBOL(cuvidGetDecoderCaps, tcuvidGetDecoderCaps, "cuvidGetDecoderCaps");
+    LOAD_SYMBOL_OPT(cuvidGetDecoderCaps, tcuvidGetDecoderCaps, "cuvidGetDecoderCaps");
     LOAD_SYMBOL(cuvidCreateDecoder, tcuvidCreateDecoder, "cuvidCreateDecoder");
     LOAD_SYMBOL(cuvidDestroyDecoder, tcuvidDestroyDecoder, "cuvidDestroyDecoder");
     LOAD_SYMBOL(cuvidDecodePicture, tcuvidDecodePicture, "cuvidDecodePicture");

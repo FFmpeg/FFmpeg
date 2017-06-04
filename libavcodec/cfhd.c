@@ -501,7 +501,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             int highpass_a_width = s->plane[s->channel_num].band[s->level][s->subband_num].a_width;
             int highpass_a_height = s->plane[s->channel_num].band[s->level][s->subband_num].a_height;
             int highpass_stride = s->plane[s->channel_num].band[s->level][s->subband_num].stride;
-            int expected = highpass_height * highpass_stride;
+            int expected;
             int a_expected = highpass_a_height * highpass_a_width;
             int level, run, coeff;
             int count = 0, bytes;
@@ -512,11 +512,12 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                 goto end;
             }
 
-            if (highpass_height > highpass_a_height || highpass_width > highpass_a_width || a_expected < expected) {
+            if (highpass_height > highpass_a_height || highpass_width > highpass_a_width || a_expected < highpass_height * (uint64_t)highpass_stride) {
                 av_log(avctx, AV_LOG_ERROR, "Too many highpass coefficients\n");
                 ret = AVERROR(EINVAL);
                 goto end;
             }
+            expected = highpass_height * highpass_stride;
 
             av_log(avctx, AV_LOG_DEBUG, "Start subband coeffs plane %i level %i codebook %i expected %i\n", s->channel_num, s->level, s->codebook, expected);
 

@@ -79,7 +79,6 @@ OBJS-$(CONFIG_WEBP_DECODER)            += x86/vp8dsp_init.o
 # GCC inline assembly optimizations
 # subsystems
 MMX-OBJS-$(CONFIG_FDCTDSP)             += x86/fdct.o
-MMX-OBJS-$(CONFIG_IDCTDSP)             += x86/simple_idct.o
 MMX-OBJS-$(CONFIG_VC1DSP)              += x86/vc1dsp_mmx.o
 
 # decoders/encoders
@@ -128,7 +127,8 @@ YASM-OBJS-$(CONFIG_QPELDSP)            += x86/qpeldsp.o                 \
 YASM-OBJS-$(CONFIG_RV34DSP)            += x86/rv34dsp.o
 YASM-OBJS-$(CONFIG_VC1DSP)             += x86/vc1dsp_loopfilter.o       \
                                           x86/vc1dsp_mc.o
-YASM-OBJS-$(CONFIG_IDCTDSP)            += x86/simple_idct10.o
+YASM-OBJS-$(CONFIG_IDCTDSP)            += x86/simple_idct10.o           \
+                                          x86/simple_idct.o
 YASM-OBJS-$(CONFIG_VIDEODSP)           += x86/videodsp.o
 YASM-OBJS-$(CONFIG_VP3DSP)             += x86/vp3dsp.o
 YASM-OBJS-$(CONFIG_VP8DSP)             += x86/vp8dsp.o                  \
