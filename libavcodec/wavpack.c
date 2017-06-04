@@ -248,7 +248,7 @@ static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb,
                 add -= (mid - (unsigned)base);
                 base = mid;
             } else
-                add = mid - base - 1;
+                add = mid - (unsigned)base - 1;
             mid = (base * 2U + add + 1) >> 1;
         }
         ret = mid;
