@@ -331,6 +331,9 @@ static int dxv_decompress_raw(AVCodecContext *avctx)
     DXVContext *ctx = avctx->priv_data;
     GetByteContext *gbc = &ctx->gbc;
 
+    if (bytestream2_get_bytes_left(gbc) < ctx->tex_size)
+        return AVERROR_INVALIDDATA;
+
     bytestream2_get_buffer(gbc, ctx->tex_data, ctx->tex_size);
     return 0;
 }
