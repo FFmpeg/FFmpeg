@@ -133,6 +133,12 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
             }
         }
 
+        if (k >= FF_ARRAY_ELEMS(rps->used)) {
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "Invalid num_delta_pocs: %d\n", k);
+            return AVERROR_INVALIDDATA;
+        }
+
         rps->num_delta_pocs    = k;
         rps->num_negative_pics = k0;
         // sort in increasing order (smallest first)
