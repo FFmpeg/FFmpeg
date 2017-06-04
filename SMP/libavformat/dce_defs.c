@@ -23,7 +23,5 @@
 
 #include "libavformat/avformat.h"
 
-AVInputFormat ff_libnut_demuxer = {0};
 AVInputFormat ff_libopenmpt_demuxer = {0};
 AVOutputFormat ff_chromaprint_muxer = {0};
-AVOutputFormat ff_libnut_muxer = {0};

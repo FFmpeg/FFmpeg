@@ -108,6 +108,7 @@
     <YASM Include="..\libavcodec\x86\vc1dsp_loopfilter.asm" />
     <YASM Include="..\libavcodec\x86\vc1dsp_mc.asm" />
     <YASM Include="..\libavcodec\x86\simple_idct10.asm" />
+    <YASM Include="..\libavcodec\x86\simple_idct.asm" />
     <YASM Include="..\libavcodec\x86\videodsp.asm" />
     <YASM Include="..\libavcodec\x86\vp3dsp.asm" />
     <YASM Include="..\libavcodec\x86\vp8dsp.asm" />
@@ -220,7 +221,6 @@
     <ClCompile Include="..\libavcodec\hevc_ps.c" />
     <ClCompile Include="..\libavcodec\hevc_sei.c" />
     <ClCompile Include="..\libavcodec\huffman.c" />
-    <ClCompile Include="..\libavcodec\simple_idct.c" />
     <ClCompile Include="..\libavcodec\jrevdct.c" />
     <ClCompile Include="..\libavcodec\iirfilter.c" />
     <ClCompile Include="..\libavcodec\mdct15.c" />
@@ -1008,6 +1008,9 @@
     <ClCompile Include="..\libavcodec\idctdsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_idctdsp.obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\simple_idct.c">
+      <ObjectFileName>$(IntDir)\libavcodec_simple_idct.obj</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\lossless_audiodsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_lossless_audiodsp.obj</ObjectFileName>
     </ClCompile>
@@ -1121,9 +1124,6 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\cavsdsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_x86_cavsdsp.obj</ObjectFileName>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\simple_idct.c">
-      <ObjectFileName>$(IntDir)\libavcodec_x86_simple_idct.obj</ObjectFileName>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

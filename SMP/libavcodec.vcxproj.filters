@@ -151,6 +151,9 @@
     <YASM Include="..\libavcodec\x86\simple_idct10.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
+    <YASM Include="..\libavcodec\x86\simple_idct.asm">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </YASM>
     <YASM Include="..\libavcodec\x86\videodsp.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
@@ -481,9 +484,6 @@
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\huffman.c">
-      <Filter>Source Files\libavcodec</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\simple_idct.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\jrevdct.c">
@@ -2787,6 +2787,9 @@
     <ClCompile Include="..\libavcodec\idctdsp.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\simple_idct.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\lossless_audiodsp.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -2899,9 +2902,6 @@
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\x86\cavsdsp.c">
-      <Filter>Source Files\libavcodec\x86</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\x86\simple_idct.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
   </ItemGroup>

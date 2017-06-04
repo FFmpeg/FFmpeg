@@ -40,7 +40,7 @@
 #include "libavcodec/vc1dsp.h"
 #include "libavcodec/synth_filter.h"
 #include "libavcodec/svq1enc.h"
-#if !(ARCH_X86_64||HAVE_MMX_INLINE||HAVE_SSE2_INLINE)
+#if !(ARCH_X86_64)
 #include "libavcodec/x86/simple_idct.h"
 #endif
 #include "libavcodec/sbrdsp.h"
@@ -3548,21 +3548,6 @@ void ff_simple_idct12_put_sse2(uint8_t *dest, ptrdiff_t line_size, int16_t *bloc
 #if !(ARCH_X86_64)
 void ff_simple_idct12_sse2(int16_t *block) {return;}
 #endif
-#if !(HAVE_MMX_INLINE)
-void ff_simple_idct_add_mmx(uint8_t *dest, ptrdiff_t line_size, int16_t *block) {return;}
-#endif
-#if !(HAVE_SSE2_INLINE)
-void ff_simple_idct_add_sse2(uint8_t *dest, ptrdiff_t line_size, int16_t *block) {return;}
-#endif
-#if !(HAVE_MMX_INLINE)
-void ff_simple_idct_mmx(int16_t *block) {return;}
-#endif
-#if !(HAVE_MMX_INLINE)
-void ff_simple_idct_put_mmx(uint8_t *dest, ptrdiff_t line_size, int16_t *block) {return;}
-#endif
-#if !(HAVE_SSE2_INLINE)
-void ff_simple_idct_put_sse2(uint8_t *dest, ptrdiff_t line_size, int16_t *block) {return;}
-#endif
 void ff_svq1enc_init_ppc(SVQ1EncContext *c) {return;}
 void ff_synth_filter_init_aarch64(SynthFilterContext *c) {return;}
 void ff_synth_filter_init_arm(SynthFilterContext *c) {return;}
@@ -3662,8 +3647,6 @@ AVCodec ff_libopenjpeg_decoder = {0};
 AVCodec ff_libopenjpeg_encoder = {0};
 AVCodec ff_libopus_decoder = {0};
 AVCodec ff_librsvg_decoder = {0};
-AVCodec ff_libschroedinger_decoder = {0};
-AVCodec ff_libschroedinger_encoder = {0};
 AVCodec ff_libshine_encoder = {0};
 AVCodec ff_libtwolame_encoder = {0};
 AVCodec ff_libvo_amrwbenc_encoder = {0};
