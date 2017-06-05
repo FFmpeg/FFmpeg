@@ -1218,6 +1218,14 @@ static int vorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     av_free(audio);
 
     ff_af_queue_remove(&venc->afq, frame_size, &avpkt->pts, &avpkt->duration);
+
+    if (frame_size > avpkt->duration) {
+        uint8_t *side = av_packet_new_side_data(avpkt, AV_PKT_DATA_SKIP_SAMPLES, 10);
+        if (!side)
+            return AVERROR(ENOMEM);
+        AV_WL32(&side[4], frame_size - avpkt->duration);
+    }
+
     *got_packet_ptr = 1;
     return 0;
 }
