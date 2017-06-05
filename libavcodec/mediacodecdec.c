@@ -1,5 +1,5 @@
 /*
- * Android MediaCodec H.264 / H.265 / MPEG-4 / VP8 / VP9 decoders
+ * Android MediaCodec MPEG-2 / H.264 / H.265 / MPEG-4 / VP8 / VP9 decoders
  *
  * Copyright (c) 2015-2016 Matthieu Bouron <matthieu.bouron stupeflix.com>
  *
@@ -267,6 +267,19 @@ done:
 }
 #endif
 
+#if CONFIG_MPEG2_MEDIACODEC_DECODER
+static int mpeg2_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
+{
+    int ret = 0;
+
+    if (avctx->extradata) {
+        ff_AMediaFormat_setBuffer(format, "csd-0", avctx->extradata, avctx->extradata_size);
+    }
+
+    return ret;
+}
+#endif
+
 #if CONFIG_MPEG4_MEDIACODEC_DECODER
 static int mpeg4_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
 {
@@ -329,6 +342,15 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
         bsf_name = "hevc_mp4toannexb";
 
         ret = hevc_set_extradata(avctx, format);
+        if (ret < 0)
+            goto done;
+        break;
+#endif
+#if CONFIG_MPEG2_MEDIACODEC_DECODER
+    case AV_CODEC_ID_MPEG2VIDEO:
+        codec_mime = "video/mpeg2";
+
+        ret = mpeg2_set_extradata(avctx, format);
         if (ret < 0)
             goto done;
         break;
@@ -565,6 +587,22 @@ AVCodec ff_hevc_mediacodec_decoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("H.265 Android MediaCodec decoder"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_HEVC,
+    .priv_data_size = sizeof(MediaCodecH264DecContext),
+    .init           = mediacodec_decode_init,
+    .decode         = mediacodec_decode_frame,
+    .flush          = mediacodec_decode_flush,
+    .close          = mediacodec_decode_close,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING,
+    .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
+};
+#endif
+
+#if CONFIG_MPEG2_MEDIACODEC_DECODER
+AVCodec ff_mpeg2_mediacodec_decoder = {
+    .name           = "mpeg2_mediacodec",
+    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-2 Android MediaCodec decoder"),
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_MPEG2VIDEO,
     .priv_data_size = sizeof(MediaCodecH264DecContext),
     .init           = mediacodec_decode_init,
     .decode         = mediacodec_decode_frame,

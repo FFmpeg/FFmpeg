@@ -96,6 +96,7 @@ static void register_all(void)
     REGISTER_HWACCEL(MPEG2_VAAPI,       mpeg2_vaapi);
     REGISTER_HWACCEL(MPEG2_VDPAU,       mpeg2_vdpau);
     REGISTER_HWACCEL(MPEG2_VIDEOTOOLBOX, mpeg2_videotoolbox);
+    REGISTER_HWACCEL(MPEG2_MEDIACODEC,  mpeg2_mediacodec);
     REGISTER_HWACCEL(MPEG4_CUVID,       mpeg4_cuvid);
     REGISTER_HWACCEL(MPEG4_MEDIACODEC,  mpeg4_mediacodec);
     REGISTER_HWACCEL(MPEG4_MMAL,        mpeg4_mmal);
@@ -257,6 +258,7 @@ static void register_all(void)
     REGISTER_DECODER(MPEG2_MMAL,        mpeg2_mmal);
     REGISTER_DECODER(MPEG2_CRYSTALHD,   mpeg2_crystalhd);
     REGISTER_DECODER(MPEG2_QSV,         mpeg2_qsv);
+    REGISTER_DECODER(MPEG2_MEDIACODEC,  mpeg2_mediacodec);
     REGISTER_DECODER(MSA1,              msa1);
     REGISTER_DECODER(MSCC,              mscc);
     REGISTER_DECODER(MSMPEG4V1,         msmpeg4v1);
