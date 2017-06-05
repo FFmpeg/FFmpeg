@@ -62,24 +62,27 @@ PS_ADD_SQUARES 3
 ;                                   float *src1, int n);
 ;*******************************************************************
 INIT_XMM sse
-cglobal ps_mul_pair_single, 4, 5, 4, dst, src1, src2, n
-    xor r4q, r4q
+cglobal ps_mul_pair_single, 4, 4, 4, dst, src1, src2, n
+    shl      nd, 3
+    add   src1q, nq
+    add    dstq, nq
+    neg      nq
 
+align 16
 .loop:
-    movu     m0, [src1q+r4q]
-    movu     m1, [src1q+r4q+mmsize]
+    movu     m0, [src1q+nq]
+    movu     m1, [src1q+nq+mmsize]
     mova     m2, [src2q]
     mova     m3, m2
     unpcklps m2, m2
     unpckhps m3, m3
     mulps    m0, m2
     mulps    m1, m3
-    mova [dstq+r4q], m0
-    mova [dstq+r4q+mmsize], m1
+    mova [dstq+nq], m0
+    mova [dstq+nq+mmsize], m1
     add   src2q, mmsize
-    add     r4q, mmsize*2
-    sub      nd, mmsize/4
-    jg .loop
+    add      nq, mmsize*2
+    jl .loop
     REP_RET
 
 ;***********************************************************************
