@@ -112,6 +112,8 @@ static int file_read(URLContext *h, unsigned char *buf, int size)
     ret = read(c->fd, buf, size);
     if (ret == 0 && c->follow)
         return AVERROR(EAGAIN);
+    if (ret == 0)
+        return AVERROR_EOF;
     return (ret == -1) ? AVERROR(errno) : ret;
 }
 
