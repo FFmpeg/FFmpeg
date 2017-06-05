@@ -1140,6 +1140,8 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
                     bytestream2_seek(&s->gb, pos + s->geotags[i].offset, SEEK_SET);
                     if (bytestream2_get_bytes_left(&s->gb) < s->geotags[i].count)
                         return AVERROR_INVALIDDATA;
+                    if (s->geotags[i].val)
+                        return AVERROR_INVALIDDATA;
                     ap = av_malloc(s->geotags[i].count);
                     if (!ap) {
                         av_log(s->avctx, AV_LOG_ERROR, "Error allocating temporary buffer\n");
