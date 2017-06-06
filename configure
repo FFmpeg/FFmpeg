@@ -1915,7 +1915,7 @@ fma4_deps="avx"
 avx2_deps="avx"
 
 mmx_external_deps="x86asm"
-mmx_inline_deps="inline_asm"
+mmx_inline_deps="inline_asm x86"
 mmx_suggest="mmx_external mmx_inline"
 
 for ext in $(filter_out mmx $ARCH_EXT_LIST_X86_SIMD); do
