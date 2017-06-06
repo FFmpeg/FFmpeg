@@ -3039,6 +3039,9 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
     int64_t edit_list_dts_entry_end = 0;
     int64_t edit_list_start_ctts_sample = 0;
     int64_t curr_cts;
+    int64_t curr_ctts = 0;
+    int64_t min_corrected_pts = -1;
+    int64_t empty_edits_sum_duration = 0;
     int64_t edit_list_index = 0;
     int64_t index;
     int64_t index_ctts_count;
@@ -3053,6 +3056,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
     int first_non_zero_audio_edit = -1;
     int packet_skip_samples = 0;
     MOVIndexRange *current_index_range;
+    int i;
 
     if (!msc->elst_data || msc->elst_count <= 0 || nb_old <= 0) {
         return;
@@ -3080,13 +3084,9 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
 
     // If the dts_shift is positive (in case of negative ctts values in mov),
     // then negate the DTS by dts_shift
-    if (msc->dts_shift > 0)
+    if (msc->dts_shift > 0) {
         edit_list_dts_entry_end -= msc->dts_shift;
-
-    // Offset the DTS by ctts[0] to make the PTS of the first frame 0
-    if (ctts_data_old && ctts_count_old > 0) {
-        edit_list_dts_entry_end -= ctts_data_old[0].duration;
-        av_log(mov->fc, AV_LOG_DEBUG, "Offset DTS by ctts[%d].duration: %d\n", 0, ctts_data_old[0].duration);
+        av_log(mov->fc, AV_LOG_DEBUG, "Shifting DTS by %d because of negative CTTS.\n", msc->dts_shift);
     }
 
     start_dts = edit_list_dts_entry_end;
@@ -3100,6 +3100,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
         edit_list_dts_entry_end += edit_list_duration;
         num_discarded_begin = 0;
         if (edit_list_media_time == -1) {
+            empty_edits_sum_duration += edit_list_duration;
             continue;
         }
 
@@ -3179,11 +3180,13 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
 
             // frames (pts) before or after edit list
             curr_cts = current->timestamp + msc->dts_shift;
+            curr_ctts = 0;
 
             if (ctts_data_old && ctts_index_old < ctts_count_old) {
-                av_log(mov->fc, AV_LOG_DEBUG, "shifted frame pts, curr_cts: %"PRId64" @ %"PRId64", ctts: %d, ctts_count: %"PRId64"\n",
-                       curr_cts, ctts_index_old, ctts_data_old[ctts_index_old].duration, ctts_count_old);
-                curr_cts += ctts_data_old[ctts_index_old].duration;
+                curr_ctts = ctts_data_old[ctts_index_old].duration;
+                av_log(mov->fc, AV_LOG_DEBUG, "stts: %"PRId64" ctts: %"PRId64", ctts_index: %"PRId64", ctts_count: %"PRId64"\n",
+                       curr_cts, curr_ctts, ctts_index_old, ctts_count_old);
+                curr_cts += curr_ctts;
                 ctts_sample_old++;
                 if (ctts_sample_old == ctts_data_old[ctts_index_old].count) {
                     if (add_ctts_entry(&msc->ctts_data, &msc->ctts_count,
@@ -3244,14 +3247,21 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
                         }
                     }
                 }
-            } else if (edit_list_start_encountered == 0) {
-                edit_list_start_encountered = 1;
-                // Make timestamps strictly monotonically increasing for audio, by rewriting timestamps for
-                // discarded packets.
-                if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && frame_duration_buffer) {
-                    fix_index_entry_timestamps(st, st->nb_index_entries, edit_list_dts_counter,
-                                               frame_duration_buffer, num_discarded_begin);
-                    av_freep(&frame_duration_buffer);
+            } else {
+                if (min_corrected_pts < 0) {
+                    min_corrected_pts = edit_list_dts_counter + curr_ctts + msc->dts_shift;
+                } else {
+                    min_corrected_pts = FFMIN(min_corrected_pts, edit_list_dts_counter + curr_ctts + msc->dts_shift);
+                }
+                if (edit_list_start_encountered == 0) {
+                    edit_list_start_encountered = 1;
+                    // Make timestamps strictly monotonically increasing for audio, by rewriting timestamps for
+                    // discarded packets.
+                    if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && frame_duration_buffer) {
+                        fix_index_entry_timestamps(st, st->nb_index_entries, edit_list_dts_counter,
+                                                   frame_duration_buffer, num_discarded_begin);
+                        av_freep(&frame_duration_buffer);
+                    }
                 }
             }
 
@@ -3292,6 +3302,19 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
             }
         }
     }
+    // If there are empty edits, then min_corrected_pts might be positive intentionally. So we subtract the
+    // sum duration of emtpy edits here.
+    min_corrected_pts -= empty_edits_sum_duration;
+
+    // If the minimum pts turns out to be greater than zero after fixing the index, then we subtract the
+    // dts by that amount to make the first pts zero.
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && min_corrected_pts > 0) {
+        av_log(mov->fc, AV_LOG_DEBUG, "Offset DTS by %"PRId64" to make first pts zero.\n", min_corrected_pts);
+        for (i = 0; i < st->nb_index_entries; ++i) {
+            st->index_entries[i].timestamp -= min_corrected_pts;
+        }
+    }
+
     // Update av stream length
     st->duration = edit_list_dts_entry_end - start_dts;
 
