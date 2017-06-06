@@ -29,6 +29,28 @@
 #include "avcodec.h"
 #include "dxva2_internal.h"
 
+static void ff_dxva2_lock(AVCodecContext *avctx)
+{
+#if CONFIG_D3D11VA
+    if (ff_dxva2_is_d3d11(avctx)) {
+        AVDXVAContext *ctx = DXVA_CONTEXT(avctx);
+        if (D3D11VA_CONTEXT(ctx)->context_mutex != INVALID_HANDLE_VALUE)
+            WaitForSingleObjectEx(D3D11VA_CONTEXT(ctx)->context_mutex, INFINITE, FALSE);
+    }
+#endif
+}
+
+static void ff_dxva2_unlock(AVCodecContext *avctx)
+{
+#if CONFIG_D3D11VA
+    if (ff_dxva2_is_d3d11(avctx)) {
+        AVDXVAContext *ctx = DXVA_CONTEXT(avctx);
+        if (D3D11VA_CONTEXT(ctx)->context_mutex != INVALID_HANDLE_VALUE)
+            ReleaseMutex(D3D11VA_CONTEXT(ctx)->context_mutex);
+    }
+#endif
+}
+
 static void *get_surface(const AVFrame *frame)
 {
     return frame->data[3];
@@ -153,14 +175,12 @@ int ff_dxva2_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
     unsigned type;
 
     do {
+        ff_dxva2_lock(avctx);
 #if CONFIG_D3D11VA
-        if (ff_dxva2_is_d3d11(avctx)) {
-            if (D3D11VA_CONTEXT(ctx)->context_mutex != INVALID_HANDLE_VALUE)
-                WaitForSingleObjectEx(D3D11VA_CONTEXT(ctx)->context_mutex, INFINITE, FALSE);
+        if (ff_dxva2_is_d3d11(avctx))
             hr = ID3D11VideoContext_DecoderBeginFrame(D3D11VA_CONTEXT(ctx)->video_context, D3D11VA_CONTEXT(ctx)->decoder,
                                                       get_surface(frame),
                                                       0, NULL);
-        }
 #endif
 #if CONFIG_DXVA2
         if (avctx->pix_fmt == AV_PIX_FMT_DXVA2_VLD)
@@ -170,21 +190,13 @@ int ff_dxva2_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
 #endif
         if (hr != E_PENDING || ++runs > 50)
             break;
-#if CONFIG_D3D11VA
-        if (ff_dxva2_is_d3d11(avctx))
-            if (D3D11VA_CONTEXT(ctx)->context_mutex != INVALID_HANDLE_VALUE)
-                ReleaseMutex(D3D11VA_CONTEXT(ctx)->context_mutex);
-#endif
+        ff_dxva2_unlock(avctx);
         av_usleep(2000);
     } while(1);
 
     if (FAILED(hr)) {
         av_log(avctx, AV_LOG_ERROR, "Failed to begin frame: 0x%x\n", hr);
-#if CONFIG_D3D11VA
-        if (ff_dxva2_is_d3d11(avctx))
-            if (D3D11VA_CONTEXT(ctx)->context_mutex != INVALID_HANDLE_VALUE)
-                ReleaseMutex(D3D11VA_CONTEXT(ctx)->context_mutex);
-#endif
+        ff_dxva2_unlock(avctx);
         return -1;
     }
 
@@ -284,16 +296,14 @@ int ff_dxva2_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
 
 end:
 #if CONFIG_D3D11VA
-    if (ff_dxva2_is_d3d11(avctx)) {
+    if (ff_dxva2_is_d3d11(avctx))
         hr = ID3D11VideoContext_DecoderEndFrame(D3D11VA_CONTEXT(ctx)->video_context, D3D11VA_CONTEXT(ctx)->decoder);
-        if (D3D11VA_CONTEXT(ctx)->context_mutex != INVALID_HANDLE_VALUE)
-            ReleaseMutex(D3D11VA_CONTEXT(ctx)->context_mutex);
-    }
 #endif
 #if CONFIG_DXVA2
     if (avctx->pix_fmt == AV_PIX_FMT_DXVA2_VLD)
         hr = IDirectXVideoDecoder_EndFrame(DXVA2_CONTEXT(ctx)->decoder, NULL);
 #endif
+    ff_dxva2_unlock(avctx);
     if (FAILED(hr)) {
         av_log(avctx, AV_LOG_ERROR, "Failed to end frame: 0x%x\n", hr);
         result = -1;
