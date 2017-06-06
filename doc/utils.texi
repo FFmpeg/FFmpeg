@@ -914,6 +914,9 @@ various input values that the expression can access through
 @code{ld(0)}. When the expression evaluates to 0 then the
 corresponding input value will be returned.
 
+@item round(expr)
+Round the value of expression @var{expr} to the nearest integer. For example, "round(1.5)" is "2.0".
+
 @item sin(x)
 Compute sine of @var{x}.
 

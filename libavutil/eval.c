@@ -153,7 +153,7 @@ struct AVExpr {
         e_squish, e_gauss, e_ld, e_isnan, e_isinf,
         e_mod, e_max, e_min, e_eq, e_gt, e_gte, e_lte, e_lt,
         e_pow, e_mul, e_div, e_add,
-        e_last, e_st, e_while, e_taylor, e_root, e_floor, e_ceil, e_trunc,
+        e_last, e_st, e_while, e_taylor, e_root, e_floor, e_ceil, e_trunc, e_round,
         e_sqrt, e_not, e_random, e_hypot, e_gcd,
         e_if, e_ifnot, e_print, e_bitand, e_bitor, e_between, e_clip, e_atan2
     } type;
@@ -189,6 +189,7 @@ static double eval_expr(Parser *p, AVExpr *e)
         case e_floor:  return e->value * floor(eval_expr(p, e->param[0]));
         case e_ceil :  return e->value * ceil (eval_expr(p, e->param[0]));
         case e_trunc:  return e->value * trunc(eval_expr(p, e->param[0]));
+        case e_round:  return e->value * round(eval_expr(p, e->param[0]));
         case e_sqrt:   return e->value * sqrt (eval_expr(p, e->param[0]));
         case e_not:    return e->value * (eval_expr(p, e->param[0]) == 0);
         case e_if:     return e->value * (eval_expr(p, e->param[0]) ? eval_expr(p, e->param[1]) :
@@ -440,6 +441,7 @@ static int parse_primary(AVExpr **e, Parser *p)
     else if (strmatch(next, "floor" )) d->type = e_floor;
     else if (strmatch(next, "ceil"  )) d->type = e_ceil;
     else if (strmatch(next, "trunc" )) d->type = e_trunc;
+    else if (strmatch(next, "round" )) d->type = e_round;
     else if (strmatch(next, "sqrt"  )) d->type = e_sqrt;
     else if (strmatch(next, "not"   )) d->type = e_not;
     else if (strmatch(next, "pow"   )) d->type = e_pow;
@@ -637,6 +639,7 @@ static int verify_expr(AVExpr *e)
         case e_floor:
         case e_ceil:
         case e_trunc:
+        case e_round:
         case e_sqrt:
         case e_not:
         case e_random:
