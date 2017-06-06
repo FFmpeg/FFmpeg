@@ -1889,9 +1889,21 @@ vfpv3_deps="vfp"
 map 'eval ${v}_inline_deps=inline_asm' $ARCH_EXT_LIST_ARM
 
 altivec_deps="ppc"
+dcbzl_deps="ppc"
+ldbrx_deps="ppc"
 ppc4xx_deps="ppc"
 vsx_deps="altivec"
 power8_deps="vsx"
+
+loongson_deps="mips"
+mips32r1_deps="mips32"
+mips32r2_deps="mips32"
+mips32r6_deps="mips32"
+mips64r1_deps="mips64"
+mips64r2_deps="mips64"
+mips64r6_deps="mips64"
+
+vis_deps="sparc"
 
 cpunop_deps="i686"
 x86_64_select="i686"
