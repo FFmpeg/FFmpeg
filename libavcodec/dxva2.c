@@ -71,7 +71,7 @@ int ff_dxva2_commit_buffer(AVCodecContext *avctx,
     HRESULT hr = 0;
 
 #if CONFIG_D3D11VA
-    if (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD)
+    if (ff_dxva2_is_d3d11(avctx))
         hr = ID3D11VideoContext_GetDecoderBuffer(D3D11VA_CONTEXT(ctx)->video_context,
                                                  D3D11VA_CONTEXT(ctx)->decoder,
                                                  type,
@@ -91,7 +91,7 @@ int ff_dxva2_commit_buffer(AVCodecContext *avctx,
         memcpy(dxva_data, data, size);
 
 #if CONFIG_D3D11VA
-        if (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD) {
+        if (ff_dxva2_is_d3d11(avctx)) {
             D3D11_VIDEO_DECODER_BUFFER_DESC *dsc11 = dsc;
             memset(dsc11, 0, sizeof(*dsc11));
             dsc11->BufferType           = type;
@@ -116,7 +116,7 @@ int ff_dxva2_commit_buffer(AVCodecContext *avctx,
     }
 
 #if CONFIG_D3D11VA
-    if (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD)
+    if (ff_dxva2_is_d3d11(avctx))
         hr = ID3D11VideoContext_ReleaseDecoderBuffer(D3D11VA_CONTEXT(ctx)->video_context, D3D11VA_CONTEXT(ctx)->decoder, type);
 #endif
 #if CONFIG_DXVA2
@@ -139,7 +139,7 @@ int ff_dxva2_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
                                                   DECODER_BUFFER_DESC *bs,
                                                   DECODER_BUFFER_DESC *slice))
 {
-    AVDXVAContext *ctx = avctx->hwaccel_context;
+    AVDXVAContext *ctx = DXVA_CONTEXT(avctx);
     unsigned               buffer_count = 0;
 #if CONFIG_D3D11VA
     D3D11_VIDEO_DECODER_BUFFER_DESC buffer11[4];
@@ -154,7 +154,7 @@ int ff_dxva2_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
 
     do {
 #if CONFIG_D3D11VA
-        if (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD) {
+        if (ff_dxva2_is_d3d11(avctx)) {
             if (D3D11VA_CONTEXT(ctx)->context_mutex != INVALID_HANDLE_VALUE)
                 WaitForSingleObjectEx(D3D11VA_CONTEXT(ctx)->context_mutex, INFINITE, FALSE);
             hr = ID3D11VideoContext_DecoderBeginFrame(D3D11VA_CONTEXT(ctx)->video_context, D3D11VA_CONTEXT(ctx)->decoder,
@@ -171,7 +171,7 @@ int ff_dxva2_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
         if (hr != E_PENDING || ++runs > 50)
             break;
 #if CONFIG_D3D11VA
-        if (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD)
+        if (ff_dxva2_is_d3d11(avctx))
             if (D3D11VA_CONTEXT(ctx)->context_mutex != INVALID_HANDLE_VALUE)
                 ReleaseMutex(D3D11VA_CONTEXT(ctx)->context_mutex);
 #endif
@@ -181,7 +181,7 @@ int ff_dxva2_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
     if (FAILED(hr)) {
         av_log(avctx, AV_LOG_ERROR, "Failed to begin frame: 0x%x\n", hr);
 #if CONFIG_D3D11VA
-        if (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD)
+        if (ff_dxva2_is_d3d11(avctx))
             if (D3D11VA_CONTEXT(ctx)->context_mutex != INVALID_HANDLE_VALUE)
                 ReleaseMutex(D3D11VA_CONTEXT(ctx)->context_mutex);
 #endif
@@ -189,7 +189,7 @@ int ff_dxva2_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
     }
 
 #if CONFIG_D3D11VA
-    if (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD) {
+    if (ff_dxva2_is_d3d11(avctx)) {
         buffer = &buffer11[buffer_count];
         type = D3D11_VIDEO_DECODER_BUFFER_PICTURE_PARAMETERS;
     }
@@ -212,7 +212,7 @@ int ff_dxva2_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
 
     if (qm_size > 0) {
 #if CONFIG_D3D11VA
-        if (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD) {
+        if (ff_dxva2_is_d3d11(avctx)) {
             buffer = &buffer11[buffer_count];
             type = D3D11_VIDEO_DECODER_BUFFER_INVERSE_QUANTIZATION_MATRIX;
         }
@@ -235,7 +235,7 @@ int ff_dxva2_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
     }
 
 #if CONFIG_D3D11VA
-    if (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD) {
+    if (ff_dxva2_is_d3d11(avctx)) {
         buffer       = &buffer11[buffer_count + 0];
         buffer_slice = &buffer11[buffer_count + 1];
     }
@@ -262,7 +262,7 @@ int ff_dxva2_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
     assert(buffer_count == 1 + (qm_size > 0) + 2);
 
 #if CONFIG_D3D11VA
-    if (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD)
+    if (ff_dxva2_is_d3d11(avctx))
         hr = ID3D11VideoContext_SubmitDecoderBuffers(D3D11VA_CONTEXT(ctx)->video_context,
                                                      D3D11VA_CONTEXT(ctx)->decoder,
                                                      buffer_count, buffer11);
@@ -284,7 +284,7 @@ int ff_dxva2_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
 
 end:
 #if CONFIG_D3D11VA
-    if (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD) {
+    if (ff_dxva2_is_d3d11(avctx)) {
         hr = ID3D11VideoContext_DecoderEndFrame(D3D11VA_CONTEXT(ctx)->video_context, D3D11VA_CONTEXT(ctx)->decoder);
         if (D3D11VA_CONTEXT(ctx)->context_mutex != INVALID_HANDLE_VALUE)
             ReleaseMutex(D3D11VA_CONTEXT(ctx)->context_mutex);
@@ -300,4 +300,12 @@ end:
     }
 
     return result;
+}
+
+int ff_dxva2_is_d3d11(const AVCodecContext *avctx)
+{
+    if (CONFIG_D3D11VA)
+        return avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD;
+    else
+        return 0;
 }
