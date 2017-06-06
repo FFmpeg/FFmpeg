@@ -156,7 +156,7 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
                                              DECODER_BUFFER_DESC *sc)
 {
     const struct MpegEncContext *s = avctx->priv_data;
-    AVDXVAContext *ctx = avctx->hwaccel_context;
+    AVDXVAContext *ctx = DXVA_CONTEXT(avctx);
     struct dxva2_picture_context *ctx_pic =
         s->current_picture_ptr->hwaccel_picture_private;
     const int is_field = s->picture_structure != PICT_FRAME;
@@ -168,7 +168,7 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
     unsigned type;
 
 #if CONFIG_D3D11VA
-    if (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD) {
+    if (ff_dxva2_is_d3d11(avctx)) {
         type = D3D11_VIDEO_DECODER_BUFFER_BITSTREAM;
         if (FAILED(ID3D11VideoContext_GetDecoderBuffer(D3D11VA_CONTEXT(ctx)->video_context,
                                                        D3D11VA_CONTEXT(ctx)->decoder,
@@ -212,7 +212,7 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
         current += size;
     }
 #if CONFIG_D3D11VA
-    if (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD)
+    if (ff_dxva2_is_d3d11(avctx))
         if (FAILED(ID3D11VideoContext_ReleaseDecoderBuffer(D3D11VA_CONTEXT(ctx)->video_context, D3D11VA_CONTEXT(ctx)->decoder, type)))
             return -1;
 #endif
@@ -225,7 +225,7 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
         return -1;
 
 #if CONFIG_D3D11VA
-    if (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD) {
+    if (ff_dxva2_is_d3d11(avctx)) {
         D3D11_VIDEO_DECODER_BUFFER_DESC *dsc11 = bs;
         memset(dsc11, 0, sizeof(*dsc11));
         dsc11->BufferType           = type;
@@ -259,7 +259,7 @@ static int dxva2_mpeg2_start_frame(AVCodecContext *avctx,
                                    av_unused uint32_t size)
 {
     const struct MpegEncContext *s = avctx->priv_data;
-    AVDXVAContext *ctx = avctx->hwaccel_context;
+    AVDXVAContext *ctx = DXVA_CONTEXT(avctx);
     struct dxva2_picture_context *ctx_pic =
         s->current_picture_ptr->hwaccel_picture_private;
 
