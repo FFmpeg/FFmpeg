@@ -746,15 +746,15 @@ static int setup_hwaccel(AVCodecContext *avctx,
             return AVERROR(ENOMEM);
     }
 
+    avctx->hwaccel = hwa;
     if (hwa->init) {
         ret = hwa->init(avctx);
         if (ret < 0) {
             av_freep(&avctx->internal->hwaccel_priv_data);
+            avctx->hwaccel = NULL;
             return ret;
         }
     }
-
-    avctx->hwaccel = hwa;
 
     return 0;
 }
