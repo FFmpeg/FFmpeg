@@ -19,6 +19,7 @@ version <next>:
 - surround audio filter
 - sofalizer filter switched to libmysofa
 - Gremlin Digital Video demuxer and decoder
+- headphone audio filter
 
 version 3.3:
 - CrystalHD decoder moved to new decode API
