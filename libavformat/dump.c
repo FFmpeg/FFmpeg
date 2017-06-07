@@ -552,6 +552,11 @@ static void dump_stream_format(AVFormatContext *ic, int i,
     dump_sidedata(NULL, st, "    ");
 }
 
+void av_dump_format(AVFormatContext *ic, int index, int is_output)
+{
+    av_dump_format(ic, index, ic->filename, is_output);
+}
+
 void av_dump_format(AVFormatContext *ic, int index,
                     const char *url, int is_output)
 {

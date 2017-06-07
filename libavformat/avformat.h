@@ -2807,6 +2807,13 @@ void av_dump_format(AVFormatContext *ic,
 #define AV_FRAME_FILENAME_FLAGS_MULTIPLE 1 ///< Allow multiple %d
 
 /**
+ * Alias to default av_dump_format using ic->filename as url
+ */
+void av_dump_format(AVFormatContext *ic,
+                    int index,
+                    int is_output);
+
+/**
  * Return in 'buf' the path with '%d' replaced by a number.
  *
  * Also handles the '%0nd' format where 'n' is the total number

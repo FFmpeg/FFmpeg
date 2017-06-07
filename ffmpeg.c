@@ -4293,9 +4293,9 @@ static int process_input(int file_index)
             ist->wrap_correction_done = 0;
         }
         if(stime2 > stime && pkt.pts != AV_NOPTS_VALUE && pkt.pts > stime + (1LL<<(ist->st->pts_wrap_bits-1))) {
-            pkt.pts -= 1ULL<<ist->st->pts_wrap_bits;
-            ist->wrap_correction_done = 0;
-        }
+-            pkt.pts -= 1ULL<<ist->st->pts_wrap_bits;
+-            ist->wrap_correction_done = 0;
+-        }
     }
 
     /* add the stream-global side data to the first packet */
