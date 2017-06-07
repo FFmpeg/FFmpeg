@@ -60,9 +60,6 @@
 
 #define YUV2RGB_INITIAL_LOAD          \
     __asm__ volatile (                \
-        "movq (%5, %0, 2), %%mm6\n\t" \
-        "movd    (%2, %0), %%mm0\n\t" \
-        "movd    (%3, %0), %%mm1\n\t" \
         "1: \n\t"                     \
 
 /* YUV2RGB core
@@ -82,6 +79,10 @@
  * mm1 - R, mm2 - G, mm0 - B
  */
 #define YUV2RGB                                  \
+    "movq (%5, %0, 2), %%mm6\n\t"                \
+    "movd    (%2, %0), %%mm0\n\t"                \
+    "movd    (%3, %0), %%mm1\n\t"                \
+\
     /* convert Y, U, V into Y1', Y2', U', V' */  \
     "movq      %%mm6, %%mm7\n\t"                 \
     "punpcklbw %%mm4, %%mm0\n\t"                 \
@@ -132,9 +133,6 @@
     "punpcklbw %%mm7, %%mm2\n\t"                 \
 
 #define YUV2RGB_ENDLOOP(depth)                   \
-    "movq 8 (%5, %0, 2), %%mm6\n\t"              \
-    "movd 4 (%3, %0),    %%mm1\n\t"              \
-    "movd 4 (%2, %0),    %%mm0\n\t"              \
     "add $"AV_STRINGIFY(depth * 8)", %1\n\t"     \
     "add  $4, %0\n\t"                            \
     "js   1b\n\t"                                \
