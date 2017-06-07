@@ -427,10 +427,13 @@ AVHWAccel ff_hevc_dxva2_hwaccel = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_HEVC,
     .pix_fmt        = AV_PIX_FMT_DXVA2_VLD,
+    .init           = ff_dxva2_decode_init,
+    .uninit         = ff_dxva2_decode_uninit,
     .start_frame    = dxva2_hevc_start_frame,
     .decode_slice   = dxva2_hevc_decode_slice,
     .end_frame      = dxva2_hevc_end_frame,
     .frame_priv_data_size = sizeof(struct hevc_dxva2_picture_context),
+    .priv_data_size = sizeof(FFDXVASharedContext),
 };
 #endif
 
@@ -440,9 +443,28 @@ AVHWAccel ff_hevc_d3d11va_hwaccel = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_HEVC,
     .pix_fmt        = AV_PIX_FMT_D3D11VA_VLD,
+    .init           = ff_dxva2_decode_init,
+    .uninit         = ff_dxva2_decode_uninit,
     .start_frame    = dxva2_hevc_start_frame,
     .decode_slice   = dxva2_hevc_decode_slice,
     .end_frame      = dxva2_hevc_end_frame,
     .frame_priv_data_size = sizeof(struct hevc_dxva2_picture_context),
+    .priv_data_size = sizeof(FFDXVASharedContext),
+};
+#endif
+
+#if CONFIG_HEVC_D3D11VA2_HWACCEL
+AVHWAccel ff_hevc_d3d11va2_hwaccel = {
+    .name           = "hevc_d3d11va2",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_HEVC,
+    .pix_fmt        = AV_PIX_FMT_D3D11,
+    .init           = ff_dxva2_decode_init,
+    .uninit         = ff_dxva2_decode_uninit,
+    .start_frame    = dxva2_hevc_start_frame,
+    .decode_slice   = dxva2_hevc_decode_slice,
+    .end_frame      = dxva2_hevc_end_frame,
+    .frame_priv_data_size = sizeof(struct hevc_dxva2_picture_context),
+    .priv_data_size = sizeof(FFDXVASharedContext),
 };
 #endif

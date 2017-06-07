@@ -2056,8 +2056,6 @@ HAVE_LIST="
     alsa
     atomics_native
     dos_paths
-    dxva2_lib
-    dxva2api_cobj
     jack
     libc_msvcrt
     makeinfo
@@ -2594,9 +2592,8 @@ crystalhd_deps="libcrystalhd_libcrystalhd_if_h"
 cuda_deps_any="dlopen LoadLibrary"
 cuvid_deps="cuda"
 d3d11va_deps="d3d11_h dxva_h ID3D11VideoDecoder ID3D11VideoContext"
-dxva2_deps="dxva2api_h DXVA2_ConfigPictureDecode"
+dxva2_deps="dxva2api_h DXVA2_ConfigPictureDecode ole32"
 dxva2_extralibs="-luser32"
-dxva2_lib_deps="dxva2"
 vda_framework_deps="VideoDecodeAcceleration_VDADecoder_h blocks_extension"
 vda_framework_extralibs="-framework VideoDecodeAcceleration"
 vda_deps="vda_framework pthreads"
@@ -2613,6 +2610,8 @@ h264_cuvid_hwaccel_deps="cuda cuvid"
 h264_cuvid_hwaccel_select="h264_cuvid_decoder"
 h264_d3d11va_hwaccel_deps="d3d11va"
 h264_d3d11va_hwaccel_select="h264_decoder"
+h264_d3d11va2_hwaccel_deps="d3d11va"
+h264_d3d11va2_hwaccel_select="h264_decoder"
 h264_dxva2_hwaccel_deps="dxva2"
 h264_dxva2_hwaccel_select="h264_decoder"
 h264_mediacodec_hwaccel_deps="mediacodec"
@@ -2633,6 +2632,8 @@ hevc_cuvid_hwaccel_select="hevc_cuvid_decoder"
 hevc_d3d11va_hwaccel_deps="d3d11va DXVA_PicParams_HEVC"
 hevc_d3d11va_hwaccel_select="hevc_decoder"
 hevc_mediacodec_hwaccel_deps="mediacodec"
+hevc_d3d11va2_hwaccel_deps="d3d11va DXVA_PicParams_HEVC"
+hevc_d3d11va2_hwaccel_select="hevc_decoder"
 hevc_dxva2_hwaccel_deps="dxva2 DXVA_PicParams_HEVC"
 hevc_dxva2_hwaccel_select="hevc_decoder"
 hevc_qsv_hwaccel_deps="libmfx"
@@ -2656,6 +2657,8 @@ mpeg2_cuvid_hwaccel_deps="cuda cuvid"
 mpeg2_cuvid_hwaccel_select="mpeg2_cuvid_decoder"
 mpeg2_d3d11va_hwaccel_deps="d3d11va"
 mpeg2_d3d11va_hwaccel_select="mpeg2video_decoder"
+mpeg2_d3d11va2_hwaccel_deps="d3d11va"
+mpeg2_d3d11va2_hwaccel_select="mpeg2video_decoder"
 mpeg2_dxva2_hwaccel_deps="dxva2"
 mpeg2_dxva2_hwaccel_select="mpeg2video_decoder"
 mpeg2_mediacodec_hwaccel_deps="mediacodec"
@@ -2684,6 +2687,8 @@ vc1_cuvid_hwaccel_deps="cuda cuvid"
 vc1_cuvid_hwaccel_select="vc1_cuvid_decoder"
 vc1_d3d11va_hwaccel_deps="d3d11va"
 vc1_d3d11va_hwaccel_select="vc1_decoder"
+vc1_d3d11va2_hwaccel_deps="d3d11va"
+vc1_d3d11va2_hwaccel_select="vc1_decoder"
 vc1_dxva2_hwaccel_deps="dxva2"
 vc1_dxva2_hwaccel_select="vc1_decoder"
 vc1_mmal_hwaccel_deps="mmal"
@@ -2701,12 +2706,15 @@ vp8_mediacodec_hwaccel_deps="mediacodec"
 vp8_qsv_hwaccel_deps="libmfx"
 vp9_d3d11va_hwaccel_deps="d3d11va DXVA_PicParams_VP9"
 vp9_d3d11va_hwaccel_select="vp9_decoder"
+vp9_d3d11va2_hwaccel_deps="d3d11va DXVA_PicParams_VP9"
+vp9_d3d11va2_hwaccel_select="vp9_decoder"
 vp9_dxva2_hwaccel_deps="dxva2 DXVA_PicParams_VP9"
 vp9_dxva2_hwaccel_select="vp9_decoder"
 vp9_mediacodec_hwaccel_deps="mediacodec"
 vp9_vaapi_hwaccel_deps="vaapi VADecPictureParameterBufferVP9_bit_depth"
 vp9_vaapi_hwaccel_select="vp9_decoder"
 wmv3_d3d11va_hwaccel_select="vc1_d3d11va_hwaccel"
+wmv3_d3d11va2_hwaccel_select="vc1_d3d11va2_hwaccel"
 wmv3_dxva2_hwaccel_select="vc1_dxva2_hwaccel"
 wmv3_vaapi_hwaccel_select="vc1_vaapi_hwaccel"
 wmv3_vdpau_hwaccel_select="vc1_vdpau_hwaccel"
@@ -5705,6 +5713,7 @@ check_header asm/types.h
 # so we also check that atomics actually work here
 check_builtin stdatomic_h stdatomic.h "atomic_int foo, bar = ATOMIC_VAR_INIT(-1); atomic_store(&foo, 0)"
 
+check_lib ole32    "windows.h"            CoTaskMemFree        -lole32
 check_lib shell32  "windows.h shellapi.h" CommandLineToArgvW   -lshell32
 check_lib wincrypt "windows.h wincrypt.h" CryptGenRandom       -ladvapi32
 check_lib psapi    "windows.h psapi.h"    GetProcessMemoryInfo -lpsapi
@@ -6110,19 +6119,6 @@ fi
 fi
 
 check_func_headers "windows.h" CreateDIBSection "$gdigrab_indev_extralibs"
-
-enabled dxva2api_h &&
-    check_cc <<EOF && enable dxva2api_cobj
-#define _WIN32_WINNT 0x0600
-#define COBJMACROS
-#include <windows.h>
-#include <d3d9.h>
-#include <dxva2api.h>
-int main(void) { IDirectXVideoDecoder *o = NULL; IDirectXVideoDecoder_Release(o); return 0; }
-EOF
-
-enabled dxva2 &&
-    check_lib dxva2_lib windows.h CoTaskMemFree -lole32
 
 enabled vaapi &&
     check_lib vaapi va/va.h vaInitialize -lva

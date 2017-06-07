@@ -314,10 +314,13 @@ AVHWAccel ff_vp9_dxva2_hwaccel = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_VP9,
     .pix_fmt        = AV_PIX_FMT_DXVA2_VLD,
+    .init           = ff_dxva2_decode_init,
+    .uninit         = ff_dxva2_decode_uninit,
     .start_frame    = dxva2_vp9_start_frame,
     .decode_slice   = dxva2_vp9_decode_slice,
     .end_frame      = dxva2_vp9_end_frame,
     .frame_priv_data_size = sizeof(struct vp9_dxva2_picture_context),
+    .priv_data_size = sizeof(FFDXVASharedContext),
 };
 #endif
 
@@ -327,9 +330,28 @@ AVHWAccel ff_vp9_d3d11va_hwaccel = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_VP9,
     .pix_fmt        = AV_PIX_FMT_D3D11VA_VLD,
+    .init           = ff_dxva2_decode_init,
+    .uninit         = ff_dxva2_decode_uninit,
     .start_frame    = dxva2_vp9_start_frame,
     .decode_slice   = dxva2_vp9_decode_slice,
     .end_frame      = dxva2_vp9_end_frame,
     .frame_priv_data_size = sizeof(struct vp9_dxva2_picture_context),
+    .priv_data_size = sizeof(FFDXVASharedContext),
+};
+#endif
+
+#if CONFIG_VP9_D3D11VA2_HWACCEL
+AVHWAccel ff_vp9_d3d11va2_hwaccel = {
+    .name           = "vp9_d3d11va2",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_VP9,
+    .pix_fmt        = AV_PIX_FMT_D3D11,
+    .init           = ff_dxva2_decode_init,
+    .uninit         = ff_dxva2_decode_uninit,
+    .start_frame    = dxva2_vp9_start_frame,
+    .decode_slice   = dxva2_vp9_decode_slice,
+    .end_frame      = dxva2_vp9_end_frame,
+    .frame_priv_data_size = sizeof(struct vp9_dxva2_picture_context),
+    .priv_data_size = sizeof(FFDXVASharedContext),
 };
 #endif

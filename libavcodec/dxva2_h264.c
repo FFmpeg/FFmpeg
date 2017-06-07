@@ -523,10 +523,13 @@ AVHWAccel ff_h264_dxva2_hwaccel = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H264,
     .pix_fmt        = AV_PIX_FMT_DXVA2_VLD,
+    .init           = ff_dxva2_decode_init,
+    .uninit         = ff_dxva2_decode_uninit,
     .start_frame    = dxva2_h264_start_frame,
     .decode_slice   = dxva2_h264_decode_slice,
     .end_frame      = dxva2_h264_end_frame,
     .frame_priv_data_size = sizeof(struct dxva2_picture_context),
+    .priv_data_size = sizeof(FFDXVASharedContext),
 };
 #endif
 
@@ -536,9 +539,28 @@ AVHWAccel ff_h264_d3d11va_hwaccel = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H264,
     .pix_fmt        = AV_PIX_FMT_D3D11VA_VLD,
+    .init           = ff_dxva2_decode_init,
+    .uninit         = ff_dxva2_decode_uninit,
     .start_frame    = dxva2_h264_start_frame,
     .decode_slice   = dxva2_h264_decode_slice,
     .end_frame      = dxva2_h264_end_frame,
     .frame_priv_data_size = sizeof(struct dxva2_picture_context),
+    .priv_data_size = sizeof(FFDXVASharedContext),
+};
+#endif
+
+#if CONFIG_H264_D3D11VA2_HWACCEL
+AVHWAccel ff_h264_d3d11va2_hwaccel = {
+    .name           = "h264_d3d11va2",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_H264,
+    .pix_fmt        = AV_PIX_FMT_D3D11,
+    .init           = ff_dxva2_decode_init,
+    .uninit         = ff_dxva2_decode_uninit,
+    .start_frame    = dxva2_h264_start_frame,
+    .decode_slice   = dxva2_h264_decode_slice,
+    .end_frame      = dxva2_h264_end_frame,
+    .frame_priv_data_size = sizeof(struct dxva2_picture_context),
+    .priv_data_size = sizeof(FFDXVASharedContext),
 };
 #endif
