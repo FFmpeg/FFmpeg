@@ -163,8 +163,8 @@ align 16
     mulps    m4, m6
     mulps    m5, m7
     addps    m2, m3
-    addsubps m4, m5
     addsubps m2, m4
+    addsubps m2, m5
     movsd  [lq+nq], m2
     movhps [rq+nq], m2
     add      nq, 8
