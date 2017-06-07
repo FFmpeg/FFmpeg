@@ -717,6 +717,7 @@ AVCodec ff_ ## name_ ## _encoder = {                        \
     .encode2        = adpcm_encode_frame,                   \
     .close          = adpcm_encode_close,                   \
     .sample_fmts    = sample_fmts_,                         \
+    .capabilities   = CODEC_CAP_SMALL_LAST_FRAME,           \
 }
 
 ADPCM_ENCODER(AV_CODEC_ID_ADPCM_IMA_QT,  adpcm_ima_qt,  sample_fmts_p, "ADPCM IMA QuickTime");
