@@ -15,6 +15,7 @@ version <next>:
 - VP9 superframe split/merge bitstream filters
 - FM Screen Capture Codec decoder
 - ClearVideo decoder (I-frames only)
+- support for decoding through D3D11VA in avconv
 
 
 version 12:

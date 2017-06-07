@@ -69,6 +69,7 @@ void avcodec_register_all(void)
     /* hardware accelerators */
     REGISTER_HWACCEL(H263_VAAPI,        h263_vaapi);
     REGISTER_HWACCEL(H264_D3D11VA,      h264_d3d11va);
+    REGISTER_HWACCEL(H264_D3D11VA2,     h264_d3d11va2);
     REGISTER_HWACCEL(H264_DXVA2,        h264_dxva2);
     REGISTER_HWACCEL(H264_MMAL,         h264_mmal);
     REGISTER_HWACCEL(H264_QSV,          h264_qsv);
@@ -77,12 +78,14 @@ void avcodec_register_all(void)
     REGISTER_HWACCEL(H264_VDA_OLD,      h264_vda_old);
     REGISTER_HWACCEL(H264_VDPAU,        h264_vdpau);
     REGISTER_HWACCEL(HEVC_D3D11VA,      hevc_d3d11va);
+    REGISTER_HWACCEL(HEVC_D3D11VA2,     hevc_d3d11va2);
     REGISTER_HWACCEL(HEVC_DXVA2,        hevc_dxva2);
     REGISTER_HWACCEL(HEVC_QSV,          hevc_qsv);
     REGISTER_HWACCEL(HEVC_VAAPI,        hevc_vaapi);
     REGISTER_HWACCEL(HEVC_VDPAU,        hevc_vdpau);
     REGISTER_HWACCEL(MPEG1_VDPAU,       mpeg1_vdpau);
     REGISTER_HWACCEL(MPEG2_D3D11VA,     mpeg2_d3d11va);
+    REGISTER_HWACCEL(MPEG2_D3D11VA2,    mpeg2_d3d11va2);
     REGISTER_HWACCEL(MPEG2_DXVA2,       mpeg2_dxva2);
     REGISTER_HWACCEL(MPEG2_MMAL,        mpeg2_mmal);
     REGISTER_HWACCEL(MPEG2_QSV,         mpeg2_qsv);
@@ -91,6 +94,7 @@ void avcodec_register_all(void)
     REGISTER_HWACCEL(MPEG4_VAAPI,       mpeg4_vaapi);
     REGISTER_HWACCEL(MPEG4_VDPAU,       mpeg4_vdpau);
     REGISTER_HWACCEL(VC1_D3D11VA,       vc1_d3d11va);
+    REGISTER_HWACCEL(VC1_D3D11VA2,      vc1_d3d11va2);
     REGISTER_HWACCEL(VC1_DXVA2,         vc1_dxva2);
     REGISTER_HWACCEL(VC1_QSV,           vc1_qsv);
     REGISTER_HWACCEL(VC1_VAAPI,         vc1_vaapi);
@@ -99,6 +103,7 @@ void avcodec_register_all(void)
     REGISTER_HWACCEL(VP8_QSV,           vp8_qsv);
     REGISTER_HWACCEL(VP8_VAAPI,         vp8_vaapi);
     REGISTER_HWACCEL(WMV3_D3D11VA,      wmv3_d3d11va);
+    REGISTER_HWACCEL(WMV3_D3D11VA2,     wmv3_d3d11va2);
     REGISTER_HWACCEL(WMV3_DXVA2,        wmv3_dxva2);
     REGISTER_HWACCEL(WMV3_VAAPI,        wmv3_vaapi);
     REGISTER_HWACCEL(WMV3_VDPAU,        wmv3_vdpau);

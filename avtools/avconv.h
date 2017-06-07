@@ -57,6 +57,7 @@ enum HWAccelID {
     HWACCEL_VDA,
     HWACCEL_QSV,
     HWACCEL_VAAPI,
+    HWACCEL_D3D11VA,
 };
 
 typedef struct HWAccel {
