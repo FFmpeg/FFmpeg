@@ -1,0 +1,24 @@
+EXPORTS
+    swr_alloc
+    swr_alloc_set_opts
+    swr_build_matrix
+    swr_close
+    swr_config_frame
+    swr_convert
+    swr_convert_frame
+    swr_drop_output
+    swr_free
+    swr_get_class
+    swr_get_delay
+    swr_get_out_samples
+    swr_init
+    swr_inject_silence
+    swr_is_initialized
+    swr_next_pts
+    swr_set_channel_mapping
+    swr_set_compensation
+    swr_set_matrix
+    swresample_configuration
+    swresample_license
+    swresample_version
+    swr_ffversion DATA
