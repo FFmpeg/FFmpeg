@@ -107,6 +107,7 @@ static const AVCodecDefault defaults[] = {
     { "qdiff", "-1" },
     { "qblur", "-1" },
     { "qcomp", "-1" },
+    { "refs", "0" },
     { NULL },
 };
 
