@@ -246,6 +246,8 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
     /* skip picture header extension if any */
     while (get_bits1(&ctx->gb)) {
         ff_dlog(avctx, "Pic hdr extension encountered!\n");
+        if (get_bits_left(&ctx->gb) < 10)
+            return AVERROR_INVALIDDATA;
         skip_bits(&ctx->gb, 8);
     }
 
