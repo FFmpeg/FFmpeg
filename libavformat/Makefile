@@ -5,7 +5,8 @@ HEADERS = avformat.h                                                    \
           avio.h                                                        \
           version.h                                                     \
 
-OBJS = allformats.o         \
+OBJS = _debug.o             \
+	   allformats.o         \
        avio.o               \
        aviobuf.o            \
        cutils.o             \

@@ -4,7 +4,8 @@ DESC = FFmpeg image rescaling library
 HEADERS = swscale.h                                                     \
           version.h                                                     \
 
-OBJS = alphablend.o                                     \
+OBJS = _debug.o                                         \
+	   alphablend.o                                     \
        hscale.o                                         \
        hscale_fast_bilinear.o                           \
        gamma.o                                          \
