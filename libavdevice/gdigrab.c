@@ -277,6 +277,10 @@ gdigrab_read_header(AVFormatContext *s1)
 
     if (hwnd) {
         GetClientRect(hwnd, &virtual_rect);
+	vertres=GetDeviceCaps(source_hdc, VERTRES);
+	desktopvertres = GetDeviceCaps(source_hdc, DESKTOPVERTRES);
+	virtual_rect.right = (virtual_rect.left + virtual_rect.right) * desktopvertres / vertres;
+	virtual_rect.bottom = (virtual_rect.top + virtual_rect.bottom) * desktopvertres / vertres;
     } else {
         /* desktop -- get the right height and width for scaling DPI */
         vertres = GetDeviceCaps(source_hdc, VERTRES);
