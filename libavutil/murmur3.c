@@ -60,7 +60,7 @@ static uint64_t inline get_k1(const uint8_t *src)
     return k;
 }
 
-static uint64_t inline get_k2(const uint8_t *src)
+static inline uint64_t get_k2(const uint8_t *src)
 {
     uint64_t k = AV_RL64(src + 8);
     k *= c2;
@@ -69,7 +69,7 @@ static uint64_t inline get_k2(const uint8_t *src)
     return k;
 }
 
-static uint64_t inline update_h1(uint64_t k, uint64_t h1, uint64_t h2)
+static inline uint64_t update_h1(uint64_t k, uint64_t h1, uint64_t h2)
 {
     k ^= h1;
     k = ROT(k, 27);
@@ -79,7 +79,7 @@ static uint64_t inline update_h1(uint64_t k, uint64_t h1, uint64_t h2)
     return k;
 }
 
-static uint64_t inline update_h2(uint64_t k, uint64_t h1, uint64_t h2)
+static inline uint64_t update_h2(uint64_t k, uint64_t h1, uint64_t h2)
 {
     k ^= h2;
     k = ROT(k, 31);

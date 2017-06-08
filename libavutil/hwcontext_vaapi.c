@@ -24,6 +24,9 @@
 #if HAVE_VAAPI_DRM
 #   include <va/va_drm.h>
 #endif
+#if HAVE_VAAPI_ANDROID
+#   include <va/va_android.h>
+#endif
 
 #include <fcntl.h>
 #if HAVE_UNISTD_H
@@ -965,6 +968,22 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
             av_log(ctx, AV_LOG_VERBOSE, "Opened VA display via "
                    "DRM device %s.\n", path);
         }
+    }
+#endif
+
+#if HAVE_VAAPI_ANDROID
+    if (!display) {
+        int mDisplay;
+        mDisplay = 0x18C34078;
+        display = vaGetDisplay(&mDisplay);
+        if (!display) {
+            av_log(ctx, AV_LOG_ERROR, "Cannot open a VA display "
+                   "from Android device %s.\n", device);
+            return AVERROR_UNKNOWN;
+        }
+
+        av_log(ctx, AV_LOG_VERBOSE, "Opened VA display via "
+               "Android device %s.\n", device);
     }
 #endif
 

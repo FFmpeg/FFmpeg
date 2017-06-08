@@ -25,6 +25,10 @@
 
 #include "ffmpeg.h"
 
+#ifdef ANDROID
+int hwaccel_lax_profile_check = 0;
+AVBufferRef *hw_device_ctx;
+#endif
 
 static AVClass vaapi_class = {
     .class_name = "vaapi",
