@@ -54,6 +54,7 @@ typedef enum {
     HEVC_SEI_TYPE_REGION_REFRESH_INFO                  = 134,
     HEVC_SEI_TYPE_MASTERING_DISPLAY_INFO               = 137,
     HEVC_SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO             = 144,
+    HEVC_SEI_TYPE_ALTERNATIVE_TRANSFER_CHARACTERISTICS = 147,
 } HEVC_SEI_Type;
 
 typedef struct HEVCSEIPictureHash {
@@ -74,10 +75,16 @@ typedef struct HEVCSEIDisplayOrientation {
     int hflip, vflip;
 } HEVCSEIDisplayOrientation;
 
+typedef struct HEVCSEIAlternativeTransfer {
+    int present;
+    int preferred_transfer_characteristics;
+} HEVCSEIAlternativeTransfer;
+
 typedef struct HEVCSEI {
     HEVCSEIPictureHash picture_hash;
     HEVCSEIFramePacking frame_packing;
     HEVCSEIDisplayOrientation display_orientation;
+    HEVCSEIAlternativeTransfer alternative_transfer;
 } HEVCSEI;
 
 int ff_hevc_decode_nal_sei(GetBitContext *gb, void *logctx, HEVCSEI *s,

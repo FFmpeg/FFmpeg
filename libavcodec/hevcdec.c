@@ -2407,6 +2407,12 @@ static int set_side_data(HEVCContext *s)
                                s->sei.display_orientation.vflip);
     }
 
+    if (s->sei.alternative_transfer.present &&
+        av_color_transfer_name(s->sei.alternative_transfer.preferred_transfer_characteristics) &&
+        s->sei.alternative_transfer.preferred_transfer_characteristics != AVCOL_TRC_UNSPECIFIED) {
+        s->avctx->color_trc = s->sei.alternative_transfer.preferred_transfer_characteristics;
+    }
+
     return 0;
 }
 

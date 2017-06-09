@@ -86,6 +86,13 @@ static int decode_nal_sei_display_orientation(HEVCSEIDisplayOrientation *s, GetB
     return 0;
 }
 
+static int decode_nal_sei_alternative_transfer(HEVCSEIAlternativeTransfer *s, GetBitContext *gb)
+{
+    s->present = 1;
+    s->preferred_transfer_characteristics = get_bits(gb, 8);
+    return 0;
+}
+
 static int decode_nal_sei_prefix(GetBitContext *gb, void *logctx, HEVCSEI *s,
                                  int type, int size)
 {
@@ -96,6 +103,8 @@ static int decode_nal_sei_prefix(GetBitContext *gb, void *logctx, HEVCSEI *s,
         return decode_nal_sei_frame_packing_arrangement(&s->frame_packing, gb);
     case HEVC_SEI_TYPE_DISPLAY_ORIENTATION:
         return decode_nal_sei_display_orientation(&s->display_orientation, gb);
+    case HEVC_SEI_TYPE_ALTERNATIVE_TRANSFER_CHARACTERISTICS:
+        return decode_nal_sei_alternative_transfer(&s->alternative_transfer, gb);
     default:
         av_log(logctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", type);
         skip_bits_long(gb, 8 * size);
