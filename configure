@@ -6120,6 +6120,10 @@ fi
 
 check_func_headers "windows.h" CreateDIBSection "$gdigrab_indev_extralibs"
 
+# d3d11va requires linking directly to dxgi and d3d11 if not building for
+# the desktop api partition
+enabled LoadLibrary || d3d11va_extralibs="-ldxgi -ld3d11"
+
 enabled vaapi &&
     check_lib vaapi va/va.h vaInitialize -lva
 
