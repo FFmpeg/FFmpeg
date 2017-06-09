@@ -118,3 +118,9 @@ fate-ffmpeg-bsf-remove-e: CMD = transcode "mpeg" $(TARGET_SAMPLES)/mpeg2/matrixb
 
 
 FATE_SAMPLES_FFMPEG-yes += $(FATE_STREAMCOPY-yes)
+
+FATE_TIME_BASE-$(call ALLYES, MPEGPS_DEMUXER MXF_MUXER) += fate-time_base
+fate-time_base: $(TARGET_SAMPLES)/mpeg2/dvd_single_frame.vob
+fate-time_base: CMD = md5 -i $(TARGET_SAMPLES)/mpeg2/dvd_single_frame.vob -an -sn -c:v copy -r 25 -time_base 1001:30000 -fflags +bitexact -f mxf
+
+FATE_SAMPLES_FFMPEG-yes += $(FATE_TIME_BASE-yes)
