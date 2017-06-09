@@ -67,6 +67,7 @@ static const struct {
 #if CONFIG_AVCODEC
     #if CONFIG_AAC_DECODER
         { "aacpsdsp", checkasm_check_aacpsdsp },
+        { "sbrdsp",   checkasm_check_sbrdsp },
     #endif
     #if CONFIG_ALAC_DECODER
         { "alacdsp", checkasm_check_alacdsp },
