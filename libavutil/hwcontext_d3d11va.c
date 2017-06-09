@@ -18,6 +18,10 @@
 
 #include <windows.h>
 
+// Include thread.h before redefining _WIN32_WINNT, to get
+// the right implementation for AVOnce
+#include "thread.h"
+
 #if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0600
 #undef _WIN32_WINNT
 #define _WIN32_WINNT 0x0600
@@ -38,6 +42,34 @@
 #include "pixfmt.h"
 
 typedef HRESULT(WINAPI *PFN_CREATE_DXGI_FACTORY)(REFIID riid, void **ppFactory);
+
+static AVOnce functions_loaded = AV_ONCE_INIT;
+
+static PFN_CREATE_DXGI_FACTORY mCreateDXGIFactory;
+static PFN_D3D11_CREATE_DEVICE mD3D11CreateDevice;
+
+static av_cold void load_functions(void)
+{
+#if HAVE_LOADLIBRARY
+    // We let these "leak" - this is fine, as unloading has no great benefit, and
+    // Windows will mark a DLL as loaded forever if its internal refcount overflows
+    // from too many LoadLibrary calls.
+    HANDLE d3dlib, dxgilib;
+
+    d3dlib  = LoadLibrary("d3d11.dll");
+    dxgilib = LoadLibrary("dxgi.dll");
+    if (!d3dlib || !dxgilib)
+        return;
+
+    mD3D11CreateDevice = (PFN_D3D11_CREATE_DEVICE) GetProcAddress(d3dlib, "D3D11CreateDevice");
+    mCreateDXGIFactory = (PFN_CREATE_DXGI_FACTORY) GetProcAddress(dxgilib, "CreateDXGIFactory");
+#else
+    // In UWP (which lacks LoadLibrary), CreateDXGIFactory isn't available,
+    // only CreateDXGIFactory1
+    mD3D11CreateDevice = (PFN_D3D11_CREATE_DEVICE) D3D11CreateDevice;
+    mCreateDXGIFactory = (PFN_CREATE_DXGI_FACTORY) CreateDXGIFactory1;
+#endif
+}
 
 typedef struct D3D11VAFramesContext {
     int nb_surfaces_used;
@@ -407,50 +439,32 @@ static int d3d11va_device_create(AVHWDeviceContext *ctx, const char *device,
                                  AVDictionary *opts, int flags)
 {
     AVD3D11VADeviceContext *device_hwctx = ctx->hwctx;
-    HANDLE d3dlib;
 
     HRESULT hr;
-    PFN_D3D11_CREATE_DEVICE createD3D;
     IDXGIAdapter           *pAdapter = NULL;
     ID3D10Multithread      *pMultithread;
     UINT creationFlags = D3D11_CREATE_DEVICE_VIDEO_SUPPORT;
+    int ret;
+
+    if ((ret = ff_thread_once(&functions_loaded, load_functions)) != 0)
+        return AVERROR_UNKNOWN;
+    if (!mD3D11CreateDevice || !mCreateDXGIFactory) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to load D3D11 library or its functions\n");
+        return AVERROR_UNKNOWN;
+    }
 
     if (device) {
-        PFN_CREATE_DXGI_FACTORY mCreateDXGIFactory;
-        HMODULE dxgilib = LoadLibrary("dxgi.dll");
-        if (!dxgilib)
-            return AVERROR_UNKNOWN;
-
-        mCreateDXGIFactory = (PFN_CREATE_DXGI_FACTORY) GetProcAddress(dxgilib, "CreateDXGIFactory");
-        if (mCreateDXGIFactory) {
-            IDXGIFactory2 *pDXGIFactory;
-            hr = mCreateDXGIFactory(&IID_IDXGIFactory2, (void **)&pDXGIFactory);
-            if (SUCCEEDED(hr)) {
-                int adapter = atoi(device);
-                if (FAILED(IDXGIFactory2_EnumAdapters(pDXGIFactory, adapter, &pAdapter)))
-                    pAdapter = NULL;
-                IDXGIFactory2_Release(pDXGIFactory);
-            }
+        IDXGIFactory2 *pDXGIFactory;
+        hr = mCreateDXGIFactory(&IID_IDXGIFactory2, (void **)&pDXGIFactory);
+        if (SUCCEEDED(hr)) {
+            int adapter = atoi(device);
+            if (FAILED(IDXGIFactory2_EnumAdapters(pDXGIFactory, adapter, &pAdapter)))
+                pAdapter = NULL;
+            IDXGIFactory2_Release(pDXGIFactory);
         }
-        FreeLibrary(dxgilib);
     }
 
-    // We let this "leak" - this is fine, as unloading has no great benefit, and
-    // Windows will mark a DLL as loaded forever if its internal refcount overflows
-    // from too many LoadLibrary calls.
-    d3dlib = LoadLibrary("d3d11.dll");
-    if (!d3dlib) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to load D3D11 library\n");
-        return AVERROR_UNKNOWN;
-    }
-
-    createD3D = (PFN_D3D11_CREATE_DEVICE) GetProcAddress(d3dlib, "D3D11CreateDevice");
-    if (!createD3D) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to locate D3D11CreateDevice\n");
-        return AVERROR_UNKNOWN;
-    }
-
-    hr = createD3D(pAdapter, pAdapter ? D3D_DRIVER_TYPE_UNKNOWN : D3D_DRIVER_TYPE_HARDWARE, NULL, creationFlags, NULL, 0,
+    hr = mD3D11CreateDevice(pAdapter, pAdapter ? D3D_DRIVER_TYPE_UNKNOWN : D3D_DRIVER_TYPE_HARDWARE, NULL, creationFlags, NULL, 0,
                    D3D11_SDK_VERSION, &device_hwctx->device, NULL, NULL);
     if (pAdapter)
         IDXGIAdapter_Release(pAdapter);

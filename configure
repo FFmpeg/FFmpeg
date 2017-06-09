@@ -4876,6 +4876,10 @@ if enabled libxcb; then
         check_pkg_config libxcb_xfixes xcb-xfixes xcb/xfixes.h xcb_xfixes_get_cursor_image
 fi
 
+# d3d11va requires linking directly to dxgi and d3d11 if not building for
+# the desktop api partition
+enabled LoadLibrary || d3d11va_extralibs="-ldxgi -ld3d11"
+
 enabled vaapi && require vaapi va/va.h vaInitialize -lva
 
 enabled vaapi &&
