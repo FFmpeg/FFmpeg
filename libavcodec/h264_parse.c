@@ -26,7 +26,8 @@
 
 int ff_h264_pred_weight_table(GetBitContext *gb, const SPS *sps,
                               const int *ref_count, int slice_type_nos,
-                              H264PredWeightTable *pwt, void *logctx)
+                              H264PredWeightTable *pwt,
+                              int picture_structure, void *logctx)
 {
     int list, i, j;
     int luma_def, chroma_def;
@@ -98,11 +99,13 @@ int ff_h264_pred_weight_table(GetBitContext *gb, const SPS *sps,
             }
 
             // for MBAFF
-            pwt->luma_weight[16 + 2 * i][list][0] = pwt->luma_weight[16 + 2 * i + 1][list][0] = pwt->luma_weight[i][list][0];
-            pwt->luma_weight[16 + 2 * i][list][1] = pwt->luma_weight[16 + 2 * i + 1][list][1] = pwt->luma_weight[i][list][1];
-            for (j = 0; j < 2; j++) {
-                pwt->chroma_weight[16 + 2 * i][list][j][0] = pwt->chroma_weight[16 + 2 * i + 1][list][j][0] = pwt->chroma_weight[i][list][j][0];
-                pwt->chroma_weight[16 + 2 * i][list][j][1] = pwt->chroma_weight[16 + 2 * i + 1][list][j][1] = pwt->chroma_weight[i][list][j][1];
+            if (picture_structure == PICT_FRAME) {
+                pwt->luma_weight[16 + 2 * i][list][0] = pwt->luma_weight[16 + 2 * i + 1][list][0] = pwt->luma_weight[i][list][0];
+                pwt->luma_weight[16 + 2 * i][list][1] = pwt->luma_weight[16 + 2 * i + 1][list][1] = pwt->luma_weight[i][list][1];
+                for (j = 0; j < 2; j++) {
+                    pwt->chroma_weight[16 + 2 * i][list][j][0] = pwt->chroma_weight[16 + 2 * i + 1][list][j][0] = pwt->chroma_weight[i][list][j][0];
+                    pwt->chroma_weight[16 + 2 * i][list][j][1] = pwt->chroma_weight[16 + 2 * i + 1][list][j][1] = pwt->chroma_weight[i][list][j][1];
+                }
             }
         }
         if (slice_type_nos != AV_PICTURE_TYPE_B)
