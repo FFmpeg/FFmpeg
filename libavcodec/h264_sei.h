@@ -32,7 +32,8 @@ typedef enum {
     SEI_TYPE_RECOVERY_POINT         = 6,   ///< recovery point (frame # to decoder sync)
     SEI_TYPE_FRAME_PACKING          = 45,  ///< frame packing arrangement
     SEI_TYPE_DISPLAY_ORIENTATION    = 47,  ///< display orientation
-    SEI_TYPE_GREEN_METADATA         = 56   ///< GreenMPEG information
+    SEI_TYPE_GREEN_METADATA         = 56,  ///< GreenMPEG information
+    SEI_TYPE_ALTERNATIVE_TRANSFER   = 147, ///< alternative transfer
 } SEI_Type;
 
 /**
@@ -144,6 +145,11 @@ typedef struct H264SEIGreenMetaData {
     uint16_t xsd_metric_value;
 } H264SEIGreenMetaData;
 
+typedef struct H264SEIAlternativeTransfer {
+    int present;
+    int preferred_transfer_characteristics;
+} H264SEIAlternativeTransfer;
+
 typedef struct H264SEIContext {
     H264SEIPictureTiming picture_timing;
     H264SEIAFD afd;
@@ -154,6 +160,7 @@ typedef struct H264SEIContext {
     H264SEIFramePacking frame_packing;
     H264SEIDisplayOrientation display_orientation;
     H264SEIGreenMetaData green_metadata;
+    H264SEIAlternativeTransfer alternative_transfer;
 } H264SEIContext;
 
 struct H264ParamSets;
