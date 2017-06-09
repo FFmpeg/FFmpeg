@@ -1090,6 +1090,7 @@ static const AVOption colorspace_options[] = {
     ENUM("smpte240m",   AVCOL_SPC_SMPTE240M,   "csp"),
     ENUM("ycgco",       AVCOL_SPC_YCGCO,       "csp"),
     ENUM("gbr",         AVCOL_SPC_RGB,         "csp"),
+    ENUM("bt2020nc",    AVCOL_SPC_BT2020_NCL,  "csp"),
     ENUM("bt2020ncl",   AVCOL_SPC_BT2020_NCL,  "csp"),
 
     { "range",      "Output color range",
