@@ -55,7 +55,8 @@ typedef struct H264POCContext {
 
 int ff_h264_pred_weight_table(GetBitContext *gb, const SPS *sps,
                               const int *ref_count, int slice_type_nos,
-                              H264PredWeightTable *pwt, void *logctx);
+                              H264PredWeightTable *pwt,
+                              int picture_structure, void *logctx);
 
 /**
  * Check if the top & left blocks are available if needed & change the

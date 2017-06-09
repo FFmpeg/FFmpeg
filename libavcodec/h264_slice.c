@@ -1686,7 +1686,8 @@ static int h264_slice_header_parse(const H264Context *h, H264SliceContext *sl,
         (pps->weighted_bipred_idc == 1 &&
          sl->slice_type_nos == AV_PICTURE_TYPE_B)) {
         ret = ff_h264_pred_weight_table(&sl->gb, sps, sl->ref_count,
-                                  sl->slice_type_nos, &sl->pwt, h->avctx);
+                                  sl->slice_type_nos, &sl->pwt,
+                                  picture_structure, h->avctx);
         if (ret < 0)
             return ret;
     }
