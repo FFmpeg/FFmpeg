@@ -1601,7 +1601,7 @@ void ff_eval_coefs(int *coefs, const int *refl)
         b1[i] = refl[i] * 16;
 
         for (j=0; j < i; j++)
-            b1[j] = ((refl[i] * b2[i-j-1]) >> 12) + b2[j];
+            b1[j] = ((int)(refl[i] * (unsigned)b2[i-j-1]) >> 12) + b2[j];
 
         FFSWAP(int *, b1, b2);
     }
