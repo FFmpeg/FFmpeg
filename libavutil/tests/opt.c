@@ -59,9 +59,9 @@ static const char *test_get_name(void *ctx)
 }
 
 static const AVClass test_class = {
-    "TestContext",
-    test_get_name,
-    test_options
+    .class_name = "TestContext",
+    .item_name  = test_get_name,
+    .option     = test_options,
 };
 
 int main(void)

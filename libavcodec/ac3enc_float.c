@@ -36,8 +36,13 @@
 
 #define AC3ENC_TYPE AC3ENC_TYPE_AC3
 #include "ac3enc_opts_template.c"
-static const AVClass ac3enc_class = { "AC-3 Encoder", av_default_item_name,
-                                      ac3_options, LIBAVUTIL_VERSION_INT };
+
+static const AVClass ac3enc_class = {
+    .class_name = "AC-3 Encoder",
+    .item_name  = av_default_item_name,
+    .option     = ac3_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 
 /*

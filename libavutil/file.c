@@ -42,8 +42,12 @@ typedef struct FileLogContext {
 } FileLogContext;
 
 static const AVClass file_log_ctx_class = {
-    "FILE", av_default_item_name, NULL, LIBAVUTIL_VERSION_INT,
-    offsetof(FileLogContext, log_offset), offsetof(FileLogContext, log_ctx)
+    .class_name                = "FILE",
+    .item_name                 = av_default_item_name,
+    .option                    = NULL,
+    .version                   = LIBAVUTIL_VERSION_INT,
+    .log_level_offset_offset   = offsetof(FileLogContext, log_offset),
+    .parent_log_context_offset = offsetof(FileLogContext, log_ctx),
 };
 
 int av_file_map(const char *filename, uint8_t **bufptr, size_t *size,

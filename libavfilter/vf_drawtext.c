@@ -209,9 +209,9 @@ static const char *drawtext_get_name(void *ctx)
 }
 
 static const AVClass drawtext_class = {
-    "DrawTextContext",
-    drawtext_get_name,
-    drawtext_options
+    .class_name = "DrawTextContext",
+    .item_name  = drawtext_get_name,
+    .option     = drawtext_options,
 };
 
 #undef __FTERRORS_H__

@@ -54,7 +54,10 @@ static const AVOption aac_enc_options[] = {
 };
 
 static const AVClass aac_enc_class = {
-    "libfdk_aac", av_default_item_name, aac_enc_options, LIBAVUTIL_VERSION_INT
+    .class_name = "libfdk_aac",
+    .item_name  = av_default_item_name,
+    .option     = aac_enc_options,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 static const char *aac_get_error(AACENC_ERROR err)

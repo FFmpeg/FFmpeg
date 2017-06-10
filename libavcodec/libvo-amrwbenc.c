@@ -46,7 +46,10 @@ static const AVOption options[] = {
 };
 
 static const AVClass class = {
-    "libvo_amrwbenc", av_default_item_name, options, LIBAVUTIL_VERSION_INT
+    .class_name = "libvo_amrwbenc",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 static int get_wb_bitrate_mode(int bitrate, void *log_ctx)

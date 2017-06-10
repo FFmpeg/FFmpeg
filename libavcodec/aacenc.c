@@ -803,10 +803,10 @@ static const AVOption aacenc_options[] = {
 };
 
 static const AVClass aacenc_class = {
-    "AAC encoder",
-    av_default_item_name,
-    aacenc_options,
-    LIBAVUTIL_VERSION_INT,
+    .class_name = "AAC encoder",
+    .item_name  = av_default_item_name,
+    .option     = aacenc_options,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 AVCodec ff_aac_encoder = {

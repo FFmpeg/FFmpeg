@@ -52,10 +52,10 @@ static const AVOption options[] = {
 };
 
 static const AVClass class = {
-    "dnxhd",
-    av_default_item_name,
-    options,
-    LIBAVUTIL_VERSION_INT
+    .class_name = "dnxhd",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 static void dnxhd_8bit_get_pixels_8x4_sym(int16_t *restrict block,
