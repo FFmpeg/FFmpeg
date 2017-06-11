@@ -400,7 +400,7 @@ static int nppscale_resize(AVFilterContext *ctx, NPPScaleStageContext *stage,
     NppStatus err;
     int i;
 
-    for (i = 0; i < FF_ARRAY_ELEMS(in->data) && in->data[i]; i++) {
+    for (i = 0; i < FF_ARRAY_ELEMS(stage->planes_in) && i < FF_ARRAY_ELEMS(in->data) && in->data[i]; i++) {
         int iw = stage->planes_in[i].width;
         int ih = stage->planes_in[i].height;
         int ow = stage->planes_out[i].width;
