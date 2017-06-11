@@ -56,6 +56,7 @@ int ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
     char *param, buffer[128], tmp[128];
     int len, tag_close, sptr = 1, line_start = 1, an = 0, end = 0;
     SrtStack stack[16];
+    int closing_brace_missing = 0;
 
     stack[0].tag[0] = 0;
     strcpy(stack[0].param[PARAM_SIZE],  "{\\fs}");
@@ -83,11 +84,20 @@ int ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
                         and all microdvd like styles such as {Y:xxx} */
             len = 0;
             an += sscanf(in, "{\\an%*1u}%n", &len) >= 0 && len > 0;
-            if ((an != 1 && (len = 0, sscanf(in, "{\\%*[^}]}%n", &len) >= 0 && len > 0)) ||
-                (len = 0, sscanf(in, "{%*1[CcFfoPSsYy]:%*[^}]}%n", &len) >= 0 && len > 0)) {
-                in += len - 1;
-            } else
-                av_bprint_chars(dst, *in, 1);
+
+            if (!closing_brace_missing) {
+                if (   (an != 1 && in[1] == '\\')
+                    || (in[1] && strchr("CcFfoPSsYy", in[1]) && in[2] == ':')) {
+                    char *bracep = strchr(in+2, '}');
+                    if (bracep) {
+                        in = bracep;
+                        break;
+                    } else
+                        closing_brace_missing = 1;
+                }
+            }
+
+            av_bprint_chars(dst, *in, 1);
             break;
         case '<':
             tag_close = in[1] == '/';
