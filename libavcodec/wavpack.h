@@ -94,7 +94,7 @@ typedef struct Decorr {
 typedef struct WvChannel {
     int median[3];
     int slow_level, error_limit;
-    int bitrate_acc, bitrate_delta;
+    unsigned bitrate_acc, bitrate_delta;
 } WvChannel;
 
 // macros for manipulating median values
