@@ -586,7 +586,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 for(; yq<slice_h && yq<h; yq++){
                     IDWTELEM * line = slice_buffer_get_line(&s->sb, yq);
                     for(x=0; x<w; x++){
-                        line[x] <<= FRAC_BITS;
+                        line[x] *= 1<<FRAC_BITS;
                     }
                 }
             }
