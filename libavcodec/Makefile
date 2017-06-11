@@ -669,6 +669,7 @@ OBJS-$(CONFIG_MATROSKA_AUDIO_MUXER)    += mpeg4audio.o
 OBJS-$(CONFIG_MATROSKA_MUXER)          += mpeg4audio.o
 OBJS-$(CONFIG_MOV_DEMUXER)             += ac3tab.o
 OBJS-$(CONFIG_NUT_MUXER)               += mpegaudiodata.o
+OBJS-$(CONFIG_RTP_MUXER)               += mpeg4audio.o
 OBJS-$(CONFIG_SPDIF_MUXER)             += dca.o
 OBJS-$(CONFIG_TAK_DEMUXER)             += tak.o
 OBJS-$(CONFIG_WEBM_MUXER)              += mpeg4audio.o
