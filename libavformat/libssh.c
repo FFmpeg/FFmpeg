@@ -103,7 +103,7 @@ static av_cold int libssh_authentication(LIBSSHContext *libssh, const char *user
         }
     }
 
-    if (!authorized && (auth_methods & SSH_AUTH_METHOD_PASSWORD)) {
+    if (!authorized && password && (auth_methods & SSH_AUTH_METHOD_PASSWORD)) {
         if (ssh_userauth_password(libssh->session, NULL, password) == SSH_AUTH_SUCCESS) {
             av_log(libssh, AV_LOG_DEBUG, "Authentication successful with password.\n");
             authorized = 1;
