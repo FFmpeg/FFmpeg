@@ -488,7 +488,7 @@ static void dwt_decode97_int(DWTContext *s, int32_t *t)
     line += 5;
 
     for (i = 0; i < w * h; i++)
-        data[i] <<= I_PRESHIFT;
+        data[i] *= 1 << I_PRESHIFT;
 
     for (lev = 0; lev < s->ndeclevels; lev++) {
         int lh = s->linelen[lev][0],
