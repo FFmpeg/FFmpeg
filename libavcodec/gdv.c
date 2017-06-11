@@ -235,14 +235,16 @@ static int decompress_68(AVCodecContext *avctx, unsigned skip, unsigned use8)
                     int len = (subtag) + 3;
                     lz_copy(pb, g2, (offs) - 4096, len);
                 } else {
+                    int real_off, len, c1, c2;
+
                     if (offs == 0xFFF) {
                         return 0;
                     }
 
-                    int real_off = ((offs >> 4) & 0x7) + 1;
-                    int len = ((offs & 0xF) + 2) * 2;
-                    int c1 = gdv->frame[bytestream2_tell_p(pb) - real_off];
-                    int c2 = gdv->frame[bytestream2_tell_p(pb) - real_off + 1];
+                    real_off = ((offs >> 4) & 0x7) + 1;
+                    len = ((offs & 0xF) + 2) * 2;
+                    c1 = gdv->frame[bytestream2_tell_p(pb) - real_off];
+                    c2 = gdv->frame[bytestream2_tell_p(pb) - real_off + 1];
                     for (i = 0; i < len/2; i++) {
                         bytestream2_put_byte(pb, c1);
                         bytestream2_put_byte(pb, c2);
@@ -259,10 +261,10 @@ static int decompress_68(AVCodecContext *avctx, unsigned skip, unsigned use8)
             int len;
             int off;
             if (use8) {
-                int b = bytestream2_get_byte(gb);
+                int q, b = bytestream2_get_byte(gb);
                 if ((b & 0xC0) == 0xC0) {
                     len = ((b & 0x3F)) + 8;
-                    int q = read_bits32(&bits, gb, 4);
+                    q = read_bits32(&bits, gb, 4);
                     off = (q << 8) + (bytestream2_get_byte(gb)) + 1;
                 } else {
                     int ofs1;
@@ -276,14 +278,14 @@ static int decompress_68(AVCodecContext *avctx, unsigned skip, unsigned use8)
                     off = (ofs1 << 8) + (bytestream2_get_byte(gb)) - 4096;
                 }
             } else {
-                int b = bytestream2_get_byte(gb);
+                int ofs1, b = bytestream2_get_byte(gb);
 
                 if ((b >> 4) == 0xF) {
                     len = bytestream2_get_byte(gb) + 21;
                 } else {
                     len = (b >> 4) + 6;
                 }
-                int ofs1 = (b & 0xF);
+                ofs1 = (b & 0xF);
                 off = (ofs1 << 8) + bytestream2_get_byte(gb) - 4096;
             }
             lz_copy(pb, g2, off, len);
