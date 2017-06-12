@@ -218,11 +218,12 @@
 ; %2 = row bias macro
 ; %3 = column shift
 ; %4 = column bias macro
-; %5 = min pixel value
-; %6 = max pixel value
-; %7 = qmat (for prores)
+; %5 = final action (nothing, "store", "put", "add")
+; %6 = min pixel value
+; %7 = max pixel value
+; %8 = qmat (for prores)
 
-%macro IDCT_FN 4-7
+%macro IDCT_FN 4-8
     ; for (i = 0; i < 8; i++)
     ;     idctRowCondDC(block + i*8);
     mova        m10,[blockq+ 0]        ; { row[0] }[0-7]
@@ -230,13 +231,13 @@
     mova        m13,[blockq+64]        ; { row[4] }[0-7]
     mova        m12,[blockq+96]        ; { row[6] }[0-7]
 
-%if %0 == 7
-    pmullw      m10,[%7+ 0]
-    pmullw      m8, [%7+32]
-    pmullw      m13,[%7+64]
-    pmullw      m12,[%7+96]
+%if %0 == 8
+    pmullw      m10,[%8+ 0]
+    pmullw      m8, [%8+32]
+    pmullw      m13,[%8+64]
+    pmullw      m12,[%8+96]
 
-    IDCT_1D     %1, %2, %7
+    IDCT_1D     %1, %2, %8
 %else
     IDCT_1D     %1, %2
 %endif
@@ -257,7 +258,8 @@
     IDCT_1D     %3, %4
 
     ; clip/store
-%if %0 == 4
+%if %0 >= 5
+%ifidn %5,"store"
     ; No clamping, means pure idct
     mova  [blockq+  0], m8
     mova  [blockq+ 16], m0
@@ -267,13 +269,13 @@
     mova  [blockq+ 80], m11
     mova  [blockq+ 96], m9
     mova  [blockq+112], m10
-%else
-%ifidn %5, 0
+%elifidn %5,"put"
+%ifidn %6, 0
     pxor        m3, m3
 %else
-    mova        m3, [%5]
-%endif
-    mova        m5, [%6]
+    mova        m3, [%6]
+%endif ; ifidn %6, 0
+    mova        m5, [%7]
     pmaxsw      m8,  m3
     pmaxsw      m0,  m3
     pmaxsw      m1,  m3
@@ -301,7 +303,8 @@
     mova  [r0+r1  ], m11
     mova  [r0+r1*2], m9
     mova  [r0+r2  ], m10
-%endif
+%endif ; %5 action
+%endif; if %0 >= 5
 %endmacro
 
 %endif
