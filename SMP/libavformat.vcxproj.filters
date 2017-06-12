@@ -571,6 +571,9 @@
     <ClCompile Include="..\libavformat\g729dec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\gdv.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\genh.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>

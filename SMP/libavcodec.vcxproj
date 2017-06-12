@@ -470,10 +470,12 @@
     <ClCompile Include="..\libavcodec\g723_1enc.c" />
     <ClCompile Include="..\libavcodec\g729dec.c" />
     <ClCompile Include="..\libavcodec\g729postfilter.c" />
+    <ClCompile Include="..\libavcodec\gdv.c" />
     <ClCompile Include="..\libavcodec\gifdec.c" />
     <ClCompile Include="..\libavcodec\lzw.c" />
     <ClCompile Include="..\libavcodec\gif.c" />
     <ClCompile Include="..\libavcodec\lzwenc.c" />
+    <ClCompile Include="..\libavcodec\dpcm.c" />
     <ClCompile Include="..\libavcodec\gsmdec.c" />
     <ClCompile Include="..\libavcodec\gsmdec_data.c" />
     <ClCompile Include="..\libavcodec\msgsmdec.c" />
@@ -539,7 +541,6 @@
     <ClCompile Include="..\libavcodec\ivi.c" />
     <ClCompile Include="..\libavcodec\indeo5.c" />
     <ClCompile Include="..\libavcodec\interplayacm.c" />
-    <ClCompile Include="..\libavcodec\dpcm.c" />
     <ClCompile Include="..\libavcodec\interplayvideo.c" />
     <ClCompile Include="..\libavcodec\jacosubdec.c" />
     <ClCompile Include="..\libavcodec\j2kenc.c" />

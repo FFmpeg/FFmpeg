@@ -249,6 +249,7 @@
     <ClCompile Include="..\libavformat\g722.c" />
     <ClCompile Include="..\libavformat\g723_1.c" />
     <ClCompile Include="..\libavformat\g729dec.c" />
+    <ClCompile Include="..\libavformat\gdv.c" />
     <ClCompile Include="..\libavformat\genh.c" />
     <ClCompile Include="..\libavformat\h261dec.c" />
     <ClCompile Include="..\libavformat\h263dec.c" />
