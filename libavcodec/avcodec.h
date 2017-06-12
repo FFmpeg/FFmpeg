@@ -446,6 +446,7 @@ enum AVCodecID {
     AV_CODEC_ID_MSCC,
     AV_CODEC_ID_SRGC,
     AV_CODEC_ID_SVG,
+    AV_CODEC_ID_GDV,
 
     /* various PCM "codecs" */
     AV_CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs
@@ -548,6 +549,7 @@ enum AVCodecID {
     AV_CODEC_ID_SOL_DPCM,
 
     AV_CODEC_ID_SDX2_DPCM = 0x14800,
+    AV_CODEC_ID_GREMLIN_DPCM,
 
     /* audio codecs */
     AV_CODEC_ID_MP2 = 0x15000,

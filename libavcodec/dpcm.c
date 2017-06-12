@@ -44,7 +44,7 @@
 #include "mathops.h"
 
 typedef struct DPCMContext {
-    int16_t square_array[256];
+    int16_t array[256];
     int sample[2];                  ///< previous sample (for SOL_DPCM)
     const int8_t *sol_table;        ///< delta table for SOL_DPCM
 } DPCMContext;
@@ -130,8 +130,8 @@ static av_cold int dpcm_decode_init(AVCodecContext *avctx)
         /* initialize square table */
         for (i = 0; i < 128; i++) {
             int16_t square = i * i;
-            s->square_array[i      ] =  square;
-            s->square_array[i + 128] = -square;
+            s->array[i      ] =  square;
+            s->array[i + 128] = -square;
         }
         break;
 
@@ -156,7 +156,25 @@ static av_cold int dpcm_decode_init(AVCodecContext *avctx)
     case AV_CODEC_ID_SDX2_DPCM:
         for (i = -128; i < 128; i++) {
             int16_t square = i * i * 2;
-            s->square_array[i+128] = i < 0 ? -square: square;
+            s->array[i+128] = i < 0 ? -square: square;
+        }
+        break;
+
+    case AV_CODEC_ID_GREMLIN_DPCM: {
+        int delta = 0;
+        int code = 64;
+        int step = 45;
+
+        s->array[0] = 0;
+        for (i = 0; i < 127; i++) {
+            delta += (code >> 5);
+            code  += step;
+            step  += 2;
+
+            s->array[i*2 + 1] =  delta;
+            s->array[i*2 + 2] = -delta;
+        }
+        s->array[255] = delta + (code >> 5);
         }
         break;
 
@@ -207,6 +225,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
         else
             out = buf_size;
         break;
+    case AV_CODEC_ID_GREMLIN_DPCM:
     case AV_CODEC_ID_SDX2_DPCM:
         out = buf_size;
         break;
@@ -240,7 +259,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
 
         /* decode the samples */
         while (output_samples < samples_end) {
-            predictor[ch] += s->square_array[bytestream2_get_byteu(&gb)];
+            predictor[ch] += s->array[bytestream2_get_byteu(&gb)];
             predictor[ch]  = av_clip_int16(predictor[ch]);
             *output_samples++ = predictor[ch];
 
@@ -335,10 +354,22 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
 
             if (!(n & 1))
                 s->sample[ch] = 0;
-            s->sample[ch] += s->square_array[n + 128];
+            s->sample[ch] += s->array[n + 128];
             s->sample[ch]  = av_clip_int16(s->sample[ch]);
             *output_samples++ = s->sample[ch];
             ch ^= stereo;
+        }
+        break;
+
+    case AV_CODEC_ID_GREMLIN_DPCM: {
+        int idx = 0;
+
+        while (output_samples < samples_end) {
+            uint8_t n = bytestream2_get_byteu(&gb);
+
+            *output_samples++ = s->sample[idx] += s->array[n];
+            idx ^= 1;
+        }
         }
         break;
     }
@@ -360,6 +391,7 @@ AVCodec ff_ ## name_ ## _decoder = {                        \
     .capabilities   = AV_CODEC_CAP_DR1,                     \
 }
 
+DPCM_DECODER(AV_CODEC_ID_GREMLIN_DPCM,   gremlin_dpcm,   "DPCM Gremlin");
 DPCM_DECODER(AV_CODEC_ID_INTERPLAY_DPCM, interplay_dpcm, "DPCM Interplay");
 DPCM_DECODER(AV_CODEC_ID_ROQ_DPCM,       roq_dpcm,       "DPCM id RoQ");
 DPCM_DECODER(AV_CODEC_ID_SDX2_DPCM,      sdx2_dpcm,      "DPCM Squareroot-Delta-Exact");

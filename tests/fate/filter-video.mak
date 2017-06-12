@@ -413,6 +413,10 @@ fate-filter-scale200: CMD = video_filter "scale=w=200:h=200"
 FATE_FILTER_VSYNTH-$(CONFIG_SCALE_FILTER) += fate-filter-scale500
 fate-filter-scale500: CMD = video_filter "scale=w=500:h=500"
 
+FATE_FILTER_VSYNTH-$(CONFIG_SCALE2REF_FILTER) += fate-filter-scale2ref_keep_aspect
+fate-filter-scale2ref_keep_aspect: tests/data/filtergraphs/scale2ref_keep_aspect
+fate-filter-scale2ref_keep_aspect: CMD = framemd5 -frames:v 5 -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/scale2ref_keep_aspect -map "[main]"
+
 FATE_FILTER_VSYNTH-$(CONFIG_SCALE_FILTER) += fate-filter-scalechroma
 fate-filter-scalechroma: tests/data/vsynth1.yuv
 fate-filter-scalechroma: CMD = framecrc -flags bitexact -s 352x288 -pix_fmt yuv444p -i tests/data/vsynth1.yuv -pix_fmt yuv420p -sws_flags +bitexact -vf scale=out_v_chr_pos=33:out_h_chr_pos=151

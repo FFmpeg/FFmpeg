@@ -894,12 +894,13 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int determinable_frame_size(AVCodecContext *avctx)
 {
-    if (/*avctx->codec_id == AV_CODEC_ID_AAC ||*/
-        avctx->codec_id == AV_CODEC_ID_MP1 ||
-        avctx->codec_id == AV_CODEC_ID_MP2 ||
-        avctx->codec_id == AV_CODEC_ID_MP3/* ||
-        avctx->codec_id == AV_CODEC_ID_CELT*/)
+    switch(avctx->codec_id) {
+    case AV_CODEC_ID_MP1:
+    case AV_CODEC_ID_MP2:
+    case AV_CODEC_ID_MP3:
         return 1;
+    }
+
     return 0;
 }
 
@@ -3903,6 +3904,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 st->info->codec_info_duration) {
                 int best_fps      = 0;
                 double best_error = 0.01;
+                AVRational codec_frame_rate = avctx->framerate;
 
                 if (st->info->codec_info_duration        >= INT64_MAX / st->time_base.num / 2||
                     st->info->codec_info_duration_fields >= INT64_MAX / st->time_base.den ||
@@ -3922,6 +3924,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
                     if (error < best_error) {
                         best_error = error;
                         best_fps   = std_fps.num;
+                    }
+
+                    if (ic->internal->prefer_codec_framerate && codec_frame_rate.num > 0 && codec_frame_rate.den > 0) {
+                        error       = fabs(av_q2d(codec_frame_rate) /
+                                           av_q2d(std_fps) - 1);
+                        if (error < best_error) {
+                            best_error = error;
+                            best_fps   = std_fps.num;
+                        }
                     }
                 }
                 if (best_fps)
@@ -4097,7 +4108,11 @@ int av_find_best_stream(AVFormatContext *ic, enum AVMediaType type,
                         AVCodec **decoder_ret, int flags)
 {
     int i, nb_streams = ic->nb_streams;
-    int ret = AVERROR_STREAM_NOT_FOUND, best_count = -1, best_bitrate = -1, best_multiframe = -1, count, bitrate, multiframe;
+    int ret = AVERROR_STREAM_NOT_FOUND;
+    int best_count = -1, best_multiframe = -1, best_disposition = -1;
+    int count, multiframe, disposition;
+    int64_t best_bitrate = -1;
+    int64_t bitrate;
     unsigned *program = NULL;
     const AVCodec *decoder = NULL, *best_decoder = NULL;
 
@@ -4116,10 +4131,6 @@ int av_find_best_stream(AVFormatContext *ic, enum AVMediaType type,
             continue;
         if (wanted_stream_nb >= 0 && real_stream_index != wanted_stream_nb)
             continue;
-        if (wanted_stream_nb != real_stream_index &&
-            st->disposition & (AV_DISPOSITION_HEARING_IMPAIRED |
-                               AV_DISPOSITION_VISUAL_IMPAIRED))
-            continue;
         if (type == AVMEDIA_TYPE_AUDIO && !(par->channels && par->sample_rate))
             continue;
         if (decoder_ret) {
@@ -4130,13 +4141,16 @@ int av_find_best_stream(AVFormatContext *ic, enum AVMediaType type,
                 continue;
             }
         }
+        disposition = !(st->disposition & (AV_DISPOSITION_HEARING_IMPAIRED | AV_DISPOSITION_VISUAL_IMPAIRED));
         count = st->codec_info_nb_frames;
         bitrate = par->bit_rate;
         multiframe = FFMIN(5, count);
-        if ((best_multiframe >  multiframe) ||
-            (best_multiframe == multiframe && best_bitrate >  bitrate) ||
-            (best_multiframe == multiframe && best_bitrate == bitrate && best_count >= count))
+        if ((best_disposition >  disposition) ||
+            (best_disposition == disposition && best_multiframe >  multiframe) ||
+            (best_disposition == disposition && best_multiframe == multiframe && best_bitrate >  bitrate) ||
+            (best_disposition == disposition && best_multiframe == multiframe && best_bitrate == bitrate && best_count >= count))
             continue;
+        best_disposition = disposition;
         best_count   = count;
         best_bitrate = bitrate;
         best_multiframe = multiframe;

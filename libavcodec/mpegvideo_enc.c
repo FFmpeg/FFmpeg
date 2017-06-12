@@ -671,9 +671,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
     if (s->avctx->flags & AV_CODEC_FLAG_LOW_DELAY) {
-        if (s->codec_id != AV_CODEC_ID_MPEG2VIDEO) {
+        if (s->codec_id != AV_CODEC_ID_MPEG2VIDEO &&
+            s->strict_std_compliance >= FF_COMPLIANCE_NORMAL) {
             av_log(avctx, AV_LOG_ERROR,
-                  "low delay forcing is only available for mpeg2\n");
+                   "low delay forcing is only available for mpeg2, "
+                   "set strict_std_compliance to 'unofficial' or lower in order to allow it\n");
             return -1;
         }
         if (s->max_b_frames != 0) {

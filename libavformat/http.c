@@ -1326,7 +1326,7 @@ static int http_buf_read(URLContext *h, uint8_t *buf, int size)
     }
     if (len > 0) {
         s->off += len;
-        if (s->chunksize > 0) {
+        if (s->chunksize > 0 && s->chunksize != UINT64_MAX) {
             av_assert0(s->chunksize >= len);
             s->chunksize -= len;
         }

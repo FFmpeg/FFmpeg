@@ -176,8 +176,10 @@ static inline av_const SoftFloat av_sub_sf(SoftFloat a, SoftFloat b){
 //FIXME log, exp, pow
 
 /**
- * Converts a mantisse and exponent to a SoftFloat
- * @returns a SoftFloat with value v * 2^frac_bits
+ * Converts a mantisse and exponent to a SoftFloat.
+ * This converts a fixed point value v with frac_bits fractional bits to a
+ * SoftFloat.
+ * @returns a SoftFloat with value v * 2^-frac_bits
  */
 static inline av_const SoftFloat av_int2sf(int v, int frac_bits){
     int exp_offset = 0;

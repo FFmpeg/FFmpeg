@@ -1157,7 +1157,11 @@ static int dvbsub_parse_region_segment(AVCodecContext *avctx,
     region->height = AV_RB16(buf);
     buf += 2;
 
-    ret = av_image_check_size(region->width, region->height, 0, avctx);
+    ret = av_image_check_size2(region->width, region->height, avctx->max_pixels, AV_PIX_FMT_PAL8, 0, avctx);
+    if (ret >= 0 && region->width * region->height * 2 > 320 * 1024 * 8) {
+        ret = AVERROR_INVALIDDATA;
+        av_log(avctx, AV_LOG_ERROR, "Pixel buffer memory constraint violated\n");
+    }
     if (ret < 0) {
         region->width= region->height= 0;
         return ret;

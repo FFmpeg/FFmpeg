@@ -249,7 +249,7 @@ static void fft_calc_c(FFTContext *s, FFTComplex *z) {
 
     int nbits, i, n, num_transforms, offset, step;
     int n4, n2, n34;
-    FFTSample tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8;
+    unsigned tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8;
     FFTComplex *tmpz;
     const int fft_size = (1 << s->nbits);
     int64_t accu;
@@ -260,14 +260,14 @@ static void fft_calc_c(FFTContext *s, FFTComplex *z) {
         offset = ff_fft_offsets_lut[n] << 2;
         tmpz = z + offset;
 
-        tmp1 = tmpz[0].re + tmpz[1].re;
-        tmp5 = tmpz[2].re + tmpz[3].re;
-        tmp2 = tmpz[0].im + tmpz[1].im;
-        tmp6 = tmpz[2].im + tmpz[3].im;
-        tmp3 = tmpz[0].re - tmpz[1].re;
-        tmp8 = tmpz[2].im - tmpz[3].im;
-        tmp4 = tmpz[0].im - tmpz[1].im;
-        tmp7 = tmpz[2].re - tmpz[3].re;
+        tmp1 = tmpz[0].re + (unsigned)tmpz[1].re;
+        tmp5 = tmpz[2].re + (unsigned)tmpz[3].re;
+        tmp2 = tmpz[0].im + (unsigned)tmpz[1].im;
+        tmp6 = tmpz[2].im + (unsigned)tmpz[3].im;
+        tmp3 = tmpz[0].re - (unsigned)tmpz[1].re;
+        tmp8 = tmpz[2].im - (unsigned)tmpz[3].im;
+        tmp4 = tmpz[0].im - (unsigned)tmpz[1].im;
+        tmp7 = tmpz[2].re - (unsigned)tmpz[3].re;
 
         tmpz[0].re = tmp1 + tmp5;
         tmpz[2].re = tmp1 - tmp5;
@@ -288,19 +288,19 @@ static void fft_calc_c(FFTContext *s, FFTComplex *z) {
         offset = ff_fft_offsets_lut[n] << 3;
         tmpz = z + offset;
 
-        tmp1 = tmpz[4].re + tmpz[5].re;
-        tmp3 = tmpz[6].re + tmpz[7].re;
-        tmp2 = tmpz[4].im + tmpz[5].im;
-        tmp4 = tmpz[6].im + tmpz[7].im;
+        tmp1 = tmpz[4].re + (unsigned)tmpz[5].re;
+        tmp3 = tmpz[6].re + (unsigned)tmpz[7].re;
+        tmp2 = tmpz[4].im + (unsigned)tmpz[5].im;
+        tmp4 = tmpz[6].im + (unsigned)tmpz[7].im;
         tmp5 = tmp1 + tmp3;
         tmp7 = tmp1 - tmp3;
         tmp6 = tmp2 + tmp4;
         tmp8 = tmp2 - tmp4;
 
-        tmp1 = tmpz[4].re - tmpz[5].re;
-        tmp2 = tmpz[4].im - tmpz[5].im;
-        tmp3 = tmpz[6].re - tmpz[7].re;
-        tmp4 = tmpz[6].im - tmpz[7].im;
+        tmp1 = tmpz[4].re - (unsigned)tmpz[5].re;
+        tmp2 = tmpz[4].im - (unsigned)tmpz[5].im;
+        tmp3 = tmpz[6].re - (unsigned)tmpz[7].re;
+        tmp4 = tmpz[6].im - (unsigned)tmpz[7].im;
 
         tmpz[4].re = tmpz[0].re - tmp5;
         tmpz[0].re = tmpz[0].re + tmp5;
@@ -311,13 +311,13 @@ static void fft_calc_c(FFTContext *s, FFTComplex *z) {
         tmpz[6].im = tmpz[2].im + tmp7;
         tmpz[2].im = tmpz[2].im - tmp7;
 
-        accu = (int64_t)Q31(M_SQRT1_2)*(tmp1 + tmp2);
+        accu = (int64_t)Q31(M_SQRT1_2)*(int)(tmp1 + tmp2);
         tmp5 = (int32_t)((accu + 0x40000000) >> 31);
-        accu = (int64_t)Q31(M_SQRT1_2)*(tmp3 - tmp4);
+        accu = (int64_t)Q31(M_SQRT1_2)*(int)(tmp3 - tmp4);
         tmp7 = (int32_t)((accu + 0x40000000) >> 31);
-        accu = (int64_t)Q31(M_SQRT1_2)*(tmp2 - tmp1);
+        accu = (int64_t)Q31(M_SQRT1_2)*(int)(tmp2 - tmp1);
         tmp6 = (int32_t)((accu + 0x40000000) >> 31);
-        accu = (int64_t)Q31(M_SQRT1_2)*(tmp3 + tmp4);
+        accu = (int64_t)Q31(M_SQRT1_2)*(int)(tmp3 + tmp4);
         tmp8 = (int32_t)((accu + 0x40000000) >> 31);
         tmp1 = tmp5 + tmp7;
         tmp3 = tmp5 - tmp7;
@@ -348,10 +348,10 @@ static void fft_calc_c(FFTContext *s, FFTComplex *z) {
             offset = ff_fft_offsets_lut[n] << nbits;
             tmpz = z + offset;
 
-            tmp5 = tmpz[ n2].re + tmpz[n34].re;
-            tmp1 = tmpz[ n2].re - tmpz[n34].re;
-            tmp6 = tmpz[ n2].im + tmpz[n34].im;
-            tmp2 = tmpz[ n2].im - tmpz[n34].im;
+            tmp5 = tmpz[ n2].re + (unsigned)tmpz[n34].re;
+            tmp1 = tmpz[ n2].re - (unsigned)tmpz[n34].re;
+            tmp6 = tmpz[ n2].im + (unsigned)tmpz[n34].im;
+            tmp2 = tmpz[ n2].im - (unsigned)tmpz[n34].im;
 
             tmpz[ n2].re = tmpz[ 0].re - tmp5;
             tmpz[  0].re = tmpz[ 0].re + tmp5;

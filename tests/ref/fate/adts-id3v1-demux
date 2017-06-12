@@ -1,0 +1,11 @@
+#tb 0: 1/28224000
+#media_type 0: audio
+#codec_id 0: aac
+#sample_rate 0: 48000
+#channel_layout 0: 3
+#channel_layout_name 0: stereo
+0,          0,          0,   602112,      474, 0x4c90e7c4
+0,     602112,     602112,   602112,      471, 0xb8b5e75d
+0,    1204224,    1204224,   602112,      502, 0xe943efd1
+0,    1806336,    1806336,   602112,      495, 0x9c3cec74
+0,    2408448,    2408448,   602112,      493, 0x03b2fa4b

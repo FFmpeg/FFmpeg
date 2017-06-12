@@ -108,6 +108,9 @@ fate-deluxepaint-anm: CMD = framecrc -i $(TARGET_SAMPLES)/deluxepaint-anm/INTRO1
 FATE_VIDEO-$(call DEMDEC, DIRAC, DIRAC) += fate-dirac
 fate-dirac: CMD = framecrc -i $(TARGET_SAMPLES)/dirac/vts.profile-main.drc
 
+FATE_VIDEO-$(call DEMDEC, DIRAC, DIRAC) += fate-dirac-low-delay
+fate-dirac-low-delay: CMD = framecrc -i $(TARGET_SAMPLES)/dirac/vts.profile-vc2-low-delay.drc
+
 FATE_DXA += fate-dxa-feeble
 fate-dxa-feeble: CMD = framecrc -i $(TARGET_SAMPLES)/dxa/meetsquid.dxa -t 2 -pix_fmt rgb24 -an
 

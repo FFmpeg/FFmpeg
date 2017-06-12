@@ -495,6 +495,8 @@ int ff_packet_split_and_drop_side_data(AVPacket *pkt){
             if (p - pkt->data < size + 5)
                 return 0;
             p-= size+5;
+            if (i > AV_PKT_DATA_NB)
+                return 0;
         }
         pkt->size = p - pkt->data - size;
         av_assert0(pkt->size >= 0);
