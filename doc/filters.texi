@@ -12335,17 +12335,18 @@ the complete list of scaler options.
 Set the output video dimension expression. Default value is the input
 dimension.
 
-If the value is 0, the input width is used for the output.
+If the @var{width} or @var{w} value is 0, the input width is used for
+the output. If the @var{height} or @var{h} value is 0, the input height
+is used for the output.
 
-If one of the values is -1, the scale filter will use a value that
-maintains the aspect ratio of the input image, calculated from the
-other specified dimension. If both of them are -1, the input size is
-used
+If one and only one of the values is -n with n >= 1, the scale filter
+will use a value that maintains the aspect ratio of the input image,
+calculated from the other specified dimension. After that it will,
+however, make sure that the calculated dimension is divisible by n and
+adjust the value if necessary.
 
-If one of the values is -n with n > 1, the scale filter will also use a value
-that maintains the aspect ratio of the input image, calculated from the other
-specified dimension. After that it will, however, make sure that the calculated
-dimension is divisible by n and adjust the value if necessary.
+If both values are -n with n >= 1, the behavior will be identical to
+both values being set to 0 as previously detailed.
 
 See below for the list of accepted constants for use in the dimension
 expression.
@@ -15478,18 +15479,18 @@ The filter accepts the following options.
 Set the output video dimension expression. Default value is the input
 dimension.
 
-If the @var{width} or @var{w} is 0, the input width is used for the output.
-If the @var{height} or @var{h} is 0, the input height is used for the output.
+If the @var{width} or @var{w} value is 0, the input width is used for
+the output. If the @var{height} or @var{h} value is 0, the input height
+is used for the output.
 
-If one of the values is -1, the zscale filter will use a value that
-maintains the aspect ratio of the input image, calculated from the
-other specified dimension. If both of them are -1, the input size is
-used
+If one and only one of the values is -n with n >= 1, the zscale filter
+will use a value that maintains the aspect ratio of the input image,
+calculated from the other specified dimension. After that it will,
+however, make sure that the calculated dimension is divisible by n and
+adjust the value if necessary.
 
-If one of the values is -n with n > 1, the zscale filter will also use a value
-that maintains the aspect ratio of the input image, calculated from the other
-specified dimension. After that it will, however, make sure that the calculated
-dimension is divisible by n and adjust the value if necessary.
+If both values are -n with n >= 1, the behavior will be identical to
+both values being set to 0 as previously detailed.
 
 See below for the list of accepted constants for use in the dimension
 expression.
