@@ -44,6 +44,8 @@ void ff_ps_hybrid_synthesis_deint_sse(float out[2][38][64], float (*in)[32][2],
                                       int i, int len);
 void ff_ps_hybrid_synthesis_deint_sse4(float out[2][38][64], float (*in)[32][2],
                                        int i, int len);
+void ff_ps_hybrid_analysis_ileave_sse(float (*out)[32][2], float L[2][38][64],
+                                      int i, int len);
 
 av_cold void ff_psdsp_init_x86(PSDSPContext *s)
 {
@@ -52,6 +54,7 @@ av_cold void ff_psdsp_init_x86(PSDSPContext *s)
     if (EXTERNAL_SSE(cpu_flags)) {
         s->add_squares            = ff_ps_add_squares_sse;
         s->mul_pair_single        = ff_ps_mul_pair_single_sse;
+        s->hybrid_analysis_ileave = ff_ps_hybrid_analysis_ileave_sse;
         s->hybrid_synthesis_deint = ff_ps_hybrid_synthesis_deint_sse;
         s->hybrid_analysis        = ff_ps_hybrid_analysis_sse;
     }
