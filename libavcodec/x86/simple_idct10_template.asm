@@ -26,6 +26,25 @@
 
 %if ARCH_X86_64
 
+%macro define_constants 1
+    %undef w4_plus_w2
+    %undef w4_min_w2
+    %undef w4_plus_w6
+    %undef w4_min_w6
+    %undef w1_plus_w3
+    %undef w3_min_w1
+    %undef w7_plus_w3
+    %undef w3_min_w7
+    %define w4_plus_w2 w4_plus_w2%1
+    %define w4_min_w2  w4_min_w2%1
+    %define w4_plus_w6 w4_plus_w6%1
+    %define w4_min_w6  w4_min_w6%1
+    %define w1_plus_w3 w1_plus_w3%1
+    %define w3_min_w1  w3_min_w1%1
+    %define w7_plus_w3 w7_plus_w3%1
+    %define w3_min_w7  w3_min_w7%1
+%endmacro
+
 ; interleave data while maintaining source
 ; %1=type, %2=dstlo, %3=dsthi, %4=src, %5=interleave
 %macro SBUTTERFLY3 5
