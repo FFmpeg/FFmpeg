@@ -1547,7 +1547,6 @@ HAVE_LIST_PUB="
 HEADERS_LIST="
     AVFoundation_AVFoundation_h
     alsa_asoundlib_h
-    altivec_h
     arpa_inet_h
     cdio_paranoia_h
     cdio_paranoia_paranoia_h
@@ -4442,15 +4441,12 @@ elif enabled ppc; then
     check_inline_asm ppc4xx    '"maclhw r10, r11, r12"'
     check_inline_asm xform_asm '"lwzx %1, %y0" :: "Z"(*(int*)0), "r"(0)'
 
-    # AltiVec flags: The FSF version of GCC differs from the Apple version
     if enabled altivec; then
-        check_cflags -maltivec -mabi=altivec &&
-        { check_header altivec.h && inc_altivec_h="#include <altivec.h>" ; } ||
-        check_cflags -faltivec
+        check_cflags -maltivec -mabi=altivec
 
         # check if our compiler supports Motorola AltiVec C API
         check_cc <<EOF || disable altivec
-$inc_altivec_h
+#include <altivec.h>
 int main(void) {
     vector signed int v1 = (vector signed int) { 0 };
     vector signed int v2 = (vector signed int) { 1 };
@@ -4465,7 +4461,7 @@ EOF
     if enabled vsx; then
         check_cflags -mvsx &&
         check_cc <<EOF || disable vsx
-$inc_altivec_h
+#include <altivec.h>
 int main(void) {
     int v[4] = { 0 };
     vector signed int v1 = vec_vsx_ld(0, v);
