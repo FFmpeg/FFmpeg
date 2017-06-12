@@ -51,6 +51,30 @@ static void rstrip_spaces_buf(AVBPrint *buf)
             buf->str[--buf->len] = 0;
 }
 
+/* skip all {\xxx} substrings except for {\an%d}
+   and all microdvd like styles such as {Y:xxx} */
+static void handle_open_brace(AVBPrint *dst, const char **inp, int *an, int *closing_brace_missing)
+{
+    int len = 0;
+    const char *in = *inp;
+
+    *an += sscanf(in, "{\\an%*1u}%n", &len) >= 0 && len > 0;
+
+    if (!*closing_brace_missing) {
+        if (   (*an != 1 && in[1] == '\\')
+            || (in[1] && strchr("CcFfoPSsYy", in[1]) && in[2] == ':')) {
+            char *bracep = strchr(in+2, '}');
+            if (bracep) {
+                *inp = bracep;
+                return;
+            } else
+                *closing_brace_missing = 1;
+        }
+    }
+
+    av_bprint_chars(dst, *in, 1);
+}
+
 int ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
 {
     char *param, buffer[128], tmp[128];
@@ -80,24 +104,8 @@ int ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
             if (!line_start)
                 av_bprint_chars(dst, *in, 1);
             break;
-        case '{':    /* skip all {\xxx} substrings except for {\an%d}
-                        and all microdvd like styles such as {Y:xxx} */
-            len = 0;
-            an += sscanf(in, "{\\an%*1u}%n", &len) >= 0 && len > 0;
-
-            if (!closing_brace_missing) {
-                if (   (an != 1 && in[1] == '\\')
-                    || (in[1] && strchr("CcFfoPSsYy", in[1]) && in[2] == ':')) {
-                    char *bracep = strchr(in+2, '}');
-                    if (bracep) {
-                        in = bracep;
-                        break;
-                    } else
-                        closing_brace_missing = 1;
-                }
-            }
-
-            av_bprint_chars(dst, *in, 1);
+        case '{':
+            handle_open_brace(dst, &in, &an, &closing_brace_missing);
             break;
         case '<':
             tag_close = in[1] == '/';
