@@ -74,7 +74,7 @@ endconst
 .endm
 
 .macro idct_col4_top y1, y2, y3, y4, i, l
-        smull\i         v7.4S,  \y3\l, z1
+        smull\i         v7.4S,  \y3\l, z2
         smull\i         v16.4S, \y3\l, z6
         smull\i         v17.4S, \y2\l, z1
         add             v19.4S, v23.4S, v7.4S
