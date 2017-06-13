@@ -253,7 +253,7 @@ static void sbr_hf_g_filt_c(int (*Y)[2], const int (*X_high)[40][2],
     }
 }
 
-static av_always_inline void sbr_hf_apply_noise(int (*Y)[2],
+static av_always_inline int sbr_hf_apply_noise(int (*Y)[2],
                                                 const SoftFloat *s_m,
                                                 const SoftFloat *q_filt,
                                                 int noise,
@@ -271,7 +271,10 @@ static av_always_inline void sbr_hf_apply_noise(int (*Y)[2],
             int shift, round;
 
             shift = 22 - s_m[m].exp;
-            if (shift < 30) {
+            if (shift < 1) {
+                av_log(NULL, AV_LOG_ERROR, "Overflow in sbr_hf_apply_noise, shift=%d\n", shift);
+                return AVERROR(ERANGE);
+            } else if (shift < 30) {
                 round = 1 << (shift-1);
                 y0 += (s_m[m].mant * phi_sign0 + round) >> shift;
                 y1 += (s_m[m].mant * phi_sign1 + round) >> shift;
@@ -281,7 +284,10 @@ static av_always_inline void sbr_hf_apply_noise(int (*Y)[2],
             int64_t accu;
 
             shift = 22 - q_filt[m].exp;
-            if (shift < 30) {
+            if (shift < 1) {
+                av_log(NULL, AV_LOG_ERROR, "Overflow in sbr_hf_apply_noise, shift=%d\n", shift);
+                return AVERROR(ERANGE);
+            } else if (shift < 30) {
                 round = 1 << (shift-1);
 
                 accu = (int64_t)q_filt[m].mant * ff_sbr_noise_table_fixed[noise][0];
@@ -297,6 +303,7 @@ static av_always_inline void sbr_hf_apply_noise(int (*Y)[2],
         Y[m][1] = y1;
         phi_sign1 = -phi_sign1;
     }
+    return 0;
 }
 
 #include "sbrdsp_template.c"
