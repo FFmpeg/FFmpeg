@@ -291,10 +291,9 @@ static void sbr_hf_inverse_filter(SBRDSPContext *dsp,
         else if (shift <= -30)
             alpha0[k][0] = 0;
         else {
-            a00.mant *= 2;
-            shift = 2-shift;
-            if (shift == 0)
-                alpha0[k][0] = a00.mant;
+            shift = 1-shift;
+            if (shift <= 0)
+                alpha0[k][0] = a00.mant * (1<<-shift);
             else {
                 round = 1 << (shift-1);
                 alpha0[k][0] = (a00.mant + round) >> shift;
@@ -307,10 +306,9 @@ static void sbr_hf_inverse_filter(SBRDSPContext *dsp,
         else if (shift <= -30)
             alpha0[k][1] = 0;
         else {
-            a01.mant *= 2;
-            shift = 2-shift;
-            if (shift == 0)
-                alpha0[k][1] = a01.mant;
+            shift = 1-shift;
+            if (shift <= 0)
+                alpha0[k][1] = a01.mant * (1<<-shift);
             else {
                 round = 1 << (shift-1);
                 alpha0[k][1] = (a01.mant + round) >> shift;
@@ -322,10 +320,9 @@ static void sbr_hf_inverse_filter(SBRDSPContext *dsp,
         else if (shift <= -30)
             alpha1[k][0] = 0;
         else {
-            a10.mant *= 2;
-            shift = 2-shift;
-            if (shift == 0)
-                alpha1[k][0] = a10.mant;
+            shift = 1-shift;
+            if (shift <= 0)
+                alpha1[k][0] = a10.mant * (1<<-shift);
             else {
                 round = 1 << (shift-1);
                 alpha1[k][0] = (a10.mant + round) >> shift;
@@ -338,10 +335,9 @@ static void sbr_hf_inverse_filter(SBRDSPContext *dsp,
         else if (shift <= -30)
             alpha1[k][1] = 0;
         else {
-            a11.mant *= 2;
-            shift = 2-shift;
-            if (shift == 0)
-                alpha1[k][1] = a11.mant;
+            shift = 1-shift;
+            if (shift <= 0)
+                alpha1[k][1] = a11.mant * (1<<-shift);
             else {
                 round = 1 << (shift-1);
                 alpha1[k][1] = (a11.mant + round) >> shift;
