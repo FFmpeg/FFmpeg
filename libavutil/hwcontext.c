@@ -50,7 +50,7 @@ static const HWContextType * const hw_table[] = {
     NULL,
 };
 
-const char *hw_type_names[] = {
+static const char *const hw_type_names[] = {
     [AV_HWDEVICE_TYPE_CUDA]   = "cuda",
     [AV_HWDEVICE_TYPE_DXVA2]  = "dxva2",
     [AV_HWDEVICE_TYPE_D3D11VA] = "d3d11va",
