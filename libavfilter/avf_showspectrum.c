@@ -306,6 +306,7 @@ static int config_output(AVFilterLink *outlink)
 
     outlink->w = s->w;
     outlink->h = s->h;
+    outlink->sample_aspect_ratio = (AVRational){1,1};
 
     if (s->legend) {
         s->start_x = log10(inlink->sample_rate) * 25;
@@ -422,7 +423,7 @@ static int config_output(AVFilterLink *outlink)
             ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!outpicref)
             return AVERROR(ENOMEM);
-        outlink->sample_aspect_ratio = (AVRational){1,1};
+        outpicref->sample_aspect_ratio = (AVRational){1,1};
         for (i = 0; i < outlink->h; i++) {
             memset(outpicref->data[0] + i * outpicref->linesize[0],   0, outlink->w);
             memset(outpicref->data[1] + i * outpicref->linesize[1], 128, outlink->w);

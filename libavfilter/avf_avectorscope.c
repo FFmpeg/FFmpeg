@@ -246,6 +246,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             return AVERROR(ENOMEM);
         }
 
+        s->outpicref->sample_aspect_ratio = (AVRational){1,1};
         for (i = 0; i < outlink->h; i++)
             memset(s->outpicref->data[0] + i * s->outpicref->linesize[0], 0, outlink->w * 4);
     }
