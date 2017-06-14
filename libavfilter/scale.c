@@ -158,19 +158,19 @@ int ff_scale_eval_dimensions(void *log_ctx,
     av_expr_parse_and_eval(&res, (expr = w_expr),
                            names, var_values,
                            NULL, NULL, NULL, NULL, NULL, 0, log_ctx);
-    eval_w = var_values[VAR_OUT_W] = var_values[VAR_OW] = res;
+    eval_w = var_values[VAR_OUT_W] = var_values[VAR_OW] = (int) res == 0 ? inlink->w : (int) res;
 
     if ((ret = av_expr_parse_and_eval(&res, (expr = h_expr),
                                       names, var_values,
                                       NULL, NULL, NULL, NULL, NULL, 0, log_ctx)) < 0)
         goto fail;
-    eval_h = var_values[VAR_OUT_H] = var_values[VAR_OH] = res;
+    eval_h = var_values[VAR_OUT_H] = var_values[VAR_OH] = (int) res == 0 ? inlink->h : (int) res;
     /* evaluate again the width, as it may depend on the output height */
     if ((ret = av_expr_parse_and_eval(&res, (expr = w_expr),
                                       names, var_values,
                                       NULL, NULL, NULL, NULL, NULL, 0, log_ctx)) < 0)
         goto fail;
-    eval_w = res;
+    eval_w = (int) res == 0 ? inlink->w : (int) res;
 
     w = eval_w;
     h = eval_h;
@@ -186,13 +186,10 @@ int ff_scale_eval_dimensions(void *log_ctx,
         factor_h = -h;
     }
 
-    if (w < 0 && h < 0)
-        eval_w = eval_h = 0;
-
-    if (!(w = eval_w))
+    if (w < 0 && h < 0) {
         w = inlink->w;
-    if (!(h = eval_h))
         h = inlink->h;
+    }
 
     /* Make sure that the result is divisible by the factor we determined
      * earlier. If no factor was set, it is nothing will happen as the default
