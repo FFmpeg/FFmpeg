@@ -243,6 +243,41 @@ static void av_unused put_bits32(PutBitContext *s, uint32_t value)
 }
 
 /**
+ * Write up to 64 bits into a bitstream.
+ */
+static inline void put_bits64(PutBitContext *s, int n, uint64_t value)
+{
+    av_assert2((n == 64) || (n < 64 && value < (UINT64_C(1) << n)));
+
+    if (n < 32)
+        put_bits(s, n, value);
+    else if (n == 32)
+        put_bits32(s, value);
+    else if (n < 64) {
+        uint32_t lo = value & 0xffffffff;
+        uint32_t hi = value >> 32;
+#ifdef BITSTREAM_WRITER_LE
+        put_bits32(s, lo);
+        put_bits(s, n - 32, hi);
+#else
+        put_bits(s, n - 32, hi);
+        put_bits32(s, lo);
+#endif
+    } else {
+        uint32_t lo = value & 0xffffffff;
+        uint32_t hi = value >> 32;
+#ifdef BITSTREAM_WRITER_LE
+        put_bits32(s, lo);
+        put_bits32(s, hi);
+#else
+        put_bits32(s, hi);
+        put_bits32(s, lo);
+#endif
+
+    }
+}
+
+/**
  * Return the pointer to the byte where the bitstream writer will put
  * the next bit.
  */
