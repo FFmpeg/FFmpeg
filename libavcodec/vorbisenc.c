@@ -352,7 +352,7 @@ static int create_vorbis_context(vorbis_enc_context *venc,
             c->books[j] = floor_classes[i].nbooks[j];
     }
     fc->multiplier = 2;
-    fc->rangebits  = venc->log2_blocksize[0] - 1;
+    fc->rangebits  = venc->log2_blocksize[1] - 1;
 
     fc->values = 2;
     for (i = 0; i < fc->partitions; i++)
@@ -439,14 +439,17 @@ static int create_vorbis_context(vorbis_enc_context *venc,
         mc->angle[0]     = 1;
     }
 
-    venc->nmodes = 1;
+    venc->nmodes = 2;
     venc->modes  = av_malloc(sizeof(vorbis_enc_mode) * venc->nmodes);
     if (!venc->modes)
         return AVERROR(ENOMEM);
 
-    // single mode
+    // Short block
     venc->modes[0].blockflag = 0;
     venc->modes[0].mapping   = 0;
+    // Long block
+    venc->modes[1].blockflag = 1;
+    venc->modes[1].mapping   = 0;
 
     venc->have_saved = 0;
     venc->saved      = av_malloc_array(sizeof(float) * venc->channels, (1 << venc->log2_blocksize[1]) / 2);
@@ -997,9 +1000,9 @@ static int residue_encode(vorbis_enc_context *venc, vorbis_enc_residue *rc,
 static int apply_window_and_mdct(vorbis_enc_context *venc, int samples)
 {
     int channel;
-    const float * win = venc->win[0];
-    int window_len = 1 << (venc->log2_blocksize[0] - 1);
-    float n = (float)(1 << venc->log2_blocksize[0]) / 4.0;
+    const float * win = venc->win[1];
+    int window_len = 1 << (venc->log2_blocksize[1] - 1);
+    float n = (float)(1 << venc->log2_blocksize[1]) / 4.0;
     AVFloatDSPContext *fdsp = venc->fdsp;
 
     for (channel = 0; channel < venc->channels; channel++) {
@@ -1013,7 +1016,7 @@ static int apply_window_and_mdct(vorbis_enc_context *venc, int samples)
         fdsp->vector_fmul_reverse(offset, offset, win, samples);
         fdsp->vector_fmul_scalar(offset, offset, 1/n, samples);
 
-        venc->mdct[0].mdct_calc(&venc->mdct[0], venc->coeffs + channel * window_len,
+        venc->mdct[1].mdct_calc(&venc->mdct[1], venc->coeffs + channel * window_len,
                      venc->samples + channel * window_len * 2);
     }
     return 1;
@@ -1134,13 +1137,13 @@ static int vorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     put_bits(&pb, 1, 0); // magic bit
 
-    put_bits(&pb, ilog(venc->nmodes - 1), 0); // 0 bits, the mode
+    put_bits(&pb, ilog(venc->nmodes - 1), 1); // Mode for current frame
 
-    mode    = &venc->modes[0];
+    mode    = &venc->modes[1];
     mapping = &venc->mappings[mode->mapping];
     if (mode->blockflag) {
-        put_bits(&pb, 1, 0);
-        put_bits(&pb, 1, 0);
+        put_bits(&pb, 1, 1); // Previous windowflag
+        put_bits(&pb, 1, 1); // Next windowflag
     }
 
     for (i = 0; i < venc->channels; i++) {
