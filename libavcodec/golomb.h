@@ -474,6 +474,21 @@ static inline void set_ue_golomb(PutBitContext *pb, int i)
 }
 
 /**
+ * write unsigned exp golomb code. 2^32-2 at most.
+ */
+static inline void set_ue_golomb_long(PutBitContext *pb, uint32_t i)
+{
+    av_assert2(i <= (UINT32_MAX - 1));
+
+    if (i < 256)
+        put_bits(pb, ff_ue_golomb_len[i], i + 1);
+    else {
+        int e = av_log2(i + 1);
+        put_bits64(pb, 2 * e + 1, i + 1);
+    }
+}
+
+/**
  * write truncated unsigned exp golomb code.
  */
 static inline void set_te_golomb(PutBitContext *pb, int i, int range)
