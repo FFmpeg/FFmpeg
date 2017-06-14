@@ -438,7 +438,7 @@ static int add_candidate_ref(HEVCContext *s, RefPicList *list,
 {
     HEVCFrame *ref = find_ref_idx(s, poc);
 
-    if (ref == s->ref)
+    if (ref == s->ref || list->nb_refs >= MAX_REFS)
         return AVERROR_INVALIDDATA;
 
     if (!ref) {
