@@ -257,6 +257,46 @@
     pmullw      m12,[%8+96]
 
     IDCT_1D     %1, %2, %8
+%elif %2 == 11
+    ; This copies the DC-only shortcut.  When there is only a DC coefficient the
+    ; C shifts the value and splats it to all coeffs rather than multiplying and
+    ; doing the full IDCT.  This causes a difference on 8-bit because the
+    ; coefficient is 16383 rather than 16384 (which you can get with shifting).
+    por      m1,  m8, m13
+    por      m1,  m12
+    por      m1, [blockq+ 16]       ; { row[1] }[0-7]
+    por      m1, [blockq+ 48]       ; { row[3] }[0-7]
+    por      m1, [blockq+ 80]       ; { row[5] }[0-7]
+    por      m1, [blockq+112]       ; { row[7] }[0-7]
+    pxor     m2,  m2
+    pcmpeqw  m1,  m2
+    psllw    m2,  m10, 3
+    pand     m2,  m1
+    pcmpeqb  m3,  m3
+    pxor     m1,  m3
+    mova    [rsp],    m1
+    mova    [rsp+16], m2
+
+    IDCT_1D  %1,  %2
+
+    mova     m5, [rsp]
+    mova     m6, [rsp+16]
+    pand     m8,  m5
+    por      m8,  m6
+    pand     m0,  m5
+    por      m0,  m6
+    pand     m1,  m5
+    por      m1,  m6
+    pand     m2,  m5
+    por      m2,  m6
+    pand     m4,  m5
+    por      m4,  m6
+    pand     m11, m5
+    por      m11, m6
+    pand     m9,  m5
+    por      m9,  m6
+    pand     m10, m5
+    por      m10, m6
 %else
     IDCT_1D     %1, %2
 %endif
