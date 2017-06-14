@@ -997,7 +997,7 @@ static int residue_encode(vorbis_enc_context *venc, vorbis_enc_residue *rc,
     return 0;
 }
 
-static int apply_window_and_mdct(vorbis_enc_context *venc, int samples)
+static int apply_window_and_mdct(vorbis_enc_context *venc)
 {
     int channel;
     const float * win = venc->win[1];
@@ -1008,13 +1008,13 @@ static int apply_window_and_mdct(vorbis_enc_context *venc, int samples)
     for (channel = 0; channel < venc->channels; channel++) {
         float *offset = venc->samples + channel * window_len * 2;
 
-        fdsp->vector_fmul(offset, offset, win, samples);
-        fdsp->vector_fmul_scalar(offset, offset, 1/n, samples);
+        fdsp->vector_fmul(offset, offset, win, window_len);
+        fdsp->vector_fmul_scalar(offset, offset, 1/n, window_len);
 
         offset += window_len;
 
-        fdsp->vector_fmul_reverse(offset, offset, win, samples);
-        fdsp->vector_fmul_scalar(offset, offset, 1/n, samples);
+        fdsp->vector_fmul_reverse(offset, offset, win, window_len);
+        fdsp->vector_fmul_scalar(offset, offset, 1/n, window_len);
 
         venc->mdct[1].mdct_calc(&venc->mdct[1], venc->coeffs + channel * window_len,
                      venc->samples + channel * window_len * 2);
@@ -1047,7 +1047,7 @@ static AVFrame *spawn_empty_frame(AVCodecContext *avctx, int channels)
 }
 
 /* Set up audio samples for psy analysis and window/mdct */
-static void move_audio(vorbis_enc_context *venc, int *samples, int sf_size)
+static void move_audio(vorbis_enc_context *venc, int sf_size)
 {
     AVFrame *cur = NULL;
     int frame_size = 1 << (venc->log2_blocksize[1] - 1);
@@ -1065,7 +1065,6 @@ static void move_audio(vorbis_enc_context *venc, int *samples, int sf_size)
 
     for (sf = 0; sf < subframes; sf++) {
         cur = ff_bufqueue_get(&venc->bufqueue);
-        *samples += cur->nb_samples;
 
         for (ch = 0; ch < venc->channels; ch++) {
             float *offset = venc->samples + 2 * ch * frame_size + frame_size;
@@ -1087,7 +1086,7 @@ static int vorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 {
     vorbis_enc_context *venc = avctx->priv_data;
     int i, ret, need_more;
-    int samples = 0, frame_size = 1 << (venc->log2_blocksize[1] - 1);
+    int frame_size = 1 << (venc->log2_blocksize[1] - 1);
     vorbis_enc_mode *mode;
     vorbis_enc_mapping *mapping;
     PutBitContext pb;
@@ -1120,9 +1119,9 @@ static int vorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         }
     }
 
-    move_audio(venc, &samples, avctx->frame_size);
+    move_audio(venc, avctx->frame_size);
 
-    if (!apply_window_and_mdct(venc, samples))
+    if (!apply_window_and_mdct(venc))
         return 0;
 
     if ((ret = ff_alloc_packet2(avctx, avpkt, 8192, 0)) < 0)
@@ -1149,21 +1148,21 @@ static int vorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     for (i = 0; i < venc->channels; i++) {
         vorbis_enc_floor *fc = &venc->floors[mapping->floor[mapping->mux[i]]];
         uint16_t posts[MAX_FLOOR_VALUES];
-        floor_fit(venc, fc, &venc->coeffs[i * samples], posts, samples);
-        if (floor_encode(venc, fc, &pb, posts, &venc->floor[i * samples], samples)) {
+        floor_fit(venc, fc, &venc->coeffs[i * frame_size], posts, frame_size);
+        if (floor_encode(venc, fc, &pb, posts, &venc->floor[i * frame_size], frame_size)) {
             av_log(avctx, AV_LOG_ERROR, "output buffer is too small\n");
             return AVERROR(EINVAL);
         }
     }
 
-    for (i = 0; i < venc->channels * samples; i++)
+    for (i = 0; i < venc->channels * frame_size; i++)
         venc->coeffs[i] /= venc->floor[i];
 
     for (i = 0; i < mapping->coupling_steps; i++) {
-        float *mag = venc->coeffs + mapping->magnitude[i] * samples;
-        float *ang = venc->coeffs + mapping->angle[i]     * samples;
+        float *mag = venc->coeffs + mapping->magnitude[i] * frame_size;
+        float *ang = venc->coeffs + mapping->angle[i]     * frame_size;
         int j;
-        for (j = 0; j < samples; j++) {
+        for (j = 0; j < frame_size; j++) {
             float a = ang[j];
             ang[j] -= mag[j];
             if (mag[j] > 0)
@@ -1174,7 +1173,7 @@ static int vorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     }
 
     if (residue_encode(venc, &venc->residues[mapping->residue[mapping->mux[0]]],
-                       &pb, venc->coeffs, samples, venc->channels)) {
+                       &pb, venc->coeffs, frame_size, venc->channels)) {
         av_log(avctx, AV_LOG_ERROR, "output buffer is too small\n");
         return AVERROR(EINVAL);
     }
