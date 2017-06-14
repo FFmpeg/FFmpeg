@@ -458,7 +458,7 @@ static inline int get_te(GetBitContext *s, int r, char *file, const char *func,
 #endif /* TRACE */
 
 /**
- * write unsigned exp golomb code.
+ * write unsigned exp golomb code. 2^16 - 2 at most
  */
 static inline void set_ue_golomb(PutBitContext *pb, int i)
 {
