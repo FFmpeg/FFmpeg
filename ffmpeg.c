@@ -3343,20 +3343,7 @@ static int init_output_stream_encode(OutputStream *ost)
             ost->frame_aspect_ratio.num ? // overridden by the -aspect cli option
             av_mul_q(ost->frame_aspect_ratio, (AVRational){ enc_ctx->height, enc_ctx->width }) :
             av_buffersink_get_sample_aspect_ratio(ost->filter->filter);
-        if (!strncmp(ost->enc->name, "libx264", 7) &&
-            enc_ctx->pix_fmt == AV_PIX_FMT_NONE &&
-            av_buffersink_get_format(ost->filter->filter) != AV_PIX_FMT_YUV420P)
-            av_log(NULL, AV_LOG_WARNING,
-                   "No pixel format specified, %s for H.264 encoding chosen.\n"
-                   "Use -pix_fmt yuv420p for compatibility with outdated media players.\n",
-                   av_get_pix_fmt_name(av_buffersink_get_format(ost->filter->filter)));
-        if (!strncmp(ost->enc->name, "mpeg2video", 10) &&
-            enc_ctx->pix_fmt == AV_PIX_FMT_NONE &&
-            av_buffersink_get_format(ost->filter->filter) != AV_PIX_FMT_YUV420P)
-            av_log(NULL, AV_LOG_WARNING,
-                   "No pixel format specified, %s for MPEG-2 encoding chosen.\n"
-                   "Use -pix_fmt yuv420p for compatibility with outdated media players.\n",
-                   av_get_pix_fmt_name(av_buffersink_get_format(ost->filter->filter)));
+
         enc_ctx->pix_fmt = av_buffersink_get_format(ost->filter->filter);
         if (dec_ctx)
             enc_ctx->bits_per_raw_sample = FFMIN(dec_ctx->bits_per_raw_sample,
