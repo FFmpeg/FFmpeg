@@ -1093,14 +1093,6 @@ decode_intra_mb:
         const uint8_t *scan, *scan8x8;
         const int max_qp = 51 + 6 * (h->ps.sps->bit_depth_luma - 8);
 
-        if(IS_INTERLACED(mb_type)){
-            scan8x8 = sl->qscale ? h->field_scan8x8_cavlc : h->field_scan8x8_cavlc_q0;
-            scan    = sl->qscale ? h->field_scan : h->field_scan_q0;
-        }else{
-            scan8x8 = sl->qscale ? h->zigzag_scan8x8_cavlc : h->zigzag_scan8x8_cavlc_q0;
-            scan    = sl->qscale ? h->zigzag_scan : h->zigzag_scan_q0;
-        }
-
         dquant= get_se_golomb(&sl->gb);
 
         sl->qscale += dquant;
@@ -1116,6 +1108,14 @@ decode_intra_mb:
 
         sl->chroma_qp[0] = get_chroma_qp(h->ps.pps, 0, sl->qscale);
         sl->chroma_qp[1] = get_chroma_qp(h->ps.pps, 1, sl->qscale);
+
+        if(IS_INTERLACED(mb_type)){
+            scan8x8 = sl->qscale ? h->field_scan8x8_cavlc : h->field_scan8x8_cavlc_q0;
+            scan    = sl->qscale ? h->field_scan : h->field_scan_q0;
+        }else{
+            scan8x8 = sl->qscale ? h->zigzag_scan8x8_cavlc : h->zigzag_scan8x8_cavlc_q0;
+            scan    = sl->qscale ? h->zigzag_scan : h->zigzag_scan_q0;
+        }
 
         if ((ret = decode_luma_residual(h, sl, gb, scan, scan8x8, pixel_shift, mb_type, cbp, 0)) < 0 ) {
             return -1;
