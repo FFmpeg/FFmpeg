@@ -4444,6 +4444,36 @@ error:
     return res;
 }
 
+const AVCodecTag codec_mp4_tags[] = {
+    { AV_CODEC_ID_MPEG4       , MKTAG('m', 'p', '4', 'v') },
+    { AV_CODEC_ID_H264        , MKTAG('a', 'v', 'c', '1') },
+    { AV_CODEC_ID_HEVC        , MKTAG('h', 'e', 'v', '1') },
+    { AV_CODEC_ID_MPEG2VIDEO  , MKTAG('m', 'p', '4', 'v') },
+    { AV_CODEC_ID_MPEG1VIDEO  , MKTAG('m', 'p', '4', 'v') },
+    { AV_CODEC_ID_MJPEG       , MKTAG('m', 'p', '4', 'v') },
+    { AV_CODEC_ID_PNG         , MKTAG('m', 'p', '4', 'v') },
+    { AV_CODEC_ID_JPEG2000    , MKTAG('m', 'p', '4', 'v') },
+    { AV_CODEC_ID_VC1         , MKTAG('v', 'c', '-', '1') },
+    { AV_CODEC_ID_DIRAC       , MKTAG('d', 'r', 'a', 'c') },
+    { AV_CODEC_ID_TSCC2       , MKTAG('m', 'p', '4', 'v') },
+    { AV_CODEC_ID_AAC         , MKTAG('m', 'p', '4', 'a') },
+    { AV_CODEC_ID_MP4ALS      , MKTAG('m', 'p', '4', 'a') },
+    { AV_CODEC_ID_MP3         , MKTAG('m', 'p', '4', 'a') },
+    { AV_CODEC_ID_MP2         , MKTAG('m', 'p', '4', 'a') },
+    { AV_CODEC_ID_AC3         , MKTAG('a', 'c', '-', '3') },
+    { AV_CODEC_ID_DTS         , MKTAG('m', 'p', '4', 'a') },
+    { AV_CODEC_ID_VORBIS      , MKTAG('m', 'p', '4', 'a') },
+    { AV_CODEC_ID_QCELP       , MKTAG('m', 'p', '4', 'a') },
+    { AV_CODEC_ID_DVD_SUBTITLE, MKTAG('m', 'p', '4', 's') },
+    { AV_CODEC_ID_MOV_TEXT    , MKTAG('t', 'x', '3', 'g') },
+    { AV_CODEC_ID_NONE        ,    0 },
+};
+
+const AVCodecTag codec_ism_tags[] = {
+    { AV_CODEC_ID_WMAPRO      , MKTAG('w', 'm', 'a', ' ') },
+    { AV_CODEC_ID_NONE        ,    0 },
+};
+
 #if CONFIG_MOV_MUXER
 MOV_CLASS(mov)
 AVOutputFormat ff_mov_muxer = {
@@ -4496,7 +4526,7 @@ AVOutputFormat ff_mp4_muxer = {
     .write_packet      = mov_write_packet,
     .write_trailer     = mov_write_trailer,
     .flags             = AVFMT_GLOBALHEADER | AVFMT_ALLOW_FLUSH | AVFMT_TS_NEGATIVE,
-    .codec_tag         = (const AVCodecTag* const []){ ff_mp4_obj_type, 0 },
+    .codec_tag         = (const AVCodecTag* const []){ codec_mp4_tags, 0 },
     .priv_class        = &mp4_muxer_class,
 };
 #endif
@@ -4514,7 +4544,7 @@ AVOutputFormat ff_psp_muxer = {
     .write_packet      = mov_write_packet,
     .write_trailer     = mov_write_trailer,
     .flags             = AVFMT_GLOBALHEADER | AVFMT_ALLOW_FLUSH | AVFMT_TS_NEGATIVE,
-    .codec_tag         = (const AVCodecTag* const []){ ff_mp4_obj_type, 0 },
+    .codec_tag         = (const AVCodecTag* const []){ codec_mp4_tags, 0 },
     .priv_class        = &psp_muxer_class,
 };
 #endif
@@ -4567,7 +4597,8 @@ AVOutputFormat ff_ismv_muxer = {
     .write_packet      = mov_write_packet,
     .write_trailer     = mov_write_trailer,
     .flags             = AVFMT_GLOBALHEADER | AVFMT_ALLOW_FLUSH | AVFMT_TS_NEGATIVE,
-    .codec_tag         = (const AVCodecTag* const []){ ff_mp4_obj_type, 0 },
+    .codec_tag         = (const AVCodecTag* const []){
+        codec_mp4_tags, codec_ism_tags, 0 },
     .priv_class        = &ismv_muxer_class,
 };
 #endif
