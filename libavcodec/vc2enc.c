@@ -1124,12 +1124,12 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
     }
 
     if (s->base_vf <= 0) {
-        if (avctx->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL) {
+        if (avctx->strict_std_compliance < FF_COMPLIANCE_STRICT) {
             s->strict_compliance = s->base_vf = 0;
-            av_log(avctx, AV_LOG_WARNING, "Disabling strict compliance\n");
+            av_log(avctx, AV_LOG_WARNING, "Format does not strictly comply with VC2 specs\n");
         } else {
             av_log(avctx, AV_LOG_WARNING, "Given format does not strictly comply with "
-                   "the specifications, please add a -strict -1 flag to use it\n");
+                   "the specifications, decrease strictness to use it.\n");
             return AVERROR_UNKNOWN;
         }
     } else {
