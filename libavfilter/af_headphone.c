@@ -398,7 +398,7 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
     FFTComplex *fft_in_r = NULL;
     float *data_ir_l = NULL;
     float *data_ir_r = NULL;
-    int offset = 0;
+    int offset = 0, ret = 0;
     int n_fft;
     int i, j;
 
@@ -409,7 +409,8 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
         fft_in_l = av_calloc(n_fft, sizeof(*fft_in_l));
         fft_in_r = av_calloc(n_fft, sizeof(*fft_in_r));
         if (!fft_in_l || !fft_in_r) {
-            return AVERROR(ENOMEM);
+            ret = AVERROR(ENOMEM);
+            goto fail;
         }
 
         av_fft_end(s->fft[0]);
@@ -423,7 +424,8 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
 
         if (!s->fft[0] || !s->fft[1] || !s->ifft[0] || !s->ifft[1]) {
             av_log(ctx, AV_LOG_ERROR, "Unable to create FFT contexts of size %d.\n", s->n_fft);
-            return AVERROR(ENOMEM);
+            ret = AVERROR(ENOMEM);
+            goto fail;
         }
     }
 
@@ -440,21 +442,29 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
         s->ringbuffer[1] = av_calloc(s->buffer_length, sizeof(float));
         s->temp_fft[0] = av_malloc_array(s->n_fft, sizeof(FFTComplex));
         s->temp_fft[1] = av_malloc_array(s->n_fft, sizeof(FFTComplex));
-        if (!s->temp_fft[0] || !s->temp_fft[1])
-            return AVERROR(ENOMEM);
+        if (!s->temp_fft[0] || !s->temp_fft[1]) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
     }
 
     if (!s->data_ir[0] || !s->data_ir[1] ||
-        !s->ringbuffer[0] || !s->ringbuffer[1])
-        return AVERROR(ENOMEM);
+        !s->ringbuffer[0] || !s->ringbuffer[1]) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
 
     s->in[0].frame = ff_get_audio_buffer(ctx->inputs[0], s->size);
-    if (!s->in[0].frame)
-        return AVERROR(ENOMEM);
+    if (!s->in[0].frame) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
     for (i = 0; i < s->nb_irs; i++) {
         s->in[i + 1].frame = ff_get_audio_buffer(ctx->inputs[i + 1], s->ir_len);
-        if (!s->in[i + 1].frame)
-            return AVERROR(ENOMEM);
+        if (!s->in[i + 1].frame) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
     }
 
     if (s->type == TIME_DOMAIN) {
@@ -464,17 +474,15 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
         data_ir_l = av_calloc(nb_irs * FFALIGN(ir_len, 16), sizeof(*data_ir_l));
         data_ir_r = av_calloc(nb_irs * FFALIGN(ir_len, 16), sizeof(*data_ir_r));
         if (!data_ir_r || !data_ir_l || !s->temp_src[0] || !s->temp_src[1]) {
-            av_free(data_ir_l);
-            av_free(data_ir_r);
-            return AVERROR(ENOMEM);
+            ret = AVERROR(ENOMEM);
+            goto fail;
         }
     } else {
         data_hrtf_l = av_malloc_array(n_fft, sizeof(*data_hrtf_l) * nb_irs);
         data_hrtf_r = av_malloc_array(n_fft, sizeof(*data_hrtf_r) * nb_irs);
         if (!data_hrtf_r || !data_hrtf_l) {
-            av_free(data_hrtf_l);
-            av_free(data_hrtf_r);
-            return AVERROR(ENOMEM);
+            ret = AVERROR(ENOMEM);
+            goto fail;
         }
     }
 
@@ -529,35 +537,34 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
     if (s->type == TIME_DOMAIN) {
         memcpy(s->data_ir[0], data_ir_l, sizeof(float) * nb_irs * FFALIGN(ir_len, 16));
         memcpy(s->data_ir[1], data_ir_r, sizeof(float) * nb_irs * FFALIGN(ir_len, 16));
-
-        av_freep(&data_ir_l);
-        av_freep(&data_ir_r);
     } else {
         s->data_hrtf[0] = av_malloc_array(n_fft * s->nb_irs, sizeof(FFTComplex));
         s->data_hrtf[1] = av_malloc_array(n_fft * s->nb_irs, sizeof(FFTComplex));
         if (!s->data_hrtf[0] || !s->data_hrtf[1]) {
-            av_freep(&data_hrtf_l);
-            av_freep(&data_hrtf_r);
-            av_freep(&fft_in_l);
-            av_freep(&fft_in_r);
-            return AVERROR(ENOMEM);
+            ret = AVERROR(ENOMEM);
+            goto fail;
         }
 
         memcpy(s->data_hrtf[0], data_hrtf_l,
             sizeof(FFTComplex) * nb_irs * n_fft);
         memcpy(s->data_hrtf[1], data_hrtf_r,
             sizeof(FFTComplex) * nb_irs * n_fft);
-
-        av_freep(&data_hrtf_l);
-        av_freep(&data_hrtf_r);
-
-        av_freep(&fft_in_l);
-        av_freep(&fft_in_r);
     }
 
     s->have_hrirs = 1;
 
-    return 0;
+fail:
+
+    av_freep(&data_ir_l);
+    av_freep(&data_ir_r);
+
+    av_freep(&data_hrtf_l);
+    av_freep(&data_hrtf_r);
+
+    av_freep(&fft_in_l);
+    av_freep(&fft_in_r);
+
+    return ret;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
