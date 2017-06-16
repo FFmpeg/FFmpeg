@@ -77,6 +77,7 @@ static int hwmap_config_output(AVFilterLink *outlink)
             type = av_hwdevice_find_type_by_name(ctx->derive_device_type);
             if (type == AV_HWDEVICE_TYPE_NONE) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid device type.\n");
+                err = AVERROR(EINVAL);
                 goto fail;
             }
 
