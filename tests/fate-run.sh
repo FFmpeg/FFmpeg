@@ -142,8 +142,15 @@ crc(){
     ffmpeg "$@" -f crc -
 }
 
-md5(){
+md5pipe(){
     ffmpeg "$@" md5:
+}
+
+md5(){
+    encfile="${outdir}/${test}.out"
+    cleanfiles="$cleanfiles $encfile"
+    ffmpeg "$@" $encfile
+    do_md5sum $encfile | awk '{print $1}'
 }
 
 pcm(){
