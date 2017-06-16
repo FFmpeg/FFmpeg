@@ -58,7 +58,7 @@ static int hwmap_config_output(AVFilterLink *outlink)
     AVHWFramesContext *hwfc;
     AVBufferRef *device;
     const AVPixFmtDescriptor *desc;
-    int err;
+    int err, device_is_derived;
 
     av_log(avctx, AV_LOG_DEBUG, "Configure hwmap %s -> %s.\n",
            av_get_pix_fmt_name(inlink->format),
@@ -67,6 +67,7 @@ static int hwmap_config_output(AVFilterLink *outlink)
     av_buffer_unref(&ctx->hwframes_ref);
 
     device = avctx->hw_device_ctx;
+    device_is_derived = 0;
 
     if (inlink->hw_frames_ctx) {
         hwfc = (AVHWFramesContext*)inlink->hw_frames_ctx->data;
@@ -88,6 +89,7 @@ static int hwmap_config_output(AVFilterLink *outlink)
                        "device context: %d.\n", err);
                 goto fail;
             }
+            device_is_derived = 1;
         }
 
         desc = av_pix_fmt_desc_get(outlink->format);
@@ -242,9 +244,13 @@ static int hwmap_config_output(AVFilterLink *outlink)
     outlink->w = inlink->w;
     outlink->h = inlink->h;
 
+    if (device_is_derived)
+        av_buffer_unref(&device);
     return 0;
 
 fail:
+    if (device_is_derived)
+        av_buffer_unref(&device);
     av_buffer_unref(&ctx->hwframes_ref);
     return err;
 }
