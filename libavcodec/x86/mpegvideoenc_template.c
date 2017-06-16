@@ -322,7 +322,7 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
         block[0x3E] = temp_block[0x3D]; block[0x33] = temp_block[0x36];
         block[0x2F] = temp_block[0x2F]; block[0x37] = temp_block[0x37];
         block[0x3B] = temp_block[0x3E]; block[0x3F] = temp_block[0x3F];
-    }else{
+    } else if (s->idsp.perm_type == FF_IDCT_PERM_NONE) {
         if(last_non_zero_p1 <= 1) goto end;
         block[0x01] = temp_block[0x01];
         block[0x08] = temp_block[0x08]; block[0x10] = temp_block[0x10];
@@ -366,6 +366,12 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
         block[0x3D] = temp_block[0x3D]; block[0x36] = temp_block[0x36];
         block[0x2F] = temp_block[0x2F]; block[0x37] = temp_block[0x37];
         block[0x3E] = temp_block[0x3E]; block[0x3F] = temp_block[0x3F];
+    } else {
+        av_log(s, AV_LOG_DEBUG, "s->idsp.perm_type: %d\n",
+                (int)s->idsp.perm_type);
+        av_assert0(s->idsp.perm_type == FF_IDCT_PERM_NONE ||
+                s->idsp.perm_type == FF_IDCT_PERM_LIBMPEG2 ||
+                s->idsp.perm_type == FF_IDCT_PERM_SIMPLE);
     }
     end:
     return last_non_zero_p1 - 1;
