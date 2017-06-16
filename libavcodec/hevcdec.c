@@ -273,12 +273,16 @@ static int decode_lt_rps(HEVCContext *s, LongTermRPS *rps, GetBitContext *gb)
 
         delta_poc_msb_present = get_bits1(gb);
         if (delta_poc_msb_present) {
-            int delta = get_ue_golomb_long(gb);
+            int64_t delta = get_ue_golomb_long(gb);
+            int64_t poc;
 
             if (i && i != nb_sps)
                 delta += prev_delta_msb;
 
-            rps->poc[i] += s->poc - delta * max_poc_lsb - s->sh.pic_order_cnt_lsb;
+            poc = rps->poc[i] + s->poc - delta * max_poc_lsb - s->sh.pic_order_cnt_lsb;
+            if (poc != (int32_t)poc)
+                return AVERROR_INVALIDDATA;
+            rps->poc[i] = poc;
             prev_delta_msb = delta;
         }
     }
