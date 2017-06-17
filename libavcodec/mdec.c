@@ -213,6 +213,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
 {
     MDECContext * const a = avctx->priv_data;
 
+    if (avctx->idct_algo == FF_IDCT_AUTO)
+        avctx->idct_algo = FF_IDCT_SIMPLE;
+
     a->mb_width  = (avctx->coded_width  + 15) / 16;
     a->mb_height = (avctx->coded_height + 15) / 16;
 
@@ -225,8 +228,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ff_init_scantable(a->idsp.idct_permutation, &a->scantable,
                       ff_zigzag_direct);
 
-    if (avctx->idct_algo == FF_IDCT_AUTO)
-        avctx->idct_algo = FF_IDCT_SIMPLE;
     avctx->pix_fmt  = AV_PIX_FMT_YUVJ420P;
     avctx->color_range = AVCOL_RANGE_JPEG;
 
