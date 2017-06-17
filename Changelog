@@ -2,6 +2,8 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 3.2.6:
+- avcodec/jpeg2000dsp: Reorder operations in ict_int() to avoid 2 integer overflows
+- avcodec/hevcpred_template: Fix left shift of negative value
 - avcodec/hevcdec: Fix signed integer overflow in decode_lt_rps()
 - avcodec/jpeg2000dec: Check nonzerobits more completely
 - avcodec/shorten: Sanity check maxnlpc
