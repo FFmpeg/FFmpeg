@@ -223,7 +223,7 @@ static int h261_decode_mb_skipped(H261Context *h, int mba1, int mba2)
             s->current_picture.motion_val[0][b_xy][1] = s->mv[0][0][1];
         }
 
-        ff_mpv_decode_mb(s, s->block);
+        ff_mpv_reconstruct_mb(s, s->block);
     }
 
     return 0;
@@ -466,7 +466,7 @@ intra:
             s->block_last_index[i] = -1;
     }
 
-    ff_mpv_decode_mb(s, s->block);
+    ff_mpv_reconstruct_mb(s, s->block);
 
     return SLICE_OK;
 }
