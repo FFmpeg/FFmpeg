@@ -104,6 +104,7 @@ int ffio_init_context(AVIOContext *s,
     s->eof_reached     = 0;
     s->error           = 0;
     s->seekable        = seek ? AVIO_SEEKABLE_NORMAL : 0;
+    s->min_packet_size = 0;
     s->max_packet_size = 0;
     s->update_checksum = NULL;
     s->short_seek_threshold = SHORT_SEEK_THRESHOLD;
@@ -489,6 +490,11 @@ void avio_wb24(AVIOContext *s, unsigned int val)
 
 void avio_write_marker(AVIOContext *s, int64_t time, enum AVIODataMarkerType type)
 {
+    if (type == AVIO_DATA_MARKER_FLUSH_POINT) {
+        if (s->buf_ptr - s->buffer >= s->min_packet_size)
+            avio_flush(s);
+        return;
+    }
     if (!s->write_data_type)
         return;
     // If ignoring boundary points, just treat it as unknown
@@ -941,6 +947,7 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
 
     (*s)->seekable = h->is_streamed ? 0 : AVIO_SEEKABLE_NORMAL;
     (*s)->max_packet_size = max_packet_size;
+    (*s)->min_packet_size = h->min_packet_size;
     if(h->prot) {
         (*s)->read_pause = io_read_pause;
         (*s)->read_seek  = io_read_seek;

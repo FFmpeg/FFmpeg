@@ -48,6 +48,7 @@ typedef struct URLContext {
     int64_t rw_timeout;         /**< maximum time to wait for (network) read/write operation completion, in mcs */
     const char *protocol_whitelist;
     const char *protocol_blacklist;
+    int min_packet_size;        /**< if non zero, the stream is packetized with this min packet size */
 } URLContext;
 
 typedef struct URLProtocol {
