@@ -1531,7 +1531,7 @@ function ff_vp9_idct_idct_32x32_add_neon, export=1
 2:
         subs            x1,  x1,  #1
 .rept 4
-        st1             {v16.8h-v19.8h},  [x0], #64
+        st1             {v16.8h,v17.8h,v18.8h,v19.8h},  [x0], #64
 .endr
         b.ne            2b
 3:
