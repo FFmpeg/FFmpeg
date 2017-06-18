@@ -889,7 +889,7 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
             uint8_t *samples = (uint8_t *)frame->extended_data[chan];
             int32_t *decoded = s->decoded[chan];
             for (i = 0; i < s->nb_samples; i++)
-                samples[i] = decoded[i] + 0x80;
+                samples[i] = decoded[i] + 0x80U;
         }
         break;
     case AV_SAMPLE_FMT_S16P:
