@@ -334,6 +334,13 @@ enum AVPixelFormat {
     AV_PIX_FMT_GBRAPF32BE, ///< IEEE-754 single precision planar GBRA 4:4:4:4, 128bpp, big-endian
     AV_PIX_FMT_GBRAPF32LE, ///< IEEE-754 single precision planar GBRA 4:4:4:4, 128bpp, little-endian
 
+    /**
+     * DRM-managed buffers exposed through PRIME buffer sharing.
+     *
+     * data[0] points to an AVDRMFrameDescriptor.
+     */
+    AV_PIX_FMT_DRM_PRIME,
+
     AV_PIX_FMT_NB         ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };
 

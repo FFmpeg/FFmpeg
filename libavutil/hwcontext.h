@@ -33,6 +33,7 @@ enum AVHWDeviceType {
     AV_HWDEVICE_TYPE_VIDEOTOOLBOX,
     AV_HWDEVICE_TYPE_NONE,
     AV_HWDEVICE_TYPE_D3D11VA,
+    AV_HWDEVICE_TYPE_DRM,
 };
 
 typedef struct AVHWDeviceInternal AVHWDeviceInternal;

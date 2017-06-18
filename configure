@@ -307,6 +307,7 @@ External library support:
   --disable-cuvid          disable Nvidia CUVID support [autodetect]
   --disable-d3d11va        disable Microsoft Direct3D 11 video acceleration code [autodetect]
   --disable-dxva2          disable Microsoft DirectX 9 video acceleration code [autodetect]
+  --enable-libdrm          enable DRM code (Linux) [no]
   --enable-libmfx          enable Intel MediaSDK (AKA Quick Sync Video) code via libmfx [no]
   --enable-libnpp          enable Nvidia Performance Primitives-based code [no]
   --enable-mmal            enable Broadcom Multi-Media Abstraction Layer (Raspberry Pi) via MMAL [no]
@@ -1567,6 +1568,7 @@ EXTERNAL_LIBRARY_LIST="
     libcaca
     libcelt
     libdc1394
+    libdrm
     libflite
     libfontconfig
     libfreetype
@@ -5877,6 +5879,7 @@ enabled libcelt           && require libcelt celt/celt.h celt_decode -lcelt0 &&
                                die "ERROR: libcelt must be installed and version must be >= 0.11.0."; }
 enabled libcaca           && require_pkg_config caca caca.h caca_create_canvas
 enabled libdc1394         && require_pkg_config libdc1394-2 dc1394/dc1394.h dc1394_new
+enabled libdrm            && require_pkg_config libdrm xf86drm.h drmGetVersion
 enabled libfdk_aac        && { use_pkg_config fdk-aac "fdk-aac/aacenc_lib.h" aacEncOpen ||
                                { require libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-aac &&
                                  warn "using libfdk without pkg-config"; } }

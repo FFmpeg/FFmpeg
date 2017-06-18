@@ -34,6 +34,7 @@ HEADERS = adler32.h                                                     \
           hwcontext.h                                                   \
           hwcontext_cuda.h                                              \
           hwcontext_d3d11va.h                                           \
+          hwcontext_drm.h                                               \
           hwcontext_dxva2.h                                             \
           hwcontext_qsv.h                                               \
           hwcontext_vaapi.h                                             \
@@ -161,6 +162,7 @@ OBJS-$(CONFIG_CUDA)                     += hwcontext_cuda.o
 OBJS-$(CONFIG_D3D11VA)                  += hwcontext_d3d11va.o
 OBJS-$(CONFIG_DXVA2)                    += hwcontext_dxva2.o
 OBJS-$(CONFIG_QSV)                   += hwcontext_qsv.o
+OBJS-$(CONFIG_LIBDRM)                   += hwcontext_drm.o
 OBJS-$(CONFIG_LZO)                      += lzo.o
 OBJS-$(CONFIG_OPENCL)                   += opencl.o opencl_internal.o
 OBJS-$(CONFIG_VAAPI)                    += hwcontext_vaapi.o
