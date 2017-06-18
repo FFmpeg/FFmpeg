@@ -245,13 +245,19 @@ of uyvy422. Not all Blackmagic devices support this option.
 
 @item teletext_lines
 If set to nonzero, an additional teletext stream will be captured from the
-vertical ancillary data. This option is a bitmask of the VBI lines checked,
-specifically lines 6 to 22, and lines 318 to 335. Line 6 is the LSB in the mask.
-Selected lines which do not contain teletext information will be ignored. You
-can use the special @option{all} constant to select all possible lines, or
-@option{standard} to skip lines 6, 318 and 319, which are not compatible with all
-receivers. Capturing teletext only works for SD PAL sources. To use this
-option, ffmpeg needs to be compiled with @code{--enable-libzvbi}.
+vertical ancillary data. Both SD PAL (576i) and HD (1080i or 1080p)
+sources are supported. In case of HD sources, OP47 packets are decoded.
+
+This option is a bitmask of the SD PAL VBI lines captured, specifically lines 6
+to 22, and lines 318 to 335. Line 6 is the LSB in the mask. Selected lines
+which do not contain teletext information will be ignored. You can use the
+special @option{all} constant to select all possible lines, or
+@option{standard} to skip lines 6, 318 and 319, which are not compatible with
+all receivers.
+
+For SD sources, ffmpeg needs to be compiled with @code{--enable-libzvbi}. For
+HD sources, on older (pre-4K) DeckLink card models you have to capture in 10
+bit mode.
 
 @item channels
 Defines number of audio channels to capture. Must be @samp{2}, @samp{8} or @samp{16}.

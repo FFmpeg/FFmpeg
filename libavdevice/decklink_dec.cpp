@@ -36,6 +36,7 @@ extern "C" {
 #include "libavutil/imgutils.h"
 #include "libavutil/time.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/reverse.h"
 #if CONFIG_LIBZVBI
 #include <libzvbi.h>
 #endif
@@ -44,7 +45,6 @@ extern "C" {
 #include "decklink_common.h"
 #include "decklink_dec.h"
 
-#if CONFIG_LIBZVBI
 static uint8_t calc_parity_and_line_offset(int line)
 {
     uint8_t ret = (line < 313) << 5;
@@ -63,6 +63,7 @@ static void fill_data_unit_head(int line, uint8_t *tgt)
     tgt[3] = 0xe4; // framing code
 }
 
+#if CONFIG_LIBZVBI
 static uint8_t* teletext_data_unit_from_vbi_data(int line, uint8_t *src, uint8_t *tgt, vbi_pixfmt fmt)
 {
     vbi_bit_slicer slicer;
@@ -94,6 +95,95 @@ static uint8_t* teletext_data_unit_from_vbi_data_10bit(int line, uint8_t *src, u
     return teletext_data_unit_from_vbi_data(line, y, tgt, VBI_PIXFMT_YUV420);
 }
 #endif
+
+static uint8_t* teletext_data_unit_from_op47_vbi_packet(int line, uint16_t *py, uint8_t *tgt)
+{
+    int i;
+
+    if (py[0] != 0x255 || py[1] != 0x255 || py[2] != 0x227)
+        return tgt;
+
+    fill_data_unit_head(line, tgt);
+
+    py += 3;
+    tgt += 4;
+
+    for (i = 0; i < 42; i++)
+       *tgt++ = ff_reverse[py[i] & 255];
+
+    return tgt;
+}
+
+static int linemask_matches(int line, int64_t mask)
+{
+    int shift = -1;
+    if (line >= 6 && line <= 22)
+        shift = line - 6;
+    if (line >= 318 && line <= 335)
+        shift = line - 318 + 17;
+    return shift >= 0 && ((1ULL << shift) & mask);
+}
+
+static uint8_t* teletext_data_unit_from_op47_data(uint16_t *py, uint16_t *pend, uint8_t *tgt, int64_t wanted_lines)
+{
+    if (py < pend - 9) {
+        if (py[0] == 0x151 && py[1] == 0x115 && py[3] == 0x102) {       // identifier, identifier, format code for WST teletext
+            uint16_t *descriptors = py + 4;
+            int i;
+            py += 9;
+            for (i = 0; i < 5 && py < pend - 45; i++, py += 45) {
+                int line = (descriptors[i] & 31) + (!(descriptors[i] & 128)) * 313;
+                if (line && linemask_matches(line, wanted_lines))
+                    tgt = teletext_data_unit_from_op47_vbi_packet(line, py, tgt);
+            }
+        }
+    }
+    return tgt;
+}
+
+static uint8_t* teletext_data_unit_from_ancillary_packet(uint16_t *py, uint16_t *pend, uint8_t *tgt, int64_t wanted_lines, int allow_multipacket)
+{
+    uint16_t did = py[0];                                               // data id
+    uint16_t sdid = py[1];                                              // secondary data id
+    uint16_t dc = py[2] & 255;                                          // data count
+    py += 3;
+    pend = FFMIN(pend, py + dc);
+    if (did == 0x143 && sdid == 0x102) {                                // subtitle distribution packet
+        tgt = teletext_data_unit_from_op47_data(py, pend, tgt, wanted_lines);
+    } else if (allow_multipacket && did == 0x143 && sdid == 0x203) {    // VANC multipacket
+        py += 2;                                                        // priority, line/field
+        while (py < pend - 3) {
+            tgt = teletext_data_unit_from_ancillary_packet(py, pend, tgt, wanted_lines, 0);
+            py += 4 + (py[2] & 255);                                    // ndid, nsdid, ndc, line/field
+        }
+    }
+    return tgt;
+}
+
+static uint8_t* teletext_data_unit_from_vanc_data(uint8_t *src, uint8_t *tgt, int64_t wanted_lines)
+{
+    uint16_t y[1920];
+    uint16_t *py = y;
+    uint16_t *pend = y + 1920;
+    /* The 10-bit VANC data is packed in V210, we only need the luma component. */
+    while (py < pend) {
+        *py++ = (src[1] >> 2) + ((src[2] & 15) << 6);
+        *py++ =  src[4]       + ((src[5] &  3) << 8);
+        *py++ = (src[6] >> 4) + ((src[7] & 63) << 4);
+        src += 8;
+    }
+    py = y;
+    while (py < pend - 6) {
+        if (py[0] == 0 && py[1] == 0x3ff && py[2] == 0x3ff) {           // ancillary data flag
+            py += 3;
+            tgt = teletext_data_unit_from_ancillary_packet(py, pend, tgt, wanted_lines, 0);
+            py += py[2] & 255;
+        } else {
+            py++;
+        }
+    }
+    return tgt;
+}
 
 static void avpacket_queue_init(AVFormatContext *avctx, AVPacketQueue *q)
 {
@@ -381,11 +471,10 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
                            videoFrame->GetHeight();
         //fprintf(stderr,"Video Frame size %d ts %d\n", pkt.size, pkt.pts);
 
-#if CONFIG_LIBZVBI
         if (!no_video && ctx->teletext_lines) {
             IDeckLinkVideoFrameAncillary *vanc;
             AVPacket txt_pkt;
-            uint8_t txt_buf0[1611]; // max 35 * 46 bytes decoded teletext lines + 1 byte data_identifier
+            uint8_t txt_buf0[3531]; // 35 * 46 bytes decoded teletext lines + 1 byte data_identifier + 1920 bytes OP47 decode buffer
             uint8_t *txt_buf = txt_buf0;
 
             if (videoFrame->GetAncillaryData(&vanc) == S_OK) {
@@ -394,6 +483,7 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
                 BMDPixelFormat vanc_format = vanc->GetPixelFormat();
                 txt_buf[0] = 0x10;    // data_identifier - EBU_data
                 txt_buf++;
+#if CONFIG_LIBZVBI
                 if (ctx->bmd_mode == bmdModePAL && (vanc_format == bmdFormat8BitYUV || vanc_format == bmdFormat10BitYUV)) {
                     av_assert0(videoFrame->GetWidth() == 720);
                     for (i = 6; i < 336; i++, line_mask <<= 1) {
@@ -406,6 +496,21 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
                         }
                         if (i == 22)
                             i = 317;
+                    }
+                }
+#endif
+                if (videoFrame->GetWidth() == 1920 && vanc_format == bmdFormat10BitYUV) {
+                    int first_active_line = ctx->bmd_field_dominance == bmdProgressiveFrame ? 42 : 584;
+                    for (i = 8; i < first_active_line; i++) {
+                        uint8_t *buf;
+                        if (vanc->GetBufferForVerticalBlankingLine(i, (void**)&buf) == S_OK)
+                            txt_buf = teletext_data_unit_from_vanc_data(buf, txt_buf, ctx->teletext_lines);
+                        if (ctx->bmd_field_dominance != bmdProgressiveFrame && i == 20)     // skip field1 active lines
+                            i = 569;
+                        if (txt_buf - txt_buf0 > 1611) {   // ensure we still have at least 1920 bytes free in the buffer
+                            av_log(avctx, AV_LOG_ERROR, "Too many OP47 teletext packets.\n");
+                            break;
+                        }
                     }
                 }
                 vanc->Release();
@@ -428,7 +533,6 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
                 }
             }
         }
-#endif
 
         if (avpacket_queue_put(&ctx->queue, &pkt) < 0) {
             ++ctx->dropped;
@@ -527,13 +631,6 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
     ctx->draw_bars = cctx->draw_bars;
     cctx->ctx = ctx;
 
-#if !CONFIG_LIBZVBI
-    if (ctx->teletext_lines) {
-        av_log(avctx, AV_LOG_ERROR, "Libzvbi support is needed for capturing teletext, please recompile FFmpeg.\n");
-        return AVERROR(ENOSYS);
-    }
-#endif
-
     /* Check audio channel option for valid values: 2, 8 or 16 */
     switch (cctx->audio_channels) {
         case 2:
@@ -586,6 +683,14 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
             goto error;
         }
     }
+
+#if !CONFIG_LIBZVBI
+    if (ctx->teletext_lines && ctx->bmd_mode == bmdModePAL) {
+        av_log(avctx, AV_LOG_ERROR, "Libzvbi support is needed for capturing SD PAL teletext, please recompile FFmpeg.\n");
+        ret = AVERROR(ENOSYS);
+        goto error;
+    }
+#endif
 
     /* Setup streams. */
     st = avformat_new_stream(avctx, NULL);
