@@ -6194,8 +6194,7 @@ enabled rpath && add_ldlibflags -Wl,-rpath,$libdir
 test_ldflags -Wl,-Bsymbolic && append SHFLAGS -Wl,-Bsymbolic
 
 # add some strip flags
-# -wN '..@*' is more selective than -x, but not available everywhere.
-check_stripflags -wN \'..@*\' || check_stripflags -x
+check_stripflags -x
 
 enabled neon_clobber_test &&
     check_ldflags -Wl,--wrap,avcodec_open2              \

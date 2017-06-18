@@ -177,7 +177,7 @@ static av_always_inline int wp_exp2(int16_t val)
     return neg ? -res : res;
 }
 
-static av_always_inline int wp_log2(int32_t val)
+static av_always_inline int wp_log2(uint32_t val)
 {
     int bits;
 

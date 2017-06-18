@@ -131,6 +131,7 @@ static const struct {
 #endif
 #if CONFIG_AVUTIL
         { "fixed_dsp", checkasm_check_fixed_dsp },
+        { "float_dsp", checkasm_check_float_dsp },
 #endif
     { NULL }
 };
@@ -280,6 +281,25 @@ int float_near_abs_eps_array_ulp(const float *a, const float *b, float eps,
 
     for (i = 0; i < len; i++) {
         if (!float_near_abs_eps_ulp(a[i], b[i], eps, max_ulp))
+            return 0;
+    }
+    return 1;
+}
+
+int double_near_abs_eps(double a, double b, double eps)
+{
+    double abs_diff = fabs(a - b);
+
+    return abs_diff < eps;
+}
+
+int double_near_abs_eps_array(const double *a, const double *b, double eps,
+                              unsigned len)
+{
+    unsigned i;
+
+    for (i = 0; i < len; i++) {
+        if (!double_near_abs_eps(a[i], b[i], eps))
             return 0;
     }
     return 1;

@@ -31,6 +31,7 @@ enum AVHWDeviceType {
     AV_HWDEVICE_TYPE_DXVA2,
     AV_HWDEVICE_TYPE_QSV,
     AV_HWDEVICE_TYPE_VIDEOTOOLBOX,
+    AV_HWDEVICE_TYPE_NONE,
 };
 
 typedef struct AVHWDeviceInternal AVHWDeviceInternal;
@@ -224,6 +225,33 @@ typedef struct AVHWFramesContext {
 } AVHWFramesContext;
 
 /**
+ * Look up an AVHWDeviceType by name.
+ *
+ * @param name String name of the device type (case-insensitive).
+ * @return The type from enum AVHWDeviceType, or AV_HWDEVICE_TYPE_NONE if
+ *         not found.
+ */
+enum AVHWDeviceType av_hwdevice_find_type_by_name(const char *name);
+
+/** Get the string name of an AVHWDeviceType.
+ *
+ * @param type Type from enum AVHWDeviceType.
+ * @return Pointer to a static string containing the name, or NULL if the type
+ *         is not valid.
+ */
+const char *av_hwdevice_get_type_name(enum AVHWDeviceType type);
+
+/**
+ * Iterate over supported device types.
+ *
+ * @param type AV_HWDEVICE_TYPE_NONE initially, then the previous type
+ *             returned by this function in subsequent iterations.
+ * @return The next usable device type from enum AVHWDeviceType, or
+ *         AV_HWDEVICE_TYPE_NONE if there are no more.
+ */
+enum AVHWDeviceType av_hwdevice_iterate_types(enum AVHWDeviceType prev);
+
+/**
  * Allocate an AVHWDeviceContext for a given hardware type.
  *
  * @param type the type of the hardware device to allocate.
@@ -269,6 +297,32 @@ int av_hwdevice_ctx_init(AVBufferRef *ref);
  */
 int av_hwdevice_ctx_create(AVBufferRef **device_ctx, enum AVHWDeviceType type,
                            const char *device, AVDictionary *opts, int flags);
+
+/**
+ * Create a new device of the specified type from an existing device.
+ *
+ * If the source device is a device of the target type or was originally
+ * derived from such a device (possibly through one or more intermediate
+ * devices of other types), then this will return a reference to the
+ * existing device of the same type as is requested.
+ *
+ * Otherwise, it will attempt to derive a new device from the given source
+ * device.  If direct derivation to the new type is not implemented, it will
+ * attempt the same derivation from each ancestor of the source device in
+ * turn looking for an implemented derivation method.
+ *
+ * @param dst_ctx On success, a reference to the newly-created
+ *                AVHWDeviceContext.
+ * @param type    The type of the new device to create.
+ * @param src_ctx A reference to an existing AVHWDeviceContext which will be
+ *                used to create the new device.
+ * @param flags   Currently unused; should be set to zero.
+ * @return        Zero on success, a negative AVERROR code on failure.
+ */
+int av_hwdevice_ctx_create_derived(AVBufferRef **dst_ctx,
+                                   enum AVHWDeviceType type,
+                                   AVBufferRef *src_ctx, int flags);
+
 
 /**
  * Allocate an AVHWFramesContext tied to a given device context.
@@ -512,7 +566,9 @@ int av_hwframe_map(AVFrame *dst, const AVFrame *src, int flags);
  *                           AVHWFramesContext on.
  * @param source_frame_ctx   A reference to an existing AVHWFramesContext
  *                           which will be mapped to the derived context.
- * @param flags  Currently unused; should be set to zero.
+ * @param flags  Some combination of AV_HWFRAME_MAP_* flags, defining the
+ *               mapping parameters to apply to frames which are allocated
+ *               in the derived device.
  * @return       Zero on success, negative AVERROR code on failure.
  */
 int av_hwframe_ctx_create_derived(AVBufferRef **derived_frame_ctx,

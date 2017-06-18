@@ -202,7 +202,6 @@ TESTPROGS = adler32                                                     \
             eval                                                        \
             file                                                        \
             fifo                                                        \
-            float_dsp                                                   \
             hash                                                        \
             hmac                                                        \
             imgutils                                                    \

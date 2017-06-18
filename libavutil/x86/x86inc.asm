@@ -788,25 +788,25 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
 %assign cpuflags_sse      (1<<4) | cpuflags_mmx2
 %assign cpuflags_sse2     (1<<5) | cpuflags_sse
 %assign cpuflags_sse2slow (1<<6) | cpuflags_sse2
-%assign cpuflags_sse3     (1<<7) | cpuflags_sse2
-%assign cpuflags_ssse3    (1<<8) | cpuflags_sse3
-%assign cpuflags_sse4     (1<<9) | cpuflags_ssse3
-%assign cpuflags_sse42    (1<<10)| cpuflags_sse4
-%assign cpuflags_avx      (1<<11)| cpuflags_sse42
-%assign cpuflags_xop      (1<<12)| cpuflags_avx
-%assign cpuflags_fma4     (1<<13)| cpuflags_avx
-%assign cpuflags_fma3     (1<<14)| cpuflags_avx
-%assign cpuflags_avx2     (1<<15)| cpuflags_fma3
+%assign cpuflags_lzcnt    (1<<7) | cpuflags_sse2
+%assign cpuflags_sse3     (1<<8) | cpuflags_sse2
+%assign cpuflags_ssse3    (1<<9) | cpuflags_sse3
+%assign cpuflags_sse4     (1<<10)| cpuflags_ssse3
+%assign cpuflags_sse42    (1<<11)| cpuflags_sse4
+%assign cpuflags_aesni    (1<<12)| cpuflags_sse42
+%assign cpuflags_avx      (1<<13)| cpuflags_sse42
+%assign cpuflags_xop      (1<<14)| cpuflags_avx
+%assign cpuflags_fma4     (1<<15)| cpuflags_avx
+%assign cpuflags_fma3     (1<<16)| cpuflags_avx
+%assign cpuflags_bmi1     (1<<17)| cpuflags_avx|cpuflags_lzcnt
+%assign cpuflags_bmi2     (1<<18)| cpuflags_bmi1
+%assign cpuflags_avx2     (1<<19)| cpuflags_fma3|cpuflags_bmi2
 
-%assign cpuflags_cache32  (1<<16)
-%assign cpuflags_cache64  (1<<17)
-%assign cpuflags_slowctz  (1<<18)
-%assign cpuflags_lzcnt    (1<<19)
-%assign cpuflags_aligned  (1<<20) ; not a cpu feature, but a function variant
-%assign cpuflags_atom     (1<<21)
-%assign cpuflags_bmi1     (1<<22)|cpuflags_lzcnt
-%assign cpuflags_bmi2     (1<<23)|cpuflags_bmi1
-%assign cpuflags_aesni    (1<<24)|cpuflags_sse42
+%assign cpuflags_cache32  (1<<20)
+%assign cpuflags_cache64  (1<<21)
+%assign cpuflags_slowctz  (1<<22)
+%assign cpuflags_aligned  (1<<23) ; not a cpu feature, but a function variant
+%assign cpuflags_atom     (1<<24)
 
 ; Returns a boolean value expressing whether or not the specified cpuflag is enabled.
 %define    cpuflag(x) (((((cpuflags & (cpuflags_ %+ x)) ^ (cpuflags_ %+ x)) - 1) >> 31) & 1)

@@ -330,7 +330,7 @@ static int gdv_decode_frame(AVCodecContext *avctx, void *data,
             unsigned r = bytestream2_get_byte(gb);
             unsigned g = bytestream2_get_byte(gb);
             unsigned b = bytestream2_get_byte(gb);
-            gdv->pal[i] = 0xFF << 24 | r << 18 | g << 10 | b << 2;
+            gdv->pal[i] = 0xFFU << 24 | r << 18 | g << 10 | b << 2;
         }
         break;
     case 3:

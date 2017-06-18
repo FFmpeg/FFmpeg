@@ -31,16 +31,14 @@ ALLAVPROGS_G = $(AVBASENAMES:%=%$(PROGSSUF)_g$(EXESUF))
 $(foreach prog,$(AVBASENAMES),$(eval OBJS-$(prog) += cmdutils.o))
 $(foreach prog,$(AVBASENAMES),$(eval OBJS-$(prog)-$(CONFIG_OPENCL) += cmdutils_opencl.o))
 
-OBJS-ffmpeg                   += ffmpeg_opt.o ffmpeg_filter.o
+OBJS-ffmpeg                   += ffmpeg_opt.o ffmpeg_filter.o ffmpeg_hw.o
 OBJS-ffmpeg-$(CONFIG_VIDEOTOOLBOX) += ffmpeg_videotoolbox.o
 OBJS-ffmpeg-$(CONFIG_LIBMFX)  += ffmpeg_qsv.o
-OBJS-ffmpeg-$(CONFIG_VAAPI)   += ffmpeg_vaapi.o
 ifndef CONFIG_VIDEOTOOLBOX
 OBJS-ffmpeg-$(CONFIG_VDA)     += ffmpeg_videotoolbox.o
 endif
 OBJS-ffmpeg-$(CONFIG_CUVID)   += ffmpeg_cuvid.o
 OBJS-ffmpeg-$(HAVE_DXVA2_LIB) += ffmpeg_dxva2.o
-OBJS-ffmpeg-$(HAVE_VDPAU_X11) += ffmpeg_vdpau.o
 OBJS-ffserver                 += ffserver_config.o
 
 TESTTOOLS   = audiogen videogen rotozoom tiny_psnr tiny_ssim base64 audiomatch
@@ -82,6 +80,7 @@ target_dec_%_fuzzer$(EXESUF): target_dec_%_fuzzer.o $(FF_DEP_LIBS)
 	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $^ $(ELIBS) $(FF_EXTRALIBS) $(LIBFUZZER_PATH)
 
 tools/cws2fws$(EXESUF): ELIBS = $(ZLIB)
+tools/sofa2wavs$(EXESUF): ELIBS = $(FF_EXTRALIBS)
 tools/uncoded_frame$(EXESUF): $(FF_DEP_LIBS)
 tools/uncoded_frame$(EXESUF): ELIBS = $(FF_EXTRALIBS)
 tools/target_dec_%_fuzzer$(EXESUF): $(FF_DEP_LIBS)

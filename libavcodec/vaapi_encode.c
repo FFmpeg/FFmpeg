@@ -428,6 +428,8 @@ fail:
 fail_at_end:
     av_freep(&pic->codec_picture_params);
     av_frame_free(&pic->recon_image);
+    av_buffer_unref(&pic->output_buffer_ref);
+    pic->output_buffer = VA_INVALID_ID;
     return err;
 }
 
@@ -1433,8 +1435,7 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
     ctx->output_order = - ctx->output_delay - 1;
 
     // Currently we never generate I frames, only IDR.
-    ctx->p_per_i = ((avctx->gop_size - 1 + avctx->max_b_frames) /
-                    (avctx->max_b_frames + 1));
+    ctx->p_per_i = INT_MAX;
     ctx->b_per_p = avctx->max_b_frames;
 
     if (ctx->codec->sequence_params_size > 0) {

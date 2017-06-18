@@ -463,6 +463,7 @@ static inline int get_te(GetBitContext *s, int r, char *file, const char *func,
 static inline void set_ue_golomb(PutBitContext *pb, int i)
 {
     av_assert2(i >= 0);
+    av_assert2(i <= 0xFFFE);
 
     if (i < 256)
         put_bits(pb, ff_ue_golomb_len[i], i + 1);

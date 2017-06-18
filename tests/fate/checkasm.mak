@@ -4,6 +4,7 @@ FATE_CHECKASM = fate-checkasm-alacdsp                                   \
                 fate-checkasm-bswapdsp                                  \
                 fate-checkasm-fixed_dsp                                 \
                 fate-checkasm-flacdsp                                   \
+                fate-checkasm-float_dsp                                 \
                 fate-checkasm-fmtconvert                                \
                 fate-checkasm-h264dsp                                   \
                 fate-checkasm-h264pred                                  \

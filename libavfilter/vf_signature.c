@@ -260,8 +260,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
         if (!elemsignature)
             return AVERROR(ENOMEM);
         sortsignature = av_malloc_array(elemcat->elem_count, sizeof(int64_t));
-        if (!sortsignature)
+        if (!sortsignature) {
+            av_freep(&elemsignature);
             return AVERROR(ENOMEM);
+        }
 
         for (j = 0; j < elemcat->elem_count; j++) {
             blocksum = 0;
@@ -508,6 +510,7 @@ static int binary_export(AVFilterContext *ctx, StreamContext *sc, const char* fi
         char buf[128];
         av_strerror(err, buf, sizeof(buf));
         av_log(ctx, AV_LOG_ERROR, "cannot open file %s: %s\n", filename, buf);
+        av_freep(&buffer);
         return err;
     }
     init_put_bits(&buf, buffer, len);

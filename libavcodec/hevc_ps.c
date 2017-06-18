@@ -725,6 +725,7 @@ static int scaling_list_data(GetBitContext *gb, AVCodecContext *avctx, ScalingLi
                  * which should already be in the arrays. */
                 if (delta) {
                     // Copy from previous array.
+                    delta *= (size_id == 3) ? 3 : 1;
                     if (matrix_id < delta) {
                         av_log(avctx, AV_LOG_ERROR,
                                "Invalid delta in scaling list data: %d.\n", delta);
