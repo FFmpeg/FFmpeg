@@ -57,11 +57,6 @@ av_cold void ff_mdct15_uninit(MDCT15Context **ps)
     av_freep(ps);
 }
 
-static void mdct15(MDCT15Context *s, float *dst, const float *src, ptrdiff_t stride);
-
-static void imdct15_half(MDCT15Context *s, float *dst, const float *src,
-                         ptrdiff_t stride, float scale);
-
 static inline int init_pfa_reindex_tabs(MDCT15Context *s)
 {
     int i, j;
@@ -93,88 +88,8 @@ static inline int init_pfa_reindex_tabs(MDCT15Context *s)
     return 0;
 }
 
-av_cold int ff_mdct15_init(MDCT15Context **ps, int inverse, int N, double scale)
-{
-    MDCT15Context *s;
-    double alpha, theta;
-    int len2 = 15 * (1 << N);
-    int len  = 2 * len2;
-    int i;
-
-    /* Tested and verified to work on everything in between */
-    if ((N < 2) || (N > 13))
-        return AVERROR(EINVAL);
-
-    s = av_mallocz(sizeof(*s));
-    if (!s)
-        return AVERROR(ENOMEM);
-
-    s->fft_n = N - 1;
-    s->len4 = len2 / 2;
-    s->len2 = len2;
-    s->inverse = inverse;
-    s->mdct = mdct15;
-    s->imdct_half = imdct15_half;
-
-    if (ff_fft_init(&s->ptwo_fft, N - 1, s->inverse) < 0)
-        goto fail;
-
-    if (init_pfa_reindex_tabs(s))
-        goto fail;
-
-    s->tmp  = av_malloc_array(len, 2 * sizeof(*s->tmp));
-    if (!s->tmp)
-        goto fail;
-
-    s->twiddle_exptab  = av_malloc_array(s->len4, sizeof(*s->twiddle_exptab));
-    if (!s->twiddle_exptab)
-        goto fail;
-
-    theta = 0.125f + (scale < 0 ? s->len4 : 0);
-    scale = sqrt(fabs(scale));
-    for (i = 0; i < s->len4; i++) {
-        alpha = 2 * M_PI * (i + theta) / len;
-        s->twiddle_exptab[i].re = cos(alpha) * scale;
-        s->twiddle_exptab[i].im = sin(alpha) * scale;
-    }
-
-    /* 15-point FFT exptab */
-    for (i = 0; i < 19; i++) {
-        if (i < 15) {
-            double theta = (2.0f * M_PI * i) / 15.0f;
-            if (!s->inverse)
-                theta *= -1;
-            s->exptab[i].re = cos(theta);
-            s->exptab[i].im = sin(theta);
-        } else { /* Wrap around to simplify fft15 */
-            s->exptab[i] = s->exptab[i - 15];
-        }
-    }
-
-    /* 5-point FFT exptab */
-    s->exptab[19].re = cos(2.0f * M_PI / 5.0f);
-    s->exptab[19].im = sin(2.0f * M_PI / 5.0f);
-    s->exptab[20].re = cos(1.0f * M_PI / 5.0f);
-    s->exptab[20].im = sin(1.0f * M_PI / 5.0f);
-
-    /* Invert the phase for an inverse transform, do nothing for a forward transform */
-    if (s->inverse) {
-        s->exptab[19].im *= -1;
-        s->exptab[20].im *= -1;
-    }
-
-    *ps = s;
-
-    return 0;
-
-fail:
-    ff_mdct15_uninit(&s);
-    return AVERROR(ENOMEM);
-}
-
 /* Stride is hardcoded to 3 */
-static inline void fft5(const FFTComplex exptab[2], FFTComplex *out,
-                        const FFTComplex *in)
+static inline void fft5(FFTComplex *out, FFTComplex *in, FFTComplex exptab[2])
 {
     FFTComplex z0[4], t[6];
 
@@ -219,14 +134,14 @@ static inline void fft5(const FFTComplex exptab[2], FFTComplex *out,
     out[4].im = in[0].im + z0[3].im;
 }
 
-static void fft15(const FFTComplex exptab[22], FFTComplex *out, const FFTComplex *in, size_t stride)
+static void fft15_c(FFTComplex *out, FFTComplex *in, FFTComplex *exptab, ptrdiff_t stride)
 {
     int k;
     FFTComplex tmp1[5], tmp2[5], tmp3[5];
 
-    fft5(exptab + 19, tmp1, in + 0);
-    fft5(exptab + 19, tmp2, in + 1);
-    fft5(exptab + 19, tmp3, in + 2);
+    fft5(tmp1, in + 0, exptab + 19);
+    fft5(tmp2, in + 1, exptab + 19);
+    fft5(tmp3, in + 2, exptab + 19);
 
     for (k = 0; k < 5; k++) {
         FFTComplex t[2];
@@ -269,7 +184,7 @@ static void mdct15(MDCT15Context *s, float *dst, const float *src, ptrdiff_t str
             }
             CMUL(fft15in[j].re, fft15in[j].im, re, im, s->twiddle_exptab[k].re, -s->twiddle_exptab[k].im);
         }
-        fft15(s->exptab, s->tmp + s->ptwo_fft.revtab[i], fft15in, l_ptwo);
+        s->fft15(s->tmp + s->ptwo_fft.revtab[i], fft15in, s->exptab, l_ptwo);
     }
 
     /* Then a 15xN FFT (where N is a power of two) */
@@ -306,7 +221,7 @@ static void imdct15_half(MDCT15Context *s, float *dst, const float *src,
             FFTComplex tmp = { *(in2 - 2*k*stride), *(in1 + 2*k*stride) };
             CMUL3(fft15in[j], tmp, s->twiddle_exptab[k]);
         }
-        fft15(s->exptab, s->tmp + s->ptwo_fft.revtab[i], fft15in, l_ptwo);
+        s->fft15(s->tmp + s->ptwo_fft.revtab[i], fft15in, s->exptab, l_ptwo);
     }
 
     /* Then a 15xN FFT (where N is a power of two) */
@@ -326,4 +241,87 @@ static void imdct15_half(MDCT15Context *s, float *dst, const float *src,
         z[i0].re = scale * re1;
         z[i0].im = scale * im1;
     }
+}
+
+av_cold int ff_mdct15_init(MDCT15Context **ps, int inverse, int N, double scale)
+{
+    MDCT15Context *s;
+    double alpha, theta;
+    int len2 = 15 * (1 << N);
+    int len  = 2 * len2;
+    int i;
+
+    /* Tested and verified to work on everything in between */
+    if ((N < 2) || (N > 13))
+        return AVERROR(EINVAL);
+
+    s = av_mallocz(sizeof(*s));
+    if (!s)
+        return AVERROR(ENOMEM);
+
+    s->fft_n      = N - 1;
+    s->len4       = len2 / 2;
+    s->len2       = len2;
+    s->inverse    = inverse;
+    s->fft15      = fft15_c;
+    s->mdct       = mdct15;
+    s->imdct_half = imdct15_half;
+
+    if (ff_fft_init(&s->ptwo_fft, N - 1, s->inverse) < 0)
+        goto fail;
+
+    if (init_pfa_reindex_tabs(s))
+        goto fail;
+
+    s->tmp  = av_malloc_array(len, 2 * sizeof(*s->tmp));
+    if (!s->tmp)
+        goto fail;
+
+    s->twiddle_exptab  = av_malloc_array(s->len4, sizeof(*s->twiddle_exptab));
+    if (!s->twiddle_exptab)
+        goto fail;
+
+    theta = 0.125f + (scale < 0 ? s->len4 : 0);
+    scale = sqrt(fabs(scale));
+    for (i = 0; i < s->len4; i++) {
+        alpha = 2 * M_PI * (i + theta) / len;
+        s->twiddle_exptab[i].re = cosf(alpha) * scale;
+        s->twiddle_exptab[i].im = sinf(alpha) * scale;
+    }
+
+    /* 15-point FFT exptab */
+    for (i = 0; i < 19; i++) {
+        if (i < 15) {
+            double theta = (2.0f * M_PI * i) / 15.0f;
+            if (!s->inverse)
+                theta *= -1;
+            s->exptab[i].re = cosf(theta);
+            s->exptab[i].im = sinf(theta);
+        } else { /* Wrap around to simplify fft15 */
+            s->exptab[i] = s->exptab[i - 15];
+        }
+    }
+
+    /* 5-point FFT exptab */
+    s->exptab[19].re = cosf(2.0f * M_PI / 5.0f);
+    s->exptab[19].im = sinf(2.0f * M_PI / 5.0f);
+    s->exptab[20].re = cosf(1.0f * M_PI / 5.0f);
+    s->exptab[20].im = sinf(1.0f * M_PI / 5.0f);
+
+    /* Invert the phase for an inverse transform, do nothing for a forward transform */
+    if (s->inverse) {
+        s->exptab[19].im *= -1;
+        s->exptab[20].im *= -1;
+    }
+
+    if (ARCH_X86)
+        ff_mdct15_init_x86(s);
+
+    *ps = s;
+
+    return 0;
+
+fail:
+    ff_mdct15_uninit(&s);
+    return AVERROR(ENOMEM);
 }
