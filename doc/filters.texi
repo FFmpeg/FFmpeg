@@ -1074,7 +1074,7 @@ The filter accepts the following options:
 @item frequency, f
 Set frequency in Hz.
 
-@item width_type
+@item width_type, t
 Set method to specify band-width of filter.
 @table @option
 @item h
@@ -1809,7 +1809,7 @@ Set the filter's central frequency. Default is @code{3000}.
 @item csg
 Constant skirt gain if set to 1. Defaults to 0.
 
-@item width_type
+@item width_type, t
 Set method to specify band-width of filter.
 @table @option
 @item h
@@ -1841,7 +1841,7 @@ The filter accepts the following options:
 @item frequency, f
 Set the filter's central frequency. Default is @code{3000}.
 
-@item width_type
+@item width_type, t
 Set method to specify band-width of filter.
 @table @option
 @item h
@@ -1880,7 +1880,7 @@ Set the filter's central frequency and so can be used
 to extend or reduce the frequency range to be boosted or cut.
 The default value is @code{100} Hz.
 
-@item width_type
+@item width_type, t
 Set method to specify band-width of filter.
 @table @option
 @item h
@@ -2498,7 +2498,7 @@ The filter accepts the following options:
 @item frequency, f
 Set the filter's central frequency in Hz.
 
-@item width_type
+@item width_type, t
 Set method to specify band-width of filter.
 @table @option
 @item h
@@ -2527,13 +2527,13 @@ Specify which channels to filter, by default all available are filtered.
 @item
 Attenuate 10 dB at 1000 Hz, with a bandwidth of 200 Hz:
 @example
-equalizer=f=1000:width_type=h:width=200:g=-10
+equalizer=f=1000:t=h:width=200:g=-10
 @end example
 
 @item
 Apply 2 dB gain at 1000 Hz with Q 1 and attenuate 5 dB at 100 Hz with Q 2:
 @example
-equalizer=f=1000:width_type=q:width=1:g=2,equalizer=f=100:width_type=q:width=2:g=-5
+equalizer=f=1000:t=q:w=1:g=2,equalizer=f=100:t=q:w=2:g=-5
 @end example
 @end itemize
 
@@ -2847,7 +2847,7 @@ Set frequency in Hz. Default is 3000.
 @item poles, p
 Set number of poles. Default is 2.
 
-@item width_type
+@item width_type, t
 Set method to specify band-width of filter.
 @table @option
 @item h
@@ -3134,7 +3134,7 @@ Set frequency in Hz. Default is 500.
 @item poles, p
 Set number of poles. Default is 2.
 
-@item width_type
+@item width_type, t
 Set method to specify band-width of filter.
 @table @option
 @item h
@@ -3890,7 +3890,7 @@ Set the filter's central frequency and so can be used
 to extend or reduce the frequency range to be boosted or cut.
 The default value is @code{3000} Hz.
 
-@item width_type
+@item width_type, t
 Set method to specify band-width of filter.
 @table @option
 @item h
