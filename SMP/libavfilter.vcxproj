@@ -168,6 +168,7 @@
     <ClCompile Include="..\libavfilter\af_firequalizer.c" />
     <ClCompile Include="..\libavfilter\af_flanger.c" />
     <ClCompile Include="..\libavfilter\af_hdcd.c" />
+    <ClCompile Include="..\libavfilter\af_headphone.c" />
     <ClCompile Include="..\libavfilter\af_join.c" />
     <ClCompile Include="..\libavfilter\af_loudnorm.c" />
     <ClCompile Include="..\libavfilter\ebur128.c" />
