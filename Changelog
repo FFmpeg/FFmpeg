@@ -21,6 +21,7 @@ version <next>:
 - Gremlin Digital Video demuxer and decoder
 - headphone audio filter
 - superequalizer audio filter
+- roberts video filter
 
 version 3.3:
 - CrystalHD decoder moved to new decode API

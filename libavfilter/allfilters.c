@@ -279,6 +279,7 @@ static void register_all(void)
     REGISTER_FILTER(REMOVELOGO,     removelogo,     vf);
     REGISTER_FILTER(REPEATFIELDS,   repeatfields,   vf);
     REGISTER_FILTER(REVERSE,        reverse,        vf);
+    REGISTER_FILTER(ROBERTS,        roberts,        vf);
     REGISTER_FILTER(ROTATE,         rotate,         vf);
     REGISTER_FILTER(SAB,            sab,            vf);
     REGISTER_FILTER(SCALE,          scale,          vf);
