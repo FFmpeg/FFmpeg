@@ -722,6 +722,7 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls, double
 {
     HLSSegment *en = av_malloc(sizeof(*en));
     const char  *filename;
+    int byterange_mode = (hls->flags & HLS_SINGLE_FILE) || (hls->max_seg_size > 0);
     int ret;
 
     if (!en)
@@ -737,8 +738,8 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls, double
     if (hls->use_localtime_mkdir) {
         filename = hls->avf->filename;
     }
-    if (find_segment_by_filename(hls->segments, filename)
-        || find_segment_by_filename(hls->old_segments, filename)) {
+    if ((find_segment_by_filename(hls->segments, filename) || find_segment_by_filename(hls->old_segments, filename))
+        && !byterange_mode) {
         av_log(hls, AV_LOG_WARNING, "Duplicated segment filename detected: %s\n", filename);
     }
     av_strlcpy(en->filename, filename, sizeof(en->filename));
