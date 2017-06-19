@@ -302,6 +302,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     SuperEqualizerContext *s = ctx->priv;
 
+    av_frame_free(&s->out);
     av_freep(&s->irest);
     av_freep(&s->ires);
     av_freep(&s->fsamples);
