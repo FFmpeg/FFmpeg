@@ -779,17 +779,6 @@ static int mov_write_avid_tag(AVIOContext *pb, MOVTrack *track)
     return 0;
 }
 
-static const AVCodecTag codec_ipod_tags[] = {
-    { AV_CODEC_ID_H264,     MKTAG('a','v','c','1') },
-    { AV_CODEC_ID_MPEG4,    MKTAG('m','p','4','v') },
-    { AV_CODEC_ID_AAC,      MKTAG('m','p','4','a') },
-    { AV_CODEC_ID_ALAC,     MKTAG('a','l','a','c') },
-    { AV_CODEC_ID_AC3,      MKTAG('a','c','-','3') },
-    { AV_CODEC_ID_MOV_TEXT, MKTAG('t','x','3','g') },
-    { AV_CODEC_ID_MOV_TEXT, MKTAG('t','e','x','t') },
-    { AV_CODEC_ID_NONE, 0 },
-};
-
 static int mov_get_dv_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
     int tag;
@@ -889,26 +878,6 @@ static int mov_get_codec_tag(AVFormatContext *s, MOVTrack *track)
 
     return tag;
 }
-
-static const AVCodecTag codec_3gp_tags[] = {
-    { AV_CODEC_ID_H263,     MKTAG('s','2','6','3') },
-    { AV_CODEC_ID_H264,     MKTAG('a','v','c','1') },
-    { AV_CODEC_ID_MPEG4,    MKTAG('m','p','4','v') },
-    { AV_CODEC_ID_AAC,      MKTAG('m','p','4','a') },
-    { AV_CODEC_ID_AMR_NB,   MKTAG('s','a','m','r') },
-    { AV_CODEC_ID_AMR_WB,   MKTAG('s','a','w','b') },
-    { AV_CODEC_ID_MOV_TEXT, MKTAG('t','x','3','g') },
-    { AV_CODEC_ID_NONE, 0 },
-};
-
-static const AVCodecTag codec_f4v_tags[] = {
-    { AV_CODEC_ID_MP3,    MKTAG('.','m','p','3') },
-    { AV_CODEC_ID_AAC,    MKTAG('m','p','4','a') },
-    { AV_CODEC_ID_H264,   MKTAG('a','v','c','1') },
-    { AV_CODEC_ID_VP6A,   MKTAG('V','P','6','A') },
-    { AV_CODEC_ID_VP6F,   MKTAG('V','P','6','F') },
-    { AV_CODEC_ID_NONE, 0 },
-};
 
 static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
@@ -4410,6 +4379,17 @@ error:
     return res;
 }
 
+static const AVCodecTag codec_3gp_tags[] = {
+    { AV_CODEC_ID_H263,     MKTAG('s','2','6','3') },
+    { AV_CODEC_ID_H264,     MKTAG('a','v','c','1') },
+    { AV_CODEC_ID_MPEG4,    MKTAG('m','p','4','v') },
+    { AV_CODEC_ID_AAC,      MKTAG('m','p','4','a') },
+    { AV_CODEC_ID_AMR_NB,   MKTAG('s','a','m','r') },
+    { AV_CODEC_ID_AMR_WB,   MKTAG('s','a','w','b') },
+    { AV_CODEC_ID_MOV_TEXT, MKTAG('t','x','3','g') },
+    { AV_CODEC_ID_NONE, 0 },
+};
+
 const AVCodecTag codec_mp4_tags[] = {
     { AV_CODEC_ID_MPEG4       , MKTAG('m', 'p', '4', 'v') },
     { AV_CODEC_ID_H264        , MKTAG('a', 'v', 'c', '1') },
@@ -4438,6 +4418,26 @@ const AVCodecTag codec_mp4_tags[] = {
 const AVCodecTag codec_ism_tags[] = {
     { AV_CODEC_ID_WMAPRO      , MKTAG('w', 'm', 'a', ' ') },
     { AV_CODEC_ID_NONE        ,    0 },
+};
+
+static const AVCodecTag codec_ipod_tags[] = {
+    { AV_CODEC_ID_H264,     MKTAG('a','v','c','1') },
+    { AV_CODEC_ID_MPEG4,    MKTAG('m','p','4','v') },
+    { AV_CODEC_ID_AAC,      MKTAG('m','p','4','a') },
+    { AV_CODEC_ID_ALAC,     MKTAG('a','l','a','c') },
+    { AV_CODEC_ID_AC3,      MKTAG('a','c','-','3') },
+    { AV_CODEC_ID_MOV_TEXT, MKTAG('t','x','3','g') },
+    { AV_CODEC_ID_MOV_TEXT, MKTAG('t','e','x','t') },
+    { AV_CODEC_ID_NONE, 0 },
+};
+
+static const AVCodecTag codec_f4v_tags[] = {
+    { AV_CODEC_ID_MP3,    MKTAG('.','m','p','3') },
+    { AV_CODEC_ID_AAC,    MKTAG('m','p','4','a') },
+    { AV_CODEC_ID_H264,   MKTAG('a','v','c','1') },
+    { AV_CODEC_ID_VP6A,   MKTAG('V','P','6','A') },
+    { AV_CODEC_ID_VP6F,   MKTAG('V','P','6','F') },
+    { AV_CODEC_ID_NONE, 0 },
 };
 
 #if CONFIG_MOV_MUXER
