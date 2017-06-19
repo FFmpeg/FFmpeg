@@ -313,8 +313,8 @@ static float wv_get_value_float(WavpackFrameContext *s, uint32_t *crc, int S)
         S  *= 1U << s->float_shift;
         sign = S < 0;
         if (sign)
-            S = -S;
-        if (S >= 0x1000000) {
+            S = -(unsigned)S;
+        if (S >= 0x1000000U) {
             if (s->got_extra_bits && get_bits1(&s->gb_extra_bits))
                 S = get_bits(&s->gb_extra_bits, 23);
             else
