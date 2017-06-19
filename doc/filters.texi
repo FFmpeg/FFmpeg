@@ -3743,6 +3743,12 @@ Left/Right to Left + Right.
 
 @item lr>rl
 Left/Right to Right/Left.
+
+@item ms>ll
+Mid/Side to Left/Left.
+
+@item ms>rr
+Mid/Side to Right/Right.
 @end table
 
 @item slev
