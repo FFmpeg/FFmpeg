@@ -100,7 +100,8 @@ av_cold void ff_idctdsp_init_x86(IDCTDSPContext *c, AVCodecContext *avctx,
             avctx->lowres == 0 &&
             (avctx->idct_algo == FF_IDCT_AUTO ||
                 avctx->idct_algo == FF_IDCT_SIMPLEAUTO ||
-                avctx->idct_algo == FF_IDCT_SIMPLEMMX)) {
+                avctx->idct_algo == FF_IDCT_SIMPLEMMX ||
+                avctx->idct_algo == FF_IDCT_SIMPLE)) {
                 c->idct      = ff_simple_idct8_sse2;
                 c->idct_put  = ff_simple_idct8_put_sse2;
                 c->idct_add  = ff_simple_idct8_add_sse2;
@@ -113,7 +114,8 @@ av_cold void ff_idctdsp_init_x86(IDCTDSPContext *c, AVCodecContext *avctx,
             !high_bit_depth &&
             (avctx->idct_algo == FF_IDCT_AUTO ||
                 avctx->idct_algo == FF_IDCT_SIMPLEAUTO ||
-                avctx->idct_algo == FF_IDCT_SIMPLEMMX)) {
+                avctx->idct_algo == FF_IDCT_SIMPLEMMX ||
+                avctx->idct_algo == FF_IDCT_SIMPLE)) {
                 c->idct      = ff_simple_idct8_avx;
                 c->idct_put  = ff_simple_idct8_put_avx;
                 c->idct_add  = ff_simple_idct8_add_avx;
