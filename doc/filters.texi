@@ -3836,7 +3836,7 @@ Set level of input signal of original channel. Default is 0.8.
 @end table
 
 @section superequalizer
-Apply 18th band equalizer.
+Apply 18 band equalizer.
 
 The filter accpets the following options:
 @table @option
