@@ -225,7 +225,7 @@ static void dct_unquantize_h263_intra_c(MpegEncContext *s,
     if(s->ac_pred)
         nCoeffs=63;
     else
-        nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
+        nCoeffs= s->intra_scantable.raster_end[ s->block_last_index[n] ];
 
     for(i=1; i<=nCoeffs; i++) {
         level = block[i];
