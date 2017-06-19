@@ -4056,8 +4056,8 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
                                   int qscale, int *overflow){
     const int *qmat;
     const uint16_t *matrix;
-    const uint8_t *scantable= s->intra_scantable.scantable;
-    const uint8_t *perm_scantable= s->intra_scantable.permutated;
+    const uint8_t *scantable;
+    const uint8_t *perm_scantable;
     int max=0;
     unsigned int threshold1, threshold2;
     int bias=0;
@@ -4090,6 +4090,8 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
     else                 mpeg2_qscale = qscale << 1;
 
     if (s->mb_intra) {
+        scantable= s->intra_scantable.scantable;
+        perm_scantable= s->intra_scantable.permutated;
         int q;
         if (!s->h263_aic) {
             if (n < 4)
@@ -4120,6 +4122,8 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
             last_length= s->intra_ac_vlc_last_length;
         }
     } else {
+        scantable= s->inter_scantable.scantable;
+        perm_scantable= s->inter_scantable.permutated;
         start_i = 0;
         last_non_zero = -1;
         qmat = s->q_inter_matrix[qscale];
@@ -4387,8 +4391,8 @@ static int dct_quantize_refine(MpegEncContext *s, //FIXME breaks denoise?
                         int n, int qscale){
     int16_t rem[64];
     LOCAL_ALIGNED_16(int16_t, d1, [64]);
-    const uint8_t *scantable= s->intra_scantable.scantable;
-    const uint8_t *perm_scantable= s->intra_scantable.permutated;
+    const uint8_t *scantable;
+    const uint8_t *perm_scantable;
 //    unsigned int threshold1, threshold2;
 //    int bias=0;
     int run_tab[65];
@@ -4415,6 +4419,8 @@ static int messed_sign=0;
     qmul= qscale*2;
     qadd= (qscale-1)|1;
     if (s->mb_intra) {
+        scantable= s->intra_scantable.scantable;
+        perm_scantable= s->intra_scantable.permutated;
         if (!s->h263_aic) {
             if (n < 4)
                 q = s->y_dc_scale;
@@ -4440,6 +4446,8 @@ static int messed_sign=0;
             last_length= s->intra_ac_vlc_last_length;
         }
     } else {
+        scantable= s->inter_scantable.scantable;
+        perm_scantable= s->inter_scantable.permutated;
         dc= 0;
         start_i = 0;
         length     = s->inter_ac_vlc_length;
@@ -4804,7 +4812,7 @@ int ff_dct_quantize_c(MpegEncContext *s,
 {
     int i, j, level, last_non_zero, q, start_i;
     const int *qmat;
-    const uint8_t *scantable= s->intra_scantable.scantable;
+    const uint8_t *scantable;
     int bias;
     int max=0;
     unsigned int threshold1, threshold2;
@@ -4815,6 +4823,7 @@ int ff_dct_quantize_c(MpegEncContext *s,
         s->denoise_dct(s, block);
 
     if (s->mb_intra) {
+        scantable= s->intra_scantable.scantable;
         if (!s->h263_aic) {
             if (n < 4)
                 q = s->y_dc_scale;
@@ -4832,6 +4841,7 @@ int ff_dct_quantize_c(MpegEncContext *s,
         qmat = n < 4 ? s->q_intra_matrix[qscale] : s->q_chroma_intra_matrix[qscale];
         bias= s->intra_quant_bias*(1<<(QMAT_SHIFT - QUANT_BIAS_SHIFT));
     } else {
+        scantable= s->inter_scantable.scantable;
         start_i = 0;
         last_non_zero = -1;
         qmat = s->q_inter_matrix[qscale];
