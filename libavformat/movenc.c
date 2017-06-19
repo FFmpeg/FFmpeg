@@ -32,6 +32,7 @@
 #include "isom.h"
 #include "avc.h"
 
+#include "libavcodec/internal.h"
 #include "libavcodec/bitstream.h"
 #include "libavcodec/put_bits.h"
 #include "libavcodec/vc1_common.h"
@@ -778,26 +779,6 @@ static int mov_write_avid_tag(AVIOContext *pb, MOVTrack *track)
     return 0;
 }
 
-static int mp4_get_codec_tag(AVFormatContext *s, MOVTrack *track)
-{
-    int tag = track->par->codec_tag;
-
-    if (!ff_codec_get_tag(ff_mp4_obj_type, track->par->codec_id))
-        return 0;
-
-    if      (track->par->codec_id == AV_CODEC_ID_H264)      tag = MKTAG('a','v','c','1');
-    else if (track->par->codec_id == AV_CODEC_ID_HEVC)      tag = MKTAG('h','e','v','1');
-    else if (track->par->codec_id == AV_CODEC_ID_AC3)       tag = MKTAG('a','c','-','3');
-    else if (track->par->codec_id == AV_CODEC_ID_DIRAC)     tag = MKTAG('d','r','a','c');
-    else if (track->par->codec_id == AV_CODEC_ID_MOV_TEXT)  tag = MKTAG('t','x','3','g');
-    else if (track->par->codec_id == AV_CODEC_ID_VC1)       tag = MKTAG('v','c','-','1');
-    else if (track->par->codec_type == AVMEDIA_TYPE_VIDEO)  tag = MKTAG('m','p','4','v');
-    else if (track->par->codec_type == AVMEDIA_TYPE_AUDIO)  tag = MKTAG('m','p','4','a');
-    else if (track->par->codec_id == AV_CODEC_ID_DVD_SUBTITLE)  tag = MKTAG('m','p','4','s');
-
-    return tag;
-}
-
 static const AVCodecTag codec_ipod_tags[] = {
     { AV_CODEC_ID_H264,     MKTAG('a','v','c','1') },
     { AV_CODEC_ID_MPEG4,    MKTAG('m','p','4','v') },
@@ -808,23 +789,6 @@ static const AVCodecTag codec_ipod_tags[] = {
     { AV_CODEC_ID_MOV_TEXT, MKTAG('t','e','x','t') },
     { AV_CODEC_ID_NONE, 0 },
 };
-
-static int ipod_get_codec_tag(AVFormatContext *s, MOVTrack *track)
-{
-    int tag = track->par->codec_tag;
-
-    // keep original tag for subs, ipod supports both formats
-    if (!(track->par->codec_type == AVMEDIA_TYPE_SUBTITLE &&
-          (tag == MKTAG('t', 'x', '3', 'g') ||
-           tag == MKTAG('t', 'e', 'x', 't'))))
-        tag = ff_codec_get_tag(codec_ipod_tags, track->par->codec_id);
-
-    if (!av_match_ext(s->filename, "m4a") && !av_match_ext(s->filename, "m4v"))
-        av_log(s, AV_LOG_WARNING, "Warning, extension is not .m4a nor .m4v "
-               "Quicktime/Ipod might not play the file\n");
-
-    return tag;
-}
 
 static int mov_get_dv_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
@@ -951,17 +915,19 @@ static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
     int tag;
 
     if (track->mode == MODE_MP4 || track->mode == MODE_PSP)
-        tag = mp4_get_codec_tag(s, track);
-    else if (track->mode == MODE_ISM) {
-        tag = mp4_get_codec_tag(s, track);
-        if (!tag && track->par->codec_id == AV_CODEC_ID_WMAPRO)
-            tag = MKTAG('w', 'm', 'a', ' ');
-    } else if (track->mode == MODE_IPOD)
-        tag = ipod_get_codec_tag(s, track);
-    else if (track->mode & MODE_3GP)
-        tag = ff_codec_get_tag(codec_3gp_tags, track->par->codec_id);
+        tag = track->par->codec_tag;
+    else if (track->mode == MODE_ISM)
+        tag = track->par->codec_tag;
+    else if (track->mode == MODE_IPOD) {
+        if (!av_match_ext(s->filename, "m4a") &&
+            !av_match_ext(s->filename, "m4v"))
+            av_log(s, AV_LOG_WARNING, "Warning, extension is not .m4a nor .m4v "
+                   "Quicktime/Ipod might not play the file\n");
+        tag = track->par->codec_tag;
+    } else if (track->mode & MODE_3GP)
+        tag = track->par->codec_tag;
     else if (track->mode == MODE_F4V)
-        tag = ff_codec_get_tag(codec_f4v_tags, track->par->codec_id);
+        tag = track->par->codec_tag;
     else
         tag = mov_get_codec_tag(s, track);
 
