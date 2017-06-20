@@ -5490,16 +5490,26 @@ EOF
     enabled ssse3  && check_inline_asm ssse3_inline  '"pabsw %xmm0, %xmm0"'
     enabled mmxext && check_inline_asm mmxext_inline '"pmaxub %mm0, %mm1"'
 
-    if ! disabled_any asm mmx x86asm; then
-        if check_cmd $x86asmexe --version; then
-            x86asm_debug="-g dwarf2"
-            X86ASMDEP='$(DEPX86ASM) $(X86ASMFLAGS) -M $(X86ASM_O) $< > $(@:.o=.d)'
-        elif check_cmd nasm -v; then
-            x86asmexe=nasm
+    probe_x86asm(){
+        x86asmexe_probe=$1
+        if check_cmd $x86asmexe_probe -v; then
+            x86asmexe=$x86asmexe_probe
+            x86asm_type=nasm
             x86asm_debug="-g -F dwarf"
             X86ASM_DEPFLAGS='-MD $(@:.o=.d)'
+        elif check_cmd $x86asmexe_probe --version; then
+            x86asmexe=$x86asmexe_probe
+            x86asm_type=yasm
+            x86asm_debug="-g dwarf2"
+            X86ASMDEP='$(DEPX86ASM) $(X86ASMFLAGS) -M $(X86ASM_O) $< > $(@:.o=.d)'
         fi
+    }
 
+    if ! disabled_any asm mmx x86asm; then
+        for program in $x86asmexe yasm nasm; do
+            probe_x86asm $program
+            test -n "$x86asm_type" && break
+        done
         X86ASMFLAGS="-f $objformat"
         enabled pic               && append X86ASMFLAGS "-DPIC"
         test -n "$extern_prefix"  && append X86ASMFLAGS "-DPREFIX"
@@ -6600,6 +6610,7 @@ echo "big-endian                ${bigendian-no}"
 echo "runtime cpu detection     ${runtime_cpudetect-no}"
 if enabled x86; then
     echo "standalone assembly       ${x86asm-no}"
+    echo "x86 assembler             ${x86asmexe}"
     echo "MMX enabled               ${mmx-no}"
     echo "MMXEXT enabled            ${mmxext-no}"
     echo "3DNow! enabled            ${amd3dnow-no}"
