@@ -243,18 +243,18 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
      * from w&h based to w2&h2 based which are of the 2^x form. */
     virtual_ref[0][0] = 16 * (vop_ref[0][0] + w2) +
                          ROUNDED_DIV(((w - w2) *
-                                      (r * sprite_ref[0][0] - 16 * vop_ref[0][0]) +
-                                      w2 * (r * sprite_ref[1][0] - 16 * vop_ref[1][0])), w);
+                                           (r * sprite_ref[0][0] - 16LL * vop_ref[0][0]) +
+                                      w2 * (r * sprite_ref[1][0] - 16LL * vop_ref[1][0])), w);
     virtual_ref[0][1] = 16 * vop_ref[0][1] +
                         ROUNDED_DIV(((w - w2) *
-                                     (r * sprite_ref[0][1] - 16 * vop_ref[0][1]) +
-                                     w2 * (r * sprite_ref[1][1] - 16 * vop_ref[1][1])), w);
+                                          (r * sprite_ref[0][1] - 16LL * vop_ref[0][1]) +
+                                     w2 * (r * sprite_ref[1][1] - 16LL * vop_ref[1][1])), w);
     virtual_ref[1][0] = 16 * vop_ref[0][0] +
-                        ROUNDED_DIV(((h - h2) * (r * sprite_ref[0][0] - 16 * vop_ref[0][0]) +
-                                     h2 * (r * sprite_ref[2][0] - 16 * vop_ref[2][0])), h);
+                        ROUNDED_DIV(((h - h2) * (r * sprite_ref[0][0] - 16LL * vop_ref[0][0]) +
+                                           h2 * (r * sprite_ref[2][0] - 16LL * vop_ref[2][0])), h);
     virtual_ref[1][1] = 16 * (vop_ref[0][1] + h2) +
-                        ROUNDED_DIV(((h - h2) * (r * sprite_ref[0][1] - 16 * vop_ref[0][1]) +
-                                     h2 * (r * sprite_ref[2][1] - 16 * vop_ref[2][1])), h);
+                        ROUNDED_DIV(((h - h2) * (r * sprite_ref[0][1] - 16LL * vop_ref[0][1]) +
+                                           h2 * (r * sprite_ref[2][1] - 16LL * vop_ref[2][1])), h);
 
     switch (ctx->num_sprite_warping_points) {
     case 0:
