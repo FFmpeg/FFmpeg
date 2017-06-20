@@ -283,6 +283,7 @@ Toolchain options:
   --extra-objcflags=FLAGS  add FLAGS to OBJCFLAGS [$CFLAGS]
   --extra-ldflags=ELDFLAGS add ELDFLAGS to LDFLAGS [$LDFLAGS]
   --extra-ldexeflags=ELDFLAGS add ELDFLAGS to LDEXEFLAGS [$LDEXEFLAGS]
+  --extra-ldsoflags=ELDFLAGS add ELDFLAGS to LDSOFLAGS [$LDSOFLAGS]
   --extra-libs=ELIBS       add ELIBS [$ELIBS]
   --extra-version=STRING   version string suffix []
   --optflags=OPTFLAGS      override optimization-related compiler flags
@@ -738,6 +739,10 @@ add_ldflags(){
 
 add_ldexeflags(){
     append LDEXEFLAGS $($ldflags_filter "$@")
+}
+
+add_ldsoflags(){
+    append LDSOFLAGS $($ldflags_filter "$@")
 }
 
 add_stripflags(){
@@ -2801,6 +2806,9 @@ for opt do
         ;;
         --extra-ldexeflags=*)
             add_ldexeflags $optval
+        ;;
+        --extra-ldsoflags=*)
+            add_ldsoflags $optval
         ;;
         --extra-libs=*)
             add_extralibs $optval
@@ -4950,7 +4958,7 @@ EOF
 # add some linker flags
 check_ldflags -Wl,--warn-common
 check_ldflags -Wl,-rpath-link=libswscale:libavfilter:libavdevice:libavformat:libavcodec:libavutil:libavresample
-enabled rpath && add_ldexeflags -Wl,-rpath,$libdir
+enabled rpath && add_ldexeflags -Wl,-rpath,$libdir && add_ldsoflags -Wl,-rpath,$libdir
 test_ldflags -Wl,-Bsymbolic && append SHFLAGS -Wl,-Bsymbolic
 
 # add some strip flags
@@ -5410,6 +5418,7 @@ LD_PATH=$LD_PATH
 DLLTOOL=$dlltool
 LDFLAGS=$LDFLAGS
 LDEXEFLAGS=$LDEXEFLAGS
+LDSOFLAGS=$LDSOFLAGS
 SHFLAGS=$(echo $($ldflags_filter $SHFLAGS))
 STRIPFLAGS=$STRIPFLAGS
 X86ASMFLAGS=$X86ASMFLAGS
