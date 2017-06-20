@@ -726,8 +726,17 @@ static int hls_slice_header(HEVCContext *s)
             if (deblocking_filter_override_flag) {
                 sh->disable_deblocking_filter_flag = get_bits1(gb);
                 if (!sh->disable_deblocking_filter_flag) {
-                    sh->beta_offset = get_se_golomb(gb) * 2;
-                    sh->tc_offset   = get_se_golomb(gb) * 2;
+                    int beta_offset_div2 = get_se_golomb(gb);
+                    int tc_offset_div2   = get_se_golomb(gb) ;
+                    if (beta_offset_div2 < -6 || beta_offset_div2 > 6 ||
+                        tc_offset_div2   < -6 || tc_offset_div2   > 6) {
+                        av_log(s->avctx, AV_LOG_ERROR,
+                            "Invalid deblock filter offsets: %d, %d\n",
+                            beta_offset_div2, tc_offset_div2);
+                        return AVERROR_INVALIDDATA;
+                    }
+                    sh->beta_offset = beta_offset_div2 * 2;
+                    sh->tc_offset   =   tc_offset_div2 * 2;
                 }
             } else {
                 sh->disable_deblocking_filter_flag = s->ps.pps->disable_dbf;
