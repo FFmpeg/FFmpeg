@@ -3981,6 +3981,10 @@ case $target_os in
             { check_cflags -mdynamic-no-pic && add_asflags -mdynamic-no-pic; }
         check_header dispatch/dispatch.h &&
             add_cppflags '-I\$(SRC_PATH)/compat/dispatch_semaphore'
+        if test -n "$sysroot"; then
+            is_in -isysroot $cc $CPPFLAGS $CFLAGS || check_cppflags -isysroot $sysroot
+            is_in -isysroot $ld $LDFLAGS          || check_ldflags  -isysroot $sysroot
+        fi
         ;;
     msys*)
         die "Native MSYS builds are discouraged, please use the MINGW environment."
