@@ -151,7 +151,7 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
         ctx->group.pushLimit = ctx->pushLimit;
         ctx->group.isPublisher = (flags & AVIO_FLAG_WRITE) > 1;
         ctx->group.isBlocking = 1;
-        ctx->streamId = RTMFP_Connect2Group(ctx->id, ctx->publication, &ctx->group);
+        ctx->streamId = RTMFP_Connect2Group(ctx->id, ctx->publication, &ctx->group, !ctx->audioUnbuffered, !ctx->videoUnbuffered);
     } else if (ctx->peerId)
         ctx->streamId = RTMFP_Connect2Peer(ctx->id, ctx->peerId, ctx->publication, 1);
     else if (ctx->p2pPublishing)
