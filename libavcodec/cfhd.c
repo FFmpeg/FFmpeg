@@ -258,6 +258,11 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             s->coded_height = data;
         } else if (tag == 101) {
             av_log(avctx, AV_LOG_DEBUG, "Bits per component: %"PRIu16"\n", data);
+            if (data < 1 || data > 31) {
+                av_log(avctx, AV_LOG_ERROR, "Bits per component %d is invalid\n", data);
+                ret = AVERROR(EINVAL);
+                break;
+            }
             s->bpc = data;
         } else if (tag == 12) {
             av_log(avctx, AV_LOG_DEBUG, "Channel Count: %"PRIu16"\n", data);
@@ -404,12 +409,12 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             av_log(avctx, AV_LOG_DEBUG, "Other codebook? %i\n", s->codebook);
         } else if (tag == 70) {
             av_log(avctx, AV_LOG_DEBUG, "Subsampling or bit-depth flag? %i\n", data);
-            s->bpc = data;
-            if (!(s->bpc == 10 || s->bpc == 12)) {
+            if (!(data == 10 || data == 12)) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid bits per channel\n");
                 ret = AVERROR(EINVAL);
                 break;
             }
+            s->bpc = data;
         } else if (tag == 84) {
             av_log(avctx, AV_LOG_DEBUG, "Sample format? %i\n", data);
             if (data == 1)
