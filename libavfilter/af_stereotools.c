@@ -248,6 +248,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             r = m * mlev * FFMIN(1., mpan)      - S * slev * FFMIN(1., sbal);
             L = l;
             R = r;
+            break;
         case 7:
             l = L * mlev * FFMIN(1., 2. - mpan) + R * slev * FFMIN(1., 2. - sbal);
             L = l;
