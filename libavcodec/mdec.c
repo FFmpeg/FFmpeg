@@ -215,9 +215,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     MDECContext * const a = avctx->priv_data;
     int i;
 
-    if (avctx->idct_algo == FF_IDCT_AUTO)
-        avctx->idct_algo = FF_IDCT_SIMPLE;
-
     a->mb_width  = (avctx->coded_width  + 15) / 16;
     a->mb_height = (avctx->coded_height + 15) / 16;
 
