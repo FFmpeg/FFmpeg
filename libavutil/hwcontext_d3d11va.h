@@ -30,6 +30,10 @@
  * Using sw_format==AV_PIX_FMT_YUV420P has special semantics, and maps to
  * DXGI_FORMAT_420_OPAQUE. av_hwframe_transfer_data() is not supported for
  * this format. Refer to MSDN for details.
+ *
+ * av_hwdevice_ctx_create() for this device type supports a key named "debug"
+ * for the AVDictionary entry. If this is set to any value, the device creation
+ * code will try to load various supported D3D debugging layers.
  */
 
 #include <d3d11.h>

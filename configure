@@ -1859,6 +1859,7 @@ HEADERS_LIST="
     direct_h
     dirent_h
     dlfcn_h
+    dxgidebug_h
     dxva_h
     ES2_gl_h
     gsm_h
@@ -5683,6 +5684,7 @@ check_header d3d11.h
 check_header direct.h
 check_header dirent.h
 check_header dlfcn.h
+check_header dxgidebug.h
 check_header dxva.h
 check_header dxva2api.h -D_WIN32_WINNT=0x0600
 check_header io.h
