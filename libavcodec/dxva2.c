@@ -363,7 +363,6 @@ static int d3d11va_get_decoder_configuration(AVCodecContext *avctx,
                                              const D3D11_VIDEO_DECODER_DESC *desc,
                                              D3D11_VIDEO_DECODER_CONFIG *config)
 {
-    FFDXVASharedContext *sctx = DXVA_SHARED_CONTEXT(avctx);
     unsigned cfg_count = 0;
     D3D11_VIDEO_DECODER_CONFIG *cfg_list = NULL;
     HRESULT hr;
@@ -629,7 +628,6 @@ int ff_dxva2_decode_init(AVCodecContext *avctx)
     if (sctx->pix_fmt == AV_PIX_FMT_D3D11) {
         AVD3D11VADeviceContext *device_hwctx = frames_ctx->device_ctx->hwctx;
         AVD3D11VAContext *d3d11_ctx = &sctx->ctx.d3d11va;
-        HRESULT hr;
 
         ff_dxva2_lock(avctx);
         ret = d3d11va_create_decoder(avctx);
@@ -696,7 +694,7 @@ int ff_dxva2_decode_uninit(AVCodecContext *avctx)
     return 0;
 }
 
-static void *get_surface(AVCodecContext *avctx, const AVFrame *frame)
+static void *get_surface(const AVCodecContext *avctx, const AVFrame *frame)
 {
 #if CONFIG_D3D11VA
     if (frame->format == AV_PIX_FMT_D3D11) {
@@ -704,7 +702,7 @@ static void *get_surface(AVCodecContext *avctx, const AVFrame *frame)
         intptr_t index = (intptr_t)frame->data[1];
         if (index < 0 || index >= sctx->nb_d3d11_views ||
             sctx->d3d11_texture != (ID3D11Texture2D *)frame->data[0]) {
-            av_log(avctx, AV_LOG_ERROR, "get_buffer frame is invalid!\n");
+            av_log((void *)avctx, AV_LOG_ERROR, "get_buffer frame is invalid!\n");
             return NULL;
         }
         return sctx->d3d11_views[index];
@@ -765,7 +763,7 @@ int ff_dxva2_commit_buffer(AVCodecContext *avctx,
 #endif
     if (FAILED(hr)) {
         av_log(avctx, AV_LOG_ERROR, "Failed to get a buffer for %u: 0x%x\n",
-               type, hr);
+               type, (unsigned)hr);
         return -1;
     }
     if (size <= dxva_size) {
@@ -807,7 +805,7 @@ int ff_dxva2_commit_buffer(AVCodecContext *avctx,
     if (FAILED(hr)) {
         av_log(avctx, AV_LOG_ERROR,
                "Failed to release buffer type %u: 0x%x\n",
-               type, hr);
+               type, (unsigned)hr);
         result = -1;
     }
     return result;
@@ -877,7 +875,7 @@ int ff_dxva2_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
     } while(1);
 
     if (FAILED(hr)) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to begin frame: 0x%x\n", hr);
+        av_log(avctx, AV_LOG_ERROR, "Failed to begin frame: 0x%x\n", (unsigned)hr);
         ff_dxva2_unlock(avctx);
         return -1;
     }
@@ -972,7 +970,7 @@ int ff_dxva2_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
     }
 #endif
     if (FAILED(hr)) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to execute: 0x%x\n", hr);
+        av_log(avctx, AV_LOG_ERROR, "Failed to execute: 0x%x\n", (unsigned)hr);
         result = -1;
     }
 
@@ -987,7 +985,7 @@ end:
 #endif
     ff_dxva2_unlock(avctx);
     if (FAILED(hr)) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to end frame: 0x%x\n", hr);
+        av_log(avctx, AV_LOG_ERROR, "Failed to end frame: 0x%x\n", (unsigned)hr);
         result = -1;
     }
 
