@@ -3,6 +3,17 @@ releases are sorted from youngest to oldest.
 
 
 version 3.1.9:
+- avcodec/cfhd: Check bpc before setting bpc in context
+- avcodec/cfhd: Fix undefined shift
+- avcodec/hevc_filter: Fix invalid shift
+- avcodec/mpeg4videodec: Fix overflow in virtual_ref computation
+- avcodec/lpc: signed integer overflow in compute_lpc_coefs() (aacdec_fixed)
+- avcodec/wavpack: Fix undefined integer negation
+- avcodec/aacdec_fixed: Check s for being too small
+- avcodec/htmlsubtitles: Replace very slow redundant sscanf() calls by cleaner and faster code
+- avcodec/h264: Fix mix of lossless and lossy MBs decoding
+- avcodec/h264_mb: Fix 8x8dct in lossless for new versions of x264
+- avcodec/h264_cabac: Fix CABAC+8x8dct in 4:4:4
 - avcodec/takdec: Fixes: integer overflow in AV_SAMPLE_FMT_U8P output
 - avcodec/jpeg2000dsp: Reorder operations in ict_int() to avoid 2 integer overflows
 - avcodec/hevcpred_template: Fix left shift of negative value
