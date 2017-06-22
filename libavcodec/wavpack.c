@@ -225,7 +225,7 @@ static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb,
         INC_MED(1);
         DEC_MED(2);
     } else {
-        base = GET_MED(0) + GET_MED(1) + GET_MED(2) * (t - 2);
+        base = GET_MED(0) + GET_MED(1) + GET_MED(2) * (t - 2U);
         add  = GET_MED(2) - 1;
         INC_MED(0);
         INC_MED(1);
