@@ -104,9 +104,11 @@ static void d3d11va_frames_uninit(AVHWFramesContext *ctx)
 
     if (frames_hwctx->texture)
         ID3D11Texture2D_Release(frames_hwctx->texture);
+    frames_hwctx->texture = NULL;
 
     if (s->staging_texture)
         ID3D11Texture2D_Release(s->staging_texture);
+    s->staging_texture = NULL;
 }
 
 static void free_texture(void *opaque, uint8_t *data)
