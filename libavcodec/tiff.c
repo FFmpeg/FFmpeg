@@ -1303,6 +1303,8 @@ static int decode_frame(AVCodecContext *avctx,
         stride = p->linesize[plane];
         dst = p->data[plane];
         for (i = 0; i < s->height; i += s->rps) {
+            if (i)
+                dst += s->rps * stride;
             if (s->stripsizesoff)
                 ssize = ff_tget(&stripsizes, s->sstype, le);
             else
@@ -1323,7 +1325,6 @@ static int decode_frame(AVCodecContext *avctx,
                     return ret;
                 break;
             }
-            dst += s->rps * stride;
         }
         if (s->predictor == 2) {
             if (s->photometric == TIFF_PHOTOMETRIC_YCBCR) {
