@@ -48,6 +48,7 @@ struct CodedBitstreamType;
  * H.264 / AVC: nal_unit_type
  * H.265 / HEVC: nal_unit_type
  * MPEG-2: start code value (without prefix)
+ * VP9: unused, set to zero (every unit is a frame)
  */
 typedef uint32_t CodedBitstreamUnitType;
 
