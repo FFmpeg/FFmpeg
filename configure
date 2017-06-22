@@ -1561,6 +1561,7 @@ HEADERS_LIST="
     dev_video_meteor_ioctl_meteor_h
     direct_h
     dlfcn_h
+    dxgidebug_h
     dxva_h
     gsm_h
     io_h
@@ -4660,6 +4661,7 @@ check_struct windows.h "CONDITION_VARIABLE" Ptr
 check_header d3d11.h
 check_header direct.h
 check_header dlfcn.h
+check_header dxgidebug.h
 check_header dxva.h
 check_header dxva2api.h
 check_header io.h

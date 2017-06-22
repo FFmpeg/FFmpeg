@@ -16,6 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+
 #include <windows.h>
 
 // Include thread.h before redefining _WIN32_WINNT, to get
@@ -31,6 +33,10 @@
 #include <initguid.h>
 #include <d3d11.h>
 #include <dxgi1_2.h>
+
+#if HAVE_DXGIDEBUG_H
+#include <dxgidebug.h>
+#endif
 
 #include "avassert.h"
 #include "common.h"
@@ -476,7 +482,17 @@ static int d3d11va_device_create(AVHWDeviceContext *ctx, const char *device,
     IDXGIAdapter           *pAdapter = NULL;
     ID3D10Multithread      *pMultithread;
     UINT creationFlags = D3D11_CREATE_DEVICE_VIDEO_SUPPORT;
+    int is_debug       = !!av_dict_get(opts, "debug", NULL, 0);
     int ret;
+
+    // (On UWP we can't check this.)
+#if HAVE_LOADLIBRARY
+    if (!LoadLibrary("d3d11_1sdklayers.dll"))
+        is_debug = 0;
+#endif
+
+    if (is_debug)
+        creationFlags |= D3D11_CREATE_DEVICE_DEBUG;
 
     if ((ret = ff_thread_once(&functions_loaded, load_functions)) != 0)
         return AVERROR_UNKNOWN;
@@ -510,6 +526,22 @@ static int d3d11va_device_create(AVHWDeviceContext *ctx, const char *device,
         ID3D10Multithread_SetMultithreadProtected(pMultithread, TRUE);
         ID3D10Multithread_Release(pMultithread);
     }
+
+#if HAVE_LOADLIBRARY && HAVE_DXGIDEBUG_H
+    if (is_debug) {
+        HANDLE dxgidebug_dll = LoadLibrary("dxgidebug.dll");
+        if (dxgidebug_dll) {
+            HRESULT (WINAPI  * pf_DXGIGetDebugInterface)(const GUID *riid, void **ppDebug)
+                = (void *)GetProcAddress(dxgidebug_dll, "DXGIGetDebugInterface");
+            if (pf_DXGIGetDebugInterface) {
+                IDXGIDebug *dxgi_debug = NULL;
+                hr = pf_DXGIGetDebugInterface(&IID_IDXGIDebug, (void**)&dxgi_debug);
+                if (SUCCEEDED(hr) && dxgi_debug)
+                    IDXGIDebug_ReportLiveObjects(dxgi_debug, DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
+            }
+        }
+    }
+#endif
 
     return 0;
 }
