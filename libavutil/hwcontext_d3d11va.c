@@ -239,17 +239,6 @@ static int d3d11va_frames_init(AVHWFramesContext *ctx)
         }
     }
 
-    texDesc.ArraySize       = 1;
-    texDesc.Usage           = D3D11_USAGE_STAGING;
-    texDesc.BindFlags       = 0;
-    texDesc.CPUAccessFlags  = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
-    texDesc.MiscFlags       = 0;
-    hr = ID3D11Device_CreateTexture2D(device_hwctx->device, &texDesc, NULL, &s->staging_texture);
-    if (FAILED(hr)) {
-        av_log(ctx, AV_LOG_ERROR, "Could not create the staging texture (%lx)\n", (long)hr);
-        return AVERROR_UNKNOWN;
-    }
-
     ctx->internal->pool_internal = av_buffer_pool_init2(sizeof(AVD3D11FrameDescriptor),
                                                         ctx, d3d11va_pool_alloc, NULL);
     if (!ctx->internal->pool_internal)
@@ -295,6 +284,31 @@ static int d3d11va_transfer_get_formats(AVHWFramesContext *ctx,
     return 0;
 }
 
+static int d3d11va_create_staging_texture(AVHWFramesContext *ctx)
+{
+    AVD3D11VADeviceContext *device_hwctx = ctx->device_ctx->hwctx;
+    D3D11VAFramesContext              *s = ctx->internal->priv;
+    HRESULT hr;
+    D3D11_TEXTURE2D_DESC texDesc = {
+        .Width          = ctx->width,
+        .Height         = ctx->height,
+        .MipLevels      = 1,
+        .Format         = s->format,
+        .SampleDesc     = { .Count = 1 },
+        .ArraySize      = 1,
+        .Usage          = D3D11_USAGE_STAGING,
+        .CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE,
+    };
+
+    hr = ID3D11Device_CreateTexture2D(device_hwctx->device, &texDesc, NULL, &s->staging_texture);
+    if (FAILED(hr)) {
+        av_log(ctx, AV_LOG_ERROR, "Could not create the staging texture (%lx)\n", (long)hr);
+        return AVERROR_UNKNOWN;
+    }
+
+    return 0;
+}
+
 static void fill_texture_ptrs(uint8_t *data[4], int linesize[4],
                               AVHWFramesContext *ctx,
                               D3D11_TEXTURE2D_DESC *desc,
@@ -320,7 +334,7 @@ static int d3d11va_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
     // (The interface types are compatible.)
     ID3D11Resource *texture = (ID3D11Resource *)(ID3D11Texture2D *)frame->data[0];
     int index = (intptr_t)frame->data[1];
-    ID3D11Resource *staging = (ID3D11Resource *)s->staging_texture;
+    ID3D11Resource *staging;
     int w = FFMIN(dst->width,  src->width);
     int h = FFMIN(dst->height, src->height);
     uint8_t *map_data[4];
@@ -333,6 +347,14 @@ static int d3d11va_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
         return AVERROR(EINVAL);
 
     device_hwctx->lock(device_hwctx->lock_ctx);
+
+    if (!s->staging_texture) {
+        int res = d3d11va_create_staging_texture(ctx);
+        if (res < 0)
+            return res;
+    }
+
+    staging = (ID3D11Resource *)s->staging_texture;
 
     ID3D11Texture2D_GetDesc(s->staging_texture, &desc);
 
