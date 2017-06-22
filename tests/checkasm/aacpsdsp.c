@@ -81,7 +81,7 @@ static void test_hybrid_analysis(void)
 
     declare_func(void, INTFLOAT (*out)[2], INTFLOAT (*in)[2],
                  const INTFLOAT (*filter)[8][2],
-                 int stride, int n);
+                 ptrdiff_t stride, int n);
 
     randomize((INTFLOAT *)in, 12 * 2);
     randomize((INTFLOAT *)filter, N * 8 * 2);

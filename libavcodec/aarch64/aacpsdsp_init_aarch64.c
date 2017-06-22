@@ -26,7 +26,7 @@ void ff_ps_mul_pair_single_neon(float (*dst)[2], float (*src0)[2],
                                 float *src1, int n);
 void ff_ps_hybrid_analysis_neon(float (*out)[2], float (*in)[2],
                                 const float (*filter)[8][2],
-                                int stride, int n);
+                                ptrdiff_t stride, int n);
 void ff_ps_stereo_interpolate_neon(float (*l)[2], float (*r)[2],
                                    float h[2][4], float h_step[2][4],
                                    int len);

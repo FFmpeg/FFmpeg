@@ -45,7 +45,7 @@ static void ps_mul_pair_single_c(INTFLOAT (*dst)[2], INTFLOAT (*src0)[2], INTFLO
 
 static void ps_hybrid_analysis_c(INTFLOAT (*out)[2], INTFLOAT (*in)[2],
                                  const INTFLOAT (*filter)[8][2],
-                                 int stride, int n)
+                                 ptrdiff_t stride, int n)
 {
     int i, j;
 

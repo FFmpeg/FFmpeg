@@ -398,7 +398,7 @@ HYBRID_SYNTHESIS_DEINT
 ;*******************************************************************
 ;void ff_ps_hybrid_analysis_<opt>(float (*out)[2], float (*in)[2],
 ;                                 const float (*filter)[8][2],
-;                                 int stride, int n);
+;                                 ptrdiff_t stride, int n);
 ;*******************************************************************
 %macro PS_HYBRID_ANALYSIS_LOOP 3
     movu     %1, [inq+mmsize*%3]
@@ -438,7 +438,7 @@ cglobal ps_hybrid_analysis, 5, 5, 8, out, in, filter, stride, n
 %else
 %define MOVH movlps
 %endif
-    shl strided, 3
+    shl strideq, 3
     shl nd, 6
     add filterq, nq
     neg nq

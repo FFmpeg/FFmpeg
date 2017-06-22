@@ -101,7 +101,6 @@ function ff_ps_stereo_interpolate_ipdopd_neon, export=1
 endfunc
 
 function ff_ps_hybrid_analysis_neon, export=1
-        sxtw        x3, w3
         lsl         x3, x3, #3
         ld2         {v0.4S,v1.4S}, [x1], #32
         ld2         {v2.2S,v3.2S}, [x1], #16
