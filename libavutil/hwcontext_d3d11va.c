@@ -83,8 +83,11 @@ static const struct {
     DXGI_FORMAT d3d_format;
     enum AVPixelFormat pix_fmt;
 } supported_formats[] = {
-    { DXGI_FORMAT_NV12, AV_PIX_FMT_NV12 },
-    { DXGI_FORMAT_P010, AV_PIX_FMT_P010 },
+    { DXGI_FORMAT_NV12,         AV_PIX_FMT_NV12 },
+    { DXGI_FORMAT_P010,         AV_PIX_FMT_P010 },
+    // Special opaque formats. The pix_fmt is merely a place holder, as the
+    // opaque format cannot be accessed directly.
+    { DXGI_FORMAT_420_OPAQUE,   AV_PIX_FMT_YUV420P },
 };
 
 static void d3d11va_default_lock(void *ctx)
@@ -270,6 +273,7 @@ static int d3d11va_transfer_get_formats(AVHWFramesContext *ctx,
                                         enum AVHWFrameTransferDirection dir,
                                         enum AVPixelFormat **formats)
 {
+    D3D11VAFramesContext *s = ctx->internal->priv;
     enum AVPixelFormat *fmts;
 
     fmts = av_malloc_array(2, sizeof(*fmts));
@@ -278,6 +282,10 @@ static int d3d11va_transfer_get_formats(AVHWFramesContext *ctx,
 
     fmts[0] = ctx->sw_format;
     fmts[1] = AV_PIX_FMT_NONE;
+
+    // Don't signal support for opaque formats. Actual access would fail.
+    if (s->format == DXGI_FORMAT_420_OPAQUE)
+        fmts[0] = AV_PIX_FMT_NONE;
 
     *formats = fmts;
 

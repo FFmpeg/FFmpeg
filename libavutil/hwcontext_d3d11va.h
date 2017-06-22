@@ -26,6 +26,10 @@
  * The default pool implementation will be fixed-size if initial_pool_size is
  * set (and allocate elements from an array texture). Otherwise it will allocate
  * individual textures. Be aware that decoding requires a single array texture.
+ *
+ * Using sw_format==AV_PIX_FMT_YUV420P has special semantics, and maps to
+ * DXGI_FORMAT_420_OPAQUE. av_hwframe_transfer_data() is not supported for
+ * this format. Refer to MSDN for details.
  */
 
 #include <d3d11.h>
