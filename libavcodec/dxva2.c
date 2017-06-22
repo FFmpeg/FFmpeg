@@ -389,19 +389,28 @@ static int d3d11va_get_decoder_configuration(AVCodecContext *avctx,
     return ret;
 }
 
+static DXGI_FORMAT d3d11va_map_sw_to_hw_format(enum AVPixelFormat pix_fmt)
+{
+    switch (pix_fmt) {
+    case AV_PIX_FMT_NV12:       return DXGI_FORMAT_NV12;
+    case AV_PIX_FMT_P010:       return DXGI_FORMAT_P010;
+    case AV_PIX_FMT_YUV420P:    return DXGI_FORMAT_420_OPAQUE;
+    default:                    return DXGI_FORMAT_UNKNOWN;
+    }
+}
+
 static int d3d11va_create_decoder(AVCodecContext *avctx)
 {
     FFDXVASharedContext *sctx = DXVA_SHARED_CONTEXT(avctx);
     GUID *guid_list;
     unsigned guid_count, i;
     GUID decoder_guid;
-    DXGI_FORMAT surface_format = avctx->sw_pix_fmt == AV_PIX_FMT_YUV420P10 ?
-                                 DXGI_FORMAT_P010 : DXGI_FORMAT_NV12;
     D3D11_VIDEO_DECODER_DESC desc = { 0 };
     D3D11_VIDEO_DECODER_CONFIG config;
     AVHWFramesContext *frames_ctx = (AVHWFramesContext *)avctx->hw_frames_ctx->data;
     AVD3D11VADeviceContext *device_hwctx = frames_ctx->device_ctx->hwctx;
     AVD3D11VAFramesContext *frames_hwctx = frames_ctx->hwctx;
+    DXGI_FORMAT surface_format = d3d11va_map_sw_to_hw_format(frames_ctx->sw_format);
     D3D11_TEXTURE2D_DESC texdesc;
     HRESULT hr;
     int ret;
