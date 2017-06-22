@@ -200,11 +200,58 @@ static int dxva_check_codec_compatibility(AVCodecContext *avctx, const dxva_mode
     return 1;
 }
 
+static void dxva_list_guids_debug(AVCodecContext *avctx, void *service,
+                                 unsigned guid_count, const GUID *guid_list)
+{
+    FFDXVASharedContext *sctx = DXVA_SHARED_CONTEXT(avctx);
+    int i;
+
+    av_log(avctx, AV_LOG_VERBOSE, "Decoder GUIDs reported as supported:\n");
+
+    for (i = 0; i < guid_count; i++) {
+        const GUID *guid = &guid_list[i];
+
+        av_log(avctx, AV_LOG_VERBOSE,
+             "{%8.8x-%4.4x-%4.4x-%2.2x%2.2x-%2.2x%2.2x%2.2x%2.2x%2.2x%2.2x}",
+             (unsigned) guid->Data1, guid->Data2, guid->Data3,
+             guid->Data4[0], guid->Data4[1],
+             guid->Data4[2], guid->Data4[3],
+             guid->Data4[4], guid->Data4[5],
+             guid->Data4[6], guid->Data4[7]);
+
+#if CONFIG_D3D11VA
+        if (sctx->pix_fmt == AV_PIX_FMT_D3D11) {
+            DXGI_FORMAT format;
+            // We don't know the maximum valid DXGI_FORMAT, so use 200 as
+            // arbitrary upper bound (that could become outdated).
+            for (format = 0; format < 200; format++) {
+                if (d3d11va_validate_output(service, *guid, &format))
+                    av_log(avctx, AV_LOG_VERBOSE, " %d", (int)format);
+            }
+        }
+#endif
+#if CONFIG_DXVA2
+        if (sctx->pix_fmt == AV_PIX_FMT_DXVA2_VLD) {
+            const D3DFORMAT formats[] = {MKTAG('N', 'V', '1', '2'),
+                                         MKTAG('P', '0', '1', '0')};
+            int i;
+            for (i = 0; i < FF_ARRAY_ELEMS(formats); i++) {
+                if (dxva2_validate_output(service, *guid, &formats[i]))
+                    av_log(avctx, AV_LOG_VERBOSE, " %d", i);
+            }
+        }
+#endif
+        av_log(avctx, AV_LOG_VERBOSE, "\n");
+    }
+}
+
 static int dxva_get_decoder_guid(AVCodecContext *avctx, void *service, void *surface_format,
                                  unsigned guid_count, const GUID *guid_list, GUID *decoder_guid)
 {
     FFDXVASharedContext *sctx = DXVA_SHARED_CONTEXT(avctx);
     unsigned i, j;
+
+    dxva_list_guids_debug(avctx, service, guid_count, guid_list);
 
     *decoder_guid = ff_GUID_NULL;
     for (i = 0; dxva_modes[i].guid; i++) {
