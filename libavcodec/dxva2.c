@@ -49,18 +49,34 @@ DEFINE_GUID(ff_IID_IDirectXVideoDecoderService, 0xfc51a551,0xd5e7,0x11d9,0xaf,0x
 typedef struct dxva_mode {
     const GUID     *guid;
     enum AVCodecID codec;
+    // List of supported profiles, terminated by a FF_PROFILE_UNKNOWN entry.
+    // If NULL, don't check profile.
+    const int      *profiles;
 } dxva_mode;
+
+static const int prof_mpeg2_main[]   = {FF_PROFILE_MPEG2_SIMPLE,
+                                        FF_PROFILE_MPEG2_MAIN,
+                                        FF_PROFILE_UNKNOWN};
+static const int prof_h264_high[]    = {FF_PROFILE_H264_CONSTRAINED_BASELINE,
+                                        FF_PROFILE_H264_MAIN,
+                                        FF_PROFILE_H264_HIGH,
+                                        FF_PROFILE_UNKNOWN};
+static const int prof_hevc_main[]    = {FF_PROFILE_HEVC_MAIN,
+                                        FF_PROFILE_UNKNOWN};
+static const int prof_hevc_main10[]  = {FF_PROFILE_HEVC_MAIN,
+                                        FF_PROFILE_HEVC_MAIN_10,
+                                        FF_PROFILE_UNKNOWN};
 
 static const dxva_mode dxva_modes[] = {
     /* MPEG-2 */
-    { &ff_DXVA2_ModeMPEG2_VLD,       AV_CODEC_ID_MPEG2VIDEO },
-    { &ff_DXVA2_ModeMPEG2and1_VLD,   AV_CODEC_ID_MPEG2VIDEO },
+    { &ff_DXVA2_ModeMPEG2_VLD,       AV_CODEC_ID_MPEG2VIDEO, prof_mpeg2_main },
+    { &ff_DXVA2_ModeMPEG2and1_VLD,   AV_CODEC_ID_MPEG2VIDEO, prof_mpeg2_main },
 
     /* H.264 */
-    { &ff_DXVA2_ModeH264_F,          AV_CODEC_ID_H264 },
-    { &ff_DXVA2_ModeH264_E,          AV_CODEC_ID_H264 },
+    { &ff_DXVA2_ModeH264_F,          AV_CODEC_ID_H264, prof_h264_high },
+    { &ff_DXVA2_ModeH264_E,          AV_CODEC_ID_H264, prof_h264_high },
     /* Intel specific H.264 mode */
-    { &ff_DXVADDI_Intel_ModeH264_E,  AV_CODEC_ID_H264 },
+    { &ff_DXVADDI_Intel_ModeH264_E,  AV_CODEC_ID_H264, prof_h264_high },
 
     /* VC-1 / WMV3 */
     { &ff_DXVA2_ModeVC1_D2010,       AV_CODEC_ID_VC1 },
@@ -69,8 +85,8 @@ static const dxva_mode dxva_modes[] = {
     { &ff_DXVA2_ModeVC1_D,           AV_CODEC_ID_WMV3 },
 
     /* HEVC/H.265 */
-    { &ff_DXVA2_ModeHEVC_VLD_Main,   AV_CODEC_ID_HEVC },
-    { &ff_DXVA2_ModeHEVC_VLD_Main10, AV_CODEC_ID_HEVC },
+    { &ff_DXVA2_ModeHEVC_VLD_Main10, AV_CODEC_ID_HEVC, prof_hevc_main10 },
+    { &ff_DXVA2_ModeHEVC_VLD_Main,   AV_CODEC_ID_HEVC, prof_hevc_main },
 
     { NULL,                          0 },
 };
@@ -160,6 +176,26 @@ static int dxva2_validate_output(void *decoder_service, GUID guid, void *surface
 }
 #endif
 
+static int dxva_check_codec_compatibility(AVCodecContext *avctx, const dxva_mode *mode)
+{
+    if (mode->codec != avctx->codec_id)
+            return 0;
+
+    if (mode->profiles && !(avctx->hwaccel_flags & AV_HWACCEL_FLAG_ALLOW_PROFILE_MISMATCH)) {
+        int i, found = 0;
+        for (i = 0; mode->profiles[i] != FF_PROFILE_UNKNOWN; i++) {
+            if (avctx->profile == mode->profiles[i]) {
+                found = 1;
+                break;
+            }
+        }
+        if (!found)
+            return 0;
+    }
+
+    return 1;
+}
+
 static int dxva_get_decoder_guid(AVCodecContext *avctx, void *service, void *surface_format,
                                  unsigned guid_count, const GUID *guid_list, GUID *decoder_guid)
 {
@@ -170,7 +206,7 @@ static int dxva_get_decoder_guid(AVCodecContext *avctx, void *service, void *sur
     for (i = 0; dxva_modes[i].guid; i++) {
         const dxva_mode *mode = &dxva_modes[i];
         int validate;
-        if (mode->codec != avctx->codec_id)
+        if (!dxva_check_codec_compatibility(avctx, mode))
             continue;
 
         for (j = 0; j < guid_count; j++) {
@@ -551,18 +587,6 @@ int ff_dxva2_decode_init(AVCodecContext *avctx)
 
     // (avctx->pix_fmt is not updated yet at this point)
     sctx->pix_fmt = avctx->hwaccel->pix_fmt;
-
-    if (avctx->codec_id == AV_CODEC_ID_H264 &&
-        (avctx->profile & ~FF_PROFILE_H264_CONSTRAINED) > FF_PROFILE_H264_HIGH) {
-        av_log(avctx, AV_LOG_VERBOSE, "Unsupported H.264 profile for DXVA HWAccel: %d\n",avctx->profile);
-        return AVERROR(ENOTSUP);
-    }
-
-    if (avctx->codec_id == AV_CODEC_ID_HEVC &&
-        avctx->profile != FF_PROFILE_HEVC_MAIN && avctx->profile != FF_PROFILE_HEVC_MAIN_10) {
-        av_log(avctx, AV_LOG_VERBOSE, "Unsupported HEVC profile for DXVA HWAccel: %d\n", avctx->profile);
-        return AVERROR(ENOTSUP);
-    }
 
     if (!avctx->hw_frames_ctx && !avctx->hw_device_ctx) {
         av_log(avctx, AV_LOG_ERROR, "Either a hw_frames_ctx or a hw_device_ctx needs to be set for hardware decoding.\n");
