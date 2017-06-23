@@ -38,7 +38,7 @@ SECTION .text
 
 INIT_XMM sse
 cglobal sbr_sum_square, 2, 3, 6
-    mov         r2, r1
+    mov        r2d, r1d
     xorps       m0, m0
     xorps       m1, m1
     sar         r2, 3
