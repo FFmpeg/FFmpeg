@@ -20,15 +20,11 @@
 #include <va/va_enc_mpeg2.h>
 
 #include "libavutil/avassert.h"
-#include "libavutil/common.h"
-#include "libavutil/internal.h"
-#include "libavutil/opt.h"
-#include "libavutil/pixfmt.h"
 
 #include "avcodec.h"
-#include "internal.h"
-#include "mpegvideo.h"
-#include "put_bits.h"
+#include "cbs.h"
+#include "cbs_mpeg2.h"
+#include "mpeg12.h"
 #include "vaapi_encode.h"
 
 typedef struct VAAPIEncodeMPEG2Context {
@@ -39,79 +35,104 @@ typedef struct VAAPIEncodeMPEG2Context {
     int quant_p;
     int quant_b;
 
+    MPEG2RawSequenceHeader sequence_header;
+    MPEG2RawExtensionData  sequence_extension;
+    MPEG2RawExtensionData  sequence_display_extension;
+    MPEG2RawGroupOfPicturesHeader gop_header;
+    MPEG2RawPictureHeader  picture_header;
+    MPEG2RawExtensionData  picture_coding_extension;
+
     int64_t last_i_frame;
 
     unsigned int bit_rate;
     unsigned int vbv_buffer_size;
+
+    AVRational frame_rate;
+
+    unsigned int f_code_horizontal;
+    unsigned int f_code_vertical;
+
+    CodedBitstreamContext *cbc;
+    CodedBitstreamFragment current_fragment;
 } VAAPIEncodeMPEG2Context;
 
 
-#define vseq_var(name)      vseq->name, name
-#define vseqext_field(name) vseq->sequence_extension.bits.name, name
-#define vgop_field(name)    vseq->gop_header.bits.name, name
-#define vpic_var(name)      vpic->name, name
-#define vpcext_field(name)  vpic->picture_coding_extension.bits.name, name
-#define vcomp_field(name)   vpic->composite_display.bits.name, name
+static int vaapi_encode_mpeg2_write_fragment(AVCodecContext *avctx,
+                                             char *data, size_t *data_len,
+                                             CodedBitstreamFragment *frag)
+{
+    VAAPIEncodeContext       *ctx = avctx->priv_data;
+    VAAPIEncodeMPEG2Context *priv = ctx->priv_data;
+    int err;
 
-#define u2(width, value, name) put_bits(&pbc, width, value)
-#define u(width, ...) u2(width, __VA_ARGS__)
+    err = ff_cbs_write_fragment_data(priv->cbc, frag);
+    if (err < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to write packed header.\n");
+        return err;
+    }
+
+    if (*data_len < 8 * frag->data_size - frag->data_bit_padding) {
+        av_log(avctx, AV_LOG_ERROR, "Access unit too large: "
+               "%zu < %zu.\n", *data_len,
+               8 * frag->data_size - frag->data_bit_padding);
+        return AVERROR(ENOSPC);
+    }
+
+    memcpy(data, frag->data, frag->data_size);
+    *data_len = 8 * frag->data_size - frag->data_bit_padding;
+
+    return 0;
+}
+
+static int vaapi_encode_mpeg2_add_header(AVCodecContext *avctx,
+                                         CodedBitstreamFragment *frag,
+                                         int type, void *header)
+{
+    VAAPIEncodeContext       *ctx = avctx->priv_data;
+    VAAPIEncodeMPEG2Context *priv = ctx->priv_data;
+    int err;
+
+    err = ff_cbs_insert_unit_content(priv->cbc, frag, -1, type, header);
+    if (err < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to add header: "
+               "type = %d.\n", type);
+        return err;
+    }
+
+    return 0;
+}
 
 static int vaapi_encode_mpeg2_write_sequence_header(AVCodecContext *avctx,
                                                     char *data, size_t *data_len)
 {
-    VAAPIEncodeContext                 *ctx = avctx->priv_data;
-    VAEncSequenceParameterBufferMPEG2 *vseq = ctx->codec_sequence_params;
-    VAAPIEncodeMPEG2Context           *priv = ctx->priv_data;
-    PutBitContext pbc;
+    VAAPIEncodeContext       *ctx = avctx->priv_data;
+    VAAPIEncodeMPEG2Context *priv = ctx->priv_data;
+    CodedBitstreamFragment  *frag = &priv->current_fragment;
+    int err;
 
-    init_put_bits(&pbc, data, 8 * *data_len);
+    err = vaapi_encode_mpeg2_add_header(avctx, frag, MPEG2_START_SEQUENCE_HEADER,
+                                        &priv->sequence_header);
+    if (err < 0)
+        goto fail;
 
-    u(32, SEQ_START_CODE, sequence_header_code);
+    err = vaapi_encode_mpeg2_add_header(avctx, frag, MPEG2_START_EXTENSION,
+                                        &priv->sequence_extension);
+    if (err < 0)
+        goto fail;
 
-    u(12, vseq->picture_width,  horizontal_size_value);
-    u(12, vseq->picture_height, vertical_size_value);
-    u(4, vseq_var(aspect_ratio_information));
-    u(4, 8, frame_rate_code);
-    u(18, priv->bit_rate & 0x3fff, bit_rate_value);
-    u(1, 1, marker_bit);
-    u(10, priv->vbv_buffer_size & 0x3ff, vbv_buffer_size_value);
-    u(1, 0, constrained_parameters_flag);
-    u(1, 0, load_intra_quantiser_matrix);
-    // intra_quantiser_matrix[64]
-    u(1, 0, load_non_intra_quantiser_matrix);
-    // non_intra_quantiser_matrix[64]
+    err = vaapi_encode_mpeg2_add_header(avctx, frag, MPEG2_START_EXTENSION,
+                                        &priv->sequence_display_extension);
+    if (err < 0)
+        goto fail;
 
-    while (put_bits_count(&pbc) % 8)
-        u(1, 0, zero_bit);
+    err = vaapi_encode_mpeg2_add_header(avctx, frag, MPEG2_START_GROUP,
+                                        &priv->gop_header);
+    if (err < 0)
+        goto fail;
 
-    u(32, EXT_START_CODE, extension_start_code);
-    u(4, 1, extension_start_code_identifier);
-    u(8, vseqext_field(profile_and_level_indication));
-    u(1, vseqext_field(progressive_sequence));
-    u(2, vseqext_field(chroma_format));
-    u(2, 0, horizontal_size_extension);
-    u(2, 0, vertical_size_extension);
-    u(12, priv->bit_rate >> 18, bit_rate_extension);
-    u(1, 1, marker_bit);
-    u(8, priv->vbv_buffer_size >> 10, vbv_buffer_size_extension);
-    u(1, vseqext_field(low_delay));
-    u(2, vseqext_field(frame_rate_extension_n));
-    u(2, vseqext_field(frame_rate_extension_d));
-
-    while (put_bits_count(&pbc) % 8)
-        u(1, 0, zero_bit);
-
-    u(32, GOP_START_CODE, group_start_code);
-    u(25, vgop_field(time_code));
-    u(1, vgop_field(closed_gop));
-    u(1, vgop_field(broken_link));
-
-    while (put_bits_count(&pbc) % 8)
-        u(1, 0, zero_bit);
-
-    *data_len = put_bits_count(&pbc);
-    flush_put_bits(&pbc);
-
+    err = vaapi_encode_mpeg2_write_fragment(avctx, data, data_len, frag);
+fail:
+    ff_cbs_fragment_uninit(priv->cbc, frag);
     return 0;
 }
 
@@ -119,139 +140,275 @@ static int vaapi_encode_mpeg2_write_picture_header(AVCodecContext *avctx,
                                                    VAAPIEncodePicture *pic,
                                                    char *data, size_t *data_len)
 {
-    VAEncPictureParameterBufferMPEG2 *vpic = pic->codec_picture_params;
-    int picture_coding_type;
-    PutBitContext pbc;
+    VAAPIEncodeContext       *ctx = avctx->priv_data;
+    VAAPIEncodeMPEG2Context *priv = ctx->priv_data;
+    CodedBitstreamFragment  *frag = &priv->current_fragment;
+    int err;
 
-    init_put_bits(&pbc, data, 8 * *data_len);
+    err = vaapi_encode_mpeg2_add_header(avctx, frag, MPEG2_START_PICTURE,
+                                        &priv->picture_header);
+    if (err < 0)
+        goto fail;
 
-    u(32, PICTURE_START_CODE, picture_start_code);
-    u(10, vpic_var(temporal_reference));
+    err = vaapi_encode_mpeg2_add_header(avctx, frag, MPEG2_START_EXTENSION,
+                                        &priv->picture_coding_extension);
+    if (err < 0)
+        goto fail;
 
-    switch (vpic->picture_type) {
-    case VAEncPictureTypeIntra:
-        picture_coding_type = AV_PICTURE_TYPE_I;
-        break;
-    case VAEncPictureTypePredictive:
-        picture_coding_type = AV_PICTURE_TYPE_P;
-        break;
-    case VAEncPictureTypeBidirectional:
-        picture_coding_type = AV_PICTURE_TYPE_B;
-        break;
-    default:
-        av_assert0(0 && "invalid picture_coding_type");
-    }
-    u(3, picture_coding_type, picture_coding_type);
-    u(16, 0xffff, vbv_delay);
-    if (picture_coding_type == 2 || picture_coding_type == 3) {
-        u(1, 0, full_pel_forward_vector);
-        u(3, 7, forward_f_code);
-    }
-    if (picture_coding_type == 3) {
-        u(1, 0, full_pel_backward_vector);
-        u(3, 7, backward_f_code);
-    }
-    u(1, 0, extra_bit_picture);
-
-    while (put_bits_count(&pbc) % 8)
-        u(1, 0, zero_bit);
-
-    u(32, EXT_START_CODE, extension_start_code);
-    u(4, 8, extension_start_code_identifier);
-    u(4, vpic_var(f_code[0][0]));
-    u(4, vpic_var(f_code[0][1]));
-    u(4, vpic_var(f_code[1][0]));
-    u(4, vpic_var(f_code[1][1]));
-    u(2, vpcext_field(intra_dc_precision));
-    u(2, vpcext_field(picture_structure));
-    u(1, vpcext_field(top_field_first));
-    u(1, vpcext_field(frame_pred_frame_dct));
-    u(1, vpcext_field(concealment_motion_vectors));
-    u(1, vpcext_field(q_scale_type));
-    u(1, vpcext_field(intra_vlc_format));
-    u(1, vpcext_field(alternate_scan));
-    u(1, vpcext_field(repeat_first_field));
-    u(1, 1, chroma_420_type);
-    u(1, vpcext_field(progressive_frame));
-    u(1, vpcext_field(composite_display_flag));
-    if (vpic->picture_coding_extension.bits.composite_display_flag) {
-        u(1, vcomp_field(v_axis));
-        u(3, vcomp_field(field_sequence));
-        u(1, vcomp_field(sub_carrier));
-        u(7, vcomp_field(burst_amplitude));
-        u(8, vcomp_field(sub_carrier_phase));
-    }
-
-    while (put_bits_count(&pbc) % 8)
-        u(1, 0, zero_bit);
-
-    *data_len = put_bits_count(&pbc);
-    flush_put_bits(&pbc);
-
+    err = vaapi_encode_mpeg2_write_fragment(avctx, data, data_len, frag);
+fail:
+    ff_cbs_fragment_uninit(priv->cbc, frag);
     return 0;
 }
 
 static int vaapi_encode_mpeg2_init_sequence_params(AVCodecContext *avctx)
 {
     VAAPIEncodeContext                 *ctx = avctx->priv_data;
+    VAAPIEncodeMPEG2Context           *priv = ctx->priv_data;
+    MPEG2RawSequenceHeader              *sh = &priv->sequence_header;
+    MPEG2RawSequenceExtension           *se = &priv->sequence_extension.data.sequence;
+    MPEG2RawSequenceDisplayExtension   *sde = &priv->sequence_display_extension.data.sequence_display;
+    MPEG2RawGroupOfPicturesHeader     *goph = &priv->gop_header;
+    MPEG2RawPictureHeader               *ph = &priv->picture_header;
+    MPEG2RawPictureCodingExtension     *pce = &priv->picture_coding_extension.data.picture_coding;
     VAEncSequenceParameterBufferMPEG2 *vseq = ctx->codec_sequence_params;
     VAEncPictureParameterBufferMPEG2  *vpic = ctx->codec_picture_params;
-    VAAPIEncodeMPEG2Context           *priv = ctx->priv_data;
+    int code, ext_n, ext_d;
 
-    vseq->intra_period   = avctx->gop_size;
-    vseq->ip_period      = ctx->b_per_p + 1;
+    memset(sh,   0, sizeof(*sh));
+    memset(se,   0, sizeof(*se));
+    memset(sde,  0, sizeof(*sde));
+    memset(goph, 0, sizeof(*goph));
+    memset(ph,   0, sizeof(*ph));
+    memset(pce,  0, sizeof(*pce));
 
-    vseq->picture_width  = avctx->width;
-    vseq->picture_height = avctx->height;
 
-    vseq->bits_per_second = avctx->bit_rate;
+    if (avctx->bit_rate > 0) {
+        priv->bit_rate = (avctx->bit_rate + 399) / 400;
+    } else {
+        // Unknown (not a bitrate-targetting mode), so just use the
+        // highest value.
+        priv->bit_rate = 0x3fffffff;
+    }
+    if (avctx->rc_buffer_size > 0) {
+        priv->vbv_buffer_size = (avctx->rc_buffer_size + (1 << 14) - 1) >> 14;
+    } else {
+        // Unknown, so guess a value from the bitrate.
+        priv->vbv_buffer_size = priv->bit_rate >> 14;
+    }
+
+    switch (avctx->level) {
+    case 4: // High.
+    case 6: // High 1440.
+        priv->f_code_horizontal = 9;
+        priv->f_code_vertical   = 5;
+        break;
+    case 8: // Main.
+        priv->f_code_horizontal = 8;
+        priv->f_code_vertical   = 5;
+        break;
+    case 10: // Low.
+    default:
+        priv->f_code_horizontal = 7;
+        priv->f_code_vertical   = 4;
+        break;
+    }
+
+
+    // Sequence header
+
+    sh->sequence_header_code = MPEG2_START_SEQUENCE_HEADER;
+
+    sh->horizontal_size_value = avctx->width  & 0xfff;
+    sh->vertical_size_value   = avctx->height & 0xfff;
+
+    if (avctx->sample_aspect_ratio.num != 0 &&
+        avctx->sample_aspect_ratio.den != 0) {
+        AVRational dar = av_div_q(avctx->sample_aspect_ratio,
+                                  (AVRational) { avctx->width, avctx->height });
+
+        if (av_cmp_q(avctx->sample_aspect_ratio, (AVRational) { 1, 1 }) == 0) {
+            sh->aspect_ratio_information = 1;
+        } else if (av_cmp_q(dar, (AVRational) { 3, 4 }) == 0) {
+            sh->aspect_ratio_information = 2;
+        } else if (av_cmp_q(dar, (AVRational) { 9, 16 }) == 0) {
+            sh->aspect_ratio_information = 3;
+        } else if (av_cmp_q(dar, (AVRational) { 100, 221 }) == 0) {
+            sh->aspect_ratio_information = 4;
+        } else {
+            av_log(avctx, AV_LOG_WARNING, "Sample aspect ratio %d:%d is not "
+                   "representable, signalling square pixels instead.\n",
+                   avctx->sample_aspect_ratio.num,
+                   avctx->sample_aspect_ratio.den);
+            sh->aspect_ratio_information = 1;
+        }
+    } else {
+        // Unknown - assume square pixels.
+        sh->aspect_ratio_information = 1;
+    }
+
     if (avctx->framerate.num > 0 && avctx->framerate.den > 0)
-        vseq->frame_rate = (float)avctx->framerate.num / avctx->framerate.den;
+        priv->frame_rate = avctx->framerate;
     else
-        vseq->frame_rate = (float)avctx->time_base.den / avctx->time_base.num;
+        priv->frame_rate = av_inv_q(avctx->time_base);
+    ff_mpeg12_find_best_frame_rate(priv->frame_rate,
+                                   &code, &ext_n, &ext_d, 0);
+    sh->frame_rate_code = code;
 
-    vseq->aspect_ratio_information = 1;
-    vseq->vbv_buffer_size = avctx->rc_buffer_size / (16 * 1024);
+    sh->bit_rate_value        = priv->bit_rate & 0x3ffff;
+    sh->vbv_buffer_size_value = priv->vbv_buffer_size & 0x3ff;
 
-    vseq->sequence_extension.bits.profile_and_level_indication =
-        avctx->profile << 4 | avctx->level;
-    vseq->sequence_extension.bits.progressive_sequence   = 1;
-    vseq->sequence_extension.bits.chroma_format          = 1;
-    vseq->sequence_extension.bits.low_delay              = 0;
-    vseq->sequence_extension.bits.frame_rate_extension_n = 0;
-    vseq->sequence_extension.bits.frame_rate_extension_d = 0;
+    sh->constrained_parameters_flag     = 0;
+    sh->load_intra_quantiser_matrix     = 0;
+    sh->load_non_intra_quantiser_matrix = 0;
 
-    vseq->new_gop_header              = 0;
-    vseq->gop_header.bits.time_code   = 0;
-    vseq->gop_header.bits.closed_gop  = 1;
-    vseq->gop_header.bits.broken_link = 0;
 
-    vpic->forward_reference_picture  = VA_INVALID_ID;
-    vpic->backward_reference_picture = VA_INVALID_ID;
-    vpic->reconstructed_picture      = VA_INVALID_ID;
+    // Sequence extension
 
-    vpic->coded_buf = VA_INVALID_ID;
+    priv->sequence_extension.extension_start_code = MPEG2_START_EXTENSION;
+    priv->sequence_extension.extension_start_code_identifier =
+        MPEG2_EXTENSION_SEQUENCE;
 
-    vpic->temporal_reference = 0;
-    vpic->f_code[0][0] = 15;
-    vpic->f_code[0][1] = 15;
-    vpic->f_code[1][0] = 15;
-    vpic->f_code[1][1] = 15;
+    se->profile_and_level_indication = avctx->profile << 4 | avctx->level;
+    se->progressive_sequence = 1;
+    se->chroma_format        = 1;
 
-    vpic->picture_coding_extension.bits.intra_dc_precision     = 0;
-    vpic->picture_coding_extension.bits.picture_structure      = 3;
-    vpic->picture_coding_extension.bits.top_field_first        = 0;
-    vpic->picture_coding_extension.bits.frame_pred_frame_dct   = 1;
-    vpic->picture_coding_extension.bits.concealment_motion_vectors = 0;
-    vpic->picture_coding_extension.bits.q_scale_type           = 0;
-    vpic->picture_coding_extension.bits.intra_vlc_format       = 0;
-    vpic->picture_coding_extension.bits.alternate_scan         = 0;
-    vpic->picture_coding_extension.bits.repeat_first_field     = 0;
-    vpic->picture_coding_extension.bits.progressive_frame      = 1;
-    vpic->picture_coding_extension.bits.composite_display_flag = 0;
+    se->horizontal_size_extension = avctx->width  >> 12;
+    se->vertical_size_extension   = avctx->height >> 12;
 
-    priv->bit_rate = (avctx->bit_rate + 399) / 400;
-    priv->vbv_buffer_size = avctx->rc_buffer_size / (16 * 1024);
+    se->bit_rate_extension        = priv->bit_rate >> 18;
+    se->vbv_buffer_size_extension = priv->vbv_buffer_size >> 10;
+    se->low_delay                 = ctx->b_per_p == 0;
+
+    se->frame_rate_extension_n = ext_n;
+    se->frame_rate_extension_d = ext_d;
+
+
+    // Sequence display extension
+
+    priv->sequence_display_extension.extension_start_code =
+        MPEG2_START_EXTENSION;
+    priv->sequence_display_extension.extension_start_code_identifier =
+        MPEG2_EXTENSION_SEQUENCE_DISPLAY;
+
+    sde->video_format = 5;
+    if (avctx->color_primaries != AVCOL_PRI_UNSPECIFIED ||
+        avctx->color_trc       != AVCOL_TRC_UNSPECIFIED ||
+        avctx->colorspace      != AVCOL_SPC_UNSPECIFIED) {
+        sde->colour_description       = 1;
+        sde->colour_primaries         = avctx->color_primaries;
+        sde->transfer_characteristics = avctx->color_trc;
+        sde->matrix_coefficients      = avctx->colorspace;
+    } else {
+        sde->colour_description = 0;
+    }
+
+    sde->display_horizontal_size = avctx->width;
+    sde->display_vertical_size   = avctx->height;
+
+
+    // GOP header
+
+    goph->group_start_code = MPEG2_START_GROUP;
+
+    goph->time_code   = 0;
+    goph->closed_gop  = 1;
+    goph->broken_link = 0;
+
+
+    // Defaults for picture header
+
+    ph->picture_start_code = MPEG2_START_PICTURE;
+
+    ph->vbv_delay = 0xffff; // Not currently calculated.
+
+    ph->full_pel_forward_vector  = 0;
+    ph->forward_f_code           = 7;
+    ph->full_pel_backward_vector = 0;
+    ph->forward_f_code           = 7;
+
+
+    // Defaults for picture coding extension
+
+    priv->picture_coding_extension.extension_start_code =
+        MPEG2_START_EXTENSION;
+    priv->picture_coding_extension.extension_start_code_identifier =
+        MPEG2_EXTENSION_PICTURE_CODING;
+
+    pce->intra_dc_precision         = 0;
+    pce->picture_structure          = 3;
+    pce->top_field_first            = 0;
+    pce->frame_pred_frame_dct       = 1;
+    pce->concealment_motion_vectors = 0;
+    pce->q_scale_type               = 0;
+    pce->intra_vlc_format           = 0;
+    pce->alternate_scan             = 0;
+    pce->repeat_first_field         = 0;
+    pce->progressive_frame          = 1;
+    pce->composite_display_flag     = 0;
+
+
+
+    *vseq = (VAEncSequenceParameterBufferMPEG2) {
+        .intra_period = avctx->gop_size,
+        .ip_period    = ctx->b_per_p + 1,
+
+        .picture_width  = avctx->width,
+        .picture_height = avctx->height,
+
+        .bits_per_second          = avctx->bit_rate,
+        .frame_rate               = av_q2d(priv->frame_rate),
+        .aspect_ratio_information = sh->aspect_ratio_information,
+        .vbv_buffer_size          = priv->vbv_buffer_size,
+
+        .sequence_extension.bits = {
+            .profile_and_level_indication = se->profile_and_level_indication,
+            .progressive_sequence         = se->progressive_sequence,
+            .chroma_format                = se->chroma_format,
+            .low_delay                    = se->low_delay,
+            .frame_rate_extension_n       = se->frame_rate_extension_n,
+            .frame_rate_extension_d       = se->frame_rate_extension_d,
+        },
+
+        .new_gop_header = 1,
+        .gop_header.bits = {
+            .time_code   = goph->time_code,
+            .closed_gop  = goph->closed_gop,
+            .broken_link = goph->broken_link,
+        },
+    };
+
+    *vpic = (VAEncPictureParameterBufferMPEG2) {
+        .forward_reference_picture  = VA_INVALID_ID,
+        .backward_reference_picture = VA_INVALID_ID,
+        .reconstructed_picture      = VA_INVALID_ID,
+        .coded_buf                  = VA_INVALID_ID,
+
+        .vbv_delay = 0xffff,
+        .f_code    = { { 15, 15 }, { 15, 15 } },
+
+        .picture_coding_extension.bits = {
+            .intra_dc_precision         = pce->intra_dc_precision,
+            .picture_structure          = pce->picture_structure,
+            .top_field_first            = pce->top_field_first,
+            .frame_pred_frame_dct       = pce->frame_pred_frame_dct,
+            .concealment_motion_vectors = pce->concealment_motion_vectors,
+            .q_scale_type               = pce->q_scale_type,
+            .intra_vlc_format           = pce->intra_vlc_format,
+            .alternate_scan             = pce->alternate_scan,
+            .repeat_first_field         = pce->repeat_first_field,
+            .progressive_frame          = pce->progressive_frame,
+            .composite_display_flag     = pce->composite_display_flag,
+        },
+
+        .composite_display.bits = {
+            .v_axis            = pce->v_axis,
+            .field_sequence    = pce->field_sequence,
+            .sub_carrier       = pce->sub_carrier,
+            .burst_amplitude   = pce->burst_amplitude,
+            .sub_carrier_phase = pce->sub_carrier_phase,
+        },
+    };
 
     return 0;
 }
@@ -260,56 +417,61 @@ static int vaapi_encode_mpeg2_init_picture_params(AVCodecContext *avctx,
                                                  VAAPIEncodePicture *pic)
 {
     VAAPIEncodeContext                *ctx = avctx->priv_data;
-    VAEncPictureParameterBufferMPEG2 *vpic = pic->codec_picture_params;
     VAAPIEncodeMPEG2Context          *priv = ctx->priv_data;
-    int fch, fcv;
+    MPEG2RawPictureHeader              *ph = &priv->picture_header;
+    MPEG2RawPictureCodingExtension    *pce = &priv->picture_coding_extension.data.picture_coding;
+    VAEncPictureParameterBufferMPEG2 *vpic = pic->codec_picture_params;
 
-    switch (avctx->level) {
-    case 4: // High.
-    case 6: // High 1440.
-        fch = 9;
-        fcv = 5;
-        break;
-    case 8: // Main.
-        fch = 8;
-        fcv = 5;
-        break;
-    case 10: // Low.
-    default:
-        fch = 7;
-        fcv = 4;
-        break;
+    if (pic->type == PICTURE_TYPE_IDR || pic->type == PICTURE_TYPE_I) {
+        ph->temporal_reference  = 0;
+        ph->picture_coding_type = 1;
+        priv->last_i_frame = pic->display_order;
+    } else {
+        ph->temporal_reference = pic->display_order - priv->last_i_frame;
+        ph->picture_coding_type = pic->type == PICTURE_TYPE_B ? 3 : 2;
     }
+
+    if (pic->type == PICTURE_TYPE_P || pic->type == PICTURE_TYPE_B) {
+        pce->f_code[0][0] = priv->f_code_horizontal;
+        pce->f_code[0][1] = priv->f_code_vertical;
+    } else {
+        pce->f_code[0][0] = 15;
+        pce->f_code[0][1] = 15;
+    }
+    if (pic->type == PICTURE_TYPE_B) {
+        pce->f_code[1][0] = priv->f_code_horizontal;
+        pce->f_code[1][1] = priv->f_code_vertical;
+    } else {
+        pce->f_code[1][0] = 15;
+        pce->f_code[1][1] = 15;
+    }
+
+    vpic->reconstructed_picture = pic->recon_surface;
+    vpic->coded_buf             = pic->output_buffer;
 
     switch (pic->type) {
     case PICTURE_TYPE_IDR:
     case PICTURE_TYPE_I:
         vpic->picture_type = VAEncPictureTypeIntra;
-        priv->last_i_frame = pic->display_order;
         break;
     case PICTURE_TYPE_P:
         vpic->picture_type = VAEncPictureTypePredictive;
         vpic->forward_reference_picture = pic->refs[0]->recon_surface;
-        vpic->f_code[0][0] = fch;
-        vpic->f_code[0][1] = fcv;
         break;
     case PICTURE_TYPE_B:
         vpic->picture_type = VAEncPictureTypeBidirectional;
         vpic->forward_reference_picture  = pic->refs[0]->recon_surface;
         vpic->backward_reference_picture = pic->refs[1]->recon_surface;
-        vpic->f_code[0][0] = fch;
-        vpic->f_code[0][1] = fcv;
-        vpic->f_code[1][0] = fch;
-        vpic->f_code[1][1] = fcv;
         break;
     default:
         av_assert0(0 && "invalid picture type");
     }
 
-    vpic->reconstructed_picture = pic->recon_surface;
-    vpic->coded_buf = pic->output_buffer;
-
-    vpic->temporal_reference = pic->display_order - priv->last_i_frame;
+    vpic->temporal_reference = ph->temporal_reference;
+    vpic->f_code[0][0]       = pce->f_code[0][0];
+    vpic->f_code[0][1]       = pce->f_code[0][1];
+    vpic->f_code[1][0]       = pce->f_code[1][0];
+    vpic->f_code[1][1]       = pce->f_code[1][1];
 
     pic->nb_slices = priv->mb_height;
 
@@ -354,6 +516,11 @@ static av_cold int vaapi_encode_mpeg2_configure(AVCodecContext *avctx)
 {
     VAAPIEncodeContext       *ctx = avctx->priv_data;
     VAAPIEncodeMPEG2Context *priv = ctx->priv_data;
+    int err;
+
+    err = ff_cbs_init(&priv->cbc, AV_CODEC_ID_MPEG2VIDEO, avctx);
+    if (err < 0)
+        return err;
 
     priv->mb_width  = FFALIGN(avctx->width,  16) / 16;
     priv->mb_height = FFALIGN(avctx->height, 16) / 16;
@@ -420,9 +587,39 @@ static av_cold int vaapi_encode_mpeg2_init(AVCodecContext *avctx)
     case FF_PROFILE_MPEG2_MAIN:
         ctx->va_profile = VAProfileMPEG2Main;
         break;
+    case FF_PROFILE_MPEG2_422:
+        av_log(avctx, AV_LOG_ERROR, "MPEG-2 4:2:2 profile "
+               "is not supported.\n");
+        return AVERROR_PATCHWELCOME;
+    case FF_PROFILE_MPEG2_HIGH:
+        av_log(avctx, AV_LOG_ERROR, "MPEG-2 high profile "
+               "is not supported.\n");
+        return AVERROR_PATCHWELCOME;
+    case FF_PROFILE_MPEG2_SS:
+    case FF_PROFILE_MPEG2_SNR_SCALABLE:
+        av_log(avctx, AV_LOG_ERROR, "MPEG-2 scalable profiles "
+               "are not supported.\n");
+        return AVERROR_PATCHWELCOME;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unknown MPEG-2 profile %d.\n",
                avctx->profile);
+        return AVERROR(EINVAL);
+    }
+    switch (avctx->level) {
+    case 4: // High
+    case 6: // High 1440
+    case 8: // Main
+    case 10: // Low
+        break;
+    default:
+        av_log(avctx, AV_LOG_ERROR, "Unknown MPEG-2 level %d.\n",
+               avctx->level);
+        return AVERROR(EINVAL);
+    }
+
+    if (avctx->height % 4096 == 0 || avctx->width % 4096 == 0) {
+        av_log(avctx, AV_LOG_ERROR, "MPEG-2 does not support picture "
+               "height or width divisible by 4096.\n");
         return AVERROR(EINVAL);
     }
 
@@ -437,6 +634,17 @@ static av_cold int vaapi_encode_mpeg2_init(AVCodecContext *avctx)
     ctx->surface_height = FFALIGN(avctx->height, 16);
 
     return ff_vaapi_encode_init(avctx);
+}
+
+static av_cold int vaapi_encode_mpeg2_close(AVCodecContext *avctx)
+{
+    VAAPIEncodeContext *ctx = avctx->priv_data;
+    VAAPIEncodeMPEG2Context *priv = ctx->priv_data;
+
+    if (priv)
+        ff_cbs_close(&priv->cbc);
+
+    return ff_vaapi_encode_close(avctx);
 }
 
 static const AVCodecDefault vaapi_encode_mpeg2_defaults[] = {
@@ -460,7 +668,7 @@ AVCodec ff_mpeg2_vaapi_encoder = {
     .priv_data_size = sizeof(VAAPIEncodeContext),
     .init           = &vaapi_encode_mpeg2_init,
     .encode2        = &ff_vaapi_encode2,
-    .close          = &ff_vaapi_encode_close,
+    .close          = &vaapi_encode_mpeg2_close,
     .capabilities   = AV_CODEC_CAP_DELAY,
     .defaults       = vaapi_encode_mpeg2_defaults,
     .pix_fmts = (const enum AVPixelFormat[]) {
