@@ -74,19 +74,60 @@ enum HEVCSliceType {
     HEVC_SLICE_I = 2,
 };
 
-/**
- * 7.4.2.1
- */
-#define HEVC_MAX_SUB_LAYERS 7
-#define HEVC_MAX_VPS_COUNT 16
-#define HEVC_MAX_SPS_COUNT 32
-#define HEVC_MAX_PPS_COUNT 256
-#define HEVC_MAX_SHORT_TERM_RPS_COUNT 64
-#define HEVC_MAX_CU_SIZE 128
+enum {
+    // 7.4.3.1: vps_max_layers_minus1 is in [0, 62].
+    HEVC_MAX_LAYERS     = 63,
+    // 7.4.3.1: vps_max_sub_layers_minus1 is in [0, 6].
+    HEVC_MAX_SUB_LAYERS = 7,
+    // 7.4.3.1: vps_num_layer_sets_minus1 is in [0, 1023].
+    HEVC_MAX_LAYER_SETS = 1024,
 
-#define HEVC_MAX_REFS 16
-#define HEVC_MAX_DPB_SIZE 16 // A.4.1
+    // 7.4.2.1: vps_video_parameter_set_id is u(4).
+    HEVC_MAX_VPS_COUNT = 16,
+    // 7.4.3.2.1: sps_seq_parameter_set_id is in [0, 15].
+    HEVC_MAX_SPS_COUNT = 16,
+    // 7.4.3.3.1: pps_pic_parameter_set_id is in [0, 63].
+    HEVC_MAX_PPS_COUNT = 64,
 
-#define HEVC_MAX_LOG2_CTB_SIZE 6
+    // A.4.2: MaxDpbSize is bounded above by 16.
+    HEVC_MAX_DPB_SIZE = 16,
+    // 7.4.3.1: vps_max_dec_pic_buffering_minus1[i] is in [0, MaxDpbSize - 1].
+    HEVC_MAX_REFS     = HEVC_MAX_DPB_SIZE,
+
+    // 7.4.3.2.1: num_short_term_ref_pic_sets is in [0, 64].
+    HEVC_MAX_SHORT_TERM_REF_PIC_SETS = 64,
+    // 7.4.3.2.1: num_long_term_ref_pics_sps is in [0, 32].
+    HEVC_MAX_LONG_TERM_REF_PICS      = 32,
+
+    // A.3: all profiles require that CtbLog2SizeY is in [4, 6].
+    HEVC_MIN_LOG2_CTB_SIZE = 4,
+    HEVC_MAX_LOG2_CTB_SIZE = 6,
+
+    // E.3.2: cpb_cnt_minus1[i] is in [0, 31].
+    HEVC_MAX_CPB_CNT = 32,
+
+    // A.4.1: in table A.6 the highest level allows a MaxLumaPs of 35 651 584.
+    HEVC_MAX_LUMA_PS = 35651584,
+    // A.4.1: pic_width_in_luma_samples and pic_height_in_luma_samples are
+    // constrained to be not greater than sqrt(MaxLumaPs * 8).  Hence height/
+    // width are bounded above by sqrt(8 * 35651584) = 16888.2 samples.
+    HEVC_MAX_WIDTH  = 16888,
+    HEVC_MAX_HEIGHT = 16888,
+
+    // A.4.1: table A.6 allows at most 22 tile rows for any level.
+    HEVC_MAX_TILE_ROWS    = 22,
+    // A.4.1: table A.6 allows at most 20 tile columns for any level.
+    HEVC_MAX_TILE_COLUMNS = 20,
+
+    // 7.4.7.1: in the worst case (tiles_enabled_flag and
+    // entropy_coding_sync_enabled_flag are both set), entry points can be
+    // placed at the beginning of every Ctb row in every tile, giving an
+    // upper bound of (num_tile_columns_minus1 + 1) * PicHeightInCtbsY - 1.
+    // Only a stream with very high resolution and perverse parameters could
+    // get near that, though, so set a lower limit here with the maximum
+    // possible value for 4K video (at most 135 16x16 Ctb rows).
+    HEVC_MAX_ENTRY_POINT_OFFSETS = HEVC_MAX_TILE_COLUMNS * 135,
+};
+
 
 #endif /* AVCODEC_HEVC_H */
