@@ -883,6 +883,12 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
     sps->long_term_ref_pics_present_flag = get_bits1(gb);
     if (sps->long_term_ref_pics_present_flag) {
         sps->num_long_term_ref_pics_sps = get_ue_golomb_long(gb);
+        if (sps->num_long_term_ref_pics_sps > HEVC_MAX_LONG_TERM_REF_PICS) {
+            av_log(avctx, AV_LOG_ERROR, "Too many long term ref pics: %d.\n",
+                   sps->num_long_term_ref_pics_sps);
+            ret = AVERROR_INVALIDDATA;
+            goto err;
+        }
         for (i = 0; i < sps->num_long_term_ref_pics_sps; i++) {
             sps->lt_ref_pic_poc_lsb_sps[i]       = get_bits(gb, sps->log2_max_poc_lsb);
             sps->used_by_curr_pic_lt_sps_flag[i] = get_bits1(gb);
