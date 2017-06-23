@@ -1285,7 +1285,7 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
                                    kCFAllocatorDefault,
                                    &has_b_frames_cfbool);
 
-    if (!status) {
+    if (!status && has_b_frames_cfbool) {
         //Some devices don't output B-frames for main profile, even if requested.
         vtctx->has_b_frames = CFBooleanGetValue(has_b_frames_cfbool);
         CFRelease(has_b_frames_cfbool);
