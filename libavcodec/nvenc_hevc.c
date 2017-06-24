@@ -47,6 +47,7 @@ static const AVOption options[] = {
     { "rext",   "",                                      0,                    AV_OPT_TYPE_CONST,  { .i64 = NV_ENC_HEVC_PROFILE_REXT }, 0, 0, VE, "profile" },
 #endif /* NVENCAPI_MAJOR_VERSION >= 7 */
     { "level",   "Set the encoding level restriction",   OFFSET(level),        AV_OPT_TYPE_INT,    { .i64 = NV_ENC_LEVEL_AUTOSELECT }, NV_ENC_LEVEL_AUTOSELECT, NV_ENC_LEVEL_HEVC_62, VE, "level" },
+    { "auto",    "",                                     0,                    AV_OPT_TYPE_CONST,  { .i64 = NV_ENC_LEVEL_AUTOSELECT }, 0, 0, VE, "level" },
     { "1.0",     "",                                     0,                    AV_OPT_TYPE_CONST,  { .i64 = NV_ENC_LEVEL_HEVC_1 },  0, 0, VE,  "level" },
     { "2.0",     "",                                     0,                    AV_OPT_TYPE_CONST,  { .i64 = NV_ENC_LEVEL_HEVC_2 },  0, 0, VE,  "level" },
     { "2.1",     "",                                     0,                    AV_OPT_TYPE_CONST,  { .i64 = NV_ENC_LEVEL_HEVC_21 }, 0, 0, VE,  "level" },

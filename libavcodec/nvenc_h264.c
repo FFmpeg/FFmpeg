@@ -47,6 +47,7 @@ static const AVOption options[] = {
     { "high_444", "",                                     0,                   AV_OPT_TYPE_CONST,  { .i64 = NV_ENC_H264_PROFILE_HIGH_444 },            0, 0, VE, "profile" },
     { "constrained_high", "",                             0,                   AV_OPT_TYPE_CONST,  { .i64 = NV_ENC_H264_PROFILE_CONSTRAINED_HIGH },    0, 0, VE, "profile" },
     { "level",    "Set the encoding level restriction",   OFFSET(level),       AV_OPT_TYPE_INT,    { .i64 = NV_ENC_LEVEL_AUTOSELECT }, NV_ENC_LEVEL_AUTOSELECT, NV_ENC_LEVEL_H264_51, VE, "level" },
+    { "auto",     "",                                     0,                   AV_OPT_TYPE_CONST,  { .i64 = NV_ENC_LEVEL_AUTOSELECT }, 0, 0, VE, "level" },
     { "1.0",      "",                                     0,                   AV_OPT_TYPE_CONST,  { .i64 = NV_ENC_LEVEL_H264_1 },  0, 0, VE,  "level" },
     { "1.b",      "",                                     0,                   AV_OPT_TYPE_CONST,  { .i64 = NV_ENC_LEVEL_H264_1b }, 0, 0, VE,  "level" },
     { "1.1",      "",                                     0,                   AV_OPT_TYPE_CONST,  { .i64 = NV_ENC_LEVEL_H264_11 }, 0, 0, VE,  "level" },
