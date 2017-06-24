@@ -357,10 +357,8 @@ static int headphone_frame(HeadphoneContext *s, AVFilterLink *outlink)
     av_audio_fifo_read(s->in[0].fifo, (void **)in->extended_data, s->size);
 
     out = ff_get_audio_buffer(outlink, in->nb_samples);
-    if (!out) {
-        av_frame_free(&in);
+    if (!out)
         return AVERROR(ENOMEM);
-    }
     out->pts = s->pts;
     if (s->pts != AV_NOPTS_VALUE)
         s->pts += av_rescale_q(out->nb_samples, (AVRational){1, outlink->sample_rate}, outlink->time_base);
