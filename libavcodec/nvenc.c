@@ -874,6 +874,44 @@ static int nvenc_setup_codec_config(AVCodecContext *avctx)
     return 0;
 }
 
+static int nvenc_recalc_surfaces(AVCodecContext *avctx)
+{
+    NVENCContext *ctx = avctx->priv_data;
+    // default minimum of 4 surfaces
+    // multiply by 2 for number of NVENCs on gpu (hardcode to 2)
+    // another multiply by 2 to avoid blocking next PBB group
+    int nb_surfaces = FFMAX(4, ctx->config.frameIntervalP * 2 * 2);
+
+    // lookahead enabled
+    if (ctx->rc_lookahead > 0) {
+        // +1 is to account for lkd_bound calculation later
+        // +4 is to allow sufficient pipelining with lookahead
+        nb_surfaces = FFMAX(1, FFMAX(nb_surfaces, ctx->rc_lookahead + ctx->config.frameIntervalP + 1 + 4));
+        if (nb_surfaces > ctx->nb_surfaces && ctx->nb_surfaces > 0) {
+            av_log(avctx, AV_LOG_WARNING,
+                "Defined rc_lookahead requires more surfaces, "
+                "increasing used surfaces %d -> %d\n",
+                ctx->nb_surfaces, nb_surfaces);
+        }
+        ctx->nb_surfaces = FFMAX(nb_surfaces, ctx->nb_surfaces);
+    } else {
+        if (ctx->config.frameIntervalP > 1 &&
+            ctx->nb_surfaces < nb_surfaces && ctx->nb_surfaces > 0) {
+            av_log(avctx, AV_LOG_WARNING,
+                "Defined b-frame requires more surfaces, "
+                "increasing used surfaces %d -> %d\n",
+                ctx->nb_surfaces, nb_surfaces);
+            ctx->nb_surfaces = FFMAX(ctx->nb_surfaces, nb_surfaces);
+        } else if (ctx->nb_surfaces <= 0)
+            ctx->nb_surfaces = nb_surfaces;
+        // otherwise use user specified value
+    }
+
+    ctx->nb_surfaces = FFMAX(1, FFMIN(MAX_REGISTERED_FRAMES, ctx->nb_surfaces));
+    ctx->async_depth = FFMIN(ctx->async_depth, ctx->nb_surfaces - 1);
+    return 0;
+}
+
 static int nvenc_setup_encoder(AVCodecContext *avctx)
 {
     NVENCContext *ctx               = avctx->priv_data;
@@ -955,6 +993,8 @@ static int nvenc_setup_encoder(AVCodecContext *avctx)
 
     ctx->initial_pts[0] = AV_NOPTS_VALUE;
     ctx->initial_pts[1] = AV_NOPTS_VALUE;
+
+    nvenc_recalc_surfaces(avctx);
 
     nvenc_setup_rate_control(avctx);
 
@@ -1056,11 +1096,6 @@ static int nvenc_setup_surfaces(AVCodecContext *avctx)
 {
     NVENCContext *ctx = avctx->priv_data;
     int i, ret;
-
-    ctx->nb_surfaces = FFMAX(4 + avctx->max_b_frames,
-                             ctx->nb_surfaces);
-    ctx->async_depth = FFMIN(ctx->async_depth, ctx->nb_surfaces - 1);
-
 
     ctx->frames = av_mallocz_array(ctx->nb_surfaces, sizeof(*ctx->frames));
     if (!ctx->frames)
