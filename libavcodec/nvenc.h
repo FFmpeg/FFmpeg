@@ -56,7 +56,6 @@ typedef struct NVENCFrame {
 
     NV_ENC_OUTPUT_PTR out;
     NV_ENC_BUFFER_FORMAT format;
-    int locked;
 } NVENCFrame;
 
 typedef CUresult(CUDAAPI *PCUINIT)(unsigned int Flags);
@@ -145,7 +144,7 @@ typedef struct NVENCContext {
     int nb_surfaces;
     NVENCFrame *frames;
     AVFifoBuffer *timestamps;
-    AVFifoBuffer *pending, *ready;
+    AVFifoBuffer *pending, *ready, *unused_surface_queue;
 
     struct {
         CUdeviceptr ptr;

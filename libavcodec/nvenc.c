@@ -986,6 +986,7 @@ static int nvenc_alloc_surface(AVCodecContext *avctx, int idx)
 {
     NVENCContext *ctx               = avctx->priv_data;
     NV_ENCODE_API_FUNCTION_LIST *nv = &ctx->nvel.nvenc_funcs;
+    NVENCFrame *tmp_surface         = &ctx->frames[idx];
     int ret;
     NV_ENC_CREATE_BITSTREAM_BUFFER out_buffer = { 0 };
 
@@ -1046,6 +1047,8 @@ static int nvenc_alloc_surface(AVCodecContext *avctx, int idx)
 
     ctx->frames[idx].out  = out_buffer.bitstreamBuffer;
 
+    av_fifo_generic_write(ctx->unused_surface_queue, &tmp_surface, sizeof(tmp_surface), NULL);
+
     return 0;
 }
 
@@ -1065,6 +1068,9 @@ static int nvenc_setup_surfaces(AVCodecContext *avctx)
 
     ctx->timestamps = av_fifo_alloc(ctx->nb_surfaces * sizeof(int64_t));
     if (!ctx->timestamps)
+        return AVERROR(ENOMEM);
+    ctx->unused_surface_queue = av_fifo_alloc(ctx->nb_surfaces * sizeof(NVENCFrame*));
+    if (!ctx->unused_surface_queue)
         return AVERROR(ENOMEM);
     ctx->pending = av_fifo_alloc(ctx->nb_surfaces * sizeof(*ctx->frames));
     if (!ctx->pending)
@@ -1123,6 +1129,7 @@ av_cold int ff_nvenc_encode_close(AVCodecContext *avctx)
     av_fifo_free(ctx->timestamps);
     av_fifo_free(ctx->pending);
     av_fifo_free(ctx->ready);
+    av_fifo_free(ctx->unused_surface_queue);
 
     if (ctx->frames) {
         for (i = 0; i < ctx->nb_surfaces; ++i) {
@@ -1201,16 +1208,14 @@ av_cold int ff_nvenc_encode_init(AVCodecContext *avctx)
 
 static NVENCFrame *get_free_frame(NVENCContext *ctx)
 {
-    int i;
+    NVENCFrame *tmp_surf;
 
-    for (i = 0; i < ctx->nb_surfaces; i++) {
-        if (!ctx->frames[i].locked) {
-            ctx->frames[i].locked = 1;
-            return &ctx->frames[i];
-        }
-    }
+    if (!(av_fifo_size(ctx->unused_surface_queue) > 0))
+        // queue empty
+        return NULL;
 
-    return NULL;
+    av_fifo_generic_read(ctx->unused_surface_queue, &tmp_surf, sizeof(tmp_surf), NULL);
+    return tmp_surf;
 }
 
 static int nvenc_copy_frame(NV_ENC_LOCK_INPUT_BUFFER *in, const AVFrame *frame)
@@ -1510,7 +1515,7 @@ static int nvenc_get_output(AVCodecContext *avctx, AVPacket *pkt)
         frame->in = NULL;
     }
 
-    frame->locked = 0;
+    av_fifo_generic_write(ctx->unused_surface_queue, &frame, sizeof(frame), NULL);
 
     ret = nvenc_set_timestamp(avctx, &params, pkt);
     if (ret < 0)
