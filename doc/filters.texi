@@ -10761,6 +10761,9 @@ force packed RGB output
 
 @item gbrp
 force planar RGB output
+
+@item auto
+automatically pick format
 @end table
 
 Default value is @samp{yuv420}.

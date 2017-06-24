@@ -104,6 +104,7 @@ enum OverlayFormat {
     OVERLAY_FORMAT_YUV444,
     OVERLAY_FORMAT_RGB,
     OVERLAY_FORMAT_GBRP,
+    OVERLAY_FORMAT_AUTO,
     OVERLAY_FORMAT_NB
 };
 
@@ -211,6 +212,12 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
     return ret;
 }
 
+static const enum AVPixelFormat alpha_pix_fmts[] = {
+    AV_PIX_FMT_YUVA420P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA444P,
+    AV_PIX_FMT_ARGB, AV_PIX_FMT_ABGR, AV_PIX_FMT_RGBA,
+    AV_PIX_FMT_BGRA, AV_PIX_FMT_GBRAP, AV_PIX_FMT_NONE
+};
+
 static int query_formats(AVFilterContext *ctx)
 {
     OverlayContext *s = ctx->priv;
@@ -298,14 +305,26 @@ static int query_formats(AVFilterContext *ctx)
                 goto fail;
             }
         break;
+    case OVERLAY_FORMAT_AUTO:
+        if (!(main_formats    = ff_make_format_list(alpha_pix_fmts))) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+        break;
     default:
         av_assert0(0);
     }
 
-    if ((ret = ff_formats_ref(main_formats   , &ctx->inputs[MAIN]->out_formats   )) < 0 ||
-        (ret = ff_formats_ref(overlay_formats, &ctx->inputs[OVERLAY]->out_formats)) < 0 ||
-        (ret = ff_formats_ref(main_formats   , &ctx->outputs[MAIN]->in_formats   )) < 0)
+    if (s->format == OVERLAY_FORMAT_AUTO) {
+        ret = ff_set_common_formats(ctx, main_formats);
+        if (ret < 0)
             goto fail;
+    } else {
+        if ((ret = ff_formats_ref(main_formats   , &ctx->inputs[MAIN]->out_formats   )) < 0 ||
+            (ret = ff_formats_ref(overlay_formats, &ctx->inputs[OVERLAY]->out_formats)) < 0 ||
+            (ret = ff_formats_ref(main_formats   , &ctx->outputs[MAIN]->in_formats   )) < 0)
+                goto fail;
+    }
 
     return 0;
 fail:
@@ -317,12 +336,6 @@ fail:
     av_freep(&overlay_formats);
     return ret;
 }
-
-static const enum AVPixelFormat alpha_pix_fmts[] = {
-    AV_PIX_FMT_YUVA420P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA444P,
-    AV_PIX_FMT_ARGB, AV_PIX_FMT_ABGR, AV_PIX_FMT_RGBA,
-    AV_PIX_FMT_BGRA, AV_PIX_FMT_GBRAP, AV_PIX_FMT_NONE
-};
 
 static int config_input_overlay(AVFilterLink *inlink)
 {
@@ -704,6 +717,31 @@ static int config_input_main(AVFilterLink *inlink)
     case OVERLAY_FORMAT_GBRP:
         s->blend_image = blend_image_gbrp;
         break;
+    case OVERLAY_FORMAT_AUTO:
+        switch (inlink->format) {
+        case AV_PIX_FMT_YUVA420P:
+            s->blend_image = blend_image_yuv420;
+            break;
+        case AV_PIX_FMT_YUVA422P:
+            s->blend_image = blend_image_yuv422;
+            break;
+        case AV_PIX_FMT_YUVA444P:
+            s->blend_image = blend_image_yuv444;
+            break;
+        case AV_PIX_FMT_ARGB:
+        case AV_PIX_FMT_RGBA:
+        case AV_PIX_FMT_BGRA:
+        case AV_PIX_FMT_ABGR:
+            s->blend_image = blend_image_packed_rgb;
+            break;
+        case AV_PIX_FMT_GBRAP:
+            s->blend_image = blend_image_gbrp;
+            break;
+        default:
+            av_assert0(0);
+            break;
+        }
+        break;
     }
     return 0;
 }
@@ -798,6 +836,7 @@ static const AVOption overlay_options[] = {
         { "yuv444", "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_YUV444}, .flags = FLAGS, .unit = "format" },
         { "rgb",    "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_RGB},    .flags = FLAGS, .unit = "format" },
         { "gbrp",   "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_GBRP},   .flags = FLAGS, .unit = "format" },
+        { "auto",   "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_AUTO},   .flags = FLAGS, .unit = "format" },
     { "repeatlast", "repeat overlay of the last overlay frame", OFFSET(dinput.repeatlast), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
     { NULL }
 };
