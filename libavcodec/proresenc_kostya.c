@@ -358,7 +358,7 @@ static inline void encode_vlc_codeword(PutBitContext *pb, unsigned codebook, int
 }
 
 #define GET_SIGN(x)  ((x) >> 31)
-#define MAKE_CODE(x) (((x) << 1) ^ GET_SIGN(x))
+#define MAKE_CODE(x) ((((x)) * 2) ^ GET_SIGN(x))
 
 static void encode_dcs(PutBitContext *pb, int16_t *blocks,
                        int blocks_per_slice, int scale)
@@ -1206,6 +1206,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
                                            ctx->pictures_per_frame)
                     break;
             ctx->bits_per_mb   = ctx->profile_info->br_tab[i];
+            if (ctx->alpha_bits)
+                ctx->bits_per_mb *= 20;
         } else if (ctx->bits_per_mb < 128) {
             av_log(avctx, AV_LOG_ERROR, "too few bits per MB, please set at least 128\n");
             return AVERROR_INVALIDDATA;
