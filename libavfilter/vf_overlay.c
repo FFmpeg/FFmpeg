@@ -112,7 +112,6 @@ typedef struct OverlayContext {
     const AVClass *class;
     int x, y;                   ///< position of overlaid picture
 
-    int allow_packed_rgb;
     uint8_t main_is_packed_rgb;
     uint8_t main_rgba_map[4];
     uint8_t main_has_alpha;
@@ -795,11 +794,6 @@ static av_cold int init(AVFilterContext *ctx)
 {
     OverlayContext *s = ctx->priv;
 
-    if (s->allow_packed_rgb) {
-        av_log(ctx, AV_LOG_WARNING,
-               "The rgb option is deprecated and is overriding the format option, use format instead\n");
-        s->format = OVERLAY_FORMAT_RGB;
-    }
     if (!s->dinput.repeatlast || s->eof_action == EOF_ACTION_PASS) {
         s->dinput.repeatlast = 0;
         s->eof_action = EOF_ACTION_PASS;
@@ -828,7 +822,6 @@ static const AVOption overlay_options[] = {
     { "eval", "specify when to evaluate expressions", OFFSET(eval_mode), AV_OPT_TYPE_INT, {.i64 = EVAL_MODE_FRAME}, 0, EVAL_MODE_NB-1, FLAGS, "eval" },
          { "init",  "eval expressions once during initialization", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_INIT},  .flags = FLAGS, .unit = "eval" },
          { "frame", "eval expressions per-frame",                  0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_FRAME}, .flags = FLAGS, .unit = "eval" },
-    { "rgb", "force packed RGB in input and output (deprecated)", OFFSET(allow_packed_rgb), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
     { "shortest", "force termination when the shortest input terminates", OFFSET(dinput.shortest), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { "format", "set output format", OFFSET(format), AV_OPT_TYPE_INT, {.i64=OVERLAY_FORMAT_YUV420}, 0, OVERLAY_FORMAT_NB-1, FLAGS, "format" },
         { "yuv420", "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_YUV420}, .flags = FLAGS, .unit = "format" },
