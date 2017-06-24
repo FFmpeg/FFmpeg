@@ -248,8 +248,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inbuf)
         outbuf = inbuf;
     } else {
         outbuf = ff_get_audio_buffer(inlink, inbuf->nb_samples);
-        if (!outbuf)
+        if (!outbuf) {
+            av_frame_free(&inbuf);
             return AVERROR(ENOMEM);
+        }
         av_frame_copy_props(outbuf, inbuf);
     }
 
