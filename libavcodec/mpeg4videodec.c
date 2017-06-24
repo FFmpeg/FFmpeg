@@ -171,7 +171,7 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
     int a     = 2 << s->sprite_warping_accuracy;
     int rho   = 3  - s->sprite_warping_accuracy;
     int r     = 16 / a;
-    int alpha = 0;
+    int alpha = 1;
     int beta  = 0;
     int w     = s->width;
     int h     = s->height;
