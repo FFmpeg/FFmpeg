@@ -4515,12 +4515,14 @@ EOF
             x86asmexe=$x86asmexe_probe
             x86asm_type=nasm
             x86asm_debug="-g -F dwarf"
+            X86ASMDEP=
             X86ASM_DEPFLAGS='-MD $(@:.o=.d)'
         elif check_cmd $x86asmexe_probe --version; then
             x86asmexe=$x86asmexe_probe
             x86asm_type=yasm
             x86asm_debug="-g dwarf2"
             X86ASMDEP='$(DEPX86ASM) $(X86ASMFLAGS) -M $(X86ASM_O) $< > $(@:.o=.d)'
+            X86ASM_DEPFLAGS=
         fi
         check_x86asm "movbe ecx, [5]" && enable x86asm
     }
