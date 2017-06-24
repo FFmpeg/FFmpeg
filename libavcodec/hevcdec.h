@@ -508,7 +508,7 @@ int ff_hevc_frame_rps(HEVCContext *s);
 int ff_hevc_slice_rpl(HEVCContext *s);
 
 void ff_hevc_save_states(HEVCContext *s, int ctb_addr_ts);
-void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts);
+int ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts);
 int ff_hevc_sao_merge_flag_decode(HEVCContext *s);
 int ff_hevc_sao_type_idx_decode(HEVCContext *s);
 int ff_hevc_sao_band_position_decode(HEVCContext *s);

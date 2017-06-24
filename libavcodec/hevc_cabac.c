@@ -467,12 +467,12 @@ static void cabac_reinit(HEVCLocalContext *lc)
     skip_bytes(&lc->cc, 0);
 }
 
-static void cabac_init_decoder(HEVCContext *s)
+static int cabac_init_decoder(HEVCContext *s)
 {
     GetBitContext *gb = &s->HEVClc->gb;
     skip_bits(gb, 1);
     align_get_bits(gb);
-    ff_init_cabac_decoder(&s->HEVClc->cc,
+    return ff_init_cabac_decoder(&s->HEVClc->cc,
                           gb->buffer + get_bits_count(gb) / 8,
                           (get_bits_left(gb) + 7) / 8);
 }
@@ -501,10 +501,12 @@ static void cabac_init_state(HEVCContext *s)
         s->HEVClc->stat_coeff[i] = 0;
 }
 
-void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
+int ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
 {
     if (ctb_addr_ts == s->ps.pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs]) {
-        cabac_init_decoder(s);
+        int ret = cabac_init_decoder(s);
+        if (ret < 0)
+            return ret;
         if (s->sh.dependent_slice_segment_flag == 0 ||
             (s->ps.pps->tiles_enabled_flag &&
              s->ps.pps->tile_id[ctb_addr_ts] != s->ps.pps->tile_id[ctb_addr_ts - 1]))
@@ -524,8 +526,11 @@ void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
             s->ps.pps->tile_id[ctb_addr_ts] != s->ps.pps->tile_id[ctb_addr_ts - 1]) {
             if (s->threads_number == 1)
                 cabac_reinit(s->HEVClc);
-            else
-                cabac_init_decoder(s);
+            else {
+                int ret = cabac_init_decoder(s);
+                if (ret < 0)
+                    return ret;
+            }
             cabac_init_state(s);
         }
         if (s->ps.pps->entropy_coding_sync_enabled_flag) {
@@ -533,8 +538,11 @@ void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
                 get_cabac_terminate(&s->HEVClc->cc);
                 if (s->threads_number == 1)
                     cabac_reinit(s->HEVClc);
-                else
-                    cabac_init_decoder(s);
+                else {
+                    int ret = cabac_init_decoder(s);
+                    if (ret < 0)
+                        return ret;
+                }
 
                 if (s->ps.sps->ctb_width == 1)
                     cabac_init_state(s);
@@ -543,6 +551,7 @@ void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
             }
         }
     }
+    return 0;
 }
 
 #define GET_CABAC(ctx) get_cabac(&s->HEVClc->cc, &s->HEVClc->cabac_state[ctx])
