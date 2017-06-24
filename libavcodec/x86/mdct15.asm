@@ -66,7 +66,7 @@ SECTION .text
 
     shufps      xm3,  xm3, q1032
     vinsertf128 m%3,  m%3, xm3, 1       ; All ACs (tmp[1] through to tmp[4])
-    addps       m%3,  m0                ; Finally offset with DCs
+    addps       m%3,  m%3,  m0          ; Finally offset with DCs
 %endmacro
 
 %macro BUTTERFLIES_DC 2 ; %1 - exptab_offset, %2 - out
@@ -88,12 +88,12 @@ SECTION .text
     mulps  m2, m13, [exptabq + 64*1 + 0*mmsize + %1]
     mulps  m3, m13, [exptabq + 64*1 + 1*mmsize + %1]
 
-    addps  m0, m2
-    addps  m1, m3
-    addps  m0, m11
+    addps  m0, m0, m2
+    addps  m1, m1, m3
+    addps  m0, m0, m11
 
-    shufps m1, m1, q2301
-    addps  m0, m1
+    shufps m1, m1, m1, q2301
+    addps  m0, m0, m1
 
     vextractf128 xm1, m0, 1
 
