@@ -30,6 +30,7 @@ extern "C" {
 extern "C" {
 #include "config.h"
 #include "libavformat/avformat.h"
+#include "libavutil/avassert.h"
 #include "libavutil/avutil.h"
 #include "libavutil/common.h"
 #include "libavutil/imgutils.h"
@@ -54,21 +55,43 @@ static uint8_t calc_parity_and_line_offset(int line)
     return ret;
 }
 
-int teletext_data_unit_from_vbi_data(int line, uint8_t *src, uint8_t *tgt)
+static void fill_data_unit_head(int line, uint8_t *tgt)
 {
-    vbi_bit_slicer slicer;
-
-    vbi_bit_slicer_init(&slicer, 720, 13500000, 6937500, 6937500, 0x00aaaae4, 0xffff, 18, 6, 42 * 8, VBI_MODULATION_NRZ_MSB, VBI_PIXFMT_UYVY);
-
-    if (vbi_bit_slice(&slicer, src, tgt + 4) == FALSE)
-        return -1;
-
     tgt[0] = 0x02; // data_unit_id
     tgt[1] = 0x2c; // data_unit_length
     tgt[2] = calc_parity_and_line_offset(line); // field_parity, line_offset
     tgt[3] = 0xe4; // framing code
+}
 
-    return 0;
+static uint8_t* teletext_data_unit_from_vbi_data(int line, uint8_t *src, uint8_t *tgt, vbi_pixfmt fmt)
+{
+    vbi_bit_slicer slicer;
+
+    vbi_bit_slicer_init(&slicer, 720, 13500000, 6937500, 6937500, 0x00aaaae4, 0xffff, 18, 6, 42 * 8, VBI_MODULATION_NRZ_MSB, fmt);
+
+    if (vbi_bit_slice(&slicer, src, tgt + 4) == FALSE)
+        return tgt;
+
+    fill_data_unit_head(line, tgt);
+
+    return tgt + 46;
+}
+
+static uint8_t* teletext_data_unit_from_vbi_data_10bit(int line, uint8_t *src, uint8_t *tgt)
+{
+    uint8_t y[720];
+    uint8_t *py = y;
+    uint8_t *pend = y + 720;
+    /* The 10-bit VBI data is packed in V210, but libzvbi only supports 8-bit,
+     * so we extract the 8 MSBs of the luma component, that is enough for
+     * teletext bit slicing. */
+    while (py < pend) {
+        *py++ = (src[1] >> 4) + ((src[2] & 15) << 4);
+        *py++ = (src[4] >> 2) + ((src[5] & 3 ) << 6);
+        *py++ = (src[6] >> 6) + ((src[7] & 63) << 2);
+        src += 8;
+    }
+    return teletext_data_unit_from_vbi_data(line, y, tgt, VBI_PIXFMT_YUV420);
 }
 #endif
 
@@ -359,7 +382,7 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
         //fprintf(stderr,"Video Frame size %d ts %d\n", pkt.size, pkt.pts);
 
 #if CONFIG_LIBZVBI
-        if (!no_video && ctx->teletext_lines && videoFrame->GetPixelFormat() == bmdFormat8BitYUV && videoFrame->GetWidth() == 720) {
+        if (!no_video && ctx->teletext_lines) {
             IDeckLinkVideoFrameAncillary *vanc;
             AVPacket txt_pkt;
             uint8_t txt_buf0[1611]; // max 35 * 46 bytes decoded teletext lines + 1 byte data_identifier
@@ -368,16 +391,22 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
             if (videoFrame->GetAncillaryData(&vanc) == S_OK) {
                 int i;
                 int64_t line_mask = 1;
+                BMDPixelFormat vanc_format = vanc->GetPixelFormat();
                 txt_buf[0] = 0x10;    // data_identifier - EBU_data
                 txt_buf++;
-                for (i = 6; i < 336; i++, line_mask <<= 1) {
-                    uint8_t *buf;
-                    if ((ctx->teletext_lines & line_mask) && vanc->GetBufferForVerticalBlankingLine(i, (void**)&buf) == S_OK) {
-                        if (teletext_data_unit_from_vbi_data(i, buf, txt_buf) >= 0)
-                            txt_buf += 46;
+                if (ctx->bmd_mode == bmdModePAL && (vanc_format == bmdFormat8BitYUV || vanc_format == bmdFormat10BitYUV)) {
+                    av_assert0(videoFrame->GetWidth() == 720);
+                    for (i = 6; i < 336; i++, line_mask <<= 1) {
+                        uint8_t *buf;
+                        if ((ctx->teletext_lines & line_mask) && vanc->GetBufferForVerticalBlankingLine(i, (void**)&buf) == S_OK) {
+                            if (vanc_format == bmdFormat8BitYUV)
+                                txt_buf = teletext_data_unit_from_vbi_data(i, buf, txt_buf, VBI_PIXFMT_UYVY);
+                            else
+                                txt_buf = teletext_data_unit_from_vbi_data_10bit(i, buf, txt_buf);
+                        }
+                        if (i == 22)
+                            i = 317;
                     }
-                    if (i == 22)
-                        i = 317;
                 }
                 vanc->Release();
                 if (txt_buf - txt_buf0 > 1) {
