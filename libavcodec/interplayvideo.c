@@ -991,29 +991,40 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
     AVFrame *frame = data;
     int ret;
     int send_buffer;
+    int frame_format;
+    int video_data_size;
 
     if (av_packet_get_side_data(avpkt, AV_PKT_DATA_PARAM_CHANGE, NULL)) {
         av_frame_unref(s->last_frame);
         av_frame_unref(s->second_last_frame);
     }
 
-    if (buf_size < 3)
+    if (buf_size < 6)
         return AVERROR_INVALIDDATA;
 
-    send_buffer = AV_RL8(avpkt->data);
+    frame_format         = AV_RL8(buf);
+    send_buffer          = AV_RL8(buf + 1);
+    video_data_size      = AV_RL16(buf + 2);
+    s->decoding_map_size = AV_RL16(buf + 4);
+
+    if (frame_format != 0x11)
+        av_log(avctx, AV_LOG_ERROR, "Frame type 0x%02X unsupported\n", frame_format);
+
+    if (! s->decoding_map_size) {
+        av_log(avctx, AV_LOG_ERROR, "Empty decoding map\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    bytestream2_init(&s->stream_ptr, buf + 6, video_data_size);
 
     /* decoding map contains 4 bits of information per 8x8 block */
-    s->decoding_map_size = AV_RL16(avpkt->data + 1);
+    s->decoding_map = buf + 6 + video_data_size;
 
-    /* compressed buffer needs to be large enough to at least hold an entire
-     * decoding map */
-    if (buf_size < s->decoding_map_size + 2)
-        return buf_size;
-
-
-    s->decoding_map = buf + 3;
-    bytestream2_init(&s->stream_ptr, buf + 3 + s->decoding_map_size,
-                     buf_size - s->decoding_map_size - 3);
+    /* ensure we can't overread the packet */
+    if (buf_size < 6 + s->decoding_map_size + video_data_size) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid IP packet size\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
