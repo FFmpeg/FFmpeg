@@ -218,12 +218,12 @@ static const enum AVPixelFormat out_rgb9_lowpass_pix_fmts[] = {
 };
 
 static const enum AVPixelFormat out_rgb10_lowpass_pix_fmts[] = {
-    AV_PIX_FMT_GBRP10,
+    AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRAP10,
     AV_PIX_FMT_NONE
 };
 
 static const enum AVPixelFormat out_rgb12_lowpass_pix_fmts[] = {
-    AV_PIX_FMT_GBRP12,
+    AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12,
     AV_PIX_FMT_NONE
 };
 
