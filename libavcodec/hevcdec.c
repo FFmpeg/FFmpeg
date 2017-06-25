@@ -2421,10 +2421,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
         ret = init_get_bits8(&lc->gb, s->data + s->sh.offset[ctb_row - 1], s->sh.size[ctb_row - 1]);
         if (ret < 0)
             goto error;
-
-        ret = ff_init_cabac_decoder(&lc->cc, s->data + s->sh.offset[(ctb_row)-1], s->sh.size[ctb_row - 1]);
-        if (ret < 0)
-            goto error;
+        ff_init_cabac_decoder(&lc->cc, s->data + s->sh.offset[(ctb_row)-1], s->sh.size[ctb_row - 1]);
     }
 
     while(more_data && ctb_addr_ts < s->ps.sps->ctb_size) {
