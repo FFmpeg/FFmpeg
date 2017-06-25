@@ -24,6 +24,7 @@ version <next>:
 - roberts video filter
 - The x86 assembler default switched from yasm to nasm, pass
   --x86asmexe=yasm to configure to restore the old behavior.
+- additional frame format support for Interplay MVE movies
 
 version 3.3:
 - CrystalHD decoder moved to new decode API
