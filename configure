@@ -2120,6 +2120,7 @@ HAVE_LIST="
     $TYPES_LIST
     makeinfo
     makeinfo_html
+    opencl_d3d11
     opencl_dxva2
     opencl_vaapi_beignet
     opencl_vaapi_intel_media
@@ -6170,6 +6171,11 @@ fi
 if enabled_all opencl dxva2 ; then
     check_type "CL/cl_dx9_media_sharing.h" cl_dx9_surface_info_khr &&
         enable opencl_dxva2
+fi
+
+if enabled_all opencl d3d11va ; then
+    check_type "CL/cl_d3d11.h" clGetDeviceIDsFromD3D11KHR_fn &&
+        enable opencl_d3d11
 fi
 
 enabled vdpau &&
