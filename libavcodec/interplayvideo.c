@@ -990,17 +990,20 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
     IpvideoContext *s = avctx->priv_data;
     AVFrame *frame = data;
     int ret;
+    int send_buffer;
 
     if (av_packet_get_side_data(avpkt, AV_PKT_DATA_PARAM_CHANGE, NULL)) {
         av_frame_unref(s->last_frame);
         av_frame_unref(s->second_last_frame);
     }
 
-    if (buf_size < 2)
+    if (buf_size < 3)
         return AVERROR_INVALIDDATA;
 
+    send_buffer = AV_RL8(avpkt->data);
+
     /* decoding map contains 4 bits of information per 8x8 block */
-    s->decoding_map_size = AV_RL16(avpkt->data);
+    s->decoding_map_size = AV_RL16(avpkt->data + 1);
 
     /* compressed buffer needs to be large enough to at least hold an entire
      * decoding map */
@@ -1008,9 +1011,9 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
         return buf_size;
 
 
-    s->decoding_map = buf + 2;
-    bytestream2_init(&s->stream_ptr, buf + 2 + s->decoding_map_size,
-                     buf_size - s->decoding_map_size);
+    s->decoding_map = buf + 3;
+    bytestream2_init(&s->stream_ptr, buf + 3 + s->decoding_map_size,
+                     buf_size - s->decoding_map_size - 3);
 
     if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
@@ -1028,7 +1031,7 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
 
     ipvideo_decode_opcodes(s, frame);
 
-    *got_frame = 1;
+    *got_frame = send_buffer;
 
     /* shuffle frames */
     av_frame_unref(s->second_last_frame);
