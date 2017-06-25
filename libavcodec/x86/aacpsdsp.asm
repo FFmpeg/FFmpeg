@@ -166,6 +166,235 @@ align 16
     jl .loop
     REP_RET
 
+;**********************************************************
+;void ps_hybrid_analysis_ileave_sse(float out[2][38][64],
+;                                   float (*in)[32][2],
+;                                   int i, int len)
+;**********************************************************
+INIT_XMM sse
+cglobal ps_hybrid_analysis_ileave, 3, 7, 5, out, in, i, len, in0, in1, tmp
+    movsxdifnidn        iq, id
+    mov               lend, 32 << 3
+    lea                inq, [inq+iq*4]
+    mov               tmpd, id
+    shl               tmpd, 8
+    add               outq, tmpq
+    mov               tmpd, 64
+    sub               tmpd, id
+    mov                 id, tmpd
+
+    test                id, 1
+    jne .loop4
+    test                id, 2
+    jne .loop8
+
+align 16
+.loop16:
+    mov               in0q, inq
+    mov               in1q, 38*64*4
+    add               in1q, in0q
+    mov               tmpd, lend
+
+.inner_loop16:
+    movaps              m0, [in0q]
+    movaps              m1, [in1q]
+    movaps              m2, [in0q+lenq]
+    movaps              m3, [in1q+lenq]
+    TRANSPOSE4x4PS 0, 1, 2, 3, 4
+    movaps          [outq], m0
+    movaps     [outq+lenq], m1
+    movaps   [outq+lenq*2], m2
+    movaps [outq+3*32*2*4], m3
+    lea               in0q, [in0q+lenq*2]
+    lea               in1q, [in1q+lenq*2]
+    add               outq, mmsize
+    sub               tmpd, mmsize
+    jg .inner_loop16
+    add                inq, 16
+    add               outq, 3*32*2*4
+    sub                 id, 4
+    jg .loop16
+    RET
+
+align 16
+.loop8:
+    mov               in0q, inq
+    mov               in1q, 38*64*4
+    add               in1q, in0q
+    mov               tmpd, lend
+
+.inner_loop8:
+    movlps              m0, [in0q]
+    movlps              m1, [in1q]
+    movhps              m0, [in0q+lenq]
+    movhps              m1, [in1q+lenq]
+    SBUTTERFLYPS 0, 1, 2
+    SBUTTERFLYPD 0, 1, 2
+    movaps          [outq], m0
+    movaps     [outq+lenq], m1
+    lea               in0q, [in0q+lenq*2]
+    lea               in1q, [in1q+lenq*2]
+    add               outq, mmsize
+    sub               tmpd, mmsize
+    jg .inner_loop8
+    add                inq, 8
+    add               outq, lenq
+    sub                 id, 2
+    jg .loop16
+    RET
+
+align 16
+.loop4:
+    mov               in0q, inq
+    mov               in1q, 38*64*4
+    add               in1q, in0q
+    mov               tmpd, lend
+
+.inner_loop4:
+    movss               m0, [in0q]
+    movss               m1, [in1q]
+    movss               m2, [in0q+lenq]
+    movss               m3, [in1q+lenq]
+    movlhps             m0, m1
+    movlhps             m2, m3
+    shufps              m0, m2, q2020
+    movaps          [outq], m0
+    lea               in0q, [in0q+lenq*2]
+    lea               in1q, [in1q+lenq*2]
+    add               outq, mmsize
+    sub               tmpd, mmsize
+    jg .inner_loop4
+    add                inq, 4
+    sub                 id, 1
+    test                id, 2
+    jne .loop8
+    cmp                 id, 4
+    jge .loop16
+    RET
+
+;***********************************************************
+;void ps_hybrid_synthesis_deint_sse4(float out[2][38][64],
+;                                    float (*in)[32][2],
+;                                    int i, int len)
+;***********************************************************
+%macro HYBRID_SYNTHESIS_DEINT 0
+cglobal ps_hybrid_synthesis_deint, 3, 7, 5, out, in, i, len, out0, out1, tmp
+%if cpuflag(sse4)
+%define MOVH movsd
+%else
+%define MOVH movlps
+%endif
+    movsxdifnidn        iq, id
+    mov               lend, 32 << 3
+    lea               outq, [outq+iq*4]
+    mov               tmpd, id
+    shl               tmpd, 8
+    add                inq, tmpq
+    mov               tmpd, 64
+    sub               tmpd, id
+    mov                 id, tmpd
+
+    test                id, 1
+    jne .loop4
+    test                id, 2
+    jne .loop8
+
+align 16
+.loop16:
+    mov              out0q, outq
+    mov              out1q, 38*64*4
+    add              out1q, out0q
+    mov               tmpd, lend
+
+.inner_loop16:
+    movaps              m0, [inq]
+    movaps              m1, [inq+lenq]
+    movaps              m2, [inq+lenq*2]
+    movaps              m3, [inq+3*32*2*4]
+    TRANSPOSE4x4PS 0, 1, 2, 3, 4
+    movaps         [out0q], m0
+    movaps         [out1q], m1
+    movaps    [out0q+lenq], m2
+    movaps    [out1q+lenq], m3
+    lea              out0q, [out0q+lenq*2]
+    lea              out1q, [out1q+lenq*2]
+    add                inq, mmsize
+    sub               tmpd, mmsize
+    jg .inner_loop16
+    add               outq, 16
+    add                inq, 3*32*2*4
+    sub                 id, 4
+    jg .loop16
+    RET
+
+align 16
+.loop8:
+    mov              out0q, outq
+    mov              out1q, 38*64*4
+    add              out1q, out0q
+    mov               tmpd, lend
+
+.inner_loop8:
+    movaps              m0, [inq]
+    movaps              m1, [inq+lenq]
+    SBUTTERFLYPS 0, 1, 2
+    SBUTTERFLYPD 0, 1, 2
+    MOVH           [out0q], m0
+    MOVH           [out1q], m1
+    movhps    [out0q+lenq], m0
+    movhps    [out1q+lenq], m1
+    lea              out0q, [out0q+lenq*2]
+    lea              out1q, [out1q+lenq*2]
+    add                inq, mmsize
+    sub               tmpd, mmsize
+    jg .inner_loop8
+    add               outq, 8
+    add                inq, lenq
+    sub                 id, 2
+    jg .loop16
+    RET
+
+align 16
+.loop4:
+    mov              out0q, outq
+    mov              out1q, 38*64*4
+    add              out1q, out0q
+    mov               tmpd, lend
+
+.inner_loop4:
+    movaps              m0, [inq]
+    movss          [out0q], m0
+%if cpuflag(sse4)
+    extractps      [out1q], m0, 1
+    extractps [out0q+lenq], m0, 2
+    extractps [out1q+lenq], m0, 3
+%else
+    movhlps             m1, m0
+    movss     [out0q+lenq], m1
+    shufps              m0, m0, 0xb1
+    movss          [out1q], m0
+    movhlps             m1, m0
+    movss     [out1q+lenq], m1
+%endif
+    lea              out0q, [out0q+lenq*2]
+    lea              out1q, [out1q+lenq*2]
+    add                inq, mmsize
+    sub               tmpd, mmsize
+    jg .inner_loop4
+    add               outq, 4
+    sub                 id, 1
+    test                id, 2
+    jne .loop8
+    cmp                 id, 4
+    jge .loop16
+    RET
+%endmacro
+
+INIT_XMM sse
+HYBRID_SYNTHESIS_DEINT
+INIT_XMM sse4
+HYBRID_SYNTHESIS_DEINT
+
 ;*******************************************************************
 ;void ff_ps_hybrid_analysis_<opt>(float (*out)[2], float (*in)[2],
 ;                                 const float (*filter)[8][2],

@@ -122,6 +122,7 @@ static void register_all(void)
     REGISTER_FILTER(SOFALIZER,      sofalizer,      af);
     REGISTER_FILTER(STEREOTOOLS,    stereotools,    af);
     REGISTER_FILTER(STEREOWIDEN,    stereowiden,    af);
+    REGISTER_FILTER(SUPEREQUALIZER, superequalizer, af);
     REGISTER_FILTER(SURROUND,       surround,       af);
     REGISTER_FILTER(TREBLE,         treble,         af);
     REGISTER_FILTER(TREMOLO,        tremolo,        af);
@@ -278,6 +279,7 @@ static void register_all(void)
     REGISTER_FILTER(REMOVELOGO,     removelogo,     vf);
     REGISTER_FILTER(REPEATFIELDS,   repeatfields,   vf);
     REGISTER_FILTER(REVERSE,        reverse,        vf);
+    REGISTER_FILTER(ROBERTS,        roberts,        vf);
     REGISTER_FILTER(ROTATE,         rotate,         vf);
     REGISTER_FILTER(SAB,            sab,            vf);
     REGISTER_FILTER(SCALE,          scale,          vf);

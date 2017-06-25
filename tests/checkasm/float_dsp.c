@@ -219,9 +219,12 @@ static void test_butterflies_float(const float *src0, const float *src1)
     call_ref(cdst, cdst1, LEN);
     call_new(odst, odst1, LEN);
     for (i = 0; i < LEN; i++) {
-        if (!float_near_abs_eps(cdst[i], odst[i], FLT_EPSILON)) {
+        if (!float_near_abs_eps(cdst[i],  odst[i],  FLT_EPSILON) ||
+            !float_near_abs_eps(cdst1[i], odst1[i], FLT_EPSILON)) {
             fprintf(stderr, "%d: %- .12f - %- .12f = % .12g\n",
                     i, cdst[i], odst[i], cdst[i] - odst[i]);
+            fprintf(stderr, "%d: %- .12f - %- .12f = % .12g\n",
+                    i, cdst1[i], odst1[i], cdst1[i] - odst1[i]);
             fail();
             break;
         }

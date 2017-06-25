@@ -225,7 +225,7 @@ static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb,
         INC_MED(1);
         DEC_MED(2);
     } else {
-        base = GET_MED(0) + GET_MED(1) + GET_MED(2) * (t - 2);
+        base = GET_MED(0) + GET_MED(1) + GET_MED(2) * (t - 2U);
         add  = GET_MED(2) - 1;
         INC_MED(0);
         INC_MED(1);
@@ -313,8 +313,8 @@ static float wv_get_value_float(WavpackFrameContext *s, uint32_t *crc, int S)
         S  *= 1U << s->float_shift;
         sign = S < 0;
         if (sign)
-            S = -S;
-        if (S >= 0x1000000) {
+            S = -(unsigned)S;
+        if (S >= 0x1000000U) {
             if (s->got_extra_bits && get_bits1(&s->gb_extra_bits))
                 S = get_bits(&s->gb_extra_bits, 23);
             else
@@ -480,7 +480,7 @@ static inline int wv_unpack_stereo(WavpackFrameContext *s, GetBitContext *gb,
         }
 
         if (type == AV_SAMPLE_FMT_S16P) {
-            if (FFABS(L) + FFABS(R) > (1<<19)) {
+            if (FFABS(L) + (unsigned)FFABS(R) > (1<<19)) {
                 av_log(s->avctx, AV_LOG_ERROR, "sample %d %d too large\n", L, R);
                 return AVERROR_INVALIDDATA;
             }

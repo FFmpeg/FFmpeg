@@ -91,7 +91,7 @@ static void mpeg_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
     if (ref)
         av_log(s->avctx, AV_LOG_DEBUG,
                "Interlaced error concealment is not fully implemented\n");
-    ff_mpv_decode_mb(s, s->block);
+    ff_mpv_reconstruct_mb(s, s->block);
 }
 
 int ff_mpeg_er_init(MpegEncContext *s)

@@ -73,11 +73,11 @@ static struct{
 
 #define GET_SYM(symbol, defaultVal)                                     \
 do{                                                                     \
-    CFStringRef cfstr = *(CFStringRef*)dlsym(RTLD_DEFAULT, #symbol);    \
-    if(!cfstr)                                                          \
+    CFStringRef* handle = (CFStringRef*)dlsym(RTLD_DEFAULT, #symbol);   \
+    if(!handle)                                                         \
         compat_keys.symbol = CFSTR(defaultVal);                         \
     else                                                                \
-        compat_keys.symbol = cfstr;                                     \
+        compat_keys.symbol = *handle;                                   \
 }while(0)
 
 static pthread_once_t once_ctrl = PTHREAD_ONCE_INIT;
@@ -1285,7 +1285,7 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
                                    kCFAllocatorDefault,
                                    &has_b_frames_cfbool);
 
-    if (!status) {
+    if (!status && has_b_frames_cfbool) {
         //Some devices don't output B-frames for main profile, even if requested.
         vtctx->has_b_frames = CFBooleanGetValue(has_b_frames_cfbool);
         CFRelease(has_b_frames_cfbool);

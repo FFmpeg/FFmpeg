@@ -181,14 +181,15 @@ static void subband_scale(int *dst, int *src, int scale, int offset, int len)
             out = (int)(((int64_t)src[i] * c) >> 32);
             dst[i] = ((int)(out+round) >> s) * ssign;
         }
-    }
-    else {
+    } else if (s > -32) {
         s = s + 32;
         round = 1U << (s-1);
         for (i=0; i<len; i++) {
             out = (int)((int64_t)((int64_t)src[i] * c + round) >> s);
             dst[i] = out * (unsigned)ssign;
         }
+    } else {
+        av_log(NULL, AV_LOG_ERROR, "Overflow in subband_scale()\n");
     }
 }
 

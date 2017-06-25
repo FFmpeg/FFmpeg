@@ -680,6 +680,7 @@ static void register_all(void)
     REGISTER_ENCODER(VP8_VAAPI,         vp8_vaapi);
     REGISTER_DECODER(VP9_CUVID,         vp9_cuvid);
     REGISTER_DECODER(VP9_MEDIACODEC,    vp9_mediacodec);
+    REGISTER_ENCODER(VP9_VAAPI,         vp9_vaapi);
 
     /* parsers */
     REGISTER_PARSER(AAC,                aac);

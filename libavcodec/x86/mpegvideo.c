@@ -51,7 +51,7 @@ static void dct_unquantize_h263_intra_mmx(MpegEncContext *s,
     if(s->ac_pred)
         nCoeffs=63;
     else
-        nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
+        nCoeffs= s->intra_scantable.raster_end[ s->block_last_index[n] ];
 
 __asm__ volatile(
                 "movd %1, %%mm6                 \n\t" //qmul

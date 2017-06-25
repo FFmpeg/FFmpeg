@@ -26,7 +26,7 @@
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/vp8dsp.h"
 
-#if HAVE_YASM
+#if HAVE_X86ASM
 
 /*
  * MC functions
@@ -290,7 +290,7 @@ DECLARE_LOOP_FILTER(sse2)
 DECLARE_LOOP_FILTER(ssse3)
 DECLARE_LOOP_FILTER(sse4)
 
-#endif /* HAVE_YASM */
+#endif /* HAVE_X86ASM */
 
 #define VP8_LUMA_MC_FUNC(IDX, SIZE, OPT) \
     c->put_vp8_epel_pixels_tab[IDX][0][2] = ff_put_vp8_epel ## SIZE ## _h6_ ## OPT; \
@@ -318,7 +318,7 @@ DECLARE_LOOP_FILTER(sse4)
 
 av_cold void ff_vp78dsp_init_x86(VP8DSPContext *c)
 {
-#if HAVE_YASM
+#if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_MMX(cpu_flags)) {
@@ -363,12 +363,12 @@ av_cold void ff_vp78dsp_init_x86(VP8DSPContext *c)
         VP8_BILINEAR_MC_FUNC(1, 8, ssse3);
         VP8_BILINEAR_MC_FUNC(2, 4, ssse3);
     }
-#endif /* HAVE_YASM */
+#endif /* HAVE_X86ASM */
 }
 
 av_cold void ff_vp8dsp_init_x86(VP8DSPContext *c)
 {
-#if HAVE_YASM
+#if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_MMX(cpu_flags)) {
@@ -463,5 +463,5 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext *c)
         c->vp8_h_loop_filter16y       = ff_vp8_h_loop_filter16y_mbedge_sse4;
         c->vp8_h_loop_filter8uv       = ff_vp8_h_loop_filter8uv_mbedge_sse4;
     }
-#endif /* HAVE_YASM */
+#endif /* HAVE_X86ASM */
 }

@@ -198,6 +198,55 @@ static int filter16_prewitt(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
     return 0;
 }
 
+static int filter16_roberts(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ConvolutionContext *s = ctx->priv;
+    ThreadData *td = arg;
+    AVFrame *in = td->in;
+    AVFrame *out = td->out;
+    const int plane = td->plane;
+    const int peak = (1 << s->depth) - 1;
+    const int stride = in->linesize[plane] / 2;
+    const int bstride = s->bstride;
+    const int height = s->planeheight[plane];
+    const int width  = s->planewidth[plane];
+    const int slice_start = (height * jobnr) / nb_jobs;
+    const int slice_end = (height * (jobnr+1)) / nb_jobs;
+    const uint16_t *src = (const uint16_t *)in->data[plane] + slice_start * stride;
+    uint16_t *dst = (uint16_t *)out->data[plane] + slice_start * (out->linesize[plane] / 2);
+    const float scale = s->scale;
+    const float delta = s->delta;
+    uint16_t *p0 = (uint16_t *)s->bptrs[jobnr] + 16;
+    uint16_t *p1 = p0 + bstride;
+    uint16_t *p2 = p1 + bstride;
+    uint16_t *orig = p0, *end = p2;
+    int y, x;
+
+    line_copy16(p0, src + stride * (slice_start == 0 ? 1 : -1), width, 1);
+    line_copy16(p1, src, width, 1);
+
+    for (y = slice_start; y < slice_end; y++) {
+        src += stride * (y < height - 1 ? 1 : -1);
+        line_copy16(p2, src, width, 1);
+
+        for (x = 0; x < width; x++) {
+            int suma = p0[x - 1] *  1 +
+                       p1[x    ] * -1;
+            int sumb = p0[x    ] *  1 +
+                       p1[x - 1] * -1;
+
+            dst[x] = av_clip(sqrt(suma*suma + sumb*sumb) * scale + delta, 0, peak);
+        }
+
+        p0 = p1;
+        p1 = p2;
+        p2 = (p2 == end) ? orig: p2 + bstride;
+        dst += out->linesize[plane] / 2;
+    }
+
+    return 0;
+}
+
 static int filter16_sobel(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     ConvolutionContext *s = ctx->priv;
@@ -298,6 +347,54 @@ static int filter_prewitt(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
                        p1[x + 1] *  1 +
                        p2[x - 1] * -1 +
                        p2[x + 1] *  1;
+
+            dst[x] = av_clip_uint8(sqrt(suma*suma + sumb*sumb) * scale + delta);
+        }
+
+        p0 = p1;
+        p1 = p2;
+        p2 = (p2 == end) ? orig: p2 + bstride;
+        dst += out->linesize[plane];
+    }
+
+    return 0;
+}
+
+static int filter_roberts(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ConvolutionContext *s = ctx->priv;
+    ThreadData *td = arg;
+    AVFrame *in = td->in;
+    AVFrame *out = td->out;
+    const int plane = td->plane;
+    const int stride = in->linesize[plane];
+    const int bstride = s->bstride;
+    const int height = s->planeheight[plane];
+    const int width  = s->planewidth[plane];
+    const int slice_start = (height * jobnr) / nb_jobs;
+    const int slice_end = (height * (jobnr+1)) / nb_jobs;
+    const uint8_t *src = in->data[plane] + slice_start * stride;
+    uint8_t *dst = out->data[plane] + slice_start * out->linesize[plane];
+    const float scale = s->scale;
+    const float delta = s->delta;
+    uint8_t *p0 = s->bptrs[jobnr] + 16;
+    uint8_t *p1 = p0 + bstride;
+    uint8_t *p2 = p1 + bstride;
+    uint8_t *orig = p0, *end = p2;
+    int y, x;
+
+    line_copy8(p0, src + stride * (slice_start == 0 ? 1 : -1), width, 1);
+    line_copy8(p1, src, width, 1);
+
+    for (y = slice_start; y < slice_end; y++) {
+        src += stride * (y < height - 1 ? 1 : -1);
+        line_copy8(p2, src, width, 1);
+
+        for (x = 0; x < width; x++) {
+            int suma = p0[x - 1] *  1 +
+                       p1[x    ] * -1;
+            int sumb = p0[x    ] *  1 +
+                       p1[x - 1] * -1;
 
             dst[x] = av_clip_uint8(sqrt(suma*suma + sumb*sumb) * scale + delta);
         }
@@ -651,6 +748,10 @@ static int config_input(AVFilterLink *inlink)
         if (s->depth > 8)
             for (p = 0; p < s->nb_planes; p++)
                 s->filter[p] = filter16_prewitt;
+    } else if (!strcmp(ctx->filter->name, "roberts")) {
+        if (s->depth > 8)
+            for (p = 0; p < s->nb_planes; p++)
+                s->filter[p] = filter16_roberts;
     } else if (!strcmp(ctx->filter->name, "sobel")) {
         if (s->depth > 8)
             for (p = 0; p < s->nb_planes; p++)
@@ -736,6 +837,13 @@ static av_cold int init(AVFilterContext *ctx)
         for (i = 0; i < 4; i++) {
             if ((1 << i) & s->planes)
                 s->filter[i] = filter_prewitt;
+            else
+                s->copy[i] = 1;
+        }
+    } else if (!strcmp(ctx->filter->name, "roberts")) {
+        for (i = 0; i < 4; i++) {
+            if ((1 << i) & s->planes)
+                s->filter[i] = filter_roberts;
             else
                 s->copy[i] = 1;
         }
@@ -845,3 +953,29 @@ AVFilter ff_vf_sobel = {
 };
 
 #endif /* CONFIG_SOBEL_FILTER */
+
+#if CONFIG_ROBERTS_FILTER
+
+static const AVOption roberts_options[] = {
+    { "planes", "set planes to filter", OFFSET(planes), AV_OPT_TYPE_INT,  {.i64=15}, 0, 15, FLAGS},
+    { "scale",  "set scale",            OFFSET(scale), AV_OPT_TYPE_FLOAT, {.dbl=1.0}, 0.0,  65535, FLAGS},
+    { "delta",  "set delta",            OFFSET(delta), AV_OPT_TYPE_FLOAT, {.dbl=0}, -65535, 65535, FLAGS},
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(roberts);
+
+AVFilter ff_vf_roberts = {
+    .name          = "roberts",
+    .description   = NULL_IF_CONFIG_SMALL("Apply roberts cross operator."),
+    .priv_size     = sizeof(ConvolutionContext),
+    .priv_class    = &roberts_class,
+    .init          = init,
+    .uninit        = uninit,
+    .query_formats = query_formats,
+    .inputs        = convolution_inputs,
+    .outputs       = convolution_outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
+};
+
+#endif /* CONFIG_ROBERTS_FILTER */

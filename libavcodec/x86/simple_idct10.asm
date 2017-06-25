@@ -46,47 +46,60 @@ times 4 dw %2, %3
 %define W2sh2 21407 ; W2 = 85627 = 21407<<2 - 1
 %define W3sh2 19265 ; W3 = 77062 = 19265<<2 + 2
 %define W4sh2 16384 ; W4 = 65535 = 16384<<2 - 1
+%define W3sh2_lo 19266
+%define W4sh2_lo 16383
 %define W5sh2 12873 ; W5 = 51491 = 12873<<2 - 1
 %define W6sh2  8867 ; W6 = 35468 =  8867<<2
 %define W7sh2  4520 ; W7 = 18081 =  4520<<2 + 1
 
-CONST_DEC  w4_plus_w2,   W4sh2, +W2sh2
-CONST_DEC  w4_min_w2,    W4sh2, -W2sh2
-CONST_DEC  w4_plus_w6,   W4sh2, +W6sh2
-CONST_DEC  w4_min_w6,    W4sh2, -W6sh2
-CONST_DEC  w1_plus_w3,   W1sh2, +W3sh2
-CONST_DEC  w3_min_w1,    W3sh2, -W1sh2
-CONST_DEC  w7_plus_w3,   W7sh2, +W3sh2
-CONST_DEC  w3_min_w7,    W3sh2, -W7sh2
+CONST_DEC  w4_plus_w2_hi,   W4sh2, +W2sh2
+CONST_DEC  w4_min_w2_hi,    W4sh2, -W2sh2
+CONST_DEC  w4_plus_w6_hi,   W4sh2, +W6sh2
+CONST_DEC  w4_min_w6_hi,    W4sh2, -W6sh2
+CONST_DEC  w1_plus_w3_hi,   W1sh2, +W3sh2
+CONST_DEC  w3_min_w1_hi,    W3sh2, -W1sh2
+CONST_DEC  w7_plus_w3_hi,   W7sh2, +W3sh2
+CONST_DEC  w3_min_w7_hi,    W3sh2, -W7sh2
 CONST_DEC  w1_plus_w5,   W1sh2, +W5sh2
 CONST_DEC  w5_min_w1,    W5sh2, -W1sh2
 CONST_DEC  w5_plus_w7,   W5sh2, +W7sh2
 CONST_DEC  w7_min_w5,    W7sh2, -W5sh2
+CONST_DEC  w4_plus_w2_lo,   W4sh2_lo, +W2sh2
+CONST_DEC  w4_min_w2_lo,    W4sh2_lo, -W2sh2
+CONST_DEC  w4_plus_w6_lo,   W4sh2_lo, +W6sh2
+CONST_DEC  w4_min_w6_lo,    W4sh2_lo, -W6sh2
+CONST_DEC  w1_plus_w3_lo,   W1sh2,    +W3sh2_lo
+CONST_DEC  w3_min_w1_lo,    W3sh2_lo, -W1sh2
+CONST_DEC  w7_plus_w3_lo,   W7sh2,    +W3sh2_lo
+CONST_DEC  w3_min_w7_lo,    W3sh2_lo, -W7sh2
 
 %include "libavcodec/x86/simple_idct10_template.asm"
 
 SECTION .text
 
 %macro idct_fn 0
-cglobal simple_idct10, 1, 1, 16
-    IDCT_FN    "", 12, "", 19
+
+define_constants _hi
+
+cglobal simple_idct10, 1, 1, 16, block
+    IDCT_FN    "", 12, "", 19, "store"
     RET
 
-cglobal simple_idct10_put, 3, 3, 16
-    IDCT_FN    "", 12, "", 19, 0, pw_1023
+cglobal simple_idct10_put, 3, 3, 16, pixels, lsize, block
+    IDCT_FN    "", 12, "", 19, "put", 0, pw_1023
     RET
 
-cglobal simple_idct12, 1, 1, 16
+cglobal simple_idct12, 1, 1, 16, block
     ; coeffs are already 15bits, adding the offset would cause
     ; overflow in the input
-    IDCT_FN    "", 15, pw_2, 16
+    IDCT_FN    "", 15, pw_2, 16, "store"
     RET
 
-cglobal simple_idct12_put, 3, 3, 16
+cglobal simple_idct12_put, 3, 3, 16, pixels, lsize, block
     ; range isn't known, so the C simple_idct range is used
     ; Also, using a bias on input overflows, so use the bias
     ; on output of the first butterfly instead
-    IDCT_FN    "", 15, pw_2, 16, 0, pw_4095
+    IDCT_FN    "", 15, pw_2, 16, "put", 0, pw_4095
     RET
 %endmacro
 

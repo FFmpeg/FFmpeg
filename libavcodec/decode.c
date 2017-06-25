@@ -462,7 +462,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 frame->sample_rate = avctx->sample_rate;
         }
 
-        side= av_packet_get_side_data(pkt, AV_PKT_DATA_SKIP_SAMPLES, &side_size);
+        side= av_packet_get_side_data(avci->last_pkt_props, AV_PKT_DATA_SKIP_SAMPLES, &side_size);
         if(side && side_size>=10) {
             avctx->internal->skip_samples = AV_RL32(side) * avctx->internal->skip_samples_multiplier;
             discard_padding = AV_RL32(side + 4);

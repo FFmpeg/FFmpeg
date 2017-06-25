@@ -680,7 +680,7 @@ void ff_mpv_common_end(MpegEncContext *s);
 
 void ff_mpv_decode_defaults(MpegEncContext *s);
 void ff_mpv_decode_init(MpegEncContext *s, AVCodecContext *avctx);
-void ff_mpv_decode_mb(MpegEncContext *s, int16_t block[12][64]);
+void ff_mpv_reconstruct_mb(MpegEncContext *s, int16_t block[12][64]);
 void ff_mpv_report_decode_progress(MpegEncContext *s);
 
 int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx);

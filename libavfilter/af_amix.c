@@ -268,7 +268,7 @@ static int calc_active_inputs(MixContext *s);
 /**
  * Read samples from the input FIFOs, mix, and write to the output link.
  */
-static int output_frame(AVFilterLink *outlink)
+static int output_frame(AVFilterLink *outlink, int need_request)
 {
     AVFilterContext *ctx = outlink->src;
     MixContext      *s = ctx->priv;
@@ -288,7 +288,7 @@ static int output_frame(AVFilterLink *outlink)
                 if (ns < nb_samples) {
                     if (!(s->input_state[i] & INPUT_EOF))
                         /* unclosed input with not enough samples */
-                        return 0;
+                        return need_request ? ff_request_frame(ctx->inputs[i]) : 0;
                     /* closed input to drain */
                     nb_samples = ns;
                 }
@@ -387,7 +387,7 @@ static int request_samples(AVFilterContext *ctx, int min_samples)
         } else if (ret < 0)
             return ret;
     }
-    return output_frame(ctx->outputs[0]);
+    return output_frame(ctx->outputs[0], 1);
 }
 
 /**
@@ -431,7 +431,7 @@ static int request_frame(AVFilterLink *outlink)
             s->input_state[0] = 0;
             if (s->nb_inputs == 1)
                 return AVERROR_EOF;
-            return output_frame(ctx->outputs[0]);
+            return output_frame(ctx->outputs[0], 1);
         }
         return ret;
     }
@@ -470,7 +470,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
                               buf->nb_samples);
 
     av_frame_free(&buf);
-    return output_frame(outlink);
+    return output_frame(outlink, 0);
 
 fail:
     av_frame_free(&buf);

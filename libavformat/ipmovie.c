@@ -650,6 +650,8 @@ static int ipmovie_read_packet(AVFormatContext *s,
         ret = AVERROR(EIO);
     else if (ret == CHUNK_NOMEM)
         ret = AVERROR(ENOMEM);
+    else if (ret == CHUNK_END || ret == CHUNK_SHUTDOWN)
+        ret = AVERROR_EOF;
     else if (ret == CHUNK_VIDEO)
         ret = 0;
     else if (ret == CHUNK_INIT_VIDEO || ret == CHUNK_INIT_AUDIO)

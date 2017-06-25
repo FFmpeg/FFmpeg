@@ -726,8 +726,17 @@ static int hls_slice_header(HEVCContext *s)
             if (deblocking_filter_override_flag) {
                 sh->disable_deblocking_filter_flag = get_bits1(gb);
                 if (!sh->disable_deblocking_filter_flag) {
-                    sh->beta_offset = get_se_golomb(gb) * 2;
-                    sh->tc_offset   = get_se_golomb(gb) * 2;
+                    int beta_offset_div2 = get_se_golomb(gb);
+                    int tc_offset_div2   = get_se_golomb(gb) ;
+                    if (beta_offset_div2 < -6 || beta_offset_div2 > 6 ||
+                        tc_offset_div2   < -6 || tc_offset_div2   > 6) {
+                        av_log(s->avctx, AV_LOG_ERROR,
+                            "Invalid deblock filter offsets: %d, %d\n",
+                            beta_offset_div2, tc_offset_div2);
+                        return AVERROR_INVALIDDATA;
+                    }
+                    sh->beta_offset = beta_offset_div2 * 2;
+                    sh->tc_offset   =   tc_offset_div2 * 2;
                 }
             } else {
                 sh->disable_deblocking_filter_flag = s->ps.pps->disable_dbf;
@@ -2328,6 +2337,7 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
     int x_ctb       = 0;
     int y_ctb       = 0;
     int ctb_addr_ts = s->ps.pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs];
+    int ret;
 
     if (!ctb_addr_ts && s->sh.dependent_slice_segment_flag) {
         av_log(s->avctx, AV_LOG_ERROR, "Impossible initial tile.\n");
@@ -2349,7 +2359,11 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
         y_ctb = (ctb_addr_rs / ((s->ps.sps->width + ctb_size - 1) >> s->ps.sps->log2_ctb_size)) << s->ps.sps->log2_ctb_size;
         hls_decode_neighbour(s, x_ctb, y_ctb, ctb_addr_ts);
 
-        ff_hevc_cabac_init(s, ctb_addr_ts);
+        ret = ff_hevc_cabac_init(s, ctb_addr_ts);
+        if (ret < 0) {
+            s->tab_slice_address[ctb_addr_rs] = -1;
+            return ret;
+        }
 
         hls_sao_param(s, x_ctb >> s->ps.sps->log2_ctb_size, y_ctb >> s->ps.sps->log2_ctb_size);
 
@@ -2405,9 +2419,8 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
 
     if(ctb_row) {
         ret = init_get_bits8(&lc->gb, s->data + s->sh.offset[ctb_row - 1], s->sh.size[ctb_row - 1]);
-
         if (ret < 0)
-            return ret;
+            goto error;
         ff_init_cabac_decoder(&lc->cc, s->data + s->sh.offset[(ctb_row)-1], s->sh.size[ctb_row - 1]);
     }
 
@@ -2424,15 +2437,15 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
             return 0;
         }
 
-        ff_hevc_cabac_init(s, ctb_addr_ts);
+        ret = ff_hevc_cabac_init(s, ctb_addr_ts);
+        if (ret < 0)
+            goto error;
         hls_sao_param(s, x_ctb >> s->ps.sps->log2_ctb_size, y_ctb >> s->ps.sps->log2_ctb_size);
         more_data = hls_coding_quadtree(s, x_ctb, y_ctb, s->ps.sps->log2_ctb_size, 0);
 
         if (more_data < 0) {
-            s->tab_slice_address[ctb_addr_rs] = -1;
-            atomic_store(&s1->wpp_err, 1);
-            ff_thread_report_progress2(s->avctx, ctb_row ,thread, SHIFT_CTB_WPP);
-            return more_data;
+            ret = more_data;
+            goto error;
         }
 
         ctb_addr_ts++;
@@ -2462,6 +2475,11 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *input_ctb_row, int
     ff_thread_report_progress2(s->avctx, ctb_row ,thread, SHIFT_CTB_WPP);
 
     return 0;
+error:
+    s->tab_slice_address[ctb_addr_rs] = -1;
+    atomic_store(&s1->wpp_err, 1);
+    ff_thread_report_progress2(s->avctx, ctb_row ,thread, SHIFT_CTB_WPP);
+    return ret;
 }
 
 static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)

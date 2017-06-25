@@ -1074,7 +1074,7 @@ The filter accepts the following options:
 @item frequency, f
 Set frequency in Hz.
 
-@item width_type
+@item width_type, t
 Set method to specify band-width of filter.
 @table @option
 @item h
@@ -1809,7 +1809,7 @@ Set the filter's central frequency. Default is @code{3000}.
 @item csg
 Constant skirt gain if set to 1. Defaults to 0.
 
-@item width_type
+@item width_type, t
 Set method to specify band-width of filter.
 @table @option
 @item h
@@ -1841,7 +1841,7 @@ The filter accepts the following options:
 @item frequency, f
 Set the filter's central frequency. Default is @code{3000}.
 
-@item width_type
+@item width_type, t
 Set method to specify band-width of filter.
 @table @option
 @item h
@@ -1880,7 +1880,7 @@ Set the filter's central frequency and so can be used
 to extend or reduce the frequency range to be boosted or cut.
 The default value is @code{100} Hz.
 
-@item width_type
+@item width_type, t
 Set method to specify band-width of filter.
 @table @option
 @item h
@@ -2498,7 +2498,7 @@ The filter accepts the following options:
 @item frequency, f
 Set the filter's central frequency in Hz.
 
-@item width_type
+@item width_type, t
 Set method to specify band-width of filter.
 @table @option
 @item h
@@ -2527,13 +2527,13 @@ Specify which channels to filter, by default all available are filtered.
 @item
 Attenuate 10 dB at 1000 Hz, with a bandwidth of 200 Hz:
 @example
-equalizer=f=1000:width_type=h:width=200:g=-10
+equalizer=f=1000:t=h:width=200:g=-10
 @end example
 
 @item
 Apply 2 dB gain at 1000 Hz with Q 1 and attenuate 5 dB at 100 Hz with Q 2:
 @example
-equalizer=f=1000:width_type=q:width=1:g=2,equalizer=f=100:width_type=q:width=2:g=-5
+equalizer=f=1000:t=q:w=1:g=2,equalizer=f=100:t=q:w=2:g=-5
 @end example
 @end itemize
 
@@ -2847,7 +2847,7 @@ Set frequency in Hz. Default is 3000.
 @item poles, p
 Set number of poles. Default is 2.
 
-@item width_type
+@item width_type, t
 Set method to specify band-width of filter.
 @table @option
 @item h
@@ -3134,7 +3134,7 @@ Set frequency in Hz. Default is 500.
 @item poles, p
 Set number of poles. Default is 2.
 
-@item width_type
+@item width_type, t
 Set method to specify band-width of filter.
 @table @option
 @item h
@@ -3743,6 +3743,12 @@ Left/Right to Left + Right.
 
 @item lr>rl
 Left/Right to Right/Left.
+
+@item ms>ll
+Mid/Side to Left/Left.
+
+@item ms>rr
+Mid/Side to Right/Right.
 @end table
 
 @item slev
@@ -3835,6 +3841,49 @@ channels. Default is 0.3.
 Set level of input signal of original channel. Default is 0.8.
 @end table
 
+@section superequalizer
+Apply 18 band equalizer.
+
+The filter accepts the following options:
+@table @option
+@item 1b
+Set 65Hz band gain.
+@item 2b
+Set 92Hz band gain.
+@item 3b
+Set 131Hz band gain.
+@item 4b
+Set 185Hz band gain.
+@item 5b
+Set 262Hz band gain.
+@item 6b
+Set 370Hz band gain.
+@item 7b
+Set 523Hz band gain.
+@item 8b
+Set 740Hz band gain.
+@item 9b
+Set 1047Hz band gain.
+@item 10b
+Set 1480Hz band gain.
+@item 11b
+Set 2093Hz band gain.
+@item 12b
+Set 2960Hz band gain.
+@item 13b
+Set 4186Hz band gain.
+@item 14b
+Set 5920Hz band gain.
+@item 15b
+Set 8372Hz band gain.
+@item 16b
+Set 11840Hz band gain.
+@item 17b
+Set 16744Hz band gain.
+@item 18b
+Set 20000Hz band gain.
+@end table
+
 @section surround
 Apply audio surround upmix filter.
 
@@ -3890,7 +3939,7 @@ Set the filter's central frequency and so can be used
 to extend or reduce the frequency range to be boosted or cut.
 The default value is @code{3000} Hz.
 
-@item width_type
+@item width_type, t
 Set method to specify band-width of filter.
 @table @option
 @item h
@@ -10712,14 +10761,12 @@ force packed RGB output
 
 @item gbrp
 force planar RGB output
+
+@item auto
+automatically pick format
 @end table
 
 Default value is @samp{yuv420}.
-
-@item rgb @emph{(deprecated)}
-If set to 1, force the filter to accept inputs in the RGB
-color space. Default value is 0. This option is deprecated, use
-@option{format} instead.
 
 @item repeatlast
 If set to 1, force the filter to draw the last overlay frame over the
@@ -12075,6 +12122,23 @@ trim=end=5,reverse
 @end example
 @end itemize
 
+@section roberts
+Apply roberts cross operator to input video stream.
+
+The filter accepts the following option:
+
+@table @option
+@item planes
+Set which planes will be processed, unprocessed planes will be copied.
+By default value 0xf, all planes will be processed.
+
+@item scale
+Set value which will be multiplied with filtered result.
+
+@item delta
+Set value which will be added to filtered result.
+@end table
+
 @section rotate
 
 Rotate video by an arbitrary angle expressed in radians.
@@ -12269,17 +12333,18 @@ the complete list of scaler options.
 Set the output video dimension expression. Default value is the input
 dimension.
 
-If the value is 0, the input width is used for the output.
+If the @var{width} or @var{w} value is 0, the input width is used for
+the output. If the @var{height} or @var{h} value is 0, the input height
+is used for the output.
 
-If one of the values is -1, the scale filter will use a value that
-maintains the aspect ratio of the input image, calculated from the
-other specified dimension. If both of them are -1, the input size is
-used
+If one and only one of the values is -n with n >= 1, the scale filter
+will use a value that maintains the aspect ratio of the input image,
+calculated from the other specified dimension. After that it will,
+however, make sure that the calculated dimension is divisible by n and
+adjust the value if necessary.
 
-If one of the values is -n with n > 1, the scale filter will also use a value
-that maintains the aspect ratio of the input image, calculated from the other
-specified dimension. After that it will, however, make sure that the calculated
-dimension is divisible by n and adjust the value if necessary.
+If both values are -n with n >= 1, the behavior will be identical to
+both values being set to 0 as previously detailed.
 
 See below for the list of accepted constants for use in the dimension
 expression.
@@ -15412,18 +15477,18 @@ The filter accepts the following options.
 Set the output video dimension expression. Default value is the input
 dimension.
 
-If the @var{width} or @var{w} is 0, the input width is used for the output.
-If the @var{height} or @var{h} is 0, the input height is used for the output.
+If the @var{width} or @var{w} value is 0, the input width is used for
+the output. If the @var{height} or @var{h} value is 0, the input height
+is used for the output.
 
-If one of the values is -1, the zscale filter will use a value that
-maintains the aspect ratio of the input image, calculated from the
-other specified dimension. If both of them are -1, the input size is
-used
+If one and only one of the values is -n with n >= 1, the zscale filter
+will use a value that maintains the aspect ratio of the input image,
+calculated from the other specified dimension. After that it will,
+however, make sure that the calculated dimension is divisible by n and
+adjust the value if necessary.
 
-If one of the values is -n with n > 1, the zscale filter will also use a value
-that maintains the aspect ratio of the input image, calculated from the other
-specified dimension. After that it will, however, make sure that the calculated
-dimension is divisible by n and adjust the value if necessary.
+If both values are -n with n >= 1, the behavior will be identical to
+both values being set to 0 as previously detailed.
 
 See below for the list of accepted constants for use in the dimension
 expression.

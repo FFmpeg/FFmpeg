@@ -71,6 +71,12 @@
     SWAP %1, %3, %2
 %endmacro
 
+%macro SBUTTERFLYPD 3
+    movlhps m%3, m%1, m%2
+    movhlps m%2, m%2, m%1
+    SWAP %1, %3
+%endmacro
+
 %macro TRANSPOSE4x4B 5
     SBUTTERFLY bw, %1, %2, %5
     SBUTTERFLY bw, %3, %4, %5
@@ -117,12 +123,9 @@
 %macro TRANSPOSE4x4PS 5
     SBUTTERFLYPS %1, %2, %5
     SBUTTERFLYPS %3, %4, %5
-    movlhps m%5, m%1, m%3
-    movhlps m%3, m%1
-    SWAP %5, %1
-    movlhps m%5, m%2, m%4
-    movhlps m%4, m%2
-    SWAP %5, %2, %3
+    SBUTTERFLYPD %1, %3, %5
+    SBUTTERFLYPD %2, %4, %5
+    SWAP %2, %3
 %endmacro
 
 %macro TRANSPOSE8x4D 9-11
