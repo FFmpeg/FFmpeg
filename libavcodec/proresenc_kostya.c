@@ -969,9 +969,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream_put_byte  (&buf, frame_flags);
 
     bytestream_put_byte  (&buf, 0);             // reserved
-    bytestream_put_byte  (&buf, avctx->color_primaries);
-    bytestream_put_byte  (&buf, avctx->color_trc);
-    bytestream_put_byte  (&buf, avctx->colorspace);
+    bytestream_put_byte  (&buf, pic->color_primaries);
+    bytestream_put_byte  (&buf, pic->color_trc);
+    bytestream_put_byte  (&buf, pic->colorspace);
     bytestream_put_byte  (&buf, 0x40 | (ctx->alpha_bits >> 3));
     bytestream_put_byte  (&buf, 0);             // reserved
     if (ctx->quant_sel != QUANT_MAT_DEFAULT) {
