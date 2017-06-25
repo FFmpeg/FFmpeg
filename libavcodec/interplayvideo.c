@@ -903,7 +903,81 @@ static int (* const ipvideo_decode_block16[])(IpvideoContext *s, AVFrame *frame)
     ipvideo_decode_block_opcode_0xE_16, ipvideo_decode_block_opcode_0x1,
 };
 
-static void ipvideo_decode_opcodes(IpvideoContext *s, AVFrame *frame)
+static void ipvideo_format_06_firstpass(IpvideoContext *s, AVFrame *frame, short opcode)
+{
+    int line;
+
+    if (!opcode) {
+        for (line = 0; line < 8; ++line) {
+            bytestream2_get_buffer(&s->stream_ptr, s->pixel_ptr, 8);
+            s->pixel_ptr += s->stride;
+        }
+    } else {
+        /* Don't try to copy second_last_frame data on the first frames */
+        if (s->avctx->frame_number > 2)
+            copy_from(s, s->second_last_frame, frame, 0, 0);
+    }
+}
+
+static void ipvideo_format_06_secondpass(IpvideoContext *s, AVFrame *frame, short opcode)
+{
+    int off_x, off_y;
+
+    if (opcode < 0) {
+        off_x = ((unsigned short)opcode - 0xC000) % frame->linesize[0];
+        off_y = ((unsigned short)opcode - 0xC000) / frame->linesize[0];
+        copy_from(s, s->last_frame, frame, off_x, off_y);
+    } else if (opcode > 0) {
+        off_x = ((unsigned short)opcode - 0x4000) % frame->linesize[0];
+        off_y = ((unsigned short)opcode - 0x4000) / frame->linesize[0];
+        copy_from(s, frame, frame, off_x, off_y);
+    }
+}
+
+static void (* const ipvideo_format_06_passes[])(IpvideoContext *s, AVFrame *frame, short op) = {
+    ipvideo_format_06_firstpass, ipvideo_format_06_secondpass,
+};
+
+static void ipvideo_decode_format_06_opcodes(IpvideoContext *s, AVFrame *frame)
+{
+    int pass, x, y;
+    short opcode;
+    GetByteContext decoding_map_ptr;
+
+    /* this is PAL8, so make the palette available */
+    memcpy(frame->data[1], s->pal, AVPALETTE_SIZE);
+    s->stride = frame->linesize[0];
+
+    s->line_inc = s->stride - 8;
+    s->upper_motion_limit_offset = (s->avctx->height - 8) * frame->linesize[0]
+                                  + (s->avctx->width - 8) * (1 + s->is_16bpp);
+
+    bytestream2_init(&decoding_map_ptr, s->decoding_map, s->decoding_map_size);
+
+    for (pass = 0; pass < 2; ++pass) {
+        bytestream2_seek(&decoding_map_ptr, 0, SEEK_SET);
+        for (y = 0; y < s->avctx->height; y += 8) {
+            for (x = 0; x < s->avctx->width; x += 8) {
+                opcode = bytestream2_get_le16(&decoding_map_ptr);
+
+                ff_tlog(s->avctx,
+                        "  block @ (%3d, %3d): opcode 0x%X, data ptr offset %d\n",
+                        x, y, opcode, bytestream2_tell(&s->stream_ptr));
+
+                s->pixel_ptr = frame->data[0] + x + y * frame->linesize[0];
+                ipvideo_format_06_passes[pass](s, frame, opcode);
+            }
+        }
+    }
+
+    if (bytestream2_get_bytes_left(&s->stream_ptr) > 1) {
+        av_log(s->avctx, AV_LOG_DEBUG,
+               "decode finished with %d bytes left over\n",
+               bytestream2_get_bytes_left(&s->stream_ptr));
+    }
+}
+
+static void ipvideo_decode_format_11_opcodes(IpvideoContext *s, AVFrame *frame)
 {
     int x, y;
     unsigned char opcode;
@@ -1007,18 +1081,40 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
     video_data_size      = AV_RL16(buf + 2);
     s->decoding_map_size = AV_RL16(buf + 4);
 
-    if (frame_format != 0x11)
-        av_log(avctx, AV_LOG_ERROR, "Frame type 0x%02X unsupported\n", frame_format);
+    switch(frame_format) {
+        case 0x06:
+            if (s->decoding_map_size) {
+                av_log(avctx, AV_LOG_ERROR, "Decoding map for format 0x06\n");
+                return AVERROR_INVALIDDATA;
+            }
 
-    if (! s->decoding_map_size) {
-        av_log(avctx, AV_LOG_ERROR, "Empty decoding map\n");
-        return AVERROR_INVALIDDATA;
+            if (s->is_16bpp) {
+                av_log(avctx, AV_LOG_ERROR, "Video format 0x06 does not support 16bpp movies\n");
+                return AVERROR_INVALIDDATA;
+            }
+
+            /* Decoding map for 0x06 frame format is at the top of pixeldata */
+            s->decoding_map_size = ((s->avctx->width / 8) * (s->avctx->height / 8)) * 2;
+            s->decoding_map = buf + 6 + 14; /* 14 bits of op data */
+            video_data_size -= s->decoding_map_size + 14;
+            bytestream2_init(&s->stream_ptr, buf + 6 + s->decoding_map_size + 14, video_data_size);
+
+            break;
+
+        case 0x11:
+            if (! s->decoding_map_size) {
+                av_log(avctx, AV_LOG_ERROR, "Empty decoding map for format 0x11\n");
+                return AVERROR_INVALIDDATA;
+            }
+
+            bytestream2_init(&s->stream_ptr, buf + 6, video_data_size);
+            s->decoding_map = buf + 6 + video_data_size;
+
+            break;
+
+        default:
+            av_log(avctx, AV_LOG_ERROR, "Frame type 0x%02X unsupported\n", frame_format);
     }
-
-    bytestream2_init(&s->stream_ptr, buf + 6, video_data_size);
-
-    /* decoding map contains 4 bits of information per 8x8 block */
-    s->decoding_map = buf + 6 + video_data_size;
 
     /* ensure we can't overread the packet */
     if (buf_size < 6 + s->decoding_map_size + video_data_size) {
@@ -1040,7 +1136,14 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
         }
     }
 
-    ipvideo_decode_opcodes(s, frame);
+    switch(frame_format) {
+        case 0x06:
+            ipvideo_decode_format_06_opcodes(s, frame);
+            break;
+        case 0x11:
+            ipvideo_decode_format_11_opcodes(s, frame);
+            break;
+    }
 
     *got_frame = send_buffer;
 

@@ -58,7 +58,7 @@
 #define OPCODE_INIT_AUDIO_BUFFERS      0x03
 #define OPCODE_START_STOP_AUDIO        0x04
 #define OPCODE_INIT_VIDEO_BUFFERS      0x05
-#define OPCODE_UNKNOWN_06              0x06
+#define OPCODE_VIDEO_DATA_06           0x06
 #define OPCODE_SEND_BUFFER             0x07
 #define OPCODE_AUDIO_FRAME             0x08
 #define OPCODE_SILENCE_FRAME           0x09
@@ -444,7 +444,6 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
                     s->video_width, s->video_height);
             break;
 
-        case OPCODE_UNKNOWN_06:
         case OPCODE_UNKNOWN_0E:
         case OPCODE_UNKNOWN_10:
         case OPCODE_UNKNOWN_12:
@@ -537,8 +536,18 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
             avio_skip(pb, opcode_size);
             break;
 
+        case OPCODE_VIDEO_DATA_06:
+            av_log(s->avf, AV_LOG_TRACE, "set video data format 0x06\n");
+            s->frame_format = 0x06;
+
+            /* log position and move on for now */
+            s->video_chunk_offset = avio_tell(pb);
+            s->video_chunk_size = opcode_size;
+            avio_skip(pb, opcode_size);
+            break;
+
         case OPCODE_VIDEO_DATA_11:
-            av_log(s->avf, AV_LOG_TRACE, "set video data\n");
+            av_log(s->avf, AV_LOG_TRACE, "set video data format 0x11\n");
             s->frame_format = 0x11;
 
             /* log position and move on for now */
