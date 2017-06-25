@@ -147,6 +147,9 @@ void ff_fdct_sse2(int16_t *block) {return;}
 #endif
 void ff_fdctdsp_init_ppc(FDCTDSPContext *c, AVCodecContext *avctx,
                          unsigned high_bit_depth) {return;}
+#if !(ARCH_X86_64)
+void ff_fft15_avx(FFTComplex *out, FFTComplex *in, FFTComplex *exptab, ptrdiff_t stride) {return;}
+#endif
 void ff_fft_fixed_init_arm(FFTContext *s) {return;}
 void ff_fft_init_aarch64(FFTContext *s) {return;}
 void ff_fft_init_arm(FFTContext *s) {return;}
@@ -3495,9 +3498,6 @@ void ff_mpv_common_init_mips(MpegEncContext *s) {return;}
 void ff_mpv_common_init_neon(MpegEncContext *s) {return;}
 void ff_mpv_common_init_ppc(MpegEncContext *s) {return;}
 #if !(CONFIG_MSMPEG4_ENCODER)
-void ff_msmpeg4_encode_ext_header(MpegEncContext *s) {return;}
-#endif
-#if !(CONFIG_MSMPEG4_ENCODER)
 void ff_msmpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
                           int motion_x, int motion_y) {return;}
 #endif
@@ -3686,6 +3686,7 @@ AVCodec ff_vc1_vdpau_decoder = {0};
 AVCodec ff_vp8_mediacodec_decoder = {0};
 AVCodec ff_vp8_vaapi_encoder = {0};
 AVCodec ff_vp9_mediacodec_decoder = {0};
+AVCodec ff_vp9_vaapi_encoder = {0};
 AVCodec ff_wmv3_crystalhd_decoder = {0};
 AVCodec ff_wmv3_vdpau_decoder = {0};
 AVHWAccel ff_h263_vaapi_hwaccel = {0};

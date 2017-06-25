@@ -41,8 +41,8 @@ REM Check if git is installed and available
 IF "%MSVC_VER%"=="" (
     git status >NUL 2>&1
     IF %ERRORLEVEL% NEQ 0 (
-      ECHO A working copy of git was not found. To use this script you must first install git for windows.
-      EXIT /B 1
+        ECHO A working copy of git was not found. To use this script you must first install git for windows.
+        GOTO exitOnError
     )
 )
 
@@ -58,9 +58,9 @@ FOR %%I IN %DEPENDENCIES% DO (
     ECHO !PASSDEPENDENCIES! | FINDSTR /C:"%%I" >NUL 2>&1 || (
         REM Check if MSVC_VER environment variable is set
         IF "%MSVC_VER%"=="" (
-            CALL :cloneOrUpdateRepo "%%I" || GOTO exit
+            CALL :cloneOrUpdateRepo "%%I" || GOTO exitOnError
         ) ELSE (
-            CALL :downloadLibs "%%I" || GOTO exit
+            CALL :downloadLibs "%%I" || GOTO exitOnError
         )
     )
 )
@@ -95,6 +95,10 @@ IF EXIST "%REPONAME%" (
     REM Clone from the origin repo
     SET REPOURL=%UPSTREAMURL%/%REPONAME%.git
     git clone !REPOURL! --quiet
+    IF %ERRORLEVEL% NEQ 0 (
+        ECHO %REPONAME%: Git clone failed.
+        GOTO exitOnError
+    )
     REM Initialise autocrlf options to fix cross platform interoperation
     REM  Once updated the repo needs to be reset to correct the local line endings
     cd %REPONAME%

@@ -178,6 +178,7 @@
     <ClCompile Include="..\libavfilter\af_silenceremove.c" />
     <ClCompile Include="..\libavfilter\af_stereotools.c" />
     <ClCompile Include="..\libavfilter\af_stereowiden.c" />
+    <ClCompile Include="..\libavfilter\af_superequalizer.c" />
     <ClCompile Include="..\libavfilter\af_surround.c" />
     <ClCompile Include="..\libavfilter\af_tremolo.c" />
     <ClCompile Include="..\libavfilter\af_vibrato.c" />

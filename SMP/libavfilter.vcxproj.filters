@@ -357,6 +357,9 @@
     <ClCompile Include="..\libavfilter\af_stereowiden.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\af_superequalizer.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\af_surround.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
