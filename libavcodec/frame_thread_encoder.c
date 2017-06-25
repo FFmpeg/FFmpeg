@@ -23,6 +23,7 @@
 #include "libavutil/fifo.h"
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/opt.h"
 #include "libavutil/thread.h"
 #include "avcodec.h"
 #include "internal.h"
@@ -197,7 +198,12 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
         *thread_avctx = *avctx;
         thread_avctx->priv_data = tmpv;
         thread_avctx->internal = NULL;
-        memcpy(thread_avctx->priv_data, avctx->priv_data, avctx->codec->priv_data_size);
+        if (avctx->codec->priv_class) {
+            int ret = av_opt_copy(thread_avctx->priv_data, avctx->priv_data);
+            if (ret < 0)
+                goto fail;
+        } else
+            memcpy(thread_avctx->priv_data, avctx->priv_data, avctx->codec->priv_data_size);
         thread_avctx->thread_count = 1;
         thread_avctx->active_thread_type &= ~FF_THREAD_FRAME;
 
