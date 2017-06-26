@@ -850,6 +850,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (s->version > 1) {
         int plane_count = 1 + 2*s->chroma_planes + s->transparency;
         s->num_v_slices = (avctx->width > 352 || avctx->height > 288 || !avctx->slices) ? 2 : 1;
+
+        if (avctx->height < 5)
+            s->num_v_slices = 1;
+
         for (; s->num_v_slices < 32; s->num_v_slices++) {
             for (s->num_h_slices = s->num_v_slices; s->num_h_slices < 2*s->num_v_slices; s->num_h_slices++) {
                 int maxw = (avctx->width  + s->num_h_slices - 1) / s->num_h_slices;
