@@ -2381,6 +2381,7 @@ Select the ProRes profile to encode
 @item standard
 @item hq
 @item 4444
+@item 4444xq
 @end table
 
 @item quant_mat @var{integer}
