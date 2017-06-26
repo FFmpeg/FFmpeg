@@ -217,19 +217,16 @@ static void hwframe_ctx_free(void *opaque, uint8_t *data)
 {
     AVHWFramesContext *ctx = (AVHWFramesContext*)data;
 
-    if (ctx->internal->source_frames) {
-        av_buffer_unref(&ctx->internal->source_frames);
+    if (ctx->internal->pool_internal)
+        av_buffer_pool_uninit(&ctx->internal->pool_internal);
 
-    } else {
-        if (ctx->internal->pool_internal)
-            av_buffer_pool_uninit(&ctx->internal->pool_internal);
+    if (ctx->internal->hw_type->frames_uninit)
+        ctx->internal->hw_type->frames_uninit(ctx);
 
-        if (ctx->internal->hw_type->frames_uninit)
-            ctx->internal->hw_type->frames_uninit(ctx);
+    if (ctx->free)
+        ctx->free(ctx);
 
-        if (ctx->free)
-            ctx->free(ctx);
-    }
+    av_buffer_unref(&ctx->internal->source_frames);
 
     av_buffer_unref(&ctx->device_ref);
 
