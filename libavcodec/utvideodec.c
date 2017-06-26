@@ -333,50 +333,6 @@ fail:
     return AVERROR_INVALIDDATA;
 }
 
-static void restore_rgb_planes(AVFrame *frame, int width, int height)
-{
-    uint8_t *src_r = (uint8_t *)frame->data[2];
-    uint8_t *src_g = (uint8_t *)frame->data[0];
-    uint8_t *src_b = (uint8_t *)frame->data[1];
-    uint8_t r, g, b;
-    int i, j;
-
-    for (j = 0; j < height; j++) {
-        for (i = 0; i < width; i++) {
-            r = src_r[i];
-            g = src_g[i];
-            b = src_b[i];
-            src_r[i] = r + g - 0x80;
-            src_b[i] = b + g - 0x80;
-        }
-        src_r += frame->linesize[2];
-        src_g += frame->linesize[0];
-        src_b += frame->linesize[1];
-    }
-}
-
-static void restore_rgb_planes10(AVFrame *frame, int width, int height)
-{
-    uint16_t *src_r = (uint16_t *)frame->data[2];
-    uint16_t *src_g = (uint16_t *)frame->data[0];
-    uint16_t *src_b = (uint16_t *)frame->data[1];
-    int r, g, b;
-    int i, j;
-
-    for (j = 0; j < height; j++) {
-        for (i = 0; i < width; i++) {
-            r = src_r[i];
-            g = src_g[i];
-            b = src_b[i];
-            src_r[i] = (r + g - 0x200) & 0x3FF;
-            src_b[i] = (b + g - 0x200) & 0x3FF;
-        }
-        src_r += frame->linesize[2] / 2;
-        src_g += frame->linesize[0] / 2;
-        src_b += frame->linesize[1] / 2;
-    }
-}
-
 #undef A
 #undef B
 #undef C
@@ -696,7 +652,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 }
             }
         }
-        restore_rgb_planes(frame.f, avctx->width, avctx->height);
+        c->utdsp.restore_rgb_planes(frame.f->data[2], frame.f->data[0], frame.f->data[1],
+                                    frame.f->linesize[2], frame.f->linesize[0], frame.f->linesize[1],
+                                    avctx->width, avctx->height);
         break;
     case AV_PIX_FMT_GBRAP10:
     case AV_PIX_FMT_GBRP10:
@@ -709,7 +667,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             if (ret)
                 return ret;
         }
-        restore_rgb_planes10(frame.f, avctx->width, avctx->height);
+        c->utdsp.restore_rgb_planes10((uint16_t *)frame.f->data[2], (uint16_t *)frame.f->data[0], (uint16_t *)frame.f->data[1],
+                                      frame.f->linesize[2] / 2, frame.f->linesize[0] / 2, frame.f->linesize[1] / 2,
+                                      avctx->width, avctx->height);
         break;
     case AV_PIX_FMT_YUV420P:
         for (i = 0; i < 3; i++) {
@@ -830,6 +790,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     c->avctx = avctx;
 
+    ff_utvideodsp_init(&c->utdsp);
     ff_bswapdsp_init(&c->bdsp);
     ff_llviddsp_init(&c->llviddsp);
 

@@ -30,6 +30,7 @@
 #include "libavutil/common.h"
 #include "avcodec.h"
 #include "bswapdsp.h"
+#include "utvideodsp.h"
 #include "lossless_videodsp.h"
 #include "lossless_videoencdsp.h"
 
@@ -66,6 +67,7 @@ extern const int ff_ut_pred_order[5];
 typedef struct UtvideoContext {
     const AVClass *class;
     AVCodecContext *avctx;
+    UTVideoDSPContext utdsp;
     BswapDSPContext bdsp;
     LLVidDSPContext llviddsp;
     LLVidEncDSPContext llvidencdsp;
