@@ -16,6 +16,7 @@ version <next>:
 - FM Screen Capture Codec decoder
 - ClearVideo decoder (I-frames only)
 - support for decoding through D3D11VA in avconv
+- Cinepak encoder
 
 
 version 12:
