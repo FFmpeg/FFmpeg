@@ -846,9 +846,9 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
                 continue;
             }
             bytestream2_get_buffer(&gb, val, 4);
-            if (val[0] > 31) {
+            if (val[0] > 30) {
                 av_log(avctx, AV_LOG_ERROR,
-                       "Invalid INT32INFO, extra_bits = %d (> 32)\n", val[0]);
+                       "Invalid INT32INFO, extra_bits = %d (> 30)\n", val[0]);
                 continue;
             } else if (val[0]) {
                 s->extra_bits = val[0];
