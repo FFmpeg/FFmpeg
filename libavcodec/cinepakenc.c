@@ -25,7 +25,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 
  * TODO:
  * - optimize: color space conversion (move conversion to libswscale), ...
- * - implement options to set the min/max number of strips?
  * MAYBE:
  * - "optimally" split the frame into several non-regular areas
  *   using a separate codebook pair for each area and approximating
@@ -38,6 +37,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "libavutil/common.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/opt.h"
+
 #include "avcodec.h"
 #include "libavutil/lfg.h"
 #include "elbg.h"
@@ -55,9 +56,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define VECTOR_MAX 6        //six or four entries per vector depending on format
 #define CODEBOOK_MAX 256    //size of a codebook
 
-//#define MAX_STRIPS  32      //Note: having fewer choices regarding the number of strips speeds up encoding (obviously)
-#define MAX_STRIPS  3       // This seems to be max for vintage players! -- rl
-// TODO: we might want to have a "vintage compatibilty" switch
+#define MAX_STRIPS  32      //Note: having fewer choices regarding the number of strips speeds up encoding (obviously)
 #define MIN_STRIPS  1       //Note: having more strips speeds up encoding the frame (this is less obvious)
 // MAX_STRIPS limits the maximum quality you can reach
 //            when you want high quality on high resolutions,
@@ -102,6 +101,7 @@ typedef struct {
 } strip_info;
 
 typedef struct {
+    const AVClass *class;
     AVCodecContext *avctx;
     unsigned char *pict_bufs[4], *strip_buf, *frame_buf;
     AVFrame *last_frame;
@@ -124,7 +124,31 @@ typedef struct {
     int num_v1_mode, num_v4_mode, num_mc_mode;
     int num_v1_encs, num_v4_encs, num_skips;
 #endif
+// options
+    int max_extra_cb_iterations;
+    int skip_empty_cb;
+    int min_min_strips;
+    int max_max_strips;
+    int strip_number_delta_range;
 } CinepakEncContext;
+
+#define OFFSET(x) offsetof(CinepakEncContext, x)
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "max_extra_cb_iterations", "Max extra codebook recalculation passes, more is better and slower", OFFSET(max_extra_cb_iterations), AV_OPT_TYPE_INT, { .i64 = 2 }, 0, INT_MAX, VE },
+    { "skip_empty_cb", "Avoid wasting bytes, ignore vintage MacOS decoder", OFFSET(skip_empty_cb), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
+    { "max_strips", "Limit strips/frame, vintage compatible is 1..3, otherwise the more the better", OFFSET(max_max_strips), AV_OPT_TYPE_INT, { .i64 = 3 }, MIN_STRIPS, MAX_STRIPS, VE },
+    { "min_strips", "Enforce min strips/frame, more is worse and faster, must be <= max_strips", OFFSET(min_min_strips), AV_OPT_TYPE_INT, { .i64 = MIN_STRIPS }, MIN_STRIPS, MAX_STRIPS, VE },
+    { "strip_number_adaptivity", "How fast the strip number adapts, more is slightly better, much slower", OFFSET(strip_number_delta_range), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, MAX_STRIPS-MIN_STRIPS, VE },
+    { NULL },
+};
+
+static const AVClass cinepak_class = {
+    .class_name = "cinepak",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 static av_cold int cinepak_encode_init(AVCodecContext *avctx)
 {
@@ -134,6 +158,12 @@ static av_cold int cinepak_encode_init(AVCodecContext *avctx)
     if (avctx->width & 3 || avctx->height & 3) {
         av_log(avctx, AV_LOG_ERROR, "width and height must be multiples of four (got %ix%i)\n",
                 avctx->width, avctx->height);
+        return AVERROR(EINVAL);
+    }
+
+    if (s->min_min_strips > s->max_max_strips) {
+        av_log(avctx, AV_LOG_ERROR, "minimal number of strips can not exceed maximal (got %i and %i)\n",
+                s->min_min_strips, s->max_max_strips);
         return AVERROR(EINVAL);
     }
 
@@ -165,7 +195,7 @@ static av_cold int cinepak_encode_init(AVCodecContext *avctx)
     //and 2*256 extra flag bits per strip
     strip_buf_size = STRIP_HEADER_SIZE + 3 * CHUNK_HEADER_SIZE + 2 * VECTOR_MAX * CODEBOOK_MAX + 4 * (mb_count + (mb_count + 15) / 16) + (2 * CODEBOOK_MAX)/8;
 
-    frame_buf_size = CVID_HEADER_SIZE + MAX_STRIPS * strip_buf_size;
+    frame_buf_size = CVID_HEADER_SIZE + s->max_max_strips * strip_buf_size;
 
     if (!(s->strip_buf = av_malloc(strip_buf_size)))
         goto enomem;
@@ -218,8 +248,8 @@ static av_cold int cinepak_encode_init(AVCodecContext *avctx)
         s->input_frame->linesize[1]   = s->input_frame->linesize[2] = s->w >> 1;
     }
 
-    s->min_strips = MIN_STRIPS;
-    s->max_strips = MAX_STRIPS;
+    s->min_strips = s->min_min_strips;
+    s->max_strips = s->max_max_strips;
 
 #ifdef CINEPAKENC_DEBUG
     s->num_v1_mode = s->num_v4_mode = s->num_mc_mode = s->num_v1_encs = s->num_v4_encs = s->num_skips = 0;
@@ -566,10 +596,10 @@ static int encode_mode(CinepakEncContext *s, int h, AVPicture *scratch_pict, AVP
 ////// MacOS vintage decoder compatibility dictates the presence of
 ////// the codebook chunk even when the codebook is empty - pretty dumb...
 ////// and also the certain order of the codebook chunks -- rl
-//    if(info->v4_size)
+    if(info->v4_size || !s->skip_empty_cb)
         ret += encode_codebook(s, info->v4_codebook, info->v4_size, 0x20, 0x24, buf + ret);
 
-//    if(info->v1_size)
+    if(info->v1_size || !s->skip_empty_cb)
         ret += encode_codebook(s, info->v1_codebook, info->v1_size, 0x22, 0x26, buf + ret);
 
     //update scratch picture
@@ -938,6 +968,7 @@ static int rd_strip(CinepakEncContext *s, int y, int h, int keyframe, AVPicture 
 );
 
                 if(mode != MODE_V1_ONLY){
+                    int extra_iterations_limit = s->max_extra_cb_iterations;
 // recompute the codebooks, omitting the extra blocks
 // we assume we _may_ come here with more blocks to encode than before
                     info.v1_size = v1_size;
@@ -964,8 +995,8 @@ static int rd_strip(CinepakEncContext *s, int y, int h, int keyframe, AVPicture 
 , &serr
 #endif
 );
-// do we have a reason to reiterate?
-                        if(!v1shrunk && !v4shrunk) break;
+// do we have a reason to reiterate? if so, have we reached the limit?
+                        if((!v1shrunk && !v4shrunk) || !extra_iterations_limit--) break;
 // recompute the codebooks, omitting the extra blocks
                         if(v1shrunk) {
                             info.v1_size = v1_size;
@@ -1054,7 +1085,7 @@ static int write_cvid_header(CinepakEncContext *s, unsigned char *buf, int num_s
     return CVID_HEADER_SIZE;
 }
 
-static int rd_frame(CinepakEncContext *s, AVFrame *frame, int isakeyframe, unsigned char *buf, int buf_size)
+static int rd_frame(CinepakEncContext *s, const AVFrame *frame, int isakeyframe, unsigned char *buf, int buf_size)
 {
     int num_strips, strip, i, y, nexty, size, temp_size, best_size;
     AVPicture last_pict, pict, scratch_pict;
@@ -1178,25 +1209,25 @@ static int rd_frame(CinepakEncContext *s, AVFrame *frame, int isakeyframe, unsig
 // let the number of strips slowly adapt to the changes in the contents,
 // compared to full bruteforcing every time this will occasionally lead
 // to some r/d performance loss but makes encoding up to several times faster
-#ifdef CINEPAK_AGGRESSIVE_STRIP_NUMBER_ADAPTIVITY
-    s->max_strips = best_nstrips + 4;
-    if(s->max_strips >= MAX_STRIPS)
-        s->max_strips = MAX_STRIPS;
-    s->min_strips = best_nstrips - 4;
-    if(s->min_strips < MIN_STRIPS)
-        s->min_strips = MIN_STRIPS;
-#else
-    if(best_nstrips == s->max_strips) { // let us try to step up
-        s->max_strips = best_nstrips + 1;
-        if(s->max_strips >= MAX_STRIPS)
-            s->max_strips = MAX_STRIPS;
-    } else { // try to step down
-        s->max_strips = best_nstrips;
+    if(!s->strip_number_delta_range) {
+        if(best_nstrips == s->max_strips) { // let us try to step up
+            s->max_strips = best_nstrips + 1;
+            if(s->max_strips >= s->max_max_strips)
+                s->max_strips = s->max_max_strips;
+        } else { // try to step down
+            s->max_strips = best_nstrips;
+        }
+        s->min_strips = s->max_strips - 1;
+        if(s->min_strips < s->min_min_strips)
+            s->min_strips = s->min_min_strips;
+    } else {
+        s->max_strips = best_nstrips + s->strip_number_delta_range;
+        if(s->max_strips >= s->max_max_strips)
+            s->max_strips = s->max_max_strips;
+        s->min_strips = best_nstrips - s->strip_number_delta_range;
+        if(s->min_strips < s->min_min_strips)
+            s->min_strips = s->min_min_strips;
     }
-    s->min_strips = s->max_strips - 1;
-    if(s->min_strips < MIN_STRIPS)
-        s->min_strips = MIN_STRIPS;
-#endif
 
     return best_size;
 }
@@ -1265,4 +1296,5 @@ AVCodec ff_cinepak_encoder = {
     .close          = cinepak_encode_end,
     .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_RGB24, AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE},
     .long_name      = NULL_IF_CONFIG_SMALL("Cinepak"),
+    .priv_class     = &cinepak_class,
 };
