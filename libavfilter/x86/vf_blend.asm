@@ -282,8 +282,7 @@ BLEND_INIT difference, 5
         punpcklbw       m1, m2
         psubw           m0, m1
         psubw           m3, m4
-        ABS1            m0, m1
-        ABS1            m3, m4
+        ABS2            m0, m3, m1, m4
         packuswb        m0, m3
         mova   [dstq + xq], m0
         add             xq, mmsize
@@ -307,8 +306,7 @@ BLEND_INIT extremity, 8
         psubw           m7, m4, m5
         psubw           m3, m1
         psubw           m7, m6
-        ABS1            m3, m1
-        ABS1            m7, m6
+        ABS2            m3, m7, m1, m6
         packuswb        m3, m7
         mova   [dstq + xq], m3
         add             xq, mmsize
@@ -332,8 +330,7 @@ BLEND_INIT negation, 8
         psubw           m7, m4, m5
         psubw           m3, m1
         psubw           m7, m6
-        ABS1            m3, m1
-        ABS1            m7, m1
+        ABS2            m3, m7, m1, m6
         psubw           m0, m4, m3
         psubw           m1, m4, m7
         packuswb        m0, m1
