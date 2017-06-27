@@ -68,7 +68,7 @@
 // NOTE the decoder in ffmpeg has its own arbitrary limitation on the number
 // of strips, currently 32
 
-typedef enum {
+typedef enum CinepakMode {
     MODE_V1_ONLY = 0,
     MODE_V1_V4,
     MODE_MC,
@@ -76,7 +76,7 @@ typedef enum {
     MODE_COUNT,
 } CinepakMode;
 
-typedef enum {
+typedef enum mb_encoding {
     ENC_V1,
     ENC_V4,
     ENC_SKIP,
@@ -84,7 +84,7 @@ typedef enum {
     ENC_UNCERTAIN
 } mb_encoding;
 
-typedef struct {
+typedef struct mb_info {
     int v1_vector;              // index into v1 codebook
     int v1_error;               // error when using V1 encoding
     int v4_vector[4];           // indices into v4 codebook
@@ -93,7 +93,7 @@ typedef struct {
     mb_encoding best_encoding;  // last result from calculate_mode_score()
 } mb_info;
 
-typedef struct {
+typedef struct strip_info {
     int v1_codebook[CODEBOOK_MAX * VECTOR_MAX];
     int v4_codebook[CODEBOOK_MAX * VECTOR_MAX];
     int v1_size;
@@ -101,8 +101,7 @@ typedef struct {
     CinepakMode mode;
 } strip_info;
 
-typedef struct {
-    const AVClass *class;
+typedef struct CinepakEncContext {
     AVCodecContext *avctx;
     unsigned char *pict_bufs[4], *strip_buf, *frame_buf;
     AVFrame *last_frame;
@@ -163,7 +162,7 @@ static av_cold int cinepak_encode_init(AVCodecContext *avctx)
     }
 
     if (s->min_min_strips > s->max_max_strips) {
-        av_log(avctx, AV_LOG_ERROR, "minimal number of strips can not exceed maximal (got %i and %i)\n",
+        av_log(avctx, AV_LOG_ERROR, "minimum number of strips must not exceed maximum (got %i and %i)\n",
                s->min_min_strips, s->max_max_strips);
         return AVERROR(EINVAL);
     }
@@ -178,10 +177,10 @@ static av_cold int cinepak_encode_init(AVCodecContext *avctx)
         if (!(s->input_frame = av_frame_alloc()))
             goto enomem;
 
-    if (!(s->codebook_input = av_malloc(sizeof(int) * (avctx->pix_fmt == AV_PIX_FMT_RGB24 ? 6 : 4) * (avctx->width * avctx->height) >> 2)))
+    if (!(s->codebook_input = av_malloc_array((avctx->pix_fmt == AV_PIX_FMT_RGB24 ? 6 : 4) * (avctx->width * avctx->height) >> 2, sizeof(*s->codebook_input))))
         goto enomem;
 
-    if (!(s->codebook_closest = av_malloc(sizeof(int) * (avctx->width * avctx->height) >> 2)))
+    if (!(s->codebook_closest = av_malloc_array((avctx->width * avctx->height) >> 2, sizeof(*s->codebook_closest))))
         goto enomem;
 
     for (x = 0; x < (avctx->pix_fmt == AV_PIX_FMT_RGB24 ? 4 : 3); x++)
@@ -204,7 +203,7 @@ static av_cold int cinepak_encode_init(AVCodecContext *avctx)
     if (!(s->frame_buf = av_malloc(frame_buf_size)))
         goto enomem;
 
-    if (!(s->mb = av_malloc(mb_count * sizeof(mb_info))))
+    if (!(s->mb = av_malloc_array(mb_count, sizeof(mb_info))))
         goto enomem;
 
     av_lfg_init(&s->randctx, 1);
@@ -584,7 +583,6 @@ static int encode_mode(CinepakEncContext *s, int h,
 
     switch (info->mode) {
     case MODE_V1_ONLY:
-        av_log(s->avctx, AV_LOG_INFO, "mb_count = %i\n", mb_count);
         ret += write_chunk_header(buf + ret, 0x32, mb_count);
 
         for (x = 0; x < mb_count; x++)
