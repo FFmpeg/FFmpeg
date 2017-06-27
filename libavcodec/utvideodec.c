@@ -27,6 +27,8 @@
 #include <inttypes.h>
 #include <stdlib.h>
 
+#define UNCHECKED_BITSTREAM_READER 1
+
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "bswapdsp.h"
