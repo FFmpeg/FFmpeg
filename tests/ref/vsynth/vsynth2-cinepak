@@ -1,0 +1,4 @@
+722bab34b13b33e46dbbdd47985049f3 *tests/data/fate/vsynth2-cinepak.avi
+400398 tests/data/fate/vsynth2-cinepak.avi
+c59f0419068f0071476d037abd2ccde2 *tests/data/fate/vsynth2-cinepak.out.rawvideo
+stddev:   87.20 PSNR:  9.32 MAXDIFF:  247 bytes:  7603200/   921600
