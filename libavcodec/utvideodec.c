@@ -187,11 +187,9 @@ static int decode_plane10(UtvideoContext *c, int plane_no,
             goto fail;
         }
 
-        memcpy(c->slice_bits, src + slice_data_start + c->slices * 4,
-               slice_size);
         memset(c->slice_bits + slice_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
         c->bdsp.bswap_buf((uint32_t *) c->slice_bits,
-                          (uint32_t *) c->slice_bits,
+                          (uint32_t *)(src + slice_data_start + c->slices * 4),
                           (slice_data_end - slice_data_start + 3) >> 2);
         init_get_bits(&gb, c->slice_bits, slice_size * 8);
 
@@ -293,11 +291,9 @@ static int decode_plane(UtvideoContext *c, int plane_no,
             goto fail;
         }
 
-        memcpy(c->slice_bits, src + slice_data_start + c->slices * 4,
-               slice_size);
         memset(c->slice_bits + slice_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
         c->bdsp.bswap_buf((uint32_t *) c->slice_bits,
-                          (uint32_t *) c->slice_bits,
+                          (uint32_t *)(src + slice_data_start + c->slices * 4),
                           (slice_data_end - slice_data_start + 3) >> 2);
         init_get_bits(&gb, c->slice_bits, slice_size * 8);
 
