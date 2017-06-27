@@ -195,7 +195,8 @@ static int decode_plane10(UtvideoContext *c, int plane_no,
 
         prev = 0x200;
         for (j = sstart; j < send; j++) {
-            for (i = 0; i < width * step; i += step) {
+            int ws = width * step;
+            for (i = 0; i < ws; i += step) {
                 pix = get_vlc2(&gb, vlc.table, VLC_BITS, 3);
                 if (pix < 0) {
                     av_log(c->avctx, AV_LOG_ERROR, "Decoding error\n");
@@ -299,7 +300,8 @@ static int decode_plane(UtvideoContext *c, int plane_no,
 
         prev = 0x80;
         for (j = sstart; j < send; j++) {
-            for (i = 0; i < width * step; i += step) {
+            int ws = width * step;
+            for (i = 0; i < ws; i += step) {
                 pix = get_vlc2(&gb, vlc.table, VLC_BITS, 3);
                 if (pix < 0) {
                     av_log(c->avctx, AV_LOG_ERROR, "Decoding error\n");
