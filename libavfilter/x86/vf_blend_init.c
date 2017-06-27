@@ -47,6 +47,8 @@ BLEND_FUNC(subtract, sse2)
 BLEND_FUNC(xor, sse2)
 BLEND_FUNC(difference, sse2)
 BLEND_FUNC(difference, ssse3)
+BLEND_FUNC(extremity, sse2)
+BLEND_FUNC(extremity, ssse3)
 BLEND_FUNC(negation, sse2)
 BLEND_FUNC(negation, ssse3)
 
@@ -72,12 +74,14 @@ av_cold void ff_blend_init_x86(FilterParams *param, int is_16bit)
         case BLEND_SUBTRACT: param->blend = ff_blend_subtract_sse2; break;
         case BLEND_XOR:      param->blend = ff_blend_xor_sse2;      break;
         case BLEND_DIFFERENCE: param->blend = ff_blend_difference_sse2; break;
+        case BLEND_EXTREMITY:  param->blend = ff_blend_extremity_sse2; break;
         case BLEND_NEGATION:   param->blend = ff_blend_negation_sse2;   break;
         }
     }
     if (EXTERNAL_SSSE3(cpu_flags) && param->opacity == 1 && !is_16bit) {
         switch (param->mode) {
         case BLEND_DIFFERENCE: param->blend = ff_blend_difference_ssse3; break;
+        case BLEND_EXTREMITY:  param->blend = ff_blend_extremity_ssse3; break;
         case BLEND_NEGATION:   param->blend = ff_blend_negation_ssse3;   break;
         }
     }

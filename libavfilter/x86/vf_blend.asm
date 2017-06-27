@@ -286,6 +286,31 @@ BLEND_INIT difference, 3
     jl .loop
 BLEND_END
 
+BLEND_INIT extremity, 8
+    pxor       m2, m2
+    mova       m4, [pw_255]
+.nextrow:
+    mov        xq, widthq
+
+    .loop:
+        movu            m0, [topq + xq]
+        movu            m1, [bottomq + xq]
+        punpckhbw       m5, m0, m2
+        punpcklbw       m0, m2
+        punpckhbw       m6, m1, m2
+        punpcklbw       m1, m2
+        psubw           m3, m4, m0
+        psubw           m7, m4, m5
+        psubw           m3, m1
+        psubw           m7, m6
+        ABS1            m3, m1
+        ABS1            m7, m6
+        packuswb        m3, m7
+        mova   [dstq + xq], m3
+        add             xq, mmsize
+    jl .loop
+BLEND_END
+
 BLEND_INIT negation, 5
     pxor       m2, m2
     mova       m4, [pw_255]
