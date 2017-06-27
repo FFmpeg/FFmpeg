@@ -196,11 +196,6 @@ static int decode_plane10(UtvideoContext *c, int plane_no,
         prev = 0x200;
         for (j = sstart; j < send; j++) {
             for (i = 0; i < width * step; i += step) {
-                if (get_bits_left(&gb) <= 0) {
-                    av_log(c->avctx, AV_LOG_ERROR,
-                           "Slice decoding ran out of bits\n");
-                    goto fail;
-                }
                 pix = get_vlc2(&gb, vlc.table, vlc.bits, 3);
                 if (pix < 0) {
                     av_log(c->avctx, AV_LOG_ERROR, "Decoding error\n");
@@ -214,6 +209,11 @@ static int decode_plane10(UtvideoContext *c, int plane_no,
                 dest[i] = pix;
             }
             dest += stride;
+            if (get_bits_left(&gb) < 0) {
+                av_log(c->avctx, AV_LOG_ERROR,
+                        "Slice decoding ran out of bits\n");
+                goto fail;
+            }
         }
         if (get_bits_left(&gb) > 32)
             av_log(c->avctx, AV_LOG_WARNING,
@@ -302,11 +302,6 @@ static int decode_plane(UtvideoContext *c, int plane_no,
         prev = 0x80;
         for (j = sstart; j < send; j++) {
             for (i = 0; i < width * step; i += step) {
-                if (get_bits_left(&gb) <= 0) {
-                    av_log(c->avctx, AV_LOG_ERROR,
-                           "Slice decoding ran out of bits\n");
-                    goto fail;
-                }
                 pix = get_vlc2(&gb, vlc.table, vlc.bits, 3);
                 if (pix < 0) {
                     av_log(c->avctx, AV_LOG_ERROR, "Decoding error\n");
@@ -317,6 +312,11 @@ static int decode_plane(UtvideoContext *c, int plane_no,
                     pix   = prev;
                 }
                 dest[i] = pix;
+            }
+            if (get_bits_left(&gb) < 0) {
+                av_log(c->avctx, AV_LOG_ERROR,
+                        "Slice decoding ran out of bits\n");
+                goto fail;
             }
             dest += stride;
         }
@@ -609,6 +609,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
            c->frame_info);
 
     c->frame_pred = (c->frame_info >> 8) & 3;
+
+    max_slice_size += 4*avctx->width;
 
     av_fast_malloc(&c->slice_bits, &c->slice_bits_size,
                    max_slice_size + AV_INPUT_BUFFER_PADDING_SIZE);
