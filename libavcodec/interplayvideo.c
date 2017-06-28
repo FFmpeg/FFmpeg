@@ -1070,7 +1070,7 @@ static void ipvideo_decode_format_10_opcodes(IpvideoContext *s, AVFrame *frame)
                     break;
                 }
                 if (bytestream2_get_bytes_left(&skip_map_ptr) < 2)
-                    return AVERROR_INVALIDDATA;
+                    return;
                 skip = bytestream2_get_le16(&skip_map_ptr);
             }
 
