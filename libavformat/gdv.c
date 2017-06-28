@@ -42,14 +42,40 @@ static int gdv_read_probe(AVProbeData *p)
     return 0;
 }
 
+struct {
+    uint16_t id;
+    uint16_t width;
+    uint16_t height;
+} FixedSize[] = {
+    { 0, 320, 200},
+    { 1, 640, 200},
+    { 2, 320, 167},
+    { 3, 320, 180},
+    { 4, 320, 400},
+    { 5, 320, 170},
+    { 6, 160,  85},
+    { 7, 160,  83},
+    { 8, 160,  90},
+    { 9, 280, 128},
+    {10, 320, 240},
+    {11, 320, 201},
+    {16, 640, 400},
+    {17, 640, 200},
+    {18, 640, 180},
+    {19, 640, 167},
+    {20, 640, 170},
+    {21, 320, 240}
+};
+
 static int gdv_read_header(AVFormatContext *ctx)
 {
     GDVContext *gdv = ctx->priv_data;
     AVIOContext *pb = ctx->pb;
     AVStream *vst, *ast;
-    unsigned fps, snd_flags, vid_depth;
+    unsigned fps, snd_flags, vid_depth, size_id;
 
-    avio_skip(pb, 6);
+    avio_skip(pb, 4);
+    size_id = avio_rl16(pb);
 
     vst = avformat_new_stream(ctx, 0);
     if (!vst)
@@ -91,6 +117,18 @@ static int gdv_read_header(AVFormatContext *ctx)
     vst->codecpar->width      = avio_rl16(pb);
     vst->codecpar->height     = avio_rl16(pb);
 
+    if (vst->codecpar->width == 0 || vst->codecpar->height == 0) {
+        int i;
+
+        for (i = 0; i < FF_ARRAY_ELEMS(FixedSize) - 1; i++) {
+            if (FixedSize[i].id == size_id)
+                break;
+        }
+
+        vst->codecpar->width  = FixedSize[i].width;
+        vst->codecpar->height = FixedSize[i].height;
+    }
+
     avpriv_set_pts_info(vst, 64, 1, fps);
 
     if (vid_depth & 1) {
@@ -100,7 +138,7 @@ static int gdv_read_header(AVFormatContext *ctx)
             unsigned r = avio_r8(pb);
             unsigned g = avio_r8(pb);
             unsigned b = avio_r8(pb);
-            gdv->pal[i] = 0xFF << 24 | r << 18 | g << 10 | b << 2;
+            gdv->pal[i] = 0xFFU << 24 | r << 18 | g << 10 | b << 2;
         }
     }
 
