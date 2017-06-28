@@ -663,7 +663,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             output = s->plane[plane].subband[0];
             for (i = 0; i < lowpass_height * 2; i++) {
                 for (j = 0; j < lowpass_width * 2; j++)
-                    output[j] <<= 2;
+                    output[j] *= 4;
 
                 output += lowpass_width * 2;
             }
