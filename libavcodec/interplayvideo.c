@@ -910,7 +910,7 @@ static int (* const ipvideo_decode_block16[])(IpvideoContext *s, AVFrame *frame)
     ipvideo_decode_block_opcode_0xE_16, ipvideo_decode_block_opcode_0x1,
 };
 
-static void ipvideo_format_06_firstpass(IpvideoContext *s, AVFrame *frame, short opcode)
+static void ipvideo_format_06_firstpass(IpvideoContext *s, AVFrame *frame, int16_t opcode)
 {
     int line;
 
@@ -926,29 +926,29 @@ static void ipvideo_format_06_firstpass(IpvideoContext *s, AVFrame *frame, short
     }
 }
 
-static void ipvideo_format_06_secondpass(IpvideoContext *s, AVFrame *frame, short opcode)
+static void ipvideo_format_06_secondpass(IpvideoContext *s, AVFrame *frame, int16_t opcode)
 {
     int off_x, off_y;
 
     if (opcode < 0) {
-        off_x = ((unsigned short)opcode - 0xC000) % frame->linesize[0];
-        off_y = ((unsigned short)opcode - 0xC000) / frame->linesize[0];
+        off_x = ((uint16_t)opcode - 0xC000) % frame->linesize[0];
+        off_y = ((uint16_t)opcode - 0xC000) / frame->linesize[0];
         copy_from(s, s->last_frame, frame, off_x, off_y);
     } else if (opcode > 0) {
-        off_x = ((unsigned short)opcode - 0x4000) % frame->linesize[0];
-        off_y = ((unsigned short)opcode - 0x4000) / frame->linesize[0];
+        off_x = ((uint16_t)opcode - 0x4000) % frame->linesize[0];
+        off_y = ((uint16_t)opcode - 0x4000) / frame->linesize[0];
         copy_from(s, frame, frame, off_x, off_y);
     }
 }
 
-static void (* const ipvideo_format_06_passes[])(IpvideoContext *s, AVFrame *frame, short op) = {
+static void (* const ipvideo_format_06_passes[])(IpvideoContext *s, AVFrame *frame, int16_t op) = {
     ipvideo_format_06_firstpass, ipvideo_format_06_secondpass,
 };
 
 static void ipvideo_decode_format_06_opcodes(IpvideoContext *s, AVFrame *frame)
 {
     int pass, x, y;
-    short opcode;
+    int16_t opcode;
     GetByteContext decoding_map_ptr;
 
     /* this is PAL8, so make the palette available */
@@ -984,7 +984,7 @@ static void ipvideo_decode_format_06_opcodes(IpvideoContext *s, AVFrame *frame)
     }
 }
 
-static void ipvideo_format_10_firstpass(IpvideoContext *s, AVFrame *frame, short opcode)
+static void ipvideo_format_10_firstpass(IpvideoContext *s, AVFrame *frame, int16_t opcode)
 {
     int line;
 
@@ -996,29 +996,29 @@ static void ipvideo_format_10_firstpass(IpvideoContext *s, AVFrame *frame, short
     }
 }
 
-static void ipvideo_format_10_secondpass(IpvideoContext *s, AVFrame *frame, short opcode)
+static void ipvideo_format_10_secondpass(IpvideoContext *s, AVFrame *frame, int16_t opcode)
 {
     int off_x, off_y;
 
     if (opcode < 0) {
-        off_x = ((unsigned short)opcode - 0xC000) % s->cur_decode_frame->linesize[0];
-        off_y = ((unsigned short)opcode - 0xC000) / s->cur_decode_frame->linesize[0];
+        off_x = ((uint16_t)opcode - 0xC000) % s->cur_decode_frame->linesize[0];
+        off_y = ((uint16_t)opcode - 0xC000) / s->cur_decode_frame->linesize[0];
         copy_from(s, s->prev_decode_frame, s->cur_decode_frame, off_x, off_y);
     } else if (opcode > 0) {
-        off_x = ((unsigned short)opcode - 0x4000) % s->cur_decode_frame->linesize[0];
-        off_y = ((unsigned short)opcode - 0x4000) / s->cur_decode_frame->linesize[0];
+        off_x = ((uint16_t)opcode - 0x4000) % s->cur_decode_frame->linesize[0];
+        off_y = ((uint16_t)opcode - 0x4000) / s->cur_decode_frame->linesize[0];
         copy_from(s, s->cur_decode_frame, s->cur_decode_frame, off_x, off_y);
     }
 }
 
-static void (* const ipvideo_format_10_passes[])(IpvideoContext *s, AVFrame *frame, short op) = {
+static void (* const ipvideo_format_10_passes[])(IpvideoContext *s, AVFrame *frame, int16_t op) = {
     ipvideo_format_10_firstpass, ipvideo_format_10_secondpass,
 };
 
 static void ipvideo_decode_format_10_opcodes(IpvideoContext *s, AVFrame *frame)
 {
     int pass, x, y, changed_block;
-    short opcode, skip;
+    int16_t opcode, skip;
     GetByteContext decoding_map_ptr;
     GetByteContext skip_map_ptr;
 
