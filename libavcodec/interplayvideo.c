@@ -1044,12 +1044,14 @@ static void ipvideo_decode_format_10_opcodes(IpvideoContext *s, AVFrame *frame)
             for (x = 0; x < s->avctx->width; x += 8) {
                 s->pixel_ptr = s->cur_decode_frame->data[0] + x + y * s->cur_decode_frame->linesize[0];
 
-                while (skip <= 0 && bytestream2_get_bytes_left(&skip_map_ptr) > 1)  {
+                while (skip <= 0)  {
                     if (skip != -0x8000 && skip) {
                         opcode = bytestream2_get_le16(&decoding_map_ptr);
                         ipvideo_format_10_passes[pass](s, frame, opcode);
                         break;
                     }
+                    if (bytestream2_get_bytes_left(&skip_map_ptr) < 2)
+                        return;
                     skip = bytestream2_get_le16(&skip_map_ptr);
                 }
                 skip *= 2;
