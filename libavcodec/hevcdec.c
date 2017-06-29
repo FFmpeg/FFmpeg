@@ -3355,6 +3355,12 @@ static int hevc_update_thread_context(AVCodecContext *dst,
         s->max_ra = INT_MAX;
     }
 
+    s->sei.frame_packing        = s0->sei.frame_packing;
+    s->sei.display_orientation  = s0->sei.display_orientation;
+    s->sei.mastering_display    = s0->sei.mastering_display;
+    s->sei.content_light        = s0->sei.content_light;
+    s->sei.alternative_transfer = s0->sei.alternative_transfer;
+
     return 0;
 }
 
