@@ -21,8 +21,6 @@
 
 %include "libavutil/x86/x86util.asm"
 
-%if ARCH_X86_64
-
 SECTION_RODATA
 
 pb_128:  times 16 db 128
@@ -36,12 +34,18 @@ INIT_XMM sse2
 ; void restore_rgb_planes(uint8_t *src_r, uint8_t *src_g, uint8_t *src_b,
 ;                         ptrdiff_t linesize_r, ptrdiff_t linesize_g, ptrdiff_t linesize_b,
 ;                         int width, int height)
-cglobal restore_rgb_planes, 8,9,4, src_r, src_g, src_b, linesize_r, linesize_g, linesize_b, w, h, x
+cglobal restore_rgb_planes, 7 + ARCH_X86_64, 7 + ARCH_X86_64 * 2, 4, src_r, src_g, src_b, linesize_r, linesize_g, linesize_b, w, h, x
     movsxdifnidn wq, wd
     add      src_rq, wq
     add      src_gq, wq
     add      src_bq, wq
     neg          wq
+%if ARCH_X86_64 == 0
+    mov          wm, wq
+DEFINE_ARGS src_r, src_g, src_b, linesize_r, linesize_g, linesize_b, x
+%define wq r6m
+%define hd r7mp
+%endif
     mova         m3, [pb_128]
 .nextrow:
     mov          xq, wq
@@ -65,7 +69,7 @@ cglobal restore_rgb_planes, 8,9,4, src_r, src_g, src_b, linesize_r, linesize_g, 
     jg .nextrow
     REP_RET
 
-cglobal restore_rgb_planes10, 8,9,5, src_r, src_g, src_b, linesize_r, linesize_g, linesize_b, w, h, x
+cglobal restore_rgb_planes10, 7 + ARCH_X86_64, 7 + ARCH_X86_64 * 2, 5, src_r, src_g, src_b, linesize_r, linesize_g, linesize_b, w, h, x
     shl          wd, 1
     shl linesize_rq, 1
     shl linesize_gq, 1
@@ -76,6 +80,12 @@ cglobal restore_rgb_planes10, 8,9,5, src_r, src_g, src_b, linesize_r, linesize_g
     mova         m3, [pw_512]
     mova         m4, [pw_1023]
     neg          wq
+%if ARCH_X86_64 == 0
+    mov          wm, wq
+DEFINE_ARGS src_r, src_g, src_b, linesize_r, linesize_g, linesize_b, x
+%define wq r6m
+%define hd r7mp
+%endif
 .nextrow:
     mov          xq, wq
 
@@ -99,5 +109,3 @@ cglobal restore_rgb_planes10, 8,9,5, src_r, src_g, src_b, linesize_r, linesize_g
     sub        hd, 1
     jg .nextrow
     REP_RET
-
-%endif
