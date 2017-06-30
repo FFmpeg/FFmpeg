@@ -1272,6 +1272,5 @@ AVOutputFormat ff_dash_muxer = {
     .write_header   = dash_write_header,
     .write_packet   = dash_write_packet,
     .write_trailer  = dash_write_trailer,
-    .codec_tag      = (const AVCodecTag* const []){ ff_mp4_obj_type, 0 },
     .priv_class     = &dash_class,
 };
