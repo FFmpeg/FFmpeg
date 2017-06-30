@@ -149,19 +149,19 @@ cglobal sbr_hf_gen, 4,4,8, X_high, X_low, alpha0, alpha1, BW, S, E
     ; start and end 6th and 7th args on stack
     mov        r2d, Sm
     mov        r3d, Em
-%define  start r2q
-%define  end   r3q
+    DEFINE_ARGS X_high, X_low, start, end
 %else
 ; BW does not actually occupy a register, so shift by 1
-%define  start BWq
-%define  end   Sq
+    DEFINE_ARGS X_high, X_low, alpha0, alpha1, start, end
+    movsxd  startq, startd
+    movsxd    endq, endd
 %endif
-    sub      start, end          ; neg num of loops
-    lea    X_highq, [X_highq + end*2*4]
-    lea     X_lowq, [X_lowq  + end*2*4 - 2*2*4]
-    shl      start, 3            ; offset from num loops
+    sub     startq, endq         ; neg num of loops
+    lea    X_highq, [X_highq + endq*2*4]
+    lea     X_lowq, [X_lowq  + endq*2*4 - 2*2*4]
+    shl     startq, 3            ; offset from num loops
 
-    mova        m0, [X_lowq + start]
+    mova        m0, [X_lowq + startq]
     shufps      m3, m3, q1111
     shufps      m4, m4, q1111
     xorps       m3, [ps_mask]
@@ -169,7 +169,7 @@ cglobal sbr_hf_gen, 4,4,8, X_high, X_low, alpha0, alpha1, BW, S, E
     shufps      m2, m2, q0000
     xorps       m4, [ps_mask]
 .loop2:
-    movu        m7, [X_lowq + start + 8]        ; BbCc
+    movu        m7, [X_lowq + startq + 8]       ; BbCc
     mova        m6, m0
     mova        m5, m7
     shufps      m0, m0, q2301                   ; aAbB
@@ -179,12 +179,12 @@ cglobal sbr_hf_gen, 4,4,8, X_high, X_low, alpha0, alpha1, BW, S, E
     mulps       m6, m2
     mulps       m5, m1
     addps       m7, m0
-    mova        m0, [X_lowq + start +16]        ; CcDd
+    mova        m0, [X_lowq + startq + 16]      ; CcDd
     addps       m7, m0
     addps       m6, m5
     addps       m7, m6
-    mova  [X_highq + start], m7
-    add     start, 16
+    mova  [X_highq + startq], m7
+    add     startq, 16
     jnz         .loop2
     RET
 
