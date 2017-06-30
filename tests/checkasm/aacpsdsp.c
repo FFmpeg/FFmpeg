@@ -76,7 +76,7 @@ static void test_hybrid_analysis(void)
 {
     LOCAL_ALIGNED_16(INTFLOAT, dst0, [BUF_SIZE], [2]);
     LOCAL_ALIGNED_16(INTFLOAT, dst1, [BUF_SIZE], [2]);
-    LOCAL_ALIGNED_16(INTFLOAT, in, [12], [2]);
+    LOCAL_ALIGNED_16(INTFLOAT, in, [13], [2]);
     LOCAL_ALIGNED_16(INTFLOAT, filter, [N], [8][2]);
 
     declare_func(void, INTFLOAT (*out)[2], INTFLOAT (*in)[2],
