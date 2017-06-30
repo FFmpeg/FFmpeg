@@ -1602,20 +1602,22 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
         pps->deblocking_filter_override_enabled_flag = get_bits1(gb);
         pps->disable_dbf                             = get_bits1(gb);
         if (!pps->disable_dbf) {
-            pps->beta_offset = get_se_golomb(gb) * 2;
-            pps->tc_offset = get_se_golomb(gb) * 2;
-            if (pps->beta_offset/2 < -6 || pps->beta_offset/2 > 6) {
+            int beta_offset_div2 = get_se_golomb(gb);
+            int tc_offset_div2   = get_se_golomb(gb) ;
+            if (beta_offset_div2 < -6 || beta_offset_div2 > 6) {
                 av_log(avctx, AV_LOG_ERROR, "pps_beta_offset_div2 out of range: %d\n",
-                       pps->beta_offset/2);
+                       beta_offset_div2);
                 ret = AVERROR_INVALIDDATA;
                 goto err;
             }
-            if (pps->tc_offset/2 < -6 || pps->tc_offset/2 > 6) {
+            if (tc_offset_div2 < -6 || tc_offset_div2 > 6) {
                 av_log(avctx, AV_LOG_ERROR, "pps_tc_offset_div2 out of range: %d\n",
-                       pps->tc_offset/2);
+                       tc_offset_div2);
                 ret = AVERROR_INVALIDDATA;
                 goto err;
             }
+            pps->beta_offset = 2 * beta_offset_div2;
+            pps->tc_offset   = 2 *   tc_offset_div2;
         }
     }
 
