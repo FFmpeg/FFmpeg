@@ -1001,6 +1001,7 @@ following image formats are supported:
     @tab All versions except 5.1 are supported.
 @item DCA (DTS Coherent Acoustics)  @tab  X  @tab  X
     @tab supported extensions: XCh, XXCH, X96, XBR, XLL, LBR (partially)
+@item Dolby E  @tab     @tab  X
 @item DPCM id RoQ            @tab  X  @tab  X
     @tab Used in Quake III, Jedi Knight 2 and other computer games.
 @item DPCM Interplay         @tab     @tab  X
