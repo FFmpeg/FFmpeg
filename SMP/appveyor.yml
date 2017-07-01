@@ -26,6 +26,32 @@ install:
 - cmd: choco install gitlink
 
 before_build:
+    
+# Backup platform so it is not affected by vcvars
+- cmd: SET PLATFORMBACK=%PLATFORM%
+    
+# Setup msvc environment for required compiler version (specified by MSVC_VER)
+- ps: >-
+    if ($env:MSVC_VER -eq 15) {
+        $env:VCVARS="C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat"
+    } else {
+        $env:VSCOMNTOOLS=(Get-Content ("env:VS" + "$env:MSVC_VER" + "0COMNTOOLS"))
+        $env:VCVARS="%VSCOMNTOOLS%\..\..\VC\vcvarsall.bat"
+    }
+
+- cmd: call "%VCVARS%" amd64
+
+# Detect latest available windows sdk version
+- ps: >-
+    if ($env:MSVC_VER -eq 12) {
+        $env:WindowsSDKVersion=8.1
+    } else {
+        $env:WindowsSDKVersion=$env:WindowsSDKVersion.TrimEnd('\')
+    }
+
+# Reset platform
+- cmd: SET PLATFORM=%PLATFORMBACK%
+
 # Create build project to compile all configurations and platforms at once
 - ps: >-
     $script = @'
@@ -43,7 +69,7 @@ before_build:
         </PropertyGroup>
         <ItemGroup>
           <ProjectToBuild Include="SMP/APPVEYOR_PROJECT_NAME.sln">
-            <Properties>Configuration=%(ConfigurationList.Identity);Platform=$(CurrentPlatform);OutDir=$(MSBuildThisFileDirectory)build_out\</Properties>
+            <Properties>Configuration=%(ConfigurationList.Identity);Platform=$(CurrentPlatform);OutDir=$(MSBuildThisFileDirectory)build_out\;WindowsTargetPlatformVersion=SDK_VER</Properties>
           </ProjectToBuild>
         </ItemGroup>
       </Target>
@@ -69,24 +95,9 @@ before_build:
 
     $script = $script -replace "APPVEYOR_MSVC_VER", "$env:MSVC_VER"
 
+    $script = $script -replace "SDK_VER", "$env:WindowsSDKVersion"
+
     $script | Out-File build.vcxproj
-    
-# Backup platform so it is not affected by vcvars
-- cmd: SET PLATFORMBACK=%PLATFORM%
-    
-# Setup msvc environment for required compiler version (specified by MSVC_VER)
-- ps: >-
-    if ($env:MSVC_VER -eq 15) {
-        $env:VCVARS="C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat"
-    } else {
-        $env:VSCOMNTOOLS=(Get-Content ("env:VS" + "$env:MSVC_VER" + "0COMNTOOLS"))
-        $env:VCVARS="%VSCOMNTOOLS%\..\..\VC\vcvarsall.bat"
-    }
-
-- cmd: call "%VCVARS%" amd64
-
-# Reset platform
-- cmd: SET PLATFORM=%PLATFORMBACK%
 
 # Set Targets path so that gitlink works correctly
 - ps: $env:MSBUILDDIR=((Get-Command msbuild.exe).Path | Split-Path -parent)
