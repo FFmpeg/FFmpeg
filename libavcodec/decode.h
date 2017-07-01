@@ -21,7 +21,20 @@
 #ifndef AVCODEC_DECODE_H
 #define AVCODEC_DECODE_H
 
+#include "libavutil/buffer.h"
+
 #include "avcodec.h"
+
+/**
+ * This struct stores per-frame lavc-internal data and is attached to it via
+ * opaque_ref.
+ */
+typedef struct FrameDecodeData {
+    /**
+     * The original user-set opaque_ref.
+     */
+    AVBufferRef *user_opaque_ref;
+} FrameDecodeData;
 
 /**
  * Called by decoders to get the next packet for decoding.
