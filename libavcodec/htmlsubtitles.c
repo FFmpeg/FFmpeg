@@ -102,13 +102,13 @@ int ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
         case '<':
             tag_close = in[1] == '/';
             len = 0;
-            if (sscanf(in+tag_close+1, "%127[^>]>%n", buffer, &len) >= 1 && len > 0) {
+            if (sscanf(in+tag_close+1, "%127[^<>]>%n", buffer, &len) >= 1 && len > 0) {
                 const char *tagname = buffer;
                 while (*tagname == ' ')
                     tagname++;
                 if ((param = strchr(tagname, ' ')))
                     *param++ = 0;
-                if ((!tag_close && sptr < FF_ARRAY_ELEMS(stack)) ||
+                if ((!tag_close && sptr < FF_ARRAY_ELEMS(stack) && *tagname) ||
                     ( tag_close && sptr > 0 && !strcmp(stack[sptr-1].tag, tagname))) {
                     int i, j, unknown = 0;
                     in += len + tag_close;
