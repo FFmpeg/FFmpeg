@@ -419,6 +419,14 @@ static int decode_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
 
             fdd = (FrameDecodeData*)frame->opaque_ref->data;
 
+            if (fdd->post_process) {
+                ret = fdd->post_process(avctx, frame);
+                if (ret < 0) {
+                    av_frame_unref(frame);
+                    return ret;
+                }
+            }
+
             user_opaque_ref = fdd->user_opaque_ref;
             fdd->user_opaque_ref = NULL;
             av_buffer_unref(&frame->opaque_ref);
@@ -1013,6 +1021,9 @@ static void decode_data_free(void *opaque, uint8_t *data)
     FrameDecodeData *fdd = (FrameDecodeData*)data;
 
     av_buffer_unref(&fdd->user_opaque_ref);
+
+    if (fdd->post_process_opaque_free)
+        fdd->post_process_opaque_free(fdd->post_process_opaque);
 
     av_freep(&fdd);
 }

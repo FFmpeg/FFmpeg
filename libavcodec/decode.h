@@ -22,6 +22,7 @@
 #define AVCODEC_DECODE_H
 
 #include "libavutil/buffer.h"
+#include "libavutil/frame.h"
 
 #include "avcodec.h"
 
@@ -34,6 +35,20 @@ typedef struct FrameDecodeData {
      * The original user-set opaque_ref.
      */
     AVBufferRef *user_opaque_ref;
+
+    /**
+     * The callback to perform some delayed processing on the frame right
+     * before it is returned to the caller.
+     *
+     * @note This code is called at some unspecified point after the frame is
+     * returned from the decoder's decode/receive_frame call. Therefore it cannot rely
+     * on AVCodecContext being in any specific state, so it does not get to
+     * access AVCodecContext directly at all. All the state it needs must be
+     * stored in the post_process_opaque object.
+     */
+    int (*post_process)(void *logctx, AVFrame *frame);
+    void *post_process_opaque;
+    void (*post_process_opaque_free)(void *opaque);
 } FrameDecodeData;
 
 /**
