@@ -520,6 +520,7 @@ library:
     @tab Multimedia format used by many games.
 @item SMJPEG                    @tab X @tab X
     @tab Used in certain Loki game ports.
+@item SMPTE 337M encapsulation  @tab   @tab X
 @item Smush                     @tab   @tab X
     @tab Multimedia format used in some LucasArts games.
 @item Sony OpenMG (OMA)         @tab X @tab X
