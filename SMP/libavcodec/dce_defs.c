@@ -21,7 +21,7 @@
 
 #include "config.h"
 
-#if !(CONFIG_VP9_D3D11VA_HWACCEL||CONFIG_VP9_DXVA2_HWACCEL)
+#if !(CONFIG_H264_D3D11VA2_HWACCEL||CONFIG_H264_D3D11VA_HWACCEL||CONFIG_HEVC_D3D11VA2_HWACCEL||CONFIG_HEVC_D3D11VA_HWACCEL||CONFIG_MPEG2_D3D11VA2_HWACCEL||CONFIG_MPEG2_D3D11VA_HWACCEL||CONFIG_VC1_D3D11VA2_HWACCEL||CONFIG_VC1_D3D11VA_HWACCEL||CONFIG_VP9_D3D11VA2_HWACCEL||CONFIG_VP9_D3D11VA_HWACCEL||CONFIG_VP9_DXVA2_HWACCEL||CONFIG_WMV3_D3D11VA2_HWACCEL||CONFIG_WMV3_D3D11VA_HWACCEL)
 #include "libavcodec/avcodec.h"
 #endif
 #include "libavcodec/xvmc_internal.h"
@@ -3512,10 +3512,21 @@ void ff_pixblockdsp_init_mips(PixblockDSPContext *c, AVCodecContext *avctx,
                               unsigned high_bit_depth) {return;}
 void ff_pixblockdsp_init_ppc(PixblockDSPContext *c, AVCodecContext *avctx,
                              unsigned high_bit_depth) {return;}
+void ff_psdsp_init_aarch64(PSDSPContext *s) {return;}
 void ff_psdsp_init_arm(PSDSPContext *s) {return;}
 void ff_psdsp_init_mips(PSDSPContext *s) {return;}
 void ff_qpeldsp_init_mips(QpelDSPContext *c) {return;}
 void ff_rdft_init_arm(RDFTContext *s) {return;}
+#if !(ARCH_X86_64)
+void ff_restore_rgb_planes10_sse2(uint16_t *src_r, uint16_t *src_g, uint16_t *src_b,
+                                  ptrdiff_t linesize_r, ptrdiff_t linesize_g,
+                                  ptrdiff_t linesize_b, int width, int height) {return;}
+#endif
+#if !(ARCH_X86_64)
+void ff_restore_rgb_planes_sse2(uint8_t *src_r, uint8_t *src_g, uint8_t *src_b,
+                                ptrdiff_t linesize_r, ptrdiff_t linesize_g,
+                                ptrdiff_t linesize_b, int width, int height) {return;}
+#endif
 #if !(ARCH_X86_32)
 void ff_rv34_idct_dc_add_mmx(uint8_t *dst, ptrdiff_t stride, int dc) {return;}
 #endif
@@ -3547,6 +3558,24 @@ void ff_simple_idct12_put_sse2(uint8_t *dest, ptrdiff_t line_size, int16_t *bloc
 #endif
 #if !(ARCH_X86_64)
 void ff_simple_idct12_sse2(int16_t *block) {return;}
+#endif
+#if !(ARCH_X86_64)
+void ff_simple_idct8_add_avx(uint8_t *dest, ptrdiff_t line_size, int16_t *block) {return;}
+#endif
+#if !(ARCH_X86_64)
+void ff_simple_idct8_add_sse2(uint8_t *dest, ptrdiff_t line_size, int16_t *block) {return;}
+#endif
+#if !(ARCH_X86_64)
+void ff_simple_idct8_avx(int16_t *block) {return;}
+#endif
+#if !(ARCH_X86_64)
+void ff_simple_idct8_put_avx(uint8_t *dest, ptrdiff_t line_size, int16_t *block) {return;}
+#endif
+#if !(ARCH_X86_64)
+void ff_simple_idct8_put_sse2(uint8_t *dest, ptrdiff_t line_size, int16_t *block) {return;}
+#endif
+#if !(ARCH_X86_64)
+void ff_simple_idct8_sse2(int16_t *block) {return;}
 #endif
 void ff_svq1enc_init_ppc(SVQ1EncContext *c) {return;}
 void ff_synth_filter_init_aarch64(SynthFilterContext *c) {return;}
@@ -3691,6 +3720,12 @@ AVCodec ff_wmv3_crystalhd_decoder = {0};
 AVCodec ff_wmv3_vdpau_decoder = {0};
 AVHWAccel ff_h263_vaapi_hwaccel = {0};
 AVHWAccel ff_h263_videotoolbox_hwaccel = {0};
+#if !(CONFIG_H264_D3D11VA2_HWACCEL)
+AVHWAccel ff_h264_d3d11va2_hwaccel = {0};
+#endif
+#if !(CONFIG_H264_D3D11VA_HWACCEL)
+AVHWAccel ff_h264_d3d11va_hwaccel = {0};
+#endif
 AVHWAccel ff_h264_mediacodec_hwaccel = {0};
 AVHWAccel ff_h264_mmal_hwaccel = {0};
 AVHWAccel ff_h264_vaapi_hwaccel = {0};
@@ -3698,12 +3733,24 @@ AVHWAccel ff_h264_vda_hwaccel = {0};
 AVHWAccel ff_h264_vda_old_hwaccel = {0};
 AVHWAccel ff_h264_vdpau_hwaccel = {0};
 AVHWAccel ff_h264_videotoolbox_hwaccel = {0};
+#if !(CONFIG_HEVC_D3D11VA2_HWACCEL)
+AVHWAccel ff_hevc_d3d11va2_hwaccel = {0};
+#endif
+#if !(CONFIG_HEVC_D3D11VA_HWACCEL)
+AVHWAccel ff_hevc_d3d11va_hwaccel = {0};
+#endif
 AVHWAccel ff_hevc_mediacodec_hwaccel = {0};
 AVHWAccel ff_hevc_vaapi_hwaccel = {0};
 AVHWAccel ff_hevc_vdpau_hwaccel = {0};
 AVHWAccel ff_mpeg1_vdpau_hwaccel = {0};
 AVHWAccel ff_mpeg1_videotoolbox_hwaccel = {0};
 AVHWAccel ff_mpeg1_xvmc_hwaccel = {0};
+#if !(CONFIG_MPEG2_D3D11VA2_HWACCEL)
+AVHWAccel ff_mpeg2_d3d11va2_hwaccel = {0};
+#endif
+#if !(CONFIG_MPEG2_D3D11VA_HWACCEL)
+AVHWAccel ff_mpeg2_d3d11va_hwaccel = {0};
+#endif
 AVHWAccel ff_mpeg2_mediacodec_hwaccel = {0};
 AVHWAccel ff_mpeg2_mmal_hwaccel = {0};
 AVHWAccel ff_mpeg2_vaapi_hwaccel = {0};
@@ -3715,10 +3762,19 @@ AVHWAccel ff_mpeg4_mmal_hwaccel = {0};
 AVHWAccel ff_mpeg4_vaapi_hwaccel = {0};
 AVHWAccel ff_mpeg4_vdpau_hwaccel = {0};
 AVHWAccel ff_mpeg4_videotoolbox_hwaccel = {0};
+#if !(CONFIG_VC1_D3D11VA2_HWACCEL)
+AVHWAccel ff_vc1_d3d11va2_hwaccel = {0};
+#endif
+#if !(CONFIG_VC1_D3D11VA_HWACCEL)
+AVHWAccel ff_vc1_d3d11va_hwaccel = {0};
+#endif
 AVHWAccel ff_vc1_mmal_hwaccel = {0};
 AVHWAccel ff_vc1_vaapi_hwaccel = {0};
 AVHWAccel ff_vc1_vdpau_hwaccel = {0};
 AVHWAccel ff_vp8_mediacodec_hwaccel = {0};
+#if !(CONFIG_VP9_D3D11VA2_HWACCEL)
+AVHWAccel ff_vp9_d3d11va2_hwaccel = {0};
+#endif
 #if !(CONFIG_VP9_D3D11VA_HWACCEL)
 AVHWAccel ff_vp9_d3d11va_hwaccel = {0};
 #endif
@@ -3727,5 +3783,11 @@ AVHWAccel ff_vp9_dxva2_hwaccel = {0};
 #endif
 AVHWAccel ff_vp9_mediacodec_hwaccel = {0};
 AVHWAccel ff_vp9_vaapi_hwaccel = {0};
+#if !(CONFIG_WMV3_D3D11VA2_HWACCEL)
+AVHWAccel ff_wmv3_d3d11va2_hwaccel = {0};
+#endif
+#if !(CONFIG_WMV3_D3D11VA_HWACCEL)
+AVHWAccel ff_wmv3_d3d11va_hwaccel = {0};
+#endif
 AVHWAccel ff_wmv3_vaapi_hwaccel = {0};
 AVHWAccel ff_wmv3_vdpau_hwaccel = {0};

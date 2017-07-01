@@ -41,7 +41,6 @@
     <ClCompile Include="..\ffmpeg_hw.c" />
     <ClCompile Include="..\ffmpeg_qsv.c" />
     <ClCompile Include="..\ffmpeg_cuvid.c" />
-    <ClCompile Include="..\ffmpeg_dxva2.c" />
     <ClCompile Include="..\ffmpeg.c" />
     <ClCompile Include="ffmpeg\dce_defs.c" />
   </ItemGroup>

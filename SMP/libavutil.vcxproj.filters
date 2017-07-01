@@ -279,6 +279,9 @@
     <ClCompile Include="..\libavutil\x86\pixelutils_init.c">
       <Filter>Source Files\libavutil\x86</Filter>
     </ClCompile>
+    <ClCompile Include="libavutil\hwcontext_d3d11va_wrap.c">
+      <Filter>Source Files\libavutil</Filter>
+    </ClCompile>
     <ClCompile Include="libavutil\dce_defs.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
@@ -396,6 +399,9 @@
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
     <ClInclude Include="..\libavutil\hwcontext_cuda.h">
+      <Filter>Header Files\libavutil</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libavutil\hwcontext_d3d11va.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
     <ClInclude Include="..\libavutil\hwcontext_dxva2.h">

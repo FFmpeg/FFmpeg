@@ -150,6 +150,7 @@
     <ClCompile Include="..\libavutil\x86\imgutils_init.c" />
     <ClCompile Include="..\libavutil\x86\lls_init.c" />
     <ClCompile Include="..\libavutil\x86\pixelutils_init.c" />
+    <ClCompile Include="libavutil\hwcontext_d3d11va_wrap.c" />
     <ClCompile Include="libavutil\dce_defs.c" />
     <ClCompile Include="..\libavutil\float_dsp.c">
       <ObjectFileName>$(IntDir)\libavutil_float_dsp.obj</ObjectFileName>
@@ -203,6 +204,7 @@
     <ClInclude Include="..\libavutil\hmac.h" />
     <ClInclude Include="..\libavutil\hwcontext.h" />
     <ClInclude Include="..\libavutil\hwcontext_cuda.h" />
+    <ClInclude Include="..\libavutil\hwcontext_d3d11va.h" />
     <ClInclude Include="..\libavutil\hwcontext_dxva2.h" />
     <ClInclude Include="..\libavutil\hwcontext_qsv.h" />
     <ClInclude Include="..\libavutil\hwcontext_vaapi.h" />
@@ -550,6 +552,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_d3d11va.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
@@ -691,6 +694,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_d3d11va.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
@@ -838,6 +842,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_d3d11va.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
@@ -984,6 +989,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_d3d11va.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
@@ -1131,6 +1137,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_d3d11va.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
@@ -1277,6 +1284,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_d3d11va.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
@@ -1424,6 +1432,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_d3d11va.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
@@ -1571,6 +1580,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_d3d11va.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
@@ -1726,6 +1736,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_d3d11va.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
@@ -1880,6 +1891,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_d3d11va.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
@@ -2035,6 +2047,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_d3d11va.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
@@ -2189,6 +2202,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_d3d11va.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
@@ -2336,6 +2350,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_d3d11va.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil
@@ -2483,6 +2498,7 @@ copy ..\libavutil\hash.h $(OutDir)\include\libavutil
 copy ..\libavutil\hmac.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_cuda.h $(OutDir)\include\libavutil
+copy ..\libavutil\hwcontext_d3d11va.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_dxva2.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_qsv.h $(OutDir)\include\libavutil
 copy ..\libavutil\hwcontext_vaapi.h $(OutDir)\include\libavutil

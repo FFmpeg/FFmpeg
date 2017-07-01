@@ -143,6 +143,7 @@
     <YASM Include="..\libavcodec\x86\takdsp.asm" />
     <YASM Include="..\libavcodec\x86\ttadsp.asm" />
     <YASM Include="..\libavcodec\x86\ttaencdsp.asm" />
+    <YASM Include="..\libavcodec\x86\utvideodsp.asm" />
     <YASM Include="..\libavcodec\x86\v210enc.asm" />
     <YASM Include="..\libavcodec\x86\v210.asm" />
     <YASM Include="..\libavcodec\x86\vorbisdsp.asm" />
@@ -965,6 +966,7 @@
     <ClCompile Include="..\libavcodec\x86\takdsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\ttadsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\ttaencdsp_init.c" />
+    <ClCompile Include="..\libavcodec\x86\utvideodsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\v210-init.c" />
     <ClCompile Include="..\libavcodec\x86\v210enc_init.c" />
     <ClCompile Include="..\libavcodec\x86\vorbisdsp_init.c" />
@@ -1100,6 +1102,9 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\ttaencdsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_ttaencdsp.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\utvideodsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_utvideodsp.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\v210enc.c">
       <ObjectFileName>$(IntDir)\libavcodec_v210enc.obj</ObjectFileName>
