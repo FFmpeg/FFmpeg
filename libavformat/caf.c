@@ -49,6 +49,7 @@ const AVCodecTag ff_codec_caf_tags[] = {
     { AV_CODEC_ID_QCELP,           MKBETAG('Q','c','l','p') },
     { AV_CODEC_ID_QDM2,            MKBETAG('Q','D','M','2') },
     { AV_CODEC_ID_QDM2,            MKBETAG('Q','D','M','C') },
+    { AV_CODEC_ID_OPUS,            MKBETAG('o','p','u','s') },
   /* currently unsupported codecs */
   /*{ AC-3 over S/PDIF          MKBETAG('c','a','c','3') },*/
   /*{ MPEG4CELP                 MKBETAG('c','e','l','p') },*/
