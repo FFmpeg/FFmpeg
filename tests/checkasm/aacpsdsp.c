@@ -83,7 +83,7 @@ static void test_hybrid_analysis(void)
                  const INTFLOAT (*filter)[8][2],
                  ptrdiff_t stride, int n);
 
-    randomize((INTFLOAT *)in, 12 * 2);
+    randomize((INTFLOAT *)in, 13 * 2);
     randomize((INTFLOAT *)filter, N * 8 * 2);
 
     randomize((INTFLOAT *)dst0, BUF_SIZE * 2);
