@@ -31,6 +31,7 @@
 #include "libavutil/lfg.h"
 #include "libavutil/timer.h"
 
+void checkasm_check_aacpsdsp(void);
 void checkasm_check_alacdsp(void);
 void checkasm_check_audiodsp(void);
 void checkasm_check_blend(void);

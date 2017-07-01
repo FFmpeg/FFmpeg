@@ -1,4 +1,5 @@
-FATE_CHECKASM = fate-checkasm-alacdsp                                   \
+FATE_CHECKASM = fate-checkasm-aacpsdsp                                  \
+                fate-checkasm-alacdsp                                   \
                 fate-checkasm-audiodsp                                  \
                 fate-checkasm-blockdsp                                  \
                 fate-checkasm-bswapdsp                                  \

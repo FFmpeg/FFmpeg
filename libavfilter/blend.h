@@ -58,6 +58,7 @@ enum BlendMode {
     BLEND_MULTIPLY128,
     BLEND_HEAT,
     BLEND_FREEZE,
+    BLEND_EXTREMITY,
     BLEND_NB
 };
 

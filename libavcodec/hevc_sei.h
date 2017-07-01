@@ -56,6 +56,7 @@ typedef enum {
     HEVC_SEI_TYPE_REGION_REFRESH_INFO                  = 134,
     HEVC_SEI_TYPE_MASTERING_DISPLAY_INFO               = 137,
     HEVC_SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO             = 144,
+    HEVC_SEI_TYPE_ALTERNATIVE_TRANSFER_CHARACTERISTICS = 147,
 } HEVC_SEI_Type;
 
 typedef struct HEVCSEIPictureHash {
@@ -100,6 +101,11 @@ typedef struct HEVCSEIContentLight {
     uint16_t max_pic_average_light_level;
 } HEVCSEIContentLight;
 
+typedef struct HEVCSEIAlternativeTransfer {
+    int present;
+    int preferred_transfer_characteristics;
+} HEVCSEIAlternativeTransfer;
+
 typedef struct HEVCSEIContext {
     HEVCSEIPictureHash picture_hash;
     HEVCSEIFramePacking frame_packing;
@@ -109,6 +115,7 @@ typedef struct HEVCSEIContext {
     HEVCSEIMasteringDisplay mastering_display;
     HEVCSEIContentLight content_light;
     int active_seq_parameter_set_id;
+    HEVCSEIAlternativeTransfer alternative_transfer;
 } HEVCSEIContext;
 
 struct HEVCParamSets;

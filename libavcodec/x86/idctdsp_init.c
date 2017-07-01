@@ -94,9 +94,34 @@ av_cold void ff_idctdsp_init_x86(IDCTDSPContext *c, AVCodecContext *avctx,
                 c->idct_add  = ff_simple_idct_add_sse2;
                 c->perm_type = FF_IDCT_PERM_SIMPLE;
         }
+
+        if (ARCH_X86_64 &&
+            !high_bit_depth &&
+            avctx->lowres == 0 &&
+            (avctx->idct_algo == FF_IDCT_AUTO ||
+                avctx->idct_algo == FF_IDCT_SIMPLEAUTO ||
+                avctx->idct_algo == FF_IDCT_SIMPLEMMX ||
+                avctx->idct_algo == FF_IDCT_SIMPLE)) {
+                c->idct      = ff_simple_idct8_sse2;
+                c->idct_put  = ff_simple_idct8_put_sse2;
+                c->idct_add  = ff_simple_idct8_add_sse2;
+                c->perm_type = FF_IDCT_PERM_TRANSPOSE;
+        }
     }
 
     if (ARCH_X86_64 && avctx->lowres == 0) {
+        if (EXTERNAL_AVX(cpu_flags) &&
+            !high_bit_depth &&
+            (avctx->idct_algo == FF_IDCT_AUTO ||
+                avctx->idct_algo == FF_IDCT_SIMPLEAUTO ||
+                avctx->idct_algo == FF_IDCT_SIMPLEMMX ||
+                avctx->idct_algo == FF_IDCT_SIMPLE)) {
+                c->idct      = ff_simple_idct8_avx;
+                c->idct_put  = ff_simple_idct8_put_avx;
+                c->idct_add  = ff_simple_idct8_add_avx;
+                c->perm_type = FF_IDCT_PERM_TRANSPOSE;
+        }
+
         if (avctx->bits_per_raw_sample == 10 &&
             (avctx->idct_algo == FF_IDCT_AUTO ||
              avctx->idct_algo == FF_IDCT_SIMPLEAUTO ||

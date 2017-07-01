@@ -4859,6 +4859,7 @@ Available values for component modes are:
 @item dodge
 @item freeze
 @item exclusion
+@item extremity
 @item glow
 @item hardlight
 @item hardmix

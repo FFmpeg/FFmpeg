@@ -76,6 +76,7 @@ typedef struct ThreadData {
     { "divide",     "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_DIVIDE},     0, 0, FLAGS, "mode" },\
     { "dodge",      "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_DODGE},      0, 0, FLAGS, "mode" },\
     { "exclusion",  "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_EXCLUSION},  0, 0, FLAGS, "mode" },\
+    { "extremity",  "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_EXTREMITY},  0, 0, FLAGS, "mode" },\
     { "freeze",     "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_FREEZE},     0, 0, FLAGS, "mode" },\
     { "glow",       "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_GLOW},       0, 0, FLAGS, "mode" },\
     { "hardlight",  "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_HARDLIGHT},  0, 0, FLAGS, "mode" },\
@@ -241,6 +242,7 @@ DEFINE_BLEND8(subtract,   FFMAX(0, A - B))
 DEFINE_BLEND8(multiply,   MULTIPLY(1, A, B))
 DEFINE_BLEND8(multiply128,av_clip_uint8((A - 128) * B / 32. + 128))
 DEFINE_BLEND8(negation,   255 - FFABS(255 - A - B))
+DEFINE_BLEND8(extremity,  FFABS(255 - A - B))
 DEFINE_BLEND8(difference, FFABS(A - B))
 DEFINE_BLEND8(difference128, av_clip_uint8(128 + A - B))
 DEFINE_BLEND8(screen,     SCREEN(1, A, B))
@@ -283,6 +285,7 @@ DEFINE_BLEND16(subtract,   FFMAX(0, A - B))
 DEFINE_BLEND16(multiply,   MULTIPLY(1, A, B))
 DEFINE_BLEND16(multiply128, av_clip_uint16((A - 32768) * B / 8192. + 32768))
 DEFINE_BLEND16(negation,   65535 - FFABS(65535 - A - B))
+DEFINE_BLEND16(extremity,  FFABS(65535 - A - B))
 DEFINE_BLEND16(difference, FFABS(A - B))
 DEFINE_BLEND16(difference128, av_clip_uint16(32768 + A - B))
 DEFINE_BLEND16(screen,     SCREEN(1, A, B))
@@ -457,6 +460,7 @@ void ff_blend_init(FilterParams *param, int is_16bit)
     case BLEND_DIVIDE:     param->blend = is_16bit ? blend_divide_16bit     : blend_divide_8bit;     break;
     case BLEND_DODGE:      param->blend = is_16bit ? blend_dodge_16bit      : blend_dodge_8bit;      break;
     case BLEND_EXCLUSION:  param->blend = is_16bit ? blend_exclusion_16bit  : blend_exclusion_8bit;  break;
+    case BLEND_EXTREMITY:  param->blend = is_16bit ? blend_extremity_16bit  : blend_extremity_8bit;  break;
     case BLEND_FREEZE:     param->blend = is_16bit ? blend_freeze_16bit     : blend_freeze_8bit;     break;
     case BLEND_GLOW:       param->blend = is_16bit ? blend_glow_16bit       : blend_glow_8bit;       break;
     case BLEND_HARDLIGHT:  param->blend = is_16bit ? blend_hardlight_16bit  : blend_hardlight_8bit;  break;

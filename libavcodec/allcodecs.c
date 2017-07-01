@@ -66,6 +66,7 @@ static void register_all(void)
     REGISTER_HWACCEL(H263_VIDEOTOOLBOX, h263_videotoolbox);
     REGISTER_HWACCEL(H264_CUVID,        h264_cuvid);
     REGISTER_HWACCEL(H264_D3D11VA,      h264_d3d11va);
+    REGISTER_HWACCEL(H264_D3D11VA2,     h264_d3d11va2);
     REGISTER_HWACCEL(H264_DXVA2,        h264_dxva2);
     REGISTER_HWACCEL(H264_MEDIACODEC,   h264_mediacodec);
     REGISTER_HWACCEL(H264_MMAL,         h264_mmal);
@@ -77,6 +78,7 @@ static void register_all(void)
     REGISTER_HWACCEL(H264_VIDEOTOOLBOX, h264_videotoolbox);
     REGISTER_HWACCEL(HEVC_CUVID,        hevc_cuvid);
     REGISTER_HWACCEL(HEVC_D3D11VA,      hevc_d3d11va);
+    REGISTER_HWACCEL(HEVC_D3D11VA2,     hevc_d3d11va2);
     REGISTER_HWACCEL(HEVC_DXVA2,        hevc_dxva2);
     REGISTER_HWACCEL(HEVC_MEDIACODEC,   hevc_mediacodec);
     REGISTER_HWACCEL(HEVC_QSV,          hevc_qsv);
@@ -90,6 +92,7 @@ static void register_all(void)
     REGISTER_HWACCEL(MPEG2_CUVID,       mpeg2_cuvid);
     REGISTER_HWACCEL(MPEG2_XVMC,        mpeg2_xvmc);
     REGISTER_HWACCEL(MPEG2_D3D11VA,     mpeg2_d3d11va);
+    REGISTER_HWACCEL(MPEG2_D3D11VA2,    mpeg2_d3d11va2);
     REGISTER_HWACCEL(MPEG2_DXVA2,       mpeg2_dxva2);
     REGISTER_HWACCEL(MPEG2_MMAL,        mpeg2_mmal);
     REGISTER_HWACCEL(MPEG2_QSV,         mpeg2_qsv);
@@ -105,6 +108,7 @@ static void register_all(void)
     REGISTER_HWACCEL(MPEG4_VIDEOTOOLBOX, mpeg4_videotoolbox);
     REGISTER_HWACCEL(VC1_CUVID,         vc1_cuvid);
     REGISTER_HWACCEL(VC1_D3D11VA,       vc1_d3d11va);
+    REGISTER_HWACCEL(VC1_D3D11VA2,      vc1_d3d11va2);
     REGISTER_HWACCEL(VC1_DXVA2,         vc1_dxva2);
     REGISTER_HWACCEL(VC1_VAAPI,         vc1_vaapi);
     REGISTER_HWACCEL(VC1_VDPAU,         vc1_vdpau);
@@ -115,10 +119,12 @@ static void register_all(void)
     REGISTER_HWACCEL(VP8_QSV,           vp8_qsv);
     REGISTER_HWACCEL(VP9_CUVID,         vp9_cuvid);
     REGISTER_HWACCEL(VP9_D3D11VA,       vp9_d3d11va);
+    REGISTER_HWACCEL(VP9_D3D11VA2,      vp9_d3d11va2);
     REGISTER_HWACCEL(VP9_DXVA2,         vp9_dxva2);
     REGISTER_HWACCEL(VP9_MEDIACODEC,    vp9_mediacodec);
     REGISTER_HWACCEL(VP9_VAAPI,         vp9_vaapi);
     REGISTER_HWACCEL(WMV3_D3D11VA,      wmv3_d3d11va);
+    REGISTER_HWACCEL(WMV3_D3D11VA2,     wmv3_d3d11va2);
     REGISTER_HWACCEL(WMV3_DXVA2,        wmv3_dxva2);
     REGISTER_HWACCEL(WMV3_VAAPI,        wmv3_vaapi);
     REGISTER_HWACCEL(WMV3_VDPAU,        wmv3_vdpau);

@@ -46,6 +46,7 @@ enum {
     PRORES_PROFILE_STANDARD,
     PRORES_PROFILE_HQ,
     PRORES_PROFILE_4444,
+    PRORES_PROFILE_4444XQ,
 };
 
 enum {
@@ -124,7 +125,7 @@ static const struct prores_profile {
     int         max_quant;
     int         br_tab[NUM_MB_LIMITS];
     int         quant;
-} prores_profile_info[5] = {
+} prores_profile_info[6] = {
     {
         .full_name = "proxy",
         .tag       = MKTAG('a', 'p', 'c', 'o'),
@@ -163,6 +164,14 @@ static const struct prores_profile {
         .min_quant = 1,
         .max_quant = 6,
         .br_tab    = { 2350, 1828, 1600, 1425 },
+        .quant     = QUANT_MAT_HQ,
+    },
+    {
+        .full_name = "4444XQ",
+        .tag       = MKTAG('a', 'p', '4', 'x'),
+        .min_quant = 1,
+        .max_quant = 6,
+        .br_tab    = { 3525, 2742, 2400, 2137 },
         .quant     = QUANT_MAT_HQ,
     }
 };
@@ -358,7 +367,7 @@ static inline void encode_vlc_codeword(PutBitContext *pb, unsigned codebook, int
 }
 
 #define GET_SIGN(x)  ((x) >> 31)
-#define MAKE_CODE(x) (((x) << 1) ^ GET_SIGN(x))
+#define MAKE_CODE(x) ((((x)) * 2) ^ GET_SIGN(x))
 
 static void encode_dcs(PutBitContext *pb, int16_t *blocks,
                        int blocks_per_slice, int scale)
@@ -969,9 +978,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream_put_byte  (&buf, frame_flags);
 
     bytestream_put_byte  (&buf, 0);             // reserved
-    bytestream_put_byte  (&buf, avctx->color_primaries);
-    bytestream_put_byte  (&buf, avctx->color_trc);
-    bytestream_put_byte  (&buf, avctx->colorspace);
+    bytestream_put_byte  (&buf, pic->color_primaries);
+    bytestream_put_byte  (&buf, pic->color_trc);
+    bytestream_put_byte  (&buf, pic->colorspace);
     bytestream_put_byte  (&buf, 0x40 | (ctx->alpha_bits >> 3));
     bytestream_put_byte  (&buf, 0);             // reserved
     if (ctx->quant_sel != QUANT_MAT_DEFAULT) {
@@ -1155,7 +1164,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
                : "HQ profile to keep best quality");
     }
     if (av_pix_fmt_desc_get(avctx->pix_fmt)->flags & AV_PIX_FMT_FLAG_ALPHA) {
-        if (ctx->profile != PRORES_PROFILE_4444) {
+        if (ctx->profile != PRORES_PROFILE_4444 &&
+            ctx->profile != PRORES_PROFILE_4444XQ) {
             // force alpha and warn
             av_log(avctx, AV_LOG_WARNING, "Profile selected will not "
                    "encode alpha. Override with -profile if needed.\n");
@@ -1206,6 +1216,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
                                            ctx->pictures_per_frame)
                     break;
             ctx->bits_per_mb   = ctx->profile_info->br_tab[i];
+            if (ctx->alpha_bits)
+                ctx->bits_per_mb *= 20;
         } else if (ctx->bits_per_mb < 128) {
             av_log(avctx, AV_LOG_ERROR, "too few bits per MB, please set at least 128\n");
             return AVERROR_INVALIDDATA;
@@ -1296,7 +1308,7 @@ static const AVOption options[] = {
         AV_OPT_TYPE_INT, { .i64 = 8 }, 1, MAX_MBS_PER_SLICE, VE },
     { "profile",       NULL, OFFSET(profile), AV_OPT_TYPE_INT,
         { .i64 = PRORES_PROFILE_AUTO },
-        PRORES_PROFILE_AUTO, PRORES_PROFILE_4444, VE, "profile" },
+        PRORES_PROFILE_AUTO, PRORES_PROFILE_4444XQ, VE, "profile" },
     { "auto",         NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PRORES_PROFILE_AUTO },
         0, 0, VE, "profile" },
     { "proxy",         NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PRORES_PROFILE_PROXY },
@@ -1308,6 +1320,8 @@ static const AVOption options[] = {
     { "hq",            NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PRORES_PROFILE_HQ },
         0, 0, VE, "profile" },
     { "4444",          NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PRORES_PROFILE_4444 },
+        0, 0, VE, "profile" },
+    { "4444xq",        NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PRORES_PROFILE_4444XQ },
         0, 0, VE, "profile" },
     { "vendor", "vendor ID", OFFSET(vendor),
         AV_OPT_TYPE_STRING, { .str = "Lavc" }, CHAR_MIN, CHAR_MAX, VE },
@@ -1348,7 +1362,7 @@ AVCodec ff_prores_ks_encoder = {
     .init           = encode_init,
     .close          = encode_close,
     .encode2        = encode_frame,
-    .capabilities   = AV_CODEC_CAP_SLICE_THREADS,
+    .capabilities   = AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_INTRA_ONLY,
     .pix_fmts       = (const enum AVPixelFormat[]) {
                           AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
                           AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_NONE

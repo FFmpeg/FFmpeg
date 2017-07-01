@@ -74,7 +74,7 @@ typedef struct PlaneContext {
     uint8_t interlace_bit_state[2];
 } PlaneContext;
 
-#define MAX_SLICES 256
+#define MAX_SLICES 1024
 
 typedef struct FFV1Context {
     AVClass *class;

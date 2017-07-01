@@ -88,10 +88,12 @@ static const struct algo idct_tab_arch[] = {
 #if HAVE_X86ASM
 #if ARCH_X86_64
 #if HAVE_SSE2_EXTERNAL
+    { "SIMPLE8-SSE2",   ff_simple_idct8_sse2,  FF_IDCT_PERM_TRANSPOSE, AV_CPU_FLAG_SSE2},
     { "SIMPLE10-SSE2",  ff_simple_idct10_sse2, FF_IDCT_PERM_TRANSPOSE, AV_CPU_FLAG_SSE2},
     { "SIMPLE12-SSE2",  ff_simple_idct12_sse2, FF_IDCT_PERM_TRANSPOSE, AV_CPU_FLAG_SSE2, 1 },
 #endif
 #if HAVE_AVX_EXTERNAL
+    { "SIMPLE8-AVX",    ff_simple_idct8_avx,   FF_IDCT_PERM_TRANSPOSE, AV_CPU_FLAG_AVX},
     { "SIMPLE10-AVX",   ff_simple_idct10_avx,  FF_IDCT_PERM_TRANSPOSE, AV_CPU_FLAG_AVX},
     { "SIMPLE12-AVX",   ff_simple_idct12_avx,  FF_IDCT_PERM_TRANSPOSE, AV_CPU_FLAG_AVX,  1 },
 #endif

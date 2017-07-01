@@ -61,7 +61,8 @@ static int get_cpu_flags(void)
 }
 
 void av_force_cpu_flags(int arg){
-    if (   (arg & ( AV_CPU_FLAG_3DNOW    |
+    if (ARCH_X86 &&
+           (arg & ( AV_CPU_FLAG_3DNOW    |
                     AV_CPU_FLAG_3DNOWEXT |
                     AV_CPU_FLAG_MMXEXT   |
                     AV_CPU_FLAG_SSE      |

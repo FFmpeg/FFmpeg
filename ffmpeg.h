@@ -68,6 +68,7 @@ enum HWAccelID {
     HWACCEL_QSV,
     HWACCEL_VAAPI,
     HWACCEL_CUVID,
+    HWACCEL_D3D11VA,
 };
 
 typedef struct HWAccel {
@@ -661,7 +662,6 @@ int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *frame);
 
 int ffmpeg_parse_options(int argc, char **argv);
 
-int dxva2_init(AVCodecContext *s);
 int vda_init(AVCodecContext *s);
 int videotoolbox_init(AVCodecContext *s);
 int qsv_init(AVCodecContext *s);

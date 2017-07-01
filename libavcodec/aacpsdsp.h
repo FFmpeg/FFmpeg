@@ -21,6 +21,8 @@
 #ifndef AVCODEC_AACPSDSP_H
 #define AVCODEC_AACPSDSP_H
 
+#include <stddef.h>
+
 #include "aac_defines.h"
 
 #define PS_QMF_TIME_SLOTS 32
@@ -33,7 +35,7 @@ typedef struct PSDSPContext {
                             int n);
     void (*hybrid_analysis)(INTFLOAT (*out)[2], INTFLOAT (*in)[2],
                             const INTFLOAT (*filter)[8][2],
-                            int stride, int n);
+                            ptrdiff_t stride, int n);
     void (*hybrid_analysis_ileave)(INTFLOAT (*out)[32][2], INTFLOAT L[2][38][64],
                                    int i, int len);
     void (*hybrid_synthesis_deint)(INTFLOAT out[2][38][64], INTFLOAT (*in)[32][2],
@@ -51,6 +53,7 @@ typedef struct PSDSPContext {
 
 void AAC_RENAME(ff_psdsp_init)(PSDSPContext *s);
 void ff_psdsp_init_arm(PSDSPContext *s);
+void ff_psdsp_init_aarch64(PSDSPContext *s);
 void ff_psdsp_init_mips(PSDSPContext *s);
 void ff_psdsp_init_x86(PSDSPContext *s);
 

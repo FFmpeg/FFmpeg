@@ -117,6 +117,7 @@ void checkasm_check_blend(void)
     check_and_report(subtract, BLEND_SUBTRACT)
     check_and_report(xor, BLEND_XOR)
     check_and_report(difference, BLEND_DIFFERENCE)
+    check_and_report(extremity, BLEND_EXTREMITY)
     check_and_report(negation, BLEND_NEGATION)
 
     report("8bit");

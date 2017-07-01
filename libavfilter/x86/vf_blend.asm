@@ -268,44 +268,74 @@ BLEND_INIT phoenix, 4
 BLEND_END
 
 %macro BLEND_ABS 0
-BLEND_INIT difference, 3
+BLEND_INIT difference, 5
     pxor       m2, m2
 .nextrow:
     mov        xq, widthq
 
     .loop:
-        movh            m0, [topq + xq]
-        movh            m1, [bottomq + xq]
+        movu            m0, [topq + xq]
+        movu            m1, [bottomq + xq]
+        punpckhbw       m3, m0, m2
         punpcklbw       m0, m2
+        punpckhbw       m4, m1, m2
         punpcklbw       m1, m2
         psubw           m0, m1
-        ABS1            m0, m1
-        packuswb        m0, m0
-        movh   [dstq + xq], m0
-        add             xq, mmsize / 2
+        psubw           m3, m4
+        ABS2            m0, m3, m1, m4
+        packuswb        m0, m3
+        mova   [dstq + xq], m0
+        add             xq, mmsize
     jl .loop
 BLEND_END
 
-BLEND_INIT negation, 5
+BLEND_INIT extremity, 8
     pxor       m2, m2
     mova       m4, [pw_255]
 .nextrow:
     mov        xq, widthq
 
     .loop:
-        movh            m0, [topq + xq]
-        movh            m1, [bottomq + xq]
+        movu            m0, [topq + xq]
+        movu            m1, [bottomq + xq]
+        punpckhbw       m5, m0, m2
         punpcklbw       m0, m2
+        punpckhbw       m6, m1, m2
         punpcklbw       m1, m2
-        mova            m3, m4
-        psubw           m3, m0
+        psubw           m3, m4, m0
+        psubw           m7, m4, m5
         psubw           m3, m1
-        ABS1            m3, m1
-        mova            m0, m4
-        psubw           m0, m3
-        packuswb        m0, m0
-        movh   [dstq + xq], m0
-        add             xq, mmsize / 2
+        psubw           m7, m6
+        ABS2            m3, m7, m1, m6
+        packuswb        m3, m7
+        mova   [dstq + xq], m3
+        add             xq, mmsize
+    jl .loop
+BLEND_END
+
+BLEND_INIT negation, 8
+    pxor       m2, m2
+    mova       m4, [pw_255]
+.nextrow:
+    mov        xq, widthq
+
+    .loop:
+        movu            m0, [topq + xq]
+        movu            m1, [bottomq + xq]
+        punpckhbw       m5, m0, m2
+        punpcklbw       m0, m2
+        punpckhbw       m6, m1, m2
+        punpcklbw       m1, m2
+        psubw           m3, m4, m0
+        psubw           m7, m4, m5
+        psubw           m3, m1
+        psubw           m7, m6
+        ABS2            m3, m7, m1, m6
+        psubw           m0, m4, m3
+        psubw           m1, m4, m7
+        packuswb        m0, m1
+        mova   [dstq + xq], m0
+        add             xq, mmsize
     jl .loop
 BLEND_END
 %endmacro
