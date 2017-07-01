@@ -1637,7 +1637,7 @@ static int read_frame_data(ALSDecContext *ctx, unsigned int ra_frame)
                     independent_bs = 2;
 
             // if this is the last channel, it has to be decoded independently
-            if (c == avctx->channels - 1)
+            if (c == avctx->channels - 1 || (c & 1))
                 independent_bs = 1;
 
             if (independent_bs) {
