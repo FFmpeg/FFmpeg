@@ -107,6 +107,8 @@ static int gdv_read_header(AVFormatContext *ctx)
         gdv->audio_size = (ast->codecpar->sample_rate / fps) *
                            ast->codecpar->channels * (1 + !!(snd_flags & 4)) / (1 + !!(snd_flags & 8));
         gdv->is_audio = 1;
+    } else {
+        avio_skip(pb, 2);
     }
     vid_depth = avio_rl16(pb);
     avio_skip(pb, 4);
