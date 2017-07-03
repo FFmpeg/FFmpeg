@@ -228,6 +228,7 @@ static void register_all(void)
     REGISTER_FILTER(INTERLEAVE,     interleave,     vf);
     REGISTER_FILTER(KERNDEINT,      kerndeint,      vf);
     REGISTER_FILTER(LENSCORRECTION, lenscorrection, vf);
+    REGISTER_FILTER(LIMITER,        limiter,        vf);
     REGISTER_FILTER(LOOP,           loop,           vf);
     REGISTER_FILTER(LUMAKEY,        lumakey,        vf);
     REGISTER_FILTER(LUT,            lut,            vf);
