@@ -478,7 +478,7 @@ int ff_mediacodec_dec_init(AVCodecContext *avctx, MediaCodecDecContext *s,
 
     profile = ff_AMediaCodecProfile_getProfileFromAVCodecContext(avctx);
     if (profile < 0) {
-        av_log(avctx, AV_LOG_WARNING, "Unsupported or unknown profile");
+        av_log(avctx, AV_LOG_WARNING, "Unsupported or unknown profile\n");
     }
 
     s->codec_name = ff_AMediaCodecList_getCodecNameByType(mime, profile, 0, avctx);
