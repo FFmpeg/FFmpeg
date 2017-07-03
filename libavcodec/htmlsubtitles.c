@@ -167,6 +167,8 @@ int ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
                         }
                     } else if (tagname[0] && !tagname[1] && strspn(tagname, "bisu") == 1) {
                         av_bprintf(dst, "{\\%c%d}", tagname[0], !tag_close);
+                    } else if (!strcmp(tagname, "br")) {
+                        av_bprintf(dst, "\\N");
                     } else {
                         unknown = 1;
                         snprintf(tmp, sizeof(tmp), "</%s>", tagname);
