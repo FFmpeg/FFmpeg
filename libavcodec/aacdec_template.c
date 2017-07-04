@@ -811,11 +811,21 @@ static int decode_ga_specific_config(AACContext *ac, AVCodecContext *avctx,
     uint8_t layout_map[MAX_ELEM_ID*4][3];
     int tags = 0;
 
+#if USE_FIXED
     if (get_bits1(gb)) { // frameLengthFlag
-        avpriv_request_sample(avctx, "960/120 MDCT window");
+        avpriv_report_missing_feature(avctx, "Fixed point 960/120 MDCT window");
         return AVERROR_PATCHWELCOME;
     }
     m4ac->frame_length_short = 0;
+#else
+    m4ac->frame_length_short = get_bits1(gb);
+    if (m4ac->frame_length_short && m4ac->sbr == 1) {
+      avpriv_report_missing_feature(avctx, "SBR with 960 frame length");
+      if (ac) ac->warned_960_sbr = 1;
+      m4ac->sbr = 0;
+      m4ac->ps = 0;
+    }
+#endif
 
     if (get_bits1(gb))       // dependsOnCoreCoder
         skip_bits(gb, 14);   // coreCoderDelay
@@ -1126,6 +1136,12 @@ static av_cold void aac_static_table_init(void)
     // window initialization
     AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(ff_aac_kbd_long_1024), 4.0, 1024);
     AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(ff_aac_kbd_short_128), 6.0, 128);
+#if !USE_FIXED
+    AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(ff_aac_kbd_long_960), 4.0, 960);
+    AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(ff_aac_kbd_short_120), 6.0, 120);
+    AAC_RENAME(ff_sine_window_init)(AAC_RENAME(ff_sine_960), 960);
+    AAC_RENAME(ff_sine_window_init)(AAC_RENAME(ff_sine_120), 120);
+#endif
     AAC_RENAME(ff_init_ff_sine_windows)(10);
     AAC_RENAME(ff_init_ff_sine_windows)( 9);
     AAC_RENAME(ff_init_ff_sine_windows)( 7);
@@ -1211,7 +1227,13 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
     AAC_RENAME_32(ff_mdct_init)(&ac->mdct_small,  8, 1, 1.0 / RANGE15(128.0));
     AAC_RENAME_32(ff_mdct_init)(&ac->mdct_ltp,   11, 0, RANGE15(-2.0));
 #if !USE_FIXED
+    ret = ff_mdct15_init(&ac->mdct120, 1, 3, 1.0f/(16*1024*120*2));
+    if (ret < 0)
+        return ret;
     ret = ff_mdct15_init(&ac->mdct480, 1, 5, 1.0f/(16*1024*960));
+    if (ret < 0)
+        return ret;
+    ret = ff_mdct15_init(&ac->mdct960, 1, 6, 1.0f/(16*1024*960*2));
     if (ret < 0)
         return ret;
 #endif
@@ -1316,8 +1338,13 @@ static int decode_ics_info(AACContext *ac, IndividualChannelStream *ics,
             }
         }
         ics->num_windows       = 8;
-        ics->swb_offset        =    ff_swb_offset_128[sampling_index];
-        ics->num_swb           =   ff_aac_num_swb_128[sampling_index];
+        if (m4ac->frame_length_short) {
+            ics->swb_offset    =  ff_swb_offset_120[sampling_index];
+            ics->num_swb       = ff_aac_num_swb_120[sampling_index];
+        } else {
+            ics->swb_offset    =  ff_swb_offset_128[sampling_index];
+            ics->num_swb       = ff_aac_num_swb_128[sampling_index];
+        }
         ics->tns_max_bands     = ff_tns_max_bands_128[sampling_index];
         ics->predictor_present = 0;
     } else {
@@ -1338,8 +1365,13 @@ static int decode_ics_info(AACContext *ac, IndividualChannelStream *ics,
                 goto fail;
             }
         } else {
-            ics->swb_offset    =    ff_swb_offset_1024[sampling_index];
-            ics->num_swb       =   ff_aac_num_swb_1024[sampling_index];
+            if (m4ac->frame_length_short) {
+                ics->num_swb    = ff_aac_num_swb_960[sampling_index];
+                ics->swb_offset = ff_swb_offset_960[sampling_index];
+            } else {
+                ics->num_swb    = ff_aac_num_swb_1024[sampling_index];
+                ics->swb_offset = ff_swb_offset_1024[sampling_index];
+            }
             ics->tns_max_bands = ff_tns_max_bands_1024[sampling_index];
         }
         if (aot != AOT_ER_AAC_ELD) {
@@ -2361,6 +2393,13 @@ static int decode_extension_payload(AACContext *ac, GetBitContext *gb, int cnt,
         if (!che) {
             av_log(ac->avctx, AV_LOG_ERROR, "SBR was found before the first channel element.\n");
             return res;
+        } else if (ac->oc[1].m4ac.frame_length_short) {
+            if (!ac->warned_960_sbr)
+              avpriv_report_missing_feature(ac->avctx,
+                                            "SBR with 960 frame length");
+            ac->warned_960_sbr = 1;
+            skip_bits_long(gb, 8 * cnt - 4);
+            return res;
         } else if (!ac->oc[1].m4ac.sbr) {
             av_log(ac->avctx, AV_LOG_ERROR, "SBR signaled to be not-present but was found in the bitstream.\n");
             skip_bits_long(gb, 8 * cnt - 4);
@@ -2620,6 +2659,72 @@ static void imdct_and_windowing(AACContext *ac, SingleChannelElement *sce)
     }
 }
 
+/**
+ * Conduct IMDCT and windowing.
+ */
+static void imdct_and_windowing_960(AACContext *ac, SingleChannelElement *sce)
+{
+#if !USE_FIXED
+    IndividualChannelStream *ics = &sce->ics;
+    INTFLOAT *in    = sce->coeffs;
+    INTFLOAT *out   = sce->ret;
+    INTFLOAT *saved = sce->saved;
+    const INTFLOAT *swindow      = ics->use_kb_window[0] ? AAC_RENAME(ff_aac_kbd_short_120) : AAC_RENAME(ff_sine_120);
+    const INTFLOAT *lwindow_prev = ics->use_kb_window[1] ? AAC_RENAME(ff_aac_kbd_long_960) : AAC_RENAME(ff_sine_960);
+    const INTFLOAT *swindow_prev = ics->use_kb_window[1] ? AAC_RENAME(ff_aac_kbd_short_120) : AAC_RENAME(ff_sine_120);
+    INTFLOAT *buf  = ac->buf_mdct;
+    INTFLOAT *temp = ac->temp;
+    int i;
+
+    // imdct
+    if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
+        for (i = 0; i < 8; i++)
+            ac->mdct120->imdct_half(ac->mdct120, buf + i * 120, in + i * 128, 1);
+    } else {
+        ac->mdct960->imdct_half(ac->mdct960, buf, in, 1);
+    }
+
+    /* window overlapping
+     * NOTE: To simplify the overlapping code, all 'meaningless' short to long
+     * and long to short transitions are considered to be short to short
+     * transitions. This leaves just two cases (long to long and short to short)
+     * with a little special sauce for EIGHT_SHORT_SEQUENCE.
+     */
+
+    if ((ics->window_sequence[1] == ONLY_LONG_SEQUENCE || ics->window_sequence[1] == LONG_STOP_SEQUENCE) &&
+        (ics->window_sequence[0] == ONLY_LONG_SEQUENCE || ics->window_sequence[0] == LONG_START_SEQUENCE)) {
+        ac->fdsp->vector_fmul_window(    out,               saved,            buf,         lwindow_prev, 480);
+    } else {
+        memcpy(                          out,               saved,            420 * sizeof(*out));
+
+        if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
+            ac->fdsp->vector_fmul_window(out + 420 + 0*120, saved + 420,      buf + 0*120, swindow_prev, 60);
+            ac->fdsp->vector_fmul_window(out + 420 + 1*120, buf + 0*120 + 60, buf + 1*120, swindow,      60);
+            ac->fdsp->vector_fmul_window(out + 420 + 2*120, buf + 1*120 + 60, buf + 2*120, swindow,      60);
+            ac->fdsp->vector_fmul_window(out + 420 + 3*120, buf + 2*120 + 60, buf + 3*120, swindow,      60);
+            ac->fdsp->vector_fmul_window(temp,              buf + 3*120 + 60, buf + 4*120, swindow,      60);
+            memcpy(                      out + 420 + 4*120, temp, 60 * sizeof(*out));
+        } else {
+            ac->fdsp->vector_fmul_window(out + 420,         saved + 420,      buf,         swindow_prev, 60);
+            memcpy(                      out + 540,         buf + 60,         420 * sizeof(*out));
+        }
+    }
+
+    // buffer update
+    if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
+        memcpy(                      saved,       temp + 60,         60 * sizeof(*saved));
+        ac->fdsp->vector_fmul_window(saved + 60,  buf + 4*120 + 60, buf + 5*120, swindow, 60);
+        ac->fdsp->vector_fmul_window(saved + 180, buf + 5*120 + 60, buf + 6*120, swindow, 60);
+        ac->fdsp->vector_fmul_window(saved + 300, buf + 6*120 + 60, buf + 7*120, swindow, 60);
+        memcpy(                      saved + 420, buf + 7*120 + 60,  60 * sizeof(*saved));
+    } else if (ics->window_sequence[0] == LONG_START_SEQUENCE) {
+        memcpy(                      saved,       buf + 480,        420 * sizeof(*saved));
+        memcpy(                      saved + 420, buf + 7*120 + 60,  60 * sizeof(*saved));
+    } else { // LONG_STOP or ONLY_LONG
+        memcpy(                      saved,       buf + 480,        480 * sizeof(*saved));
+    }
+#endif
+}
 static void imdct_and_windowing_ld(AACContext *ac, SingleChannelElement *sce)
 {
     IndividualChannelStream *ics = &sce->ics;
@@ -2771,7 +2876,10 @@ static void spectral_to_sample(AACContext *ac, int samples)
         imdct_and_window = imdct_and_windowing_eld;
         break;
     default:
-        imdct_and_window = ac->imdct_and_windowing;
+        if (ac->oc[1].m4ac.frame_length_short)
+            imdct_and_window = imdct_and_windowing_960;
+        else
+            imdct_and_window = ac->imdct_and_windowing;
     }
     for (type = 3; type >= 0; type--) {
         for (i = 0; i < MAX_ELEM_ID; i++) {
@@ -3015,7 +3123,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
                 err = AVERROR_INVALIDDATA;
                 goto fail;
             }
-            samples = 1024;
+            samples = ac->oc[1].m4ac.frame_length_short ? 960 : 1024;
             che->present = 1;
         }
 
@@ -3242,7 +3350,9 @@ static av_cold int aac_decode_close(AVCodecContext *avctx)
     ff_mdct_end(&ac->mdct_ld);
     ff_mdct_end(&ac->mdct_ltp);
 #if !USE_FIXED
+    ff_mdct15_uninit(&ac->mdct120);
     ff_mdct15_uninit(&ac->mdct480);
+    ff_mdct15_uninit(&ac->mdct960);
 #endif
     av_freep(&ac->fdsp);
     return 0;
