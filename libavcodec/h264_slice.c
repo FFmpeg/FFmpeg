@@ -1667,7 +1667,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
     }
 
     sl->last_qscale_diff = 0;
-    tmp = pps->init_qp + get_se_golomb(&sl->gb);
+    tmp = pps->init_qp + (unsigned)get_se_golomb(&sl->gb);
     if (tmp > 51 + 6 * (sps->bit_depth_luma - 8)) {
         av_log(h->avctx, AV_LOG_ERROR, "QP %u out of range\n", tmp);
         return AVERROR_INVALIDDATA;
