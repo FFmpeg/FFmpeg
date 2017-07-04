@@ -109,8 +109,8 @@ static void ssim_4x4xn_16bit(const uint8_t *main8, ptrdiff_t main_stride,
 
         for (y = 0; y < 4; y++) {
             for (x = 0; x < 4; x++) {
-                int a = main16[x + y * main_stride];
-                int b = ref16[x + y * ref_stride];
+                unsigned a = main16[x + y * main_stride];
+                unsigned b = ref16[x + y * ref_stride];
 
                 s1  += a;
                 s2  += b;
