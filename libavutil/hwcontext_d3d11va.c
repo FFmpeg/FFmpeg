@@ -56,7 +56,7 @@ static PFN_D3D11_CREATE_DEVICE mD3D11CreateDevice;
 
 static av_cold void load_functions(void)
 {
-#if HAVE_LOADLIBRARY
+#if !HAVE_UWP
     // We let these "leak" - this is fine, as unloading has no great benefit, and
     // Windows will mark a DLL as loaded forever if its internal refcount overflows
     // from too many LoadLibrary calls.
@@ -486,7 +486,7 @@ static int d3d11va_device_create(AVHWDeviceContext *ctx, const char *device,
     int ret;
 
     // (On UWP we can't check this.)
-#if HAVE_LOADLIBRARY
+#if !HAVE_UWP
     if (!LoadLibrary("d3d11_1sdklayers.dll"))
         is_debug = 0;
 #endif
@@ -527,7 +527,7 @@ static int d3d11va_device_create(AVHWDeviceContext *ctx, const char *device,
         ID3D10Multithread_Release(pMultithread);
     }
 
-#if HAVE_LOADLIBRARY && HAVE_DXGIDEBUG_H
+#if !HAVE_UWP && HAVE_DXGIDEBUG_H
     if (is_debug) {
         HANDLE dxgidebug_dll = LoadLibrary("dxgidebug.dll");
         if (dxgidebug_dll) {
