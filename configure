@@ -2072,6 +2072,7 @@ HAVE_LIST="
     sndio
     texi2html
     threads
+    uwp
     vaapi_drm
     vaapi_x11
     vdpau_x11
@@ -6134,7 +6135,18 @@ check_func_headers "windows.h" CreateDIBSection "$gdigrab_indev_extralibs"
 
 # d3d11va requires linking directly to dxgi and d3d11 if not building for
 # the desktop api partition
-enabled LoadLibrary || d3d11va_extralibs="-ldxgi -ld3d11"
+check_cpp <<EOF && enable uwp && d3d11va_extralibs="-ldxgi -ld3d11"
+#ifdef WINAPI_FAMILY
+#include <winapifamily.h>
+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+#error desktop, not uwp
+#else
+// WINAPI_FAMILY_APP, WINAPI_FAMILY_PHONE_APP => UWP
+#endif
+#else
+#error no family set
+#endif
+EOF
 
 enabled vaapi &&
     check_lib vaapi va/va.h vaInitialize -lva
