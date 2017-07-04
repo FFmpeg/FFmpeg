@@ -5902,7 +5902,8 @@ enabled libtwolame        && require libtwolame twolame.h twolame_init -ltwolame
 enabled libv4l2           && require_pkg_config libv4l2 libv4l2.h v4l2_ioctl
 enabled libvidstab        && require_pkg_config "vidstab >= 0.98" vid.stab/libvidstab.h vsMotionDetectInit
 enabled libvo_amrwbenc    && require libvo_amrwbenc vo-amrwbenc/enc_if.h E_IF_init -lvo-amrwbenc
-enabled libvorbis         && require libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbisenc -lvorbis -logg
+enabled libvorbis         && require_pkg_config vorbis vorbis/codec.h vorbis_info_init &&
+                             require_pkg_config vorbisenc vorbis/vorbisenc.h vorbis_encode_init
 
 enabled libvpx            && {
     enabled libvpx_vp8_decoder && {
