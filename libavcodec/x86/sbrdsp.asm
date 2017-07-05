@@ -382,8 +382,7 @@ apply_noise_main:
 %else
     DEFINE_ARGS Y, s_m, q_filt, noise, kx, count
 %endif
-    movsxdifnidn    noiseq, noised
-    dec    noiseq
+    dec    noised
     shl    countd, 2
 %ifdef PIC
     lea NOISE_TABLE, [sbr_noise_table]
