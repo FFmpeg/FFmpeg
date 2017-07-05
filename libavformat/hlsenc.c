@@ -566,6 +566,14 @@ static int hls_mux_init(AVFormatContext *s)
         if (!(st = avformat_new_stream(loc, NULL)))
             return AVERROR(ENOMEM);
         avcodec_parameters_copy(st->codecpar, s->streams[i]->codecpar);
+        if (!oc->oformat->codec_tag ||
+            av_codec_get_id (oc->oformat->codec_tag, s->streams[i]->codecpar->codec_tag) == st->codecpar->codec_id ||
+            av_codec_get_tag(oc->oformat->codec_tag, s->streams[i]->codecpar->codec_id) <= 0) {
+            st->codecpar->codec_tag = s->streams[i]->codecpar->codec_tag;
+        } else {
+            st->codecpar->codec_tag = 0;
+        }
+
         st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
         st->time_base = s->streams[i]->time_base;
         av_dict_copy(&st->metadata, s->streams[i]->metadata, 0);
