@@ -52,7 +52,7 @@ static void test_sum_square(void)
     INTFLOAT res1;
     LOCAL_ALIGNED_16(INTFLOAT, src, [256], [2]);
 
-    declare_func(INTFLOAT, INTFLOAT (*x)[2], int n);
+    declare_func_float(INTFLOAT, INTFLOAT (*x)[2], int n);
 
     randomize((INTFLOAT *)src, 256 * 2);
     res0 = call_ref(src, 256);
