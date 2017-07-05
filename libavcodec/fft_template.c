@@ -29,11 +29,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include "libavutil/mathematics.h"
+#include "libavutil/thread.h"
 #include "fft.h"
 #include "fft-internal.h"
 
 #if FFT_FIXED_32
 #include "fft_table.h"
+
+static void av_cold fft_lut_init(void)
+{
+    int n = 0;
+    ff_fft_lut_init(ff_fft_offsets_lut, 0, 1 << 17, &n);
+}
+
 #else /* FFT_FIXED_32 */
 
 /* cos(2*pi*x/n) for 0<=x<=n/4, followed by its reverse */
@@ -52,6 +60,66 @@ COSTABLE(16384);
 COSTABLE(32768);
 COSTABLE(65536);
 COSTABLE(131072);
+
+static av_cold void init_ff_cos_tabs(int index)
+{
+    int i;
+    int m = 1<<index;
+    double freq = 2*M_PI/m;
+    FFTSample *tab = FFT_NAME(ff_cos_tabs)[index];
+    for(i=0; i<=m/4; i++)
+        tab[i] = FIX15(cos(i*freq));
+    for(i=1; i<m/4; i++)
+        tab[m/2-i] = tab[i];
+}
+
+typedef struct CosTabsInitOnce {
+    void (*func)(void);
+    AVOnce control;
+} CosTabsInitOnce;
+
+#define INIT_FF_COS_TABS_FUNC(index, size)          \
+static av_cold void init_ff_cos_tabs_ ## size (void)\
+{                                                   \
+    init_ff_cos_tabs(index);                        \
+}
+
+INIT_FF_COS_TABS_FUNC(4, 16)
+INIT_FF_COS_TABS_FUNC(5, 32)
+INIT_FF_COS_TABS_FUNC(6, 64)
+INIT_FF_COS_TABS_FUNC(7, 128)
+INIT_FF_COS_TABS_FUNC(8, 256)
+INIT_FF_COS_TABS_FUNC(9, 512)
+INIT_FF_COS_TABS_FUNC(10, 1024)
+INIT_FF_COS_TABS_FUNC(11, 2048)
+INIT_FF_COS_TABS_FUNC(12, 4096)
+INIT_FF_COS_TABS_FUNC(13, 8192)
+INIT_FF_COS_TABS_FUNC(14, 16384)
+INIT_FF_COS_TABS_FUNC(15, 32768)
+INIT_FF_COS_TABS_FUNC(16, 65536)
+INIT_FF_COS_TABS_FUNC(17, 131072)
+
+static CosTabsInitOnce cos_tabs_init_once[] = {
+    { NULL },
+    { NULL },
+    { NULL },
+    { NULL },
+    { init_ff_cos_tabs_16, AV_ONCE_INIT },
+    { init_ff_cos_tabs_32, AV_ONCE_INIT },
+    { init_ff_cos_tabs_64, AV_ONCE_INIT },
+    { init_ff_cos_tabs_128, AV_ONCE_INIT },
+    { init_ff_cos_tabs_256, AV_ONCE_INIT },
+    { init_ff_cos_tabs_512, AV_ONCE_INIT },
+    { init_ff_cos_tabs_1024, AV_ONCE_INIT },
+    { init_ff_cos_tabs_2048, AV_ONCE_INIT },
+    { init_ff_cos_tabs_4096, AV_ONCE_INIT },
+    { init_ff_cos_tabs_8192, AV_ONCE_INIT },
+    { init_ff_cos_tabs_16384, AV_ONCE_INIT },
+    { init_ff_cos_tabs_32768, AV_ONCE_INIT },
+    { init_ff_cos_tabs_65536, AV_ONCE_INIT },
+    { init_ff_cos_tabs_131072, AV_ONCE_INIT },
+};
+
 #endif
 COSTABLE_CONST FFTSample * const FFT_NAME(ff_cos_tabs)[] = {
     NULL, NULL, NULL, NULL,
@@ -90,14 +158,7 @@ static int split_radix_permutation(int i, int n, int inverse)
 av_cold void ff_init_ff_cos_tabs(int index)
 {
 #if (!CONFIG_HARDCODED_TABLES) && (!FFT_FIXED_32)
-    int i;
-    int m = 1<<index;
-    double freq = 2*M_PI/m;
-    FFTSample *tab = FFT_NAME(ff_cos_tabs)[index];
-    for(i=0; i<=m/4; i++)
-        tab[i] = FIX15(cos(i*freq));
-    for(i=1; i<m/4; i++)
-        tab[m/2-i] = tab[i];
+    ff_thread_once(&cos_tabs_init_once[index].control, cos_tabs_init_once[index].func);
 #endif
 }
 
@@ -176,8 +237,8 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
 
 #if FFT_FIXED_32
     {
-        int n=0;
-        ff_fft_lut_init(ff_fft_offsets_lut, 0, 1 << 17, &n);
+        static AVOnce control = AV_ONCE_INIT;
+        ff_thread_once(&control, fft_lut_init);
     }
 #else /* FFT_FIXED_32 */
 #if FFT_FLOAT
