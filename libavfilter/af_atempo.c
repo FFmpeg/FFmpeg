@@ -1148,6 +1148,8 @@ static int request_frame(AVFilterLink *outlink)
 
             if (n_out) {
                 ret = push_samples(atempo, outlink, n_out);
+                if (ret < 0)
+                    return ret;
             }
         }
 
