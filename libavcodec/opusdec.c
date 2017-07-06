@@ -152,14 +152,7 @@ static int opus_init_resample(OpusStreamContext *s)
 
 static int opus_decode_redundancy(OpusStreamContext *s, const uint8_t *data, int size)
 {
-    int ret;
-    enum OpusBandwidth bw = s->packet.bandwidth;
-
-    if (s->packet.mode == OPUS_MODE_SILK &&
-        bw == OPUS_BANDWIDTH_MEDIUMBAND)
-        bw = OPUS_BANDWIDTH_WIDEBAND;
-
-    ret = ff_opus_rc_dec_init(&s->redundancy_rc, data, size);
+    int ret = ff_opus_rc_dec_init(&s->redundancy_rc, data, size);
     if (ret < 0)
         goto fail;
     ff_opus_rc_dec_raw_init(&s->redundancy_rc, data + size, size);
