@@ -438,6 +438,34 @@ static void format_init(zimg_image_format *format, AVFrame *frame, const AVPixFm
     format->chroma_location = location == -1 ? convert_chroma_location(frame->chroma_location) : location;
 }
 
+static int graph_build(zimg_filter_graph **graph, zimg_graph_builder_params *params,
+                       zimg_image_format *src_format, zimg_image_format *dst_format,
+                       void **tmp, size_t *tmp_size)
+{
+    int ret;
+    size_t size;
+
+    zimg_filter_graph_free(*graph);
+    *graph = zimg_filter_graph_build(src_format, dst_format, params);
+    if (!*graph)
+        return print_zimg_error(NULL);
+
+    ret = zimg_filter_graph_get_tmp_size(*graph, &size);
+    if (ret)
+        return print_zimg_error(NULL);
+
+    if (size > *tmp_size) {
+        av_freep(tmp);
+        *tmp = av_malloc(size);
+        if (!*tmp)
+            return AVERROR(ENOMEM);
+
+        *tmp_size = size;
+    }
+
+    return 0;
+}
+
 static int filter_frame(AVFilterLink *link, AVFrame *in)
 {
     ZScaleContext *s = link->dst->priv;
@@ -447,7 +475,6 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     zimg_image_buffer_const src_buf = { ZIMG_API_VERSION };
     zimg_image_buffer dst_buf = { ZIMG_API_VERSION };
     char buf[32];
-    size_t tmp_size;
     int ret = 0, plane;
     AVFrame *out;
 
@@ -520,27 +547,10 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         if (s->chromal != -1)
             out->chroma_location = (int)s->dst_format.chroma_location - 1;
 
-        zimg_filter_graph_free(s->graph);
-        s->graph = zimg_filter_graph_build(&s->src_format, &s->dst_format, &s->params);
-        if (!s->graph) {
-            ret = print_zimg_error(link->dst);
+        ret = graph_build(&s->graph, &s->params, &s->src_format, &s->dst_format,
+                          &s->tmp, &s->tmp_size);
+        if (ret < 0)
             goto fail;
-        }
-
-        if ((ret = zimg_filter_graph_get_tmp_size(s->graph, &tmp_size))) {
-            ret = print_zimg_error(link->dst);
-            goto fail;
-        }
-
-        if (tmp_size > s->tmp_size) {
-            av_freep(&s->tmp);
-            s->tmp = av_malloc(tmp_size);
-            if (!s->tmp) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
-            s->tmp_size = tmp_size;
-        }
 
         s->in_colorspace  = in->colorspace;
         s->in_trc         = in->color_trc;
