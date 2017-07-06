@@ -421,6 +421,23 @@ static int convert_range(enum AVColorRange color_range)
     return ZIMG_RANGE_LIMITED;
 }
 
+static void format_init(zimg_image_format *format, AVFrame *frame, const AVPixFmtDescriptor *desc,
+                        int colorspace, int primaries, int transfer, int range, int location)
+{
+    format->width = frame->width;
+    format->height = frame->height;
+    format->subsample_w = desc->log2_chroma_w;
+    format->subsample_h = desc->log2_chroma_h;
+    format->depth = desc->comp[0].depth;
+    format->pixel_type = desc->comp[0].depth > 8 ? ZIMG_PIXEL_WORD : ZIMG_PIXEL_BYTE;
+    format->color_family = (desc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_COLOR_RGB : ZIMG_COLOR_YUV;
+    format->matrix_coefficients = (desc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_MATRIX_RGB : colorspace == -1 ? convert_matrix(frame->colorspace) : colorspace;
+    format->color_primaries = primaries == -1 ? convert_primaries(frame->color_primaries) : primaries;
+    format->transfer_characteristics = transfer == - 1 ? convert_trc(frame->color_trc) : transfer;
+    format->pixel_range = (desc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_RANGE_FULL : range == -1 ? convert_range(frame->color_range) : range;
+    format->chroma_location = location == -1 ? convert_chroma_location(frame->chroma_location) : location;
+}
+
 static int filter_frame(AVFilterLink *link, AVFrame *in)
 {
     ZScaleContext *s = link->dst->priv;
@@ -483,31 +500,10 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         s->params.nominal_peak_luminance = s->nominal_peak_luminance;
         s->params.allow_approximate_gamma = s->approximate_gamma;
 
-        s->src_format.width = in->width;
-        s->src_format.height = in->height;
-        s->src_format.subsample_w = desc->log2_chroma_w;
-        s->src_format.subsample_h = desc->log2_chroma_h;
-        s->src_format.depth = desc->comp[0].depth;
-        s->src_format.pixel_type = desc->comp[0].depth > 8 ? ZIMG_PIXEL_WORD : ZIMG_PIXEL_BYTE;
-        s->src_format.color_family = (desc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_COLOR_RGB : ZIMG_COLOR_YUV;
-        s->src_format.matrix_coefficients = (desc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_MATRIX_RGB : s->colorspace_in == -1 ? convert_matrix(in->colorspace) : s->colorspace_in;
-        s->src_format.transfer_characteristics = s->trc_in == - 1 ? convert_trc(in->color_trc) : s->trc_in;
-        s->src_format.color_primaries = s->primaries_in == -1 ? convert_primaries(in->color_primaries) : s->primaries_in;
-        s->src_format.pixel_range = (desc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_RANGE_FULL : s->range_in == -1 ? convert_range(in->color_range) : s->range_in;
-        s->src_format.chroma_location = s->chromal_in == -1 ? convert_chroma_location(in->chroma_location) : s->chromal_in;
-
-        s->dst_format.width = out->width;
-        s->dst_format.height = out->height;
-        s->dst_format.subsample_w = odesc->log2_chroma_w;
-        s->dst_format.subsample_h = odesc->log2_chroma_h;
-        s->dst_format.depth = odesc->comp[0].depth;
-        s->dst_format.pixel_type = odesc->comp[0].depth > 8 ? ZIMG_PIXEL_WORD : ZIMG_PIXEL_BYTE;
-        s->dst_format.color_family = (odesc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_COLOR_RGB : ZIMG_COLOR_YUV;
-        s->dst_format.matrix_coefficients = (odesc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_MATRIX_RGB : s->colorspace == -1 ? convert_matrix(out->colorspace) : s->colorspace;
-        s->dst_format.transfer_characteristics = s->trc == -1 ? convert_trc(out->color_trc) : s->trc;
-        s->dst_format.color_primaries = s->primaries == -1 ? convert_primaries(out->color_primaries) : s->primaries;
-        s->dst_format.pixel_range = (odesc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_RANGE_FULL : s->range == -1 ? convert_range(out->color_range) : s->range;
-        s->dst_format.chroma_location = s->chromal == -1 ? convert_chroma_location(out->chroma_location) : s->chromal;
+        format_init(&s->src_format, in, desc, s->colorspace_in,
+                    s->primaries_in, s->trc_in, s->range_in, s->chromal_in);
+        format_init(&s->dst_format, out, odesc, s->colorspace,
+                    s->primaries, s->trc, s->range, s->chromal);
 
         if (s->colorspace != -1)
             out->colorspace = (int)s->dst_format.matrix_coefficients;
