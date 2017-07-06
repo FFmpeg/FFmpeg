@@ -468,6 +468,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 
     ret = av_audio_fifo_write(s->fifos[i], (void **)buf->extended_data,
                               buf->nb_samples);
+    if (ret < 0)
+        goto fail;
 
     av_frame_free(&buf);
     return output_frame(outlink, 0);
