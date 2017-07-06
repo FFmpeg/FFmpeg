@@ -420,7 +420,6 @@ static int hds_write_header(AVFormatContext *s)
         if (!os->has_video && c->min_frag_duration <= 0) {
             av_log(s, AV_LOG_WARNING,
                    "No video stream in output stream %d and no min frag duration set\n", i);
-            ret = AVERROR(EINVAL);
         }
         os->fragment_index = 1;
         write_abst(s, os, 0);
