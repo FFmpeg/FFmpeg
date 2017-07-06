@@ -2507,7 +2507,7 @@ static int get_packet(URLContext *s, int for_header)
         } else if (rpkt.type == RTMP_PT_METADATA) {
             ret = handle_metadata(rt, &rpkt);
             ff_rtmp_packet_destroy(&rpkt);
-            return 0;
+            return ret;
         }
         ff_rtmp_packet_destroy(&rpkt);
     }
