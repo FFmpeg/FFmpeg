@@ -1214,6 +1214,20 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
     if (av_packet_get_side_data(avpkt, AV_PKT_DATA_PARAM_CHANGE, NULL)) {
         av_frame_unref(s->last_frame);
         av_frame_unref(s->second_last_frame);
+        av_frame_unref(s->cur_decode_frame);
+        av_frame_unref(s->prev_decode_frame);
+    }
+
+    if (!s->cur_decode_frame->data[0]) {
+        ret = ff_get_buffer(avctx, s->cur_decode_frame, 0);
+        if (ret < 0)
+            return ret;
+
+        ret = ff_get_buffer(avctx, s->prev_decode_frame, 0);
+        if (ret < 0) {
+            av_frame_unref(s->cur_decode_frame);
+            return ret;
+        }
     }
 
     if (buf_size < 8)
