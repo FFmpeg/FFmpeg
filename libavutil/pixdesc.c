@@ -2511,8 +2511,16 @@ static int get_pix_fmt_score(enum AVPixelFormat dst_pix_fmt,
     int ret, loss, i, nb_components;
     int score = INT_MAX - 1;
 
-    if (dst_pix_fmt >= AV_PIX_FMT_NB || dst_pix_fmt <= AV_PIX_FMT_NONE)
-        return ~0;
+    if (!src_desc || !dst_desc)
+        return -4;
+
+    if ((src_desc->flags & AV_PIX_FMT_FLAG_HWACCEL) ||
+        (dst_desc->flags & AV_PIX_FMT_FLAG_HWACCEL)) {
+        if (dst_pix_fmt == src_pix_fmt)
+            return -1;
+        else
+            return -2;
+    }
 
     /* compute loss */
     *lossp = loss = 0;
@@ -2521,9 +2529,9 @@ static int get_pix_fmt_score(enum AVPixelFormat dst_pix_fmt,
         return INT_MAX;
 
     if ((ret = get_pix_fmt_depth(&src_min_depth, &src_max_depth, src_pix_fmt)) < 0)
-        return ret;
+        return -3;
     if ((ret = get_pix_fmt_depth(&dst_min_depth, &dst_max_depth, dst_pix_fmt)) < 0)
-        return ret;
+        return -3;
 
     src_color = get_color_type(src_desc);
     dst_color = get_color_type(dst_desc);
