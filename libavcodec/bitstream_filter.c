@@ -122,6 +122,8 @@ int av_bitstream_filter_filter(AVBitStreamFilterContext *bsfc,
                 shorthand[0] = opt->name;
 
             ret = av_opt_set_from_string(priv->ctx->priv_data, bsfc->args, shorthand, "=", ":");
+            if (ret < 0)
+                return ret;
         }
 
         ret = av_bsf_init(priv->ctx);
