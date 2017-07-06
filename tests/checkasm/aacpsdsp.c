@@ -97,6 +97,80 @@ static void test_hybrid_analysis(void)
     bench_new(dst1, in, filter, STRIDE, N);
 }
 
+static void test_hybrid_analysis_ileave(void)
+{
+    LOCAL_ALIGNED_16(INTFLOAT, in,   [2], [38][64]);
+    LOCAL_ALIGNED_16(INTFLOAT, out0, [91], [32][2]);
+    LOCAL_ALIGNED_16(INTFLOAT, out1, [91], [32][2]);
+
+    declare_func(void, INTFLOAT (*out)[32][2], INTFLOAT L[2][38][64],
+                       int i, int len);
+
+    randomize((INTFLOAT *)out0, 91 * 32 * 2);
+    randomize((INTFLOAT *)in,    2 * 38 * 64);
+    memcpy(out1, out0, 91 * 32 * 2 * sizeof(INTFLOAT));
+
+    /* len is hardcoded to 32 as that's the only value used in
+       libavcodec. asm functions are likely to be optimized
+       hardcoding this value in their loops and could fail with
+       anything else.
+       i is hardcoded to the two values currently used by the
+       aac decoder because the arm neon implementation is
+       micro-optimized for them and will fail for almost every
+       other value. */
+    call_ref(out0, in, 3, 32);
+    call_new(out1, in, 3, 32);
+
+    /* the function just moves data around, so memcmp is enough */
+    if (memcmp(out0, out1, 91 * 32 * 2 * sizeof(INTFLOAT)))
+        fail();
+
+    call_ref(out0, in, 5, 32);
+    call_new(out1, in, 5, 32);
+
+    if (memcmp(out0, out1, 91 * 32 * 2 * sizeof(INTFLOAT)))
+        fail();
+
+    bench_new(out1, in, 3, 32);
+}
+
+static void test_hybrid_synthesis_deint(void)
+{
+    LOCAL_ALIGNED_16(INTFLOAT, out0, [2], [38][64]);
+    LOCAL_ALIGNED_16(INTFLOAT, out1, [2], [38][64]);
+    LOCAL_ALIGNED_16(INTFLOAT, in,  [91], [32][2]);
+
+    declare_func(void, INTFLOAT out[2][38][64], INTFLOAT (*in)[32][2],
+                       int i, int len);
+
+    randomize((INTFLOAT *)in,  91 * 32 * 2);
+    randomize((INTFLOAT *)out0, 2 * 38 * 64);
+    memcpy(out1, out0, 2 * 38 * 64 * sizeof(INTFLOAT));
+
+    /* len is hardcoded to 32 as that's the only value used in
+       libavcodec. asm functions are likely to be optimized
+       hardcoding this value in their loops and could fail with
+       anything else.
+       i is hardcoded to the two values currently used by the
+       aac decoder because the arm neon implementation is
+       micro-optimized for them and will fail for almost every
+       other value. */
+    call_ref(out0, in, 3, 32);
+    call_new(out1, in, 3, 32);
+
+    /* the function just moves data around, so memcmp is enough */
+    if (memcmp(out0, out1, 2 * 38 * 64 * sizeof(INTFLOAT)))
+        fail();
+
+    call_ref(out0, in, 5, 32);
+    call_new(out1, in, 5, 32);
+
+    if (memcmp(out0, out1, 2 * 38 * 64 * sizeof(INTFLOAT)))
+        fail();
+
+    bench_new(out1, in, 3, 32);
+}
+
 static void test_stereo_interpolate(PSDSPContext *psdsp)
 {
     int i;
@@ -155,6 +229,14 @@ void checkasm_check_aacpsdsp(void)
     if (check_func(psdsp.hybrid_analysis, "ps_hybrid_analysis"))
         test_hybrid_analysis();
     report("hybrid_analysis");
+
+    if (check_func(psdsp.hybrid_analysis_ileave, "ps_hybrid_analysis_ileave"))
+        test_hybrid_analysis_ileave();
+    report("hybrid_analysis_ileave");
+
+    if (check_func(psdsp.hybrid_synthesis_deint, "ps_hybrid_synthesis_deint"))
+        test_hybrid_synthesis_deint();
+    report("hybrid_synthesis_deint");
 
     test_stereo_interpolate(&psdsp);
     report("stereo_interpolate");
