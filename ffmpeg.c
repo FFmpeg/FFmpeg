@@ -2253,8 +2253,8 @@ static int ifilter_send_eof(InputFilter *ifilter)
 
 // This does not quite work like avcodec_decode_audio4/avcodec_decode_video2.
 // There is the following difference: if you got a frame, you must call
-// it again with pkt=NULL. pkt==NULL is treated differently from pkt.size==0
-// (pkt==NULL means get more output, pkt.size==0 is a flush/drain packet)
+// it again with pkt=NULL. pkt==NULL is treated differently from pkt->size==0
+// (pkt==NULL means get more output, pkt->size==0 is a flush/drain packet)
 static int decode(AVCodecContext *avctx, AVFrame *frame, int *got_frame, AVPacket *pkt)
 {
     int ret;
