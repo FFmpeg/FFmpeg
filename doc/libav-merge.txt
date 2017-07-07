@@ -95,7 +95,6 @@ Stuff that didn't reach the codebase:
   - 0cef06df0 checkasm: add HEVC MC tests
   - e7078e842 hevcdsp: add x86 SIMD for MC
   - 7993ec19a hevc: Add hevc_get_pixel_4/8/12/16/24/32/48/64
-- new bitstream reader (see http://ffmpeg.org/pipermail/ffmpeg-devel/2017-April/209609.html)
 - use av_cpu_max_align() instead of hardcoding alignment requirements (see https://ffmpeg.org/pipermail/ffmpeg-devel/2017-September/215834.html)
   - f44ec22e0 lavc: use av_cpu_max_align() instead of hardcoding alignment requirements
   - 4de220d2e frame: allow align=0 (meaning automatic) for av_frame_get_buffer()
