@@ -380,6 +380,16 @@ static void register_all(void)
     REGISTER_MUXER   (CHROMAPRINT,      chromaprint);
     REGISTER_DEMUXER (LIBGME,           libgme);
     REGISTER_DEMUXER (LIBMODPLUG,       libmodplug);
+    REGISTER_MUXDEMUX(LIBNUT,           libnut);
+    REGISTER_DEMUXER (LIBQUVI,          libquvi);
+    REGISTER_PROTOCOL(LIBRTMP,          librtmp);
+    REGISTER_PROTOCOL(LIBRTMFP,         librtmfp);
+    REGISTER_PROTOCOL(LIBRTMPE,         librtmpe);
+    REGISTER_PROTOCOL(LIBRTMPS,         librtmps);
+    REGISTER_PROTOCOL(LIBRTMPT,         librtmpt);
+    REGISTER_PROTOCOL(LIBRTMPTE,        librtmpte);
+    REGISTER_PROTOCOL(LIBSSH,           libssh);
+    REGISTER_PROTOCOL(LIBSMBCLIENT,     libsmbclient);
     REGISTER_DEMUXER (LIBOPENMPT,       libopenmpt);
 }
 
