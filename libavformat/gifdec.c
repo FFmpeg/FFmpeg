@@ -118,10 +118,10 @@ static int gif_read_header(AVFormatContext *s)
     /* GIF format operates with time in "hundredths of second",
      * therefore timebase is 1/100 */
     avpriv_set_pts_info(st, 64, 1, 100);
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = AV_CODEC_ID_GIF;
-    st->codec->width      = width;
-    st->codec->height     = height;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id   = AV_CODEC_ID_GIF;
+    st->codecpar->width      = width;
+    st->codecpar->height     = height;
 
     /* jump to start because gif decoder needs header data too */
     if (avio_seek(pb, 0, SEEK_SET) != 0)
@@ -322,7 +322,7 @@ static const AVOption options[] = {
     { "min_delay"    , "minimum valid delay between frames (in hundredths of second)", offsetof(GIFDemuxContext, min_delay)    , AV_OPT_TYPE_INT, {.i64 = GIF_MIN_DELAY}    , 0, 100 * 60, AV_OPT_FLAG_DECODING_PARAM },
     { "max_gif_delay", "maximum valid delay between frames (in hundredths of seconds)", offsetof(GIFDemuxContext, max_delay)   , AV_OPT_TYPE_INT, {.i64 = 65535}            , 0, 65535   , AV_OPT_FLAG_DECODING_PARAM },
     { "default_delay", "default delay between frames (in hundredths of second)"      , offsetof(GIFDemuxContext, default_delay), AV_OPT_TYPE_INT, {.i64 = GIF_DEFAULT_DELAY}, 0, 100 * 60, AV_OPT_FLAG_DECODING_PARAM },
-    { "ignore_loop"  , "ignore loop setting (netscape extension)"                    , offsetof(GIFDemuxContext, ignore_loop)  , AV_OPT_TYPE_INT, {.i64 = 1}                , 0,        1, AV_OPT_FLAG_DECODING_PARAM },
+    { "ignore_loop"  , "ignore loop setting (netscape extension)"                    , offsetof(GIFDemuxContext, ignore_loop)  , AV_OPT_TYPE_BOOL,{.i64 = 1}                , 0,        1, AV_OPT_FLAG_DECODING_PARAM },
     { NULL },
 };
 

@@ -58,7 +58,7 @@ struct AVTreeNode *av_tree_node_alloc(void);
  *             then the corresponding entry in next is unchanged.
  * @param cmp compare function used to compare elements in the tree,
  *            API identical to that of Standard C's qsort
- *            It is guranteed that the first and only the first argument to cmp()
+ *            It is guaranteed that the first and only the first argument to cmp()
  *            will be the key parameter to av_tree_find(), thus it could if the
  *            user wants, be a different type (like an opaque context).
  * @return An element with cmp(key, elem) == 0 or NULL if no such element
@@ -120,8 +120,8 @@ void av_tree_destroy(struct AVTreeNode *t);
 /**
  * Apply enu(opaque, &elem) to all the elements in the tree in a given range.
  *
- * @param cmp a comparison function that returns < 0 for a element below the
- *            range, > 0 for a element above the range and == 0 for a
+ * @param cmp a comparison function that returns < 0 for an element below the
+ *            range, > 0 for an element above the range and == 0 for an
  *            element inside the range
  *
  * @note The cmp function should use the same ordering used to construct the

@@ -1,6 +1,6 @@
 /*
  * Cinepak Video Decoder
- * Copyright (c) 2003 The FFmpeg Project
+ * Copyright (C) 2003 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -155,8 +155,8 @@ static int cinepak_decode_vectors (CinepakContext *s, cvid_strip *strip,
                 }
             }
         }
-/* to get the correct picture for not-multiple-of-4 cases let us fill
- * each block from the bottom up, thus possibly overwriting the top line
+/* to get the correct picture for not-multiple-of-4 cases let us fill each
+ * block from the bottom up, thus possibly overwriting the bottommost line
  * more than once but ending with the correct data in place
  * (instead of in-loop checking) */
 
@@ -322,9 +322,6 @@ static int cinepak_decode (CinepakContext *s)
     int           y0 = 0;
     int           encoded_buf_size;
 
-    if (s->size < 10)
-        return AVERROR_INVALIDDATA;
-
     frame_flags = s->data[0];
     num_strips  = AV_RB16 (&s->data[8]);
     encoded_buf_size = AV_RB24(&s->data[1]);
@@ -439,14 +436,20 @@ static int cinepak_decode_frame(AVCodecContext *avctx,
     s->data = buf;
     s->size = buf_size;
 
+    if (s->size < 10)
+        return AVERROR_INVALIDDATA;
+
     if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
         return ret;
 
     if (s->palette_video) {
-        const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
-        if (pal) {
+        int size;
+        const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, &size);
+        if (pal && size == AVPALETTE_SIZE) {
             s->frame->palette_has_changed = 1;
             memcpy(s->pal, pal, AVPALETTE_SIZE);
+        } else if (pal) {
+            av_log(avctx, AV_LOG_ERROR, "Palette size %d is wrong\n", size);
         }
     }
 

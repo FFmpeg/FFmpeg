@@ -1,7 +1,7 @@
-CROSS_TEST = $(foreach I,$(1),                                        \
-                 $(foreach J,$(1),                                    \
-                     $(if $(filter-out $(I),$(J)),                    \
-                         $(eval $(call $(2),$(I),$(J),$(3),$(4),$(5))),    \
+CROSS_TEST = $(foreach I,$(1),                                          \
+                 $(foreach J,$(1),                                      \
+                     $(if $(filter-out $(I),$(J)),                      \
+                         $(eval $(call $(2),$(I),$(J),$(3),$(4),$(5))), \
                      )))
 
 MIX_CHANNELS = 1 2 3 4 5 6 7 8

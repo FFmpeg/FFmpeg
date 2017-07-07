@@ -23,8 +23,8 @@
 SECTION .text
 
 ;-----------------------------------------------------------------------------
-; void avpriv_emms_yasm(void)
+; void avpriv_emms_asm(void)
 ;-----------------------------------------------------------------------------
-cvisible emms_yasm, 0, 0
+cvisible emms_asm, 0, 0
     emms
     RET

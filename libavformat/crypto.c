@@ -26,7 +26,8 @@
 #include "internal.h"
 #include "url.h"
 
-#define MAX_BUFFER_BLOCKS 150
+// encourage reads of 4096 bytes - 1 block is always retained.
+#define MAX_BUFFER_BLOCKS 257
 #define BLOCKSIZE 16
 
 typedef struct CryptoContext {
@@ -36,6 +37,8 @@ typedef struct CryptoContext {
             outbuffer[BLOCKSIZE*MAX_BUFFER_BLOCKS];
     uint8_t *outptr;
     int indata, indata_used, outdata;
+    int64_t position;  // position in file - used in seek
+    int flags;
     int eof;
     uint8_t *key;
     int keylen;
@@ -51,10 +54,10 @@ typedef struct CryptoContext {
     int encrypt_ivlen;
     struct AVAES *aes_decrypt;
     struct AVAES *aes_encrypt;
-
+    uint8_t *write_buf;
+    unsigned int write_buf_size;
     uint8_t pad[BLOCKSIZE];
     int pad_len;
-
 } CryptoContext;
 
 #define OFFSET(x) offsetof(CryptoContext, x)
@@ -77,16 +80,16 @@ static const AVClass crypto_class = {
     .version        = LIBAVUTIL_VERSION_INT,
 };
 
-static int set_aes_arg(CryptoContext *c, uint8_t **buf, int *buf_len,
+static int set_aes_arg(URLContext *h, uint8_t **buf, int *buf_len,
                        uint8_t *default_buf, int default_buf_len,
                        const char *desc)
 {
     if (!*buf_len) {
         if (!default_buf_len) {
-            av_log(c, AV_LOG_ERROR, "%s not set\n", desc);
+            av_log(h, AV_LOG_ERROR, "%s not set\n", desc);
             return AVERROR(EINVAL);
         } else if (default_buf_len != BLOCKSIZE) {
-            av_log(c, AV_LOG_ERROR,
+            av_log(h, AV_LOG_ERROR,
                    "invalid %s size (%d bytes, block size is %d)\n",
                    desc, default_buf_len, BLOCKSIZE);
             return AVERROR(EINVAL);
@@ -96,7 +99,7 @@ static int set_aes_arg(CryptoContext *c, uint8_t **buf, int *buf_len,
             return AVERROR(ENOMEM);
         *buf_len = default_buf_len;
     } else if (*buf_len != BLOCKSIZE) {
-        av_log(c, AV_LOG_ERROR,
+        av_log(h, AV_LOG_ERROR,
                "invalid %s size (%d bytes, block size is %d)\n",
                desc, *buf_len, BLOCKSIZE);
         return AVERROR(EINVAL);
@@ -109,6 +112,7 @@ static int crypto_open2(URLContext *h, const char *uri, int flags, AVDictionary 
     const char *nested_url;
     int ret = 0;
     CryptoContext *c = h->priv_data;
+    c->flags = flags;
 
     if (!av_strstart(uri, "crypto+", &nested_url) &&
         !av_strstart(uri, "crypto:", &nested_url)) {
@@ -118,26 +122,27 @@ static int crypto_open2(URLContext *h, const char *uri, int flags, AVDictionary 
     }
 
     if (flags & AVIO_FLAG_READ) {
-        if ((ret = set_aes_arg(c, &c->decrypt_key, &c->decrypt_keylen,
+        if ((ret = set_aes_arg(h, &c->decrypt_key, &c->decrypt_keylen,
                                c->key, c->keylen, "decryption key")) < 0)
             goto err;
-        if ((ret = set_aes_arg(c, &c->decrypt_iv, &c->decrypt_ivlen,
+        if ((ret = set_aes_arg(h, &c->decrypt_iv, &c->decrypt_ivlen,
                                c->iv, c->ivlen, "decryption IV")) < 0)
             goto err;
     }
 
     if (flags & AVIO_FLAG_WRITE) {
-        if ((ret = set_aes_arg(c, &c->encrypt_key, &c->encrypt_keylen,
+        if ((ret = set_aes_arg(h, &c->encrypt_key, &c->encrypt_keylen,
                                c->key, c->keylen, "encryption key")) < 0)
         if (ret < 0)
             goto err;
-        if ((ret = set_aes_arg(c, &c->encrypt_iv, &c->encrypt_ivlen,
+        if ((ret = set_aes_arg(h, &c->encrypt_iv, &c->encrypt_ivlen,
                                c->iv, c->ivlen, "encryption IV")) < 0)
             goto err;
     }
 
-    if ((ret = ffurl_open(&c->hd, nested_url, flags,
-                          &h->interrupt_callback, options)) < 0) {
+    if ((ret = ffurl_open_whitelist(&c->hd, nested_url, flags,
+                                    &h->interrupt_callback, options,
+                                    h->protocol_whitelist, h->protocol_blacklist, h)) < 0) {
         av_log(h, AV_LOG_ERROR, "Unable to open resource: %s\n", nested_url);
         goto err;
     }
@@ -148,9 +153,13 @@ static int crypto_open2(URLContext *h, const char *uri, int flags, AVDictionary 
             ret = AVERROR(ENOMEM);
             goto err;
         }
-        ret = av_aes_init(c->aes_decrypt, c->decrypt_key, BLOCKSIZE*8, 1);
+        ret = av_aes_init(c->aes_decrypt, c->decrypt_key, BLOCKSIZE * 8, 1);
         if (ret < 0)
             goto err;
+
+        // pass back information about the context we openned
+        if (c->hd->is_streamed)
+            h->is_streamed = c->hd->is_streamed;
     }
 
     if (flags & AVIO_FLAG_WRITE) {
@@ -159,14 +168,13 @@ static int crypto_open2(URLContext *h, const char *uri, int flags, AVDictionary 
             ret = AVERROR(ENOMEM);
             goto err;
         }
-        ret = av_aes_init(c->aes_encrypt, c->encrypt_key, BLOCKSIZE*8, 0);
+        ret = av_aes_init(c->aes_encrypt, c->encrypt_key, BLOCKSIZE * 8, 0);
         if (ret < 0)
             goto err;
+        // for write, we must be streamed
+        // - linear write only for crytpo aes-128-cbc
+        h->is_streamed = 1;
     }
-
-    c->pad_len = 0;
-
-    h->is_streamed = 1;
 
 err:
     return ret;
@@ -182,6 +190,7 @@ retry:
         memcpy(buf, c->outptr, size);
         c->outptr  += size;
         c->outdata -= size;
+        c->position = c->position + size;
         return size;
     }
     // We avoid using the last block until we've found EOF,
@@ -221,11 +230,110 @@ retry:
     goto retry;
 }
 
+static int64_t crypto_seek(URLContext *h, int64_t pos, int whence)
+{
+    CryptoContext *c = h->priv_data;
+    int64_t block;
+    int64_t newpos;
+
+    if (c->flags & AVIO_FLAG_WRITE) {
+        av_log(h, AV_LOG_ERROR,
+            "Crypto: seek not supported for write\r\n");
+        /* seems the most appropriate error to return */
+        return AVERROR(ESPIPE);
+    }
+
+    // reset eof, else we won't read it correctly if we already hit eof.
+    c->eof = 0;
+
+    switch (whence) {
+    case SEEK_SET:
+        break;
+    case SEEK_CUR:
+        pos = pos + c->position;
+        break;
+    case SEEK_END: {
+        int64_t newpos = ffurl_seek( c->hd, pos, AVSEEK_SIZE );
+        if (newpos < 0) {
+            av_log(h, AV_LOG_ERROR,
+                "Crypto: seek_end - can't get file size (pos=%lld)\r\n", (long long int)pos);
+            return newpos;
+        }
+        pos = newpos - pos;
+        }
+        break;
+    case AVSEEK_SIZE: {
+        int64_t newpos = ffurl_seek( c->hd, pos, AVSEEK_SIZE );
+        return newpos;
+        }
+        break;
+    default:
+        av_log(h, AV_LOG_ERROR,
+            "Crypto: no support for seek where 'whence' is %d\r\n", whence);
+        return AVERROR(EINVAL);
+    }
+
+    c->outdata = 0;
+    c->indata = 0;
+    c->indata_used = 0;
+    c->outptr = c->outbuffer;
+
+    // identify the block containing the IV for the
+    // next block we will decrypt
+    block = pos/BLOCKSIZE;
+    if (block == 0) {
+        // restore the iv to the seed one - this is the iv for the FIRST block
+        memcpy( c->decrypt_iv, c->iv, c->ivlen );
+        c->position = 0;
+    } else {
+        // else, go back one block - we will get av_cyrpt to read this block
+        // which it will then store use as the iv.
+        // note that the DECRYPTED result will not be correct,
+        // but will be discarded
+        block--;
+        c->position = (block * BLOCKSIZE);
+    }
+
+    newpos = ffurl_seek( c->hd, c->position, SEEK_SET );
+    if (newpos < 0) {
+        av_log(h, AV_LOG_ERROR,
+            "Crypto: nested protocol no support for seek or seek failed\n");
+        return newpos;
+    }
+
+    // read and discard from here up to required position
+    // (which will set the iv correctly to it).
+    if (pos - c->position) {
+        uint8_t buff[BLOCKSIZE*2]; // maximum size of pos-c->position
+        int len = pos - c->position;
+        int res;
+
+        while (len > 0) {
+            // note: this may not return all the bytes first time
+            res = crypto_read(h, buff, len);
+            if (res < 0)
+                break;
+            len -= res;
+        }
+
+        // if we did not get all the bytes
+        if (len != 0) {
+            char errbuf[100] = "unknown error";
+            av_strerror(res, errbuf, sizeof(errbuf));
+            av_log(h, AV_LOG_ERROR,
+                "Crypto: discard read did not get all the bytes (%d remain) - read returned (%d)-%s\n",
+                len, res, errbuf);
+            return AVERROR(EINVAL);
+        }
+    }
+
+    return c->position;
+}
+
 static int crypto_write(URLContext *h, const unsigned char *buf, int size)
 {
     CryptoContext *c = h->priv_data;
     int total_size, blocks, pad_len, out_size;
-    uint8_t *out_buf;
     int ret = 0;
 
     total_size = size + c->pad_len;
@@ -234,22 +342,23 @@ static int crypto_write(URLContext *h, const unsigned char *buf, int size)
     blocks = out_size / BLOCKSIZE;
 
     if (out_size) {
-        out_buf = av_malloc(out_size);
-        if (!out_buf)
+        av_fast_malloc(&c->write_buf, &c->write_buf_size, out_size);
+
+        if (!c->write_buf)
             return AVERROR(ENOMEM);
 
         if (c->pad_len) {
             memcpy(&c->pad[c->pad_len], buf, BLOCKSIZE - c->pad_len);
-            av_aes_crypt(c->aes_encrypt, out_buf, c->pad, 1, c->encrypt_iv, 0);
+            av_aes_crypt(c->aes_encrypt, c->write_buf, c->pad, 1, c->encrypt_iv, 0);
             blocks--;
         }
 
-        av_aes_crypt(c->aes_encrypt, &out_buf[c->pad_len ? BLOCKSIZE : 0],
-                             &buf[c->pad_len ? BLOCKSIZE - c->pad_len: 0],
-                             blocks, c->encrypt_iv, 0);
+        av_aes_crypt(c->aes_encrypt,
+                     &c->write_buf[c->pad_len ? BLOCKSIZE : 0],
+                     &buf[c->pad_len ? BLOCKSIZE - c->pad_len : 0],
+                     blocks, c->encrypt_iv, 0);
 
-        ret = ffurl_write(c->hd, out_buf, out_size);
-        av_free(out_buf);
+        ret = ffurl_write(c->hd, c->write_buf, out_size);
         if (ret < 0)
             return ret;
 
@@ -265,27 +374,29 @@ static int crypto_write(URLContext *h, const unsigned char *buf, int size)
 static int crypto_close(URLContext *h)
 {
     CryptoContext *c = h->priv_data;
-    uint8_t out_buf[BLOCKSIZE];
-    int ret, pad;
+    int ret = 0;
 
     if (c->aes_encrypt) {
-        pad = BLOCKSIZE - c->pad_len;
+        uint8_t out_buf[BLOCKSIZE];
+        int pad = BLOCKSIZE - c->pad_len;
+
         memset(&c->pad[c->pad_len], pad, pad);
         av_aes_crypt(c->aes_encrypt, out_buf, c->pad, 1, c->encrypt_iv, 0);
-        if ((ret =  ffurl_write(c->hd, out_buf, BLOCKSIZE)) < 0)
-            return ret;
+        ret = ffurl_write(c->hd, out_buf, BLOCKSIZE);
     }
 
     if (c->hd)
         ffurl_close(c->hd);
     av_freep(&c->aes_decrypt);
     av_freep(&c->aes_encrypt);
-    return 0;
+    av_freep(&c->write_buf);
+    return ret;
 }
 
-URLProtocol ff_crypto_protocol = {
+const URLProtocol ff_crypto_protocol = {
     .name            = "crypto",
     .url_open2       = crypto_open2,
+    .url_seek        = crypto_seek,
     .url_read        = crypto_read,
     .url_write       = crypto_write,
     .url_close       = crypto_close,

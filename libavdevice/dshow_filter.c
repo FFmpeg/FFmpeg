@@ -157,9 +157,7 @@ libAVFilter_QueryVendorInfo(libAVFilter *this, wchar_t **info)
 
     if (!info)
         return E_POINTER;
-    *info = wcsdup(L"libAV");
-
-    return S_OK;
+    return E_NOTIMPL; /* don't have to do anything here */
 }
 
 static int

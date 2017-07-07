@@ -83,10 +83,10 @@ static int read_header(AVFormatContext *s)
     if (!video)
         return AVERROR(ENOMEM);
 
-    video->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    video->codec->codec_id = AV_CODEC_ID_C93;
-    video->codec->width = 320;
-    video->codec->height = 192;
+    video->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    video->codecpar->codec_id = AV_CODEC_ID_C93;
+    video->codecpar->width = 320;
+    video->codecpar->height = 192;
     /* 4:3 320x200 with 8 empty lines */
     video->sample_aspect_ratio = (AVRational) { 5, 6 };
     avpriv_set_pts_info(video, 64, 2, 25);
@@ -120,7 +120,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
                 c93->audio = avformat_new_stream(s, NULL);
                 if (!c93->audio)
                     return AVERROR(ENOMEM);
-                c93->audio->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+                c93->audio->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
             }
             avio_skip(pb, 26); /* VOC header */
             ret = ff_voc_get_packet(s, pkt, c93->audio, datasize - 26);
@@ -188,7 +188,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 
     fail:
-    av_free_packet(pkt);
+    av_packet_unref(pkt);
     return ret;
 }
 

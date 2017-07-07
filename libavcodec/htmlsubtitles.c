@@ -46,15 +46,41 @@ typedef struct SrtStack {
 
 static void rstrip_spaces_buf(AVBPrint *buf)
 {
-    while (buf->len > 0 && buf->str[buf->len - 1] == ' ')
-        buf->str[--buf->len] = 0;
+    if (av_bprint_is_complete(buf))
+        while (buf->len > 0 && buf->str[buf->len - 1] == ' ')
+            buf->str[--buf->len] = 0;
 }
 
-void ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
+/* skip all {\xxx} substrings except for {\an%d}
+   and all microdvd like styles such as {Y:xxx} */
+static void handle_open_brace(AVBPrint *dst, const char **inp, int *an, int *closing_brace_missing)
+{
+    int len = 0;
+    const char *in = *inp;
+
+    *an += sscanf(in, "{\\an%*1u}%n", &len) >= 0 && len > 0;
+
+    if (!*closing_brace_missing) {
+        if (   (*an != 1 && in[1] == '\\')
+            || (in[1] && strchr("CcFfoPSsYy", in[1]) && in[2] == ':')) {
+            char *bracep = strchr(in+2, '}');
+            if (bracep) {
+                *inp = bracep;
+                return;
+            } else
+                *closing_brace_missing = 1;
+        }
+    }
+
+    av_bprint_chars(dst, *in, 1);
+}
+
+int ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
 {
     char *param, buffer[128], tmp[128];
     int len, tag_close, sptr = 1, line_start = 1, an = 0, end = 0;
     SrtStack stack[16];
+    int closing_brace_missing = 0;
 
     stack[0].tag[0] = 0;
     strcpy(stack[0].param[PARAM_SIZE],  "{\\fs}");
@@ -78,15 +104,8 @@ void ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
             if (!line_start)
                 av_bprint_chars(dst, *in, 1);
             break;
-        case '{':    /* skip all {\xxx} substrings except for {\an%d}
-                        and all microdvd like styles such as {Y:xxx} */
-            len = 0;
-            an += sscanf(in, "{\\an%*1u}%n", &len) >= 0 && len > 0;
-            if ((an != 1 && (len = 0, sscanf(in, "{\\%*[^}]}%n", &len) >= 0 && len > 0)) ||
-                (len = 0, sscanf(in, "{%*1[CcFfoPSsYy]:%*[^}]}%n", &len) >= 0 && len > 0)) {
-                in += len - 1;
-            } else
-                av_bprint_chars(dst, *in, 1);
+        case '{':
+            handle_open_brace(dst, &in, &an, &closing_brace_missing);
             break;
         case '<':
             tag_close = in[1] == '/';
@@ -98,12 +117,12 @@ void ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
                 if ((param = strchr(tagname, ' ')))
                     *param++ = 0;
                 if ((!tag_close && sptr < FF_ARRAY_ELEMS(stack)) ||
-                    ( tag_close && sptr > 0 && !strcmp(stack[sptr-1].tag, tagname))) {
+                    ( tag_close && sptr > 0 && !av_strcasecmp(stack[sptr-1].tag, tagname))) {
                     int i, j, unknown = 0;
                     in += len + tag_close;
                     if (!tag_close)
                         memset(stack+sptr, 0, sizeof(*stack));
-                    if (!strcmp(tagname, "font")) {
+                    if (!av_strcasecmp(tagname, "font")) {
                         if (tag_close) {
                             for (i=PARAM_NUMBER-1; i>=0; i--)
                                 if (stack[sptr-1].param[i][0])
@@ -114,7 +133,7 @@ void ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
                                         }
                         } else {
                             while (param) {
-                                if (!strncmp(param, "size=", 5)) {
+                                if (!av_strncasecmp(param, "size=", 5)) {
                                     unsigned font_size;
                                     param += 5 + (param[5] == '"');
                                     if (sscanf(param, "%u", &font_size) == 1) {
@@ -122,13 +141,13 @@ void ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
                                              sizeof(stack[0].param[PARAM_SIZE]),
                                              "{\\fs%u}", font_size);
                                     }
-                                } else if (!strncmp(param, "color=", 6)) {
+                                } else if (!av_strncasecmp(param, "color=", 6)) {
                                     param += 6 + (param[6] == '"');
                                     snprintf(stack[sptr].param[PARAM_COLOR],
                                          sizeof(stack[0].param[PARAM_COLOR]),
                                          "{\\c&H%X&}",
                                          html_color_parse(log_ctx, param));
-                                } else if (!strncmp(param, "face=", 5)) {
+                                } else if (!av_strncasecmp(param, "face=", 5)) {
                                     param += 5 + (param[5] == '"');
                                     len = strcspn(param,
                                                   param[-1] == '"' ? "\"" :" ");
@@ -146,8 +165,10 @@ void ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
                                 if (stack[sptr].param[i][0])
                                     av_bprintf(dst, "%s", stack[sptr].param[i]);
                         }
-                    } else if (!tagname[1] && strspn(tagname, "bisu") == 1) {
-                        av_bprintf(dst, "{\\%c%d}", tagname[0], !tag_close);
+                    } else if (tagname[0] && !tagname[1] && av_stristr("bisu", tagname)) {
+                        av_bprintf(dst, "{\\%c%d}", (char)av_tolower(tagname[0]), !tag_close);
+                    } else if (!av_strcasecmp(tagname, "br")) {
+                        av_bprintf(dst, "\\N");
                     } else {
                         unknown = 1;
                         snprintf(tmp, sizeof(tmp), "</%s>", tagname);
@@ -171,8 +192,13 @@ void ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
             line_start = 0;
     }
 
+    if (!av_bprint_is_complete(dst))
+        return AVERROR(ENOMEM);
+
     while (dst->len >= 2 && !strncmp(&dst->str[dst->len - 2], "\\N", 2))
         dst->len -= 2;
     dst->str[dst->len] = 0;
     rstrip_spaces_buf(dst);
+
+    return 0;
 }

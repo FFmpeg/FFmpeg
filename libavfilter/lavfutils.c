@@ -38,7 +38,7 @@ int ff_load_image(uint8_t *data[4], int linesize[4],
 
     av_register_all();
 
-    iformat = av_find_input_format("image2");
+    iformat = av_find_input_format("image2pipe");
     if ((ret = avformat_open_input(&format_ctx, filename, iformat, NULL)) < 0) {
         av_log(log_ctx, AV_LOG_ERROR,
                "Failed to open input file '%s'\n", filename);
@@ -95,7 +95,7 @@ int ff_load_image(uint8_t *data[4], int linesize[4],
     av_image_copy(data, linesize, (const uint8_t **)frame->data, frame->linesize, *pix_fmt, *w, *h);
 
 end:
-    av_free_packet(&pkt);
+    av_packet_unref(&pkt);
     avcodec_close(codec_ctx);
     avformat_close_input(&format_ctx);
     av_frame_free(&frame);

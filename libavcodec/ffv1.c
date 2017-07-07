@@ -32,10 +32,10 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/timer.h"
+
 #include "avcodec.h"
 #include "internal.h"
 #include "rangecoder.h"
-#include "golomb.h"
 #include "mathops.h"
 #include "ffv1.h"
 
@@ -73,7 +73,7 @@ av_cold int ff_ffv1_init_slice_state(FFV1Context *f, FFV1Context *fs)
     for (j = 0; j < f->plane_count; j++) {
         PlaneContext *const p = &fs->plane[j];
 
-        if (fs->ac) {
+        if (fs->ac != AC_GOLOMB_RICE) {
             if (!p->state)
                 p->state = av_malloc_array(p->context_count, CONTEXT_SIZE *
                                      sizeof(uint8_t));
@@ -92,7 +92,7 @@ av_cold int ff_ffv1_init_slice_state(FFV1Context *f, FFV1Context *fs)
         }
     }
 
-    if (fs->ac > 1) {
+    if (fs->ac == AC_RANGE_CUSTOM_TAB) {
         //FIXME only redo if state_transition changed
         for (j = 1; j < 256; j++) {
             fs->c. one_state[      j] = f->state_transition[j];
@@ -144,7 +144,11 @@ av_cold int ff_ffv1_init_slice_contexts(FFV1Context *f)
 
         fs->sample_buffer = av_malloc_array((fs->width + 6), 3 * MAX_PLANES *
                                       sizeof(*fs->sample_buffer));
-        if (!fs->sample_buffer) {
+        fs->sample_buffer32 = av_malloc_array((fs->width + 6), 3 * MAX_PLANES *
+                                        sizeof(*fs->sample_buffer32));
+        if (!fs->sample_buffer || !fs->sample_buffer32) {
+            av_freep(&fs->sample_buffer);
+            av_freep(&fs->sample_buffer32);
             av_freep(&f->slice_context[i]);
             goto memfail;
         }
@@ -154,6 +158,7 @@ av_cold int ff_ffv1_init_slice_contexts(FFV1Context *f)
 memfail:
     while(--i >= 0) {
         av_freep(&f->slice_context[i]->sample_buffer);
+        av_freep(&f->slice_context[i]->sample_buffer32);
         av_freep(&f->slice_context[i]);
     }
     return AVERROR(ENOMEM);
@@ -184,7 +189,7 @@ void ff_ffv1_clear_slice_state(FFV1Context *f, FFV1Context *fs)
         p->interlace_bit_state[0] = 128;
         p->interlace_bit_state[1] = 128;
 
-        if (fs->ac) {
+        if (fs->ac != AC_GOLOMB_RICE) {
             if (f->initial_states[p->quant_table_index]) {
                 memcpy(p->state, f->initial_states[p->quant_table_index],
                        CONTEXT_SIZE * p->context_count);
@@ -224,6 +229,7 @@ av_cold int ff_ffv1_close(AVCodecContext *avctx)
             av_freep(&p->vlc_state);
         }
         av_freep(&fs->sample_buffer);
+        av_freep(&fs->sample_buffer32);
     }
 
     av_freep(&avctx->stats_out);

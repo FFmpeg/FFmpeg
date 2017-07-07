@@ -19,6 +19,7 @@
  */
 
 #include "libavutil/intmath.h"
+#include "libavutil/libm.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
@@ -40,7 +41,14 @@ static av_cold int encode_init(AVCodecContext *avctx)
     int plane_index, ret;
     int i;
 
-    if(avctx->prediction_method == DWT_97
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->prediction_method)
+        s->pred = avctx->prediction_method;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+    if(s->pred == DWT_97
        && (avctx->flags & AV_CODEC_FLAG_QSCALE)
        && avctx->global_quality == 0){
         av_log(avctx, AV_LOG_ERROR, "The 9/7 wavelet is incompatible with lossless mode.\n");
@@ -53,7 +61,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    s->spatial_decomposition_type= avctx->prediction_method; //FIXME add decorrelator type r transform_type
+    s->spatial_decomposition_type= s->pred; //FIXME add decorrelator type r transform_type
 
     s->mv_scale       = (avctx->flags & AV_CODEC_FLAG_QPEL) ? 2 : 4;
     s->block_max_depth= (avctx->flags & AV_CODEC_FLAG_4MV ) ? 1 : 0;
@@ -98,11 +106,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (!avctx->stats_out)
             return AVERROR(ENOMEM);
     }
-    if((avctx->flags&AV_CODEC_FLAG_PASS2) || !(avctx->flags&CODEC_FLAG_QSCALE)){
+    if((avctx->flags&AV_CODEC_FLAG_PASS2) || !(avctx->flags&AV_CODEC_FLAG_QSCALE)){
         if(ff_rate_control_init(&s->m) < 0)
             return -1;
     }
-    s->pass1_rc= !(avctx->flags & (AV_CODEC_FLAG_QSCALE|CODEC_FLAG_PASS2));
+    s->pass1_rc= !(avctx->flags & (AV_CODEC_FLAG_QSCALE|AV_CODEC_FLAG_PASS2));
 
     switch(avctx->pix_fmt){
     case AV_PIX_FMT_YUV444P:
@@ -291,7 +299,7 @@ static int encode_q_branch(SnowContext *s, int level, int x, int y){
     c->penalty_factor    = get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_cmp);
     c->sub_penalty_factor= get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_sub_cmp);
     c->mb_penalty_factor = get_penalty_factor(s->lambda, s->lambda2, c->avctx->mb_cmp);
-    c->current_mv_penalty= c->mv_penalty[s->m.f_code=1] + MAX_MV;
+    c->current_mv_penalty= c->mv_penalty[s->m.f_code=1] + MAX_DMV;
 
     c->xmin = - x*block_w - 16+3;
     c->ymin = - y*block_w - 16+3;
@@ -1470,7 +1478,7 @@ static void update_last_header_values(SnowContext *s){
 }
 
 static int qscale2qlog(int qscale){
-    return rint(QROOT*log2(qscale / (float)FF_QP2LAMBDA))
+    return lrint(QROOT*log2(qscale / (float)FF_QP2LAMBDA))
            + 61*QROOT/8; ///< 64 > 60
 }
 
@@ -1547,7 +1555,7 @@ static void calculate_visual_weight(SnowContext *s, Plane *p){
                 }
             }
 
-            b->qlog= (int)(log(352256.0/sqrt(error)) / log(pow(2.0, 1.0/QROOT))+0.5);
+            b->qlog= (int)(QROOT * log2(352256.0/sqrt(error)) + 0.5);
         }
     }
 }
@@ -1573,12 +1581,12 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     for(i=0; i < s->nb_planes; i++){
         int hshift= i ? s->chroma_h_shift : 0;
         int vshift= i ? s->chroma_v_shift : 0;
-        for(y=0; y<FF_CEIL_RSHIFT(height, vshift); y++)
+        for(y=0; y<AV_CEIL_RSHIFT(height, vshift); y++)
             memcpy(&s->input_picture->data[i][y * s->input_picture->linesize[i]],
                    &pict->data[i][y * pict->linesize[i]],
-                   FF_CEIL_RSHIFT(width, hshift));
+                   AV_CEIL_RSHIFT(width, hshift));
         s->mpvencdsp.draw_edges(s->input_picture->data[i], s->input_picture->linesize[i],
-                                FF_CEIL_RSHIFT(width, hshift), FF_CEIL_RSHIFT(height, vshift),
+                                AV_CEIL_RSHIFT(width, hshift), AV_CEIL_RSHIFT(height, vshift),
                                 EDGE_WIDTH >> hshift, EDGE_WIDTH >> vshift,
                                 EDGE_TOP | EDGE_BOTTOM);
 
@@ -1632,6 +1640,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                                     s->current_picture->linesize[2], w>>s->chroma_h_shift, h>>s->chroma_v_shift,
                                     EDGE_WIDTH>>s->chroma_h_shift, EDGE_WIDTH>>s->chroma_v_shift, EDGE_TOP | EDGE_BOTTOM);
         }
+        emms_c();
     }
 
     ff_snow_frame_start(s);
@@ -1738,10 +1747,17 @@ redo_frame:
                 }
             predict_plane(s, s->spatial_idwt_buffer, plane_index, 0);
 
+#if FF_API_PRIVATE_OPT
+FF_DISABLE_DEPRECATION_WARNINGS
+            if(s->avctx->scenechange_threshold)
+                s->scenechange_threshold = s->avctx->scenechange_threshold;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
             if(   plane_index==0
                && pic->pict_type == AV_PICTURE_TYPE_P
                && !(avctx->flags&AV_CODEC_FLAG_PASS2)
-               && s->m.me.scene_change_score > s->avctx->scenechange_threshold){
+               && s->m.me.scene_change_score > s->scenechange_threshold){
                 ff_init_range_encoder(c, pkt->data, pkt->size);
                 ff_build_rac_states(c, (1LL<<32)/20, 256-8);
                 pic->pict_type= AV_PICTURE_TYPE_I;
@@ -1841,6 +1857,7 @@ redo_frame:
         }
 
     }
+    emms_c();
 
     update_last_header_values(s);
 
@@ -1904,10 +1921,14 @@ static av_cold int encode_end(AVCodecContext *avctx)
 static const AVOption options[] = {
     FF_MPV_COMMON_OPTS
     { "iter",           NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_ITER }, 0, 0, FF_MPV_OPT_FLAGS, "motion_est" },
-    { "memc_only",      "Only do ME/MC (I frames -> ref, P frame -> ME+MC).",   OFFSET(memc_only), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
-    { "no_bitstream",   "Skip final bitstream writeout.",                    OFFSET(no_bitstream), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
+    { "memc_only",      "Only do ME/MC (I frames -> ref, P frame -> ME+MC).",   OFFSET(memc_only), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
+    { "no_bitstream",   "Skip final bitstream writeout.",                    OFFSET(no_bitstream), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
     { "intra_penalty",  "Penalty for intra blocks in block decission",      OFFSET(intra_penalty), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
     { "iterative_dia_size",  "Dia size for the iterative ME",          OFFSET(iterative_dia_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
+    { "sc_threshold",   "Scene change threshold",                   OFFSET(scenechange_threshold), AV_OPT_TYPE_INT, { .i64 = 0 }, INT_MIN, INT_MAX, VE },
+    { "pred",           "Spatial decomposition type",                                OFFSET(pred), AV_OPT_TYPE_INT, { .i64 = 0 }, DWT_97, DWT_53, VE, "pred" },
+        { "dwt97", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, INT_MIN, INT_MAX, VE, "pred" },
+        { "dwt53", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, INT_MIN, INT_MAX, VE, "pred" },
     { NULL },
 };
 
@@ -1936,132 +1957,3 @@ AVCodec ff_snow_encoder = {
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
 };
-
-
-#ifdef TEST
-#undef malloc
-#undef free
-#undef printf
-
-#include "libavutil/lfg.h"
-#include "libavutil/mathematics.h"
-
-int main(void){
-#define width  256
-#define height 256
-    int buffer[2][width*height];
-    SnowContext s;
-    int i;
-    AVLFG prng;
-    s.spatial_decomposition_count=6;
-    s.spatial_decomposition_type=1;
-
-    s.temp_dwt_buffer  = av_mallocz_array(width, sizeof(DWTELEM));
-    s.temp_idwt_buffer = av_mallocz_array(width, sizeof(IDWTELEM));
-
-    if (!s.temp_dwt_buffer || !s.temp_idwt_buffer) {
-        fprintf(stderr, "Failed to allocate memory\n");
-        return 1;
-    }
-
-    av_lfg_init(&prng, 1);
-
-    printf("testing 5/3 DWT\n");
-    for(i=0; i<width*height; i++)
-        buffer[0][i] = buffer[1][i] = av_lfg_get(&prng) % 54321 - 12345;
-
-    ff_spatial_dwt(buffer[0], s.temp_dwt_buffer, width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
-    ff_spatial_idwt((IDWTELEM*)buffer[0], s.temp_idwt_buffer, width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
-
-    for(i=0; i<width*height; i++)
-        if(buffer[0][i]!= buffer[1][i]) printf("fsck: %6d %12d %7d\n",i, buffer[0][i], buffer[1][i]);
-
-    printf("testing 9/7 DWT\n");
-    s.spatial_decomposition_type=0;
-    for(i=0; i<width*height; i++)
-        buffer[0][i] = buffer[1][i] = av_lfg_get(&prng) % 54321 - 12345;
-
-    ff_spatial_dwt(buffer[0], s.temp_dwt_buffer, width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
-    ff_spatial_idwt((IDWTELEM*)buffer[0], s.temp_idwt_buffer, width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
-
-    for(i=0; i<width*height; i++)
-        if(FFABS(buffer[0][i] - buffer[1][i])>20) printf("fsck: %6d %12d %7d\n",i, buffer[0][i], buffer[1][i]);
-
-    {
-    int level, orientation, x, y;
-    int64_t errors[8][4];
-    int64_t g=0;
-
-        memset(errors, 0, sizeof(errors));
-        s.spatial_decomposition_count=3;
-        s.spatial_decomposition_type=0;
-        for(level=0; level<s.spatial_decomposition_count; level++){
-            for(orientation=level ? 1 : 0; orientation<4; orientation++){
-                int w= width  >> (s.spatial_decomposition_count-level);
-                int h= height >> (s.spatial_decomposition_count-level);
-                int stride= width  << (s.spatial_decomposition_count-level);
-                DWTELEM *buf= buffer[0];
-                int64_t error=0;
-
-                if(orientation&1) buf+=w;
-                if(orientation>1) buf+=stride>>1;
-
-                memset(buffer[0], 0, sizeof(int)*width*height);
-                buf[w/2 + h/2*stride]= 256*256;
-                ff_spatial_idwt((IDWTELEM*)buffer[0], s.temp_idwt_buffer, width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
-                for(y=0; y<height; y++){
-                    for(x=0; x<width; x++){
-                        int64_t d= buffer[0][x + y*width];
-                        error += d*d;
-                        if(FFABS(width/2-x)<9 && FFABS(height/2-y)<9 && level==2) printf("%8"PRId64" ", d);
-                    }
-                    if(FFABS(height/2-y)<9 && level==2) printf("\n");
-                }
-                error= (int)(sqrt(error)+0.5);
-                errors[level][orientation]= error;
-                if(g) g=av_gcd(g, error);
-                else g= error;
-            }
-        }
-        printf("static int const visual_weight[][4]={\n");
-        for(level=0; level<s.spatial_decomposition_count; level++){
-            printf("  {");
-            for(orientation=0; orientation<4; orientation++){
-                printf("%8"PRId64",", errors[level][orientation]/g);
-            }
-            printf("},\n");
-        }
-        printf("};\n");
-        {
-            int level=2;
-            int w= width  >> (s.spatial_decomposition_count-level);
-            //int h= height >> (s.spatial_decomposition_count-level);
-            int stride= width  << (s.spatial_decomposition_count-level);
-            DWTELEM *buf= buffer[0];
-            int64_t error=0;
-
-            buf+=w;
-            buf+=stride>>1;
-
-            memset(buffer[0], 0, sizeof(int)*width*height);
-            for(y=0; y<height; y++){
-                for(x=0; x<width; x++){
-                    int tab[4]={0,2,3,1};
-                    buffer[0][x+width*y]= 256*256*tab[(x&1) + 2*(y&1)];
-                }
-            }
-            ff_spatial_dwt(buffer[0], s.temp_dwt_buffer, width, height, width, s.spatial_decomposition_type, s.spatial_decomposition_count);
-            for(y=0; y<height; y++){
-                for(x=0; x<width; x++){
-                    int64_t d= buffer[0][x + y*width];
-                    error += d*d;
-                    if(FFABS(width/2-x)<9 && FFABS(height/2-y)<9) printf("%8"PRId64" ", d);
-                }
-                if(FFABS(height/2-y)<9) printf("\n");
-            }
-        }
-
-    }
-    return 0;
-}
-#endif /* TEST */

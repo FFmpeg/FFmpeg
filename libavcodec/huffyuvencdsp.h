@@ -21,21 +21,20 @@
 
 #include <stdint.h>
 
+#include "avcodec.h"
+
 typedef struct HuffYUVEncDSPContext {
-    void (*diff_bytes)(uint8_t *dst /* align 16 */,
-                       const uint8_t *src1 /* align 16 */,
-                       const uint8_t *src2 /* align 1 */,
-                       intptr_t w);
-    /**
-     * Subtract HuffYUV's variant of median prediction.
-     * Note, this might read from src1[-1], src2[-1].
-     */
-    void (*sub_hfyu_median_pred)(uint8_t *dst, const uint8_t *src1,
-                                 const uint8_t *src2, intptr_t w,
-                                 int *left, int *left_top);
+    void (*diff_int16)(uint16_t *dst /* align 16 */,
+                       const uint16_t *src1 /* align 16 */,
+                       const uint16_t *src2 /* align 1 */,
+                       unsigned mask, int w);
+
+    void (*sub_hfyu_median_pred_int16)(uint16_t *dst, const uint16_t *src1,
+                                       const uint16_t *src2, unsigned mask,
+                                       int w, int *left, int *left_top);
 } HuffYUVEncDSPContext;
 
-void ff_huffyuvencdsp_init(HuffYUVEncDSPContext *c);
-void ff_huffyuvencdsp_init_x86(HuffYUVEncDSPContext *c);
+void ff_huffyuvencdsp_init(HuffYUVEncDSPContext *c, AVCodecContext *avctx);
+void ff_huffyuvencdsp_init_x86(HuffYUVEncDSPContext *c, AVCodecContext *avctx);
 
 #endif /* AVCODEC_HUFFYUVENCDSP_H */

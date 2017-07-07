@@ -60,7 +60,7 @@ static void yuv_a_to_rgba(const uint8_t *ycbcr, const uint8_t *alpha, uint32_t *
         cb = *ycbcr++;
         YUV_TO_RGB1_CCIR(cb, cr);
         YUV_TO_RGB2_CCIR(r, g, b, y);
-        *rgba++ = (*alpha++ << 24) | (r << 16) | (g << 8) | b;
+        *rgba++ = ((unsigned)*alpha++ << 24) | (r << 16) | (g << 8) | b;
     }
 }
 
@@ -185,16 +185,16 @@ static void guess_palette(DVDSubContext* ctx,
     for(i = 0; i < 4; i++) {
         if (alpha[i] != 0) {
             if (!color_used[colormap[i]])  {
-                level = level_map[nb_opaque_colors][j];
+                level = level_map[nb_opaque_colors - 1][j];
                 r = (((subtitle_color >> 16) & 0xff) * level) >> 8;
                 g = (((subtitle_color >> 8) & 0xff) * level) >> 8;
                 b = (((subtitle_color >> 0) & 0xff) * level) >> 8;
-                rgba_palette[i] = b | (g << 8) | (r << 16) | ((alpha[i] * 17) << 24);
+                rgba_palette[i] = b | (g << 8) | (r << 16) | ((alpha[i] * 17U) << 24);
                 color_used[colormap[i]] = (i + 1);
                 j++;
             } else {
                 rgba_palette[i] = (rgba_palette[color_used[colormap[i]] - 1] & 0x00ffffff) |
-                                    ((alpha[i] * 17) << 24);
+                                    ((alpha[i] * 17U) << 24);
             }
         }
     }
@@ -220,7 +220,7 @@ static void reset_rects(AVSubtitle *sub_header)
 static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
                                 const uint8_t *buf, int buf_size)
 {
-    int cmd_pos, pos, cmd, x1, y1, x2, y2, offset1, offset2, next_cmd_pos;
+    int cmd_pos, pos, cmd, x1, y1, x2, y2, next_cmd_pos;
     int big_offsets, offset_size, is_8bit = 0;
     const uint8_t *yuv_palette = NULL;
     uint8_t *colormap = ctx->colormap, *alpha = ctx->alpha;
@@ -228,6 +228,7 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
     int i;
     int is_menu = 0;
     uint32_t size;
+    int64_t offset1, offset2;
 
     if (buf_size < 10)
         return -1;
@@ -317,7 +318,7 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
                     goto fail;
                 offset1 = AV_RB16(buf + pos);
                 offset2 = AV_RB16(buf + pos + 2);
-                ff_dlog(NULL, "offset1=0x%04x offset2=0x%04x\n", offset1, offset2);
+                ff_dlog(NULL, "offset1=0x%04"PRIx64" offset2=0x%04"PRIx64"\n", offset1, offset2);
                 pos += 4;
                 break;
             case 0x86:
@@ -325,7 +326,7 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
                     goto fail;
                 offset1 = AV_RB32(buf + pos);
                 offset2 = AV_RB32(buf + pos + 4);
-                ff_dlog(NULL, "offset1=0x%04x offset2=0x%04x\n", offset1, offset2);
+                ff_dlog(NULL, "offset1=0x%04"PRIx64" offset2=0x%04"PRIx64"\n", offset1, offset2);
                 pos += 8;
                 break;
 
@@ -353,7 +354,10 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
             }
         }
     the_end:
-        if (offset1 >= 0) {
+        if (offset1 >= buf_size || offset2 >= buf_size)
+            goto fail;
+
+        if (offset1 >= 0 && offset2 >= 0) {
             int w, h;
             uint8_t *bitmap;
 
@@ -364,7 +368,7 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
             h = y2 - y1 + 1;
             if (h < 0)
                 h = 0;
-            if (w > 0 && h > 0) {
+            if (w > 0 && h > 1) {
                 reset_rects(sub_header);
 
                 sub_header->rects = av_mallocz(sizeof(*sub_header->rects));
@@ -544,7 +548,8 @@ static int append_to_cached_buf(AVCodecContext *avctx,
 {
     DVDSubContext *ctx = avctx->priv_data;
 
-    if (ctx->buf_size >= sizeof(ctx->buf) - buf_size) {
+    av_assert0(buf_size >= 0 && ctx->buf_size <= sizeof(ctx->buf));
+    if (buf_size >= sizeof(ctx->buf) - ctx->buf_size) {
         av_log(avctx, AV_LOG_WARNING, "Attempt to reconstruct "
                "too large SPU packets aborted.\n");
         ctx->buf_size = 0;
@@ -742,7 +747,7 @@ static av_cold int dvdsub_init(AVCodecContext *avctx)
         int i;
         av_log(avctx, AV_LOG_DEBUG, "palette:");
         for(i=0;i<16;i++)
-            av_log(avctx, AV_LOG_DEBUG, " 0x%06x", ctx->palette[i]);
+            av_log(avctx, AV_LOG_DEBUG, " 0x%06"PRIx32, ctx->palette[i]);
         av_log(avctx, AV_LOG_DEBUG, "\n");
     }
 
@@ -766,7 +771,7 @@ static av_cold int dvdsub_close(AVCodecContext *avctx)
 static const AVOption options[] = {
     { "palette", "set the global palette", OFFSET(palette_str), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, SD },
     { "ifo_palette", "obtain the global palette from .IFO file", OFFSET(ifo_str), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, SD },
-    { "forced_subs_only", "Only show forced subtitles", OFFSET(forced_subs_only), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, SD},
+    { "forced_subs_only", "Only show forced subtitles", OFFSET(forced_subs_only), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, SD},
     { NULL }
 };
 static const AVClass dvdsub_class = {

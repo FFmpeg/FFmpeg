@@ -151,7 +151,7 @@ static int config_input(AVFilterLink *inlink)
     if ((ret = av_image_fill_linesizes(s->planewidth, inlink->format, inlink->w)) < 0)
         return ret;
 
-    s->planeheight[1] = s->planeheight[2] = FF_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
+    s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
     s->planeheight[0] = s->planeheight[3] = inlink->h;
 
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
@@ -275,7 +275,7 @@ static const AVOption erosion_options[] = {
     { NULL }
 };
 
-DEFINE_NEIGHBOR_FILTER(erosion, "Apply erosion effect");
+DEFINE_NEIGHBOR_FILTER(erosion, "Apply erosion effect.");
 
 #endif /* CONFIG_EROSION_FILTER */
 
@@ -290,7 +290,7 @@ static const AVOption dilation_options[] = {
     { NULL }
 };
 
-DEFINE_NEIGHBOR_FILTER(dilation, "Apply dilation effect");
+DEFINE_NEIGHBOR_FILTER(dilation, "Apply dilation effect.");
 
 #endif /* CONFIG_DILATION_FILTER */
 
@@ -304,7 +304,7 @@ static const AVOption deflate_options[] = {
     { NULL }
 };
 
-DEFINE_NEIGHBOR_FILTER(deflate, "Apply deflate effect");
+DEFINE_NEIGHBOR_FILTER(deflate, "Apply deflate effect.");
 
 #endif /* CONFIG_DEFLATE_FILTER */
 
@@ -318,6 +318,6 @@ static const AVOption inflate_options[] = {
     { NULL }
 };
 
-DEFINE_NEIGHBOR_FILTER(inflate, "Apply inflate effect");
+DEFINE_NEIGHBOR_FILTER(inflate, "Apply inflate effect.");
 
 #endif /* CONFIG_INFLATE_FILTER */

@@ -94,8 +94,8 @@ typedef struct RTMPContext {
     int           flv_nb_packets;             ///< number of flv packets published
     RTMPPacket    out_pkt;                    ///< rtmp packet, created from flv a/v or metadata (for output)
     uint32_t      client_report_size;         ///< number of bytes after which client should report to server
-    uint32_t      bytes_read;                 ///< number of bytes read from server
-    uint32_t      last_bytes_read;            ///< number of bytes read last reported to server
+    uint64_t      bytes_read;                 ///< number of bytes read from server
+    uint64_t      last_bytes_read;            ///< number of bytes read last reported to server
     uint32_t      last_timestamp;             ///< last timestamp received in a packet
     int           skip_bytes;                 ///< number of bytes to skip from the input FLV stream in the next write call
     int           has_audio;                  ///< presence of audio data
@@ -156,6 +156,8 @@ static const uint8_t rtmp_server_key[] = {
 };
 
 static int handle_chunk_size(URLContext *s, RTMPPacket *pkt);
+static int handle_server_bw(URLContext *s, RTMPPacket *pkt);
+static int handle_client_bw(URLContext *s, RTMPPacket *pkt);
 
 static int add_tracked_method(RTMPContext *rt, const char *name, int id)
 {
@@ -339,9 +341,12 @@ static int gen_connect(URLContext *s, RTMPContext *rt)
     ff_amf_write_field_name(&p, "flashVer");
     ff_amf_write_string(&p, rt->flashver);
 
-    if (rt->swfurl) {
+    if (rt->swfurl || rt->swfverify) {
         ff_amf_write_field_name(&p, "swfUrl");
-        ff_amf_write_string(&p, rt->swfurl);
+        if (rt->swfurl)
+            ff_amf_write_string(&p, rt->swfurl);
+        else
+            ff_amf_write_string(&p, rt->swfverify);
     }
 
     ff_amf_write_field_name(&p, "tcUrl");
@@ -399,6 +404,9 @@ static int gen_connect(URLContext *s, RTMPContext *rt)
     return rtmp_send_packet(rt, &pkt, 1);
 }
 
+
+#define RTMP_CTRL_ABORT_MESSAGE  (2)
+
 static int read_connect(URLContext *s, RTMPContext *rt)
 {
     RTMPPacket pkt = { 0 };
@@ -411,18 +419,42 @@ static int read_connect(URLContext *s, RTMPContext *rt)
     uint8_t tmpstr[256];
     GetByteContext gbc;
 
-    if ((ret = ff_rtmp_packet_read(rt->stream, &pkt, rt->in_chunk_size,
-                                   &rt->prev_pkt[0], &rt->nb_prev_pkt[0])) < 0)
-        return ret;
-
-    if (pkt.type == RTMP_PT_CHUNK_SIZE) {
-        if ((ret = handle_chunk_size(s, &pkt)) < 0)
-            return ret;
-
-        ff_rtmp_packet_destroy(&pkt);
+    // handle RTMP Protocol Control Messages
+    for (;;) {
         if ((ret = ff_rtmp_packet_read(rt->stream, &pkt, rt->in_chunk_size,
                                        &rt->prev_pkt[0], &rt->nb_prev_pkt[0])) < 0)
             return ret;
+#ifdef DEBUG
+        ff_rtmp_packet_dump(s, &pkt);
+#endif
+        if (pkt.type == RTMP_PT_CHUNK_SIZE) {
+            if ((ret = handle_chunk_size(s, &pkt)) < 0) {
+                ff_rtmp_packet_destroy(&pkt);
+                return ret;
+            }
+        } else if (pkt.type == RTMP_CTRL_ABORT_MESSAGE) {
+            av_log(s, AV_LOG_ERROR, "received abort message\n");
+            ff_rtmp_packet_destroy(&pkt);
+            return AVERROR_UNKNOWN;
+        } else if (pkt.type == RTMP_PT_BYTES_READ) {
+            av_log(s, AV_LOG_TRACE, "received acknowledgement\n");
+        } else if (pkt.type == RTMP_PT_SERVER_BW) {
+            if ((ret = handle_server_bw(s, &pkt)) < 0) {
+                ff_rtmp_packet_destroy(&pkt);
+                return ret;
+            }
+        } else if (pkt.type == RTMP_PT_CLIENT_BW) {
+            if ((ret = handle_client_bw(s, &pkt)) < 0) {
+                ff_rtmp_packet_destroy(&pkt);
+                return ret;
+            }
+        } else if (pkt.type == RTMP_PT_INVOKE) {
+            // received RTMP Command Message
+            break;
+        } else {
+            av_log(s, AV_LOG_ERROR, "Unknown control message type (%d)\n", pkt.type);
+        }
+        ff_rtmp_packet_destroy(&pkt);
     }
 
     cp = pkt.data;
@@ -451,7 +483,7 @@ static int read_connect(URLContext *s, RTMPContext *rt)
                tmpstr, rt->app);
     ff_rtmp_packet_destroy(&pkt);
 
-    // Send Window Acknowledgement Size (as defined in speficication)
+    // Send Window Acknowledgement Size (as defined in specification)
     if ((ret = ff_rtmp_packet_create(&pkt, RTMP_NETWORK_CHANNEL,
                                      RTMP_PT_SERVER_BW, 0, 4)) < 0)
         return ret;
@@ -492,7 +524,7 @@ static int read_connect(URLContext *s, RTMPContext *rt)
         return ret;
 
     // Chunk size
-    if ((ret = ff_rtmp_packet_create(&pkt, RTMP_SYSTEM_CHANNEL,
+    if ((ret = ff_rtmp_packet_create(&pkt, RTMP_NETWORK_CHANNEL,
                                      RTMP_PT_CHUNK_SIZE, 0, 4)) < 0)
         return ret;
 
@@ -581,7 +613,7 @@ static int gen_release_stream(URLContext *s, RTMPContext *rt)
 
 /**
  * Generate 'FCPublish' call and send it to the server. It should make
- * the server preapare for receiving media streams.
+ * the server prepare for receiving media streams.
  */
 static int gen_fcpublish_stream(URLContext *s, RTMPContext *rt)
 {
@@ -1111,15 +1143,16 @@ static int rtmp_calc_swfhash(URLContext *s)
 {
     RTMPContext *rt = s->priv_data;
     uint8_t *in_data = NULL, *out_data = NULL, *swfdata;
-    int64_t in_size, out_size;
+    int64_t in_size;
     URLContext *stream;
     char swfhash[32];
     int swfsize;
     int ret = 0;
 
     /* Get the SWF player file. */
-    if ((ret = ffurl_open(&stream, rt->swfverify, AVIO_FLAG_READ,
-                          &s->interrupt_callback, NULL)) < 0) {
+    if ((ret = ffurl_open_whitelist(&stream, rt->swfverify, AVIO_FLAG_READ,
+                                    &s->interrupt_callback, NULL,
+                                    s->protocol_whitelist, s->protocol_blacklist, s)) < 0) {
         av_log(s, AV_LOG_ERROR, "Cannot open connection %s.\n", rt->swfverify);
         goto fail;
     }
@@ -1143,6 +1176,8 @@ static int rtmp_calc_swfhash(URLContext *s)
     }
 
     if (!memcmp(in_data, "CWS", 3)) {
+#if CONFIG_ZLIB
+        int64_t out_size;
         /* Decompress the SWF player file using Zlib. */
         if (!(out_data = av_malloc(8))) {
             ret = AVERROR(ENOMEM);
@@ -1152,18 +1187,17 @@ static int rtmp_calc_swfhash(URLContext *s)
         memcpy(out_data, in_data, 8);
         out_size = 8;
 
-#if CONFIG_ZLIB
         if ((ret = rtmp_uncompress_swfplayer(in_data + 8, in_size - 8,
                                              &out_data, &out_size)) < 0)
             goto fail;
+        swfsize = out_size;
+        swfdata = out_data;
 #else
         av_log(s, AV_LOG_ERROR,
                "Zlib is required for decompressing the SWF player file.\n");
         ret = AVERROR(EINVAL);
         goto fail;
 #endif
-        swfsize = out_size;
-        swfdata = out_data;
     } else {
         swfsize = in_size;
         swfdata = in_data;
@@ -1879,9 +1913,6 @@ static int write_status(URLContext *s, RTMPPacket *pkt,
     ff_amf_write_string(&pp, statusmsg);
     ff_amf_write_field_name(&pp, "details");
     ff_amf_write_string(&pp, filename);
-    ff_amf_write_field_name(&pp, "clientid");
-    snprintf(statusmsg, sizeof(statusmsg), "%s", LIBAVFORMAT_IDENT);
-    ff_amf_write_string(&pp, statusmsg);
     ff_amf_write_object_end(&pp);
 
     spkt.size = pp - spkt.data;
@@ -1896,7 +1927,7 @@ static int send_invoke_response(URLContext *s, RTMPPacket *pkt)
 {
     RTMPContext *rt = s->priv_data;
     double seqnum;
-    char filename[64];
+    char filename[128];
     char command[64];
     int stringlen;
     char *pchar;
@@ -1923,6 +1954,13 @@ static int send_invoke_response(URLContext *s, RTMPPacket *pkt)
         !strcmp(command, "publish")) {
         ret = ff_amf_read_string(&gbc, filename,
                                  sizeof(filename), &stringlen);
+        if (ret) {
+            if (ret == AVERROR(EINVAL))
+                av_log(s, AV_LOG_ERROR, "Unable to parse stream name - name too long?\n");
+            else
+                av_log(s, AV_LOG_ERROR, "Unable to parse stream name\n");
+            return ret;
+        }
         // check with url
         if (s->filename) {
             pchar = strrchr(s->filename, '/');
@@ -1999,7 +2037,7 @@ static int send_invoke_response(URLContext *s, RTMPPacket *pkt)
  * successful response, we will return set the value to number (otherwise number
  * will not be changed).
  *
- * @return 0 if reading the value succeeds, negative value otherwiss
+ * @return 0 if reading the value succeeds, negative value otherwise
  */
 static int read_number_result(RTMPPacket *pkt, double *number)
 {
@@ -2022,7 +2060,7 @@ static int read_number_result(RTMPPacket *pkt, double *number)
     // Value 3/4: Null
     if (ff_amf_read_null(&gbc))
         return AVERROR_INVALIDDATA;
-    // Value 4/4: The resonse as AMF_NUMBER
+    // Value 4/4: The response as AMF_NUMBER
     if (ff_amf_read_number(&gbc, &numbuffer))
         return AVERROR_INVALIDDATA;
     else
@@ -2513,7 +2551,7 @@ static int rtmp_close(URLContext *h)
  */
 static int inject_fake_duration_metadata(RTMPContext *rt)
 {
-    // We need to insert the metdata packet directly after the FLV
+    // We need to insert the metadata packet directly after the FLV
     // header, i.e. we need to move all other already read data by the
     // size of our fake metadata packet.
 
@@ -2574,14 +2612,13 @@ static int inject_fake_duration_metadata(RTMPContext *rt)
  *             and 'playpath' is a file name (the rest of the path,
  *             may be prefixed with "mp4:")
  */
-static int rtmp_open(URLContext *s, const char *uri, int flags)
+static int rtmp_open(URLContext *s, const char *uri, int flags, AVDictionary **opts)
 {
     RTMPContext *rt = s->priv_data;
     char proto[8], hostname[256], path[1024], auth[100], *fname;
     char *old_app, *qmark, *n, fname_buffer[1024];
     uint8_t buf[2048];
     int port;
-    AVDictionary *opts = NULL;
     int ret;
 
     if (rt->listen_timeout > 0)
@@ -2618,7 +2655,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     }
     if (!strcmp(proto, "rtmpt") || !strcmp(proto, "rtmpts")) {
         if (!strcmp(proto, "rtmpts"))
-            av_dict_set(&opts, "ffrtmphttp_tls", "1", 1);
+            av_dict_set(opts, "ffrtmphttp_tls", "1", 1);
 
         /* open the http tunneling connection */
         ff_url_join(buf, sizeof(buf), "ffrtmphttp", NULL, hostname, port, NULL);
@@ -2629,7 +2666,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
         ff_url_join(buf, sizeof(buf), "tls", NULL, hostname, port, NULL);
     } else if (!strcmp(proto, "rtmpe") || (!strcmp(proto, "rtmpte"))) {
         if (!strcmp(proto, "rtmpte"))
-            av_dict_set(&opts, "ffrtmpcrypt_tunneling", "1", 1);
+            av_dict_set(opts, "ffrtmpcrypt_tunneling", "1", 1);
 
         /* open the encrypted connection */
         ff_url_join(buf, sizeof(buf), "ffrtmpcrypt", NULL, hostname, port, NULL);
@@ -2647,8 +2684,9 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
     }
 
 reconnect:
-    if ((ret = ffurl_open(&rt->stream, buf, AVIO_FLAG_READ_WRITE,
-                          &s->interrupt_callback, &opts)) < 0) {
+    if ((ret = ffurl_open_whitelist(&rt->stream, buf, AVIO_FLAG_READ_WRITE,
+                                    &s->interrupt_callback, opts,
+                                    s->protocol_whitelist, s->protocol_blacklist, s)) < 0) {
         av_log(s , AV_LOG_ERROR, "Cannot open connection %s\n", buf);
         goto fail;
     }
@@ -2681,8 +2719,8 @@ reconnect:
     qmark = strchr(path, '?');
     if (qmark && strstr(qmark, "slist=")) {
         char* amp;
-        // After slist we have the playpath, before the params, the app
-        av_strlcpy(rt->app, path + 1, FFMIN(qmark - path, APP_MAX_LENGTH));
+        // After slist we have the playpath, the full path is used as app
+        av_strlcpy(rt->app, path + 1, APP_MAX_LENGTH);
         fname = strstr(path, "slist=") + 6;
         // Strip any further query parameters from fname
         amp = strchr(fname, '&');
@@ -2865,7 +2903,7 @@ reconnect:
     return 0;
 
 fail:
-    av_dict_free(&opts);
+    av_dict_free(opts);
     rtmp_close(s);
     return ret;
 }
@@ -3108,9 +3146,9 @@ static const AVClass flavor##_class = {          \
     .version    = LIBAVUTIL_VERSION_INT,         \
 };                                               \
                                                  \
-URLProtocol ff_##flavor##_protocol = {           \
+const URLProtocol ff_##flavor##_protocol = {     \
     .name           = #flavor,                   \
-    .url_open       = rtmp_open,                 \
+    .url_open2      = rtmp_open,                 \
     .url_read       = rtmp_read,                 \
     .url_read_seek  = rtmp_seek,                 \
     .url_read_pause = rtmp_pause,                \

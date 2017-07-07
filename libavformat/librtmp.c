@@ -193,6 +193,8 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
 
             if (sep)
                 p = sep + 1;
+            else
+                break;
         }
     }
     if (ctx->playpath) {
@@ -237,7 +239,10 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
 #if CONFIG_NETWORK
     if (ctx->buffer_size >= 0 && (flags & AVIO_FLAG_WRITE)) {
         int tmp = ctx->buffer_size;
-        setsockopt(r->m_sb.sb_socket, SOL_SOCKET, SO_SNDBUF, &tmp, sizeof(tmp));
+        if (setsockopt(r->m_sb.sb_socket, SOL_SOCKET, SO_SNDBUF, &tmp, sizeof(tmp))) {
+            rc = AVERROR_EXTERNAL;
+            goto fail;
+        }
     }
 #endif
 
@@ -337,7 +342,7 @@ static const AVClass lib ## flavor ## _class = {\
 };
 
 RTMP_CLASS(rtmp)
-URLProtocol ff_librtmp_protocol = {
+const URLProtocol ff_librtmp_protocol = {
     .name                = "rtmp",
     .url_open            = rtmp_open,
     .url_read            = rtmp_read,
@@ -352,7 +357,7 @@ URLProtocol ff_librtmp_protocol = {
 };
 
 RTMP_CLASS(rtmpt)
-URLProtocol ff_librtmpt_protocol = {
+const URLProtocol ff_librtmpt_protocol = {
     .name                = "rtmpt",
     .url_open            = rtmp_open,
     .url_read            = rtmp_read,
@@ -367,7 +372,7 @@ URLProtocol ff_librtmpt_protocol = {
 };
 
 RTMP_CLASS(rtmpe)
-URLProtocol ff_librtmpe_protocol = {
+const URLProtocol ff_librtmpe_protocol = {
     .name                = "rtmpe",
     .url_open            = rtmp_open,
     .url_read            = rtmp_read,
@@ -382,7 +387,7 @@ URLProtocol ff_librtmpe_protocol = {
 };
 
 RTMP_CLASS(rtmpte)
-URLProtocol ff_librtmpte_protocol = {
+const URLProtocol ff_librtmpte_protocol = {
     .name                = "rtmpte",
     .url_open            = rtmp_open,
     .url_read            = rtmp_read,
@@ -397,7 +402,7 @@ URLProtocol ff_librtmpte_protocol = {
 };
 
 RTMP_CLASS(rtmps)
-URLProtocol ff_librtmps_protocol = {
+const URLProtocol ff_librtmps_protocol = {
     .name                = "rtmps",
     .url_open            = rtmp_open,
     .url_read            = rtmp_read,

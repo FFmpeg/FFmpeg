@@ -31,7 +31,7 @@
 #include "video.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct TileContext {
     const AVClass *class;
     unsigned w, h;
     unsigned margin;

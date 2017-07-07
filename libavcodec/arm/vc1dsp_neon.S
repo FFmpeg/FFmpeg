@@ -426,7 +426,7 @@ function ff_vc1_inv_trans_8x8_neon, export=1
         bx              lr
 endfunc
 
-@ (uint8_t *dest [r0], int linesize [r1], int16_t *block [r2])
+@ (uint8_t *dest [r0], ptrdiff_t stride [r1], int16_t *block [r2])
 function ff_vc1_inv_trans_8x4_neon, export=1
         vld1.64         {q0-q1}, [r2,:128]!     @ load 8 * 4 * 2 = 64 bytes / 16 bytes per quad = 4 quad registers
         vld1.64         {q2-q3}, [r2,:128]
@@ -511,7 +511,7 @@ function ff_vc1_inv_trans_8x4_neon, export=1
         bx              lr
 endfunc
 
-@ (uint8_t *dest [r0], int linesize [r1], int16_t *block [r2])
+@ (uint8_t *dest [r0], ptrdiff_t stride [r1], int16_t *block [r2])
 function ff_vc1_inv_trans_4x8_neon, export=1
         mov             r12, #(8 * 2)  @ 8 elements per line, each element 2 bytes
         vld4.16         {d0[],  d2[],  d4[],  d6[]},  [r2,:64], r12     @ read each column into a q register
@@ -593,7 +593,7 @@ endfunc
         vshr.s16        q1,  q1,  #\rshift      @ dst[3,1] >>= rshift
 .endm
 
-@ (uint8_t *dest [r0], int linesize [r1], int16_t *block [r2])
+@ (uint8_t *dest [r0], ptrdiff_t stride [r1], int16_t *block [r2])
 function ff_vc1_inv_trans_4x4_neon, export=1
         mov             r12, #(8 * 2)  @ 8 elements per line, each element 2 bytes
         vld4.16         {d0[],  d1[],  d2[],  d3[]},  [r2,:64], r12     @ read each column into a register

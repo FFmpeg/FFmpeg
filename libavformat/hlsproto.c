@@ -28,6 +28,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/time.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "url.h"
 #include "version.h"
@@ -116,8 +117,9 @@ static int parse_playlist(URLContext *h, const char *url)
     char line[1024];
     const char *ptr;
 
-    if ((ret = avio_open2(&in, url, AVIO_FLAG_READ,
-                          &h->interrupt_callback, NULL)) < 0)
+    if ((ret = ffio_open_whitelist(&in, url, AVIO_FLAG_READ,
+                                   &h->interrupt_callback, NULL,
+                                   h->protocol_whitelist, h->protocol_blacklist)) < 0)
         return ret;
 
     read_chomp_line(in, line, sizeof(line));
@@ -303,8 +305,9 @@ retry:
     }
     url = s->segments[s->cur_seq_no - s->start_seq_no]->url,
     av_log(h, AV_LOG_DEBUG, "opening %s\n", url);
-    ret = ffurl_open(&s->seg_hd, url, AVIO_FLAG_READ,
-                     &h->interrupt_callback, NULL);
+    ret = ffurl_open_whitelist(&s->seg_hd, url, AVIO_FLAG_READ,
+                               &h->interrupt_callback, NULL,
+                               h->protocol_whitelist, h->protocol_blacklist, h);
     if (ret < 0) {
         if (ff_check_interrupt(&h->interrupt_callback))
             return AVERROR_EXIT;
@@ -315,7 +318,7 @@ retry:
     goto start;
 }
 
-URLProtocol ff_hls_protocol = {
+const URLProtocol ff_hls_protocol = {
     .name           = "hls",
     .url_open       = hls_open,
     .url_read       = hls_read,

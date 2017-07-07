@@ -527,7 +527,7 @@ Wavelet Transform:
 ==================
 
 Snow supports 2 wavelet transforms, the symmetric biorthogonal 5/3 integer
-transform and a integer approximation of the symmetric biorthogonal 9/7
+transform and an integer approximation of the symmetric biorthogonal 9/7
 daubechies wavelet.
 
 2D IDWT (inverse discrete wavelet transform)

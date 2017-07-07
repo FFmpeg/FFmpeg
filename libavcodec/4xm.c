@@ -532,7 +532,7 @@ static int decode_i_block(FourXContext *f, int16_t *block)
             }
             i    += code >> 4;
             if (i >= 64) {
-                av_log(f->avctx, AV_LOG_ERROR, "run %d oveflow\n", i);
+                av_log(f->avctx, AV_LOG_ERROR, "run %d overflow\n", i);
                 return 0;
             }
 

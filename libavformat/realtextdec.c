@@ -70,8 +70,8 @@ static int realtext_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
     avpriv_set_pts_info(st, 64, 1, 100);
-    st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-    st->codec->codec_id   = AV_CODEC_ID_REALTEXT;
+    st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
+    st->codecpar->codec_id   = AV_CODEC_ID_REALTEXT;
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
 
@@ -89,12 +89,12 @@ static int realtext_read_header(AVFormatContext *s)
 
             if (p)
                 duration = read_ts(p);
-            st->codec->extradata = av_strdup(buf.str);
-            if (!st->codec->extradata) {
+            st->codecpar->extradata = av_strdup(buf.str);
+            if (!st->codecpar->extradata) {
                 res = AVERROR(ENOMEM);
                 goto end;
             }
-            st->codec->extradata_size = buf.len + 1;
+            st->codecpar->extradata_size = buf.len + 1;
         } else {
             /* if we just read a <time> tag, introduce a new event, otherwise merge
              * with the previous one */

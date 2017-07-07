@@ -34,7 +34,7 @@
 #include "audio.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct AResampleContext {
     const AVClass *class;
     int sample_rate_arg;
     double ratio;
@@ -195,12 +195,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamplesref)
 
     outsamplesref = ff_get_audio_buffer(outlink, n_out);
 
-    if(!outsamplesref)
+    if(!outsamplesref) {
+        av_frame_free(&insamplesref);
         return AVERROR(ENOMEM);
+    }
 
     av_frame_copy_props(outsamplesref, insamplesref);
     outsamplesref->format                = outlink->format;
-    av_frame_set_channels(outsamplesref, outlink->channels);
+    outsamplesref->channels              = outlink->channels;
     outsamplesref->channel_layout        = outlink->channel_layout;
     outsamplesref->sample_rate           = outlink->sample_rate;
 

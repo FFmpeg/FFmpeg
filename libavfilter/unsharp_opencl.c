@@ -43,7 +43,7 @@ static int compute_mask(int step, uint32_t *mask)
 {
     int i, z, ret = 0;
     int counter_size = sizeof(uint32_t) * (2 * step + 1);
-    uint32_t *temp1_counter, *temp2_counter, **counter;
+    uint32_t *temp1_counter, *temp2_counter, **counter = NULL;
     temp1_counter = av_mallocz(counter_size);
     if (!temp1_counter) {
         ret = AVERROR(ENOMEM);
@@ -80,7 +80,7 @@ static int compute_mask(int step, uint32_t *mask)
 end:
     av_freep(&temp1_counter);
     av_freep(&temp2_counter);
-    for (i = 0; i < 2 * step + 1; i++) {
+    for (i = 0; counter && i < 2 * step + 1; i++) {
         av_freep(&counter[i]);
     }
     av_freep(&counter);
@@ -170,8 +170,8 @@ int ff_opencl_apply_unsharp(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
     FFOpenclParam kernel2 = {0};
     int width = link->w;
     int height = link->h;
-    int cw = FF_CEIL_RSHIFT(link->w, unsharp->hsub);
-    int ch = FF_CEIL_RSHIFT(link->h, unsharp->vsub);
+    int cw = AV_CEIL_RSHIFT(link->w, unsharp->hsub);
+    int ch = AV_CEIL_RSHIFT(link->h, unsharp->vsub);
     size_t globalWorkSize1d = width * height + 2 * ch * cw;
     size_t globalWorkSize2dLuma[2];
     size_t globalWorkSize2dChroma[2];
@@ -385,7 +385,7 @@ int ff_opencl_unsharp_process_inout_buf(AVFilterContext *ctx, AVFrame *in, AVFra
     int ret = 0;
     AVFilterLink *link = ctx->inputs[0];
     UnsharpContext *unsharp = ctx->priv;
-    int ch = FF_CEIL_RSHIFT(link->h, unsharp->vsub);
+    int ch = AV_CEIL_RSHIFT(link->h, unsharp->vsub);
 
     if ((!unsharp->opencl_ctx.cl_inbuf) || (!unsharp->opencl_ctx.cl_outbuf)) {
         unsharp->opencl_ctx.in_plane_size[0]  = (in->linesize[0] * in->height);

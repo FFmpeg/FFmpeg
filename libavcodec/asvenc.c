@@ -61,7 +61,7 @@ static inline void asv2_put_level(ASV1Context *a, PutBitContext *pb, int level)
     } else {
         put_bits(pb, ff_asv2_level_tab[31][1], ff_asv2_level_tab[31][0]);
         if (level < -128 || level > 127) {
-            av_log(a->avctx, AV_LOG_WARNING, "Cliping level %d, increase qscale\n", level);
+            av_log(a->avctx, AV_LOG_WARNING, "Clipping level %d, increase qscale\n", level);
             level = av_clip_int8(level);
         }
         asv2_put_bits(pb, 8, level & 0xFF);
@@ -245,10 +245,10 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
         for (i = 0; i<3; i++) {
             int x, y;
-            int w  = FF_CEIL_RSHIFT(pict->width, !!i);
-            int h  = FF_CEIL_RSHIFT(pict->height, !!i);
-            int w2 = FF_CEIL_RSHIFT(clone->width, !!i);
-            int h2 = FF_CEIL_RSHIFT(clone->height, !!i);
+            int w  = AV_CEIL_RSHIFT(pict->width, !!i);
+            int h  = AV_CEIL_RSHIFT(pict->height, !!i);
+            int w2 = AV_CEIL_RSHIFT(clone->width, !!i);
+            int h2 = AV_CEIL_RSHIFT(clone->height, !!i);
             for (y=0; y<h; y++)
                 for (x=w; x<w2; x++)
                     clone->data[i][x + y*clone->linesize[i]] =

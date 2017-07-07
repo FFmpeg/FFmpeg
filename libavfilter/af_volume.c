@@ -27,6 +27,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/eval.h"
+#include "libavutil/ffmath.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
@@ -279,7 +280,7 @@ static int set_volume(AVFilterContext *ctx)
         av_log(ctx, AV_LOG_VERBOSE, "volume_i:%d/255 ", vol->volume_i);
     }
     av_log(ctx, AV_LOG_VERBOSE, "volume:%f volume_dB:%f\n",
-           vol->volume, 20.0*log(vol->volume)/M_LN10);
+           vol->volume, 20.0*log10(vol->volume));
 
     volume_init(vol);
     return 0;
@@ -376,7 +377,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
             av_log(inlink->dst, AV_LOG_VERBOSE,
                    "Using gain %f dB from replaygain side data.\n", g);
 
-            vol->volume   = pow(10, (g + vol->replaygain_preamp) / 20);
+            vol->volume   = ff_exp10((g + vol->replaygain_preamp) / 20);
             if (vol->replaygain_noclip)
                 vol->volume = FFMIN(vol->volume, 1.0 / p);
             vol->volume_i = (int)(vol->volume * 256 + 0.5);
@@ -392,9 +393,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     }
     vol->var_values[VAR_PTS] = TS2D(buf->pts);
     vol->var_values[VAR_T  ] = TS2T(buf->pts, inlink->time_base);
-    vol->var_values[VAR_N  ] = inlink->frame_count;
+    vol->var_values[VAR_N  ] = inlink->frame_count_out;
 
-    pos = av_frame_get_pkt_pos(buf);
+    pos = buf->pkt_pos;
     vol->var_values[VAR_POS] = pos == -1 ? NAN : pos;
     if (vol->eval_mode == EVAL_MODE_FRAME)
         set_volume(ctx);
@@ -410,8 +411,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         out_buf = buf;
     } else {
         out_buf = ff_get_audio_buffer(inlink, nb_samples);
-        if (!out_buf)
+        if (!out_buf) {
+            av_frame_free(&buf);
             return AVERROR(ENOMEM);
+        }
         ret = av_frame_copy_props(out_buf, buf);
         if (ret < 0) {
             av_frame_free(&out_buf);

@@ -146,12 +146,9 @@ static int cmp_pkt_sub_ts_pos(const void *a, const void *b)
 {
     const AVPacket *s1 = a;
     const AVPacket *s2 = b;
-    if (s1->pts == s2->pts) {
-        if (s1->pos == s2->pos)
-            return 0;
-        return s1->pos > s2->pos ? 1 : -1;
-    }
-    return s1->pts > s2->pts ? 1 : -1;
+    if (s1->pts == s2->pts)
+        return FFDIFFSIGN(s1->pos, s2->pos);
+    return FFDIFFSIGN(s1->pts , s2->pts);
 }
 
 static int cmp_pkt_sub_pos_ts(const void *a, const void *b)
@@ -179,7 +176,7 @@ static void drop_dups(void *log_ctx, FFDemuxSubtitlesQueue *q)
             q->subs[i].stream_index == last->stream_index &&
             !strcmp(q->subs[i].data, last->data)) {
 
-            av_free_packet(&q->subs[i]);
+            av_packet_unref(&q->subs[i]);
             drop++;
         } else if (drop) {
             q->subs[last_id + 1] = q->subs[i];
@@ -201,7 +198,7 @@ void ff_subtitles_queue_finalize(void *log_ctx, FFDemuxSubtitlesQueue *q)
           q->sort == SUB_SORT_TS_POS ? cmp_pkt_sub_ts_pos
                                      : cmp_pkt_sub_pos_ts);
     for (i = 0; i < q->nb_subs; i++)
-        if (q->subs[i].duration == -1 && i < q->nb_subs - 1)
+        if (q->subs[i].duration < 0 && i < q->nb_subs - 1)
             q->subs[i].duration = q->subs[i + 1].pts - q->subs[i].pts;
 
     if (!q->keep_duplicates)
@@ -302,7 +299,7 @@ void ff_subtitles_queue_clean(FFDemuxSubtitlesQueue *q)
     int i;
 
     for (i = 0; i < q->nb_subs; i++)
-        av_free_packet(&q->subs[i]);
+        av_packet_unref(&q->subs[i]);
     av_freep(&q->subs);
     q->nb_subs = q->allocated_size = q->current_sub_idx = 0;
 }

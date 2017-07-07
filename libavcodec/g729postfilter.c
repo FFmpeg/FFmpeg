@@ -165,7 +165,8 @@ static int16_t long_term_filter(AudioDSPContext *adsp, int pitch_delay_int,
                                     sig_scaled + RES_PREV_DATA_SIZE,
                                     subframe_size);
     if (ener) {
-        sh_ener = FFMAX(av_log2(ener) - 14, 0);
+        sh_ener = av_log2(ener) - 14;
+        sh_ener = FFMAX(sh_ener, 0);
         ener >>= sh_ener;
         /* Search for best pitch delay.
 
@@ -320,7 +321,8 @@ static int16_t long_term_filter(AudioDSPContext *adsp, int pitch_delay_int,
             gain_long_num = 0;
             sh_gain_long_num = 0;
         } else {
-            tmp = FFMAX(av_log2(sum) - 14, 0);
+            tmp = av_log2(sum) - 14;
+            tmp = FFMAX(tmp, 0);
             sum >>= tmp;
             gain_long_num = sum;
             sh_gain_long_num = tmp;
@@ -329,7 +331,8 @@ static int16_t long_term_filter(AudioDSPContext *adsp, int pitch_delay_int,
         /* Compute R'(k) correlation's denominator. */
         sum = adsp->scalarproduct_int16(residual_filt, residual_filt, subframe_size);
 
-        tmp = FFMAX(av_log2(sum) - 14, 0);
+        tmp = av_log2(sum) - 14;
+        tmp = FFMAX(tmp, 0);
         sum >>= tmp;
         gain_long_den = sum;
         sh_gain_long_den = tmp;
@@ -541,9 +544,10 @@ void ff_g729_postfilter(AudioDSPContext *adsp, int16_t* ht_prev_data, int* voici
 
     /* long-term filter. If long-term prediction gain is larger than 3dB (returned value is
        nonzero) then declare current subframe as periodic. */
-    *voicing = FFMAX(*voicing, long_term_filter(adsp, pitch_delay_int,
+    i = long_term_filter(adsp, pitch_delay_int,
                                                 residual, residual_filt_buf + 10,
-                                                subframe_size));
+                                                subframe_size);
+    *voicing = FFMAX(*voicing, i);
 
     /* shift residual for using in next subframe */
     memmove(residual, residual + subframe_size, RES_PREV_DATA_SIZE * sizeof(int16_t));

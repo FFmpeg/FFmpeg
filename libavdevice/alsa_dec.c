@@ -79,11 +79,11 @@ static av_cold int audio_read_header(AVFormatContext *s1)
     }
 
     /* take real parameters */
-    st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id    = codec_id;
-    st->codec->sample_rate = s->sample_rate;
-    st->codec->channels    = s->channels;
-    st->codec->frame_size = s->frame_size;
+    st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id    = codec_id;
+    st->codecpar->sample_rate = s->sample_rate;
+    st->codecpar->channels    = s->channels;
+    st->codecpar->frame_size = s->frame_size;
     avpriv_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
     /* microseconds instead of seconds, MHz instead of Hz */
     s->timefilter = ff_timefilter_new(1000000.0 / s->sample_rate,
@@ -111,14 +111,14 @@ static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
 
     while ((res = snd_pcm_readi(s->h, pkt->data, s->period_size)) < 0) {
         if (res == -EAGAIN) {
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
 
             return AVERROR(EAGAIN);
         }
         if (ff_alsa_xrun_recover(s1, res) < 0) {
             av_log(s1, AV_LOG_ERROR, "ALSA read error: %s\n",
                    snd_strerror(res));
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
 
             return AVERROR(EIO);
         }

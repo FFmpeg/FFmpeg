@@ -631,6 +631,8 @@ static int epic_decode_run_length(ePICContext *dc, int x, int y, int tile_width,
               (NN  != N)  << 1 |
               (NNW != NW);
         WWneW = ff_els_decode_bit(&dc->els_ctx, &dc->W_ctx_rung[idx]);
+        if (WWneW < 0)
+            return WWneW;
     }
 
     if (WWneW)
@@ -837,10 +839,13 @@ static int epic_decode_tile(ePICContext *dc, uint8_t *out, int tile_height,
                 if (y < 2 || x < 2 || x == tile_width - 1) {
                     run       = 1;
                     got_pixel = epic_handle_edges(dc, x, y, curr_row, above_row, &pix);
-                } else
+                } else {
                     got_pixel = epic_decode_run_length(dc, x, y, tile_width,
                                                        curr_row, above_row,
                                                        above2_row, &pix, &run);
+                    if (got_pixel < 0)
+                        return got_pixel;
+                }
 
                 if (!got_pixel && !epic_predict_from_NW_NE(dc, x, y, run,
                                                            tile_width, curr_row,
@@ -895,7 +900,7 @@ static int epic_jb_decode_tile(G2MContext *c, int tile_x, int tile_y,
     }
 
     if (src_size < els_dsize) {
-        av_log(avctx, AV_LOG_ERROR, "ePIC: data too short, needed %zu, got %zu\n",
+        av_log(avctx, AV_LOG_ERROR, "ePIC: data too short, needed %"SIZE_SPECIFIER", got %"SIZE_SPECIFIER"\n",
                els_dsize, src_size);
         return AVERROR_INVALIDDATA;
     }
@@ -1437,9 +1442,8 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
             }
             c->compression = bytestream2_get_be32(&bc);
             if (c->compression != 2 && c->compression != 3) {
-                av_log(avctx, AV_LOG_ERROR,
-                       "Unknown compression method %d\n",
-                       c->compression);
+                avpriv_report_missing_feature(avctx, "Compression method %d",
+                                              c->compression);
                 ret = AVERROR_PATCHWELCOME;
                 goto header_fail;
             }
@@ -1470,9 +1474,9 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
                 g_mask = bytestream2_get_be32(&bc);
                 b_mask = bytestream2_get_be32(&bc);
                 if (r_mask != 0xFF0000 || g_mask != 0xFF00 || b_mask != 0xFF) {
-                    av_log(avctx, AV_LOG_ERROR,
-                           "Invalid or unsupported bitmasks: R=%"PRIX32", G=%"PRIX32", B=%"PRIX32"\n",
-                           r_mask, g_mask, b_mask);
+                    avpriv_report_missing_feature(avctx,
+                                                  "Bitmasks: R=%"PRIX32", G=%"PRIX32", B=%"PRIX32,
+                                                  r_mask, g_mask, b_mask);
                     ret = AVERROR_PATCHWELCOME;
                     goto header_fail;
                 }

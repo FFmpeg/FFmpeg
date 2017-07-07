@@ -97,13 +97,13 @@ static int adts_decode_extradata(AVFormatContext *s, ADTSContext *adts, const ui
 static int adts_write_header(AVFormatContext *s)
 {
     ADTSContext *adts = s->priv_data;
-    AVCodecContext *avc = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
 
     if (adts->id3v2tag)
         ff_id3v2_write_simple(s, 4, ID3v2_DEFAULT_MAGIC);
-    if (avc->extradata_size > 0)
-        return adts_decode_extradata(s, adts, avc->extradata,
-                                     avc->extradata_size);
+    if (par->extradata_size > 0)
+        return adts_decode_extradata(s, adts, par->extradata,
+                                     par->extradata_size);
 
     return 0;
 }
@@ -149,11 +149,28 @@ static int adts_write_frame_header(ADTSContext *ctx,
 static int adts_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ADTSContext *adts = s->priv_data;
+    AVCodecParameters *par = s->streams[0]->codecpar;
     AVIOContext *pb = s->pb;
     uint8_t buf[ADTS_HEADER_SIZE];
 
     if (!pkt->size)
         return 0;
+    if (!par->extradata_size) {
+        uint8_t *side_data;
+        int side_data_size = 0, ret;
+
+        side_data = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
+                                            &side_data_size);
+        if (side_data_size) {
+            ret = adts_decode_extradata(s, adts, side_data, side_data_size);
+            if (ret < 0)
+                return ret;
+            ret = ff_alloc_extradata(par, side_data_size);
+            if (ret < 0)
+                return ret;
+            memcpy(par->extradata, side_data, side_data_size);
+        }
+    }
     if (adts->write_adts) {
         int err = adts_write_frame_header(adts, buf, pkt->size,
                                              adts->pce_size);
@@ -183,8 +200,8 @@ static int adts_write_trailer(AVFormatContext *s)
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 #define OFFSET(obj) offsetof(ADTSContext, obj)
 static const AVOption options[] = {
-    { "write_id3v2", "Enable ID3v2 tag writing", OFFSET(id3v2tag), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, ENC},
-    { "write_apetag", "Enable APE tag writing", OFFSET(apetag), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, ENC},
+    { "write_id3v2",  "Enable ID3v2 tag writing", OFFSET(id3v2tag), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, ENC},
+    { "write_apetag", "Enable APE tag writing",   OFFSET(apetag),   AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, ENC},
     { NULL },
 };
 

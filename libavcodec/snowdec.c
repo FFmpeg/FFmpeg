@@ -104,8 +104,11 @@ static av_always_inline void predict_slice_buffered(SnowContext *s, slice_buffer
             avmv->h = block_h;
             avmv->dst_x = block_w*mb_x - block_w/2;
             avmv->dst_y = block_h*mb_y - block_h/2;
-            avmv->src_x = avmv->dst_x + (bn->mx * s->mv_scale)/8;
-            avmv->src_y = avmv->dst_y + (bn->my * s->mv_scale)/8;
+            avmv->motion_scale = 8;
+            avmv->motion_x = bn->mx * s->mv_scale;
+            avmv->motion_y = bn->my * s->mv_scale;
+            avmv->src_x = avmv->dst_x + avmv->motion_x / 8;
+            avmv->src_y = avmv->dst_y + avmv->motion_y / 8;
             avmv->source= -1 - bn->ref;
             avmv->flags = 0;
         }
@@ -225,9 +228,9 @@ static void dequantize_slice_buffered(SnowContext *s, slice_buffer * sb, SubBand
         for(x=0; x<w; x++){
             int i= line[x];
             if(i<0){
-                line[x]= -((-i*qmul + qadd)>>(QEXPSHIFT)); //FIXME try different bias
+                line[x]= -((-i*(unsigned)qmul + qadd)>>(QEXPSHIFT)); //FIXME try different bias
             }else if(i>0){
-                line[x]=  (( i*qmul + qadd)>>(QEXPSHIFT));
+                line[x]=  (( i*(unsigned)qmul + qadd)>>(QEXPSHIFT));
             }
         }
     }
@@ -381,6 +384,10 @@ static int decode_header(SnowContext *s){
         av_log(s->avctx, AV_LOG_ERROR, "spatial_decomposition_count %d too large for size\n", s->spatial_decomposition_count);
         return AVERROR_INVALIDDATA;
     }
+    if (s->avctx->width > 65536-4) {
+        av_log(s->avctx, AV_LOG_ERROR, "Width %d is too large\n", s->avctx->width);
+        return AVERROR_INVALIDDATA;
+    }
 
 
     s->qlog           += get_symbol(&s->c, s->header_state, 1);
@@ -390,6 +397,11 @@ static int decode_header(SnowContext *s){
     if(s->block_max_depth > 1 || s->block_max_depth < 0){
         av_log(s->avctx, AV_LOG_ERROR, "block_max_depth= %d is too large\n", s->block_max_depth);
         s->block_max_depth= 0;
+        return AVERROR_INVALIDDATA;
+    }
+    if (FFABS(s->qbias) > 127) {
+        av_log(s->avctx, AV_LOG_ERROR, "qbias %d is too large\n", s->qbias);
+        s->qbias = 0;
         return AVERROR_INVALIDDATA;
     }
 
@@ -504,13 +516,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             }
         }
 
-        {
         for(level=0; level<s->spatial_decomposition_count; level++){
             for(orientation=level ? 1 : 0; orientation<4; orientation++){
                 SubBand *b= &p->band[level][orientation];
                 unpack_coeffs(s, b, b->parent, orientation);
             }
-        }
         }
 
         {
@@ -574,7 +584,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 for(; yq<slice_h && yq<h; yq++){
                     IDWTELEM * line = slice_buffer_get_line(&s->sb, yq);
                     for(x=0; x<w; x++){
-                        line[x] <<= FRAC_BITS;
+                        line[x] *= 1<<FRAC_BITS;
                     }
                 }
             }

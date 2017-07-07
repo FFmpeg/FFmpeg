@@ -58,7 +58,7 @@
  * The following example illustrates an AVOptions-enabled struct:
  * @code
  * typedef struct test_struct {
- *     AVClass *class;
+ *     const AVClass *class;
  *     int      int_opt;
  *     char    *str_opt;
  *     uint8_t *bin_opt;
@@ -96,7 +96,7 @@
  * @code
  * test_struct *alloc_test_struct(void)
  * {
- *     test_struct *ret = av_malloc(sizeof(*ret));
+ *     test_struct *ret = av_mallocz(sizeof(*ret));
  *     ret->class = &test_class;
  *     av_opt_set_defaults(ret);
  *     return ret;
@@ -228,6 +228,7 @@ enum AVOptionType{
     AV_OPT_TYPE_RATIONAL,
     AV_OPT_TYPE_BINARY,  ///< offset must point to a pointer immediately followed by an int for the length
     AV_OPT_TYPE_DICT,
+    AV_OPT_TYPE_UINT64,
     AV_OPT_TYPE_CONST = 128,
     AV_OPT_TYPE_IMAGE_SIZE = MKBETAG('S','I','Z','E'), ///< offset must point to two consecutive integers
     AV_OPT_TYPE_PIXEL_FMT  = MKBETAG('P','F','M','T'),
@@ -281,7 +282,7 @@ typedef struct AVOption {
 #define AV_OPT_FLAG_VIDEO_PARAM     16
 #define AV_OPT_FLAG_SUBTITLE_PARAM  32
 /**
- * The option is inteded for exporting values to the caller.
+ * The option is intended for exporting values to the caller.
  */
 #define AV_OPT_FLAG_EXPORT          64
 /**

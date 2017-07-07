@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/opt.h"
+
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
@@ -27,6 +29,12 @@
 
 #define SGI_SINGLE_CHAN 2
 #define SGI_MULTI_CHAN 3
+
+typedef struct SgiContext {
+    AVClass *class;
+
+    int rle;
+} SgiContext;
 
 static av_cold int encode_init(AVCodecContext *avctx)
 {
@@ -40,20 +48,69 @@ static av_cold int encode_init(AVCodecContext *avctx)
     return 0;
 }
 
+static int sgi_rle_encode(PutByteContext *pbc, const uint8_t *src,
+                          int w, int bpp)
+{
+    int val, count, x, start = bytestream2_tell_p(pbc);
+    void (*bytestream2_put)(PutByteContext *, unsigned int);
+
+    if (bpp == 1)
+        bytestream2_put = bytestream2_put_byte;
+    else
+        bytestream2_put = bytestream2_put_be16;
+
+    for (x = 0; x < w; x += count) {
+        /* see if we can encode the next set of pixels with RLE */
+        count = ff_rle_count_pixels(src, w - x, bpp, 1);
+        if (count > 1) {
+            if (bytestream2_get_bytes_left_p(pbc) < bpp * 2)
+                return AVERROR_INVALIDDATA;
+
+            val = bpp == 1 ? *src : AV_RB16(src);
+            bytestream2_put(pbc, count);
+            bytestream2_put(pbc, val);
+        } else {
+            int i;
+            /* fall back on uncompressed */
+            count = ff_rle_count_pixels(src, w - x, bpp, 0);
+            if (bytestream2_get_bytes_left_p(pbc) < bpp * (count + 1))
+                return AVERROR_INVALIDDATA;
+
+            bytestream2_put(pbc, count + 0x80);
+            for (i = 0; i < count; i++) {
+                val = bpp == 1 ? src[i] : AV_RB16(src + i * bpp);
+                bytestream2_put(pbc, val);
+            }
+        }
+
+        src += count * bpp;
+    }
+
+    return bytestream2_tell_p(pbc) - start;
+}
+
 static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *frame, int *got_packet)
 {
+    SgiContext *s = avctx->priv_data;
     const AVFrame * const p = frame;
-    uint8_t *offsettab, *lengthtab, *in_buf, *encode_buf, *buf;
-    int x, y, z, length, tablesize, ret;
+    PutByteContext pbc;
+    uint8_t *in_buf, *encode_buf;
+    int x, y, z, length, tablesize, ret, i;
     unsigned int width, height, depth, dimension;
     unsigned int bytes_per_channel, pixmax, put_be;
-    unsigned char *end_buf;
 
 #if FF_API_CODED_FRAME
 FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->coded_frame->key_frame = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+#if FF_API_CODER_TYPE
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->coder_type == FF_CODER_TYPE_RAW)
+        s->rle = 0;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
@@ -79,7 +136,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     case AV_PIX_FMT_GRAY16LE:
         put_be = !HAVE_BIGENDIAN;
     case AV_PIX_FMT_GRAY16BE:
-        avctx->coder_type = FF_CODER_TYPE_RAW;
         bytes_per_channel = 2;
         pixmax = 0xFFFF;
         dimension = SGI_SINGLE_CHAN;
@@ -88,7 +144,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     case AV_PIX_FMT_RGB48LE:
         put_be = !HAVE_BIGENDIAN;
     case AV_PIX_FMT_RGB48BE:
-        avctx->coder_type = FF_CODER_TYPE_RAW;
         bytes_per_channel = 2;
         pixmax = 0xFFFF;
         dimension = SGI_MULTI_CHAN;
@@ -97,7 +152,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     case AV_PIX_FMT_RGBA64LE:
         put_be = !HAVE_BIGENDIAN;
     case AV_PIX_FMT_RGBA64BE:
-        avctx->coder_type = FF_CODER_TYPE_RAW;
         bytes_per_channel = 2;
         pixmax = 0xFFFF;
         dimension = SGI_MULTI_CHAN;
@@ -109,69 +163,72 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     tablesize = depth * height * 4;
     length = SGI_HEADER_SIZE;
-    if (avctx->coder_type == FF_CODER_TYPE_RAW)
+    if (!s->rle)
         length += depth * height * width;
-    else // assume ff_rl_encode() produces at most 2x size of input
+    else // assume sgi_rle_encode() produces at most 2x size of input
         length += tablesize * 2 + depth * height * (2 * width + 1);
 
     if ((ret = ff_alloc_packet2(avctx, pkt, bytes_per_channel * length, 0)) < 0)
         return ret;
-    buf     = pkt->data;
-    end_buf = pkt->data + pkt->size;
+
+    bytestream2_init_writer(&pbc, pkt->data, pkt->size);
 
     /* Encode header. */
-    bytestream_put_be16(&buf, SGI_MAGIC);
-    bytestream_put_byte(&buf, avctx->coder_type != FF_CODER_TYPE_RAW); /* RLE 1 - VERBATIM 0*/
-    bytestream_put_byte(&buf, bytes_per_channel);
-    bytestream_put_be16(&buf, dimension);
-    bytestream_put_be16(&buf, width);
-    bytestream_put_be16(&buf, height);
-    bytestream_put_be16(&buf, depth);
+    bytestream2_put_be16(&pbc, SGI_MAGIC);
+    bytestream2_put_byte(&pbc, s->rle); /* RLE 1 - VERBATIM 0 */
+    bytestream2_put_byte(&pbc, bytes_per_channel);
+    bytestream2_put_be16(&pbc, dimension);
+    bytestream2_put_be16(&pbc, width);
+    bytestream2_put_be16(&pbc, height);
+    bytestream2_put_be16(&pbc, depth);
 
-    bytestream_put_be32(&buf, 0L); /* pixmin */
-    bytestream_put_be32(&buf, pixmax);
-    bytestream_put_be32(&buf, 0L); /* dummy */
+    bytestream2_put_be32(&pbc, 0L); /* pixmin */
+    bytestream2_put_be32(&pbc, pixmax);
+    bytestream2_put_be32(&pbc, 0L); /* dummy */
 
     /* name */
-    memset(buf, 0, SGI_HEADER_SIZE);
-    buf += 80;
+    for (i = 0; i < 80; i++)
+        bytestream2_put_byte(&pbc, 0L);
 
     /* colormap */
-    bytestream_put_be32(&buf, 0L);
+    bytestream2_put_be32(&pbc, 0L);
 
     /* The rest of the 512 byte header is unused. */
-    buf += 404;
-    offsettab = buf;
+    for (i = 0; i < 404; i++)
+        bytestream2_put_byte(&pbc, 0L);
 
-    if (avctx->coder_type != FF_CODER_TYPE_RAW) {
+    if (s->rle) {
+        PutByteContext taboff_pcb, tablen_pcb;
+
         /* Skip RLE offset table. */
-        buf += tablesize;
-        lengthtab = buf;
+        bytestream2_init_writer(&taboff_pcb, pbc.buffer, tablesize);
+        bytestream2_skip_p(&pbc, tablesize);
 
         /* Skip RLE length table. */
-        buf += tablesize;
+        bytestream2_init_writer(&tablen_pcb, pbc.buffer, tablesize);
+        bytestream2_skip_p(&pbc, tablesize);
 
         /* Make an intermediate consecutive buffer. */
-        if (!(encode_buf = av_malloc(width)))
+        if (!(encode_buf = av_malloc(width * bytes_per_channel)))
             return AVERROR(ENOMEM);
 
         for (z = 0; z < depth; z++) {
-            in_buf = p->data[0] + p->linesize[0] * (height - 1) + z;
+            in_buf = p->data[0] + p->linesize[0] * (height - 1) + z * bytes_per_channel;
 
             for (y = 0; y < height; y++) {
-                bytestream_put_be32(&offsettab, buf - pkt->data);
+                bytestream2_put_be32(&taboff_pcb, bytestream2_tell_p(&pbc));
 
-                for (x = 0; x < width; x++)
+                for (x = 0; x < width * bytes_per_channel; x += bytes_per_channel)
                     encode_buf[x] = in_buf[depth * x];
 
-                if ((length = ff_rle_encode(buf, end_buf - buf - 1, encode_buf, 1, width, 0, 0, 0x80, 0)) < 1) {
+                length = sgi_rle_encode(&pbc, encode_buf, width,
+                                        bytes_per_channel);
+                if (length < 1) {
                     av_free(encode_buf);
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
 
-                buf += length;
-                bytestream_put_byte(&buf, 0);
-                bytestream_put_be32(&lengthtab, length + 1);
+                bytestream2_put_be32(&tablen_pcb, length);
                 in_buf -= p->linesize[0];
             }
         }
@@ -183,15 +240,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
             for (y = 0; y < height; y++) {
                 for (x = 0; x < width * depth; x += depth)
-                    if (bytes_per_channel == 1) {
-                        bytestream_put_byte(&buf, in_buf[x]);
-                    } else {
-                        if (put_be) {
-                            bytestream_put_be16(&buf, ((uint16_t *)in_buf)[x]);
-                        } else {
-                            bytestream_put_le16(&buf, ((uint16_t *)in_buf)[x]);
-                        }
-                    }
+                    if (bytes_per_channel == 1)
+                        bytestream2_put_byte(&pbc, in_buf[x]);
+                    else
+                        if (put_be)
+                            bytestream2_put_be16(&pbc, ((uint16_t *)in_buf)[x]);
+                        else
+                            bytestream2_put_le16(&pbc, ((uint16_t *)in_buf)[x]);
 
                 in_buf -= p->linesize[0];
             }
@@ -199,18 +254,35 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
     /* total length */
-    pkt->size   = buf - pkt->data;
+    pkt->size   = bytestream2_tell_p(&pbc);
     pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
 
     return 0;
 }
 
+#define OFFSET(x) offsetof(SgiContext, x)
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "rle", "Use run-length compression", OFFSET(rle), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, VE },
+
+    { NULL },
+};
+
+static const AVClass sgi_class = {
+    .class_name = "sgi",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_sgi_encoder = {
     .name      = "sgi",
     .long_name = NULL_IF_CONFIG_SMALL("SGI image"),
     .type      = AVMEDIA_TYPE_VIDEO,
     .id        = AV_CODEC_ID_SGI,
+    .priv_data_size = sizeof(SgiContext),
+    .priv_class = &sgi_class,
     .init      = encode_init,
     .encode2   = encode_frame,
     .pix_fmts  = (const enum AVPixelFormat[]) {

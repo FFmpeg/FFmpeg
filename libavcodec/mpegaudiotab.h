@@ -33,8 +33,6 @@
 #include <stdint.h>
 #include "mpegaudio.h"
 
-#define SQRT2 1.41421356237309514547
-
 static const int costab32[30] = {
     FIX(0.54119610014619701222),
     FIX(1.3065629648763763537),

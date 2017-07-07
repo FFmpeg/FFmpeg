@@ -51,8 +51,8 @@ static int nc_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = AV_CODEC_ID_MPEG4;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id   = AV_CODEC_ID_MPEG4;
     st->need_parsing      = AVSTREAM_PARSE_FULL;
 
     avpriv_set_pts_info(st, 64, 1, 100);
@@ -83,7 +83,7 @@ static int nc_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     ret = av_get_packet(s->pb, pkt, size);
     if (ret != size) {
-        if (ret > 0) av_free_packet(pkt);
+        if (ret > 0) av_packet_unref(pkt);
         return AVERROR(EIO);
     }
 

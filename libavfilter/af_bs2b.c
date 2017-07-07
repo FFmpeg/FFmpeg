@@ -45,7 +45,7 @@ typedef struct Bs2bContext {
 } Bs2bContext;
 
 #define OFFSET(x) offsetof(Bs2bContext, x)
-#define A AV_OPT_FLAG_AUDIO_PARAM
+#define A AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption bs2b_options[] = {
     { "profile", "Apply a pre-defined crossfeed level",
@@ -134,8 +134,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         out_frame = frame;
     } else {
         out_frame = ff_get_audio_buffer(inlink, frame->nb_samples);
-        if (!out_frame)
+        if (!out_frame) {
+            av_frame_free(&frame);
             return AVERROR(ENOMEM);
+        }
         av_frame_copy(out_frame, frame);
         ret = av_frame_copy_props(out_frame, frame);
         if (ret < 0) {

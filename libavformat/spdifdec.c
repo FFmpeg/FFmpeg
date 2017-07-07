@@ -193,7 +193,7 @@ int ff_spdif_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->pos = avio_tell(pb) - BURST_HEADER_SIZE;
 
     if (avio_read(pb, pkt->data, pkt->size) < pkt->size) {
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
         return AVERROR_EOF;
     }
     ff_spdif_bswap_buf16((uint16_t *)pkt->data, (uint16_t *)pkt->data, pkt->size >> 1);
@@ -201,7 +201,7 @@ int ff_spdif_read_packet(AVFormatContext *s, AVPacket *pkt)
     ret = spdif_get_offset_and_codec(s, data_type, pkt->data,
                                      &offset, &codec_id);
     if (ret) {
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
         return ret;
     }
 
@@ -212,20 +212,20 @@ int ff_spdif_read_packet(AVFormatContext *s, AVPacket *pkt)
         /* first packet, create a stream */
         AVStream *st = avformat_new_stream(s, NULL);
         if (!st) {
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             return AVERROR(ENOMEM);
         }
-        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        st->codec->codec_id = codec_id;
-    } else if (codec_id != s->streams[0]->codec->codec_id) {
+        st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+        st->codecpar->codec_id = codec_id;
+    } else if (codec_id != s->streams[0]->codecpar->codec_id) {
         avpriv_report_missing_feature(s, "Codec change in IEC 61937");
         return AVERROR_PATCHWELCOME;
     }
 
-    if (!s->bit_rate && s->streams[0]->codec->sample_rate)
+    if (!s->bit_rate && s->streams[0]->codecpar->sample_rate)
         /* stream bitrate matches 16-bit stereo PCM bitrate for currently
            supported codecs */
-        s->bit_rate = 2 * 16 * s->streams[0]->codec->sample_rate;
+        s->bit_rate = 2 * 16 * s->streams[0]->codecpar->sample_rate;
 
     return 0;
 }

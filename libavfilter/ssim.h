@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef LIBAVFILTER_SSIM_H
-#define LIBAVFILTER_SSIM_H
+#ifndef AVFILTER_SSIM_H
+#define AVFILTER_SSIM_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -33,4 +33,4 @@ typedef struct SSIMDSPContext {
 
 void ff_ssim_init_x86(SSIMDSPContext *dsp);
 
-#endif /* LIBAVFILTER_SSIM_H */
+#endif /* AVFILTER_SSIM_H */

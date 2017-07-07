@@ -174,21 +174,21 @@ typedef struct Jpeg2000Cblk {
     int nb_terminationsinc;
     int data_start[JPEG2000_MAX_PASSES];
     Jpeg2000Pass passes[JPEG2000_MAX_PASSES];
-    uint16_t coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
+    int coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
 } Jpeg2000Cblk; // code block
 
 typedef struct Jpeg2000Prec {
-    uint16_t nb_codeblocks_width;
-    uint16_t nb_codeblocks_height;
+    int nb_codeblocks_width;
+    int nb_codeblocks_height;
     Jpeg2000TgtNode *zerobits;
     Jpeg2000TgtNode *cblkincl;
     Jpeg2000Cblk *cblk;
     int decoded_layers;
-    uint16_t coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
+    int coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
 } Jpeg2000Prec; // precinct
 
 typedef struct Jpeg2000Band {
-    uint16_t coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
+    int coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
     uint16_t log2_cblk_width, log2_cblk_height;
     int i_stepsize; // quantization stepsize
     float f_stepsize; // quantization stepsize
@@ -197,8 +197,8 @@ typedef struct Jpeg2000Band {
 
 typedef struct Jpeg2000ResLevel {
     uint8_t nbands;
-    uint16_t coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
-    uint16_t num_precincts_x, num_precincts_y; // number of precincts in x/y direction
+    int coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
+    int num_precincts_x, num_precincts_y; // number of precincts in x/y direction
     uint8_t log2_prec_width, log2_prec_height; // exponent of precinct size
     Jpeg2000Band *band;
 } Jpeg2000ResLevel; // resolution level
@@ -208,19 +208,19 @@ typedef struct Jpeg2000Component {
     DWTContext dwt;
     float *f_data;
     int *i_data;
-    uint16_t coord[2][2];   // border coordinates {{x0, x1}, {y0, y1}} -- can be reduced with lowres option
-    uint16_t coord_o[2][2]; // border coordinates {{x0, x1}, {y0, y1}} -- original values from jpeg2000 headers
+    int coord[2][2];   // border coordinates {{x0, x1}, {y0, y1}} -- can be reduced with lowres option
+    int coord_o[2][2]; // border coordinates {{x0, x1}, {y0, y1}} -- original values from jpeg2000 headers
 } Jpeg2000Component;
 
 /* misc tools */
 static inline int ff_jpeg2000_ceildivpow2(int a, int b)
 {
-    return -(((int64_t)(-a)) >> b);
+    return -((-(int64_t)a) >> b);
 }
 
 static inline int ff_jpeg2000_ceildiv(int a, int b)
 {
-    return (a + b - 1) / b;
+    return (a + (int64_t)b - 1) / b;
 }
 
 /* TIER-1 routines */

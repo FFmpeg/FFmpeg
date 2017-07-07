@@ -320,6 +320,7 @@ static int parse_cube(AVFilterContext *ctx, FILE *f)
                         struct rgbvec *vec = &lut3d->lut[i][j][k];
 
                         do {
+try_again:
                             NEXT_LINE(0);
                             if (!strncmp(line, "DOMAIN_", 7)) {
                                 float *vals = NULL;
@@ -330,7 +331,7 @@ static int parse_cube(AVFilterContext *ctx, FILE *f)
                                 sscanf(line + 11, "%f %f %f", vals, vals + 1, vals + 2);
                                 av_log(ctx, AV_LOG_DEBUG, "min: %f %f %f | max: %f %f %f\n",
                                        min[0], min[1], min[2], max[0], max[1], max[2]);
-                                continue;
+                                goto try_again;
                             }
                         } while (skip_line(line));
                         if (sscanf(line, "%f %f %f", &vec->r, &vec->g, &vec->b) != 3)
@@ -531,7 +532,7 @@ static AVFrame *apply_lut(AVFilterLink *inlink, AVFrame *in)
 
     td.in  = in;
     td.out = out;
-    ctx->internal->execute(ctx, lut3d->interp, &td, NULL, FFMIN(outlink->h, ctx->graph->nb_threads));
+    ctx->internal->execute(ctx, lut3d->interp, &td, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
 
     if (out != in)
         av_frame_free(&in);

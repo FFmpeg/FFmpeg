@@ -78,6 +78,11 @@ static int s302m_encode2_frame(AVCodecContext *avctx, AVPacket *avpkt,
     uint8_t *o;
     PutBitContext pb;
 
+    if (buf_size - AES3_HEADER_LEN > UINT16_MAX) {
+        av_log(avctx, AV_LOG_ERROR, "number of samples in frame too big\n");
+        return AVERROR(EINVAL);
+    }
+
     if ((ret = ff_alloc_packet2(avctx, avpkt, buf_size, 0)) < 0)
         return ret;
 
@@ -175,4 +180,9 @@ AVCodec ff_s302m_encoder = {
                                                             AV_SAMPLE_FMT_NONE },
     .capabilities          = AV_CODEC_CAP_VARIABLE_FRAME_SIZE | AV_CODEC_CAP_EXPERIMENTAL,
     .supported_samplerates = (const int[]) { 48000, 0 },
+ /* .channel_layouts       = (const uint64_t[]) { AV_CH_LAYOUT_STEREO,
+                                                  AV_CH_LAYOUT_QUAD,
+                                                  AV_CH_LAYOUT_5POINT1_BACK,
+                                                  AV_CH_LAYOUT_5POINT1_BACK | AV_CH_LAYOUT_STEREO_DOWNMIX,
+                                                  0 }, */
 };

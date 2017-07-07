@@ -52,24 +52,24 @@ static int opus_header(AVFormatContext *avf, int idx)
     if (os->flags & OGG_FLAG_BOS) {
         if (os->psize < OPUS_HEAD_SIZE || (AV_RL8(packet + 8) & 0xF0) != 0)
             return AVERROR_INVALIDDATA;
-        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        st->codec->codec_id   = AV_CODEC_ID_OPUS;
-        st->codec->channels   = AV_RL8 (packet + 9);
+        st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+        st->codecpar->codec_id   = AV_CODEC_ID_OPUS;
+        st->codecpar->channels   = AV_RL8(packet + 9);
+
         priv->pre_skip        = AV_RL16(packet + 10);
-        st->codec->delay      = priv->pre_skip;
+        st->codecpar->initial_padding = priv->pre_skip;
         /*orig_sample_rate    = AV_RL32(packet + 12);*/
         /*gain                = AV_RL16(packet + 16);*/
         /*channel_map         = AV_RL8 (packet + 18);*/
 
-        if (ff_alloc_extradata(st->codec, os->psize))
+        if (ff_alloc_extradata(st->codecpar, os->psize))
             return AVERROR(ENOMEM);
 
-        memcpy(st->codec->extradata, packet, os->psize);
+        memcpy(st->codecpar->extradata, packet, os->psize);
 
-        st->codec->sample_rate = 48000;
-        av_codec_set_seek_preroll(st->codec,
-                                  av_rescale(OPUS_SEEK_PREROLL_MS,
-                                             st->codec->sample_rate, 1000));
+        st->codecpar->sample_rate = 48000;
+        st->codecpar->seek_preroll = av_rescale(OPUS_SEEK_PREROLL_MS,
+                                                st->codecpar->sample_rate, 1000);
         avpriv_set_pts_info(st, 64, 1, 48000);
         priv->need_comments = 1;
         return 1;
@@ -117,6 +117,10 @@ static int opus_packet(AVFormatContext *avf, int idx)
 
     if (!os->psize)
         return AVERROR_INVALIDDATA;
+    if (os->granule > (1LL << 62)) {
+        av_log(avf, AV_LOG_ERROR, "Unsupported huge granule pos %"PRId64 "\n", os->granule);
+        return AVERROR_INVALIDDATA;
+    }
 
     if ((!os->lastpts || os->lastpts == AV_NOPTS_VALUE) && !(os->flags & OGG_FLAG_EOS)) {
         int seg, d;

@@ -22,8 +22,9 @@
 #include <opus.h>
 #include <opus_multistream.h>
 
-#include "libavutil/avassert.h"
+#include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
+
 #include "avcodec.h"
 #include "internal.h"
 #include "vorbis.h"
@@ -45,6 +46,13 @@ static av_cold int libopus_decode_init(AVCodecContext *avc)
     struct libopus_context *opus = avc->priv_data;
     int ret, channel_map = 0, gain_db = 0, nb_streams, nb_coupled;
     uint8_t mapping_arr[8] = { 0, 1 }, *mapping;
+
+    avc->channels = avc->extradata_size >= 10 ? avc->extradata[9] : (avc->channels == 1) ? 1 : 2;
+    if (avc->channels <= 0) {
+        av_log(avc, AV_LOG_WARNING,
+               "Invalid number of channels %d, defaulting to stereo\n", avc->channels);
+        avc->channels = 2;
+    }
 
     avc->sample_rate    = 48000;
     avc->sample_fmt     = avc->request_sample_fmt == AV_SAMPLE_FMT_FLT ?
@@ -78,7 +86,7 @@ static av_cold int libopus_decode_init(AVCodecContext *avc)
         const uint8_t *vorbis_offset = ff_vorbis_channel_layout_offsets[avc->channels - 1];
         int ch;
 
-        /* Remap channels from vorbis order to ffmpeg order */
+        /* Remap channels from Vorbis order to ffmpeg order */
         for (ch = 0; ch < avc->channels; ch++)
             mapping_arr[ch] = mapping[vorbis_offset[ch]];
         mapping = mapping_arr;
@@ -100,7 +108,7 @@ static av_cold int libopus_decode_init(AVCodecContext *avc)
                opus_strerror(ret));
 #else
     {
-        double gain_lin = pow(10, gain_db / (20.0 * 256));
+        double gain_lin = ff_exp10(gain_db / (20.0 * 256));
         if (avc->sample_fmt == AV_SAMPLE_FMT_FLT)
             opus->gain.d = gain_lin;
         else

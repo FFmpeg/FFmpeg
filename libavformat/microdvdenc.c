@@ -25,21 +25,21 @@
 
 static int microdvd_write_header(struct AVFormatContext *s)
 {
-    AVCodecContext *avctx = s->streams[0]->codec;
-    AVRational tb = avctx->time_base;
+    AVCodecParameters *par = s->streams[0]->codecpar;
+    AVRational framerate = s->streams[0]->avg_frame_rate;
 
-    if (s->nb_streams != 1 || avctx->codec_id != AV_CODEC_ID_MICRODVD) {
+    if (s->nb_streams != 1 || par->codec_id != AV_CODEC_ID_MICRODVD) {
         av_log(s, AV_LOG_ERROR, "Exactly one MicroDVD stream is needed.\n");
         return -1;
     }
 
-    if (avctx->extradata && avctx->extradata_size > 0) {
+    if (par->extradata && par->extradata_size > 0) {
         avio_write(s->pb, "{DEFAULT}{}", 11);
-        avio_write(s->pb, avctx->extradata, avctx->extradata_size);
+        avio_write(s->pb, par->extradata, par->extradata_size);
         avio_flush(s->pb);
     }
 
-    avpriv_set_pts_info(s->streams[0], 64, tb.num, tb.den);
+    avpriv_set_pts_info(s->streams[0], 64, framerate.num, framerate.den);
     return 0;
 }
 

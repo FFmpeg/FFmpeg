@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_MOTIONEST_H
-#define AVCODEC_MOTIONEST_H
+#ifndef AVCODEC_MOTION_EST_H
+#define AVCODEC_MOTION_EST_H
 
 #include <stdint.h>
 
@@ -29,7 +29,12 @@
 
 struct MpegEncContext;
 
+#if ARCH_IA64 // Limit static arrays to avoid gcc failing "short data segment overflowed"
+#define MAX_MV 1024
+#else
 #define MAX_MV 4096
+#endif
+#define MAX_DMV (2*MAX_MV)
 #define ME_MAP_SIZE 64
 
 #define FF_ME_ZERO 0
@@ -85,7 +90,7 @@ typedef struct MotionEstContext {
     op_pixels_func(*hpel_avg)[4];
     qpel_mc_func(*qpel_put)[16];
     qpel_mc_func(*qpel_avg)[16];
-    uint8_t (*mv_penalty)[MAX_MV * 2 + 1]; ///< bit amount needed to encode a MV
+    uint8_t (*mv_penalty)[MAX_DMV * 2 + 1]; ///< bit amount needed to encode a MV
     uint8_t *current_mv_penalty;
     int (*sub_motion_search)(struct MpegEncContext *s,
                              int *mx_ptr, int *my_ptr, int dmin,
@@ -127,4 +132,4 @@ void ff_fix_long_mvs(struct MpegEncContext *s, uint8_t *field_select_table,
                      int field_select, int16_t (*mv_table)[2], int f_code,
                      int type, int truncate);
 
-#endif /* AVCODEC_MOTIONEST_H */
+#endif /* AVCODEC_MOTION_EST_H */

@@ -1,5 +1,5 @@
 /*
- * MPEG4 encoder/decoder internal header.
+ * MPEG-4 encoder/decoder internal header.
  * Copyright (c) 2000,2001 Fabrice Bellard
  * Copyright (c) 2002-2010 Michael Niedermayer <michaelni@gmx.at>
  *
@@ -107,7 +107,7 @@ typedef struct Mpeg4DecContext {
     int cplx_estimation_trash_b;
 } Mpeg4DecContext;
 
-/* dc encoding for mpeg4 */
+/* dc encoding for MPEG-4 */
 extern const uint8_t ff_mpeg4_DCtab_lum[13][2];
 extern const uint8_t ff_mpeg4_DCtab_chrom[13][2];
 
@@ -140,7 +140,7 @@ void ff_mpeg4_encode_mb(MpegEncContext *s,
 void ff_mpeg4_pred_ac(MpegEncContext *s, int16_t *block, int n,
                       int dir);
 void ff_set_mpeg4_time(MpegEncContext *s);
-void ff_mpeg4_encode_picture_header(MpegEncContext *s, int picture_number);
+int ff_mpeg4_encode_picture_header(MpegEncContext *s, int picture_number);
 
 int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb);
 void ff_mpeg4_encode_video_packet_header(MpegEncContext *s);
@@ -158,7 +158,6 @@ int ff_mpeg4_workaround_bugs(AVCodecContext *avctx);
 int ff_mpeg4_frame_end(AVCodecContext *avctx, const uint8_t *buf, int buf_size);
 
 /**
- *
  * @return the mb_type
  */
 int ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my);

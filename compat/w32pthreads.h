@@ -26,8 +26,8 @@
  * w32threads to pthreads wrapper
  */
 
-#ifndef FFMPEG_COMPAT_W32PTHREADS_H
-#define FFMPEG_COMPAT_W32PTHREADS_H
+#ifndef COMPAT_W32PTHREADS_H
+#define COMPAT_W32PTHREADS_H
 
 /* Build up a pthread-like API using underlying Windows API. Have only static
  * methods so as to not conflict with a potentially linked in pthread-win32
@@ -39,9 +39,9 @@
 #include <windows.h>
 #include <process.h>
 
-/* MinGW requires the intrinsics header for the pthread_once fallback code */
 #if _WIN32_WINNT < 0x0600 && defined(__MINGW32__)
-#include <intrin.h>
+#undef MemoryBarrier
+#define MemoryBarrier __sync_synchronize
 #endif
 
 #include "libavutil/attributes.h"
@@ -77,7 +77,7 @@ typedef struct pthread_cond_t {
 
 static av_unused unsigned __stdcall attribute_align_arg win32thread_worker(void *arg)
 {
-    pthread_t *h = arg;
+    pthread_t *h = (pthread_t*)arg;
     h->ret = h->func(h->arg);
     return 0;
 }
@@ -270,7 +270,7 @@ static av_unused int pthread_cond_init(pthread_cond_t *cond, const void *unused_
     }
 
     /* non native condition variables */
-    win32_cond = av_mallocz(sizeof(win32_cond_t));
+    win32_cond = (win32_cond_t*)av_mallocz(sizeof(win32_cond_t));
     if (!win32_cond)
         return ENOMEM;
     cond->Ptr = win32_cond;
@@ -288,7 +288,7 @@ static av_unused int pthread_cond_init(pthread_cond_t *cond, const void *unused_
 
 static av_unused int pthread_cond_destroy(pthread_cond_t *cond)
 {
-    win32_cond_t *win32_cond = cond->Ptr;
+    win32_cond_t *win32_cond = (win32_cond_t*)cond->Ptr;
     /* native condition variables do not destroy */
     if (cond_init)
         return 0;
@@ -305,7 +305,7 @@ static av_unused int pthread_cond_destroy(pthread_cond_t *cond)
 
 static av_unused int pthread_cond_broadcast(pthread_cond_t *cond)
 {
-    win32_cond_t *win32_cond = cond->Ptr;
+    win32_cond_t *win32_cond = (win32_cond_t*)cond->Ptr;
     int have_waiter;
 
     if (cond_broadcast) {
@@ -337,7 +337,7 @@ static av_unused int pthread_cond_broadcast(pthread_cond_t *cond)
 
 static av_unused int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
 {
-    win32_cond_t *win32_cond = cond->Ptr;
+    win32_cond_t *win32_cond = (win32_cond_t*)cond->Ptr;
     int last_waiter;
     if (cond_wait) {
         cond_wait(cond, mutex, INFINITE);
@@ -369,7 +369,7 @@ static av_unused int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mu
 
 static av_unused int pthread_cond_signal(pthread_cond_t *cond)
 {
-    win32_cond_t *win32_cond = cond->Ptr;
+    win32_cond_t *win32_cond = (win32_cond_t*)cond->Ptr;
     int have_waiter;
     if (cond_signal) {
         cond_signal(cond);
@@ -397,22 +397,22 @@ static av_unused int pthread_cond_signal(pthread_cond_t *cond)
 static av_unused void w32thread_init(void)
 {
 #if _WIN32_WINNT < 0x0600
-    HANDLE kernel_dll = GetModuleHandle(TEXT("kernel32.dll"));
+    HMODULE kernel_dll = GetModuleHandle(TEXT("kernel32.dll"));
     /* if one is available, then they should all be available */
-    cond_init      =
-        (void*)GetProcAddress(kernel_dll, "InitializeConditionVariable");
-    cond_broadcast =
-        (void*)GetProcAddress(kernel_dll, "WakeAllConditionVariable");
-    cond_signal    =
-        (void*)GetProcAddress(kernel_dll, "WakeConditionVariable");
-    cond_wait      =
-        (void*)GetProcAddress(kernel_dll, "SleepConditionVariableCS");
-    initonce_begin =
-        (void*)GetProcAddress(kernel_dll, "InitOnceBeginInitialize");
-    initonce_complete =
-        (void*)GetProcAddress(kernel_dll, "InitOnceComplete");
+    cond_init      = (void (WINAPI*)(pthread_cond_t *))
+        GetProcAddress(kernel_dll, "InitializeConditionVariable");
+    cond_broadcast = (void (WINAPI*)(pthread_cond_t *))
+        GetProcAddress(kernel_dll, "WakeAllConditionVariable");
+    cond_signal    = (void (WINAPI*)(pthread_cond_t *))
+        GetProcAddress(kernel_dll, "WakeConditionVariable");
+    cond_wait      = (BOOL (WINAPI*)(pthread_cond_t *, pthread_mutex_t *, DWORD))
+        GetProcAddress(kernel_dll, "SleepConditionVariableCS");
+    initonce_begin = (BOOL (WINAPI*)(pthread_once_t *, DWORD, BOOL *, void **))
+        GetProcAddress(kernel_dll, "InitOnceBeginInitialize");
+    initonce_complete = (BOOL (WINAPI*)(pthread_once_t *, DWORD, void *))
+        GetProcAddress(kernel_dll, "InitOnceComplete");
 #endif
 
 }
 
-#endif /* FFMPEG_COMPAT_W32PTHREADS_H */
+#endif /* COMPAT_W32PTHREADS_H */

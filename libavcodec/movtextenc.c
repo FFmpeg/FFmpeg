@@ -57,6 +57,8 @@ typedef struct {
 } HilightcolorBox;
 
 typedef struct {
+    AVCodecContext *avctx;
+
     ASSSplitContext *ass_ctx;
     AVBPrint buffer;
     StyleBox **style_attributes;
@@ -187,6 +189,7 @@ static av_cold int mov_text_encode_init(AVCodecContext *avctx)
     };
 
     MovTextContext *s = avctx->priv_data;
+    s->avctx = avctx;
 
     avctx->extradata_size = sizeof text_sample_entry;
     avctx->extradata = av_mallocz(avctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
@@ -247,6 +250,9 @@ static void mov_text_style_cb(void *priv, const char style, int close)
             s->style_attributes_temp->style_flag |= STYLE_FLAG_UNDERLINE;
             break;
         }
+    } else if (!s->style_attributes_temp) {
+        av_log(s->avctx, AV_LOG_WARNING, "Ignoring unmatched close tag\n");
+        return;
     } else {
         s->style_attributes_temp->style_end = AV_RB16(&s->text_pos);
         av_dynarray_add(&s->style_attributes, &s->count, s->style_attributes_temp);
@@ -324,7 +330,7 @@ static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
 {
     MovTextContext *s = avctx->priv_data;
     ASSDialog *dialog;
-    int i, num, length;
+    int i, length;
     size_t j;
 
     s->text_pos = 0;
@@ -332,16 +338,30 @@ static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
     s->box_flags = 0;
     s->style_entries = 0;
     for (i = 0; i < sub->num_rects; i++) {
+        const char *ass = sub->rects[i]->ass;
 
         if (sub->rects[i]->type != SUBTITLE_ASS) {
             av_log(avctx, AV_LOG_ERROR, "Only SUBTITLE_ASS type supported.\n");
             return AVERROR(ENOSYS);
         }
 
-        dialog = ff_ass_split_dialog(s->ass_ctx, sub->rects[i]->ass, 0, &num);
-        for (; dialog && num--; dialog++) {
+#if FF_API_ASS_TIMING
+        if (!strncmp(ass, "Dialogue: ", 10)) {
+            int num;
+            dialog = ff_ass_split_dialog(s->ass_ctx, ass, 0, &num);
+            for (; dialog && num--; dialog++) {
+                ff_ass_split_override_codes(&mov_text_callbacks, s, dialog->text);
+            }
+        } else {
+#endif
+            dialog = ff_ass_split_dialog2(s->ass_ctx, ass);
+            if (!dialog)
+                return AVERROR(ENOMEM);
             ff_ass_split_override_codes(&mov_text_callbacks, s, dialog->text);
+            ff_ass_free_dialog(&dialog);
+#if FF_API_ASS_TIMING
         }
+#endif
 
         for (j = 0; j < box_count; j++) {
             box_types[j].encode(s, box_types[j].type);

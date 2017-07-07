@@ -132,10 +132,10 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
     st->attached_pic.flags       |= AV_PKT_FLAG_KEY;
 
     st->disposition      |= AV_DISPOSITION_ATTACHED_PIC;
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = id;
-    st->codec->width      = width;
-    st->codec->height     = height;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id   = id;
+    st->codecpar->width      = width;
+    st->codecpar->height     = height;
     av_dict_set(&st->metadata, "comment", ff_id3v2_picture_types[type], 0);
     if (desc)
         av_dict_set(&st->metadata, "title", desc, AV_DICT_DONT_STRDUP_VAL);

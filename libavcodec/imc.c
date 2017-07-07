@@ -27,7 +27,6 @@
  *  A mdct based codec using a 256 points large transform
  *  divided into 32 bands with some mix of scale factors.
  *  Only mono is supported.
- *
  */
 
 
@@ -36,9 +35,9 @@
 #include <stdio.h>
 
 #include "libavutil/channel_layout.h"
+#include "libavutil/ffmath.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/internal.h"
-#include "libavutil/libm.h"
 #include "avcodec.h"
 #include "bswapdsp.h"
 #include "get_bits.h"
@@ -71,7 +70,7 @@ typedef struct IMCChannel {
     int sumLenArr[BANDS];      ///< bits for all coeffs in band
     int skipFlagRaw[BANDS];    ///< skip flags are stored in raw form or not
     int skipFlagBits[BANDS];   ///< bits used to code skip flags
-    int skipFlagCount[BANDS];  ///< skipped coeffients per band
+    int skipFlagCount[BANDS];  ///< skipped coefficients per band
     int skipFlags[COEFFS];     ///< skip coefficient decoding or not
     int codewords[COEFFS];     ///< raw codewords read from bitstream
 
@@ -137,8 +136,8 @@ static av_cold void iac_generate_tabs(IMCContext *q, int sampling_rate)
 
         if (i > 0) {
             tb = bark - prev_bark;
-            q->weights1[i - 1] = pow(10.0, -1.0 * tb);
-            q->weights2[i - 1] = pow(10.0, -2.7 * tb);
+            q->weights1[i - 1] = ff_exp10(-1.0 * tb);
+            q->weights2[i - 1] = ff_exp10(-2.7 * tb);
         }
         prev_bark = bark;
 
@@ -829,7 +828,7 @@ static void imc_refine_bit_allocation(IMCContext *q, IMCChannel *chctx)
         for (j = band_tab[i]; j < band_tab[i + 1]; j++)
             chctx->sumLenArr[i] += chctx->CWlengthT[j];
         if (chctx->bandFlagsBuf[i])
-            if ((((band_tab[i + 1] - band_tab[i]) * 1.5) > chctx->sumLenArr[i]) && (chctx->sumLenArr[i] > 0))
+            if (((int)((band_tab[i + 1] - band_tab[i]) * 1.5) > chctx->sumLenArr[i]) && (chctx->sumLenArr[i] > 0))
                 chctx->skipFlagRaw[i] = 1;
     }
 

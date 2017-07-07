@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef H264_PRED_MIPS_H
-#define H264_PRED_MIPS_H
+#ifndef AVCODEC_MIPS_H264PRED_MIPS_H
+#define AVCODEC_MIPS_H264PRED_MIPS_H
 
 #include "constants.h"
 #include "libavcodec/h264pred.h"
@@ -45,4 +45,4 @@ void ff_pred8x8_dc_8_mmi(uint8_t *src, ptrdiff_t stride);
 void ff_pred8x16_vertical_8_mmi(uint8_t *src, ptrdiff_t stride);
 void ff_pred8x16_horizontal_8_mmi(uint8_t *src, ptrdiff_t stride);
 
-#endif  /* H264_PRED_MIPS_H */
+#endif  /* AVCODEC_MIPS_H264PRED_MIPS_H */

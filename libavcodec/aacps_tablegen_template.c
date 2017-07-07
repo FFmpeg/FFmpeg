@@ -26,13 +26,13 @@
 
 #if USE_FIXED
 #define TYPE_NAME "int32_t"
-#define INT32FLOAT int32_t
+typedef int32_t INT32FLOAT;
 #define ARRAY_RENAME(x) write_int32_t_ ## x
 #define ARRAY_URENAME(x) write_uint32_t_ ## x
 #include "aacps_fixed_tablegen.h"
 #else
 #define TYPE_NAME "float"
-#define INT32FLOAT float
+typedef float INT32FLOAT;
 #define ARRAY_RENAME(x) write_float_ ## x
 #define ARRAY_URENAME(x) write_float_ ## x
 #include "aacps_tablegen.h"

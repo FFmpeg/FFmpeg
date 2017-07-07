@@ -136,7 +136,7 @@ static int mpa_robust_parse_packet(AVFormatContext *ctx, PayloadContext *data,
             data->split_pos = 0;
             if (!data->split_buf) {
                 av_log(ctx, AV_LOG_ERROR, "Out of memory.\n");
-                av_free_packet(pkt);
+                av_packet_unref(pkt);
                 return AVERROR(ENOMEM);
             }
             memcpy(data->split_buf, buf, data->split_buf_size);
@@ -166,7 +166,7 @@ static int mpa_robust_parse_packet(AVFormatContext *ctx, PayloadContext *data,
             "Received packet without a start fragment; dropping.\n");
         return AVERROR(EAGAIN);
     }
-    if (adu_size = data->adu_size ||
+    if (adu_size != data->adu_size ||
         data->timestamp != *timestamp) {
         ffio_free_dyn_buf(&data->fragment);
         av_log(ctx, AV_LOG_ERROR, "Invalid packet received\n");

@@ -156,7 +156,7 @@ static int config_input(AVFilterLink *inlink)
     if ((ret = av_image_fill_linesizes(n->bytewidth, inlink->format, inlink->w)) < 0)
         return ret;
 
-    n->height[1] = n->height[2] = FF_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
+    n->height[1] = n->height[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
     n->height[0] = n->height[3] = inlink->h;
 
     return 0;
@@ -272,7 +272,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     }
 
     td.in = inpicref; td.out = out;
-    ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(n->height[0], ctx->graph->nb_threads));
+    ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(n->height[0], ff_filter_get_nb_threads(ctx)));
     emms_c();
 
     if (inpicref != out)

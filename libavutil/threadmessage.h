@@ -69,10 +69,10 @@ int av_thread_message_queue_recv(AVThreadMessageQueue *mq,
 /**
  * Set the sending error code.
  *
- * If the error code is set to non-zero, av_thread_message_queue_recv() will
- * return it immediately when there are no longer available messages.
- * Conventional values, such as AVERROR_EOF or AVERROR(EAGAIN), can be used
- * to cause the receiving thread to stop or suspend its operation.
+ * If the error code is set to non-zero, av_thread_message_queue_send() will
+ * return it immediately. Conventional values, such as AVERROR_EOF or
+ * AVERROR(EAGAIN), can be used to cause the sending thread to stop or
+ * suspend its operation.
  */
 void av_thread_message_queue_set_err_send(AVThreadMessageQueue *mq,
                                           int err);
@@ -80,12 +80,28 @@ void av_thread_message_queue_set_err_send(AVThreadMessageQueue *mq,
 /**
  * Set the receiving error code.
  *
- * If the error code is set to non-zero, av_thread_message_queue_send() will
- * return it immediately. Conventional values, such as AVERROR_EOF or
- * AVERROR(EAGAIN), can be used to cause the sending thread to stop or
- * suspend its operation.
+ * If the error code is set to non-zero, av_thread_message_queue_recv() will
+ * return it immediately when there are no longer available messages.
+ * Conventional values, such as AVERROR_EOF or AVERROR(EAGAIN), can be used
+ * to cause the receiving thread to stop or suspend its operation.
  */
 void av_thread_message_queue_set_err_recv(AVThreadMessageQueue *mq,
                                           int err);
+
+/**
+ * Set the optional free message callback function which will be called if an
+ * operation is removing messages from the queue.
+ */
+void av_thread_message_queue_set_free_func(AVThreadMessageQueue *mq,
+                                           void (*free_func)(void *msg));
+
+/**
+ * Flush the message queue
+ *
+ * This function is mostly equivalent to reading and free-ing every message
+ * except that it will be done in a single operation (no lock/unlock between
+ * reads).
+ */
+void av_thread_message_flush(AVThreadMessageQueue *mq);
 
 #endif /* AVUTIL_THREADMESSAGE_H */

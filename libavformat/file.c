@@ -72,14 +72,16 @@ typedef struct FileContext {
     int fd;
     int trunc;
     int blocksize;
+    int follow;
 #if HAVE_DIRENT_H
     DIR *dir;
 #endif
 } FileContext;
 
 static const AVOption file_options[] = {
-    { "truncate", "truncate existing files on write", offsetof(FileContext, trunc), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, AV_OPT_FLAG_ENCODING_PARAM },
+    { "truncate", "truncate existing files on write", offsetof(FileContext, trunc), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, AV_OPT_FLAG_ENCODING_PARAM },
     { "blocksize", "set I/O operation maximum block size", offsetof(FileContext, blocksize), AV_OPT_TYPE_INT, { .i64 = INT_MAX }, 1, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { "follow", "Follow a file as it is being written", offsetof(FileContext, follow), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
     { NULL }
 };
 
@@ -108,6 +110,10 @@ static int file_read(URLContext *h, unsigned char *buf, int size)
     int ret;
     size = FFMIN(size, c->blocksize);
     ret = read(c->fd, buf, size);
+    if (ret == 0 && c->follow)
+        return AVERROR(EAGAIN);
+    if (ret == 0)
+        return AVERROR_EOF;
     return (ret == -1) ? AVERROR(errno) : ret;
 }
 
@@ -144,7 +150,11 @@ static int file_check(URLContext *h, int mask)
             ret |= AVIO_FLAG_WRITE;
 #else
     struct stat st;
+#   ifndef _WIN32
     ret = stat(filename, &st);
+#   else
+    ret = win32_stat(filename, &st);
+#   endif
     if (ret < 0)
         return AVERROR(errno);
 
@@ -176,7 +186,6 @@ static int file_delete(URLContext *h)
 
 static int file_move(URLContext *h_src, URLContext *h_dst)
 {
-#if HAVE_UNISTD_H
     const char *filename_src = h_src->filename;
     const char *filename_dst = h_dst->filename;
     av_strstart(filename_src, "file:", &filename_src);
@@ -186,9 +195,6 @@ static int file_move(URLContext *h_src, URLContext *h_dst)
         return AVERROR(errno);
 
     return 0;
-#else
-    return AVERROR(ENOSYS);
-#endif /* HAVE_UNISTD_H */
 }
 
 #if CONFIG_FILE_PROTOCOL
@@ -222,6 +228,11 @@ static int file_open(URLContext *h, const char *filename, int flags)
     c->fd = fd;
 
     h->is_streamed = !fstat(fd, &st) && S_ISFIFO(st.st_mode);
+
+    /* Buffer writes more than the default 32k to improve throughput especially
+     * with networked file systems */
+    if (!h->is_streamed && flags & AVIO_FLAG_WRITE)
+        h->min_packet_size = h->max_packet_size = 262144;
 
     return 0;
 }
@@ -333,7 +344,7 @@ static int file_close_dir(URLContext *h)
 #endif /* HAVE_LSTAT */
 }
 
-URLProtocol ff_file_protocol = {
+const URLProtocol ff_file_protocol = {
     .name                = "file",
     .url_open            = file_open,
     .url_read            = file_read,
@@ -349,6 +360,7 @@ URLProtocol ff_file_protocol = {
     .url_open_dir        = file_open_dir,
     .url_read_dir        = file_read_dir,
     .url_close_dir       = file_close_dir,
+    .default_whitelist   = "file,crypto"
 };
 
 #endif /* CONFIG_FILE_PROTOCOL */
@@ -378,7 +390,7 @@ static int pipe_open(URLContext *h, const char *filename, int flags)
     return 0;
 }
 
-URLProtocol ff_pipe_protocol = {
+const URLProtocol ff_pipe_protocol = {
     .name                = "pipe",
     .url_open            = pipe_open,
     .url_read            = file_read,
@@ -387,6 +399,7 @@ URLProtocol ff_pipe_protocol = {
     .url_check           = file_check,
     .priv_data_size      = sizeof(FileContext),
     .priv_data_class     = &pipe_class,
+    .default_whitelist   = "crypto"
 };
 
 #endif /* CONFIG_PIPE_PROTOCOL */

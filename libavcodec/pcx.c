@@ -28,6 +28,8 @@
 #include "get_bits.h"
 #include "internal.h"
 
+#define PCX_HEADER_SIZE 128
+
 static void pcx_rle_decode(GetByteContext *gb,
                            uint8_t *dst,
                            unsigned int bytes_per_scanline,
@@ -74,8 +76,10 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                  bytes_per_scanline;
     uint8_t *ptr, *scanline;
 
-    if (avpkt->size < 128)
+    if (avpkt->size < PCX_HEADER_SIZE) {
+        av_log(avctx, AV_LOG_ERROR, "Packet too small\n");
         return AVERROR_INVALIDDATA;
+    }
 
     bytestream2_init(&gb, avpkt->data, avpkt->size);
 

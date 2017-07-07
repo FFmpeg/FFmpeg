@@ -28,7 +28,7 @@
 #include <CoreFoundation/CoreFoundation.h>
 
 #include "vda.h"
-#include "h264.h"
+#include "h264dec.h"
 #include "avcodec.h"
 
 #ifndef kCFCoreFoundationVersionNumber10_7
@@ -226,7 +226,7 @@ static av_cold int vdadec_init(AVCodecContext *avctx)
     ctx->h264_initialized = 1;
 
     for (i = 0; i < MAX_SPS_COUNT; i++) {
-        SPS *sps = ctx->h264ctx.sps_buffers[i];
+        const SPS *sps = ctx->h264ctx.ps.sps_list[i] ? (const SPS*)ctx->h264ctx.ps.sps_list[i]->data : NULL;
         if (sps && (sps->bit_depth_luma != 8 ||
                 sps->chroma_format_idc == 2 ||
                 sps->chroma_format_idc == 3)) {

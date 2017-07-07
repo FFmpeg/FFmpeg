@@ -156,7 +156,7 @@ static inline size_t av_strnlen(const char *s, size_t len)
 char *av_asprintf(const char *fmt, ...) av_printf_format(1, 2);
 
 /**
- * Convert a number to a av_malloced string.
+ * Convert a number to an av_malloced string.
  */
 char *av_d2str(double d);
 
@@ -266,6 +266,11 @@ int av_strcasecmp(const char *a, const char *b);
  */
 int av_strncasecmp(const char *a, const char *b, size_t n);
 
+/**
+ * Locale-independent strings replace.
+ * @note This means only ASCII-range characters are replace
+ */
+char *av_strireplace(const char *str, const char *from, const char *to);
 
 /**
  * Thread safe basename.
@@ -284,6 +289,11 @@ const char *av_dirname(char *path);
 
 /**
  * Match instances of a name in a comma-separated list of names.
+ * List entries are checked from the start to the end of the names list,
+ * the first match ends further processing. If an entry prefixed with '-'
+ * matches, then 0 is returned. The "ALL" list entry is considered to
+ * match all names.
+ *
  * @param name  Name to look for.
  * @param names List of names.
  * @return 1 on match, 0 otherwise.
@@ -339,6 +349,7 @@ enum AVEscapeMode {
  * @return the length of the allocated string, or a negative error code in case of error
  * @see av_bprint_escape()
  */
+av_warn_unused_result
 int av_escape(char **dst, const char *src, const char *special_chars,
               enum AVEscapeMode mode, int flags);
 
@@ -378,6 +389,7 @@ int av_escape(char **dst, const char *src, const char *special_chars,
  * @return >= 0 in case a sequence was successfully read, a negative
  * value in case of invalid sequence
  */
+av_warn_unused_result
 int av_utf8_decode(int32_t *codep, const uint8_t **bufp, const uint8_t *buf_end,
                    unsigned int flags);
 

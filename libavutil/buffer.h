@@ -249,13 +249,30 @@ typedef struct AVBufferPool AVBufferPool;
 AVBufferPool *av_buffer_pool_init(int size, AVBufferRef* (*alloc)(int size));
 
 /**
+ * Allocate and initialize a buffer pool with a more complex allocator.
+ *
+ * @param size size of each buffer in this pool
+ * @param opaque arbitrary user data used by the allocator
+ * @param alloc a function that will be used to allocate new buffers when the
+ *              pool is empty.
+ * @param pool_free a function that will be called immediately before the pool
+ *                  is freed. I.e. after av_buffer_pool_uninit() is called
+ *                  by the caller and all the frames are returned to the pool
+ *                  and freed. It is intended to uninitialize the user opaque
+ *                  data.
+ * @return newly created buffer pool on success, NULL on error.
+ */
+AVBufferPool *av_buffer_pool_init2(int size, void *opaque,
+                                   AVBufferRef* (*alloc)(void *opaque, int size),
+                                   void (*pool_free)(void *opaque));
+
+/**
  * Mark the pool as being available for freeing. It will actually be freed only
  * once all the allocated buffers associated with the pool are released. Thus it
  * is safe to call this function while some of the allocated buffers are still
  * in use.
  *
  * @param pool pointer to the pool to be freed. It will be set to NULL.
- * @see av_buffer_pool_can_uninit()
  */
 void av_buffer_pool_uninit(AVBufferPool **pool);
 

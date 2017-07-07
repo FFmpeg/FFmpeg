@@ -42,30 +42,30 @@ static int svag_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     size                   = avio_rl32(s->pb);
-    st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id    = AV_CODEC_ID_ADPCM_PSX;
-    st->codec->sample_rate = avio_rl32(s->pb);
-    if (st->codec->sample_rate <= 0)
+    st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id    = AV_CODEC_ID_ADPCM_PSX;
+    st->codecpar->sample_rate = avio_rl32(s->pb);
+    if (st->codecpar->sample_rate <= 0)
         return AVERROR_INVALIDDATA;
-    st->codec->channels    = avio_rl32(s->pb);
-    if (st->codec->channels <= 0)
+    st->codecpar->channels    = avio_rl32(s->pb);
+    if (st->codecpar->channels <= 0 || st->codecpar->channels > 8)
         return AVERROR_INVALIDDATA;
-    st->duration           = size / (16 * st->codec->channels) * 28;
+    st->duration           = size / (16 * st->codecpar->channels) * 28;
     align                  = avio_rl32(s->pb);
-    if (align <= 0 || align > INT_MAX / st->codec->channels)
+    if (align <= 0 || align > INT_MAX / st->codecpar->channels)
         return AVERROR_INVALIDDATA;
-    st->codec->block_align = align * st->codec->channels;
+    st->codecpar->block_align = align * st->codecpar->channels;
     avio_skip(s->pb, 0x800 - avio_tell(s->pb));
-    avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
 
     return 0;
 }
 
 static int svag_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    AVCodecContext *codec = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
 
-    return av_get_packet(s->pb, pkt, codec->block_align);
+    return av_get_packet(s->pb, pkt, par->block_align);
 }
 
 AVInputFormat ff_svag_demuxer = {

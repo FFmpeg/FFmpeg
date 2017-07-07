@@ -24,6 +24,7 @@
 #include "bytestream.h"
 #include "internal.h"
 #include "libavutil/colorspace.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 
 #define DVBSUB_PAGE_SEGMENT     0x10
@@ -34,121 +35,6 @@
 #define DVBSUB_DISPLAY_SEGMENT  0x80
 
 #define cm (ff_crop_tab + MAX_NEG_CROP)
-
-#ifdef DEBUG
-#if 0
-static void png_save(const char *filename, uint8_t *bitmap, int w, int h,
-                     uint32_t *rgba_palette)
-{
-    int x, y, v;
-    FILE *f;
-    char fname[40], fname2[40];
-    char command[1024];
-
-    snprintf(fname, 40, "%s.ppm", filename);
-
-    f = fopen(fname, "w");
-    if (!f) {
-        perror(fname);
-        return;
-    }
-    fprintf(f, "P6\n"
-            "%d %d\n"
-            "%d\n",
-            w, h, 255);
-    for(y = 0; y < h; y++) {
-        for(x = 0; x < w; x++) {
-            v = rgba_palette[bitmap[y * w + x]];
-            putc((v >> 16) & 0xff, f);
-            putc((v >> 8) & 0xff, f);
-            putc((v >> 0) & 0xff, f);
-        }
-    }
-    fclose(f);
-
-
-    snprintf(fname2, 40, "%s-a.pgm", filename);
-
-    f = fopen(fname2, "w");
-    if (!f) {
-        perror(fname2);
-        return;
-    }
-    fprintf(f, "P5\n"
-            "%d %d\n"
-            "%d\n",
-            w, h, 255);
-    for(y = 0; y < h; y++) {
-        for(x = 0; x < w; x++) {
-            v = rgba_palette[bitmap[y * w + x]];
-            putc((v >> 24) & 0xff, f);
-        }
-    }
-    fclose(f);
-
-    snprintf(command, 1024, "pnmtopng -alpha %s %s > %s.png 2> /dev/null", fname2, fname, filename);
-    system(command);
-
-    snprintf(command, 1024, "rm %s %s", fname, fname2);
-    system(command);
-}
-#endif
-
-static void png_save2(const char *filename, uint32_t *bitmap, int w, int h)
-{
-    int x, y, v;
-    FILE *f;
-    char fname[40], fname2[40];
-    char command[1024];
-
-    snprintf(fname, sizeof(fname), "%s.ppm", filename);
-
-    f = fopen(fname, "w");
-    if (!f) {
-        perror(fname);
-        return;
-    }
-    fprintf(f, "P6\n"
-            "%d %d\n"
-            "%d\n",
-            w, h, 255);
-    for(y = 0; y < h; y++) {
-        for(x = 0; x < w; x++) {
-            v = bitmap[y * w + x];
-            putc((v >> 16) & 0xff, f);
-            putc((v >> 8) & 0xff, f);
-            putc((v >> 0) & 0xff, f);
-        }
-    }
-    fclose(f);
-
-
-    snprintf(fname2, sizeof(fname2), "%s-a.pgm", filename);
-
-    f = fopen(fname2, "w");
-    if (!f) {
-        perror(fname2);
-        return;
-    }
-    fprintf(f, "P5\n"
-            "%d %d\n"
-            "%d\n",
-            w, h, 255);
-    for(y = 0; y < h; y++) {
-        for(x = 0; x < w; x++) {
-            v = bitmap[y * w + x];
-            putc((v >> 24) & 0xff, f);
-        }
-    }
-    fclose(f);
-
-    snprintf(command, sizeof(command), "pnmtopng -alpha %s %s > %s.png 2> /dev/null", fname2, fname, filename);
-    system(command);
-
-    snprintf(command, sizeof(command), "rm %s %s", fname, fname2);
-    system(command);
-}
-#endif
 
 #define RGBA(r,g,b,a) (((unsigned)(a) << 24) | ((r) << 16) | ((g) << 8) | (b))
 
@@ -810,7 +696,7 @@ static void compute_default_clut(AVSubtitleRect *rect, int w, int h)
         list_inv[     i ] = bestv;
     }
 
-    count = i - 1;
+    count = FFMAX(i - 1, 1);
     for (i--; i>=0; i--) {
         int v = i*255/count;
         AV_WN32(rect->data[1] + 4*list_inv[i], RGBA(v/2,v,v/2,v));
@@ -827,7 +713,7 @@ static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_ou
     AVSubtitleRect *rect;
     DVBSubCLUT *clut;
     uint32_t *clut_table;
-    int i,j;
+    int i;
     int offset_x=0, offset_y=0;
     int ret = 0;
 
@@ -924,10 +810,13 @@ static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_ou
 
 #if FF_API_AVPICTURE
 FF_DISABLE_DEPRECATION_WARNINGS
+{
+            int j;
             for (j = 0; j < 4; j++) {
                 rect->pict.data[j] = rect->data[j];
                 rect->pict.linesize[j] = rect->linesize[j];
             }
+}
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
@@ -1214,9 +1103,9 @@ static int dvbsub_parse_clut_segment(AVCodecContext *avctx,
                 return AVERROR_INVALIDDATA;
         }
 
-        if (depth & 0x80)
+        if (depth & 0x80 && entry_id < 4)
             clut->clut4[entry_id] = RGBA(r,g,b,255 - alpha);
-        else if (depth & 0x40)
+        else if (depth & 0x40 && entry_id < 16)
             clut->clut16[entry_id] = RGBA(r,g,b,255 - alpha);
         else if (depth & 0x20)
             clut->clut256[entry_id] = RGBA(r,g,b,255 - alpha);
@@ -1239,6 +1128,7 @@ static int dvbsub_parse_region_segment(AVCodecContext *avctx,
     DVBSubObject *object;
     DVBSubObjectDisplay *display;
     int fill;
+    int ret;
 
     if (buf_size < 10)
         return AVERROR_INVALIDDATA;
@@ -1266,6 +1156,16 @@ static int dvbsub_parse_region_segment(AVCodecContext *avctx,
     buf += 2;
     region->height = AV_RB16(buf);
     buf += 2;
+
+    ret = av_image_check_size2(region->width, region->height, avctx->max_pixels, AV_PIX_FMT_PAL8, 0, avctx);
+    if (ret >= 0 && region->width * region->height * 2 > 320 * 1024 * 8) {
+        ret = AVERROR_INVALIDDATA;
+        av_log(avctx, AV_LOG_ERROR, "Pixel buffer memory constraint violated\n");
+    }
+    if (ret < 0) {
+        region->width= region->height= 0;
+        return ret;
+    }
 
     if (region->width * region->height != region->buf_size) {
         av_free(region->pbuf);
@@ -1444,6 +1344,67 @@ static int dvbsub_parse_page_segment(AVCodecContext *avctx,
 
 
 #ifdef DEBUG
+static void png_save(DVBSubContext *ctx, const char *filename, uint32_t *bitmap, int w, int h)
+{
+    int x, y, v;
+    FILE *f;
+    char fname[40], fname2[40];
+    char command[1024];
+
+    snprintf(fname, sizeof(fname), "%s.ppm", filename);
+
+    f = fopen(fname, "w");
+    if (!f) {
+        perror(fname);
+        return;
+    }
+    fprintf(f, "P6\n"
+            "%d %d\n"
+            "%d\n",
+            w, h, 255);
+    for(y = 0; y < h; y++) {
+        for(x = 0; x < w; x++) {
+            v = bitmap[y * w + x];
+            putc((v >> 16) & 0xff, f);
+            putc((v >> 8) & 0xff, f);
+            putc((v >> 0) & 0xff, f);
+        }
+    }
+    fclose(f);
+
+
+    snprintf(fname2, sizeof(fname2), "%s-a.pgm", filename);
+
+    f = fopen(fname2, "w");
+    if (!f) {
+        perror(fname2);
+        return;
+    }
+    fprintf(f, "P5\n"
+            "%d %d\n"
+            "%d\n",
+            w, h, 255);
+    for(y = 0; y < h; y++) {
+        for(x = 0; x < w; x++) {
+            v = bitmap[y * w + x];
+            putc((v >> 24) & 0xff, f);
+        }
+    }
+    fclose(f);
+
+    snprintf(command, sizeof(command), "pnmtopng -alpha %s %s > %s.png 2> /dev/null", fname2, fname, filename);
+    if (system(command) != 0) {
+        av_log(ctx, AV_LOG_ERROR, "Error running pnmtopng\n");
+        return;
+    }
+
+    snprintf(command, sizeof(command), "rm %s %s", fname, fname2);
+    if (system(command) != 0) {
+        av_log(ctx, AV_LOG_ERROR, "Error removing %s and %s\n", fname, fname2);
+        return;
+    }
+}
+
 static int save_display_set(DVBSubContext *ctx)
 {
     DVBSubRegion *region;
@@ -1537,7 +1498,7 @@ static int save_display_set(DVBSubContext *ctx)
 
         snprintf(filename, sizeof(filename), "dvbs.%d", fileno_index);
 
-        png_save2(filename, pbuf, width, height);
+        png_save(ctx, filename, pbuf, width, height);
 
         av_freep(&pbuf);
     }
@@ -1545,7 +1506,7 @@ static int save_display_set(DVBSubContext *ctx)
     fileno_index++;
     return 0;
 }
-#endif
+#endif /* DEBUG */
 
 static int dvbsub_parse_display_definition_segment(AVCodecContext *avctx,
                                                    const uint8_t *buf,
@@ -1728,8 +1689,8 @@ end:
 
 #define DS AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_SUBTITLE_PARAM
 static const AVOption options[] = {
-    {"compute_edt", "compute end of time using pts or timeout", offsetof(DVBSubContext, compute_edt), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DS},
-    {"compute_clut", "compute clut when not available(-1) or always(1) or never(0)", offsetof(DVBSubContext, compute_clut), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, DS},
+    {"compute_edt", "compute end of time using pts or timeout", offsetof(DVBSubContext, compute_edt), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DS},
+    {"compute_clut", "compute clut when not available(-1) or always(1) or never(0)", offsetof(DVBSubContext, compute_clut), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, DS},
     {"dvb_substream", "", offsetof(DVBSubContext, substream), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 63, DS},
     {NULL}
 };

@@ -39,14 +39,14 @@ examples
 libavformat/output-example
     Build the libavformat basic example.
 
-libavcodec/api-example
-    Build the libavcodec basic example.
-
 libswscale/swscale-test
     Build the swscale self-test (useful also as an example).
 
 config
     Reconfigure the project with the current configuration.
+
+tools/target_dec_<decoder>_fuzzer
+    Build fuzzer to fuzz the specified decoder.
 
 
 Useful standard make commands:

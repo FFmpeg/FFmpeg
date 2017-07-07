@@ -45,7 +45,17 @@ extern av_export const int avpriv_mpeg4audio_sample_rates[16];
 extern const uint8_t ff_mpeg4audio_channels[8];
 
 /**
- * Parse MPEG-4 systems extradata to retrieve audio configuration.
+ * Parse MPEG-4 systems extradata from a potentially unaligned GetBitContext to retrieve audio configuration.
+ * @param[in] c        MPEG4AudioConfig structure to fill.
+ * @param[in] gb       Extradata from container.
+ * @param[in] sync_extension look for a sync extension after config if true.
+ * @return On error -1 is returned, on success AudioSpecificConfig bit index in extradata.
+ */
+int ff_mpeg4audio_get_config_gb(MPEG4AudioConfig *c, GetBitContext *gb,
+                                int sync_extension);
+
+/**
+ * Parse MPEG-4 systems extradata from a raw buffer to retrieve audio configuration.
  * @param[in] c        MPEG4AudioConfig structure to fill.
  * @param[in] buf      Extradata from container.
  * @param[in] bit_size Extradata size in bits.

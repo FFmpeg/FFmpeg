@@ -1,0 +1,13 @@
+[STREAM]
+sample_aspect_ratio=1:2
+display_aspect_ratio=1:3
+[SIDE_DATA]
+side_data_type=Display Matrix
+displaymatrix=
+00000000:            0      131072           0
+00000001:       -65536           0           0
+00000002:     47185920           0  1073741824
+
+rotation=-90
+[/SIDE_DATA]
+[/STREAM]

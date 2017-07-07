@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 The FFmpeg Project
+ * Copyright (C) 2003 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -175,8 +175,7 @@ static av_cold int roq_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
 
     if (avctx->width % 16 || avctx->height % 16) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Dimensions must be a multiple of 16\n");
+        avpriv_request_sample(avctx, "Dimensions not being a multiple of 16");
         return AVERROR_PATCHWELCOME;
     }
 
@@ -204,14 +203,15 @@ static int roq_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     RoqContext *s = avctx->priv_data;
-    int copy= !s->current_frame->data[0] && s->last_frame->data[0];
+    int copy = !s->current_frame->data[0] && s->last_frame->data[0];
     int ret;
 
     if ((ret = ff_reget_buffer(avctx, s->current_frame)) < 0)
         return ret;
 
-    if(copy) {
-        if ((ret = av_frame_copy(s->current_frame, s->last_frame)) < 0)
+    if (copy) {
+        ret = av_frame_copy(s->current_frame, s->last_frame);
+        if (ret < 0)
             return ret;
     }
 

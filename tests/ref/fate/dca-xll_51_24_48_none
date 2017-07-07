@@ -1,0 +1,13 @@
+#format: frame checksums
+#version: 2
+#hash: MD5
+#tb 0: 1/48000
+#media_type 0: audio
+#codec_id 0: pcm_s24le
+#sample_rate 0: 48000
+#channel_layout 0: 60f
+#channel_layout_name 0: 5.1(side)
+#stream#, dts,        pts, duration,     size, hash
+0,          0,          0,     1024,    18432, f9debe3f07be68533bf0295e3d2ba68a
+0,       1024,       1024,     1024,    18432, 6707daa7724fdc552869e522a7936f26
+0,       2048,       2048,     1024,    18432, be4cc5d54a49870a83edba83f21a7fb5

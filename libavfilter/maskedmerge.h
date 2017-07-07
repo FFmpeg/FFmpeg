@@ -18,12 +18,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVFILTER_MASKEDMERGE_H
+#define AVFILTER_MASKEDMERGE_H
+
 #include "avfilter.h"
 #include "framesync.h"
 
 typedef struct MaskedMergeContext {
     const AVClass *class;
     int width[4], height[4];
+    int linesize[4];
     int nb_planes;
     int planes;
     int half, depth;
@@ -38,3 +42,5 @@ typedef struct MaskedMergeContext {
 } MaskedMergeContext;
 
 void ff_maskedmerge_init_x86(MaskedMergeContext *s);
+
+#endif /* AVFILTER_MASKEDMERGE_H */

@@ -96,8 +96,10 @@ typedef struct SBRData {
     AAC_FLOAT          q_temp[42][48];
     uint8_t            s_indexmapped[8][48];
     ///Envelope scalefactors
+    uint8_t            env_facs_q[6][48];
     AAC_FLOAT          env_facs[6][48];
     ///Noise scalefactors
+    uint8_t            noise_facs_q[3][5];
     AAC_FLOAT          noise_facs[3][5];
     ///Envelope time borders
     uint8_t            t_env[8];
@@ -137,6 +139,7 @@ typedef struct AACSBRContext {
 struct SpectralBandReplication {
     int                sample_rate;
     int                start;
+    int                ready_for_dequant;
     int                id_aac;
     int                reset;
     SpectrumParameters spectrum_params;

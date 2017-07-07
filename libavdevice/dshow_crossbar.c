@@ -167,7 +167,7 @@ dshow_try_setup_crossbar_options(ICaptureGraphBuilder2 *graph_builder2,
     }
 
     if (devtype == VideoDevice && ctx->show_analog_tv_tuner_dialog) {
-        hr = ICaptureGraphBuilder2_FindInterface(graph_builder2, &LOOK_UPSTREAM_ONLY, NULL, 
+        hr = ICaptureGraphBuilder2_FindInterface(graph_builder2, &LOOK_UPSTREAM_ONLY, NULL,
              device_filter, &IID_IAMTVTuner, (void**) &tv_tuner_filter);
         if (hr == S_OK) {
             hr = IAMCrossbar_QueryInterface(tv_tuner_filter, &IID_IBaseFilter, (void **) &tv_tuner_base_filter);
@@ -179,7 +179,7 @@ dshow_try_setup_crossbar_options(ICaptureGraphBuilder2 *graph_builder2,
         }
     }
     if (devtype == AudioDevice && ctx->show_analog_tv_tuner_audio_dialog) {
-        hr = ICaptureGraphBuilder2_FindInterface(graph_builder2, &LOOK_UPSTREAM_ONLY, NULL, 
+        hr = ICaptureGraphBuilder2_FindInterface(graph_builder2, &LOOK_UPSTREAM_ONLY, NULL,
              device_filter, &IID_IAMTVAudio, (void**) &tv_audio_filter);
         if (hr == S_OK) {
             hr = IAMCrossbar_QueryInterface(tv_audio_filter, &IID_IBaseFilter, (void **) &tv_audio_base_filter);

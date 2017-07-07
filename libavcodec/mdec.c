@@ -49,6 +49,7 @@ typedef struct MDECContext {
     int mb_height;
     int mb_x, mb_y;
     DECLARE_ALIGNED(16, int16_t, block)[6][64];
+    DECLARE_ALIGNED(16, uint16_t, quant_matrix)[64];
     uint8_t *bitstream_buffer;
     unsigned int bitstream_buffer_size;
     int block_last_index[6];
@@ -61,7 +62,7 @@ static inline int mdec_decode_block_intra(MDECContext *a, int16_t *block, int n)
     int component;
     RLTable *rl = &ff_rl_mpeg1;
     uint8_t * const scantable = a->scantable.permutated;
-    const uint16_t *quant_matrix = ff_mpeg1_default_intra_matrix;
+    const uint16_t *quant_matrix = a->quant_matrix;
     const int qscale = a->qscale;
 
     /* DC coefficient */
@@ -73,7 +74,7 @@ static inline int mdec_decode_block_intra(MDECContext *a, int16_t *block, int n)
         if (diff >= 0xffff)
             return AVERROR_INVALIDDATA;
         a->last_dc[component] += diff;
-        block[0] = a->last_dc[component] << 3;
+        block[0] = a->last_dc[component] * (1 << 3);
     }
 
     i = 0;
@@ -111,11 +112,11 @@ static inline int mdec_decode_block_intra(MDECContext *a, int16_t *block, int n)
                 j = scantable[i];
                 if (level < 0) {
                     level = -level;
-                    level = (level * qscale * quant_matrix[j]) >> 3;
+                    level = (level * (unsigned)qscale * quant_matrix[j]) >> 3;
                     level = (level - 1) | 1;
                     level = -level;
                 } else {
-                    level = (level * qscale * quant_matrix[j]) >> 3;
+                    level = (level * (unsigned)qscale * quant_matrix[j]) >> 3;
                     level = (level - 1) | 1;
                 }
             }
@@ -212,6 +213,7 @@ static int decode_frame(AVCodecContext *avctx,
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     MDECContext * const a = avctx->priv_data;
+    int i;
 
     a->mb_width  = (avctx->coded_width  + 15) / 16;
     a->mb_height = (avctx->coded_height + 15) / 16;
@@ -225,10 +227,15 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ff_init_scantable(a->idsp.idct_permutation, &a->scantable,
                       ff_zigzag_direct);
 
-    if (avctx->idct_algo == FF_IDCT_AUTO)
-        avctx->idct_algo = FF_IDCT_SIMPLE;
     avctx->pix_fmt  = AV_PIX_FMT_YUVJ420P;
     avctx->color_range = AVCOL_RANGE_JPEG;
+
+    /* init q matrix */
+    for (i = 0; i < 64; i++) {
+        int j = a->idsp.idct_permutation[i];
+
+        a->quant_matrix[j] = ff_mpeg1_default_intra_matrix[i];
+    }
 
     return 0;
 }

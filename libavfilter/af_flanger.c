@@ -130,7 +130,7 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(ENOMEM);
 
     ff_generate_wave_table(s->wave_shape, AV_SAMPLE_FMT_FLT, s->lfo, s->lfo_length,
-                           floor(s->delay_min * inlink->sample_rate + 0.5),
+                           rint(s->delay_min * inlink->sample_rate),
                            s->max_samples - 2., 3 * M_PI_2);
 
     return av_samples_alloc_array_and_samples(&s->delay_buffer, NULL,

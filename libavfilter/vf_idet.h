@@ -39,7 +39,7 @@ typedef enum {
     REPEAT_BOTTOM,
 } RepeatedField;
 
-typedef struct {
+typedef struct IDETContext {
     const AVClass *class;
     float interlace_threshold;
     float progressive_threshold;

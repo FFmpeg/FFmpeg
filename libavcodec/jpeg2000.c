@@ -28,8 +28,10 @@
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "jpeg2000.h"
 
 #define SHL(a, n) ((n) >= 0 ? (a) << (n) : (a) >> -(n))
@@ -37,11 +39,11 @@
 /* tag tree routines */
 
 /* allocate the memory for tag tree */
-static int32_t tag_tree_size(uint16_t w, uint16_t h)
+static int32_t tag_tree_size(int w, int h)
 {
-    uint32_t res = 0;
+    int64_t res = 0;
     while (w > 1 || h > 1) {
-        res += w * h;
+        res += w * (int64_t)h;
         av_assert0(res + 1 < INT32_MAX);
         w = (w + 1) >> 1;
         h = (h + 1) >> 1;
@@ -220,7 +222,7 @@ static void init_band_stepsize(AVCodecContext *avctx,
          * R_b = R_I + log2 (gain_b )
          * see ISO/IEC 15444-1:2002 E.1.1 eqn. E-3 and E-4 */
         gain            = cbps;
-        band->f_stepsize  = pow(2.0, gain - qntsty->expn[gbandno]);
+        band->f_stepsize  = ff_exp2fi(gain - qntsty->expn[gbandno]);
         band->f_stepsize *= qntsty->mant[gbandno] / 2048.0 + 1.0;
         break;
     default:
@@ -247,7 +249,7 @@ static void init_band_stepsize(AVCodecContext *avctx,
 
     band->i_stepsize = band->f_stepsize * (1 << 15);
 
-    /* FIXME: In openjepg code stespize = stepsize * 0.5. Why?
+    /* FIXME: In OpenJPEG code stepsize = stepsize * 0.5. Why?
      * If not set output of entropic decoder is not correct. */
     if (!av_codec_is_encoder(avctx->codec))
         band->f_stepsize *= 0.5;
@@ -321,7 +323,7 @@ static int init_prec(Jpeg2000Band *band,
         return AVERROR(ENOMEM);
     for (cblkno = 0; cblkno < nb_codeblocks; cblkno++) {
         Jpeg2000Cblk *cblk = prec->cblk + cblkno;
-        uint16_t Cx0, Cy0;
+        int Cx0, Cy0;
 
         /* Compute coordinates of codeblocks */
         /* Compute Cx0*/
@@ -461,9 +463,17 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                                    codsty->nreslevels2decode - 1,
                                    codsty->transform))
         return ret;
-    // component size comp->coord is uint16_t so ir cannot overflow
+
+    if (av_image_check_size(comp->coord[0][1] - comp->coord[0][0],
+                            comp->coord[1][1] - comp->coord[1][0], 0, avctx))
+        return AVERROR_INVALIDDATA;
     csize = (comp->coord[0][1] - comp->coord[0][0]) *
             (comp->coord[1][1] - comp->coord[1][0]);
+    if (comp->coord[0][1] - comp->coord[0][0] > 32768 ||
+        comp->coord[1][1] - comp->coord[1][0] > 32768) {
+        av_log(avctx, AV_LOG_ERROR, "component size too large\n");
+        return AVERROR_PATCHWELCOME;
+    }
 
     if (codsty->transform == FF_DWT97) {
         csize += AV_INPUT_BUFFER_PADDING_SIZE / sizeof(*comp->f_data);

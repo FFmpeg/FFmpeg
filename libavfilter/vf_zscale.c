@@ -23,6 +23,7 @@
  * zscale video filter using z.lib library
  */
 
+#include <float.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -88,7 +89,15 @@ typedef struct ZScaleContext {
     int trc;
     int primaries;
     int range;
+    int chromal;
+    int colorspace_in;
+    int trc_in;
+    int primaries_in;
+    int range_in;
+    int chromal_in;
     char *size_str;
+    double nominal_peak_luminance;
+    int approximate_gamma;
 
     char *w_expr;               ///< width  expression string
     char *h_expr;               ///< height expression string
@@ -112,6 +121,7 @@ typedef struct ZScaleContext {
     enum AVColorTransferCharacteristic in_trc, out_trc;
     enum AVColorPrimaries in_primaries, out_primaries;
     enum AVColorRange in_range, out_range;
+    enum AVChromaLocation in_chromal, out_chromal;
 } ZScaleContext;
 
 static av_cold int init_dict(AVFilterContext *ctx, AVDictionary **opts)
@@ -312,6 +322,26 @@ static int print_zimg_error(AVFilterContext *ctx)
     return err_code;
 }
 
+static int convert_chroma_location(enum AVChromaLocation chroma_location)
+{
+    switch (chroma_location) {
+    case AVCHROMA_LOC_UNSPECIFIED:
+    case AVCHROMA_LOC_LEFT:
+        return ZIMG_CHROMA_LEFT;
+    case AVCHROMA_LOC_CENTER:
+        return ZIMG_CHROMA_CENTER;
+    case AVCHROMA_LOC_TOPLEFT:
+        return ZIMG_CHROMA_TOP_LEFT;
+    case AVCHROMA_LOC_TOP:
+        return ZIMG_CHROMA_TOP;
+    case AVCHROMA_LOC_BOTTOMLEFT:
+        return ZIMG_CHROMA_BOTTOM_LEFT;
+    case AVCHROMA_LOC_BOTTOM:
+        return ZIMG_CHROMA_BOTTOM;
+    }
+    return ZIMG_CHROMA_LEFT;
+}
+
 static int convert_matrix(enum AVColorSpace colorspace)
 {
     switch (colorspace) {
@@ -350,6 +380,12 @@ static int convert_trc(enum AVColorTransferCharacteristic color_trc)
         return ZIMG_TRANSFER_2020_10;
     case AVCOL_TRC_BT2020_12:
         return ZIMG_TRANSFER_2020_12;
+    case AVCOL_TRC_SMPTE2084:
+        return ZIMG_TRANSFER_ST2084;
+    case AVCOL_TRC_ARIB_STD_B67:
+        return ZIMG_TRANSFER_ARIB_B67;
+    case AVCOL_TRC_IEC61966_2_1:
+        return ZIMG_TRANSFER_IEC_61966_2_1;
     }
     return ZIMG_TRANSFER_UNSPECIFIED;
 }
@@ -367,6 +403,8 @@ static int convert_primaries(enum AVColorPrimaries color_primaries)
         return ZIMG_PRIMARIES_240M;
     case AVCOL_PRI_BT2020:
         return ZIMG_PRIMARIES_2020;
+    case AVCOL_PRI_SMPTE432:
+        return ZIMG_PRIMARIES_ST432_1;
     }
     return ZIMG_PRIMARIES_UNSPECIFIED;
 }
@@ -416,7 +454,9 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
        || s->out_colorspace != out->colorspace
        || s->out_trc  != out->color_trc
        || s->out_primaries != out->color_primaries
-       || s->out_range != out->color_range) {
+       || s->out_range != out->color_range
+       || s->in_chromal != in->chroma_location
+       || s->out_chromal != out->chroma_location) {
         snprintf(buf, sizeof(buf)-1, "%d", outlink->w);
         av_opt_set(s, "w", buf, 0);
         snprintf(buf, sizeof(buf)-1, "%d", outlink->h);
@@ -440,6 +480,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         s->params.cpu_type = ZIMG_CPU_AUTO;
         s->params.resample_filter = s->filter;
         s->params.resample_filter_uv = s->filter;
+        s->params.nominal_peak_luminance = s->nominal_peak_luminance;
+        s->params.allow_approximate_gamma = s->approximate_gamma;
 
         s->src_format.width = in->width;
         s->src_format.height = in->height;
@@ -448,10 +490,11 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         s->src_format.depth = desc->comp[0].depth;
         s->src_format.pixel_type = desc->comp[0].depth > 8 ? ZIMG_PIXEL_WORD : ZIMG_PIXEL_BYTE;
         s->src_format.color_family = (desc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_COLOR_RGB : ZIMG_COLOR_YUV;
-        s->src_format.matrix_coefficients = (desc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_MATRIX_RGB : convert_matrix(in->colorspace);
-        s->src_format.transfer_characteristics = (desc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_TRANSFER_UNSPECIFIED : convert_trc(in->color_trc);
-        s->src_format.color_primaries = (desc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_PRIMARIES_UNSPECIFIED : convert_primaries(in->color_primaries);
-        s->src_format.pixel_range = (desc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_RANGE_FULL : convert_range(in->color_range);
+        s->src_format.matrix_coefficients = (desc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_MATRIX_RGB : s->colorspace_in == -1 ? convert_matrix(in->colorspace) : s->colorspace_in;
+        s->src_format.transfer_characteristics = s->trc_in == - 1 ? convert_trc(in->color_trc) : s->trc_in;
+        s->src_format.color_primaries = s->primaries_in == -1 ? convert_primaries(in->color_primaries) : s->primaries_in;
+        s->src_format.pixel_range = (desc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_RANGE_FULL : s->range_in == -1 ? convert_range(in->color_range) : s->range_in;
+        s->src_format.chroma_location = s->chromal_in == -1 ? convert_chroma_location(in->chroma_location) : s->chromal_in;
 
         s->dst_format.width = out->width;
         s->dst_format.height = out->height;
@@ -461,9 +504,10 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         s->dst_format.pixel_type = odesc->comp[0].depth > 8 ? ZIMG_PIXEL_WORD : ZIMG_PIXEL_BYTE;
         s->dst_format.color_family = (odesc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_COLOR_RGB : ZIMG_COLOR_YUV;
         s->dst_format.matrix_coefficients = (odesc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_MATRIX_RGB : s->colorspace == -1 ? convert_matrix(out->colorspace) : s->colorspace;
-        s->dst_format.transfer_characteristics = (odesc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_TRANSFER_UNSPECIFIED : s->trc == -1 ? convert_trc(out->color_trc) : s->trc;
-        s->dst_format.color_primaries = (odesc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_PRIMARIES_UNSPECIFIED : s->primaries == -1 ? convert_primaries(out->color_primaries) : s->primaries;
+        s->dst_format.transfer_characteristics = s->trc == -1 ? convert_trc(out->color_trc) : s->trc;
+        s->dst_format.color_primaries = s->primaries == -1 ? convert_primaries(out->color_primaries) : s->primaries;
         s->dst_format.pixel_range = (odesc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_RANGE_FULL : s->range == -1 ? convert_range(out->color_range) : s->range;
+        s->dst_format.chroma_location = s->chromal == -1 ? convert_chroma_location(out->chroma_location) : s->chromal;
 
         if (s->colorspace != -1)
             out->colorspace = (int)s->dst_format.matrix_coefficients;
@@ -476,6 +520,9 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
 
         if (s->trc != -1)
             out->color_trc = (int)s->dst_format.transfer_characteristics;
+
+        if (s->chromal != -1)
+            out->chroma_location = (int)s->dst_format.chroma_location - 1;
 
         zimg_filter_graph_free(s->graph);
         s->graph = zimg_filter_graph_build(&s->src_format, &s->dst_format, &s->params);
@@ -661,21 +708,31 @@ static const AVOption zscale_options[] = {
     {     "spline16",         0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_RESIZE_SPLINE16}, 0, 0, FLAGS, "filter" },
     {     "spline36",         0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_RESIZE_SPLINE36}, 0, 0, FLAGS, "filter" },
     {     "lanczos",          0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_RESIZE_LANCZOS},  0, 0, FLAGS, "filter" },
+    { "out_range", "set color range",  OFFSET(range),     AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_RANGE_FULL, FLAGS, "range" },
     { "range", "set color range",      OFFSET(range),     AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_RANGE_FULL, FLAGS, "range" },
     { "r",     "set color range",      OFFSET(range),     AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_RANGE_FULL, FLAGS, "range" },
     {     "input",            0,       0,                 AV_OPT_TYPE_CONST, {.i64 = -1},                 0, 0, FLAGS, "range" },
     {     "limited",          0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_RANGE_LIMITED}, 0, 0, FLAGS, "range" },
     {     "full",             0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_RANGE_FULL},    0, 0, FLAGS, "range" },
-    { "primaries", "set color primaries", OFFSET(primaries), AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_PRIMARIES_2020, FLAGS, "primaries" },
-    { "p",         "set color primaries", OFFSET(primaries), AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_PRIMARIES_2020, FLAGS, "primaries" },
+    {     "unknown",          0,       0,                 AV_OPT_TYPE_CONST, {.i64 = -1},                 0, 0, FLAGS, "range" },
+    {     "tv",               0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_RANGE_LIMITED}, 0, 0, FLAGS, "range" },
+    {     "pc",               0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_RANGE_FULL},    0, 0, FLAGS, "range" },
+    { "primaries", "set color primaries", OFFSET(primaries), AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_PRIMARIES_ST432_1, FLAGS, "primaries" },
+    { "p",         "set color primaries", OFFSET(primaries), AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_PRIMARIES_ST432_1, FLAGS, "primaries" },
     {     "input",            0,       0,                 AV_OPT_TYPE_CONST, {.i64 = -1},                         0, 0, FLAGS, "primaries" },
     {     "709",              0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_PRIMARIES_709},         0, 0, FLAGS, "primaries" },
     {     "unspecified",      0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_PRIMARIES_UNSPECIFIED}, 0, 0, FLAGS, "primaries" },
     {     "170m",             0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_PRIMARIES_170M},        0, 0, FLAGS, "primaries" },
     {     "240m",             0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_PRIMARIES_240M},        0, 0, FLAGS, "primaries" },
     {     "2020",             0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_PRIMARIES_2020},        0, 0, FLAGS, "primaries" },
-    { "transfer", "set transfer characteristic", OFFSET(trc), AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_TRANSFER_2020_12, FLAGS, "transfer" },
-    { "t",        "set transfer characteristic", OFFSET(trc), AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_TRANSFER_2020_12, FLAGS, "transfer" },
+    {     "unknown",          0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_PRIMARIES_UNSPECIFIED}, 0, 0, FLAGS, "primaries" },
+    {     "bt709",            0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_PRIMARIES_709},         0, 0, FLAGS, "primaries" },
+    {     "smpte170m",        0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_PRIMARIES_170M},        0, 0, FLAGS, "primaries" },
+    {     "smpte240m",        0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_PRIMARIES_240M},        0, 0, FLAGS, "primaries" },
+    {     "bt2020",           0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_PRIMARIES_2020},        0, 0, FLAGS, "primaries" },
+    {     "smpte432",         0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_PRIMARIES_ST432_1},     0, 0, FLAGS, "primaries" },
+    { "transfer", "set transfer characteristic", OFFSET(trc), AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_TRANSFER_ARIB_B67, FLAGS, "transfer" },
+    { "t",        "set transfer characteristic", OFFSET(trc), AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_TRANSFER_ARIB_B67, FLAGS, "transfer" },
     {     "input",            0,       0,                 AV_OPT_TYPE_CONST, {.i64 = -1},                         0, 0, FLAGS, "transfer" },
     {     "709",              0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_TRANSFER_709},         0, 0, FLAGS, "transfer" },
     {     "unspecified",      0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_TRANSFER_UNSPECIFIED}, 0, 0, FLAGS, "transfer" },
@@ -683,6 +740,15 @@ static const AVOption zscale_options[] = {
     {     "linear",           0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_TRANSFER_LINEAR},      0, 0, FLAGS, "transfer" },
     {     "2020_10",          0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_TRANSFER_2020_10},     0, 0, FLAGS, "transfer" },
     {     "2020_12",          0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_TRANSFER_2020_12},     0, 0, FLAGS, "transfer" },
+    {     "unknown",          0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_TRANSFER_UNSPECIFIED}, 0, 0, FLAGS, "transfer" },
+    {     "smpte170m",        0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_TRANSFER_601},         0, 0, FLAGS, "transfer" },
+    {     "bt709",            0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_TRANSFER_709},         0, 0, FLAGS, "transfer" },
+    {     "linear",           0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_TRANSFER_LINEAR},      0, 0, FLAGS, "transfer" },
+    {     "bt2020-10",        0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_TRANSFER_2020_10},     0, 0, FLAGS, "transfer" },
+    {     "bt2020-12",        0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_TRANSFER_2020_12},     0, 0, FLAGS, "transfer" },
+    {     "smpte2084",        0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_TRANSFER_ST2084},      0, 0, FLAGS, "transfer" },
+    {     "iec61966-2-1",     0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_TRANSFER_IEC_61966_2_1},0, 0, FLAGS, "transfer" },
+    {     "arib-std-b67",     0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_TRANSFER_ARIB_B67},    0, 0, FLAGS, "transfer" },
     { "matrix", "set colorspace matrix", OFFSET(colorspace), AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_MATRIX_2020_CL, FLAGS, "matrix" },
     { "m",      "set colorspace matrix", OFFSET(colorspace), AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_MATRIX_2020_CL, FLAGS, "matrix" },
     {     "input",            0,       0,                 AV_OPT_TYPE_CONST, {.i64 = -1},                      0, 0, FLAGS, "matrix" },
@@ -690,9 +756,37 @@ static const AVOption zscale_options[] = {
     {     "unspecified",      0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_MATRIX_UNSPECIFIED}, 0, 0, FLAGS, "matrix" },
     {     "470bg",            0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_MATRIX_470BG},       0, 0, FLAGS, "matrix" },
     {     "170m",             0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_MATRIX_170M},        0, 0, FLAGS, "matrix" },
-    {     "ycgco",            0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_MATRIX_YCGCO},       0, 0, FLAGS, "matrix" },
     {     "2020_ncl",         0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_MATRIX_2020_NCL},    0, 0, FLAGS, "matrix" },
     {     "2020_cl",          0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_MATRIX_2020_CL},     0, 0, FLAGS, "matrix" },
+    {     "unknown",          0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_MATRIX_UNSPECIFIED}, 0, 0, FLAGS, "matrix" },
+    {     "bt709",            0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_MATRIX_709},         0, 0, FLAGS, "matrix" },
+    {     "bt470bg",          0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_MATRIX_470BG},       0, 0, FLAGS, "matrix" },
+    {     "smpte170m",        0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_MATRIX_170M},        0, 0, FLAGS, "matrix" },
+    {     "ycgco",            0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_MATRIX_YCGCO},       0, 0, FLAGS, "matrix" },
+    {     "bt2020nc",         0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_MATRIX_2020_NCL},    0, 0, FLAGS, "matrix" },
+    {     "bt2020c",          0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_MATRIX_2020_CL},     0, 0, FLAGS, "matrix" },
+    { "in_range", "set input color range", OFFSET(range_in),    AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_RANGE_FULL, FLAGS, "range" },
+    { "rangein", "set input color range", OFFSET(range_in),     AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_RANGE_FULL, FLAGS, "range" },
+    { "rin",     "set input color range", OFFSET(range_in),     AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_RANGE_FULL, FLAGS, "range" },
+    { "primariesin", "set input color primaries", OFFSET(primaries_in), AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_PRIMARIES_ST432_1, FLAGS, "primaries" },
+    { "pin",         "set input color primaries", OFFSET(primaries_in), AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_PRIMARIES_ST432_1, FLAGS, "primaries" },
+    { "transferin", "set input transfer characteristic", OFFSET(trc_in), AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_TRANSFER_ARIB_B67, FLAGS, "transfer" },
+    { "tin",        "set input transfer characteristic", OFFSET(trc_in), AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_TRANSFER_ARIB_B67, FLAGS, "transfer" },
+    { "matrixin", "set input colorspace matrix", OFFSET(colorspace_in), AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_MATRIX_2020_CL, FLAGS, "matrix" },
+    { "min",      "set input colorspace matrix", OFFSET(colorspace_in), AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_MATRIX_2020_CL, FLAGS, "matrix" },
+    { "chromal",  "set output chroma location", OFFSET(chromal), AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_CHROMA_BOTTOM, FLAGS, "chroma" },
+    { "c",        "set output chroma location", OFFSET(chromal), AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_CHROMA_BOTTOM, FLAGS, "chroma" },
+    {     "input",     0, 0, AV_OPT_TYPE_CONST, {.i64 = -1},                       0, 0, FLAGS, "chroma" },
+    {     "left",      0, 0, AV_OPT_TYPE_CONST, {.i64 = ZIMG_CHROMA_LEFT},         0, 0, FLAGS, "chroma" },
+    {     "center",    0, 0, AV_OPT_TYPE_CONST, {.i64 = ZIMG_CHROMA_CENTER},       0, 0, FLAGS, "chroma" },
+    {     "topleft",   0, 0, AV_OPT_TYPE_CONST, {.i64 = ZIMG_CHROMA_TOP_LEFT},     0, 0, FLAGS, "chroma" },
+    {     "top",       0, 0, AV_OPT_TYPE_CONST, {.i64 = ZIMG_CHROMA_TOP},          0, 0, FLAGS, "chroma" },
+    {     "bottomleft",0, 0, AV_OPT_TYPE_CONST, {.i64 = ZIMG_CHROMA_BOTTOM_LEFT},  0, 0, FLAGS, "chroma" },
+    {     "bottom",    0, 0, AV_OPT_TYPE_CONST, {.i64 = ZIMG_CHROMA_BOTTOM},       0, 0, FLAGS, "chroma" },
+    { "chromalin",  "set input chroma location", OFFSET(chromal_in), AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_CHROMA_BOTTOM, FLAGS, "chroma" },
+    { "cin",        "set input chroma location", OFFSET(chromal_in), AV_OPT_TYPE_INT, {.i64 = -1}, -1, ZIMG_CHROMA_BOTTOM, FLAGS, "chroma" },
+    { "npl",       "set nominal peak luminance", OFFSET(nominal_peak_luminance), AV_OPT_TYPE_DOUBLE, {.dbl = NAN}, 0, DBL_MAX, FLAGS },
+    { "agamma",       "allow approximate gamma", OFFSET(approximate_gamma),      AV_OPT_TYPE_BOOL,   {.i64 = 1},   0, 1,       FLAGS },
     { NULL }
 };
 

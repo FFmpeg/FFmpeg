@@ -440,7 +440,7 @@ copy_done:
         s->pending_end_frame = 0;
     s->last_dest_frame_pts = s->work->pts;
 
-    return ff_filter_frame(ctx->outputs[0], s->work);
+    return 1;
 }
 
 static void set_srce_frame_dest_pts(AVFilterContext *ctx)
@@ -526,7 +526,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     FrameRateContext *s = ctx->priv;
     int i;
 
-    for (i = s->frst + 1; i < s->last; i++) {
+    for (i = s->frst; i < s->last; i++) {
         if (s->srce[i] && (s->srce[i] != s->srce[i + 1]))
             av_frame_free(&s->srce[i]);
     }
@@ -586,6 +586,7 @@ static int config_input(AVFilterLink *inlink)
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
 {
+    int ret;
     AVFilterContext *ctx = inlink->dst;
     FrameRateContext *s = ctx->priv;
 
@@ -606,7 +607,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
         set_srce_frame_dest_pts(ctx);
     }
 
-    return process_work_frame(ctx, 1);
+    ret = process_work_frame(ctx, 1);
+    if (ret < 0)
+        return ret;
+    return ret ? ff_filter_frame(ctx->outputs[0], s->work) : 0;
 }
 
 static int config_output(AVFilterLink *outlink)
@@ -658,23 +662,13 @@ static int request_frame(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     FrameRateContext *s = ctx->priv;
-    int val, i;
+    int ret, i;
 
     ff_dlog(ctx, "request_frame()\n");
 
     // if there is no "next" frame AND we are not in flush then get one from our input filter
-    if (!s->srce[s->frst] && !s->flush) {
-        ff_dlog(ctx, "request_frame() call source's request_frame()\n");
-        val = ff_request_frame(outlink->src->inputs[0]);
-        if (val < 0 && (val != AVERROR_EOF)) {
-            ff_dlog(ctx, "request_frame() source's request_frame() returned error:%d\n", val);
-            return val;
-        } else if (val == AVERROR_EOF) {
-            s->flush = 1;
-        }
-        ff_dlog(ctx, "request_frame() source's request_frame() returned:%d\n", val);
-        return 0;
-    }
+    if (!s->srce[s->frst] && !s->flush)
+        goto request;
 
     ff_dlog(ctx, "request_frame() REPEAT or FLUSH\n");
 
@@ -695,7 +689,23 @@ static int request_frame(AVFilterLink *outlink)
     }
 
     set_work_frame_pts(ctx);
-    return process_work_frame(ctx, 0);
+    ret = process_work_frame(ctx, 0);
+    if (ret < 0)
+        return ret;
+    if (ret)
+        return ff_filter_frame(ctx->outputs[0], s->work);
+
+request:
+    ff_dlog(ctx, "request_frame() call source's request_frame()\n");
+    ret = ff_request_frame(ctx->inputs[0]);
+    if (ret < 0 && (ret != AVERROR_EOF)) {
+        ff_dlog(ctx, "request_frame() source's request_frame() returned error:%d\n", ret);
+        return ret;
+    } else if (ret == AVERROR_EOF) {
+        s->flush = 1;
+    }
+    ff_dlog(ctx, "request_frame() source's request_frame() returned:%d\n", ret);
+    return 0;
 }
 
 static const AVFilterPad framerate_inputs[] = {

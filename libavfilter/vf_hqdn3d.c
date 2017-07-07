@@ -127,7 +127,7 @@ static int denoise_depth(HQDN3DContext *s,
                          int w, int h, int sstride, int dstride,
                          int16_t *spatial, int16_t *temporal, int depth)
 {
-    // FIXME: For 16bit depth, frame_ant could be a pointer to the previous
+    // FIXME: For 16-bit depth, frame_ant could be a pointer to the previous
     // filtered frame rather than a separate buffer.
     long x, y;
     uint16_t *frame_ant = *frame_ant_ptr;
@@ -311,8 +311,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     for (c = 0; c < 3; c++) {
         denoise(s, in->data[c], out->data[c],
                 s->line, &s->frame_prev[c],
-                FF_CEIL_RSHIFT(in->width,  (!!c * s->hsub)),
-                FF_CEIL_RSHIFT(in->height, (!!c * s->vsub)),
+                AV_CEIL_RSHIFT(in->width,  (!!c * s->hsub)),
+                AV_CEIL_RSHIFT(in->height, (!!c * s->vsub)),
                 in->linesize[c], out->linesize[c],
                 s->coefs[c ? CHROMA_SPATIAL : LUMA_SPATIAL],
                 s->coefs[c ? CHROMA_TMP     : LUMA_TMP]);

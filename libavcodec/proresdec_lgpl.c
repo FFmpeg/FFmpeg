@@ -251,7 +251,7 @@ static int decode_picture_header(ProresContext *ctx, const uint8_t *buf,
                       (1 << (4 + ctx->frame->interlaced_frame)) - 1) >>
                      (4 + ctx->frame->interlaced_frame);
 
-    remainder    = ctx->num_x_mbs & ((1 << slice_width_factor) - 1);
+    remainder    = av_mod_uintp2(ctx->num_x_mbs, slice_width_factor);
     num_x_slices = (ctx->num_x_mbs >> slice_width_factor) + (remainder & 1) +
                    ((remainder >> 1) & 1) + ((remainder >> 2) & 1);
 
@@ -625,7 +625,7 @@ static int decode_slice(AVCodecContext *avctx, void *tdata)
 
     /* if V or alpha component size is negative that means that previous
        component sizes are too large */
-    if (v_data_size < 0 || a_data_size < 0 || hdr_size < 6) {
+    if (v_data_size < 0 || a_data_size < 0 || hdr_size < 6 || coff[3] > slice_data_size) {
         av_log(avctx, AV_LOG_ERROR, "invalid data size\n");
         return AVERROR_INVALIDDATA;
     }

@@ -25,8 +25,7 @@
 #include "libavcodec/audiodsp.h"
 #include "audiodsp_arm.h"
 
-void ff_vector_clipf_neon(float *dst, const float *src, float min, float max,
-                          int len);
+void ff_vector_clipf_neon(float *dst, const float *src, int len, float min, float max);
 void ff_vector_clip_int32_neon(int32_t *dst, const int32_t *src, int32_t min,
                                int32_t max, unsigned int len);
 

@@ -21,8 +21,9 @@
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
-#include "msgsmdec.h"
 #include "gsm.h"
+#include "msgsmdec.h"
+
 #include "gsmdec_template.c"
 
 int ff_msgsm_decode_block(AVCodecContext *avctx, int16_t *samples,

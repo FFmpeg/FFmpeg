@@ -224,7 +224,7 @@ static int64_t bluray_seek(URLContext *h, int64_t pos, int whence)
 }
 
 
-URLProtocol ff_bluray_protocol = {
+const URLProtocol ff_bluray_protocol = {
     .name            = "bluray",
     .url_close       = bluray_close,
     .url_open        = bluray_open,

@@ -24,6 +24,7 @@
 #if !defined(AVCODEC_DCT_H) && (!defined(FFT_FLOAT) || FFT_FLOAT)
 #define AVCODEC_DCT_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include "rdft.h"
@@ -62,7 +63,7 @@ void ff_j_rev_dct(int16_t *data);
 void ff_j_rev_dct4(int16_t *data);
 void ff_j_rev_dct2(int16_t *data);
 void ff_j_rev_dct1(int16_t *data);
-void ff_jref_idct_put(uint8_t *dest, int line_size, int16_t *block);
-void ff_jref_idct_add(uint8_t *dest, int line_size, int16_t *block);
+void ff_jref_idct_put(uint8_t *dest, ptrdiff_t line_size, int16_t *block);
+void ff_jref_idct_add(uint8_t *dest, ptrdiff_t line_size, int16_t *block);
 
 #endif /* AVCODEC_DCT_H */

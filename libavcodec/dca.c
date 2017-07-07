@@ -36,13 +36,20 @@ const uint32_t avpriv_dca_sample_rates[16] = {
     12000, 24000, 48000, 96000, 192000
 };
 
+const uint32_t ff_dca_sampling_freqs[16] = {
+      8000,  16000, 32000, 64000, 128000, 22050,  44100,  88200,
+    176400, 352800, 12000, 24000,  48000, 96000, 192000, 384000,
+};
+
+const uint8_t ff_dca_freq_ranges[16] = {
+    0, 1, 2, 3, 4, 1, 2, 3, 4, 4, 0, 1, 2, 3, 4, 4
+};
+
 int avpriv_dca_convert_bitstream(const uint8_t *src, int src_size, uint8_t *dst,
                              int max_size)
 {
     uint32_t mrk;
     int i, tmp;
-    const uint16_t *ssrc = (const uint16_t *) src;
-    uint16_t *sdst = (uint16_t *) dst;
     PutBitContext pb;
 
     if ((unsigned) src_size > (unsigned) max_size)
@@ -51,11 +58,15 @@ int avpriv_dca_convert_bitstream(const uint8_t *src, int src_size, uint8_t *dst,
     mrk = AV_RB32(src);
     switch (mrk) {
     case DCA_SYNCWORD_CORE_BE:
+    case DCA_SYNCWORD_SUBSTREAM:
         memcpy(dst, src, src_size);
         return src_size;
     case DCA_SYNCWORD_CORE_LE:
-        for (i = 0; i < (src_size + 1) >> 1; i++)
-            *sdst++ = av_bswap16(*ssrc++);
+        for (i = 0; i < (src_size + 1) >> 1; i++) {
+            AV_WB16(dst, AV_RL16(src));
+            src += 2;
+            dst += 2;
+        }
         return src_size;
     case DCA_SYNCWORD_CORE_14B_BE:
     case DCA_SYNCWORD_CORE_14B_LE:

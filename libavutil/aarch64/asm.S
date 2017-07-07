@@ -72,15 +72,21 @@ ELF     .size   \name, . - \name
 \name:
 .endm
 
-.macro  movrel rd, val
+.macro  movrel rd, val, offset=0
 #if CONFIG_PIC && defined(__APPLE__)
+    .if \offset < 0
         adrp            \rd, \val@PAGE
         add             \rd, \rd, \val@PAGEOFF
+        sub             \rd, \rd, -(\offset)
+    .else
+        adrp            \rd, \val+(\offset)@PAGE
+        add             \rd, \rd, \val+(\offset)@PAGEOFF
+    .endif
 #elif CONFIG_PIC
-        adrp            \rd, \val
-        add             \rd, \rd, :lo12:\val
+        adrp            \rd, \val+(\offset)
+        add             \rd, \rd, :lo12:\val+(\offset)
 #else
-        ldr             \rd, =\val
+        ldr             \rd, =\val+\offset
 #endif
 .endm
 

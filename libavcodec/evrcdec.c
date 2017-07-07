@@ -917,7 +917,7 @@ erasure:
 #define AD AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM
 
 static const AVOption options[] = {
-    { "postfilter", "enable postfilter", OFFSET(postfilter), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, AD },
+    { "postfilter", "enable postfilter", OFFSET(postfilter), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, AD },
     { NULL }
 };
 

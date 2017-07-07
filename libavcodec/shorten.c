@@ -23,11 +23,11 @@
  * @file
  * Shorten decoder
  * @author Jeff Muizelaar
- *
  */
 
 #include <limits.h>
 #include "avcodec.h"
+#include "bswapdsp.h"
 #include "bytestream.h"
 #include "get_bits.h"
 #include "golomb.h"
@@ -110,12 +110,16 @@ typedef struct ShortenContext {
     int32_t lpcqoffset;
     int got_header;
     int got_quit_command;
+    int swap;
+    BswapDSPContext bdsp;
 } ShortenContext;
 
 static av_cold int shorten_decode_init(AVCodecContext *avctx)
 {
     ShortenContext *s = avctx->priv_data;
     s->avctx          = avctx;
+
+    ff_bswapdsp_init(&s->bdsp);
 
     return 0;
 }
@@ -156,8 +160,11 @@ static int allocate_buffers(ShortenContext *s)
 
 static inline unsigned int get_uint(ShortenContext *s, int k)
 {
-    if (s->version != 0)
+    if (s->version != 0) {
         k = get_ur_golomb_shorten(&s->gb, ULONGSIZE);
+        if (k > 31U)
+            return AVERROR_INVALIDDATA;
+    }
     return get_ur_golomb_shorten(&s->gb, k);
 }
 
@@ -165,9 +172,13 @@ static void fix_bitshift(ShortenContext *s, int32_t *buffer)
 {
     int i;
 
-    if (s->bitshift != 0)
+    if (s->bitshift == 32) {
+        for (i = 0; i < s->blocksize; i++)
+            buffer[i] = 0;
+    } else if (s->bitshift != 0) {
         for (i = 0; i < s->blocksize; i++)
             buffer[i] <<= s->bitshift;
+    }
 }
 
 static int init_offset(ShortenContext *s)
@@ -193,6 +204,74 @@ static int init_offset(ShortenContext *s)
     for (chan = 0; chan < s->channels; chan++)
         for (i = 0; i < nblock; i++)
             s->offset[chan][i] = mean;
+    return 0;
+}
+
+static int decode_aiff_header(AVCodecContext *avctx, const uint8_t *header,
+                              int header_size)
+{
+    ShortenContext *s = avctx->priv_data;
+    int len, bps, exp;
+    GetByteContext gb;
+    uint64_t val;
+    uint32_t tag;
+
+    bytestream2_init(&gb, header, header_size);
+
+    if (bytestream2_get_le32(&gb) != MKTAG('F', 'O', 'R', 'M')) {
+        av_log(avctx, AV_LOG_ERROR, "missing FORM tag\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    bytestream2_skip(&gb, 4); /* chunk size */
+
+    tag = bytestream2_get_le32(&gb);
+    if (tag != MKTAG('A', 'I', 'F', 'F') &&
+        tag != MKTAG('A', 'I', 'F', 'C')) {
+        av_log(avctx, AV_LOG_ERROR, "missing AIFF tag\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    while (bytestream2_get_le32(&gb) != MKTAG('C', 'O', 'M', 'M')) {
+        len = bytestream2_get_be32(&gb);
+        bytestream2_skip(&gb, len + (len & 1));
+        if (len < 0 || bytestream2_get_bytes_left(&gb) < 18) {
+            av_log(avctx, AV_LOG_ERROR, "no COMM chunk found\n");
+            return AVERROR_INVALIDDATA;
+        }
+    }
+    len = bytestream2_get_be32(&gb);
+
+    if (len < 18) {
+        av_log(avctx, AV_LOG_ERROR, "COMM chunk was too short\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    bytestream2_skip(&gb, 6);
+    bps = bytestream2_get_be16(&gb);
+    avctx->bits_per_coded_sample = bps;
+
+    s->swap = tag == MKTAG('A', 'I', 'F', 'C');
+
+    if (bps != 16 && bps != 8) {
+        av_log(avctx, AV_LOG_ERROR, "unsupported number of bits per sample: %d\n", bps);
+        return AVERROR(ENOSYS);
+    }
+
+    exp = bytestream2_get_be16(&gb) - 16383 - 63;
+    val = bytestream2_get_be64(&gb);
+    if (exp < -63 || exp > 63) {
+        av_log(avctx, AV_LOG_ERROR, "exp %d is out of range\n", exp);
+        return AVERROR_INVALIDDATA;
+    }
+    if (exp >= 0)
+        avctx->sample_rate = val << exp;
+    else
+        avctx->sample_rate = (val + (1ULL<<(-exp-1))) >> -exp;
+    len -= 18;
+    if (len > 0)
+        av_log(avctx, AV_LOG_INFO, "%d header bytes unparsed\n", len);
+
     return 0;
 }
 
@@ -366,6 +445,10 @@ static int read_header(ShortenContext *s)
         s->blocksize = blocksize;
 
         maxnlpc  = get_uint(s, LPCQSIZE);
+        if (maxnlpc > 1024U) {
+            av_log(s->avctx, AV_LOG_ERROR, "maxnlpc is: %d\n", maxnlpc);
+            return AVERROR_INVALIDDATA;
+        }
         s->nmean = get_uint(s, 0);
 
         skip_bytes = get_uint(s, NSKIPSIZE);
@@ -388,6 +471,9 @@ static int read_header(ShortenContext *s)
     if (s->version > 1)
         s->lpcqoffset = V2LPCQOFFSET;
 
+    if (s->avctx->extradata_size > 0)
+        goto end;
+
     if (get_ur_golomb_shorten(&s->gb, FNSIZE) != FN_VERBATIM) {
         av_log(s->avctx, AV_LOG_ERROR,
                "missing verbatim section at beginning of stream\n");
@@ -405,9 +491,19 @@ static int read_header(ShortenContext *s)
     for (i = 0; i < s->header_size; i++)
         s->header[i] = (char)get_ur_golomb_shorten(&s->gb, VERBATIM_BYTE_SIZE);
 
-    if ((ret = decode_wave_header(s->avctx, s->header, s->header_size)) < 0)
-        return ret;
+    if (AV_RL32(s->header) == MKTAG('R','I','F','F')) {
+        if ((ret = decode_wave_header(s->avctx, s->header, s->header_size)) < 0)
+            return ret;
+    } else if (AV_RL32(s->header) == MKTAG('F','O','R','M')) {
+        if ((ret = decode_aiff_header(s->avctx, s->header, s->header_size)) < 0)
+            return ret;
+    } else {
+        avpriv_report_missing_feature(s->avctx, "unsupported bit packing %"
+                                      PRIX32, AV_RL32(s->header));
+        return AVERROR_PATCHWELCOME;
+    }
 
+end:
     s->cur_chan = 0;
     s->bitshift = 0;
 
@@ -433,6 +529,7 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
         tmp_ptr = av_fast_realloc(s->bitstream, &s->allocated_bitstream_size,
                                   s->max_framesize + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!tmp_ptr) {
+            s->max_framesize = 0;
             av_log(avctx, AV_LOG_ERROR, "error allocating bitstream buffer\n");
             return AVERROR(ENOMEM);
         }
@@ -441,29 +538,27 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     /* append current packet data to bitstream buffer */
-    if (1 && s->max_framesize) { //FIXME truncated
-        buf_size       = FFMIN(buf_size, s->max_framesize - s->bitstream_size);
-        input_buf_size = buf_size;
+    buf_size       = FFMIN(buf_size, s->max_framesize - s->bitstream_size);
+    input_buf_size = buf_size;
 
-        if (s->bitstream_index + s->bitstream_size + buf_size + AV_INPUT_BUFFER_PADDING_SIZE >
-            s->allocated_bitstream_size) {
-            memmove(s->bitstream, &s->bitstream[s->bitstream_index],
-                    s->bitstream_size);
-            s->bitstream_index = 0;
-        }
-        if (buf)
-            memcpy(&s->bitstream[s->bitstream_index + s->bitstream_size], buf,
-                   buf_size);
-        buf               = &s->bitstream[s->bitstream_index];
-        buf_size         += s->bitstream_size;
-        s->bitstream_size = buf_size;
+    if (s->bitstream_index + s->bitstream_size + buf_size + AV_INPUT_BUFFER_PADDING_SIZE >
+        s->allocated_bitstream_size) {
+        memmove(s->bitstream, &s->bitstream[s->bitstream_index],
+                s->bitstream_size);
+        s->bitstream_index = 0;
+    }
+    if (buf)
+        memcpy(&s->bitstream[s->bitstream_index + s->bitstream_size], buf,
+               buf_size);
+    buf               = &s->bitstream[s->bitstream_index];
+    buf_size         += s->bitstream_size;
+    s->bitstream_size = buf_size;
 
-        /* do not decode until buffer has at least max_framesize bytes or
-         * the end of the file has been reached */
-        if (buf_size < s->max_framesize && avpkt->data) {
-            *got_frame_ptr = 0;
-            return input_buf_size;
-        }
+    /* do not decode until buffer has at least max_framesize bytes or
+     * the end of the file has been reached */
+    if (buf_size < s->max_framesize && avpkt->data) {
+        *got_frame_ptr = 0;
+        return input_buf_size;
     }
     /* init and position bitstream reader */
     if ((ret = init_get_bits8(&s->gb, buf, buf_size)) < 0)
@@ -472,10 +567,26 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
 
     /* process header or next subblock */
     if (!s->got_header) {
+
         if ((ret = read_header(s)) < 0)
             return ret;
-        *got_frame_ptr = 0;
-        goto finish_frame;
+
+        if (avpkt->size) {
+            int max_framesize;
+            void *tmp_ptr;
+
+            max_framesize = FFMAX(s->max_framesize, s->blocksize * s->channels * 8);
+            tmp_ptr = av_fast_realloc(s->bitstream, &s->allocated_bitstream_size,
+                                      max_framesize + AV_INPUT_BUFFER_PADDING_SIZE);
+            if (!tmp_ptr) {
+                av_log(avctx, AV_LOG_ERROR, "error allocating bitstream buffer\n");
+                return AVERROR(ENOMEM);
+            }
+            s->bitstream = tmp_ptr;
+            s->max_framesize = max_framesize;
+            *got_frame_ptr = 0;
+            goto finish_frame;
+        }
     }
 
     /* if quit command was read previously, don't decode anything */
@@ -512,7 +623,7 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
                 break;
             case FN_BITSHIFT: {
                 unsigned bitshift = get_ur_golomb_shorten(&s->gb, BITSHIFTSIZE);
-                if (bitshift > 31) {
+                if (bitshift > 32) {
                     av_log(avctx, AV_LOG_ERROR, "bitshift %d is invalid\n",
                            bitshift);
                     return AVERROR_INVALIDDATA;
@@ -523,8 +634,8 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
             case FN_BLOCKSIZE: {
                 unsigned blocksize = get_uint(s, av_log2(s->blocksize));
                 if (blocksize > s->blocksize) {
-                    av_log(avctx, AV_LOG_ERROR,
-                           "Increasing block size is not supported\n");
+                    avpriv_report_missing_feature(avctx,
+                                                  "Increasing block size");
                     return AVERROR_PATCHWELCOME;
                 }
                 if (!blocksize || blocksize > MAX_BLOCKSIZE) {
@@ -539,10 +650,8 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
                 s->got_quit_command = 1;
                 break;
             }
-            if (cmd == FN_BLOCKSIZE || cmd == FN_QUIT) {
-                *got_frame_ptr = 0;
+            if (cmd == FN_QUIT)
                 break;
-            }
         } else {
             /* process audio command */
             int residual_size = 0;
@@ -556,6 +665,10 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
                  * of get_sr_golomb_shorten(). */
                 if (s->version == 0)
                     residual_size--;
+                if (residual_size > 30U) {
+                    av_log(avctx, AV_LOG_ERROR, "residual size unsupportd: %d\n", residual_size);
+                    return AVERROR_INVALIDDATA;
+                }
             }
 
             /* calculate sample offset using means from previous blocks */
@@ -592,7 +705,7 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
                 if (s->version < 2)
                     s->offset[channel][s->nmean - 1] = sum / s->blocksize;
                 else
-                    s->offset[channel][s->nmean - 1] = (sum / s->blocksize) << s->bitshift;
+                    s->offset[channel][s->nmean - 1] = s->bitshift == 32 ? 0 : (sum / s->blocksize) << s->bitshift;
             }
 
             /* copy wrap samples for use with next block */
@@ -629,6 +742,11 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
                             break;
                         }
                     }
+                    if (s->swap && s->internal_ftype != TYPE_U8)
+                        s->bdsp.bswap16_buf(((uint16_t **)frame->extended_data)[chan],
+                                            ((uint16_t **)frame->extended_data)[chan],
+                                            s->blocksize);
+
                 }
 
                 *got_frame_ptr = 1;
@@ -680,7 +798,7 @@ AVCodec ff_shorten_decoder = {
     .init           = shorten_decode_init,
     .close          = shorten_decode_close,
     .decode         = shorten_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_U8P,
                                                       AV_SAMPLE_FMT_NONE },

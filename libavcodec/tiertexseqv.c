@@ -24,8 +24,8 @@
  * Tiertex Limited SEQ video decoder
  */
 
-#include "avcodec.h"
 #define BITSTREAM_READER_LE
+#include "avcodec.h"
 #include "get_bits.h"
 #include "internal.h"
 
@@ -213,9 +213,14 @@ static int seqvideo_decode(SeqVideoContext *seq, const unsigned char *data, int 
 static av_cold int seqvideo_decode_init(AVCodecContext *avctx)
 {
     SeqVideoContext *seq = avctx->priv_data;
+    int ret;
 
     seq->avctx = avctx;
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
+
+    ret = ff_set_dimensions(avctx, 256, 128);
+    if (ret < 0)
+        return ret;
 
     seq->frame = av_frame_alloc();
     if (!seq->frame)

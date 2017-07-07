@@ -35,20 +35,20 @@ static int afc_read_header(AVFormatContext *s)
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id   = AV_CODEC_ID_ADPCM_AFC;
-    st->codec->channels   = 2;
-    st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+    st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id   = AV_CODEC_ID_ADPCM_AFC;
+    st->codecpar->channels   = 2;
+    st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
 
-    if (ff_alloc_extradata(st->codec, 1))
+    if (ff_alloc_extradata(st->codecpar, 1))
         return AVERROR(ENOMEM);
-    st->codec->extradata[0] = 8 * st->codec->channels;
+    st->codecpar->extradata[0] = 8 * st->codecpar->channels;
 
     c->data_end = avio_rb32(s->pb) + 32LL;
     st->duration = avio_rb32(s->pb);
-    st->codec->sample_rate = avio_rb16(s->pb);
+    st->codecpar->sample_rate = avio_rb16(s->pb);
     avio_skip(s->pb, 22);
-    avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
 
     return 0;
 }

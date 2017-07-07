@@ -29,6 +29,8 @@
 #include "integer.h"
 #include "avassert.h"
 
+static const AVInteger zero_i;
+
 AVInteger av_add_i(AVInteger a, AVInteger b){
     int i, carry=0;
 
@@ -110,6 +112,12 @@ AVInteger av_mod_i(AVInteger *quot, AVInteger a, AVInteger b){
     int i= av_log2_i(a) - av_log2_i(b);
     AVInteger quot_temp;
     if(!quot) quot = &quot_temp;
+
+    if ((int16_t)a.v[AV_INTEGER_SIZE-1] < 0) {
+        a = av_mod_i(quot, av_sub_i(zero_i, a), b);
+        *quot = av_sub_i(zero_i, *quot);
+        return av_sub_i(zero_i, a);
+    }
 
     av_assert2((int16_t)a.v[AV_INTEGER_SIZE-1] >= 0 && (int16_t)b.v[AV_INTEGER_SIZE-1] >= 0);
     av_assert2(av_log2_i(b)>=0);

@@ -25,14 +25,16 @@
 #include "libavutil/common.h"
 
 #include "cabac_functions.h"
+#include "hevc_data.h"
 #include "hevc.h"
+#include "hevcdec.h"
 
 #define CABAC_MAX_BIN 31
 
 /**
  * number of bin by SyntaxElement.
  */
-av_unused static const int8_t num_bins_in_se[] = {
+static const int8_t num_bins_in_se[] = {
      1, // sao_merge_flag
      1, // sao_type_idx
      0, // sao_eo_class
@@ -465,12 +467,12 @@ static void cabac_reinit(HEVCLocalContext *lc)
     skip_bytes(&lc->cc, 0);
 }
 
-static void cabac_init_decoder(HEVCContext *s)
+static int cabac_init_decoder(HEVCContext *s)
 {
     GetBitContext *gb = &s->HEVClc->gb;
     skip_bits(gb, 1);
     align_get_bits(gb);
-    ff_init_cabac_decoder(&s->HEVClc->cc,
+    return ff_init_cabac_decoder(&s->HEVClc->cc,
                           gb->buffer + get_bits_count(gb) / 8,
                           (get_bits_left(gb) + 7) / 8);
 }
@@ -480,7 +482,7 @@ static void cabac_init_state(HEVCContext *s)
     int init_type = 2 - s->sh.slice_type;
     int i;
 
-    if (s->sh.cabac_init_flag && s->sh.slice_type != I_SLICE)
+    if (s->sh.cabac_init_flag && s->sh.slice_type != HEVC_SLICE_I)
         init_type ^= 3;
 
     for (i = 0; i < HEVC_CONTEXTS; i++) {
@@ -499,10 +501,12 @@ static void cabac_init_state(HEVCContext *s)
         s->HEVClc->stat_coeff[i] = 0;
 }
 
-void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
+int ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
 {
     if (ctb_addr_ts == s->ps.pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs]) {
-        cabac_init_decoder(s);
+        int ret = cabac_init_decoder(s);
+        if (ret < 0)
+            return ret;
         if (s->sh.dependent_slice_segment_flag == 0 ||
             (s->ps.pps->tiles_enabled_flag &&
              s->ps.pps->tile_id[ctb_addr_ts] != s->ps.pps->tile_id[ctb_addr_ts - 1]))
@@ -522,8 +526,11 @@ void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
             s->ps.pps->tile_id[ctb_addr_ts] != s->ps.pps->tile_id[ctb_addr_ts - 1]) {
             if (s->threads_number == 1)
                 cabac_reinit(s->HEVClc);
-            else
-                cabac_init_decoder(s);
+            else {
+                int ret = cabac_init_decoder(s);
+                if (ret < 0)
+                    return ret;
+            }
             cabac_init_state(s);
         }
         if (s->ps.pps->entropy_coding_sync_enabled_flag) {
@@ -531,8 +538,11 @@ void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
                 get_cabac_terminate(&s->HEVClc->cc);
                 if (s->threads_number == 1)
                     cabac_reinit(s->HEVClc);
-                else
-                    cabac_init_decoder(s);
+                else {
+                    int ret = cabac_init_decoder(s);
+                    if (ret < 0)
+                        return ret;
+                }
 
                 if (s->ps.sps->ctb_width == 1)
                     cabac_init_state(s);
@@ -541,6 +551,7 @@ void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
             }
         }
     }
+    return 0;
 }
 
 #define GET_CABAC(ctx) get_cabac(&s->HEVClc->cc, &s->HEVClc->cabac_state[ctx])
@@ -831,11 +842,13 @@ static av_always_inline int mvd_decode(HEVCContext *s)
     int k = 1;
 
     while (k < CABAC_MAX_BIN && get_cabac_bypass(&s->HEVClc->cc)) {
-        ret += 1 << k;
+        ret += 1U << k;
         k++;
     }
-    if (k == CABAC_MAX_BIN)
+    if (k == CABAC_MAX_BIN) {
         av_log(s->avctx, AV_LOG_ERROR, "CABAC_MAX_BIN : %d\n", k);
+        return 0;
+    }
     while (k--)
         ret += get_cabac_bypass(&s->HEVClc->cc) << k;
     return get_cabac_bypass_sign(&s->HEVClc->cc, -ret);
@@ -973,8 +986,10 @@ static av_always_inline int coeff_abs_level_remaining_decode(HEVCContext *s, int
 
     while (prefix < CABAC_MAX_BIN && get_cabac_bypass(&s->HEVClc->cc))
         prefix++;
-    if (prefix == CABAC_MAX_BIN)
+    if (prefix == CABAC_MAX_BIN) {
         av_log(s->avctx, AV_LOG_ERROR, "CABAC_MAX_BIN : %d\n", prefix);
+        return 0;
+    }
     if (prefix < 3) {
         for (i = 0; i < rc_rice_param; i++)
             suffix = (suffix << 1) | get_cabac_bypass(&s->HEVClc->cc);
@@ -1035,7 +1050,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
     int trafo_size = 1 << log2_trafo_size;
     int i;
     int qp,shift,add,scale,scale_m;
-    const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
+    static const uint8_t level_scale[] = { 40, 45, 51, 57, 64, 72 };
     const uint8_t *scale_matrix = NULL;
     uint8_t dc_scale;
     int pred_mode_intra = (c_idx == 0) ? lc->tu.intra_pred_mode :
@@ -1472,7 +1487,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                     FFSWAP(int16_t, coeffs[i], coeffs[16 - i - 1]);
             }
 
-            s->hevcdsp.transform_skip(coeffs, log2_trafo_size);
+            s->hevcdsp.dequant(coeffs, log2_trafo_size);
 
             if (explicit_rdpcm_flag || (s->ps.sps->implicit_rdpcm_enabled_flag &&
                                         lc->cu.pred_mode == MODE_INTRA &&
@@ -1482,11 +1497,11 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                 s->hevcdsp.transform_rdpcm(coeffs, log2_trafo_size, mode);
             }
         } else if (lc->cu.pred_mode == MODE_INTRA && c_idx == 0 && log2_trafo_size == 2) {
-            s->hevcdsp.idct_4x4_luma(coeffs);
+            s->hevcdsp.transform_4x4_luma(coeffs);
         } else {
             int max_xy = FFMAX(last_significant_coeff_x, last_significant_coeff_y);
             if (max_xy == 0)
-                s->hevcdsp.idct_dc[log2_trafo_size-2](coeffs);
+                s->hevcdsp.idct_dc[log2_trafo_size - 2](coeffs);
             else {
                 int col_limit = last_significant_coeff_x + last_significant_coeff_y + 4;
                 if (max_xy < 4)
@@ -1495,7 +1510,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                     col_limit = FFMIN(8, col_limit);
                 else if (max_xy < 12)
                     col_limit = FFMIN(24, col_limit);
-                s->hevcdsp.idct[log2_trafo_size-2](coeffs, col_limit);
+                s->hevcdsp.idct[log2_trafo_size - 2](coeffs, col_limit);
             }
         }
     }
@@ -1506,7 +1521,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
             coeffs[i] = coeffs[i] + ((lc->tu.res_scale_val * coeffs_y[i]) >> 3);
         }
     }
-    s->hevcdsp.transform_add[log2_trafo_size-2](dst, coeffs, stride);
+    s->hevcdsp.add_residual[log2_trafo_size-2](dst, coeffs, stride);
 }
 
 void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size)

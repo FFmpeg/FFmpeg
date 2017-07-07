@@ -28,11 +28,10 @@
  */
 
 /**
- * @defgroup lswr Libswresample
+ * @defgroup lswr libswresample
  * @{
  *
- * Libswresample (lswr) is a library that handles audio resampling, sample
- * format conversion and mixing.
+ * Audio resampling, sample format conversion and mixing library.
  *
  * Interaction with lswr is done through SwrContext, which is
  * allocated with swr_alloc() or swr_alloc_set_opts(). It is opaque, so all parameters
@@ -121,14 +120,11 @@
  */
 
 #include <stdint.h>
+#include "libavutil/channel_layout.h"
 #include "libavutil/frame.h"
 #include "libavutil/samplefmt.h"
 
 #include "libswresample/version.h"
-
-#if LIBSWRESAMPLE_VERSION_MAJOR < 1
-#define SWR_CH_MAX 32   ///< Maximum number of channels
-#endif
 
 /**
  * @name Option constants
@@ -365,6 +361,36 @@ int swr_set_compensation(struct SwrContext *s, int sample_delta, int compensatio
  * @return >= 0 on success, or AVERROR error code in case of failure.
  */
 int swr_set_channel_mapping(struct SwrContext *s, const int *channel_map);
+
+/**
+ * Generate a channel mixing matrix.
+ *
+ * This function is the one used internally by libswresample for building the
+ * default mixing matrix. It is made public just as a utility function for
+ * building custom matrices.
+ *
+ * @param in_layout           input channel layout
+ * @param out_layout          output channel layout
+ * @param center_mix_level    mix level for the center channel
+ * @param surround_mix_level  mix level for the surround channel(s)
+ * @param lfe_mix_level       mix level for the low-frequency effects channel
+ * @param rematrix_maxval     if 1.0, coefficients will be normalized to prevent
+ *                            overflow. if INT_MAX, coefficients will not be
+ *                            normalized.
+ * @param[out] matrix         mixing coefficients; matrix[i + stride * o] is
+ *                            the weight of input channel i in output channel o.
+ * @param stride              distance between adjacent input channels in the
+ *                            matrix array
+ * @param matrix_encoding     matrixed stereo downmix mode (e.g. dplii)
+ * @param log_ctx             parent logging context, can be NULL
+ * @return                    0 on success, negative AVERROR code on failure
+ */
+int swr_build_matrix(uint64_t in_layout, uint64_t out_layout,
+                     double center_mix_level, double surround_mix_level,
+                     double lfe_mix_level, double rematrix_maxval,
+                     double rematrix_volume, double *matrix,
+                     int stride, enum AVMatrixEncoding matrix_encoding,
+                     void *log_ctx);
 
 /**
  * Set a customized remix matrix.

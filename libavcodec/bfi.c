@@ -185,4 +185,5 @@ AVCodec ff_bfi_decoder = {
     .close          = bfi_decode_close,
     .decode         = bfi_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

@@ -186,7 +186,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         p0 = (uint8_t *)out->data[0];
 
         for (i = 0; i < elbg->codebook_length; i++) {
-            pal[i] = (elbg->codebook[i*3  ] << 16) |
+            pal[i] =  0xFFU                 << 24  |
+                     (elbg->codebook[i*3  ] << 16) |
                      (elbg->codebook[i*3+1] <<  8) |
                       elbg->codebook[i*3+2];
         }

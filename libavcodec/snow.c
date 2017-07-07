@@ -108,8 +108,8 @@ void ff_snow_reset_contexts(SnowContext *s){ //FIXME better initial contexts
 }
 
 int ff_snow_alloc_blocks(SnowContext *s){
-    int w= FF_CEIL_RSHIFT(s->avctx->width,  LOG2_MB_SIZE);
-    int h= FF_CEIL_RSHIFT(s->avctx->height, LOG2_MB_SIZE);
+    int w= AV_CEIL_RSHIFT(s->avctx->width,  LOG2_MB_SIZE);
+    int h= AV_CEIL_RSHIFT(s->avctx->height, LOG2_MB_SIZE);
 
     s->b_width = w;
     s->b_height= h;
@@ -535,8 +535,8 @@ int ff_snow_common_init_after_header(AVCodecContext *avctx) {
         int h= s->avctx->height;
 
         if(plane_index){
-            w = FF_CEIL_RSHIFT(w, s->chroma_h_shift);
-            h = FF_CEIL_RSHIFT(h, s->chroma_v_shift);
+            w = AV_CEIL_RSHIFT(w, s->chroma_h_shift);
+            h = AV_CEIL_RSHIFT(h, s->chroma_v_shift);
         }
         s->plane[plane_index].width = w;
         s->plane[plane_index].height= h;
@@ -590,8 +590,8 @@ static int halfpel_interpol(SnowContext *s, uint8_t *halfpel[4][4], AVFrame *fra
 
     for(p=0; p < s->nb_planes; p++){
         int is_chroma= !!p;
-        int w= is_chroma ? FF_CEIL_RSHIFT(s->avctx->width,  s->chroma_h_shift) : s->avctx->width;
-        int h= is_chroma ? FF_CEIL_RSHIFT(s->avctx->height, s->chroma_v_shift) : s->avctx->height;
+        int w= is_chroma ? AV_CEIL_RSHIFT(s->avctx->width,  s->chroma_h_shift) : s->avctx->width;
+        int h= is_chroma ? AV_CEIL_RSHIFT(s->avctx->height, s->chroma_v_shift) : s->avctx->height;
         int ls= frame->linesize[p];
         uint8_t *src= frame->data[p];
 

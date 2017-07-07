@@ -82,7 +82,7 @@ void ff_put_no_rnd_mpeg4_qpel8_v_lowpass_mmxext(uint8_t *dst,
 #define ff_put_no_rnd_pixels16_mmxext ff_put_pixels16_mmx
 #define ff_put_no_rnd_pixels8_mmxext ff_put_pixels8_mmx
 
-#if HAVE_YASM
+#if HAVE_X86ASM
 
 #define ff_put_pixels16_mmxext ff_put_pixels16_mmx
 #define ff_put_pixels8_mmxext  ff_put_pixels8_mmx
@@ -504,7 +504,7 @@ QPEL_OP(put_,        _,        mmxext)
 QPEL_OP(avg_,        _,        mmxext)
 QPEL_OP(put_no_rnd_, _no_rnd_, mmxext)
 
-#endif /* HAVE_YASM */
+#endif /* HAVE_X86ASM */
 
 #define SET_QPEL_FUNCS(PFX, IDX, SIZE, CPU, PREFIX)                          \
 do {                                                                         \

@@ -70,12 +70,12 @@ typedef struct VP8DSPContext {
     void (*vp8_h_loop_filter_simple)(uint8_t *dst, ptrdiff_t stride, int flim);
 
     /**
-     * first dimension: width>>3, height is assumed equal to width
+     * first dimension: 4-log2(width)
      * second dimension: 0 if no vertical interpolation is needed;
      *                   1 4-tap vertical interpolation filter (my & 1)
      *                   2 6-tap vertical interpolation filter (!(my & 1))
      * third dimension: same as second dimension, for horizontal interpolation
-     * so something like put_vp8_epel_pixels_tab[width>>3][2*!!my-(my&1)][2*!!mx-(mx&1)](..., mx, my)
+     * so something like put_vp8_epel_pixels_tab[4-log2(width)][2*!!my-(my&1)][2*!!mx-(mx&1)](..., mx, my)
      */
     vp8_mc_func put_vp8_epel_pixels_tab[3][3][3];
     vp8_mc_func put_vp8_bilinear_pixels_tab[3][3][3];

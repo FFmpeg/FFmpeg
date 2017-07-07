@@ -128,6 +128,11 @@ static av_cold int wavpack_encode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
 
+    if (avctx->channels > 255) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid channel count: %d\n", avctx->channels);
+        return AVERROR(EINVAL);
+    }
+
     if (!avctx->frame_size) {
         int block_samples;
         if (!(avctx->sample_rate & 1))
@@ -2211,8 +2216,7 @@ static void pack_float_sample(WavPackEncodeContext *s, int32_t *sample)
         }
     } else if (shift_count) {
         if (s->float_flags & FLOAT_SHIFT_SENT) {
-            int32_t data = get_mantissa(*sample) & ((1 << shift_count) - 1);
-            put_bits(pb, shift_count, data);
+            put_sbits(pb, shift_count, get_mantissa(*sample));
         } else if (s->float_flags & FLOAT_SHIFT_SAME) {
             put_bits(pb, 1, get_mantissa(*sample) & 1);
         }
@@ -2878,7 +2882,7 @@ static int wavpack_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     }
 
     buf_size = s->block_samples * avctx->channels * 8
-             + 200 /* for headers */;
+             + 200 * avctx->channels /* for headers */;
     if ((ret = ff_alloc_packet2(avctx, avpkt, buf_size, 0)) < 0)
         return ret;
     buf = avpkt->data;

@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavcodec/internal.h"
 #include "avformat.h"
 #include "internal.h"
 #include "pcm.h"
@@ -59,22 +60,22 @@ static int epaf_read_header(AVFormatContext *s)
         channels    = avio_rb32(s->pb);
     }
 
-    if (!channels || !sample_rate)
+    if (channels <= 0 || channels > FF_SANE_NB_CHANNELS || sample_rate <= 0)
         return AVERROR_INVALIDDATA;
 
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-    st->codec->channels    = channels;
-    st->codec->sample_rate = sample_rate;
+    st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->channels    = channels;
+    st->codecpar->sample_rate = sample_rate;
     switch (codec) {
     case 0:
-        st->codec->codec_id = le ? AV_CODEC_ID_PCM_S16LE : AV_CODEC_ID_PCM_S16BE;
+        st->codecpar->codec_id = le ? AV_CODEC_ID_PCM_S16LE : AV_CODEC_ID_PCM_S16BE;
         break;
     case 2:
-        st->codec->codec_id = AV_CODEC_ID_PCM_S8;
+        st->codecpar->codec_id = AV_CODEC_ID_PCM_S8;
         break;
     case 1:
         avpriv_request_sample(s, "24-bit Paris PCM format");
@@ -82,10 +83,10 @@ static int epaf_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    st->codec->bits_per_coded_sample = av_get_bits_per_sample(st->codec->codec_id);
-    st->codec->block_align = st->codec->bits_per_coded_sample * st->codec->channels / 8;
+    st->codecpar->bits_per_coded_sample = av_get_bits_per_sample(st->codecpar->codec_id);
+    st->codecpar->block_align = st->codecpar->bits_per_coded_sample * st->codecpar->channels / 8;
 
-    avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
 
     if (avio_skip(s->pb, 2024) < 0)
         return AVERROR_INVALIDDATA;

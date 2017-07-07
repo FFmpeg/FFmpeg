@@ -36,7 +36,7 @@
 #include "libavutil/fixed_dsp.h"
 #include "avcodec.h"
 #if !USE_FIXED
-#include "imdct15.h"
+#include "mdct15.h"
 #endif
 #include "fft.h"
 #include "mpeg4audio.h"
@@ -150,6 +150,8 @@ typedef struct PredictorState {
 #define SCALE_MAX_POS   255    ///< scalefactor index maximum value
 #define SCALE_MAX_DIFF   60    ///< maximum scalefactor difference allowed by standard
 #define SCALE_DIFF_ZERO  60    ///< codebook index corresponding to zero scalefactor indices difference
+
+#define POW_SF2_ZERO    200    ///< ff_aac_pow2sf_tab index corresponding to pow(2, 0);
 
 #define NOISE_PRE       256    ///< preamble for NOISE_BT, put in bitstream with the first noise band
 #define NOISE_PRE_BITS    9    ///< length of preamble
@@ -325,7 +327,7 @@ struct AACContext {
 #if USE_FIXED
     AVFixedDSPContext *fdsp;
 #else
-    IMDCT15Context *mdct480;
+    MDCT15Context *mdct480;
     AVFloatDSPContext *fdsp;
 #endif /* USE_FIXED */
     int random_state;

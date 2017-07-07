@@ -27,8 +27,8 @@ static int sup_read_header(AVFormatContext *s)
     AVStream *st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-    st->codec->codec_id = AV_CODEC_ID_HDMV_PGS_SUBTITLE;
+    st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
+    st->codecpar->codec_id = AV_CODEC_ID_HDMV_PGS_SUBTITLE;
     avpriv_set_pts_info(st, 32, 1, 90000);
 
     return 0;

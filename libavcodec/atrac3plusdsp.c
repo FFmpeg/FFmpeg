@@ -28,6 +28,7 @@
 #include <math.h>
 
 #include "libavutil/float_dsp.h"
+#include "libavutil/libm.h"
 #include "avcodec.h"
 #include "sinewin.h"
 #include "fft.h"
@@ -107,7 +108,7 @@ av_cold void ff_atrac3p_init_wave_synth(void)
 
     /* generate amplitude scalefactors table */
     for (i = 0; i < 64; i++)
-        amp_sf_tab[i] = pow(2.0f, ((double)i - 3) / 4.0f);
+        amp_sf_tab[i] = exp2f((i - 3) / 4.0f);
 }
 
 /**

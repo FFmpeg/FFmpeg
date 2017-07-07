@@ -215,22 +215,22 @@ static void finish_chunk(AVFormatContext *s)
 
 static void put_videoinfoheader2(AVIOContext *pb, AVStream *st)
 {
-    AVRational dar = av_mul_q(st->sample_aspect_ratio, (AVRational){st->codec->width, st->codec->height});
+    AVRational dar = av_mul_q(st->sample_aspect_ratio, (AVRational){st->codecpar->width, st->codecpar->height});
     unsigned int num, den;
     av_reduce(&num, &den, dar.num, dar.den, 0xFFFFFFFF);
 
     /* VIDEOINFOHEADER2 */
     avio_wl32(pb, 0);
     avio_wl32(pb, 0);
-    avio_wl32(pb, st->codec->width);
-    avio_wl32(pb, st->codec->height);
+    avio_wl32(pb, st->codecpar->width);
+    avio_wl32(pb, st->codecpar->height);
 
     avio_wl32(pb, 0);
     avio_wl32(pb, 0);
     avio_wl32(pb, 0);
     avio_wl32(pb, 0);
 
-    avio_wl32(pb, st->codec->bit_rate);
+    avio_wl32(pb, st->codecpar->bit_rate);
     avio_wl32(pb, 0);
     avio_wl64(pb, st->avg_frame_rate.num && st->avg_frame_rate.den ? INT64_C(10000000) / av_q2d(st->avg_frame_rate) : 0);
     avio_wl32(pb, 0);
@@ -241,17 +241,17 @@ static void put_videoinfoheader2(AVIOContext *pb, AVStream *st)
     avio_wl32(pb, 0);
     avio_wl32(pb, 0);
 
-    ff_put_bmp_header(pb, st->codec, ff_codec_bmp_tags, 0, 1);
+    ff_put_bmp_header(pb, st->codecpar, ff_codec_bmp_tags, 0, 1);
 
-    if (st->codec->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
-        int padding = (st->codec->extradata_size & 3) ? 4 - (st->codec->extradata_size & 3) : 0;
+    if (st->codecpar->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
+        int padding = (st->codecpar->extradata_size & 3) ? 4 - (st->codecpar->extradata_size & 3) : 0;
         /* MPEG2VIDEOINFO */
         avio_wl32(pb, 0);
-        avio_wl32(pb, st->codec->extradata_size + padding);
+        avio_wl32(pb, st->codecpar->extradata_size + padding);
         avio_wl32(pb, -1);
         avio_wl32(pb, -1);
         avio_wl32(pb, 0);
-        avio_write(pb, st->codec->extradata, st->codec->extradata_size);
+        avio_write(pb, st->codecpar->extradata, st->codecpar->extradata_size);
         ffio_fill(pb, 0, padding);
     }
 }
@@ -264,18 +264,18 @@ static int write_stream_codec_info(AVFormatContext *s, AVStream *st)
     int64_t  hdr_pos_start;
     int hdr_size = 0;
 
-    if (st->codec->codec_type  == AVMEDIA_TYPE_VIDEO) {
-        g = ff_get_codec_guid(st->codec->codec_id, ff_video_guids);
+    if (st->codecpar->codec_type  == AVMEDIA_TYPE_VIDEO) {
+        g = ff_get_codec_guid(st->codecpar->codec_id, ff_video_guids);
         media_type = &ff_mediatype_video;
-        format_type = st->codec->codec_id == AV_CODEC_ID_MPEG2VIDEO ? &ff_format_mpeg2_video : &ff_format_videoinfo2;
+        format_type = st->codecpar->codec_id == AV_CODEC_ID_MPEG2VIDEO ? &ff_format_mpeg2_video : &ff_format_videoinfo2;
         tags = ff_codec_bmp_tags;
-    } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-        g = ff_get_codec_guid(st->codec->codec_id, ff_codec_wav_guids);
+    } else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+        g = ff_get_codec_guid(st->codecpar->codec_id, ff_codec_wav_guids);
         media_type = &ff_mediatype_audio;
         format_type = &ff_format_waveformatex;
         tags = ff_codec_wav_tags;
     } else {
-        av_log(s, AV_LOG_ERROR, "unknown codec_type (0x%x)\n", st->codec->codec_type);
+        av_log(s, AV_LOG_ERROR, "unknown codec_type (0x%x)\n", st->codecpar->codec_type);
         return -1;
     }
 
@@ -286,10 +286,10 @@ static int write_stream_codec_info(AVFormatContext *s, AVStream *st)
     avio_wl32(pb, 0); // size
 
     hdr_pos_start = avio_tell(pb);
-    if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         put_videoinfoheader2(pb, st);
     } else {
-        if (ff_put_wav_header(pb, st->codec, 0) < 0)
+        if (ff_put_wav_header(s, pb, st->codecpar, 0) < 0)
             format_type = &ff_format_none;
     }
     hdr_size = avio_tell(pb) - hdr_pos_start;
@@ -301,9 +301,9 @@ static int write_stream_codec_info(AVFormatContext *s, AVStream *st)
     if (g) {
         ff_put_guid(pb, g);           // actual_subtype
     } else {
-        int tag = ff_codec_get_tag(tags, st->codec->codec_id);
+        int tag = ff_codec_get_tag(tags, st->codecpar->codec_id);
         if (!tag) {
-            av_log(s, AV_LOG_ERROR, "unsupported codec_id (0x%x)\n", st->codec->codec_id);
+            av_log(s, AV_LOG_ERROR, "unsupported codec_id (0x%x)\n", st->codecpar->codec_id);
             return -1;
         }
         avio_wl32(pb, tag);
@@ -326,7 +326,7 @@ static int write_stream_codec(AVFormatContext *s, AVStream * st)
 
     ret = write_stream_codec_info(s, st);
     if (ret < 0) {
-        av_log(s, AV_LOG_ERROR, "write stream codec info failed codec_type(0x%x)\n", st->codec->codec_type);
+        av_log(s, AV_LOG_ERROR, "write stream codec info failed codec_type(0x%x)\n", st->codecpar->codec_type);
         return -1;
     }
 
@@ -364,7 +364,7 @@ static int write_stream_data(AVFormatContext *s, AVStream *st)
 
     ret = write_stream_codec_info(s, st);
     if (ret < 0) {
-        av_log(s, AV_LOG_ERROR, "write stream codec info failed codec_type(0x%x)\n", st->codec->codec_type);
+        av_log(s, AV_LOG_ERROR, "write stream codec info failed codec_type(0x%x)\n", st->codecpar->codec_type);
         return -1;
     }
     finish_chunk(s);
@@ -411,11 +411,11 @@ static int write_header(AVFormatContext *s)
 
     for (i = 0; i < s->nb_streams; i++) {
         st = s->streams[i];
-        if (st->codec->codec_id == AV_CODEC_ID_MJPEG)
+        if (st->codecpar->codec_id == AV_CODEC_ID_MJPEG)
             continue;
         ret = write_stream_codec(s, st);
         if (ret < 0) {
-            av_log(s, AV_LOG_ERROR, "write stream codec failed codec_type(0x%x)\n", st->codec->codec_type);
+            av_log(s, AV_LOG_ERROR, "write stream codec failed codec_type(0x%x)\n", st->codecpar->codec_type);
             return -1;
         }
         if (!i)
@@ -424,11 +424,11 @@ static int write_header(AVFormatContext *s)
 
     for (i = 0; i < s->nb_streams; i++) {
         st = s->streams[i];
-        if (st->codec->codec_id == AV_CODEC_ID_MJPEG)
+        if (st->codecpar->codec_id == AV_CODEC_ID_MJPEG)
             continue;
         ret  = write_stream_data(s, st);
         if (ret < 0) {
-            av_log(s, AV_LOG_ERROR, "write stream data failed codec_type(0x%x)\n", st->codec->codec_type);
+            av_log(s, AV_LOG_ERROR, "write stream data failed codec_type(0x%x)\n", st->codecpar->codec_type);
             return -1;
         }
     }
@@ -443,7 +443,7 @@ static void write_timestamp(AVFormatContext *s, AVPacket *pkt)
 {
     AVIOContext *pb = s->pb;
     WtvContext  *wctx = s->priv_data;
-    AVCodecContext *enc = s->streams[pkt->stream_index]->codec;
+    AVCodecParameters *par = s->streams[pkt->stream_index]->codecpar;
 
     write_chunk_header(s, &ff_timestamp_guid, 56, 0x40000000 | (INDEX_BASE + pkt->stream_index));
     write_pad(pb, 8);
@@ -451,7 +451,7 @@ static void write_timestamp(AVFormatContext *s, AVPacket *pkt)
     avio_wl64(pb, pkt->pts == AV_NOPTS_VALUE ? -1 : pkt->pts);
     avio_wl64(pb, pkt->pts == AV_NOPTS_VALUE ? -1 : pkt->pts);
     avio_wl64(pb, 0);
-    avio_wl64(pb, enc->codec_type == AVMEDIA_TYPE_VIDEO && (pkt->flags & AV_PKT_FLAG_KEY) ? 1 : 0);
+    avio_wl64(pb, par->codec_type == AVMEDIA_TYPE_VIDEO && (pkt->flags & AV_PKT_FLAG_KEY) ? 1 : 0);
     avio_wl64(pb, 0);
 
     wctx->last_timestamp_pos = wctx->last_chunk_pos;
@@ -463,10 +463,10 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     WtvContext  *wctx = s->priv_data;
     AVStream    *st   = s->streams[pkt->stream_index];
 
-    if (st->codec->codec_id == AV_CODEC_ID_MJPEG && !wctx->thumbnail.size) {
+    if (st->codecpar->codec_id == AV_CODEC_ID_MJPEG && !wctx->thumbnail.size) {
         av_copy_packet(&wctx->thumbnail, pkt);
         return 0;
-    } else if (st->codec->codec_id == AV_CODEC_ID_H264) {
+    } else if (st->codecpar->codec_id == AV_CODEC_ID_H264) {
         int ret = ff_check_h264_startcode(s, st, pkt);
         if (ret < 0)
             return ret;
@@ -672,6 +672,7 @@ static void write_table_entries_attrib(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     AVDictionaryEntry *tag = 0;
 
+    ff_standardize_creation_time(s);
     //FIXME: translate special tags (e.g. WM/Bitrate) to binary representation
     ff_metadata_conv(&s->metadata, ff_asf_metadata_conv, NULL);
     while ((tag = av_dict_get(s->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
@@ -826,7 +827,7 @@ static int write_trailer(AVFormatContext *s)
 
     av_free(wctx->sp_pairs);
     av_free(wctx->st_pairs);
-    av_free_packet(&wctx->thumbnail);
+    av_packet_unref(&wctx->thumbnail);
     return 0;
 }
 

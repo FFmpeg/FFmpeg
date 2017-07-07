@@ -34,7 +34,7 @@
 #include "sbr.h"
 
 #define ENVELOPE_ADJUSTMENT_OFFSET 2
-#define NOISE_FLOOR_OFFSET FIXR(6.0f)
+#define NOISE_FLOOR_OFFSET 6
 
 /**
  * SBR VLC tables
@@ -81,7 +81,7 @@ static const int8_t vlc_sbr_lav[10] =
 /** Initialize SBR. */
 void AAC_RENAME(ff_aac_sbr_init)(void);
 /** Initialize one SBR context. */
-void AAC_RENAME(ff_aac_sbr_ctx_init)(AACContext *ac, SpectralBandReplication *sbr);
+void AAC_RENAME(ff_aac_sbr_ctx_init)(AACContext *ac, SpectralBandReplication *sbr, int id_aac);
 /** Close one SBR context. */
 void AAC_RENAME(ff_aac_sbr_ctx_close)(SpectralBandReplication *sbr);
 /** Decode one SBR element. */

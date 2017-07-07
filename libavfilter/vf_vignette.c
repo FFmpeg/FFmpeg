@@ -57,7 +57,7 @@ enum EvalMode {
     EVAL_MODE_NB
 };
 
-typedef struct {
+typedef struct VignetteContext {
     const AVClass *class;
     const AVPixFmtDescriptor *desc;
     int backward;
@@ -165,7 +165,7 @@ static void update_context(VignetteContext *s, AVFilterLink *inlink, AVFrame *fr
     int dst_linesize = s->fmap_linesize;
 
     if (frame) {
-        s->var_values[VAR_N]   = inlink->frame_count;
+        s->var_values[VAR_N]   = inlink->frame_count_out;
         s->var_values[VAR_T]   = TS2T(frame->pts, inlink->time_base);
         s->var_values[VAR_PTS] = TS2D(frame->pts);
     } else {
@@ -267,8 +267,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             const int chroma = plane == 1 || plane == 2;
             const int hsub = chroma ? s->desc->log2_chroma_w : 0;
             const int vsub = chroma ? s->desc->log2_chroma_h : 0;
-            const int w = FF_CEIL_RSHIFT(inlink->w, hsub);
-            const int h = FF_CEIL_RSHIFT(inlink->h, vsub);
+            const int w = AV_CEIL_RSHIFT(inlink->w, hsub);
+            const int h = AV_CEIL_RSHIFT(inlink->h, vsub);
 
             for (y = 0; y < h; y++) {
                 uint8_t *dstp = dst;

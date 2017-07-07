@@ -7,11 +7,14 @@ fate-4xm-2: CMD = framecrc -i $(TARGET_SAMPLES)/4xm/version2.4xm -pix_fmt rgb24 
 FATE_VIDEO-$(call DEMDEC, FOURXM, FOURXM) += $(FATE_4XM)
 fate-4xm: $(FATE_4XM)
 
+FATE_VIDEO-$(call DEMDEC, AVI, ZERO12V) += fate-012v
+fate-012v: CMD = framecrc -i $(TARGET_SAMPLES)/012v/sample.avi -pix_fmt yuv422p16le
+
 FATE_VIDEO-$(call DEMDEC, AVI, AASC) += fate-aasc
 fate-aasc: CMD = framecrc -i $(TARGET_SAMPLES)/aasc/AASC-1.5MB.AVI -pix_fmt rgb24
 
 FATE_VIDEO-$(call DEMDEC, MOV, AIC) += fate-aic
-fate-aic: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/aic/small_apple_intermediate_codec.mov -an -vframes 15
+fate-aic: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/aic/small_apple_intermediate_codec.mov -an -frames:v 15
 
 FATE_VIDEO-$(call DEMDEC, MOV, AIC) += fate-aic-oddsize
 fate-aic-oddsize: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/aic/aic_odd_dimensions.mov
@@ -60,38 +63,20 @@ FATE_VIDEO-$(call DEMDEC, BINK, BINK) += $(FATE_BINK_VIDEO)
 FATE_VIDEO-$(call DEMDEC, BMV, BMV_VIDEO) += fate-bmv-video
 fate-bmv-video: CMD = framecrc -i $(TARGET_SAMPLES)/bmv/SURFING-partial.BMV -pix_fmt rgb24 -an
 
-FATE_CANOPUS_HQ_HQA += fate-canopus-hq_hqa-hq
-fate-canopus-hq_hqa-hq: CMD = framecrc -i $(TARGET_SAMPLES)/canopus/hq.avi
-
-FATE_CANOPUS_HQ_HQA += fate-canopus-hq_hqa-hqa
-fate-canopus-hq_hqa-hqa: CMD = framecrc -i $(TARGET_SAMPLES)/canopus/hqa.avi
-
-FATE_CANOPUS_HQ_HQA += fate-canopus-hq_hqa-inter
-fate-canopus-hq_hqa-inter: CMD = framecrc -i $(TARGET_SAMPLES)/canopus/hq25i.avi
-
-FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, HQ_HQA) += $(FATE_CANOPUS_HQ_HQA)
-fate-canopus-hq_hqa: $(FATE_CANOPUS_HQ_HQA)
-
-FATE_CANOPUS_HQX += fate-canopus-hqx422
-fate-canopus-hqx422: CMD = framecrc -i $(TARGET_SAMPLES)/canopus/hqx422.avi -pix_fmt yuv422p16be -an
-
-FATE_CANOPUS_HQX += fate-canopus-hqx422a
-fate-canopus-hqx422a: CMD = framecrc -i $(TARGET_SAMPLES)/canopus/hqx422a.avi -pix_fmt yuv422p16be -an
-
-FATE_VIDEO-$(call DEMDEC, AVI, HQX) += $(FATE_CANOPUS_HQX)
-fate-canopus-hqx: $(FATE_CANOPUS_HQX)
-
 FATE_VIDEO-$(call DEMDEC, MPEGPS, CAVS) += fate-cavs
 fate-cavs: CMD = framecrc -i $(TARGET_SAMPLES)/cavs/cavs.mpg -an
 
 FATE_VIDEO-$(call DEMDEC, CDG, CDGRAPHICS) += fate-cdgraphics
-fate-cdgraphics: CMD = framecrc -i $(TARGET_SAMPLES)/cdgraphics/BrotherJohn.cdg -pix_fmt rgb24 -t 1
+fate-cdgraphics: CMD = framecrc -i $(TARGET_SAMPLES)/cdgraphics/BrotherJohn.cdg -pix_fmt rgba -t 1
 
 FATE_VIDEO-$(call DEMDEC, AVI, CLJR) += fate-cljr
 fate-cljr: CMD = framecrc -i $(TARGET_SAMPLES)/cljr/testcljr-partial.avi
 
 FATE_VIDEO-$(call DEMDEC, AVI, PNG) += fate-corepng
 fate-corepng: CMD = framecrc -i $(TARGET_SAMPLES)/png1/corepng-partial.avi
+
+FATE_VIDEO-$(call DEMDEC, AVI, PNG) += fate-rgbapng-4816
+fate-rgbapng-4816: CMD = framecrc -i $(TARGET_SAMPLES)/png1/55c99e750a5fd6_50314226.png
 
 FATE_VIDEO-$(call DEMDEC, AVS, AVS) += fate-creatureshock-avs
 fate-creatureshock-avs: CMD = framecrc -i $(TARGET_SAMPLES)/creatureshock-avs/OUTATIME.AVS -pix_fmt rgb24
@@ -123,17 +108,8 @@ fate-deluxepaint-anm: CMD = framecrc -i $(TARGET_SAMPLES)/deluxepaint-anm/INTRO1
 FATE_VIDEO-$(call DEMDEC, DIRAC, DIRAC) += fate-dirac
 fate-dirac: CMD = framecrc -i $(TARGET_SAMPLES)/dirac/vts.profile-main.drc
 
-FATE_TRUEMOTION1 += fate-truemotion1-15
-fate-truemotion1-15: CMD = framecrc -i $(TARGET_SAMPLES)/duck/phant2-940.duk -pix_fmt rgb24 -an
-
-FATE_TRUEMOTION1 += fate-truemotion1-24
-fate-truemotion1-24: CMD = framecrc -i $(TARGET_SAMPLES)/duck/sonic3dblast_intro-partial.avi -pix_fmt rgb24 -an
-
-FATE_VIDEO-$(call DEMDEC, AVI, TRUEMOTION1) += $(FATE_TRUEMOTION1)
-fate-truemotion1: $(FATE_TRUEMOTION1)
-
-FATE_VIDEO-$(call DEMDEC, AVI, TRUEMOTION2) += fate-truemotion2
-fate-truemotion2: CMD = framecrc -i $(TARGET_SAMPLES)/duck/tm20.avi
+FATE_VIDEO-$(call DEMDEC, DIRAC, DIRAC) += fate-dirac-low-delay
+fate-dirac-low-delay: CMD = framecrc -i $(TARGET_SAMPLES)/dirac/vts.profile-vc2-low-delay.drc
 
 FATE_DXA += fate-dxa-feeble
 fate-dxa-feeble: CMD = framecrc -i $(TARGET_SAMPLES)/dxa/meetsquid.dxa -t 2 -pix_fmt rgb24 -an
@@ -195,7 +171,7 @@ fate-hapy: CMD = framecrc -i $(TARGET_SAMPLES)/hap/hapy.mov
 FATE_HAP += fate-hap-chunk
 fate-hap-chunk: CMD = framecrc -i $(TARGET_SAMPLES)/hap/hapy-12-chunks.mov
 
-FATE_SAMPLES_AVCONV-$(call DEMDEC, MOV, HAP) += $(FATE_HAP)
+FATE_VIDEO-$(call DEMDEC, MOV, HAP) += $(FATE_HAP)
 fate-hap: $(FATE_HAP)
 
 FATE_IFF-$(CONFIG_IFF_ILBM_DECODER) += fate-iff-byterun1
@@ -228,6 +204,25 @@ fate-kgv1: CMD = framecrc -i $(TARGET_SAMPLES)/kega/kgv1.avi -pix_fmt rgb555le -
 FATE_VIDEO-$(call DEMDEC, AVI, KMVC) += fate-kmvc
 fate-kmvc: CMD = framecrc -i $(TARGET_SAMPLES)/KMVC/LOGO1.AVI -an -t 3 -pix_fmt rgb24
 
+FATE_MAGICYUV += fate-magicyuv-y4444i \
+                 fate-magicyuv-y400i  \
+                 fate-magicyuv-y420   \
+                 fate-magicyuv-y422i  \
+                 fate-magicyuv-y444   \
+                 fate-magicyuv-rgba   \
+                 fate-magicyuv-rgb
+
+FATE_VIDEO-$(call DEMDEC, AVI, MAGICYUV) += $(FATE_MAGICYUV)
+fate-magicyuv: $(FATE_MAGICYUV)
+
+fate-magicyuv-rgb:    CMD = framecrc -i $(TARGET_SAMPLES)/magy/magy_rgb_median.avi
+fate-magicyuv-rgba:   CMD = framecrc -i $(TARGET_SAMPLES)/magy/magy_rgba_gradient.avi
+fate-magicyuv-y400i:  CMD = framecrc -i $(TARGET_SAMPLES)/magy/magy_yuv400_gradient_interlaced.avi
+fate-magicyuv-y420:   CMD = framecrc -i $(TARGET_SAMPLES)/magy/magy_yuv420_median.avi
+fate-magicyuv-y422i:  CMD = framecrc -i $(TARGET_SAMPLES)/magy/magy_yuv422_median_interlaced.avi
+fate-magicyuv-y4444i: CMD = framecrc -i $(TARGET_SAMPLES)/magy/magy_yuv4444_left_interlaced.avi
+fate-magicyuv-y444:   CMD = framecrc -i $(TARGET_SAMPLES)/magy/magy_yuv444_left.avi
+
 FATE_VIDEO-$(call DEMDEC, EA, MDEC) += fate-mdec
 fate-mdec: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/ea-dct/NFS2Esprit-partial.dct -an
 
@@ -241,10 +236,14 @@ FATE_VIDEO-$(call DEMDEC, MOV, MJPEGB) += fate-mjpegb
 fate-mjpegb: CMD = framecrc -idct simple -fflags +bitexact -i $(TARGET_SAMPLES)/mjpegb/mjpegb_part.mov -an
 
 FATE_VIDEO-$(call DEMDEC, MVI, MOTIONPIXELS) += fate-motionpixels
-fate-motionpixels: CMD = framecrc -i $(TARGET_SAMPLES)/motion-pixels/INTRO-partial.MVI -an -pix_fmt rgb24 -vframes 111
+fate-motionpixels: CMD = framecrc -i $(TARGET_SAMPLES)/motion-pixels/INTRO-partial.MVI -an -pix_fmt rgb24 -frames:v 111
 
-FATE_VIDEO-$(call DEMDEC, MPEGTS, MPEG2VIDEO) += fate-mpeg2-field-enc
-fate-mpeg2-field-enc: CMD = framecrc -flags +bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -an -vframes 30
+FATE_VIDEO-$(call DEMDEC, MPEGTS, MPEG2VIDEO) += fate-mpeg2-field-enc fate-mpeg2-ticket186
+fate-mpeg2-field-enc: CMD = framecrc -flags +bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -an -frames:v 30
+fate-mpeg2-ticket186: CMD = framecrc -flags +bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/t.mpg -an
+
+FATE_VIDEO-$(call DEMDEC, MPEGPS, MPEG2VIDEO) += fate-mpeg2-ticket6024
+fate-mpeg2-ticket6024: CMD = framecrc -flags +bitexact -idct simple -flags +truncated -i $(TARGET_SAMPLES)/mpeg2/matrixbench_mpeg2.lq1.mpg -an
 
 FATE_VIDEO-$(call DEMDEC, MV, MVC1) += fate-mv-mvc1
 fate-mv-mvc1: CMD = framecrc -i $(TARGET_SAMPLES)/mv/posture.mv -an -frames 25 -pix_fmt rgb555le

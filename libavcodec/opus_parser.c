@@ -31,10 +31,10 @@
 #include "parser.h"
 
 typedef struct OpusParseContext {
+    ParseContext pc;
     OpusContext ctx;
     OpusPacket pkt;
     int extradata_parsed;
-    ParseContext pc;
     int ts_framing;
 } OpusParseContext;
 

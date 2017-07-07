@@ -188,7 +188,7 @@ void ff_vc1_mc_1mv(VC1Context *v, int dir)
     mx = s->mv[dir][0][0];
     my = s->mv[dir][0][1];
 
-    // store motion vectors for further use in B frames
+    // store motion vectors for further use in B-frames
     if (s->pict_type == AV_PICTURE_TYPE_P) {
         for (i = 0; i < 4; i++) {
             s->current_picture.motion_val[1][s->block_index[i] + v->blocks_off][0] = mx;
@@ -867,7 +867,7 @@ void ff_vc1_interp_mc(VC1Context *v)
 
     if (CONFIG_GRAY && s->avctx->flags & AV_CODEC_FLAG_GRAY)
         return;
-    /* Chroma MC always uses qpel blilinear */
+    /* Chroma MC always uses qpel bilinear */
     uvmx = (uvmx & 3) << 1;
     uvmy = (uvmy & 3) << 1;
     if (!v->rnd) {

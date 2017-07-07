@@ -28,7 +28,7 @@
 typedef struct {
     AVCodecContext *mjpeg_avctx;
     int is_mjpeg;
-    int interlace; //FIXME use frame.interlaced_frame
+    int interlace;
     int tff;
 } AVRnContext;
 
@@ -113,7 +113,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
             int shift = p->height - avctx->height;
             int subsample_h, subsample_v;
 
-            av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt, &subsample_h, &subsample_v);
+            av_pix_fmt_get_chroma_sub_sample(p->format, &subsample_h, &subsample_v);
 
             p->data[0] += p->linesize[0] * shift;
             if (p->data[2]) {
@@ -170,4 +170,5 @@ AVCodec ff_avrn_decoder = {
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
     .max_lowres     = 3,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

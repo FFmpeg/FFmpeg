@@ -1,5 +1,5 @@
 /*
- * H261 decoder
+ * H.261 codec
  * Copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
  * Copyright (c) 2004 Maarten Daniels
  *
@@ -22,7 +22,7 @@
 
 /**
  * @file
- * h261codec.
+ * H.261 codec.
  */
 
 #ifndef AVCODEC_H261_H

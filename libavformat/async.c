@@ -195,19 +195,16 @@ static void *async_buffer_task(void *arg)
 
         if (c->seek_request) {
             seek_ret = ffurl_seek(c->inner, c->seek_pos, c->seek_whence);
-            if (seek_ret < 0) {
-                c->io_eof_reached = 1;
-                c->io_error       = (int)seek_ret;
-            } else {
+            if (seek_ret >= 0) {
                 c->io_eof_reached = 0;
                 c->io_error       = 0;
+                ring_reset(ring);
             }
 
             c->seek_completed = 1;
             c->seek_ret       = seek_ret;
             c->seek_request   = 0;
 
-            ring_reset(ring);
 
             pthread_cond_signal(&c->cond_wakeup_main);
             pthread_mutex_unlock(&c->mutex);
@@ -254,7 +251,7 @@ static int async_open(URLContext *h, const char *arg, int flags, AVDictionary **
 
     /* wrap interrupt callback */
     c->interrupt_callback = h->interrupt_callback;
-    ret = ffurl_open(&c->inner, arg, flags, &interrupt_callback, options);
+    ret = ffurl_open_whitelist(&c->inner, arg, flags, &interrupt_callback, options, h->protocol_whitelist, h->protocol_blacklist, h);
     if (ret != 0) {
         av_log(h, AV_LOG_ERROR, "ffurl_open failed : %s, %s\n", av_err2str(ret), arg);
         goto url_fail;
@@ -482,7 +479,7 @@ static const AVClass async_context_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-URLProtocol ff_async_protocol = {
+const URLProtocol ff_async_protocol = {
     .name                = "async",
     .url_open2           = async_open,
     .url_read            = async_read,
@@ -492,7 +489,7 @@ URLProtocol ff_async_protocol = {
     .priv_data_class     = &async_context_class,
 };
 
-#ifdef TEST
+#if 0
 
 #define TEST_SEEK_POS    (1536)
 #define TEST_STREAM_SIZE (2048)
@@ -584,7 +581,7 @@ static const AVClass async_test_context_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-URLProtocol ff_async_test_protocol = {
+const URLProtocol ff_async_test_protocol = {
     .name                = "async-test",
     .url_open2           = async_test_open,
     .url_read            = async_test_read,

@@ -35,14 +35,14 @@
 #include "libavutil/float_dsp.h"
 #include "libavutil/lfg.h"
 #include "libavutil/random_seed.h"
+
+#define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "fft.h"
+#include "get_bits.h"
 #include "internal.h"
 #include "nellymoser.h"
 #include "sinewin.h"
-
-#define BITSTREAM_READER_LE
-#include "get_bits.h"
 
 
 typedef struct NellyMoserDecodeContext {
@@ -75,7 +75,7 @@ static void nelly_decode_block(NellyMoserDecodeContext *s,
     for (i=0 ; i<NELLY_BANDS ; i++) {
         if (i > 0)
             val += ff_nelly_delta_table[get_bits(&s->gb, 5)];
-        pval = -pow(2, val/2048) * s->scale_bias;
+        pval = -exp2(val/2048) * s->scale_bias;
         for (j = 0; j < ff_nelly_band_sizes_table[i]; j++) {
             *bptr++ = val;
             *pptr++ = pval;

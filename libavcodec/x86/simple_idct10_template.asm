@@ -26,6 +26,25 @@
 
 %if ARCH_X86_64
 
+%macro define_constants 1
+    %undef w4_plus_w2
+    %undef w4_min_w2
+    %undef w4_plus_w6
+    %undef w4_min_w6
+    %undef w1_plus_w3
+    %undef w3_min_w1
+    %undef w7_plus_w3
+    %undef w3_min_w7
+    %define w4_plus_w2 w4_plus_w2%1
+    %define w4_min_w2  w4_min_w2%1
+    %define w4_plus_w6 w4_plus_w6%1
+    %define w4_min_w6  w4_min_w6%1
+    %define w1_plus_w3 w1_plus_w3%1
+    %define w3_min_w1  w3_min_w1%1
+    %define w7_plus_w3 w7_plus_w3%1
+    %define w3_min_w7  w3_min_w7%1
+%endmacro
+
 ; interleave data while maintaining source
 ; %1=type, %2=dstlo, %3=dsthi, %4=src, %5=interleave
 %macro SBUTTERFLY3 5
@@ -115,18 +134,18 @@
     psubd       m3,  m9            ; a1[4-7] intermediate
 
     ; load/store
-    mova   [COEFFS+  0], m0
-    mova   [COEFFS+ 32], m2
-    mova   [COEFFS+ 64], m4
-    mova   [COEFFS+ 96], m6
-    mova        m10,[COEFFS+ 16]       ; { row[1] }[0-7]
-    mova        m8, [COEFFS+ 48]       ; { row[3] }[0-7]
-    mova        m13,[COEFFS+ 80]       ; { row[5] }[0-7]
-    mova        m14,[COEFFS+112]       ; { row[7] }[0-7]
-    mova   [COEFFS+ 16], m1
-    mova   [COEFFS+ 48], m3
-    mova   [COEFFS+ 80], m5
-    mova   [COEFFS+112], m7
+    mova   [blockq+  0], m0
+    mova   [blockq+ 32], m2
+    mova   [blockq+ 64], m4
+    mova   [blockq+ 96], m6
+    mova        m10,[blockq+ 16]       ; { row[1] }[0-7]
+    mova        m8, [blockq+ 48]       ; { row[3] }[0-7]
+    mova        m13,[blockq+ 80]       ; { row[5] }[0-7]
+    mova        m14,[blockq+112]       ; { row[7] }[0-7]
+    mova   [blockq+ 16], m1
+    mova   [blockq+ 48], m3
+    mova   [blockq+ 80], m5
+    mova   [blockq+112], m7
 %if %0 == 3
     pmullw      m10,[%3+ 16]
     pmullw      m8, [%3+ 48]
@@ -197,64 +216,97 @@
     ; row[5] = (a2 - b2) >> 15;
     ; row[3] = (a3 + b3) >> 15;
     ; row[4] = (a3 - b3) >> 15;
-    mova        m8, [COEFFS+ 0]        ; a0[0-3]
-    mova        m9, [COEFFS+16]        ; a0[4-7]
+    mova        m8, [blockq+ 0]        ; a0[0-3]
+    mova        m9, [blockq+16]        ; a0[4-7]
     SUMSUB_SHPK m8,  m9,  m10, m11, m0,  m1,  %2
-    mova        m0, [COEFFS+32]        ; a1[0-3]
-    mova        m1, [COEFFS+48]        ; a1[4-7]
+    mova        m0, [blockq+32]        ; a1[0-3]
+    mova        m1, [blockq+48]        ; a1[4-7]
     SUMSUB_SHPK m0,  m1,  m9,  m11, m2,  m3,  %2
-    mova        m1, [COEFFS+64]        ; a2[0-3]
-    mova        m2, [COEFFS+80]        ; a2[4-7]
+    mova        m1, [blockq+64]        ; a2[0-3]
+    mova        m2, [blockq+80]        ; a2[4-7]
     SUMSUB_SHPK m1,  m2,  m11, m3,  m4,  m5,  %2
-    mova        m2, [COEFFS+96]        ; a3[0-3]
-    mova        m3, [COEFFS+112]       ; a3[4-7]
+    mova        m2, [blockq+96]        ; a3[0-3]
+    mova        m3, [blockq+112]       ; a3[4-7]
     SUMSUB_SHPK m2,  m3,  m4,  m5,  m6,  m7,  %2
 %endmacro
 
-; void ff_prores_idct_put_10_<opt>(uint8_t *pixels, int stride,
+; void ff_prores_idct_put_10_<opt>(uint8_t *pixels, ptrdiff_t stride,
 ;                                  int16_t *block, const int16_t *qmat);
 
 ; %1 = row shift
 ; %2 = row bias macro
 ; %3 = column shift
 ; %4 = column bias macro
-; %5 = min pixel value
-; %6 = max pixel value
-; %7 = qmat (for prores)
+; %5 = final action (nothing, "store", "put", "add")
+; %6 = min pixel value
+; %7 = max pixel value
+; %8 = qmat (for prores)
 
-%macro IDCT_FN 4-7
-%if %0 == 4
-    ; No clamping, means pure idct
-%xdefine COEFFS r0
-%else
-    movsxd      r1,  r1d
-%xdefine COEFFS r2
-%endif
-
+%macro IDCT_FN 4-8
     ; for (i = 0; i < 8; i++)
     ;     idctRowCondDC(block + i*8);
-    mova        m10,[COEFFS+ 0]        ; { row[0] }[0-7]
-    mova        m8, [COEFFS+32]        ; { row[2] }[0-7]
-    mova        m13,[COEFFS+64]        ; { row[4] }[0-7]
-    mova        m12,[COEFFS+96]        ; { row[6] }[0-7]
+    mova        m10,[blockq+ 0]        ; { row[0] }[0-7]
+    mova        m8, [blockq+32]        ; { row[2] }[0-7]
+    mova        m13,[blockq+64]        ; { row[4] }[0-7]
+    mova        m12,[blockq+96]        ; { row[6] }[0-7]
 
-%if %0 == 7
-    pmullw      m10,[%7+ 0]
-    pmullw      m8, [%7+32]
-    pmullw      m13,[%7+64]
-    pmullw      m12,[%7+96]
+%if %0 == 8
+    pmullw      m10,[%8+ 0]
+    pmullw      m8, [%8+32]
+    pmullw      m13,[%8+64]
+    pmullw      m12,[%8+96]
 
-    IDCT_1D     %1, %2, %7
+    IDCT_1D     %1, %2, %8
+%elif %2 == 11
+    ; This copies the DC-only shortcut.  When there is only a DC coefficient the
+    ; C shifts the value and splats it to all coeffs rather than multiplying and
+    ; doing the full IDCT.  This causes a difference on 8-bit because the
+    ; coefficient is 16383 rather than 16384 (which you can get with shifting).
+    por      m1,  m8, m13
+    por      m1,  m12
+    por      m1, [blockq+ 16]       ; { row[1] }[0-7]
+    por      m1, [blockq+ 48]       ; { row[3] }[0-7]
+    por      m1, [blockq+ 80]       ; { row[5] }[0-7]
+    por      m1, [blockq+112]       ; { row[7] }[0-7]
+    pxor     m2,  m2
+    pcmpeqw  m1,  m2
+    psllw    m2,  m10, 3
+    pand     m2,  m1
+    pcmpeqb  m3,  m3
+    pxor     m1,  m3
+    mova    [rsp],    m1
+    mova    [rsp+16], m2
+
+    IDCT_1D  %1,  %2
+
+    mova     m5, [rsp]
+    mova     m6, [rsp+16]
+    pand     m8,  m5
+    por      m8,  m6
+    pand     m0,  m5
+    por      m0,  m6
+    pand     m1,  m5
+    por      m1,  m6
+    pand     m2,  m5
+    por      m2,  m6
+    pand     m4,  m5
+    por      m4,  m6
+    pand     m11, m5
+    por      m11, m6
+    pand     m9,  m5
+    por      m9,  m6
+    pand     m10, m5
+    por      m10, m6
 %else
     IDCT_1D     %1, %2
 %endif
 
     ; transpose for second part of IDCT
     TRANSPOSE8x8W 8, 0, 1, 2, 4, 11, 9, 10, 3
-    mova   [COEFFS+ 16], m0
-    mova   [COEFFS+ 48], m2
-    mova   [COEFFS+ 80], m11
-    mova   [COEFFS+112], m10
+    mova   [blockq+ 16], m0
+    mova   [blockq+ 48], m2
+    mova   [blockq+ 80], m11
+    mova   [blockq+112], m10
     SWAP         8,  10
     SWAP         1,   8
     SWAP         4,  13
@@ -265,23 +317,24 @@
     IDCT_1D     %3, %4
 
     ; clip/store
-%if %0 == 4
+%if %0 >= 5
+%ifidn %5,"store"
     ; No clamping, means pure idct
-    mova  [r0+  0], m8
-    mova  [r0+ 16], m0
-    mova  [r0+ 32], m1
-    mova  [r0+ 48], m2
-    mova  [r0+ 64], m4
-    mova  [r0+ 80], m11
-    mova  [r0+ 96], m9
-    mova  [r0+112], m10
-%else
-%ifidn %5, 0
+    mova  [blockq+  0], m8
+    mova  [blockq+ 16], m0
+    mova  [blockq+ 32], m1
+    mova  [blockq+ 48], m2
+    mova  [blockq+ 64], m4
+    mova  [blockq+ 80], m11
+    mova  [blockq+ 96], m9
+    mova  [blockq+112], m10
+%elifidn %5,"put"
+%ifidn %6, 0
     pxor        m3, m3
 %else
-    mova        m3, [%5]
-%endif
-    mova        m5, [%6]
+    mova        m3, [%6]
+%endif ; ifidn %6, 0
+    mova        m5, [%7]
     pmaxsw      m8,  m3
     pmaxsw      m0,  m3
     pmaxsw      m1,  m3
@@ -309,7 +362,8 @@
     mova  [r0+r1  ], m11
     mova  [r0+r1*2], m9
     mova  [r0+r2  ], m10
-%endif
+%endif ; %5 action
+%endif; if %0 >= 5
 %endmacro
 
 %endif

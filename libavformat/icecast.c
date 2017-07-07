@@ -53,15 +53,15 @@ typedef struct IcecastContext {
 #define E AV_OPT_FLAG_ENCODING_PARAM
 
 static const AVOption options[] = {
-    { "ice_genre", "set stream genre", OFFSET(genre), AV_OPT_TYPE_STRING, { 0 }, 0, 0, E },
-    { "ice_name", "set stream description", OFFSET(name), AV_OPT_TYPE_STRING, { 0 }, 0, 0, E },
-    { "ice_description", "set stream description", OFFSET(description), AV_OPT_TYPE_STRING, { 0 }, 0, 0, E },
-    { "ice_url", "set stream website", OFFSET(url), AV_OPT_TYPE_STRING, { 0 }, 0, 0, E },
-    { "ice_public", "set if stream is public", OFFSET(public), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, E },
-    { "user_agent", "override User-Agent header", OFFSET(user_agent), AV_OPT_TYPE_STRING, { 0 }, 0, 0, E },
-    { "password", "set password", OFFSET(pass), AV_OPT_TYPE_STRING, { 0 }, 0, 0, E },
-    { "content_type", "set content-type, MUST be set if not audio/mpeg", OFFSET(content_type), AV_OPT_TYPE_STRING, { 0 }, 0, 0, E },
-    { "legacy_icecast", "use legacy SOURCE method, for Icecast < v2.4", OFFSET(legacy_icecast), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, E },
+    { "ice_genre", "set stream genre", OFFSET(genre), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E },
+    { "ice_name", "set stream description", OFFSET(name), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E },
+    { "ice_description", "set stream description", OFFSET(description), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E },
+    { "ice_url", "set stream website", OFFSET(url), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E },
+    { "ice_public", "set if stream is public", OFFSET(public), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
+    { "user_agent", "override User-Agent header", OFFSET(user_agent), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E },
+    { "password", "set password", OFFSET(pass), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E },
+    { "content_type", "set content-type, MUST be set if not audio/mpeg", OFFSET(content_type), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E },
+    { "legacy_icecast", "use legacy SOURCE method, for Icecast < v2.4", OFFSET(legacy_icecast), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
     { NULL }
 };
 
@@ -164,7 +164,8 @@ static int icecast_open(URLContext *h, const char *uri, int flags)
     // Build new URI for passing to http protocol
     ff_url_join(h_url, sizeof(h_url), "http", auth, host, port, "%s", path);
     // Finally open http proto handler
-    ret = ffurl_open(&s->hd, h_url, AVIO_FLAG_READ_WRITE, NULL, &opt_dict);
+    ret = ffurl_open_whitelist(&s->hd, h_url, AVIO_FLAG_READ_WRITE, NULL,
+                               &opt_dict, h->protocol_whitelist, h->protocol_blacklist, h);
 
 cleanup:
     av_freep(&user);
@@ -208,7 +209,7 @@ static const AVClass icecast_context_class = {
     .version        = LIBAVUTIL_VERSION_INT,
 };
 
-URLProtocol ff_icecast_protocol = {
+const URLProtocol ff_icecast_protocol = {
     .name            = "icecast",
     .url_open        = icecast_open,
     .url_write       = icecast_write,

@@ -85,16 +85,16 @@ typedef struct AVPixFmtDescriptor {
     /**
      * Amount to shift the luma width right to find the chroma width.
      * For YV12 this is 1 for example.
-     * chroma_width = -((-luma_width) >> log2_chroma_w)
+     * chroma_width = AV_CEIL_RSHIFT(luma_width, log2_chroma_w)
      * The note above is needed to ensure rounding up.
      * This value only refers to the chroma components.
      */
-    uint8_t log2_chroma_w;  ///< chroma_width = -((-luma_width )>>log2_chroma_w)
+    uint8_t log2_chroma_w;
 
     /**
      * Amount to shift the luma height right to find the chroma height.
      * For YV12 this is 1 for example.
-     * chroma_height= -((-luma_height) >> log2_chroma_h)
+     * chroma_height= AV_CEIL_RSHIFT(luma_height, log2_chroma_h)
      * The note above is needed to ensure rounding up.
      * This value only refers to the chroma components.
      */
@@ -173,76 +173,9 @@ typedef struct AVPixFmtDescriptor {
 #define AV_PIX_FMT_FLAG_ALPHA        (1 << 7)
 
 /**
- * Read a line from an image, and write the values of the
- * pixel format component c to dst.
- *
- * @param data the array containing the pointers to the planes of the image
- * @param linesize the array containing the linesizes of the image
- * @param desc the pixel format descriptor for the image
- * @param x the horizontal coordinate of the first pixel to read
- * @param y the vertical coordinate of the first pixel to read
- * @param w the width of the line to read, that is the number of
- * values to write to dst
- * @param read_pal_component if not zero and the format is a paletted
- * format writes the values corresponding to the palette
- * component c in data[1] to dst, rather than the palette indexes in
- * data[0]. The behavior is undefined if the format is not paletted.
+ * The pixel format is following a Bayer pattern
  */
-void av_read_image_line(uint16_t *dst, const uint8_t *data[4],
-                        const int linesize[4], const AVPixFmtDescriptor *desc,
-                        int x, int y, int c, int w, int read_pal_component);
-
-/**
- * Write the values from src to the pixel format component c of an
- * image line.
- *
- * @param src array containing the values to write
- * @param data the array containing the pointers to the planes of the
- * image to write into. It is supposed to be zeroed.
- * @param linesize the array containing the linesizes of the image
- * @param desc the pixel format descriptor for the image
- * @param x the horizontal coordinate of the first pixel to write
- * @param y the vertical coordinate of the first pixel to write
- * @param w the width of the line to write, that is the number of
- * values to write to the image line
- */
-void av_write_image_line(const uint16_t *src, uint8_t *data[4],
-                         const int linesize[4], const AVPixFmtDescriptor *desc,
-                         int x, int y, int c, int w);
-
-/**
- * Return the pixel format corresponding to name.
- *
- * If there is no pixel format with name name, then looks for a
- * pixel format with the name corresponding to the native endian
- * format of name.
- * For example in a little-endian system, first looks for "gray16",
- * then for "gray16le".
- *
- * Finally if no pixel format has been found, returns AV_PIX_FMT_NONE.
- */
-enum AVPixelFormat av_get_pix_fmt(const char *name);
-
-/**
- * Return the short name for a pixel format, NULL in case pix_fmt is
- * unknown.
- *
- * @see av_get_pix_fmt(), av_get_pix_fmt_string()
- */
-const char *av_get_pix_fmt_name(enum AVPixelFormat pix_fmt);
-
-/**
- * Print in buf the string corresponding to the pixel format with
- * number pix_fmt, or a header if pix_fmt is negative.
- *
- * @param buf the buffer where to write the string
- * @param buf_size the size of buf
- * @param pix_fmt the number of the pixel format to print the
- * corresponding info string, or a negative value to print the
- * corresponding header.
- */
-char *av_get_pix_fmt_string(char *buf, int buf_size,
-                            enum AVPixelFormat pix_fmt);
+#define AV_PIX_FMT_FLAG_BAYER        (1 << 8)
 
 /**
  * Return the number of bits per pixel used by the pixel format
@@ -292,8 +225,8 @@ enum AVPixelFormat av_pix_fmt_desc_get_id(const AVPixFmtDescriptor *desc);
  * you do check the return code!
  *
  * @param[in]  pix_fmt the pixel format
- * @param[out] h_shift store log2_chroma_w
- * @param[out] v_shift store log2_chroma_h
+ * @param[out] h_shift store log2_chroma_w (horizontal/width shift)
+ * @param[out] v_shift store log2_chroma_h (vertical/height shift)
  *
  * @return 0 on success, AVERROR(ENOSYS) on invalid or unknown pixel format
  */
@@ -305,6 +238,103 @@ int av_pix_fmt_get_chroma_sub_sample(enum AVPixelFormat pix_fmt,
  * valid pixel format.
  */
 int av_pix_fmt_count_planes(enum AVPixelFormat pix_fmt);
+
+/**
+ * @return the name for provided color range or NULL if unknown.
+ */
+const char *av_color_range_name(enum AVColorRange range);
+
+/**
+ * @return the name for provided color primaries or NULL if unknown.
+ */
+const char *av_color_primaries_name(enum AVColorPrimaries primaries);
+
+/**
+ * @return the name for provided color transfer or NULL if unknown.
+ */
+const char *av_color_transfer_name(enum AVColorTransferCharacteristic transfer);
+
+/**
+ * @return the name for provided color space or NULL if unknown.
+ */
+const char *av_color_space_name(enum AVColorSpace space);
+
+/**
+ * @return the name for provided chroma location or NULL if unknown.
+ */
+const char *av_chroma_location_name(enum AVChromaLocation location);
+
+/**
+ * Return the pixel format corresponding to name.
+ *
+ * If there is no pixel format with name name, then looks for a
+ * pixel format with the name corresponding to the native endian
+ * format of name.
+ * For example in a little-endian system, first looks for "gray16",
+ * then for "gray16le".
+ *
+ * Finally if no pixel format has been found, returns AV_PIX_FMT_NONE.
+ */
+enum AVPixelFormat av_get_pix_fmt(const char *name);
+
+/**
+ * Return the short name for a pixel format, NULL in case pix_fmt is
+ * unknown.
+ *
+ * @see av_get_pix_fmt(), av_get_pix_fmt_string()
+ */
+const char *av_get_pix_fmt_name(enum AVPixelFormat pix_fmt);
+
+/**
+ * Print in buf the string corresponding to the pixel format with
+ * number pix_fmt, or a header if pix_fmt is negative.
+ *
+ * @param buf the buffer where to write the string
+ * @param buf_size the size of buf
+ * @param pix_fmt the number of the pixel format to print the
+ * corresponding info string, or a negative value to print the
+ * corresponding header.
+ */
+char *av_get_pix_fmt_string(char *buf, int buf_size,
+                            enum AVPixelFormat pix_fmt);
+
+/**
+ * Read a line from an image, and write the values of the
+ * pixel format component c to dst.
+ *
+ * @param data the array containing the pointers to the planes of the image
+ * @param linesize the array containing the linesizes of the image
+ * @param desc the pixel format descriptor for the image
+ * @param x the horizontal coordinate of the first pixel to read
+ * @param y the vertical coordinate of the first pixel to read
+ * @param w the width of the line to read, that is the number of
+ * values to write to dst
+ * @param read_pal_component if not zero and the format is a paletted
+ * format writes the values corresponding to the palette
+ * component c in data[1] to dst, rather than the palette indexes in
+ * data[0]. The behavior is undefined if the format is not paletted.
+ */
+void av_read_image_line(uint16_t *dst, const uint8_t *data[4],
+                        const int linesize[4], const AVPixFmtDescriptor *desc,
+                        int x, int y, int c, int w, int read_pal_component);
+
+/**
+ * Write the values from src to the pixel format component c of an
+ * image line.
+ *
+ * @param src array containing the values to write
+ * @param data the array containing the pointers to the planes of the
+ * image to write into. It is supposed to be zeroed.
+ * @param linesize the array containing the linesizes of the image
+ * @param desc the pixel format descriptor for the image
+ * @param x the horizontal coordinate of the first pixel to write
+ * @param y the vertical coordinate of the first pixel to write
+ * @param w the width of the line to write, that is the number of
+ * values to write to the image line
+ */
+void av_write_image_line(const uint16_t *src, uint8_t *data[4],
+                         const int linesize[4], const AVPixFmtDescriptor *desc,
+                         int x, int y, int c, int w);
 
 /**
  * Utility function to swap the endianness of a pixel format.
@@ -365,30 +395,5 @@ int av_get_pix_fmt_loss(enum AVPixelFormat dst_pix_fmt,
  */
 enum AVPixelFormat av_find_best_pix_fmt_of_2(enum AVPixelFormat dst_pix_fmt1, enum AVPixelFormat dst_pix_fmt2,
                                              enum AVPixelFormat src_pix_fmt, int has_alpha, int *loss_ptr);
-
-/**
- * @return the name for provided color range or NULL if unknown.
- */
-const char *av_color_range_name(enum AVColorRange range);
-
-/**
- * @return the name for provided color primaries or NULL if unknown.
- */
-const char *av_color_primaries_name(enum AVColorPrimaries primaries);
-
-/**
- * @return the name for provided color transfer or NULL if unknown.
- */
-const char *av_color_transfer_name(enum AVColorTransferCharacteristic transfer);
-
-/**
- * @return the name for provided color space or NULL if unknown.
- */
-const char *av_color_space_name(enum AVColorSpace space);
-
-/**
- * @return the name for provided chroma location or NULL if unknown.
- */
-const char *av_chroma_location_name(enum AVChromaLocation location);
 
 #endif /* AVUTIL_PIXDESC_H */

@@ -28,7 +28,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/cpu_internal.h"
 
-#if HAVE_YASM
+#if HAVE_X86ASM
 
 #define cpuid(index, eax, ebx, ecx, edx)        \
     ff_cpu_cpuid(index, &eax, &ebx, &ecx, &edx)
@@ -41,9 +41,9 @@
 /* ebx saving is necessary for PIC. gcc seems unable to see it alone */
 #define cpuid(index, eax, ebx, ecx, edx)                        \
     __asm__ volatile (                                          \
-        "mov    %%"REG_b", %%"REG_S" \n\t"                      \
+        "mov    %%"FF_REG_b", %%"FF_REG_S" \n\t"                \
         "cpuid                       \n\t"                      \
-        "xchg   %%"REG_b", %%"REG_S                             \
+        "xchg   %%"FF_REG_b", %%"FF_REG_S                       \
         : "=a" (eax), "=S" (ebx), "=c" (ecx), "=d" (edx)        \
         : "0" (index), "2"(0))
 
@@ -66,7 +66,7 @@
 
 #define cpuid_test() 1
 
-#elif HAVE_YASM
+#elif HAVE_X86ASM
 
 #define cpuid_test ff_cpu_cpuid_test
 
@@ -126,6 +126,8 @@ int ff_get_cpu_flags_x86(void)
             rval |= AV_CPU_FLAG_SSE4;
         if (ecx & 0x00100000 )
             rval |= AV_CPU_FLAG_SSE42;
+        if (ecx & 0x01000000 )
+            rval |= AV_CPU_FLAG_AESNI;
 #if HAVE_AVX
         /* Check OXSAVE and AVX bits */
         if ((ecx & 0x18000000) == 0x18000000) {
@@ -180,13 +182,11 @@ int ff_get_cpu_flags_x86(void)
 
         /* Similar to the above but for AVX functions on AMD processors.
            This is necessary only for functions using YMM registers on Bulldozer
-           based CPUs as they lack 256-bits execution units. SSE/AVX functions
-           using XMM registers are always faster on them.
+           and Jaguar based CPUs as they lack 256-bit execution units. SSE/AVX
+           functions using XMM registers are always faster on them.
            AV_CPU_FLAG_AVX and AV_CPU_FLAG_AVXSLOW are both set so that AVX is
-           used unless explicitly disabled by checking AV_CPU_FLAG_AVXSLOW.
-           TODO: Confirm if Excavator is affected or not by this once it's
-                 released, and update the check if necessary. Same for btver2. */
-            if (family == 0x15 && (rval & AV_CPU_FLAG_AVX))
+           used unless explicitly disabled by checking AV_CPU_FLAG_AVXSLOW. */
+            if ((family == 0x15 || family == 0x16) && (rval & AV_CPU_FLAG_AVX))
                 rval |= AV_CPU_FLAG_AVXSLOW;
         }
 
@@ -221,6 +221,12 @@ int ff_get_cpu_flags_x86(void)
          * functions on the Atom. */
         if (family == 6 && model == 28)
             rval |= AV_CPU_FLAG_ATOM;
+
+        /* Conroe has a slow shuffle unit. Check the model number to ensure not
+         * to include crippled low-end Penryns and Nehalems that lack SSE4. */
+        if ((rval & AV_CPU_FLAG_SSSE3) && !(rval & AV_CPU_FLAG_SSE4) &&
+            family == 6 && model < 23)
+            rval |= AV_CPU_FLAG_SSSE3SLOW;
     }
 
 #endif /* cpuid */

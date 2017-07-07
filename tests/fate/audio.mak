@@ -16,19 +16,6 @@ fate-binkaudio: $(FATE_BINKAUDIO-yes)
 FATE_SAMPLES_AUDIO-$(call DEMDEC, BMV, BMV_AUDIO) += fate-bmv-audio
 fate-bmv-audio: CMD = framecrc -i $(TARGET_SAMPLES)/bmv/SURFING-partial.BMV -vn
 
-FATE_DCA-$(CONFIG_MPEGTS_DEMUXER) += fate-dca-core
-fate-dca-core: CMD = pcm -i $(TARGET_SAMPLES)/dts/dts.ts
-fate-dca-core: CMP = oneoff
-fate-dca-core: REF = $(SAMPLES)/dts/dts.pcm
-
-FATE_DCA-$(CONFIG_DTS_DEMUXER) += fate-dca-xll
-fate-dca-xll: CMD = pcm -disable_xll 0 -i $(TARGET_SAMPLES)/dts/master_audio_7.1_24bit.dts
-fate-dca-xll: CMP = oneoff
-fate-dca-xll: REF = $(SAMPLES)/dts/master_audio_7.1_24bit.pcm
-
-FATE_SAMPLES_AUDIO-$(CONFIG_DCA_DECODER) += $(FATE_DCA-yes)
-fate-dca: $(FATE_DCA-yes)
-
 FATE_SAMPLES_AUDIO-$(call DEMDEC, DSICIN, DSICINAUDIO) += fate-delphine-cin-audio
 fate-delphine-cin-audio: CMD = framecrc -i $(TARGET_SAMPLES)/delphine-cin/LOGO-partial.CIN -vn
 
@@ -36,15 +23,10 @@ FATE_SAMPLES_AUDIO-$(call DEMDEC, DSS, DSS_SP) += fate-dss-lp fate-dss-sp
 fate-dss-lp: CMD = framecrc -i $(TARGET_SAMPLES)/dss/lp.dss -frames 30
 fate-dss-sp: CMD = framecrc -i $(TARGET_SAMPLES)/dss/sp.dss -frames 30
 
-FATE_SAMPLES_AUDIO-$(call DEMDEC, DTS, DCA) += fate-dts_es
-fate-dts_es: CMD = pcm -i $(TARGET_SAMPLES)/dts/dts_es.dts
-fate-dts_es: CMP = oneoff
-fate-dts_es: REF = $(SAMPLES)/dts/dts_es.pcm
-
 FATE_SAMPLES_AUDIO-$(call DEMDEC, AVI, IMC) += fate-imc
 fate-imc: CMD = pcm -i $(TARGET_SAMPLES)/imc/imc.avi
 fate-imc: CMP = oneoff
-fate-imc: REF = $(SAMPLES)/imc/imc.pcm
+fate-imc: REF = $(SAMPLES)/imc/imc-201706.pcm
 
 FATE_SAMPLES_AUDIO-$(call DEMDEC, FLV, NELLYMOSER) += fate-nellymoser
 fate-nellymoser: CMD = pcm -i $(TARGET_SAMPLES)/nellymoser/nellymoser.flv
@@ -75,7 +57,11 @@ fate-smacker-audio: CMD = framecrc -i $(TARGET_SAMPLES)/smacker/wetlogo.smk -vn
 FATE_SAMPLES_AUDIO-$(call DEMDEC, WSVQA, WS_SND1) += fate-ws_snd
 fate-ws_snd: CMD = md5 -i $(TARGET_SAMPLES)/vqa/ws_snd.vqa -f s16le
 
+fate-flcl1905: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_frames -show_packets -print_format compact $(TARGET_SAMPLES)/wav/FLCL_Ending_My-short.wav
+
 FATE_SAMPLES_AUDIO += $(FATE_SAMPLES_AUDIO-yes)
 
+FATE_SAMPLES_FFPROBE += fate-flcl1905
+
 FATE_SAMPLES_FFMPEG += $(FATE_SAMPLES_AUDIO)
-fate-audio: $(FATE_SAMPLES_AUDIO)
+fate-audio: $(FATE_SAMPLES_AUDIO) fate-flcl1905

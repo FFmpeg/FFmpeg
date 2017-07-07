@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavcodec/avcodec.h"
 #include "libavcodec/get_bits.h"
 #include "libavcodec/golomb.h"
 #include "libavcodec/hevc.h"
@@ -127,8 +128,8 @@ static void hvcc_parse_ptl(GetBitContext *gb,
 {
     unsigned int i;
     HVCCProfileTierLevel general_ptl;
-    uint8_t sub_layer_profile_present_flag[MAX_SUB_LAYERS];
-    uint8_t sub_layer_level_present_flag[MAX_SUB_LAYERS];
+    uint8_t sub_layer_profile_present_flag[HEVC_MAX_SUB_LAYERS];
+    uint8_t sub_layer_level_present_flag[HEVC_MAX_SUB_LAYERS];
 
     general_ptl.profile_space               = get_bits(gb, 2);
     general_ptl.tier_flag                   = get_bits1(gb);
@@ -416,7 +417,7 @@ static void skip_scaling_list_data(GetBitContext *gb)
 
 static int parse_rps(GetBitContext *gb, unsigned int rps_idx,
                      unsigned int num_rps,
-                     unsigned int num_delta_pocs[MAX_SHORT_TERM_RPS_COUNT])
+                     unsigned int num_delta_pocs[HEVC_MAX_SHORT_TERM_RPS_COUNT])
 {
     unsigned int i;
 
@@ -485,7 +486,7 @@ static int hvcc_parse_sps(GetBitContext *gb,
                           HEVCDecoderConfigurationRecord *hvcc)
 {
     unsigned int i, sps_max_sub_layers_minus1, log2_max_pic_order_cnt_lsb_minus4;
-    unsigned int num_short_term_ref_pic_sets, num_delta_pocs[MAX_SHORT_TERM_RPS_COUNT];
+    unsigned int num_short_term_ref_pic_sets, num_delta_pocs[HEVC_MAX_SHORT_TERM_RPS_COUNT];
 
     skip_bits(gb, 4); // sps_video_parameter_set_id
 
@@ -555,7 +556,7 @@ static int hvcc_parse_sps(GetBitContext *gb,
     }
 
     num_short_term_ref_pic_sets = get_ue_golomb_long(gb);
-    if (num_short_term_ref_pic_sets > MAX_SHORT_TERM_RPS_COUNT)
+    if (num_short_term_ref_pic_sets > HEVC_MAX_SHORT_TERM_RPS_COUNT)
         return AVERROR_INVALIDDATA;
 
     for (i = 0; i < num_short_term_ref_pic_sets; i++) {
@@ -734,7 +735,7 @@ static int hvcc_array_add_nal_unit(uint8_t *nal_buf, uint32_t nal_size,
      * for all other arrays. When the sample entry name is ‘hev1’, the default
      * value of array_completeness is 0 for all arrays.
      */
-    if (nal_type == NAL_VPS || nal_type == NAL_SPS || nal_type == NAL_PPS)
+    if (nal_type == HEVC_NAL_VPS || nal_type == HEVC_NAL_SPS || nal_type == HEVC_NAL_PPS)
         array->array_completeness = ps_array_completeness;
 
     return 0;
@@ -768,20 +769,20 @@ static int hvcc_add_nal_unit(uint8_t *nal_buf, uint32_t nal_size,
      * and non-declarative SEI messages discarded?
      */
     switch (nal_type) {
-    case NAL_VPS:
-    case NAL_SPS:
-    case NAL_PPS:
-    case NAL_SEI_PREFIX:
-    case NAL_SEI_SUFFIX:
+    case HEVC_NAL_VPS:
+    case HEVC_NAL_SPS:
+    case HEVC_NAL_PPS:
+    case HEVC_NAL_SEI_PREFIX:
+    case HEVC_NAL_SEI_SUFFIX:
         ret = hvcc_array_add_nal_unit(nal_buf, nal_size, nal_type,
                                       ps_array_completeness, hvcc);
         if (ret < 0)
             goto end;
-        else if (nal_type == NAL_VPS)
+        else if (nal_type == HEVC_NAL_VPS)
             ret = hvcc_parse_vps(&gbc, hvcc);
-        else if (nal_type == NAL_SPS)
+        else if (nal_type == HEVC_NAL_SPS)
             ret = hvcc_parse_sps(&gbc, hvcc);
-        else if (nal_type == NAL_PPS)
+        else if (nal_type == HEVC_NAL_PPS)
             ret = hvcc_parse_pps(&gbc, hvcc);
         if (ret < 0)
             goto end;
@@ -915,21 +916,21 @@ static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc)
      */
     for (i = 0; i < hvcc->numOfArrays; i++)
         switch (hvcc->array[i].NAL_unit_type) {
-        case NAL_VPS:
+        case HEVC_NAL_VPS:
             vps_count += hvcc->array[i].numNalus;
             break;
-        case NAL_SPS:
+        case HEVC_NAL_SPS:
             sps_count += hvcc->array[i].numNalus;
             break;
-        case NAL_PPS:
+        case HEVC_NAL_PPS:
             pps_count += hvcc->array[i].numNalus;
             break;
         default:
             break;
         }
-    if (!vps_count || vps_count > MAX_VPS_COUNT ||
-        !sps_count || sps_count > MAX_SPS_COUNT ||
-        !pps_count || pps_count > MAX_PPS_COUNT)
+    if (!vps_count || vps_count > HEVC_MAX_VPS_COUNT ||
+        !sps_count || sps_count > HEVC_MAX_SPS_COUNT ||
+        !pps_count || pps_count > HEVC_MAX_PPS_COUNT)
         return AVERROR_INVALIDDATA;
 
     /* unsigned int(8) configurationVersion = 1; */
@@ -1052,9 +1053,9 @@ int ff_hevc_annexb2mp4(AVIOContext *pb, const uint8_t *buf_in,
         buf += 4;
 
         switch (type) {
-        case NAL_VPS:
-        case NAL_SPS:
-        case NAL_PPS:
+        case HEVC_NAL_VPS:
+        case HEVC_NAL_SPS:
+        case HEVC_NAL_PPS:
             num_ps++;
             break;
         default:
@@ -1127,11 +1128,11 @@ int ff_isom_write_hvcc(AVIOContext *pb, const uint8_t *data,
         buf += 4;
 
         switch (type) {
-        case NAL_VPS:
-        case NAL_SPS:
-        case NAL_PPS:
-        case NAL_SEI_PREFIX:
-        case NAL_SEI_SUFFIX:
+        case HEVC_NAL_VPS:
+        case HEVC_NAL_SPS:
+        case HEVC_NAL_PPS:
+        case HEVC_NAL_SEI_PREFIX:
+        case HEVC_NAL_SEI_SUFFIX:
             ret = hvcc_add_nal_unit(buf, len, ps_array_completeness, &hvcc);
             if (ret < 0)
                 goto end;

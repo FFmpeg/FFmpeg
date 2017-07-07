@@ -233,6 +233,7 @@ static const uint8_t dnxhd_1252_chroma_weight[] = {
     114, 128, 125, 129, 134, 125, 116, 116,
 };
 
+/* Used in CID 1244, 1260 */
 static const uint8_t dnxhd_1260_luma_weight[] = {
      0, 32, 33, 34, 36, 37, 37, 36,
     34, 33, 34, 35, 37, 38, 40, 41,
@@ -244,6 +245,7 @@ static const uint8_t dnxhd_1260_luma_weight[] = {
     52, 53, 53, 50, 50, 54, 54, 54,
 };
 
+/* Used in CID 1244, 1260 */
 static const uint8_t dnxhd_1260_chroma_weight[] = {
      0, 32, 34, 38, 42, 40, 38, 36,
     35, 35, 38, 42, 43, 43, 42, 40,
@@ -979,6 +981,14 @@ const CIDEntry ff_dnxhd_cid_table[] = {
       dnxhd_1235_run_codes, dnxhd_1235_run_bits, dnxhd_1238_run,
       { 185, 220 },
       { { 25, 1 }, { 30000, 1001 } } },
+    { 1244, 1440, 1080, 606208, 303104,
+      DNXHD_INTERLACED, 4, 8, 3,
+      dnxhd_1260_luma_weight, dnxhd_1260_chroma_weight,
+      dnxhd_1237_dc_codes, dnxhd_1237_dc_bits,
+      dnxhd_1237_ac_codes, dnxhd_1237_ac_bits, dnxhd_1237_ac_info,
+      dnxhd_1237_run_codes, dnxhd_1237_run_bits, dnxhd_1237_run,
+      { 120, 145 },
+      { { 25, 1 }, { 30000, 1001 } } },
     { 1250, 1280,  720, 458752, 458752,
       0, 6, 10, 4,
       dnxhd_1250_luma_weight, dnxhd_1250_chroma_weight,
@@ -1046,35 +1056,35 @@ const CIDEntry ff_dnxhd_cid_table[] = {
       dnxhd_1235_dc_codes, dnxhd_1235_dc_bits,
       dnxhd_1235_ac_codes, dnxhd_1235_ac_bits, dnxhd_1235_ac_info,
       dnxhd_1235_run_codes, dnxhd_1235_run_bits, dnxhd_1235_run,
-      { 0 } },
+      { 0 }, { { 0 } }, { 57344, 255} },
     { 1271, DNXHD_VARIABLE, DNXHD_VARIABLE, DNXHD_VARIABLE, DNXHD_VARIABLE,
       0, 6, DNXHD_VARIABLE, 4,
       dnxhd_1241_luma_weight, dnxhd_1241_chroma_weight,
       dnxhd_1235_dc_codes, dnxhd_1235_dc_bits,
       dnxhd_1235_ac_codes, dnxhd_1235_ac_bits, dnxhd_1235_ac_info,
       dnxhd_1235_run_codes, dnxhd_1235_run_bits, dnxhd_1235_run,
-      { 0 } },
+      { 0 }, { { 0 } }, { 28672, 255} },
     { 1272, DNXHD_VARIABLE, DNXHD_VARIABLE, DNXHD_VARIABLE, DNXHD_VARIABLE,
       0, 4, 8, 4,
       dnxhd_1238_luma_weight, dnxhd_1238_chroma_weight,
       dnxhd_1237_dc_codes, dnxhd_1237_dc_bits,
       dnxhd_1238_ac_codes, dnxhd_1238_ac_bits, dnxhd_1238_ac_info,
       dnxhd_1235_run_codes, dnxhd_1235_run_bits, dnxhd_1238_run,
-      { 0 } },
+      { 0 }, { { 0 } }, { 28672, 255} },
     { 1273, DNXHD_VARIABLE, DNXHD_VARIABLE, DNXHD_VARIABLE, DNXHD_VARIABLE,
       0, 4, 8, 3,
       dnxhd_1237_luma_weight, dnxhd_1237_chroma_weight,
       dnxhd_1237_dc_codes, dnxhd_1237_dc_bits,
       dnxhd_1237_ac_codes, dnxhd_1237_ac_bits, dnxhd_1237_ac_info,
       dnxhd_1237_run_codes, dnxhd_1237_run_bits, dnxhd_1237_run,
-      { 0 } },
+      { 0 }, { { 0 } }, { 18944, 255} },
     { 1274, DNXHD_VARIABLE, DNXHD_VARIABLE, DNXHD_VARIABLE, DNXHD_VARIABLE,
       0, 4, 8, 3,
       dnxhd_1237_luma_weight, dnxhd_1237_chroma_weight,
       dnxhd_1237_dc_codes, dnxhd_1237_dc_bits,
       dnxhd_1237_ac_codes, dnxhd_1237_ac_bits, dnxhd_1237_ac_info,
       dnxhd_1237_run_codes, dnxhd_1237_run_bits, dnxhd_1237_run,
-      { 0 } },
+      { 0 }, { { 0 } }, { 5888, 255} },
 };
 
 int ff_dnxhd_get_cid_table(int cid)
@@ -1102,10 +1112,38 @@ int avpriv_dnxhd_get_interlaced(int cid)
     return ff_dnxhd_cid_table[i].flags & DNXHD_INTERLACED ? 1 : 0;
 }
 
+#if LIBAVCODEC_VERSION_MAJOR < 58
+uint64_t avpriv_dnxhd_parse_header_prefix(const uint8_t *buf)
+{
+    return ff_dnxhd_parse_header_prefix(buf);
+}
+#endif
+
+static int dnxhd_find_hr_cid(AVCodecContext *avctx)
+{
+    switch (avctx->profile) {
+    case FF_PROFILE_DNXHR_444:
+        return 1270;
+    case FF_PROFILE_DNXHR_HQX:
+        return 1271;
+    case FF_PROFILE_DNXHR_HQ:
+        return 1272;
+    case FF_PROFILE_DNXHR_SQ:
+        return 1273;
+    case FF_PROFILE_DNXHR_LB:
+        return 1274;
+    }
+    return 0;
+}
+
 int ff_dnxhd_find_cid(AVCodecContext *avctx, int bit_depth)
 {
     int i, j;
     int mbs = avctx->bit_rate / 1000000;
+
+    if (avctx->profile != FF_PROFILE_DNXHD)
+        return dnxhd_find_hr_cid(avctx);
+
     if (!mbs)
         return 0;
     for (i = 0; i < FF_ARRAY_ELEMS(ff_dnxhd_cid_table); i++) {

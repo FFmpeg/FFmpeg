@@ -55,8 +55,8 @@ static void vector_clipf_c_opposite_sign(float *dst, const float *src,
     }
 }
 
-static void vector_clipf_c(float *dst, const float *src,
-                           float min, float max, int len)
+static void vector_clipf_c(float *dst, const float *src, int len,
+                           float min, float max)
 {
     int i;
 

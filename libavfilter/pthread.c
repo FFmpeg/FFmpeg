@@ -1,5 +1,4 @@
 /*
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -27,18 +26,11 @@
 #include "libavutil/common.h"
 #include "libavutil/cpu.h"
 #include "libavutil/mem.h"
+#include "libavutil/thread.h"
 
 #include "avfilter.h"
 #include "internal.h"
 #include "thread.h"
-
-#if HAVE_PTHREADS
-#include <pthread.h>
-#elif HAVE_OS2THREADS
-#include "compat/os2threads.h"
-#elif HAVE_W32THREADS
-#include "compat/w32pthreads.h"
-#endif
 
 typedef struct ThreadContext {
     AVFilterGraph *graph;
@@ -47,11 +39,10 @@ typedef struct ThreadContext {
     pthread_t *workers;
     avfilter_action_func *func;
 
-    /* per-execute perameters */
+    /* per-execute parameters */
     AVFilterContext *ctx;
     void *arg;
     int   *rets;
-    int nb_rets;
     int nb_jobs;
 
     pthread_cond_t last_job_cond;
@@ -68,10 +59,11 @@ static void* attribute_align_arg worker(void *v)
     int our_job      = c->nb_jobs;
     int nb_threads   = c->nb_threads;
     unsigned int last_execute = 0;
-    int self_id;
+    int ret, self_id;
 
     pthread_mutex_lock(&c->current_job_lock);
     self_id = c->current_job++;
+
     for (;;) {
         while (our_job >= c->nb_jobs) {
             if (c->current_job == nb_threads + c->nb_jobs)
@@ -89,7 +81,9 @@ static void* attribute_align_arg worker(void *v)
         }
         pthread_mutex_unlock(&c->current_job_lock);
 
-        c->rets[our_job % c->nb_rets] = c->func(c->ctx, c->arg, our_job, c->nb_jobs);
+        ret = c->func(c->ctx, c->arg, our_job, c->nb_jobs);
+        if (c->rets)
+            c->rets[our_job % c->nb_jobs] = ret;
 
         pthread_mutex_lock(&c->current_job_lock);
         our_job = c->current_job++;
@@ -125,7 +119,6 @@ static int thread_execute(AVFilterContext *ctx, avfilter_action_func *func,
                           void *arg, int *ret, int nb_jobs)
 {
     ThreadContext *c = ctx->graph->internal->thread;
-    int dummy_ret;
 
     if (nb_jobs <= 0)
         return 0;
@@ -137,13 +130,7 @@ static int thread_execute(AVFilterContext *ctx, avfilter_action_func *func,
     c->ctx         = ctx;
     c->arg         = arg;
     c->func        = func;
-    if (ret) {
-        c->rets    = ret;
-        c->nb_rets = nb_jobs;
-    } else {
-        c->rets    = &dummy_ret;
-        c->nb_rets = 1;
-    }
+    c->rets        = ret;
     c->current_execute++;
 
     pthread_cond_broadcast(&c->current_job_cond);

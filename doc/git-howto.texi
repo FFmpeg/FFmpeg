@@ -65,6 +65,21 @@ git clone git@@source.ffmpeg.org:ffmpeg <target>
 This will put the FFmpeg sources into the directory @var{<target>} and let
 you push back your changes to the remote repository.
 
+@example
+git clone gil@@ffmpeg.org:ffmpeg-web <target>
+@end example
+
+This will put the source of the FFmpeg website into the directory
+@var{<target>} and let you push back your changes to the remote repository.
+(Note that @var{gil} stands for GItoLite and is not a typo of @var{git}.)
+
+If you don't have write-access to the ffmpeg-web repository, you can
+create patches after making a read-only ffmpeg-web clone:
+
+@example
+git clone git://ffmpeg.org/ffmpeg-web <target>
+@end example
+
 Make sure that you do not have Windows line endings in your checkouts,
 otherwise you may experience spurious compilation failures. One way to
 achieve this is to run
@@ -393,7 +408,7 @@ with @option{--dry-run} first. And then inspecting the commits listed with
 @command{git log -p 1234567..987654}. The @command{git status} command
 may help in finding local changes that have been forgotten to be added.
 
-Next let the code pass through a full run of our testsuite.
+Next let the code pass through a full run of our test suite.
 
 @itemize
 @item @command{make distclean}
@@ -403,7 +418,7 @@ Next let the code pass through a full run of our testsuite.
 @end itemize
 
 Make sure all your changes have been checked before pushing them, the
-testsuite only checks against regressions and that only to some extend. It does
+test suite only checks against regressions and that only to some extend. It does
 obviously not check newly added features/code to be working unless you have
 added a test for that (which is recommended).
 

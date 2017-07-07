@@ -26,8 +26,9 @@
 
 #include "libavutil/internal.h"
 #include "avfilter.h"
-#include "avfiltergraph.h"
 #include "formats.h"
+#include "framepool.h"
+#include "framequeue.h"
 #include "thread.h"
 #include "version.h"
 #include "video.h"
@@ -85,7 +86,7 @@ struct AVFilterPad {
      * Input pads only.
      *
      * @return >= 0 on success, a negative AVERROR on error. This function
-     * must ensure that samplesref is properly unreferenced on error if it
+     * must ensure that frame is properly unreferenced on error if it
      * hasn't been passed on to another filter.
      */
     int (*filter_frame)(AVFilterLink *link, AVFrame *frame);
@@ -146,6 +147,7 @@ struct AVFilterPad {
 struct AVFilterGraphInternal {
     void *thread;
     avfilter_execute_func *thread_execute;
+    FFFrameQueueGlobal frame_queues;
 };
 
 struct AVFilterInternal {
@@ -225,6 +227,21 @@ int ff_parse_channel_layout(int64_t *ret, int *nret, const char *arg,
 
 void ff_update_link_current_pts(AVFilterLink *link, int64_t pts);
 
+/**
+ * Set the status field of a link from the source filter.
+ * The pts should reflect the timestamp of the status change,
+ * in link time base and relative to the frames timeline.
+ * In particular, for AVERROR_EOF, it should reflect the
+ * end time of the last frame.
+ */
+void ff_avfilter_link_set_in_status(AVFilterLink *link, int status, int64_t pts);
+
+/**
+ * Set the status field of a link from the destination filter.
+ * The pts should probably be left unset (AV_NOPTS_VALUE).
+ */
+void ff_avfilter_link_set_out_status(AVFilterLink *link, int status, int64_t pts);
+
 void ff_command_queue_pop(AVFilterContext *filter);
 
 /* misc trace functions */
@@ -290,6 +307,9 @@ int ff_poll_frame(AVFilterLink *link);
 
 /**
  * Request an input frame from the filter at the other end of the link.
+ *
+ * This function must not be used by filters using the activate callback,
+ * use ff_link_set_frame_wanted() instead.
  *
  * The input filter may pass the request on to its inputs, fulfill the
  * request from an internal buffer or any other means specific to its function.
@@ -358,10 +378,23 @@ int ff_filter_frame(AVFilterLink *link, AVFrame *frame);
  */
 AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name);
 
+int ff_filter_activate(AVFilterContext *filter);
+
 /**
  * Remove a filter from a graph;
  */
 void ff_filter_graph_remove_filter(AVFilterGraph *graph, AVFilterContext *filter);
+
+/**
+ * The filter is aware of hardware frames, and any hardware frame context
+ * should not be automatically propagated through it.
+ */
+#define FF_FILTER_FLAG_HWFRAME_AWARE (1 << 0)
+
+/**
+ * Run one round of processing on a filter graph.
+ */
+int ff_filter_graph_run_once(AVFilterGraph *graph);
 
 /**
  * Normalize the qscale factor
@@ -378,5 +411,11 @@ static inline int ff_norm_qscale(int qscale, int type)
     }
     return qscale;
 }
+
+/**
+ * Get number of threads for current filter instance.
+ * This number is always same or less than graph->nb_threads.
+ */
+int ff_filter_get_nb_threads(AVFilterContext *ctx);
 
 #endif /* AVFILTER_INTERNAL_H */

@@ -57,7 +57,6 @@ typedef struct APEContext {
     APEFrame *frames;
 
     /* Info from Descriptor Block */
-    char magic[4];
     int16_t fileversion;
     int16_t padding1;
     uint32_t descriptorlength;
@@ -102,7 +101,6 @@ static void ape_dumpinfo(AVFormatContext * s, APEContext * ape_ctx)
     int i;
 
     av_log(s, AV_LOG_DEBUG, "Descriptor Block:\n\n");
-    av_log(s, AV_LOG_DEBUG, "magic                = \"%c%c%c%c\"\n", ape_ctx->magic[0], ape_ctx->magic[1], ape_ctx->magic[2], ape_ctx->magic[3]);
     av_log(s, AV_LOG_DEBUG, "fileversion          = %"PRId16"\n", ape_ctx->fileversion);
     av_log(s, AV_LOG_DEBUG, "descriptorlength     = %"PRIu32"\n", ape_ctx->descriptorlength);
     av_log(s, AV_LOG_DEBUG, "headerlength         = %"PRIu32"\n", ape_ctx->headerlength);
@@ -337,7 +335,7 @@ static int ape_read_header(AVFormatContext * s)
 
     ape_dumpinfo(s, ape);
 
-    av_log(s, AV_LOG_DEBUG, "Decoding file - v%d.%02d, compression level %"PRIu16"\n",
+    av_log(s, AV_LOG_VERBOSE, "Decoding file - v%d.%02d, compression level %"PRIu16"\n",
            ape->fileversion / 1000, (ape->fileversion % 1000) / 10,
            ape->compressiontype);
 
@@ -348,23 +346,23 @@ static int ape_read_header(AVFormatContext * s)
 
     total_blocks = (ape->totalframes == 0) ? 0 : ((ape->totalframes - 1) * ape->blocksperframe) + ape->finalframeblocks;
 
-    st->codec->codec_type      = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id        = AV_CODEC_ID_APE;
-    st->codec->codec_tag       = MKTAG('A', 'P', 'E', ' ');
-    st->codec->channels        = ape->channels;
-    st->codec->sample_rate     = ape->samplerate;
-    st->codec->bits_per_coded_sample = ape->bps;
+    st->codecpar->codec_type      = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id        = AV_CODEC_ID_APE;
+    st->codecpar->codec_tag       = MKTAG('A', 'P', 'E', ' ');
+    st->codecpar->channels        = ape->channels;
+    st->codecpar->sample_rate     = ape->samplerate;
+    st->codecpar->bits_per_coded_sample = ape->bps;
 
     st->nb_frames = ape->totalframes;
     st->start_time = 0;
     st->duration  = total_blocks;
     avpriv_set_pts_info(st, 64, 1, ape->samplerate);
 
-    if (ff_alloc_extradata(st->codec, APE_EXTRADATA_SIZE))
+    if (ff_alloc_extradata(st->codecpar, APE_EXTRADATA_SIZE))
         return AVERROR(ENOMEM);
-    AV_WL16(st->codec->extradata + 0, ape->fileversion);
-    AV_WL16(st->codec->extradata + 2, ape->compressiontype);
-    AV_WL16(st->codec->extradata + 4, ape->formatflags);
+    AV_WL16(st->codecpar->extradata + 0, ape->fileversion);
+    AV_WL16(st->codecpar->extradata + 2, ape->compressiontype);
+    AV_WL16(st->codecpar->extradata + 4, ape->formatflags);
 
     pts = 0;
     for (i = 0; i < ape->totalframes; i++) {
@@ -374,7 +372,7 @@ static int ape_read_header(AVFormatContext * s)
     }
 
     /* try to read APE tags */
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         ff_ape_parse_tag(s);
         avio_seek(pb, 0, SEEK_SET);
     }
@@ -418,7 +416,7 @@ static int ape_read_packet(AVFormatContext * s, AVPacket * pkt)
     AV_WL32(pkt->data + 4, ape->frames[ape->currentframe].skip);
     ret = avio_read(s->pb, pkt->data + extra_size, ape->frames[ape->currentframe].size);
     if (ret < 0) {
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
         return ret;
     }
 

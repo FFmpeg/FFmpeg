@@ -141,6 +141,9 @@ AVFilterChannelLayouts *ff_all_channel_counts(void);
 av_warn_unused_result
 AVFilterChannelLayouts *avfilter_make_format64_list(const int64_t *fmts);
 
+av_warn_unused_result
+AVFilterChannelLayouts *ff_make_formatu64_list(const uint64_t *fmts);
+
 
 /**
  * A helper for query_formats() which sets all links to the same list of channel
@@ -183,15 +186,13 @@ void ff_channel_layouts_changeref(AVFilterChannelLayouts **oldref,
 av_warn_unused_result
 int ff_default_query_formats(AVFilterContext *ctx);
 
-/**
- * Set the formats list to all existing formats.
- * This function behaves like ff_default_query_formats(), except it also
- * accepts channel layouts with unknown disposition. It should only be used
- * with audio filters.
+ /**
+ * Set the formats list to all known channel layouts. This function behaves
+ * like ff_default_query_formats(), except it only accepts known channel
+ * layouts. It should only be used with audio filters.
  */
 av_warn_unused_result
-int ff_query_formats_all(AVFilterContext *ctx);
-
+int ff_query_formats_all_layouts(AVFilterContext *ctx);
 
 /**
  * Create a list of supported formats. This is intended for use in
@@ -270,7 +271,6 @@ int ff_formats_ref(AVFilterFormats *formats, AVFilterFormats **ref);
 void ff_formats_unref(AVFilterFormats **ref);
 
 /**
- *
  *         Before                                 After
  *   ________                         ________
  *  |formats |<---------.            |formats |<---------.

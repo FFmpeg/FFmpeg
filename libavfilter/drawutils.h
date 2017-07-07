@@ -55,23 +55,29 @@ typedef struct FFDrawContext {
     uint8_t vsub[MAX_PLANES];  /*< vertical subsampling */
     uint8_t hsub_max;
     uint8_t vsub_max;
+    unsigned flags;
 } FFDrawContext;
 
 typedef struct FFDrawColor {
     uint8_t rgba[4];
     union {
-        uint32_t u32;
-        uint16_t u16;
-        uint8_t  u8[4];
+        uint32_t u32[4];
+        uint16_t u16[8];
+        uint8_t  u8[16];
     } comp[MAX_PLANES];
 } FFDrawColor;
+
+/**
+  * Process alpha pixel component.
+  */
+#define FF_DRAW_PROCESS_ALPHA 1
 
 /**
  * Init a draw context.
  *
  * Only a limited number of pixel formats are supported, if format is not
  * supported the function will return an error.
- * No flags currently defined.
+ * flags is combination of FF_DRAW_* flags.
  * @return  0 for success, < 0 for error
  */
 int ff_draw_init(FFDrawContext *draw, enum AVPixelFormat format, unsigned flags);
@@ -130,7 +136,7 @@ void ff_blend_rectangle(FFDrawContext *draw, FFDrawColor *color,
  */
 void ff_blend_mask(FFDrawContext *draw, FFDrawColor *color,
                    uint8_t *dst[], int dst_linesize[], int dst_w, int dst_h,
-                   uint8_t *mask, int mask_linesize, int mask_w, int mask_h,
+                   const uint8_t *mask, int mask_linesize, int mask_w, int mask_h,
                    int l2depth, unsigned endianness, int x0, int y0);
 
 /**

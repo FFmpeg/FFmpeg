@@ -216,7 +216,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if (s->vad)
         speex_encoder_ctl(s->enc_state, SPEEX_SET_VAD, &s->vad);
 
-    /* Activiting Discontinuous Transmission */
+    /* Activating Discontinuous Transmission */
     if (s->dtx) {
         speex_encoder_ctl(s->enc_state, SPEEX_SET_DTX, &s->dtx);
         if (!(s->abr || s->vad || s->header.vbr))

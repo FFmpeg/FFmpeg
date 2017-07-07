@@ -3,19 +3,19 @@
  *
  * This file is part of FFmpeg.
  *
- * FFmpeg is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
  * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License along
- * with FFmpeg; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 /**
@@ -33,6 +33,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/dict.h"
+#include "libavutil/ffmath.h"
 #include "libavutil/xga_font_data.h"
 #include "libavutil/opt.h"
 #include "libavutil/timestamp.h"
@@ -89,7 +90,7 @@ struct integrator {
 
 struct rect { int x, y, w, h; };
 
-typedef struct {
+typedef struct EBUR128Context {
     const AVClass *class;           ///< AVClass context for log and options purpose
 
     /* peak metering */
@@ -140,7 +141,7 @@ typedef struct {
     int loglevel;                   ///< log level for frame logging
     int metadata;                   ///< whether or not to inject loudness results in frames
     int dual_mono;                  ///< whether or not to treat single channel input files as dual-mono
-    double pan_law;                 ///< pan law value used to calulate dual-mono measurements
+    double pan_law;                 ///< pan law value used to calculate dual-mono measurements
 } EBUR128Context;
 
 enum {
@@ -268,6 +269,7 @@ static int config_video_output(AVFilterLink *outlink)
     }
     outlink->w = ebur128->w;
     outlink->h = ebur128->h;
+    outlink->sample_aspect_ratio = (AVRational){1,1};
 
 #define PAD 8
 
@@ -298,7 +300,7 @@ static int config_video_output(AVFilterLink *outlink)
         ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!outpicref)
         return AVERROR(ENOMEM);
-    outlink->sample_aspect_ratio = (AVRational){1,1};
+    outpicref->sample_aspect_ratio = (AVRational){1,1};
 
     /* init y references values (to draw LU lines) */
     ebur128->y_line_ref = av_calloc(ebur128->graph.h + 1, sizeof(*ebur128->y_line_ref));
@@ -435,7 +437,7 @@ static int config_audio_output(AVFilterLink *outlink)
     return 0;
 }
 
-#define ENERGY(loudness) (pow(10, ((loudness) + 0.691) / 10.))
+#define ENERGY(loudness) (ff_exp10(((loudness) + 0.691) / 10.))
 #define LOUDNESS(energy) (-0.691 + 10 * log10(energy))
 #define DBFS(energy) (20 * log10(energy))
 
@@ -663,12 +665,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                     nb_integrated  += nb_v;
                     integrated_sum += nb_v * ebur128->i400.histogram[i].energy;
                 }
-                if (nb_integrated)
+                if (nb_integrated) {
                     ebur128->integrated_loudness = LOUDNESS(integrated_sum / nb_integrated);
                     /* dual-mono correction */
                     if (nb_channels == 1 && ebur128->dual_mono) {
                         ebur128->integrated_loudness -= ebur128->pan_law;
                     }
+                }
             }
 
             /* LRA */

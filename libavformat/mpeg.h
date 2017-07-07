@@ -1,5 +1,5 @@
 /*
- * MPEG1/2 muxer and demuxer common defines
+ * MPEG-1/2 muxer and demuxer common defines
  * Copyright (c) 2000, 2001, 2002 Fabrice Bellard
  *
  * This file is part of FFmpeg.

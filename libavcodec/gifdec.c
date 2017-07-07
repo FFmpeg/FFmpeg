@@ -130,7 +130,7 @@ static void gif_copy_img_rect(const uint32_t *src, uint32_t *dst,
 static int gif_read_image(GifState *s, AVFrame *frame)
 {
     int left, top, width, height, bits_per_pixel, code_size, flags, pw;
-    int is_interleaved, has_local_palette, y, pass, y1, linesize, pal_size;
+    int is_interleaved, has_local_palette, y, pass, y1, linesize, pal_size, lzwed_len;
     uint32_t *ptr, *pal, *px, *pr, *ptr1;
     int ret;
     uint8_t *idx;
@@ -293,7 +293,8 @@ static int gif_read_image(GifState *s, AVFrame *frame)
 
  decode_tail:
     /* read the garbage data until end marker is found */
-    ff_lzw_decode_tail(s->lzw);
+    lzwed_len = ff_lzw_decode_tail(s->lzw);
+    bytestream2_skipu(&s->gb, lzwed_len);
 
     /* Graphic Control Extension's scope is single frame.
      * Remove its influence. */
@@ -461,9 +462,13 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, A
     bytestream2_init(&s->gb, avpkt->data, avpkt->size);
 
     s->frame->pts     = avpkt->pts;
+#if FF_API_PKT_PTS
+FF_DISABLE_DEPRECATION_WARNINGS
     s->frame->pkt_pts = avpkt->pts;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     s->frame->pkt_dts = avpkt->dts;
-    av_frame_set_pkt_duration(s->frame, avpkt->duration);
+    s->frame->pkt_duration = avpkt->duration;
 
     if (avpkt->size >= 6) {
         s->keyframe = memcmp(avpkt->data, gif87a_sig, 6) == 0 ||

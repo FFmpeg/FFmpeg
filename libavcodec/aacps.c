@@ -196,8 +196,13 @@ int AAC_RENAME(ff_ps_read_data)(AVCodecContext *avctx, GetBitContext *gb_host, P
 
     ps->border_position[0] = -1;
     if (ps->frame_class) {
-        for (e = 1; e <= ps->num_env; e++)
+        for (e = 1; e <= ps->num_env; e++) {
             ps->border_position[e] = get_bits(gb, 5);
+            if (ps->border_position[e] < ps->border_position[e-1]) {
+                av_log(avctx, AV_LOG_ERROR, "border_position non monotone.\n");
+                goto err;
+            }
+        }
     } else
         for (e = 1; e <= ps->num_env; e++)
             ps->border_position[e] = (e * numQMFSlots >> ff_log2_tab[ps->num_env]) - 1;
@@ -940,9 +945,9 @@ static void stereo_processing(PSContext *ps, INTFLOAT (*l)[32][2], INTFLOAT (*r)
             LOCAL_ALIGNED_16(INTFLOAT, h_step, [2], [4]);
             int start = ps->border_position[e];
             int stop  = ps->border_position[e+1];
-            INTFLOAT width = Q30(1.f) / (stop - start);
+            INTFLOAT width = Q30(1.f) / ((stop - start) ? (stop - start) : 1);
 #if USE_FIXED
-            width <<= 1;
+            width = FFMIN(2U*width, INT_MAX);
 #endif
             b = k_to_i[k];
             h[0][0] = H11[0][e][b];
@@ -974,9 +979,10 @@ static void stereo_processing(PSContext *ps, INTFLOAT (*l)[32][2], INTFLOAT (*r)
                 h_step[1][2] = AAC_MSUB31_V3(H21[1][e+1][b], h[1][2], width);
                 h_step[1][3] = AAC_MSUB31_V3(H22[1][e+1][b], h[1][3], width);
             }
-            ps->dsp.stereo_interpolate[!PS_BASELINE && ps->enable_ipdopd](
-                l[k] + start + 1, r[k] + start + 1,
-                h, h_step, stop - start);
+            if (stop - start)
+                ps->dsp.stereo_interpolate[!PS_BASELINE && ps->enable_ipdopd](
+                    l[k] + 1 + start, r[k] + 1 + start,
+                    h, h_step, stop - start);
         }
     }
 }

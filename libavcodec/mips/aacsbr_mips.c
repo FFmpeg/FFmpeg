@@ -311,6 +311,7 @@ static int sbr_x_gen_mips(SpectralBandReplication *sbr, float X[2][38][64],
 }
 
 #if HAVE_MIPSFPU
+#if !HAVE_MIPS32R6 && !HAVE_MIPS64R6
 static void sbr_hf_assemble_mips(float Y1[38][64][2],
                             const float X_high[64][40][2],
                             SpectralBandReplication *sbr, SBRData *ch_data,
@@ -603,6 +604,7 @@ static void sbr_hf_inverse_filter_mips(SBRDSPContext *dsp,
         }
     }
 }
+#endif /* !HAVE_MIPS32R6 && !HAVE_MIPS64R6 */
 #endif /* HAVE_MIPSFPU */
 #endif /* HAVE_INLINE_ASM */
 
@@ -612,8 +614,10 @@ void ff_aacsbr_func_ptr_init_mips(AACSBRContext *c)
     c->sbr_lf_gen            = sbr_lf_gen_mips;
     c->sbr_x_gen             = sbr_x_gen_mips;
 #if HAVE_MIPSFPU
+#if !HAVE_MIPS32R6 && !HAVE_MIPS64R6
     c->sbr_hf_inverse_filter = sbr_hf_inverse_filter_mips;
     c->sbr_hf_assemble       = sbr_hf_assemble_mips;
+#endif /* !HAVE_MIPS32R6 && !HAVE_MIPS64R6 */
 #endif /* HAVE_MIPSFPU */
 #endif /* HAVE_INLINE_ASM */
 }

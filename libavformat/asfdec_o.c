@@ -20,7 +20,6 @@
  */
 
 #include "libavutil/attributes.h"
-#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bswap.h"
 #include "libavutil/common.h"
@@ -122,8 +121,8 @@ typedef struct ASFContext {
 
     int stream_index; // from packet header, for the subpayload case
 
-    // packet parameteres
-    uint64_t sub_header_offset; // offset of subplayload header
+    // packet parameters
+    uint64_t sub_header_offset; // offset of subpayload header
     int64_t sub_dts;
     uint8_t dts_delta; // for subpayloads
     uint32_t packet_size_internal; // packet size stored inside ASFPacket, can be 0
@@ -167,7 +166,7 @@ static void swap_guid(ff_asf_guid guid)
 
 static void align_position(AVIOContext *pb,  int64_t offset, uint64_t size)
 {
-    if (avio_tell(pb) != offset + size)
+    if (size < INT64_MAX - offset && avio_tell(pb) != offset + size)
         avio_seek(pb, offset + size, SEEK_SET);
 }
 
@@ -178,6 +177,9 @@ static int asf_read_unknown(AVFormatContext *s, const GUIDParseTable *g)
     uint64_t size   = avio_rl64(pb);
     int ret;
 
+    if (size > INT64_MAX)
+        return AVERROR_INVALIDDATA;
+
     if (asf->is_header)
         asf->unknown_size = size;
     asf->is_header = 0;
@@ -187,8 +189,13 @@ static int asf_read_unknown(AVFormatContext *s, const GUIDParseTable *g)
         if ((ret = detect_unknown_subobject(s, asf->unknown_offset,
                                             asf->unknown_size)) < 0)
             return ret;
-    } else
+    } else {
+        if (size < 24) {
+            av_log(s, AV_LOG_ERROR, "Too small size %"PRIu64" (< 24).\n", size);
+            return AVERROR_INVALIDDATA;
+        }
         avio_skip(pb, size - 24);
+    }
 
     return 0;
 }
@@ -263,7 +270,7 @@ static int asf_read_metadata(AVFormatContext *s, const char *title, uint16_t len
     return 0;
 }
 
-static int asf_read_value(AVFormatContext *s, const uint8_t *name, uint16_t name_len,
+static int asf_read_value(AVFormatContext *s, const uint8_t *name,
                           uint16_t val_len, int type, AVDictionary **met)
 {
     int ret;
@@ -328,7 +335,7 @@ static int asf_read_generic_value(AVIOContext *pb, int type, uint64_t *value)
 }
 
 static int asf_set_metadata(AVFormatContext *s, const uint8_t *name,
-                            uint16_t name_len, int type, AVDictionary **met)
+                            int type, AVDictionary **met)
 {
     AVIOContext *pb = s->pb;
     uint64_t value;
@@ -423,8 +430,8 @@ static int asf_read_picture(AVFormatContext *s, int len)
     }
 
     st->disposition              |= AV_DISPOSITION_ATTACHED_PIC;
-    st->codec->codec_type         = asf_st->type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id           = id;
+    st->codecpar->codec_type      = asf_st->type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id        = id;
     st->attached_pic              = pkt;
     st->attached_pic.stream_index = asf_st->index = st->index;
     st->attached_pic.flags       |= AV_PKT_FLAG_KEY;
@@ -444,7 +451,7 @@ static int asf_read_picture(AVFormatContext *s, int len)
 
 fail:
     av_freep(&desc);
-    av_free_packet(&pkt);
+    av_packet_unref(&pkt);
     return ret;
 }
 
@@ -467,7 +474,7 @@ static int process_metadata(AVFormatContext *s, const uint8_t *name, uint16_t na
     if (val_len) {
         switch (type) {
         case ASF_UNICODE:
-            asf_read_value(s, name, name_len, val_len, type, met);
+            asf_read_value(s, name, val_len, type, met);
             break;
         case ASF_BYTE_ARRAY:
             if (!strcmp(name, "WM/Picture")) // handle cover art
@@ -475,13 +482,13 @@ static int process_metadata(AVFormatContext *s, const uint8_t *name, uint16_t na
             else if (!strcmp(name, "ID3")) // handle ID3 tag
                 get_id3_tag(s, val_len);
             else
-                asf_read_value(s, name, name_len, val_len, type, met);
+                asf_read_value(s, name, val_len, type, met);
             break;
         case ASF_GUID:
             ff_get_guid(s->pb, &guid);
             break;
         default:
-            if ((ret = asf_set_metadata(s, name, name_len, type, met)) < 0)
+            if ((ret = asf_set_metadata(s, name, type, met)) < 0)
                 return ret;
             break;
         }
@@ -687,26 +694,26 @@ static int parse_video_info(AVIOContext *pb, AVStream *st)
     uint16_t size;
     unsigned int tag;
 
-    st->codec->width  = avio_rl32(pb);
-    st->codec->height = avio_rl32(pb);
+    st->codecpar->width  = avio_rl32(pb);
+    st->codecpar->height = avio_rl32(pb);
     avio_skip(pb, 1); // skip reserved flags
     size = avio_rl16(pb); // size of the Format Data
     tag  = ff_get_bmp_header(pb, st, NULL);
-    st->codec->codec_tag = tag;
-    st->codec->codec_id  = ff_codec_get_id(ff_codec_bmp_tags, tag);
+    st->codecpar->codec_tag = tag;
+    st->codecpar->codec_id  = ff_codec_get_id(ff_codec_bmp_tags, tag);
 
     if (size > BMP_HEADER_SIZE) {
         int ret;
-        st->codec->extradata_size  = size - BMP_HEADER_SIZE;
-        if (!(st->codec->extradata = av_malloc(st->codec->extradata_size +
+        st->codecpar->extradata_size  = size - BMP_HEADER_SIZE;
+        if (!(st->codecpar->extradata = av_malloc(st->codecpar->extradata_size +
                                                AV_INPUT_BUFFER_PADDING_SIZE))) {
-            st->codec->extradata_size = 0;
+            st->codecpar->extradata_size = 0;
             return AVERROR(ENOMEM);
         }
-        memset(st->codec->extradata + st->codec->extradata_size , 0,
+        memset(st->codecpar->extradata + st->codecpar->extradata_size , 0,
                AV_INPUT_BUFFER_PADDING_SIZE);
-        if ((ret = avio_read(pb, st->codec->extradata,
-                             st->codec->extradata_size)) < 0)
+        if ((ret = avio_read(pb, st->codecpar->extradata,
+                             st->codecpar->extradata_size)) < 0)
             return ret;
     }
     return 0;
@@ -765,7 +772,7 @@ static int asf_read_stream_properties(AVFormatContext *s, const GUIDParseTable *
     if (!st)
         return AVERROR(ENOMEM);
     avpriv_set_pts_info(st, 32, 1, 1000); // pts should be dword, in milliseconds
-    st->codec->codec_type = type;
+    st->codecpar->codec_type = type;
     asf->asf_st[asf->nb_streams] = av_mallocz(sizeof(*asf_st));
     if (!asf->asf_st[asf->nb_streams])
         return AVERROR(ENOMEM);
@@ -782,7 +789,7 @@ static int asf_read_stream_properties(AVFormatContext *s, const GUIDParseTable *
     switch (type) {
     case AVMEDIA_TYPE_AUDIO:
         asf_st->type = AVMEDIA_TYPE_AUDIO;
-        if ((ret = ff_get_wav_header(s, pb, st->codec, ts_data_len, 0)) < 0)
+        if ((ret = ff_get_wav_header(s, pb, st->codecpar, ts_data_len, 0)) < 0)
             return ret;
         break;
     case AVMEDIA_TYPE_VIDEO:
@@ -821,7 +828,7 @@ static void set_language(AVFormatContext *s, const char *rfc1766, AVDictionary *
     // language abbr should contain at least 2 chars
     if (rfc1766 && strlen(rfc1766) > 1) {
         const char primary_tag[3] = { rfc1766[0], rfc1766[1], '\0' }; // ignore country code if any
-        const char *iso6392       = av_convert_lang_to(primary_tag,
+        const char *iso6392       = ff_convert_lang_to(primary_tag,
                                                        AV_LANG_ISO639_2_BIBL);
         if (iso6392)
             if (av_dict_set(met, "language", iso6392, 0) < 0)
@@ -859,7 +866,7 @@ static int asf_read_ext_stream_properties(AVFormatContext *s, const GUIDParseTab
     if (st) {
         st->start_time           = start_time;
         st->duration             = end_time - start_time;
-        st->codec->bit_rate      = bitrate;
+        st->codecpar->bit_rate   = bitrate;
         st->avg_frame_rate.num   = 10000000;
         st->avg_frame_rate.den   = time_per_frame;
     }
@@ -953,7 +960,7 @@ static int asf_read_data(AVFormatContext *s, const GUIDParseTable *g)
                size, asf->nb_packets);
     avio_skip(pb, 2); // skip reserved field
     asf->first_packet_offset = avio_tell(pb);
-    if (pb->seekable && !(asf->b_flags & ASF_FLAG_BROADCAST))
+    if ((pb->seekable & AVIO_SEEKABLE_NORMAL) && !(asf->b_flags & ASF_FLAG_BROADCAST))
         align_position(pb, asf->offset, asf->data_size);
 
     return 0;
@@ -967,7 +974,7 @@ static int asf_read_simple_index(AVFormatContext *s, const GUIDParseTable *g)
     uint64_t interval; // index entry time interval in 100 ns units, usually it's 1s
     uint32_t pkt_num, nb_entries;
     int32_t prev_pkt_num = -1;
-    int i;
+    int i, ret;
     uint64_t size = avio_rl64(pb);
 
     // simple index objects should be ordered by stream number, this loop tries to find
@@ -989,7 +996,11 @@ static int asf_read_simple_index(AVFormatContext *s, const GUIDParseTable *g)
     nb_entries = avio_rl32(pb);
     for (i = 0; i < nb_entries; i++) {
         pkt_num = avio_rl32(pb);
-        avio_skip(pb, 2);
+        ret = avio_skip(pb, 2);
+        if (ret < 0) {
+            av_log(s, AV_LOG_ERROR, "Skipping failed in asf_read_simple_index.\n");
+            return ret;
+        }
         if (prev_pkt_num != pkt_num) {
             av_add_index_entry(st, asf->first_packet_offset + asf->packet_size *
                                pkt_num, av_rescale(interval, i, 10000),
@@ -1128,7 +1139,7 @@ static void reset_packet(ASFPacket *asf_pkt)
     asf_pkt->flags     = 0;
     asf_pkt->dts       = 0;
     asf_pkt->duration  = 0;
-    av_free_packet(&asf_pkt->avpkt);
+    av_packet_unref(&asf_pkt->avpkt);
     av_init_packet(&asf_pkt->avpkt);
 }
 
@@ -1136,14 +1147,15 @@ static int asf_read_replicated_data(AVFormatContext *s, ASFPacket *asf_pkt)
 {
     ASFContext *asf = s->priv_data;
     AVIOContext *pb = s->pb;
-    int ret;
+    int ret, data_size;
 
     if (!asf_pkt->data_size) {
-        asf_pkt->data_size = asf_pkt->size_left = avio_rl32(pb); // read media object size
-        if (asf_pkt->data_size <= 0)
+        data_size = avio_rl32(pb); // read media object size
+        if (data_size <= 0)
             return AVERROR_INVALIDDATA;
-        if ((ret = av_new_packet(&asf_pkt->avpkt, asf_pkt->data_size)) < 0)
+        if ((ret = av_new_packet(&asf_pkt->avpkt, data_size)) < 0)
             return ret;
+        asf_pkt->data_size = asf_pkt->size_left = data_size;
     } else
         avio_skip(pb, 4); // reading of media object size is already done
     asf_pkt->dts = avio_rl32(pb); // read presentation time
@@ -1204,22 +1216,22 @@ static int asf_read_multiple_payload(AVFormatContext *s, AVPacket *pkt,
     return 0;
 }
 
-static int asf_read_single_payload(AVFormatContext *s, AVPacket *pkt,
-                               ASFPacket *asf_pkt)
+static int asf_read_single_payload(AVFormatContext *s, ASFPacket *asf_pkt)
 {
     ASFContext *asf = s->priv_data;
     AVIOContext *pb = s->pb;
     int64_t  offset;
     uint64_t size;
     unsigned char *p;
-    int ret;
+    int ret, data_size;
 
     if (!asf_pkt->data_size) {
-        asf_pkt->data_size = asf_pkt->size_left = avio_rl32(pb); // read media object size
-        if (asf_pkt->data_size <= 0)
+        data_size = avio_rl32(pb); // read media object size
+        if (data_size <= 0)
             return AVERROR_EOF;
-        if ((ret = av_new_packet(&asf_pkt->avpkt, asf_pkt->data_size)) < 0)
+        if ((ret = av_new_packet(&asf_pkt->avpkt, data_size)) < 0)
             return ret;
+        asf_pkt->data_size = asf_pkt->size_left = data_size;
     } else
         avio_skip(pb, 4); // skip media object size
     asf_pkt->dts = avio_rl32(pb); // read presentation time
@@ -1276,8 +1288,20 @@ static int asf_read_payload(AVFormatContext *s, AVPacket *pkt)
                 break;
             }
         }
-        if (!asf_pkt)
-            return AVERROR_INVALIDDATA;
+        if (!asf_pkt) {
+            if (asf->packet_offset + asf->packet_size <= asf->data_offset + asf->data_size) {
+                if (!asf->packet_size) {
+                    av_log(s, AV_LOG_ERROR, "Invalid packet size 0.\n");
+                    return AVERROR_INVALIDDATA;
+                }
+                avio_seek(pb, asf->packet_offset + asf->packet_size, SEEK_SET);
+                av_log(s, AV_LOG_WARNING, "Skipping the stream with the invalid stream index %d.\n",
+                       asf->stream_index);
+                return AVERROR(EAGAIN);
+            } else
+                return AVERROR_INVALIDDATA;
+        }
+
         if (stream_num >> 7)
             asf_pkt->flags |= AV_PKT_FLAG_KEY;
         READ_LEN(asf->prop_flags & ASF_PL_MASK_MEDIA_OBJECT_NUMBER_LENGTH_FIELD_SIZE,
@@ -1302,7 +1326,7 @@ static int asf_read_payload(AVFormatContext *s, AVPacket *pkt)
             if ((ret = asf_read_subpayload(s, pkt, 1)) < 0)
                 return ret;
         } else {
-            if ((ret = asf_read_single_payload(s, pkt, asf_pkt)) < 0)
+            if ((ret = asf_read_single_payload(s, asf_pkt)) < 0)
                 return ret;
         }
     } else {
@@ -1395,7 +1419,7 @@ static int asf_deinterleave(AVFormatContext *s, ASFPacket *asf_pkt, int st_num)
         if (p > asf_pkt->avpkt.data + asf_pkt->data_size)
             break;
     }
-    av_free_packet(&asf_pkt->avpkt);
+    av_packet_unref(&asf_pkt->avpkt);
     asf_pkt->avpkt = pkt;
 
     return 0;
@@ -1413,13 +1437,21 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
     while (!pb->eof_reached) {
         if (asf->state == PARSE_PACKET_HEADER) {
             asf_read_packet_header(s);
+            if (pb->eof_reached)
+                break;
             if (!asf->nb_mult_left)
                 asf->state = READ_SINGLE;
             else
                 asf->state = READ_MULTI;
         }
-        if ((ret = asf_read_payload(s, pkt)) < 0)
+        ret = asf_read_payload(s, pkt);
+        if (ret == AVERROR(EAGAIN)) {
+            asf->state = PARSE_PACKET_HEADER;
+            continue;
+        }
+        else if (ret < 0)
             return ret;
+
         switch (asf->state) {
         case READ_SINGLE:
             if (!asf->sub_left)
@@ -1485,7 +1517,7 @@ static int asf_read_close(AVFormatContext *s)
     for (i = 0; i < ASF_MAX_STREAMS; i++) {
         av_dict_free(&asf->asf_sd[i].asf_met);
         if (i < asf->nb_streams) {
-            av_free_packet(&asf->asf_st[i]->pkt.avpkt);
+            av_packet_unref(&asf->asf_st[i]->pkt.avpkt);
             av_freep(&asf->asf_st[i]);
         }
     }
@@ -1521,7 +1553,7 @@ static void reset_packet_state(AVFormatContext *s)
         pkt->flags     = 0;
         pkt->dts       = 0;
         pkt->duration  = 0;
-        av_free_packet(&pkt->avpkt);
+        av_packet_unref(&pkt->avpkt);
         av_init_packet(&pkt->avpkt);
     }
 }
@@ -1588,11 +1620,11 @@ static int64_t asf_read_timestamp(AVFormatContext *s, int stream_index,
         }
         if (st_found)
             break;
-        av_free_packet(&pkt);
+        av_packet_unref(&pkt);
     }
     *pos = pkt_pos;
 
-    av_free_packet(&pkt);
+    av_packet_unref(&pkt);
     return dts;
 }
 
@@ -1706,7 +1738,9 @@ static int asf_read_header(AVFormatContext *s)
             size = avio_rl64(pb);
             align_position(pb, asf->offset, size);
         }
-        if (asf->data_reached && (!pb->seekable || (asf->b_flags & ASF_FLAG_BROADCAST)))
+        if (asf->data_reached &&
+            (!(pb->seekable & AVIO_SEEKABLE_NORMAL) ||
+             (asf->b_flags & ASF_FLAG_BROADCAST)))
             break;
     }
 
@@ -1715,7 +1749,7 @@ static int asf_read_header(AVFormatContext *s)
         ret = AVERROR_INVALIDDATA;
         goto failed;
     }
-    if (pb->seekable)
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL)
         avio_seek(pb, asf->first_packet_offset, SEEK_SET);
 
     for (i = 0; i < asf->nb_streams; i++) {

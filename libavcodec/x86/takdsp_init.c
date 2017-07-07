@@ -29,7 +29,7 @@ void ff_tak_decorrelate_sf_sse4(int32_t *p1, int32_t *p2, int length, int dshift
 
 av_cold void ff_takdsp_init_x86(TAKDSPContext *c)
 {
-#if HAVE_YASM
+#if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_SSE2(cpu_flags)) {

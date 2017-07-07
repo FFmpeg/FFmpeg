@@ -28,9 +28,12 @@
 
 #include "libavutil/error.h"
 #include "libavutil/mem.h"
+#include "libavutil/intreadwrite.h"
 
 #include "avcodec.h"
+#include "bsf.h"
 #include "jpegtables.h"
+#include "mjpeg.h"
 
 static const uint8_t jpeg_header[] = {
     0xff, 0xd8,                     // SOI
@@ -75,42 +78,66 @@ static uint8_t *append_dht_segment(uint8_t *buf)
     return buf;
 }
 
-static int mjpeg2jpeg_filter(AVBitStreamFilterContext *bsfc,
-                             AVCodecContext *avctx, const char *args,
-                             uint8_t **poutbuf, int *poutbuf_size,
-                             const uint8_t *buf, int buf_size,
-                             int keyframe)
+static int mjpeg2jpeg_filter(AVBSFContext *ctx, AVPacket *out)
 {
+    AVPacket *in;
+    int ret = 0;
     int input_skip, output_size;
-    uint8_t *output, *out;
+    uint8_t *output;
 
-    if (buf_size < 12) {
-        av_log(avctx, AV_LOG_ERROR, "input is truncated\n");
-        return AVERROR_INVALIDDATA;
+    ret = ff_bsf_get_packet(ctx, &in);
+    if (ret < 0)
+        return ret;
+
+    if (in->size < 12) {
+        av_log(ctx, AV_LOG_ERROR, "input is truncated\n");
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
     }
-    if (memcmp("AVI1", buf + 6, 4)) {
-        av_log(avctx, AV_LOG_ERROR, "input is not MJPEG/AVI1\n");
-        return AVERROR_INVALIDDATA;
+    if (AV_RB16(in->data) != 0xffd8) {
+        av_log(ctx, AV_LOG_ERROR, "input is not MJPEG\n");
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
     }
-    input_skip = (buf[4] << 8) + buf[5] + 4;
-    if (buf_size < input_skip) {
-        av_log(avctx, AV_LOG_ERROR, "input is truncated\n");
-        return AVERROR_INVALIDDATA;
+    if (in->data[2] == 0xff && in->data[3] == APP0) {
+        input_skip = (in->data[4] << 8) + in->data[5] + 4;
+    } else {
+        input_skip = 2;
     }
-    output_size = buf_size - input_skip +
+    if (in->size < input_skip) {
+        av_log(ctx, AV_LOG_ERROR, "input is truncated\n");
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
+    }
+    output_size = in->size - input_skip +
                   sizeof(jpeg_header) + dht_segment_size;
-    output = out = av_malloc(output_size);
-    if (!output)
-        return AVERROR(ENOMEM);
-    out = append(out, jpeg_header, sizeof(jpeg_header));
-    out = append_dht_segment(out);
-    out = append(out, buf + input_skip, buf_size - input_skip);
-    *poutbuf = output;
-    *poutbuf_size = output_size;
-    return 1;
+    ret = av_new_packet(out, output_size);
+    if (ret < 0)
+        goto fail;
+
+    output = out->data;
+
+    output = append(output, jpeg_header, sizeof(jpeg_header));
+    output = append_dht_segment(output);
+    output = append(output, in->data + input_skip, in->size - input_skip);
+
+    ret = av_packet_copy_props(out, in);
+    if (ret < 0)
+        goto fail;
+
+fail:
+    if (ret < 0)
+        av_packet_unref(out);
+    av_packet_free(&in);
+    return ret;
 }
 
-AVBitStreamFilter ff_mjpeg2jpeg_bsf = {
+static const enum AVCodecID codec_ids[] = {
+    AV_CODEC_ID_MJPEG, AV_CODEC_ID_NONE,
+};
+
+const AVBitStreamFilter ff_mjpeg2jpeg_bsf = {
     .name           = "mjpeg2jpeg",
     .filter         = mjpeg2jpeg_filter,
+    .codec_ids      = codec_ids,
 };

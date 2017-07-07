@@ -25,11 +25,16 @@
 #include <stdint.h>
 #include "avcodec.h"
 #include "libavutil/internal.h"
+#include "libavutil/intreadwrite.h"
 
 /** Additional profile info flags */
 #define DNXHD_INTERLACED   (1<<0)
 #define DNXHD_MBAFF        (1<<1)
 #define DNXHD_444          (1<<2)
+
+/** Frame headers, extra 0x00 added to end for parser */
+#define DNXHD_HEADER_INITIAL 0x000002800100
+#define DNXHD_HEADER_444     0x000002800200
 
 /** Indicate that a CIDEntry value must be read in the bitstream */
 #define DNXHD_VARIABLE 0
@@ -51,6 +56,7 @@ typedef struct CIDEntry {
     const uint8_t *run_bits, *run;
     int bit_rates[5]; ///< Helper to choose variants, rounded to nearest 5Mb/s
     AVRational frame_rates[5];
+    AVRational packet_scale;
 } CIDEntry;
 
 extern const CIDEntry ff_dnxhd_cid_table[];
@@ -59,7 +65,49 @@ int ff_dnxhd_get_cid_table(int cid);
 int ff_dnxhd_find_cid(AVCodecContext *avctx, int bit_depth);
 void ff_dnxhd_print_profiles(AVCodecContext *avctx, int loglevel);
 
+static av_always_inline uint64_t ff_dnxhd_check_header_prefix_hr(uint64_t prefix)
+{
+    uint64_t data_offset = prefix >> 16;
+    if ((prefix & 0xFFFF0000FFFFLL) == 0x0300 &&
+         data_offset >= 0x0280 && data_offset <= 0x2170 &&
+         (data_offset & 3) == 0)
+        return prefix;
+    return 0;
+}
+
+static av_always_inline uint64_t ff_dnxhd_check_header_prefix(uint64_t prefix)
+{
+    if (prefix == DNXHD_HEADER_INITIAL ||
+        prefix == DNXHD_HEADER_444     ||
+        ff_dnxhd_check_header_prefix_hr(prefix))
+        return prefix;
+    return 0;
+}
+
+static av_always_inline uint64_t ff_dnxhd_parse_header_prefix(const uint8_t *buf)
+{
+    uint64_t prefix = AV_RB32(buf);
+    prefix = (prefix << 16) | buf[4] << 8;
+    return ff_dnxhd_check_header_prefix(prefix);
+}
+
+static av_always_inline int ff_dnxhd_get_hr_frame_size(int cid, int w, int h)
+{
+    int result, i = ff_dnxhd_get_cid_table(cid);
+
+    if (i < 0)
+        return i;
+
+    result = ((h + 15) / 16) * ((w + 15) / 16) * (int64_t)ff_dnxhd_cid_table[i].packet_scale.num / ff_dnxhd_cid_table[i].packet_scale.den;
+    result = (result + 2048) / 4096 * 4096;
+
+    return FFMAX(result, 8192);
+}
+
 int avpriv_dnxhd_get_frame_size(int cid);
 int avpriv_dnxhd_get_interlaced(int cid);
-
+#if LIBAVCODEC_VERSION_MAJOR < 58
+attribute_deprecated
+uint64_t avpriv_dnxhd_parse_header_prefix(const uint8_t *buf);
+#endif
 #endif /* AVCODEC_DNXHDDATA_H */

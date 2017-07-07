@@ -25,6 +25,7 @@
 #include <stdint.h>
 
 #include "libavutil/common.h"
+#include "libavutil/reverse.h"
 #include "config.h"
 
 #define MAX_NEG_CROP 1024
@@ -33,6 +34,7 @@ extern const uint32_t ff_inverse[257];
 extern const uint8_t ff_sqrt_tab[256];
 extern const uint8_t ff_crop_tab[256 + 2 * MAX_NEG_CROP];
 extern const uint8_t ff_zigzag_direct[64];
+extern const uint8_t ff_zigzag_scan[16+1];
 
 #if   ARCH_ARM
 #   include "arm/mathops.h"
@@ -95,15 +97,6 @@ static av_always_inline unsigned UMULH(unsigned a, unsigned b){
 #define mid_pred mid_pred
 static inline av_const int mid_pred(int a, int b, int c)
 {
-#if 0
-    int t= (a-b)&((a-b)>>31);
-    a-=t;
-    b+=t;
-    b-= (b-c)&((b-c)>>31);
-    b+= (a-b)&((a-b)>>31);
-
-    return b;
-#else
     if(a>b){
         if(c>b){
             if(c>a) b=a;
@@ -116,7 +109,6 @@ static inline av_const int mid_pred(int a, int b, int c)
         }
     }
     return b;
-#endif
 }
 #endif
 
@@ -246,6 +238,14 @@ static inline int8_t ff_u8_to_s8(uint8_t a)
     } b;
     b.u8 = a;
     return b.s8;
+}
+
+static av_always_inline uint32_t bitswap_32(uint32_t x)
+{
+    return (uint32_t)ff_reverse[ x        & 0xFF] << 24 |
+           (uint32_t)ff_reverse[(x >> 8)  & 0xFF] << 16 |
+           (uint32_t)ff_reverse[(x >> 16) & 0xFF] << 8  |
+           (uint32_t)ff_reverse[ x >> 24];
 }
 
 #endif /* AVCODEC_MATHOPS_H */

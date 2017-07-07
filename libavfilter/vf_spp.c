@@ -374,11 +374,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             /* if the qp stride is not set, it means the QP are only defined on
              * a line basis */
             if (!qp_stride) {
-                w = FF_CEIL_RSHIFT(inlink->w, 4);
+                w = AV_CEIL_RSHIFT(inlink->w, 4);
                 h = 1;
             } else {
                 w = qp_stride;
-                h = FF_CEIL_RSHIFT(inlink->h, 4);
+                h = AV_CEIL_RSHIFT(inlink->h, 4);
             }
 
             if (w * h > s->non_b_qp_alloc_size) {
@@ -400,8 +400,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             qp_table = s->non_b_qp_table;
 
         if (qp_table || s->qp) {
-            const int cw = FF_CEIL_RSHIFT(inlink->w, s->hsub);
-            const int ch = FF_CEIL_RSHIFT(inlink->h, s->vsub);
+            const int cw = AV_CEIL_RSHIFT(inlink->w, s->hsub);
+            const int ch = AV_CEIL_RSHIFT(inlink->h, s->vsub);
 
             /* get a new frame if in-place is not possible or if the dimensions
              * are not multiple of 8 */

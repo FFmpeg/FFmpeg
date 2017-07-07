@@ -193,16 +193,17 @@ static void create_default_qtables(uint8_t *qtables, uint8_t q)
 {
     int factor = q;
     int i;
+    uint16_t S;
 
     factor = av_clip(q, 1, 99);
 
     if (q < 50)
-        q = 5000 / factor;
+        S = 5000 / factor;
     else
-        q = 200 - factor * 2;
+        S = 200 - factor * 2;
 
     for (i = 0; i < 128; i++) {
-        int val = (default_quantizers[i] * q + 50) / 100;
+        int val = (default_quantizers[i] * S + 50) / 100;
 
         /* Limit the quantizers to 1 <= q <= 255. */
         val = av_clip(val, 1, 255);
@@ -245,14 +246,8 @@ static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
         len -= 4;
         type &= ~0x40;
     }
-    /* Parse the restart marker header. */
-    if (type > 63) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Unimplemented RTP/JPEG restart marker header.\n");
-        return AVERROR_PATCHWELCOME;
-    }
     if (type > 1) {
-        av_log(ctx, AV_LOG_ERROR, "Unimplemented RTP/JPEG type %d\n", type);
+        avpriv_report_missing_feature(ctx, "RTP/JPEG type %"PRIu8, type);
         return AVERROR_PATCHWELCOME;
     }
 

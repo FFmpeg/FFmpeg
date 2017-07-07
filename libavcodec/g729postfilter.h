@@ -18,8 +18,8 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#ifndef FFMPEG_G729POSTFILTER_H
-#define FFMPEG_G729POSTFILTER_H
+#ifndef AVCODEC_G729POSTFILTER_H
+#define AVCODEC_G729POSTFILTER_H
 
 #include <stdint.h>
 #include "audiodsp.h"
@@ -113,4 +113,4 @@ void ff_g729_postfilter(AudioDSPContext *adsp, int16_t* ht_prev_data, int* voici
 int16_t ff_g729_adaptive_gain_control(int gain_before, int gain_after, int16_t *speech,
                                    int subframe_size, int16_t gain_prev);
 
-#endif // FFMPEG_G729POSTFILTER_H
+#endif // AVCODEC_G729POSTFILTER_H

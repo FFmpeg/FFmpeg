@@ -21,14 +21,13 @@
  */
 
 #include "libavutil/channel_layout.h"
+#include "libavutil/ffmath.h"
 #include "libavutil/float_dsp.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "fft.h"
 #include "get_bits.h"
-#include "golomb.h"
 #include "internal.h"
-#include "unary.h"
 
 #include "on2avcdata.h"
 
@@ -211,9 +210,16 @@ static inline int get_egolomb(GetBitContext *gb)
 {
     int v = 4;
 
-    while (get_bits1(gb)) v++;
+    while (get_bits1(gb)) {
+        v++;
+        if (v > 30) {
+            av_log(NULL, AV_LOG_WARNING, "Too large golomb code in get_egolomb.\n");
+            v = 30;
+            break;
+        }
+    }
 
-    return (1 << v) + get_bits(gb, v);
+    return (1 << v) + get_bits_long(gb, v);
 }
 
 static int on2avc_decode_pairs(On2AVCContext *c, GetBitContext *gb, float *dst,
@@ -679,11 +685,11 @@ static void wtf_44(On2AVCContext *c, float *out, float *src, int size)
     }
 }
 
-static int on2avc_reconstruct_stereo(On2AVCContext *c, AVFrame *dst, int offset)
+static int on2avc_reconstruct_channel_ext(On2AVCContext *c, AVFrame *dst, int offset)
 {
     int ch, i;
 
-    for (ch = 0; ch < 2; ch++) {
+    for (ch = 0; ch < c->avctx->channels; ch++) {
         float *out   = (float*)dst->extended_data[ch] + offset;
         float *in    = c->coeffs[ch];
         float *saved = c->delay[ch];
@@ -804,10 +810,6 @@ static int on2avc_decode_subframe(On2AVCContext *c, const uint8_t *buf,
     }
     c->prev_window_type = c->window_type;
     c->window_type      = get_bits(&gb, 3);
-    if (c->window_type >= WINDOW_TYPE_EXT4 && c->avctx->channels == 1) {
-        av_log(c->avctx, AV_LOG_ERROR, "stereo mode window for mono audio\n");
-        return AVERROR_INVALIDDATA;
-    }
 
     c->band_start  = c->modes[c->window_type].band_start;
     c->num_windows = c->modes[c->window_type].num_windows;
@@ -828,7 +830,7 @@ static int on2avc_decode_subframe(On2AVCContext *c, const uint8_t *buf,
         for (i = 0; i < c->avctx->channels; i++)
             on2avc_reconstruct_channel(c, i, dst, offset);
     } else {
-        on2avc_reconstruct_stereo(c, dst, offset);
+        on2avc_reconstruct_channel_ext(c, dst, offset);
     }
 
     return 0;
@@ -917,19 +919,18 @@ static av_cold int on2avc_decode_init(AVCodecContext *avctx)
                                                    : AV_CH_LAYOUT_MONO;
 
     c->is_av500 = (avctx->codec_tag == 0x500);
-    if (c->is_av500 && avctx->channels == 2) {
-        av_log(avctx, AV_LOG_ERROR, "0x500 version should be mono\n");
-        return AVERROR_INVALIDDATA;
-    }
 
     if (avctx->channels == 2)
         av_log(avctx, AV_LOG_WARNING,
                "Stereo mode support is not good, patch is welcome\n");
 
+    // We add -0.01 before ceil() to avoid any values to fall at exactly the
+    // midpoint between different ceil values. The results are identical to
+    // using pow(10, i / 10.0) without such bias
     for (i = 0; i < 20; i++)
-        c->scale_tab[i] = ceil(pow(10.0, i * 0.1) * 16) / 32;
+        c->scale_tab[i] = ceil(ff_exp10(i * 0.1) * 16 - 0.01) / 32;
     for (; i < 128; i++)
-        c->scale_tab[i] = ceil(pow(10.0, i * 0.1) * 0.5);
+        c->scale_tab[i] = ceil(ff_exp10(i * 0.1) * 0.5 - 0.01);
 
     if (avctx->sample_rate < 32000 || avctx->channels == 1)
         memcpy(c->long_win, ff_on2avc_window_long_24000,

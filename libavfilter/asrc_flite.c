@@ -32,7 +32,7 @@
 #include "formats.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct FliteContext {
     const AVClass *class;
     char *voice_str;
     char *textfile;
@@ -170,8 +170,10 @@ static av_cold int init(AVFilterContext *ctx)
             return ret;
         }
 
-        if (!(flite->text = av_malloc(textbuf_size+1)))
+        if (!(flite->text = av_malloc(textbuf_size+1))) {
+            av_file_unmap(textbuf, textbuf_size);
             return AVERROR(ENOMEM);
+        }
         memcpy(flite->text, textbuf, textbuf_size);
         flite->text[textbuf_size] = 0;
         av_file_unmap(textbuf, textbuf_size);
@@ -253,8 +255,8 @@ static int request_frame(AVFilterLink *outlink)
     memcpy(samplesref->data[0], flite->wave_samples,
            nb_samples * flite->wave->num_channels * 2);
     samplesref->pts = flite->pts;
-    av_frame_set_pkt_pos(samplesref, -1);
-    av_frame_set_sample_rate(samplesref, flite->wave->sample_rate);
+    samplesref->pkt_pos = -1;
+    samplesref->sample_rate = flite->wave->sample_rate;
     flite->pts += nb_samples;
     flite->wave_samples += nb_samples * flite->wave->num_channels;
     flite->wave_nb_samples -= nb_samples;

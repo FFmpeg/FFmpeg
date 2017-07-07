@@ -253,7 +253,7 @@ static av_cold int encode_init(AVCodecContext* avc_context)
         Output first header packet consisting of theora
         header, comment, and tables.
 
-        Each one is prefixed with a 16bit size, then they
+        Each one is prefixed with a 16-bit size, then they
         are concatenated together into libavcodec's extradata.
     */
     offset = 0;

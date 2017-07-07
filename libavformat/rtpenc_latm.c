@@ -34,7 +34,7 @@ void ff_rtp_send_latm(AVFormatContext *s1, const uint8_t *buff, int size)
     int len    = 0;
 
     /* skip ADTS header, if present */
-    if ((s1->streams[0]->codec->extradata_size) == 0) {
+    if ((s1->streams[0]->codecpar->extradata_size) == 0) {
         size -= 7;
         buff += 7;
     }

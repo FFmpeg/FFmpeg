@@ -104,7 +104,7 @@ fate-acodec-dca: tests/data/asynth-44100-2.wav
 fate-acodec-dca: SRC = tests/data/asynth-44100-2.wav
 fate-acodec-dca: CMD = md5 -i $(TARGET_PATH)/$(SRC) -c:a dca -strict -2 -f dts -flags +bitexact
 fate-acodec-dca: CMP = oneline
-fate-acodec-dca: REF = c54ca9a13711755ef90fa143a9b38386
+fate-acodec-dca: REF = 7cd79a3717943a06b217f1130223a86f
 
 FATE_ACODEC-$(call ENCDEC, DCA, WAV) += fate-acodec-dca2
 fate-acodec-dca2: CMD = enc_dec_pcm dts wav s16le $(SRC) -c:a dca -strict -2 -flags +bitexact
@@ -154,8 +154,8 @@ FATE_ACODEC-$(call ENCDEC, WAVPACK, WV) += fate-acodec-wavpack
 fate-acodec-wavpack: FMT = wv
 fate-acodec-wavpack: CODEC = wavpack -compression_level 1
 
-FATE_ACODEC-$(call ENCDEC, TTA, MATROSKA) += fate-acodec-tta
-fate-acodec-tta: FMT = matroska
+FATE_ACODEC-$(call ENCDEC, TTA, TTA) += fate-acodec-tta
+fate-acodec-tta: FMT = tta
 
 FATE_ACODEC += $(FATE_ACODEC-yes)
 

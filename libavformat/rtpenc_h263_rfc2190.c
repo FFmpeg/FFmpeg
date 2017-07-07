@@ -114,7 +114,7 @@ void ff_rtp_send_h263_rfc2190(AVFormatContext *s1, const uint8_t *buf, int size,
     init_get_bits(&gb, buf, size*8);
     if (get_bits(&gb, 22) == 0x20) { /* Picture Start Code */
         info.tr  = get_bits(&gb, 8);
-        skip_bits(&gb, 2); /* PTYPE start, H261 disambiguation */
+        skip_bits(&gb, 2); /* PTYPE start, H.261 disambiguation */
         skip_bits(&gb, 3); /* Split screen, document camera, freeze picture release */
         info.src = get_bits(&gb, 3);
         info.i   = get_bits(&gb, 1);
@@ -168,7 +168,7 @@ void ff_rtp_send_h263_rfc2190(AVFormatContext *s1, const uint8_t *buf, int size,
                         mb_info_pos++;
                     }
                 } else {
-                    av_log(s1, AV_LOG_ERROR, "Unable to split H263 packet, "
+                    av_log(s1, AV_LOG_ERROR, "Unable to split H.263 packet, "
                            "use -mb_info %d or -ps 1.\n",
                            s->max_payload_size - 8);
                 }

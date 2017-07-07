@@ -61,7 +61,44 @@ static const struct error_entry error_entries[] = {
     { ERROR_TAG(HTTP_OTHER_4XX),     "Server returned 4XX Client Error, but not one of 40{0,1,3,4}" },
     { ERROR_TAG(HTTP_SERVER_ERROR),  "Server returned 5XX Server Error reply" },
 #if !HAVE_STRERROR_R
+    { EERROR_TAG(E2BIG),             "Argument list too long" },
+    { EERROR_TAG(EACCES),            "Permission denied" },
+    { EERROR_TAG(EAGAIN),            "Resource temporarily unavailable" },
+    { EERROR_TAG(EBADF),             "Bad file descriptor" },
+    { EERROR_TAG(EBUSY),             "Device or resource busy" },
+    { EERROR_TAG(ECHILD),            "No child processes" },
+    { EERROR_TAG(EDEADLK),           "Resource deadlock avoided" },
+    { EERROR_TAG(EDOM),              "Numerical argument out of domain" },
+    { EERROR_TAG(EEXIST),            "File exists" },
+    { EERROR_TAG(EFAULT),            "Bad address" },
+    { EERROR_TAG(EFBIG),             "File too large" },
+    { EERROR_TAG(EILSEQ),            "Illegal byte sequence" },
+    { EERROR_TAG(EINTR),             "Interrupted system call" },
     { EERROR_TAG(EINVAL),            "Invalid argument" },
+    { EERROR_TAG(EIO),               "I/O error" },
+    { EERROR_TAG(EISDIR),            "Is a directory" },
+    { EERROR_TAG(EMFILE),            "Too many open files" },
+    { EERROR_TAG(EMLINK),            "Too many links" },
+    { EERROR_TAG(ENAMETOOLONG),      "File name too long" },
+    { EERROR_TAG(ENFILE),            "Too many open files in system" },
+    { EERROR_TAG(ENODEV),            "No such device" },
+    { EERROR_TAG(ENOENT),            "No such file or directory" },
+    { EERROR_TAG(ENOEXEC),           "Exec format error" },
+    { EERROR_TAG(ENOLCK),            "No locks available" },
+    { EERROR_TAG(ENOMEM),            "Cannot allocate memory" },
+    { EERROR_TAG(ENOSPC),            "No space left on device" },
+    { EERROR_TAG(ENOSYS),            "Function not implemented" },
+    { EERROR_TAG(ENOTDIR),           "Not a directory" },
+    { EERROR_TAG(ENOTEMPTY),         "Directory not empty" },
+    { EERROR_TAG(ENOTTY),            "Inappropriate I/O control operation" },
+    { EERROR_TAG(ENXIO),             "No such device or address" },
+    { EERROR_TAG(EPERM),             "Operation not permitted" },
+    { EERROR_TAG(EPIPE),             "Broken pipe" },
+    { EERROR_TAG(ERANGE),            "Result too large" },
+    { EERROR_TAG(EROFS),             "Read-only file system" },
+    { EERROR_TAG(ESPIPE),            "Illegal seek" },
+    { EERROR_TAG(ESRCH),             "No such process" },
+    { EERROR_TAG(EXDEV),             "Cross-device link" },
 #endif
 };
 
@@ -90,25 +127,3 @@ int av_strerror(int errnum, char *errbuf, size_t errbuf_size)
 
     return ret;
 }
-
-#ifdef TEST
-
-#undef printf
-
-int main(void)
-{
-    int i;
-
-    for (i = 0; i < FF_ARRAY_ELEMS(error_entries); i++) {
-        const struct error_entry *entry = &error_entries[i];
-        printf("%d: %s [%s]\n", entry->num, av_err2str(entry->num), entry->tag);
-    }
-
-    for (i = 0; i < 256; i++) {
-        printf("%d: %s\n", -i, av_err2str(-i));
-    }
-
-    return 0;
-}
-
-#endif /* TEST */

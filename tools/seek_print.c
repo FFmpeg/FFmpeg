@@ -87,7 +87,7 @@ int main(int argc, char **argv)
                        ret, packet.size, packet.stream_index,
                        av_ts2str(packet.dts), av_ts2timestr(packet.dts, tb),
                        av_ts2str(packet.pts), av_ts2timestr(packet.pts, tb));
-                av_free_packet(&packet);
+                av_packet_unref(&packet);
             }
         } else if (sscanf(*argv, "seek:%i:%"SCNi64":%"SCNi64":%"SCNi64":%i",
                    &stream, &min_ts, &ts, &max_ts, &flags) == 5) {

@@ -23,7 +23,7 @@
  * @file
  * PCX image encoder
  * @author Daniel Verkamp
- * @see http://www.qzx.com/pc-gpe/pcx.txt
+ * @see http://bespin.org/~qz/pc-gpe/pcx.txt
  */
 
 #include "avcodec.h"

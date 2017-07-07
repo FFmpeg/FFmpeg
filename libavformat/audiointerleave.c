@@ -33,7 +33,7 @@ void ff_audio_interleave_close(AVFormatContext *s)
         AVStream *st = s->streams[i];
         AudioInterleaveContext *aic = st->priv_data;
 
-        if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
+        if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
             av_fifo_freep(&aic->fifo);
     }
 }
@@ -55,9 +55,9 @@ int ff_audio_interleave_init(AVFormatContext *s,
         AVStream *st = s->streams[i];
         AudioInterleaveContext *aic = st->priv_data;
 
-        if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-            aic->sample_size = (st->codec->channels *
-                                av_get_bits_per_sample(st->codec->codec_id)) / 8;
+        if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+            aic->sample_size = (st->codecpar->channels *
+                                av_get_bits_per_sample(st->codecpar->codec_id)) / 8;
             if (!aic->sample_size) {
                 av_log(s, AV_LOG_ERROR, "could not compute sample size\n");
                 return AVERROR(EINVAL);
@@ -111,7 +111,7 @@ int ff_audio_rechunk_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt
     if (pkt) {
         AVStream *st = s->streams[pkt->stream_index];
         AudioInterleaveContext *aic = st->priv_data;
-        if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+        if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             unsigned new_size = av_fifo_size(aic->fifo) + pkt->size;
             if (new_size > aic->fifo_size) {
                 if (av_fifo_realloc2(aic->fifo, new_size) < 0)
@@ -131,7 +131,7 @@ int ff_audio_rechunk_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
-        if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+        if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             AVPacket new_pkt = { 0 };
             while ((ret = interleave_new_audio_packet(s, &new_pkt, i, flush)) > 0) {
                 if ((ret = ff_interleave_add_packet(s, &new_pkt, compare_ts)) < 0)

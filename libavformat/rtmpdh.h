@@ -22,10 +22,10 @@
 #ifndef AVFORMAT_RTMPDH_H
 #define AVFORMAT_RTMPDH_H
 
-#include "avformat.h"
+#include <stdint.h>
+
 #include "config.h"
 
-#if CONFIG_GMP || CONFIG_GCRYPT
 #if CONFIG_GMP
 #include <gmp.h>
 
@@ -34,6 +34,12 @@ typedef mpz_ptr FFBigNum;
 #include <gcrypt.h>
 
 typedef gcry_mpi_t FFBigNum;
+
+#elif CONFIG_OPENSSL
+#include <openssl/bn.h>
+#include <openssl/dh.h>
+
+typedef BIGNUM *FFBigNum;
 #endif
 
 typedef struct FF_DH {
@@ -44,13 +50,6 @@ typedef struct FF_DH {
     long length;
 } FF_DH;
 
-#elif CONFIG_OPENSSL
-#include <openssl/bn.h>
-#include <openssl/dh.h>
-
-typedef BIGNUM *FFBigNum;
-typedef DH FF_DH;
-#endif
 
 /**
  * Initialize a Diffie-Hellmann context.

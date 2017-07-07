@@ -21,8 +21,8 @@
  * audio volume filter
  */
 
-#ifndef AVFILTER_AF_VOLUME_H
-#define AVFILTER_AF_VOLUME_H
+#ifndef AVFILTER_VOLUME_H
+#define AVFILTER_VOLUME_H
 
 #include "libavutil/common.h"
 #include "libavutil/eval.h"
@@ -90,4 +90,4 @@ typedef struct VolumeContext {
 
 void ff_volume_init_x86(VolumeContext *vol);
 
-#endif /* AVFILTER_AF_VOLUME_H */
+#endif /* AVFILTER_VOLUME_H */

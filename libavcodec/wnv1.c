@@ -52,7 +52,7 @@ static inline int wnv1_get_code(WNV1Context *w, int base_value)
     if (v == 15)
         return ff_reverse[get_bits(&w->gb, 8 - w->shift)];
     else
-        return base_value + ((v - 7) << w->shift);
+        return base_value + ((v - 7U) << w->shift);
 }
 
 static int decode_frame(AVCodecContext *avctx,
@@ -68,7 +68,7 @@ static int decode_frame(AVCodecContext *avctx,
     int prev_y = 0, prev_u = 0, prev_v = 0;
     uint8_t *rbuf;
 
-    if (buf_size <= 8) {
+    if (buf_size < 8 + avctx->height * (avctx->width/2)/8) {
         av_log(avctx, AV_LOG_ERROR, "Packet size %d is too small\n", buf_size);
         return AVERROR_INVALIDDATA;
     }

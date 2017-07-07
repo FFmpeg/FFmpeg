@@ -97,7 +97,7 @@ static int query_formats(AVFilterContext *ctx)
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
-    AVDictionary **metadata = avpriv_frame_get_metadatap(in);
+    AVDictionary **metadata = &in->metadata;
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     OCRContext *s = ctx->priv;

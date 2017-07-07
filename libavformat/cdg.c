@@ -39,8 +39,8 @@ static int read_header(AVFormatContext *s)
     if (!vst)
         return AVERROR(ENOMEM);
 
-    vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    vst->codec->codec_id   = AV_CODEC_ID_CDGRAPHICS;
+    vst->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    vst->codecpar->codec_id   = AV_CODEC_ID_CDGRAPHICS;
 
     /// 75 sectors/sec * 4 packets/sector = 300 packets/sec
     avpriv_set_pts_info(vst, 32, 1, 300);
@@ -63,7 +63,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         ret = av_get_packet(s->pb, pkt, CDG_PACKET_SIZE);
         if (ret < 1 || (pkt->data[0] & CDG_MASK) == CDG_COMMAND)
             break;
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
     }
 
     if (!priv->got_first_packet) {

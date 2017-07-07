@@ -328,8 +328,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         qp_table = av_frame_get_qp_table(in, &qp_stride, &pp7->qscale_type);
 
     if (!ctx->is_disabled) {
-        const int cw = FF_CEIL_RSHIFT(inlink->w, pp7->hsub);
-        const int ch = FF_CEIL_RSHIFT(inlink->h, pp7->vsub);
+        const int cw = AV_CEIL_RSHIFT(inlink->w, pp7->hsub);
+        const int ch = AV_CEIL_RSHIFT(inlink->h, pp7->vsub);
 
         /* get a new frame if in-place is not possible or if the dimensions
         * are not multiple of 8 */

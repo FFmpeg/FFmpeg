@@ -57,12 +57,10 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/qsort.h"
 
 #include "deshake.h"
 #include "deshake_opencl.h"
-
-#define CHROMA_WIDTH(link)  (-((-(link)->w) >> av_pix_fmt_desc_get((link)->format)->log2_chroma_w))
-#define CHROMA_HEIGHT(link) (-((-(link)->h) >> av_pix_fmt_desc_get((link)->format)->log2_chroma_h))
 
 #define OFFSET(x) offsetof(DeshakeContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
@@ -93,8 +91,7 @@ AVFILTER_DEFINE_CLASS(deshake);
 
 static int cmp(const void *a, const void *b)
 {
-    const double va = *(const double *)a, vb = *(const double *)b;
-    return va < vb ? -1 : ( va > vb ? 1 : 0 );
+    return FFDIFFSIGN(*(const double *)a, *(const double *)b);
 }
 
 /**
@@ -106,7 +103,7 @@ static double clean_mean(double *values, int count)
     int cut = count / 5;
     int x;
 
-    qsort(values, count, sizeof(double), cmp);
+    AV_QSORT(values, count, double, cmp);
 
     for (x = cut; x < count - cut; x++) {
         mean += values[x];
@@ -439,6 +436,9 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     float alpha = 2.0 / deshake->refcount;
     char tmp[256];
     int ret = 0;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
+    const int chroma_width  = AV_CEIL_RSHIFT(link->w, desc->log2_chroma_w);
+    const int chroma_height = AV_CEIL_RSHIFT(link->h, desc->log2_chroma_h);
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
@@ -450,7 +450,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     if (CONFIG_OPENCL && deshake->opencl) {
         ret = ff_opencl_deshake_process_inout_buf(link->dst,in, out);
         if (ret < 0)
-            return ret;
+            goto fail;
     }
 
     if (deshake->cx < 0 || deshake->cy < 0 || deshake->cw < 0 || deshake->ch < 0) {
@@ -527,22 +527,25 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     // Generate a luma transformation matrix
     avfilter_get_matrix(t.vec.x, t.vec.y, t.angle, 1.0 + t.zoom / 100.0, matrix_y);
     // Generate a chroma transformation matrix
-    avfilter_get_matrix(t.vec.x / (link->w / CHROMA_WIDTH(link)), t.vec.y / (link->h / CHROMA_HEIGHT(link)), t.angle, 1.0 + t.zoom / 100.0, matrix_uv);
+    avfilter_get_matrix(t.vec.x / (link->w / chroma_width), t.vec.y / (link->h / chroma_height), t.angle, 1.0 + t.zoom / 100.0, matrix_uv);
     // Transform the luma and chroma planes
-    ret = deshake->transform(link->dst, link->w, link->h, CHROMA_WIDTH(link), CHROMA_HEIGHT(link),
+    ret = deshake->transform(link->dst, link->w, link->h, chroma_width, chroma_height,
                              matrix_y, matrix_uv, INTERPOLATE_BILINEAR, deshake->edge, in, out);
 
     // Cleanup the old reference frame
     av_frame_free(&deshake->ref);
 
     if (ret < 0)
-        return ret;
+        goto fail;
 
     // Store the current frame as the reference frame for calculating the
     // motion of the next frame
     deshake->ref = in;
 
     return ff_filter_frame(outlink, out);
+fail:
+    av_frame_free(&out);
+    return ret;
 }
 
 static const AVFilterPad deshake_inputs[] = {

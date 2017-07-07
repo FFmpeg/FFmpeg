@@ -23,7 +23,7 @@
 #include "libavutil/x86/cpu.h"
 #include "libavfilter/vf_idet.h"
 
-#if HAVE_YASM
+#if HAVE_X86ASM
 
 /* declares main callable idet_filter_line_{mmx,mmxext,sse2}() */
 #define FUNC_MAIN_DECL(KIND, SPAN)                                        \
@@ -68,7 +68,7 @@ FUNC_MAIN_DECL_16bit(mmx, 4)
 #endif
 av_cold void ff_idet_init_x86(IDETContext *idet, int for_16b)
 {
-#if HAVE_YASM
+#if HAVE_X86ASM
     const int cpu_flags = av_get_cpu_flags();
 
 #if ARCH_X86_32
@@ -83,5 +83,5 @@ av_cold void ff_idet_init_x86(IDETContext *idet, int for_16b)
     if (EXTERNAL_SSE2(cpu_flags)) {
         idet->filter_line = for_16b ? (ff_idet_filter_func)idet_filter_line_16bit_sse2 : idet_filter_line_sse2;
     }
-#endif // HAVE_YASM
+#endif // HAVE_X86ASM
 }

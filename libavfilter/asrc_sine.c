@@ -28,7 +28,7 @@
 #include "avfilter.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct SineContext {
     const AVClass *class;
     double frequency;
     double beep_factor;
@@ -69,8 +69,8 @@ typedef struct {
 static const AVOption sine_options[] = {
     OPT_DBL("frequency",         frequency,            440, 0, DBL_MAX,   "set the sine frequency",),
     OPT_DBL("f",                 frequency,            440, 0, DBL_MAX,   "set the sine frequency",),
-    OPT_DBL("beep_factor",       beep_factor,            0, 0, DBL_MAX,   "set the beep fequency factor",),
-    OPT_DBL("b",                 beep_factor,            0, 0, DBL_MAX,   "set the beep fequency factor",),
+    OPT_DBL("beep_factor",       beep_factor,            0, 0, DBL_MAX,   "set the beep frequency factor",),
+    OPT_DBL("b",                 beep_factor,            0, 0, DBL_MAX,   "set the beep frequency factor",),
     OPT_INT("sample_rate",       sample_rate,        44100, 1, INT_MAX,   "set the sample rate",),
     OPT_INT("r",                 sample_rate,        44100, 1, INT_MAX,   "set the sample rate",),
     OPT_DUR("duration",          duration,               0, 0, INT64_MAX, "set the audio duration",),
@@ -219,7 +219,7 @@ static int request_frame(AVFilterLink *outlink)
     SineContext *sine = outlink->src->priv;
     AVFrame *frame;
     double values[VAR_VARS_NB] = {
-        [VAR_N]   = outlink->frame_count,
+        [VAR_N]   = outlink->frame_count_in,
         [VAR_PTS] = sine->pts,
         [VAR_T]   = sine->pts * av_q2d(outlink->time_base),
         [VAR_TB]  = av_q2d(outlink->time_base),

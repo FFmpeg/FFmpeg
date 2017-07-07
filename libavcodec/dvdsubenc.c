@@ -343,7 +343,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     av_log(avctx, AV_LOG_DEBUG, "Selected palette:");
     for (i = 0; i < 4; i++)
-        av_log(avctx, AV_LOG_DEBUG, " 0x%06x@@%02x (0x%x,0x%x)",
+        av_log(avctx, AV_LOG_DEBUG, " 0x%06"PRIx32"@@%02x (0x%x,0x%x)",
                dvdc->global_palette[out_palette[i]], out_alpha[i],
                out_palette[i], out_alpha[i] >> 4);
     av_log(avctx, AV_LOG_DEBUG, "\n");
@@ -467,7 +467,7 @@ static int dvdsub_encode(AVCodecContext *avctx,
 #define OFFSET(x) offsetof(DVDSubtitleContext, x)
 #define SE AV_OPT_FLAG_SUBTITLE_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    {"even_rows_fix", "Make number of rows even (workaround for some players)", OFFSET(even_rows_fix), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, SE},
+    {"even_rows_fix", "Make number of rows even (workaround for some players)", OFFSET(even_rows_fix), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, SE},
     { NULL },
 };
 

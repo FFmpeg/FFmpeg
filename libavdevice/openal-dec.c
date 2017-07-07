@@ -128,7 +128,7 @@ static int read_header(AVFormatContext *ctx)
     int error = 0;
     const char *error_msg;
     AVStream *st = NULL;
-    AVCodecContext *codec = NULL;
+    AVCodecParameters *par = NULL;
 
     if (ad->list_devices) {
         print_al_capture_devices(ctx);
@@ -156,11 +156,11 @@ static int read_header(AVFormatContext *ctx)
     avpriv_set_pts_info(st, 64, 1, 1000000);
 
     /* Set codec parameters */
-    codec = st->codec;
-    codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    codec->sample_rate = ad->sample_rate;
-    codec->channels = get_al_format_info(ad->sample_format)->channels;
-    codec->codec_id = get_al_format_info(ad->sample_format)->codec_id;
+    par = st->codecpar;
+    par->codec_type = AVMEDIA_TYPE_AUDIO;
+    par->sample_rate = ad->sample_rate;
+    par->channels = get_al_format_info(ad->sample_format)->channels;
+    par->codec_id = get_al_format_info(ad->sample_format)->codec_id;
 
     /* This is needed to read the audio data */
     ad->sample_step = (av_get_bits_per_sample(get_al_format_info(ad->sample_format)->codec_id) *
@@ -187,9 +187,16 @@ static int read_packet(AVFormatContext* ctx, AVPacket *pkt)
     const char *error_msg;
     ALCint nb_samples;
 
-    /* Get number of samples available */
-    alcGetIntegerv(ad->device, ALC_CAPTURE_SAMPLES, (ALCsizei) sizeof(ALCint), &nb_samples);
-    if (error = al_get_error(ad->device, &error_msg)) goto fail;
+    for (;;) {
+        /* Get number of samples available */
+        alcGetIntegerv(ad->device, ALC_CAPTURE_SAMPLES, (ALCsizei) sizeof(ALCint), &nb_samples);
+        if (error = al_get_error(ad->device, &error_msg)) goto fail;
+        if (nb_samples > 0)
+            break;
+        if (ctx->flags & AVFMT_FLAG_NONBLOCK)
+            return AVERROR(EAGAIN);
+        av_usleep(1000);
+    }
 
     /* Create a packet of appropriate size */
     if ((error = av_new_packet(pkt, nb_samples*ad->sample_step)) < 0)
@@ -204,7 +211,7 @@ static int read_packet(AVFormatContext* ctx, AVPacket *pkt)
 fail:
     /* Handle failure */
     if (pkt->data)
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
     if (error_msg)
         av_log(ctx, AV_LOG_ERROR, "Error: %s\n", error_msg);
     return error;
