@@ -1304,9 +1304,14 @@ static int hls_write_header(AVFormatContext *s)
     const char *pattern_localtime_fmt = get_default_pattern_localtime_fmt();
     const char *vtt_pattern = "%d.vtt";
     AVDictionary *options = NULL;
+    int byterange_mode = (hls->flags & HLS_SINGLE_FILE) || (hls->max_seg_size > 0);
     int basename_size;
     int vtt_basename_size;
 
+    if (hls->segment_type == SEGMENT_TYPE_FMP4 && byterange_mode) {
+        av_log(s, AV_LOG_WARNING, "Have not support fmp4 byterange mode yet now\n");
+        return AVERROR_PATCHWELCOME;
+    }
     if ((hls->start_sequence_source_type == HLS_START_SEQUENCE_AS_SECONDS_SINCE_EPOCH) ||
         (hls->start_sequence_source_type == HLS_START_SEQUENCE_AS_FORMATTED_DATETIME)) {
         time_t t = time(NULL); // we will need it in either case
