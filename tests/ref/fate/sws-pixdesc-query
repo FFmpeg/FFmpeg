@@ -112,11 +112,13 @@ isBE:
   gbrap10be
   gbrap12be
   gbrap16be
+  gbrapf32be
   gbrp10be
   gbrp12be
   gbrp14be
   gbrp16be
   gbrp9be
+  gbrpf32be
   gray10be
   gray12be
   gray16be
@@ -362,6 +364,8 @@ isRGB:
   gbrap12le
   gbrap16be
   gbrap16le
+  gbrapf32be
+  gbrapf32le
   gbrp
   gbrp10be
   gbrp10le
@@ -373,6 +377,8 @@ isRGB:
   gbrp16le
   gbrp9be
   gbrp9le
+  gbrpf32be
+  gbrpf32le
   rgb0
   rgb24
   rgb32
@@ -498,6 +504,8 @@ AnyRGB:
   gbrap12le
   gbrap16be
   gbrap16le
+  gbrapf32be
+  gbrapf32le
   gbrp
   gbrp10be
   gbrp10le
@@ -509,6 +517,8 @@ AnyRGB:
   gbrp16le
   gbrp9be
   gbrp9le
+  gbrpf32be
+  gbrpf32le
   monob
   monow
   rgb0
@@ -543,6 +553,8 @@ ALPHA:
   gbrap12le
   gbrap16be
   gbrap16le
+  gbrapf32be
+  gbrapf32le
   pal8
   rgb32
   rgb32_1
@@ -645,6 +657,8 @@ Planar:
   gbrap12le
   gbrap16be
   gbrap16le
+  gbrapf32be
+  gbrapf32le
   gbrp
   gbrp10be
   gbrp10le
@@ -656,6 +670,8 @@ Planar:
   gbrp16le
   gbrp9be
   gbrp9le
+  gbrpf32be
+  gbrpf32le
   nv12
   nv16
   nv20be
@@ -790,6 +806,8 @@ PlanarRGB:
   gbrap12le
   gbrap16be
   gbrap16le
+  gbrapf32be
+  gbrapf32le
   gbrp
   gbrp10be
   gbrp10le
@@ -801,6 +819,8 @@ PlanarRGB:
   gbrp16le
   gbrp9be
   gbrp9le
+  gbrpf32be
+  gbrpf32le
 
 usePal:
   bgr4_byte

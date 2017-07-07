@@ -178,6 +178,12 @@ typedef struct AVPixFmtDescriptor {
 #define AV_PIX_FMT_FLAG_BAYER        (1 << 8)
 
 /**
+ * The pixel format contains IEEE-754 floating point values. Precision (double,
+ * single, or half) should be determined by the pixel size (64, 32, or 16 bits).
+ */
+#define AV_PIX_FMT_FLAG_FLOAT        (1 << 9)
+
+/**
  * Return the number of bits per pixel used by the pixel format
  * described by pixdesc. Note that this is not the same as the number
  * of bits per sample.

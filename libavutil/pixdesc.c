@@ -2183,6 +2183,60 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .name = "d3d11",
         .flags = AV_PIX_FMT_FLAG_HWACCEL,
     },
+    [AV_PIX_FMT_GBRPF32BE] = {
+        .name = "gbrpf32be",
+        .nb_components = 3,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 2, 4, 0, 0, 32, 3, 31, 1 },        /* R */
+            { 0, 4, 0, 0, 32, 3, 31, 1 },        /* G */
+            { 1, 4, 0, 0, 32, 3, 31, 1 },        /* B */
+        },
+        .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_PLANAR |
+                 AV_PIX_FMT_FLAG_RGB | AV_PIX_FMT_FLAG_FLOAT,
+    },
+    [AV_PIX_FMT_GBRPF32LE] = {
+        .name = "gbrpf32le",
+        .nb_components = 3,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 2, 4, 0, 0, 32, 3, 31, 1 },        /* R */
+            { 0, 4, 0, 0, 32, 3, 31, 1 },        /* G */
+            { 1, 4, 0, 0, 32, 3, 31, 1 },        /* B */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_FLOAT | AV_PIX_FMT_FLAG_RGB,
+    },
+    [AV_PIX_FMT_GBRAPF32BE] = {
+        .name = "gbrapf32be",
+        .nb_components = 4,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 2, 4, 0, 0, 32, 3, 31, 1 },        /* R */
+            { 0, 4, 0, 0, 32, 3, 31, 1 },        /* G */
+            { 1, 4, 0, 0, 32, 3, 31, 1 },        /* B */
+            { 3, 4, 0, 0, 32, 3, 31, 1 },        /* A */
+        },
+        .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_PLANAR |
+                 AV_PIX_FMT_FLAG_ALPHA | AV_PIX_FMT_FLAG_RGB |
+                 AV_PIX_FMT_FLAG_FLOAT,
+    },
+    [AV_PIX_FMT_GBRAPF32LE] = {
+        .name = "gbrapf32le",
+        .nb_components = 4,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 2, 4, 0, 0, 32, 3, 31, 1 },        /* R */
+            { 0, 4, 0, 0, 32, 3, 31, 1 },        /* G */
+            { 1, 4, 0, 0, 32, 3, 31, 1 },        /* B */
+            { 3, 4, 0, 0, 32, 3, 31, 1 },        /* A */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_ALPHA |
+                 AV_PIX_FMT_FLAG_RGB | AV_PIX_FMT_FLAG_FLOAT,
+    },
 };
 #if FF_API_PLUS1_MINUS1
 FF_ENABLE_DEPRECATION_WARNINGS
