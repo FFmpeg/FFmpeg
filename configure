@@ -246,7 +246,6 @@ External library support:
   --enable-librubberband   enable rubberband needed for rubberband filter [no]
   --enable-librtmp         enable RTMP[E] support via librtmp [no]
   --enable-librtmfp        enable RTMFP support via librtmfp [no]
-  --enable-libschroedinger enable Dirac de/encoding via libschroedinger [no]
   --enable-libshine        enable fixed-point MP3 encoding via libshine [no]
   --enable-libsmbclient    enable Samba protocol via libsmbclient [no]
   --enable-libsnappy       enable Snappy compression, needed for hap encoding [no]
@@ -1562,8 +1561,6 @@ EXTERNAL_LIBRARY_LIST="
     librsvg
     librtmp
     librtmfp
-    librubberband
-    libschroedinger
     libshine
     libsmbclient
     libsnappy

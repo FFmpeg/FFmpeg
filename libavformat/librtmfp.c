@@ -116,24 +116,24 @@ static void onStatusEvent(const char* code, const char* description) {
 static int rtmfp_open(URLContext *s, const char *uri, int flags)
 {
     LibRTMFPContext *ctx = s->priv_data;
-    int level = 0;
+    const char* level = 0;
 
     switch (av_log_get_level()) {
-        case AV_LOG_FATAL:   level = 1; break;
-        case AV_LOG_ERROR:   level = 3; break;
-        case AV_LOG_WARNING: level = 4; break;
+        case AV_LOG_FATAL:   level = "1"; break;
+        case AV_LOG_ERROR:   level = "3"; break;
+        case AV_LOG_WARNING: level = "4"; break;
         default:
-        case AV_LOG_INFO:    level = 6; break;
-        case AV_LOG_DEBUG:   level = 7; break;
-        case AV_LOG_VERBOSE: level = 8; break;
-        case AV_LOG_TRACE:   level = 8; break;
+        case AV_LOG_INFO:    level = "6"; break;
+        case AV_LOG_DEBUG:   level = "7"; break;
+        case AV_LOG_VERBOSE: level = "8"; break;
+        case AV_LOG_TRACE:   level = "8"; break;
     }
     RTMFP_Init(&ctx->rtmfp, &ctx->group, 1);
     ctx->rtmfp.pOnSocketError = onSocketError;
     ctx->rtmfp.pOnStatusEvent = onStatusEvent;
     ctx->rtmfp.isBlocking = 1;
 
-    RTMFP_LogSetLevel(level);
+    RTMFP_SetParameter("logLevel", level);
     RTMFP_LogSetCallback(rtmfp_log);
     /*RTMFP_ActiveDump();
     RTMFP_DumpSetCallback(rtmfp_dump);*/
