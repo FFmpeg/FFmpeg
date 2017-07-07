@@ -263,8 +263,6 @@ static const struct URLProtocol *url_find_protocol(const char *filename)
         av_strlcpy(proto_str, filename,
                    FFMIN(proto_len + 1, sizeof(proto_str)));
 
-    if ((ptr = strchr(proto_str, ',')))
-        *ptr = '\0';
     av_strlcpy(proto_nested, proto_str, sizeof(proto_nested));
     if ((ptr = strchr(proto_nested, '+')))
         *ptr = '\0';
