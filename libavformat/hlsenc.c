@@ -602,6 +602,8 @@ static int hls_mux_init(AVFormatContext *s)
         av_dict_set(&options, "fflags", "-autobsf", 0);
         av_dict_set(&options, "movflags", "frag_custom+dash+delay_moov", 0);
         ret = avformat_init_output(oc, &options);
+        if (ret < 0)
+            return ret;
         if (av_dict_count(options)) {
             av_log(s, AV_LOG_ERROR, "Some of the provided format options in '%s' are not recognized\n", hls->format_options_str);
             av_dict_free(&options);
