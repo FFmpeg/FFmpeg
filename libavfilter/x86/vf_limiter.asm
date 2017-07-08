@@ -20,23 +20,21 @@
 
 %include "libavutil/x86/x86util.asm"
 
-%if ARCH_X86_64
-
-SECTION_RODATA
-
-pb_0: times 16 db 0
-
 SECTION .text
 
 INIT_XMM sse2
 
-cglobal limiter_8bit, 8, 9, 3, src, dst, slinesize, dlinesize, w, h, min, max, x
+cglobal limiter_8bit, 6, 7, 3, src, dst, slinesize, dlinesize, w, h, x
     movsxdifnidn wq, wd
     add        srcq, wq
     add        dstq, wq
     neg          wq
-    SPLATB_REG   m1, min, [pb_0]
-    SPLATB_REG   m2, max, [pb_0]
+    movd         m1, r6m
+    punpcklbw    m1, m1
+    SPLATW       m1, m1
+    movd         m2, r7m
+    punpcklbw    m2, m2
+    SPLATW       m2, m2
 .nextrow:
     mov          xq, wq
 
@@ -51,18 +49,18 @@ cglobal limiter_8bit, 8, 9, 3, src, dst, slinesize, dlinesize, w, h, min, max, x
     add        dstq, dlinesizeq
     sub        hd, 1
     jg .nextrow
-    ret
+    RET
 
 INIT_XMM sse4
 
-cglobal limiter_16bit, 8, 9, 3, src, dst, slinesize, dlinesize, w, h, min, max, x
+cglobal limiter_16bit, 6, 7, 3, src, dst, slinesize, dlinesize, w, h, x
     shl          wd, 1
     add        srcq, wq
     add        dstq, wq
     neg          wq
-    movd         m1, mind
+    movd         m1, r6m
     SPLATW       m1, m1
-    movd         m2, maxd
+    movd         m2, r7m
     SPLATW       m2, m2
 .nextrow:
     mov          xq, wq
@@ -79,6 +77,4 @@ cglobal limiter_16bit, 8, 9, 3, src, dst, slinesize, dlinesize, w, h, min, max, 
     add        dstq, dlinesizeq
     sub        hd, 1
     jg .nextrow
-    ret
-
-%endif
+    RET
