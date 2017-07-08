@@ -31,6 +31,7 @@
 typedef struct NoiseContext {
     const AVClass *class;
     int amount;
+    int dropamount;
     unsigned int state;
 } NoiseContext;
 
@@ -47,6 +48,12 @@ static int noise(AVBSFContext *ctx, AVPacket *out)
     ret = ff_bsf_get_packet(ctx, &in);
     if (ret < 0)
         return ret;
+
+    if (s->dropamount > 0 && s->state % s->dropamount == 0) {
+        s->state++;
+        av_packet_free(&in);
+        return AVERROR(EAGAIN);
+    }
 
     ret = av_new_packet(out, in->size);
     if (ret < 0)
@@ -73,6 +80,7 @@ fail:
 #define OFFSET(x) offsetof(NoiseContext, x)
 static const AVOption options[] = {
     { "amount", NULL, OFFSET(amount), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX },
+    { "dropamount", NULL, OFFSET(dropamount), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX },
     { NULL },
 };
 
