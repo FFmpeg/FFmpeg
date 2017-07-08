@@ -6,6 +6,7 @@ version <next>:
 - Dropped support for OpenJPEG versions 2.0 and below. Using OpenJPEG now
   requires 2.1 (or later) and pkg-config.
 - VDA dropped (use VideoToolbox instead)
+- MagicYUV encoder
 
 
 version 3.4:
