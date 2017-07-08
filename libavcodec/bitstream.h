@@ -239,11 +239,13 @@ static inline void skip_remaining(BitstreamContext *bc, unsigned n)
 /* Skip n bits in the buffer. */
 static inline void bitstream_skip(BitstreamContext *bc, unsigned n)
 {
-    if (n <= bc->bits_left)
+    if (n < bc->bits_left)
         skip_remaining(bc, n);
     else {
         n -= bc->bits_left;
-        skip_remaining(bc, bc->bits_left);
+        bc->bits      = 0;
+        bc->bits_left = 0;
+
         if (n >= 64) {
             unsigned skip = n / 8;
 
