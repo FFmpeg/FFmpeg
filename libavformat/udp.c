@@ -24,6 +24,7 @@
  * UDP protocol
  */
 
+#define _DEFAULT_SOURCE
 #define _BSD_SOURCE     /* Needed for using struct ip_mreq with recent glibc */
 
 #include "avformat.h"

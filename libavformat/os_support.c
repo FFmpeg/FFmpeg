@@ -21,6 +21,7 @@
  */
 
 /* needed by inet_aton() */
+#define _DEFAULT_SOURCE
 #define _SVID_SOURCE
 
 #include "config.h"

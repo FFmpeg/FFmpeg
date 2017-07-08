@@ -20,6 +20,7 @@
 
 #include "config.h"
 
+#define _DEFAULT_SOURCE
 #define _SVID_SOURCE // needed for MAP_ANONYMOUS
 #include <assert.h>
 #include <inttypes.h>
