@@ -244,6 +244,8 @@ static int dct_error(const struct algo *dct, int test, int is_idct, int speed, c
     ome  = (double) err_sum / NB_ITS / 64;
 
     spec_err = is_idct && (err_inf > 1 || omse > 0.02 || fabs(ome) > 0.0015);
+    if (test < 2)
+        spec_err = is_idct && ((double) sysErrMax / NB_ITS > 0.015);
 
     printf("%s %s: max_err=%d omse=%0.8f ome=%0.8f syserr=%0.8f maxout=%d blockSumErr=%d\n",
            is_idct ? "IDCT" : "DCT", dct->name, err_inf,
