@@ -3517,22 +3517,13 @@ void ff_psdsp_init_arm(PSDSPContext *s) {return;}
 void ff_psdsp_init_mips(PSDSPContext *s) {return;}
 void ff_qpeldsp_init_mips(QpelDSPContext *c) {return;}
 void ff_rdft_init_arm(RDFTContext *s) {return;}
-#if !(ARCH_X86_64)
-void ff_restore_rgb_planes10_sse2(uint16_t *src_r, uint16_t *src_g, uint16_t *src_b,
-                                  ptrdiff_t linesize_r, ptrdiff_t linesize_g,
-                                  ptrdiff_t linesize_b, int width, int height) {return;}
-#endif
-#if !(ARCH_X86_64)
-void ff_restore_rgb_planes_sse2(uint8_t *src_r, uint8_t *src_g, uint8_t *src_b,
-                                ptrdiff_t linesize_r, ptrdiff_t linesize_g,
-                                ptrdiff_t linesize_b, int width, int height) {return;}
-#endif
 #if !(ARCH_X86_32)
 void ff_rv34_idct_dc_add_mmx(uint8_t *dst, ptrdiff_t stride, int dc) {return;}
 #endif
 void ff_rv34dsp_init_arm(RV34DSPContext *c) {return;}
 void ff_rv40dsp_init_aarch64(RV34DSPContext *c) {return;}
 void ff_rv40dsp_init_arm(RV34DSPContext *c) {return;}
+void ff_sbrdsp_init_aarch64(SBRDSPContext *s) {return;}
 void ff_sbrdsp_init_arm(SBRDSPContext *s) {return;}
 void ff_sbrdsp_init_mips(SBRDSPContext *s) {return;}
 #if !(ARCH_X86_64)

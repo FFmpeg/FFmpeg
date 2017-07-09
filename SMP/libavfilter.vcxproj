@@ -78,6 +78,7 @@
     <YASM Include="..\libavfilter\x86\vf_hqdn3d.asm" />
     <YASM Include="..\libavfilter\x86\vf_idet.asm" />
     <YASM Include="..\libavfilter\x86\vf_interlace.asm" />
+    <YASM Include="..\libavfilter\x86\vf_limiter.asm" />
     <YASM Include="..\libavfilter\x86\vf_maskedmerge.asm" />
     <YASM Include="..\libavfilter\x86\vf_pp7.asm" />
     <YASM Include="..\libavfilter\x86\vf_psnr.asm" />
@@ -358,6 +359,7 @@
     <ClCompile Include="..\libavfilter\x86\vf_hqdn3d_init.c" />
     <ClCompile Include="..\libavfilter\x86\vf_idet_init.c" />
     <ClCompile Include="..\libavfilter\x86\vf_interlace_init.c" />
+    <ClCompile Include="..\libavfilter\x86\vf_limiter_init.c" />
     <ClCompile Include="..\libavfilter\x86\vf_maskedmerge_init.c" />
     <ClCompile Include="..\libavfilter\x86\vf_pp7_init.c" />
     <ClCompile Include="..\libavfilter\x86\vf_psnr_init.c" />
@@ -401,6 +403,9 @@
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_interlace.c">
       <ObjectFileName>$(IntDir)\libavfilter_vf_interlace.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_limiter.c">
+      <ObjectFileName>$(IntDir)\libavfilter_vf_limiter.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_maskedmerge.c">
       <ObjectFileName>$(IntDir)\libavfilter_vf_maskedmerge.obj</ObjectFileName>
