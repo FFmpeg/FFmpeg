@@ -24,8 +24,6 @@
  * @url{http://tools.ietf.org/id/draft-pantos-http-live-streaming}
  */
 
-/* #define DEBUG */
-
 #include <float.h>
 #include <time.h>
 

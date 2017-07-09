@@ -9639,6 +9639,23 @@ The formula that generates the correction is:
 where @var{r_0} is halve of the image diagonal and @var{r_src} and @var{r_tgt} are the
 distances from the focal point in the source and target images, respectively.
 
+@section limiter
+
+Limits the pixel components values to the specified range [min, max].
+
+The filter accepts the following options:
+
+@table @option
+@item min
+Lower bound. Defaults to the lowest allowed value for the input.
+
+@item max
+Upper bound. Defaults to the highest allowed value for the input.
+
+@item planes
+Specify which planes will be processed. Defaults to all available.
+@end table
+
 @section loop
 
 Loop video frames.

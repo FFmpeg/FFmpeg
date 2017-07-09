@@ -26,6 +26,7 @@ version <next>:
   --x86asmexe=yasm to configure to restore the old behavior.
 - additional frame format support for Interplay MVE movies
 - support for decoding through D3D11VA in ffmpeg
+- limiter video filter
 
 version 3.3:
 - CrystalHD decoder moved to new decode API

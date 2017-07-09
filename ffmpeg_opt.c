@@ -3072,7 +3072,7 @@ static int opt_timecode(void *optctx, const char *opt, const char *arg)
     if (ret >= 0)
         ret = av_dict_set(&o->g->codec_opts, "gop_timecode", arg, 0);
     av_free(tcr);
-    return 0;
+    return ret;
 }
 
 static int opt_channel_layout(void *optctx, const char *opt, const char *arg)

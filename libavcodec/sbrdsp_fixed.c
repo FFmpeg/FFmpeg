@@ -264,8 +264,8 @@ static av_always_inline int sbr_hf_apply_noise(int (*Y)[2],
     int m;
 
     for (m = 0; m < m_max; m++) {
-        int y0 = Y[m][0];
-        int y1 = Y[m][1];
+        unsigned y0 = Y[m][0];
+        unsigned y1 = Y[m][1];
         noise = (noise + 1) & 0x1ff;
         if (s_m[m].mant) {
             int shift, round;

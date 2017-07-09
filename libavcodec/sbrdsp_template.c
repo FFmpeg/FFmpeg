@@ -94,6 +94,8 @@ av_cold void AAC_RENAME(ff_sbrdsp_init)(SBRDSPContext *s)
 #if !USE_FIXED
     if (ARCH_ARM)
         ff_sbrdsp_init_arm(s);
+    if (ARCH_AARCH64)
+        ff_sbrdsp_init_aarch64(s);
     if (ARCH_X86)
         ff_sbrdsp_init_x86(s);
     if (ARCH_MIPS)

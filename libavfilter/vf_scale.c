@@ -337,10 +337,10 @@ static int config_props(AVFilterLink *outlink)
         }
     }
 
-    if (inlink->sample_aspect_ratio.num){
-        outlink->sample_aspect_ratio = av_mul_q((AVRational){outlink->h * inlink->w, outlink->w * inlink->h}, inlink->sample_aspect_ratio);
+    if (inlink0->sample_aspect_ratio.num){
+        outlink->sample_aspect_ratio = av_mul_q((AVRational){outlink->h * inlink0->w, outlink->w * inlink0->h}, inlink0->sample_aspect_ratio);
     } else
-        outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
+        outlink->sample_aspect_ratio = inlink0->sample_aspect_ratio;
 
     av_log(ctx, AV_LOG_VERBOSE, "w:%d h:%d fmt:%s sar:%d/%d -> w:%d h:%d fmt:%s sar:%d/%d flags:0x%0x\n",
            inlink ->w, inlink ->h, av_get_pix_fmt_name( inlink->format),

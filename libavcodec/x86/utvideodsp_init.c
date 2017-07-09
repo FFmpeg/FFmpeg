@@ -36,7 +36,7 @@ av_cold void ff_utvideodsp_init_x86(UTVideoDSPContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (ARCH_X86_64 && EXTERNAL_SSE2(cpu_flags)) {
+    if (EXTERNAL_SSE2(cpu_flags)) {
         c->restore_rgb_planes   = ff_restore_rgb_planes_sse2;
         c->restore_rgb_planes10 = ff_restore_rgb_planes10_sse2;
     }
