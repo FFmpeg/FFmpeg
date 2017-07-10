@@ -81,114 +81,68 @@ static void get_array(GetBitContext *s, int32_t *array, int size, int n)
 // 5.3.1 - Bit stream header
 static int parse_frame_header(DCACoreDecoder *s)
 {
-    int normal_frame, pcmr_index;
+    DCACoreFrameHeader h = { 0 };
+    int err = avpriv_dca_parse_core_frame_header(&s->gb, &h);
 
-    // Frame type
-    normal_frame = get_bits1(&s->gb);
+    if (err < 0) {
+        switch (err) {
+        case DCA_PARSE_ERROR_DEFICIT_SAMPLES:
+            av_log(s->avctx, AV_LOG_ERROR, "Deficit samples are not supported\n");
+            return h.normal_frame ? AVERROR_INVALIDDATA : AVERROR_PATCHWELCOME;
 
-    // Deficit sample count
-    if (get_bits(&s->gb, 5) != DCA_PCMBLOCK_SAMPLES - 1) {
-        av_log(s->avctx, AV_LOG_ERROR, "Deficit samples are not supported\n");
-        return normal_frame ? AVERROR_INVALIDDATA : AVERROR_PATCHWELCOME;
+        case DCA_PARSE_ERROR_PCM_BLOCKS:
+            av_log(s->avctx, AV_LOG_ERROR, "Unsupported number of PCM sample blocks (%d)\n", h.npcmblocks);
+            return (h.npcmblocks < 6 || h.normal_frame) ? AVERROR_INVALIDDATA : AVERROR_PATCHWELCOME;
+
+        case DCA_PARSE_ERROR_FRAME_SIZE:
+            av_log(s->avctx, AV_LOG_ERROR, "Invalid core frame size (%d bytes)\n", h.frame_size);
+            return AVERROR_INVALIDDATA;
+
+        case DCA_PARSE_ERROR_AMODE:
+            av_log(s->avctx, AV_LOG_ERROR, "Unsupported audio channel arrangement (%d)\n", h.audio_mode);
+            return AVERROR_PATCHWELCOME;
+
+        case DCA_PARSE_ERROR_SAMPLE_RATE:
+            av_log(s->avctx, AV_LOG_ERROR, "Invalid core audio sampling frequency\n");
+            return AVERROR_INVALIDDATA;
+
+        case DCA_PARSE_ERROR_RESERVED_BIT:
+            av_log(s->avctx, AV_LOG_ERROR, "Reserved bit set\n");
+            return AVERROR_INVALIDDATA;
+
+        case DCA_PARSE_ERROR_LFE_FLAG:
+            av_log(s->avctx, AV_LOG_ERROR, "Invalid low frequency effects flag\n");
+            return AVERROR_INVALIDDATA;
+
+        case DCA_PARSE_ERROR_PCM_RES:
+            av_log(s->avctx, AV_LOG_ERROR, "Invalid source PCM resolution\n");
+            return AVERROR_INVALIDDATA;
+
+        default:
+            av_log(s->avctx, AV_LOG_ERROR, "Unknown core frame header error\n");
+            return AVERROR_INVALIDDATA;
+        }
     }
 
-    // CRC present flag
-    s->crc_present = get_bits1(&s->gb);
-
-    // Number of PCM sample blocks
-    s->npcmblocks = get_bits(&s->gb, 7) + 1;
-    if (s->npcmblocks & (DCA_SUBBAND_SAMPLES - 1)) {
-        av_log(s->avctx, AV_LOG_ERROR, "Unsupported number of PCM sample blocks (%d)\n", s->npcmblocks);
-        return (s->npcmblocks < 6 || normal_frame) ? AVERROR_INVALIDDATA : AVERROR_PATCHWELCOME;
-    }
-
-    // Primary frame byte size
-    s->frame_size = get_bits(&s->gb, 14) + 1;
-    if (s->frame_size < 96) {
-        av_log(s->avctx, AV_LOG_ERROR, "Invalid core frame size (%d bytes)\n", s->frame_size);
-        return AVERROR_INVALIDDATA;
-    }
-
-    // Audio channel arrangement
-    s->audio_mode = get_bits(&s->gb, 6);
-    if (s->audio_mode >= DCA_AMODE_COUNT) {
-        av_log(s->avctx, AV_LOG_ERROR, "Unsupported audio channel arrangement (%d)\n", s->audio_mode);
-        return AVERROR_PATCHWELCOME;
-    }
-
-    // Core audio sampling frequency
-    s->sample_rate = avpriv_dca_sample_rates[get_bits(&s->gb, 4)];
-    if (!s->sample_rate) {
-        av_log(s->avctx, AV_LOG_ERROR, "Invalid core audio sampling frequency\n");
-        return AVERROR_INVALIDDATA;
-    }
-
-    // Transmission bit rate
-    s->bit_rate = ff_dca_bit_rates[get_bits(&s->gb, 5)];
-
-    // Reserved field
-    skip_bits1(&s->gb);
-
-    // Embedded dynamic range flag
-    s->drc_present = get_bits1(&s->gb);
-
-    // Embedded time stamp flag
-    s->ts_present = get_bits1(&s->gb);
-
-    // Auxiliary data flag
-    s->aux_present = get_bits1(&s->gb);
-
-    // HDCD mastering flag
-    skip_bits1(&s->gb);
-
-    // Extension audio descriptor flag
-    s->ext_audio_type = get_bits(&s->gb, 3);
-
-    // Extended coding flag
-    s->ext_audio_present = get_bits1(&s->gb);
-
-    // Audio sync word insertion flag
-    s->sync_ssf = get_bits1(&s->gb);
-
-    // Low frequency effects flag
-    s->lfe_present = get_bits(&s->gb, 2);
-    if (s->lfe_present == DCA_LFE_FLAG_INVALID) {
-        av_log(s->avctx, AV_LOG_ERROR, "Invalid low frequency effects flag\n");
-        return AVERROR_INVALIDDATA;
-    }
-
-    // Predictor history flag switch
-    s->predictor_history = get_bits1(&s->gb);
-
-    // Header CRC check bytes
-    if (s->crc_present)
-        skip_bits(&s->gb, 16);
-
-    // Multirate interpolator switch
-    s->filter_perfect = get_bits1(&s->gb);
-
-    // Encoder software revision
-    skip_bits(&s->gb, 4);
-
-    // Copy history
-    skip_bits(&s->gb, 2);
-
-    // Source PCM resolution
-    s->source_pcm_res = ff_dca_bits_per_sample[pcmr_index = get_bits(&s->gb, 3)];
-    if (!s->source_pcm_res) {
-        av_log(s->avctx, AV_LOG_ERROR, "Invalid source PCM resolution\n");
-        return AVERROR_INVALIDDATA;
-    }
-    s->es_format = pcmr_index & 1;
-
-    // Front sum/difference flag
-    s->sumdiff_front = get_bits1(&s->gb);
-
-    // Surround sum/difference flag
-    s->sumdiff_surround = get_bits1(&s->gb);
-
-    // Dialog normalization / unspecified
-    skip_bits(&s->gb, 4);
+    s->crc_present          = h.crc_present;
+    s->npcmblocks           = h.npcmblocks;
+    s->frame_size           = h.frame_size;
+    s->audio_mode           = h.audio_mode;
+    s->sample_rate          = avpriv_dca_sample_rates[h.sr_code];
+    s->bit_rate             = ff_dca_bit_rates[h.br_code];
+    s->drc_present          = h.drc_present;
+    s->ts_present           = h.ts_present;
+    s->aux_present          = h.aux_present;
+    s->ext_audio_type       = h.ext_audio_type;
+    s->ext_audio_present    = h.ext_audio_present;
+    s->sync_ssf             = h.sync_ssf;
+    s->lfe_present          = h.lfe_present;
+    s->predictor_history    = h.predictor_history;
+    s->filter_perfect       = h.filter_perfect;
+    s->source_pcm_res       = ff_dca_bits_per_sample[h.pcmr_code];
+    s->es_format            = h.pcmr_code & 1;
+    s->sumdiff_front        = h.sumdiff_front;
+    s->sumdiff_surround     = h.sumdiff_surround;
 
     return 0;
 }
@@ -1850,7 +1804,6 @@ int ff_dca_core_parse(DCACoreDecoder *s, uint8_t *data, int size)
     if ((ret = init_get_bits8(&s->gb, data, size)) < 0)
         return ret;
 
-    skip_bits_long(&s->gb, 32);
     if ((ret = parse_frame_header(s)) < 0)
         return ret;
     if ((ret = alloc_sample_buffer(s)) < 0)
