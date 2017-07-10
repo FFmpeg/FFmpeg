@@ -1049,8 +1049,6 @@ static av_cold int opus_encode_init(AVCodecContext *avctx)
     /* Initial padding will change if SILK is ever supported */
     avctx->initial_padding = 120;
 
-    avctx->cutoff = !avctx->cutoff ? 20000 : avctx->cutoff;
-
     if (!avctx->bit_rate) {
         int coupled = ff_opus_default_coupled_streams[s->channels - 1];
         avctx->bit_rate = coupled*(96000) + (s->channels - coupled*2)*(48000);
