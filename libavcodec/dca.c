@@ -45,6 +45,10 @@ const uint8_t ff_dca_freq_ranges[16] = {
     0, 1, 2, 3, 4, 1, 2, 3, 4, 4, 0, 1, 2, 3, 4, 4
 };
 
+const uint8_t ff_dca_bits_per_sample[8] = {
+    16, 16, 20, 20, 0, 24, 24, 0
+};
+
 int avpriv_dca_convert_bitstream(const uint8_t *src, int src_size, uint8_t *dst,
                              int max_size)
 {
