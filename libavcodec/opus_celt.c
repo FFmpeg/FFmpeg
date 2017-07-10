@@ -594,11 +594,6 @@ static void celt_postfilter(CeltFrame *f, CeltBlock *block)
 
 static int parse_postfilter(CeltFrame *f, OpusRangeCoder *rc, int consumed)
 {
-    static const float postfilter_taps[3][3] = {
-        { 0.3066406250f, 0.2170410156f, 0.1296386719f },
-        { 0.4638671875f, 0.2680664062f, 0.0           },
-        { 0.7998046875f, 0.1000976562f, 0.0           }
-    };
     int i;
 
     memset(f->block[0].pf_gains_new, 0, sizeof(f->block[0].pf_gains_new));
@@ -620,9 +615,9 @@ static int parse_postfilter(CeltFrame *f, OpusRangeCoder *rc, int consumed)
                 CeltBlock *block = &f->block[i];
 
                 block->pf_period_new = FFMAX(period, CELT_POSTFILTER_MINPERIOD);
-                block->pf_gains_new[0] = gain * postfilter_taps[tapset][0];
-                block->pf_gains_new[1] = gain * postfilter_taps[tapset][1];
-                block->pf_gains_new[2] = gain * postfilter_taps[tapset][2];
+                block->pf_gains_new[0] = gain * ff_celt_postfilter_taps[tapset][0];
+                block->pf_gains_new[1] = gain * ff_celt_postfilter_taps[tapset][1];
+                block->pf_gains_new[2] = gain * ff_celt_postfilter_taps[tapset][2];
             }
         }
 
