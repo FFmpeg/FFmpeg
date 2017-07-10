@@ -323,6 +323,8 @@ static int open_file(AVFormatContext *avf, unsigned fileno)
     AVFormatContext *new_avf = NULL;
     int ret;
     AVDictionary *tmp = NULL;
+    AVDictionaryEntry *t = NULL;
+    int fps_flag = 0;
 
     new_avf = avformat_alloc_context();
     if (!new_avf)
@@ -338,6 +340,15 @@ static int open_file(AVFormatContext *avf, unsigned fileno)
         av_dict_copy(&tmp, cat->options, 0);
 
     av_dict_set_int(&tmp, "cur_file_no", fileno, 0);
+
+    t = av_dict_get(tmp, "skip-calc-frame-rate", NULL, AV_DICT_MATCH_CASE);
+    if (t) {
+        fps_flag = (int) strtol(t->value, NULL, 10);
+        if (fps_flag > 0) {
+            av_dict_set_int(&new_avf->metadata, "skip-calc-frame-rate", fps_flag, 0);
+        }
+    }
+
     ret = avformat_open_input(&new_avf, file->url, NULL, &tmp);
     av_dict_free(&tmp);
     if (ret < 0 ||
