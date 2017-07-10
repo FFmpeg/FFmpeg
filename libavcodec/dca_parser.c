@@ -192,10 +192,11 @@ static int dca_parse_params(DCAParseContext *pc1, const uint8_t *buf,
                             int buf_size, int *duration, int *sample_rate)
 {
     GetBitContext gb;
-    uint8_t hdr[12 + AV_INPUT_BUFFER_PADDING_SIZE] = { 0 };
-    int ret, sample_blocks;
+    DCACoreFrameHeader h;
+    uint8_t hdr[DCA_CORE_FRAME_HEADER_SIZE + AV_INPUT_BUFFER_PADDING_SIZE] = { 0 };
+    int ret;
 
-    if (buf_size < 12)
+    if (buf_size < DCA_CORE_FRAME_HEADER_SIZE)
         return AVERROR_INVALIDDATA;
 
     if (AV_RB32(buf) == DCA_SYNCWORD_SUBSTREAM) {
@@ -255,21 +256,16 @@ static int dca_parse_params(DCAParseContext *pc1, const uint8_t *buf,
         return AVERROR_INVALIDDATA;
     }
 
-    if ((ret = avpriv_dca_convert_bitstream(buf, 12, hdr, 12)) < 0)
+    if ((ret = avpriv_dca_convert_bitstream(buf, DCA_CORE_FRAME_HEADER_SIZE,
+                                            hdr, DCA_CORE_FRAME_HEADER_SIZE)) < 0)
         return ret;
-
-    init_get_bits(&gb, hdr, 96);
-
-    skip_bits_long(&gb, 39);
-    sample_blocks = get_bits(&gb, 7) + 1;
-    if (sample_blocks < 8)
+    if ((ret = init_get_bits8(&gb, hdr, ret)) < 0)
+        return ret;
+    if (avpriv_dca_parse_core_frame_header(&gb, &h) < 0)
         return AVERROR_INVALIDDATA;
-    *duration = 256 * (sample_blocks / 8);
 
-    skip_bits(&gb, 20);
-    *sample_rate = avpriv_dca_sample_rates[get_bits(&gb, 4)];
-    if (*sample_rate == 0)
-        return AVERROR_INVALIDDATA;
+    *duration = 256 * (h.npcmblocks / 8);
+    *sample_rate = avpriv_dca_sample_rates[h.sr_code];
 
     return 0;
 }
