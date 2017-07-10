@@ -3321,6 +3321,7 @@ static int mov_write_ilst_tag(AVIOContext *pb, MOVMuxContext *mov,
     mov_write_string_metadata(s, pb, "tvsh",    "show"     , 1);
     mov_write_string_metadata(s, pb, "tven",    "episode_id",1);
     mov_write_string_metadata(s, pb, "tvnn",    "network"  , 1);
+    mov_write_string_metadata(s, pb, "keyw",    "keywords"  , 1);
     mov_write_int8_metadata  (s, pb, "tves",    "episode_sort",4);
     mov_write_int8_metadata  (s, pb, "tvsn",    "season_number",4);
     mov_write_int8_metadata  (s, pb, "stik",    "media_type",1);
@@ -3543,6 +3544,7 @@ static int mov_write_udta_tag(AVIOContext *pb, MOVMuxContext *mov,
         mov_write_string_metadata(s, pb_buf, "\251mak", "make",        0);
         mov_write_string_metadata(s, pb_buf, "\251mod", "model",       0);
         mov_write_string_metadata(s, pb_buf, "\251xyz", "location",    0);
+        mov_write_string_metadata(s, pb_buf, "\251key", "keywords",    0);
         mov_write_raw_metadata_tag(s, pb_buf, "XMP_", "xmp");
     } else {
         /* iTunes meta data */
