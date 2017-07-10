@@ -35,35 +35,7 @@ enum HeaderType {
     HEADER_XXCH
 };
 
-enum AudioMode {
-    AMODE_MONO,             // Mode 0: A (mono)
-    AMODE_MONO_DUAL,        // Mode 1: A + B (dual mono)
-    AMODE_STEREO,           // Mode 2: L + R (stereo)
-    AMODE_STEREO_SUMDIFF,   // Mode 3: (L+R) + (L-R) (sum-diff)
-    AMODE_STEREO_TOTAL,     // Mode 4: LT + RT (left and right total)
-    AMODE_3F,               // Mode 5: C + L + R
-    AMODE_2F1R,             // Mode 6: L + R + S
-    AMODE_3F1R,             // Mode 7: C + L + R + S
-    AMODE_2F2R,             // Mode 8: L + R + SL + SR
-    AMODE_3F2R,             // Mode 9: C + L + R + SL + SR
-
-    AMODE_COUNT
-};
-
-enum ExtAudioType {
-    EXT_AUDIO_XCH   = 0,
-    EXT_AUDIO_X96   = 2,
-    EXT_AUDIO_XXCH  = 6
-};
-
-enum LFEFlag {
-    LFE_FLAG_NONE,
-    LFE_FLAG_128,
-    LFE_FLAG_64,
-    LFE_FLAG_INVALID
-};
-
-static const int8_t prm_ch_to_spkr_map[AMODE_COUNT][5] = {
+static const int8_t prm_ch_to_spkr_map[DCA_AMODE_COUNT][5] = {
     { DCA_SPEAKER_C,            -1,             -1,             -1,             -1 },
     { DCA_SPEAKER_L, DCA_SPEAKER_R,             -1,             -1,             -1 },
     { DCA_SPEAKER_L, DCA_SPEAKER_R,             -1,             -1,             -1 },
@@ -76,7 +48,7 @@ static const int8_t prm_ch_to_spkr_map[AMODE_COUNT][5] = {
     { DCA_SPEAKER_C, DCA_SPEAKER_L, DCA_SPEAKER_R,  DCA_SPEAKER_Ls, DCA_SPEAKER_Rs }
 };
 
-static const uint8_t audio_mode_ch_mask[AMODE_COUNT] = {
+static const uint8_t audio_mode_ch_mask[DCA_AMODE_COUNT] = {
     DCA_SPEAKER_LAYOUT_MONO,
     DCA_SPEAKER_LAYOUT_STEREO,
     DCA_SPEAKER_LAYOUT_STEREO,
@@ -139,7 +111,7 @@ static int parse_frame_header(DCACoreDecoder *s)
 
     // Audio channel arrangement
     s->audio_mode = get_bits(&s->gb, 6);
-    if (s->audio_mode >= AMODE_COUNT) {
+    if (s->audio_mode >= DCA_AMODE_COUNT) {
         av_log(s->avctx, AV_LOG_ERROR, "Unsupported audio channel arrangement (%d)\n", s->audio_mode);
         return AVERROR_PATCHWELCOME;
     }
@@ -180,7 +152,7 @@ static int parse_frame_header(DCACoreDecoder *s)
 
     // Low frequency effects flag
     s->lfe_present = get_bits(&s->gb, 2);
-    if (s->lfe_present == LFE_FLAG_INVALID) {
+    if (s->lfe_present == DCA_LFE_FLAG_INVALID) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid low frequency effects flag\n");
         return AVERROR_INVALIDDATA;
     }
@@ -1783,7 +1755,7 @@ static int parse_optional_info(DCACoreDecoder *s)
         // must be done backwards from the end of core frame to work around
         // sync word aliasing issues.
         switch (s->ext_audio_type) {
-        case EXT_AUDIO_XCH:
+        case DCA_EXT_AUDIO_XCH:
             if (dca->request_channel_layout)
                 break;
 
@@ -1813,7 +1785,7 @@ static int parse_optional_info(DCACoreDecoder *s)
             }
             break;
 
-        case EXT_AUDIO_X96:
+        case DCA_EXT_AUDIO_X96:
             // The distance between X96 sync word and end of the core frame
             // must be equal to X96 frame size. Minimum X96 frame size is 96
             // bytes.
@@ -1836,7 +1808,7 @@ static int parse_optional_info(DCACoreDecoder *s)
             }
             break;
 
-        case EXT_AUDIO_XXCH:
+        case DCA_EXT_AUDIO_XXCH:
             if (dca->request_channel_layout)
                 break;
 
@@ -2102,7 +2074,7 @@ int ff_dca_core_filter_fixed(DCACoreDecoder *s, int x96_synth)
         int nlfesamples = s->npcmblocks >> 1;
 
         // Check LFF
-        if (s->lfe_present == LFE_FLAG_128) {
+        if (s->lfe_present == DCA_LFE_FLAG_128) {
             av_log(s->avctx, AV_LOG_ERROR, "Fixed point mode doesn't support LFF=1\n");
             return AVERROR(EINVAL);
         }
@@ -2152,7 +2124,7 @@ static int filter_frame_fixed(DCACoreDecoder *s, AVFrame *frame)
 
     // Undo embedded XCH downmix
     if (s->es_format && (s->ext_audio_mask & DCA_CSS_XCH)
-        && s->audio_mode >= AMODE_2F2R) {
+        && s->audio_mode >= DCA_AMODE_2F2R) {
         s->dcadsp->dmix_sub_xch(s->output_samples[DCA_SPEAKER_Ls],
                                 s->output_samples[DCA_SPEAKER_Rs],
                                 s->output_samples[DCA_SPEAKER_Cs],
@@ -2196,15 +2168,15 @@ static int filter_frame_fixed(DCACoreDecoder *s, AVFrame *frame)
 
     if (!(s->ext_audio_mask & (DCA_CSS_XXCH | DCA_CSS_XCH | DCA_EXSS_XXCH))) {
         // Front sum/difference decoding
-        if ((s->sumdiff_front && s->audio_mode > AMODE_MONO)
-            || s->audio_mode == AMODE_STEREO_SUMDIFF) {
+        if ((s->sumdiff_front && s->audio_mode > DCA_AMODE_MONO)
+            || s->audio_mode == DCA_AMODE_STEREO_SUMDIFF) {
             s->fixed_dsp->butterflies_fixed(s->output_samples[DCA_SPEAKER_L],
                                             s->output_samples[DCA_SPEAKER_R],
                                             nsamples);
         }
 
         // Surround sum/difference decoding
-        if (s->sumdiff_surround && s->audio_mode >= AMODE_2F2R) {
+        if (s->sumdiff_surround && s->audio_mode >= DCA_AMODE_2F2R) {
             s->fixed_dsp->butterflies_fixed(s->output_samples[DCA_SPEAKER_Ls],
                                             s->output_samples[DCA_SPEAKER_Rs],
                                             nsamples);
@@ -2308,7 +2280,7 @@ static int filter_frame_float(DCACoreDecoder *s, AVFrame *frame)
 
     // Filter LFE channel
     if (s->lfe_present) {
-        int dec_select = (s->lfe_present == LFE_FLAG_128);
+        int dec_select = (s->lfe_present == DCA_LFE_FLAG_128);
         float *samples = output_samples[DCA_SPEAKER_LFE1];
         int nlfesamples = s->npcmblocks >> (dec_select + 1);
 
@@ -2342,7 +2314,7 @@ static int filter_frame_float(DCACoreDecoder *s, AVFrame *frame)
 
     // Undo embedded XCH downmix
     if (s->es_format && (s->ext_audio_mask & DCA_CSS_XCH)
-        && s->audio_mode >= AMODE_2F2R) {
+        && s->audio_mode >= DCA_AMODE_2F2R) {
         s->float_dsp->vector_fmac_scalar(output_samples[DCA_SPEAKER_Ls],
                                          output_samples[DCA_SPEAKER_Cs],
                                          -M_SQRT1_2, nsamples);
@@ -2389,15 +2361,15 @@ static int filter_frame_float(DCACoreDecoder *s, AVFrame *frame)
 
     if (!(s->ext_audio_mask & (DCA_CSS_XXCH | DCA_CSS_XCH | DCA_EXSS_XXCH))) {
         // Front sum/difference decoding
-        if ((s->sumdiff_front && s->audio_mode > AMODE_MONO)
-            || s->audio_mode == AMODE_STEREO_SUMDIFF) {
+        if ((s->sumdiff_front && s->audio_mode > DCA_AMODE_MONO)
+            || s->audio_mode == DCA_AMODE_STEREO_SUMDIFF) {
             s->float_dsp->butterflies_float(output_samples[DCA_SPEAKER_L],
                                             output_samples[DCA_SPEAKER_R],
                                             nsamples);
         }
 
         // Surround sum/difference decoding
-        if (s->sumdiff_surround && s->audio_mode >= AMODE_2F2R) {
+        if (s->sumdiff_surround && s->audio_mode >= DCA_AMODE_2F2R) {
             s->float_dsp->butterflies_float(output_samples[DCA_SPEAKER_Ls],
                                             output_samples[DCA_SPEAKER_Rs],
                                             nsamples);
@@ -2424,7 +2396,7 @@ int ff_dca_core_filter_frame(DCACoreDecoder *s, AVFrame *frame)
 
     // Handle downmixing to stereo request
     if (dca->request_channel_layout == DCA_SPEAKER_LAYOUT_STEREO
-        && s->audio_mode > AMODE_MONO && s->prim_dmix_embedded
+        && s->audio_mode > DCA_AMODE_MONO && s->prim_dmix_embedded
         && (s->prim_dmix_type == DCA_DMIX_TYPE_LoRo ||
             s->prim_dmix_type == DCA_DMIX_TYPE_LtRt))
         s->request_mask = DCA_SPEAKER_LAYOUT_STEREO;
@@ -2457,8 +2429,8 @@ int ff_dca_core_filter_frame(DCACoreDecoder *s, AVFrame *frame)
     else
         avctx->bit_rate = 0;
 
-    if (s->audio_mode == AMODE_STEREO_TOTAL || (s->request_mask != s->ch_mask &&
-                                                s->prim_dmix_type == DCA_DMIX_TYPE_LtRt))
+    if (s->audio_mode == DCA_AMODE_STEREO_TOTAL || (s->request_mask != s->ch_mask &&
+                                                    s->prim_dmix_type == DCA_DMIX_TYPE_LtRt))
         matrix_encoding = AV_MATRIX_ENCODING_DOLBY;
     else
         matrix_encoding = AV_MATRIX_ENCODING_NONE;
