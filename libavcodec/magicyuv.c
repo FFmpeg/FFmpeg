@@ -438,9 +438,9 @@ static int build_huffman(AVCodecContext *avctx, GetBitContext *gbit, int max)
 
     memset(s->len, 0, sizeof(s->len));
     while (get_bits_left(gbit) >= 8) {
-        int b = get_bits(gbit, 4);
-        int x = get_bits(gbit, 4);
-        int l = get_bitsz(gbit, b) + 1;
+        int b = get_bits(gbit, 1);
+        int x = get_bits(gbit, 7);
+        int l = get_bitsz(gbit, b * 8) + 1;
 
         for (k = 0; k < l; k++)
             if (j + k < max)
