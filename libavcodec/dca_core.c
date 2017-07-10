@@ -1704,6 +1704,7 @@ static int parse_optional_info(DCACoreDecoder *s)
         int sync_pos = FFMIN(s->frame_size / 4, s->gb.size_in_bits / 32) - 1;
         int last_pos = get_bits_count(&s->gb) / 32;
         int size, dist;
+        uint32_t w1, w2 = 0;
 
         // Search for extension sync words aligned on 4-byte boundary. Search
         // must be done backwards from the end of core frame to work around
@@ -1718,15 +1719,15 @@ static int parse_optional_info(DCACoreDecoder *s)
             // compatibility with legacy bitstreams. Minimum XCH frame size is
             // 96 bytes. AMODE and PCHS are further checked to reduce
             // probability of alias sync detection.
-            for (; sync_pos >= last_pos; sync_pos--) {
-                if (AV_RB32(s->gb.buffer + sync_pos * 4) == DCA_SYNCWORD_XCH) {
-                    s->gb.index = (sync_pos + 1) * 32;
-                    size = get_bits(&s->gb, 10) + 1;
+            for (; sync_pos >= last_pos; sync_pos--, w2 = w1) {
+                w1 = AV_RB32(s->gb.buffer + sync_pos * 4);
+                if (w1 == DCA_SYNCWORD_XCH) {
+                    size = (w2 >> 22) + 1;
                     dist = s->frame_size - sync_pos * 4;
                     if (size >= 96
                         && (size == dist || size - 1 == dist)
-                        && get_bits(&s->gb, 7) == 0x08) {
-                        s->xch_pos = get_bits_count(&s->gb);
+                        && (w2 >> 15 & 0x7f) == 0x08) {
+                        s->xch_pos = sync_pos * 32 + 49;
                         break;
                     }
                 }
@@ -1743,13 +1744,13 @@ static int parse_optional_info(DCACoreDecoder *s)
             // The distance between X96 sync word and end of the core frame
             // must be equal to X96 frame size. Minimum X96 frame size is 96
             // bytes.
-            for (; sync_pos >= last_pos; sync_pos--) {
-                if (AV_RB32(s->gb.buffer + sync_pos * 4) == DCA_SYNCWORD_X96) {
-                    s->gb.index = (sync_pos + 1) * 32;
-                    size = get_bits(&s->gb, 12) + 1;
+            for (; sync_pos >= last_pos; sync_pos--, w2 = w1) {
+                w1 = AV_RB32(s->gb.buffer + sync_pos * 4);
+                if (w1 == DCA_SYNCWORD_X96) {
+                    size = (w2 >> 20) + 1;
                     dist = s->frame_size - sync_pos * 4;
                     if (size >= 96 && size == dist) {
-                        s->x96_pos = get_bits_count(&s->gb);
+                        s->x96_pos = sync_pos * 32 + 44;
                         break;
                     }
                 }
@@ -1768,10 +1769,10 @@ static int parse_optional_info(DCACoreDecoder *s)
 
             // XXCH frame header CRC must be valid. Minimum XXCH frame header
             // size is 11 bytes.
-            for (; sync_pos >= last_pos; sync_pos--) {
-                if (AV_RB32(s->gb.buffer + sync_pos * 4) == DCA_SYNCWORD_XXCH) {
-                    s->gb.index = (sync_pos + 1) * 32;
-                    size = get_bits(&s->gb, 6) + 1;
+            for (; sync_pos >= last_pos; sync_pos--, w2 = w1) {
+                w1 = AV_RB32(s->gb.buffer + sync_pos * 4);
+                if (w1 == DCA_SYNCWORD_XXCH) {
+                    size = (w2 >> 26) + 1;
                     dist = s->gb.size_in_bits / 8 - sync_pos * 4;
                     if (size >= 11 && size <= dist &&
                         !av_crc(dca->crctab, 0xffff, s->gb.buffer +
