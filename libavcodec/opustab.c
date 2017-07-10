@@ -772,11 +772,16 @@ const uint8_t ff_celt_log_freq_range[] = {
     0,  0,  0,  0,  0,  0,  0,  0,  8,  8,  8,  8, 16, 16, 16, 21, 21, 24, 29, 34, 36
 };
 
+/* Positive - increased freqeuency resolution (only possible on transients)
+ * Negative - increased time resolution */
 const int8_t ff_celt_tf_select[4][2][2][2] = {
-    { { { 0, -1 }, { 0, -1 } }, { { 0, -1 }, { 0, -1 } } },
-    { { { 0, -1 }, { 0, -2 } }, { { 1,  0 }, { 1, -1 } } },
-    { { { 0, -2 }, { 0, -3 } }, { { 2,  0 }, { 1, -1 } } },
-    { { { 0, -2 }, { 0, -3 } }, { { 3,  0 }, { 1, -1 } } }
+    /*          OFF                        ON                Transient frame */
+    /*     OFF        ON             OFF        ON           TF select flag  */
+    /*   OFF  ON    OFF  ON        OFF  ON    OFF  ON        TF change flag  */
+    { { { 0, -1 }, { 0, -1 } }, { { 0, -1 }, { 0, -1 } } }, /* 120 */
+    { { { 0, -1 }, { 0, -2 } }, { { 1,  0 }, { 1, -1 } } }, /* 240 */
+    { { { 0, -2 }, { 0, -3 } }, { { 2,  0 }, { 1, -1 } } }, /* 480 */
+    { { { 0, -2 }, { 0, -3 } }, { { 3,  0 }, { 1, -1 } } }  /* 960 */
 };
 
 const float ff_celt_mean_energy[] = {
