@@ -25,6 +25,7 @@
 #include "dca.h"
 #include "dca_core.h"
 #include "dca_exss.h"
+#include "dca_lbr.h"
 #include "dca_syncwords.h"
 #include "get_bits.h"
 #include "parser.h"
@@ -214,9 +215,9 @@ static int dca_parse_params(DCAParseContext *pc1, const uint8_t *buf,
                 return AVERROR_INVALIDDATA;
 
             switch (get_bits(&gb, 8)) {
-            case 2:
+            case DCA_LBR_HEADER_DECODER_INIT:
                 pc1->sr_code = get_bits(&gb, 8);
-            case 1:
+            case DCA_LBR_HEADER_SYNC_ONLY:
                 break;
             default:
                 return AVERROR_INVALIDDATA;
@@ -267,7 +268,7 @@ static int dca_parse_params(DCAParseContext *pc1, const uint8_t *buf,
     if (avpriv_dca_parse_core_frame_header(&gb, &h) < 0)
         return AVERROR_INVALIDDATA;
 
-    *duration = 256 * (h.npcmblocks / 8);
+    *duration = h.npcmblocks * DCA_PCMBLOCK_SAMPLES;
     *sample_rate = avpriv_dca_sample_rates[h.sr_code];
     if (*profile != FF_PROFILE_UNKNOWN)
         return 0;
