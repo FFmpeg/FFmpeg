@@ -101,6 +101,7 @@ typedef struct DCADSPData {
 typedef struct DCACoreDecoder {
     AVCodecContext  *avctx;
     GetBitContext   gb;
+    GetBitContext   gb_in;
 
     // Bit stream header
     int     crc_present;        ///< CRC present flag

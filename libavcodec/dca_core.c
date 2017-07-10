@@ -1804,6 +1804,7 @@ int ff_dca_core_parse(DCACoreDecoder *s, uint8_t *data, int size)
 
     if ((ret = init_get_bits8(&s->gb, data, size)) < 0)
         return ret;
+    s->gb_in = s->gb;
 
     if ((ret = parse_frame_header(s)) < 0)
         return ret;
@@ -1831,7 +1832,6 @@ int ff_dca_core_parse_exss(DCACoreDecoder *s, uint8_t *data, DCAExssAsset *asset
 {
     AVCodecContext *avctx = s->avctx;
     DCAContext *dca = avctx->priv_data;
-    GetBitContext gb = s->gb;
     int exss_mask = asset ? asset->extension_mask : 0;
     int ret = 0, ext = 0;
 
@@ -1843,11 +1843,13 @@ int ff_dca_core_parse_exss(DCACoreDecoder *s, uint8_t *data, DCAExssAsset *asset
             ret = parse_xxch_frame(s);
             ext = DCA_EXSS_XXCH;
         } else if (s->xxch_pos) {
-            s->gb.index = s->xxch_pos;
+            s->gb = s->gb_in;
+            skip_bits_long(&s->gb, s->xxch_pos);
             ret = parse_xxch_frame(s);
             ext = DCA_CSS_XXCH;
         } else if (s->xch_pos) {
-            s->gb.index = s->xch_pos;
+            s->gb = s->gb_in;
+            skip_bits_long(&s->gb, s->xch_pos);
             ret = parse_xch_frame(s);
             ext = DCA_CSS_XCH;
         }
@@ -1889,8 +1891,8 @@ int ff_dca_core_parse_exss(DCACoreDecoder *s, uint8_t *data, DCAExssAsset *asset
                 s->ext_audio_mask |= DCA_EXSS_X96;
             }
         } else if (s->x96_pos) {
-            s->gb = gb;
-            s->gb.index = s->x96_pos;
+            s->gb = s->gb_in;
+            skip_bits_long(&s->gb, s->x96_pos);
             if ((ret = parse_x96_frame(s)) < 0) {
                 if (ret == AVERROR(ENOMEM) || (avctx->err_recognition & AV_EF_EXPLODE))
                     return ret;
