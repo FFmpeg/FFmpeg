@@ -23,6 +23,7 @@
  */
 
 #include "dca.h"
+#include "dca_core.h"
 #include "dca_exss.h"
 #include "dca_syncwords.h"
 #include "get_bits.h"
@@ -189,19 +190,19 @@ static av_cold int dca_parse_init(AVCodecParserContext *s)
 }
 
 static int dca_parse_params(DCAParseContext *pc1, const uint8_t *buf,
-                            int buf_size, int *duration, int *sample_rate)
+                            int buf_size, int *duration, int *sample_rate,
+                            int *profile)
 {
+    DCAExssAsset *asset = &pc1->exss.assets[0];
     GetBitContext gb;
     DCACoreFrameHeader h;
     uint8_t hdr[DCA_CORE_FRAME_HEADER_SIZE + AV_INPUT_BUFFER_PADDING_SIZE] = { 0 };
-    int ret;
+    int ret, frame_size;
 
     if (buf_size < DCA_CORE_FRAME_HEADER_SIZE)
         return AVERROR_INVALIDDATA;
 
     if (AV_RB32(buf) == DCA_SYNCWORD_SUBSTREAM) {
-        DCAExssAsset *asset = &pc1->exss.assets[0];
-
         if ((ret = ff_dca_exss_parse(&pc1->exss, buf, buf_size)) < 0)
             return ret;
 
@@ -226,6 +227,7 @@ static int dca_parse_params(DCAParseContext *pc1, const uint8_t *buf,
 
             *sample_rate = ff_dca_sampling_freqs[pc1->sr_code];
             *duration = 1024 << ff_dca_freq_ranges[pc1->sr_code];
+            *profile = FF_PROFILE_DTS_EXPRESS;
             return 0;
         }
 
@@ -250,6 +252,7 @@ static int dca_parse_params(DCAParseContext *pc1, const uint8_t *buf,
 
             *sample_rate = asset->max_sample_rate;
             *duration = (1 + (*sample_rate > 96000)) << nsamples_log2;
+            *profile = FF_PROFILE_DTS_HD_MA;
             return 0;
         }
 
@@ -266,6 +269,37 @@ static int dca_parse_params(DCAParseContext *pc1, const uint8_t *buf,
 
     *duration = 256 * (h.npcmblocks / 8);
     *sample_rate = avpriv_dca_sample_rates[h.sr_code];
+    if (*profile != FF_PROFILE_UNKNOWN)
+        return 0;
+
+    *profile = FF_PROFILE_DTS;
+    if (h.ext_audio_present) {
+        switch (h.ext_audio_type) {
+        case DCA_EXT_AUDIO_XCH:
+        case DCA_EXT_AUDIO_XXCH:
+            *profile = FF_PROFILE_DTS_ES;
+            break;
+        case DCA_EXT_AUDIO_X96:
+            *profile = FF_PROFILE_DTS_96_24;
+            break;
+        }
+    }
+
+    frame_size = FFALIGN(h.frame_size, 4);
+    if (buf_size - 4 < frame_size)
+        return 0;
+
+    buf      += frame_size;
+    buf_size -= frame_size;
+    if (AV_RB32(buf) != DCA_SYNCWORD_SUBSTREAM)
+        return 0;
+    if (ff_dca_exss_parse(&pc1->exss, buf, buf_size) < 0)
+        return 0;
+
+    if (asset->extension_mask & DCA_EXSS_XLL)
+        *profile = FF_PROFILE_DTS_HD_MA;
+    else if (asset->extension_mask & (DCA_EXSS_XBR | DCA_EXSS_XXCH | DCA_EXSS_X96))
+        *profile = FF_PROFILE_DTS_HD_HRA;
 
     return 0;
 }
@@ -298,7 +332,7 @@ static int dca_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     }
 
     /* read the duration and sample rate from the frame header */
-    if (!dca_parse_params(pc1, buf, buf_size, &duration, &sample_rate)) {
+    if (!dca_parse_params(pc1, buf, buf_size, &duration, &sample_rate, &avctx->profile)) {
         if (!avctx->sample_rate)
             avctx->sample_rate = sample_rate;
         s->duration = av_rescale(duration, avctx->sample_rate, sample_rate);
