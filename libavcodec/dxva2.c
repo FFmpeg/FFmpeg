@@ -64,8 +64,7 @@ static const int prof_h264_high[]    = {FF_PROFILE_H264_CONSTRAINED_BASELINE,
                                         FF_PROFILE_UNKNOWN};
 static const int prof_hevc_main[]    = {FF_PROFILE_HEVC_MAIN,
                                         FF_PROFILE_UNKNOWN};
-static const int prof_hevc_main10[]  = {FF_PROFILE_HEVC_MAIN,
-                                        FF_PROFILE_HEVC_MAIN_10,
+static const int prof_hevc_main10[]  = {FF_PROFILE_HEVC_MAIN_10,
                                         FF_PROFILE_UNKNOWN};
 
 static const dxva_mode dxva_modes[] = {
