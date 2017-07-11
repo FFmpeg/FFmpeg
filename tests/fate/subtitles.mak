@@ -55,6 +55,9 @@ fate-sub-sami2: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/SAMI_multilang_twea
 FATE_SUBTITLES_ASS-$(call DEMDEC, SRT, SUBRIP) += fate-sub-srt
 fate-sub-srt: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/SubRip_capability_tester.srt
 
+FATE_SUBTITLES_ASS-$(call DEMDEC, SRT, SUBRIP) += fate-sub-srt-badsyntax
+fate-sub-srt-badsyntax: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/badsyntax.srt
+
 FATE_SUBTITLES-$(call ALLYES, SRT_DEMUXER SUBRIP_DECODER SRT_MUXER) += fate-sub-srt-rrn-remux
 fate-sub-srt-rrn-remux: CMD = fmtstdout srt -i $(TARGET_SAMPLES)/sub/ticket5032-rrn.srt -c:s copy
 
