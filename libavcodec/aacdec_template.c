@@ -1211,7 +1211,7 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
     AAC_RENAME_32(ff_mdct_init)(&ac->mdct_small,  8, 1, 1.0 / RANGE15(128.0));
     AAC_RENAME_32(ff_mdct_init)(&ac->mdct_ltp,   11, 0, RANGE15(-2.0));
 #if !USE_FIXED
-    ret = ff_mdct15_init(&ac->mdct480, 1, 5, -1.0f);
+    ret = ff_mdct15_init(&ac->mdct480, 1, 5, -1.0f/(16*1024*960));
     if (ret < 0)
         return ret;
 #endif
@@ -2664,7 +2664,7 @@ static void imdct_and_windowing_eld(AACContext *ac, SingleChannelElement *sce)
     }
 #if !USE_FIXED
     if (n == 480)
-        ac->mdct480->imdct_half(ac->mdct480, buf, in, 1, -1.f/(16*1024*960));
+        ac->mdct480->imdct_half(ac->mdct480, buf, in, 1);
     else
 #endif
         ac->mdct.imdct_half(&ac->mdct_ld, buf, in);

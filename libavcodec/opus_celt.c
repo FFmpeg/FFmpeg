@@ -775,10 +775,9 @@ int ff_celt_decode_frame(CeltFrame *f, OpusRangeCoder *rc,
                          float **output, int channels, int frame_size,
                          int start_band,  int end_band)
 {
-    int i, j;
+    int i, j, downmix = 0;
     int consumed;           // bits of entropy consumed thus far for this frame
     MDCT15Context *imdct;
-    float imdct_scale = 1.0;
 
     if (channels != 1 && channels != 2) {
         av_log(f->avctx, AV_LOG_ERROR, "Invalid number of coded channels: %d\n",
@@ -870,7 +869,7 @@ int ff_celt_decode_frame(CeltFrame *f, OpusRangeCoder *rc,
     /* stereo -> mono downmix */
     if (f->output_channels < f->channels) {
         f->dsp->vector_fmac_scalar(f->block[0].coeffs, f->block[1].coeffs, 1.0, FFALIGN(frame_size, 16));
-        imdct_scale = 0.5;
+        downmix = 1;
     } else if (f->output_channels > f->channels)
         memcpy(f->block[1].coeffs, f->block[0].coeffs, frame_size * sizeof(float));
 
@@ -895,10 +894,13 @@ int ff_celt_decode_frame(CeltFrame *f, OpusRangeCoder *rc,
             float *dst  = block->buf + 1024 + j * f->blocksize;
 
             imdct->imdct_half(imdct, dst + CELT_OVERLAP / 2, f->block[i].coeffs + j,
-                              f->blocks, imdct_scale);
+                              f->blocks);
             f->dsp->vector_fmul_window(dst, dst, dst + CELT_OVERLAP / 2,
                                        ff_celt_window, CELT_OVERLAP / 2);
         }
+
+        if (downmix)
+            f->dsp->vector_fmul_scalar(&block->buf[1024], &block->buf[1024], 0.5f, frame_size);
 
         /* postfilter */
         celt_postfilter(f, block);
