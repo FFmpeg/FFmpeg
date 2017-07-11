@@ -142,6 +142,7 @@ OBJS = adler32.o                                                        \
        samplefmt.o                                                      \
        sha.o                                                            \
        sha512.o                                                         \
+       slicethread.o                                                    \
        spherical.o                                                      \
        stereo3d.o                                                       \
        threadmessage.o                                                  \
