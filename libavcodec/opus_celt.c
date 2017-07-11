@@ -907,10 +907,11 @@ int ff_celt_decode_frame(CeltFrame *f, OpusRangeCoder *rc,
 
         /* deemphasis and output scaling */
         for (j = 0; j < frame_size; j++) {
-            float tmp = block->buf[1024 - frame_size + j] + m;
+            const float tmp = block->buf[1024 - frame_size + j] + m;
             m = tmp * CELT_EMPH_COEFF;
-            output[i][j] = tmp / 32768.;
+            output[i][j] = tmp;
         }
+
         block->emph_coeff = m;
     }
 
@@ -1006,7 +1007,7 @@ int ff_celt_init(AVCodecContext *avctx, CeltFrame **f, int output_channels)
     frm->output_channels = output_channels;
 
     for (i = 0; i < FF_ARRAY_ELEMS(frm->imdct); i++)
-        if ((ret = ff_mdct15_init(&frm->imdct[i], 1, i + 3, -1.0f)) < 0)
+        if ((ret = ff_mdct15_init(&frm->imdct[i], 1, i + 3, -1.0f/32768)) < 0)
             goto fail;
 
     if ((ret = ff_celt_pvq_init(&frm->pvq)) < 0)
