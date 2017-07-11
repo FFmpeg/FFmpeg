@@ -249,7 +249,7 @@ static int videotoolbox_buffer_create(AVCodecContext *avctx, AVFrame *frame)
         vtctx->cached_hw_frames_ctx = hw_frames_ctx;
     }
 
-    av_assert0(!frame->hw_frames_ctx);
+    av_buffer_unref(&frame->hw_frames_ctx);
     frame->hw_frames_ctx = av_buffer_ref(vtctx->cached_hw_frames_ctx);
     if (!frame->hw_frames_ctx)
         return AVERROR(ENOMEM);
