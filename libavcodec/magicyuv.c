@@ -104,7 +104,7 @@ static int huff_build10(VLC *vlc, uint8_t *len)
     for (i = 0; i < 1024; i++) {
         he[i].sym = 1023 - i;
         he[i].len = len[i];
-        if (len[i] == 0)
+        if (len[i] == 0 || len[i] > 32)
             return AVERROR_INVALIDDATA;
     }
     AV_QSORT(he, 1024, HuffEntry, huff_cmp_len10);
@@ -136,7 +136,7 @@ static int huff_build12(VLC *vlc, uint8_t *len)
     for (i = 0; i < 4096; i++) {
         he[i].sym = 4095 - i;
         he[i].len = len[i];
-        if (len[i] == 0)
+        if (len[i] == 0 || len[i] > 32)
             return AVERROR_INVALIDDATA;
     }
     AV_QSORT(he, 4096, HuffEntry, huff_cmp_len12);
@@ -168,7 +168,7 @@ static int huff_build(VLC *vlc, uint8_t *len)
     for (i = 0; i < 256; i++) {
         he[i].sym = 255 - i;
         he[i].len = len[i];
-        if (len[i] == 0)
+        if (len[i] == 0 || len[i] > 32)
             return AVERROR_INVALIDDATA;
     }
     AV_QSORT(he, 256, HuffEntry, huff_cmp_len);
