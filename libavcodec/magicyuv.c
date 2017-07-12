@@ -90,6 +90,8 @@ static int build_huff(VLC *vlc, uint8_t *len)
     for (i = 0; i < 256; i++) {
         he[i].sym = 255 - i;
         he[i].len = len[i];
+        if (len[i] == 0 || len[i] > 32)
+            return AVERROR_INVALIDDATA;
     }
     AV_QSORT(he, 256, HuffEntry, ff_magy_huff_cmp_len);
 
