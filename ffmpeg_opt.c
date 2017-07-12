@@ -145,6 +145,7 @@ static int override_ffserver  = 0;
 static int input_stream_potentially_available = 0;
 static int ignore_unknown_streams = 0;
 static int copy_unknown_streams = 0;
+static int find_stream_info = 1;
 
 static void uninit_options(OptionsContext *o)
 {
@@ -949,10 +950,8 @@ static int open_input_file(OptionsContext *o, const char *filename)
     AVInputFormat *file_iformat = NULL;
     int err, i, ret;
     int64_t timestamp;
-    AVDictionary **opts;
     AVDictionary *unused_opts = NULL;
     AVDictionaryEntry *e = NULL;
-    int orig_nb_streams;                     // number of streams before avformat_find_stream_info
     char *   video_codec_name = NULL;
     char *   audio_codec_name = NULL;
     char *subtitle_codec_name = NULL;
@@ -1055,19 +1054,26 @@ static int open_input_file(OptionsContext *o, const char *filename)
     for (i = 0; i < ic->nb_streams; i++)
         choose_decoder(o, ic, ic->streams[i]);
 
-    /* Set AVCodecContext options for avformat_find_stream_info */
-    opts = setup_find_stream_info_opts(ic, o->g->codec_opts);
-    orig_nb_streams = ic->nb_streams;
+    if (find_stream_info) {
+        AVDictionary **opts = setup_find_stream_info_opts(ic, o->g->codec_opts);
+        int orig_nb_streams = ic->nb_streams;
 
+        // TODO: reindent
     /* If not enough info to get the stream parameters, we decode the
        first frames to get it. (used in mpeg case for example) */
     ret = avformat_find_stream_info(ic, opts);
+
+    for (i = 0; i < orig_nb_streams; i++)
+        av_dict_free(&opts[i]);
+    av_freep(&opts);
+
     if (ret < 0) {
         av_log(NULL, AV_LOG_FATAL, "%s: could not find codec parameters\n", filename);
         if (ic->nb_streams == 0) {
             avformat_close_input(&ic);
             exit_program(1);
         }
+    }
     }
 
     if (o->start_time_eof != AV_NOPTS_VALUE) {
@@ -1179,10 +1185,6 @@ static int open_input_file(OptionsContext *o, const char *filename)
                 dump_attachment(st, o->dump_attachment[i].u.str);
         }
     }
-
-    for (i = 0; i < orig_nb_streams; i++)
-        av_dict_free(&opts[i]);
-    av_freep(&opts);
 
     input_stream_potentially_available = 1;
 
@@ -3520,6 +3522,8 @@ const OptionDef options[] = {
     { "thread_queue_size", HAS_ARG | OPT_INT | OPT_OFFSET | OPT_EXPERT | OPT_INPUT,
                                                                      { .off = OFFSET(thread_queue_size) },
         "set the maximum number of queued packets from the demuxer" },
+    { "find_stream_info", OPT_BOOL | OPT_PERFILE | OPT_INPUT | OPT_EXPERT, { &find_stream_info },
+        "read and decode the streams to fill missing information with heuristics" },
 
     /* video options */
     { "vframes",      OPT_VIDEO | HAS_ARG  | OPT_PERFILE | OPT_OUTPUT,           { .func_arg = opt_video_frames },
