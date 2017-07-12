@@ -210,17 +210,15 @@ static void celt_frame_mdct(OpusEncContext *s, CeltFrame *f)
     int i, t, ch;
     float *win = s->scratch;
 
-    /* I think I can use s->dsp->vector_fmul_window for transients at least */
     if (f->transient) {
         for (ch = 0; ch < f->channels; ch++) {
             CeltBlock *b = &f->block[ch];
             float *src1 = b->overlap;
             for (t = 0; t < f->blocks; t++) {
                 float *src2 = &b->samples[CELT_OVERLAP*t];
-                for (i = 0; i < CELT_OVERLAP; i++) {
-                    win[               i] = src1[i]*ff_celt_window[i];
-                    win[CELT_OVERLAP + i] = src2[i]*ff_celt_window[CELT_OVERLAP - i - 1];
-                }
+                s->dsp->vector_fmul(win, src1, ff_celt_window, CELT_OVERLAP);
+                s->dsp->vector_fmul_reverse(&win[CELT_OVERLAP], src2,
+                                            ff_celt_window - 8, CELT_OVERLAP + 8);
                 src1 = src2;
                 s->mdct[0]->mdct(s->mdct[0], b->coeffs + t, win, f->blocks);
             }

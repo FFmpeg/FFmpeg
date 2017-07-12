@@ -154,8 +154,7 @@ extern const uint32_t ff_celt_pvq_u[1272];
 extern const float    ff_celt_postfilter_taps[3][3];
 
 extern const float    ff_celt_window2[120];
-
-DECLARE_ALIGNED(32, extern const float, ff_celt_window)[120];
+extern const float   *ff_celt_window;
 
 extern const uint32_t * const ff_celt_pvq_u_row[15];
 
