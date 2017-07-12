@@ -349,6 +349,7 @@ static int nb_vfilters = 0;
 static char *afilters = NULL;
 #endif
 static int autorotate = 1;
+static int find_stream_info = 1;
 
 /* current context */
 static int is_full_screen;
@@ -2695,8 +2696,6 @@ static int read_thread(void *arg)
     int64_t stream_start_time;
     int pkt_in_play_range = 0;
     AVDictionaryEntry *t;
-    AVDictionary **opts;
-    int orig_nb_streams;
     SDL_mutex *wait_mutex = SDL_CreateMutex();
     int scan_all_pmts_set = 0;
     int64_t pkt_ts;
@@ -2746,9 +2745,11 @@ static int read_thread(void *arg)
 
     av_format_inject_global_side_data(ic);
 
-    opts = setup_find_stream_info_opts(ic, codec_opts);
-    orig_nb_streams = ic->nb_streams;
+    if (find_stream_info) {
+        AVDictionary **opts = setup_find_stream_info_opts(ic, codec_opts);
+        int orig_nb_streams = ic->nb_streams;
 
+        // TODO: reindent
     err = avformat_find_stream_info(ic, opts);
 
     for (i = 0; i < orig_nb_streams; i++)
@@ -2760,6 +2761,7 @@ static int read_thread(void *arg)
                "%s: could not find codec parameters\n", is->filename);
         ret = -1;
         goto fail;
+    }
     }
 
     if (ic->pb)
@@ -3557,6 +3559,8 @@ static const OptionDef options[] = {
     { "scodec", HAS_ARG | OPT_STRING | OPT_EXPERT, { &subtitle_codec_name }, "force subtitle decoder", "decoder_name" },
     { "vcodec", HAS_ARG | OPT_STRING | OPT_EXPERT, {    &video_codec_name }, "force video decoder",    "decoder_name" },
     { "autorotate", OPT_BOOL, { &autorotate }, "automatically rotate video", "" },
+    { "find_stream_info", OPT_BOOL | OPT_INPUT | OPT_EXPERT, { &find_stream_info },
+        "read and decode the streams to fill missing information with heuristics" },
     { NULL, },
 };
 
