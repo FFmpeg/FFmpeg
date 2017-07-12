@@ -130,6 +130,8 @@ typedef struct ReadInterval {
 static ReadInterval *read_intervals;
 static int read_intervals_nb = 0;
 
+static int find_stream_info  = 1;
+
 /* section structure definition */
 
 #define SECTION_MAX_NB_CHILDREN 10
@@ -2771,10 +2773,9 @@ static void show_error(WriterContext *w, int err)
 
 static int open_input_file(InputFile *ifile, const char *filename)
 {
-    int err, i, orig_nb_streams;
+    int err, i;
     AVFormatContext *fmt_ctx = NULL;
     AVDictionaryEntry *t;
-    AVDictionary **opts;
     int scan_all_pmts_set = 0;
 
     fmt_ctx = avformat_alloc_context();
@@ -2802,10 +2803,11 @@ static int open_input_file(InputFile *ifile, const char *filename)
         return AVERROR_OPTION_NOT_FOUND;
     }
 
-    /* fill the streams in the format context */
-    opts = setup_find_stream_info_opts(fmt_ctx, codec_opts);
-    orig_nb_streams = fmt_ctx->nb_streams;
+    if (find_stream_info) {
+        AVDictionary **opts = setup_find_stream_info_opts(fmt_ctx, codec_opts);
+        int orig_nb_streams = fmt_ctx->nb_streams;
 
+        // TODO: reindent
     err = avformat_find_stream_info(fmt_ctx, opts);
 
     for (i = 0; i < orig_nb_streams; i++)
@@ -2815,6 +2817,7 @@ static int open_input_file(InputFile *ifile, const char *filename)
     if (err < 0) {
         print_error(filename, err);
         return err;
+    }
     }
 
     av_dump_format(fmt_ctx, 0, filename, 0);
@@ -3472,6 +3475,8 @@ static const OptionDef real_options[] = {
     { "read_intervals", HAS_ARG, {.func_arg = opt_read_intervals}, "set read intervals", "read_intervals" },
     { "default", HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {.func_arg = opt_default}, "generic catch all option", "" },
     { "i", HAS_ARG, {.func_arg = opt_input_file_i}, "read specified file", "input_file"},
+    { "find_stream_info", OPT_BOOL | OPT_INPUT | OPT_EXPERT, { &find_stream_info },
+        "read and decode the streams to fill missing information with heuristics" },
     { NULL, },
 };
 
