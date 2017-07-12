@@ -716,7 +716,7 @@ static int decode_block(MJpegDecodeContext *s, int16_t *block, int component,
         return AVERROR_INVALIDDATA;
     }
     val = val * quant_matrix[0] + s->last_dc[component];
-    val = FFMIN(val, 32767);
+    val = av_clip_int16(val);
     s->last_dc[component] = val;
     block[0] = val;
     /* AC coefs */
