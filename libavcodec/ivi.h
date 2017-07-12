@@ -322,8 +322,8 @@ int  ff_ivi_dec_huff_desc(GetBitContext *gb, int desc_coded, int which_tab,
  *  @param[in]      is_indeo4  flag signalling if it is Indeo 4 or not
  *  @return             result code: 0 - OK
  */
-int  ff_ivi_init_planes(IVIPlaneDesc *planes, const IVIPicConfig *cfg,
-                        int is_indeo4);
+int  ff_ivi_init_planes(AVCodecContext *avctx, IVIPlaneDesc *planes,
+                        const IVIPicConfig *cfg, int is_indeo4);
 
 /**
  *  Initialize tile and macroblock descriptors.
