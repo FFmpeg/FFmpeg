@@ -839,7 +839,7 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb,
                 ret = AVERROR(EINVAL);
             }
 
-            ff_put_bmp_header(dyn_cp, par, ff_codec_bmp_tags, 0, 0);
+            ff_put_bmp_header(dyn_cp, par, 0, 0);
         }
     } else if (par->codec_type == AVMEDIA_TYPE_AUDIO) {
         unsigned int tag;
