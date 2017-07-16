@@ -44,13 +44,13 @@
  * The basic working of this API is the following:
  *
  * - When a frame is available on any input, add it using
- *   ff_framesync_add_frame().
+ *   ff_framesync2_add_frame().
  *
  * - When a frame event is ready to be processed (i.e. after adding a frame
  *   or when requested on input):
- *   - call ff_framesync_next();
+ *   - call ff_framesync2_next();
  *   - if fs->frame_ready is true, process the frames;
- *   - call ff_framesync_drop().
+ *   - call ff_framesync2_drop().
  */
 
 /**
@@ -217,7 +217,7 @@ typedef struct FFFrameSync {
  * @param  nb_in   number of inputs
  * @return  >= 0 for success or a negative error code
  */
-int ff_framesync_init(FFFrameSync *fs, void *parent, unsigned nb_in);
+int ff_framesync2_init(FFFrameSync *fs, void *parent, unsigned nb_in);
 
 /**
  * Configure a frame sync structure.
@@ -226,12 +226,12 @@ int ff_framesync_init(FFFrameSync *fs, void *parent, unsigned nb_in);
  *
  * @return  >= 0 for success or a negative error code
  */
-int ff_framesync_configure(FFFrameSync *fs);
+int ff_framesync2_configure(FFFrameSync *fs);
 
 /**
  * Free all memory currently allocated.
  */
-void ff_framesync_uninit(FFFrameSync *fs);
+void ff_framesync2_uninit(FFFrameSync *fs);
 
 /**
  * Add a frame to an input
@@ -242,19 +242,19 @@ void ff_framesync_uninit(FFFrameSync *fs);
  * @param in     index of the input
  * @param frame  input frame, or NULL for EOF
  */
-int ff_framesync_add_frame(FFFrameSync *fs, unsigned in, AVFrame *frame);
+int ff_framesync2_add_frame(FFFrameSync *fs, unsigned in, AVFrame *frame);
 
 /**
  * Prepare the next frame event.
  *
  * The status of the operation can be found in fs->frame_ready and fs->eof.
  */
-void ff_framesync_next(FFFrameSync *fs);
+void ff_framesync2_next(FFFrameSync *fs);
 
 /**
  * Drop the current frame event.
  */
-void ff_framesync_drop(FFFrameSync *fs);
+void ff_framesync2_drop(FFFrameSync *fs);
 
 /**
  * Get the current frame in an input.
@@ -266,15 +266,15 @@ void ff_framesync_drop(FFFrameSync *fs);
  *                the returned frame; the current frame will either be
  *                duplicated or removed from the framesync structure
  */
-int ff_framesync_get_frame(FFFrameSync *fs, unsigned in, AVFrame **rframe,
-                           unsigned get);
+int ff_framesync2_get_frame(FFFrameSync *fs, unsigned in, AVFrame **rframe,
+                            unsigned get);
 
 /**
  * Process one or several frame using the on_event callback.
  *
  * @return  number of frames processed or negative error code
  */
-int ff_framesync_process_frame(FFFrameSync *fs, unsigned all);
+int ff_framesync2_process_frame(FFFrameSync *fs, unsigned all);
 
 
 /**
@@ -283,8 +283,8 @@ int ff_framesync_process_frame(FFFrameSync *fs, unsigned all);
  * This function can be the complete implementation of all filter_frame
  * methods of a filter using framesync.
  */
-int ff_framesync_filter_frame(FFFrameSync *fs, AVFilterLink *inlink,
-                              AVFrame *in);
+int ff_framesync2_filter_frame(FFFrameSync *fs, AVFilterLink *inlink,
+                               AVFrame *in);
 
 /**
  * Request a frame on the filter output.
@@ -292,6 +292,6 @@ int ff_framesync_filter_frame(FFFrameSync *fs, AVFilterLink *inlink,
  * This function can be the complete implementation of all filter_frame
  * methods of a filter using framesync if it has only one output.
  */
-int ff_framesync_request_frame(FFFrameSync *fs, AVFilterLink *outlink);
+int ff_framesync2_request_frame(FFFrameSync *fs, AVFilterLink *outlink);
 
 #endif /* AVFILTER_FRAMESYNC2_H */

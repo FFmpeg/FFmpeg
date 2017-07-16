@@ -24,7 +24,7 @@
 #include "libavutil/avassert.h"
 #include "avfilter.h"
 #include "bufferqueue.h"
-#include "framesync.h"
+#include "framesync2.h"
 #include "internal.h"
 
 #define OFFSET(member) offsetof(FFFrameSync, member)
@@ -49,7 +49,7 @@ enum {
     STATE_EOF,
 };
 
-int ff_framesync_init(FFFrameSync *fs, void *parent, unsigned nb_in)
+int ff_framesync2_init(FFFrameSync *fs, void *parent, unsigned nb_in)
 {
     fs->class  = &framesync_class;
     fs->parent = parent;
@@ -77,7 +77,7 @@ static void framesync_sync_level_update(FFFrameSync *fs)
         fs->eof = 1;
 }
 
-int ff_framesync_configure(FFFrameSync *fs)
+int ff_framesync2_configure(FFFrameSync *fs)
 {
     unsigned i;
     int64_t gcd, lcm;
@@ -202,7 +202,7 @@ static void framesync_inject_frame(FFFrameSync *fs, unsigned in, AVFrame *frame)
     fs->in[in].have_next  = 1;
 }
 
-int ff_framesync_add_frame(FFFrameSync *fs, unsigned in, AVFrame *frame)
+int ff_framesync2_add_frame(FFFrameSync *fs, unsigned in, AVFrame *frame)
 {
     av_assert1(in < fs->nb_in);
     if (!fs->in[in].have_next)
@@ -212,7 +212,7 @@ int ff_framesync_add_frame(FFFrameSync *fs, unsigned in, AVFrame *frame)
     return 0;
 }
 
-void ff_framesync_next(FFFrameSync *fs)
+void ff_framesync2_next(FFFrameSync *fs)
 {
     unsigned i;
 
@@ -224,13 +224,13 @@ void ff_framesync_next(FFFrameSync *fs)
     framesync_advance(fs);
 }
 
-void ff_framesync_drop(FFFrameSync *fs)
+void ff_framesync2_drop(FFFrameSync *fs)
 {
     fs->frame_ready = 0;
 }
 
-int ff_framesync_get_frame(FFFrameSync *fs, unsigned in, AVFrame **rframe,
-                           unsigned get)
+int ff_framesync2_get_frame(FFFrameSync *fs, unsigned in, AVFrame **rframe,
+                            unsigned get)
 {
     AVFrame *frame;
     unsigned need_copy = 0, i;
@@ -266,7 +266,7 @@ int ff_framesync_get_frame(FFFrameSync *fs, unsigned in, AVFrame **rframe,
     return 0;
 }
 
-void ff_framesync_uninit(FFFrameSync *fs)
+void ff_framesync2_uninit(FFFrameSync *fs)
 {
     unsigned i;
 
@@ -279,18 +279,18 @@ void ff_framesync_uninit(FFFrameSync *fs)
     av_freep(&fs->in);
 }
 
-int ff_framesync_process_frame(FFFrameSync *fs, unsigned all)
+int ff_framesync2_process_frame(FFFrameSync *fs, unsigned all)
 {
     int ret, count = 0;
 
     av_assert0(fs->on_event);
     while (1) {
-        ff_framesync_next(fs);
+        ff_framesync2_next(fs);
         if (fs->eof || !fs->frame_ready)
             break;
         if ((ret = fs->on_event(fs)) < 0)
             return ret;
-        ff_framesync_drop(fs);
+        ff_framesync2_drop(fs);
         count++;
         if (!all)
             break;
@@ -300,26 +300,26 @@ int ff_framesync_process_frame(FFFrameSync *fs, unsigned all)
     return count;
 }
 
-int ff_framesync_filter_frame(FFFrameSync *fs, AVFilterLink *inlink,
-                              AVFrame *in)
+int ff_framesync2_filter_frame(FFFrameSync *fs, AVFilterLink *inlink,
+                               AVFrame *in)
 {
     int ret;
 
-    if ((ret = ff_framesync_process_frame(fs, 1)) < 0)
+    if ((ret = ff_framesync2_process_frame(fs, 1)) < 0)
         return ret;
-    if ((ret = ff_framesync_add_frame(fs, FF_INLINK_IDX(inlink), in)) < 0)
+    if ((ret = ff_framesync2_add_frame(fs, FF_INLINK_IDX(inlink), in)) < 0)
         return ret;
-    if ((ret = ff_framesync_process_frame(fs, 0)) < 0)
+    if ((ret = ff_framesync2_process_frame(fs, 0)) < 0)
         return ret;
     return 0;
 }
 
-int ff_framesync_request_frame(FFFrameSync *fs, AVFilterLink *outlink)
+int ff_framesync2_request_frame(FFFrameSync *fs, AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     int input, ret, i;
 
-    if ((ret = ff_framesync_process_frame(fs, 0)) < 0)
+    if ((ret = ff_framesync2_process_frame(fs, 0)) < 0)
         return ret;
     if (ret > 0)
         return 0;
@@ -333,9 +333,9 @@ int ff_framesync_request_frame(FFFrameSync *fs, AVFilterLink *outlink)
             input = i;
     ret = ff_request_frame(ctx->inputs[input]);
     if (ret == AVERROR_EOF) {
-        if ((ret = ff_framesync_add_frame(fs, input, NULL)) < 0)
+        if ((ret = ff_framesync2_add_frame(fs, input, NULL)) < 0)
             return ret;
-        if ((ret = ff_framesync_process_frame(fs, 0)) < 0)
+        if ((ret = ff_framesync2_process_frame(fs, 0)) < 0)
             return ret;
         ret = 0;
     }
