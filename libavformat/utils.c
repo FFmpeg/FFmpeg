@@ -2733,7 +2733,12 @@ void avformat_free_context(AVFormatContext *s)
 void avformat_close_input(AVFormatContext **ps)
 {
     AVFormatContext *s = *ps;
-    AVIOContext *pb    = s->pb;
+    AVIOContext *pb;
+
+    if (!*ps)
+        return;
+
+    pb = s->pb;
 
     if ((s->iformat && s->iformat->flags & AVFMT_NOFILE) ||
         (s->flags & AVFMT_FLAG_CUSTOM_IO))
