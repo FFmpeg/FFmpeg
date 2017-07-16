@@ -36,16 +36,6 @@ int ff_opencl_transform(AVFilterContext *ctx,
 int ff_opencl_unsharp_init(AVFilterContext *ctx) {return 0;}
 int ff_opencl_unsharp_process_inout_buf(AVFilterContext *ctx, AVFrame *in, AVFrame *out) {return 0;}
 #if !(ARCH_X86_64)
-void ff_limiter_16bit_sse4(const uint8_t *src, uint8_t *dst,
-                           ptrdiff_t slinesize, ptrdiff_t dlinesize,
-                           int w, int h, int min, int max) {return;}
-#endif
-#if !(ARCH_X86_64)
-void ff_limiter_8bit_sse2(const uint8_t *src, uint8_t *dst,
-                          ptrdiff_t slinesize, ptrdiff_t dlinesize,
-                          int w, int h, int min, int max) {return;}
-#endif
-#if !(ARCH_X86_64)
 void ff_multiply3x3_sse2(int16_t *data[3], ptrdiff_t stride, int w, int h,
                          const int16_t coeff[3][3][8]) {return;}
 #endif
@@ -207,6 +197,7 @@ AVFilter ff_asrc_flite = {0};
 AVFilter ff_vf_coreimage = {0};
 AVFilter ff_vf_deinterlace_vaapi = {0};
 AVFilter ff_vf_frei0r = {0};
+AVFilter ff_vf_libvmaf = {0};
 AVFilter ff_vf_ocr = {0};
 AVFilter ff_vf_ocv = {0};
 AVFilter ff_vf_scale_cuda = {0};

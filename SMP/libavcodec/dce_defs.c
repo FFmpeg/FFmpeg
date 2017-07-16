@@ -3594,6 +3594,7 @@ void ff_vdpau_vc1_decode_picture(MpegEncContext *s, const uint8_t *buf,
                                  int buf_size) {return;}
 void ff_videodsp_init_aarch64(VideoDSPContext *ctx, int bpc) {return;}
 void ff_videodsp_init_arm(VideoDSPContext *ctx, int bpc) {return;}
+void ff_videodsp_init_mips(VideoDSPContext *ctx, int bpc) {return;}
 void ff_videodsp_init_ppc(VideoDSPContext *ctx, int bpc) {return;}
 void ff_vorbisdsp_init_aarch64(VorbisDSPContext *dsp) {return;}
 void ff_vorbisdsp_init_arm(VorbisDSPContext *dsp) {return;}
