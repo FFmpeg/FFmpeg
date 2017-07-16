@@ -594,11 +594,6 @@ static void celt_postfilter(CeltFrame *f, CeltBlock *block)
 
 static int parse_postfilter(CeltFrame *f, OpusRangeCoder *rc, int consumed)
 {
-    static const float postfilter_taps[3][3] = {
-        { 0.3066406250f, 0.2170410156f, 0.1296386719f },
-        { 0.4638671875f, 0.2680664062f, 0.0           },
-        { 0.7998046875f, 0.1000976562f, 0.0           }
-    };
     int i;
 
     memset(f->block[0].pf_gains_new, 0, sizeof(f->block[0].pf_gains_new));
@@ -620,9 +615,9 @@ static int parse_postfilter(CeltFrame *f, OpusRangeCoder *rc, int consumed)
                 CeltBlock *block = &f->block[i];
 
                 block->pf_period_new = FFMAX(period, CELT_POSTFILTER_MINPERIOD);
-                block->pf_gains_new[0] = gain * postfilter_taps[tapset][0];
-                block->pf_gains_new[1] = gain * postfilter_taps[tapset][1];
-                block->pf_gains_new[2] = gain * postfilter_taps[tapset][2];
+                block->pf_gains_new[0] = gain * ff_celt_postfilter_taps[tapset][0];
+                block->pf_gains_new[1] = gain * ff_celt_postfilter_taps[tapset][1];
+                block->pf_gains_new[2] = gain * ff_celt_postfilter_taps[tapset][2];
             }
         }
 
@@ -780,10 +775,9 @@ int ff_celt_decode_frame(CeltFrame *f, OpusRangeCoder *rc,
                          float **output, int channels, int frame_size,
                          int start_band,  int end_band)
 {
-    int i, j;
+    int i, j, downmix = 0;
     int consumed;           // bits of entropy consumed thus far for this frame
     MDCT15Context *imdct;
-    float imdct_scale = 1.0;
 
     if (channels != 1 && channels != 2) {
         av_log(f->avctx, AV_LOG_ERROR, "Invalid number of coded channels: %d\n",
@@ -875,7 +869,7 @@ int ff_celt_decode_frame(CeltFrame *f, OpusRangeCoder *rc,
     /* stereo -> mono downmix */
     if (f->output_channels < f->channels) {
         f->dsp->vector_fmac_scalar(f->block[0].coeffs, f->block[1].coeffs, 1.0, FFALIGN(frame_size, 16));
-        imdct_scale = 0.5;
+        downmix = 1;
     } else if (f->output_channels > f->channels)
         memcpy(f->block[1].coeffs, f->block[0].coeffs, frame_size * sizeof(float));
 
@@ -900,20 +894,24 @@ int ff_celt_decode_frame(CeltFrame *f, OpusRangeCoder *rc,
             float *dst  = block->buf + 1024 + j * f->blocksize;
 
             imdct->imdct_half(imdct, dst + CELT_OVERLAP / 2, f->block[i].coeffs + j,
-                              f->blocks, imdct_scale);
+                              f->blocks);
             f->dsp->vector_fmul_window(dst, dst, dst + CELT_OVERLAP / 2,
                                        ff_celt_window, CELT_OVERLAP / 2);
         }
+
+        if (downmix)
+            f->dsp->vector_fmul_scalar(&block->buf[1024], &block->buf[1024], 0.5f, frame_size);
 
         /* postfilter */
         celt_postfilter(f, block);
 
         /* deemphasis and output scaling */
         for (j = 0; j < frame_size; j++) {
-            float tmp = block->buf[1024 - frame_size + j] + m;
+            const float tmp = block->buf[1024 - frame_size + j] + m;
             m = tmp * CELT_EMPH_COEFF;
-            output[i][j] = tmp / 32768.;
+            output[i][j] = tmp;
         }
+
         block->emph_coeff = m;
     }
 
@@ -1009,7 +1007,7 @@ int ff_celt_init(AVCodecContext *avctx, CeltFrame **f, int output_channels)
     frm->output_channels = output_channels;
 
     for (i = 0; i < FF_ARRAY_ELEMS(frm->imdct); i++)
-        if ((ret = ff_mdct15_init(&frm->imdct[i], 1, i + 3, -1.0f)) < 0)
+        if ((ret = ff_mdct15_init(&frm->imdct[i], 1, i + 3, -1.0f/32768)) < 0)
             goto fail;
 
     if ((ret = ff_celt_pvq_init(&frm->pvq)) < 0)

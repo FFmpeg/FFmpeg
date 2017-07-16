@@ -220,19 +220,27 @@ ffmpeg -i INPUT.avi -codec copy -bsf:v mpeg4_unpack_bframes OUTPUT.avi
 
 @section noise
 
-Damages the contents of packets without damaging the container. Can be
-used for fuzzing or testing error resilience/concealment.
+Damages the contents of packets or simply drops them without damaging the
+container. Can be used for fuzzing or testing error resilience/concealment.
 
 Parameters:
+@table @option
+@item amount
 A numeral string, whose value is related to how often output bytes will
 be modified. Therefore, values below or equal to 0 are forbidden, and
 the lower the more frequent bytes will be modified, with 1 meaning
 every byte is modified.
+@item dropamount
+A numeral string, whose value is related to how often packets will be dropped.
+Therefore, values below or equal to 0 are forbidden, and the lower the more
+frequent packets will be dropped, with 1 meaning every packet is dropped.
+@end table
 
+The following example applies the modification to every byte but does not drop
+any packets.
 @example
 ffmpeg -i INPUT -c copy -bsf noise[=1] output.mkv
 @end example
-applies the modification to every byte.
 
 @section null
 This bitstream filter passes the packets through unchanged.

@@ -47,7 +47,7 @@ typedef struct MDCT15Context {
 
     /* Calculate the middle half of the iMDCT */
     void (*imdct_half)(struct MDCT15Context *s, float *dst, const float *src,
-                       ptrdiff_t src_stride, float scale);
+                       ptrdiff_t stride);
 } MDCT15Context;
 
 /* Init an (i)MDCT of the length 2 * 15 * (2^N) */

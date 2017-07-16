@@ -207,7 +207,7 @@ static void mdct15(MDCT15Context *s, float *dst, const float *src, ptrdiff_t str
 }
 
 static void imdct15_half(MDCT15Context *s, float *dst, const float *src,
-                         ptrdiff_t stride, float scale)
+                         ptrdiff_t stride)
 {
     FFTComplex fft15in[15];
     FFTComplex *z = (FFTComplex *)dst;
@@ -230,16 +230,11 @@ static void imdct15_half(MDCT15Context *s, float *dst, const float *src,
 
     /* Reindex again, apply twiddles and output */
     for (i = 0; i < len8; i++) {
-        float re0, im0, re1, im1;
         const int i0 = len8 + i, i1 = len8 - i - 1;
         const int s0 = s->pfa_postreindex[i0], s1 = s->pfa_postreindex[i1];
 
-        CMUL(re0, im1, s->tmp[s1].im, s->tmp[s1].re,  s->twiddle_exptab[i1].im, s->twiddle_exptab[i1].re);
-        CMUL(re1, im0, s->tmp[s0].im, s->tmp[s0].re,  s->twiddle_exptab[i0].im, s->twiddle_exptab[i0].re);
-        z[i1].re = scale * re0;
-        z[i1].im = scale * im0;
-        z[i0].re = scale * re1;
-        z[i0].im = scale * im1;
+        CMUL(z[i1].re, z[i0].im, s->tmp[s1].im, s->tmp[s1].re,  s->twiddle_exptab[i1].im, s->twiddle_exptab[i1].re);
+        CMUL(z[i0].re, z[i1].im, s->tmp[s0].im, s->tmp[s0].re,  s->twiddle_exptab[i0].im, s->twiddle_exptab[i0].re);
     }
 }
 

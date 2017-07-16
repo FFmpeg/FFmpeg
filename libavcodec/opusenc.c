@@ -208,19 +208,17 @@ static void celt_apply_preemph_filter(OpusEncContext *s, CeltFrame *f)
 static void celt_frame_mdct(OpusEncContext *s, CeltFrame *f)
 {
     int i, t, ch;
-    float *win = s->scratch;
+    float *win = s->scratch, *temp = s->scratch + 1920;
 
-    /* I think I can use s->dsp->vector_fmul_window for transients at least */
     if (f->transient) {
         for (ch = 0; ch < f->channels; ch++) {
             CeltBlock *b = &f->block[ch];
             float *src1 = b->overlap;
             for (t = 0; t < f->blocks; t++) {
                 float *src2 = &b->samples[CELT_OVERLAP*t];
-                for (i = 0; i < CELT_OVERLAP; i++) {
-                    win[               i] = src1[i]*ff_celt_window[i];
-                    win[CELT_OVERLAP + i] = src2[i]*ff_celt_window[CELT_OVERLAP - i - 1];
-                }
+                s->dsp->vector_fmul(win, src1, ff_celt_window, 128);
+                s->dsp->vector_fmul_reverse(&win[CELT_OVERLAP], src2,
+                                            ff_celt_window - 8, 128);
                 src1 = src2;
                 s->mdct[0]->mdct(s->mdct[0], b->coeffs + t, win, f->blocks);
             }
@@ -228,21 +226,21 @@ static void celt_frame_mdct(OpusEncContext *s, CeltFrame *f)
     } else {
         int blk_len = OPUS_BLOCK_SIZE(f->size), wlen = OPUS_BLOCK_SIZE(f->size + 1);
         int rwin = blk_len - CELT_OVERLAP, lap_dst = (wlen - blk_len - CELT_OVERLAP) >> 1;
+        memset(win, 0, wlen*sizeof(float));
         for (ch = 0; ch < f->channels; ch++) {
             CeltBlock *b = &f->block[ch];
 
-            memset(win, 0, wlen*sizeof(float));
+            /* Overlap */
+            s->dsp->vector_fmul(temp, b->overlap, ff_celt_window, 128);
+            memcpy(win + lap_dst, temp, CELT_OVERLAP*sizeof(float));
 
+            /* Samples, flat top window */
             memcpy(&win[lap_dst + CELT_OVERLAP], b->samples, rwin*sizeof(float));
 
-            /* Alignment fucks me over */
-            //s->dsp->vector_fmul(&dst[lap_dst], b->overlap, ff_celt_window, CELT_OVERLAP);
-            //s->dsp->vector_fmul_reverse(&dst[lap_dst + blk_len - CELT_OVERLAP], b->samples, ff_celt_window, CELT_OVERLAP);
-
-            for (i = 0; i < CELT_OVERLAP; i++) {
-                win[lap_dst           + i] = b->overlap[i]       *ff_celt_window[i];
-                win[lap_dst + blk_len + i] = b->samples[rwin + i]*ff_celt_window[CELT_OVERLAP - i - 1];
-            }
+            /* Samples, windowed */
+            s->dsp->vector_fmul_reverse(temp, b->samples + rwin,
+                                        ff_celt_window - 8, 128);
+            memcpy(win + lap_dst + blk_len, temp, CELT_OVERLAP*sizeof(float));
 
             s->mdct[f->size]->mdct(s->mdct[f->size], b->coeffs, win, 1);
         }
@@ -1048,8 +1046,6 @@ static av_cold int opus_encode_init(AVCodecContext *avctx)
     avctx->frame_size = 120;
     /* Initial padding will change if SILK is ever supported */
     avctx->initial_padding = 120;
-
-    avctx->cutoff = !avctx->cutoff ? 20000 : avctx->cutoff;
 
     if (!avctx->bit_rate) {
         int coupled = ff_opus_default_coupled_streams[s->channels - 1];

@@ -498,7 +498,6 @@ int ff_rtsp_parse_streaming_commands(AVFormatContext *s)
     } else if (methodcode == TEARDOWN) {
         rt->state = RTSP_STATE_IDLE;
         ret       = rtsp_send_reply(s, RTSP_STATUS_OK, NULL , request.seq);
-        return 0;
     }
     return ret;
 }

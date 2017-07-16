@@ -90,6 +90,9 @@ static const struct {
     #if CONFIG_FMTCONVERT
         { "fmtconvert", checkasm_check_fmtconvert },
     #endif
+    #if CONFIG_G722DSP
+        { "g722dsp", checkasm_check_g722dsp },
+    #endif
     #if CONFIG_H264DSP
         { "h264dsp", checkasm_check_h264dsp },
     #endif

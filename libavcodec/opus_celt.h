@@ -75,8 +75,8 @@ typedef struct CeltBlock {
     DECLARE_ALIGNED(32, float, coeffs)[CELT_MAX_FRAME_SIZE];
 
     /* Used by the encoder */
-    DECLARE_ALIGNED(32, float, overlap)[120];
-    DECLARE_ALIGNED(32, float, samples)[CELT_MAX_FRAME_SIZE];
+    DECLARE_ALIGNED(32, float, overlap)[FFALIGN(CELT_OVERLAP, 16)];
+    DECLARE_ALIGNED(32, float, samples)[FFALIGN(CELT_MAX_FRAME_SIZE, 16)];
 
     /* postfilter parameters */
     int   pf_period_new;
