@@ -245,4 +245,29 @@ int ff_framesync2_get_frame(FFFrameSync *fs, unsigned in, AVFrame **rframe,
  */
 int ff_framesync2_activate(FFFrameSync *fs);
 
+/**
+ * Initialize a frame sync structure for dualinput.
+ *
+ * Compared to generic framesync, dualinput assumes the first input is the
+ * main one and the filtering is performed on it. The first input will be
+ * the only one with sync set and generic timeline support will just pass it
+ * unchanged when disabled.
+ *
+ * Equivalent to ff_framesync2_init(fs, parent, 2) then setting the time
+ * base, sync and ext modes on the inputs.
+ */
+int ff_framesync2_init_dualinput(FFFrameSync *fs, AVFilterContext *parent);
+
+/**
+ * @param f0  used to return the main frame
+ * @param f1  used to return the second frame, or NULL if disabled
+ * @return  >=0 for success or AVERROR code
+ */
+int ff_framesync2_dualinput_get(FFFrameSync *fs, AVFrame **f0, AVFrame **f1);
+
+/**
+ * Same as ff_framesync2_dualinput_get(), but make sure that f0 is writable.
+ */
+int ff_framesync2_dualinput_get_writable(FFFrameSync *fs, AVFrame **f0, AVFrame **f1);
+
 #endif /* AVFILTER_FRAMESYNC2_H */
