@@ -28,6 +28,11 @@
 #include "avfilter.h"
 
 /**
+ * Special return code when activate() did not do anything.
+ */
+#define FFERROR_NOT_READY FFERRTAG('N','R','D','Y')
+
+/**
  * Mark a filter ready and schedule it for activation.
  *
  * This is automatically done when something happens to the filter (queued
