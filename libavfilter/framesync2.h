@@ -25,7 +25,6 @@
 
 /*
  * TODO
- * Callback-based API similar to dualinput.
  * Export convenient options.
  */
 
@@ -41,16 +40,9 @@
  * situations where some stream extend beyond the beginning or the end of
  * others can be configured.
  *
- * The basic working of this API is the following:
- *
- * - When a frame is available on any input, add it using
- *   ff_framesync2_add_frame().
- *
- * - When a frame event is ready to be processed (i.e. after adding a frame
- *   or when requested on input):
- *   - call ff_framesync2_next();
- *   - if fs->frame_ready is true, process the frames;
- *   - call ff_framesync2_drop().
+ * The basic working of this API is the following: set the on_event
+ * callback, then call ff_framesync2_activate() from the filter's activate
+ * callback.
  */
 
 /**
@@ -81,11 +73,6 @@ enum FFFrameSyncExtMode {
  * Input stream structure
  */
 typedef struct FFFrameSyncIn {
-
-    /**
-     * Queue of incoming AVFrame, and NULL to mark EOF
-     */
-    struct FFBufQueue queue;
 
     /**
      * Extrapolation mode for timestamps before the first frame
@@ -152,7 +139,11 @@ typedef struct FFFrameSyncIn {
  */
 typedef struct FFFrameSync {
     const AVClass *class;
-    void *parent;
+
+    /**
+     * Parent filter context.
+     */
+    AVFilterContext *parent;
 
     /**
      * Number of input streams
@@ -213,11 +204,11 @@ typedef struct FFFrameSync {
  * The entire structure is expected to be already set to 0.
  *
  * @param  fs      frame sync structure to initialize
- * @param  parent  parent object, used for logging
+ * @param  parent  parent AVFilterContext object
  * @param  nb_in   number of inputs
  * @return  >= 0 for success or a negative error code
  */
-int ff_framesync2_init(FFFrameSync *fs, void *parent, unsigned nb_in);
+int ff_framesync2_init(FFFrameSync *fs, AVFilterContext *parent, unsigned nb_in);
 
 /**
  * Configure a frame sync structure.
@@ -234,29 +225,6 @@ int ff_framesync2_configure(FFFrameSync *fs);
 void ff_framesync2_uninit(FFFrameSync *fs);
 
 /**
- * Add a frame to an input
- *
- * Typically called from the filter_frame() method.
- *
- * @param fs     frame sync structure
- * @param in     index of the input
- * @param frame  input frame, or NULL for EOF
- */
-int ff_framesync2_add_frame(FFFrameSync *fs, unsigned in, AVFrame *frame);
-
-/**
- * Prepare the next frame event.
- *
- * The status of the operation can be found in fs->frame_ready and fs->eof.
- */
-void ff_framesync2_next(FFFrameSync *fs);
-
-/**
- * Drop the current frame event.
- */
-void ff_framesync2_drop(FFFrameSync *fs);
-
-/**
  * Get the current frame in an input.
  *
  * @param fs      frame sync structure
@@ -270,28 +238,11 @@ int ff_framesync2_get_frame(FFFrameSync *fs, unsigned in, AVFrame **rframe,
                             unsigned get);
 
 /**
- * Process one or several frame using the on_event callback.
+ * Examine the frames in the filter's input and try to produce output.
  *
- * @return  number of frames processed or negative error code
+ * This function can be the complete implementation of the activate
+ * method of a filter using framesync2.
  */
-int ff_framesync2_process_frame(FFFrameSync *fs, unsigned all);
-
-
-/**
- * Accept a frame on a filter input.
- *
- * This function can be the complete implementation of all filter_frame
- * methods of a filter using framesync.
- */
-int ff_framesync2_filter_frame(FFFrameSync *fs, AVFilterLink *inlink,
-                               AVFrame *in);
-
-/**
- * Request a frame on the filter output.
- *
- * This function can be the complete implementation of all filter_frame
- * methods of a filter using framesync if it has only one output.
- */
-int ff_framesync2_request_frame(FFFrameSync *fs, AVFilterLink *outlink);
+int ff_framesync2_activate(FFFrameSync *fs);
 
 #endif /* AVFILTER_FRAMESYNC2_H */
