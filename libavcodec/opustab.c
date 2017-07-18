@@ -796,8 +796,8 @@ const float ff_celt_alpha_coef[] = {
     29440.0f/32768.0f,    26112.0f/32768.0f,    21248.0f/32768.0f,    16384.0f/32768.0f
 };
 
-const float ff_celt_beta_coef[] = { /* TODO: precompute 1 minus this if the code ends up neater */
-    30147.0f/32768.0f,    22282.0f/32768.0f,    12124.0f/32768.0f,     6554.0f/32768.0f
+const float ff_celt_beta_coef[] = {
+    1.0f - (30147.0f/32768.0f), 1.0f - (22282.0f/32768.0f), 1.0f - (12124.0f/32768.0f), 1.0f - (6554.0f/32768.0f),
 };
 
 const uint8_t ff_celt_coarse_energy_dist[4][2][42] = {

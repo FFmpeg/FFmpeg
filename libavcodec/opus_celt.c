@@ -29,25 +29,21 @@
 #include "opustab.h"
 #include "opus_pvq.h"
 
+/* Use the 2D z-transform to apply prediction in both the time domain (alpha)
+ * and the frequency domain (beta) */
 static void celt_decode_coarse_energy(CeltFrame *f, OpusRangeCoder *rc)
 {
     int i, j;
-    float prev[2] = {0};
-    float alpha, beta;
-    const uint8_t *model;
+    float prev[2] = { 0 };
+    float alpha = ff_celt_alpha_coef[f->size];
+    float beta  = ff_celt_beta_coef[f->size];
+    const uint8_t *model = ff_celt_coarse_energy_dist[f->size][0];
 
-    /* use the 2D z-transform to apply prediction in both */
-    /* the time domain (alpha) and the frequency domain (beta) */
-
-    if (opus_rc_tell(rc)+3 <= f->framebits && ff_opus_rc_dec_log(rc, 3)) {
-        /* intra frame */
-        alpha = 0;
-        beta  = 1.0f - 4915.0f/32768.0f;
+    /* intra frame */
+    if (opus_rc_tell(rc) + 3 <= f->framebits && ff_opus_rc_dec_log(rc, 3)) {
+        alpha = 0.0f;
+        beta  = 1.0f - (4915.0f/32768.0f);
         model = ff_celt_coarse_energy_dist[f->size][1];
-    } else {
-        alpha = ff_celt_alpha_coef[f->size];
-        beta  = 1.0f - ff_celt_beta_coef[f->size];
-        model = ff_celt_coarse_energy_dist[f->size][0];
     }
 
     for (i = 0; i < CELT_MAX_BANDS; i++) {

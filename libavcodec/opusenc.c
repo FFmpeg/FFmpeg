@@ -644,10 +644,10 @@ static void exp_quant_coarse(OpusRangeCoder *rc, CeltFrame *f,
 
     if (intra) {
         alpha = 0.0f;
-        beta  = 1.0f - 4915.0f/32768.0f;
+        beta  = 1.0f - (4915.0f/32768.0f);
     } else {
         alpha = ff_celt_alpha_coef[f->size];
-        beta  = 1.0f - ff_celt_beta_coef[f->size];
+        beta  = ff_celt_beta_coef[f->size];
     }
 
     for (i = f->start_band; i < f->end_band; i++) {
