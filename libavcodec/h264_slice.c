@@ -408,7 +408,6 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
 
     memcpy(&h->poc,        &h1->poc,        sizeof(h->poc));
 
-    memcpy(h->default_ref, h1->default_ref, sizeof(h->default_ref));
     memcpy(h->short_ref,   h1->short_ref,   sizeof(h->short_ref));
     memcpy(h->long_ref,    h1->long_ref,    sizeof(h->long_ref));
     memcpy(h->delayed_pic, h1->delayed_pic, sizeof(h->delayed_pic));
