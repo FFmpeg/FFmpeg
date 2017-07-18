@@ -2807,17 +2807,16 @@ static int open_input_file(InputFile *ifile, const char *filename)
         AVDictionary **opts = setup_find_stream_info_opts(fmt_ctx, codec_opts);
         int orig_nb_streams = fmt_ctx->nb_streams;
 
-        // TODO: reindent
-    err = avformat_find_stream_info(fmt_ctx, opts);
+        err = avformat_find_stream_info(fmt_ctx, opts);
 
-    for (i = 0; i < orig_nb_streams; i++)
-        av_dict_free(&opts[i]);
-    av_freep(&opts);
+        for (i = 0; i < orig_nb_streams; i++)
+            av_dict_free(&opts[i]);
+        av_freep(&opts);
 
-    if (err < 0) {
-        print_error(filename, err);
-        return err;
-    }
+        if (err < 0) {
+            print_error(filename, err);
+            return err;
+        }
     }
 
     av_dump_format(fmt_ctx, 0, filename, 0);
