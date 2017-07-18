@@ -1058,22 +1058,21 @@ static int open_input_file(OptionsContext *o, const char *filename)
         AVDictionary **opts = setup_find_stream_info_opts(ic, o->g->codec_opts);
         int orig_nb_streams = ic->nb_streams;
 
-        // TODO: reindent
-    /* If not enough info to get the stream parameters, we decode the
-       first frames to get it. (used in mpeg case for example) */
-    ret = avformat_find_stream_info(ic, opts);
+        /* If not enough info to get the stream parameters, we decode the
+           first frames to get it. (used in mpeg case for example) */
+        ret = avformat_find_stream_info(ic, opts);
 
-    for (i = 0; i < orig_nb_streams; i++)
-        av_dict_free(&opts[i]);
-    av_freep(&opts);
+        for (i = 0; i < orig_nb_streams; i++)
+            av_dict_free(&opts[i]);
+        av_freep(&opts);
 
-    if (ret < 0) {
-        av_log(NULL, AV_LOG_FATAL, "%s: could not find codec parameters\n", filename);
-        if (ic->nb_streams == 0) {
-            avformat_close_input(&ic);
-            exit_program(1);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_FATAL, "%s: could not find codec parameters\n", filename);
+            if (ic->nb_streams == 0) {
+                avformat_close_input(&ic);
+                exit_program(1);
+            }
         }
-    }
     }
 
     if (o->start_time_eof != AV_NOPTS_VALUE) {
