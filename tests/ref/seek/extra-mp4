@@ -1,0 +1,134 @@
+ret: 0         st: 0 flags:1 dts:-0.033333 pts: 0.000000 pos:   1287 size:   183
+ret: 0         st: 0 flags:0 dts: 0.000000 pts: 0.033333 pos:   1470 size:    24
+ret: 0         st: 0 flags:0 dts: 0.033333 pts: 0.066667 pos:   1494 size:  6779
+ret: 0         st: 0 flags:0 dts: 0.066667 pts: 0.100000 pos:   8273 size: 11041
+ret: 0         st:-1 flags:0  ts:-1.000000
+ret: 0         st: 0 flags:1 dts:-0.033333 pts: 0.000000 pos:   1287 size:   183
+ret: 0         st: 0 flags:0 dts: 0.000000 pts: 0.033333 pos:   1470 size:    24
+ret: 0         st: 0 flags:0 dts: 0.033333 pts: 0.066667 pos:   1494 size:  6779
+ret: 0         st: 0 flags:0 dts: 0.066667 pts: 0.100000 pos:   8273 size: 11041
+ret: 0         st:-1 flags:1  ts: 101.894167
+ret: 0         st: 0 flags:1 dts: 101.300000 pts: 101.333333 pos:10982311 size: 67237
+ret: 0         st: 0 flags:0 dts: 101.333333 pts: 101.433333 pos:11049548 size:  3524
+ret: 0         st: 0 flags:0 dts: 101.366667 pts: 101.366667 pos:11053072 size:   562
+ret: 0         st: 0 flags:0 dts: 101.400000 pts: 101.400000 pos:11053634 size:   599
+ret: 0         st: 0 flags:0  ts: 24.788333
+ret: 0         st: 0 flags:1 dts: 25.300000 pts: 25.333333 pos:2607246 size: 40273
+ret: 0         st: 0 flags:0 dts: 25.333333 pts: 25.433333 pos:2647519 size:  2959
+ret: 0         st: 0 flags:0 dts: 25.366667 pts: 25.366667 pos:2650478 size:   197
+ret: 0         st: 0 flags:0 dts: 25.400000 pts: 25.400000 pos:2650675 size:   230
+ret: 0         st: 0 flags:1  ts: 127.682500
+ret: 0         st: 0 flags:1 dts: 126.633333 pts: 126.666667 pos:13359975 size: 68741
+ret: 0         st: 0 flags:0 dts: 126.666667 pts: 126.766667 pos:13428716 size:  2914
+ret: 0         st: 0 flags:0 dts: 126.700000 pts: 126.700000 pos:13431630 size:   781
+ret: 0         st: 0 flags:0 dts: 126.733333 pts: 126.733333 pos:13432411 size:   817
+ret: 0         st:-1 flags:0  ts: 50.576668
+ret: 0         st: 0 flags:1 dts: 50.600000 pts: 50.633333 pos:5858254 size: 67903
+ret: 0         st: 0 flags:0 dts: 50.633333 pts: 50.733333 pos:5926157 size:  1307
+ret: 0         st: 0 flags:0 dts: 50.666667 pts: 50.666667 pos:5927464 size:   150
+ret: 0         st: 0 flags:0 dts: 50.700000 pts: 50.700000 pos:5927614 size:   176
+ret: 0         st:-1 flags:1  ts: 153.470835
+ret: 0         st: 0 flags:1 dts: 153.466667 pts: 153.500000 pos:15867700 size: 96169
+ret: 0         st: 0 flags:0 dts: 153.500000 pts: 153.533333 pos:15963869 size:   785
+ret: 0         st: 0 flags:0 dts: 153.533333 pts: 153.633333 pos:15964654 size:  3135
+ret: 0         st: 0 flags:0 dts: 153.566667 pts: 153.566667 pos:15967789 size:   859
+ret: 0         st: 0 flags:0  ts: 76.365000
+ret: 0         st: 0 flags:1 dts: 77.833333 pts: 77.866667 pos:8659657 size: 41182
+ret: 0         st: 0 flags:0 dts: 77.866667 pts: 77.966667 pos:8700839 size:  4197
+ret: 0         st: 0 flags:0 dts: 77.900000 pts: 77.900000 pos:8705036 size:   653
+ret: 0         st: 0 flags:0 dts: 77.933333 pts: 77.933333 pos:8705689 size:   751
+ret: 0         st: 0 flags:1  ts:-0.740833
+ret: 0         st: 0 flags:1 dts:-0.033333 pts: 0.000000 pos:   1287 size:   183
+ret: 0         st: 0 flags:0 dts: 0.000000 pts: 0.033333 pos:   1470 size:    24
+ret: 0         st: 0 flags:0 dts: 0.033333 pts: 0.066667 pos:   1494 size:  6779
+ret: 0         st: 0 flags:0 dts: 0.066667 pts: 0.100000 pos:   8273 size: 11041
+ret: 0         st:-1 flags:0  ts: 102.153336
+ret: 0         st: 0 flags:1 dts: 104.066667 pts: 104.100000 pos:11116461 size:112929
+ret: 0         st: 0 flags:0 dts: 104.100000 pts: 104.133333 pos:11229390 size:   585
+ret: 0         st: 0 flags:0 dts: 104.133333 pts: 104.166667 pos:11229975 size:   797
+ret: 0         st: 0 flags:0 dts: 104.166667 pts: 104.200000 pos:11230772 size:   810
+ret: 0         st:-1 flags:1  ts: 25.047503
+ret: 0         st: 0 flags:1 dts: 20.233333 pts: 20.266667 pos:2223959 size: 51823
+ret: 0         st: 0 flags:0 dts: 20.266667 pts: 20.300000 pos:2275782 size:   488
+ret: 0         st: 0 flags:0 dts: 20.300000 pts: 20.400000 pos:2276270 size:   670
+ret: 0         st: 0 flags:0 dts: 20.333333 pts: 20.333333 pos:2276940 size:    84
+ret: 0         st: 0 flags:0  ts: 127.941667
+ret: 0         st: 0 flags:1 dts: 131.233333 pts: 131.266667 pos:13727953 size: 62229
+ret: 0         st: 0 flags:0 dts: 131.266667 pts: 131.366667 pos:13790182 size:  2349
+ret: 0         st: 0 flags:0 dts: 131.300000 pts: 131.300000 pos:13792531 size:   571
+ret: 0         st: 0 flags:0 dts: 131.333333 pts: 131.333333 pos:13793102 size:  1190
+ret: 0         st: 0 flags:1  ts: 50.835833
+ret: 0         st: 0 flags:1 dts: 50.600000 pts: 50.633333 pos:5858254 size: 67903
+ret: 0         st: 0 flags:0 dts: 50.633333 pts: 50.733333 pos:5926157 size:  1307
+ret: 0         st: 0 flags:0 dts: 50.666667 pts: 50.666667 pos:5927464 size:   150
+ret: 0         st: 0 flags:0 dts: 50.700000 pts: 50.700000 pos:5927614 size:   176
+ret: 0         st:-1 flags:0  ts: 153.730004
+ret: 0         st: 0 flags:1 dts: 157.033333 pts: 157.066667 pos:16225365 size: 82738
+ret: 0         st: 0 flags:0 dts: 157.066667 pts: 157.166667 pos:16308103 size:  2273
+ret: 0         st: 0 flags:0 dts: 157.100000 pts: 157.100000 pos:16310376 size:   350
+ret: 0         st: 0 flags:0 dts: 157.133333 pts: 157.133333 pos:16310726 size:   337
+ret: 0         st:-1 flags:1  ts: 76.624171
+ret: 0         st: 0 flags:1 dts: 75.966667 pts: 76.000000 pos:8520178 size: 94395
+ret: 0         st: 0 flags:0 dts: 76.000000 pts: 76.100000 pos:8614573 size:   483
+ret: 0         st: 0 flags:0 dts: 76.033333 pts: 76.033333 pos:8615056 size:    37
+ret: 0         st: 0 flags:0 dts: 76.066667 pts: 76.066667 pos:8615093 size:    56
+ret: 0         st: 0 flags:0  ts:-0.481667
+ret: 0         st: 0 flags:1 dts:-0.033333 pts: 0.000000 pos:   1287 size:   183
+ret: 0         st: 0 flags:0 dts: 0.000000 pts: 0.033333 pos:   1470 size:    24
+ret: 0         st: 0 flags:0 dts: 0.033333 pts: 0.066667 pos:   1494 size:  6779
+ret: 0         st: 0 flags:0 dts: 0.066667 pts: 0.100000 pos:   8273 size: 11041
+ret: 0         st: 0 flags:1  ts: 102.412500
+ret: 0         st: 0 flags:1 dts: 101.300000 pts: 101.333333 pos:10982311 size: 67237
+ret: 0         st: 0 flags:0 dts: 101.333333 pts: 101.433333 pos:11049548 size:  3524
+ret: 0         st: 0 flags:0 dts: 101.366667 pts: 101.366667 pos:11053072 size:   562
+ret: 0         st: 0 flags:0 dts: 101.400000 pts: 101.400000 pos:11053634 size:   599
+ret: 0         st:-1 flags:0  ts: 25.306672
+ret: 0         st: 0 flags:1 dts: 27.400000 pts: 27.433333 pos:2674605 size:127383
+ret: 0         st: 0 flags:0 dts: 27.433333 pts: 27.466667 pos:2801988 size:    68
+ret: 0         st: 0 flags:0 dts: 27.466667 pts: 27.500000 pos:2802268 size:  1754
+ret: 0         st: 0 flags:0 dts: 27.500000 pts: 27.533333 pos:2804022 size:  4071
+ret: 0         st:-1 flags:1  ts: 128.200839
+ret: 0         st: 0 flags:1 dts: 127.833333 pts: 127.866667 pos:13514072 size: 67382
+ret: 0         st: 0 flags:0 dts: 127.866667 pts: 127.966667 pos:13581454 size:  2936
+ret: 0         st: 0 flags:0 dts: 127.900000 pts: 127.900000 pos:13584390 size:   451
+ret: 0         st: 0 flags:0 dts: 127.933333 pts: 127.933333 pos:13584841 size:   537
+ret: 0         st: 0 flags:0  ts: 51.095011
+ret: 0         st: 0 flags:1 dts: 52.033333 pts: 52.066667 pos:6028050 size:115809
+ret: 0         st: 0 flags:0 dts: 52.066667 pts: 52.166667 pos:6143859 size:  1620
+ret: 0         st: 0 flags:0 dts: 52.100000 pts: 52.100000 pos:6145479 size:    92
+ret: 0         st: 0 flags:0 dts: 52.133333 pts: 52.133333 pos:6145571 size:   533
+ret: 0         st: 0 flags:1  ts: 153.989178
+ret: 0         st: 0 flags:1 dts: 153.466667 pts: 153.500000 pos:15867700 size: 96169
+ret: 0         st: 0 flags:0 dts: 153.500000 pts: 153.533333 pos:15963869 size:   785
+ret: 0         st: 0 flags:0 dts: 153.533333 pts: 153.633333 pos:15964654 size:  3135
+ret: 0         st: 0 flags:0 dts: 153.566667 pts: 153.566667 pos:15967789 size:   859
+ret: 0         st:-1 flags:0  ts: 76.883340
+ret: 0         st: 0 flags:1 dts: 77.833333 pts: 77.866667 pos:8659657 size: 41182
+ret: 0         st: 0 flags:0 dts: 77.866667 pts: 77.966667 pos:8700839 size:  4197
+ret: 0         st: 0 flags:0 dts: 77.900000 pts: 77.900000 pos:8705036 size:   653
+ret: 0         st: 0 flags:0 dts: 77.933333 pts: 77.933333 pos:8705689 size:   751
+ret: 0         st:-1 flags:1  ts:-0.222493
+ret: 0         st: 0 flags:1 dts:-0.033333 pts: 0.000000 pos:   1287 size:   183
+ret: 0         st: 0 flags:0 dts: 0.000000 pts: 0.033333 pos:   1470 size:    24
+ret: 0         st: 0 flags:0 dts: 0.033333 pts: 0.066667 pos:   1494 size:  6779
+ret: 0         st: 0 flags:0 dts: 0.066667 pts: 0.100000 pos:   8273 size: 11041
+ret: 0         st: 0 flags:0  ts: 102.671678
+ret: 0         st: 0 flags:1 dts: 104.066667 pts: 104.100000 pos:11116461 size:112929
+ret: 0         st: 0 flags:0 dts: 104.100000 pts: 104.133333 pos:11229390 size:   585
+ret: 0         st: 0 flags:0 dts: 104.133333 pts: 104.166667 pos:11229975 size:   797
+ret: 0         st: 0 flags:0 dts: 104.166667 pts: 104.200000 pos:11230772 size:   810
+ret: 0         st: 0 flags:1  ts: 25.565844
+ret: 0         st: 0 flags:1 dts: 25.300000 pts: 25.333333 pos:2607246 size: 40273
+ret: 0         st: 0 flags:0 dts: 25.333333 pts: 25.433333 pos:2647519 size:  2959
+ret: 0         st: 0 flags:0 dts: 25.366667 pts: 25.366667 pos:2650478 size:   197
+ret: 0         st: 0 flags:0 dts: 25.400000 pts: 25.400000 pos:2650675 size:   230
+ret: 0         st:-1 flags:0  ts: 128.460008
+ret: 0         st: 0 flags:1 dts: 131.233333 pts: 131.266667 pos:13727953 size: 62229
+ret: 0         st: 0 flags:0 dts: 131.266667 pts: 131.366667 pos:13790182 size:  2349
+ret: 0         st: 0 flags:0 dts: 131.300000 pts: 131.300000 pos:13792531 size:   571
+ret: 0         st: 0 flags:0 dts: 131.333333 pts: 131.333333 pos:13793102 size:  1190
+ret: 0         st:-1 flags:1  ts: 51.354175
+ret: 0         st: 0 flags:1 dts: 50.600000 pts: 50.633333 pos:5858254 size: 67903
+ret: 0         st: 0 flags:0 dts: 50.633333 pts: 50.733333 pos:5926157 size:  1307
+ret: 0         st: 0 flags:0 dts: 50.666667 pts: 50.666667 pos:5927464 size:   150
+ret: 0         st: 0 flags:0 dts: 50.700000 pts: 50.700000 pos:5927614 size:   176
