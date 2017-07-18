@@ -37,6 +37,7 @@ static const enum AVPixelFormat supported_formats[] = {
     AV_PIX_FMT_YUV444P,
     AV_PIX_FMT_P010,
     AV_PIX_FMT_P016,
+    AV_PIX_FMT_YUV444P16,
 };
 
 static int cuda_frames_get_constraints(AVHWDeviceContext *ctx,
@@ -142,6 +143,9 @@ static int cuda_frames_init(AVHWFramesContext *ctx)
         case AV_PIX_FMT_P016:
             size = aligned_width * ctx->height * 3;
             break;
+        case AV_PIX_FMT_YUV444P16:
+            size = aligned_width * ctx->height * 6;
+            break;
         default:
             av_log(ctx, AV_LOG_ERROR, "BUG: Pixel format missing from size calculation.");
             return AVERROR_BUG;
@@ -161,7 +165,8 @@ static int cuda_get_buffer(AVHWFramesContext *ctx, AVFrame *frame)
     int width_in_bytes = ctx->width;
 
     if (ctx->sw_format == AV_PIX_FMT_P010 ||
-        ctx->sw_format == AV_PIX_FMT_P016) {
+        ctx->sw_format == AV_PIX_FMT_P016 ||
+        ctx->sw_format == AV_PIX_FMT_YUV444P16) {
        width_in_bytes *= 2;
     }
     aligned_width = FFALIGN(width_in_bytes, CUDA_FRAME_ALIGNMENT);
@@ -188,6 +193,7 @@ static int cuda_get_buffer(AVHWFramesContext *ctx, AVFrame *frame)
         frame->linesize[2] = aligned_width / 2;
         break;
     case AV_PIX_FMT_YUV444P:
+    case AV_PIX_FMT_YUV444P16:
         frame->data[0]     = frame->buf[0]->data;
         frame->data[1]     = frame->data[0] + aligned_width * ctx->height;
         frame->data[2]     = frame->data[1] + aligned_width * ctx->height;
