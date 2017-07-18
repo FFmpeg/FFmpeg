@@ -207,7 +207,7 @@ static void celt_apply_preemph_filter(OpusEncContext *s, CeltFrame *f)
 /* Create the window and do the mdct */
 static void celt_frame_mdct(OpusEncContext *s, CeltFrame *f)
 {
-    int i, t, ch;
+    int t, ch;
     float *win = s->scratch, *temp = s->scratch + 1920;
 
     if (f->transient) {
