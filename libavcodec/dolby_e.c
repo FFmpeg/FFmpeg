@@ -266,7 +266,7 @@ static void bit_allocate(int nb_exponent, int nb_code, int fr_code,
 
     for (i = 0; i < nb_exponent; i++) {
         int v = 16 * (snr_ofs - 64) + psd_val[i] - msk_val[i] >> 5;
-        bap[i] = bap_tab[av_clip(v, 0, 63)];
+        bap[i] = bap_tab[av_clip_uintp2(v, 6)];
     }
 }
 
