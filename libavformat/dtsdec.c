@@ -101,9 +101,7 @@ static int dts_probe(AVProbeData *p)
         if ((ret = avpriv_dca_convert_bitstream(buf - 2, DCA_CORE_FRAME_HEADER_SIZE,
                                                 hdr,     DCA_CORE_FRAME_HEADER_SIZE)) < 0)
             continue;
-        if (init_get_bits8(&gb, hdr, ret) < 0)
-            continue;
-        if (avpriv_dca_parse_core_frame_header(&gb, &h) < 0)
+        if (avpriv_dca_parse_core_frame_header(&h, hdr, ret) < 0)
             continue;
 
         marker += 4 * h.sr_code;

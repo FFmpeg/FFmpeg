@@ -82,7 +82,7 @@ static void get_array(GetBitContext *s, int32_t *array, int size, int n)
 static int parse_frame_header(DCACoreDecoder *s)
 {
     DCACoreFrameHeader h = { 0 };
-    int err = avpriv_dca_parse_core_frame_header(&s->gb, &h);
+    int err = ff_dca_parse_core_frame_header(&h, &s->gb);
 
     if (err < 0) {
         switch (err) {

@@ -263,9 +263,7 @@ static int dca_parse_params(DCAParseContext *pc1, const uint8_t *buf,
     if ((ret = avpriv_dca_convert_bitstream(buf, DCA_CORE_FRAME_HEADER_SIZE,
                                             hdr, DCA_CORE_FRAME_HEADER_SIZE)) < 0)
         return ret;
-    if ((ret = init_get_bits8(&gb, hdr, ret)) < 0)
-        return ret;
-    if (avpriv_dca_parse_core_frame_header(&gb, &h) < 0)
+    if (avpriv_dca_parse_core_frame_header(&h, hdr, ret) < 0)
         return AVERROR_INVALIDDATA;
 
     *duration = h.npcmblocks * DCA_PCMBLOCK_SAMPLES;

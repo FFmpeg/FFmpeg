@@ -88,7 +88,7 @@ int avpriv_dca_convert_bitstream(const uint8_t *src, int src_size, uint8_t *dst,
     }
 }
 
-int avpriv_dca_parse_core_frame_header(GetBitContext *gb, DCACoreFrameHeader *h)
+int ff_dca_parse_core_frame_header(DCACoreFrameHeader *h, GetBitContext *gb)
 {
     if (get_bits_long(gb, 32) != DCA_SYNCWORD_CORE_BE)
         return DCA_PARSE_ERROR_SYNC_WORD;
@@ -144,4 +144,14 @@ int avpriv_dca_parse_core_frame_header(GetBitContext *gb, DCACoreFrameHeader *h)
     h->sumdiff_surround = get_bits1(gb);
     h->dn_code = get_bits(gb, 4);
     return 0;
+}
+
+int avpriv_dca_parse_core_frame_header(DCACoreFrameHeader *h, uint8_t *buf, int size)
+{
+    GetBitContext gb;
+
+    if (init_get_bits8(&gb, buf, size) < 0)
+        return DCA_PARSE_ERROR_INVALIDDATA;
+
+    return ff_dca_parse_core_frame_header(h, &gb);
 }
