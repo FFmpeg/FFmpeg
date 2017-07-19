@@ -4471,8 +4471,8 @@ Specify the duration of the generated audio stream. Not specifying this option
 results in noise with an infinite length.
 
 @item color, colour, c
-Specify the color of noise. Available noise colors are white, pink, and brown.
-Default color is white.
+Specify the color of noise. Available noise colors are white, pink, brown,
+blue and violet. Default color is white.
 
 @item seed, s
 Specify a value used to seed the PRNG.
