@@ -1623,6 +1623,7 @@ Crest_factor
 Flat_factor
 Peak_count
 Bit_depth
+Dynamic_range
 
 and for Overall:
 DC_offset
@@ -1697,6 +1698,9 @@ Number of occasions (not the number of samples) that the signal attained either
 
 @item Bit depth
 Overall bit depth of audio. Number of bits used for each sample.
+
+@item Dynamic range
+Measured dynamic range of audio in dB.
 @end table
 
 @section atempo
