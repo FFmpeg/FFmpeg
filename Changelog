@@ -2,6 +2,16 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 3.0.9
+- avcodec/aacdec_template: Fix undefined integer overflow in apply_tns()
+- avcodec/mjpegdec: Clip DC also on the negative side.
+- avcodec/aacps (fixed point): Fix multiple signed integer overflows
+- avcodec/sbrdsp_fixed: Fix integer overflow in sbr_hf_apply_noise()
+- avcodec/wavpack: Fix invalid shift
+- avcodec/hevc_ps: Fix integer overflow with beta/tc offsets
+- avcodec/cfhd: Fix invalid left shift of negative value
+- avcodec/vb: Check vertical GMC component before multiply
+- avcodec/jpeg2000dwt: Fix integer overflow in dwt_decode97_int()
+- avcodec/apedec: Fix integer overflow
 - avcodec/wavpack: Fix integer overflow in wv_unpack_stereo()
 - avcodec/mpeg4videodec: Fix GMC with videos of dimension 1
 - avcodec/wavpack: Fix integer overflow
