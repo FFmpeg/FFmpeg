@@ -115,8 +115,6 @@ static void reset_stats(AudioStatsContext *s)
         p->sigma_x = 0;
         p->sigma_x2 = 0;
         p->avg_sigma_x2 = 0;
-        p->min_sigma_x2 = 0;
-        p->max_sigma_x2 = 0;
         p->min_run = 0;
         p->max_run = 0;
         p->min_runs = 0;
