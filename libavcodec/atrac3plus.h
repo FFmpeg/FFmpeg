@@ -199,13 +199,14 @@ void ff_atrac3p_generate_tones(Atrac3pChanUnitCtx *ch_unit, AVFloatDSPContext *f
  * Perform power compensation aka noise dithering.
  *
  * @param[in]      ctx         ptr to the channel context
+ * @param[in]      fdsp        pointer to float DSP context
  * @param[in]      ch_index    which channel to process
  * @param[in,out]  sp          ptr to channel spectrum to process
  * @param[in]      rng_index   indicates which RNG table to use
  * @param[in]      sb_num      which subband to process
  */
-void ff_atrac3p_power_compensation(Atrac3pChanUnitCtx *ctx, int ch_index,
-                                   float *sp, int rng_index, int sb_num);
+void ff_atrac3p_power_compensation(Atrac3pChanUnitCtx *ctx, AVFloatDSPContext *fdsp,
+                                   int ch_index, float *sp, int rng_index, int sb_num);
 
 /**
  * Regular IMDCT and windowing without overlapping,
