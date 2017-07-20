@@ -16394,6 +16394,11 @@ The sources accept the following parameters:
 
 @table @option
 
+@item alpha
+Specify the alpha (opacity) of the background, only available in the
+@code{testsrc2} source. The value must be between 0 (fully transparent) and
+255 (fully opaque, the default).
+
 @item color, c
 Specify the color of the source, only available in the @code{color}
 source. For the syntax of this option, check the "Color" section in the
