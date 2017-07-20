@@ -9,6 +9,7 @@ OBJS    = alldevices.o                                                  \
           utils.o                                                       \
 
 OBJS-$(HAVE_LIBC_MSVCRT)                 += file_open.o
+OBJS-$(CONFIG_SHARED)                    += reverse.o
 
 # input/output devices
 OBJS-$(CONFIG_ALSA_INDEV)                += alsa_dec.o alsa.o timefilter.o
