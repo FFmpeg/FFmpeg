@@ -22,6 +22,11 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
+color_range=unknown
+color_space=unknown
+color_primaries=unknown
+color_transfer=unknown
+chroma_location=left
 [/FRAME]
 [FRAME]
 media_type=video
@@ -47,6 +52,11 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
+color_range=unknown
+color_space=unknown
+color_primaries=unknown
+color_transfer=unknown
+chroma_location=left
 [/FRAME]
 [FRAME]
 media_type=video
@@ -72,6 +82,11 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
+color_range=unknown
+color_space=unknown
+color_primaries=unknown
+color_transfer=unknown
+chroma_location=left
 [/FRAME]
 [FRAME]
 media_type=video
@@ -97,6 +112,11 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
+color_range=unknown
+color_space=unknown
+color_primaries=unknown
+color_transfer=unknown
+chroma_location=left
 [/FRAME]
 [FRAME]
 media_type=video
@@ -122,4 +142,9 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
+color_range=unknown
+color_space=unknown
+color_primaries=unknown
+color_transfer=unknown
+chroma_location=left
 [/FRAME]
