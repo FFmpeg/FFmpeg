@@ -159,8 +159,10 @@ Codecs:
   crystalhd.c                           Philip Langdale
   cscd.c                                Reimar Doeffinger
   cuvid.c                               Timo Rothenpieler
+  dca*                                  foo86
   dirac*                                Rostislav Pehlivanov
   dnxhd*                                Baptiste Coudurier
+  dolby_e*                              foo86
   dpcm.c                                Mike Melanson
   dss_sp.c                              Oleksij Rempel
   dv.c                                  Roman Shaposhnik
@@ -394,6 +396,7 @@ Muxers/Demuxers:
   crc.c                                 Michael Niedermayer
   daud.c                                Reimar Doeffinger
   dss.c                                 Oleksij Rempel
+  dtsdec.c                              foo86
   dtshddec.c                            Paul B Mahol
   dv.c                                  Roman Shaposhnik
   electronicarts.c                      Peter Ross
@@ -465,6 +468,7 @@ Muxers/Demuxers:
   rtpdec_vc2hq.*, rtpenc_vc2hq.*        Thomas Volkert
   rtpdec_vp9.c                          Thomas Volkert
   rtpenc_mpv.*, rtpenc_aac.*            Martin Storsjo
+  s337m.c                               foo86
   sbgdec.c                              Nicolas George
   sdp.c                                 Martin Storsjo
   segafilm.c                            Mike Melanson
