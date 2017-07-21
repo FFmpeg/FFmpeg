@@ -17,6 +17,7 @@ version <next>:
 - ClearVideo decoder (I-frames only)
 - support for decoding through D3D11VA in avconv
 - Cinepak encoder
+- Intel QSV-accelerated MJPEG encoding
 
 
 version 12:
