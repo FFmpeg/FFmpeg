@@ -332,7 +332,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             s->plane[s->channel_num].band[0][0].stride = data;
         } else if (tag == 28) {
             av_log(avctx, AV_LOG_DEBUG, "Lowpass height %"PRIu16"\n", data);
-            if (data < 3 || data > s->plane[s->channel_num].band[0][0].height) {
+            if (data < 3 || data > s->plane[s->channel_num].band[0][0].a_height) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid lowpass height\n");
                 ret = AVERROR(EINVAL);
                 break;
