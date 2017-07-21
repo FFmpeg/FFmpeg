@@ -6,6 +6,7 @@ FATE_MOV = fate-mov-3elist \
            fate-mov-1elist-ends-last-bframe \
            fate-mov-2elist-elist1-ends-bframe \
            fate-mov-3elist-encrypted \
+           fate-mov-gpmf-remux \
 
 FATE_MOV_FFPROBE = fate-mov-aac-2048-priming \
                    fate-mov-zombie \
@@ -47,3 +48,7 @@ fate-mov-init-nonkeyframe: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_packets -
 fate-mov-displaymatrix: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream=display_aspect_ratio,sample_aspect_ratio:stream_side_data_list -select_streams v -v 0 $(TARGET_SAMPLES)/mov/displaymatrix.mov
 
 fate-mov-spherical-mono: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream_side_data_list -select_streams v -v 0 $(TARGET_SAMPLES)/mov/spherical.mov
+
+fate-mov-gpmf-remux: CMD = md5 -i $(TARGET_SAMPLES)/mov/fake-gp-media-with-real-gpmf.mp4 -map 0 -c copy -fflags +bitexact -f mp4
+fate-mov-gpmf-remux: CMP = oneline
+fate-mov-gpmf-remux: REF = 8f48e435ee1f6b7e173ea756141eabf3
