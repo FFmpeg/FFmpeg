@@ -8263,7 +8263,7 @@ It accepts the following parameters:
 @item filter_name
 The name of the frei0r effect to load. If the environment variable
 @env{FREI0R_PATH} is defined, the frei0r effect is searched for in each of the
-directories specified by the colon-separated list in @env{FREIOR_PATH}.
+directories specified by the colon-separated list in @env{FREI0R_PATH}.
 Otherwise, the standard frei0r paths are searched, in this order:
 @file{HOME/.frei0r-1/lib/}, @file{/usr/local/lib/frei0r-1/},
 @file{/usr/lib/frei0r-1/}.
