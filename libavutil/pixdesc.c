@@ -2638,22 +2638,22 @@ enum AVPixelFormat av_find_best_pix_fmt_of_2(enum AVPixelFormat dst_pix_fmt1, en
     } else if (!desc2) {
         dst_pix_fmt = dst_pix_fmt1;
     } else {
-    loss_mask= loss_ptr?~*loss_ptr:~0; /* use loss mask if provided */
-    if(!has_alpha)
-        loss_mask &= ~FF_LOSS_ALPHA;
+        loss_mask= loss_ptr?~*loss_ptr:~0; /* use loss mask if provided */
+        if(!has_alpha)
+            loss_mask &= ~FF_LOSS_ALPHA;
 
-    score1 = get_pix_fmt_score(dst_pix_fmt1, src_pix_fmt, &loss1, loss_mask);
-    score2 = get_pix_fmt_score(dst_pix_fmt2, src_pix_fmt, &loss2, loss_mask);
+        score1 = get_pix_fmt_score(dst_pix_fmt1, src_pix_fmt, &loss1, loss_mask);
+        score2 = get_pix_fmt_score(dst_pix_fmt2, src_pix_fmt, &loss2, loss_mask);
 
-    if (score1 == score2) {
-        if(av_get_padded_bits_per_pixel(desc2) != av_get_padded_bits_per_pixel(desc1)) {
-            dst_pix_fmt = av_get_padded_bits_per_pixel(desc2) < av_get_padded_bits_per_pixel(desc1) ? dst_pix_fmt2 : dst_pix_fmt1;
+        if (score1 == score2) {
+            if(av_get_padded_bits_per_pixel(desc2) != av_get_padded_bits_per_pixel(desc1)) {
+                dst_pix_fmt = av_get_padded_bits_per_pixel(desc2) < av_get_padded_bits_per_pixel(desc1) ? dst_pix_fmt2 : dst_pix_fmt1;
+            } else {
+                dst_pix_fmt = desc2->nb_components < desc1->nb_components ? dst_pix_fmt2 : dst_pix_fmt1;
+            }
         } else {
-            dst_pix_fmt = desc2->nb_components < desc1->nb_components ? dst_pix_fmt2 : dst_pix_fmt1;
+            dst_pix_fmt = score1 < score2 ? dst_pix_fmt2 : dst_pix_fmt1;
         }
-    } else {
-        dst_pix_fmt = score1 < score2 ? dst_pix_fmt2 : dst_pix_fmt1;
-    }
     }
 
     if (loss_ptr)
