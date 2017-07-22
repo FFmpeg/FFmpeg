@@ -80,7 +80,7 @@ static int64_t find_best_filter(const DCAADPCMEncContext *s, const int32_t *in, 
 {
     const premultiplied_coeffs *precalc_data = s->private_data;
     int i, j, k = 0;
-    int vq;
+    int vq = -1;
     int64_t err;
     int64_t min_err = 1ll << 62;
     int64_t corr[15];
