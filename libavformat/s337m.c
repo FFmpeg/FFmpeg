@@ -86,22 +86,21 @@ static int s337m_probe(AVProbeData *p)
 {
     uint64_t state = 0;
     int markers[3] = { 0 };
-    int i, sum, max, data_type, data_size, offset;
+    int i, pos, sum, max, data_type, data_size, offset;
     uint8_t *buf;
 
-    for (buf = p->buf; buf < p->buf + p->buf_size; buf++) {
-        state = (state << 8) | *buf;
+    for (pos = 0; pos < p->buf_size; pos++) {
+        state = (state << 8) | p->buf[pos];
         if (!IS_LE_MARKER(state))
             continue;
 
+        buf = p->buf + pos + 1;
         if (IS_16LE_MARKER(state)) {
-            data_type = AV_RL16(buf + 1);
-            data_size = AV_RL16(buf + 3);
-            buf += 4;
+            data_type = AV_RL16(buf    );
+            data_size = AV_RL16(buf + 2);
         } else {
-            data_type = AV_RL24(buf + 1);
-            data_size = AV_RL24(buf + 4);
-            buf += 6;
+            data_type = AV_RL24(buf    );
+            data_size = AV_RL24(buf + 3);
         }
 
         if (s337m_get_offset_and_codec(NULL, state, data_type, data_size, &offset, NULL))
@@ -110,7 +109,8 @@ static int s337m_probe(AVProbeData *p)
         i = IS_16LE_MARKER(state) ? 0 : IS_20LE_MARKER(state) ? 1 : 2;
         markers[i]++;
 
-        buf  += offset;
+        pos  += IS_16LE_MARKER(state) ? 4 : 6;
+        pos  += offset;
         state = 0;
     }
 
