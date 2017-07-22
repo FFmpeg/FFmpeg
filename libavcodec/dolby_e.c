@@ -28,21 +28,28 @@
 #include "dolby_e.h"
 #include "fft.h"
 
-static void skip_input(DBEContext *s, int nb_words)
+static int skip_input(DBEContext *s, int nb_words)
 {
+    if (nb_words > s->input_size) {
+        av_log(s->avctx, AV_LOG_ERROR, "Packet too short\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     s->input      += nb_words * s->word_bytes;
     s->input_size -= nb_words;
+    return 0;
 }
 
 static int parse_key(DBEContext *s)
 {
-    int key = 0;
-
-    if (s->key_present && s->input_size > 0)
-        key = AV_RB24(s->input) >> 24 - s->word_bits;
-
-    skip_input(s, s->key_present);
-    return key;
+    if (s->key_present) {
+        uint8_t *key = s->input;
+        int      ret = skip_input(s, 1);
+        if (ret < 0)
+            return ret;
+        return AV_RB24(key) >> 24 - s->word_bits;
+    }
+    return 0;
 }
 
 static int convert_input(DBEContext *s, int nb_words, int key)
@@ -83,8 +90,10 @@ static int convert_input(DBEContext *s, int nb_words, int key)
 
 static int parse_metadata(DBEContext *s)
 {
-    int i, ret, key = parse_key(s), mtd_size;
+    int i, ret, key, mtd_size;
 
+    if ((key = parse_key(s)) < 0)
+        return key;
     if ((ret = convert_input(s, 1, key)) < 0)
         return ret;
 
@@ -135,14 +144,13 @@ static int parse_metadata(DBEContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    skip_input(s, mtd_size + 1);
-    return 0;
+    return skip_input(s, mtd_size + 1);
 }
 
 static int parse_metadata_ext(DBEContext *s)
 {
     if (s->mtd_ext_size)
-        skip_input(s, s->key_present + s->mtd_ext_size + 1);
+        return skip_input(s, s->key_present + s->mtd_ext_size + 1);
     return 0;
 }
 
@@ -455,7 +463,10 @@ static int parse_channel(DBEContext *s, int ch, int seg_id)
 
 static int parse_audio(DBEContext *s, int start, int end, int seg_id)
 {
-    int ch, ret, key = parse_key(s);
+    int ch, ret, key;
+
+    if ((key = parse_key(s)) < 0)
+        return key;
 
     for (ch = start; ch < end; ch++) {
         if (!s->ch_size[ch]) {
@@ -469,17 +480,17 @@ static int parse_audio(DBEContext *s, int start, int end, int seg_id)
                 return ret;
             s->channels[seg_id][ch].nb_groups = 0;
         }
-        skip_input(s, s->ch_size[ch]);
+        if ((ret = skip_input(s, s->ch_size[ch])) < 0)
+            return ret;
     }
 
-    skip_input(s, 1);
-    return 0;
+    return skip_input(s, 1);
 }
 
 static int parse_meter(DBEContext *s)
 {
     if (s->meter_size)
-        skip_input(s, s->key_present + s->meter_size + 1);
+        return skip_input(s, s->key_present + s->meter_size + 1);
     return 0;
 }
 
