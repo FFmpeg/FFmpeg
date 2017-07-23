@@ -42,6 +42,7 @@ typedef struct VAAPIEncodeH265Context {
     int fixed_qp_p;
     int fixed_qp_b;
 
+    H265RawAUD aud;
     H265RawVPS vps;
     H265RawSPS sps;
     H265RawPPS pps;
@@ -52,13 +53,16 @@ typedef struct VAAPIEncodeH265Context {
 
     int slice_nal_unit;
     int slice_type;
+    int pic_type;
 
     CodedBitstreamContext cbc;
     CodedBitstreamFragment current_access_unit;
+    int aud_needed;
 } VAAPIEncodeH265Context;
 
 typedef struct VAAPIEncodeH265Options {
     int qp;
+    int aud;
 } VAAPIEncodeH265Options;
 
 
@@ -117,6 +121,13 @@ static int vaapi_encode_h265_write_sequence_header(AVCodecContext *avctx,
     CodedBitstreamFragment   *au = &priv->current_access_unit;
     int err;
 
+    if (priv->aud_needed) {
+        err = vaapi_encode_h265_add_nal(avctx, au, &priv->aud);
+        if (err < 0)
+            goto fail;
+        priv->aud_needed = 0;
+    }
+
     err = vaapi_encode_h265_add_nal(avctx, au, &priv->vps);
     if (err < 0)
         goto fail;
@@ -144,6 +155,13 @@ static int vaapi_encode_h265_write_slice_header(AVCodecContext *avctx,
     VAAPIEncodeH265Context *priv = ctx->priv_data;
     CodedBitstreamFragment   *au = &priv->current_access_unit;
     int err;
+
+    if (priv->aud_needed) {
+        err = vaapi_encode_h265_add_nal(avctx, au, &priv->aud);
+        if (err < 0)
+            goto fail;
+        priv->aud_needed = 0;
+    }
 
     err = vaapi_encode_h265_add_nal(avctx, au, &priv->slice);
     if (err < 0)
@@ -519,6 +537,7 @@ static int vaapi_encode_h265_init_picture_params(AVCodecContext *avctx,
 {
     VAAPIEncodeContext               *ctx = avctx->priv_data;
     VAAPIEncodeH265Context          *priv = ctx->priv_data;
+    VAAPIEncodeH265Options           *opt = ctx->codec_options;
     VAEncPictureParameterBufferHEVC *vpic = pic->codec_picture_params;
     int i;
 
@@ -529,16 +548,19 @@ static int vaapi_encode_h265_init_picture_params(AVCodecContext *avctx,
 
         priv->slice_nal_unit = HEVC_NAL_IDR_W_RADL;
         priv->slice_type     = HEVC_SLICE_I;
+        priv->pic_type       = 0;
     } else {
         av_assert0(pic->encode_order > priv->last_idr_frame);
 
         if (pic->type == PICTURE_TYPE_I) {
             priv->slice_nal_unit = HEVC_NAL_CRA_NUT;
             priv->slice_type     = HEVC_SLICE_I;
+            priv->pic_type       = 0;
         } else if (pic->type == PICTURE_TYPE_P) {
             av_assert0(pic->refs[0]);
             priv->slice_nal_unit = HEVC_NAL_TRAIL_R;
             priv->slice_type     = HEVC_SLICE_P;
+            priv->pic_type       = 1;
         } else {
             av_assert0(pic->refs[0] && pic->refs[1]);
             if (pic->refs[1]->type == PICTURE_TYPE_I)
@@ -546,9 +568,22 @@ static int vaapi_encode_h265_init_picture_params(AVCodecContext *avctx,
             else
                 priv->slice_nal_unit = HEVC_NAL_TRAIL_N;
             priv->slice_type = HEVC_SLICE_B;
+            priv->pic_type   = 2;
         }
     }
     priv->pic_order_cnt = pic->display_order - priv->last_idr_frame;
+
+    if (opt->aud) {
+        priv->aud_needed = 1;
+        priv->aud.nal_unit_header = (H265RawNALUnitHeader) {
+            .nal_unit_type         = HEVC_NAL_AUD,
+            .nuh_layer_id          = 0,
+            .nuh_temporal_id_plus1 = 1,
+        };
+        priv->aud.pic_type = priv->pic_type;
+    } else {
+        priv->aud_needed = 0;
+    }
 
     vpic->decoded_curr_pic = (VAPictureHEVC) {
         .picture_id    = pic->recon_surface,
@@ -902,6 +937,10 @@ static av_cold int vaapi_encode_h265_close(AVCodecContext *avctx)
 static const AVOption vaapi_encode_h265_options[] = {
     { "qp", "Constant QP (for P-frames; scaled by qfactor/qoffset for I/B)",
       OFFSET(qp), AV_OPT_TYPE_INT, { .i64 = 25 }, 0, 52, FLAGS },
+
+    { "aud", "Include AUD",
+      OFFSET(aud), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
+
     { NULL },
 };
 
