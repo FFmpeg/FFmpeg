@@ -210,6 +210,9 @@
     <ClCompile Include="..\libavutil\sha512.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavutil\slicethread.c">
+      <Filter>Source Files\libavutil</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavutil\spherical.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>

@@ -398,6 +398,8 @@
     <ClCompile Include="..\libavformat\httpauth.c" />
     <ClCompile Include="..\libavformat\urldecode.c" />
     <ClCompile Include="..\libavformat\rtspenc.c" />
+    <ClCompile Include="..\libavformat\s337m.c" />
+    <ClCompile Include="..\libavformat\spdif.c" />
     <ClCompile Include="..\libavformat\samidec.c" />
     <ClCompile Include="..\libavformat\sapdec.c" />
     <ClCompile Include="..\libavformat\sapenc.c" />
@@ -420,7 +422,6 @@
     <ClCompile Include="..\libavformat\sol.c" />
     <ClCompile Include="..\libavformat\soxdec.c" />
     <ClCompile Include="..\libavformat\soxenc.c" />
-    <ClCompile Include="..\libavformat\spdif.c" />
     <ClCompile Include="..\libavformat\spdifdec.c" />
     <ClCompile Include="..\libavformat\spdifenc.c" />
     <ClCompile Include="..\libavformat\srtdec.c" />

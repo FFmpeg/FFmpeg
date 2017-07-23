@@ -1018,6 +1018,12 @@
     <ClCompile Include="..\libavformat\rtspenc.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\s337m.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\spdif.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\samidec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
@@ -1082,9 +1088,6 @@
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\soxenc.c">
-      <Filter>Source Files\libavformat</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavformat\spdif.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\spdifdec.c">

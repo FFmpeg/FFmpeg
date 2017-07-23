@@ -127,6 +127,7 @@
     <ClCompile Include="..\libavutil\samplefmt.c" />
     <ClCompile Include="..\libavutil\sha.c" />
     <ClCompile Include="..\libavutil\sha512.c" />
+    <ClCompile Include="..\libavutil\slicethread.c" />
     <ClCompile Include="..\libavutil\spherical.c" />
     <ClCompile Include="..\libavutil\stereo3d.c" />
     <ClCompile Include="..\libavutil\threadmessage.c" />

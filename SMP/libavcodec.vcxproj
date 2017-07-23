@@ -411,6 +411,7 @@
     <ClCompile Include="..\libavcodec\dfa.c" />
     <ClCompile Include="..\libavcodec\dnxhddec.c" />
     <ClCompile Include="..\libavcodec\dnxhddata.c" />
+    <ClCompile Include="..\libavcodec\dolby_e.c" />
     <ClCompile Include="..\libavcodec\dpx.c" />
     <ClCompile Include="..\libavcodec\dpxenc.c" />
     <ClCompile Include="..\libavcodec\dsddec.c" />

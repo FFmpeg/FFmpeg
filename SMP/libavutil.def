@@ -485,6 +485,9 @@ EXPORTS
     avpriv_request_sample
     avpriv_scalarproduct_float_c
     avpriv_set_systematic_pal2
+    avpriv_slicethread_create
+    avpriv_slicethread_execute
+    avpriv_slicethread_free
     avpriv_snprintf
     avpriv_solve_lls
     avpriv_strtod

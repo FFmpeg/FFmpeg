@@ -204,6 +204,7 @@ EXPORTS
     avpriv_copy_bits
     avpriv_copy_pce_data
     avpriv_dca_convert_bitstream
+    avpriv_dca_parse_core_frame_header
     avpriv_dnxhd_get_frame_size
     avpriv_dnxhd_get_interlaced
     avpriv_dnxhd_parse_header_prefix
