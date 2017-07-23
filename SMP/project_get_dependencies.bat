@@ -40,15 +40,15 @@ SET PASSDEPENDENCIES=%~1
 REM Check if git is installed and available
 IF "%MSVC_VER%"=="" (
     git status >NUL 2>&1
-    IF %ERRORLEVEL% NEQ 0 (
+    IF ERRORLEVEL 1 (
         ECHO A working copy of git was not found. To use this script you must first install git for windows.
         GOTO exitOnError
     )
 )
 
 REM Store current directory and ensure working directory is the location of current .bat
-SET CURRDIR=%CD%
-cd %~dp0
+SET CURRDIR="%CD%"
+cd "%~dp0"
 
 REM Initialise error check value
 SET ERROR=0
@@ -64,7 +64,7 @@ FOR %%I IN %DEPENDENCIES% DO (
         )
     )
 )
-cd %CURRDIR% >NUL
+cd "%CURRDIR%" >NUL
 GOTO exit
 
 REM Function to clone or update a repo
@@ -95,7 +95,7 @@ IF EXIST "%REPONAME%" (
     REM Clone from the origin repo
     SET REPOURL=%UPSTREAMURL%/%REPONAME%.git
     git clone !REPOURL! --quiet
-    IF %ERRORLEVEL% NEQ 0 (
+    IF ERRORLEVEL 1 (
         ECHO %REPONAME%: Git clone failed.
         GOTO exitOnError
     )
@@ -134,7 +134,7 @@ IF "%GITHUBTOKEN%" == "" (
 ) ELSE (
     powershell -nologo -noprofile -command "try { Invoke-RestMethod -Uri %UPSTREAMAPIURL%/%REPONAME%/releases/latest -Headers @{'Authorization' = 'token %GITHUBTOKEN%'} > latest.json } catch {exit 1}"
 )
-IF NOT %ERRORLEVEL% == 0 ( ECHO Failed getting latest %REPONAME% release & EXIT /B 1 )
+IF ERRORLEVEL 1 ( ECHO Failed getting latest %REPONAME% release & EXIT /B 1 )
 REM Get tag for latest release
 FOR /F "tokens=* USEBACKQ" %%F IN (`TYPE latest.json ^| FINDSTR /B "tag_name"`) DO SET TAG=%%F
 FOR /F "tokens=2 delims=: " %%F in ("%TAG%") DO SET TAG=%%F
@@ -153,15 +153,15 @@ ECHO %REPONAME%: Downloading %LIBNAME%_%TAG%_msvc%MSVC_VER%.zip...
 SET PREBUILTDIR=prebuilt
 MKDIR %PREBUILTDIR% >NUL 2>&1
 powershell -nologo -noprofile -command "try { (New-Object Net.WebClient).DownloadFile('%DLURL%', '%PREBUILTDIR%\temp.zip') } catch {exit 1}"
-IF NOT %ERRORLEVEL% == 0 ( ECHO Failed downloading %DLURL% & EXIT /B 1 )
+IF ERRORLEVEL 1 ( ECHO Failed downloading %DLURL% & EXIT /B 1 )
 powershell -nologo -noprofile -command "Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip=[System.IO.Compression.ZipFile]::OpenRead('%PREBUILTDIR%\temp.zip'); foreach ($item in $zip.Entries) { try {$file=(Join-Path -Path .\%PREBUILTDIR% -ChildPath $item.FullName); $null=[System.IO.Directory]::CreateDirectory((Split-Path -Path $file)); [System.IO.Compression.ZipFileExtensions]::ExtractToFile($item,$file,$true)} catch {exit 1} }"
-IF NOT %ERRORLEVEL% == 0 ( ECHO Failed extracting downloaded archive & EXIT /B 1 )
+IF ERRORLEVEL 1 ( ECHO Failed extracting downloaded archive & EXIT /B 1 )
 DEL /F /Q %PREBUILTDIR%\\temp.zip
 ECHO.
 EXIT /B %ERRORLEVEL%
 
 :exitOnError
-cd %CURRDIR%
+cd "%CURRDIR%"
 SET ERROR=1
 
 :exit
