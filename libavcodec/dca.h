@@ -32,6 +32,50 @@
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 
+#include "get_bits.h"
+
+#define DCA_CORE_FRAME_HEADER_SIZE      18
+
+enum DCAParseError {
+    DCA_PARSE_ERROR_SYNC_WORD       = -1,
+    DCA_PARSE_ERROR_DEFICIT_SAMPLES = -2,
+    DCA_PARSE_ERROR_PCM_BLOCKS      = -3,
+    DCA_PARSE_ERROR_FRAME_SIZE      = -4,
+    DCA_PARSE_ERROR_AMODE           = -5,
+    DCA_PARSE_ERROR_SAMPLE_RATE     = -6,
+    DCA_PARSE_ERROR_RESERVED_BIT    = -7,
+    DCA_PARSE_ERROR_LFE_FLAG        = -8,
+    DCA_PARSE_ERROR_PCM_RES         = -9,
+    DCA_PARSE_ERROR_INVALIDDATA     = -10,
+};
+
+typedef struct DCACoreFrameHeader {
+    uint8_t     normal_frame;       ///< Frame type
+    uint8_t     deficit_samples;    ///< Deficit sample count
+    uint8_t     crc_present;        ///< CRC present flag
+    uint8_t     npcmblocks;         ///< Number of PCM sample blocks
+    uint16_t    frame_size;         ///< Primary frame byte size
+    uint8_t     audio_mode;         ///< Audio channel arrangement
+    uint8_t     sr_code;            ///< Core audio sampling frequency
+    uint8_t     br_code;            ///< Transmission bit rate
+    uint8_t     drc_present;        ///< Embedded dynamic range flag
+    uint8_t     ts_present;         ///< Embedded time stamp flag
+    uint8_t     aux_present;        ///< Auxiliary data flag
+    uint8_t     hdcd_master;        ///< HDCD mastering flag
+    uint8_t     ext_audio_type;     ///< Extension audio descriptor flag
+    uint8_t     ext_audio_present;  ///< Extended coding flag
+    uint8_t     sync_ssf;           ///< Audio sync word insertion flag
+    uint8_t     lfe_present;        ///< Low frequency effects flag
+    uint8_t     predictor_history;  ///< Predictor history flag switch
+    uint8_t     filter_perfect;     ///< Multirate interpolator switch
+    uint8_t     encoder_rev;        ///< Encoder software revision
+    uint8_t     copy_hist;          ///< Copy history
+    uint8_t     pcmr_code;          ///< Source PCM resolution
+    uint8_t     sumdiff_front;      ///< Front sum/difference flag
+    uint8_t     sumdiff_surround;   ///< Surround sum/difference flag
+    uint8_t     dn_code;            ///< Dialog normalization / unspecified
+} DCACoreFrameHeader;
+
 enum DCASpeaker {
     DCA_SPEAKER_C,    DCA_SPEAKER_L,    DCA_SPEAKER_R,    DCA_SPEAKER_Ls,
     DCA_SPEAKER_Rs,   DCA_SPEAKER_LFE1, DCA_SPEAKER_Cs,   DCA_SPEAKER_Lsr,
@@ -156,11 +200,21 @@ extern av_export const uint32_t avpriv_dca_sample_rates[16];
 
 extern const uint32_t ff_dca_sampling_freqs[16];
 extern const uint8_t ff_dca_freq_ranges[16];
+extern const uint8_t ff_dca_bits_per_sample[8];
+
 
 /**
  * Convert bitstream to one representation based on sync marker
  */
 int avpriv_dca_convert_bitstream(const uint8_t *src, int src_size, uint8_t *dst,
                                  int max_size);
+
+/**
+ * Parse and validate core frame header
+ * @return 0 on success, negative DCA_PARSE_ERROR_ code on failure
+ */
+int avpriv_dca_parse_core_frame_header(DCACoreFrameHeader *h, uint8_t *buf, int size);
+
+int ff_dca_parse_core_frame_header(DCACoreFrameHeader *h, GetBitContext *gb);
 
 #endif /* AVCODEC_DCA_H */

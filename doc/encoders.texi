@@ -2570,7 +2570,7 @@ The following standard libavcodec options are used:
 
 @table @option
 
-@item vaapi_h264
+@item h264_vaapi
 @option{profile} sets the value of @emph{profile_idc} and the @emph{constraint_set*_flag}s.
 @option{level} sets the value of @emph{level_idc}.
 
@@ -2582,20 +2582,20 @@ systems implement all levels).
 Use low-power encoding mode.
 @end table
 
-@item vaapi_hevc
+@item hevc_vaapi
 @option{profile} and @option{level} set the values of
 @emph{general_profile_idc} and @emph{general_level_idc} respectively.
 
-@item vaapi_mjpeg
+@item mjpeg_vaapi
 Always encodes using the standard quantisation and huffman tables -
 @option{global_quality} scales the standard quantisation table (range 1-100).
 
-@item vaapi_mpeg2
+@item mpeg2_vaapi
 @option{profile} and @option{level} set the value of @emph{profile_and_level_indication}.
 
 No rate control is supported.
 
-@item vaapi_vp8
+@item vp8_vaapi
 B-frames are not supported.
 
 @option{global_quality} sets the @emph{q_idx} used for non-key frames (range 0-127).
@@ -2606,7 +2606,7 @@ B-frames are not supported.
 Manually set the loop filter parameters.
 @end table
 
-@item vaapi_vp9
+@item vp9_vaapi
 @option{global_quality} sets the @emph{q_idx} used for P-frames (range 0-255).
 
 @table @option

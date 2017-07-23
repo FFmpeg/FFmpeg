@@ -207,7 +207,7 @@ static void celt_apply_preemph_filter(OpusEncContext *s, CeltFrame *f)
 /* Create the window and do the mdct */
 static void celt_frame_mdct(OpusEncContext *s, CeltFrame *f)
 {
-    int i, t, ch;
+    int t, ch;
     float *win = s->scratch, *temp = s->scratch + 1920;
 
     if (f->transient) {
@@ -644,10 +644,10 @@ static void exp_quant_coarse(OpusRangeCoder *rc, CeltFrame *f,
 
     if (intra) {
         alpha = 0.0f;
-        beta  = 1.0f - 4915.0f/32768.0f;
+        beta  = 1.0f - (4915.0f/32768.0f);
     } else {
         alpha = ff_celt_alpha_coef[f->size];
-        beta  = 1.0f - ff_celt_beta_coef[f->size];
+        beta  = ff_celt_beta_coef[f->size];
     }
 
     for (i = f->start_band; i < f->end_band; i++) {

@@ -1916,8 +1916,8 @@ int ff_h264_decode_mb_cabac(const H264Context *h, H264SliceContext *sl)
     const SPS *sps = h->ps.sps;
     int mb_xy;
     int mb_type, partition_count, cbp = 0;
-    int dct8x8_allowed= h->ps.pps->transform_8x8_mode;
-    int decode_chroma = sps->chroma_format_idc == 1 || sps->chroma_format_idc == 2;
+    int dct8x8_allowed = h->ps.pps->transform_8x8_mode;
+    const int decode_chroma = sps->chroma_format_idc == 1 || sps->chroma_format_idc == 2;
     const int pixel_shift = h->pixel_shift;
 
     mb_xy = sl->mb_xy = sl->mb_x + sl->mb_y*h->mb_stride;

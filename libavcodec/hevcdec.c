@@ -1684,10 +1684,11 @@ static void chroma_mc_bi(HEVCContext *s, uint8_t *dst0, ptrdiff_t dststride, AVF
 static void hevc_await_progress(HEVCContext *s, HEVCFrame *ref,
                                 const Mv *mv, int y0, int height)
 {
-    int y = FFMAX(0, (mv->y >> 2) + y0 + height + 9);
+    if (s->threads_type == FF_THREAD_FRAME ) {
+        int y = FFMAX(0, (mv->y >> 2) + y0 + height + 9);
 
-    if (s->threads_type == FF_THREAD_FRAME )
         ff_thread_await_progress(&ref->tf, y, 0);
+    }
 }
 
 static void hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
@@ -2728,7 +2729,7 @@ static int set_side_data(HEVCContext *s)
     if (s->sei.alternative_transfer.present &&
         av_color_transfer_name(s->sei.alternative_transfer.preferred_transfer_characteristics) &&
         s->sei.alternative_transfer.preferred_transfer_characteristics != AVCOL_TRC_UNSPECIFIED) {
-        s->avctx->color_trc = s->sei.alternative_transfer.preferred_transfer_characteristics;
+        s->avctx->color_trc = out->color_trc = s->sei.alternative_transfer.preferred_transfer_characteristics;
     }
 
     return 0;

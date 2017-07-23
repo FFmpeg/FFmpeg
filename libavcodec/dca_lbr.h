@@ -41,6 +41,11 @@
 #define DCA_LBR_TIME_SAMPLES    128
 #define DCA_LBR_TIME_HISTORY    8
 
+enum DCALBRHeader {
+    DCA_LBR_HEADER_SYNC_ONLY    = 1,
+    DCA_LBR_HEADER_DECODER_INIT = 2
+};
+
 typedef struct DCALbrTone {
     uint8_t     x_freq;     ///< Spectral line offset
     uint8_t     f_delt;     ///< Difference between original and center frequency

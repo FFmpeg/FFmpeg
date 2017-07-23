@@ -423,6 +423,7 @@ static void register_all(void)
     REGISTER_DECODER(BMV_AUDIO,         bmv_audio);
     REGISTER_DECODER(COOK,              cook);
     REGISTER_ENCDEC (DCA,               dca);
+    REGISTER_DECODER(DOLBY_E,           dolby_e);
     REGISTER_DECODER(DSD_LSBF,          dsd_lsbf);
     REGISTER_DECODER(DSD_MSBF,          dsd_msbf);
     REGISTER_DECODER(DSD_LSBF_PLANAR,   dsd_lsbf_planar);

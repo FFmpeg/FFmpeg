@@ -130,6 +130,8 @@ typedef struct ReadInterval {
 static ReadInterval *read_intervals;
 static int read_intervals_nb = 0;
 
+static int find_stream_info  = 1;
+
 /* section structure definition */
 
 #define SECTION_MAX_NB_CHILDREN 10
@@ -2103,6 +2105,31 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
         print_int("interlaced_frame",       frame->interlaced_frame);
         print_int("top_field_first",        frame->top_field_first);
         print_int("repeat_pict",            frame->repeat_pict);
+
+        if (frame->color_range != AVCOL_RANGE_UNSPECIFIED)
+            print_str("color_range", av_color_range_name(frame->color_range));
+        else
+            print_str_opt("color_range", av_color_range_name(frame->color_range));
+
+        if (frame->colorspace != AVCOL_SPC_UNSPECIFIED)
+            print_str("color_space", av_color_space_name(frame->colorspace));
+        else
+            print_str_opt("color_space", av_color_space_name(frame->colorspace));
+
+        if (frame->color_primaries != AVCOL_PRI_UNSPECIFIED)
+            print_str("color_primaries", av_color_primaries_name(frame->color_primaries));
+        else
+            print_str_opt("color_primaries", av_color_primaries_name(frame->color_primaries));
+
+        if (frame->color_trc != AVCOL_TRC_UNSPECIFIED)
+            print_str("color_transfer", av_color_transfer_name(frame->color_trc));
+        else
+            print_str_opt("color_transfer", av_color_transfer_name(frame->color_trc));
+
+        if (frame->chroma_location != AVCHROMA_LOC_UNSPECIFIED)
+            print_str("chroma_location", av_chroma_location_name(frame->chroma_location));
+        else
+            print_str_opt("chroma_location", av_chroma_location_name(frame->chroma_location));
         break;
 
     case AVMEDIA_TYPE_AUDIO:
@@ -2771,10 +2798,9 @@ static void show_error(WriterContext *w, int err)
 
 static int open_input_file(InputFile *ifile, const char *filename)
 {
-    int err, i, orig_nb_streams;
+    int err, i;
     AVFormatContext *fmt_ctx = NULL;
     AVDictionaryEntry *t;
-    AVDictionary **opts;
     int scan_all_pmts_set = 0;
 
     fmt_ctx = avformat_alloc_context();
@@ -2802,19 +2828,20 @@ static int open_input_file(InputFile *ifile, const char *filename)
         return AVERROR_OPTION_NOT_FOUND;
     }
 
-    /* fill the streams in the format context */
-    opts = setup_find_stream_info_opts(fmt_ctx, codec_opts);
-    orig_nb_streams = fmt_ctx->nb_streams;
+    if (find_stream_info) {
+        AVDictionary **opts = setup_find_stream_info_opts(fmt_ctx, codec_opts);
+        int orig_nb_streams = fmt_ctx->nb_streams;
 
-    err = avformat_find_stream_info(fmt_ctx, opts);
+        err = avformat_find_stream_info(fmt_ctx, opts);
 
-    for (i = 0; i < orig_nb_streams; i++)
-        av_dict_free(&opts[i]);
-    av_freep(&opts);
+        for (i = 0; i < orig_nb_streams; i++)
+            av_dict_free(&opts[i]);
+        av_freep(&opts);
 
-    if (err < 0) {
-        print_error(filename, err);
-        return err;
+        if (err < 0) {
+            print_error(filename, err);
+            return err;
+        }
     }
 
     av_dump_format(fmt_ctx, 0, filename, 0);
@@ -3472,6 +3499,8 @@ static const OptionDef real_options[] = {
     { "read_intervals", HAS_ARG, {.func_arg = opt_read_intervals}, "set read intervals", "read_intervals" },
     { "default", HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {.func_arg = opt_default}, "generic catch all option", "" },
     { "i", HAS_ARG, {.func_arg = opt_input_file_i}, "read specified file", "input_file"},
+    { "find_stream_info", OPT_BOOL | OPT_INPUT | OPT_EXPERT, { &find_stream_info },
+        "read and decode the streams to fill missing information with heuristics" },
     { NULL, },
 };
 

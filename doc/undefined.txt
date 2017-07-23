@@ -1,0 +1,47 @@
+Undefined Behavior
+------------------
+In the C language, some operations are undefined, like signed integer overflow,
+dereferencing freed pointers, accessing outside allocated space, ...
+
+Undefined Behavior must not occur in a C program, it is not safe even if the
+output of undefined operations is unused. The unsafety may seem nit picking
+but Optimizing compilers have in fact optimized code on the assumption that
+no undefined Behavior occurs.
+Optimizing code based on wrong assumptions can and has in some cases lead to
+effects beyond the output of computations.
+
+
+The signed integer overflow problem in speed critical code
+----------------------------------------------------------
+Code which is highly optimized and works with signed integers sometimes has the
+problem that some (invalid) inputs can trigger overflows (undefined behavior).
+In these cases, often the output of the computation does not matter (as it is
+from invalid input).
+In some cases the input can be checked easily in others checking the input is
+computationally too intensive.
+In these remaining cases a unsigned type can be used instead of a signed type.
+unsigned overflows are defined in C.
+
+SUINT
+-----
+As we have above established there is a need to use "unsigned" sometimes in
+computations which work with signed integers (which overflow).
+Using "unsigned" for signed integers has the very significant potential to
+cause confusion
+as in
+unsigned a,b,c;
+...
+a+b*c;
+The reader does not expect b to be semantically -5 here and if the code is
+changed by maybe adding a cast, a division or other the signedness will almost
+certainly be mistaken.
+To avoid this confusion a new type was introduced, "SUINT" is the C "unsigned"
+type but it holds a signed "int".
+to use the same example
+SUINT a,b,c;
+...
+a+b*c;
+here the reader knows that a,b,c are meant to be signed integers but for C
+standard compliance / to avoid undefined behavior they are stored in unsigned
+ints.
+

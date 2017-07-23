@@ -108,7 +108,7 @@ uint32_t ff_opus_rc_dec_cdf(OpusRangeCoder *rc, const uint16_t *cdf)
 
 void ff_opus_rc_enc_cdf(OpusRangeCoder *rc, int val, const uint16_t *cdf)
 {
-    opus_rc_enc_update(rc, cdf[val], cdf[val + 1], cdf[0], 1);
+    opus_rc_enc_update(rc, (!!val)*cdf[val], cdf[val + 1], cdf[0], 1);
 }
 
 uint32_t ff_opus_rc_dec_log(OpusRangeCoder *rc, uint32_t bits)

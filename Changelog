@@ -28,6 +28,7 @@ version <next>:
 - support for decoding through D3D11VA in ffmpeg
 - limiter video filter
 - libvmaf video filter
+- Dolby E decoder and SMPTE 337M demuxer
 
 version 3.3:
 - CrystalHD decoder moved to new decode API

@@ -28,6 +28,7 @@
 
 typedef struct ChannelStats {
     double last;
+    double min_non_zero;
     double sigma_x, sigma_x2;
     double avg_sigma_x2, min_sigma_x2, max_sigma_x2;
     double min, max;
@@ -110,13 +111,12 @@ static void reset_stats(AudioStatsContext *s)
 
         p->min = p->nmin = p->min_sigma_x2 = DBL_MAX;
         p->max = p->nmax = p->max_sigma_x2 = DBL_MIN;
+        p->min_non_zero = DBL_MAX;
         p->min_diff = DBL_MAX;
         p->max_diff = DBL_MIN;
         p->sigma_x = 0;
         p->sigma_x2 = 0;
         p->avg_sigma_x2 = 0;
-        p->min_sigma_x2 = 0;
-        p->max_sigma_x2 = 0;
         p->min_run = 0;
         p->max_run = 0;
         p->min_runs = 0;
@@ -179,6 +179,9 @@ static inline void update_stat(AudioStatsContext *s, ChannelStats *p, double d, 
     } else if (p->last == p->min) {
         p->min_runs += p->min_run * p->min_run;
     }
+
+    if (d != 0 && FFABS(d) < p->min_non_zero)
+        p->min_non_zero = FFABS(d);
 
     if (d > p->max) {
         p->max = d;
@@ -288,6 +291,7 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
         bit_depth(s, p->mask, p->imask, &depth);
         set_meta(metadata, c + 1, "Bit_depth", "%f", depth.num);
         set_meta(metadata, c + 1, "Bit_depth2", "%f", depth.den);
+        set_meta(metadata, c + 1, "Dynamic_range", "%f", LINEAR_TO_DB(2 * FFMAX(FFABS(p->min), FFABS(p->max))/ p->min_non_zero));
     }
 
     set_meta(metadata, 0, "Overall.DC_offset", "%f", max_sigma_x / (nb_samples / s->nb_channels));
@@ -481,6 +485,7 @@ static void print_stats(AVFilterContext *ctx)
         av_log(ctx, AV_LOG_INFO, "Peak count: %"PRId64"\n", p->min_count + p->max_count);
         bit_depth(s, p->mask, p->imask, &depth);
         av_log(ctx, AV_LOG_INFO, "Bit depth: %u/%u\n", depth.num, depth.den);
+        av_log(ctx, AV_LOG_INFO, "Dynamic range: %f\n", LINEAR_TO_DB(2 * FFMAX(FFABS(p->min), FFABS(p->max))/ p->min_non_zero));
     }
 
     av_log(ctx, AV_LOG_INFO, "Overall\n");
