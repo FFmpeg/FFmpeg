@@ -113,6 +113,60 @@ confuse other transformations which require correct extradata.
 A new single global PPS is created, and all of the redundant PPSs
 within the stream are removed.
 
+@section hevc_metadata
+
+Modify metadata embedded in an HEVC stream.
+
+@table @option
+@item aud
+Insert or remove AUD NAL units in all access units of the stream.
+
+@table @samp
+@item insert
+@item remove
+@end table
+
+@item sample_aspect_ratio
+Set the sample aspect ratio in the stream in the VUI parameters.
+
+@item video_format
+@item video_full_range_flag
+Set the video format in the stream (see H.265 section E.3.1 and
+table E.2).
+
+@item colour_primaries
+@item transfer_characteristics
+@item matrix_coefficients
+Set the colour description in the stream (see H.265 section E.3.1
+and tables E.3, E.4 and E.5).
+
+@item chroma_sample_loc_type
+Set the chroma sample location in the stream (see H.265 section
+E.3.1 and figure E.1).
+
+@item tick_rate
+Set the tick rate in the VPS and VUI parameters (num_units_in_tick /
+time_scale).  Combined with @option{num_ticks_poc_diff_one}, this can
+set a constant framerate in the stream.  Note that it is likely to be
+overridden by container parameters when the stream is in a container.
+
+@item num_ticks_poc_diff_one
+Set poc_proportional_to_timing_flag in VPS and VUI and use this value
+to set num_ticks_poc_diff_one_minus1 (see H.265 sections 7.4.3.1 and
+E.3.1).  Ignored if @option{tick_rate} is not also set.
+
+@item crop_left
+@item crop_right
+@item crop_top
+@item crop_bottom
+Set the conformance window cropping offsets in the SPS.  These values
+will replace the current ones if the stream is already cropped.
+
+These fields are set in pixels.  Note that some sizes may not be
+representable if the chroma is subsampled (H.265 section 7.4.3.2.1).
+
+@end table
+
 @section imx_dump_header
 
 @section mjpeg2jpeg
