@@ -731,6 +731,19 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         st->codecpar->bit_rate    = av_rescale(ctx->bmd_width * ctx->bmd_height * 16, st->time_base.den, st->time_base.num);
     }
 
+    switch (ctx->bmd_field_dominance) {
+    case bmdUpperFieldFirst:
+        st->codecpar->field_order = AV_FIELD_TT;
+        break;
+    case bmdLowerFieldFirst:
+        st->codecpar->field_order = AV_FIELD_BB;
+        break;
+    case bmdProgressiveFrame:
+    case bmdProgressiveSegmentedFrame:
+        st->codecpar->field_order = AV_FIELD_PROGRESSIVE;
+        break;
+    }
+
     avpriv_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
 
     ctx->video_st=st;
@@ -788,15 +801,8 @@ int ff_decklink_read_packet(AVFormatContext *avctx, AVPacket *pkt)
 {
     struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
     struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
-    AVFrame *frame = ctx->video_st->codec->coded_frame;
 
     avpacket_queue_get(&ctx->queue, pkt, 1);
-    if (frame && (ctx->bmd_field_dominance == bmdUpperFieldFirst || ctx->bmd_field_dominance == bmdLowerFieldFirst)) {
-        frame->interlaced_frame = 1;
-        if (ctx->bmd_field_dominance == bmdUpperFieldFirst) {
-            frame->top_field_first = 1;
-        }
-    }
 
     return 0;
 }
