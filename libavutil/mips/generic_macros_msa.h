@@ -1531,6 +1531,24 @@
 #define ILVR_D4_SB(...) ILVR_D4(v16i8, __VA_ARGS__)
 #define ILVR_D4_UB(...) ILVR_D4(v16u8, __VA_ARGS__)
 
+/* Description : Interleave left half of double word elements from vectors
+   Arguments   : Inputs  - in0, in1, in2, in3
+                 Outputs - out0, out1
+                 Return Type - as per RTYPE
+   Details     : Left half of double word elements of in0 and left half of
+                 double word elements of in1 are interleaved and copied to out0.
+                 Left half of double word elements of in2 and left half of
+                 double word elements of in3 are interleaved and copied to out1.
+*/
+#define ILVL_D2(RTYPE, in0, in1, in2, in3, out0, out1)      \
+{                                                           \
+    out0 = (RTYPE) __msa_ilvl_d((v2i64) in0, (v2i64) in1);  \
+    out1 = (RTYPE) __msa_ilvl_d((v2i64) in2, (v2i64) in3);  \
+}
+#define ILVL_D2_UB(...) ILVL_D2(v16u8, __VA_ARGS__)
+#define ILVL_D2_SB(...) ILVL_D2(v16i8, __VA_ARGS__)
+#define ILVL_D2_SH(...) ILVL_D2(v8i16, __VA_ARGS__)
+
 /* Description : Interleave both left and right half of input vectors
    Arguments   : Inputs  - in0, in1
                  Outputs - out0, out1
