@@ -1221,6 +1221,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     int i, j, x, y, ctb_addr_rs, tile_id;
     int ret = 0;
     unsigned int pps_id = 0;
+    unsigned log2_parallel_merge_level_minus2;
 
     AVBufferRef *pps_buf;
     HEVCPPS *pps = av_mallocz(sizeof(*pps));
@@ -1405,13 +1406,14 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
             goto err;
     }
     pps->lists_modification_present_flag = get_bits1(gb);
-    pps->log2_parallel_merge_level       = get_ue_golomb_long(gb) + 2;
-    if (pps->log2_parallel_merge_level > sps->log2_ctb_size) {
+    log2_parallel_merge_level_minus2     = get_ue_golomb_long(gb);
+    if (log2_parallel_merge_level_minus2 > sps->log2_ctb_size) {
         av_log(s->avctx, AV_LOG_ERROR, "log2_parallel_merge_level_minus2 out of range: %d\n",
-               pps->log2_parallel_merge_level - 2);
+               log2_parallel_merge_level_minus2);
         ret = AVERROR_INVALIDDATA;
         goto err;
     }
+    pps->log2_parallel_merge_level       = log2_parallel_merge_level_minus2 + 2;
 
     pps->slice_header_extension_present_flag = get_bits1(gb);
 
