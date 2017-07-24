@@ -147,6 +147,7 @@ typedef struct HLSContext {
     HLSSegment *old_segments;
 
     char *basename;
+    char *base_output_dirname;
     char *vtt_basename;
     char *vtt_m3u8_name;
     char *baseurl;
@@ -584,7 +585,7 @@ static int hls_mux_init(AVFormatContext *s)
 
     if (hls->segment_type == SEGMENT_TYPE_FMP4) {
         hls->fmp4_init_mode = 1;
-        if ((ret = s->io_open(s, &oc->pb, hls->fmp4_init_filename, AVIO_FLAG_WRITE, NULL)) < 0) {
+        if ((ret = s->io_open(s, &oc->pb, hls->base_output_dirname, AVIO_FLAG_WRITE, NULL)) < 0) {
             av_log(s, AV_LOG_ERROR, "Failed to open segment '%s'\n", hls->fmp4_init_filename);
             return ret;
         }
@@ -1286,14 +1287,19 @@ fail:
     return err;
 }
 
-static const char * get_default_pattern_localtime_fmt(void)
+static const char * get_default_pattern_localtime_fmt(AVFormatContext *s)
 {
     char b[21];
     time_t t = time(NULL);
     struct tm *p, tmbuf;
+    HLSContext *hls = s->priv_data;
+
     p = localtime_r(&t, &tmbuf);
     // no %s support when strftime returned error or left format string unchanged
     // also no %s support on MSVC, which invokes the invalid parameter handler on unsupported format strings, instead of returning an error
+    if (hls->segment_type == SEGMENT_TYPE_FMP4) {
+        return (HAVE_LIBC_MSVCRT || !strftime(b, sizeof(b), "%s", p) || !strcmp(b, "%s")) ? "-%Y%m%d%H%M%S.m4s" : "-%s.m4s";
+    }
     return (HAVE_LIBC_MSVCRT || !strftime(b, sizeof(b), "%s", p) || !strcmp(b, "%s")) ? "-%Y%m%d%H%M%S.ts" : "-%s.ts";
 }
 
@@ -1303,16 +1309,19 @@ static int hls_write_header(AVFormatContext *s)
     int ret, i;
     char *p;
     const char *pattern = "%d.ts";
-    const char *pattern_localtime_fmt = get_default_pattern_localtime_fmt();
+    const char *pattern_localtime_fmt = get_default_pattern_localtime_fmt(s);
     const char *vtt_pattern = "%d.vtt";
     AVDictionary *options = NULL;
     int byterange_mode = (hls->flags & HLS_SINGLE_FILE) || (hls->max_seg_size > 0);
     int basename_size;
     int vtt_basename_size;
 
-    if (hls->segment_type == SEGMENT_TYPE_FMP4 && byterange_mode) {
-        av_log(s, AV_LOG_WARNING, "Have not support fmp4 byterange mode yet now\n");
-        return AVERROR_PATCHWELCOME;
+    if (hls->segment_type == SEGMENT_TYPE_FMP4) {
+        if (byterange_mode) {
+            av_log(s, AV_LOG_WARNING, "Have not support fmp4 byterange mode yet now\n");
+            return AVERROR_PATCHWELCOME;
+        }
+        pattern = "%d.m4s";
     }
     if ((hls->start_sequence_source_type == HLS_START_SEQUENCE_AS_SECONDS_SINCE_EPOCH) ||
         (hls->start_sequence_source_type == HLS_START_SEQUENCE_AS_FORMATTED_DATETIME)) {
@@ -1411,6 +1420,31 @@ static int hls_write_header(AVFormatContext *s)
             av_strlcat(hls->basename, pattern_localtime_fmt, basename_size);
         } else {
             av_strlcat(hls->basename, pattern, basename_size);
+        }
+
+        if (av_strcasecmp(hls->fmp4_init_filename, "init.mp4")) {
+            int fmp4_init_filename_len = strlen(hls->fmp4_init_filename) + 1;
+            hls->base_output_dirname = av_malloc(fmp4_init_filename_len);
+            if (!hls->base_output_dirname) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+            av_strlcpy(hls->base_output_dirname, hls->fmp4_init_filename, fmp4_init_filename_len);
+        } else {
+            hls->base_output_dirname = av_malloc(basename_size);
+            if (!hls->base_output_dirname) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+
+            av_strlcpy(hls->base_output_dirname, s->filename, basename_size);
+            p = strrchr(hls->base_output_dirname, '/');
+            if (p) {
+                *(p + 1) = '\0';
+                av_strlcat(hls->base_output_dirname, hls->fmp4_init_filename, basename_size);
+            } else {
+                av_strlcpy(hls->base_output_dirname, hls->fmp4_init_filename, basename_size);
+            }
         }
     }
     if (!hls->use_localtime) {
@@ -1686,6 +1720,7 @@ static int hls_write_trailer(struct AVFormatContext *s)
         ff_format_io_close(s, &vtt_oc->pb);
     }
     av_freep(&hls->basename);
+    av_freep(&hls->base_output_dirname);
     av_freep(&hls->key_basename);
     avformat_free_context(oc);
 
