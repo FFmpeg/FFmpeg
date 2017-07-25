@@ -1223,12 +1223,15 @@ static int hls_start(AVFormatContext *s)
             av_log(s, AV_LOG_WARNING, "Cannot use both -hls_key_info_file and -hls_enc,"
                   " will use -hls_key_info_file priority\n");
         }
-        if (c->key_info_file) {
-            if ((err = hls_encryption_start(s)) < 0)
-                goto fail;
-        } else {
-            if ((err = do_encrypt(s)) < 0)
-                goto fail;
+
+        if (c->number <= 1) {
+            if (c->key_info_file) {
+                if ((err = hls_encryption_start(s)) < 0)
+                    goto fail;
+            } else {
+                if ((err = do_encrypt(s)) < 0)
+                    goto fail;
+            }
         }
         if ((err = av_dict_set(&options, "encryption_key", c->key_string, 0))
                 < 0)
