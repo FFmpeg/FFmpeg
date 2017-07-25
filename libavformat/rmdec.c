@@ -784,10 +784,11 @@ ff_rm_parse_packet (AVFormatContext *s, AVIOContext *pb,
                 return ret;
             rm_ac3_swap_bytes(st, pkt);
         }
-    } else
+    } else {
         ret = av_get_packet(pb, pkt, len);
         if (ret < 0)
             return ret;
+    }
 
     pkt->stream_index = st->index;
 
