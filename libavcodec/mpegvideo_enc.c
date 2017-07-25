@@ -4090,9 +4090,9 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
     else                 mpeg2_qscale = qscale << 1;
 
     if (s->mb_intra) {
+        int q;
         scantable= s->intra_scantable.scantable;
         perm_scantable= s->intra_scantable.permutated;
-        int q;
         if (!s->h263_aic) {
             if (n < 4)
                 q = s->y_dc_scale;
