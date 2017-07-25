@@ -65,9 +65,14 @@ static int celt_header(AVFormatContext *s, int idx)
         st->codec->channels       = nb_channels;
         if (sample_rate)
             avpriv_set_pts_info(st, 64, 1, sample_rate);
-        priv->extra_headers_left  = 1 + extra_headers;
-        av_free(os->private);
+
+        if (os->private) {
+            av_free(priv);
+            priv = os->private;
+        }
         os->private = priv;
+        priv->extra_headers_left  = 1 + extra_headers;
+
         AV_WL32(st->codec->extradata + 0, overlap);
         AV_WL32(st->codec->extradata + 4, version);
         return 1;
