@@ -298,13 +298,17 @@ static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
     if (ctx->mb_height > 68 && ff_dnxhd_check_header_prefix_hr(header_prefix)) {
         ctx->data_offset = 0x170 + (ctx->mb_height << 2);
     } else {
-        if (ctx->mb_height > 68 ||
-            (ctx->mb_height << frame->interlaced_frame) > (ctx->height + 15) >> 4) {
+        if (ctx->mb_height > 68) {
             av_log(ctx->avctx, AV_LOG_ERROR,
                    "mb height too big: %d\n", ctx->mb_height);
             return AVERROR_INVALIDDATA;
         }
         ctx->data_offset = 0x280;
+    }
+    if ((ctx->mb_height << frame->interlaced_frame) > (ctx->height + 15) >> 4) {
+        av_log(ctx->avctx, AV_LOG_ERROR,
+                "mb height too big: %d\n", ctx->mb_height);
+        return AVERROR_INVALIDDATA;
     }
 
     if (buf_size < ctx->data_offset) {
