@@ -863,8 +863,11 @@ static int decode_iccp_chunk(PNGDecContext *s, int length, AVFrame *f)
 
     av_bprint_finalize(&bp, (char **)&data);
 
-    if (!(sd = av_frame_new_side_data(f, AV_FRAME_DATA_ICC_PROFILE, bp.len)))
+    sd = av_frame_new_side_data(f, AV_FRAME_DATA_ICC_PROFILE, bp.len);
+    if (!sd) {
+        av_free(data);
         return AVERROR(ENOMEM);
+    }
 
     av_dict_set(&sd->metadata, "name", profile_name, 0);
     memcpy(sd->data, data, bp.len);
