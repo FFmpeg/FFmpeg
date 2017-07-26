@@ -2075,7 +2075,7 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
                     hden = bytestream2_get_be16u(&s->g);
                     vexp = bytestream2_get_byteu(&s->g);
                     hexp = bytestream2_get_byteu(&s->g);
-                    if (!vnum || !vden || !hnum || !vden) {
+                    if (!vnum || !vden || !hnum || !hden) {
                         bytestream2_seek(&s->g, atom2_end, SEEK_SET);
                         av_log(s->avctx, AV_LOG_WARNING, "RES box invalid\n");
                         continue;
