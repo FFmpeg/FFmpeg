@@ -206,8 +206,8 @@ static int read_high_coeffs(AVCodecContext *avctx, uint8_t *src, int16_t *dst, i
     if ((ret = init_get_bits8(b, src, bytestream2_get_bytes_left(&ctx->gb))) < 0)
       return ret;
 
-    if ((a >= 0) + (a ^ (a >> 31)) - (a >> 31) != 1) {
-        nbits = 33 - ff_clz((a >= 0) + (a ^ (a >> 31)) - (a >> 31) - 1);
+    if (a ^ (a >> 31)) {
+        nbits = 33 - ff_clz(a ^ (a >> 31));
         if (nbits > 16)
             return AVERROR_INVALIDDATA;
     } else {
