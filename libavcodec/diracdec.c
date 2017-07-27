@@ -249,7 +249,7 @@ enum dirac_subband {
 /* magic number division by 3 from schroedinger */
 static inline int divide3(int x)
 {
-    return ((x+1)*21845 + 10922) >> 16;
+    return (int)((x+1U)*21845 + 10922) >> 16;
 }
 
 static DiracFrame *remove_frame(DiracFrame *framelist[], int picnum)
