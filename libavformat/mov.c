@@ -4262,7 +4262,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     int64_t dts;
     int data_offset = 0;
     unsigned entries, first_sample_flags = frag->flags;
-    int flags, distance, i, err;
+    int flags, distance, i, err, old_nb_index_entries;
 
     for (i = 0; i < c->fc->nb_streams; i++) {
         if (c->fc->streams[i]->id == frag->track_id) {
@@ -4355,13 +4355,19 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                                   MOV_FRAG_SAMPLE_FLAG_DEPENDS_YES));
         if (keyframe)
             distance = 0;
+        old_nb_index_entries = st->nb_index_entries;
         err = av_add_index_entry(st, offset, dts, sample_size, distance,
                                  keyframe ? AVINDEX_KEYFRAME : 0);
         if (err < 0) {
             av_log(c->fc, AV_LOG_ERROR, "Failed to add index entry\n");
+        } else if (err <= sc->current_sample && err + 1 != st->nb_index_entries &&
+            st->nb_index_entries != old_nb_index_entries) {
+            // if we inserted a new item before the current sample, move the
+            // counter ahead so it is still pointing to the same sample.
+            sc->current_sample++;
         }
-        av_log(c->fc, AV_LOG_TRACE, "AVIndex stream %d, sample %u, offset %"PRIx64", dts %"PRId64", "
-                "size %u, distance %d, keyframe %d\n", st->index, sc->sample_count+i,
+        av_log(c->fc, AV_LOG_TRACE, "AVIndex stream %d, sample %d, offset %"PRIx64", dts %"PRId64", "
+                "size %u, distance %d, keyframe %d\n", st->index, err,
                 offset, dts, sample_size, distance, keyframe);
         distance++;
         dts += sample_duration;
