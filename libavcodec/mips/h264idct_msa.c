@@ -40,17 +40,20 @@ static void avc_deq_idct_luma_dc_msa(int16_t *dst, int16_t *src,
                                      int32_t de_q_val)
 {
 #define DC_DEST_STRIDE 16
-    int16_t out0, out1, out2, out3;
-    v8i16 src0, src1, src2, src3;
+    int16_t out0, out1, out2, out3, out4, out5, out6, out7;
+    v8i16 src1, src3;
     v8i16 vec0, vec1, vec2, vec3;
+    v8i16 tmp0, tmp1, tmp2, tmp3;
     v8i16 hres0, hres1, hres2, hres3;
     v8i16 vres0, vres1, vres2, vres3;
     v4i32 vres0_r, vres1_r, vres2_r, vres3_r;
-    v4i32 de_q_vec = __msa_fill_w(de_q_val);
+    const v4i32 de_q_vec = __msa_fill_w(de_q_val);
+    const v8i16 src0 = LD_SH(src);
+    const v8i16 src2 = LD_SH(src + 8);
 
-    LD4x4_SH(src, src0, src1, src2, src3);
-    TRANSPOSE4x4_SH_SH(src0, src1, src2, src3, src0, src1, src2, src3);
-    BUTTERFLY_4(src0, src2, src3, src1, vec0, vec3, vec2, vec1);
+    ILVL_D2_SH(src0, src0, src2, src2, src1, src3);
+    TRANSPOSE4x4_SH_SH(src0, src1, src2, src3, tmp0, tmp1, tmp2, tmp3);
+    BUTTERFLY_4(tmp0, tmp2, tmp3, tmp1, vec0, vec3, vec2, vec1);
     BUTTERFLY_4(vec0, vec1, vec2, vec3, hres0, hres3, hres2, hres1);
     TRANSPOSE4x4_SH_SH(hres0, hres1, hres2, hres3, hres0, hres1, hres2, hres3);
     BUTTERFLY_4(hres0, hres1, hres3, hres2, vec0, vec3, vec2, vec1);
@@ -72,40 +75,35 @@ static void avc_deq_idct_luma_dc_msa(int16_t *dst, int16_t *src,
     out1 = __msa_copy_s_h(vec0, 1);
     out2 = __msa_copy_s_h(vec0, 2);
     out3 = __msa_copy_s_h(vec0, 3);
-    SH(out0, dst);
-    SH(out1, (dst + 2 * DC_DEST_STRIDE));
-    SH(out2, (dst + 8 * DC_DEST_STRIDE));
+    out4 = __msa_copy_s_h(vec0, 4);
+    out5 = __msa_copy_s_h(vec0, 5);
+    out6 = __msa_copy_s_h(vec0, 6);
+    out7 = __msa_copy_s_h(vec0, 7);
+    SH(out0, (dst + 0  * DC_DEST_STRIDE));
+    SH(out1, (dst + 2  * DC_DEST_STRIDE));
+    SH(out2, (dst + 8  * DC_DEST_STRIDE));
     SH(out3, (dst + 10 * DC_DEST_STRIDE));
-    dst += DC_DEST_STRIDE;
-
-    out0 = __msa_copy_s_h(vec0, 4);
-    out1 = __msa_copy_s_h(vec0, 5);
-    out2 = __msa_copy_s_h(vec0, 6);
-    out3 = __msa_copy_s_h(vec0, 7);
-    SH(out0, dst);
-    SH(out1, (dst + 2 * DC_DEST_STRIDE));
-    SH(out2, (dst + 8 * DC_DEST_STRIDE));
-    SH(out3, (dst + 10 * DC_DEST_STRIDE));
-    dst += (3 * DC_DEST_STRIDE);
+    SH(out4, (dst + 1  * DC_DEST_STRIDE));
+    SH(out5, (dst + 3  * DC_DEST_STRIDE));
+    SH(out6, (dst + 9  * DC_DEST_STRIDE));
+    SH(out7, (dst + 11 * DC_DEST_STRIDE));
 
     out0 = __msa_copy_s_h(vec1, 0);
     out1 = __msa_copy_s_h(vec1, 1);
     out2 = __msa_copy_s_h(vec1, 2);
     out3 = __msa_copy_s_h(vec1, 3);
-    SH(out0, dst);
-    SH(out1, (dst + 2 * DC_DEST_STRIDE));
-    SH(out2, (dst + 8 * DC_DEST_STRIDE));
-    SH(out3, (dst + 10 * DC_DEST_STRIDE));
-    dst += DC_DEST_STRIDE;
-
-    out0 = __msa_copy_s_h(vec1, 4);
-    out1 = __msa_copy_s_h(vec1, 5);
-    out2 = __msa_copy_s_h(vec1, 6);
-    out3 = __msa_copy_s_h(vec1, 7);
-    SH(out0, dst);
-    SH(out1, (dst + 2 * DC_DEST_STRIDE));
-    SH(out2, (dst + 8 * DC_DEST_STRIDE));
-    SH(out3, (dst + 10 * DC_DEST_STRIDE));
+    out4 = __msa_copy_s_h(vec1, 4);
+    out5 = __msa_copy_s_h(vec1, 5);
+    out6 = __msa_copy_s_h(vec1, 6);
+    out7 = __msa_copy_s_h(vec1, 7);
+    SH(out0, (dst + 4  * DC_DEST_STRIDE));
+    SH(out1, (dst + 6  * DC_DEST_STRIDE));
+    SH(out2, (dst + 12 * DC_DEST_STRIDE));
+    SH(out3, (dst + 14 * DC_DEST_STRIDE));
+    SH(out4, (dst + 5  * DC_DEST_STRIDE));
+    SH(out5, (dst + 7  * DC_DEST_STRIDE));
+    SH(out6, (dst + 13 * DC_DEST_STRIDE));
+    SH(out7, (dst + 15 * DC_DEST_STRIDE));
 
 #undef DC_DEST_STRIDE
 }
