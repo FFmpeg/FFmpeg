@@ -3605,6 +3605,8 @@ enable_weak cuda cuvid nvenc vda_framework videotoolbox videotoolbox_encoder
 # Enable compression/decompression libraries by default
 enable_weak zlib bzlib lzma
 
+enable_weak iconv
+
 disabled logging && logfile=/dev/null
 
 die_license_disabled() {
@@ -6203,7 +6205,7 @@ int main(void) { return 0; }
 EOF
 
 # Funny iconv installations are not unusual, so check it after all flags have been set
-disabled iconv || check_func_headers iconv.h iconv || check_lib iconv iconv.h iconv -liconv
+enabled iconv && check_func_headers iconv.h iconv || check_lib iconv iconv.h iconv -liconv
 
 enabled debug && add_cflags -g"$debuglevel" && add_asflags -g"$debuglevel"
 
