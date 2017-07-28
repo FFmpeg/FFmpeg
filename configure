@@ -109,6 +109,7 @@ Configuration options:
   --enable-gray            enable full grayscale support (slower color)
   --disable-swscale-alpha  disable alpha channel support in swscale
   --disable-all            disable building components, libraries and programs
+  --disable-autodetect     disable automatically detected external libraries [no]
 
 Program options:
   --disable-programs       do not build command line programs
@@ -1685,6 +1686,7 @@ CONFIG_LIST="
     $LIBRARY_LIST
     $PROGRAM_LIST
     $SUBSYSTEM_LIST
+    autodetect
     fontconfig
     memory_poisoning
     neon_clobber_test
@@ -3589,6 +3591,10 @@ for e in $env; do
     eval "export $e"
 done
 
+if disabled autodetect; then
+    disable_weak $EXTERNAL_AUTODETECT_LIBRARY_LIST
+    disable_weak $HWACCEL_AUTODETECT_LIBRARY_LIST
+fi
 # Mark specifically enabled, but normally autodetected libraries as requested.
 for lib in $AUTODETECT_LIBS; do
     enabled $lib && request $lib

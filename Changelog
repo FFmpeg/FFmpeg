@@ -40,6 +40,7 @@ version <next>:
   They must always be used by name.
 - FITS demuxer and decoder
 - FITS muxer and encoder
+- add --disable-autodetect build switch
 
 version 3.3:
 - CrystalHD decoder moved to new decode API
