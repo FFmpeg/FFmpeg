@@ -458,6 +458,7 @@ extern const AVFilter ff_vf_split;
 extern const AVFilter ff_vf_spp;
 extern const AVFilter ff_vf_sr;
 extern const AVFilter ff_vf_ssim;
+extern const AVFilter ff_vf_ssim360;
 extern const AVFilter ff_vf_stereo3d;
 extern const AVFilter ff_vf_streamselect;
 extern const AVFilter ff_vf_subtitles;

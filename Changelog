@@ -31,6 +31,7 @@ version <next>:
 - afdelaysrc audio filter
 - WADY DPCM decoder and demuxer
 - CBD2 DPCM decoder
+- ssim360 video filter
 
 
 version 5.1:
