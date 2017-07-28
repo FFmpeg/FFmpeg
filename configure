@@ -3602,6 +3602,9 @@ enable_weak xlib
 
 enable_weak cuda cuvid nvenc vda_framework videotoolbox videotoolbox_encoder
 
+# Enable compression/decompression libraries by default
+enable_weak zlib bzlib lzma
+
 disabled logging && logfile=/dev/null
 
 die_license_disabled() {
@@ -5800,9 +5803,9 @@ fi
 enabled pthreads &&
     check_builtin sem_timedwait semaphore.h "sem_t *s; sem_init(s,0,0); sem_timedwait(s,0); sem_destroy(s)"
 
-disabled  zlib || check_lib zlib   zlib.h      zlibVersion    -lz
-disabled bzlib || check_lib bzlib bzlib.h BZ2_bzlibVersion    -lbz2
-disabled  lzma || check_lib lzma   lzma.h lzma_version_number -llzma
+enabled  zlib && check_lib zlib   zlib.h      zlibVersion    -lz
+enabled bzlib && check_lib bzlib bzlib.h BZ2_bzlibVersion    -lbz2
+enabled  lzma && check_lib lzma   lzma.h lzma_version_number -llzma
 
 check_lib libm math.h sin -lm && LIBM="-lm"
 disabled crystalhd || check_lib crystalhd "stdint.h libcrystalhd/libcrystalhd_if.h" DtsCrystalHDVersion -lcrystalhd
