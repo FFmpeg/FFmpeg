@@ -1891,24 +1891,33 @@ static int mov_read_stsd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (!sc->extradata)
         return AVERROR(ENOMEM);
 
-    sc->stsd_count = entries;
-    sc->extradata_size = av_mallocz_array(sc->stsd_count, sizeof(*sc->extradata_size));
-    if (!sc->extradata_size)
-        return AVERROR(ENOMEM);
+    sc->extradata_size = av_mallocz_array(entries, sizeof(*sc->extradata_size));
+    if (!sc->extradata_size) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
 
-    ret = ff_mov_read_stsd_entries(c, pb, sc->stsd_count);
+    ret = ff_mov_read_stsd_entries(c, pb, entries);
     if (ret < 0)
-        return ret;
+        goto fail;
+
+    sc->stsd_count = entries;
 
     /* Restore back the primary extradata. */
     av_free(st->codecpar->extradata);
     st->codecpar->extradata_size = sc->extradata_size[0];
     st->codecpar->extradata = av_mallocz(sc->extradata_size[0] + AV_INPUT_BUFFER_PADDING_SIZE);
-    if (!st->codecpar->extradata)
-        return AVERROR(ENOMEM);
+    if (!st->codecpar->extradata) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
     memcpy(st->codecpar->extradata, sc->extradata[0], sc->extradata_size[0]);
 
     return 0;
+fail:
+    av_freep(&sc->extradata);
+    av_freep(&sc->extradata_size);
+    return ret;
 }
 
 static int mov_read_stsc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
