@@ -3598,7 +3598,7 @@ enable_weak audiotoolbox
 
 # Enable hwaccels by default.
 enable_weak crystalhd d3d11va dxva2 vaapi vda vdpau videotoolbox_hwaccel xvmc
-enable_weak xlib
+enable_weak xlib libxcb libxcb_shm libxcb_shape libxcb_xfixes
 
 enable_weak cuda cuvid nvenc vda_framework videotoolbox videotoolbox_encoder
 
@@ -6119,30 +6119,16 @@ if enabled libcdio; then
     die "ERROR: No usable libcdio/cdparanoia found"
 fi
 
-if ! disabled libxcb; then
-    check_pkg_config "xcb >= 1.4" xcb/xcb.h xcb_connect || {
-        enabled libxcb && die "ERROR: libxcb >= 1.4 not found";
-    } && enable libxcb
+enabled libxcb && check_pkg_config "xcb >= 1.4" xcb/xcb.h xcb_connect || disable libxcb
 
 if enabled libxcb; then
-    disabled libxcb_shm || {
-        check_pkg_config xcb-shm xcb/shm.h xcb_shm_attach || {
-            enabled libxcb_shm && die "ERROR: libxcb_shm not found";
-        } && check_header sys/shm.h && enable libxcb_shm; }
 
-    disabled libxcb_xfixes || {
-        check_pkg_config xcb-xfixes xcb/xfixes.h xcb_xfixes_get_cursor_image || {
-            enabled libxcb_xfixes && die "ERROR: libxcb_xfixes not found";
-        } && enable libxcb_xfixes; }
-
-    disabled libxcb_shape || {
-        check_pkg_config xcb-shape xcb/shape.h xcb_shape_get_rectangles || {
-            enabled libxcb_shape && die "ERROR: libxcb_shape not found";
-        } && enable libxcb_shape; }
+    enabled libxcb_shm    && check_pkg_config xcb-shm    xcb/shm.h    xcb_shm_attach              || disable libxcb_shm
+    enabled libxcb_shape  && check_pkg_config xcb-shape  xcb/shape.h  xcb_shape_get_rectangles    || disable libxcb_shape
+    enabled libxcb_xfixes && check_pkg_config xcb-xfixes xcb/xfixes.h xcb_xfixes_get_cursor_image || disable libxcb_xfixes
 
     add_cflags $xcb_cflags $xcb_shm_cflags $xcb_xfixes_cflags $xcb_shape_cflags
     add_extralibs $xcb_extralibs $xcb_shm_extralibs $xcb_xfixes_extralibs $xcb_shape_extralibs
-fi
 fi
 
 check_func_headers "windows.h" CreateDIBSection "$gdigrab_indev_extralibs"
