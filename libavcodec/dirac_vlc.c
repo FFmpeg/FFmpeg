@@ -96,6 +96,9 @@ int ff_dirac_golomb_read_16bit(DiracGolombLUT *lut_ctx, const uint8_t *buf,
         if ((c_idx + 1) > coeffs)
             return c_idx;
 
+        if (res_bits >= RSIZE_BITS)
+            res_bits = res = 0;
+
         if (res_bits && l->sign) {
             int32_t coeff = 1;
             APPEND_RESIDUE(res, l->preamble);
