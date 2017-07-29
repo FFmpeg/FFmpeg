@@ -77,6 +77,8 @@ typedef struct SPS {
     enum AVColorPrimaries color_primaries;
     enum AVColorTransferCharacteristic color_trc;
     enum AVColorSpace colorspace;
+    enum AVChromaLocation chroma_location;
+
     int timing_info_present_flag;
     uint32_t num_units_in_tick;
     uint32_t time_scale;

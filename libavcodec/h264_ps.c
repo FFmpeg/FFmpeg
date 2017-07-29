@@ -181,9 +181,10 @@ static inline int decode_vui_parameters(GetBitContext *gb, AVCodecContext *avctx
     /* chroma_location_info_present_flag */
     if (get_bits1(gb)) {
         /* chroma_sample_location_type_top_field */
-        avctx->chroma_sample_location = get_ue_golomb(gb) + 1;
+        sps->chroma_location = get_ue_golomb(gb) + 1;
         get_ue_golomb(gb);  /* chroma_sample_location_type_bottom_field */
-    }
+    } else
+        sps->chroma_location = AVCHROMA_LOC_LEFT;
 
     if (show_bits1(gb) && get_bits_left(gb) < 10) {
         av_log(avctx, AV_LOG_WARNING, "Truncated VUI (%d)\n", get_bits_left(gb));

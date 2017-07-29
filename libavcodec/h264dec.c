@@ -325,8 +325,6 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
 
     ff_h264_sei_uninit(&h->sei);
 
-    avctx->chroma_sample_location = AVCHROMA_LOC_LEFT;
-
     h->nb_slice_ctx = (avctx->active_thread_type & FF_THREAD_SLICE) ? avctx->thread_count : 1;
     h->slice_ctx = av_mallocz_array(h->nb_slice_ctx, sizeof(*h->slice_ctx));
     if (!h->slice_ctx) {
