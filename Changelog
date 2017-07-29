@@ -73,6 +73,7 @@ version <next>:
 - exposure video filter
 - monochrome video filter
 - setts bitstream filter
+- vif video filter
 
 
 version 4.3:
