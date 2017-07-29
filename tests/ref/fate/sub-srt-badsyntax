@@ -15,7 +15,7 @@ Dialogue: 0,0:01:10.00,0:01:14.50,Default,,0,0,0,,>>> RebelSubTeam <<<
 Dialogue: 0,0:02:37.75,0:02:43.70,Default,,0,0,0,,{\b1}~ASUKO MARCH!~\N>>:<<\Ntranslation by: cangii\NRetiming by: furransu{\b0}
 Dialogue: 0,0:03:38.32,0:03:42.78,Default,,0,0,0,,<<THE HIGH ROLLERS>>\N<<Grandes Jogadores>>
 Dialogue: 0,0:04:50.43,0:05:01.03,Default,,0,0,0,,<<flash gordon\Npisode 4\Nsaison 1>\Nwww.SeriesSub.com>
-Dialogue: 0,0:20:31.85,0:20:56.84,Default,,0,0,0,,\N<<<<www.egfire.com>>>>
+Dialogue: 0,0:20:31.85,0:20:56.84,Default,,0,0,0,,{\c&HFFFF&}\N<<<<www.egfire.com>>>>{\c}
 Dialogue: 0,0:37:59.69,0:38:01.59,Default,,0,0,0,,mint asztalt foglaltatni\Na <<>Le Cirque-ben.
 Dialogue: 0,0:53:43.78,0:53:45.94,Default,,0,0,0,,<<That's OK, >> - he calmed himself.
 Dialogue: 0,0:53:46.22,0:53:49.09,Default,,0,0,0,,<<lt's not a long way to the hotel,\Nthe hotel is within easy reach.
