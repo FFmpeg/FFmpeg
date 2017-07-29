@@ -1179,6 +1179,11 @@ static int dirac_unpack_prediction_parameters(DiracContext *s)
 
     if (get_bits1(gb)) {
         s->weight_log2denom = get_interleaved_ue_golomb(gb);
+        if (s->weight_log2denom < 1 || s->weight_log2denom > 8) {
+            av_log(s->avctx, AV_LOG_ERROR, "weight_log2denom unsupported or invalid\n");
+            s->weight_log2denom = 1;
+            return AVERROR_INVALIDDATA;
+        }
         s->weight[0] = dirac_get_se_golomb(gb);
         if (s->num_refs == 2)
             s->weight[1] = dirac_get_se_golomb(gb);
