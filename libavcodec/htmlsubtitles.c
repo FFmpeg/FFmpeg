@@ -177,8 +177,6 @@ int ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
                     }
                 }
 
-                // TODO: reindent
-
                 if (!av_strcasecmp(tagname, "font")) {
                     if (tag_close && sptr > 0) {
                         struct font_tag *cur_tag  = &stack[sptr--];
@@ -209,48 +207,46 @@ int ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
 
                         *new_tag = stack[sptr++];
 
-                            while (param) {
-                                if (!av_strncasecmp(param, "size=", 5)) {
-                                    param += 5 + (param[5] == '"');
-                                    if (sscanf(param, "%u", &new_tag->size) == 1)
-                                        av_bprintf(dst, "{\\fs%u}", new_tag->size);
-                                } else if (!av_strncasecmp(param, "color=", 6)) {
-                                    int color;
-                                    param += 6 + (param[6] == '"');
-                                    color = html_color_parse(log_ctx, param);
-                                    if (color >= 0) {
-                                        new_tag->color = 0xff000000 | color;
-                                        av_bprintf(dst, "{\\c&H%X&}", new_tag->color & 0xffffff);
-                                    }
-                                } else if (!av_strncasecmp(param, "face=", 5)) {
-                                    param += 5 + (param[5] == '"');
-                                    len = strcspn(param,
-                                                  param[-1] == '"' ? "\"" :" ");
-                                    av_strlcpy(new_tag->face, param,
-                                               FFMIN(sizeof(new_tag->face), len+1));
-                                    param += len;
-                                    av_bprintf(dst, "{\\fn%s}", new_tag->face);
+                        while (param) {
+                            if (!av_strncasecmp(param, "size=", 5)) {
+                                param += 5 + (param[5] == '"');
+                                if (sscanf(param, "%u", &new_tag->size) == 1)
+                                    av_bprintf(dst, "{\\fs%u}", new_tag->size);
+                            } else if (!av_strncasecmp(param, "color=", 6)) {
+                                int color;
+                                param += 6 + (param[6] == '"');
+                                color = html_color_parse(log_ctx, param);
+                                if (color >= 0) {
+                                    new_tag->color = 0xff000000 | color;
+                                    av_bprintf(dst, "{\\c&H%X&}", new_tag->color & 0xffffff);
                                 }
-                                if ((param = strchr(param, ' ')))
-                                    param++;
+                            } else if (!av_strncasecmp(param, "face=", 5)) {
+                                param += 5 + (param[5] == '"');
+                                len = strcspn(param,
+                                              param[-1] == '"' ? "\"" :" ");
+                                av_strlcpy(new_tag->face, param,
+                                           FFMIN(sizeof(new_tag->face), len+1));
+                                param += len;
+                                av_bprintf(dst, "{\\fn%s}", new_tag->face);
                             }
+                            if ((param = strchr(param, ' ')))
+                                param++;
                         }
-
+                    }
                     in += skip;
-
-                    } else if (tagname[0] && !tagname[1] && strchr("bisu", av_tolower(tagname[0]))) {
-                        av_bprintf(dst, "{\\%c%d}", (char)av_tolower(tagname[0]), !tag_close);
-                        in += skip;
-                    } else if (!av_strncasecmp(tagname, "br", 2) &&
-                               (!tagname[2] || (tagname[2] == '/' && !tagname[3]))) {
-                        av_bprintf(dst, "\\N");
-                        in += skip;
-                    } else if (likely_a_tag) {
-                        if (!tag_close) // warn only once
-                            av_log(log_ctx, AV_LOG_WARNING, "Unrecognized tag %s\n", tagname);
-                        in += skip;
-                    } else {
-                        av_bprint_chars(dst, '<', 1);
+                } else if (tagname[0] && !tagname[1] && strchr("bisu", av_tolower(tagname[0]))) {
+                    av_bprintf(dst, "{\\%c%d}", (char)av_tolower(tagname[0]), !tag_close);
+                    in += skip;
+                } else if (!av_strncasecmp(tagname, "br", 2) &&
+                           (!tagname[2] || (tagname[2] == '/' && !tagname[3]))) {
+                    av_bprintf(dst, "\\N");
+                    in += skip;
+                } else if (likely_a_tag) {
+                    if (!tag_close) // warn only once
+                        av_log(log_ctx, AV_LOG_WARNING, "Unrecognized tag %s\n", tagname);
+                    in += skip;
+                } else {
+                    av_bprint_chars(dst, '<', 1);
                 }
             } else {
                 av_bprint_chars(dst, *in, 1);
