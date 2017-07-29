@@ -29,6 +29,8 @@ static const char * const test_cases[] = {
     "Foo <foo@bar.com>",                    // not a tag (not alnum)
 
     "<b> foo <I> bar </B> bla </i>",        // broken nesting
+
+    "A<br>B<BR/>C<br  / >D<  Br >E<brk><brk/>", // misc line breaks
 };
 
 int main(void)

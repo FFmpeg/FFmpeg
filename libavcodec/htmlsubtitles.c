@@ -165,7 +165,7 @@ int ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
 #define LIKELY_A_TAG_CHAR(x) (((x) >= '0' && (x) <= '9') || \
                               ((x) >= 'a' && (x) <= 'z') || \
                               ((x) >= 'A' && (x) <= 'Z') || \
-                               (x) == '_')
+                               (x) == '_' || (x) == '/')
                 for (i = 0; tagname[i]; i++) {
                     if (!LIKELY_A_TAG_CHAR(tagname[i])) {
                         likely_a_tag = 0;
@@ -237,7 +237,8 @@ int ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
                     } else if (tagname[0] && !tagname[1] && strchr("bisu", av_tolower(tagname[0]))) {
                         av_bprintf(dst, "{\\%c%d}", (char)av_tolower(tagname[0]), !tag_close);
                         in += skip;
-                    } else if (!av_strcasecmp(tagname, "br")) {
+                    } else if (!av_strncasecmp(tagname, "br", 2) &&
+                               (!tagname[2] || (tagname[2] == '/' && !tagname[3]))) {
                         av_bprintf(dst, "\\N");
                         in += skip;
                     } else if (likely_a_tag) {
