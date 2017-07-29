@@ -1041,6 +1041,7 @@ SKIPHEADERS-$(CONFIG_VIDEOTOOLBOX)     += videotoolbox.h vda_vt_internal.h
 
 TESTPROGS = avpacket                                                    \
             celp_math                                                   \
+            htmlsubtitles                                               \
             imgconvert                                                  \
             jpeg2000dwt                                                 \
             mathops                                                    \

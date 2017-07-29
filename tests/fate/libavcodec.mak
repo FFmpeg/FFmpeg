@@ -82,5 +82,9 @@ fate-libavcodec-huffman: CMD = run libavcodec/tests/mjpegenc_huffman
 fate-libavcodec-huffman: CMP = null
 fate-libavcodec-huffman: REF = /dev/null
 
+FATE_LIBAVCODEC-yes += fate-libavcodec-htmlsubtitles
+fate-libavcodec-htmlsubtitles: libavcodec/tests/htmlsubtitles$(EXESUF)
+fate-libavcodec-htmlsubtitles: CMD = run libavcodec/tests/htmlsubtitles
+
 FATE-$(CONFIG_AVCODEC) += $(FATE_LIBAVCODEC-yes)
 fate-libavcodec: $(FATE_LIBAVCODEC-yes)
