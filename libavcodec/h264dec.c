@@ -309,7 +309,6 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
     h->width_from_caller     = avctx->width;
     h->height_from_caller    = avctx->height;
 
-    h->picture_structure     = PICT_FRAME;
     h->workaround_bugs       = avctx->workaround_bugs;
     h->flags                 = avctx->flags;
     h->poc.prev_poc_msb      = 1 << 16;
