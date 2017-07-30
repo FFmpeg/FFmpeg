@@ -83,7 +83,7 @@ int main(void)
                 printf("  %s\n", pix_fmts[j]);
             printf("\n");
 
-            free(pix_fmts);
+            av_free(pix_fmts);
         }
     }
     return 0;
