@@ -191,6 +191,8 @@
     <ClCompile Include="..\libavcodec\vorbis_parser.c" />
     <ClCompile Include="..\libavcodec\xiph.c" />
     <ClCompile Include="..\libavcodec\aandcttab.c" />
+    <ClCompile Include="..\libavcodec\ac3.c" />
+    <ClCompile Include="..\libavcodec\ac3tab.c" />
     <ClCompile Include="..\libavcodec\audio_frame_queue.c" />
     <ClCompile Include="..\libavcodec\cabac.c" />
     <ClCompile Include="..\libavcodec\dct.c" />
@@ -222,11 +224,13 @@
     <ClCompile Include="..\libavcodec\hevc_parse.c" />
     <ClCompile Include="..\libavcodec\hevc_ps.c" />
     <ClCompile Include="..\libavcodec\hevc_sei.c" />
+    <ClCompile Include="..\libavcodec\hevc_data.c" />
     <ClCompile Include="..\libavcodec\huffman.c" />
     <ClCompile Include="..\libavcodec\jrevdct.c" />
     <ClCompile Include="..\libavcodec\iirfilter.c" />
     <ClCompile Include="..\libavcodec\intrax8.c" />
     <ClCompile Include="..\libavcodec\intrax8dsp.c" />
+    <ClCompile Include="..\libavcodec\msmpeg4data.c" />
     <ClCompile Include="..\libavcodec\ivi_dsp.c" />
     <ClCompile Include="..\libavcodec\jpegtables.c" />
     <ClCompile Include="..\libavcodec\libxvid_rc.c" />
@@ -304,11 +308,9 @@
     <ClCompile Include="..\libavcodec\msrledec.c" />
     <ClCompile Include="..\libavcodec\ac3dec_float.c" />
     <ClCompile Include="..\libavcodec\ac3dec_data.c" />
-    <ClCompile Include="..\libavcodec\ac3.c" />
     <ClCompile Include="..\libavcodec\ac3dec_fixed.c" />
     <ClCompile Include="..\libavcodec\ac3enc_float.c" />
     <ClCompile Include="..\libavcodec\ac3enc.c" />
-    <ClCompile Include="..\libavcodec\ac3tab.c" />
     <ClCompile Include="..\libavcodec\ac3enc_fixed.c" />
     <ClCompile Include="..\libavcodec\aic.c" />
     <ClCompile Include="..\libavcodec\alac.c" />
@@ -520,7 +522,6 @@
     <ClCompile Include="..\libavcodec\hevcpred.c" />
     <ClCompile Include="..\libavcodec\hevcdsp.c" />
     <ClCompile Include="..\libavcodec\hevc_filter.c" />
-    <ClCompile Include="..\libavcodec\hevc_data.c" />
     <ClCompile Include="..\libavcodec\nvenc_hevc.c" />
     <ClCompile Include="..\libavcodec\qsvenc_hevc.c" />
     <ClCompile Include="..\libavcodec\hevc_ps_enc.c" />
@@ -596,7 +597,6 @@
     <ClCompile Include="..\libavcodec\mscc.c" />
     <ClCompile Include="..\libavcodec\msmpeg4dec.c" />
     <ClCompile Include="..\libavcodec\msmpeg4.c" />
-    <ClCompile Include="..\libavcodec\msmpeg4data.c" />
     <ClCompile Include="..\libavcodec\msmpeg4enc.c" />
     <ClCompile Include="..\libavcodec\msrle.c" />
     <ClCompile Include="..\libavcodec\mss1.c" />

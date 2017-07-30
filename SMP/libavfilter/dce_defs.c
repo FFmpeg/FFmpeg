@@ -187,25 +187,25 @@ void ff_yuv2yuv_444p8to12_sse2(uint8_t *yuv_out[3], const ptrdiff_t yuv_out_stri
 #if !(ARCH_X86_64)
 void ff_yuv2yuv_444p8to8_sse2(uint8_t *yuv_out[3], const ptrdiff_t yuv_out_stride[3], uint8_t *yuv_in[3], const ptrdiff_t yuv_in_stride[3], int w, int h, const int16_t yuv2yuv_coeffs[3][3][8], const int16_t yuv_offset[2][8]) {return;}
 #endif
-AVFilter ff_af_azmq = {0};
-AVFilter ff_af_bs2b = {0};
-AVFilter ff_af_ladspa = {0};
-AVFilter ff_af_resample = {0};
-AVFilter ff_af_rubberband = {0};
-AVFilter ff_af_sofalizer = {0};
-AVFilter ff_asrc_flite = {0};
-AVFilter ff_vf_coreimage = {0};
-AVFilter ff_vf_deinterlace_vaapi = {0};
-AVFilter ff_vf_frei0r = {0};
-AVFilter ff_vf_libvmaf = {0};
-AVFilter ff_vf_ocr = {0};
-AVFilter ff_vf_ocv = {0};
-AVFilter ff_vf_scale_cuda = {0};
-AVFilter ff_vf_scale_npp = {0};
-AVFilter ff_vf_scale_vaapi = {0};
-AVFilter ff_vf_vidstabdetect = {0};
-AVFilter ff_vf_vidstabtransform = {0};
-AVFilter ff_vf_zmq = {0};
-AVFilter ff_vf_zscale = {0};
-AVFilter ff_vsrc_coreimagesrc = {0};
-AVFilter ff_vsrc_frei0r_src = {0};
+const AVFilter ff_af_azmq = {0};
+const AVFilter ff_af_bs2b = {0};
+const AVFilter ff_af_ladspa = {0};
+const AVFilter ff_af_resample = {0};
+const AVFilter ff_af_rubberband = {0};
+const AVFilter ff_af_sofalizer = {0};
+const AVFilter ff_asrc_flite = {0};
+const AVFilter ff_vf_coreimage = {0};
+const AVFilter ff_vf_deinterlace_vaapi = {0};
+const AVFilter ff_vf_frei0r = {0};
+const AVFilter ff_vf_libvmaf = {0};
+const AVFilter ff_vf_ocr = {0};
+const AVFilter ff_vf_ocv = {0};
+const AVFilter ff_vf_scale_cuda = {0};
+const AVFilter ff_vf_scale_npp = {0};
+const AVFilter ff_vf_scale_vaapi = {0};
+const AVFilter ff_vf_vidstabdetect = {0};
+const AVFilter ff_vf_vidstabtransform = {0};
+const AVFilter ff_vf_zmq = {0};
+const AVFilter ff_vf_zscale = {0};
+const AVFilter ff_vsrc_coreimagesrc = {0};
+const AVFilter ff_vsrc_frei0r_src = {0};
