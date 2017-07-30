@@ -19,24 +19,43 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/opt.h"
 #include "avfilter.h"
 #include "filters.h"
 #include "framesync2.h"
 #include "internal.h"
 
 #define OFFSET(member) offsetof(FFFrameSync, member)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
+
+enum EOFAction {
+    EOF_ACTION_REPEAT,
+    EOF_ACTION_ENDALL,
+    EOF_ACTION_PASS
+};
 
 static const char *framesync_name(void *ptr)
 {
     return "framesync";
 }
 
+static const AVOption framesync_options[] = {
+    { "eof_action", "Action to take when encountering EOF from secondary input ",
+        OFFSET(opt_eof_action), AV_OPT_TYPE_INT, { .i64 = EOF_ACTION_REPEAT },
+        EOF_ACTION_REPEAT, EOF_ACTION_PASS, .flags = FLAGS, "eof_action" },
+        { "repeat", "Repeat the previous frame.",   0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_REPEAT }, .flags = FLAGS, "eof_action" },
+        { "endall", "End both streams.",            0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_ENDALL }, .flags = FLAGS, "eof_action" },
+        { "pass",   "Pass through the main input.", 0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_PASS },   .flags = FLAGS, "eof_action" },
+    { "shortest", "force termination when the shortest input terminates", OFFSET(opt_shortest), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
+    { "repeatlast", "repeat overlay of the last overlay frame", OFFSET(opt_repeatlast), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, FLAGS },
+    { NULL }
+};
 static const AVClass framesync_class = {
     .version                   = LIBAVUTIL_VERSION_INT,
     .class_name                = "framesync",
     .item_name                 = framesync_name,
     .category                  = AV_CLASS_CATEGORY_FILTER,
-    .option                    = NULL,
+    .option                    = framesync_options,
     .parent_log_context_offset = OFFSET(parent),
 };
 
@@ -48,6 +67,19 @@ enum {
 
 static int consume_from_fifos(FFFrameSync *fs);
 
+const AVClass *framesync2_get_class(void)
+{
+    return &framesync_class;
+}
+
+void ff_framesync2_preinit(FFFrameSync *fs)
+{
+    if (fs->class)
+        return;
+    fs->class  = &framesync_class;
+    av_opt_set_defaults(fs);
+}
+
 int ff_framesync2_init(FFFrameSync *fs, AVFilterContext *parent, unsigned nb_in)
 {
     /* For filters with several outputs, we will not be able to assume which
@@ -55,7 +87,7 @@ int ff_framesync2_init(FFFrameSync *fs, AVFilterContext *parent, unsigned nb_in)
        ff_outlink_set_status(). To be designed when needed. */
     av_assert0(parent->nb_outputs == 1);
 
-    fs->class  = &framesync_class;
+    ff_framesync2_preinit(fs);
     fs->parent = parent;
     fs->nb_in  = nb_in;
 
@@ -92,6 +124,25 @@ int ff_framesync2_configure(FFFrameSync *fs)
 {
     unsigned i;
     int64_t gcd, lcm;
+
+    if (!fs->opt_repeatlast || fs->opt_eof_action == EOF_ACTION_PASS) {
+        fs->opt_repeatlast = 0;
+        fs->opt_eof_action = EOF_ACTION_PASS;
+    }
+    if (fs->opt_shortest || fs->opt_eof_action == EOF_ACTION_ENDALL) {
+        fs->opt_shortest = 1;
+        fs->opt_eof_action = EOF_ACTION_ENDALL;
+    }
+    if (fs->opt_shortest) {
+        for (i = 0; i < fs->nb_in; i++)
+            fs->in[i].after = EXT_STOP;
+    }
+    if (!fs->opt_repeatlast) {
+        for (i = 1; i < fs->nb_in; i++) {
+            fs->in[i].after = EXT_NULL;
+            fs->in[i].sync  = 0;
+        }
+    }
 
     if (!fs->time_base.num) {
         for (i = 0; i < fs->nb_in; i++) {

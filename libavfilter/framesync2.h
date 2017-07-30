@@ -196,12 +196,30 @@ typedef struct FFFrameSync {
      */
     FFFrameSyncIn *in;
 
+    int opt_repeatlast;
+    int opt_shortest;
+    int opt_eof_action;
+
 } FFFrameSync;
+
+/**
+ * Get the class for the framesync2 object.
+ */
+const AVClass *framesync2_get_class(void);
+
+/**
+ * Pre-initialize a frame sync structure.
+ *
+ * It sets the class pointer and inits the options to their default values.
+ * The entire structure is expected to be already set to 0.
+ * This step is optional, but necessary to use the options.
+ */
+void ff_framesync2_preinit(FFFrameSync *fs);
 
 /**
  * Initialize a frame sync structure.
  *
- * The entire structure is expected to be already set to 0.
+ * The entire structure is expected to be already set to 0 or preinited.
  *
  * @param  fs      frame sync structure to initialize
  * @param  parent  parent AVFilterContext object
@@ -269,5 +287,29 @@ int ff_framesync2_dualinput_get(FFFrameSync *fs, AVFrame **f0, AVFrame **f1);
  * Same as ff_framesync2_dualinput_get(), but make sure that f0 is writable.
  */
 int ff_framesync2_dualinput_get_writable(FFFrameSync *fs, AVFrame **f0, AVFrame **f1);
+
+#define FRAMESYNC_DEFINE_CLASS(name, context, field) \
+static int name##_framesync_preinit(AVFilterContext *ctx) { \
+    context *s = ctx->priv; \
+    ff_framesync2_preinit(&s->field); \
+    return 0; \
+} \
+static const AVClass *name##_child_class_next(const AVClass *prev) { \
+    return prev ? NULL : framesync2_get_class(); \
+} \
+static void *name##_child_next(void *obj, void *prev) { \
+    context *s = obj; \
+    s->fs.class = framesync2_get_class(); /* FIXME */ \
+    return prev ? NULL : &s->field; \
+} \
+static const AVClass name##_class = { \
+    .class_name       = #name, \
+    .item_name        = av_default_item_name, \
+    .option           = name##_options, \
+    .version          = LIBAVUTIL_VERSION_INT, \
+    .category         = AV_CLASS_CATEGORY_FILTER, \
+    .child_class_next = name##_child_class_next, \
+    .child_next       = name##_child_next, \
+}
 
 #endif /* AVFILTER_FRAMESYNC2_H */
