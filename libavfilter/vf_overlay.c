@@ -70,16 +70,6 @@ enum var_name {
     VAR_VARS_NB
 };
 
-enum EOFAction {
-    EOF_ACTION_REPEAT,
-    EOF_ACTION_ENDALL,
-    EOF_ACTION_PASS
-};
-
-static const char * const eof_action_str[] = {
-    "repeat", "endall", "pass"
-};
-
 #define MAIN    0
 #define OVERLAY 1
 
@@ -130,10 +120,6 @@ typedef struct OverlayContext {
 
     double var_values[VAR_VARS_NB];
     char *x_expr, *y_expr;
-
-    int eof_action;             ///< action to take on EOF from source
-    int opt_shortest;
-    int opt_repeatlast;
 
     AVExpr *x_pexpr, *y_pexpr;
 
@@ -377,12 +363,11 @@ static int config_input_overlay(AVFilterLink *inlink)
     }
 
     av_log(ctx, AV_LOG_VERBOSE,
-           "main w:%d h:%d fmt:%s overlay w:%d h:%d fmt:%s eof_action:%s\n",
+           "main w:%d h:%d fmt:%s overlay w:%d h:%d fmt:%s\n",
            ctx->inputs[MAIN]->w, ctx->inputs[MAIN]->h,
            av_get_pix_fmt_name(ctx->inputs[MAIN]->format),
            ctx->inputs[OVERLAY]->w, ctx->inputs[OVERLAY]->h,
-           av_get_pix_fmt_name(ctx->inputs[OVERLAY]->format),
-           eof_action_str[s->eof_action]);
+           av_get_pix_fmt_name(ctx->inputs[OVERLAY]->format));
     return 0;
 }
 
@@ -394,12 +379,6 @@ static int config_output(AVFilterLink *outlink)
 
     if ((ret = ff_framesync2_init_dualinput(&s->fs, ctx)) < 0)
         return ret;
-    if (s->opt_shortest)
-        s->fs.in[0].after = s->fs.in[1].after = EXT_STOP;
-    if (!s->opt_repeatlast) {
-        s->fs.in[1].after = EXT_NULL;
-        s->fs.in[1].sync  = 0;
-    }
 
     outlink->w = ctx->inputs[MAIN]->w;
     outlink->h = ctx->inputs[MAIN]->h;
@@ -822,15 +801,6 @@ static av_cold int init(AVFilterContext *ctx)
 {
     OverlayContext *s = ctx->priv;
 
-    if (!s->opt_repeatlast || s->eof_action == EOF_ACTION_PASS) {
-        s->opt_repeatlast = 0;
-        s->eof_action = EOF_ACTION_PASS;
-    }
-    if (s->opt_shortest || s->eof_action == EOF_ACTION_ENDALL) {
-        s->opt_shortest = 1;
-        s->eof_action = EOF_ACTION_ENDALL;
-    }
-
     s->fs.on_event = do_blend;
     return 0;
 }
@@ -847,16 +817,9 @@ static int activate(AVFilterContext *ctx)
 static const AVOption overlay_options[] = {
     { "x", "set the x expression", OFFSET(x_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "y", "set the y expression", OFFSET(y_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "eof_action", "Action to take when encountering EOF from secondary input ",
-        OFFSET(eof_action), AV_OPT_TYPE_INT, { .i64 = EOF_ACTION_REPEAT },
-        EOF_ACTION_REPEAT, EOF_ACTION_PASS, .flags = FLAGS, "eof_action" },
-        { "repeat", "Repeat the previous frame.",   0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_REPEAT }, .flags = FLAGS, "eof_action" },
-        { "endall", "End both streams.",            0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_ENDALL }, .flags = FLAGS, "eof_action" },
-        { "pass",   "Pass through the main input.", 0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_PASS },   .flags = FLAGS, "eof_action" },
     { "eval", "specify when to evaluate expressions", OFFSET(eval_mode), AV_OPT_TYPE_INT, {.i64 = EVAL_MODE_FRAME}, 0, EVAL_MODE_NB-1, FLAGS, "eval" },
          { "init",  "eval expressions once during initialization", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_INIT},  .flags = FLAGS, .unit = "eval" },
          { "frame", "eval expressions per-frame",                  0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_FRAME}, .flags = FLAGS, .unit = "eval" },
-    { "shortest", "force termination when the shortest input terminates", OFFSET(opt_shortest), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { "format", "set output format", OFFSET(format), AV_OPT_TYPE_INT, {.i64=OVERLAY_FORMAT_YUV420}, 0, OVERLAY_FORMAT_NB-1, FLAGS, "format" },
         { "yuv420", "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_YUV420}, .flags = FLAGS, .unit = "format" },
         { "yuv422", "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_YUV422}, .flags = FLAGS, .unit = "format" },
@@ -864,11 +827,10 @@ static const AVOption overlay_options[] = {
         { "rgb",    "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_RGB},    .flags = FLAGS, .unit = "format" },
         { "gbrp",   "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_GBRP},   .flags = FLAGS, .unit = "format" },
         { "auto",   "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_AUTO},   .flags = FLAGS, .unit = "format" },
-    { "repeatlast", "repeat overlay of the last overlay frame", OFFSET(opt_repeatlast), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
     { NULL }
 };
 
-AVFILTER_DEFINE_CLASS(overlay);
+FRAMESYNC_DEFINE_CLASS(overlay, OverlayContext, fs);
 
 static const AVFilterPad avfilter_vf_overlay_inputs[] = {
     {
@@ -896,6 +858,7 @@ static const AVFilterPad avfilter_vf_overlay_outputs[] = {
 AVFilter ff_vf_overlay = {
     .name          = "overlay",
     .description   = NULL_IF_CONFIG_SMALL("Overlay a video source on top of the input."),
+    .preinit       = overlay_framesync_preinit,
     .init          = init,
     .uninit        = uninit,
     .priv_size     = sizeof(OverlayContext),
