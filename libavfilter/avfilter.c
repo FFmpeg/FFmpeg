@@ -692,6 +692,7 @@ static int default_execute(AVFilterContext *ctx, avfilter_action_func *func, voi
 AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name)
 {
     AVFilterContext *ret;
+    int preinited = 0;
 
     if (!filter)
         return NULL;
@@ -707,6 +708,11 @@ AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name)
         ret->priv     = av_mallocz(filter->priv_size);
         if (!ret->priv)
             goto err;
+    }
+    if (filter->preinit) {
+        if (filter->preinit(ret) < 0)
+            goto err;
+        preinited = 1;
     }
 
     av_opt_set_defaults(ret);
@@ -745,6 +751,8 @@ AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name)
     return ret;
 
 err:
+    if (preinited)
+        filter->uninit(ret);
     av_freep(&ret->inputs);
     av_freep(&ret->input_pads);
     ret->nb_inputs = 0;
