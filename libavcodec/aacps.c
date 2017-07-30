@@ -504,13 +504,13 @@ static void map_idx_34_to_20(int8_t *par_mapped, const int8_t *par, int full)
 static void map_val_34_to_20(INTFLOAT par[PS_MAX_NR_IIDICC])
 {
 #if USE_FIXED
-    par[ 0] = (int)(((int64_t)(par[ 0] + (par[ 1]>>1)) * 1431655765 + \
+    par[ 0] = (int)(((int64_t)(par[ 0] + (unsigned)(par[ 1]>>1)) * 1431655765 + \
                       0x40000000) >> 31);
-    par[ 1] = (int)(((int64_t)((par[ 1]>>1) + par[ 2]) * 1431655765 + \
+    par[ 1] = (int)(((int64_t)((par[ 1]>>1) + (unsigned)par[ 2]) * 1431655765 + \
                       0x40000000) >> 31);
-    par[ 2] = (int)(((int64_t)(par[ 3] + (par[ 4]>>1)) * 1431655765 + \
+    par[ 2] = (int)(((int64_t)(par[ 3] + (unsigned)(par[ 4]>>1)) * 1431655765 + \
                       0x40000000) >> 31);
-    par[ 3] = (int)(((int64_t)((par[ 4]>>1) + par[ 5]) * 1431655765 + \
+    par[ 3] = (int)(((int64_t)((par[ 4]>>1) + (unsigned)par[ 5]) * 1431655765 + \
                       0x40000000) >> 31);
 #else
     par[ 0] = (2*par[ 0] +   par[ 1]) * 0.33333333f;

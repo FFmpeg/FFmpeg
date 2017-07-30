@@ -165,7 +165,7 @@ int ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
                                 if (stack[sptr].param[i][0])
                                     av_bprintf(dst, "%s", stack[sptr].param[i]);
                         }
-                    } else if (tagname[0] && !tagname[1] && av_stristr("bisu", tagname)) {
+                    } else if (tagname[0] && !tagname[1] && strchr("bisu", av_tolower(tagname[0]))) {
                         av_bprintf(dst, "{\\%c%d}", (char)av_tolower(tagname[0]), !tag_close);
                     } else if (!av_strcasecmp(tagname, "br")) {
                         av_bprintf(dst, "\\N");

@@ -1391,7 +1391,7 @@ AVCodec ff_dnxhd_encoder = {
     .init           = dnxhd_encode_init,
     .encode2        = dnxhd_encode_picture,
     .close          = dnxhd_encode_end,
-    .capabilities   = AV_CODEC_CAP_SLICE_THREADS,
+    .capabilities   = AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_INTRA_ONLY,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV422P,
         AV_PIX_FMT_YUV422P10,

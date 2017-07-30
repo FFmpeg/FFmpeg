@@ -35,7 +35,7 @@
 static void rdft_calc_c(RDFTContext *s, FFTSample *data)
 {
     int i, i1, i2;
-    FFTComplex ev, od;
+    FFTComplex ev, od, odsum;
     const int n = 1 << s->nbits;
     const float k1 = 0.5;
     const float k2 = 0.5 - s->inverse;
@@ -58,14 +58,16 @@ static void rdft_calc_c(RDFTContext *s, FFTSample *data)
         i2 = n-i1;                                                          \
         /* Separate even and odd FFTs */                                    \
         ev.re =  k1*(data[i1  ]+data[i2  ]);                                \
-        od.im = -k2*(data[i1  ]-data[i2  ]);                                \
+        od.im =  k2*(data[i2  ]-data[i1  ]);                                \
         ev.im =  k1*(data[i1+1]-data[i2+1]);                                \
         od.re =  k2*(data[i1+1]+data[i2+1]);                                \
         /* Apply twiddle factors to the odd FFT and add to the even FFT */  \
-        data[i1  ] =  ev.re + od.re*tcos[i] sign0 od.im*tsin[i];            \
-        data[i1+1] =  ev.im + od.im*tcos[i] sign1 od.re*tsin[i];            \
-        data[i2  ] =  ev.re - od.re*tcos[i] sign1 od.im*tsin[i];            \
-        data[i2+1] = -ev.im + od.im*tcos[i] sign1 od.re*tsin[i];            \
+        odsum.re = od.re*tcos[i] sign0 od.im*tsin[i];                       \
+        odsum.im = od.im*tcos[i] sign1 od.re*tsin[i];                       \
+        data[i1  ] =  ev.re + odsum.re;                                     \
+        data[i1+1] =  ev.im + odsum.im;                                     \
+        data[i2  ] =  ev.re - odsum.re;                                     \
+        data[i2+1] =  odsum.im - ev.im;                                     \
     }
 
     if (s->negative_sin) {

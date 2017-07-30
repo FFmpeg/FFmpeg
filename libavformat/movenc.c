@@ -2060,6 +2060,18 @@ static int mov_write_tmcd_tag(AVIOContext *pb, MOVTrack *track)
     return update_size(pb, pos);
 }
 
+static int mov_write_gpmd_tag(AVIOContext *pb, const MOVTrack *track)
+{
+    int64_t pos = avio_tell(pb);
+    avio_wb32(pb, 0); /* size */
+    ffio_wfourcc(pb, "gpmd");
+    avio_wb32(pb, 0); /* Reserved */
+    avio_wb16(pb, 0); /* Reserved */
+    avio_wb16(pb, 1); /* Data-reference index */
+    avio_wb32(pb, 0); /* Reserved */
+    return update_size(pb, pos);
+}
+
 static int mov_write_stsd_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext *mov, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
@@ -2077,6 +2089,8 @@ static int mov_write_stsd_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext
         mov_write_rtp_tag(pb, track);
     else if (track->par->codec_tag == MKTAG('t','m','c','d'))
         mov_write_tmcd_tag(pb, track);
+    else if (track->par->codec_tag == MKTAG('g','p','m','d'))
+        mov_write_gpmd_tag(pb, track);
     return update_size(pb, pos);
 }
 
@@ -2377,6 +2391,12 @@ static int mov_write_gmhd_tag(AVIOContext *pb, MOVTrack *track)
         ffio_wfourcc(pb, "tmcd");
         mov_write_tcmi_tag(pb, track);
         update_size(pb, tmcd_pos);
+    } else if (track->par->codec_tag == MKTAG('g','p','m','d')) {
+        int64_t gpmd_pos = avio_tell(pb);
+        avio_wb32(pb, 0); /* size */
+        ffio_wfourcc(pb, "gpmd");
+        avio_wb32(pb, 0); /* version */
+        update_size(pb, gpmd_pos);
     }
     return update_size(pb, pos);
 }
@@ -2443,6 +2463,9 @@ static int mov_write_hdlr_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *tra
         } else if (track->par->codec_tag == MKTAG('t','m','c','d')) {
             hdlr_type = "tmcd";
             descr = "TimeCodeHandler";
+        } else if (track->par->codec_tag == MKTAG('g','p','m','d')) {
+            hdlr_type = "meta";
+            descr = "GoPro MET"; // GoPro Metadata
         } else {
             av_log(s, AV_LOG_WARNING,
                    "Unknown hldr_type for %s, writing dummy values\n",
@@ -2514,6 +2537,8 @@ static int mov_write_minf_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext
             mov_write_nmhd_tag(pb);
         else
             mov_write_gmhd_tag(pb, track);
+    } else if (track->tag == MKTAG('g','p','m','d')) {
+        mov_write_gmhd_tag(pb, track);
     }
     if (track->mode == MODE_MOV) /* FIXME: Why do it for MODE_MOV only ? */
         mov_write_hdlr_tag(s, pb, NULL);

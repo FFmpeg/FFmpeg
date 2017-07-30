@@ -134,6 +134,13 @@ enum AVFrameSideDataType {
      * the form of the AVContentLightMetadata struct.
      */
     AV_FRAME_DATA_CONTENT_LIGHT_LEVEL,
+
+    /**
+     * The data contains an ICC profile as an opaque octet buffer following the
+     * format described by ISO 15076-1 with an optional name defined in the
+     * metadata key entry "name".
+     */
+    AV_FRAME_DATA_ICC_PROFILE,
 };
 
 enum AVActiveFormatDescription {

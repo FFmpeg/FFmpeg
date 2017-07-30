@@ -249,7 +249,7 @@ enum dirac_subband {
 /* magic number division by 3 from schroedinger */
 static inline int divide3(int x)
 {
-    return ((x+1)*21845 + 10922) >> 16;
+    return (int)((x+1U)*21845 + 10922) >> 16;
 }
 
 static DiracFrame *remove_frame(DiracFrame *framelist[], int picnum)
@@ -454,7 +454,8 @@ static inline int coeff_unpack_golomb(GetBitContext *gb, int qfactor, int qoffse
     static inline void coeff_unpack_arith_##n(DiracArith *c, int qfactor, int qoffset, \
                                               SubBand *b, type *buf, int x, int y) \
     { \
-        int coeff, sign, sign_pred = 0, pred_ctx = CTX_ZPZN_F1; \
+        int sign, sign_pred = 0, pred_ctx = CTX_ZPZN_F1; \
+        unsigned coeff; \
         const int mstride = -(b->stride >> (1+b->pshift)); \
         if (b->parent) { \
             const type *pbuf = (type *)b->parent->ibuf; \

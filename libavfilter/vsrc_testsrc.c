@@ -66,6 +66,9 @@ typedef struct TestSourceContext {
     /* only used by testsrc */
     int nb_decimals;
 
+    /* only used by testsrc2 */
+    int alpha;
+
     /* only used by color */
     FFDrawContext draw;
     FFDrawColor color;
@@ -685,6 +688,7 @@ AVFilter ff_vsrc_testsrc = {
 
 static const AVOption testsrc2_options[] = {
     COMMON_OPTIONS
+    { "alpha", "set global alpha (opacity)", OFFSET(alpha), AV_OPT_TYPE_INT, {.i64 = 255}, 0, 255, FLAGS },
     { NULL }
 };
 
@@ -735,6 +739,7 @@ static void test2_fill_picture(AVFilterContext *ctx, AVFrame *frame)
 {
     TestSourceContext *s = ctx->priv;
     FFDrawColor color;
+    unsigned alpha = (uint32_t)s->alpha << 24;
 
     /* colored background */
     {
@@ -746,7 +751,8 @@ static void test2_fill_picture(AVFilterContext *ctx, AVFrame *frame)
             x2 = ff_draw_round_to_sub(&s->draw, 0, 0, x2);
             set_color(s, &color, ((i & 1) ? 0xFF0000 : 0) |
                                  ((i & 2) ? 0x00FF00 : 0) |
-                                 ((i & 4) ? 0x0000FF : 0));
+                                 ((i & 4) ? 0x0000FF : 0) |
+                                 alpha);
             ff_fill_rectangle(&s->draw, &color, frame->data, frame->linesize,
                               x, 0, x2 - x, frame->height);
             x = x2;
@@ -763,7 +769,7 @@ static void test2_fill_picture(AVFilterContext *ctx, AVFrame *frame)
         g0 = av_rescale_q(s->pts, s->time_base, av_make_q(1, 128));
         for (x = 0; x < s->w; x += dx) {
             g = (av_rescale(x, 6 * 256, s->w) + g0) % (6 * 256);
-            set_color(s, &color, color_gradient(g));
+            set_color(s, &color, color_gradient(g) | alpha);
             y = y0 + av_rescale(x, s->h / 2, s->w);
             y %= 2 * (s->h - 16);
             if (y > s->h - 16)
@@ -785,7 +791,7 @@ static void test2_fill_picture(AVFilterContext *ctx, AVFrame *frame)
         int c, i;
 
         for (c = 0; c < 3; c++) {
-            set_color(s, &color, 0xBBBBBB ^ (0xFF << (c << 3)));
+            set_color(s, &color, (0xBBBBBB ^ (0xFF << (c << 3))) | alpha);
             pos = av_rescale_q(s->pts, s->time_base, av_make_q(64 >> (c << 1), cycle)) % cycle;
             xh = pos < 1 * l ? pos :
                  pos < 2 * l ? l :

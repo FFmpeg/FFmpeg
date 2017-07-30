@@ -366,7 +366,7 @@ static int deinterlace_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_
     int j, y_in, y_out;
 
     /* copy unchanged the lines of the field */
-    y_out = start + (s->field == cur->top_field_first) - (start & 1);
+    y_out = start + ((s->field == cur->top_field_first) ^ (start & 1));
 
     in_line  = cur_data + (y_out * cur_line_stride);
     out_line = dst_data + (y_out * dst_line_stride);
@@ -379,7 +379,7 @@ static int deinterlace_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_
     }
 
     /* interpolate other lines of the field */
-    y_out = start + (s->field != cur->top_field_first) - (start & 1);
+    y_out = start + ((s->field != cur->top_field_first) ^ (start & 1));
 
     out_line = dst_data + (y_out * dst_line_stride);
 

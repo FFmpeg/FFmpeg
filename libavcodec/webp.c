@@ -33,10 +33,10 @@
  *
  * @author James Almer <jamrial@gmail.com>
  * Exif metadata
+ * ICC profile
  *
  * Unimplemented:
  *   - Animation
- *   - ICC profile
  *   - XMP metadata
  */
 
@@ -197,6 +197,7 @@ typedef struct WebPContext {
     uint8_t *alpha_data;                /* alpha chunk data */
     int alpha_data_size;                /* alpha chunk data size */
     int has_exif;                       /* set after an EXIF chunk has been processed */
+    int has_iccp;                       /* set after an ICCP chunk has been processed */
     int width;                          /* image width */
     int height;                         /* image height */
     int lossless;                       /* indicates lossless or lossy */
@@ -1381,6 +1382,7 @@ static int webp_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     *got_frame   = 0;
     s->has_alpha = 0;
     s->has_exif  = 0;
+    s->has_iccp  = 0;
     bytestream2_init(&gb, avpkt->data, avpkt->size);
 
     if (bytestream2_get_bytes_left(&gb) < 12)
@@ -1514,7 +1516,27 @@ exif_end:
             bytestream2_skip(&gb, chunk_size);
             break;
         }
-        case MKTAG('I', 'C', 'C', 'P'):
+        case MKTAG('I', 'C', 'C', 'P'): {
+            AVFrameSideData *sd;
+
+            if (s->has_iccp) {
+                av_log(avctx, AV_LOG_VERBOSE, "Ignoring extra ICCP chunk\n");
+                bytestream2_skip(&gb, chunk_size);
+                break;
+            }
+            if (!(vp8x_flags & VP8X_FLAG_ICC))
+                av_log(avctx, AV_LOG_WARNING,
+                       "ICCP chunk present, but ICC Profile bit not set in the "
+                       "VP8X header\n");
+
+            s->has_iccp = 1;
+            sd = av_frame_new_side_data(p, AV_FRAME_DATA_ICC_PROFILE, chunk_size);
+            if (!sd)
+                return AVERROR(ENOMEM);
+
+            bytestream2_get_buffer(&gb, sd->data, chunk_size);
+            break;
+        }
         case MKTAG('A', 'N', 'I', 'M'):
         case MKTAG('A', 'N', 'M', 'F'):
         case MKTAG('X', 'M', 'P', ' '):

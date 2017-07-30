@@ -2190,6 +2190,11 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
                 AVContentLightMetadata *metadata = (AVContentLightMetadata *)sd->data;
                 print_int("max_content", metadata->MaxCLL);
                 print_int("max_average", metadata->MaxFALL);
+            } else if (sd->type == AV_FRAME_DATA_ICC_PROFILE) {
+                AVDictionaryEntry *tag = av_dict_get(sd->metadata, "name", NULL, AV_DICT_MATCH_CASE);
+                if (tag)
+                    print_str(tag->key, tag->value);
+                print_int("size", sd->size);
             }
             writer_print_section_footer(w);
         }

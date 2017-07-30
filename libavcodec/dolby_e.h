@@ -649,30 +649,30 @@ static av_cold void init_tables(void)
     int i, j;
 
     for (i = 1; i < 17; i++)
-        mantissa_tab1[i][0] = 1.0 / (1 << i - 1);
+        mantissa_tab1[i][0] = 1.0f / (1 << i - 1);
 
     for (i = 2; i < 16; i++) {
-        mantissa_tab1[i][1] = 1.0  / ((1 << i) - 1);
-        mantissa_tab1[i][2] = 0.5  / ((1 << i) - 1);
-        mantissa_tab1[i][3] = 0.25 / ((1 << i) - 1);
+        mantissa_tab1[i][1] = 1.0f  / ((1 << i) - 1);
+        mantissa_tab1[i][2] = 0.5f  / ((1 << i) - 1);
+        mantissa_tab1[i][3] = 0.25f / ((1 << i) - 1);
     }
 
-    mantissa_tab1[i][1] = 0.5   / (1 << 15);
-    mantissa_tab1[i][2] = 0.75  / (1 << 15);
-    mantissa_tab1[i][3] = 0.875 / (1 << 15);
+    mantissa_tab1[i][1] = 0.5f   / (1 << 15);
+    mantissa_tab1[i][2] = 0.75f  / (1 << 15);
+    mantissa_tab1[i][3] = 0.875f / (1 << 15);
 
     for (i = 1; i < 17; i++) {
-        mantissa_tab2[i][1] = mantissa_tab1[i][0] * 0.5;
-        mantissa_tab2[i][2] = mantissa_tab1[i][0] * 0.75;
-        mantissa_tab2[i][3] = mantissa_tab1[i][0] * 0.875;
+        mantissa_tab2[i][1] = mantissa_tab1[i][0] * 0.5f;
+        mantissa_tab2[i][2] = mantissa_tab1[i][0] * 0.75f;
+        mantissa_tab2[i][3] = mantissa_tab1[i][0] * 0.875f;
         for (j = 1; j < 4; j++)
-            mantissa_tab3[i][j] = 1.0 / (1 << i) + 1.0 / (1 << j) - 1.0 / (1 << i + j);
+            mantissa_tab3[i][j] = 1.0f / (1 << i) + 1.0f / (1 << j) - 1.0f / (1 << i + j);
     }
 
-    mantissa_tab3[1][3] = 0.6875;
+    mantissa_tab3[1][3] = 0.6875f;
 
     for (i = 0; i < 25; i++) {
-        exponent_tab[i * 2    ] = 1.0       / (1 << i);
+        exponent_tab[i * 2    ] = 1.0f      / (1 << i);
         exponent_tab[i * 2 + 1] = M_SQRT1_2 / (1 << i);
     }
 
@@ -680,7 +680,7 @@ static av_cold void init_tables(void)
         gain_tab[i] = exp2f((i - 960) / 64.0f);
 
     // short 1
-    ff_kbd_window_init(window, 3.0, 128);
+    ff_kbd_window_init(window, 3.0f, 128);
     for (i = 0; i < 128; i++)
         window[128 + i] = window[127 - i];
 
@@ -704,12 +704,12 @@ static av_cold void init_tables(void)
     for (i = 0; i < 128; i++)
         window[960 + i] = window[i];
     for (i = 0; i < 64; i++)
-        window[1088 + i] = 1.0;
+        window[1088 + i] = 1.0f;
 
     // long
-    ff_kbd_window_init(window + 1408, 3.0, 256);
+    ff_kbd_window_init(window + 1408, 3.0f, 256);
     for (i = 0; i < 640; i++)
-        window[1664 + i] = 1.0;
+        window[1664 + i] = 1.0f;
     for (i = 0; i < 256; i++)
         window[2304 + i] = window[1152 + i] = window[1663 - i];
 

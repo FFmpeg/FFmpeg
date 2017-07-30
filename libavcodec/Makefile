@@ -53,7 +53,7 @@ OBJS = allcodecs.o                                                      \
 
 # subsystems
 OBJS-$(CONFIG_AANDCTTABLES)            += aandcttab.o
-OBJS-$(CONFIG_AC3DSP)                  += ac3dsp.o
+OBJS-$(CONFIG_AC3DSP)                  += ac3dsp.o ac3.o ac3tab.o
 OBJS-$(CONFIG_AUDIO_FRAME_QUEUE)       += audio_frame_queue.o
 OBJS-$(CONFIG_AUDIODSP)                += audiodsp.o
 OBJS-$(CONFIG_BLOCKDSP)                += blockdsp.o
@@ -79,7 +79,7 @@ OBJS-$(CONFIG_H264DSP)                 += h264dsp.o h264idct.o
 OBJS-$(CONFIG_H264PARSE)               += h264_parse.o h2645_parse.o h264_ps.o
 OBJS-$(CONFIG_H264PRED)                += h264pred.o
 OBJS-$(CONFIG_H264QPEL)                += h264qpel.o
-OBJS-$(CONFIG_HEVCPARSE)               += hevc_parse.o h2645_parse.o hevc_ps.o hevc_sei.o
+OBJS-$(CONFIG_HEVCPARSE)               += hevc_parse.o h2645_parse.o hevc_ps.o hevc_sei.o hevc_data.o
 OBJS-$(CONFIG_HPELDSP)                 += hpeldsp.o
 OBJS-$(CONFIG_HUFFMAN)                 += huffman.o
 OBJS-$(CONFIG_HUFFYUVDSP)              += huffyuvdsp.o
@@ -87,7 +87,7 @@ OBJS-$(CONFIG_HUFFYUVENCDSP)           += huffyuvencdsp.o
 OBJS-$(CONFIG_IDCTDSP)                 += idctdsp.o simple_idct.o jrevdct.o
 OBJS-$(CONFIG_IIRFILTER)               += iirfilter.o
 OBJS-$(CONFIG_MDCT15)                  += mdct15.o
-OBJS-$(CONFIG_INTRAX8)                 += intrax8.o intrax8dsp.o
+OBJS-$(CONFIG_INTRAX8)                 += intrax8.o intrax8dsp.o msmpeg4data.o
 OBJS-$(CONFIG_IVIDSP)                  += ivi_dsp.o
 OBJS-$(CONFIG_JNI)                     += ffjni.o jni.o
 OBJS-$(CONFIG_JPEGTABLES)              += jpegtables.o
@@ -158,8 +158,8 @@ OBJS-$(CONFIG_AAC_ENCODER)             += aacenc.o aaccoder.o aacenctab.o    \
                                           aacenc_pred.o \
                                           psymodel.o mpeg4audio.o kbdwin.o cbrt_data.o
 OBJS-$(CONFIG_AASC_DECODER)            += aasc.o msrledec.o
-OBJS-$(CONFIG_AC3_DECODER)             += ac3dec_float.o ac3dec_data.o ac3.o kbdwin.o
-OBJS-$(CONFIG_AC3_FIXED_DECODER)       += ac3dec_fixed.o ac3dec_data.o ac3.o kbdwin.o
+OBJS-$(CONFIG_AC3_DECODER)             += ac3dec_float.o ac3dec_data.o ac3.o kbdwin.o ac3tab.o
+OBJS-$(CONFIG_AC3_FIXED_DECODER)       += ac3dec_fixed.o ac3dec_data.o ac3.o kbdwin.o ac3tab.o
 OBJS-$(CONFIG_AC3_ENCODER)             += ac3enc_float.o ac3enc.o ac3tab.o \
                                           ac3.o kbdwin.o
 OBJS-$(CONFIG_AC3_FIXED_ENCODER)       += ac3enc_fixed.o ac3enc.o ac3tab.o ac3.o

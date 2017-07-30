@@ -22,6 +22,7 @@ EXAMPLES=       avio_dir_cmd                       \
                 filtering_video                    \
                 filtering_audio                    \
                 http_multiclient                   \
+                hw_decode                          \
                 metadata                           \
                 muxing                             \
                 remuxing                           \
