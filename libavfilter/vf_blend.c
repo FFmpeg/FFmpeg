@@ -25,8 +25,8 @@
 #include "avfilter.h"
 #include "bufferqueue.h"
 #include "formats.h"
+#include "framesync2.h"
 #include "internal.h"
-#include "dualinput.h"
 #include "video.h"
 #include "blend.h"
 
@@ -35,7 +35,7 @@
 
 typedef struct BlendContext {
     const AVClass *class;
-    FFDualInputContext dinput;
+    FFFrameSync fs;
     int hsub, vsub;             ///< chroma subsampling values
     int nb_planes;
     char *all_expr;
@@ -116,12 +116,10 @@ typedef struct ThreadData {
 
 static const AVOption blend_options[] = {
     COMMON_OPTIONS,
-    { "shortest",    "force termination when the shortest input terminates", OFFSET(dinput.shortest), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
-    { "repeatlast",  "repeat last bottom frame", OFFSET(dinput.repeatlast), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
     { NULL }
 };
 
-AVFILTER_DEFINE_CLASS(blend);
+FRAMESYNC_DEFINE_CLASS(blend, BlendContext, fs);
 
 #define COPY(src)                                                            \
 static void blend_copy ## src(const uint8_t *top, ptrdiff_t top_linesize,    \
@@ -407,13 +405,28 @@ static AVFrame *blend_frame(AVFilterContext *ctx, AVFrame *top_buf,
     return dst_buf;
 }
 
+static int blend_frame_for_dualinput(FFFrameSync *fs)
+{
+    AVFilterContext *ctx = fs->parent;
+    AVFrame *top_buf, *bottom_buf, *dst_buf;
+    int ret;
+
+    ret = ff_framesync2_dualinput_get(fs, &top_buf, &bottom_buf);
+    if (ret < 0)
+        return ret;
+    if (!bottom_buf)
+        return ff_filter_frame(ctx->outputs[0], top_buf);
+    dst_buf = blend_frame(ctx, top_buf, bottom_buf);
+    return ff_filter_frame(ctx->outputs[0], dst_buf);
+}
+
 static av_cold int init(AVFilterContext *ctx)
 {
     BlendContext *s = ctx->priv;
 
     s->tblend = !strcmp(ctx->filter->name, "tblend");
 
-    s->dinput.process = blend_frame;
+    s->fs.on_event = blend_frame_for_dualinput;
     return 0;
 }
 
@@ -441,7 +454,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     BlendContext *s = ctx->priv;
     int i;
 
-    ff_dualinput_uninit(&s->dinput);
+    ff_framesync2_uninit(&s->fs);
     av_frame_free(&s->prev_frame);
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->params); i++)
@@ -541,7 +554,7 @@ static int config_output(AVFilterLink *outlink)
     s->nb_planes = av_pix_fmt_count_planes(toplink->format);
 
     if (!s->tblend)
-        if ((ret = ff_dualinput_init(ctx, &s->dinput)) < 0)
+        if ((ret = ff_framesync2_init_dualinput(&s->fs, ctx)) < 0)
             return ret;
 
     for (plane = 0; plane < FF_ARRAY_ELEMS(s->params); plane++) {
@@ -568,32 +581,24 @@ static int config_output(AVFilterLink *outlink)
         }
     }
 
-    return 0;
+    return s->tblend ? 0 : ff_framesync2_configure(&s->fs);
 }
 
 #if CONFIG_BLEND_FILTER
 
-static int request_frame(AVFilterLink *outlink)
+static int activate(AVFilterContext *ctx)
 {
-    BlendContext *s = outlink->src->priv;
-    return ff_dualinput_request_frame(&s->dinput, outlink);
-}
-
-static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
-{
-    BlendContext *s = inlink->dst->priv;
-    return ff_dualinput_filter_frame(&s->dinput, inlink, buf);
+    BlendContext *s = ctx->priv;
+    return ff_framesync2_activate(&s->fs);
 }
 
 static const AVFilterPad blend_inputs[] = {
     {
         .name          = "top",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .filter_frame  = filter_frame,
     },{
         .name          = "bottom",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .filter_frame  = filter_frame,
     },
     { NULL }
 };
@@ -603,7 +608,6 @@ static const AVFilterPad blend_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
-        .request_frame = request_frame,
     },
     { NULL }
 };
@@ -611,10 +615,12 @@ static const AVFilterPad blend_outputs[] = {
 AVFilter ff_vf_blend = {
     .name          = "blend",
     .description   = NULL_IF_CONFIG_SMALL("Blend two video frames into each other."),
+    .preinit       = blend_framesync_preinit,
     .init          = init,
     .uninit        = uninit,
     .priv_size     = sizeof(BlendContext),
     .query_formats = query_formats,
+    .activate      = activate,
     .inputs        = blend_inputs,
     .outputs       = blend_outputs,
     .priv_class    = &blend_class,
