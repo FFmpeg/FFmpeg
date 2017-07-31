@@ -3755,8 +3755,9 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     c->trak_index = -1;
 
     /* sanity checks */
-    if (sc->chunk_count && (!sc->stts_count || !sc->stsc_count ||
-                            (!sc->sample_size && !sc->sample_count))) {
+    if ((sc->chunk_count && (!sc->stts_count || !sc->stsc_count ||
+                            (!sc->sample_size && !sc->sample_count))) ||
+        (!sc->chunk_count && sc->sample_count)) {
         av_log(c->fc, AV_LOG_ERROR, "stream %d, missing mandatory atoms, broken header\n",
                st->index);
         return 0;
@@ -4284,26 +4285,6 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     entries = avio_rb32(pb);
     av_log(c->fc, AV_LOG_TRACE, "flags 0x%x entries %u\n", flags, entries);
 
-    /* Always assume the presence of composition time offsets.
-     * Without this assumption, for instance, we cannot deal with a track in fragmented movies that meet the following.
-     *  1) in the initial movie, there are no samples.
-     *  2) in the first movie fragment, there is only one sample without composition time offset.
-     *  3) in the subsequent movie fragments, there are samples with composition time offset. */
-    if (!sc->ctts_count && sc->sample_count)
-    {
-        /* Complement ctts table if moov atom doesn't have ctts atom. */
-        ctts_data = av_fast_realloc(NULL, &sc->ctts_allocated_size, sizeof(*sc->ctts_data) * sc->sample_count);
-        if (!ctts_data)
-            return AVERROR(ENOMEM);
-        /* Don't use a count greater than 1 here since it will leave a gap in
-         * the ctts index which the code below relies on being sequential. */
-        sc->ctts_data = ctts_data;
-        for (i = 0; i < sc->sample_count; i++) {
-            sc->ctts_data[sc->ctts_count].count = 1;
-            sc->ctts_data[sc->ctts_count].duration = 0;
-            sc->ctts_count++;
-        }
-    }
     if ((uint64_t)entries+sc->ctts_count >= UINT_MAX/sizeof(*sc->ctts_data))
         return AVERROR_INVALIDDATA;
     if (flags & MOV_TRUN_DATA_OFFSET)        data_offset        = avio_rb32(pb);
@@ -4364,13 +4345,19 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             unsigned int size_needed = st->nb_index_entries * sizeof(*sc->ctts_data);
             unsigned int request_size = size_needed > sc->ctts_allocated_size ?
                 FFMAX(size_needed, 2 * sc->ctts_allocated_size) : size_needed;
+            unsigned int old_ctts_size = sc->ctts_allocated_size;
             ctts_data = av_fast_realloc(sc->ctts_data, &sc->ctts_allocated_size, request_size);
             if (!ctts_data) {
                 av_freep(&sc->ctts_data);
                 return AVERROR(ENOMEM);
             }
-
             sc->ctts_data = ctts_data;
+
+            // In case there were samples without ctts entries, ensure they get
+            // zero valued entries. This ensures clips which mix boxes with and
+            // without ctts entries don't pickup uninitialized data.
+            memset((uint8_t*)(sc->ctts_data) + old_ctts_size, 0, sc->ctts_allocated_size - old_ctts_size);
+
             if (ctts_index != old_nb_index_entries) {
                 memmove(sc->ctts_data + ctts_index + 1, sc->ctts_data + ctts_index,
                         sizeof(*sc->ctts_data) * (sc->ctts_count - ctts_index));
