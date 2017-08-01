@@ -210,6 +210,42 @@ avconv -i frame_%d.jpg -c:v copy rotated.avi
 
 @section movsub
 
+@section mpeg2_metadata
+
+Modify metadata embedded in an MPEG-2 stream.
+
+@table @option
+@item display_aspect_ratio
+Set the display aspect ratio in the stream.
+
+The following fixed values are supported:
+@table @option
+@item 4/3
+@item 16/9
+@item 221/100
+@end table
+Any other value will result in square pixels being signalled instead
+(see H.262 section 6.3.3 and table 6-3).
+
+@item frame_rate
+Set the frame rate in the stream.  This is constructed from a table
+of known values combined with a small multiplier and divisor - if
+the supplied value is not exactly representable, the nearest
+representable value will be used instead (see H.262 section 6.3.3
+and table 6-4).
+
+@item video_format
+Set the video format in the stream (see H.262 section 6.3.6 and
+table 6-6).
+
+@item colour_primaries
+@item transfer_characteristics
+@item matrix_coefficients
+Set the colour description in the stream (see H.262 section 6.3.6
+and tables 6-7, 6-8 and 6-9).
+
+@end table
+
 @section mp3_header_compress
 
 @section mp3_header_decompress
