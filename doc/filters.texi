@@ -11338,6 +11338,10 @@ Default value is @samp{yuv420}.
 
 @item repeatlast
 See @ref{framesync}.
+
+@item alpha
+Set format of alpha of the overlaid video, it can be @var{straight} or
+@var{premultiplied}. Default is @var{straight}.
 @end table
 
 The @option{x}, and @option{y} expressions can contain the following
