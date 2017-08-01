@@ -33,7 +33,8 @@ typedef struct PreMultiplyContext {
     int linesize[4];
     int nb_planes;
     int planes;
-    int half, depth, offset;
+    int inverse;
+    int half, depth, offset, max;
     FFFrameSync fs;
 
     void (*premultiply[4])(const uint8_t *msrc, const uint8_t *asrc,
@@ -47,11 +48,12 @@ typedef struct PreMultiplyContext {
 #define OFFSET(x) offsetof(PreMultiplyContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
-static const AVOption premultiply_options[] = {
+static const AVOption options[] = {
     { "planes", "set planes", OFFSET(planes), AV_OPT_TYPE_INT, {.i64=0xF}, 0, 0xF, FLAGS },
     { NULL }
 };
 
+#define premultiply_options options
 AVFILTER_DEFINE_CLASS(premultiply);
 
 static int query_formats(AVFilterContext *ctx)
@@ -199,6 +201,153 @@ static void premultiply16offset(const uint8_t *mmsrc, const uint8_t *aasrc,
     }
 }
 
+static void unpremultiply8(const uint8_t *msrc, const uint8_t *asrc,
+                           uint8_t *dst,
+                           ptrdiff_t mlinesize, ptrdiff_t alinesize,
+                           ptrdiff_t dlinesize,
+                           int w, int h,
+                           int half, int max, int offset)
+{
+    int x, y;
+
+    for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            if (asrc[x] > 0 && asrc[x] < 255)
+                dst[x] = FFMIN(msrc[x] * 255 / asrc[x], 255);
+            else
+                dst[x] = msrc[x];
+        }
+
+        dst  += dlinesize;
+        msrc += mlinesize;
+        asrc += alinesize;
+    }
+}
+
+static void unpremultiply8yuv(const uint8_t *msrc, const uint8_t *asrc,
+                              uint8_t *dst,
+                              ptrdiff_t mlinesize, ptrdiff_t alinesize,
+                              ptrdiff_t dlinesize,
+                              int w, int h,
+                              int half, int max, int offset)
+{
+    int x, y;
+
+    for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            if (asrc[x] > 0 && asrc[x] < 255)
+                dst[x] = FFMIN((msrc[x] - 128) * 255 / asrc[x] + 128, 255);
+            else
+                dst[x] = msrc[x];
+        }
+
+        dst  += dlinesize;
+        msrc += mlinesize;
+        asrc += alinesize;
+    }
+}
+
+static void unpremultiply8offset(const uint8_t *msrc, const uint8_t *asrc,
+                                 uint8_t *dst,
+                                 ptrdiff_t mlinesize, ptrdiff_t alinesize,
+                                 ptrdiff_t dlinesize,
+                                 int w, int h,
+                                 int half, int max, int offset)
+{
+    int x, y;
+
+    for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            if (asrc[x] > 0 && asrc[x] < 255)
+                dst[x] = FFMIN((msrc[x] - offset) * 255 / asrc[x] + offset, 255);
+            else
+                dst[x] = msrc[x];
+        }
+
+        dst  += dlinesize;
+        msrc += mlinesize;
+        asrc += alinesize;
+    }
+}
+
+static void unpremultiply16(const uint8_t *mmsrc, const uint8_t *aasrc,
+                            uint8_t *ddst,
+                            ptrdiff_t mlinesize, ptrdiff_t alinesize,
+                            ptrdiff_t dlinesize,
+                            int w, int h,
+                            int half, int max, int offset)
+{
+    const uint16_t *msrc = (const uint16_t *)mmsrc;
+    const uint16_t *asrc = (const uint16_t *)aasrc;
+    uint16_t *dst = (uint16_t *)ddst;
+    int x, y;
+
+    for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            if (asrc[x] > 0 && asrc[x] < max)
+                dst[x] = FFMIN(msrc[x] * (unsigned)max / asrc[x], max);
+            else
+                dst[x] = msrc[x];
+        }
+
+        dst  += dlinesize / 2;
+        msrc += mlinesize / 2;
+        asrc += alinesize / 2;
+    }
+}
+
+static void unpremultiply16yuv(const uint8_t *mmsrc, const uint8_t *aasrc,
+                               uint8_t *ddst,
+                               ptrdiff_t mlinesize, ptrdiff_t alinesize,
+                               ptrdiff_t dlinesize,
+                               int w, int h,
+                               int half, int max, int offset)
+{
+    const uint16_t *msrc = (const uint16_t *)mmsrc;
+    const uint16_t *asrc = (const uint16_t *)aasrc;
+    uint16_t *dst = (uint16_t *)ddst;
+    int x, y;
+
+    for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            if (asrc[x] > 0 && asrc[x] < max)
+                dst[x] = FFMAX(FFMIN((msrc[x] - half) * max / asrc[x], half - 1), -half) + half;
+            else
+                dst[x] = msrc[x];
+        }
+
+        dst  += dlinesize / 2;
+        msrc += mlinesize / 2;
+        asrc += alinesize / 2;
+    }
+}
+
+static void unpremultiply16offset(const uint8_t *mmsrc, const uint8_t *aasrc,
+                                  uint8_t *ddst,
+                                  ptrdiff_t mlinesize, ptrdiff_t alinesize,
+                                  ptrdiff_t dlinesize,
+                                  int w, int h,
+                                  int half, int max, int offset)
+{
+    const uint16_t *msrc = (const uint16_t *)mmsrc;
+    const uint16_t *asrc = (const uint16_t *)aasrc;
+    uint16_t *dst = (uint16_t *)ddst;
+    int x, y;
+
+    for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            if (asrc[x] > 0 && asrc[x] < max)
+                dst[x] = FFMAX(FFMIN((msrc[x] - offset) * (unsigned)max / asrc[x] + offset, max), 0);
+            else
+                dst[x] = msrc[x];
+        }
+
+        dst  += dlinesize / 2;
+        msrc += mlinesize / 2;
+        asrc += alinesize / 2;
+    }
+}
+
 static int process_frame(FFFrameSync *fs)
 {
     AVFilterContext *ctx = fs->parent;
@@ -226,48 +375,80 @@ static int process_frame(FFFrameSync *fs)
         full = base->color_range == AVCOL_RANGE_JPEG;
         limited = base->color_range == AVCOL_RANGE_MPEG;
 
-        switch (outlink->format) {
-        case AV_PIX_FMT_YUV444P:
-            s->premultiply[0] = full ? premultiply8 : premultiply8offset;
-            s->premultiply[1] = premultiply8yuv;
-            s->premultiply[2] = premultiply8yuv;
-            break;
-        case AV_PIX_FMT_YUVJ444P:
-            s->premultiply[0] = premultiply8;
-            s->premultiply[1] = premultiply8yuv;
-            s->premultiply[2] = premultiply8yuv;
-            break;
-        case AV_PIX_FMT_GBRP:
-            s->premultiply[0] = limited ? premultiply8offset : premultiply8;
-            s->premultiply[1] = limited ? premultiply8offset : premultiply8;
-            s->premultiply[2] = limited ? premultiply8offset : premultiply8;
-            break;
-        case AV_PIX_FMT_YUV444P9:
-        case AV_PIX_FMT_YUV444P10:
-        case AV_PIX_FMT_YUV444P12:
-        case AV_PIX_FMT_YUV444P14:
-        case AV_PIX_FMT_YUV444P16:
-            s->premultiply[0] = full ? premultiply16 : premultiply16offset;
-            s->premultiply[1] = premultiply16yuv;
-            s->premultiply[2] = premultiply16yuv;
-            break;
-        case AV_PIX_FMT_GBRP9:
-        case AV_PIX_FMT_GBRP10:
-        case AV_PIX_FMT_GBRP12:
-        case AV_PIX_FMT_GBRP14:
-        case AV_PIX_FMT_GBRP16:
-            s->premultiply[0] = limited ? premultiply16offset : premultiply16;
-            s->premultiply[1] = limited ? premultiply16offset : premultiply16;
-            s->premultiply[2] = limited ? premultiply16offset : premultiply16;
-            break;
-        case AV_PIX_FMT_GRAY8:
-            s->premultiply[0] = limited ? premultiply8offset : premultiply8;
-            break;
-        case AV_PIX_FMT_GRAY10:
-        case AV_PIX_FMT_GRAY12:
-        case AV_PIX_FMT_GRAY16:
-            s->premultiply[0] = limited ? premultiply16offset : premultiply16;
-            break;
+        if (s->inverse) {
+            switch (outlink->format) {
+            case AV_PIX_FMT_YUV444P:
+                s->premultiply[0] = full ? unpremultiply8 : unpremultiply8offset;
+                s->premultiply[1] = s->premultiply[2] = unpremultiply8yuv;
+                break;
+            case AV_PIX_FMT_YUVJ444P:
+                s->premultiply[0] = unpremultiply8;
+                s->premultiply[1] = s->premultiply[2] = unpremultiply8yuv;
+                break;
+            case AV_PIX_FMT_GBRP:
+                s->premultiply[0] = s->premultiply[1] = s->premultiply[2] = limited ? unpremultiply8offset : unpremultiply8;
+                break;
+            case AV_PIX_FMT_YUV444P9:
+            case AV_PIX_FMT_YUV444P10:
+            case AV_PIX_FMT_YUV444P12:
+            case AV_PIX_FMT_YUV444P14:
+            case AV_PIX_FMT_YUV444P16:
+                s->premultiply[0] = full ? unpremultiply16 : unpremultiply16offset;
+                s->premultiply[1] = s->premultiply[2] = unpremultiply16yuv;
+                break;
+            case AV_PIX_FMT_GBRP9:
+            case AV_PIX_FMT_GBRP10:
+            case AV_PIX_FMT_GBRP12:
+            case AV_PIX_FMT_GBRP14:
+            case AV_PIX_FMT_GBRP16:
+                s->premultiply[0] = s->premultiply[1] = s->premultiply[2] = limited ? unpremultiply16offset : unpremultiply16;
+                break;
+            case AV_PIX_FMT_GRAY8:
+                s->premultiply[0] = limited ? unpremultiply8offset : unpremultiply8;
+                break;
+            case AV_PIX_FMT_GRAY10:
+            case AV_PIX_FMT_GRAY12:
+            case AV_PIX_FMT_GRAY16:
+                s->premultiply[0] = limited ? unpremultiply16offset : unpremultiply16;
+                break;
+            }
+        } else {
+            switch (outlink->format) {
+            case AV_PIX_FMT_YUV444P:
+                s->premultiply[0] = full ? premultiply8 : premultiply8offset;
+                s->premultiply[1] = s->premultiply[2] = premultiply8yuv;
+                break;
+            case AV_PIX_FMT_YUVJ444P:
+                s->premultiply[0] = premultiply8;
+                s->premultiply[1] = s->premultiply[2] = premultiply8yuv;
+                break;
+            case AV_PIX_FMT_GBRP:
+                s->premultiply[0] = s->premultiply[1] = s->premultiply[2] = limited ? premultiply8offset : premultiply8;
+                break;
+            case AV_PIX_FMT_YUV444P9:
+            case AV_PIX_FMT_YUV444P10:
+            case AV_PIX_FMT_YUV444P12:
+            case AV_PIX_FMT_YUV444P14:
+            case AV_PIX_FMT_YUV444P16:
+                s->premultiply[0] = full ? premultiply16 : premultiply16offset;
+                s->premultiply[1] = s->premultiply[2] = premultiply16yuv;
+                break;
+            case AV_PIX_FMT_GBRP9:
+            case AV_PIX_FMT_GBRP10:
+            case AV_PIX_FMT_GBRP12:
+            case AV_PIX_FMT_GBRP14:
+            case AV_PIX_FMT_GBRP16:
+                s->premultiply[0] = s->premultiply[1] = s->premultiply[2] = limited ? premultiply16offset : premultiply16;
+                break;
+            case AV_PIX_FMT_GRAY8:
+                s->premultiply[0] = limited ? premultiply8offset : premultiply8;
+                break;
+            case AV_PIX_FMT_GRAY10:
+            case AV_PIX_FMT_GRAY12:
+            case AV_PIX_FMT_GRAY16:
+                s->premultiply[0] = limited ? premultiply16offset : premultiply16;
+                break;
+            }
         }
 
         for (p = 0; p < s->nb_planes; p++) {
@@ -282,7 +463,7 @@ static int process_frame(FFFrameSync *fs)
                               base->linesize[p], alpha->linesize[0],
                               out->linesize[p],
                               s->width[p], s->height[p],
-                              s->half, s->depth, s->offset);
+                              s->half, s->inverse ? s->max : s->depth, s->offset);
         }
     }
     out->pts = av_rescale_q(base->pts, s->fs.time_base, outlink->time_base);
@@ -310,6 +491,7 @@ static int config_input(AVFilterLink *inlink)
     s->width[0]  = s->width[3]  = inlink->w;
 
     s->depth = desc->comp[0].depth;
+    s->max = (1 << s->depth) - 1;
     s->half = (1 << s->depth) / 2;
     s->offset = 16 << (s->depth - 8);
 
@@ -369,6 +551,16 @@ static int activate(AVFilterContext *ctx)
     return ff_framesync2_activate(&s->fs);
 }
 
+static av_cold int init(AVFilterContext *ctx)
+{
+    PreMultiplyContext *s = ctx->priv;
+
+    if (!strcmp(ctx->filter->name, "unpremultiply"))
+        s->inverse = 1;
+
+    return 0;
+}
+
 static av_cold void uninit(AVFilterContext *ctx)
 {
     PreMultiplyContext *s = ctx->priv;
@@ -398,6 +590,8 @@ static const AVFilterPad premultiply_outputs[] = {
     { NULL }
 };
 
+#if CONFIG_PREMULTIPLY_FILTER
+
 AVFilter ff_vf_premultiply = {
     .name          = "premultiply",
     .description   = NULL_IF_CONFIG_SMALL("PreMultiply first stream with first plane of second stream."),
@@ -410,3 +604,26 @@ AVFilter ff_vf_premultiply = {
     .priv_class    = &premultiply_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };
+
+#endif /* CONFIG_PREMULTIPLY_FILTER */
+
+#if CONFIG_UNPREMULTIPLY_FILTER
+
+#define unpremultiply_options options
+AVFILTER_DEFINE_CLASS(unpremultiply);
+
+AVFilter ff_vf_unpremultiply = {
+    .name          = "unpremultiply",
+    .description   = NULL_IF_CONFIG_SMALL("UnPreMultiply first stream with first plane of second stream."),
+    .priv_size     = sizeof(PreMultiplyContext),
+    .init          = init,
+    .uninit        = uninit,
+    .query_formats = query_formats,
+    .activate      = activate,
+    .inputs        = premultiply_inputs,
+    .outputs       = premultiply_outputs,
+    .priv_class    = &unpremultiply_class,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
+};
+
+#endif /* CONFIG_UNPREMULTIPLY_FILTER */

@@ -29,6 +29,7 @@ version <next>:
 - limiter video filter
 - libvmaf video filter
 - Dolby E decoder and SMPTE 337M demuxer
+- unpremultiply video filter
 
 version 3.3:
 - CrystalHD decoder moved to new decode API
