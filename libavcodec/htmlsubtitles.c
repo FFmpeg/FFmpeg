@@ -193,7 +193,7 @@ int ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
                             if (!(last_tag->color & 0xff000000))
                                 av_bprintf(dst, "{\\c}");
                             else if (last_tag->color != cur_tag->color)
-                                av_bprintf(dst, "{\\c&H%X&}", last_tag->color & 0xffffff);
+                                av_bprintf(dst, "{\\c&H%"PRIX32"&}", last_tag->color & 0xffffff);
                         }
 
                         if (cur_tag->face[0]) {
@@ -218,7 +218,7 @@ int ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
                                 color = html_color_parse(log_ctx, param);
                                 if (color >= 0) {
                                     new_tag->color = 0xff000000 | color;
-                                    av_bprintf(dst, "{\\c&H%X&}", new_tag->color & 0xffffff);
+                                    av_bprintf(dst, "{\\c&H%"PRIX32"&}", new_tag->color & 0xffffff);
                                 }
                             } else if (!av_strncasecmp(param, "face=", 5)) {
                                 param += 5 + (param[5] == '"');
