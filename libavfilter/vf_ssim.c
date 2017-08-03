@@ -147,6 +147,8 @@ static float ssim_endn(const int (*sum0)[4], const int (*sum1)[4], int width)
     return ssim;
 }
 
+#define SUM_LEN(w) (((w) >> 2) + 3)
+
 static float ssim_plane(SSIMDSPContext *dsp,
                         uint8_t *main, int main_stride,
                         uint8_t *ref, int ref_stride,
@@ -155,7 +157,7 @@ static float ssim_plane(SSIMDSPContext *dsp,
     int z = 0, y;
     float ssim = 0.0;
     int (*sum0)[4] = temp;
-    int (*sum1)[4] = sum0 + (width >> 2) + 3;
+    int (*sum1)[4] = sum0 + SUM_LEN(width);
 
     width >>= 2;
     height >>= 2;
@@ -297,7 +299,7 @@ static int config_input_ref(AVFilterLink *inlink)
     for (i = 0; i < s->nb_components; i++)
         s->coefs[i] = (double) s->planeheight[i] * s->planewidth[i] / sum;
 
-    s->temp = av_malloc((2 * inlink->w + 12) * sizeof(*s->temp));
+    s->temp = av_mallocz_array(2 * SUM_LEN(inlink->w), sizeof(int[4]));
     if (!s->temp)
         return AVERROR(ENOMEM);
 
