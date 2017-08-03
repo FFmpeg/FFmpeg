@@ -24,7 +24,6 @@
  * Calculate the VMAF between two input videos.
  */
 
-#include <inttypes.h>
 #include <pthread.h>
 #include <libvmaf.h>
 #include "libavutil/avstring.h"
@@ -84,11 +83,10 @@ static const AVOption libvmaf_options[] = {
 FRAMESYNC_DEFINE_CLASS(libvmaf, LIBVMAFContext, fs);
 
 #define read_frame_fn(type, bits)                                               \
-    static int read_frame_##bits##bit(float *ref_data, float *main_data,            \
-                                      float *temp_data, int stride,             \
-                                      double *score, void *ctx)                 \
+    static int read_frame_##bits##bit(float *ref_data, float *main_data,        \
+                                      float *temp_data, int stride, void *ctx)  \
 {                                                                               \
-    LIBVMAFContext *s = (LIBVMAFContext *) ctx;                                       \
+    LIBVMAFContext *s = (LIBVMAFContext *) ctx;                                 \
     int ret;                                                                    \
     \
     pthread_mutex_lock(&s->lock);                                               \
@@ -150,7 +148,7 @@ read_frame_fn(uint16_t, 10);
 static void compute_vmaf_score(LIBVMAFContext *s)
 {
     int (*read_frame)(float *ref_data, float *main_data, float *temp_data,
-                      int stride, double *score, void *ctx);
+                      int stride, void *ctx);
 
     if (s->desc->comp[0].depth <= 8) {
         read_frame = read_frame_8bit;
