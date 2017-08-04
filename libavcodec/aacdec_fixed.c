@@ -305,8 +305,12 @@ static av_always_inline void predict(PredictorState *ps, int *coef,
     if (output_enable) {
         int shift = 28 - pv.exp;
 
-        if (shift < 31)
-            *coef += (pv.mant + (1 << (shift - 1))) >> shift;
+        if (shift < 31) {
+            if (shift > 0) {
+                *coef += (pv.mant + (1 << (shift - 1))) >> shift;
+            } else
+                *coef += pv.mant << -shift;
+        }
     }
 
     e0 = av_int2sf(*coef, 2);
