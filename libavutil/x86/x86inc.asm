@@ -1297,10 +1297,42 @@ AVX_INSTR blendpd, sse4, 1, 1, 0
 AVX_INSTR blendps, sse4, 1, 1, 0
 AVX_INSTR blendvpd, sse4 ; can't be emulated
 AVX_INSTR blendvps, sse4 ; can't be emulated
+AVX_INSTR cmpeqpd, sse2, 1, 0, 1
+AVX_INSTR cmpeqps, sse, 1, 0, 1
+AVX_INSTR cmpeqsd, sse2, 1, 0, 0
+AVX_INSTR cmpeqss, sse, 1, 0, 0
+AVX_INSTR cmplepd, sse2, 1, 0, 0
+AVX_INSTR cmpleps, sse, 1, 0, 0
+AVX_INSTR cmplesd, sse2, 1, 0, 0
+AVX_INSTR cmpless, sse, 1, 0, 0
+AVX_INSTR cmpltpd, sse2, 1, 0, 0
+AVX_INSTR cmpltps, sse, 1, 0, 0
+AVX_INSTR cmpltsd, sse2, 1, 0, 0
+AVX_INSTR cmpltss, sse, 1, 0, 0
+AVX_INSTR cmpneqpd, sse2, 1, 0, 1
+AVX_INSTR cmpneqps, sse, 1, 0, 1
+AVX_INSTR cmpneqsd, sse2, 1, 0, 0
+AVX_INSTR cmpneqss, sse, 1, 0, 0
+AVX_INSTR cmpnlepd, sse2, 1, 0, 0
+AVX_INSTR cmpnleps, sse, 1, 0, 0
+AVX_INSTR cmpnlesd, sse2, 1, 0, 0
+AVX_INSTR cmpnless, sse, 1, 0, 0
+AVX_INSTR cmpnltpd, sse2, 1, 0, 0
+AVX_INSTR cmpnltps, sse, 1, 0, 0
+AVX_INSTR cmpnltsd, sse2, 1, 0, 0
+AVX_INSTR cmpnltss, sse, 1, 0, 0
+AVX_INSTR cmpordpd, sse2 1, 0, 1
+AVX_INSTR cmpordps, sse 1, 0, 1
+AVX_INSTR cmpordsd, sse2 1, 0, 0
+AVX_INSTR cmpordss, sse 1, 0, 0
 AVX_INSTR cmppd, sse2, 1, 1, 0
 AVX_INSTR cmpps, sse, 1, 1, 0
 AVX_INSTR cmpsd, sse2, 1, 1, 0
 AVX_INSTR cmpss, sse, 1, 1, 0
+AVX_INSTR cmpunordpd, sse2, 1, 0, 1
+AVX_INSTR cmpunordps, sse, 1, 0, 1
+AVX_INSTR cmpunordsd, sse2, 1, 0, 0
+AVX_INSTR cmpunordss, sse, 1, 0, 0
 AVX_INSTR comisd, sse2
 AVX_INSTR comiss, sse
 AVX_INSTR cvtdq2pd, sse2
