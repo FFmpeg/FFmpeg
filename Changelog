@@ -2,6 +2,43 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 
+version 3.1.10:
+- avcodec/diracdec: Check weight_log2denom
+- avcodec/dirac_dwt: Fix multiple integer overflows in COMPOSE_DD97iH0()
+- avcodec/diracdec: Fix integer overflow in divide3()
+- avcodec/takdec: Fix integer overflow in decode_subframe()
+- avformat/rtmppkt: Convert ff_amf_get_field_value() to bytestream2
+- avformat/rtmppkt: Convert ff_amf_tag_size() to bytestream2
+- avcodec/diracdec: Fix integer overflow in signed multiplication in UNPACK_ARITH()
+- avcodec/dnxhddec: Move mb height check out of non hr branch
+- avcodec/hevc_ps: fix integer overflow in log2_parallel_merge_level_minus2
+- avformat/oggparsecelt: Do not re-allocate os->private
+- avcodec/ylc: Fix shift overflow
+- avcodec/aacps: Fix multiple integer overflow in map_val_34_to_20()
+- avcodec/aacdec_fixed: fix: left shift of negative value -1
+- doc/filters: typo in frei0r
+- avcodec/cfhd: Fix decoding regression due to height check
+- avcodec/aacdec_template (fixed point): Check gain in decode_cce() to avoid undefined shifts later
+- avcodec/aacdec_template: Fix undefined integer overflow in apply_tns()
+- avcodec/magicyuv: Check that vlc len is not too large
+- avcodec/mjpegdec: Clip DC also on the negative side.
+- avcodec/aacps (fixed point): Fix multiple signed integer overflows
+- avcodec/ylc: Fix vlc of 31 bits
+- avcodec/sbrdsp_fixed: Fix integer overflow in sbr_hf_apply_noise()
+- avcodec/wavpack: Fix invalid shift
+- avcodec/h264_slice: Fix signed integer overflow
+- avcodec/hevc_ps: Fix integer overflow with beta/tc offsets
+- avcodec/cfhd: Fix invalid left shift of negative value
+- avcodec/vb: Check vertical GMC component before multiply
+- avcodec/jpeg2000dwt: Fix integer overflow in dwt_decode97_int()
+- avcodec/apedec: Fix integer overflow
+- avcodec/wavpack: Fix integer overflow in wv_unpack_stereo()
+- avcodec/mpeg4videodec: Fix GMC with videos of dimension 1
+- avcodec/wavpack: Fix integer overflow
+- avcodec/takdec: Fix integer overflow
+- avcodec/tiff: Update pointer only when the result is used
+
+
 version 3.1.9:
 - avcodec/cfhd: Check bpc before setting bpc in context
 - avcodec/cfhd: Fix undefined shift
