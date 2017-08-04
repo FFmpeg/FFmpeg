@@ -9946,9 +9946,13 @@ lutyuv=u='(val-maxval/2)*2+maxval/2':v='(val-maxval/2)*2+maxval/2'
 @end example
 @end itemize
 
-@section lut2
+@section lut2, tlut2
 
-Compute and apply a lookup table from two video inputs.
+The @code{lut2} filter takes two input streams and outputs one
+stream.
+
+The @code{tlut2} (time lut2) filter takes two consecutive frames
+from one single stream.
 
 This filter accepts the following parameters:
 @table @option

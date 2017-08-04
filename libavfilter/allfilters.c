@@ -323,6 +323,7 @@ static void register_all(void)
     REGISTER_FILTER(THUMBNAIL,      thumbnail,      vf);
     REGISTER_FILTER(TILE,           tile,           vf);
     REGISTER_FILTER(TINTERLACE,     tinterlace,     vf);
+    REGISTER_FILTER(TLUT2,          tlut2,          vf);
     REGISTER_FILTER(TRANSPOSE,      transpose,      vf);
     REGISTER_FILTER(TRIM,           trim,           vf);
     REGISTER_FILTER(UNPREMULTIPLY,  unpremultiply,  vf);
