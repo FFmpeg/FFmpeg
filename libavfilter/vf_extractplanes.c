@@ -103,6 +103,13 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV440P12LE,
         AV_PIX_FMT_GBRP10LE, AV_PIX_FMT_GBRAP10LE,
         AV_PIX_FMT_GBRP12LE, AV_PIX_FMT_GBRAP12LE,
+        AV_PIX_FMT_YUV420P9LE,
+        AV_PIX_FMT_YUV422P9LE,
+        AV_PIX_FMT_YUV444P9LE,
+        AV_PIX_FMT_YUVA420P9LE,
+        AV_PIX_FMT_YUVA422P9LE,
+        AV_PIX_FMT_YUVA444P9LE,
+        AV_PIX_FMT_GBRP9LE,
         AV_PIX_FMT_NONE,
     };
     static const enum AVPixelFormat in_pixfmts_be[] = {
@@ -142,9 +149,18 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV440P12BE,
         AV_PIX_FMT_GBRP10BE, AV_PIX_FMT_GBRAP10BE,
         AV_PIX_FMT_GBRP12BE, AV_PIX_FMT_GBRAP12BE,
+        AV_PIX_FMT_YUV420P9BE,
+        AV_PIX_FMT_YUV422P9BE,
+        AV_PIX_FMT_YUV444P9BE,
+        AV_PIX_FMT_YUVA420P9BE,
+        AV_PIX_FMT_YUVA422P9BE,
+        AV_PIX_FMT_YUVA444P9BE,
+        AV_PIX_FMT_GBRP9BE,
         AV_PIX_FMT_NONE,
     };
     static const enum AVPixelFormat out8_pixfmts[] = { AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE };
+    static const enum AVPixelFormat out9le_pixfmts[] = { AV_PIX_FMT_GRAY9LE, AV_PIX_FMT_NONE };
+    static const enum AVPixelFormat out9be_pixfmts[] = { AV_PIX_FMT_GRAY9BE, AV_PIX_FMT_NONE };
     static const enum AVPixelFormat out10le_pixfmts[] = { AV_PIX_FMT_GRAY10LE, AV_PIX_FMT_NONE };
     static const enum AVPixelFormat out10be_pixfmts[] = { AV_PIX_FMT_GRAY10BE, AV_PIX_FMT_NONE };
     static const enum AVPixelFormat out12le_pixfmts[] = { AV_PIX_FMT_GRAY12LE, AV_PIX_FMT_NONE };
@@ -184,6 +200,10 @@ static int query_formats(AVFilterContext *ctx)
 
     if (depth == 8)
         out_pixfmts = out8_pixfmts;
+    else if (!be && depth == 9)
+        out_pixfmts = out9le_pixfmts;
+    else if (be && depth == 9)
+        out_pixfmts = out9be_pixfmts;
     else if (!be && depth == 10)
         out_pixfmts = out10le_pixfmts;
     else if (be && depth == 10)
