@@ -957,7 +957,8 @@ static void video_image_display(VideoState *is)
 
     if (!vp->uploaded) {
         int sdl_pix_fmt = vp->frame->format == AV_PIX_FMT_YUV420P ? SDL_PIXELFORMAT_YV12 : SDL_PIXELFORMAT_ARGB8888;
-        if (realloc_texture(&is->vid_texture, sdl_pix_fmt, vp->frame->width, vp->frame->height, SDL_BLENDMODE_NONE, 0) < 0)
+        SDL_BlendMode sdl_blendmode = vp->frame->format == AV_PIX_FMT_YUV420P ? SDL_BLENDMODE_NONE : SDL_BLENDMODE_BLEND;
+        if (realloc_texture(&is->vid_texture, sdl_pix_fmt, vp->frame->width, vp->frame->height, sdl_blendmode, 0) < 0)
             return;
         if (upload_texture(is->vid_texture, vp->frame, &is->img_convert_ctx) < 0)
             return;
