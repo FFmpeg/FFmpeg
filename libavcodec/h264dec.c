@@ -414,10 +414,16 @@ static av_cold int h264_decode_init(AVCodecContext *avctx)
             ret = ff_h264_decode_extradata(avctx->extradata, avctx->extradata_size,
                                            &h->ps, &h->is_avc, &h->nal_length_size,
                                            avctx->err_recognition, avctx);
-            if (ret < 0) {
-                h264_decode_end(avctx);
-                return ret;
-            }
+           if (ret < 0) {
+               int explode = avctx->err_recognition & AV_EF_EXPLODE;
+               av_log(avctx, explode ? AV_LOG_ERROR: AV_LOG_WARNING,
+                      "Error decoding the extradata\n");
+               if (explode) {
+                   h264_decode_end(avctx);
+                   return ret;
+               }
+               ret = 0;
+           }
         }
     }
 
