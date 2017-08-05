@@ -326,6 +326,9 @@ enum AVPixelFormat {
      */
     AV_PIX_FMT_D3D11,
 
+    AV_PIX_FMT_GRAY9BE,   ///<        Y        , 9bpp, big-endian
+    AV_PIX_FMT_GRAY9LE,   ///<        Y        , 9bpp, little-endian
+
     AV_PIX_FMT_NB         ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };
 
@@ -342,6 +345,7 @@ enum AVPixelFormat {
 #define AV_PIX_FMT_0RGB32  AV_PIX_FMT_NE(0RGB, BGR0)
 #define AV_PIX_FMT_0BGR32  AV_PIX_FMT_NE(0BGR, RGB0)
 
+#define AV_PIX_FMT_GRAY9  AV_PIX_FMT_NE(GRAY9BE,  GRAY9LE)
 #define AV_PIX_FMT_GRAY10 AV_PIX_FMT_NE(GRAY10BE, GRAY10LE)
 #define AV_PIX_FMT_GRAY12 AV_PIX_FMT_NE(GRAY12BE, GRAY12LE)
 #define AV_PIX_FMT_GRAY16 AV_PIX_FMT_NE(GRAY16BE, GRAY16LE)
