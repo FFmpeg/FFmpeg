@@ -859,13 +859,18 @@ static int upload_texture(SDL_Texture *tex, AVFrame *frame, struct SwsContext **
     int ret = 0;
     switch (frame->format) {
         case AV_PIX_FMT_YUV420P:
-            if (frame->linesize[0] < 0 || frame->linesize[1] < 0 || frame->linesize[2] < 0) {
-                av_log(NULL, AV_LOG_ERROR, "Negative linesize is not supported for YUV.\n");
+            if (frame->linesize[0] > 0 && frame->linesize[1] > 0 && frame->linesize[2] > 0) {
+                ret = SDL_UpdateYUVTexture(tex, NULL, frame->data[0], frame->linesize[0],
+                                                      frame->data[1], frame->linesize[1],
+                                                      frame->data[2], frame->linesize[2]);
+            } else if (frame->linesize[0] < 0 && frame->linesize[1] < 0 && frame->linesize[2] < 0) {
+                ret = SDL_UpdateYUVTexture(tex, NULL, frame->data[0] + frame->linesize[0] * (frame->height                    - 1), -frame->linesize[0],
+                                                      frame->data[1] + frame->linesize[1] * (AV_CEIL_RSHIFT(frame->height, 1) - 1), -frame->linesize[1],
+                                                      frame->data[2] + frame->linesize[2] * (AV_CEIL_RSHIFT(frame->height, 1) - 1), -frame->linesize[2]);
+            } else {
+                av_log(NULL, AV_LOG_ERROR, "Mixed negative and positive linesizes are not supported.\n");
                 return -1;
             }
-            ret = SDL_UpdateYUVTexture(tex, NULL, frame->data[0], frame->linesize[0],
-                                                  frame->data[1], frame->linesize[1],
-                                                  frame->data[2], frame->linesize[2]);
             break;
         case AV_PIX_FMT_BGRA:
             if (frame->linesize[0] < 0) {
