@@ -832,14 +832,25 @@
     pmaxsd  %1, %2
 %endmacro
 
-%macro VBROADCASTSS 2 ; dst xmm/ymm, src m32
-%if cpuflag(avx)
-    vbroadcastss %1, %2
-%else ; sse
-%ifnidn %1, %2
-    movss        %1, %2
-%endif
-    shufps       %1, %1, 0
+%macro VBROADCASTSS 2 ; dst xmm/ymm, src m32/xmm
+%if cpuflag(avx2)
+    vbroadcastss  %1, %2
+%elif cpuflag(avx)
+    %ifnum sizeof%2         ; avx1 register
+        shufps  xmm%1, xmm%2, xmm%2, q0000
+        %if sizeof%1 >= 32  ; mmsize>=32
+            vinsertf128  %1, %1, xmm%1, 1
+        %endif
+    %else                   ; avx1 memory
+        vbroadcastss  %1, %2
+    %endif
+%else
+    %ifnum sizeof%2         ; sse register
+        shufps  %1, %2, %2, q0000
+    %else                   ; sse memory
+        movss   %1, %2
+        shufps  %1, %1, 0
+    %endif
 %endif
 %endmacro
 
@@ -851,6 +862,21 @@
 %else ; sse2
     movsd        %1, %2
     movlhps      %1, %1
+%endif
+%endmacro
+
+%macro VPBROADCASTD 2 ; dst xmm/ymm, src m32/xmm
+%if cpuflag(avx2)
+    vpbroadcastd  %1, %2
+%elif cpuflag(avx) && sizeof%1 >= 32
+    %error vpbroadcastd not possible with ymm on avx1. try vbroadcastss
+%else
+    %ifnum sizeof%2         ; sse2 register
+        pshufd  %1, %2, q0000
+    %else                   ; sse memory
+        movd    %1, %2
+        pshufd  %1, %1, 0
+    %endif
 %endif
 %endmacro
 
@@ -916,5 +942,69 @@
     pshufd     %1, %2, q3232 ; pshufd is slow on some older CPUs, so only use it on more modern ones
 %else
     movhlps    %1, %2        ; may cause an int/float domain transition and has a dependency on dst
+%endif
+%endmacro
+
+; Horizontal Sum of Packed Single precision floats
+; The resulting sum is in all elements.
+%macro HSUMPS 2 ; dst/src, tmp
+%if cpuflag(avx)
+    %if sizeof%1>=32  ; avx
+        vperm2f128  %2, %1, %1, (0)*16+(1)
+        addps       %1, %2
+    %endif
+    shufps      %2, %1, %1, q1032
+    addps       %1, %2
+    shufps      %2, %1, %1, q0321
+    addps       %1, %2
+%else  ; this form is a bit faster than the short avx-like emulation.
+    movaps      %2, %1
+    shufps      %1, %1, q1032
+    addps       %1, %2
+    movaps      %2, %1
+    shufps      %1, %1, q0321
+    addps       %1, %2
+    ; all %1 members should be equal for as long as float a+b==b+a
+%endif
+%endmacro
+
+; Emulate blendvps if not available
+;
+; src_b is destroyed when using emulation with logical operands
+; SSE41 blendv instruction is hard coded to use xmm0 as mask
+%macro BLENDVPS 3 ; dst/src_a, src_b, mask
+%if cpuflag(avx)
+    blendvps  %1, %1, %2, %3
+%elif cpuflag(sse4)
+    %ifnidn %3,xmm0
+        %error sse41 blendvps uses xmm0 as default 3d operand, you used %3
+    %endif
+    blendvps  %1, %2, %3
+%else
+    xorps  %2, %1
+    andps  %2, %3
+    xorps  %1, %2
+%endif
+%endmacro
+
+; Emulate pblendvb if not available
+;
+; src_b is destroyed when using emulation with logical operands
+; SSE41 blendv instruction is hard coded to use xmm0 as mask
+%macro PBLENDVB 3 ; dst/src_a, src_b, mask
+%if cpuflag(avx)
+    %if cpuflag(avx) && notcpuflag(avx2) && sizeof%1 >= 32
+        %error pblendb not possible with ymm on avx1, try blendvps.
+    %endif
+    pblendvb  %1, %1, %2, %3
+%elif cpuflag(sse4)
+    %ifnidn %3,xmm0
+        %error sse41 pblendvd uses xmm0 as default 3d operand, you used %3
+    %endif
+    pblendvb  %1, %2, %3
+%else
+    pxor  %2, %1
+    pand  %2, %3
+    pxor  %1, %2
 %endif
 %endmacro
