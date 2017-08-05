@@ -8404,6 +8404,43 @@ ffmpeg -i file.ts -vf find_rect=newref.pgm,cover_rect=cover.jpg:mode=cover new.m
 @end example
 @end itemize
 
+@section floodfill
+
+Flood area with values of same pixel components with another values.
+
+It accepts the following options:
+@table @option
+@item x
+Set pixel x coordinate.
+
+@item y
+Set pixel y coordinate.
+
+@item s0
+Set source #0 component value.
+
+@item s1
+Set source #1 component value.
+
+@item s2
+Set source #2 component value.
+
+@item s3
+Set source #3 component value.
+
+@item d0
+Set destination #0 component value.
+
+@item d1
+Set destination #1 component value.
+
+@item d2
+Set destination #2 component value.
+
+@item d3
+Set destination #3 component value.
+@end table
+
 @anchor{format}
 @section format
 
