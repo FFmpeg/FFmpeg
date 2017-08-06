@@ -6363,6 +6363,13 @@ static int mov_read_header(AVFormatContext *s)
     }
     ff_configure_buffers_for_index(s, AV_TIME_BASE);
 
+    for (i = 0; i < mov->fragment_index_count; i++) {
+        MOVFragmentIndex *idx = mov->fragment_index_data[i];
+        for (j = 0; j < idx->item_count; j++)
+            if (idx->items[j].moof_offset <= mov->fragment.moof_offset)
+                idx->items[j].headers_read = 1;
+    }
+
     return 0;
 }
 
