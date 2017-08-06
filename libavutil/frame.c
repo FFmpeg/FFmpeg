@@ -47,6 +47,7 @@ static const AVSideDataDescriptor sd_props[] = {
     [AV_FRAME_DATA_DOVI_RPU_BUFFER]             = { "Dolby Vision RPU Data" },
     [AV_FRAME_DATA_DOVI_METADATA]               = { "Dolby Vision Metadata" },
     [AV_FRAME_DATA_LCEVC]                       = { "LCEVC NAL data" },
+    [AV_FRAME_DATA_VIEW_ID]                     = { "View ID" },
     [AV_FRAME_DATA_STEREO3D]                    = { "Stereo 3D",                                    AV_SIDE_DATA_PROP_GLOBAL },
     [AV_FRAME_DATA_REPLAYGAIN]                  = { "AVReplayGain",                                 AV_SIDE_DATA_PROP_GLOBAL },
     [AV_FRAME_DATA_DISPLAYMATRIX]               = { "3x3 displaymatrix",                            AV_SIDE_DATA_PROP_GLOBAL },

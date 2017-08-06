@@ -2920,6 +2920,8 @@ static void print_frame_side_data(WriterContext *w,
         } else if (sd->type == AV_FRAME_DATA_FILM_GRAIN_PARAMS) {
             AVFilmGrainParams *fgp = (AVFilmGrainParams *)sd->data;
             print_film_grain_params(w, fgp);
+        } else if (sd->type == AV_FRAME_DATA_VIEW_ID) {
+            print_int("view_id", *(int*)sd->data);
         }
         writer_print_section_footer(w);
     }

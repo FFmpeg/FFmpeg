@@ -857,6 +857,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         case AV_FRAME_DATA_AMBIENT_VIEWING_ENVIRONMENT:
             dump_ambient_viewing_environment(ctx, sd);
             break;
+        case AV_FRAME_DATA_VIEW_ID:
+            av_log(ctx, AV_LOG_INFO, "view id: %d\n", *(int*)sd->data);
         default:
             if (name)
                 av_log(ctx, AV_LOG_INFO,
