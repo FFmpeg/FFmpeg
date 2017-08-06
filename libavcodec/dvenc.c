@@ -756,7 +756,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 #define OFFSET(x) offsetof(DVVideoContext, x)
 static const AVOption dv_options[] = {
-    { "quant_deadzone",        "Quantizer dead zone",    OFFSET(quant_deadzone),       AV_OPT_TYPE_INT, { .i64 = 15 }, 0, 1024, VE },
+    { "quant_deadzone",        "Quantizer dead zone",    OFFSET(quant_deadzone),       AV_OPT_TYPE_INT, { .i64 = 7 }, 0, 1024, VE },
     { NULL },
 };
 
