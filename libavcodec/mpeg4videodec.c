@@ -2290,6 +2290,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     int time_incr, time_increment;
     int64_t pts;
 
+    s->mcsel       = 0;
     s->pict_type = get_bits(gb, 2) + AV_PICTURE_TYPE_I;        /* pict type: I = 0 , P = 1 */
     if (s->pict_type == AV_PICTURE_TYPE_B && s->low_delay &&
         ctx->vol_control_parameters == 0 && !(s->avctx->flags & AV_CODEC_FLAG_LOW_DELAY)) {
