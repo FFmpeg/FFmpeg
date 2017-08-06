@@ -38,6 +38,7 @@ typedef struct DVwork_chunk {
 } DVwork_chunk;
 
 typedef struct DVVideoContext {
+    AVClass *avclass;
     const AVDVProfile *sys;
     const AVFrame   *frame;
     AVCodecContext  *avctx;
@@ -51,6 +52,8 @@ typedef struct DVVideoContext {
     me_cmp_func ildct_cmp;
     DVwork_chunk work_chunks[4 * 12 * 27];
     uint32_t idct_factor[2 * 4 * 16 * 64];
+
+    int quant_deadzone;
 } DVVideoContext;
 
 enum dv_section_type {
