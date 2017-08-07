@@ -65,7 +65,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV444P16,
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
-        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY16,
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_NONE
     };
 
@@ -406,6 +406,7 @@ static int process_frame(FFFrameSync *fs)
             case AV_PIX_FMT_GRAY8:
                 s->premultiply[0] = limited ? unpremultiply8offset : unpremultiply8;
                 break;
+            case AV_PIX_FMT_GRAY9:
             case AV_PIX_FMT_GRAY10:
             case AV_PIX_FMT_GRAY12:
             case AV_PIX_FMT_GRAY16:
@@ -443,6 +444,7 @@ static int process_frame(FFFrameSync *fs)
             case AV_PIX_FMT_GRAY8:
                 s->premultiply[0] = limited ? premultiply8offset : premultiply8;
                 break;
+            case AV_PIX_FMT_GRAY9:
             case AV_PIX_FMT_GRAY10:
             case AV_PIX_FMT_GRAY12:
             case AV_PIX_FMT_GRAY16:

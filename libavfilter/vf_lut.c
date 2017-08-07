@@ -130,6 +130,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     AV_PIX_FMT_RGB48LE,      AV_PIX_FMT_RGBA64LE,     \
     AV_PIX_FMT_GBRP,         AV_PIX_FMT_GBRAP,        \
     AV_PIX_FMT_GBRP9LE,      AV_PIX_FMT_GBRP10LE,     \
+    AV_PIX_FMT_GBRAP10LE,                             \
     AV_PIX_FMT_GBRP12LE,     AV_PIX_FMT_GBRP14LE,     \
     AV_PIX_FMT_GBRP16LE,     AV_PIX_FMT_GBRAP12LE,    \
     AV_PIX_FMT_GBRAP16LE
