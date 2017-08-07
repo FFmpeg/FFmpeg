@@ -23,7 +23,7 @@
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "formats.h"
-#include "framesync.h"
+#include "framesync2.h"
 #include "internal.h"
 #include "video.h"
 
@@ -212,9 +212,9 @@ static int process_frame(FFFrameSync *fs)
     AVFrame *out, *in, *xpic, *ypic;
     int ret;
 
-    if ((ret = ff_framesync_get_frame(&s->fs, 0, &in,   0)) < 0 ||
-        (ret = ff_framesync_get_frame(&s->fs, 1, &xpic, 0)) < 0 ||
-        (ret = ff_framesync_get_frame(&s->fs, 2, &ypic, 0)) < 0)
+    if ((ret = ff_framesync2_get_frame(&s->fs, 0, &in,   0)) < 0 ||
+        (ret = ff_framesync2_get_frame(&s->fs, 1, &xpic, 0)) < 0 ||
+        (ret = ff_framesync2_get_frame(&s->fs, 2, &ypic, 0)) < 0)
         return ret;
 
     if (ctx->is_disabled) {
@@ -310,7 +310,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->sample_aspect_ratio = srclink->sample_aspect_ratio;
     outlink->frame_rate = srclink->frame_rate;
 
-    ret = ff_framesync_init(&s->fs, ctx, 3);
+    ret = ff_framesync2_init(&s->fs, ctx, 3);
     if (ret < 0)
         return ret;
 
@@ -330,44 +330,35 @@ static int config_output(AVFilterLink *outlink)
     s->fs.opaque   = s;
     s->fs.on_event = process_frame;
 
-    return ff_framesync_configure(&s->fs);
+    return ff_framesync2_configure(&s->fs);
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
+static int activate(AVFilterContext *ctx)
 {
-    DisplaceContext *s = inlink->dst->priv;
-    return ff_framesync_filter_frame(&s->fs, inlink, buf);
-}
-
-static int request_frame(AVFilterLink *outlink)
-{
-    DisplaceContext *s = outlink->src->priv;
-    return ff_framesync_request_frame(&s->fs, outlink);
+    DisplaceContext *s = ctx->priv;
+    return ff_framesync2_activate(&s->fs);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
     DisplaceContext *s = ctx->priv;
 
-    ff_framesync_uninit(&s->fs);
+    ff_framesync2_uninit(&s->fs);
 }
 
 static const AVFilterPad displace_inputs[] = {
     {
         .name         = "source",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
         .config_props = config_input,
     },
     {
         .name         = "xmap",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
     },
     {
         .name         = "ymap",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -377,7 +368,6 @@ static const AVFilterPad displace_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
-        .request_frame = request_frame,
     },
     { NULL }
 };
@@ -388,6 +378,7 @@ AVFilter ff_vf_displace = {
     .priv_size     = sizeof(DisplaceContext),
     .uninit        = uninit,
     .query_formats = query_formats,
+    .activate      = activate,
     .inputs        = displace_inputs,
     .outputs       = displace_outputs,
     .priv_class    = &displace_class,

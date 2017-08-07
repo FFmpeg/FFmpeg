@@ -462,9 +462,9 @@ static void load_states(HEVCContext *s)
     memcpy(s->HEVClc->cabac_state, s->cabac_state, HEVC_CONTEXTS);
 }
 
-static void cabac_reinit(HEVCLocalContext *lc)
+static int cabac_reinit(HEVCLocalContext *lc)
 {
-    skip_bytes(&lc->cc, 0);
+    return skip_bytes(&lc->cc, 0) == NULL ? AVERROR_INVALIDDATA : 0;
 }
 
 static int cabac_init_decoder(HEVCContext *s)
@@ -524,25 +524,27 @@ int ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
     } else {
         if (s->ps.pps->tiles_enabled_flag &&
             s->ps.pps->tile_id[ctb_addr_ts] != s->ps.pps->tile_id[ctb_addr_ts - 1]) {
+            int ret;
             if (s->threads_number == 1)
-                cabac_reinit(s->HEVClc);
+                ret = cabac_reinit(s->HEVClc);
             else {
-                int ret = cabac_init_decoder(s);
-                if (ret < 0)
-                    return ret;
+                ret = cabac_init_decoder(s);
             }
+            if (ret < 0)
+                return ret;
             cabac_init_state(s);
         }
         if (s->ps.pps->entropy_coding_sync_enabled_flag) {
             if (ctb_addr_ts % s->ps.sps->ctb_width == 0) {
+                int ret;
                 get_cabac_terminate(&s->HEVClc->cc);
                 if (s->threads_number == 1)
-                    cabac_reinit(s->HEVClc);
+                    ret = cabac_reinit(s->HEVClc);
                 else {
-                    int ret = cabac_init_decoder(s);
-                    if (ret < 0)
-                        return ret;
+                    ret = cabac_init_decoder(s);
                 }
+                if (ret < 0)
+                    return ret;
 
                 if (s->ps.sps->ctb_width == 1)
                     cabac_init_state(s);

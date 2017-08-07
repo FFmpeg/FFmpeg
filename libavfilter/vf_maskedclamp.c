@@ -25,7 +25,7 @@
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
-#include "framesync.h"
+#include "framesync2.h"
 
 #define OFFSET(x) offsetof(MaskedClampContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
@@ -93,9 +93,9 @@ static int process_frame(FFFrameSync *fs)
     AVFrame *out, *base, *dark, *bright;
     int ret;
 
-    if ((ret = ff_framesync_get_frame(&s->fs, 0, &base,   0)) < 0 ||
-        (ret = ff_framesync_get_frame(&s->fs, 1, &dark,   0)) < 0 ||
-        (ret = ff_framesync_get_frame(&s->fs, 2, &bright, 0)) < 0)
+    if ((ret = ff_framesync2_get_frame(&s->fs, 0, &base,   0)) < 0 ||
+        (ret = ff_framesync2_get_frame(&s->fs, 1, &dark,   0)) < 0 ||
+        (ret = ff_framesync2_get_frame(&s->fs, 2, &bright, 0)) < 0)
         return ret;
 
     if (ctx->is_disabled) {
@@ -265,7 +265,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->sample_aspect_ratio = base->sample_aspect_ratio;
     outlink->frame_rate = base->frame_rate;
 
-    if ((ret = ff_framesync_init(&s->fs, ctx, 3)) < 0)
+    if ((ret = ff_framesync2_init(&s->fs, ctx, 3)) < 0)
         return ret;
 
     in = s->fs.in;
@@ -284,44 +284,35 @@ static int config_output(AVFilterLink *outlink)
     s->fs.opaque   = s;
     s->fs.on_event = process_frame;
 
-    return ff_framesync_configure(&s->fs);
+    return ff_framesync2_configure(&s->fs);
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
+static int activate(AVFilterContext *ctx)
 {
-    MaskedClampContext *s = inlink->dst->priv;
-    return ff_framesync_filter_frame(&s->fs, inlink, buf);
-}
-
-static int request_frame(AVFilterLink *outlink)
-{
-    MaskedClampContext *s = outlink->src->priv;
-    return ff_framesync_request_frame(&s->fs, outlink);
+    MaskedClampContext *s = ctx->priv;
+    return ff_framesync2_activate(&s->fs);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
     MaskedClampContext *s = ctx->priv;
 
-    ff_framesync_uninit(&s->fs);
+    ff_framesync2_uninit(&s->fs);
 }
 
 static const AVFilterPad maskedclamp_inputs[] = {
     {
         .name         = "base",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
         .config_props = config_input,
     },
     {
         .name         = "dark",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
     },
     {
         .name         = "bright",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -331,7 +322,6 @@ static const AVFilterPad maskedclamp_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
-        .request_frame = request_frame,
     },
     { NULL }
 };
@@ -341,6 +331,7 @@ AVFilter ff_vf_maskedclamp = {
     .description   = NULL_IF_CONFIG_SMALL("Clamp first stream with second stream and third stream."),
     .priv_size     = sizeof(MaskedClampContext),
     .uninit        = uninit,
+    .activate      = activate,
     .query_formats = query_formats,
     .inputs        = maskedclamp_inputs,
     .outputs       = maskedclamp_outputs,

@@ -26,7 +26,7 @@
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
-#include "framesync.h"
+#include "framesync2.h"
 #include "video.h"
 
 typedef struct StackContext {
@@ -58,12 +58,6 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, pix_fmts);
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *in)
-{
-    StackContext *s = inlink->dst->priv;
-    return ff_framesync_filter_frame(&s->fs, inlink, in);
-}
-
 static av_cold int init(AVFilterContext *ctx)
 {
     StackContext *s = ctx->priv;
@@ -83,7 +77,6 @@ static av_cold int init(AVFilterContext *ctx)
         pad.name = av_asprintf("input%d", i);
         if (!pad.name)
             return AVERROR(ENOMEM);
-        pad.filter_frame = filter_frame;
 
         if ((ret = ff_insert_inpad(ctx, i, &pad)) < 0) {
             av_freep(&pad.name);
@@ -104,7 +97,7 @@ static int process_frame(FFFrameSync *fs)
     int i, p, ret, offset[4] = { 0 };
 
     for (i = 0; i < s->nb_inputs; i++) {
-        if ((ret = ff_framesync_get_frame(&s->fs, i, &in[i], 0)) < 0)
+        if ((ret = ff_framesync2_get_frame(&s->fs, i, &in[i], 0)) < 0)
             return ret;
     }
 
@@ -187,7 +180,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->time_base  = time_base;
     outlink->frame_rate = frame_rate;
 
-    if ((ret = ff_framesync_init(&s->fs, ctx, s->nb_inputs)) < 0)
+    if ((ret = ff_framesync2_init(&s->fs, ctx, s->nb_inputs)) < 0)
         return ret;
 
     in = s->fs.in;
@@ -203,13 +196,7 @@ static int config_output(AVFilterLink *outlink)
         in[i].after  = s->shortest ? EXT_STOP : EXT_INFINITY;
     }
 
-    return ff_framesync_configure(&s->fs);
-}
-
-static int request_frame(AVFilterLink *outlink)
-{
-    StackContext *s = outlink->src->priv;
-    return ff_framesync_request_frame(&s->fs, outlink);
+    return ff_framesync2_configure(&s->fs);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -217,11 +204,17 @@ static av_cold void uninit(AVFilterContext *ctx)
     StackContext *s = ctx->priv;
     int i;
 
-    ff_framesync_uninit(&s->fs);
+    ff_framesync2_uninit(&s->fs);
     av_freep(&s->frames);
 
     for (i = 0; i < ctx->nb_inputs; i++)
         av_freep(&ctx->input_pads[i].name);
+}
+
+static int activate(AVFilterContext *ctx)
+{
+    StackContext *s = ctx->priv;
+    return ff_framesync2_activate(&s->fs);
 }
 
 #define OFFSET(x) offsetof(StackContext, x)
@@ -237,7 +230,6 @@ static const AVFilterPad outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
-        .request_frame = request_frame,
     },
     { NULL }
 };
@@ -256,6 +248,7 @@ AVFilter ff_vf_hstack = {
     .outputs       = outputs,
     .init          = init,
     .uninit        = uninit,
+    .activate      = activate,
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };
 
@@ -275,6 +268,7 @@ AVFilter ff_vf_vstack = {
     .outputs       = outputs,
     .init          = init,
     .uninit        = uninit,
+    .activate      = activate,
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };
 

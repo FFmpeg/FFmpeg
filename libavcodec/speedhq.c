@@ -450,10 +450,13 @@ static int speedhq_decode_frame(AVCodecContext *avctx,
     if (second_field_offset == 4) {
         /*
          * Overlapping first and second fields is used to signal
-         * encoding only a single field (the second field then comes
-         * as a separate, later frame).
+         * encoding only a single field. In this case, "height"
+         * is ambiguous; it could mean either the height of the
+         * frame as a whole, or of the field. The former would make
+         * more sense for compatibility with legacy decoders,
+         * but this matches the convention used in NDI, which is
+         * the primary user of this trick.
          */
-        frame->height >>= 1;
         if ((ret = decode_speedhq_field(s, buf, buf_size, frame, 0, 4, buf_size, 1)) < 0)
             return ret;
     } else {

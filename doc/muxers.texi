@@ -551,7 +551,7 @@ format. The optional third line specifies the initialization vector (IV) as a
 hexadecimal string to be used instead of the segment sequence number (default)
 for encryption. Changes to @var{key_info_file} will result in segment
 encryption with the new key/IV and an entry in the playlist for the new key
-URI/IV.
+URI/IV if @code{hls_flags periodic_rekey} is enabled.
 
 Key info file format:
 @example
@@ -664,6 +664,11 @@ first segment's information.
 
 @item omit_endlist
 Do not append the @code{EXT-X-ENDLIST} tag at the end of the playlist.
+
+@item periodic_rekey
+The file specified by @code{hls_key_info_file} will be checked periodically and
+detect updates to the encryption info. Be sure to replace this file atomically,
+including the file containing the AES encryption key.
 
 @item split_by_time
 Allow segments to start on frames other than keyframes. This improves

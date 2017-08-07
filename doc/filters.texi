@@ -5881,6 +5881,12 @@ convolution="0 1 0 1 -4 1 0 1 0:0 1 0 1 -4 1 0 1 0:0 1 0 1 -4 1 0 1 0:0 1 0 1 -4
 @end example
 
 @item
+Apply laplacian edge detector which includes diagonals:
+@example
+convolution="1 1 1 1 -8 1 1 1 1:1 1 1 1 -8 1 1 1 1:1 1 1 1 -8 1 1 1 1:1 1 1 1 -8 1 1 1 1:5:5:5:1:0:128:128:0"
+@end example
+
+@item
 Apply emboss:
 @example
 convolution="-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2"
@@ -8398,6 +8404,43 @@ ffmpeg -i file.ts -vf find_rect=newref.pgm,cover_rect=cover.jpg:mode=cover new.m
 @end example
 @end itemize
 
+@section floodfill
+
+Flood area with values of same pixel components with another values.
+
+It accepts the following options:
+@table @option
+@item x
+Set pixel x coordinate.
+
+@item y
+Set pixel y coordinate.
+
+@item s0
+Set source #0 component value.
+
+@item s1
+Set source #1 component value.
+
+@item s2
+Set source #2 component value.
+
+@item s3
+Set source #3 component value.
+
+@item d0
+Set destination #0 component value.
+
+@item d1
+Set destination #1 component value.
+
+@item d2
+Set destination #2 component value.
+
+@item d3
+Set destination #3 component value.
+@end table
+
 @anchor{format}
 @section format
 
@@ -9946,9 +9989,13 @@ lutyuv=u='(val-maxval/2)*2+maxval/2':v='(val-maxval/2)*2+maxval/2'
 @end example
 @end itemize
 
-@section lut2
+@section lut2, tlut2
 
-Compute and apply a lookup table from two video inputs.
+The @code{lut2} filter takes two input streams and outputs one
+stream.
+
+The @code{tlut2} (time lut2) filter takes two consecutive frames
+from one single stream.
 
 This filter accepts the following parameters:
 @table @option
@@ -10003,6 +10050,12 @@ lut2='ifnot(x-y,0,pow(2,bdx)-1):ifnot(x-y,0,pow(2,bdx)-1):ifnot(x-y,0,pow(2,bdx)
 Highlight differences between two YUV video streams:
 @example
 lut2='ifnot(x-y,0,pow(2,bdx)-1):ifnot(x-y,pow(2,bdx-1),pow(2,bdx)-1):ifnot(x-y,pow(2,bdx-1),pow(2,bdx)-1)'
+@end example
+
+@item
+Show max difference between two video streams:
+@example
+lut2='if(lt(x,y),0,if(gt(x,y),pow(2,bdx)-1,pow(2,bdx-1))):if(lt(x,y),0,if(gt(x,y),pow(2,bdx)-1,pow(2,bdx-1))):if(lt(x,y),0,if(gt(x,y),pow(2,bdx)-1,pow(2,bdx-1)))'
 @end example
 @end itemize
 
@@ -14526,6 +14579,25 @@ ffmpeg -i INPUT -vf trim=duration=1
 
 @end itemize
 
+@section unpremultiply
+Apply alpha unpremultiply effect to input video stream using first plane
+of second stream as alpha.
+
+Both streams must have same dimensions and same pixel format.
+
+The filter accepts the following option:
+
+@table @option
+@item planes
+Set which planes will be processed, unprocessed planes will be copied.
+By default value 0xf, all planes will be processed.
+
+If the format has 1 or 2 components, then luma is bit 0.
+If the format has 3 or 4 components:
+for RGB formats bit 0 is green, bit 1 is blue and bit 2 is red;
+for YUV formats bit 0 is luma, bit 1 is chroma-U and bit 2 is chroma-V.
+If present, the alpha channel is always the last bit.
+@end table
 
 @anchor{unsharp}
 @section unsharp

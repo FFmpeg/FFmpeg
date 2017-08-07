@@ -28,7 +28,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
-#include "framesync.h"
+#include "framesync2.h"
 #include "internal.h"
 #include "video.h"
 
@@ -96,10 +96,10 @@ static int process_frame(FFFrameSync *fs)
     AVFrame *out, *in, *threshold, *min, *max;
     int ret;
 
-    if ((ret = ff_framesync_get_frame(&s->fs, 0, &in,        0)) < 0 ||
-        (ret = ff_framesync_get_frame(&s->fs, 1, &threshold, 0)) < 0 ||
-        (ret = ff_framesync_get_frame(&s->fs, 2, &min,       0)) < 0 ||
-        (ret = ff_framesync_get_frame(&s->fs, 3, &max,       0)) < 0)
+    if ((ret = ff_framesync2_get_frame(&s->fs, 0, &in,        0)) < 0 ||
+        (ret = ff_framesync2_get_frame(&s->fs, 1, &threshold, 0)) < 0 ||
+        (ret = ff_framesync2_get_frame(&s->fs, 2, &min,       0)) < 0 ||
+        (ret = ff_framesync2_get_frame(&s->fs, 3, &max,       0)) < 0)
         return ret;
 
     if (ctx->is_disabled) {
@@ -256,7 +256,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->sample_aspect_ratio = base->sample_aspect_ratio;
     outlink->frame_rate = base->frame_rate;
 
-    if ((ret = ff_framesync_init(&s->fs, ctx, 4)) < 0)
+    if ((ret = ff_framesync2_init(&s->fs, ctx, 4)) < 0)
         return ret;
 
     in = s->fs.in;
@@ -279,49 +279,39 @@ static int config_output(AVFilterLink *outlink)
     s->fs.opaque   = s;
     s->fs.on_event = process_frame;
 
-    return ff_framesync_configure(&s->fs);
+    return ff_framesync2_configure(&s->fs);
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
+static int activate(AVFilterContext *ctx)
 {
-    ThresholdContext *s = inlink->dst->priv;
-    return ff_framesync_filter_frame(&s->fs, inlink, buf);
-}
-
-static int request_frame(AVFilterLink *outlink)
-{
-    ThresholdContext *s = outlink->src->priv;
-    return ff_framesync_request_frame(&s->fs, outlink);
+    ThresholdContext *s = ctx->priv;
+    return ff_framesync2_activate(&s->fs);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
     ThresholdContext *s = ctx->priv;
 
-    ff_framesync_uninit(&s->fs);
+    ff_framesync2_uninit(&s->fs);
 }
 
 static const AVFilterPad inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
         .config_props = config_input,
     },
     {
         .name         = "threshold",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
     },
     {
         .name         = "min",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
     },
     {
         .name         = "max",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -331,7 +321,6 @@ static const AVFilterPad outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
-        .request_frame = request_frame,
     },
     { NULL }
 };
@@ -343,6 +332,7 @@ AVFilter ff_vf_threshold = {
     .priv_class    = &threshold_class,
     .uninit        = uninit,
     .query_formats = query_formats,
+    .activate      = activate,
     .inputs        = inputs,
     .outputs       = outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,

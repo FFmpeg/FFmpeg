@@ -198,6 +198,7 @@ static void register_all(void)
     REGISTER_FILTER(FIELDMATCH,     fieldmatch,     vf);
     REGISTER_FILTER(FIELDORDER,     fieldorder,     vf);
     REGISTER_FILTER(FIND_RECT,      find_rect,      vf);
+    REGISTER_FILTER(FLOODFILL,      floodfill,      vf);
     REGISTER_FILTER(FORMAT,         format,         vf);
     REGISTER_FILTER(FPS,            fps,            vf);
     REGISTER_FILTER(FRAMEPACK,      framepack,      vf);
@@ -323,8 +324,10 @@ static void register_all(void)
     REGISTER_FILTER(THUMBNAIL,      thumbnail,      vf);
     REGISTER_FILTER(TILE,           tile,           vf);
     REGISTER_FILTER(TINTERLACE,     tinterlace,     vf);
+    REGISTER_FILTER(TLUT2,          tlut2,          vf);
     REGISTER_FILTER(TRANSPOSE,      transpose,      vf);
     REGISTER_FILTER(TRIM,           trim,           vf);
+    REGISTER_FILTER(UNPREMULTIPLY,  unpremultiply,  vf);
     REGISTER_FILTER(UNSHARP,        unsharp,        vf);
     REGISTER_FILTER(USPP,           uspp,           vf);
     REGISTER_FILTER(VAGUEDENOISER,  vaguedenoiser,  vf);

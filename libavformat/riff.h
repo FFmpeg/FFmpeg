@@ -45,7 +45,7 @@ void ff_end_tag(AVIOContext *pb, int64_t start);
  */
 int ff_get_bmp_header(AVIOContext *pb, AVStream *st, unsigned *esize);
 
-void ff_put_bmp_header(AVIOContext *pb, AVCodecParameters *par, const AVCodecTag *tags, int for_asf, int ignore_extradata);
+void ff_put_bmp_header(AVIOContext *pb, AVCodecParameters *par, int for_asf, int ignore_extradata);
 
 /**
  * Tell ff_put_wav_header() to use WAVEFORMATEX even for PCM codecs.

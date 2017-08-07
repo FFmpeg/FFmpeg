@@ -25,7 +25,7 @@
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "internal.h"
-#include "framesync.h"
+#include "framesync2.h"
 
 typedef struct InputParam {
     int depth[4];
@@ -57,12 +57,6 @@ static const AVOption mergeplanes_options[] = {
 };
 
 AVFILTER_DEFINE_CLASS(mergeplanes);
-
-static int filter_frame(AVFilterLink *inlink, AVFrame *in)
-{
-    MergePlanesContext *s = inlink->dst->priv;
-    return ff_framesync_filter_frame(&s->fs, inlink, in);
-}
 
 static av_cold int init(AVFilterContext *ctx)
 {
@@ -101,7 +95,6 @@ static av_cold int init(AVFilterContext *ctx)
         pad.name = av_asprintf("in%d", i);
         if (!pad.name)
             return AVERROR(ENOMEM);
-        pad.filter_frame = filter_frame;
 
         if ((ret = ff_insert_inpad(ctx, i, &pad)) < 0){
             av_freep(&pad.name);
@@ -150,7 +143,7 @@ static int process_frame(FFFrameSync *fs)
     int i, ret;
 
     for (i = 0; i < s->nb_inputs; i++) {
-        if ((ret = ff_framesync_get_frame(&s->fs, i, &in[i], 0)) < 0)
+        if ((ret = ff_framesync2_get_frame(&s->fs, i, &in[i], 0)) < 0)
             return ret;
     }
 
@@ -179,7 +172,7 @@ static int config_output(AVFilterLink *outlink)
     FFFrameSyncIn *in;
     int i, ret;
 
-    if ((ret = ff_framesync_init(&s->fs, ctx, s->nb_inputs)) < 0)
+    if ((ret = ff_framesync2_init(&s->fs, ctx, s->nb_inputs)) < 0)
         return ret;
 
     in = s->fs.in;
@@ -272,15 +265,15 @@ static int config_output(AVFilterLink *outlink)
         }
     }
 
-    return ff_framesync_configure(&s->fs);
+    return ff_framesync2_configure(&s->fs);
 fail:
     return AVERROR(EINVAL);
 }
 
-static int request_frame(AVFilterLink *outlink)
+static int activate(AVFilterContext *ctx)
 {
-    MergePlanesContext *s = outlink->src->priv;
-    return ff_framesync_request_frame(&s->fs, outlink);
+    MergePlanesContext *s = ctx->priv;
+    return ff_framesync2_activate(&s->fs);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -288,7 +281,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     MergePlanesContext *s = ctx->priv;
     int i;
 
-    ff_framesync_uninit(&s->fs);
+    ff_framesync2_uninit(&s->fs);
 
     for (i = 0; i < ctx->nb_inputs; i++)
         av_freep(&ctx->input_pads[i].name);
@@ -299,7 +292,6 @@ static const AVFilterPad mergeplanes_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
-        .request_frame = request_frame,
     },
     { NULL }
 };
@@ -312,6 +304,7 @@ AVFilter ff_vf_mergeplanes = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
+    .activate      = activate,
     .inputs        = NULL,
     .outputs       = mergeplanes_outputs,
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,

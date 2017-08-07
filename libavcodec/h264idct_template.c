@@ -40,10 +40,10 @@ void FUNCC(ff_h264_idct_add)(uint8_t *_dst, int16_t *_block, int stride)
     block[0] += 1 << 5;
 
     for(i=0; i<4; i++){
-        const SUINT z0=  block[i + 4*0]     +  block[i + 4*2];
-        const SUINT z1=  block[i + 4*0]     -  block[i + 4*2];
-        const SUINT z2= (block[i + 4*1]>>1) -  block[i + 4*3];
-        const SUINT z3=  block[i + 4*1]     + (block[i + 4*3]>>1);
+        const SUINT z0=  block[i + 4*0]     +  (unsigned)block[i + 4*2];
+        const SUINT z1=  block[i + 4*0]     -  (unsigned)block[i + 4*2];
+        const SUINT z2= (block[i + 4*1]>>1) -  (unsigned)block[i + 4*3];
+        const SUINT z3=  block[i + 4*1]     + (unsigned)(block[i + 4*3]>>1);
 
         block[i + 4*0]= z0 + z3;
         block[i + 4*1]= z1 + z2;

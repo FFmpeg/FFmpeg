@@ -207,7 +207,7 @@ int ff_put_wav_header(AVFormatContext *s, AVIOContext *pb,
 
 /* BITMAPINFOHEADER header */
 void ff_put_bmp_header(AVIOContext *pb, AVCodecParameters *par,
-                       const AVCodecTag *tags, int for_asf, int ignore_extradata)
+                       int for_asf, int ignore_extradata)
 {
     int keep_height = par->extradata_size >= 9 &&
                       !memcmp(par->extradata + par->extradata_size - 9, "BottomUp", 9);

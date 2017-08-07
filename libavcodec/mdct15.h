@@ -42,6 +42,9 @@ typedef struct MDCT15Context {
     /* 15-point FFT */
     void (*fft15)(FFTComplex *out, FFTComplex *in, FFTComplex *exptab, ptrdiff_t stride);
 
+    /* PFA postrotate and exptab */
+    void (*postreindex)(FFTComplex *out, FFTComplex *in, FFTComplex *exp, int *lut, ptrdiff_t len8);
+
     /* Calculate a full 2N -> N MDCT */
     void (*mdct)(struct MDCT15Context *s, float *dst, const float *src, ptrdiff_t stride);
 

@@ -19,7 +19,7 @@ Dialogue: 0,0:00:17.67,0:00:21.72,Default,,0,0,0,,\N{\c&HCBC0FF&}{\fs6}It's{\fs}
 Dialogue: 0,0:00:21.84,0:00:21.84,Default,,0,0,0,,\N{\u1}매력적인 세계에서\N이 모든 것이 펼쳐집니다{\u1}
 Dialogue: 0,0:00:21.84,0:00:23.58,Default,,0,0,0,,\N{\i1}{\c&H9966CC&}of{\c}{\c&HC2A3E0&} what's{\c} {\c&HE0D1F0&}right{\c} {\c&HFCFAFE&}and{\c} wrong.{\i0}
 Dialogue: 0,0:00:23.69,0:00:23.69,Default,,0,0,0,,\N{\i1}이 주제를 심오한 철학으로\N담아내고 있어요{\i0}
-Dialogue: 0,0:00:23.69,0:00:25.67,Default,,0,0,0,,\N{\fs20}{\c&HFF0000&}{\s1}It{\s0}{\c}{\fs} has {\fs15}{\c&HFFFF00&}a{\c}{\fs} great {\fs16}{\c&HFFCC00&}philosophy{\c}{\fs} about it.
+Dialogue: 0,0:00:23.69,0:00:25.67,Default,,0,0,0,,\N{\c&HFF0000&}{\fs20}{\s1}It{\s0}{\fs}{\c} has {\c&HFFFF00&}{\fs15}a{\fs}{\c} great {\c&HFFCC00&}{\fs16}philosophy{\fs}{\c} about it.
 Dialogue: 0,0:00:40.22,0:00:40.22,Default,,0,0,0,,\N{\s1}"왕좌의 게임"은 웨스테로스라는 가상왕국의\N권력 분쟁 이야기입니다{\s0}
 Dialogue: 0,0:00:40.22,0:00:47.94,Default,,0,0,0,,\N{\c&HA5FF&}{\fs26}"Game of Thrones"{\fs}{\c} {\c&H2A2AA5&}{\b1}is{\b0}{\c}{\c&HFFFF&}{\fs24}{\i1} about{\i0}{\fs}{\c} {\c&H336699&}{\fs14}power{\fs}{\c}{\c&HFF&} struggles{\c}\N{\c&HA5FF&}{\fs8}in a fantasy{\fs}{\c&HCBC0FF&} kingdom{\c&HA5FF&}, called {\fs6}Westeros.{\fs}{\c}
 Dialogue: 0,0:00:48.06,0:00:48.06,Default,,0,0,0,,\N철의 왕좌를 둘러싼\N권력 분쟁이죠
@@ -51,7 +51,7 @@ Dialogue: 0,0:01:28.98,0:01:33.89,Default,,0,0,0,,\N{\u1}this common threat, tha
 Dialogue: 0,0:01:34.01,0:01:35.24,Default,,0,0,0,,\Npursuing their own interests.
 Dialogue: 0,0:01:35.36,0:01:35.36,Default,,0,0,0,,\N한편, 일곱 왕국의 밖에서는\N두 개의 거대한 위협이 부상합니다
 Dialogue: 0,0:01:35.36,0:01:40.23,Default,,0,0,0,,\N{\fs30}And meanwhile, outside the Seven\NKingdoms, two great threats arising.{\fs}
-Dialogue: 0,0:01:40.35,0:01:40.35,Default,,0,0,0,,\N<sup>하나는 바다 건너\N타가리엔 일족 유배자들이며</sub>
+Dialogue: 0,0:01:40.35,0:01:40.35,Default,,0,0,0,,\N하나는 바다 건너\N타가리엔 일족 유배자들이며
 Dialogue: 0,0:01:40.35,0:01:44.06,Default,,0,0,0,,\NOne across the sea, in the exile\NTargaryen siblings,
 Dialogue: 0,0:01:44.17,0:01:44.17,Default,,0,0,0,,\N또 하나는 일곱 왕국의\N국경이 자리잡은
 Dialogue: 0,0:01:44.17,0:01:47.39,Default,,0,0,0,,\Nand another far to the north,\Nbeyond the Wall,

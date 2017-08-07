@@ -1304,8 +1304,6 @@ static int forward_status_change(AVFilterContext *filter, AVFilterLink *in)
     return 0;
 }
 
-#define FFERROR_NOT_READY FFERRTAG('N','R','D','Y')
-
 static int ff_filter_activate_default(AVFilterContext *filter)
 {
     unsigned i;
