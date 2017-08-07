@@ -88,16 +88,7 @@
 #include "libavcodec/aacsbr.h"
 #include "libavcodec/aac.h"
 #include "libavcodec/aacenc.h"
-#if !(CONFIG_MSMPEG4_DECODER||CONFIG_MSMPEG4_ENCODER)
-#include "libavcodec/msmpeg4.h"
-#endif
 
-#if !(CONFIG_MSMPEG4_DECODER)
-int ff_msmpeg4_decode_picture_header(MpegEncContext *s) {return 0;}
-#endif
-#if !(CONFIG_MSMPEG4_ENCODER)
-int ff_msmpeg4_encode_init(MpegEncContext *s) {return 0;}
-#endif
 void ff_aac_coder_init_mips(AACEncContext *c) {return;}
 void ff_aacdec_init_mips(AACContext *c) {return;}
 void ff_aacsbr_func_ptr_init_mips(AACSBRContext *c) {return;}
@@ -3469,6 +3460,9 @@ void ff_lfe_fir0_float_sse(float *pcm_samples, int32_t *lfe_samples, const float
 void ff_llauddsp_init_arm(LLAudDSPContext *c) {return;}
 void ff_llauddsp_init_ppc(LLAudDSPContext *c) {return;}
 void ff_llviddsp_init_ppc(LLVidDSPContext *llviddsp) {return;}
+#if !(ARCH_X86_64)
+void ff_mdct15_postreindex_avx2(FFTComplex *out, FFTComplex *in, FFTComplex *exp, int *lut, ptrdiff_t len8) {return;}
+#endif
 void ff_me_cmp_init_alpha(MECmpContext *c, AVCodecContext *avctx) {return;}
 void ff_me_cmp_init_arm(MECmpContext *c, AVCodecContext *avctx) {return;}
 void ff_me_cmp_init_mips(MECmpContext *c, AVCodecContext *avctx) {return;}
@@ -3497,16 +3491,6 @@ void ff_mpv_common_init_axp(MpegEncContext *s) {return;}
 void ff_mpv_common_init_mips(MpegEncContext *s) {return;}
 void ff_mpv_common_init_neon(MpegEncContext *s) {return;}
 void ff_mpv_common_init_ppc(MpegEncContext *s) {return;}
-#if !(CONFIG_MSMPEG4_ENCODER)
-void ff_msmpeg4_encode_ext_header(MpegEncContext *s) {return;}
-#endif
-#if !(CONFIG_MSMPEG4_ENCODER)
-void ff_msmpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
-                          int motion_x, int motion_y) {return;}
-#endif
-#if !(CONFIG_MSMPEG4_ENCODER)
-void ff_msmpeg4_encode_picture_header(MpegEncContext *s, int picture_number) {return;}
-#endif
 void ff_pixblockdsp_init_alpha(PixblockDSPContext *c, AVCodecContext *avctx,
                                unsigned high_bit_depth) {return;}
 void ff_pixblockdsp_init_arm(PixblockDSPContext *c, AVCodecContext *avctx,
