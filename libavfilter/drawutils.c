@@ -64,6 +64,8 @@ int ff_fill_rgba_map(uint8_t *rgba_map, enum AVPixelFormat pix_fmt)
     case AV_PIX_FMT_GBRP16LE:
     case AV_PIX_FMT_GBRP16BE:
     case AV_PIX_FMT_GBRAP:
+    case AV_PIX_FMT_GBRAP10LE:
+    case AV_PIX_FMT_GBRAP10BE:
     case AV_PIX_FMT_GBRAP12LE:
     case AV_PIX_FMT_GBRAP12BE:
     case AV_PIX_FMT_GBRAP16LE:
