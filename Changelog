@@ -41,6 +41,7 @@ version <next>:
 - VAAPI-accelerated ProcAmp (color balance), denoise and sharpness filters
 - Add android_camera indev
 - codec2 en/decoding via libcodec2
+- muxer/demuxer for raw codec2 files and .c2 files
 
 
 version 3.4:

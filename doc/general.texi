@@ -320,6 +320,10 @@ library:
 @item BRSTM                     @tab   @tab X
     @tab Audio format used on the Nintendo Wii.
 @item BWF                       @tab X @tab X
+@item codec2 (raw)              @tab X @tab X
+    @tab Must be given -mode format option to decode correctly.
+@item codec2 (.c2 files)        @tab X @tab X
+    @tab Contains header with version and mode info, simplifying playback.
 @item CRI ADX                   @tab X @tab X
     @tab Audio-only format used in console video games.
 @item Discworld II BMV          @tab   @tab X

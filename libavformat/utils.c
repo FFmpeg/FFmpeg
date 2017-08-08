@@ -933,6 +933,7 @@ static int determinable_frame_size(AVCodecContext *avctx)
     case AV_CODEC_ID_MP1:
     case AV_CODEC_ID_MP2:
     case AV_CODEC_ID_MP3:
+    case AV_CODEC_ID_CODEC2:
         return 1;
     }
 
