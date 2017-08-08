@@ -1265,19 +1265,6 @@ start_sync:
                 }
             }
 
-            if (!avi->dv_demux &&
-                ((st->discard >= AVDISCARD_DEFAULT && size == 0) /* ||
-                 // FIXME: needs a little reordering
-                 (st->discard >= AVDISCARD_NONKEY &&
-                 !(pkt->flags & AV_PKT_FLAG_KEY)) */
-                || st->discard >= AVDISCARD_ALL)) {
-                if (!exit_early) {
-                    ast->frame_offset += get_duration(ast, size);
-                    avio_skip(pb, size);
-                    goto start_sync;
-                }
-            }
-
             if (d[2] == 'p' && d[3] == 'c' && size <= 4 * 256 + 4) {
                 int k    = avio_r8(pb);
                 int last = (k + avio_r8(pb) - 1) & 0xFF;
@@ -1302,6 +1289,18 @@ start_sync:
                 else {
                     ast->prefix       = d[2] * 256 + d[3];
                     ast->prefix_count = 0;
+                }
+
+                if (!avi->dv_demux &&
+                    ((st->discard >= AVDISCARD_DEFAULT && size == 0) /* ||
+                        // FIXME: needs a little reordering
+                        (st->discard >= AVDISCARD_NONKEY &&
+                        !(pkt->flags & AV_PKT_FLAG_KEY)) */
+                    || st->discard >= AVDISCARD_ALL)) {
+
+                    ast->frame_offset += get_duration(ast, size);
+                    avio_skip(pb, size);
+                    goto start_sync;
                 }
 
                 avi->stream_index = n;
