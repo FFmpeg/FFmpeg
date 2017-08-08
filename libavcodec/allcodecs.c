@@ -662,6 +662,8 @@ extern AVCodec ff_pcm_mulaw_at_decoder;
 extern AVCodec ff_qdmc_at_decoder;
 extern AVCodec ff_qdm2_at_decoder;
 extern AVCodec ff_libcelt_decoder;
+extern AVCodec ff_libcodec2_encoder;
+extern AVCodec ff_libcodec2_decoder;
 extern AVCodec ff_libfdk_aac_encoder;
 extern AVCodec ff_libfdk_aac_decoder;
 extern AVCodec ff_libgsm_encoder;

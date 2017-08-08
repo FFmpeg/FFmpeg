@@ -85,6 +85,24 @@ Go to @url{http://www.twolame.org/} and follow the
 instructions for installing the library.
 Then pass @code{--enable-libtwolame} to configure to enable it.
 
+@section libcodec2 / codec2 general
+
+FFmpeg can make use of libcodec2 for codec2 encoding and decoding.
+There is currently no native decoder, so libcodec2 must be used for decoding.
+
+Go to @url{http://freedv.org/}, download "Codec 2 source archive".
+Build and install using CMake. Debian users can install the libcodec2-dev package instead.
+Once libcodec2 is installed you can pass @code{--enable-libcodec2} to configure to enable it.
+
+The easiest way to use codec2 is with .c2 files, since they contain the mode information required for decoding.
+To encode such a file, use a .c2 file extension and give the libcodec2 encoder the -mode option:
+@code{ffmpeg -i input.wav -mode 700C output.c2}.
+Playback is as simple as @code{ffplay output.c2}.
+For a list of supported modes, run @code{ffmpeg -h encoder=libcodec2}.
+Raw codec2 files are also supported.
+To make sense of them the mode in use needs to be specified as a format option:
+@code{ffmpeg -f codec2raw -mode 1300 -i input.raw output.wav}.
+
 @section libvpx
 
 FFmpeg can make use of the libvpx library for VP8/VP9 encoding.
@@ -1019,6 +1037,8 @@ following image formats are supported:
     @tab Used in Bink and Smacker files in many games.
 @item CELT                   @tab     @tab  E
     @tab decoding supported through external library libcelt
+@item codec2                 @tab  E  @tab  E
+    @tab en/decoding supported through external library libcodec2
 @item Delphine Software International CIN audio  @tab     @tab  X
     @tab Codec used in Delphine Software International games.
 @item Digital Speech Standard - Standard Play mode (DSS SP) @tab     @tab  X

@@ -40,6 +40,7 @@ version <next>:
 - VideoToolbox HEVC encoder and hwaccel
 - VAAPI-accelerated ProcAmp (color balance), denoise and sharpness filters
 - Add android_camera indev
+- codec2 en/decoding via libcodec2
 
 
 version 3.4:
