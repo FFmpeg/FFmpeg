@@ -1154,6 +1154,12 @@ static int h264_export_frame_props(H264Context *h)
         a53->a53_caption_size = 0;
     }
 
+    if (h->sei.alternative_transfer.present &&
+        av_color_transfer_name(h->sei.alternative_transfer.preferred_transfer_characteristics) &&
+        h->sei.alternative_transfer.preferred_transfer_characteristics != AVCOL_TRC_UNSPECIFIED) {
+        h->avctx->color_trc = cur->f->color_trc = h->sei.alternative_transfer.preferred_transfer_characteristics;
+    }
+
     return 0;
 }
 

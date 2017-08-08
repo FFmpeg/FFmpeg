@@ -33,6 +33,7 @@ typedef enum {
     H264_SEI_TYPE_RECOVERY_POINT         = 6,   ///< recovery point (frame # to decoder sync)
     H264_SEI_TYPE_FRAME_PACKING          = 45,  ///< frame packing arrangement
     H264_SEI_TYPE_DISPLAY_ORIENTATION    = 47,  ///< display orientation
+    H264_SEI_TYPE_ALTERNATIVE_TRANSFER   = 147, ///< alternative transfer
 } H264_SEI_Type;
 
 /**
@@ -115,6 +116,11 @@ typedef struct H264SEIDisplayOrientation {
     int hflip, vflip;
 } H264SEIDisplayOrientation;
 
+typedef struct H264SEIAlternativeTransfer {
+    int present;
+    int preferred_transfer_characteristics;
+} H264SEIAlternativeTransfer;
+
 typedef struct H264SEIContext {
     H264SEIPictureTiming picture_timing;
     H264SEIAFD afd;
@@ -124,6 +130,7 @@ typedef struct H264SEIContext {
     H264SEIBufferingPeriod buffering_period;
     H264SEIFramePacking frame_packing;
     H264SEIDisplayOrientation display_orientation;
+    H264SEIAlternativeTransfer alternative_transfer;
 } H264SEIContext;
 
 struct H264ParamSets;
