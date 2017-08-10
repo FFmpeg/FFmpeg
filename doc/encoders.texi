@@ -1793,7 +1793,7 @@ the documentation of the undocumented generic options, see
 @ref{codec-options,,the Codec Options chapter}.
 
 To get a more accurate and extensive documentation of the libx264
-options, invoke the command @command{x264 --full-help} or consult
+options, invoke the command @command{x264 --fullhelp} or consult
 the libx264 documentation.
 
 @table @option
