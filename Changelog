@@ -35,6 +35,9 @@ version <next>:
 - pseudocolor video filter
 - raw G.726 muxer and demuxer, left- and right-justified
 - NewTek NDI input/output device
+- Some video filters with several inputs now use a common set of options:
+  blend, libvmaf, lut3d, overlay, psnr, ssim.
+  They must always be used by name.
 
 version 3.3:
 - CrystalHD decoder moved to new decode API

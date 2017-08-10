@@ -311,6 +311,39 @@ See @code{ffmpeg -filters} to view which filters have timeline support.
 
 @c man end FILTERGRAPH DESCRIPTION
 
+@anchor{framesync}
+@chapter Options for filters with several inputs (framesync)
+@c man begin OPTIONS FOR FILTERS WITH SEVERAL INPUTS
+
+Some filters with several inputs support a common set of options.
+These options can only be set by name, not with the short notation.
+
+@table @option
+@item eof_action
+The action to take when EOF is encountered on the secondary input; it accepts
+one of the following values:
+
+@table @option
+@item repeat
+Repeat the last frame (the default).
+@item endall
+End both streams.
+@item pass
+Pass the main input through.
+@end table
+
+@item shortest
+If set to 1, force the output to terminate when the shortest input
+terminates. Default value is 0.
+
+@item repeatlast
+If set to 1, force the filter to draw the last overlay frame over the
+main input until the end of the stream. A value of 0 disables this
+behavior. Default value is 1.
+@end table
+
+@c man end OPTIONS FOR FILTERS WITH SEVERAL INPUTS
+
 @chapter Audio Filters
 @c man begin AUDIO FILTERS
 
@@ -4949,16 +4982,9 @@ Value of pixel component at current location for first video frame (top layer).
 @item BOTTOM, B
 Value of pixel component at current location for second video frame (bottom layer).
 @end table
-
-@item shortest
-Force termination when the shortest input terminates. Default is
-@code{0}. This option is only defined for the @code{blend} filter.
-
-@item repeatlast
-Continue applying the last bottom frame after the end of the stream. A value of
-@code{0} disable the filter after the last frame of the bottom layer is reached.
-Default is @code{1}. This option is only defined for the @code{blend} filter.
 @end table
+
+The @code{blend} filter also supports the @ref{framesync} options.
 
 @subsection Examples
 
@@ -9757,6 +9783,8 @@ Enables computing ms_ssim along with vmaf.
 Set the pool method to be used for computing vmaf.
 @end table
 
+This filter also supports the @ref{framesync} options.
+
 For example:
 @example
 ffmpeg -i main.mpg -i ref.mpg -lavfi libvmaf -f null -
@@ -9837,6 +9865,8 @@ Interpolate values using the 8 points defining a cube.
 Interpolate values using a tetrahedron.
 @end table
 @end table
+
+This filter also supports the @ref{framesync} options.
 
 @section lumakey
 
@@ -10866,19 +10896,6 @@ on the main video. Default value is "0" for both expressions. In case
 the expression is invalid, it is set to a huge value (meaning that the
 overlay will not be displayed within the output visible area).
 
-@item eof_action
-The action to take when EOF is encountered on the secondary input; it accepts
-one of the following values:
-
-@table @option
-@item repeat
-Repeat the last frame (the default).
-@item endall
-End both streams.
-@item pass
-Pass the main input through.
-@end table
-
 @item eval
 Set when the expressions for @option{x}, and @option{y} are evaluated.
 
@@ -10893,10 +10910,6 @@ evaluate expressions for each incoming frame
 @end table
 
 Default value is @samp{frame}.
-
-@item shortest
-If set to 1, force the output to terminate when the shortest input
-terminates. Default value is 0.
 
 @item format
 Set the format for the output video.
@@ -10923,11 +10936,6 @@ automatically pick format
 @end table
 
 Default value is @samp{yuv420}.
-
-@item repeatlast
-If set to 1, force the filter to draw the last overlay frame over the
-main input until the end of the stream. A value of 0 disables this
-behavior. Default value is 1.
 @end table
 
 The @option{x}, and @option{y} expressions can contain the following
@@ -10963,6 +10971,8 @@ the position in the file of the input frame, NAN if unknown
 The timestamp, expressed in seconds. It's NAN if the input timestamp is unknown.
 
 @end table
+
+This filter also supports the @ref{framesync} options.
 
 Note that the @var{n}, @var{pos}, @var{t} variables are available only
 when evaluation is done @emph{per frame}, and will evaluate to NAN
@@ -11901,6 +11911,8 @@ Default value is 0.
 Requires stats_version >= 2. If this is set and stats_version < 2,
 the filter will return an error.
 @end table
+
+This filter also supports the @ref{framesync} options.
 
 The file printed if @var{stats_file} is selected, contains a sequence of
 key/value pairs of the form @var{key}:@var{value} for each compared
@@ -13654,6 +13666,8 @@ SSIM of the compared frames for the whole frame.
 @item dB
 Same as above but in dB representation.
 @end table
+
+This filter also supports the @ref{framesync} options.
 
 For example:
 @example
