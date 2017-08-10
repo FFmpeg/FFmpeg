@@ -346,6 +346,7 @@ void ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[12][64])
     }
 }
 
+#if CONFIG_AMV_ENCODER
 // maximum over s->mjpeg_vsample[i]
 #define V_MAX 2
 static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
@@ -387,6 +388,7 @@ static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
     av_frame_free(&pic);
     return ret;
 }
+#endif
 
 #define OFFSET(x) offsetof(MpegEncContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
