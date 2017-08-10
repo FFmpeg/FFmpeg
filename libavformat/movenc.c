@@ -2218,32 +2218,32 @@ static int mov_preroll_write_stbl_atoms(AVIOContext *pb, MOVTrack *track)
     av_assert0(track->par->codec_id == AV_CODEC_ID_OPUS || track->par->codec_id == AV_CODEC_ID_AAC);
 
     if (track->par->codec_id == AV_CODEC_ID_OPUS) {
-    for (i = 0; i < track->entry; i++) {
-        int roll_samples_remaining = roll_samples;
-        int distance = 0;
-        for (j = i - 1; j >= 0; j--) {
-            roll_samples_remaining -= get_cluster_duration(track, j);
-            distance++;
-            if (roll_samples_remaining <= 0)
-                break;
+        for (i = 0; i < track->entry; i++) {
+            int roll_samples_remaining = roll_samples;
+            int distance = 0;
+            for (j = i - 1; j >= 0; j--) {
+                roll_samples_remaining -= get_cluster_duration(track, j);
+                distance++;
+                if (roll_samples_remaining <= 0)
+                    break;
+            }
+            /* We don't have enough preceeding samples to compute a valid
+               roll_distance here, so this sample can't be independently
+               decoded. */
+            if (roll_samples_remaining > 0)
+                distance = 0;
+            /* Verify distance is a minimum of 2 (60ms) packets and a maximum of
+               32 (2.5ms) packets. */
+            av_assert0(distance == 0 || (distance >= 2 && distance <= 32));
+            if (i && distance == sgpd_entries[entries].roll_distance) {
+                sgpd_entries[entries].count++;
+            } else {
+                entries++;
+                sgpd_entries[entries].count = 1;
+                sgpd_entries[entries].roll_distance = distance;
+                sgpd_entries[entries].group_description_index = distance ? ++group : 0;
+            }
         }
-        /* We don't have enough preceeding samples to compute a valid
-           roll_distance here, so this sample can't be independently
-           decoded. */
-        if (roll_samples_remaining > 0)
-            distance = 0;
-        /* Verify distance is a minimum of 2 (60ms) packets and a maximum of
-           32 (2.5ms) packets. */
-        av_assert0(distance == 0 || (distance >= 2 && distance <= 32));
-        if (i && distance == sgpd_entries[entries].roll_distance) {
-            sgpd_entries[entries].count++;
-        } else {
-            entries++;
-            sgpd_entries[entries].count = 1;
-            sgpd_entries[entries].roll_distance = distance;
-            sgpd_entries[entries].group_description_index = distance ? ++group : 0;
-        }
-    }
     } else {
         entries++;
         sgpd_entries[entries].count = track->sample_count;
