@@ -1,6 +1,7 @@
 /*
  * Blackmagic DeckLink input
  * Copyright (c) 2013-2014 Luca Barbato, Deti Fliegl
+ * Copyright (c) 2017 Akamai Technologies, Inc.
  *
  * This file is part of FFmpeg.
  *
@@ -187,10 +188,12 @@ static uint8_t* teletext_data_unit_from_vanc_data(uint8_t *src, uint8_t *tgt, in
 
 static void avpacket_queue_init(AVFormatContext *avctx, AVPacketQueue *q)
 {
+    struct decklink_cctx *ctx = (struct decklink_cctx *)avctx->priv_data;
     memset(q, 0, sizeof(AVPacketQueue));
     pthread_mutex_init(&q->mutex, NULL);
     pthread_cond_init(&q->cond, NULL);
     q->avctx = avctx;
+    q->max_q_size = ctx->queue_size;
 }
 
 static void avpacket_queue_flush(AVPacketQueue *q)
@@ -230,8 +233,8 @@ static int avpacket_queue_put(AVPacketQueue *q, AVPacket *pkt)
 {
     AVPacketList *pkt1;
 
-    // Drop Packet if queue size is > 1GB
-    if (avpacket_queue_size(q) >  1024 * 1024 * 1024 ) {
+    // Drop Packet if queue size is > maximum queue size
+    if (avpacket_queue_size(q) > q->max_q_size) {
         av_log(q->avctx, AV_LOG_WARNING,  "Decklink input buffer overrun!\n");
         return -1;
     }

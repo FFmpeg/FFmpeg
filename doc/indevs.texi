@@ -289,6 +289,11 @@ Sets the audio packet timestamp source. Must be @samp{video}, @samp{audio},
 If set to @samp{true}, color bars are drawn in the event of a signal loss.
 Defaults to @samp{true}.
 
+@item queue_size
+Sets maximum input buffer size in bytes. If the buffering reaches this value,
+incoming frames will be dropped.
+Defaults to @samp{1073741824}.
+
 @end table
 
 @subsection Examples
