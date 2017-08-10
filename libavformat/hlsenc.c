@@ -1038,8 +1038,8 @@ static int hls_window(AVFormatContext *s, int last)
         goto fail;
 
     for (en = hls->segments; en; en = en->next) {
-        if (target_duration <= en->duration)
-            target_duration = get_int_from_double(en->duration);
+        if (target_duration < en->duration)
+            target_duration = (int)round(en->duration);
     }
 
     hls->discontinuity_set = 0;
