@@ -144,6 +144,8 @@ static int decode_dds1(GetByteContext *gb, uint8_t *frame, int width, int height
     int mask = 0x10000, bitbuf = 0;
     int i, v, offset, count, segments;
 
+    if ((width | height) & 1)
+        return AVERROR_INVALIDDATA;
     segments = bytestream2_get_le16(gb);
     while (segments--) {
         if (bytestream2_get_bytes_left(gb) < 2)
@@ -171,7 +173,7 @@ static int decode_dds1(GetByteContext *gb, uint8_t *frame, int width, int height
                 return AVERROR_INVALIDDATA;
             frame += v;
         } else {
-            if (frame_end - frame < width + 3)
+            if (width < 4 || frame_end - frame < width + 4)
                 return AVERROR_INVALIDDATA;
             frame[0] = frame[1] =
             frame[width] = frame[width + 1] =  bytestream2_get_byte(gb);
