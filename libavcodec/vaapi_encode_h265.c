@@ -815,8 +815,11 @@ static av_cold int vaapi_encode_h265_configure(AVCodecContext *avctx)
     if (err < 0)
         return err;
 
-    priv->ctu_width     = FFALIGN(ctx->surface_width,  32) / 32;
-    priv->ctu_height    = FFALIGN(ctx->surface_height, 32) / 32;
+    // This is an Intel driver constraint.  Despite MinCbSizeY being 8,
+    // we are still required to encode at 16-pixel alignment and then
+    // crop back (so 1080 lines is still encoded as 1088 + cropping).
+    priv->ctu_width     = FFALIGN(ctx->surface_width,  16) / 16;
+    priv->ctu_height    = FFALIGN(ctx->surface_height, 16) / 16;
 
     av_log(avctx, AV_LOG_VERBOSE, "Input %ux%u -> Surface %ux%u -> CTU %ux%u.\n",
            avctx->width, avctx->height, ctx->surface_width,
