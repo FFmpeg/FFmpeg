@@ -1,4 +1,4 @@
-4fa4ce9e167fb1816522126d36acfd3c *tests/data/fate/vsynth2-mpeg2-idct-int.mpeg2video
+5e121ff369249a98e080a50af2dadbbb *tests/data/fate/vsynth2-mpeg2-idct-int.mpeg2video
 267430 tests/data/fate/vsynth2-mpeg2-idct-int.mpeg2video
 b750f48d58f157da94613fe92012e7a5 *tests/data/fate/vsynth2-mpeg2-idct-int.out.rawvideo
 stddev:    5.56 PSNR: 33.22 MAXDIFF:   77 bytes:  7603200/  7603200

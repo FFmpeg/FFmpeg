@@ -1,4 +1,4 @@
-c17bee51286e13b0c95a504391632087 *tests/data/fate/vsynth1-mpeg2-thread.mpeg2video
+e93f5d45ee16e5daa76f6fa670b93002 *tests/data/fate/vsynth1-mpeg2-thread.mpeg2video
 801373 tests/data/fate/vsynth1-mpeg2-thread.mpeg2video
 d1658911ca83f5616c1d32abc40750de *tests/data/fate/vsynth1-mpeg2-thread.out.rawvideo
 stddev:    7.63 PSNR: 30.48 MAXDIFF:  110 bytes:  7603200/  7603200
