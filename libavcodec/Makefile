@@ -1022,6 +1022,7 @@ OBJS-$(CONFIG_PNG_PARSER)              += png_parser.o
 OBJS-$(CONFIG_PNM_PARSER)              += pnm_parser.o pnm.o
 OBJS-$(CONFIG_RV30_PARSER)             += rv34_parser.o
 OBJS-$(CONFIG_RV40_PARSER)             += rv34_parser.o
+OBJS-$(CONFIG_SBC_PARSER)              += sbc_parser.o
 OBJS-$(CONFIG_SIPR_PARSER)             += sipr_parser.o
 OBJS-$(CONFIG_TAK_PARSER)              += tak_parser.o tak.o
 OBJS-$(CONFIG_VC1_PARSER)              += vc1_parser.o vc1.o vc1data.o  \

@@ -65,6 +65,7 @@ extern AVCodecParser ff_png_parser;
 extern AVCodecParser ff_pnm_parser;
 extern AVCodecParser ff_rv30_parser;
 extern AVCodecParser ff_rv40_parser;
+extern AVCodecParser ff_sbc_parser;
 extern AVCodecParser ff_sipr_parser;
 extern AVCodecParser ff_tak_parser;
 extern AVCodecParser ff_vc1_parser;
