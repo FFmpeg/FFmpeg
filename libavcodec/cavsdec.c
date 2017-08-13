@@ -1070,10 +1070,14 @@ static int decode_pic(AVSContext *h)
     } else {
         h->alpha_offset = h->beta_offset  = 0;
     }
+
+    ret = 0;
     if (h->cur.f->pict_type == AV_PICTURE_TYPE_I) {
         do {
             check_for_slice(h);
-            decode_mb_i(h, 0);
+            ret = decode_mb_i(h, 0);
+            if (ret < 0)
+                break;
         } while (ff_cavs_next_mb(h));
     } else if (h->cur.f->pict_type == AV_PICTURE_TYPE_P) {
         do {
@@ -1109,12 +1113,12 @@ static int decode_pic(AVSContext *h)
         } while (ff_cavs_next_mb(h));
     }
     emms_c();
-    if (h->cur.f->pict_type != AV_PICTURE_TYPE_B) {
+    if (ret >= 0 && h->cur.f->pict_type != AV_PICTURE_TYPE_B) {
         av_frame_unref(h->DPB[1].f);
         FFSWAP(AVSFrame, h->cur, h->DPB[1]);
         FFSWAP(AVSFrame, h->DPB[0], h->DPB[1]);
     }
-    return 0;
+    return ret;
 }
 
 /*****************************************************************************
