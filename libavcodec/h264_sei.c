@@ -382,6 +382,14 @@ static int decode_green_metadata(H264SEIGreenMetaData *h, GetBitContext *gb)
     return 0;
 }
 
+static int decode_alternative_transfer(H264SEIAlternativeTransfer *h,
+                                       GetBitContext *gb)
+{
+    h->present = 1;
+    h->preferred_transfer_characteristics = get_bits(gb, 8);
+    return 0;
+}
+
 int ff_h264_sei_decode(H264SEIContext *h, GetBitContext *gb,
                        const H264ParamSets *ps, void *logctx)
 {
@@ -436,6 +444,9 @@ int ff_h264_sei_decode(H264SEIContext *h, GetBitContext *gb,
             break;
         case SEI_TYPE_GREEN_METADATA:
             ret = decode_green_metadata(&h->green_metadata, gb);
+            break;
+        case SEI_TYPE_ALTERNATIVE_TRANSFER:
+            ret = decode_alternative_transfer(&h->alternative_transfer, gb);
             break;
         default:
             av_log(logctx, AV_LOG_DEBUG, "unknown SEI type %d\n", type);

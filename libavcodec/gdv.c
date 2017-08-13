@@ -427,6 +427,8 @@ static int gdv_decode_frame(AVCodecContext *avctx, void *data,
     case 1:
         memset(gdv->frame + PREAMBLE_SIZE, 0, gdv->frame_size - PREAMBLE_SIZE);
     case 0:
+        if (bytestream2_get_bytes_left(gb) < 256*3)
+            return AVERROR_INVALIDDATA;
         for (i = 0; i < 256; i++) {
             unsigned r = bytestream2_get_byte(gb);
             unsigned g = bytestream2_get_byte(gb);

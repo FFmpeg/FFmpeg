@@ -508,7 +508,7 @@ static av_always_inline void blend_plane(AVFilterContext *ctx,
     int dst_hp = AV_CEIL_RSHIFT(dst_h, vsub);
     int yp = y>>vsub;
     int xp = x>>hsub;
-    uint8_t *s, *sp, *d, *dp, *a, *ap;
+    uint8_t *s, *sp, *d, *dp, *dap, *a, *da, *ap;
     int jmax, j, k, kmax;
 
     j = FFMAX(-yp, 0);
@@ -517,12 +517,14 @@ static av_always_inline void blend_plane(AVFilterContext *ctx,
                       + (yp+j)    * dst->linesize[dst_plane]
                       + dst_offset;
     ap = src->data[3] + (j<<vsub) * src->linesize[3];
+    dap = dst->data[3] + ((yp+j) << vsub) * dst->linesize[3];
 
     for (jmax = FFMIN(-yp + dst_hp, src_hp); j < jmax; j++) {
         k = FFMAX(-xp, 0);
         d = dp + (xp+k) * dst_step;
         s = sp + k;
         a = ap + (k<<hsub);
+        da = dap + ((xp+k) << hsub);
 
         for (kmax = FFMIN(-xp + dst_wp, src_wp); k < kmax; k++) {
             int alpha_v, alpha_h, alpha;
@@ -545,26 +547,28 @@ static av_always_inline void blend_plane(AVFilterContext *ctx,
                 // average alpha for color components, improve quality
                 uint8_t alpha_d;
                 if (hsub && vsub && j+1 < src_hp && k+1 < src_wp) {
-                    alpha_d = (d[0] + d[src->linesize[3]] +
-                               d[1] + d[src->linesize[3]+1]) >> 2;
+                    alpha_d = (da[0] + da[dst->linesize[3]] +
+                               da[1] + da[dst->linesize[3]+1]) >> 2;
                 } else if (hsub || vsub) {
                     alpha_h = hsub && k+1 < src_wp ?
-                        (d[0] + d[1]) >> 1 : d[0];
+                        (da[0] + da[1]) >> 1 : da[0];
                     alpha_v = vsub && j+1 < src_hp ?
-                        (d[0] + d[src->linesize[3]]) >> 1 : d[0];
+                        (da[0] + da[dst->linesize[3]]) >> 1 : da[0];
                     alpha_d = (alpha_v + alpha_h) >> 1;
                 } else
-                    alpha_d = d[0];
+                    alpha_d = da[0];
                 alpha = UNPREMULTIPLY_ALPHA(alpha, alpha_d);
             }
             *d = FAST_DIV255(*d * (255 - alpha) + *s * alpha);
             s++;
             d += dst_step;
+            da += 1 << hsub;
             a += 1 << hsub;
         }
         dp += dst->linesize[dst_plane];
         sp += src->linesize[i];
         ap += (1 << vsub) * src->linesize[3];
+        dap += (1 << vsub) * dst->linesize[3];
     }
 }
 
@@ -622,15 +626,15 @@ static av_always_inline void blend_image_yuv(AVFilterContext *ctx,
     const int dst_w = dst->width;
     const int dst_h = dst->height;
 
-    if (main_has_alpha)
-        alpha_composite(src, dst, src_w, src_h, dst_w, dst_h, x, y);
-
     blend_plane(ctx, dst, src, src_w, src_h, dst_w, dst_h, 0, 0,       0, x, y, main_has_alpha,
                 s->main_desc->comp[0].plane, s->main_desc->comp[0].offset, s->main_desc->comp[0].step);
     blend_plane(ctx, dst, src, src_w, src_h, dst_w, dst_h, 1, hsub, vsub, x, y, main_has_alpha,
                 s->main_desc->comp[1].plane, s->main_desc->comp[1].offset, s->main_desc->comp[1].step);
     blend_plane(ctx, dst, src, src_w, src_h, dst_w, dst_h, 2, hsub, vsub, x, y, main_has_alpha,
                 s->main_desc->comp[2].plane, s->main_desc->comp[2].offset, s->main_desc->comp[2].step);
+
+    if (main_has_alpha)
+        alpha_composite(src, dst, src_w, src_h, dst_w, dst_h, x, y);
 }
 
 static av_always_inline void blend_image_planar_rgb(AVFilterContext *ctx,
@@ -645,15 +649,15 @@ static av_always_inline void blend_image_planar_rgb(AVFilterContext *ctx,
     const int dst_w = dst->width;
     const int dst_h = dst->height;
 
-    if (main_has_alpha)
-        alpha_composite(src, dst, src_w, src_h, dst_w, dst_h, x, y);
-
     blend_plane(ctx, dst, src, src_w, src_h, dst_w, dst_h, 0, 0,       0, x, y, main_has_alpha,
                 s->main_desc->comp[1].plane, s->main_desc->comp[1].offset, s->main_desc->comp[1].step);
     blend_plane(ctx, dst, src, src_w, src_h, dst_w, dst_h, 1, hsub, vsub, x, y, main_has_alpha,
                 s->main_desc->comp[2].plane, s->main_desc->comp[2].offset, s->main_desc->comp[2].step);
     blend_plane(ctx, dst, src, src_w, src_h, dst_w, dst_h, 2, hsub, vsub, x, y, main_has_alpha,
                 s->main_desc->comp[0].plane, s->main_desc->comp[0].offset, s->main_desc->comp[0].step);
+
+    if (main_has_alpha)
+        alpha_composite(src, dst, src_w, src_h, dst_w, dst_h, x, y);
 }
 
 static void blend_image_yuv420(AVFilterContext *ctx, AVFrame *dst, const AVFrame *src, int x, int y)

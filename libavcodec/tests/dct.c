@@ -182,6 +182,7 @@ static int dct_error(const struct algo *dct, int test, int is_idct, int speed, c
     int err_inf, v;
     int64_t err2, ti, ti1, it1, err_sum = 0;
     int64_t sysErr[64], sysErrMax = 0;
+    int64_t err2_matrix[64], err2_max = 0;
     int maxout = 0;
     int blockSumErrMax = 0, blockSumErr;
     AVLFG prng;
@@ -194,7 +195,7 @@ static int dct_error(const struct algo *dct, int test, int is_idct, int speed, c
     err_inf = 0;
     err2 = 0;
     for (i = 0; i < 64; i++)
-        sysErr[i] = 0;
+        err2_matrix[i] = sysErr[i] = 0;
     for (it = 0; it < NB_ITS; it++) {
         init_block(block1, test, is_idct, &prng, vals);
         permute(block, block1, dct->perm_type);
@@ -221,6 +222,7 @@ static int dct_error(const struct algo *dct, int test, int is_idct, int speed, c
             v = abs(err);
             if (v > err_inf)
                 err_inf = v;
+            err2_matrix[i] += v * v;
             err2 += v * v;
             sysErr[i] += block[i] - block1[i];
             blockSumErr += v;
@@ -230,8 +232,10 @@ static int dct_error(const struct algo *dct, int test, int is_idct, int speed, c
         if (blockSumErrMax < blockSumErr)
             blockSumErrMax = blockSumErr;
     }
-    for (i = 0; i < 64; i++)
+    for (i = 0; i < 64; i++) {
         sysErrMax = FFMAX(sysErrMax, FFABS(sysErr[i]));
+        err2_max  = FFMAX(err2_max , FFABS(err2_matrix[i]));
+    }
 
     for (i = 0; i < 64; i++) {
         if (i % 8 == 0)
@@ -244,6 +248,8 @@ static int dct_error(const struct algo *dct, int test, int is_idct, int speed, c
     ome  = (double) err_sum / NB_ITS / 64;
 
     spec_err = is_idct && (err_inf > 1 || omse > 0.02 || fabs(ome) > 0.0015);
+    if (test < 2)
+        spec_err = is_idct && ((double) err2_max / NB_ITS > 0.06 || (double) sysErrMax / NB_ITS > 0.015);
 
     printf("%s %s: max_err=%d omse=%0.8f ome=%0.8f syserr=%0.8f maxout=%d blockSumErr=%d\n",
            is_idct ? "IDCT" : "DCT", dct->name, err_inf,

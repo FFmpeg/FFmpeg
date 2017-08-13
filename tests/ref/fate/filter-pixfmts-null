@@ -43,6 +43,8 @@ gray12be            9685614450f1282be433d2b07234ca1f
 gray12le            2700bd7fb3fea56e54eb03e31d6d4e57
 gray16be            08d997a3faa25a3db9d6be272d282eef
 gray16le            df65eb804360795e3e38a2701fa9641a
+gray9be             6382a14594a8b68f0ec7de25531f9334
+gray9le             4eb1dda58706436e3b69aef29b0089db
 monob               8b04f859fee6a0be856be184acd7a0b5
 monow               54d16d2c01abfd72ecdb5e51e283937c
 nv12                8e24feb2c544dc26a20047a71e4c27aa

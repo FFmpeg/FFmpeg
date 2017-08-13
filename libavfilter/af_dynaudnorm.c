@@ -460,7 +460,8 @@ static void update_gain_history(DynamicAudioNormalizerContext *s, int channel,
             int input = pre_fill_size;
 
             while (cqueue_size(s->gain_history_minimum[channel]) < pre_fill_size) {
-                initial_value = FFMIN(initial_value, cqueue_peek(s->gain_history_original[channel], ++input));
+                input++;
+                initial_value = FFMIN(initial_value, cqueue_peek(s->gain_history_original[channel], input));
                 cqueue_enqueue(s->gain_history_minimum[channel], initial_value);
             }
         }
