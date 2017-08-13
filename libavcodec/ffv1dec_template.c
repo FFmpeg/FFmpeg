@@ -20,7 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-static av_always_inline void RENAME(decode_line)(FFV1Context *s, int w,
+static av_always_inline int RENAME(decode_line)(FFV1Context *s, int w,
                                                  TYPE *sample[2],
                                                  int plane_index, int bits)
 {
@@ -30,6 +30,9 @@ static av_always_inline void RENAME(decode_line)(FFV1Context *s, int w,
     int run_count = 0;
     int run_mode  = 0;
     int run_index = s->run_index;
+
+    if (is_input_end(s))
+        return AVERROR_INVALIDDATA;
 
     if (s->slice_coding_mode == 1) {
         int i;
@@ -41,7 +44,7 @@ static av_always_inline void RENAME(decode_line)(FFV1Context *s, int w,
             }
             sample[1][x] = v;
         }
-        return;
+        return 0;
     }
 
     for (x = 0; x < w; x++) {
@@ -101,6 +104,7 @@ static av_always_inline void RENAME(decode_line)(FFV1Context *s, int w,
         sample[1][x] = av_mod_uintp2(RENAME(predict)(sample[1] + x, sample[0] + x) + (SUINT)diff, bits);
     }
     s->run_index = run_index;
+    return 0;
 }
 
 static void RENAME(decode_rgb_frame)(FFV1Context *s, uint8_t *src[3], int w, int h, int stride[3])
