@@ -142,6 +142,7 @@ EXPORTS
     av_force_cpu_flags
     av_fourcc_make_string
     av_frame_alloc
+    av_frame_apply_cropping
     av_frame_clone
     av_frame_copy
     av_frame_copy_props
@@ -261,6 +262,7 @@ EXPORTS
     av_image_copy_to_buffer
     av_image_copy_uc_from
     av_image_fill_arrays
+    av_image_fill_black
     av_image_fill_linesizes
     av_image_fill_max_pixsteps
     av_image_fill_pointers

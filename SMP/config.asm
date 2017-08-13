@@ -418,6 +418,7 @@
 %define HAVE_SNDIO 0
 %define HAVE_TEXI2HTML 0
 %define HAVE_THREADS 1
+%define HAVE_UWP 0
 %define HAVE_VAAPI_DRM 0
 %define HAVE_VAAPI_X11 0
 %define HAVE_VDPAU_X11 0
