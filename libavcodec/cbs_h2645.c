@@ -1244,6 +1244,11 @@ static int cbs_h2645_write_nal_unit(CodedBitstreamContext *ctx,
     // Overflow but we didn't notice.
     av_assert0(put_bits_count(&pbc) <= 8 * priv->write_buffer_size);
 
+    if (err < 0) {
+        // Write failed for some other reason.
+        return err;
+    }
+
     if (put_bits_count(&pbc) % 8)
         unit->data_bit_padding = 8 - put_bits_count(&pbc) % 8;
     else
