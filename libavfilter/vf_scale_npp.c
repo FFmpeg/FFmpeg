@@ -320,7 +320,11 @@ static int init_processing_chain(AVFilterContext *ctx, int in_width, int in_heig
     }
 
     if (last_stage < 0)
+    {
+        ctx->outputs[0]->hw_frames_ctx = av_buffer_ref(ctx->inputs[0]->hw_frames_ctx);
         return 0;
+    }
+
     ctx->outputs[0]->hw_frames_ctx = av_buffer_ref(s->stages[last_stage].frames_ctx);
     if (!ctx->outputs[0]->hw_frames_ctx)
         return AVERROR(ENOMEM);
