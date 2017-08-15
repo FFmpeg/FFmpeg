@@ -889,6 +889,7 @@ static int mov_read_ddts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     init_get_bits(&gb, buf, 8*ddts_size);
 
     if (c->fc->nb_streams < 1) {
+        av_free(buf);
         return 0;
     }
     st = c->fc->streams[c->fc->nb_streams-1];
@@ -896,6 +897,7 @@ static int mov_read_ddts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     st->codecpar->sample_rate = get_bits_long(&gb, 32);
     if (st->codecpar->sample_rate <= 0) {
         av_log(c->fc, AV_LOG_ERROR, "Invalid sample rate %d\n", st->codecpar->sample_rate);
+        av_free(buf);
         return AVERROR_INVALIDDATA;
     }
     skip_bits_long(&gb, 32); /* max bitrate */
@@ -923,6 +925,7 @@ static int mov_read_ddts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             ((channel_layout_code & 0x8) ? AV_CH_LOW_FREQUENCY : 0);
 
     st->codecpar->channels = av_get_channel_layout_nb_channels(st->codecpar->channel_layout);
+    av_free(buf);
 
     return 0;
 }
