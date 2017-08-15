@@ -11527,10 +11527,10 @@ The filters accept the following options:
 
 @table @option
 @item x
-Set scope X position, offset on X axis.
+Set scope X position, relative offset on X axis.
 
 @item y
-Set scope Y position, offset on Y axis.
+Set scope Y position, relative offset on Y axis.
 
 @item w
 Set scope width.
@@ -11540,6 +11540,12 @@ Set scope height.
 
 @item o
 Set window opacity. This window also holds statistics about pixel area.
+
+@item wx
+Set window X position, relative offset on X axis.
+
+@item wy
+Set window Y position, relative offset on Y axis.
 @end table
 
 @section pp
