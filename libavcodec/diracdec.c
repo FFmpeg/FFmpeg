@@ -1161,6 +1161,10 @@ static int dirac_unpack_prediction_parameters(DiracContext *s)
                 s->globalmc[ref].perspective[0]  = dirac_get_se_golomb(gb);
                 s->globalmc[ref].perspective[1]  = dirac_get_se_golomb(gb);
             }
+            if (s->globalmc[ref].perspective_exp + (uint64_t)s->globalmc[ref].zrs_exp > 30) {
+                return AVERROR_INVALIDDATA;
+            }
+
         }
     }
 
