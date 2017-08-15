@@ -90,6 +90,10 @@
         SECTION .text
     %elifidn __OUTPUT_FORMAT__,coff
         SECTION .text
+    %elifidn __OUTPUT_FORMAT__,win32
+        SECTION .rdata align=%1
+    %elif WIN64
+        SECTION .rdata align=%1
     %else
         SECTION .rodata align=%1
     %endif
