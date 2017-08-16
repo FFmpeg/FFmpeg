@@ -4,9 +4,9 @@
 ;* Copyright (C) 2005-2017 x264 project
 ;*
 ;* Authors: Loren Merritt <lorenm@u.washington.edu>
+;*          Henrik Gramner <henrik@gramner.com>
 ;*          Anton Mitrofanov <BugMaster@narod.ru>
 ;*          Fiona Glaser <fiona@x264.com>
-;*          Henrik Gramner <henrik@gramner.com>
 ;*
 ;* Permission to use, copy, modify, and/or distribute this software for any
 ;* purpose with or without fee is hereby granted, provided that the above
@@ -741,6 +741,16 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
     %ifnidn %3, ""
         PROLOGUE %3
     %endif
+%endmacro
+
+; Create a global symbol from a local label with the correct name mangling and type
+%macro cglobal_label 1
+    %if FORMAT_ELF
+        global current_function %+ %1:function hidden
+    %else
+        global current_function %+ %1
+    %endif
+    %1:
 %endmacro
 
 %macro cextern 1
