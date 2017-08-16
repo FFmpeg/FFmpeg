@@ -10669,7 +10669,7 @@ values are assumed.
 
 Refer to the official libopencv documentation for more precise
 information:
-@url{http://docs.opencv.org/master/modules/imgproc/doc/filtering.html}
+@url{http://docs.opencv.org/master/d4/d86/group__imgproc__filter.html}
 
 Several libopencv filters are supported; see the following subsections.
 
