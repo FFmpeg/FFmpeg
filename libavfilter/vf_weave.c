@@ -100,20 +100,20 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     for (i = 0; i < s->nb_planes; i++) {
         if (s->double_weave && !(inlink->frame_count_out & 1)) {
-            av_image_copy_plane(out->data[i] + out->linesize[i] * !s->first_field,
+            av_image_copy_plane(out->data[i] + out->linesize[i] * s->first_field,
                                 out->linesize[i] * 2,
                                 in->data[i], in->linesize[i],
                                 s->linesize[i], s->planeheight[i]);
-            av_image_copy_plane(out->data[i] + out->linesize[i] * s->first_field,
+            av_image_copy_plane(out->data[i] + out->linesize[i] * !s->first_field,
                                 out->linesize[i] * 2,
                                 s->prev->data[i], s->prev->linesize[i],
                                 s->linesize[i], s->planeheight[i]);
         } else {
-            av_image_copy_plane(out->data[i] + out->linesize[i] * s->first_field,
+            av_image_copy_plane(out->data[i] + out->linesize[i] * !s->first_field,
                                 out->linesize[i] * 2,
                                 in->data[i], in->linesize[i],
                                 s->linesize[i], s->planeheight[i]);
-            av_image_copy_plane(out->data[i] + out->linesize[i] * !s->first_field,
+            av_image_copy_plane(out->data[i] + out->linesize[i] * s->first_field,
                                 out->linesize[i] * 2,
                                 s->prev->data[i], s->prev->linesize[i],
                                 s->linesize[i], s->planeheight[i]);
