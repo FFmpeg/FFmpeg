@@ -2583,6 +2583,18 @@ Size / quality tradeoff: higher values are smaller / worse quality.
 @table @option
 @item low_power
 Use low-power encoding mode.
+@item coder
+Set entropy encoder (default is @emph{cabac}).  Possible values:
+
+@table @samp
+@item ac
+@item cabac
+Use CABAC.
+
+@item vlc
+@item cavlc
+Use CAVLC.
+@end table
 @end table
 
 @item hevc_vaapi
