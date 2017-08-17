@@ -23,6 +23,7 @@
 
 #include "libavutil/common.h"
 #include "libavutil/ffmath.h"
+#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "celp_filters.h"
 #include "internal.h"
@@ -118,6 +119,11 @@ static int cng_decode_frame(AVCodecContext *avctx, void *data,
         for (i = 0; i < FFMIN(avpkt->size - 1, p->order); i++) {
             p->target_refl_coef[i] = (avpkt->data[1 + i] - 127) / 128.0;
         }
+    }
+
+    if (avctx->internal->skip_samples > 10 * avctx->frame_size) {
+        avctx->internal->skip_samples = 0;
+        return AVERROR_INVALIDDATA;
     }
 
     if (p->inited) {
