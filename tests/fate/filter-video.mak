@@ -80,6 +80,30 @@ fate-filter-testsrc2-yuv444p: CMD = framecrc -lavfi testsrc2=r=7:d=10 -pix_fmt y
 FATE_FILTER-$(call ALLYES, TESTSRC2_FILTER) += fate-filter-testsrc2-rgb24
 fate-filter-testsrc2-rgb24: CMD = framecrc -lavfi testsrc2=r=7:d=10 -pix_fmt rgb24
 
+FATE_FILTER-$(call ALLYES, LAVFI_INDEV TESTSRC2_FILTER) += fate-filter-testsrc2-rgba
+fate-filter-testsrc2-rgba: CMD = framecrc -lavfi testsrc2=r=7:d=10 -pix_fmt rgba
+
+FATE_FILTER-$(call ALLYES, LAVFI_INDEV ALLRGB_FILTER) += fate-filter-allrgb
+fate-filter-allrgb: CMD = framecrc -lavfi allrgb=rate=5:duration=1 -pix_fmt rgb24
+
+FATE_FILTER-$(call ALLYES, LAVFI_INDEV ALLYUV_FILTER) += fate-filter-allyuv
+fate-filter-allyuv: CMD = framecrc -lavfi allyuv=rate=5:duration=1 -pix_fmt yuv444p
+
+FATE_FILTER-$(call ALLYES, LAVFI_INDEV RGBTESTSRC_FILTER) += fate-filter-rgbtestsrc
+fate-filter-rgbtestsrc: CMD = framecrc -lavfi rgbtestsrc=rate=5:duration=1 -pix_fmt rgb24
+
+FATE_FILTER-$(call ALLYES, LAVFI_INDEV SMPTEBARS_FILTER) += fate-filter-smptebars
+fate-filter-smptebars: CMD = framecrc -lavfi smptebars=rate=5:duration=1 -pix_fmt yuv420p
+
+FATE_FILTER-$(call ALLYES, LAVFI_INDEV SMPTEHDBARS_FILTER) += fate-filter-smptehdbars
+fate-filter-smptehdbars: CMD = framecrc -lavfi smptehdbars=rate=5:duration=1 -pix_fmt yuv444p
+
+FATE_FILTER-$(call ALLYES, LAVFI_INDEV YUVTESTSRC_FILTER) += fate-filter-yuvtestsrc-yuv444p
+fate-filter-yuvtestsrc-yuv444p: CMD = framecrc -lavfi yuvtestsrc=rate=5:duration=1 -pix_fmt yuv444p
+
+FATE_FILTER-$(call ALLYES, LAVFI_INDEV YUVTESTSRC_FILTER) += fate-filter-yuvtestsrc-yuv444p12
+fate-filter-yuvtestsrc-yuv444p12: CMD = framecrc -lavfi yuvtestsrc=rate=5:duration=1,format=yuv444p12 -pix_fmt yuv444p12le
+
 FATE_FILTER-$(call ALLYES, AVDEVICE TESTSRC_FILTER FORMAT_FILTER CONCAT_FILTER SCALE_FILTER) += fate-filter-lavd-scalenorm
 fate-filter-lavd-scalenorm: tests/data/filtergraphs/scalenorm
 fate-filter-lavd-scalenorm: CMD = framecrc -f lavfi -graph_file $(TARGET_PATH)/tests/data/filtergraphs/scalenorm -i dummy
