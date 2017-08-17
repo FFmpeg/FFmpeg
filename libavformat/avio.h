@@ -332,6 +332,15 @@ void avio_flush(AVIOContext *s);
 int avio_read(AVIOContext *s, unsigned char *buf, int size);
 
 /**
+ * Read size bytes from AVIOContext into buf. Unlike avio_read(), this is allowed
+ * to read fewer bytes than requested. The missing bytes can be read in the next
+ * call. This always tries to read at least 1 byte.
+ * Useful to reduce latency in certain cases.
+ * @return number of bytes read or AVERROR
+ */
+int avio_read_partial(AVIOContext *s, unsigned char *buf, int size);
+
+/**
  * @name Functions for reading from AVIOContext
  * @{
  *

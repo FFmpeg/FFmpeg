@@ -621,7 +621,7 @@ int ffio_read_indirect(AVIOContext *s, unsigned char *buf, int size, const unsig
     }
 }
 
-int ffio_read_partial(AVIOContext *s, unsigned char *buf, int size)
+int avio_read_partial(AVIOContext *s, unsigned char *buf, int size)
 {
     int len;
 
