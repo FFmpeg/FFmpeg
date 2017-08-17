@@ -3328,6 +3328,7 @@ static int parse_read_interval(const char *interval_spec,
             }
             interval->end = lli;
         } else {
+            interval->duration_frames = 0;
             ret = av_parse_time(&us, p, 1);
             if (ret < 0) {
                 av_log(NULL, AV_LOG_ERROR, "Invalid interval end/duration specification '%s'\n", p);
