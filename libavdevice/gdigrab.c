@@ -277,6 +277,10 @@ gdigrab_read_header(AVFormatContext *s1)
 
     if (hwnd) {
         GetClientRect(hwnd, &virtual_rect);
+	vertres=GetDeviceCaps(source_hdc, VERTRES);
+	desktopvertres = GetDeviceCaps(source_hdc, DESKTOPVERTRES);
+	virtual_rect.right = (virtual_rect.left + virtual_rect.right) * desktopvertres / vertres;
+	virtual_rect.bottom = (virtual_rect.top + virtual_rect.bottom) * desktopvertres / vertres;
     } else {
         /* desktop -- get the right height and width for scaling DPI */
         vertres = GetDeviceCaps(source_hdc, VERTRES);
@@ -467,8 +471,9 @@ static void paint_mouse_pointer(AVFormatContext *s1, struct gdigrab *gdigrab)
             goto icon_error;
         }
 
-        pos.x = ci.ptScreenPos.x - clip_rect.left - info.xHotspot;
-        pos.y = ci.ptScreenPos.y - clip_rect.top - info.yHotspot;
+        //that would keep the correct location of mouse with hidpi screens
+        pos.x = ci.ptScreenPos.x* desktopvertres / vertres - clip_rect.left - info.xHotspot;
+        pos.y = ci.ptScreenPos.y* desktopvertres / vertres - clip_rect.top - info.yHotspot;
 
         if (hwnd) {
             RECT rect;
@@ -483,17 +488,24 @@ static void paint_mouse_pointer(AVFormatContext *s1, struct gdigrab *gdigrab)
         }
 
         //that would keep the correct location of mouse with hidpi screens
-        pos.x = pos.x * desktopvertres / vertres;
-        pos.y = pos.y * desktopvertres / vertres;
+        //pos.x = pos.x * desktopvertres / vertres;
+        //pos.y = pos.y * desktopvertres / vertres;
 
         av_log(s1, AV_LOG_DEBUG, "Cursor pos (%li,%li) -> (%li,%li)\n",
                 ci.ptScreenPos.x, ci.ptScreenPos.y, pos.x, pos.y);
 
         if (pos.x >= 0 && pos.x <= clip_rect.right - clip_rect.left &&
                 pos.y >= 0 && pos.y <= clip_rect.bottom - clip_rect.top) {
-            if (!DrawIcon(gdigrab->dest_hdc, pos.x, pos.y, icon))
-                CURSOR_ERROR("Couldn't draw icon");
-        }
+        		double dpifactor=desktopvertres / vertres;
+				int xWidth=GetSystemMetrics(SM_CXCURSOR)*dpifactor;
+        		int yWidth=GetSystemMetrics(SM_CYCURSOR)*dpifactor;
+        		xWidth=xWidth-xWidth%2;
+        		yWidth=yWidth-yWidth%2;
+        		//av_log(s1, AV_LOG_WARNING, "cursor size (%i,%i)",xWidth,yWidth);
+        		if(!DrawIconEx(gdigrab->dest_hdc,pos.x,pos.y,icon,xWidth,yWidth,0,NULL,0x0003|0x0004))
+        			//av_log(s1, AV_LOG_WARNING, "error drawing icon");
+        			CURSOR_ERROR("Couldn't draw icon");
+        		}
 
 icon_error:
         if (info.hbmMask)
@@ -621,7 +633,7 @@ static int gdigrab_read_close(AVFormatContext *s1)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
     { "draw_mouse", "draw the mouse pointer", OFFSET(draw_mouse), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, DEC },
-    { "show_region", "draw border around capture area", OFFSET(show_region), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DEC },
+	{ "show_region", "draw border around capture area", OFFSET(show_region), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, DEC },
     { "framerate", "set video frame rate", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "ntsc"}, 0, INT_MAX, DEC },
     { "video_size", "set video frame size", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, DEC },
     { "offset_x", "capture area x offset", OFFSET(offset_x), AV_OPT_TYPE_INT, {.i64 = 0}, INT_MIN, INT_MAX, DEC },
