@@ -15,6 +15,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2017-09-01 - xxxxxxx - lavf 57.81.100 - avio.h
+  Add avio_read_partial().
+
 2017-09-01 - xxxxxxx - lavf 57.80.100 / 57.11.0 - avio.h
   Add avio_context_free(). From now on it must be used for freeing AVIOContext.
 

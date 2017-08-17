@@ -2136,7 +2136,7 @@ redo:
             wait_end && wait_end < av_gettime_relative())
             len = AVERROR(EAGAIN);
         else
-            len = ffio_read_partial(s->pb, rt->recvbuf, RECVBUF_SIZE);
+            len = avio_read_partial(s->pb, rt->recvbuf, RECVBUF_SIZE);
         len = pick_stream(s, &rtsp_st, rt->recvbuf, len);
         if (len > 0 && rtsp_st->transport_priv && rt->transport == RTSP_TRANSPORT_RTP)
             ff_rtp_check_and_send_back_rr(rtsp_st->transport_priv, NULL, s->pb, len);
