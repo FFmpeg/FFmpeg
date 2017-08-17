@@ -3068,11 +3068,9 @@ If the specified value is not valid, it is ignored and prior one is kept.
 
 EBU R128 loudness normalization. Includes both dynamic and linear normalization modes.
 Support for both single pass (livestreams, files) and double pass (files) modes.
-This algorithm can target IL, LRA, and maximum true peak.
-
-To accurately detect true peaks, the audio stream will be upsampled to 192 kHz.
-Use the @code{-ar} option or @code{aresample} filter to set a different output
-sample rate.
+This algorithm can target IL, LRA, and maximum true peak. To accurately detect true peaks,
+the audio stream will be upsampled to 192 kHz unless the normalization mode is linear.
+Use the @code{-ar} option or @code{aresample} filter to explicitly set an output sample rate.
 
 The filter accepts the following options:
 
