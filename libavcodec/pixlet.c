@@ -331,6 +331,9 @@ static int read_highpass(AVCodecContext *avctx, uint8_t *ptr, int plane, AVFrame
             return AVERROR_INVALIDDATA;
         }
 
+        if (a == INT32_MIN)
+            return AVERROR_INVALIDDATA;
+
         ret = read_high_coeffs(avctx, ptr + bytestream2_tell(&ctx->gb), dest, size,
                                c, (b >= FFABS(a)) ? b : a, d,
                                ctx->band[plane][i + 1].width, stride);
