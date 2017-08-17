@@ -268,7 +268,7 @@ typedef struct H264SliceContext {
                                          *   according to picture reordering in slice header */
     struct {
         uint8_t op;
-        uint8_t val;
+        uint32_t val;
     } ref_modifications[2][32];
     int nb_ref_modifications[2];
 
