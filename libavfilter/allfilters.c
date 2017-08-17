@@ -270,6 +270,7 @@ static void register_all(void)
     REGISTER_FILTER(PP7,            pp7,            vf);
     REGISTER_FILTER(PREMULTIPLY,    premultiply,    vf);
     REGISTER_FILTER(PREWITT,        prewitt,        vf);
+    REGISTER_FILTER(PSEUDOCOLOR,    pseudocolor,    vf);
     REGISTER_FILTER(PSNR,           psnr,           vf);
     REGISTER_FILTER(PULLUP,         pullup,         vf);
     REGISTER_FILTER(QP,             qp,             vf);

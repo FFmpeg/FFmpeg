@@ -11785,6 +11785,51 @@ Set value which will be multiplied with filtered result.
 Set value which will be added to filtered result.
 @end table
 
+@section pseudocolor
+
+Alter frame colors in video with pseudocolors.
+
+This filter accept the following options:
+
+@table @option
+@item c0
+set pixel first component expression
+
+@item c1
+set pixel second component expression
+
+@item c2
+set pixel third component expression
+
+@item c3
+set pixel fourth component expression, corresponds to the alpha component
+
+@item i
+set component to use as base for altering colors
+@end table
+
+Each of them specifies the expression to use for computing the lookup table for
+the corresponding pixel component values.
+
+The expressions can contain the following constants and functions:
+
+@table @option
+@item w
+@item h
+The input width and height.
+
+@item val
+The input value for the pixel component.
+
+@item ymin, umin, vmin, amin
+The minimum allowed component value.
+
+@item ymax, umax, vmax, amax
+The maximum allowed component value.
+@end table
+
+All expressions default to "val".
+
 @section psnr
 
 Obtain the average, maximum and minimum PSNR (Peak Signal to Noise
