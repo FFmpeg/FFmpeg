@@ -277,6 +277,7 @@ External library support:
   --enable-libzvbi         enable teletext support via libzvbi [no]
   --disable-lzma           disable lzma [autodetect]
   --enable-decklink        enable Blackmagic DeckLink I/O support [no]
+  --enable-libndi_newtek   enable Newteck NDI I/O support [no]
   --enable-mediacodec      enable Android MediaCodec support [no]
   --enable-libmysofa       enable libmysofa, needed for sofalizer filter [no]
   --enable-openal          enable OpenAL 1.1 capture support [no]
@@ -1508,6 +1509,7 @@ EXTERNAL_LIBRARY_GPL_LIST="
 
 EXTERNAL_LIBRARY_NONFREE_LIST="
     decklink
+    libndi_newtek
     libfdk_aac
     openssl
 "
@@ -3014,6 +3016,10 @@ decklink_indev_deps="decklink threads"
 decklink_indev_extralibs="-lstdc++"
 decklink_outdev_deps="decklink threads"
 decklink_outdev_extralibs="-lstdc++"
+libndi_newtek_indev_deps="libndi_newtek"
+libndi_newtek_indev_extralibs="-lndi"
+libndi_newtek_outdev_deps="libndi_newtek"
+libndi_newtek_outdev_extralibs="-lndi"
 dshow_indev_deps="IBaseFilter"
 dshow_indev_extralibs="-lpsapi -lole32 -lstrmiids -luuid -loleaut32 -lshlwapi"
 dv1394_indev_deps="dv1394"
@@ -5567,6 +5573,8 @@ avisynth_demuxer_extralibs='$ldl'
 cuda_extralibs='$ldl'
 decklink_outdev_extralibs="$decklink_outdev_extralibs $ldl"
 decklink_indev_extralibs="$decklink_indev_extralibs $ldl"
+libndi_newtek_outdev_extralibs="$libndi_newtek_outdev_extralibs $ldl"
+libndi_newtek_indev_extralibs="$libndi_newtek_indev_extralibs $ldl"
 frei0r_filter_extralibs='$ldl'
 frei0r_src_filter_extralibs='$ldl'
 ladspa_filter_extralibs='$ldl'
@@ -5825,6 +5833,7 @@ enabled coreimage_filter  && { check_header_objcc QuartzCore/CoreImage.h || disa
 enabled coreimagesrc_filter && { check_header_objcc QuartzCore/CoreImage.h || disable coreimagesrc_filter; }
 enabled decklink          && { { check_header DeckLinkAPI.h || die "ERROR: DeckLinkAPI.h header not found"; } &&
                                { check_cpp_condition DeckLinkAPIVersion.h "BLACKMAGIC_DECKLINK_API_VERSION >= 0x0a060100" || die "ERROR: Decklink API version must be >= 10.6.1."; } }
+enabled libndi_newtek     && { check_header Processing.NDI.Lib.h || die "ERROR: Processing.NDI.Lib.h header not found"; }
 enabled frei0r            && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
 enabled gmp               && require gmp gmp.h mpz_export -lgmp
 enabled gnutls            && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init

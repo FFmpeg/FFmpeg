@@ -34,6 +34,7 @@ version <next>:
 - floodfill video filter
 - pseudocolor video filter
 - raw G.726 muxer and demuxer, left- and right-justified
+- NewTek NDI input/output device
 
 version 3.3:
 - CrystalHD decoder moved to new decode API
