@@ -20,6 +20,9 @@ OBJS = allfilters.o                                                     \
 
 OBJS-$(HAVE_THREADS)                         += pthread.o
 
+# subsystems
+OBJS-$(CONFIG_QSVVPP)                        += qsvvpp.o
+
 # audio filters
 OBJS-$(CONFIG_AFORMAT_FILTER)                += af_aformat.o
 OBJS-$(CONFIG_AMIX_FILTER)                   += af_amix.o
@@ -75,6 +78,7 @@ OBJS-$(CONFIG_NOFORMAT_FILTER)               += vf_format.o
 OBJS-$(CONFIG_NULL_FILTER)                   += vf_null.o
 OBJS-$(CONFIG_OCV_FILTER)                    += vf_libopencv.o
 OBJS-$(CONFIG_OVERLAY_FILTER)                += vf_overlay.o
+OBJS-$(CONFIG_OVERLAY_QSV_FILTER)            += vf_overlay_qsv.o
 OBJS-$(CONFIG_PAD_FILTER)                    += vf_pad.o
 OBJS-$(CONFIG_PIXDESCTEST_FILTER)            += vf_pixdesctest.o
 OBJS-$(CONFIG_SCALE_FILTER)                  += vf_scale.o
@@ -104,6 +108,8 @@ OBJS-$(CONFIG_MOVIE_FILTER)                  += vsrc_movie.o
 OBJS-$(CONFIG_NULLSRC_FILTER)                += vsrc_nullsrc.o
 OBJS-$(CONFIG_RGBTESTSRC_FILTER)             += vsrc_testsrc.o
 OBJS-$(CONFIG_TESTSRC_FILTER)                += vsrc_testsrc.o
+
+SKIPHEADERS-$(CONFIG_QSVVPP)                 += qsvvpp.h
 
 TOOLS     = graph2dot
 TESTPROGS = filtfmts

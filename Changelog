@@ -19,6 +19,7 @@ version <next>:
 - Cinepak encoder
 - Intel QSV-accelerated MJPEG encoding
 - NVIDIA CUVID-accelerated H.264 and HEVC decoding
+- Intel QSV-accelerated overlay filter
 
 
 version 12:

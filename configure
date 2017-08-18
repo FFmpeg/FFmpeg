@@ -1790,6 +1790,7 @@ CONFIG_EXTRA="
     qsv
     qsvdec
     qsvenc
+    qsvvpp
     rangecoder
     riffdec
     riffenc
@@ -2276,6 +2277,7 @@ omx_rpi_select="omx"
 qsv_deps="libmfx"
 qsvdec_select="qsv"
 qsvenc_select="qsv"
+qsvvpp_select="qsv"
 vaapi_encode_deps="vaapi"
 
 hwupload_cuda_filter_deps="cuda"
@@ -2540,6 +2542,8 @@ hqdn3d_filter_deps="gpl"
 interlace_filter_deps="gpl"
 movie_filter_deps="avcodec avformat"
 ocv_filter_deps="libopencv"
+overlay_qsv_filter_deps="libmfx"
+overlay_qsv_filter_select="qsvvpp"
 resample_filter_deps="avresample"
 scale_filter_deps="swscale"
 scale_qsv_filter_deps="libmfx"
