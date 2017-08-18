@@ -28,12 +28,6 @@
 ALIGNMODE p6
 %endif
 
-; Use float op that give half precision but execute for around 3 cycles.
-; On Skylake & Ryzen the division is much faster (around 11c/3),
-; that makes the full precision code about 2% slower.
-; Opus also does use rsqrt approximation in their intrinsics code.
-%define USE_APPROXIMATION   1
-
 SECTION_RODATA 64
 
 const_float_abs_mask:   times 8 dd 0x7fffffff
@@ -102,17 +96,17 @@ align 16
     movaps         m4, [tmpY + r4]  ; y[i]
     movaps         m5, [tmpX + r4]  ; X[i]
 
-  %if USE_APPROXIMATION == 1
+%if !cpuflag(avx) ; for crappy ancient CPUs that have slow packed divs but fast 1/sqrt
     xorps          m0, m0
     cmpps          m0, m0, m5, 4    ; m0 = (X[i] != 0.0)
-  %endif
+%endif
 
     addps          m4, m6           ; m4 = Syy_new = y[i] + Syy_norm
     addps          m5, m7           ; m5 = Sxy_new = X[i] + Sxy_norm
 
-  %if USE_APPROXIMATION == 1
+%if !cpuflag(avx)
     andps          m5, m0           ; if(X[i] == 0) Sxy_new = 0; Prevent aproximation error from setting pulses in array padding.
-  %endif
+%endif
 
 %else
     movaps         m5, [tmpY + r4]      ; m5 = y[i]
@@ -125,7 +119,7 @@ align 16
     andps          m5, m0               ; (0<y)?m5:0
 %endif
 
-%if USE_APPROXIMATION == 1
+%if !cpuflag(avx)
     rsqrtps        m4, m4
     mulps          m5, m4           ; m5 = p = Sxy_new*approx(1/sqrt(Syy) )
 %else
@@ -261,7 +255,7 @@ align 16
     jz   %%zero_input       ; if (Sx==0) goto zero_input
 
     cvtsi2ss  xm0, dword Kd ; m0 = K
-%if USE_APPROXIMATION == 1
+%if !cpuflag(avx)
     rcpss     xm1, xm1      ; m1 = approx(1/Sx)
     mulss     xm0, xm1      ; m0 = K*(1/Sx)
 %else
