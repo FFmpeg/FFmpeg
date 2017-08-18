@@ -34,13 +34,6 @@ ALIGNMODE p6
 ; Opus also does use rsqrt approximation in their intrinsics code.
 %define USE_APPROXIMATION   1
 
-; Presearch tries to quantize by using the property Sum( abs(x[i]*K)/Sx ) = K.
-; If we use truncation for the division result then the integer Sum would be <= K.
-; By using nearest rounding we get closer approximation, but
-; we could also get more than K pulses and we have to remove the extra ones.
-; This method is the main improvement of the ffmpeg C function over the Opus original.
-%define PRESEARCH_ROUNDING  1
-
 SECTION_RODATA 64
 
 const_float_abs_mask:   times 8 dd 0x7fffffff
@@ -286,11 +279,7 @@ align 16
 %%loop_guess:
     movaps     m1, [tmpX + r4]    ; m1   = X[i]
     mulps      m2, m0, m1         ; m2   = res*X[i]
-  %if PRESEARCH_ROUNDING == 0
-    cvttps2dq  m2, m2             ; yt   = (int)truncf( res*X[i] )
-  %else
     cvtps2dq   m2, m2             ; yt   = (int)lrintf( res*X[i] )
-  %endif
     paddd      m5, m2             ; Sy  += yt
     cvtdq2ps   m2, m2             ; yt   = (float)yt
     mulps      m1, m2             ; m1   = X[i]*yt
