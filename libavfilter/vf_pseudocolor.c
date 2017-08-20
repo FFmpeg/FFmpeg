@@ -71,6 +71,14 @@ typedef struct PseudoColorContext {
     char   *comp_expr_str[4];
     AVExpr *comp_expr[4];
     float lut[4][256];
+
+    void (*filter[4])(int max, int width, int height,
+                      const uint8_t *index, const uint8_t *src,
+                      uint8_t *dst,
+                      ptrdiff_t ilinesize,
+                      ptrdiff_t slinesize,
+                      ptrdiff_t dlinesize,
+                      float *lut);
 } PseudoColorContext;
 
 #define OFFSET(x) offsetof(PseudoColorContext, x)
@@ -87,6 +95,8 @@ static const AVOption pseudocolor_options[] = {
 
 static const enum AVPixelFormat pix_fmts[] = {
     AV_PIX_FMT_GRAY8,
+    AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVA420P,
+    AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVA422P,
     AV_PIX_FMT_YUV444P, AV_PIX_FMT_GBRP,
     AV_PIX_FMT_YUVA444P, AV_PIX_FMT_GBRAP,
     AV_PIX_FMT_NONE
@@ -98,6 +108,139 @@ static int query_formats(AVFilterContext *ctx)
     if (!fmts_list)
         return AVERROR(ENOMEM);
     return ff_set_common_formats(ctx, fmts_list);
+}
+
+static void pseudocolor_filter(int max, int width, int height,
+                               const uint8_t *index,
+                               const uint8_t *src,
+                               uint8_t *dst,
+                               ptrdiff_t ilinesize,
+                               ptrdiff_t slinesize,
+                               ptrdiff_t dlinesize,
+                               float *lut)
+{
+    int x, y;
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            int v = lut[index[x]];
+
+            if (v >= 0 && v <= max) {
+                dst[x] = v;
+            } else {
+                dst[x] = src[x];
+            }
+        }
+        index += ilinesize;
+        src += slinesize;
+        dst += dlinesize;
+    }
+}
+
+static void pseudocolor_filter_11(int max, int width, int height,
+                                  const uint8_t *index,
+                                  const uint8_t *src,
+                                  uint8_t *dst,
+                                  ptrdiff_t ilinesize,
+                                  ptrdiff_t slinesize,
+                                  ptrdiff_t dlinesize,
+                                  float *lut)
+{
+    int x, y;
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            int v = lut[index[(y << 1) * ilinesize + (x << 1)]];
+
+            if (v >= 0 && v <= max) {
+                dst[x] = v;
+            } else {
+                dst[x] = src[x];
+            }
+        }
+        src += slinesize;
+        dst += dlinesize;
+    }
+}
+
+static void pseudocolor_filter_11d(int max, int width, int height,
+                                   const uint8_t *index,
+                                   const uint8_t *src,
+                                   uint8_t *dst,
+                                   ptrdiff_t ilinesize,
+                                   ptrdiff_t slinesize,
+                                   ptrdiff_t dlinesize,
+                                   float *lut)
+{
+    int x, y;
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            int v = lut[index[(y >> 1) * ilinesize + (x >> 1)]];
+
+            if (v >= 0 && v <= max) {
+                dst[x] = v;
+            } else {
+                dst[x] = src[x];
+            }
+        }
+        src += slinesize;
+        dst += dlinesize;
+    }
+}
+
+static void pseudocolor_filter_10(int max, int width, int height,
+                                  const uint8_t *index,
+                                  const uint8_t *src,
+                                  uint8_t *dst,
+                                  ptrdiff_t ilinesize,
+                                  ptrdiff_t slinesize,
+                                  ptrdiff_t dlinesize,
+                                  float *lut)
+{
+    int x, y;
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            int v = lut[index[x << 1]];
+
+            if (v >= 0 && v <= max) {
+                dst[x] = v;
+            } else {
+                dst[x] = src[x];
+            }
+        }
+        index += ilinesize;
+        src += slinesize;
+        dst += dlinesize;
+    }
+}
+
+static void pseudocolor_filter_10d(int max, int width, int height,
+                                   const uint8_t *index,
+                                   const uint8_t *src,
+                                   uint8_t *dst,
+                                   ptrdiff_t ilinesize,
+                                   ptrdiff_t slinesize,
+                                   ptrdiff_t dlinesize,
+                                   float *lut)
+{
+    int x, y;
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            int v = lut[index[x >> 1]];
+
+            if (v >= 0 && v <= max) {
+                dst[x] = v;
+            } else {
+                dst[x] = src[x];
+            }
+        }
+        index += ilinesize;
+        src += slinesize;
+        dst += dlinesize;
+    }
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -169,6 +312,46 @@ static int config_input(AVFilterLink *inlink)
         }
     }
 
+    switch (inlink->format) {
+    case AV_PIX_FMT_YUV444P:
+    case AV_PIX_FMT_YUVA444P:
+    case AV_PIX_FMT_GBRP:
+    case AV_PIX_FMT_GBRAP:
+    case AV_PIX_FMT_GRAY8:
+        s->filter[0] = s->filter[1] = s->filter[2] = s->filter[3] = pseudocolor_filter;
+        break;
+    case AV_PIX_FMT_YUV420P:
+    case AV_PIX_FMT_YUVA420P:
+        switch (s->index) {
+        case 0:
+        case 3:
+            s->filter[0] = s->filter[3] = pseudocolor_filter;
+            s->filter[1] = s->filter[2] = pseudocolor_filter_11;
+            break;
+        case 1:
+        case 2:
+            s->filter[0] = s->filter[3] = pseudocolor_filter_11d;
+            s->filter[1] = s->filter[2] = pseudocolor_filter;
+            break;
+        }
+        break;
+    case AV_PIX_FMT_YUV422P:
+    case AV_PIX_FMT_YUVA422P:
+        switch (s->index) {
+        case 0:
+        case 3:
+            s->filter[0] = s->filter[3] = pseudocolor_filter;
+            s->filter[1] = s->filter[2] = pseudocolor_filter_10;
+            break;
+        case 1:
+        case 2:
+            s->filter[0] = s->filter[3] = pseudocolor_filter_10d;
+            s->filter[1] = s->filter[2] = pseudocolor_filter;
+            break;
+        }
+        break;
+    }
+
     return 0;
 }
 
@@ -178,7 +361,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     PseudoColorContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out;
-    int x, y, plane;
+    int plane;
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
@@ -191,21 +374,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         const uint8_t *index = in->data[s->index];
         const uint8_t *src = in->data[plane];
         uint8_t *dst = out->data[plane];
+        ptrdiff_t ilinesize = in->linesize[s->index];
+        ptrdiff_t slinesize = in->linesize[plane];
+        ptrdiff_t dlinesize = out->linesize[plane];
 
-        for (y = 0; y < s->height[plane]; y++) {
-            for (x = 0; x < s->width[plane]; x++) {
-                int v = s->lut[plane][index[x]];
-
-                if (v >= 0 && v <= s->max) {
-                    dst[x] = v;
-                } else {
-                    dst[x] = src[x];
-                }
-            }
-            index += in->linesize[s->index];
-            src += in->linesize[plane];
-            dst += out->linesize[plane];
-        }
+        s->filter[plane](s->max, s->width[plane], s->height[plane],
+                         index, src, dst, ilinesize, slinesize,
+                         dlinesize, s->lut[plane]);
     }
 
     av_frame_free(&in);
