@@ -292,6 +292,7 @@
     <ClCompile Include="..\libavfilter\vf_pixdesctest.c" />
     <ClCompile Include="..\libavfilter\vf_pp.c" />
     <ClCompile Include="..\libavfilter\vf_premultiply.c" />
+    <ClCompile Include="..\libavfilter\vf_pseudocolor.c" />
     <ClCompile Include="..\libavfilter\vf_qp.c" />
     <ClCompile Include="..\libavfilter\vf_random.c" />
     <ClCompile Include="..\libavfilter\vf_readeia608.c" />
@@ -325,6 +326,7 @@
     <ClCompile Include="..\libavfilter\vf_thumbnail.c" />
     <ClCompile Include="..\libavfilter\vf_tile.c" />
     <ClCompile Include="..\libavfilter\vf_tinterlace.c" />
+    <ClCompile Include="..\libavfilter\vf_tonemap.c" />
     <ClCompile Include="..\libavfilter\vf_transpose.c" />
     <ClCompile Include="..\libavfilter\vf_unsharp.c" />
     <ClCompile Include="..\libavfilter\vf_uspp.c" />

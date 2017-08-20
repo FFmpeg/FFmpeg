@@ -103,6 +103,7 @@
     <YASM Include="..\libavcodec\x86\me_cmp.asm" />
     <YASM Include="..\libavcodec\x86\imdct36.asm" />
     <YASM Include="..\libavcodec\x86\mpegvideoencdsp.asm" />
+    <YASM Include="..\libavcodec\x86\opus_pvq_search.asm" />
     <YASM Include="..\libavcodec\x86\pixblockdsp.asm" />
     <YASM Include="..\libavcodec\x86\qpeldsp.asm" />
     <YASM Include="..\libavcodec\x86\rv34dsp.asm" />
@@ -957,6 +958,7 @@
     <ClCompile Include="..\libavcodec\x86\dcadsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\synth_filter_init.c" />
     <ClCompile Include="..\libavcodec\x86\dnxhdenc_init.c" />
+    <ClCompile Include="..\libavcodec\x86\opus_dsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\hevcdsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\jpeg2000dsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\mlpdsp_init.c" />
