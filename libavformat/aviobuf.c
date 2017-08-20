@@ -222,6 +222,8 @@ int64_t avio_seek(AVIOContext *s, int64_t offset, int whence)
         offset1 = pos + (s->buf_ptr - s->buffer);
         if (offset == 0)
             return offset1;
+        if (offset > INT64_MAX - offset1)
+            return AVERROR(EINVAL);
         offset += offset1;
     }
     if (offset < 0)
