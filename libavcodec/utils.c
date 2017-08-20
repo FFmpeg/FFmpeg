@@ -1568,7 +1568,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
 
         if (!avctx->rc_initial_buffer_occupancy)
-            avctx->rc_initial_buffer_occupancy = avctx->rc_buffer_size * 3 / 4;
+            avctx->rc_initial_buffer_occupancy = avctx->rc_buffer_size * 3LL / 4;
 
         if (avctx->ticks_per_frame && avctx->time_base.num &&
             avctx->ticks_per_frame > INT_MAX / avctx->time_base.num) {
