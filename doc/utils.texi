@@ -864,6 +864,9 @@ Load the value of the internal variable with number
 @var{var}, which was previously stored with st(@var{var}, @var{expr}).
 The function returns the loaded value.
 
+@item lerp(x, y, z)
+Return linear interpolation between @var{x} and @var{y} by amount of @var{z}.
+
 @item log(x)
 Compute natural logarithm of @var{x}.
 

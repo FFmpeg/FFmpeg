@@ -36,6 +36,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/eval.h"
 #include "libavutil/internal.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
@@ -179,6 +180,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
         AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRAP16,
+        AV_PIX_FMT_GBRPF32, AV_PIX_FMT_GBRAPF32,
         AV_PIX_FMT_NONE
     };
     int ret;
@@ -429,7 +431,7 @@ static void format_init(zimg_image_format *format, AVFrame *frame, const AVPixFm
     format->subsample_w = desc->log2_chroma_w;
     format->subsample_h = desc->log2_chroma_h;
     format->depth = desc->comp[0].depth;
-    format->pixel_type = desc->comp[0].depth > 8 ? ZIMG_PIXEL_WORD : ZIMG_PIXEL_BYTE;
+    format->pixel_type = (desc->flags & AV_PIX_FMT_FLAG_FLOAT) ? ZIMG_PIXEL_FLOAT : desc->comp[0].depth > 8 ? ZIMG_PIXEL_WORD : ZIMG_PIXEL_BYTE;
     format->color_family = (desc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_COLOR_RGB : ZIMG_COLOR_YUV;
     format->matrix_coefficients = (desc->flags & AV_PIX_FMT_FLAG_RGB) ? ZIMG_MATRIX_RGB : colorspace == -1 ? convert_matrix(frame->colorspace) : colorspace;
     format->color_primaries = primaries == -1 ? convert_primaries(frame->color_primaries) : primaries;
@@ -573,13 +575,13 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
             s->alpha_src_format.width = in->width;
             s->alpha_src_format.height = in->height;
             s->alpha_src_format.depth = desc->comp[0].depth;
-            s->alpha_src_format.pixel_type = desc->comp[0].depth > 8 ? ZIMG_PIXEL_WORD : ZIMG_PIXEL_BYTE;
+            s->alpha_src_format.pixel_type = (desc->flags & AV_PIX_FMT_FLAG_FLOAT) ? ZIMG_PIXEL_FLOAT : desc->comp[0].depth > 8 ? ZIMG_PIXEL_WORD : ZIMG_PIXEL_BYTE;
             s->alpha_src_format.color_family = ZIMG_COLOR_GREY;
 
             s->alpha_dst_format.width = out->width;
             s->alpha_dst_format.height = out->height;
             s->alpha_dst_format.depth = odesc->comp[0].depth;
-            s->alpha_dst_format.pixel_type = odesc->comp[0].depth > 8 ? ZIMG_PIXEL_WORD : ZIMG_PIXEL_BYTE;
+            s->alpha_dst_format.pixel_type = (desc->flags & AV_PIX_FMT_FLAG_FLOAT) ? ZIMG_PIXEL_FLOAT : odesc->comp[0].depth > 8 ? ZIMG_PIXEL_WORD : ZIMG_PIXEL_BYTE;
             s->alpha_dst_format.color_family = ZIMG_COLOR_GREY;
 
             zimg_filter_graph_free(s->alpha_graph);
@@ -641,10 +643,19 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
             goto fail;
         }
     } else if (odesc->flags & AV_PIX_FMT_FLAG_ALPHA) {
-        int y;
+        int x, y;
 
-        for (y = 0; y < outlink->h; y++)
-            memset(out->data[3] + y * out->linesize[3], 0xff, outlink->w);
+        if (odesc->flags & AV_PIX_FMT_FLAG_FLOAT) {
+            for (y = 0; y < out->height; y++) {
+                for (x = 0; x < out->width; x++) {
+                    AV_WN32(out->data[3] + x * odesc->comp[3].step + y * out->linesize[3],
+                            av_float2int(1.0f));
+                }
+            }
+        } else {
+            for (y = 0; y < outlink->h; y++)
+                memset(out->data[3] + y * out->linesize[3], 0xff, outlink->w);
+        }
     }
 
 fail:

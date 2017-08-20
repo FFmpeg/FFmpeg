@@ -155,7 +155,7 @@ struct AVExpr {
         e_pow, e_mul, e_div, e_add,
         e_last, e_st, e_while, e_taylor, e_root, e_floor, e_ceil, e_trunc, e_round,
         e_sqrt, e_not, e_random, e_hypot, e_gcd,
-        e_if, e_ifnot, e_print, e_bitand, e_bitor, e_between, e_clip, e_atan2
+        e_if, e_ifnot, e_print, e_bitand, e_bitor, e_between, e_clip, e_atan2, e_lerp,
     } type;
     double value; // is sign in other types
     union {
@@ -207,6 +207,12 @@ static double eval_expr(Parser *p, AVExpr *e)
             double d = eval_expr(p, e->param[0]);
             return e->value * (d >= eval_expr(p, e->param[1]) &&
                                d <= eval_expr(p, e->param[2]));
+        }
+        case e_lerp: {
+            double v0 = eval_expr(p, e->param[0]);
+            double v1 = eval_expr(p, e->param[1]);
+            double f  = eval_expr(p, e->param[2]);
+            return v0 + (v1 - v0) * f;
         }
         case e_print: {
             double x = eval_expr(p, e->param[0]);
@@ -456,6 +462,7 @@ static int parse_primary(AVExpr **e, Parser *p)
     else if (strmatch(next, "between"))d->type = e_between;
     else if (strmatch(next, "clip"  )) d->type = e_clip;
     else if (strmatch(next, "atan2" )) d->type = e_atan2;
+    else if (strmatch(next, "lerp"  )) d->type = e_lerp;
     else {
         for (i=0; p->func1_names && p->func1_names[i]; i++) {
             if (strmatch(next, p->func1_names[i])) {
@@ -654,6 +661,7 @@ static int verify_expr(AVExpr *e)
                    && (!e->param[2] || verify_expr(e->param[2]));
         case e_between:
         case e_clip:
+        case e_lerp:
             return verify_expr(e->param[0]) &&
                    verify_expr(e->param[1]) &&
                    verify_expr(e->param[2]);

@@ -33,8 +33,8 @@
                                        float *lowband_scratch, int fill)
 
 struct CeltPVQ {
-    DECLARE_ALIGNED(32, int,   qcoeff      )[176];
-    DECLARE_ALIGNED(32, float, hadamard_tmp)[176];
+    DECLARE_ALIGNED(32, int,   qcoeff      )[256];
+    DECLARE_ALIGNED(32, float, hadamard_tmp)[256];
 
     float (*pvq_search)(float *X, int *y, int K, int N);
 
@@ -45,6 +45,7 @@ struct CeltPVQ {
 };
 
 int  ff_celt_pvq_init  (struct CeltPVQ **pvq);
+void ff_opus_dsp_init_x86(struct CeltPVQ *s);
 void ff_celt_pvq_uninit(struct CeltPVQ **pvq);
 
 #endif /* AVCODEC_OPUS_PVQ_H */

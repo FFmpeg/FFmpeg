@@ -190,6 +190,14 @@ static int dc1394_read_header(AVFormatContext *c)
 
     /* FIXME: To select a specific camera I need to search in list its guid */
     dc1394->camera = dc1394_camera_new (dc1394->d, list->ids[0].guid);
+
+    if (!dc1394->camera) {
+         av_log(c, AV_LOG_ERROR, "Unable to open camera with guid 0x%"PRIx64"\n",
+                list->ids[0].guid);
+         dc1394_camera_free_list(list);
+         goto out;
+    }
+
     if (list->num > 1) {
         av_log(c, AV_LOG_INFO, "Working with the first camera found\n");
     }

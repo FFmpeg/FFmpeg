@@ -526,9 +526,11 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    if (avctx->thread_count > MAX_THREADS) {
-        av_log(avctx, AV_LOG_ERROR, "too many threads\n");
-        return AVERROR(EINVAL);
+    if (avctx->active_thread_type == FF_THREAD_SLICE) {
+        if (avctx->thread_count > MAX_THREADS) {
+            av_log(avctx, AV_LOG_ERROR, "too many threads\n");
+            return AVERROR(EINVAL);
+        }
     }
 
     if (avctx->qmax <= 1) {
@@ -537,9 +539,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
     ctx->thread[0] = ctx;
-    for (i = 1; i < avctx->thread_count; i++) {
-        ctx->thread[i] = av_malloc(sizeof(DNXHDEncContext));
-        memcpy(ctx->thread[i], ctx, sizeof(DNXHDEncContext));
+    if (avctx->active_thread_type == FF_THREAD_SLICE) {
+        for (i = 1; i < avctx->thread_count; i++) {
+            ctx->thread[i] = av_malloc(sizeof(DNXHDEncContext));
+            memcpy(ctx->thread[i], ctx, sizeof(DNXHDEncContext));
+        }
     }
 
     return 0;

@@ -544,18 +544,21 @@ static int64_t get_out_samples(struct SwrContext *s, int in_samples) {
 }
 
 static int resample_flush(struct SwrContext *s) {
+    ResampleContext *c = s->resample;
     AudioData *a= &s->in_buffer;
     int i, j, ret;
-    if((ret = swri_realloc_audio(a, s->in_buffer_index + 2*s->in_buffer_count)) < 0)
+    int reflection = (FFMIN(s->in_buffer_count, c->filter_length) + 1) / 2;
+
+    if((ret = swri_realloc_audio(a, s->in_buffer_index + s->in_buffer_count + reflection)) < 0)
         return ret;
     av_assert0(a->planar);
     for(i=0; i<a->ch_count; i++){
-        for(j=0; j<s->in_buffer_count; j++){
+        for(j=0; j<reflection; j++){
             memcpy(a->ch[i] + (s->in_buffer_index+s->in_buffer_count+j  )*a->bps,
                 a->ch[i] + (s->in_buffer_index+s->in_buffer_count-j-1)*a->bps, a->bps);
         }
     }
-    s->in_buffer_count += (s->in_buffer_count+1)/2;
+    s->in_buffer_count += reflection;
     return 0;
 }
 

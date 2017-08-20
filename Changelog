@@ -32,6 +32,7 @@ version <next>:
 - unpremultiply video filter
 - tlut2 video filter
 - floodfill video filter
+- pseudocolor video filter
 
 version 3.3:
 - CrystalHD decoder moved to new decode API

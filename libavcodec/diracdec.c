@@ -442,7 +442,7 @@ static av_cold int dirac_decode_end(AVCodecContext *avctx)
 static inline int coeff_unpack_golomb(GetBitContext *gb, int qfactor, int qoffset)
 {
     int coeff = dirac_get_se_golomb(gb);
-    const int sign = FFSIGN(coeff);
+    const unsigned sign = FFSIGN(coeff);
     if (coeff)
         coeff = sign*((sign * coeff * qfactor + qoffset) >> 2);
     return coeff;
@@ -1161,6 +1161,10 @@ static int dirac_unpack_prediction_parameters(DiracContext *s)
                 s->globalmc[ref].perspective[0]  = dirac_get_se_golomb(gb);
                 s->globalmc[ref].perspective[1]  = dirac_get_se_golomb(gb);
             }
+            if (s->globalmc[ref].perspective_exp + (uint64_t)s->globalmc[ref].zrs_exp > 30) {
+                return AVERROR_INVALIDDATA;
+            }
+
         }
     }
 

@@ -3068,7 +3068,9 @@ If the specified value is not valid, it is ignored and prior one is kept.
 
 EBU R128 loudness normalization. Includes both dynamic and linear normalization modes.
 Support for both single pass (livestreams, files) and double pass (files) modes.
-This algorithm can target IL, LRA, and maximum true peak.
+This algorithm can target IL, LRA, and maximum true peak. To accurately detect true peaks,
+the audio stream will be upsampled to 192 kHz unless the normalization mode is linear.
+Use the @code{-ar} option or @code{aresample} filter to explicitly set an output sample rate.
 
 The filter accepts the following options:
 
@@ -11527,10 +11529,10 @@ The filters accept the following options:
 
 @table @option
 @item x
-Set scope X position, offset on X axis.
+Set scope X position, relative offset on X axis.
 
 @item y
-Set scope Y position, offset on Y axis.
+Set scope Y position, relative offset on Y axis.
 
 @item w
 Set scope width.
@@ -11540,6 +11542,12 @@ Set scope height.
 
 @item o
 Set window opacity. This window also holds statistics about pixel area.
+
+@item wx
+Set window X position, relative offset on X axis.
+
+@item wy
+Set window Y position, relative offset on Y axis.
 @end table
 
 @section pp
@@ -11776,6 +11784,51 @@ Set value which will be multiplied with filtered result.
 @item delta
 Set value which will be added to filtered result.
 @end table
+
+@section pseudocolor
+
+Alter frame colors in video with pseudocolors.
+
+This filter accept the following options:
+
+@table @option
+@item c0
+set pixel first component expression
+
+@item c1
+set pixel second component expression
+
+@item c2
+set pixel third component expression
+
+@item c3
+set pixel fourth component expression, corresponds to the alpha component
+
+@item i
+set component to use as base for altering colors
+@end table
+
+Each of them specifies the expression to use for computing the lookup table for
+the corresponding pixel component values.
+
+The expressions can contain the following constants and functions:
+
+@table @option
+@item w
+@item h
+The input width and height.
+
+@item val
+The input value for the pixel component.
+
+@item ymin, umin, vmin, amin
+The minimum allowed component value.
+
+@item ymax, umax, vmax, amax
+The maximum allowed component value.
+@end table
+
+All expressions default to "val".
 
 @section psnr
 
@@ -14436,6 +14489,113 @@ Vertical low-pass filtering can only be enabled for @option{mode}
 
 @end table
 
+@section tonemap
+Tone map colors from different dynamic ranges.
+
+This filter expects data in single precision floating point, as it needs to
+operate on (and can output) out-of-range values. Another filter, such as
+@ref{zscale}, is needed to convert the resulting frame to a usable format.
+
+The tonemapping algorithms implemented only work on linear light, so input
+data should be linearized beforehand (and possibly correctly tagged).
+
+@example
+ffmpeg -i INPUT -vf zscale=transfer=linear,tonemap=clip,zscale=transfer=bt709,format=yuv420p OUTPUT
+@end example
+
+@subsection Options
+The filter accepts the following options.
+
+@table @option
+@item tonemap
+Set the tone map algorithm to use.
+
+Possible values are:
+@table @var
+@item none
+Do not apply any tone map, only desaturate overbright pixels.
+
+@item clip
+Hard-clip any out-of-range values. Use it for perfect color accuracy for
+in-range values, while distorting out-of-range values.
+
+@item linear
+Stretch the entire reference gamut to a linear multiple of the display.
+
+@item gamma
+Fit a logarithmic transfer between the tone curves.
+
+@item reinhard
+Preserve overall image brightness with a simple curve, using nonlinear
+contrast, which results in flattening details and degrading color accuracy.
+
+@item hable
+Peserve both dark and bright details better than @var{reinhard}, at the cost
+of slightly darkening everything. Use it when detail preservation is more
+important than color and brightness accuracy.
+
+@item mobius
+Smoothly map out-of-range values, while retaining contrast and colors for
+in-range material as much as possible. Use it when color accuracy is more
+important than detail preservation.
+@end table
+
+Default is none.
+
+@item param
+Tune the tone mapping algorithm.
+
+This affects the following algorithms:
+@table @var
+@item none
+Ignored.
+
+@item linear
+Specifies the scale factor to use while stretching.
+Default to 1.0.
+
+@item gamma
+Specifies the exponent of the function.
+Default to 1.8.
+
+@item clip
+Specify an extra linear coefficient to multiply into the signal before clipping.
+Default to 1.0.
+
+@item reinhard
+Specify the local contrast coefficient at the display peak.
+Default to 0.5, which means that in-gamut values will be about half as bright
+as when clipping.
+
+@item hable
+Ignored.
+
+@item mobius
+Specify the transition point from linear to mobius transform. Every value
+below this point is guaranteed to be mapped 1:1. The higher the value, the
+more accurate the result will be, at the cost of losing bright details.
+Default to 0.3, which due to the steep initial slope still preserves in-range
+colors fairly accurately.
+@end table
+
+@item desat
+Apply desaturation for highlights that exceed this level of brightness. The
+higher the parameter, the more color information will be preserved. This
+setting helps prevent unnaturally blown-out colors for super-highlights, by
+(smoothly) turning into white instead. This makes images feel more natural,
+at the cost of reducing information about out-of-range colors.
+
+The default of 2.0 is somewhat conservative and will mostly just apply to
+skies or directly sunlit surfaces. A setting of 0.0 disables this option.
+
+This option works only if the input frame has a supported color tag.
+
+@item peak
+Override signal/nominal/reference peak with this value. Useful when the
+embedded peak information in display metadata is not reliable or when tone
+mapping from a lower range to a higher range.
+@end table
+
 @section transpose
 
 Transpose rows with columns in the input video and optionally flip it.
@@ -15621,6 +15781,7 @@ zoompan=z='min(max(zoom,pzoom)+0.0015,1.5)':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih
 @end example
 @end itemize
 
+@anchor{zscale}
 @section zscale
 Scale (resize) the input video, using the z.lib library:
 https://github.com/sekrit-twc/zimg.
