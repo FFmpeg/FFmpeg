@@ -293,7 +293,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
         H264RawSEI *sei;
         H264RawSEIPayload *payload;
         H264RawSEIUserDataUnregistered *udu;
-        int sei_pos;
+        int sei_pos, sei_new;
 
         for (i = 0; i < au->nb_units; i++) {
             if (au->units[i].type == H264_NAL_SEI ||
@@ -305,8 +305,10 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
 
         if (sei_pos < au->nb_units &&
             au->units[sei_pos].type == H264_NAL_SEI) {
+            sei_new = 0;
             sei = au->units[sei_pos].content;
         } else {
+            sei_new = 1;
             sei = &ctx->sei_nal;
             memset(sei, 0, sizeof(*sei));
 
@@ -353,6 +355,12 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
             udu->data_length = strlen(sei_udu_string);
 
             payload->payload_size = 16 + udu->data_length;
+
+            if (!sei_new) {
+                // This will be freed by the existing internal
+                // reference in fragment_uninit().
+                sei_udu_string = NULL;
+            }
 
         } else {
         invalid_user_data:
