@@ -70,7 +70,7 @@ typedef struct PseudoColorContext {
     double var_values[VAR_VARS_NB];
     char   *comp_expr_str[4];
     AVExpr *comp_expr[4];
-    float lut[4][256];
+    float lut[4][256*256];
 
     void (*filter[4])(int max, int width, int height,
                       const uint8_t *index, const uint8_t *src,
@@ -94,11 +94,28 @@ static const AVOption pseudocolor_options[] = {
 };
 
 static const enum AVPixelFormat pix_fmts[] = {
-    AV_PIX_FMT_GRAY8,
+    AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY16,
     AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVA420P,
     AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVA422P,
     AV_PIX_FMT_YUV444P, AV_PIX_FMT_GBRP,
     AV_PIX_FMT_YUVA444P, AV_PIX_FMT_GBRAP,
+    AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUVA422P9,
+    AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUVA420P9,
+    AV_PIX_FMT_YUV444P9, AV_PIX_FMT_YUVA444P9,
+    AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUVA420P10,
+    AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUVA422P10,
+    AV_PIX_FMT_YUV444P10, AV_PIX_FMT_YUVA444P10,
+    AV_PIX_FMT_YUV420P12,
+    AV_PIX_FMT_YUV422P12,
+    AV_PIX_FMT_YUV444P12,
+    AV_PIX_FMT_YUV420P14,
+    AV_PIX_FMT_YUV422P14,
+    AV_PIX_FMT_YUV444P14,
+    AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUVA420P16,
+    AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUVA422P16,
+    AV_PIX_FMT_YUV444P16, AV_PIX_FMT_YUVA444P16,
+    AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRAP10,
+    AV_PIX_FMT_GBRP16, AV_PIX_FMT_GBRAP16,
     AV_PIX_FMT_NONE
 };
 
@@ -243,6 +260,162 @@ static void pseudocolor_filter_10d(int max, int width, int height,
     }
 }
 
+static void pseudocolor_filter_16(int max, int width, int height,
+                                  const uint8_t *iindex,
+                                  const uint8_t *ssrc,
+                                  uint8_t *ddst,
+                                  ptrdiff_t ilinesize,
+                                  ptrdiff_t slinesize,
+                                  ptrdiff_t dlinesize,
+                                  float *lut)
+{
+    const uint16_t *index = (const uint16_t *)iindex;
+    const uint16_t *src = (const uint16_t *)ssrc;
+    uint16_t *dst = (uint16_t *)ddst;
+    int x, y;
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            int v = lut[index[x]];
+
+            if (v >= 0 && v <= max) {
+                dst[x] = v;
+            } else {
+                dst[x] = src[x];
+            }
+        }
+        index += ilinesize / 2;
+        src += slinesize / 2;
+        dst += dlinesize / 2;
+    }
+}
+
+static void pseudocolor_filter_16_10(int max, int width, int height,
+                                     const uint8_t *iindex,
+                                     const uint8_t *ssrc,
+                                     uint8_t *ddst,
+                                     ptrdiff_t ilinesize,
+                                     ptrdiff_t slinesize,
+                                     ptrdiff_t dlinesize,
+                                     float *lut)
+{
+    const uint16_t *index = (const uint16_t *)iindex;
+    const uint16_t *src = (const uint16_t *)ssrc;
+    uint16_t *dst = (uint16_t *)ddst;
+    int x, y;
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            int v = lut[index[x << 1]];
+
+            if (v >= 0 && v <= max) {
+                dst[x] = v;
+            } else {
+                dst[x] = src[x];
+            }
+        }
+        index += ilinesize / 2;
+        src += slinesize / 2;
+        dst += dlinesize / 2;
+    }
+}
+
+static void pseudocolor_filter_16_10d(int max, int width, int height,
+                                      const uint8_t *iindex,
+                                      const uint8_t *ssrc,
+                                      uint8_t *ddst,
+                                      ptrdiff_t ilinesize,
+                                      ptrdiff_t slinesize,
+                                      ptrdiff_t dlinesize,
+                                      float *lut)
+{
+    const uint16_t *index = (const uint16_t *)iindex;
+    const uint16_t *src = (const uint16_t *)ssrc;
+    uint16_t *dst = (uint16_t *)ddst;
+    int x, y;
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            int v = lut[index[x >> 1]];
+
+            if (v >= 0 && v <= max) {
+                dst[x] = v;
+            } else {
+                dst[x] = src[x];
+            }
+        }
+        index += ilinesize / 2;
+        src += slinesize / 2;
+        dst += dlinesize / 2;
+    }
+}
+
+static void pseudocolor_filter_16_11(int max, int width, int height,
+                                     const uint8_t *iindex,
+                                     const uint8_t *ssrc,
+                                     uint8_t *ddst,
+                                     ptrdiff_t ilinesize,
+                                     ptrdiff_t slinesize,
+                                     ptrdiff_t dlinesize,
+                                     float *lut)
+{
+    const uint16_t *index = (const uint16_t *)iindex;
+    const uint16_t *src = (const uint16_t *)ssrc;
+    uint16_t *dst = (uint16_t *)ddst;
+    int x, y;
+
+    ilinesize /= 2;
+    dlinesize /= 2;
+    slinesize /= 2;
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            int v = lut[index[(y << 1) * ilinesize + (x << 1)]];
+
+            if (v >= 0 && v <= max) {
+                dst[x] = v;
+            } else {
+                dst[x] = src[x];
+            }
+        }
+        src += slinesize;
+        dst += dlinesize;
+    }
+}
+
+static void pseudocolor_filter_16_11d(int max, int width, int height,
+                                      const uint8_t *iindex,
+                                      const uint8_t *ssrc,
+                                      uint8_t *ddst,
+                                      ptrdiff_t ilinesize,
+                                      ptrdiff_t slinesize,
+                                      ptrdiff_t dlinesize,
+                                      float *lut)
+{
+    const uint16_t *index = (const uint16_t *)iindex;
+    const uint16_t *src = (const uint16_t *)ssrc;
+    uint16_t *dst = (uint16_t *)ddst;
+    int x, y;
+
+    ilinesize /= 2;
+    dlinesize /= 2;
+    slinesize /= 2;
+
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
+            int v = lut[index[(y >> 1) * ilinesize + (x >> 1)]];
+
+            if (v >= 0 && v <= max) {
+                dst[x] = v;
+            } else {
+                dst[x] = src[x];
+            }
+        }
+        src += slinesize;
+        dst += dlinesize;
+    }
+}
+
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -347,6 +520,64 @@ static int config_input(AVFilterLink *inlink)
         case 2:
             s->filter[0] = s->filter[3] = pseudocolor_filter_10d;
             s->filter[1] = s->filter[2] = pseudocolor_filter;
+            break;
+        }
+        break;
+    case AV_PIX_FMT_YUV444P9:
+    case AV_PIX_FMT_YUVA444P9:
+    case AV_PIX_FMT_YUV444P10:
+    case AV_PIX_FMT_YUVA444P10:
+    case AV_PIX_FMT_YUV444P12:
+    case AV_PIX_FMT_YUV444P14:
+    case AV_PIX_FMT_YUV444P16:
+    case AV_PIX_FMT_YUVA444P16:
+    case AV_PIX_FMT_GBRP10:
+    case AV_PIX_FMT_GBRAP10:
+    case AV_PIX_FMT_GBRP16:
+    case AV_PIX_FMT_GBRAP16:
+    case AV_PIX_FMT_GRAY10:
+    case AV_PIX_FMT_GRAY16:
+        s->filter[0] = s->filter[1] = s->filter[2] = s->filter[3] = pseudocolor_filter_16;
+        break;
+    case AV_PIX_FMT_YUV422P9:
+    case AV_PIX_FMT_YUVA422P9:
+    case AV_PIX_FMT_YUV422P10:
+    case AV_PIX_FMT_YUVA422P10:
+    case AV_PIX_FMT_YUV422P12:
+    case AV_PIX_FMT_YUV422P14:
+    case AV_PIX_FMT_YUV422P16:
+    case AV_PIX_FMT_YUVA422P16:
+        switch (s->index) {
+        case 0:
+        case 3:
+            s->filter[0] = s->filter[3] = pseudocolor_filter_16;
+            s->filter[1] = s->filter[2] = pseudocolor_filter_16_10;
+            break;
+        case 1:
+        case 2:
+            s->filter[0] = s->filter[3] = pseudocolor_filter_16_10d;
+            s->filter[1] = s->filter[2] = pseudocolor_filter_16;
+            break;
+        }
+        break;
+    case AV_PIX_FMT_YUV420P9:
+    case AV_PIX_FMT_YUVA420P9:
+    case AV_PIX_FMT_YUV420P10:
+    case AV_PIX_FMT_YUVA420P10:
+    case AV_PIX_FMT_YUV420P12:
+    case AV_PIX_FMT_YUV420P14:
+    case AV_PIX_FMT_YUV420P16:
+    case AV_PIX_FMT_YUVA420P16:
+        switch (s->index) {
+        case 0:
+        case 3:
+            s->filter[0] = s->filter[3] = pseudocolor_filter_16;
+            s->filter[1] = s->filter[2] = pseudocolor_filter_16_11;
+            break;
+        case 1:
+        case 2:
+            s->filter[0] = s->filter[3] = pseudocolor_filter_16_11d;
+            s->filter[1] = s->filter[2] = pseudocolor_filter_16;
             break;
         }
         break;
