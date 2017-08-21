@@ -40,6 +40,8 @@ typedef struct ThreadData {
     int tff;
 } ThreadData;
 
+#define MAX_ALIGN 8
+
 #define CHECK(j)\
     {   int score = FFABS(cur[mrefs - 1 + (j)] - cur[prefs - 1 - (j)])\
                   + FFABS(cur[mrefs  +(j)] - cur[prefs  -(j)])\
@@ -123,17 +125,20 @@ static void filter_edges(void *dst1, void *prev1, void *cur1, void *next1,
     uint8_t *prev2 = parity ? prev : cur ;
     uint8_t *next2 = parity ? cur  : next;
 
+    const int edge = MAX_ALIGN - 1;
+
     /* Only edge pixels need to be processed here.  A constant value of false
      * for is_not_edge should let the compiler ignore the whole branch. */
     FILTER(0, 3, 0)
 
-    dst  = (uint8_t*)dst1  + w - 3;
-    prev = (uint8_t*)prev1 + w - 3;
-    cur  = (uint8_t*)cur1  + w - 3;
-    next = (uint8_t*)next1 + w - 3;
+    dst  = (uint8_t*)dst1  + w - edge;
+    prev = (uint8_t*)prev1 + w - edge;
+    cur  = (uint8_t*)cur1  + w - edge;
+    next = (uint8_t*)next1 + w - edge;
     prev2 = (uint8_t*)(parity ? prev : cur);
     next2 = (uint8_t*)(parity ? cur  : next);
 
+    FILTER(w - edge, w - 3, 1)
     FILTER(w - 3, w, 0)
 }
 
@@ -166,18 +171,22 @@ static void filter_edges_16bit(void *dst1, void *prev1, void *cur1, void *next1,
     int x;
     uint16_t *prev2 = parity ? prev : cur ;
     uint16_t *next2 = parity ? cur  : next;
+
+    const int edge = MAX_ALIGN / 2 - 1;
+
     mrefs /= 2;
     prefs /= 2;
 
     FILTER(0, 3, 0)
 
-    dst   = (uint16_t*)dst1  + w - 3;
-    prev  = (uint16_t*)prev1 + w - 3;
-    cur   = (uint16_t*)cur1  + w - 3;
-    next  = (uint16_t*)next1 + w - 3;
+    dst   = (uint16_t*)dst1  + w - edge;
+    prev  = (uint16_t*)prev1 + w - edge;
+    cur   = (uint16_t*)cur1  + w - edge;
+    next  = (uint16_t*)next1 + w - edge;
     prev2 = (uint16_t*)(parity ? prev : cur);
     next2 = (uint16_t*)(parity ? cur  : next);
 
+    FILTER(w - edge, w - 3, 1)
     FILTER(w - 3, w, 0)
 }
 
@@ -192,6 +201,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     int slice_start = jobnr * slice_h;
     int slice_end   = (jobnr == nb_jobs - 1) ? td->h : (jobnr + 1) * slice_h;
     int y;
+    int edge = 3 + MAX_ALIGN / df - 1;
 
     /* filtering reads 3 pixels to the left/right; to avoid invalid reads,
      * we need to call the c variant which avoids this for border pixels
@@ -204,7 +214,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             uint8_t *dst  = &td->frame->data[td->plane][y * td->frame->linesize[td->plane]];
             int     mode  = y == 1 || y + 2 == td->h ? 2 : s->mode;
             s->filter_line(dst + pix_3, prev + pix_3, cur + pix_3,
-                           next + pix_3, td->w - 6,
+                           next + pix_3, td->w - edge,
                            y + 1 < td->h ? refs : -refs,
                            y ? -refs : refs,
                            td->parity ^ td->tff, mode);
