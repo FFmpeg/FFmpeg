@@ -1281,6 +1281,8 @@ static int decode_ics_info(AACContext *ac, IndividualChannelStream *ics,
     const MPEG4AudioConfig *const m4ac = &ac->oc[1].m4ac;
     const int aot = m4ac->object_type;
     const int sampling_index = m4ac->sampling_index;
+    int ret_fail = AVERROR_INVALIDDATA;
+
     if (aot != AOT_ER_AAC_ELD) {
         if (get_bits1(gb)) {
             av_log(ac->avctx, AV_LOG_ERROR, "Reserved bit set.\n");
@@ -1331,8 +1333,10 @@ static int decode_ics_info(AACContext *ac, IndividualChannelStream *ics,
                 ics->num_swb       =    ff_aac_num_swb_512[sampling_index];
                 ics->tns_max_bands =  ff_tns_max_bands_512[sampling_index];
             }
-            if (!ics->num_swb || !ics->swb_offset)
-                return AVERROR_BUG;
+            if (!ics->num_swb || !ics->swb_offset) {
+                ret_fail = AVERROR_BUG;
+                goto fail;
+            }
         } else {
             ics->swb_offset    =    ff_swb_offset_1024[sampling_index];
             ics->num_swb       =   ff_aac_num_swb_1024[sampling_index];
@@ -1356,7 +1360,8 @@ static int decode_ics_info(AACContext *ac, IndividualChannelStream *ics,
                 if (aot == AOT_ER_AAC_LD) {
                     av_log(ac->avctx, AV_LOG_ERROR,
                            "LTP in ER AAC LD not yet implemented.\n");
-                    return AVERROR_PATCHWELCOME;
+                    ret_fail = AVERROR_PATCHWELCOME;
+                    goto fail;
                 }
                 if ((ics->ltp.present = get_bits(gb, 1)))
                     decode_ltp(&ics->ltp, gb, ics->max_sfb);
@@ -1375,7 +1380,7 @@ static int decode_ics_info(AACContext *ac, IndividualChannelStream *ics,
     return 0;
 fail:
     ics->max_sfb = 0;
-    return AVERROR_INVALIDDATA;
+    return ret_fail;
 }
 
 /**
