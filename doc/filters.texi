@@ -2667,6 +2667,9 @@ Default is linlog.
 @item fft2
 Enable 2-channel convolution using complex FFT. This improves speed significantly.
 Default is disabled.
+
+@item min_phase
+Enable minimum phase impulse response. Default is disabled.
 @end table
 
 @subsection Examples
