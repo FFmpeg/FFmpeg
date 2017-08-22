@@ -10,6 +10,14 @@ FATE_MAPCHAN-$(CONFIG_CHANNELMAP_FILTER) += fate-mapchan-silent-mono
 fate-mapchan-silent-mono: tests/data/asynth-22050-1.wav
 fate-mapchan-silent-mono: CMD = md5 -i $(TARGET_PATH)/tests/data/asynth-22050-1.wav -map_channel -1 -map_channel 0.0.0 -fflags +bitexact -f wav
 
+FATE_MAPCHAN-$(CONFIG_CHANNELMAP_FILTER) += fate-mapchan-2ch-extract-ch0-ch2-trailing
+fate-mapchan-2ch-extract-ch0-ch2-trailing: tests/data/asynth-44100-2.wav
+fate-mapchan-2ch-extract-ch0-ch2-trailing: CMD = md5 -i $(TARGET_PATH)/tests/data/asynth-44100-2.wav -map_channel 0.0.0 -map_channel 0.0.2? -fflags +bitexact -f wav
+
+FATE_MAPCHAN-$(CONFIG_CHANNELMAP_FILTER) += fate-mapchan-3ch-extract-ch0-ch2-trailing
+fate-mapchan-3ch-extract-ch0-ch2-trailing: tests/data/asynth-44100-3.wav
+fate-mapchan-3ch-extract-ch0-ch2-trailing: CMD = md5 -i $(TARGET_PATH)/tests/data/asynth-44100-3.wav -map_channel 0.0.0 -map_channel 0.0.2? -fflags +bitexact -f wav
+
 FATE_MAPCHAN = $(FATE_MAPCHAN-yes)
 
 FATE_FFMPEG += $(FATE_MAPCHAN)
