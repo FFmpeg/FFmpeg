@@ -1682,6 +1682,16 @@ static inline int show_tags(WriterContext *w, AVDictionary *tags, int section_id
     return ret;
 }
 
+static void print_color_space(WriterContext *w, enum AVColorSpace color_space)
+{
+    const char *val = av_get_colorspace_name(color_space);
+    if (!val || color_space == AVCOL_SPC_UNSPECIFIED) {
+        print_str_opt("color_space", "unknown");
+    } else {
+        print_str("color_space", val);
+    }
+}
+
 static void show_packet(WriterContext *w, AVFormatContext *fmt_ctx, AVPacket *pkt, int packet_idx)
 {
     char val_str[128];
@@ -2101,9 +2111,8 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
                 print_str    ("color_range", dec_ctx->color_range == AVCOL_RANGE_MPEG ? "tv": "pc");
             else
                 print_str_opt("color_range", "N/A");
-            s = av_get_colorspace_name(dec_ctx->colorspace);
-            if (s) print_str    ("color_space", s);
-            else   print_str_opt("color_space", "unknown");
+            print_color_space(w, dec_ctx->colorspace);
+
             if (dec_ctx->timecode_frame_start >= 0) {
                 char tcbuf[AV_TIMECODE_STR_SIZE];
                 av_timecode_make_mpeg_tc_string(tcbuf, dec_ctx->timecode_frame_start);
