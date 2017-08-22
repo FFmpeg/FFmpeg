@@ -1789,6 +1789,26 @@ static void print_pkt_side_data(WriterContext *w,
     writer_print_section_footer(w);
 }
 
+static void print_color_range(WriterContext *w, enum AVColorRange color_range, const char *fallback)
+{
+    const char *val = av_color_range_name(color_range);
+    if (!val || color_range == AVCOL_RANGE_UNSPECIFIED) {
+        print_str_opt("color_range", fallback);
+    } else {
+        print_str("color_range", val);
+    }
+}
+
+static void print_color_space(WriterContext *w, enum AVColorSpace color_space)
+{
+    const char *val = av_color_space_name(color_space);
+    if (!val || color_space == AVCOL_SPC_UNSPECIFIED) {
+        print_str_opt("color_space", "unknown");
+    } else {
+        print_str("color_space", val);
+    }
+}
+
 static void print_primaries(WriterContext *w, enum AVColorPrimaries color_primaries)
 {
     const char *val = av_color_primaries_name(color_primaries);
@@ -1796,6 +1816,26 @@ static void print_primaries(WriterContext *w, enum AVColorPrimaries color_primar
         print_str_opt("color_primaries", "unknown");
     } else {
         print_str("color_primaries", val);
+    }
+}
+
+static void print_color_trc(WriterContext *w, enum AVColorTransferCharacteristic color_trc)
+{
+    const char *val = av_color_transfer_name(color_trc);
+    if (!val || color_trc == AVCOL_TRC_UNSPECIFIED) {
+        print_str_opt("color_transfer", "unknown");
+    } else {
+        print_str("color_transfer", val);
+    }
+}
+
+static void print_chroma_location(WriterContext *w, enum AVChromaLocation chroma_location)
+{
+    const char *val = av_chroma_location_name(chroma_location);
+    if (!val || chroma_location == AVCHROMA_LOC_UNSPECIFIED) {
+        print_str_opt("chroma_location", "unspecified");
+    } else {
+        print_str("chroma_location", val);
     }
 }
 
@@ -2253,26 +2293,12 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
         if (s) print_str    ("pix_fmt", s);
         else   print_str_opt("pix_fmt", "unknown");
         print_int("level",   par->level);
-        if (par->color_range != AVCOL_RANGE_UNSPECIFIED)
-            print_str    ("color_range", av_color_range_name(par->color_range));
-        else
-            print_str_opt("color_range", "N/A");
 
-        s = av_get_colorspace_name(par->color_space);
-        if (s) print_str    ("color_space", s);
-        else   print_str_opt("color_space", "unknown");
-
-        if (par->color_trc != AVCOL_TRC_UNSPECIFIED)
-            print_str("color_transfer", av_color_transfer_name(par->color_trc));
-        else
-            print_str_opt("color_transfer", av_color_transfer_name(par->color_trc));
-
+        print_color_range(w, par->color_range, "N/A");
+        print_color_space(w, par->color_space);
+        print_color_trc(w, par->color_trc);
         print_primaries(w, par->color_primaries);
-
-        if (par->chroma_location != AVCHROMA_LOC_UNSPECIFIED)
-            print_str("chroma_location", av_chroma_location_name(par->chroma_location));
-        else
-            print_str_opt("chroma_location", av_chroma_location_name(par->chroma_location));
+        print_chroma_location(w, par->chroma_location);
 
 #if FF_API_PRIVATE_OPT
         if (dec_ctx && dec_ctx->timecode_frame_start >= 0) {
