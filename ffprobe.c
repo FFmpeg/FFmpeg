@@ -1899,6 +1899,16 @@ static void print_pkt_side_data(WriterContext *w,
     writer_print_section_footer(w);
 }
 
+static void print_primaries(WriterContext *w, enum AVColorPrimaries color_primaries)
+{
+    const char *val = av_color_primaries_name(color_primaries);
+    if (!val || color_primaries == AVCOL_PRI_UNSPECIFIED) {
+        print_str_opt("color_primaries", "unknown");
+    } else {
+        print_str("color_primaries", val);
+    }
+}
+
 static void clear_log(int need_lock)
 {
     int i;
@@ -2420,10 +2430,7 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
         else
             print_str_opt("color_transfer", av_color_transfer_name(par->color_trc));
 
-        if (par->color_primaries != AVCOL_PRI_UNSPECIFIED)
-            print_str("color_primaries", av_color_primaries_name(par->color_primaries));
-        else
-            print_str_opt("color_primaries", av_color_primaries_name(par->color_primaries));
+        print_primaries(w, par->color_primaries);
 
         if (par->chroma_location != AVCHROMA_LOC_UNSPECIFIED)
             print_str("chroma_location", av_chroma_location_name(par->chroma_location));
