@@ -285,7 +285,7 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame);
  */
 AVCPBProperties *ff_add_cpb_side_data(AVCodecContext *avctx);
 
-#if defined(_MSC_VER) && CONFIG_SHARED
+#if defined(_WIN32) && CONFIG_SHARED
 #ifdef BUILDING_avcodec
 #    define av_export_avcodec __declspec(dllexport)
 #else
