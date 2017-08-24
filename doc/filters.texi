@@ -4854,13 +4854,13 @@ of @var{all_mode}. Default value is @code{normal}.
 Available values for component modes are:
 @table @samp
 @item addition
-@item addition128
+@item grainmerge
 @item and
 @item average
 @item burn
 @item darken
 @item difference
-@item difference128
+@item grainextract
 @item divide
 @item dodge
 @item freeze
@@ -4987,7 +4987,7 @@ blend=all_expr=if(gt(X,Y*(W/H)),A,B)
 @item
 Display differences between the current and the previous frame:
 @example
-tblend=all_mode=difference128
+tblend=all_mode=grainextract
 @end example
 @end itemize
 
