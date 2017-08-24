@@ -338,6 +338,8 @@ static int mv_read_header(AVFormatContext *avctx)
             uint32_t pos   = avio_rb32(pb);
             uint32_t asize = avio_rb32(pb);
             uint32_t vsize = avio_rb32(pb);
+            if (avio_feof(pb))
+                return AVERROR_INVALIDDATA;
             avio_skip(pb, 8);
             av_add_index_entry(ast, pos, timestamp, asize, 0, AVINDEX_KEYFRAME);
             av_add_index_entry(vst, pos + asize, i, vsize, 0, AVINDEX_KEYFRAME);
