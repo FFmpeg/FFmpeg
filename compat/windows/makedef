@@ -112,7 +112,10 @@ for line in $(cat ${vscript} | tr '\t' ' '); do
 '
 done
 
-dump=$(dumpbin -linkermember:1 ${libname})
+dump=$(dumpbin -linkermember:1 ${libname} |
+          sed -e '/public symbols/,$!d' -e '/^ \{1,\}Summary/,$d' -e "s/ \{1,\}${prefix}/ /" -e 's/ \{1,\}/ /g' |
+          tail -n +2 |
+          cut -d' ' -f3)
 
 rm ${libname}
 
@@ -121,9 +124,6 @@ list=""
 for exp in ${regex}; do
     list="${list}"'
 '$(echo "${dump}" |
-          sed -e '/public symbols/,$!d' -e '/^ \{1,\}Summary/,$d' -e "s/ \{1,\}${prefix}/ /" -e 's/ \{1,\}/ /g' |
-          tail -n +2 |
-          cut -d' ' -f3 |
           grep "^${exp}" |
           sed -e 's/^/    /')
 done
