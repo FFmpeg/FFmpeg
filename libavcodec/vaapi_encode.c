@@ -36,13 +36,17 @@ static int vaapi_encode_make_packed_header(AVCodecContext *avctx,
     VAAPIEncodeContext *ctx = avctx->priv_data;
     VAStatus vas;
     VABufferID param_buffer, data_buffer;
+    VABufferID *tmp;
     VAEncPackedHeaderParameterBuffer params = {
         .type = type,
         .bit_length = bit_len,
         .has_emulation_bytes = 1,
     };
 
-    av_assert0(pic->nb_param_buffers + 2 <= MAX_PARAM_BUFFERS);
+    tmp = av_realloc_array(pic->param_buffers, sizeof(*tmp), pic->nb_param_buffers + 2);
+    if (!tmp)
+        return AVERROR(ENOMEM);
+    pic->param_buffers = tmp;
 
     vas = vaCreateBuffer(ctx->hwctx->display, ctx->va_context,
                          VAEncPackedHeaderParameterBufferType,
@@ -77,9 +81,13 @@ static int vaapi_encode_make_param_buffer(AVCodecContext *avctx,
 {
     VAAPIEncodeContext *ctx = avctx->priv_data;
     VAStatus vas;
+    VABufferID *tmp;
     VABufferID buffer;
 
-    av_assert0(pic->nb_param_buffers + 1 <= MAX_PARAM_BUFFERS);
+    tmp = av_realloc_array(pic->param_buffers, sizeof(*tmp), pic->nb_param_buffers + 1);
+    if (!tmp)
+        return AVERROR(ENOMEM);
+    pic->param_buffers = tmp;
 
     vas = vaCreateBuffer(ctx->hwctx->display, ctx->va_context,
                          type, len, 1, data, &buffer);
@@ -313,15 +321,14 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
         }
     }
 
-    av_assert0(pic->nb_slices <= MAX_PICTURE_SLICES);
+    pic->slices = av_mallocz_array(pic->nb_slices, sizeof(*pic->slices));
+    if (!pic->slices) {
+        err = AVERROR(ENOMEM);
+        goto fail;
+    }
     for (i = 0; i < pic->nb_slices; i++) {
-        slice = av_mallocz(sizeof(*slice));
-        if (!slice) {
-            err = AVERROR(ENOMEM);
-            goto fail;
-        }
+        slice = &pic->slices[i];
         slice->index = i;
-        pic->slices[i] = slice;
 
         if (ctx->codec->slice_params_size > 0) {
             slice->codec_slice_params = av_mallocz(ctx->codec->slice_params_size);
@@ -425,8 +432,16 @@ fail_with_picture:
 fail:
     for(i = 0; i < pic->nb_param_buffers; i++)
         vaDestroyBuffer(ctx->hwctx->display, pic->param_buffers[i]);
+    for (i = 0; i < pic->nb_slices; i++) {
+        if (pic->slices) {
+            av_freep(&pic->slices[i].priv_data);
+            av_freep(&pic->slices[i].codec_slice_params);
+        }
+    }
 fail_at_end:
     av_freep(&pic->codec_picture_params);
+    av_freep(&pic->param_buffers);
+    av_freep(&pic->slices);
     av_frame_free(&pic->recon_image);
     av_buffer_unref(&pic->output_buffer_ref);
     pic->output_buffer = VA_INVALID_ID;
@@ -535,15 +550,18 @@ static int vaapi_encode_free(AVCodecContext *avctx,
         vaapi_encode_discard(avctx, pic);
 
     for (i = 0; i < pic->nb_slices; i++) {
-        av_freep(&pic->slices[i]->priv_data);
-        av_freep(&pic->slices[i]->codec_slice_params);
-        av_freep(&pic->slices[i]);
+        if (pic->slices) {
+            av_freep(&pic->slices[i].priv_data);
+            av_freep(&pic->slices[i].codec_slice_params);
+        }
     }
     av_freep(&pic->codec_picture_params);
 
     av_frame_free(&pic->input_image);
     av_frame_free(&pic->recon_image);
 
+    av_freep(&pic->param_buffers);
+    av_freep(&pic->slices);
     // Output buffer should already be destroyed.
     av_assert0(pic->output_buffer == VA_INVALID_ID);
 
