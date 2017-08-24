@@ -93,6 +93,7 @@ OBJS-$(CONFIG_TRANSPOSE_FILTER)              += vf_transpose.o
 OBJS-$(CONFIG_TRIM_FILTER)                   += trim.o
 OBJS-$(CONFIG_UNSHARP_FILTER)                += vf_unsharp.o
 OBJS-$(CONFIG_VFLIP_FILTER)                  += vf_vflip.o
+OBJS-$(CONFIG_VPP_QSV_FILTER)                += vf_vpp_qsv.o
 OBJS-$(CONFIG_YADIF_FILTER)                  += vf_yadif.o
 
 OBJS-$(CONFIG_NULLSINK_FILTER)               += vsink_nullsink.o
