@@ -28,12 +28,12 @@
 #include <stdint.h>
 
 #include "libavutil/float_dsp.h"
-#include "libavutil/internal.h"
 
 #include "avcodec.h"
 #include "dcadsp.h"
 #include "fmtconvert.h"
 #include "get_bits.h"
+#include "internal.h"
 
 #define DCA_PRIM_CHANNELS_MAX  (7)
 #define DCA_ABITS_MAX         (32)      /* Should be 28 */
@@ -288,7 +288,7 @@ typedef struct DCAContext {
     FmtConvertContext fmt_conv;
 } DCAContext;
 
-extern av_export const uint32_t avpriv_dca_sample_rates[16];
+extern av_export_avcodec const uint32_t avpriv_dca_sample_rates[16];
 
 /**
  * Convert bitstream to one representation based on sync marker

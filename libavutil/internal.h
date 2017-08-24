@@ -57,12 +57,6 @@
 #endif
 #endif
 
-#if defined(_MSC_VER) && CONFIG_SHARED
-#    define av_export __declspec(dllimport)
-#else
-#    define av_export
-#endif
-
 #if HAVE_PRAGMA_DEPRECATED
 #    if defined(__ICL)
 #        define FF_DISABLE_DEPRECATION_WARNINGS __pragma(warning(push)) __pragma(warning(disable:1478))
