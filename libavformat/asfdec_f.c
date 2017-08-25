@@ -749,12 +749,14 @@ static int asf_read_marker(AVFormatContext *s, int64_t size)
     count = avio_rl32(pb);    // markers count
     avio_rl16(pb);            // reserved 2 bytes
     name_len = avio_rl16(pb); // name length
-    for (i = 0; i < name_len; i++)
-        avio_r8(pb); // skip the name
+    avio_skip(pb, name_len);
 
     for (i = 0; i < count; i++) {
         int64_t pres_time;
         int name_len;
+
+        if (avio_feof(pb))
+            return AVERROR_INVALIDDATA;
 
         avio_rl64(pb);             // offset, 8 bytes
         pres_time = avio_rl64(pb); // presentation time
