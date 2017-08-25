@@ -283,6 +283,24 @@ used to end the output video at the length of the shortest input file,
 which in this case is @file{input.mp4} as the GIF in this example loops
 infinitely.
 
+@section hls
+
+HLS demuxer
+
+It accepts the following options:
+
+@table @option
+@item live_start_index
+segment index to start live streams at (negative values are from the end).
+
+@item allowed_extensions
+',' separated list of file extensions that hls is allowed to access.
+
+@item max_reload
+Maximum number of times a insufficient list is attempted to be reloaded.
+Default value is 1000.
+@end table
+
 @section image2
 
 Image file demuxer.
