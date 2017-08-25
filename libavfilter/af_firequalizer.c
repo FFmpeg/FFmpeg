@@ -554,6 +554,7 @@ static void generate_min_phase_kernel(FIREqualizerContext *s, float *rdft_buf)
 {
     int k, cepstrum_len = s->cepstrum_len, rdft_len = s->rdft_len;
     double norm = 2.0 / cepstrum_len;
+    double minval = 1e-7 / rdft_len;
 
     memset(s->cepstrum_buf, 0, cepstrum_len * sizeof(*s->cepstrum_buf));
     memcpy(s->cepstrum_buf, rdft_buf, rdft_len/2 * sizeof(*rdft_buf));
@@ -561,11 +562,11 @@ static void generate_min_phase_kernel(FIREqualizerContext *s, float *rdft_buf)
 
     av_rdft_calc(s->cepstrum_rdft, s->cepstrum_buf);
 
-    s->cepstrum_buf[0] = log(FFMAX(s->cepstrum_buf[0], 1e-10));
-    s->cepstrum_buf[1] = log(FFMAX(s->cepstrum_buf[1], 1e-10));
+    s->cepstrum_buf[0] = log(FFMAX(s->cepstrum_buf[0], minval));
+    s->cepstrum_buf[1] = log(FFMAX(s->cepstrum_buf[1], minval));
 
     for (k = 2; k < cepstrum_len; k += 2) {
-        s->cepstrum_buf[k] = log(FFMAX(s->cepstrum_buf[k], 1e-10));
+        s->cepstrum_buf[k] = log(FFMAX(s->cepstrum_buf[k], minval));
         s->cepstrum_buf[k+1] = 0;
     }
 
