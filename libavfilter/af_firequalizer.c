@@ -362,11 +362,11 @@ static void dump_fir(AVFilterContext *ctx, FILE *fp, int ch)
     double vx, ya, yb;
 
     if (!s->min_phase) {
-    s->analysis_buf[0] *= s->rdft_len/2;
-    for (x = 1; x <= center; x++) {
-        s->analysis_buf[x] *= s->rdft_len/2;
-        s->analysis_buf[s->analysis_rdft_len - x] *= s->rdft_len/2;
-    }
+        s->analysis_buf[0] *= s->rdft_len/2;
+        for (x = 1; x <= center; x++) {
+            s->analysis_buf[x] *= s->rdft_len/2;
+            s->analysis_buf[s->analysis_rdft_len - x] *= s->rdft_len/2;
+        }
     } else {
         for (x = 0; x < s->fir_len; x++)
             s->analysis_buf[x] *= s->rdft_len/2;
@@ -729,10 +729,10 @@ static int generate_kernel(AVFilterContext *ctx, const char *gain, const char *g
         }
 
         if (!s->min_phase) {
-        rdft_buf[s->rdft_len-1] = rdft_buf[1];
-        for (k = 0; k < s->rdft_len/2; k++)
-            rdft_buf[k] = rdft_buf[2*k];
-        rdft_buf[s->rdft_len/2] = rdft_buf[s->rdft_len-1];
+            rdft_buf[s->rdft_len-1] = rdft_buf[1];
+            for (k = 0; k < s->rdft_len/2; k++)
+                rdft_buf[k] = rdft_buf[2*k];
+            rdft_buf[s->rdft_len/2] = rdft_buf[s->rdft_len-1];
         }
 
         if (dump_fp)
@@ -846,17 +846,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     int ch;
 
     if (!s->min_phase) {
-    for (ch = 0; ch + 1 < inlink->channels && s->fft_ctx; ch += 2) {
-        fast_convolute2(s, s->kernel_buf, (FFTComplex *)(s->conv_buf + 2 * ch * s->rdft_len),
-                        s->conv_idx + ch, (float *) frame->extended_data[ch],
-                        (float *) frame->extended_data[ch+1], frame->nb_samples);
-    }
+        for (ch = 0; ch + 1 < inlink->channels && s->fft_ctx; ch += 2) {
+            fast_convolute2(s, s->kernel_buf, (FFTComplex *)(s->conv_buf + 2 * ch * s->rdft_len),
+                            s->conv_idx + ch, (float *) frame->extended_data[ch],
+                            (float *) frame->extended_data[ch+1], frame->nb_samples);
+        }
 
-    for ( ; ch < inlink->channels; ch++) {
-        fast_convolute(s, s->kernel_buf + (s->multi ? ch * s->rdft_len : 0),
-                       s->conv_buf + 2 * ch * s->rdft_len, s->conv_idx + ch,
-                       (float *) frame->extended_data[ch], frame->nb_samples);
-    }
+        for ( ; ch < inlink->channels; ch++) {
+            fast_convolute(s, s->kernel_buf + (s->multi ? ch * s->rdft_len : 0),
+                        s->conv_buf + 2 * ch * s->rdft_len, s->conv_idx + ch,
+                        (float *) frame->extended_data[ch], frame->nb_samples);
+        }
     } else {
         for (ch = 0; ch < inlink->channels; ch++) {
             fast_convolute_nonlinear(s, s->kernel_buf + (s->multi ? ch * s->rdft_len : 0),
