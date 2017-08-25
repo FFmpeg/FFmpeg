@@ -11833,6 +11833,16 @@ The maximum allowed component value.
 
 All expressions default to "val".
 
+@subsection Examples
+
+@itemize
+@item
+Change too high luma values to gradient:
+@example
+pseudocolor='if(between(val,ymax,amax),lerp(ymin,ymax,(val-ymax)/(amax-ymax)),-1):if(between(val,ymax,amax),lerp(umax,umin,(val-ymax)/(amax-ymax)),-1):if(between(val,ymax,amax),lerp(vmin,vmax,(val-ymax)/(amax-ymax)),-1):-1'
+@end example
+@end itemize
+
 @section psnr
 
 Obtain the average, maximum and minimum PSNR (Peak Signal to Noise
