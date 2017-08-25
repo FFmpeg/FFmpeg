@@ -839,13 +839,15 @@ static av_cold int vaapi_encode_h265_configure(AVCodecContext *avctx)
                "%d / %d / %d for IDR- / P- / B-frames.\n",
                priv->fixed_qp_idr, priv->fixed_qp_p, priv->fixed_qp_b);
 
-    } else if (ctx->va_rc_mode == VA_RC_CBR) {
+    } else if (ctx->va_rc_mode == VA_RC_CBR ||
+               ctx->va_rc_mode == VA_RC_VBR) {
         // These still need to be  set for pic_init_qp/slice_qp_delta.
         priv->fixed_qp_idr = 30;
         priv->fixed_qp_p   = 30;
         priv->fixed_qp_b   = 30;
 
-        av_log(avctx, AV_LOG_DEBUG, "Using constant-bitrate = %d bps.\n",
+        av_log(avctx, AV_LOG_DEBUG, "Using %s-bitrate = %d bps.\n",
+               ctx->va_rc_mode == VA_RC_CBR ? "constant" : "variable",
                avctx->bit_rate);
 
     } else {
@@ -905,9 +907,12 @@ static av_cold int vaapi_encode_h265_init(AVCodecContext *avctx)
     }
     ctx->va_entrypoint = VAEntrypointEncSlice;
 
-    if (avctx->bit_rate > 0)
-        ctx->va_rc_mode = VA_RC_CBR;
-    else
+    if (avctx->bit_rate > 0) {
+        if (avctx->rc_max_rate == avctx->bit_rate)
+            ctx->va_rc_mode = VA_RC_CBR;
+        else
+            ctx->va_rc_mode = VA_RC_VBR;
+    } else
         ctx->va_rc_mode = VA_RC_CQP;
 
     ctx->va_packed_headers =
