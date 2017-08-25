@@ -483,7 +483,7 @@ fail:
 static av_cold int init(AVFilterContext *ctx)
 {
     MixContext *s = ctx->priv;
-    int i;
+    int i, ret;
 
     for (i = 0; i < s->nb_inputs; i++) {
         char name[32];
@@ -496,7 +496,10 @@ static av_cold int init(AVFilterContext *ctx)
             return AVERROR(ENOMEM);
         pad.filter_frame   = filter_frame;
 
-        ff_insert_inpad(ctx, i, &pad);
+        if ((ret = ff_insert_inpad(ctx, i, &pad)) < 0) {
+            av_freep(&pad.name);
+            return ret;
+        }
     }
 
     s->fdsp = avpriv_float_dsp_alloc(0);
