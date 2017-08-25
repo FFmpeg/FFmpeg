@@ -660,7 +660,7 @@ static int config_input(AVFilterLink *inlink)
 static av_cold int init(AVFilterContext *ctx)
 {
     HeadphoneContext *s = ctx->priv;
-    int i;
+    int i, ret;
 
     AVFilterPad pad = {
         .name         = "in0",
@@ -668,7 +668,8 @@ static av_cold int init(AVFilterContext *ctx)
         .config_props = config_input,
         .filter_frame = filter_frame,
     };
-    ff_insert_inpad(ctx, 0, &pad);
+    if ((ret = ff_insert_inpad(ctx, 0, &pad)) < 0)
+        return ret;
 
     if (!s->map) {
         av_log(ctx, AV_LOG_ERROR, "Valid mapping must be set.\n");
@@ -690,7 +691,10 @@ static av_cold int init(AVFilterContext *ctx)
         };
         if (!name)
             return AVERROR(ENOMEM);
-        ff_insert_inpad(ctx, i, &pad);
+        if ((ret = ff_insert_inpad(ctx, i, &pad)) < 0) {
+            av_freep(&pad.name);
+            return ret;
+        }
     }
 
     s->fdsp = avpriv_float_dsp_alloc(0);
