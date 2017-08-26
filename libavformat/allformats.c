@@ -132,9 +132,9 @@ static void register_all(void)
     REGISTER_DEMUXER (FRM,              frm);
     REGISTER_DEMUXER (FSB,              fsb);
     REGISTER_MUXDEMUX(G722,             g722);
-    REGISTER_DEMUXER (G726,             g726);
-    REGISTER_DEMUXER (G726LE,           g726le);
     REGISTER_MUXDEMUX(G723_1,           g723_1);
+    REGISTER_MUXDEMUX(G726,             g726);
+    REGISTER_MUXDEMUX(G726LE,           g726le);
     REGISTER_DEMUXER (G729,             g729);
     REGISTER_DEMUXER (GDV,              gdv);
     REGISTER_DEMUXER (GENH,             genh);
