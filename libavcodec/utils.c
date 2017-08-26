@@ -1757,7 +1757,7 @@ static int get_audio_frame_duration(enum AVCodecID id, int sr, int ch, int ba,
 
         if (bps > 0) {
             /* calc from frame_bytes and bits_per_coded_sample */
-            if (id == AV_CODEC_ID_ADPCM_G726)
+            if (id == AV_CODEC_ID_ADPCM_G726 || id == AV_CODEC_ID_ADPCM_G726LE)
                 return frame_bytes * 8 / bps;
         }
 
