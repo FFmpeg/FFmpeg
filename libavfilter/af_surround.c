@@ -31,8 +31,16 @@ typedef struct AudioSurroundContext {
 
     char *out_channel_layout_str;
     char *in_channel_layout_str;
+
     float level_in;
     float level_out;
+    float fc_in;
+    float fc_out;
+    float lfe_in;
+    float lfe_out;
+
+    float *input_levels;
+    float *output_levels;
     int output_lfe;
     int lowcutf;
     int highcutf;
@@ -148,6 +156,17 @@ static int config_input(AVFilterLink *inlink)
             return AVERROR(ENOMEM);
     }
     s->nb_in_channels = inlink->channels;
+    s->input_levels = av_malloc_array(s->nb_in_channels, sizeof(*s->input_levels));
+    if (!s->input_levels)
+        return AVERROR(ENOMEM);
+    for (ch = 0;  ch < s->nb_in_channels; ch++)
+        s->input_levels[ch] = s->level_in;
+    ch = av_get_channel_layout_channel_index(inlink->channel_layout, AV_CH_FRONT_CENTER);
+    if (ch >= 0)
+        s->input_levels[ch] *= s->fc_in;
+    ch = av_get_channel_layout_channel_index(inlink->channel_layout, AV_CH_LOW_FREQUENCY);
+    if (ch >= 0)
+        s->input_levels[ch] *= s->lfe_in;
 
     s->input = ff_get_audio_buffer(inlink, s->buf_size * 2);
     if (!s->input)
@@ -179,6 +198,17 @@ static int config_output(AVFilterLink *outlink)
             return AVERROR(ENOMEM);
     }
     s->nb_out_channels = outlink->channels;
+    s->output_levels = av_malloc_array(s->nb_out_channels, sizeof(*s->output_levels));
+    if (!s->output_levels)
+        return AVERROR(ENOMEM);
+    for (ch = 0;  ch < s->nb_out_channels; ch++)
+        s->output_levels[ch] = s->level_out;
+    ch = av_get_channel_layout_channel_index(outlink->channel_layout, AV_CH_FRONT_CENTER);
+    if (ch >= 0)
+        s->output_levels[ch] *= s->fc_out;
+    ch = av_get_channel_layout_channel_index(outlink->channel_layout, AV_CH_LOW_FREQUENCY);
+    if (ch >= 0)
+        s->output_levels[ch] *= s->lfe_out;
 
     s->output = ff_get_audio_buffer(outlink, s->buf_size * 2);
     s->overlap_buffer = ff_get_audio_buffer(outlink, s->buf_size * 2);
@@ -1068,7 +1098,7 @@ fail:
 static int fft_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
 {
     AudioSurroundContext *s = ctx->priv;
-    const float level_in = s->level_in;
+    const float level_in = s->input_levels[ch];
     float *dst;
     int n;
 
@@ -1087,7 +1117,7 @@ static int fft_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
 static int ifft_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
 {
     AudioSurroundContext *s = ctx->priv;
-    const float level_out = s->level_out;
+    const float level_out = s->output_levels[ch];
     AVFrame *out = arg;
     float *dst, *ptr;
     int n;
@@ -1173,6 +1203,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     for (ch = 0; ch < s->nb_out_channels; ch++) {
         av_rdft_end(s->irdft[ch]);
     }
+    av_freep(&s->input_levels);
+    av_freep(&s->output_levels);
     av_freep(&s->rdft);
     av_freep(&s->irdft);
     av_audio_fifo_free(s->fifo);
@@ -1190,6 +1222,10 @@ static const AVOption surround_options[] = {
     { "lfe",       "output LFE",                OFFSET(output_lfe),             AV_OPT_TYPE_BOOL,   {.i64=1},     0,   1, FLAGS },
     { "lfe_low",   "LFE low cut off",           OFFSET(lowcutf),                AV_OPT_TYPE_INT,    {.i64=128},   0, 256, FLAGS },
     { "lfe_high",  "LFE high cut off",          OFFSET(highcutf),               AV_OPT_TYPE_INT,    {.i64=256},   0, 512, FLAGS },
+    { "fc_in",     "set front center channel input level",  OFFSET(fc_in),      AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
+    { "fc_out",    "set front center channel output level", OFFSET(fc_out),     AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
+    { "lfe_in",    "set lfe channel input level",  OFFSET(lfe_in),              AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
+    { "lfe_out",   "set lfe channel output level", OFFSET(lfe_out),             AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
     { NULL }
 };
 

@@ -3927,6 +3927,18 @@ Set LFE low cut off frequency. By default, this is @var{128} Hz.
 
 @item lfe_high
 Set LFE high cut off frequency. By default, this is @var{256} Hz.
+
+@item fc_in
+Set front center input volume. By default, this is @var{1}.
+
+@item fc_out
+Set front center output volume. By default, this is @var{1}.
+
+@item lfe_in
+Set LFE input volume. By default, this is @var{1}.
+
+@item lfe_out
+Set LFE output volume. By default, this is @var{1}.
 @end table
 
 @section treble
