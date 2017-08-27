@@ -1028,10 +1028,10 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
         sps->pcm.log2_min_pcm_cb_size = get_ue_golomb_long(gb) + 3;
         sps->pcm.log2_max_pcm_cb_size = sps->pcm.log2_min_pcm_cb_size +
                                         get_ue_golomb_long(gb);
-        if (sps->pcm.bit_depth > sps->bit_depth) {
+        if (FFMAX(sps->pcm.bit_depth, sps->pcm.bit_depth_chroma) > sps->bit_depth) {
             av_log(avctx, AV_LOG_ERROR,
-                   "PCM bit depth (%d) is greater than normal bit depth (%d)\n",
-                   sps->pcm.bit_depth, sps->bit_depth);
+                   "PCM bit depth (%d, %d) is greater than normal bit depth (%d)\n",
+                   sps->pcm.bit_depth, sps->pcm.bit_depth_chroma, sps->bit_depth);
             return AVERROR_INVALIDDATA;
         }
 
