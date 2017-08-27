@@ -23,7 +23,8 @@ environment:
 
 install:
 # Install GitLink
-- cmd: choco install gitlink --version 2.4.1 
+- cmd: nuget install gitlink -Version 2.4.0
+- cmd: for /f "tokens=*" %%f in ('dir /s /b gitlink.exe') do copy /b %%f .\
 
 before_build:
     
