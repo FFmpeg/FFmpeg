@@ -23,6 +23,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -217,97 +218,91 @@ static int output_single_frame(AVFilterContext *ctx, AVFrame *in, double *var_va
     sws_freeContext(s->sws);
     s->sws = NULL;
     s->current_frame++;
+
+    if (s->current_frame >= s->nb_frames) {
+        if (*dx != -1)
+            s->x = *dx;
+        if (*dy != -1)
+            s->y = *dy;
+        if (*zoom != -1)
+            s->prev_zoom = *zoom;
+        s->prev_nb_frames = s->nb_frames;
+        s->nb_frames = 0;
+        s->current_frame = 0;
+        av_frame_free(&s->in);
+        s->finished = 1;
+    }
     return ret;
 error:
     av_frame_free(&out);
     return ret;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *in)
+static int activate(AVFilterContext *ctx)
 {
-    AVFilterContext *ctx = inlink->dst;
+    ZPContext *s = ctx->priv;
+    AVFilterLink *inlink = ctx->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
-    ZPContext *s = ctx->priv;
-    double nb_frames;
-    int ret;
+    int status, ret = 0;
+    int64_t pts;
 
-    av_assert0(s->in == NULL);
+    if (s->in && ff_outlink_frame_wanted(outlink)) {
+        double zoom = -1, dx = -1, dy = -1;
 
-    s->finished = 0;
-    s->var_values[VAR_IN_W]  = s->var_values[VAR_IW] = in->width;
-    s->var_values[VAR_IN_H]  = s->var_values[VAR_IH] = in->height;
-    s->var_values[VAR_OUT_W] = s->var_values[VAR_OW] = s->w;
-    s->var_values[VAR_OUT_H] = s->var_values[VAR_OH] = s->h;
-    s->var_values[VAR_IN]    = inlink->frame_count_out + 1;
-    s->var_values[VAR_ON]    = outlink->frame_count_in + 1;
-    s->var_values[VAR_PX]    = s->x;
-    s->var_values[VAR_PY]    = s->y;
-    s->var_values[VAR_X]     = 0;
-    s->var_values[VAR_Y]     = 0;
-    s->var_values[VAR_PZOOM] = s->prev_zoom;
-    s->var_values[VAR_ZOOM]  = 1;
-    s->var_values[VAR_PDURATION] = s->prev_nb_frames;
-    s->var_values[VAR_A]     = (double) in->width / in->height;
-    s->var_values[VAR_SAR]   = inlink->sample_aspect_ratio.num ?
-        (double) inlink->sample_aspect_ratio.num / inlink->sample_aspect_ratio.den : 1;
-    s->var_values[VAR_DAR]   = s->var_values[VAR_A] * s->var_values[VAR_SAR];
-    s->var_values[VAR_HSUB]  = 1 << s->desc->log2_chroma_w;
-    s->var_values[VAR_VSUB]  = 1 << s->desc->log2_chroma_h;
-
-    if ((ret = av_expr_parse_and_eval(&nb_frames, s->duration_expr_str,
-                                      var_names, s->var_values,
-                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0) {
-        av_frame_free(&in);
-        return ret;
-    }
-
-    s->var_values[VAR_DURATION] = s->nb_frames = nb_frames;
-    s->in = in;
-
-    return 0;
-}
-
-static int request_frame(AVFilterLink *outlink)
-{
-    AVFilterContext *ctx = outlink->src;
-    ZPContext *s = ctx->priv;
-    AVFrame *in = s->in;
-    double zoom=-1, dx=-1, dy=-1;
-    int ret = -1;
-
-    if (in) {
-        ret = output_single_frame(ctx, in, s->var_values, s->current_frame,
+        ret = output_single_frame(ctx, s->in, s->var_values, s->current_frame,
                                   &zoom, &dx, &dy);
         if (ret < 0)
-            goto fail;
+            return ret;
     }
 
-    if (s->current_frame >= s->nb_frames) {
-        if (dx != -1)
-            s->x = dx;
-        if (dy != -1)
-            s->y = dy;
-        if (zoom != -1)
-            s->prev_zoom = zoom;
-        s->prev_nb_frames = s->nb_frames;
-        s->nb_frames = 0;
-        s->current_frame = 0;
-        av_frame_free(&s->in);
-        s->finished = 1;
-        ret = ff_request_frame(ctx->inputs[0]);
+    if (!s->in && (ret = ff_inlink_consume_frame(inlink, &s->in)) > 0) {
+        double zoom = -1, dx = -1, dy = -1, nb_frames;
+
+        s->finished = 0;
+        s->var_values[VAR_IN_W]  = s->var_values[VAR_IW] = s->in->width;
+        s->var_values[VAR_IN_H]  = s->var_values[VAR_IH] = s->in->height;
+        s->var_values[VAR_OUT_W] = s->var_values[VAR_OW] = s->w;
+        s->var_values[VAR_OUT_H] = s->var_values[VAR_OH] = s->h;
+        s->var_values[VAR_IN]    = inlink->frame_count_out + 1;
+        s->var_values[VAR_ON]    = outlink->frame_count_in + 1;
+        s->var_values[VAR_PX]    = s->x;
+        s->var_values[VAR_PY]    = s->y;
+        s->var_values[VAR_X]     = 0;
+        s->var_values[VAR_Y]     = 0;
+        s->var_values[VAR_PZOOM] = s->prev_zoom;
+        s->var_values[VAR_ZOOM]  = 1;
+        s->var_values[VAR_PDURATION] = s->prev_nb_frames;
+        s->var_values[VAR_A]     = (double) s->in->width / s->in->height;
+        s->var_values[VAR_SAR]   = inlink->sample_aspect_ratio.num ?
+            (double) inlink->sample_aspect_ratio.num / inlink->sample_aspect_ratio.den : 1;
+        s->var_values[VAR_DAR]   = s->var_values[VAR_A] * s->var_values[VAR_SAR];
+        s->var_values[VAR_HSUB]  = 1 << s->desc->log2_chroma_w;
+        s->var_values[VAR_VSUB]  = 1 << s->desc->log2_chroma_h;
+
+        if ((ret = av_expr_parse_and_eval(&nb_frames, s->duration_expr_str,
+                                          var_names, s->var_values,
+                                          NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0) {
+            av_frame_free(&s->in);
+            return ret;
+        }
+
+        s->var_values[VAR_DURATION] = s->nb_frames = nb_frames;
+
+        ret = output_single_frame(ctx, s->in, s->var_values, s->current_frame,
+                                  &zoom, &dx, &dy);
+        if (ret < 0)
+            return ret;
     }
-
-fail:
-    sws_freeContext(s->sws);
-    s->sws = NULL;
-
-    return ret;
-}
-
-static int poll_frame(AVFilterLink *link)
-{
-    ZPContext *s = link->src->priv;
-    return s->nb_frames - s->current_frame;
+    if (ret < 0) {
+        return ret;
+    } else if (s->finished && ff_inlink_acknowledge_status(inlink, &status, &pts)) {
+        ff_outlink_set_status(outlink, status, pts);
+        return 0;
+    } else {
+        if (ff_outlink_frame_wanted(outlink) && s->finished)
+            ff_inlink_request_frame(inlink);
+        return 0;
+    }
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -344,8 +339,6 @@ static const AVFilterPad inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
-        .needs_fifo   = 1,
     },
     { NULL }
 };
@@ -355,8 +348,6 @@ static const AVFilterPad outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
-        .poll_frame    = poll_frame,
-        .request_frame = request_frame,
     },
     { NULL }
 };
@@ -369,6 +360,7 @@ AVFilter ff_vf_zoompan = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
+    .activate      = activate,
     .inputs        = inputs,
     .outputs       = outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
