@@ -628,25 +628,21 @@
     <TargetName>avfilterd</TargetName>
     <IntDir>$(SolutionDir)obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
     <OutDir>$(ProjectDir)..\..\..\msvc\</OutDir>
-    <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLL|x64'">
     <TargetName>avfilterd</TargetName>
     <OutDir>$(ProjectDir)..\..\..\msvc\</OutDir>
     <IntDir>$(SolutionDir)obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
-    <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLLStaticDeps|Win32'">
     <TargetName>avfilterd</TargetName>
     <IntDir>$(SolutionDir)obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
     <OutDir>$(ProjectDir)..\..\..\msvc\</OutDir>
-    <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDLLStaticDeps|x64'">
     <TargetName>avfilterd</TargetName>
     <OutDir>$(ProjectDir)..\..\..\msvc\</OutDir>
     <IntDir>$(SolutionDir)obj\$(Configuration)\$(Platform)\$(ProjectName)\</IntDir>
-    <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDLL|Win32'">
     <TargetName>avfilter</TargetName>
@@ -704,7 +700,6 @@
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0502;_LIB;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;$(OutDir)\include;$(ProjectDir)\..\..\prebuilt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <EnableAnsiAliasing Condition="'$(PlatformToolset)'!='Intel C++ Compiler XE 13.0'">true</EnableAnsiAliasing>
       <ForcedIncludeFiles>compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -715,6 +710,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FloatingPointModel>Precise</FloatingPointModel>
       <ProgramDataBaseFileName>$(OutDir)\lib\x86\$(TargetName).pdb</ProgramDataBaseFileName>
+      <MinimalRebuild>false</MinimalRebuild>
       <DisableSpecificWarnings>4244;4267;4018;4146;4028;4996;4090;4114;4308;4305;4005;4101;4554;4307;4273;4133;4544;4334;4293;4047;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Lib>
@@ -726,15 +722,15 @@
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
     <PostBuildEvent>
-      <Command>mkdir $(OutDir)\include
-mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
-mkdir $(OutDir)\licenses
-copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+      <Command>mkdir "$(OutDir)"\include
+mkdir "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter
+mkdir "$(OutDir)"\licenses
+copy ..\COPYING.GPLv3 "$(OutDir)"\licenses\ffmpeg.txt</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>if exist ..\config.h (
@@ -752,8 +748,8 @@ del ..\libavutil\avconfig.h
 if exist ..\libavutil\ffversion.h (
 del ..\libavutil\ffversion.h
 )
-if exist $(OutDir)\include\libavfilter (
-rd /s /q $(OutDir)\include\libavfilter
+if exist "$(OutDir)"\include\libavfilter (
+rd /s /q "$(OutDir)"\include\libavfilter
 cd ../
 cd $(ProjectDir)
 )</Command>
@@ -774,17 +770,16 @@ cd $(ProjectDir)
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0600;_LIB;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;$(OutDir)\include;$(ProjectDir)\..\..\prebuilt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <EnableAnsiAliasing Condition="'$(PlatformToolset)'!='Intel C++ Compiler XE 13.0'">true</EnableAnsiAliasing>
       <ForcedIncludeFiles>compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
-      <OmitFramePointers>false</OmitFramePointers>
       <AdditionalOptions Condition="$([System.String]::Copy($(PlatformToolset)).Contains('Intel'))">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(AdditionalOptions)' == '' and '$(VisualStudioVersion)' != '12.0'">/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FloatingPointModel>Precise</FloatingPointModel>
       <ProgramDataBaseFileName>$(OutDir)\lib\x64\$(TargetName).pdb</ProgramDataBaseFileName>
+      <MinimalRebuild>false</MinimalRebuild>
       <DisableSpecificWarnings>4244;4267;4018;4146;4028;4996;4090;4114;4308;4305;4005;4101;4554;4307;4273;4133;4544;4334;4293;4047;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Lib>
@@ -796,15 +791,15 @@ cd $(ProjectDir)
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
     <PostBuildEvent>
-      <Command>mkdir $(OutDir)\include
-mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
-mkdir $(OutDir)\licenses
-copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+      <Command>mkdir "$(OutDir)"\include
+mkdir "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter
+mkdir "$(OutDir)"\licenses
+copy ..\COPYING.GPLv3 "$(OutDir)"\licenses\ffmpeg.txt</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>if exist ..\config.h (
@@ -822,8 +817,8 @@ del ..\libavutil\avconfig.h
 if exist ..\libavutil\ffversion.h (
 del ..\libavutil\ffversion.h
 )
-if exist $(OutDir)\include\libavfilter (
-rd /s /q $(OutDir)\include\libavfilter
+if exist "$(OutDir)"\include\libavfilter (
+rd /s /q "$(OutDir)"\include\libavfilter
 cd ../
 cd $(ProjectDir)
 )</Command>
@@ -844,7 +839,6 @@ cd $(ProjectDir)
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0502;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;$(OutDir)\include;$(ProjectDir)\..\..\prebuilt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <EnableAnsiAliasing Condition="'$(PlatformToolset)'!='Intel C++ Compiler XE 13.0'">true</EnableAnsiAliasing>
       <ForcedIncludeFiles>compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -855,6 +849,7 @@ cd $(ProjectDir)
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FloatingPointModel>Precise</FloatingPointModel>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <MinimalRebuild>false</MinimalRebuild>
       <DisableSpecificWarnings>4244;4267;4018;4146;4028;4996;4090;4114;4308;4305;4005;4101;4554;4307;4273;4133;4544;4334;4293;4047;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
@@ -872,15 +867,15 @@ cd $(ProjectDir)
       <MinimumRequiredVersion>5.1</MinimumRequiredVersion>
     </Link>
     <PostBuildEvent>
-      <Command>mkdir $(OutDir)\include
-mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
-mkdir $(OutDir)\licenses
-copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+      <Command>mkdir "$(OutDir)"\include
+mkdir "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter
+mkdir "$(OutDir)"\licenses
+copy ..\COPYING.GPLv3 "$(OutDir)"\licenses\ffmpeg.txt</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>if exist ..\config.h (
@@ -898,8 +893,8 @@ del ..\libavutil\avconfig.h
 if exist ..\libavutil\ffversion.h (
 del ..\libavutil\ffversion.h
 )
-if exist $(OutDir)\include\libavfilter (
-rd /s /q $(OutDir)\include\libavfilter
+if exist "$(OutDir)"\include\libavfilter (
+rd /s /q "$(OutDir)"\include\libavfilter
 cd ../
 cd $(ProjectDir)
 )</Command>
@@ -920,17 +915,16 @@ cd $(ProjectDir)
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0600;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;$(OutDir)\include;$(ProjectDir)\..\..\prebuilt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <EnableAnsiAliasing Condition="'$(PlatformToolset)'!='Intel C++ Compiler XE 13.0'">true</EnableAnsiAliasing>
       <ForcedIncludeFiles>compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
-      <OmitFramePointers>false</OmitFramePointers>
       <AdditionalOptions Condition="$([System.String]::Copy($(PlatformToolset)).Contains('Intel'))">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(AdditionalOptions)' == '' and '$(VisualStudioVersion)' != '12.0'">/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FloatingPointModel>Precise</FloatingPointModel>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <MinimalRebuild>false</MinimalRebuild>
       <DisableSpecificWarnings>4244;4267;4018;4146;4028;4996;4090;4114;4308;4305;4005;4101;4554;4307;4273;4133;4544;4334;4293;4047;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <MinimumRequiredVersion>6.0</MinimumRequiredVersion>
     </ClCompile>
@@ -947,15 +941,15 @@ cd $(ProjectDir)
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
-      <Command>mkdir $(OutDir)\include
-mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
-mkdir $(OutDir)\licenses
-copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+      <Command>mkdir "$(OutDir)"\include
+mkdir "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter
+mkdir "$(OutDir)"\licenses
+copy ..\COPYING.GPLv3 "$(OutDir)"\licenses\ffmpeg.txt</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>if exist ..\config.h (
@@ -973,8 +967,8 @@ del ..\libavutil\avconfig.h
 if exist ..\libavutil\ffversion.h (
 del ..\libavutil\ffversion.h
 )
-if exist $(OutDir)\include\libavfilter (
-rd /s /q $(OutDir)\include\libavfilter
+if exist "$(OutDir)"\include\libavfilter (
+rd /s /q "$(OutDir)"\include\libavfilter
 cd ../
 cd $(ProjectDir)
 )</Command>
@@ -995,7 +989,6 @@ cd $(ProjectDir)
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0502;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;$(OutDir)\include;$(ProjectDir)\..\..\prebuilt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <EnableAnsiAliasing Condition="'$(PlatformToolset)'!='Intel C++ Compiler XE 13.0'">true</EnableAnsiAliasing>
       <ForcedIncludeFiles>compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -1006,6 +999,7 @@ cd $(ProjectDir)
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FloatingPointModel>Precise</FloatingPointModel>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <MinimalRebuild>false</MinimalRebuild>
       <DisableSpecificWarnings>4244;4267;4018;4146;4028;4996;4090;4114;4308;4305;4005;4101;4554;4307;4273;4133;4544;4334;4293;4047;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
@@ -1023,15 +1017,15 @@ cd $(ProjectDir)
       <MinimumRequiredVersion>5.1</MinimumRequiredVersion>
     </Link>
     <PostBuildEvent>
-      <Command>mkdir $(OutDir)\include
-mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
-mkdir $(OutDir)\licenses
-copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+      <Command>mkdir "$(OutDir)"\include
+mkdir "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter
+mkdir "$(OutDir)"\licenses
+copy ..\COPYING.GPLv3 "$(OutDir)"\licenses\ffmpeg.txt</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>if exist ..\config.h (
@@ -1049,8 +1043,8 @@ del ..\libavutil\avconfig.h
 if exist ..\libavutil\ffversion.h (
 del ..\libavutil\ffversion.h
 )
-if exist $(OutDir)\include\libavfilter (
-rd /s /q $(OutDir)\include\libavfilter
+if exist "$(OutDir)"\include\libavfilter (
+rd /s /q "$(OutDir)"\include\libavfilter
 cd ../
 cd $(ProjectDir)
 )</Command>
@@ -1071,17 +1065,16 @@ cd $(ProjectDir)
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0600;_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;$(OutDir)\include;$(ProjectDir)\..\..\prebuilt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <EnableAnsiAliasing Condition="'$(PlatformToolset)'!='Intel C++ Compiler XE 13.0'">true</EnableAnsiAliasing>
       <ForcedIncludeFiles>compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
-      <OmitFramePointers>false</OmitFramePointers>
       <AdditionalOptions Condition="$([System.String]::Copy($(PlatformToolset)).Contains('Intel'))">/Qvec- /Qsimd- %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(AdditionalOptions)' == '' and '$(VisualStudioVersion)' != '12.0'">/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <FloatingPointModel>Precise</FloatingPointModel>
       <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <MinimalRebuild>false</MinimalRebuild>
       <DisableSpecificWarnings>4244;4267;4018;4146;4028;4996;4090;4114;4308;4305;4005;4101;4554;4307;4273;4133;4544;4334;4293;4047;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
@@ -1098,15 +1091,15 @@ cd $(ProjectDir)
       <MinimumRequiredVersion>6.0</MinimumRequiredVersion>
     </Link>
     <PostBuildEvent>
-      <Command>mkdir $(OutDir)\include
-mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
-mkdir $(OutDir)\licenses
-copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+      <Command>mkdir "$(OutDir)"\include
+mkdir "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter
+mkdir "$(OutDir)"\licenses
+copy ..\COPYING.GPLv3 "$(OutDir)"\licenses\ffmpeg.txt</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>if exist ..\config.h (
@@ -1124,8 +1117,8 @@ del ..\libavutil\avconfig.h
 if exist ..\libavutil\ffversion.h (
 del ..\libavutil\ffversion.h
 )
-if exist $(OutDir)\include\libavfilter (
-rd /s /q $(OutDir)\include\libavfilter
+if exist "$(OutDir)"\include\libavfilter (
+rd /s /q "$(OutDir)"\include\libavfilter
 cd ../
 cd $(ProjectDir)
 )</Command>
@@ -1155,7 +1148,6 @@ cd $(ProjectDir)
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;$(OutDir)\include;$(ProjectDir)\..\..\prebuilt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <EnableAnsiAliasing Condition="'$(PlatformToolset)'!='Intel C++ Compiler XE 13.0'">true</EnableAnsiAliasing>
       <ForcedIncludeFiles>compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -1174,15 +1166,15 @@ cd $(ProjectDir)
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
     <PostBuildEvent>
-      <Command>mkdir $(OutDir)\include
-mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
-mkdir $(OutDir)\licenses
-copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+      <Command>mkdir "$(OutDir)"\include
+mkdir "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter
+mkdir "$(OutDir)"\licenses
+copy ..\COPYING.GPLv3 "$(OutDir)"\licenses\ffmpeg.txt</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>if exist ..\config.h (
@@ -1200,8 +1192,8 @@ del ..\libavutil\avconfig.h
 if exist ..\libavutil\ffversion.h (
 del ..\libavutil\ffversion.h
 )
-if exist $(OutDir)\include\libavfilter (
-rd /s /q $(OutDir)\include\libavfilter
+if exist "$(OutDir)"\include\libavfilter (
+rd /s /q "$(OutDir)"\include\libavfilter
 cd ../
 cd $(ProjectDir)
 )</Command>
@@ -1223,15 +1215,12 @@ cd $(ProjectDir)
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0600;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
-      <BufferSecurityCheck>false</BufferSecurityCheck>
-      <FloatingPointExceptions>false</FloatingPointExceptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;$(OutDir)\include;$(ProjectDir)\..\..\prebuilt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <EnableAnsiAliasing Condition="'$(PlatformToolset)'!='Intel C++ Compiler XE 13.0'">true</EnableAnsiAliasing>
       <ForcedIncludeFiles>compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -1250,15 +1239,15 @@ cd $(ProjectDir)
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
     <PostBuildEvent>
-      <Command>mkdir $(OutDir)\include
-mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
-mkdir $(OutDir)\licenses
-copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+      <Command>mkdir "$(OutDir)"\include
+mkdir "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter
+mkdir "$(OutDir)"\licenses
+copy ..\COPYING.GPLv3 "$(OutDir)"\licenses\ffmpeg.txt</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>if exist ..\config.h (
@@ -1276,8 +1265,8 @@ del ..\libavutil\avconfig.h
 if exist ..\libavutil\ffversion.h (
 del ..\libavutil\ffversion.h
 )
-if exist $(OutDir)\include\libavfilter (
-rd /s /q $(OutDir)\include\libavfilter
+if exist "$(OutDir)"\include\libavfilter (
+rd /s /q "$(OutDir)"\include\libavfilter
 cd ../
 cd $(ProjectDir)
 )</Command>
@@ -1299,15 +1288,12 @@ cd $(ProjectDir)
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0502;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
-      <BufferSecurityCheck>false</BufferSecurityCheck>
-      <FloatingPointExceptions>false</FloatingPointExceptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;$(OutDir)\include;$(ProjectDir)\..\..\prebuilt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <EnableAnsiAliasing Condition="'$(PlatformToolset)'!='Intel C++ Compiler XE 13.0'">true</EnableAnsiAliasing>
       <ForcedIncludeFiles>compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -1334,15 +1320,15 @@ cd $(ProjectDir)
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>mkdir $(OutDir)\include
-mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
-mkdir $(OutDir)\licenses
-copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+      <Command>mkdir "$(OutDir)"\include
+mkdir "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter
+mkdir "$(OutDir)"\licenses
+copy ..\COPYING.GPLv3 "$(OutDir)"\licenses\ffmpeg.txt</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>if exist ..\config.h (
@@ -1360,8 +1346,8 @@ del ..\libavutil\avconfig.h
 if exist ..\libavutil\ffversion.h (
 del ..\libavutil\ffversion.h
 )
-if exist $(OutDir)\include\libavfilter (
-rd /s /q $(OutDir)\include\libavfilter
+if exist "$(OutDir)"\include\libavfilter (
+rd /s /q "$(OutDir)"\include\libavfilter
 cd ../
 cd $(ProjectDir)
 )</Command>
@@ -1383,15 +1369,12 @@ cd $(ProjectDir)
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0600;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
-      <BufferSecurityCheck>false</BufferSecurityCheck>
-      <FloatingPointExceptions>false</FloatingPointExceptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;$(OutDir)\include;$(ProjectDir)\..\..\prebuilt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <EnableAnsiAliasing Condition="'$(PlatformToolset)'!='Intel C++ Compiler XE 13.0'">true</EnableAnsiAliasing>
       <ForcedIncludeFiles>compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -1417,15 +1400,15 @@ cd $(ProjectDir)
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>mkdir $(OutDir)\include
-mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
-mkdir $(OutDir)\licenses
-copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+      <Command>mkdir "$(OutDir)"\include
+mkdir "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter
+mkdir "$(OutDir)"\licenses
+copy ..\COPYING.GPLv3 "$(OutDir)"\licenses\ffmpeg.txt</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>if exist ..\config.h (
@@ -1443,8 +1426,8 @@ del ..\libavutil\avconfig.h
 if exist ..\libavutil\ffversion.h (
 del ..\libavutil\ffversion.h
 )
-if exist $(OutDir)\include\libavfilter (
-rd /s /q $(OutDir)\include\libavfilter
+if exist "$(OutDir)"\include\libavfilter (
+rd /s /q "$(OutDir)"\include\libavfilter
 cd ../
 cd $(ProjectDir)
 )</Command>
@@ -1466,15 +1449,12 @@ cd $(ProjectDir)
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0502;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
-      <BufferSecurityCheck>false</BufferSecurityCheck>
-      <FloatingPointExceptions>false</FloatingPointExceptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;$(OutDir)\include;$(ProjectDir)\..\..\prebuilt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <EnableAnsiAliasing Condition="'$(PlatformToolset)'!='Intel C++ Compiler XE 13.0'">true</EnableAnsiAliasing>
       <ForcedIncludeFiles>compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -1501,15 +1481,15 @@ cd $(ProjectDir)
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>mkdir $(OutDir)\include
-mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
-mkdir $(OutDir)\licenses
-copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+      <Command>mkdir "$(OutDir)"\include
+mkdir "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter
+mkdir "$(OutDir)"\licenses
+copy ..\COPYING.GPLv3 "$(OutDir)"\licenses\ffmpeg.txt</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>if exist ..\config.h (
@@ -1527,8 +1507,8 @@ del ..\libavutil\avconfig.h
 if exist ..\libavutil\ffversion.h (
 del ..\libavutil\ffversion.h
 )
-if exist $(OutDir)\include\libavfilter (
-rd /s /q $(OutDir)\include\libavfilter
+if exist "$(OutDir)"\include\libavfilter (
+rd /s /q "$(OutDir)"\include\libavfilter
 cd ../
 cd $(ProjectDir)
 )</Command>
@@ -1550,15 +1530,12 @@ cd $(ProjectDir)
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0600;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
-      <BufferSecurityCheck>false</BufferSecurityCheck>
-      <FloatingPointExceptions>false</FloatingPointExceptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;$(OutDir)\include;$(ProjectDir)\..\..\prebuilt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <EnableAnsiAliasing Condition="'$(PlatformToolset)'!='Intel C++ Compiler XE 13.0'">true</EnableAnsiAliasing>
       <ForcedIncludeFiles>compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -1584,15 +1561,15 @@ cd $(ProjectDir)
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>mkdir $(OutDir)\include
-mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
-mkdir $(OutDir)\licenses
-copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+      <Command>mkdir "$(OutDir)"\include
+mkdir "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter
+mkdir "$(OutDir)"\licenses
+copy ..\COPYING.GPLv3 "$(OutDir)"\licenses\ffmpeg.txt</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>if exist ..\config.h (
@@ -1610,8 +1587,8 @@ del ..\libavutil\avconfig.h
 if exist ..\libavutil\ffversion.h (
 del ..\libavutil\ffversion.h
 )
-if exist $(OutDir)\include\libavfilter (
-rd /s /q $(OutDir)\include\libavfilter
+if exist "$(OutDir)"\include\libavfilter (
+rd /s /q "$(OutDir)"\include\libavfilter
 cd ../
 cd $(ProjectDir)
 )</Command>
@@ -1633,15 +1610,12 @@ cd $(ProjectDir)
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0502;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
-      <BufferSecurityCheck>false</BufferSecurityCheck>
-      <FloatingPointExceptions>false</FloatingPointExceptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;$(OutDir)\include;$(ProjectDir)\..\..\prebuilt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <EnableAnsiAliasing Condition="'$(PlatformToolset)'!='Intel C++ Compiler XE 13.0'">true</EnableAnsiAliasing>
       <ForcedIncludeFiles>compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -1660,15 +1634,15 @@ cd $(ProjectDir)
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
     <PostBuildEvent>
-      <Command>mkdir $(OutDir)\include
-mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
-mkdir $(OutDir)\licenses
-copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+      <Command>mkdir "$(OutDir)"\include
+mkdir "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter
+mkdir "$(OutDir)"\licenses
+copy ..\COPYING.GPLv3 "$(OutDir)"\licenses\ffmpeg.txt</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>if exist ..\config.h (
@@ -1686,8 +1660,8 @@ del ..\libavutil\avconfig.h
 if exist ..\libavutil\ffversion.h (
 del ..\libavutil\ffversion.h
 )
-if exist $(OutDir)\include\libavfilter (
-rd /s /q $(OutDir)\include\libavfilter
+if exist "$(OutDir)"\include\libavfilter (
+rd /s /q "$(OutDir)"\include\libavfilter
 cd ../
 cd $(ProjectDir)
 )</Command>
@@ -1709,15 +1683,12 @@ cd $(ProjectDir)
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_WINDOWS;HAVE_AV_CONFIG_H;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x0600;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
-      <BufferSecurityCheck>false</BufferSecurityCheck>
-      <FloatingPointExceptions>false</FloatingPointExceptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <AdditionalIncludeDirectories>$(OutDir)\include\freetype2;$(ProjectDir)\..\..\prebuilt\include\freetype2;$(OutDir)\include\fribidi;$(ProjectDir)\..\..\prebuilt\include\fribidi;.\;..\;$(OutDir)\include;$(ProjectDir)\..\..\prebuilt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ExceptionHandling>false</ExceptionHandling>
       <C99Support>true</C99Support>
       <EnableAnsiAliasing Condition="'$(PlatformToolset)'!='Intel C++ Compiler XE 13.0'">true</EnableAnsiAliasing>
       <ForcedIncludeFiles>compat.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -1736,15 +1707,15 @@ cd $(ProjectDir)
       <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
     <PostBuildEvent>
-      <Command>mkdir $(OutDir)\include
-mkdir $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfilter.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersink.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\buffersrc.h $(OutDir)\include\libavfilter
-copy ..\libavfilter\version.h $(OutDir)\include\libavfilter
-mkdir $(OutDir)\licenses
-copy ..\COPYING.GPLv3 $(OutDir)\licenses\ffmpeg.txt</Command>
+      <Command>mkdir "$(OutDir)"\include
+mkdir "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
+copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter
+mkdir "$(OutDir)"\licenses
+copy ..\COPYING.GPLv3 "$(OutDir)"\licenses\ffmpeg.txt</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>if exist ..\config.h (
@@ -1762,8 +1733,8 @@ del ..\libavutil\avconfig.h
 if exist ..\libavutil\ffversion.h (
 del ..\libavutil\ffversion.h
 )
-if exist $(OutDir)\include\libavfilter (
-rd /s /q $(OutDir)\include\libavfilter
+if exist "$(OutDir)"\include\libavfilter (
+rd /s /q "$(OutDir)"\include\libavfilter
 cd ../
 cd $(ProjectDir)
 )</Command>

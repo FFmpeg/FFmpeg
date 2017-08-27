@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 12.0.30501.0
-MinimumVisualStudioVersion = 10.0.40219.1
+MinimumVisualStudioVersion = 12.0.30501.0
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libavcodec", "libavcodec.vcxproj", "{B4824EFF-C340-425D-A4A8-E2E02A71A7AE}"
 	ProjectSection(ProjectDependencies) = postProject
 		{CE6C44DD-6E38-4293-8AB3-04EE28CCA972} = {CE6C44DD-6E38-4293-8AB3-04EE28CCA972}
