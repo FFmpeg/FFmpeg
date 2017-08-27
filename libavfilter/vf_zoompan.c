@@ -81,6 +81,9 @@ typedef struct ZPcontext {
     char *x_expr_str;
     char *y_expr_str;
     char *duration_expr_str;
+
+    AVExpr *zoom_expr, *x_expr, *y_expr;
+
     int w, h;
     double x, y;
     double prev_zoom;
@@ -123,12 +126,25 @@ static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     ZPContext *s = ctx->priv;
+    int ret;
 
     outlink->w = s->w;
     outlink->h = s->h;
     outlink->time_base = av_inv_q(s->framerate);
     outlink->frame_rate = s->framerate;
     s->desc = av_pix_fmt_desc_get(outlink->format);
+
+    ret = av_expr_parse(&s->zoom_expr, s->zoom_expr_str, var_names, NULL, NULL, NULL, NULL, 0, ctx);
+    if (ret < 0)
+        return ret;
+
+    ret = av_expr_parse(&s->x_expr, s->x_expr_str, var_names, NULL, NULL, NULL, NULL, 0, ctx);
+    if (ret < 0)
+        return ret;
+
+    ret = av_expr_parse(&s->y_expr, s->y_expr_str, var_names, NULL, NULL, NULL, NULL, 0, ctx);
+    if (ret < 0)
+        return ret;
 
     return 0;
 }
@@ -151,28 +167,22 @@ static int output_single_frame(AVFilterContext *ctx, AVFrame *in, double *var_va
     var_values[VAR_TIME] = pts * av_q2d(outlink->time_base);
     var_values[VAR_FRAME] = i;
     var_values[VAR_ON] = outlink->frame_count_in + 1;
-    if ((ret = av_expr_parse_and_eval(zoom, s->zoom_expr_str,
-                                      var_names, var_values,
-                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0)
-        return ret;
+
+    *zoom = av_expr_eval(s->zoom_expr, var_values, NULL);
 
     *zoom = av_clipd(*zoom, 1, 10);
     var_values[VAR_ZOOM] = *zoom;
     w = in->width * (1.0 / *zoom);
     h = in->height * (1.0 / *zoom);
 
-    if ((ret = av_expr_parse_and_eval(dx, s->x_expr_str,
-                                      var_names, var_values,
-                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0)
-        return ret;
+    *dx = av_expr_eval(s->x_expr, var_values, NULL);
+
     x = *dx = av_clipd(*dx, 0, FFMAX(in->width - w, 0));
     var_values[VAR_X] = *dx;
     x &= ~((1 << s->desc->log2_chroma_w) - 1);
 
-    if ((ret = av_expr_parse_and_eval(dy, s->y_expr_str,
-                                      var_names, var_values,
-                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0)
-        return ret;
+    *dy = av_expr_eval(s->y_expr, var_values, NULL);
+
     y = *dy = av_clipd(*dy, 0, FFMAX(in->height - h, 0));
     var_values[VAR_Y] = *dy;
     y &= ~((1 << s->desc->log2_chroma_h) - 1);
