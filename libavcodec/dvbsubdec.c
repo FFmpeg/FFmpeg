@@ -1302,6 +1302,15 @@ static int dvbsub_parse_page_segment(AVCodecContext *avctx,
         region_id = *buf++;
         buf += 1;
 
+        display = ctx->display_list;
+        while (display && display->region_id != region_id) {
+            display = display->next;
+        }
+        if (display) {
+            av_log(avctx, AV_LOG_ERROR, "duplicate region\n");
+            break;
+        }
+
         display = tmp_display_list;
         tmp_ptr = &tmp_display_list;
 

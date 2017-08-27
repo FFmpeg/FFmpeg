@@ -1745,7 +1745,6 @@ static int hls_write_trailer(struct AVFormatContext *s)
         hls->size = avio_tell(hls->vtt_avf->pb) - hls->start_pos;
         ff_format_io_close(s, &vtt_oc->pb);
     }
-    av_freep(&hls->fmp4_init_filename);
     av_freep(&hls->basename);
     av_freep(&hls->base_output_dirname);
     av_freep(&hls->key_basename);
@@ -1754,6 +1753,7 @@ static int hls_write_trailer(struct AVFormatContext *s)
     hls->avf = NULL;
     hls_window(s, 1);
 
+    av_freep(&hls->fmp4_init_filename);
     if (vtt_oc) {
         av_freep(&hls->vtt_basename);
         av_freep(&hls->vtt_m3u8_name);

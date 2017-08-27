@@ -71,7 +71,9 @@ static av_cold int init(AVFilterContext *ctx)
         pad.type = AVMEDIA_TYPE_AUDIO;
         pad.name = av_get_channel_name(channel);
 
-        ff_insert_outpad(ctx, i, &pad);
+        if ((ret = ff_insert_outpad(ctx, i, &pad)) < 0) {
+            return ret;
+        }
     }
 
 fail:

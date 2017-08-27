@@ -341,6 +341,7 @@ library:
 @item FunCom ISS                @tab   @tab X
     @tab Audio format used in various games from FunCom like The Longest Journey.
 @item G.723.1                   @tab X @tab X
+@item G.726                     @tab   @tab X @tab Both left- and right-justified.
 @item G.729 BIT                 @tab X @tab X
 @item G.729 raw                 @tab   @tab X
 @item GENH                      @tab   @tab X

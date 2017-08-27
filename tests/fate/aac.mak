@@ -2,6 +2,10 @@ FATE_AAC += fate-aac-al04_44
 fate-aac-al04_44: CMD = pcm -i $(TARGET_SAMPLES)/aac/al04_44.mp4
 fate-aac-al04_44: REF = $(SAMPLES)/aac/al04_44.s16
 
+FATE_AAC += fate-aac-al04sf_48
+fate-aac-al04sf_48: CMD = pcm -i $(TARGET_SAMPLES)/aac/al04sf_48.mp4
+fate-aac-al04sf_48: REF = $(SAMPLES)/aac/al04sf_48.s16
+
 FATE_AAC += fate-aac-al05_44
 fate-aac-al05_44: CMD = pcm -i $(TARGET_SAMPLES)/aac/al05_44.mp4
 fate-aac-al05_44: REF = $(SAMPLES)/aac/al05_44.s16

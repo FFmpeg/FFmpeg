@@ -154,20 +154,14 @@ typedef struct VAAPIEncodeH264Context {
 
     // Rate control configuration.
     int send_timing_sei;
-
-#if VA_CHECK_VERSION(0, 36, 0)
-    // Speed-quality tradeoff setting.
-    struct {
-        VAEncMiscParameterBuffer misc;
-        VAEncMiscParameterBufferQualityLevel quality;
-    } quality_params;
-#endif
 } VAAPIEncodeH264Context;
 
 typedef struct VAAPIEncodeH264Options {
     int qp;
     int quality;
     int low_power;
+    // Entropy encoder type.
+    int coder;
 } VAAPIEncodeH264Options;
 
 
@@ -783,6 +777,8 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
     VAEncPictureParameterBufferH264   *vpic = ctx->codec_picture_params;
     VAAPIEncodeH264Context            *priv = ctx->priv_data;
     VAAPIEncodeH264MiscSequenceParams *mseq = &priv->misc_sequence_params;
+    VAAPIEncodeH264Options             *opt =
+        (VAAPIEncodeH264Options*)ctx->codec_options_data;
     int i;
 
     {
@@ -928,7 +924,7 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
         vpic->num_ref_idx_l1_active_minus1 = 0;
 
         vpic->pic_fields.bits.entropy_coding_mode_flag =
-            ((avctx->profile & 0xff) != 66);
+            opt->coder ? ((avctx->profile & 0xff) != 66) : 0;
         vpic->pic_fields.bits.weighted_pred_flag = 0;
         vpic->pic_fields.bits.weighted_bipred_idc = 0;
         vpic->pic_fields.bits.transform_8x8_mode_flag =
@@ -1141,21 +1137,8 @@ static av_cold int vaapi_encode_h264_configure(AVCodecContext *avctx)
         av_assert0(0 && "Invalid RC mode.");
     }
 
-    if (opt->quality > 0) {
-#if VA_CHECK_VERSION(0, 36, 0)
-        priv->quality_params.misc.type =
-            VAEncMiscParameterTypeQualityLevel;
-        priv->quality_params.quality.quality_level = opt->quality;
-
-        ctx->global_params[ctx->nb_global_params] =
-            &priv->quality_params.misc;
-        ctx->global_params_size[ctx->nb_global_params++] =
-            sizeof(priv->quality_params);
-#else
-        av_log(avctx, AV_LOG_WARNING, "The encode quality option is not "
-               "supported with this VAAPI version.\n");
-#endif
-    }
+    if (avctx->compression_level == FF_COMPRESSION_DEFAULT)
+        avctx->compression_level = opt->quality;
 
     return 0;
 }
@@ -1283,6 +1266,12 @@ static const AVOption vaapi_encode_h264_options[] = {
     { "low_power", "Use low-power encoding mode (experimental: only supported "
       "on some platforms, does not support all features)",
       OFFSET(low_power), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
+    { "coder", "Entropy coder type",
+      OFFSET(coder), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, FLAGS, "coder" },
+        { "cavlc", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, INT_MIN, INT_MAX, FLAGS, "coder" },
+        { "cabac", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, INT_MIN, INT_MAX, FLAGS, "coder" },
+        { "vlc",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, INT_MIN, INT_MAX, FLAGS, "coder" },
+        { "ac",    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, INT_MIN, INT_MAX, FLAGS, "coder" },
     { NULL },
 };
 

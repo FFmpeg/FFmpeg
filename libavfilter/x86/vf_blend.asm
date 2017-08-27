@@ -83,7 +83,7 @@ BLEND_SIMPLE subtract, subusb
 BLEND_SIMPLE darken,   minub
 BLEND_SIMPLE lighten,  maxub
 
-BLEND_INIT difference128, 4
+BLEND_INIT grainextract, 4
     pxor       m2, m2
     mova       m3, [pw_128]
 .nextrow:
@@ -181,7 +181,7 @@ BLEND_INIT average, 3
     jl .loop
 BLEND_END
 
-BLEND_INIT addition128, 4
+BLEND_INIT grainmerge, 4
     pxor       m2, m2
     mova       m3, [pw_128]
 .nextrow:

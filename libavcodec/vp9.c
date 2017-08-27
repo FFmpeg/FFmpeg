@@ -459,7 +459,7 @@ static int decode_frame_header(AVCodecContext *avctx,
                 s->bytesperpixel = 1;
                 s->pix_fmt = AV_PIX_FMT_YUV420P;
                 avctx->colorspace = AVCOL_SPC_BT470BG;
-                avctx->color_range = AVCOL_RANGE_JPEG;
+                avctx->color_range = AVCOL_RANGE_MPEG;
             }
             s->s.h.refreshrefmask = get_bits(&s->gb, 8);
             w = get_bits(&s->gb, 16) + 1;

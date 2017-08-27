@@ -262,7 +262,7 @@ static int read_high_coeffs(AVCodecContext *avctx, uint8_t *src, int16_t *dst, i
 
         flag = 0;
 
-        if (state * 4ULL > 0xFF || i >= size)
+        if ((uint64_t)state > 0xFF / 4 || i >= size)
             continue;
 
         pfx = ((state + 8) >> 5) + (state ? ff_clz(state): 32) - 24;

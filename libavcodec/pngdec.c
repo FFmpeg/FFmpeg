@@ -858,7 +858,7 @@ static int decode_iccp_chunk(PNGDecContext *s, int length, AVFrame *f)
 
     length = FFMAX(length - 1, 0);
 
-    if ((ret = decode_zbuf(&bp, s->gb.buffer, s->gb.buffer + length) < 0))
+    if ((ret = decode_zbuf(&bp, s->gb.buffer, s->gb.buffer + length)) < 0)
         return ret;
 
     av_bprint_finalize(&bp, (char **)&data);

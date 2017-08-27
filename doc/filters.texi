@@ -2667,6 +2667,9 @@ Default is linlog.
 @item fft2
 Enable 2-channel convolution using complex FFT. This improves speed significantly.
 Default is disabled.
+
+@item min_phase
+Enable minimum phase impulse response. Default is disabled.
 @end table
 
 @subsection Examples
@@ -3924,6 +3927,18 @@ Set LFE low cut off frequency. By default, this is @var{128} Hz.
 
 @item lfe_high
 Set LFE high cut off frequency. By default, this is @var{256} Hz.
+
+@item fc_in
+Set front center input volume. By default, this is @var{1}.
+
+@item fc_out
+Set front center output volume. By default, this is @var{1}.
+
+@item lfe_in
+Set LFE input volume. By default, this is @var{1}.
+
+@item lfe_out
+Set LFE output volume. By default, this is @var{1}.
 @end table
 
 @section treble
@@ -4854,13 +4869,13 @@ of @var{all_mode}. Default value is @code{normal}.
 Available values for component modes are:
 @table @samp
 @item addition
-@item addition128
+@item grainmerge
 @item and
 @item average
 @item burn
 @item darken
 @item difference
-@item difference128
+@item grainextract
 @item divide
 @item dodge
 @item freeze
@@ -4987,7 +5002,7 @@ blend=all_expr=if(gt(X,Y*(W/H)),A,B)
 @item
 Display differences between the current and the previous frame:
 @example
-tblend=all_mode=difference128
+tblend=all_mode=grainextract
 @end example
 @end itemize
 
@@ -11829,6 +11844,16 @@ The maximum allowed component value.
 @end table
 
 All expressions default to "val".
+
+@subsection Examples
+
+@itemize
+@item
+Change too high luma values to gradient:
+@example
+pseudocolor="'if(between(val,ymax,amax),lerp(ymin,ymax,(val-ymax)/(amax-ymax)),-1):if(between(val,ymax,amax),lerp(umax,umin,(val-ymax)/(amax-ymax)),-1):if(between(val,ymax,amax),lerp(vmin,vmax,(val-ymax)/(amax-ymax)),-1):-1'"
+@end example
+@end itemize
 
 @section psnr
 

@@ -292,7 +292,7 @@ static av_cold int g726_reset(G726Context *c)
     return 0;
 }
 
-#if CONFIG_ADPCM_G726_ENCODER
+#if CONFIG_ADPCM_G726_ENCODER || CONFIG_ADPCM_G726LE_ENCODER
 static int16_t g726_encode(G726Context* c, int16_t sig)
 {
     uint8_t i;
@@ -307,6 +307,8 @@ static int16_t g726_encode(G726Context* c, int16_t sig)
 static av_cold int g726_encode_init(AVCodecContext *avctx)
 {
     G726Context* c = avctx->priv_data;
+
+    c->little_endian = !strcmp(avctx->codec->name, "g726le");
 
     if (avctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL &&
         avctx->sample_rate != 8000) {
@@ -356,9 +358,17 @@ static int g726_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     init_put_bits(&pb, avpkt->data, avpkt->size);
 
     for (i = 0; i < frame->nb_samples; i++)
-        put_bits(&pb, c->code_size, g726_encode(c, *samples++));
+        if (c->little_endian) {
+            put_bits_le(&pb, c->code_size, g726_encode(c, *samples++));
+        } else {
+            put_bits(&pb, c->code_size, g726_encode(c, *samples++));
+        }
 
-    flush_put_bits(&pb);
+    if (c->little_endian) {
+        flush_put_bits_le(&pb);
+    } else {
+        flush_put_bits(&pb);
+    }
 
     avpkt->size = out_size;
     *got_packet_ptr = 1;
@@ -372,16 +382,18 @@ static const AVOption options[] = {
     { NULL },
 };
 
+static const AVCodecDefault defaults[] = {
+    { "b", "0" },
+    { NULL },
+};
+#endif
+
+#if CONFIG_ADPCM_G726_ENCODER
 static const AVClass g726_class = {
     .class_name = "g726",
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
-};
-
-static const AVCodecDefault defaults[] = {
-    { "b", "0" },
-    { NULL },
 };
 
 AVCodec ff_adpcm_g726_encoder = {
@@ -396,6 +408,30 @@ AVCodec ff_adpcm_g726_encoder = {
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
     .priv_class     = &g726_class,
+    .defaults       = defaults,
+};
+#endif
+
+#if CONFIG_ADPCM_G726LE_ENCODER
+static const AVClass g726le_class = {
+    .class_name = "g726le",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+AVCodec ff_adpcm_g726le_encoder = {
+    .name           = "g726le",
+    .long_name      = NULL_IF_CONFIG_SMALL("G.726 little endian ADPCM (\"right-justified\")"),
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = AV_CODEC_ID_ADPCM_G726LE,
+    .priv_data_size = sizeof(G726Context),
+    .init           = g726_encode_init,
+    .encode2        = g726_encode_frame,
+    .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME,
+    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
+                                                     AV_SAMPLE_FMT_NONE },
+    .priv_class     = &g726le_class,
     .defaults       = defaults,
 };
 #endif
