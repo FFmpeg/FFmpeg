@@ -140,7 +140,7 @@ static inline void decode_subband_slice_buffered(SnowContext *s, SubBand *b, sli
         v = b->x_coeff[new_index].coeff;
         x = b->x_coeff[new_index++].x;
         while(x < w){
-            register int t= ( (v>>1)*qmul + qadd)>>QEXPSHIFT;
+            register int t= (int)( (v>>1)*(unsigned)qmul + qadd)>>QEXPSHIFT;
             register int u= -(v&1);
             line[x] = (t^u) - u;
 
