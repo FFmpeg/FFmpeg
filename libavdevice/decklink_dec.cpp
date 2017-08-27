@@ -234,7 +234,7 @@ static int avpacket_queue_put(AVPacketQueue *q, AVPacket *pkt)
     AVPacketList *pkt1;
 
     // Drop Packet if queue size is > maximum queue size
-    if (avpacket_queue_size(q) > q->max_q_size) {
+    if (avpacket_queue_size(q) > (uint64_t)q->max_q_size) {
         av_log(q->avctx, AV_LOG_WARNING,  "Decklink input buffer overrun!\n");
         return -1;
     }
