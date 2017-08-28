@@ -134,7 +134,7 @@ static int config_props(AVFilterLink *inlink)
     case MODE_EXTRA_SLOW:
         enc_ctx->refs = 3;
     case MODE_SLOW:
-        enc_ctx->me_method = ME_ITER;
+        av_dict_set(&opts, "motion_est", "iter", 0);
     case MODE_MEDIUM:
         enc_ctx->flags |= AV_CODEC_FLAG_4MV;
         enc_ctx->dia_size = 2;
