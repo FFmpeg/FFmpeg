@@ -67,7 +67,8 @@ static int FUNC(extension_data)(CodedBitstreamContext *ctx, RWContext *rw,
     BitstreamContext start;
     uint8_t bit;
     start = *rw;
-    for (k = 0; cbs_h2645_read_more_rbsp_data(rw); k++);
+    for (k = 0; cbs_h2645_read_more_rbsp_data(rw); k++)
+        bitstream_skip(rw, 1);
     current->bit_length = k;
     if (k > 0) {
         *rw = start;
