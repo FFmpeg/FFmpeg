@@ -42,6 +42,7 @@ version <next>:
 - FITS muxer and encoder
 - add --disable-autodetect build switch
 - drop deprecated qtkit input device (use avfoundation instead)
+- despill video filter
 
 version 3.3:
 - CrystalHD decoder moved to new decode API

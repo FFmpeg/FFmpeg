@@ -6811,6 +6811,41 @@ FFmpeg was configured with @code{--enable-opencl}. Default value is 0.
 
 @end table
 
+@section despill
+
+Remove unwanted contamination of foreground colors, caused by reflected color of
+greenscreen or bluescreen.
+
+This filter accepts the following options:
+
+@table @option
+@item type
+Set what type of despill to use.
+
+@item mix
+Set how spillmap will be generated.
+
+@item expand
+Set how much to get rid of still remaining spill.
+
+@item red
+Controls ammount of red in spill area.
+
+@item green
+Controls ammount of green in spill area.
+Should be -1 for greenscreen.
+
+@item blue
+Controls ammount of blue in spill area.
+Should be -1 for bluescreen.
+
+@item brightness
+Controls brightness of spill area, preserving colors.
+
+@item alpha
+Modify alpha from generated spillmap.
+@end table
+
 @section detelecine
 
 Apply an exact inverse of the telecine operation. It requires a predefined
