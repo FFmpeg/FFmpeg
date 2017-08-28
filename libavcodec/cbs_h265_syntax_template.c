@@ -1133,7 +1133,7 @@ static int FUNC(pred_weight_table)(CodedBitstreamContext *ctx, RWContext *rw,
             se(delta_luma_weight_l0[i], -128, +127);
             se(luma_offset_l0[i],
                -(1 << (sps->bit_depth_luma_minus8 + 8 - 1)),
-               +(1 << (sps->bit_depth_luma_minus8 + 8 - 1) - 1));
+               ((1 << (sps->bit_depth_luma_minus8 + 8 - 1)) - 1));
         } else {
             infer(delta_luma_weight_l0[i], 0);
             infer(luma_offset_l0[i],       0);
@@ -1143,7 +1143,7 @@ static int FUNC(pred_weight_table)(CodedBitstreamContext *ctx, RWContext *rw,
                 se(delta_chroma_weight_l0[i][j], -128, +127);
                 se(chroma_offset_l0[i][j],
                    -(4 << (sps->bit_depth_chroma_minus8 + 8 - 1)),
-                   +(4 << (sps->bit_depth_chroma_minus8 + 8 - 1) - 1));
+                   ((4 << (sps->bit_depth_chroma_minus8 + 8 - 1)) - 1));
             }
         } else {
             for (j = 0; j < 2; j++) {
@@ -1173,8 +1173,8 @@ static int FUNC(pred_weight_table)(CodedBitstreamContext *ctx, RWContext *rw,
             if (current->luma_weight_l1_flag[i]) {
                 se(delta_luma_weight_l1[i], -128, +127);
                 se(luma_offset_l1[i],
-                   - 1 << (sps->bit_depth_luma_minus8 + 8 - 1),
-                   + 1 << (sps->bit_depth_luma_minus8 + 8 - 1) - 1);
+                   -(1 << (sps->bit_depth_luma_minus8 + 8 - 1)),
+                   ((1 << (sps->bit_depth_luma_minus8 + 8 - 1)) - 1));
             } else {
                 infer(delta_luma_weight_l1[i], 0);
                 infer(luma_offset_l1[i],       0);
@@ -1183,8 +1183,8 @@ static int FUNC(pred_weight_table)(CodedBitstreamContext *ctx, RWContext *rw,
                 for (j = 0; j < 2; j++) {
                     se(delta_chroma_weight_l1[i][j], -128, +127);
                     se(chroma_offset_l1[i][j],
-                       - 4 << (sps->bit_depth_chroma_minus8 + 8 - 1),
-                       + 4 << (sps->bit_depth_chroma_minus8 + 8 - 1) - 1);
+                       -(4 << (sps->bit_depth_chroma_minus8 + 8 - 1)),
+                       ((4 << (sps->bit_depth_chroma_minus8 + 8 - 1)) - 1));
                 }
             } else {
                 for (j = 0; j < 2; j++) {
