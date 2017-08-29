@@ -62,6 +62,8 @@ static int write_header(AVFormatContext *s)
 
     if (st->codecpar->codec_id == AV_CODEC_ID_GIF) {
         img->muxer = "gif";
+    } else if (st->codecpar->codec_id == AV_CODEC_ID_FITS) {
+        img->muxer = "fits";
     } else if (st->codecpar->codec_id == AV_CODEC_ID_RAWVIDEO) {
         const char *str = strrchr(img->path, '.');
         img->split_planes =     str

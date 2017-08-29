@@ -165,6 +165,7 @@ OBJS-$(CONFIG_FIFO_MUXER)                += fifo.o
 OBJS-$(CONFIG_FILMSTRIP_DEMUXER)         += filmstripdec.o
 OBJS-$(CONFIG_FILMSTRIP_MUXER)           += filmstripenc.o
 OBJS-$(CONFIG_FITS_DEMUXER)              += fitsdec.o
+OBJS-$(CONFIG_FITS_MUXER)                += fitsenc.o
 OBJS-$(CONFIG_FLAC_DEMUXER)              += flacdec.o rawdec.o \
                                             flac_picture.o   \
                                             oggparsevorbis.o \
