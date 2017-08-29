@@ -230,6 +230,15 @@ do_avconv $file $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $ENC_OPTS -t 1 -q
 #do_avconv_crc $file -i $target_path/$file
 fi
 
+if [ -n "$do_fits" ] ; then
+pix_fmts="gray gray16be gbrp gbrap gbrp16be gbrap16be"
+for pix_fmt in $pix_fmts ; do
+    file=${outfile}${pix_fmt}lavf.fits
+    do_avconv $file $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $ENC_OPTS -pix_fmt $pix_fmt
+    do_avconv_crc $file $DEC_OPTS -i $target_path/$file -pix_fmt $pix_fmt
+done
+fi
+
 # image formats
 
 if [ -n "$do_pgm" ] ; then
