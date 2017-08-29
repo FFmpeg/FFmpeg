@@ -350,8 +350,11 @@ static int nsv_parse_NSVf_header(AVFormatContext *s)
         if (!nsv->nsvs_file_offset)
             return AVERROR(ENOMEM);
 
-        for(i=0;i<table_entries_used;i++)
+        for(i=0;i<table_entries_used;i++) {
+            if (avio_feof(pb))
+                return AVERROR_INVALIDDATA;
             nsv->nsvs_file_offset[i] = avio_rl32(pb) + size;
+        }
 
         if(table_entries > table_entries_used &&
            avio_rl32(pb) == MKTAG('T','O','C','2')) {
