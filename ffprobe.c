@@ -1925,11 +1925,11 @@ static void print_pkt_side_data(WriterContext *w,
     writer_print_section_footer(w);
 }
 
-static void print_color_range(WriterContext *w, enum AVColorRange color_range, const char *fallback)
+static void print_color_range(WriterContext *w, enum AVColorRange color_range)
 {
     const char *val = av_color_range_name(color_range);
     if (!val || color_range == AVCOL_RANGE_UNSPECIFIED) {
-        print_str_opt("color_range", fallback);
+        print_str_opt("color_range", "unknown");
     } else {
         print_str("color_range", val);
     }
@@ -2157,7 +2157,7 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
         print_int("top_field_first",        frame->top_field_first);
         print_int("repeat_pict",            frame->repeat_pict);
 
-        print_color_range(w, frame->color_range, "unknown");
+        print_color_range(w, frame->color_range);
         print_color_space(w, frame->colorspace);
         print_primaries(w, frame->color_primaries);
         print_color_trc(w, frame->color_trc);
@@ -2534,7 +2534,7 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
         else   print_str_opt("pix_fmt", "unknown");
         print_int("level",   par->level);
 
-        print_color_range(w, par->color_range, "N/A");
+        print_color_range(w, par->color_range);
         print_color_space(w, par->color_space);
         print_color_trc(w, par->color_trc);
         print_primaries(w, par->color_primaries);
