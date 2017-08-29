@@ -593,6 +593,8 @@ following image formats are supported:
     @tab Digital Picture Exchange
 @item EXR          @tab   @tab X
     @tab OpenEXR
+@item FITS         @tab   @tab X
+    @tab Flexible Image Transport System
 @item JPEG         @tab X @tab X
     @tab Progressive JPEG is not supported.
 @item JPEG 2000    @tab X @tab X

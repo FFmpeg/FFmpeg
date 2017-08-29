@@ -192,6 +192,7 @@ static void register_all(void)
     REGISTER_ENCDEC (FFV1,              ffv1);
     REGISTER_ENCDEC (FFVHUFF,           ffvhuff);
     REGISTER_DECODER(FIC,               fic);
+    REGISTER_DECODER(FITS,              fits);
     REGISTER_ENCDEC (FLASHSV,           flashsv);
     REGISTER_ENCDEC (FLASHSV2,          flashsv2);
     REGISTER_DECODER(FLIC,              flic);

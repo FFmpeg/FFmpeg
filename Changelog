@@ -38,6 +38,7 @@ version <next>:
 - Some video filters with several inputs now use a common set of options:
   blend, libvmaf, lut3d, overlay, psnr, ssim.
   They must always be used by name.
+- FITS demuxer and decoder
 
 version 3.3:
 - CrystalHD decoder moved to new decode API
