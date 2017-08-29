@@ -39,6 +39,7 @@ version <next>:
   blend, libvmaf, lut3d, overlay, psnr, ssim.
   They must always be used by name.
 - FITS demuxer and decoder
+- FITS muxer and encoder
 
 version 3.3:
 - CrystalHD decoder moved to new decode API
