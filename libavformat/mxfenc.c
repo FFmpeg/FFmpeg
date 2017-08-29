@@ -2101,6 +2101,10 @@ static int mxf_write_header(AVFormatContext *s)
 
             sc->video_bit_rate = st->codecpar->bit_rate;
             if (s->oformat == &ff_mxf_d10_muxer) {
+                if (st->codecpar->codec_id != AV_CODEC_ID_MPEG2VIDEO) {
+                    av_log(s, AV_LOG_ERROR, "error MXF D-10 only support MPEG-2 Video\n");
+                    return AVERROR(EINVAL);
+                }
                 if ((sc->video_bit_rate == 50000000) && (mxf->time_base.den == 25)) {
                     sc->index = 3;
                 } else if ((sc->video_bit_rate == 49999840 || sc->video_bit_rate == 50000000) && (mxf->time_base.den != 25)) {
