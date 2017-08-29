@@ -46,6 +46,63 @@ extern "C" {
 #include "decklink_common.h"
 #include "decklink_dec.h"
 
+typedef struct VANCLineNumber {
+    BMDDisplayMode mode;
+    int vanc_start;
+    int field0_vanc_end;
+    int field1_vanc_start;
+    int vanc_end;
+} VANCLineNumber;
+
+/* These VANC line numbers need not be very accurate. In any case
+ * GetBufferForVerticalBlankingLine() will return an error when invalid
+ * ancillary line number was requested. We just need to make sure that the
+ * entire VANC region is covered, while making sure we don't decode VANC of
+ * another source during switching*/
+static VANCLineNumber vanc_line_numbers[] = {
+    /* SD Modes */
+
+    {bmdModeNTSC, 11, 19, 274, 282},
+    {bmdModeNTSC2398, 11, 19, 274, 282},
+    {bmdModePAL, 7, 22, 320, 335},
+    {bmdModeNTSCp, 11, -1, -1, 39},
+    {bmdModePALp, 7, -1, -1, 45},
+
+    /* HD 1080 Modes */
+
+    {bmdModeHD1080p2398, 8, -1, -1, 42},
+    {bmdModeHD1080p24, 8, -1, -1, 42},
+    {bmdModeHD1080p25, 8, -1, -1, 42},
+    {bmdModeHD1080p2997, 8, -1, -1, 42},
+    {bmdModeHD1080p30, 8, -1, -1, 42},
+    {bmdModeHD1080i50, 8, 20, 570, 585},
+    {bmdModeHD1080i5994, 8, 20, 570, 585},
+    {bmdModeHD1080i6000, 8, 20, 570, 585},
+    {bmdModeHD1080p50, 8, -1, -1, 42},
+    {bmdModeHD1080p5994, 8, -1, -1, 42},
+    {bmdModeHD1080p6000, 8, -1, -1, 42},
+
+     /* HD 720 Modes */
+
+    {bmdModeHD720p50, 8, -1, -1, 26},
+    {bmdModeHD720p5994, 8, -1, -1, 26},
+    {bmdModeHD720p60, 8, -1, -1, 26},
+
+    /* For all other modes, for which we don't support VANC */
+    {bmdModeUnknown, 0, -1, -1, -1}
+};
+
+static int get_vanc_line_idx(BMDDisplayMode mode)
+{
+    unsigned int i;
+    for (i = 0; i < FF_ARRAY_ELEMS(vanc_line_numbers); i++) {
+        if (mode == vanc_line_numbers[i].mode)
+            return i;
+    }
+    /* Return the VANC idx for Unknown mode */
+    return i - 1;
+}
+
 static uint8_t calc_parity_and_line_offset(int line)
 {
     uint8_t ret = (line < 313) << 5;
@@ -502,18 +559,21 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
                     }
                 }
 #endif
-                if (videoFrame->GetWidth() == 1920 && vanc_format == bmdFormat10BitYUV) {
-                    int first_active_line = ctx->bmd_field_dominance == bmdProgressiveFrame ? 42 : 584;
-                    for (i = 8; i < first_active_line; i++) {
+                if (vanc_format == bmdFormat10BitYUV) {
+                    int idx = get_vanc_line_idx(ctx->bmd_mode);
+                    for (i = vanc_line_numbers[idx].vanc_start; i <= vanc_line_numbers[idx].vanc_end; i++) {
                         uint8_t *buf;
-                        if (vanc->GetBufferForVerticalBlankingLine(i, (void**)&buf) == S_OK)
-                            txt_buf = teletext_data_unit_from_vanc_data(buf, txt_buf, ctx->teletext_lines);
-                        if (ctx->bmd_field_dominance != bmdProgressiveFrame && i == 20)     // skip field1 active lines
-                            i = 569;
-                        if (txt_buf - txt_buf0 > 1611) {   // ensure we still have at least 1920 bytes free in the buffer
-                            av_log(avctx, AV_LOG_ERROR, "Too many OP47 teletext packets.\n");
-                            break;
+                        if (vanc->GetBufferForVerticalBlankingLine(i, (void**)&buf) == S_OK) {
+                            if (videoFrame->GetWidth() == 1920) {
+                                txt_buf = teletext_data_unit_from_vanc_data(buf, txt_buf, ctx->teletext_lines);
+                                if (txt_buf - txt_buf0 > 1611) {   // ensure we still have at least 1920 bytes free in the buffer
+                                    av_log(avctx, AV_LOG_ERROR, "Too many OP47 teletext packets.\n");
+                                    break;
+                                }
+                            }
                         }
+                        if (i == vanc_line_numbers[idx].field0_vanc_end)
+                            i = vanc_line_numbers[idx].field1_vanc_start - 1;
                     }
                 }
                 vanc->Release();
