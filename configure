@@ -5875,7 +5875,9 @@ enabled libmfx            && { use_pkg_config libmfx "mfx/mfxvideo.h" MFXInit ||
 enabled libmodplug        && require_pkg_config libmodplug libmodplug/modplug.h ModPlug_Load
 enabled libmp3lame        && require "libmp3lame >= 3.98.3" lame/lame.h lame_set_VBR_quality -lmp3lame
 enabled libmysofa         && require libmysofa "mysofa.h" mysofa_load -lmysofa
-enabled libnpp            && require libnpp npp.h nppGetLibVersion -lnppi -lnppc
+enabled libnpp            && { check_lib libnpp npp.h nppGetLibVersion -lnppig -lnppicc -lnppc ||
+                               check_lib libnpp npp.h nppGetLibVersion -lnppi -lnppc ||
+                               die "ERROR: libnpp not found"; }
 enabled libopencore_amrnb && require libopencore_amrnb opencore-amrnb/interf_dec.h Decoder_Interface_init -lopencore-amrnb
 enabled libopencore_amrwb && require libopencore_amrwb opencore-amrwb/dec_if.h D_IF_init -lopencore-amrwb
 enabled libopencv         && { check_header opencv2/core/core_c.h &&
