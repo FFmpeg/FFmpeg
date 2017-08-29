@@ -234,6 +234,15 @@ lavftest(){
     ${base}/lavf-regression.sh $t lavf tests/vsynth1 "$target_exec" "$target_path" "$threads" "$thread_type" "$cpuflags" "$target_samples"
 }
 
+refcmp_metadata(){
+    refcmp=$1
+    pixfmt=$2
+    fuzz=${3:-0.001}
+    ffmpeg $FLAGS $ENC_OPTS \
+        -lavfi "testsrc2=size=300x200:rate=1:duration=5,format=${pixfmt},split[ref][tmp];[tmp]avgblur=4[enc];[enc][ref]${refcmp},metadata=print:file=-" \
+        -f null /dev/null | awk -v ref=${ref} -v fuzz=${fuzz} -f ${base}/refcmp-metadata.awk -
+}
+
 video_filter(){
     filters=$1
     shift
