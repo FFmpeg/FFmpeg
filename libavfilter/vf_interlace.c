@@ -83,14 +83,23 @@ static void lowpass_line_complex_c(uint8_t *dstp, ptrdiff_t linesize,
     const uint8_t *srcp_below = srcp + pref;
     const uint8_t *srcp_above2 = srcp + mref * 2;
     const uint8_t *srcp_below2 = srcp + pref * 2;
-    int i;
+    int i, srcp_x, srcp_ab;
     for (i = 0; i < linesize; i++) {
         // this calculation is an integer representation of
         // '0.75 * current + 0.25 * above + 0.25 * below - 0.125 * above2 - 0.125 * below2'
         // '4 +' is for rounding.
-        dstp[i] = av_clip_uint8((4 + (srcp[i] << 2)
-                  + ((srcp[i] + srcp_above[i] + srcp_below[i]) << 1)
-                  - srcp_above2[i] - srcp_below2[i]) >> 3);
+        srcp_x = srcp[i] << 1;
+        srcp_ab = srcp_above[i] + srcp_below[i];
+        dstp[i] = av_clip_uint8((4 + ((srcp[i] + srcp_x + srcp_ab) << 1)
+                                - srcp_above2[i] - srcp_below2[i]) >> 3);
+        // Prevent over-sharpening:
+        // dst must not exceed src when the average of above and below
+        // is less than src. And the other way around.
+        if (srcp_ab > srcp_x) {
+            if (dstp[i] < srcp[i])
+                dstp[i] = srcp[i];
+        } else if (dstp[i] > srcp[i])
+            dstp[i] = srcp[i];
     }
 }
 
