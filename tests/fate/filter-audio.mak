@@ -145,7 +145,7 @@ fate-filter-compand: CMD = framecrc -i $(SRC) -frames:a 20 -filter_complex_scrip
 tests/data/hls-list.m3u8: TAG = GEN
 tests/data/hls-list.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
-        -f lavfi -i "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t)::d=20" -f segment -segment_time 10 -map 0 -flags +bitexact -codec:a mp2fixed \
+        -f lavfi -i "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t):d=20" -f segment -segment_time 10 -map 0 -flags +bitexact -codec:a mp2fixed \
         -segment_list $(TARGET_PATH)/$@ -y $(TARGET_PATH)/tests/data/hls-out-%03d.ts 2>/dev/null
 
 FATE_AFILTER-$(call ALLYES, HLS_DEMUXER MPEGTS_MUXER MPEGTS_DEMUXER AEVALSRC_FILTER LAVFI_INDEV MP2FIXED_ENCODER) += fate-filter-hls
@@ -155,10 +155,10 @@ fate-filter-hls: CMD = framecrc -flags +bitexact -i $(TARGET_PATH)/tests/data/hl
 tests/data/hls-list-append.m3u8: TAG = GEN
 tests/data/hls-list-append.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
-        -f lavfi -i "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t)::d=20" -f segment -segment_time 10 -map 0 -flags +bitexact -codec:a mp2fixed \
+        -f lavfi -i "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t):d=20" -f segment -segment_time 10 -map 0 -flags +bitexact -codec:a mp2fixed \
         -segment_list $(TARGET_PATH)/$@ -y $(TARGET_PATH)/tests/data/hls-append-out-%03d.ts 2>/dev/null; \
         $(TARGET_EXEC) $(TARGET_PATH)/$< \
-        -f lavfi -i "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t)::d=20" -f hls -hls_time 10 -map 0 -flags +bitexact \
+        -f lavfi -i "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t):d=20" -f hls -hls_time 10 -map 0 -flags +bitexact \
         -hls_flags append_list -codec:a mp2fixed -hls_segment_filename $(TARGET_PATH)/tests/data/hls-append-out-%03d.ts \
         $(TARGET_PATH)/tests/data/hls-list-append.m3u8 2>/dev/null
 
