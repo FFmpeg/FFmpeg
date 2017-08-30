@@ -15,6 +15,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2017-09-28 - xxxxxxx - lavc 57.106.104 - avcodec.h
+  Add AV_PKT_DATA_A53_CC packet side data, to export closed captions
+
 2017-09-27 - xxxxxxx - lavu 55.77.101 / lavu 55.31.1 - frame.h
   Allow passing the value of 0 (meaning "automatic") as the required alignment
   to av_frame_get_buffer().

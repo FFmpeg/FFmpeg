@@ -1600,6 +1600,13 @@ enum AVPacketSideDataType {
     AV_PKT_DATA_CONTENT_LIGHT_LEVEL,
 
     /**
+     * ATSC A53 Part 4 Closed Captions. This metadata should be associated with
+     * a video stream. A53 CC bitstream is stored as uint8_t in AVPacketSideData.data.
+     * The number of bytes of CC data is AVPacketSideData.size.
+     */
+    AV_PKT_DATA_A53_CC,
+
+    /**
      * The number of side data elements (in fact a bit more than it).
      * This is not part of the public API/ABI in the sense that it may
      * change when new side data types are added.
