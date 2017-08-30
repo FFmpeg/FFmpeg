@@ -46,6 +46,8 @@ extern "C" {
 #include "decklink_common.h"
 #include "decklink_dec.h"
 
+#define MAX_WIDTH_VANC 1920
+
 typedef struct VANCLineNumber {
     BMDDisplayMode mode;
     int vanc_start;
@@ -101,6 +103,18 @@ static int get_vanc_line_idx(BMDDisplayMode mode)
     }
     /* Return the VANC idx for Unknown mode */
     return i - 1;
+}
+
+/* The 10-bit VANC data is packed in V210, we only need the luma component. */
+static void extract_luma_from_v210(uint16_t *dst, const uint8_t *src, int width)
+{
+    int i;
+    for (i = 0; i < width / 3; i += 3) {
+        *dst++ = (src[1] >> 2) + ((src[2] & 15) << 6);
+        *dst++ =  src[4]       + ((src[5] &  3) << 8);
+        *dst++ = (src[6] >> 4) + ((src[7] & 63) << 4);
+        src += 8;
+    }
 }
 
 static uint8_t calc_parity_and_line_offset(int line)
@@ -218,19 +232,10 @@ static uint8_t* teletext_data_unit_from_ancillary_packet(uint16_t *py, uint16_t 
     return tgt;
 }
 
-static uint8_t* teletext_data_unit_from_vanc_data(uint8_t *src, uint8_t *tgt, int64_t wanted_lines)
+static uint8_t* teletext_data_unit_from_vanc_data(uint16_t *py, uint8_t *tgt, int64_t wanted_lines)
 {
-    uint16_t y[1920];
-    uint16_t *py = y;
-    uint16_t *pend = y + 1920;
-    /* The 10-bit VANC data is packed in V210, we only need the luma component. */
-    while (py < pend) {
-        *py++ = (src[1] >> 2) + ((src[2] & 15) << 6);
-        *py++ =  src[4]       + ((src[5] &  3) << 8);
-        *py++ = (src[6] >> 4) + ((src[7] & 63) << 4);
-        src += 8;
-    }
-    py = y;
+    uint16_t *pend = py + 1920;
+
     while (py < pend - 6) {
         if (py[0] == 0 && py[1] == 0x3ff && py[2] == 0x3ff) {           // ancillary data flag
             py += 3;
@@ -559,13 +564,15 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
                     }
                 }
 #endif
-                if (vanc_format == bmdFormat10BitYUV) {
+                if (vanc_format == bmdFormat10BitYUV && videoFrame->GetWidth() <= MAX_WIDTH_VANC) {
                     int idx = get_vanc_line_idx(ctx->bmd_mode);
                     for (i = vanc_line_numbers[idx].vanc_start; i <= vanc_line_numbers[idx].vanc_end; i++) {
                         uint8_t *buf;
                         if (vanc->GetBufferForVerticalBlankingLine(i, (void**)&buf) == S_OK) {
+                            uint16_t luma_vanc[MAX_WIDTH_VANC];
+                            extract_luma_from_v210(luma_vanc, buf, videoFrame->GetWidth());
                             if (videoFrame->GetWidth() == 1920) {
-                                txt_buf = teletext_data_unit_from_vanc_data(buf, txt_buf, ctx->teletext_lines);
+                                txt_buf = teletext_data_unit_from_vanc_data(luma_vanc, txt_buf, ctx->teletext_lines);
                                 if (txt_buf - txt_buf0 > 1611) {   // ensure we still have at least 1920 bytes free in the buffer
                                     av_log(avctx, AV_LOG_ERROR, "Too many OP47 teletext packets.\n");
                                     break;
