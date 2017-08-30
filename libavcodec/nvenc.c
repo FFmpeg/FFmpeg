@@ -1262,16 +1262,16 @@ av_cold int ff_nvenc_encode_close(AVCodecContext *avctx)
     CUcontext dummy;
     int i;
 
-    cu_res = dl_fn->cuda_dl->cuCtxPushCurrent(ctx->cu_context);
-    if (cu_res != CUDA_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "cuCtxPushCurrent failed\n");
-        return AVERROR_EXTERNAL;
-    }
-
     /* the encoder has to be flushed before it can be closed */
     if (ctx->nvencoder) {
         NV_ENC_PIC_PARAMS params        = { .version        = NV_ENC_PIC_PARAMS_VER,
                                             .encodePicFlags = NV_ENC_PIC_FLAG_EOS };
+
+        cu_res = dl_fn->cuda_dl->cuCtxPushCurrent(ctx->cu_context);
+        if (cu_res != CUDA_SUCCESS) {
+            av_log(avctx, AV_LOG_ERROR, "cuCtxPushCurrent failed\n");
+            return AVERROR_EXTERNAL;
+        }
 
         p_nvenc->nvEncEncodePicture(ctx->nvencoder, &params);
     }
@@ -1304,15 +1304,16 @@ av_cold int ff_nvenc_encode_close(AVCodecContext *avctx)
     av_freep(&ctx->surfaces);
     ctx->nb_surfaces = 0;
 
-    if (ctx->nvencoder)
+    if (ctx->nvencoder) {
         p_nvenc->nvEncDestroyEncoder(ctx->nvencoder);
-    ctx->nvencoder = NULL;
 
-    cu_res = dl_fn->cuda_dl->cuCtxPopCurrent(&dummy);
-    if (cu_res != CUDA_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "cuCtxPopCurrent failed\n");
-        return AVERROR_EXTERNAL;
+        cu_res = dl_fn->cuda_dl->cuCtxPopCurrent(&dummy);
+        if (cu_res != CUDA_SUCCESS) {
+            av_log(avctx, AV_LOG_ERROR, "cuCtxPopCurrent failed\n");
+            return AVERROR_EXTERNAL;
+        }
     }
+    ctx->nvencoder = NULL;
 
     if (ctx->cu_context_internal)
         dl_fn->cuda_dl->cuCtxDestroy(ctx->cu_context_internal);
