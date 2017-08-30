@@ -317,6 +317,12 @@ static int nvenc_check_capabilities(AVCodecContext *avctx)
         return AVERROR(ENOSYS);
     }
 
+    ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_CABAC);
+    if (ctx->coder == NV_ENC_H264_ENTROPY_CODING_MODE_CABAC && ret <= 0) {
+        av_log(avctx, AV_LOG_VERBOSE, "CABAC entropy coding not supported\n");
+        return AVERROR(ENOSYS);
+    }
+
     return 0;
 }
 
@@ -915,6 +921,9 @@ static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
     h264->chromaFormatIDC = avctx->profile == FF_PROFILE_H264_HIGH_444_PREDICTIVE ? 3 : 1;
 
     h264->level = ctx->level;
+
+    if (ctx->coder >= 0)
+        h264->entropyCodingMode = ctx->coder;
 
     return 0;
 }
