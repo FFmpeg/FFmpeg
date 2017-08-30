@@ -213,6 +213,7 @@ External library support:
   --enable-gnutls          enable gnutls, needed for https support
                            if openssl is not used [no]
   --disable-iconv          disable iconv [autodetect]
+  --disable-jack           disable libjack support [autodetect]
   --enable-jni             enable JNI support [no]
   --enable-ladspa          enable LADSPA audio filtering [no]
   --enable-libass          enable libass subtitles rendering,
@@ -1485,6 +1486,7 @@ EXTERNAL_AUTODETECT_LIBRARY_LIST="
     alsa
     bzlib
     iconv
+    jack
     libxcb
     libxcb_shm
     libxcb_shape
@@ -2064,7 +2066,6 @@ HAVE_LIST="
     $TYPES_LIST
     atomics_native
     dos_paths
-    jack
     libc_msvcrt
     makeinfo
     makeinfo_html
@@ -6115,7 +6116,7 @@ check_header soundcard.h
 
 enabled alsa && check_lib alsa alsa/asoundlib.h snd_pcm_htimestamp -lasound
 
-enabled jack_indev && check_lib jack jack/jack.h jack_client_open -ljack &&
+enabled jack && check_lib jack jack/jack.h jack_client_open -ljack &&
     check_func jack_port_get_latency_range -ljack
 
 enabled_any sndio_indev sndio_outdev && check_lib sndio sndio.h sio_open -lsndio
