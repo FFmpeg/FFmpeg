@@ -1854,7 +1854,6 @@ HAVE_LIST_PUB="
 "
 
 HEADERS_LIST="
-    alsa_asoundlib_h
     altivec_h
     arpa_inet_h
     asm_types_h
@@ -1887,7 +1886,6 @@ HEADERS_LIST="
     openjpeg_1_5_openjpeg_h
     OpenGL_gl3_h
     poll_h
-    sndio_h
     soundcard_h
     stdatomic_h
     sys_mman_h
