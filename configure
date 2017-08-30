@@ -1488,7 +1488,6 @@ EXTERNAL_AUTODETECT_LIBRARY_LIST="
     libxcb_xfixes
     lzma
     schannel
-    sdl
     sdl2
     securetransport
     xlib
@@ -3523,6 +3522,9 @@ for opt do
         --enable-random=*|--disable-random=*)
             action=${opt%%-random=*}
             do_random ${action#--} $optval
+        ;;
+        --enable-sdl)
+            enable sdl2
         ;;
         --enable-*=*|--disable-*=*)
             eval $(echo "${opt%%=*}" | sed 's/--/action=/;s/-/ thing=/')
@@ -6025,7 +6027,6 @@ if enabled gcrypt; then
     fi
 fi
 
-disabled sdl && disable sdl2
 if ! disabled sdl2; then
     SDL2_CONFIG="${cross_prefix}sdl2-config"
     if check_pkg_config sdl2 SDL_events.h SDL_PollEvent; then
@@ -6045,7 +6046,7 @@ if ! disabled sdl2; then
         sdl2_extralibs="$sdl2_extralibs -mconsole"
     fi
 fi
-enabled sdl2 && enable sdl && add_cflags $sdl2_cflags && add_extralibs $sdl2_extralibs
+enabled sdl2 && add_cflags $sdl2_cflags && add_extralibs $sdl2_extralibs
 
 if enabled decklink; then
     case $target_os in
