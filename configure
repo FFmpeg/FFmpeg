@@ -6027,20 +6027,22 @@ if enabled gcrypt; then
     fi
 fi
 
-if ! disabled sdl2; then
+if enabled sdl2; then
     SDL2_CONFIG="${cross_prefix}sdl2-config"
     if check_pkg_config sdl2 SDL_events.h SDL_PollEvent; then
         check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x020001" $sdl2_cflags &&
         check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x020100" $sdl2_cflags &&
-        check_func SDL_Init $sdl2_extralibs $sdl2_cflags && enable sdl2
-    else
-      if "${SDL2_CONFIG}" --version > /dev/null 2>&1; then
+        check_func SDL_Init $sdl2_extralibs $sdl2_cflags ||
+            disable sdl2
+    elif "${SDL2_CONFIG}" --version > /dev/null 2>&1; then
         sdl2_cflags=$("${SDL2_CONFIG}" --cflags)
         sdl2_extralibs=$("${SDL2_CONFIG}" --libs)
         check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x020001" $sdl2_cflags &&
         check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x020100" $sdl2_cflags &&
-        check_func SDL_Init $sdl2_extralibs $sdl2_cflags && enable sdl2
-      fi
+        check_func SDL_Init $sdl2_extralibs $sdl2_cflags ||
+            disable sdl2
+    else
+        disable sdl2
     fi
     if test $target_os = "mingw32"; then
         sdl2_extralibs="$sdl2_extralibs -mconsole"
