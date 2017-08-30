@@ -70,7 +70,7 @@ SKIPHEADERS-$(CONFIG_FBDEV_OUTDEV)       += fbdev_common.h
 SKIPHEADERS-$(CONFIG_LIBPULSE)           += pulse_audio_common.h
 SKIPHEADERS-$(CONFIG_V4L2_INDEV)         += v4l2-common.h
 SKIPHEADERS-$(CONFIG_V4L2_OUTDEV)        += v4l2-common.h
-SKIPHEADERS-$(HAVE_ALSA)                 += alsa.h
+SKIPHEADERS-$(CONFIG_ALSA)               += alsa.h
 SKIPHEADERS-$(HAVE_SNDIO)                += sndio.h
 
 TESTPROGS-$(CONFIG_JACK_INDEV)           += timefilter
