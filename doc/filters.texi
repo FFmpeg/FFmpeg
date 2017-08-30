@@ -551,7 +551,6 @@ The filter accepts the following option:
 @table @option
 @item delays
 Set list of delays in milliseconds for each channel separated by '|'.
-At least one delay greater than 0 should be provided.
 Unused delays will be silently ignored. If number of given delays is
 smaller than number of channels all remaining channels will not be delayed.
 If you want to delay exact number of samples, append 'S' to number.
