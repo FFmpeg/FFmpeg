@@ -3592,6 +3592,11 @@ for e in $env; do
 done
 
 if disabled autodetect; then
+
+    # Unless iconv is explicitely disabled by the user, we still want to probe
+    # for the iconv from the libc.
+    disabled iconv || enable libc_iconv
+
     disable_weak $EXTERNAL_AUTODETECT_LIBRARY_LIST
     disable_weak $HWACCEL_AUTODETECT_LIBRARY_LIST
 fi
@@ -6193,7 +6198,11 @@ int main(void) { return 0; }
 EOF
 
 # Funny iconv installations are not unusual, so check it after all flags have been set
-enabled iconv && check_func_headers iconv.h iconv || check_lib iconv iconv.h iconv -liconv
+if enabled libc_iconv; then
+    check_func_headers iconv.h iconv
+elif enabled iconv; then
+    check_func_headers iconv.h iconv || check_lib iconv iconv.h iconv -liconv
+fi
 
 enabled debug && add_cflags -g"$debuglevel" && add_asflags -g"$debuglevel"
 
