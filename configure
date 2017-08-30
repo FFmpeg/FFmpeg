@@ -2068,7 +2068,6 @@ HAVE_LIST="
     MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS
     perl
     pod2man
-    sdl2
     section_data_rel_ro
     sndio
     texi2html
