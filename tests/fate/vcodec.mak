@@ -376,11 +376,11 @@ fate-vsynth%-rv20:               FMT     = rm
 
 FATE_VCODEC-$(call ENCDEC, SNOW, AVI)   += snow snow-hpel snow-ll
 fate-vsynth%-snow:               ENCOPTS = -qscale 2 -flags +qpel \
-                                           -me_method iter -dia_size 2       \
+                                           -motion_est iter -dia_size 2      \
                                            -cmp 12 -subcmp 12 -s 128x64
 
 fate-vsynth%-snow-hpel:          ENCOPTS = -qscale 2              \
-                                           -me_method iter -dia_size 2       \
+                                           -motion_est iter -dia_size 2      \
                                            -cmp 12 -subcmp 12 -s 128x64
 
 fate-vsynth%-snow-ll:            ENCOPTS = -qscale .001 -pred 1 \
