@@ -288,6 +288,7 @@ External library support:
   --enable-opengl          enable OpenGL rendering [no]
   --enable-openssl         enable openssl, needed for https support
                            if gnutls is not used [no]
+  --disable-sndio          disable sndio support [autodetect]
   --disable-schannel       disable SChannel SSP, needed for TLS support on
                            Windows if openssl and gnutls are not used [autodetect]
   --disable-sdl2           disable sdl2 [autodetect]
@@ -1495,6 +1496,7 @@ EXTERNAL_AUTODETECT_LIBRARY_LIST="
     schannel
     sdl2
     securetransport
+    sndio
     xlib
     zlib
 "
@@ -2073,7 +2075,6 @@ HAVE_LIST="
     perl
     pod2man
     section_data_rel_ro
-    sndio
     texi2html
     threads
     uwp
@@ -6119,7 +6120,7 @@ enabled alsa && check_lib alsa alsa/asoundlib.h snd_pcm_htimestamp -lasound
 enabled jack && check_lib jack jack/jack.h jack_client_open -ljack &&
     check_func jack_port_get_latency_range -ljack
 
-enabled_any sndio_indev sndio_outdev && check_lib sndio sndio.h sio_open -lsndio
+enabled sndio && check_lib sndio sndio.h sio_open -lsndio
 
 if enabled libcdio; then
     check_lib libcdio "cdio/cdda.h cdio/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio ||
