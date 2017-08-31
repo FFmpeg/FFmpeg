@@ -368,7 +368,7 @@ static av_cold int libopus_encode_init(AVCodecContext *avctx)
         goto fail;
     }
 
-    /* Header includes channel mapping table if and only if mapping family is 0 */
+    /* Header includes channel mapping table if and only if mapping family is NOT 0 */
     header_size = 19 + (mapping_family == 0 ? 0 : 2 + avctx->channels);
     avctx->extradata = av_malloc(header_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!avctx->extradata) {
