@@ -45,6 +45,7 @@ version <next>:
 - despill video filter
 - haas audio filter
 - SUP/PGS subtitle muxer
+- convolve video filter
 
 version 3.3:
 - CrystalHD decoder moved to new decode API

@@ -6005,6 +6005,24 @@ convolution="-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2:-2 -
 @end example
 @end itemize
 
+@section convolve
+
+Apply 2D convolution of video stream in frequency domain using second stream
+as impulse.
+
+The filter accepts the following options:
+
+@table @option
+@item planes
+Set which planes to process.
+
+@item impulse
+Set which impulse video frames will be processed, can be @var{first}
+or @var{all}. Default is @var{all}.
+@end table
+
+The @code{convolve} filter also supports the @ref{framesync} options.
+
 @section copy
 
 Copy the input video source unchanged to the output. This is mainly useful for
