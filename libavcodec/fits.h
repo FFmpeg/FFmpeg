@@ -22,6 +22,10 @@
 #ifndef AVCODEC_FITS_H
 #define AVCODEC_FITS_H
 
+#include <inttypes.h>
+
+#include <libavutil/dict.h>
+
 typedef enum FITSHeaderState {
     STATE_SIMPLE,
     STATE_XTENSION,
