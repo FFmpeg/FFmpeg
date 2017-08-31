@@ -22,7 +22,7 @@
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "filters.h"
-#include "framesync2.h"
+#include "framesync.h"
 #include "internal.h"
 
 #define OFFSET(member) offsetof(FFFrameSync, member)
@@ -61,12 +61,12 @@ enum {
 
 static int consume_from_fifos(FFFrameSync *fs);
 
-const AVClass *framesync2_get_class(void)
+const AVClass *framesync_get_class(void)
 {
     return &framesync_class;
 }
 
-void ff_framesync2_preinit(FFFrameSync *fs)
+void ff_framesync_preinit(FFFrameSync *fs)
 {
     if (fs->class)
         return;
@@ -74,14 +74,14 @@ void ff_framesync2_preinit(FFFrameSync *fs)
     av_opt_set_defaults(fs);
 }
 
-int ff_framesync2_init(FFFrameSync *fs, AVFilterContext *parent, unsigned nb_in)
+int ff_framesync_init(FFFrameSync *fs, AVFilterContext *parent, unsigned nb_in)
 {
     /* For filters with several outputs, we will not be able to assume which
        output is relevant for ff_outlink_frame_wanted() and
        ff_outlink_set_status(). To be designed when needed. */
     av_assert0(parent->nb_outputs == 1);
 
-    ff_framesync2_preinit(fs);
+    ff_framesync_preinit(fs);
     fs->parent = parent;
     fs->nb_in  = nb_in;
 
@@ -114,7 +114,7 @@ static void framesync_sync_level_update(FFFrameSync *fs)
         framesync_eof(fs);
 }
 
-int ff_framesync2_configure(FFFrameSync *fs)
+int ff_framesync_configure(FFFrameSync *fs)
 {
     unsigned i;
     int64_t gcd, lcm;
@@ -253,7 +253,7 @@ static void framesync_inject_status(FFFrameSync *fs, unsigned in, int status, in
     fs->in[in].have_next  = 1;
 }
 
-int ff_framesync2_get_frame(FFFrameSync *fs, unsigned in, AVFrame **rframe,
+int ff_framesync_get_frame(FFFrameSync *fs, unsigned in, AVFrame **rframe,
                             unsigned get)
 {
     AVFrame *frame;
@@ -290,7 +290,7 @@ int ff_framesync2_get_frame(FFFrameSync *fs, unsigned in, AVFrame **rframe,
     return 0;
 }
 
-void ff_framesync2_uninit(FFFrameSync *fs)
+void ff_framesync_uninit(FFFrameSync *fs)
 {
     unsigned i;
 
@@ -341,7 +341,7 @@ static int consume_from_fifos(FFFrameSync *fs)
     return 1;
 }
 
-int ff_framesync2_activate(FFFrameSync *fs)
+int ff_framesync_activate(FFFrameSync *fs)
 {
     int ret;
 
@@ -358,11 +358,11 @@ int ff_framesync2_activate(FFFrameSync *fs)
     return 0;
 }
 
-int ff_framesync2_init_dualinput(FFFrameSync *fs, AVFilterContext *parent)
+int ff_framesync_init_dualinput(FFFrameSync *fs, AVFilterContext *parent)
 {
     int ret;
 
-    ret = ff_framesync2_init(fs, parent, 2);
+    ret = ff_framesync_init(fs, parent, 2);
     if (ret < 0)
         return ret;
     fs->in[0].time_base = parent->inputs[0]->time_base;
@@ -376,14 +376,14 @@ int ff_framesync2_init_dualinput(FFFrameSync *fs, AVFilterContext *parent)
     return 0;
 }
 
-int ff_framesync2_dualinput_get(FFFrameSync *fs, AVFrame **f0, AVFrame **f1)
+int ff_framesync_dualinput_get(FFFrameSync *fs, AVFrame **f0, AVFrame **f1)
 {
     AVFilterContext *ctx = fs->parent;
     AVFrame *mainpic = NULL, *secondpic = NULL;
     int ret = 0;
 
-    if ((ret = ff_framesync2_get_frame(fs, 0, &mainpic,   1)) < 0 ||
-        (ret = ff_framesync2_get_frame(fs, 1, &secondpic, 0)) < 0) {
+    if ((ret = ff_framesync_get_frame(fs, 0, &mainpic,   1)) < 0 ||
+        (ret = ff_framesync_get_frame(fs, 1, &secondpic, 0)) < 0) {
         av_frame_free(&mainpic);
         return ret;
     }
@@ -398,11 +398,11 @@ int ff_framesync2_dualinput_get(FFFrameSync *fs, AVFrame **f0, AVFrame **f1)
     return 0;
 }
 
-int ff_framesync2_dualinput_get_writable(FFFrameSync *fs, AVFrame **f0, AVFrame **f1)
+int ff_framesync_dualinput_get_writable(FFFrameSync *fs, AVFrame **f0, AVFrame **f1)
 {
     int ret;
 
-    ret = ff_framesync2_dualinput_get(fs, f0, f1);
+    ret = ff_framesync_dualinput_get(fs, f0, f1);
     if (ret < 0)
         return ret;
     ret = ff_inlink_make_frame_writable(fs->parent->inputs[0], f0);

@@ -29,7 +29,7 @@
 #include "libavutil/qsort.h"
 #include "avfilter.h"
 #include "filters.h"
-#include "framesync2.h"
+#include "framesync.h"
 #include "internal.h"
 
 enum dithering_mode {
@@ -904,7 +904,7 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     PaletteUseContext *s = ctx->priv;
 
-    ret = ff_framesync2_init_dualinput(&s->fs, ctx);
+    ret = ff_framesync_init_dualinput(&s->fs, ctx);
     if (ret < 0)
         return ret;
     s->fs.opt_repeatlast = 1; // only 1 frame in the palette
@@ -915,7 +915,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->h = ctx->inputs[0]->h;
 
     outlink->time_base = ctx->inputs[0]->time_base;
-    if ((ret = ff_framesync2_configure(&s->fs)) < 0)
+    if ((ret = ff_framesync_configure(&s->fs)) < 0)
         return ret;
     return 0;
 }
@@ -971,7 +971,7 @@ static int load_apply_palette(FFFrameSync *fs)
     int ret;
 
     // writable for error diffusal dithering
-    ret = ff_framesync2_dualinput_get_writable(fs, &main, &second);
+    ret = ff_framesync_dualinput_get_writable(fs, &main, &second);
     if (ret < 0)
         return ret;
     if (!main || !second) {
@@ -1052,7 +1052,7 @@ static av_cold int init(AVFilterContext *ctx)
 static int activate(AVFilterContext *ctx)
 {
     PaletteUseContext *s = ctx->priv;
-    return ff_framesync2_activate(&s->fs);
+    return ff_framesync_activate(&s->fs);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -1060,7 +1060,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     int i;
     PaletteUseContext *s = ctx->priv;
 
-    ff_framesync2_uninit(&s->fs);
+    ff_framesync_uninit(&s->fs);
     for (i = 0; i < CACHE_SIZE; i++)
         av_freep(&s->cache[i].entries);
     av_frame_free(&s->last_in);

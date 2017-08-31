@@ -22,7 +22,7 @@
 #include "avfilter.h"
 #include "audio.h"
 #include "formats.h"
-#include "framesync2.h"
+#include "framesync.h"
 #include "internal.h"
 #include "video.h"
 
@@ -56,7 +56,7 @@ static int process_frame(FFFrameSync *fs)
     int i, j, ret = 0;
 
     for (i = 0; i < ctx->nb_inputs; i++) {
-        if ((ret = ff_framesync2_get_frame(&s->fs, i, &in[i], 0)) < 0)
+        if ((ret = ff_framesync_get_frame(&s->fs, i, &in[i], 0)) < 0)
             return ret;
     }
 
@@ -87,7 +87,7 @@ static int process_frame(FFFrameSync *fs)
 static int activate(AVFilterContext *ctx)
 {
     StreamSelectContext *s = ctx->priv;
-    return ff_framesync2_activate(&s->fs);
+    return ff_framesync_activate(&s->fs);
 }
 
 static int config_output(AVFilterLink *outlink)
@@ -124,7 +124,7 @@ static int config_output(AVFilterLink *outlink)
     if (s->fs.opaque == s)
         return 0;
 
-    if ((ret = ff_framesync2_init(&s->fs, ctx, ctx->nb_inputs)) < 0)
+    if ((ret = ff_framesync_init(&s->fs, ctx, ctx->nb_inputs)) < 0)
         return ret;
 
     in = s->fs.in;
@@ -142,7 +142,7 @@ static int config_output(AVFilterLink *outlink)
     if (!s->frames)
         return AVERROR(ENOMEM);
 
-    return ff_framesync2_configure(&s->fs);
+    return ff_framesync_configure(&s->fs);
 }
 
 static int parse_definition(AVFilterContext *ctx, int nb_pads, int is_input, int is_audio)
@@ -289,7 +289,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->last_pts);
     av_freep(&s->map);
     av_freep(&s->frames);
-    ff_framesync2_uninit(&s->fs);
+    ff_framesync_uninit(&s->fs);
 }
 
 static int query_formats(AVFilterContext *ctx)

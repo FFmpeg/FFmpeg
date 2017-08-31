@@ -37,7 +37,7 @@
 #include "libavutil/timestamp.h"
 #include "internal.h"
 #include "drawutils.h"
-#include "framesync2.h"
+#include "framesync.h"
 #include "video.h"
 
 static const char *const var_names[] = {
@@ -130,7 +130,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     OverlayContext *s = ctx->priv;
 
-    ff_framesync2_uninit(&s->fs);
+    ff_framesync_uninit(&s->fs);
     av_expr_free(s->x_pexpr); s->x_pexpr = NULL;
     av_expr_free(s->y_pexpr); s->y_pexpr = NULL;
 }
@@ -377,14 +377,14 @@ static int config_output(AVFilterLink *outlink)
     OverlayContext *s = ctx->priv;
     int ret;
 
-    if ((ret = ff_framesync2_init_dualinput(&s->fs, ctx)) < 0)
+    if ((ret = ff_framesync_init_dualinput(&s->fs, ctx)) < 0)
         return ret;
 
     outlink->w = ctx->inputs[MAIN]->w;
     outlink->h = ctx->inputs[MAIN]->h;
     outlink->time_base = ctx->inputs[MAIN]->time_base;
 
-    return ff_framesync2_configure(&s->fs);
+    return ff_framesync_configure(&s->fs);
 }
 
 // divide by 255 and round to nearest
@@ -765,7 +765,7 @@ static int do_blend(FFFrameSync *fs)
     AVFilterLink *inlink = ctx->inputs[0];
     int ret;
 
-    ret = ff_framesync2_dualinput_get_writable(fs, &mainpic, &second);
+    ret = ff_framesync_dualinput_get_writable(fs, &mainpic, &second);
     if (ret < 0)
         return ret;
     if (!second)
@@ -808,7 +808,7 @@ static av_cold int init(AVFilterContext *ctx)
 static int activate(AVFilterContext *ctx)
 {
     OverlayContext *s = ctx->priv;
-    return ff_framesync2_activate(&s->fs);
+    return ff_framesync_activate(&s->fs);
 }
 
 #define OFFSET(x) offsetof(OverlayContext, x)

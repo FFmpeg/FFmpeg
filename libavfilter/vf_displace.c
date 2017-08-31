@@ -23,7 +23,7 @@
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "formats.h"
-#include "framesync2.h"
+#include "framesync.h"
 #include "internal.h"
 #include "video.h"
 
@@ -248,9 +248,9 @@ static int process_frame(FFFrameSync *fs)
     AVFrame *out, *in, *xpic, *ypic;
     int ret;
 
-    if ((ret = ff_framesync2_get_frame(&s->fs, 0, &in,   0)) < 0 ||
-        (ret = ff_framesync2_get_frame(&s->fs, 1, &xpic, 0)) < 0 ||
-        (ret = ff_framesync2_get_frame(&s->fs, 2, &ypic, 0)) < 0)
+    if ((ret = ff_framesync_get_frame(&s->fs, 0, &in,   0)) < 0 ||
+        (ret = ff_framesync_get_frame(&s->fs, 1, &xpic, 0)) < 0 ||
+        (ret = ff_framesync_get_frame(&s->fs, 2, &ypic, 0)) < 0)
         return ret;
 
     if (ctx->is_disabled) {
@@ -336,7 +336,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->sample_aspect_ratio = srclink->sample_aspect_ratio;
     outlink->frame_rate = srclink->frame_rate;
 
-    ret = ff_framesync2_init(&s->fs, ctx, 3);
+    ret = ff_framesync_init(&s->fs, ctx, 3);
     if (ret < 0)
         return ret;
 
@@ -356,20 +356,20 @@ static int config_output(AVFilterLink *outlink)
     s->fs.opaque   = s;
     s->fs.on_event = process_frame;
 
-    return ff_framesync2_configure(&s->fs);
+    return ff_framesync_configure(&s->fs);
 }
 
 static int activate(AVFilterContext *ctx)
 {
     DisplaceContext *s = ctx->priv;
-    return ff_framesync2_activate(&s->fs);
+    return ff_framesync_activate(&s->fs);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
     DisplaceContext *s = ctx->priv;
 
-    ff_framesync2_uninit(&s->fs);
+    ff_framesync_uninit(&s->fs);
 }
 
 static const AVFilterPad displace_inputs[] = {

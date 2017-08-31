@@ -71,9 +71,9 @@ static int process_frame(FFFrameSync *fs)
     AVFrame *out, *base, *overlay, *mask;
     int ret;
 
-    if ((ret = ff_framesync2_get_frame(&s->fs, 0, &base,    0)) < 0 ||
-        (ret = ff_framesync2_get_frame(&s->fs, 1, &overlay, 0)) < 0 ||
-        (ret = ff_framesync2_get_frame(&s->fs, 2, &mask,    0)) < 0)
+    if ((ret = ff_framesync_get_frame(&s->fs, 0, &base,    0)) < 0 ||
+        (ret = ff_framesync_get_frame(&s->fs, 1, &overlay, 0)) < 0 ||
+        (ret = ff_framesync_get_frame(&s->fs, 2, &mask,    0)) < 0)
         return ret;
 
     if (ctx->is_disabled) {
@@ -232,7 +232,7 @@ static int config_output(AVFilterLink *outlink)
     if ((ret = av_image_fill_linesizes(s->linesize, outlink->format, outlink->w)) < 0)
         return ret;
 
-    if ((ret = ff_framesync2_init(&s->fs, ctx, 3)) < 0)
+    if ((ret = ff_framesync_init(&s->fs, ctx, 3)) < 0)
         return ret;
 
     in = s->fs.in;
@@ -251,20 +251,20 @@ static int config_output(AVFilterLink *outlink)
     s->fs.opaque   = s;
     s->fs.on_event = process_frame;
 
-    return ff_framesync2_configure(&s->fs);
+    return ff_framesync_configure(&s->fs);
 }
 
 static int activate(AVFilterContext *ctx)
 {
     MaskedMergeContext *s = ctx->priv;
-    return ff_framesync2_activate(&s->fs);
+    return ff_framesync_activate(&s->fs);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
     MaskedMergeContext *s = ctx->priv;
 
-    ff_framesync2_uninit(&s->fs);
+    ff_framesync_uninit(&s->fs);
 }
 
 static const AVFilterPad maskedmerge_inputs[] = {

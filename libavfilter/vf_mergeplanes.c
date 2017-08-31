@@ -25,7 +25,7 @@
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "internal.h"
-#include "framesync2.h"
+#include "framesync.h"
 
 typedef struct InputParam {
     int depth[4];
@@ -143,7 +143,7 @@ static int process_frame(FFFrameSync *fs)
     int i, ret;
 
     for (i = 0; i < s->nb_inputs; i++) {
-        if ((ret = ff_framesync2_get_frame(&s->fs, i, &in[i], 0)) < 0)
+        if ((ret = ff_framesync_get_frame(&s->fs, i, &in[i], 0)) < 0)
             return ret;
     }
 
@@ -172,7 +172,7 @@ static int config_output(AVFilterLink *outlink)
     FFFrameSyncIn *in;
     int i, ret;
 
-    if ((ret = ff_framesync2_init(&s->fs, ctx, s->nb_inputs)) < 0)
+    if ((ret = ff_framesync_init(&s->fs, ctx, s->nb_inputs)) < 0)
         return ret;
 
     in = s->fs.in;
@@ -265,7 +265,7 @@ static int config_output(AVFilterLink *outlink)
         }
     }
 
-    return ff_framesync2_configure(&s->fs);
+    return ff_framesync_configure(&s->fs);
 fail:
     return AVERROR(EINVAL);
 }
@@ -273,7 +273,7 @@ fail:
 static int activate(AVFilterContext *ctx)
 {
     MergePlanesContext *s = ctx->priv;
-    return ff_framesync2_activate(&s->fs);
+    return ff_framesync_activate(&s->fs);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -281,7 +281,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     MergePlanesContext *s = ctx->priv;
     int i;
 
-    ff_framesync2_uninit(&s->fs);
+    ff_framesync_uninit(&s->fs);
 
     for (i = 0; i < ctx->nb_inputs; i++)
         av_freep(&ctx->input_pads[i].name);
