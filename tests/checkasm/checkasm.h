@@ -25,6 +25,14 @@
 
 #include <stdint.h>
 #include "config.h"
+
+#if CONFIG_LINUX_PERF
+#include <unistd.h> // read(3)
+#include <sys/ioctl.h>
+#include <asm/unistd.h>
+#include <linux/perf_event.h>
+#endif
+
 #include "libavutil/avstring.h"
 #include "libavutil/cpu.h"
 #include "libavutil/internal.h"
@@ -58,10 +66,12 @@ void checkasm_check_vp8dsp(void);
 void checkasm_check_vp9dsp(void);
 void checkasm_check_videodsp(void);
 
+struct CheckasmPerf;
+
 void *checkasm_check_func(void *func, const char *name, ...) av_printf_format(2, 3);
 int checkasm_bench_func(void);
 void checkasm_fail_func(const char *msg, ...) av_printf_format(1, 2);
-void checkasm_update_bench(int iterations, uint64_t cycles);
+struct CheckasmPerf *checkasm_get_perf_context(void);
 void checkasm_report(const char *name, ...) av_printf_format(1, 2);
 
 /* float compare utilities */
@@ -178,32 +188,59 @@ void checkasm_checked_call(void *func, ...);
 #define declare_new_float(ret, ...) declare_new(ret, __VA_ARGS__)
 #endif
 
+typedef struct CheckasmPerf {
+    int sysfd;
+    uint64_t cycles;
+    int iterations;
+} CheckasmPerf;
+
+#if defined(AV_READ_TIME) || CONFIG_LINUX_PERF
+
+#if CONFIG_LINUX_PERF
+#define PERF_START(t) do {                              \
+    ioctl(sysfd, PERF_EVENT_IOC_RESET, 0);              \
+    ioctl(sysfd, PERF_EVENT_IOC_ENABLE, 0);             \
+} while (0)
+#define PERF_STOP(t) do {                               \
+    ioctl(sysfd, PERF_EVENT_IOC_DISABLE, 0);            \
+    read(sysfd, &t, sizeof(t));                         \
+} while (0)
+#else
+#define PERF_START(t) t = AV_READ_TIME()
+#define PERF_STOP(t)  t = AV_READ_TIME() - t
+#endif
+
 /* Benchmark the function */
-#ifdef AV_READ_TIME
 #define bench_new(...)\
     do {\
         if (checkasm_bench_func()) {\
+            struct CheckasmPerf *perf = checkasm_get_perf_context();\
+            av_unused const int sysfd = perf->sysfd;\
             func_type *tfunc = func_new;\
             uint64_t tsum = 0;\
             int ti, tcount = 0;\
+            uint64_t t = 0; \
             for (ti = 0; ti < BENCH_RUNS; ti++) {\
-                uint64_t t = AV_READ_TIME();\
+                PERF_START(t);\
                 tfunc(__VA_ARGS__);\
                 tfunc(__VA_ARGS__);\
                 tfunc(__VA_ARGS__);\
                 tfunc(__VA_ARGS__);\
-                t = AV_READ_TIME() - t;\
+                PERF_STOP(t);\
                 if (t*tcount <= tsum*4 && ti > 0) {\
                     tsum += t;\
                     tcount++;\
                 }\
             }\
             emms_c();\
-            checkasm_update_bench(tcount, tsum);\
+            perf->cycles += t;\
+            perf->iterations++;\
         }\
     } while (0)
 #else
 #define bench_new(...) while(0)
+#define PERF_START(t)  while(0)
+#define PERF_STOP(t)   while(0)
 #endif
 
 #endif /* TESTS_CHECKASM_CHECKASM_H */

@@ -448,6 +448,7 @@ Developer options (useful when working on FFmpeg itself):
   --libfuzzer=PATH         path to libfuzzer
   --ignore-tests=TESTS     comma-separated list (without "fate-" prefix
                            in the name) of tests whose result is ignored
+  --enable-linux-perf      enable Linux Performance Monitor API
 
 NOTE: Object files are built at the place where configure is launched.
 EOF
@@ -1699,6 +1700,7 @@ CONFIG_LIST="
     $SUBSYSTEM_LIST
     autodetect
     fontconfig
+    linux_perf
     memory_poisoning
     neon_clobber_test
     ossfuzz
@@ -5015,6 +5017,7 @@ case $target_os in
     linux)
         enable dv1394
         enable section_data_rel_ro
+        enabled_any arm aarch64 && enable_weak linux_perf
         ;;
     irix*)
         target_os=irix
