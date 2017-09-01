@@ -56,6 +56,9 @@ int ff_dirac_golomb_read_32bit(DiracGolombLUT *lut_ctx, const uint8_t *buf,
         if ((c_idx + 1) > coeffs)
             return c_idx;
 
+        if (res_bits >= RSIZE_BITS)
+            res_bits = res = 0;
+
         /* res_bits is a hint for better branch prediction */
         if (res_bits && l->sign) {
             int32_t coeff = 1;
