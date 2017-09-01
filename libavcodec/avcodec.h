@@ -3879,7 +3879,7 @@ typedef struct AVHWAccel {
 
     /**
      * Hardware accelerated codec capabilities.
-     * see HWACCEL_CODEC_CAP_*
+     * see AV_HWACCEL_CODEC_CAP_*
      */
     int capabilities;
 
@@ -3986,6 +3986,12 @@ typedef struct AVHWAccel {
      */
     int caps_internal;
 } AVHWAccel;
+
+/**
+ * HWAccel is experimental and is thus avoided in favor of non experimental
+ * codecs
+ */
+#define AV_HWACCEL_CODEC_CAP_EXPERIMENTAL 0x0200
 
 /**
  * Hardware acceleration should be used for decoding even if the codec level

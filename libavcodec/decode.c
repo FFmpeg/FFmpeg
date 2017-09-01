@@ -1150,7 +1150,7 @@ static int setup_hwaccel(AVCodecContext *avctx,
         return AVERROR(ENOENT);
     }
 
-    if (hwa->capabilities & HWACCEL_CODEC_CAP_EXPERIMENTAL &&
+    if (hwa->capabilities & AV_HWACCEL_CODEC_CAP_EXPERIMENTAL &&
         avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
         av_log(avctx, AV_LOG_WARNING, "Ignoring experimental hwaccel: %s\n",
                hwa->name);
