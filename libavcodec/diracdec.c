@@ -586,7 +586,7 @@ static inline void codeblock(DiracContext *s, SubBand *b,
     } \
 
 INTRA_DC_PRED(8, int16_t)
-INTRA_DC_PRED(10, int32_t)
+INTRA_DC_PRED(10, uint32_t)
 
 /**
  * Dirac Specification ->
