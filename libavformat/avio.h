@@ -439,7 +439,7 @@ void avio_free_directory_entry(AVIODirEntry **entry);
 
 /**
  * Allocate and initialize an AVIOContext for buffered I/O. It must be later
- * freed with av_free().
+ * freed with avio_context_free().
  *
  * @param buffer Memory block for input/output operations via AVIOContext.
  *        The buffer must be allocated with av_malloc() and friends.
