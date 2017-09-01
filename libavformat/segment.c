@@ -569,7 +569,7 @@ static int open_null_ctx(AVIOContext **ctx)
 static void close_null_ctxp(AVIOContext **pb)
 {
     av_freep(&(*pb)->buffer);
-    av_freep(pb);
+    avio_context_free(pb);
 }
 
 static int select_reference_stream(AVFormatContext *s)

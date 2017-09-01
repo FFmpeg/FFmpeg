@@ -182,7 +182,7 @@ static void ism_free(AVFormatContext *s)
         if (os->ctx && os->ctx_inited)
             av_write_trailer(os->ctx);
         if (os->ctx && os->ctx->pb)
-            av_freep(&os->ctx->pb);
+            avio_context_free(&os->ctx->pb);
         if (os->ctx)
             avformat_free_context(os->ctx);
         av_freep(&os->private_str);

@@ -1124,7 +1124,7 @@ static int read_gab2_sub(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 
 error:
         av_freep(&ast->sub_ctx);
-        av_freep(&pb);
+        avio_context_free(&pb);
     }
     return 0;
 }
