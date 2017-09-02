@@ -62,7 +62,6 @@ static void register_all(void)
     REGISTER_OUTDEV  (SDL2,             sdl2);
     REGISTER_INOUTDEV(SNDIO,            sndio);
     REGISTER_INOUTDEV(V4L2,             v4l2);
-//    REGISTER_INDEV   (V4L,              v4l
     REGISTER_INDEV   (VFWCAP,           vfwcap);
     REGISTER_INDEV   (XCBGRAB,          xcbgrab);
     REGISTER_OUTDEV  (XV,               xv);
