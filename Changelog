@@ -47,6 +47,7 @@ version <next>:
 - SUP/PGS subtitle muxer
 - convolve video filter
 - VP9 tile threading support
+- KMS screen grabber
 
 version 3.3:
 - CrystalHD decoder moved to new decode API

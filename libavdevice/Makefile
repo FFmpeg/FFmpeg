@@ -32,6 +32,7 @@ OBJS-$(CONFIG_FBDEV_OUTDEV)              += fbdev_enc.o \
 OBJS-$(CONFIG_GDIGRAB_INDEV)             += gdigrab.o
 OBJS-$(CONFIG_IEC61883_INDEV)            += iec61883.o
 OBJS-$(CONFIG_JACK_INDEV)                += jack.o timefilter.o
+OBJS-$(CONFIG_KMSGRAB_INDEV)             += kmsgrab.o
 OBJS-$(CONFIG_LAVFI_INDEV)               += lavfi.o
 OBJS-$(CONFIG_OPENAL_INDEV)              += openal-dec.o
 OBJS-$(CONFIG_OPENGL_OUTDEV)             += opengl_enc.o
