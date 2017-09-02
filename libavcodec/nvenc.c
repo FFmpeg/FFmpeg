@@ -879,8 +879,9 @@ static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
 
     if (IS_CBR(cc->rcParams.rateControlMode)) {
         h264->outputBufferingPeriodSEI = 1;
-        h264->outputPictureTimingSEI   = 1;
     }
+
+    h264->outputPictureTimingSEI = 1;
 
     if (cc->rcParams.rateControlMode == NV_ENC_PARAMS_RC_CBR_LOWDELAY_HQ ||
         cc->rcParams.rateControlMode == NV_ENC_PARAMS_RC_CBR_HQ ||
@@ -966,8 +967,9 @@ static av_cold int nvenc_setup_hevc_config(AVCodecContext *avctx)
 
     if (IS_CBR(cc->rcParams.rateControlMode)) {
         hevc->outputBufferingPeriodSEI = 1;
-        hevc->outputPictureTimingSEI   = 1;
     }
+
+    hevc->outputPictureTimingSEI = 1;
 
     switch (ctx->profile) {
     case NV_ENC_HEVC_PROFILE_MAIN:
