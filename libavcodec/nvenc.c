@@ -1807,8 +1807,7 @@ static int output_ready(AVCodecContext *avctx, int flush)
     return (nb_ready > 0) && (nb_ready + nb_pending >= ctx->async_depth);
 }
 
-int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
-                          const AVFrame *frame, int *got_packet)
+int ff_nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
 {
     NVENCSTATUS nv_status;
     CUresult cu_res;
@@ -1823,12 +1822,16 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     NV_ENC_PIC_PARAMS pic_params = { 0 };
     pic_params.version = NV_ENC_PIC_PARAMS_VER;
 
+    if (!ctx->cu_context || !ctx->nvencoder)
+        return AVERROR(EINVAL);
+
+    if (ctx->encoder_flushing)
+        return AVERROR_EOF;
+
     if (frame) {
         inSurf = get_free_frame(ctx);
-        if (!inSurf) {
-            av_log(avctx, AV_LOG_ERROR, "No free surfaces\n");
-            return AVERROR_BUG;
-        }
+        if (!inSurf)
+            return AVERROR(EAGAIN);
 
         cu_res = dl_fn->cuda_dl->cuCtxPushCurrent(ctx->cu_context);
         if (cu_res != CUDA_SUCCESS) {
@@ -1844,9 +1847,8 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             return AVERROR_EXTERNAL;
         }
 
-        if (res) {
+        if (res)
             return res;
-        }
 
         pic_params.inputBuffer = inSurf->input_surface;
         pic_params.bufferFmt = inSurf->format;
@@ -1876,6 +1878,7 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         nvenc_codec_specific_pic_params(avctx, &pic_params);
     } else {
         pic_params.encodePicFlags = NV_ENC_PIC_FLAG_EOS;
+        ctx->encoder_flushing = 1;
     }
 
     cu_res = dl_fn->cuda_dl->cuCtxPushCurrent(ctx->cu_context);
@@ -1914,7 +1917,23 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         }
     }
 
-    if (output_ready(avctx, !frame)) {
+    return 0;
+}
+
+int ff_nvenc_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
+{
+    CUresult cu_res;
+    CUcontext dummy;
+    NvencSurface *tmpoutsurf;
+    int res;
+
+    NvencContext *ctx = avctx->priv_data;
+    NvencDynLoadFunctions *dl_fn = &ctx->nvenc_dload_funcs;
+
+    if (!ctx->cu_context || !ctx->nvencoder)
+        return AVERROR(EINVAL);
+
+    if (output_ready(avctx, ctx->encoder_flushing)) {
         av_fifo_generic_read(ctx->output_surface_ready_queue, &tmpoutsurf, sizeof(tmpoutsurf), NULL);
 
         cu_res = dl_fn->cuda_dl->cuCtxPushCurrent(ctx->cu_context);
@@ -1935,10 +1954,34 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             return res;
 
         av_fifo_generic_write(ctx->unused_surface_queue, &tmpoutsurf, sizeof(tmpoutsurf), NULL);
-
-        *got_packet = 1;
+    } else if (ctx->encoder_flushing) {
+        return AVERROR_EOF;
     } else {
+        return AVERROR(EAGAIN);
+    }
+
+    return 0;
+}
+
+int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
+                          const AVFrame *frame, int *got_packet)
+{
+    NvencContext *ctx = avctx->priv_data;
+    int res;
+
+    if (!ctx->encoder_flushing) {
+        res = ff_nvenc_send_frame(avctx, frame);
+        if (res < 0)
+            return res;
+    }
+
+    res = ff_nvenc_receive_packet(avctx, pkt);
+    if (res == AVERROR(EAGAIN) || res == AVERROR_EOF) {
         *got_packet = 0;
+    } else if (res < 0) {
+        return res;
+    } else {
+        *got_packet = 1;
     }
 
     return 0;
