@@ -2,6 +2,17 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 2.8.13:
+- avformat/mxfdec: Fix Sign error in mxf_read_primer_pack()
+- avformat/mxfdec: Fix DoS issues in mxf_read_index_entry_array()
+- avformat/nsvdec: Fix DoS due to lack of eof check in nsvs_file_offset loop.
+- avcodec/snowdec: Fix integer overflow in decode_subband_slice_buffered()
+- avcodec/hevc_ps: Fix undefined shift in pcm code
+- avcodec/sbrdsp_fixed: Fix undefined overflows in autocorrelate()
+- avformat/mvdec: Fix DoS due to lack of eof check
+- avformat/rl2: Fix DoS due to lack of eof check
+- avformat/cinedec: Fix DoS due to lack of eof check
+- avformat/asfdec: Fix DoS due to lack of eof check
+- avformat/hls: Fix DoS due to infinite loop
 - ffprobe: Fix NULL pointer handling in color parameter printing
 - ffprobe: Fix null pointer dereference with color primaries
 - avcodec/hevc_ps: Check delta_pocs in ff_hevc_decode_short_term_rps()
