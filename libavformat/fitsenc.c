@@ -58,7 +58,7 @@ static int write_keyword_value(AVFormatContext *s, const char *keyword, int valu
     header[9] = ' ';
 
     ret = snprintf(header + 10, 70, "%d", value);
-    header[ret + 10] = ' ';
+    memset(&header[ret + 10], ' ', sizeof(header) - (ret + 10));
 
     avio_write(s->pb, header, sizeof(header));
     *lines_written += 1;
