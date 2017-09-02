@@ -25,6 +25,11 @@
 #   include <va/va_drm.h>
 #endif
 
+#if CONFIG_LIBDRM
+#   include <va/va_drmcommon.h>
+#   include <drm_fourcc.h>
+#endif
+
 #include <fcntl.h>
 #if HAVE_UNISTD_H
 #   include <unistd.h>
@@ -40,6 +45,10 @@
 #include "mem.h"
 #include "pixdesc.h"
 #include "pixfmt.h"
+
+#if CONFIG_LIBDRM
+#   include "hwcontext_drm.h"
+#endif
 
 typedef struct VAAPIDevicePriv {
 #if HAVE_VAAPI_X11
@@ -897,6 +906,173 @@ static int vaapi_map_from(AVHWFramesContext *hwfc, AVFrame *dst,
     return 0;
 }
 
+#if CONFIG_LIBDRM
+
+#define DRM_MAP(va, layers, ...) { \
+        VA_FOURCC_ ## va, \
+        layers, \
+        { __VA_ARGS__ } \
+    }
+static const struct {
+    uint32_t va_fourcc;
+    int   nb_layer_formats;
+    uint32_t layer_formats[AV_DRM_MAX_PLANES];
+} vaapi_drm_format_map[] = {
+    DRM_MAP(NV12, 2, DRM_FORMAT_R8,  DRM_FORMAT_RG88),
+    DRM_MAP(NV12, 1, DRM_FORMAT_NV12),
+#ifdef VA_FOURCC_P010
+    DRM_MAP(P010, 2, DRM_FORMAT_R16, DRM_FORMAT_RG1616),
+#endif
+    DRM_MAP(BGRA, 1, DRM_FORMAT_BGRA8888),
+    DRM_MAP(BGRX, 1, DRM_FORMAT_BGRX8888),
+    DRM_MAP(RGBA, 1, DRM_FORMAT_RGBA8888),
+    DRM_MAP(RGBX, 1, DRM_FORMAT_RGBX8888),
+#ifdef VA_FOURCC_ABGR
+    DRM_MAP(ABGR, 1, DRM_FORMAT_ABGR8888),
+    DRM_MAP(XBGR, 1, DRM_FORMAT_XBGR8888),
+#endif
+    DRM_MAP(ARGB, 1, DRM_FORMAT_ARGB8888),
+    DRM_MAP(XRGB, 1, DRM_FORMAT_XRGB8888),
+};
+#undef DRM_MAP
+
+static void vaapi_unmap_from_drm(AVHWFramesContext *dst_fc,
+                                 HWMapDescriptor *hwmap)
+{
+    AVVAAPIDeviceContext *dst_dev = dst_fc->device_ctx->hwctx;
+
+    VASurfaceID surface_id = (VASurfaceID)(uintptr_t)hwmap->priv;
+
+    av_log(dst_fc, AV_LOG_DEBUG, "Destroy surface %#x.\n", surface_id);
+
+    vaDestroySurfaces(dst_dev->display, &surface_id, 1);
+}
+
+static int vaapi_map_from_drm(AVHWFramesContext *src_fc, AVFrame *dst,
+                              const AVFrame *src, int flags)
+{
+    AVHWFramesContext      *dst_fc =
+        (AVHWFramesContext*)dst->hw_frames_ctx->data;
+    AVVAAPIDeviceContext  *dst_dev = dst_fc->device_ctx->hwctx;
+    const AVDRMFrameDescriptor *desc;
+    VASurfaceID surface_id;
+    VAStatus vas;
+    uint32_t va_fourcc, va_rt_format;
+    int err, i, j, k;
+
+    unsigned long buffer_handle;
+    VASurfaceAttribExternalBuffers buffer_desc;
+    VASurfaceAttrib attrs[2] = {
+        {
+            .type  = VASurfaceAttribMemoryType,
+            .flags = VA_SURFACE_ATTRIB_SETTABLE,
+            .value.type    = VAGenericValueTypeInteger,
+            .value.value.i = VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME,
+        },
+        {
+            .type  = VASurfaceAttribExternalBufferDescriptor,
+            .flags = VA_SURFACE_ATTRIB_SETTABLE,
+            .value.type    = VAGenericValueTypePointer,
+            .value.value.p = &buffer_desc,
+        }
+    };
+
+    desc = (AVDRMFrameDescriptor*)src->data[0];
+
+    if (desc->nb_objects != 1) {
+        av_log(dst_fc, AV_LOG_ERROR, "VAAPI can only map frames "
+               "made from a single DRM object.\n");
+        return AVERROR(EINVAL);
+    }
+
+    va_fourcc = 0;
+    for (i = 0; i < FF_ARRAY_ELEMS(vaapi_drm_format_map); i++) {
+        if (desc->nb_layers != vaapi_drm_format_map[i].nb_layer_formats)
+            continue;
+        for (j = 0; j < desc->nb_layers; j++) {
+            if (desc->layers[j].format !=
+                vaapi_drm_format_map[i].layer_formats[j])
+                break;
+        }
+        if (j != desc->nb_layers)
+            continue;
+        va_fourcc = vaapi_drm_format_map[i].va_fourcc;
+        break;
+    }
+    if (!va_fourcc) {
+        av_log(dst_fc, AV_LOG_ERROR, "DRM format not supported "
+               "by VAAPI.\n");
+        return AVERROR(EINVAL);
+    }
+
+    av_log(dst_fc, AV_LOG_DEBUG, "Map DRM object %d to VAAPI as "
+           "%08x.\n", desc->objects[0].fd, va_fourcc);
+
+    for (i = 0; i < FF_ARRAY_ELEMS(vaapi_format_map); i++) {
+        if (vaapi_format_map[i].fourcc == va_fourcc)
+            va_rt_format = vaapi_format_map[i].rt_format;
+    }
+
+    buffer_handle = desc->objects[0].fd;
+    buffer_desc.pixel_format = va_fourcc;
+    buffer_desc.width        = src_fc->width;
+    buffer_desc.height       = src_fc->height;
+    buffer_desc.data_size    = desc->objects[0].size;
+    buffer_desc.buffers      = &buffer_handle;
+    buffer_desc.num_buffers  = 1;
+    buffer_desc.flags        = 0;
+
+    k = 0;
+    for (i = 0; i < desc->nb_layers; i++) {
+        for (j = 0; j < desc->layers[i].nb_planes; j++) {
+            buffer_desc.pitches[k] = desc->layers[i].planes[j].pitch;
+            buffer_desc.offsets[k] = desc->layers[i].planes[j].offset;
+            ++k;
+        }
+    }
+    buffer_desc.num_planes = k;
+
+    vas = vaCreateSurfaces(dst_dev->display, va_rt_format,
+                           src->width, src->height,
+                           &surface_id, 1,
+                           attrs, FF_ARRAY_ELEMS(attrs));
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(dst_fc, AV_LOG_ERROR, "Failed to create surface from DRM "
+               "object: %d (%s).\n", vas, vaErrorStr(vas));
+        return AVERROR(EIO);
+    }
+    av_log(dst_fc, AV_LOG_DEBUG, "Create surface %#x.\n", surface_id);
+
+    err = ff_hwframe_map_create(dst->hw_frames_ctx, dst, src,
+                                &vaapi_unmap_from_drm,
+                                (void*)(uintptr_t)surface_id);
+    if (err < 0)
+        return err;
+
+    dst->width   = src->width;
+    dst->height  = src->height;
+    dst->data[3] = (uint8_t*)(uintptr_t)surface_id;
+
+    av_log(dst_fc, AV_LOG_DEBUG, "Mapped DRM object %d to "
+           "surface %#x.\n", desc->objects[0].fd, surface_id);
+
+    return 0;
+}
+#endif
+
+static int vaapi_map_to(AVHWFramesContext *hwfc, AVFrame *dst,
+                        const AVFrame *src, int flags)
+{
+    switch (src->format) {
+#if CONFIG_LIBDRM
+    case AV_PIX_FMT_DRM_PRIME:
+        return vaapi_map_from_drm(hwfc, dst, src, flags);
+#endif
+    default:
+        return AVERROR(ENOSYS);
+    }
+}
+
 static void vaapi_device_free(AVHWDeviceContext *ctx)
 {
     AVVAAPIDeviceContext *hwctx = ctx->hwctx;
@@ -999,6 +1175,56 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
     return 0;
 }
 
+static int vaapi_device_derive(AVHWDeviceContext *ctx,
+                               AVHWDeviceContext *src_ctx, int flags)
+{
+#if CONFIG_LIBDRM
+    if (src_ctx->type == AV_HWDEVICE_TYPE_DRM) {
+        AVDRMDeviceContext *src_hwctx = src_ctx->hwctx;
+        AVVAAPIDeviceContext   *hwctx = ctx->hwctx;
+        VADisplay *display;
+        VAStatus vas;
+        VAAPIDevicePriv *priv;
+        int major, minor;
+
+        if (src_hwctx->fd < 0) {
+            av_log(ctx, AV_LOG_ERROR, "DRM instance requires an associated "
+                   "device to derive a VA display from.\n");
+            return AVERROR(EINVAL);
+        }
+
+        priv = av_mallocz(sizeof(*priv));
+        if (!priv)
+            return AVERROR(ENOMEM);
+
+        // Inherits the fd from the source context, which will close it.
+        priv->drm_fd = -1;
+
+        ctx->user_opaque = priv;
+        ctx->free        = &vaapi_device_free;
+
+        display = vaGetDisplayDRM(src_hwctx->fd);
+        if (!display) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to open a VA display from "
+                   "DRM device.\n");
+            return AVERROR(EIO);
+        }
+
+        hwctx->display = display;
+
+        vas = vaInitialize(display, &major, &minor);
+        if (vas != VA_STATUS_SUCCESS) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to initialise VAAPI "
+                   "connection: %d (%s).\n", vas, vaErrorStr(vas));
+            return AVERROR(EIO);
+        }
+
+        return 0;
+    }
+#endif
+    return AVERROR(ENOSYS);
+}
+
 const HWContextType ff_hwcontext_type_vaapi = {
     .type                   = AV_HWDEVICE_TYPE_VAAPI,
     .name                   = "VAAPI",
@@ -1010,6 +1236,7 @@ const HWContextType ff_hwcontext_type_vaapi = {
     .frames_priv_size       = sizeof(VAAPIFramesContext),
 
     .device_create          = &vaapi_device_create,
+    .device_derive          = &vaapi_device_derive,
     .device_init            = &vaapi_device_init,
     .device_uninit          = &vaapi_device_uninit,
     .frames_get_constraints = &vaapi_frames_get_constraints,
@@ -1019,7 +1246,7 @@ const HWContextType ff_hwcontext_type_vaapi = {
     .transfer_get_formats   = &vaapi_transfer_get_formats,
     .transfer_data_to       = &vaapi_transfer_data_to,
     .transfer_data_from     = &vaapi_transfer_data_from,
-    .map_to                 = NULL,
+    .map_to                 = &vaapi_map_to,
     .map_from               = &vaapi_map_from,
 
     .pix_fmts = (const enum AVPixelFormat[]) {
