@@ -109,6 +109,7 @@ Configuration options:
   --enable-gray            enable full grayscale support (slower color)
   --disable-swscale-alpha  disable alpha channel support in swscale
   --disable-all            disable building components, libraries and programs
+  --disable-autodetect     disable automatically detected external libraries [no]
 
 Program options:
   --disable-programs       do not build command line programs
@@ -200,6 +201,7 @@ External library support:
   Also note that the following help text describes the purpose of the libraries
   themselves, not all their features will necessarily be usable by FFmpeg.
 
+  --disable-alsa           disable ALSA support [autodetect]
   --enable-avisynth        enable reading of AviSynth script files [no]
   --disable-bzlib          disable bzlib [autodetect]
   --enable-chromaprint     enable audio fingerprinting with chromaprint [no]
@@ -211,6 +213,7 @@ External library support:
   --enable-gnutls          enable gnutls, needed for https support
                            if openssl is not used [no]
   --disable-iconv          disable iconv [autodetect]
+  --disable-jack           disable libjack support [autodetect]
   --enable-jni             enable JNI support [no]
   --enable-ladspa          enable LADSPA audio filtering [no]
   --enable-libass          enable libass subtitles rendering,
@@ -277,6 +280,7 @@ External library support:
   --enable-libzvbi         enable teletext support via libzvbi [no]
   --disable-lzma           disable lzma [autodetect]
   --enable-decklink        enable Blackmagic DeckLink I/O support [no]
+  --enable-libndi_newtek   enable Newteck NDI I/O support [no]
   --enable-mediacodec      enable Android MediaCodec support [no]
   --enable-libmysofa       enable libmysofa, needed for sofalizer filter [no]
   --enable-openal          enable OpenAL 1.1 capture support [no]
@@ -284,6 +288,7 @@ External library support:
   --enable-opengl          enable OpenGL rendering [no]
   --enable-openssl         enable openssl, needed for https support
                            if gnutls is not used [no]
+  --disable-sndio          disable sndio support [autodetect]
   --disable-schannel       disable SChannel SSP, needed for TLS support on
                            Windows if openssl and gnutls are not used [autodetect]
   --disable-sdl2           disable sdl2 [autodetect]
@@ -1479,17 +1484,19 @@ EXAMPLE_LIST="
     transcoding_example
 "
 EXTERNAL_AUTODETECT_LIBRARY_LIST="
+    alsa
     bzlib
     iconv
+    jack
     libxcb
     libxcb_shm
     libxcb_shape
     libxcb_xfixes
     lzma
     schannel
-    sdl
     sdl2
     securetransport
+    sndio
     xlib
     zlib
 "
@@ -1508,6 +1515,7 @@ EXTERNAL_LIBRARY_GPL_LIST="
 
 EXTERNAL_LIBRARY_NONFREE_LIST="
     decklink
+    libndi_newtek
     libfdk_aac
     openssl
 "
@@ -1530,7 +1538,6 @@ EXTERNAL_LIBRARY_LIST="
     $EXTERNAL_LIBRARY_VERSION3_LIST
     $EXTERNAL_LIBRARY_GPLV3_LIST
     chromaprint
-    crystalhd
     gcrypt
     gnutls
     jni
@@ -1587,6 +1594,7 @@ EXTERNAL_LIBRARY_LIST="
 "
 HWACCEL_AUTODETECT_LIBRARY_LIST="
     audiotoolbox
+    crystalhd
     cuda
     cuvid
     d3d11va
@@ -1684,6 +1692,7 @@ CONFIG_LIST="
     $LIBRARY_LIST
     $PROGRAM_LIST
     $SUBSYSTEM_LIST
+    autodetect
     fontconfig
     memory_poisoning
     neon_clobber_test
@@ -1845,7 +1854,6 @@ HAVE_LIST_PUB="
 "
 
 HEADERS_LIST="
-    alsa_asoundlib_h
     altivec_h
     arpa_inet_h
     asm_types_h
@@ -1878,7 +1886,6 @@ HEADERS_LIST="
     openjpeg_1_5_openjpeg_h
     OpenGL_gl3_h
     poll_h
-    sndio_h
     soundcard_h
     stdatomic_h
     sys_mman_h
@@ -2057,19 +2064,15 @@ HAVE_LIST="
     $THREADS_LIST
     $TOOLCHAIN_FEATURES
     $TYPES_LIST
-    alsa
     atomics_native
     dos_paths
-    jack
     libc_msvcrt
     makeinfo
     makeinfo_html
     MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS
     perl
     pod2man
-    sdl2
     section_data_rel_ro
-    sndio
     texi2html
     threads
     uwp
@@ -3014,6 +3017,10 @@ decklink_indev_deps="decklink threads"
 decklink_indev_extralibs="-lstdc++"
 decklink_outdev_deps="decklink threads"
 decklink_outdev_extralibs="-lstdc++"
+libndi_newtek_indev_deps="libndi_newtek"
+libndi_newtek_indev_extralibs="-lndi"
+libndi_newtek_outdev_deps="libndi_newtek"
+libndi_newtek_outdev_extralibs="-lndi"
 dshow_indev_deps="IBaseFilter"
 dshow_indev_extralibs="-lpsapi -lole32 -lstrmiids -luuid -loleaut32 -lshlwapi"
 dv1394_indev_deps="dv1394"
@@ -3518,6 +3525,9 @@ for opt do
             action=${opt%%-random=*}
             do_random ${action#--} $optval
         ;;
+        --enable-sdl)
+            enable sdl2
+        ;;
         --enable-*=*|--disable-*=*)
             eval $(echo "${opt%%=*}" | sed 's/--/action=/;s/-/ thing=/')
             is_in "${thing}s" $COMPONENT_LIST || die_unknown "$opt"
@@ -3582,19 +3592,22 @@ for e in $env; do
     eval "export $e"
 done
 
+if disabled autodetect; then
+
+    # Unless iconv is explicitely disabled by the user, we still want to probe
+    # for the iconv from the libc.
+    disabled iconv || enable libc_iconv
+
+    disable_weak $EXTERNAL_AUTODETECT_LIBRARY_LIST
+    disable_weak $HWACCEL_AUTODETECT_LIBRARY_LIST
+fi
 # Mark specifically enabled, but normally autodetected libraries as requested.
 for lib in $AUTODETECT_LIBS; do
     enabled $lib && request $lib
 done
-
-# Enable platform codecs by default.
-enable_weak audiotoolbox
-
-# Enable hwaccels by default.
-enable_weak d3d11va dxva2 vaapi vda vdpau videotoolbox_hwaccel xvmc
-enable_weak xlib
-
-enable_weak cuda cuvid nvenc vda_framework videotoolbox videotoolbox_encoder
+#TODO: switch to $AUTODETECT_LIBS when $THREADS_LIST is supported the same way
+enable_weak $EXTERNAL_AUTODETECT_LIBRARY_LIST
+enable_weak $HWACCEL_AUTODETECT_LIBRARY_LIST
 
 disabled logging && logfile=/dev/null
 
@@ -5567,6 +5580,8 @@ avisynth_demuxer_extralibs='$ldl'
 cuda_extralibs='$ldl'
 decklink_outdev_extralibs="$decklink_outdev_extralibs $ldl"
 decklink_indev_extralibs="$decklink_indev_extralibs $ldl"
+libndi_newtek_outdev_extralibs="$libndi_newtek_outdev_extralibs $ldl"
+libndi_newtek_indev_extralibs="$libndi_newtek_indev_extralibs $ldl"
 frei0r_filter_extralibs='$ldl'
 frei0r_src_filter_extralibs='$ldl'
 ladspa_filter_extralibs='$ldl'
@@ -5792,12 +5807,11 @@ fi
 enabled pthreads &&
     check_builtin sem_timedwait semaphore.h "sem_t *s; sem_init(s,0,0); sem_timedwait(s,0); sem_destroy(s)"
 
-disabled  zlib || check_lib zlib   zlib.h      zlibVersion    -lz
-disabled bzlib || check_lib bzlib bzlib.h BZ2_bzlibVersion    -lbz2
-disabled  lzma || check_lib lzma   lzma.h lzma_version_number -llzma
+enabled  zlib && check_lib zlib   zlib.h      zlibVersion    -lz
+enabled bzlib && check_lib bzlib bzlib.h BZ2_bzlibVersion    -lbz2
+enabled  lzma && check_lib lzma   lzma.h lzma_version_number -llzma
 
 check_lib libm math.h sin -lm && LIBM="-lm"
-disabled crystalhd || check_lib crystalhd "stdint.h libcrystalhd/libcrystalhd_if.h" DtsCrystalHDVersion -lcrystalhd
 
 atan2f_args=2
 copysign_args=2
@@ -5825,6 +5839,7 @@ enabled coreimage_filter  && { check_header_objcc QuartzCore/CoreImage.h || disa
 enabled coreimagesrc_filter && { check_header_objcc QuartzCore/CoreImage.h || disable coreimagesrc_filter; }
 enabled decklink          && { { check_header DeckLinkAPI.h || die "ERROR: DeckLinkAPI.h header not found"; } &&
                                { check_cpp_condition DeckLinkAPIVersion.h "BLACKMAGIC_DECKLINK_API_VERSION >= 0x0a060100" || die "ERROR: Decklink API version must be >= 10.6.1."; } }
+enabled libndi_newtek     && { check_header Processing.NDI.Lib.h || die "ERROR: Processing.NDI.Lib.h header not found"; }
 enabled frei0r            && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
 enabled gmp               && require gmp gmp.h mpz_export -lgmp
 enabled gnutls            && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
@@ -5866,7 +5881,9 @@ enabled libmfx            && { use_pkg_config libmfx "mfx/mfxvideo.h" MFXInit ||
 enabled libmodplug        && require_pkg_config libmodplug libmodplug/modplug.h ModPlug_Load
 enabled libmp3lame        && require "libmp3lame >= 3.98.3" lame/lame.h lame_set_VBR_quality -lmp3lame
 enabled libmysofa         && require libmysofa "mysofa.h" mysofa_load -lmysofa
-enabled libnpp            && require libnpp npp.h nppGetLibVersion -lnppi -lnppc
+enabled libnpp            && { check_lib libnpp npp.h nppGetLibVersion -lnppig -lnppicc -lnppc ||
+                               check_lib libnpp npp.h nppGetLibVersion -lnppi -lnppc ||
+                               die "ERROR: libnpp not found"; }
 enabled libopencore_amrnb && require libopencore_amrnb opencore-amrnb/interf_dec.h Decoder_Interface_init -lopencore-amrnb
 enabled libopencore_amrwb && require libopencore_amrwb opencore-amrwb/dec_if.h D_IF_init -lopencore-amrwb
 enabled libopencv         && { check_header opencv2/core/core_c.h &&
@@ -5909,8 +5926,7 @@ enabled libtwolame        && require libtwolame twolame.h twolame_init -ltwolame
                                die "ERROR: libtwolame must be installed and version must be >= 0.3.10"; }
 enabled libv4l2           && require_pkg_config libv4l2 libv4l2.h v4l2_ioctl
 enabled libvidstab        && require_pkg_config "vidstab >= 0.98" vid.stab/libvidstab.h vsMotionDetectInit
-enabled libvmaf           && { check_lib libvmaf "libvmaf.h" "compute_vmaf" -lvmaf -lstdc++ -lpthread -lm ||
-                               die "ERROR: libvmaf must be installed"; }
+enabled libvmaf           && require_pkg_config libvmaf libvmaf.h compute_vmaf
 enabled libvo_amrwbenc    && require libvo_amrwbenc vo-amrwbenc/enc_if.h E_IF_init -lvo-amrwbenc
 enabled libvorbis         && require_pkg_config vorbis vorbis/codec.h vorbis_info_init &&
                              require_pkg_config vorbisenc vorbis/vorbisenc.h vorbis_encode_init
@@ -6010,27 +6026,28 @@ if enabled gcrypt; then
     fi
 fi
 
-disabled sdl && disable sdl2
-if ! disabled sdl2; then
+if enabled sdl2; then
     SDL2_CONFIG="${cross_prefix}sdl2-config"
     if check_pkg_config sdl2 SDL_events.h SDL_PollEvent; then
         check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x020001" $sdl2_cflags &&
         check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x020100" $sdl2_cflags &&
-        check_func SDL_Init $sdl2_extralibs $sdl2_cflags && enable sdl2
-    else
-      if "${SDL2_CONFIG}" --version > /dev/null 2>&1; then
+        check_func SDL_Init $sdl2_extralibs $sdl2_cflags ||
+            disable sdl2
+    elif "${SDL2_CONFIG}" --version > /dev/null 2>&1; then
         sdl2_cflags=$("${SDL2_CONFIG}" --cflags)
         sdl2_extralibs=$("${SDL2_CONFIG}" --libs)
         check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x020001" $sdl2_cflags &&
         check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x020100" $sdl2_cflags &&
-        check_func SDL_Init $sdl2_extralibs $sdl2_cflags && enable sdl2
-      fi
+        check_func SDL_Init $sdl2_extralibs $sdl2_cflags ||
+            disable sdl2
+    else
+        disable sdl2
     fi
     if test $target_os = "mingw32"; then
         sdl2_extralibs="$sdl2_extralibs -mconsole"
     fi
 fi
-enabled sdl2 && enable sdl && add_cflags $sdl2_cflags && add_extralibs $sdl2_extralibs
+enabled sdl2 && add_cflags $sdl2_cflags && add_extralibs $sdl2_extralibs
 
 if enabled decklink; then
     case $target_os in
@@ -6041,11 +6058,16 @@ if enabled decklink; then
     esac
 fi
 
-disabled securetransport || { check_func SecIdentityCreate "-Wl,-framework,CoreFoundation -Wl,-framework,Security" &&
-    check_lib securetransport "Security/SecureTransport.h Security/Security.h" "SSLCreateContext SecItemImport" "-Wl,-framework,CoreFoundation -Wl,-framework,Security"; }
+enabled securetransport &&
+    check_func SecIdentityCreate "-Wl,-framework,CoreFoundation -Wl,-framework,Security" &&
+    check_lib securetransport "Security/SecureTransport.h Security/Security.h" "SSLCreateContext SecItemImport" "-Wl,-framework,CoreFoundation -Wl,-framework,Security" ||
+        disable securetransport
 
-disabled schannel || { check_func_headers "windows.h security.h" InitializeSecurityContext -DSECURITY_WIN32 -lsecur32 &&
-                       check_cpp_condition winerror.h "defined(SEC_I_CONTEXT_EXPIRED)" && enable schannel && add_extralibs -lsecur32; }
+enabled schannel &&
+    check_func_headers "windows.h security.h" InitializeSecurityContext -DSECURITY_WIN32 -lsecur32 &&
+    check_cpp_condition winerror.h "defined(SEC_I_CONTEXT_EXPIRED)" &&
+    add_extralibs -lsecur32 ||
+        disable schannel
 
 makeinfo --version > /dev/null 2>&1 && enable makeinfo  || disable makeinfo
 enabled makeinfo \
@@ -6091,13 +6113,12 @@ EOF
 fi
 check_header soundcard.h
 
-enabled_any alsa_indev alsa_outdev &&
-    check_lib alsa alsa/asoundlib.h snd_pcm_htimestamp -lasound
+enabled alsa && check_lib alsa alsa/asoundlib.h snd_pcm_htimestamp -lasound
 
-enabled jack_indev && check_lib jack jack/jack.h jack_client_open -ljack &&
+enabled jack && check_lib jack jack/jack.h jack_client_open -ljack &&
     check_func jack_port_get_latency_range -ljack
 
-enabled_any sndio_indev sndio_outdev && check_lib sndio sndio.h sio_open -lsndio
+enabled sndio && check_lib sndio sndio.h sio_open -lsndio
 
 if enabled libcdio; then
     check_lib libcdio "cdio/cdda.h cdio/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio ||
@@ -6105,30 +6126,16 @@ if enabled libcdio; then
     die "ERROR: No usable libcdio/cdparanoia found"
 fi
 
-if ! disabled libxcb; then
-    check_pkg_config "xcb >= 1.4" xcb/xcb.h xcb_connect || {
-        enabled libxcb && die "ERROR: libxcb >= 1.4 not found";
-    } && enable libxcb
+enabled libxcb && check_pkg_config "xcb >= 1.4" xcb/xcb.h xcb_connect || disable libxcb
 
 if enabled libxcb; then
-    disabled libxcb_shm || {
-        check_pkg_config xcb-shm xcb/shm.h xcb_shm_attach || {
-            enabled libxcb_shm && die "ERROR: libxcb_shm not found";
-        } && check_header sys/shm.h && enable libxcb_shm; }
 
-    disabled libxcb_xfixes || {
-        check_pkg_config xcb-xfixes xcb/xfixes.h xcb_xfixes_get_cursor_image || {
-            enabled libxcb_xfixes && die "ERROR: libxcb_xfixes not found";
-        } && enable libxcb_xfixes; }
-
-    disabled libxcb_shape || {
-        check_pkg_config xcb-shape xcb/shape.h xcb_shape_get_rectangles || {
-            enabled libxcb_shape && die "ERROR: libxcb_shape not found";
-        } && enable libxcb_shape; }
+    enabled libxcb_shm    && check_pkg_config xcb-shm    xcb/shm.h    xcb_shm_attach              || disable libxcb_shm
+    enabled libxcb_shape  && check_pkg_config xcb-shape  xcb/shape.h  xcb_shape_get_rectangles    || disable libxcb_shape
+    enabled libxcb_xfixes && check_pkg_config xcb-xfixes xcb/xfixes.h xcb_xfixes_get_cursor_image || disable libxcb_xfixes
 
     add_cflags $xcb_cflags $xcb_shm_cflags $xcb_xfixes_cflags $xcb_shape_cflags
     add_extralibs $xcb_extralibs $xcb_shm_extralibs $xcb_xfixes_extralibs $xcb_shape_extralibs
-fi
 fi
 
 check_func_headers "windows.h" CreateDIBSection "$gdigrab_indev_extralibs"
@@ -6168,6 +6175,8 @@ enabled vdpau &&
 enabled vdpau &&
     check_lib vdpau_x11 "vdpau/vdpau.h vdpau/vdpau_x11.h" vdp_device_create_x11 -lvdpau -lX11
 
+enabled crystalhd && check_lib crystalhd "stdint.h libcrystalhd/libcrystalhd_if.h" DtsCrystalHDVersion -lcrystalhd
+
 if enabled x86; then
     case $target_os in
         mingw32*|mingw64*|win32|win64|linux|cygwin*)
@@ -6189,7 +6198,11 @@ int main(void) { return 0; }
 EOF
 
 # Funny iconv installations are not unusual, so check it after all flags have been set
-disabled iconv || check_func_headers iconv.h iconv || check_lib iconv iconv.h iconv -liconv
+if enabled libc_iconv; then
+    check_func_headers iconv.h iconv
+elif enabled iconv; then
+    check_func_headers iconv.h iconv || check_lib iconv iconv.h iconv -liconv
+fi
 
 enabled debug && add_cflags -g"$debuglevel" && add_asflags -g"$debuglevel"
 

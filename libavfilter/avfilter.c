@@ -692,6 +692,7 @@ static int default_execute(AVFilterContext *ctx, avfilter_action_func *func, voi
 AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name)
 {
     AVFilterContext *ret;
+    int preinited = 0;
 
     if (!filter)
         return NULL;
@@ -707,6 +708,11 @@ AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name)
         ret->priv     = av_mallocz(filter->priv_size);
         if (!ret->priv)
             goto err;
+    }
+    if (filter->preinit) {
+        if (filter->preinit(ret) < 0)
+            goto err;
+        preinited = 1;
     }
 
     av_opt_set_defaults(ret);
@@ -745,6 +751,8 @@ AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name)
     return ret;
 
 err:
+    if (preinited)
+        filter->uninit(ret);
     av_freep(&ret->inputs);
     av_freep(&ret->input_pads);
     ret->nb_inputs = 0;
@@ -889,7 +897,7 @@ static int process_options(AVFilterContext *ctx, AVDictionary **options,
             }
         } else {
         av_dict_set(options, key, value, 0);
-        if ((ret = av_opt_set(ctx->priv, key, value, 0)) < 0) {
+        if ((ret = av_opt_set(ctx->priv, key, value, AV_OPT_SEARCH_CHILDREN)) < 0) {
             if (!av_opt_find(ctx->priv, key, NULL, 0, AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ)) {
             if (ret == AVERROR_OPTION_NOT_FOUND)
                 av_log(ctx, AV_LOG_ERROR, "Option '%s' not found\n", key);
@@ -940,7 +948,7 @@ int avfilter_init_dict(AVFilterContext *ctx, AVDictionary **options)
     }
 
     if (ctx->filter->priv_class) {
-        ret = av_opt_set_dict(ctx->priv, options);
+        ret = av_opt_set_dict2(ctx->priv, options, AV_OPT_SEARCH_CHILDREN);
         if (ret < 0) {
             av_log(ctx, AV_LOG_ERROR, "Error applying options to the filter.\n");
             return ret;

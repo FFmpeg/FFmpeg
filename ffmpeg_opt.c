@@ -791,14 +791,16 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
         case AVMEDIA_TYPE_VIDEO:
             if(!ist->dec)
                 ist->dec = avcodec_find_decoder(par->codec_id);
-#if FF_API_EMU_EDGE
+#if FF_API_LOWRES
             if (av_codec_get_lowres(st->codec)) {
                 av_codec_set_lowres(ist->dec_ctx, av_codec_get_lowres(st->codec));
                 ist->dec_ctx->width  = st->codec->width;
                 ist->dec_ctx->height = st->codec->height;
                 ist->dec_ctx->coded_width  = st->codec->coded_width;
                 ist->dec_ctx->coded_height = st->codec->coded_height;
+#if FF_API_EMU_EDGE
                 ist->dec_ctx->flags |= CODEC_FLAG_EMU_EDGE;
+#endif
             }
 #endif
 

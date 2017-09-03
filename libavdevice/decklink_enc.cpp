@@ -172,9 +172,9 @@ static int decklink_setup_audio(AVFormatContext *avctx, AVStream *st)
                " Only 48kHz is supported.\n");
         return -1;
     }
-    if (c->channels != 2 && c->channels != 8) {
+    if (c->channels != 2 && c->channels != 8 && c->channels != 16) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported number of channels!"
-               " Only stereo and 7.1 are supported.\n");
+               " Only 2, 8 or 16 channels are supported.\n");
         return -1;
     }
     if (ctx->dlo->EnableAudioOutput(bmdAudioSampleRate48kHz,

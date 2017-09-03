@@ -1,0 +1,10 @@
+#tb 0: 1/1
+#media_type 0: video
+#codec_id 0: fits
+#dimensions 0: 72x36
+#sar 0: 0/1
+0,          0,          0,        1,    11520, 0xeb0a0cc8
+0,          1,          1,        1,    11520, 0x9d7d8e4f
+0,          2,          2,        1,    11520, 0xd9e6afe7
+0,          3,          3,        1,    11520, 0x75bd7365
+0,          4,          4,        1,    11520, 0x86f107d1

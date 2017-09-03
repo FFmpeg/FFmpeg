@@ -140,14 +140,14 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
     if (desc)
         av_dict_set(&st->metadata, "title", desc, AV_DICT_DONT_STRDUP_VAL);
 
-    av_freep(&pb);
+    avio_context_free(&pb);
 
     return 0;
 
 fail:
     av_buffer_unref(&data);
     av_freep(&desc);
-    av_freep(&pb);
+    avio_context_free(&pb);
 
     return ret;
 }

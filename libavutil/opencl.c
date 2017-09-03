@@ -169,7 +169,7 @@ const char *av_opencl_errstr(cl_int status)
 static void free_device_list(AVOpenCLDeviceList *device_list)
 {
     int i, j;
-    if (!device_list)
+    if (!device_list || !device_list->platform_node)
         return;
     for (i = 0; i < device_list->platform_num; i++) {
         if (!device_list->platform_node[i])

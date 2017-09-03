@@ -1464,6 +1464,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
                      AV_CODEC_PROP_LOSSLESS,
     },
     {
+        .id        = AV_CODEC_ID_FITS,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "fits",
+        .long_name = NULL_IF_CONFIG_SMALL("FITS (Flexible Image Transport System)"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
+    },
+    {
         .id        = AV_CODEC_ID_GIF,
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "gif",

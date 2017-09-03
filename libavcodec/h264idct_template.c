@@ -76,20 +76,20 @@ void FUNCC(ff_h264_idct8_add)(uint8_t *_dst, int16_t *_block, int stride){
 
     for( i = 0; i < 8; i++ )
     {
-        const int a0 =  block[i+0*8] + block[i+4*8];
-        const int a2 =  block[i+0*8] - block[i+4*8];
-        const int a4 = (block[i+2*8]>>1) - block[i+6*8];
-        const int a6 = (block[i+6*8]>>1) + block[i+2*8];
+        const unsigned int a0 =  block[i+0*8] + block[i+4*8];
+        const unsigned int a2 =  block[i+0*8] - block[i+4*8];
+        const unsigned int a4 = (block[i+2*8]>>1) - block[i+6*8];
+        const unsigned int a6 = (block[i+6*8]>>1) + block[i+2*8];
 
-        const int b0 = a0 + a6;
-        const int b2 = a2 + a4;
-        const int b4 = a2 - a4;
-        const int b6 = a0 - a6;
+        const unsigned int b0 = a0 + a6;
+        const unsigned int b2 = a2 + a4;
+        const unsigned int b4 = a2 - a4;
+        const unsigned int b6 = a0 - a6;
 
-        const int a1 = -block[i+3*8] + block[i+5*8] - block[i+7*8] - (block[i+7*8]>>1);
-        const int a3 =  block[i+1*8] + block[i+7*8] - block[i+3*8] - (block[i+3*8]>>1);
-        const int a5 = -block[i+1*8] + block[i+7*8] + block[i+5*8] + (block[i+5*8]>>1);
-        const int a7 =  block[i+3*8] + block[i+5*8] + block[i+1*8] + (block[i+1*8]>>1);
+        const int a1 = -block[i+3*8] + (unsigned)block[i+5*8] - block[i+7*8] - (block[i+7*8]>>1);
+        const int a3 =  block[i+1*8] + (unsigned)block[i+7*8] - block[i+3*8] - (block[i+3*8]>>1);
+        const int a5 = -block[i+1*8] + (unsigned)block[i+7*8] + block[i+5*8] + (block[i+5*8]>>1);
+        const int a7 =  block[i+3*8] + (unsigned)block[i+5*8] + block[i+1*8] + (block[i+1*8]>>1);
 
         const int b1 = (a7>>2) + a1;
         const int b3 =  a3 + (a5>>2);
