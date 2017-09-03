@@ -197,6 +197,7 @@
     <ClCompile Include="..\libavformat\cinedec.c" />
     <ClCompile Include="..\libavformat\concatdec.c" />
     <ClCompile Include="..\libavformat\crcenc.c" />
+    <ClCompile Include="..\libavformat\dash.c" />
     <ClCompile Include="..\libavformat\dashenc.c" />
     <ClCompile Include="..\libavformat\dauddec.c" />
     <ClCompile Include="..\libavformat\daudenc.c" />
@@ -224,6 +225,8 @@
     <ClCompile Include="..\libavformat\fifo.c" />
     <ClCompile Include="..\libavformat\filmstripdec.c" />
     <ClCompile Include="..\libavformat\filmstripenc.c" />
+    <ClCompile Include="..\libavformat\fitsdec.c" />
+    <ClCompile Include="..\libavformat\fitsenc.c" />
     <ClCompile Include="..\libavformat\flacdec.c" />
     <ClCompile Include="..\libavformat\flac_picture.c" />
     <ClCompile Include="..\libavformat\oggparsevorbis.c" />

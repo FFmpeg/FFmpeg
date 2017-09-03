@@ -1188,6 +1188,15 @@
     <ClCompile Include="..\libavcodec\fic.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\fitsdec.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\fits.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\fitsenc.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\flacdec.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>

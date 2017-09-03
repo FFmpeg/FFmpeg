@@ -279,6 +279,9 @@
     <ClCompile Include="..\libavfilter\f_streamselect.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\framesync2.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\af_atempo.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
@@ -417,12 +420,6 @@
     <ClCompile Include="..\libavfilter\vf_blackframe.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavfilter\dualinput.c">
-      <Filter>Source Files\libavfilter</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavfilter\framesync.c">
-      <Filter>Source Files\libavfilter</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_boxblur.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
@@ -508,9 +505,6 @@
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_displace.c">
-      <Filter>Source Files\libavfilter</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavfilter\framesync2.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_weave.c">

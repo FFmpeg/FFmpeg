@@ -113,6 +113,7 @@ EXPORTS
     avio_close_dir
     avio_close_dyn_buf
     avio_closep
+    avio_context_free
     avio_enum_protocols
     avio_feof
     avio_find_protocol_name
@@ -139,6 +140,7 @@ EXPORTS
     avio_rb64
     avio_read
     avio_read_dir
+    avio_read_partial
     avio_read_to_bprint
     avio_rl16
     avio_rl24

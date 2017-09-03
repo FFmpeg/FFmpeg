@@ -415,6 +415,9 @@
     <ClCompile Include="..\libavformat\crcenc.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\dash.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\dashenc.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
@@ -494,6 +497,12 @@
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\filmstripenc.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\fitsdec.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavformat\fitsenc.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="..\libavformat\flacdec.c">

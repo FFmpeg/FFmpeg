@@ -455,6 +455,9 @@
     <ClCompile Include="..\libavcodec\ffv1enc.c" />
     <ClCompile Include="..\libavcodec\ffwavesynth.c" />
     <ClCompile Include="..\libavcodec\fic.c" />
+    <ClCompile Include="..\libavcodec\fitsdec.c" />
+    <ClCompile Include="..\libavcodec\fits.c" />
+    <ClCompile Include="..\libavcodec\fitsenc.c" />
     <ClCompile Include="..\libavcodec\flacdec.c" />
     <ClCompile Include="..\libavcodec\flacdata.c" />
     <ClCompile Include="..\libavcodec\flac.c" />

@@ -212,6 +212,8 @@ EXPORTS
     avpriv_exif_decode_ifd
     avpriv_find_pix_fmt
     avpriv_find_start_code
+    avpriv_fits_header_init
+    avpriv_fits_header_parse_line
     avpriv_get_raw_pix_fmt_tags
     avpriv_h264_has_num_reorder_frames
     avpriv_init_elbg
