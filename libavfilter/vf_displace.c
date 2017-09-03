@@ -31,6 +31,7 @@ enum EdgeMode {
     EDGE_BLANK,
     EDGE_SMEAR,
     EDGE_WRAP,
+    EDGE_MIRROR,
     EDGE_NB
 };
 
@@ -53,9 +54,10 @@ typedef struct DisplaceContext {
 
 static const AVOption displace_options[] = {
     { "edge", "set edge mode", OFFSET(edge), AV_OPT_TYPE_INT, {.i64=EDGE_SMEAR}, 0, EDGE_NB-1, FLAGS, "edge" },
-    {   "blank", "", 0, AV_OPT_TYPE_CONST, {.i64=EDGE_BLANK}, 0, 0, FLAGS, "edge" },
-    {   "smear", "", 0, AV_OPT_TYPE_CONST, {.i64=EDGE_SMEAR}, 0, 0, FLAGS, "edge" },
-    {   "wrap" , "", 0, AV_OPT_TYPE_CONST, {.i64=EDGE_WRAP},  0, 0, FLAGS, "edge" },
+    {   "blank",   "", 0, AV_OPT_TYPE_CONST, {.i64=EDGE_BLANK},  0, 0, FLAGS, "edge" },
+    {   "smear",   "", 0, AV_OPT_TYPE_CONST, {.i64=EDGE_SMEAR},  0, 0, FLAGS, "edge" },
+    {   "wrap" ,   "", 0, AV_OPT_TYPE_CONST, {.i64=EDGE_WRAP},   0, 0, FLAGS, "edge" },
+    {   "mirror" , "", 0, AV_OPT_TYPE_CONST, {.i64=EDGE_MIRROR}, 0, 0, FLAGS, "edge" },
     { NULL }
 };
 
@@ -130,6 +132,22 @@ static void displace_planar(DisplaceContext *s, const AVFrame *in,
                     dst[x] = src[Y * slinesize + X];
                 }
                 break;
+            case EDGE_MIRROR:
+                for (x = 0; x < w; x++) {
+                    int Y = y + ysrc[x] - 128;
+                    int X = x + xsrc[x] - 128;
+
+                    if (Y < 0)
+                        Y = (-Y) % h;
+                    if (X < 0)
+                        X = (-X) % w;
+                    if (Y >= h)
+                        Y = h - (Y % h) - 1;
+                    if (X >= w)
+                        X = w - (X % w) - 1;
+                    dst[x] = src[Y * slinesize + X];
+                }
+                break;
             }
 
             ysrc += ylinesize;
@@ -192,6 +210,24 @@ static void displace_packed(DisplaceContext *s, const AVFrame *in,
                         Y += h;
                     if (X < 0)
                         X += w;
+                    dst[x * step + c] = src[Y * slinesize + X * step + c];
+                }
+            }
+            break;
+        case EDGE_MIRROR:
+            for (x = 0; x < w; x++) {
+                for (c = 0; c < s->nb_components; c++) {
+                    int Y = y + ysrc[x * step + c] - 128;
+                    int X = x + xsrc[x * step + c] - 128;
+
+                    if (Y < 0)
+                        Y = (-Y) % h;
+                    if (X < 0)
+                        X = (-X) % w;
+                    if (Y >= h)
+                        Y = h - (Y % h) - 1;
+                    if (X >= w)
+                        X = w - (X % w) - 1;
                     dst[x * step + c] = src[Y * slinesize + X * step + c];
                 }
             }

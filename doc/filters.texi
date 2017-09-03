@@ -6890,6 +6890,9 @@ Adjacent pixels will spread out to replace missing pixels.
 
 @item wrap
 Out of range pixels are wrapped so they point to pixels of other side.
+
+@item mirror
+Out of range pixels will be replaced with mirrored pixels.
 @end table
 Default is @samp{smear}.
 
