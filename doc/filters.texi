@@ -14911,7 +14911,7 @@ This filter accepts the following options:
 @item threshold
 The filtering strength. The higher, the more filtered the video will be.
 Hard thresholding can use a higher threshold than soft thresholding
-before the video looks overfiltered.
+before the video looks overfiltered. Default value is 2.
 
 @item method
 The filtering method the filter will use.
@@ -14930,13 +14930,15 @@ Scales or nullifies coefficients - intermediary between (more) soft and
 (less) hard thresholding.
 @end table
 
+Default is garrote.
+
 @item nsteps
 Number of times, the wavelet will decompose the picture. Picture can't
 be decomposed beyond a particular point (typically, 8 for a 640x480
-frame - as 2^9 = 512 > 480)
+frame - as 2^9 = 512 > 480). Valid values are integers between 1 and 32. Default value is 6.
 
 @item percent
-Partial of full denoising (limited coefficients shrinking), from 0 to 100.
+Partial of full denoising (limited coefficients shrinking), from 0 to 100. Default value is 85.
 
 @item planes
 A list of the planes to process. By default all planes are processed.
