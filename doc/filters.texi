@@ -4995,6 +4995,12 @@ blend=all_expr='A*(if(gte(T,10),1,T/10))+B*(1-(if(gte(T,10),1,T/10)))'
 @end example
 
 @item
+Apply linear horizontal transition from top layer to bottom layer:
+@example
+blend=all_expr='A*(X/W)+B*(1-X/W)'
+@end example
+
+@item
 Apply 1x1 checkerboard effect:
 @example
 blend=all_expr='if(eq(mod(X,2),mod(Y,2)),A,B)'
