@@ -280,27 +280,17 @@ static int config_output(AVFilterLink *outlink)
         av_log(ctx, AV_LOG_ERROR, "inputs must be of same pixel format\n");
         return AVERROR(EINVAL);
     }
-    if (srclink->w                       != xlink->w ||
-        srclink->h                       != xlink->h ||
-        srclink->sample_aspect_ratio.num != xlink->sample_aspect_ratio.num ||
-        srclink->sample_aspect_ratio.den != xlink->sample_aspect_ratio.den ||
-        srclink->w                       != ylink->w ||
-        srclink->h                       != ylink->h ||
-        srclink->sample_aspect_ratio.num != ylink->sample_aspect_ratio.num ||
-        srclink->sample_aspect_ratio.den != ylink->sample_aspect_ratio.den) {
+    if (srclink->w != xlink->w ||
+        srclink->h != xlink->h ||
+        srclink->w != ylink->w ||
+        srclink->h != ylink->h) {
         av_log(ctx, AV_LOG_ERROR, "First input link %s parameters "
-               "(size %dx%d, SAR %d:%d) do not match the corresponding "
-               "second input link %s parameters (%dx%d, SAR %d:%d) "
-               "and/or third input link %s parameters (%dx%d, SAR %d:%d)\n",
+               "(size %dx%d) do not match the corresponding "
+               "second input link %s parameters (%dx%d) "
+               "and/or third input link %s parameters (%dx%d)\n",
                ctx->input_pads[0].name, srclink->w, srclink->h,
-               srclink->sample_aspect_ratio.num,
-               srclink->sample_aspect_ratio.den,
                ctx->input_pads[1].name, xlink->w, xlink->h,
-               xlink->sample_aspect_ratio.num,
-               xlink->sample_aspect_ratio.den,
-               ctx->input_pads[2].name, ylink->w, ylink->h,
-               ylink->sample_aspect_ratio.num,
-               ylink->sample_aspect_ratio.den);
+               ctx->input_pads[2].name, ylink->w, ylink->h);
         return AVERROR(EINVAL);
     }
 
