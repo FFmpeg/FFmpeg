@@ -646,6 +646,7 @@ AVFilter ff_vf_pixscope = {
     .query_formats = query_formats,
     .inputs        = pixscope_inputs,
     .outputs       = pixscope_outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
 
 typedef struct PixelValues {
@@ -1027,4 +1028,5 @@ AVFilter ff_vf_oscilloscope = {
     .uninit        = oscilloscope_uninit,
     .inputs        = oscilloscope_inputs,
     .outputs       = oscilloscope_outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
