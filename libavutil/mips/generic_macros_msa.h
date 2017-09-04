@@ -2773,20 +2773,18 @@
 
 /* Description : Converts inputs to unsigned bytes, interleave, average & store
                  as 8x4 unsigned byte block
-   Arguments   : Inputs  - in0, in1, in2, in3, dst0, dst1, dst2, dst3,
-                           pdst, stride
+   Arguments   : Inputs  - in0, in1, in2, in3, dst0, dst1, pdst, stride
 */
-#define CONVERT_UB_AVG_ST8x4_UB(in0, in1, in2, in3,                    \
-                                dst0, dst1, dst2, dst3, pdst, stride)  \
-{                                                                      \
-    v16u8 tmp0_m, tmp1_m, tmp2_m, tmp3_m;                              \
-    uint8_t *pdst_m = (uint8_t *) (pdst);                              \
-                                                                       \
-    tmp0_m = PCKEV_XORI128_UB(in0, in1);                               \
-    tmp1_m = PCKEV_XORI128_UB(in2, in3);                               \
-    ILVR_D2_UB(dst1, dst0, dst3, dst2, tmp2_m, tmp3_m);                \
-    AVER_UB2_UB(tmp0_m, tmp2_m, tmp1_m, tmp3_m, tmp0_m, tmp1_m);       \
-    ST8x4_UB(tmp0_m, tmp1_m, pdst_m, stride);                          \
+#define CONVERT_UB_AVG_ST8x4_UB(in0, in1, in2, in3,           \
+                                dst0, dst1, pdst, stride)     \
+{                                                             \
+    v16u8 tmp0_m, tmp1_m;                                     \
+    uint8_t *pdst_m = (uint8_t *) (pdst);                     \
+                                                              \
+    tmp0_m = PCKEV_XORI128_UB(in0, in1);                      \
+    tmp1_m = PCKEV_XORI128_UB(in2, in3);                      \
+    AVER_UB2_UB(tmp0_m, dst0, tmp1_m, dst1, tmp0_m, tmp1_m);  \
+    ST8x4_UB(tmp0_m, tmp1_m, pdst_m, stride);                 \
 }
 
 /* Description : Pack even byte elements, extract 0 & 2 index words from pair

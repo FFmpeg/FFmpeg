@@ -1479,7 +1479,8 @@ static void avc_luma_hz_and_aver_dst_8x8_msa(const uint8_t *src,
                      plus20b, res0, res1, res2, res3);
         SRARI_H4_SH(res0, res1, res2, res3, 5);
         SAT_SH4_SH(res0, res1, res2, res3, 7);
-        CONVERT_UB_AVG_ST8x4_UB(res0, res1, res2, res3, dst0, dst1, dst2, dst3,
+        ILVR_D2_UB(dst1, dst0, dst3, dst2, dst0, dst1);
+        CONVERT_UB_AVG_ST8x4_UB(res0, res1, res2, res3, dst0, dst1,
                                 dst, dst_stride);
 
         dst += (4 * dst_stride);
@@ -1825,8 +1826,8 @@ static void avc_luma_vt_and_aver_dst_8x8_msa(const uint8_t *src,
         SRARI_H4_SH(out0, out1, out2, out3, 5);
         SAT_SH4_SH(out0, out1, out2, out3, 7);
         LD_UB4(dst, dst_stride, dst0, dst1, dst2, dst3);
-
-        CONVERT_UB_AVG_ST8x4_UB(out0, out1, out2, out3, dst0, dst1, dst2, dst3,
+        ILVR_D2_UB(dst1, dst0, dst3, dst2, dst0, dst1);
+        CONVERT_UB_AVG_ST8x4_UB(out0, out1, out2, out3, dst0, dst1,
                                 dst, dst_stride);
         dst += (4 * dst_stride);
 
@@ -2229,7 +2230,8 @@ static void avc_luma_mid_and_aver_dst_8w_msa(const uint8_t *src,
         res3 = AVC_CALC_DPADD_H_6PIX_2COEFF_SH(hz_out3, hz_out4, hz_out5,
                                                hz_out6, hz_out7, hz_out8);
         LD_UB4(dst, dst_stride, dst0, dst1, dst2, dst3);
-        CONVERT_UB_AVG_ST8x4_UB(res0, res1, res2, res3, dst0, dst1, dst2, dst3,
+        ILVR_D2_UB(dst1, dst0, dst3, dst2, dst0, dst1);
+        CONVERT_UB_AVG_ST8x4_UB(res0, res1, res2, res3, dst0, dst1,
                                 dst, dst_stride);
 
         dst += (4 * dst_stride);
@@ -2518,8 +2520,8 @@ static void avc_luma_midv_qrt_and_aver_dst_8w_msa(const uint8_t *src,
         res1 = __msa_aver_s_h(res2, res3);
         res2 = __msa_aver_s_h(res4, res5);
         res3 = __msa_aver_s_h(res6, res7);
-
-        CONVERT_UB_AVG_ST8x4_UB(res0, res1, res2, res3, dst0, dst1, dst2, dst3,
+        ILVR_D2_UB(dst1, dst0, dst3, dst2, dst0, dst1);
+        CONVERT_UB_AVG_ST8x4_UB(res0, res1, res2, res3, dst0, dst1,
                                 dst, dst_stride);
         dst += (4 * dst_stride);
 
@@ -2676,7 +2678,8 @@ static void avc_luma_hv_qrt_and_aver_dst_8x8_msa(const uint8_t *src_x,
         out3 = __msa_srari_h((hz_out3 + vert_out3), 1);
 
         SAT_SH4_SH(out0, out1, out2, out3, 7);
-        CONVERT_UB_AVG_ST8x4_UB(out0, out1, out2, out3, dst0, dst1, dst2, dst3,
+        ILVR_D2_UB(dst1, dst0, dst3, dst2, dst0, dst1);
+        CONVERT_UB_AVG_ST8x4_UB(out0, out1, out2, out3, dst0, dst1,
                                 dst, dst_stride);
         dst += (4 * dst_stride);
 
