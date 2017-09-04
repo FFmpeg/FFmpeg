@@ -254,6 +254,9 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
         // update precincts size: 2^n value
         reslevel->log2_prec_width  = codsty->log2_prec_widths[reslevelno];
         reslevel->log2_prec_height = codsty->log2_prec_heights[reslevelno];
+        if (!reslevel->log2_prec_width || !reslevel->log2_prec_height) {
+            return AVERROR_INVALIDDATA;
+        }
 
         /* Number of bands for each resolution level */
         if (reslevelno == 0)
