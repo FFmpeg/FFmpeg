@@ -36,6 +36,11 @@
 typedef struct FFTFILTContext {
     const AVClass *class;
 
+    int depth;
+    int nb_planes;
+    int planewidth[MAX_PLANES];
+    int planeheight[MAX_PLANES];
+
     RDFTContext *hrdft[MAX_PLANES];
     RDFTContext *vrdft[MAX_PLANES];
     RDFTContext *ihrdft[MAX_PLANES];
@@ -198,9 +203,17 @@ static int config_props(AVFilterLink *inlink)
     double values[VAR_VARS_NB];
 
     desc = av_pix_fmt_desc_get(inlink->format);
+    s->depth = desc->comp[0].depth;
+    s->planewidth[1] = s->planewidth[2] = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
+    s->planewidth[0] = s->planewidth[3] = inlink->w;
+    s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
+    s->planeheight[0] = s->planeheight[3] = inlink->h;
+
+    s->nb_planes = av_pix_fmt_count_planes(inlink->format);
+
     for (i = 0; i < desc->nb_components; i++) {
-        int w = inlink->w;
-        int h = inlink->h;
+        int w = s->planewidth[i];
+        int h = s->planeheight[i];
 
         /* RDFT - Array initialization for Horizontal pass*/
         for (rdft_hbits = 1; 1 << rdft_hbits < w*10/9; rdft_hbits++);
@@ -228,10 +241,10 @@ static int config_props(AVFilterLink *inlink)
     }
 
     /*Luminance value - Array initialization*/
-    values[VAR_W] = inlink->w;
-    values[VAR_H] = inlink->h;
-    for (plane = 0; plane < 3; plane++)
-    {
+    for (plane = 0; plane < 3; plane++) {
+        values[VAR_W] = s->planewidth[plane];
+        values[VAR_H] = s->planeheight[plane];
+
         if(!(s->weight[plane] = av_malloc_array(s->rdft_hlen[plane], s->rdft_vlen[plane] * sizeof(double))))
             return AVERROR(ENOMEM);
         for (i = 0; i < s->rdft_hlen[plane]; i++)
@@ -252,7 +265,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    const AVPixFmtDescriptor *desc;
     FFTFILTContext *s = ctx->priv;
     AVFrame *out;
     int i, j, plane;
@@ -265,15 +277,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     av_frame_copy_props(out, in);
 
-    desc = av_pix_fmt_desc_get(inlink->format);
-    for (plane = 0; plane < desc->nb_components; plane++) {
-        int w = inlink->w;
-        int h = inlink->h;
-
-        if (plane == 1 || plane == 2) {
-            w = AV_CEIL_RSHIFT(w, desc->log2_chroma_w);
-            h = AV_CEIL_RSHIFT(h, desc->log2_chroma_h);
-        }
+    for (plane = 0; plane < s->nb_planes; plane++) {
+        int w = s->planewidth[plane];
+        int h = s->planeheight[plane];
 
         rdft_horizontal(s, in, w, h, plane);
         rdft_vertical(s, h, plane);
@@ -314,7 +320,9 @@ static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat pixel_fmts_fftfilt[] = {
         AV_PIX_FMT_GRAY8,
-        AV_PIX_FMT_YUV444P,
+        AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVJ444P,
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVJ420P,
+        AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVJ422P,
         AV_PIX_FMT_NONE
     };
 
