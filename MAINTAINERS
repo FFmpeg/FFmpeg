@@ -291,7 +291,6 @@ libavdevice
   libdc1394.c                           Roman Shaposhnik
   opengl_enc.c                          Lukasz Marek
   pulse_audio_enc.c                     Lukasz Marek
-  qtkit.m                               Thilo Borgmann
   sdl                                   Stefano Sabatini
   sdl2.c                                Josh de Kock
   v4l2.c                                Giorgio Vazzana
