@@ -36,7 +36,10 @@
 typedef struct FFTFILTContext {
     const AVClass *class;
 
-    RDFTContext *rdft;
+    RDFTContext *hrdft[MAX_PLANES];
+    RDFTContext *vrdft[MAX_PLANES];
+    RDFTContext *ihrdft[MAX_PLANES];
+    RDFTContext *ivrdft[MAX_PLANES];
     int rdft_hbits[MAX_PLANES];
     int rdft_vbits[MAX_PLANES];
     size_t rdft_hlen[MAX_PLANES];
@@ -96,7 +99,6 @@ static void copy_rev (FFTSample *dest, int w, int w2)
 static void rdft_horizontal(FFTFILTContext *s, AVFrame *in, int w, int h, int plane)
 {
     int i, j;
-    s->rdft = av_rdft_init(s->rdft_hbits[plane], DFT_R2C);
 
     for (i = 0; i < h; i++) {
         for (j = 0; j < w; j++)
@@ -106,16 +108,13 @@ static void rdft_horizontal(FFTFILTContext *s, AVFrame *in, int w, int h, int pl
     }
 
     for (i = 0; i < h; i++)
-        av_rdft_calc(s->rdft, s->rdft_hdata[plane] + i * s->rdft_hlen[plane]);
-
-    av_rdft_end(s->rdft);
+        av_rdft_calc(s->hrdft[plane], s->rdft_hdata[plane] + i * s->rdft_hlen[plane]);
 }
 
 /*Vertical pass - RDFT*/
 static void rdft_vertical(FFTFILTContext *s, int h, int plane)
 {
     int i, j;
-    s->rdft = av_rdft_init(s->rdft_vbits[plane], DFT_R2C);
 
     for (i = 0; i < s->rdft_hlen[plane]; i++) {
         for (j = 0; j < h; j++)
@@ -125,33 +124,29 @@ static void rdft_vertical(FFTFILTContext *s, int h, int plane)
     }
 
     for (i = 0; i < s->rdft_hlen[plane]; i++)
-        av_rdft_calc(s->rdft, s->rdft_vdata[plane] + i * s->rdft_vlen[plane]);
-
-    av_rdft_end(s->rdft);
+        av_rdft_calc(s->vrdft[plane], s->rdft_vdata[plane] + i * s->rdft_vlen[plane]);
 }
 /*Vertical pass - IRDFT*/
 static void irdft_vertical(FFTFILTContext *s, int h, int plane)
 {
     int i, j;
-    s->rdft = av_rdft_init(s->rdft_vbits[plane], IDFT_C2R);
+
     for (i = 0; i < s->rdft_hlen[plane]; i++)
-        av_rdft_calc(s->rdft, s->rdft_vdata[plane] + i * s->rdft_vlen[plane]);
+        av_rdft_calc(s->ivrdft[plane], s->rdft_vdata[plane] + i * s->rdft_vlen[plane]);
 
     for (i = 0; i < s->rdft_hlen[plane]; i++)
         for (j = 0; j < h; j++)
             s->rdft_hdata[plane][j * s->rdft_hlen[plane] + i] =
             s->rdft_vdata[plane][i * s->rdft_vlen[plane] + j];
-
-    av_rdft_end(s->rdft);
 }
 
 /*Horizontal pass - IRDFT*/
 static void irdft_horizontal(FFTFILTContext *s, AVFrame *out, int w, int h, int plane)
 {
     int i, j;
-    s->rdft = av_rdft_init(s->rdft_hbits[plane], IDFT_C2R);
+
     for (i = 0; i < h; i++)
-        av_rdft_calc(s->rdft, s->rdft_hdata[plane] + i * s->rdft_hlen[plane]);
+        av_rdft_calc(s->ihrdft[plane], s->rdft_hdata[plane] + i * s->rdft_hlen[plane]);
 
     for (i = 0; i < h; i++)
         for (j = 0; j < w; j++)
@@ -159,8 +154,6 @@ static void irdft_horizontal(FFTFILTContext *s, AVFrame *out, int w, int h, int 
                                                                          *s->rdft_hlen[plane] + j] * 4 /
                                                                          (s->rdft_hlen[plane] *
                                                                           s->rdft_vlen[plane]), 0, 255);
-
-    av_rdft_end(s->rdft);
 }
 
 static av_cold int initialize(AVFilterContext *ctx)
@@ -216,11 +209,21 @@ static int config_props(AVFilterLink *inlink)
         if (!(s->rdft_hdata[i] = av_malloc_array(h, s->rdft_hlen[i] * sizeof(FFTSample))))
             return AVERROR(ENOMEM);
 
+        if (!(s->hrdft[i] = av_rdft_init(s->rdft_hbits[i], DFT_R2C)))
+            return AVERROR(ENOMEM);
+        if (!(s->ihrdft[i] = av_rdft_init(s->rdft_hbits[i], IDFT_C2R)))
+            return AVERROR(ENOMEM);
+
         /* RDFT - Array initialization for Vertical pass*/
         for (rdft_vbits = 1; 1 << rdft_vbits < h*10/9; rdft_vbits++);
         s->rdft_vbits[i] = rdft_vbits;
         s->rdft_vlen[i] = 1 << rdft_vbits;
         if (!(s->rdft_vdata[i] = av_malloc_array(s->rdft_hlen[i], s->rdft_vlen[i] * sizeof(FFTSample))))
+            return AVERROR(ENOMEM);
+
+        if (!(s->vrdft[i] = av_rdft_init(s->rdft_vbits[i], DFT_R2C)))
+            return AVERROR(ENOMEM);
+        if (!(s->ivrdft[i] = av_rdft_init(s->rdft_vbits[i], IDFT_C2R)))
             return AVERROR(ENOMEM);
     }
 
@@ -300,6 +303,10 @@ static av_cold void uninit(AVFilterContext *ctx)
         av_free(s->rdft_vdata[i]);
         av_expr_free(s->weight_expr[i]);
         av_free(s->weight[i]);
+        av_rdft_end(s->hrdft[i]);
+        av_rdft_end(s->ihrdft[i]);
+        av_rdft_end(s->vrdft[i]);
+        av_rdft_end(s->ivrdft[i]);
     }
 }
 
