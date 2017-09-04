@@ -6094,6 +6094,13 @@ static int read_tfra(MOVContext *mov, AVIOContext *f)
     }
     for (i = 0; i < index->item_count; i++) {
         int64_t time, offset;
+
+        if (avio_feof(f)) {
+            index->item_count = 0;
+            av_freep(&index->items);
+            return AVERROR_INVALIDDATA;
+        }
+
         if (version == 1) {
             time   = avio_rb64(f);
             offset = avio_rb64(f);
