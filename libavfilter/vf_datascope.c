@@ -455,8 +455,8 @@ static const AVOption pixscope_options[] = {
     { "w",  "set scope width",     POFFSET(w),    AV_OPT_TYPE_INT,   {.i64=7},   1, 80, FLAGS },
     { "h",  "set scope height",    POFFSET(h),    AV_OPT_TYPE_INT,   {.i64=7},   1, 80, FLAGS },
     { "o",  "set window opacity",  POFFSET(o),    AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0,  1, FLAGS },
-    { "wx", "set window x offset", POFFSET(wx),   AV_OPT_TYPE_FLOAT, {.dbl=1},   0,  1, FLAGS },
-    { "wy", "set window y offset", POFFSET(wy),   AV_OPT_TYPE_FLOAT, {.dbl=0},   0,  1, FLAGS },
+    { "wx", "set window x offset", POFFSET(wx),   AV_OPT_TYPE_FLOAT, {.dbl=-1}, -1,  1, FLAGS },
+    { "wy", "set window y offset", POFFSET(wy),   AV_OPT_TYPE_FLOAT, {.dbl=-1}, -1,  1, FLAGS },
     { NULL }
 };
 
@@ -542,8 +542,30 @@ static int pixscope_filter_frame(AVFilterLink *inlink, AVFrame *in)
     w = s->ww / s->w;
     h = s->ww / s->h;
 
-    X = (in->width - s->ww) * s->wx;
-    Y = (in->height - s->wh) * s->wy;
+    if (s->wx >= 0) {
+        X = (in->width - s->ww) * s->wx;
+    } else {
+        X = (in->width - s->ww) * -s->wx;
+    }
+    if (s->wy >= 0) {
+        Y = (in->height - s->wh) * s->wy;
+    } else {
+        Y = (in->height - s->wh) * -s->wy;
+    }
+
+    if (s->wx < 0) {
+        if (s->x + s->w >= X && (s->x + s->w <= X + s->ww) &&
+            s->y + s->h >= Y && (s->y + s->h <= Y + s->wh)) {
+            X = (in->width - s->ww) * (1 + s->wx);
+        }
+    }
+
+    if (s->wy < 0) {
+        if (s->x + s->w >= X && (s->x + s->w <= X + s->ww) &&
+            s->y + s->h >= Y && (s->y + s->h <= Y + s->wh)) {
+            Y = (in->height - s->wh) * (1 + s->wy);
+        }
+    }
 
     ff_blend_rectangle(&s->draw, &s->dark, out->data, out->linesize,
                        out->width, out->height,
