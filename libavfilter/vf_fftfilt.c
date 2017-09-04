@@ -360,4 +360,5 @@ AVFilter ff_vf_fftfilt = {
     .query_formats   = query_formats,
     .init            = initialize,
     .uninit          = uninit,
+    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
