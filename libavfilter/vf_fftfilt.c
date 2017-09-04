@@ -33,9 +33,16 @@
 
 #define MAX_PLANES 4
 
+enum EvalMode {
+    EVAL_MODE_INIT,
+    EVAL_MODE_FRAME,
+    EVAL_MODE_NB
+};
+
 typedef struct FFTFILTContext {
     const AVClass *class;
 
+    int eval_mode;
     int depth;
     int nb_planes;
     int planewidth[MAX_PLANES];
@@ -59,8 +66,8 @@ typedef struct FFTFILTContext {
 
 } FFTFILTContext;
 
-static const char *const var_names[] = {   "X",   "Y",   "W",   "H",     NULL    };
-enum                                   { VAR_X, VAR_Y, VAR_W, VAR_H, VAR_VARS_NB };
+static const char *const var_names[] = {   "X",   "Y",   "W",   "H",   "N", NULL        };
+enum                                   { VAR_X, VAR_Y, VAR_W, VAR_H, VAR_N, VAR_VARS_NB };
 
 enum { Y = 0, U, V };
 
@@ -74,6 +81,9 @@ static const AVOption fftfilt_options[] = {
     { "weight_Y", "set luminance expression in Y plane",   OFFSET(weight_str[Y]), AV_OPT_TYPE_STRING, {.str = "1"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "weight_U", "set chrominance expression in U plane", OFFSET(weight_str[U]), AV_OPT_TYPE_STRING, {.str = NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "weight_V", "set chrominance expression in V plane", OFFSET(weight_str[V]), AV_OPT_TYPE_STRING, {.str = NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "eval", "specify when to evaluate expressions", OFFSET(eval_mode), AV_OPT_TYPE_INT, {.i64 = EVAL_MODE_INIT}, 0, EVAL_MODE_NB-1, FLAGS, "eval" },
+         { "init",  "eval expressions once during initialization", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_INIT},  .flags = FLAGS, .unit = "eval" },
+         { "frame", "eval expressions per-frame",                  0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_FRAME}, .flags = FLAGS, .unit = "eval" },
     {NULL},
 };
 
@@ -195,12 +205,30 @@ static av_cold int initialize(AVFilterContext *ctx)
     return ret;
 }
 
+static void do_eval(FFTFILTContext *s, AVFilterLink *inlink, int plane)
+{
+    double values[VAR_VARS_NB];
+    int i, j;
+
+    values[VAR_N] = inlink->frame_count_out;
+    values[VAR_W] = s->planewidth[plane];
+    values[VAR_H] = s->planeheight[plane];
+
+    for (i = 0; i < s->rdft_hlen[plane]; i++) {
+        values[VAR_X] = i;
+        for (j = 0; j < s->rdft_vlen[plane]; j++) {
+            values[VAR_Y] = j;
+            s->weight[plane][i * s->rdft_vlen[plane] + j] =
+            av_expr_eval(s->weight_expr[plane], values, s);
+        }
+    }
+}
+
 static int config_props(AVFilterLink *inlink)
 {
     FFTFILTContext *s = inlink->dst->priv;
     const AVPixFmtDescriptor *desc;
-    int rdft_hbits, rdft_vbits, i, j, plane;
-    double values[VAR_VARS_NB];
+    int rdft_hbits, rdft_vbits, i, plane;
 
     desc = av_pix_fmt_desc_get(inlink->format);
     s->depth = desc->comp[0].depth;
@@ -242,21 +270,11 @@ static int config_props(AVFilterLink *inlink)
 
     /*Luminance value - Array initialization*/
     for (plane = 0; plane < 3; plane++) {
-        values[VAR_W] = s->planewidth[plane];
-        values[VAR_H] = s->planeheight[plane];
-
         if(!(s->weight[plane] = av_malloc_array(s->rdft_hlen[plane], s->rdft_vlen[plane] * sizeof(double))))
             return AVERROR(ENOMEM);
-        for (i = 0; i < s->rdft_hlen[plane]; i++)
-        {
-            values[VAR_X] = i;
-            for (j = 0; j < s->rdft_vlen[plane]; j++)
-            {
-                values[VAR_Y] = j;
-                s->weight[plane][i * s->rdft_vlen[plane] + j] =
-                av_expr_eval(s->weight_expr[plane], values, s);
-            }
-        }
+
+        if (s->eval_mode == EVAL_MODE_INIT)
+            do_eval(s, inlink, plane);
     }
     return 0;
 }
@@ -280,6 +298,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     for (plane = 0; plane < s->nb_planes; plane++) {
         int w = s->planewidth[plane];
         int h = s->planeheight[plane];
+
+        if (s->eval_mode == EVAL_MODE_FRAME)
+            do_eval(s, inlink, plane);
 
         rdft_horizontal(s, in, w, h, plane);
         rdft_vertical(s, h, plane);

@@ -7926,6 +7926,20 @@ Set the frequency domain weight expression for the 1st chroma plane.
 @item weight_V
 Set the frequency domain weight expression for the 2nd chroma plane.
 
+@item eval
+Set when the expressions are evaluated.
+
+It accepts the following values:
+@table @samp
+@item init
+Only evaluate expressions once during the filter initialization.
+
+@item frame
+Evaluate expressions for each incoming frame.
+@end table
+
+Default value is @samp{init}.
+
 The filter accepts the following variables:
 @item X
 @item Y
@@ -7934,6 +7948,9 @@ The coordinates of the current sample.
 @item W
 @item H
 The width and height of the image.
+
+@item N
+The number of input frame, starting from 0.
 @end table
 
 @subsection Examples
