@@ -48,6 +48,8 @@ version <next>:
 - convolve video filter
 - VP9 tile threading support
 - KMS screen grabber
+- CUDA thumbnail filter
+
 
 version 3.3:
 - CrystalHD decoder moved to new decode API

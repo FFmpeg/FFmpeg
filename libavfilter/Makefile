@@ -315,6 +315,7 @@ OBJS-$(CONFIG_TBLEND_FILTER)                 += vf_blend.o framesync.o
 OBJS-$(CONFIG_TELECINE_FILTER)               += vf_telecine.o
 OBJS-$(CONFIG_THRESHOLD_FILTER)              += vf_threshold.o framesync.o
 OBJS-$(CONFIG_THUMBNAIL_FILTER)              += vf_thumbnail.o
+OBJS-$(CONFIG_THUMBNAIL_CUDA_FILTER)         += vf_thumbnail_cuda.o vf_thumbnail_cuda.ptx.o
 OBJS-$(CONFIG_TILE_FILTER)                   += vf_tile.o
 OBJS-$(CONFIG_TINTERLACE_FILTER)             += vf_tinterlace.o
 OBJS-$(CONFIG_TLUT2_FILTER)                  += vf_lut2.o framesync.o
