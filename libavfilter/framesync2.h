@@ -23,6 +23,12 @@
 
 #include "bufferqueue.h"
 
+enum EOFAction {
+    EOF_ACTION_REPEAT,
+    EOF_ACTION_ENDALL,
+    EOF_ACTION_PASS
+};
+
 /*
  * TODO
  * Export convenient options.

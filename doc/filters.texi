@@ -10956,6 +10956,9 @@ on the main video. Default value is "0" for both expressions. In case
 the expression is invalid, it is set to a huge value (meaning that the
 overlay will not be displayed within the output visible area).
 
+@item eof_action
+See @ref{framesync}.
+
 @item eval
 Set when the expressions for @option{x}, and @option{y} are evaluated.
 
@@ -10970,6 +10973,9 @@ evaluate expressions for each incoming frame
 @end table
 
 Default value is @samp{frame}.
+
+@item shortest
+See @ref{framesync}.
 
 @item format
 Set the format for the output video.
@@ -10996,6 +11002,9 @@ automatically pick format
 @end table
 
 Default value is @samp{yuv420}.
+
+@item repeatlast
+See @ref{framesync}.
 @end table
 
 The @option{x}, and @option{y} expressions can contain the following

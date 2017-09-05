@@ -28,12 +28,6 @@
 #define OFFSET(member) offsetof(FFFrameSync, member)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
 
-enum EOFAction {
-    EOF_ACTION_REPEAT,
-    EOF_ACTION_ENDALL,
-    EOF_ACTION_PASS
-};
-
 static const char *framesync_name(void *ptr)
 {
     return "framesync";
