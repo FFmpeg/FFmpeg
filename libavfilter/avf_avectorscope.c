@@ -269,9 +269,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             }
             break;
         case AV_SAMPLE_FMT_FLT: {
-            float *samples = (float *)insamples->data[0] + i * 2;
+            float *samples = (float *)insamples->data[0];
 
-            for (i = 0; i < insamples->nb_samples; i++) {
+            for (i = 0; i < insamples->nb_samples * 2; i++) {
                 max = FFMAX(FFABS(samples[i]), max);
             }
             }
