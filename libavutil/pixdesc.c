@@ -1670,12 +1670,6 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .log2_chroma_h = 1,
         .flags = AV_PIX_FMT_FLAG_HWACCEL,
     },
-    [AV_PIX_FMT_VDA_VLD] = {
-        .name = "vda_vld",
-        .log2_chroma_w = 1,
-        .log2_chroma_h = 1,
-        .flags = AV_PIX_FMT_FLAG_HWACCEL,
-    },
     [AV_PIX_FMT_YA8] = {
         .name = "ya8",
         .nb_components = 2,
@@ -2028,10 +2022,6 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 1, 4, 2, 0, 10, 3, 9, 3 },        /* V */
         },
         .flags = AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_BE,
-    },
-    [AV_PIX_FMT_VDA] = {
-        .name = "vda",
-        .flags = AV_PIX_FMT_FLAG_HWACCEL,
     },
     [AV_PIX_FMT_QSV] = {
         .name = "qsv",

@@ -72,8 +72,6 @@ static void register_all(void)
     REGISTER_HWACCEL(H264_MMAL,         h264_mmal);
     REGISTER_HWACCEL(H264_QSV,          h264_qsv);
     REGISTER_HWACCEL(H264_VAAPI,        h264_vaapi);
-    REGISTER_HWACCEL(H264_VDA,          h264_vda);
-    REGISTER_HWACCEL(H264_VDA_OLD,      h264_vda_old);
     REGISTER_HWACCEL(H264_VDPAU,        h264_vdpau);
     REGISTER_HWACCEL(H264_VIDEOTOOLBOX, h264_videotoolbox);
     REGISTER_HWACCEL(HEVC_CUVID,        hevc_cuvid);
@@ -217,7 +215,6 @@ static void register_all(void)
     REGISTER_DECODER(H264_MMAL,         h264_mmal);
     REGISTER_DECODER(H264_QSV,          h264_qsv);
     REGISTER_DECODER(H264_RKMPP,        h264_rkmpp);
-    REGISTER_DECODER(H264_VDA,          h264_vda);
 #if FF_API_VDPAU
     REGISTER_DECODER(H264_VDPAU,        h264_vdpau);
 #endif

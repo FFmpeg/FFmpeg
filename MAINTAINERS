@@ -244,7 +244,6 @@ Codecs:
   txd.c                                 Ivo van Poorten
   vc2*                                  Rostislav Pehlivanov
   vcr1.c                                Michael Niedermayer
-  vda_h264_dec.c                        Xidorn Quan
   videotoolboxenc.c                     Rick Kern
   vima.c                                Paul B Mahol
   vorbisdec.c                           Denes Balatoni, David Conrad

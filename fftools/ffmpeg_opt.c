@@ -78,10 +78,6 @@ const HWAccel hwaccels[] = {
     { "dxva2", hwaccel_decode_init, HWACCEL_DXVA2, AV_PIX_FMT_DXVA2_VLD,
       AV_HWDEVICE_TYPE_DXVA2 },
 #endif
-#if CONFIG_VDA
-    { "vda",   videotoolbox_init,   HWACCEL_VDA,   AV_PIX_FMT_VDA,
-      AV_HWDEVICE_TYPE_NONE },
-#endif
 #if CONFIG_VIDEOTOOLBOX
     { "videotoolbox",   videotoolbox_init,   HWACCEL_VIDEOTOOLBOX,   AV_PIX_FMT_VIDEOTOOLBOX,
       AV_HWDEVICE_TYPE_NONE },
@@ -3631,7 +3627,7 @@ const OptionDef options[] = {
     { "hwaccel_output_format", OPT_VIDEO | OPT_STRING | HAS_ARG | OPT_EXPERT |
                           OPT_SPEC | OPT_INPUT,                                  { .off = OFFSET(hwaccel_output_formats) },
         "select output format used with HW accelerated decoding", "format" },
-#if CONFIG_VDA || CONFIG_VIDEOTOOLBOX
+#if CONFIG_VIDEOTOOLBOX
     { "videotoolbox_pixfmt", HAS_ARG | OPT_STRING | OPT_EXPERT, { &videotoolbox_pixfmt}, "" },
 #endif
     { "hwaccels",         OPT_EXIT,                                              { .func_arg = show_hwaccels },

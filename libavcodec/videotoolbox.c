@@ -21,13 +21,9 @@
  */
 
 #include "config.h"
-#if CONFIG_VIDEOTOOLBOX
-#  include "videotoolbox.h"
-#  include "libavutil/hwcontext_videotoolbox.h"
-#else
-#  include "vda.h"
-#endif
-#include "vda_vt_internal.h"
+#include "videotoolbox.h"
+#include "libavutil/hwcontext_videotoolbox.h"
+#include "vt_internal.h"
 #include "libavutil/avutil.h"
 #include "libavutil/hwcontext.h"
 #include "bytestream.h"
