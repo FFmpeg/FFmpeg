@@ -5591,8 +5591,8 @@ frei0r_filter_extralibs='$ldl'
 frei0r_src_filter_extralibs='$ldl'
 ladspa_filter_extralibs='$ldl'
 nvenc_extralibs='$ldl'
-coreimage_filter_extralibs="-framework QuartzCore -framework AppKit -framework OpenGL"
-coreimagesrc_filter_extralibs="-framework QuartzCore -framework AppKit -framework OpenGL"
+coreimage_filter_extralibs="-framework CoreImage -framework AppKit -framework OpenGL"
+coreimagesrc_filter_extralibs="-framework CoreImage -framework AppKit -framework OpenGL"
 
 if ! disabled network; then
     check_func getaddrinfo $network_extralibs
@@ -5840,8 +5840,8 @@ enabled cuda_sdk          && require cuda_sdk cuda.h cuCtxCreate -lcuda
 enabled cuvid             && { enabled cuda ||
                                die "ERROR: CUVID requires CUDA"; }
 enabled chromaprint       && require chromaprint chromaprint.h chromaprint_get_version -lchromaprint
-enabled coreimage_filter  && { check_header_objcc QuartzCore/CoreImage.h || disable coreimage_filter; }
-enabled coreimagesrc_filter && { check_header_objcc QuartzCore/CoreImage.h || disable coreimagesrc_filter; }
+enabled coreimage_filter  && { check_header_objcc CoreImage/CoreImage.h || disable coreimage_filter; }
+enabled coreimagesrc_filter && { check_header_objcc CoreImage/CoreImage.h || disable coreimagesrc_filter; }
 enabled decklink          && { { check_header DeckLinkAPI.h || die "ERROR: DeckLinkAPI.h header not found"; } &&
                                { check_cpp_condition DeckLinkAPIVersion.h "BLACKMAGIC_DECKLINK_API_VERSION >= 0x0a060100" || die "ERROR: Decklink API version must be >= 10.6.1."; } }
 enabled libndi_newtek     && { check_header Processing.NDI.Lib.h || die "ERROR: Processing.NDI.Lib.h header not found"; }
