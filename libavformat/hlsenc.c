@@ -174,6 +174,7 @@ typedef struct HLSContext {
 
     double initial_prog_date_time;
     char current_segment_final_filename_fmt[1024]; // when renaming segments
+    char *user_agent;
 } HLSContext;
 
 static int get_int_from_double(double val)
@@ -974,6 +975,9 @@ static void set_http_options(AVFormatContext *s, AVDictionary **options, HLSCont
         av_log(c, AV_LOG_WARNING, "No HTTP method set, hls muxer defaulting to method PUT.\n");
         av_dict_set(options, "method", "PUT", 0);
     }
+    if (c->user_agent)
+        av_dict_set(options, "user_agent", c->user_agent, 0);
+
 }
 
 static void write_m3u8_head_block(HLSContext *hls, AVIOContext *out, int version,
@@ -1816,6 +1820,7 @@ static const AVOption options[] = {
     {"generic", "start_number value (default)", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_START_SEQUENCE_AS_START_NUMBER }, INT_MIN, INT_MAX, E, "start_sequence_source_type" },
     {"epoch", "seconds since epoch", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_START_SEQUENCE_AS_SECONDS_SINCE_EPOCH }, INT_MIN, INT_MAX, E, "start_sequence_source_type" },
     {"datetime", "current datetime as YYYYMMDDhhmmss", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_START_SEQUENCE_AS_FORMATTED_DATETIME }, INT_MIN, INT_MAX, E, "start_sequence_source_type" },
+    {"http_user_agent", "override User-Agent field in HTTP header", OFFSET(user_agent), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
     { NULL },
 };
 

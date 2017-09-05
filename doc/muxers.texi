@@ -728,6 +728,10 @@ server using the HTTP PUT method, and update the m3u8 files every
 @code{refresh} times using the same method.
 Note that the HTTP server must support the given method for uploading
 files.
+
+@item http_user_agent
+Override User-Agent field in HTTP header. Applicable only for HTTP output.
+
 @end table
 
 @anchor{ico}
