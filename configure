@@ -1118,7 +1118,7 @@ check_header_objcc(){
     {
        echo "#include <$header>"
        echo "int main(void) { return 0; }"
-    } | check_objcc && check_stat "$TMPO" && enable_safe $headers
+    } | check_objcc && check_stat "$TMPO" && enable_safe $header
 }
 
 check_func(){
