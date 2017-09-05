@@ -17044,7 +17044,8 @@ Specify the red, green, blue and alpha fade. Default values are @code{15},
 Allowed range is @code{[0, 255]}.
 
 @item zoom
-Set the zoom factor. Default value is @code{1}. Allowed range is @code{[1, 10]}.
+Set the zoom factor. Default value is @code{1}. Allowed range is @code{[0, 10]}.
+Values lower than @var{1} will auto adjust zoom factor to maximal possible value.
 
 @item draw
 Set the vectorscope drawing mode.
