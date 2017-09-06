@@ -1121,6 +1121,15 @@ check_header_objcc(){
     } | check_objcc && check_stat "$TMPO" && enable_safe $header
 }
 
+check_apple_framework(){
+    log check_apple_framework "$@"
+    framework="$1"
+    name="$(tolower $framework)"
+    header="${framework}/${framework}.h"
+    disable $name
+    check_header_objcc $header && enable $name && add_extralibs "-framework $framework"
+}
+
 check_func(){
     log check_func "$@"
     func=$1
