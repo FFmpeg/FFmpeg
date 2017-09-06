@@ -2770,6 +2770,70 @@ Set delay-line interpolation, @var{linear} or @var{quadratic}.
 Default is @var{linear}.
 @end table
 
+@section haas
+Apply Haas effect to audio.
+
+Note that this makes most sense to apply on mono signals.
+With this filter applied to mono signals it give some directionality and
+streches its stereo image.
+
+The filter accepts the following options:
+
+@table @option
+@item level_in
+Set input level. By default is @var{1}, or 0dB
+
+@item level_out
+Set output level. By default is @var{1}, or 0dB.
+
+@item side_gain
+Set gain applied to side part of signal. By default is @var{1}.
+
+@item middle_source
+Set kind of middle source. Can be one of the following:
+
+@table @samp
+@item left
+Pick left channel.
+
+@item right
+Pick right channel.
+
+@item mid
+Pick middle part signal of stereo image.
+
+@item side
+Pick side part signal of stereo image.
+@end table
+
+@item middle_phase
+Change middle phase. By default is disabled.
+
+@item left_delay
+Set left channel delay. By default is @var{2.05} milliseconds.
+
+@item left_balance
+Set left channel balance. By default is @var{-1}.
+
+@item left_gain
+Set left channel gain. By default is @var{1}.
+
+@item left_phase
+Change left phase. By default is disabled.
+
+@item right_delay
+Set right channel delay. By defaults is @var{2.12} milliseconds.
+
+@item right_balance
+Set right channel balance. By default is @var{1}.
+
+@item right_gain
+Set right channel gain. By default is @var{1}.
+
+@item right_phase
+Change right phase. By default is enabled.
+@end table
+
 @section hdcd
 
 Decodes High Definition Compatible Digital (HDCD) data. A 16-bit PCM stream with

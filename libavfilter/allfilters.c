@@ -104,6 +104,7 @@ static void register_all(void)
     REGISTER_FILTER(EXTRASTEREO,    extrastereo,    af);
     REGISTER_FILTER(FIREQUALIZER,   firequalizer,   af);
     REGISTER_FILTER(FLANGER,        flanger,        af);
+    REGISTER_FILTER(HAAS,           haas,           af);
     REGISTER_FILTER(HDCD,           hdcd,           af);
     REGISTER_FILTER(HEADPHONE,      headphone,      af);
     REGISTER_FILTER(HIGHPASS,       highpass,       af);
