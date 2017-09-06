@@ -46,6 +46,10 @@ typedef struct LibRTMFPContext {
     char*               publication;
     unsigned short      streamId;
 
+    // General options
+    int                 socketReceiveSize;
+    int                 socketSendSize;
+
     // NetGroup members
     RTMFPGroupConfig    group;
     char*               netgroup;
@@ -89,7 +93,7 @@ static int rtmfp_close(URLContext *s)
     LibRTMFPContext *ctx = s->priv_data;
 
     av_log(NULL, AV_LOG_INFO, "Closing RTMFP connection...\n");
-    RTMFP_Close(ctx->id);
+    RTMFP_Close(ctx->id, 1);
     return 0;
 }
 
@@ -116,24 +120,30 @@ static void onStatusEvent(const char* code, const char* description) {
 static int rtmfp_open(URLContext *s, const char *uri, int flags)
 {
     LibRTMFPContext *ctx = s->priv_data;
-    const char* level = 0;
+    int level = 0;
 
     switch (av_log_get_level()) {
-        case AV_LOG_FATAL:   level = "1"; break;
-        case AV_LOG_ERROR:   level = "3"; break;
-        case AV_LOG_WARNING: level = "4"; break;
+        case AV_LOG_FATAL:   level = 1; break;
+        case AV_LOG_ERROR:   level = 3; break;
+        case AV_LOG_WARNING: level = 4; break;
         default:
-        case AV_LOG_INFO:    level = "6"; break;
-        case AV_LOG_DEBUG:   level = "7"; break;
-        case AV_LOG_VERBOSE: level = "8"; break;
-        case AV_LOG_TRACE:   level = "8"; break;
+        case AV_LOG_INFO:    level = 6; break;
+        case AV_LOG_DEBUG:   level = 7; break;
+        case AV_LOG_VERBOSE: level = 8; break;
+        case AV_LOG_TRACE:   level = 8; break;
     }
+
+    if (ctx->socketReceiveSize)
+        RTMFP_SetIntParameter("socketReceiveSize", ctx->socketReceiveSize);
+    if (ctx->socketSendSize)
+        RTMFP_SetIntParameter("socketSendSize", ctx->socketSendSize);
+    RTMFP_SetIntParameter("logLevel", level);
+
     RTMFP_Init(&ctx->rtmfp, &ctx->group, 1);
     ctx->rtmfp.pOnSocketError = onSocketError;
     ctx->rtmfp.pOnStatusEvent = onStatusEvent;
     ctx->rtmfp.isBlocking = 1;
 
-    RTMFP_SetParameter("logLevel", level);
     RTMFP_LogSetCallback(rtmfp_log);
     /*RTMFP_ActiveDump();
     RTMFP_DumpSetCallback(rtmfp_dump);*/
@@ -233,6 +243,8 @@ static int rtmp_get_file_handle(URLContext *s)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
+    {"socketReceiveSize", "Socket receive buffer size", OFFSET(socketReceiveSize), AV_OPT_TYPE_INT, {.i64 = 212992}, 0, 0x0FFFFFFF, DEC|ENC},
+    {"socketSendSize", "Socket send buffer size", OFFSET(socketSendSize), AV_OPT_TYPE_INT, {.i64 = 212992}, 0, 0x0FFFFFFF, DEC|ENC},
     {"audioUnbuffered", "Unbuffered audio mode (default to false)", OFFSET(audioUnbuffered), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, DEC|ENC},
     {"videoUnbuffered", "Unbuffered video mode (default to false)", OFFSET(videoUnbuffered), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, DEC|ENC},
     {"peerId", "Connect to a peer for playing", OFFSET(peerId), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
