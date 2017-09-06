@@ -570,8 +570,8 @@ static av_cold int ffat_close_decoder(AVCodecContext *avctx)
         AudioConverterDispose(at->converter);
     av_packet_unref(&at->new_in_pkt);
     av_packet_unref(&at->in_pkt);
-    av_free(at->decoded_data);
-    av_free(at->extradata);
+    av_freep(&at->decoded_data);
+    av_freep(&at->extradata);
     return 0;
 }
 
