@@ -202,6 +202,7 @@ External library support:
   themselves, not all their features will necessarily be usable by FFmpeg.
 
   --disable-alsa           disable ALSA support [autodetect]
+  --disable-avfoundation   disable Apple AVFoundation framework [autodetect]
   --enable-avisynth        enable reading of AviSynth script files [no]
   --disable-bzlib          disable bzlib [autodetect]
   --enable-chromaprint     enable audio fingerprinting with chromaprint [no]
@@ -1499,6 +1500,7 @@ EXAMPLE_LIST="
 
 EXTERNAL_AUTODETECT_LIBRARY_LIST="
     alsa
+    avfoundation
     bzlib
     iconv
     jack
@@ -3025,8 +3027,8 @@ xwma_demuxer_select="riffdec"
 # indevs / outdevs
 alsa_indev_deps="alsa"
 alsa_outdev_deps="alsa"
-avfoundation_indev_deps="pthreads"
-avfoundation_indev_extralibs="-framework Foundation -framework AVFoundation -framework CoreVideo -framework CoreMedia"
+avfoundation_indev_deps="avfoundation pthreads"
+avfoundation_indev_extralibs="-framework Foundation -framework CoreVideo -framework CoreMedia"
 bktr_indev_deps_any="dev_bktr_ioctl_bt848_h machine_ioctl_bt848_h dev_video_bktr_ioctl_bt848_h dev_ic_bt8xx_h"
 caca_outdev_deps="libcaca"
 decklink_indev_deps="decklink threads"
@@ -5758,6 +5760,13 @@ check_lib psapi    "windows.h psapi.h"    GetProcessMemoryInfo -lpsapi
 
 check_lib coreservices "CoreServices/CoreServices.h" UTGetOSTypeFromString "-framework CoreServices"
 
+enabled avfoundation && check_apple_framework AVFoundation
+
+enabled avfoundation && {
+    check_lib avfoundation CoreGraphics/CoreGraphics.h               CGGetActiveDisplayList "-framework CoreGraphics" ||
+    check_lib avfoundation ApplicationServices/ApplicationServices.h CGGetActiveDisplayList "-framework ApplicationServices"; }
+
+
 check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
 
 check_type "windows.h dxva.h" "DXVA_PicParams_HEVC" -DWINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP -D_CRT_BUILD_DESKTOP_APP=0
@@ -5842,9 +5851,6 @@ for func in $COMPLEX_FUNCS; do
 done
 
 # these are off by default, so fail if requested and not available
-enabled avfoundation_indev && { check_header_objcc AVFoundation/AVFoundation.h || disable avfoundation_indev; }
-enabled avfoundation_indev && { check_lib avfoundation_indev CoreGraphics/CoreGraphics.h CGGetActiveDisplayList -framework CoreGraphics ||
-                                check_lib avfoundation_indev ApplicationServices/ApplicationServices.h CGGetActiveDisplayList -framework ApplicationServices; }
 enabled cuda_sdk          && require cuda_sdk cuda.h cuCtxCreate -lcuda
 enabled cuvid             && { enabled cuda ||
                                die "ERROR: CUVID requires CUDA"; }
