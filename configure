@@ -205,6 +205,7 @@ External library support:
   --disable-avfoundation   disable Apple AVFoundation framework [autodetect]
   --enable-avisynth        enable reading of AviSynth script files [no]
   --disable-bzlib          disable bzlib [autodetect]
+  --disable-coreimage      disable Apple CoreImage framework [autodetect]
   --enable-chromaprint     enable audio fingerprinting with chromaprint [no]
   --enable-frei0r          enable frei0r video filtering [no]
   --enable-gcrypt          enable gcrypt, needed for rtmp(t)e support
@@ -1502,6 +1503,7 @@ EXTERNAL_AUTODETECT_LIBRARY_LIST="
     alsa
     avfoundation
     bzlib
+    coreimage
     iconv
     jack
     libxcb
@@ -3136,6 +3138,10 @@ blackframe_filter_deps="gpl"
 boxblur_filter_deps="gpl"
 bs2b_filter_deps="libbs2b"
 colormatrix_filter_deps="gpl"
+coreimage_filter_deps="coreimage"
+coreimage_filter_extralibs="-framework OpenGL -framework AppKit"
+coreimagesrc_filter_deps="coreimage"
+coreimagesrc_filter_extralibs="-framework OpenGL -framework AppKit"
 cover_rect_filter_deps="avcodec avformat gpl"
 cropdetect_filter_deps="gpl"
 deinterlace_qsv_filter_deps="libmfx"
@@ -5602,8 +5608,6 @@ frei0r_filter_extralibs='$ldl'
 frei0r_src_filter_extralibs='$ldl'
 ladspa_filter_extralibs='$ldl'
 nvenc_extralibs='$ldl'
-coreimage_filter_extralibs="-framework CoreImage -framework AppKit -framework OpenGL"
-coreimagesrc_filter_extralibs="-framework CoreImage -framework AppKit -framework OpenGL"
 
 if ! disabled network; then
     check_func getaddrinfo $network_extralibs
@@ -5761,6 +5765,7 @@ check_lib psapi    "windows.h psapi.h"    GetProcessMemoryInfo -lpsapi
 check_lib coreservices "CoreServices/CoreServices.h" UTGetOSTypeFromString "-framework CoreServices"
 
 enabled avfoundation && check_apple_framework AVFoundation
+enabled coreimage    && check_apple_framework CoreImage
 
 enabled avfoundation && {
     check_lib avfoundation CoreGraphics/CoreGraphics.h               CGGetActiveDisplayList "-framework CoreGraphics" ||
@@ -5855,8 +5860,6 @@ enabled cuda_sdk          && require cuda_sdk cuda.h cuCtxCreate -lcuda
 enabled cuvid             && { enabled cuda ||
                                die "ERROR: CUVID requires CUDA"; }
 enabled chromaprint       && require chromaprint chromaprint.h chromaprint_get_version -lchromaprint
-enabled coreimage_filter  && { check_header_objcc CoreImage/CoreImage.h || disable coreimage_filter; }
-enabled coreimagesrc_filter && { check_header_objcc CoreImage/CoreImage.h || disable coreimagesrc_filter; }
 enabled decklink          && { { check_header DeckLinkAPI.h || die "ERROR: DeckLinkAPI.h header not found"; } &&
                                { check_cpp_condition DeckLinkAPIVersion.h "BLACKMAGIC_DECKLINK_API_VERSION >= 0x0a060100" || die "ERROR: Decklink API version must be >= 10.6.1."; } }
 enabled libndi_newtek     && { check_header Processing.NDI.Lib.h || die "ERROR: Processing.NDI.Lib.h header not found"; }
