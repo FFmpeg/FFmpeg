@@ -15,6 +15,9 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2017-09-13 - xxxxxxx - lavc 57.106.100 - avcodec.h
+  Add AV_PKT_FLAG_TRUSTED.
+
 2017-09-13 - xxxxxxx - lavu 55.75.100 - hwcontext.h hwcontext_drm.h
   Add AV_HWDEVICE_TYPE_DRM and implementation.
 
