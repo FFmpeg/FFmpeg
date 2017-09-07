@@ -3217,15 +3217,9 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     pkt->stream_index = st->index;
 
-    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && t->ptses &&
-        mxf->current_edit_unit >= 0 && mxf->current_edit_unit < t->nb_ptses) {
-        pkt->dts = mxf->current_edit_unit + t->first_dts;
-        pkt->pts = t->ptses[mxf->current_edit_unit];
-    } else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-        int ret = mxf_set_audio_pts(mxf, st->codecpar, pkt);
-        if (ret < 0)
-            return ret;
-    }
+    ret = mxf_set_pts(mxf, st, pkt, next_pos);
+    if (ret < 0)
+        return ret;
 
     mxf->current_edit_unit += edit_units;
 
