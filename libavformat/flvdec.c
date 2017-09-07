@@ -1015,7 +1015,13 @@ retry:
                    "Skipping flv packet: type %d, size %d, flags %d.\n",
                    type, size, flags);
 skip:
-            avio_seek(s->pb, next, SEEK_SET);
+            if (avio_seek(s->pb, next, SEEK_SET) != next) {
+                 // This can happen if flv_read_metabody above read past
+                 // next, on a non-seekable input, and the preceding data has
+                 // been flushed out from the IO buffer.
+                 av_log(s, AV_LOG_ERROR, "Unable to seek to the next packet\n");
+                 return AVERROR_INVALIDDATA;
+            }
             ret = FFERROR_REDO;
             goto leave;
         }
