@@ -3060,6 +3060,32 @@ static int mxf_set_audio_pts(MXFContext *mxf, AVCodecParameters *par,
     return 0;
 }
 
+static int mxf_set_pts(MXFContext *mxf, AVStream *st, AVPacket *pkt, int64_t next_ofs)
+{
+    AVCodecParameters *par = st->codecpar;
+    MXFTrack *track = st->priv_data;
+
+    if (par->codec_type == AVMEDIA_TYPE_VIDEO && next_ofs >= 0) {
+        /* mxf->current_edit_unit good - see if we have an
+         * index table to derive timestamps from */
+        MXFIndexTable *t = &mxf->index_tables[0];
+
+        if (mxf->nb_index_tables >= 1 && mxf->current_edit_unit < t->nb_ptses) {
+            pkt->dts = mxf->current_edit_unit + t->first_dts;
+            pkt->pts = t->ptses[mxf->current_edit_unit];
+        } else if (track && track->intra_only) {
+            /* intra-only -> PTS = EditUnit.
+             * let utils.c figure out DTS since it can be < PTS if low_delay = 0 (Sony IMX30) */
+            pkt->pts = mxf->current_edit_unit;
+        }
+    } else if (par->codec_type == AVMEDIA_TYPE_AUDIO) {
+        int ret = mxf_set_audio_pts(mxf, par, pkt);
+        if (ret < 0)
+            return ret;
+    }
+    return 0;
+}
+
 static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
 {
     KLVPacket klv;
@@ -3083,8 +3109,6 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
             int index = mxf_get_stream_index(s, &klv);
             int64_t next_ofs, next_klv;
             AVStream *st;
-            MXFTrack *track;
-            AVCodecParameters *par;
 
             if (index < 0) {
                 av_log(s, AV_LOG_ERROR,
@@ -3094,7 +3118,6 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
             }
 
             st = s->streams[index];
-            track = st->priv_data;
 
             if (s->streams[index]->discard == AVDISCARD_ALL)
                 goto skip;
@@ -3129,26 +3152,9 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
             pkt->stream_index = index;
             pkt->pos = klv.offset;
 
-            par = st->codecpar;
-
-            if (par->codec_type == AVMEDIA_TYPE_VIDEO && next_ofs >= 0) {
-                /* mxf->current_edit_unit good - see if we have an
-                 * index table to derive timestamps from */
-                MXFIndexTable *t = &mxf->index_tables[0];
-
-                if (mxf->nb_index_tables >= 1 && mxf->current_edit_unit < t->nb_ptses) {
-                    pkt->dts = mxf->current_edit_unit + t->first_dts;
-                    pkt->pts = t->ptses[mxf->current_edit_unit];
-                } else if (track && track->intra_only) {
-                    /* intra-only -> PTS = EditUnit.
-                     * let utils.c figure out DTS since it can be < PTS if low_delay = 0 (Sony IMX30) */
-                    pkt->pts = mxf->current_edit_unit;
-                }
-            } else if (par->codec_type == AVMEDIA_TYPE_AUDIO) {
-                ret = mxf_set_audio_pts(mxf, par, pkt);
-                if (ret < 0)
-                    return ret;
-            }
+            ret = mxf_set_pts(mxf, st, pkt, next_ofs);
+            if (ret < 0)
+                return ret;
 
             /* seek for truncated packets */
             avio_seek(s->pb, next_klv, SEEK_SET);
