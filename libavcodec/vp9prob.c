@@ -56,8 +56,8 @@ void ff_vp9_adapt_probs(VP9Context *s)
                 for (l = 0; l < 6; l++)
                     for (m = 0; m < 6; m++) {
                         uint8_t *pp = s->prob_ctx[s->s.h.framectxid].coef[i][j][k][l][m];
-                        unsigned *e = s->counts.eob[i][j][k][l][m];
-                        unsigned *c = s->counts.coef[i][j][k][l][m];
+                        unsigned *e = s->td[0].counts.eob[i][j][k][l][m];
+                        unsigned *c = s->td[0].counts.coef[i][j][k][l][m];
 
                         if (l == 0 && m >= 3) // dc only has 3 pt
                             break;
@@ -77,32 +77,32 @@ void ff_vp9_adapt_probs(VP9Context *s)
 
     // skip flag
     for (i = 0; i < 3; i++)
-        adapt_prob(&p->skip[i], s->counts.skip[i][0],
-                   s->counts.skip[i][1], 20, 128);
+        adapt_prob(&p->skip[i], s->td[0].counts.skip[i][0],
+                   s->td[0].counts.skip[i][1], 20, 128);
 
     // intra/inter flag
     for (i = 0; i < 4; i++)
-        adapt_prob(&p->intra[i], s->counts.intra[i][0],
-                   s->counts.intra[i][1], 20, 128);
+        adapt_prob(&p->intra[i], s->td[0].counts.intra[i][0],
+                   s->td[0].counts.intra[i][1], 20, 128);
 
     // comppred flag
     if (s->s.h.comppredmode == PRED_SWITCHABLE) {
         for (i = 0; i < 5; i++)
-            adapt_prob(&p->comp[i], s->counts.comp[i][0],
-                       s->counts.comp[i][1], 20, 128);
+            adapt_prob(&p->comp[i], s->td[0].counts.comp[i][0],
+                       s->td[0].counts.comp[i][1], 20, 128);
     }
 
     // reference frames
     if (s->s.h.comppredmode != PRED_SINGLEREF) {
         for (i = 0; i < 5; i++)
-            adapt_prob(&p->comp_ref[i], s->counts.comp_ref[i][0],
-                       s->counts.comp_ref[i][1], 20, 128);
+            adapt_prob(&p->comp_ref[i], s->td[0].counts.comp_ref[i][0],
+                       s->td[0].counts.comp_ref[i][1], 20, 128);
     }
 
     if (s->s.h.comppredmode != PRED_COMPREF) {
         for (i = 0; i < 5; i++) {
             uint8_t *pp = p->single_ref[i];
-            unsigned (*c)[2] = s->counts.single_ref[i];
+            unsigned (*c)[2] = s->td[0].counts.single_ref[i];
 
             adapt_prob(&pp[0], c[0][0], c[0][1], 20, 128);
             adapt_prob(&pp[1], c[1][0], c[1][1], 20, 128);
@@ -113,7 +113,7 @@ void ff_vp9_adapt_probs(VP9Context *s)
     for (i = 0; i < 4; i++)
         for (j = 0; j < 4; j++) {
             uint8_t *pp = p->partition[i][j];
-            unsigned *c = s->counts.partition[i][j];
+            unsigned *c = s->td[0].counts.partition[i][j];
 
             adapt_prob(&pp[0], c[0], c[1] + c[2] + c[3], 20, 128);
             adapt_prob(&pp[1], c[1], c[2] + c[3], 20, 128);
@@ -123,10 +123,10 @@ void ff_vp9_adapt_probs(VP9Context *s)
     // tx size
     if (s->s.h.txfmmode == TX_SWITCHABLE) {
         for (i = 0; i < 2; i++) {
-            unsigned *c16 = s->counts.tx16p[i], *c32 = s->counts.tx32p[i];
+            unsigned *c16 = s->td[0].counts.tx16p[i], *c32 = s->td[0].counts.tx32p[i];
 
-            adapt_prob(&p->tx8p[i], s->counts.tx8p[i][0],
-                       s->counts.tx8p[i][1], 20, 128);
+            adapt_prob(&p->tx8p[i], s->td[0].counts.tx8p[i][0],
+                       s->td[0].counts.tx8p[i][1], 20, 128);
             adapt_prob(&p->tx16p[i][0], c16[0], c16[1] + c16[2], 20, 128);
             adapt_prob(&p->tx16p[i][1], c16[1], c16[2], 20, 128);
             adapt_prob(&p->tx32p[i][0], c32[0], c32[1] + c32[2] + c32[3], 20, 128);
@@ -139,7 +139,7 @@ void ff_vp9_adapt_probs(VP9Context *s)
     if (s->s.h.filtermode == FILTER_SWITCHABLE) {
         for (i = 0; i < 4; i++) {
             uint8_t *pp = p->filter[i];
-            unsigned *c = s->counts.filter[i];
+            unsigned *c = s->td[0].counts.filter[i];
 
             adapt_prob(&pp[0], c[0], c[1] + c[2], 20, 128);
             adapt_prob(&pp[1], c[1], c[2], 20, 128);
@@ -149,7 +149,7 @@ void ff_vp9_adapt_probs(VP9Context *s)
     // inter modes
     for (i = 0; i < 7; i++) {
         uint8_t *pp = p->mv_mode[i];
-        unsigned *c = s->counts.mv_mode[i];
+        unsigned *c = s->td[0].counts.mv_mode[i];
 
         adapt_prob(&pp[0], c[2], c[1] + c[0] + c[3], 20, 128);
         adapt_prob(&pp[1], c[0], c[1] + c[3], 20, 128);
@@ -159,7 +159,7 @@ void ff_vp9_adapt_probs(VP9Context *s)
     // mv joints
     {
         uint8_t *pp = p->mv_joint;
-        unsigned *c = s->counts.mv_joint;
+        unsigned *c = s->td[0].counts.mv_joint;
 
         adapt_prob(&pp[0], c[0], c[1] + c[2] + c[3], 20, 128);
         adapt_prob(&pp[1], c[1], c[2] + c[3], 20, 128);
@@ -171,11 +171,11 @@ void ff_vp9_adapt_probs(VP9Context *s)
         uint8_t *pp;
         unsigned *c, (*c2)[2], sum;
 
-        adapt_prob(&p->mv_comp[i].sign, s->counts.mv_comp[i].sign[0],
-                   s->counts.mv_comp[i].sign[1], 20, 128);
+        adapt_prob(&p->mv_comp[i].sign, s->td[0].counts.mv_comp[i].sign[0],
+                   s->td[0].counts.mv_comp[i].sign[1], 20, 128);
 
         pp  = p->mv_comp[i].classes;
-        c   = s->counts.mv_comp[i].classes;
+        c   = s->td[0].counts.mv_comp[i].classes;
         sum = c[1] + c[2] + c[3] + c[4] + c[5] +
               c[6] + c[7] + c[8] + c[9] + c[10];
         adapt_prob(&pp[0], c[0], sum, 20, 128);
@@ -193,39 +193,39 @@ void ff_vp9_adapt_probs(VP9Context *s)
         adapt_prob(&pp[8], c[7], c[8], 20, 128);
         adapt_prob(&pp[9], c[9], c[10], 20, 128);
 
-        adapt_prob(&p->mv_comp[i].class0, s->counts.mv_comp[i].class0[0],
-                   s->counts.mv_comp[i].class0[1], 20, 128);
+        adapt_prob(&p->mv_comp[i].class0, s->td[0].counts.mv_comp[i].class0[0],
+                   s->td[0].counts.mv_comp[i].class0[1], 20, 128);
         pp = p->mv_comp[i].bits;
-        c2 = s->counts.mv_comp[i].bits;
+        c2 = s->td[0].counts.mv_comp[i].bits;
         for (j = 0; j < 10; j++)
             adapt_prob(&pp[j], c2[j][0], c2[j][1], 20, 128);
 
         for (j = 0; j < 2; j++) {
             pp = p->mv_comp[i].class0_fp[j];
-            c  = s->counts.mv_comp[i].class0_fp[j];
+            c  = s->td[0].counts.mv_comp[i].class0_fp[j];
             adapt_prob(&pp[0], c[0], c[1] + c[2] + c[3], 20, 128);
             adapt_prob(&pp[1], c[1], c[2] + c[3], 20, 128);
             adapt_prob(&pp[2], c[2], c[3], 20, 128);
         }
         pp = p->mv_comp[i].fp;
-        c  = s->counts.mv_comp[i].fp;
+        c  = s->td[0].counts.mv_comp[i].fp;
         adapt_prob(&pp[0], c[0], c[1] + c[2] + c[3], 20, 128);
         adapt_prob(&pp[1], c[1], c[2] + c[3], 20, 128);
         adapt_prob(&pp[2], c[2], c[3], 20, 128);
 
         if (s->s.h.highprecisionmvs) {
             adapt_prob(&p->mv_comp[i].class0_hp,
-                       s->counts.mv_comp[i].class0_hp[0],
-                       s->counts.mv_comp[i].class0_hp[1], 20, 128);
-            adapt_prob(&p->mv_comp[i].hp, s->counts.mv_comp[i].hp[0],
-                       s->counts.mv_comp[i].hp[1], 20, 128);
+                       s->td[0].counts.mv_comp[i].class0_hp[0],
+                       s->td[0].counts.mv_comp[i].class0_hp[1], 20, 128);
+            adapt_prob(&p->mv_comp[i].hp, s->td[0].counts.mv_comp[i].hp[0],
+                       s->td[0].counts.mv_comp[i].hp[1], 20, 128);
         }
     }
 
     // y intra modes
     for (i = 0; i < 4; i++) {
         uint8_t *pp = p->y_mode[i];
-        unsigned *c = s->counts.y_mode[i], sum, s2;
+        unsigned *c = s->td[0].counts.y_mode[i], sum, s2;
 
         sum = c[0] + c[1] + c[3] + c[4] + c[5] + c[6] + c[7] + c[8] + c[9];
         adapt_prob(&pp[0], c[DC_PRED], sum, 20, 128);
@@ -250,7 +250,7 @@ void ff_vp9_adapt_probs(VP9Context *s)
     // uv intra modes
     for (i = 0; i < 10; i++) {
         uint8_t *pp = p->uv_mode[i];
-        unsigned *c = s->counts.uv_mode[i], sum, s2;
+        unsigned *c = s->td[0].counts.uv_mode[i], sum, s2;
 
         sum = c[0] + c[1] + c[3] + c[4] + c[5] + c[6] + c[7] + c[8] + c[9];
         adapt_prob(&pp[0], c[DC_PRED], sum, 20, 128);
