@@ -651,6 +651,11 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         return AVERROR_EXIT;
     }
 
+    if (cctx->v210) {
+        av_log(avctx, AV_LOG_WARNING, "The bm_v210 option is deprecated and will be removed. Please use the -raw_format yuv422p10.\n");
+        cctx->raw_format = MKBETAG('v','2','1','0');
+    }
+
     strcpy (fname, avctx->filename);
     tmp=strchr (fname, '@');
     if (tmp != NULL) {
@@ -723,15 +728,42 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
     st->time_base.num      = ctx->bmd_tb_num;
     av_stream_set_r_frame_rate(st, av_make_q(st->time_base.den, st->time_base.num));
 
-    if (cctx->v210) {
-        st->codecpar->codec_id    = AV_CODEC_ID_V210;
-        st->codecpar->codec_tag   = MKTAG('V', '2', '1', '0');
-        st->codecpar->bit_rate    = av_rescale(ctx->bmd_width * ctx->bmd_height * 64, st->time_base.den, st->time_base.num * 3);
-    } else {
+    switch((BMDPixelFormat)cctx->raw_format) {
+    case bmdFormat8BitYUV:
         st->codecpar->codec_id    = AV_CODEC_ID_RAWVIDEO;
-        st->codecpar->format      = AV_PIX_FMT_UYVY422;
         st->codecpar->codec_tag   = MKTAG('U', 'Y', 'V', 'Y');
+        st->codecpar->format      = AV_PIX_FMT_UYVY422;
         st->codecpar->bit_rate    = av_rescale(ctx->bmd_width * ctx->bmd_height * 16, st->time_base.den, st->time_base.num);
+        break;
+    case bmdFormat10BitYUV:
+        st->codecpar->codec_id    = AV_CODEC_ID_V210;
+        st->codecpar->codec_tag   = MKTAG('V','2','1','0');
+        st->codecpar->bit_rate    = av_rescale(ctx->bmd_width * ctx->bmd_height * 64, st->time_base.den, st->time_base.num * 3);
+        st->codecpar->bits_per_coded_sample = 10;
+        break;
+    case bmdFormat8BitARGB:
+        st->codecpar->codec_id    = AV_CODEC_ID_RAWVIDEO;
+        st->codecpar->codec_tag   = avcodec_pix_fmt_to_codec_tag((enum AVPixelFormat)st->codecpar->format);;
+        st->codecpar->format      = AV_PIX_FMT_ARGB;
+        st->codecpar->bit_rate    = av_rescale(ctx->bmd_width * ctx->bmd_height * 32, st->time_base.den, st->time_base.num);
+        break;
+    case bmdFormat8BitBGRA:
+        st->codecpar->codec_id    = AV_CODEC_ID_RAWVIDEO;
+        st->codecpar->codec_tag   = avcodec_pix_fmt_to_codec_tag((enum AVPixelFormat)st->codecpar->format);
+        st->codecpar->format      = AV_PIX_FMT_BGRA;
+        st->codecpar->bit_rate    = av_rescale(ctx->bmd_width * ctx->bmd_height * 32, st->time_base.den, st->time_base.num);
+        break;
+    case bmdFormat10BitRGB:
+        st->codecpar->codec_id    = AV_CODEC_ID_R210;
+        st->codecpar->codec_tag   = MKTAG('R','2','1','0');
+        st->codecpar->format      = AV_PIX_FMT_RGB48LE;
+        st->codecpar->bit_rate    = av_rescale(ctx->bmd_width * ctx->bmd_height * 30, st->time_base.den, st->time_base.num);
+        st->codecpar->bits_per_coded_sample = 10;
+        break;
+    default:
+        av_log(avctx, AV_LOG_ERROR, "Raw Format %.4s not supported\n", (char*) &cctx->raw_format);
+        ret = AVERROR(EINVAL);
+        goto error;
     }
 
     switch (ctx->bmd_field_dominance) {
@@ -776,7 +808,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
     }
 
     result = ctx->dli->EnableVideoInput(ctx->bmd_mode,
-                                        cctx->v210 ? bmdFormat10BitYUV : bmdFormat8BitYUV,
+                                        (BMDPixelFormat) cctx->raw_format,
                                         bmdVideoInputFlagDefault);
 
     if (result != S_OK) {

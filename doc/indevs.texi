@@ -214,8 +214,9 @@ need to configure with the appropriate @code{--extra-cflags}
 and @code{--extra-ldflags}.
 On Windows, you need to run the IDL files through @command{widl}.
 
-DeckLink is very picky about the formats it supports. Pixel format is
-uyvy422 or v210, framerate and video size must be determined for your device with
+DeckLink is very picky about the formats it supports. Pixel format of the
+input can be set with @option{raw_format}.
+Framerate and video size must be determined for your device with
 @command{-list_formats 1}. Audio sample rate is always 48 kHz and the number
 of channels can be 2, 8 or 16. Note that all audio channels are bundled in one single
 audio track.
@@ -239,8 +240,25 @@ Note that there is a FourCC @option{'pal '} that can also be used
 as @option{pal} (3 letters).
 
 @item bm_v210
+This is a deprecated option, you can use @option{raw_format} instead.
 If set to @samp{1}, video is captured in 10 bit v210 instead
 of uyvy422. Not all Blackmagic devices support this option.
+
+@item raw_format
+Set the pixel format of the captured video.
+Available values are:
+@table @samp
+@item uyvy422
+
+@item yuv422p10
+
+@item argb
+
+@item bgra
+
+@item rgb10
+
+@end table
 
 @item teletext_lines
 If set to nonzero, an additional teletext stream will be captured from the
