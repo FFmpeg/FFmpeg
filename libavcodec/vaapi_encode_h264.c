@@ -612,10 +612,8 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
     if (opt->sei & SEI_TIMING) {
         memset(&priv->pic_timing, 0, sizeof(priv->pic_timing));
 
-        priv->pic_timing.cpb_removal_delay =
-            2 * sps->vui.num_units_in_tick * priv->cpb_delay;
-        priv->pic_timing.dpb_output_delay =
-            2 * sps->vui.num_units_in_tick * priv->dpb_delay;
+        priv->pic_timing.cpb_removal_delay = 2 * priv->cpb_delay;
+        priv->pic_timing.dpb_output_delay  = 2 * priv->dpb_delay;
 
         priv->sei_needed = 1;
     }
