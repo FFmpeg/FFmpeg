@@ -1421,7 +1421,7 @@ static void decode_block_params(DiracContext *s, DiracArith arith[8], DiracBlock
     if (!block->ref) {
         pred_block_dc(block, stride, x, y);
         for (i = 0; i < 3; i++)
-            block->u.dc[i] += dirac_get_arith_int(arith+1+i, CTX_DC_F1, CTX_DC_DATA);
+            block->u.dc[i] += (unsigned)dirac_get_arith_int(arith+1+i, CTX_DC_F1, CTX_DC_DATA);
         return;
     }
 
