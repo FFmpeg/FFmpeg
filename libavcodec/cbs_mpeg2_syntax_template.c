@@ -101,6 +101,7 @@ static int FUNC(sequence_extension)(CodedBitstreamContext *ctx, RWContext *rw,
         current->horizontal_size_extension << 12;
     mpeg2->vertical_size = (mpeg2->vertical_size & 0xfff) |
         current->vertical_size_extension << 12;
+    mpeg2->progressive_sequence = current->progressive_sequence;
 
     ui(12, bit_rate_extension);
     marker_bit();
@@ -183,6 +184,7 @@ static int FUNC(picture_header)(CodedBitstreamContext *ctx, RWContext *rw,
 static int FUNC(picture_coding_extension)(CodedBitstreamContext *ctx, RWContext *rw,
                                           MPEG2RawPictureCodingExtension *current)
 {
+    CodedBitstreamMPEG2Context *mpeg2 = ctx->priv_data;
     int err;
 
     HEADER("Picture Coding Extension");
@@ -203,6 +205,27 @@ static int FUNC(picture_coding_extension)(CodedBitstreamContext *ctx, RWContext 
     ui(1, repeat_first_field);
     ui(1, chroma_420_type);
     ui(1, progressive_frame);
+
+    if (mpeg2->progressive_sequence) {
+        if (current->repeat_first_field) {
+            if (current->top_field_first)
+                mpeg2->number_of_frame_centre_offsets = 3;
+            else
+                mpeg2->number_of_frame_centre_offsets = 2;
+        } else {
+            mpeg2->number_of_frame_centre_offsets = 1;
+        }
+    } else {
+        if (current->picture_structure == 1 || // Top field.
+            current->picture_structure == 2) { // Bottom field.
+            mpeg2->number_of_frame_centre_offsets = 1;
+        } else {
+            if (current->repeat_first_field)
+                mpeg2->number_of_frame_centre_offsets = 3;
+            else
+                mpeg2->number_of_frame_centre_offsets = 2;
+        }
+    }
 
     ui(1, composite_display_flag);
     if (current->composite_display_flag) {
@@ -250,6 +273,24 @@ static int FUNC(quant_matrix_extension)(CodedBitstreamContext *ctx, RWContext *r
     return 0;
 }
 
+static int FUNC(picture_display_extension)(CodedBitstreamContext *ctx, RWContext *rw,
+                                           MPEG2RawPictureDisplayExtension *current)
+{
+    CodedBitstreamMPEG2Context *mpeg2 = ctx->priv_data;
+    int err, i;
+
+    HEADER("Picture Display Extension");
+
+    for (i = 0; i < mpeg2->number_of_frame_centre_offsets; i++) {
+        ui(16, frame_centre_horizontal_offset[i]);
+        marker_bit();
+        ui(16, frame_centre_vertical_offset[i]);
+        marker_bit();
+    }
+
+    return 0;
+}
+
 static int FUNC(extension_data)(CodedBitstreamContext *ctx, RWContext *rw,
                                 MPEG2RawExtensionData *current)
 {
@@ -270,6 +311,9 @@ static int FUNC(extension_data)(CodedBitstreamContext *ctx, RWContext *rw,
     case 3:
         return FUNC(quant_matrix_extension)
             (ctx, rw, &current->data.quant_matrix);
+    case 7:
+        return FUNC(picture_display_extension)
+            (ctx, rw, &current->data.picture_display);
     case 8:
         return FUNC(picture_coding_extension)
             (ctx, rw, &current->data.picture_coding);

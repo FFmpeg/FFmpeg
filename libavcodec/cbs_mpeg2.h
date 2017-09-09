@@ -160,6 +160,11 @@ typedef struct MPEG2RawQuantMatrixExtension {
     uint8_t chroma_non_intra_quantiser_matrix[64];
 } MPEG2RawQuantMatrixExtension;
 
+typedef struct MPEG2RawPictureDisplayExtension {
+    uint16_t frame_centre_horizontal_offset[3];
+    uint16_t frame_centre_vertical_offset[3];
+} MPEG2RawPictureDisplayExtension;
+
 typedef struct MPEG2RawExtensionData {
     uint8_t extension_start_code;
     uint8_t extension_start_code_identifier;
@@ -169,6 +174,7 @@ typedef struct MPEG2RawExtensionData {
         MPEG2RawSequenceDisplayExtension sequence_display;
         MPEG2RawQuantMatrixExtension quant_matrix;
         MPEG2RawPictureCodingExtension picture_coding;
+        MPEG2RawPictureDisplayExtension picture_display;
     } data;
 } MPEG2RawExtensionData;
 
@@ -206,6 +212,8 @@ typedef struct CodedBitstreamMPEG2Context {
     uint16_t vertical_size;
     uint8_t scalable;
     uint8_t scalable_mode;
+    uint8_t progressive_sequence;
+    uint8_t number_of_frame_centre_offsets;
 
     // Write buffer.
     uint8_t *write_buffer;
