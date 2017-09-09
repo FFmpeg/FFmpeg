@@ -277,6 +277,7 @@ External library support:
   --enable-libxcb-shape    enable X11 grabbing shape rendering [autodetect]
   --enable-libxvid         enable Xvid encoding via xvidcore,
                            native MPEG-4/Xvid encoder exists [no]
+  --enable-libxml2         enable XML parsing using the C library libxml2 [no]
   --enable-libzimg         enable z.lib, needed for zscale filter [no]
   --enable-libzmq          enable message passing via libzmq [no]
   --enable-libzvbi         enable teletext support via libzvbi [no]
@@ -1601,6 +1602,7 @@ EXTERNAL_LIBRARY_LIST="
     libvpx
     libwavpack
     libwebp
+    libxml2
     libzimg
     libzmq
     libzvbi
@@ -2952,6 +2954,7 @@ avi_muxer_select="riffenc"
 caf_demuxer_select="iso_media riffdec"
 caf_muxer_select="iso_media"
 dash_muxer_select="mp4_muxer"
+dash_demuxer_deps="libxml2"
 dirac_demuxer_select="dirac_parser"
 dts_demuxer_select="dca_parser"
 dtshd_demuxer_select="dca_parser"
@@ -5990,6 +5993,7 @@ enabled libzmq            && require_pkg_config libzmq zmq.h zmq_ctx_new
 enabled libzvbi           && require libzvbi libzvbi.h vbi_decoder_new -lzvbi &&
                              { check_cpp_condition libzvbi.h "VBI_VERSION_MAJOR > 0 || VBI_VERSION_MINOR > 2 || VBI_VERSION_MINOR == 2 && VBI_VERSION_MICRO >= 28" ||
                                enabled gpl || die "ERROR: libzvbi requires version 0.2.28 or --enable-gpl."; }
+enabled libxml2           && require_pkg_config libxml-2.0 libxml2/libxml/xmlversion.h xmlCheckVersion
 enabled mediacodec        && { enabled jni || die "ERROR: mediacodec requires --enable-jni"; }
 enabled mmal              && { check_lib mmal interface/mmal/mmal.h mmal_port_connect -lmmal_core -lmmal_util -lmmal_vc_client -lbcm_host ||
                                { ! enabled cross_compile &&

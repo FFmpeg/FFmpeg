@@ -96,7 +96,7 @@ static void register_all(void)
     REGISTER_DEMUXER (CINE,             cine);
     REGISTER_DEMUXER (CONCAT,           concat);
     REGISTER_MUXER   (CRC,              crc);
-    REGISTER_MUXER   (DASH,             dash);
+    REGISTER_MUXDEMUX(DASH,             dash);
     REGISTER_MUXDEMUX(DATA,             data);
     REGISTER_MUXDEMUX(DAUD,             daud);
     REGISTER_DEMUXER (DCSTR,            dcstr);
