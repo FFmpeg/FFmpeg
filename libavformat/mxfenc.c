@@ -843,6 +843,7 @@ static void mxf_write_track(AVFormatContext *s, AVStream *st, enum MXFMetadataSe
     else
         avio_write(pb, sc->track_essence_element_key + 12, 4);
 
+    // write edit rate
     mxf_write_local_tag(pb, 8, 0x4B01);
 
     if (st == mxf->timecode_track && s->oformat == &ff_mxf_opatom_muxer){
