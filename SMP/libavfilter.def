@@ -18,6 +18,7 @@ EXPORTS
     av_buffersink_set_frame_size
     av_buffersrc_add_frame
     av_buffersrc_add_frame_flags
+    av_buffersrc_close
     av_buffersrc_get_nb_failed_requests
     av_buffersrc_parameters_alloc
     av_buffersrc_parameters_set

@@ -19,6 +19,7 @@ libiconv, ^
 libilbc, ^
 liblzma, ^
 libssh, ^
+libxml2, ^
 libvpx, ^
 mfx_dispatch, ^
 modplug, ^

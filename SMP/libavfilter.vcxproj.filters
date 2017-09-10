@@ -330,6 +330,9 @@
     <ClCompile Include="..\libavfilter\af_flanger.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\af_haas.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\af_hdcd.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
@@ -453,6 +456,9 @@
     <ClCompile Include="..\libavfilter\vf_convolution.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_convolve.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_copy.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
@@ -499,6 +505,9 @@
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_deshake.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_despill.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_detelecine.c">

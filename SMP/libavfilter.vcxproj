@@ -169,6 +169,7 @@
     <ClCompile Include="..\libavfilter\af_extrastereo.c" />
     <ClCompile Include="..\libavfilter\af_firequalizer.c" />
     <ClCompile Include="..\libavfilter\af_flanger.c" />
+    <ClCompile Include="..\libavfilter\af_haas.c" />
     <ClCompile Include="..\libavfilter\af_hdcd.c" />
     <ClCompile Include="..\libavfilter\af_headphone.c" />
     <ClCompile Include="..\libavfilter\af_join.c" />
@@ -210,6 +211,7 @@
     <ClCompile Include="..\libavfilter\vf_colormatrix.c" />
     <ClCompile Include="..\libavfilter\vf_colorspace.c" />
     <ClCompile Include="..\libavfilter\vf_convolution.c" />
+    <ClCompile Include="..\libavfilter\vf_convolve.c" />
     <ClCompile Include="..\libavfilter\vf_copy.c" />
     <ClCompile Include="..\libavfilter\vf_cover_rect.c" />
     <ClCompile Include="..\libavfilter\lavfutils.c" />
@@ -226,6 +228,7 @@
     <ClCompile Include="..\libavfilter\vf_dejudder.c" />
     <ClCompile Include="..\libavfilter\vf_delogo.c" />
     <ClCompile Include="..\libavfilter\vf_deshake.c" />
+    <ClCompile Include="..\libavfilter\vf_despill.c" />
     <ClCompile Include="..\libavfilter\vf_detelecine.c" />
     <ClCompile Include="..\libavfilter\vf_displace.c" />
     <ClCompile Include="..\libavfilter\vf_weave.c" />

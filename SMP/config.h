@@ -21,7 +21,7 @@
 
 #ifndef SMP_CONFIG_H
 #define SMP_CONFIG_H
-#define FFMPEG_CONFIGURATION "--enable-gpl --enable-version3 --enable-avisynth --enable-libmp3lame --enable-libvorbis --enable-libspeex --enable-libopus --enable-libilbc --enable-libtheora --enable-libx264 --enable-libx265 --enable-libxvid --enable-libvpx --enable-libgme --enable-libmodplug --enable-libsoxr --enable-libfreetype --enable-fontconfig --enable-libfribidi --enable-libass --enable-gnutls --disable-schannel --enable-gmp --enable-libssh --enable-libcdio --enable-libbluray --enable-opengl --enable-libmfx --toolchain=msvc"
+#define FFMPEG_CONFIGURATION "--enable-gpl --enable-version3 --enable-avisynth --enable-libmp3lame --enable-libvorbis --enable-libspeex --enable-libopus --enable-libilbc --enable-libtheora --enable-libx264 --enable-libx265 --enable-libxvid --enable-libvpx --enable-libgme --enable-libmodplug --enable-libsoxr --enable-libfreetype --enable-fontconfig --enable-libfribidi --enable-libass --enable-libxml2 --enable-gnutls --disable-schannel --enable-gmp --enable-libssh --enable-libcdio --enable-libbluray --enable-opengl --enable-libmfx --toolchain=msvc"
 #define FFMPEG_LICENSE "GPL version 3 or later"
 #define CONFIG_THIS_YEAR 2017
 #define FFMPEG_DATADIR "."
@@ -486,7 +486,9 @@
 #define CONFIG_TRANSCODE_AAC_EXAMPLE 0
 #define CONFIG_TRANSCODING_EXAMPLE 0
 #define CONFIG_ALSA 0
+#define CONFIG_AVFOUNDATION 0
 #define CONFIG_BZLIB 1
+#define CONFIG_COREIMAGE 0
 #define CONFIG_ICONV 1
 #define CONFIG_JACK 0
 #define CONFIG_LIBXCB 0
@@ -564,6 +566,7 @@
 #define CONFIG_LIBVPX 1
 #define CONFIG_LIBWAVPACK 0
 #define CONFIG_LIBWEBP 0
+#define CONFIG_LIBXML2 1
 #define CONFIG_LIBZIMG 0
 #define CONFIG_LIBZMQ 0
 #define CONFIG_LIBZVBI 0
@@ -571,7 +574,6 @@
 #define CONFIG_OPENAL 0
 #define CONFIG_OPENCL 0
 #define CONFIG_OPENGL 1
-#define CONFIG_VIDEOTOOLBOX 0
 #define CONFIG_AUDIOTOOLBOX 0
 #define CONFIG_CRYSTALHD 0
 #define CONFIG_CUDA 1
@@ -589,7 +591,7 @@
 #define CONFIG_VAAPI 0
 #define CONFIG_VDA 0
 #define CONFIG_VDPAU 0
-#define CONFIG_VIDEOTOOLBOX_HWACCEL 0
+#define CONFIG_VIDEOTOOLBOX 0
 #define CONFIG_XVMC 0
 #define CONFIG_CUDA_SDK 0
 #define CONFIG_LIBNPP 0
@@ -644,6 +646,7 @@
 #define CONFIG_RDFT 1
 #define CONFIG_AUTODETECT 1
 #define CONFIG_FONTCONFIG 1
+#define CONFIG_LINUX_PERF 0
 #define CONFIG_MEMORY_POISONING 0
 #define CONFIG_NEON_CLOBBER_TEST 0
 #define CONFIG_OSSFUZZ 0
@@ -738,7 +741,6 @@
 #define CONFIG_VP3DSP 1
 #define CONFIG_VP56DSP 1
 #define CONFIG_VP8DSP 1
-#define CONFIG_VT_BT2020 0
 #define CONFIG_WMA_FREQS 1
 #define CONFIG_WMV2DSP 1
 #define CONFIG_AAC_ADTSTOASC_BSF 1
@@ -1293,6 +1295,7 @@
 #define CONFIG_CDXL_DEMUXER 1
 #define CONFIG_CINE_DEMUXER 1
 #define CONFIG_CONCAT_DEMUXER 1
+#define CONFIG_DASH_DEMUXER 1
 #define CONFIG_DATA_DEMUXER 1
 #define CONFIG_DAUD_DEMUXER 1
 #define CONFIG_DCSTR_DEMUXER 1
@@ -1791,6 +1794,7 @@
 #define CONFIG_EXTRASTEREO_FILTER 1
 #define CONFIG_FIREQUALIZER_FILTER 1
 #define CONFIG_FLANGER_FILTER 1
+#define CONFIG_HAAS_FILTER 1
 #define CONFIG_HDCD_FILTER 1
 #define CONFIG_HEADPHONE_FILTER 1
 #define CONFIG_HIGHPASS_FILTER 1
@@ -1845,6 +1849,7 @@
 #define CONFIG_COLORMATRIX_FILTER 1
 #define CONFIG_COLORSPACE_FILTER 1
 #define CONFIG_CONVOLUTION_FILTER 1
+#define CONFIG_CONVOLVE_FILTER 1
 #define CONFIG_COPY_FILTER 1
 #define CONFIG_COREIMAGE_FILTER 0
 #define CONFIG_COVER_RECT_FILTER 1
@@ -1862,6 +1867,7 @@
 #define CONFIG_DEJUDDER_FILTER 1
 #define CONFIG_DELOGO_FILTER 1
 #define CONFIG_DESHAKE_FILTER 1
+#define CONFIG_DESPILL_FILTER 1
 #define CONFIG_DETELECINE_FILTER 1
 #define CONFIG_DILATION_FILTER 1
 #define CONFIG_DISPLACE_FILTER 1
@@ -2167,7 +2173,6 @@
 #define CONFIG_OPENAL_INDEV 0
 #define CONFIG_OSS_INDEV 0
 #define CONFIG_PULSE_INDEV 0
-#define CONFIG_QTKIT_INDEV 0
 #define CONFIG_SNDIO_INDEV 0
 #define CONFIG_V4L2_INDEV 0
 #define CONFIG_VFWCAP_INDEV 1
@@ -2306,6 +2311,7 @@
 #define CONFIG_SPX_MUXER 1
 #define CONFIG_SPDIF_MUXER 1
 #define CONFIG_SRT_MUXER 1
+#define CONFIG_SUP_MUXER 1
 #define CONFIG_SWF_MUXER 1
 #define CONFIG_TEE_MUXER 1
 #define CONFIG_TG2_MUXER 1

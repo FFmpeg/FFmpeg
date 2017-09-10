@@ -36,7 +36,6 @@ const AVInputFormat ff_libndi_newtek_demuxer = {0};
 const AVInputFormat ff_openal_demuxer = {0};
 const AVInputFormat ff_oss_demuxer = {0};
 const AVInputFormat ff_pulse_demuxer = {0};
-const AVInputFormat ff_qtkit_demuxer = {0};
 const AVInputFormat ff_sndio_demuxer = {0};
 const AVInputFormat ff_v4l2_demuxer = {0};
 const AVInputFormat ff_xcbgrab_demuxer = {0};
