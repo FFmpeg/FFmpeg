@@ -366,8 +366,8 @@ typedef struct HEVCPPS {
     uint8_t chroma_qp_offset_list_enabled_flag;
     uint8_t diff_cu_chroma_qp_offset_depth;
     uint8_t chroma_qp_offset_list_len_minus1;
-    int8_t  cb_qp_offset_list[5];
-    int8_t  cr_qp_offset_list[5];
+    int8_t  cb_qp_offset_list[6];
+    int8_t  cr_qp_offset_list[6];
     uint8_t log2_sao_offset_scale_luma;
     uint8_t log2_sao_offset_scale_chroma;
 
