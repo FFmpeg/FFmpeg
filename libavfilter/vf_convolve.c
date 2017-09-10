@@ -243,7 +243,7 @@ static void ifft_horizontal(ConvolveContext *s, AVFrame *out,
         for (y = 0; y < h; y++) {
             uint8_t *dst = out->data[plane] + y * out->linesize[plane];
             for (x = 0; x < w; x++)
-                dst[x] = av_clip(s->fft_hdata[plane][(y+oh) * n + x+ow].re * scale, 0, 255);
+                dst[x] = av_clip_uint8(s->fft_hdata[plane][(y+oh) * n + x+ow].re * scale);
         }
     } else {
         for (y = 0; y < h; y++) {
