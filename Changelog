@@ -17,6 +17,7 @@ version <next>:
 - Intel QSV-accelerated overlay filter
 - mcompand audio filter
 - acontrast audio filter
+- OpenCL overlay filter
 
 
 version 3.4:
