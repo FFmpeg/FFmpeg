@@ -462,12 +462,6 @@ static int read_header(ShortenContext *s)
     }
     s->nwrap = FFMAX(NWRAP, maxnlpc);
 
-    if ((ret = allocate_buffers(s)) < 0)
-        return ret;
-
-    if ((ret = init_offset(s)) < 0)
-        return ret;
-
     if (s->version > 1)
         s->lpcqoffset = V2LPCQOFFSET;
 
@@ -504,6 +498,13 @@ static int read_header(ShortenContext *s)
     }
 
 end:
+
+    if ((ret = allocate_buffers(s)) < 0)
+        return ret;
+
+    if ((ret = init_offset(s)) < 0)
+        return ret;
+
     s->cur_chan = 0;
     s->bitshift = 0;
 
