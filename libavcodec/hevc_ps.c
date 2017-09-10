@@ -1302,7 +1302,7 @@ static int pps_range_extensions(GetBitContext *gb, AVCodecContext *avctx,
     if (pps->chroma_qp_offset_list_enabled_flag) {
         pps->diff_cu_chroma_qp_offset_depth = get_ue_golomb_long(gb);
         pps->chroma_qp_offset_list_len_minus1 = get_ue_golomb_long(gb);
-        if (pps->chroma_qp_offset_list_len_minus1 && pps->chroma_qp_offset_list_len_minus1 >= 5) {
+        if (pps->chroma_qp_offset_list_len_minus1 > 5) {
             av_log(avctx, AV_LOG_ERROR,
                    "chroma_qp_offset_list_len_minus1 shall be in the range [0, 5].\n");
             return AVERROR_INVALIDDATA;
