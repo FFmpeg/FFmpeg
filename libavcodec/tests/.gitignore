@@ -1,6 +1,7 @@
 /avfft
 /avpacket
 /cabac
+/celp_math
 /dct
 /fft
 /fft-fixed

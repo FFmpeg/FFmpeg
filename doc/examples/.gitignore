@@ -10,6 +10,7 @@
 /filtering_audio
 /filtering_video
 /http_multiclient
+/hw_decode
 /metadata
 /muxing
 /pc-uninstalled
