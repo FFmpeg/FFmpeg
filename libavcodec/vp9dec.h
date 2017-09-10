@@ -98,9 +98,11 @@ typedef struct VP9Context {
     VP56RangeCoder c;
     int pass, active_tile_cols;
 
+#if HAVE_THREADS
     pthread_mutex_t progress_mutex;
     pthread_cond_t progress_cond;
     atomic_int *entries;
+#endif
 
     uint8_t ss_h, ss_v;
     uint8_t last_bpp, bpp_index, bytesperpixel;
