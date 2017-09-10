@@ -46,6 +46,7 @@ version <next>:
 - haas audio filter
 - SUP/PGS subtitle muxer
 - convolve video filter
+- VP9 tile threading support
 
 version 3.3:
 - CrystalHD decoder moved to new decode API
