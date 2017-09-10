@@ -530,7 +530,7 @@ library:
 @item Sony Wave64 (W64)         @tab X @tab X
 @item SoX native format         @tab X @tab X
 @item SUN AU format             @tab X @tab X
-@item SUP raw PGS subtitles     @tab   @tab X
+@item SUP raw PGS subtitles     @tab X @tab X
 @item SVAG                      @tab   @tab X
     @tab Audio format used in Konami PS2 games.
 @item TDSC                      @tab   @tab X

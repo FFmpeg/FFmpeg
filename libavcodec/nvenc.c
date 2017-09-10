@@ -1807,13 +1807,12 @@ static int output_ready(AVCodecContext *avctx, int flush)
     return (nb_ready > 0) && (nb_ready + nb_pending >= ctx->async_depth);
 }
 
-int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
-                          const AVFrame *frame, int *got_packet)
+int ff_nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
 {
     NVENCSTATUS nv_status;
     CUresult cu_res;
     CUcontext dummy;
-    NvencSurface *tmpoutsurf, *inSurf;
+    NvencSurface *tmp_out_surf, *in_surf;
     int res;
 
     NvencContext *ctx = avctx->priv_data;
@@ -1823,12 +1822,16 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     NV_ENC_PIC_PARAMS pic_params = { 0 };
     pic_params.version = NV_ENC_PIC_PARAMS_VER;
 
+    if (!ctx->cu_context || !ctx->nvencoder)
+        return AVERROR(EINVAL);
+
+    if (ctx->encoder_flushing)
+        return AVERROR_EOF;
+
     if (frame) {
-        inSurf = get_free_frame(ctx);
-        if (!inSurf) {
-            av_log(avctx, AV_LOG_ERROR, "No free surfaces\n");
-            return AVERROR_BUG;
-        }
+        in_surf = get_free_frame(ctx);
+        if (!in_surf)
+            return AVERROR(EAGAIN);
 
         cu_res = dl_fn->cuda_dl->cuCtxPushCurrent(ctx->cu_context);
         if (cu_res != CUDA_SUCCESS) {
@@ -1836,7 +1839,7 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             return AVERROR_EXTERNAL;
         }
 
-        res = nvenc_upload_frame(avctx, frame, inSurf);
+        res = nvenc_upload_frame(avctx, frame, in_surf);
 
         cu_res = dl_fn->cuda_dl->cuCtxPopCurrent(&dummy);
         if (cu_res != CUDA_SUCCESS) {
@@ -1844,16 +1847,15 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             return AVERROR_EXTERNAL;
         }
 
-        if (res) {
+        if (res)
             return res;
-        }
 
-        pic_params.inputBuffer = inSurf->input_surface;
-        pic_params.bufferFmt = inSurf->format;
-        pic_params.inputWidth = inSurf->width;
-        pic_params.inputHeight = inSurf->height;
-        pic_params.inputPitch = inSurf->pitch;
-        pic_params.outputBitstream = inSurf->output_surface;
+        pic_params.inputBuffer = in_surf->input_surface;
+        pic_params.bufferFmt = in_surf->format;
+        pic_params.inputWidth = in_surf->width;
+        pic_params.inputHeight = in_surf->height;
+        pic_params.inputPitch = in_surf->pitch;
+        pic_params.outputBitstream = in_surf->output_surface;
 
         if (avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
             if (frame->top_field_first)
@@ -1876,6 +1878,7 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         nvenc_codec_specific_pic_params(avctx, &pic_params);
     } else {
         pic_params.encodePicFlags = NV_ENC_PIC_FLAG_EOS;
+        ctx->encoder_flushing = 1;
     }
 
     cu_res = dl_fn->cuda_dl->cuCtxPushCurrent(ctx->cu_context);
@@ -1897,7 +1900,7 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return nvenc_print_error(avctx, nv_status, "EncodePicture failed!");
 
     if (frame) {
-        av_fifo_generic_write(ctx->output_surface_queue, &inSurf, sizeof(inSurf), NULL);
+        av_fifo_generic_write(ctx->output_surface_queue, &in_surf, sizeof(in_surf), NULL);
         timestamp_queue_enqueue(ctx->timestamp_list, frame->pts);
 
         if (ctx->initial_pts[0] == AV_NOPTS_VALUE)
@@ -1909,13 +1912,29 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     /* all the pending buffers are now ready for output */
     if (nv_status == NV_ENC_SUCCESS) {
         while (av_fifo_size(ctx->output_surface_queue) > 0) {
-            av_fifo_generic_read(ctx->output_surface_queue, &tmpoutsurf, sizeof(tmpoutsurf), NULL);
-            av_fifo_generic_write(ctx->output_surface_ready_queue, &tmpoutsurf, sizeof(tmpoutsurf), NULL);
+            av_fifo_generic_read(ctx->output_surface_queue, &tmp_out_surf, sizeof(tmp_out_surf), NULL);
+            av_fifo_generic_write(ctx->output_surface_ready_queue, &tmp_out_surf, sizeof(tmp_out_surf), NULL);
         }
     }
 
-    if (output_ready(avctx, !frame)) {
-        av_fifo_generic_read(ctx->output_surface_ready_queue, &tmpoutsurf, sizeof(tmpoutsurf), NULL);
+    return 0;
+}
+
+int ff_nvenc_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
+{
+    CUresult cu_res;
+    CUcontext dummy;
+    NvencSurface *tmp_out_surf;
+    int res;
+
+    NvencContext *ctx = avctx->priv_data;
+    NvencDynLoadFunctions *dl_fn = &ctx->nvenc_dload_funcs;
+
+    if (!ctx->cu_context || !ctx->nvencoder)
+        return AVERROR(EINVAL);
+
+    if (output_ready(avctx, ctx->encoder_flushing)) {
+        av_fifo_generic_read(ctx->output_surface_ready_queue, &tmp_out_surf, sizeof(tmp_out_surf), NULL);
 
         cu_res = dl_fn->cuda_dl->cuCtxPushCurrent(ctx->cu_context);
         if (cu_res != CUDA_SUCCESS) {
@@ -1923,7 +1942,7 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             return AVERROR_EXTERNAL;
         }
 
-        res = process_output_surface(avctx, pkt, tmpoutsurf);
+        res = process_output_surface(avctx, pkt, tmp_out_surf);
 
         cu_res = dl_fn->cuda_dl->cuCtxPopCurrent(&dummy);
         if (cu_res != CUDA_SUCCESS) {
@@ -1934,11 +1953,35 @@ int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         if (res)
             return res;
 
-        av_fifo_generic_write(ctx->unused_surface_queue, &tmpoutsurf, sizeof(tmpoutsurf), NULL);
-
-        *got_packet = 1;
+        av_fifo_generic_write(ctx->unused_surface_queue, &tmp_out_surf, sizeof(tmp_out_surf), NULL);
+    } else if (ctx->encoder_flushing) {
+        return AVERROR_EOF;
     } else {
+        return AVERROR(EAGAIN);
+    }
+
+    return 0;
+}
+
+int ff_nvenc_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
+                          const AVFrame *frame, int *got_packet)
+{
+    NvencContext *ctx = avctx->priv_data;
+    int res;
+
+    if (!ctx->encoder_flushing) {
+        res = ff_nvenc_send_frame(avctx, frame);
+        if (res < 0)
+            return res;
+    }
+
+    res = ff_nvenc_receive_packet(avctx, pkt);
+    if (res == AVERROR(EAGAIN) || res == AVERROR_EOF) {
         *got_packet = 0;
+    } else if (res < 0) {
+        return res;
+    } else {
+        *got_packet = 1;
     }
 
     return 0;

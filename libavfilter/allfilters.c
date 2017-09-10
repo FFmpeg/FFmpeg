@@ -104,6 +104,7 @@ static void register_all(void)
     REGISTER_FILTER(EXTRASTEREO,    extrastereo,    af);
     REGISTER_FILTER(FIREQUALIZER,   firequalizer,   af);
     REGISTER_FILTER(FLANGER,        flanger,        af);
+    REGISTER_FILTER(HAAS,           haas,           af);
     REGISTER_FILTER(HDCD,           hdcd,           af);
     REGISTER_FILTER(HEADPHONE,      headphone,      af);
     REGISTER_FILTER(HIGHPASS,       highpass,       af);
@@ -161,6 +162,7 @@ static void register_all(void)
     REGISTER_FILTER(COLORMATRIX,    colormatrix,    vf);
     REGISTER_FILTER(COLORSPACE,     colorspace,     vf);
     REGISTER_FILTER(CONVOLUTION,    convolution,    vf);
+    REGISTER_FILTER(CONVOLVE,       convolve,       vf);
     REGISTER_FILTER(COPY,           copy,           vf);
     REGISTER_FILTER(COREIMAGE,      coreimage,      vf);
     REGISTER_FILTER(COVER_RECT,     cover_rect,     vf);
@@ -178,6 +180,7 @@ static void register_all(void)
     REGISTER_FILTER(DEJUDDER,       dejudder,       vf);
     REGISTER_FILTER(DELOGO,         delogo,         vf);
     REGISTER_FILTER(DESHAKE,        deshake,        vf);
+    REGISTER_FILTER(DESPILL,        despill,        vf);
     REGISTER_FILTER(DETELECINE,     detelecine,     vf);
     REGISTER_FILTER(DILATION,       dilation,       vf);
     REGISTER_FILTER(DISPLACE,       displace,       vf);

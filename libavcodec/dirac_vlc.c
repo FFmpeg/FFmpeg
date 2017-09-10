@@ -37,7 +37,7 @@
 
 #define APPEND_RESIDUE(N, M)                                                   \
     N          |= M >> (N ## _bits);                                           \
-    N ## _bits +=      (M ## _bits)
+    N ## _bits  = (N ## _bits + (M ## _bits)) & 0x3F
 
 int ff_dirac_golomb_read_32bit(DiracGolombLUT *lut_ctx, const uint8_t *buf,
                                int bytes, uint8_t *_dst, int coeffs)
@@ -55,9 +55,6 @@ int ff_dirac_golomb_read_32bit(DiracGolombLUT *lut_ctx, const uint8_t *buf,
 
         if ((c_idx + 1) > coeffs)
             return c_idx;
-
-        if (res_bits >= RSIZE_BITS)
-            res_bits = res = 0;
 
         /* res_bits is a hint for better branch prediction */
         if (res_bits && l->sign) {
@@ -98,9 +95,6 @@ int ff_dirac_golomb_read_16bit(DiracGolombLUT *lut_ctx, const uint8_t *buf,
 
         if ((c_idx + 1) > coeffs)
             return c_idx;
-
-        if (res_bits >= RSIZE_BITS)
-            res_bits = res = 0;
 
         if (res_bits && l->sign) {
             int32_t coeff = 1;

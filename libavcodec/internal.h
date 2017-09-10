@@ -64,6 +64,10 @@
  * dimensions to coded rather than display values.
  */
 #define FF_CODEC_CAP_EXPORTS_CROPPING       (1 << 4)
+/**
+ * Codec initializes slice-based threading with a main function
+ */
+#define FF_CODEC_CAP_SLICE_THREAD_HAS_MF    (1 << 5)
 
 #ifdef TRACE
 #   define ff_tlog(ctx, ...) av_log(ctx, AV_LOG_TRACE, __VA_ARGS__)

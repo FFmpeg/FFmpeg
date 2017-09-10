@@ -427,6 +427,24 @@ int ff_request_frame(AVFilterLink *link)
     return 0;
 }
 
+static int64_t guess_status_pts(AVFilterContext *ctx, int status)
+{
+    unsigned i;
+    int64_t r = INT64_MAX;
+
+    for (i = 0; i < ctx->nb_inputs; i++)
+        if (ctx->inputs[i]->status_out == status)
+            r = FFMIN(r, ctx->inputs[i]->current_pts);
+    if (r < INT64_MAX)
+        return r;
+    av_log(ctx, AV_LOG_WARNING, "EOF timestamp not reliable\n");
+    for (i = 0; i < ctx->nb_inputs; i++)
+        r = FFMIN(r, ctx->inputs[i]->status_in_pts);
+    if (r < INT64_MAX)
+        return r;
+    return AV_NOPTS_VALUE;
+}
+
 static int ff_request_frame_to_filter(AVFilterLink *link)
 {
     int ret = -1;
@@ -440,7 +458,7 @@ static int ff_request_frame_to_filter(AVFilterLink *link)
         ret = ff_request_frame(link->src->inputs[0]);
     if (ret < 0) {
         if (ret != AVERROR(EAGAIN) && ret != link->status_in)
-            ff_avfilter_link_set_in_status(link, ret, AV_NOPTS_VALUE);
+            ff_avfilter_link_set_in_status(link, ret, guess_status_pts(link->src, ret));
         if (ret == AVERROR_EOF)
             ret = 0;
     }

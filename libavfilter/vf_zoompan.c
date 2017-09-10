@@ -133,6 +133,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->time_base = av_inv_q(s->framerate);
     outlink->frame_rate = s->framerate;
     s->desc = av_pix_fmt_desc_get(outlink->format);
+    s->finished = 1;
 
     ret = av_expr_parse(&s->zoom_expr, s->zoom_expr_str, var_names, NULL, NULL, NULL, NULL, 0, ctx);
     if (ret < 0)

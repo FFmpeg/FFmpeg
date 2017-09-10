@@ -2770,6 +2770,70 @@ Set delay-line interpolation, @var{linear} or @var{quadratic}.
 Default is @var{linear}.
 @end table
 
+@section haas
+Apply Haas effect to audio.
+
+Note that this makes most sense to apply on mono signals.
+With this filter applied to mono signals it give some directionality and
+streches its stereo image.
+
+The filter accepts the following options:
+
+@table @option
+@item level_in
+Set input level. By default is @var{1}, or 0dB
+
+@item level_out
+Set output level. By default is @var{1}, or 0dB.
+
+@item side_gain
+Set gain applied to side part of signal. By default is @var{1}.
+
+@item middle_source
+Set kind of middle source. Can be one of the following:
+
+@table @samp
+@item left
+Pick left channel.
+
+@item right
+Pick right channel.
+
+@item mid
+Pick middle part signal of stereo image.
+
+@item side
+Pick side part signal of stereo image.
+@end table
+
+@item middle_phase
+Change middle phase. By default is disabled.
+
+@item left_delay
+Set left channel delay. By default is @var{2.05} milliseconds.
+
+@item left_balance
+Set left channel balance. By default is @var{-1}.
+
+@item left_gain
+Set left channel gain. By default is @var{1}.
+
+@item left_phase
+Change left phase. By default is disabled.
+
+@item right_delay
+Set right channel delay. By defaults is @var{2.12} milliseconds.
+
+@item right_balance
+Set right channel balance. By default is @var{1}.
+
+@item right_gain
+Set right channel gain. By default is @var{1}.
+
+@item right_phase
+Change right phase. By default is enabled.
+@end table
+
 @section hdcd
 
 Decodes High Definition Compatible Digital (HDCD) data. A 16-bit PCM stream with
@@ -4995,6 +5059,12 @@ blend=all_expr='A*(if(gte(T,10),1,T/10))+B*(1-(if(gte(T,10),1,T/10)))'
 @end example
 
 @item
+Apply linear horizontal transition from top layer to bottom layer:
+@example
+blend=all_expr='A*(X/W)+B*(1-X/W)'
+@end example
+
+@item
 Apply 1x1 checkerboard effect:
 @example
 blend=all_expr='if(eq(mod(X,2),mod(Y,2)),A,B)'
@@ -5021,7 +5091,7 @@ blend=all_expr='if(gte(T*SH*40+Y,H)*gte((T*40*SW+X)*W/H,W),A,B)'
 @item
 Split diagonally video and shows top and bottom layer on each side:
 @example
-blend=all_expr=if(gt(X,Y*(W/H)),A,B)
+blend=all_expr='if(gt(X,Y*(W/H)),A,B)'
 @end example
 
 @item
@@ -5935,6 +6005,24 @@ convolution="-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2:-2 -
 @end example
 @end itemize
 
+@section convolve
+
+Apply 2D convolution of video stream in frequency domain using second stream
+as impulse.
+
+The filter accepts the following options:
+
+@table @option
+@item planes
+Set which planes to process.
+
+@item impulse
+Set which impulse video frames will be processed, can be @var{first}
+or @var{all}. Default is @var{all}.
+@end table
+
+The @code{convolve} filter also supports the @ref{framesync} options.
+
 @section copy
 
 Copy the input video source unchanged to the output. This is mainly useful for
@@ -6805,6 +6893,41 @@ FFmpeg was configured with @code{--enable-opencl}. Default value is 0.
 
 @end table
 
+@section despill
+
+Remove unwanted contamination of foreground colors, caused by reflected color of
+greenscreen or bluescreen.
+
+This filter accepts the following options:
+
+@table @option
+@item type
+Set what type of despill to use.
+
+@item mix
+Set how spillmap will be generated.
+
+@item expand
+Set how much to get rid of still remaining spill.
+
+@item red
+Controls ammount of red in spill area.
+
+@item green
+Controls ammount of green in spill area.
+Should be -1 for greenscreen.
+
+@item blue
+Controls ammount of blue in spill area.
+Should be -1 for bluescreen.
+
+@item brightness
+Controls brightness of spill area, preserving colors.
+
+@item alpha
+Modify alpha from generated spillmap.
+@end table
+
 @section detelecine
 
 Apply an exact inverse of the telecine operation. It requires a predefined
@@ -6890,6 +7013,9 @@ Adjacent pixels will spread out to replace missing pixels.
 
 @item wrap
 Out of range pixels are wrapped so they point to pixels of other side.
+
+@item mirror
+Out of range pixels will be replaced with mirrored pixels.
 @end table
 Default is @samp{smear}.
 
@@ -7917,6 +8043,20 @@ Set the frequency domain weight expression for the 1st chroma plane.
 @item weight_V
 Set the frequency domain weight expression for the 2nd chroma plane.
 
+@item eval
+Set when the expressions are evaluated.
+
+It accepts the following values:
+@table @samp
+@item init
+Only evaluate expressions once during the filter initialization.
+
+@item frame
+Evaluate expressions for each incoming frame.
+@end table
+
+Default value is @samp{init}.
+
 The filter accepts the following variables:
 @item X
 @item Y
@@ -7925,6 +8065,9 @@ The coordinates of the current sample.
 @item W
 @item H
 The width and height of the image.
+
+@item N
+The number of input frame, starting from 0.
 @end table
 
 @subsection Examples
@@ -10895,6 +11038,9 @@ on the main video. Default value is "0" for both expressions. In case
 the expression is invalid, it is set to a huge value (meaning that the
 overlay will not be displayed within the output visible area).
 
+@item eof_action
+See @ref{framesync}.
+
 @item eval
 Set when the expressions for @option{x}, and @option{y} are evaluated.
 
@@ -10909,6 +11055,9 @@ evaluate expressions for each incoming frame
 @end table
 
 Default value is @samp{frame}.
+
+@item shortest
+See @ref{framesync}.
 
 @item format
 Set the format for the output video.
@@ -10935,6 +11084,9 @@ automatically pick format
 @end table
 
 Default value is @samp{yuv420}.
+
+@item repeatlast
+See @ref{framesync}.
 @end table
 
 The @option{x}, and @option{y} expressions can contain the following
@@ -14005,6 +14157,9 @@ correctly scale the fonts if the aspect ratio has been changed.
 Set a directory path containing fonts that can be used by the filter.
 These fonts will be used in addition to whatever the font provider uses.
 
+@item alpha
+Process alpha channel, by default alpha channel is untouched.
+
 @item charenc
 Set subtitles input character encoding. @code{subtitles} filter only. Only
 useful if not UTF-8.
@@ -14911,7 +15066,7 @@ This filter accepts the following options:
 @item threshold
 The filtering strength. The higher, the more filtered the video will be.
 Hard thresholding can use a higher threshold than soft thresholding
-before the video looks overfiltered.
+before the video looks overfiltered. Default value is 2.
 
 @item method
 The filtering method the filter will use.
@@ -14930,13 +15085,15 @@ Scales or nullifies coefficients - intermediary between (more) soft and
 (less) hard thresholding.
 @end table
 
+Default is garrote.
+
 @item nsteps
 Number of times, the wavelet will decompose the picture. Picture can't
 be decomposed beyond a particular point (typically, 8 for a 640x480
-frame - as 2^9 = 512 > 480)
+frame - as 2^9 = 512 > 480). Valid values are integers between 1 and 32. Default value is 6.
 
 @item percent
-Partial of full denoising (limited coefficients shrinking), from 0 to 100.
+Partial of full denoising (limited coefficients shrinking), from 0 to 100. Default value is 85.
 
 @item planes
 A list of the planes to process. By default all planes are processed.
@@ -16978,7 +17135,8 @@ Specify the red, green, blue and alpha fade. Default values are @code{15},
 Allowed range is @code{[0, 255]}.
 
 @item zoom
-Set the zoom factor. Default value is @code{1}. Allowed range is @code{[1, 10]}.
+Set the zoom factor. Default value is @code{1}. Allowed range is @code{[0, 10]}.
+Values lower than @var{1} will auto adjust zoom factor to maximal possible value.
 
 @item draw
 Set the vectorscope drawing mode.

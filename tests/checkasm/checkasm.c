@@ -20,6 +20,14 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include "config.h"
+
+#if CONFIG_LINUX_PERF
+# ifndef _GNU_SOURCE
+#  define _GNU_SOURCE // for syscall (performance monitoring API)
+# endif
+#endif
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -190,8 +198,7 @@ typedef struct CheckasmFuncVersion {
     void *func;
     int ok;
     int cpu;
-    int iterations;
-    uint64_t cycles;
+    CheckasmPerf perf;
 } CheckasmFuncVersion;
 
 /* Binary search tree node */
@@ -212,7 +219,11 @@ static struct {
     int bench_pattern_len;
     int num_checked;
     int num_failed;
+
+    /* perf */
     int nop_time;
+    int sysfd;
+
     int cpu_flag;
     const char *cpu_flag_name;
     const char *test_name;
@@ -396,7 +407,6 @@ static const char *cpu_suffix(int cpu)
     return "c";
 }
 
-#ifdef AV_READ_TIME
 static int cmp_nop(const void *a, const void *b)
 {
     return *(const uint16_t*)a - *(const uint16_t*)b;
@@ -407,10 +417,13 @@ static int measure_nop_time(void)
 {
     uint16_t nops[10000];
     int i, nop_sum = 0;
+    av_unused const int sysfd = state.sysfd;
 
+    uint64_t t = 0;
     for (i = 0; i < 10000; i++) {
-        uint64_t t = AV_READ_TIME();
-        nops[i] = AV_READ_TIME() - t;
+        PERF_START(t);
+        PERF_STOP(t);
+        nops[i] = t;
     }
 
     qsort(nops, 10000, sizeof(uint16_t), cmp_nop);
@@ -430,8 +443,9 @@ static void print_benchs(CheckasmFunc *f)
         if (f->versions.cpu || f->versions.next) {
             CheckasmFuncVersion *v = &f->versions;
             do {
-                if (v->iterations) {
-                    int decicycles = (10*v->cycles/v->iterations - state.nop_time) / 4;
+                CheckasmPerf *p = &v->perf;
+                if (p->iterations) {
+                    int decicycles = (10*p->cycles/p->iterations - state.nop_time) / 4;
                     printf("%s_%s: %d.%d\n", f->name, cpu_suffix(v->cpu), decicycles/10, decicycles%10);
                 }
             } while ((v = v->next));
@@ -440,7 +454,6 @@ static void print_benchs(CheckasmFunc *f)
         print_benchs(f->child[1]);
     }
 }
-#endif
 
 /* ASCIIbetical sort except preserving natural order for numbers */
 static int cmp_func_names(const char *a, const char *b)
@@ -543,6 +556,63 @@ static void print_cpu_name(void)
     }
 }
 
+#if CONFIG_LINUX_PERF
+static int bench_init_linux(void)
+{
+    struct perf_event_attr attr = {
+        .type           = PERF_TYPE_HARDWARE,
+        .size           = sizeof(struct perf_event_attr),
+        .config         = PERF_COUNT_HW_CPU_CYCLES,
+        .disabled       = 1, // start counting only on demand
+        .exclude_kernel = 1,
+        .exclude_hv     = 1,
+    };
+
+    printf("benchmarking with Linux Perf Monitoring API\n");
+
+    state.sysfd = syscall(__NR_perf_event_open, &attr, 0, -1, -1, 0);
+    if (state.sysfd == -1) {
+        perror("syscall");
+        return -1;
+    }
+    return 0;
+}
+#endif
+
+static int bench_init_ffmpeg(void)
+{
+#ifdef AV_READ_TIME
+    printf("benchmarking with native FFmpeg timers\n");
+    return 0;
+#else
+    fprintf(stderr, "checkasm: --bench is not supported on your system\n");
+    return -1;
+#endif
+}
+
+static int bench_init(void)
+{
+#if CONFIG_LINUX_PERF
+    int ret = bench_init_linux();
+#else
+    int ret = bench_init_ffmpeg();
+#endif
+    if (ret < 0)
+        return ret;
+
+    state.nop_time = measure_nop_time();
+    printf("nop: %d.%d\n", state.nop_time/10, state.nop_time%10);
+    return 0;
+}
+
+static void bench_uninit(void)
+{
+#if CONFIG_LINUX_PERF
+    if (state.sysfd > 0)
+        close(state.sysfd);
+#endif
+}
+
 int main(int argc, char *argv[])
 {
     unsigned int seed = av_get_random_seed();
@@ -560,10 +630,8 @@ int main(int argc, char *argv[])
 
     while (argc > 1) {
         if (!strncmp(argv[1], "--bench", 7)) {
-#ifndef AV_READ_TIME
-            fprintf(stderr, "checkasm: --bench is not supported on your system\n");
-            return 1;
-#endif
+            if (bench_init() < 0)
+                return 1;
             if (argv[1][7] == '=') {
                 state.bench_pattern = argv[1] + 8;
                 state.bench_pattern_len = strlen(state.bench_pattern);
@@ -591,16 +659,13 @@ int main(int argc, char *argv[])
         ret = 1;
     } else {
         fprintf(stderr, "checkasm: all %d tests passed\n", state.num_checked);
-#ifdef AV_READ_TIME
         if (state.bench_pattern) {
-            state.nop_time = measure_nop_time();
-            printf("nop: %d.%d\n", state.nop_time/10, state.nop_time%10);
             print_benchs(state.funcs);
         }
-#endif
     }
 
     destroy_func_tree(state.funcs);
+    bench_uninit();
     return ret;
 }
 
@@ -678,11 +743,13 @@ void checkasm_fail_func(const char *msg, ...)
     }
 }
 
-/* Update benchmark results of the current function */
-void checkasm_update_bench(int iterations, uint64_t cycles)
+/* Get the benchmark context of the current function */
+CheckasmPerf *checkasm_get_perf_context(void)
 {
-    state.current_func_ver->iterations += iterations;
-    state.current_func_ver->cycles += cycles;
+    CheckasmPerf *perf = &state.current_func_ver->perf;
+    memset(perf, 0, sizeof(*perf));
+    perf->sysfd = state.sysfd;
+    return perf;
 }
 
 /* Print the outcome of all tests performed since the last time this function was called */

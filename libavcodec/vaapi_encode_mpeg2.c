@@ -208,7 +208,7 @@ static int vaapi_encode_mpeg2_init_sequence_params(AVCodecContext *avctx)
     if (avctx->framerate.num > 0 && avctx->framerate.den > 0)
         vseq->frame_rate = (float)avctx->framerate.num / avctx->framerate.den;
     else
-        vseq->frame_rate = (float)avctx->time_base.num / avctx->time_base.den;
+        vseq->frame_rate = (float)avctx->time_base.den / avctx->time_base.num;
 
     vseq->aspect_ratio_information = 1;
     vseq->vbv_buffer_size = avctx->rc_buffer_size / (16 * 1024);

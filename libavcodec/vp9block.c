@@ -77,7 +77,7 @@ static av_always_inline void setctx_2d(uint8_t *ptr, int w, int h,
     }
 }
 
-static void decode_mode(AVCodecContext *avctx)
+static void decode_mode(VP9TileData *td)
 {
     static const uint8_t left_ctx[N_BS_SIZES] = {
         0x0, 0x8, 0x0, 0x8, 0xc, 0x8, 0xc, 0xe, 0xc, 0xe, 0xf, 0xe, 0xf
@@ -89,25 +89,25 @@ static void decode_mode(AVCodecContext *avctx)
         TX_32X32, TX_32X32, TX_32X32, TX_32X32, TX_16X16, TX_16X16,
         TX_16X16, TX_8X8,   TX_8X8,   TX_8X8,   TX_4X4,   TX_4X4,  TX_4X4
     };
-    VP9Context *s = avctx->priv_data;
-    VP9Block *b = s->b;
-    int row = s->row, col = s->col, row7 = s->row7;
+    VP9Context *s = td->s;
+    VP9Block *b = td->b;
+    int row = td->row, col = td->col, row7 = td->row7;
     enum TxfmMode max_tx = max_tx_for_bl_bp[b->bs];
     int bw4 = ff_vp9_bwh_tab[1][b->bs][0], w4 = FFMIN(s->cols - col, bw4);
     int bh4 = ff_vp9_bwh_tab[1][b->bs][1], h4 = FFMIN(s->rows - row, bh4), y;
-    int have_a = row > 0, have_l = col > s->tile_col_start;
+    int have_a = row > 0, have_l = col > td->tile_col_start;
     int vref, filter_id;
 
     if (!s->s.h.segmentation.enabled) {
         b->seg_id = 0;
     } else if (s->s.h.keyframe || s->s.h.intraonly) {
         b->seg_id = !s->s.h.segmentation.update_map ? 0 :
-                    vp8_rac_get_tree(&s->c, ff_vp9_segmentation_tree, s->s.h.segmentation.prob);
+                    vp8_rac_get_tree(td->c, ff_vp9_segmentation_tree, s->s.h.segmentation.prob);
     } else if (!s->s.h.segmentation.update_map ||
                (s->s.h.segmentation.temporal &&
-                vp56_rac_get_prob_branchy(&s->c,
+                vp56_rac_get_prob_branchy(td->c,
                     s->s.h.segmentation.pred_prob[s->above_segpred_ctx[col] +
-                                    s->left_segpred_ctx[row7]]))) {
+                                    td->left_segpred_ctx[row7]]))) {
         if (!s->s.h.errorres && s->s.frames[REF_FRAME_SEGMAP].segmentation_map) {
             int pred = 8, x;
             uint8_t *refsegmap = s->s.frames[REF_FRAME_SEGMAP].segmentation_map;
@@ -126,13 +126,13 @@ static void decode_mode(AVCodecContext *avctx)
         }
 
         memset(&s->above_segpred_ctx[col], 1, w4);
-        memset(&s->left_segpred_ctx[row7], 1, h4);
+        memset(&td->left_segpred_ctx[row7], 1, h4);
     } else {
-        b->seg_id = vp8_rac_get_tree(&s->c, ff_vp9_segmentation_tree,
+        b->seg_id = vp8_rac_get_tree(td->c, ff_vp9_segmentation_tree,
                                      s->s.h.segmentation.prob);
 
         memset(&s->above_segpred_ctx[col], 0, w4);
-        memset(&s->left_segpred_ctx[row7], 0, h4);
+        memset(&td->left_segpred_ctx[row7], 0, h4);
     }
     if (s->s.h.segmentation.enabled &&
         (s->s.h.segmentation.update_map || s->s.h.keyframe || s->s.h.intraonly)) {
@@ -143,9 +143,9 @@ static void decode_mode(AVCodecContext *avctx)
     b->skip = s->s.h.segmentation.enabled &&
         s->s.h.segmentation.feat[b->seg_id].skip_enabled;
     if (!b->skip) {
-        int c = s->left_skip_ctx[row7] + s->above_skip_ctx[col];
-        b->skip = vp56_rac_get_prob(&s->c, s->prob.p.skip[c]);
-        s->counts.skip[c][b->skip]++;
+        int c = td->left_skip_ctx[row7] + s->above_skip_ctx[col];
+        b->skip = vp56_rac_get_prob(td->c, s->prob.p.skip[c]);
+        td->counts.skip[c][b->skip]++;
     }
 
     if (s->s.h.keyframe || s->s.h.intraonly) {
@@ -156,14 +156,14 @@ static void decode_mode(AVCodecContext *avctx)
         int c, bit;
 
         if (have_a && have_l) {
-            c = s->above_intra_ctx[col] + s->left_intra_ctx[row7];
+            c = s->above_intra_ctx[col] + td->left_intra_ctx[row7];
             c += (c == 2);
         } else {
             c = have_a ? 2 * s->above_intra_ctx[col] :
-                have_l ? 2 * s->left_intra_ctx[row7] : 0;
+                have_l ? 2 * td->left_intra_ctx[row7] : 0;
         }
-        bit = vp56_rac_get_prob(&s->c, s->prob.p.intra[c]);
-        s->counts.intra[c][bit]++;
+        bit = vp56_rac_get_prob(td->c, s->prob.p.intra[c]);
+        td->counts.intra[c][bit]++;
         b->intra = !bit;
     }
 
@@ -173,37 +173,37 @@ static void decode_mode(AVCodecContext *avctx)
             if (have_l) {
                 c = (s->above_skip_ctx[col] ? max_tx :
                      s->above_txfm_ctx[col]) +
-                    (s->left_skip_ctx[row7] ? max_tx :
-                     s->left_txfm_ctx[row7]) > max_tx;
+                    (td->left_skip_ctx[row7] ? max_tx :
+                     td->left_txfm_ctx[row7]) > max_tx;
             } else {
                 c = s->above_skip_ctx[col] ? 1 :
                     (s->above_txfm_ctx[col] * 2 > max_tx);
             }
         } else if (have_l) {
-            c = s->left_skip_ctx[row7] ? 1 :
-                (s->left_txfm_ctx[row7] * 2 > max_tx);
+            c = td->left_skip_ctx[row7] ? 1 :
+                (td->left_txfm_ctx[row7] * 2 > max_tx);
         } else {
             c = 1;
         }
         switch (max_tx) {
         case TX_32X32:
-            b->tx = vp56_rac_get_prob(&s->c, s->prob.p.tx32p[c][0]);
+            b->tx = vp56_rac_get_prob(td->c, s->prob.p.tx32p[c][0]);
             if (b->tx) {
-                b->tx += vp56_rac_get_prob(&s->c, s->prob.p.tx32p[c][1]);
+                b->tx += vp56_rac_get_prob(td->c, s->prob.p.tx32p[c][1]);
                 if (b->tx == 2)
-                    b->tx += vp56_rac_get_prob(&s->c, s->prob.p.tx32p[c][2]);
+                    b->tx += vp56_rac_get_prob(td->c, s->prob.p.tx32p[c][2]);
             }
-            s->counts.tx32p[c][b->tx]++;
+            td->counts.tx32p[c][b->tx]++;
             break;
         case TX_16X16:
-            b->tx = vp56_rac_get_prob(&s->c, s->prob.p.tx16p[c][0]);
+            b->tx = vp56_rac_get_prob(td->c, s->prob.p.tx16p[c][0]);
             if (b->tx)
-                b->tx += vp56_rac_get_prob(&s->c, s->prob.p.tx16p[c][1]);
-            s->counts.tx16p[c][b->tx]++;
+                b->tx += vp56_rac_get_prob(td->c, s->prob.p.tx16p[c][1]);
+            td->counts.tx16p[c][b->tx]++;
             break;
         case TX_8X8:
-            b->tx = vp56_rac_get_prob(&s->c, s->prob.p.tx8p[c]);
-            s->counts.tx8p[c][b->tx]++;
+            b->tx = vp56_rac_get_prob(td->c, s->prob.p.tx8p[c]);
+            td->counts.tx8p[c][b->tx]++;
             break;
         case TX_4X4:
             b->tx = TX_4X4;
@@ -215,7 +215,7 @@ static void decode_mode(AVCodecContext *avctx)
 
     if (s->s.h.keyframe || s->s.h.intraonly) {
         uint8_t *a = &s->above_mode_ctx[col * 2];
-        uint8_t *l = &s->left_mode_ctx[(row7) << 1];
+        uint8_t *l = &td->left_mode_ctx[(row7) << 1];
 
         b->comp = 0;
         if (b->bs > BS_8x8) {
@@ -223,10 +223,10 @@ static void decode_mode(AVCodecContext *avctx)
             // necessary, they're just there to make the code slightly
             // simpler for now
             b->mode[0] =
-            a[0]       = vp8_rac_get_tree(&s->c, ff_vp9_intramode_tree,
+            a[0]       = vp8_rac_get_tree(td->c, ff_vp9_intramode_tree,
                                           ff_vp9_default_kf_ymode_probs[a[0]][l[0]]);
             if (b->bs != BS_8x4) {
-                b->mode[1] = vp8_rac_get_tree(&s->c, ff_vp9_intramode_tree,
+                b->mode[1] = vp8_rac_get_tree(td->c, ff_vp9_intramode_tree,
                                               ff_vp9_default_kf_ymode_probs[a[1]][b->mode[0]]);
                 l[0]       =
                 a[1]       = b->mode[1];
@@ -237,10 +237,10 @@ static void decode_mode(AVCodecContext *avctx)
             }
             if (b->bs != BS_4x8) {
                 b->mode[2] =
-                a[0]       = vp8_rac_get_tree(&s->c, ff_vp9_intramode_tree,
+                a[0]       = vp8_rac_get_tree(td->c, ff_vp9_intramode_tree,
                                               ff_vp9_default_kf_ymode_probs[a[0]][l[1]]);
                 if (b->bs != BS_8x4) {
-                    b->mode[3] = vp8_rac_get_tree(&s->c, ff_vp9_intramode_tree,
+                    b->mode[3] = vp8_rac_get_tree(td->c, ff_vp9_intramode_tree,
                                                   ff_vp9_default_kf_ymode_probs[a[1]][b->mode[2]]);
                     l[1]       =
                     a[1]       = b->mode[3];
@@ -256,7 +256,7 @@ static void decode_mode(AVCodecContext *avctx)
                 b->mode[3] = b->mode[1];
             }
         } else {
-            b->mode[0] = vp8_rac_get_tree(&s->c, ff_vp9_intramode_tree,
+            b->mode[0] = vp8_rac_get_tree(td->c, ff_vp9_intramode_tree,
                                           ff_vp9_default_kf_ymode_probs[*a][*l]);
             b->mode[3] =
             b->mode[2] =
@@ -265,29 +265,29 @@ static void decode_mode(AVCodecContext *avctx)
             memset(a, b->mode[0], ff_vp9_bwh_tab[0][b->bs][0]);
             memset(l, b->mode[0], ff_vp9_bwh_tab[0][b->bs][1]);
         }
-        b->uvmode = vp8_rac_get_tree(&s->c, ff_vp9_intramode_tree,
+        b->uvmode = vp8_rac_get_tree(td->c, ff_vp9_intramode_tree,
                                      ff_vp9_default_kf_uvmode_probs[b->mode[3]]);
     } else if (b->intra) {
         b->comp = 0;
         if (b->bs > BS_8x8) {
-            b->mode[0] = vp8_rac_get_tree(&s->c, ff_vp9_intramode_tree,
+            b->mode[0] = vp8_rac_get_tree(td->c, ff_vp9_intramode_tree,
                                           s->prob.p.y_mode[0]);
-            s->counts.y_mode[0][b->mode[0]]++;
+            td->counts.y_mode[0][b->mode[0]]++;
             if (b->bs != BS_8x4) {
-                b->mode[1] = vp8_rac_get_tree(&s->c, ff_vp9_intramode_tree,
+                b->mode[1] = vp8_rac_get_tree(td->c, ff_vp9_intramode_tree,
                                               s->prob.p.y_mode[0]);
-                s->counts.y_mode[0][b->mode[1]]++;
+                td->counts.y_mode[0][b->mode[1]]++;
             } else {
                 b->mode[1] = b->mode[0];
             }
             if (b->bs != BS_4x8) {
-                b->mode[2] = vp8_rac_get_tree(&s->c, ff_vp9_intramode_tree,
+                b->mode[2] = vp8_rac_get_tree(td->c, ff_vp9_intramode_tree,
                                               s->prob.p.y_mode[0]);
-                s->counts.y_mode[0][b->mode[2]]++;
+                td->counts.y_mode[0][b->mode[2]]++;
                 if (b->bs != BS_8x4) {
-                    b->mode[3] = vp8_rac_get_tree(&s->c, ff_vp9_intramode_tree,
+                    b->mode[3] = vp8_rac_get_tree(td->c, ff_vp9_intramode_tree,
                                                   s->prob.p.y_mode[0]);
-                    s->counts.y_mode[0][b->mode[3]]++;
+                    td->counts.y_mode[0][b->mode[3]]++;
                 } else {
                     b->mode[3] = b->mode[2];
                 }
@@ -301,16 +301,16 @@ static void decode_mode(AVCodecContext *avctx)
             };
             int sz = size_group[b->bs];
 
-            b->mode[0] = vp8_rac_get_tree(&s->c, ff_vp9_intramode_tree,
+            b->mode[0] = vp8_rac_get_tree(td->c, ff_vp9_intramode_tree,
                                           s->prob.p.y_mode[sz]);
             b->mode[1] =
             b->mode[2] =
             b->mode[3] = b->mode[0];
-            s->counts.y_mode[sz][b->mode[3]]++;
+            td->counts.y_mode[sz][b->mode[3]]++;
         }
-        b->uvmode = vp8_rac_get_tree(&s->c, ff_vp9_intramode_tree,
+        b->uvmode = vp8_rac_get_tree(td->c, ff_vp9_intramode_tree,
                                      s->prob.p.uv_mode[b->mode[3]]);
-        s->counts.uv_mode[b->mode[3]][b->uvmode]++;
+        td->counts.uv_mode[b->mode[3]][b->uvmode]++;
     } else {
         static const uint8_t inter_mode_ctx_lut[14][14] = {
             { 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5, 5, 5, 5 },
@@ -343,32 +343,32 @@ static void decode_mode(AVCodecContext *avctx)
                 // FIXME add intra as ref=0xff (or -1) to make these easier?
                 if (have_a) {
                     if (have_l) {
-                        if (s->above_comp_ctx[col] && s->left_comp_ctx[row7]) {
+                        if (s->above_comp_ctx[col] && td->left_comp_ctx[row7]) {
                             c = 4;
                         } else if (s->above_comp_ctx[col]) {
-                            c = 2 + (s->left_intra_ctx[row7] ||
-                                     s->left_ref_ctx[row7] == s->s.h.fixcompref);
-                        } else if (s->left_comp_ctx[row7]) {
+                            c = 2 + (td->left_intra_ctx[row7] ||
+                                     td->left_ref_ctx[row7] == s->s.h.fixcompref);
+                        } else if (td->left_comp_ctx[row7]) {
                             c = 2 + (s->above_intra_ctx[col] ||
                                      s->above_ref_ctx[col] == s->s.h.fixcompref);
                         } else {
                             c = (!s->above_intra_ctx[col] &&
                                  s->above_ref_ctx[col] == s->s.h.fixcompref) ^
-                                (!s->left_intra_ctx[row7] &&
-                                 s->left_ref_ctx[row & 7] == s->s.h.fixcompref);
+                                (!td->left_intra_ctx[row7] &&
+                                 td->left_ref_ctx[row & 7] == s->s.h.fixcompref);
                         }
                     } else {
                         c = s->above_comp_ctx[col] ? 3 :
                         (!s->above_intra_ctx[col] && s->above_ref_ctx[col] == s->s.h.fixcompref);
                     }
                 } else if (have_l) {
-                    c = s->left_comp_ctx[row7] ? 3 :
-                    (!s->left_intra_ctx[row7] && s->left_ref_ctx[row7] == s->s.h.fixcompref);
+                    c = td->left_comp_ctx[row7] ? 3 :
+                    (!td->left_intra_ctx[row7] && td->left_ref_ctx[row7] == s->s.h.fixcompref);
                 } else {
                     c = 1;
                 }
-                b->comp = vp56_rac_get_prob(&s->c, s->prob.p.comp[c]);
-                s->counts.comp[c][b->comp]++;
+                b->comp = vp56_rac_get_prob(td->c, s->prob.p.comp[c]);
+                td->counts.comp[c][b->comp]++;
             }
 
             // read actual references
@@ -382,26 +382,26 @@ static void decode_mode(AVCodecContext *avctx)
                 if (have_a) {
                     if (have_l) {
                         if (s->above_intra_ctx[col]) {
-                            if (s->left_intra_ctx[row7]) {
+                            if (td->left_intra_ctx[row7]) {
                                 c = 2;
                             } else {
-                                c = 1 + 2 * (s->left_ref_ctx[row7] != s->s.h.varcompref[1]);
+                                c = 1 + 2 * (td->left_ref_ctx[row7] != s->s.h.varcompref[1]);
                             }
-                        } else if (s->left_intra_ctx[row7]) {
+                        } else if (td->left_intra_ctx[row7]) {
                             c = 1 + 2 * (s->above_ref_ctx[col] != s->s.h.varcompref[1]);
                         } else {
-                            int refl = s->left_ref_ctx[row7], refa = s->above_ref_ctx[col];
+                            int refl = td->left_ref_ctx[row7], refa = s->above_ref_ctx[col];
 
                             if (refl == refa && refa == s->s.h.varcompref[1]) {
                                 c = 0;
-                            } else if (!s->left_comp_ctx[row7] && !s->above_comp_ctx[col]) {
+                            } else if (!td->left_comp_ctx[row7] && !s->above_comp_ctx[col]) {
                                 if ((refa == s->s.h.fixcompref && refl == s->s.h.varcompref[0]) ||
                                     (refl == s->s.h.fixcompref && refa == s->s.h.varcompref[0])) {
                                     c = 4;
                                 } else {
                                     c = (refa == refl) ? 3 : 1;
                                 }
-                            } else if (!s->left_comp_ctx[row7]) {
+                            } else if (!td->left_comp_ctx[row7]) {
                                 if (refa == s->s.h.varcompref[1] && refl != s->s.h.varcompref[1]) {
                                     c = 1;
                                 } else {
@@ -429,37 +429,37 @@ static void decode_mode(AVCodecContext *avctx)
                         }
                     }
                 } else if (have_l) {
-                    if (s->left_intra_ctx[row7]) {
+                    if (td->left_intra_ctx[row7]) {
                         c = 2;
-                    } else if (s->left_comp_ctx[row7]) {
-                        c = 4 * (s->left_ref_ctx[row7] != s->s.h.varcompref[1]);
+                    } else if (td->left_comp_ctx[row7]) {
+                        c = 4 * (td->left_ref_ctx[row7] != s->s.h.varcompref[1]);
                     } else {
-                        c = 3 * (s->left_ref_ctx[row7] != s->s.h.varcompref[1]);
+                        c = 3 * (td->left_ref_ctx[row7] != s->s.h.varcompref[1]);
                     }
                 } else {
                     c = 2;
                 }
-                bit = vp56_rac_get_prob(&s->c, s->prob.p.comp_ref[c]);
+                bit = vp56_rac_get_prob(td->c, s->prob.p.comp_ref[c]);
                 b->ref[var_idx] = s->s.h.varcompref[bit];
-                s->counts.comp_ref[c][bit]++;
+                td->counts.comp_ref[c][bit]++;
             } else /* single reference */ {
                 int bit, c;
 
                 if (have_a && !s->above_intra_ctx[col]) {
-                    if (have_l && !s->left_intra_ctx[row7]) {
-                        if (s->left_comp_ctx[row7]) {
+                    if (have_l && !td->left_intra_ctx[row7]) {
+                        if (td->left_comp_ctx[row7]) {
                             if (s->above_comp_ctx[col]) {
-                                c = 1 + (!s->s.h.fixcompref || !s->left_ref_ctx[row7] ||
+                                c = 1 + (!s->s.h.fixcompref || !td->left_ref_ctx[row7] ||
                                          !s->above_ref_ctx[col]);
                             } else {
                                 c = (3 * !s->above_ref_ctx[col]) +
-                                    (!s->s.h.fixcompref || !s->left_ref_ctx[row7]);
+                                    (!s->s.h.fixcompref || !td->left_ref_ctx[row7]);
                             }
                         } else if (s->above_comp_ctx[col]) {
-                            c = (3 * !s->left_ref_ctx[row7]) +
+                            c = (3 * !td->left_ref_ctx[row7]) +
                                 (!s->s.h.fixcompref || !s->above_ref_ctx[col]);
                         } else {
-                            c = 2 * !s->left_ref_ctx[row7] + 2 * !s->above_ref_ctx[col];
+                            c = 2 * !td->left_ref_ctx[row7] + 2 * !s->above_ref_ctx[col];
                         }
                     } else if (s->above_intra_ctx[col]) {
                         c = 2;
@@ -468,26 +468,26 @@ static void decode_mode(AVCodecContext *avctx)
                     } else {
                         c = 4 * (!s->above_ref_ctx[col]);
                     }
-                } else if (have_l && !s->left_intra_ctx[row7]) {
-                    if (s->left_intra_ctx[row7]) {
+                } else if (have_l && !td->left_intra_ctx[row7]) {
+                    if (td->left_intra_ctx[row7]) {
                         c = 2;
-                    } else if (s->left_comp_ctx[row7]) {
-                        c = 1 + (!s->s.h.fixcompref || !s->left_ref_ctx[row7]);
+                    } else if (td->left_comp_ctx[row7]) {
+                        c = 1 + (!s->s.h.fixcompref || !td->left_ref_ctx[row7]);
                     } else {
-                        c = 4 * (!s->left_ref_ctx[row7]);
+                        c = 4 * (!td->left_ref_ctx[row7]);
                     }
                 } else {
                     c = 2;
                 }
-                bit = vp56_rac_get_prob(&s->c, s->prob.p.single_ref[c][0]);
-                s->counts.single_ref[c][0][bit]++;
+                bit = vp56_rac_get_prob(td->c, s->prob.p.single_ref[c][0]);
+                td->counts.single_ref[c][0][bit]++;
                 if (!bit) {
                     b->ref[0] = 0;
                 } else {
                     // FIXME can this codeblob be replaced by some sort of LUT?
                     if (have_a) {
                         if (have_l) {
-                            if (s->left_intra_ctx[row7]) {
+                            if (td->left_intra_ctx[row7]) {
                                 if (s->above_intra_ctx[col]) {
                                     c = 2;
                                 } else if (s->above_comp_ctx[col]) {
@@ -499,49 +499,49 @@ static void decode_mode(AVCodecContext *avctx)
                                     c = 4 * (s->above_ref_ctx[col] == 1);
                                 }
                             } else if (s->above_intra_ctx[col]) {
-                                if (s->left_intra_ctx[row7]) {
+                                if (td->left_intra_ctx[row7]) {
                                     c = 2;
-                                } else if (s->left_comp_ctx[row7]) {
+                                } else if (td->left_comp_ctx[row7]) {
                                     c = 1 + 2 * (s->s.h.fixcompref == 1 ||
-                                                 s->left_ref_ctx[row7] == 1);
-                                } else if (!s->left_ref_ctx[row7]) {
+                                                 td->left_ref_ctx[row7] == 1);
+                                } else if (!td->left_ref_ctx[row7]) {
                                     c = 3;
                                 } else {
-                                    c = 4 * (s->left_ref_ctx[row7] == 1);
+                                    c = 4 * (td->left_ref_ctx[row7] == 1);
                                 }
                             } else if (s->above_comp_ctx[col]) {
-                                if (s->left_comp_ctx[row7]) {
-                                    if (s->left_ref_ctx[row7] == s->above_ref_ctx[col]) {
+                                if (td->left_comp_ctx[row7]) {
+                                    if (td->left_ref_ctx[row7] == s->above_ref_ctx[col]) {
                                         c = 3 * (s->s.h.fixcompref == 1 ||
-                                                 s->left_ref_ctx[row7] == 1);
+                                                 td->left_ref_ctx[row7] == 1);
                                     } else {
                                         c = 2;
                                     }
-                                } else if (!s->left_ref_ctx[row7]) {
+                                } else if (!td->left_ref_ctx[row7]) {
                                     c = 1 + 2 * (s->s.h.fixcompref == 1 ||
                                                  s->above_ref_ctx[col] == 1);
                                 } else {
-                                    c = 3 * (s->left_ref_ctx[row7] == 1) +
+                                    c = 3 * (td->left_ref_ctx[row7] == 1) +
                                     (s->s.h.fixcompref == 1 || s->above_ref_ctx[col] == 1);
                                 }
-                            } else if (s->left_comp_ctx[row7]) {
+                            } else if (td->left_comp_ctx[row7]) {
                                 if (!s->above_ref_ctx[col]) {
                                     c = 1 + 2 * (s->s.h.fixcompref == 1 ||
-                                                 s->left_ref_ctx[row7] == 1);
+                                                 td->left_ref_ctx[row7] == 1);
                                 } else {
                                     c = 3 * (s->above_ref_ctx[col] == 1) +
-                                    (s->s.h.fixcompref == 1 || s->left_ref_ctx[row7] == 1);
+                                    (s->s.h.fixcompref == 1 || td->left_ref_ctx[row7] == 1);
                                 }
                             } else if (!s->above_ref_ctx[col]) {
-                                if (!s->left_ref_ctx[row7]) {
+                                if (!td->left_ref_ctx[row7]) {
                                     c = 3;
                                 } else {
-                                    c = 4 * (s->left_ref_ctx[row7] == 1);
+                                    c = 4 * (td->left_ref_ctx[row7] == 1);
                                 }
-                            } else if (!s->left_ref_ctx[row7]) {
+                            } else if (!td->left_ref_ctx[row7]) {
                                 c = 4 * (s->above_ref_ctx[col] == 1);
                             } else {
-                                c = 2 * (s->left_ref_ctx[row7] == 1) +
+                                c = 2 * (td->left_ref_ctx[row7] == 1) +
                                     2 * (s->above_ref_ctx[col] == 1);
                             }
                         } else {
@@ -555,19 +555,19 @@ static void decode_mode(AVCodecContext *avctx)
                             }
                         }
                     } else if (have_l) {
-                        if (s->left_intra_ctx[row7] ||
-                            (!s->left_comp_ctx[row7] && !s->left_ref_ctx[row7])) {
+                        if (td->left_intra_ctx[row7] ||
+                            (!td->left_comp_ctx[row7] && !td->left_ref_ctx[row7])) {
                             c = 2;
-                        } else if (s->left_comp_ctx[row7]) {
-                            c = 3 * (s->s.h.fixcompref == 1 || s->left_ref_ctx[row7] == 1);
+                        } else if (td->left_comp_ctx[row7]) {
+                            c = 3 * (s->s.h.fixcompref == 1 || td->left_ref_ctx[row7] == 1);
                         } else {
-                            c = 4 * (s->left_ref_ctx[row7] == 1);
+                            c = 4 * (td->left_ref_ctx[row7] == 1);
                         }
                     } else {
                         c = 2;
                     }
-                    bit = vp56_rac_get_prob(&s->c, s->prob.p.single_ref[c][1]);
-                    s->counts.single_ref[c][1][bit]++;
+                    bit = vp56_rac_get_prob(td->c, s->prob.p.single_ref[c][1]);
+                    td->counts.single_ref[c][1][bit]++;
                     b->ref[0] = 1 + bit;
                 }
             }
@@ -587,14 +587,14 @@ static void decode_mode(AVCodecContext *avctx)
                 // FIXME this needs to use the LUT tables from find_ref_mvs
                 // because not all are -1,0/0,-1
                 int c = inter_mode_ctx_lut[s->above_mode_ctx[col + off[b->bs]]]
-                                          [s->left_mode_ctx[row7 + off[b->bs]]];
+                                          [td->left_mode_ctx[row7 + off[b->bs]]];
 
-                b->mode[0] = vp8_rac_get_tree(&s->c, ff_vp9_inter_mode_tree,
+                b->mode[0] = vp8_rac_get_tree(td->c, ff_vp9_inter_mode_tree,
                                               s->prob.p.mv_mode[c]);
                 b->mode[1] =
                 b->mode[2] =
                 b->mode[3] = b->mode[0];
-                s->counts.mv_mode[c][b->mode[0] - 10]++;
+                td->counts.mv_mode[c][b->mode[0] - 10]++;
             }
         }
 
@@ -602,39 +602,39 @@ static void decode_mode(AVCodecContext *avctx)
             int c;
 
             if (have_a && s->above_mode_ctx[col] >= NEARESTMV) {
-                if (have_l && s->left_mode_ctx[row7] >= NEARESTMV) {
-                    c = s->above_filter_ctx[col] == s->left_filter_ctx[row7] ?
-                        s->left_filter_ctx[row7] : 3;
+                if (have_l && td->left_mode_ctx[row7] >= NEARESTMV) {
+                    c = s->above_filter_ctx[col] == td->left_filter_ctx[row7] ?
+                        td->left_filter_ctx[row7] : 3;
                 } else {
                     c = s->above_filter_ctx[col];
                 }
-            } else if (have_l && s->left_mode_ctx[row7] >= NEARESTMV) {
-                c = s->left_filter_ctx[row7];
+            } else if (have_l && td->left_mode_ctx[row7] >= NEARESTMV) {
+                c = td->left_filter_ctx[row7];
             } else {
                 c = 3;
             }
 
-            filter_id = vp8_rac_get_tree(&s->c, ff_vp9_filter_tree,
+            filter_id = vp8_rac_get_tree(td->c, ff_vp9_filter_tree,
                                          s->prob.p.filter[c]);
-            s->counts.filter[c][filter_id]++;
+            td->counts.filter[c][filter_id]++;
             b->filter = ff_vp9_filter_lut[filter_id];
         } else {
             b->filter = s->s.h.filtermode;
         }
 
         if (b->bs > BS_8x8) {
-            int c = inter_mode_ctx_lut[s->above_mode_ctx[col]][s->left_mode_ctx[row7]];
+            int c = inter_mode_ctx_lut[s->above_mode_ctx[col]][td->left_mode_ctx[row7]];
 
-            b->mode[0] = vp8_rac_get_tree(&s->c, ff_vp9_inter_mode_tree,
+            b->mode[0] = vp8_rac_get_tree(td->c, ff_vp9_inter_mode_tree,
                                           s->prob.p.mv_mode[c]);
-            s->counts.mv_mode[c][b->mode[0] - 10]++;
-            ff_vp9_fill_mv(s, b->mv[0], b->mode[0], 0);
+            td->counts.mv_mode[c][b->mode[0] - 10]++;
+            ff_vp9_fill_mv(td, b->mv[0], b->mode[0], 0);
 
             if (b->bs != BS_8x4) {
-                b->mode[1] = vp8_rac_get_tree(&s->c, ff_vp9_inter_mode_tree,
+                b->mode[1] = vp8_rac_get_tree(td->c, ff_vp9_inter_mode_tree,
                                               s->prob.p.mv_mode[c]);
-                s->counts.mv_mode[c][b->mode[1] - 10]++;
-                ff_vp9_fill_mv(s, b->mv[1], b->mode[1], 1);
+                td->counts.mv_mode[c][b->mode[1] - 10]++;
+                ff_vp9_fill_mv(td, b->mv[1], b->mode[1], 1);
             } else {
                 b->mode[1] = b->mode[0];
                 AV_COPY32(&b->mv[1][0], &b->mv[0][0]);
@@ -642,16 +642,16 @@ static void decode_mode(AVCodecContext *avctx)
             }
 
             if (b->bs != BS_4x8) {
-                b->mode[2] = vp8_rac_get_tree(&s->c, ff_vp9_inter_mode_tree,
+                b->mode[2] = vp8_rac_get_tree(td->c, ff_vp9_inter_mode_tree,
                                               s->prob.p.mv_mode[c]);
-                s->counts.mv_mode[c][b->mode[2] - 10]++;
-                ff_vp9_fill_mv(s, b->mv[2], b->mode[2], 2);
+                td->counts.mv_mode[c][b->mode[2] - 10]++;
+                ff_vp9_fill_mv(td, b->mv[2], b->mode[2], 2);
 
                 if (b->bs != BS_8x4) {
-                    b->mode[3] = vp8_rac_get_tree(&s->c, ff_vp9_inter_mode_tree,
+                    b->mode[3] = vp8_rac_get_tree(td->c, ff_vp9_inter_mode_tree,
                                                   s->prob.p.mv_mode[c]);
-                    s->counts.mv_mode[c][b->mode[3] - 10]++;
-                    ff_vp9_fill_mv(s, b->mv[3], b->mode[3], 3);
+                    td->counts.mv_mode[c][b->mode[3] - 10]++;
+                    ff_vp9_fill_mv(td, b->mv[3], b->mode[3], 3);
                 } else {
                     b->mode[3] = b->mode[2];
                     AV_COPY32(&b->mv[3][0], &b->mv[2][0]);
@@ -666,7 +666,7 @@ static void decode_mode(AVCodecContext *avctx)
                 AV_COPY32(&b->mv[3][1], &b->mv[1][1]);
             }
         } else {
-            ff_vp9_fill_mv(s, b->mv[0], b->mode[0], -1);
+            ff_vp9_fill_mv(td, b->mv[0], b->mode[0], -1);
             AV_COPY32(&b->mv[1][0], &b->mv[0][0]);
             AV_COPY32(&b->mv[2][0], &b->mv[0][0]);
             AV_COPY32(&b->mv[3][0], &b->mv[0][0]);
@@ -716,33 +716,33 @@ static void decode_mode(AVCodecContext *avctx)
 #endif
 
     switch (ff_vp9_bwh_tab[1][b->bs][0]) {
-#define SET_CTXS(dir, off, n) \
+#define SET_CTXS(perf, dir, off, n) \
     do { \
-        SPLAT_CTX(s->dir##_skip_ctx[off],      b->skip,          n); \
-        SPLAT_CTX(s->dir##_txfm_ctx[off],      b->tx,            n); \
-        SPLAT_CTX(s->dir##_partition_ctx[off], dir##_ctx[b->bs], n); \
+        SPLAT_CTX(perf->dir##_skip_ctx[off],      b->skip,          n); \
+        SPLAT_CTX(perf->dir##_txfm_ctx[off],      b->tx,            n); \
+        SPLAT_CTX(perf->dir##_partition_ctx[off], dir##_ctx[b->bs], n); \
         if (!s->s.h.keyframe && !s->s.h.intraonly) { \
-            SPLAT_CTX(s->dir##_intra_ctx[off], b->intra,   n); \
-            SPLAT_CTX(s->dir##_comp_ctx[off],  b->comp,    n); \
-            SPLAT_CTX(s->dir##_mode_ctx[off],  b->mode[3], n); \
+            SPLAT_CTX(perf->dir##_intra_ctx[off], b->intra,   n); \
+            SPLAT_CTX(perf->dir##_comp_ctx[off],  b->comp,    n); \
+            SPLAT_CTX(perf->dir##_mode_ctx[off],  b->mode[3], n); \
             if (!b->intra) { \
-                SPLAT_CTX(s->dir##_ref_ctx[off], vref, n); \
+                SPLAT_CTX(perf->dir##_ref_ctx[off], vref, n); \
                 if (s->s.h.filtermode == FILTER_SWITCHABLE) { \
-                    SPLAT_CTX(s->dir##_filter_ctx[off], filter_id, n); \
+                    SPLAT_CTX(perf->dir##_filter_ctx[off], filter_id, n); \
                 } \
             } \
         } \
     } while (0)
-    case 1: SET_CTXS(above, col, 1); break;
-    case 2: SET_CTXS(above, col, 2); break;
-    case 4: SET_CTXS(above, col, 4); break;
-    case 8: SET_CTXS(above, col, 8); break;
+    case 1: SET_CTXS(s, above, col, 1); break;
+    case 2: SET_CTXS(s, above, col, 2); break;
+    case 4: SET_CTXS(s, above, col, 4); break;
+    case 8: SET_CTXS(s, above, col, 8); break;
     }
     switch (ff_vp9_bwh_tab[1][b->bs][1]) {
-    case 1: SET_CTXS(left, row7, 1); break;
-    case 2: SET_CTXS(left, row7, 2); break;
-    case 4: SET_CTXS(left, row7, 4); break;
-    case 8: SET_CTXS(left, row7, 8); break;
+    case 1: SET_CTXS(td, left, row7, 1); break;
+    case 2: SET_CTXS(td, left, row7, 2); break;
+    case 4: SET_CTXS(td, left, row7, 4); break;
+    case 8: SET_CTXS(td, left, row7, 8); break;
     }
 #undef SPLAT_CTX
 #undef SET_CTXS
@@ -751,10 +751,10 @@ static void decode_mode(AVCodecContext *avctx)
         if (b->bs > BS_8x8) {
             int mv0 = AV_RN32A(&b->mv[3][0]), mv1 = AV_RN32A(&b->mv[3][1]);
 
-            AV_COPY32(&s->left_mv_ctx[row7 * 2 + 0][0], &b->mv[1][0]);
-            AV_COPY32(&s->left_mv_ctx[row7 * 2 + 0][1], &b->mv[1][1]);
-            AV_WN32A(&s->left_mv_ctx[row7 * 2 + 1][0], mv0);
-            AV_WN32A(&s->left_mv_ctx[row7 * 2 + 1][1], mv1);
+            AV_COPY32(&td->left_mv_ctx[row7 * 2 + 0][0], &b->mv[1][0]);
+            AV_COPY32(&td->left_mv_ctx[row7 * 2 + 0][1], &b->mv[1][1]);
+            AV_WN32A(&td->left_mv_ctx[row7 * 2 + 1][0], mv0);
+            AV_WN32A(&td->left_mv_ctx[row7 * 2 + 1][1], mv1);
             AV_COPY32(&s->above_mv_ctx[col * 2 + 0][0], &b->mv[2][0]);
             AV_COPY32(&s->above_mv_ctx[col * 2 + 0][1], &b->mv[2][1]);
             AV_WN32A(&s->above_mv_ctx[col * 2 + 1][0], mv0);
@@ -767,8 +767,8 @@ static void decode_mode(AVCodecContext *avctx)
                 AV_WN32A(&s->above_mv_ctx[col * 2 + n][1], mv1);
             }
             for (n = 0; n < h4 * 2; n++) {
-                AV_WN32A(&s->left_mv_ctx[row7 * 2 + n][0], mv0);
-                AV_WN32A(&s->left_mv_ctx[row7 * 2 + n][1], mv1);
+                AV_WN32A(&td->left_mv_ctx[row7 * 2 + n][0], mv0);
+                AV_WN32A(&td->left_mv_ctx[row7 * 2 + n][1], mv1);
             }
         }
     }
@@ -806,10 +806,10 @@ decode_coeffs_b_generic(VP56RangeCoder *c, int16_t *coef, int n_coeffs,
                         int is_tx32x32, int is8bitsperpixel, int bpp, unsigned (*cnt)[6][3],
                         unsigned (*eob)[6][2], uint8_t (*p)[6][11],
                         int nnz, const int16_t *scan, const int16_t (*nb)[2],
-                        const int16_t *band_counts, const int16_t *qmul)
+                        const int16_t *band_counts, int16_t *qmul)
 {
     int i = 0, band = 0, band_left = band_counts[band];
-    uint8_t *tp = p[0][nnz];
+    const uint8_t *tp = p[0][nnz];
     uint8_t cache[1024];
 
     do {
@@ -839,10 +839,6 @@ skip_eob:
             val       = 1;
             cache[rc] = 1;
         } else {
-            // fill in p[3-10] (model fill) - only once per frame for each pos
-            if (!tp[3])
-                memcpy(&tp[3], ff_vp9_model_pareto8[tp[2]], 8);
-
             cnt[band][nnz][2]++;
             if (!vp56_rac_get_prob_branchy(c, tp[3])) { // 2, 3, 4
                 if (!vp56_rac_get_prob_branchy(c, tp[4])) {
@@ -925,54 +921,54 @@ skip_eob:
     return i;
 }
 
-static int decode_coeffs_b_8bpp(VP9Context *s, int16_t *coef, int n_coeffs,
+static int decode_coeffs_b_8bpp(VP9TileData *td, int16_t *coef, int n_coeffs,
                                 unsigned (*cnt)[6][3], unsigned (*eob)[6][2],
                                 uint8_t (*p)[6][11], int nnz, const int16_t *scan,
                                 const int16_t (*nb)[2], const int16_t *band_counts,
-                                const int16_t *qmul)
+                                int16_t *qmul)
 {
-    return decode_coeffs_b_generic(&s->c, coef, n_coeffs, 0, 1, 8, cnt, eob, p,
+    return decode_coeffs_b_generic(td->c, coef, n_coeffs, 0, 1, 8, cnt, eob, p,
                                    nnz, scan, nb, band_counts, qmul);
 }
 
-static int decode_coeffs_b32_8bpp(VP9Context *s, int16_t *coef, int n_coeffs,
+static int decode_coeffs_b32_8bpp(VP9TileData *td, int16_t *coef, int n_coeffs,
                                   unsigned (*cnt)[6][3], unsigned (*eob)[6][2],
                                   uint8_t (*p)[6][11], int nnz, const int16_t *scan,
                                   const int16_t (*nb)[2], const int16_t *band_counts,
-                                  const int16_t *qmul)
+                                  int16_t *qmul)
 {
-    return decode_coeffs_b_generic(&s->c, coef, n_coeffs, 1, 1, 8, cnt, eob, p,
+    return decode_coeffs_b_generic(td->c, coef, n_coeffs, 1, 1, 8, cnt, eob, p,
                                    nnz, scan, nb, band_counts, qmul);
 }
 
-static int decode_coeffs_b_16bpp(VP9Context *s, int16_t *coef, int n_coeffs,
+static int decode_coeffs_b_16bpp(VP9TileData *td, int16_t *coef, int n_coeffs,
                                  unsigned (*cnt)[6][3], unsigned (*eob)[6][2],
                                  uint8_t (*p)[6][11], int nnz, const int16_t *scan,
                                  const int16_t (*nb)[2], const int16_t *band_counts,
-                                 const int16_t *qmul)
+                                 int16_t *qmul)
 {
-    return decode_coeffs_b_generic(&s->c, coef, n_coeffs, 0, 0, s->s.h.bpp, cnt, eob, p,
+    return decode_coeffs_b_generic(td->c, coef, n_coeffs, 0, 0, td->s->s.h.bpp, cnt, eob, p,
                                    nnz, scan, nb, band_counts, qmul);
 }
 
-static int decode_coeffs_b32_16bpp(VP9Context *s, int16_t *coef, int n_coeffs,
+static int decode_coeffs_b32_16bpp(VP9TileData *td, int16_t *coef, int n_coeffs,
                                    unsigned (*cnt)[6][3], unsigned (*eob)[6][2],
                                    uint8_t (*p)[6][11], int nnz, const int16_t *scan,
                                    const int16_t (*nb)[2], const int16_t *band_counts,
-                                   const int16_t *qmul)
+                                   int16_t *qmul)
 {
-    return decode_coeffs_b_generic(&s->c, coef, n_coeffs, 1, 0, s->s.h.bpp, cnt, eob, p,
+    return decode_coeffs_b_generic(td->c, coef, n_coeffs, 1, 0, td->s->s.h.bpp, cnt, eob, p,
                                    nnz, scan, nb, band_counts, qmul);
 }
 
-static av_always_inline int decode_coeffs(AVCodecContext *avctx, int is8bitsperpixel)
+static av_always_inline int decode_coeffs(VP9TileData *td, int is8bitsperpixel)
 {
-    VP9Context *s = avctx->priv_data;
-    VP9Block *b = s->b;
-    int row = s->row, col = s->col;
+    VP9Context *s = td->s;
+    VP9Block *b = td->b;
+    int row = td->row, col = td->col;
     uint8_t (*p)[6][11] = s->prob.coef[b->tx][0 /* y */][!b->intra];
-    unsigned (*c)[6][3] = s->counts.coef[b->tx][0 /* y */][!b->intra];
-    unsigned (*e)[6][2] = s->counts.eob[b->tx][0 /* y */][!b->intra];
+    unsigned (*c)[6][3] = td->counts.coef[b->tx][0 /* y */][!b->intra];
+    unsigned (*e)[6][2] = td->counts.eob[b->tx][0 /* y */][!b->intra];
     int w4 = ff_vp9_bwh_tab[1][b->bs][0] << 1, h4 = ff_vp9_bwh_tab[1][b->bs][1] << 1;
     int end_x = FFMIN(2 * (s->cols - col), w4);
     int end_y = FFMIN(2 * (s->rows - row), h4);
@@ -984,7 +980,7 @@ static av_always_inline int decode_coeffs(AVCodecContext *avctx, int is8bitsperp
     const int16_t *uvscan = ff_vp9_scans[b->uvtx][DCT_DCT];
     const int16_t (*uvnb)[2] = ff_vp9_scans_nb[b->uvtx][DCT_DCT];
     uint8_t *a = &s->above_y_nnz_ctx[col * 2];
-    uint8_t *l = &s->left_y_nnz_ctx[(row & 7) << 1];
+    uint8_t *l = &td->left_y_nnz_ctx[(row & 7) << 1];
     static const int16_t band_counts[4][8] = {
         { 1, 2, 3, 4,  3,   16 - 13 },
         { 1, 2, 3, 4, 11,   64 - 21 },
@@ -1010,15 +1006,15 @@ static av_always_inline int decode_coeffs(AVCodecContext *avctx, int is8bitsperp
         for (x = 0; x < end_x; x += step, n += step * step) { \
             enum TxfmType txtp = ff_vp9_intra_txfm_type[b->mode[mode_index]]; \
             ret = (is8bitsperpixel ? decode_coeffs_b##v##_8bpp : decode_coeffs_b##v##_16bpp) \
-                                    (s, s->block + 16 * n * bytesperpixel, 16 * step * step, \
+                                    (td, td->block + 16 * n * bytesperpixel, 16 * step * step, \
                                      c, e, p, a[x] + l[y], yscans[txtp], \
                                      ynbs[txtp], y_band_counts, qmul[0]); \
             a[x] = l[y] = !!ret; \
             total_coeff |= !!ret; \
             if (step >= 4) { \
-                AV_WN16A(&s->eob[n], ret); \
+                AV_WN16A(&td->eob[n], ret); \
             } else { \
-                s->eob[n] = ret; \
+                td->eob[n] = ret; \
             } \
         } \
     }
@@ -1084,29 +1080,29 @@ static av_always_inline int decode_coeffs(AVCodecContext *avctx, int is8bitsperp
     for (n = 0, y = 0; y < end_y; y += step) { \
         for (x = 0; x < end_x; x += step, n += step * step) { \
             ret = (is8bitsperpixel ? decode_coeffs_b##v##_8bpp : decode_coeffs_b##v##_16bpp) \
-                                    (s, s->uvblock[pl] + 16 * n * bytesperpixel, \
+                                    (td, td->uvblock[pl] + 16 * n * bytesperpixel, \
                                      16 * step * step, c, e, p, a[x] + l[y], \
                                      uvscan, uvnb, uv_band_counts, qmul[1]); \
             a[x] = l[y] = !!ret; \
             total_coeff |= !!ret; \
             if (step >= 4) { \
-                AV_WN16A(&s->uveob[pl][n], ret); \
+                AV_WN16A(&td->uveob[pl][n], ret); \
             } else { \
-                s->uveob[pl][n] = ret; \
+                td->uveob[pl][n] = ret; \
             } \
         } \
     }
 
     p = s->prob.coef[b->uvtx][1 /* uv */][!b->intra];
-    c = s->counts.coef[b->uvtx][1 /* uv */][!b->intra];
-    e = s->counts.eob[b->uvtx][1 /* uv */][!b->intra];
+    c = td->counts.coef[b->uvtx][1 /* uv */][!b->intra];
+    e = td->counts.eob[b->uvtx][1 /* uv */][!b->intra];
     w4 >>= s->ss_h;
     end_x >>= s->ss_h;
     h4 >>= s->ss_v;
     end_y >>= s->ss_v;
     for (pl = 0; pl < 2; pl++) {
         a = &s->above_uv_nnz_ctx[pl][col << !s->ss_h];
-        l = &s->left_uv_nnz_ctx[pl][(row & 7) << !s->ss_v];
+        l = &td->left_uv_nnz_ctx[pl][(row & 7) << !s->ss_v];
         switch (b->uvtx) {
         case TX_4X4:
             DECODE_UV_COEF_LOOP(1,);
@@ -1132,14 +1128,14 @@ static av_always_inline int decode_coeffs(AVCodecContext *avctx, int is8bitsperp
     return total_coeff;
 }
 
-static int decode_coeffs_8bpp(AVCodecContext *avctx)
+static int decode_coeffs_8bpp(VP9TileData *td)
 {
-    return decode_coeffs(avctx, 1);
+    return decode_coeffs(td, 1);
 }
 
-static int decode_coeffs_16bpp(AVCodecContext *avctx)
+static int decode_coeffs_16bpp(VP9TileData *td)
 {
-    return decode_coeffs(avctx, 0);
+    return decode_coeffs(td, 0);
 }
 
 static av_always_inline void mask_edges(uint8_t (*mask)[8][4], int ss_h, int ss_v,
@@ -1264,33 +1260,33 @@ static av_always_inline void mask_edges(uint8_t (*mask)[8][4], int ss_h, int ss_
     }
 }
 
-void ff_vp9_decode_block(AVCodecContext *avctx, int row, int col,
+void ff_vp9_decode_block(VP9TileData *td, int row, int col,
                          VP9Filter *lflvl, ptrdiff_t yoff, ptrdiff_t uvoff,
                          enum BlockLevel bl, enum BlockPartition bp)
 {
-    VP9Context *s = avctx->priv_data;
-    VP9Block *b = s->b;
+    VP9Context *s = td->s;
+    VP9Block *b = td->b;
     enum BlockSize bs = bl * 3 + bp;
     int bytesperpixel = s->bytesperpixel;
     int w4 = ff_vp9_bwh_tab[1][bs][0], h4 = ff_vp9_bwh_tab[1][bs][1], lvl;
     int emu[2];
     AVFrame *f = s->s.frames[CUR_FRAME].tf.f;
 
-    s->row = row;
-    s->row7 = row & 7;
-    s->col = col;
-    s->col7 = col & 7;
+    td->row = row;
+    td->row7 = row & 7;
+    td->col = col;
+    td->col7 = col & 7;
 
-    s->min_mv.x = -(128 + col * 64);
-    s->min_mv.y = -(128 + row * 64);
-    s->max_mv.x = 128 + (s->cols - col - w4) * 64;
-    s->max_mv.y = 128 + (s->rows - row - h4) * 64;
+    td->min_mv.x = -(128 + col * 64);
+    td->min_mv.y = -(128 + row * 64);
+    td->max_mv.x = 128 + (s->cols - col - w4) * 64;
+    td->max_mv.y = 128 + (s->rows - row - h4) * 64;
 
     if (s->pass < 2) {
         b->bs = bs;
         b->bl = bl;
         b->bp = bp;
-        decode_mode(avctx);
+        decode_mode(td);
         b->uvtx = b->tx - ((s->ss_h && w4 * 2 == (1 << b->tx)) ||
                            (s->ss_v && h4 * 2 == (1 << b->tx)));
 
@@ -1298,17 +1294,17 @@ void ff_vp9_decode_block(AVCodecContext *avctx, int row, int col,
             int has_coeffs;
 
             if (bytesperpixel == 1) {
-                has_coeffs = decode_coeffs_8bpp(avctx);
+                has_coeffs = decode_coeffs_8bpp(td);
             } else {
-                has_coeffs = decode_coeffs_16bpp(avctx);
+                has_coeffs = decode_coeffs_16bpp(td);
             }
             if (!has_coeffs && b->bs <= BS_8x8 && !b->intra) {
                 b->skip = 1;
                 memset(&s->above_skip_ctx[col], 1, w4);
-                memset(&s->left_skip_ctx[s->row7], 1, h4);
+                memset(&td->left_skip_ctx[td->row7], 1, h4);
             }
         } else {
-            int row7 = s->row7;
+            int row7 = td->row7;
 
 #define SPLAT_ZERO_CTX(v, n) \
     switch (n) { \
@@ -1320,38 +1316,38 @@ void ff_vp9_decode_block(AVCodecContext *avctx, int row, int col,
     }
 #define SPLAT_ZERO_YUV(dir, var, off, n, dir2) \
     do { \
-        SPLAT_ZERO_CTX(s->dir##_y_##var[off * 2], n * 2); \
+        SPLAT_ZERO_CTX(dir##_y_##var[off * 2], n * 2); \
         if (s->ss_##dir2) { \
-            SPLAT_ZERO_CTX(s->dir##_uv_##var[0][off], n); \
-            SPLAT_ZERO_CTX(s->dir##_uv_##var[1][off], n); \
+            SPLAT_ZERO_CTX(dir##_uv_##var[0][off], n); \
+            SPLAT_ZERO_CTX(dir##_uv_##var[1][off], n); \
         } else { \
-            SPLAT_ZERO_CTX(s->dir##_uv_##var[0][off * 2], n * 2); \
-            SPLAT_ZERO_CTX(s->dir##_uv_##var[1][off * 2], n * 2); \
+            SPLAT_ZERO_CTX(dir##_uv_##var[0][off * 2], n * 2); \
+            SPLAT_ZERO_CTX(dir##_uv_##var[1][off * 2], n * 2); \
         } \
     } while (0)
 
             switch (w4) {
-            case 1: SPLAT_ZERO_YUV(above, nnz_ctx, col, 1, h); break;
-            case 2: SPLAT_ZERO_YUV(above, nnz_ctx, col, 2, h); break;
-            case 4: SPLAT_ZERO_YUV(above, nnz_ctx, col, 4, h); break;
-            case 8: SPLAT_ZERO_YUV(above, nnz_ctx, col, 8, h); break;
+            case 1: SPLAT_ZERO_YUV(s->above, nnz_ctx, col, 1, h); break;
+            case 2: SPLAT_ZERO_YUV(s->above, nnz_ctx, col, 2, h); break;
+            case 4: SPLAT_ZERO_YUV(s->above, nnz_ctx, col, 4, h); break;
+            case 8: SPLAT_ZERO_YUV(s->above, nnz_ctx, col, 8, h); break;
             }
             switch (h4) {
-            case 1: SPLAT_ZERO_YUV(left, nnz_ctx, row7, 1, v); break;
-            case 2: SPLAT_ZERO_YUV(left, nnz_ctx, row7, 2, v); break;
-            case 4: SPLAT_ZERO_YUV(left, nnz_ctx, row7, 4, v); break;
-            case 8: SPLAT_ZERO_YUV(left, nnz_ctx, row7, 8, v); break;
+            case 1: SPLAT_ZERO_YUV(td->left, nnz_ctx, row7, 1, v); break;
+            case 2: SPLAT_ZERO_YUV(td->left, nnz_ctx, row7, 2, v); break;
+            case 4: SPLAT_ZERO_YUV(td->left, nnz_ctx, row7, 4, v); break;
+            case 8: SPLAT_ZERO_YUV(td->left, nnz_ctx, row7, 8, v); break;
             }
         }
 
         if (s->pass == 1) {
-            s->b++;
-            s->block += w4 * h4 * 64 * bytesperpixel;
-            s->uvblock[0] += w4 * h4 * 64 * bytesperpixel >> (s->ss_h + s->ss_v);
-            s->uvblock[1] += w4 * h4 * 64 * bytesperpixel >> (s->ss_h + s->ss_v);
-            s->eob += 4 * w4 * h4;
-            s->uveob[0] += 4 * w4 * h4 >> (s->ss_h + s->ss_v);
-            s->uveob[1] += 4 * w4 * h4 >> (s->ss_h + s->ss_v);
+            s->td[0].b++;
+            s->td[0].block += w4 * h4 * 64 * bytesperpixel;
+            s->td[0].uvblock[0] += w4 * h4 * 64 * bytesperpixel >> (s->ss_h + s->ss_v);
+            s->td[0].uvblock[1] += w4 * h4 * 64 * bytesperpixel >> (s->ss_h + s->ss_v);
+            s->td[0].eob += 4 * w4 * h4;
+            s->td[0].uveob[0] += 4 * w4 * h4 >> (s->ss_h + s->ss_v);
+            s->td[0].uveob[1] += 4 * w4 * h4 >> (s->ss_h + s->ss_v);
 
             return;
         }
@@ -1365,32 +1361,32 @@ void ff_vp9_decode_block(AVCodecContext *avctx, int row, int col,
     emu[1] = ((col + w4) * 8 >> s->ss_h) * bytesperpixel > f->linesize[1] ||
              (row + h4) > s->rows;
     if (emu[0]) {
-        s->dst[0] = s->tmp_y;
-        s->y_stride = 128;
+        td->dst[0] = td->tmp_y;
+        td->y_stride = 128;
     } else {
-        s->dst[0] = f->data[0] + yoff;
-        s->y_stride = f->linesize[0];
+        td->dst[0] = f->data[0] + yoff;
+        td->y_stride = f->linesize[0];
     }
     if (emu[1]) {
-        s->dst[1] = s->tmp_uv[0];
-        s->dst[2] = s->tmp_uv[1];
-        s->uv_stride = 128;
+        td->dst[1] = td->tmp_uv[0];
+        td->dst[2] = td->tmp_uv[1];
+        td->uv_stride = 128;
     } else {
-        s->dst[1] = f->data[1] + uvoff;
-        s->dst[2] = f->data[2] + uvoff;
-        s->uv_stride = f->linesize[1];
+        td->dst[1] = f->data[1] + uvoff;
+        td->dst[2] = f->data[2] + uvoff;
+        td->uv_stride = f->linesize[1];
     }
     if (b->intra) {
         if (s->s.h.bpp > 8) {
-            ff_vp9_intra_recon_16bpp(avctx, yoff, uvoff);
+            ff_vp9_intra_recon_16bpp(td, yoff, uvoff);
         } else {
-            ff_vp9_intra_recon_8bpp(avctx, yoff, uvoff);
+            ff_vp9_intra_recon_8bpp(td, yoff, uvoff);
         }
     } else {
         if (s->s.h.bpp > 8) {
-            ff_vp9_inter_recon_16bpp(avctx);
+            ff_vp9_inter_recon_16bpp(td);
         } else {
-            ff_vp9_inter_recon_8bpp(avctx);
+            ff_vp9_inter_recon_8bpp(td);
         }
     }
     if (emu[0]) {
@@ -1402,7 +1398,7 @@ void ff_vp9_decode_block(AVCodecContext *avctx, int row, int col,
             av_assert2(n <= 4);
             if (w & bw) {
                 s->dsp.mc[n][0][0][0][0](f->data[0] + yoff + o * bytesperpixel, f->linesize[0],
-                                         s->tmp_y + o * bytesperpixel, 128, h, 0, 0);
+                                         td->tmp_y + o * bytesperpixel, 128, h, 0, 0);
                 o += bw;
             }
         }
@@ -1417,9 +1413,9 @@ void ff_vp9_decode_block(AVCodecContext *avctx, int row, int col,
             av_assert2(n <= 4);
             if (w & bw) {
                 s->dsp.mc[n][0][0][0][0](f->data[1] + uvoff + o * bytesperpixel, f->linesize[1],
-                                         s->tmp_uv[0] + o * bytesperpixel, 128, h, 0, 0);
+                                         td->tmp_uv[0] + o * bytesperpixel, 128, h, 0, 0);
                 s->dsp.mc[n][0][0][0][0](f->data[2] + uvoff + o * bytesperpixel, f->linesize[2],
-                                         s->tmp_uv[1] + o * bytesperpixel, 128, h, 0, 0);
+                                         td->tmp_uv[1] + o * bytesperpixel, 128, h, 0, 0);
                 o += bw;
             }
         }
@@ -1430,7 +1426,7 @@ void ff_vp9_decode_block(AVCodecContext *avctx, int row, int col,
         (lvl = s->s.h.segmentation.feat[b->seg_id].lflvl[b->intra ? 0 : b->ref[0] + 1]
                                                       [b->mode[3] != ZEROMV]) > 0) {
         int x_end = FFMIN(s->cols - col, w4), y_end = FFMIN(s->rows - row, h4);
-        int skip_inter = !b->intra && b->skip, col7 = s->col7, row7 = s->row7;
+        int skip_inter = !b->intra && b->skip, col7 = td->col7, row7 = td->row7;
 
         setctx_2d(&lflvl->level[row7 * 8 + col7], w4, h4, 8, lvl);
         mask_edges(lflvl->mask[0], 0, 0, row7, col7, x_end, y_end, 0, 0, b->tx, skip_inter);
@@ -1439,29 +1435,15 @@ void ff_vp9_decode_block(AVCodecContext *avctx, int row, int col,
                        s->cols & 1 && col + w4 >= s->cols ? s->cols & 7 : 0,
                        s->rows & 1 && row + h4 >= s->rows ? s->rows & 7 : 0,
                        b->uvtx, skip_inter);
-
-        if (!s->filter_lut.lim_lut[lvl]) {
-            int sharp = s->s.h.filter.sharpness;
-            int limit = lvl;
-
-            if (sharp > 0) {
-                limit >>= (sharp + 3) >> 2;
-                limit = FFMIN(limit, 9 - sharp);
-            }
-            limit = FFMAX(limit, 1);
-
-            s->filter_lut.lim_lut[lvl] = limit;
-            s->filter_lut.mblim_lut[lvl] = 2 * (lvl + 2) + limit;
-        }
     }
 
     if (s->pass == 2) {
-        s->b++;
-        s->block += w4 * h4 * 64 * bytesperpixel;
-        s->uvblock[0] += w4 * h4 * 64 * bytesperpixel >> (s->ss_v + s->ss_h);
-        s->uvblock[1] += w4 * h4 * 64 * bytesperpixel >> (s->ss_v + s->ss_h);
-        s->eob += 4 * w4 * h4;
-        s->uveob[0] += 4 * w4 * h4 >> (s->ss_v + s->ss_h);
-        s->uveob[1] += 4 * w4 * h4 >> (s->ss_v + s->ss_h);
+        s->td[0].b++;
+        s->td[0].block += w4 * h4 * 64 * bytesperpixel;
+        s->td[0].uvblock[0] += w4 * h4 * 64 * bytesperpixel >> (s->ss_v + s->ss_h);
+        s->td[0].uvblock[1] += w4 * h4 * 64 * bytesperpixel >> (s->ss_v + s->ss_h);
+        s->td[0].eob += 4 * w4 * h4;
+        s->td[0].uveob[0] += 4 * w4 * h4 >> (s->ss_v + s->ss_h);
+        s->td[0].uveob[1] += 4 * w4 * h4 >> (s->ss_v + s->ss_h);
     }
 }

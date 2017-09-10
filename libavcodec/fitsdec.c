@@ -264,11 +264,10 @@ static int fits_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, 
             for (j = 0; j < avctx->width; j++) { \
                 t = rd; \
                 if (!header.blank_found || t != header.blank) { \
-                    t = ((t - header.data_min) * ((1 << (sizeof(type) * 8)) - 1)) / (header.data_max - header.data_min); \
+                    *dst++ = ((t - header.data_min) * ((1 << (sizeof(type) * 8)) - 1)) / (header.data_max - header.data_min); \
                 } else { \
-                    t = fitsctx->blank_val; \
+                    *dst++ = fitsctx->blank_val; \
                 } \
-                *dst++ = (type) t; \
                 ptr8 += abs(cas) >> 3; \
             } \
         } \

@@ -68,7 +68,6 @@ Set the number of channels. Default is 2.
 AVFoundation input device.
 
 AVFoundation is the currently recommended framework by Apple for streamgrabbing on OSX >= 10.7 as well as on iOS.
-The older QTKit framework has been marked deprecated since OSX version 10.7.
 
 The input filename has to be given in the following syntax:
 @example
@@ -1140,49 +1139,6 @@ Record a stream from default device:
 @example
 ffmpeg -f pulse -i default /tmp/pulse.wav
 @end example
-
-@section qtkit
-
-QTKit input device.
-
-The filename passed as input is parsed to contain either a device name or index.
-The device index can also be given by using -video_device_index.
-A given device index will override any given device name.
-If the desired device consists of numbers only, use -video_device_index to identify it.
-The default device will be chosen if an empty string  or the device name "default" is given.
-The available devices can be enumerated by using -list_devices.
-
-@example
-ffmpeg -f qtkit -i "0" out.mpg
-@end example
-
-@example
-ffmpeg -f qtkit -video_device_index 0 -i "" out.mpg
-@end example
-
-@example
-ffmpeg -f qtkit -i "default" out.mpg
-@end example
-
-@example
-ffmpeg -f qtkit -list_devices true -i ""
-@end example
-
-@subsection Options
-
-@table @option
-
-@item frame_rate
-Set frame rate. Default is 30.
-
-@item list_devices
-If set to @code{true}, print a list of devices and exit. Default is
-@code{false}.
-
-@item video_device_index
-Select the video device by index for devices with the same name (starts at 0).
-
-@end table
 
 @section sndio
 

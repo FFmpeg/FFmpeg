@@ -120,11 +120,12 @@ static void avc_idct8_addblk_msa(uint8_t *dst, int16_t *src, int32_t dst_stride)
     v4i32 res0_r, res1_r, res2_r, res3_r, res4_r, res5_r, res6_r, res7_r;
     v4i32 res0_l, res1_l, res2_l, res3_l, res4_l, res5_l, res6_l, res7_l;
     v16i8 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
-    v16i8 zeros = { 0 };
+    v8i16 zeros = { 0 };
 
     src[0] += 32;
 
     LD_SH8(src, 8, src0, src1, src2, src3, src4, src5, src6, src7);
+    ST_SH8(zeros, zeros, zeros, zeros, zeros, zeros, zeros, zeros, src, 8);
 
     vec0 = src0 + src4;
     vec1 = src0 - src4;
@@ -318,7 +319,6 @@ void ff_h264_idct8_addblk_msa(uint8_t *dst, int16_t *src,
                               int32_t dst_stride)
 {
     avc_idct8_addblk_msa(dst, src, dst_stride);
-    memset(src, 0, 64 * sizeof(dctcoef));
 }
 
 void ff_h264_idct4x4_addblk_dc_msa(uint8_t *dst, int16_t *src,

@@ -34,21 +34,22 @@ int ff_h264_pred_weight_table(GetBitContext *gb, const SPS *sps,
 
     pwt->use_weight             = 0;
     pwt->use_weight_chroma      = 0;
-    pwt->luma_log2_weight_denom = get_ue_golomb(gb);
-    if (sps->chroma_format_idc)
-        pwt->chroma_log2_weight_denom = get_ue_golomb(gb);
 
+    pwt->luma_log2_weight_denom = get_ue_golomb(gb);
     if (pwt->luma_log2_weight_denom > 7U) {
         av_log(logctx, AV_LOG_ERROR, "luma_log2_weight_denom %d is out of range\n", pwt->luma_log2_weight_denom);
         pwt->luma_log2_weight_denom = 0;
     }
-    if (pwt->chroma_log2_weight_denom > 7U) {
-        av_log(logctx, AV_LOG_ERROR, "chroma_log2_weight_denom %d is out of range\n", pwt->chroma_log2_weight_denom);
-        pwt->chroma_log2_weight_denom = 0;
-    }
+    luma_def = 1 << pwt->luma_log2_weight_denom;
 
-    luma_def   = 1 << pwt->luma_log2_weight_denom;
-    chroma_def = 1 << pwt->chroma_log2_weight_denom;
+    if (sps->chroma_format_idc) {
+        pwt->chroma_log2_weight_denom = get_ue_golomb(gb);
+        if (pwt->chroma_log2_weight_denom > 7U) {
+            av_log(logctx, AV_LOG_ERROR, "chroma_log2_weight_denom %d is out of range\n", pwt->chroma_log2_weight_denom);
+            pwt->chroma_log2_weight_denom = 0;
+        }
+        chroma_def = 1 << pwt->chroma_log2_weight_denom;
+    }
 
     for (list = 0; list < 2; list++) {
         pwt->luma_weight_flag[list]   = 0;
@@ -102,9 +103,11 @@ int ff_h264_pred_weight_table(GetBitContext *gb, const SPS *sps,
             if (picture_structure == PICT_FRAME) {
                 pwt->luma_weight[16 + 2 * i][list][0] = pwt->luma_weight[16 + 2 * i + 1][list][0] = pwt->luma_weight[i][list][0];
                 pwt->luma_weight[16 + 2 * i][list][1] = pwt->luma_weight[16 + 2 * i + 1][list][1] = pwt->luma_weight[i][list][1];
-                for (j = 0; j < 2; j++) {
-                    pwt->chroma_weight[16 + 2 * i][list][j][0] = pwt->chroma_weight[16 + 2 * i + 1][list][j][0] = pwt->chroma_weight[i][list][j][0];
-                    pwt->chroma_weight[16 + 2 * i][list][j][1] = pwt->chroma_weight[16 + 2 * i + 1][list][j][1] = pwt->chroma_weight[i][list][j][1];
+                if (sps->chroma_format_idc) {
+                    for (j = 0; j < 2; j++) {
+                        pwt->chroma_weight[16 + 2 * i][list][j][0] = pwt->chroma_weight[16 + 2 * i + 1][list][j][0] = pwt->chroma_weight[i][list][j][0];
+                        pwt->chroma_weight[16 + 2 * i][list][j][1] = pwt->chroma_weight[16 + 2 * i + 1][list][j][1] = pwt->chroma_weight[i][list][j][1];
+                    }
                 }
             }
         }

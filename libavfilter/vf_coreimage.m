@@ -23,7 +23,7 @@
  * Video processing based on Apple's CoreImage API
  */
 
-#import <QuartzCore/CoreImage.h>
+#import <CoreImage/CoreImage.h>
 #import <AppKit/AppKit.h>
 
 #include "avfilter.h"

@@ -96,7 +96,7 @@ static void register_all(void)
     REGISTER_DEMUXER (CINE,             cine);
     REGISTER_DEMUXER (CONCAT,           concat);
     REGISTER_MUXER   (CRC,              crc);
-    REGISTER_MUXER   (DASH,             dash);
+    REGISTER_MUXDEMUX(DASH,             dash);
     REGISTER_MUXDEMUX(DATA,             data);
     REGISTER_MUXDEMUX(DAUD,             daud);
     REGISTER_DEMUXER (DCSTR,            dcstr);
@@ -303,7 +303,7 @@ static void register_all(void)
     REGISTER_DEMUXER (STL,              stl);
     REGISTER_DEMUXER (SUBVIEWER1,       subviewer1);
     REGISTER_DEMUXER (SUBVIEWER,        subviewer);
-    REGISTER_DEMUXER (SUP,              sup);
+    REGISTER_MUXDEMUX(SUP,              sup);
     REGISTER_DEMUXER (SVAG,             svag);
     REGISTER_MUXDEMUX(SWF,              swf);
     REGISTER_DEMUXER (TAK,              tak);
