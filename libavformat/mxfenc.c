@@ -21,7 +21,7 @@
  */
 
 /*
- * signal_standard, color_siting, store_user_comments and klv_fill_key version
+ * signal_standard, color_siting, store_user_comments, sample rate and klv_fill_key version
  * fixes sponsored by NOA GmbH
  */
 
@@ -1034,8 +1034,19 @@ static void mxf_write_generic_desc(AVFormatContext *s, AVStream *st, const UID k
     avio_wb32(pb, st->index+2);
 
     mxf_write_local_tag(pb, 8, 0x3001);
-    avio_wb32(pb, mxf->time_base.den);
-    avio_wb32(pb, mxf->time_base.num);
+    if (s->oformat == &ff_mxf_d10_muxer) {
+        avio_wb32(pb, mxf->time_base.den);
+        avio_wb32(pb, mxf->time_base.num);
+    } else {
+        if (st->codecpar->codec_id == AV_CODEC_ID_PCM_S16LE ||
+            st->codecpar->codec_id == AV_CODEC_ID_PCM_S24LE) {
+            avio_wb32(pb, st->codecpar->sample_rate);
+            avio_wb32(pb, 1);
+        } else {
+            avio_wb32(pb, mxf->time_base.den);
+            avio_wb32(pb, mxf->time_base.num);
+        }
+    }
 
     mxf_write_local_tag(pb, 16, 0x3004);
     avio_write(pb, mxf_essence_container_uls[sc->index].container_ul, 16);
