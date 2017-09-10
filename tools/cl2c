@@ -1,0 +1,20 @@
+#!/bin/sh
+# Convert an OpenCL source file into a C source file containing the
+# OpenCL source as a C string.  Also adds a #line directive so that
+# compiler messages are useful.
+
+input="$1"
+output="$2"
+
+name=$(basename "$input" | sed 's/.cl$//')
+
+cat >$output <<EOF
+// Generated from $input
+const char *ff_opencl_source_$name =
+"#line 1 \"$input\"\n"
+EOF
+
+# Convert \ to \\ and " to \", then add " to the start and end of the line.
+cat "$input" | sed 's/\\/\\\\/g;s/\"/\\\"/g;s/^/\"/;s/$/\\n\"/' >>$output
+
+echo ";" >>$output
