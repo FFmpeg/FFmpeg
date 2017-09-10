@@ -56,6 +56,12 @@
 #include "hwcontext_d3d11va.h"
 #endif
 
+#if HAVE_OPENCL_DRM_ARM
+#include <CL/cl_ext.h>
+#include <drm_fourcc.h>
+#include "hwcontext_drm.h"
+#endif
+
 
 typedef struct OpenCLDeviceContext {
     // Default command queue to use for transfer/mapping operations on
@@ -103,6 +109,10 @@ typedef struct OpenCLDeviceContext {
         clEnqueueAcquireD3D11ObjectsKHR;
     clEnqueueReleaseD3D11ObjectsKHR_fn
         clEnqueueReleaseD3D11ObjectsKHR;
+#endif
+
+#if HAVE_OPENCL_DRM_ARM
+    int drm_arm_mapping_usable;
 #endif
 } OpenCLDeviceContext;
 
@@ -826,6 +836,37 @@ static int opencl_device_init(AVHWDeviceContext *hwdev)
     }
 #endif
 
+#if HAVE_OPENCL_DRM_ARM
+    {
+        const char *drm_arm_ext = "cl_arm_import_memory";
+        const char *image_ext   = "cl_khr_image2d_from_buffer";
+        int fail = 0;
+
+        if (!opencl_check_extension(hwdev, drm_arm_ext)) {
+            av_log(hwdev, AV_LOG_VERBOSE, "The %s extension is "
+                   "required for DRM to OpenCL mapping on ARM.\n",
+                   drm_arm_ext);
+            fail = 1;
+        }
+        if (!opencl_check_extension(hwdev, image_ext)) {
+            av_log(hwdev, AV_LOG_VERBOSE, "The %s extension is "
+                   "required for DRM to OpenCL mapping on ARM.\n",
+                   image_ext);
+            fail = 1;
+        }
+
+        // clImportMemoryARM() is linked statically.
+
+        if (fail) {
+            av_log(hwdev, AV_LOG_WARNING, "DRM to OpenCL mapping on ARM "
+                   "not usable.\n");
+            priv->drm_arm_mapping_usable = 0;
+        } else {
+            priv->drm_arm_mapping_usable = 1;
+        }
+    }
+#endif
+
 #undef CL_FUNC
 
     return 0;
@@ -1104,6 +1145,40 @@ static int opencl_filter_gpu_device(AVHWDeviceContext *hwdev,
 }
 #endif
 
+#if HAVE_OPENCL_DRM_ARM
+static int opencl_filter_drm_arm_platform(AVHWDeviceContext *hwdev,
+                                          cl_platform_id platform_id,
+                                          const char *platform_name,
+                                          void *context)
+{
+    const char *drm_arm_ext = "cl_arm_import_memory";
+
+    if (opencl_check_platform_extension(platform_id, drm_arm_ext)) {
+        return 0;
+    } else {
+        av_log(hwdev, AV_LOG_DEBUG, "Platform %s does not support the "
+               "%s extension.\n", platform_name, drm_arm_ext);
+        return 1;
+    }
+}
+
+static int opencl_filter_drm_arm_device(AVHWDeviceContext *hwdev,
+                                        cl_device_id device_id,
+                                        const char *device_name,
+                                        void *context)
+{
+    const char *drm_arm_ext = "cl_arm_import_memory";
+
+    if (opencl_check_device_extension(device_id, drm_arm_ext)) {
+        return 0;
+    } else {
+        av_log(hwdev, AV_LOG_DEBUG, "Device %s does not support the "
+               "%s extension.\n", device_name, drm_arm_ext);
+        return 1;
+    }
+}
+#endif
+
 static int opencl_device_derive(AVHWDeviceContext *hwdev,
                                 AVHWDeviceContext *src_ctx,
                                 int flags)
@@ -1246,6 +1321,24 @@ static int opencl_device_derive(AVHWDeviceContext *hwdev,
             };
 
             err = opencl_device_create_internal(hwdev, &selector, props);
+        }
+        break;
+#endif
+
+#if HAVE_OPENCL_DRM_ARM
+    case AV_HWDEVICE_TYPE_DRM:
+        {
+            OpenCLDeviceSelector selector = {
+                .platform_index      = -1,
+                .device_index        = -1,
+                .context             = NULL,
+                .enumerate_platforms = &opencl_enumerate_platforms,
+                .filter_platform     = &opencl_filter_drm_arm_platform,
+                .enumerate_devices   = &opencl_enumerate_devices,
+                .filter_device       = &opencl_filter_drm_arm_device,
+            };
+
+            err = opencl_device_create_internal(hwdev, &selector, NULL);
         }
         break;
 #endif
@@ -2558,6 +2651,165 @@ fail:
 
 #endif
 
+#if HAVE_OPENCL_DRM_ARM
+
+typedef struct DRMARMtoOpenCLMapping {
+    int nb_objects;
+    cl_mem object_buffers[AV_DRM_MAX_PLANES];
+    int nb_planes;
+    cl_mem plane_images[AV_DRM_MAX_PLANES];
+} DRMARMtoOpenCLMapping;
+
+static void opencl_unmap_from_drm_arm(AVHWFramesContext *dst_fc,
+                                      HWMapDescriptor *hwmap)
+{
+    DRMARMtoOpenCLMapping *mapping = hwmap->priv;
+    int i;
+
+    for (i = 0; i < mapping->nb_planes; i++)
+        clReleaseMemObject(mapping->plane_images[i]);
+
+    for (i = 0; i < mapping->nb_objects; i++)
+        clReleaseMemObject(mapping->object_buffers[i]);
+
+    av_free(mapping);
+}
+
+static int opencl_map_from_drm_arm(AVHWFramesContext *dst_fc, AVFrame *dst,
+                                   const AVFrame *src, int flags)
+{
+    AVHWFramesContext *src_fc =
+        (AVHWFramesContext*)src->hw_frames_ctx->data;
+    AVOpenCLDeviceContext *dst_dev = dst_fc->device_ctx->hwctx;
+    const AVDRMFrameDescriptor *desc;
+    DRMARMtoOpenCLMapping *mapping = NULL;
+    cl_mem_flags cl_flags;
+    const cl_import_properties_arm props[3] = {
+        CL_IMPORT_TYPE_ARM, CL_IMPORT_TYPE_DMA_BUF_ARM, 0,
+    };
+    cl_int cle;
+    int err, i, j;
+
+    desc = (const AVDRMFrameDescriptor*)src->data[0];
+
+    cl_flags = opencl_mem_flags_for_mapping(flags);
+    if (!cl_flags)
+        return AVERROR(EINVAL);
+
+    mapping = av_mallocz(sizeof(*mapping));
+    if (!mapping)
+        return AVERROR(ENOMEM);
+
+    mapping->nb_objects = desc->nb_objects;
+    for (i = 0; i < desc->nb_objects; i++) {
+        int fd = desc->objects[i].fd;
+
+        av_log(dst_fc, AV_LOG_DEBUG, "Map DRM PRIME fd %d to OpenCL.\n", fd);
+
+        if (desc->objects[i].format_modifier) {
+            av_log(dst_fc, AV_LOG_DEBUG, "Warning: object %d fd %d has "
+                   "nonzero format modifier %"PRId64", result may not "
+                   "be as expected.\n", i, fd,
+                   desc->objects[i].format_modifier);
+        }
+
+        mapping->object_buffers[i] =
+            clImportMemoryARM(dst_dev->context, cl_flags, props,
+                              &fd, desc->objects[i].size, &cle);
+        if (!mapping->object_buffers[i]) {
+            av_log(dst_fc, AV_LOG_ERROR, "Failed to create CL buffer "
+                   "from object %d (fd %d, size %zu) of DRM frame: %d.\n",
+                   i, fd, desc->objects[i].size, cle);
+            err = AVERROR(EIO);
+            goto fail;
+        }
+    }
+
+    mapping->nb_planes = 0;
+    for (i = 0; i < desc->nb_layers; i++) {
+        const AVDRMLayerDescriptor *layer = &desc->layers[i];
+
+        for (j = 0; j < layer->nb_planes; j++) {
+            const AVDRMPlaneDescriptor *plane = &layer->planes[j];
+            cl_mem plane_buffer;
+            cl_image_format image_format;
+            cl_image_desc   image_desc;
+            cl_buffer_region region;
+            int p = mapping->nb_planes;
+
+            err = opencl_get_plane_format(src_fc->sw_format, p,
+                                          src_fc->width, src_fc->height,
+                                          &image_format, &image_desc);
+            if (err < 0) {
+                av_log(dst_fc, AV_LOG_ERROR, "Invalid plane %d (DRM "
+                       "layer %d plane %d): %d.\n", p, i, j, err);
+                goto fail;
+            }
+
+            region.origin = plane->offset;
+            region.size   = image_desc.image_row_pitch *
+                            image_desc.image_height;
+
+            plane_buffer =
+                clCreateSubBuffer(mapping->object_buffers[plane->object_index],
+                                  cl_flags,
+                                  CL_BUFFER_CREATE_TYPE_REGION,
+                                  &region, &cle);
+            if (!plane_buffer) {
+                av_log(dst_fc, AV_LOG_ERROR, "Failed to create sub-buffer "
+                       "for plane %d: %d.\n", p, cle);
+                err = AVERROR(EIO);
+                goto fail;
+            }
+
+            image_desc.buffer = plane_buffer;
+
+            mapping->plane_images[p] =
+                clCreateImage(dst_dev->context, cl_flags,
+                              &image_format, &image_desc, NULL, &cle);
+
+            // Unreference the sub-buffer immediately - we don't need it
+            // directly and a reference is held by the image.
+            clReleaseMemObject(plane_buffer);
+
+            if (!mapping->plane_images[p]) {
+                av_log(dst_fc, AV_LOG_ERROR, "Failed to create image "
+                       "for plane %d: %d.\n", p, cle);
+                err = AVERROR(EIO);
+                goto fail;
+            }
+
+            ++mapping->nb_planes;
+        }
+    }
+
+    for (i = 0; i < mapping->nb_planes; i++)
+        dst->data[i] = (uint8_t*)mapping->plane_images[i];
+
+    err = ff_hwframe_map_create(dst->hw_frames_ctx, dst, src,
+                                &opencl_unmap_from_drm_arm, mapping);
+    if (err < 0)
+        goto fail;
+
+    dst->width  = src->width;
+    dst->height = src->height;
+
+    return 0;
+
+fail:
+    for (i = 0; i < mapping->nb_planes; i++) {
+        clReleaseMemObject(mapping->plane_images[i]);
+    }
+    for (i = 0; i < mapping->nb_objects; i++) {
+        if (mapping->object_buffers[i])
+            clReleaseMemObject(mapping->object_buffers[i]);
+    }
+    av_free(mapping);
+    return err;
+}
+
+#endif
+
 static int opencl_map_from(AVHWFramesContext *hwfc, AVFrame *dst,
                            const AVFrame *src, int flags)
 {
@@ -2593,6 +2845,11 @@ static int opencl_map_to(AVHWFramesContext *hwfc, AVFrame *dst,
     case AV_PIX_FMT_D3D11:
         if (priv->d3d11_mapping_usable)
             return opencl_map_from_d3d11(hwfc, dst, src, flags);
+#endif
+#if HAVE_OPENCL_DRM_ARM
+    case AV_PIX_FMT_DRM_PRIME:
+        if (priv->drm_arm_mapping_usable)
+            return opencl_map_from_drm_arm(hwfc, dst, src, flags);
 #endif
     }
     return AVERROR(ENOSYS);
@@ -2638,6 +2895,12 @@ static int opencl_frames_derive_to(AVHWFramesContext *dst_fc,
             if (err < 0)
                 return err;
         }
+        break;
+#endif
+#if HAVE_OPENCL_DRM_ARM
+    case AV_HWDEVICE_TYPE_DRM:
+        if (!priv->drm_arm_mapping_usable)
+            return AVERROR(ENOSYS);
         break;
 #endif
     default:

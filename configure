@@ -2121,6 +2121,7 @@ HAVE_LIST="
     makeinfo
     makeinfo_html
     opencl_d3d11
+    opencl_drm_arm
     opencl_dxva2
     opencl_vaapi_beignet
     opencl_vaapi_intel_media
@@ -6176,6 +6177,11 @@ fi
 if enabled_all opencl d3d11va ; then
     check_type "CL/cl_d3d11.h" clGetDeviceIDsFromD3D11KHR_fn &&
         enable opencl_d3d11
+fi
+
+if enabled_all opencl libdrm ; then
+    check_func_headers "CL/cl_ext.h" clImportMemoryARM &&
+        enable opencl_drm_arm
 fi
 
 enabled vdpau &&
