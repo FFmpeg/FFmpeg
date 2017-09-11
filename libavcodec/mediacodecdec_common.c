@@ -88,6 +88,7 @@ enum {
     COLOR_FormatYUV420Planar                              = 0x13,
     COLOR_FormatYUV420SemiPlanar                          = 0x15,
     COLOR_FormatYCbYCr                                    = 0x19,
+    COLOR_FormatYUV420PackedSemiPlanar                    = 0x27,
     COLOR_FormatAndroidOpaque                             = 0x7F000789,
     COLOR_QCOM_FormatYUV420SemiPlanar                     = 0x7fa30c00,
     COLOR_QCOM_FormatYUV420SemiPlanar32m                  = 0x7fa30c04,
@@ -108,6 +109,7 @@ static const struct {
     { COLOR_QCOM_FormatYUV420SemiPlanar,                     AV_PIX_FMT_NV12    },
     { COLOR_QCOM_FormatYUV420SemiPlanar32m,                  AV_PIX_FMT_NV12    },
     { COLOR_QCOM_FormatYUV420PackedSemiPlanar64x32Tile2m8ka, AV_PIX_FMT_NV12    },
+    { COLOR_FormatYUV420PackedSemiPlanar,                    AV_PIX_FMT_NV12    },
     { COLOR_TI_FormatYUV420PackedSemiPlanar,                 AV_PIX_FMT_NV12    },
     { COLOR_TI_FormatYUV420PackedSemiPlanarInterlaced,       AV_PIX_FMT_NV12    },
     { 0 }
@@ -315,6 +317,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         break;
     case COLOR_TI_FormatYUV420PackedSemiPlanar:
     case COLOR_TI_FormatYUV420PackedSemiPlanarInterlaced:
+    case COLOR_FormatYUV420PackedSemiPlanar:
         ff_mediacodec_sw_buffer_copy_yuv420_packed_semi_planar(avctx, s, data, size, info, frame);
         break;
     case COLOR_QCOM_FormatYUV420PackedSemiPlanar64x32Tile2m8ka:
