@@ -331,6 +331,68 @@ ffmpeg -channels 16 -format_code Hi50 -f decklink -i 'UltraStudio Mini Recorder'
 
 @end itemize
 
+@section kmsgrab
+
+KMS video input device.
+
+Captures the KMS scanout framebuffer associated with a specified CRTC or plane as a
+DRM object that can be passed to other hardware functions.
+
+Requires either DRM master or CAP_SYS_ADMIN to run.
+
+If you don't understand what all of that means, you probably don't want this.  Look at
+@option{x11grab} instead.
+
+@subsection Options
+
+@table @option
+
+@item device
+DRM device to capture on.  Defaults to @option{/dev/dri/card0}.
+
+@item format
+Pixel format of the framebuffer.  Defaults to @option{bgr0}.
+
+@item format_modifier
+Format modifier to signal on output frames.  This is necessary to import correctly into
+some APIs, but can't be autodetected.  See the libdrm documentation for possible values.
+
+@item crtc_id
+KMS CRTC ID to define the capture source.  The first active plane on the given CRTC
+will be used.
+
+@item plane_id
+KMS plane ID to define the capture source.  Defaults to the first active plane found if
+neither @option{crtc_id} nor @option{plane_id} are specified.
+
+@item framerate
+Framerate to capture at.  This is not synchronised to any page flipping or framebuffer
+changes - it just defines the interval at which the framebuffer is sampled.  Sampling
+faster than the framebuffer update rate will generate independent frames with the same
+content.  Defaults to @code{30}.
+
+@end table
+
+@subsection Examples
+
+@itemize
+
+@item
+Capture from the first active plane, download the result to normal frames and encode.
+This will only work if the framebuffer is both linear and mappable - if not, the result
+may be scrambled or fail to download.
+@example
+ffmpeg -f kmsgrab -i - -vf 'hwdownload,format=bgr0' output.mp4
+@end example
+
+@item
+Capture from CRTC ID 42 at 60fps, map the result to VAAPI, convert to NV12 and encode as H.264.
+@example
+ffmpeg -crtc_id 42 -framerate 60 -f kmsgrab -i - -vf 'hwmap=derive_device=vaapi,scale_vaapi=w=1920:h=1080:format=nv12' -c:v h264_vaapi output.mp4
+@end example
+
+@end itemize
+
 @section libndi_newtek
 
 The libndi_newtek input device provides capture capabilities for using NDI (Network
