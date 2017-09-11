@@ -1603,7 +1603,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (avctx->active_thread_type == FF_THREAD_SLICE) {
             int tile_row, tile_col;
 
-            assert(!pass);
+            av_assert1(!s->pass);
 
             for (tile_row = 0; tile_row < s->s.h.tiling.tile_rows; tile_row++) {
                 for (tile_col = 0; tile_col < s->s.h.tiling.tile_cols; tile_col++) {
