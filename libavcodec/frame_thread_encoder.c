@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdatomic.h>
+
 #include "frame_thread_encoder.h"
 
 #include "libavutil/fifo.h"
@@ -55,7 +57,7 @@ typedef struct{
     unsigned finished_task_index;
 
     pthread_t worker[MAX_THREADS];
-    int exit;
+    atomic_int exit;
 } ThreadContext;
 
 static void * attribute_align_arg worker(void *v){
@@ -63,7 +65,7 @@ static void * attribute_align_arg worker(void *v){
     ThreadContext *c = avctx->internal->frame_thread_encoder;
     AVPacket *pkt = NULL;
 
-    while(!c->exit){
+    while (!atomic_load(&c->exit)) {
         int got_packet, ret;
         AVFrame *frame;
         Task task;
@@ -73,8 +75,8 @@ static void * attribute_align_arg worker(void *v){
         av_init_packet(pkt);
 
         pthread_mutex_lock(&c->task_fifo_mutex);
-        while (av_fifo_size(c->task_fifo) <= 0 || c->exit) {
-            if(c->exit){
+        while (av_fifo_size(c->task_fifo) <= 0 || atomic_load(&c->exit)) {
+            if (atomic_load(&c->exit)) {
                 pthread_mutex_unlock(&c->task_fifo_mutex);
                 goto end;
             }
@@ -187,6 +189,7 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
     pthread_mutex_init(&c->buffer_mutex, NULL);
     pthread_cond_init(&c->task_fifo_cond, NULL);
     pthread_cond_init(&c->finished_task_cond, NULL);
+    atomic_init(&c->exit, 0);
 
     for(i=0; i<avctx->thread_count ; i++){
         AVDictionary *tmp = NULL;
@@ -236,7 +239,7 @@ void ff_frame_thread_encoder_free(AVCodecContext *avctx){
     ThreadContext *c= avctx->internal->frame_thread_encoder;
 
     pthread_mutex_lock(&c->task_fifo_mutex);
-    c->exit = 1;
+    atomic_store(&c->exit, 1);
     pthread_cond_broadcast(&c->task_fifo_cond);
     pthread_mutex_unlock(&c->task_fifo_mutex);
 
