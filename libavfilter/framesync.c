@@ -380,15 +380,13 @@ int ff_framesync_dualinput_get(FFFrameSync *fs, AVFrame **f0, AVFrame **f1)
 {
     AVFilterContext *ctx = fs->parent;
     AVFrame *mainpic = NULL, *secondpic = NULL;
-    int ret = 0;
+    int ret;
 
     if ((ret = ff_framesync_get_frame(fs, 0, &mainpic,   1)) < 0 ||
         (ret = ff_framesync_get_frame(fs, 1, &secondpic, 0)) < 0) {
         av_frame_free(&mainpic);
         return ret;
     }
-    if (ret < 0)
-        return ret;
     av_assert0(mainpic);
     mainpic->pts = av_rescale_q(fs->pts, fs->time_base, ctx->outputs[0]->time_base);
     if (ctx->is_disabled)
