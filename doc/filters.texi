@@ -337,9 +337,9 @@ If set to 1, force the output to terminate when the shortest input
 terminates. Default value is 0.
 
 @item repeatlast
-If set to 1, force the filter to draw the last overlay frame over the
-main input until the end of the stream. A value of 0 disables this
-behavior. Default value is 1.
+If set to 1, force the filter to extend the last frame of secondary streams
+until the end of the primary stream. A value of 0 disables this behavior.
+Default value is 1.
 @end table
 
 @c man end OPTIONS FOR FILTERS WITH SEVERAL INPUTS
