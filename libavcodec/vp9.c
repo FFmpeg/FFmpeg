@@ -73,7 +73,7 @@ static int vp9_alloc_entries(AVCodecContext *avctx, int n) {
 
 static void vp9_report_tile_progress(VP9Context *s, int field, int n) {
     pthread_mutex_lock(&s->progress_mutex);
-    atomic_fetch_add_explicit(&s->entries[field], n, memory_order_relaxed);
+    atomic_fetch_add_explicit(&s->entries[field], n, memory_order_release);
     pthread_cond_signal(&s->progress_cond);
     pthread_mutex_unlock(&s->progress_mutex);
 }
