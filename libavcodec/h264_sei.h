@@ -56,14 +56,14 @@ typedef enum {
  * frame_packing_arrangement types
  */
 typedef enum {
-    SEI_FPA_TYPE_CHECKERBOARD        = 0,
-    SEI_FPA_TYPE_INTERLEAVE_COLUMN   = 1,
-    SEI_FPA_TYPE_INTERLEAVE_ROW      = 2,
-    SEI_FPA_TYPE_SIDE_BY_SIDE        = 3,
-    SEI_FPA_TYPE_TOP_BOTTOM          = 4,
-    SEI_FPA_TYPE_INTERLEAVE_TEMPORAL = 5,
-    SEI_FPA_TYPE_2D                  = 6,
-} SEI_FpaType;
+    H264_SEI_FPA_TYPE_CHECKERBOARD        = 0,
+    H264_SEI_FPA_TYPE_INTERLEAVE_COLUMN   = 1,
+    H264_SEI_FPA_TYPE_INTERLEAVE_ROW      = 2,
+    H264_SEI_FPA_TYPE_SIDE_BY_SIDE        = 3,
+    H264_SEI_FPA_TYPE_TOP_BOTTOM          = 4,
+    H264_SEI_FPA_TYPE_INTERLEAVE_TEMPORAL = 5,
+    H264_SEI_FPA_TYPE_2D                  = 6,
+} H264_SEI_FpaType;
 
 typedef struct H264SEIPictureTiming {
     int present;
@@ -121,7 +121,7 @@ typedef struct H264SEIFramePacking {
     int present;
     int frame_packing_arrangement_id;
     int frame_packing_arrangement_cancel_flag;  ///< is previous arrangement canceled, -1 if never received
-    SEI_FpaType frame_packing_arrangement_type;
+    H264_SEI_FpaType frame_packing_arrangement_type;
     int frame_packing_arrangement_repetition_period;
     int content_interpretation_type;
     int quincunx_sampling_flag;

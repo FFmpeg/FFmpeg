@@ -469,37 +469,37 @@ const char *ff_h264_sei_stereo_mode(const H264SEIFramePacking *h)
 {
     if (h->frame_packing_arrangement_cancel_flag == 0) {
         switch (h->frame_packing_arrangement_type) {
-            case SEI_FPA_TYPE_CHECKERBOARD:
+            case H264_SEI_FPA_TYPE_CHECKERBOARD:
                 if (h->content_interpretation_type == 2)
                     return "checkerboard_rl";
                 else
                     return "checkerboard_lr";
-            case SEI_FPA_TYPE_INTERLEAVE_COLUMN:
+            case H264_SEI_FPA_TYPE_INTERLEAVE_COLUMN:
                 if (h->content_interpretation_type == 2)
                     return "col_interleaved_rl";
                 else
                     return "col_interleaved_lr";
-            case SEI_FPA_TYPE_INTERLEAVE_ROW:
+            case H264_SEI_FPA_TYPE_INTERLEAVE_ROW:
                 if (h->content_interpretation_type == 2)
                     return "row_interleaved_rl";
                 else
                     return "row_interleaved_lr";
-            case SEI_FPA_TYPE_SIDE_BY_SIDE:
+            case H264_SEI_FPA_TYPE_SIDE_BY_SIDE:
                 if (h->content_interpretation_type == 2)
                     return "right_left";
                 else
                     return "left_right";
-            case SEI_FPA_TYPE_TOP_BOTTOM:
+            case H264_SEI_FPA_TYPE_TOP_BOTTOM:
                 if (h->content_interpretation_type == 2)
                     return "bottom_top";
                 else
                     return "top_bottom";
-            case SEI_FPA_TYPE_INTERLEAVE_TEMPORAL:
+            case H264_SEI_FPA_TYPE_INTERLEAVE_TEMPORAL:
                 if (h->content_interpretation_type == 2)
                     return "block_rl";
                 else
                     return "block_lr";
-            case SEI_FPA_TYPE_2D:
+            case H264_SEI_FPA_TYPE_2D:
             default:
                 return "mono";
         }
