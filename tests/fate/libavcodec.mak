@@ -45,6 +45,11 @@ FATE_LIBAVCODEC-$(CONFIG_IIRFILTER) += fate-iirfilter
 fate-iirfilter: libavcodec/tests/iirfilter$(EXESUF)
 fate-iirfilter: CMD = run libavcodec/tests/iirfilter
 
+FATE_LIBAVCODEC-$(CONFIG_MPEGVIDEO) += fate-mpeg12framerate
+fate-mpeg12framerate: libavcodec/tests/mpeg12framerate$(EXESUF)
+fate-mpeg12framerate: CMD = run libavcodec/tests/mpeg12framerate
+fate-mpeg12framerate: REF = /dev/null
+
 FATE_LIBAVCODEC-yes += fate-libavcodec-options
 fate-libavcodec-options: libavcodec/tests/options$(EXESUF)
 fate-libavcodec-options: CMD = run libavcodec/tests/options

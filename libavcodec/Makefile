@@ -1090,6 +1090,7 @@ TESTPROGS-$(CONFIG_GOLOMB)                += golomb
 TESTPROGS-$(CONFIG_IDCTDSP)               += dct
 TESTPROGS-$(CONFIG_IIRFILTER)             += iirfilter
 TESTPROGS-$(HAVE_MMX)                     += motion
+TESTPROGS-$(CONFIG_MPEGVIDEO)             += mpeg12framerate
 TESTPROGS-$(CONFIG_RANGECODER)            += rangecoder
 TESTPROGS-$(CONFIG_SNOW_ENCODER)          += snowenc
 
