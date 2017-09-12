@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Manojkumar Bhosale (Manojkumar.Bhosale@imgtec.com)
+ * Copyright (c) 2015 -2017 Manojkumar Bhosale (Manojkumar.Bhosale@imgtec.com)
  *
  * This file is part of FFmpeg.
  *
@@ -35,12 +35,14 @@ static void hevc_loopfilter_luma_hor_msa(uint8_t *src, int32_t stride,
     uint8_t *q3 = src + (stride << 1) + stride;
     uint8_t flag0, flag1;
     int32_t dp00, dq00, dp30, dq30, d00, d30;
+    int32_t d0030, d0434;
     int32_t dp04, dq04, dp34, dq34, d04, d34;
     int32_t tc0, p_is_pcm0, q_is_pcm0, beta30, beta20, tc250;
     int32_t tc4, p_is_pcm4, q_is_pcm4, tc254, tmp;
     uint64_t dst_val0, dst_val1;
     v16u8 dst0, dst1, dst2, dst3, dst4, dst5;
     v2i64 cmp0, cmp1, cmp2, p_is_pcm_vec, q_is_pcm_vec;
+    v2i64 cmp3;
     v8u16 temp0, temp1;
     v8i16 temp2;
     v8i16 tc_pos, tc_neg;
@@ -54,62 +56,86 @@ static void hevc_loopfilter_luma_hor_msa(uint8_t *src, int32_t stride,
     dq30 = abs(q2[3] - (q1[3] << 1) + q0[3]);
     d00 = dp00 + dq00;
     d30 = dp30 + dq30;
-    p_is_pcm0 = p_is_pcm[0];
-    q_is_pcm0 = q_is_pcm[0];
     dp04 = abs(p2[4] - (p1[4] << 1) + p0[4]);
     dq04 = abs(q2[4] - (q1[4] << 1) + q0[4]);
     dp34 = abs(p2[7] - (p1[7] << 1) + p0[7]);
     dq34 = abs(q2[7] - (q1[7] << 1) + q0[7]);
     d04 = dp04 + dq04;
     d34 = dp34 + dq34;
+
+    p_is_pcm0 = p_is_pcm[0];
     p_is_pcm4 = p_is_pcm[1];
+    q_is_pcm0 = q_is_pcm[0];
     q_is_pcm4 = q_is_pcm[1];
 
-    if (!p_is_pcm0 || !p_is_pcm4 || !q_is_pcm0 || !q_is_pcm4) {
-        if (!(d00 + d30 >= beta) || !(d04 + d34 >= beta)) {
-            p3_src = LD_UH(p3);
-            p2_src = LD_UH(p2);
-            p1_src = LD_UH(p1);
-            p0_src = LD_UH(p0);
-            q0_src = LD_UH(q0);
-            q1_src = LD_UH(q1);
-            q2_src = LD_UH(q2);
-            q3_src = LD_UH(q3);
+    cmp0 = __msa_fill_d(p_is_pcm0);
+    cmp1 = __msa_fill_d(p_is_pcm4);
+    p_is_pcm_vec = __msa_ilvev_d(cmp1, cmp0);
+    p_is_pcm_vec = __msa_ceqi_d(p_is_pcm_vec, 0);
 
-            tc0 = tc[0];
-            beta30 = beta >> 3;
-            beta20 = beta >> 2;
-            tc250 = ((tc0 * 5 + 1) >> 1);
-            tc4 = tc[1];
-            tc254 = ((tc4 * 5 + 1) >> 1);
+    d0030 = (d00 + d30) >= beta;
+    d0434 = (d04 + d34) >= beta;
 
-            flag0 = (abs(p3[0] - p0[0]) + abs(q3[0] - q0[0]) < beta30 &&
-                     abs(p0[0] - q0[0]) < tc250 &&
-                     abs(p3[3] - p0[3]) + abs(q3[3] - q0[3]) < beta30 &&
-                     abs(p0[3] - q0[3]) < tc250 &&
-                     (d00 << 1) < beta20 && (d30 << 1) < beta20);
-            cmp0 = __msa_fill_d(flag0);
+    cmp0 = (v2i64) __msa_fill_w(d0030);
+    cmp1 = (v2i64) __msa_fill_w(d0434);
+    cmp3 = (v2i64) __msa_ilvev_w((v4i32) cmp1, (v4i32) cmp0);
+    cmp3 = (v2i64) __msa_ceqi_w((v4i32) cmp3, 0);
 
-            flag1 = (abs(p3[4] - p0[4]) + abs(q3[4] - q0[4]) < beta30 &&
-                     abs(p0[4] - q0[4]) < tc254 &&
-                     abs(p3[7] - p0[7]) + abs(q3[7] - q0[7]) < beta30 &&
-                     abs(p0[7] - q0[7]) < tc254 &&
-                     (d04 << 1) < beta20 && (d34 << 1) < beta20);
-            cmp1 = __msa_fill_d(flag1);
-            cmp2 = __msa_ilvev_d(cmp1, cmp0);
-            cmp2 = __msa_ceqi_d(cmp2, 0);
+    if ((!p_is_pcm0 || !p_is_pcm4 || !q_is_pcm0 || !q_is_pcm4) &&
+        (!d0030 || !d0434)) {
+        p3_src = LD_UH(p3);
+        p2_src = LD_UH(p2);
+        p1_src = LD_UH(p1);
+        p0_src = LD_UH(p0);
 
-            ILVR_B8_UH(zero, p3_src, zero, p2_src, zero, p1_src, zero, p0_src,
-                       zero, q0_src, zero, q1_src, zero, q2_src, zero, q3_src,
-                       p3_src, p2_src, p1_src, p0_src, q0_src, q1_src, q2_src,
-                       q3_src);
+        cmp0 = __msa_fill_d(q_is_pcm0);
+        cmp1 = __msa_fill_d(q_is_pcm4);
+        q_is_pcm_vec = __msa_ilvev_d(cmp1, cmp0);
+        q_is_pcm_vec = __msa_ceqi_d(q_is_pcm_vec, 0);
 
-            cmp0 = (v2i64) __msa_fill_h(tc0);
-            cmp1 = (v2i64) __msa_fill_h(tc4);
-            tc_pos = (v8i16) __msa_ilvev_d(cmp1, cmp0);
+        tc0 = tc[0];
+        beta30 = beta >> 3;
+        beta20 = beta >> 2;
+        tc250 = ((tc0 * 5 + 1) >> 1);
+        tc4 = tc[1];
+        tc254 = ((tc4 * 5 + 1) >> 1);
+
+        cmp0 = (v2i64) __msa_fill_h(tc0);
+        cmp1 = (v2i64) __msa_fill_h(tc4);
+
+        ILVR_B4_UH(zero, p3_src, zero, p2_src, zero, p1_src, zero, p0_src,
+                   p3_src, p2_src, p1_src, p0_src);
+        q0_src = LD_UH(q0);
+        q1_src = LD_UH(q1);
+        q2_src = LD_UH(q2);
+        q3_src = LD_UH(q3);
+
+        flag0 = abs(p3[0] - p0[0]) + abs(q3[0] - q0[0]) < beta30 &&
+                abs(p0[0] - q0[0]) < tc250;
+        flag0 = flag0 && (abs(p3[3] - p0[3]) + abs(q3[3] - q0[3]) < beta30 &&
+                abs(p0[3] - q0[3]) < tc250 && (d00 << 1) < beta20 &&
+                (d30 << 1) < beta20);
+
+        tc_pos = (v8i16) __msa_ilvev_d(cmp1, cmp0);
+        ILVR_B4_UH(zero, q0_src, zero, q1_src, zero, q2_src, zero, q3_src,
+                   q0_src, q1_src, q2_src, q3_src);
+        flag1 = abs(p3[4] - p0[4]) + abs(q3[4] - q0[4]) < beta30 &&
+                abs(p0[4] - q0[4]) < tc254;
+        flag1 = flag1 && (abs(p3[7] - p0[7]) + abs(q3[7] - q0[7]) < beta30 &&
+                abs(p0[7] - q0[7]) < tc254 && (d04 << 1) < beta20 &&
+                (d34 << 1) < beta20);
+
+        cmp0 = (v2i64) __msa_fill_w(flag0);
+        cmp1 = (v2i64) __msa_fill_w(flag1);
+        cmp2 = (v2i64) __msa_ilvev_w((v4i32) cmp1, (v4i32) cmp0);
+        cmp2 = (v2i64) __msa_ceqi_w((v4i32) cmp2, 0);
+
+        if (flag0 && flag1) { /* strong only */
+            /* strong filter */
             tc_pos <<= 1;
             tc_neg = -tc_pos;
 
+            /* p part */
             temp0 = (p1_src + p0_src + q0_src);
             temp1 = ((p3_src + p2_src) << 1) + p2_src + temp0;
             temp1 = (v8u16) __msa_srari_h((v8i16) temp1, 3);
@@ -129,15 +155,11 @@ static void hevc_loopfilter_luma_hor_msa(uint8_t *src, int32_t stride,
             temp2 = CLIP_SH(temp2, tc_neg, tc_pos);
             dst2 = (v16u8) (temp2 + (v8i16) p0_src);
 
-            cmp0 = __msa_fill_d(p_is_pcm0);
-            cmp1 = __msa_fill_d(p_is_pcm4);
-            p_is_pcm_vec = __msa_ilvev_d(cmp1, cmp0);
-            p_is_pcm_vec = __msa_ceqi_d(p_is_pcm_vec, 0);
-
             dst0 = __msa_bmz_v(dst0, (v16u8) p2_src, (v16u8) p_is_pcm_vec);
             dst1 = __msa_bmz_v(dst1, (v16u8) p1_src, (v16u8) p_is_pcm_vec);
             dst2 = __msa_bmz_v(dst2, (v16u8) p0_src, (v16u8) p_is_pcm_vec);
 
+            /* q part */
             temp0 = (q1_src + p0_src + q0_src);
 
             temp1 = ((q3_src + q2_src) << 1) + q2_src + temp0;
@@ -158,15 +180,601 @@ static void hevc_loopfilter_luma_hor_msa(uint8_t *src, int32_t stride,
             temp2 = CLIP_SH(temp2, tc_neg, tc_pos);
             dst3 = (v16u8) (temp2 + (v8i16) q0_src);
 
-            cmp0 = __msa_fill_d(q_is_pcm0);
-            cmp1 = __msa_fill_d(q_is_pcm4);
-            q_is_pcm_vec = __msa_ilvev_d(cmp1, cmp0);
-            q_is_pcm_vec = __msa_ceqi_d(q_is_pcm_vec, 0);
+            dst3 = __msa_bmz_v(dst3, (v16u8) q0_src, (v16u8) q_is_pcm_vec);
+            dst4 = __msa_bmz_v(dst4, (v16u8) q1_src, (v16u8) q_is_pcm_vec);
+            dst5 = __msa_bmz_v(dst5, (v16u8) q2_src, (v16u8) q_is_pcm_vec);
+
+            /* pack results to 8 bit */
+            PCKEV_B2_UB(dst1, dst0, dst3, dst2, dst0, dst1);
+            dst2 = (v16u8) __msa_pckev_b((v16i8) dst5, (v16i8) dst4);
+
+            /* pack src to 8 bit */
+            PCKEV_B2_UB(p1_src, p2_src, q0_src, p0_src, dst3, dst4);
+            dst5 = (v16u8) __msa_pckev_b((v16i8) q2_src, (v16i8) q1_src);
+
+            dst0 = __msa_bmz_v(dst0, dst3, (v16u8) cmp3);
+            dst1 = __msa_bmz_v(dst1, dst4, (v16u8) cmp3);
+            dst2 = __msa_bmz_v(dst2, dst5, (v16u8) cmp3);
+
+            dst_val0 = __msa_copy_u_d((v2i64) dst2, 0);
+            dst_val1 = __msa_copy_u_d((v2i64) dst2, 1);
+
+            ST8x4_UB(dst0, dst1, p2, stride);
+            p2 += (4 * stride);
+            SD(dst_val0, p2);
+            p2 += stride;
+            SD(dst_val1, p2);
+            /* strong filter ends */
+        } else if (flag0 == flag1) { /* weak only */
+            /* weak filter */
+            tc_neg = -tc_pos;
+
+            diff0 = (v8i16) (q0_src - p0_src);
+            diff1 = (v8i16) (q1_src - p1_src);
+            diff0 = (diff0 << 3) + diff0;
+            diff1 = (diff1 << 1) + diff1;
+            delta0 = diff0 - diff1;
+            delta0 = __msa_srari_h(delta0, 4);
+
+            temp1 = (v8u16) ((tc_pos << 3) + (tc_pos << 1));
+            abs_delta0 = __msa_add_a_h(delta0, (v8i16) zero);
+            abs_delta0 = (v8u16) abs_delta0 < temp1;
+
+            delta0 = CLIP_SH(delta0, tc_neg, tc_pos);
+
+            temp0 = (v8u16) (delta0 + p0_src);
+            temp0 = (v8u16) CLIP_SH_0_255(temp0);
+            temp0 = (v8u16) __msa_bmz_v((v16u8) temp0, (v16u8) p0_src,
+                                        (v16u8) p_is_pcm_vec);
+
+            temp2 = (v8i16) (q0_src - delta0);
+            temp2 = CLIP_SH_0_255(temp2);
+            temp2 = (v8i16) __msa_bmz_v((v16u8) temp2, (v16u8) q0_src,
+                                        (v16u8) q_is_pcm_vec);
+
+            p_is_pcm_vec = ~p_is_pcm_vec;
+            q_is_pcm_vec = ~q_is_pcm_vec;
+            tmp = (beta + (beta >> 1)) >> 3;
+            cmp0 = __msa_fill_d(dp00 + dp30 < tmp);
+            cmp1 = __msa_fill_d(dp04 + dp34 < tmp);
+            cmp0 = __msa_ilvev_d(cmp1, cmp0);
+            cmp0 = __msa_ceqi_d(cmp0, 0);
+            p_is_pcm_vec = p_is_pcm_vec | cmp0;
+
+            cmp0 = __msa_fill_d(dq00 + dq30 < tmp);
+            cmp1 = __msa_fill_d(dq04 + dq34 < tmp);
+            cmp0 = __msa_ilvev_d(cmp1, cmp0);
+            cmp0 = __msa_ceqi_d(cmp0, 0);
+            q_is_pcm_vec = q_is_pcm_vec | cmp0;
+
+            tc_pos >>= 1;
+            tc_neg = -tc_pos;
+
+            delta1 = (v8i16) __msa_aver_u_h(p2_src, p0_src);
+            delta1 -= (v8i16) p1_src;
+            delta1 += delta0;
+            delta1 >>= 1;
+            delta1 = CLIP_SH(delta1, tc_neg, tc_pos);
+            delta1 = (v8i16) p1_src + (v8i16) delta1;
+            delta1 = CLIP_SH_0_255(delta1);
+            delta1 = (v8i16) __msa_bmnz_v((v16u8) delta1, (v16u8) p1_src,
+                                          (v16u8) p_is_pcm_vec);
+
+            delta2 = (v8i16) __msa_aver_u_h(q0_src, q2_src);
+            delta2 = delta2 - (v8i16) q1_src;
+            delta2 = delta2 - delta0;
+            delta2 = delta2 >> 1;
+            delta2 = CLIP_SH(delta2, tc_neg, tc_pos);
+            delta2 = (v8i16) q1_src + (v8i16) delta2;
+            delta2 = CLIP_SH_0_255(delta2);
+            delta2 = (v8i16) __msa_bmnz_v((v16u8) delta2, (v16u8) q1_src,
+                                          (v16u8) q_is_pcm_vec);
+
+            dst1 = (v16u8) __msa_bmz_v((v16u8) delta1, (v16u8) p1_src,
+                                       (v16u8) abs_delta0);
+            dst2 = (v16u8) __msa_bmz_v((v16u8) temp0, (v16u8) p0_src,
+                                       (v16u8) abs_delta0);
+            dst3 = (v16u8) __msa_bmz_v((v16u8) temp2, (v16u8) q0_src,
+                                       (v16u8) abs_delta0);
+            dst4 = (v16u8) __msa_bmz_v((v16u8) delta2, (v16u8) q1_src,
+                                       (v16u8) abs_delta0);
+            /* pack results to 8 bit */
+            PCKEV_B2_UB(dst2, dst1, dst4, dst3, dst0, dst1);
+
+            /* pack src to 8 bit */
+            PCKEV_B2_UB(p0_src, p1_src, q1_src, q0_src, dst2, dst3);
+
+            dst0 = __msa_bmz_v(dst0, dst2, (v16u8) cmp3);
+            dst1 = __msa_bmz_v(dst1, dst3, (v16u8) cmp3);
+
+            p2 += stride;
+            ST8x4_UB(dst0, dst1, p2, stride);
+            /* weak filter ends */
+        } else { /* strong + weak */
+            /* strong filter */
+            tc_pos <<= 1;
+            tc_neg = -tc_pos;
+
+            /* p part */
+            temp0 = (p1_src + p0_src + q0_src);
+            temp1 = ((p3_src + p2_src) << 1) + p2_src + temp0;
+            temp1 = (v8u16) __msa_srari_h((v8i16) temp1, 3);
+            temp2 = (v8i16) (temp1 - p2_src);
+            temp2 = CLIP_SH(temp2, tc_neg, tc_pos);
+            dst0 = (v16u8) (temp2 + (v8i16) p2_src);
+
+            temp1 = temp0 + p2_src;
+            temp1 = (v8u16) __msa_srari_h((v8i16) temp1, 2);
+            temp2 = (v8i16) (temp1 - p1_src);
+            temp2 = CLIP_SH(temp2, tc_neg, tc_pos);
+            dst1 = (v16u8) (temp2 + (v8i16) p1_src);
+
+            temp1 = (temp0 << 1) + p2_src + q1_src;
+            temp1 = (v8u16) __msa_srari_h((v8i16) temp1, 3);
+            temp2 = (v8i16) (temp1 - p0_src);
+            temp2 = CLIP_SH(temp2, tc_neg, tc_pos);
+            dst2 = (v16u8) (temp2 + (v8i16) p0_src);
+
+            dst0 = __msa_bmz_v(dst0, (v16u8) p2_src, (v16u8) p_is_pcm_vec);
+            dst1 = __msa_bmz_v(dst1, (v16u8) p1_src, (v16u8) p_is_pcm_vec);
+            dst2 = __msa_bmz_v(dst2, (v16u8) p0_src, (v16u8) p_is_pcm_vec);
+
+            /* q part */
+            temp0 = (q1_src + p0_src + q0_src);
+
+            temp1 = ((q3_src + q2_src) << 1) + q2_src + temp0;
+            temp1 = (v8u16) __msa_srari_h((v8i16) temp1, 3);
+            temp2 = (v8i16) (temp1 - q2_src);
+            temp2 = CLIP_SH(temp2, tc_neg, tc_pos);
+            dst5 = (v16u8) (temp2 + (v8i16) q2_src);
+
+            temp1 = temp0 + q2_src;
+            temp1 = (v8u16) __msa_srari_h((v8i16) temp1, 2);
+            temp2 = (v8i16) (temp1 - q1_src);
+            temp2 = CLIP_SH(temp2, tc_neg, tc_pos);
+            dst4 = (v16u8) (temp2 + (v8i16) q1_src);
+
+            temp1 = (temp0 << 1) + p1_src + q2_src;
+            temp1 = (v8u16) __msa_srari_h((v8i16) temp1, 3);
+            temp2 = (v8i16) (temp1 - q0_src);
+            temp2 = CLIP_SH(temp2, tc_neg, tc_pos);
+            dst3 = (v16u8) (temp2 + (v8i16) q0_src);
 
             dst3 = __msa_bmz_v(dst3, (v16u8) q0_src, (v16u8) q_is_pcm_vec);
             dst4 = __msa_bmz_v(dst4, (v16u8) q1_src, (v16u8) q_is_pcm_vec);
             dst5 = __msa_bmz_v(dst5, (v16u8) q2_src, (v16u8) q_is_pcm_vec);
 
+            /* pack strong results to 8 bit */
+            PCKEV_B2_UB(dst1, dst0, dst3, dst2, dst0, dst1);
+            dst2 = (v16u8) __msa_pckev_b((v16i8) dst5, (v16i8) dst4);
+            /* strong filter ends */
+
+            /* weak filter */
+            tc_pos >>= 1;
+            tc_neg = -tc_pos;
+
+            diff0 = (v8i16) (q0_src - p0_src);
+            diff1 = (v8i16) (q1_src - p1_src);
+            diff0 = (diff0 << 3) + diff0;
+            diff1 = (diff1 << 1) + diff1;
+            delta0 = diff0 - diff1;
+            delta0 = __msa_srari_h(delta0, 4);
+
+            temp1 = (v8u16) ((tc_pos << 3) + (tc_pos << 1));
+            abs_delta0 = __msa_add_a_h(delta0, (v8i16) zero);
+            abs_delta0 = (v8u16) abs_delta0 < temp1;
+
+            delta0 = CLIP_SH(delta0, tc_neg, tc_pos);
+
+            temp0 = (v8u16) (delta0 + p0_src);
+            temp0 = (v8u16) CLIP_SH_0_255(temp0);
+            temp0 = (v8u16) __msa_bmz_v((v16u8) temp0, (v16u8) p0_src,
+                                        (v16u8) p_is_pcm_vec);
+
+            temp2 = (v8i16) (q0_src - delta0);
+            temp2 = CLIP_SH_0_255(temp2);
+            temp2 = (v8i16) __msa_bmz_v((v16u8) temp2, (v16u8) q0_src,
+                                        (v16u8) q_is_pcm_vec);
+
+            p_is_pcm_vec = ~p_is_pcm_vec;
+            q_is_pcm_vec = ~q_is_pcm_vec;
+            tmp = (beta + (beta >> 1)) >> 3;
+            cmp0 = __msa_fill_d(dp00 + dp30 < tmp);
+            cmp1 = __msa_fill_d(dp04 + dp34 < tmp);
+            cmp0 = __msa_ilvev_d(cmp1, cmp0);
+            p_is_pcm_vec = p_is_pcm_vec | __msa_ceqi_d(cmp0, 0);
+
+            cmp0 = __msa_fill_d(dq00 + dq30 < tmp);
+            cmp1 = __msa_fill_d(dq04 + dq34 < tmp);
+            cmp0 = __msa_ilvev_d(cmp1, cmp0);
+            q_is_pcm_vec = q_is_pcm_vec | __msa_ceqi_d(cmp0, 0);
+
+            tc_pos >>= 1;
+            tc_neg = -tc_pos;
+
+            delta1 = (v8i16) __msa_aver_u_h(p2_src, p0_src);
+            delta1 -= (v8i16) p1_src;
+            delta1 += delta0;
+            delta1 >>= 1;
+            delta1 = CLIP_SH(delta1, tc_neg, tc_pos);
+            delta1 = (v8i16) p1_src + (v8i16) delta1;
+            delta1 = CLIP_SH_0_255(delta1);
+            delta1 = (v8i16) __msa_bmnz_v((v16u8) delta1, (v16u8) p1_src,
+                                          (v16u8) p_is_pcm_vec);
+
+            delta2 = (v8i16) __msa_aver_u_h(q0_src, q2_src);
+            delta2 = delta2 - (v8i16) q1_src;
+            delta2 = delta2 - delta0;
+            delta2 = delta2 >> 1;
+            delta2 = CLIP_SH(delta2, tc_neg, tc_pos);
+            delta2 = (v8i16) q1_src + (v8i16) delta2;
+            delta2 = CLIP_SH_0_255(delta2);
+            delta2 = (v8i16) __msa_bmnz_v((v16u8) delta2, (v16u8) q1_src,
+                                          (v16u8) q_is_pcm_vec);
+
+            delta1 = (v8i16) __msa_bmz_v((v16u8) delta1, (v16u8) p1_src,
+                                         (v16u8) abs_delta0);
+            temp0 = (v8u16) __msa_bmz_v((v16u8) temp0, (v16u8) p0_src,
+                                        (v16u8) abs_delta0);
+            temp2 = (v8i16) __msa_bmz_v((v16u8) temp2, (v16u8) q0_src,
+                                        (v16u8) abs_delta0);
+            delta2 = (v8i16) __msa_bmz_v((v16u8) delta2, (v16u8) q1_src,
+                                         (v16u8) abs_delta0);
+            /* weak filter ends */
+
+            /* pack weak results to 8 bit */
+            PCKEV_B2_UB(delta1, p2_src, temp2, temp0, dst3, dst4);
+            dst5 = (v16u8) __msa_pckev_b((v16i8) q2_src, (v16i8) delta2);
+
+            /* select between weak or strong */
+            dst0 = __msa_bmnz_v(dst0, dst3, (v16u8) cmp2);
+            dst1 = __msa_bmnz_v(dst1, dst4, (v16u8) cmp2);
+            dst2 = __msa_bmnz_v(dst2, dst5, (v16u8) cmp2);
+
+            /* pack src to 8 bit */
+            PCKEV_B2_UB(p1_src, p2_src, q0_src, p0_src, dst3, dst4);
+            dst5 = (v16u8) __msa_pckev_b((v16i8) q2_src, (v16i8) q1_src);
+
+            dst0 = __msa_bmz_v(dst0, dst3, (v16u8) cmp3);
+            dst1 = __msa_bmz_v(dst1, dst4, (v16u8) cmp3);
+            dst2 = __msa_bmz_v(dst2, dst5, (v16u8) cmp3);
+
+            dst_val0 = __msa_copy_u_d((v2i64) dst2, 0);
+            dst_val1 = __msa_copy_u_d((v2i64) dst2, 1);
+
+            ST8x4_UB(dst0, dst1, p2, stride);
+            p2 += (4 * stride);
+            SD(dst_val0, p2);
+            p2 += stride;
+            SD(dst_val1, p2);
+        }
+    }
+}
+
+static void hevc_loopfilter_luma_ver_msa(uint8_t *src, int32_t stride,
+                                         int32_t beta, int32_t *tc,
+                                         uint8_t *p_is_pcm, uint8_t *q_is_pcm)
+{
+    uint8_t *p3 = src;
+    uint8_t *p2 = src + 3 * stride;
+    uint8_t *p1 = src + (stride << 2);
+    uint8_t *p0 = src + 7 * stride;
+    uint8_t flag0, flag1;
+    uint16_t tmp0, tmp1;
+    uint32_t tmp2, tmp3;
+    int32_t dp00, dq00, dp30, dq30, d00, d30;
+    int32_t d0030, d0434;
+    int32_t dp04, dq04, dp34, dq34, d04, d34;
+    int32_t tc0, p_is_pcm0, q_is_pcm0, beta30, beta20, tc250;
+    int32_t tc4, p_is_pcm4, q_is_pcm4, tc254, tmp;
+    v16u8 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
+    v2i64 cmp0, cmp1, cmp2, p_is_pcm_vec, q_is_pcm_vec;
+    v2i64 cmp3;
+    v8u16 temp0, temp1;
+    v8i16 temp2;
+    v8i16 tc_pos, tc_neg;
+    v8i16 diff0, diff1, delta0, delta1, delta2, abs_delta0;
+    v16i8 zero = { 0 };
+    v8u16 p3_src, p2_src, p1_src, p0_src, q0_src, q1_src, q2_src, q3_src;
+
+    dp00 = abs(p3[-3] - (p3[-2] << 1) + p3[-1]);
+    dq00 = abs(p3[2] - (p3[1] << 1) + p3[0]);
+    dp30 = abs(p2[-3] - (p2[-2] << 1) + p2[-1]);
+    dq30 = abs(p2[2] - (p2[1] << 1) + p2[0]);
+    d00 = dp00 + dq00;
+    d30 = dp30 + dq30;
+    p_is_pcm0 = p_is_pcm[0];
+    q_is_pcm0 = q_is_pcm[0];
+
+    dp04 = abs(p1[-3] - (p1[-2] << 1) + p1[-1]);
+    dq04 = abs(p1[2] - (p1[1] << 1) + p1[0]);
+    dp34 = abs(p0[-3] - (p0[-2] << 1) + p0[-1]);
+    dq34 = abs(p0[2] - (p0[1] << 1) + p0[0]);
+    d04 = dp04 + dq04;
+    d34 = dp34 + dq34;
+    p_is_pcm4 = p_is_pcm[1];
+    q_is_pcm4 = q_is_pcm[1];
+
+    cmp0 = __msa_fill_d(p_is_pcm0);
+    cmp1 = __msa_fill_d(p_is_pcm4);
+    p_is_pcm_vec = __msa_ilvev_d(cmp1, cmp0);
+    p_is_pcm_vec = __msa_ceqi_d(p_is_pcm_vec, 0);
+
+    d0030 = (d00 + d30) >= beta;
+    d0434 = (d04 + d34) >= beta;
+
+    cmp0 = __msa_fill_d(d0030);
+    cmp1 = __msa_fill_d(d0434);
+    cmp3 = __msa_ilvev_d(cmp1, cmp0);
+    cmp3 = (v2i64) __msa_ceqi_d(cmp3, 0);
+
+    if ((!p_is_pcm0 || !p_is_pcm4 || !q_is_pcm0 || !q_is_pcm4) &&
+        (!d0030 || !d0434)) {
+        src -= 4;
+        LD_UH8(src, stride, p3_src, p2_src, p1_src, p0_src, q0_src, q1_src,
+               q2_src, q3_src);
+
+        cmp0 = __msa_fill_d(q_is_pcm0);
+        cmp1 = __msa_fill_d(q_is_pcm4);
+        q_is_pcm_vec = __msa_ilvev_d(cmp1, cmp0);
+        q_is_pcm_vec = __msa_ceqi_d(q_is_pcm_vec, 0);
+
+        tc0 = tc[0];
+        beta30 = beta >> 3;
+        beta20 = beta >> 2;
+        tc250 = ((tc0 * 5 + 1) >> 1);
+
+        tc4 = tc[1];
+        tc254 = ((tc4 * 5 + 1) >> 1);
+        cmp0 = (v2i64) __msa_fill_h(tc0 << 1);
+        cmp1 = (v2i64) __msa_fill_h(tc4 << 1);
+        tc_pos = (v8i16) __msa_ilvev_d(cmp1, cmp0);
+
+        TRANSPOSE8x8_UB_UH(p3_src, p2_src, p1_src, p0_src, q0_src, q1_src,
+                           q2_src, q3_src, p3_src, p2_src, p1_src, p0_src,
+                           q0_src, q1_src, q2_src, q3_src);
+
+        flag0 = abs(p3[-4] - p3[-1]) + abs(p3[3] - p3[0]) < beta30 &&
+                abs(p3[-1] - p3[0]) < tc250;
+        flag0 = flag0 && (abs(p2[-4] - p2[-1]) + abs(p2[3] - p2[0]) < beta30 &&
+                abs(p2[-1] - p2[0]) < tc250 && (d00 << 1) < beta20 &&
+                (d30 << 1) < beta20);
+        cmp0 = __msa_fill_d(flag0);
+        ILVR_B4_UH(zero, p3_src, zero, p2_src, zero, p1_src, zero, p0_src,
+                   p3_src, p2_src, p1_src, p0_src);
+
+        flag1 = abs(p1[-4] - p1[-1]) + abs(p1[3] - p1[0]) < beta30 &&
+                abs(p1[-1] - p1[0]) < tc254;
+        flag1 = flag1 && (abs(p0[-4] - p0[-1]) + abs(p0[3] - p0[0]) < beta30 &&
+                abs(p0[-1] - p0[0]) < tc254 && (d04 << 1) < beta20 &&
+                (d34 << 1) < beta20);
+        ILVR_B4_UH(zero, q0_src, zero, q1_src, zero, q2_src, zero, q3_src,
+                   q0_src, q1_src, q2_src, q3_src);
+
+        cmp1 = __msa_fill_d(flag1);
+        cmp2 = __msa_ilvev_d(cmp1, cmp0);
+        cmp2 = __msa_ceqi_d(cmp2, 0);
+
+        if (flag0 && flag1) { /* strong only */
+            /* strong filter */
+            tc_neg = -tc_pos;
+
+            /* p part */
+            temp0 = (p1_src + p0_src + q0_src);
+
+            temp1 = ((p3_src + p2_src) << 1) + p2_src + temp0;
+            temp1 = (v8u16) __msa_srari_h((v8i16) temp1, 3);
+            temp2 = (v8i16) (temp1 - p2_src);
+            temp2 = CLIP_SH(temp2, tc_neg, tc_pos);
+            dst0 = (v16u8) (temp2 + (v8i16) p2_src);
+
+            temp1 = temp0 + p2_src;
+            temp1 = (v8u16) __msa_srari_h((v8i16) temp1, 2);
+            temp2 = (v8i16) (temp1 - p1_src);
+            temp2 = CLIP_SH(temp2, tc_neg, tc_pos);
+            dst1 = (v16u8) (temp2 + (v8i16) p1_src);
+
+            temp1 = (temp0 << 1) + p2_src + q1_src;
+            temp1 = (v8u16) __msa_srari_h((v8i16) temp1, 3);
+            temp2 = (v8i16) (temp1 - p0_src);
+            temp2 = CLIP_SH(temp2, tc_neg, tc_pos);
+            dst2 = (v16u8) (temp2 + (v8i16) p0_src);
+
+            dst0 = __msa_bmz_v(dst0, (v16u8) p2_src, (v16u8) p_is_pcm_vec);
+            dst1 = __msa_bmz_v(dst1, (v16u8) p1_src, (v16u8) p_is_pcm_vec);
+            dst2 = __msa_bmz_v(dst2, (v16u8) p0_src, (v16u8) p_is_pcm_vec);
+
+            /* q part */
+            temp0 = (q1_src + p0_src + q0_src);
+            temp1 = ((q3_src + q2_src) << 1) + q2_src + temp0;
+            temp1 = (v8u16) __msa_srari_h((v8i16) temp1, 3);
+            temp2 = (v8i16) (temp1 - q2_src);
+            temp2 = CLIP_SH(temp2, tc_neg, tc_pos);
+            dst5 = (v16u8) (temp2 + (v8i16) q2_src);
+
+            temp1 = temp0 + q2_src;
+            temp1 = (v8u16) __msa_srari_h((v8i16) temp1, 2);
+            temp2 = (v8i16) (temp1 - q1_src);
+            temp2 = CLIP_SH(temp2, tc_neg, tc_pos);
+            dst4 = (v16u8) (temp2 + (v8i16) q1_src);
+
+            temp1 = (temp0 << 1) + p1_src + q2_src;
+            temp1 = (v8u16) __msa_srari_h((v8i16) temp1, 3);
+            temp2 = (v8i16) (temp1 - q0_src);
+            temp2 = CLIP_SH(temp2, tc_neg, tc_pos);
+            dst3 = (v16u8) (temp2 + (v8i16) q0_src);
+
+            dst3 = __msa_bmz_v(dst3, (v16u8) q0_src, (v16u8) q_is_pcm_vec);
+            dst4 = __msa_bmz_v(dst4, (v16u8) q1_src, (v16u8) q_is_pcm_vec);
+            dst5 = __msa_bmz_v(dst5, (v16u8) q2_src, (v16u8) q_is_pcm_vec);
+            /* strong filter ends */
+        } else if (flag0 == flag1) { /* weak only */
+            /* weak filter */
+            tc_pos >>= 1;
+            tc_neg = -tc_pos;
+
+            diff0 = (v8i16) (q0_src - p0_src);
+            diff1 = (v8i16) (q1_src - p1_src);
+            diff0 = (diff0 << 3) + diff0;
+            diff1 = (diff1 << 1) + diff1;
+            delta0 = diff0 - diff1;
+            delta0 = __msa_srari_h(delta0, 4);
+
+            temp1 = (v8u16) ((tc_pos << 3) + (tc_pos << 1));
+            abs_delta0 = __msa_add_a_h(delta0, (v8i16) zero);
+            abs_delta0 = (v8u16) abs_delta0 < temp1;
+
+            delta0 = CLIP_SH(delta0, tc_neg, tc_pos);
+            temp0 = (v8u16) (delta0 + p0_src);
+            temp0 = (v8u16) CLIP_SH_0_255(temp0);
+            temp0 = (v8u16) __msa_bmz_v((v16u8) temp0, (v16u8) p0_src,
+                                        (v16u8) p_is_pcm_vec);
+
+            temp2 = (v8i16) (q0_src - delta0);
+            temp2 = CLIP_SH_0_255(temp2);
+            temp2 = (v8i16) __msa_bmz_v((v16u8) temp2, (v16u8) q0_src,
+                                        (v16u8) q_is_pcm_vec);
+
+            tmp = ((beta + (beta >> 1)) >> 3);
+            cmp0 = __msa_fill_d(!p_is_pcm0 && ((dp00 + dp30) < tmp));
+            cmp1 = __msa_fill_d(!p_is_pcm4 && ((dp04 + dp34) < tmp));
+            p_is_pcm_vec = __msa_ilvev_d(cmp1, cmp0);
+            p_is_pcm_vec = __msa_ceqi_d(p_is_pcm_vec, 0);
+
+            cmp0 = (v2i64) __msa_fill_h((!q_is_pcm0) && (dq00 + dq30 < tmp));
+            cmp1 = (v2i64) __msa_fill_h((!q_is_pcm4) && (dq04 + dq34 < tmp));
+            q_is_pcm_vec = __msa_ilvev_d(cmp1, cmp0);
+            q_is_pcm_vec = __msa_ceqi_d(q_is_pcm_vec, 0);
+
+            tc_pos >>= 1;
+            tc_neg = -tc_pos;
+
+            delta1 = (v8i16) __msa_aver_u_h(p2_src, p0_src);
+            delta1 -= (v8i16) p1_src;
+            delta1 += delta0;
+            delta1 >>= 1;
+            delta1 = CLIP_SH(delta1, tc_neg, tc_pos);
+            delta1 = (v8i16) p1_src + (v8i16) delta1;
+            delta1 = CLIP_SH_0_255(delta1);
+            delta1 = (v8i16) __msa_bmnz_v((v16u8) delta1, (v16u8) p1_src,
+                                          (v16u8) p_is_pcm_vec);
+
+            delta2 = (v8i16) __msa_aver_u_h(q0_src, q2_src);
+            delta2 = delta2 - (v8i16) q1_src;
+            delta2 = delta2 - delta0;
+            delta2 = delta2 >> 1;
+            delta2 = CLIP_SH(delta2, tc_neg, tc_pos);
+            delta2 = (v8i16) q1_src + (v8i16) delta2;
+            delta2 = CLIP_SH_0_255(delta2);
+            delta2 = (v8i16) __msa_bmnz_v((v16u8) delta2, (v16u8) q1_src,
+                                          (v16u8) q_is_pcm_vec);
+
+            dst0 = __msa_bmz_v((v16u8) delta1, (v16u8) p1_src,
+                               (v16u8) abs_delta0);
+            dst1 = __msa_bmz_v((v16u8) temp0, (v16u8) p0_src,
+                               (v16u8) abs_delta0);
+            dst2 = __msa_bmz_v((v16u8) temp2, (v16u8) q0_src,
+                               (v16u8) abs_delta0);
+            dst3 = __msa_bmz_v((v16u8) delta2, (v16u8) q1_src,
+                               (v16u8) abs_delta0);
+            /* weak filter ends */
+
+            dst0 = __msa_bmz_v(dst0, (v16u8) p1_src, (v16u8) cmp3);
+            dst1 = __msa_bmz_v(dst1, (v16u8) p0_src, (v16u8) cmp3);
+            dst2 = __msa_bmz_v(dst2, (v16u8) q0_src, (v16u8) cmp3);
+            dst3 = __msa_bmz_v(dst3, (v16u8) q1_src, (v16u8) cmp3);
+
+            PCKEV_B2_UB(dst2, dst0, dst3, dst1, dst0, dst1);
+
+            /* transpose */
+            ILVRL_B2_UB(dst1, dst0, dst4, dst5);
+            ILVRL_H2_UB(dst5, dst4, dst0, dst1);
+
+            src += 2;
+
+            tmp2 = __msa_copy_u_w((v4i32) dst0, 0);
+            tmp3 = __msa_copy_u_w((v4i32) dst0, 1);
+            SW(tmp2, src);
+            src += stride;
+            SW(tmp3, src);
+            src += stride;
+
+            tmp2 = __msa_copy_u_w((v4i32) dst0, 2);
+            tmp3 = __msa_copy_u_w((v4i32) dst0, 3);
+            SW(tmp2, src);
+            src += stride;
+            SW(tmp3, src);
+            src += stride;
+
+            tmp2 = __msa_copy_u_w((v4i32) dst1, 0);
+            tmp3 = __msa_copy_u_w((v4i32) dst1, 1);
+            SW(tmp2, src);
+            src += stride;
+            SW(tmp3, src);
+            src += stride;
+
+            tmp2 = __msa_copy_u_w((v4i32) dst1, 2);
+            tmp3 = __msa_copy_u_w((v4i32) dst1, 3);
+            SW(tmp2, src);
+            src += stride;
+            SW(tmp3, src);
+
+            return;
+        } else { /* strong + weak */
+            /* strong filter */
+            tc_neg = -tc_pos;
+
+            /* p part */
+            temp0 = (p1_src + p0_src + q0_src);
+
+            temp1 = ((p3_src + p2_src) << 1) + p2_src + temp0;
+            temp1 = (v8u16) __msa_srari_h((v8i16) temp1, 3);
+            temp2 = (v8i16) (temp1 - p2_src);
+            temp2 = CLIP_SH(temp2, tc_neg, tc_pos);
+            dst0 = (v16u8) (temp2 + (v8i16) p2_src);
+
+            temp1 = temp0 + p2_src;
+            temp1 = (v8u16) __msa_srari_h((v8i16) temp1, 2);
+            temp2 = (v8i16) (temp1 - p1_src);
+            temp2 = CLIP_SH(temp2, tc_neg, tc_pos);
+            dst1 = (v16u8) (temp2 + (v8i16) p1_src);
+
+            temp1 = (temp0 << 1) + p2_src + q1_src;
+            temp1 = (v8u16) __msa_srari_h((v8i16) temp1, 3);
+            temp2 = (v8i16) (temp1 - p0_src);
+            temp2 = CLIP_SH(temp2, tc_neg, tc_pos);
+            dst2 = (v16u8) (temp2 + (v8i16) p0_src);
+
+            dst0 = __msa_bmz_v(dst0, (v16u8) p2_src, (v16u8) p_is_pcm_vec);
+            dst1 = __msa_bmz_v(dst1, (v16u8) p1_src, (v16u8) p_is_pcm_vec);
+            dst2 = __msa_bmz_v(dst2, (v16u8) p0_src, (v16u8) p_is_pcm_vec);
+
+            /* q part */
+            temp0 = (q1_src + p0_src + q0_src);
+            temp1 = ((q3_src + q2_src) << 1) + q2_src + temp0;
+            temp1 = (v8u16) __msa_srari_h((v8i16) temp1, 3);
+            temp2 = (v8i16) (temp1 - q2_src);
+            temp2 = CLIP_SH(temp2, tc_neg, tc_pos);
+            dst5 = (v16u8) (temp2 + (v8i16) q2_src);
+
+            temp1 = temp0 + q2_src;
+            temp1 = (v8u16) __msa_srari_h((v8i16) temp1, 2);
+            temp2 = (v8i16) (temp1 - q1_src);
+            temp2 = CLIP_SH(temp2, tc_neg, tc_pos);
+            dst4 = (v16u8) (temp2 + (v8i16) q1_src);
+
+            temp1 = (temp0 << 1) + p1_src + q2_src;
+            temp1 = (v8u16) __msa_srari_h((v8i16) temp1, 3);
+            temp2 = (v8i16) (temp1 - q0_src);
+            temp2 = CLIP_SH(temp2, tc_neg, tc_pos);
+            dst3 = (v16u8) (temp2 + (v8i16) q0_src);
+
+            dst3 = __msa_bmz_v(dst3, (v16u8) q0_src, (v16u8) q_is_pcm_vec);
+            dst4 = __msa_bmz_v(dst4, (v16u8) q1_src, (v16u8) q_is_pcm_vec);
+            dst5 = __msa_bmz_v(dst5, (v16u8) q2_src, (v16u8) q_is_pcm_vec);
+            /* strong filter ends */
+
+            /* weak filter */
             tc_pos >>= 1;
             tc_neg = -tc_pos;
 
@@ -226,7 +834,6 @@ static void hevc_loopfilter_luma_hor_msa(uint8_t *src, int32_t stride,
             delta2 = CLIP_SH_0_255(delta2);
             delta2 = (v8i16) __msa_bmnz_v((v16u8) delta2, (v16u8) q1_src,
                                           (v16u8) q_is_pcm_vec);
-
             delta1 = (v8i16) __msa_bmz_v((v16u8) delta1, (v16u8) p1_src,
                                          (v16u8) abs_delta0);
             temp0 = (v8u16) __msa_bmz_v((v16u8) temp0, (v16u8) p0_src,
@@ -235,323 +842,78 @@ static void hevc_loopfilter_luma_hor_msa(uint8_t *src, int32_t stride,
                                         (v16u8) abs_delta0);
             delta2 = (v8i16) __msa_bmz_v((v16u8) delta2, (v16u8) q1_src,
                                          (v16u8) abs_delta0);
+            /* weak filter ends*/
 
+            /* select between weak or strong */
             dst2 = __msa_bmnz_v(dst2, (v16u8) temp0, (v16u8) cmp2);
             dst3 = __msa_bmnz_v(dst3, (v16u8) temp2, (v16u8) cmp2);
             dst1 = __msa_bmnz_v(dst1, (v16u8) delta1, (v16u8) cmp2);
             dst4 = __msa_bmnz_v(dst4, (v16u8) delta2, (v16u8) cmp2);
             dst0 = __msa_bmnz_v(dst0, (v16u8) p2_src, (v16u8) cmp2);
             dst5 = __msa_bmnz_v(dst5, (v16u8) q2_src, (v16u8) cmp2);
-
-            cmp0 = __msa_fill_d(d00 + d30 >= beta);
-            cmp1 = __msa_fill_d(d04 + d34 >= beta);
-            cmp0 = __msa_ilvev_d(cmp1, cmp0);
-            cmp0 = __msa_ceqi_d(cmp0, 0);
-
-            dst0 = __msa_bmz_v(dst0, (v16u8) p2_src, (v16u8) cmp0);
-            dst1 = __msa_bmz_v(dst1, (v16u8) p1_src, (v16u8) cmp0);
-            dst2 = __msa_bmz_v(dst2, (v16u8) p0_src, (v16u8) cmp0);
-            dst3 = __msa_bmz_v(dst3, (v16u8) q0_src, (v16u8) cmp0);
-            dst4 = __msa_bmz_v(dst4, (v16u8) q1_src, (v16u8) cmp0);
-            dst5 = __msa_bmz_v(dst5, (v16u8) q2_src, (v16u8) cmp0);
-
-            PCKEV_B2_UB(dst1, dst0, dst3, dst2, dst0, dst1);
-            dst2 = (v16u8) __msa_pckev_b((v16i8) dst5, (v16i8) dst4);
-
-            dst_val0 = __msa_copy_u_d((v2i64) dst2, 0);
-            dst_val1 = __msa_copy_u_d((v2i64) dst2, 1);
-
-            ST8x4_UB(dst0, dst1, p2, stride);
-            p2 += (4 * stride);
-            SD(dst_val0, p2);
-            p2 += stride;
-            SD(dst_val1, p2);
         }
-    }
-}
 
-static void hevc_loopfilter_luma_ver_msa(uint8_t *src, int32_t stride,
-                                         int32_t beta, int32_t *tc,
-                                         uint8_t *p_is_pcm, uint8_t *q_is_pcm)
-{
-    uint8_t *p3 = src;
-    uint8_t *p2 = src + 3 * stride;
-    uint8_t *p1 = src + (stride << 2);
-    uint8_t *p0 = src + 7 * stride;
-    uint8_t flag0, flag1;
-    uint16_t tmp0, tmp1;
-    uint32_t tmp2, tmp3;
-    int32_t dp00, dq00, dp30, dq30, d00, d30;
-    int32_t dp04, dq04, dp34, dq34, d04, d34;
-    int32_t tc0, p_is_pcm0, q_is_pcm0, beta30, beta20, tc250;
-    int32_t tc4, p_is_pcm4, q_is_pcm4, tc254, tmp;
-    v16u8 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
-    v2i64 cmp0, cmp1, cmp2, p_is_pcm_vec, q_is_pcm_vec;
-    v8u16 temp0, temp1;
-    v8i16 temp2;
-    v8i16 tc_pos, tc_neg;
-    v8i16 diff0, diff1, delta0, delta1, delta2, abs_delta0;
-    v16i8 zero = { 0 };
-    v8u16 p3_src, p2_src, p1_src, p0_src, q0_src, q1_src, q2_src, q3_src;
+        dst0 = __msa_bmz_v(dst0, (v16u8) p2_src, (v16u8) cmp3);
+        dst1 = __msa_bmz_v(dst1, (v16u8) p1_src, (v16u8) cmp3);
+        dst2 = __msa_bmz_v(dst2, (v16u8) p0_src, (v16u8) cmp3);
+        dst3 = __msa_bmz_v(dst3, (v16u8) q0_src, (v16u8) cmp3);
+        dst4 = __msa_bmz_v(dst4, (v16u8) q1_src, (v16u8) cmp3);
+        dst5 = __msa_bmz_v(dst5, (v16u8) q2_src, (v16u8) cmp3);
 
-    dp00 = abs(p3[-3] - (p3[-2] << 1) + p3[-1]);
-    dq00 = abs(p3[2] - (p3[1] << 1) + p3[0]);
-    dp30 = abs(p2[-3] - (p2[-2] << 1) + p2[-1]);
-    dq30 = abs(p2[2] - (p2[1] << 1) + p2[0]);
-    d00 = dp00 + dq00;
-    d30 = dp30 + dq30;
-    p_is_pcm0 = p_is_pcm[0];
-    q_is_pcm0 = q_is_pcm[0];
+        /* pack results to 8 bit */
+        PCKEV_B4_UB(dst2, dst0, dst3, dst1, dst4, dst4, dst5, dst5, dst0, dst1,
+                    dst2, dst3);
 
-    dp04 = abs(p1[-3] - (p1[-2] << 1) + p1[-1]);
-    dq04 = abs(p1[2] - (p1[1] << 1) + p1[0]);
-    dp34 = abs(p0[-3] - (p0[-2] << 1) + p0[-1]);
-    dq34 = abs(p0[2] - (p0[1] << 1) + p0[0]);
-    d04 = dp04 + dq04;
-    d34 = dp34 + dq34;
-    p_is_pcm4 = p_is_pcm[1];
-    q_is_pcm4 = q_is_pcm[1];
+        /* transpose */
+        ILVRL_B2_UB(dst1, dst0, dst4, dst5);
+        ILVRL_B2_UB(dst3, dst2, dst6, dst7);
+        ILVRL_H2_UB(dst5, dst4, dst0, dst1);
+        ILVRL_H2_UB(dst7, dst6, dst2, dst3);
 
-    if (!p_is_pcm0 || !p_is_pcm4 || !q_is_pcm0 || !q_is_pcm4) {
-        if (!(d00 + d30 >= beta) || !(d04 + d34 >= beta)) {
-            src -= 4;
-            LD_UH8(src, stride,
-                   p3_src, p2_src, p1_src, p0_src, q0_src, q1_src, q2_src,
-                   q3_src);
+        src += 1;
 
-            tc0 = tc[0];
-            beta30 = beta >> 3;
-            beta20 = beta >> 2;
-            tc250 = ((tc0 * 5 + 1) >> 1);
+        tmp2 = __msa_copy_u_w((v4i32) dst0, 0);
+        tmp3 = __msa_copy_u_w((v4i32) dst0, 1);
+        tmp0 = __msa_copy_u_h((v8i16) dst2, 0);
+        tmp1 = __msa_copy_u_h((v8i16) dst2, 2);
+        SW(tmp2, src);
+        SH(tmp0, src + 4);
+        src += stride;
+        SW(tmp3, src);
+        SH(tmp1, src + 4);
+        src += stride;
 
-            tc4 = tc[1];
-            tc254 = ((tc4 * 5 + 1) >> 1);
+        tmp2 = __msa_copy_u_w((v4i32) dst0, 2);
+        tmp3 = __msa_copy_u_w((v4i32) dst0, 3);
+        tmp0 = __msa_copy_u_h((v8i16) dst2, 4);
+        tmp1 = __msa_copy_u_h((v8i16) dst2, 6);
+        SW(tmp2, src);
+        SH(tmp0, src + 4);
+        src += stride;
+        SW(tmp3, src);
+        SH(tmp1, src + 4);
+        src += stride;
 
-            TRANSPOSE8x8_UB_UH(p3_src, p2_src, p1_src, p0_src, q0_src, q1_src,
-                               q2_src, q3_src, p3_src, p2_src, p1_src, p0_src,
-                               q0_src, q1_src, q2_src, q3_src);
+        tmp2 = __msa_copy_u_w((v4i32) dst1, 0);
+        tmp3 = __msa_copy_u_w((v4i32) dst1, 1);
+        tmp0 = __msa_copy_u_h((v8i16) dst3, 0);
+        tmp1 = __msa_copy_u_h((v8i16) dst3, 2);
+        SW(tmp2, src);
+        SH(tmp0, src + 4);
+        src += stride;
+        SW(tmp3, src);
+        SH(tmp1, src + 4);
+        src += stride;
 
-            flag0 = (abs(p3[-4] - p3[-1]) + abs(p3[3] - p3[0]) < beta30 &&
-                     abs(p3[-1] - p3[0]) < tc250 &&
-                     abs(p2[-4] - p2[-1]) + abs(p2[3] - p2[0]) < beta30 &&
-                     abs(p2[-1] - p2[0]) < tc250 &&
-                     (d00 << 1) < beta20 && (d30 << 1) < beta20);
-            cmp0 = __msa_fill_d(flag0);
-
-            flag1 = (abs(p1[-4] - p1[-1]) + abs(p1[3] - p1[0]) < beta30 &&
-                     abs(p1[-1] - p1[0]) < tc254 &&
-                     abs(p0[-4] - p0[-1]) + abs(p0[3] - p0[0]) < beta30 &&
-                     abs(p0[-1] - p0[0]) < tc254 &&
-                     (d04 << 1) < beta20 && (d34 << 1) < beta20);
-            cmp1 = __msa_fill_d(flag1);
-            cmp2 = __msa_ilvev_d(cmp1, cmp0);
-            cmp2 = __msa_ceqi_d(cmp2, 0);
-
-            ILVR_B8_UH(zero, p3_src, zero, p2_src, zero, p1_src, zero, p0_src,
-                       zero, q0_src, zero, q1_src, zero, q2_src, zero, q3_src,
-                       p3_src, p2_src, p1_src, p0_src, q0_src, q1_src, q2_src,
-                       q3_src);
-
-            cmp0 = (v2i64) __msa_fill_h(tc0 << 1);
-            cmp1 = (v2i64) __msa_fill_h(tc4 << 1);
-            tc_pos = (v8i16) __msa_ilvev_d(cmp1, cmp0);
-            tc_neg = -tc_pos;
-
-            temp0 = (p1_src + p0_src + q0_src);
-
-            temp1 = ((p3_src + p2_src) << 1) + p2_src + temp0;
-            temp1 = (v8u16) __msa_srari_h((v8i16) temp1, 3);
-            temp2 = (v8i16) (temp1 - p2_src);
-            temp2 = CLIP_SH(temp2, tc_neg, tc_pos);
-            dst0 = (v16u8) (temp2 + (v8i16) p2_src);
-
-            temp1 = temp0 + p2_src;
-            temp1 = (v8u16) __msa_srari_h((v8i16) temp1, 2);
-            temp2 = (v8i16) (temp1 - p1_src);
-            temp2 = CLIP_SH(temp2, tc_neg, tc_pos);
-            dst1 = (v16u8) (temp2 + (v8i16) p1_src);
-
-            temp1 = (temp0 << 1) + p2_src + q1_src;
-            temp1 = (v8u16) __msa_srari_h((v8i16) temp1, 3);
-            temp2 = (v8i16) (temp1 - p0_src);
-            temp2 = CLIP_SH(temp2, tc_neg, tc_pos);
-            dst2 = (v16u8) (temp2 + (v8i16) p0_src);
-
-            cmp0 = __msa_fill_d(p_is_pcm0);
-            cmp1 = __msa_fill_d(p_is_pcm4);
-            p_is_pcm_vec = __msa_ilvev_d(cmp1, cmp0);
-            p_is_pcm_vec = __msa_ceqi_d(p_is_pcm_vec, 0);
-
-            dst0 = __msa_bmz_v(dst0, (v16u8) p2_src, (v16u8) p_is_pcm_vec);
-            dst1 = __msa_bmz_v(dst1, (v16u8) p1_src, (v16u8) p_is_pcm_vec);
-            dst2 = __msa_bmz_v(dst2, (v16u8) p0_src, (v16u8) p_is_pcm_vec);
-
-            temp0 = (q1_src + p0_src + q0_src);
-            temp1 = ((q3_src + q2_src) << 1) + q2_src + temp0;
-            temp1 = (v8u16) __msa_srari_h((v8i16) temp1, 3);
-            temp2 = (v8i16) (temp1 - q2_src);
-            temp2 = CLIP_SH(temp2, tc_neg, tc_pos);
-            dst5 = (v16u8) (temp2 + (v8i16) q2_src);
-
-            temp1 = temp0 + q2_src;
-            temp1 = (v8u16) __msa_srari_h((v8i16) temp1, 2);
-            temp2 = (v8i16) (temp1 - q1_src);
-            temp2 = CLIP_SH(temp2, tc_neg, tc_pos);
-            dst4 = (v16u8) (temp2 + (v8i16) q1_src);
-
-            temp1 = (temp0 << 1) + p1_src + q2_src;
-            temp1 = (v8u16) __msa_srari_h((v8i16) temp1, 3);
-            temp2 = (v8i16) (temp1 - q0_src);
-            temp2 = CLIP_SH(temp2, tc_neg, tc_pos);
-            dst3 = (v16u8) (temp2 + (v8i16) q0_src);
-
-            cmp0 = __msa_fill_d(q_is_pcm0);
-            cmp1 = __msa_fill_d(q_is_pcm4);
-            q_is_pcm_vec = __msa_ilvev_d(cmp1, cmp0);
-            q_is_pcm_vec = __msa_ceqi_d(q_is_pcm_vec, 0);
-
-            dst3 = __msa_bmz_v(dst3, (v16u8) q0_src, (v16u8) q_is_pcm_vec);
-            dst4 = __msa_bmz_v(dst4, (v16u8) q1_src, (v16u8) q_is_pcm_vec);
-            dst5 = __msa_bmz_v(dst5, (v16u8) q2_src, (v16u8) q_is_pcm_vec);
-
-            tc_pos >>= 1;
-            tc_neg = -tc_pos;
-
-            diff0 = (v8i16) (q0_src - p0_src);
-            diff1 = (v8i16) (q1_src - p1_src);
-            diff0 = (v8i16) (diff0 << 3) + diff0;
-            diff1 = (v8i16) (diff1 << 1) + diff1;
-            delta0 = diff0 - diff1;
-            delta0 = __msa_srari_h(delta0, 4);
-
-            temp1 = (v8u16) ((tc_pos << 3) + (tc_pos << 1));
-            abs_delta0 = __msa_add_a_h(delta0, (v8i16) zero);
-            abs_delta0 = (v8u16) abs_delta0 < temp1;
-
-            delta0 = CLIP_SH(delta0, tc_neg, tc_pos);
-            temp0 = (v8u16) delta0 + p0_src;
-            temp0 = (v8u16) CLIP_SH_0_255(temp0);
-            temp0 = (v8u16) __msa_bmz_v((v16u8) temp0, (v16u8) p0_src,
-                                        (v16u8) p_is_pcm_vec);
-
-            temp2 = (v8i16) q0_src - delta0;
-            temp2 = CLIP_SH_0_255(temp2);
-            temp2 = (v8i16) __msa_bmz_v((v16u8) temp2, (v16u8) q0_src,
-                                        (v16u8) q_is_pcm_vec);
-
-            tmp = ((beta + (beta >> 1)) >> 3);
-            cmp0 = __msa_fill_d(!p_is_pcm0 && (dp00 + dp30 < tmp));
-            cmp1 = __msa_fill_d(!p_is_pcm4 && (dp04 + dp34 < tmp));
-            p_is_pcm_vec = __msa_ilvev_d(cmp1, cmp0);
-            p_is_pcm_vec = __msa_ceqi_d(p_is_pcm_vec, 0);
-
-            cmp0 = (v2i64) __msa_fill_h((!q_is_pcm0) && (dq00 + dq30 < tmp));
-            cmp1 = (v2i64) __msa_fill_h((!q_is_pcm4) && (dq04 + dq34 < tmp));
-            q_is_pcm_vec = __msa_ilvev_d(cmp1, cmp0);
-            q_is_pcm_vec = __msa_ceqi_d(q_is_pcm_vec, 0);
-
-            tc_pos >>= 1;
-            tc_neg = -tc_pos;
-
-            delta1 = (v8i16) __msa_aver_u_h(p2_src, p0_src);
-            delta1 -= (v8i16) p1_src;
-            delta1 += delta0;
-            delta1 >>= 1;
-            delta1 = CLIP_SH(delta1, tc_neg, tc_pos);
-            delta1 = (v8i16) p1_src + (v8i16) delta1;
-            delta1 = CLIP_SH_0_255(delta1);
-            delta1 = (v8i16) __msa_bmnz_v((v16u8) delta1, (v16u8) p1_src,
-                                          (v16u8) p_is_pcm_vec);
-
-            delta2 = (v8i16) __msa_aver_u_h(q0_src, q2_src);
-            delta2 = delta2 - (v8i16) q1_src;
-            delta2 = delta2 - delta0;
-            delta2 = delta2 >> 1;
-            delta2 = CLIP_SH(delta2, tc_neg, tc_pos);
-            delta2 = (v8i16) q1_src + (v8i16) delta2;
-            delta2 = CLIP_SH_0_255(delta2);
-            delta2 = (v8i16) __msa_bmnz_v((v16u8) delta2, (v16u8) q1_src,
-                                          (v16u8) q_is_pcm_vec);
-            delta1 = (v8i16) __msa_bmz_v((v16u8) delta1, (v16u8) p1_src,
-                                         (v16u8) abs_delta0);
-            temp0 = (v8u16) __msa_bmz_v((v16u8) temp0, (v16u8) p0_src,
-                                        (v16u8) abs_delta0);
-            temp2 = (v8i16) __msa_bmz_v((v16u8) temp2, (v16u8) q0_src,
-                                        (v16u8) abs_delta0);
-            delta2 = (v8i16) __msa_bmz_v((v16u8) delta2, (v16u8) q1_src,
-                                         (v16u8) abs_delta0);
-
-            dst2 = __msa_bmnz_v(dst2, (v16u8) temp0, (v16u8) cmp2);
-            dst3 = __msa_bmnz_v(dst3, (v16u8) temp2, (v16u8) cmp2);
-            dst1 = __msa_bmnz_v(dst1, (v16u8) delta1, (v16u8) cmp2);
-            dst4 = __msa_bmnz_v(dst4, (v16u8) delta2, (v16u8) cmp2);
-            dst0 = __msa_bmnz_v(dst0, (v16u8) p2_src, (v16u8) cmp2);
-            dst5 = __msa_bmnz_v(dst5, (v16u8) q2_src, (v16u8) cmp2);
-
-            cmp0 = __msa_fill_d(d00 + d30 >= beta);
-            dst7 = (v16u8) __msa_fill_d(d04 + d34 >= beta);
-            cmp0 = __msa_ilvev_d((v2i64) dst7, cmp0);
-            dst6 = (v16u8) __msa_ceqi_d(cmp0, 0);
-
-            dst0 = __msa_bmz_v(dst0, (v16u8) p2_src, dst6);
-            dst1 = __msa_bmz_v(dst1, (v16u8) p1_src, dst6);
-            dst2 = __msa_bmz_v(dst2, (v16u8) p0_src, dst6);
-            dst3 = __msa_bmz_v(dst3, (v16u8) q0_src, dst6);
-            dst4 = __msa_bmz_v(dst4, (v16u8) q1_src, dst6);
-            dst5 = __msa_bmz_v(dst5, (v16u8) q2_src, dst6);
-
-            PCKEV_B4_UB(dst0, dst0, dst1, dst1, dst2, dst2, dst3, dst3,
-                        dst0, dst1, dst2, dst3);
-            PCKEV_B2_UB(dst4, dst4, dst5, dst5, dst4, dst5);
-
-            TRANSPOSE8x8_UB_UB(dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7,
-                               dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7);
-
-            src += 1;
-
-            tmp2 = __msa_copy_u_w((v4i32) dst0, 0);
-            tmp0 = __msa_copy_u_h((v8i16) dst0, 2);
-            tmp3 = __msa_copy_u_w((v4i32) dst1, 0);
-            tmp1 = __msa_copy_u_h((v8i16) dst1, 2);
-            SW(tmp2, src);
-            SH(tmp0, src + 4);
-            src += stride;
-            SW(tmp3, src);
-            SH(tmp1, src + 4);
-            src += stride;
-
-            tmp2 = __msa_copy_u_w((v4i32) dst2, 0);
-            tmp0 = __msa_copy_u_h((v8i16) dst2, 2);
-            tmp3 = __msa_copy_u_w((v4i32) dst3, 0);
-            tmp1 = __msa_copy_u_h((v8i16) dst3, 2);
-            SW(tmp2, src);
-            SH(tmp0, src + 4);
-            src += stride;
-            SW(tmp3, src);
-            SH(tmp1, src + 4);
-            src += stride;
-
-            tmp2 = __msa_copy_u_w((v4i32) dst4, 0);
-            tmp0 = __msa_copy_u_h((v8i16) dst4, 2);
-            tmp3 = __msa_copy_u_w((v4i32) dst5, 0);
-            tmp1 = __msa_copy_u_h((v8i16) dst5, 2);
-            SW(tmp2, src);
-            SH(tmp0, src + 4);
-            src += stride;
-            SW(tmp3, src);
-            SH(tmp1, src + 4);
-            src += stride;
-
-            tmp2 = __msa_copy_u_w((v4i32) dst6, 0);
-            tmp0 = __msa_copy_u_h((v8i16) dst6, 2);
-            tmp3 = __msa_copy_u_w((v4i32) dst7, 0);
-            tmp1 = __msa_copy_u_h((v8i16) dst7, 2);
-            SW(tmp2, src);
-            SH(tmp0, src + 4);
-            src += stride;
-            SW(tmp3, src);
-            SH(tmp1, src + 4);
-        }
+        tmp2 = __msa_copy_u_w((v4i32) dst1, 2);
+        tmp3 = __msa_copy_u_w((v4i32) dst1, 3);
+        tmp0 = __msa_copy_u_h((v8i16) dst3, 4);
+        tmp1 = __msa_copy_u_h((v8i16) dst3, 6);
+        SW(tmp2, src);
+        SH(tmp0, src + 4);
+        src += stride;
+        SW(tmp3, src);
+        SH(tmp1, src + 4);
     }
 }
 
