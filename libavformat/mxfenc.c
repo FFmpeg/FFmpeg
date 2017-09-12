@@ -48,6 +48,7 @@
 #include "libavutil/time_internal.h"
 #include "libavcodec/bytestream.h"
 #include "libavcodec/dnxhddata.h"
+#include "libavcodec/dv_profile.h"
 #include "libavcodec/h264.h"
 #include "libavcodec/internal.h"
 #include "audiointerleave.h"
@@ -1812,6 +1813,7 @@ static int mxf_parse_dv_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt)
     MXFStreamContext *sc = st->priv_data;
     uint8_t *vs_pack, *vsc_pack;
     int i, ul_index, frame_size, stype, pal;
+    const AVDVProfile *profile;
 
     if (mxf->header_written)
         return 1;
@@ -1819,6 +1821,8 @@ static int mxf_parse_dv_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt)
     // Check for minimal frame size
     if (pkt->size < 120000)
         return -1;
+
+    profile = av_dv_frame_profile(NULL, pkt->data, pkt->size);
 
     vs_pack  = pkt->data + 80*5 + 48;
     vsc_pack = pkt->data + 80*5 + 53;
@@ -1854,6 +1858,11 @@ static int mxf_parse_dv_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt)
         frame_size = pal ? 288000 : 240000;
         break;
     default: // DV25
+        if (profile && profile->pix_fmt == AV_PIX_FMT_YUV420P && pal) {
+            ul_index = INDEX_DV25_525_60_IEC + pal;
+            frame_size = pal ? 144000 : 120000;
+            break;
+        }
         ul_index = INDEX_DV25_525_60 + pal;
         frame_size = pal ? 144000 : 120000;
     }
