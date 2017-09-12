@@ -749,14 +749,14 @@ void dnxhd_get_blocks(DNXHDEncContext *ctx, int mb_x, int mb_y)
         ptr_y = &ctx->edge_buf_y[0];
         ptr_u = &ctx->edge_buf_uv[0][0];
         ptr_v = &ctx->edge_buf_uv[1][0];
-    } else if (ctx->bit_depth == 10 && vdsp->emulated_edge_mc && ((mb_x << 3) + 8 > ctx->m.avctx->width ||
-                                                                  (mb_y << 3) + 8 > ctx->m.avctx->height)) {
-        int y_w = ctx->m.avctx->width  - (mb_x << 3);
-        int y_h = ctx->m.avctx->height - (mb_y << 3);
+    } else if (ctx->bit_depth == 10 && vdsp->emulated_edge_mc && ((mb_x << 4) + 16 > ctx->m.avctx->width ||
+                                                                  (mb_y << 4) + 16 > ctx->m.avctx->height)) {
+        int y_w = ctx->m.avctx->width  - (mb_x << 4);
+        int y_h = ctx->m.avctx->height - (mb_y << 4);
         int uv_w = ctx->is_444 ? y_w : (y_w + 1) / 2;
         int uv_h = y_h;
-        linesize = 16;
-        uvlinesize = 8 + 8 * ctx->is_444;
+        linesize = 32;
+        uvlinesize = 16 + 16 * ctx->is_444;
 
         vdsp->emulated_edge_mc(&ctx->edge_buf_y[0], ptr_y,
                                linesize, ctx->m.linesize,
@@ -771,8 +771,8 @@ void dnxhd_get_blocks(DNXHDEncContext *ctx, int mb_x, int mb_y)
                                uvlinesize / 2, 16,
                                0, 0, uv_w, uv_h);
 
-        dct_y_offset =  bw * linesize;
-        dct_uv_offset = bw * uvlinesize;
+        dct_y_offset =  bw * linesize / 2;
+        dct_uv_offset = bw * uvlinesize / 2;
         ptr_y = &ctx->edge_buf_y[0];
         ptr_u = &ctx->edge_buf_uv[0][0];
         ptr_v = &ctx->edge_buf_uv[1][0];
