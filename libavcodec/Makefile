@@ -824,6 +824,7 @@ TESTPROGS-$(CONFIG_FFT)                   += fft fft-fixed
 TESTPROGS-$(CONFIG_GOLOMB)                += golomb
 TESTPROGS-$(CONFIG_IDCTDSP)               += dct
 TESTPROGS-$(CONFIG_IIRFILTER)             += iirfilter
+TESTPROGS-$(CONFIG_MPEGVIDEO)             += mpeg12framerate
 TESTPROGS-$(CONFIG_RANGECODER)            += rangecoder
 
 TESTOBJS = dctref.o

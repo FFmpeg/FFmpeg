@@ -23,6 +23,7 @@
 #include "bsf.h"
 #include "cbs.h"
 #include "cbs_mpeg2.h"
+#include "mpeg12.h"
 
 typedef struct MPEG2MetadataContext {
     const AVClass *class;
@@ -99,63 +100,14 @@ static int mpeg2_metadata_update_fragment(AVBSFContext *bsf,
     }
 
     if (ctx->frame_rate.num && ctx->frame_rate.den) {
-        // Table 6-4.
-        static AVRational frame_rate_table[] = {
-            { 0, 0 },
-            { 24000, 1001 },
-            { 24,    1    },
-            { 25,    1    },
-            { 30000, 1001 },
-            { 30,    1    },
-            { 50,    1    },
-            { 60000, 1001 },
-            { 60,    1    },
-        };
         int code, ext_n, ext_d;
-        AVRational best_error = { INT_MAX, 1 };
 
-        for (i = 1; i < FF_ARRAY_ELEMS(frame_rate_table); i++) {
-            if (av_cmp_q(ctx->frame_rate, frame_rate_table[i]) == 0) {
-                code  = i;
-                ext_n = 1;
-                ext_d = 1;
-                goto found_frame_rate;
-            }
-        }
+        ff_mpeg12_find_best_frame_rate(ctx->frame_rate,
+                                       &code, &ext_n, &ext_d, 0);
 
-        for (i = 1; i < FF_ARRAY_ELEMS(frame_rate_table); i++) {
-            AVRational fr, error;
-            int n, d, cmp;
-            for (n = 1; n <= 4; n++) {
-                for (d = 1; d <= 32; d++) {
-                    fr = av_mul_q(frame_rate_table[i],
-                                  (AVRational) { n, d });
-                    cmp = av_cmp_q(fr, ctx->frame_rate);
-                    if (cmp == 0) {
-                        code  = i;
-                        ext_n = n;
-                        ext_d = d;
-                        goto found_frame_rate;
-                    }
-                    if (cmp < 0)
-                        error = av_div_q(ctx->frame_rate, fr);
-                    else
-                        error = av_div_q(fr, ctx->frame_rate);
-                    cmp = av_cmp_q(error, best_error);
-                    if (cmp < 0 || (cmp == 0 && n == 1 && d == 1)) {
-                        code  = i;
-                        ext_n = n;
-                        ext_d = d;
-                        best_error = error;
-                    }
-                }
-            }
-        }
-
-    found_frame_rate:
         sh->frame_rate_code        = code;
-        se->frame_rate_extension_n = ext_n - 1;
-        se->frame_rate_extension_d = ext_d - 1;
+        se->frame_rate_extension_n = ext_n;
+        se->frame_rate_extension_d = ext_d;
     }
 
     if (ctx->video_format             >= 0 ||
