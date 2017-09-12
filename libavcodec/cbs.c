@@ -313,6 +313,12 @@ int ff_cbs_read_unsigned(CodedBitstreamContext *ctx, BitstreamContext *bc,
 
     av_assert0(width <= 32);
 
+    if (bitstream_bits_left(bc) < width) {
+        av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid value at "
+               "%s: bitstream ended.\n", name);
+        return AVERROR_INVALIDDATA;
+    }
+
     if (ctx->trace_enable)
         position = bitstream_tell(bc);
 

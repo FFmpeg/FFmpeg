@@ -58,8 +58,9 @@
         CHECK(ff_cbs_read_unsigned(ctx, rw, 1, "marker_bit", &one, 1, 1)); \
     } while (0)
 
-#define nextbits(width, compare, var) (var = bitstream_peek(rw, width), \
-                                       var == (compare))
+#define nextbits(width, compare, var) \
+    (bitstream_bits_left(rw) >= width && \
+     (var = bitstream_peek(rw, width)) == (compare))
 
 #include "cbs_mpeg2_syntax_template.c"
 

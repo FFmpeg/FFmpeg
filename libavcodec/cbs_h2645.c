@@ -36,40 +36,39 @@ static int cbs_read_ue_golomb(CodedBitstreamContext *ctx, BitstreamContext *bc,
                               uint32_t range_min, uint32_t range_max)
 {
     uint32_t value;
-    int position;
+    int position, i, j;
+    unsigned int k;
+    char bits[65];
 
-    if (ctx->trace_enable) {
-        char bits[65];
-        unsigned int k;
-        int i, j;
+    position = bitstream_tell(bc);
 
-        position = bitstream_tell(bc);
-
-        for (i = 0; i < 32; i++) {
-            k = bitstream_read_bit(bc);
-            bits[i] = k ? '1' : '0';
-            if (k)
-                break;
-        }
-        if (i >= 32) {
-            av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid ue-golomb "
-                   "code found while reading %s: "
-                   "more than 31 zeroes.\n", name);
+    for (i = 0; i < 32; i++) {
+        if (bitstream_bits_left(bc) < i + 1) {
+            av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid ue-golomb code at "
+                   "%s: bitstream ended.\n", name);
             return AVERROR_INVALIDDATA;
         }
-        value = 1;
-        for (j = 0; j < i; j++) {
-            k = bitstream_read_bit(bc);
-            bits[i + j + 1] = k ? '1' : '0';
-            value = value << 1 | k;
-        }
-        bits[i + j + 1] = 0;
-        --value;
-
-        ff_cbs_trace_syntax_element(ctx, position, name, bits, value);
-    } else {
-        value = get_ue_golomb_long(bc);
+        k = bitstream_read_bit(bc);
+        bits[i] = k ? '1' : '0';
+        if (k)
+            break;
     }
+    if (i >= 32) {
+        av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid ue-golomb code at "
+               "%s: more than 31 zeroes.\n", name);
+        return AVERROR_INVALIDDATA;
+    }
+    value = 1;
+    for (j = 0; j < i; j++) {
+        k = bitstream_read_bit(bc);
+        bits[i + j + 1] = k ? '1' : '0';
+        value = value << 1 | k;
+    }
+    bits[i + j + 1] = 0;
+    --value;
+
+    if (ctx->trace_enable)
+        ff_cbs_trace_syntax_element(ctx, position, name, bits, value);
 
     if (value < range_min || value > range_max) {
         av_log(ctx->log_ctx, AV_LOG_ERROR, "%s out of range: "
@@ -87,44 +86,43 @@ static int cbs_read_se_golomb(CodedBitstreamContext *ctx, BitstreamContext *bc,
                               int32_t range_min, int32_t range_max)
 {
     int32_t value;
-    int position;
+    int position, i, j;
+    unsigned int k;
+    uint32_t v;
+    char bits[65];
 
-    if (ctx->trace_enable) {
-        char bits[65];
-        uint32_t v;
-        unsigned int k;
-        int i, j;
+    position = bitstream_tell(bc);
 
-        position = bitstream_tell(bc);
-
-        for (i = 0; i < 32; i++) {
-            k = bitstream_read_bit(bc);
-            bits[i] = k ? '1' : '0';
-            if (k)
-                break;
-        }
-        if (i >= 32) {
-            av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid se-golomb "
-                   "code found while reading %s: "
-                   "more than 31 zeroes.\n", name);
+    for (i = 0; i < 32; i++) {
+        if (bitstream_bits_left(bc) < i + 1) {
+            av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid se-golomb code at "
+                   "%s: bitstream ended.\n", name);
             return AVERROR_INVALIDDATA;
         }
-        v = 1;
-        for (j = 0; j < i; j++) {
-            k = bitstream_read_bit(bc);
-            bits[i + j + 1] = k ? '1' : '0';
-            v = v << 1 | k;
-        }
-        bits[i + j + 1] = 0;
-        if (v & 1)
-            value = -(int32_t)(v / 2);
-        else
-            value = v / 2;
-
-        ff_cbs_trace_syntax_element(ctx, position, name, bits, value);
-    } else {
-        value = get_se_golomb_long(bc);
+        k = bitstream_read_bit(bc);
+        bits[i] = k ? '1' : '0';
+        if (k)
+            break;
     }
+    if (i >= 32) {
+        av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid se-golomb code at "
+               "%s: more than 31 zeroes.\n", name);
+        return AVERROR_INVALIDDATA;
+    }
+    v = 1;
+    for (j = 0; j < i; j++) {
+        k = bitstream_read_bit(bc);
+        bits[i + j + 1] = k ? '1' : '0';
+        v = v << 1 | k;
+    }
+    bits[i + j + 1] = 0;
+    if (v & 1)
+        value = -(int32_t)(v / 2);
+    else
+        value = v / 2;
+
+    if (ctx->trace_enable)
+        ff_cbs_trace_syntax_element(ctx, position, name, bits, value);
 
     if (value < range_min || value > range_max) {
         av_log(ctx->log_ctx, AV_LOG_ERROR, "%s out of range: "
