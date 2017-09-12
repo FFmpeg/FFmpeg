@@ -3,6 +3,8 @@ releases are sorted from youngest to oldest.
 
 
 version 3.3.4:
+- avcodec/hevc_ps: Fix c?_qp_offset_list size
+- avcodec/shorten: Move buffer allocation and offset init to end of read_header()
 - avcodec/jpeg2000dsp: Fix multiple integer overflows in ict_int()
 - avcodec/hevcdsp_template: Fix undefined shift in put_hevc_pel_bi_w_pixels
 - avcodec/diracdec: Fix overflow in DC computation
