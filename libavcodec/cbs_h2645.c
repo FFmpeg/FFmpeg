@@ -479,12 +479,19 @@ static int cbs_h2645_fragment_add_nals(CodedBitstreamContext *ctx,
 
     for (i = 0; i < packet->nb_nals; i++) {
         const H2645NAL *nal = &packet->nals[i];
+        size_t size = nal->size;
         uint8_t *data;
 
-        data = av_malloc(nal->size);
+        // Remove trailing zeroes.
+        while (size > 0 && nal->data[size - 1] == 0)
+            --size;
+        av_assert0(size > 0);
+
+        data = av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!data)
             return AVERROR(ENOMEM);
-        memcpy(data, nal->data, nal->size);
+        memcpy(data, nal->data, size);
+        memset(data + size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
         err = ff_cbs_insert_unit_data(ctx, frag, -1, nal->type,
                                       data, nal->size);
