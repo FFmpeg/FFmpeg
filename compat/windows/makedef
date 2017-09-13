@@ -74,12 +74,12 @@ else
            tr '\t' ' ' |
            grep '^ \+.\+machine \+(.\+)' |
            head -1 |
-           sed -e 's/^ \{1,\}.\{1,\} \{1,\}machine \{1,\}(\(...\)).*/\1/')
+           sed -e 's/^ \{1,\}.\{1,\} \{1,\}machine \{1,\}(\(.\{3,5\}\)).*/\1/')
 
     if [ "${arch}" = "x86" ]; then
         prefix="_"
     else
-        if [ "${arch}" != "ARM" ] && [ "${arch}" != "x64" ]; then
+        if [ "${arch}" != "ARM" ] && [ "${arch}" != "x64" ] && [ "${arch}" != "ARM64" ]; then
             echo "Unknown machine type." >&2
             exit 1
         fi
