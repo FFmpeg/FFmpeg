@@ -101,14 +101,17 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
 
         if (s->remove) {
             filtered_buf = av_buffer_alloc(pkt->size + AV_INPUT_BUFFER_PADDING_SIZE);
-            if (!filtered_buf)
+            if (!filtered_buf) {
+                ret = AVERROR(ENOMEM);
                 goto fail;
+            }
             filtered_data = filtered_buf->data;
         }
 
         extradata = av_malloc(extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!extradata) {
             av_buffer_unref(&filtered_buf);
+            ret = AVERROR(ENOMEM);
             goto fail;
         }
 
