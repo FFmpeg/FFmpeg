@@ -3210,6 +3210,7 @@ pixfmts_super2xsai_test_deps="super2xsai_filter"
 tinterlace_filter_deps="gpl"
 tinterlace_merge_test_deps="tinterlace_filter"
 tinterlace_pad_test_deps="tinterlace_filter"
+tonemap_filter_deps="const_nan"
 uspp_filter_deps="gpl avcodec"
 vaguedenoiser_filter_deps="gpl"
 vidstabdetect_filter_deps="libvidstab"
@@ -3217,7 +3218,7 @@ vidstabtransform_filter_deps="libvidstab"
 libvmaf_filter_deps="libvmaf"
 zmq_filter_deps="libzmq"
 zoompan_filter_deps="swscale"
-zscale_filter_deps="libzimg"
+zscale_filter_deps="libzimg const_nan"
 scale_vaapi_filter_deps="vaapi VAProcPipelineParameterBuffer"
 
 # examples
@@ -5311,6 +5312,11 @@ check_cc <<EOF || die "endian test failed"
 unsigned int endian = 'B' << 24 | 'I' << 16 | 'G' << 8 | 'E';
 EOF
 od -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
+
+check_cc <<EOF && enable const_nan
+#include <math.h>
+void foo(void) { struct { double d; } static const bar[] = { { NAN } }; }
+EOF
 
 if ! enabled ppc64 || enabled bigendian; then
     disable vsx
