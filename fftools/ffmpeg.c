@@ -2512,7 +2512,7 @@ static void ts_discontinuity_detect(InputFile *ifile, InputStream *ist,
             if (FFABS(delta) > 1LL * dts_delta_threshold * AV_TIME_BASE ||
                 pkt_dts + AV_TIME_BASE/10 < FFMAX(ist->pts, ist->dts)) {
                 ifile->ts_offset_discont -= delta;
-                av_log(NULL, AV_LOG_DEBUG,
+                av_log(NULL, AV_LOG_WARNING,
                        "timestamp discontinuity for stream #%d:%d "
                        "(id=%d, type=%s): %"PRId64", new offset= %"PRId64"\n",
                        ist->file_index, ist->st->index, ist->st->id,
