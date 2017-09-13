@@ -199,6 +199,9 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
             goto fail;
         tmpv = thread_avctx->priv_data;
         *thread_avctx = *avctx;
+        int ret = av_opt_copy(thread_avctx, avctx);
+        if (ret < 0)
+            goto fail;
         thread_avctx->priv_data = tmpv;
         thread_avctx->internal = NULL;
         if (avctx->codec->priv_class) {
