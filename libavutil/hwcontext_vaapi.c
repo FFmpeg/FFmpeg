@@ -918,9 +918,11 @@ static const struct {
     int   nb_layer_formats;
     uint32_t layer_formats[AV_DRM_MAX_PLANES];
 } vaapi_drm_format_map[] = {
+#ifdef DRM_FORMAT_R8
     DRM_MAP(NV12, 2, DRM_FORMAT_R8,  DRM_FORMAT_RG88),
+#endif
     DRM_MAP(NV12, 1, DRM_FORMAT_NV12),
-#ifdef VA_FOURCC_P010
+#if defined(VA_FOURCC_P010) && defined(DRM_FORMAT_R16)
     DRM_MAP(P010, 2, DRM_FORMAT_R16, DRM_FORMAT_RG1616),
 #endif
     DRM_MAP(BGRA, 1, DRM_FORMAT_BGRA8888),
