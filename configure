@@ -3883,7 +3883,7 @@ case $target_os in
     mingw32*|mingw64*)
         target_os=mingw32
         if enabled shared; then
-            # Cannot build both shared and static libs when using dllexport.
+            # Cannot build both shared and static libs when using dllimport.
             disable static
         fi
         check_ldflags -Wl,--nxcompat
