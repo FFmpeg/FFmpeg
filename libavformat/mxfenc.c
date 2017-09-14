@@ -846,7 +846,7 @@ static void mxf_write_track(AVFormatContext *s, AVStream *st, enum MXFMetadataSe
     // write edit rate
     mxf_write_local_tag(pb, 8, 0x4B01);
 
-    if (st == mxf->timecode_track && s->oformat == &ff_mxf_opatom_muxer){
+    if (st == mxf->timecode_track && s->oformat == &ff_mxf_opatom_muxer) {
         avio_wb32(pb, mxf->tc.rate.num);
         avio_wb32(pb, mxf->tc.rate.den);
     } else {
@@ -882,7 +882,7 @@ static void mxf_write_common_fields(AVFormatContext *s, AVStream *st)
     // write duration
     mxf_write_local_tag(pb, 8, 0x0202);
 
-    if (st != mxf->timecode_track && s->oformat == &ff_mxf_opatom_muxer && st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO){
+    if (st != mxf->timecode_track && s->oformat == &ff_mxf_opatom_muxer && st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         avio_wb64(pb, mxf->body_offset / mxf->edit_unit_byte_count);
     } else {
         avio_wb64(pb, mxf->duration);
@@ -1194,7 +1194,7 @@ static void mxf_write_generic_sound_common(AVFormatContext *s, AVStream *st, con
 
     mxf_write_generic_desc(s, st, key, size+duration_size+5+12+8+8);
 
-    if (duration_size > 0){
+    if (duration_size > 0) {
         mxf_write_local_tag(pb, 8, 0x3002);
         avio_wb64(pb, mxf->body_offset / mxf->edit_unit_byte_count);
     }
@@ -1328,7 +1328,7 @@ static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type, 
     // write uid
     mxf_write_local_tag(pb, 16, 0x3C0A);
     mxf_write_uuid(pb, type, 0);
-    av_log(s,AV_LOG_DEBUG, "package type:%d\n", type);
+    av_log(s, AV_LOG_DEBUG, "package type:%d\n", type);
     PRINT_KEY(s, "package uid", pb->buf_ptr - 16);
 
     // write package umid
@@ -1770,7 +1770,7 @@ AVPacket *pkt)
     sc->codec_ul = &mxf_essence_container_uls[sc->index].codec_ul;
     sc->aspect_ratio = (AVRational){ 16, 9 };
 
-    if(s->oformat == &ff_mxf_opatom_muxer){
+    if (s->oformat == &ff_mxf_opatom_muxer) {
         mxf->edit_unit_byte_count = frame_size;
         return 1;
     }
@@ -1810,10 +1810,11 @@ static int mxf_parse_dv_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt)
     stype    = vs_pack[3] & 0x1f;
     pal      = (vs_pack[3] >> 5) & 0x1;
 
-    if ((vsc_pack[2] & 0x07) == 0x02)
+    if ((vsc_pack[2] & 0x07) == 0x02) {
         sc->aspect_ratio = (AVRational){ 16, 9 };
-    else
+    } else {
         sc->aspect_ratio = (AVRational){ 4, 3 };
+    }
 
     sc->interlaced = (vsc_pack[3] >> 4) & 0x01;
     // TODO: fix dv encoder to set proper FF/FS value in VSC pack
@@ -2097,7 +2098,7 @@ static int mxf_write_header(AVFormatContext *s)
     if (!s->nb_streams)
         return -1;
 
-    if (s->oformat == &ff_mxf_opatom_muxer && s->nb_streams !=1){
+    if (s->oformat == &ff_mxf_opatom_muxer && s->nb_streams !=1) {
         av_log(s, AV_LOG_ERROR, "there must be exactly one stream for mxf opatom\n");
         return -1;
     }
@@ -2212,7 +2213,7 @@ static int mxf_write_header(AVFormatContext *s)
                 }
 
                 spf = ff_mxf_get_samples_per_frame(s, tbc);
-                if (!spf){
+                if (!spf) {
                     av_log(s, AV_LOG_ERROR, "Unsupported timecode frame rate %d/%d\n", tbc.den, tbc.num);
                     return AVERROR(EINVAL);
                 }
@@ -2605,7 +2606,7 @@ static int mxf_write_footer(AVFormatContext *s)
     mxf_write_random_index_pack(s);
 
     if (s->pb->seekable & AVIO_SEEKABLE_NORMAL) {
-        if (s->oformat == &ff_mxf_opatom_muxer){
+        if (s->oformat == &ff_mxf_opatom_muxer) {
             /* rewrite body partition to update lengths */
             avio_seek(pb, mxf->body_partition_offset[0], SEEK_SET);
             if ((err = mxf_write_opatom_body_partition(s)) < 0)
