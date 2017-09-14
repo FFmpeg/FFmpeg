@@ -202,8 +202,12 @@ static const struct {
     enum AVPixelFormat pixfmt;
     uint32_t drm_format;
 } kmsgrab_formats[] = {
+#ifdef DRM_FORMAT_R8
     { AV_PIX_FMT_GRAY8,    DRM_FORMAT_R8       },
+#endif
+#ifdef DRM_FORMAT_R16
     { AV_PIX_FMT_GRAY16LE, DRM_FORMAT_R16      },
+#endif
     { AV_PIX_FMT_RGB24,    DRM_FORMAT_RGB888   },
     { AV_PIX_FMT_BGR24,    DRM_FORMAT_BGR888   },
     { AV_PIX_FMT_0RGB,     DRM_FORMAT_XRGB8888 },
