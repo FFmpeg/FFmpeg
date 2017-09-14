@@ -3564,7 +3564,7 @@ typedef struct AVCodecContext {
      */
     char *codec_whitelist;
 
-    /*
+    /**
      * Properties of the stream that gets decoded
      * - encoding: unused
      * - decoding: set by libavcodec
