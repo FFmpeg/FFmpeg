@@ -1810,7 +1810,7 @@ static int mxf_parse_dv_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt)
     stype    = vs_pack[3] & 0x1f;
     pal      = (vs_pack[3] >> 5) & 0x1;
 
-    if ((vs_pack[2] & 0x07) == 0x02)
+    if ((vsc_pack[2] & 0x07) == 0x02)
         sc->aspect_ratio = (AVRational){ 16, 9 };
     else
         sc->aspect_ratio = (AVRational){ 4, 3 };
