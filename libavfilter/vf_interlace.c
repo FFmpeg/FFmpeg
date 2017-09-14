@@ -181,6 +181,8 @@ static void copy_picture_field(InterlaceContext *s,
         int lines = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(inlink->h, vsub) : inlink->h;
         uint8_t *dstp = dst_frame->data[plane];
         const uint8_t *srcp = src_frame->data[plane];
+        int srcp_linesize = src_frame->linesize[plane] * 2;
+        int dstp_linesize = dst_frame->linesize[plane] * 2;
 
         av_assert0(cols >= 0 || lines >= 0);
 
@@ -189,38 +191,23 @@ static void copy_picture_field(InterlaceContext *s,
             srcp += src_frame->linesize[plane];
             dstp += dst_frame->linesize[plane];
         }
-        if (lowpass == VLPF_LIN) {
-            int srcp_linesize = src_frame->linesize[plane] * 2;
-            int dstp_linesize = dst_frame->linesize[plane] * 2;
+        if (lowpass) {
+            int x = 0;
+            if (lowpass == VLPF_CMP)
+                x = 1;
             for (j = lines; j > 0; j--) {
                 ptrdiff_t pref = src_frame->linesize[plane];
                 ptrdiff_t mref = -pref;
-                if (j == lines)
-                    mref = 0;    // there is no line above
-                else if (j == 1)
-                    pref = 0;    // there is no line below
-                s->lowpass_line(dstp, cols, srcp, mref, pref);
-                dstp += dstp_linesize;
-                srcp += srcp_linesize;
-            }
-        } else if (lowpass == VLPF_CMP) {
-            int srcp_linesize = src_frame->linesize[plane] * 2;
-            int dstp_linesize = dst_frame->linesize[plane] * 2;
-            for (j = lines; j > 0; j--) {
-                ptrdiff_t pref = src_frame->linesize[plane];
-                ptrdiff_t mref = -pref;
-                if (j >= (lines - 1))
+                if (j >= (lines - x))
                     mref = 0;
-                else if (j <= 2)
+                else if (j <= (1 + x))
                     pref = 0;
                 s->lowpass_line(dstp, cols, srcp, mref, pref);
                 dstp += dstp_linesize;
                 srcp += srcp_linesize;
             }
         } else {
-            av_image_copy_plane(dstp, dst_frame->linesize[plane] * 2,
-                                srcp, src_frame->linesize[plane] * 2,
-                                cols, lines);
+            av_image_copy_plane(dstp, dstp_linesize, srcp, srcp_linesize, cols, lines);
         }
     }
 }

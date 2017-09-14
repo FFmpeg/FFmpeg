@@ -252,6 +252,8 @@ void copy_picture_field(TInterlaceContext *tinterlace,
         int cols  = plane == 1 || plane == 2 ? AV_CEIL_RSHIFT(    w, hsub) : w;
         uint8_t *dstp = dst[plane];
         const uint8_t *srcp = src[plane];
+        int srcp_linesize = src_linesize[plane] * k;
+        int dstp_linesize = dst_linesize[plane] * (interleave ? 2 : 1);
 
         lines = (lines + (src_field == FIELD_UPPER)) / k;
         if (src_field == FIELD_LOWER)
@@ -261,35 +263,22 @@ void copy_picture_field(TInterlaceContext *tinterlace,
         // Low-pass filtering is required when creating an interlaced destination from
         // a progressive source which contains high-frequency vertical detail.
         // Filtering will reduce interlace 'twitter' and Moire patterning.
-        if (flags & TINTERLACE_FLAG_CVLPF) {
-            int srcp_linesize = src_linesize[plane] * k;
-            int dstp_linesize = dst_linesize[plane] * (interleave ? 2 : 1);
+        if (flags & TINTERLACE_FLAG_VLPF || flags & TINTERLACE_FLAG_CVLPF) {
+            int x = 0;
+            if (flags & TINTERLACE_FLAG_CVLPF)
+                x = 1;
             for (h = lines; h > 0; h--) {
                 ptrdiff_t pref = src_linesize[plane];
                 ptrdiff_t mref = -pref;
-                if (h >= (lines - 1)) mref = 0;
-                else if (h <= 2)      pref = 0;
-
-                tinterlace->lowpass_line(dstp, cols, srcp, mref, pref);
-                dstp += dstp_linesize;
-                srcp += srcp_linesize;
-            }
-        } else if (flags & TINTERLACE_FLAG_VLPF) {
-            int srcp_linesize = src_linesize[plane] * k;
-            int dstp_linesize = dst_linesize[plane] * (interleave ? 2 : 1);
-            for (h = lines; h > 0; h--) {
-                ptrdiff_t pref = src_linesize[plane];
-                ptrdiff_t mref = -pref;
-                if (h == lines)  mref = 0; // there is no line above
-                else if (h == 1) pref = 0; // there is no line below
+                if (h >= (lines - x))  mref = 0; // there is no line above
+                else if (h <= (1 + x)) pref = 0; // there is no line below
 
                 tinterlace->lowpass_line(dstp, cols, srcp, mref, pref);
                 dstp += dstp_linesize;
                 srcp += srcp_linesize;
             }
         } else {
-            av_image_copy_plane(dstp, dst_linesize[plane] * (interleave ? 2 : 1),
-                                srcp, src_linesize[plane]*k, cols, lines);
+            av_image_copy_plane(dstp, dstp_linesize, srcp, srcp_linesize, cols, lines);
         }
     }
 }
