@@ -233,3 +233,14 @@ int ff_get_cpu_flags_x86(void)
 
     return rval;
 }
+
+size_t ff_get_cpu_max_align_x86(void)
+{
+    int flags = av_get_cpu_flags();
+
+    if (flags & AV_CPU_FLAG_AVX)
+        return 32;
+    if (flags & AV_CPU_FLAG_SSE)
+        return 16;
+    return 8;
+}

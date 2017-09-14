@@ -184,12 +184,13 @@ int av_cpu_count(void)
 
 size_t av_cpu_max_align(void)
 {
-    int flags = av_get_cpu_flags();
-
-    if (flags & AV_CPU_FLAG_AVX)
-        return 32;
-    if (flags & (AV_CPU_FLAG_ALTIVEC | AV_CPU_FLAG_SSE | AV_CPU_FLAG_NEON))
-        return 16;
-
+    if (ARCH_AARCH64)
+        return ff_get_cpu_max_align_aarch64();
+    if (ARCH_ARM)
+        return ff_get_cpu_max_align_arm();
+    if (ARCH_PPC)
+        return ff_get_cpu_max_align_ppc();
+    if (ARCH_X86)
+        return ff_get_cpu_max_align_x86();
     return 8;
 }
