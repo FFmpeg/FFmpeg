@@ -190,10 +190,10 @@ static int kmsgrab_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     if (!pkt->buf)
         return AVERROR(ENOMEM);
 
-    pkt->data  = (uint8_t*)frame;
-    pkt->size  = sizeof(*frame);
-    pkt->pts   = now;
-    pkt->flags = AV_PKT_FLAG_TRUSTED;
+    pkt->data   = (uint8_t*)frame;
+    pkt->size   = sizeof(*frame);
+    pkt->pts    = now;
+    pkt->flags |= AV_PKT_FLAG_TRUSTED;
 
     return 0;
 }
