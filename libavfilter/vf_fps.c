@@ -171,6 +171,7 @@ static int request_frame(AVFilterLink *outlink)
                         s->frames_out++;
                         if (j > 0) s->dup++;
                     }
+                    av_frame_free(&buf);
                 } else {
                     /* for delta less or equal to 0, we should drop the frame,
                      * otherwise, we will have one or more extra frames */
