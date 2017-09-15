@@ -221,10 +221,6 @@ static const struct {
     { AV_PIX_FMT_YUYV422,  DRM_FORMAT_YUYV     },
     { AV_PIX_FMT_YVYU422,  DRM_FORMAT_YVYU     },
     { AV_PIX_FMT_UYVY422,  DRM_FORMAT_UYVY     },
-    { AV_PIX_FMT_NV12,     DRM_FORMAT_NV12     },
-    { AV_PIX_FMT_YUV420P,  DRM_FORMAT_YUV420   },
-    { AV_PIX_FMT_YUV422P,  DRM_FORMAT_YUV422   },
-    { AV_PIX_FMT_YUV444P,  DRM_FORMAT_YUV444   },
 };
 
 static av_cold int kmsgrab_read_header(AVFormatContext *avctx)
