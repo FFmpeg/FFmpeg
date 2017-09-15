@@ -329,6 +329,7 @@ Filters:
   avf_avectorscope.c                    Paul B Mahol
   avf_showcqt.c                         Muhammad Faiz
   vf_blend.c                            Paul B Mahol
+  vf_bwdif                              Thomas Mundt (CC <thomas.mundt@hr.de>)
   vf_chromakey.c                        Timo Rothenpieler
   vf_colorchannelmixer.c                Paul B Mahol
   vf_colorbalance.c                     Paul B Mahol
@@ -344,6 +345,7 @@ Filters:
   vf_hqx.c                              Clément Bœsch
   vf_idet.c                             Pascal Massimino
   vf_il.c                               Paul B Mahol
+  vf_(t)interlace                       Thomas Mundt (CC <thomas.mundt@hr.de>)
   vf_lenscorrection.c                   Daniel Oberhoff
   vf_mergeplanes.c                      Paul B Mahol
   vf_mestimate.c                        Davinder Singh
