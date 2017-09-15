@@ -1049,29 +1049,28 @@ static void hevc_sao_band_filter_4width_msa(uint8_t *dst, int32_t dst_stride,
                                             int16_t *sao_offset_val,
                                             int32_t height)
 {
-    int32_t h_cnt;
     v16u8 src0, src1, src2, src3;
     v16i8 src0_r, src1_r;
     v16i8 offset, offset_val, mask;
-    v16i8 offset0 = { 0 };
-    v16i8 offset1 = { 0 };
+    v16i8 dst0, offset0, offset1;
     v16i8 zero = { 0 };
-    v8i16 temp0, temp1, dst0, dst1;
 
     offset_val = LD_SB(sao_offset_val + 1);
     offset_val = (v16i8) __msa_pckev_d((v2i64) offset_val, (v2i64) offset_val);
 
     offset_val = __msa_pckev_b(offset_val, offset_val);
-    offset1 = (v16i8) __msa_insve_w((v4i32) offset1, 3, (v4i32) offset_val);
-    offset0 = __msa_sld_b(offset1, offset0, 28 - ((sao_left_class) & 31));
+    offset1 = (v16i8) __msa_insve_w((v4i32) zero, 3, (v4i32) offset_val);
+    offset0 = __msa_sld_b(offset1, zero, 28 - ((sao_left_class) & 31));
     offset1 = __msa_sld_b(zero, offset1, 28 - ((sao_left_class) & 31));
+
+    /* load in advance. */
+    LD_UB4(src, src_stride, src0, src1, src2, src3);
 
     if (!((sao_left_class > 12) & (sao_left_class < 29))) {
         SWAP(offset0, offset1);
     }
 
-    for (h_cnt = height >> 2; h_cnt--;) {
-        LD_UB4(src, src_stride, src0, src1, src2, src3);
+    for (height -= 4; height; height -= 4) {
         src += (4 * src_stride);
 
         ILVEV_D2_SB(src0, src1, src2, src3, src0_r, src1_r);
@@ -1080,14 +1079,30 @@ static void hevc_sao_band_filter_4width_msa(uint8_t *dst, int32_t dst_stride,
         mask = __msa_srli_b(src0_r, 3);
         offset = __msa_vshf_b(mask, offset1, offset0);
 
-        UNPCK_SB_SH(offset, temp0, temp1);
-        ILVRL_B2_SH(zero, src0_r, dst0, dst1);
-        ADD2(dst0, temp0, dst1, temp1, dst0, dst1);
-        CLIP_SH2_0_255(dst0, dst1);
-        dst0 = (v8i16) __msa_pckev_b((v16i8) dst1, (v16i8) dst0);
+        src0_r = (v16i8) __msa_xori_b((v16u8) src0_r, 128);
+        dst0 = __msa_adds_s_b(src0_r, offset);
+        dst0 = (v16i8) __msa_xori_b((v16u8) dst0, 128);
+
+        /* load in advance. */
+        LD_UB4(src, src_stride, src0, src1, src2, src3);
+
+        /* store results */
         ST4x4_UB(dst0, dst0, 0, 1, 2, 3, dst, dst_stride);
         dst += (4 * dst_stride);
     }
+
+    ILVEV_D2_SB(src0, src1, src2, src3, src0_r, src1_r);
+
+    src0_r = (v16i8) __msa_pckev_w((v4i32) src1_r, (v4i32) src0_r);
+    mask = __msa_srli_b(src0_r, 3);
+    offset = __msa_vshf_b(mask, offset1, offset0);
+
+    src0_r = (v16i8) __msa_xori_b((v16u8) src0_r, 128);
+    dst0 = __msa_adds_s_b(src0_r, offset);
+    dst0 = (v16i8) __msa_xori_b((v16u8) dst0, 128);
+
+    /* store results */
+    ST4x4_UB(dst0, dst0, 0, 1, 2, 3, dst, dst_stride);
 }
 
 static void hevc_sao_band_filter_8width_msa(uint8_t *dst, int32_t dst_stride,
@@ -1096,51 +1111,69 @@ static void hevc_sao_band_filter_8width_msa(uint8_t *dst, int32_t dst_stride,
                                             int16_t *sao_offset_val,
                                             int32_t height)
 {
-    int32_t h_cnt;
     v16u8 src0, src1, src2, src3;
     v16i8 src0_r, src1_r, mask0, mask1;
-    v16i8 offset, offset_val;
-    v16i8 offset0 = { 0 };
-    v16i8 offset1 = { 0 };
+    v16i8 offset_mask0, offset_mask1, offset_val;
+    v16i8 offset0, offset1, dst0, dst1;
     v16i8 zero = { 0 };
-    v8i16 dst0, dst1, dst2, dst3;
-    v8i16 temp0, temp1, temp2, temp3;
 
     offset_val = LD_SB(sao_offset_val + 1);
     offset_val = (v16i8) __msa_pckev_d((v2i64) offset_val, (v2i64) offset_val);
     offset_val = __msa_pckev_b(offset_val, offset_val);
-    offset1 = (v16i8) __msa_insve_w((v4i32) offset1, 3, (v4i32) offset_val);
-    offset0 = __msa_sld_b(offset1, offset0, 28 - ((sao_left_class) & 31));
+    offset1 = (v16i8) __msa_insve_w((v4i32) zero, 3, (v4i32) offset_val);
+    offset0 = __msa_sld_b(offset1, zero, 28 - ((sao_left_class) & 31));
     offset1 = __msa_sld_b(zero, offset1, 28 - ((sao_left_class) & 31));
+
+    /* load in advance. */
+    LD_UB4(src, src_stride, src0, src1, src2, src3);
 
     if (!((sao_left_class > 12) & (sao_left_class < 29))) {
         SWAP(offset0, offset1);
     }
 
-    for (h_cnt = height >> 2; h_cnt--;) {
-        LD_UB4(src, src_stride, src0, src1, src2, src3);
-        src += (4 * src_stride);
+    for (height -= 4; height; height -= 4) {
+        src += src_stride << 2;
 
         ILVR_D2_SB(src1, src0, src3, src2, src0_r, src1_r);
 
         mask0 = __msa_srli_b(src0_r, 3);
         mask1 = __msa_srli_b(src1_r, 3);
 
-        offset = __msa_vshf_b(mask0, offset1, offset0);
-        UNPCK_SB_SH(offset, temp0, temp1);
+        offset_mask0 = __msa_vshf_b(mask0, offset1, offset0);
+        offset_mask1 = __msa_vshf_b(mask1, offset1, offset0);
 
-        offset = __msa_vshf_b(mask1, offset1, offset0);
-        UNPCK_SB_SH(offset, temp2, temp3);
+        /* load in advance. */
+        LD_UB4(src, src_stride, src0, src1, src2, src3);
 
-        UNPCK_UB_SH(src0_r, dst0, dst1);
-        UNPCK_UB_SH(src1_r, dst2, dst3);
-        ADD4(dst0, temp0, dst1, temp1, dst2, temp2, dst3, temp3,
-             dst0, dst1, dst2, dst3);
-        CLIP_SH4_0_255(dst0, dst1, dst2, dst3);
-        PCKEV_B2_SH(dst1, dst0, dst3, dst2, dst0, dst2);
-        ST8x4_UB(dst0, dst2, dst, dst_stride);
-        dst += (4 * dst_stride);
+        XORI_B2_128_SB(src0_r, src1_r);
+
+        dst0 = __msa_adds_s_b(src0_r, offset_mask0);
+        dst1 = __msa_adds_s_b(src1_r, offset_mask1);
+
+        XORI_B2_128_SB(dst0, dst1);
+
+        /* store results */
+        ST8x4_UB(dst0, dst1, dst, dst_stride);
+        dst += dst_stride << 2;
     }
+
+    ILVR_D2_SB(src1, src0, src3, src2, src0_r, src1_r);
+
+    mask0 = __msa_srli_b(src0_r, 3);
+    mask1 = __msa_srli_b(src1_r, 3);
+
+    offset_mask0 = __msa_vshf_b(mask0, offset1, offset0);
+    offset_mask1 = __msa_vshf_b(mask1, offset1, offset0);
+
+    XORI_B2_128_SB(src0_r, src1_r);
+
+    dst0 = __msa_adds_s_b(src0_r, offset_mask0);
+    dst1 = __msa_adds_s_b(src1_r, offset_mask1);
+
+    XORI_B2_128_SB(dst0, dst1);
+
+    /* store results */
+    ST8x4_UB(dst0, dst1, dst, dst_stride);
 }
 
 static void hevc_sao_band_filter_16multiple_msa(uint8_t *dst,
@@ -1151,32 +1184,30 @@ static void hevc_sao_band_filter_16multiple_msa(uint8_t *dst,
                                                 int16_t *sao_offset_val,
                                                 int32_t width, int32_t height)
 {
-    int32_t h_cnt, w_cnt;
+    int32_t w_cnt;
     v16u8 src0, src1, src2, src3;
-    v8i16 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
     v16i8 out0, out1, out2, out3;
     v16i8 mask0, mask1, mask2, mask3;
     v16i8 tmp0, tmp1, tmp2, tmp3, offset_val;
-    v16i8 offset0 = { 0 };
-    v16i8 offset1 = { 0 };
+    v16i8 offset0, offset1;
     v16i8 zero = { 0 };
-    v8i16 temp0, temp1, temp2, temp3, temp4, temp5, temp6, temp7;
 
     offset_val = LD_SB(sao_offset_val + 1);
     offset_val = (v16i8) __msa_pckev_d((v2i64) offset_val, (v2i64) offset_val);
     offset_val = __msa_pckev_b(offset_val, offset_val);
-    offset1 = (v16i8) __msa_insve_w((v4i32) offset1, 3, (v4i32) offset_val);
-    offset0 = __msa_sld_b(offset1, offset0, 28 - ((sao_left_class) & 31));
+    offset1 = (v16i8) __msa_insve_w((v4i32) zero, 3, (v4i32) offset_val);
+    offset0 = __msa_sld_b(offset1, zero, 28 - ((sao_left_class) & 31));
     offset1 = __msa_sld_b(zero, offset1, 28 - ((sao_left_class) & 31));
 
     if (!((sao_left_class > 12) & (sao_left_class < 29))) {
         SWAP(offset0, offset1);
     }
 
-    for (h_cnt = height >> 2; h_cnt--;) {
-        for (w_cnt = 0; w_cnt < (width >> 4); w_cnt++) {
-            LD_UB4(src + w_cnt * 16, src_stride, src0, src1, src2, src3);
+    while (height > 0) {
+        /* load in advance */
+        LD_UB4(src, src_stride, src0, src1, src2, src3);
 
+        for (w_cnt = 16; w_cnt < width; w_cnt += 16) {
             mask0 = __msa_srli_b((v16i8) src0, 3);
             mask1 = __msa_srli_b((v16i8) src1, 3);
             mask2 = __msa_srli_b((v16i8) src2, 3);
@@ -1186,27 +1217,44 @@ static void hevc_sao_band_filter_16multiple_msa(uint8_t *dst,
                        tmp0, tmp1);
             VSHF_B2_SB(offset0, offset1, offset0, offset1, mask2, mask3,
                        tmp2, tmp3);
-            UNPCK_SB_SH(tmp0, temp0, temp1);
-            UNPCK_SB_SH(tmp1, temp2, temp3);
-            UNPCK_SB_SH(tmp2, temp4, temp5);
-            UNPCK_SB_SH(tmp3, temp6, temp7);
-            ILVRL_B2_SH(zero, src0, dst0, dst1);
-            ILVRL_B2_SH(zero, src1, dst2, dst3);
-            ILVRL_B2_SH(zero, src2, dst4, dst5);
-            ILVRL_B2_SH(zero, src3, dst6, dst7);
-            ADD4(dst0, temp0, dst1, temp1, dst2, temp2, dst3, temp3,
-                 dst0, dst1, dst2, dst3);
-            ADD4(dst4, temp4, dst5, temp5, dst6, temp6, dst7, temp7,
-                 dst4, dst5, dst6, dst7);
-            CLIP_SH4_0_255(dst0, dst1, dst2, dst3);
-            CLIP_SH4_0_255(dst4, dst5, dst6, dst7);
-            PCKEV_B4_SB(dst1, dst0, dst3, dst2, dst5, dst4, dst7, dst6,
-                        out0, out1, out2, out3);
-            ST_SB4(out0, out1, out2, out3, dst + w_cnt * 16, dst_stride);
+            XORI_B4_128_UB(src0, src1, src2, src3);
+
+            out0 = __msa_adds_s_b((v16i8) src0, tmp0);
+            out1 = __msa_adds_s_b((v16i8) src1, tmp1);
+            out2 = __msa_adds_s_b((v16i8) src2, tmp2);
+            out3 = __msa_adds_s_b((v16i8) src3, tmp3);
+
+            /* load for next iteration */
+            LD_UB4(src + w_cnt, src_stride, src0, src1, src2, src3);
+
+            XORI_B4_128_SB(out0, out1, out2, out3);
+
+            ST_SB4(out0, out1, out2, out3, dst + w_cnt - 16, dst_stride);
         }
+
+        mask0 = __msa_srli_b((v16i8) src0, 3);
+        mask1 = __msa_srli_b((v16i8) src1, 3);
+        mask2 = __msa_srli_b((v16i8) src2, 3);
+        mask3 = __msa_srli_b((v16i8) src3, 3);
+
+        VSHF_B2_SB(offset0, offset1, offset0, offset1, mask0, mask1, tmp0,
+                   tmp1);
+        VSHF_B2_SB(offset0, offset1, offset0, offset1, mask2, mask3, tmp2,
+                   tmp3);
+        XORI_B4_128_UB(src0, src1, src2, src3);
+
+        out0 = __msa_adds_s_b((v16i8) src0, tmp0);
+        out1 = __msa_adds_s_b((v16i8) src1, tmp1);
+        out2 = __msa_adds_s_b((v16i8) src2, tmp2);
+        out3 = __msa_adds_s_b((v16i8) src3, tmp3);
+
+        XORI_B4_128_SB(out0, out1, out2, out3);
+
+        ST_SB4(out0, out1, out2, out3, dst + w_cnt - 16, dst_stride);
 
         src += src_stride << 2;
         dst += dst_stride << 2;
+        height -= 4;
     }
 }
 
