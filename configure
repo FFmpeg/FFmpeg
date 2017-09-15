@@ -202,6 +202,7 @@ External library support:
   themselves, not all their features will necessarily be usable by FFmpeg.
 
   --disable-alsa           disable ALSA support [autodetect]
+  --disable-appkit         disable Apple AppKit framework [autodetect]
   --disable-avfoundation   disable Apple AVFoundation framework [autodetect]
   --enable-avisynth        enable reading of AviSynth script files [no]
   --disable-bzlib          disable bzlib [autodetect]
@@ -1503,6 +1504,7 @@ EXAMPLE_LIST="
 
 EXTERNAL_AUTODETECT_LIBRARY_LIST="
     alsa
+    appkit
     avfoundation
     bzlib
     coreimage
@@ -3136,10 +3138,10 @@ blackframe_filter_deps="gpl"
 boxblur_filter_deps="gpl"
 bs2b_filter_deps="libbs2b"
 colormatrix_filter_deps="gpl"
-coreimage_filter_deps="coreimage"
-coreimage_filter_extralibs="-framework OpenGL -framework AppKit"
-coreimagesrc_filter_deps="coreimage"
-coreimagesrc_filter_extralibs="-framework OpenGL -framework AppKit"
+coreimage_filter_deps="coreimage appkit"
+coreimage_filter_extralibs="-framework OpenGL"
+coreimagesrc_filter_deps="coreimage appkit"
+coreimagesrc_filter_extralibs="-framework OpenGL"
 cover_rect_filter_deps="avcodec avformat gpl"
 cropdetect_filter_deps="gpl"
 deinterlace_qsv_filter_deps="libmfx"
@@ -5763,6 +5765,7 @@ check_lib shell32  "windows.h shellapi.h" CommandLineToArgvW   -lshell32
 check_lib wincrypt "windows.h wincrypt.h" CryptGenRandom       -ladvapi32
 check_lib psapi    "windows.h psapi.h"    GetProcessMemoryInfo -lpsapi
 
+enabled appkit       && check_apple_framework AppKit
 enabled audiotoolbox && check_apple_framework AudioToolbox
 enabled avfoundation && check_apple_framework AVFoundation
 enabled coreimage    && check_apple_framework CoreImage
