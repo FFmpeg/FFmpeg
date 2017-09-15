@@ -51,6 +51,7 @@ version <next>:
 - CUDA thumbnail filter
 - V4L2 mem2mem HW assisted codecs
 - Rockchip MPP hardware decoding
+- vmafmotion video filter
 
 
 version 3.3:
