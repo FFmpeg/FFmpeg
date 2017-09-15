@@ -1448,7 +1448,7 @@ int ff_AMediaCodec_releaseOutputBuffer(FFAMediaCodec* codec, size_t idx, int ren
 
     JNI_GET_ENV_OR_RETURN(env, codec, AVERROR_EXTERNAL);
 
-    (*env)->CallVoidMethod(env, codec->object, codec->jfields.release_output_buffer_id, idx, render);
+    (*env)->CallVoidMethod(env, codec->object, codec->jfields.release_output_buffer_id, (jint)idx, (jboolean)render);
     if (ff_jni_exception_check(env, 1, codec) < 0) {
         ret = AVERROR_EXTERNAL;
         goto fail;
@@ -1465,7 +1465,7 @@ int ff_AMediaCodec_releaseOutputBufferAtTime(FFAMediaCodec *codec, size_t idx, i
 
     JNI_GET_ENV_OR_RETURN(env, codec, AVERROR_EXTERNAL);
 
-    (*env)->CallVoidMethod(env, codec->object, codec->jfields.release_output_buffer_at_time_id, idx, timestampNs);
+    (*env)->CallVoidMethod(env, codec->object, codec->jfields.release_output_buffer_at_time_id, (jint)idx, timestampNs);
     if (ff_jni_exception_check(env, 1, codec) < 0) {
         ret = AVERROR_EXTERNAL;
         goto fail;
@@ -1499,7 +1499,7 @@ int ff_AMediaCodec_queueInputBuffer(FFAMediaCodec* codec, size_t idx, off_t offs
 
     JNI_GET_ENV_OR_RETURN(env, codec, AVERROR_EXTERNAL);
 
-    (*env)->CallVoidMethod(env, codec->object, codec->jfields.queue_input_buffer_id, idx, offset, size, time, flags);
+    (*env)->CallVoidMethod(env, codec->object, codec->jfields.queue_input_buffer_id, (jint)idx, (jint)offset, (jint)size, time, flags);
     if ((ret = ff_jni_exception_check(env, 1, codec)) < 0) {
         ret = AVERROR_EXTERNAL;
         goto fail;
@@ -1572,7 +1572,7 @@ uint8_t* ff_AMediaCodec_getInputBuffer(FFAMediaCodec* codec, size_t idx, size_t 
     JNI_GET_ENV_OR_RETURN(env, codec, NULL);
 
     if (codec->has_get_i_o_buffer) {
-        buffer = (*env)->CallObjectMethod(env, codec->object, codec->jfields.get_input_buffer_id, idx);
+        buffer = (*env)->CallObjectMethod(env, codec->object, codec->jfields.get_input_buffer_id, (jint)idx);
         if (ff_jni_exception_check(env, 1, codec) < 0) {
             goto fail;
         }
@@ -1620,7 +1620,7 @@ uint8_t* ff_AMediaCodec_getOutputBuffer(FFAMediaCodec* codec, size_t idx, size_t
     JNI_GET_ENV_OR_RETURN(env, codec, NULL);
 
     if (codec->has_get_i_o_buffer) {
-        buffer = (*env)->CallObjectMethod(env, codec->object, codec->jfields.get_output_buffer_id, idx);
+        buffer = (*env)->CallObjectMethod(env, codec->object, codec->jfields.get_output_buffer_id, (jint)idx);
         if (ff_jni_exception_check(env, 1, codec) < 0) {
             goto fail;
         }
