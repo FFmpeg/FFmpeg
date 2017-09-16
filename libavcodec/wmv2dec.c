@@ -29,7 +29,7 @@
 #include "wmv2.h"
 
 
-static void parse_mb_skip(Wmv2Context *w)
+static int parse_mb_skip(Wmv2Context *w)
 {
     int mb_x, mb_y;
     MpegEncContext *const s = &w->s;
@@ -44,6 +44,8 @@ static void parse_mb_skip(Wmv2Context *w)
                     MB_TYPE_16x16 | MB_TYPE_L0;
         break;
     case SKIP_TYPE_MPEG:
+        if (get_bits_left(&s->gb) < s->mb_height * s->mb_width)
+            return AVERROR_INVALIDDATA;
         for (mb_y = 0; mb_y < s->mb_height; mb_y++)
             for (mb_x = 0; mb_x < s->mb_width; mb_x++)
                 mb_type[mb_y * s->mb_stride + mb_x] =
@@ -51,6 +53,8 @@ static void parse_mb_skip(Wmv2Context *w)
         break;
     case SKIP_TYPE_ROW:
         for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
+            if (get_bits_left(&s->gb) < 1)
+                return AVERROR_INVALIDDATA;
             if (get_bits1(&s->gb)) {
                 for (mb_x = 0; mb_x < s->mb_width; mb_x++)
                     mb_type[mb_y * s->mb_stride + mb_x] =
@@ -64,6 +68,8 @@ static void parse_mb_skip(Wmv2Context *w)
         break;
     case SKIP_TYPE_COL:
         for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
+            if (get_bits_left(&s->gb) < 1)
+                return AVERROR_INVALIDDATA;
             if (get_bits1(&s->gb)) {
                 for (mb_y = 0; mb_y < s->mb_height; mb_y++)
                     mb_type[mb_y * s->mb_stride + mb_x] =
@@ -76,6 +82,7 @@ static void parse_mb_skip(Wmv2Context *w)
         }
         break;
     }
+    return 0;
 }
 
 static int decode_ext_header(Wmv2Context *w)
@@ -169,9 +176,12 @@ int ff_wmv2_decode_secondary_picture_header(MpegEncContext *s)
         }
     } else {
         int cbp_index;
+        int ret;
         w->j_type = 0;
 
-        parse_mb_skip(w);
+        ret = parse_mb_skip(w);
+        if (ret < 0)
+            return ret;
         cbp_index = decode012(&s->gb);
         if (s->qscale <= 10) {
             int map[3]         = { 0, 2, 1 };
@@ -360,6 +370,8 @@ int ff_wmv2_decode_mb(MpegEncContext *s, int16_t block[6][64])
             w->hshift      = 0;
             return 0;
         }
+        if (get_bits_left(&s->gb) <= 0)
+            return AVERROR_INVALIDDATA;
 
         code = get_vlc2(&s->gb, ff_mb_non_intra_vlc[w->cbp_table_index].table,
                         MB_NON_INTRA_VLC_BITS, 3);
@@ -370,6 +382,8 @@ int ff_wmv2_decode_mb(MpegEncContext *s, int16_t block[6][64])
         cbp = code & 0x3f;
     } else {
         s->mb_intra = 1;
+        if (get_bits_left(&s->gb) <= 0)
+            return AVERROR_INVALIDDATA;
         code = get_vlc2(&s->gb, ff_msmp4_mb_i_vlc.table, MB_INTRA_VLC_BITS, 2);
         if (code < 0) {
             av_log(s->avctx, AV_LOG_ERROR,
