@@ -1,6 +1,55 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 3.2.8:
+- avcodec/hevc_ps: Fix c?_qp_offset_list size
+- avcodec/shorten: Move buffer allocation and offset init to end of read_header()
+- avcodec/jpeg2000dsp: Fix multiple integer overflows in ict_int()
+- avcodec/hevcdsp_template: Fix undefined shift in put_hevc_pel_bi_w_pixels
+- avcodec/diracdec: Fix overflow in DC computation
+- avcodec/dirac_vlc: limit res_bits in APPEND_RESIDUE()
+- libavcodec/h264_parse: don't use uninitialized value when chroma_format_idc==0
+- avformat/asfdec: Fix DoS in asf_build_simple_index()
+- avformat/mov: Fix DoS in read_tfra()
+- avcodec/dirac_vlc: Fix invalid shift in ff_dirac_golomb_read_32bit()
+- avcodec/dirac_dwt: Fix multiple overflows in 9/7 lifting
+- avcodec/diracdec: Fix integer overflow in INTRA_DC_PRED()
+- avformat/mxfdec: Fix Sign error in mxf_read_primer_pack()
+- avformat/mxfdec: Fix DoS issues in mxf_read_index_entry_array()
+- avformat/nsvdec: Fix DoS due to lack of eof check in nsvs_file_offset loop.
+- avcodec/snowdec: Fix integer overflow in decode_subband_slice_buffered()
+- avcodec/hevc_ps: Fix undefined shift in pcm code
+- avcodec/sbrdsp_fixed: Fix undefined overflows in autocorrelate()
+- avformat/mvdec: Fix DoS due to lack of eof check
+- avformat/rl2: Fix DoS due to lack of eof check
+- avformat/rmdec: Fix DoS due to lack of eof check
+- avformat/cinedec: Fix DoS due to lack of eof check
+- avformat/asfdec: Fix DoS due to lack of eof check
+- avformat/hls: Fix DoS due to infinite loop
+- ffprobe: Fix NULL pointer handling in color parameter printing
+- ffprobe: Fix null pointer dereference with color primaries
+- avcodec/hevc_ps: Check delta_pocs in ff_hevc_decode_short_term_rps()
+- avformat/rtpdec_h264: Fix heap-buffer-overflow
+- avformat/aviobuf: Fix signed integer overflow in avio_seek()
+- avformat/mov: Fix signed integer overflows with total_size
+- avcodec/utils: Fix signed integer overflow in rc_initial_buffer_occupancy initialization
+- avcodec/aacdec_template: Fix running cleanup in decode_ics_info()
+- avcodec/me_cmp: Fix crashes on ARM due to misalignment
+- avcodec/dirac_dwt_template: Fix integer overflow in vertical_compose53iL0()
+- avcodec/fic: Fixes signed integer overflow
+- avcodec/snowdec: Fix off by 1 error
+- avcodec/diracdec: Fixes integer overflow
+- avcodec/diracdec: Check perspective_exp and zrs_exp.
+- avcodec/ffv1dec_template: Fix undefined shift
+- avcodec/mpeg4videodec: Clear mcsel before decoding an image
+- avcodec/dirac_dwt: Fixes integer overflows in COMPOSE_DAUB97*
+- avcodec/aacdec_fixed: fix invalid shift in predict()
+- avcodec/h264_slice: Fix overflow in slice offset
+- avformat/utils: fix memory leak in avformat_free_context
+- avcodec/diracdsp: fix integer overflow
+- avcodec/diracdec: Check weight_log2denom
+- avfilter/vf_ssim: fix temp size calculation
+
 version 3.2.7:
 - avcodec/dirac_dwt: Fix multiple integer overflows in COMPOSE_DD97iH0()
 - avcodec/diracdec: Fix integer overflow in divide3()
