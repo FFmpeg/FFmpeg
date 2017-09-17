@@ -888,7 +888,7 @@ exit_loop:
     metadata   = NULL;
 
     if ((ret = av_frame_ref(data, s->picture.f)) < 0)
-        return ret;
+        goto the_end;
 
     *got_frame = 1;
 
