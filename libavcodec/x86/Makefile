@@ -52,6 +52,7 @@ OBJS-$(CONFIG_APNG_DECODER)            += x86/pngdsp_init.o
 OBJS-$(CONFIG_CAVS_DECODER)            += x86/cavsdsp.o
 OBJS-$(CONFIG_DCA_DECODER)             += x86/dcadsp_init.o x86/synth_filter_init.o
 OBJS-$(CONFIG_DNXHD_ENCODER)           += x86/dnxhdenc_init.o
+OBJS-$(CONFIG_EXR_DECODER)             += x86/exrdsp_init.o
 OBJS-$(CONFIG_OPUS_DECODER)            += x86/opus_dsp_init.o
 OBJS-$(CONFIG_OPUS_ENCODER)            += x86/opus_dsp_init.o
 OBJS-$(CONFIG_HEVC_DECODER)            += x86/hevcdsp_init.o
@@ -153,6 +154,7 @@ X86ASM-OBJS-$(CONFIG_DCA_DECODER)      += x86/dcadsp.o x86/synth_filter.o
 X86ASM-OBJS-$(CONFIG_DIRAC_DECODER)    += x86/diracdsp.o                \
                                           x86/dirac_dwt.o
 X86ASM-OBJS-$(CONFIG_DNXHD_ENCODER)    += x86/dnxhdenc.o
+X86ASM-OBJS-$(CONFIG_EXR_DECODER)      += x86/exrdsp.o
 X86ASM-OBJS-$(CONFIG_FLAC_DECODER)     += x86/flacdsp.o
 ifdef CONFIG_GPL
 X86ASM-OBJS-$(CONFIG_FLAC_ENCODER)     += x86/flac_dsp_gpl.o
