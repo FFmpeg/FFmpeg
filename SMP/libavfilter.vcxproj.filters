@@ -279,7 +279,7 @@
     <ClCompile Include="..\libavfilter\f_streamselect.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavfilter\framesync2.c">
+    <ClCompile Include="..\libavfilter\framesync.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\af_atempo.c">

@@ -407,6 +407,9 @@
     <ClInclude Include="..\libavutil\hwcontext_d3d11va.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
+    <ClInclude Include="..\libavutil\hwcontext_drm.h">
+      <Filter>Header Files\libavutil</Filter>
+    </ClInclude>
     <ClInclude Include="..\libavutil\hwcontext_dxva2.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>

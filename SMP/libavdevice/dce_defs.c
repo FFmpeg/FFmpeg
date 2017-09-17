@@ -31,6 +31,7 @@ const AVInputFormat ff_dv1394_demuxer = {0};
 const AVInputFormat ff_fbdev_demuxer = {0};
 const AVInputFormat ff_iec61883_demuxer = {0};
 const AVInputFormat ff_jack_demuxer = {0};
+const AVInputFormat ff_kmsgrab_demuxer = {0};
 const AVInputFormat ff_libdc1394_demuxer = {0};
 const AVInputFormat ff_libndi_newtek_demuxer = {0};
 const AVInputFormat ff_openal_demuxer = {0};
