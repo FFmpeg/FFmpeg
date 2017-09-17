@@ -92,6 +92,9 @@ static const struct {
     #if CONFIG_DCA_DECODER
         { "synth_filter", checkasm_check_synth_filter },
     #endif
+    #if CONFIG_EXR_DECODER
+        { "exrdsp", checkasm_check_exrdsp },
+    #endif
     #if CONFIG_FLACDSP
         { "flacdsp", checkasm_check_flacdsp },
     #endif
