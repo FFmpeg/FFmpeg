@@ -24,7 +24,7 @@
 #include "exrdsp.h"
 #include "config.h"
 
-static void reorder_pixels_scalar(uint8_t *src, uint8_t *dst, ptrdiff_t size)
+static void reorder_pixels_scalar(uint8_t *dst, const uint8_t *src, ptrdiff_t size)
 {
     const uint8_t *t1 = src;
     int half_size     = size / 2;

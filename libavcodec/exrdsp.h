@@ -23,7 +23,7 @@
 #include "libavutil/common.h"
 
 typedef struct ExrDSPContext {
-    void (*reorder_pixels)(uint8_t *src, uint8_t *dst, ptrdiff_t size);
+    void (*reorder_pixels)(uint8_t *dst, const uint8_t *src, ptrdiff_t size);
 } ExrDSPContext;
 
 void ff_exrdsp_init(ExrDSPContext *c);

@@ -22,9 +22,9 @@
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/exrdsp.h"
 
-void ff_reorder_pixels_sse2(uint8_t *src, uint8_t *dst, ptrdiff_t size);
+void ff_reorder_pixels_sse2(uint8_t *dst, const uint8_t *src, ptrdiff_t size);
 
-void ff_reorder_pixels_avx2(uint8_t *src, uint8_t *dst, ptrdiff_t size);
+void ff_reorder_pixels_avx2(uint8_t *dst, const uint8_t *src, ptrdiff_t size);
 
 av_cold void ff_exrdsp_init_x86(ExrDSPContext *dsp)
 {

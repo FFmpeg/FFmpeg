@@ -27,11 +27,11 @@
 SECTION .text
 
 ;------------------------------------------------------------------------------
-; void ff_reorder_pixels(uint8_t *src, uint8_t *dst, ptrdiff_t size)
+; void ff_reorder_pixels(uint8_t *dst, const uint8_t *src, ptrdiff_t size);
 ;------------------------------------------------------------------------------
 
 %macro REORDER_PIXELS 0
-cglobal reorder_pixels, 3,4,3, src1, dst, size, src2
+cglobal reorder_pixels, 3,4,3, dst, src1, size, src2
     lea                              src2q, [src1q+sizeq] ; src2 = src + 2 * half_size
     add                               dstq, sizeq         ; dst offset by size
     shr                              sizeq, 1             ; half_size

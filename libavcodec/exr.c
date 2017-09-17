@@ -289,7 +289,7 @@ static int zip_uncompress(EXRContext *s, const uint8_t *src, int compressed_size
     av_assert1(uncompressed_size % 2 == 0);
 
     predictor(td->tmp, uncompressed_size);
-    s->dsp.reorder_pixels(td->tmp, td->uncompressed_data, uncompressed_size);
+    s->dsp.reorder_pixels(td->uncompressed_data, td->tmp, uncompressed_size);
 
     return 0;
 }
@@ -336,7 +336,7 @@ static int rle_uncompress(EXRContext *ctx, const uint8_t *src, int compressed_si
     av_assert1(uncompressed_size % 2 == 0);
 
     predictor(td->tmp, uncompressed_size);
-    ctx->dsp.reorder_pixels(td->tmp, td->uncompressed_data, uncompressed_size);
+    ctx->dsp.reorder_pixels(td->uncompressed_data, td->tmp, uncompressed_size);
 
     return 0;
 }
