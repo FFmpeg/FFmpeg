@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Parag Salasakar (Parag.Salasakar@imgtec.com)
+ * Copyright (c) 2015 -2017 Parag Salasakar (Parag.Salasakar@imgtec.com)
  *
  * This file is part of FFmpeg.
  *
@@ -2966,31 +2966,100 @@ static void avg_width16_msa(const uint8_t *src, int32_t src_stride,
 void ff_put_h264_qpel16_mc00_msa(uint8_t *dst, const uint8_t *src,
                                  ptrdiff_t stride)
 {
-    copy_width16_msa(src, stride, dst, stride, 16);
+    v16u8 src0, src1, src2, src3, src4, src5, src6, src7;
+    v16u8 src8, src9, src10, src11, src12, src13, src14, src15;
+
+    LD_UB8(src, stride, src0, src1, src2, src3, src4, src5, src6, src7);
+    src += (8 * stride);
+    LD_UB8(src, stride, src8, src9, src10, src11, src12, src13, src14, src15);
+
+    ST_UB8(src0, src1, src2, src3, src4, src5, src6, src7, dst, stride);
+    dst += (8 * stride);
+    ST_UB8(src8, src9, src10, src11, src12, src13, src14, src15, dst, stride);
 }
 
 void ff_put_h264_qpel8_mc00_msa(uint8_t *dst, const uint8_t *src,
                                 ptrdiff_t stride)
 {
-    copy_width8_msa(src, stride, dst, stride, 8);
+    uint64_t src0, src1, src2, src3, src4, src5, src6, src7;
+
+    LD4(src, stride, src0, src1, src2, src3);
+    src += 4 * stride;
+    LD4(src, stride, src4, src5, src6, src7);
+    SD4(src0, src1, src2, src3, dst, stride);
+    dst += 4 * stride;
+    SD4(src4, src5, src6, src7, dst, stride);
 }
 
 void ff_avg_h264_qpel16_mc00_msa(uint8_t *dst, const uint8_t *src,
                                  ptrdiff_t stride)
 {
-    avg_width16_msa(src, stride, dst, stride, 16);
+    v16u8 src0, src1, src2, src3, src4, src5, src6, src7;
+    v16u8 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
+
+    LD_UB8(src, stride, src0, src1, src2, src3, src4, src5, src6, src7);
+    src += (8 * stride);
+    LD_UB8(dst, stride, dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7);
+
+    AVER_UB4_UB(src0, dst0, src1, dst1, src2, dst2, src3, dst3, dst0, dst1,
+                dst2, dst3);
+    AVER_UB4_UB(src4, dst4, src5, dst5, src6, dst6, src7, dst7, dst4, dst5,
+                dst6, dst7);
+    ST_UB8(dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7, dst, stride);
+    dst += (8 * stride);
+
+    LD_UB8(src, stride, src0, src1, src2, src3, src4, src5, src6, src7);
+    LD_UB8(dst, stride, dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7);
+
+    AVER_UB4_UB(src0, dst0, src1, dst1, src2, dst2, src3, dst3, dst0, dst1,
+                dst2, dst3);
+    AVER_UB4_UB(src4, dst4, src5, dst5, src6, dst6, src7, dst7, dst4, dst5,
+                dst6, dst7);
+    ST_UB8(dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7, dst, stride);
 }
 
 void ff_avg_h264_qpel8_mc00_msa(uint8_t *dst, const uint8_t *src,
                                 ptrdiff_t stride)
 {
-    avg_width8_msa(src, stride, dst, stride, 8);
+    uint64_t tp0, tp1, tp2, tp3, tp4, tp5, tp6, tp7;
+    v16u8 src0 = { 0 }, src1 = { 0 }, src2 = { 0 }, src3 = { 0 };
+    v16u8 dst0 = { 0 }, dst1 = { 0 }, dst2 = { 0 }, dst3 = { 0 };
+
+    LD4(src, stride, tp0, tp1, tp2, tp3);
+    src += 4 * stride;
+    LD4(src, stride, tp4, tp5, tp6, tp7);
+    INSERT_D2_UB(tp0, tp1, src0);
+    INSERT_D2_UB(tp2, tp3, src1);
+    INSERT_D2_UB(tp4, tp5, src2);
+    INSERT_D2_UB(tp6, tp7, src3);
+
+    LD4(dst, stride, tp0, tp1, tp2, tp3);
+    LD4(dst + 4 * stride, stride, tp4, tp5, tp6, tp7);
+    INSERT_D2_UB(tp0, tp1, dst0);
+    INSERT_D2_UB(tp2, tp3, dst1);
+    INSERT_D2_UB(tp4, tp5, dst2);
+    INSERT_D2_UB(tp6, tp7, dst3);
+
+    AVER_UB4_UB(src0, dst0, src1, dst1, src2, dst2, src3, dst3, dst0, dst1,
+                dst2, dst3);
+
+    ST8x8_UB(dst0, dst1, dst2, dst3, dst, stride);
 }
 
 void ff_avg_h264_qpel4_mc00_msa(uint8_t *dst, const uint8_t *src,
                                 ptrdiff_t stride)
 {
-    avg_width4_msa(src, stride, dst, stride, 4);
+    uint32_t tp0, tp1, tp2, tp3;
+    v16u8 src0 = { 0 }, dst0 = { 0 };
+
+    LW4(src, stride, tp0, tp1, tp2, tp3);
+    INSERT_W4_UB(tp0, tp1, tp2, tp3, src0);
+    LW4(dst, stride, tp0, tp1, tp2, tp3);
+    INSERT_W4_UB(tp0, tp1, tp2, tp3, dst0);
+
+    dst0 = __msa_aver_u_b(src0, dst0);
+
+    ST4x4_UB(dst0, dst0, 0, 1, 2, 3, dst, stride);
 }
 
 void ff_put_h264_qpel16_mc10_msa(uint8_t *dst, const uint8_t *src,

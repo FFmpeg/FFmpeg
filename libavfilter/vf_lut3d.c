@@ -32,7 +32,7 @@
 #include "avfilter.h"
 #include "drawutils.h"
 #include "formats.h"
-#include "framesync2.h"
+#include "framesync.h"
 #include "internal.h"
 #include "video.h"
 
@@ -681,13 +681,13 @@ static int config_output(AVFilterLink *outlink)
     LUT3DContext *lut3d = ctx->priv;
     int ret;
 
-    ret = ff_framesync2_init_dualinput(&lut3d->fs, ctx);
+    ret = ff_framesync_init_dualinput(&lut3d->fs, ctx);
     if (ret < 0)
         return ret;
     outlink->w = ctx->inputs[0]->w;
     outlink->h = ctx->inputs[0]->h;
     outlink->time_base = ctx->inputs[0]->time_base;
-    if ((ret = ff_framesync2_configure(&lut3d->fs)) < 0)
+    if ((ret = ff_framesync_configure(&lut3d->fs)) < 0)
         return ret;
     return 0;
 }
@@ -695,7 +695,7 @@ static int config_output(AVFilterLink *outlink)
 static int activate(AVFilterContext *ctx)
 {
     LUT3DContext *s = ctx->priv;
-    return ff_framesync2_activate(&s->fs);
+    return ff_framesync_activate(&s->fs);
 }
 
 static int config_clut(AVFilterLink *inlink)
@@ -755,7 +755,7 @@ static int update_apply_clut(FFFrameSync *fs)
     AVFrame *main, *second, *out;
     int ret;
 
-    ret = ff_framesync2_dualinput_get(fs, &main, &second);
+    ret = ff_framesync_dualinput_get(fs, &main, &second);
     if (ret < 0)
         return ret;
     if (!second)
@@ -775,7 +775,7 @@ static av_cold int haldclut_init(AVFilterContext *ctx)
 static av_cold void haldclut_uninit(AVFilterContext *ctx)
 {
     LUT3DContext *lut3d = ctx->priv;
-    ff_framesync2_uninit(&lut3d->fs);
+    ff_framesync_uninit(&lut3d->fs);
 }
 
 static const AVOption haldclut_options[] = {

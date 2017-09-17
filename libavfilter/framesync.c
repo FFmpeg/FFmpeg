@@ -18,28 +18,38 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#define FF_INTERNAL_FIELDS 1
-#include "framequeue.h"
-
 #include "libavutil/avassert.h"
+#include "libavutil/opt.h"
 #include "avfilter.h"
-#include "bufferqueue.h"
+#include "filters.h"
 #include "framesync.h"
 #include "internal.h"
 
 #define OFFSET(member) offsetof(FFFrameSync, member)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
 
 static const char *framesync_name(void *ptr)
 {
     return "framesync";
 }
 
+static const AVOption framesync_options[] = {
+    { "eof_action", "Action to take when encountering EOF from secondary input ",
+        OFFSET(opt_eof_action), AV_OPT_TYPE_INT, { .i64 = EOF_ACTION_REPEAT },
+        EOF_ACTION_REPEAT, EOF_ACTION_PASS, .flags = FLAGS, "eof_action" },
+        { "repeat", "Repeat the previous frame.",   0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_REPEAT }, .flags = FLAGS, "eof_action" },
+        { "endall", "End both streams.",            0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_ENDALL }, .flags = FLAGS, "eof_action" },
+        { "pass",   "Pass through the main input.", 0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_PASS },   .flags = FLAGS, "eof_action" },
+    { "shortest", "force termination when the shortest input terminates", OFFSET(opt_shortest), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
+    { "repeatlast", "extend last frame of secondary streams beyond EOF", OFFSET(opt_repeatlast), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, FLAGS },
+    { NULL }
+};
 static const AVClass framesync_class = {
     .version                   = LIBAVUTIL_VERSION_INT,
     .class_name                = "framesync",
     .item_name                 = framesync_name,
     .category                  = AV_CLASS_CATEGORY_FILTER,
-    .option                    = NULL,
+    .option                    = framesync_options,
     .parent_log_context_offset = OFFSET(parent),
 };
 
@@ -49,9 +59,29 @@ enum {
     STATE_EOF,
 };
 
-int ff_framesync_init(FFFrameSync *fs, void *parent, unsigned nb_in)
+static int consume_from_fifos(FFFrameSync *fs);
+
+const AVClass *framesync_get_class(void)
 {
+    return &framesync_class;
+}
+
+void ff_framesync_preinit(FFFrameSync *fs)
+{
+    if (fs->class)
+        return;
     fs->class  = &framesync_class;
+    av_opt_set_defaults(fs);
+}
+
+int ff_framesync_init(FFFrameSync *fs, AVFilterContext *parent, unsigned nb_in)
+{
+    /* For filters with several outputs, we will not be able to assume which
+       output is relevant for ff_outlink_frame_wanted() and
+       ff_outlink_set_status(). To be designed when needed. */
+    av_assert0(parent->nb_outputs == 1);
+
+    ff_framesync_preinit(fs);
     fs->parent = parent;
     fs->nb_in  = nb_in;
 
@@ -59,6 +89,13 @@ int ff_framesync_init(FFFrameSync *fs, void *parent, unsigned nb_in)
     if (!fs->in)
         return AVERROR(ENOMEM);
     return 0;
+}
+
+static void framesync_eof(FFFrameSync *fs)
+{
+    fs->eof = 1;
+    fs->frame_ready = 0;
+    ff_outlink_set_status(fs->parent->outputs[0], AVERROR_EOF, AV_NOPTS_VALUE);
 }
 
 static void framesync_sync_level_update(FFFrameSync *fs)
@@ -74,13 +111,32 @@ static void framesync_sync_level_update(FFFrameSync *fs)
     if (level)
         fs->sync_level = level;
     else
-        fs->eof = 1;
+        framesync_eof(fs);
 }
 
 int ff_framesync_configure(FFFrameSync *fs)
 {
     unsigned i;
     int64_t gcd, lcm;
+
+    if (!fs->opt_repeatlast || fs->opt_eof_action == EOF_ACTION_PASS) {
+        fs->opt_repeatlast = 0;
+        fs->opt_eof_action = EOF_ACTION_PASS;
+    }
+    if (fs->opt_shortest || fs->opt_eof_action == EOF_ACTION_ENDALL) {
+        fs->opt_shortest = 1;
+        fs->opt_eof_action = EOF_ACTION_ENDALL;
+    }
+    if (fs->opt_shortest) {
+        for (i = 0; i < fs->nb_in; i++)
+            fs->in[i].after = EXT_STOP;
+    }
+    if (!fs->opt_repeatlast) {
+        for (i = 1; i < fs->nb_in; i++) {
+            fs->in[i].after = EXT_NULL;
+            fs->in[i].sync  = 0;
+        }
+    }
 
     if (!fs->time_base.num) {
         for (i = 0; i < fs->nb_in; i++) {
@@ -118,33 +174,23 @@ int ff_framesync_configure(FFFrameSync *fs)
     return 0;
 }
 
-static void framesync_advance(FFFrameSync *fs)
+static int framesync_advance(FFFrameSync *fs)
 {
-    int latest;
     unsigned i;
     int64_t pts;
+    int ret;
 
-    if (fs->eof)
-        return;
-    while (!fs->frame_ready) {
-        latest = -1;
-        for (i = 0; i < fs->nb_in; i++) {
-            if (!fs->in[i].have_next) {
-                if (latest < 0 || fs->in[i].pts < fs->in[latest].pts)
-                    latest = i;
-            }
-        }
-        if (latest >= 0) {
-            fs->in_request = latest;
-            break;
-        }
+    while (!(fs->frame_ready || fs->eof)) {
+        ret = consume_from_fifos(fs);
+        if (ret <= 0)
+            return ret;
 
-        pts = fs->in[0].pts_next;
-        for (i = 1; i < fs->nb_in; i++)
-            if (fs->in[i].pts_next < pts)
+        pts = INT64_MAX;
+        for (i = 0; i < fs->nb_in; i++)
+            if (fs->in[i].have_next && fs->in[i].pts_next < pts)
                 pts = fs->in[i].pts_next;
         if (pts == INT64_MAX) {
-            fs->eof = 1;
+            framesync_eof(fs);
             break;
         }
         for (i = 0; i < fs->nb_in; i++) {
@@ -162,11 +208,9 @@ static void framesync_advance(FFFrameSync *fs)
                     fs->frame_ready = 1;
                 if (fs->in[i].state == STATE_EOF &&
                     fs->in[i].after == EXT_STOP)
-                    fs->eof = 1;
+                    framesync_eof(fs);
             }
         }
-        if (fs->eof)
-            fs->frame_ready = 0;
         if (fs->frame_ready)
             for (i = 0; i < fs->nb_in; i++)
                 if ((fs->in[i].state == STATE_BOF &&
@@ -174,6 +218,7 @@ static void framesync_advance(FFFrameSync *fs)
                     fs->frame_ready = 0;
         fs->pts = pts;
     }
+    return 0;
 }
 
 static int64_t framesync_pts_extrapolate(FFFrameSync *fs, unsigned in,
@@ -188,49 +233,28 @@ static void framesync_inject_frame(FFFrameSync *fs, unsigned in, AVFrame *frame)
     int64_t pts;
 
     av_assert0(!fs->in[in].have_next);
-    if (frame) {
-        pts = av_rescale_q(frame->pts, fs->in[in].time_base, fs->time_base);
-        frame->pts = pts;
-    } else {
-        pts = fs->in[in].state != STATE_RUN || fs->in[in].after == EXT_INFINITY
-            ? INT64_MAX : framesync_pts_extrapolate(fs, in, fs->in[in].pts);
-        fs->in[in].sync = 0;
-        framesync_sync_level_update(fs);
-    }
+    av_assert0(frame);
+    pts = av_rescale_q(frame->pts, fs->in[in].time_base, fs->time_base);
+    frame->pts = pts;
     fs->in[in].frame_next = frame;
     fs->in[in].pts_next   = pts;
     fs->in[in].have_next  = 1;
 }
 
-int ff_framesync_add_frame(FFFrameSync *fs, unsigned in, AVFrame *frame)
+static void framesync_inject_status(FFFrameSync *fs, unsigned in, int status, int64_t pts)
 {
-    av_assert1(in < fs->nb_in);
-    if (!fs->in[in].have_next)
-        framesync_inject_frame(fs, in, frame);
-    else
-        ff_bufqueue_add(fs, &fs->in[in].queue, frame);
-    return 0;
-}
-
-void ff_framesync_next(FFFrameSync *fs)
-{
-    unsigned i;
-
-    av_assert0(!fs->frame_ready);
-    for (i = 0; i < fs->nb_in; i++)
-        if (!fs->in[i].have_next && fs->in[i].queue.available)
-            framesync_inject_frame(fs, i, ff_bufqueue_get(&fs->in[i].queue));
-    fs->frame_ready = 0;
-    framesync_advance(fs);
-}
-
-void ff_framesync_drop(FFFrameSync *fs)
-{
-    fs->frame_ready = 0;
+    av_assert0(!fs->in[in].have_next);
+    pts = fs->in[in].state != STATE_RUN || fs->in[in].after == EXT_INFINITY
+        ? INT64_MAX : framesync_pts_extrapolate(fs, in, fs->in[in].pts);
+    fs->in[in].sync = 0;
+    framesync_sync_level_update(fs);
+    fs->in[in].frame_next = NULL;
+    fs->in[in].pts_next   = pts;
+    fs->in[in].have_next  = 1;
 }
 
 int ff_framesync_get_frame(FFFrameSync *fs, unsigned in, AVFrame **rframe,
-                           unsigned get)
+                            unsigned get)
 {
     AVFrame *frame;
     unsigned need_copy = 0, i;
@@ -273,71 +297,117 @@ void ff_framesync_uninit(FFFrameSync *fs)
     for (i = 0; i < fs->nb_in; i++) {
         av_frame_free(&fs->in[i].frame);
         av_frame_free(&fs->in[i].frame_next);
-        ff_bufqueue_discard_all(&fs->in[i].queue);
     }
 
     av_freep(&fs->in);
 }
 
-int ff_framesync_process_frame(FFFrameSync *fs, unsigned all)
+static int consume_from_fifos(FFFrameSync *fs)
 {
-    int ret, count = 0;
+    AVFilterContext *ctx = fs->parent;
+    AVFrame *frame = NULL;
+    int64_t pts;
+    unsigned i, nb_active, nb_miss;
+    int ret, status;
 
-    av_assert0(fs->on_event);
-    while (1) {
-        ff_framesync_next(fs);
-        if (fs->eof || !fs->frame_ready)
-            break;
-        if ((ret = fs->on_event(fs)) < 0)
+    nb_active = nb_miss = 0;
+    for (i = 0; i < fs->nb_in; i++) {
+        if (fs->in[i].have_next || fs->in[i].state == STATE_EOF)
+            continue;
+        nb_active++;
+        ret = ff_inlink_consume_frame(ctx->inputs[i], &frame);
+        if (ret < 0)
             return ret;
-        ff_framesync_drop(fs);
-        count++;
-        if (!all)
-            break;
+        if (ret) {
+            av_assert0(frame);
+            framesync_inject_frame(fs, i, frame);
+        } else {
+            ret = ff_inlink_acknowledge_status(ctx->inputs[i], &status, &pts);
+            if (ret > 0) {
+                framesync_inject_status(fs, i, status, pts);
+            } else if (!ret) {
+                nb_miss++;
+            }
+        }
     }
-    if (!count && fs->eof)
-        return AVERROR_EOF;
-    return count;
+    if (nb_miss) {
+        if (nb_miss == nb_active && !ff_outlink_frame_wanted(ctx->outputs[0]))
+            return FFERROR_NOT_READY;
+        for (i = 0; i < fs->nb_in; i++)
+            if (!fs->in[i].have_next && fs->in[i].state != STATE_EOF)
+                ff_inlink_request_frame(ctx->inputs[i]);
+        return 0;
+    }
+    return 1;
 }
 
-int ff_framesync_filter_frame(FFFrameSync *fs, AVFilterLink *inlink,
-                              AVFrame *in)
+int ff_framesync_activate(FFFrameSync *fs)
 {
     int ret;
 
-    if ((ret = ff_framesync_process_frame(fs, 1)) < 0)
+    ret = framesync_advance(fs);
+    if (ret < 0)
         return ret;
-    if ((ret = ff_framesync_add_frame(fs, FF_INLINK_IDX(inlink), in)) < 0)
+    if (fs->eof || !fs->frame_ready)
+        return 0;
+    ret = fs->on_event(fs);
+    if (ret < 0)
         return ret;
-    if ((ret = ff_framesync_process_frame(fs, 0)) < 0)
-        return ret;
+    fs->frame_ready = 0;
+
     return 0;
 }
 
-int ff_framesync_request_frame(FFFrameSync *fs, AVFilterLink *outlink)
+int ff_framesync_init_dualinput(FFFrameSync *fs, AVFilterContext *parent)
 {
-    AVFilterContext *ctx = outlink->src;
-    int input, ret, i;
+    int ret;
 
-    if ((ret = ff_framesync_process_frame(fs, 0)) < 0)
+    ret = ff_framesync_init(fs, parent, 2);
+    if (ret < 0)
         return ret;
-    if (ret > 0)
-        return 0;
-    if (fs->eof)
-        return AVERROR_EOF;
-    input = fs->in_request;
-    /* Detect status change early */
-    for (i = 0; i < fs->nb_in; i++)
-        if (!ff_framequeue_queued_frames(&ctx->inputs[i]->fifo) &&
-            ctx->inputs[i]->status_in && !ctx->inputs[i]->status_out)
-            input = i;
-    ret = ff_request_frame(ctx->inputs[input]);
-    if (ret == AVERROR_EOF) {
-        if ((ret = ff_framesync_add_frame(fs, input, NULL)) < 0)
-            return ret;
-        if ((ret = ff_framesync_process_frame(fs, 0)) < 0)
-            return ret;
-        ret = 0;
+    fs->in[0].time_base = parent->inputs[0]->time_base;
+    fs->in[1].time_base = parent->inputs[1]->time_base;
+    fs->in[0].sync   = 2;
+    fs->in[0].before = EXT_STOP;
+    fs->in[0].after  = EXT_INFINITY;
+    fs->in[1].sync   = 1;
+    fs->in[1].before = EXT_NULL;
+    fs->in[1].after  = EXT_INFINITY;
+    return 0;
+}
+
+int ff_framesync_dualinput_get(FFFrameSync *fs, AVFrame **f0, AVFrame **f1)
+{
+    AVFilterContext *ctx = fs->parent;
+    AVFrame *mainpic = NULL, *secondpic = NULL;
+    int ret;
+
+    if ((ret = ff_framesync_get_frame(fs, 0, &mainpic,   1)) < 0 ||
+        (ret = ff_framesync_get_frame(fs, 1, &secondpic, 0)) < 0) {
+        av_frame_free(&mainpic);
+        return ret;
     }
-    return ret;
+    av_assert0(mainpic);
+    mainpic->pts = av_rescale_q(fs->pts, fs->time_base, ctx->outputs[0]->time_base);
+    if (ctx->is_disabled)
+        secondpic = NULL;
+    *f0 = mainpic;
+    *f1 = secondpic;
+    return 0;
+}
+
+int ff_framesync_dualinput_get_writable(FFFrameSync *fs, AVFrame **f0, AVFrame **f1)
+{
+    int ret;
+
+    ret = ff_framesync_dualinput_get(fs, f0, f1);
+    if (ret < 0)
+        return ret;
+    ret = ff_inlink_make_frame_writable(fs->parent->inputs[0], f0);
+    if (ret < 0) {
+        av_frame_free(f0);
+        av_frame_free(f1);
+        return ret;
+    }
+    return 0;
 }

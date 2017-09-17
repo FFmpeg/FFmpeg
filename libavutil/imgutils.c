@@ -555,7 +555,7 @@ int av_image_fill_black(uint8_t *dst_data[4], const ptrdiff_t dst_linesize[4],
     int nb_planes = av_pix_fmt_count_planes(pix_fmt);
     // A pixel or a group of pixels on each plane, with a value that represents black.
     // Consider e.g. AV_PIX_FMT_UYVY422 for non-trivial cases.
-    uint8_t clear_block[4][MAX_BLOCK_SIZE] = {0}; // clear padding with 0
+    uint8_t clear_block[4][MAX_BLOCK_SIZE] = {{0}}; // clear padding with 0
     int clear_block_size[4] = {0};
     ptrdiff_t plane_line_bytes[4] = {0};
     int rgb, limited;

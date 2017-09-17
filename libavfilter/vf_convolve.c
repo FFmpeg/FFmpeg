@@ -25,7 +25,7 @@
 
 #include "avfilter.h"
 #include "formats.h"
-#include "framesync2.h"
+#include "framesync.h"
 #include "internal.h"
 #include "video.h"
 
@@ -262,7 +262,7 @@ static int do_convolve(FFFrameSync *fs)
     AVFrame *mainpic = NULL, *impulsepic = NULL;
     int ret, y, x, plane;
 
-    ret = ff_framesync2_dualinput_get(fs, &mainpic, &impulsepic);
+    ret = ff_framesync_dualinput_get(fs, &mainpic, &impulsepic);
     if (ret < 0)
         return ret;
     if (!impulsepic)
@@ -336,7 +336,7 @@ static int config_output(AVFilterLink *outlink)
     int ret, i;
 
     s->fs.on_event = do_convolve;
-    ret = ff_framesync2_init_dualinput(&s->fs, ctx);
+    ret = ff_framesync_init_dualinput(&s->fs, ctx);
     if (ret < 0)
         return ret;
     outlink->w = mainlink->w;
@@ -345,7 +345,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->sample_aspect_ratio = mainlink->sample_aspect_ratio;
     outlink->frame_rate = mainlink->frame_rate;
 
-    if ((ret = ff_framesync2_configure(&s->fs)) < 0)
+    if ((ret = ff_framesync_configure(&s->fs)) < 0)
         return ret;
 
     for (i = 0; i < s->nb_planes; i++) {
@@ -361,7 +361,7 @@ static int config_output(AVFilterLink *outlink)
 static int activate(AVFilterContext *ctx)
 {
     ConvolveContext *s = ctx->priv;
-    return ff_framesync2_activate(&s->fs);
+    return ff_framesync_activate(&s->fs);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -378,7 +378,7 @@ static av_cold void uninit(AVFilterContext *ctx)
         av_fft_end(s->ifft[i]);
     }
 
-    ff_framesync2_uninit(&s->fs);
+    ff_framesync_uninit(&s->fs);
 }
 
 static const AVFilterPad convolve_inputs[] = {

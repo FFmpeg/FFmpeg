@@ -25,48 +25,49 @@
  * SEI message types
  */
 typedef enum {
-    SEI_TYPE_BUFFERING_PERIOD       = 0,   ///< buffering period (H.264, D.1.1)
-    SEI_TYPE_PIC_TIMING             = 1,   ///< picture timing
-    SEI_TYPE_USER_DATA_REGISTERED   = 4,   ///< registered user data as specified by Rec. ITU-T T.35
-    SEI_TYPE_USER_DATA_UNREGISTERED = 5,   ///< unregistered user data
-    SEI_TYPE_RECOVERY_POINT         = 6,   ///< recovery point (frame # to decoder sync)
-    SEI_TYPE_FRAME_PACKING          = 45,  ///< frame packing arrangement
-    SEI_TYPE_DISPLAY_ORIENTATION    = 47,  ///< display orientation
-    SEI_TYPE_GREEN_METADATA         = 56,  ///< GreenMPEG information
-    SEI_TYPE_ALTERNATIVE_TRANSFER   = 147, ///< alternative transfer
-} SEI_Type;
+    H264_SEI_TYPE_BUFFERING_PERIOD       = 0,   ///< buffering period (H.264, D.1.1)
+    H264_SEI_TYPE_PIC_TIMING             = 1,   ///< picture timing
+    H264_SEI_TYPE_FILLER_PAYLOAD         = 3,   ///< filler data
+    H264_SEI_TYPE_USER_DATA_REGISTERED   = 4,   ///< registered user data as specified by Rec. ITU-T T.35
+    H264_SEI_TYPE_USER_DATA_UNREGISTERED = 5,   ///< unregistered user data
+    H264_SEI_TYPE_RECOVERY_POINT         = 6,   ///< recovery point (frame # to decoder sync)
+    H264_SEI_TYPE_FRAME_PACKING          = 45,  ///< frame packing arrangement
+    H264_SEI_TYPE_DISPLAY_ORIENTATION    = 47,  ///< display orientation
+    H264_SEI_TYPE_GREEN_METADATA         = 56,  ///< GreenMPEG information
+    H264_SEI_TYPE_ALTERNATIVE_TRANSFER   = 147, ///< alternative transfer
+} H264_SEI_Type;
 
 /**
  * pic_struct in picture timing SEI message
  */
 typedef enum {
-    SEI_PIC_STRUCT_FRAME             = 0, ///<  0: %frame
-    SEI_PIC_STRUCT_TOP_FIELD         = 1, ///<  1: top field
-    SEI_PIC_STRUCT_BOTTOM_FIELD      = 2, ///<  2: bottom field
-    SEI_PIC_STRUCT_TOP_BOTTOM        = 3, ///<  3: top field, bottom field, in that order
-    SEI_PIC_STRUCT_BOTTOM_TOP        = 4, ///<  4: bottom field, top field, in that order
-    SEI_PIC_STRUCT_TOP_BOTTOM_TOP    = 5, ///<  5: top field, bottom field, top field repeated, in that order
-    SEI_PIC_STRUCT_BOTTOM_TOP_BOTTOM = 6, ///<  6: bottom field, top field, bottom field repeated, in that order
-    SEI_PIC_STRUCT_FRAME_DOUBLING    = 7, ///<  7: %frame doubling
-    SEI_PIC_STRUCT_FRAME_TRIPLING    = 8  ///<  8: %frame tripling
-} SEI_PicStructType;
+    H264_SEI_PIC_STRUCT_FRAME             = 0, ///<  0: %frame
+    H264_SEI_PIC_STRUCT_TOP_FIELD         = 1, ///<  1: top field
+    H264_SEI_PIC_STRUCT_BOTTOM_FIELD      = 2, ///<  2: bottom field
+    H264_SEI_PIC_STRUCT_TOP_BOTTOM        = 3, ///<  3: top field, bottom field, in that order
+    H264_SEI_PIC_STRUCT_BOTTOM_TOP        = 4, ///<  4: bottom field, top field, in that order
+    H264_SEI_PIC_STRUCT_TOP_BOTTOM_TOP    = 5, ///<  5: top field, bottom field, top field repeated, in that order
+    H264_SEI_PIC_STRUCT_BOTTOM_TOP_BOTTOM = 6, ///<  6: bottom field, top field, bottom field repeated, in that order
+    H264_SEI_PIC_STRUCT_FRAME_DOUBLING    = 7, ///<  7: %frame doubling
+    H264_SEI_PIC_STRUCT_FRAME_TRIPLING    = 8  ///<  8: %frame tripling
+} H264_SEI_PicStructType;
 
 /**
  * frame_packing_arrangement types
  */
 typedef enum {
-    SEI_FPA_TYPE_CHECKERBOARD        = 0,
-    SEI_FPA_TYPE_INTERLEAVE_COLUMN   = 1,
-    SEI_FPA_TYPE_INTERLEAVE_ROW      = 2,
-    SEI_FPA_TYPE_SIDE_BY_SIDE        = 3,
-    SEI_FPA_TYPE_TOP_BOTTOM          = 4,
-    SEI_FPA_TYPE_INTERLEAVE_TEMPORAL = 5,
-    SEI_FPA_TYPE_2D                  = 6,
-} SEI_FpaType;
+    H264_SEI_FPA_TYPE_CHECKERBOARD        = 0,
+    H264_SEI_FPA_TYPE_INTERLEAVE_COLUMN   = 1,
+    H264_SEI_FPA_TYPE_INTERLEAVE_ROW      = 2,
+    H264_SEI_FPA_TYPE_SIDE_BY_SIDE        = 3,
+    H264_SEI_FPA_TYPE_TOP_BOTTOM          = 4,
+    H264_SEI_FPA_TYPE_INTERLEAVE_TEMPORAL = 5,
+    H264_SEI_FPA_TYPE_2D                  = 6,
+} H264_SEI_FpaType;
 
 typedef struct H264SEIPictureTiming {
     int present;
-    SEI_PicStructType pic_struct;
+    H264_SEI_PicStructType pic_struct;
 
     /**
      * Bit set of clock types for fields/frames in picture timing SEI message.
@@ -120,7 +121,7 @@ typedef struct H264SEIFramePacking {
     int present;
     int frame_packing_arrangement_id;
     int frame_packing_arrangement_cancel_flag;  ///< is previous arrangement canceled, -1 if never received
-    SEI_FpaType frame_packing_arrangement_type;
+    H264_SEI_FpaType frame_packing_arrangement_type;
     int frame_packing_arrangement_repetition_period;
     int content_interpretation_type;
     int quincunx_sampling_flag;

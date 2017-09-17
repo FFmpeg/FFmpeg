@@ -24,7 +24,7 @@
 
 #include <inttypes.h>
 
-#include <libavutil/dict.h>
+#include "libavutil/dict.h"
 
 typedef enum FITSHeaderState {
     STATE_SIMPLE,

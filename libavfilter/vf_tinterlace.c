@@ -110,14 +110,23 @@ static void lowpass_line_complex_c(uint8_t *dstp, ptrdiff_t width, const uint8_t
     const uint8_t *srcp_below = srcp + pref;
     const uint8_t *srcp_above2 = srcp + mref * 2;
     const uint8_t *srcp_below2 = srcp + pref * 2;
-    int i;
+    int i, srcp_x, srcp_ab;
     for (i = 0; i < width; i++) {
         // this calculation is an integer representation of
         // '0.75 * current + 0.25 * above + 0.25 * below - 0.125 * above2 - 0.125 * below2'
         // '4 +' is for rounding.
-        dstp[i] = av_clip_uint8((4 + (srcp[i] << 2)
-                  + ((srcp[i] + srcp_above[i] + srcp_below[i]) << 1)
-                  - srcp_above2[i] - srcp_below2[i]) >> 3);
+        srcp_x = srcp[i] << 1;
+        srcp_ab = srcp_above[i] + srcp_below[i];
+        dstp[i] = av_clip_uint8((4 + ((srcp[i] + srcp_x + srcp_ab) << 1)
+                                - srcp_above2[i] - srcp_below2[i]) >> 3);
+        // Prevent over-sharpening:
+        // dst must not exceed src when the average of above and below
+        // is less than src. And the other way around.
+        if (srcp_ab > srcp_x) {
+            if (dstp[i] < srcp[i])
+                dstp[i] = srcp[i];
+        } else if (dstp[i] > srcp[i])
+            dstp[i] = srcp[i];
     }
 }
 
@@ -243,6 +252,8 @@ void copy_picture_field(TInterlaceContext *tinterlace,
         int cols  = plane == 1 || plane == 2 ? AV_CEIL_RSHIFT(    w, hsub) : w;
         uint8_t *dstp = dst[plane];
         const uint8_t *srcp = src[plane];
+        int srcp_linesize = src_linesize[plane] * k;
+        int dstp_linesize = dst_linesize[plane] * (interleave ? 2 : 1);
 
         lines = (lines + (src_field == FIELD_UPPER)) / k;
         if (src_field == FIELD_LOWER)
@@ -252,35 +263,22 @@ void copy_picture_field(TInterlaceContext *tinterlace,
         // Low-pass filtering is required when creating an interlaced destination from
         // a progressive source which contains high-frequency vertical detail.
         // Filtering will reduce interlace 'twitter' and Moire patterning.
-        if (flags & TINTERLACE_FLAG_CVLPF) {
-            int srcp_linesize = src_linesize[plane] * k;
-            int dstp_linesize = dst_linesize[plane] * (interleave ? 2 : 1);
+        if (flags & TINTERLACE_FLAG_VLPF || flags & TINTERLACE_FLAG_CVLPF) {
+            int x = 0;
+            if (flags & TINTERLACE_FLAG_CVLPF)
+                x = 1;
             for (h = lines; h > 0; h--) {
                 ptrdiff_t pref = src_linesize[plane];
                 ptrdiff_t mref = -pref;
-                if (h >= (lines - 1)) mref = 0;
-                else if (h <= 2)      pref = 0;
-
-                tinterlace->lowpass_line(dstp, cols, srcp, mref, pref);
-                dstp += dstp_linesize;
-                srcp += srcp_linesize;
-            }
-        } else if (flags & TINTERLACE_FLAG_VLPF) {
-            int srcp_linesize = src_linesize[plane] * k;
-            int dstp_linesize = dst_linesize[plane] * (interleave ? 2 : 1);
-            for (h = lines; h > 0; h--) {
-                ptrdiff_t pref = src_linesize[plane];
-                ptrdiff_t mref = -pref;
-                if (h == lines)  mref = 0; // there is no line above
-                else if (h == 1) pref = 0; // there is no line below
+                if (h >= (lines - x))  mref = 0; // there is no line above
+                else if (h <= (1 + x)) pref = 0; // there is no line below
 
                 tinterlace->lowpass_line(dstp, cols, srcp, mref, pref);
                 dstp += dstp_linesize;
                 srcp += srcp_linesize;
             }
         } else {
-            av_image_copy_plane(dstp, dst_linesize[plane] * (interleave ? 2 : 1),
-                                srcp, src_linesize[plane]*k, cols, lines);
+            av_image_copy_plane(dstp, dstp_linesize, srcp, srcp_linesize, cols, lines);
         }
     }
 }

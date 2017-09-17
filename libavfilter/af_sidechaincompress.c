@@ -188,10 +188,10 @@ static int activate(AVFilterContext *ctx)
 {
     SidechainCompressContext *s = ctx->priv;
     AVFrame *out = NULL, *in[2] = { NULL };
-    int ret, i, status, nb_samples;
+    int ret, i, nb_samples;
     double *dst;
-    int64_t pts;
 
+    FF_FILTER_FORWARD_STATUS_BACK_ALL(ctx->outputs[0], ctx);
     if ((ret = ff_inlink_consume_frame(ctx->inputs[0], &in[0])) > 0) {
         av_audio_fifo_write(s->fifo[0], (void **)in[0]->extended_data,
                             in[0]->nb_samples);
@@ -239,13 +239,9 @@ static int activate(AVFilterContext *ctx)
         if (ret < 0)
             return ret;
     }
-    if (ff_inlink_acknowledge_status(ctx->inputs[0], &status, &pts)) {
-        ff_outlink_set_status(ctx->outputs[0], status, pts);
-        return 0;
-    } else if (ff_inlink_acknowledge_status(ctx->inputs[1], &status, &pts)) {
-        ff_outlink_set_status(ctx->outputs[0], status, pts);
-        return 0;
-    } else {
+    FF_FILTER_FORWARD_STATUS(ctx->inputs[0], ctx->outputs[0]);
+    FF_FILTER_FORWARD_STATUS(ctx->inputs[1], ctx->outputs[0]);
+    /* TODO reindent */
         if (ff_outlink_frame_wanted(ctx->outputs[0])) {
             if (!av_audio_fifo_size(s->fifo[0]))
                 ff_inlink_request_frame(ctx->inputs[0]);
@@ -253,7 +249,6 @@ static int activate(AVFilterContext *ctx)
                 ff_inlink_request_frame(ctx->inputs[1]);
         }
         return 0;
-    }
 }
 
 static int query_formats(AVFilterContext *ctx)

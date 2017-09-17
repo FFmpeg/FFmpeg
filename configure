@@ -202,6 +202,7 @@ External library support:
   themselves, not all their features will necessarily be usable by FFmpeg.
 
   --disable-alsa           disable ALSA support [autodetect]
+  --disable-appkit         disable Apple AppKit framework [autodetect]
   --disable-avfoundation   disable Apple AVFoundation framework [autodetect]
   --enable-avisynth        enable reading of AviSynth script files [no]
   --disable-bzlib          disable bzlib [autodetect]
@@ -307,6 +308,7 @@ External library support:
   --disable-cuvid          disable Nvidia CUVID support [autodetect]
   --disable-d3d11va        disable Microsoft Direct3D 11 video acceleration code [autodetect]
   --disable-dxva2          disable Microsoft DirectX 9 video acceleration code [autodetect]
+  --enable-libdrm          enable DRM code (Linux) [no]
   --enable-libmfx          enable Intel MediaSDK (AKA Quick Sync Video) code via libmfx [no]
   --enable-libnpp          enable Nvidia Performance Primitives-based code [no]
   --enable-mmal            enable Broadcom Multi-Media Abstraction Layer (Raspberry Pi) via MMAL [no]
@@ -1502,6 +1504,7 @@ EXAMPLE_LIST="
 
 EXTERNAL_AUTODETECT_LIBRARY_LIST="
     alsa
+    appkit
     avfoundation
     bzlib
     coreimage
@@ -1567,6 +1570,7 @@ EXTERNAL_LIBRARY_LIST="
     libcaca
     libcelt
     libdc1394
+    libdrm
     libflite
     libfontconfig
     libfreetype
@@ -3048,6 +3052,7 @@ gdigrab_indev_select="bmp_decoder"
 iec61883_indev_deps="libiec61883"
 jack_indev_deps="jack"
 jack_indev_deps_any="sem_timedwait dispatch_dispatch_h"
+kmsgrab_indev_deps="libdrm"
 lavfi_indev_deps="avfilter"
 libcdio_indev_deps="libcdio"
 libdc1394_indev_deps="libdc1394"
@@ -3133,10 +3138,10 @@ blackframe_filter_deps="gpl"
 boxblur_filter_deps="gpl"
 bs2b_filter_deps="libbs2b"
 colormatrix_filter_deps="gpl"
-coreimage_filter_deps="coreimage"
-coreimage_filter_extralibs="-framework OpenGL -framework AppKit"
-coreimagesrc_filter_deps="coreimage"
-coreimagesrc_filter_extralibs="-framework OpenGL -framework AppKit"
+coreimage_filter_deps="coreimage appkit"
+coreimage_filter_extralibs="-framework OpenGL"
+coreimagesrc_filter_deps="coreimage appkit"
+coreimagesrc_filter_extralibs="-framework OpenGL"
 cover_rect_filter_deps="avcodec avformat gpl"
 cropdetect_filter_deps="gpl"
 deinterlace_qsv_filter_deps="libmfx"
@@ -3210,6 +3215,7 @@ pixfmts_super2xsai_test_deps="super2xsai_filter"
 tinterlace_filter_deps="gpl"
 tinterlace_merge_test_deps="tinterlace_filter"
 tinterlace_pad_test_deps="tinterlace_filter"
+tonemap_filter_deps="const_nan"
 uspp_filter_deps="gpl avcodec"
 vaguedenoiser_filter_deps="gpl"
 vidstabdetect_filter_deps="libvidstab"
@@ -3217,7 +3223,7 @@ vidstabtransform_filter_deps="libvidstab"
 libvmaf_filter_deps="libvmaf"
 zmq_filter_deps="libzmq"
 zoompan_filter_deps="swscale"
-zscale_filter_deps="libzimg"
+zscale_filter_deps="libzimg const_nan"
 scale_vaapi_filter_deps="vaapi VAProcPipelineParameterBuffer"
 
 # examples
@@ -5312,6 +5318,11 @@ unsigned int endian = 'B' << 24 | 'I' << 16 | 'G' << 8 | 'E';
 EOF
 od -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
 
+check_cc <<EOF && enable const_nan
+#include <math.h>
+void foo(void) { struct { double d; } static const bar[] = { { NAN } }; }
+EOF
+
 if ! enabled ppc64 || enabled bigendian; then
     disable vsx
 fi
@@ -5754,6 +5765,7 @@ check_lib shell32  "windows.h shellapi.h" CommandLineToArgvW   -lshell32
 check_lib wincrypt "windows.h wincrypt.h" CryptGenRandom       -ladvapi32
 check_lib psapi    "windows.h psapi.h"    GetProcessMemoryInfo -lpsapi
 
+enabled appkit       && check_apple_framework AppKit
 enabled audiotoolbox && check_apple_framework AudioToolbox
 enabled avfoundation && check_apple_framework AVFoundation
 enabled coreimage    && check_apple_framework CoreImage
@@ -5871,6 +5883,7 @@ enabled libcelt           && require libcelt celt/celt.h celt_decode -lcelt0 &&
                                die "ERROR: libcelt must be installed and version must be >= 0.11.0."; }
 enabled libcaca           && require_pkg_config caca caca.h caca_create_canvas
 enabled libdc1394         && require_pkg_config libdc1394-2 dc1394/dc1394.h dc1394_new
+enabled libdrm            && require_pkg_config libdrm xf86drm.h drmGetVersion
 enabled libfdk_aac        && { use_pkg_config fdk-aac "fdk-aac/aacenc_lib.h" aacEncOpen ||
                                { require libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-aac &&
                                  warn "using libfdk without pkg-config"; } }

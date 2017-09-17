@@ -85,7 +85,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
-    AVFrame *out = ff_get_audio_buffer(inlink, in->nb_samples);
+    AVFrame *out;
     DCShiftContext *s = ctx->priv;
     int i, j;
     double dcshift = s->dcshift;
@@ -93,7 +93,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     if (av_frame_is_writable(in)) {
         out = in;
     } else {
-        out = ff_get_audio_buffer(inlink, in->nb_samples);
+        out = ff_get_audio_buffer(outlink, in->nb_samples);
         if (!out) {
             av_frame_free(&in);
             return AVERROR(ENOMEM);

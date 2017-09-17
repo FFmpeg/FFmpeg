@@ -63,41 +63,46 @@ REP_RET
 %endmacro
 
 %macro LOWPASS_LINE_COMPLEX 0
-cglobal lowpass_line_complex, 5, 5, 7, dst, h, src, mref, pref
-    pxor m6, m6
+cglobal lowpass_line_complex, 5, 5, 8, dst, h, src, mref, pref
+    pxor m7, m7
 .loop:
     mova m0, [srcq+mrefq]
     mova m2, [srcq+prefq]
     mova m1, m0
     mova m3, m2
-    punpcklbw m0, m6
-    punpcklbw m2, m6
-    punpckhbw m1, m6
-    punpckhbw m3, m6
+    punpcklbw m0, m7
+    punpcklbw m2, m7
+    punpckhbw m1, m7
+    punpckhbw m3, m7
     paddw m0, m2
     paddw m1, m3
+    mova m6, m0
+    mova m5, m1
+    mova m2, [srcq]
+    mova m3, m2
+    punpcklbw m2, m7
+    punpckhbw m3, m7
+    paddw m0, m2
+    paddw m1, m3
+    psllw m2, 1
+    psllw m3, 1
+    paddw m0, m2
+    paddw m1, m3
+    psllw m0, 1
+    psllw m1, 1
+    pcmpgtw m6, m2
+    pcmpgtw m5, m3
+    packsswb m6, m5
     mova m2, [srcq+mrefq*2]
     mova m4, [srcq+prefq*2]
     mova m3, m2
     mova m5, m4
-    punpcklbw m2, m6
-    punpcklbw m4, m6
-    punpckhbw m3, m6
-    punpckhbw m5, m6
+    punpcklbw m2, m7
+    punpcklbw m4, m7
+    punpckhbw m3, m7
+    punpckhbw m5, m7
     paddw m2, m4
     paddw m3, m5
-    mova m4, [srcq]
-    mova m5, m4
-    punpcklbw m4, m6
-    punpckhbw m5, m6
-    paddw m0, m4
-    paddw m1, m5
-    psllw m0, 1
-    psllw m1, 1
-    psllw m4, 2
-    psllw m5, 2
-    paddw m0, m4
-    paddw m1, m5
     paddw m0, [pw_4]
     paddw m1, [pw_4]
     psubusw m0, m2
@@ -105,6 +110,12 @@ cglobal lowpass_line_complex, 5, 5, 7, dst, h, src, mref, pref
     psrlw m0, 3
     psrlw m1, 3
     packuswb m0, m1
+    mova m1, m0
+    pmaxub m0, [srcq]
+    pminub m1, [srcq]
+    pand m0, m6
+    pandn m6, m1
+    por m0, m6
     mova [dstq], m0
 
     add dstq, mmsize

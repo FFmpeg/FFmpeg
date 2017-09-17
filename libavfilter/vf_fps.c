@@ -34,6 +34,8 @@
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 
+#define FF_INTERNAL_FIELDS 1
+#include "framequeue.h"
 #include "avfilter.h"
 #include "internal.h"
 #include "video.h"
@@ -137,13 +139,46 @@ static int request_frame(AVFilterLink *outlink)
             AVFrame *buf;
 
             av_fifo_generic_read(s->fifo, &buf, sizeof(buf), NULL);
-            buf->pts = av_rescale_q(s->first_pts, ctx->inputs[0]->time_base,
-                                    outlink->time_base) + s->frames_out;
+            if (av_fifo_size(s->fifo)) {
+                buf->pts = av_rescale_q(s->first_pts, ctx->inputs[0]->time_base,
+                                        outlink->time_base) + s->frames_out;
 
-            if ((ret = ff_filter_frame(outlink, buf)) < 0)
-                return ret;
+                if ((ret = ff_filter_frame(outlink, buf)) < 0)
+                    return ret;
 
-            s->frames_out++;
+                s->frames_out++;
+            } else {
+                /* This is the last frame, we may have to duplicate it to match
+                 * the last frame duration */
+                int j;
+                int delta = av_rescale_q_rnd(ctx->inputs[0]->current_pts - s->first_pts,
+                                             ctx->inputs[0]->time_base,
+                                             outlink->time_base, s->rounding) - s->frames_out ;
+                /* if the delta is equal to 1, it means we just need to output
+                 * the last frame. Greater than 1 means we will need duplicate
+                 * delta-1 frames */
+                if (delta > 0 ) {
+                    for (j = 0; j < delta; j++) {
+                        AVFrame *dup = av_frame_clone(buf);
+
+                        av_log(ctx, AV_LOG_DEBUG, "Duplicating frame.\n");
+                        dup->pts = av_rescale_q(s->first_pts, ctx->inputs[0]->time_base,
+                                                outlink->time_base) + s->frames_out;
+
+                        if ((ret = ff_filter_frame(outlink, dup)) < 0)
+                            return ret;
+
+                        s->frames_out++;
+                        if (j > 0) s->dup++;
+                    }
+                    av_frame_free(&buf);
+                } else {
+                    /* for delta less or equal to 0, we should drop the frame,
+                     * otherwise, we will have one or more extra frames */
+                    av_frame_free(&buf);
+                    s->drop++;
+                }
+            }
         }
         return 0;
     }

@@ -53,6 +53,7 @@ static void register_all(void)
     REGISTER_INDEV   (GDIGRAB,          gdigrab);
     REGISTER_INDEV   (IEC61883,         iec61883);
     REGISTER_INDEV   (JACK,             jack);
+    REGISTER_INDEV   (KMSGRAB,          kmsgrab);
     REGISTER_INDEV   (LAVFI,            lavfi);
     REGISTER_INDEV   (OPENAL,           openal);
     REGISTER_OUTDEV  (OPENGL,           opengl);

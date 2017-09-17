@@ -1668,6 +1668,26 @@ void ff_inlink_request_frame(AVFilterLink *link)
     ff_filter_set_ready(link->src, 100);
 }
 
+void ff_inlink_set_status(AVFilterLink *link, int status)
+{
+    if (link->status_out)
+        return;
+    link->frame_wanted_out = 0;
+    link->frame_blocked_in = 0;
+    ff_avfilter_link_set_out_status(link, status, AV_NOPTS_VALUE);
+    while (ff_framequeue_queued_frames(&link->fifo)) {
+           AVFrame *frame = ff_framequeue_take(&link->fifo);
+           av_frame_free(&frame);
+    }
+    if (!link->status_in)
+        link->status_in = status;
+}
+
+int ff_outlink_get_status(AVFilterLink *link)
+{
+    return link->status_in;
+}
+
 const AVClass *avfilter_get_class(void)
 {
     return &avfilter_class;

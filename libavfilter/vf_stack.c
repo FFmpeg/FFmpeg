@@ -26,7 +26,7 @@
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
-#include "framesync2.h"
+#include "framesync.h"
 #include "video.h"
 
 typedef struct StackContext {
@@ -97,7 +97,7 @@ static int process_frame(FFFrameSync *fs)
     int i, p, ret, offset[4] = { 0 };
 
     for (i = 0; i < s->nb_inputs; i++) {
-        if ((ret = ff_framesync2_get_frame(&s->fs, i, &in[i], 0)) < 0)
+        if ((ret = ff_framesync_get_frame(&s->fs, i, &in[i], 0)) < 0)
             return ret;
     }
 
@@ -180,7 +180,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->time_base  = time_base;
     outlink->frame_rate = frame_rate;
 
-    if ((ret = ff_framesync2_init(&s->fs, ctx, s->nb_inputs)) < 0)
+    if ((ret = ff_framesync_init(&s->fs, ctx, s->nb_inputs)) < 0)
         return ret;
 
     in = s->fs.in;
@@ -196,7 +196,7 @@ static int config_output(AVFilterLink *outlink)
         in[i].after  = s->shortest ? EXT_STOP : EXT_INFINITY;
     }
 
-    return ff_framesync2_configure(&s->fs);
+    return ff_framesync_configure(&s->fs);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -204,7 +204,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     StackContext *s = ctx->priv;
     int i;
 
-    ff_framesync2_uninit(&s->fs);
+    ff_framesync_uninit(&s->fs);
     av_freep(&s->frames);
 
     for (i = 0; i < ctx->nb_inputs; i++)
@@ -214,7 +214,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 static int activate(AVFilterContext *ctx)
 {
     StackContext *s = ctx->priv;
-    return ff_framesync2_activate(&s->fs);
+    return ff_framesync_activate(&s->fs);
 }
 
 #define OFFSET(x) offsetof(StackContext, x)

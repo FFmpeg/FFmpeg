@@ -73,7 +73,7 @@ static int vp9_alloc_entries(AVCodecContext *avctx, int n) {
 
 static void vp9_report_tile_progress(VP9Context *s, int field, int n) {
     pthread_mutex_lock(&s->progress_mutex);
-    atomic_fetch_add_explicit(&s->entries[field], n, memory_order_relaxed);
+    atomic_fetch_add_explicit(&s->entries[field], n, memory_order_release);
     pthread_cond_signal(&s->progress_cond);
     pthread_mutex_unlock(&s->progress_mutex);
 }
@@ -88,10 +88,8 @@ static void vp9_await_tile_progress(VP9Context *s, int field, int n) {
     pthread_mutex_unlock(&s->progress_mutex);
 }
 #else
-static void vp9_free_entries(VP9Context *s) {}
+static void vp9_free_entries(AVCodecContext *avctx) {}
 static int vp9_alloc_entries(AVCodecContext *avctx, int n) { return 0; }
-static void vp9_report_tile_progress(VP9Context *s, int field, int n) {}
-static void vp9_await_tile_progress(VP9Context *s, int field, int n) {}
 #endif
 
 static void vp9_frame_unref(AVCodecContext *avctx, VP9Frame *f)
@@ -1343,7 +1341,7 @@ static int decode_tiles(AVCodecContext *avctx,
     return 0;
 }
 
-
+#if HAVE_THREADS
 static av_always_inline
 int decode_tiles_mt(AVCodecContext *avctx, void *tdata, int jobnr,
                               int threadnr)
@@ -1451,7 +1449,7 @@ int loopfilter_proc(AVCodecContext *avctx)
     }
     return 0;
 }
-
+#endif
 
 static int vp9_decode_frame(AVCodecContext *avctx, void *frame,
                             int *got_frame, AVPacket *pkt)
@@ -1583,10 +1581,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
         ff_thread_finish_setup(avctx);
     }
 
+#if HAVE_THREADS
     if (avctx->active_thread_type & FF_THREAD_SLICE) {
         for (i = 0; i < s->sb_rows; i++)
             atomic_store(&s->entries[i], 0);
     }
+#endif
 
     do {
         for (i = 0; i < s->active_tile_cols; i++) {
@@ -1599,10 +1599,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
             s->td[i].uveob[1] = s->td[i].uveob_base[1];
         }
 
+#if HAVE_THREADS
         if (avctx->active_thread_type == FF_THREAD_SLICE) {
             int tile_row, tile_col;
 
-            assert(!pass);
+            av_assert1(!s->pass);
 
             for (tile_row = 0; tile_row < s->s.h.tiling.tile_rows; tile_row++) {
                 for (tile_col = 0; tile_col < s->s.h.tiling.tile_cols; tile_col++) {
@@ -1629,7 +1630,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
             }
 
             ff_slice_thread_execute_with_mainfunc(avctx, decode_tiles_mt, loopfilter_proc, s->td, NULL, s->s.h.tiling.tile_cols);
-        } else {
+        } else
+#endif
+        {
             ret = decode_tiles(avctx, data, size);
             if (ret < 0)
                 return ret;

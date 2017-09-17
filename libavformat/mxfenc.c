@@ -21,7 +21,7 @@
  */
 
 /*
- * signal_standard, color_siting, store_user_comments and klv_fill_key version
+ * signal_standard, color_siting, store_user_comments, sample rate and klv_fill_key version
  * fixes sponsored by NOA GmbH
  */
 
@@ -100,27 +100,7 @@ typedef struct MXFContainerEssenceEntry {
     void (*write_desc)(AVFormatContext *, AVStream *);
 } MXFContainerEssenceEntry;
 
-static const struct {
-    enum AVCodecID id;
-    int index;
-} mxf_essence_mappings[] = {
-    { AV_CODEC_ID_MPEG2VIDEO, 0 },
-    { AV_CODEC_ID_PCM_S24LE,  1 },
-    { AV_CODEC_ID_PCM_S16LE,  1 },
-    { AV_CODEC_ID_DVVIDEO,   15 },
-    { AV_CODEC_ID_DNXHD,     24 },
-    { AV_CODEC_ID_JPEG2000,  34 },
-    { AV_CODEC_ID_H264,      35 },
-    { AV_CODEC_ID_NONE }
-};
-
-static void mxf_write_wav_desc(AVFormatContext *s, AVStream *st);
-static void mxf_write_aes3_desc(AVFormatContext *s, AVStream *st);
-static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st);
-static void mxf_write_cdci_desc(AVFormatContext *s, AVStream *st);
-static void mxf_write_generic_sound_desc(AVFormatContext *s, AVStream *st);
-
-enum {
+enum ULIndex {
     INDEX_MPEG2 = 0,
     INDEX_AES3,
     INDEX_WAV,
@@ -158,6 +138,26 @@ enum {
     INDEX_JPEG2000,
     INDEX_H264,
 };
+
+static const struct {
+    enum AVCodecID id;
+    enum ULIndex index;
+} mxf_essence_mappings[] = {
+    { AV_CODEC_ID_MPEG2VIDEO, INDEX_MPEG2 },
+    { AV_CODEC_ID_PCM_S24LE,  INDEX_AES3 },
+    { AV_CODEC_ID_PCM_S16LE,  INDEX_AES3 },
+    { AV_CODEC_ID_DVVIDEO,    INDEX_DV },
+    { AV_CODEC_ID_DNXHD,      INDEX_DNXHD_1080p_10bit_HIGH },
+    { AV_CODEC_ID_JPEG2000,   INDEX_JPEG2000 },
+    { AV_CODEC_ID_H264,       INDEX_H264 },
+    { AV_CODEC_ID_NONE }
+};
+
+static void mxf_write_wav_desc(AVFormatContext *s, AVStream *st);
+static void mxf_write_aes3_desc(AVFormatContext *s, AVStream *st);
+static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st);
+static void mxf_write_cdci_desc(AVFormatContext *s, AVStream *st);
+static void mxf_write_generic_sound_desc(AVFormatContext *s, AVStream *st);
 
 static const MXFContainerEssenceEntry mxf_essence_container_uls[] = {
     { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x02,0x0D,0x01,0x03,0x01,0x02,0x04,0x60,0x01 },
@@ -843,6 +843,7 @@ static void mxf_write_track(AVFormatContext *s, AVStream *st, enum MXFMetadataSe
     else
         avio_write(pb, sc->track_essence_element_key + 12, 4);
 
+    // write edit rate
     mxf_write_local_tag(pb, 8, 0x4B01);
 
     if (st == mxf->timecode_track && s->oformat == &ff_mxf_opatom_muxer){
@@ -1033,8 +1034,19 @@ static void mxf_write_generic_desc(AVFormatContext *s, AVStream *st, const UID k
     avio_wb32(pb, st->index+2);
 
     mxf_write_local_tag(pb, 8, 0x3001);
-    avio_wb32(pb, mxf->time_base.den);
-    avio_wb32(pb, mxf->time_base.num);
+    if (s->oformat == &ff_mxf_d10_muxer) {
+        avio_wb32(pb, mxf->time_base.den);
+        avio_wb32(pb, mxf->time_base.num);
+    } else {
+        if (st->codecpar->codec_id == AV_CODEC_ID_PCM_S16LE ||
+            st->codecpar->codec_id == AV_CODEC_ID_PCM_S24LE) {
+            avio_wb32(pb, st->codecpar->sample_rate);
+            avio_wb32(pb, 1);
+        } else {
+            avio_wb32(pb, mxf->time_base.den);
+            avio_wb32(pb, mxf->time_base.num);
+        }
+    }
 
     mxf_write_local_tag(pb, 16, 0x3004);
     avio_write(pb, mxf_essence_container_uls[sc->index].container_ul, 16);

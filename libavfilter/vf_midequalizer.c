@@ -25,7 +25,7 @@
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
-#include "framesync2.h"
+#include "framesync.h"
 
 typedef struct MidEqualizerContext {
     const AVClass *class;
@@ -89,8 +89,8 @@ static int process_frame(FFFrameSync *fs)
     AVFrame *out, *in0, *in1;
     int ret;
 
-    if ((ret = ff_framesync2_get_frame(&s->fs, 0, &in0, 0)) < 0 ||
-        (ret = ff_framesync2_get_frame(&s->fs, 1, &in1, 0)) < 0)
+    if ((ret = ff_framesync_get_frame(&s->fs, 0, &in0, 0)) < 0 ||
+        (ret = ff_framesync_get_frame(&s->fs, 1, &in1, 0)) < 0)
         return ret;
 
     if (ctx->is_disabled) {
@@ -311,7 +311,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->sample_aspect_ratio = in0->sample_aspect_ratio;
     outlink->frame_rate = in0->frame_rate;
 
-    if ((ret = ff_framesync2_init(&s->fs, ctx, 2)) < 0)
+    if ((ret = ff_framesync_init(&s->fs, ctx, 2)) < 0)
         return ret;
 
     in = s->fs.in;
@@ -326,20 +326,20 @@ static int config_output(AVFilterLink *outlink)
     s->fs.opaque   = s;
     s->fs.on_event = process_frame;
 
-    return ff_framesync2_configure(&s->fs);
+    return ff_framesync_configure(&s->fs);
 }
 
 static int activate(AVFilterContext *ctx)
 {
     MidEqualizerContext *s = ctx->priv;
-    return ff_framesync2_activate(&s->fs);
+    return ff_framesync_activate(&s->fs);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
     MidEqualizerContext *s = ctx->priv;
 
-    ff_framesync2_uninit(&s->fs);
+    ff_framesync_uninit(&s->fs);
     av_freep(&s->histogram[0]);
     av_freep(&s->histogram[1]);
     av_freep(&s->cchange);

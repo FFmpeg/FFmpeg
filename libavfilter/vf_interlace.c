@@ -83,14 +83,23 @@ static void lowpass_line_complex_c(uint8_t *dstp, ptrdiff_t linesize,
     const uint8_t *srcp_below = srcp + pref;
     const uint8_t *srcp_above2 = srcp + mref * 2;
     const uint8_t *srcp_below2 = srcp + pref * 2;
-    int i;
+    int i, srcp_x, srcp_ab;
     for (i = 0; i < linesize; i++) {
         // this calculation is an integer representation of
         // '0.75 * current + 0.25 * above + 0.25 * below - 0.125 * above2 - 0.125 * below2'
         // '4 +' is for rounding.
-        dstp[i] = av_clip_uint8((4 + (srcp[i] << 2)
-                  + ((srcp[i] + srcp_above[i] + srcp_below[i]) << 1)
-                  - srcp_above2[i] - srcp_below2[i]) >> 3);
+        srcp_x = srcp[i] << 1;
+        srcp_ab = srcp_above[i] + srcp_below[i];
+        dstp[i] = av_clip_uint8((4 + ((srcp[i] + srcp_x + srcp_ab) << 1)
+                                - srcp_above2[i] - srcp_below2[i]) >> 3);
+        // Prevent over-sharpening:
+        // dst must not exceed src when the average of above and below
+        // is less than src. And the other way around.
+        if (srcp_ab > srcp_x) {
+            if (dstp[i] < srcp[i])
+                dstp[i] = srcp[i];
+        } else if (dstp[i] > srcp[i])
+            dstp[i] = srcp[i];
     }
 }
 
@@ -172,6 +181,8 @@ static void copy_picture_field(InterlaceContext *s,
         int lines = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(inlink->h, vsub) : inlink->h;
         uint8_t *dstp = dst_frame->data[plane];
         const uint8_t *srcp = src_frame->data[plane];
+        int srcp_linesize = src_frame->linesize[plane] * 2;
+        int dstp_linesize = dst_frame->linesize[plane] * 2;
 
         av_assert0(cols >= 0 || lines >= 0);
 
@@ -180,38 +191,23 @@ static void copy_picture_field(InterlaceContext *s,
             srcp += src_frame->linesize[plane];
             dstp += dst_frame->linesize[plane];
         }
-        if (lowpass == VLPF_LIN) {
-            int srcp_linesize = src_frame->linesize[plane] * 2;
-            int dstp_linesize = dst_frame->linesize[plane] * 2;
+        if (lowpass) {
+            int x = 0;
+            if (lowpass == VLPF_CMP)
+                x = 1;
             for (j = lines; j > 0; j--) {
                 ptrdiff_t pref = src_frame->linesize[plane];
                 ptrdiff_t mref = -pref;
-                if (j == lines)
-                    mref = 0;    // there is no line above
-                else if (j == 1)
-                    pref = 0;    // there is no line below
-                s->lowpass_line(dstp, cols, srcp, mref, pref);
-                dstp += dstp_linesize;
-                srcp += srcp_linesize;
-            }
-        } else if (lowpass == VLPF_CMP) {
-            int srcp_linesize = src_frame->linesize[plane] * 2;
-            int dstp_linesize = dst_frame->linesize[plane] * 2;
-            for (j = lines; j > 0; j--) {
-                ptrdiff_t pref = src_frame->linesize[plane];
-                ptrdiff_t mref = -pref;
-                if (j >= (lines - 1))
+                if (j >= (lines - x))
                     mref = 0;
-                else if (j <= 2)
+                else if (j <= (1 + x))
                     pref = 0;
                 s->lowpass_line(dstp, cols, srcp, mref, pref);
                 dstp += dstp_linesize;
                 srcp += srcp_linesize;
             }
         } else {
-            av_image_copy_plane(dstp, dst_frame->linesize[plane] * 2,
-                                srcp, src_frame->linesize[plane] * 2,
-                                cols, lines);
+            av_image_copy_plane(dstp, dstp_linesize, srcp, srcp_linesize, cols, lines);
         }
     }
 }

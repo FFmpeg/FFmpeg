@@ -394,6 +394,7 @@ Muxers/Demuxers:
   caf*                                  Peter Ross
   cdxl.c                                Paul B Mahol
   crc.c                                 Michael Niedermayer
+  dashdec.c                             Steven Liu
   daud.c                                Reimar Doeffinger
   dss.c                                 Oleksij Rempel
   dtsdec.c                              foo86
