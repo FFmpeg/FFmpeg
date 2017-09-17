@@ -1358,7 +1358,7 @@ static int decode_frame_png(AVCodecContext *avctx,
     }
 
     if ((ret = av_frame_ref(data, s->picture.f)) < 0)
-        return ret;
+        goto the_end;
 
     *got_frame = 1;
 
