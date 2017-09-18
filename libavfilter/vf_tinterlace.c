@@ -156,21 +156,19 @@ static int config_out_props(AVFilterLink *outlink)
                                                 av_make_q(2, 1));
 
     if (tinterlace->mode == MODE_PAD) {
-        uint8_t black[4] = { 16, 128, 128, 16 };
-        int i, ret;
+        uint8_t black[4] = { 0, 0, 0, 16 };
+        int ret;
+        ff_draw_init(&tinterlace->draw, outlink->format, 0);
+        ff_draw_color(&tinterlace->draw, &tinterlace->color, black);
         if (ff_fmt_is_in(outlink->format, full_scale_yuvj_pix_fmts))
-            black[0] = black[3] = 0;
+            tinterlace->color.comp[0].u8[0] = 0;
         ret = av_image_alloc(tinterlace->black_data, tinterlace->black_linesize,
                              outlink->w, outlink->h, outlink->format, 16);
         if (ret < 0)
             return ret;
 
-        /* fill black picture with black */
-        for (i = 0; i < 4 && tinterlace->black_data[i]; i++) {
-            int h = i == 1 || i == 2 ? AV_CEIL_RSHIFT(outlink->h, desc->log2_chroma_h) : outlink->h;
-            memset(tinterlace->black_data[i], black[i],
-                   tinterlace->black_linesize[i] * h);
-        }
+        ff_fill_rectangle(&tinterlace->draw, &tinterlace->color, tinterlace->black_data,
+                          tinterlace->black_linesize, 0, 0, outlink->w, outlink->h);
     }
     if (tinterlace->flags & (TINTERLACE_FLAG_VLPF | TINTERLACE_FLAG_CVLPF)
             && !(tinterlace->mode == MODE_INTERLEAVE_TOP
