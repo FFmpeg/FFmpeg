@@ -228,7 +228,7 @@ void ff_svq3_add_idct_c(uint8_t *dst, int16_t *block,
         const unsigned z1 = 13 * (block[i + 4 * 0] -      block[i + 4 * 2]);
         const unsigned z2 =  7 *  block[i + 4 * 1] - 17 * block[i + 4 * 3];
         const unsigned z3 = 17 *  block[i + 4 * 1] +  7 * block[i + 4 * 3];
-        const int rr = (dc + 0x80000);
+        const int rr = (dc + 0x80000u);
 
         dst[i + stride * 0] = av_clip_uint8(dst[i + stride * 0] + ((int)((z0 + z3) * qmul + rr) >> 20));
         dst[i + stride * 1] = av_clip_uint8(dst[i + stride * 1] + ((int)((z1 + z2) * qmul + rr) >> 20));
