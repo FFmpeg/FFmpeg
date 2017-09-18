@@ -39,16 +39,15 @@ cglobal reorder_pixels, 3,4,3, dst, src1, size, src2
     neg                              sizeq                ; size = offset for dst, src1, src2
 .loop:
 
-%if cpuflag(avx2)
-    vpermq                              m0, [src1q + sizeq], 0xd8; load first part
-    vpermq                              m1, [src2q + sizeq], 0xd8; load second part
-%else
     mova                                m0, [src1q+sizeq]        ; load first part
     movu                                m1, [src2q+sizeq]        ; load second part
-%endif
     SBUTTERFLY bw, 0, 1, 2                                       ; interleaved
-    mova                 [dstq+2*sizeq   ], m0                   ; copy to dst
-    mova             [dstq+2*sizeq+mmsize], m1
+    mova                 [dstq+2*sizeq   ], xm0                  ; copy to dst
+    mova                 [dstq+2*sizeq+16], xm1
+%if cpuflag(avx2)
+    vperm2i128                          m0, m0, m1, q0301
+    mova                 [dstq+2*sizeq+32], m0
+%endif
     add     sizeq, mmsize
     jl .loop
     RET
