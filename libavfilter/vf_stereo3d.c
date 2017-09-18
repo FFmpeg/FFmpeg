@@ -150,6 +150,7 @@ typedef struct Stereo3DContext {
     AVFrame *prev;
     int blanks;
     int in_off_left[4], in_off_right[4];
+    AVRational aspect;
     Stereo3DDSPContext dsp;
 } Stereo3DContext;
 
@@ -359,11 +360,11 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
     Stereo3DContext *s = ctx->priv;
-    AVRational aspect = inlink->sample_aspect_ratio;
     AVRational fps = inlink->frame_rate;
     AVRational tb = inlink->time_base;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(outlink->format);
     int ret;
+    s->aspect = inlink->sample_aspect_ratio;
 
     switch (s->in.format) {
     case INTERLEAVE_COLS_LR:
@@ -404,25 +405,25 @@ static int config_output(AVFilterLink *outlink)
 
     switch (s->in.format) {
     case SIDE_BY_SIDE_2_LR:
-        aspect.num     *= 2;
+        s->aspect.num  *= 2;
     case SIDE_BY_SIDE_LR:
         s->width        = inlink->w / 2;
         s->in.off_right = s->width;
         break;
     case SIDE_BY_SIDE_2_RL:
-        aspect.num     *= 2;
+        s->aspect.num  *= 2;
     case SIDE_BY_SIDE_RL:
         s->width        = inlink->w / 2;
         s->in.off_left  = s->width;
         break;
     case ABOVE_BELOW_2_LR:
-        aspect.den     *= 2;
+        s->aspect.den  *= 2;
     case ABOVE_BELOW_LR:
         s->in.row_right =
         s->height       = inlink->h / 2;
         break;
     case ABOVE_BELOW_2_RL:
-        aspect.den     *= 2;
+        s->aspect.den  *= 2;
     case ABOVE_BELOW_RL:
         s->in.row_left  =
         s->height       = inlink->h / 2;
@@ -486,19 +487,19 @@ static int config_output(AVFilterLink *outlink)
         break;
     }
     case SIDE_BY_SIDE_2_LR:
-        aspect.den      *= 2;
+        s->aspect.den   *= 2;
     case SIDE_BY_SIDE_LR:
         s->out.width     = s->width * 2;
         s->out.off_right = s->width;
         break;
     case SIDE_BY_SIDE_2_RL:
-        aspect.den      *= 2;
+        s->aspect.den   *= 2;
     case SIDE_BY_SIDE_RL:
         s->out.width     = s->width * 2;
         s->out.off_left  = s->width;
         break;
     case ABOVE_BELOW_2_LR:
-        aspect.num      *= 2;
+        s->aspect.num   *= 2;
     case ABOVE_BELOW_LR:
         s->out.height    = s->height * 2;
         s->out.row_right = s->height;
@@ -514,7 +515,7 @@ static int config_output(AVFilterLink *outlink)
         s->out.row_right = s->height + s->blanks;
         break;
     case ABOVE_BELOW_2_RL:
-        aspect.num      *= 2;
+        s->aspect.num   *= 2;
     case ABOVE_BELOW_RL:
         s->out.height    = s->height * 2;
         s->out.row_left  = s->height;
@@ -576,7 +577,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->h = s->out.height;
     outlink->frame_rate = fps;
     outlink->time_base = tb;
-    outlink->sample_aspect_ratio = aspect;
+    outlink->sample_aspect_ratio = s->aspect;
 
     if ((ret = av_image_fill_linesizes(s->linesize, outlink->format, s->width)) < 0)
         return ret;
@@ -1075,6 +1076,7 @@ copy:
         av_frame_free(&s->prev);
         av_frame_free(&inpicref);
     }
+    out->sample_aspect_ratio = s->aspect;
     return ff_filter_frame(outlink, out);
 }
 
