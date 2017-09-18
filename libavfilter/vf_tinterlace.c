@@ -172,14 +172,12 @@ static int config_out_props(AVFilterLink *outlink)
                    tinterlace->black_linesize[i] * h);
         }
     }
-    if ((tinterlace->flags & TINTERLACE_FLAG_VLPF
-          || tinterlace->flags & TINTERLACE_FLAG_CVLPF)
+    if (tinterlace->flags & (TINTERLACE_FLAG_VLPF | TINTERLACE_FLAG_CVLPF)
             && !(tinterlace->mode == MODE_INTERLEAVE_TOP
               || tinterlace->mode == MODE_INTERLEAVE_BOTTOM)) {
         av_log(ctx, AV_LOG_WARNING, "low_pass_filter flags ignored with mode %d\n",
                 tinterlace->mode);
-        tinterlace->flags &= ~TINTERLACE_FLAG_VLPF;
-        tinterlace->flags &= ~TINTERLACE_FLAG_CVLPF;
+        tinterlace->flags &= ~(TINTERLACE_FLAG_VLPF | TINTERLACE_FLAG_CVLPF);
     }
     tinterlace->preout_time_base = inlink->time_base;
     if (tinterlace->mode == MODE_INTERLACEX2) {
@@ -263,10 +261,8 @@ void copy_picture_field(TInterlaceContext *tinterlace,
         // Low-pass filtering is required when creating an interlaced destination from
         // a progressive source which contains high-frequency vertical detail.
         // Filtering will reduce interlace 'twitter' and Moire patterning.
-        if (flags & TINTERLACE_FLAG_VLPF || flags & TINTERLACE_FLAG_CVLPF) {
-            int x = 0;
-            if (flags & TINTERLACE_FLAG_CVLPF)
-                x = 1;
+        if (flags & (TINTERLACE_FLAG_VLPF | TINTERLACE_FLAG_CVLPF)) {
+            int x = !!(flags & TINTERLACE_FLAG_CVLPF);
             for (h = lines; h > 0; h--) {
                 ptrdiff_t pref = src_linesize[plane];
                 ptrdiff_t mref = -pref;
