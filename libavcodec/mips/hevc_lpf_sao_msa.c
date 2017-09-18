@@ -1265,54 +1265,51 @@ static void hevc_sao_edge_filter_0degree_4width_msa(uint8_t *dst,
                                                     int16_t *sao_offset_val,
                                                     int32_t height)
 {
-    int32_t h_cnt;
     uint32_t dst_val0, dst_val1;
-    v8i16 edge_idx = { 1, 2, 0, 3, 4, 0, 0, 0 };
+    v16u8 cmp_minus10, diff_minus10, diff_minus11, src_minus10, src_minus11;
+    v16i8 edge_idx = { 1, 2, 0, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    v16i8 sao_offset = LD_SB(sao_offset_val);
+    v16i8 src_plus10, offset, src0, dst0;
     v16u8 const1 = (v16u8) __msa_ldi_b(1);
-    v16u8 cmp_minus10, diff_minus10, cmp_minus11, diff_minus11;
-    v16u8 src_minus10, src_minus11;
     v16i8 zero = { 0 };
-    v16i8 src_zero0, src_zero1, src_plus10, src_plus11, dst0;
-    v8i16 offset_mask0, offset_mask1;
-    v8i16 sao_offset, src00, src01;
 
-    sao_offset = LD_SH(sao_offset_val);
+    sao_offset = __msa_pckev_b(sao_offset, sao_offset);
     src -= 1;
 
-    for (h_cnt = (height >> 1); h_cnt--;) {
-        LD_UB2(src, src_stride, src_minus10, src_minus11);
+    /* load in advance */
+    LD_UB2(src, src_stride, src_minus10, src_minus11);
+
+    for (height -= 2; height; height -= 2) {
         src += (2 * src_stride);
 
-        SLDI_B2_0_SB(src_minus10, src_minus11, src_zero0, src_zero1, 1);
-        SLDI_B2_0_SB(src_minus10, src_minus11, src_plus10, src_plus11, 2);
-        ILVR_B2_UB(src_plus10, src_minus10, src_plus11, src_minus11,
-                   src_minus10, src_minus11);
-        ILVR_B2_SB(src_zero0, src_zero0, src_zero1, src_zero1, src_zero0,
-                   src_zero1);
+        src_minus10 = (v16u8) __msa_pckev_d((v2i64) src_minus11,
+                                            (v2i64) src_minus10);
 
-        cmp_minus10 = ((v16u8) src_zero0 == src_minus10);
+        src0 = (v16i8) __msa_sldi_b(zero, (v16i8) src_minus10, 1);
+        src_plus10 = (v16i8) __msa_sldi_b(zero, (v16i8) src_minus10, 2);
+
+        cmp_minus10 = ((v16u8) src0 == src_minus10);
         diff_minus10 = __msa_nor_v(cmp_minus10, cmp_minus10);
-        cmp_minus10 = (src_minus10 < (v16u8) src_zero0);
+        cmp_minus10 = (src_minus10 < (v16u8) src0);
         diff_minus10 = __msa_bmnz_v(diff_minus10, const1, cmp_minus10);
 
-        cmp_minus11 = ((v16u8) src_zero1 == src_minus11);
-        diff_minus11 = __msa_nor_v(cmp_minus11, cmp_minus11);
-        cmp_minus11 = (src_minus11 < (v16u8) src_zero1);
-        diff_minus11 = __msa_bmnz_v(diff_minus11, const1, cmp_minus11);
+        cmp_minus10 = ((v16u8) src0 == (v16u8) src_plus10);
+        diff_minus11 = __msa_nor_v(cmp_minus10, cmp_minus10);
+        cmp_minus10 = ((v16u8) src_plus10 < (v16u8) src0);
+        diff_minus11 = __msa_bmnz_v(diff_minus11, const1, cmp_minus10);
 
-        offset_mask0 = (v8i16) (__msa_hadd_u_h(diff_minus10, diff_minus10) + 2);
-        offset_mask1 = (v8i16) (__msa_hadd_u_h(diff_minus11, diff_minus11) + 2);
+        offset = (v16i8) diff_minus10 + (v16i8) diff_minus11 + 2;
 
-        VSHF_H2_SH(edge_idx, edge_idx, sao_offset, sao_offset, offset_mask0,
-                   offset_mask0, offset_mask0, offset_mask0);
-        VSHF_H2_SH(edge_idx, edge_idx, sao_offset, sao_offset, offset_mask1,
-                   offset_mask1, offset_mask1, offset_mask1);
-        ILVEV_B2_SH(src_zero0, zero, src_zero1, zero, src00, src01);
-        ADD2(offset_mask0, src00, offset_mask1, src01, offset_mask0,
-             offset_mask1);
-        CLIP_SH2_0_255(offset_mask0, offset_mask1);
+        /* load in advance */
+        LD_UB2(src, src_stride, src_minus10, src_minus11);
 
-        dst0 = __msa_pckev_b((v16i8) offset_mask1, (v16i8) offset_mask0);
+        VSHF_B2_SB(edge_idx, edge_idx, sao_offset, sao_offset, offset, offset,
+                   offset, offset);
+
+        src0 = (v16i8) __msa_xori_b((v16u8) src0, 128);
+        dst0 = __msa_adds_s_b(src0, offset);
+        dst0 = (v16i8) __msa_xori_b((v16u8) dst0, 128);
+
         dst_val0 = __msa_copy_u_w((v4i32) dst0, 0);
         dst_val1 = __msa_copy_u_w((v4i32) dst0, 2);
         SW(dst_val0, dst);
@@ -1320,6 +1317,37 @@ static void hevc_sao_edge_filter_0degree_4width_msa(uint8_t *dst,
         SW(dst_val1, dst);
         dst += dst_stride;
     }
+
+    src_minus10 = (v16u8) __msa_pckev_d((v2i64) src_minus11,
+                                        (v2i64) src_minus10);
+
+    src0 = (v16i8) __msa_sldi_b(zero, (v16i8) src_minus10, 1);
+    src_plus10 = (v16i8) __msa_sldi_b(zero, (v16i8) src_minus10, 2);
+
+    cmp_minus10 = ((v16u8) src0 == src_minus10);
+    diff_minus10 = __msa_nor_v(cmp_minus10, cmp_minus10);
+    cmp_minus10 = (src_minus10 < (v16u8) src0);
+    diff_minus10 = __msa_bmnz_v(diff_minus10, const1, cmp_minus10);
+
+    cmp_minus10 = ((v16u8) src0 == (v16u8) src_plus10);
+    diff_minus11 = __msa_nor_v(cmp_minus10, cmp_minus10);
+    cmp_minus10 = ((v16u8) src_plus10 < (v16u8) src0);
+    diff_minus11 = __msa_bmnz_v(diff_minus11, const1, cmp_minus10);
+
+    offset = (v16i8) diff_minus10 + (v16i8) diff_minus11 + 2;
+    VSHF_B2_SB(edge_idx, edge_idx, sao_offset, sao_offset, offset, offset,
+               offset, offset);
+
+    src0 = (v16i8) __msa_xori_b((v16u8) src0, 128);
+    dst0 = __msa_adds_s_b(src0, offset);
+    dst0 = (v16i8) __msa_xori_b((v16u8) dst0, 128);
+
+    dst_val0 = __msa_copy_u_w((v4i32) dst0, 0);
+    dst_val1 = __msa_copy_u_w((v4i32) dst0, 2);
+
+    SW(dst_val0, dst);
+    dst += dst_stride;
+    SW(dst_val1, dst);
 }
 
 static void hevc_sao_edge_filter_0degree_8width_msa(uint8_t *dst,
@@ -1329,64 +1357,90 @@ static void hevc_sao_edge_filter_0degree_8width_msa(uint8_t *dst,
                                                     int16_t *sao_offset_val,
                                                     int32_t height)
 {
-    uint8_t *src_minus1;
-    int32_t h_cnt;
     uint64_t dst_val0, dst_val1;
-    v8i16 edge_idx = { 1, 2, 0, 3, 4, 0, 0, 0 };
+    v16i8 edge_idx = { 1, 2, 0, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     v16u8 const1 = (v16u8) __msa_ldi_b(1);
-    v16i8 dst0, dst1;
-    v16i8 zero = { 0 };
-    v16u8 cmp_minus10, diff_minus10, cmp_minus11, diff_minus11;
-    v16u8 src_minus10, src_minus11;
-    v16i8 src_zero0, src_plus10, src_zero1, src_plus11;
-    v8i16 sao_offset, src00, offset_mask0, src01, offset_mask1;
+    v16u8 cmp_minus10, diff_minus10, diff_minus11;
+    v16u8 src0, src1, dst0, src_minus10, src_minus11, src_plus10, src_plus11;
+    v16i8 offset, sao_offset = LD_SB(sao_offset_val);
 
-    sao_offset = LD_SH(sao_offset_val);
+    sao_offset = __msa_pckev_b(sao_offset, sao_offset);
+    src -= 1;
 
-    for (h_cnt = (height >> 1); h_cnt--;) {
-        src_minus1 = src - 1;
-        LD_UB2(src_minus1, src_stride, src_minus10, src_minus11);
+    /* load in advance */
+    LD_UB2(src, src_stride, src_minus10, src_minus11);
 
-        SLDI_B2_0_SB(src_minus10, src_minus11, src_zero0, src_zero1, 1);
-        SLDI_B2_0_SB(src_minus10, src_minus11, src_plus10, src_plus11, 2);
-        ILVR_B2_UB(src_plus10, src_minus10, src_plus11, src_minus11,
-                   src_minus10, src_minus11);
-        ILVR_B2_SB(src_zero0, src_zero0, src_zero1, src_zero1,
-                   src_zero0, src_zero1);
+    for (height -= 2; height; height -= 2) {
+        src += (src_stride << 1);
 
-        cmp_minus10 = ((v16u8) src_zero0 == src_minus10);
+        SLDI_B2_0_UB(src_minus10, src_minus11, src0, src1, 1);
+        SLDI_B2_0_UB(src_minus10, src_minus11, src_plus10, src_plus11, 2);
+
+        PCKEV_D2_UB(src_minus11, src_minus10, src_plus11, src_plus10,
+                    src_minus10, src_plus10);
+        src0 = (v16u8) __msa_pckev_d((v2i64) src1, (v2i64) src0);
+
+        cmp_minus10 = (src0 == src_minus10);
         diff_minus10 = __msa_nor_v(cmp_minus10, cmp_minus10);
-        cmp_minus10 = (src_minus10 < (v16u8) src_zero0);
+        cmp_minus10 = (src_minus10 < src0);
         diff_minus10 = __msa_bmnz_v(diff_minus10, const1, cmp_minus10);
 
-        cmp_minus11 = ((v16u8) src_zero1 == src_minus11);
-        diff_minus11 = __msa_nor_v(cmp_minus11, cmp_minus11);
-        cmp_minus11 = (src_minus11 < (v16u8) src_zero1);
-        diff_minus11 = __msa_bmnz_v(diff_minus11, const1, cmp_minus11);
+        cmp_minus10 = (src0 == src_plus10);
+        diff_minus11 = __msa_nor_v(cmp_minus10, cmp_minus10);
+        cmp_minus10 = (src_plus10 < src0);
+        diff_minus11 = __msa_bmnz_v(diff_minus11, const1, cmp_minus10);
 
-        offset_mask0 = (v8i16) (__msa_hadd_u_h(diff_minus10, diff_minus10) + 2);
-        offset_mask1 = (v8i16) (__msa_hadd_u_h(diff_minus11, diff_minus11) + 2);
+        offset = (v16i8) diff_minus10 + (v16i8) diff_minus11 + 2;
 
-        VSHF_H2_SH(edge_idx, edge_idx, sao_offset, sao_offset, offset_mask0,
-                   offset_mask0, offset_mask0, offset_mask0);
-        VSHF_H2_SH(edge_idx, edge_idx, sao_offset, sao_offset, offset_mask1,
-                   offset_mask1, offset_mask1, offset_mask1);
-        ILVEV_B2_SH(src_zero0, zero, src_zero1, zero, src00, src01);
+        /* load in advance */
+        LD_UB2(src, src_stride, src_minus10, src_minus11);
 
-        ADD2(offset_mask0, src00, offset_mask1, src01, offset_mask0,
-             offset_mask1);
-        CLIP_SH2_0_255(offset_mask0, offset_mask1);
-        PCKEV_B2_SB(offset_mask0, offset_mask0, offset_mask1, offset_mask1,
-                    dst0, dst1);
+        VSHF_B2_SB(edge_idx, edge_idx, sao_offset, sao_offset, offset, offset,
+                   offset, offset);
+
+        src0 = __msa_xori_b(src0, 128);
+        dst0 = (v16u8) __msa_adds_s_b((v16i8) src0, offset);
+        dst0 = __msa_xori_b(dst0, 128);
 
         dst_val0 = __msa_copy_u_d((v2i64) dst0, 0);
-        dst_val1 = __msa_copy_u_d((v2i64) dst1, 0);
+        dst_val1 = __msa_copy_u_d((v2i64) dst0, 1);
         SD(dst_val0, dst);
         dst += dst_stride;
         SD(dst_val1, dst);
         dst += dst_stride;
-        src += (src_stride << 1);
     }
+
+    SLDI_B2_0_UB(src_minus10, src_minus11, src0, src1, 1);
+    SLDI_B2_0_UB(src_minus10, src_minus11, src_plus10, src_plus11, 2);
+
+    PCKEV_D2_UB(src_minus11, src_minus10, src_plus11, src_plus10, src_minus10,
+                src_plus10);
+    src0 = (v16u8) __msa_pckev_d((v2i64) src1, (v2i64) src0);
+
+    cmp_minus10 = ((v16u8) src0 == src_minus10);
+    diff_minus10 = __msa_nor_v(cmp_minus10, cmp_minus10);
+    cmp_minus10 = (src_minus10 < (v16u8) src0);
+    diff_minus10 = __msa_bmnz_v(diff_minus10, const1, cmp_minus10);
+
+    cmp_minus10 = (src0 ==  src_plus10);
+    diff_minus11 = __msa_nor_v(cmp_minus10, cmp_minus10);
+    cmp_minus10 = (src_plus10 < src0);
+    diff_minus11 = __msa_bmnz_v(diff_minus11, const1, cmp_minus10);
+
+    offset = (v16i8) diff_minus10 + (v16i8) diff_minus11 + 2;
+
+    VSHF_B2_SB(edge_idx, edge_idx, sao_offset, sao_offset, offset, offset,
+               offset, offset);
+
+    src0 = __msa_xori_b(src0, 128);
+    dst0 = (v16u8) __msa_adds_s_b((v16i8) src0, offset);
+    dst0 = __msa_xori_b(dst0, 128);
+
+    dst_val0 = __msa_copy_u_d((v2i64) dst0, 0);
+    dst_val1 = __msa_copy_u_d((v2i64) dst0, 1);
+    SD(dst_val0, dst);
+    dst += dst_stride;
+    SD(dst_val1, dst);
 }
 
 static void hevc_sao_edge_filter_0degree_16multiple_msa(uint8_t *dst,
@@ -1398,7 +1452,7 @@ static void hevc_sao_edge_filter_0degree_16multiple_msa(uint8_t *dst,
                                                         int32_t height)
 {
     uint8_t *dst_ptr, *src_minus1;
-    int32_t h_cnt, v_cnt;
+    int32_t v_cnt;
     v16i8 edge_idx = { 1, 2, 0, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     v16u8 const1 = (v16u8) __msa_ldi_b(1);
     v16i8 sao_offset;
@@ -1411,20 +1465,18 @@ static void hevc_sao_edge_filter_0degree_16multiple_msa(uint8_t *dst,
     v16i8 offset_mask0, offset_mask1, offset_mask2, offset_mask3;
     v16i8 src_zero0, src_zero1, src_zero2, src_zero3;
     v16i8 src_plus10, src_plus11, src_plus12, src_plus13;
-    v8i16 src0, src1, src2, src3, src4, src5, src6, src7;
-    v8i16 temp0, temp1, temp2, temp3, temp4, temp5, temp6, temp7;
 
     sao_offset = LD_SB(sao_offset_val);
     sao_offset = __msa_pckev_b(sao_offset, sao_offset);
 
-    for (h_cnt = (height >> 2); h_cnt--;) {
+    for (; height; height -= 4) {
         src_minus1 = src - 1;
         LD_UB4(src_minus1, src_stride,
                src_minus10, src_minus11, src_minus12, src_minus13);
 
-        for (v_cnt = 0; v_cnt < (width >> 4); v_cnt++) {
+        for (v_cnt = 0; v_cnt < width; v_cnt += 16) {
             src_minus1 += 16;
-            dst_ptr = dst + (v_cnt << 4);
+            dst_ptr = dst + v_cnt;
             LD_UB4(src_minus1, src_stride, src10, src11, src12, src13);
 
             SLDI_B2_SB(src10, src11, src_minus10, src_minus11, src_zero0,
@@ -1485,22 +1537,14 @@ static void hevc_sao_edge_filter_0degree_16multiple_msa(uint8_t *dst,
             VSHF_B2_SB(edge_idx, edge_idx, sao_offset, sao_offset, offset_mask3,
                        offset_mask3, offset_mask3, offset_mask3);
 
-            UNPCK_UB_SH(src_zero0, src0, src1);
-            UNPCK_SB_SH(offset_mask0, temp0, temp1);
-            UNPCK_UB_SH(src_zero1, src2, src3);
-            UNPCK_SB_SH(offset_mask1, temp2, temp3);
-            UNPCK_UB_SH(src_zero2, src4, src5);
-            UNPCK_SB_SH(offset_mask2, temp4, temp5);
-            UNPCK_UB_SH(src_zero3, src6, src7);
-            UNPCK_SB_SH(offset_mask3, temp6, temp7);
-            ADD4(temp0, src0, temp1, src1, temp2, src2, temp3, src3, temp0,
-                 temp1, temp2, temp3);
-            ADD4(temp4, src4, temp5, src5, temp6, src6, temp7, src7, temp4,
-                 temp5, temp6, temp7);
-            CLIP_SH4_0_255(temp0, temp1, temp2, temp3);
-            CLIP_SH4_0_255(temp4, temp5, temp6, temp7);
-            PCKEV_B4_UB(temp1, temp0, temp3, temp2, temp5, temp4, temp7, temp6,
-                        dst0, dst1, dst2, dst3);
+            XORI_B4_128_SB(src_zero0, src_zero1, src_zero2, src_zero3);
+
+            dst0 = (v16u8) __msa_adds_s_b((v16i8) src_zero0, offset_mask0);
+            dst1 = (v16u8) __msa_adds_s_b((v16i8) src_zero1, offset_mask1);
+            dst2 = (v16u8) __msa_adds_s_b((v16i8) src_zero2, offset_mask2);
+            dst3 = (v16u8) __msa_adds_s_b((v16i8) src_zero3, offset_mask3);
+
+            XORI_B4_128_UB(dst0, dst1, dst2, dst3);
 
             src_minus10 = src10;
             ST_UB(dst0, dst_ptr);
