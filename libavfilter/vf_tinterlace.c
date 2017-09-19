@@ -78,7 +78,12 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P,
         AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV444P,
+        AV_PIX_FMT_YUV420P10LE, AV_PIX_FMT_YUV422P10LE,
+        AV_PIX_FMT_YUV440P10LE, AV_PIX_FMT_YUV444P10LE,
+        AV_PIX_FMT_YUV420P12LE, AV_PIX_FMT_YUV422P12LE,
+        AV_PIX_FMT_YUV440P12LE, AV_PIX_FMT_YUV444P12LE,
         AV_PIX_FMT_YUVA420P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA444P,
+        AV_PIX_FMT_YUVA420P10LE, AV_PIX_FMT_YUVA422P10LE, AV_PIX_FMT_YUVA444P10LE,
         AV_PIX_FMT_GRAY8, FULL_SCALE_YUVJ_FORMATS,
         AV_PIX_FMT_NONE
     };
@@ -90,7 +95,7 @@ static int query_formats(AVFilterContext *ctx)
 }
 
 static void lowpass_line_c(uint8_t *dstp, ptrdiff_t width, const uint8_t *srcp,
-                           ptrdiff_t mref, ptrdiff_t pref)
+                           ptrdiff_t mref, ptrdiff_t pref, int clip_max)
 {
     const uint8_t *srcp_above = srcp + mref;
     const uint8_t *srcp_below = srcp + pref;
@@ -103,8 +108,26 @@ static void lowpass_line_c(uint8_t *dstp, ptrdiff_t width, const uint8_t *srcp,
     }
 }
 
+static void lowpass_line_c_16(uint8_t *dst8, ptrdiff_t width, const uint8_t *src8,
+                              ptrdiff_t mref, ptrdiff_t pref, int clip_max)
+{
+    uint16_t *dstp = (uint16_t *)dst8;
+    const uint16_t *srcp = (const uint16_t *)src8;
+    const uint16_t *srcp_above = srcp + mref / 2;
+    const uint16_t *srcp_below = srcp + pref / 2;
+    int i, src_x;
+    for (i = 0; i < width; i++) {
+        // this calculation is an integer representation of
+        // '0.5 * current + 0.25 * above + 0.25 * below'
+        // '1 +' is for rounding.
+        src_x   = av_le2ne16(srcp[i]) << 1;
+        dstp[i] = av_le2ne16((1 + src_x + av_le2ne16(srcp_above[i])
+                             + av_le2ne16(srcp_below[i])) >> 2);
+    }
+}
+
 static void lowpass_line_complex_c(uint8_t *dstp, ptrdiff_t width, const uint8_t *srcp,
-                                   ptrdiff_t mref, ptrdiff_t pref)
+                                   ptrdiff_t mref, ptrdiff_t pref, int clip_max)
 {
     const uint8_t *srcp_above = srcp + mref;
     const uint8_t *srcp_below = srcp + pref;
@@ -127,6 +150,41 @@ static void lowpass_line_complex_c(uint8_t *dstp, ptrdiff_t width, const uint8_t
                 dstp[i] = srcp[i];
         } else if (dstp[i] > srcp[i])
             dstp[i] = srcp[i];
+    }
+}
+
+static void lowpass_line_complex_c_16(uint8_t *dst8, ptrdiff_t width, const uint8_t *src8,
+                                      ptrdiff_t mref, ptrdiff_t pref, int clip_max)
+{
+    uint16_t *dstp = (uint16_t *)dst8;
+    const uint16_t *srcp = (const uint16_t *)src8;
+    const uint16_t *srcp_above = srcp + mref / 2;
+    const uint16_t *srcp_below = srcp + pref / 2;
+    const uint16_t *srcp_above2 = srcp + mref;
+    const uint16_t *srcp_below2 = srcp + pref;
+    int i, dst_le, src_le, src_x, src_ab;
+    for (i = 0; i < width; i++) {
+        // this calculation is an integer representation of
+        // '0.75 * current + 0.25 * above + 0.25 * below - 0.125 * above2 - 0.125 * below2'
+        // '4 +' is for rounding.
+        src_le = av_le2ne16(srcp[i]);
+        src_x  = src_le << 1;
+        src_ab = av_le2ne16(srcp_above[i]) + av_le2ne16(srcp_below[i]);
+        dst_le = av_clip((4 + ((src_le + src_x + src_ab) << 1)
+                         - av_le2ne16(srcp_above2[i])
+                         - av_le2ne16(srcp_below2[i])) >> 3, 0, clip_max);
+        // Prevent over-sharpening:
+        // dst must not exceed src when the average of above and below
+        // is less than src. And the other way around.
+        if (src_ab > src_x) {
+            if (dst_le < src_le)
+                dstp[i] = av_le2ne16(src_le);
+            else
+                dstp[i] = av_le2ne16(dst_le);
+        } else if (dst_le > src_le) {
+            dstp[i] = av_le2ne16(src_le);
+        } else
+            dstp[i] = av_le2ne16(dst_le);
     }
 }
 
@@ -198,12 +256,19 @@ static int config_out_props(AVFilterLink *outlink)
         (tinterlace->flags & TINTERLACE_FLAG_EXACT_TB))
         outlink->time_base = tinterlace->preout_time_base;
 
+    tinterlace->csp = av_pix_fmt_desc_get(outlink->format);
     if (tinterlace->flags & TINTERLACE_FLAG_CVLPF) {
-        tinterlace->lowpass_line = lowpass_line_complex_c;
+        if (tinterlace->csp->comp[0].depth > 8)
+            tinterlace->lowpass_line = lowpass_line_complex_c_16;
+        else
+            tinterlace->lowpass_line = lowpass_line_complex_c;
         if (ARCH_X86)
             ff_tinterlace_init_x86(tinterlace);
     } else if (tinterlace->flags & TINTERLACE_FLAG_VLPF) {
-        tinterlace->lowpass_line = lowpass_line_c;
+        if (tinterlace->csp->comp[0].depth > 8)
+            tinterlace->lowpass_line = lowpass_line_c_16;
+        else
+            tinterlace->lowpass_line = lowpass_line_c;
         if (ARCH_X86)
             ff_tinterlace_init_x86(tinterlace);
     }
@@ -250,6 +315,7 @@ void copy_picture_field(TInterlaceContext *tinterlace,
         const uint8_t *srcp = src[plane];
         int srcp_linesize = src_linesize[plane] * k;
         int dstp_linesize = dst_linesize[plane] * (interleave ? 2 : 1);
+        int clip_max = (1 << tinterlace->csp->comp[plane].depth) - 1;
 
         lines = (lines + (src_field == FIELD_UPPER)) / k;
         if (src_field == FIELD_LOWER)
@@ -267,11 +333,13 @@ void copy_picture_field(TInterlaceContext *tinterlace,
                 if (h >= (lines - x))  mref = 0; // there is no line above
                 else if (h <= (1 + x)) pref = 0; // there is no line below
 
-                tinterlace->lowpass_line(dstp, cols, srcp, mref, pref);
+                tinterlace->lowpass_line(dstp, cols, srcp, mref, pref, clip_max);
                 dstp += dstp_linesize;
                 srcp += srcp_linesize;
             }
         } else {
+            if (tinterlace->csp->comp[plane].depth > 8)
+                cols *= 2;
             av_image_copy_plane(dstp, dstp_linesize, srcp, srcp_linesize, cols, lines);
         }
     }
