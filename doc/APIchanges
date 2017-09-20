@@ -15,6 +15,11 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2017-xx-xx - xxxxxxx - lavu 55.76.100 / 56.6.0 - pixdesc.h
+  Add av_color_range_from_name(), av_color_primaries_from_name(),
+  av_color_transfer_from_name(), av_color_space_from_name(), and
+  av_chroma_location_from_name().
+
 2017-09-13 - xxxxxxx - lavc 57.106.100 - avcodec.h
   Add AV_PKT_FLAG_TRUSTED.
 
