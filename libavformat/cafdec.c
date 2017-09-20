@@ -166,6 +166,8 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
             }
             avio_skip(pb, size - ALAC_NEW_KUKI);
         }
+    } else if (st->codecpar->codec_id == AV_CODEC_ID_OPUS) {
+        avio_skip(pb, size);
     } else {
         av_freep(&st->codecpar->extradata);
         if (ff_get_extradata(s, st->codecpar, pb, size) < 0)

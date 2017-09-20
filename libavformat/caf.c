@@ -52,6 +52,7 @@ const AVCodecTag ff_codec_caf_tags[] = {
     { AV_CODEC_ID_MP2,             MKTAG('.','m','p','2') },
     { AV_CODEC_ID_MP3,             MKTAG('.','m','p','3') },
     { AV_CODEC_ID_MP3,             MKTAG('m','s', 0 ,'U') },
+    { AV_CODEC_ID_OPUS,            MKTAG('o','p','u','s') },
     { AV_CODEC_ID_PCM_ALAW,        MKTAG('a','l','a','w') },
     { AV_CODEC_ID_PCM_MULAW,       MKTAG('u','l','a','w') },
     { AV_CODEC_ID_QCELP,           MKTAG('Q','c','l','p') },
