@@ -185,6 +185,7 @@ Individual component options:
   --enable-filter=NAME     enable filter NAME
   --disable-filter=NAME    disable filter NAME
   --disable-filters        disable all filters
+  --disable-v4l2_m2m       disable V4L2 mem2mem code [autodetect]
 
 External library support:
 
@@ -1628,6 +1629,7 @@ HWACCEL_AUTODETECT_LIBRARY_LIST="
     vda
     vdpau
     videotoolbox
+    v4l2_m2m
     xvmc
 "
 
@@ -2755,6 +2757,7 @@ omx_rpi_select="omx"
 qsvdec_select="qsv"
 qsvenc_select="qsv"
 vaapi_encode_deps="vaapi"
+v4l2_m2m_deps_any="linux_videodev2_h"
 
 hwupload_cuda_filter_deps="cuda"
 scale_npp_filter_deps="cuda libnpp"
@@ -2765,6 +2768,8 @@ nvenc_deps="cuda"
 nvenc_deps_any="dlopen LoadLibrary"
 nvenc_encoder_deps="nvenc"
 
+h263_v4l2m2m_decoder_deps="v4l2_m2m h263_v4l2_m2m"
+h263_v4l2m2m_encoder_deps="v4l2_m2m h263_v4l2_m2m"
 h264_crystalhd_decoder_select="crystalhd h264_mp4toannexb_bsf h264_parser"
 h264_cuvid_decoder_deps="cuda cuvid"
 h264_cuvid_decoder_select="h264_mp4toannexb_bsf"
@@ -2783,6 +2788,8 @@ h264_vda_decoder_deps="vda"
 h264_vda_decoder_select="h264_decoder"
 h264_vdpau_decoder_deps="vdpau"
 h264_vdpau_decoder_select="h264_decoder"
+h264_v4l2m2m_decoder_deps="v4l2_m2m h264_v4l2_m2m"
+h264_v4l2m2m_encoder_deps="v4l2_m2m h264_v4l2_m2m"
 hevc_cuvid_decoder_deps="cuda cuvid"
 hevc_cuvid_decoder_select="hevc_mp4toannexb_bsf"
 hevc_mediacodec_decoder_deps="mediacodec"
@@ -2794,12 +2801,15 @@ hevc_qsv_encoder_deps="libmfx"
 hevc_qsv_encoder_select="hevcparse qsvenc"
 hevc_vaapi_encoder_deps="VAEncPictureParameterBufferHEVC"
 hevc_vaapi_encoder_select="vaapi_encode golomb"
+hevc_v4l2m2m_decoder_deps="v4l2_m2m hevc_v4l2_m2m"
+hevc_v4l2m2m_encoder_deps="v4l2_m2m hevc_v4l2_m2m"
 mjpeg_cuvid_decoder_deps="cuda cuvid"
 mjpeg_vaapi_encoder_deps="VAEncPictureParameterBufferJPEG"
 mjpeg_vaapi_encoder_select="vaapi_encode jpegtables"
 mpeg1_cuvid_decoder_deps="cuda cuvid"
 mpeg1_vdpau_decoder_deps="vdpau"
 mpeg1_vdpau_decoder_select="mpeg1video_decoder"
+mpeg1_v4l2m2m_decoder_deps="v4l2_m2m mpeg1_v4l2_m2m"
 mpeg2_crystalhd_decoder_select="crystalhd"
 mpeg2_cuvid_decoder_deps="cuda cuvid"
 mpeg2_mmal_decoder_deps="mmal"
@@ -2810,6 +2820,7 @@ mpeg2_qsv_encoder_deps="libmfx"
 mpeg2_qsv_encoder_select="qsvenc"
 mpeg2_vaapi_encoder_deps="VAEncPictureParameterBufferMPEG2"
 mpeg2_vaapi_encoder_select="vaapi_encode"
+mpeg2_v4l2m2m_decoder_deps="v4l2_m2m mpeg2_v4l2_m2m"
 mpeg4_crystalhd_decoder_select="crystalhd"
 mpeg4_cuvid_decoder_deps="cuda cuvid"
 mpeg4_mediacodec_decoder_deps="mediacodec"
@@ -2817,6 +2828,8 @@ mpeg4_mmal_decoder_deps="mmal"
 mpeg4_omx_encoder_deps="omx"
 mpeg4_vdpau_decoder_deps="vdpau"
 mpeg4_vdpau_decoder_select="mpeg4_decoder"
+mpeg4_v4l2m2m_decoder_deps="v4l2_m2m mpeg4_v4l2_m2m"
+mpeg4_v4l2m2m_encoder_deps="v4l2_m2m mpeg4_v4l2_m2m"
 mpeg_vdpau_decoder_deps="vdpau"
 mpeg_vdpau_decoder_select="mpeg2video_decoder"
 msmpeg4_crystalhd_decoder_select="crystalhd"
@@ -2827,16 +2840,20 @@ vc1_cuvid_decoder_deps="cuda cuvid"
 vc1_mmal_decoder_deps="mmal"
 vc1_vdpau_decoder_deps="vdpau"
 vc1_vdpau_decoder_select="vc1_decoder"
+vc1_v4l2m2m_decoder_deps="v4l2_m2m vc1_v4l2_m2m"
 vp8_cuvid_decoder_deps="cuda cuvid"
 vp8_mediacodec_decoder_deps="mediacodec"
 vp8_qsv_decoder_deps="libmfx"
 vp8_qsv_decoder_select="qsvdec vp8_qsv_hwaccel vp8_parser"
 vp8_vaapi_encoder_deps="VAEncPictureParameterBufferVP8"
 vp8_vaapi_encoder_select="vaapi_encode"
+vp8_v4l2m2m_decoder_deps="v4l2_m2m vp8_v4l2_m2m"
+vp8_v4l2m2m_encoder_deps="v4l2_m2m vp8_v4l2_m2m"
 vp9_cuvid_decoder_deps="cuda cuvid"
 vp9_mediacodec_decoder_deps="mediacodec"
 vp9_vaapi_encoder_deps="VAEncPictureParameterBufferVP9"
 vp9_vaapi_encoder_select="vaapi_encode"
+vp9_v4l2m2m_decoder_deps="v4l2_m2m vp9_v4l2_m2m"
 wmv3_crystalhd_decoder_select="crystalhd"
 wmv3_vdpau_decoder_select="vc1_vdpau_decoder"
 
@@ -6109,9 +6126,20 @@ perl -v            > /dev/null 2>&1 && enable perl      || disable perl
 pod2man --help     > /dev/null 2>&1 && enable pod2man   || disable pod2man
 rsync --help 2> /dev/null | grep -q 'contimeout' && enable rsync_contimeout || disable rsync_contimeout
 
+# check V4L2 codecs available in the API
 check_header linux/fb.h
 check_header linux/videodev2.h
 check_code cc linux/videodev2.h "struct v4l2_frmsizeenum vfse; vfse.discrete.width = 0;" && enable_safe struct_v4l2_frmivalenum_discrete
+check_code cc linux/videodev2.h "int i = V4L2_CAP_VIDEO_M2M_MPLANE | V4L2_CAP_VIDEO_M2M | V4L2_BUF_FLAG_LAST;" || disable v4l2_m2m
+check_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_VC1_ANNEX_G;" && enable vc1_v4l2_m2m
+check_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_MPEG1;" && enable mpeg1_v4l2_m2m
+check_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_MPEG2;" && enable mpeg2_v4l2_m2m
+check_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_MPEG4;" && enable mpeg4_v4l2_m2m
+check_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_HEVC;" && enable hevc_v4l2_m2m
+check_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_H263;" && enable h263_v4l2_m2m
+check_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_H264;" && enable h264_v4l2_m2m
+check_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_VP8;" && enable vp8_v4l2_m2m
+check_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_VP9;" && enable vp9_v4l2_m2m
 
 check_header sys/videoio.h
 check_code cc sys/videoio.h "struct v4l2_frmsizeenum vfse; vfse.discrete.width = 0;" && enable_safe struct_v4l2_frmivalenum_discrete

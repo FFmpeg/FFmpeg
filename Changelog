@@ -49,6 +49,7 @@ version <next>:
 - VP9 tile threading support
 - KMS screen grabber
 - CUDA thumbnail filter
+- V4L2 mem2mem HW assisted codecs
 
 
 version 3.3:
