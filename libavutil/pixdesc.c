@@ -2013,10 +2013,36 @@ const char *av_color_range_name(enum AVColorRange range)
         color_range_names[range] : NULL;
 }
 
+int av_color_range_from_name(const char *name)
+{
+    int i;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(color_range_names); i++) {
+        size_t len = strlen(color_range_names[i]);
+        if (!strncmp(color_range_names[i], name, len))
+            return i;
+    }
+
+    return AVERROR(EINVAL);
+}
+
 const char *av_color_primaries_name(enum AVColorPrimaries primaries)
 {
     return (unsigned) primaries < AVCOL_PRI_NB ?
         color_primaries_names[primaries] : NULL;
+}
+
+int av_color_primaries_from_name(const char *name)
+{
+    int i;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(color_primaries_names); i++) {
+        size_t len = strlen(color_primaries_names[i]);
+        if (!strncmp(color_primaries_names[i], name, len))
+            return i;
+    }
+
+    return AVERROR(EINVAL);
 }
 
 const char *av_color_transfer_name(enum AVColorTransferCharacteristic transfer)
@@ -2025,10 +2051,36 @@ const char *av_color_transfer_name(enum AVColorTransferCharacteristic transfer)
         color_transfer_names[transfer] : NULL;
 }
 
+int av_color_transfer_from_name(const char *name)
+{
+    int i;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(color_transfer_names); i++) {
+        size_t len = strlen(color_transfer_names[i]);
+        if (!strncmp(color_transfer_names[i], name, len))
+            return i;
+    }
+
+    return AVERROR(EINVAL);
+}
+
 const char *av_color_space_name(enum AVColorSpace space)
 {
     return (unsigned) space < AVCOL_SPC_NB ?
         color_space_names[space] : NULL;
+}
+
+int av_color_space_from_name(const char *name)
+{
+    int i;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(color_space_names); i++) {
+        size_t len = strlen(color_space_names[i]);
+        if (!strncmp(color_space_names[i], name, len))
+            return i;
+    }
+
+    return AVERROR(EINVAL);
 }
 
 const char *av_chroma_location_name(enum AVChromaLocation location)
@@ -2037,3 +2089,15 @@ const char *av_chroma_location_name(enum AVChromaLocation location)
         chroma_location_names[location] : NULL;
 }
 
+int av_chroma_location_from_name(const char *name)
+{
+    int i;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(chroma_location_names); i++) {
+        size_t len = strlen(chroma_location_names[i]);
+        if (!strncmp(chroma_location_names[i], name, len))
+            return i;
+    }
+
+    return AVERROR(EINVAL);
+}

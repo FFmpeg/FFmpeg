@@ -298,9 +298,19 @@ enum AVPixelFormat av_pix_fmt_swap_endianness(enum AVPixelFormat pix_fmt);
 const char *av_color_range_name(enum AVColorRange range);
 
 /**
+ * @return the AVColorRange value for name or an AVError if not found.
+ */
+int av_color_range_from_name(const char *name);
+
+/**
  * @return the name for provided color primaries or NULL if unknown.
  */
 const char *av_color_primaries_name(enum AVColorPrimaries primaries);
+
+/**
+ * @return the AVColorPrimaries value for name or an AVError if not found.
+ */
+int av_color_primaries_from_name(const char *name);
 
 /**
  * @return the name for provided color transfer or NULL if unknown.
@@ -308,13 +318,28 @@ const char *av_color_primaries_name(enum AVColorPrimaries primaries);
 const char *av_color_transfer_name(enum AVColorTransferCharacteristic transfer);
 
 /**
+ * @return the AVColorTransferCharacteristic value for name or an AVError if not found.
+ */
+int av_color_transfer_from_name(const char *name);
+
+/**
  * @return the name for provided color space or NULL if unknown.
  */
 const char *av_color_space_name(enum AVColorSpace space);
 
 /**
+ * @return the AVColorSpace value for name or an AVError if not found.
+ */
+int av_color_space_from_name(const char *name);
+
+/**
  * @return the name for provided chroma location or NULL if unknown.
  */
 const char *av_chroma_location_name(enum AVChromaLocation location);
+
+/**
+ * @return the AVChromaLocation value for name or an AVError if not found.
+ */
+int av_chroma_location_from_name(const char *name);
 
 #endif /* AVUTIL_PIXDESC_H */
