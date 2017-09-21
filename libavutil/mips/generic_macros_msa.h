@@ -204,6 +204,12 @@
     out3 = LW((psrc) + 3 * stride);                \
 }
 
+#define LW2(psrc, stride, out0, out1)  \
+{                                      \
+    out0 = LW((psrc));                 \
+    out1 = LW((psrc) + stride);        \
+}
+
 /* Description : Load double words with stride
    Arguments   : Inputs  - psrc    (source pointer to load from)
                          - stride
@@ -1045,6 +1051,25 @@
 {                                           \
     CLIP_SH2_0_255(in0, in1);               \
     CLIP_SH2_0_255(in2, in3);               \
+}
+
+#define CLIP_SH_0_255_MAX_SATU(in)                    \
+( {                                                   \
+    v8i16 out_m;                                      \
+                                                      \
+    out_m = __msa_maxi_s_h((v8i16) in, 0);            \
+    out_m = (v8i16) __msa_sat_u_h((v8u16) out_m, 7);  \
+    out_m;                                            \
+} )
+#define CLIP_SH2_0_255_MAX_SATU(in0, in1)  \
+{                                          \
+    in0 = CLIP_SH_0_255_MAX_SATU(in0);     \
+    in1 = CLIP_SH_0_255_MAX_SATU(in1);     \
+}
+#define CLIP_SH4_0_255_MAX_SATU(in0, in1, in2, in3)  \
+{                                                    \
+    CLIP_SH2_0_255_MAX_SATU(in0, in1);               \
+    CLIP_SH2_0_255_MAX_SATU(in2, in3);               \
 }
 
 /* Description : Clips all signed word elements of input vector
@@ -1965,6 +1990,11 @@
                  result is in place written to 'in0'
                  Similar for other pairs
 */
+#define SLLI_2V(in0, in1, shift)  \
+{                                 \
+    in0 = in0 << shift;           \
+    in1 = in1 << shift;           \
+}
 #define SLLI_4V(in0, in1, in2, in3, shift)  \
 {                                           \
     in0 = in0 << shift;                     \
