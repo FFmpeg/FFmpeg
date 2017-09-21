@@ -53,7 +53,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if (avctx->bit_rate < 24 * 1000) {
         av_log(avctx, AV_LOG_ERROR,
                "bitrate too low: got %"PRId64", need 24000 or higher\n",
-               (int64_t)avctx->bit_rate);
+               avctx->bit_rate);
         return AVERROR(EINVAL);
     }
 
