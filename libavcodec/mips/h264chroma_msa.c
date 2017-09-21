@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Shivraj Patil (Shivraj.Patil@imgtec.com)
+ * Copyright (c) 2015 - 2017 Shivraj Patil (Shivraj.Patil@imgtec.com)
  *
  * This file is part of FFmpeg.
  *
@@ -29,8 +29,7 @@ static const uint8_t chroma_mask_arr[16 * 5] = {
     0, 1, 1, 2, 16, 17, 17, 18, 16, 17, 17, 18, 18, 19, 19, 20
 };
 
-static void avc_chroma_hz_2x2_msa(uint8_t *src, int32_t src_stride,
-                                  uint8_t *dst, int32_t dst_stride,
+static void avc_chroma_hz_2x2_msa(uint8_t *src, uint8_t *dst, int32_t stride,
                                   uint32_t coeff0, uint32_t coeff1)
 {
     uint16_t out0, out1;
@@ -44,7 +43,7 @@ static void avc_chroma_hz_2x2_msa(uint8_t *src, int32_t src_stride,
 
     mask = LD_SB(&chroma_mask_arr[0]);
 
-    LD_SB2(src, src_stride, src0, src1);
+    LD_SB2(src, stride, src0, src1);
 
     src0 = __msa_vshf_b(mask, src1, src0);
     res_r = __msa_dotp_u_h((v16u8) src0, coeff_vec);
@@ -57,12 +56,11 @@ static void avc_chroma_hz_2x2_msa(uint8_t *src, int32_t src_stride,
     out1 = __msa_copy_u_h(res, 2);
 
     SH(out0, dst);
-    dst += dst_stride;
+    dst += stride;
     SH(out1, dst);
 }
 
-static void avc_chroma_hz_2x4_msa(uint8_t *src, int32_t src_stride,
-                                  uint8_t *dst, int32_t dst_stride,
+static void avc_chroma_hz_2x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
                                   uint32_t coeff0, uint32_t coeff1)
 {
     v16u8 src0, src1, src2, src3;
@@ -75,7 +73,7 @@ static void avc_chroma_hz_2x4_msa(uint8_t *src, int32_t src_stride,
 
     mask = LD_SB(&chroma_mask_arr[64]);
 
-    LD_UB4(src, src_stride, src0, src1, src2, src3);
+    LD_UB4(src, stride, src0, src1, src2, src3);
 
     VSHF_B2_UB(src0, src1, src2, src3, mask, mask, src0, src2);
 
@@ -87,64 +85,21 @@ static void avc_chroma_hz_2x4_msa(uint8_t *src, int32_t src_stride,
     res_r = __msa_sat_u_h(res_r, 7);
     res = (v8i16) __msa_pckev_b((v16i8) res_r, (v16i8) res_r);
 
-    ST2x4_UB(res, 0, dst, dst_stride);
+    ST2x4_UB(res, 0, dst, stride);
 }
 
-static void avc_chroma_hz_2x8_msa(uint8_t *src, int32_t src_stride,
-                                  uint8_t *dst, int32_t dst_stride,
-                                  uint32_t coeff0, uint32_t coeff1)
-{
-    v16u8 src0, src1, src2, src3, src4, src5, src6, src7;
-    v8u16 res_r;
-    v8i16 res;
-    v16i8 mask;
-    v16i8 coeff_vec0 = __msa_fill_b(coeff0);
-    v16i8 coeff_vec1 = __msa_fill_b(coeff1);
-    v16u8 coeff_vec = (v16u8) __msa_ilvr_b(coeff_vec0, coeff_vec1);
-
-    mask = LD_SB(&chroma_mask_arr[64]);
-
-    LD_UB8(src, src_stride, src0, src1, src2, src3, src4, src5, src6, src7);
-
-    VSHF_B2_UB(src0, src1, src2, src3, mask, mask, src0, src2);
-    VSHF_B2_UB(src4, src5, src6, src7, mask, mask, src4, src6);
-
-    ILVR_D2_UB(src2, src0, src6, src4, src0, src4);
-
-    res_r = __msa_dotp_u_h(src0, coeff_vec);
-    res_r <<= 3;
-    res_r = (v8u16) __msa_srari_h((v8i16) res_r, 6);
-    res_r = __msa_sat_u_h(res_r, 7);
-    res = (v8i16) __msa_pckev_b((v16i8) res_r, (v16i8) res_r);
-
-    ST2x4_UB(res, 0, dst, dst_stride);
-    dst += (4 * dst_stride);
-
-    res_r = __msa_dotp_u_h(src4, coeff_vec);
-    res_r <<= 3;
-    res_r = (v8u16) __msa_srari_h((v8i16) res_r, 6);
-    res_r = __msa_sat_u_h(res_r, 7);
-    res = (v8i16) __msa_pckev_b((v16i8) res_r, (v16i8) res_r);
-
-    ST2x4_UB(res, 0, dst, dst_stride);
-}
-
-static void avc_chroma_hz_2w_msa(uint8_t *src, int32_t src_stride,
-                                 uint8_t *dst, int32_t dst_stride,
+static void avc_chroma_hz_2w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
                                  uint32_t coeff0, uint32_t coeff1,
                                  int32_t height)
 {
     if (2 == height) {
-        avc_chroma_hz_2x2_msa(src, src_stride, dst, dst_stride, coeff0, coeff1);
+        avc_chroma_hz_2x2_msa(src, dst, stride, coeff0, coeff1);
     } else if (4 == height) {
-        avc_chroma_hz_2x4_msa(src, src_stride, dst, dst_stride, coeff0, coeff1);
-    } else if (8 == height) {
-        avc_chroma_hz_2x8_msa(src, src_stride, dst, dst_stride, coeff0, coeff1);
+        avc_chroma_hz_2x4_msa(src, dst, stride, coeff0, coeff1);
     }
 }
 
-static void avc_chroma_hz_4x2_msa(uint8_t *src, int32_t src_stride,
-                                  uint8_t *dst, int32_t dst_stride,
+static void avc_chroma_hz_4x2_msa(uint8_t *src, uint8_t *dst, int32_t stride,
                                   uint32_t coeff0, uint32_t coeff1)
 {
     v16i8 src0, src1;
@@ -157,7 +112,7 @@ static void avc_chroma_hz_4x2_msa(uint8_t *src, int32_t src_stride,
 
     mask = LD_SB(&chroma_mask_arr[0]);
 
-    LD_SB2(src, src_stride, src0, src1);
+    LD_SB2(src, stride, src0, src1);
 
     src0 = __msa_vshf_b(mask, src1, src0);
     res_r = __msa_dotp_u_h((v16u8) src0, coeff_vec);
@@ -166,18 +121,14 @@ static void avc_chroma_hz_4x2_msa(uint8_t *src, int32_t src_stride,
     res_r = __msa_sat_u_h(res_r, 7);
     res = (v4i32) __msa_pckev_b((v16i8) res_r, (v16i8) res_r);
 
-    ST4x2_UB(res, dst, dst_stride);
+    ST4x2_UB(res, dst, stride);
 }
 
-static void avc_chroma_hz_4x4multiple_msa(uint8_t *src, int32_t src_stride,
-                                          uint8_t *dst, int32_t dst_stride,
-                                          uint32_t coeff0, uint32_t coeff1,
-                                          int32_t height)
+static void avc_chroma_hz_4x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+                                  uint32_t coeff0, uint32_t coeff1)
 {
-    uint32_t row;
-    v16u8 src0, src1, src2, src3;
+    v16u8 src0, src1, src2, src3, out;
     v8u16 res0_r, res1_r;
-    v4i32 res0, res1;
     v16i8 mask;
     v16i8 coeff_vec0 = __msa_fill_b(coeff0);
     v16i8 coeff_vec1 = __msa_fill_b(coeff1);
@@ -185,42 +136,113 @@ static void avc_chroma_hz_4x4multiple_msa(uint8_t *src, int32_t src_stride,
 
     mask = LD_SB(&chroma_mask_arr[0]);
 
-    for (row = (height >> 2); row--;) {
-        LD_UB4(src, src_stride, src0, src1, src2, src3);
-        src += (4 * src_stride);
-
-        VSHF_B2_UB(src0, src1, src2, src3, mask, mask, src0, src2);
-        DOTP_UB2_UH(src0, src2, coeff_vec, coeff_vec, res0_r, res1_r);
-
-        res0_r <<= 3;
-        res1_r <<= 3;
-
-        SRARI_H2_UH(res0_r, res1_r, 6);
-        SAT_UH2_UH(res0_r, res1_r, 7);
-        PCKEV_B2_SW(res0_r, res0_r, res1_r, res1_r, res0, res1);
-
-        ST4x4_UB(res0, res1, 0, 1, 0, 1, dst, dst_stride);
-        dst += (4 * dst_stride);
-    }
+    LD_UB4(src, stride, src0, src1, src2, src3);
+    VSHF_B2_UB(src0, src1, src2, src3, mask, mask, src0, src2);
+    DOTP_UB2_UH(src0, src2, coeff_vec, coeff_vec, res0_r, res1_r);
+    res0_r <<= 3;
+    res1_r <<= 3;
+    SRARI_H2_UH(res0_r, res1_r, 6);
+    SAT_UH2_UH(res0_r, res1_r, 7);
+    out = (v16u8) __msa_pckev_b((v16i8) res1_r, (v16i8) res0_r);
+    ST4x4_UB(out, out, 0, 1, 2, 3, dst, stride);
 }
 
-static void avc_chroma_hz_4w_msa(uint8_t *src, int32_t src_stride,
-                                 uint8_t *dst, int32_t dst_stride,
+static void avc_chroma_hz_4x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+                                  uint32_t coeff0, uint32_t coeff1)
+{
+    v16u8 src0, src1, src2, src3, src4, src5, src6, src7, out0, out1;
+    v16i8 mask;
+    v8u16 res0, res1, res2, res3;
+    v16i8 coeff_vec0 = __msa_fill_b(coeff0);
+    v16i8 coeff_vec1 = __msa_fill_b(coeff1);
+    v16u8 coeff_vec = (v16u8) __msa_ilvr_b(coeff_vec0, coeff_vec1);
+
+    mask = LD_SB(&chroma_mask_arr[0]);
+
+    LD_UB8(src, stride, src0, src1, src2, src3, src4, src5, src6, src7);
+    VSHF_B2_UB(src0, src1, src2, src3, mask, mask, src0, src2);
+    VSHF_B2_UB(src4, src5, src6, src7, mask, mask, src4, src6);
+    DOTP_UB2_UH(src0, src2, coeff_vec, coeff_vec, res0, res1);
+    DOTP_UB2_UH(src4, src6, coeff_vec, coeff_vec, res2, res3);
+    SLLI_4V(res0, res1, res2, res3, 3);
+    SRARI_H4_UH(res0, res1, res2, res3, 6);
+    SAT_UH4_UH(res0, res1, res2, res3, 7);
+    PCKEV_B2_UB(res1, res0, res3, res2, out0, out1);
+    ST4x8_UB(out0, out1, dst, stride);
+}
+
+static void avc_chroma_hz_4w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
                                  uint32_t coeff0, uint32_t coeff1,
                                  int32_t height)
 {
     if (2 == height) {
-        avc_chroma_hz_4x2_msa(src, src_stride, dst, dst_stride, coeff0, coeff1);
-    } else {
-        avc_chroma_hz_4x4multiple_msa(src, src_stride, dst, dst_stride, coeff0,
-                                      coeff1, height);
+        avc_chroma_hz_4x2_msa(src, dst, stride, coeff0, coeff1);
+    } else if (4 == height) {
+        avc_chroma_hz_4x4_msa(src, dst, stride, coeff0, coeff1);
+    } else if (8 == height) {
+        avc_chroma_hz_4x8_msa(src, dst, stride, coeff0, coeff1);
     }
 }
 
-static void avc_chroma_hz_8w_msa(uint8_t *src, int32_t src_stride,
-                                 uint8_t *dst, int32_t dst_stride,
-                                 uint32_t coeff0, uint32_t coeff1,
-                                 int32_t height)
+static void avc_chroma_hz_8x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+                                  uint32_t coeff0, uint32_t coeff1)
+{
+    v16u8 src0, src1, src2, src3, out0, out1;
+    v8u16 res0, res1, res2, res3;
+    v16i8 mask;
+    v16i8 coeff_vec0 = __msa_fill_b(coeff0);
+    v16i8 coeff_vec1 = __msa_fill_b(coeff1);
+    v16u8 coeff_vec = (v16u8) __msa_ilvr_b(coeff_vec0, coeff_vec1);
+
+    mask = LD_SB(&chroma_mask_arr[32]);
+    LD_UB4(src, stride, src0, src1, src2, src3);
+    VSHF_B2_UB(src0, src0, src1, src1, mask, mask, src0, src1);
+    VSHF_B2_UB(src2, src2, src3, src3, mask, mask, src2, src3);
+    DOTP_UB4_UH(src0, src1, src2, src3, coeff_vec, coeff_vec, coeff_vec,
+                coeff_vec, res0, res1, res2, res3);
+    SLLI_4V(res0, res1, res2, res3, 3);
+    SRARI_H4_UH(res0, res1, res2, res3, 6);
+    SAT_UH4_UH(res0, res1, res2, res3, 7);
+    PCKEV_B2_UB(res1, res0, res3, res2, out0, out1);
+    ST8x4_UB(out0, out1, dst, stride);
+}
+
+static void avc_chroma_hz_8x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+                                  uint32_t coeff0, uint32_t coeff1)
+{
+    v16u8 src0, src1, src2, src3, src4, src5, src6, src7;
+    v16u8 out0, out1, out2, out3;
+    v8u16 res0, res1, res2, res3, res4, res5, res6, res7;
+    v16i8 mask;
+    v16i8 coeff_vec0 = __msa_fill_b(coeff0);
+    v16i8 coeff_vec1 = __msa_fill_b(coeff1);
+    v16u8 coeff_vec = (v16u8) __msa_ilvr_b(coeff_vec0, coeff_vec1);
+
+    mask = LD_SB(&chroma_mask_arr[32]);
+
+    LD_UB8(src, stride, src0, src1, src2, src3, src4, src5, src6, src7);
+    VSHF_B2_UB(src0, src0, src1, src1, mask, mask, src0, src1);
+    VSHF_B2_UB(src2, src2, src3, src3, mask, mask, src2, src3);
+    VSHF_B2_UB(src4, src4, src5, src5, mask, mask, src4, src5);
+    VSHF_B2_UB(src6, src6, src7, src7, mask, mask, src6, src7);
+    DOTP_UB4_UH(src0, src1, src2, src3, coeff_vec, coeff_vec, coeff_vec,
+                coeff_vec, res0, res1, res2, res3);
+    DOTP_UB4_UH(src4, src5, src6, src7, coeff_vec, coeff_vec, coeff_vec,
+                coeff_vec, res4, res5, res6, res7);
+    SLLI_4V(res0, res1, res2, res3, 3);
+    SLLI_4V(res4, res5, res6, res7, 3);
+    SRARI_H4_UH(res0, res1, res2, res3, 6);
+    SRARI_H4_UH(res4, res5, res6, res7, 6);
+    SAT_UH4_UH(res0, res1, res2, res3, 7);
+    SAT_UH4_UH(res4, res5, res6, res7, 7);
+    PCKEV_B2_UB(res1, res0, res3, res2, out0, out1);
+    PCKEV_B2_UB(res5, res4, res7, res6, out2, out3);
+    ST8x8_UB(out0, out1, out2, out3, dst, stride);
+}
+
+static void avc_chroma_hz_nonmult_msa(uint8_t *src, uint8_t *dst,
+                                      int32_t stride, uint32_t coeff0,
+                                      uint32_t coeff1, int32_t height)
 {
     uint32_t row;
     v16u8 src0, src1, src2, src3, out0, out1;
@@ -233,8 +255,8 @@ static void avc_chroma_hz_8w_msa(uint8_t *src, int32_t src_stride,
     mask = LD_SB(&chroma_mask_arr[32]);
 
     for (row = height >> 2; row--;) {
-        LD_UB4(src, src_stride, src0, src1, src2, src3);
-        src += (4 * src_stride);
+        LD_UB4(src, stride, src0, src1, src2, src3);
+        src += (4 * stride);
 
         VSHF_B2_UB(src0, src0, src1, src1, mask, mask, src0, src1);
         VSHF_B2_UB(src2, src2, src3, src3, mask, mask, src2, src3);
@@ -244,14 +266,14 @@ static void avc_chroma_hz_8w_msa(uint8_t *src, int32_t src_stride,
         SRARI_H4_UH(res0, res1, res2, res3, 6);
         SAT_UH4_UH(res0, res1, res2, res3, 7);
         PCKEV_B2_UB(res1, res0, res3, res2, out0, out1);
-        ST8x4_UB(out0, out1, dst, dst_stride);
-        dst += (4 * dst_stride);
+        ST8x4_UB(out0, out1, dst, stride);
+        dst += (4 * stride);
     }
 
     if (0 != (height % 4)) {
         for (row = (height % 4); row--;) {
             src0 = LD_UB(src);
-            src += src_stride;
+            src += stride;
 
             src0 = (v16u8) __msa_vshf_b(mask, (v16i8) src0, (v16i8) src0);
 
@@ -262,8 +284,21 @@ static void avc_chroma_hz_8w_msa(uint8_t *src, int32_t src_stride,
             res0 = (v8u16) __msa_pckev_b((v16i8) res0, (v16i8) res0);
 
             ST8x1_UB(res0, dst);
-            dst += dst_stride;
+            dst += stride;
         }
+    }
+}
+
+static void avc_chroma_hz_8w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+                                 uint32_t coeff0, uint32_t coeff1,
+                                 int32_t height)
+{
+    if (4 == height) {
+        avc_chroma_hz_8x4_msa(src, dst, stride, coeff0, coeff1);
+    } else if (8 == height) {
+        avc_chroma_hz_8x8_msa(src, dst, stride, coeff0, coeff1);
+    } else {
+        avc_chroma_hz_nonmult_msa(src, dst, stride, coeff0, coeff1, height);
     }
 }
 
@@ -1877,7 +1912,7 @@ void ff_put_h264_chroma_mc8_msa(uint8_t *dst, uint8_t *src,
         avc_chroma_hv_8w_msa(src, stride, dst,
                              stride, x, (8 - x), y, (8 - y), height);
     } else if (x) {
-        avc_chroma_hz_8w_msa(src, stride, dst, stride, x, (8 - x), height);
+        avc_chroma_hz_8w_msa(src, dst, stride, x, (8 - x), height);
     } else if (y) {
         avc_chroma_vt_8w_msa(src, stride, dst, stride, y, (8 - y), height);
     } else {
@@ -1896,7 +1931,7 @@ void ff_put_h264_chroma_mc4_msa(uint8_t *dst, uint8_t *src,
         avc_chroma_hv_4w_msa(src, stride, dst,
                              stride, x, (8 - x), y, (8 - y), height);
     } else if (x) {
-        avc_chroma_hz_4w_msa(src, stride, dst, stride, x, (8 - x), height);
+        avc_chroma_hz_4w_msa(src, dst, stride, x, (8 - x), height);
     } else if (y) {
         avc_chroma_vt_4w_msa(src, stride, dst, stride, y, (8 - y), height);
     } else {
@@ -1920,7 +1955,7 @@ void ff_put_h264_chroma_mc2_msa(uint8_t *dst, uint8_t *src,
         avc_chroma_hv_2w_msa(src, stride, dst,
                              stride, x, (8 - x), y, (8 - y), height);
     } else if (x) {
-        avc_chroma_hz_2w_msa(src, stride, dst, stride, x, (8 - x), height);
+        avc_chroma_hz_2w_msa(src, dst, stride, x, (8 - x), height);
     } else if (y) {
         avc_chroma_vt_2w_msa(src, stride, dst, stride, y, (8 - y), height);
     } else {
