@@ -111,7 +111,7 @@ typedef struct SegmentContext {
     int  write_header_trailer; /**< Set by a private option. */
     char *header_filename;  ///< filename to write the output header to
 
-    int reset_timestamps;  ///< reset timestamps at the begin of each segment
+    int reset_timestamps;  ///< reset timestamps at the beginning of each segment
     int64_t initial_offset;    ///< initial timestamps offset, expressed in microseconds
     char *reference_stream_specifier; ///< reference stream specifier
     int   reference_stream_index;
@@ -1052,7 +1052,7 @@ static const AVOption options[] = {
 
     { "individual_header_trailer", "write header/trailer to each segment", OFFSET(individual_header_trailer), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, E },
     { "write_header_trailer", "write a header to the first segment and a trailer to the last one", OFFSET(write_header_trailer), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, E },
-    { "reset_timestamps", "reset timestamps at the begin of each segment", OFFSET(reset_timestamps), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, E },
+    { "reset_timestamps", "reset timestamps at the beginning of each segment", OFFSET(reset_timestamps), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, E },
     { "initial_offset", "set initial timestamp offset", OFFSET(initial_offset), AV_OPT_TYPE_DURATION, {.i64 = 0}, -INT64_MAX, INT64_MAX, E },
     { "write_empty_segments", "allow writing empty 'filler' segments", OFFSET(write_empty), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, E },
     { NULL },

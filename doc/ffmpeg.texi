@@ -935,7 +935,7 @@ It disables matching streams from already created mappings.
 A trailing @code{?} after the stream index will allow the map to be
 optional: if the map matches no streams the map will be ignored instead
 of failing. Note the map will still fail if an invalid input file index
-is used; such as if the map refers to a non-existant input.
+is used; such as if the map refers to a non-existent input.
 
 An alternative @var{[linklabel]} form will map outputs from complex filter
 graphs (see the @option{-filter_complex} option) to the output file.

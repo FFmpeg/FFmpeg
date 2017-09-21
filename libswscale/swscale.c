@@ -326,7 +326,7 @@ static int swscale(SwsContext *c, const uint8_t *src[],
         static int warnedAlready=0;
         int cpu_flags = av_get_cpu_flags();
         if (HAVE_MMXEXT && (cpu_flags & AV_CPU_FLAG_SSE2) && !warnedAlready){
-            av_log(c, AV_LOG_WARNING, "Warning: data is not aligned! This can lead to a speedloss\n");
+            av_log(c, AV_LOG_WARNING, "Warning: data is not aligned! This can lead to a speed loss\n");
             warnedAlready=1;
         }
     }
