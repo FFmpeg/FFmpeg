@@ -8695,6 +8695,18 @@ round to nearest
 @end table
 The default is @code{near}.
 
+@item eof_action
+Action performed when reading the last frame.
+
+Possible values are:
+@table @option
+@item round
+Use same timestamp rounding method as used for other frames.
+@item pass
+Pass through last frame if input duration has not been reached yet.
+@end table
+The default is @code{round}.
+
 @end table
 
 Alternatively, the options can be specified as a flat string:

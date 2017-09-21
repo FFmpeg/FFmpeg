@@ -40,6 +40,12 @@
 #include "internal.h"
 #include "video.h"
 
+enum EOFAction {
+    EOF_ACTION_ROUND,
+    EOF_ACTION_PASS,
+    EOF_ACTION_NB
+};
+
 typedef struct FPSContext {
     const AVClass *class;
 
@@ -52,6 +58,7 @@ typedef struct FPSContext {
 
     AVRational framerate;   ///< target framerate
     int rounding;           ///< AVRounding method for timestamps
+    int eof_action;         ///< action performed for last frame in FIFO
 
     /* statistics */
     int frames_in;             ///< number of frames on input
@@ -72,6 +79,9 @@ static const AVOption fps_options[] = {
         { "down", "round towards -infty",            0, AV_OPT_TYPE_CONST, { .i64 = AV_ROUND_DOWN     }, 0, 0, V|F, "round" },
         { "up",   "round towards +infty",            0, AV_OPT_TYPE_CONST, { .i64 = AV_ROUND_UP       }, 0, 0, V|F, "round" },
         { "near", "round to nearest",                0, AV_OPT_TYPE_CONST, { .i64 = AV_ROUND_NEAR_INF }, 0, 0, V|F, "round" },
+    { "eof_action", "action performed for last frame", OFFSET(eof_action), AV_OPT_TYPE_INT, { .i64 = EOF_ACTION_ROUND }, 0, EOF_ACTION_NB-1, V|F, "eof_action" },
+        { "round", "round similar to other frames",  0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_ROUND }, 0, 0, V|F, "eof_action" },
+        { "pass",  "pass through last frame",        0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_PASS  }, 0, 0, V|F, "eof_action" },
     { NULL }
 };
 
@@ -151,9 +161,11 @@ static int request_frame(AVFilterLink *outlink)
                 /* This is the last frame, we may have to duplicate it to match
                  * the last frame duration */
                 int j;
+                int eof_rounding = (s->eof_action == EOF_ACTION_PASS) ? AV_ROUND_UP : s->rounding;
                 int delta = av_rescale_q_rnd(ctx->inputs[0]->current_pts - s->first_pts,
                                              ctx->inputs[0]->time_base,
-                                             outlink->time_base, s->rounding) - s->frames_out ;
+                                             outlink->time_base, eof_rounding) - s->frames_out;
+                av_log(ctx, AV_LOG_DEBUG, "EOF frames_out:%d delta:%d\n", s->frames_out, delta);
                 /* if the delta is equal to 1, it means we just need to output
                  * the last frame. Greater than 1 means we will need duplicate
                  * delta-1 frames */
