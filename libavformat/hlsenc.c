@@ -1327,13 +1327,13 @@ static int hls_write_header(AVFormatContext *s)
 {
     HLSContext *hls = s->priv_data;
     int ret, i;
-    char *p;
+    char *p = NULL;
     const char *pattern = "%d.ts";
     const char *pattern_localtime_fmt = get_default_pattern_localtime_fmt(s);
     const char *vtt_pattern = "%d.vtt";
     AVDictionary *options = NULL;
-    int basename_size;
-    int vtt_basename_size;
+    int basename_size = 0;
+    int vtt_basename_size = 0;
 
     if (hls->segment_type == SEGMENT_TYPE_FMP4) {
         pattern = "%d.m4s";
