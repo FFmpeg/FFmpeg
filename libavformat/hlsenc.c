@@ -215,6 +215,22 @@ static int mkdir_p(const char *path) {
     return ret;
 }
 
+static void set_http_options(AVFormatContext *s, AVDictionary **options, HLSContext *c)
+{
+    const char *proto = avio_find_protocol_name(s->filename);
+    int http_base_proto = proto ? (!av_strcasecmp(proto, "http") || !av_strcasecmp(proto, "https")) : 0;
+
+    if (c->method) {
+        av_dict_set(options, "method", c->method, 0);
+    } else if (http_base_proto) {
+        av_log(c, AV_LOG_WARNING, "No HTTP method set, hls muxer defaulting to method PUT.\n");
+        av_dict_set(options, "method", "PUT", 0);
+    }
+    if (c->user_agent)
+        av_dict_set(options, "user_agent", c->user_agent, 0);
+
+}
+
 static int replace_int_data_in_filename(char *buf, int buf_size, const char *filename, char placeholder, int64_t number)
 {
     const char *p;
@@ -592,7 +608,8 @@ static int hls_mux_init(AVFormatContext *s)
             return AVERROR_PATCHWELCOME;
         }
         hls->fmp4_init_mode = !byterange_mode;
-        if ((ret = s->io_open(s, &oc->pb, hls->base_output_dirname, AVIO_FLAG_WRITE, NULL)) < 0) {
+        set_http_options(s, &options, hls);
+        if ((ret = s->io_open(s, &oc->pb, hls->base_output_dirname, AVIO_FLAG_WRITE, &options)) < 0) {
             av_log(s, AV_LOG_ERROR, "Failed to open segment '%s'\n", hls->fmp4_init_filename);
             return ret;
         }
@@ -962,22 +979,6 @@ static void hls_free_segments(HLSSegment *p)
         p = p->next;
         av_free(en);
     }
-}
-
-static void set_http_options(AVFormatContext *s, AVDictionary **options, HLSContext *c)
-{
-    const char *proto = avio_find_protocol_name(s->filename);
-    int http_base_proto = proto ? (!av_strcasecmp(proto, "http") || !av_strcasecmp(proto, "https")) : 0;
-
-    if (c->method) {
-        av_dict_set(options, "method", c->method, 0);
-    } else if (http_base_proto) {
-        av_log(c, AV_LOG_WARNING, "No HTTP method set, hls muxer defaulting to method PUT.\n");
-        av_dict_set(options, "method", "PUT", 0);
-    }
-    if (c->user_agent)
-        av_dict_set(options, "user_agent", c->user_agent, 0);
-
 }
 
 static void write_m3u8_head_block(HLSContext *hls, AVIOContext *out, int version,
