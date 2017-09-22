@@ -206,7 +206,7 @@ static void decode_lpc(int32_t *coeffs, int mode, int length)
         unsigned a1 = *coeffs++;
         for (i = 0; i < length - 1 >> 1; i++) {
             *coeffs   += a1;
-            coeffs[1] += *coeffs;
+            coeffs[1] += (unsigned)*coeffs;
             a1         = coeffs[1];
             coeffs    += 2;
         }
