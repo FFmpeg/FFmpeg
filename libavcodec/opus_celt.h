@@ -120,6 +120,12 @@ struct CeltFrame {
     uint32_t seed;
     enum CeltSpread spread;
 
+    /* Encoder PF coeffs */
+    int pf_octave;
+    int pf_period;
+    int pf_tapset;
+    float pf_gain;
+
     /* Bit allocation */
     int framebits;
     int remaining;
