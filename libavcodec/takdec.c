@@ -486,10 +486,10 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
                 v += (unsigned)s->adsp.scalarproduct_int16(&s->residues[i], s->filter,
                                                  filter_order & -16);
             for (j = filter_order & -16; j < filter_order; j += 4) {
-                v += s->residues[i + j + 3] * s->filter[j + 3] +
-                     s->residues[i + j + 2] * s->filter[j + 2] +
-                     s->residues[i + j + 1] * s->filter[j + 1] +
-                     s->residues[i + j    ] * s->filter[j    ];
+                v += s->residues[i + j + 3] * (unsigned)s->filter[j + 3] +
+                     s->residues[i + j + 2] * (unsigned)s->filter[j + 2] +
+                     s->residues[i + j + 1] * (unsigned)s->filter[j + 1] +
+                     s->residues[i + j    ] * (unsigned)s->filter[j    ];
             }
             v = (av_clip_intp2(v >> filter_quant, 13) * (1 << dshift)) - (unsigned)*decoded;
             *decoded++ = v;
