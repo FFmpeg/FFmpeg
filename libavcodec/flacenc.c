@@ -268,7 +268,7 @@ static av_cold int flac_encode_init(AVCodecContext *avctx)
 
     /* find samplerate in table */
     if (freq < 1)
-        return -1;
+        return AVERROR(EINVAL);
     for (i = 4; i < 12; i++) {
         if (freq == ff_flac_sample_rate_table[i]) {
             s->samplerate = ff_flac_sample_rate_table[i];
