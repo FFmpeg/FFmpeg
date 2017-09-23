@@ -1008,7 +1008,7 @@ static int cbs_h264_write_nal_unit(CodedBitstreamContext *ctx,
 
     case H264_NAL_SPS_EXT:
         {
-            H264RawSPSExtension *sps_ext;
+            H264RawSPSExtension *sps_ext = unit->content;
 
             err = cbs_h264_write_sps_extension(ctx, pbc, sps_ext);
             if (err < 0)
@@ -1032,6 +1032,7 @@ static int cbs_h264_write_nal_unit(CodedBitstreamContext *ctx,
 
     case H264_NAL_SLICE:
     case H264_NAL_IDR_SLICE:
+    case H264_NAL_AUXILIARY_SLICE:
         {
             H264RawSlice *slice = unit->content;
             GetBitContext gbc;
