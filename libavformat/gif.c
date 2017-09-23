@@ -186,7 +186,7 @@ static int gif_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVStream *video_st = s->streams[0];
 
     if (!gif->prev_pkt) {
-        gif->prev_pkt = av_malloc(sizeof(*gif->prev_pkt));
+        gif->prev_pkt = av_packet_alloc();
         if (!gif->prev_pkt)
             return AVERROR(ENOMEM);
 
