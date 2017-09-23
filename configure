@@ -4747,6 +4747,7 @@ enabled mmal              && { check_lib mmal interface/mmal/mmal.h mmal_port_co
                                  check_lib mmal interface/mmal/mmal.h mmal_port_connect -lmmal_core -lmmal_util -lmmal_vc_client -lbcm_host; } ||
                                die "ERROR: mmal not found" &&
                                check_func_headers interface/mmal/mmal.h "MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS"; }
+enabled nvenc             && require_cpp_condition nvEncodeAPI.h "NVENCAPI_MAJOR_VERSION >= 6"
 enabled omx               && require_header OMX_Core.h
 enabled omx_rpi           && { check_header OMX_Core.h ||
                                { ! enabled cross_compile && add_cflags -isystem/opt/vc/include/IL && check_header OMX_Core.h ; } ||
@@ -4759,11 +4760,6 @@ enabled openssl           && { { check_pkg_config openssl openssl openssl/ssl.h 
                                die "ERROR: openssl not found"; }
 
 enabled gnutls            && check_lib gmp gmp.h mpz_export -lgmp
-
-if enabled nvenc; then
-    require_header nvEncodeAPI.h
-    require_cpp_condition nvEncodeAPI.h "NVENCAPI_MAJOR_VERSION >= 6"
-fi
 
 # SDL adds some CFLAGS that should not be part of the general CFLAGS.
 enabled avplay &&
