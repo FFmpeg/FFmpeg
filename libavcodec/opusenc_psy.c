@@ -299,7 +299,7 @@ static void celt_gauge_psy_weight(OpusPsyContext *s, OpusPsyStep **start,
     }
 
     tonal /= 1333136.0f;
-    f_out->spread = av_clip(lrintf(tonal), 0, 3);
+    f_out->spread = av_clip_uintp2(lrintf(tonal), 2);
 
     rate = ((float)s->avctx->bit_rate) + frame_bits*frame_size*16;
     rate *= s->lambda;
