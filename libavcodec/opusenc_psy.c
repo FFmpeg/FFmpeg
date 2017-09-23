@@ -507,7 +507,7 @@ av_cold int ff_opus_psy_init(OpusPsyContext *s, AVCodecContext *avctx,
             ret = AVERROR(ENOMEM);
             goto fail;
         }
-        ff_generate_window_func(s->window[i], 2*len, WFUNC_SINE, &tmp);
+        generate_window_func(s->window[i], 2*len, WFUNC_SINE, &tmp);
         if ((ret = ff_mdct15_init(&s->mdct[i], 0, i + 3, 68 << (CELT_BLOCK_NB - 1 - i))))
             goto fail;
     }

@@ -166,7 +166,7 @@ static int config_input(AVFilterLink *inlink)
                                       sizeof(*s->window_func_lut));
     if (!s->window_func_lut)
         return AVERROR(ENOMEM);
-    ff_generate_window_func(s->window_func_lut, s->window_size, s->win_func, &overlap);
+    generate_window_func(s->window_func_lut, s->window_size, s->win_func, &overlap);
     if (s->overlap == 1)
         s->overlap = overlap;
 
