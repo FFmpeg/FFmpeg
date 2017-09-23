@@ -25,6 +25,8 @@
 #define AVCODEC_V4L2_CONTEXT_H
 
 #include <stdatomic.h>
+#include <linux/videodev2.h>
+
 #include "libavcodec/avcodec.h"
 #include "libavutil/pixfmt.h"
 #include "libavutil/frame.h"

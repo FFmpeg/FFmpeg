@@ -24,6 +24,8 @@
 #ifndef AVCODEC_V4L2_BUFFERS_H
 #define AVCODEC_V4L2_BUFFERS_H
 
+#include <linux/videodev2.h>
+
 enum V4L2Buffer_status {
     V4L2BUF_AVAILABLE,
     V4L2BUF_IN_DRIVER,

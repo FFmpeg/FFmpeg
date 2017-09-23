@@ -27,6 +27,8 @@
 #include <semaphore.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <linux/videodev2.h>
+
 #include "libavcodec/avcodec.h"
 #include "v4l2_context.h"
 
