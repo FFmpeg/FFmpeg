@@ -464,7 +464,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     AVStream    *st   = s->streams[pkt->stream_index];
 
     if (st->codecpar->codec_id == AV_CODEC_ID_MJPEG && !wctx->thumbnail.size) {
-        av_copy_packet(&wctx->thumbnail, pkt);
+        av_packet_ref(&wctx->thumbnail, pkt);
         return 0;
     } else if (st->codecpar->codec_id == AV_CODEC_ID_H264) {
         int ret = ff_check_h264_startcode(s, st, pkt);

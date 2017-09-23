@@ -437,8 +437,8 @@ concatenate:
         return AVERROR_INVALIDDATA;
 
     if (!info->num_blocks) {
-        int ret;
-        if ((ret = av_copy_packet(&info->pkt, pkt)) < 0)
+        int ret = av_packet_ref(&info->pkt, pkt);
+        if (ret < 0)
             return ret;
         info->num_blocks = num_blocks;
         return 0;
@@ -454,7 +454,8 @@ concatenate:
         if (info->num_blocks != 6)
             return 0;
         av_packet_unref(pkt);
-        if ((ret = av_copy_packet(pkt, &info->pkt)) < 0)
+        ret = av_packet_ref(pkt, &info->pkt);
+        if (ret < 0)
             return ret;
         av_packet_unref(&info->pkt);
         info->num_blocks = 0;

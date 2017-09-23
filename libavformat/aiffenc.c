@@ -233,7 +233,8 @@ static int aiff_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (!pict_list)
             return AVERROR(ENOMEM);
 
-        if ((ret = av_copy_packet(&pict_list->pkt, pkt)) < 0) {
+        ret = av_packet_ref(&pict_list->pkt, pkt);
+        if (ret < 0) {
             av_freep(&pict_list);
             return ret;
         }

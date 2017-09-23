@@ -158,7 +158,7 @@ static int webp_write_packet(AVFormatContext *s, AVPacket *pkt)
         int ret;
         if ((ret = flush(s, 0, pkt->pts)) < 0)
             return ret;
-        av_copy_packet(&w->last_pkt, pkt);
+        av_packet_ref(&w->last_pkt, pkt);
     }
     ++w->frame_count;
 
