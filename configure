@@ -4686,7 +4686,8 @@ enabled avxsynth          && require_header avxsynth/avxsynth_c.h
 enabled cuda              && require cuda cuda.h cuInit -lcuda
 enabled cuvid             && require cuvid cuviddec.h cuvidCreateDecoder -lnvcuvid
 enabled frei0r            && require_header frei0r.h
-enabled gnutls            && require_pkg_config gnutls gnutls gnutls/gnutls.h gnutls_global_init
+enabled gnutls            && require_pkg_config gnutls gnutls gnutls/gnutls.h gnutls_global_init &&
+                             check_lib gmp gmp.h mpz_export -lgmp
 enabled libbs2b           && require_pkg_config libbs2b libbs2b bs2b.h bs2b_open
 enabled libdc1394         && require_pkg_config libdc1394 libdc1394-2 dc1394/dc1394.h dc1394_new
 enabled libdcadec         && require libdcadec libdcadec/dca_context.h dcadec_context_create -ldcadec
@@ -4758,8 +4759,6 @@ enabled openssl           && { { check_pkg_config openssl openssl openssl/ssl.h 
                                check_lib openssl openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
                                check_lib openssl openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
                                die "ERROR: openssl not found"; }
-
-enabled gnutls            && check_lib gmp gmp.h mpz_export -lgmp
 
 # SDL adds some CFLAGS that should not be part of the general CFLAGS.
 enabled avplay &&
