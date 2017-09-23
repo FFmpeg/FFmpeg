@@ -247,8 +247,6 @@ failed_alloc:
     av_packet_unref(pkt);
     return AVERROR(ENOMEM);
 }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
 int av_dup_packet(AVPacket *pkt)
 {
@@ -266,6 +264,8 @@ int av_copy_packet(AVPacket *dst, const AVPacket *src)
     *dst = *src;
     return copy_packet_data(dst, src, 0);
 }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
 void av_packet_free_side_data(AVPacket *pkt)
 {

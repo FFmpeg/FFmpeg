@@ -4614,7 +4614,10 @@ int av_dup_packet(AVPacket *pkt);
  * Copy packet, including contents
  *
  * @return 0 on success, negative AVERROR on fail
+ *
+ * @deprecated Use av_packet_ref
  */
+attribute_deprecated
 int av_copy_packet(AVPacket *dst, const AVPacket *src);
 
 /**
