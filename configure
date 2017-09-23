@@ -4147,12 +4147,11 @@ EOF
         eval ${pfx}libc_type=default
         add_${pfx}cppflags -D_DEFAULT_SOURCE
     fi
+    eval test -n "\${${pfx}libc_type}" && enable ${pfx}libc_${libc_type}
 }
 
 probe_libc
-test -n "$libc_type" && enable libc_$libc_type
 probe_libc host_
-test -n "$host_libc_type" && enable host_libc_$host_libc_type
 
 # hacks for compiler/libc/os combinations
 
