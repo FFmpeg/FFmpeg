@@ -70,7 +70,7 @@ static void * attribute_align_arg worker(void *v){
         AVFrame *frame;
         Task task;
 
-        if(!pkt) pkt= av_mallocz(sizeof(*pkt));
+        if(!pkt) pkt = av_packet_alloc();
         if(!pkt) continue;
         av_init_packet(pkt);
 
