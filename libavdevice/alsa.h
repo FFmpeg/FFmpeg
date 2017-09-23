@@ -91,6 +91,4 @@ int ff_alsa_close(AVFormatContext *s1);
  */
 int ff_alsa_xrun_recover(AVFormatContext *s1, int err);
 
-int ff_alsa_extend_reorder_buf(AlsaData *s, int size);
-
 #endif /* AVDEVICE_ALSA_H */

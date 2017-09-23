@@ -1264,7 +1264,6 @@ avconv -i src.ext -lmax 21*QP2LAMBDA dst.ext
 @include demuxers.texi
 @include muxers.texi
 @include indevs.texi
-@include outdevs.texi
 @include protocols.texi
 @include bitstream_filters.texi
 @include filters.texi

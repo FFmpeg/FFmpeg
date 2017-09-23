@@ -73,7 +73,6 @@ Help options:
   --list-protocols         show all available protocols
   --list-bsfs              show all available bitstream filters
   --list-indevs            show all available input devices
-  --list-outdevs           show all available output devices
   --list-filters           show all available filters
 
 Standard options:
@@ -163,9 +162,6 @@ Individual component options:
   --enable-indev=NAME      enable input device NAME
   --disable-indev=NAME     disable input device NAME
   --disable-indevs         disable input devices
-  --enable-outdev=NAME     enable output device NAME
-  --disable-outdev=NAME    disable output device NAME
-  --disable-outdevs        disable output devices
   --disable-devices        disable all devices
   --enable-filter=NAME     enable filter NAME
   --disable-filter=NAME    disable filter NAME
@@ -1224,7 +1220,6 @@ AVCODEC_COMPONENTS="
 
 AVDEVICE_COMPONENTS="
     indevs
-    outdevs
 "
 AVFILTER_COMPONENTS="
     filters
@@ -2433,9 +2428,8 @@ wtv_demuxer_select="mpegts_demuxer riffdec"
 xmv_demuxer_select="riffdec"
 xwma_demuxer_select="riffdec"
 
-# indevs / outdevs
+# indevs
 alsa_indev_deps="alsa"
-alsa_outdev_deps="alsa"
 avfoundation_indev_deps="AVFoundation_AVFoundation_h objc_arc pthreads"
 avfoundation_indev_extralibs="-framework Foundation -framework AVFoundation -framework CoreVideo -framework CoreMedia"
 bktr_indev_deps_any="dev_bktr_ioctl_bt848_h machine_ioctl_bt848_h dev_video_bktr_ioctl_bt848_h dev_ic_bt8xx_h"
@@ -2447,10 +2441,8 @@ jack_indev_deps_any="sem_timedwait dispatch_dispatch_h"
 libcdio_indev_deps="libcdio"
 libdc1394_indev_deps="libdc1394"
 oss_indev_deps_any="sys_soundcard_h"
-oss_outdev_deps_any="sys_soundcard_h"
 pulse_indev_deps="libpulse"
 sndio_indev_deps="sndio"
-sndio_outdev_deps="sndio"
 v4l2_indev_deps_any="linux_videodev2_h sys_videoio_h"
 vfwcap_indev_deps="vfw32 vfwcap_defines"
 xcbgrab_indev_deps="libxcb libxcb_shape"
@@ -2715,7 +2707,6 @@ HWACCEL_LIST=$(find_things  hwaccel  HWACCEL  libavcodec/allcodecs.c)
 PARSER_LIST=$(find_things   parser   PARSER   libavcodec/allcodecs.c)
 MUXER_LIST=$(find_things    muxer    _MUX     libavformat/allformats.c)
 DEMUXER_LIST=$(find_things  demuxer  DEMUX    libavformat/allformats.c)
-OUTDEV_LIST=$(find_things   outdev   OUTDEV   libavdevice/alldevices.c)
 INDEV_LIST=$(find_things    indev    _IN      libavdevice/alldevices.c)
 FILTER_LIST=$(find_things   filter   FILTER   libavfilter/allfilters.c)
 
@@ -2739,7 +2730,6 @@ AVCODEC_COMPONENTS_LIST="
 
 AVDEVICE_COMPONENTS_LIST="
     $INDEV_LIST
-    $OUTDEV_LIST
 "
 
 AVFILTER_COMPONENTS_LIST="
@@ -2800,7 +2790,7 @@ for opt do
             add_extralibs $optval
         ;;
         --disable-devices)
-            disable $INDEV_LIST $OUTDEV_LIST
+            disable $INDEV_LIST
         ;;
         --enable-debug=*)
             debuglevel="$optval"
@@ -3906,7 +3896,6 @@ case $target_os in
     netbsd)
         disable symver
         oss_indev_extralibs="-lossaudio"
-        oss_outdev_extralibs="-lossaudio"
         ;;
     openbsd|bitrig)
         disable symver
@@ -3914,7 +3903,6 @@ case $target_os in
         SLIB_INSTALL_NAME='$(SLIBNAME).$(LIBMAJOR).$(LIBMINOR)'
         SLIB_INSTALL_LINKS=
         oss_indev_extralibs="-lossaudio"
-        oss_outdev_extralibs="-lossaudio"
         ;;
     dragonfly)
         disable symver
@@ -4789,13 +4777,13 @@ check_header "dev/bktr/ioctl_meteor.h dev/bktr/ioctl_bt848.h"                   
 
 check_header sys/soundcard.h
 
-enabled_any alsa_indev alsa_outdev &&
+enabled alsa_indev &&
     check_lib alsa alsa/asoundlib.h snd_pcm_htimestamp -lasound
 
 enabled libjack &&
     require_pkg_config libjack jack jack/jack.h jack_port_get_latency_range
 
-enabled_any sndio_indev sndio_outdev && check_lib sndio sndio.h sio_open -lsndio
+enabled sndio_indev && check_lib sndio sndio.h sio_open -lsndio
 
 if enabled libcdio; then
     check_lib libcdio "cdio/cdda.h cdio/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio ||
@@ -5252,7 +5240,7 @@ echo "Programs:"
 print_enabled '' $PROGRAM_LIST | print_3_columns
 echo
 
-for type in decoder encoder hwaccel parser demuxer muxer protocol filter bsf indev outdev; do
+for type in decoder encoder hwaccel parser demuxer muxer protocol filter bsf indev; do
     echo "Enabled ${type}s:"
     eval list=\$$(toupper $type)_LIST
     print_enabled '_*' $list | print_3_columns
