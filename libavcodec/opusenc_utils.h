@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVCODEC_OPUSENC_UTILS_H
+#define AVCODEC_OPUSENC_UTILS_H
+
 #include "opus.h"
 
 typedef struct FFBesselFilter {
@@ -80,3 +83,5 @@ static inline float bessel_filter(FFBesselFilter *s, float x)
     s->y[0] = s->a[0]*s->x[0] + s->a[1]*s->x[1] + s->a[2]*s->x[2] + s->b[0]*s->y[1] + s->b[1]*s->y[2];
     return s->y[0];
 }
+
+#endif /* AVCODEC_OPUSENC_UTILS_H */
