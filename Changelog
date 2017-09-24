@@ -50,6 +50,7 @@ version <next>:
 - KMS screen grabber
 - CUDA thumbnail filter
 - V4L2 mem2mem HW assisted codecs
+- Rockchip MPP hardware decoding
 
 
 version 3.3:
