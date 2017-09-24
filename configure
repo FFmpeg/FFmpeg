@@ -803,6 +803,14 @@ test_as(){
     test_cmd $as $CPPFLAGS $ASFLAGS "$@" $AS_C $(as_o $TMPO) $TMPS
 }
 
+check_cmd(){
+    log check_cmd "$@"
+    cmd=$1
+    disabled $cmd && return
+    disable $cmd
+    test_cmd $@ && enable $cmd
+}
+
 check_inline_asm(){
     log check_inline_asm "$@"
     name="$1"
@@ -4676,9 +4684,6 @@ enabled openssl           && { { check_pkg_config openssl openssl openssl/ssl.h 
 enabled avplay &&
     test_pkg_config sdl "sdl >= 1.2.1 sdl < 1.3.0" SDL_events.h SDL_PollEvent
 
-! disabled pod2man   && test_cmd pod2man --help     && enable pod2man   || disable pod2man
-! disabled texi2html && test_cmd texi2html -version && enable texi2html || disable texi2html
-
 check_header linux/fb.h
 check_header linux/videodev2.h
 check_struct linux/videodev2.h "struct v4l2_frmivalenum" discrete
@@ -5002,6 +5007,9 @@ case $ld_type in
 esac
 
 enabled asm || { arch=c; disable $ARCH_LIST $ARCH_EXT_LIST; }
+
+check_cmd pod2man --help
+check_cmd texi2html -version
 
 check_deps $CONFIG_LIST       \
            $CONFIG_EXTRA      \
