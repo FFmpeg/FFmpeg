@@ -41,13 +41,6 @@
 #if defined(__ICC) && __ICC < 1200 || defined(__SUNPRO_C)
     #define DECLARE_ALIGNED(n,t,v)      t __attribute__ ((aligned (n))) v
     #define DECLARE_ASM_CONST(n,t,v)    const t __attribute__ ((aligned (n))) v
-#elif defined(__TI_COMPILER_VERSION__)
-    #define DECLARE_ALIGNED(n,t,v)                      \
-        AV_PRAGMA(DATA_ALIGN(v,n))                      \
-        t __attribute__((aligned(n))) v
-    #define DECLARE_ASM_CONST(n,t,v)                    \
-        AV_PRAGMA(DATA_ALIGN(v,n))                      \
-        static const t __attribute__((aligned(n))) v
 #elif defined(__GNUC__) || defined(__clang__)
     #define DECLARE_ALIGNED(n,t,v)      t __attribute__ ((aligned (n))) v
     #define DECLARE_ASM_CONST(n,t,v)    static const t av_used __attribute__ ((aligned (n))) v

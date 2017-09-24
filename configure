@@ -3220,35 +3220,6 @@ suncc_flags(){
     done
 }
 
-tms470_flags(){
-    for flag; do
-        case $flag in
-            -march=*|-mcpu=*)
-                case "${flag#*=}" in
-                    armv7-a|cortex-a*)      echo -mv=7a8 ;;
-                    armv7-r|cortex-r*)      echo -mv=7r4 ;;
-                    armv7-m|cortex-m*)      echo -mv=7m3 ;;
-                    armv6*|arm11*)          echo -mv=6   ;;
-                    armv5*e|arm[79]*e*|arm9[24]6*|arm96*|arm102[26])
-                                            echo -mv=5e  ;;
-                    armv4*|arm7*|arm9[24]*) echo -mv=4   ;;
-                esac
-                ;;
-            -mfpu=neon)     echo --float_support=vfpv3 --neon ;;
-            -mfpu=vfp)      echo --float_support=vfpv2        ;;
-            -mfpu=vfpv3)    echo --float_support=vfpv3        ;;
-            -mfpu=vfpv3-d16) echo --float_support=vfpv3d16    ;;
-            -msoft-float)   echo --float_support=vfplib       ;;
-            -O[0-3]|-mf=*)  echo $flag                        ;;
-            -g)             echo -g -mn                       ;;
-            -pds=*)         echo $flag                        ;;
-            -D*|-I*)        echo $flag                        ;;
-            --gcc|--abi=*)  echo $flag                        ;;
-            -me)            echo $flag                        ;;
-        esac
-    done
-}
-
 probe_cc(){
     pfx=$1
     _cc=$2
@@ -3305,16 +3276,6 @@ probe_cc(){
         _depflags='-MMD'
         _cflags_speed='-O3'
         _cflags_size='-Os'
-    elif $_cc -version 2>/dev/null | grep -Eq 'TMS470|TI ARM'; then
-        _type=tms470
-        _ident=$($_cc -version | head -n1 | tr -s ' ')
-        _flags='--gcc --abi=eabi -me'
-        _cc_e='-ppl -fe=$@'
-        _cc_o='-fe=$@'
-        _depflags='-ppa -ppd=$(@:.o=.d)'
-        _cflags_speed='-O3 -mf=5'
-        _cflags_size='-O3 -mf=2'
-        _flags_filter=tms470_flags
     elif $_cc -v 2>&1 | grep -q clang; then
         _type=clang
         _ident=$($_cc --version 2>/dev/null | head -n1)
@@ -3497,9 +3458,6 @@ fi
 if $ar 2>&1 | grep -q Microsoft; then
     arflags="-nologo"
     ar_o='-out:$@'
-elif $ar 2>&1 | grep -q 'Texas Instruments'; then
-    arflags="rq"
-    ar_o='$@'
 elif $ar 2>&1 | grep -q 'Usage: ar.*-X.*any'; then
     arflags='-Xany -r -c'
     ar_o='$@'
@@ -3517,10 +3475,6 @@ if test -n "$sysroot"; then
         gcc|llvm_gcc|clang)
             add_cppflags --sysroot="$sysroot"
             add_ldflags --sysroot="$sysroot"
-        ;;
-        tms470)
-            add_cppflags -I"$sysinclude"
-            add_ldflags  --sysroot="$sysroot"
         ;;
     esac
 fi
@@ -4178,15 +4132,6 @@ probe_libc host_
 case $libc_type in
     bionic)
         add_compat strtod.o strtod=avpriv_strtod
-        ;;
-    glibc)
-        if enabled tms470; then
-            CPPFLAGS="-I${source_path}/compat/tms470 ${CPPFLAGS}"
-            add_cppflags -D__USER_LABEL_PREFIX__=
-            add_cppflags -D__builtin_memset=memset
-            add_cppflags -D__gnuc_va_list=va_list -D_VA_LIST_DEFINED
-            add_cflags   -pds=48    # incompatible redefinition of macro
-        fi
         ;;
 esac
 
@@ -5030,9 +4975,6 @@ elif enabled armcc; then
     add_cflags -W${armcc_opt},--diag_suppress=3343 # hardfp compat
     add_cflags -W${armcc_opt},--diag_suppress=167  # pointer sign
     add_cflags -W${armcc_opt},--diag_suppress=513  # pointer sign
-elif enabled tms470; then
-    add_cflags -pds=824 -pds=837
-    disable inline_asm
 elif enabled pathscale; then
     add_cflags -fstrict-overflow -OPT:wrap_around_unsafe_opt=OFF
     disable inline_asm
