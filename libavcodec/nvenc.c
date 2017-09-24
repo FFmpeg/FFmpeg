@@ -28,12 +28,7 @@
 
 #define CUDA_LIBNAME "libcuda.so"
 
-#if HAVE_DLFCN_H
-#include <dlfcn.h>
-
-#define NVENC_LIBNAME "libnvidia-encode.so"
-
-#elif HAVE_WINDOWS_H
+#if HAVE_WINDOWS_H
 #include <windows.h>
 
 #if ARCH_X86_64
@@ -45,6 +40,9 @@
 #define dlopen(filename, flags) LoadLibrary((filename))
 #define dlsym(handle, symbol)   GetProcAddress(handle, symbol)
 #define dlclose(handle)         FreeLibrary(handle)
+#else
+#include <dlfcn.h>
+#define NVENC_LIBNAME "libnvidia-encode.so"
 #endif
 
 #include "libavutil/common.h"
