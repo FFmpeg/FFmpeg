@@ -1562,7 +1562,6 @@ HEADERS_LIST="
     machine_ioctl_meteor_h
     malloc_h
     poll_h
-    stdatomic_h
     sys_param_h
     sys_resource_h
     sys_select_h
@@ -4612,7 +4611,7 @@ check_header windows.h
 # it seems there are versions of clang in some distros that try to use the
 # gcc headers, which explodes for stdatomic
 # so we also check that atomics actually work here
-check_builtin stdatomic_h stdatomic.h "atomic_int foo; atomic_store(&foo, 0)"
+check_builtin stdatomic stdatomic.h "atomic_int foo; atomic_store(&foo, 0)"
 
 check_lib ole32    "windows.h"            CoTaskMemFree        -lole32
 check_lib shell32  "windows.h shellapi.h" CommandLineToArgvW   -lshell32
@@ -5141,7 +5140,7 @@ for thread in $THREADS_LIST; do
     fi
 done
 
-if disabled stdatomic_h; then
+if disabled stdatomic; then
     if enabled atomics_gcc; then
         add_cppflags '-I\$(SRC_PATH)/compat/atomics/gcc'
     elif enabled atomics_win32; then
