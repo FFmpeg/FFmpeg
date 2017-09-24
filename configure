@@ -1557,7 +1557,6 @@ HAVE_LIST_PUB="
 
 HEADERS_LIST="
     AVFoundation_AVFoundation_h
-    alsa_asoundlib_h
     arpa_inet_h
     cdio_paranoia_h
     cdio_paranoia_paranoia_h
@@ -1579,7 +1578,6 @@ HEADERS_LIST="
     machine_ioctl_meteor_h
     malloc_h
     poll_h
-    sndio_h
     soundcard_h
     stdatomic_h
     sys_mman_h
@@ -1632,10 +1630,8 @@ SYSTEM_FUNCS="
     clock_gettime
     closesocket
     CommandLineToArgvW
-    CoTaskMemFree
     CryptGenRandom
     fcntl
-    flt_lim
     fork
     getaddrinfo
     gethrtime
@@ -1649,12 +1645,10 @@ SYSTEM_FUNCS="
     gmtime_r
     inet_aton
     isatty
-    LoadLibrary
     localtime_r
     mach_absolute_time
     MapViewOfFile
     memalign
-    mkstemp
     mmap
     mprotect
     nanosleep
