@@ -347,8 +347,6 @@ EOF
   exit 0
 }
 
-quotes='""'
-
 log(){
     echo "$@" >> $logfile
 }
@@ -2861,6 +2859,8 @@ done
 
 disabled logging && logfile=/dev/null
 
+# command line configuration sanity checks
+
 # we need to build at least one lib type
 if ! enabled_any static shared; then
     cat <<EOF
@@ -3001,11 +3001,10 @@ case "$toolchain" in
     ;;
 esac
 
-test -n "$cross_prefix" && enable cross_compile
-
-if enabled cross_compile; then
+if test -n "$cross_prefix"; then
     test -n "$arch" && test -n "$target_os" ||
         die "Must specify target arch (--arch) and OS (--target-os) when cross-compiling"
+    enable cross_compile
 fi
 
 ar_default="${cross_prefix}${ar_default}"
@@ -3828,7 +3827,7 @@ case $target_os in
         ;;
     sunos)
         SHFLAGS='-shared -Wl,-h,$$(@F)'
-        enabled x86 && SHFLAGS="-mimpure-text $SHFLAGS"
+        enabled x86 && append SHFLAGS -mimpure-text
         network_extralibs="-lsocket -lnsl"
         # When using suncc to build, the Solaris linker will mark
         # an executable with each instruction set encountered by
@@ -4563,10 +4562,9 @@ if ! disabled pthreads && ! enabled w32threads; then
     elif check_func pthread_join; then
         enable pthreads
     fi
+    enabled pthreads &&
+        check_builtin sem_timedwait semaphore.h "sem_t *s; sem_init(s,0,0); sem_timedwait(s,0); sem_destroy(s)" $pthreads_extralibs
 fi
-
-enabled pthreads &&
-    check_builtin sem_timedwait semaphore.h "sem_t *s; sem_init(s,0,0); sem_timedwait(s,0); sem_destroy(s)" $pthreads_extralibs
 
 disabled  zlib || check_lib  zlib  zlib.h      zlibVersion -lz
 disabled bzlib || check_lib bzlib bzlib.h BZ2_bzlibVersion -lbz2
@@ -4849,6 +4847,7 @@ if enabled proper_dce; then
     echo "X { local: *; };" > $TMPV
     if test_ldflags -Wl,${version_script},$TMPV; then
         append SHFLAGS '-Wl,${version_script},\$(SUBDIR)lib\$(NAME).ver'
+        quotes='""'
         check_cc <<EOF && enable symver_asm_label
 void ff_foo(void) __asm__ ("av_foo@VERSION");
 void ff_foo(void) { ${inline_asm+__asm__($quotes);} }
