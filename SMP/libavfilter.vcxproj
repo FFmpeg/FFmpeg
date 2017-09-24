@@ -121,7 +121,6 @@
     <ClCompile Include="..\libavfilter\af_aemphasis.c" />
     <ClCompile Include="..\libavfilter\aeval.c" />
     <ClCompile Include="..\libavfilter\af_afftfilt.c" />
-    <ClCompile Include="..\libavfilter\window_func.c" />
     <ClCompile Include="..\libavfilter\af_aformat.c" />
     <ClCompile Include="..\libavfilter\af_agate.c" />
     <ClCompile Include="..\libavfilter\f_interleave.c" />

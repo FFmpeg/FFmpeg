@@ -71,11 +71,16 @@ EXPORTS
     av_cast5_crypt2
     av_cast5_init
     av_channel_layout_extract_channel
+    av_chroma_location_from_name
     av_chroma_location_name
     av_cmp_i
+    av_color_primaries_from_name
     av_color_primaries_name
+    av_color_range_from_name
     av_color_range_name
+    av_color_space_from_name
     av_color_space_name
+    av_color_transfer_from_name
     av_color_transfer_name
     av_compare_mod
     av_compare_ts

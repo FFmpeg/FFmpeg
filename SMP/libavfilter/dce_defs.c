@@ -203,6 +203,7 @@ const AVFilter ff_vf_ocv = {0};
 const AVFilter ff_vf_scale_cuda = {0};
 const AVFilter ff_vf_scale_npp = {0};
 const AVFilter ff_vf_scale_vaapi = {0};
+const AVFilter ff_vf_thumbnail_cuda = {0};
 const AVFilter ff_vf_vidstabdetect = {0};
 const AVFilter ff_vf_vidstabtransform = {0};
 const AVFilter ff_vf_zmq = {0};

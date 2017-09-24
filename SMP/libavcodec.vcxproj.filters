@@ -208,6 +208,9 @@
     <YASM Include="..\libavcodec\x86\dnxhdenc.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
+    <YASM Include="..\libavcodec\x86\exrdsp.asm">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </YASM>
     <YASM Include="..\libavcodec\x86\flacdsp.asm">
       <Filter>Source Files\libavcodec\x86</Filter>
     </YASM>
@@ -1710,6 +1713,9 @@
     <ClCompile Include="..\libavcodec\opusenc.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\opusenc_psy.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\pafaudio.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -2712,6 +2718,9 @@
     <ClCompile Include="..\libavcodec\x86\dnxhdenc_init.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\x86\exrdsp_init.c">
+      <Filter>Source Files\libavcodec\x86</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\x86\opus_dsp_init.c">
       <Filter>Source Files\libavcodec\x86</Filter>
     </ClCompile>
@@ -2887,6 +2896,9 @@
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\dnxhdenc.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\exrdsp.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\jpeg2000dsp.c">

@@ -127,6 +127,7 @@
     <YASM Include="..\libavcodec\x86\diracdsp.asm" />
     <YASM Include="..\libavcodec\x86\dirac_dwt.asm" />
     <YASM Include="..\libavcodec\x86\dnxhdenc.asm" />
+    <YASM Include="..\libavcodec\x86\exrdsp.asm" />
     <YASM Include="..\libavcodec\x86\flacdsp.asm" />
     <YASM Include="..\libavcodec\x86\flac_dsp_gpl.asm" />
     <YASM Include="..\libavcodec\x86\hevc_add_res.asm" />
@@ -629,6 +630,7 @@
     <ClCompile Include="..\libavcodec\opus_silk.c" />
     <ClCompile Include="..\libavcodec\opustab.c" />
     <ClCompile Include="..\libavcodec\opusenc.c" />
+    <ClCompile Include="..\libavcodec\opusenc_psy.c" />
     <ClCompile Include="..\libavcodec\pafaudio.c" />
     <ClCompile Include="..\libavcodec\pafvideo.c" />
     <ClCompile Include="..\libavcodec\pnmdec.c" />
@@ -963,6 +965,7 @@
     <ClCompile Include="..\libavcodec\x86\dcadsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\synth_filter_init.c" />
     <ClCompile Include="..\libavcodec\x86\dnxhdenc_init.c" />
+    <ClCompile Include="..\libavcodec\x86\exrdsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\opus_dsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\hevcdsp_init.c" />
     <ClCompile Include="..\libavcodec\x86\jpeg2000dsp_init.c" />
@@ -1083,6 +1086,9 @@
     </ClCompile>
     <ClCompile Include="..\libavcodec\dnxhdenc.c">
       <ObjectFileName>$(IntDir)\libavcodec_dnxhdenc.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\libavcodec\exrdsp.c">
+      <ObjectFileName>$(IntDir)\libavcodec_exrdsp.obj</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\libavcodec\jpeg2000dsp.c">
       <ObjectFileName>$(IntDir)\libavcodec_jpeg2000dsp.obj</ObjectFileName>
