@@ -1578,7 +1578,6 @@ HEADERS_LIST="
     poll_h
     soundcard_h
     stdatomic_h
-    sys_mman_h
     sys_param_h
     sys_resource_h
     sys_select_h
@@ -4662,7 +4661,6 @@ check_header io.h
 check_header mach/mach_time.h
 check_header malloc.h
 check_header poll.h
-check_header sys/mman.h
 check_header sys/param.h
 check_header sys/resource.h
 check_header sys/select.h
