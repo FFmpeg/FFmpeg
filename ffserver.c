@@ -1916,7 +1916,7 @@ static inline void print_stream_params(AVIOContext *pb, FFServerStream *stream)
 
         avio_printf(pb, "<tr><td>%d<td>%s<td>%"PRId64
                         "<td>%s<td>%s\n",
-                    i, type, (int64_t)st->codecpar->bit_rate/1000,
+                    i, type, st->codecpar->bit_rate/1000,
                     codec ? codec->name : "", parameters);
      }
 

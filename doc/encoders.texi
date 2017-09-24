@@ -92,12 +92,12 @@ using the value "enable", which is mainly useful for debugging or disabled using
 
 @item aac_is
 Sets intensity stereo coding tool usage. By default, it's enabled and will
-automatically toggle IS for similar pairs of stereo bands if it's benefitial.
+automatically toggle IS for similar pairs of stereo bands if it's beneficial.
 Can be disabled for debugging by setting the value to "disable".
 
 @item aac_pns
 Uses perceptual noise substitution to replace low entropy high frequency bands
-with imperceivable white noise during the decoding process. By default, it's
+with imperceptible white noise during the decoding process. By default, it's
 enabled, but can be disabled for debugging purposes by using "disable".
 
 @item aac_tns
@@ -599,7 +599,7 @@ Channel mode
 @item auto
 The mode is chosen automatically for each frame
 @item indep
-Chanels are independently coded
+Channels are independently coded
 @item left_side
 @item right_side
 @item mid_side

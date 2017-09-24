@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Manojkumar Bhosale (Manojkumar.Bhosale@imgtec.com)
+ * Copyright (c) 2015 - 2017 Manojkumar Bhosale (Manojkumar.Bhosale@imgtec.com)
  *
  * This file is part of FFmpeg.
  *
@@ -302,8 +302,34 @@ static void hevc_copy_16w_msa(uint8_t *src, int32_t src_stride,
         ST_SH4(in0_r, in1_r, in2_r, in3_r, dst, dst_stride);
         ST_SH4(in0_l, in1_l, in2_l, in3_l, (dst + 8), dst_stride);
     } else if (0 == (height % 8)) {
-        hevc_copy_16multx8mult_msa(src, src_stride, dst, dst_stride,
-                                   height, 16);
+        uint32_t loop_cnt;
+        v16i8 src0, src1, src2, src3, src4, src5, src6, src7;
+        v8i16 in0_r, in1_r, in2_r, in3_r, in0_l, in1_l, in2_l, in3_l;
+
+        for (loop_cnt = (height >> 3); loop_cnt--;) {
+            LD_SB8(src, src_stride, src0, src1, src2, src3, src4, src5, src6,
+                   src7);
+            src += (8 * src_stride);
+            ILVR_B4_SH(zero, src0, zero, src1, zero, src2, zero, src3, in0_r,
+                       in1_r, in2_r, in3_r);
+            ILVL_B4_SH(zero, src0, zero, src1, zero, src2, zero, src3, in0_l,
+                       in1_l, in2_l, in3_l);
+            SLLI_4V(in0_r, in1_r, in2_r, in3_r, 6);
+            SLLI_4V(in0_l, in1_l, in2_l, in3_l, 6);
+            ST_SH4(in0_r, in1_r, in2_r, in3_r, dst, dst_stride);
+            ST_SH4(in0_l, in1_l, in2_l, in3_l, (dst + 8), dst_stride);
+            dst += (4 * dst_stride);
+
+            ILVR_B4_SH(zero, src4, zero, src5, zero, src6, zero, src7, in0_r,
+                       in1_r, in2_r, in3_r);
+            ILVL_B4_SH(zero, src4, zero, src5, zero, src6, zero, src7, in0_l,
+                       in1_l, in2_l, in3_l);
+            SLLI_4V(in0_r, in1_r, in2_r, in3_r, 6);
+            SLLI_4V(in0_l, in1_l, in2_l, in3_l, 6);
+            ST_SH4(in0_r, in1_r, in2_r, in3_r, dst, dst_stride);
+            ST_SH4(in0_l, in1_l, in2_l, in3_l, (dst + 8), dst_stride);
+            dst += (4 * dst_stride);
+        }
     }
 }
 
@@ -311,29 +337,155 @@ static void hevc_copy_24w_msa(uint8_t *src, int32_t src_stride,
                               int16_t *dst, int32_t dst_stride,
                               int32_t height)
 {
-    hevc_copy_16multx8mult_msa(src, src_stride, dst, dst_stride, height, 16);
-    hevc_copy_8w_msa(src + 16, src_stride, dst + 16, dst_stride, height);
+    uint32_t loop_cnt;
+    v16i8 zero = { 0 };
+    v16i8 src0, src1, src2, src3, src4, src5, src6, src7;
+    v8i16 in0_r, in1_r, in2_r, in3_r, in0_l, in1_l, in2_l, in3_l;
+
+    for (loop_cnt = (height >> 2); loop_cnt--;) {
+        LD_SB4(src, src_stride, src0, src1, src2, src3);
+        LD_SB4((src + 16), src_stride, src4, src5, src6, src7);
+        src += (4 * src_stride);
+        ILVR_B4_SH(zero, src0, zero, src1, zero, src2, zero, src3, in0_r, in1_r,
+                   in2_r, in3_r);
+        ILVL_B4_SH(zero, src0, zero, src1, zero, src2, zero, src3, in0_l, in1_l,
+                   in2_l, in3_l);
+        SLLI_4V(in0_r, in1_r, in2_r, in3_r, 6);
+        SLLI_4V(in0_l, in1_l, in2_l, in3_l, 6);
+        ST_SH4(in0_r, in1_r, in2_r, in3_r, dst, dst_stride);
+        ST_SH4(in0_l, in1_l, in2_l, in3_l, (dst + 8), dst_stride);
+        ILVR_B4_SH(zero, src4, zero, src5, zero, src6, zero, src7, in0_r, in1_r,
+                   in2_r, in3_r);
+        SLLI_4V(in0_r, in1_r, in2_r, in3_r, 6);
+        ST_SH4(in0_r, in1_r, in2_r, in3_r, (dst + 16), dst_stride);
+        dst += (4 * dst_stride);
+    }
 }
 
 static void hevc_copy_32w_msa(uint8_t *src, int32_t src_stride,
                               int16_t *dst, int32_t dst_stride,
                               int32_t height)
 {
-    hevc_copy_16multx8mult_msa(src, src_stride, dst, dst_stride, height, 32);
+    uint32_t loop_cnt;
+    v16i8 zero = { 0 };
+    v16i8 src0, src1, src2, src3, src4, src5, src6, src7;
+    v8i16 in0_r, in1_r, in2_r, in3_r, in0_l, in1_l, in2_l, in3_l;
+
+    for (loop_cnt = (height >> 2); loop_cnt--;) {
+        LD_SB4(src, src_stride, src0, src2, src4, src6);
+        LD_SB4((src + 16), src_stride, src1, src3, src5, src7);
+        src += (4 * src_stride);
+
+        ILVR_B4_SH(zero, src0, zero, src1, zero, src2, zero, src3, in0_r, in1_r,
+                   in2_r, in3_r);
+        ILVL_B4_SH(zero, src0, zero, src1, zero, src2, zero, src3, in0_l, in1_l,
+                   in2_l, in3_l);
+        SLLI_4V(in0_r, in1_r, in2_r, in3_r, 6);
+        SLLI_4V(in0_l, in1_l, in2_l, in3_l, 6);
+        ST_SH4(in0_r, in0_l, in1_r, in1_l, dst, 8);
+        dst += dst_stride;
+        ST_SH4(in2_r, in2_l, in3_r, in3_l, dst, 8);
+        dst += dst_stride;
+
+        ILVR_B4_SH(zero, src4, zero, src5, zero, src6, zero, src7, in0_r, in1_r,
+                   in2_r, in3_r);
+        ILVL_B4_SH(zero, src4, zero, src5, zero, src6, zero, src7, in0_l, in1_l,
+                   in2_l, in3_l);
+        SLLI_4V(in0_r, in1_r, in2_r, in3_r, 6);
+        SLLI_4V(in0_l, in1_l, in2_l, in3_l, 6);
+        ST_SH4(in0_r, in0_l, in1_r, in1_l, dst, 8);
+        dst += dst_stride;
+        ST_SH4(in2_r, in2_l, in3_r, in3_l, dst, 8);
+        dst += dst_stride;
+    }
 }
 
 static void hevc_copy_48w_msa(uint8_t *src, int32_t src_stride,
                               int16_t *dst, int32_t dst_stride,
                               int32_t height)
 {
-    hevc_copy_16multx8mult_msa(src, src_stride, dst, dst_stride, height, 48);
+    uint32_t loop_cnt;
+    v16i8 zero = { 0 };
+    v16i8 src0, src1, src2, src3, src4, src5, src6, src7;
+    v16i8 src8, src9, src10, src11;
+    v8i16 in0_r, in1_r, in2_r, in3_r, in4_r, in5_r;
+    v8i16 in0_l, in1_l, in2_l, in3_l, in4_l, in5_l;
+
+    for (loop_cnt = (height >> 2); loop_cnt--;) {
+        LD_SB3(src, 16, src0, src1, src2);
+        src += src_stride;
+        LD_SB3(src, 16, src3, src4, src5);
+        src += src_stride;
+        LD_SB3(src, 16, src6, src7, src8);
+        src += src_stride;
+        LD_SB3(src, 16, src9, src10, src11);
+        src += src_stride;
+
+        ILVR_B4_SH(zero, src0, zero, src1, zero, src2, zero, src3,
+                   in0_r, in1_r, in2_r, in3_r);
+        ILVL_B4_SH(zero, src0, zero, src1, zero, src2, zero, src3,
+                   in0_l, in1_l, in2_l, in3_l);
+        ILVR_B2_SH(zero, src4, zero, src5, in4_r, in5_r);
+        ILVL_B2_SH(zero, src4, zero, src5, in4_l, in5_l);
+        SLLI_4V(in0_r, in1_r, in2_r, in3_r, 6);
+        SLLI_4V(in0_l, in1_l, in2_l, in3_l, 6);
+        SLLI_4V(in4_r, in5_r, in4_l, in5_l, 6);
+        ST_SH6(in0_r, in0_l, in1_r, in1_l, in2_r, in2_l, dst, 8);
+        dst += dst_stride;
+        ST_SH6(in3_r, in3_l, in4_r, in4_l, in5_r, in5_l, dst, 8);
+        dst += dst_stride;
+
+        ILVR_B4_SH(zero, src6, zero, src7, zero, src8, zero, src9,
+                   in0_r, in1_r, in2_r, in3_r);
+        ILVL_B4_SH(zero, src6, zero, src7, zero, src8, zero, src9,
+                   in0_l, in1_l, in2_l, in3_l);
+        ILVR_B2_SH(zero, src10, zero, src11, in4_r, in5_r);
+        ILVL_B2_SH(zero, src10, zero, src11, in4_l, in5_l);
+        SLLI_4V(in0_r, in1_r, in2_r, in3_r, 6);
+        SLLI_4V(in0_l, in1_l, in2_l, in3_l, 6);
+        SLLI_4V(in4_r, in5_r, in4_l, in5_l, 6);
+        ST_SH6(in0_r, in0_l, in1_r, in1_l, in2_r, in2_l, dst, 8);
+        dst += dst_stride;
+        ST_SH6(in3_r, in3_l, in4_r, in4_l, in5_r, in5_l, dst, 8);
+        dst += dst_stride;
+    }
 }
 
 static void hevc_copy_64w_msa(uint8_t *src, int32_t src_stride,
                               int16_t *dst, int32_t dst_stride,
                               int32_t height)
 {
-    hevc_copy_16multx8mult_msa(src, src_stride, dst, dst_stride, height, 64);
+    uint32_t loop_cnt;
+    v16i8 zero = { 0 };
+    v16i8 src0, src1, src2, src3, src4, src5, src6, src7;
+    v8i16 in0_r, in1_r, in2_r, in3_r, in0_l, in1_l, in2_l, in3_l;
+
+    for (loop_cnt = (height >> 1); loop_cnt--;) {
+        LD_SB4(src, 16, src0, src1, src2, src3);
+        src += src_stride;
+        LD_SB4(src, 16, src4, src5, src6, src7);
+        src += src_stride;
+
+        ILVR_B4_SH(zero, src0, zero, src1, zero, src2, zero, src3,
+                   in0_r, in1_r, in2_r, in3_r);
+        ILVL_B4_SH(zero, src0, zero, src1, zero, src2, zero, src3,
+                   in0_l, in1_l, in2_l, in3_l);
+        SLLI_4V(in0_r, in1_r, in2_r, in3_r, 6);
+        SLLI_4V(in0_l, in1_l, in2_l, in3_l, 6);
+        ST_SH4(in0_r, in0_l, in1_r, in1_l, dst, 8);
+        ST_SH4(in2_r, in2_l, in3_r, in3_l, (dst + 32), 8);
+        dst += dst_stride;
+
+        ILVR_B4_SH(zero, src4, zero, src5, zero, src6, zero, src7,
+                   in0_r, in1_r, in2_r, in3_r);
+        ILVL_B4_SH(zero, src4, zero, src5, zero, src6, zero, src7,
+                   in0_l, in1_l, in2_l, in3_l);
+        SLLI_4V(in0_r, in1_r, in2_r, in3_r, 6);
+        SLLI_4V(in0_l, in1_l, in2_l, in3_l, 6);
+        ST_SH4(in0_r, in0_l, in1_r, in1_l, dst, 8);
+        ST_SH4(in2_r, in2_l, in3_r, in3_l, (dst + 32), 8);
+        dst += dst_stride;
+    }
 }
 
 static void hevc_hz_8t_4w_msa(uint8_t *src, int32_t src_stride,

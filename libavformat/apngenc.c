@@ -228,7 +228,7 @@ static int apng_write_packet(AVFormatContext *format_context, AVPacket *packet)
     int ret;
 
     if (!apng->prev_packet) {
-        apng->prev_packet = av_malloc(sizeof(*apng->prev_packet));
+        apng->prev_packet = av_packet_alloc();
         if (!apng->prev_packet)
             return AVERROR(ENOMEM);
 

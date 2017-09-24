@@ -109,7 +109,7 @@ correctly by using lavc's old buggy lpc logic for decoding.
 
 @section ffwavesynth
 
-Internal wave synthetizer.
+Internal wave synthesizer.
 
 This decoder generates wave patterns according to predefined sequences. Its
 use is purely internal and the format of the data it accepts is not publicly
@@ -275,7 +275,7 @@ Y offset of generated bitmaps, default is 0.
 Chops leading and trailing spaces and removes empty lines from the generated
 text. This option is useful for teletext based subtitles where empty spaces may
 be present at the start or at the end of the lines or empty lines may be
-present between the subtitle lines because of double-sized teletext charactes.
+present between the subtitle lines because of double-sized teletext characters.
 Default value is 1.
 @item txt_duration
 Sets the display duration of the decoded teletext pages or subtitles in

@@ -70,7 +70,7 @@ static void * attribute_align_arg worker(void *v){
         AVFrame *frame;
         Task task;
 
-        if(!pkt) pkt= av_mallocz(sizeof(*pkt));
+        if(!pkt) pkt = av_packet_alloc();
         if(!pkt) continue;
         av_init_packet(pkt);
 
@@ -193,13 +193,14 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
 
     for(i=0; i<avctx->thread_count ; i++){
         AVDictionary *tmp = NULL;
+        int ret;
         void *tmpv;
         AVCodecContext *thread_avctx = avcodec_alloc_context3(avctx->codec);
         if(!thread_avctx)
             goto fail;
         tmpv = thread_avctx->priv_data;
         *thread_avctx = *avctx;
-        int ret = av_opt_copy(thread_avctx, avctx);
+        ret = av_opt_copy(thread_avctx, avctx);
         if (ret < 0)
             goto fail;
         thread_avctx->priv_data = tmpv;

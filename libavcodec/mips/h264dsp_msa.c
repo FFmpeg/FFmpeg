@@ -1250,21 +1250,7 @@ static void avc_loopfilter_luma_inter_edge_ver_msa(uint8_t *data,
                                                    uint8_t beta_in,
                                                    uint32_t img_width)
 {
-    uint8_t *src;
-    v16u8 beta, tmp_vec, bs = { 0 };
-    v16u8 tc = { 0 };
-    v16u8 is_less_than, is_less_than_beta;
-    v16u8 p1, p0, q0, q1;
-    v8i16 p0_r, q0_r, p1_r = { 0 };
-    v8i16 q1_r = { 0 };
-    v8i16 p0_l, q0_l, p1_l = { 0 };
-    v8i16 q1_l = { 0 };
-    v16u8 p3_org, p2_org, p1_org, p0_org, q0_org, q1_org, q2_org, q3_org;
-    v8i16 p2_org_r, p1_org_r, p0_org_r, q0_org_r, q1_org_r, q2_org_r;
-    v8i16 p2_org_l, p1_org_l, p0_org_l, q0_org_l, q1_org_l, q2_org_l;
-    v8i16 tc_r, tc_l;
-    v16i8 zero = { 0 };
-    v16u8 is_bs_greater_than0;
+    v16u8 tmp_vec, bs = { 0 };
 
     tmp_vec = (v16u8) __msa_fill_b(bs0);
     bs = (v16u8) __msa_insve_w((v4i32) bs, 0, (v4i32) tmp_vec);
@@ -1276,6 +1262,14 @@ static void avc_loopfilter_luma_inter_edge_ver_msa(uint8_t *data,
     bs = (v16u8) __msa_insve_w((v4i32) bs, 3, (v4i32) tmp_vec);
 
     if (!__msa_test_bz_v(bs)) {
+        uint8_t *src = data - 4;
+        v16u8 p3_org, p2_org, p1_org, p0_org, q0_org, q1_org, q2_org, q3_org;
+        v16u8 p0_asub_q0, p1_asub_p0, q1_asub_q0, alpha, beta;
+        v16u8 is_less_than, is_less_than_beta, is_less_than_alpha;
+        v16u8 is_bs_greater_than0;
+        v16u8 tc = { 0 };
+        v16i8 zero = { 0 };
+
         tmp_vec = (v16u8) __msa_fill_b(tc0);
         tc = (v16u8) __msa_insve_w((v4i32) tc, 0, (v4i32) tmp_vec);
         tmp_vec = (v16u8) __msa_fill_b(tc1);
@@ -1291,9 +1285,6 @@ static void avc_loopfilter_luma_inter_edge_ver_msa(uint8_t *data,
             v16u8 row0, row1, row2, row3, row4, row5, row6, row7;
             v16u8 row8, row9, row10, row11, row12, row13, row14, row15;
 
-            src = data;
-            src -= 4;
-
             LD_UB8(src, img_width,
                    row0, row1, row2, row3, row4, row5, row6, row7);
             src += (8 * img_width);
@@ -1306,27 +1297,28 @@ static void avc_loopfilter_luma_inter_edge_ver_msa(uint8_t *data,
                                 p3_org, p2_org, p1_org, p0_org,
                                 q0_org, q1_org, q2_org, q3_org);
         }
-        {
-            v16u8 p0_asub_q0, p1_asub_p0, q1_asub_q0, alpha;
-            v16u8 is_less_than_alpha;
 
-            p0_asub_q0 = __msa_asub_u_b(p0_org, q0_org);
-            p1_asub_p0 = __msa_asub_u_b(p1_org, p0_org);
-            q1_asub_q0 = __msa_asub_u_b(q1_org, q0_org);
+        p0_asub_q0 = __msa_asub_u_b(p0_org, q0_org);
+        p1_asub_p0 = __msa_asub_u_b(p1_org, p0_org);
+        q1_asub_q0 = __msa_asub_u_b(q1_org, q0_org);
 
-            alpha = (v16u8) __msa_fill_b(alpha_in);
-            beta = (v16u8) __msa_fill_b(beta_in);
+        alpha = (v16u8) __msa_fill_b(alpha_in);
+        beta = (v16u8) __msa_fill_b(beta_in);
 
-            is_less_than_alpha = (p0_asub_q0 < alpha);
-            is_less_than_beta = (p1_asub_p0 < beta);
-            is_less_than = is_less_than_beta & is_less_than_alpha;
-            is_less_than_beta = (q1_asub_q0 < beta);
-            is_less_than = is_less_than_beta & is_less_than;
-            is_less_than = is_less_than & is_bs_greater_than0;
-        }
+        is_less_than_alpha = (p0_asub_q0 < alpha);
+        is_less_than_beta = (p1_asub_p0 < beta);
+        is_less_than = is_less_than_beta & is_less_than_alpha;
+        is_less_than_beta = (q1_asub_q0 < beta);
+        is_less_than = is_less_than_beta & is_less_than;
+        is_less_than = is_less_than & is_bs_greater_than0;
+
         if (!__msa_test_bz_v(is_less_than)) {
             v16i8 negate_tc, sign_negate_tc;
-            v8i16 negate_tc_r, i16_negatetc_l;
+            v16u8 p0, q0, p2_asub_p0, q2_asub_q0;
+            v8i16 tc_r, tc_l, negate_tc_r, i16_negatetc_l;
+            v8i16 p1_org_r, p0_org_r, q0_org_r, q1_org_r;
+            v8i16 p1_org_l, p0_org_l, q0_org_l, q1_org_l;
+            v8i16 p0_r, q0_r, p0_l, q0_l;
 
             negate_tc = zero - (v16i8) tc;
             sign_negate_tc = __msa_clti_s_b(negate_tc, 0);
@@ -1338,34 +1330,22 @@ static void avc_loopfilter_luma_inter_edge_ver_msa(uint8_t *data,
             UNPCK_UB_SH(p0_org, p0_org_r, p0_org_l);
             UNPCK_UB_SH(q0_org, q0_org_r, q0_org_l);
 
-            {
-                v16u8 p2_asub_p0;
-                v16u8 is_less_than_beta_r, is_less_than_beta_l;
-
-                p2_asub_p0 = __msa_asub_u_b(p2_org, p0_org);
-                is_less_than_beta = (p2_asub_p0 < beta);
-                is_less_than_beta = is_less_than_beta & is_less_than;
-
-                is_less_than_beta_r =
-                    (v16u8) __msa_sldi_b((v16i8) is_less_than_beta, zero, 8);
-                if (!__msa_test_bz_v(is_less_than_beta_r)) {
-                    p2_org_r = (v8i16) __msa_ilvr_b(zero, (v16i8) p2_org);
-
-                    AVC_LPF_P1_OR_Q1(p0_org_r, q0_org_r, p1_org_r, p2_org_r,
-                                     negate_tc_r, tc_r, p1_r);
-                }
-
-                is_less_than_beta_l =
-                    (v16u8) __msa_sldi_b(zero, (v16i8) is_less_than_beta, 8);
-                if (!__msa_test_bz_v(is_less_than_beta_l)) {
-                    p2_org_l = (v8i16) __msa_ilvl_b(zero, (v16i8) p2_org);
-
-                    AVC_LPF_P1_OR_Q1(p0_org_l, q0_org_l, p1_org_l, p2_org_l,
-                                     i16_negatetc_l, tc_l, p1_l);
-                }
-            }
+            p2_asub_p0 = __msa_asub_u_b(p2_org, p0_org);
+            is_less_than_beta = (p2_asub_p0 < beta);
+            is_less_than_beta = is_less_than_beta & is_less_than;
 
             if (!__msa_test_bz_v(is_less_than_beta)) {
+                v16u8 p1;
+                v8i16 p1_r = { 0 };
+                v8i16 p1_l = { 0 };
+                v8i16 p2_org_r = (v8i16) __msa_ilvr_b(zero, (v16i8) p2_org);
+                v8i16 p2_org_l = (v8i16) __msa_ilvl_b(zero, (v16i8) p2_org);
+
+                AVC_LPF_P1_OR_Q1(p0_org_r, q0_org_r, p1_org_r, p2_org_r,
+                                 negate_tc_r, tc_r, p1_r);
+                AVC_LPF_P1_OR_Q1(p0_org_l, q0_org_l, p1_org_l, p2_org_l,
+                                 i16_negatetc_l, tc_l, p1_l);
+
                 p1 = (v16u8) __msa_pckev_b((v16i8) p1_l, (v16i8) p1_r);
                 p1_org = __msa_bmnz_v(p1_org, p1, is_less_than_beta);
 
@@ -1373,36 +1353,25 @@ static void avc_loopfilter_luma_inter_edge_ver_msa(uint8_t *data,
                 tc = tc + is_less_than_beta;
             }
 
-            {
-                v16u8 u8_q2asub_q0;
-                v16u8 is_less_than_beta_l, is_less_than_beta_r;
+            q2_asub_q0 = __msa_asub_u_b(q2_org, q0_org);
+            is_less_than_beta = (q2_asub_q0 < beta);
+            is_less_than_beta = is_less_than_beta & is_less_than;
 
-                u8_q2asub_q0 = __msa_asub_u_b(q2_org, q0_org);
-                is_less_than_beta = (u8_q2asub_q0 < beta);
-                is_less_than_beta = is_less_than_beta & is_less_than;
-
-                q1_org_r = (v8i16) __msa_ilvr_b(zero, (v16i8) q1_org);
-
-                is_less_than_beta_r =
-                    (v16u8) __msa_sldi_b((v16i8) is_less_than_beta, zero, 8);
-                if (!__msa_test_bz_v(is_less_than_beta_r)) {
-                    q2_org_r = (v8i16) __msa_ilvr_b(zero, (v16i8) q2_org);
-                    AVC_LPF_P1_OR_Q1(p0_org_r, q0_org_r, q1_org_r, q2_org_r,
-                                     negate_tc_r, tc_r, q1_r);
-                }
-
-                q1_org_l = (v8i16) __msa_ilvl_b(zero, (v16i8) q1_org);
-
-                is_less_than_beta_l =
-                    (v16u8) __msa_sldi_b(zero, (v16i8) is_less_than_beta, 8);
-                if (!__msa_test_bz_v(is_less_than_beta_l)) {
-                    q2_org_l = (v8i16) __msa_ilvl_b(zero, (v16i8) q2_org);
-                    AVC_LPF_P1_OR_Q1(p0_org_l, q0_org_l, q1_org_l, q2_org_l,
-                                     i16_negatetc_l, tc_l, q1_l);
-                }
-            }
+            q1_org_r = (v8i16) __msa_ilvr_b(zero, (v16i8) q1_org);
+            q1_org_l = (v8i16) __msa_ilvl_b(zero, (v16i8) q1_org);
 
             if (!__msa_test_bz_v(is_less_than_beta)) {
+                v16u8 q1;
+                v8i16 q1_r = { 0 };
+                v8i16 q1_l = { 0 };
+                v8i16 q2_org_r = (v8i16) __msa_ilvr_b(zero, (v16i8) q2_org);
+                v8i16 q2_org_l = (v8i16) __msa_ilvl_b(zero, (v16i8) q2_org);
+
+                AVC_LPF_P1_OR_Q1(p0_org_r, q0_org_r, q1_org_r, q2_org_r,
+                                 negate_tc_r, tc_r, q1_r);
+                AVC_LPF_P1_OR_Q1(p0_org_l, q0_org_l, q1_org_l, q2_org_l,
+                                 i16_negatetc_l, tc_l, q1_l);
+
                 q1 = (v16u8) __msa_pckev_b((v16i8) q1_l, (v16i8) q1_r);
                 q1_org = __msa_bmnz_v(q1_org, q1, is_less_than_beta);
 
@@ -1436,7 +1405,7 @@ static void avc_loopfilter_luma_inter_edge_ver_msa(uint8_t *data,
 
             p0_org = __msa_bmnz_v(p0_org, p0, is_less_than);
             q0_org = __msa_bmnz_v(q0_org, q0, is_less_than);
-        }
+
         {
             v16i8 tp0, tp1, tp2, tp3;
             v8i16 tmp2, tmp5;
@@ -1548,6 +1517,7 @@ static void avc_loopfilter_luma_inter_edge_ver_msa(uint8_t *data,
             SW(out2, src);
             SH(out3, (src + 4));
         }
+        }
     }
 }
 
@@ -1560,20 +1530,8 @@ static void avc_loopfilter_luma_inter_edge_hor_msa(uint8_t *data,
                                                    uint8_t beta_in,
                                                    uint32_t image_width)
 {
-    v16u8 p2_asub_p0, u8_q2asub_q0;
-    v16u8 alpha, beta, is_less_than, is_less_than_beta;
-    v16u8 p1, p0, q0, q1;
-    v8i16 p1_r = { 0 };
-    v8i16 p0_r, q0_r, q1_r = { 0 };
-    v8i16 p1_l = { 0 };
-    v8i16 p0_l, q0_l, q1_l = { 0 };
-    v16u8 p2_org, p1_org, p0_org, q0_org, q1_org, q2_org;
-    v8i16 p2_org_r, p1_org_r, p0_org_r, q0_org_r, q1_org_r, q2_org_r;
-    v8i16 p2_org_l, p1_org_l, p0_org_l, q0_org_l, q1_org_l, q2_org_l;
-    v16i8 zero = { 0 };
     v16u8 tmp_vec;
     v16u8 bs = { 0 };
-    v16i8 tc = { 0 };
 
     tmp_vec = (v16u8) __msa_fill_b(bs0);
     bs = (v16u8) __msa_insve_w((v4i32) bs, 0, (v4i32) tmp_vec);
@@ -1585,6 +1543,16 @@ static void avc_loopfilter_luma_inter_edge_hor_msa(uint8_t *data,
     bs = (v16u8) __msa_insve_w((v4i32) bs, 3, (v4i32) tmp_vec);
 
     if (!__msa_test_bz_v(bs)) {
+        v16u8 alpha, beta, is_less_than, is_less_than_beta;
+        v16u8 p0, q0, p2_org, p1_org, p0_org, q0_org, q1_org, q2_org;
+        v16u8 p0_asub_q0, p1_asub_p0, q1_asub_q0;
+        v16u8 is_less_than_alpha, is_bs_greater_than0;
+        v8i16 p0_r, q0_r, p0_l, q0_l;
+        v8i16 p1_org_r, p0_org_r, q0_org_r, q1_org_r;
+        v8i16 p1_org_l, p0_org_l, q0_org_l, q1_org_l;
+        v16i8 zero = { 0 };
+        v16i8 tc = { 0 };
+
         tmp_vec = (v16u8) __msa_fill_b(tc0);
         tc = (v16i8) __msa_insve_w((v4i32) tc, 0, (v4i32) tmp_vec);
         tmp_vec = (v16u8) __msa_fill_b(tc1);
@@ -1600,26 +1568,22 @@ static void avc_loopfilter_luma_inter_edge_hor_msa(uint8_t *data,
         LD_UB5(data - (3 * image_width), image_width,
                p2_org, p1_org, p0_org, q0_org, q1_org);
 
-        {
-            v16u8 p0_asub_q0, p1_asub_p0, q1_asub_q0;
-            v16u8 is_less_than_alpha, is_bs_greater_than0;
+        is_bs_greater_than0 = ((v16u8) zero < bs);
+        p0_asub_q0 = __msa_asub_u_b(p0_org, q0_org);
+        p1_asub_p0 = __msa_asub_u_b(p1_org, p0_org);
+        q1_asub_q0 = __msa_asub_u_b(q1_org, q0_org);
 
-            is_bs_greater_than0 = ((v16u8) zero < bs);
-            p0_asub_q0 = __msa_asub_u_b(p0_org, q0_org);
-            p1_asub_p0 = __msa_asub_u_b(p1_org, p0_org);
-            q1_asub_q0 = __msa_asub_u_b(q1_org, q0_org);
-
-            is_less_than_alpha = (p0_asub_q0 < alpha);
-            is_less_than_beta = (p1_asub_p0 < beta);
-            is_less_than = is_less_than_beta & is_less_than_alpha;
-            is_less_than_beta = (q1_asub_q0 < beta);
-            is_less_than = is_less_than_beta & is_less_than;
-            is_less_than = is_less_than & is_bs_greater_than0;
-        }
+        is_less_than_alpha = (p0_asub_q0 < alpha);
+        is_less_than_beta = (p1_asub_p0 < beta);
+        is_less_than = is_less_than_beta & is_less_than_alpha;
+        is_less_than_beta = (q1_asub_q0 < beta);
+        is_less_than = is_less_than_beta & is_less_than;
+        is_less_than = is_less_than & is_bs_greater_than0;
 
         if (!__msa_test_bz_v(is_less_than)) {
             v16i8 sign_negate_tc, negate_tc;
             v8i16 negate_tc_r, i16_negatetc_l, tc_l, tc_r;
+            v16u8 p2_asub_p0, q2_asub_q0;
 
             q2_org = LD_UB(data + (2 * image_width));
             negate_tc = zero - tc;
@@ -1635,28 +1599,19 @@ static void avc_loopfilter_luma_inter_edge_hor_msa(uint8_t *data,
             p2_asub_p0 = __msa_asub_u_b(p2_org, p0_org);
             is_less_than_beta = (p2_asub_p0 < beta);
             is_less_than_beta = is_less_than_beta & is_less_than;
-            {
-                v8u16 is_less_than_beta_r, is_less_than_beta_l;
 
-                is_less_than_beta_r =
-                    (v8u16) __msa_sldi_b((v16i8) is_less_than_beta, zero, 8);
-                if (!__msa_test_bz_v((v16u8) is_less_than_beta_r)) {
-                    p2_org_r = (v8i16) __msa_ilvr_b(zero, (v16i8) p2_org);
-
-                    AVC_LPF_P1_OR_Q1(p0_org_r, q0_org_r, p1_org_r, p2_org_r,
-                                     negate_tc_r, tc_r, p1_r);
-                }
-
-                is_less_than_beta_l =
-                    (v8u16) __msa_sldi_b(zero, (v16i8) is_less_than_beta, 8);
-                if (!__msa_test_bz_v((v16u8) is_less_than_beta_l)) {
-                    p2_org_l = (v8i16) __msa_ilvl_b(zero, (v16i8) p2_org);
-
-                    AVC_LPF_P1_OR_Q1(p0_org_l, q0_org_l, p1_org_l, p2_org_l,
-                                     i16_negatetc_l, tc_l, p1_l);
-                }
-            }
             if (!__msa_test_bz_v(is_less_than_beta)) {
+                v16u8 p1;
+                v8i16 p1_r = { 0 };
+                v8i16 p1_l = { 0 };
+                v8i16 p2_org_r = (v8i16) __msa_ilvr_b(zero, (v16i8) p2_org);
+                v8i16 p2_org_l = (v8i16) __msa_ilvl_b(zero, (v16i8) p2_org);
+
+                AVC_LPF_P1_OR_Q1(p0_org_r, q0_org_r, p1_org_r, p2_org_r,
+                                 negate_tc_r, tc_r, p1_r);
+                AVC_LPF_P1_OR_Q1(p0_org_l, q0_org_l, p1_org_l, p2_org_l,
+                                 i16_negatetc_l, tc_l, p1_l);
+
                 p1 = (v16u8) __msa_pckev_b((v16i8) p1_l, (v16i8) p1_r);
                 p1_org = __msa_bmnz_v(p1_org, p1, is_less_than_beta);
                 ST_UB(p1_org, data - (2 * image_width));
@@ -1665,34 +1620,25 @@ static void avc_loopfilter_luma_inter_edge_hor_msa(uint8_t *data,
                 tc = tc + (v16i8) is_less_than_beta;
             }
 
-            u8_q2asub_q0 = __msa_asub_u_b(q2_org, q0_org);
-            is_less_than_beta = (u8_q2asub_q0 < beta);
+            q2_asub_q0 = __msa_asub_u_b(q2_org, q0_org);
+            is_less_than_beta = (q2_asub_q0 < beta);
             is_less_than_beta = is_less_than_beta & is_less_than;
 
-            {
-                v8u16 is_less_than_beta_r, is_less_than_beta_l;
-                is_less_than_beta_r =
-                    (v8u16) __msa_sldi_b((v16i8) is_less_than_beta, zero, 8);
+            q1_org_r = (v8i16) __msa_ilvr_b(zero, (v16i8) q1_org);
+            q1_org_l = (v8i16) __msa_ilvl_b(zero, (v16i8) q1_org);
 
-                q1_org_r = (v8i16) __msa_ilvr_b(zero, (v16i8) q1_org);
-                if (!__msa_test_bz_v((v16u8) is_less_than_beta_r)) {
-                    q2_org_r = (v8i16) __msa_ilvr_b(zero, (v16i8) q2_org);
-
-                    AVC_LPF_P1_OR_Q1(p0_org_r, q0_org_r, q1_org_r, q2_org_r,
-                                     negate_tc_r, tc_r, q1_r);
-                }
-                is_less_than_beta_l =
-                    (v8u16) __msa_sldi_b(zero, (v16i8) is_less_than_beta, 8);
-
-                q1_org_l = (v8i16) __msa_ilvl_b(zero, (v16i8) q1_org);
-                if (!__msa_test_bz_v((v16u8) is_less_than_beta_l)) {
-                    q2_org_l = (v8i16) __msa_ilvl_b(zero, (v16i8) q2_org);
-
-                    AVC_LPF_P1_OR_Q1(p0_org_l, q0_org_l, q1_org_l, q2_org_l,
-                                     i16_negatetc_l, tc_l, q1_l);
-                }
-            }
             if (!__msa_test_bz_v(is_less_than_beta)) {
+                v16u8 q1;
+                v8i16 q1_r = { 0 };
+                v8i16 q1_l = { 0 };
+                v8i16 q2_org_r = (v8i16) __msa_ilvr_b(zero, (v16i8) q2_org);
+                v8i16 q2_org_l = (v8i16) __msa_ilvl_b(zero, (v16i8) q2_org);
+
+                AVC_LPF_P1_OR_Q1(p0_org_r, q0_org_r, q1_org_r, q2_org_r,
+                                 negate_tc_r, tc_r, q1_r);
+                AVC_LPF_P1_OR_Q1(p0_org_l, q0_org_l, q1_org_l, q2_org_l,
+                                 i16_negatetc_l, tc_l, q1_l);
+
                 q1 = (v16u8) __msa_pckev_b((v16i8) q1_l, (v16i8) q1_r);
                 q1_org = __msa_bmnz_v(q1_org, q1, is_less_than_beta);
                 ST_UB(q1_org, data + image_width);

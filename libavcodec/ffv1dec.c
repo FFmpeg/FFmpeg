@@ -372,7 +372,7 @@ static int read_quant_table(RangeCoder *c, int16_t *quant_table, int scale)
     memset(state, 128, sizeof(state));
 
     for (v = 0; i < 128; v++) {
-        unsigned len = get_symbol(c, state, 0) + 1;
+        unsigned len = get_symbol(c, state, 0) + 1U;
 
         if (len > 128 - i || !len)
             return AVERROR_INVALIDDATA;

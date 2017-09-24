@@ -50,7 +50,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
        && (avctx->flags & AV_CODEC_FLAG_QSCALE)
        && avctx->global_quality == 0){
         av_log(avctx, AV_LOG_ERROR, "The 9/7 wavelet is incompatible with lossless mode.\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 #if FF_API_MOTION_EST
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -107,8 +107,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
             return AVERROR(ENOMEM);
     }
     if((avctx->flags&AV_CODEC_FLAG_PASS2) || !(avctx->flags&AV_CODEC_FLAG_QSCALE)){
-        if(ff_rate_control_init(&s->m) < 0)
-            return -1;
+        ret = ff_rate_control_init(&s->m);
+        if(ret < 0)
+            return ret;
     }
     s->pass1_rc= !(avctx->flags & (AV_CODEC_FLAG_QSCALE|AV_CODEC_FLAG_PASS2));
 
@@ -130,7 +131,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         break;*/
     default:
         av_log(avctx, AV_LOG_ERROR, "pixel format not supported\n");
-        return -1;
+        return AVERROR_PATCHWELCOME;
     }
     avcodec_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_h_shift, &s->chroma_v_shift);
 
@@ -833,7 +834,7 @@ static int encode_subband_c0run(SnowContext *s, SubBand *b, const IDWTELEM *src,
         for(y=0; y<h; y++){
             if(s->c.bytestream_end - s->c.bytestream < w*40){
                 av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
-                return -1;
+                return AVERROR(ENOMEM);
             }
             for(x=0; x<w; x++){
                 int v, p=0;

@@ -25,9 +25,11 @@
 #ifndef AVFILTER_INTERLACE_H
 #define AVFILTER_INTERLACE_H
 
+#include "libavutil/bswap.h"
 #include "libavutil/common.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
+#include "libavutil/pixdesc.h"
 
 #include "avfilter.h"
 #include "formats.h"
@@ -55,8 +57,9 @@ typedef struct InterlaceContext {
     enum ScanMode scan;    // top or bottom field first scanning
     int lowpass;           // enable or disable low pass filtering
     AVFrame *cur, *next;   // the two frames from which the new one is obtained
+    const AVPixFmtDescriptor *csp;
     void (*lowpass_line)(uint8_t *dstp, ptrdiff_t linesize, const uint8_t *srcp,
-                         ptrdiff_t mref, ptrdiff_t pref);
+                         ptrdiff_t mref, ptrdiff_t pref, int clip_max);
 } InterlaceContext;
 
 void ff_interlace_init_x86(InterlaceContext *interlace);

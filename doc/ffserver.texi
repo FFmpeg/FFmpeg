@@ -327,7 +327,7 @@ Name of options and sections are case-insensitive.
 An ACL (Access Control List) specifies the address which are allowed
 to access a given stream, or to write a given feed.
 
-It accepts the folling forms
+It accepts the following forms
 @itemize
 @item
 Allow/deny access to @var{address}.
@@ -416,7 +416,7 @@ deprecated.
 @item NoDefaults
 Control whether default codec options are used for the all streams or not.
 Each stream may overwrite this setting for its own. Default is @var{UseDefaults}.
-The lastest occurrence overrides previous if multiple definitions.
+The last occurrence overrides the previous if multiple definitions exist.
 @end table
 
 @section Feed section

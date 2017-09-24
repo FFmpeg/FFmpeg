@@ -3167,7 +3167,7 @@ static void compute_chapters_end(AVFormatContext *s)
                 if (j != i && next_start > ch->start && next_start < end)
                     end = next_start;
             }
-            ch->end = (end == INT64_MAX) ? ch->start : end;
+            ch->end = (end == INT64_MAX || end < ch->start) ? ch->start : end;
         }
 }
 

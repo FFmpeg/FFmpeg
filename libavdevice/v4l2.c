@@ -492,6 +492,7 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
         .type   = V4L2_BUF_TYPE_VIDEO_CAPTURE,
         .memory = V4L2_MEMORY_MMAP
     };
+    struct timeval buf_ts;
     int res;
 
     pkt->size = 0;
@@ -507,6 +508,8 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
                av_err2str(res));
         return res;
     }
+
+    buf_ts = buf.timestamp;
 
     if (buf.index >= s->buffers) {
         av_log(ctx, AV_LOG_ERROR, "Invalid buffer index received.\n");
@@ -583,7 +586,7 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
             return AVERROR(ENOMEM);
         }
     }
-    pkt->pts = buf.timestamp.tv_sec * INT64_C(1000000) + buf.timestamp.tv_usec;
+    pkt->pts = buf_ts.tv_sec * INT64_C(1000000) + buf_ts.tv_usec;
     convert_timestamp(ctx, &pkt->pts);
 
     return pkt->size;

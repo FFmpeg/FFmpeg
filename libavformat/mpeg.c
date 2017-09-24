@@ -884,7 +884,7 @@ static int vobsub_read_packet(AVFormatContext *s, AVPacket *pkt)
     FFDemuxSubtitlesQueue *q;
     AVIOContext *pb = vobsub->sub_ctx->pb;
     int ret, psize, total_read = 0, i;
-    AVPacket idx_pkt;
+    AVPacket idx_pkt = { 0 };
 
     int64_t min_ts = INT64_MAX;
     int sid = 0;

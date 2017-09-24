@@ -89,8 +89,8 @@ typedef struct VP9Block {
 typedef struct VP9TileData VP9TileData;
 
 typedef struct VP9Context {
-    VP9TileData *td;
     VP9SharedContext s;
+    VP9TileData *td;
 
     VP9DSPContext dsp;
     VideoDSPContext vdsp;

@@ -216,7 +216,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         if ((err = aacEncoder_SetParam(s->handle, AACENC_BITRATE,
                                        avctx->bit_rate)) != AACENC_OK) {
             av_log(avctx, AV_LOG_ERROR, "Unable to set the bitrate %"PRId64": %s\n",
-                   (int64_t)avctx->bit_rate, aac_get_error(err));
+                   avctx->bit_rate, aac_get_error(err));
             goto error;
         }
     }

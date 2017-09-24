@@ -51,6 +51,7 @@
 #include "bswapdsp.h"
 #endif
 
+#include "exrdsp.h"
 #include "get_bits.h"
 #include "internal.h"
 #include "mathops.h"
@@ -121,6 +122,7 @@ typedef struct EXRContext {
     AVClass *class;
     AVFrame *picture;
     AVCodecContext *avctx;
+    ExrDSPContext dsp;
 
 #if HAVE_BIGENDIAN
     BswapDSPContext bbdsp;
@@ -275,23 +277,7 @@ static void predictor(uint8_t *src, int size)
     }
 }
 
-static void reorder_pixels(uint8_t *src, uint8_t *dst, int size)
-{
-    const uint8_t *t1 = src;
-    int half_size     = size / 2;
-    const uint8_t *t2 = src + half_size;
-    uint8_t *s        = dst;
-    int i;
-
-    av_assert1(size % 2 == 0);
-
-    for (i = 0; i < half_size; i++) {
-        *(s++) = *(t1++);
-        *(s++) = *(t2++);
-    }
-}
-
-static int zip_uncompress(const uint8_t *src, int compressed_size,
+static int zip_uncompress(EXRContext *s, const uint8_t *src, int compressed_size,
                           int uncompressed_size, EXRThreadData *td)
 {
     unsigned long dest_len = uncompressed_size;
@@ -300,13 +286,15 @@ static int zip_uncompress(const uint8_t *src, int compressed_size,
         dest_len != uncompressed_size)
         return AVERROR_INVALIDDATA;
 
+    av_assert1(uncompressed_size % 2 == 0);
+
     predictor(td->tmp, uncompressed_size);
-    reorder_pixels(td->tmp, td->uncompressed_data, uncompressed_size);
+    s->dsp.reorder_pixels(td->uncompressed_data, td->tmp, uncompressed_size);
 
     return 0;
 }
 
-static int rle_uncompress(const uint8_t *src, int compressed_size,
+static int rle_uncompress(EXRContext *ctx, const uint8_t *src, int compressed_size,
                           int uncompressed_size, EXRThreadData *td)
 {
     uint8_t *d      = td->tmp;
@@ -345,8 +333,10 @@ static int rle_uncompress(const uint8_t *src, int compressed_size,
     if (dend != d)
         return AVERROR_INVALIDDATA;
 
+    av_assert1(uncompressed_size % 2 == 0);
+
     predictor(td->tmp, uncompressed_size);
-    reorder_pixels(td->tmp, td->uncompressed_data, uncompressed_size);
+    ctx->dsp.reorder_pixels(td->uncompressed_data, td->tmp, uncompressed_size);
 
     return 0;
 }
@@ -1152,7 +1142,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
 
     if (data_size < uncompressed_size) {
         av_fast_padded_malloc(&td->uncompressed_data,
-                              &td->uncompressed_size, uncompressed_size);
+                              &td->uncompressed_size, uncompressed_size + 64);/* Force 64 padding for AVX2 reorder_pixels dst */
 
         if (!td->uncompressed_data)
             return AVERROR(ENOMEM);
@@ -1161,7 +1151,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
         switch (s->compression) {
         case EXR_ZIP1:
         case EXR_ZIP16:
-            ret = zip_uncompress(src, data_size, uncompressed_size, td);
+            ret = zip_uncompress(s, src, data_size, uncompressed_size, td);
             break;
         case EXR_PIZ:
             ret = piz_uncompress(s, src, data_size, uncompressed_size, td);
@@ -1170,7 +1160,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
             ret = pxr24_uncompress(s, src, data_size, uncompressed_size, td);
             break;
         case EXR_RLE:
-            ret = rle_uncompress(src, data_size, uncompressed_size, td);
+            ret = rle_uncompress(s, src, data_size, uncompressed_size, td);
             break;
         case EXR_B44:
         case EXR_B44A:
@@ -1803,6 +1793,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     avpriv_trc_function trc_func = NULL;
 
     s->avctx              = avctx;
+
+    ff_exrdsp_init(&s->dsp);
 
 #if HAVE_BIGENDIAN
     ff_bswapdsp_init(&s->bbdsp);

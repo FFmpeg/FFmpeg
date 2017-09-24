@@ -326,6 +326,7 @@ static void register_all(void)
     REGISTER_FILTER(TELECINE,       telecine,       vf);
     REGISTER_FILTER(THRESHOLD,      threshold,      vf);
     REGISTER_FILTER(THUMBNAIL,      thumbnail,      vf);
+    REGISTER_FILTER(THUMBNAIL_CUDA, thumbnail_cuda, vf);
     REGISTER_FILTER(TILE,           tile,           vf);
     REGISTER_FILTER(TINTERLACE,     tinterlace,     vf);
     REGISTER_FILTER(TLUT2,          tlut2,          vf);
