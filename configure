@@ -2857,6 +2857,17 @@ done
 
 disabled logging && logfile=/dev/null
 
+# we need to build at least one lib type
+if ! enabled_any static shared; then
+    cat <<EOF
+At least one library type must be built.
+Specify --enable-static to build the static libraries or --enable-shared to
+build the shared libraries as well. To only build the shared libraries specify
+--disable-static in addition to --enable-shared.
+EOF
+    exit 1
+fi
+
 # Die early if licensing-related configure options are incompatible.
 die_license_disabled() {
     enabled $1 || { enabled $v && die "$v is $1 and --enable-$1 is not specified."; }
@@ -4183,17 +4194,6 @@ check_cpp_condition stdlib.h "defined(__PIC__) || defined(__pic__) || defined(PI
 
 set_default $PATHS_LIST
 set_default nm
-
-# we need to build at least one lib type
-if ! enabled_any static shared; then
-    cat <<EOF
-At least one library type must be built.
-Specify --enable-static to build the static libraries or --enable-shared to
-build the shared libraries as well. To only build the shared libraries specify
---disable-static in addition to --enable-shared.
-EOF
-    exit 1
-fi
 
 disabled optimizations || check_cflags -fomit-frame-pointer
 
