@@ -572,9 +572,22 @@ static OSStatus videotoolbox_session_decode_frame(AVCodecContext *avctx)
     return status;
 }
 
+static const char *videotoolbox_error_string(OSStatus status)
+{
+    switch (status) {
+        case kVTVideoDecoderBadDataErr:
+            return "bad data";
+        case kVTVideoDecoderMalfunctionErr:
+            return "decoder malfunction";
+        case kVTInvalidSessionErr:
+            return "invalid session";
+    }
+    return "unknown";
+}
+
 static int videotoolbox_common_end_frame(AVCodecContext *avctx, AVFrame *frame)
 {
-    int status;
+    OSStatus status;
     AVVideotoolboxContext *videotoolbox = videotoolbox_get_context(avctx);
     VTContext *vtctx = avctx->internal->hwaccel_priv_data;
 
@@ -582,9 +595,8 @@ static int videotoolbox_common_end_frame(AVCodecContext *avctx, AVFrame *frame)
         return AVERROR_INVALIDDATA;
 
     status = videotoolbox_session_decode_frame(avctx);
-
-    if (status) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to decode frame (%d)\n", status);
+    if (status != noErr) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to decode frame (%s, %d)\n", videotoolbox_error_string(status), (int)status);
         return AVERROR_UNKNOWN;
     }
 
