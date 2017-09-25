@@ -1112,6 +1112,13 @@ static int h264_export_frame_props(H264Context *h)
 
         if (fp->content_interpretation_type == 2)
             stereo->flags = AV_STEREO3D_FLAG_INVERT;
+
+        if (fp->arrangement_type == 5) {
+            if (fp->current_frame_is_frame0_flag)
+                stereo->view = AV_STEREO3D_VIEW_LEFT;
+            else
+                stereo->view = AV_STEREO3D_VIEW_RIGHT;
+        }
     }
 
     if (h->sei.display_orientation.present &&

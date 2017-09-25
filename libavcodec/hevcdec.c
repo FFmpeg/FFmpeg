@@ -2397,6 +2397,13 @@ static int set_side_data(HEVCContext *s)
 
         if (s->sei.frame_packing.content_interpretation_type == 2)
             stereo->flags = AV_STEREO3D_FLAG_INVERT;
+
+        if (s->sei.frame_packing.arrangement_type == 5) {
+            if (s->sei.frame_packing.current_frame_is_frame0_flag)
+                stereo->view = AV_STEREO3D_VIEW_LEFT;
+            else
+                stereo->view = AV_STEREO3D_VIEW_RIGHT;
+        }
     }
 
     if (s->sei.display_orientation.present &&

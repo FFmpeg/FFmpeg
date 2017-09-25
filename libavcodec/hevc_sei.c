@@ -57,10 +57,11 @@ static int decode_nal_sei_frame_packing_arrangement(HEVCSEIFramePacking *s, GetB
         s->quincunx_subsampling           = get_bits1(gb);
         s->content_interpretation_type    = get_bits(gb, 6);
 
-        // the following skips spatial_flipping_flag frame0_flipped_flag
-        // field_views_flag current_frame_is_frame0_flag
-        // frame0_self_contained_flag frame1_self_contained_flag
-        skip_bits(gb, 6);
+        // spatial_flipping_flag, frame0_flipped_flag, field_views_flag
+        skip_bits(gb, 3);
+        s->current_frame_is_frame0_flag = get_bits1(gb);
+        // frame0_self_contained_flag, frame1_self_contained_flag
+        skip_bits(gb, 2);
 
         if (!s->quincunx_subsampling && s->arrangement_type != 5)
             skip_bits(gb, 16);  // frame[01]_grid_position_[xy]

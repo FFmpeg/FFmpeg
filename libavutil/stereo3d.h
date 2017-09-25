@@ -141,6 +141,25 @@ enum AVStereo3DType {
     AV_STEREO3D_COLUMNS,
 };
 
+/**
+ * List of possible view types.
+ */
+enum AVStereo3DView {
+    /**
+     * Frame contains two packed views.
+     */
+    AV_STEREO3D_VIEW_PACKED,
+
+    /**
+     * Frame contains only the left view.
+     */
+    AV_STEREO3D_VIEW_LEFT,
+
+    /**
+     * Frame contains only the right view.
+     */
+    AV_STEREO3D_VIEW_RIGHT,
+};
 
 /**
  * Inverted views, Right/Bottom represents the left view.
@@ -164,6 +183,11 @@ typedef struct AVStereo3D {
      * Additional information about the frame packing.
      */
     int flags;
+
+    /**
+     * Determines which views are packed.
+     */
+    enum AVStereo3DView view;
 } AVStereo3D;
 
 /**

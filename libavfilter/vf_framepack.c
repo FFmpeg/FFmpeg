@@ -310,6 +310,8 @@ static int request_frame(AVFilterLink *outlink)
             if (!stereo)
                 return AVERROR(ENOMEM);
             stereo->type = s->format;
+            stereo->view = i == LEFT ? AV_STEREO3D_VIEW_LEFT
+                                     : AV_STEREO3D_VIEW_RIGHT;
 
             // filter the frame and immediately relinquish its pointer
             ret = ff_filter_frame(outlink, s->input_views[i]);
