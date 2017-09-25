@@ -1029,6 +1029,23 @@ static int qsv_device_derive_from_child(AVHWDeviceContext *ctx,
         goto fail;
     }
 
+    err = MFXQueryVersion(hwctx->session, &ver);
+    if (err != MFX_ERR_NONE) {
+        av_log(ctx, AV_LOG_ERROR, "Error querying an MFX session: %d.\n", err);
+        ret = AVERROR_UNKNOWN;
+        goto fail;
+    }
+
+    MFXClose(hwctx->session);
+
+    err = MFXInit(implementation, &ver, &hwctx->session);
+    if (err != MFX_ERR_NONE) {
+        av_log(ctx, AV_LOG_ERROR,
+               "Error initializing an MFX session: %d.\n", err);
+        ret = AVERROR_UNKNOWN;
+        goto fail;
+    }
+
     err = MFXVideoCORE_SetHandle(hwctx->session, handle_type, handle);
     if (err != MFX_ERR_NONE) {
         av_log(ctx, AV_LOG_ERROR, "Error setting child device handle: "
