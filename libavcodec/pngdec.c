@@ -25,6 +25,7 @@
 #include "libavutil/bprint.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/stereo3d.h"
+#include "libavutil/mastering_display_metadata.h"
 
 #include "avcodec.h"
 #include "bytestream.h"
@@ -1167,7 +1168,7 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
     AVDictionary **metadatap = NULL;
     uint32_t tag, length;
     int decode_next_dat = 0;
-    int ret;
+    int i, ret;
 
     for (;;) {
         length = bytestream2_get_bytes_left(&s->gb);
@@ -1287,6 +1288,42 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
         case MKTAG('i', 'C', 'C', 'P'): {
             if (decode_iccp_chunk(s, length, p) < 0)
                 goto fail;
+            break;
+        }
+        case MKTAG('c', 'H', 'R', 'M'): {
+            AVMasteringDisplayMetadata *mdm = av_mastering_display_metadata_create_side_data(p);
+            if (!mdm) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+
+            mdm->white_point[0] = av_make_q(bytestream2_get_be32(&s->gb), 100000);
+            mdm->white_point[1] = av_make_q(bytestream2_get_be32(&s->gb), 100000);
+
+            /* RGB Primaries */
+            for (i = 0; i < 3; i++) {
+                mdm->display_primaries[i][0] = av_make_q(bytestream2_get_be32(&s->gb), 100000);
+                mdm->display_primaries[i][1] = av_make_q(bytestream2_get_be32(&s->gb), 100000);
+            }
+
+            mdm->has_primaries = 1;
+            bytestream2_skip(&s->gb, 4); /* crc */
+            break;
+        }
+        case MKTAG('g', 'A', 'M', 'A'): {
+            AVBPrint bp;
+            char *gamma_str;
+            int num = bytestream2_get_be32(&s->gb);
+
+            av_bprint_init(&bp, 0, -1);
+            av_bprintf(&bp, "%i/%i", num, 100000);
+            av_bprint_finalize(&bp, &gamma_str);
+            if (!gamma_str)
+                return AVERROR(ENOMEM);
+
+            av_dict_set(&p->metadata, "gamma", gamma_str, AV_DICT_DONT_STRDUP_VAL);
+
+            bytestream2_skip(&s->gb, 4); /* crc */
             break;
         }
         case MKTAG('I', 'E', 'N', 'D'):
