@@ -77,6 +77,7 @@ static const AVOption options[] = {
     { "write_gama", "Write deprecated gama atom", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_WRITE_GAMA}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "use_metadata_tags", "Use mdta atom for metadata.", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_USE_MDTA}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "skip_trailer", "Skip writing the mfra/tfra/mfro trailer for fragmented files", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_SKIP_TRAILER}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
+    { "negative_cts_offsets", "Use negative CTS offsets (reducing the need for edit lists)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_NEGATIVE_CTS_OFFSETS}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     FF_RTP_FLAG_OPTS(MOVMuxContext, rtp_flags),
     { "skip_iods", "Skip writing iods atom.", offsetof(MOVMuxContext, iods_skip), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { "iods_audio_profile", "iods audio profile atom.", offsetof(MOVMuxContext, iods_audio_profile), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 255, AV_OPT_FLAG_ENCODING_PARAM},
@@ -2095,8 +2096,9 @@ static int mov_write_stsd_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext
     return update_size(pb, pos);
 }
 
-static int mov_write_ctts_tag(AVIOContext *pb, MOVTrack *track)
+static int mov_write_ctts_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *track)
 {
+    MOVMuxContext *mov = s->priv_data;
     MOVStts *ctts_entries;
     uint32_t entries = 0;
     uint32_t atom_size;
@@ -2120,7 +2122,11 @@ static int mov_write_ctts_tag(AVIOContext *pb, MOVTrack *track)
     atom_size = 16 + (entries * 8);
     avio_wb32(pb, atom_size); /* size */
     ffio_wfourcc(pb, "ctts");
-    avio_wb32(pb, 0); /* version & flags */
+    if (mov->flags & FF_MOV_FLAG_NEGATIVE_CTS_OFFSETS)
+        avio_w8(pb, 1); /* version */
+    else
+        avio_w8(pb, 0); /* version */
+    avio_wb24(pb, 0); /* flags */
     avio_wb32(pb, entries); /* entry count */
     for (i = 0; i < entries; i++) {
         avio_wb32(pb, ctts_entries[i].count);
@@ -2304,7 +2310,7 @@ static int mov_write_stbl_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext
     if (track->par->codec_type == AVMEDIA_TYPE_VIDEO &&
         track->flags & MOV_TRACK_CTTS && track->entry) {
 
-        if ((ret = mov_write_ctts_tag(pb, track)) < 0)
+        if ((ret = mov_write_ctts_tag(s, pb, track)) < 0)
             return ret;
     }
     mov_write_stsc_tag(pb, track);
@@ -4045,7 +4051,10 @@ static int mov_write_trun_tag(AVIOContext *pb, MOVMuxContext *mov,
 
     avio_wb32(pb, 0); /* size placeholder */
     ffio_wfourcc(pb, "trun");
-    avio_w8(pb, 0); /* version */
+    if (mov->flags & FF_MOV_FLAG_NEGATIVE_CTS_OFFSETS)
+        avio_w8(pb, 1); /* version */
+    else
+        avio_w8(pb, 0); /* version */
     avio_wb24(pb, flags);
 
     avio_wb32(pb, end - first); /* sample count */
@@ -4490,6 +4499,8 @@ static int mov_write_ftyp_tag(AVIOContext *pb, AVFormatContext *s)
         ffio_wfourcc(pb, "MSNV");
     else if (mov->mode == MODE_MP4 && mov->flags & FF_MOV_FLAG_DEFAULT_BASE_MOOF)
         ffio_wfourcc(pb, "iso5"); // Required when using default-base-is-moof
+    else if (mov->mode == MODE_MP4 && mov->flags & FF_MOV_FLAG_NEGATIVE_CTS_OFFSETS)
+        ffio_wfourcc(pb, "iso4");
     else if (mov->mode == MODE_MP4)
         ffio_wfourcc(pb, "isom");
     else if (mov->mode == MODE_IPOD)
@@ -4760,6 +4771,8 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
         if (!track->end_reliable) {
             AVPacket pkt;
             if (!ff_interleaved_peek(s, i, &pkt, 1)) {
+                if (track->dts_shift != AV_NOPTS_VALUE)
+                    pkt.dts += track->dts_shift;
                 track->track_duration = pkt.dts - track->start_dts;
                 if (pkt.pts != AV_NOPTS_VALUE)
                     track->end_pts = pkt.pts;
@@ -5281,6 +5294,12 @@ static int mov_write_single_packet(AVFormatContext *s, AVPacket *pkt)
             for (i = 0; i < s->nb_streams; i++)
                 mov->tracks[i].frag_discont = 1;
             mov->flags &= ~FF_MOV_FLAG_FRAG_DISCONT;
+        }
+
+        if (mov->flags & FF_MOV_FLAG_NEGATIVE_CTS_OFFSETS) {
+            if (trk->dts_shift == AV_NOPTS_VALUE)
+                trk->dts_shift = pkt->pts - pkt->dts;
+            pkt->dts += trk->dts_shift;
         }
 
         if (trk->par->codec_id == AV_CODEC_ID_MP4ALS ||
@@ -5923,6 +5942,7 @@ static int mov_init(AVFormatContext *s)
         track->start_dts  = AV_NOPTS_VALUE;
         track->start_cts  = AV_NOPTS_VALUE;
         track->end_pts    = AV_NOPTS_VALUE;
+        track->dts_shift  = AV_NOPTS_VALUE;
         if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
             if (track->tag == MKTAG('m','x','3','p') || track->tag == MKTAG('m','x','3','n') ||
                 track->tag == MKTAG('m','x','4','p') || track->tag == MKTAG('m','x','4','n') ||

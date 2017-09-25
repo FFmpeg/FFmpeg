@@ -1117,6 +1117,12 @@ on the implicit end of the previous track fragment).
 @item -write_tmcd
 Specify @code{on} to force writing a timecode track, @code{off} to disable it
 and @code{auto} to write a timecode track only for mov and mp4 output (default).
+@item -movflags negative_cts_offsets
+Enables utilization of version 1 of the CTTS box, in which the CTS offsets can
+be negative. This enables the initial sample to have DTS/CTS of zero, and
+reduces the need for edit lists for some cases such as video tracks with
+B-frames. Additionally, eases conformance with the DASH-IF interoperability
+guidelines.
 @end table
 
 @subsection Example
