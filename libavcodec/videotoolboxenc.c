@@ -1939,8 +1939,6 @@ static int get_cv_pixel_info(
                    "Color range not set for %s. Using MPEG range.\n",
                    av_get_pix_fmt_name(av_format));
         }
-
-        av_log(avctx, AV_LOG_WARNING, "");
     }
 
     switch (av_format) {
