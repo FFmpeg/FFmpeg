@@ -702,7 +702,7 @@ static CFDictionaryRef videotoolbox_decoder_config_create(CMVideoCodecType codec
                          kVTVideoDecoderSpecification_RequireHardwareAcceleratedVideoDecoder,
                          kCFBooleanTrue);
 
-    if (avctx->extradata_size) {
+    if (1) {
         CFMutableDictionaryRef avc_info;
         CFDataRef data = NULL;
 
@@ -713,7 +713,8 @@ static CFDictionaryRef videotoolbox_decoder_config_create(CMVideoCodecType codec
 
         switch (codec_type) {
         case kCMVideoCodecType_MPEG4Video :
-            data = videotoolbox_esds_extradata_create(avctx);
+            if (avctx->extradata_size)
+                data = videotoolbox_esds_extradata_create(avctx);
             if (data)
                 CFDictionarySetValue(avc_info, CFSTR("esds"), data);
             break;
