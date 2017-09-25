@@ -756,7 +756,7 @@ static CMVideoFormatDescriptionRef videotoolbox_format_desc_create(CMVideoCodecT
     return cm_fmt_desc;
 }
 
-static int videotoolbox_default_init(AVCodecContext *avctx)
+static int videotoolbox_start(AVCodecContext *avctx)
 {
     AVVideotoolboxContext *videotoolbox = videotoolbox_get_context(avctx);
     OSStatus status;
@@ -793,6 +793,11 @@ static int videotoolbox_default_init(AVCodecContext *avctx)
     }
 
     decoder_spec = videotoolbox_decoder_config_create(videotoolbox->cm_codec_type, avctx);
+
+    if (!decoder_spec) {
+        av_log(avctx, AV_LOG_ERROR, "decoder specification creation failed\n");
+        return -1;
+    }
 
     videotoolbox->cm_fmt_desc = videotoolbox_format_desc_create(videotoolbox->cm_codec_type,
                                                                 decoder_spec,
@@ -846,18 +851,21 @@ static int videotoolbox_default_init(AVCodecContext *avctx)
     }
 }
 
-static void videotoolbox_default_free(AVCodecContext *avctx)
+static void videotoolbox_stop(AVCodecContext *avctx)
 {
     AVVideotoolboxContext *videotoolbox = videotoolbox_get_context(avctx);
     if (!videotoolbox)
         return;
 
-    if (videotoolbox->cm_fmt_desc)
+    if (videotoolbox->cm_fmt_desc) {
         CFRelease(videotoolbox->cm_fmt_desc);
+        videotoolbox->cm_fmt_desc = NULL;
+    }
 
     if (videotoolbox->session) {
         VTDecompressionSessionInvalidate(videotoolbox->session);
         CFRelease(videotoolbox->session);
+        videotoolbox->session = NULL;
     }
 }
 
@@ -870,7 +878,7 @@ static int videotoolbox_uninit(AVCodecContext *avctx)
     ff_videotoolbox_uninit(avctx);
 
     if (vtctx->vt_ctx)
-        videotoolbox_default_free(avctx);
+        videotoolbox_stop(avctx);
 
     av_buffer_unref(&vtctx->cached_hw_frames_ctx);
     av_freep(&vtctx->vt_ctx);
@@ -936,7 +944,7 @@ static int videotoolbox_common_init(AVCodecContext *avctx)
         goto fail;
     }
 
-    err = videotoolbox_default_init(avctx);
+    err = videotoolbox_start(avctx);
     if (err < 0)
         goto fail;
 
@@ -1072,13 +1080,13 @@ int av_videotoolbox_default_init2(AVCodecContext *avctx, AVVideotoolboxContext *
     avctx->hwaccel_context = vtctx ?: av_videotoolbox_alloc_context();
     if (!avctx->hwaccel_context)
         return AVERROR(ENOMEM);
-    return videotoolbox_default_init(avctx);
+    return videotoolbox_start(avctx);
 }
 
 void av_videotoolbox_default_free(AVCodecContext *avctx)
 {
 
-    videotoolbox_default_free(avctx);
+    videotoolbox_stop(avctx);
     av_freep(&avctx->hwaccel_context);
 }
 #endif /* CONFIG_VIDEOTOOLBOX */
