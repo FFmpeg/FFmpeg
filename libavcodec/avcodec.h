@@ -4632,7 +4632,10 @@ int av_copy_packet(AVPacket *dst, const AVPacket *src);
  * Copy packet side data
  *
  * @return 0 on success, negative AVERROR on fail
+ *
+ * @deprecated Use av_packet_copy_props
  */
+attribute_deprecated
 int av_copy_packet_side_data(AVPacket *dst, const AVPacket *src);
 
 /**
