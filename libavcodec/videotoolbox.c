@@ -300,8 +300,6 @@ int ff_videotoolbox_h264_start_frame(AVCodecContext *avctx,
     VTContext *vtctx = avctx->internal->hwaccel_priv_data;
     H264Context *h  = avctx->priv_data;
 
-    vtctx->bitstream_size = 0;
-
     if (h->is_avc == 1) {
         return videotoolbox_buffer_copy(vtctx, buffer, size);
     }
@@ -600,8 +598,10 @@ static int videotoolbox_h264_end_frame(AVCodecContext *avctx)
 {
     H264Context *h = avctx->priv_data;
     AVFrame *frame = h->cur_pic_ptr->f;
-
-    return videotoolbox_common_end_frame(avctx, frame);
+    VTContext *vtctx = avctx->internal->hwaccel_priv_data;
+    int ret = videotoolbox_common_end_frame(avctx, frame);
+    vtctx->bitstream_size = 0;
+    return ret;
 }
 
 static int videotoolbox_hevc_end_frame(AVCodecContext *avctx)
