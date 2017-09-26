@@ -7724,12 +7724,12 @@ static const double tabs_9_20[9 * 2][20] = {
       0.22783, 0.058894795, -0.61350902, 0.69559873, -0.27013783, }
 };
 
-const double* const ff_on2avc_tabs_9_20_1[9] = {
+const double * const ff_on2avc_tabs_9_20_1[9] = {
     tabs_9_20[0], tabs_9_20[1], tabs_9_20[2], tabs_9_20[3], tabs_9_20[4],
     tabs_9_20[5], tabs_9_20[6], tabs_9_20[7], tabs_9_20[8]
 };
 
-const double* const ff_on2avc_tabs_9_20_2[9] = {
+const double * const ff_on2avc_tabs_9_20_2[9] = {
     tabs_9_20[ 9], tabs_9_20[10], tabs_9_20[11], tabs_9_20[12], tabs_9_20[13],
     tabs_9_20[14], tabs_9_20[15], tabs_9_20[16], tabs_9_20[17]
 };
@@ -7927,7 +7927,7 @@ static const double tabs_19_40[19 * 2][40] = {
       0.019871848, -0.11989559, 0.036659135, 0.26632201, -0.3057397, -0.23220335, 0.68741352, -0.54024027, }
 };
 
-const double* const ff_on2avc_tabs_19_40_1[19] = {
+const double * const ff_on2avc_tabs_19_40_1[19] = {
     tabs_19_40[ 0], tabs_19_40[ 1], tabs_19_40[ 2], tabs_19_40[ 3],
     tabs_19_40[ 4], tabs_19_40[ 5], tabs_19_40[ 6], tabs_19_40[ 7],
     tabs_19_40[ 8], tabs_19_40[ 9], tabs_19_40[10], tabs_19_40[11],
@@ -7935,7 +7935,7 @@ const double* const ff_on2avc_tabs_19_40_1[19] = {
     tabs_19_40[16], tabs_19_40[17], tabs_19_40[18],
 };
 
-const double* const ff_on2avc_tabs_19_40_2[19] = {
+const double * const ff_on2avc_tabs_19_40_2[19] = {
     tabs_19_40[19], tabs_19_40[20], tabs_19_40[21], tabs_19_40[22],
     tabs_19_40[23], tabs_19_40[24], tabs_19_40[25], tabs_19_40[26],
     tabs_19_40[27], tabs_19_40[28], tabs_19_40[29], tabs_19_40[30],
@@ -8826,7 +8826,7 @@ static const double tabs_20_84[20 * 4][84] = {
       0.51434408, -0.41486443, 0.27672635, -0.10432054, },
 };
 
-const double* const ff_on2avc_tabs_20_84_1[20] = {
+const double * const ff_on2avc_tabs_20_84_1[20] = {
     tabs_20_84[ 0], tabs_20_84[ 1], tabs_20_84[ 2], tabs_20_84[ 3],
     tabs_20_84[ 4], tabs_20_84[ 5], tabs_20_84[ 6], tabs_20_84[ 7],
     tabs_20_84[ 8], tabs_20_84[ 9], tabs_20_84[10], tabs_20_84[11],
@@ -8834,7 +8834,7 @@ const double* const ff_on2avc_tabs_20_84_1[20] = {
     tabs_20_84[16], tabs_20_84[17], tabs_20_84[18], tabs_20_84[19]
 };
 
-const double* const ff_on2avc_tabs_20_84_2[20] = {
+const double * const ff_on2avc_tabs_20_84_2[20] = {
     tabs_20_84[20], tabs_20_84[21], tabs_20_84[22], tabs_20_84[23],
     tabs_20_84[24], tabs_20_84[25], tabs_20_84[26], tabs_20_84[27],
     tabs_20_84[28], tabs_20_84[29], tabs_20_84[30], tabs_20_84[31],
@@ -8842,7 +8842,7 @@ const double* const ff_on2avc_tabs_20_84_2[20] = {
     tabs_20_84[36], tabs_20_84[37], tabs_20_84[38], tabs_20_84[39]
 };
 
-const double* const ff_on2avc_tabs_20_84_3[20] = {
+const double * const ff_on2avc_tabs_20_84_3[20] = {
     tabs_20_84[40], tabs_20_84[41], tabs_20_84[42], tabs_20_84[43],
     tabs_20_84[44], tabs_20_84[45], tabs_20_84[46], tabs_20_84[47],
     tabs_20_84[48], tabs_20_84[49], tabs_20_84[50], tabs_20_84[51],
@@ -8850,7 +8850,7 @@ const double* const ff_on2avc_tabs_20_84_3[20] = {
     tabs_20_84[56], tabs_20_84[57], tabs_20_84[58], tabs_20_84[59]
 };
 
-const double* const ff_on2avc_tabs_20_84_4[20] = {
+const double * const ff_on2avc_tabs_20_84_4[20] = {
     tabs_20_84[60], tabs_20_84[61], tabs_20_84[62], tabs_20_84[63],
     tabs_20_84[64], tabs_20_84[65], tabs_20_84[66], tabs_20_84[67],
     tabs_20_84[68], tabs_20_84[69], tabs_20_84[70], tabs_20_84[71],

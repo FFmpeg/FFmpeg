@@ -1498,9 +1498,9 @@ static int select_cur_seq_no(HLSContext *c, struct playlist *pls)
 static int save_avio_options(AVFormatContext *s)
 {
     HLSContext *c = s->priv_data;
-    static const char *opts[] = {
+    static const char * const opts[] = {
         "headers", "http_proxy", "user_agent", "user-agent", "cookies", NULL };
-    const char **opt = opts;
+    const char * const * opt = opts;
     uint8_t *buf;
     int ret = 0;
 

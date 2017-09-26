@@ -976,7 +976,7 @@ static av_always_inline int decode_coeffs(VP9TileData *td, int is8bitsperpixel)
     int16_t (*qmul)[2] = s->s.h.segmentation.feat[b->seg_id].qmul;
     int tx = 4 * s->s.h.lossless + b->tx;
     const int16_t * const *yscans = ff_vp9_scans[tx];
-    const int16_t (* const *ynbs)[2] = ff_vp9_scans_nb[tx];
+    const int16_t (* const * ynbs)[2] = ff_vp9_scans_nb[tx];
     const int16_t *uvscan = ff_vp9_scans[b->uvtx][DCT_DCT];
     const int16_t (*uvnb)[2] = ff_vp9_scans_nb[b->uvtx][DCT_DCT];
     uint8_t *a = &s->above_y_nnz_ctx[col * 2];

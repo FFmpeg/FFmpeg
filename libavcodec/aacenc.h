@@ -78,7 +78,7 @@ typedef struct AACCoefficientsEncoder {
     void (*search_for_pred)(struct AACEncContext *s, SingleChannelElement *sce);
 } AACCoefficientsEncoder;
 
-extern AACCoefficientsEncoder ff_aac_coders[];
+extern const AACCoefficientsEncoder ff_aac_coders[];
 
 typedef struct AACQuantizeBandCostCacheEntry {
     float rd;
@@ -110,7 +110,7 @@ typedef struct AACEncContext {
     ChannelElement *cpe;                         ///< channel elements
     FFPsyContext psy;
     struct FFPsyPreprocessContext* psypp;
-    AACCoefficientsEncoder *coder;
+    const AACCoefficientsEncoder *coder;
     int cur_channel;                             ///< current channel for coder context
     int random_state;
     float lambda;

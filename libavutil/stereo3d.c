@@ -43,7 +43,7 @@ AVStereo3D *av_stereo3d_create_side_data(AVFrame *frame)
     return (AVStereo3D *)side_data->data;
 }
 
-static const char *stereo3d_type_names[] = {
+static const char * const stereo3d_type_names[] = {
     [AV_STEREO3D_2D]                  = "2D",
     [AV_STEREO3D_SIDEBYSIDE]          = "side by side",
     [AV_STEREO3D_TOPBOTTOM]           = "top and bottom",
