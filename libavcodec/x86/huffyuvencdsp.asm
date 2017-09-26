@@ -25,7 +25,7 @@
 
 %include "libavutil/x86/x86util.asm"
 
-section .text
+SECTION .text
 
 ; void ff_diff_int16(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
 ;                    unsigned mask, int w);

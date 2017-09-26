@@ -24,7 +24,7 @@
 cextern pw_4
 cextern pw_5
 
-section .text
+SECTION .text
 
 ; dst_low, dst_high (src), zero
 ; zero-extends one vector from 8 to 16 bits

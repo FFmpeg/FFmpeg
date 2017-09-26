@@ -87,9 +87,9 @@
 ; keep supporting OS/2.
 %macro SECTION_RODATA 0-1 16
     %ifidn __OUTPUT_FORMAT__,aout
-        section .text
+        SECTION .text
     %elifidn __OUTPUT_FORMAT__,coff
-        section .text
+        SECTION .text
     %else
         SECTION .rodata align=%1
     %endif
