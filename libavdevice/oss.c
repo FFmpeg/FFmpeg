@@ -22,16 +22,10 @@
 #include "config.h"
 
 #include <string.h>
-
-#if HAVE_SOUNDCARD_H
-#include <soundcard.h>
-#else
-#include <sys/soundcard.h>
-#endif
-
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
+#include <sys/soundcard.h>
 
 #include "libavutil/log.h"
 

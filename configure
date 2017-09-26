@@ -1575,7 +1575,6 @@ HEADERS_LIST="
     machine_ioctl_meteor_h
     malloc_h
     poll_h
-    soundcard_h
     stdatomic_h
     sys_param_h
     sys_resource_h
@@ -2465,8 +2464,8 @@ jack_indev_deps="libjack"
 jack_indev_deps_any="sem_timedwait dispatch_dispatch_h"
 libcdio_indev_deps="libcdio"
 libdc1394_indev_deps="libdc1394"
-oss_indev_deps_any="soundcard_h sys_soundcard_h"
-oss_outdev_deps_any="soundcard_h sys_soundcard_h"
+oss_indev_deps_any="sys_soundcard_h"
+oss_outdev_deps_any="sys_soundcard_h"
 pulse_indev_deps="libpulse"
 sndio_indev_deps="sndio"
 sndio_outdev_deps="sndio"
@@ -4857,7 +4856,6 @@ check_cpp_condition vfw.h "WM_CAP_DRIVER_CONNECT > WM_USER" && enable vfwcap_def
 check_header dev/ic/bt8xx.h
 
 check_header sys/soundcard.h
-check_header soundcard.h
 
 enabled_any alsa_indev alsa_outdev &&
     check_lib alsa alsa/asoundlib.h snd_pcm_htimestamp -lasound
