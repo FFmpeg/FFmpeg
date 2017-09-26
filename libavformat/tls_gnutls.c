@@ -35,6 +35,10 @@
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 
+#ifndef GNUTLS_VERSION_NUMBER
+#define GNUTLS_VERSION_NUMBER LIBGNUTLS_VERSION_NUMBER
+#endif
+
 #if HAVE_THREADS && GNUTLS_VERSION_NUMBER <= 0x020b00
 #include <gcrypt.h>
 #include "libavutil/thread.h"
