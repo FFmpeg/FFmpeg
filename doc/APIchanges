@@ -15,6 +15,12 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+2017-09-26 - xxxxxxx - lavc 57.106.102 - avcodec.h
+  Deprecate AVCodecContext.refcounted_frames. This was useful for deprecated
+  API only (avcodec_decode_video2/avcodec_decode_audio4). The new decode APIs
+  (avcodec_send_packet/avcodec_receive_frame) always work with reference
+  counted frames.
+
 2017-xx-xx - xxxxxxx - lavu 55.76.100 / 56.6.0 - pixdesc.h
   Add av_color_range_from_name(), av_color_primaries_from_name(),
   av_color_transfer_from_name(), av_color_space_from_name(), and
