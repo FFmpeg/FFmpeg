@@ -106,115 +106,6 @@ static void intra_predict_horiz_16x16_msa(uint8_t *src, int32_t src_stride,
            dst, dst_stride);
 }
 
-static void intra_predict_dc_8x8_msa(uint8_t *src_top, uint8_t *src_left,
-                                     int32_t src_stride_left,
-                                     uint8_t *dst, int32_t dst_stride,
-                                     uint8_t is_above, uint8_t is_left)
-{
-    uint32_t row;
-    uint32_t out, addition = 0;
-    v16u8 src_above, store;
-    v8u16 sum_above;
-    v4u32 sum_top;
-    v2u64 sum;
-
-    if (is_left && is_above) {
-        src_above = LD_UB(src_top);
-
-        sum_above = __msa_hadd_u_h(src_above, src_above);
-        sum_top = __msa_hadd_u_w(sum_above, sum_above);
-        sum = __msa_hadd_u_d(sum_top, sum_top);
-        addition = __msa_copy_u_w((v4i32) sum, 0);
-
-        for (row = 0; row < 8; row++) {
-            addition += src_left[row * src_stride_left];
-        }
-
-        addition = (addition + 8) >> 4;
-        store = (v16u8) __msa_fill_b(addition);
-    } else if (is_left) {
-        for (row = 0; row < 8; row++) {
-            addition += src_left[row * src_stride_left];
-        }
-
-        addition = (addition + 4) >> 3;
-        store = (v16u8) __msa_fill_b(addition);
-    } else if (is_above) {
-        src_above = LD_UB(src_top);
-
-        sum_above = __msa_hadd_u_h(src_above, src_above);
-        sum_top = __msa_hadd_u_w(sum_above, sum_above);
-        sum = __msa_hadd_u_d(sum_top, sum_top);
-        sum = (v2u64) __msa_srari_d((v2i64) sum, 3);
-        store = (v16u8) __msa_splati_b((v16i8) sum, 0);
-    } else {
-        store = (v16u8) __msa_ldi_b(128);
-    }
-
-    out = __msa_copy_u_w((v4i32) store, 0);
-
-    for (row = 8; row--;) {
-        SW(out, dst);
-        SW(out, (dst + 4));
-        dst += dst_stride;
-    }
-}
-
-static void intra_predict_dc_16x16_msa(uint8_t *src_top, uint8_t *src_left,
-                                       int32_t src_stride_left,
-                                       uint8_t *dst, int32_t dst_stride,
-                                       uint8_t is_above, uint8_t is_left)
-{
-    uint32_t row;
-    uint32_t addition = 0;
-    v16u8 src_above, store;
-    v8u16 sum_above;
-    v4u32 sum_top;
-    v2u64 sum;
-
-    if (is_left && is_above) {
-        src_above = LD_UB(src_top);
-
-        sum_above = __msa_hadd_u_h(src_above, src_above);
-        sum_top = __msa_hadd_u_w(sum_above, sum_above);
-        sum = __msa_hadd_u_d(sum_top, sum_top);
-        sum_top = (v4u32) __msa_pckev_w((v4i32) sum, (v4i32) sum);
-        sum = __msa_hadd_u_d(sum_top, sum_top);
-        addition = __msa_copy_u_w((v4i32) sum, 0);
-
-        for (row = 0; row < 16; row++) {
-            addition += src_left[row * src_stride_left];
-        }
-
-        addition = (addition + 16) >> 5;
-        store = (v16u8) __msa_fill_b(addition);
-    } else if (is_left) {
-        for (row = 0; row < 16; row++) {
-            addition += src_left[row * src_stride_left];
-        }
-
-        addition = (addition + 8) >> 4;
-        store = (v16u8) __msa_fill_b(addition);
-    } else if (is_above) {
-        src_above = LD_UB(src_top);
-
-        sum_above = __msa_hadd_u_h(src_above, src_above);
-        sum_top = __msa_hadd_u_w(sum_above, sum_above);
-        sum = __msa_hadd_u_d(sum_top, sum_top);
-        sum_top = (v4u32) __msa_pckev_w((v4i32) sum, (v4i32) sum);
-        sum = __msa_hadd_u_d(sum_top, sum_top);
-        sum = (v2u64) __msa_srari_d((v2i64) sum, 4);
-        store = (v16u8) __msa_splati_b((v16i8) sum, 0);
-    } else {
-        store = (v16u8) __msa_ldi_b(128);
-    }
-
-    for (row = 16; row--;) {
-        ST_UB(store, dst);
-        dst += dst_stride;
-    }
-}
-
 #define INTRA_PREDICT_VALDC_8X8_MSA(val)                                       \
 static void intra_predict_##val##dc_8x8_msa(uint8_t *dst, int32_t dst_stride)  \
 {                                                                              \
@@ -646,8 +537,42 @@ void ff_h264_intra_pred_dc_16x16_msa(uint8_t *src, ptrdiff_t stride)
     uint8_t *src_top = src - stride;
     uint8_t *src_left = src - 1;
     uint8_t *dst = src;
+    uint32_t addition = 0;
+    v16u8 src_above, out;
+    v8u16 sum_above;
+    v4u32 sum_top;
+    v2u64 sum;
 
-    intra_predict_dc_16x16_msa(src_top, src_left, stride, dst, stride, 1, 1);
+    src_above = LD_UB(src_top);
+
+    sum_above = __msa_hadd_u_h(src_above, src_above);
+    sum_top = __msa_hadd_u_w(sum_above, sum_above);
+    sum = __msa_hadd_u_d(sum_top, sum_top);
+    sum_top = (v4u32) __msa_pckev_w((v4i32) sum, (v4i32) sum);
+    sum = __msa_hadd_u_d(sum_top, sum_top);
+    addition = __msa_copy_u_w((v4i32) sum, 0);
+    addition += src_left[ 0 * stride];
+    addition += src_left[ 1 * stride];
+    addition += src_left[ 2 * stride];
+    addition += src_left[ 3 * stride];
+    addition += src_left[ 4 * stride];
+    addition += src_left[ 5 * stride];
+    addition += src_left[ 6 * stride];
+    addition += src_left[ 7 * stride];
+    addition += src_left[ 8 * stride];
+    addition += src_left[ 9 * stride];
+    addition += src_left[10 * stride];
+    addition += src_left[11 * stride];
+    addition += src_left[12 * stride];
+    addition += src_left[13 * stride];
+    addition += src_left[14 * stride];
+    addition += src_left[15 * stride];
+    addition = (addition + 16) >> 5;
+    out = (v16u8) __msa_fill_b(addition);
+
+    ST_UB8(out, out, out, out, out, out, out, out, dst, stride);
+    dst += (8 * stride);
+    ST_UB8(out, out, out, out, out, out, out, out, dst, stride);
 }
 
 void ff_h264_intra_pred_vert_16x16_msa(uint8_t *src, ptrdiff_t stride)
@@ -666,38 +591,82 @@ void ff_h264_intra_pred_horiz_16x16_msa(uint8_t *src, ptrdiff_t stride)
 
 void ff_h264_intra_pred_dc_left_16x16_msa(uint8_t *src, ptrdiff_t stride)
 {
-    uint8_t *src_top = src - stride;
     uint8_t *src_left = src - 1;
     uint8_t *dst = src;
+    uint32_t addition;
+    v16u8 out;
 
-    intra_predict_dc_16x16_msa(src_top, src_left, stride, dst, stride, 0, 1);
+    addition  = src_left[ 0 * stride];
+    addition += src_left[ 1 * stride];
+    addition += src_left[ 2 * stride];
+    addition += src_left[ 3 * stride];
+    addition += src_left[ 4 * stride];
+    addition += src_left[ 5 * stride];
+    addition += src_left[ 6 * stride];
+    addition += src_left[ 7 * stride];
+    addition += src_left[ 8 * stride];
+    addition += src_left[ 9 * stride];
+    addition += src_left[10 * stride];
+    addition += src_left[11 * stride];
+    addition += src_left[12 * stride];
+    addition += src_left[13 * stride];
+    addition += src_left[14 * stride];
+    addition += src_left[15 * stride];
+
+    addition = (addition + 8) >> 4;
+    out = (v16u8) __msa_fill_b(addition);
+
+    ST_UB8(out, out, out, out, out, out, out, out, dst, stride);
+    dst += (8 * stride);
+    ST_UB8(out, out, out, out, out, out, out, out, dst, stride);
 }
 
 void ff_h264_intra_pred_dc_top_16x16_msa(uint8_t *src, ptrdiff_t stride)
 {
     uint8_t *src_top = src - stride;
-    uint8_t *src_left = src - 1;
     uint8_t *dst = src;
+    v16u8 src_above, out;
+    v8u16 sum_above;
+    v4u32 sum_top;
+    v2u64 sum;
 
-    intra_predict_dc_16x16_msa(src_top, src_left, stride, dst, stride, 1, 0);
+    src_above = LD_UB(src_top);
+
+    sum_above = __msa_hadd_u_h(src_above, src_above);
+    sum_top = __msa_hadd_u_w(sum_above, sum_above);
+    sum = __msa_hadd_u_d(sum_top, sum_top);
+    sum_top = (v4u32) __msa_pckev_w((v4i32) sum, (v4i32) sum);
+    sum = __msa_hadd_u_d(sum_top, sum_top);
+    sum = (v2u64) __msa_srari_d((v2i64) sum, 4);
+    out = (v16u8) __msa_splati_b((v16i8) sum, 0);
+
+    ST_UB8(out, out, out, out, out, out, out, out, dst, stride);
+    dst += (8 * stride);
+    ST_UB8(out, out, out, out, out, out, out, out, dst, stride);
 }
 
 void ff_h264_intra_pred_dc_128_8x8_msa(uint8_t *src, ptrdiff_t stride)
 {
-    uint8_t *src_top = src - stride;
-    uint8_t *src_left = src - 1;
-    uint8_t *dst = src;
+    uint64_t out;
+    v16u8 store;
 
-    intra_predict_dc_8x8_msa(src_top, src_left, stride, dst, stride, 0, 0);
+    store = (v16u8) __msa_fill_b(128);
+    out = __msa_copy_u_d((v2i64) store, 0);
+
+    SD4(out, out, out, out, src, stride);
+    src += (4 * stride);
+    SD4(out, out, out, out, src, stride);
 }
 
 void ff_h264_intra_pred_dc_128_16x16_msa(uint8_t *src, ptrdiff_t stride)
 {
-    uint8_t *src_top = src - stride;
-    uint8_t *src_left = src - 1;
-    uint8_t *dst = src;
+    v16u8 out;
 
-    intra_predict_dc_16x16_msa(src_top, src_left, stride, dst, stride, 0, 0);
+    out = (v16u8) __msa_fill_b(128);
+
+    ST_UB8(out, out, out, out, out, out, out, out, src, stride);
+    src += (8 * stride);
+    ST_UB8(out, out, out, out, out, out, out, out, src, stride);
 }
 
 void ff_vp8_pred8x8_127_dc_8_msa(uint8_t *src, ptrdiff_t stride)
