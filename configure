@@ -1601,6 +1601,15 @@ MATH_FUNCS="
     truncf
 "
 
+SYSTEM_FEATURES="
+    dos_paths
+    libc_msvcrt
+    MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS
+    section_data_rel_ro
+    threads
+    uwp
+"
+
 SYSTEM_FUNCS="
     aligned_malloc
     clock_gettime
@@ -1637,6 +1646,14 @@ SYSTEM_FUNCS="
     sysctl
     usleep
     VirtualAlloc
+"
+
+SYSTEM_LIBRARIES="
+    sdl
+    vaapi_drm
+    vaapi_x11
+    vdpau_x11
+    wincrypt
 "
 
 TOOLCHAIN_FEATURES="
@@ -1686,21 +1703,12 @@ HAVE_LIST="
     $HEADERS_LIST
     $INTRINSICS_LIST
     $MATH_FUNCS
+    $SYSTEM_FEATURES
     $SYSTEM_FUNCS
+    $SYSTEM_LIBRARIES
     $THREADS_LIST
     $TOOLCHAIN_FEATURES
     $TYPES_LIST
-    dos_paths
-    libc_msvcrt
-    MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS
-    sdl
-    section_data_rel_ro
-    threads
-    uwp
-    vaapi_drm
-    vaapi_x11
-    vdpau_x11
-    wincrypt
 "
 
 # options emitted with CONFIG_ prefix but not available on the command line
