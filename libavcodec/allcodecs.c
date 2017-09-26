@@ -84,6 +84,7 @@ static void register_all(void)
     REGISTER_HWACCEL(HEVC_QSV,          hevc_qsv);
     REGISTER_HWACCEL(HEVC_VAAPI,        hevc_vaapi);
     REGISTER_HWACCEL(HEVC_VDPAU,        hevc_vdpau);
+    REGISTER_HWACCEL(HEVC_VIDEOTOOLBOX, hevc_videotoolbox);
     REGISTER_HWACCEL(MJPEG_CUVID,       mjpeg_cuvid);
     REGISTER_HWACCEL(MPEG1_CUVID,       mpeg1_cuvid);
     REGISTER_HWACCEL(MPEG1_XVMC,        mpeg1_xvmc);

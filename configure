@@ -2081,6 +2081,7 @@ TOOLCHAIN_FEATURES="
 
 TYPES_LIST="
     CONDITION_VARIABLE_Ptr
+    kCMVideoCodecType_HEVC
     socklen_t
     struct_addrinfo
     struct_group_source_req
@@ -2696,6 +2697,8 @@ hevc_vaapi_hwaccel_deps="vaapi VAPictureParameterBufferHEVC"
 hevc_vaapi_hwaccel_select="hevc_decoder"
 hevc_vdpau_hwaccel_deps="vdpau VdpPictureInfoHEVC"
 hevc_vdpau_hwaccel_select="hevc_decoder"
+hevc_videotoolbox_hwaccel_deps="videotoolbox"
+hevc_videotoolbox_hwaccel_select="hevc_decoder"
 mjpeg_cuvid_hwaccel_deps="cuda cuvid"
 mjpeg_cuvid_hwaccel_select="mjpeg_cuvid_decoder"
 mpeg_xvmc_hwaccel_deps="xvmc"
@@ -5814,8 +5817,10 @@ enabled avfoundation && {
     check_lib avfoundation CoreGraphics/CoreGraphics.h               CGGetActiveDisplayList "-framework CoreGraphics" ||
     check_lib avfoundation ApplicationServices/ApplicationServices.h CGGetActiveDisplayList "-framework ApplicationServices"; }
 
-enabled videotoolbox &&
+enabled videotoolbox && {
     check_lib coreservices CoreServices/CoreServices.h UTGetOSTypeFromString "-framework CoreServices"
+    check_func_headers CoreMedia/CMFormatDescription.h kCMVideoCodecType_HEVC "-framework CoreMedia"
+}
 
 check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
 
