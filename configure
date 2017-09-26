@@ -1379,6 +1379,14 @@ require_header(){
     check_header "$header" "$@" || die "ERROR: $header header not found"
 }
 
+require_cpp_condition(){
+    log require "$@"
+    header="$1"
+    condition="$2"
+    shift 2
+    check_cpp_condition "$header" "$condition" "$@" || die "ERROR: $condition not satisfied"
+}
+
 use_pkg_config(){
     log use_pkg_config "$@"
     pkg="$1"
@@ -6017,13 +6025,11 @@ enabled libwebp           && {
 enabled libx264           && { use_pkg_config x264 "stdint.h x264.h" x264_encoder_encode ||
                                { require libx264 "stdint.h x264.h" x264_encoder_encode -lx264 &&
                                  warn "using libx264 without pkg-config"; } } &&
-                             { check_cpp_condition x264.h "X264_BUILD >= 118" ||
-                               die "ERROR: libx264 must be installed and version must be >= 0.118."; } &&
+                             require_cpp_condition x264.h "X264_BUILD >= 118" &&
                              { check_cpp_condition x264.h "X264_MPEG2" &&
                                enable libx262; }
 enabled libx265           && require_pkg_config x265 x265.h x265_api_get &&
-                             { check_cpp_condition x265.h "X265_BUILD >= 68" ||
-                               die "ERROR: libx265 version must be >= 68."; }
+                             require_cpp_condition x265.h "X265_BUILD >= 68"
 enabled libxavs           && require libxavs "stdint.h xavs.h" xavs_encoder_encode -lxavs
 enabled libxvid           && require libxvid xvid.h xvid_global -lxvidcore
 enabled libzimg           && require_pkg_config "zimg >= 2.3.0" zimg.h zimg_get_api_version
