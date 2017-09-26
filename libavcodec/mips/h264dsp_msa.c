@@ -25,187 +25,201 @@ static void avc_wgt_4x2_msa(uint8_t *data, int32_t stride,
                             int32_t log2_denom, int32_t src_weight,
                             int32_t offset_in)
 {
-    uint32_t data0, data1;
+    uint32_t tp0, tp1, offset_val;
     v16u8 zero = { 0 };
-    v16u8 src0, src1;
-    v4i32 res0, res1;
-    v8i16 temp0, temp1, vec0, vec1, wgt, denom, offset;
-    v8u16 out0, out1;
+    v16u8 src0 = { 0 };
+    v8i16 src0_r, tmp0, wgt, denom, offset;
 
-    offset_in <<= (log2_denom);
-
-    if (log2_denom) {
-        offset_in += (1 << (log2_denom - 1));
-    }
+    offset_val = (unsigned) offset_in << log2_denom;
 
     wgt = __msa_fill_h(src_weight);
-    offset = __msa_fill_h(offset_in);
+    offset = __msa_fill_h(offset_val);
     denom = __msa_fill_h(log2_denom);
 
-    data0 = LW(data);
-    data1 = LW(data + stride);
-
-    src0 = (v16u8) __msa_fill_w(data0);
-    src1 = (v16u8) __msa_fill_w(data1);
-
-    ILVR_B2_SH(zero, src0, zero, src1, vec0, vec1);
-    MUL2(wgt, vec0, wgt, vec1, temp0, temp1);
-    ADDS_SH2_SH(temp0, offset, temp1, offset, temp0, temp1);
-    MAXI_SH2_SH(temp0, temp1, 0);
-
-    out0 = (v8u16) __msa_srl_h(temp0, denom);
-    out1 = (v8u16) __msa_srl_h(temp1, denom);
-
-    SAT_UH2_UH(out0, out1, 7);
-    PCKEV_B2_SW(out0, out0, out1, out1, res0, res1);
-
-    data0 = __msa_copy_u_w(res0, 0);
-    data1 = __msa_copy_u_w(res1, 0);
-    SW(data0, data);
-    data += stride;
-    SW(data1, data);
+    LW2(data, stride, tp0, tp1);
+    INSERT_W2_UB(tp0, tp1, src0);
+    src0_r = (v8i16) __msa_ilvr_b((v16i8) zero, (v16i8) src0);
+    tmp0 = wgt * src0_r;
+    tmp0 = __msa_adds_s_h(tmp0, offset);
+    tmp0 = __msa_maxi_s_h(tmp0, 0);
+    tmp0 = __msa_srlr_h(tmp0, denom);
+    tmp0 = (v8i16) __msa_sat_u_h((v8u16) tmp0, 7);
+    src0 = (v16u8) __msa_pckev_b((v16i8) tmp0, (v16i8) tmp0);
+    ST4x2_UB(src0, data, stride);
 }
 
-static void avc_wgt_4x4multiple_msa(uint8_t *data, int32_t stride,
-                                    int32_t height, int32_t log2_denom,
-                                    int32_t src_weight, int32_t offset_in)
+static void avc_wgt_4x4_msa(uint8_t *data, int32_t stride, int32_t log2_denom,
+                            int32_t src_weight, int32_t offset_in)
 {
-    uint8_t cnt;
-    uint32_t data0, data1, data2, data3;
-    v16u8 zero = { 0 };
-    v16u8 src0, src1, src2, src3;
-    v8u16 temp0, temp1, temp2, temp3, wgt;
-    v8i16 denom, offset;
+    uint32_t tp0, tp1, tp2, tp3, offset_val;
+    v16u8 src0 = { 0 };
+    v8i16 src0_r, src1_r, tmp0, tmp1, wgt, denom, offset;
 
-    offset_in <<= (log2_denom);
+    offset_val = (unsigned) offset_in << log2_denom;
 
-    if (log2_denom) {
-        offset_in += (1 << (log2_denom - 1));
-    }
-
-    wgt = (v8u16) __msa_fill_h(src_weight);
-    offset = __msa_fill_h(offset_in);
+    wgt = __msa_fill_h(src_weight);
+    offset = __msa_fill_h(offset_val);
     denom = __msa_fill_h(log2_denom);
 
-    for (cnt = height / 4; cnt--;) {
-        LW4(data, stride, data0, data1, data2, data3);
-
-        src0 = (v16u8) __msa_fill_w(data0);
-        src1 = (v16u8) __msa_fill_w(data1);
-        src2 = (v16u8) __msa_fill_w(data2);
-        src3 = (v16u8) __msa_fill_w(data3);
-
-        ILVR_B4_UH(zero, src0, zero, src1, zero, src2, zero, src3,
-                   temp0, temp1, temp2, temp3);
-        MUL4(wgt, temp0, wgt, temp1, wgt, temp2, wgt, temp3,
-             temp0, temp1, temp2, temp3);
-        ADDS_SH4_UH(temp0, offset, temp1, offset, temp2, offset, temp3, offset,
-                    temp0, temp1, temp2, temp3);
-        MAXI_SH4_UH(temp0, temp1, temp2, temp3, 0);
-        SRL_H4_UH(temp0, temp1, temp2, temp3, denom);
-        SAT_UH4_UH(temp0, temp1, temp2, temp3, 7);
-        PCKEV_ST4x4_UB(temp0, temp1, temp2, temp3, data, stride);
-        data += (4 * stride);
-    }
+    LW4(data, stride, tp0, tp1, tp2, tp3);
+    INSERT_W4_UB(tp0, tp1, tp2, tp3, src0);
+    UNPCK_UB_SH(src0, src0_r, src1_r);
+    MUL2(wgt, src0_r, wgt, src1_r, tmp0, tmp1);
+    ADDS_SH2_SH(tmp0, offset, tmp1, offset, tmp0, tmp1);
+    MAXI_SH2_SH(tmp0, tmp1, 0);
+    tmp0 = __msa_srlr_h(tmp0, denom);
+    tmp1 = __msa_srlr_h(tmp1, denom);
+    SAT_UH2_SH(tmp0, tmp1, 7);
+    src0 = (v16u8) __msa_pckev_b((v16i8) tmp1, (v16i8) tmp0);
+    ST4x4_UB(src0, src0, 0, 1, 2, 3, data, stride);
 }
 
-static void avc_wgt_4width_msa(uint8_t *data, int32_t stride,
-                               int32_t height, int32_t log2_denom,
-                               int32_t src_weight, int32_t offset_in)
+static void avc_wgt_4x8_msa(uint8_t *data, int32_t stride, int32_t log2_denom,
+                            int32_t src_weight, int32_t offset_in)
 {
-    if (2 == height) {
-        avc_wgt_4x2_msa(data, stride, log2_denom, src_weight, offset_in);
-    } else {
-        avc_wgt_4x4multiple_msa(data, stride, height, log2_denom, src_weight,
-                                offset_in);
-    }
+    uint32_t tp0, tp1, tp2, tp3, offset_val;
+    v16u8 src0 = { 0 }, src1 = { 0 };
+    v8i16 src0_r, src1_r, src2_r, src3_r, tmp0, tmp1, tmp2, tmp3;
+    v8i16 wgt, denom, offset;
+
+    offset_val = (unsigned) offset_in << log2_denom;
+
+    wgt = __msa_fill_h(src_weight);
+    offset = __msa_fill_h(offset_val);
+    denom = __msa_fill_h(log2_denom);
+
+    LW4(data, stride, tp0, tp1, tp2, tp3);
+    INSERT_W4_UB(tp0, tp1, tp2, tp3, src0);
+    LW4(data + 4 * stride, stride, tp0, tp1, tp2, tp3);
+    INSERT_W4_UB(tp0, tp1, tp2, tp3, src1);
+    UNPCK_UB_SH(src0, src0_r, src1_r);
+    UNPCK_UB_SH(src1, src2_r, src3_r);
+    MUL4(wgt, src0_r, wgt, src1_r, wgt, src2_r, wgt, src3_r, tmp0, tmp1, tmp2,
+         tmp3);
+    ADDS_SH4_SH(tmp0, offset, tmp1, offset, tmp2, offset, tmp3, offset, tmp0,
+                tmp1, tmp2, tmp3);
+    MAXI_SH4_SH(tmp0, tmp1, tmp2, tmp3, 0);
+    SRLR_H4_SH(tmp0, tmp1, tmp2, tmp3, denom);
+    SAT_UH4_SH(tmp0, tmp1, tmp2, tmp3, 7);
+    PCKEV_B2_UB(tmp1, tmp0, tmp3, tmp2, src0, src1);
+    ST4x8_UB(src0, src1, data, stride);
 }
 
-static void avc_wgt_8width_msa(uint8_t *data, int32_t stride,
-                               int32_t height, int32_t log2_denom,
-                               int32_t src_weight, int32_t offset_in)
+static void avc_wgt_8x4_msa(uint8_t *data, int32_t stride, int32_t log2_denom,
+                            int32_t src_weight, int32_t offset_in)
 {
-    uint8_t cnt;
-    v16u8 zero = { 0 };
-    v16u8 src0, src1, src2, src3;
-    v8u16 src0_r, src1_r, src2_r, src3_r;
-    v8u16 temp0, temp1, temp2, temp3;
-    v8u16 wgt, denom, offset;
-    v16i8 out0, out1;
+    uint32_t offset_val;
+    uint64_t tp0, tp1, tp2, tp3;
+    v16u8 src0 = { 0 }, src1 = { 0 };
+    v8i16 src0_r, src1_r, src2_r, src3_r, tmp0, tmp1, tmp2, tmp3;
+    v8i16 wgt, denom, offset;
 
-    offset_in <<= (log2_denom);
+    offset_val = (unsigned) offset_in << log2_denom;
 
-    if (log2_denom) {
-        offset_in += (1 << (log2_denom - 1));
-    }
+    wgt = __msa_fill_h(src_weight);
+    offset = __msa_fill_h(offset_val);
+    denom = __msa_fill_h(log2_denom);
 
-    wgt = (v8u16) __msa_fill_h(src_weight);
-    offset = (v8u16) __msa_fill_h(offset_in);
-    denom = (v8u16) __msa_fill_h(log2_denom);
-
-    for (cnt = height / 4; cnt--;) {
-        LD_UB4(data, stride, src0, src1, src2, src3);
-        ILVR_B4_UH(zero, src0, zero, src1, zero, src2, zero, src3,
-                   src0_r, src1_r, src2_r, src3_r);
-        MUL4(wgt, src0_r, wgt, src1_r, wgt, src2_r, wgt, src3_r,
-             temp0, temp1, temp2, temp3);
-        ADDS_SH4_UH(temp0, offset, temp1, offset, temp2, offset, temp3, offset,
-                    temp0, temp1, temp2, temp3);
-        MAXI_SH4_UH(temp0, temp1, temp2, temp3, 0);
-        SRL_H4_UH(temp0, temp1, temp2, temp3, denom);
-        SAT_UH4_UH(temp0, temp1, temp2, temp3, 7);
-        PCKEV_B2_SB(temp1, temp0, temp3, temp2, out0, out1);
-        ST8x4_UB(out0, out1, data, stride);
-        data += (4 * stride);
-    }
+    LD4(data, stride, tp0, tp1, tp2, tp3);
+    INSERT_D2_UB(tp0, tp1, src0);
+    INSERT_D2_UB(tp2, tp3, src1);
+    UNPCK_UB_SH(src0, src0_r, src1_r);
+    UNPCK_UB_SH(src1, src2_r, src3_r);
+    MUL4(wgt, src0_r, wgt, src1_r, wgt, src2_r, wgt, src3_r, tmp0, tmp1, tmp2,
+         tmp3);
+    ADDS_SH4_SH(tmp0, offset, tmp1, offset, tmp2, offset, tmp3, offset, tmp0,
+                tmp1, tmp2, tmp3);
+    MAXI_SH4_SH(tmp0, tmp1, tmp2, tmp3, 0);
+    SRLR_H4_SH(tmp0, tmp1, tmp2, tmp3, denom);
+    SAT_UH4_SH(tmp0, tmp1, tmp2, tmp3, 7);
+    PCKEV_B2_UB(tmp1, tmp0, tmp3, tmp2, src0, src1);
+    ST8x4_UB(src0, src1, data, stride);
 }
 
-static void avc_wgt_16width_msa(uint8_t *data, int32_t stride,
-                                int32_t height, int32_t log2_denom,
-                                int32_t src_weight, int32_t offset_in)
+static void avc_wgt_8x8_msa(uint8_t *data, int32_t stride, int32_t log2_denom,
+                            int32_t src_weight, int32_t offset_in)
 {
-    uint8_t cnt;
-    v16i8 zero = { 0 };
-    v16u8 src0, src1, src2, src3;
-    v16u8 dst0, dst1, dst2, dst3;
-    v8u16 src0_l, src1_l, src2_l, src3_l, src0_r, src1_r, src2_r, src3_r;
-    v8u16 temp0, temp1, temp2, temp3, temp4, temp5, temp6, temp7;
-    v8u16 wgt, denom, offset;
+    uint32_t offset_val;
+    uint64_t tp0, tp1, tp2, tp3;
+    v16u8 src0 = { 0 }, src1 = { 0 }, src2 = { 0 }, src3 = { 0 };
+    v8i16 src0_r, src1_r, src2_r, src3_r, src4_r, src5_r, src6_r, src7_r;
+    v8i16 tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
+    v8i16 wgt, denom, offset;
 
-    offset_in <<= (log2_denom);
+    offset_val = (unsigned) offset_in << log2_denom;
 
-    if (log2_denom) {
-        offset_in += (1 << (log2_denom - 1));
-    }
+    wgt = __msa_fill_h(src_weight);
+    offset = __msa_fill_h(offset_val);
+    denom = __msa_fill_h(log2_denom);
 
-    wgt = (v8u16) __msa_fill_h(src_weight);
-    offset = (v8u16) __msa_fill_h(offset_in);
-    denom = (v8u16) __msa_fill_h(log2_denom);
+    LD4(data, stride, tp0, tp1, tp2, tp3);
+    INSERT_D2_UB(tp0, tp1, src0);
+    INSERT_D2_UB(tp2, tp3, src1);
+    LD4(data + 4 * stride, stride, tp0, tp1, tp2, tp3);
+    INSERT_D2_UB(tp0, tp1, src2);
+    INSERT_D2_UB(tp2, tp3, src3);
+    UNPCK_UB_SH(src0, src0_r, src1_r);
+    UNPCK_UB_SH(src1, src2_r, src3_r);
+    UNPCK_UB_SH(src2, src4_r, src5_r);
+    UNPCK_UB_SH(src3, src6_r, src7_r);
+    MUL4(wgt, src0_r, wgt, src1_r, wgt, src2_r, wgt, src3_r, tmp0, tmp1, tmp2,
+         tmp3);
+    MUL4(wgt, src4_r, wgt, src5_r, wgt, src6_r, wgt, src7_r, tmp4, tmp5, tmp6,
+         tmp7);
+    ADDS_SH4_SH(tmp0, offset, tmp1, offset, tmp2, offset, tmp3, offset, tmp0,
+                tmp1, tmp2, tmp3);
+    ADDS_SH4_SH(tmp4, offset, tmp5, offset, tmp6, offset, tmp7, offset, tmp4,
+                tmp5, tmp6, tmp7);
+    MAXI_SH8_SH(tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, 0);
+    SRLR_H8_SH(tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, denom);
+    SAT_UH8_SH(tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, 7);
+    PCKEV_B4_UB(tmp1, tmp0, tmp3, tmp2, tmp5, tmp4, tmp7, tmp6, src0, src1,
+                src2, src3);
+    ST8x8_UB(src0, src1, src2, src3, data, stride);
+}
 
-    for (cnt = height / 4; cnt--;) {
-        LD_UB4(data, stride, src0, src1, src2, src3);
-        ILVR_B4_UH(zero, src0, zero, src1, zero, src2, zero, src3,
-                   src0_r, src1_r, src2_r, src3_r);
-        ILVL_B4_UH(zero, src0, zero, src1, zero, src2, zero, src3,
-                   src0_l, src1_l, src2_l, src3_l);
-        MUL4(wgt, src0_r, wgt, src0_l, wgt, src1_r, wgt, src1_l,
-             temp0, temp1, temp2, temp3);
-        MUL4(wgt, src2_r, wgt, src2_l, wgt, src3_r, wgt, src3_l,
-             temp4, temp5, temp6, temp7);
-        ADDS_SH4_UH(temp0, offset, temp1, offset, temp2, offset, temp3, offset,
-                    temp0, temp1, temp2, temp3);
-        ADDS_SH4_UH(temp4, offset, temp5, offset, temp6, offset, temp7, offset,
-                    temp4, temp5, temp6, temp7);
-        MAXI_SH4_UH(temp0, temp1, temp2, temp3, 0);
-        MAXI_SH4_UH(temp4, temp5, temp6, temp7, 0);
-        SRL_H4_UH(temp0, temp1, temp2, temp3, denom);
-        SRL_H4_UH(temp4, temp5, temp6, temp7, denom);
-        SAT_UH4_UH(temp0, temp1, temp2, temp3, 7);
-        SAT_UH4_UH(temp4, temp5, temp6, temp7, 7);
-        PCKEV_B4_UB(temp1, temp0, temp3, temp2, temp5, temp4, temp7, temp6,
-                    dst0, dst1, dst2, dst3);
-        ST_UB4(dst0, dst1, dst2, dst3, data, stride);
-        data += 4 * stride;
+static void avc_wgt_8x16_msa(uint8_t *data, int32_t stride, int32_t log2_denom,
+                             int32_t src_weight, int32_t offset_in)
+{
+    uint32_t offset_val, cnt;
+    uint64_t tp0, tp1, tp2, tp3;
+    v16u8 src0 = { 0 }, src1 = { 0 }, src2 = { 0 }, src3 = { 0 };
+    v8i16 src0_r, src1_r, src2_r, src3_r, src4_r, src5_r, src6_r, src7_r;
+    v8i16 tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
+    v8i16 wgt, denom, offset;
+
+    offset_val = (unsigned) offset_in << log2_denom;
+
+    wgt = __msa_fill_h(src_weight);
+    offset = __msa_fill_h(offset_val);
+    denom = __msa_fill_h(log2_denom);
+
+    for (cnt = 2; cnt--;) {
+        LD4(data, stride, tp0, tp1, tp2, tp3);
+        INSERT_D2_UB(tp0, tp1, src0);
+        INSERT_D2_UB(tp2, tp3, src1);
+        LD4(data + 4 * stride, stride, tp0, tp1, tp2, tp3);
+        INSERT_D2_UB(tp0, tp1, src2);
+        INSERT_D2_UB(tp2, tp3, src3);
+        UNPCK_UB_SH(src0, src0_r, src1_r);
+        UNPCK_UB_SH(src1, src2_r, src3_r);
+        UNPCK_UB_SH(src2, src4_r, src5_r);
+        UNPCK_UB_SH(src3, src6_r, src7_r);
+        MUL4(wgt, src0_r, wgt, src1_r, wgt, src2_r, wgt, src3_r, tmp0, tmp1,
+             tmp2, tmp3);
+        MUL4(wgt, src4_r, wgt, src5_r, wgt, src6_r, wgt, src7_r, tmp4, tmp5,
+             tmp6, tmp7);
+        ADDS_SH4_SH(tmp0, offset, tmp1, offset, tmp2, offset, tmp3, offset,
+                    tmp0, tmp1, tmp2, tmp3);
+        ADDS_SH4_SH(tmp4, offset, tmp5, offset, tmp6, offset, tmp7, offset,
+                    tmp4, tmp5, tmp6, tmp7);
+        MAXI_SH8_SH(tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, 0);
+        SRLR_H8_SH(tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, denom);
+        SAT_UH8_SH(tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, 7);
+        PCKEV_B4_UB(tmp1, tmp0, tmp3, tmp2, tmp5, tmp4, tmp7, tmp6, src0, src1,
+                    src2, src3);
+        ST8x8_UB(src0, src1, src2, src3, data, stride);
+        data += 8 * stride;
     }
 }
 
@@ -2291,23 +2305,126 @@ void ff_h264_h_loop_filter_luma_mbaff_intra_msa(uint8_t *src,
 
 void ff_weight_h264_pixels16_8_msa(uint8_t *src, ptrdiff_t stride,
                                    int height, int log2_denom,
-                                   int weight_src, int offset)
+                                   int weight_src, int offset_in)
 {
-    avc_wgt_16width_msa(src, stride, height, log2_denom, weight_src, offset);
+    uint32_t offset_val;
+    v16i8 zero = { 0 };
+    v16u8 src0, src1, src2, src3, src4, src5, src6, src7;
+    v16u8 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
+    v8i16 src0_l, src1_l, src2_l, src3_l, src0_r, src1_r, src2_r, src3_r;
+    v8i16 src4_l, src5_l, src6_l, src7_l, src4_r, src5_r, src6_r, src7_r;
+    v8i16 tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
+    v8i16 tmp8, tmp9, tmp10, tmp11, tmp12, tmp13, tmp14, tmp15;
+    v8i16 wgt, denom, offset;
+
+    offset_val = (unsigned) offset_in << log2_denom;
+
+    wgt = __msa_fill_h(weight_src);
+    offset = __msa_fill_h(offset_val);
+    denom = __msa_fill_h(log2_denom);
+
+    LD_UB8(src, stride, src0, src1, src2, src3, src4, src5, src6, src7);
+    ILVR_B4_SH(zero, src0, zero, src1, zero, src2, zero, src3, src0_r, src1_r,
+               src2_r, src3_r);
+    ILVL_B4_SH(zero, src0, zero, src1, zero, src2, zero, src3, src0_l, src1_l,
+               src2_l, src3_l);
+    ILVR_B4_SH(zero, src4, zero, src5, zero, src6, zero, src7, src4_r, src5_r,
+               src6_r, src7_r);
+    ILVL_B4_SH(zero, src4, zero, src5, zero, src6, zero, src7, src4_l, src5_l,
+               src6_l, src7_l);
+    MUL4(wgt, src0_r, wgt, src0_l, wgt, src1_r, wgt, src1_l, tmp0, tmp1, tmp2,
+         tmp3);
+    MUL4(wgt, src2_r, wgt, src2_l, wgt, src3_r, wgt, src3_l, tmp4, tmp5, tmp6,
+         tmp7);
+    MUL4(wgt, src4_r, wgt, src4_l, wgt, src5_r, wgt, src5_l, tmp8, tmp9, tmp10,
+         tmp11);
+    MUL4(wgt, src6_r, wgt, src6_l, wgt, src7_r, wgt, src7_l, tmp12, tmp13,
+         tmp14, tmp15);
+    ADDS_SH4_SH(tmp0, offset, tmp1, offset, tmp2, offset, tmp3, offset, tmp0,
+                tmp1, tmp2, tmp3);
+    ADDS_SH4_SH(tmp4, offset, tmp5, offset, tmp6, offset, tmp7, offset, tmp4,
+                tmp5, tmp6, tmp7);
+    ADDS_SH4_SH(tmp8, offset, tmp9, offset, tmp10, offset, tmp11, offset, tmp8,
+                tmp9, tmp10, tmp11);
+    ADDS_SH4_SH(tmp12, offset, tmp13, offset, tmp14, offset, tmp15, offset,
+                tmp12, tmp13, tmp14, tmp15);
+    MAXI_SH8_SH(tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, 0);
+    MAXI_SH8_SH(tmp8, tmp9, tmp10, tmp11, tmp12, tmp13, tmp14, tmp15, 0);
+    SRLR_H8_SH(tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, denom);
+    SRLR_H8_SH(tmp8, tmp9, tmp10, tmp11, tmp12, tmp13, tmp14, tmp15, denom);
+    SAT_UH8_SH(tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, 7);
+    SAT_UH8_SH(tmp8, tmp9, tmp10, tmp11, tmp12, tmp13, tmp14, tmp15, 7);
+    PCKEV_B4_UB(tmp1, tmp0, tmp3, tmp2, tmp5, tmp4, tmp7, tmp6, dst0, dst1,
+                dst2, dst3);
+    PCKEV_B4_UB(tmp9, tmp8, tmp11, tmp10, tmp13, tmp12, tmp15, tmp14, dst4,
+                dst5, dst6, dst7);
+    ST_UB8(dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7, src, stride);
+    src += 8 * stride;
+
+    if (16 == height) {
+        LD_UB8(src, stride, src0, src1, src2, src3, src4, src5, src6, src7);
+        ILVR_B4_SH(zero, src0, zero, src1, zero, src2, zero, src3, src0_r,
+                   src1_r, src2_r, src3_r);
+        ILVL_B4_SH(zero, src0, zero, src1, zero, src2, zero, src3, src0_l,
+                   src1_l, src2_l, src3_l);
+        ILVR_B4_SH(zero, src4, zero, src5, zero, src6, zero, src7, src4_r,
+                   src5_r, src6_r, src7_r);
+        ILVL_B4_SH(zero, src4, zero, src5, zero, src6, zero, src7, src4_l,
+                   src5_l, src6_l, src7_l);
+        MUL4(wgt, src0_r, wgt, src0_l, wgt, src1_r, wgt, src1_l, tmp0, tmp1,
+             tmp2, tmp3);
+        MUL4(wgt, src2_r, wgt, src2_l, wgt, src3_r, wgt, src3_l, tmp4, tmp5,
+             tmp6, tmp7);
+        MUL4(wgt, src4_r, wgt, src4_l, wgt, src5_r, wgt, src5_l, tmp8, tmp9,
+             tmp10, tmp11);
+        MUL4(wgt, src6_r, wgt, src6_l, wgt, src7_r, wgt, src7_l, tmp12, tmp13,
+             tmp14, tmp15);
+        ADDS_SH4_SH(tmp0, offset, tmp1, offset, tmp2, offset, tmp3, offset,
+                    tmp0, tmp1, tmp2, tmp3);
+        ADDS_SH4_SH(tmp4, offset, tmp5, offset, tmp6, offset, tmp7, offset,
+                    tmp4, tmp5, tmp6, tmp7);
+        ADDS_SH4_SH(tmp8, offset, tmp9, offset, tmp10, offset, tmp11, offset,
+                    tmp8, tmp9, tmp10, tmp11);
+        ADDS_SH4_SH(tmp12, offset, tmp13, offset, tmp14, offset, tmp15, offset,
+                    tmp12, tmp13, tmp14, tmp15);
+        MAXI_SH8_SH(tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, 0);
+        MAXI_SH8_SH(tmp8, tmp9, tmp10, tmp11, tmp12, tmp13, tmp14, tmp15, 0);
+        SRLR_H8_SH(tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, denom);
+        SRLR_H8_SH(tmp8, tmp9, tmp10, tmp11, tmp12, tmp13, tmp14, tmp15, denom);
+        SAT_UH8_SH(tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, 7);
+        SAT_UH8_SH(tmp8, tmp9, tmp10, tmp11, tmp12, tmp13, tmp14, tmp15, 7);
+        PCKEV_B4_UB(tmp1, tmp0, tmp3, tmp2, tmp5, tmp4, tmp7, tmp6, dst0, dst1,
+                    dst2, dst3);
+        PCKEV_B4_UB(tmp9, tmp8, tmp11, tmp10, tmp13, tmp12, tmp15, tmp14, dst4,
+                    dst5, dst6, dst7);
+        ST_UB8(dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7, src, stride);
+    }
 }
 
 void ff_weight_h264_pixels8_8_msa(uint8_t *src, ptrdiff_t stride,
                                   int height, int log2_denom,
                                   int weight_src, int offset)
 {
-    avc_wgt_8width_msa(src, stride, height, log2_denom, weight_src, offset);
+    if (4 == height) {
+        avc_wgt_8x4_msa(src, stride, log2_denom, weight_src, offset);
+    } else if (8 == height) {
+        avc_wgt_8x8_msa(src, stride, log2_denom, weight_src, offset);
+    } else {
+        avc_wgt_8x16_msa(src, stride, log2_denom, weight_src, offset);
+    }
 }
 
 void ff_weight_h264_pixels4_8_msa(uint8_t *src, ptrdiff_t stride,
                                   int height, int log2_denom,
                                   int weight_src, int offset)
 {
-    avc_wgt_4width_msa(src, stride, height, log2_denom, weight_src, offset);
+    if (2 == height) {
+        avc_wgt_4x2_msa(src, stride, log2_denom, weight_src, offset);
+    } else if (4 == height) {
+        avc_wgt_4x4_msa(src, stride, log2_denom, weight_src, offset);
+    } else {
+        avc_wgt_4x8_msa(src, stride, log2_denom, weight_src, offset);
+    }
 }
 
 void ff_biweight_h264_pixels16_8_msa(uint8_t *dst, uint8_t *src,

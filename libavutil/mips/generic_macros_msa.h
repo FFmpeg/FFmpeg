@@ -1635,6 +1635,15 @@
     MAXI_SH2(RTYPE, in2, in3, max_val);               \
 }
 #define MAXI_SH4_UH(...) MAXI_SH4(v8u16, __VA_ARGS__)
+#define MAXI_SH4_SH(...) MAXI_SH4(v8i16, __VA_ARGS__)
+
+#define MAXI_SH8(RTYPE, in0, in1, in2, in3, in4, in5, in6, in7, max_val)  \
+{                                                                         \
+    MAXI_SH4(RTYPE, in0, in1, in2, in3, max_val);                         \
+    MAXI_SH4(RTYPE, in4, in5, in6, in7, max_val);                         \
+}
+#define MAXI_SH8_UH(...) MAXI_SH8(v8u16, __VA_ARGS__)
+#define MAXI_SH8_SH(...) MAXI_SH8(v8i16, __VA_ARGS__)
 
 /* Description : Saturate the halfword element values to the max
                  unsigned value of (sat_val+1 bits)
@@ -1660,6 +1669,15 @@
     SAT_UH2(RTYPE, in2, in3, sat_val);               \
 }
 #define SAT_UH4_UH(...) SAT_UH4(v8u16, __VA_ARGS__)
+#define SAT_UH4_SH(...) SAT_UH4(v8i16, __VA_ARGS__)
+
+#define SAT_UH8(RTYPE, in0, in1, in2, in3, in4, in5, in6, in7, sat_val)  \
+{                                                                        \
+    SAT_UH4(RTYPE, in0, in1, in2, in3, sat_val);                         \
+    SAT_UH4(RTYPE, in4, in5, in6, in7, sat_val);                         \
+}
+#define SAT_UH8_UH(...) SAT_UH8(v8u16, __VA_ARGS__)
+#define SAT_UH8_SH(...) SAT_UH8(v8i16, __VA_ARGS__)
 
 /* Description : Saturate the halfword element values to the max
                  unsigned value of (sat_val+1 bits)
@@ -2039,6 +2057,24 @@
     in3 = (RTYPE) __msa_srl_h((v8i16) in3, (v8i16) shift);  \
 }
 #define SRL_H4_UH(...) SRL_H4(v8u16, __VA_ARGS__)
+
+#define SRLR_H4(RTYPE, in0, in1, in2, in3, shift)            \
+{                                                            \
+    in0 = (RTYPE) __msa_srlr_h((v8i16) in0, (v8i16) shift);  \
+    in1 = (RTYPE) __msa_srlr_h((v8i16) in1, (v8i16) shift);  \
+    in2 = (RTYPE) __msa_srlr_h((v8i16) in2, (v8i16) shift);  \
+    in3 = (RTYPE) __msa_srlr_h((v8i16) in3, (v8i16) shift);  \
+}
+#define SRLR_H4_UH(...) SRLR_H4(v8u16, __VA_ARGS__)
+#define SRLR_H4_SH(...) SRLR_H4(v8i16, __VA_ARGS__)
+
+#define SRLR_H8(RTYPE, in0, in1, in2, in3, in4, in5, in6, in7, shift)  \
+{                                                                      \
+    SRLR_H4(RTYPE, in0, in1, in2, in3, shift);                         \
+    SRLR_H4(RTYPE, in4, in5, in6, in7, shift);                         \
+}
+#define SRLR_H8_UH(...) SRLR_H8(v8u16, __VA_ARGS__)
+#define SRLR_H8_SH(...) SRLR_H8(v8i16, __VA_ARGS__)
 
 /* Description : Shift right arithmetic rounded halfwords
    Arguments   : Inputs  - in0, in1, shift
