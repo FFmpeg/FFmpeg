@@ -388,6 +388,24 @@ static int add_adaptation_set(AVFormatContext *s, AdaptationSet **as, enum AVMed
     return 0;
 }
 
+static int adaptation_set_add_stream(AVFormatContext *s, int as_idx, int i)
+{
+    DASHContext *c = s->priv_data;
+    AdaptationSet *as = &c->as[as_idx - 1];
+    OutputStream *os = &c->streams[i];
+
+    if (as->media_type != s->streams[i]->codecpar->codec_type) {
+        av_log(s, AV_LOG_ERROR, "Codec type of stream %d doesn't match AdaptationSet's media type\n", i);
+        return AVERROR(EINVAL);
+    } else if (os->as_idx) {
+        av_log(s, AV_LOG_ERROR, "Stream %d is already assigned to an AdaptationSet\n", i);
+        return AVERROR(EINVAL);
+    }
+    os->as_idx = as_idx;
+
+    return 0;
+}
+
 static int parse_adaptation_sets(AVFormatContext *s)
 {
     DASHContext *c = s->priv_data;
@@ -441,30 +459,41 @@ static int parse_adaptation_sets(AVFormatContext *s)
             state = parsing_streams;
         } else if (state == parsing_streams) {
             AdaptationSet *as = &c->as[c->nb_as - 1];
-            OutputStream *os;
             char idx_str[8], *end_str;
 
             n = strcspn(p, " ,");
             snprintf(idx_str, sizeof(idx_str), "%.*s", n, p);
             p += n;
 
-            i = strtol(idx_str, &end_str, 10);
-            if (idx_str == end_str || i < 0 || i >= s->nb_streams) {
-                av_log(s, AV_LOG_ERROR, "Selected stream \"%s\" not found!\n", idx_str);
-                return AVERROR(EINVAL);
-            }
+            // if value is "a" or "v", map all streams of that type
+            if (as->media_type == AVMEDIA_TYPE_UNKNOWN && (idx_str[0] == 'v' || idx_str[0] == 'a')) {
+                enum AVMediaType type = (idx_str[0] == 'v') ? AVMEDIA_TYPE_VIDEO : AVMEDIA_TYPE_AUDIO;
+                av_log(s, AV_LOG_DEBUG, "Map all streams of type %s\n", idx_str);
 
-            os = &c->streams[i];
-            if (as->media_type == AVMEDIA_TYPE_UNKNOWN) {
-                as->media_type = s->streams[i]->codecpar->codec_type;
-            } else if (as->media_type != s->streams[i]->codecpar->codec_type) {
-                av_log(s, AV_LOG_ERROR, "Mixing codec types within an AdaptationSet is not allowed\n");
-                return AVERROR(EINVAL);
-            } else if (os->as_idx) {
-                av_log(s, AV_LOG_ERROR, "Assigning a stream to more than one AdaptationSet is not allowed\n");
-                return AVERROR(EINVAL);
+                for (i = 0; i < s->nb_streams; i++) {
+                    if (s->streams[i]->codecpar->codec_type != type)
+                        continue;
+
+                    as->media_type = s->streams[i]->codecpar->codec_type;
+
+                    if ((ret = adaptation_set_add_stream(s, c->nb_as, i)) < 0)
+                        return ret;
+                }
+            } else { // select single stream
+                i = strtol(idx_str, &end_str, 10);
+                if (idx_str == end_str || i < 0 || i >= s->nb_streams) {
+                    av_log(s, AV_LOG_ERROR, "Selected stream \"%s\" not found!\n", idx_str);
+                    return AVERROR(EINVAL);
+                }
+                av_log(s, AV_LOG_DEBUG, "Map stream %d\n", i);
+
+                if (as->media_type == AVMEDIA_TYPE_UNKNOWN) {
+                    as->media_type = s->streams[i]->codecpar->codec_type;
+                }
+
+                if ((ret = adaptation_set_add_stream(s, c->nb_as, i)) < 0)
+                    return ret;
             }
-            os->as_idx = c->nb_as;
 
             if (*p == ' ')
                 state = new_set;
