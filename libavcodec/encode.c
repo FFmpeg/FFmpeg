@@ -222,10 +222,12 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
             }
             avpkt->buf      = user_pkt.buf;
             avpkt->data     = user_pkt.data;
-        } else {
-            if (av_dup_packet(avpkt) < 0) {
-                ret = AVERROR(ENOMEM);
-            }
+        } else if (!avpkt->buf) {
+            AVPacket tmp = { 0 };
+            ret = av_packet_ref(&tmp, avpkt);
+            if (ret < 0)
+                return ret;
+            *avpkt = tmp;
         }
     }
 
@@ -318,10 +320,12 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
             }
             avpkt->buf      = user_pkt.buf;
             avpkt->data     = user_pkt.data;
-        } else {
-            if (av_dup_packet(avpkt) < 0) {
-                ret = AVERROR(ENOMEM);
-            }
+        } else if (!avpkt->buf) {
+            AVPacket tmp = { 0 };
+            ret = av_packet_ref(&tmp, avpkt);
+            if (ret < 0)
+                return ret;
+            *avpkt = tmp;
         }
     }
 
