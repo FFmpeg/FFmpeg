@@ -3075,8 +3075,6 @@ libndi_newtek_outdev_deps="libndi_newtek"
 libndi_newtek_outdev_extralibs="-lndi"
 dshow_indev_deps="IBaseFilter"
 dshow_indev_extralibs="-lpsapi -lole32 -lstrmiids -luuid -loleaut32 -lshlwapi"
-dv1394_indev_deps="dv1394"
-dv1394_indev_select="dv_demuxer"
 fbdev_indev_deps="linux_fb_h"
 fbdev_outdev_deps="linux_fb_h"
 gdigrab_indev_deps="CreateDIBSection"
@@ -5062,7 +5060,6 @@ case $target_os in
         add_cppflags -U__STRICT_ANSI__
         ;;
     linux)
-        enable dv1394
         enable section_data_rel_ro
         enabled_any arm aarch64 && enable_weak linux_perf
         ;;

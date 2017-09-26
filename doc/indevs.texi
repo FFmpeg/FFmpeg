@@ -641,31 +641,6 @@ $ ffmpeg -f dshow -show_video_device_dialog true -crossbar_video_input_pin_numbe
 
 @end itemize
 
-@section dv1394
-
-Linux DV 1394 input device.
-
-@subsection Options
-
-@table @option
-
-@item framerate
-Set the frame rate. Default is 25.
-
-@item standard
-
-Available values are:
-@table @samp
-@item pal
-
-@item ntsc
-
-@end table
-
-Default value is @code{ntsc}.
-
-@end table
-
 @section fbdev
 
 Linux framebuffer input device.
