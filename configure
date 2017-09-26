@@ -1611,7 +1611,6 @@ SYSTEM_FUNCS="
     clock_gettime
     closesocket
     CommandLineToArgvW
-    CryptGenRandom
     fcntl
     getaddrinfo
     gethrtime
@@ -1706,6 +1705,7 @@ HAVE_LIST="
     vaapi_drm
     vaapi_x11
     vdpau_x11
+    wincrypt
 "
 
 # options emitted with CONFIG_ prefix but not available on the command line
