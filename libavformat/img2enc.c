@@ -162,7 +162,6 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 
         fmt->pb = pb[0];
         if ((ret = av_packet_ref(&pkt2, pkt))                             < 0 ||
-            (ret = av_dup_packet(&pkt2))                                  < 0 ||
             (ret = avcodec_parameters_copy(st->codecpar, s->streams[0]->codecpar)) < 0 ||
             (ret = avformat_write_header(fmt, NULL))                      < 0 ||
             (ret = av_interleaved_write_frame(fmt, &pkt2))                < 0 ||
