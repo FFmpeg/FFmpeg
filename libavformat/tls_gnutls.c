@@ -72,7 +72,9 @@ static int print_tls_error(URLContext *h, int ret)
     switch (ret) {
     case GNUTLS_E_AGAIN:
     case GNUTLS_E_INTERRUPTED:
+#ifdef GNUTLS_E_PREMATURE_TERMINATION
     case GNUTLS_E_PREMATURE_TERMINATION:
+#endif
         break;
     case GNUTLS_E_WARNING_ALERT_RECEIVED:
         av_log(h, AV_LOG_WARNING, "%s\n", gnutls_strerror(ret));
