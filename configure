@@ -1665,8 +1665,6 @@ TOOLCHAIN_FEATURES="
     as_func
     as_object_arch
     asm_mod_q
-    attribute_may_alias
-    attribute_packed
     blocks_extension
     ebp_available
     ebx_available
@@ -4293,14 +4291,6 @@ done
 
 check_cc <<EOF && enable pragma_deprecated
 void foo(void) { _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"") }
-EOF
-
-check_cc <<EOF && enable attribute_packed
-struct { int x; } __attribute__((packed)) x;
-EOF
-
-check_cc <<EOF && enable attribute_may_alias
-union { int x; } __attribute__((may_alias)) x;
 EOF
 
 check_cc <<EOF || die "endian test failed"
