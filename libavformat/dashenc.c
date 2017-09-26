@@ -413,26 +413,15 @@ static int parse_adaptation_sets(AVFormatContext *s)
     enum { new_set, parse_id, parsing_streams } state;
     AdaptationSet *as;
     int i, n, ret;
-    enum AVMediaType types[] = { AVMEDIA_TYPE_VIDEO, AVMEDIA_TYPE_AUDIO, AVMEDIA_TYPE_UNKNOWN };
 
-    // default: one AdaptationSet for each media type
+    // default: one AdaptationSet for each stream
     if (!p) {
-        for (n = 0; types[n] != AVMEDIA_TYPE_UNKNOWN; n++) {
-            int as_idx = 0;
+        for (i = 0; i < s->nb_streams; i++) {
+            if ((ret = add_adaptation_set(s, &as, s->streams[i]->codecpar->codec_type)) < 0)
+                return ret;
+            snprintf(as->id, sizeof(as->id), "%d", i);
 
-            for (i = 0; i < s->nb_streams; i++) {
-                if (s->streams[i]->codecpar->codec_type != types[n])
-                    continue;
-
-                if (!as_idx) {
-                    if ((ret = add_adaptation_set(s, &as, types[n])) < 0)
-                        return ret;
-                    as_idx = c->nb_as;
-
-                    snprintf(as->id, sizeof(as->id), "%d", i);
-                }
-                c->streams[i].as_idx = as_idx;
-            }
+            c->streams[i].as_idx = c->nb_as;
         }
         goto end;
     }
