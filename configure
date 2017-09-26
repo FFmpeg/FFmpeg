@@ -1372,6 +1372,13 @@ require_cpp(){
     check_lib_cpp "$headers" "$classes" "$@" || die "ERROR: $name not found"
 }
 
+require_header(){
+    log require "$@"
+    header="$1"
+    shift
+    check_header "$header" "$@" || die "ERROR: $header header not found"
+}
+
 use_pkg_config(){
     log use_pkg_config "$@"
     pkg="$1"
@@ -5884,14 +5891,14 @@ enabled cuda_sdk          && require cuda_sdk cuda.h cuCtxCreate -lcuda
 enabled cuvid             && { enabled cuda ||
                                die "ERROR: CUVID requires CUDA"; }
 enabled chromaprint       && require chromaprint chromaprint.h chromaprint_get_version -lchromaprint
-enabled decklink          && { { check_header DeckLinkAPI.h || die "ERROR: DeckLinkAPI.h header not found"; } &&
+enabled decklink          && { require_header DeckLinkAPI.h &&
                                { check_cpp_condition DeckLinkAPIVersion.h "BLACKMAGIC_DECKLINK_API_VERSION >= 0x0a060100" || die "ERROR: Decklink API version must be >= 10.6.1."; } }
-enabled libndi_newtek     && { check_header Processing.NDI.Lib.h || die "ERROR: Processing.NDI.Lib.h header not found"; }
-enabled frei0r            && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
+enabled libndi_newtek     && require_header Processing.NDI.Lib.h
+enabled frei0r            && require_header frei0r.h
 enabled gmp               && require gmp gmp.h mpz_export -lgmp
 enabled gnutls            && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
 enabled jni               && { [ $target_os = "android" ] && check_header jni.h && enabled pthreads || die "ERROR: jni not found"; }
-enabled ladspa            && { check_header ladspa.h || die "ERROR: ladspa.h header not found"; }
+enabled ladspa            && require_header ladspa.h
 enabled libiec61883       && require libiec61883 libiec61883/iec61883.h iec61883_cmp_connect -lraw1394 -lavc1394 -lrom1394 -liec61883
 enabled libass            && require_pkg_config libass ass/ass.h ass_library_init
 enabled libbluray         && require_pkg_config libbluray libbluray/bluray.h bd_open
@@ -6053,7 +6060,7 @@ enabled opengl            && { check_lib opengl GL/glx.h glXGetProcAddress "-lGL
 enabled omx_rpi           && { check_header OMX_Core.h ||
                                { ! enabled cross_compile && add_cflags -isystem/opt/vc/include/IL && check_header OMX_Core.h ; } ||
                                die "ERROR: OpenMAX IL headers not found"; }
-enabled omx               && { check_header OMX_Core.h || die "ERROR: OpenMAX IL headers not found"; }
+enabled omx               && require_header OMX_Core.h
 enabled openssl           && { use_pkg_config openssl openssl/ssl.h OPENSSL_init_ssl ||
                                use_pkg_config openssl openssl/ssl.h SSL_library_init ||
                                check_lib openssl openssl/ssl.h SSL_library_init -lssl -lcrypto ||
