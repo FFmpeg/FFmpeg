@@ -55,10 +55,6 @@ For more information see:
 
 BSD video input device.
 
-@section dv1394
-
-Linux DV 1394 input device.
-
 @section fbdev
 
 Linux framebuffer input device.

@@ -2433,8 +2433,6 @@ alsa_indev_deps="alsa"
 avfoundation_indev_deps="AVFoundation_AVFoundation_h objc_arc pthreads"
 avfoundation_indev_extralibs="-framework Foundation -framework AVFoundation -framework CoreVideo -framework CoreMedia"
 bktr_indev_deps_any="dev_bktr_ioctl_bt848_h machine_ioctl_bt848_h dev_video_bktr_ioctl_bt848_h dev_ic_bt8xx_h"
-dv1394_indev_deps="dv1394"
-dv1394_indev_select="dv_demuxer"
 fbdev_indev_deps="linux_fb_h"
 jack_indev_deps="libjack"
 jack_indev_deps_any="sem_timedwait dispatch_dispatch_h"
@@ -4008,7 +4006,6 @@ case $target_os in
         add_cppflags -U__STRICT_ANSI__
         ;;
     linux)
-        enable dv1394
         enable section_data_rel_ro
         ;;
     irix*)
