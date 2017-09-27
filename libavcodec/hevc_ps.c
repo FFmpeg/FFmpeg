@@ -933,6 +933,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
                sps->bit_depth, bit_depth_chroma);
         return AVERROR_INVALIDDATA;
     }
+    sps->bit_depth_chroma = bit_depth_chroma;
 
     ret = map_pixel_format(avctx, sps);
     if (ret < 0)
