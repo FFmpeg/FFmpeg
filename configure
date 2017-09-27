@@ -3101,7 +3101,6 @@ v4l2_indev_deps_any="linux_videodev2_h sys_videoio_h"
 v4l2_outdev_deps_any="linux_videodev2_h sys_videoio_h"
 vfwcap_indev_deps="vfw32 vfwcap_defines"
 xcbgrab_indev_deps="libxcb"
-xcbgrab_indev_suggest="libxcb_shm libxcb_shape libxcb_xfixes"
 xv_outdev_deps="X11_extensions_Xvlib_h XvGetPortAttribute"
 xv_outdev_extralibs="-lXv -lX11 -lXext"
 
