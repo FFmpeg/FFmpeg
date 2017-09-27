@@ -893,7 +893,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
         return AVERROR_INVALIDDATA;
     }
 
-    skip_bits1(gb); // temporal_id_nesting_flag
+    sps->temporal_id_nesting_flag = get_bits(gb, 1);
 
     if ((ret = parse_ptl(gb, avctx, &sps->ptl, sps->max_sub_layers)) < 0)
         return ret;
@@ -956,6 +956,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
                sps->bit_depth, bit_depth_chroma);
         return AVERROR_INVALIDDATA;
     }
+    sps->bit_depth_chroma = bit_depth_chroma;
 
     ret = map_pixel_format(avctx, sps);
     if (ret < 0)
