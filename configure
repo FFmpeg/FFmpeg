@@ -1389,14 +1389,18 @@ require_cpp_condition(){
 
 use_pkg_config(){
     log use_pkg_config "$@"
-    pkg="$1"
+    name="$1"
+    shift
+    pkg_version="$1"
+    pkg="${1%% *}"
+    test "$name" = "" && name=$pkg
     check_pkg_config "$@" || return 1
     add_cflags    $(get_safe "${pkg}_cflags")
     add_extralibs $(get_safe "${pkg}_extralibs")
 }
 
 require_pkg_config(){
-    use_pkg_config "$@" || die "ERROR: $pkg not found using pkg-config$pkg_config_fail_message"
+    use_pkg_config "$@" || die "ERROR: $pkg_version not found using pkg-config$pkg_config_fail_message"
 }
 
 hostcc_e(){
@@ -5693,7 +5697,7 @@ case "$custom_allocator" in
         require libjemalloc jemalloc/jemalloc.h malloc -ljemalloc
     ;;
     tcmalloc)
-        require_pkg_config libtcmalloc gperftools/tcmalloc.h tc_malloc
+        require_pkg_config "" libtcmalloc gperftools/tcmalloc.h tc_malloc
         malloc_prefix=tc_
     ;;
 esac
@@ -5893,44 +5897,44 @@ enabled decklink          && { require_header DeckLinkAPI.h &&
 enabled libndi_newtek     && require_header Processing.NDI.Lib.h
 enabled frei0r            && require_header frei0r.h
 enabled gmp               && require gmp gmp.h mpz_export -lgmp
-enabled gnutls            && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
+enabled gnutls            && require_pkg_config "" gnutls gnutls/gnutls.h gnutls_global_init
 enabled jni               && { [ $target_os = "android" ] && check_header jni.h && enabled pthreads || die "ERROR: jni not found"; }
 enabled ladspa            && require_header ladspa.h
 enabled libiec61883       && require libiec61883 libiec61883/iec61883.h iec61883_cmp_connect -lraw1394 -lavc1394 -lrom1394 -liec61883
-enabled libass            && require_pkg_config libass ass/ass.h ass_library_init
-enabled libbluray         && require_pkg_config libbluray libbluray/bluray.h bd_open
-enabled libbs2b           && require_pkg_config libbs2b bs2b.h bs2b_open
+enabled libass            && require_pkg_config "" libass ass/ass.h ass_library_init
+enabled libbluray         && require_pkg_config "" libbluray libbluray/bluray.h bd_open
+enabled libbs2b           && require_pkg_config "" libbs2b bs2b.h bs2b_open
 enabled libcelt           && require libcelt celt/celt.h celt_decode -lcelt0 &&
                              { check_lib libcelt celt/celt.h celt_decoder_create_custom -lcelt0 ||
                                die "ERROR: libcelt must be installed and version must be >= 0.11.0."; }
-enabled libcaca           && require_pkg_config caca caca.h caca_create_canvas
-enabled libdc1394         && require_pkg_config libdc1394-2 dc1394/dc1394.h dc1394_new
-enabled libdrm            && require_pkg_config libdrm xf86drm.h drmGetVersion
-enabled libfdk_aac        && { use_pkg_config fdk-aac "fdk-aac/aacenc_lib.h" aacEncOpen ||
+enabled libcaca           && require_pkg_config libcaca caca caca.h caca_create_canvas
+enabled libdc1394         && require_pkg_config libdc1394 libdc1394-2 dc1394/dc1394.h dc1394_new
+enabled libdrm            && require_pkg_config "" libdrm xf86drm.h drmGetVersion
+enabled libfdk_aac        && { use_pkg_config libfdk_aac fdk-aac "fdk-aac/aacenc_lib.h" aacEncOpen ||
                                { require libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-aac &&
                                  warn "using libfdk without pkg-config"; } }
 flite_extralibs="-lflite_cmu_time_awb -lflite_cmu_us_awb -lflite_cmu_us_kal -lflite_cmu_us_kal16 -lflite_cmu_us_rms -lflite_cmu_us_slt -lflite_usenglish -lflite_cmulex -lflite"
 enabled libflite          && require libflite "flite/flite.h" flite_init $flite_extralibs
 enabled fontconfig        && enable libfontconfig
-enabled libfontconfig     && require_pkg_config fontconfig "fontconfig/fontconfig.h" FcInit
-enabled libfreetype       && require_pkg_config freetype2 "ft2build.h FT_FREETYPE_H" FT_Init_FreeType
-enabled libfribidi        && require_pkg_config fribidi fribidi.h fribidi_version_info
-enabled libgme            && { use_pkg_config libgme gme/gme.h gme_new_emu ||
+enabled libfontconfig     && require_pkg_config libfontconfig fontconfig "fontconfig/fontconfig.h" FcInit
+enabled libfreetype       && require_pkg_config libfreetype2 freetype2 "ft2build.h FT_FREETYPE_H" FT_Init_FreeType
+enabled libfribidi        && require_pkg_config libfribidi fribidi fribidi.h fribidi_version_info
+enabled libgme            && { use_pkg_config "" libgme gme/gme.h gme_new_emu ||
                                require libgme gme/gme.h gme_new_emu -lgme -lstdc++; }
 enabled libgsm            && { for gsm_hdr in "gsm.h" "gsm/gsm.h"; do
                                    check_lib libgsm "${gsm_hdr}" gsm_create -lgsm && break;
                                done || die "ERROR: libgsm not found"; }
 enabled libilbc           && require libilbc ilbc.h WebRtcIlbcfix_InitDecode -lilbc
-enabled libkvazaar        && require_pkg_config "kvazaar >= 0.8.1" kvazaar.h kvz_api_get
+enabled libkvazaar        && require_pkg_config libkvazaar "kvazaar >= 0.8.1" kvazaar.h kvz_api_get
 # While it may appear that require is being used as a pkg-config
 # fallback for libmfx, it is actually being used to detect a different
 # installation route altogether.  If libmfx is installed via the Intel
 # Media SDK or Intel Media Server Studio, these don't come with
 # pkg-config support.  Instead, users should make sure that the build
 # can find the libraries and headers through other means.
-enabled libmfx            && { use_pkg_config libmfx "mfx/mfxvideo.h" MFXInit ||
+enabled libmfx            && { use_pkg_config "" libmfx "mfx/mfxvideo.h" MFXInit ||
                                { require libmfx "mfx/mfxvideo.h" MFXInit -llibmfx && warn "using libmfx without pkg-config"; } }
-enabled libmodplug        && require_pkg_config libmodplug libmodplug/modplug.h ModPlug_Load
+enabled libmodplug        && require_pkg_config "" libmodplug libmodplug/modplug.h ModPlug_Load
 enabled libmp3lame        && require "libmp3lame >= 3.98.3" lame/lame.h lame_set_VBR_quality -lmp3lame
 enabled libmysofa         && require libmysofa "mysofa.h" mysofa_load -lmysofa
 enabled libnpp            && { check_lib libnpp npp.h nppGetLibVersion -lnppig -lnppicc -lnppc ||
@@ -5939,10 +5943,10 @@ enabled libnpp            && { check_lib libnpp npp.h nppGetLibVersion -lnppig -
 enabled libopencore_amrnb && require libopencore_amrnb opencore-amrnb/interf_dec.h Decoder_Interface_init -lopencore-amrnb
 enabled libopencore_amrwb && require libopencore_amrwb opencore-amrwb/dec_if.h D_IF_init -lopencore-amrwb
 enabled libopencv         && { check_header opencv2/core/core_c.h &&
-                               { use_pkg_config opencv opencv2/core/core_c.h cvCreateImageHeader ||
+                               { use_pkg_config libopencv opencv opencv2/core/core_c.h cvCreateImageHeader ||
                                  require opencv opencv2/core/core_c.h cvCreateImageHeader -lopencv_core -lopencv_imgproc; } ||
-                               require_pkg_config opencv opencv/cxcore.h cvCreateImageHeader; }
-enabled libopenh264       && require_pkg_config openh264 wels/codec_api.h WelsGetCodecVersion
+                               require_pkg_config libopencv opencv opencv/cxcore.h cvCreateImageHeader; }
+enabled libopenh264       && require_pkg_config libopenh264 openh264 wels/codec_api.h WelsGetCodecVersion
 enabled libopenjpeg       && { { check_lib libopenjpeg openjpeg-2.2/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
                                check_lib libopenjpeg openjpeg-2.2/openjpeg.h opj_version -lopenjp2 ||
                                { check_lib libopenjpeg openjpeg-2.1/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
@@ -5951,55 +5955,55 @@ enabled libopenjpeg       && { { check_lib libopenjpeg openjpeg-2.2/openjpeg.h o
                                { check_lib libopenjpeg openjpeg-1.5/openjpeg.h opj_version -lopenjpeg -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
                                { check_lib libopenjpeg openjpeg.h opj_version -lopenjpeg -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
                                die "ERROR: libopenjpeg not found"; }
-enabled libopenmpt        && require_pkg_config "libopenmpt >= 0.2.6557" libopenmpt/libopenmpt.h openmpt_module_create
+enabled libopenmpt        && require_pkg_config libopenmpt "libopenmpt >= 0.2.6557" libopenmpt/libopenmpt.h openmpt_module_create
 enabled libopus           && {
     enabled libopus_decoder && {
-        require_pkg_config opus opus_multistream.h opus_multistream_decoder_create
+        require_pkg_config libopus opus opus_multistream.h opus_multistream_decoder_create
     }
     enabled libopus_encoder && {
-        require_pkg_config opus opus_multistream.h opus_multistream_surround_encoder_create
+        require_pkg_config libopus opus opus_multistream.h opus_multistream_surround_encoder_create
     }
 }
-enabled libpulse          && require_pkg_config libpulse pulse/pulseaudio.h pa_context_new
-enabled librsvg           && require_pkg_config librsvg-2.0 librsvg-2.0/librsvg/rsvg.h rsvg_handle_render_cairo
-enabled librtmp           && require_pkg_config librtmp librtmp/rtmp.h RTMP_Socket
-enabled librubberband     && require_pkg_config "rubberband >= 1.8.1" rubberband/rubberband-c.h rubberband_new
-enabled libshine          && require_pkg_config shine shine/layer3.h shine_encode_buffer
-enabled libsmbclient      && { use_pkg_config smbclient libsmbclient.h smbc_init ||
+enabled libpulse          && require_pkg_config "" libpulse pulse/pulseaudio.h pa_context_new
+enabled librsvg           && require_pkg_config librsvg librsvg-2.0 librsvg-2.0/librsvg/rsvg.h rsvg_handle_render_cairo
+enabled librtmp           && require_pkg_config "" librtmp librtmp/rtmp.h RTMP_Socket
+enabled librubberband     && require_pkg_config librubberband "rubberband >= 1.8.1" rubberband/rubberband-c.h rubberband_new
+enabled libshine          && require_pkg_config libshine shine shine/layer3.h shine_encode_buffer
+enabled libsmbclient      && { use_pkg_config libsmbclient smbclient libsmbclient.h smbc_init ||
                                require smbclient libsmbclient.h smbc_init -lsmbclient; }
 enabled libsnappy         && require libsnappy snappy-c.h snappy_compress -lsnappy
 enabled libsoxr           && require libsoxr soxr.h soxr_create -lsoxr && LIBSOXR="-lsoxr"
-enabled libssh            && require_pkg_config libssh libssh/sftp.h sftp_init
-enabled libspeex          && require_pkg_config speex speex/speex.h speex_decoder_init -lspeex
-enabled libtesseract      && require_pkg_config tesseract tesseract/capi.h TessBaseAPICreate
+enabled libssh            && require_pkg_config "" libssh libssh/sftp.h sftp_init
+enabled libspeex          && require_pkg_config libspeex speex speex/speex.h speex_decoder_init -lspeex
+enabled libtesseract      && require_pkg_config libtesseract tesseract tesseract/capi.h TessBaseAPICreate
 enabled libtheora         && require libtheora theora/theoraenc.h th_info_init -ltheoraenc -ltheoradec -logg
 enabled libtwolame        && require libtwolame twolame.h twolame_init -ltwolame &&
                              { check_lib libtwolame twolame.h twolame_encode_buffer_float32_interleaved -ltwolame ||
                                die "ERROR: libtwolame must be installed and version must be >= 0.3.10"; }
-enabled libv4l2           && require_pkg_config libv4l2 libv4l2.h v4l2_ioctl
-enabled libvidstab        && require_pkg_config "vidstab >= 0.98" vid.stab/libvidstab.h vsMotionDetectInit
-enabled libvmaf           && require_pkg_config libvmaf libvmaf.h compute_vmaf
+enabled libv4l2           && require_pkg_config "" libv4l2 libv4l2.h v4l2_ioctl
+enabled libvidstab        && require_pkg_config libvidstab "vidstab >= 0.98" vid.stab/libvidstab.h vsMotionDetectInit
+enabled libvmaf           && require_pkg_config "" libvmaf libvmaf.h compute_vmaf
 enabled libvo_amrwbenc    && require libvo_amrwbenc vo-amrwbenc/enc_if.h E_IF_init -lvo-amrwbenc
-enabled libvorbis         && require_pkg_config vorbis vorbis/codec.h vorbis_info_init &&
-                             require_pkg_config vorbisenc vorbis/vorbisenc.h vorbis_encode_init
+enabled libvorbis         && require_pkg_config libvorbis vorbis vorbis/codec.h vorbis_info_init &&
+                             require_pkg_config libvorbisenc vorbisenc vorbis/vorbisenc.h vorbis_encode_init
 
 enabled libvpx            && {
     enabled libvpx_vp8_decoder && {
-        use_pkg_config "vpx >= 0.9.1" "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_vp8_dx ||
+        use_pkg_config libvpx "vpx >= 0.9.1" "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_vp8_dx ||
             check_lib libvpx_vp8_decoder "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_dec_init_ver -lvpx ||
                 die "ERROR: libvpx decoder version must be >=0.9.1";
     }
     enabled libvpx_vp8_encoder && {
-        use_pkg_config "vpx >= 0.9.7" "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_vp8_cx ||
+        use_pkg_config libvpx "vpx >= 0.9.7" "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_vp8_cx ||
             check_lib libvpx_vp8_encoder "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_enc_init_ver VP8E_SET_MAX_INTRA_BITRATE_PCT" -lvpx ||
                 die "ERROR: libvpx encoder version must be >=0.9.7";
     }
     enabled libvpx_vp9_decoder && {
-        use_pkg_config "vpx >= 1.3.0" "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_vp9_dx ||
+        use_pkg_config libvpx "vpx >= 1.3.0" "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_vp9_dx ||
             check_lib libvpx_vp9_decoder "vpx/vpx_decoder.h vpx/vp8dx.h" "vpx_codec_vp9_dx" -lvpx
     }
     enabled libvpx_vp9_encoder && {
-        use_pkg_config "vpx >= 1.3.0" "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_vp9_cx ||
+        use_pkg_config libvpx "vpx >= 1.3.0" "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_vp9_cx ||
             check_lib libvpx_vp9_encoder "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_vp9_cx VP9E_SET_AQ_MODE" -lvpx
     }
     if disabled_all libvpx_vp8_decoder libvpx_vp9_decoder libvpx_vp8_encoder libvpx_vp9_encoder; then
@@ -6009,24 +6013,24 @@ enabled libvpx            && {
 
 enabled libwavpack        && require libwavpack wavpack/wavpack.h WavpackOpenFileOutput  -lwavpack
 enabled libwebp           && {
-    enabled libwebp_encoder      && require_pkg_config "libwebp >= 0.2.0" webp/encode.h WebPGetEncoderVersion
-    enabled libwebp_anim_encoder && { use_pkg_config "libwebpmux >= 0.4.0" webp/mux.h WebPAnimEncoderOptionsInit || disable libwebp_anim_encoder; } }
-enabled libx264           && { use_pkg_config x264 "stdint.h x264.h" x264_encoder_encode ||
+    enabled libwebp_encoder      && require_pkg_config libwebp "libwebp >= 0.2.0" webp/encode.h WebPGetEncoderVersion
+    enabled libwebp_anim_encoder && { use_pkg_config libwebpmux "libwebpmux >= 0.4.0" webp/mux.h WebPAnimEncoderOptionsInit || disable libwebp_anim_encoder; } }
+enabled libx264           && { use_pkg_config libx264 x264 "stdint.h x264.h" x264_encoder_encode ||
                                { require libx264 "stdint.h x264.h" x264_encoder_encode -lx264 &&
                                  warn "using libx264 without pkg-config"; } } &&
                              require_cpp_condition x264.h "X264_BUILD >= 118" &&
                              { check_cpp_condition x264.h "X264_MPEG2" &&
                                enable libx262; }
-enabled libx265           && require_pkg_config x265 x265.h x265_api_get &&
+enabled libx265           && require_pkg_config libx265 x265 x265.h x265_api_get &&
                              require_cpp_condition x265.h "X265_BUILD >= 68"
 enabled libxavs           && require libxavs "stdint.h xavs.h" xavs_encoder_encode -lxavs
 enabled libxvid           && require libxvid xvid.h xvid_global -lxvidcore
-enabled libzimg           && require_pkg_config "zimg >= 2.3.0" zimg.h zimg_get_api_version
-enabled libzmq            && require_pkg_config libzmq zmq.h zmq_ctx_new
+enabled libzimg           && require_pkg_config libzimg "zimg >= 2.3.0" zimg.h zimg_get_api_version
+enabled libzmq            && require_pkg_config "" libzmq zmq.h zmq_ctx_new
 enabled libzvbi           && require libzvbi libzvbi.h vbi_decoder_new -lzvbi &&
                              { check_cpp_condition libzvbi.h "VBI_VERSION_MAJOR > 0 || VBI_VERSION_MINOR > 2 || VBI_VERSION_MINOR == 2 && VBI_VERSION_MICRO >= 28" ||
                                enabled gpl || die "ERROR: libzvbi requires version 0.2.28 or --enable-gpl."; }
-enabled libxml2           && require_pkg_config libxml-2.0 libxml2/libxml/xmlversion.h xmlCheckVersion
+enabled libxml2           && require_pkg_config libxml2 libxml-2.0 libxml2/libxml/xmlversion.h xmlCheckVersion
 enabled mediacodec        && { enabled jni || die "ERROR: mediacodec requires --enable-jni"; }
 enabled mmal              && { check_lib mmal interface/mmal/mmal.h mmal_port_connect -lmmal_core -lmmal_util -lmmal_vc_client -lbcm_host ||
                                { ! enabled cross_compile &&
@@ -6056,8 +6060,8 @@ enabled omx_rpi           && { check_header OMX_Core.h ||
                                { ! enabled cross_compile && add_cflags -isystem/opt/vc/include/IL && check_header OMX_Core.h ; } ||
                                die "ERROR: OpenMAX IL headers not found"; }
 enabled omx               && require_header OMX_Core.h
-enabled openssl           && { use_pkg_config openssl openssl/ssl.h OPENSSL_init_ssl ||
-                               use_pkg_config openssl openssl/ssl.h SSL_library_init ||
+enabled openssl           && { use_pkg_config "" openssl openssl/ssl.h OPENSSL_init_ssl ||
+                               use_pkg_config "" openssl openssl/ssl.h SSL_library_init ||
                                check_lib openssl openssl/ssl.h SSL_library_init -lssl -lcrypto ||
                                check_lib openssl openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
                                check_lib openssl openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
