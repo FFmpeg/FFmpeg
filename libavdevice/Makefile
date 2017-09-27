@@ -11,7 +11,7 @@ OBJS-$(HAVE_LIBC_MSVCRT)                 += file_open.o
 
 # input devices
 OBJS-$(CONFIG_ALSA_INDEV)                += alsa.o
-OBJS-$(CONFIG_AVFOUNDATION_INDEV)        += avfoundation_dec.o
+OBJS-$(CONFIG_AVFOUNDATION_INDEV)        += avfoundation.o
 OBJS-$(CONFIG_BKTR_INDEV)                += bktr.o
 OBJS-$(CONFIG_DV1394_INDEV)              += dv1394.o
 OBJS-$(CONFIG_FBDEV_INDEV)               += fbdev.o
