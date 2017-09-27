@@ -994,8 +994,9 @@ static int rd_strip(CinepakEncContext *s, int y, int h, int keyframe,
 #define SMALLEST_CODEBOOK 1
     for(v1enough = 0, v1_size = SMALLEST_CODEBOOK; v1_size <= CODEBOOK_MAX && !v1enough; v1_size <<= 2) {
         for(v4enough = 0, v4_size = 0; v4_size <= v1_size && !v4enough; v4_size = v4_size ? v4_size << 2 : v1_size >= SMALLEST_CODEBOOK << 2 ? v1_size >> 2 : SMALLEST_CODEBOOK) {
+            CinepakMode mode;
             //try all modes
-            for(CinepakMode mode = 0; mode < MODE_COUNT; mode++) {
+            for(mode = 0; mode < MODE_COUNT; mode++) {
                 //don't allow MODE_MC in intra frames
                 if(keyframe && mode == MODE_MC)
                     continue;
