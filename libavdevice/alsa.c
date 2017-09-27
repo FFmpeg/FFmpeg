@@ -1,5 +1,5 @@
 /*
- * ALSA input and output
+ * ALSA input
  * Copyright (c) 2007 Luca Abeni ( lucabe72 email it )
  * Copyright (c) 2007 Benoit Fouet ( benoit fouet free fr )
  *
@@ -22,18 +22,39 @@
 
 /**
  * @file
- * ALSA input and output: common code
+ * ALSA input
  * @author Luca Abeni ( lucabe72 email it )
  * @author Benoit Fouet ( benoit fouet free fr )
  * @author Nicolas George ( nicolas george normalesup org )
  */
 
 #include <alsa/asoundlib.h>
-#include "libavformat/avformat.h"
+
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/opt.h"
 
-#include "alsa.h"
+#include "libavformat/avformat.h"
+#include "libavformat/internal.h"
+
+/* XXX: we make the assumption that the soundcard accepts this format */
+/* XXX: find better solution with "preinit" method, needed also in
+        other formats */
+#define DEFAULT_CODEC_ID AV_NE(AV_CODEC_ID_PCM_S16BE, AV_CODEC_ID_PCM_S16LE)
+
+#define ALSA_BUFFER_SIZE_MAX 32768
+
+typedef struct AlsaData {
+    AVClass *class;
+    snd_pcm_t *h;
+    int frame_size;  ///< preferred size for reads and writes
+    int period_size; ///< bytes per sample * channels
+    int sample_rate; ///< sample rate set by user
+    int channels;    ///< number of channels set by user
+    void (*reorder_func)(const void *, void *, int);
+    void *reorder_buf;
+    int reorder_buf_size; ///< in frames
+} AlsaData;
 
 static av_cold snd_pcm_format_t codec_id_to_pcm_format(int codec_id)
 {
@@ -183,9 +204,23 @@ static av_cold int find_reorder_func(AlsaData *s, int codec_id, uint64_t layout,
     return s->reorder_func ? 0 : AVERROR(ENOSYS);
 }
 
-av_cold int ff_alsa_open(AVFormatContext *ctx, snd_pcm_stream_t mode,
-                         unsigned int *sample_rate,
-                         int channels, enum AVCodecID *codec_id)
+/**
+ * Open an ALSA PCM.
+ *
+ * @param s media file handle
+ * @param mode either SND_PCM_STREAM_CAPTURE or SND_PCM_STREAM_PLAYBACK
+ * @param sample_rate in: requested sample rate;
+ *                    out: actually selected sample rate
+ * @param channels number of channels
+ * @param codec_id in: requested AVCodecID or AV_CODEC_ID_NONE;
+ *                 out: actually selected AVCodecID, changed only if
+ *                 AV_CODEC_ID_NONE was requested
+ *
+ * @return 0 if OK, AVERROR_xxx on error
+ */
+static av_cold int alsa_open(AVFormatContext *ctx, snd_pcm_stream_t mode,
+                             unsigned int *sample_rate,
+                             int channels, enum AVCodecID *codec_id)
 {
     AlsaData *s = ctx->priv_data;
     const char *audio_device;
@@ -315,7 +350,14 @@ fail1:
     return AVERROR(EIO);
 }
 
-av_cold int ff_alsa_close(AVFormatContext *s1)
+/**
+ * Close the ALSA PCM.
+ *
+ * @param s1 media file handle
+ *
+ * @return 0
+ */
+static av_cold int alsa_close(AVFormatContext *s1)
 {
     AlsaData *s = s1->priv_data;
 
@@ -324,7 +366,15 @@ av_cold int ff_alsa_close(AVFormatContext *s1)
     return 0;
 }
 
-int ff_alsa_xrun_recover(AVFormatContext *s1, int err)
+/**
+ * Try to recover from ALSA buffer underrun.
+ *
+ * @param s1 media file handle
+ * @param err error code reported by the previous ALSA call
+ *
+ * @return 0 if OK, AVERROR_xxx on error
+ */
+static int alsa_xrun_recover(AVFormatContext *s1, int err)
 {
     AlsaData *s = s1->priv_data;
     snd_pcm_t *handle = s->h;
@@ -344,3 +394,125 @@ int ff_alsa_xrun_recover(AVFormatContext *s1, int err)
     }
     return err;
 }
+
+static av_cold int audio_read_header(AVFormatContext *s1)
+{
+    AlsaData *s = s1->priv_data;
+    AVStream *st;
+    int ret;
+    enum AVCodecID codec_id;
+    snd_pcm_sw_params_t *sw_params;
+
+    st = avformat_new_stream(s1, NULL);
+    if (!st) {
+        av_log(s1, AV_LOG_ERROR, "Cannot add stream\n");
+
+        return AVERROR(ENOMEM);
+    }
+    codec_id    = s1->audio_codec_id;
+
+    ret = alsa_open(s1, SND_PCM_STREAM_CAPTURE, &s->sample_rate, s->channels,
+                    &codec_id);
+    if (ret < 0) {
+        return AVERROR(EIO);
+    }
+
+    if (snd_pcm_type(s->h) != SND_PCM_TYPE_HW)
+        av_log(s1, AV_LOG_WARNING,
+               "capture with some ALSA plugins, especially dsnoop, "
+               "may hang.\n");
+
+    ret = snd_pcm_sw_params_malloc(&sw_params);
+    if (ret < 0) {
+        av_log(s1, AV_LOG_ERROR, "cannot allocate software parameters structure (%s)\n",
+               snd_strerror(ret));
+        goto fail;
+    }
+
+    snd_pcm_sw_params_current(s->h, sw_params);
+    snd_pcm_sw_params_set_tstamp_mode(s->h, sw_params, SND_PCM_TSTAMP_ENABLE);
+
+    ret = snd_pcm_sw_params(s->h, sw_params);
+    snd_pcm_sw_params_free(sw_params);
+    if (ret < 0) {
+        av_log(s1, AV_LOG_ERROR, "cannot install ALSA software parameters (%s)\n",
+               snd_strerror(ret));
+        goto fail;
+    }
+
+    /* take real parameters */
+    st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id    = codec_id;
+    st->codecpar->sample_rate = s->sample_rate;
+    st->codecpar->channels    = s->channels;
+    avpriv_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
+
+    return 0;
+
+fail:
+    snd_pcm_close(s->h);
+    return AVERROR(EIO);
+}
+
+static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
+{
+    AlsaData *s  = s1->priv_data;
+    AVStream *st = s1->streams[0];
+    int res;
+    snd_htimestamp_t timestamp;
+    snd_pcm_uframes_t ts_delay;
+
+    if (av_new_packet(pkt, s->period_size) < 0) {
+        return AVERROR(EIO);
+    }
+
+    while ((res = snd_pcm_readi(s->h, pkt->data, pkt->size / s->frame_size)) < 0) {
+        if (res == -EAGAIN) {
+            av_packet_unref(pkt);
+
+            return AVERROR(EAGAIN);
+        }
+        if (alsa_xrun_recover(s1, res) < 0) {
+            av_log(s1, AV_LOG_ERROR, "ALSA read error: %s\n",
+                   snd_strerror(res));
+            av_packet_unref(pkt);
+
+            return AVERROR(EIO);
+        }
+    }
+
+    snd_pcm_htimestamp(s->h, &ts_delay, &timestamp);
+    ts_delay += res;
+    pkt->pts = timestamp.tv_sec * 1000000LL
+               + (timestamp.tv_nsec * st->codecpar->sample_rate
+                  - (int64_t)ts_delay * 1000000000LL + st->codecpar->sample_rate * 500LL)
+               / (st->codecpar->sample_rate * 1000LL);
+
+    pkt->size = res * s->frame_size;
+
+    return 0;
+}
+
+static const AVOption options[] = {
+    { "sample_rate", "", offsetof(AlsaData, sample_rate), AV_OPT_TYPE_INT, {.i64 = 48000}, 1, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+    { "channels",    "", offsetof(AlsaData, channels),    AV_OPT_TYPE_INT, {.i64 = 2},     1, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+    { NULL },
+};
+
+static const AVClass alsa_demuxer_class = {
+    .class_name     = "ALSA demuxer",
+    .item_name      = av_default_item_name,
+    .option         = options,
+    .version        = LIBAVUTIL_VERSION_INT,
+};
+
+AVInputFormat ff_alsa_demuxer = {
+    .name           = "alsa",
+    .long_name      = NULL_IF_CONFIG_SMALL("ALSA audio input"),
+    .priv_data_size = sizeof(AlsaData),
+    .read_header    = audio_read_header,
+    .read_packet    = audio_read_packet,
+    .read_close     = alsa_close,
+    .flags          = AVFMT_NOFILE,
+    .priv_class     = &alsa_demuxer_class,
+};
