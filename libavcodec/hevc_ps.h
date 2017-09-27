@@ -151,6 +151,7 @@ typedef struct HEVCSPS {
     HEVCWindow pic_conf_win;
 
     int bit_depth;
+    int bit_depth_chroma;
     int pixel_shift;
     enum AVPixelFormat pix_fmt;
 
@@ -163,6 +164,7 @@ typedef struct HEVCSPS {
         int num_reorder_pics;
         int max_latency_increase;
     } temporal_layer[HEVC_MAX_SUB_LAYERS];
+    uint8_t temporal_id_nesting_flag;
 
     VUI vui;
     PTL ptl;
