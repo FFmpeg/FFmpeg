@@ -89,7 +89,7 @@ static const int8_t transform[32][32] = {
       90, -90,  88, -85,  82, -78,  73, -67,  61, -54,  46, -38,  31, -22,  13,  -4 },
 };
 
-DECLARE_ALIGNED(16, const int16_t, ff_hevc_epel_coeffs[7][16]) = {
+DECLARE_ALIGNED(16, const int16_t, ff_hevc_epel_coeffs)[7][16] = {
     { -2, 58, 10, -2, -2, 58, 10, -2, -2, 58, 10, -2, -2, 58, 10, -2 },
     { -4, 54, 16, -2, -4, 54, 16, -2, -4, 54, 16, -2, -4, 54, 16, -2 },
     { -6, 46, 28, -4, -6, 46, 28, -4, -6, 46, 28, -4, -6, 46, 28, -4 },
@@ -99,7 +99,7 @@ DECLARE_ALIGNED(16, const int16_t, ff_hevc_epel_coeffs[7][16]) = {
     { -2, 10, 58, -2, -2, 10, 58, -2, -2, 10, 58, -2, -2, 10, 58, -2 },
 };
 
-DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_coeffs8[7][16]) = {
+DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_coeffs8)[7][16] = {
     { -2, 58, 10, -2, -2, 58, 10, -2, -2, 58, 10, -2, -2, 58, 10, -2 },
     { -4, 54, 16, -2, -4, 54, 16, -2, -4, 54, 16, -2, -4, 54, 16, -2 },
     { -6, 46, 28, -4, -6, 46, 28, -4, -6, 46, 28, -4, -6, 46, 28, -4 },
@@ -109,13 +109,13 @@ DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_coeffs8[7][16]) = {
     { -2, 10, 58, -2, -2, 10, 58, -2, -2, 10, 58, -2, -2, 10, 58, -2 },
 };
 
-DECLARE_ALIGNED(16, const int16_t, ff_hevc_qpel_coeffs[3][8]) = {
+DECLARE_ALIGNED(16, const int16_t, ff_hevc_qpel_coeffs)[3][8] = {
     { -1, 4, -10, 58, 17, -5,  1,  0 },
     { -1, 4, -11, 40, 40, -11, 4, -1 },
     {  0, 1,  -5, 17, 58, -10, 4, -1 },
 };
 
-DECLARE_ALIGNED(16, const int8_t, ff_hevc_qpel_coeffs8[3][16]) = {
+DECLARE_ALIGNED(16, const int8_t, ff_hevc_qpel_coeffs8)[3][16] = {
     { -1, 4, -10, 58, 17, -5,  1,  0, -1, 4, -10, 58, 17, -5,  1,  0 },
     { -1, 4, -11, 40, 40, -11, 4, -1, -1, 4, -11, 40, 40, -11, 4, -1 },
     {  0, 1,  -5, 17, 58, -10, 4, -1,  0, 1,  -5, 17, 58, -10, 4, -1 },
