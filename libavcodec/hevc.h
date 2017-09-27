@@ -407,6 +407,7 @@ typedef struct HEVCSPS {
     HEVCWindow pic_conf_win;
 
     int bit_depth;
+    int bit_depth_chroma;
     int pixel_shift;
     enum AVPixelFormat pix_fmt;
 
