@@ -233,3 +233,30 @@ int ff_get_cpu_flags_x86(void)
 
     return rval;
 }
+
+size_t ff_get_cpu_max_align_x86(void)
+{
+    int flags = av_get_cpu_flags();
+
+    if (flags & (AV_CPU_FLAG_AVX2      |
+                 AV_CPU_FLAG_AVX       |
+                 AV_CPU_FLAG_XOP       |
+                 AV_CPU_FLAG_FMA4      |
+                 AV_CPU_FLAG_FMA3      |
+                 AV_CPU_FLAG_AVXSLOW))
+        return 32;
+    if (flags & (AV_CPU_FLAG_AESNI     |
+                 AV_CPU_FLAG_SSE42     |
+                 AV_CPU_FLAG_SSE4      |
+                 AV_CPU_FLAG_SSSE3     |
+                 AV_CPU_FLAG_SSE3      |
+                 AV_CPU_FLAG_SSE2      |
+                 AV_CPU_FLAG_SSE       |
+                 AV_CPU_FLAG_ATOM      |
+                 AV_CPU_FLAG_SSSE3SLOW |
+                 AV_CPU_FLAG_SSE3SLOW  |
+                 AV_CPU_FLAG_SSE2SLOW))
+        return 16;
+
+    return 8;
+}
