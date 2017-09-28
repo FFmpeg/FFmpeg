@@ -1268,15 +1268,18 @@ check_lib_cpp(){
 
 check_pkg_config(){
     log check_pkg_config "$@"
-    pkg_version="$1"
-    pkg="${1%% *}"
-    headers="$2"
-    funcs="$3"
-    shift 3
+    name="$1"
+    pkg_version="$2"
+    pkg="${2%% *}"
+    headers="$3"
+    funcs="$4"
+    shift 4
+    disable $name
     check_cmd $pkg_config --exists --print-errors $pkg_version || return
     pkg_cflags=$($pkg_config --cflags $pkg_config_flags $pkg)
     pkg_libs=$($pkg_config --libs $pkg_config_flags $pkg)
     check_func_headers "$headers" "$funcs" $pkg_cflags $pkg_libs "$@" &&
+        enable $name &&
         set_safe "${pkg}_cflags"    $pkg_cflags &&
         set_safe "${pkg}_extralibs" $pkg_libs
 }
@@ -1391,16 +1394,15 @@ require_cpp_condition(){
 
 use_pkg_config(){
     log use_pkg_config "$@"
-    name="$1"
-    shift
-    pkg_version="$1"
-    pkg="${1%% *}"
+    pkg="${2%% *}"
     check_pkg_config "$@" || return 1
     add_cflags    $(get_safe "${pkg}_cflags")
     add_extralibs $(get_safe "${pkg}_extralibs")
 }
 
 require_pkg_config(){
+    log require_pkg_config "$@"
+    pkg_version="$2"
     use_pkg_config "$@" || die "ERROR: $pkg_version not found using pkg-config$pkg_config_fail_message"
 }
 
@@ -6000,21 +6002,21 @@ enabled libvorbis         && require_pkg_config libvorbis vorbis vorbis/codec.h 
 
 enabled libvpx            && {
     enabled libvpx_vp8_decoder && {
-        use_pkg_config libvpx "vpx >= 0.9.1" "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_vp8_dx ||
+        use_pkg_config libvpx_vp8_decoder "vpx >= 0.9.1" "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_vp8_dx ||
             check_lib libvpx_vp8_decoder "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_dec_init_ver -lvpx ||
                 die "ERROR: libvpx decoder version must be >=0.9.1";
     }
     enabled libvpx_vp8_encoder && {
-        use_pkg_config libvpx "vpx >= 0.9.7" "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_vp8_cx ||
+        use_pkg_config libvpx_vp8_encoder "vpx >= 0.9.7" "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_vp8_cx ||
             check_lib libvpx_vp8_encoder "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_enc_init_ver VP8E_SET_MAX_INTRA_BITRATE_PCT" -lvpx ||
                 die "ERROR: libvpx encoder version must be >=0.9.7";
     }
     enabled libvpx_vp9_decoder && {
-        use_pkg_config libvpx "vpx >= 1.3.0" "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_vp9_dx ||
+        use_pkg_config libvpx_vp9_decoder "vpx >= 1.3.0" "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_vp9_dx ||
             check_lib libvpx_vp9_decoder "vpx/vpx_decoder.h vpx/vp8dx.h" "vpx_codec_vp9_dx" -lvpx
     }
     enabled libvpx_vp9_encoder && {
-        use_pkg_config libvpx "vpx >= 1.3.0" "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_vp9_cx ||
+        use_pkg_config libvpx_vp9_encoder "vpx >= 1.3.0" "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_vp9_cx ||
             check_lib libvpx_vp9_encoder "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_vp9_cx VP9E_SET_AQ_MODE" -lvpx
     }
     if disabled_all libvpx_vp8_decoder libvpx_vp9_decoder libvpx_vp8_encoder libvpx_vp9_encoder; then
@@ -6025,7 +6027,7 @@ enabled libvpx            && {
 enabled libwavpack        && require libwavpack wavpack/wavpack.h WavpackOpenFileOutput  -lwavpack
 enabled libwebp           && {
     enabled libwebp_encoder      && require_pkg_config libwebp "libwebp >= 0.2.0" webp/encode.h WebPGetEncoderVersion
-    enabled libwebp_anim_encoder && { use_pkg_config libwebpmux "libwebpmux >= 0.4.0" webp/mux.h WebPAnimEncoderOptionsInit || disable libwebp_anim_encoder; } }
+    enabled libwebp_anim_encoder && use_pkg_config libwebp_anim_encoder "libwebpmux >= 0.4.0" webp/mux.h WebPAnimEncoderOptionsInit; }
 enabled libx264           && { use_pkg_config libx264 x264 "stdint.h x264.h" x264_encoder_encode ||
                                { require libx264 "stdint.h x264.h" x264_encoder_encode -lx264 &&
                                  warn "using libx264 without pkg-config"; } } &&
@@ -6100,7 +6102,7 @@ fi
 
 if enabled sdl2; then
     SDL2_CONFIG="${cross_prefix}sdl2-config"
-    if check_pkg_config "sdl2 >= 2.0.1 sdl2 < 2.1.0" SDL_events.h SDL_PollEvent; then
+    if check_pkg_config sdl2 "sdl2 >= 2.0.1 sdl2 < 2.1.0" SDL_events.h SDL_PollEvent; then
         check_func SDL_Init $sdl2_extralibs $sdl2_cflags ||
             disable sdl2
     elif "${SDL2_CONFIG}" --version > /dev/null 2>&1; then
@@ -6110,8 +6112,6 @@ if enabled sdl2; then
         check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x020100" $sdl2_cflags &&
         check_func SDL_Init $sdl2_extralibs $sdl2_cflags ||
             disable sdl2
-    else
-        disable sdl2
     fi
     if test $target_os = "mingw32"; then
         sdl2_extralibs="$sdl2_extralibs -mconsole"
@@ -6206,13 +6206,12 @@ if enabled libcdio; then
     die "ERROR: No usable libcdio/cdparanoia found"
 fi
 
-enabled libxcb && check_pkg_config "xcb >= 1.4" xcb/xcb.h xcb_connect || disable libxcb
+enabled libxcb && check_pkg_config libxcb "xcb >= 1.4" xcb/xcb.h xcb_connect
 
 if enabled libxcb; then
-
-    enabled libxcb_shm    && check_pkg_config xcb-shm    xcb/shm.h    xcb_shm_attach              || disable libxcb_shm
-    enabled libxcb_shape  && check_pkg_config xcb-shape  xcb/shape.h  xcb_shape_get_rectangles    || disable libxcb_shape
-    enabled libxcb_xfixes && check_pkg_config xcb-xfixes xcb/xfixes.h xcb_xfixes_get_cursor_image || disable libxcb_xfixes
+    enabled libxcb_shm    && check_pkg_config libxcb_shm    xcb-shm    xcb/shm.h    xcb_shm_attach
+    enabled libxcb_shape  && check_pkg_config libxcb_shape  xcb-shape  xcb/shape.h  xcb_shape_get_rectangles
+    enabled libxcb_xfixes && check_pkg_config libxcb_xfixes xcb-xfixes xcb/xfixes.h xcb_xfixes_get_cursor_image
 
     add_cflags $xcb_cflags $xcb_shm_cflags $xcb_xfixes_cflags $xcb_shape_cflags
     add_extralibs $xcb_extralibs $xcb_shm_extralibs $xcb_xfixes_extralibs $xcb_shape_extralibs
