@@ -52,7 +52,7 @@ struct AVAESCTR;
  */
 
 typedef struct MOVStts {
-    int count;
+    unsigned int count;
     int duration;
 } MOVStts;
 
