@@ -665,8 +665,8 @@ static int rgtc1u_alpha_block(uint8_t *dst, ptrdiff_t stride, const uint8_t *blo
 
 av_cold void ff_texturedspenc_init(TextureDSPContext *c)
 {
-    c->dxt1_block   = dxt1_block;
-    c->dxt5_block   = dxt5_block;
-    c->dxt5ys_block = dxt5ys_block;
+    c->dxt1_block         = dxt1_block;
+    c->dxt5_block         = dxt5_block;
+    c->dxt5ys_block       = dxt5ys_block;
     c->rgtc1u_alpha_block = rgtc1u_alpha_block;
 }
