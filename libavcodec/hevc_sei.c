@@ -137,10 +137,10 @@ static int decode_nal_sei_pic_timing(HEVCSEIContext *s, GetBitContext *gb, const
     if (sps->vui.frame_field_info_present_flag) {
         int pic_struct = get_bits(gb, 4);
         h->picture_struct = AV_PICTURE_STRUCTURE_UNKNOWN;
-        if (pic_struct == 2) {
+        if (pic_struct == 2 || pic_struct == 10 || pic_struct == 12) {
             av_log(logctx, AV_LOG_DEBUG, "BOTTOM Field\n");
             h->picture_struct = AV_PICTURE_STRUCTURE_BOTTOM_FIELD;
-        } else if (pic_struct == 1) {
+        } else if (pic_struct == 1 || pic_struct == 9 || pic_struct == 11) {
             av_log(logctx, AV_LOG_DEBUG, "TOP Field\n");
             h->picture_struct = AV_PICTURE_STRUCTURE_TOP_FIELD;
         }
