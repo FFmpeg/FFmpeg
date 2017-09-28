@@ -620,18 +620,18 @@ static int dxn3dc_block(uint8_t *dst, ptrdiff_t stride, const uint8_t *block)
 
 av_cold void ff_texturedsp_init(TextureDSPContext *c)
 {
-    c->dxt1_block   = dxt1_block;
-    c->dxt1a_block  = dxt1a_block;
-    c->dxt2_block   = dxt2_block;
-    c->dxt3_block   = dxt3_block;
-    c->dxt4_block   = dxt4_block;
-    c->dxt5_block   = dxt5_block;
-    c->dxt5y_block  = dxt5y_block;
-    c->dxt5ys_block = dxt5ys_block;
-    c->rgtc1s_block = rgtc1s_block;
-    c->rgtc1u_block = rgtc1u_block;
+    c->dxt1_block         = dxt1_block;
+    c->dxt1a_block        = dxt1a_block;
+    c->dxt2_block         = dxt2_block;
+    c->dxt3_block         = dxt3_block;
+    c->dxt4_block         = dxt4_block;
+    c->dxt5_block         = dxt5_block;
+    c->dxt5y_block        = dxt5y_block;
+    c->dxt5ys_block       = dxt5ys_block;
+    c->rgtc1s_block       = rgtc1s_block;
+    c->rgtc1u_block       = rgtc1u_block;
     c->rgtc1u_alpha_block = rgtc1u_alpha_block;
-    c->rgtc2s_block = rgtc2s_block;
-    c->rgtc2u_block = rgtc2u_block;
-    c->dxn3dc_block = dxn3dc_block;
+    c->rgtc2s_block       = rgtc2s_block;
+    c->rgtc2u_block       = rgtc2u_block;
+    c->dxn3dc_block       = dxn3dc_block;
 }
