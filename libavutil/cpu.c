@@ -16,9 +16,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stddef.h>
 #include <stdint.h>
 #include <stdatomic.h>
 
+#include "attributes.h"
 #include "cpu.h"
 #include "cpu_internal.h"
 #include "config.h"
@@ -298,4 +300,41 @@ int av_cpu_count(void)
     }
 
     return nb_cpus;
+}
+
+size_t av_cpu_max_align(void)
+{
+    int av_unused flags = av_get_cpu_flags();
+
+#if ARCH_ARM || ARCH_AARCH64
+    if (flags & AV_CPU_FLAG_NEON)
+        return 16;
+#elif ARCH_PPC
+    if (flags & (AV_CPU_FLAG_ALTIVEC   |
+                 AV_CPU_FLAG_VSX       |
+                 AV_CPU_FLAG_POWER8))
+        return 16;
+#elif ARCH_X86
+    if (flags & (AV_CPU_FLAG_AVX2      |
+                 AV_CPU_FLAG_AVX       |
+                 AV_CPU_FLAG_XOP       |
+                 AV_CPU_FLAG_FMA4      |
+                 AV_CPU_FLAG_FMA3      |
+                 AV_CPU_FLAG_AVXSLOW))
+        return 32;
+    if (flags & (AV_CPU_FLAG_AESNI     |
+                 AV_CPU_FLAG_SSE42     |
+                 AV_CPU_FLAG_SSE4      |
+                 AV_CPU_FLAG_SSSE3     |
+                 AV_CPU_FLAG_SSE3      |
+                 AV_CPU_FLAG_SSE2      |
+                 AV_CPU_FLAG_SSE       |
+                 AV_CPU_FLAG_ATOM      |
+                 AV_CPU_FLAG_SSSE3SLOW |
+                 AV_CPU_FLAG_SSE3SLOW  |
+                 AV_CPU_FLAG_SSE2SLOW))
+        return 16;
+#endif
+
+    return 8;
 }
