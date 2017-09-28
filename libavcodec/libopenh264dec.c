@@ -92,7 +92,7 @@ static int svc_decode_frame(AVCodecContext *avctx, void *data,
     SVCContext *s = avctx->priv_data;
     SBufferInfo info = { 0 };
     uint8_t* ptrs[3];
-    int linesize[3];
+    int ret, linesize[3];
     AVFrame *avframe = data;
     DECODING_STATE state;
 
@@ -106,7 +106,9 @@ static int svc_decode_frame(AVCodecContext *avctx, void *data,
         return avpkt->size;
     }
 
-    ff_set_dimensions(avctx, info.UsrData.sSystemBuffer.iWidth, info.UsrData.sSystemBuffer.iHeight);
+    ret = ff_set_dimensions(avctx, info.UsrData.sSystemBuffer.iWidth, info.UsrData.sSystemBuffer.iHeight);
+    if (ret < 0)
+        return ret;
     // The decoder doesn't (currently) support decoding into a user
     // provided buffer, so do a copy instead.
     if (ff_get_buffer(avctx, avframe, 0) < 0) {
