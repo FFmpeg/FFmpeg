@@ -33,10 +33,10 @@ $(DOC_EXAMPLES): %$(PROGSSUF)$(EXESUF): %.o
 
 examples: $(DOC_EXAMPLES)
 
-$(DOC_EXAMPLES:%$(EXESUF)=%.o): | doc/examples
+$(DOC_EXAMPLES:%$(PROGSSUF)$(EXESUF)=%.o): | doc/examples
 OBJDIRS += doc/examples
 
-DOXY_INPUT += $(DOC_EXAMPLES:%$(EXESUF)=%.c)
+DOXY_INPUT += $(DOC_EXAMPLES:%$(PROGSSUF)$(EXESUF)=%.c)
 
 examplesclean:
 	$(RM) $(ALL_DOC_EXAMPLES) $(ALL_DOC_EXAMPLES_G)
