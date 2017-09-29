@@ -6115,8 +6115,8 @@ if enabled sdl2; then
         sdl2_extralibs=$("${SDL2_CONFIG}" --libs)
         check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x020001" $sdl2_cflags &&
         check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x020100" $sdl2_cflags &&
-        check_func SDL_Init $sdl2_extralibs $sdl2_cflags ||
-            disable sdl2
+        check_func SDL_Init $sdl2_extralibs $sdl2_cflags &&
+            enable sdl2
     fi
     if test $target_os = "mingw32"; then
         sdl2_extralibs="$sdl2_extralibs -mconsole"
