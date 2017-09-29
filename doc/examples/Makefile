@@ -28,6 +28,9 @@ PROGS              += $(DOC_EXAMPLES)
 EXAMPLES_FILES := $(wildcard $(SRC_PATH)/doc/examples/*.c) $(SRC_PATH)/doc/examples/README
 EXAMPLE_MAKEFILE := $(SRC_PATH)/doc/examples/Makefile
 
+$(foreach P,$(DOC_EXAMPLES),$(eval OBJS-$(P:%$(PROGSSUF)$(EXESUF)=%) = $(P:%$(PROGSSUF)$(EXESUF)=%).o))
+$(DOC_EXAMPLES): %$(PROGSSUF)$(EXESUF): %.o
+
 examples: $(DOC_EXAMPLES)
 
 $(DOC_EXAMPLES:%$(EXESUF)=%.o): | doc/examples
@@ -40,5 +43,7 @@ examplesclean:
 	$(RM) $(CLEANSUFFIXES:%=doc/examples/%)
 
 docclean:: examplesclean
+
+-include $(wildcard $(DOC_EXAMPLES:%$(PROGSSUF)$(EXESUF)=%.d))
 
 .PHONY: examples
