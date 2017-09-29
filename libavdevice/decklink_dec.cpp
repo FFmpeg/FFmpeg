@@ -106,14 +106,6 @@ static int get_vanc_line_idx(BMDDisplayMode mode)
     return i - 1;
 }
 
-static inline uint16_t parity (uint16_t x)
-{
-    uint16_t i;
-    for (i = 4 * sizeof (x); i > 0; i /= 2)
-        x ^= x >> i;
-    return x & 1;
-}
-
 static inline void clear_parity_bits(uint16_t *buf, int len) {
     int i;
     for (i = 0; i < len; i++)
@@ -126,7 +118,7 @@ static int check_vanc_parity_checksum(uint16_t *buf, int len, uint16_t checksum)
     for (i = 3; i < len - 1; i++) {
         uint16_t v = buf[i];
         int np = v >> 8;
-        int p = parity(v & 0xff);
+        int p = av_parity(v & 0xff);
         if ((!!p ^ !!(v & 0x100)) || (np != 1 && np != 2)) {
             // Parity check failed
             return -1;
