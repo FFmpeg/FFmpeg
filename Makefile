@@ -172,7 +172,7 @@ install-data: $(DATA_FILES) $(EXAMPLES_FILES) $(EXAMPLE_MAKEFILE)
 	$(Q)mkdir -p "$(DATADIR)/examples"
 	$(INSTALL) -m 644 $(DATA_FILES) "$(DATADIR)"
 	$(INSTALL) -m 644 $(EXAMPLES_FILES) "$(DATADIR)/examples"
-	$(INSTALL) -m 644 -T $(EXAMPLE_MAKEFILE:%=%.example) "$(DATADIR)/examples/Makefile"
+	$(INSTALL) -m 644 $(EXAMPLE_MAKEFILE:%=%.example) "$(DATADIR)/examples/Makefile"
 
 uninstall: uninstall-libs uninstall-headers uninstall-progs uninstall-data
 
