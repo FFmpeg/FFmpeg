@@ -87,7 +87,7 @@ cglobal diff_bytes, 4,5,2, dst, src1, src2, w
         jz     .end_%1%2
 %if mmsize > 16
     ; fall back to narrower xmm
-    %define regsize mmsize / 2
+    %define regsize (mmsize / 2)
     DIFF_BYTES_LOOP_PREP .setup_loop_gpr_aa, .end_aa
 .loop2_%1%2:
     DIFF_BYTES_LOOP_CORE %1, %2, xm0, xm1
