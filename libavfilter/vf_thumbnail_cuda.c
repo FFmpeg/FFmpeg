@@ -269,7 +269,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     if (hw_frames_ctx->sw_format == AV_PIX_FMT_NV12 || hw_frames_ctx->sw_format == AV_PIX_FMT_YUV420P ||
         hw_frames_ctx->sw_format == AV_PIX_FMT_P010LE || hw_frames_ctx->sw_format == AV_PIX_FMT_P016LE)
     {
-        for (int i = 256; i < HIST_SIZE; i++)
+        int i;
+        for (i = 256; i < HIST_SIZE; i++)
             hist[i] = 4 * hist[i];
     }
 
