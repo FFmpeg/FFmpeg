@@ -143,10 +143,10 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR(EINVAL);
 
     avio_wl16(pb, SYNC_WORD);
-    avio_wl16(pb, 8 * 10);
+    avio_wl16(pb, 8 * pkt->size);
 
-    init_get_bits(&gb, pkt->data, 8*10);
-    for(i=0; i< 8 * 10; i++)
+    init_get_bits(&gb, pkt->data, 8 * pkt->size);
+    for (i = 0; i < 8 * pkt->size; i++)
         avio_wl16(pb, get_bits1(&gb) ? BIT_1 : BIT_0);
 
     return 0;
