@@ -29,6 +29,7 @@
 #define BIT_0      0x7f
 #define BIT_1      0x81
 
+#if CONFIG_BIT_DEMUXER
 static int probe(AVProbeData *p)
 {
     int i, j;
@@ -113,8 +114,9 @@ AVInputFormat ff_bit_demuxer = {
     .read_packet = read_packet,
     .extensions  = "bit",
 };
+#endif
 
-#if CONFIG_MUXERS
+#if CONFIG_BIT_MUXER
 static int write_header(AVFormatContext *s)
 {
     AVCodecParameters *par = s->streams[0]->codecpar;
