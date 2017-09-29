@@ -56,7 +56,6 @@ FFLIBS-$(CONFIG_SWSCALE)    += swscale
 FFLIBS := avutil
 
 DATA_FILES := $(wildcard $(SRC_PATH)/presets/*.ffpreset) $(SRC_PATH)/doc/ffprobe.xsd
-EXAMPLES_FILES := $(wildcard $(SRC_PATH)/doc/examples/*.c) $(SRC_PATH)/doc/examples/Makefile $(SRC_PATH)/doc/examples/README
 
 SKIPHEADERS = compat/w32pthreads.h
 
@@ -119,6 +118,7 @@ endef
 $(foreach D,$(FFLIBS),$(eval $(call DOSUBDIR,lib$(D))))
 
 include $(SRC_PATH)/doc/Makefile
+include $(SRC_PATH)/doc/examples/Makefile
 
 define DOPROG
 OBJS-$(1) += $(1).o $(OBJS-$(1)-yes)
@@ -168,10 +168,11 @@ install-progs: install-progs-yes $(AVPROGS)
 	$(Q)mkdir -p "$(BINDIR)"
 	$(INSTALL) -c -m 755 $(INSTPROGS) "$(BINDIR)"
 
-install-data: $(DATA_FILES) $(EXAMPLES_FILES)
+install-data: $(DATA_FILES) $(EXAMPLES_FILES) $(EXAMPLE_MAKEFILE)
 	$(Q)mkdir -p "$(DATADIR)/examples"
 	$(INSTALL) -m 644 $(DATA_FILES) "$(DATADIR)"
 	$(INSTALL) -m 644 $(EXAMPLES_FILES) "$(DATADIR)/examples"
+	$(INSTALL) -m 644 -T $(EXAMPLE_MAKEFILE:%=%.example) "$(DATADIR)/examples/Makefile"
 
 uninstall: uninstall-libs uninstall-headers uninstall-progs uninstall-data
 
@@ -219,5 +220,4 @@ $(sort $(OBJDIRS)):
 # so this saves some time on slow systems.
 .SUFFIXES:
 
-.PHONY: all all-yes alltools check *clean config install*
-.PHONY: testprogs uninstall*
+.PHONY: all all-yes alltools check *clean config install* testprogs uninstall*
