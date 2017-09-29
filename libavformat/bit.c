@@ -32,20 +32,23 @@
 #if CONFIG_BIT_DEMUXER
 static int probe(AVProbeData *p)
 {
-    int i, j;
+    int i = 0, j, valid = 0;
 
-    if(p->buf_size < 0x40)
-        return 0;
-
-    for(i=0; i+3<p->buf_size && i< 10*0x50; ){
-        if(AV_RL16(&p->buf[0]) != SYNC_WORD)
+    while (2 * i + 3 < p->buf_size){
+        if (AV_RL16(&p->buf[2 * i++]) != SYNC_WORD)
             return 0;
-        j=AV_RL16(&p->buf[2]);
-        if(j!=0x40 && j!=0x50)
+        j = AV_RL16(&p->buf[2 * i++]);
+        if (j != 0 && j != 0x10 && j != 0x40 && j != 0x50 && j != 0x76)
             return 0;
-        i+=j;
+        if (j)
+            valid++;
+        i += j;
     }
-    return AVPROBE_SCORE_EXTENSION;
+    if (valid > 10)
+        return AVPROBE_SCORE_MAX;
+    if (valid > 2)
+        return AVPROBE_SCORE_EXTENSION - 1;
+    return 0;
 }
 
 static int read_header(AVFormatContext *s)
