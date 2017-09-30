@@ -282,7 +282,7 @@ libavdevice
 
 
   avfoundation.m                        Thilo Borgmann
-  decklink*                             Deti Fliegl
+  decklink*                             Marton Balint
   dshow.c                               Roger Pack (CC rogerdpack@gmail.com)
   fbdev_enc.c                           Lukasz Marek
   gdigrab.c                             Roger Pack (CC rogerdpack@gmail.com)
