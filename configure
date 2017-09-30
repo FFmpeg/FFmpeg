@@ -1025,8 +1025,8 @@ check_lib(){
         enable $name && eval ${name}_extralibs="\$@"
 }
 
-check_pkg_config(){
-    log check_pkg_config "$@"
+test_pkg_config(){
+    log test_pkg_config "$@"
     name="$1"
     pkg_version="$2"
     pkg="${2%% *}"
@@ -1039,8 +1039,15 @@ check_pkg_config(){
     pkg_libs=$($pkg_config --libs $pkg_config_flags $pkg)
     check_func_headers "$headers" "$funcs" $pkg_cflags $pkg_libs "$@" &&
         enable $name &&
-        add_cflags    "$pkg_cflags" &&
-        eval $(sanitize_var_name ${name}_extralibs)="\$pkg_libs"
+        set_sanitized "${name}_cflags"    $pkg_cflags &&
+        set_sanitized "${name}_extralibs" $pkg_libs
+}
+
+check_pkg_config(){
+    log check_pkg_config "$@"
+    name="$1"
+    test_pkg_config "$@" &&
+        eval add_cflags \$${name}_cflags
 }
 
 check_exec(){
