@@ -197,6 +197,8 @@ static int dxv_decompress_dxt5(AVCodecContext *avctx)
             AV_WL32(ctx->tex_data + 4 * pos, prev);
             pos++;
         } else {
+            if (bytestream2_get_bytes_left(gbc) < 1)
+                return AVERROR_INVALIDDATA;
             if (state == 0) {
                 value = bytestream2_get_le32(gbc);
                 state = 16;
