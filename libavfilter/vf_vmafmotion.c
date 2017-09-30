@@ -261,15 +261,19 @@ int ff_vmafmotion_init(VMAFMotionData *s,
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV420P,
-        AV_PIX_FMT_YUV444P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV420P10,
-        AV_PIX_FMT_NONE
-    };
+    AVFilterFormats *fmts_list = NULL;
+    int format, ret;
 
-    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-    if (!fmts_list)
-        return AVERROR(ENOMEM);
+    for (format = 0; av_pix_fmt_desc_get(format); format++) {
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(format);
+        if (!(desc->flags & (AV_PIX_FMT_FLAG_RGB | AV_PIX_FMT_FLAG_HWACCEL | AV_PIX_FMT_FLAG_BITSTREAM | AV_PIX_FMT_FLAG_PAL)) &&
+            (desc->flags & AV_PIX_FMT_FLAG_PLANAR || desc->nb_components == 1) &&
+            (!(desc->flags & AV_PIX_FMT_FLAG_BE) == !HAVE_BIGENDIAN || desc->comp[0].depth == 8) &&
+            (desc->comp[0].depth == 8 || desc->comp[0].depth == 10) &&
+            (ret = ff_add_format(&fmts_list, format)) < 0)
+            return ret;
+    }
+
     return ff_set_common_formats(ctx, fmts_list);
 }
 
