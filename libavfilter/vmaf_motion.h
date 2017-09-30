@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFILTER_VMAFMOTION_H
-#define AVFILTER_VMAFMOTION_H
+#ifndef AVFILTER_VMAF_MOTION_H
+#define AVFILTER_VMAF_MOTION_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -55,4 +55,4 @@ int ff_vmafmotion_init(VMAFMotionData *data, int w, int h, enum AVPixelFormat fm
 double ff_vmafmotion_process(VMAFMotionData *data, AVFrame *frame);
 double ff_vmafmotion_uninit(VMAFMotionData *data);
 
-#endif /* AVFILTER_VMAFMOTION_H */
+#endif /* AVFILTER_VMAF_MOTION_H */
