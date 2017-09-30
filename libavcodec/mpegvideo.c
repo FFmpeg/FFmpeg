@@ -1283,8 +1283,7 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             s->pict_type, s->droppable);
 
     if ((!s->last_picture_ptr || !s->last_picture_ptr->f->buf[0]) &&
-        (s->pict_type != AV_PICTURE_TYPE_I ||
-         s->picture_structure != PICT_FRAME)) {
+        (s->pict_type != AV_PICTURE_TYPE_I)) {
         int h_chroma_shift, v_chroma_shift;
         av_pix_fmt_get_chroma_sub_sample(s->avctx->pix_fmt,
                                          &h_chroma_shift, &v_chroma_shift);
@@ -1294,9 +1293,6 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         else if (s->pict_type != AV_PICTURE_TYPE_I)
             av_log(avctx, AV_LOG_ERROR,
                    "warning: first frame is no keyframe\n");
-        else if (s->picture_structure != PICT_FRAME)
-            av_log(avctx, AV_LOG_DEBUG,
-                   "allocate dummy last picture for field based first keyframe\n");
 
         /* Allocate a dummy frame */
         i = ff_find_unused_picture(s->avctx, s->picture, 0);
