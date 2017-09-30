@@ -1,0 +1,14 @@
+[PROGRAM]
+[STREAM]
+codec_name=hevc
+[/STREAM]
+[STREAM]
+codec_name=aac_latm
+[/STREAM]
+[/PROGRAM]
+[STREAM]
+codec_name=hevc
+[/STREAM]
+[STREAM]
+codec_name=aac_latm
+[/STREAM]
