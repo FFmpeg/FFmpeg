@@ -379,7 +379,7 @@ uint8_t *get_metadata(AVFormatContext *avctx, uint16_t *buf, size_t width,
                 av_log(avctx, AV_LOG_WARNING, "VANC parity or checksum incorrect\n");
                 goto skip_packet;
             }
-            tgt = teletext_data_unit_from_ancillary_packet(buf + 3, buf + len, tgt, cctx->teletext_lines, 0);
+            tgt = teletext_data_unit_from_ancillary_packet(buf + 3, buf + len, tgt, cctx->teletext_lines, 1);
         } else if (did == 0x61 && sdid == 0x01) {
             unsigned int data_len;
             uint8_t *data;
