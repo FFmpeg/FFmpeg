@@ -21,8 +21,9 @@ DOC_EXAMPLES-$(CONFIG_TRANSCODE_AAC_EXAMPLE)     += transcode_aac
 DOC_EXAMPLES-$(CONFIG_TRANSCODING_EXAMPLE)       += transcoding
 
 DOC_EXAMPLES       := $(DOC_EXAMPLES-yes:%=doc/examples/%$(PROGSSUF)$(EXESUF))
+DOC_EXAMPLES_G     := $(DOC_EXAMPLES-yes:%=doc/examples/%$(PROGSSUF)_g$(EXESUF))
 ALL_DOC_EXAMPLES   := $(DOC_EXAMPLES) $(DOC_EXAMPLES-:%=doc/examples/%$(PROGSSUF)$(EXESUF))
-ALL_DOC_EXAMPLES_G := $(DOC_EXAMPLES) $(DOC_EXAMPLES-:%=doc/examples/%$(PROGSSUF)_g$(EXESUF))
+ALL_DOC_EXAMPLES_G := $(DOC_EXAMPLES_G) $(DOC_EXAMPLES-:%=doc/examples/%$(PROGSSUF)_g$(EXESUF))
 PROGS              += $(DOC_EXAMPLES)
 
 EXAMPLES_FILES := $(wildcard $(SRC_PATH)/doc/examples/*.c) $(SRC_PATH)/doc/examples/README
