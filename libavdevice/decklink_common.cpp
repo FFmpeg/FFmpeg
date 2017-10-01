@@ -241,7 +241,7 @@ int ff_decklink_set_format(AVFormatContext *avctx,
     if (ctx->bmd_mode == bmdModeUnknown)
         return -1;
     if (direction == DIRECTION_IN) {
-        if (ctx->dli->DoesSupportVideoMode(ctx->bmd_mode, bmdFormat8BitYUV,
+        if (ctx->dli->DoesSupportVideoMode(ctx->bmd_mode, (BMDPixelFormat) cctx->raw_format,
                                            bmdVideoOutputFlagDefault,
                                            &support, NULL) != S_OK)
             return -1;

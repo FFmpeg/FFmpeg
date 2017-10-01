@@ -1171,10 +1171,10 @@ void decode_mb_mode(VP8Context *s, VP8mvbounds *mv_bounds,
                     uint8_t *segment, uint8_t *ref, int layout, int is_vp7)
 {
     VP56RangeCoder *c = &s->c;
-    static const char *vp7_feature_name[] = { "q-index",
-                                              "lf-delta",
-                                              "partial-golden-update",
-                                              "blit-pitch" };
+    static const char * const vp7_feature_name[] = { "q-index",
+                                                     "lf-delta",
+                                                     "partial-golden-update",
+                                                     "blit-pitch" };
     if (is_vp7) {
         int i;
         *segment = 0;

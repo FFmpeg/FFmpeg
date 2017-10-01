@@ -84,8 +84,8 @@ static av_cold int qsv_decode_init(AVCodecContext *avctx)
     int ret;
 
     if (avctx->codec_id == AV_CODEC_ID_HEVC && s->load_plugin != LOAD_PLUGIN_NONE) {
-        static const char *uid_hevcdec_sw = "15dd936825ad475ea34e35f3f54217a6";
-        static const char *uid_hevcdec_hw = "33a61c0b4c27454ca8d85dde757c6f8e";
+        static const char * const uid_hevcdec_sw = "15dd936825ad475ea34e35f3f54217a6";
+        static const char * const uid_hevcdec_hw = "33a61c0b4c27454ca8d85dde757c6f8e";
 
         if (s->qsv.load_plugins[0]) {
             av_log(avctx, AV_LOG_WARNING,

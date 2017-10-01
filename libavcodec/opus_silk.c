@@ -599,7 +599,7 @@ static void silk_decode_frame(SilkContext *s, OpusRangeCoder *rc,
         if (lag_absolute) {
             /* primary lag is coded absolute */
             int highbits, lowbits;
-            static const uint16_t *model[] = {
+            static const uint16_t * const model[] = {
                 ff_silk_model_pitch_lowbits_nb, ff_silk_model_pitch_lowbits_mb,
                 ff_silk_model_pitch_lowbits_wb
             };
@@ -633,11 +633,11 @@ static void silk_decode_frame(SilkContext *s, OpusRangeCoder *rc,
         ltpfilter = ff_opus_rc_dec_cdf(rc, ff_silk_model_ltp_filter);
         for (i = 0; i < s->subframes; i++) {
             int index, j;
-            static const uint16_t *filter_sel[] = {
+            static const uint16_t * const filter_sel[] = {
                 ff_silk_model_ltp_filter0_sel, ff_silk_model_ltp_filter1_sel,
                 ff_silk_model_ltp_filter2_sel
             };
-            static const int8_t (*filter_taps[])[5] = {
+            static const int8_t (* const filter_taps[])[5] = {
                 ff_silk_ltp_filter0_taps, ff_silk_ltp_filter1_taps, ff_silk_ltp_filter2_taps
             };
             index = ff_opus_rc_dec_cdf(rc, filter_sel[ltpfilter]);

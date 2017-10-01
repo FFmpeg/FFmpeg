@@ -523,7 +523,7 @@ static int mp3_write_packet(AVFormatContext *s, AVPacket *pkt)
                 return mp3_write_audio_packet(s, pkt);
             }
 
-            ret = av_copy_packet(&pktl->pkt, pkt);
+            ret = av_packet_ref(&pktl->pkt, pkt);
             if (ret < 0) {
                 av_freep(&pktl);
                 return ret;

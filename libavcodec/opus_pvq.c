@@ -381,8 +381,9 @@ static float ppp_pvq_search_c(float *X, int *y, int K, int N)
     }
 
     while (K) {
-        int max_idx = 0, max_den = 1, phase = FFSIGN(K);
+        int max_idx = 0, phase = FFSIGN(K);
         float max_num = 0.0f;
+        float max_den = 1.0f;
         y_norm += 1.0f;
 
         for (i = 0; i < N; i++) {

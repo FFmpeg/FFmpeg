@@ -29,7 +29,7 @@ fate-fitsdec-bitpix-32: CMD = framecrc -i $(TARGET_SAMPLES)/fits/tst0005.fits -p
 FATE_FITS_DEC-$(call DEMDEC, FITS, FITS) += fate-fitsdec-bitpix-64
 fate-fitsdec-bitpix-64: CMD = framecrc -i $(TARGET_SAMPLES)/fits/tst0006.fits -pix_fmt gray16
 
-FATE_FITS_DEC-$(call DEMDEC, FITS, FITS) += fate-fitsdec-multi
+FATE_FITS_DEC-$(call ALLYES, GIF_DEMUXER FITS_DEMUXER GIF_DECODER FITS_DECODER FITS_ENCODER FITS_MUXER) += fate-fitsdec-multi
 fate-fitsdec-multi: tests/data/fits-multi.fits
 fate-fitsdec-multi: CMD = framecrc -i $(TARGET_PATH)/tests/data/fits-multi.fits -pix_fmt gbrap
 
@@ -39,7 +39,7 @@ fate-fitsdec%: CMD = framecrc -i $(SRC) -pix_fmt $(PIXFMT)
 
 FATE_FITS_DEC_PIXFMT = gray gbrp gbrp16 gbrap16
 $(FATE_FITS_DEC_PIXFMT:%=fate-fitsdec-%): fate-fitsdec-%: tests/data/lena-%.fits
-FATE_FITS_DEC-$(call DEMDEC, FITS, FITS) += $(FATE_FITS_DEC_PIXFMT:%=fate-fitsdec-%)
+FATE_FITS_DEC-$(call ALLYES, FITS_DEMUXER IMAGE2_DEMUXER FITS_DECODER PNG_DECODER FITS_ENCODER FITS_MUXER) += $(FATE_FITS_DEC_PIXFMT:%=fate-fitsdec-%)
 
 FATE_FITS += $(FATE_FITS_DEC-yes)
 fate-fitsdec: $(FATE_FITS_DEC-yes)
@@ -50,7 +50,7 @@ fate-fitsenc%: CMD = framecrc -i $(SRC) -c:v fits -pix_fmt $(PIXFMT)
 
 FATE_FITS_ENC_PIXFMT = gray gray16be gbrp gbrap gbrp16be gbrap16be
 $(FATE_FITS_ENC_PIXFMT:%=fate-fitsenc-%): tests/data/fits-multi.fits
-FATE_FITS_ENC-$(call ENCDEC, FITS, FITS) += $(FATE_FITS_ENC_PIXFMT:%=fate-fitsenc-%)
+FATE_FITS_ENC-$(call ALLYES, GIF_DEMUXER GIF_DECODER FITS_ENCODER FITS_MUXER) += $(FATE_FITS_ENC_PIXFMT:%=fate-fitsenc-%)
 
 FATE_FITS += $(FATE_FITS_ENC-yes)
 fate-fitsenc: $(FATE_FITS_ENC-yes)

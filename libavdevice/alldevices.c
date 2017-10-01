@@ -48,7 +48,6 @@ static void register_all(void)
     REGISTER_INOUTDEV(DECKLINK,         decklink);
     REGISTER_INOUTDEV(LIBNDI_NEWTEK,    libndi_newtek);
     REGISTER_INDEV   (DSHOW,            dshow);
-    REGISTER_INDEV   (DV1394,           dv1394);
     REGISTER_INOUTDEV(FBDEV,            fbdev);
     REGISTER_INDEV   (GDIGRAB,          gdigrab);
     REGISTER_INDEV   (IEC61883,         iec61883);

@@ -30,7 +30,7 @@ cextern pw_16
 cextern pw_32
 cextern pb_80
 
-section .text
+SECTION .text
 
 %macro UNPACK_ADD 6
     mov%5   %1, %3

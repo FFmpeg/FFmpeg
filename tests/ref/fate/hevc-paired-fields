@@ -1,0 +1,16 @@
+[FRAME]
+interlaced_frame=1
+top_field_first=1
+[/FRAME]
+[FRAME]
+interlaced_frame=1
+top_field_first=0
+[/FRAME]
+[FRAME]
+interlaced_frame=1
+top_field_first=1
+[/FRAME]
+[FRAME]
+interlaced_frame=1
+top_field_first=0
+[/FRAME]

@@ -112,7 +112,7 @@ static inline void v4l2_save_to_context(V4L2Context* ctx, struct v4l2_format_upd
 }
 
 /**
- * returns 1 if reinit was succesful, negative if it failed
+ * returns 1 if reinit was successful, negative if it failed
  * returns 0 if reinit was not executed
  */
 static int v4l2_handle_event(V4L2Context *ctx)
@@ -266,7 +266,7 @@ static V4L2Buffer* v4l2_dequeue_v4l2buf(V4L2Context *ctx, int timeout)
             return NULL;
         }
         if (ret) {
-            /* if re-init was successfull drop the buffer (if there was one)
+            /* if re-init was successful drop the buffer (if there was one)
              * since we had to reconfigure capture (unmap all buffers)
              */
             return NULL;

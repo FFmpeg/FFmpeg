@@ -16,9 +16,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stddef.h>
 #include <stdint.h>
 #include <stdatomic.h>
 
+#include "attributes.h"
 #include "cpu.h"
 #include "cpu_internal.h"
 #include "config.h"
@@ -298,4 +300,18 @@ int av_cpu_count(void)
     }
 
     return nb_cpus;
+}
+
+size_t av_cpu_max_align(void)
+{
+    if (ARCH_AARCH64)
+        return ff_get_cpu_max_align_aarch64();
+    if (ARCH_ARM)
+        return ff_get_cpu_max_align_arm();
+    if (ARCH_PPC)
+        return ff_get_cpu_max_align_ppc();
+    if (ARCH_X86)
+        return ff_get_cpu_max_align_x86();
+
+    return 8;
 }

@@ -49,6 +49,7 @@ struct decklink_cctx {
     int video_input;
     int draw_bars;
     char *format_code;
+    int raw_format;
     int64_t queue_size;
 };
 

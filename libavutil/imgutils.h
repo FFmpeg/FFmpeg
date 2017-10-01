@@ -172,7 +172,11 @@ int av_image_fill_arrays(uint8_t *dst_data[4], int dst_linesize[4],
  * Return the size in bytes of the amount of data required to store an
  * image with the given parameters.
  *
- * @param[in] align the assumed linesize alignment
+ * @param pix_fmt  the pixel format of the image
+ * @param width    the width of the image in pixels
+ * @param height   the height of the image in pixels
+ * @param align    the assumed linesize alignment
+ * @return the buffer size in bytes, a negative error code in case of failure
  */
 int av_image_get_buffer_size(enum AVPixelFormat pix_fmt, int width, int height, int align);
 

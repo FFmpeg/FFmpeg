@@ -27,7 +27,7 @@
 #include "vaapi_encode.h"
 #include "avcodec.h"
 
-static const char *picture_type_name[] = { "IDR", "I", "P", "B" };
+static const char * const picture_type_name[] = { "IDR", "I", "P", "B" };
 
 static int vaapi_encode_make_packed_header(AVCodecContext *avctx,
                                            VAAPIEncodePicture *pic,

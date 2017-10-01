@@ -335,7 +335,7 @@ static int read_ir(AVFilterLink *inlink, AVFrame *frame)
     av_frame_free(&frame);
 
     ir_len = av_audio_fifo_size(s->in[input_number].fifo);
-    max_ir_len = 4096;
+    max_ir_len = 65536;
     if (ir_len > max_ir_len) {
         av_log(ctx, AV_LOG_ERROR, "Too big length of IRs: %d > %d.\n", ir_len, max_ir_len);
         return AVERROR(EINVAL);
