@@ -680,14 +680,17 @@ static void compute_default_clut(AVSubtitleRect *rect, int w, int h)
                 int l_r = x+1<w ? L( 1, 0) : 1;
                 int l_t = y     ? L( 0,-1) : 1;
                 int l_b = y+1<h ? L( 0, 1) : 1;
-                int score;
                 if (l_m)
                     continue;
                 scoretab[v] += l_l + l_r + l_t + l_b;
-                score = 1024LL*scoretab[v] / counttab[v];
+            }
+        }
+        for (x = 0; x < 256; x++) {
+            if (scoretab[x]) {
+                int score = 1024LL*scoretab[x] / counttab[x];
                 if (score > bestscore) {
                     bestscore = score;
-                    bestv = v;
+                    bestv = x;
                 }
             }
         }
