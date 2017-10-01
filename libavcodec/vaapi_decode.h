@@ -24,6 +24,7 @@
 #include "libavutil/frame.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_vaapi.h"
+#include "libavutil/internal.h"
 
 #include "avcodec.h"
 
@@ -57,9 +58,11 @@ typedef struct VAAPIDecodeContext {
     VAContextID           va_context;
 
 #if FF_API_VAAPI_CONTEXT
+FF_DISABLE_DEPRECATION_WARNINGS
     int                   have_old_context;
     struct vaapi_context *old_context;
     AVBufferRef          *device_ref;
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
     AVHWDeviceContext    *device;
