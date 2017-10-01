@@ -392,14 +392,14 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
         err = AVERROR(EIO);
         // vaRenderPicture() has been called here, so we should not destroy
         // the parameter buffers unless separate destruction is required.
-        if (ctx->hwctx->driver_quirks &
+        if (HAVE_VAAPI_1 || ctx->hwctx->driver_quirks &
             AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS)
             goto fail;
         else
             goto fail_at_end;
     }
 
-    if (ctx->hwctx->driver_quirks &
+    if (HAVE_VAAPI_1 || ctx->hwctx->driver_quirks &
         AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS) {
         for (i = 0; i < pic->nb_param_buffers; i++) {
             vas = vaDestroyBuffer(ctx->hwctx->display,
