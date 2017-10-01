@@ -813,7 +813,7 @@ static int binkb_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
     int v, col[2];
     const uint8_t *scan;
     int xoff, yoff;
-    LOCAL_ALIGNED_16(int16_t, block, [64]);
+    LOCAL_ALIGNED_32(int16_t, block, [64]);
     LOCAL_ALIGNED_16(int32_t, dctblock, [64]);
     int coordmap[64];
     int ybias = is_key ? -15 : 0;
@@ -976,7 +976,7 @@ static int bink_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
     uint8_t *dst, *prev, *ref_start, *ref_end;
     int v, col[2];
     const uint8_t *scan;
-    LOCAL_ALIGNED_16(int16_t, block, [64]);
+    LOCAL_ALIGNED_32(int16_t, block, [64]);
     LOCAL_ALIGNED_16(uint8_t, ublock, [64]);
     LOCAL_ALIGNED_16(int32_t, dctblock, [64]);
     int coordmap[64];

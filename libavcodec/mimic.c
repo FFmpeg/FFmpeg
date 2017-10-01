@@ -49,7 +49,7 @@ typedef struct MimicContext {
 
     ThreadFrame     frames     [16];
 
-    DECLARE_ALIGNED(16, int16_t, dct_block)[64];
+    DECLARE_ALIGNED(32, int16_t, dct_block)[64];
 
     GetBitContext   gb;
     ScanTable       scantable;

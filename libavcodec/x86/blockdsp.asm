@@ -4,6 +4,8 @@
 ;* Copyright (c) 2008 Loren Merritt
 ;* Copyright (c) 2009 Fiona Glaser
 ;*
+;* AVX version by Jokyo Images
+;*
 ;* This file is part of FFmpeg.
 ;*
 ;* FFmpeg is free software; you can redistribute it and/or
@@ -39,20 +41,18 @@ cglobal clear_block, 1, 1, %1, blocks
     mova  [blocksq+mmsize*(1+%%i)], m0
     mova  [blocksq+mmsize*(2+%%i)], m0
     mova  [blocksq+mmsize*(3+%%i)], m0
-    mova  [blocksq+mmsize*(4+%%i)], m0
-    mova  [blocksq+mmsize*(5+%%i)], m0
-    mova  [blocksq+mmsize*(6+%%i)], m0
-    mova  [blocksq+mmsize*(7+%%i)], m0
-%assign %%i %%i+8
+%assign %%i %%i+4
 %endrep
     RET
 %endmacro
 
 INIT_MMX mmx
 %define ZERO pxor
-CLEAR_BLOCK 0, 2
+CLEAR_BLOCK 0, 4
 INIT_XMM sse
 %define ZERO xorps
+CLEAR_BLOCK 1, 2
+INIT_YMM avx
 CLEAR_BLOCK 1, 1
 
 ;-----------------------------------------
@@ -83,4 +83,6 @@ INIT_MMX mmx
 CLEAR_BLOCKS 0
 INIT_XMM sse
 %define ZERO xorps
+CLEAR_BLOCKS 1
+INIT_YMM avx
 CLEAR_BLOCKS 1

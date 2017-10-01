@@ -51,7 +51,7 @@ typedef struct TqiContext {
     uint16_t intra_matrix[64];
     int last_dc[3];
 
-    DECLARE_ALIGNED(16, int16_t, block)[6][64];
+    DECLARE_ALIGNED(32, int16_t, block)[6][64];
 } TqiContext;
 
 static av_cold int tqi_decode_init(AVCodecContext *avctx)
