@@ -265,18 +265,6 @@ static inline uint16_t exr_halflt2uint(uint16_t v)
     return (v + (1 << 16)) >> (exp + 1);
 }
 
-static void predictor(uint8_t *src, int size)
-{
-    uint8_t *t    = src + 1;
-    uint8_t *stop = src + size;
-
-    while (t < stop) {
-        int d = (int) t[-1] + (int) t[0] - 128;
-        t[0] = d;
-        ++t;
-    }
-}
-
 static int zip_uncompress(EXRContext *s, const uint8_t *src, int compressed_size,
                           int uncompressed_size, EXRThreadData *td)
 {
@@ -288,7 +276,7 @@ static int zip_uncompress(EXRContext *s, const uint8_t *src, int compressed_size
 
     av_assert1(uncompressed_size % 2 == 0);
 
-    predictor(td->tmp, uncompressed_size);
+    s->dsp.predictor(td->tmp, uncompressed_size);
     s->dsp.reorder_pixels(td->uncompressed_data, td->tmp, uncompressed_size);
 
     return 0;
@@ -335,7 +323,7 @@ static int rle_uncompress(EXRContext *ctx, const uint8_t *src, int compressed_si
 
     av_assert1(uncompressed_size % 2 == 0);
 
-    predictor(td->tmp, uncompressed_size);
+    ctx->dsp.predictor(td->tmp, uncompressed_size);
     ctx->dsp.reorder_pixels(td->uncompressed_data, td->tmp, uncompressed_size);
 
     return 0;
