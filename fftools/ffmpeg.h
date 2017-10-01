@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFMPEG_H
-#define FFMPEG_H
+#ifndef FFTOOLS_FFMPEG_H
+#define FFTOOLS_FFMPEG_H
 
 #include "config.h"
 
@@ -676,4 +676,4 @@ int hw_device_setup_for_encode(OutputStream *ost);
 
 int hwaccel_decode_init(AVCodecContext *avctx);
 
-#endif /* FFMPEG_H */
+#endif /* FFTOOLS_FFMPEG_H */

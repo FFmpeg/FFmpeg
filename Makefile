@@ -15,31 +15,6 @@ vpath %.cu   $(SRC_PATH)
 vpath %.ptx  $(SRC_PATH)
 vpath %/fate_config.sh.template $(SRC_PATH)
 
-AVPROGS-$(CONFIG_FFMPEG)   += ffmpeg
-AVPROGS-$(CONFIG_FFPLAY)   += ffplay
-AVPROGS-$(CONFIG_FFPROBE)  += ffprobe
-AVPROGS-$(CONFIG_FFSERVER) += ffserver
-
-AVPROGS    := $(AVPROGS-yes:%=%$(PROGSSUF)$(EXESUF))
-INSTPROGS   = $(AVPROGS-yes:%=%$(PROGSSUF)$(EXESUF))
-PROGS      += $(AVPROGS)
-
-AVBASENAMES  = ffmpeg ffplay ffprobe ffserver
-ALLAVPROGS   = $(AVBASENAMES:%=%$(PROGSSUF)$(EXESUF))
-ALLAVPROGS_G = $(AVBASENAMES:%=%$(PROGSSUF)_g$(EXESUF))
-
-$(foreach prog,$(AVBASENAMES),$(eval OBJS-$(prog) += cmdutils.o))
-$(foreach prog,$(AVBASENAMES),$(eval OBJS-$(prog)-$(CONFIG_OPENCL) += cmdutils_opencl.o))
-
-OBJS-ffmpeg                   += ffmpeg_opt.o ffmpeg_filter.o ffmpeg_hw.o
-OBJS-ffmpeg-$(CONFIG_VIDEOTOOLBOX) += ffmpeg_videotoolbox.o
-OBJS-ffmpeg-$(CONFIG_LIBMFX)  += ffmpeg_qsv.o
-ifndef CONFIG_VIDEOTOOLBOX
-OBJS-ffmpeg-$(CONFIG_VDA)     += ffmpeg_videotoolbox.o
-endif
-OBJS-ffmpeg-$(CONFIG_CUVID)   += ffmpeg_cuvid.o
-OBJS-ffserver                 += ffserver_config.o
-
 TESTTOOLS   = audiogen videogen rotozoom tiny_psnr tiny_ssim base64 audiomatch
 HOSTPROGS  := $(TESTTOOLS:%=tests/%) doc/print_options
 
@@ -68,8 +43,6 @@ include $(SRC_PATH)/ffbuild/common.mak
 FF_EXTRALIBS := $(FFEXTRALIBS)
 FF_DEP_LIBS  := $(DEP_LIBS)
 FF_STATIC_DEP_LIBS := $(STATIC_DEP_LIBS)
-
-all: $(AVPROGS)
 
 $(TOOLS): %$(EXESUF): %.o
 	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $^ $(ELIBS)
@@ -117,27 +90,17 @@ endef
 
 $(foreach D,$(FFLIBS),$(eval $(call DOSUBDIR,lib$(D))))
 
+include $(SRC_PATH)/fftools/Makefile
 include $(SRC_PATH)/doc/Makefile
 include $(SRC_PATH)/doc/examples/Makefile
 
-define DOPROG
-OBJS-$(1) += $(1).o $(OBJS-$(1)-yes)
-$(1)$(PROGSSUF)_g$(EXESUF): $$(OBJS-$(1))
-$$(OBJS-$(1)): CFLAGS  += $(CFLAGS-$(1))
-$(1)$(PROGSSUF)_g$(EXESUF): LDFLAGS += $(LDFLAGS-$(1))
-$(1)$(PROGSSUF)_g$(EXESUF): FF_EXTRALIBS += $(EXTRALIBS-$(1))
--include $$(OBJS-$(1):.o=.d)
-endef
-
-$(foreach P,$(AVPROGS-yes),$(eval $(call DOPROG,$(P))))
-
-ffprobe.o cmdutils.o libavcodec/utils.o libavformat/utils.o libavdevice/avdevice.o libavfilter/avfilter.o libavutil/utils.o libpostproc/postprocess.o libswresample/swresample.o libswscale/utils.o : libavutil/ffversion.h
+libavcodec/utils.o libavformat/utils.o libavdevice/avdevice.o libavfilter/avfilter.o libavutil/utils.o libpostproc/postprocess.o libswresample/swresample.o libswscale/utils.o : libavutil/ffversion.h
 
 $(PROGS): %$(PROGSSUF)$(EXESUF): %$(PROGSSUF)_g$(EXESUF)
 	$(CP) $< $@
 	$(STRIP) $@
 
-%$(PROGSSUF)_g$(EXESUF): %.o $(FF_DEP_LIBS)
+%$(PROGSSUF)_g$(EXESUF): $(FF_DEP_LIBS)
 	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $(OBJS-$*) $(FF_EXTRALIBS)
 
 VERSION_SH  = $(SRC_PATH)/ffbuild/version.sh
@@ -153,20 +116,9 @@ libavutil/ffversion.h .version:
 # force version.sh to run whenever version might have changed
 -include .version
 
-ifdef AVPROGS
-install: install-progs install-data
-endif
-
 install: install-libs install-headers
 
 install-libs: install-libs-yes
-
-install-progs-yes:
-install-progs-$(CONFIG_SHARED): install-libs
-
-install-progs: install-progs-yes $(AVPROGS)
-	$(Q)mkdir -p "$(BINDIR)"
-	$(INSTALL) -c -m 755 $(INSTPROGS) "$(BINDIR)"
 
 install-data: $(DATA_FILES) $(EXAMPLES_FILES) $(EXAMPLE_MAKEFILE)
 	$(Q)mkdir -p "$(DATADIR)/examples"
@@ -174,16 +126,12 @@ install-data: $(DATA_FILES) $(EXAMPLES_FILES) $(EXAMPLE_MAKEFILE)
 	$(INSTALL) -m 644 $(EXAMPLES_FILES) "$(DATADIR)/examples"
 	$(INSTALL) -m 644 $(EXAMPLE_MAKEFILE:%=%.example) "$(DATADIR)/examples/Makefile"
 
-uninstall: uninstall-libs uninstall-headers uninstall-progs uninstall-data
-
-uninstall-progs:
-	$(RM) $(addprefix "$(BINDIR)/", $(ALLAVPROGS))
+uninstall: uninstall-libs uninstall-headers uninstall-data
 
 uninstall-data:
 	$(RM) -r "$(DATADIR)"
 
 clean::
-	$(RM) $(ALLAVPROGS) $(ALLAVPROGS_G)
 	$(RM) $(CLEANSUFFIXES)
 	$(RM) $(CLEANSUFFIXES:%=compat/msvcrt/%)
 	$(RM) $(CLEANSUFFIXES:%=compat/atomics/pthread/%)

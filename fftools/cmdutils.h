@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef CMDUTILS_H
-#define CMDUTILS_H
+#ifndef FFTOOLS_CMDUTILS_H
+#define FFTOOLS_CMDUTILS_H
 
 #include <stdint.h>
 
@@ -659,4 +659,4 @@ void *grow_array(void *array, int elem_size, int *size, int new_size);
 
 double get_rotation(AVStream *st);
 
-#endif /* CMDUTILS_H */
+#endif /* FFTOOLS_CMDUTILS_H */

@@ -30,7 +30,7 @@ EXAMPLES_FILES := $(wildcard $(SRC_PATH)/doc/examples/*.c) $(SRC_PATH)/doc/examp
 EXAMPLE_MAKEFILE := $(SRC_PATH)/doc/examples/Makefile
 
 $(foreach P,$(DOC_EXAMPLES),$(eval OBJS-$(P:%$(PROGSSUF)$(EXESUF)=%) = $(P:%$(PROGSSUF)$(EXESUF)=%).o))
-$(DOC_EXAMPLES): %$(PROGSSUF)$(EXESUF): %.o
+$(DOC_EXAMPLES_G): %$(PROGSSUF)_g$(EXESUF): %.o
 
 examples: $(DOC_EXAMPLES)
 
