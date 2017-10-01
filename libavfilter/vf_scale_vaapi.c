@@ -361,7 +361,7 @@ static int scale_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame)
         goto fail_after_render;
     }
 
-    if (ctx->hwctx->driver_quirks &
+    if (CONFIG_VAAPI_1 || ctx->hwctx->driver_quirks &
         AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS) {
         vas = vaDestroyBuffer(ctx->hwctx->display, params_id);
         if (vas != VA_STATUS_SUCCESS) {
