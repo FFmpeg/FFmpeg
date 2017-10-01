@@ -863,11 +863,12 @@ static av_cold int vaapi_encode_h264_init(AVCodecContext *avctx)
     ctx->codec = &vaapi_encode_type_h264;
 
     switch (avctx->profile) {
+    case FF_PROFILE_H264_BASELINE:
+        av_log(avctx, AV_LOG_WARNING, "H.264 baseline profile is not "
+               "supported, using constrained baseline profile instead.\n");
+        avctx->profile = FF_PROFILE_H264_CONSTRAINED_BASELINE;
     case FF_PROFILE_H264_CONSTRAINED_BASELINE:
         ctx->va_profile = VAProfileH264ConstrainedBaseline;
-        break;
-    case FF_PROFILE_H264_BASELINE:
-        ctx->va_profile = VAProfileH264Baseline;
         break;
     case FF_PROFILE_H264_MAIN:
         ctx->va_profile = VAProfileH264Main;

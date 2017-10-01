@@ -247,7 +247,6 @@ static const struct {
     MAP(MPEG4,       MPEG4_MAIN,      MPEG4Main   ),
     MAP(H264,        H264_CONSTRAINED_BASELINE,
                            H264ConstrainedBaseline),
-    MAP(H264,        H264_BASELINE,   H264Baseline),
     MAP(H264,        H264_MAIN,       H264Main    ),
     MAP(H264,        H264_HIGH,       H264High    ),
 #if VA_CHECK_VERSION(0, 37, 0)
