@@ -916,6 +916,22 @@ static void vaapi_device_free(AVHWDeviceContext *ctx)
     av_freep(&priv);
 }
 
+#if HAVE_VAAPI_1
+static void vaapi_device_log_error(void *context, const char *message)
+{
+    AVHWDeviceContext *ctx = context;
+
+    av_log(ctx, AV_LOG_ERROR, "libva: %s", message);
+}
+
+static void vaapi_device_log_info(void *context, const char *message)
+{
+    AVHWDeviceContext *ctx = context;
+
+    av_log(ctx, AV_LOG_VERBOSE, "libva: %s", message);
+}
+#endif
+
 static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
                                AVDictionary *opts, int flags)
 {
@@ -984,6 +1000,11 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
                "device: %s.\n", device ? device : "");
         return AVERROR(EINVAL);
     }
+
+#if HAVE_VAAPI_1
+    vaSetErrorCallback(display, &vaapi_device_log_error, ctx);
+    vaSetInfoCallback (display, &vaapi_device_log_info,  ctx);
+#endif
 
     hwctx->display = display;
 
