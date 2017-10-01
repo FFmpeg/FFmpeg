@@ -1094,14 +1094,32 @@ static void vaapi_device_free(AVHWDeviceContext *ctx)
     av_freep(&priv);
 }
 
+static int vaapi_device_connect(AVHWDeviceContext *ctx,
+                                VADisplay display)
+{
+    AVVAAPIDeviceContext *hwctx = ctx->hwctx;
+    int major, minor;
+    VAStatus vas;
+
+    hwctx->display = display;
+
+    vas = vaInitialize(display, &major, &minor);
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to initialise VAAPI "
+               "connection: %d (%s).\n", vas, vaErrorStr(vas));
+        return AVERROR(EIO);
+    }
+    av_log(ctx, AV_LOG_VERBOSE, "Initialised VAAPI connection: "
+           "version %d.%d\n", major, minor);
+
+    return 0;
+}
+
 static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
                                AVDictionary *opts, int flags)
 {
-    AVVAAPIDeviceContext *hwctx = ctx->hwctx;
     VAAPIDevicePriv *priv;
-    VADisplay display = 0;
-    VAStatus vas;
-    int major, minor;
+    VADisplay display = NULL;
 
     priv = av_mallocz(sizeof(*priv));
     if (!priv)
@@ -1163,18 +1181,7 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
         return AVERROR(EINVAL);
     }
 
-    hwctx->display = display;
-
-    vas = vaInitialize(display, &major, &minor);
-    if (vas != VA_STATUS_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to initialise VAAPI "
-               "connection: %d (%s).\n", vas, vaErrorStr(vas));
-        return AVERROR(EIO);
-    }
-    av_log(ctx, AV_LOG_VERBOSE, "Initialised VAAPI connection: "
-           "version %d.%d\n", major, minor);
-
-    return 0;
+    return vaapi_device_connect(ctx, display);
 }
 
 static int vaapi_device_derive(AVHWDeviceContext *ctx,
@@ -1183,11 +1190,8 @@ static int vaapi_device_derive(AVHWDeviceContext *ctx,
 #if CONFIG_LIBDRM
     if (src_ctx->type == AV_HWDEVICE_TYPE_DRM) {
         AVDRMDeviceContext *src_hwctx = src_ctx->hwctx;
-        AVVAAPIDeviceContext   *hwctx = ctx->hwctx;
         VADisplay *display;
-        VAStatus vas;
         VAAPIDevicePriv *priv;
-        int major, minor;
 
         if (src_hwctx->fd < 0) {
             av_log(ctx, AV_LOG_ERROR, "DRM instance requires an associated "
@@ -1212,16 +1216,7 @@ static int vaapi_device_derive(AVHWDeviceContext *ctx,
             return AVERROR(EIO);
         }
 
-        hwctx->display = display;
-
-        vas = vaInitialize(display, &major, &minor);
-        if (vas != VA_STATUS_SUCCESS) {
-            av_log(ctx, AV_LOG_ERROR, "Failed to initialise VAAPI "
-                   "connection: %d (%s).\n", vas, vaErrorStr(vas));
-            return AVERROR(EIO);
-        }
-
-        return 0;
+        return vaapi_device_connect(ctx, display);
     }
 #endif
     return AVERROR(ENOSYS);
