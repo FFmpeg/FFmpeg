@@ -87,6 +87,7 @@ EXPORTS
     av_content_light_metadata_alloc
     av_content_light_metadata_create_side_data
     av_cpu_count
+    av_cpu_max_align
     av_crc
     av_crc_get_table
     av_crc_init

@@ -27,7 +27,6 @@ const AVInputFormat ff_alsa_demuxer = {0};
 const AVInputFormat ff_avfoundation_demuxer = {0};
 const AVInputFormat ff_bktr_demuxer = {0};
 const AVInputFormat ff_decklink_demuxer = {0};
-const AVInputFormat ff_dv1394_demuxer = {0};
 const AVInputFormat ff_fbdev_demuxer = {0};
 const AVInputFormat ff_iec61883_demuxer = {0};
 const AVInputFormat ff_jack_demuxer = {0};

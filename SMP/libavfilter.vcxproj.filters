@@ -825,6 +825,9 @@
     <ClCompile Include="..\libavfilter\vf_vignette.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_vmafmotion.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_waveform.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
