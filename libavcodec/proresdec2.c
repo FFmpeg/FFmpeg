@@ -267,7 +267,7 @@ static int decode_picture_header(AVCodecContext *avctx, const uint8_t *buf, cons
                                                                         \
         if (q > switch_bits) { /* exp golomb */                         \
             bits = exp_order - switch_bits + (q<<1);                    \
-            if (bits > MIN_CACHE_BITS)                                  \
+            if (bits > FFMIN(MIN_CACHE_BITS, 31))                       \
                 return AVERROR_INVALIDDATA;                             \
             val = SHOW_UBITS(re, gb, bits) - (1 << exp_order) +         \
                 ((switch_bits + 1) << rice_order);                      \
