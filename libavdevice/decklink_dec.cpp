@@ -390,10 +390,8 @@ uint8_t *get_metadata(AVFormatContext *avctx, uint16_t *buf, size_t width,
             clear_parity_bits(buf, len);
             data = vanc_to_cc(avctx, buf, width, data_len);
             if (data) {
-                uint8_t *pkt_cc = av_packet_new_side_data(pkt, AV_PKT_DATA_A53_CC, data_len);
-                if (pkt_cc)
-                    memcpy(pkt_cc, data, data_len);
-                av_free(data);
+                if (av_packet_add_side_data(pkt, AV_PKT_DATA_A53_CC, data, data_len) < 0)
+                    av_free(data);
             }
         } else {
             av_log(avctx, AV_LOG_DEBUG, "Unknown meta data DID = 0x%.2x SDID = 0x%.2x\n",
