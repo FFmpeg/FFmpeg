@@ -2113,6 +2113,8 @@ static void mkv_write_block(AVFormatContext *s, AVIOContext *pb,
     uint8_t track_number = (mkv->is_dash ? mkv->dash_track_number : (pkt->stream_index + 1));
     ebml_master block_group, block_additions, block_more;
 
+    ts += mkv->tracks[pkt->stream_index].ts_offset;
+
     av_log(s, AV_LOG_DEBUG, "Writing block at offset %" PRIu64 ", size %d, "
            "pts %" PRId64 ", dts %" PRId64 ", duration %" PRId64 ", keyframe %d\n",
            avio_tell(pb), pkt->size, pkt->pts, pkt->dts, pkt->duration,
