@@ -250,7 +250,7 @@ static int decode_picture_header(AVCodecContext *avctx, const uint8_t *buf, cons
     return pic_data_size;
 }
 
-#define DECODE_CODEWORD(val, codebook)                                  \
+#define DECODE_CODEWORD(val, codebook, SKIP)                            \
     do {                                                                \
         unsigned int rice_order, exp_order, switch_bits;                \
         unsigned int q, buf, bits;                                      \
@@ -271,14 +271,14 @@ static int decode_picture_header(AVCodecContext *avctx, const uint8_t *buf, cons
                 return AVERROR_INVALIDDATA;                             \
             val = SHOW_UBITS(re, gb, bits) - (1 << exp_order) +         \
                 ((switch_bits + 1) << rice_order);                      \
-            SKIP_BITS(re, gb, bits);                                    \
+            SKIP(re, gb, bits);                                         \
         } else if (rice_order) {                                        \
             SKIP_BITS(re, gb, q+1);                                     \
             val = (q << rice_order) + SHOW_UBITS(re, gb, rice_order);   \
-            SKIP_BITS(re, gb, rice_order);                              \
+            SKIP(re, gb, rice_order);                                   \
         } else {                                                        \
             val = q;                                                    \
-            SKIP_BITS(re, gb, q+1);                                     \
+            SKIP(re, gb, q+1);                                          \
         }                                                               \
     } while (0)
 
@@ -296,7 +296,7 @@ static av_always_inline int decode_dc_coeffs(GetBitContext *gb, int16_t *out,
 
     OPEN_READER(re, gb);
 
-    DECODE_CODEWORD(code, FIRST_DC_CB);
+    DECODE_CODEWORD(code, FIRST_DC_CB, LAST_SKIP_BITS);
     prev_dc = TOSIGNED(code);
     out[0] = prev_dc;
 
@@ -305,7 +305,7 @@ static av_always_inline int decode_dc_coeffs(GetBitContext *gb, int16_t *out,
     code = 5;
     sign = 0;
     for (i = 1; i < blocks_per_slice; i++, out += 64) {
-        DECODE_CODEWORD(code, dc_codebook[FFMIN(code, 6U)]);
+        DECODE_CODEWORD(code, dc_codebook[FFMIN(code, 6U)], LAST_SKIP_BITS);
         if(code) sign ^= -(code & 1);
         else     sign  = 0;
         prev_dc += (((code + 1) >> 1) ^ sign) - sign;
@@ -341,14 +341,14 @@ static av_always_inline int decode_ac_coeffs(AVCodecContext *avctx, GetBitContex
         if (!bits_left || (bits_left < 32 && !SHOW_UBITS(re, gb, bits_left)))
             break;
 
-        DECODE_CODEWORD(run, run_to_cb[FFMIN(run,  15)]);
+        DECODE_CODEWORD(run, run_to_cb[FFMIN(run,  15)], LAST_SKIP_BITS);
         pos += run + 1;
         if (pos >= max_coeffs) {
             av_log(avctx, AV_LOG_ERROR, "ac tex damaged %d, %d\n", pos, max_coeffs);
             return AVERROR_INVALIDDATA;
         }
 
-        DECODE_CODEWORD(level, lev_to_cb[FFMIN(level, 9)]);
+        DECODE_CODEWORD(level, lev_to_cb[FFMIN(level, 9)], SKIP_BITS);
         level += 1;
 
         i = pos >> log2_block_count;
