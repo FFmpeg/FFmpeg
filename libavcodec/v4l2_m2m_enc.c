@@ -93,7 +93,7 @@ static inline int v4l2_get_ext_ctrl(V4L2m2mContext *s, unsigned int id, signed i
 
 static inline unsigned int v4l2_h264_profile_from_ff(int p)
 {
-    struct h264_profile  {
+    static const struct h264_profile  {
         unsigned int ffmpeg_val;
         unsigned int v4l2_val;
     } profile[] = {
@@ -120,7 +120,7 @@ static inline unsigned int v4l2_h264_profile_from_ff(int p)
 
 static inline int v4l2_mpeg4_profile_from_ff(int p)
 {
-    struct mpeg4_profile {
+    static const struct mpeg4_profile {
         unsigned int ffmpeg_val;
         unsigned int v4l2_val;
     } profile[] = {
