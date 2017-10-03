@@ -142,7 +142,7 @@ static void mp3_parse_info_tag(AVFormatContext *s, AVStream *st,
                                MPADecodeHeader *c, uint32_t spf)
 {
 #define LAST_BITS(k, n) ((k) & ((1 << (n)) - 1))
-#define MIDDLE_BITS(k, m, n) LAST_BITS((k) >> (m), ((n) - (m)))
+#define MIDDLE_BITS(k, m, n) LAST_BITS((k) >> (m), ((n) - (m) + 1))
 
     uint16_t crc;
     uint32_t v;
