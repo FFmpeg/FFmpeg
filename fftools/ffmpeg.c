@@ -4536,6 +4536,15 @@ static int transcode_step(void)
     }
 
     if (ost->filter && ost->filter->graph->graph) {
+        if (!ost->initialized) {
+            char error[1024] = {0};
+            ret = init_output_stream(ost, error, sizeof(error));
+            if (ret < 0) {
+                av_log(NULL, AV_LOG_ERROR, "Error initializing output stream %d:%d -- %s\n",
+                       ost->file_index, ost->index, error);
+                exit_program(1);
+            }
+        }
         if ((ret = transcode_from_filter(ost->filter->graph, &ist)) < 0)
             return ret;
         if (!ist)
