@@ -109,74 +109,33 @@ static const struct fmt_conversion {
 #endif
 };
 
-static int match_codec(const void *a, const void *b)
-{
-    if (*(enum AVCodecID *)a == ((struct fmt_conversion *)b)->avcodec)
-        return 0;
-
-    return 1;
-}
-
 uint32_t ff_v4l2_format_avcodec_to_v4l2(enum AVCodecID avcodec)
 {
-    size_t len = FF_ARRAY_ELEMS(fmt_map);
-    struct fmt_conversion *item;
-
-    item = lfind(&avcodec, fmt_map, &len, sizeof(fmt_map[0]), match_codec);
-    if (item)
-        return item->v4l2_fmt;
-
+    int i;
+    for (i = 0; i < FF_ARRAY_ELEMS(fmt_map); i++) {
+        if (fmt_map[i].avcodec == avcodec)
+            return fmt_map[i].v4l2_fmt;
+    }
     return 0;
-}
-
-static int match_fmt(const void *a, const void *b)
-{
-    if ( *(enum AVPixelFormat *)a == ((struct fmt_conversion *)b)->avfmt)
-        return 0;
-
-    return 1;
 }
 
 uint32_t ff_v4l2_format_avfmt_to_v4l2(enum AVPixelFormat avfmt)
 {
-    size_t len = FF_ARRAY_ELEMS(fmt_map);
-    struct fmt_conversion *item;
-
-    item = lfind(&avfmt, fmt_map, &len, sizeof(fmt_map[0]), match_fmt);
-    if (item)
-        return item->v4l2_fmt;
-
+    int i;
+    for (i = 0; i < FF_ARRAY_ELEMS(fmt_map); i++) {
+        if (fmt_map[i].avfmt == avfmt)
+            return fmt_map[i].v4l2_fmt;
+    }
     return 0;
-}
-
-struct v4l2fmt_avcodec_pair {
-    enum AVCodecID avcodec;
-    uint32_t v4l2_fmt;
-};
-
-static int match_codecfmt(const void *a, const void *b)
-{
-    struct v4l2fmt_avcodec_pair *key = (struct v4l2fmt_avcodec_pair *) a;
-    struct fmt_conversion *item = (struct fmt_conversion *) b;
-
-    if (key->avcodec == item->avcodec && key->v4l2_fmt == item->v4l2_fmt)
-        return 0;
-
-    return 1;
 }
 
 enum AVPixelFormat ff_v4l2_format_v4l2_to_avfmt(uint32_t v4l2_fmt, enum AVCodecID avcodec)
 {
-    struct v4l2fmt_avcodec_pair const key = {
-        .v4l2_fmt = v4l2_fmt,
-        .avcodec = avcodec,
-    };
-    size_t len = FF_ARRAY_ELEMS(fmt_map);
-    struct fmt_conversion *item;
-
-    item = lfind(&key, fmt_map, &len, sizeof(fmt_map[0]), match_codecfmt);
-    if (item)
-        return item->avfmt;
-
+    int i;
+    for (i = 0; i < FF_ARRAY_ELEMS(fmt_map); i++) {
+        if (fmt_map[i].avcodec  == avcodec &&
+            fmt_map[i].v4l2_fmt == v4l2_fmt)
+            return fmt_map[i].avfmt;
+    }
     return AV_PIX_FMT_NONE;
 }

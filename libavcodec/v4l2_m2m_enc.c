@@ -91,20 +91,12 @@ static inline int v4l2_get_ext_ctrl(V4L2m2mContext *s, unsigned int id, signed i
     return 0;
 }
 
-static int match_profile(const void *a, const void *b)
-{
-    if (*(unsigned int *)a == *(unsigned int *)b)
-        return 0;
-
-    return 1;
-}
-
 static inline unsigned int v4l2_h264_profile_from_ff(int p)
 {
     struct h264_profile  {
         unsigned int ffmpeg_val;
         unsigned int v4l2_val;
-    } *val, profile[] = {
+    } profile[] = {
         { FF_PROFILE_H264_CONSTRAINED_BASELINE, MPEG_VIDEO(H264_PROFILE_CONSTRAINED_BASELINE) },
         { FF_PROFILE_H264_HIGH_444_PREDICTIVE, MPEG_VIDEO(H264_PROFILE_HIGH_444_PREDICTIVE) },
         { FF_PROFILE_H264_HIGH_422_INTRA, MPEG_VIDEO(H264_PROFILE_HIGH_422_INTRA) },
@@ -117,12 +109,12 @@ static inline unsigned int v4l2_h264_profile_from_ff(int p)
         { FF_PROFILE_H264_MAIN, MPEG_VIDEO(H264_PROFILE_MAIN) },
         { FF_PROFILE_H264_HIGH, MPEG_VIDEO(H264_PROFILE_HIGH) },
     };
-    size_t len = FF_ARRAY_ELEMS(profile);
+    int i;
 
-    val = lfind(&p, profile, &len, sizeof(profile[0]), match_profile);
-    if (val)
-        return val->v4l2_val;
-
+    for (i = 0; i < FF_ARRAY_ELEMS(profile); i++) {
+        if (profile[i].ffmpeg_val == p)
+            return profile[i].v4l2_val;
+    }
     return AVERROR(ENOENT);
 }
 
@@ -131,19 +123,19 @@ static inline int v4l2_mpeg4_profile_from_ff(int p)
     struct mpeg4_profile {
         unsigned int ffmpeg_val;
         unsigned int v4l2_val;
-    } *val, profile[] = {
+    } profile[] = {
         { FF_PROFILE_MPEG4_ADVANCED_CODING, MPEG_VIDEO(MPEG4_PROFILE_ADVANCED_CODING_EFFICIENCY) },
         { FF_PROFILE_MPEG4_ADVANCED_SIMPLE, MPEG_VIDEO(MPEG4_PROFILE_ADVANCED_SIMPLE) },
         { FF_PROFILE_MPEG4_SIMPLE_SCALABLE, MPEG_VIDEO(MPEG4_PROFILE_SIMPLE_SCALABLE) },
         { FF_PROFILE_MPEG4_SIMPLE, MPEG_VIDEO(MPEG4_PROFILE_SIMPLE) },
         { FF_PROFILE_MPEG4_CORE, MPEG_VIDEO(MPEG4_PROFILE_CORE) },
     };
-    size_t len = FF_ARRAY_ELEMS(profile);
+    int i;
 
-    val = lfind(&p, profile, &len, sizeof(profile[0]), match_profile);
-    if (val)
-        return val->v4l2_val;
-
+    for (i = 0; i < FF_ARRAY_ELEMS(profile); i++) {
+        if (profile[i].ffmpeg_val == p)
+            return profile[i].v4l2_val;
+    }
     return AVERROR(ENOENT);
 }
 
