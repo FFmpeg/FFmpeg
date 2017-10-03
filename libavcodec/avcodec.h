@@ -3532,6 +3532,13 @@ typedef struct AVHWAccel {
      * Internal hwaccel capabilities.
      */
     int caps_internal;
+
+    /**
+     * Some hwaccels are ambiguous if only the id and pix_fmt fields are used.
+     * If non-NULL, the associated AVCodec must have
+     * FF_CODEC_CAP_HWACCEL_REQUIRE_CLASS set.
+     */
+    const AVClass *decoder_class;
 } AVHWAccel;
 
 /**
