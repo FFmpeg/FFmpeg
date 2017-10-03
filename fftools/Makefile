@@ -20,7 +20,6 @@ OBJS-ffmpeg-$(CONFIG_VIDEOTOOLBOX) += fftools/ffmpeg_videotoolbox.o
 OBJS-ffserver                      += fftools/ffserver_config.o
 
 define DOFFTOOL
-OBJS-$(1)-$(CONFIG_OPENCL) += fftools/cmdutils_opencl.o
 OBJS-$(1) += fftools/cmdutils.o fftools/$(1).o $(OBJS-$(1)-yes)
 $(1)$(PROGSSUF)_g$(EXESUF): $$(OBJS-$(1))
 $$(OBJS-$(1)): | fftools
@@ -30,6 +29,7 @@ $(1)$(PROGSSUF)_g$(EXESUF): FF_EXTRALIBS += $(EXTRALIBS-$(1))
 -include $$(OBJS-$(1):.o=.d)
 endef
 
+$(foreach P,$(AVPROGS-yes),$(eval OBJS-$(P)-$(CONFIG_OPENCL) += fftools/cmdutils_opencl.o))
 $(foreach P,$(AVPROGS-yes),$(eval $(call DOFFTOOL,$(P))))
 
 all: $(AVPROGS)
