@@ -225,9 +225,9 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
         } else if (!avpkt->buf) {
             AVPacket tmp = { 0 };
             ret = av_packet_ref(&tmp, avpkt);
-            if (ret < 0)
-                return ret;
             av_packet_unref(avpkt);
+            if (ret < 0)
+                goto end;
             *avpkt = tmp;
         }
     }
@@ -324,9 +324,9 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
         } else if (!avpkt->buf) {
             AVPacket tmp = { 0 };
             ret = av_packet_ref(&tmp, avpkt);
+            av_packet_unref(avpkt);
             if (ret < 0)
                 return ret;
-            av_packet_unref(avpkt);
             *avpkt = tmp;
         }
     }
