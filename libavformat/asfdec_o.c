@@ -976,7 +976,8 @@ static int asf_read_simple_index(AVFormatContext *s, const GUIDParseTable *g)
     uint64_t interval; // index entry time interval in 100 ns units, usually it's 1s
     uint32_t pkt_num, nb_entries;
     int32_t prev_pkt_num = -1;
-    int i, ret;
+    int i;
+    int64_t offset;
     uint64_t size = avio_rl64(pb);
 
     // simple index objects should be ordered by stream number, this loop tries to find
@@ -998,10 +999,10 @@ static int asf_read_simple_index(AVFormatContext *s, const GUIDParseTable *g)
     nb_entries = avio_rl32(pb);
     for (i = 0; i < nb_entries; i++) {
         pkt_num = avio_rl32(pb);
-        ret = avio_skip(pb, 2);
-        if (ret < 0) {
+        offset = avio_skip(pb, 2);
+        if (offset < 0) {
             av_log(s, AV_LOG_ERROR, "Skipping failed in asf_read_simple_index.\n");
-            return ret;
+            return offset;
         }
         if (prev_pkt_num != pkt_num) {
             av_add_index_entry(st, asf->first_packet_offset + asf->packet_size *
