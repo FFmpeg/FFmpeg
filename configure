@@ -5872,7 +5872,7 @@ enabled bzlib && check_lib bzlib bzlib.h BZ2_bzlibVersion    -lbz2
 enabled  lzma && check_lib lzma   lzma.h lzma_version_number -llzma
 
 # On some systems dynamic loading requires no extra linker flags
-check_lib libdl dlfcn.h dlopen || { check_func dlsym -ldl && check_lib libdl dlfcn.h dlopen -ldl; }
+check_lib libdl dlfcn.h "dlopen dlsym" || check_lib libdl dlfcn.h "dlopen dlsym" -ldl
 
 check_lib libm math.h sin -lm && LIBM="-lm"
 
