@@ -670,7 +670,6 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
 
 int ff_sdp_parse(AVFormatContext *s, const char *content)
 {
-    RTSPState *rt = s->priv_data;
     const char *p;
     int letter, i;
     /* Some SDP lines, particularly for Realmedia or ASF RTSP streams,
@@ -717,8 +716,6 @@ int ff_sdp_parse(AVFormatContext *s, const char *content)
         av_freep(&s1->default_exclude_source_addrs[i]);
     av_freep(&s1->default_exclude_source_addrs);
 
-    rt->p = av_malloc_array(rt->nb_rtsp_streams + 1, sizeof(struct pollfd) * 2);
-    if (!rt->p) return AVERROR(ENOMEM);
     return 0;
 }
 #endif /* CONFIG_RTPDEC */
@@ -1930,6 +1927,12 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
     int max_p = 0;
     struct pollfd *p = rt->p;
     int *fds = NULL, fdsnum, fdsidx;
+
+    if (!p) {
+        p = rt->p = av_malloc_array(2 * (rt->nb_rtsp_streams + 1), sizeof(struct pollfd));
+        if (!p)
+            return AVERROR(ENOMEM);
+    }
 
     if (rt->rtsp_hd) {
         tcp_fd = ffurl_get_file_handle(rt->rtsp_hd);
