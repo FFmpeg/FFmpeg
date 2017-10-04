@@ -123,7 +123,7 @@ FATE_AFILTER-$(call FILTERDEMDECENCMUX, FIREQUALIZER ATRIM VOLUME, WAV, PCM_S16L
 fate-filter-firequalizer: tests/data/asynth-44100-2.wav
 fate-filter-firequalizer: tests/data/filtergraphs/firequalizer
 fate-filter-firequalizer: REF = tests/data/asynth-44100-2.wav
-fate-filter-firequalizer: CMD = ffmpeg -i $(TARGET_PATH)/tests/data/asynth-44100-2.wav -filter_script $(TARGET_PATH)/tests/data/filtergraphs/firequalizer -f wav -acodec pcm_s16le -
+fate-filter-firequalizer: CMD = ffmpeg -i $(TARGET_PATH)/tests/data/asynth-44100-2.wav -filter_script $(TARGET_PATH)/tests/data/filtergraphs/firequalizer -f wav -c:a pcm_s16le -
 fate-filter-firequalizer: CMP = oneoff
 fate-filter-firequalizer: CMP_UNIT = s16
 fate-filter-firequalizer: SIZE_TOLERANCE = 1058400 - 1097208

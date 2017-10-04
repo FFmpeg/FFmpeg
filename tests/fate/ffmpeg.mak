@@ -101,7 +101,7 @@ fate-streamcopy: $(FATE_STREAMCOPY-yes)
 FATE_SAMPLES_FFMPEG-$(call ALLYES, MOV_DEMUXER MATROSKA_MUXER) += fate-rgb24-mkv
 fate-rgb24-mkv: $(TARGET_SAMPLES)/qtrle/aletrek-rle.mov
 fate-rgb24-mkv: CMD = transcode "mov" $(TARGET_SAMPLES)/qtrle/aletrek-rle.mov\
-                      matroska "-vcodec rawvideo -pix_fmt rgb24 -allow_raw_vfw 1 -frames:v 1"
+                      matroska "-c:v rawvideo -pix_fmt rgb24 -allow_raw_vfw 1 -frames:v 1"
 
 FATE_SAMPLES_FFMPEG-$(call ALLYES, AAC_DEMUXER MOV_MUXER) += fate-adtstoasc_ticket3715
 fate-adtstoasc_ticket3715: $(TARGET_SAMPLES)/aac/foo.aac

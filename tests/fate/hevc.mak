@@ -235,7 +235,7 @@ tests/data/hevc-mp4.mov: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 
 FATE_HEVC-$(call ALLYES, HEVC_DEMUXER MOV_DEMUXER HEVC_MP4TOANNEXB_BSF MOV_MUXER HEVC_MUXER) += fate-hevc-bsf-mp4toannexb
 fate-hevc-bsf-mp4toannexb: tests/data/hevc-mp4.mov
-fate-hevc-bsf-mp4toannexb: CMD = md5 -i $(TARGET_PATH)/tests/data/hevc-mp4.mov -vcodec copy -fflags +bitexact -f hevc
+fate-hevc-bsf-mp4toannexb: CMD = md5 -i $(TARGET_PATH)/tests/data/hevc-mp4.mov -c:v copy -fflags +bitexact -f hevc
 fate-hevc-bsf-mp4toannexb: CMP = oneline
 fate-hevc-bsf-mp4toannexb: REF = 1873662a3af1848c37e4eb25722c8df9
 

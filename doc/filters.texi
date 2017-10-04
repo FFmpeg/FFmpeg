@@ -2851,7 +2851,7 @@ so the resulting 20-bit stream will be truncated back to 16-bit. Use something
 like @command{-acodec pcm_s24le} after the filter to get 24-bit PCM output.
 @example
 ffmpeg -i HDCD16.wav -af hdcd OUT16.wav
-ffmpeg -i HDCD16.wav -af hdcd -acodec pcm_s24le OUT24.wav
+ffmpeg -i HDCD16.wav -af hdcd -c:a pcm_s24le OUT24.wav
 @end example
 
 The filter accepts the following options:
