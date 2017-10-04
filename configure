@@ -1930,6 +1930,7 @@ HEADERS_LIST="
     machine_ioctl_meteor_h
     malloc_h
     opencv2_core_core_c_h
+    openjpeg_2_3_openjpeg_h
     openjpeg_2_2_openjpeg_h
     openjpeg_2_1_openjpeg_h
     openjpeg_2_0_openjpeg_h
@@ -5950,7 +5951,9 @@ enabled libopencv         && { check_header opencv2/core/core_c.h &&
                                  require opencv opencv2/core/core_c.h cvCreateImageHeader -lopencv_core -lopencv_imgproc; } ||
                                require_pkg_config libopencv opencv opencv/cxcore.h cvCreateImageHeader; }
 enabled libopenh264       && require_pkg_config libopenh264 openh264 wels/codec_api.h WelsGetCodecVersion
-enabled libopenjpeg       && { { check_lib libopenjpeg openjpeg-2.2/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
+enabled libopenjpeg       && { { check_lib libopenjpeg openjpeg-2.3/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
+                               check_lib libopenjpeg openjpeg-2.3/openjpeg.h opj_version -lopenjp2 ||
+                               { check_lib libopenjpeg openjpeg-2.2/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
                                check_lib libopenjpeg openjpeg-2.2/openjpeg.h opj_version -lopenjp2 ||
                                { check_lib libopenjpeg openjpeg-2.1/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
                                check_lib libopenjpeg openjpeg-2.1/openjpeg.h opj_version -lopenjp2 ||
