@@ -90,6 +90,20 @@ static inline int v4l2_type_supported(V4L2Context *ctx)
         ctx->type == V4L2_BUF_TYPE_VIDEO_OUTPUT;
 }
 
+static inline int v4l2_get_framesize_compressed(V4L2Context* ctx, int width, int height)
+{
+    V4L2m2mContext *s = ctx_to_m2mctx(ctx);
+    const int SZ_4K = 0x1000;
+    int size;
+
+    if (av_codec_is_decoder(s->avctx->codec))
+        return ((width * height * 3 / 2) / 2) + 128;
+
+    /* encoder */
+    size = FFALIGN(height, 32) * FFALIGN(width, 32) * 3 / 2 / 2;
+    return FFALIGN(size, SZ_4K);
+}
+
 static inline void v4l2_save_to_context(V4L2Context* ctx, struct v4l2_format_update *fmt)
 {
     ctx->format.type = ctx->type;
@@ -101,13 +115,23 @@ static inline void v4l2_save_to_context(V4L2Context* ctx, struct v4l2_format_upd
         /* update the sizes to handle the reconfiguration of the capture stream at runtime */
         ctx->format.fmt.pix_mp.height = ctx->height;
         ctx->format.fmt.pix_mp.width = ctx->width;
-        if (fmt->update_v4l2)
+        if (fmt->update_v4l2) {
             ctx->format.fmt.pix_mp.pixelformat = fmt->v4l2_fmt;
+
+            /* s5p-mfc requires the user to specify a buffer size */
+            ctx->format.fmt.pix_mp.plane_fmt[0].sizeimage =
+                v4l2_get_framesize_compressed(ctx, ctx->width, ctx->height);
+        }
     } else {
         ctx->format.fmt.pix.height = ctx->height;
         ctx->format.fmt.pix.width = ctx->width;
-        if (fmt->update_v4l2)
+        if (fmt->update_v4l2) {
             ctx->format.fmt.pix.pixelformat = fmt->v4l2_fmt;
+
+            /* s5p-mfc requires the user to specify a buffer size */
+            ctx->format.fmt.pix.sizeimage =
+                v4l2_get_framesize_compressed(ctx, ctx->width, ctx->height);
+        }
     }
 }
 
