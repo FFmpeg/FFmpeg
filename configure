@@ -2004,7 +2004,6 @@ SYSTEM_FUNCS="
     CommandLineToArgvW
     CoTaskMemFree
     CryptGenRandom
-    dlopen
     fcntl
     flt_lim
     fork
@@ -2645,7 +2644,7 @@ zmbv_encoder_select="zlib"
 
 # hardware accelerators
 crystalhd_deps="libcrystalhd_libcrystalhd_if_h"
-cuda_deps_any="dlopen LoadLibrary"
+cuda_deps_any="libdl LoadLibrary"
 cuvid_deps="cuda"
 d3d11va_deps="d3d11_h dxva_h ID3D11VideoDecoder ID3D11VideoContext"
 dxva2_deps="dxva2api_h DXVA2_ConfigPictureDecode ole32"
@@ -2778,8 +2777,7 @@ wmv3_vaapi_hwaccel_select="vc1_vaapi_hwaccel"
 wmv3_vdpau_hwaccel_select="vc1_vdpau_hwaccel"
 
 # hardware-accelerated codecs
-omx_deps="dlopen pthreads"
-omx_extralibs='$ldl'
+omx_deps="libdl pthreads"
 omx_rpi_select="omx"
 qsvdec_select="qsv"
 qsvenc_select="qsv"
@@ -2792,7 +2790,7 @@ scale_cuda_filter_deps="cuda_sdk"
 thumbnail_cuda_filter_deps="cuda_sdk"
 
 nvenc_deps="cuda"
-nvenc_deps_any="dlopen LoadLibrary"
+nvenc_deps_any="libdl LoadLibrary"
 nvenc_encoder_deps="nvenc"
 
 h263_v4l2m2m_decoder_deps="v4l2_m2m h263_v4l2_m2m"
@@ -2908,7 +2906,7 @@ ac3_at_decoder_select="ac3_parser"
 adpcm_ima_qt_at_decoder_deps="audiotoolbox"
 alac_at_decoder_deps="audiotoolbox"
 amr_nb_at_decoder_deps="audiotoolbox"
-avisynth_deps_any="dlopen LoadLibrary"
+avisynth_deps_any="libdl LoadLibrary"
 avisynth_demuxer_deps="avisynth"
 avisynth_demuxer_select="riffdec"
 eac3_at_decoder_deps="audiotoolbox"
@@ -3083,13 +3081,13 @@ avfoundation_indev_deps="avfoundation pthreads"
 avfoundation_indev_extralibs="-framework Foundation -framework CoreVideo -framework CoreMedia"
 bktr_indev_deps_any="dev_bktr_ioctl_bt848_h machine_ioctl_bt848_h dev_video_bktr_ioctl_bt848_h dev_ic_bt8xx_h"
 caca_outdev_deps="libcaca"
-decklink_indev_deps="decklink threads"
+decklink_indev_deps="decklink threads libdl"
 decklink_indev_extralibs="-lstdc++"
-decklink_outdev_deps="decklink threads"
+decklink_outdev_deps="decklink threads libdl"
 decklink_outdev_extralibs="-lstdc++"
-libndi_newtek_indev_deps="libndi_newtek"
+libndi_newtek_indev_deps="libndi_newtek libdl"
 libndi_newtek_indev_extralibs="-lndi"
-libndi_newtek_outdev_deps="libndi_newtek"
+libndi_newtek_outdev_deps="libndi_newtek libdl"
 libndi_newtek_outdev_extralibs="-lndi"
 dshow_indev_deps="IBaseFilter"
 dshow_indev_extralibs="-lpsapi -lole32 -lstrmiids -luuid -loleaut32 -lshlwapi"
@@ -3209,15 +3207,15 @@ firequalizer_filter_deps="avcodec"
 firequalizer_filter_select="rdft"
 flite_filter_deps="libflite"
 framerate_filter_select="pixelutils"
-frei0r_filter_deps="frei0r dlopen"
-frei0r_src_filter_deps="frei0r dlopen"
+frei0r_filter_deps="frei0r libdl"
+frei0r_src_filter_deps="frei0r libdl"
 fspp_filter_deps="gpl"
 geq_filter_deps="gpl"
 histeq_filter_deps="gpl"
 hqdn3d_filter_deps="gpl"
 interlace_filter_deps="gpl"
 kerndeint_filter_deps="gpl"
-ladspa_filter_deps="ladspa dlopen"
+ladspa_filter_deps="ladspa libdl"
 mcdeint_filter_deps="avcodec gpl"
 movie_filter_deps="avcodec avformat"
 mpdecimate_filter_deps="gpl"
@@ -5640,23 +5638,6 @@ check_code cc arm_neon.h "int16x8_t test = vdupq_n_s16(0)" && enable intrinsics_
 check_ldflags -Wl,--as-needed
 check_ldflags -Wl,-z,noexecstack
 
-if check_func dlopen && check_func dlsym; then
-    ldl=
-elif check_func dlopen -ldl && check_func dlsym -ldl; then
-    ldl=-ldl
-fi
-
-avisynth_demuxer_extralibs='$ldl'
-cuda_extralibs='$ldl'
-decklink_outdev_extralibs="$decklink_outdev_extralibs $ldl"
-decklink_indev_extralibs="$decklink_indev_extralibs $ldl"
-libndi_newtek_outdev_extralibs="$libndi_newtek_outdev_extralibs $ldl"
-libndi_newtek_indev_extralibs="$libndi_newtek_indev_extralibs $ldl"
-frei0r_filter_extralibs='$ldl'
-frei0r_src_filter_extralibs='$ldl'
-ladspa_filter_extralibs='$ldl'
-nvenc_extralibs='$ldl'
-
 if ! disabled network; then
     check_func getaddrinfo $network_extralibs
     check_func inet_aton $network_extralibs
@@ -5888,6 +5869,9 @@ enabled pthreads &&
 enabled  zlib && check_lib zlib   zlib.h      zlibVersion    -lz
 enabled bzlib && check_lib bzlib bzlib.h BZ2_bzlibVersion    -lbz2
 enabled  lzma && check_lib lzma   lzma.h lzma_version_number -llzma
+
+# On some systems dynamic loading requires no extra linker flags
+check_lib libdl dlfcn.h dlopen || { check_func dlsym -ldl && check_lib libdl dlfcn.h dlopen -ldl; }
 
 check_lib libm math.h sin -lm && LIBM="-lm"
 
