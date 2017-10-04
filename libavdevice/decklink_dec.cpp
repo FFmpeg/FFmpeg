@@ -138,7 +138,7 @@ static int check_vanc_parity_checksum(uint16_t *buf, int len, uint16_t checksum)
 static void extract_luma_from_v210(uint16_t *dst, const uint8_t *src, int width)
 {
     int i;
-    for (i = 0; i < width / 3; i += 3) {
+    for (i = 0; i < width / 3; i++) {
         *dst++ = (src[1] >> 2) + ((src[2] & 15) << 6);
         *dst++ =  src[4]       + ((src[5] &  3) << 8);
         *dst++ = (src[6] >> 4) + ((src[7] & 63) << 4);
