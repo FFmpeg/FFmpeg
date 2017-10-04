@@ -5081,6 +5081,51 @@ static int mov_read_smdm(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+static int mov_read_mdcv(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    MOVStreamContext *sc;
+    const int mapping[3] = {1, 2, 0};
+    const int chroma_den = 50000;
+    const int luma_den = 10000;
+    int i;
+
+    if (c->fc->nb_streams < 1)
+        return AVERROR_INVALIDDATA;
+
+    sc = c->fc->streams[c->fc->nb_streams - 1]->priv_data;
+
+    if (atom.size < 24) {
+        av_log(c->fc, AV_LOG_ERROR, "Invalid Mastering Display Color Volume box\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    sc->mastering = av_mastering_display_metadata_alloc();
+    if (!sc->mastering)
+        return AVERROR(ENOMEM);
+
+    for (i = 0; i < 3; i++) {
+        const int j = mapping[i];
+        sc->mastering->display_primaries[j][0].num = avio_rb16(pb);
+        sc->mastering->display_primaries[j][0].den = chroma_den;
+        sc->mastering->display_primaries[j][1].num = avio_rb16(pb);
+        sc->mastering->display_primaries[j][1].den = chroma_den;
+    }
+    sc->mastering->white_point[0].num = avio_rb16(pb);
+    sc->mastering->white_point[0].den = chroma_den;
+    sc->mastering->white_point[1].num = avio_rb16(pb);
+    sc->mastering->white_point[1].den = chroma_den;
+
+    sc->mastering->max_luminance.num = avio_rb32(pb);
+    sc->mastering->max_luminance.den = luma_den;
+    sc->mastering->min_luminance.num = avio_rb32(pb);
+    sc->mastering->min_luminance.den = luma_den;
+
+    sc->mastering->has_luminance = 1;
+    sc->mastering->has_primaries = 1;
+
+    return 0;
+}
+
 static int mov_read_coll(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     MOVStreamContext *sc;
@@ -5102,6 +5147,30 @@ static int mov_read_coll(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
     }
     avio_skip(pb, 3); /* flags */
+
+    sc->coll = av_content_light_metadata_alloc(&sc->coll_size);
+    if (!sc->coll)
+        return AVERROR(ENOMEM);
+
+    sc->coll->MaxCLL  = avio_rb16(pb);
+    sc->coll->MaxFALL = avio_rb16(pb);
+
+    return 0;
+}
+
+static int mov_read_clli(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    MOVStreamContext *sc;
+
+    if (c->fc->nb_streams < 1)
+        return AVERROR_INVALIDDATA;
+
+    sc = c->fc->streams[c->fc->nb_streams - 1]->priv_data;
+
+    if (atom.size < 4) {
+        av_log(c->fc, AV_LOG_ERROR, "Empty Content Light Level Info box\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     sc->coll = av_content_light_metadata_alloc(&sc->coll_size);
     if (!sc->coll)
@@ -5921,6 +5990,8 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('S','m','D','m'), mov_read_smdm },
 { MKTAG('C','o','L','L'), mov_read_coll },
 { MKTAG('v','p','c','C'), mov_read_vpcc },
+{ MKTAG('m','d','c','v'), mov_read_mdcv },
+{ MKTAG('c','l','l','i'), mov_read_clli },
 { 0, NULL }
 };
 
