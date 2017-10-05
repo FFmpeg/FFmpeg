@@ -180,7 +180,7 @@ static int v4l2_prepare_encoder(V4L2m2mContext *s)
 
     av_log(avctx, AV_LOG_DEBUG,
         "Encoder Context: id (%d), profile (%d), frame rate(%d/%d), number b-frames (%d), "
-        "gop size (%d), bit rate (%ld), qmin (%d), qmax (%d)\n",
+        "gop size (%d), bit rate (%"PRId64"), qmin (%d), qmax (%d)\n",
         avctx->codec_id, avctx->profile, avctx->framerate.num, avctx->framerate.den,
         avctx->max_b_frames, avctx->gop_size, avctx->bit_rate, avctx->qmin, avctx->qmax);
 
