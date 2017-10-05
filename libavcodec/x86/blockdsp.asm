@@ -34,7 +34,7 @@ SECTION .text
 ; %2 = number of inline store loops
 %macro CLEAR_BLOCK 2
 cglobal clear_block, 1, 1, %1, blocks
-    ZERO  m0, m0
+    ZERO  m0, m0, m0
 %assign %%i 0
 %rep %2
     mova  [blocksq+mmsize*(0+%%i)], m0
@@ -63,7 +63,7 @@ CLEAR_BLOCK 1, 1
 cglobal clear_blocks, 1, 2, %1, blocks, len
     add   blocksq, 768
     mov      lenq, -768
-    ZERO       m0, m0
+    ZERO       m0, m0, m0
 .loop:
     mova  [blocksq+lenq+mmsize*0], m0
     mova  [blocksq+lenq+mmsize*1], m0
