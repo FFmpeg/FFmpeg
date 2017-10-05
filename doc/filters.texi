@@ -8669,13 +8669,21 @@ It accepts the following parameters:
 @item fps
 The desired output frame rate. The default is @code{25}.
 
+@item start_time
+Assume the first PTS should be the given value, in seconds. This allows for
+padding/trimming at the start of stream. By default, no assumption is made
+about the first frame's expected PTS, so no padding or trimming is done.
+For example, this could be set to 0 to pad the beginning with duplicates of
+the first frame if a video stream starts after the audio stream or to trim any
+frames with a negative PTS.
+
 @item round
-Rounding method.
+Timestamp (PTS) rounding method.
 
 Possible values are:
 @table @option
 @item zero
-zero round towards 0
+round towards 0
 @item inf
 round away from 0
 @item down
@@ -8687,18 +8695,10 @@ round to nearest
 @end table
 The default is @code{near}.
 
-@item start_time
-Assume the first PTS should be the given value, in seconds. This allows for
-padding/trimming at the start of stream. By default, no assumption is made
-about the first frame's expected PTS, so no padding or trimming is done.
-For example, this could be set to 0 to pad the beginning with duplicates of
-the first frame if a video stream starts after the audio stream or to trim any
-frames with a negative PTS.
-
 @end table
 
 Alternatively, the options can be specified as a flat string:
-@var{fps}[:@var{round}].
+@var{fps}[:@var{start_time}[:@var{round}]].
 
 See also the @ref{setpts} filter.
 
