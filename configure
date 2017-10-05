@@ -110,7 +110,6 @@ Program options:
   --disable-avconv         disable avconv build
   --disable-avplay         disable avplay build
   --disable-avprobe        disable avprobe build
-  --disable-avserver       deprecated, does nothing
 
 Component options:
   --disable-doc            do not build documentation
@@ -2822,10 +2821,6 @@ for opt do
             eval list=\$$(toupper $thing)_LIST
             name=$(echo "${optval}" | sed "s/,/_${thing}|/g")_${thing}
             $action $(filter "$name" $list)
-        ;;
-        --enable-avserver|--disable-avserver*)
-            warn "avserver has been removed, the ${opt} option is only"\
-                 "provided for compatibility and will be removed in the future"
         ;;
         --enable-yasm|--disable-yasm)
             warn "The ${opt} option is only provided for compatibility and will be\n"\
