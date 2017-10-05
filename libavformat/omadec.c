@@ -397,6 +397,11 @@ static int oma_read_header(AVFormatContext *s)
     OMAContext *oc = s->priv_data;
 
     ff_id3v2_read(s, ID3v2_EA3_MAGIC, &extra_meta, 0);
+    if ((ret = ff_id3v2_parse_chapters(s, &extra_meta)) < 0) {
+        ff_id3v2_free_extra_meta(&extra_meta);
+        return ret;
+    }
+
     ret = avio_read(s->pb, buf, EA3_HEADER_SIZE);
     if (ret < EA3_HEADER_SIZE)
         return -1;
