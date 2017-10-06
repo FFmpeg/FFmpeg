@@ -3434,9 +3434,6 @@ fi
 if $ar 2>&1 | grep -q Microsoft; then
     arflags="-nologo"
     ar_o='-out:$@'
-elif $ar 2>&1 | grep -q 'Usage: ar.*-X.*any'; then
-    arflags='-Xany -r -c'
-    ar_o='$@'
 else
     arflags="rc"
     ar_o='$@'
@@ -3815,6 +3812,7 @@ case $target_os in
         SHFLAGS=-shared
         add_cppflags '-I\$(SRC_PATH)/compat/aix'
         enabled shared && add_ldflags -Wl,-brtl
+        ar_default='ar -Xany'
         ;;
     android)
         disable symver
