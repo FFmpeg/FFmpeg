@@ -3172,17 +3172,6 @@ icl_flags(){
     done
 }
 
-pgi_flags(){
-    for flag; do
-        case $flag in
-            -flto)                echo -Mipa=fast,libopt,libinline,vestigial ;;
-            -fomit-frame-pointer) echo -Mnoframe ;;
-            -g)                   echo -gopt ;;
-            *)                    echo $flag ;;
-        esac
-    done
-}
-
 suncc_flags(){
     for flag; do
         case $flag in
@@ -3305,14 +3294,6 @@ probe_cc(){
         _cflags_speed='-O2'
         _cflags_size='-Os'
         _flags_filter='filter_out -Wdisabled-optimization|-Wtype-limits|-fno-signed-zeros'
-    elif $_cc -V 2>&1 | grep -q Portland; then
-        _type=pgi
-        _ident="PGI $($_cc -V 2>&1 | awk '/^pgcc/ { print $2; exit }')"
-        opt_common='-alias=ansi -Mdse -Mlre -Mpre'
-        _cflags_speed="-O3 -Mautoinline -Munroll=c:4 $opt_common"
-        _cflags_size="-O2 -Munroll=c:1 $opt_common"
-        _cflags_noopt="-O1"
-        _flags_filter=pgi_flags
     elif $_cc 2>&1 | grep -q 'Microsoft.*ARM.*Assembler'; then
         _type=armasm
         _ident=$($_cc | head -n1)
