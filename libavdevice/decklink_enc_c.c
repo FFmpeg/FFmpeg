@@ -49,6 +49,7 @@ AVOutputFormat ff_decklink_muxer = {
     .video_codec    = AV_CODEC_ID_WRAPPED_AVFRAME,
     .subtitle_codec = AV_CODEC_ID_NONE,
     .flags          = AVFMT_NOFILE,
+    .get_device_list = ff_decklink_list_output_devices,
     .priv_class     = &decklink_muxer_class,
     .priv_data_size = sizeof(struct decklink_cctx),
     .write_header   = ff_decklink_write_header,

@@ -39,6 +39,7 @@ extern "C" {
 #include "libavutil/time.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/reverse.h"
+#include "avdevice.h"
 #if CONFIG_LIBZVBI
 #include <libzvbi.h>
 #endif
@@ -868,7 +869,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
 
     /* List available devices. */
     if (ctx->list_devices) {
-        ff_decklink_list_devices(avctx);
+        ff_decklink_list_devices_legacy(avctx, 1, 0);
         return AVERROR_EXIT;
     }
 
@@ -1061,6 +1062,11 @@ int ff_decklink_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     avpacket_queue_get(&ctx->queue, pkt, 1);
 
     return 0;
+}
+
+int ff_decklink_list_input_devices(AVFormatContext *avctx, struct AVDeviceInfoList *device_list)
+{
+    return ff_decklink_list_devices(avctx, device_list, 1, 0);
 }
 
 } /* extern "C" */

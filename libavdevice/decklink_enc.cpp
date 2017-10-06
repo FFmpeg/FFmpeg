@@ -33,6 +33,7 @@ extern "C" {
 extern "C" {
 #include "libavformat/avformat.h"
 #include "libavutil/imgutils.h"
+#include "avdevice.h"
 }
 
 #include "decklink_common.h"
@@ -335,9 +336,9 @@ av_cold int ff_decklink_write_header(AVFormatContext *avctx)
     ctx->preroll      = cctx->preroll;
     cctx->ctx = ctx;
 
-    /* List available devices. */
+    /* List available devices and exit. */
     if (ctx->list_devices) {
-        ff_decklink_list_devices(avctx);
+        ff_decklink_list_devices_legacy(avctx, 0, 1);
         return AVERROR_EXIT;
     }
 
@@ -398,6 +399,11 @@ int ff_decklink_write_packet(AVFormatContext *avctx, AVPacket *pkt)
         return decklink_write_audio_packet(avctx, pkt);
 
     return AVERROR(EIO);
+}
+
+int ff_decklink_list_output_devices(AVFormatContext *avctx, struct AVDeviceInfoList *device_list)
+{
+    return ff_decklink_list_devices(avctx, device_list, 0, 1);
 }
 
 } /* extern "C" */

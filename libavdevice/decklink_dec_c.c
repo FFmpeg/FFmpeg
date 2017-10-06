@@ -89,6 +89,7 @@ AVInputFormat ff_decklink_demuxer = {
     .flags          = AVFMT_NOFILE,
     .priv_class     = &decklink_demuxer_class,
     .priv_data_size = sizeof(struct decklink_cctx),
+    .get_device_list = ff_decklink_list_input_devices,
     .read_header   = ff_decklink_read_header,
     .read_packet   = ff_decklink_read_packet,
     .read_close    = ff_decklink_read_close,
