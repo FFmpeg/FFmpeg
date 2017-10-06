@@ -3363,6 +3363,7 @@ x86asmexe_default="nasm"
 windres_default="windres"
 nvcc_default="nvcc"
 nvccflags_default="-gencode arch=compute_30,code=sm_30 -O2"
+striptype="direct"
 
 # OS
 target_os_default=$(tolower $(uname -s))
@@ -5089,6 +5090,7 @@ case $target_os in
         ;;
     os/2*)
         strip="lxlite -CS"
+        striptype=""
         objformat="aout"
         add_cppflags -D_GNU_SOURCE
         add_ldflags -Zomf -Zbin-files -Zargs-wild -Zhigh-mem -Zmap
@@ -6834,6 +6836,7 @@ fi # test "$quiet" != "yes"
 test -e Makefile || echo "include $source_path/Makefile" > Makefile
 
 enabled stripping || strip="echo skipping strip"
+enabled stripping || striptype=""
 
 config_files="$TMPH ffbuild/config.mak doc/config.texi"
 
@@ -6877,6 +6880,7 @@ ARFLAGS=$arflags
 AR_O=$ar_o
 RANLIB=$ranlib
 STRIP=$strip
+STRIPTYPE=$striptype
 NVCC=$nvcc
 CP=cp -p
 LN_S=$ln_s
