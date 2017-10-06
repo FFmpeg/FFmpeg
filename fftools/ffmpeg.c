@@ -2909,6 +2909,9 @@ static int init_input_stream(int ist_index, char *error, int error_len)
 
         if (!av_dict_get(ist->decoder_opts, "threads", NULL, 0))
             av_dict_set(&ist->decoder_opts, "threads", "auto", 0);
+        /* Attached pics are sparse, therefore we would not want to delay their decoding till EOF. */
+        if (ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC)
+            av_dict_set(&ist->decoder_opts, "threads", "1", 0);
 
         ret = hw_device_setup_for_decode(ist);
         if (ret < 0) {
