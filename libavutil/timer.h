@@ -32,7 +32,7 @@
 
 #include "config.h"
 
-#if HAVE_MACH_MACH_TIME_H
+#if HAVE_MACH_ABSOLUTE_TIME
 #include <mach/mach_time.h>
 #endif
 

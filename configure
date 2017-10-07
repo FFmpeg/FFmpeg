@@ -1556,7 +1556,6 @@ HEADERS_LIST="
     dxgidebug_h
     dxva_h
     io_h
-    mach_mach_time_h
     machine_ioctl_bt848_h
     machine_ioctl_meteor_h
     malloc_h
@@ -4565,7 +4564,6 @@ check_func  gettimeofday
 check_func  gmtime_r
 check_func  isatty
 check_func  localtime_r
-check_func  mach_absolute_time
 check_func  mkstemp
 check_func  mmap
 check_func  mprotect
@@ -4579,6 +4577,7 @@ check_func  sysctl
 check_func  usleep
 
 check_func_headers io.h setmode
+check_func_headers mach/mach_time.h mach_absolute_time
 check_func_headers stdlib.h getenv
 
 check_func_headers windows.h GetProcessAffinityMask
@@ -4596,7 +4595,6 @@ check_header dxgidebug.h
 check_header dxva.h
 check_header dxva2api.h
 check_header io.h
-check_header mach/mach_time.h
 check_header malloc.h
 check_header poll.h
 check_header sys/param.h
