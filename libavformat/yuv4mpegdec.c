@@ -126,6 +126,12 @@ static int yuv4_read_header(AVFormatContext *s)
                 pix_fmt = AV_PIX_FMT_YUV444P;
             } else if (strncmp("mono16", tokstart, 6) == 0) {
                 pix_fmt = AV_PIX_FMT_GRAY16;
+            } else if (strncmp("mono12", tokstart, 6) == 0) {
+                pix_fmt = AV_PIX_FMT_GRAY12;
+            } else if (strncmp("mono10", tokstart, 6) == 0) {
+                pix_fmt = AV_PIX_FMT_GRAY10;
+            } else if (strncmp("mono9", tokstart, 5) == 0) {
+                pix_fmt = AV_PIX_FMT_GRAY9;
             } else if (strncmp("mono", tokstart, 4) == 0) {
                 pix_fmt = AV_PIX_FMT_GRAY8;
             } else {
