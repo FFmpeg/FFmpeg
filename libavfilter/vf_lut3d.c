@@ -752,16 +752,16 @@ static int update_apply_clut(FFFrameSync *fs)
 {
     AVFilterContext *ctx = fs->parent;
     AVFilterLink *inlink = ctx->inputs[0];
-    AVFrame *main, *second, *out;
+    AVFrame *master, *second, *out;
     int ret;
 
-    ret = ff_framesync_dualinput_get(fs, &main, &second);
+    ret = ff_framesync_dualinput_get(fs, &master, &second);
     if (ret < 0)
         return ret;
     if (!second)
-        return ff_filter_frame(ctx->outputs[0], main);
+        return ff_filter_frame(ctx->outputs[0], master);
     update_clut(ctx->priv, second);
-    out = apply_lut(inlink, main);
+    out = apply_lut(inlink, master);
     return ff_filter_frame(ctx->outputs[0], out);
 }
 
