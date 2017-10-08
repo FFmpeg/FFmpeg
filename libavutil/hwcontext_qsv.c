@@ -989,7 +989,6 @@ static int qsv_device_derive_from_child(AVHWDeviceContext *ctx,
                                         int flags)
 {
     AVQSVDeviceContext *hwctx = ctx->hwctx;
-    QSVDeviceContext       *s = ctx->internal->priv;
 
     mfxVersion    ver = { { 3, 1 } };
     mfxHDL        handle;
@@ -1055,16 +1054,6 @@ static int qsv_device_derive_from_child(AVHWDeviceContext *ctx,
         av_log(ctx, AV_LOG_ERROR, "Error setting child device handle: "
                "%d\n", err);
         ret = AVERROR_UNKNOWN;
-        goto fail;
-    }
-
-    ret = qsv_device_init(ctx);
-    if (ret < 0)
-        goto fail;
-    if (s->handle_type != handle_type) {
-        av_log(ctx, AV_LOG_ERROR, "Error in child device handle setup: "
-               "type mismatch (%d != %d).\n", s->handle_type, handle_type);
-        err = AVERROR_UNKNOWN;
         goto fail;
     }
 
