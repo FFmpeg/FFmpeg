@@ -26,6 +26,10 @@ fate-mapchan: $(FATE_MAPCHAN)
 FATE_FFMPEG-$(CONFIG_COLOR_FILTER) += fate-ffmpeg-filter_complex
 fate-ffmpeg-filter_complex: CMD = framecrc -filter_complex color=d=1:r=5 -fflags +bitexact
 
+# Ticket 6603
+FATE_FFMPEG-$(call ALLYES, AEVALSRC_FILTER ASETNSAMPLES_FILTER AC3_FIXED_ENCODER) += fate-ffmpeg-filter_complex_audio
+fate-ffmpeg-filter_complex_audio: CMD = framecrc -filter_complex "aevalsrc=0:d=0.1,asetnsamples=1537" -c ac3_fixed
+
 FATE_SAMPLES_FFMPEG-$(CONFIG_COLORKEY_FILTER) += fate-ffmpeg-filter_colorkey
 fate-ffmpeg-filter_colorkey: tests/data/filtergraphs/colorkey
 fate-ffmpeg-filter_colorkey: CMD = framecrc -idct simple -fflags +bitexact -flags +bitexact  -sws_flags +accurate_rnd+bitexact -i $(TARGET_SAMPLES)/cavs/cavs.mpg -fflags +bitexact -flags +bitexact -sws_flags +accurate_rnd+bitexact -i $(TARGET_SAMPLES)/lena.pnm -an -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/colorkey -sws_flags +accurate_rnd+bitexact -fflags +bitexact -flags +bitexact -qscale 2 -frames:v 10
