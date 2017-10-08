@@ -71,6 +71,7 @@ static void mpeg_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
     s->mb_skipped = mb_skipped;
     s->mb_x       = mb_x;
     s->mb_y       = mb_y;
+    s->mcsel      = 0;
     memcpy(s->mv, mv, sizeof(*mv));
 
     ff_init_block_index(s);
