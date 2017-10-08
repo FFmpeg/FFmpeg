@@ -6108,10 +6108,10 @@ if enabled sdl2; then
             enable sdl2
     fi
     if test $target_os = "mingw32"; then
-        sdl2_extralibs="$sdl2_extralibs -mconsole"
+        sdl2_extralibs=$(filter_out '-mwindows' $sdl2_extralibs)
     fi
 fi
-enabled sdl2 && add_cflags $sdl2_cflags && add_extralibs $sdl2_extralibs
+enabled sdl2 && add_cflags $(filter_out '-Dmain=SDL_main' $sdl2_cflags) && add_extralibs $sdl2_extralibs
 
 if enabled decklink; then
     case $target_os in
