@@ -6297,7 +6297,6 @@ check_cflags -Wmissing-prototypes
 check_cflags -Wno-pointer-to-int-cast
 check_cflags -Wstrict-prototypes
 check_cflags -Wempty-body
-check_cflags -Wno-bool-operation
 
 if enabled extra_warnings; then
     check_cflags -Wcast-qual
