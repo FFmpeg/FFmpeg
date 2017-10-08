@@ -52,6 +52,7 @@ version <next>:
 - V4L2 mem2mem HW assisted codecs
 - Rockchip MPP hardware decoding
 - vmafmotion video filter
+- use MIME type "G726" for little-endian G.726, "AAL2-G726" for big-endian G.726
 
 
 version 3.3:

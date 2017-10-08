@@ -2851,7 +2851,7 @@ so the resulting 20-bit stream will be truncated back to 16-bit. Use something
 like @command{-acodec pcm_s24le} after the filter to get 24-bit PCM output.
 @example
 ffmpeg -i HDCD16.wav -af hdcd OUT16.wav
-ffmpeg -i HDCD16.wav -af hdcd -acodec pcm_s24le OUT24.wav
+ffmpeg -i HDCD16.wav -af hdcd -c:a pcm_s24le OUT24.wav
 @end example
 
 The filter accepts the following options:
@@ -8669,13 +8669,21 @@ It accepts the following parameters:
 @item fps
 The desired output frame rate. The default is @code{25}.
 
+@item start_time
+Assume the first PTS should be the given value, in seconds. This allows for
+padding/trimming at the start of stream. By default, no assumption is made
+about the first frame's expected PTS, so no padding or trimming is done.
+For example, this could be set to 0 to pad the beginning with duplicates of
+the first frame if a video stream starts after the audio stream or to trim any
+frames with a negative PTS.
+
 @item round
-Rounding method.
+Timestamp (PTS) rounding method.
 
 Possible values are:
 @table @option
 @item zero
-zero round towards 0
+round towards 0
 @item inf
 round away from 0
 @item down
@@ -8687,18 +8695,22 @@ round to nearest
 @end table
 The default is @code{near}.
 
-@item start_time
-Assume the first PTS should be the given value, in seconds. This allows for
-padding/trimming at the start of stream. By default, no assumption is made
-about the first frame's expected PTS, so no padding or trimming is done.
-For example, this could be set to 0 to pad the beginning with duplicates of
-the first frame if a video stream starts after the audio stream or to trim any
-frames with a negative PTS.
+@item eof_action
+Action performed when reading the last frame.
+
+Possible values are:
+@table @option
+@item round
+Use same timestamp rounding method as used for other frames.
+@item pass
+Pass through last frame if input duration has not been reached yet.
+@end table
+The default is @code{round}.
 
 @end table
 
 Alternatively, the options can be specified as a flat string:
-@var{fps}[:@var{round}].
+@var{fps}[:@var{start_time}[:@var{round}]].
 
 See also the @ref{setpts} filter.
 

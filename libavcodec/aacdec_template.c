@@ -1999,16 +1999,17 @@ static int decode_ics(AACContext *ac, SingleChannelElement *sce,
     global_gain = get_bits(gb, 8);
 
     if (!common_window && !scale_flag) {
-        if (decode_ics_info(ac, ics, gb) < 0)
-            return AVERROR_INVALIDDATA;
+        ret = decode_ics_info(ac, ics, gb);
+        if (ret < 0)
+            goto fail;
     }
 
     if ((ret = decode_band_types(ac, sce->band_type,
                                  sce->band_type_run_end, gb, ics)) < 0)
-        return ret;
+        goto fail;
     if ((ret = decode_scalefactors(ac, sce->sf, gb, global_gain, ics,
                                   sce->band_type, sce->band_type_run_end)) < 0)
-        return ret;
+        goto fail;
 
     pulse_present = 0;
     if (!scale_flag) {
@@ -2016,37 +2017,48 @@ static int decode_ics(AACContext *ac, SingleChannelElement *sce,
             if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
                 av_log(ac->avctx, AV_LOG_ERROR,
                        "Pulse tool not allowed in eight short sequence.\n");
-                return AVERROR_INVALIDDATA;
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
             }
             if (decode_pulses(&pulse, gb, ics->swb_offset, ics->num_swb)) {
                 av_log(ac->avctx, AV_LOG_ERROR,
                        "Pulse data corrupt or invalid.\n");
-                return AVERROR_INVALIDDATA;
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
             }
         }
         tns->present = get_bits1(gb);
-        if (tns->present && !er_syntax)
-            if (decode_tns(ac, tns, gb, ics) < 0)
-                return AVERROR_INVALIDDATA;
+        if (tns->present && !er_syntax) {
+            ret = decode_tns(ac, tns, gb, ics);
+            if (ret < 0)
+                goto fail;
+        }
         if (!eld_syntax && get_bits1(gb)) {
             avpriv_request_sample(ac->avctx, "SSR");
-            return AVERROR_PATCHWELCOME;
+            ret = AVERROR_PATCHWELCOME;
+            goto fail;
         }
         // I see no textual basis in the spec for this occurring after SSR gain
         // control, but this is what both reference and real implmentations do
-        if (tns->present && er_syntax)
-            if (decode_tns(ac, tns, gb, ics) < 0)
-                return AVERROR_INVALIDDATA;
+        if (tns->present && er_syntax) {
+            ret = decode_tns(ac, tns, gb, ics);
+            if (ret < 0)
+                goto fail;
+        }
     }
 
-    if (decode_spectrum_and_dequant(ac, out, gb, sce->sf, pulse_present,
-                                    &pulse, ics, sce->band_type) < 0)
-        return AVERROR_INVALIDDATA;
+    ret = decode_spectrum_and_dequant(ac, out, gb, sce->sf, pulse_present,
+                                    &pulse, ics, sce->band_type);
+    if (ret < 0)
+        goto fail;
 
     if (ac->oc[1].m4ac.object_type == AOT_AAC_MAIN && !common_window)
         apply_prediction(ac, sce);
 
     return 0;
+fail:
+    tns->present = 0;
+    return ret;
 }
 
 /**

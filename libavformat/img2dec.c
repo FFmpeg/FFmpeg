@@ -34,6 +34,7 @@
 #include "internal.h"
 #include "img2.h"
 #include "libavcodec/mjpeg.h"
+#include "subtitles.h"
 
 #if HAVE_GLOB
 /* Locally define as 0 (bitwise-OR no-op) any missing glob options that
@@ -875,8 +876,17 @@ static int sunrast_probe(AVProbeData *p)
 
 static int svg_probe(AVProbeData *p)
 {
-    if (av_match_ext(p->filename, "svg") || av_match_ext(p->filename, "svgz"))
-        return AVPROBE_SCORE_EXTENSION + 1;
+    const uint8_t *b = p->buf;
+    const uint8_t *end = p->buf + p->buf_size;
+    if (memcmp(p->buf, "<?xml", 5))
+        return 0;
+    while (b < end) {
+        b += ff_subtitles_next_line(b);
+        if (b >= end - 4)
+            return 0;
+        if (!memcmp(b, "<svg", 4))
+            return AVPROBE_SCORE_EXTENSION + 1;
+    }
     return 0;
 }
 

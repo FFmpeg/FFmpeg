@@ -192,56 +192,6 @@ static void hevc_copy_12w_msa(uint8_t *src, int32_t src_stride,
     }
 }
 
-static void hevc_copy_16multx8mult_msa(uint8_t *src,
-                                       int32_t src_stride,
-                                       int16_t *dst,
-                                       int32_t dst_stride,
-                                       int32_t height,
-                                       int32_t width)
-{
-    uint8_t *src_tmp;
-    int16_t *dst_tmp;
-    uint32_t loop_cnt, cnt;
-    v16i8 zero = { 0 };
-    v16i8 src0, src1, src2, src3, src4, src5, src6, src7;
-    v8i16 in0_r, in1_r, in2_r, in3_r;
-    v8i16 in0_l, in1_l, in2_l, in3_l;
-
-    for (cnt = (width >> 4); cnt--;) {
-        src_tmp = src;
-        dst_tmp = dst;
-
-        for (loop_cnt = (height >> 3); loop_cnt--;) {
-            LD_SB8(src_tmp, src_stride,
-                   src0, src1, src2, src3, src4, src5, src6, src7);
-            src_tmp += (8 * src_stride);
-
-            ILVR_B4_SH(zero, src0, zero, src1, zero, src2, zero, src3,
-                       in0_r, in1_r, in2_r, in3_r);
-            ILVL_B4_SH(zero, src0, zero, src1, zero, src2, zero, src3,
-                       in0_l, in1_l, in2_l, in3_l);
-            SLLI_4V(in0_r, in1_r, in2_r, in3_r, 6);
-            SLLI_4V(in0_l, in1_l, in2_l, in3_l, 6);
-            ST_SH4(in0_r, in1_r, in2_r, in3_r, dst_tmp, dst_stride);
-            ST_SH4(in0_l, in1_l, in2_l, in3_l, (dst_tmp + 8), dst_stride);
-            dst_tmp += (4 * dst_stride);
-
-            ILVR_B4_SH(zero, src4, zero, src5, zero, src6, zero, src7,
-                       in0_r, in1_r, in2_r, in3_r);
-            ILVL_B4_SH(zero, src4, zero, src5, zero, src6, zero, src7,
-                       in0_l, in1_l, in2_l, in3_l);
-            SLLI_4V(in0_r, in1_r, in2_r, in3_r, 6);
-            SLLI_4V(in0_l, in1_l, in2_l, in3_l, 6);
-            ST_SH4(in0_r, in1_r, in2_r, in3_r, dst_tmp, dst_stride);
-            ST_SH4(in0_l, in1_l, in2_l, in3_l, (dst_tmp + 8), dst_stride);
-            dst_tmp += (4 * dst_stride);
-        }
-
-        src += 16;
-        dst += 16;
-    }
-}
-
 static void hevc_copy_16w_msa(uint8_t *src, int32_t src_stride,
                               int16_t *dst, int32_t dst_stride,
                               int32_t height)

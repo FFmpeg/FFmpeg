@@ -465,7 +465,7 @@ static inline void tm2_apply_deltas(TM2Context *ctx, int* Y, int stride, int *de
     }
 }
 
-static inline void tm2_high_chroma(int *data, int stride, int *last, int *CD, int *deltas)
+static inline void tm2_high_chroma(int *data, int stride, int *last, unsigned *CD, int *deltas)
 {
     int i, j;
     for (j = 0; j < 2; j++) {

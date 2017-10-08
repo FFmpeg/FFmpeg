@@ -104,7 +104,7 @@ The argument must be one of @code{algorithms}, @code{antialiases},
 The following command shows the @command{ffmpeg} output is an
 CACA window, forcing its size to 80x25:
 @example
-ffmpeg -i INPUT -vcodec rawvideo -pix_fmt rgb24 -window_size 80x25 -f caca -
+ffmpeg -i INPUT -c:v rawvideo -pix_fmt rgb24 -window_size 80x25 -f caca -
 @end example
 
 @item
@@ -251,7 +251,7 @@ Set x/y coordinate of top left corner. Default is 0.
 Play a file on framebuffer device @file{/dev/fb0}.
 Required pixel format depends on current framebuffer settings.
 @example
-ffmpeg -re -i INPUT -vcodec rawvideo -pix_fmt bgra -f fbdev /dev/fb0
+ffmpeg -re -i INPUT -c:v rawvideo -pix_fmt bgra -f fbdev /dev/fb0
 @end example
 
 See also @url{http://linux-fbdev.sourceforge.net/}, and fbset(1).
@@ -413,7 +413,7 @@ Quit the device immediately.
 The following command shows the @command{ffmpeg} output is an
 SDL window, forcing its size to the qcif format:
 @example
-ffmpeg -i INPUT -vcodec rawvideo -pix_fmt yuv420p -window_size qcif -f sdl "SDL output"
+ffmpeg -i INPUT -c:v rawvideo -pix_fmt yuv420p -window_size qcif -f sdl "SDL output"
 @end example
 
 @section sndio

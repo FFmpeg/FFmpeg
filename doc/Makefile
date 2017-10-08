@@ -24,6 +24,7 @@ HTMLPAGES   = $(AVPROGS-yes:%=doc/%.html) $(AVPROGS-yes:%=doc/%-all.html) $(COMP
               doc/fate.html                                             \
               doc/general.html                                          \
               doc/git-howto.html                                        \
+              doc/mailing-list-faq.html                                 \
               doc/nut.html                                              \
               doc/platform.html                                         \
 

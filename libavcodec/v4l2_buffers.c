@@ -244,13 +244,23 @@ static int v4l2_buf_to_bufref(V4L2Buffer *in, int plane, AVBufferRef **buf)
 
 static int v4l2_bufref_to_buf(V4L2Buffer *out, int plane, const uint8_t* data, int size, AVBufferRef* bref)
 {
+    unsigned int bytesused, length;
+
     if (plane >= out->num_planes)
         return AVERROR(EINVAL);
 
+    bytesused = FFMIN(size, out->plane_info[plane].length);
+    length = out->plane_info[plane].length;
+
     memcpy(out->plane_info[plane].mm_addr, data, FFMIN(size, out->plane_info[plane].length));
 
-    out->planes[plane].bytesused = FFMIN(size, out->plane_info[plane].length);
-    out->planes[plane].length = out->plane_info[plane].length;
+    if (V4L2_TYPE_IS_MULTIPLANAR(out->buf.type)) {
+        out->planes[plane].bytesused = bytesused;
+        out->planes[plane].length = length;
+    } else {
+        out->buf.bytesused = bytesused;
+        out->buf.length = length;
+    }
 
     return 0;
 }

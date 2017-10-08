@@ -146,21 +146,21 @@ static int do_psnr(FFFrameSync *fs)
 {
     AVFilterContext *ctx = fs->parent;
     PSNRContext *s = ctx->priv;
-    AVFrame *main, *ref;
+    AVFrame *master, *ref;
     double comp_mse[4], mse = 0;
     int ret, j, c;
     AVDictionary **metadata;
 
-    ret = ff_framesync_dualinput_get(fs, &main, &ref);
+    ret = ff_framesync_dualinput_get(fs, &master, &ref);
     if (ret < 0)
         return ret;
     if (!ref)
-        return ff_filter_frame(ctx->outputs[0], main);
-    metadata = &main->metadata;
+        return ff_filter_frame(ctx->outputs[0], master);
+    metadata = &master->metadata;
 
-    compute_images_mse(s, (const uint8_t **)main->data, main->linesize,
+    compute_images_mse(s, (const uint8_t **)master->data, master->linesize,
                           (const uint8_t **)ref->data, ref->linesize,
-                          main->width, main->height, comp_mse);
+                          master->width, master->height, comp_mse);
 
     for (j = 0; j < s->nb_components; j++)
         mse += comp_mse[j] * s->planeweight[j];
@@ -222,7 +222,7 @@ static int do_psnr(FFFrameSync *fs)
         fprintf(s->stats_file, "\n");
     }
 
-    return ff_filter_frame(ctx->outputs[0], main);
+    return ff_filter_frame(ctx->outputs[0], master);
 }
 
 static av_cold int init(AVFilterContext *ctx)

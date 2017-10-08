@@ -574,7 +574,7 @@ not_coded:
 
 static int h263_skip_b_part(MpegEncContext *s, int cbp)
 {
-    LOCAL_ALIGNED_16(int16_t, dblock, [64]);
+    LOCAL_ALIGNED_32(int16_t, dblock, [64]);
     int i, mbi;
     int bli[6];
 

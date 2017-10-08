@@ -106,14 +106,6 @@ static int get_vanc_line_idx(BMDDisplayMode mode)
     return i - 1;
 }
 
-static inline uint16_t parity (uint16_t x)
-{
-    uint16_t i;
-    for (i = 4 * sizeof (x); i > 0; i /= 2)
-        x ^= x >> i;
-    return x & 1;
-}
-
 static inline void clear_parity_bits(uint16_t *buf, int len) {
     int i;
     for (i = 0; i < len; i++)
@@ -126,7 +118,7 @@ static int check_vanc_parity_checksum(uint16_t *buf, int len, uint16_t checksum)
     for (i = 3; i < len - 1; i++) {
         uint16_t v = buf[i];
         int np = v >> 8;
-        int p = parity(v & 0xff);
+        int p = av_parity(v & 0xff);
         if ((!!p ^ !!(v & 0x100)) || (np != 1 && np != 2)) {
             // Parity check failed
             return -1;
@@ -146,7 +138,7 @@ static int check_vanc_parity_checksum(uint16_t *buf, int len, uint16_t checksum)
 static void extract_luma_from_v210(uint16_t *dst, const uint8_t *src, int width)
 {
     int i;
-    for (i = 0; i < width / 3; i += 3) {
+    for (i = 0; i < width / 3; i++) {
         *dst++ = (src[1] >> 2) + ((src[2] & 15) << 6);
         *dst++ =  src[4]       + ((src[5] &  3) << 8);
         *dst++ = (src[6] >> 4) + ((src[7] & 63) << 4);
@@ -387,7 +379,7 @@ uint8_t *get_metadata(AVFormatContext *avctx, uint16_t *buf, size_t width,
                 av_log(avctx, AV_LOG_WARNING, "VANC parity or checksum incorrect\n");
                 goto skip_packet;
             }
-            tgt = teletext_data_unit_from_ancillary_packet(buf + 3, buf + len, tgt, cctx->teletext_lines, 0);
+            tgt = teletext_data_unit_from_ancillary_packet(buf + 3, buf + len, tgt, cctx->teletext_lines, 1);
         } else if (did == 0x61 && sdid == 0x01) {
             unsigned int data_len;
             uint8_t *data;
@@ -398,10 +390,8 @@ uint8_t *get_metadata(AVFormatContext *avctx, uint16_t *buf, size_t width,
             clear_parity_bits(buf, len);
             data = vanc_to_cc(avctx, buf, width, data_len);
             if (data) {
-                uint8_t *pkt_cc = av_packet_new_side_data(pkt, AV_PKT_DATA_A53_CC, data_len);
-                if (pkt_cc)
-                    memcpy(pkt_cc, data, data_len);
-                av_free(data);
+                if (av_packet_add_side_data(pkt, AV_PKT_DATA_A53_CC, data, data_len) < 0)
+                    av_free(data);
             }
         } else {
             av_log(avctx, AV_LOG_DEBUG, "Unknown meta data DID = 0x%.2x SDID = 0x%.2x\n",
@@ -460,22 +450,24 @@ static unsigned long long avpacket_queue_size(AVPacketQueue *q)
 static int avpacket_queue_put(AVPacketQueue *q, AVPacket *pkt)
 {
     AVPacketList *pkt1;
+    int ret;
 
     // Drop Packet if queue size is > maximum queue size
     if (avpacket_queue_size(q) > (uint64_t)q->max_q_size) {
         av_log(q->avctx, AV_LOG_WARNING,  "Decklink input buffer overrun!\n");
         return -1;
     }
-    /* duplicate the packet */
-    if (av_dup_packet(pkt) < 0) {
-        return -1;
-    }
 
-    pkt1 = (AVPacketList *)av_malloc(sizeof(AVPacketList));
+    pkt1 = (AVPacketList *)av_mallocz(sizeof(AVPacketList));
     if (!pkt1) {
         return -1;
     }
-    pkt1->pkt  = *pkt;
+    ret = av_packet_ref(&pkt1->pkt, pkt);
+    av_packet_unref(pkt);
+    if (ret < 0) {
+        av_free(pkt1);
+        return -1;
+    }
     pkt1->next = NULL;
 
     pthread_mutex_lock(&q->mutex);

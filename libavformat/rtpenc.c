@@ -78,6 +78,7 @@ static int is_supported(enum AVCodecID id)
     case AV_CODEC_ID_VP9:
     case AV_CODEC_ID_ADPCM_G722:
     case AV_CODEC_ID_ADPCM_G726:
+    case AV_CODEC_ID_ADPCM_G726LE:
     case AV_CODEC_ID_ILBC:
     case AV_CODEC_ID_MJPEG:
     case AV_CODEC_ID_SPEEX:
@@ -550,6 +551,7 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
          * clock. */
         return rtp_send_samples(s1, pkt->data, size, 8 * st->codecpar->channels);
     case AV_CODEC_ID_ADPCM_G726:
+    case AV_CODEC_ID_ADPCM_G726LE:
         return rtp_send_samples(s1, pkt->data, size,
                                 st->codecpar->bits_per_coded_sample * st->codecpar->channels);
     case AV_CODEC_ID_MP2:

@@ -55,6 +55,24 @@ static void check_reorder_pixels(void) {
     bench_new(dst_new, src, BUF_SIZE);
 }
 
+static void check_predictor(void) {
+    LOCAL_ALIGNED_32(uint8_t, src,     [PADDED_BUF_SIZE]);
+    LOCAL_ALIGNED_32(uint8_t, dst_ref, [PADDED_BUF_SIZE]);
+    LOCAL_ALIGNED_32(uint8_t, dst_new, [PADDED_BUF_SIZE]);
+
+    declare_func(void, uint8_t *src, ptrdiff_t size);
+
+    memset(src,     0, PADDED_BUF_SIZE);
+    randomize_buffers();
+    memcpy(dst_ref, src, PADDED_BUF_SIZE);
+    memcpy(dst_new, src, PADDED_BUF_SIZE);
+    call_ref(dst_ref, BUF_SIZE);
+    call_new(dst_new, BUF_SIZE);
+    if (memcmp(dst_ref, dst_new, BUF_SIZE))
+        fail();
+    bench_new(dst_new, BUF_SIZE);
+}
+
 void checkasm_check_exrdsp(void)
 {
     ExrDSPContext h;
@@ -65,4 +83,9 @@ void checkasm_check_exrdsp(void)
         check_reorder_pixels();
 
     report("reorder_pixels");
+
+    if (check_func(h.predictor, "predictor"))
+        check_predictor();
+
+    report("predictor");
 }

@@ -4,6 +4,8 @@
 ;* Copyright (c) 2008 Loren Merritt
 ;* Copyright (c) 2009 Fiona Glaser
 ;*
+;* AVX version by Jokyo Images
+;*
 ;* This file is part of FFmpeg.
 ;*
 ;* FFmpeg is free software; you can redistribute it and/or
@@ -32,27 +34,25 @@ SECTION .text
 ; %2 = number of inline store loops
 %macro CLEAR_BLOCK 2
 cglobal clear_block, 1, 1, %1, blocks
-    ZERO  m0, m0
+    ZERO  m0, m0, m0
 %assign %%i 0
 %rep %2
     mova  [blocksq+mmsize*(0+%%i)], m0
     mova  [blocksq+mmsize*(1+%%i)], m0
     mova  [blocksq+mmsize*(2+%%i)], m0
     mova  [blocksq+mmsize*(3+%%i)], m0
-    mova  [blocksq+mmsize*(4+%%i)], m0
-    mova  [blocksq+mmsize*(5+%%i)], m0
-    mova  [blocksq+mmsize*(6+%%i)], m0
-    mova  [blocksq+mmsize*(7+%%i)], m0
-%assign %%i %%i+8
+%assign %%i %%i+4
 %endrep
     RET
 %endmacro
 
 INIT_MMX mmx
 %define ZERO pxor
-CLEAR_BLOCK 0, 2
+CLEAR_BLOCK 0, 4
 INIT_XMM sse
 %define ZERO xorps
+CLEAR_BLOCK 1, 2
+INIT_YMM avx
 CLEAR_BLOCK 1, 1
 
 ;-----------------------------------------
@@ -63,7 +63,7 @@ CLEAR_BLOCK 1, 1
 cglobal clear_blocks, 1, 2, %1, blocks, len
     add   blocksq, 768
     mov      lenq, -768
-    ZERO       m0, m0
+    ZERO       m0, m0, m0
 .loop:
     mova  [blocksq+lenq+mmsize*0], m0
     mova  [blocksq+lenq+mmsize*1], m0
@@ -83,4 +83,6 @@ INIT_MMX mmx
 CLEAR_BLOCKS 0
 INIT_XMM sse
 %define ZERO xorps
+CLEAR_BLOCKS 1
+INIT_YMM avx
 CLEAR_BLOCKS 1

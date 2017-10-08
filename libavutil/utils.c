@@ -152,7 +152,7 @@ AVRational av_get_time_base_q(void)
 void av_assert0_fpu(void) {
 #if HAVE_MMX_INLINE
     uint16_t state[14];
-     __asm volatile (
+     __asm__ volatile (
         "fstenv %0 \n\t"
         : "+m" (state)
         :

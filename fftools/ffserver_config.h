@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef FFSERVER_CONFIG_H
-#define FFSERVER_CONFIG_H
+#ifndef FFTOOLS_FFSERVER_CONFIG_H
+#define FFTOOLS_FFSERVER_CONFIG_H
 
 #define FFM_PACKET_SIZE 4096
 
@@ -152,4 +152,4 @@ int ffserver_parse_ffconfig(const char *filename, FFServerConfig *config);
 
 void ffserver_free_child_args(void *argsp);
 
-#endif /* FFSERVER_CONFIG_H */
+#endif /* FFTOOLS_FFSERVER_CONFIG_H */

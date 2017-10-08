@@ -458,7 +458,7 @@ static int read_audio_mux_element(struct LATMContext *latmctx,
     } else if (!latmctx->aac_ctx.avctx->extradata) {
         av_log(latmctx->aac_ctx.avctx, AV_LOG_DEBUG,
                "no decoder config found\n");
-        return AVERROR(EAGAIN);
+        return 1;
     }
     if (latmctx->audio_mux_version_A == 0) {
         int mux_slot_length_bytes = read_payload_length_info(latmctx, gb);
@@ -495,8 +495,8 @@ static int latm_decode_frame(AVCodecContext *avctx, void *out,
     if (muxlength > avpkt->size)
         return AVERROR_INVALIDDATA;
 
-    if ((err = read_audio_mux_element(latmctx, &gb)) < 0)
-        return err;
+    if ((err = read_audio_mux_element(latmctx, &gb)))
+        return (err < 0) ? err : avpkt->size;
 
     if (!latmctx->initialized) {
         if (!avctx->extradata) {
