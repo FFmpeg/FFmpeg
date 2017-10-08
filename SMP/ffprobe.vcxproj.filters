@@ -16,13 +16,16 @@
     <Filter Include="Source Files\ffprobe">
       <UniqueIdentifier>{cac6df1e-4a60-495c-8daa-5707dc1216ff}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\fftools">
+      <UniqueIdentifier>{9fee14b2-1b77-463a-bd6b-60efdcf8850f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\cmdutils.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\fftools\cmdutils.c">
+      <Filter>Source Files\fftools</Filter>
     </ClCompile>
-    <ClCompile Include="..\ffprobe.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\fftools\ffprobe.c">
+      <Filter>Source Files\fftools</Filter>
     </ClCompile>
     <ClCompile Include="ffprobe\dce_defs.c">
       <Filter>Source Files\ffprobe</Filter>

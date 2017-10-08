@@ -16,28 +16,31 @@
     <Filter Include="Source Files\ffmpeg">
       <UniqueIdentifier>{cac6df1e-4a60-495c-8daa-5707dc1216ff}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\fftools">
+      <UniqueIdentifier>{9fee14b2-1b77-463a-bd6b-60efdcf8850f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\cmdutils.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\fftools\ffmpeg_opt.c">
+      <Filter>Source Files\fftools</Filter>
     </ClCompile>
-    <ClCompile Include="..\ffmpeg_opt.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\fftools\ffmpeg_filter.c">
+      <Filter>Source Files\fftools</Filter>
     </ClCompile>
-    <ClCompile Include="..\ffmpeg_filter.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\fftools\ffmpeg_hw.c">
+      <Filter>Source Files\fftools</Filter>
     </ClCompile>
-    <ClCompile Include="..\ffmpeg_hw.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\fftools\ffmpeg_cuvid.c">
+      <Filter>Source Files\fftools</Filter>
     </ClCompile>
-    <ClCompile Include="..\ffmpeg_qsv.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\fftools\ffmpeg_qsv.c">
+      <Filter>Source Files\fftools</Filter>
     </ClCompile>
-    <ClCompile Include="..\ffmpeg_cuvid.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\fftools\cmdutils.c">
+      <Filter>Source Files\fftools</Filter>
     </ClCompile>
-    <ClCompile Include="..\ffmpeg.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\fftools\ffmpeg.c">
+      <Filter>Source Files\fftools</Filter>
     </ClCompile>
     <ClCompile Include="ffmpeg\dce_defs.c">
       <Filter>Source Files\ffmpeg</Filter>

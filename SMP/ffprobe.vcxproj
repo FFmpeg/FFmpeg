@@ -35,8 +35,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\cmdutils.c" />
-    <ClCompile Include="..\ffprobe.c" />
+    <ClCompile Include="..\fftools\cmdutils.c" />
+    <ClCompile Include="..\fftools\ffprobe.c" />
     <ClCompile Include="ffprobe\dce_defs.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

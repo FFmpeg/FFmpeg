@@ -35,8 +35,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\cmdutils.c" />
-    <ClCompile Include="..\ffplay.c" />
+    <ClCompile Include="..\fftools\cmdutils.c" />
+    <ClCompile Include="..\fftools\ffplay.c" />
     <ClCompile Include="ffplay\dce_defs.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

@@ -35,13 +35,13 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\cmdutils.c" />
-    <ClCompile Include="..\ffmpeg_opt.c" />
-    <ClCompile Include="..\ffmpeg_filter.c" />
-    <ClCompile Include="..\ffmpeg_hw.c" />
-    <ClCompile Include="..\ffmpeg_qsv.c" />
-    <ClCompile Include="..\ffmpeg_cuvid.c" />
-    <ClCompile Include="..\ffmpeg.c" />
+    <ClCompile Include="..\fftools\ffmpeg_opt.c" />
+    <ClCompile Include="..\fftools\ffmpeg_filter.c" />
+    <ClCompile Include="..\fftools\ffmpeg_hw.c" />
+    <ClCompile Include="..\fftools\ffmpeg_cuvid.c" />
+    <ClCompile Include="..\fftools\ffmpeg_qsv.c" />
+    <ClCompile Include="..\fftools\cmdutils.c" />
+    <ClCompile Include="..\fftools\ffmpeg.c" />
     <ClCompile Include="ffmpeg\dce_defs.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
