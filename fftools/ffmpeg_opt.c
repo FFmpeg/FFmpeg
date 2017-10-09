@@ -100,7 +100,6 @@ const HWAccel hwaccels[] = {
 #endif
     { 0 },
 };
-int hwaccel_lax_profile_check = 0;
 AVBufferRef *hw_device_ctx;
 HWDevice *filter_hw_device;
 
@@ -3640,8 +3639,6 @@ const OptionDef options[] = {
     { "autorotate",       HAS_ARG | OPT_BOOL | OPT_SPEC |
                           OPT_EXPERT | OPT_INPUT,                                { .off = OFFSET(autorotate) },
         "automatically insert correct rotate filters" },
-    { "hwaccel_lax_profile_check", OPT_BOOL | OPT_EXPERT,                        { &hwaccel_lax_profile_check},
-        "attempt to decode anyway if HW accelerated decoder's supported profiles do not exactly match the stream" },
 
     /* audio options */
     { "aframes",        OPT_AUDIO | HAS_ARG  | OPT_PERFILE | OPT_OUTPUT,           { .func_arg = opt_audio_frames },
