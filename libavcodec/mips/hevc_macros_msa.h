@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Manojkumar Bhosale (Manojkumar.Bhosale@imgtec.com)
+ * Copyright (c) 2015 - 2017 Manojkumar Bhosale (Manojkumar.Bhosale@imgtec.com)
  *
  * This file is part of FFmpeg.
  *
@@ -57,6 +57,17 @@
     PCKEV_B2_SW(tmp1_m, tmp0_m, tmp3_m, tmp2_m, out0, out1);       \
     out2 = (v4i32) __msa_pckev_b((v16i8) tmp5_m, (v16i8) tmp4_m);  \
 }
+
+#define HEVC_FILT_8TAP_SH(in0, in1, in2, in3,                    \
+                          filt0, filt1, filt2, filt3)            \
+( {                                                              \
+    v8i16 out_m;                                                 \
+                                                                 \
+    out_m = __msa_dotp_s_h((v16i8) in0, (v16i8) filt0);          \
+    out_m = __msa_dpadd_s_h(out_m, (v16i8) in1, (v16i8) filt1);  \
+    DPADD_SB2_SH(in2, in3, filt2, filt3, out_m, out_m);          \
+    out_m;                                                       \
+} )
 
 #define HEVC_FILT_8TAP(in0, in1, in2, in3,                       \
                        filt0, filt1, filt2, filt3)               \
