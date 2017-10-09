@@ -281,7 +281,7 @@ static int vaapi_decode_make_config(AVCodecContext *avctx)
     VAStatus vas;
     int err, i, j;
     const AVCodecDescriptor *codec_desc;
-    VAProfile profile, *profile_list = NULL;
+    VAProfile profile, va_profile, *profile_list = NULL;
     int profile_count, exact_match, alt_profile;
     const AVPixFmtDescriptor *sw_desc, *desc;
 
@@ -328,6 +328,7 @@ static int vaapi_decode_make_config(AVCodecContext *avctx)
             if (exact_match)
                 break;
             alt_profile = vaapi_profile_map[i].codec_profile;
+            va_profile = vaapi_profile_map[i].va_profile;
         }
     }
     av_freep(&profile_list);
@@ -347,6 +348,7 @@ static int vaapi_decode_make_config(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_WARNING, "Using possibly-"
                    "incompatible profile %d instead.\n",
                    alt_profile);
+            profile = va_profile;
         } else {
             av_log(avctx, AV_LOG_VERBOSE, "Codec %s profile %d not "
                    "supported for hardware decode.\n",
