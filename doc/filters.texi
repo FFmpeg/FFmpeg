@@ -4512,7 +4512,7 @@ Synthesize a voice utterance using the libflite library.
 To enable compilation of this filter you need to configure FFmpeg with
 @code{--enable-libflite}.
 
-Note that the flite library is not thread-safe.
+Note that versions of the flite library prior to 2.0 are not thread-safe.
 
 The filter accepts the following options:
 
@@ -4567,7 +4567,7 @@ ffplay -f lavfi flite=text='No more be grieved for which that thou hast done.'
 @end itemize
 
 For more information about libflite, check:
-@url{http://www.speech.cs.cmu.edu/flite/}
+@url{http://www.festvox.org/flite/}
 
 @section anoisesrc
 
