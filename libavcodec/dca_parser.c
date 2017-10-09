@@ -124,13 +124,13 @@ static int dca_find_frame_end(DCAParseContext *pc1, const uint8_t *buf,
                     break;
                 case DCA_SYNCWORD_CORE_14B_BE:
                     if (size == 4) {
-                        pc1->framesize = CORE_FRAMESIZE(STATE_14(state)) * 8 / 14 * 2;
+                        pc1->framesize = CORE_FRAMESIZE(STATE_14(state));
                         start_found    = 4;
                     }
                     break;
                 case DCA_SYNCWORD_CORE_14B_LE:
                     if (size == 4) {
-                        pc1->framesize = CORE_FRAMESIZE(STATE_14(STATE_LE(state))) * 8 / 14 * 2;
+                        pc1->framesize = CORE_FRAMESIZE(STATE_14(STATE_LE(state)));
                         start_found    = 4;
                     }
                     break;
