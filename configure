@@ -1767,7 +1767,7 @@ CONFIG_EXTRA="
     h264parse
     h264pred
     h264qpel
-    hevc_ps
+    hevcparse
     hpeldsp
     huffman
     huffyuvdsp
@@ -1988,7 +1988,7 @@ faandct_select="fdctdsp"
 faanidct_deps="faan"
 faanidct_select="idctdsp"
 h264dsp_select="startcode"
-hevc_ps_select="golomb"
+hevcparse_select="golomb"
 intrax8_select="blockdsp idctdsp"
 mdct_select="fft"
 rdft_select="fft"
@@ -2074,7 +2074,7 @@ h264_decoder_suggest="error_resilience"
 hap_decoder_select="snappy texturedsp"
 hap_encoder_deps="libsnappy"
 hap_encoder_select="texturedspenc"
-hevc_decoder_select="bswapdsp cabac hevc_ps videodsp"
+hevc_decoder_select="bswapdsp cabac hevcparse videodsp"
 huffyuv_decoder_select="bswapdsp huffyuvdsp"
 huffyuv_encoder_select="bswapdsp huffman huffyuvencdsp"
 iac_decoder_select="imc_decoder"
@@ -2299,7 +2299,7 @@ h264_vaapi_encoder_deps="VAEncPictureParameterBufferH264"
 h264_vaapi_encoder_select="cbs_h264 vaapi_encode"
 hevc_nvenc_encoder_deps="nvenc"
 hevc_qsv_decoder_select="hevc_mp4toannexb_bsf hevc_parser hevc_qsv_hwaccel qsvdec"
-hevc_qsv_encoder_select="hevc_ps qsvenc"
+hevc_qsv_encoder_select="hevcparse qsvenc"
 hevc_vaapi_encoder_deps="VAEncPictureParameterBufferHEVC"
 hevc_vaapi_encoder_select="cbs_h265 vaapi_encode"
 mjpeg_qsv_encoder_deps="libmfx"
@@ -2326,7 +2326,7 @@ nvenc_hevc_encoder_select="hevc_nvenc_encoder"
 # parsers
 aac_parser_select="adts_header"
 h264_parser_select="golomb h264dsp h264parse"
-hevc_parser_select="hevc_ps"
+hevc_parser_select="hevcparse"
 mpegaudio_parser_select="mpegaudioheader"
 mpegvideo_parser_select="mpegvideo"
 mpeg4video_parser_select="error_resilience h263dsp mpegvideo qpeldsp"
