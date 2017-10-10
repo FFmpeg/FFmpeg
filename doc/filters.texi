@@ -11711,7 +11711,8 @@ can be used to test the monowhite pixel format descriptor definition.
 
 @section pixscope
 
-Display sample values of color channels. Mainly useful for checking color and levels.
+Display sample values of color channels. Mainly useful for checking color
+and levels. Minimum supported resolution is 640x480.
 
 The filters accept the following options:
 
