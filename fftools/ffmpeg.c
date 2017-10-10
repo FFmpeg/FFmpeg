@@ -2665,8 +2665,13 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
                     ist->next_dts = AV_NOPTS_VALUE;
             }
 
-            if (got_output)
-                ist->next_pts += av_rescale_q(duration_pts, ist->st->time_base, AV_TIME_BASE_Q);
+            if (got_output) {
+                if (duration_pts > 0) {
+                    ist->next_pts += av_rescale_q(duration_pts, ist->st->time_base, AV_TIME_BASE_Q);
+                } else {
+                    ist->next_pts += duration_dts;
+                }
+            }
             break;
         case AVMEDIA_TYPE_SUBTITLE:
             if (repeating)
