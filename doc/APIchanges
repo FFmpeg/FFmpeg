@@ -15,6 +15,8 @@ libavutil:     2015-08-28
 
 API changes, most recent first:
 
+-------- 8< --------- FFmpeg 3.4 was cut here -------- 8< ---------
+
 2017-09-28 - b6cf66ae1c - lavc 57.106.104 - avcodec.h
   Add AV_PKT_DATA_A53_CC packet side data, to export closed captions
 
