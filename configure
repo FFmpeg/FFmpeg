@@ -4737,7 +4737,7 @@ enabled libfaac           && require libfaac "stdint.h faac.h" faacEncGetVersion
 enabled libfdk_aac        && require_pkg_config libfdk_aac fdk-aac "fdk-aac/aacenc_lib.h" aacEncOpen
 enabled libfontconfig     && require_pkg_config libfontconfig fontconfig "fontconfig/fontconfig.h" FcInit
 enabled libfreetype       && require_pkg_config libfreetype freetype2 "ft2build.h FT_FREETYPE_H" FT_Init_FreeType
-enabled libgsm            && require libgsm gsm._h gsm_create -lgsm
+enabled libgsm            && require libgsm gsm.h gsm_create -lgsm
 enabled libhdcd           && require_pkg_config libhdcd libhdcd "hdcd/hdcd_simple.h" hdcd_new
 enabled libilbc           && require libilbc ilbc.h WebRtcIlbcfix_InitDecode -lilbc
 enabled libkvazaar        && require_pkg_config libkvazaar "kvazaar >= 0.8.1" kvazaar.h kvz_api_get
