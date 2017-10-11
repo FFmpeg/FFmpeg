@@ -350,6 +350,7 @@ concat(){
     else
         run ffprobe${PROGSUF} -bitexact -show_streams -show_packets -v 0 -of compact=p=0:nk=1 -fflags keepside -safe 0 $extra_args $concatfile
     fi
+}
 
 null(){
     :
