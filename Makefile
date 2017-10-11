@@ -154,6 +154,7 @@ endif
 config:
 	$(SRC_PATH)/configure $(value FFMPEG_CONFIGURATION)
 
+build: all alltools examples testprogs
 check: all alltools examples testprogs fate
 
 include $(SRC_PATH)/tests/Makefile
@@ -169,4 +170,5 @@ $(sort $(OBJDIRS)):
 # so this saves some time on slow systems.
 .SUFFIXES:
 
-.PHONY: all all-yes alltools check *clean config install* testprogs uninstall*
+.PHONY: all all-yes alltools build check config testprogs
+.PHONY: *clean install* uninstall*
