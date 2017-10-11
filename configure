@@ -732,12 +732,11 @@ is_in(){
     return 1
 }
 
-do_check_deps(){
+check_deps(){
     for cfg; do
         enabled ${cfg}_checking && die "Circular dependency for $cfg."
         disabled ${cfg}_checking && continue
         enable ${cfg}_checking
-        append allopts $cfg
 
         eval dep_all="\$${cfg}_deps"
         eval dep_any="\$${cfg}_deps_any"
@@ -748,7 +747,7 @@ do_check_deps(){
         eval dep_ifn="\$${cfg}_if_any"
 
         pushvar cfg dep_all dep_any dep_con dep_sel dep_sgs dep_ifa dep_ifn
-        do_check_deps $dep_all $dep_any $dep_con $dep_sel $dep_sgs $dep_ifa $dep_ifn
+        check_deps $dep_all $dep_any $dep_con $dep_sel $dep_sgs $dep_ifa $dep_ifn
         popvar cfg dep_all dep_any dep_con dep_sel dep_sgs dep_ifa dep_ifn
 
         [ -n "$dep_ifa" ] && { enabled_all $dep_ifa && enable_weak $cfg; }
@@ -758,24 +757,15 @@ do_check_deps(){
         disabled_all $dep_con || { disable $cfg && requested $cfg && die "ERROR: $cfg requested, but some conflicting dependencies are unsatisfied: $dep_con"; }
         disabled_any $dep_sel && { disable $cfg && requested $cfg && die "ERROR: $cfg requested, but some selected dependency is unsatisfied: $dep_sel"; }
 
-        if enabled $cfg; then
-            enable_deep $dep_sel
-            enable_deep_weak $dep_sgs
-        fi
+        enabled $cfg && enable_deep_weak $dep_sel $dep_sgs
+
+        for dep in $dep_all $dep_any $dep_sel $dep_sgs; do
+            # filter out library deps, these do not belong in extralibs
+            is_in $dep $LIBRARY_LIST && continue
+            enabled $dep && eval append ${cfg}_extralibs ${dep}_extralibs
+        done
 
         disable ${cfg}_checking
-    done
-}
-
-check_deps(){
-    unset allopts
-
-    do_check_deps "$@"
-
-    for cfg in $allopts; do
-        enabled $cfg || continue
-        eval dep_extralibs="\$${cfg}_extralibs"
-        test -n "$dep_extralibs" && add_extralibs $dep_extralibs
     done
 }
 
@@ -837,6 +827,15 @@ unique(){
         uniq_list="$(filter_out $tok $uniq_list) $tok"
     done
     eval "$var=\"${uniq_list}\""
+}
+
+resolve(){
+    var=$1
+    tmpvar=
+    for entry in $(eval echo \$$var); do
+        tmpvar="$tmpvar $(eval echo \$${entry})"
+    done
+    eval "$var=\"${tmpvar}\""
 }
 
 add_cppflags(){
@@ -1135,7 +1134,8 @@ check_apple_framework(){
     name="$(tolower $framework)"
     header="${framework}/${framework}.h"
     disable $name
-    check_header_objcc $header && enable $name && add_extralibs "-framework $framework"
+    check_header_objcc $header &&
+        enable $name && eval ${name}_extralibs='"-framework $framework"'
 }
 
 check_func(){
@@ -1255,15 +1255,18 @@ check_lib(){
     shift 3
     disable $name
     check_func_headers "$headers" "$funcs" "$@" &&
-        enable $name && add_extralibs "$@"
+        enable $name && eval ${name}_extralibs="\$@"
 }
 
 check_lib_cpp(){
     log check_lib_cpp "$@"
-    headers="$1"
-    classes="$2"
-    shift 2
-    check_class_headers_cpp "$headers" "$classes" "$@" && add_extralibs "$@"
+    name="$1"
+    headers="$2"
+    classes="$3"
+    shift 3
+    disable $name
+    check_class_headers_cpp "$headers" "$classes" "$@" &&
+        enable $name && eval ${name}_extralibs="\$@"
 }
 
 check_pkg_config(){
@@ -1280,8 +1283,8 @@ check_pkg_config(){
     pkg_libs=$($pkg_config --libs $pkg_config_flags $pkg)
     check_func_headers "$headers" "$funcs" $pkg_cflags $pkg_libs "$@" &&
         enable $name &&
-        set_safe "${pkg}_cflags"    $pkg_cflags &&
-        set_safe "${pkg}_extralibs" $pkg_libs
+        set_safe "${name}_cflags"    $pkg_cflags &&
+        set_safe "${name}_extralibs" $pkg_libs
 }
 
 check_exec(){
@@ -1394,10 +1397,9 @@ require_cpp_condition(){
 
 use_pkg_config(){
     log use_pkg_config "$@"
-    pkg="${2%% *}"
+    name="$1"
     check_pkg_config "$@" || return 1
-    add_cflags    $(get_safe "${pkg}_cflags")
-    add_extralibs $(get_safe "${pkg}_extralibs")
+    add_cflags    $(get_safe "${name}_cflags")
 }
 
 require_pkg_config(){
@@ -1578,7 +1580,6 @@ EXTERNAL_LIBRARY_GPLV3_LIST="
 "
 
 EXTERNAL_LIBRARY_LIST="
-    $EXTERNAL_AUTODETECT_LIBRARY_LIST
     $EXTERNAL_LIBRARY_GPL_LIST
     $EXTERNAL_LIBRARY_NONFREE_LIST
     $EXTERNAL_LIBRARY_VERSION3_LIST
@@ -1656,13 +1657,18 @@ HWACCEL_AUTODETECT_LIBRARY_LIST="
     xvmc
 "
 
+# catchall list of things that require external libs to link
+EXTRALIBS_LIST="
+    cpu_init
+    cws2fws
+"
+
 HWACCEL_LIBRARY_NONFREE_LIST="
     cuda_sdk
     libnpp
 "
 
 HWACCEL_LIBRARY_LIST="
-    $HWACCEL_AUTODETECT_LIBRARY_LIST
     $HWACCEL_LIBRARY_NONFREE_LIST
     libmfx
     mmal
@@ -1735,7 +1741,9 @@ CONFIG_LIST="
     $DOCUMENT_LIST
     $EXAMPLE_LIST
     $EXTERNAL_LIBRARY_LIST
+    $EXTERNAL_AUTODETECT_LIBRARY_LIST
     $HWACCEL_LIBRARY_LIST
+    $HWACCEL_AUTODETECT_LIBRARY_LIST
     $FEATURE_LIST
     $LICENSE_LIST
     $LIBRARY_LIST
@@ -2649,12 +2657,11 @@ crystalhd_deps="libcrystalhd_libcrystalhd_if_h"
 cuda_deps_any="libdl LoadLibrary"
 cuvid_deps="cuda"
 d3d11va_deps="d3d11_h dxva_h ID3D11VideoDecoder ID3D11VideoContext"
-dxva2_deps="dxva2api_h DXVA2_ConfigPictureDecode ole32"
-dxva2_extralibs="-luser32"
+dxva2_deps="dxva2api_h DXVA2_ConfigPictureDecode ole32 user32"
 vda_framework_deps="VideoDecodeAcceleration_VDADecoder_h blocks_extension"
 vda_framework_extralibs="-framework VideoDecodeAcceleration"
-vda_deps="vda_framework pthreads"
-vda_extralibs="-framework CoreFoundation -framework QuartzCore"
+vda_deps="vda_framework pthreads corefoundation"
+vda_extralibs="-framework QuartzCore"
 videotoolbox_hwaccel_deps="videotoolbox pthreads"
 videotoolbox_hwaccel_extralibs="-framework QuartzCore"
 xvmc_deps="X11_extensions_XvMClib_h"
@@ -2976,7 +2983,7 @@ libtheora_encoder_deps="libtheora"
 libtwolame_encoder_deps="libtwolame"
 libvo_amrwbenc_encoder_deps="libvo_amrwbenc"
 libvorbis_decoder_deps="libvorbis"
-libvorbis_encoder_deps="libvorbis"
+libvorbis_encoder_deps="libvorbis libvorbisenc"
 libvorbis_encoder_select="audio_frame_queue"
 libvpx_vp8_decoder_deps="libvpx"
 libvpx_vp8_encoder_deps="libvpx"
@@ -2994,7 +3001,8 @@ libx265_encoder_deps="libx265"
 libxavs_encoder_deps="libxavs"
 libxvid_encoder_deps="libxvid"
 libzvbi_teletext_decoder_deps="libzvbi"
-videotoolbox_extralibs="-framework CoreFoundation -framework VideoToolbox -framework CoreMedia -framework CoreVideo"
+videotoolbox_suggest="coreservices"
+videotoolbox_deps="corefoundation coremedia corevideo"
 videotoolbox_encoder_deps="videotoolbox VTCompressionSessionPrepareToEncodeFrames"
 videotoolbox_encoder_suggest="vda_framework"
 
@@ -3080,8 +3088,9 @@ xwma_demuxer_select="riffdec"
 # indevs / outdevs
 alsa_indev_deps="alsa"
 alsa_outdev_deps="alsa"
-avfoundation_indev_deps="avfoundation pthreads"
-avfoundation_indev_extralibs="-framework Foundation -framework CoreVideo -framework CoreMedia"
+avfoundation_indev_deps="avfoundation corevideo coremedia pthreads"
+avfoundation_indev_suggest="coregraphics applicationservices"
+avfoundation_indev_extralibs="-framework Foundation"
 bktr_indev_deps_any="dev_bktr_ioctl_bt848_h machine_ioctl_bt848_h dev_video_bktr_ioctl_bt848_h dev_ic_bt8xx_h"
 caca_outdev_deps="libcaca"
 decklink_deps_any="libdl LoadLibrary"
@@ -3121,6 +3130,7 @@ v4l2_indev_deps_any="linux_videodev2_h sys_videoio_h"
 v4l2_outdev_deps_any="linux_videodev2_h sys_videoio_h"
 vfwcap_indev_deps="vfw32 vfwcap_defines"
 xcbgrab_indev_deps="libxcb"
+xcbgrab_indev_suggest="libxcb_shm libxcb_shape libxcb_xfixes"
 xv_outdev_deps="X11_extensions_Xvlib_h XvGetPortAttribute"
 xv_outdev_extralibs="-lXv -lX11 -lXext"
 
@@ -3135,8 +3145,11 @@ ffrtmphttp_protocol_select="http_protocol"
 ftp_protocol_select="tcp_protocol"
 gopher_protocol_select="network"
 http_protocol_select="tcp_protocol"
+http_protocol_suggest="zlib"
 httpproxy_protocol_select="tcp_protocol"
+httpproxy_protocol_suggest="zlib"
 https_protocol_select="tls_protocol"
+https_protocol_suggest="zlib"
 icecast_protocol_select="http_protocol"
 librtmp_protocol_deps="librtmp"
 librtmpe_protocol_deps="librtmp"
@@ -3149,12 +3162,18 @@ mmsh_protocol_select="http_protocol"
 mmst_protocol_select="network"
 rtmp_protocol_conflict="librtmp_protocol"
 rtmp_protocol_select="tcp_protocol"
+rtmp_protocol_suggest="zlib"
 rtmpe_protocol_select="ffrtmpcrypt_protocol"
+rtmpe_protocol_suggest="zlib"
 rtmps_protocol_conflict="librtmp_protocol"
 rtmps_protocol_select="tls_protocol"
+rtmps_protocol_suggest="zlib"
 rtmpt_protocol_select="ffrtmphttp_protocol"
+rtmpt_protocol_suggest="zlib"
 rtmpte_protocol_select="ffrtmpcrypt_protocol ffrtmphttp_protocol"
+rtmpte_protocol_suggest="zlib"
 rtmpts_protocol_select="ffrtmphttp_protocol https_protocol"
+rtmpts_protocol_suggest="zlib"
 rtp_protocol_select="udp_protocol"
 sctp_protocol_deps="struct_sctp_event_subscribe struct_msghdr_msg_flags"
 sctp_protocol_select="network"
@@ -3201,7 +3220,9 @@ deinterlace_qsv_filter_deps="libmfx"
 deinterlace_vaapi_filter_deps="vaapi"
 delogo_filter_deps="gpl"
 deshake_filter_select="pixelutils"
+deshake_filter_suggest="opencl"
 drawtext_filter_deps="libfreetype"
+drawtext_filter_suggest="libfontconfig"
 elbg_filter_deps="avcodec"
 eq_filter_deps="gpl"
 fftfilt_filter_deps="avcodec"
@@ -3270,6 +3291,7 @@ tinterlace_merge_test_deps="tinterlace_filter"
 tinterlace_pad_test_deps="tinterlace_filter"
 tonemap_filter_deps="const_nan"
 uspp_filter_deps="gpl avcodec"
+unsharp_filter_suggest="opencl"
 vaguedenoiser_filter_deps="gpl"
 vidstabdetect_filter_deps="libvidstab"
 vidstabtransform_filter_deps="libvidstab"
@@ -3302,27 +3324,45 @@ scaling_video_example_deps="avutil swscale"
 transcode_aac_example_deps="avcodec avformat swresample"
 transcoding_example_deps="avfilter avcodec avformat avutil"
 
+# EXTRALIBS_LIST
+cpu_init_extralibs="pthreads_extralibs"
+cws2fws_extralibs="zlib_extralibs"
+
 # libraries, in linking order
 avcodec_deps="avutil"
+avcodec_suggest="libm"
 avcodec_select="null_bsf"
 avdevice_deps="avformat avcodec avutil"
+avdevice_suggest="libm"
 avfilter_deps="avutil"
+avfilter_suggest="libm"
 avformat_deps="avcodec avutil"
-avformat_suggest="network"
+avformat_suggest="libm network"
 avresample_deps="avutil"
+avresample_suggest="libm"
+avutil_suggest="libm libdrm libmfx user32 vaapi videotoolbox wincrypt"
 postproc_deps="avutil gpl"
+postproc_suggest="libm"
 swresample_deps="avutil"
+swresample_suggest="libm libsoxr"
 swscale_deps="avutil"
+swscale_suggest="libm"
+
+avcodec_extralibs="pthreads_extralibs iconv_extralibs"
+avfilter_extralibs="pthreads_extralibs"
+avutil_extralibs="clock_gettime_extralibs nanosleep_extralibs pthreads_extralibs vaapi_drm_extralibs vaapi_x11_extralibs vdpau_x11_extralibs"
 
 # programs
 ffmpeg_deps="avcodec avfilter avformat swresample"
 ffmpeg_select="aformat_filter anull_filter atrim_filter format_filter
                null_filter
                trim_filter"
+ffmpeg_suggest="ole32 psapi shell32"
 ffplay_deps="avcodec avformat swscale swresample sdl2"
-ffplay_extralibs='$sdl2_extralibs'
 ffplay_select="rdft crop_filter transpose_filter hflip_filter vflip_filter rotate_filter"
+ffplay_suggest="shell32"
 ffprobe_deps="avcodec avformat"
+ffprobe_suggest="shell32"
 ffserver_deps="avformat fork sarestart"
 ffserver_select="ffm_muxer rtp_protocol rtsp_demuxer"
 
@@ -3400,6 +3440,12 @@ enable valgrind_backtrace
 
 sws_max_filter_size_default=256
 set_default sws_max_filter_size
+
+# internal components are enabled by default
+enable $EXTRALIBS_LIST
+
+# Avoid external, non-system, libraries getting enabled by dependency resolution
+disable $EXTERNAL_LIBRARY_LIST $HWACCEL_LIBRARY_LIST
 
 # build settings
 SHFLAGS='-shared -Wl,-soname,$$(@F)'
@@ -3501,18 +3547,34 @@ find_things_extern(){
 BSF_LIST=$(find_things_extern bsf AVBitStreamFilter libavcodec/bitstream_filters.c)
 PROTOCOL_LIST=$(find_things_extern protocol URLProtocol libavformat/protocols.c)
 
-ALL_COMPONENTS="
+AVCODEC_COMPONENTS_LIST="
     $BSF_LIST
     $DECODER_LIST
-    $DEMUXER_LIST
     $ENCODER_LIST
-    $FILTER_LIST
     $HWACCEL_LIST
-    $INDEV_LIST
-    $MUXER_LIST
-    $OUTDEV_LIST
     $PARSER_LIST
+"
+
+AVDEVICE_COMPONENTS_LIST="
+    $INDEV_LIST
+    $OUTDEV_LIST
+"
+
+AVFILTER_COMPONENTS_LIST="
+    $FILTER_LIST
+"
+
+AVFORMAT_COMPONENTS_LIST="
+    $DEMUXER_LIST
+    $MUXER_LIST
     $PROTOCOL_LIST
+"
+
+ALL_COMPONENTS="
+    $AVCODEC_COMPONENTS_LIST
+    $AVDEVICE_COMPONENTS_LIST
+    $AVFILTER_COMPONENTS_LIST
+    $AVFORMAT_COMPONENTS_LIST
 "
 
 for n in $COMPONENT_LIST; do
@@ -5711,8 +5773,7 @@ check_func  ${malloc_prefix}posix_memalign      && enable posix_memalign
 
 check_func  access
 check_func_headers stdlib.h arc4random
-check_func_headers time.h clock_gettime ||
-    { check_lib clock_gettime time.h clock_gettime -lrt && LIBRT="-lrt"; }
+check_func_headers time.h clock_gettime || check_lib clock_gettime time.h clock_gettime -lrt
 check_func  fcntl
 check_func  fork
 check_func  gethrtime
@@ -5725,8 +5786,7 @@ check_func  mkstemp
 check_func  mmap
 check_func  mprotect
 # Solaris has nanosleep in -lrt, OpenSolaris no longer needs that
-check_func_headers time.h nanosleep ||
-    { check_lib nanosleep time.h nanosleep -lrt && LIBRT="-lrt"; }
+check_func_headers time.h nanosleep || check_lib nanosleep time.h nanosleep -lrt
 check_func  sched_getaffinity
 check_func  setrlimit
 check_struct "sys/stat.h" "struct stat" st_mtim.tv_nsec -D_BSD_SOURCE
@@ -5800,9 +5860,14 @@ enabled avfoundation && check_apple_framework AVFoundation
 enabled coreimage    && check_apple_framework CoreImage
 enabled videotoolbox && check_apple_framework VideoToolbox
 
+check_apple_framework CoreFoundation
+check_apple_framework CoreMedia
+check_apple_framework CoreVideo
+
 enabled avfoundation && {
-    check_lib avfoundation CoreGraphics/CoreGraphics.h               CGGetActiveDisplayList "-framework CoreGraphics" ||
-    check_lib avfoundation ApplicationServices/ApplicationServices.h CGGetActiveDisplayList "-framework ApplicationServices"; }
+    disable coregraphics applicationservices
+    check_lib CoreGraphics        CoreGraphics/CoreGraphics.h               CGGetActiveDisplayList "-framework CoreGraphics" ||
+    check_lib applicationservices ApplicationServices/ApplicationServices.h CGGetActiveDisplayList "-framework ApplicationServices"; }
 
 enabled videotoolbox && {
     check_lib coreservices CoreServices/CoreServices.h UTGetOSTypeFromString "-framework CoreServices"
@@ -5879,7 +5944,7 @@ enabled  lzma && check_lib lzma   lzma.h lzma_version_number -llzma
 # On some systems dynamic loading requires no extra linker flags
 check_lib libdl dlfcn.h "dlopen dlsym" || check_lib libdl dlfcn.h "dlopen dlsym" -ldl
 
-check_lib libm math.h sin -lm && LIBM="-lm"
+check_lib libm math.h sin -lm
 
 atan2f_args=2
 copysign_args=2
@@ -5888,7 +5953,7 @@ ldexpf_args=2
 powf_args=2
 
 for func in $MATH_FUNCS; do
-    eval check_mathfunc $func \${${func}_args:-1} $LIBM
+    eval check_mathfunc $func \${${func}_args:-1} $libm_extralibs
 done
 
 for func in $COMPLEX_FUNCS; do
@@ -5925,7 +5990,7 @@ flite_extralibs="-lflite_cmu_time_awb -lflite_cmu_us_awb -lflite_cmu_us_kal -lfl
 enabled libflite          && require libflite "flite/flite.h" flite_init $flite_extralibs
 enabled fontconfig        && enable libfontconfig
 enabled libfontconfig     && require_pkg_config libfontconfig fontconfig "fontconfig/fontconfig.h" FcInit
-enabled libfreetype       && require_pkg_config libfreetype2 freetype2 "ft2build.h FT_FREETYPE_H" FT_Init_FreeType
+enabled libfreetype       && require_pkg_config libfreetype freetype2 "ft2build.h FT_FREETYPE_H" FT_Init_FreeType
 enabled libfribidi        && require_pkg_config libfribidi fribidi fribidi.h fribidi_version_info
 enabled libgme            && { use_pkg_config libgme libgme gme/gme.h gme_new_emu ||
                                require libgme gme/gme.h gme_new_emu -lgme -lstdc++; }
@@ -5952,7 +6017,7 @@ enabled libopencore_amrnb && require libopencore_amrnb opencore-amrnb/interf_dec
 enabled libopencore_amrwb && require libopencore_amrwb opencore-amrwb/dec_if.h D_IF_init -lopencore-amrwb
 enabled libopencv         && { check_header opencv2/core/core_c.h &&
                                { use_pkg_config libopencv opencv opencv2/core/core_c.h cvCreateImageHeader ||
-                                 require opencv opencv2/core/core_c.h cvCreateImageHeader -lopencv_core -lopencv_imgproc; } ||
+                                 require libopencv opencv2/core/core_c.h cvCreateImageHeader -lopencv_core -lopencv_imgproc; } ||
                                require_pkg_config libopencv opencv opencv/cxcore.h cvCreateImageHeader; }
 enabled libopenh264       && require_pkg_config libopenh264 openh264 wels/codec_api.h WelsGetCodecVersion
 enabled libopenjpeg       && { { check_lib libopenjpeg openjpeg-2.3/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
@@ -5980,9 +6045,9 @@ enabled librtmp           && require_pkg_config librtmp librtmp librtmp/rtmp.h R
 enabled librubberband     && require_pkg_config librubberband "rubberband >= 1.8.1" rubberband/rubberband-c.h rubberband_new
 enabled libshine          && require_pkg_config libshine shine shine/layer3.h shine_encode_buffer
 enabled libsmbclient      && { use_pkg_config libsmbclient smbclient libsmbclient.h smbc_init ||
-                               require smbclient libsmbclient.h smbc_init -lsmbclient; }
+                               require libsmbclient libsmbclient.h smbc_init -lsmbclient; }
 enabled libsnappy         && require libsnappy snappy-c.h snappy_compress -lsnappy
-enabled libsoxr           && require libsoxr soxr.h soxr_create -lsoxr && LIBSOXR="-lsoxr"
+enabled libsoxr           && require libsoxr soxr.h soxr_create -lsoxr
 enabled libssh            && require_pkg_config libssh libssh libssh/sftp.h sftp_init
 enabled libspeex          && require_pkg_config libspeex speex speex/speex.h speex_decoder_init -lspeex
 enabled libtesseract      && require_pkg_config libtesseract tesseract tesseract/capi.h TessBaseAPICreate
@@ -6066,17 +6131,17 @@ enabled opengl            && { check_lib opengl GL/glx.h glXGetProcAddress "-lGL
                                check_lib opengl ES2/gl.h glGetError "-isysroot=${sysroot} -Wl,-framework,OpenGLES" ||
                                die "ERROR: opengl not found."
                              }
+enabled omx               && require_header OMX_Core.h
 enabled omx_rpi           && { check_header OMX_Core.h ||
                                { ! enabled cross_compile && add_cflags -isystem/opt/vc/include/IL && check_header OMX_Core.h ; } ||
-                               die "ERROR: OpenMAX IL headers not found"; }
-enabled omx               && require_header OMX_Core.h
+                               die "ERROR: OpenMAX IL headers not found"; } && enable omx
 enabled openssl           && { use_pkg_config openssl openssl openssl/ssl.h OPENSSL_init_ssl ||
                                use_pkg_config openssl openssl openssl/ssl.h SSL_library_init ||
                                check_lib openssl openssl/ssl.h SSL_library_init -lssl -lcrypto ||
                                check_lib openssl openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
                                check_lib openssl openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
                                die "ERROR: openssl not found"; }
-enabled rkmpp             && { { require_pkg_config rockchip_mpp rockchip_mpp rockchip/rk_mpi.h mpp_create ||
+enabled rkmpp             && { { require_pkg_config rkmpp rockchip_mpp rockchip/rk_mpi.h mpp_create ||
                                  die "ERROR : Rockchip MPP was not found."; } &&
                                { check_func_headers rockchip/rk_mpi_cmd.h "MPP_DEC_GET_FREE_PACKET_SLOT_COUNT" ||
                                  die "ERROR: Rockchip MPP is outdated, please get a more recent one."; } &&
@@ -6091,7 +6156,7 @@ if enabled gcrypt; then
         gcrypt_extralibs=$("${GCRYPT_CONFIG}" --libs)
         check_func_headers gcrypt.h gcry_mpi_new $gcrypt_cflags $gcrypt_extralibs ||
             die "ERROR: gcrypt not found"
-        add_cflags $gcrypt_cflags && add_extralibs $gcrypt_extralibs
+        add_cflags $gcrypt_cflags
     else
         require gcrypt gcrypt.h gcry_mpi_new -lgcrypt
     fi
@@ -6114,7 +6179,6 @@ if enabled sdl2; then
         sdl2_extralibs=$(filter_out '-mwindows' $sdl2_extralibs)
     fi
 fi
-enabled sdl2 && add_cflags $(filter_out '-Dmain=SDL_main' $sdl2_cflags) && add_extralibs $sdl2_extralibs
 
 if enabled decklink; then
     case $target_os in
@@ -6133,7 +6197,7 @@ enabled securetransport &&
 enabled schannel &&
     check_func_headers "windows.h security.h" InitializeSecurityContext -DSECURITY_WIN32 -lsecur32 &&
     check_cpp_condition winerror.h "defined(SEC_I_CONTEXT_EXPIRED)" &&
-    add_extralibs -lsecur32 ||
+    schannel_extralibs="-lsecur32" ||
         disable schannel
 
 makeinfo --version > /dev/null 2>&1 && enable makeinfo  || disable makeinfo
@@ -6203,16 +6267,13 @@ if enabled libcdio; then
     die "ERROR: No usable libcdio/cdparanoia found"
 fi
 
-enabled libxcb && check_pkg_config libxcb "xcb >= 1.4" xcb/xcb.h xcb_connect ||
+enabled libxcb && use_pkg_config libxcb "xcb >= 1.4" xcb/xcb.h xcb_connect ||
     disable libxcb_shm libxcb_shape libxcb_xfixes
 
 if enabled libxcb; then
-    enabled libxcb_shm    && check_pkg_config libxcb_shm    xcb-shm    xcb/shm.h    xcb_shm_attach
-    enabled libxcb_shape  && check_pkg_config libxcb_shape  xcb-shape  xcb/shape.h  xcb_shape_get_rectangles
-    enabled libxcb_xfixes && check_pkg_config libxcb_xfixes xcb-xfixes xcb/xfixes.h xcb_xfixes_get_cursor_image
-
-    add_cflags $xcb_cflags $xcb_shm_cflags $xcb_xfixes_cflags $xcb_shape_cflags
-    add_extralibs $xcb_extralibs $xcb_shm_extralibs $xcb_xfixes_extralibs $xcb_shape_extralibs
+    enabled libxcb_shm    && use_pkg_config libxcb_shm    xcb-shm    xcb/shm.h    xcb_shm_attach
+    enabled libxcb_shape  && use_pkg_config libxcb_shape  xcb-shape  xcb/shape.h  xcb_shape_get_rectangles
+    enabled libxcb_xfixes && use_pkg_config libxcb_xfixes xcb-xfixes xcb/xfixes.h xcb_xfixes_get_cursor_image
 fi
 
 check_func_headers "windows.h" CreateDIBSection "$gdigrab_indev_extralibs"
@@ -6591,32 +6652,42 @@ if test $target_os = "haiku"; then
     disable posix_memalign
 fi
 
-# add_dep lib dep
-# -> enable ${lib}_deps_${dep}
-# -> add $dep to ${lib}_deps only once
-add_dep() {
-    lib=$1
-    dep=$2
-    enabled "${lib}_deps_${dep}" && return 0
-    enable  "${lib}_deps_${dep}"
-    prepend "${lib}_deps" $dep
-}
-
-# merge deps lib components
-# merge all ${component}_deps into ${lib}_deps and ${lib}_deps_*
-merge_deps() {
-    lib=$1
-    shift
-    for comp in $*; do
-        enabled $comp || continue
-        eval "dep=\"\$${comp}_deps\""
-        for d in $dep; do
-            add_dep $lib $d
-        done
+flatten_extralibs(){
+    unset nested_entries
+    list_name=$1
+    eval list=\$${1}
+    for entry in $list; do
+        entry_copy=$entry
+        resolve entry_copy
+        append nested_entries $(filter '*_extralibs' $entry_copy)
+        flat_entries=$(filter_out '*_extralibs' $entry_copy)
+        eval $entry="\$flat_entries"
     done
+    append $list_name "$nested_entries"
+
+    resolve nested_entries
+    if test -n "$(filter '*_extralibs' $nested_entries)"; then
+        flatten_extralibs $list_name
+    fi
 }
 
-merge_deps libavfilter $FILTER_LIST
+for linkunit in $LIBRARY_LIST; do
+    unset current_extralibs
+    eval components=\$$(toupper ${linkunit})_COMPONENTS_LIST
+    for comp in ${components}; do
+        enabled $comp || continue
+        comp_extralibs="${comp}_extralibs"
+        append current_extralibs $comp_extralibs
+    done
+    eval prepend ${linkunit}_extralibs $current_extralibs
+done
+
+for linkunit in $LIBRARY_LIST $PROGRAM_LIST $EXTRALIBS_LIST; do
+    flatten_extralibs ${linkunit}_extralibs
+    unique  ${linkunit}_extralibs
+    resolve ${linkunit}_extralibs
+    eval ${linkunit}_extralibs=\$\(\$ldflags_filter \$${linkunit}_extralibs\)
+done
 
 map 'enabled $v && intrinsics=${v#intrinsics_}' $INTRINSICS_LIST
 
@@ -6685,6 +6756,9 @@ enabled uspp_filter         && prepend avfilter_deps "avcodec"
 enabled zoompan_filter      && prepend avfilter_deps "swscale"
 
 enabled lavfi_indev         && prepend avdevice_deps "avfilter"
+
+#FIXME
+enabled sdl2_outdev     && add_cflags $(filter_out '-Dmain=SDL_main' $sdl2_cflags)
 
 enabled opus_decoder    && prepend avcodec_deps "swresample"
 
@@ -6799,11 +6873,11 @@ test -n "$random_seed" &&
 echo
 
 echo "External libraries:"
-print_enabled '' $EXTERNAL_LIBRARY_LIST | print_in_columns
+print_enabled '' $EXTERNAL_LIBRARY_LIST $EXTERNAL_AUTODETECT_LIBRARY_LIST | print_in_columns
 echo
 
 echo "External libraries providing hardware acceleration:"
-print_enabled '' $HWACCEL_LIBRARY_LIST | print_in_columns
+print_enabled '' $HWACCEL_LIBRARY_LIST $HWACCEL_AUTODETECT_LIBRARY_LIST | print_in_columns
 echo
 
 echo "Libraries:"
@@ -6957,7 +7031,6 @@ TARGET_PATH=$target_path
 TARGET_SAMPLES=${target_samples:-\$(SAMPLES)}
 CFLAGS-ffplay=${sdl2_cflags}
 CFLAGS_HEADERS=$CFLAGS_HEADERS
-ZLIB=$($ldflags_filter -lz)
 LIB_INSTALL_EXTRA_CMD=$LIB_INSTALL_EXTRA_CMD
 EXTRALIBS=$extralibs
 COMPAT_OBJS=$compat_objs
@@ -6981,12 +7054,9 @@ EOF
 
 map 'eval echo "${v}_FFLIBS=\$${v}_deps" >> ffbuild/config.mak' $LIBRARY_LIST
 
-print_program_extralibs(){
-    eval "program_extralibs=\$${1}_extralibs"
-    eval echo "EXTRALIBS-${1}=${program_extralibs}" >> ffbuild/config.mak
-}
-
-map 'print_program_extralibs $v' $PROGRAM_LIST
+for entry in $LIBRARY_LIST $PROGRAM_LIST $EXTRALIBS_LIST; do
+    eval echo "EXTRALIBS-${entry}=\$${entry}_extralibs" >> ffbuild/config.mak
+done
 
 cat > $TMPH <<EOF
 /* Automatically generated by configure - do not modify! */
@@ -7088,16 +7158,15 @@ rpath=$(enabled rpath && echo "-Wl,-rpath,\${libdir}")
 source_path=${source_path}
 LIBPREF=${LIBPREF}
 LIBSUF=${LIBSUF}
-
-extralibs_avutil="$LIBRT $LIBM"
-extralibs_avcodec="$extralibs"
-extralibs_avformat="$extralibs"
-extralibs_avdevice="$extralibs"
-extralibs_avfilter="$extralibs"
-extralibs_avresample="$LIBM"
-extralibs_postproc=""
-extralibs_swscale="$LIBM"
-extralibs_swresample="$LIBM $LIBSOXR"
+extralibs_avutil="$avutil_extralibs"
+extralibs_avcodec="$avcodec_extralibs"
+extralibs_avformat="$avformat_extralibs"
+extralibs_avdevice="$avdevice_extralibs"
+extralibs_avfilter="$avfilter_extralibs"
+extralibs_avresample="$avresample_extralibs"
+extralibs_postproc="$postproc_extralibs"
+extralibs_swscale="$swscale_extralibs"
+extralibs_swresample="$swresample_extralibs"
 EOF
 
 for lib in $LIBRARY_LIST; do
