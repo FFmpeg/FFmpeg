@@ -113,6 +113,7 @@ include $(SRC_PATH)/tests/fate/apng.mak
 include $(SRC_PATH)/tests/fate/atrac.mak
 include $(SRC_PATH)/tests/fate/audio.mak
 include $(SRC_PATH)/tests/fate/bmp.mak
+include $(SRC_PATH)/tests/fate/build.mak
 include $(SRC_PATH)/tests/fate/canopus.mak
 include $(SRC_PATH)/tests/fate/cdxl.mak
 include $(SRC_PATH)/tests/fate/checkasm.mak
