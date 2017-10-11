@@ -34,7 +34,7 @@ typedef struct MSS1Context {
     SliceContext   sc;
 } MSS1Context;
 
-static void arith_normalise(ArithCoder *c)
+static void arith1_normalise(ArithCoder *c)
 {
     for (;;) {
         if (c->high >= 0x8000) {
@@ -60,7 +60,7 @@ static void arith_normalise(ArithCoder *c)
     }
 }
 
-ARITH_GET_BIT()
+ARITH_GET_BIT(1)
 
 static int arith_get_bits(ArithCoder *c, int bits)
 {
@@ -71,7 +71,7 @@ static int arith_get_bits(ArithCoder *c, int bits)
     c->high   = ((prob + range) >> bits) + c->low - 1;
     c->low   += prob >> bits;
 
-    arith_normalise(c);
+    arith1_normalise(c);
 
     return val;
 }
@@ -85,12 +85,12 @@ static int arith_get_number(ArithCoder *c, int mod_val)
     c->high   = (prob + range) / mod_val + c->low - 1;
     c->low   += prob / mod_val;
 
-    arith_normalise(c);
+    arith1_normalise(c);
 
     return val;
 }
 
-static int arith_get_prob(ArithCoder *c, int16_t *probs)
+static int arith1_get_prob(ArithCoder *c, int16_t *probs)
 {
     int range = c->high - c->low + 1;
     int val   = ((c->value - c->low + 1) * probs[0] - 1) / range;
@@ -105,7 +105,7 @@ static int arith_get_prob(ArithCoder *c, int16_t *probs)
     return sym;
 }
 
-ARITH_GET_MODEL_SYM()
+ARITH_GET_MODEL_SYM(1)
 
 static void arith_init(ArithCoder *c, GetBitContext *gb)
 {
@@ -113,7 +113,7 @@ static void arith_init(ArithCoder *c, GetBitContext *gb)
     c->high          = 0xFFFF;
     c->value         = get_bits(gb, 16);
     c->gbc.gb        = gb;
-    c->get_model_sym = arith_get_model_sym;
+    c->get_model_sym = arith1_get_model_sym;
     c->get_number    = arith_get_number;
 }
 
@@ -158,7 +158,7 @@ static int mss1_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     c->pal_pic    =  ctx->pic->data[0] + ctx->pic->linesize[0] * (avctx->height - 1);
     c->pal_stride = -ctx->pic->linesize[0];
-    c->keyframe   = !arith_get_bit(&acoder);
+    c->keyframe   = !arith1_get_bit(&acoder);
     if (c->keyframe) {
         c->corrupted = 0;
         ff_mss12_slicecontext_reset(&ctx->sc);
