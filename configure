@@ -5931,7 +5931,7 @@ fi
 
 
 if enabled pthreads; then
-  check_func pthread_cancel
+  check_func pthread_cancel $pthreads_extralibs
 fi
 
 enabled pthreads &&
