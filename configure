@@ -4215,7 +4215,7 @@ enable_weak_pic() {
     enable pic
     add_cppflags -DPIC
     case "$target_os" in
-    mingw*|cygwin*)
+    mingw*|cygwin*|win*)
         ;;
     *)
         add_cflags -fPIC
