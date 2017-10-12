@@ -4219,9 +4219,9 @@ enable_weak_pic() {
         ;;
     *)
         add_cflags -fPIC
+        add_asflags -fPIC
         ;;
     esac
-    add_asflags  -fPIC
 }
 
 enabled pic && enable_weak_pic
