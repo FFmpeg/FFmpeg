@@ -1168,6 +1168,211 @@ static int mov_read_moov(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0; /* now go for mdat */
 }
 
+static MOVFragmentStreamInfo * get_frag_stream_info(
+    MOVFragmentIndex *frag_index,
+    int index,
+    int id)
+{
+    int i;
+    MOVFragmentIndexItem * item;
+
+    if (index < 0 || index >= frag_index->nb_items)
+        return NULL;
+    item = &frag_index->item[index];
+    for (i = 0; i < item->nb_stream_info; i++)
+        if (item->stream_info[i].id == id)
+            return &item->stream_info[i];
+
+    // This shouldn't happen
+    return NULL;
+}
+
+static void set_frag_stream(MOVFragmentIndex *frag_index, int id)
+{
+    int i;
+    MOVFragmentIndexItem * item;
+
+    if (frag_index->current < 0 ||
+        frag_index->current >= frag_index->nb_items)
+        return;
+
+    item = &frag_index->item[frag_index->current];
+    for (i = 0; i < item->nb_stream_info; i++)
+        if (item->stream_info[i].id == id) {
+            item->current = i;
+            return;
+        }
+
+    // id not found.  This shouldn't happen.
+    item->current = -1;
+}
+
+static MOVFragmentStreamInfo * get_current_frag_stream_info(
+    MOVFragmentIndex *frag_index)
+{
+    MOVFragmentIndexItem * item = &frag_index->item[frag_index->current];
+    if (item->current >= 0 && item->current < item->nb_stream_info)
+        return &item->stream_info[item->current];
+
+    // This shouldn't happen
+    return NULL;
+}
+
+static int search_frag_moof_offset(MOVFragmentIndex *frag_index, int64_t offset)
+{
+    int a, b, m;
+    int64_t moof_offset;
+
+    // Optimize for appending new entries
+    if (!frag_index->nb_items ||
+        frag_index->item[frag_index->nb_items - 1].moof_offset < offset)
+        return frag_index->nb_items;
+
+    a = -1;
+    b = frag_index->nb_items;
+
+    while (b - a > 1) {
+        m = (a + b) >> 1;
+        moof_offset = frag_index->item[m].moof_offset;
+        if (moof_offset >= offset)
+            b = m;
+        if (moof_offset <= offset)
+            a = m;
+    }
+    return b;
+}
+
+static int64_t get_stream_info_time(MOVFragmentStreamInfo * frag_stream_info)
+{
+
+    if (frag_stream_info) {
+        if (frag_stream_info->sidx_pts != AV_NOPTS_VALUE)
+            return frag_stream_info->sidx_pts;
+        if (frag_stream_info->first_tfra_pts != AV_NOPTS_VALUE)
+            return frag_stream_info->first_tfra_pts;
+        if (frag_stream_info->tfdt_dts != AV_NOPTS_VALUE)
+            return frag_stream_info->tfdt_dts;
+    }
+    return AV_NOPTS_VALUE;
+}
+
+static int64_t get_frag_time(MOVFragmentIndex *frag_index,
+                             int index, int track_id)
+{
+    MOVFragmentStreamInfo * frag_stream_info;
+    int64_t timestamp;
+    int i;
+
+    if (track_id >= 0) {
+        frag_stream_info = get_frag_stream_info(frag_index, index, track_id);
+        return frag_stream_info->sidx_pts;
+    }
+
+    for (i = 0; i < frag_index->item[index].nb_stream_info; i++) {
+        frag_stream_info = &frag_index->item[index].stream_info[i];
+        timestamp = get_stream_info_time(frag_stream_info);
+        if (timestamp != AV_NOPTS_VALUE)
+            return timestamp;
+    }
+    return AV_NOPTS_VALUE;
+}
+
+static int search_frag_timestamp(MOVFragmentIndex *frag_index,
+                                 AVStream *st, int64_t timestamp)
+{
+    int a, b, m;
+    int64_t frag_time;
+    int id = -1;
+
+    if (st) {
+        // If the stream is referenced by any sidx, limit the search
+        // to fragments that referenced this stream in the sidx
+        MOVStreamContext *sc = st->priv_data;
+        if (sc->has_sidx)
+            id = st->id;
+    }
+
+    a = -1;
+    b = frag_index->nb_items;
+
+    while (b - a > 1) {
+        m = (a + b) >> 1;
+        frag_time = get_frag_time(frag_index, m, id);
+        if (frag_time != AV_NOPTS_VALUE) {
+            if (frag_time >= timestamp)
+                b = m;
+            if (frag_time <= timestamp)
+                a = m;
+        }
+    }
+    return a;
+}
+
+static int update_frag_index(MOVContext *c, int64_t offset)
+{
+    int index, i;
+    MOVFragmentIndexItem * item;
+    MOVFragmentStreamInfo * frag_stream_info;
+
+    // If moof_offset already exists in frag_index, return index to it
+    index = search_frag_moof_offset(&c->frag_index, offset);
+    if (index < c->frag_index.nb_items &&
+        c->frag_index.item[index].moof_offset == offset)
+        return index;
+
+    // offset is not yet in frag index.
+    // Insert new item at index (sorted by moof offset)
+    item = av_fast_realloc(c->frag_index.item,
+                           &c->frag_index.allocated_size,
+                           (c->frag_index.nb_items + 1) *
+                           sizeof(*c->frag_index.item));
+    if(!item)
+        return -1;
+    c->frag_index.item = item;
+
+    frag_stream_info = av_realloc_array(NULL, c->fc->nb_streams,
+                                        sizeof(*item->stream_info));
+    if (!frag_stream_info)
+        return -1;
+
+    for (i = 0; i < c->fc->nb_streams; i++) {
+        frag_stream_info[i].id = c->fc->streams[i]->id;
+        frag_stream_info[i].sidx_pts = AV_NOPTS_VALUE;
+        frag_stream_info[i].tfdt_dts = AV_NOPTS_VALUE;
+        frag_stream_info[i].first_tfra_pts = AV_NOPTS_VALUE;
+        frag_stream_info[i].index_entry = -1;
+    }
+
+    if (index < c->frag_index.nb_items)
+        memmove(c->frag_index.item + index + 1, c->frag_index.item + index,
+                (c->frag_index.nb_items - index) * sizeof(*c->frag_index.item));
+
+    item = &c->frag_index.item[index];
+    item->headers_read = 0;
+    item->current = 0;
+    item->nb_stream_info = c->fc->nb_streams;
+    item->moof_offset = offset;
+    item->stream_info = frag_stream_info;
+    c->frag_index.nb_items++;
+
+    return index;
+}
+
+static void fix_frag_index_entries(MOVFragmentIndex *frag_index, int index,
+                                   int id, int entries)
+{
+    int i;
+    MOVFragmentStreamInfo * frag_stream_info;
+
+    if (index < 0)
+        return;
+    for (i = index; i < frag_index->nb_items; i++) {
+        frag_stream_info = get_frag_stream_info(frag_index, i, id);
+        if (frag_stream_info && frag_stream_info->index_entry >= 0)
+            frag_stream_info->index_entry += entries;
+    }
+}
+
 static int mov_read_moof(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     if (!c->has_looked_for_mfra && c->use_mfra_for > 0) {
@@ -1187,6 +1392,7 @@ static int mov_read_moof(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
     c->fragment.moof_offset = c->fragment.implicit_offset = avio_tell(pb) - 8;
     av_log(c->fc, AV_LOG_TRACE, "moof offset %"PRIx64"\n", c->fragment.moof_offset);
+    c->frag_index.current = update_frag_index(c, c->fragment.moof_offset);
     return mov_read_default(c, pb, atom);
 }
 
@@ -4118,8 +4324,7 @@ static int mov_read_tfhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     MOVFragment *frag = &c->fragment;
     MOVTrackExt *trex = NULL;
-    MOVFragmentIndex* index = NULL;
-    int flags, track_id, i, found = 0;
+    int flags, track_id, i;
 
     avio_r8(pb); /* version */
     flags = avio_rb24(pb);
@@ -4128,6 +4333,7 @@ static int mov_read_tfhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (!track_id)
         return AVERROR_INVALIDDATA;
     frag->track_id = track_id;
+    set_frag_stream(&c->frag_index, track_id);
     for (i = 0; i < c->trex_count; i++)
         if (c->trex_data[i].track_id == frag->track_id) {
             trex = &c->trex_data[i];
@@ -4149,35 +4355,8 @@ static int mov_read_tfhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                      avio_rb32(pb) : trex->size;
     frag->flags    = flags & MOV_TFHD_DEFAULT_FLAGS ?
                      avio_rb32(pb) : trex->flags;
-    frag->time     = AV_NOPTS_VALUE;
-    for (i = 0; i < c->fragment_index_count; i++) {
-        int j;
-        MOVFragmentIndex* candidate = c->fragment_index_data[i];
-        if (candidate->track_id == frag->track_id) {
-            av_log(c->fc, AV_LOG_DEBUG,
-                   "found fragment index for track %u\n", frag->track_id);
-            index = candidate;
-            for (j = index->current_item; j < index->item_count; j++) {
-                if (frag->implicit_offset == index->items[j].moof_offset) {
-                    av_log(c->fc, AV_LOG_DEBUG, "found fragment index entry "
-                            "for track %u and moof_offset %"PRId64"\n",
-                            frag->track_id, index->items[j].moof_offset);
-                    frag->time = index->items[j].time;
-                    index->current_item = j + 1;
-                    found = 1;
-                    break;
-                }
-            }
-            if (found)
-                break;
-        }
-    }
-    if (index && !found) {
-        av_log(c->fc, AV_LOG_DEBUG, "track %u has a fragment index but "
-               "it doesn't have an (in-order) entry for moof_offset "
-               "%"PRId64"\n", frag->track_id, frag->implicit_offset);
-    }
     av_log(c->fc, AV_LOG_TRACE, "frag flags 0x%x\n", frag->flags);
+
     return 0;
 }
 
@@ -4232,6 +4411,8 @@ static int mov_read_tfdt(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     AVStream *st = NULL;
     MOVStreamContext *sc;
     int version, i;
+    MOVFragmentStreamInfo * frag_stream_info;
+    int64_t base_media_decode_time;
 
     for (i = 0; i < c->fc->nb_streams; i++) {
         if (c->fc->streams[i]->id == frag->track_id) {
@@ -4249,10 +4430,16 @@ static int mov_read_tfdt(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     version = avio_r8(pb);
     avio_rb24(pb); /* flags */
     if (version) {
-        sc->track_end = avio_rb64(pb);
+        base_media_decode_time = avio_rb64(pb);
     } else {
-        sc->track_end = avio_rb32(pb);
+        base_media_decode_time = avio_rb32(pb);
     }
+
+    frag_stream_info = get_current_frag_stream_info(&c->frag_index);
+    if (frag_stream_info)
+        frag_stream_info->tfdt_dts = base_media_decode_time;
+    sc->track_end = base_media_decode_time;
+
     return 0;
 }
 
@@ -4263,10 +4450,15 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     MOVStreamContext *sc;
     MOVStts *ctts_data;
     uint64_t offset;
-    int64_t dts;
+    int64_t dts, pts = AV_NOPTS_VALUE;
     int data_offset = 0;
     unsigned entries, first_sample_flags = frag->flags;
     int flags, distance, i;
+    int64_t prev_dts = AV_NOPTS_VALUE;
+    int next_frag_index = -1, index_entry_pos;
+    size_t requested_size;
+    AVIndexEntry *new_entries;
+    MOVFragmentStreamInfo * frag_stream_info;
 
     for (i = 0; i < c->fc->nb_streams; i++) {
         if (c->fc->streams[i]->id == frag->track_id) {
@@ -4281,6 +4473,23 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     sc = st->priv_data;
     if (sc->pseudo_stream_id+1 != frag->stsd_id && sc->pseudo_stream_id != -1)
         return 0;
+
+    // Find the next frag_index index that has a valid index_entry for
+    // the current track_id.
+    //
+    // A valid index_entry means the trun for the fragment was read
+    // and it's samples are in index_entries at the given position.
+    // New index entries will be inserted before the index_entry found.
+    index_entry_pos = st->nb_index_entries;
+    for (i = c->frag_index.current + 1; i < c->frag_index.nb_items; i++) {
+        frag_stream_info = get_frag_stream_info(&c->frag_index, i, frag->track_id);
+        if (frag_stream_info && frag_stream_info->index_entry >= 0) {
+            next_frag_index = i;
+            index_entry_pos = frag_stream_info->index_entry;
+            break;
+        }
+    }
+
     avio_r8(pb); /* version */
     flags = avio_rb24(pb);
     entries = avio_rb32(pb);
@@ -4290,18 +4499,99 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR_INVALIDDATA;
     if (flags & MOV_TRUN_DATA_OFFSET)        data_offset        = avio_rb32(pb);
     if (flags & MOV_TRUN_FIRST_SAMPLE_FLAGS) first_sample_flags = avio_rb32(pb);
-    dts    = sc->track_end - sc->time_offset;
-    offset = frag->base_data_offset + data_offset;
+
+    frag_stream_info = get_current_frag_stream_info(&c->frag_index);
+    if (frag_stream_info)
+    {
+        if (frag_stream_info->first_tfra_pts != AV_NOPTS_VALUE &&
+            c->use_mfra_for == FF_MOV_FLAG_MFRA_PTS) {
+            pts = frag_stream_info->first_tfra_pts;
+            av_log(c->fc, AV_LOG_DEBUG, "found mfra time %"PRId64
+                    ", using it for pts\n", pts);
+        } else if (frag_stream_info->sidx_pts != AV_NOPTS_VALUE) {
+            // FIXME: sidx earliest_presentation_time is *PTS*, s.b.
+            // pts = frag_stream_info->sidx_pts;
+            dts = frag_stream_info->sidx_pts - sc->time_offset;
+            av_log(c->fc, AV_LOG_DEBUG, "found sidx time %"PRId64
+                    ", using it for pts\n", pts);
+        } else if (frag_stream_info->tfdt_dts != AV_NOPTS_VALUE) {
+            dts = frag_stream_info->tfdt_dts - sc->time_offset;
+            av_log(c->fc, AV_LOG_DEBUG, "found tfdt time %"PRId64
+                    ", using it for dts\n", dts);
+        } else {
+            dts = sc->track_end - sc->time_offset;
+            av_log(c->fc, AV_LOG_DEBUG, "found track end time %"PRId64
+                    ", using it for dts\n", dts);
+        }
+    } else {
+        dts = sc->track_end - sc->time_offset;
+        av_log(c->fc, AV_LOG_DEBUG, "found track end time %"PRId64
+                ", using it for dts\n", dts);
+    }
+    offset   = frag->base_data_offset + data_offset;
     distance = 0;
     av_log(c->fc, AV_LOG_TRACE, "first sample flags 0x%x\n", first_sample_flags);
+
+    // realloc space for new index entries
+    if((unsigned)st->nb_index_entries + entries >= UINT_MAX / sizeof(AVIndexEntry)) {
+        entries = UINT_MAX / sizeof(AVIndexEntry) - st->nb_index_entries;
+        av_log(c->fc, AV_LOG_ERROR, "Failed to add index entry\n");
+    }
+    if (entries <= 0)
+        return -1;
+
+    requested_size = (st->nb_index_entries + entries) * sizeof(AVIndexEntry);
+    new_entries = av_fast_realloc(st->index_entries,
+                                  &st->index_entries_allocated_size,
+                                  requested_size);
+    if(!new_entries)
+        return AVERROR(ENOMEM);
+    st->index_entries= new_entries;
+
+    requested_size = (st->nb_index_entries + entries) * sizeof(*sc->ctts_data);
+    ctts_data = av_fast_realloc(sc->ctts_data, &sc->ctts_allocated_size,
+                                requested_size);
+    if (!ctts_data)
+        return AVERROR(ENOMEM);
+    sc->ctts_data = ctts_data;
+
+    // In case there were samples without ctts entries, ensure they get
+    // zero valued entries. This ensures clips which mix boxes with and
+    // without ctts entries don't pickup uninitialized data.
+    memset(sc->ctts_data + sc->ctts_count, 0,
+           (st->nb_index_entries - sc->ctts_count) * sizeof(*sc->ctts_data));
+
+    if (index_entry_pos < st->nb_index_entries) {
+        // Make hole in index_entries and ctts_data for new samples
+        memmove(st->index_entries + index_entry_pos + entries,
+                st->index_entries + index_entry_pos,
+                sizeof(*st->index_entries) *
+                (st->nb_index_entries - index_entry_pos));
+        memmove(sc->ctts_data + index_entry_pos + entries,
+                sc->ctts_data + index_entry_pos,
+                sizeof(*sc->ctts_data) * (sc->ctts_count - index_entry_pos));
+        if (index_entry_pos < sc->current_sample) {
+            sc->current_sample += entries;
+        }
+    }
+
+    st->nb_index_entries += entries;
+    sc->ctts_count = st->nb_index_entries;
+
+    // Record the index_entry position in frag_index of this fragment
+    if (frag_stream_info)
+        frag_stream_info->index_entry = index_entry_pos;
+
+    if (index_entry_pos > 0)
+        prev_dts = st->index_entries[index_entry_pos-1].timestamp;
+
     for (i = 0; i < entries && !pb->eof_reached; i++) {
         unsigned sample_size = frag->size;
         int sample_flags = i ? frag->flags : first_sample_flags;
         unsigned sample_duration = frag->duration;
         unsigned ctts_duration = 0;
         int keyframe = 0;
-        int ctts_index = 0;
-        int old_nb_index_entries = st->nb_index_entries;
+        int index_entry_flags = 0;
 
         if (flags & MOV_TRUN_SAMPLE_DURATION) sample_duration = avio_rb32(pb);
         if (flags & MOV_TRUN_SAMPLE_SIZE)     sample_size     = avio_rb32(pb);
@@ -4309,27 +4599,22 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         if (flags & MOV_TRUN_SAMPLE_CTS)      ctts_duration   = avio_rb32(pb);
 
         mov_update_dts_shift(sc, ctts_duration);
-        if (frag->time != AV_NOPTS_VALUE) {
-            if (c->use_mfra_for == FF_MOV_FLAG_MFRA_PTS) {
-                int64_t pts = frag->time;
-                av_log(c->fc, AV_LOG_DEBUG, "found frag time %"PRId64
-                        " sc->dts_shift %d ctts.duration %d"
-                        " sc->time_offset %"PRId64" flags & MOV_TRUN_SAMPLE_CTS %d\n", pts,
-                        sc->dts_shift, ctts_duration,
-                        sc->time_offset, flags & MOV_TRUN_SAMPLE_CTS);
-                dts = pts - sc->dts_shift;
-                if (flags & MOV_TRUN_SAMPLE_CTS) {
-                    dts -= ctts_duration;
-                } else {
-                    dts -= sc->time_offset;
-                }
-                av_log(c->fc, AV_LOG_DEBUG, "calculated into dts %"PRId64"\n", dts);
+        if (pts != AV_NOPTS_VALUE) {
+            dts = pts - sc->dts_shift;
+            if (flags & MOV_TRUN_SAMPLE_CTS) {
+                dts -= ctts_duration;
             } else {
-                dts = frag->time - sc->time_offset;
-                av_log(c->fc, AV_LOG_DEBUG, "found frag time %"PRId64
-                        ", using it for dts\n", dts);
+                dts -= sc->time_offset;
             }
-            frag->time = AV_NOPTS_VALUE;
+            av_log(c->fc, AV_LOG_DEBUG,
+                   "pts %"PRId64" calculated dts %"PRId64
+                   " sc->dts_shift %d ctts.duration %d"
+                   " sc->time_offset %"PRId64
+                   " flags & MOV_TRUN_SAMPLE_CTS %d\n",
+                   pts, dts,
+                   sc->dts_shift, ctts_duration,
+                   sc->time_offset, flags & MOV_TRUN_SAMPLE_CTS);
+            pts = AV_NOPTS_VALUE;
         }
 
         if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
@@ -4338,47 +4623,28 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             keyframe =
                 !(sample_flags & (MOV_FRAG_SAMPLE_FLAG_IS_NON_SYNC |
                                   MOV_FRAG_SAMPLE_FLAG_DEPENDS_YES));
-        if (keyframe)
+        if (keyframe) {
             distance = 0;
-        ctts_index = av_add_index_entry(st, offset, dts, sample_size, distance,
-                                        keyframe ? AVINDEX_KEYFRAME : 0);
-        if (ctts_index >= 0 && old_nb_index_entries < st->nb_index_entries) {
-            unsigned int size_needed = st->nb_index_entries * sizeof(*sc->ctts_data);
-            unsigned int request_size = size_needed > sc->ctts_allocated_size ?
-                FFMAX(size_needed, 2 * sc->ctts_allocated_size) : size_needed;
-            unsigned int old_ctts_size = sc->ctts_allocated_size;
-            ctts_data = av_fast_realloc(sc->ctts_data, &sc->ctts_allocated_size, request_size);
-            if (!ctts_data) {
-                av_freep(&sc->ctts_data);
-                return AVERROR(ENOMEM);
-            }
-            sc->ctts_data = ctts_data;
-
-            // In case there were samples without ctts entries, ensure they get
-            // zero valued entries. This ensures clips which mix boxes with and
-            // without ctts entries don't pickup uninitialized data.
-            memset((uint8_t*)(sc->ctts_data) + old_ctts_size, 0, sc->ctts_allocated_size - old_ctts_size);
-
-            if (ctts_index != old_nb_index_entries) {
-                memmove(sc->ctts_data + ctts_index + 1, sc->ctts_data + ctts_index,
-                        sizeof(*sc->ctts_data) * (sc->ctts_count - ctts_index));
-                if (ctts_index <= sc->current_sample) {
-                    // if we inserted a new item before the current sample, move the
-                    // counter ahead so it is still pointing to the same sample.
-                    sc->current_sample++;
-                }
-            }
-
-            sc->ctts_data[ctts_index].count = 1;
-            sc->ctts_data[ctts_index].duration = ctts_duration;
-            sc->ctts_count++;
-        } else {
-            av_log(c->fc, AV_LOG_ERROR, "Failed to add index entry\n");
+            index_entry_flags |= AVINDEX_KEYFRAME;
         }
+        // Fragments can overlap in time.  Discard overlapping frames after
+        // decoding.
+        if (prev_dts >= dts)
+            index_entry_flags |= AVINDEX_DISCARD_FRAME;
+
+        st->index_entries[index_entry_pos].pos = offset;
+        st->index_entries[index_entry_pos].timestamp = dts;
+        st->index_entries[index_entry_pos].size= sample_size;
+        st->index_entries[index_entry_pos].min_distance= distance;
+        st->index_entries[index_entry_pos].flags = index_entry_flags;
+
+        sc->ctts_data[index_entry_pos].count = 1;
+        sc->ctts_data[index_entry_pos].duration = ctts_duration;
+        index_entry_pos++;
 
         av_log(c->fc, AV_LOG_TRACE, "AVIndex stream %d, sample %d, offset %"PRIx64", dts %"PRId64", "
-                "size %u, distance %d, keyframe %d\n", st->index, ctts_index,
-                offset, dts, sample_size, distance, keyframe);
+                "size %u, distance %d, keyframe %d\n", st->index,
+                index_entry_pos, offset, dts, sample_size, distance, keyframe);
         distance++;
         dts += sample_duration;
         offset += sample_size;
@@ -4386,6 +4652,44 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         sc->duration_for_fps += sample_duration;
         sc->nb_frames_for_fps ++;
     }
+    if (i < entries) {
+        // EOF found before reading all entries.  Fix the hole this would
+        // leave in index_entries and ctts_data
+        int gap = entries - i;
+        memmove(st->index_entries + index_entry_pos,
+                st->index_entries + index_entry_pos + gap,
+                sizeof(*st->index_entries) *
+                (st->nb_index_entries - (index_entry_pos + gap)));
+        memmove(sc->ctts_data + index_entry_pos,
+                sc->ctts_data + index_entry_pos + gap,
+                sizeof(*sc->ctts_data) *
+                (sc->ctts_count - (index_entry_pos + gap)));
+
+        st->nb_index_entries -= gap;
+        sc->ctts_count -= gap;
+        if (index_entry_pos < sc->current_sample) {
+            sc->current_sample -= gap;
+        }
+        entries = i;
+    }
+
+    // The end of this new fragment may overlap in time with the start
+    // of the next fragment in index_entries. Mark the samples in the next
+    // fragment that overlap with AVINDEX_DISCARD_FRAME
+    prev_dts = AV_NOPTS_VALUE;
+    if (index_entry_pos > 0)
+        prev_dts = st->index_entries[index_entry_pos-1].timestamp;
+    for (i = index_entry_pos; i < st->nb_index_entries; i++) {
+        if (prev_dts < st->index_entries[i].timestamp)
+            break;
+        st->index_entries[i].flags |= AVINDEX_DISCARD_FRAME;
+    }
+
+    // If a hole was created to insert the new index_entries into,
+    // the index_entry recorded for all subsequent moof must
+    // be incremented by the number of entries inserted.
+    fix_frag_index_entries(&c->frag_index, next_frag_index,
+                           frag->track_id, entries);
 
     if (pb->eof_reached)
         return AVERROR_EOF;
@@ -4401,14 +4705,12 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
 static int mov_read_sidx(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
-    int64_t offset = avio_tell(pb) + atom.size, pts;
+    int64_t offset = avio_tell(pb) + atom.size, pts, timestamp;
     uint8_t version;
-    unsigned i, track_id;
+    unsigned i, j, track_id, item_count;
     AVStream *st = NULL;
     AVStream *ref_st = NULL;
     MOVStreamContext *sc, *ref_sc = NULL;
-    MOVFragmentIndex *index = NULL;
-    MOVFragmentIndex **tmp;
     AVRational timescale;
 
     version = avio_r8(pb);
@@ -4450,57 +4752,46 @@ static int mov_read_sidx(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     avio_rb16(pb); // reserved
 
-    index = av_mallocz(sizeof(MOVFragmentIndex));
-    if (!index)
-        return AVERROR(ENOMEM);
+    item_count = avio_rb16(pb);
 
-    index->track_id = track_id;
-
-    index->item_count = avio_rb16(pb);
-    index->items = av_mallocz_array(index->item_count, sizeof(MOVFragmentIndexItem));
-
-    if (!index->items) {
-        av_freep(&index);
-        return AVERROR(ENOMEM);
-    }
-
-    for (i = 0; i < index->item_count; i++) {
+    for (i = 0; i < item_count; i++) {
+        int index;
+        MOVFragmentStreamInfo * frag_stream_info;
         uint32_t size = avio_rb32(pb);
         uint32_t duration = avio_rb32(pb);
         if (size & 0x80000000) {
             avpriv_request_sample(c->fc, "sidx reference_type 1");
-            av_freep(&index->items);
-            av_freep(&index);
             return AVERROR_PATCHWELCOME;
         }
         avio_rb32(pb); // sap_flags
-        index->items[i].moof_offset = offset;
-        index->items[i].time = av_rescale_q(pts, st->time_base, timescale);
+        timestamp = av_rescale_q(pts, st->time_base, timescale);
+
+        index = update_frag_index(c, offset);
+        frag_stream_info = get_frag_stream_info(&c->frag_index, index, track_id);
+        if (frag_stream_info)
+            frag_stream_info->sidx_pts = timestamp;
+
         offset += size;
         pts += duration;
     }
 
     st->duration = sc->track_end = pts;
 
-    tmp = av_realloc_array(c->fragment_index_data,
-                           c->fragment_index_count + 1,
-                           sizeof(MOVFragmentIndex*));
-    if (!tmp) {
-        av_freep(&index->items);
-        av_freep(&index);
-        return AVERROR(ENOMEM);
-    }
-
-    c->fragment_index_data = tmp;
-    c->fragment_index_data[c->fragment_index_count++] = index;
     sc->has_sidx = 1;
 
     if (offset == avio_size(pb)) {
-        for (i = 0; i < c->fc->nb_streams; i++) {
-            if (c->fc->streams[i]->id == c->fragment_index_data[0]->track_id) {
-                ref_st = c->fc->streams[i];
-                ref_sc = ref_st->priv_data;
-                break;
+        // Find first entry in fragment index that came from an sidx.
+        // This will pretty much always be the first entry.
+        for (i = 0; i < c->frag_index.nb_items; i++) {
+            MOVFragmentIndexItem * item = &c->frag_index.item[i];
+            for (j = 0; ref_st == NULL && j < item->nb_stream_info; j++) {
+                MOVFragmentStreamInfo * si;
+                si = &item->stream_info[j];
+                if (si->sidx_pts != AV_NOPTS_VALUE) {
+                    ref_st = c->fc->streams[i];
+                    ref_sc = ref_st->priv_data;
+                    break;
+                }
             }
         }
         for (i = 0; i < c->fc->nb_streams; i++) {
@@ -4511,7 +4802,7 @@ static int mov_read_sidx(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             }
         }
 
-        c->fragment_index_complete = 1;
+        c->frag_index.complete = 1;
     }
 
     return 0;
@@ -5680,9 +5971,9 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 return err;
             }
             if (c->found_moov && c->found_mdat &&
-                ((!(pb->seekable & AVIO_SEEKABLE_NORMAL) || c->fc->flags & AVFMT_FLAG_IGNIDX || c->fragment_index_complete) ||
+                ((!(pb->seekable & AVIO_SEEKABLE_NORMAL) || c->fc->flags & AVFMT_FLAG_IGNIDX || c->frag_index.complete) ||
                  start_pos + a.size == avio_size(pb))) {
-                if (!(pb->seekable & AVIO_SEEKABLE_NORMAL) || c->fc->flags & AVFMT_FLAG_IGNIDX || c->fragment_index_complete)
+                if (!(pb->seekable & AVIO_SEEKABLE_NORMAL) || c->fc->flags & AVFMT_FLAG_IGNIDX || c->frag_index.complete)
                     c->next_root_atom = start_pos + a.size;
                 c->atom_depth --;
                 return 0;
@@ -6027,12 +6318,10 @@ static int mov_read_close(AVFormatContext *s)
     av_freep(&mov->trex_data);
     av_freep(&mov->bitrates);
 
-    for (i = 0; i < mov->fragment_index_count; i++) {
-        MOVFragmentIndex* index = mov->fragment_index_data[i];
-        av_freep(&index->items);
-        av_freep(&mov->fragment_index_data[i]);
+    for (i = 0; i < mov->frag_index.nb_items; i++) {
+        av_freep(&mov->frag_index.item[i].stream_info);
     }
-    av_freep(&mov->fragment_index_data);
+    av_freep(&mov->frag_index.item);
 
     av_freep(&mov->aes_decrypt);
     av_freep(&mov->chapter_tracks);
@@ -6076,48 +6365,27 @@ static void export_orphan_timecode(AVFormatContext *s)
 
 static int read_tfra(MOVContext *mov, AVIOContext *f)
 {
-    MOVFragmentIndex* index = NULL;
     int version, fieldlength, i, j;
     int64_t pos = avio_tell(f);
     uint32_t size = avio_rb32(f);
-    void *tmp;
+    unsigned track_id, item_count;
 
     if (avio_rb32(f) != MKBETAG('t', 'f', 'r', 'a')) {
         return 1;
     }
     av_log(mov->fc, AV_LOG_VERBOSE, "found tfra\n");
-    index = av_mallocz(sizeof(MOVFragmentIndex));
-    if (!index) {
-        return AVERROR(ENOMEM);
-    }
-
-    tmp = av_realloc_array(mov->fragment_index_data,
-                           mov->fragment_index_count + 1,
-                           sizeof(MOVFragmentIndex*));
-    if (!tmp) {
-        av_freep(&index);
-        return AVERROR(ENOMEM);
-    }
-    mov->fragment_index_data = tmp;
-    mov->fragment_index_data[mov->fragment_index_count++] = index;
 
     version = avio_r8(f);
     avio_rb24(f);
-    index->track_id = avio_rb32(f);
+    track_id = avio_rb32(f);
     fieldlength = avio_rb32(f);
-    index->item_count = avio_rb32(f);
-    index->items = av_mallocz_array(
-            index->item_count, sizeof(MOVFragmentIndexItem));
-    if (!index->items) {
-        index->item_count = 0;
-        return AVERROR(ENOMEM);
-    }
-    for (i = 0; i < index->item_count; i++) {
+    item_count = avio_rb32(f);
+    for (i = 0; i < item_count; i++) {
         int64_t time, offset;
+        int index;
+        MOVFragmentStreamInfo * frag_stream_info;
 
         if (avio_feof(f)) {
-            index->item_count = 0;
-            av_freep(&index->items);
             return AVERROR_INVALIDDATA;
         }
 
@@ -6128,8 +6396,16 @@ static int read_tfra(MOVContext *mov, AVIOContext *f)
             time   = avio_rb32(f);
             offset = avio_rb32(f);
         }
-        index->items[i].time = time;
-        index->items[i].moof_offset = offset;
+
+        // The first sample of each stream in a fragment is always a random
+        // access sample.  So it's entry in the tfra can be used as the
+        // initial PTS of the fragment.
+        index = update_frag_index(mov, offset);
+        frag_stream_info = get_frag_stream_info(&mov->frag_index, index, track_id);
+        if (frag_stream_info &&
+            frag_stream_info->first_tfra_pts == AV_NOPTS_VALUE)
+            frag_stream_info->first_tfra_pts = time;
+
         for (j = 0; j < ((fieldlength >> 4) & 3) + 1; j++)
             avio_r8(f);
         for (j = 0; j < ((fieldlength >> 2) & 3) + 1; j++)
@@ -6390,12 +6666,9 @@ static int mov_read_header(AVFormatContext *s)
     }
     ff_configure_buffers_for_index(s, AV_TIME_BASE);
 
-    for (i = 0; i < mov->fragment_index_count; i++) {
-        MOVFragmentIndex *idx = mov->fragment_index_data[i];
-        for (j = 0; j < idx->item_count; j++)
-            if (idx->items[j].moof_offset <= mov->fragment.moof_offset)
-                idx->items[j].headers_read = 1;
-    }
+    for (i = 0; i < mov->frag_index.nb_items; i++)
+        if (mov->frag_index.item[i].moof_offset <= mov->fragment.moof_offset)
+            mov->frag_index.item[i].headers_read = 1;
 
     return 0;
 }
@@ -6433,41 +6706,27 @@ static int should_retry(AVIOContext *pb, int error_code) {
     return 1;
 }
 
-static int mov_switch_root(AVFormatContext *s, int64_t target)
+static int mov_switch_root(AVFormatContext *s, int64_t target, int index)
 {
     MOVContext *mov = s->priv_data;
-    int i, j;
-    int already_read = 0;
 
+    if (index >= 0 && index < mov->frag_index.nb_items)
+        target = mov->frag_index.item[index].moof_offset;
     if (avio_seek(s->pb, target, SEEK_SET) != target) {
         av_log(mov->fc, AV_LOG_ERROR, "root atom offset 0x%"PRIx64": partial file\n", target);
         return AVERROR_INVALIDDATA;
     }
 
     mov->next_root_atom = 0;
-
-    for (i = 0; i < mov->fragment_index_count; i++) {
-        MOVFragmentIndex *index = mov->fragment_index_data[i];
-        int found = 0;
-        for (j = 0; j < index->item_count; j++) {
-            MOVFragmentIndexItem *item = &index->items[j];
-            if (found) {
-                mov->next_root_atom = item->moof_offset;
-                break; // Advance to next index in outer loop
-            } else if (item->moof_offset == target) {
-                index->current_item = FFMIN(j, index->current_item);
-                if (item->headers_read)
-                    already_read = 1;
-                item->headers_read = 1;
-                found = 1;
-            }
-        }
-        if (!found)
-            index->current_item = 0;
+    if (index < 0 || index >= mov->frag_index.nb_items)
+        index = search_frag_moof_offset(&mov->frag_index, target);
+    if (index < mov->frag_index.nb_items) {
+        if (index + 1 < mov->frag_index.nb_items)
+            mov->next_root_atom = mov->frag_index.item[index + 1].moof_offset;
+        if (mov->frag_index.item[index].headers_read)
+            return 0;
+        mov->frag_index.item[index].headers_read = 1;
     }
-
-    if (already_read)
-        return 0;
 
     mov->found_mdat = 0;
 
@@ -6516,7 +6775,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (!sample || (mov->next_root_atom && sample->pos > mov->next_root_atom)) {
         if (!mov->next_root_atom)
             return AVERROR_EOF;
-        if ((ret = mov_switch_root(s, mov->next_root_atom)) < 0)
+        if ((ret = mov_switch_root(s, mov->next_root_atom, -1)) < 0)
             return ret;
         goto retry;
     }
@@ -6640,25 +6899,18 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
 static int mov_seek_fragment(AVFormatContext *s, AVStream *st, int64_t timestamp)
 {
     MOVContext *mov = s->priv_data;
-    MOVStreamContext *sc = st->priv_data;
-    int i, j;
+    int index;
 
-    if (!mov->fragment_index_complete)
+    if (!mov->frag_index.complete)
         return 0;
 
-    for (i = 0; i < mov->fragment_index_count; i++) {
-        if (mov->fragment_index_data[i]->track_id == st->id || !sc->has_sidx) {
-            MOVFragmentIndex *index = mov->fragment_index_data[i];
-            for (j = index->item_count - 1; j >= 0; j--) {
-                if (index->items[j].time <= timestamp) {
-                    if (index->items[j].headers_read)
-                        return 0;
-
-                    return mov_switch_root(s, index->items[j].moof_offset);
-                }
-            }
-        }
-    }
+    index = search_frag_timestamp(&mov->frag_index, st, timestamp);
+    if (index < 0)
+        index = 0;
+    if (!mov->frag_index.item[index].headers_read)
+        return mov_switch_root(s, -1, index);
+    if (index + 1 < mov->frag_index.nb_items)
+        mov->next_root_atom = mov->frag_index.item[index + 1].moof_offset;
 
     return 0;
 }

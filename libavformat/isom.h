@@ -93,7 +93,6 @@ typedef struct MOVFragment {
     unsigned duration;
     unsigned size;
     unsigned flags;
-    int64_t time;
 } MOVFragment;
 
 typedef struct MOVTrackExt {
@@ -109,17 +108,28 @@ typedef struct MOVSbgp {
     unsigned int index;
 } MOVSbgp;
 
+typedef struct MOVFragmentStreamInfo {
+    int id;
+    int64_t sidx_pts;
+    int64_t first_tfra_pts;
+    int64_t tfdt_dts;
+    int index_entry;
+} MOVFragmentStreamInfo;
+
 typedef struct MOVFragmentIndexItem {
     int64_t moof_offset;
-    int64_t time;
     int headers_read;
+    int current;
+    int nb_stream_info;
+    MOVFragmentStreamInfo * stream_info;
 } MOVFragmentIndexItem;
 
 typedef struct MOVFragmentIndex {
-    unsigned track_id;
-    unsigned item_count;
-    unsigned current_item;
-    MOVFragmentIndexItem *items;
+    int allocated_size;
+    int complete;
+    int current;
+    int nb_items;
+    MOVFragmentIndexItem * item;
 } MOVFragmentIndex;
 
 typedef struct MOVIndexRange {
@@ -250,9 +260,7 @@ typedef struct MOVContext {
     int moov_retry;
     int use_mfra_for;
     int has_looked_for_mfra;
-    MOVFragmentIndex** fragment_index_data;
-    unsigned fragment_index_count;
-    int fragment_index_complete;
+    MOVFragmentIndex frag_index;
     int atom_depth;
     unsigned int aax_mode;  ///< 'aax' file has been detected
     uint8_t file_key[20];
