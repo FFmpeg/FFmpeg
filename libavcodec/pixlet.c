@@ -420,7 +420,7 @@ static void filterfn(int16_t *dest, int16_t *tmp, unsigned size, int64_t scale)
 }
 
 static void reconstruction(AVCodecContext *avctx, int16_t *dest,
-                           unsigned width, unsigned height, ptrdiff_t stride, int nb_levels,
+                           unsigned width, unsigned height, ptrdiff_t stride,
                            int64_t *scaling_h, int64_t *scaling_v)
 {
     PixletContext *ctx = avctx->priv_data;
@@ -428,11 +428,11 @@ static void reconstruction(AVCodecContext *avctx, int16_t *dest,
     int16_t *ptr, *tmp;
     int i, j, k;
 
-    scaled_width  = width  >> nb_levels;
-    scaled_height = height >> nb_levels;
+    scaled_width  = width  >> NB_LEVELS;
+    scaled_height = height >> NB_LEVELS;
     tmp           = ctx->filter[0];
 
-    for (i = 0; i < nb_levels; i++) {
+    for (i = 0; i < NB_LEVELS; i++) {
         int64_t scale_v = scaling_v[i];
         int64_t scale_h = scaling_h[i];
         scaled_width  <<= 1;
@@ -578,7 +578,7 @@ static int decode_plane(AVCodecContext *avctx, int plane,
                        ctx->band[plane][0].height, stride);
 
     reconstruction(avctx, (int16_t *)frame->data[plane], ctx->w >> shift,
-                   ctx->h >> shift, stride, NB_LEVELS, ctx->scaling[plane][H],
+                   ctx->h >> shift, stride, ctx->scaling[plane][H],
                    ctx->scaling[plane][V]);
 
     return 0;
