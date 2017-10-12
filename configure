@@ -4357,6 +4357,7 @@ EOF
 .object_arch armv4
 EOF
 
+    # MS armasm fails to assemble our PIC constructs
     [ $target_os != win32 ] && enabled_all armv6t2 shared !pic && enable_weak_pic
 
 elif enabled mips; then
