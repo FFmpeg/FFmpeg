@@ -17679,7 +17679,7 @@ with AV_LOG_INFO loglevel.
 
 @itemize
 @item
-Print all metadata values for frames with key @code{lavfi.singnalstats.YDIF} with values
+Print all metadata values for frames with key @code{lavfi.signalstats.YDIF} with values
 between 0 and 1.
 @example
 signalstats,metadata=print:key=lavfi.signalstats.YDIF:value=0:function=expr:expr='between(VALUE1,0,1)'
@@ -17807,7 +17807,7 @@ The PTS of the previously filtered video frame. It's NAN if undefined.
 The PTS of the last previously filtered video frame. It's NAN if undefined.
 
 @item prev_selected_t
-The PTS of the last previously selected video frame. It's NAN if undefined.
+The PTS of the last previously selected video frame, expressed in seconds. It's NAN if undefined.
 
 @item start_pts
 The PTS of the first video frame in the video. It's NAN if undefined.
