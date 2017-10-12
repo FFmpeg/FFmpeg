@@ -5866,7 +5866,7 @@ check_apple_framework CoreVideo
 
 enabled avfoundation && {
     disable coregraphics applicationservices
-    check_lib CoreGraphics        CoreGraphics/CoreGraphics.h               CGGetActiveDisplayList "-framework CoreGraphics" ||
+    check_lib coregraphics        CoreGraphics/CoreGraphics.h               CGGetActiveDisplayList "-framework CoreGraphics" ||
     check_lib applicationservices ApplicationServices/ApplicationServices.h CGGetActiveDisplayList "-framework ApplicationServices"; }
 
 enabled videotoolbox && {
