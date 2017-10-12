@@ -3341,7 +3341,7 @@ avformat_deps="avcodec avutil"
 avformat_suggest="libm network"
 avresample_deps="avutil"
 avresample_suggest="libm"
-avutil_suggest="libm libdrm libmfx opencl user32 vaapi videotoolbox wincrypt"
+avutil_suggest="clock_gettime libm libdrm libmfx opencl user32 vaapi videotoolbox wincrypt"
 postproc_deps="avutil gpl"
 postproc_suggest="libm"
 swresample_deps="avutil"
@@ -3351,7 +3351,7 @@ swscale_suggest="libm"
 
 avcodec_extralibs="pthreads_extralibs iconv_extralibs"
 avfilter_extralibs="pthreads_extralibs"
-avutil_extralibs="clock_gettime_extralibs nanosleep_extralibs pthreads_extralibs vaapi_drm_extralibs vaapi_x11_extralibs vdpau_x11_extralibs"
+avutil_extralibs="nanosleep_extralibs pthreads_extralibs vaapi_drm_extralibs vaapi_x11_extralibs vdpau_x11_extralibs"
 
 # programs
 ffmpeg_deps="avcodec avfilter avformat swresample"
@@ -5773,7 +5773,7 @@ check_func  ${malloc_prefix}posix_memalign      && enable posix_memalign
 
 check_func  access
 check_func_headers stdlib.h arc4random
-check_func_headers time.h clock_gettime || check_lib clock_gettime time.h clock_gettime -lrt
+check_lib   clock_gettime time.h clock_gettime || check_lib clock_gettime time.h clock_gettime -lrt
 check_func  fcntl
 check_func  fork
 check_func  gethrtime
