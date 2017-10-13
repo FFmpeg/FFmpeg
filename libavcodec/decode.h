@@ -44,6 +44,12 @@ typedef struct FrameDecodeData {
     int (*post_process)(void *logctx, AVFrame *frame);
     void *post_process_opaque;
     void (*post_process_opaque_free)(void *opaque);
+
+    /**
+     * Per-frame private data for hwaccels.
+     */
+    void *hwaccel_priv;
+    void (*hwaccel_priv_free)(void *priv);
 } FrameDecodeData;
 
 /**

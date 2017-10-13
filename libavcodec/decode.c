@@ -1581,6 +1581,9 @@ static void decode_data_free(void *opaque, uint8_t *data)
     if (fdd->post_process_opaque_free)
         fdd->post_process_opaque_free(fdd->post_process_opaque);
 
+    if (fdd->hwaccel_priv_free)
+        fdd->hwaccel_priv_free(fdd->hwaccel_priv);
+
     av_freep(&fdd);
 }
 
