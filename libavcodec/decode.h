@@ -21,7 +21,16 @@
 #ifndef AVCODEC_DECODE_H
 #define AVCODEC_DECODE_H
 
+#include "libavutil/buffer.h"
+
 #include "avcodec.h"
+
+/**
+ * This struct stores per-frame lavc-internal data and is attached to it via
+ * private_ref.
+ */
+typedef struct FrameDecodeData {
+} FrameDecodeData;
 
 /**
  * Called by decoders to get the next packet for decoding.
@@ -35,5 +44,7 @@
 int ff_decode_get_packet(AVCodecContext *avctx, AVPacket *pkt);
 
 void ff_decode_bsfs_uninit(AVCodecContext *avctx);
+
+int ff_attach_decode_data(AVFrame *frame);
 
 #endif /* AVCODEC_DECODE_H */
