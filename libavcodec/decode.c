@@ -1598,6 +1598,9 @@ end:
         frame->height = avctx->height;
     }
 
+    if (ret < 0)
+        av_frame_unref(frame);
+
     return ret;
 }
 
