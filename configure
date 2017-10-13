@@ -2946,6 +2946,9 @@ case "$toolchain" in
         nm_default="dumpbin -symbols"
         ar_default="lib"
         case "$arch" in
+        aarch64|arm64)
+            as_default="armasm64"
+            ;;
         arm*)
             as_default="armasm"
             ;;
