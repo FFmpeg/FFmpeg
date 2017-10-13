@@ -163,8 +163,11 @@ filename specifies the playlist filename; the segment filenames
 receive the same basename as the playlist, a sequential number and
 a .ts extension.
 
+Make sure to require a closed GOP when encoding and to set the GOP
+size to fit your segment time constraint.
+
 @example
-avconv -i in.nut out.m3u8
+avconv -i in.mkv -c:v h264 -flags +cgop -g 30 -hls_time 1 out.m3u8
 @end example
 
 @table @option
@@ -625,8 +628,11 @@ Prepend @var{prefix} to each entry. Useful to generate absolute paths.
 Wrap around segment index once it reaches @var{limit}.
 @end table
 
+Make sure to require a closed GOP when encoding and to set the GOP
+size to fit your segment time constraint.
+
 @example
-avconv -i in.mkv -c copy -map 0 -f segment -list out.list out%03d.nut
+avconv -i in.mkv -c hevc -flags +cgop -g 60 -map 0 -f segment -list out.list out%03d.nut
 @end example
 
 @c man end MUXERS
