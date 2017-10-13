@@ -23,7 +23,7 @@
 #ifdef __ELF__
 #   define ELF
 #else
-#   define ELF  #
+#   define ELF #
 #endif
 
 #if HAVE_AS_FUNC
