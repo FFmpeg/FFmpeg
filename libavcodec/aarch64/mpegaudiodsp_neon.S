@@ -24,7 +24,7 @@
 #define WFRAC_BITS  16   // fractional bits for window
 #define OUT_SHIFT (WFRAC_BITS + FRAC_BITS - 15)
 
-const   tbl_rev128.s, align=4
+const   tbl_rev128_s, align=4
         .byte           12, 13, 14, 15
         .byte            8,  9, 10, 11
         .byte            4,  5,  6,  7
@@ -39,7 +39,7 @@ function ff_mpadsp_apply_window_\type\()_neon, export=1
         ld1             {v4.4s,v5.4s,v6.4s,v7.4s},  [x7],  #64
         st1             {v0.4s,v1.4s,v2.4s,v3.4s},  [x8],  #64
         st1             {v4.4s,v5.4s,v6.4s,v7.4s},  [x8],  #64
-        movrel          x15, tbl_rev128.s
+        movrel          x15, tbl_rev128_s
         ld1             {v27.4s}, [x15]
 .ifc \type, fixed
         lsl             x4,  x4,  #1
