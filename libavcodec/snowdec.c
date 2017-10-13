@@ -394,9 +394,10 @@ static int decode_header(SnowContext *s){
     s->mv_scale       += get_symbol(&s->c, s->header_state, 1);
     s->qbias          += get_symbol(&s->c, s->header_state, 1);
     s->block_max_depth+= get_symbol(&s->c, s->header_state, 1);
-    if(s->block_max_depth > 1 || s->block_max_depth < 0){
+    if(s->block_max_depth > 1 || s->block_max_depth < 0 || s->mv_scale > 256U){
         av_log(s->avctx, AV_LOG_ERROR, "block_max_depth= %d is too large\n", s->block_max_depth);
         s->block_max_depth= 0;
+        s->mv_scale = 0;
         return AVERROR_INVALIDDATA;
     }
     if (FFABS(s->qbias) > 127) {
