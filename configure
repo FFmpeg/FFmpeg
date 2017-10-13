@@ -6370,8 +6370,13 @@ fi
 
 check_disable_warning(){
     warning_flag=-W${1#-Wno-}
-    test_cflags $warning_flag && add_cflags $1
+    test_cflags $unknown_warning_flags $warning_flag && add_cflags $1
 }
+
+test_cflags -Werror=unused-command-line-argument &&
+    append unknown_warning_flags "-Werror=unused-command-line-argument"
+test_cflags -Werror=unknown-warning-option &&
+    append unknown_warning_flags "-Werror=unknown-warning-option"
 
 check_disable_warning -Wno-parentheses
 check_disable_warning -Wno-switch
