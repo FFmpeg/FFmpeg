@@ -1816,7 +1816,7 @@ int ff_dca_core_parse(DCACoreDecoder *s, uint8_t *data, int size)
         return ret;
 
     // Workaround for DTS in WAV
-    if (s->frame_size > size && s->frame_size < size + 4)
+    if (s->frame_size > size)
         s->frame_size = size;
 
     if (ff_dca_seek_bits(&s->gb, s->frame_size * 8)) {

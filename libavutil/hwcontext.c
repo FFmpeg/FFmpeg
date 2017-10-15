@@ -650,6 +650,10 @@ int av_hwdevice_ctx_create_derived(AVBufferRef **dst_ref_ptr,
     goto fail;
 
 done:
+    ret = av_hwdevice_ctx_init(dst_ref);
+    if (ret < 0)
+        goto fail;
+
     *dst_ref_ptr = dst_ref;
     return 0;
 

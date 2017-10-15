@@ -1217,7 +1217,7 @@ static void setup_hwaccel_for_pixfmt(AVCodecContext *avctx)
 #endif
         )
         if (avctx->idct_algo == FF_IDCT_AUTO)
-            avctx->idct_algo = FF_IDCT_SIMPLE;
+            avctx->idct_algo = FF_IDCT_NONE;
 
     if (avctx->hwaccel && avctx->pix_fmt == AV_PIX_FMT_XVMC) {
         Mpeg1Context *s1 = avctx->priv_data;

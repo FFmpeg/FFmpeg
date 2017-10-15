@@ -65,7 +65,7 @@ static int64_t seek_by_sector(AVIOContext *pb, int64_t sector, int64_t offset)
 }
 
 /**
- * @return bytes read, 0 on end of file, or <0 on error
+ * @return bytes read, AVERROR_EOF on end of file, or <0 on error
  */
 static int wtvfile_read_packet(void *opaque, uint8_t *buf, int buf_size)
 {
@@ -76,7 +76,7 @@ static int wtvfile_read_packet(void *opaque, uint8_t *buf, int buf_size)
     if (wf->error || pb->error)
         return -1;
     if (wf->position >= wf->length || avio_feof(pb))
-        return 0;
+        return AVERROR_EOF;
 
     buf_size = FFMIN(buf_size, wf->length - wf->position);
     while(nread < buf_size) {

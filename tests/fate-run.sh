@@ -352,6 +352,10 @@ concat(){
     fi
 }
 
+null(){
+    :
+}
+
 mkdir -p "$outdir"
 
 # Disable globbing: command arguments may contain globbing characters and

@@ -816,7 +816,7 @@ do {                                       \
 
 AVVDPAUContext *av_vdpau_alloc_context(void)
 {
-    return av_mallocz(sizeof(AVVDPAUContext));
+    return av_mallocz(sizeof(VDPAUHWContext));
 }
 
 int av_vdpau_bind_context(AVCodecContext *avctx, VdpDevice device,

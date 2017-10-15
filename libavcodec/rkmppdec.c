@@ -352,7 +352,7 @@ retry_get_frame:
     }
 
     if (mppframe) {
-        // Check wether we have a special frame or not
+        // Check whether we have a special frame or not
         if (mpp_frame_get_info_change(mppframe)) {
             AVHWFramesContext *hwframes;
 

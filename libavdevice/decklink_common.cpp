@@ -37,6 +37,7 @@ extern "C" {
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/bswap.h"
+#include "avdevice.h"
 }
 
 #include "decklink_common.h"
@@ -261,24 +262,100 @@ int ff_decklink_set_format(AVFormatContext *avctx, decklink_direction_t directio
     return ff_decklink_set_format(avctx, 0, 0, 0, 0, AV_FIELD_UNKNOWN, direction, num);
 }
 
-int ff_decklink_list_devices(AVFormatContext *avctx)
+int ff_decklink_list_devices(AVFormatContext *avctx,
+                             struct AVDeviceInfoList *device_list,
+                             int show_inputs, int show_outputs)
 {
     IDeckLink *dl = NULL;
     IDeckLinkIterator *iter = CreateDeckLinkIteratorInstance();
+    int ret = 0;
+
     if (!iter) {
         av_log(avctx, AV_LOG_ERROR, "Could not create DeckLink iterator\n");
         return AVERROR(EIO);
     }
-    av_log(avctx, AV_LOG_INFO, "Blackmagic DeckLink devices:\n");
-    while (iter->Next(&dl) == S_OK) {
+
+    while (ret == 0 && iter->Next(&dl) == S_OK) {
+        IDeckLinkOutput *output_config;
+        IDeckLinkInput *input_config;
         const char *displayName;
+        AVDeviceInfo *new_device = NULL;
+        int add = 0;
+
         ff_decklink_get_display_name(dl, &displayName);
-        av_log(avctx, AV_LOG_INFO, "\t'%s'\n", displayName);
-        av_free((void *) displayName);
+
+        if (show_outputs) {
+            if (dl->QueryInterface(IID_IDeckLinkOutput, (void **)&output_config) == S_OK) {
+                output_config->Release();
+                add = 1;
+            }
+        }
+
+        if (show_inputs) {
+            if (dl->QueryInterface(IID_IDeckLinkInput, (void **)&input_config) == S_OK) {
+                input_config->Release();
+                add = 1;
+            }
+        }
+
+        if (add == 1) {
+            new_device = (AVDeviceInfo *) av_mallocz(sizeof(AVDeviceInfo));
+            if (!new_device) {
+                ret = AVERROR(ENOMEM);
+                goto next;
+            }
+            new_device->device_name = av_strdup(displayName);
+            if (!new_device->device_name) {
+                ret = AVERROR(ENOMEM);
+                goto next;
+            }
+
+            new_device->device_description = av_strdup(displayName);
+            if (!new_device->device_description) {
+                av_freep(&new_device->device_name);
+                ret = AVERROR(ENOMEM);
+                goto next;
+            }
+
+            if ((ret = av_dynarray_add_nofree(&device_list->devices,
+                                              &device_list->nb_devices, new_device)) < 0) {
+                av_freep(&new_device->device_name);
+                av_freep(&new_device->device_description);
+                av_freep(&new_device);
+                goto next;
+            }
+        }
+
+    next:
+        av_freep(&displayName);
         dl->Release();
     }
     iter->Release();
-    return 0;
+    return ret;
+}
+
+/* This is a wrapper around the ff_decklink_list_devices() which dumps the
+   output to av_log() and exits (for backward compatibility with the
+   "-list_devices" argument). */
+void ff_decklink_list_devices_legacy(AVFormatContext *avctx,
+                                     int show_inputs, int show_outputs)
+{
+    struct AVDeviceInfoList *device_list = NULL;
+    int ret;
+
+    device_list = (struct AVDeviceInfoList *) av_mallocz(sizeof(AVDeviceInfoList));
+    if (!device_list)
+        return;
+
+    ret = ff_decklink_list_devices(avctx, device_list, show_inputs, show_outputs);
+    if (ret == 0) {
+        av_log(avctx, AV_LOG_INFO, "Blackmagic DeckLink %s devices:\n",
+               show_inputs ? "input" : "output");
+        for (int i = 0; i < device_list->nb_devices; i++) {
+            av_log(avctx, AV_LOG_INFO, "\t'%s'\n", device_list->devices[i]->device_name);
+        }
+    }
+    avdevice_free_list_devices(&device_list);
 }
 
 int ff_decklink_list_formats(AVFormatContext *avctx, decklink_direction_t direction)

@@ -1037,16 +1037,6 @@ static int qsv_device_derive_from_child(AVHWDeviceContext *ctx,
         goto fail;
     }
 
-    ret = qsv_device_init(ctx);
-    if (ret < 0)
-        goto fail;
-    if (s->handle_type != handle_type) {
-        av_log(ctx, AV_LOG_ERROR, "Error in child device handle setup: "
-               "type mismatch (%d != %d).\n", s->handle_type, handle_type);
-        err = AVERROR_UNKNOWN;
-        goto fail;
-    }
-
     return 0;
 
 fail:

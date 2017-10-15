@@ -188,14 +188,14 @@ int ff_vaapi_decode_issue(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "Failed to end picture decode "
                "issue: %d (%s).\n", vas, vaErrorStr(vas));
         err = AVERROR(EIO);
-        if (ctx->hwctx->driver_quirks &
+        if (CONFIG_VAAPI_1 || ctx->hwctx->driver_quirks &
             AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS)
             goto fail;
         else
             goto fail_at_end;
     }
 
-    if (ctx->hwctx->driver_quirks &
+    if (CONFIG_VAAPI_1 || ctx->hwctx->driver_quirks &
         AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS)
         ff_vaapi_decode_destroy_buffers(avctx, pic);
 
@@ -246,7 +246,6 @@ static const struct {
     MAP(MPEG4,       MPEG4_MAIN,      MPEG4Main   ),
     MAP(H264,        H264_CONSTRAINED_BASELINE,
                            H264ConstrainedBaseline),
-    MAP(H264,        H264_BASELINE,   H264Baseline),
     MAP(H264,        H264_MAIN,       H264Main    ),
     MAP(H264,        H264_HIGH,       H264High    ),
 #if VA_CHECK_VERSION(0, 37, 0)
@@ -282,7 +281,7 @@ static int vaapi_decode_make_config(AVCodecContext *avctx)
     VAStatus vas;
     int err, i, j;
     const AVCodecDescriptor *codec_desc;
-    VAProfile profile, *profile_list = NULL;
+    VAProfile profile, va_profile, *profile_list = NULL;
     int profile_count, exact_match, alt_profile;
     const AVPixFmtDescriptor *sw_desc, *desc;
 
@@ -329,6 +328,7 @@ static int vaapi_decode_make_config(AVCodecContext *avctx)
             if (exact_match)
                 break;
             alt_profile = vaapi_profile_map[i].codec_profile;
+            va_profile = vaapi_profile_map[i].va_profile;
         }
     }
     av_freep(&profile_list);
@@ -348,6 +348,7 @@ static int vaapi_decode_make_config(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_WARNING, "Using possibly-"
                    "incompatible profile %d instead.\n",
                    alt_profile);
+            profile = va_profile;
         } else {
             av_log(avctx, AV_LOG_VERBOSE, "Codec %s profile %d not "
                    "supported for hardware decode.\n",

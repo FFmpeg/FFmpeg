@@ -223,217 +223,242 @@ static void avc_wgt_8x16_msa(uint8_t *data, int32_t stride, int32_t log2_denom,
     }
 }
 
-static void avc_biwgt_4x2_msa(uint8_t *src, int32_t src_stride,
-                              uint8_t *dst, int32_t dst_stride,
+static void avc_biwgt_4x2_msa(uint8_t *src, uint8_t *dst, int32_t stride,
                               int32_t log2_denom, int32_t src_weight,
                               int32_t dst_weight, int32_t offset_in)
 {
-    uint32_t load0, load1, out0, out1;
-    v16i8 src_wgt, dst_wgt, wgt;
-    v16i8 src0, src1, dst0, dst1;
-    v8i16 temp0, temp1, denom, offset, add_val;
-    int32_t val = 128 * (src_weight + dst_weight);
+    uint32_t tp0, tp1;
+    v16i8 src_wgt, dst_wgt, wgt, vec0;
+    v16u8 src0 = { 0 }, dst0 = { 0 };
+    v8i16 tmp0, denom, offset, max255 = __msa_ldi_h(255);
 
-    offset_in = ((offset_in + 1) | 1) << log2_denom;
-
-    src_wgt = __msa_fill_b(src_weight);
-    dst_wgt = __msa_fill_b(dst_weight);
-    offset = __msa_fill_h(offset_in);
-    denom = __msa_fill_h(log2_denom + 1);
-    add_val = __msa_fill_h(val);
-    offset += add_val;
-
-    wgt = __msa_ilvev_b(dst_wgt, src_wgt);
-
-    load0 = LW(src);
-    src += src_stride;
-    load1 = LW(src);
-
-    src0 = (v16i8) __msa_fill_w(load0);
-    src1 = (v16i8) __msa_fill_w(load1);
-
-    load0 = LW(dst);
-    load1 = LW(dst + dst_stride);
-
-    dst0 = (v16i8) __msa_fill_w(load0);
-    dst1 = (v16i8) __msa_fill_w(load1);
-
-    XORI_B4_128_SB(src0, src1, dst0, dst1);
-    ILVR_B2_SH(dst0, src0, dst1, src1, temp0, temp1);
-
-    temp0 = __msa_dpadd_s_h(offset, wgt, (v16i8) temp0);
-    temp1 = __msa_dpadd_s_h(offset, wgt, (v16i8) temp1);
-
-    temp0 >>= denom;
-    temp1 >>= denom;
-
-    CLIP_SH2_0_255(temp0, temp1);
-    PCKEV_B2_SB(temp0, temp0, temp1, temp1, dst0, dst1);
-
-    out0 = __msa_copy_u_w((v4i32) dst0, 0);
-    out1 = __msa_copy_u_w((v4i32) dst1, 0);
-    SW(out0, dst);
-    dst += dst_stride;
-    SW(out1, dst);
-}
-
-static void avc_biwgt_4x4multiple_msa(uint8_t *src, int32_t src_stride,
-                                      uint8_t *dst, int32_t dst_stride,
-                                      int32_t height, int32_t log2_denom,
-                                      int32_t src_weight, int32_t dst_weight,
-                                      int32_t offset_in)
-{
-    uint8_t cnt;
-    uint32_t load0, load1, load2, load3;
-    v16i8 src_wgt, dst_wgt, wgt;
-    v16i8 src0, src1, src2, src3;
-    v16i8 dst0, dst1, dst2, dst3;
-    v8i16 temp0, temp1, temp2, temp3;
-    v8i16 denom, offset, add_val;
-    int32_t val = 128 * (src_weight + dst_weight);
-
-    offset_in = ((offset_in + 1) | 1) << log2_denom;
+    offset_in = (unsigned) ((offset_in + 1) | 1) << log2_denom;
+    offset_in += (128 * (src_weight + dst_weight));
 
     src_wgt = __msa_fill_b(src_weight);
     dst_wgt = __msa_fill_b(dst_weight);
     offset = __msa_fill_h(offset_in);
     denom = __msa_fill_h(log2_denom + 1);
-    add_val = __msa_fill_h(val);
-    offset += add_val;
 
     wgt = __msa_ilvev_b(dst_wgt, src_wgt);
 
-    for (cnt = height / 4; cnt--;) {
-        LW4(src, src_stride, load0, load1, load2, load3);
-        src += (4 * src_stride);
-
-        src0 = (v16i8) __msa_fill_w(load0);
-        src1 = (v16i8) __msa_fill_w(load1);
-        src2 = (v16i8) __msa_fill_w(load2);
-        src3 = (v16i8) __msa_fill_w(load3);
-
-        LW4(dst, dst_stride, load0, load1, load2, load3);
-
-        dst0 = (v16i8) __msa_fill_w(load0);
-        dst1 = (v16i8) __msa_fill_w(load1);
-        dst2 = (v16i8) __msa_fill_w(load2);
-        dst3 = (v16i8) __msa_fill_w(load3);
-
-        XORI_B4_128_SB(src0, src1, src2, src3);
-        XORI_B4_128_SB(dst0, dst1, dst2, dst3);
-        ILVR_B4_SH(dst0, src0, dst1, src1, dst2, src2, dst3, src3,
-                   temp0, temp1, temp2, temp3);
-
-        temp0 = __msa_dpadd_s_h(offset, wgt, (v16i8) temp0);
-        temp1 = __msa_dpadd_s_h(offset, wgt, (v16i8) temp1);
-        temp2 = __msa_dpadd_s_h(offset, wgt, (v16i8) temp2);
-        temp3 = __msa_dpadd_s_h(offset, wgt, (v16i8) temp3);
-
-        SRA_4V(temp0, temp1, temp2, temp3, denom);
-        CLIP_SH4_0_255(temp0, temp1, temp2, temp3);
-        PCKEV_ST4x4_UB(temp0, temp1, temp2, temp3, dst, dst_stride);
-        dst += (4 * dst_stride);
-    }
+    LW2(src, stride, tp0, tp1);
+    INSERT_W2_UB(tp0, tp1, src0);
+    LW2(dst, stride, tp0, tp1);
+    INSERT_W2_UB(tp0, tp1, dst0);
+    XORI_B2_128_UB(src0, dst0);
+    vec0 = (v16i8) __msa_ilvr_b((v16i8) dst0, (v16i8) src0);
+    tmp0 = __msa_dpadd_s_h(offset, wgt, vec0);
+    tmp0 >>= denom;
+    tmp0 = __msa_maxi_s_h(tmp0, 0);
+    tmp0 = __msa_min_s_h(max255, tmp0);
+    dst0 = (v16u8) __msa_pckev_b((v16i8) tmp0, (v16i8) tmp0);
+    ST4x2_UB(dst0, dst, stride);
 }
 
-static void avc_biwgt_4width_msa(uint8_t *src, int32_t src_stride,
-                                 uint8_t *dst, int32_t dst_stride,
-                                 int32_t height, int32_t log2_denom,
-                                 int32_t src_weight, int32_t dst_weight,
-                                 int32_t offset_in)
+static void avc_biwgt_4x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+                              int32_t log2_denom, int32_t src_weight,
+                              int32_t dst_weight, int32_t offset_in)
 {
-    if (2 == height) {
-        avc_biwgt_4x2_msa(src, src_stride, dst, dst_stride, log2_denom,
-                          src_weight, dst_weight, offset_in);
-    } else {
-        avc_biwgt_4x4multiple_msa(src, src_stride, dst, dst_stride, height,
-                                  log2_denom, src_weight, dst_weight,
-                                  offset_in);
-    }
-}
+    uint32_t tp0, tp1, tp2, tp3;
+    v16i8 src_wgt, dst_wgt, wgt, vec0, vec1;
+    v16u8 src0, dst0;
+    v8i16 tmp0, tmp1, denom, offset;
 
-static void avc_biwgt_8width_msa(uint8_t *src, int32_t src_stride,
-                                 uint8_t *dst, int32_t dst_stride,
-                                 int32_t height, int32_t log2_denom,
-                                 int32_t src_weight, int32_t dst_weight,
-                                 int32_t offset_in)
-{
-    uint8_t cnt;
-    v16i8 src_wgt, dst_wgt, wgt;
-    v16i8 src0, src1, src2, src3;
-    v16i8 dst0, dst1, dst2, dst3;
-    v16i8 out0, out1;
-    v8i16 temp0, temp1, temp2, temp3;
-    v8i16 denom, offset, add_val;
-    int32_t val = 128 * (src_weight + dst_weight);
-
-    offset_in = ((offset_in + 1) | 1) << log2_denom;
+    offset_in = (unsigned) ((offset_in + 1) | 1) << log2_denom;
+    offset_in += (128 * (src_weight + dst_weight));
 
     src_wgt = __msa_fill_b(src_weight);
     dst_wgt = __msa_fill_b(dst_weight);
     offset = __msa_fill_h(offset_in);
     denom = __msa_fill_h(log2_denom + 1);
-    add_val = __msa_fill_h(val);
-    offset += add_val;
 
     wgt = __msa_ilvev_b(dst_wgt, src_wgt);
 
-    for (cnt = height / 4; cnt--;) {
-        LD_SB4(src, src_stride, src0, src1, src2, src3);
-        src += (4 * src_stride);
-
-        LD_SB4(dst, dst_stride, dst0, dst1, dst2, dst3);
-        XORI_B4_128_SB(src0, src1, src2, src3);
-        XORI_B4_128_SB(dst0, dst1, dst2, dst3);
-        ILVR_B4_SH(dst0, src0, dst1, src1, dst2, src2, dst3, src3,
-                   temp0, temp1, temp2, temp3);
-
-        temp0 = __msa_dpadd_s_h(offset, wgt, (v16i8) temp0);
-        temp1 = __msa_dpadd_s_h(offset, wgt, (v16i8) temp1);
-        temp2 = __msa_dpadd_s_h(offset, wgt, (v16i8) temp2);
-        temp3 = __msa_dpadd_s_h(offset, wgt, (v16i8) temp3);
-
-        SRA_4V(temp0, temp1, temp2, temp3, denom);
-        CLIP_SH4_0_255(temp0, temp1, temp2, temp3);
-        PCKEV_B2_SB(temp1, temp0, temp3, temp2, out0, out1);
-        ST8x4_UB(out0, out1, dst, dst_stride);
-        dst += 4 * dst_stride;
-    }
+    LW4(src, stride, tp0, tp1, tp2, tp3);
+    INSERT_W4_UB(tp0, tp1, tp2, tp3, src0);
+    LW4(dst, stride, tp0, tp1, tp2, tp3);
+    INSERT_W4_UB(tp0, tp1, tp2, tp3, dst0);
+    XORI_B2_128_UB(src0, dst0);
+    ILVRL_B2_SB(dst0, src0, vec0, vec1);
+    tmp0 = __msa_dpadd_s_h(offset, wgt, vec0);
+    tmp1 = __msa_dpadd_s_h(offset, wgt, vec1);
+    tmp0 >>= denom;
+    tmp1 >>= denom;
+    CLIP_SH2_0_255(tmp0, tmp1);
+    dst0 = (v16u8) __msa_pckev_b((v16i8) tmp1, (v16i8) tmp0);
+    ST4x4_UB(dst0, dst0, 0, 1, 2, 3, dst, stride);
 }
 
-static void avc_biwgt_16width_msa(uint8_t *src, int32_t src_stride,
-                                  uint8_t *dst, int32_t dst_stride,
-                                  int32_t height, int32_t log2_denom,
-                                  int32_t src_weight, int32_t dst_weight,
-                                  int32_t offset_in)
+static void avc_biwgt_4x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+                              int32_t log2_denom, int32_t src_weight,
+                              int32_t dst_weight, int32_t offset_in)
+{
+    uint32_t tp0, tp1, tp2, tp3;
+    v16i8 src_wgt, dst_wgt, wgt, vec0, vec1, vec2, vec3;
+    v16u8 src0, src1, dst0, dst1;
+    v8i16 tmp0, tmp1, tmp2, tmp3, denom, offset;
+
+    offset_in = (unsigned) ((offset_in + 1) | 1) << log2_denom;
+    offset_in += (128 * (src_weight + dst_weight));
+
+    src_wgt = __msa_fill_b(src_weight);
+    dst_wgt = __msa_fill_b(dst_weight);
+    offset = __msa_fill_h(offset_in);
+    denom = __msa_fill_h(log2_denom + 1);
+    wgt = __msa_ilvev_b(dst_wgt, src_wgt);
+
+    LW4(src, stride, tp0, tp1, tp2, tp3);
+    src += 4 * stride;
+    INSERT_W4_UB(tp0, tp1, tp2, tp3, src0);
+    LW4(src, stride, tp0, tp1, tp2, tp3);
+    INSERT_W4_UB(tp0, tp1, tp2, tp3, src1);
+    LW4(dst, stride, tp0, tp1, tp2, tp3);
+    INSERT_W4_UB(tp0, tp1, tp2, tp3, dst0);
+    LW4(dst + 4 * stride, stride, tp0, tp1, tp2, tp3);
+    INSERT_W4_UB(tp0, tp1, tp2, tp3, dst1);
+    XORI_B4_128_UB(src0, src1, dst0, dst1);
+    ILVRL_B2_SB(dst0, src0, vec0, vec1);
+    ILVRL_B2_SB(dst1, src1, vec2, vec3);
+    tmp0 = __msa_dpadd_s_h(offset, wgt, vec0);
+    tmp1 = __msa_dpadd_s_h(offset, wgt, vec1);
+    tmp2 = __msa_dpadd_s_h(offset, wgt, vec2);
+    tmp3 = __msa_dpadd_s_h(offset, wgt, vec3);
+    SRA_4V(tmp0, tmp1, tmp2, tmp3, denom);
+    CLIP_SH4_0_255(tmp0, tmp1, tmp2, tmp3);
+    PCKEV_B2_UB(tmp1, tmp0, tmp3, tmp2, dst0, dst1);
+    ST4x8_UB(dst0, dst1, dst, stride);
+}
+
+static void avc_biwgt_8x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+                              int32_t log2_denom, int32_t src_weight,
+                              int32_t dst_weight, int32_t offset_in)
+{
+    uint64_t tp0, tp1, tp2, tp3;
+    v16i8 src_wgt, dst_wgt, wgt, vec0, vec1, vec2, vec3;
+    v16u8 src0, src1, dst0, dst1;
+    v8i16 tmp0, tmp1, tmp2, tmp3, denom, offset;
+
+    offset_in = (unsigned) ((offset_in + 1) | 1) << log2_denom;
+    offset_in += (128 * (src_weight + dst_weight));
+
+    src_wgt = __msa_fill_b(src_weight);
+    dst_wgt = __msa_fill_b(dst_weight);
+    offset = __msa_fill_h(offset_in);
+    denom = __msa_fill_h(log2_denom + 1);
+
+    wgt = __msa_ilvev_b(dst_wgt, src_wgt);
+
+    LD4(src, stride, tp0, tp1, tp2, tp3);
+    INSERT_D2_UB(tp0, tp1, src0);
+    INSERT_D2_UB(tp2, tp3, src1);
+    LD4(dst, stride, tp0, tp1, tp2, tp3);
+    INSERT_D2_UB(tp0, tp1, dst0);
+    INSERT_D2_UB(tp2, tp3, dst1);
+    XORI_B4_128_UB(src0, src1, dst0, dst1);
+    ILVRL_B2_SB(dst0, src0, vec0, vec1);
+    ILVRL_B2_SB(dst1, src1, vec2, vec3);
+    tmp0 = __msa_dpadd_s_h(offset, wgt, vec0);
+    tmp1 = __msa_dpadd_s_h(offset, wgt, vec1);
+    tmp2 = __msa_dpadd_s_h(offset, wgt, vec2);
+    tmp3 = __msa_dpadd_s_h(offset, wgt, vec3);
+    SRA_4V(tmp0, tmp1, tmp2, tmp3, denom);
+    CLIP_SH4_0_255(tmp0, tmp1, tmp2, tmp3);
+    PCKEV_B2_UB(tmp1, tmp0, tmp3, tmp2, dst0, dst1);
+    ST8x4_UB(dst0, dst1, dst, stride);
+}
+
+static void avc_biwgt_8x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+                              int32_t log2_denom, int32_t src_weight,
+                              int32_t dst_weight, int32_t offset_in)
+{
+    uint64_t tp0, tp1, tp2, tp3;
+    v16i8 src_wgt, dst_wgt, wgt, vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7;
+    v16u8 src0, src1, src2, src3, dst0, dst1, dst2, dst3;
+    v8i16 tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, denom, offset;
+
+    offset_in = (unsigned) ((offset_in + 1) | 1) << log2_denom;
+    offset_in += (128 * (src_weight + dst_weight));
+
+    src_wgt = __msa_fill_b(src_weight);
+    dst_wgt = __msa_fill_b(dst_weight);
+    offset = __msa_fill_h(offset_in);
+    denom = __msa_fill_h(log2_denom + 1);
+    wgt = __msa_ilvev_b(dst_wgt, src_wgt);
+
+    LD4(src, stride, tp0, tp1, tp2, tp3);
+    INSERT_D2_UB(tp0, tp1, src0);
+    INSERT_D2_UB(tp2, tp3, src1);
+    LD4(src + 4 * stride, stride, tp0, tp1, tp2, tp3);
+    INSERT_D2_UB(tp0, tp1, src2);
+    INSERT_D2_UB(tp2, tp3, src3);
+    LD4(dst, stride, tp0, tp1, tp2, tp3);
+    INSERT_D2_UB(tp0, tp1, dst0);
+    INSERT_D2_UB(tp2, tp3, dst1);
+    LD4(dst + 4 * stride, stride, tp0, tp1, tp2, tp3);
+    INSERT_D2_UB(tp0, tp1, dst2);
+    INSERT_D2_UB(tp2, tp3, dst3);
+    XORI_B8_128_UB(src0, src1, src2, src3, dst0, dst1, dst2, dst3);
+    ILVRL_B2_SB(dst0, src0, vec0, vec1);
+    ILVRL_B2_SB(dst1, src1, vec2, vec3);
+    ILVRL_B2_SB(dst2, src2, vec4, vec5);
+    ILVRL_B2_SB(dst3, src3, vec6, vec7);
+    tmp0 = __msa_dpadd_s_h(offset, wgt, vec0);
+    tmp1 = __msa_dpadd_s_h(offset, wgt, vec1);
+    tmp2 = __msa_dpadd_s_h(offset, wgt, vec2);
+    tmp3 = __msa_dpadd_s_h(offset, wgt, vec3);
+    tmp4 = __msa_dpadd_s_h(offset, wgt, vec4);
+    tmp5 = __msa_dpadd_s_h(offset, wgt, vec5);
+    tmp6 = __msa_dpadd_s_h(offset, wgt, vec6);
+    tmp7 = __msa_dpadd_s_h(offset, wgt, vec7);
+    SRA_4V(tmp0, tmp1, tmp2, tmp3, denom);
+    SRA_4V(tmp4, tmp5, tmp6, tmp7, denom);
+    CLIP_SH4_0_255(tmp0, tmp1, tmp2, tmp3);
+    CLIP_SH4_0_255(tmp4, tmp5, tmp6, tmp7);
+    PCKEV_B2_UB(tmp1, tmp0, tmp3, tmp2, dst0, dst1);
+    PCKEV_B2_UB(tmp5, tmp4, tmp7, tmp6, dst2, dst3);
+    ST8x8_UB(dst0, dst1, dst2, dst3, dst, stride);
+}
+
+static void avc_biwgt_8x16_msa(uint8_t *src, uint8_t *dst, int32_t stride,
+                               int32_t log2_denom, int32_t src_weight,
+                               int32_t dst_weight, int32_t offset_in)
 {
     uint8_t cnt;
+    uint64_t tp0, tp1, tp2, tp3;
     v16i8 src_wgt, dst_wgt, wgt;
-    v16i8 src0, src1, src2, src3;
-    v16i8 dst0, dst1, dst2, dst3;
+    v16u8 src0, src1, src2, src3;
+    v16u8 dst0, dst1, dst2, dst3;
     v16i8 vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7;
     v8i16 temp0, temp1, temp2, temp3, temp4, temp5, temp6, temp7;
-    v8i16 denom, offset, add_val;
-    int32_t val = 128 * (src_weight + dst_weight);
+    v8i16 denom, offset;
 
-    offset_in = ((offset_in + 1) | 1) << log2_denom;
+    offset_in = (unsigned) ((offset_in + 1) | 1) << log2_denom;
+    offset_in += (128 * (src_weight + dst_weight));
 
     src_wgt = __msa_fill_b(src_weight);
     dst_wgt = __msa_fill_b(dst_weight);
     offset = __msa_fill_h(offset_in);
     denom = __msa_fill_h(log2_denom + 1);
-    add_val = __msa_fill_h(val);
-    offset += add_val;
-
     wgt = __msa_ilvev_b(dst_wgt, src_wgt);
 
-    for (cnt = height / 4; cnt--;) {
-        LD_SB4(src, src_stride, src0, src1, src2, src3);
-        src += (4 * src_stride);
-
-        LD_SB4(dst, dst_stride, dst0, dst1, dst2, dst3);
-        XORI_B4_128_SB(src0, src1, src2, src3);
-        XORI_B4_128_SB(dst0, dst1, dst2, dst3);
+    for (cnt = 2; cnt--;) {
+        LD4(src, stride, tp0, tp1, tp2, tp3);
+        src += 4 * stride;
+        INSERT_D2_UB(tp0, tp1, src0);
+        INSERT_D2_UB(tp2, tp3, src1);
+        LD4(src, stride, tp0, tp1, tp2, tp3);
+        src += 4 * stride;
+        INSERT_D2_UB(tp0, tp1, src2);
+        INSERT_D2_UB(tp2, tp3, src3);
+        LD4(dst, stride, tp0, tp1, tp2, tp3);
+        INSERT_D2_UB(tp0, tp1, dst0);
+        INSERT_D2_UB(tp2, tp3, dst1);
+        LD4(dst + 4 * stride, stride, tp0, tp1, tp2, tp3);
+        INSERT_D2_UB(tp0, tp1, dst2);
+        INSERT_D2_UB(tp2, tp3, dst3);
+        XORI_B4_128_UB(src0, src1, src2, src3);
+        XORI_B4_128_UB(dst0, dst1, dst2, dst3);
         ILVR_B4_SB(dst0, src0, dst1, src1, dst2, src2, dst3, src3,
                    vec0, vec2, vec4, vec6);
         ILVL_B4_SB(dst0, src0, dst1, src1, dst2, src2, dst3, src3,
@@ -452,10 +477,10 @@ static void avc_biwgt_16width_msa(uint8_t *src, int32_t src_stride,
         SRA_4V(temp4, temp5, temp6, temp7, denom);
         CLIP_SH4_0_255(temp0, temp1, temp2, temp3);
         CLIP_SH4_0_255(temp4, temp5, temp6, temp7);
-        PCKEV_B4_SB(temp1, temp0, temp3, temp2, temp5, temp4, temp7, temp6,
+        PCKEV_B4_UB(temp1, temp0, temp3, temp2, temp5, temp4, temp7, temp6,
                     dst0, dst1, dst2, dst3);
-        ST_SB4(dst0, dst1, dst2, dst3, dst, dst_stride);
-        dst += 4 * dst_stride;
+        ST8x8_UB(dst0, dst1, dst2, dst3, dst, stride);
+        dst += 8 * stride;
     }
 }
 
@@ -2430,10 +2455,114 @@ void ff_weight_h264_pixels4_8_msa(uint8_t *src, ptrdiff_t stride,
 void ff_biweight_h264_pixels16_8_msa(uint8_t *dst, uint8_t *src,
                                      ptrdiff_t stride, int height,
                                      int log2_denom, int weight_dst,
-                                     int weight_src, int offset)
+                                     int weight_src, int offset_in)
 {
-    avc_biwgt_16width_msa(src, stride, dst, stride, height, log2_denom,
-                          weight_src, weight_dst, offset);
+    v16i8 src_wgt, dst_wgt, wgt;
+    v16u8 src0, src1, src2, src3, src4, src5, src6, src7;
+    v16u8 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
+    v16i8 vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7;
+    v16i8 vec8, vec9, vec10, vec11, vec12, vec13, vec14, vec15;
+    v8i16 tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
+    v8i16 tmp8, tmp9, tmp10, tmp11, tmp12, tmp13, tmp14, tmp15;
+    v8i16 denom, offset;
+
+    offset_in = (unsigned) ((offset_in + 1) | 1) << log2_denom;
+    offset_in += (128 * (weight_src + weight_dst));
+
+    src_wgt = __msa_fill_b(weight_src);
+    dst_wgt = __msa_fill_b(weight_dst);
+    offset = __msa_fill_h(offset_in);
+    denom = __msa_fill_h(log2_denom + 1);
+
+    wgt = __msa_ilvev_b(dst_wgt, src_wgt);
+
+    LD_UB8(src, stride, src0, src1, src2, src3, src4, src5, src6, src7);
+    src += 8 * stride;
+    LD_UB8(dst, stride, dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7);
+    XORI_B8_128_UB(src0, src1, src2, src3, src4, src5, src6, src7);
+    XORI_B8_128_UB(dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7);
+    ILVR_B4_SB(dst0, src0, dst1, src1, dst2, src2, dst3, src3, vec0, vec2, vec4,
+               vec6);
+    ILVL_B4_SB(dst0, src0, dst1, src1, dst2, src2, dst3, src3, vec1, vec3, vec5,
+               vec7);
+    ILVR_B4_SB(dst4, src4, dst5, src5, dst6, src6, dst7, src7, vec8, vec10,
+               vec12, vec14);
+    ILVL_B4_SB(dst4, src4, dst5, src5, dst6, src6, dst7, src7, vec9, vec11,
+               vec13, vec15);
+    tmp0 = __msa_dpadd_s_h(offset, wgt, vec0);
+    tmp1 = __msa_dpadd_s_h(offset, wgt, vec1);
+    tmp2 = __msa_dpadd_s_h(offset, wgt, vec2);
+    tmp3 = __msa_dpadd_s_h(offset, wgt, vec3);
+    tmp4 = __msa_dpadd_s_h(offset, wgt, vec4);
+    tmp5 = __msa_dpadd_s_h(offset, wgt, vec5);
+    tmp6 = __msa_dpadd_s_h(offset, wgt, vec6);
+    tmp7 = __msa_dpadd_s_h(offset, wgt, vec7);
+    tmp8 = __msa_dpadd_s_h(offset, wgt, vec8);
+    tmp9 = __msa_dpadd_s_h(offset, wgt, vec9);
+    tmp10 = __msa_dpadd_s_h(offset, wgt, vec10);
+    tmp11 = __msa_dpadd_s_h(offset, wgt, vec11);
+    tmp12 = __msa_dpadd_s_h(offset, wgt, vec12);
+    tmp13 = __msa_dpadd_s_h(offset, wgt, vec13);
+    tmp14 = __msa_dpadd_s_h(offset, wgt, vec14);
+    tmp15 = __msa_dpadd_s_h(offset, wgt, vec15);
+    SRA_4V(tmp0, tmp1, tmp2, tmp3, denom);
+    SRA_4V(tmp4, tmp5, tmp6, tmp7, denom);
+    SRA_4V(tmp8, tmp9, tmp10, tmp11, denom);
+    SRA_4V(tmp12, tmp13, tmp14, tmp15, denom);
+    CLIP_SH4_0_255(tmp0, tmp1, tmp2, tmp3);
+    CLIP_SH4_0_255(tmp4, tmp5, tmp6, tmp7);
+    CLIP_SH4_0_255(tmp8, tmp9, tmp10, tmp11);
+    CLIP_SH4_0_255(tmp12, tmp13, tmp14, tmp15);
+    PCKEV_B4_UB(tmp1, tmp0, tmp3, tmp2, tmp5, tmp4, tmp7, tmp6, dst0, dst1,
+                dst2, dst3);
+    PCKEV_B4_UB(tmp9, tmp8, tmp11, tmp10, tmp13, tmp12, tmp15, tmp14, dst4,
+                dst5, dst6, dst7);
+    ST_UB8(dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7, dst, stride);
+    dst += 8 * stride;
+
+    if (16 == height) {
+        LD_UB8(src, stride, src0, src1, src2, src3, src4, src5, src6, src7);
+        LD_UB8(dst, stride, dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7);
+        XORI_B8_128_UB(src0, src1, src2, src3, src4, src5, src6, src7);
+        XORI_B8_128_UB(dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7);
+        ILVR_B4_SB(dst0, src0, dst1, src1, dst2, src2, dst3, src3, vec0, vec2,
+                   vec4, vec6);
+        ILVL_B4_SB(dst0, src0, dst1, src1, dst2, src2, dst3, src3, vec1, vec3,
+                   vec5, vec7);
+        ILVR_B4_SB(dst4, src4, dst5, src5, dst6, src6, dst7, src7, vec8, vec10,
+                   vec12, vec14);
+        ILVL_B4_SB(dst4, src4, dst5, src5, dst6, src6, dst7, src7, vec9, vec11,
+                   vec13, vec15);
+        tmp0 = __msa_dpadd_s_h(offset, wgt, vec0);
+        tmp1 = __msa_dpadd_s_h(offset, wgt, vec1);
+        tmp2 = __msa_dpadd_s_h(offset, wgt, vec2);
+        tmp3 = __msa_dpadd_s_h(offset, wgt, vec3);
+        tmp4 = __msa_dpadd_s_h(offset, wgt, vec4);
+        tmp5 = __msa_dpadd_s_h(offset, wgt, vec5);
+        tmp6 = __msa_dpadd_s_h(offset, wgt, vec6);
+        tmp7 = __msa_dpadd_s_h(offset, wgt, vec7);
+        tmp8 = __msa_dpadd_s_h(offset, wgt, vec8);
+        tmp9 = __msa_dpadd_s_h(offset, wgt, vec9);
+        tmp10 = __msa_dpadd_s_h(offset, wgt, vec10);
+        tmp11 = __msa_dpadd_s_h(offset, wgt, vec11);
+        tmp12 = __msa_dpadd_s_h(offset, wgt, vec12);
+        tmp13 = __msa_dpadd_s_h(offset, wgt, vec13);
+        tmp14 = __msa_dpadd_s_h(offset, wgt, vec14);
+        tmp15 = __msa_dpadd_s_h(offset, wgt, vec15);
+        SRA_4V(tmp0, tmp1, tmp2, tmp3, denom);
+        SRA_4V(tmp4, tmp5, tmp6, tmp7, denom);
+        SRA_4V(tmp8, tmp9, tmp10, tmp11, denom);
+        SRA_4V(tmp12, tmp13, tmp14, tmp15, denom);
+        CLIP_SH4_0_255(tmp0, tmp1, tmp2, tmp3);
+        CLIP_SH4_0_255(tmp4, tmp5, tmp6, tmp7);
+        CLIP_SH4_0_255(tmp8, tmp9, tmp10, tmp11);
+        CLIP_SH4_0_255(tmp12, tmp13, tmp14, tmp15);
+        PCKEV_B4_UB(tmp1, tmp0, tmp3, tmp2, tmp5, tmp4, tmp7, tmp6, dst0, dst1,
+                    dst2, dst3);
+        PCKEV_B4_UB(tmp9, tmp8, tmp11, tmp10, tmp13, tmp12, tmp15, tmp14, dst4,
+                    dst5, dst6, dst7);
+        ST_UB8(dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7, dst, stride);
+    }
 }
 
 void ff_biweight_h264_pixels8_8_msa(uint8_t *dst, uint8_t *src,
@@ -2441,8 +2570,16 @@ void ff_biweight_h264_pixels8_8_msa(uint8_t *dst, uint8_t *src,
                                     int log2_denom, int weight_dst,
                                     int weight_src, int offset)
 {
-    avc_biwgt_8width_msa(src, stride, dst, stride, height, log2_denom,
-                         weight_src, weight_dst, offset);
+    if (4 == height) {
+        avc_biwgt_8x4_msa(src, dst, stride, log2_denom, weight_src, weight_dst,
+                          offset);
+    } else if (8 == height) {
+        avc_biwgt_8x8_msa(src, dst, stride, log2_denom, weight_src, weight_dst,
+                          offset);
+    } else {
+        avc_biwgt_8x16_msa(src, dst, stride, log2_denom, weight_src, weight_dst,
+                           offset);
+    }
 }
 
 void ff_biweight_h264_pixels4_8_msa(uint8_t *dst, uint8_t *src,
@@ -2450,6 +2587,14 @@ void ff_biweight_h264_pixels4_8_msa(uint8_t *dst, uint8_t *src,
                                     int log2_denom, int weight_dst,
                                     int weight_src, int offset)
 {
-    avc_biwgt_4width_msa(src, stride, dst, stride, height, log2_denom,
-                         weight_src, weight_dst, offset);
+    if (2 == height) {
+        avc_biwgt_4x2_msa(src, dst, stride, log2_denom, weight_src, weight_dst,
+                          offset);
+    } else if (4 == height) {
+        avc_biwgt_4x4_msa(src, dst, stride, log2_denom, weight_src, weight_dst,
+                          offset);
+    } else {
+        avc_biwgt_4x8_msa(src, dst, stride, log2_denom, weight_src, weight_dst,
+                          offset);
+    }
 }

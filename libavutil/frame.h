@@ -783,8 +783,8 @@ enum {
     /**
      * Apply the maximum possible cropping, even if it requires setting the
      * AVFrame.data[] entries to unaligned pointers. Passing unaligned data
-     * to Libav API is generally not allowed, and causes undefined behavior
-     * (such as crashes). You can pass unaligned data only to Libav APIs that
+     * to FFmpeg API is generally not allowed, and causes undefined behavior
+     * (such as crashes). You can pass unaligned data only to FFmpeg APIs that
      * are explicitly documented to accept it. Use this flag only if you
      * absolutely know what you are doing.
      */

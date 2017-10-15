@@ -1252,6 +1252,7 @@
 }
 #define INSERT_W4_UB(...) INSERT_W4(v16u8, __VA_ARGS__)
 #define INSERT_W4_SB(...) INSERT_W4(v16i8, __VA_ARGS__)
+#define INSERT_W4_SH(...) INSERT_W4(v8i16, __VA_ARGS__)
 #define INSERT_W4_SW(...) INSERT_W4(v4i32, __VA_ARGS__)
 
 /* Description : Insert specified double word elements from input vectors to 1
@@ -1267,6 +1268,7 @@
 }
 #define INSERT_D2_UB(...) INSERT_D2(v16u8, __VA_ARGS__)
 #define INSERT_D2_SB(...) INSERT_D2(v16i8, __VA_ARGS__)
+#define INSERT_D2_SH(...) INSERT_D2(v8i16, __VA_ARGS__)
 #define INSERT_D2_SD(...) INSERT_D2(v2i64, __VA_ARGS__)
 
 /* Description : Interleave even byte elements from vectors
@@ -1444,6 +1446,7 @@
     out2 = (RTYPE) __msa_ilvr_b((v16i8) in4, (v16i8) in5);              \
 }
 #define ILVR_B3_UB(...) ILVR_B3(v16u8, __VA_ARGS__)
+#define ILVR_B3_SB(...) ILVR_B3(v16i8, __VA_ARGS__)
 #define ILVR_B3_UH(...) ILVR_B3(v8u16, __VA_ARGS__)
 #define ILVR_B3_SH(...) ILVR_B3(v8i16, __VA_ARGS__)
 
@@ -1974,6 +1977,7 @@
     XORI_B4_128(RTYPE, in4, in5, in6, in7);                         \
 }
 #define XORI_B8_128_SB(...) XORI_B8_128(v16i8, __VA_ARGS__)
+#define XORI_B8_128_UB(...) XORI_B8_128(v16u8, __VA_ARGS__)
 
 /* Description : Addition of signed halfword elements and signed saturation
    Arguments   : Inputs  - in0, in1, in2, in3

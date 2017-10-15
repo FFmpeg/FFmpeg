@@ -653,8 +653,8 @@ static void compute_default_clut(AVSubtitleRect *rect, int w, int h)
     uint8_t list_inv[256];
     int counttab[256] = {0};
     int count, i, x, y;
-
-#define V(x,y) rect->data[0][(x) + (y)*rect->linesize[0]]
+    ptrdiff_t stride = rect->linesize[0];
+#define V(x,y) rect->data[0][(x) + (y)*stride]
     for (y = 0; y<h; y++) {
         for (x = 0; x<w; x++) {
             int v = V(x,y) + 1;
@@ -665,7 +665,7 @@ static void compute_default_clut(AVSubtitleRect *rect, int w, int h)
             counttab[v-1] += !!((v!=vl) + (v!=vr) + (v!=vt) + (v!=vb));
         }
     }
-#define L(x,y) list[ rect->data[0][(x) + (y)*rect->linesize[0]] ]
+#define L(x,y) list[d[(x) + (y)*stride]]
 
     for (i = 0; i<256; i++) {
         int scoretab[256] = {0};
@@ -673,20 +673,24 @@ static void compute_default_clut(AVSubtitleRect *rect, int w, int h)
         int bestv = 0;
         for (y = 0; y<h; y++) {
             for (x = 0; x<w; x++) {
-                int v = rect->data[0][x + y*rect->linesize[0]];
+                uint8_t *d = &rect->data[0][x + y*stride];
+                int v = *d;
                 int l_m = list[v];
-                int l_l = x     ? L(x-1, y) : 1;
-                int l_r = x+1<w ? L(x+1, y) : 1;
-                int l_t = y     ? L(x, y-1) : 1;
-                int l_b = y+1<h ? L(x, y+1) : 1;
-                int score;
+                int l_l = x     ? L(-1, 0) : 1;
+                int l_r = x+1<w ? L( 1, 0) : 1;
+                int l_t = y     ? L( 0,-1) : 1;
+                int l_b = y+1<h ? L( 0, 1) : 1;
                 if (l_m)
                     continue;
                 scoretab[v] += l_l + l_r + l_t + l_b;
-                score = 1024LL*scoretab[v] / counttab[v];
+            }
+        }
+        for (x = 0; x < 256; x++) {
+            if (scoretab[x]) {
+                int score = 1024LL*scoretab[x] / counttab[x];
                 if (score > bestscore) {
                     bestscore = score;
-                    bestv = v;
+                    bestv = x;
                 }
             }
         }
