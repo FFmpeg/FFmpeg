@@ -45,6 +45,10 @@ typedef struct LibRTMFPContext {
     char*               peerId;
     char*               publication;
     unsigned short      streamId;
+    const char*         swfUrl;
+    const char*         app;
+    const char*         pageUrl;
+    const char*         flashVer;
 
     // General options
     int                 socketReceiveSize;
@@ -143,6 +147,10 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
     ctx->rtmfp.pOnSocketError = onSocketError;
     ctx->rtmfp.pOnStatusEvent = onStatusEvent;
     ctx->rtmfp.isBlocking = 1;
+    ctx->rtmfp.swfUrl = ctx->swfUrl;
+    ctx->rtmfp.app = ctx->app;
+    ctx->rtmfp.pageUrl = ctx->pageUrl;
+    ctx->rtmfp.flashVer = ctx->flashVer;
 
     RTMFP_LogSetCallback(rtmfp_log);
     /*RTMFP_ActiveDump();
@@ -186,9 +194,7 @@ static int rtmfp_write(URLContext *s, const uint8_t *buf, int size)
 
     res = RTMFP_Write(ctx->id, buf, size);
     //av_log(NULL, AV_LOG_INFO, "RTMFP write called, %d/%d bytes read\n", res, size);
-    if (res < 0)
-        return AVERROR_UNKNOWN;
-    return res;
+    return (res < 0)? AVERROR_UNKNOWN : res;
 }
 
 static int rtmfp_read(URLContext *s, uint8_t *buf, int size)
@@ -256,6 +262,10 @@ static const AVOption options[] = {
     {"updatePeriod", "Specifies the interval in milliseconds between messages sent to peers informating them that the local node has new p2p multicast media fragments available",
         OFFSET(updatePeriod), AV_OPT_TYPE_INT, {.i64 = 100 }, 100, 10000, DEC|ENC},
     {"windowDuration", "Specifies the duration in milliseconds of the p2p multicast reassembly window", OFFSET(windowDuration), AV_OPT_TYPE_INT, {.i64 = 8000 }, 1000, 60000, DEC|ENC},
+    {"rtmfp_swfurl", "URL of the SWF player. By default no value will be sent", OFFSET(swfUrl), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    {"rtmfp_app", "Name of application to connect to on the RTMFP server (by default 'live')", OFFSET(app), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    {"rtmfp_pageurl", "URL of the web page in which the media was embedded. By default no value will be sent.", OFFSET(pageUrl), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC},
+    {"rtmfp_flashver", "Version of the Flash plugin used to run the SWF player. By default 'WIN 20,0,0,286'", OFFSET(flashVer), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     { NULL },
 };
 
