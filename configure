@@ -6262,6 +6262,8 @@ enabled jack && check_lib jack jack/jack.h jack_client_open -ljack &&
 enabled sndio && check_lib sndio sndio.h sio_open -lsndio
 
 if enabled libcdio; then
+    use_pkg_config libcdio libcdio_paranoia "cdio/cdda.h cdio/paranoia.h" cdio_cddap_open ||
+    use_pkg_config libcdio libcdio_paranoia "cdio/paranoia/cdda.h cdio/paranoia/paranoia.h" cdio_cddap_open ||
     check_lib libcdio "cdio/cdda.h cdio/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio ||
     check_lib libcdio "cdio/paranoia/cdda.h cdio/paranoia/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio ||
     die "ERROR: No usable libcdio/cdparanoia found"
