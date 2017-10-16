@@ -3249,7 +3249,6 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
                         // Increment skip_samples for the first non-zero audio edit list
                         if (first_non_zero_audio_edit > 0 && st->codecpar->codec_id != AV_CODEC_ID_VORBIS) {
                             st->skip_samples += frame_duration;
-                            msc->start_pad = st->skip_samples;
                         }
                     }
                 }
@@ -3323,6 +3322,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
 
     // Update av stream length
     st->duration = edit_list_dts_entry_end - start_dts;
+    msc->start_pad = st->skip_samples;
 
     // Free the old index and the old CTTS structures
     av_free(e_old);
