@@ -4,6 +4,8 @@
 
 fate-cbs: fate-cbs-h264 fate-cbs-hevc fate-cbs-mpeg2
 
+FATE_CBS_DEPS = $(call ALLYES, $(1)_DEMUXER $(1)_PARSER $(2)_METADATA_BSF $(3)_DECODER $(3)_MUXER)
+
 define FATE_CBS_TEST
 # (codec, test_name, sample_file, output_format)
 FATE_CBS_$(1) += fate-cbs-$(1)-$(2)
@@ -30,8 +32,9 @@ FATE_CBS_H264_SAMPLES =   \
 
 $(foreach N,$(FATE_CBS_H264_SAMPLES),$(eval $(call FATE_CBS_TEST,h264,$(basename $(N)),h264-conformance/$(N),h264)))
 
-FATE_SAMPLES_AVCONV += $(FATE_CBS_h264)
-fate-cbs-h264: $(FATE_CBS_h264)
+FATE_CBS_H264-$(call FATE_CBS_DEPS, H264, H264, H264) = $(FATE_CBS_h264)
+FATE_SAMPLES_AVCONV += $(FATE_CBS_H264-yes)
+fate-cbs-h264: $(FATE_CBS_H264-yes)
 
 # H.265 read/write
 
@@ -58,8 +61,9 @@ FATE_CBS_HEVC_SAMPLES =       \
 
 $(foreach N,$(FATE_CBS_HEVC_SAMPLES),$(eval $(call FATE_CBS_TEST,hevc,$(basename $(N)),hevc-conformance/$(N),hevc)))
 
-FATE_SAMPLES_AVCONV += $(FATE_CBS_hevc)
-fate-cbs-hevc: $(FATE_CBS_hevc)
+FATE_CBS_HEVC-$(call FATE_CBS_DEPS, HEVC, HEVC, HEVC) = $(FATE_CBS_hevc)
+FATE_SAMPLES_AVCONV += $(FATE_CBS_HEVC-yes)
+fate-cbs-hevc: $(FATE_CBS_HEVC-yes)
 
 # MPEG-2 read/write
 
@@ -70,5 +74,6 @@ FATE_CBS_MPEG2_SAMPLES =     \
 
 $(foreach N,$(FATE_CBS_MPEG2_SAMPLES),$(eval $(call FATE_CBS_TEST,mpeg2,$(basename $(N)),mpeg2/$(N),mpeg2video)))
 
-FATE_SAMPLES_AVCONV += $(FATE_CBS_mpeg2)
-fate-cbs-mpeg2: $(FATE_CBS_mpeg2)
+FATE_CBS_MPEG2-$(call FATE_CBS_DEPS, MPEGVIDEO, MPEG2, MPEG2VIDEO) = $(FATE_CBS_mpeg2)
+FATE_SAMPLES_AVCONV += $(FATE_CBS_MPEG2-yes)
+fate-cbs-mpeg2: $(FATE_CBS_MPEG2-yes)
