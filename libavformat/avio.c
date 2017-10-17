@@ -391,8 +391,10 @@ static inline int retry_transfer_wrapper(URLContext *h, uint8_t *buf,
                 }
                 av_usleep(1000);
             }
-        } else if (ret < 1)
-            return (ret < 0 && ret != AVERROR_EOF) ? ret : len;
+        } else if (ret == AVERROR_EOF)
+            return (len > 0) ? len : AVERROR_EOF;
+        else if (ret < 0)
+            return ret;
         if (ret) {
             fast_retries = FFMAX(fast_retries, 2);
             wait_since = 0;
