@@ -81,6 +81,8 @@ static uint32_t samples_per_packet(enum AVCodecID codec_id, int channels, int bl
         return 320;
     case AV_CODEC_ID_MP1:
         return 384;
+    case AV_CODEC_ID_OPUS:
+        return 960;
     case AV_CODEC_ID_MP2:
     case AV_CODEC_ID_MP3:
         return 1152;
@@ -117,7 +119,6 @@ static int caf_write_header(AVFormatContext *s)
 
     switch (par->codec_id) {
     case AV_CODEC_ID_AAC:
-    case AV_CODEC_ID_OPUS:
         av_log(s, AV_LOG_ERROR, "muxing codec currently unsupported\n");
         return AVERROR_PATCHWELCOME;
     }
