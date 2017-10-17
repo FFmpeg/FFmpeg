@@ -123,6 +123,11 @@ static int caf_write_header(AVFormatContext *s)
         return AVERROR_PATCHWELCOME;
     }
 
+    if (par->codec_id == AV_CODEC_ID_OPUS && par->channels > 2) {
+        av_log(s, AV_LOG_ERROR, "Only mono and stereo are supported for Opus\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if (!codec_tag) {
         av_log(s, AV_LOG_ERROR, "unsupported codec\n");
         return AVERROR_INVALIDDATA;
