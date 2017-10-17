@@ -11458,6 +11458,9 @@ If not set, the maximum of colors in the palette will be 256. You probably want
 to disable this option for a standalone image.
 Set by default.
 
+@item transparency_color
+Set the color that will be used as background for transparency.
+
 @item stats_mode
 Set statistics mode.
 
