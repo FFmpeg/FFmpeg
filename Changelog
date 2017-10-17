@@ -2,6 +2,10 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+- Bitstream filters for editing metadata in H.264, HEVC and MPEG-2 streams
+
+
+version 3.4:
 - deflicker video filter
 - doubleweave video filter
 - lumakey video filter
