@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2018-03-xx - xxxxxxx - lavu 56.8.100 - frame.h
+  Add av_frame_new_side_data_from_buf().
+
 2018-02-xx - xxxxxxx
   Change av_ripemd_update(), av_murmur3_update() and av_hash_update() length
   parameter type to size_t at next major bump.
