@@ -4953,7 +4953,8 @@ static int mov_parse_uuid_spherical(MOVStreamContext *sc, AVIOContext *pb, size_
         goto out;
 
     /* Check for mandatory keys and values, try to support XML as best-effort */
-    if (av_stristr(buffer, "<GSpherical:StitchingSoftware>") &&
+    if (!sc->spherical &&
+        av_stristr(buffer, "<GSpherical:StitchingSoftware>") &&
         (val = av_stristr(buffer, "<GSpherical:Spherical>")) &&
         av_stristr(val, "true") &&
         (val = av_stristr(buffer, "<GSpherical:Stitched>")) &&
@@ -4966,7 +4967,7 @@ static int mov_parse_uuid_spherical(MOVStreamContext *sc, AVIOContext *pb, size_
 
         sc->spherical->projection = AV_SPHERICAL_EQUIRECTANGULAR;
 
-        if (av_stristr(buffer, "<GSpherical:StereoMode>")) {
+        if (av_stristr(buffer, "<GSpherical:StereoMode>") && !sc->stereo3d) {
             enum AVStereo3DType mode;
 
             if (av_stristr(buffer, "left-right"))
