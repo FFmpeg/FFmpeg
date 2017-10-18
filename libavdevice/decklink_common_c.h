@@ -42,6 +42,7 @@ struct decklink_cctx {
     double preroll;
     int v210;
     int audio_channels;
+    int audio_depth;
     int duplex_mode;
     DecklinkPtsSource audio_pts_source;
     DecklinkPtsSource video_pts_source;

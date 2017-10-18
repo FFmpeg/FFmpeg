@@ -771,7 +771,7 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
         av_init_packet(&pkt);
 
         //hack among hacks
-        pkt.size = audioFrame->GetSampleFrameCount() * ctx->audio_st->codecpar->channels * (16 / 8);
+        pkt.size = audioFrame->GetSampleFrameCount() * ctx->audio_st->codecpar->channels * (ctx->audio_depth / 8);
         audioFrame->GetBytes(&audioFrameBytes);
         audioFrame->GetPacketTime(&audio_pts, ctx->audio_st->time_base.den);
         pkt.pts = get_pkt_pts(videoFrame, audioFrame, wallclock, ctx->audio_pts_source, ctx->audio_st->time_base, &initial_audio_pts);
@@ -854,6 +854,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
     ctx->audio_pts_source = cctx->audio_pts_source;
     ctx->video_pts_source = cctx->video_pts_source;
     ctx->draw_bars = cctx->draw_bars;
+    ctx->audio_depth = cctx->audio_depth;
     cctx->ctx = ctx;
 
     /* Check audio channel option for valid values: 2, 8 or 16 */
@@ -864,6 +865,16 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "Value of channels option must be one of 2, 8 or 16\n");
+            return AVERROR(EINVAL);
+    }
+
+    /* Check audio bit depth option for valid values: 16 or 32 */
+    switch (cctx->audio_depth) {
+        case 16:
+        case 32:
+            break;
+        default:
+            av_log(avctx, AV_LOG_ERROR, "Value for audio bit depth option must be either 16 or 32\n");
             return AVERROR(EINVAL);
     }
 
@@ -930,7 +941,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         goto error;
     }
     st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
-    st->codecpar->codec_id    = AV_CODEC_ID_PCM_S16LE;
+    st->codecpar->codec_id    = cctx->audio_depth == 32 ? AV_CODEC_ID_PCM_S32LE : AV_CODEC_ID_PCM_S16LE;
     st->codecpar->sample_rate = bmdAudioSampleRate48kHz;
     st->codecpar->channels    = cctx->audio_channels;
     avpriv_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
@@ -1021,7 +1032,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
     }
 
     av_log(avctx, AV_LOG_VERBOSE, "Using %d input audio channels\n", ctx->audio_st->codecpar->channels);
-    result = ctx->dli->EnableAudioInput(bmdAudioSampleRate48kHz, bmdAudioSampleType16bitInteger, ctx->audio_st->codecpar->channels);
+    result = ctx->dli->EnableAudioInput(bmdAudioSampleRate48kHz, cctx->audio_depth == 32 ? bmdAudioSampleType32bitInteger : bmdAudioSampleType16bitInteger, ctx->audio_st->codecpar->channels);
 
     if (result != S_OK) {
         av_log(avctx, AV_LOG_ERROR, "Cannot enable audio input\n");
