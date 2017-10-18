@@ -256,7 +256,7 @@ static int vaapi_encode_h264_write_extra_header(AVCodecContext *avctx,
 
         ff_cbs_fragment_uninit(priv->cbc, au);
 
-        *type = VAEncPackedHeaderH264_SEI;
+        *type = VAEncPackedHeaderRawData;
         return 0;
     } else {
         return AVERROR_EOF;
