@@ -211,7 +211,9 @@ static int vaapi_encode_h264_write_extra_header(AVCodecContext *avctx,
 
     if (priv->sei_needed) {
         if (priv->aud_needed) {
-            vaapi_encode_h264_add_nal(avctx, au, &priv->aud);
+            err = vaapi_encode_h264_add_nal(avctx, au, &priv->aud);
+            if (err < 0)
+                goto fail;
             priv->aud_needed = 0;
         }
 
