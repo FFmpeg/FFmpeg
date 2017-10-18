@@ -372,7 +372,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
                    "must be \"UUID+string\".\n");
             err = AVERROR(EINVAL);
         sei_fail:
-            memset(payload, 0, sizeof(&payload));
+            memset(payload, 0, sizeof(*payload));
             goto fail;
         }
 
