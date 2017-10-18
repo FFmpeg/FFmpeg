@@ -73,6 +73,7 @@ static void init_frame_defaults(CFHDContext *s)
 {
     s->coded_width       = 0;
     s->coded_height      = 0;
+    s->cropped_height    = 0;
     s->bpc               = 10;
     s->channel_cnt       = 4;
     s->subband_cnt       = SUBBAND_COUNT;
@@ -455,6 +456,9 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                 break;
             }
             planes = av_pix_fmt_count_planes(s->coded_format);
+        } else if (tag == -85) {
+            av_log(avctx, AV_LOG_DEBUG, "Cropped height %"PRIu16"\n", data);
+            s->cropped_height = data;
         } else
             av_log(avctx, AV_LOG_DEBUG,  "Unknown tag %i data %x\n", tag, data);
 
@@ -472,6 +476,8 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             ret = ff_set_dimensions(avctx, s->coded_width, s->coded_height);
             if (ret < 0)
                 return ret;
+            if (s->cropped_height)
+                avctx->height = s->cropped_height;
             frame.f->width =
             frame.f->height = 0;
 
