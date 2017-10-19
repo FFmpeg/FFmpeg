@@ -669,6 +669,88 @@ static AVHWAccel *find_hwaccel(enum AVCodecID codec_id,
     return NULL;
 }
 
+int ff_decode_get_hw_frames_ctx(AVCodecContext *avctx,
+                                enum AVHWDeviceType dev_type)
+{
+    AVHWDeviceContext *device_ctx;
+    AVHWFramesContext *frames_ctx;
+    int ret;
+
+    if (!avctx->hwaccel)
+        return AVERROR(ENOSYS);
+
+    if (avctx->hw_frames_ctx)
+        return 0;
+    if (!avctx->hw_device_ctx) {
+        av_log(avctx, AV_LOG_ERROR, "A hardware frames or device context is "
+                "required for hardware accelerated decoding.\n");
+        return AVERROR(EINVAL);
+    }
+
+    device_ctx = (AVHWDeviceContext *)avctx->hw_device_ctx->data;
+    if (device_ctx->type != dev_type) {
+        av_log(avctx, AV_LOG_ERROR, "Device type %s expected for hardware "
+               "decoding, but got %s.\n", av_hwdevice_get_type_name(dev_type),
+               av_hwdevice_get_type_name(device_ctx->type));
+        return AVERROR(EINVAL);
+    }
+
+    ret = avcodec_get_hw_frames_parameters(avctx,
+                                           avctx->hw_device_ctx,
+                                           avctx->hwaccel->pix_fmt,
+                                           avctx->hw_frames_ctx);
+    if (ret < 0) {
+        av_buffer_unref(&avctx->hw_frames_ctx);
+        return ret;
+    }
+
+    frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
+
+
+    if (frames_ctx->initial_pool_size) {
+        // We guarantee 4 base work surfaces. The function above guarantees 1
+        // (the absolute minimum), so add the missing count.
+        frames_ctx->initial_pool_size += 3;
+
+        // Add an additional surface per thread is frame threading is enabled.
+        if (avctx->active_thread_type & FF_THREAD_FRAME)
+            frames_ctx->initial_pool_size += avctx->thread_count;
+    }
+
+    ret = av_hwframe_ctx_init(avctx->hw_frames_ctx);
+    if (ret < 0) {
+        av_buffer_unref(&avctx->hw_frames_ctx);
+        return ret;
+    }
+
+    return 0;
+}
+
+int avcodec_get_hw_frames_parameters(AVCodecContext *avctx,
+                                     AVBufferRef *device_ref,
+                                     enum AVPixelFormat hw_pix_fmt,
+                                     AVBufferRef **out_frames_ref)
+{
+    AVBufferRef *frames_ref = NULL;
+    AVHWAccel *hwa = find_hwaccel(avctx->codec_id, hw_pix_fmt);
+    int ret;
+
+    if (!hwa || !hwa->frame_params)
+        return AVERROR(ENOENT);
+
+    frames_ref = av_hwframe_ctx_alloc(device_ref);
+    if (!frames_ref)
+        return AVERROR(ENOMEM);
+
+    ret = hwa->frame_params(avctx, frames_ref);
+    if (ret >= 0) {
+        *out_frames_ref = frames_ref;
+    } else {
+        av_buffer_unref(&frames_ref);
+    }
+    return ret;
+}
+
 static int setup_hwaccel(AVCodecContext *avctx,
                          const enum AVPixelFormat fmt,
                          const char *name)

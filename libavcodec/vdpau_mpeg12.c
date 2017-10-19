@@ -149,6 +149,7 @@ AVHWAccel ff_mpeg2_vdpau_hwaccel = {
     .frame_priv_data_size = sizeof(struct vdpau_picture_context),
     .init           = vdpau_mpeg2_init,
     .uninit         = ff_vdpau_common_uninit,
+    .frame_params   = ff_vdpau_common_frame_params,
     .priv_data_size = sizeof(VDPAUContext),
     .caps_internal  = HWACCEL_CAP_ASYNC_SAFE,
 };

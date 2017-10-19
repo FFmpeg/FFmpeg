@@ -523,6 +523,7 @@ AVHWAccel ff_h264_dxva2_hwaccel = {
     .start_frame    = dxva2_h264_start_frame,
     .decode_slice   = dxva2_h264_decode_slice,
     .end_frame      = dxva2_h264_end_frame,
+    .frame_params   = ff_dxva2_common_frame_params,
     .frame_priv_data_size = sizeof(struct dxva2_picture_context),
     .priv_data_size = sizeof(FFDXVASharedContext),
 };
@@ -539,6 +540,7 @@ AVHWAccel ff_h264_d3d11va_hwaccel = {
     .start_frame    = dxva2_h264_start_frame,
     .decode_slice   = dxva2_h264_decode_slice,
     .end_frame      = dxva2_h264_end_frame,
+    .frame_params   = ff_dxva2_common_frame_params,
     .frame_priv_data_size = sizeof(struct dxva2_picture_context),
     .priv_data_size = sizeof(FFDXVASharedContext),
 };
@@ -555,6 +557,7 @@ AVHWAccel ff_h264_d3d11va2_hwaccel = {
     .start_frame    = dxva2_h264_start_frame,
     .decode_slice   = dxva2_h264_decode_slice,
     .end_frame      = dxva2_h264_end_frame,
+    .frame_params   = ff_dxva2_common_frame_params,
     .frame_priv_data_size = sizeof(struct dxva2_picture_context),
     .priv_data_size = sizeof(FFDXVASharedContext),
 };
