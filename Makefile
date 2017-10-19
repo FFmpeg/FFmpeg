@@ -168,6 +168,7 @@ uninstall-data:
 
 clean::
 	$(RM) $(CLEANSUFFIXES)
+	$(RM) $(addprefix compat/,$(CLEANSUFFIXES)) $(addprefix compat/*/,$(CLEANSUFFIXES))
 	$(RM) -rf coverage.info lcov
 
 distclean::
