@@ -718,12 +718,12 @@ add_cflags_headers(){
     append CFLAGS_HEADERS $($cflags_filter "$@")
 }
 
-add_asflags(){
-    append ASFLAGS $($asflags_filter "$@")
-}
-
 add_objcflags(){
     append OBJCFLAGS $($objcflags_filter "$@")
+}
+
+add_asflags(){
+    append ASFLAGS $($asflags_filter "$@")
 }
 
 add_ldflags(){
@@ -738,12 +738,12 @@ add_ldsoflags(){
     append LDSOFLAGS $($ldflags_filter "$@")
 }
 
-add_stripflags(){
-    append STRIPFLAGS "$@"
-}
-
 add_extralibs(){
     prepend extralibs $($ldflags_filter "$@")
+}
+
+add_stripflags(){
+    append STRIPFLAGS "$@"
 }
 
 add_host_cppflags(){
