@@ -3773,7 +3773,7 @@ check_host_cflags $host_cflags_speed
 check_64bit(){
     arch32=$1
     arch64=$2
-    expr=$3
+    expr=${3:-'sizeof(void *) > 4'}
     check_code cc "" "int test[2*($expr) - 1]" &&
         subarch=$arch64 || subarch=$arch32
     enable $subarch
@@ -3788,23 +3788,23 @@ case "$arch" in
         enabled shared && enable_weak pic
     ;;
     parisc)
-        check_64bit parisc parisc64 'sizeof(void *) > 4'
+        check_64bit parisc parisc64
         enabled shared && enable_weak pic
     ;;
     ppc)
-        check_64bit ppc ppc64 'sizeof(void *) > 4'
+        check_64bit ppc ppc64
         enabled shared && enable_weak pic
     ;;
     s390)
-        check_64bit s390 s390x 'sizeof(void *) > 4'
+        check_64bit s390 s390x
         enabled shared && enable_weak pic
     ;;
     sparc)
-        check_64bit sparc sparc64 'sizeof(void *) > 4'
+        check_64bit sparc sparc64
         enabled shared && enable_weak pic
     ;;
     x86)
-        check_64bit x86_32 x86_64 'sizeof(void *) > 4'
+        check_64bit x86_32 x86_64
         if enabled x86_64; then
             enabled shared && enable_weak pic
             objformat=elf64
