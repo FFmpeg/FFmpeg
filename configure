@@ -4268,10 +4268,10 @@ EOF
 
 elif enabled mips; then
 
-    check_inline_asm loongson '"dmult.g $1, $2, $3"'
+    # make sure that only one instruction set is enabled
+    disable $ARCH_EXT_LIST_MIPS
 
-    # make sure that only an instruction set is enabled
-    disable mips64r6 mips32r6 mips64r2 mips32r2 mips64r1 mips32r1
+    check_inline_asm loongson '"dmult.g $1, $2, $3"'
 
     if enabled mips64; then
         check_inline_asm mips64r6 '"dlsa $0, $0, $0, 1"' ||
