@@ -96,7 +96,7 @@ static char *parse_link_name(const char **buf, void *log_ctx)
 static int create_filter(AVFilterContext **filt_ctx, AVFilterGraph *ctx, int index,
                          const char *name, const char *args, void *log_ctx)
 {
-    AVFilter *filt;
+    const AVFilter *filt;
     char name2[30];
     const char *inst_name = NULL, *filt_name = NULL;
     char *tmp_args = NULL;
