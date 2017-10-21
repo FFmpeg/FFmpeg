@@ -1250,6 +1250,8 @@ or as a floating point number (e.g. 0.04166, 2.0833e-5)
 
 Default value is 0.
 
+@item -bitexact (@emph{input/output})
+Enable bitexact mode for (de)muxer and (de/en)coder
 @item -shortest (@emph{output})
 Finish encoding when the shortest input stream ends.
 @item -dts_delta_threshold

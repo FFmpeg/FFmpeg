@@ -160,6 +160,7 @@ typedef struct OptionsContext {
     float mux_preload;
     float mux_max_delay;
     int shortest;
+    int bitexact;
 
     int video_disable;
     int audio_disable;

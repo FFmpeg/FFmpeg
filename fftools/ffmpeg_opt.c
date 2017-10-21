@@ -782,6 +782,9 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
             exit_program(1);
         }
 
+        if (o->bitexact)
+            ist->dec_ctx->flags |= AV_CODEC_FLAG_BITEXACT;
+
         switch (par->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
             if(!ist->dec)
@@ -1045,6 +1048,8 @@ static int open_input_file(OptionsContext *o, const char *filename)
         av_format_set_data_codec(ic, find_codec_or_die(data_codec_name, AVMEDIA_TYPE_DATA, 0));
 
     ic->flags |= AVFMT_FLAG_NONBLOCK;
+    if (o->bitexact)
+        ic->flags |= AVFMT_FLAG_BITEXACT;
     ic->interrupt_callback = int_cb;
 
     if (!av_dict_get(o->g->format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE)) {
@@ -1365,6 +1370,10 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     } else {
         ost->encoder_opts = filter_codec_opts(o->g->codec_opts, AV_CODEC_ID_NONE, oc, st, NULL);
     }
+
+
+    if (o->bitexact)
+        ost->enc_ctx->flags |= AV_CODEC_FLAG_BITEXACT;
 
     MATCH_PER_STREAM_OPT(time_bases, str, time_base, oc, st);
     if (time_base) {
@@ -2143,6 +2152,10 @@ static int open_output_file(OptionsContext *o, const char *filename)
     if (e) {
         const AVOption *o = av_opt_find(oc, "fflags", NULL, 0, 0);
         av_opt_eval_flags(oc, o, e->value, &format_flags);
+    }
+    if (o->bitexact) {
+        format_flags |= AVFMT_FLAG_BITEXACT;
+        oc->flags    |= AVFMT_FLAG_BITEXACT;
     }
 
     /* create streams for all unlabeled output pads */
@@ -3467,6 +3480,9 @@ const OptionDef options[] = {
     { "shortest",       OPT_BOOL | OPT_EXPERT | OPT_OFFSET |
                         OPT_OUTPUT,                                  { .off = OFFSET(shortest) },
         "finish encoding within shortest input" },
+    { "bitexact",       OPT_BOOL | OPT_EXPERT | OPT_OFFSET |
+                        OPT_OUTPUT | OPT_INPUT,                      { .off = OFFSET(bitexact) },
+        "bitexact mode" },
     { "apad",           OPT_STRING | HAS_ARG | OPT_SPEC |
                         OPT_OUTPUT,                                  { .off = OFFSET(apad) },
         "audio pad", "" },
