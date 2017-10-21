@@ -54,30 +54,6 @@ SECTION .text
 %endif
 %endmacro
 
-%macro PMINSD 3
-%if cpuflag(sse4)
-    pminsd %1, %2
-%else
-    mova    %3, %2
-    pcmpgtd %3, %1
-    pand    %1, %3
-    pandn   %3, %2
-    por     %1, %3
-%endif
-%endmacro
-
-%macro PMAXSD 3
-%if cpuflag(sse4)
-    pmaxsd %1, %2
-%else
-    mova    %3, %1
-    pcmpgtd %3, %2
-    pand    %1, %3
-    pandn   %3, %2
-    por     %1, %3
-%endif
-%endmacro
-
 %macro PMAXUW 2
 %if cpuflag(sse4)
     pmaxuw %1, %2

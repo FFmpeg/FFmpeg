@@ -357,7 +357,7 @@
 %endif
 %endmacro
 
-%macro ABSB 2 ; source mmreg, temp mmreg (unused for ssse3)
+%macro ABSB 2 ; source mmreg, temp mmreg (unused for SSSE3)
 %if cpuflag(ssse3)
     pabsb   %1, %1
 %else
@@ -381,7 +381,7 @@
 %endif
 %endmacro
 
-%macro ABSD2_MMX 4
+%macro ABSD2 4
     pxor    %3, %3
     pxor    %4, %4
     pcmpgtd %3, %1
@@ -475,7 +475,7 @@
 %else
     palignr %1, %2, %3
 %endif
-%elif cpuflag(mmx) ; [dst,] src1, src2, imm, tmp
+%else ; [dst,] src1, src2, imm, tmp
     %define %%dst %1
 %if %0==5
 %ifnidn %1, %2
@@ -799,37 +799,47 @@
     pminsw %1, %3
 %endmacro
 
-%macro PMINSD_MMX 3 ; dst, src, tmp
+%macro PMINSD 3 ; dst, src, tmp/unused
+%if cpuflag(sse4)
+    pminsd    %1, %2
+%elif cpuflag(sse2)
+    cvtdq2ps  %1, %1
+    minps     %1, %2
+    cvtps2dq  %1, %1
+%else
     mova      %3, %2
     pcmpgtd   %3, %1
     pxor      %1, %2
     pand      %1, %3
     pxor      %1, %2
+%endif
 %endmacro
 
-%macro PMAXSD_MMX 3 ; dst, src, tmp
+%macro PMAXSD 3 ; dst, src, tmp/unused
+%if cpuflag(sse4)
+    pmaxsd    %1, %2
+%else
     mova      %3, %1
     pcmpgtd   %3, %2
     pand      %1, %3
     pandn     %3, %2
     por       %1, %3
+%endif
 %endmacro
 
-%macro CLIPD_MMX 3-4 ; src/dst, min, max, tmp
-    PMINSD_MMX %1, %3, %4
-    PMAXSD_MMX %1, %2, %4
-%endmacro
-
-%macro CLIPD_SSE2 3-4 ; src/dst, min (float), max (float), unused
+%macro CLIPD 3-4
+%if cpuflag(sse4);  src/dst, min, max, unused
+    pminsd  %1, %3
+    pmaxsd  %1, %2
+%elif cpuflag(sse2) ; src/dst, min (float), max (float), unused
     cvtdq2ps  %1, %1
     minps     %1, %3
     maxps     %1, %2
     cvtps2dq  %1, %1
-%endmacro
-
-%macro CLIPD_SSE41 3-4 ;  src/dst, min, max, unused
-    pminsd  %1, %3
-    pmaxsd  %1, %2
+%else               ; src/dst, min, max, tmp
+    PMINSD    %1, %3, %4
+    PMAXSD    %1, %2, %4
+%endif
 %endmacro
 
 %macro VBROADCASTSS 2 ; dst xmm/ymm, src m32/xmm
