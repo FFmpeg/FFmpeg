@@ -120,7 +120,6 @@ static void register_all(void)
     REGISTER_MUXDEMUX(EAC3,             eac3);
     REGISTER_DEMUXER (EPAF,             epaf);
     REGISTER_MUXER   (F4V,              f4v);
-    REGISTER_MUXDEMUX(FFM,              ffm);
     REGISTER_MUXDEMUX(FFMETADATA,       ffmetadata);
     REGISTER_MUXER   (FIFO,             fifo);
     REGISTER_MUXDEMUX(FILMSTRIP,        filmstrip);
