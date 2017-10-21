@@ -2,7 +2,6 @@ LIBAVFORMAT_MAJOR {
     global:
         av*;
         #FIXME those are for ffserver
-        ff_inet_aton;
         ff_socket_nonblock;
         ff_rtsp_parse_line;
         ff_rtp_get_local_rtp_port;

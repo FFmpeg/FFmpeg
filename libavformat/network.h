@@ -105,8 +105,6 @@ int ff_network_wait_fd_timeout(int fd, int write, int64_t timeout, AVIOInterrupt
  */
 int ff_network_sleep_interruptible(int64_t timeout, AVIOInterruptCB *int_cb);
 
-int ff_inet_aton (const char * str, struct in_addr * add);
-
 #if !HAVE_STRUCT_SOCKADDR_STORAGE
 struct sockaddr_storage {
 #if HAVE_STRUCT_SOCKADDR_SA_LEN
