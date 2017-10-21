@@ -996,7 +996,7 @@ int avfilter_init_str(AVFilterContext *filter, const char *args)
             return AVERROR(EINVAL);
         }
 
-#if FF_API_OLD_FILTER_OPTS || FF_API_OLD_FILTER_OPTS_ERROR
+#if FF_API_OLD_FILTER_OPTS_ERROR
             if (   !strcmp(filter->filter->name, "format")     ||
                    !strcmp(filter->filter->name, "noformat")   ||
                    !strcmp(filter->filter->name, "frei0r")     ||
@@ -1056,14 +1056,6 @@ int avfilter_init_str(AVFilterContext *filter, const char *args)
             while ((p = strchr(p, ':')))
                 *p++ = '|';
 
-#if FF_API_OLD_FILTER_OPTS
-            if (deprecated)
-                av_log(filter, AV_LOG_WARNING, "This syntax is deprecated. Use "
-                       "'|' to separate the list items.\n");
-
-            av_log(filter, AV_LOG_DEBUG, "compat: called with args=[%s]\n", copy);
-            ret = process_options(filter, &options, copy);
-#else
             if (deprecated) {
                 av_log(filter, AV_LOG_ERROR, "This syntax is deprecated. Use "
                        "'|' to separate the list items ('%s' instead of '%s')\n",
@@ -1072,7 +1064,6 @@ int avfilter_init_str(AVFilterContext *filter, const char *args)
             } else {
                 ret = process_options(filter, &options, copy);
             }
-#endif
             av_freep(&copy);
 
             if (ret < 0)
