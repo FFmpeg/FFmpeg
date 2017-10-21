@@ -160,8 +160,8 @@
 #ifndef FF_API_AVCTX_TIMEBASE
 #define FF_API_AVCTX_TIMEBASE    (LIBAVCODEC_VERSION_MAJOR < 59)
 #endif
-#ifndef FF_API_MPV_OPT /* To be removed with ffserver removal */
-#define FF_API_MPV_OPT           1
+#ifndef FF_API_MPV_OPT
+#define FF_API_MPV_OPT           (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif
 #ifndef FF_API_STREAM_CODEC_TAG
 #define FF_API_STREAM_CODEC_TAG  (LIBAVCODEC_VERSION_MAJOR < 58)
