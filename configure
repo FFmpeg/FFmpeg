@@ -217,7 +217,6 @@ External library support:
   --enable-gnutls          enable gnutls, needed for https support
                            if openssl is not used [no]
   --disable-iconv          disable iconv [autodetect]
-  --disable-jack           disable libjack support [autodetect]
   --enable-jni             enable JNI support [no]
   --enable-ladspa          enable LADSPA audio filtering [no]
   --enable-libass          enable libass subtitles rendering,
@@ -238,6 +237,7 @@ External library support:
   --enable-libgsm          enable GSM de/encoding via libgsm [no]
   --enable-libiec61883     enable iec61883 via libiec61883 [no]
   --enable-libilbc         enable iLBC de/encoding via libilbc [no]
+  --enable-libjack         enable JACK audio sound server [no]
   --enable-libkvazaar      enable HEVC encoding via libkvazaar [no]
   --enable-libmodplug      enable ModPlug via libmodplug [no]
   --enable-libmp3lame      enable MP3 encoding via libmp3lame [no]
@@ -1534,7 +1534,6 @@ EXTERNAL_AUTODETECT_LIBRARY_LIST="
     bzlib
     coreimage
     iconv
-    jack
     libxcb
     libxcb_shm
     libxcb_shape
@@ -1604,6 +1603,7 @@ EXTERNAL_LIBRARY_LIST="
     libgsm
     libiec61883
     libilbc
+    libjack
     libkvazaar
     libmodplug
     libmp3lame
@@ -3118,7 +3118,7 @@ gdigrab_indev_deps="CreateDIBSection"
 gdigrab_indev_extralibs="-lgdi32"
 gdigrab_indev_select="bmp_decoder"
 iec61883_indev_deps="libiec61883"
-jack_indev_deps="jack"
+jack_indev_deps="libjack"
 jack_indev_deps_any="sem_timedwait dispatch_dispatch_h"
 kmsgrab_indev_deps="libdrm"
 lavfi_indev_deps="avfilter"
@@ -6258,8 +6258,10 @@ check_header soundcard.h
 enabled alsa && use_pkg_config alsa alsa "alsa/asoundlib.h" snd_pcm_htimestamp ||
     check_lib alsa alsa/asoundlib.h snd_pcm_htimestamp -lasound
 
-enabled jack && check_lib jack jack/jack.h jack_client_open -ljack &&
-    check_func jack_port_get_latency_range -ljack
+if enabled libjack; then
+    check_pkg_config libjack jack jack/jack.h jack_port_get_latency_range ||
+    require_pkg_config libjack jack jack/jack.h jack_client_open
+fi
 
 enabled sndio && check_lib sndio sndio.h sio_open -lsndio
 
