@@ -521,6 +521,7 @@ typedef struct H264Context {
     uint8_t *direct_table;
     uint8_t direct_cache[5 * 8];
 
+    uint8_t scan_padding[16];
     uint8_t zigzag_scan[16];
     uint8_t zigzag_scan8x8[64];
     uint8_t zigzag_scan8x8_cavlc[64];
