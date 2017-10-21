@@ -193,9 +193,6 @@ ffplay
 ffprobe
     issues in or related to ffprobe.c
 
-ffserver
-    issues in or related to ffserver.c
-
 postproc
     issues in libpostproc/*
 

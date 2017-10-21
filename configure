@@ -116,7 +116,6 @@ Program options:
   --disable-ffmpeg         disable ffmpeg build
   --disable-ffplay         disable ffplay build
   --disable-ffprobe        disable ffprobe build
-  --disable-ffserver       disable ffserver build
 
 Documentation options:
   --disable-doc            do not build documentation
@@ -1722,7 +1721,6 @@ LICENSE_LIST="
 PROGRAM_LIST="
     ffplay
     ffprobe
-    ffserver
     ffmpeg
 "
 
@@ -3358,8 +3356,6 @@ ffplay_select="rdft crop_filter transpose_filter hflip_filter vflip_filter rotat
 ffplay_suggest="shell32"
 ffprobe_deps="avcodec avformat"
 ffprobe_suggest="shell32"
-ffserver_deps="avformat fork sarestart"
-ffserver_select="ffm_muxer rtp_protocol rtsp_demuxer"
 
 # documentation
 podpages_deps="perl"

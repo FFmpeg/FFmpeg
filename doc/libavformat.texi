@@ -26,13 +26,13 @@ resource.
 @chapter See Also
 
 @ifhtml
-@url{ffmpeg.html,ffmpeg}, @url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe}, @url{ffserver.html,ffserver},
+@url{ffmpeg.html,ffmpeg}, @url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe},
 @url{ffmpeg-formats.html,ffmpeg-formats}, @url{ffmpeg-protocols.html,ffmpeg-protocols},
 @url{libavutil.html,libavutil}, @url{libavcodec.html,libavcodec}
 @end ifhtml
 
 @ifnothtml
-ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1),
+ffmpeg(1), ffplay(1), ffprobe(1),
 ffmpeg-formats(1), ffmpeg-protocols(1),
 libavutil(3), libavcodec(3)
 @end ifnothtml

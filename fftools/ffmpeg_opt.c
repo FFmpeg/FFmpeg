@@ -117,7 +117,6 @@ static int file_overwrite     = 0;
 static int no_file_overwrite  = 0;
 static int do_psnr            = 0;
 static int input_sync;
-static int override_ffserver  = 0;
 static int input_stream_potentially_available = 0;
 static int ignore_unknown_streams = 0;
 static int copy_unknown_streams = 0;
@@ -1997,58 +1996,6 @@ static int copy_chapters(InputFile *ifile, OutputFile *ofile, int copy_metadata)
     return 0;
 }
 
-static int read_ffserver_streams(OptionsContext *o, AVFormatContext *s, const char *filename)
-{
-    int i, err;
-    AVFormatContext *ic = avformat_alloc_context();
-    if (!ic)
-        return AVERROR(ENOMEM);
-
-    ic->interrupt_callback = int_cb;
-    err = avformat_open_input(&ic, filename, NULL, NULL);
-    if (err < 0)
-        return err;
-    /* copy stream format */
-    for(i=0;i<ic->nb_streams;i++) {
-        AVStream *st;
-        OutputStream *ost;
-        AVCodec *codec;
-        const char *enc_config;
-
-        codec = avcodec_find_encoder(ic->streams[i]->codecpar->codec_id);
-        if (!codec) {
-            av_log(s, AV_LOG_ERROR, "no encoder found for codec id %i\n", ic->streams[i]->codecpar->codec_id);
-            return AVERROR(EINVAL);
-        }
-        if (codec->type == AVMEDIA_TYPE_AUDIO)
-            opt_audio_codec(o, "c:a", codec->name);
-        else if (codec->type == AVMEDIA_TYPE_VIDEO)
-            opt_video_codec(o, "c:v", codec->name);
-        ost   = new_output_stream(o, s, codec->type, -1);
-        st    = ost->st;
-
-        avcodec_get_context_defaults3(st->codec, codec);
-        enc_config = av_stream_get_recommended_encoder_configuration(ic->streams[i]);
-        if (enc_config) {
-            AVDictionary *opts = NULL;
-            av_dict_parse_string(&opts, enc_config, "=", ",", 0);
-            av_opt_set_dict2(st->codec, &opts, AV_OPT_SEARCH_CHILDREN);
-            av_dict_free(&opts);
-        }
-
-        if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && !ost->stream_copy)
-            choose_sample_fmt(st, codec);
-        else if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && !ost->stream_copy)
-            choose_pixel_fmt(st, st->codec, codec, st->codecpar->format);
-        avcodec_copy_context(ost->enc_ctx, st->codec);
-        if (enc_config)
-            av_dict_parse_string(&ost->encoder_opts, enc_config, "=", ",", 0);
-    }
-
-    avformat_close_input(&ic);
-    return err;
-}
-
 static void init_output_filter(OutputFilter *ofilter, OptionsContext *o,
                                AVFormatContext *oc)
 {
@@ -2187,47 +2134,7 @@ static int open_output_file(OptionsContext *o, const char *filename)
         }
     }
 
-    /* ffserver seeking with date=... needs a date reference */
-    if (!strcmp(file_oformat->name, "ffm") &&
-        !(format_flags & AVFMT_FLAG_BITEXACT) &&
-        av_strstart(filename, "http:", NULL)) {
-        int err = parse_option(o, "metadata", "creation_time=now", options);
-        if (err < 0) {
-            print_error(filename, err);
-            exit_program(1);
-        }
-    }
-
-    if (!strcmp(file_oformat->name, "ffm") && !override_ffserver &&
-        av_strstart(filename, "http:", NULL)) {
-        int j;
-        /* special case for files sent to ffserver: we get the stream
-           parameters from ffserver */
-        int err = read_ffserver_streams(o, oc, filename);
-        if (err < 0) {
-            print_error(filename, err);
-            exit_program(1);
-        }
-        for(j = nb_output_streams - oc->nb_streams; j < nb_output_streams; j++) {
-            ost = output_streams[j];
-            for (i = 0; i < nb_input_streams; i++) {
-                ist = input_streams[i];
-                if(ist->st->codecpar->codec_type == ost->st->codecpar->codec_type){
-                    ost->sync_ist= ist;
-                    ost->source_index= i;
-                    if(ost->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) ost->avfilter = av_strdup("anull");
-                    if(ost->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) ost->avfilter = av_strdup("null");
-                    ist->discard = 0;
-                    ist->st->discard = ist->user_set_discard;
-                    break;
-                }
-            }
-            if(!ost->sync_ist){
-                av_log(NULL, AV_LOG_FATAL, "Missing %s stream which is required by this ffm\n", av_get_media_type_string(ost->st->codecpar->codec_type));
-                exit_program(1);
-            }
-        }
-    } else if (!o->nb_stream_maps) {
+    if (!o->nb_stream_maps) {
         char *subtitle_codec_name = NULL;
         /* pick the "best" stream of each type */
 
@@ -3719,8 +3626,6 @@ const OptionDef options[] = {
         "set the maximum demux-decode delay", "seconds" },
     { "muxpreload", OPT_FLOAT | HAS_ARG | OPT_EXPERT | OPT_OFFSET | OPT_OUTPUT, { .off = OFFSET(mux_preload) },
         "set the initial demux-decode delay", "seconds" },
-    { "override_ffserver", OPT_BOOL | OPT_EXPERT | OPT_OUTPUT, { &override_ffserver },
-        "override the options from ffserver", "" },
     { "sdp_file", HAS_ARG | OPT_EXPERT | OPT_OUTPUT, { .func_arg = opt_sdp_file },
         "specify a file in which to print sdp information", "file" },
 
