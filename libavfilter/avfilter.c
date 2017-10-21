@@ -931,13 +931,6 @@ static int process_options(AVFilterContext *ctx, AVDictionary **options,
     return count;
 }
 
-#if FF_API_AVFILTER_INIT_FILTER
-int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque)
-{
-    return avfilter_init_str(filter, args);
-}
-#endif
-
 int avfilter_init_dict(AVFilterContext *ctx, AVDictionary **options)
 {
     int ret = 0;
