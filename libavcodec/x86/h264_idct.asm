@@ -995,7 +995,30 @@ REP_RET
     SWAP %1, %4, %3
 %endmacro
 
-%macro DEQUANT_MMX 3
+%macro DEQUANT 1-3
+%if cpuflag(sse2)
+    movd      xmm4, t3d
+    movq      xmm5, [pw_1]
+    pshufd    xmm4, xmm4, 0
+    movq2dq   xmm0, m0
+    movq2dq   xmm1, m1
+    movq2dq   xmm2, m2
+    movq2dq   xmm3, m3
+    punpcklwd xmm0, xmm5
+    punpcklwd xmm1, xmm5
+    punpcklwd xmm2, xmm5
+    punpcklwd xmm3, xmm5
+    pmaddwd   xmm0, xmm4
+    pmaddwd   xmm1, xmm4
+    pmaddwd   xmm2, xmm4
+    pmaddwd   xmm3, xmm4
+    psrad     xmm0, %1
+    psrad     xmm1, %1
+    psrad     xmm2, %1
+    psrad     xmm3, %1
+    packssdw  xmm0, xmm1
+    packssdw  xmm2, xmm3
+%else
     mova        m7, [pw_1]
     mova        m4, %1
     punpcklwd   %1, m7
@@ -1015,6 +1038,7 @@ REP_RET
     psrad       m5, %3
     packssdw    %1, m4
     packssdw    %2, m5
+%endif
 %endmacro
 
 %macro STORE_WORDS 5-9
@@ -1053,35 +1077,15 @@ REP_RET
 
 %macro DEQUANT_STORE 1
 %if cpuflag(sse2)
-    movd      xmm4, t3d
-    movq      xmm5, [pw_1]
-    pshufd    xmm4, xmm4, 0
-    movq2dq   xmm0, m0
-    movq2dq   xmm1, m1
-    movq2dq   xmm2, m2
-    movq2dq   xmm3, m3
-    punpcklwd xmm0, xmm5
-    punpcklwd xmm1, xmm5
-    punpcklwd xmm2, xmm5
-    punpcklwd xmm3, xmm5
-    pmaddwd   xmm0, xmm4
-    pmaddwd   xmm1, xmm4
-    pmaddwd   xmm2, xmm4
-    pmaddwd   xmm3, xmm4
-    psrad     xmm0, %1
-    psrad     xmm1, %1
-    psrad     xmm2, %1
-    psrad     xmm3, %1
-    packssdw  xmm0, xmm1
-    packssdw  xmm2, xmm3
+    DEQUANT     %1
     STORE_WORDS xmm0,  0,  1,  4,  5,  2,  3,  6,  7
     STORE_WORDS xmm2,  8,  9, 12, 13, 10, 11, 14, 15
 %else
-    DEQUANT_MMX m0, m1, %1
+    DEQUANT     m0, m1, %1
     STORE_WORDS m0,  0,  1,  4,  5
     STORE_WORDS m1,  2,  3,  6,  7
 
-    DEQUANT_MMX m2, m3, %1
+    DEQUANT     m2, m3, %1
     STORE_WORDS m2,  8,  9, 12, 13
     STORE_WORDS m3, 10, 11, 14, 15
 %endif
