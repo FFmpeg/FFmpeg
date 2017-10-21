@@ -55,9 +55,6 @@
  * at once through the bump. This improves the git bisect-ability of the change.
  *
  */
-#ifndef FF_API_LAVF_BITEXACT
-#define FF_API_LAVF_BITEXACT            (LIBAVFORMAT_VERSION_MAJOR < 58)
-#endif
 #ifndef FF_API_LAVF_FRAC
 #define FF_API_LAVF_FRAC                (LIBAVFORMAT_VERSION_MAJOR < 58)
 #endif
