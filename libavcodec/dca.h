@@ -213,7 +213,7 @@ int avpriv_dca_convert_bitstream(const uint8_t *src, int src_size, uint8_t *dst,
  * Parse and validate core frame header
  * @return 0 on success, negative DCA_PARSE_ERROR_ code on failure
  */
-int avpriv_dca_parse_core_frame_header(DCACoreFrameHeader *h, uint8_t *buf, int size);
+int avpriv_dca_parse_core_frame_header(DCACoreFrameHeader *h, const uint8_t *buf, int size);
 
 int ff_dca_parse_core_frame_header(DCACoreFrameHeader *h, GetBitContext *gb);
 
