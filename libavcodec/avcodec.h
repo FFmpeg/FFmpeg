@@ -1031,13 +1031,6 @@ typedef struct RcOverride{
  */
 #define AV_CODEC_CAP_SMALL_LAST_FRAME    (1 <<  6)
 
-#if FF_API_CAP_VDPAU
-/**
- * Codec can export data for HW decoding (VDPAU).
- */
-#define AV_CODEC_CAP_HWACCEL_VDPAU       (1 <<  7)
-#endif
-
 /**
  * Codec can output multiple frames per AVPacket
  * Normally demuxers return one frame at a time, demuxers which do not do
@@ -1222,12 +1215,7 @@ typedef struct RcOverride{
  * This can be used to prevent truncation of the last audio samples.
  */
 #define CODEC_CAP_SMALL_LAST_FRAME AV_CODEC_CAP_SMALL_LAST_FRAME
-#if FF_API_CAP_VDPAU
-/**
- * Codec can export data for HW decoding (VDPAU).
- */
-#define CODEC_CAP_HWACCEL_VDPAU    AV_CODEC_CAP_HWACCEL_VDPAU
-#endif
+
 /**
  * Codec can output multiple frames per AVPacket
  * Normally demuxers return one frame at a time, demuxers which do not do

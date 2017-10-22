@@ -527,10 +527,6 @@ static void flush_dpb(AVCodecContext *avctx)
     h->context_initialized = 0;
 }
 
-#if FF_API_CAP_VDPAU
-static const uint8_t start_code[] = { 0x00, 0x00, 0x01 };
-#endif
-
 static int get_last_needed_nal(H264Context *h)
 {
     int nals_needed = 0;
@@ -688,11 +684,6 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
                 if (h->avctx->hwaccel &&
                     (ret = h->avctx->hwaccel->start_frame(h->avctx, buf, buf_size)) < 0)
                     goto end;
-#if FF_API_CAP_VDPAU
-                if (CONFIG_H264_VDPAU_DECODER &&
-                    h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU)
-                    ff_vdpau_h264_picture_start(h);
-#endif
             }
 
             max_slice_ctx = avctx->hwaccel ? 1 : h->nb_slice_ctx;
@@ -701,18 +692,6 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
                     ret = avctx->hwaccel->decode_slice(avctx, nal->raw_data, nal->raw_size);
                     h->nb_slice_ctx_queued = 0;
                 } else
-#if FF_API_CAP_VDPAU
-            if (CONFIG_H264_VDPAU_DECODER &&
-                       h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU) {
-                ff_vdpau_add_data_chunk(h->cur_pic_ptr->f->data[0],
-                                        start_code,
-                                        sizeof(start_code));
-                ff_vdpau_add_data_chunk(h->cur_pic_ptr->f->data[0],
-                                        nal->raw_data,
-                                        nal->raw_size);
-                ret = 0;
-            } else
-#endif
                     ret = ff_h264_execute_decode_slices(h);
                 if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
                     goto end;
