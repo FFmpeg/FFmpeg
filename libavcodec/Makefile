@@ -45,8 +45,6 @@ OBJS = allcodecs.o                                                      \
        profiles.o                                                       \
        qsv_api.o                                                        \
        raw.o                                                            \
-       resample.o                                                       \
-       resample2.o                                                      \
        utils.o                                                          \
        vorbis_parser.o                                                  \
        xiph.o                                                           \
