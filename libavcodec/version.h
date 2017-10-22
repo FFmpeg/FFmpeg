@@ -51,9 +51,6 @@
  * at once through the bump. This improves the git bisect-ability of the change.
  */
 
-#ifndef FF_API_VIMA_DECODER
-#define FF_API_VIMA_DECODER     (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
 #ifndef FF_API_LOWRES
 #define FF_API_LOWRES            (LIBAVCODEC_VERSION_MAJOR < 59)
 #endif
