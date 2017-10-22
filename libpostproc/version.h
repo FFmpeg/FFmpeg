@@ -42,8 +42,4 @@
 
 #define LIBPOSTPROC_IDENT       "postproc" AV_STRINGIFY(LIBPOSTPROC_VERSION)
 
-#ifndef FF_API_QP_TYPE
-#define FF_API_QP_TYPE     (LIBPOSTPROC_VERSION_MAJOR < 55)
-#endif
-
 #endif /* POSTPROC_VERSION_H */

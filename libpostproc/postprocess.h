@@ -53,10 +53,6 @@ const char *postproc_license(void);
 
 #define PP_QUALITY_MAX 6
 
-#if FF_API_QP_TYPE
-#define QP_STORE_T int8_t //deprecated
-#endif
-
 #include <inttypes.h>
 
 typedef void pp_context;
