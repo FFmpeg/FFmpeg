@@ -20,7 +20,6 @@ HEADERS = avcodec.h                                                     \
           xvmc.h                                                        \
 
 OBJS = allcodecs.o                                                      \
-       audioconvert.o                                                   \
        avdct.o                                                          \
        avpacket.o                                                       \
        avpicture.o                                                      \
