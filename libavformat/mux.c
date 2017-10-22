@@ -674,7 +674,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
  */
 static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret, did_split;
+    int ret;
     int64_t pts_backup, dts_backup;
 
     pts_backup = pkt->pts;
@@ -739,12 +739,6 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
-#if FF_API_LAVF_MERGE_SD
-FF_DISABLE_DEPRECATION_WARNINGS
-    did_split = av_packet_split_side_data(pkt);
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     if (!s->internal->header_written) {
         ret = s->internal->write_header_ret ? s->internal->write_header_ret : write_header_internal(s);
         if (ret < 0)
@@ -767,12 +761,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
 fail:
-#if FF_API_LAVF_MERGE_SD
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (did_split)
-        av_packet_merge_side_data(pkt);
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     if (ret < 0) {
         pkt->pts = pts_backup;
@@ -868,16 +856,6 @@ static int do_packet_auto_bsf(AVFormatContext *s, AVPacket *pkt) {
                 st->internal->bitstream_checked = 1;
         }
     }
-
-#if FF_API_LAVF_MERGE_SD
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (st->internal->nb_bsfcs) {
-        ret = av_packet_split_side_data(pkt);
-        if (ret < 0)
-            av_log(s, AV_LOG_WARNING, "Failed to split side data before bitstream filter\n");
-    }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     for (i = 0; i < st->internal->nb_bsfcs; i++) {
         AVBSFContext *ctx = st->internal->bsfcs[i];
