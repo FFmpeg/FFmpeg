@@ -364,13 +364,6 @@ int avio_feof(AVIOContext *s)
     return s->eof_reached;
 }
 
-#if FF_API_URL_FEOF
-int url_feof(AVIOContext *s)
-{
-    return avio_feof(s);
-}
-#endif
-
 void avio_wl32(AVIOContext *s, unsigned int val)
 {
     avio_w8(s, (uint8_t) val       );

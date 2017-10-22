@@ -55,9 +55,6 @@
  * at once through the bump. This improves the git bisect-ability of the change.
  *
  */
-#ifndef FF_API_URL_FEOF
-#define FF_API_URL_FEOF                 (LIBAVFORMAT_VERSION_MAJOR < 58)
-#endif
 #ifndef FF_API_LAVF_FMT_RAWPICTURE
 #define FF_API_LAVF_FMT_RAWPICTURE      (LIBAVFORMAT_VERSION_MAJOR < 58)
 #endif
