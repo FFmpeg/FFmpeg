@@ -198,16 +198,6 @@ unsigned avcodec_get_edge_width(void)
 }
 #endif
 
-#if FF_API_SET_DIMENSIONS
-void avcodec_set_dimensions(AVCodecContext *s, int width, int height)
-{
-    int ret = ff_set_dimensions(s, width, height);
-    if (ret < 0) {
-        av_log(s, AV_LOG_WARNING, "Failed to set dimensions %d %d\n", width, height);
-    }
-}
-#endif
-
 int ff_set_dimensions(AVCodecContext *s, int width, int height)
 {
     int ret = av_image_check_size2(width, height, s->max_pixels, AV_PIX_FMT_NONE, 0, s);
