@@ -373,10 +373,6 @@ int ff_set_sar(AVCodecContext *avctx, AVRational sar);
 int ff_side_data_update_matrix_encoding(AVFrame *frame,
                                         enum AVMatrixEncoding matrix_encoding);
 
-#if FF_API_MERGE_SD
-int ff_packet_split_and_drop_side_data(AVPacket *pkt);
-#endif
-
 /**
  * Select the (possibly hardware accelerated) pixel format.
  * This is a wrapper around AVCodecContext.get_format() and should be used
