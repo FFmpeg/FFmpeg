@@ -57,9 +57,6 @@
 #ifndef FF_API_DEBUG_MV
 #define FF_API_DEBUG_MV          (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif
-#ifndef FF_API_ERROR_RATE
-#define FF_API_ERROR_RATE        (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
 #ifndef FF_API_QSCALE_TYPE
 #define FF_API_QSCALE_TYPE       (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif
