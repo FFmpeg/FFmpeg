@@ -41,7 +41,6 @@
 #include "mpegvideo.h"
 #include "msmpeg4.h"
 #include "qpeldsp.h"
-#include "vdpau_compat.h"
 #include "thread.h"
 #include "wmv2.h"
 

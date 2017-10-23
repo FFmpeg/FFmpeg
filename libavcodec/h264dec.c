@@ -50,10 +50,10 @@
 #include "mathops.h"
 #include "me_cmp.h"
 #include "mpegutils.h"
+#include "mpeg4video.h"
 #include "profiles.h"
 #include "rectangle.h"
 #include "thread.h"
-#include "vdpau_compat.h"
 
 const uint16_t ff_h264_mb_sizes[4] = { 256, 384, 512, 768 };
 
@@ -1049,29 +1049,3 @@ AVCodec ff_h264_decoder = {
     .profiles              = NULL_IF_CONFIG_SMALL(ff_h264_profiles),
     .priv_class            = &h264_class,
 };
-
-#if CONFIG_H264_VDPAU_DECODER && FF_API_VDPAU
-static const AVClass h264_vdpau_class = {
-    .class_name = "H264 VDPAU Decoder",
-    .item_name  = av_default_item_name,
-    .option     = h264_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-AVCodec ff_h264_vdpau_decoder = {
-    .name           = "h264_vdpau",
-    .long_name      = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (VDPAU acceleration)"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_H264,
-    .priv_data_size = sizeof(H264Context),
-    .init           = h264_decode_init,
-    .close          = h264_decode_end,
-    .decode         = h264_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HWACCEL_VDPAU,
-    .flush          = flush_dpb,
-    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_VDPAU_H264,
-                                                     AV_PIX_FMT_NONE},
-    .profiles       = NULL_IF_CONFIG_SMALL(ff_h264_profiles),
-    .priv_class     = &h264_vdpau_class,
-};
-#endif

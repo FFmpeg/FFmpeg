@@ -37,7 +37,6 @@
 #include "profiles.h"
 #include "vc1.h"
 #include "vc1data.h"
-#include "vdpau_compat.h"
 #include "libavutil/avassert.h"
 
 
@@ -1158,38 +1157,6 @@ AVCodec ff_wmv3_decoder = {
     .flush          = ff_mpeg_flush,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .pix_fmts       = vc1_hwaccel_pixfmt_list_420,
-    .profiles       = NULL_IF_CONFIG_SMALL(ff_vc1_profiles)
-};
-#endif
-
-#if CONFIG_WMV3_VDPAU_DECODER && FF_API_VDPAU
-AVCodec ff_wmv3_vdpau_decoder = {
-    .name           = "wmv3_vdpau",
-    .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Video 9 VDPAU"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_WMV3,
-    .priv_data_size = sizeof(VC1Context),
-    .init           = vc1_decode_init,
-    .close          = ff_vc1_decode_end,
-    .decode         = vc1_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HWACCEL_VDPAU,
-    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_VDPAU_WMV3, AV_PIX_FMT_NONE },
-    .profiles       = NULL_IF_CONFIG_SMALL(ff_vc1_profiles)
-};
-#endif
-
-#if CONFIG_VC1_VDPAU_DECODER && FF_API_VDPAU
-AVCodec ff_vc1_vdpau_decoder = {
-    .name           = "vc1_vdpau",
-    .long_name      = NULL_IF_CONFIG_SMALL("SMPTE VC-1 VDPAU"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_VC1,
-    .priv_data_size = sizeof(VC1Context),
-    .init           = vc1_decode_init,
-    .close          = ff_vc1_decode_end,
-    .decode         = vc1_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HWACCEL_VDPAU,
-    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_VDPAU_VC1, AV_PIX_FMT_NONE },
     .profiles       = NULL_IF_CONFIG_SMALL(ff_vc1_profiles)
 };
 #endif
