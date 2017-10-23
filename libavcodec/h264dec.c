@@ -707,11 +707,6 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
             h->has_recovery_point = h->has_recovery_point || h->sei.recovery_point.recovery_frame_cnt != -1;
             if (avctx->debug & FF_DEBUG_GREEN_MD)
                 debug_green_metadata(&h->sei.green_metadata, h->avctx);
-#if FF_API_AFD
-FF_DISABLE_DEPRECATION_WARNINGS
-            h->avctx->dtg_active_format = h->sei.afd.active_format_description;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif /* FF_API_AFD */
             if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
                 goto end;
             break;
