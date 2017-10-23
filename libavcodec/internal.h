@@ -76,9 +76,7 @@
 #endif
 
 
-#if !FF_API_QUANT_BIAS
 #define FF_DEFAULT_QUANT_BIAS 999999
-#endif
 
 #define FF_QSCALE_TYPE_MPEG1 0
 #define FF_QSCALE_TYPE_MPEG2 1

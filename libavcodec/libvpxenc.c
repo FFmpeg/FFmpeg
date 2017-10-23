@@ -581,15 +581,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         enccfg.rc_buf_initial_sz =
             avctx->rc_initial_buffer_occupancy * 1000LL / avctx->bit_rate;
     enccfg.rc_buf_optimal_sz     = enccfg.rc_buf_sz * 5 / 6;
-#if FF_API_MPV_OPT
-    FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->rc_buffer_aggressivity != 1.0) {
-        av_log(avctx, AV_LOG_WARNING, "The rc_buffer_aggressivity option is "
-               "deprecated, use the undershoot-pct private option instead.\n");
-        enccfg.rc_undershoot_pct = lrint(avctx->rc_buffer_aggressivity * 100);
-    }
-    FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     if (ctx->rc_undershoot_pct >= 0)
         enccfg.rc_undershoot_pct = ctx->rc_undershoot_pct;
     if (ctx->rc_overshoot_pct >= 0)
@@ -688,15 +679,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         codecctl_int(avctx, VP8E_SET_NOISE_SENSITIVITY, ctx->noise_sensitivity);
         codecctl_int(avctx, VP8E_SET_TOKEN_PARTITIONS,  av_log2(avctx->slices));
     }
-#if FF_API_MPV_OPT
-    FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->mb_threshold) {
-        av_log(avctx, AV_LOG_WARNING, "The mb_threshold option is deprecated, "
-               "use the static-thresh private option instead.\n");
-        ctx->static_thresh = avctx->mb_threshold;
-    }
-    FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     codecctl_int(avctx, VP8E_SET_STATIC_THRESHOLD,  ctx->static_thresh);
     if (ctx->crf >= 0)
         codecctl_int(avctx, VP8E_SET_CQ_LEVEL,          ctx->crf);

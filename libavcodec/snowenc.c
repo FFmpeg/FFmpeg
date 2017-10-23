@@ -52,12 +52,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         av_log(avctx, AV_LOG_ERROR, "The 9/7 wavelet is incompatible with lossless mode.\n");
         return AVERROR(EINVAL);
     }
-#if FF_API_MOTION_EST
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->me_method == ME_ITER)
-        s->motion_est = FF_ME_ITER;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     s->spatial_decomposition_type= s->pred; //FIXME add decorrelator type r transform_type
 
@@ -1675,11 +1669,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         s->m.b8_stride= 2*s->m.mb_width+1;
         s->m.f_code=1;
         s->m.pict_type = pic->pict_type;
-#if FF_API_MOTION_EST
-FF_DISABLE_DEPRECATION_WARNINGS
-        s->m.me_method= s->avctx->me_method;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         s->m.motion_est= s->motion_est;
         s->m.me.scene_change_score=0;
         s->m.me.dia_size = avctx->dia_size;

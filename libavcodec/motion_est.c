@@ -313,26 +313,6 @@ int ff_init_me(MpegEncContext *s){
         return -1;
     }
 
-#if FF_API_MOTION_EST
-    //special case of snow is needed because snow uses its own iterative ME code
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (s->motion_est == FF_ME_EPZS) {
-        if (s->me_method == ME_ZERO)
-            s->motion_est = FF_ME_ZERO;
-        else if (s->me_method == ME_EPZS)
-            s->motion_est = FF_ME_EPZS;
-        else if (s->me_method == ME_X1)
-            s->motion_est = FF_ME_XONE;
-        else if (s->avctx->codec_id != AV_CODEC_ID_SNOW) {
-            av_log(s->avctx, AV_LOG_ERROR,
-                   "me_method is only allowed to be set to zero and epzs; "
-                   "for hex,umh,full and others see dia_size\n");
-            return -1;
-        }
-    }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     c->avctx= s->avctx;
 
     if(s->codec_id == AV_CODEC_ID_H261)
