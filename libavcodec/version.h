@@ -57,9 +57,6 @@
 #ifndef FF_API_DEBUG_MV
 #define FF_API_DEBUG_MV          (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif
-#ifndef FF_API_CODEC_NAME
-#define FF_API_CODEC_NAME        (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
 #ifndef FF_API_AFD
 #define FF_API_AFD               (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif
