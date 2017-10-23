@@ -57,10 +57,6 @@
 #ifndef FF_API_DEBUG_MV
 #define FF_API_DEBUG_MV          (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif
-#ifndef FF_API_VISMV
-/* XXX: don't forget to drop the -vismv documentation */
-#define FF_API_VISMV             (LIBAVCODEC_VERSION_MAJOR < 58)
-#endif
 #ifndef FF_API_VAAPI_CONTEXT
 #define FF_API_VAAPI_CONTEXT     (LIBAVCODEC_VERSION_MAJOR < 58)
 #endif

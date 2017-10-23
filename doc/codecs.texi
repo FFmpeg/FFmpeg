@@ -506,21 +506,6 @@ threading operations
 skip motion compensation
 @end table
 
-@item vismv @var{integer} (@emph{decoding,video})
-Visualize motion vectors (MVs).
-
-This option is deprecated, see the codecview filter instead.
-
-Possible values:
-@table @samp
-@item pf
-forward predicted MVs of P-frames
-@item bf
-forward predicted MVs of B-frames
-@item bb
-backward predicted MVs of B-frames
-@end table
-
 @item cmp @var{integer} (@emph{encoding,video})
 Set full pel me compare function.
 
