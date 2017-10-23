@@ -11545,6 +11545,13 @@ Default is @var{none}.
 
 @item new
 Take new palette for each output frame.
+
+@item alpha_threshold
+Sets the alpha threshold for transparency. Alpha values above this threshold
+will be treated as completely opaque, and values below this threshold will be
+treated as completely transparent.
+
+The option must be an integer value in the range [0,255]. Default is @var{128}.
 @end table
 
 @subsection Examples
