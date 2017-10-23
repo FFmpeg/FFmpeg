@@ -796,9 +796,6 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
                 ist->dec_ctx->height = st->codec->height;
                 ist->dec_ctx->coded_width  = st->codec->coded_width;
                 ist->dec_ctx->coded_height = st->codec->coded_height;
-#if FF_API_EMU_EDGE
-                ist->dec_ctx->flags |= CODEC_FLAG_EMU_EDGE;
-#endif
             }
 #endif
 

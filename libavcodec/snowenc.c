@@ -1622,11 +1622,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         s->lambda = 0;
     }//else keep previous frame's qlog until after motion estimation
 
-    if (s->current_picture->data[0]
-#if FF_API_EMU_EDGE
-        && !(s->avctx->flags&CODEC_FLAG_EMU_EDGE)
-#endif
-        ) {
+    if (s->current_picture->data[0]) {
         int w = s->avctx->width;
         int h = s->avctx->height;
 
