@@ -61,6 +61,7 @@ typedef struct LibRTMFPContext {
     unsigned int        windowDuration;
     unsigned int        pushLimit;
     char*               fallbackUrl;
+    int                 disableRateCtl;
 } LibRTMFPContext;
 
 static void rtmfp_log(unsigned int level, const char* fileName, long line, const char* message)
@@ -170,6 +171,7 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
         ctx->group.pushLimit = ctx->pushLimit;
         ctx->group.isPublisher = (flags & AVIO_FLAG_WRITE) > 1;
         ctx->group.isBlocking = 1;
+        ctx->group.disableRateControl = ctx->disableRateCtl>0;
         ctx->streamId = RTMFP_Connect2Group(ctx->id, ctx->publication, &ctx->rtmfp, &ctx->group, !ctx->audioUnbuffered, !ctx->videoUnbuffered, ctx->fallbackUrl);
     } else if (ctx->peerId)
         ctx->streamId = RTMFP_Connect2Peer(ctx->id, ctx->peerId, ctx->publication, 1);
@@ -258,6 +260,7 @@ static const AVOption options[] = {
     {"netgroup", "Publish/Play the stream into a NetGroup (multicast)", OFFSET(netgroup), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     {"fallbackUrl", "Try to play a unicast stream url until the NetGroup connection is not ready (can produce undefined behavior if the stream codecs are different)",
         OFFSET(fallbackUrl), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    {"disableRateControl", "For Netgroup disable the P2P connection rate control to avoid disconnection", OFFSET(disableRateCtl), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, DEC|ENC},
     {"pushLimit", "Specifies the maximum number (-1) of peers to which we will send push fragments", OFFSET(pushLimit), AV_OPT_TYPE_INT, {.i64 = 4 }, 0, 255, DEC|ENC},
     {"updatePeriod", "Specifies the interval in milliseconds between messages sent to peers informating them that the local node has new p2p multicast media fragments available",
         OFFSET(updatePeriod), AV_OPT_TYPE_INT, {.i64 = 100 }, 100, 10000, DEC|ENC},
