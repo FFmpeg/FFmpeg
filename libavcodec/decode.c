@@ -698,11 +698,9 @@ int ff_decode_get_hw_frames_ctx(AVCodecContext *avctx,
     ret = avcodec_get_hw_frames_parameters(avctx,
                                            avctx->hw_device_ctx,
                                            avctx->hwaccel->pix_fmt,
-                                           avctx->hw_frames_ctx);
-    if (ret < 0) {
-        av_buffer_unref(&avctx->hw_frames_ctx);
+                                           &avctx->hw_frames_ctx);
+    if (ret < 0)
         return ret;
-    }
 
     frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
 
