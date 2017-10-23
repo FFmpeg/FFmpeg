@@ -1069,20 +1069,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
             return ret;
     }
 
-#if FF_API_NORMALIZE_AQP
-    FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->flags & CODEC_FLAG_NORMALIZE_AQP)
-        s->mpv_flags |= FF_MPV_FLAG_NAQ;
-    FF_ENABLE_DEPRECATION_WARNINGS;
-#endif
-
-#if FF_API_MV0
-    FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->flags & CODEC_FLAG_MV0)
-        s->mpv_flags |= FF_MPV_FLAG_MV0;
-    FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
 #if FF_API_MPV_OPT
     FF_DISABLE_DEPRECATION_WARNINGS
     if (avctx->rc_qsquish != 0.0)

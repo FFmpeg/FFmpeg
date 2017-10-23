@@ -462,11 +462,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
     /* Bring in VOL flags from ffmpeg command-line */
-#if FF_API_GMC
-    if (avctx->flags & CODEC_FLAG_GMC)
-        x->gmc = 1;
-#endif
-
     x->vol_flags = 0;
     if (x->gmc) {
         x->vol_flags |= XVID_VOL_GMC;
