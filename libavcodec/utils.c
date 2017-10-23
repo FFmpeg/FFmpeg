@@ -1008,11 +1008,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     ret=0;
 
-#if FF_API_AUDIOENC_DELAY
-    if (av_codec_is_encoder(avctx->codec))
-        avctx->delay = avctx->initial_padding;
-#endif
-
     if (av_codec_is_decoder(avctx->codec)) {
         if (!avctx->bit_rate)
             avctx->bit_rate = get_bit_rate(avctx);
