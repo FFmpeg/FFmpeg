@@ -1504,14 +1504,6 @@ typedef struct AVCodecContext {
      */
     unsigned int codec_tag;
 
-#if FF_API_STREAM_CODEC_TAG
-    /**
-     * @deprecated this field is unused
-     */
-    attribute_deprecated
-    unsigned int stream_codec_tag;
-#endif
-
     void *priv_data;
 
     /**
