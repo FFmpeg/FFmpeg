@@ -757,8 +757,6 @@ Set context model.
 
 @item slice_flags @var{integer}
 
-@item xvmc_acceleration @var{integer}
-
 @item mbd @var{integer} (@emph{encoding,video})
 Set macroblock decision algorithm (high quality mode).
 

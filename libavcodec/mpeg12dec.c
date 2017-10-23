@@ -1224,11 +1224,6 @@ static void setup_hwaccel_for_pixfmt(AVCodecContext *avctx)
         MpegEncContext *s = &s1->mpeg_enc_ctx;
 
         s->pack_pblocks = 1;
-#if FF_API_XVMC
-FF_DISABLE_DEPRECATION_WARNINGS
-        avctx->xvmc_acceleration = 2;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif /* FF_API_XVMC */
     }
 }
 
@@ -2914,44 +2909,6 @@ AVCodec ff_mpegvideo_decoder = {
     .flush          = flush,
     .max_lowres     = 3,
 };
-
-#if FF_API_XVMC
-#if CONFIG_MPEG_XVMC_DECODER
-FF_DISABLE_DEPRECATION_WARNINGS
-static av_cold int mpeg_mc_decode_init(AVCodecContext *avctx)
-{
-    if (avctx->active_thread_type & FF_THREAD_SLICE)
-        return -1;
-    if (!(avctx->slice_flags & SLICE_FLAG_CODED_ORDER))
-        return -1;
-    if (!(avctx->slice_flags & SLICE_FLAG_ALLOW_FIELD)) {
-        ff_dlog(avctx, "mpeg12.c: XvMC decoder will work better if SLICE_FLAG_ALLOW_FIELD is set\n");
-    }
-    mpeg_decode_init(avctx);
-
-    avctx->pix_fmt           = AV_PIX_FMT_XVMC_MPEG2_IDCT;
-    avctx->xvmc_acceleration = 2; // 2 - the blocks are packed!
-
-    return 0;
-}
-
-AVCodec ff_mpeg_xvmc_decoder = {
-    .name           = "mpegvideo_xvmc",
-    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-1/2 video XvMC (X-Video Motion Compensation)"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MPEG2VIDEO_XVMC,
-    .priv_data_size = sizeof(Mpeg1Context),
-    .init           = mpeg_mc_decode_init,
-    .close          = mpeg_decode_end,
-    .decode         = mpeg_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 |
-                      AV_CODEC_CAP_TRUNCATED | CODEC_CAP_HWACCEL |
-                      AV_CODEC_CAP_DELAY,
-    .flush          = flush,
-};
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-#endif /* FF_API_XVMC */
 
 #if CONFIG_MPEG_VDPAU_DECODER && FF_API_VDPAU
 AVCodec ff_mpeg_vdpau_decoder = {

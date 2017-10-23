@@ -109,9 +109,6 @@
 #ifndef FF_API_VDPAU
 #define FF_API_VDPAU                    (LIBAVUTIL_VERSION_MAJOR < 56)
 #endif
-#ifndef FF_API_XVMC
-#define FF_API_XVMC                     (LIBAVUTIL_VERSION_MAJOR < 56)
-#endif
 #ifndef FF_API_OPT_TYPE_METADATA
 #define FF_API_OPT_TYPE_METADATA        (LIBAVUTIL_VERSION_MAJOR < 56)
 #endif
