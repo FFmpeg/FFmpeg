@@ -1485,7 +1485,25 @@ static int packedCopyWrapper(SwsContext *c, const uint8_t *src[],
 
 #define DITHER_COPY(dst, dstStride, src, srcStride, bswap, dbswap)\
     unsigned shift= src_depth-dst_depth, tmp;\
-    if (shiftonly) {\
+    if (c->dither == SWS_DITHER_NONE) {\
+        for (i = 0; i < height; i++) {\
+            for (j = 0; j < length-7; j+=8) {\
+                dst[j+0] = dbswap(bswap(src[j+0])>>shift);\
+                dst[j+1] = dbswap(bswap(src[j+1])>>shift);\
+                dst[j+2] = dbswap(bswap(src[j+2])>>shift);\
+                dst[j+3] = dbswap(bswap(src[j+3])>>shift);\
+                dst[j+4] = dbswap(bswap(src[j+4])>>shift);\
+                dst[j+5] = dbswap(bswap(src[j+5])>>shift);\
+                dst[j+6] = dbswap(bswap(src[j+6])>>shift);\
+                dst[j+7] = dbswap(bswap(src[j+7])>>shift);\
+            }\
+            for (; j < length; j++) {\
+                dst[j] = dbswap(bswap(src[j])>>shift);\
+            }\
+            dst += dstStride;\
+            src += srcStride;\
+        }\
+    } else if (shiftonly) {\
         for (i = 0; i < height; i++) {\
             const uint8_t *dither= dithers[shift-1][i&7];\
             for (j = 0; j < length-7; j+=8) {\
