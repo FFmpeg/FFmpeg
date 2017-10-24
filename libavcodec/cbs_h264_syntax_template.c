@@ -761,7 +761,7 @@ static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
     end_position = get_bits_count(rw);
     if (end_position < start_position + 8 * current->payload_size) {
         av_log(ctx->log_ctx, AV_LOG_ERROR, "Incorrect SEI payload length: "
-               "header %d bits, actually %d bits.\n",
+               "header %"PRIu32" bits, actually %d bits.\n",
                8 * current->payload_size,
                end_position - start_position);
         return AVERROR_INVALIDDATA;
