@@ -342,6 +342,9 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
         } else if (h->rects[region_id]->nb_colors <= 16) {
             /* 4 bpp, standard encoding */
             bpp_index = 1;
+        } else if (h->rects[region_id]->nb_colors <= 256) {
+            /* 8 bpp, standard encoding */
+            bpp_index = 2;
         } else {
             return -1;
         }
