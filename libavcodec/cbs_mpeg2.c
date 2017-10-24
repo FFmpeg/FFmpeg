@@ -54,7 +54,7 @@
         xui(width, name, current->name)
 
 #define marker_bit() do { \
-        av_unused int one = 1; \
+        av_unused uint32_t one; \
         CHECK(ff_cbs_read_unsigned(ctx, rw, 1, "marker_bit", &one, 1, 1)); \
     } while (0)
 
