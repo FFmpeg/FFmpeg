@@ -73,7 +73,7 @@ static void print_formats(AVFilterContext *filter_ctx)
 
 int main(int argc, char **argv)
 {
-    AVFilter *filter;
+    const AVFilter *filter;
     AVFilterContext *filter_ctx;
     AVFilterGraph *graph_ctx;
     const char *filter_name;
