@@ -441,7 +441,7 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
     sps->vui.log2_max_mv_length_horizontal = 16;
     sps->vui.log2_max_mv_length_vertical   = 16;
     sps->vui.max_num_reorder_frames        = (ctx->b_per_p > 0);
-    sps->vui.max_dec_frame_buffering       = vseq->max_num_ref_frames;
+    sps->vui.max_dec_frame_buffering       = sps->max_num_ref_frames;
 
     pps->nal_unit_header.nal_ref_idc = 3;
     pps->nal_unit_header.nal_unit_type = H264_NAL_PPS;
