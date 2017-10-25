@@ -1347,21 +1347,16 @@ const AVCodecHWConfig *avcodec_get_hw_config(const AVCodec *codec, int index)
     return &codec->hw_configs[index]->public;
 }
 
-static AVHWAccel *first_hwaccel = NULL;
+#if FF_API_USER_VISIBLE_AVHWACCEL
+AVHWAccel *av_hwaccel_next(const AVHWAccel *hwaccel)
+{
+    return NULL;
+}
 
 void av_register_hwaccel(AVHWAccel *hwaccel)
 {
-    AVHWAccel **p = &first_hwaccel;
-    while (*p)
-        p = &(*p)->next;
-    *p = hwaccel;
-    hwaccel->next = NULL;
 }
-
-AVHWAccel *av_hwaccel_next(const AVHWAccel *hwaccel)
-{
-    return hwaccel ? hwaccel->next : first_hwaccel;
-}
+#endif
 
 int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op))
 {
