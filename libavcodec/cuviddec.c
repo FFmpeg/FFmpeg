@@ -1120,7 +1120,6 @@ static const AVCodecHWConfigInternal *cuvid_hw_configs[] = {
         .type           = AVMEDIA_TYPE_VIDEO, \
         .id             = AV_CODEC_ID_##X, \
         .pix_fmt        = AV_PIX_FMT_CUDA, \
-        .decoder_class  = &x##_cuvid_class, \
     }; \
     AVCodec ff_##x##_cuvid_decoder = { \
         .name           = #x "_cuvid", \
@@ -1135,7 +1134,6 @@ static const AVCodecHWConfigInternal *cuvid_hw_configs[] = {
         .receive_frame  = cuvid_output_frame, \
         .flush          = cuvid_flush, \
         .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING, \
-        .caps_internal  = FF_CODEC_CAP_HWACCEL_REQUIRE_CLASS, \
         .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_CUDA, \
                                                         AV_PIX_FMT_NV12, \
                                                         AV_PIX_FMT_P010, \

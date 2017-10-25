@@ -69,11 +69,6 @@
  */
 #define FF_CODEC_CAP_SLICE_THREAD_HAS_MF    (1 << 5)
 
-/**
- * Allow only AVHWAccels which have a matching decoder_class field.
- */
-#define FF_CODEC_CAP_HWACCEL_REQUIRE_CLASS  (1 << 6)
-
 #ifdef TRACE
 #   define ff_tlog(ctx, ...) av_log(ctx, AV_LOG_TRACE, __VA_ARGS__)
 #else
@@ -377,6 +372,12 @@ int ff_side_data_update_matrix_encoding(AVFrame *frame,
  * Select the (possibly hardware accelerated) pixel format.
  * This is a wrapper around AVCodecContext.get_format() and should be used
  * instead of calling get_format() directly.
+ *
+ * The list of pixel formats must contain at least one valid entry, and is
+ * terminated with AV_PIX_FMT_NONE.  If it is possible to decode to software,
+ * the last entry in the list must be the most accurate software format.
+ * If it is not possible to decode to software, AVCodecContext.sw_pix_fmt
+ * must be set before calling this function.
  */
 int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt);
 
