@@ -20,6 +20,7 @@
 #define AVCODEC_HWACCEL_H
 
 #include "avcodec.h"
+#include "hwaccels.h"
 
 
 #define HWACCEL_CAP_ASYNC_SAFE      (1 << 0)
@@ -38,5 +39,42 @@ typedef struct AVCodecHWConfigInternal {
     const AVHWAccel *hwaccel;
 } AVCodecHWConfigInternal;
 
+
+// These macros are used to simplify AVCodecHWConfigInternal definitions.
+
+#define HW_CONFIG_HWACCEL(device, frames, ad_hoc, format, device_type_, name) \
+    &(const AVCodecHWConfigInternal) { \
+        .public          = { \
+            .pix_fmt     = AV_PIX_FMT_ ## format, \
+            .methods     = (device ? AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX : 0) | \
+                           (frames ? AV_CODEC_HW_CONFIG_METHOD_HW_FRAMES_CTX : 0) | \
+                           (ad_hoc ? AV_CODEC_HW_CONFIG_METHOD_AD_HOC        : 0),  \
+            .device_type = AV_HWDEVICE_TYPE_ ## device_type_, \
+        }, \
+        .hwaccel         = &name, \
+    }
+
+#define HW_CONFIG_INTERNAL(format) \
+    &(const AVCodecHWConfigInternal) { \
+        .public          = { \
+            .pix_fmt     = AV_PIX_FMT_ ## format, \
+            .methods     = AV_CODEC_HW_CONFIG_METHOD_INTERNAL, \
+            .device_type = AV_HWDEVICE_TYPE_NONE, \
+        }, \
+        .hwaccel         = NULL, \
+    }
+
+#define HWACCEL_CUVID(codec) \
+    HW_CONFIG_HWACCEL(1, 1, 0, CUDA,         CUDA,         ff_ ## codec ## _cuvid_hwaccel)
+#define HWACCEL_DXVA2(codec) \
+    HW_CONFIG_HWACCEL(1, 1, 1, DXVA2_VLD,    DXVA2,        ff_ ## codec ## _dxva2_hwaccel)
+#define HWACCEL_D3D11VA2(codec) \
+    HW_CONFIG_HWACCEL(1, 1, 0, D3D11,        D3D11VA,      ff_ ## codec ## _d3d11va2_hwaccel)
+#define HWACCEL_VAAPI(codec) \
+    HW_CONFIG_HWACCEL(1, 1, 1, VAAPI,        VAAPI,        ff_ ## codec ## _vaapi_hwaccel)
+#define HWACCEL_VDPAU(codec) \
+    HW_CONFIG_HWACCEL(1, 1, 1, VDPAU,        VDPAU,        ff_ ## codec ## _vdpau_hwaccel)
+#define HWACCEL_D3D11VA(codec) \
+    HW_CONFIG_HWACCEL(0, 0, 1, D3D11VA_VLD,  NONE,         ff_ ## codec ## _d3d11va_hwaccel)
 
 #endif /* AVCODEC_HWACCEL_H */

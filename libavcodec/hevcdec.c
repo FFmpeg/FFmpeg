@@ -39,6 +39,7 @@
 #include "hevc.h"
 #include "hevc_data.h"
 #include "hevcdec.h"
+#include "hwaccel.h"
 #include "profiles.h"
 
 const uint8_t ff_hevc_qpel_extra_before[4] = { 0, 3, 3, 3 };
@@ -3120,4 +3121,25 @@ AVCodec ff_hevc_decoder = {
                              AV_CODEC_CAP_FRAME_THREADS,
     .profiles              = NULL_IF_CONFIG_SMALL(ff_hevc_profiles),
     .caps_internal         = FF_CODEC_CAP_EXPORTS_CROPPING | FF_CODEC_CAP_INIT_THREADSAFE,
+    .hw_configs            = (const AVCodecHWConfigInternal*[]) {
+#if CONFIG_HEVC_CUVID_HWACCEL
+                               HWACCEL_CUVID(hevc),
+#endif
+#if CONFIG_HEVC_DXVA2_HWACCEL
+                               HWACCEL_DXVA2(hevc),
+#endif
+#if CONFIG_HEVC_D3D11VA_HWACCEL
+                               HWACCEL_D3D11VA(hevc),
+#endif
+#if CONFIG_HEVC_D3D11VA2_HWACCEL
+                               HWACCEL_D3D11VA2(hevc),
+#endif
+#if CONFIG_HEVC_VAAPI_HWACCEL
+                               HWACCEL_VAAPI(hevc),
+#endif
+#if CONFIG_HEVC_VDPAU_HWACCEL
+                               HWACCEL_VDPAU(hevc),
+#endif
+                               NULL
+                           },
 };

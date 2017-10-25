@@ -195,6 +195,7 @@ AVCodec ff_mpeg2_qsv_decoder = {
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
                                                     AV_PIX_FMT_QSV,
                                                     AV_PIX_FMT_NONE },
+    .hw_configs     = ff_qsv_hw_configs,
     .wrapper_name   = "qsv",
 };
 #endif
@@ -231,6 +232,7 @@ AVCodec ff_vc1_qsv_decoder = {
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
                                                     AV_PIX_FMT_QSV,
                                                     AV_PIX_FMT_NONE },
+    .hw_configs     = ff_qsv_hw_configs,
     .wrapper_name   = "qsv",
 };
 #endif
@@ -267,6 +269,7 @@ AVCodec ff_vp8_qsv_decoder = {
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
                                                     AV_PIX_FMT_QSV,
                                                     AV_PIX_FMT_NONE },
+    .hw_configs     = ff_qsv_hw_configs,
     .wrapper_name   = "qsv",
 };
 #endif

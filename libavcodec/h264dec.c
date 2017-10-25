@@ -44,6 +44,7 @@
 #include "h264chroma.h"
 #include "h264_mvpred.h"
 #include "h264_ps.h"
+#include "hwaccel.h"
 #include "mathops.h"
 #include "me_cmp.h"
 #include "mpegutils.h"
@@ -786,6 +787,33 @@ AVCodec ff_h264_decoder = {
     .capabilities          = /*AV_CODEC_CAP_DRAW_HORIZ_BAND |*/ AV_CODEC_CAP_DR1 |
                              AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS |
                              AV_CODEC_CAP_FRAME_THREADS,
+    .hw_configs            = (const AVCodecHWConfigInternal*[]) {
+#if CONFIG_H264_CUVID_HWACCEL
+                               HWACCEL_CUVID(h264),
+#endif
+#if CONFIG_H264_DXVA2_HWACCEL
+                               HWACCEL_DXVA2(h264),
+#endif
+#if CONFIG_H264_D3D11VA_HWACCEL
+                               HWACCEL_D3D11VA(h264),
+#endif
+#if CONFIG_H264_D3D11VA2_HWACCEL
+                               HWACCEL_D3D11VA2(h264),
+#endif
+#if CONFIG_H264_VAAPI_HWACCEL
+                               HWACCEL_VAAPI(h264),
+#endif
+#if CONFIG_H264_VDPAU_HWACCEL
+                               HWACCEL_VDPAU(h264),
+#endif
+#if CONFIG_H264_VDA_HWACCEL
+                               HW_CONFIG_HWACCEL(0, 0, 1, VDA, NONE, ff_h264_vda_hwaccel),
+#endif
+#if CONFIG_H264_VDA_OLD_HWACCEL
+                               HW_CONFIG_HWACCEL(0, 0, 1, VDA_VLD, NONE, ff_h264_vda_old_hwaccel),
+#endif
+                               NULL
+                           },
     .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_EXPORTS_CROPPING,
     .flush                 = flush_dpb,
     .init_thread_copy      = ONLY_IF_THREADS_ENABLED(decode_init_thread_copy),

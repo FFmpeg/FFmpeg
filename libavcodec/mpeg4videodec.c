@@ -21,6 +21,7 @@
  */
 
 #include "error_resilience.h"
+#include "hwaccel.h"
 #include "idctdsp.h"
 #include "internal.h"
 #include "mpegutils.h"
@@ -2625,6 +2626,15 @@ AVCodec ff_mpeg4_decoder = {
     .capabilities          = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 |
                              AV_CODEC_CAP_TRUNCATED | AV_CODEC_CAP_DELAY |
                              AV_CODEC_CAP_FRAME_THREADS,
+    .hw_configs            = (const AVCodecHWConfigInternal*[]) {
+#if CONFIG_MPEG4_VAAPI_HWACCEL
+                               HWACCEL_VAAPI(mpeg4),
+#endif
+#if CONFIG_MPEG4_VDPAU_HWACCEL
+                               HWACCEL_VDPAU(mpeg4),
+#endif
+                               NULL
+                           },
     .flush                 = ff_mpeg_flush,
     .pix_fmts              = ff_h263_hwaccel_pixfmt_list_420,
     .profiles              = NULL_IF_CONFIG_SMALL(ff_mpeg4_video_profiles),

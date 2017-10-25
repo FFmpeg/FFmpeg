@@ -27,6 +27,7 @@
 #include "libavutil/imgutils.h"
 
 #include "avcodec.h"
+#include "hwaccel.h"
 #include "internal.h"
 #include "mathops.h"
 #include "rectangle.h"
@@ -2851,6 +2852,12 @@ AVCodec ff_vp8_decoder = {
     .decode                = ff_vp8_decode_frame,
     .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS |
                              AV_CODEC_CAP_SLICE_THREADS,
+    .hw_configs            = (const AVCodecHWConfigInternal*[]) {
+#if CONFIG_VP8_VAAPI_HWACCEL
+                               HWACCEL_VAAPI(vp8),
+#endif
+                               NULL
+                           },
     .flush                 = vp8_decode_flush,
     .init_thread_copy      = ONLY_IF_THREADS_ENABLED(vp8_decode_init_thread_copy),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(vp8_decode_update_thread_context),

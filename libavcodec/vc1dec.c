@@ -29,6 +29,7 @@
 #include "avcodec.h"
 #include "blockdsp.h"
 #include "get_bits.h"
+#include "hwaccel.h"
 #include "internal.h"
 #include "mpeg_er.h"
 #include "mpegvideo.h"
@@ -986,6 +987,24 @@ AVCodec ff_vc1_decoder = {
     .flush          = ff_mpeg_flush,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .pix_fmts       = vc1_hwaccel_pixfmt_list_420,
+    .hw_configs     = (const AVCodecHWConfigInternal*[]) {
+#if CONFIG_VC1_DXVA2_HWACCEL
+                        HWACCEL_DXVA2(vc1),
+#endif
+#if CONFIG_VC1_D3D11VA_HWACCEL
+                        HWACCEL_D3D11VA(vc1),
+#endif
+#if CONFIG_VC1_D3D11VA2_HWACCEL
+                        HWACCEL_D3D11VA2(vc1),
+#endif
+#if CONFIG_VC1_VAAPI_HWACCEL
+                        HWACCEL_VAAPI(vc1),
+#endif
+#if CONFIG_VC1_VDPAU_HWACCEL
+                        HWACCEL_VDPAU(vc1),
+#endif
+                        NULL
+                    },
     .profiles       = NULL_IF_CONFIG_SMALL(ff_vc1_profiles)
 };
 
@@ -1002,6 +1021,24 @@ AVCodec ff_wmv3_decoder = {
     .flush          = ff_mpeg_flush,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .pix_fmts       = vc1_hwaccel_pixfmt_list_420,
+    .hw_configs     = (const AVCodecHWConfigInternal*[]) {
+#if CONFIG_WMV3_DXVA2_HWACCEL
+                        HWACCEL_DXVA2(wmv3),
+#endif
+#if CONFIG_WMV3_D3D11VA_HWACCEL
+                        HWACCEL_D3D11VA(wmv3),
+#endif
+#if CONFIG_WMV3_D3D11VA2_HWACCEL
+                        HWACCEL_D3D11VA2(wmv3),
+#endif
+#if CONFIG_WMV3_VAAPI_HWACCEL
+                        HWACCEL_VAAPI(wmv3),
+#endif
+#if CONFIG_WMV3_VDPAU_HWACCEL
+                        HWACCEL_VDPAU(wmv3),
+#endif
+                        NULL
+                    },
     .profiles       = NULL_IF_CONFIG_SMALL(ff_vc1_profiles)
 };
 #endif
