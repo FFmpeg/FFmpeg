@@ -158,15 +158,6 @@ static const AVOption options[] = {
     { NULL },
 };
 
-#if CONFIG_MPEG2_QSV_HWACCEL
-AVHWAccel ff_mpeg2_qsv_hwaccel = {
-    .name           = "mpeg2_qsv",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MPEG2VIDEO,
-    .pix_fmt        = AV_PIX_FMT_QSV,
-};
-#endif
-
 #if CONFIG_MPEG2_QSV_DECODER
 static const AVClass mpeg2_qsv_class = {
     .class_name = "mpeg2_qsv",
@@ -194,15 +185,6 @@ AVCodec ff_mpeg2_qsv_decoder = {
 };
 #endif
 
-#if CONFIG_VC1_QSV_HWACCEL
-AVHWAccel ff_vc1_qsv_hwaccel = {
-    .name           = "vc1_qsv",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_VC1,
-    .pix_fmt        = AV_PIX_FMT_QSV,
-};
-#endif
-
 #if CONFIG_VC1_QSV_DECODER
 static const AVClass vc1_qsv_class = {
     .class_name = "vc1_qsv",
@@ -227,15 +209,6 @@ AVCodec ff_vc1_qsv_decoder = {
                                                     AV_PIX_FMT_QSV,
                                                     AV_PIX_FMT_NONE },
     .hw_configs     = ff_qsv_hw_configs,
-};
-#endif
-
-#if CONFIG_VP8_QSV_HWACCEL
-AVHWAccel ff_vp8_qsv_hwaccel = {
-    .name           = "vp8_qsv",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_VP8,
-    .pix_fmt        = AV_PIX_FMT_QSV,
 };
 #endif
 

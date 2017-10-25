@@ -1115,12 +1115,6 @@ static const AVCodecHWConfigInternal *cuvid_hw_configs[] = {
         .option = options, \
         .version = LIBAVUTIL_VERSION_INT, \
     }; \
-    AVHWAccel ff_##x##_cuvid_hwaccel = { \
-        .name           = #x "_cuvid", \
-        .type           = AVMEDIA_TYPE_VIDEO, \
-        .id             = AV_CODEC_ID_##X, \
-        .pix_fmt        = AV_PIX_FMT_CUDA, \
-    }; \
     AVCodec ff_##x##_cuvid_decoder = { \
         .name           = #x "_cuvid", \
         .long_name      = NULL_IF_CONFIG_SMALL("Nvidia CUVID " #X " decoder"), \
