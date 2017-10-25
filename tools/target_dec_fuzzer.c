@@ -154,10 +154,6 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         av_log_set_level(AV_LOG_PANIC);
     }
 
-    // Unsupported
-    if (c->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU)
-        return 0;
-
     switch (c->type) {
     case AVMEDIA_TYPE_AUDIO   : decode_handler = avcodec_decode_audio4; break;
     case AVMEDIA_TYPE_VIDEO   : decode_handler = avcodec_decode_video2; break;
