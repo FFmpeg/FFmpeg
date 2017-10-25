@@ -443,6 +443,10 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
         avpriv_report_missing_feature(s->avctx, "Sample interleaved images");
         ret = AVERROR_PATCHWELCOME;
         goto end;
+    } else { /* unknown interleaving */
+        avpriv_report_missing_feature(s->avctx, "Unknown interleaved images");
+        ret = AVERROR_PATCHWELCOME;
+        goto end;
     }
 
     if (s->xfrm && s->nb_components == 3) {
