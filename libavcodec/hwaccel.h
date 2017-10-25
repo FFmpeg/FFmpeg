@@ -19,6 +19,24 @@
 #ifndef AVCODEC_HWACCEL_H
 #define AVCODEC_HWACCEL_H
 
+#include "avcodec.h"
+
+
 #define HWACCEL_CAP_ASYNC_SAFE      (1 << 0)
+
+
+typedef struct AVCodecHWConfigInternal {
+    /**
+     * This is the structure which will be returned to the user by
+     * avcodec_get_hw_config().
+     */
+    AVCodecHWConfig public;
+    /**
+     * If this configuration uses a hwaccel, a pointer to it.
+     * If not, NULL.
+     */
+    const AVHWAccel *hwaccel;
+} AVCodecHWConfigInternal;
+
 
 #endif /* AVCODEC_HWACCEL_H */

@@ -41,6 +41,7 @@
 #include "libavutil/dict.h"
 #include "avcodec.h"
 #include "decode.h"
+#include "hwaccel.h"
 #include "libavutil/opt.h"
 #include "me_cmp.h"
 #include "mpegvideo.h"
@@ -1333,6 +1334,17 @@ int ff_match_2uint16(const uint16_t(*tab)[2], int size, int a, int b)
     int i;
     for (i = 0; i < size && !(tab[i][0] == a && tab[i][1] == b); i++) ;
     return i;
+}
+
+const AVCodecHWConfig *avcodec_get_hw_config(const AVCodec *codec, int index)
+{
+    int i;
+    if (!codec->hw_configs || index < 0)
+        return NULL;
+    for (i = 0; i <= index; i++)
+        if (!codec->hw_configs[i])
+            return NULL;
+    return &codec->hw_configs[index]->public;
 }
 
 static AVHWAccel *first_hwaccel = NULL;
