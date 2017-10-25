@@ -69,6 +69,9 @@ static int print_tls_error(URLContext *h, int ret)
 
 static int import_pem(URLContext *h, char *path, CFArrayRef *array)
 {
+#if !HAVE_SECITEMIMPORT
+    return AVERROR_PATCHWELCOME;
+#else
     AVIOContext *s = NULL;
     CFDataRef data = NULL;
     int64_t ret = 0;
@@ -124,6 +127,7 @@ end:
     if (s)
         avio_close(s);
     return ret;
+#endif
 }
 
 static int load_ca(URLContext *h)
