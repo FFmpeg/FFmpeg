@@ -3489,6 +3489,10 @@ const AVCodecHWConfig *avcodec_get_hw_config(const AVCodec *codec, int index);
 
 /**
  * @defgroup lavc_hwaccel AVHWAccel
+ *
+ * @note  Nothing in this structure should be accessed by the user.  At some
+ *        point in future it will not be externally visible at all.
+ *
  * @{
  */
 typedef struct AVHWAccel {
@@ -3533,7 +3537,6 @@ typedef struct AVHWAccel {
      * New public fields should be added right above.
      *****************************************************************
      */
-    struct AVHWAccel *next;
 
     /**
      * Allocate a custom buffer
@@ -5874,17 +5877,26 @@ void av_fast_padded_mallocz(void *ptr, unsigned int *size, size_t min_size);
  */
 unsigned int av_xiphlacing(unsigned char *s, unsigned int v);
 
+#if FF_API_USER_VISIBLE_AVHWACCEL
 /**
  * Register the hardware accelerator hwaccel.
+ *
+ * @deprecated  This function doesn't do anything.
  */
+attribute_deprecated
 void av_register_hwaccel(AVHWAccel *hwaccel);
 
 /**
  * If hwaccel is NULL, returns the first registered hardware accelerator,
  * if hwaccel is non-NULL, returns the next registered hardware accelerator
  * after hwaccel, or NULL if hwaccel is the last one.
+ *
+ * @deprecated  AVHWaccel structures contain no user-serviceable parts, so
+ *              this function should not be used.
  */
+attribute_deprecated
 AVHWAccel *av_hwaccel_next(const AVHWAccel *hwaccel);
+#endif
 
 
 /**
