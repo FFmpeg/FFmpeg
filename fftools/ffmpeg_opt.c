@@ -66,37 +66,14 @@
 }
 
 const HWAccel hwaccels[] = {
-#if HAVE_VDPAU_X11
-    { "vdpau", hwaccel_decode_init, HWACCEL_VDPAU, AV_PIX_FMT_VDPAU,
-      AV_HWDEVICE_TYPE_VDPAU },
-#endif
-#if CONFIG_D3D11VA
-    { "d3d11va", hwaccel_decode_init, HWACCEL_D3D11VA, AV_PIX_FMT_D3D11,
-      AV_HWDEVICE_TYPE_D3D11VA },
-#endif
-#if CONFIG_DXVA2
-    { "dxva2", hwaccel_decode_init, HWACCEL_DXVA2, AV_PIX_FMT_DXVA2_VLD,
-      AV_HWDEVICE_TYPE_DXVA2 },
-#endif
 #if CONFIG_VIDEOTOOLBOX
-    { "videotoolbox",   videotoolbox_init,   HWACCEL_VIDEOTOOLBOX,   AV_PIX_FMT_VIDEOTOOLBOX,
-      AV_HWDEVICE_TYPE_NONE },
+    { "videotoolbox", videotoolbox_init, HWACCEL_VIDEOTOOLBOX, AV_PIX_FMT_VIDEOTOOLBOX },
 #endif
 #if CONFIG_LIBMFX
-    { "qsv",   qsv_init,   HWACCEL_QSV,   AV_PIX_FMT_QSV,
-      AV_HWDEVICE_TYPE_NONE },
-#endif
-#if CONFIG_VAAPI
-    { "vaapi", hwaccel_decode_init, HWACCEL_VAAPI, AV_PIX_FMT_VAAPI,
-      AV_HWDEVICE_TYPE_VAAPI },
-#endif
-#if CONFIG_NVDEC
-    { "nvdec", hwaccel_decode_init, HWACCEL_NVDEC, AV_PIX_FMT_CUDA,
-       AV_HWDEVICE_TYPE_CUDA },
+    { "qsv",   qsv_init,   HWACCEL_QSV,   AV_PIX_FMT_QSV },
 #endif
 #if CONFIG_CUVID
-    { "cuvid", cuvid_init, HWACCEL_CUVID, AV_PIX_FMT_CUDA,
-      AV_HWDEVICE_TYPE_NONE },
+    { "cuvid", cuvid_init, HWACCEL_CUVID, AV_PIX_FMT_CUDA },
 #endif
     { 0 },
 };
@@ -194,12 +171,15 @@ static void init_options(OptionsContext *o)
 
 static int show_hwaccels(void *optctx, const char *opt, const char *arg)
 {
+    enum AVHWDeviceType type = AV_HWDEVICE_TYPE_NONE;
     int i;
 
     printf("Hardware acceleration methods:\n");
-    for (i = 0; hwaccels[i].name; i++) {
+    while ((type = av_hwdevice_iterate_types(type)) !=
+           AV_HWDEVICE_TYPE_NONE)
+        printf("%s\n", av_hwdevice_get_type_name(type));
+    for (i = 0; hwaccels[i].name; i++)
         printf("%s\n", hwaccels[i].name);
-    }
     printf("\n");
     return 0;
 }
@@ -819,11 +799,16 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
 
             MATCH_PER_STREAM_OPT(hwaccels, str, hwaccel, ic, st);
             if (hwaccel) {
+                // The NVDEC hwaccels use a CUDA device, so remap the name here.
+                if (!strcmp(hwaccel, "nvdec"))
+                    hwaccel = "cuda";
+
                 if (!strcmp(hwaccel, "none"))
                     ist->hwaccel_id = HWACCEL_NONE;
                 else if (!strcmp(hwaccel, "auto"))
                     ist->hwaccel_id = HWACCEL_AUTO;
                 else {
+                    enum AVHWDeviceType type;
                     int i;
                     for (i = 0; hwaccels[i].name; i++) {
                         if (!strcmp(hwaccels[i].name, hwaccel)) {
@@ -833,9 +818,22 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
                     }
 
                     if (!ist->hwaccel_id) {
+                        type = av_hwdevice_find_type_by_name(hwaccel);
+                        if (type != AV_HWDEVICE_TYPE_NONE) {
+                            ist->hwaccel_id = HWACCEL_GENERIC;
+                            ist->hwaccel_device_type = type;
+                        }
+                    }
+
+                    if (!ist->hwaccel_id) {
                         av_log(NULL, AV_LOG_FATAL, "Unrecognized hwaccel: %s.\n",
                                hwaccel);
                         av_log(NULL, AV_LOG_FATAL, "Supported hwaccels: ");
+                        type = AV_HWDEVICE_TYPE_NONE;
+                        while ((type = av_hwdevice_iterate_types(type)) !=
+                               AV_HWDEVICE_TYPE_NONE)
+                            av_log(NULL, AV_LOG_FATAL, "%s ",
+                                   av_hwdevice_get_type_name(type));
                         for (i = 0; hwaccels[i].name; i++)
                             av_log(NULL, AV_LOG_FATAL, "%s ", hwaccels[i].name);
                         av_log(NULL, AV_LOG_FATAL, "\n");

@@ -2792,45 +2792,77 @@ fail:
     av_freep(&avc);
 }
 
-static const HWAccel *get_hwaccel(enum AVPixelFormat pix_fmt, enum HWAccelID selected_hwaccel_id)
-{
-    int i;
-    for (i = 0; hwaccels[i].name; i++)
-        if (hwaccels[i].pix_fmt == pix_fmt &&
-            (!selected_hwaccel_id || selected_hwaccel_id == HWACCEL_AUTO || hwaccels[i].id == selected_hwaccel_id))
-            return &hwaccels[i];
-    return NULL;
-}
-
 static enum AVPixelFormat get_format(AVCodecContext *s, const enum AVPixelFormat *pix_fmts)
 {
     InputStream *ist = s->opaque;
     const enum AVPixelFormat *p;
     int ret;
 
-    for (p = pix_fmts; *p != -1; p++) {
+    for (p = pix_fmts; *p != AV_PIX_FMT_NONE; p++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(*p);
-        const HWAccel *hwaccel;
+        const AVCodecHWConfig  *config = NULL;
+        int i;
 
         if (!(desc->flags & AV_PIX_FMT_FLAG_HWACCEL))
             break;
 
-        hwaccel = get_hwaccel(*p, ist->hwaccel_id);
-        if (!hwaccel ||
-            (ist->active_hwaccel_id && ist->active_hwaccel_id != hwaccel->id) ||
-            (ist->hwaccel_id != HWACCEL_AUTO && ist->hwaccel_id != hwaccel->id))
-            continue;
+        if (ist->hwaccel_id == HWACCEL_GENERIC ||
+            ist->hwaccel_id == HWACCEL_AUTO) {
+            for (i = 0;; i++) {
+                config = avcodec_get_hw_config(s->codec, i);
+                if (!config)
+                    break;
+                if (!(config->methods &
+                      AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX))
+                    continue;
+                if (config->pix_fmt == *p)
+                    break;
+            }
+        }
+        if (config) {
+            if (config->device_type != ist->hwaccel_device_type) {
+                // Different hwaccel offered, ignore.
+                continue;
+            }
 
-        ret = hwaccel->init(s);
-        if (ret < 0) {
-            if (ist->hwaccel_id == hwaccel->id) {
+            ret = hwaccel_decode_init(s);
+            if (ret < 0) {
+                if (ist->hwaccel_id == HWACCEL_GENERIC) {
+                    av_log(NULL, AV_LOG_FATAL,
+                           "%s hwaccel requested for input stream #%d:%d, "
+                           "but cannot be initialized.\n",
+                           av_hwdevice_get_type_name(config->device_type),
+                           ist->file_index, ist->st->index);
+                    return AV_PIX_FMT_NONE;
+                }
+                continue;
+            }
+        } else {
+            const HWAccel *hwaccel = NULL;
+            int i;
+            for (i = 0; hwaccels[i].name; i++) {
+                if (hwaccels[i].pix_fmt == *p) {
+                    hwaccel = &hwaccels[i];
+                    break;
+                }
+            }
+            if (!hwaccel) {
+                // No hwaccel supporting this pixfmt.
+                continue;
+            }
+            if (hwaccel->id != ist->hwaccel_id) {
+                // Does not match requested hwaccel.
+                continue;
+            }
+
+            ret = hwaccel->init(s);
+            if (ret < 0) {
                 av_log(NULL, AV_LOG_FATAL,
                        "%s hwaccel requested for input stream #%d:%d, "
                        "but cannot be initialized.\n", hwaccel->name,
                        ist->file_index, ist->st->index);
                 return AV_PIX_FMT_NONE;
             }
-            continue;
         }
 
         if (ist->hw_frames_ctx) {
@@ -2839,8 +2871,7 @@ static enum AVPixelFormat get_format(AVCodecContext *s, const enum AVPixelFormat
                 return AV_PIX_FMT_NONE;
         }
 
-        ist->active_hwaccel_id = hwaccel->id;
-        ist->hwaccel_pix_fmt   = *p;
+        ist->hwaccel_pix_fmt = *p;
         break;
     }
 
