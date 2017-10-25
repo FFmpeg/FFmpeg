@@ -140,6 +140,7 @@ typedef struct VP8Context {
     VP8ThreadData *thread_data;
     AVCodecContext *avctx;
     enum AVPixelFormat pix_fmt;
+    int actually_webp;
 
     VP8Frame *framep[4];
     VP8Frame *next_framep[4];

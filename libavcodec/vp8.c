@@ -2515,7 +2515,9 @@ int vp78_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (ret < 0)
         goto err;
 
-    if (!is_vp7 && s->pix_fmt == AV_PIX_FMT_NONE) {
+    if (s->actually_webp) {
+        // avctx->pix_fmt already set in caller.
+    } else if (!is_vp7 && s->pix_fmt == AV_PIX_FMT_NONE) {
         enum AVPixelFormat pix_fmts[] = {
 #if CONFIG_VP8_VAAPI_HWACCEL
             AV_PIX_FMT_VAAPI,
