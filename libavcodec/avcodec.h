@@ -36,6 +36,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/dict.h"
 #include "libavutil/frame.h"
+#include "libavutil/hwcontext.h"
 #include "libavutil/log.h"
 #include "libavutil/pixfmt.h"
 #include "libavutil/rational.h"
@@ -3279,6 +3280,61 @@ typedef struct AVProfile {
     const char *name; ///< short name for the profile
 } AVProfile;
 
+enum {
+    /**
+     * The codec supports this format via the hw_device_ctx interface.
+     *
+     * When selecting this format, AVCodecContext.hw_device_ctx should
+     * have been set to a device of the specified type before calling
+     * avcodec_open2().
+     */
+    AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX = 0x01,
+    /**
+     * The codec supports this format via the hw_frames_ctx interface.
+     *
+     * When selecting this format for a decoder,
+     * AVCodecContext.hw_frames_ctx should be set to a suitable frames
+     * context inside the get_format() callback.  The frames context
+     * must have been created on a device of the specified type.
+     */
+    AV_CODEC_HW_CONFIG_METHOD_HW_FRAMES_CTX = 0x02,
+    /**
+     * The codec supports this format by some internal method.
+     *
+     * This format can be selected without any additional configuration -
+     * no device or frames context is required.
+     */
+    AV_CODEC_HW_CONFIG_METHOD_INTERNAL      = 0x04,
+    /**
+     * The codec supports this format by some ad-hoc method.
+     *
+     * Additional settings and/or function calls are required.  See the
+     * codec-specific documentation for details.  (Methods requiring
+     * this sort of configuration are deprecated and others should be
+     * used in preference.)
+     */
+    AV_CODEC_HW_CONFIG_METHOD_AD_HOC        = 0x08,
+};
+
+typedef struct AVCodecHWConfig {
+    /**
+     * A hardware pixel format which the codec can use.
+     */
+    enum AVPixelFormat pix_fmt;
+    /**
+     * Bit set of AV_CODEC_HW_CONFIG_METHOD_* flags, describing the possible
+     * setup methods which can be used with this configuration.
+     */
+    int methods;
+    /**
+     * The device type associated with the configuration.
+     *
+     * Must be set for AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX and
+     * AV_CODEC_HW_CONFIG_METHOD_HW_FRAMES_CTX, otherwise unused.
+     */
+    enum AVHWDeviceType device_type;
+} AVCodecHWConfig;
+
 typedef struct AVCodecDefault AVCodecDefault;
 
 struct AVSubtitle;
@@ -3404,6 +3460,15 @@ typedef struct AVCodec {
      * packets before decoding.
      */
     const char *bsfs;
+
+    /**
+     * Array of pointers to hardware configurations supported by the codec,
+     * or NULL if no hardware supported.  The array is terminated by a NULL
+     * pointer.
+     *
+     * The user can only access this field via avcodec_get_hw_config().
+     */
+    const struct AVCodecHWConfigInternal **hw_configs;
 } AVCodec;
 
 #if FF_API_CODEC_GET_SET
@@ -3412,6 +3477,15 @@ int av_codec_get_max_lowres(const AVCodec *codec);
 #endif
 
 struct MpegEncContext;
+
+/**
+ * Retrieve supported hardware configurations for a codec.
+ *
+ * Values of index from zero to some maximum return the indexed configuration
+ * descriptor; all other values return NULL.  If the codec does not support
+ * any hardware configurations then it will always return NULL.
+ */
+const AVCodecHWConfig *avcodec_get_hw_config(const AVCodec *codec, int index);
 
 /**
  * @defgroup lavc_hwaccel AVHWAccel
