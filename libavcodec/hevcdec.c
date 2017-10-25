@@ -41,6 +41,7 @@
 #include "hevc_data.h"
 #include "hevc_parse.h"
 #include "hevcdec.h"
+#include "hwaccel.h"
 #include "profiles.h"
 
 const uint8_t ff_hevc_pel_weight[65] = { [2] = 0, [4] = 1, [6] = 2, [8] = 3, [12] = 4, [16] = 5, [24] = 6, [32] = 7, [48] = 8, [64] = 9 };
@@ -3510,4 +3511,28 @@ AVCodec ff_hevc_decoder = {
                              AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_EXPORTS_CROPPING,
     .profiles              = NULL_IF_CONFIG_SMALL(ff_hevc_profiles),
+    .hw_configs            = (const AVCodecHWConfigInternal*[]) {
+#if CONFIG_HEVC_DXVA2_HWACCEL
+                               HWACCEL_DXVA2(hevc),
+#endif
+#if CONFIG_HEVC_D3D11VA_HWACCEL
+                               HWACCEL_D3D11VA(hevc),
+#endif
+#if CONFIG_HEVC_D3D11VA2_HWACCEL
+                               HWACCEL_D3D11VA2(hevc),
+#endif
+#if CONFIG_HEVC_NVDEC_HWACCEL
+                               HWACCEL_NVDEC(hevc),
+#endif
+#if CONFIG_HEVC_VAAPI_HWACCEL
+                               HWACCEL_VAAPI(hevc),
+#endif
+#if CONFIG_HEVC_VDPAU_HWACCEL
+                               HWACCEL_VDPAU(hevc),
+#endif
+#if CONFIG_HEVC_VIDEOTOOLBOX_HWACCEL
+                               HWACCEL_VIDEOTOOLBOX(hevc),
+#endif
+                               NULL
+                           },
 };

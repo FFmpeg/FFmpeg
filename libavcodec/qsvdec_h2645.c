@@ -226,6 +226,7 @@ AVCodec ff_hevc_qsv_decoder = {
                                                     AV_PIX_FMT_P010,
                                                     AV_PIX_FMT_QSV,
                                                     AV_PIX_FMT_NONE },
+    .hw_configs     = ff_qsv_hw_configs,
     .bsfs           = "hevc_mp4toannexb",
 };
 #endif
@@ -268,6 +269,7 @@ AVCodec ff_h264_qsv_decoder = {
                                                     AV_PIX_FMT_P010,
                                                     AV_PIX_FMT_QSV,
                                                     AV_PIX_FMT_NONE },
+    .hw_configs     = ff_qsv_hw_configs,
     .bsfs           = "h264_mp4toannexb",
 };
 #endif

@@ -23,6 +23,7 @@
 
 #include "avcodec.h"
 #include "get_bits.h"
+#include "hwaccel.h"
 #include "internal.h"
 #include "profiles.h"
 #include "thread.h"
@@ -1794,4 +1795,22 @@ AVCodec ff_vp9_decoder = {
     .init_thread_copy      = ONLY_IF_THREADS_ENABLED(vp9_decode_init_thread_copy),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(vp9_decode_update_thread_context),
     .profiles              = NULL_IF_CONFIG_SMALL(ff_vp9_profiles),
+    .hw_configs            = (const AVCodecHWConfigInternal*[]) {
+#if CONFIG_VP9_DXVA2_HWACCEL
+                               HWACCEL_DXVA2(vp9),
+#endif
+#if CONFIG_VP9_D3D11VA_HWACCEL
+                               HWACCEL_D3D11VA(vp9),
+#endif
+#if CONFIG_VP9_D3D11VA2_HWACCEL
+                               HWACCEL_D3D11VA2(vp9),
+#endif
+#if CONFIG_VP9_NVDEC_HWACCEL
+                               HWACCEL_NVDEC(vp9),
+#endif
+#if CONFIG_VP9_VAAPI_HWACCEL
+                               HWACCEL_VAAPI(vp9),
+#endif
+                               NULL
+                           },
 };

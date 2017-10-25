@@ -34,6 +34,7 @@
 #include <stdatomic.h>
 
 #include "avcodec.h"
+#include "hwaccel.h"
 #include "internal.h"
 #include "libavutil/avassert.h"
 #include "libavutil/buffer.h"
@@ -835,6 +836,11 @@ AVHWAccel ff_vc1_mmal_hwaccel = {
     .pix_fmt    = AV_PIX_FMT_MMAL,
 };
 
+static const AVCodecHWConfigInternal *mmal_hw_configs[] = {
+    HW_CONFIG_INTERNAL(MMAL),
+    NULL
+};
+
 static const AVOption options[]={
     {"extra_buffers", "extra buffers", offsetof(MMALDecodeContext, extra_buffers), AV_OPT_TYPE_INT, {.i64 = 10}, 0, 256, 0},
     {"extra_decoder_buffers", "extra MMAL internal buffered frames", offsetof(MMALDecodeContext, extra_decoder_buffers), AV_OPT_TYPE_INT, {.i64 = 10}, 0, 256, 0},
@@ -867,6 +873,7 @@ static const AVOption options[]={
         .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_MMAL, \
                                                          AV_PIX_FMT_YUV420P, \
                                                          AV_PIX_FMT_NONE}, \
+        .hw_configs     = mmal_hw_configs, \
     };
 
 FFMMAL_DEC(h264, AV_CODEC_ID_H264)

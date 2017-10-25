@@ -41,6 +41,19 @@
 #include "qsv_internal.h"
 #include "qsvdec.h"
 
+const AVCodecHWConfigInternal *ff_qsv_hw_configs[] = {
+    &(const AVCodecHWConfigInternal) {
+        .public = {
+            .pix_fmt     = AV_PIX_FMT_QSV,
+            .methods     = AV_CODEC_HW_CONFIG_METHOD_HW_FRAMES_CTX |
+                           AV_CODEC_HW_CONFIG_METHOD_AD_HOC,
+            .device_type = AV_HWDEVICE_TYPE_QSV,
+        },
+        .hwaccel = NULL,
+    },
+    NULL
+};
+
 static int qsv_init_session(AVCodecContext *avctx, QSVContext *q, mfxSession session,
                             AVBufferRef *hw_frames_ref, AVBufferRef *hw_device_ref)
 {

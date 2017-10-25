@@ -25,6 +25,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "error_resilience.h"
+#include "hwaccel.h"
 #include "idctdsp.h"
 #include "internal.h"
 #include "mpegutils.h"
@@ -2855,4 +2856,19 @@ AVCodec ff_mpeg4_decoder = {
     .profiles              = NULL_IF_CONFIG_SMALL(ff_mpeg4_video_profiles),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(mpeg4_update_thread_context),
     .priv_class = &mpeg4_class,
+    .hw_configs            = (const AVCodecHWConfigInternal*[]) {
+#if CONFIG_MPEG2_NVDEC_HWACCEL
+                               HWACCEL_NVDEC(mpeg4),
+#endif
+#if CONFIG_MPEG4_VAAPI_HWACCEL
+                               HWACCEL_VAAPI(mpeg4),
+#endif
+#if CONFIG_MPEG4_VDPAU_HWACCEL
+                               HWACCEL_VDPAU(mpeg4),
+#endif
+#if CONFIG_MPEG4_VIDEOTOOLBOX_HWACCEL
+                               HWACCEL_VIDEOTOOLBOX(mpeg4),
+#endif
+                               NULL
+                           },
 };

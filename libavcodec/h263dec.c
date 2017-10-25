@@ -33,6 +33,7 @@
 #include "flv.h"
 #include "h263.h"
 #include "h263_parser.h"
+#include "hwaccel.h"
 #include "internal.h"
 #include "mpeg_er.h"
 #include "mpeg4video.h"
@@ -759,4 +760,16 @@ AVCodec ff_h263p_decoder = {
     .flush          = ff_mpeg_flush,
     .max_lowres     = 3,
     .pix_fmts       = ff_h263_hwaccel_pixfmt_list_420,
+    .hw_configs     = (const AVCodecHWConfigInternal*[]) {
+#if CONFIG_H263_VAAPI_HWACCEL
+                        HWACCEL_VAAPI(h263),
+#endif
+#if CONFIG_MPEG4_VDPAU_HWACCEL
+                        HWACCEL_VDPAU(mpeg4),
+#endif
+#if CONFIG_H263_VIDEOTOOLBOX_HWACCEL
+                        HWACCEL_VIDEOTOOLBOX(h263),
+#endif
+                        NULL
+                    },
 };

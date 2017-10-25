@@ -36,6 +36,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "error_resilience.h"
+#include "hwaccel.h"
 #include "idctdsp.h"
 #include "internal.h"
 #include "mpeg_er.h"
@@ -2890,7 +2891,22 @@ AVCodec ff_mpeg1video_decoder = {
     .caps_internal         = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .flush                 = flush,
     .max_lowres            = 3,
-    .update_thread_context = ONLY_IF_THREADS_ENABLED(mpeg_decode_update_thread_context)
+    .update_thread_context = ONLY_IF_THREADS_ENABLED(mpeg_decode_update_thread_context),
+    .hw_configs            = (const AVCodecHWConfigInternal*[]) {
+#if CONFIG_MPEG2_NVDEC_HWACCEL
+                               HWACCEL_NVDEC(mpeg1),
+#endif
+#if CONFIG_MPEG1_VDPAU_HWACCEL
+                               HWACCEL_VDPAU(mpeg1),
+#endif
+#if CONFIG_MPEG1_VIDEOTOOLBOX_HWACCEL
+                               HWACCEL_VIDEOTOOLBOX(mpeg1),
+#endif
+#if CONFIG_MPEG1_XVMC_HWACCEL
+                               HWACCEL_XVMC(mpeg1),
+#endif
+                               NULL
+                           },
 };
 
 AVCodec ff_mpeg2video_decoder = {
@@ -2909,6 +2925,33 @@ AVCodec ff_mpeg2video_decoder = {
     .flush          = flush,
     .max_lowres     = 3,
     .profiles       = NULL_IF_CONFIG_SMALL(ff_mpeg2_video_profiles),
+    .hw_configs     = (const AVCodecHWConfigInternal*[]) {
+#if CONFIG_MPEG2_DXVA2_HWACCEL
+                        HWACCEL_DXVA2(mpeg2),
+#endif
+#if CONFIG_MPEG2_D3D11VA_HWACCEL
+                        HWACCEL_D3D11VA(mpeg2),
+#endif
+#if CONFIG_MPEG2_D3D11VA2_HWACCEL
+                        HWACCEL_D3D11VA2(mpeg2),
+#endif
+#if CONFIG_MPEG2_NVDEC_HWACCEL
+                        HWACCEL_NVDEC(mpeg2),
+#endif
+#if CONFIG_MPEG2_VAAPI_HWACCEL
+                        HWACCEL_VAAPI(mpeg2),
+#endif
+#if CONFIG_MPEG2_VDPAU_HWACCEL
+                        HWACCEL_VDPAU(mpeg2),
+#endif
+#if CONFIG_MPEG2_VIDEOTOOLBOX_HWACCEL
+                        HWACCEL_VIDEOTOOLBOX(mpeg2),
+#endif
+#if CONFIG_MPEG2_XVMC_HWACCEL
+                        HWACCEL_XVMC(mpeg2),
+#endif
+                        NULL
+                    },
 };
 
 //legacy decoder

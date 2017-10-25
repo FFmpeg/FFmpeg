@@ -32,6 +32,7 @@
 
 #include "avcodec.h"
 #include "decode.h"
+#include "hwaccel.h"
 #include "internal.h"
 
 typedef struct CuvidContext
@@ -1094,6 +1095,19 @@ static const AVOption options[] = {
     { NULL }
 };
 
+static const AVCodecHWConfigInternal *cuvid_hw_configs[] = {
+    &(const AVCodecHWConfigInternal) {
+        .public = {
+            .pix_fmt     = AV_PIX_FMT_CUDA,
+            .methods     = AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX |
+                           AV_CODEC_HW_CONFIG_METHOD_INTERNAL,
+            .device_type = AV_HWDEVICE_TYPE_CUDA
+        },
+        .hwaccel = NULL,
+    },
+    NULL
+};
+
 #define DEFINE_CUVID_CODEC(x, X) \
     static const AVClass x##_cuvid_class = { \
         .class_name = #x "_cuvid", \
@@ -1127,6 +1141,7 @@ static const AVOption options[] = {
                                                         AV_PIX_FMT_P010, \
                                                         AV_PIX_FMT_P016, \
                                                         AV_PIX_FMT_NONE }, \
+        .hw_configs     = cuvid_hw_configs, \
     };
 
 #if CONFIG_HEVC_CUVID_DECODER
