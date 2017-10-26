@@ -55,6 +55,8 @@ typedef struct AdaptationSet {
     char id[10];
     enum AVMediaType media_type;
     AVDictionary *metadata;
+    AVRational min_frame_rate, max_frame_rate;
+    int ambiguous_frame_rate;
 } AdaptationSet;
 
 typedef struct OutputStream {
@@ -97,8 +99,6 @@ typedef struct DASHContext {
     const char *single_file_name;
     const char *init_seg_name;
     const char *media_seg_name;
-    AVRational min_frame_rate, max_frame_rate;
-    int ambiguous_frame_rate;
     const char *utc_timing_url;
 } DASHContext;
 
@@ -393,8 +393,8 @@ static int write_adaptation_set(AVFormatContext *s, AVIOContext *out, int as_ind
 
     avio_printf(out, "\t\t<AdaptationSet id=\"%s\" contentType=\"%s\" segmentAlignment=\"true\" bitstreamSwitching=\"true\"",
                 as->id, as->media_type == AVMEDIA_TYPE_VIDEO ? "video" : "audio");
-    if (as->media_type == AVMEDIA_TYPE_VIDEO && c->max_frame_rate.num && !c->ambiguous_frame_rate)
-        avio_printf(out, " %s=\"%d/%d\"", (av_cmp_q(c->min_frame_rate, c->max_frame_rate) < 0) ? "maxFrameRate" : "frameRate", c->max_frame_rate.num, c->max_frame_rate.den);
+    if (as->media_type == AVMEDIA_TYPE_VIDEO && as->max_frame_rate.num && !as->ambiguous_frame_rate)
+        avio_printf(out, " %s=\"%d/%d\"", (av_cmp_q(as->min_frame_rate, as->max_frame_rate) < 0) ? "maxFrameRate" : "frameRate", as->max_frame_rate.num, as->max_frame_rate.den);
     lang = av_dict_get(as->metadata, "language", NULL, 0);
     if (lang)
         avio_printf(out, " lang=\"%s\"", lang->value);
@@ -677,7 +677,6 @@ static int dash_init(AVFormatContext *s)
         c->single_file = 1;
     if (c->single_file)
         c->use_template = 0;
-    c->ambiguous_frame_rate = 0;
 
     av_strlcpy(c->dirname, s->filename, sizeof(c->dirname));
     ptr = strrchr(c->dirname, '/');
@@ -805,12 +804,12 @@ static int dash_init(AVFormatContext *s)
         if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
             AVRational avg_frame_rate = s->streams[i]->avg_frame_rate;
             if (avg_frame_rate.num > 0) {
-                if (av_cmp_q(avg_frame_rate, c->min_frame_rate) < 0)
-                    c->min_frame_rate = avg_frame_rate;
-                if (av_cmp_q(c->max_frame_rate, avg_frame_rate) < 0)
-                    c->max_frame_rate = avg_frame_rate;
+                if (av_cmp_q(avg_frame_rate, as->min_frame_rate) < 0)
+                    as->min_frame_rate = avg_frame_rate;
+                if (av_cmp_q(as->max_frame_rate, avg_frame_rate) < 0)
+                    as->max_frame_rate = avg_frame_rate;
             } else {
-                c->ambiguous_frame_rate = 1;
+                as->ambiguous_frame_rate = 1;
             }
             c->has_video = 1;
         }
