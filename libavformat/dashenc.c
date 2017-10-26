@@ -664,14 +664,6 @@ static int dict_copy_entry(AVDictionary **dst, const AVDictionary *src, const ch
     return 0;
 }
 
-static int dict_set_int(AVDictionary **pm, const char *key, int64_t value, int flags)
-{
-    char valuestr[22];
-    snprintf(valuestr, sizeof(valuestr), "%"PRId64, value);
-    flags &= ~AV_DICT_DONT_STRDUP_VAL;
-    return av_dict_set(pm, key, valuestr, flags);
-}
-
 static int dash_init(AVFormatContext *s)
 {
     DASHContext *c = s->priv_data;
@@ -782,8 +774,8 @@ static int dash_init(AVFormatContext *s)
         if (!strcmp(os->format_name, "mp4")) {
             av_dict_set(&opts, "movflags", "frag_custom+dash+delay_moov", 0);
         } else {
-            dict_set_int(&opts, "cluster_time_limit", c->min_seg_duration / 1000, 0);
-            dict_set_int(&opts, "cluster_size_limit", 5 * 1024 * 1024, 0); // set a large cluster size limit
+            av_dict_set_int(&opts, "cluster_time_limit", c->min_seg_duration / 1000, 0);
+            av_dict_set_int(&opts, "cluster_size_limit", 5 * 1024 * 1024, 0); // set a large cluster size limit
         }
         if ((ret = avformat_write_header(ctx, &opts)) < 0)
             return ret;
