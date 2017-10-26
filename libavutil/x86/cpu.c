@@ -246,6 +246,8 @@ size_t ff_get_cpu_max_align_x86(void)
 {
     int flags = av_get_cpu_flags();
 
+    if (flags & AV_CPU_FLAG_AVX512)
+        return 64;
     if (flags & (AV_CPU_FLAG_AVX2      |
                  AV_CPU_FLAG_AVX       |
                  AV_CPU_FLAG_XOP       |
