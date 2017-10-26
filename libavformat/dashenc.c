@@ -870,6 +870,7 @@ static int dash_write_header(AVFormatContext *s)
         avcodec_parameters_copy(st->codecpar, s->streams[i]->codecpar);
         st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
         st->time_base = s->streams[i]->time_base;
+        st->avg_frame_rate = s->streams[i]->avg_frame_rate;
         ctx->avoid_negative_ts = s->avoid_negative_ts;
 
         if ((ret = avio_open_dyn_buf(&ctx->pb)) < 0)
