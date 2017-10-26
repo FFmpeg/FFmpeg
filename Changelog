@@ -1,6 +1,27 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 3.2.9:
+- avcodec/snowdec: Check mv_scale
+- avcodec/pafvideo: Check for bitstream end in decode_0()
+- avcodec/ffv1dec: Fix out of array read in slice counting
+- avcodec/dirac_dwt: Fix integer overflow in COMPOSE_53iL0()
+- avcodec/mpeg_er: Clear mcsel in mpeg_er_decode_mb()
+- avcodec/mpeg4videodec: Use 64 bit intermediates for sprite delta
+- avcodec/x86/lossless_videoencdsp: Fix handling of small widths
+- avcodec/truemotion2: Fix integer overflows in tm2_high_chroma()
+- avcodec/aacdec_template: Clear tns present flag on error
+- avcodec/proresdec2: SKIP_BITS() does not work with len=32
+- avcodec/hevcdsp_template: Fix undefined shift
+- avcodec/jpeg2000: Check that codsty->log2_prec_widths/heights has been initialized
+- avcodec/takdec: Fix integer overflow in decode_lpc()
+- avcodec/proresdec2: Check bits in DECODE_CODEWORD(), fixes invalid shift
+- avcodec/takdec: Fix integer overflows in decode_subframe()
+- avcodec/dirac_dwt: Fix integer overflow in COMPOSE_FIDELITYi*()
+- avcodec/ffv1dec: Fix integer overflow in read_quant_table()
+- avcodec/svq3: Fix overflow in svq3_add_idct_c()
+- avcodec/pngdec: Clean up on av_frame_ref() failure
+
 version 3.2.8:
 - avcodec/hevc_ps: Fix c?_qp_offset_list size
 - avcodec/shorten: Move buffer allocation and offset init to end of read_header()
