@@ -71,10 +71,12 @@ static int merge_superframe(const struct CachedBuf *in, int n_in, AVPacket *out)
     }
 
 #define wloop(mag, wr) \
-    for (n = 0; n < n_in; n++) { \
-        wr; \
-        ptr += mag + 1; \
-    }
+    do { \
+        for (n = 0; n < n_in; n++) { \
+            wr; \
+            ptr += mag + 1; \
+        } \
+    } while (0)
 
     // write superframe with marker 110[mag:2][nframes:3]
     *ptr++ = marker;
