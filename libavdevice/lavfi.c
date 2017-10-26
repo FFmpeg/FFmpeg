@@ -38,7 +38,6 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavfilter/avfilter.h"
-#include "libavfilter/avfiltergraph.h"
 #include "libavfilter/buffersink.h"
 #include "libavformat/avio_internal.h"
 #include "libavformat/internal.h"

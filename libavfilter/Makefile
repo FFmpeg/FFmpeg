@@ -2,7 +2,6 @@ NAME = avfilter
 DESC = FFmpeg audio/video filtering library
 
 HEADERS = avfilter.h                                                    \
-          avfiltergraph.h                                               \
           buffersink.h                                                  \
           buffersrc.h                                                   \
           version.h                                                     \
