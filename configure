@@ -584,13 +584,13 @@ sanitize_var_name(){
     echo $@ | sed 's/[^A-Za-z0-9_]/_/g'
 }
 
-set_safe(){
+set_sanitized(){
     var=$1
     shift
     eval $(sanitize_var_name "$var")='$*'
 }
 
-get_safe(){
+get_sanitized(){
     eval echo \$$(sanitize_var_name "$1")
 }
 
@@ -636,13 +636,13 @@ disable_weak(){
     set_weak no $*
 }
 
-enable_safe(){
+enable_sanitized(){
     for var; do
         enable $(echo "$var" | sed 's/[^A-Za-z0-9_]/_/g')
     done
 }
 
-disable_safe(){
+disable_sanitized(){
     for var; do
         disable $(echo "$var" | sed 's/[^A-Za-z0-9_]/_/g')
     done
@@ -1108,8 +1108,8 @@ check_header(){
     log check_header "$@"
     header=$1
     shift
-    disable_safe $header
-    check_cpp "$@" <<EOF && enable_safe $header
+    disable_sanitized $header
+    check_cpp "$@" <<EOF && enable_sanitized $header
 #include <$header>
 int x;
 EOF
@@ -1120,11 +1120,11 @@ check_header_objcc(){
     rm -f -- "$TMPO"
     header=$1
     shift
-    disable_safe $header
+    disable_sanitized $header
     {
        echo "#include <$header>"
        echo "int main(void) { return 0; }"
-    } | check_objcc && check_stat "$TMPO" && enable_safe $header
+    } | check_objcc && check_stat "$TMPO" && enable_sanitized $header
 }
 
 check_apple_framework(){
@@ -1196,7 +1196,7 @@ check_func_headers(){
             echo " ret |= ((intptr_t)check_$func) & 0xFFFF;"
         done
         echo "return ret; }"
-    } | check_ld "cc" "$@" && enable $funcs && enable_safe $headers
+    } | check_ld "cc" "$@" && enable $funcs && enable_sanitized $headers
 }
 
 check_class_headers_cpp(){
@@ -1215,7 +1215,7 @@ check_class_headers_cpp(){
             i=$(expr $i + 1)
         done
         echo "return 0; }"
-    } | check_ld "cxx" "$@" && enable $funcs && enable_safe $headers
+    } | check_ld "cxx" "$@" && enable $funcs && enable_sanitized $headers
 }
 
 check_cpp_condition(){
@@ -1282,8 +1282,8 @@ check_pkg_config(){
     pkg_libs=$($pkg_config --libs $pkg_config_flags $pkg)
     check_func_headers "$headers" "$funcs" $pkg_cflags $pkg_libs "$@" &&
         enable $name &&
-        set_safe "${name}_cflags"    $pkg_cflags &&
-        set_safe "${name}_extralibs" $pkg_libs
+        set_sanitized "${name}_cflags"    $pkg_cflags &&
+        set_sanitized "${name}_extralibs" $pkg_libs
 }
 
 check_exec(){
@@ -1326,8 +1326,8 @@ check_type(){
     headers=$1
     type=$2
     shift 2
-    disable_safe "$type"
-    check_code cc "$headers" "$type v" "$@" && enable_safe "$type"
+    disable_sanitized "$type"
+    check_code cc "$headers" "$type v" "$@" && enable_sanitized "$type"
 }
 
 check_struct(){
@@ -1336,9 +1336,9 @@ check_struct(){
     struct=$2
     member=$3
     shift 3
-    disable_safe "${struct}_${member}"
+    disable_sanitized "${struct}_${member}"
     check_code cc "$headers" "const void *p = &(($struct *)0)->$member" "$@" &&
-        enable_safe "${struct}_${member}"
+        enable_sanitized "${struct}_${member}"
 }
 
 check_builtin(){
@@ -1398,7 +1398,7 @@ use_pkg_config(){
     log use_pkg_config "$@"
     name="$1"
     check_pkg_config "$@" || return 1
-    add_cflags    $(get_safe "${name}_cflags")
+    add_cflags    $(get_sanitized "${name}_cflags")
 }
 
 require_pkg_config(){
@@ -6183,7 +6183,7 @@ rsync --help 2> /dev/null | grep -q 'contimeout' && enable rsync_contimeout || d
 # check V4L2 codecs available in the API
 check_header linux/fb.h
 check_header linux/videodev2.h
-check_code cc linux/videodev2.h "struct v4l2_frmsizeenum vfse; vfse.discrete.width = 0;" && enable_safe struct_v4l2_frmivalenum_discrete
+check_code cc linux/videodev2.h "struct v4l2_frmsizeenum vfse; vfse.discrete.width = 0;" && enable_sanitized struct_v4l2_frmivalenum_discrete
 check_code cc linux/videodev2.h "int i = V4L2_CAP_VIDEO_M2M_MPLANE | V4L2_CAP_VIDEO_M2M | V4L2_BUF_FLAG_LAST;" || disable v4l2_m2m
 check_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_VC1_ANNEX_G;" && enable vc1_v4l2_m2m
 check_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_MPEG1;" && enable mpeg1_v4l2_m2m
@@ -6196,7 +6196,7 @@ check_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_VP8;" && enable vp8_v4l2_m
 check_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_VP9;" && enable vp9_v4l2_m2m
 
 check_header sys/videoio.h
-check_code cc sys/videoio.h "struct v4l2_frmsizeenum vfse; vfse.discrete.width = 0;" && enable_safe struct_v4l2_frmivalenum_discrete
+check_code cc sys/videoio.h "struct v4l2_frmsizeenum vfse; vfse.discrete.width = 0;" && enable_sanitized struct_v4l2_frmivalenum_discrete
 
 check_lib user32 "windows.h winuser.h" GetShellWindow -luser32
 check_lib vfw32 "windows.h vfw.h" capCreateCaptureWindow -lvfw32
@@ -6216,9 +6216,9 @@ check_type "dshow.h" IBaseFilter
 check_header dev/ic/bt8xx.h
 
 if check_struct sys/soundcard.h audio_buf_info bytes; then
-    enable_safe sys/soundcard.h
+    enable_sanitized sys/soundcard.h
 else
-    check_cc -D__BSD_VISIBLE -D__XSI_VISIBLE <<EOF && add_cppflags -D__BSD_VISIBLE -D__XSI_VISIBLE && enable_safe sys/soundcard.h
+    check_cc -D__BSD_VISIBLE -D__XSI_VISIBLE <<EOF && add_cppflags -D__BSD_VISIBLE -D__XSI_VISIBLE && enable_sanitized sys/soundcard.h
     #include <sys/soundcard.h>
     audio_buf_info abc;
 EOF
