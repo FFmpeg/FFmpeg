@@ -28,7 +28,7 @@
 #if FF_API_OLD_BSF
 FF_DISABLE_DEPRECATION_WARNINGS
 
-AVBitStreamFilter *av_bitstream_filter_next(const AVBitStreamFilter *f)
+const AVBitStreamFilter *av_bitstream_filter_next(const AVBitStreamFilter *f)
 {
     const AVBitStreamFilter *filter = NULL;
     void *opaque = NULL;

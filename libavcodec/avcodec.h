@@ -5484,7 +5484,7 @@ void av_bitstream_filter_close(AVBitStreamFilterContext *bsf);
  * filters.
  */
 attribute_deprecated
-AVBitStreamFilter *av_bitstream_filter_next(const AVBitStreamFilter *f);
+const AVBitStreamFilter *av_bitstream_filter_next(const AVBitStreamFilter *f);
 #endif
 
 /**
