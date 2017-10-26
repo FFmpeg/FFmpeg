@@ -1199,24 +1199,6 @@ static void do_video_out(OutputFile *of,
 #endif
         return;
 
-#if FF_API_LAVF_FMT_RAWPICTURE
-    if (of->ctx->oformat->flags & AVFMT_RAWPICTURE &&
-        enc->codec->id == AV_CODEC_ID_RAWVIDEO) {
-        /* raw pictures are written as AVPicture structure to
-           avoid any copies. We support temporarily the older
-           method. */
-        if (in_picture->interlaced_frame)
-            mux_par->field_order = in_picture->top_field_first ? AV_FIELD_TB:AV_FIELD_BT;
-        else
-            mux_par->field_order = AV_FIELD_PROGRESSIVE;
-        pkt.data   = (uint8_t *)in_picture;
-        pkt.size   =  sizeof(AVPicture);
-        pkt.pts    = av_rescale_q(in_picture->pts, enc->time_base, ost->mux_timebase);
-        pkt.flags |= AV_PKT_FLAG_KEY;
-
-        output_packet(of, &pkt, ost, 0);
-    } else
-#endif
     {
         int forced_keyframe = 0;
         double pts_time;
@@ -1897,10 +1879,6 @@ static void flush_encoders(void)
 
         if (enc->codec_type == AVMEDIA_TYPE_AUDIO && enc->frame_size <= 1)
             continue;
-#if FF_API_LAVF_FMT_RAWPICTURE
-        if (enc->codec_type == AVMEDIA_TYPE_VIDEO && (of->ctx->oformat->flags & AVFMT_RAWPICTURE) && enc->codec->id == AV_CODEC_ID_RAWVIDEO)
-            continue;
-#endif
 
         if (enc->codec_type != AVMEDIA_TYPE_VIDEO && enc->codec_type != AVMEDIA_TYPE_AUDIO)
             continue;
@@ -1991,7 +1969,6 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     InputFile   *f = input_files [ist->file_index];
     int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ? 0 : of->start_time;
     int64_t ost_tb_start_time = av_rescale_q(start_time, AV_TIME_BASE_Q, ost->mux_timebase);
-    AVPicture pict;
     AVPacket opkt;
 
     av_init_packet(&opkt);
@@ -2078,23 +2055,6 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         opkt.size = pkt->size;
     }
     av_copy_packet_side_data(&opkt, pkt);
-
-#if FF_API_LAVF_FMT_RAWPICTURE
-    if (ost->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
-        ost->st->codecpar->codec_id == AV_CODEC_ID_RAWVIDEO &&
-        (of->ctx->oformat->flags & AVFMT_RAWPICTURE)) {
-        /* store AVPicture in AVPacket, as expected by the output format */
-        int ret = avpicture_fill(&pict, opkt.data, ost->st->codecpar->format, ost->st->codecpar->width, ost->st->codecpar->height);
-        if (ret < 0) {
-            av_log(NULL, AV_LOG_FATAL, "avpicture_fill failed: %s\n",
-                   av_err2str(ret));
-            exit_program(1);
-        }
-        opkt.data = (uint8_t *)&pict;
-        opkt.size = sizeof(AVPicture);
-        opkt.flags |= AV_PKT_FLAG_KEY;
-    }
-#endif
 
     output_packet(of, &opkt, ost, 0);
 }
