@@ -27,6 +27,7 @@ version <next>:
 - video setrange filter
 - nsp demuxer
 - support LibreSSL (via libtls)
+- AVX-512/ZMM support added
 
 
 version 3.4:
