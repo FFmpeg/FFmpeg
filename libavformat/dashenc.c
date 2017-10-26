@@ -782,7 +782,7 @@ static int dash_init(AVFormatContext *s)
             av_dict_set_int(&opts, "dash_track_number", i + 1, 0);
             av_dict_set_int(&opts, "live", 1, 0);
         }
-        if ((ret = avformat_write_header(ctx, &opts)) < 0)
+        if ((ret = avformat_init_output(ctx, &opts)) < 0)
             return ret;
         os->ctx_inited = 1;
         avio_flush(ctx->pb);
