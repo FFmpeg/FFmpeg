@@ -44,6 +44,8 @@ static int read_packet(void *opaque, uint8_t *buf, int buf_size)
     struct buffer_data *bd = (struct buffer_data *)opaque;
     buf_size = FFMIN(buf_size, bd->size);
 
+    if (!buf_size)
+        return AVERROR_EOF;
     printf("ptr:%p size:%zu\n", bd->ptr, bd->size);
 
     /* copy internal buffer data to buf */
