@@ -627,8 +627,6 @@ static int write_manifest(AVFormatContext *s, int final)
         av_free(escaped);
     }
     avio_printf(out, "\t</ProgramInformation>\n");
-    if (c->utc_timing_url)
-        avio_printf(out, "\t<UTCTiming schemeIdUri=\"urn:mpeg:dash:utc:http-xsdate:2014\" value=\"%s\"/>\n", c->utc_timing_url);
 
     if (c->window_size && s->nb_streams > 0 && c->streams[0].nb_segments > 0 && !c->use_template) {
         OutputStream *os = &c->streams[0];
@@ -646,6 +644,10 @@ static int write_manifest(AVFormatContext *s, int final)
             return ret;
     }
     avio_printf(out, "\t</Period>\n");
+
+    if (c->utc_timing_url)
+        avio_printf(out, "\t<UTCTiming schemeIdUri=\"urn:mpeg:dash:utc:http-xsdate:2014\" value=\"%s\"/>\n", c->utc_timing_url);
+
     avio_printf(out, "</MPD>\n");
     avio_flush(out);
     ff_format_io_close(s, &out);
