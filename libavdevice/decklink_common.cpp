@@ -75,7 +75,6 @@ static char *dup_wchar_to_utf8(wchar_t *w)
 #define DECKLINK_STR    OLECHAR *
 #define DECKLINK_STRDUP dup_wchar_to_utf8
 #define DECKLINK_FREE(s) SysFreeString(s)
-#define DECKLINK_BOOL BOOL
 #elif defined(__APPLE__)
 static char *dup_cfstring_to_utf8(CFStringRef w)
 {
@@ -86,13 +85,11 @@ static char *dup_cfstring_to_utf8(CFStringRef w)
 #define DECKLINK_STR    const __CFString *
 #define DECKLINK_STRDUP dup_cfstring_to_utf8
 #define DECKLINK_FREE(s) CFRelease(s)
-#define DECKLINK_BOOL bool
 #else
 #define DECKLINK_STR    const char *
 #define DECKLINK_STRDUP av_strdup
 /* free() is needed for a string returned by the DeckLink SDL. */
 #define DECKLINK_FREE(s) free((void *) s)
-#define DECKLINK_BOOL bool
 #endif
 
 HRESULT ff_decklink_get_display_name(IDeckLink *This, const char **displayName)

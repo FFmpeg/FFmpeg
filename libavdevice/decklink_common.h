@@ -28,6 +28,12 @@
 #include "libavutil/thread.h"
 #include "decklink_common_c.h"
 
+#ifdef _WIN32
+#define DECKLINK_BOOL BOOL
+#else
+#define DECKLINK_BOOL bool
+#endif
+
 class decklink_output_callback;
 class decklink_input_callback;
 
@@ -95,6 +101,7 @@ struct decklink_ctx {
     pthread_mutex_t mutex;
     pthread_cond_t cond;
     int frames_buffer_available_spots;
+    int autodetect;
 
     int channels;
     int audio_depth;
