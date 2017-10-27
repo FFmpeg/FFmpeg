@@ -529,7 +529,7 @@ static int read_packet_wrapper(AVIOContext *s, uint8_t *buf, int size)
     int ret;
 
     if (!s->read_packet)
-        return AVERROR_EOF;
+        return AVERROR(EINVAL);
     ret = s->read_packet(s->opaque, buf, size);
 #if FF_API_OLD_AVIO_EOF_0
     if (!ret && !s->max_packet_size) {
