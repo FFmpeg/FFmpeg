@@ -79,6 +79,9 @@
 #ifndef FF_API_FORMAT_GET_SET
 #define FF_API_FORMAT_GET_SET           (LIBAVFORMAT_VERSION_MAJOR < 59)
 #endif
+#ifndef FF_API_OLD_AVIO_EOF_0
+#define FF_API_OLD_AVIO_EOF_0           (LIBAVFORMAT_VERSION_MAJOR < 59)
+#endif
 
 
 #ifndef FF_API_R_FRAME_RATE
