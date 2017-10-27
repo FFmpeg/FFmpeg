@@ -29,8 +29,10 @@ void ff_hevc_v_loop_filter_chroma_neon(uint8_t *_pix, ptrdiff_t _stride, int *_t
 void ff_hevc_h_loop_filter_chroma_neon(uint8_t *_pix, ptrdiff_t _stride, int *_tc, uint8_t *_no_p, uint8_t *_no_q);
 void ff_hevc_idct_4x4_8_neon(int16_t *coeffs, int col_limit);
 void ff_hevc_idct_8x8_8_neon(int16_t *coeffs, int col_limit);
+void ff_hevc_idct_16x16_8_neon(int16_t *coeffs, int col_limit);
 void ff_hevc_idct_4x4_10_neon(int16_t *coeffs, int col_limit);
 void ff_hevc_idct_8x8_10_neon(int16_t *coeffs, int col_limit);
+void ff_hevc_idct_16x16_10_neon(int16_t *coeffs, int col_limit);
 void ff_hevc_idct_4x4_dc_neon_8(int16_t *coeffs);
 void ff_hevc_idct_8x8_dc_neon_8(int16_t *coeffs);
 void ff_hevc_idct_16x16_dc_neon_8(int16_t *coeffs);
@@ -154,6 +156,7 @@ av_cold void ff_hevc_dsp_init_neon(HEVCDSPContext *c, const int bit_depth)
         c->hevc_h_loop_filter_chroma   = ff_hevc_h_loop_filter_chroma_neon;
         c->idct[0]                     = ff_hevc_idct_4x4_8_neon;
         c->idct[1]                     = ff_hevc_idct_8x8_8_neon;
+        c->idct[2]                     = ff_hevc_idct_16x16_8_neon;
         c->idct_dc[0]                  = ff_hevc_idct_4x4_dc_neon_8;
         c->idct_dc[1]                  = ff_hevc_idct_8x8_dc_neon_8;
         c->idct_dc[2]                  = ff_hevc_idct_16x16_dc_neon_8;
@@ -227,5 +230,6 @@ av_cold void ff_hevc_dsp_init_neon(HEVCDSPContext *c, const int bit_depth)
     if (bit_depth == 10) {
         c->idct[0] = ff_hevc_idct_4x4_10_neon;
         c->idct[1] = ff_hevc_idct_8x8_10_neon;
+        c->idct[2] = ff_hevc_idct_16x16_10_neon;
     }
 }
