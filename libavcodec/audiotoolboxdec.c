@@ -24,7 +24,7 @@
 
 #include "config.h"
 #include "avcodec.h"
-#include "ac3_parser.h"
+#include "ac3_parser_internal.h"
 #include "bytestream.h"
 #include "internal.h"
 #include "mpegaudiodecheader.h"
