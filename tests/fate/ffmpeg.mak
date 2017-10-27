@@ -30,9 +30,9 @@ fate-ffmpeg-filter_complex: CMD = framecrc -filter_complex color=d=1:r=5 -fflags
 FATE_FFMPEG-$(call ALLYES, AEVALSRC_FILTER ASETNSAMPLES_FILTER AC3_FIXED_ENCODER) += fate-ffmpeg-filter_complex_audio
 fate-ffmpeg-filter_complex_audio: CMD = framecrc -filter_complex "aevalsrc=0:d=0.1,asetnsamples=1537" -c ac3_fixed
 
-# Ticket 6375
-FATE_SAMPLES_FFMPEG-$(call ALLYES, MOV_DEMUXER PNG_DECODER ALAC_DECODER ALAC_ENCODER) += fate-ffmpeg-attached_pics
-fate-ffmpeg-attached_pics: CMD = threads=2 framecrc -i $(TARGET_SAMPLES)/lossless-audio/inside.m4a -acodec alac -max_muxing_queue_size 16
+# Ticket 6375, use case of NoX
+FATE_SAMPLES_FFMPEG-$(call ALLYES, MOV_DEMUXER PNG_DECODER ALAC_DECODER PCM_S16LE_ENCODER RAWVIDEO_ENCODER) += fate-ffmpeg-attached_pics
+fate-ffmpeg-attached_pics: CMD = threads=2 framecrc -i $(TARGET_SAMPLES)/lossless-audio/inside.m4a -c:a pcm_s16le -max_muxing_queue_size 16
 
 FATE_SAMPLES_FFMPEG-$(CONFIG_COLORKEY_FILTER) += fate-ffmpeg-filter_colorkey
 fate-ffmpeg-filter_colorkey: tests/data/filtergraphs/colorkey
