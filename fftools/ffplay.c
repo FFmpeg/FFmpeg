@@ -361,6 +361,7 @@ static AVPacket flush_pkt;
 
 static SDL_Window *window;
 static SDL_Renderer *renderer;
+static SDL_RendererInfo renderer_info = {0};
 
 static const struct TextureFormatEntry {
     enum AVPixelFormat format;
@@ -1320,38 +1321,15 @@ static int video_open(VideoState *is)
         h = default_height;
     }
 
-    if (!window) {
-        int flags = SDL_WINDOW_SHOWN;
-        if (!window_title)
-            window_title = input_filename;
-        if (is_full_screen)
-            flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
-        if (borderless)
-            flags |= SDL_WINDOW_BORDERLESS;
-        else
-            flags |= SDL_WINDOW_RESIZABLE;
-        window = SDL_CreateWindow(window_title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, flags);
-        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
-        if (window) {
-            SDL_RendererInfo info;
-            renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-            if (!renderer) {
-                av_log(NULL, AV_LOG_WARNING, "Failed to initialize a hardware accelerated renderer: %s\n", SDL_GetError());
-                renderer = SDL_CreateRenderer(window, -1, 0);
-            }
-            if (renderer) {
-                if (!SDL_GetRendererInfo(renderer, &info))
-                    av_log(NULL, AV_LOG_VERBOSE, "Initialized %s renderer.\n", info.name);
-            }
-        }
-    } else {
-        SDL_SetWindowSize(window, w, h);
-    }
+    if (!window_title)
+        window_title = input_filename;
+    SDL_SetWindowTitle(window, window_title);
 
-    if (!window || !renderer) {
-        av_log(NULL, AV_LOG_FATAL, "SDL: could not set video mode - exiting\n");
-        do_exit(is);
-    }
+    SDL_SetWindowSize(window, w, h);
+    SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+    if (is_full_screen)
+        SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+    SDL_ShowWindow(window);
 
     is->width  = w;
     is->height = h;
@@ -1362,7 +1340,7 @@ static int video_open(VideoState *is)
 /* display the current picture, if any */
 static void video_display(VideoState *is)
 {
-    if (!window)
+    if (!is->width)
         video_open(is);
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -3743,6 +3721,31 @@ int main(int argc, char **argv)
 
     av_init_packet(&flush_pkt);
     flush_pkt.data = (uint8_t *)&flush_pkt;
+
+    if (!display_disable) {
+        int flags = SDL_WINDOW_HIDDEN;
+        if (borderless)
+            flags |= SDL_WINDOW_BORDERLESS;
+        else
+            flags |= SDL_WINDOW_RESIZABLE;
+        window = SDL_CreateWindow(program_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, default_width, default_height, flags);
+        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
+        if (window) {
+            renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+            if (!renderer) {
+                av_log(NULL, AV_LOG_WARNING, "Failed to initialize a hardware accelerated renderer: %s\n", SDL_GetError());
+                renderer = SDL_CreateRenderer(window, -1, 0);
+            }
+            if (renderer) {
+                if (!SDL_GetRendererInfo(renderer, &renderer_info))
+                    av_log(NULL, AV_LOG_VERBOSE, "Initialized %s renderer.\n", renderer_info.name);
+            }
+        }
+        if (!window || !renderer) {
+            av_log(NULL, AV_LOG_FATAL, "Failed to create window or renderer: %s", SDL_GetError());
+            do_exit(NULL);
+        }
+    }
 
     is = stream_open(input_filename, file_iformat);
     if (!is) {
