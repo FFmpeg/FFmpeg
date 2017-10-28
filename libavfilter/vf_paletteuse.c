@@ -558,16 +558,16 @@ static int debug_accuracy(const struct color_node *node, const uint32_t *palette
     for (r = 0; r < 256; r++) {
         for (g = 0; g < 256; g++) {
             for (b = 0; b < 256; b++) {
-                const uint8_t rgb[] = {r, g, b};
-                const int r1 = COLORMAP_NEAREST(search_method, palette, node, rgb, trans_thresh);
-                const int r2 = colormap_nearest_bruteforce(palette, rgb, trans_thresh);
+                const uint8_t argb[] = {0xff, r, g, b};
+                const int r1 = COLORMAP_NEAREST(search_method, palette, node, argb, trans_thresh);
+                const int r2 = colormap_nearest_bruteforce(palette, argb, trans_thresh);
                 if (r1 != r2) {
                     const uint32_t c1 = palette[r1];
                     const uint32_t c2 = palette[r2];
-                    const uint8_t palrgb1[] = { c1>>16 & 0xff, c1>> 8 & 0xff, c1 & 0xff };
-                    const uint8_t palrgb2[] = { c2>>16 & 0xff, c2>> 8 & 0xff, c2 & 0xff };
-                    const int d1 = diff(palrgb1, rgb, trans_thresh);
-                    const int d2 = diff(palrgb2, rgb, trans_thresh);
+                    const uint8_t palargb1[] = { 0xff, c1>>16 & 0xff, c1>> 8 & 0xff, c1 & 0xff };
+                    const uint8_t palargb2[] = { 0xff, c2>>16 & 0xff, c2>> 8 & 0xff, c2 & 0xff };
+                    const int d1 = diff(palargb1, argb, trans_thresh);
+                    const int d2 = diff(palargb2, argb, trans_thresh);
                     if (d1 != d2) {
                         av_log(NULL, AV_LOG_ERROR,
                                "/!\\ %02X%02X%02X: %d ! %d (%06"PRIX32" ! %06"PRIX32") / dist: %d ! %d\n",
