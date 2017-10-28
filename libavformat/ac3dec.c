@@ -47,8 +47,11 @@ static int ac3_eac3_probe(AVProbeData *p, enum AVCodecID expected_codec_id)
             uint16_t frame_size;
             int i, ret;
 
-            if(!memcmp(buf2, "\x1\x10\0\0\0\0\0\0", 8))
+            if(!memcmp(buf2, "\x1\x10\0\0\0\0\0\0", 8)) {
+                if (buf2 + 16 > end)
+                    break;
                 buf2+=16;
+            }
             if (buf[0] == 0x77 && buf[1] == 0x0B) {
                 for(i=0; i<8; i+=2) {
                     buf3[i  ] = buf2[i+1];
