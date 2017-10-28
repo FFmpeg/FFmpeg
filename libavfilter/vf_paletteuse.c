@@ -787,9 +787,9 @@ static void debug_mean_error(PaletteUseContext *s, const AVFrame *in1,
         for (x = 0; x < in1->width; x++) {
             const uint32_t c1 = src1[x];
             const uint32_t c2 = palette[src2[x]];
-            const uint8_t rgb1[] = {c1 >> 16 & 0xff, c1 >> 8 & 0xff, c1 & 0xff};
-            const uint8_t rgb2[] = {c2 >> 16 & 0xff, c2 >> 8 & 0xff, c2 & 0xff};
-            mean_err += diff(rgb1, rgb2, s->trans_thresh);
+            const uint8_t argb1[] = {0xff, c1 >> 16 & 0xff, c1 >> 8 & 0xff, c1 & 0xff};
+            const uint8_t argb2[] = {0xff, c2 >> 16 & 0xff, c2 >> 8 & 0xff, c2 & 0xff};
+            mean_err += diff(argb1, argb2, s->trans_thresh);
         }
         src1 += src1_linesize;
         src2 += src2_linesize;
