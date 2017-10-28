@@ -280,11 +280,9 @@ static int magy_decode_slice10(AVCodecContext *avctx, void *tdata,
         case GRADIENT:
             dst = (uint16_t *)p->data[i] + j * sheight * stride;
             s->llviddsp.add_left_pred_int16(dst, dst, max, width, 0);
-            left = lefttop = 0;
             dst += stride;
             if (interlaced) {
                 s->llviddsp.add_left_pred_int16(dst, dst, max, width, 0);
-                left = lefttop = 0;
                 dst += stride;
             }
             for (k = 1 + interlaced; k < height; k++) {
@@ -302,14 +300,13 @@ static int magy_decode_slice10(AVCodecContext *avctx, void *tdata,
             break;
         case MEDIAN:
             dst = (uint16_t *)p->data[i] + j * sheight * stride;
-            lefttop = left = dst[0];
             s->llviddsp.add_left_pred_int16(dst, dst, max, width, 0);
             dst += stride;
             if (interlaced) {
-                lefttop = left = dst[0];
                 s->llviddsp.add_left_pred_int16(dst, dst, max, width, 0);
                 dst += stride;
             }
+            lefttop = left = dst[0];
             for (k = 1 + interlaced; k < height; k++) {
                 magicyuv_median_pred16(dst, dst - fake_stride, dst, width, &left, &lefttop, max);
                 lefttop = left = dst[0];
@@ -411,11 +408,9 @@ static int magy_decode_slice(AVCodecContext *avctx, void *tdata,
         case GRADIENT:
             dst = p->data[i] + j * sheight * stride;
             s->llviddsp.add_left_pred(dst, dst, width, 0);
-            left = lefttop = 0;
             dst += stride;
             if (interlaced) {
                 s->llviddsp.add_left_pred(dst, dst, width, 0);
-                left = lefttop = 0;
                 dst += stride;
             }
             for (k = 1 + interlaced; k < height; k++) {
@@ -433,14 +428,13 @@ static int magy_decode_slice(AVCodecContext *avctx, void *tdata,
             break;
         case MEDIAN:
             dst = p->data[i] + j * sheight * stride;
-            lefttop = left = dst[0];
             s->llviddsp.add_left_pred(dst, dst, width, 0);
             dst += stride;
             if (interlaced) {
-                lefttop = left = dst[0];
                 s->llviddsp.add_left_pred(dst, dst, width, 0);
                 dst += stride;
             }
+            lefttop = left = dst[0];
             for (k = 1 + interlaced; k < height; k++) {
                 s->llviddsp.add_median_pred(dst, dst - fake_stride,
                                              dst, width, &left, &lefttop);
