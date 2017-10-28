@@ -155,11 +155,12 @@ static int nvdec_h264_decode_slice(AVCodecContext *avctx, const uint8_t *buffer,
     return 0;
 }
 
-static int nvdec_h264_decode_init(AVCodecContext *avctx)
+static int nvdec_h264_frame_params(AVCodecContext *avctx,
+                                   AVBufferRef *hw_frames_ctx)
 {
     const H264Context *h = avctx->priv_data;
     const SPS       *sps = h->ps.sps;
-    return ff_nvdec_decode_init(avctx, sps->ref_frame_count + sps->num_reorder_frames);
+    return ff_nvdec_frame_params(avctx, hw_frames_ctx, sps->ref_frame_count + sps->num_reorder_frames);
 }
 
 AVHWAccel ff_h264_nvdec_hwaccel = {
@@ -170,7 +171,8 @@ AVHWAccel ff_h264_nvdec_hwaccel = {
     .start_frame          = nvdec_h264_start_frame,
     .end_frame            = ff_nvdec_end_frame,
     .decode_slice         = nvdec_h264_decode_slice,
-    .init                 = nvdec_h264_decode_init,
+    .frame_params         = nvdec_h264_frame_params,
+    .init                 = ff_nvdec_decode_init,
     .uninit               = ff_nvdec_decode_uninit,
     .priv_data_size       = sizeof(NVDECContext),
 };

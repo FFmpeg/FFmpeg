@@ -258,11 +258,12 @@ static int nvdec_hevc_decode_slice(AVCodecContext *avctx, const uint8_t *buffer,
     return 0;
 }
 
-static int nvdec_hevc_decode_init(AVCodecContext *avctx)
+static int nvdec_hevc_frame_params(AVCodecContext *avctx,
+                                   AVBufferRef *hw_frames_ctx)
 {
     const HEVCContext *s = avctx->priv_data;
     const HEVCSPS *sps = s->ps.sps;
-    return ff_nvdec_decode_init(avctx, sps->temporal_layer[sps->max_sub_layers - 1].max_dec_pic_buffering + 1);
+    return ff_nvdec_frame_params(avctx, hw_frames_ctx, sps->temporal_layer[sps->max_sub_layers - 1].max_dec_pic_buffering + 1);
 }
 
 AVHWAccel ff_hevc_nvdec_hwaccel = {
@@ -273,7 +274,8 @@ AVHWAccel ff_hevc_nvdec_hwaccel = {
     .start_frame          = nvdec_hevc_start_frame,
     .end_frame            = ff_nvdec_end_frame,
     .decode_slice         = nvdec_hevc_decode_slice,
-    .init                 = nvdec_hevc_decode_init,
+    .frame_params         = nvdec_hevc_frame_params,
+    .init                 = ff_nvdec_decode_init,
     .uninit               = ff_nvdec_decode_uninit,
     .priv_data_size       = sizeof(NVDECContext),
 };
