@@ -506,15 +506,16 @@ static void disp_node(AVBPrint *buf,
     const uint32_t fontcolor = node->val[1] > 0x50 &&
                                node->val[2] > 0x50 &&
                                node->val[3] > 0x50 ? 0 : 0xffffff;
+    const int rgb_comp = node->split - 1;
     av_bprintf(buf, "%*cnode%d ["
                "label=\"%c%02X%c%02X%c%02X%c\" "
                "fillcolor=\"#%02x%02x%02x\" "
                "fontcolor=\"#%06"PRIX32"\"]\n",
                depth*INDENT, ' ', node->palette_id,
-               "[  "[node->split], node->val[1],
-               "][ "[node->split], node->val[2],
-               " ]["[node->split], node->val[3],
-               "  ]"[node->split],
+               "[  "[rgb_comp], node->val[1],
+               "][ "[rgb_comp], node->val[2],
+               " ]["[rgb_comp], node->val[3],
+               "  ]"[rgb_comp],
                node->val[1], node->val[2], node->val[3],
                fontcolor);
     if (parent_id != -1)
