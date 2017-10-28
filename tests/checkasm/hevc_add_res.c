@@ -61,7 +61,7 @@ static void check_add_res(HEVCDSPContext h, int bit_depth)
         memcpy(res1, res0, sizeof(*res0) * size);
         memcpy(dst1, dst0, sizeof(int16_t) * size);
 
-        if (check_func(h.add_residual[i - 2], "add_res_%dx%d_%d", block_size, block_size, bit_depth)) {
+        if (check_func(h.add_residual[i - 2], "hevc_add_res_%dx%d_%d", block_size, block_size, bit_depth)) {
             call_ref(dst0, res0, stride);
             call_new(dst1, res1, stride);
             if (memcmp(dst0, dst1, size))
