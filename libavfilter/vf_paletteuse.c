@@ -338,12 +338,8 @@ end:
  * Note: a, r, g, and b are the components of color, but are passed as well to avoid
  * recomputing them (they are generally computed by the caller for other uses).
  */
-static av_always_inline int color_get(struct cache_node *cache, uint32_t color,
+static av_always_inline int color_get(PaletteUseContext *s, uint32_t color,
                                       uint8_t a, uint8_t r, uint8_t g, uint8_t b,
-                                      int transparency_index,
-                                      int trans_thresh,
-                                      const struct color_node *map,
-                                      const uint32_t *palette,
                                       const enum color_search_method search_method)
 {
     int i;
@@ -352,12 +348,12 @@ static av_always_inline int color_get(struct cache_node *cache, uint32_t color,
     const uint8_t ghash = g & ((1<<NBITS)-1);
     const uint8_t bhash = b & ((1<<NBITS)-1);
     const unsigned hash = rhash<<(NBITS*2) | ghash<<NBITS | bhash;
-    struct cache_node *node = &cache[hash];
+    struct cache_node *node = &s->cache[hash];
     struct cached_color *e;
 
     // first, check for transparency
-    if (a < trans_thresh && transparency_index >= 0) {
-        return transparency_index;
+    if (a < s->trans_thresh && s->transparency_index >= 0) {
+        return s->transparency_index;
     }
 
     for (i = 0; i < node->nb_entries; i++) {
@@ -371,25 +367,21 @@ static av_always_inline int color_get(struct cache_node *cache, uint32_t color,
     if (!e)
         return AVERROR(ENOMEM);
     e->color = color;
-    e->pal_entry = COLORMAP_NEAREST(search_method, palette, map, argb_elts, trans_thresh);
+    e->pal_entry = COLORMAP_NEAREST(search_method, s->palette, s->map, argb_elts, s->trans_thresh);
 
     return e->pal_entry;
 }
 
-static av_always_inline int get_dst_color_err(struct cache_node *cache,
-                                              uint32_t c, const struct color_node *map,
-                                              const uint32_t *palette,
-                                              int transparency_index,
-                                              int trans_thresh,
-                                              int *er, int *eg, int *eb,
+static av_always_inline int get_dst_color_err(PaletteUseContext *s,
+                                              uint32_t c, int *er, int *eg, int *eb,
                                               const enum color_search_method search_method)
 {
     const uint8_t a = c >> 24 & 0xff;
     const uint8_t r = c >> 16 & 0xff;
     const uint8_t g = c >>  8 & 0xff;
     const uint8_t b = c       & 0xff;
-    const int dstx = color_get(cache, c, a, r, g, b, transparency_index, trans_thresh, map, palette, search_method);
-    const uint32_t dstc = palette[dstx];
+    const int dstx = color_get(s, c, a, r, g, b, search_method);
+    const uint32_t dstc = s->palette[dstx];
     *er = r - (dstc >> 16 & 0xff);
     *eg = g - (dstc >>  8 & 0xff);
     *eb = b - (dstc       & 0xff);
@@ -402,15 +394,10 @@ static av_always_inline int set_frame(PaletteUseContext *s, AVFrame *out, AVFram
                                       const enum color_search_method search_method)
 {
     int x, y;
-    const struct color_node *map = s->map;
-    struct cache_node *cache = s->cache;
-    const uint32_t *palette = s->palette;
     const int src_linesize = in ->linesize[0] >> 2;
     const int dst_linesize = out->linesize[0];
     uint32_t *src = ((uint32_t *)in ->data[0]) + y_start*src_linesize;
     uint8_t  *dst =              out->data[0]  + y_start*dst_linesize;
-    int transparency_index = s->transparency_index;
-    int trans_thresh = s->trans_thresh;
 
     w += x_start;
     h += y_start;
@@ -428,7 +415,7 @@ static av_always_inline int set_frame(PaletteUseContext *s, AVFrame *out, AVFram
                 const uint8_t r = av_clip_uint8(r8 + d);
                 const uint8_t g = av_clip_uint8(g8 + d);
                 const uint8_t b = av_clip_uint8(b8 + d);
-                const int color = color_get(cache, src[x], a8, r, g, b, transparency_index, trans_thresh, map, palette, search_method);
+                const int color = color_get(s, src[x], a8, r, g, b, search_method);
 
                 if (color < 0)
                     return color;
@@ -436,7 +423,7 @@ static av_always_inline int set_frame(PaletteUseContext *s, AVFrame *out, AVFram
 
             } else if (dither == DITHERING_HECKBERT) {
                 const int right = x < w - 1, down = y < h - 1;
-                const int color = get_dst_color_err(cache, src[x], map, palette, transparency_index, trans_thresh, &er, &eg, &eb, search_method);
+                const int color = get_dst_color_err(s, src[x], &er, &eg, &eb, search_method);
 
                 if (color < 0)
                     return color;
@@ -448,7 +435,7 @@ static av_always_inline int set_frame(PaletteUseContext *s, AVFrame *out, AVFram
 
             } else if (dither == DITHERING_FLOYD_STEINBERG) {
                 const int right = x < w - 1, down = y < h - 1, left = x > x_start;
-                const int color = get_dst_color_err(cache, src[x], map, palette, transparency_index, trans_thresh, &er, &eg, &eb, search_method);
+                const int color = get_dst_color_err(s, src[x], &er, &eg, &eb, search_method);
 
                 if (color < 0)
                     return color;
@@ -462,7 +449,7 @@ static av_always_inline int set_frame(PaletteUseContext *s, AVFrame *out, AVFram
             } else if (dither == DITHERING_SIERRA2) {
                 const int right  = x < w - 1, down  = y < h - 1, left  = x > x_start;
                 const int right2 = x < w - 2,                    left2 = x > x_start + 1;
-                const int color = get_dst_color_err(cache, src[x], map, palette, transparency_index, trans_thresh, &er, &eg, &eb, search_method);
+                const int color = get_dst_color_err(s, src[x], &er, &eg, &eb, search_method);
 
                 if (color < 0)
                     return color;
@@ -481,7 +468,7 @@ static av_always_inline int set_frame(PaletteUseContext *s, AVFrame *out, AVFram
 
             } else if (dither == DITHERING_SIERRA2_4A) {
                 const int right = x < w - 1, down = y < h - 1, left = x > x_start;
-                const int color = get_dst_color_err(cache, src[x], map, palette, transparency_index, trans_thresh, &er, &eg, &eb, search_method);
+                const int color = get_dst_color_err(s, src[x], &er, &eg, &eb, search_method);
 
                 if (color < 0)
                     return color;
@@ -496,7 +483,7 @@ static av_always_inline int set_frame(PaletteUseContext *s, AVFrame *out, AVFram
                 const uint8_t r = src[x] >> 16 & 0xff;
                 const uint8_t g = src[x] >>  8 & 0xff;
                 const uint8_t b = src[x]       & 0xff;
-                const int color = color_get(cache, src[x], a, r, g, b, transparency_index, trans_thresh, map, palette, search_method);
+                const int color = color_get(s, src[x], a, r, g, b, search_method);
 
                 if (color < 0)
                     return color;
