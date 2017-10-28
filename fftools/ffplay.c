@@ -1828,10 +1828,18 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
     AVCodecParameters *codecpar = is->video_st->codecpar;
     AVRational fr = av_guess_frame_rate(is->ic, is->video_st, NULL);
     AVDictionaryEntry *e = NULL;
-    int i;
+    int nb_pix_fmts = 0;
+    int i, j;
 
-    for (i = 0; i < FF_ARRAY_ELEMS(pix_fmts); i++)
-        pix_fmts[i] = sdl_texture_format_map[i].format;
+    for (i = 0; i < renderer_info.num_texture_formats; i++) {
+        for (j = 0; j < FF_ARRAY_ELEMS(sdl_texture_format_map) - 1; j++) {
+            if (renderer_info.texture_formats[i] == sdl_texture_format_map[j].texture_fmt) {
+                pix_fmts[nb_pix_fmts++] = sdl_texture_format_map[j].format;
+                break;
+            }
+        }
+    }
+    pix_fmts[nb_pix_fmts] = AV_PIX_FMT_NONE;
 
     while ((e = av_dict_get(sws_dict, "", e, AV_DICT_IGNORE_SUFFIX))) {
         if (!strcmp(e->key, "sws_flags")) {
@@ -3741,7 +3749,7 @@ int main(int argc, char **argv)
                     av_log(NULL, AV_LOG_VERBOSE, "Initialized %s renderer.\n", renderer_info.name);
             }
         }
-        if (!window || !renderer) {
+        if (!window || !renderer || !renderer_info.num_texture_formats) {
             av_log(NULL, AV_LOG_FATAL, "Failed to create window or renderer: %s", SDL_GetError());
             do_exit(NULL);
         }
