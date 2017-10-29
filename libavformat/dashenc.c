@@ -778,6 +778,9 @@ static int dash_init(AVFormatContext *s)
         } else {
             av_dict_set_int(&opts, "cluster_time_limit", c->min_seg_duration / 1000, 0);
             av_dict_set_int(&opts, "cluster_size_limit", 5 * 1024 * 1024, 0); // set a large cluster size limit
+            av_dict_set_int(&opts, "dash", 1, 0);
+            av_dict_set_int(&opts, "dash_track_number", i + 1, 0);
+            av_dict_set_int(&opts, "live", 1, 0);
         }
         if ((ret = avformat_write_header(ctx, &opts)) < 0)
             return ret;
