@@ -6901,10 +6901,12 @@ static int mov_seek_fragment(AVFormatContext *s, AVStream *st, int64_t timestamp
 static int mov_seek_stream(AVFormatContext *s, AVStream *st, int64_t timestamp, int flags)
 {
     MOVStreamContext *sc = st->priv_data;
-    int sample, time_sample;
+    int sample, time_sample, ret;
     unsigned int i;
 
-    int ret = mov_seek_fragment(s, st, timestamp);
+    timestamp -= sc->time_offset;
+
+    ret = mov_seek_fragment(s, st, timestamp);
     if (ret < 0)
         return ret;
 
