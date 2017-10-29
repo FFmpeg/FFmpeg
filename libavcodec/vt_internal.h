@@ -16,17 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_VDA_VT_INTERNAL_H
-#define AVCODEC_VDA_VT_INTERNAL_H
-
-void ff_vda_output_callback(void *vda_hw_ctx,
-                            CFDictionaryRef user_info,
-                            OSStatus status,
-                            uint32_t infoFlags,
-                            CVImageBufferRef image_buffer);
-
-int ff_vda_default_init(AVCodecContext *avctx);
-void ff_vda_default_free(AVCodecContext *avctx);
+#ifndef AVCODEC_VT_INTERNAL_H
+#define AVCODEC_VT_INTERNAL_H
 
 typedef struct VTContext {
     // The current bitstream buffer.
@@ -60,4 +51,5 @@ int ff_videotoolbox_h264_decode_slice(AVCodecContext *avctx,
                                       uint32_t size);
 CFDataRef ff_videotoolbox_avcc_extradata_create(AVCodecContext *avctx);
 CFDataRef ff_videotoolbox_hvcc_extradata_create(AVCodecContext *avctx);
-#endif /* AVCODEC_VDA_VT_INTERNAL_H */
+
+#endif /* AVCODEC_VT_INTERNAL_H */

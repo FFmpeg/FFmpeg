@@ -6,7 +6,9 @@ FATE_MOV = fate-mov-3elist \
            fate-mov-1elist-ends-last-bframe \
            fate-mov-2elist-elist1-ends-bframe \
            fate-mov-3elist-encrypted \
+           fate-mov-invalid-elst-entry-count \
            fate-mov-gpmf-remux \
+           fate-mov-440hz-10ms \
 
 FATE_MOV_FFPROBE = fate-mov-aac-2048-priming \
                    fate-mov-zombie \
@@ -38,6 +40,12 @@ fate-mov-1elist-ends-last-bframe: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/mov-1e
 
 # Makes sure that we handle timestamps of packets in case of multiple edit lists with one of them ending on a B-frame correctly.
 fate-mov-2elist-elist1-ends-bframe: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/mov-2elist-elist1-ends-bframe.mov
+
+# Makes sure that we handle edit lists and start padding correctly.
+fate-mov-440hz-10ms: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/440hz-10ms.m4a
+
+# Makes sure that we handle invalid edit list entry count correctly.
+fate-mov-invalid-elst-entry-count: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/invalid_elst_entry_count.mov
 
 fate-mov-aac-2048-priming: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_packets -print_format compact $(TARGET_SAMPLES)/mov/aac-2048-priming.mov
 

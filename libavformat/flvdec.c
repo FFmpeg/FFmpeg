@@ -1152,6 +1152,12 @@ retry_duration:
         st->codecpar->codec_id == AV_CODEC_ID_MPEG4) {
         int type = avio_r8(s->pb);
         size--;
+
+        if (size < 0) {
+            ret = AVERROR_INVALIDDATA;
+            goto leave;
+        }
+
         if (st->codecpar->codec_id == AV_CODEC_ID_H264 || st->codecpar->codec_id == AV_CODEC_ID_MPEG4) {
             // sign extension
             int32_t cts = (avio_rb24(s->pb) + 0xff800000) ^ 0xff800000;

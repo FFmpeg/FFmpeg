@@ -76,16 +76,12 @@
 #endif
 
 
-#if !FF_API_QUANT_BIAS
 #define FF_DEFAULT_QUANT_BIAS 999999
-#endif
 
-#if !FF_API_QSCALE_TYPE
 #define FF_QSCALE_TYPE_MPEG1 0
 #define FF_QSCALE_TYPE_MPEG2 1
 #define FF_QSCALE_TYPE_H264  2
 #define FF_QSCALE_TYPE_VP56  3
-#endif
 
 #define FF_SANE_NB_CHANNELS 64U
 
@@ -372,10 +368,6 @@ int ff_set_sar(AVCodecContext *avctx, AVRational sar);
  */
 int ff_side_data_update_matrix_encoding(AVFrame *frame,
                                         enum AVMatrixEncoding matrix_encoding);
-
-#if FF_API_MERGE_SD
-int ff_packet_split_and_drop_side_data(AVPacket *pkt);
-#endif
 
 /**
  * Select the (possibly hardware accelerated) pixel format.

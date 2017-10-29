@@ -217,7 +217,6 @@ External library support:
   --enable-gnutls          enable gnutls, needed for https support
                            if openssl is not used [no]
   --disable-iconv          disable iconv [autodetect]
-  --disable-jack           disable libjack support [autodetect]
   --enable-jni             enable JNI support [no]
   --enable-ladspa          enable LADSPA audio filtering [no]
   --enable-libass          enable libass subtitles rendering,
@@ -238,6 +237,7 @@ External library support:
   --enable-libgsm          enable GSM de/encoding via libgsm [no]
   --enable-libiec61883     enable iec61883 via libiec61883 [no]
   --enable-libilbc         enable iLBC de/encoding via libilbc [no]
+  --enable-libjack         enable JACK audio sound server [no]
   --enable-libkvazaar      enable HEVC encoding via libkvazaar [no]
   --enable-libmodplug      enable ModPlug via libmodplug [no]
   --enable-libmp3lame      enable MP3 encoding via libmp3lame [no]
@@ -318,7 +318,6 @@ External library support:
   --enable-omx-rpi         enable OpenMAX IL code for Raspberry Pi [no]
   --enable-rkmpp           enable Rockchip Media Process Platform code [no]
   --disable-vaapi          disable Video Acceleration API (mainly Unix/Intel) code [autodetect]
-  --disable-vda            disable Apple Video Decode Acceleration code [autodetect]
   --disable-vdpau          disable Nvidia Video Decode and Presentation API for Unix code [autodetect]
   --disable-videotoolbox   disable VideoToolbox code [autodetect]
 
@@ -585,13 +584,13 @@ sanitize_var_name(){
     echo $@ | sed 's/[^A-Za-z0-9_]/_/g'
 }
 
-set_safe(){
+set_sanitized(){
     var=$1
     shift
     eval $(sanitize_var_name "$var")='$*'
 }
 
-get_safe(){
+get_sanitized(){
     eval echo \$$(sanitize_var_name "$1")
 }
 
@@ -637,13 +636,13 @@ disable_weak(){
     set_weak no $*
 }
 
-enable_safe(){
+enable_sanitized(){
     for var; do
         enable $(echo "$var" | sed 's/[^A-Za-z0-9_]/_/g')
     done
 }
 
-disable_safe(){
+disable_sanitized(){
     for var; do
         disable $(echo "$var" | sed 's/[^A-Za-z0-9_]/_/g')
     done
@@ -1109,8 +1108,8 @@ check_header(){
     log check_header "$@"
     header=$1
     shift
-    disable_safe $header
-    check_cpp "$@" <<EOF && enable_safe $header
+    disable_sanitized $header
+    check_cpp "$@" <<EOF && enable_sanitized $header
 #include <$header>
 int x;
 EOF
@@ -1121,11 +1120,11 @@ check_header_objcc(){
     rm -f -- "$TMPO"
     header=$1
     shift
-    disable_safe $header
+    disable_sanitized $header
     {
        echo "#include <$header>"
        echo "int main(void) { return 0; }"
-    } | check_objcc && check_stat "$TMPO" && enable_safe $header
+    } | check_objcc && check_stat "$TMPO" && enable_sanitized $header
 }
 
 check_apple_framework(){
@@ -1197,7 +1196,7 @@ check_func_headers(){
             echo " ret |= ((intptr_t)check_$func) & 0xFFFF;"
         done
         echo "return ret; }"
-    } | check_ld "cc" "$@" && enable $funcs && enable_safe $headers
+    } | check_ld "cc" "$@" && enable $funcs && enable_sanitized $headers
 }
 
 check_class_headers_cpp(){
@@ -1216,7 +1215,7 @@ check_class_headers_cpp(){
             i=$(expr $i + 1)
         done
         echo "return 0; }"
-    } | check_ld "cxx" "$@" && enable $funcs && enable_safe $headers
+    } | check_ld "cxx" "$@" && enable $funcs && enable_sanitized $headers
 }
 
 check_cpp_condition(){
@@ -1283,8 +1282,8 @@ check_pkg_config(){
     pkg_libs=$($pkg_config --libs $pkg_config_flags $pkg)
     check_func_headers "$headers" "$funcs" $pkg_cflags $pkg_libs "$@" &&
         enable $name &&
-        set_safe "${name}_cflags"    $pkg_cflags &&
-        set_safe "${name}_extralibs" $pkg_libs
+        set_sanitized "${name}_cflags"    $pkg_cflags &&
+        set_sanitized "${name}_extralibs" $pkg_libs
 }
 
 check_exec(){
@@ -1327,8 +1326,8 @@ check_type(){
     headers=$1
     type=$2
     shift 2
-    disable_safe "$type"
-    check_code cc "$headers" "$type v" "$@" && enable_safe "$type"
+    disable_sanitized "$type"
+    check_code cc "$headers" "$type v" "$@" && enable_sanitized "$type"
 }
 
 check_struct(){
@@ -1337,9 +1336,9 @@ check_struct(){
     struct=$2
     member=$3
     shift 3
-    disable_safe "${struct}_${member}"
+    disable_sanitized "${struct}_${member}"
     check_code cc "$headers" "const void *p = &(($struct *)0)->$member" "$@" &&
-        enable_safe "${struct}_${member}"
+        enable_sanitized "${struct}_${member}"
 }
 
 check_builtin(){
@@ -1399,7 +1398,7 @@ use_pkg_config(){
     log use_pkg_config "$@"
     name="$1"
     check_pkg_config "$@" || return 1
-    add_cflags    $(get_safe "${name}_cflags")
+    add_cflags    $(get_sanitized "${name}_cflags")
 }
 
 require_pkg_config(){
@@ -1534,7 +1533,6 @@ EXTERNAL_AUTODETECT_LIBRARY_LIST="
     bzlib
     coreimage
     iconv
-    jack
     libxcb
     libxcb_shm
     libxcb_shape
@@ -1604,6 +1602,7 @@ EXTERNAL_LIBRARY_LIST="
     libgsm
     libiec61883
     libilbc
+    libjack
     libkvazaar
     libmodplug
     libmp3lame
@@ -1650,7 +1649,6 @@ HWACCEL_AUTODETECT_LIBRARY_LIST="
     dxva2
     nvenc
     vaapi
-    vda
     vdpau
     videotoolbox
     v4l2_m2m
@@ -1883,9 +1881,7 @@ ARCH_FEATURES="
     fast_64bit
     fast_clz
     fast_cmov
-    local_aligned_8
-    local_aligned_16
-    local_aligned_32
+    local_aligned
     simd_align_16
     simd_align_32
 "
@@ -1938,11 +1934,6 @@ HEADERS_LIST="
     machine_ioctl_meteor_h
     malloc_h
     opencv2_core_core_c_h
-    openjpeg_2_3_openjpeg_h
-    openjpeg_2_2_openjpeg_h
-    openjpeg_2_1_openjpeg_h
-    openjpeg_2_0_openjpeg_h
-    openjpeg_1_5_openjpeg_h
     OpenGL_gl3_h
     poll_h
     soundcard_h
@@ -2030,7 +2021,6 @@ SYSTEM_FUNCS="
     gmtime_r
     inet_aton
     isatty
-    jack_port_get_latency_range
     kbhit
     LoadLibrary
     localtime_r
@@ -2150,6 +2140,10 @@ CONFIG_EXTRA="
     blockdsp
     bswapdsp
     cabac
+    cbs
+    cbs_h264
+    cbs_h265
+    cbs_mpeg2
     dirac_parse
     dvprofile
     exif
@@ -2403,6 +2397,9 @@ w32threads_deps="atomics_native"
 threads_if_any="$THREADS_LIST"
 
 # subsystems
+cbs_h264_select="cbs golomb"
+cbs_h265_select="cbs golomb"
+cbs_mpeg2_select="cbs"
 dct_select="rdft"
 dirac_parse_select="golomb"
 error_resilience_select="me_cmp"
@@ -2521,6 +2518,7 @@ jv_decoder_select="blockdsp"
 lagarith_decoder_select="llviddsp"
 ljpeg_encoder_select="aandcttables idctdsp jpegtables mpegvideoenc"
 magicyuv_decoder_select="llviddsp"
+magicyuv_encoder_select="llvidencdsp"
 mdec_decoder_select="blockdsp idctdsp mpegvideo"
 metasound_decoder_select="lsp mdct sinewin"
 mimic_decoder_select="blockdsp bswapdsp hpeldsp idctdsp"
@@ -2542,8 +2540,6 @@ mp3on4_decoder_select="mpegaudio"
 mp3on4float_decoder_select="mpegaudio"
 mpc7_decoder_select="bswapdsp mpegaudiodsp"
 mpc8_decoder_select="mpegaudiodsp"
-mpeg_xvmc_decoder_deps="X11_extensions_XvMClib_h"
-mpeg_xvmc_decoder_select="mpeg2video_decoder"
 mpegvideo_decoder_select="mpegvideo"
 mpeg1video_decoder_select="mpegvideo"
 mpeg1video_encoder_select="aandcttables mpegvideoenc h263dsp"
@@ -2658,10 +2654,6 @@ cuda_deps_any="libdl LoadLibrary"
 cuvid_deps="cuda"
 d3d11va_deps="d3d11_h dxva_h ID3D11VideoDecoder ID3D11VideoContext"
 dxva2_deps="dxva2api_h DXVA2_ConfigPictureDecode ole32 user32"
-vda_framework_deps="VideoDecodeAcceleration_VDADecoder_h blocks_extension"
-vda_framework_extralibs="-framework VideoDecodeAcceleration"
-vda_deps="vda_framework pthreads corefoundation"
-vda_extralibs="-framework QuartzCore"
 videotoolbox_hwaccel_deps="videotoolbox pthreads"
 videotoolbox_hwaccel_extralibs="-framework QuartzCore"
 xvmc_deps="X11_extensions_XvMClib_h"
@@ -2683,10 +2675,6 @@ h264_mmal_hwaccel_deps="mmal"
 h264_qsv_hwaccel_deps="libmfx"
 h264_vaapi_hwaccel_deps="vaapi"
 h264_vaapi_hwaccel_select="h264_decoder"
-h264_vda_hwaccel_deps="vda"
-h264_vda_hwaccel_select="h264_decoder"
-h264_vda_old_hwaccel_deps="vda"
-h264_vda_old_hwaccel_select="h264_decoder"
 h264_vdpau_hwaccel_deps="vdpau"
 h264_vdpau_hwaccel_select="h264_decoder"
 h264_videotoolbox_hwaccel_deps="videotoolbox"
@@ -2819,11 +2807,7 @@ h264_qsv_encoder_select="qsvenc"
 h264_rkmpp_decoder_deps="rkmpp"
 h264_rkmpp_decoder_select="h264_mp4toannexb_bsf"
 h264_vaapi_encoder_deps="VAEncPictureParameterBufferH264"
-h264_vaapi_encoder_select="vaapi_encode golomb"
-h264_vda_decoder_deps="vda"
-h264_vda_decoder_select="h264_decoder"
-h264_vdpau_decoder_deps="vdpau"
-h264_vdpau_decoder_select="h264_decoder"
+h264_vaapi_encoder_select="cbs_h264 vaapi_encode"
 h264_v4l2m2m_decoder_deps="v4l2_m2m h264_v4l2_m2m"
 h264_v4l2m2m_encoder_deps="v4l2_m2m h264_v4l2_m2m"
 hevc_cuvid_decoder_deps="cuda cuvid"
@@ -2838,15 +2822,13 @@ hevc_qsv_encoder_select="hevcparse qsvenc"
 hevc_rkmpp_decoder_deps="rkmpp"
 hevc_rkmpp_decoder_select="hevc_mp4toannexb_bsf"
 hevc_vaapi_encoder_deps="VAEncPictureParameterBufferHEVC"
-hevc_vaapi_encoder_select="vaapi_encode golomb"
+hevc_vaapi_encoder_select="cbs_h265 vaapi_encode"
 hevc_v4l2m2m_decoder_deps="v4l2_m2m hevc_v4l2_m2m"
 hevc_v4l2m2m_encoder_deps="v4l2_m2m hevc_v4l2_m2m"
 mjpeg_cuvid_decoder_deps="cuda cuvid"
 mjpeg_vaapi_encoder_deps="VAEncPictureParameterBufferJPEG"
 mjpeg_vaapi_encoder_select="vaapi_encode jpegtables"
 mpeg1_cuvid_decoder_deps="cuda cuvid"
-mpeg1_vdpau_decoder_deps="vdpau"
-mpeg1_vdpau_decoder_select="mpeg1video_decoder"
 mpeg1_v4l2m2m_decoder_deps="v4l2_m2m mpeg1_v4l2_m2m"
 mpeg2_crystalhd_decoder_select="crystalhd"
 mpeg2_cuvid_decoder_deps="cuda cuvid"
@@ -2857,27 +2839,21 @@ mpeg2_qsv_decoder_select="qsvdec mpeg2_qsv_hwaccel"
 mpeg2_qsv_encoder_deps="libmfx"
 mpeg2_qsv_encoder_select="qsvenc"
 mpeg2_vaapi_encoder_deps="VAEncPictureParameterBufferMPEG2"
-mpeg2_vaapi_encoder_select="vaapi_encode"
+mpeg2_vaapi_encoder_select="cbs_mpeg2 vaapi_encode"
 mpeg2_v4l2m2m_decoder_deps="v4l2_m2m mpeg2_v4l2_m2m"
 mpeg4_crystalhd_decoder_select="crystalhd"
 mpeg4_cuvid_decoder_deps="cuda cuvid"
 mpeg4_mediacodec_decoder_deps="mediacodec"
 mpeg4_mmal_decoder_deps="mmal"
 mpeg4_omx_encoder_deps="omx"
-mpeg4_vdpau_decoder_deps="vdpau"
-mpeg4_vdpau_decoder_select="mpeg4_decoder"
 mpeg4_v4l2m2m_decoder_deps="v4l2_m2m mpeg4_v4l2_m2m"
 mpeg4_v4l2m2m_encoder_deps="v4l2_m2m mpeg4_v4l2_m2m"
-mpeg_vdpau_decoder_deps="vdpau"
-mpeg_vdpau_decoder_select="mpeg2video_decoder"
 msmpeg4_crystalhd_decoder_select="crystalhd"
 nvenc_h264_encoder_select="h264_nvenc_encoder"
 nvenc_hevc_encoder_select="hevc_nvenc_encoder"
 vc1_crystalhd_decoder_select="crystalhd"
 vc1_cuvid_decoder_deps="cuda cuvid"
 vc1_mmal_decoder_deps="mmal"
-vc1_vdpau_decoder_deps="vdpau"
-vc1_vdpau_decoder_select="vc1_decoder"
 vc1_v4l2m2m_decoder_deps="v4l2_m2m vc1_v4l2_m2m"
 vp8_cuvid_decoder_deps="cuda cuvid"
 vp8_mediacodec_decoder_deps="mediacodec"
@@ -2895,7 +2871,6 @@ vp9_vaapi_encoder_deps="VAEncPictureParameterBufferVP9"
 vp9_vaapi_encoder_select="vaapi_encode"
 vp9_v4l2m2m_decoder_deps="v4l2_m2m vp9_v4l2_m2m"
 wmv3_crystalhd_decoder_select="crystalhd"
-wmv3_vdpau_decoder_select="vc1_vdpau_decoder"
 
 # parsers
 h264_parser_select="golomb h264dsp h264parse"
@@ -2906,7 +2881,12 @@ mpeg4video_parser_select="h263dsp mpegvideo qpeldsp"
 vc1_parser_select="vc1dsp"
 
 # bitstream_filters
+h264_metadata_bsf_select="cbs_h264"
+h264_redundant_pps_bsf_select="cbs_h264"
+hevc_metadata_bsf_select="cbs_h265"
 mjpeg2jpeg_bsf_select="jpegtables"
+mpeg2_metadata_bsf_select="cbs_mpeg2"
+trace_headers_bsf_select="cbs_h264 cbs_h265 cbs_mpeg2"
 
 # external libraries
 aac_at_decoder_deps="audiotoolbox"
@@ -3004,7 +2984,6 @@ libzvbi_teletext_decoder_deps="libzvbi"
 videotoolbox_suggest="coreservices"
 videotoolbox_deps="corefoundation coremedia corevideo"
 videotoolbox_encoder_deps="videotoolbox VTCompressionSessionPrepareToEncodeFrames"
-videotoolbox_encoder_suggest="vda_framework"
 
 # demuxers / muxers
 ac3_demuxer_select="ac3_parser"
@@ -3031,6 +3010,7 @@ fifo_muxer_deps="threads"
 flac_demuxer_select="flac_parser"
 hds_muxer_select="flv_muxer"
 hls_muxer_select="mpegts_muxer"
+hls_muxer_suggest="gcrypt openssl"
 image2_alias_pix_demuxer_select="image2_demuxer"
 image2_brender_pix_demuxer_select="image2_demuxer"
 ipod_muxer_select="mov_muxer"
@@ -3110,7 +3090,7 @@ gdigrab_indev_deps="CreateDIBSection"
 gdigrab_indev_extralibs="-lgdi32"
 gdigrab_indev_select="bmp_decoder"
 iec61883_indev_deps="libiec61883"
-jack_indev_deps="jack"
+jack_indev_deps="libjack"
 jack_indev_deps_any="sem_timedwait dispatch_dispatch_h"
 kmsgrab_indev_deps="libdrm"
 lavfi_indev_deps="avfilter"
@@ -3223,7 +3203,7 @@ delogo_filter_deps="gpl"
 deshake_filter_select="pixelutils"
 deshake_filter_suggest="opencl"
 drawtext_filter_deps="libfreetype"
-drawtext_filter_suggest="libfontconfig"
+drawtext_filter_suggest="libfontconfig libfribidi"
 elbg_filter_deps="avcodec"
 eq_filter_deps="gpl"
 fftfilt_filter_deps="avcodec"
@@ -3339,7 +3319,7 @@ avdevice_suggest="libm"
 avfilter_deps="avutil"
 avfilter_suggest="libm"
 avformat_deps="avcodec avutil"
-avformat_suggest="libm network"
+avformat_suggest="libm network zlib"
 avresample_deps="avutil"
 avresample_suggest="libm"
 avutil_suggest="clock_gettime libm libdrm libmfx opencl user32 vaapi videotoolbox corefoundation corevideo coremedia wincrypt"
@@ -4701,7 +4681,7 @@ elif enabled mips; then
             loongson*)
                 enable loongson2
                 enable loongson3
-                enable local_aligned_8 local_aligned_16 local_aligned_32
+                enable local_aligned
                 enable simd_align_16
                 enable fast_64bit
                 enable fast_clz
@@ -5031,6 +5011,7 @@ case $target_os in
         enabled x86_32 && append SHFLAGS -Wl,-read_only_relocs,suppress
         strip="${strip} -x"
         add_ldflags -Wl,-dynamic,-search_paths_first
+        check_cflags -Werror=partial-availability
         SLIBSUF=".dylib"
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME).$(LIBVERSION)$(SLIBSUF)'
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME).$(LIBMAJOR)$(SLIBSUF)'
@@ -5401,7 +5382,7 @@ EOF
 sym=$($nm $TMPO | awk '/ff_extern/{ print substr($0, match($0, /[^ \t]*ff_extern/)) }')
 extern_prefix=${sym%%ff_extern*}
 
-check_inline_asm inline_asm '"" ::'
+! disabled inline_asm && check_inline_asm inline_asm '"" ::'
 
 _restrict=
 for restrict_keyword in restrict __restrict__ __restrict; do
@@ -5592,7 +5573,7 @@ elif enabled parisc; then
 
 elif enabled ppc; then
 
-    enable local_aligned_8 local_aligned_16 local_aligned_32
+    enable local_aligned
 
     check_inline_asm dcbzl     '"dcbzl 0, %0" :: "r"(0)'
     check_inline_asm ibm_asm   '"add 0, 0, 0"'
@@ -5633,7 +5614,7 @@ elif enabled x86; then
     check_builtin rdtsc    intrin.h   "__rdtsc()"
     check_builtin mm_empty mmintrin.h "_mm_empty()"
 
-    enable local_aligned_8 local_aligned_16 local_aligned_32
+    enable local_aligned
 
     # check whether EBP is available on x86
     # As 'i' is stored on the stack, this program will crash
@@ -5838,7 +5819,6 @@ check_header sys/un.h
 check_header termios.h
 check_header unistd.h
 check_header valgrind/valgrind.h
-check_header VideoDecodeAcceleration/VDADecoder.h
 check_func_headers VideoToolbox/VTCompressionSession.h VTCompressionSessionPrepareToEncodeFrames -framework VideoToolbox
 check_header windows.h
 check_header X11/extensions/XvMClib.h
@@ -6020,16 +6000,8 @@ enabled libopencv         && { check_header opencv2/core/core_c.h &&
                                  require libopencv opencv2/core/core_c.h cvCreateImageHeader -lopencv_core -lopencv_imgproc; } ||
                                require_pkg_config libopencv opencv opencv/cxcore.h cvCreateImageHeader; }
 enabled libopenh264       && require_pkg_config libopenh264 openh264 wels/codec_api.h WelsGetCodecVersion
-enabled libopenjpeg       && { { check_lib libopenjpeg openjpeg-2.3/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
-                               check_lib libopenjpeg openjpeg-2.3/openjpeg.h opj_version -lopenjp2 ||
-                               { check_lib libopenjpeg openjpeg-2.2/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
-                               check_lib libopenjpeg openjpeg-2.2/openjpeg.h opj_version -lopenjp2 ||
-                               { check_lib libopenjpeg openjpeg-2.1/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
-                               check_lib libopenjpeg openjpeg-2.1/openjpeg.h opj_version -lopenjp2 ||
-                               { check_lib libopenjpeg openjpeg-2.0/openjpeg.h opj_version -lopenjp2 -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
-                               { check_lib libopenjpeg openjpeg-1.5/openjpeg.h opj_version -lopenjpeg -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
-                               { check_lib libopenjpeg openjpeg.h opj_version -lopenjpeg -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } ||
-                               die "ERROR: libopenjpeg not found"; }
+enabled libopenjpeg       && { use_pkg_config libopenjpeg "libopenjp2 >= 2.1.0" openjpeg.h opj_version ||
+                               { require_pkg_config libopenjpeg "libopenjp2 >= 2.1.0" openjpeg.h opj_version -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } }
 enabled libopenmpt        && require_pkg_config libopenmpt "libopenmpt >= 0.2.6557" libopenmpt/libopenmpt.h openmpt_module_create -lstdc++ && append libopenmpt_extralibs "-lstdc++"
 enabled libopus           && {
     enabled libopus_decoder && {
@@ -6212,7 +6184,7 @@ rsync --help 2> /dev/null | grep -q 'contimeout' && enable rsync_contimeout || d
 # check V4L2 codecs available in the API
 check_header linux/fb.h
 check_header linux/videodev2.h
-check_code cc linux/videodev2.h "struct v4l2_frmsizeenum vfse; vfse.discrete.width = 0;" && enable_safe struct_v4l2_frmivalenum_discrete
+check_code cc linux/videodev2.h "struct v4l2_frmsizeenum vfse; vfse.discrete.width = 0;" && enable_sanitized struct_v4l2_frmivalenum_discrete
 check_code cc linux/videodev2.h "int i = V4L2_CAP_VIDEO_M2M_MPLANE | V4L2_CAP_VIDEO_M2M | V4L2_BUF_FLAG_LAST;" || disable v4l2_m2m
 check_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_VC1_ANNEX_G;" && enable vc1_v4l2_m2m
 check_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_MPEG1;" && enable mpeg1_v4l2_m2m
@@ -6225,7 +6197,7 @@ check_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_VP8;" && enable vp8_v4l2_m
 check_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_VP9;" && enable vp9_v4l2_m2m
 
 check_header sys/videoio.h
-check_code cc sys/videoio.h "struct v4l2_frmsizeenum vfse; vfse.discrete.width = 0;" && enable_safe struct_v4l2_frmivalenum_discrete
+check_code cc sys/videoio.h "struct v4l2_frmsizeenum vfse; vfse.discrete.width = 0;" && enable_sanitized struct_v4l2_frmivalenum_discrete
 
 check_lib user32 "windows.h winuser.h" GetShellWindow -luser32
 check_lib vfw32 "windows.h vfw.h" capCreateCaptureWindow -lvfw32
@@ -6245,19 +6217,20 @@ check_type "dshow.h" IBaseFilter
 check_header dev/ic/bt8xx.h
 
 if check_struct sys/soundcard.h audio_buf_info bytes; then
-    enable_safe sys/soundcard.h
+    enable_sanitized sys/soundcard.h
 else
-    check_cc -D__BSD_VISIBLE -D__XSI_VISIBLE <<EOF && add_cppflags -D__BSD_VISIBLE -D__XSI_VISIBLE && enable_safe sys/soundcard.h
+    check_cc -D__BSD_VISIBLE -D__XSI_VISIBLE <<EOF && add_cppflags -D__BSD_VISIBLE -D__XSI_VISIBLE && enable_sanitized sys/soundcard.h
     #include <sys/soundcard.h>
     audio_buf_info abc;
 EOF
 fi
 check_header soundcard.h
 
-enabled alsa && check_lib alsa alsa/asoundlib.h snd_pcm_htimestamp -lasound
+enabled alsa && use_pkg_config alsa alsa "alsa/asoundlib.h" snd_pcm_htimestamp ||
+    check_lib alsa alsa/asoundlib.h snd_pcm_htimestamp -lasound
 
-enabled jack && check_lib jack jack/jack.h jack_client_open -ljack &&
-    check_func jack_port_get_latency_range -ljack
+enabled libjack &&
+    require_pkg_config libjack jack jack/jack.h jack_port_get_latency_range
 
 enabled sndio && check_lib sndio sndio.h sio_open -lsndio
 
@@ -6576,6 +6549,7 @@ elif enabled tms470; then
     disable inline_asm
 elif enabled pathscale; then
     add_cflags -fstrict-overflow -OPT:wrap_around_unsafe_opt=OFF
+    disable inline_asm
 elif enabled_any msvc icl; then
     enabled x86_32 && disable aligned_stack
     enabled_all x86_32 debug && add_cflags -Oy-

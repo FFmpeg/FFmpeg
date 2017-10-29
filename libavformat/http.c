@@ -1296,8 +1296,11 @@ static int http_buf_read(URLContext *h, uint8_t *buf, int size)
                    "Chunked encoding data size: %"PRIu64"'\n",
                     s->chunksize);
 
-            if (!s->chunksize)
+            if (!s->chunksize) {
+                av_log(h, AV_LOG_DEBUG, "Last chunk received, closing conn\n");
+                ffurl_closep(&s->hd);
                 return 0;
+            }
             else if (s->chunksize == UINT64_MAX) {
                 av_log(h, AV_LOG_ERROR, "Invalid chunk size %"PRIu64"\n",
                        s->chunksize);

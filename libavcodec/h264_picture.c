@@ -41,7 +41,6 @@
 #include "mpegutils.h"
 #include "rectangle.h"
 #include "thread.h"
-#include "vdpau_compat.h"
 
 void ff_h264_unref_picture(H264Context *h, H264Picture *pic)
 {
@@ -152,12 +151,6 @@ int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup)
     int err = 0;
     h->mb_y = 0;
 
-#if FF_API_CAP_VDPAU
-    if (CONFIG_H264_VDPAU_DECODER &&
-        h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU)
-        ff_vdpau_h264_set_reference_frames(h);
-#endif
-
     if (in_setup || !(avctx->active_thread_type & FF_THREAD_FRAME)) {
         if (!h->droppable) {
             err = ff_h264_execute_ref_pic_marking(h);
@@ -174,12 +167,6 @@ int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup)
             av_log(avctx, AV_LOG_ERROR,
                    "hardware accelerator failed to decode picture\n");
     }
-
-#if FF_API_CAP_VDPAU
-    if (CONFIG_H264_VDPAU_DECODER &&
-        h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU)
-        ff_vdpau_h264_picture_complete(h);
-#endif
 
     if (!in_setup && !h->droppable)
         ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX,

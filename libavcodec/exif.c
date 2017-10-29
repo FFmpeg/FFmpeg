@@ -92,7 +92,7 @@ static int exif_decode_tag(void *logctx, GetByteContext *gbytes, int le,
     // store metadata or proceed with next IFD
     ret = ff_tis_ifd(id);
     if (ret) {
-        ret = avpriv_exif_decode_ifd(logctx, gbytes, le, depth + 1, metadata);
+        ret = ff_exif_decode_ifd(logctx, gbytes, le, depth + 1, metadata);
     } else {
         const char *name = exif_get_tag_name(id);
         char *use_name   = (char*) name;
@@ -119,8 +119,8 @@ static int exif_decode_tag(void *logctx, GetByteContext *gbytes, int le,
 }
 
 
-int avpriv_exif_decode_ifd(void *logctx, GetByteContext *gbytes, int le,
-                           int depth, AVDictionary **metadata)
+int ff_exif_decode_ifd(void *logctx, GetByteContext *gbytes,
+                       int le, int depth, AVDictionary **metadata)
 {
     int i, ret;
     int entries;
@@ -139,4 +139,14 @@ int avpriv_exif_decode_ifd(void *logctx, GetByteContext *gbytes, int le,
 
     // return next IDF offset or 0x000000000 or a value < 0 for failure
     return ff_tget_long(gbytes, le);
+}
+
+int avpriv_exif_decode_ifd(void *logctx, const uint8_t *buf, int size,
+                           int le, int depth, AVDictionary **metadata)
+{
+    GetByteContext gb;
+
+    bytestream2_init(&gb, buf, size);
+
+    return ff_exif_decode_ifd(logctx, &gb, le, depth, metadata);
 }

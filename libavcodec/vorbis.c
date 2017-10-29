@@ -58,7 +58,7 @@ int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, unsigned num)
     uint32_t exit_at_level[33] = { 404 };
     unsigned i, j, p, code;
 
-    for (p = 0; (bits[p] == 0) && (p < num); ++p)
+    for (p = 0; (p < num) && (bits[p] == 0); ++p)
         ;
     if (p == num)
         return 0;
@@ -71,7 +71,7 @@ int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, unsigned num)
 
     ++p;
 
-    for (i = p; (bits[i] == 0) && (i < num); ++i)
+    for (i = p; (i < num) && (bits[i] == 0); ++i)
         ;
     if (i == num)
         return 0;

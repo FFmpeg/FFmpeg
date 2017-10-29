@@ -136,23 +136,6 @@ void avfilter_graph_free(AVFilterGraph **graph)
     av_freep(graph);
 }
 
-#if FF_API_AVFILTER_OPEN
-int avfilter_graph_add_filter(AVFilterGraph *graph, AVFilterContext *filter)
-{
-    AVFilterContext **filters = av_realloc(graph->filters,
-                                           sizeof(*filters) * (graph->nb_filters + 1));
-    if (!filters)
-        return AVERROR(ENOMEM);
-
-    graph->filters = filters;
-    graph->filters[graph->nb_filters++] = filter;
-
-    filter->graph = graph;
-
-    return 0;
-}
-#endif
-
 int avfilter_graph_create_filter(AVFilterContext **filt_ctx, const AVFilter *filt,
                                  const char *name, const char *args, void *opaque,
                                  AVFilterGraph *graph_ctx)
@@ -509,7 +492,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
 
             if (convert_needed) {
                 AVFilterContext *convert;
-                AVFilter *filter;
+                const AVFilter *filter;
                 AVFilterLink *inlink, *outlink;
                 char scale_args[256];
                 char inst_name[30];
@@ -1235,7 +1218,7 @@ static int graph_insert_fifos(AVFilterGraph *graph, AVClass *log_ctx)
         for (j = 0; j < f->nb_inputs; j++) {
             AVFilterLink *link = f->inputs[j];
             AVFilterContext *fifo_ctx;
-            AVFilter *fifo;
+            const AVFilter *fifo;
             char name[32];
 
             if (!link->dstpad->needs_fifo)

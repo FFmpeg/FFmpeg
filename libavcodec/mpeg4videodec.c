@@ -189,6 +189,10 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
     if (w <= 0 || h <= 0)
         return AVERROR_INVALIDDATA;
 
+    /* the decoder was not properly initialized and we cannot continue */
+    if (sprite_trajectory.table == NULL)
+        return AVERROR_INVALIDDATA;
+
     for (i = 0; i < ctx->num_sprite_warping_points; i++) {
         int length;
         int x = 0, y = 0;
@@ -2845,29 +2849,3 @@ AVCodec ff_mpeg4_decoder = {
     .update_thread_context = ONLY_IF_THREADS_ENABLED(mpeg4_update_thread_context),
     .priv_class = &mpeg4_class,
 };
-
-
-#if CONFIG_MPEG4_VDPAU_DECODER && FF_API_VDPAU
-static const AVClass mpeg4_vdpau_class = {
-    "MPEG4 Video VDPAU Decoder",
-    av_default_item_name,
-    mpeg4_options,
-    LIBAVUTIL_VERSION_INT,
-};
-
-AVCodec ff_mpeg4_vdpau_decoder = {
-    .name           = "mpeg4_vdpau",
-    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 part 2 (VDPAU)"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MPEG4,
-    .priv_data_size = sizeof(Mpeg4DecContext),
-    .init           = decode_init,
-    .close          = ff_h263_decode_end,
-    .decode         = ff_h263_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_TRUNCATED | AV_CODEC_CAP_DELAY |
-                      AV_CODEC_CAP_HWACCEL_VDPAU,
-    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_VDPAU_MPEG4,
-                                                  AV_PIX_FMT_NONE },
-    .priv_class     = &mpeg4_vdpau_class,
-};
-#endif

@@ -92,6 +92,69 @@ When this option is enabled, the long-term headers are removed from the
 bitstream after extraction.
 @end table
 
+@section h264_metadata
+
+Modify metadata embedded in an H.264 stream.
+
+@table @option
+@item aud
+Insert or remove AUD NAL units in all access units of the stream.
+
+@table @samp
+@item insert
+@item remove
+@end table
+
+@item sample_aspect_ratio
+Set the sample aspect ratio of the stream in the VUI parameters.
+
+@item video_format
+@item video_full_range_flag
+Set the video format in the stream (see H.264 section E.2.1 and
+table E-2).
+
+@item colour_primaries
+@item transfer_characteristics
+@item matrix_coefficients
+Set the colour description in the stream (see H.264 section E.2.1
+and tables E-3, E-4 and E-5).
+
+@item chroma_sample_loc_type
+Set the chroma sample location in the stream (see H.264 section
+E.2.1 and figure E-1).
+
+@item tick_rate
+Set the tick rate (num_units_in_tick / time_scale) in the VUI
+parameters.  This is the smallest time unit representable in the
+stream, and in many cases represents the field rate of the stream
+(double the frame rate).
+@item fixed_frame_rate_flag
+Set whether the stream has fixed framerate - typically this indicates
+that the framerate is exactly half the tick rate, but the exact
+meaning is dependent on interlacing and the picture structure (see
+H.264 section E.2.1 and table E-6).
+
+@item crop_left
+@item crop_right
+@item crop_top
+@item crop_bottom
+Set the frame cropping offsets in the SPS.  These values will replace
+the current ones if the stream is already cropped.
+
+These fields are set in pixels.  Note that some sizes may not be
+representable if the chroma is subsampled or the stream is interlaced
+(see H.264 section 7.4.2.1.1).
+
+@item sei_user_data
+Insert a string as SEI unregistered user data.  The argument must
+be of the form @emph{UUID+string}, where the UUID is as hex digits
+possibly separated by hyphens, and the string can be anything.
+
+For example, @samp{086f3693-b7b3-4f2c-9653-21492feee5b8+hello} will
+insert the string ``hello'' associated with the given UUID.
+
+@end table
+
 @section h264_mp4toannexb
 
 Convert an H.264 bitstream from length prefixed mode to start code
@@ -110,6 +173,69 @@ ffmpeg -i INPUT.mp4 -codec copy -bsf:v h264_mp4toannexb OUTPUT.ts
 
 Please note that this filter is auto-inserted for MPEG-TS (muxer
 @code{mpegts}) and raw H.264 (muxer @code{h264}) output formats.
+
+@section h264_redundant_pps
+
+This applies a specific fixup to some Blu-ray streams which contain
+redundant PPSs modifying irrelevant parameters of the stream which
+confuse other transformations which require correct extradata.
+
+A new single global PPS is created, and all of the redundant PPSs
+within the stream are removed.
+
+@section hevc_metadata
+
+Modify metadata embedded in an HEVC stream.
+
+@table @option
+@item aud
+Insert or remove AUD NAL units in all access units of the stream.
+
+@table @samp
+@item insert
+@item remove
+@end table
+
+@item sample_aspect_ratio
+Set the sample aspect ratio in the stream in the VUI parameters.
+
+@item video_format
+@item video_full_range_flag
+Set the video format in the stream (see H.265 section E.3.1 and
+table E.2).
+
+@item colour_primaries
+@item transfer_characteristics
+@item matrix_coefficients
+Set the colour description in the stream (see H.265 section E.3.1
+and tables E.3, E.4 and E.5).
+
+@item chroma_sample_loc_type
+Set the chroma sample location in the stream (see H.265 section
+E.3.1 and figure E.1).
+
+@item tick_rate
+Set the tick rate in the VPS and VUI parameters (num_units_in_tick /
+time_scale).  Combined with @option{num_ticks_poc_diff_one}, this can
+set a constant framerate in the stream.  Note that it is likely to be
+overridden by container parameters when the stream is in a container.
+
+@item num_ticks_poc_diff_one
+Set poc_proportional_to_timing_flag in VPS and VUI and use this value
+to set num_ticks_poc_diff_one_minus1 (see H.265 sections 7.4.3.1 and
+E.3.1).  Ignored if @option{tick_rate} is not also set.
+
+@item crop_left
+@item crop_right
+@item crop_top
+@item crop_bottom
+Set the conformance window cropping offsets in the SPS.  These values
+will replace the current ones if the stream is already cropped.
+
+These fields are set in pixels.  Note that some sizes may not be
+representable if the chroma is subsampled (H.265 section 7.4.3.2.1).
+
+@end table
 
 @section hevc_mp4toannexb
 
@@ -198,6 +324,42 @@ See also the @ref{text2movsub} filter.
 
 Decompress non-standard compressed MP3 audio headers.
 
+@section mpeg2_metadata
+
+Modify metadata embedded in an MPEG-2 stream.
+
+@table @option
+@item display_aspect_ratio
+Set the display aspect ratio in the stream.
+
+The following fixed values are supported:
+@table @option
+@item 4/3
+@item 16/9
+@item 221/100
+@end table
+Any other value will result in square pixels being signalled instead
+(see H.262 section 6.3.3 and table 6-3).
+
+@item frame_rate
+Set the frame rate in the stream.  This is constructed from a table
+of known values combined with a small multiplier and divisor - if
+the supplied value is not exactly representable, the nearest
+representable value will be used instead (see H.262 section 6.3.3
+and table 6-4).
+
+@item video_format
+Set the video format in the stream (see H.262 section 6.3.6 and
+table 6-6).
+
+@item colour_primaries
+@item transfer_characteristics
+@item matrix_coefficients
+Set the colour description in the stream (see H.262 section 6.3.6
+and tables 6-7, 6-8 and 6-9).
+
+@end table
+
 @section mpeg4_unpack_bframes
 
 Unpack DivX-style packed B-frames.
@@ -274,6 +436,14 @@ Convert text subtitles to MOV subtitles (as used by the @code{mov_text}
 codec) with metadata headers.
 
 See also the @ref{mov2textsub} filter.
+
+@section trace_headers
+
+Log trace output containing all syntax elements in the coded stream
+headers (everything above the level of individual coded blocks).
+This can be useful for debugging low-level stream issues.
+
+Supports H.264, H.265 and MPEG-2.
 
 @section vp9_superframe
 

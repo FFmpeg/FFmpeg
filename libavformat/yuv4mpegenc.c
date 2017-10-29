@@ -69,6 +69,15 @@ static int yuv4_generate_header(AVFormatContext *s, char* buf)
     case AV_PIX_FMT_GRAY8:
         colorspace = " Cmono";
         break;
+    case AV_PIX_FMT_GRAY9:
+        colorspace = " Cmono9";
+        break;
+    case AV_PIX_FMT_GRAY10:
+        colorspace = " Cmono10";
+        break;
+    case AV_PIX_FMT_GRAY12:
+        colorspace = " Cmono12";
+        break;
     case AV_PIX_FMT_GRAY16:
         colorspace = " Cmono16";
         break;
@@ -184,6 +193,9 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
     case AV_PIX_FMT_YUV422P:
     case AV_PIX_FMT_YUV444P:
         break;
+    case AV_PIX_FMT_GRAY9:
+    case AV_PIX_FMT_GRAY10:
+    case AV_PIX_FMT_GRAY12:
     case AV_PIX_FMT_GRAY16:
     case AV_PIX_FMT_YUV420P9:
     case AV_PIX_FMT_YUV422P9:
@@ -213,7 +225,8 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
         ptr += frame->linesize[0];
     }
 
-    if (st->codecpar->format != AV_PIX_FMT_GRAY8 &&
+    if (st->codecpar->format != AV_PIX_FMT_GRAY8 && st->codecpar->format != AV_PIX_FMT_GRAY9 &&
+        st->codecpar->format != AV_PIX_FMT_GRAY10 && st->codecpar->format != AV_PIX_FMT_GRAY12 &&
         st->codecpar->format != AV_PIX_FMT_GRAY16) {
         // Adjust for smaller Cb and Cr planes
         av_pix_fmt_get_chroma_sub_sample(st->codecpar->format, &h_chroma_shift,
@@ -255,11 +268,14 @@ static int yuv4_write_header(AVFormatContext *s)
                "stream, some mjpegtools might not work.\n");
         break;
     case AV_PIX_FMT_GRAY8:
-    case AV_PIX_FMT_GRAY16:
     case AV_PIX_FMT_YUV420P:
     case AV_PIX_FMT_YUV422P:
     case AV_PIX_FMT_YUV444P:
         break;
+    case AV_PIX_FMT_GRAY9:
+    case AV_PIX_FMT_GRAY10:
+    case AV_PIX_FMT_GRAY12:
+    case AV_PIX_FMT_GRAY16:
     case AV_PIX_FMT_YUV420P9:
     case AV_PIX_FMT_YUV422P9:
     case AV_PIX_FMT_YUV444P9:
@@ -291,7 +307,8 @@ static int yuv4_write_header(AVFormatContext *s)
                "yuv444p10, yuv422p10, yuv420p10, "
                "yuv444p12, yuv422p12, yuv420p12, "
                "yuv444p14, yuv422p14, yuv420p14, "
-               "yuv444p16, yuv422p16, yuv420p16 "
+               "yuv444p16, yuv422p16, yuv420p16, "
+               "gray9, gray10, gray12 "
                "and gray16 pixel formats. "
                "Use -pix_fmt to select one.\n");
         return AVERROR(EIO);

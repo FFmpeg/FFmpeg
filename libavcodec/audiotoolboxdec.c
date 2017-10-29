@@ -24,7 +24,7 @@
 
 #include "config.h"
 #include "avcodec.h"
-#include "ac3_parser.h"
+#include "ac3_parser_internal.h"
 #include "bytestream.h"
 #include "internal.h"
 #include "mpegaudiodecheader.h"
@@ -350,10 +350,10 @@ static av_cold int ffat_create_decoder(AVCodecContext *avctx, AVPacket *pkt)
     } else if (pkt && pkt->size >= 7 &&
                (avctx->codec_id == AV_CODEC_ID_AC3 ||
                 avctx->codec_id == AV_CODEC_ID_EAC3)) {
-        AC3HeaderInfo hdr, *phdr = &hdr;
+        AC3HeaderInfo hdr;
         GetBitContext gbc;
         init_get_bits(&gbc, pkt->data, pkt->size);
-        if (avpriv_ac3_parse_header(&gbc, &phdr) < 0)
+        if (ff_ac3_parse_header(&gbc, &hdr) < 0)
             return AVERROR_INVALIDDATA;
         in_format.mSampleRate = hdr.sample_rate;
         in_format.mChannelsPerFrame = hdr.channels;

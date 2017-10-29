@@ -78,10 +78,6 @@ const HWAccel hwaccels[] = {
     { "dxva2", hwaccel_decode_init, HWACCEL_DXVA2, AV_PIX_FMT_DXVA2_VLD,
       AV_HWDEVICE_TYPE_DXVA2 },
 #endif
-#if CONFIG_VDA
-    { "vda",   videotoolbox_init,   HWACCEL_VDA,   AV_PIX_FMT_VDA,
-      AV_HWDEVICE_TYPE_NONE },
-#endif
 #if CONFIG_VIDEOTOOLBOX
     { "videotoolbox",   videotoolbox_init,   HWACCEL_VIDEOTOOLBOX,   AV_PIX_FMT_VIDEOTOOLBOX,
       AV_HWDEVICE_TYPE_NONE },
@@ -100,7 +96,6 @@ const HWAccel hwaccels[] = {
 #endif
     { 0 },
 };
-int hwaccel_lax_profile_check = 0;
 AVBufferRef *hw_device_ctx;
 HWDevice *filter_hw_device;
 
@@ -787,6 +782,9 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
             exit_program(1);
         }
 
+        if (o->bitexact)
+            ist->dec_ctx->flags |= AV_CODEC_FLAG_BITEXACT;
+
         switch (par->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
             if(!ist->dec)
@@ -798,9 +796,6 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
                 ist->dec_ctx->height = st->codec->height;
                 ist->dec_ctx->coded_width  = st->codec->coded_width;
                 ist->dec_ctx->coded_height = st->codec->coded_height;
-#if FF_API_EMU_EDGE
-                ist->dec_ctx->flags |= CODEC_FLAG_EMU_EDGE;
-#endif
             }
 #endif
 
@@ -996,7 +991,6 @@ static int open_input_file(OptionsContext *o, const char *filename)
         print_error(filename, AVERROR(ENOMEM));
         exit_program(1);
     }
-    ic->flags |= AVFMT_FLAG_KEEP_SIDE_DATA;
     if (o->nb_audio_sample_rate) {
         av_dict_set_int(&o->g->format_opts, "sample_rate", o->audio_sample_rate[o->nb_audio_sample_rate - 1].u.i, 0);
     }
@@ -1050,6 +1044,8 @@ static int open_input_file(OptionsContext *o, const char *filename)
         av_format_set_data_codec(ic, find_codec_or_die(data_codec_name, AVMEDIA_TYPE_DATA, 0));
 
     ic->flags |= AVFMT_FLAG_NONBLOCK;
+    if (o->bitexact)
+        ic->flags |= AVFMT_FLAG_BITEXACT;
     ic->interrupt_callback = int_cb;
 
     if (!av_dict_get(o->g->format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE)) {
@@ -1370,6 +1366,10 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     } else {
         ost->encoder_opts = filter_codec_opts(o->g->codec_opts, AV_CODEC_ID_NONE, oc, st, NULL);
     }
+
+
+    if (o->bitexact)
+        ost->enc_ctx->flags |= AV_CODEC_FLAG_BITEXACT;
 
     MATCH_PER_STREAM_OPT(time_bases, str, time_base, oc, st);
     if (time_base) {
@@ -1988,7 +1988,6 @@ static int read_ffserver_streams(OptionsContext *o, AVFormatContext *s, const ch
     int i, err;
     AVFormatContext *ic = avformat_alloc_context();
 
-    ic->flags |= AVFMT_FLAG_KEEP_SIDE_DATA;
     ic->interrupt_callback = int_cb;
     err = avformat_open_input(&ic, filename, NULL, NULL);
     if (err < 0)
@@ -2148,6 +2147,10 @@ static int open_output_file(OptionsContext *o, const char *filename)
     if (e) {
         const AVOption *o = av_opt_find(oc, "fflags", NULL, 0, 0);
         av_opt_eval_flags(oc, o, e->value, &format_flags);
+    }
+    if (o->bitexact) {
+        format_flags |= AVFMT_FLAG_BITEXACT;
+        oc->flags    |= AVFMT_FLAG_BITEXACT;
     }
 
     /* create streams for all unlabeled output pads */
@@ -3472,6 +3475,9 @@ const OptionDef options[] = {
     { "shortest",       OPT_BOOL | OPT_EXPERT | OPT_OFFSET |
                         OPT_OUTPUT,                                  { .off = OFFSET(shortest) },
         "finish encoding within shortest input" },
+    { "bitexact",       OPT_BOOL | OPT_EXPERT | OPT_OFFSET |
+                        OPT_OUTPUT | OPT_INPUT,                      { .off = OFFSET(bitexact) },
+        "bitexact mode" },
     { "apad",           OPT_STRING | HAS_ARG | OPT_SPEC |
                         OPT_OUTPUT,                                  { .off = OFFSET(apad) },
         "audio pad", "" },
@@ -3632,7 +3638,7 @@ const OptionDef options[] = {
     { "hwaccel_output_format", OPT_VIDEO | OPT_STRING | HAS_ARG | OPT_EXPERT |
                           OPT_SPEC | OPT_INPUT,                                  { .off = OFFSET(hwaccel_output_formats) },
         "select output format used with HW accelerated decoding", "format" },
-#if CONFIG_VDA || CONFIG_VIDEOTOOLBOX
+#if CONFIG_VIDEOTOOLBOX
     { "videotoolbox_pixfmt", HAS_ARG | OPT_STRING | OPT_EXPERT, { &videotoolbox_pixfmt}, "" },
 #endif
     { "hwaccels",         OPT_EXIT,                                              { .func_arg = show_hwaccels },
@@ -3640,8 +3646,6 @@ const OptionDef options[] = {
     { "autorotate",       HAS_ARG | OPT_BOOL | OPT_SPEC |
                           OPT_EXPERT | OPT_INPUT,                                { .off = OFFSET(autorotate) },
         "automatically insert correct rotate filters" },
-    { "hwaccel_lax_profile_check", OPT_BOOL | OPT_EXPERT,                        { &hwaccel_lax_profile_check},
-        "attempt to decode anyway if HW accelerated decoder's supported profiles do not exactly match the stream" },
 
     /* audio options */
     { "aframes",        OPT_AUDIO | HAS_ARG  | OPT_PERFILE | OPT_OUTPUT,           { .func_arg = opt_audio_frames },

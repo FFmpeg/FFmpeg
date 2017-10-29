@@ -1080,15 +1080,15 @@ static int hls_window(AVFormatContext *s, int last)
                 avio_printf(out, ",BYTERANGE=\"%"PRId64"@%"PRId64"\"", en->size, en->pos);
             }
             avio_printf(out, "\n");
-        } else {
-            if (hls->flags & HLS_ROUND_DURATIONS)
-                avio_printf(out, "#EXTINF:%ld,\n",  lrint(en->duration));
-            else
-                avio_printf(out, "#EXTINF:%f,\n", en->duration);
-            if (byterange_mode)
-                avio_printf(out, "#EXT-X-BYTERANGE:%"PRId64"@%"PRId64"\n",
-                            en->size, en->pos);
         }
+        if (hls->flags & HLS_ROUND_DURATIONS)
+            avio_printf(out, "#EXTINF:%ld,\n",  lrint(en->duration));
+        else
+            avio_printf(out, "#EXTINF:%f,\n", en->duration);
+        if (byterange_mode)
+            avio_printf(out, "#EXT-X-BYTERANGE:%"PRId64"@%"PRId64"\n",
+                        en->size, en->pos);
+
         if (hls->flags & HLS_PROGRAM_DATE_TIME) {
             time_t tt, wrongsecs;
             int milli;
@@ -1113,11 +1113,9 @@ static int hls_window(AVFormatContext *s, int last)
             avio_printf(out, "#EXT-X-PROGRAM-DATE-TIME:%s.%03d%s\n", buf0, milli, buf1);
             prog_date_time += en->duration;
         }
-        if (!((hls->segment_type == SEGMENT_TYPE_FMP4) && (en == hls->segments))) {
-            if (hls->baseurl)
-                avio_printf(out, "%s", hls->baseurl);
-            avio_printf(out, "%s\n", en->filename);
-        }
+        if (hls->baseurl)
+            avio_printf(out, "%s", hls->baseurl);
+        avio_printf(out, "%s\n", en->filename);
     }
 
     if (last && (hls->flags & HLS_OMIT_ENDLIST)==0)
@@ -1335,6 +1333,7 @@ static int hls_write_header(AVFormatContext *s)
     AVDictionary *options = NULL;
     int basename_size = 0;
     int vtt_basename_size = 0;
+    int fmp4_init_filename_len = strlen(hls->fmp4_init_filename) + 1;
 
     if (hls->segment_type == SEGMENT_TYPE_FMP4) {
         pattern = "%d.m4s";
@@ -1445,7 +1444,6 @@ static int hls_write_header(AVFormatContext *s)
     }
 
     if (av_strcasecmp(hls->fmp4_init_filename, "init.mp4")) {
-        int fmp4_init_filename_len = strlen(hls->fmp4_init_filename) + 1;
         hls->base_output_dirname = av_malloc(fmp4_init_filename_len);
         if (!hls->base_output_dirname) {
             ret = AVERROR(ENOMEM);
@@ -1453,19 +1451,25 @@ static int hls_write_header(AVFormatContext *s)
         }
         av_strlcpy(hls->base_output_dirname, hls->fmp4_init_filename, fmp4_init_filename_len);
     } else {
-        hls->base_output_dirname = av_malloc(basename_size);
+        if (basename_size > 0) {
+            hls->base_output_dirname = av_malloc(basename_size);
+        } else {
+            hls->base_output_dirname = av_malloc(strlen(hls->fmp4_init_filename));
+        }
         if (!hls->base_output_dirname) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
 
-        av_strlcpy(hls->base_output_dirname, s->filename, basename_size);
-        p = strrchr(hls->base_output_dirname, '/');
+        if (basename_size > 0) {
+            av_strlcpy(hls->base_output_dirname, s->filename, basename_size);
+            p = strrchr(hls->base_output_dirname, '/');
+        }
         if (p) {
             *(p + 1) = '\0';
             av_strlcat(hls->base_output_dirname, hls->fmp4_init_filename, basename_size);
         } else {
-            av_strlcpy(hls->base_output_dirname, hls->fmp4_init_filename, basename_size);
+            av_strlcpy(hls->base_output_dirname, hls->fmp4_init_filename, fmp4_init_filename_len);
         }
     }
 

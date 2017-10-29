@@ -1088,6 +1088,25 @@
     out_m;                                                \
 } )
 
+#define CLIP_SW_0_255_MAX_SATU(in)                    \
+( {                                                   \
+    v4i32 out_m;                                      \
+                                                      \
+    out_m = __msa_maxi_s_w((v4i32) in, 0);            \
+    out_m = (v4i32) __msa_sat_u_w((v4u32) out_m, 7);  \
+    out_m;                                            \
+} )
+#define CLIP_SW2_0_255_MAX_SATU(in0, in1)  \
+{                                          \
+    in0 = CLIP_SW_0_255_MAX_SATU(in0);     \
+    in1 = CLIP_SW_0_255_MAX_SATU(in1);     \
+}
+#define CLIP_SW4_0_255_MAX_SATU(in0, in1, in2, in3)  \
+{                                                    \
+    CLIP_SW2_0_255_MAX_SATU(in0, in1);               \
+    CLIP_SW2_0_255_MAX_SATU(in2, in3);               \
+}
+
 /* Description : Addition of 4 signed word elements
                  4 signed word elements of input vector are added together and
                  resulted integer sum is returned
@@ -2242,6 +2261,22 @@
     out1 = in2 - in3;                                                         \
     out2 = in4 - in5;                                                         \
     out3 = in6 - in7;                                                         \
+}
+
+/* Description : Sign extend byte elements from right half of the vector
+   Arguments   : Input  - in    (byte vector)
+                 Output - out   (sign extended halfword vector)
+                 Return Type - signed halfword
+   Details     : Sign bit of byte elements from input vector 'in' is
+                 extracted and interleaved with same vector 'in' to generate
+                 8 halfword elements keeping sign intact
+*/
+#define UNPCK_R_SB_SH(in, out)                       \
+{                                                    \
+    v16i8 sign_m;                                    \
+                                                     \
+    sign_m = __msa_clti_s_b((v16i8) in, 0);          \
+    out = (v8i16) __msa_ilvr_b(sign_m, (v16i8) in);  \
 }
 
 /* Description : Sign extend halfword elements from right half of the vector

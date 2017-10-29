@@ -204,7 +204,7 @@ static int v4l2_prepare_encoder(V4L2m2mContext *s)
             v4l2_set_ext_ctrl(s, MPEG_CID(MPEG4_PROFILE), val, "mpeg4 profile");
         qmin_cid = MPEG_CID(MPEG4_MIN_QP);
         qmax_cid = MPEG_CID(MPEG4_MAX_QP);
-        if (avctx->flags & CODEC_FLAG_QPEL)
+        if (avctx->flags & AV_CODEC_FLAG_QPEL)
             v4l2_set_ext_ctrl(s, MPEG_CID(MPEG4_QPEL), 1, "qpel");
         qmin = 1;
         qmax = 31;

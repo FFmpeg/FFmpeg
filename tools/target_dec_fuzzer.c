@@ -99,7 +99,7 @@ static void FDBCreate(FuzzDataBuffer *FDB) {
 static void FDBDesroy(FuzzDataBuffer *FDB) { av_free(FDB->data_); }
 
 static void FDBRealloc(FuzzDataBuffer *FDB, size_t size) {
-    size_t needed = size + FF_INPUT_BUFFER_PADDING_SIZE;
+    size_t needed = size + AV_INPUT_BUFFER_PADDING_SIZE;
     av_assert0(needed > size);
     if (needed > FDB->size_) {
         av_free(FDB->data_);
@@ -116,8 +116,8 @@ static void FDBPrepare(FuzzDataBuffer *FDB, AVPacket *dst, const uint8_t *data,
     FDBRealloc(FDB, size);
     memcpy(FDB->data_, data, size);
     size_t padd = FDB->size_ - size;
-    if (padd > FF_INPUT_BUFFER_PADDING_SIZE)
-        padd = FF_INPUT_BUFFER_PADDING_SIZE;
+    if (padd > AV_INPUT_BUFFER_PADDING_SIZE)
+        padd = AV_INPUT_BUFFER_PADDING_SIZE;
     memset(FDB->data_ + size, 0, padd);
     av_init_packet(dst);
     dst->data = FDB->data_;
@@ -153,10 +153,6 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 #endif
         av_log_set_level(AV_LOG_PANIC);
     }
-
-    // Unsupported
-    if (c->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU)
-        return 0;
 
     switch (c->type) {
     case AVMEDIA_TYPE_AUDIO   : decode_handler = avcodec_decode_audio4; break;

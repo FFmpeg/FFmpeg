@@ -31,7 +31,7 @@
 #include "avio.h"
 #include "isom.h"
 #include "avc.h"
-#include "libavcodec/ac3_parser.h"
+#include "libavcodec/ac3_parser_internal.h"
 #include "libavcodec/dnxhddata.h"
 #include "libavcodec/flac.h"
 #include "libavcodec/get_bits.h"
@@ -345,7 +345,6 @@ struct eac3_info {
 #if CONFIG_AC3_PARSER
 static int handle_eac3(MOVMuxContext *mov, AVPacket *pkt, MOVTrack *track)
 {
-    GetBitContext gbc;
     AC3HeaderInfo tmp, *hdr = &tmp;
     struct eac3_info *info;
     int num_blocks;
@@ -354,8 +353,7 @@ static int handle_eac3(MOVMuxContext *mov, AVPacket *pkt, MOVTrack *track)
         return AVERROR(ENOMEM);
     info = track->eac3_priv;
 
-    init_get_bits(&gbc, pkt->data, pkt->size * 8);
-    if (avpriv_ac3_parse_header(&gbc, &hdr) < 0) {
+    if (avpriv_ac3_parse_header(&hdr, pkt->data, pkt->size) < 0) {
         /* drop the packets until we see a good one */
         if (!track->entry) {
             av_log(mov, AV_LOG_WARNING, "Dropping invalid packet from start of the stream\n");
@@ -403,16 +401,18 @@ static int handle_eac3(MOVMuxContext *mov, AVPacket *pkt, MOVTrack *track)
             int parent = hdr->substreamid;
 
             while (cumul_size != pkt->size) {
-                int i;
-                init_get_bits(&gbc, pkt->data + cumul_size, (pkt->size - cumul_size) * 8);
-                if (avpriv_ac3_parse_header(&gbc, &hdr) < 0)
+                GetBitContext gbc;
+                int i, ret;
+                ret = avpriv_ac3_parse_header(&hdr, pkt->data + cumul_size, pkt->size - cumul_size);
+                if (ret < 0)
                     return AVERROR_INVALIDDATA;
                 if (hdr->frame_type != EAC3_FRAME_TYPE_DEPENDENT)
                     return AVERROR(EINVAL);
-                cumul_size += hdr->frame_size;
                 info->substream[parent].num_dep_sub++;
+                ret /= 8;
 
                 /* header is parsed up to lfeon, but custom channel map may be needed */
+                init_get_bits8(&gbc, pkt->data + cumul_size + ret, pkt->size - cumul_size - ret);
                 /* skip bsid */
                 skip_bits(&gbc, 5);
                 /* skip volume control params */
@@ -427,6 +427,7 @@ static int handle_eac3(MOVMuxContext *mov, AVPacket *pkt, MOVTrack *track)
                     info->substream[parent].chan_loc |= (get_bits(&gbc, 16) >> 5) & 0x1f;
                 else
                     info->substream[parent].chan_loc |= hdr->channel_mode;
+                cumul_size += hdr->frame_size;
             }
         }
     }

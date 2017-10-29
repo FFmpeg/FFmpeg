@@ -254,14 +254,14 @@ typedef struct HEVCSPS {
     ScalingList scaling_list;
 
     unsigned int nb_st_rps;
-    ShortTermRPS st_rps[HEVC_MAX_SHORT_TERM_RPS_COUNT];
+    ShortTermRPS st_rps[HEVC_MAX_SHORT_TERM_REF_PIC_SETS];
 
     uint8_t amp_enabled_flag;
     uint8_t sao_enabled;
 
     uint8_t long_term_ref_pics_present_flag;
-    uint16_t lt_ref_pic_poc_lsb_sps[32];
-    uint8_t used_by_curr_pic_lt_sps_flag[32];
+    uint16_t lt_ref_pic_poc_lsb_sps[HEVC_MAX_LONG_TERM_REF_PICS];
+    uint8_t used_by_curr_pic_lt_sps_flag[HEVC_MAX_LONG_TERM_REF_PICS];
     uint8_t num_long_term_ref_pics_sps;
 
     struct {

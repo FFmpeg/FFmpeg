@@ -364,15 +364,7 @@ cglobal hscale%1to%2_%4, %5, 10, %6, pos0, dst, w, srcmem, filter, fltpos, fltsi
     movd [dstq+wq*2], m0
 %endif ; %3 ==/!= X
 %else ; %2 == 19
-%if mmsize == 8
-    PMINSD_MMX    m0, m2, m4
-%elif cpuflag(sse4)
-    pminsd        m0, m2
-%else ; sse2/ssse3
-    cvtdq2ps      m0, m0
-    minps         m0, m2
-    cvtps2dq      m0, m0
-%endif ; mmx/sse2/ssse3/sse4
+    PMINSD        m0, m2, m4
 %ifnidn %3, X
     mova [dstq+wq*(4>>wshr)], m0
 %else ; %3 == X

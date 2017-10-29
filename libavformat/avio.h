@@ -569,13 +569,6 @@ int64_t avio_size(AVIOContext *s);
  * @return non zero if and only if end of file
  */
 int avio_feof(AVIOContext *s);
-#if FF_API_URL_FEOF
-/**
- * @deprecated use avio_feof()
- */
-attribute_deprecated
-int url_feof(AVIOContext *s);
-#endif
 
 /** @warning Writes up to 4 KiB per call */
 int avio_printf(AVIOContext *s, const char *fmt, ...) av_printf_format(2, 3);

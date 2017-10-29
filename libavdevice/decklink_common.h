@@ -97,6 +97,7 @@ struct decklink_ctx {
     int frames_buffer_available_spots;
 
     int channels;
+    int audio_depth;
 };
 
 typedef enum { DIRECTION_IN, DIRECTION_OUT} decklink_direction_t;

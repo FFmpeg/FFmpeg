@@ -48,8 +48,6 @@ MAKE_ACCESSORS(AVFrame, frame, enum AVColorRange, color_range)
                (frame)->channels == \
                av_get_channel_layout_nb_channels((frame)->channel_layout))
 
-AVDictionary **avpriv_frame_get_metadatap(AVFrame *frame) {return &frame->metadata;};
-
 #if FF_API_FRAME_QP
 int av_frame_set_qp_table(AVFrame *f, AVBufferRef *buf, int stride, int qp_type)
 {

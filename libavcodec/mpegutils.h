@@ -48,7 +48,6 @@
 #define MAX_FCODE        7
 
 /* MB types */
-#if !FF_API_MB_TYPE
 #define MB_TYPE_INTRA4x4   (1 <<  0)
 #define MB_TYPE_INTRA16x16 (1 <<  1) // FIXME H.264-specific
 #define MB_TYPE_INTRA_PCM  (1 <<  2) // FIXME H.264-specific
@@ -70,7 +69,6 @@
 #define MB_TYPE_L0L1       (MB_TYPE_L0   | MB_TYPE_L1)
 #define MB_TYPE_QUANT      (1 << 16)
 #define MB_TYPE_CBP        (1 << 17)
-#endif
 
 #define MB_TYPE_INTRA    MB_TYPE_INTRA4x4 // default mb_type if there is just one type
 

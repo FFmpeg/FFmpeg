@@ -437,19 +437,6 @@ int av_get_packet(AVIOContext *s, AVPacket *pkt, int size);
  */
 int av_append_packet(AVIOContext *s, AVPacket *pkt, int size);
 
-#if FF_API_LAVF_FRAC
-/*************************************************/
-/* fractional numbers for exact pts handling */
-
-/**
- * The exact value of the fractional number is: 'val + num / den'.
- * num is assumed to be 0 <= num < den.
- */
-typedef struct AVFrac {
-    int64_t val, num, den;
-} AVFrac;
-#endif
-
 /*************************************************/
 /* input/output formats */
 
@@ -478,10 +465,6 @@ typedef struct AVProbeData {
 #define AVFMT_NOFILE        0x0001
 #define AVFMT_NEEDNUMBER    0x0002 /**< Needs '%d' in filename. */
 #define AVFMT_SHOW_IDS      0x0008 /**< Show format stream IDs numbers. */
-#if FF_API_LAVF_FMT_RAWPICTURE
-#define AVFMT_RAWPICTURE    0x0020 /**< Format wants AVPicture structure for
-                                      raw picture data. @deprecated Not used anymore */
-#endif
 #define AVFMT_GLOBALHEADER  0x0040 /**< Format wants global header. */
 #define AVFMT_NOTIMESTAMPS  0x0080 /**< Format does not need / have any timestamps. */
 #define AVFMT_GENERIC_INDEX 0x0100 /**< Use generic index building code. */
@@ -893,14 +876,6 @@ typedef struct AVStream {
     AVCodecContext *codec;
 #endif
     void *priv_data;
-
-#if FF_API_LAVF_FRAC
-    /**
-     * @deprecated this field is unused
-     */
-    attribute_deprecated
-    struct AVFrac pts;
-#endif
 
     /**
      * This is the fundamental unit of time (in seconds) in terms
@@ -1469,7 +1444,7 @@ typedef struct AVFormatContext {
 #define AVFMT_FLAG_SORT_DTS    0x10000 ///< try to interleave outputted packets by dts (using this flag can slow demuxing down)
 #define AVFMT_FLAG_PRIV_OPT    0x20000 ///< Enable use of private options by delaying codec open (this could be made default once all code is converted)
 #if FF_API_LAVF_KEEPSIDE_FLAG
-#define AVFMT_FLAG_KEEP_SIDE_DATA 0x40000 ///< Don't merge side data but keep it separate. Deprecated, will be the default.
+#define AVFMT_FLAG_KEEP_SIDE_DATA 0x40000 ///< Deprecated, does nothing.
 #endif
 #define AVFMT_FLAG_FAST_SEEK   0x80000 ///< Enable fast, but inaccurate seeks for some formats
 #define AVFMT_FLAG_SHORTEST   0x100000 ///< Stop muxing when the shortest stream stops.
@@ -2103,13 +2078,8 @@ uint8_t *av_stream_new_side_data(AVStream *stream,
  * @param size pointer for side information size to store (optional)
  * @return pointer to data if present or NULL otherwise
  */
-#if FF_API_NOCONST_GET_SIDE_DATA
-uint8_t *av_stream_get_side_data(AVStream *stream,
-                                 enum AVPacketSideDataType type, int *size);
-#else
 uint8_t *av_stream_get_side_data(const AVStream *stream,
                                  enum AVPacketSideDataType type, int *size);
-#endif
 
 AVProgram *av_new_program(AVFormatContext *s, int id);
 

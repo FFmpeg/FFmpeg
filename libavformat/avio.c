@@ -297,7 +297,7 @@ int ffurl_alloc(URLContext **puc, const char *filename, int flags,
        return url_alloc_for_protocol(puc, p, filename, flags, int_cb);
 
     *puc = NULL;
-    if (av_strstart(filename, "https:", NULL))
+    if (av_strstart(filename, "https:", NULL) || av_strstart(filename, "tls:", NULL))
         av_log(NULL, AV_LOG_WARNING, "https protocol not found, recompile FFmpeg with "
                                      "openssl, gnutls "
                                      "or securetransport enabled.\n");
@@ -391,8 +391,10 @@ static inline int retry_transfer_wrapper(URLContext *h, uint8_t *buf,
                 }
                 av_usleep(1000);
             }
-        } else if (ret < 1)
-            return (ret < 0 && ret != AVERROR_EOF) ? ret : len;
+        } else if (ret == AVERROR_EOF)
+            return (len > 0) ? len : AVERROR_EOF;
+        else if (ret < 0)
+            return ret;
         if (ret) {
             fast_retries = FFMAX(fast_retries, 2);
             wait_since = 0;

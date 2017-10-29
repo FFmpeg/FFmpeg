@@ -370,7 +370,6 @@ static int celt_search_for_tf(OpusPsyContext *s, OpusPsyStep **start, CeltFrame 
     for (cway = 0; cway < 2; cway++) {
         int mag[2];
         int base = f->transient ? 120 : 960;
-        int i;
 
         for (i = 0; i < 2; i++) {
             int c = ff_celt_tf_select[f->size][f->transient][cway][i];

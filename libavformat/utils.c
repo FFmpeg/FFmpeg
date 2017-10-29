@@ -1677,13 +1677,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
             }
             st->inject_global_side_data = 0;
         }
-
-#if FF_API_LAVF_MERGE_SD
-FF_DISABLE_DEPRECATION_WARNINGS
-        if (!(s->flags & AVFMT_FLAG_KEEP_SIDE_DATA))
-            av_packet_merge_side_data(pkt);
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     }
 
     av_opt_get_dict_val(s, "metadata", AV_OPT_SEARCH_CHILDREN, &metadata);
@@ -3882,12 +3875,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
 
-    // close codecs which were opened in try_decode_frame()
-    for (i = 0; i < ic->nb_streams; i++) {
-        st = ic->streams[i];
-        avcodec_close(st->internal->avctx);
-    }
-
     ff_rfps_calculate(ic);
 
     for (i = 0; i < ic->nb_streams; i++) {
@@ -4078,6 +4065,7 @@ find_stream_info_err:
         st = ic->streams[i];
         if (st->info)
             av_freep(&st->info->duration_error);
+        avcodec_close(ic->streams[i]->internal->avctx);
         av_freep(&ic->streams[i]->info);
         av_bsf_free(&ic->streams[i]->internal->extract_extradata.bsf);
         av_packet_free(&ic->streams[i]->internal->extract_extradata.pkt);
@@ -5251,13 +5239,8 @@ int ff_generate_avci_extradata(AVStream *st)
     return 0;
 }
 
-#if FF_API_NOCONST_GET_SIDE_DATA
-uint8_t *av_stream_get_side_data(AVStream *st,
-                                 enum AVPacketSideDataType type, int *size)
-#else
 uint8_t *av_stream_get_side_data(const AVStream *st,
                                  enum AVPacketSideDataType type, int *size)
-#endif
 {
     int i;
 

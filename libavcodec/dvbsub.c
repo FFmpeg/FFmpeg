@@ -239,9 +239,9 @@ static void dvb_encode_rle8(uint8_t **pq,
             x += len;
         }
         /* end of line */
-        // 00000000 00000000 end of 8-bit/pixel_code_string
+        // 00000000 end of 8-bit/pixel_code_string
         *q++ = 0x00;
-        *q++ = 0x00;
+        *q++ = 0xf0;
         bitmap += linesize;
     }
     *pq = q;
@@ -342,6 +342,9 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
         } else if (h->rects[region_id]->nb_colors <= 16) {
             /* 4 bpp, standard encoding */
             bpp_index = 1;
+        } else if (h->rects[region_id]->nb_colors <= 256) {
+            /* 8 bpp, standard encoding */
+            bpp_index = 2;
         } else {
             return -1;
         }

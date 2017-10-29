@@ -627,8 +627,6 @@ static int write_manifest(AVFormatContext *s, int final)
         av_free(escaped);
     }
     avio_printf(out, "\t</ProgramInformation>\n");
-    if (c->utc_timing_url)
-        avio_printf(out, "\t<UTCTiming schemeIdUri=\"urn:mpeg:dash:utc:http-xsdate:2014\" value=\"%s\"/>\n", c->utc_timing_url);
 
     if (c->window_size && s->nb_streams > 0 && c->streams[0].nb_segments > 0 && !c->use_template) {
         OutputStream *os = &c->streams[0];
@@ -646,6 +644,10 @@ static int write_manifest(AVFormatContext *s, int final)
             return ret;
     }
     avio_printf(out, "\t</Period>\n");
+
+    if (c->utc_timing_url)
+        avio_printf(out, "\t<UTCTiming schemeIdUri=\"urn:mpeg:dash:utc:http-xsdate:2014\" value=\"%s\"/>\n", c->utc_timing_url);
+
     avio_printf(out, "</MPD>\n");
     avio_flush(out);
     ff_format_io_close(s, &out);
@@ -662,14 +664,6 @@ static int dict_copy_entry(AVDictionary **dst, const AVDictionary *src, const ch
     if (entry)
         av_dict_set(dst, key, entry->value, AV_DICT_DONT_OVERWRITE);
     return 0;
-}
-
-static int dict_set_int(AVDictionary **pm, const char *key, int64_t value, int flags)
-{
-    char valuestr[22];
-    snprintf(valuestr, sizeof(valuestr), "%"PRId64, value);
-    flags &= ~AV_DICT_DONT_STRDUP_VAL;
-    return av_dict_set(pm, key, valuestr, flags);
 }
 
 static int dash_init(AVFormatContext *s)
@@ -782,8 +776,8 @@ static int dash_init(AVFormatContext *s)
         if (!strcmp(os->format_name, "mp4")) {
             av_dict_set(&opts, "movflags", "frag_custom+dash+delay_moov", 0);
         } else {
-            dict_set_int(&opts, "cluster_time_limit", c->min_seg_duration / 1000, 0);
-            dict_set_int(&opts, "cluster_size_limit", 5 * 1024 * 1024, 0); // set a large cluster size limit
+            av_dict_set_int(&opts, "cluster_time_limit", c->min_seg_duration / 1000, 0);
+            av_dict_set_int(&opts, "cluster_size_limit", 5 * 1024 * 1024, 0); // set a large cluster size limit
         }
         if ((ret = avformat_write_header(ctx, &opts)) < 0)
             return ret;

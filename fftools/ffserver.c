@@ -476,7 +476,7 @@ static int compute_datarate(DataRateData *drd, int64_t count)
 static void start_children(FFServerStream *feed)
 {
     char *pathname;
-    char *slash;
+    char *dirname, *prog;
     int i;
     size_t cmd_length;
 
@@ -495,22 +495,18 @@ static void start_children(FFServerStream *feed)
         return;
     }
 
-    slash = strrchr(my_program_name, '/');
-    if (!slash) {
-        pathname = av_mallocz(sizeof("ffmpeg"));
-    } else {
-        pathname = av_mallocz(slash - my_program_name + sizeof("ffmpeg"));
-        if (pathname != NULL) {
-            memcpy(pathname, my_program_name, slash - my_program_name);
-        }
+   /* use "ffmpeg" in the path of current program. Ignore user provided path */
+    prog = av_strdup(my_program_name);
+    if (prog) {
+        dirname = av_dirname(prog);
+        pathname = *dirname ? av_asprintf("%s/%s", dirname, "ffmpeg")
+                            : av_asprintf("ffmpeg");
+        av_free(prog);
     }
-    if (!pathname) {
+    if (!prog || !pathname) {
         http_log("Could not allocate memory for children cmd line\n");
         return;
     }
-   /* use "ffmpeg" in the path of current program. Ignore user provided path */
-
-    strcat(pathname, "ffmpeg");
 
     for (; feed; feed = feed->next) {
 

@@ -38,7 +38,6 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavfilter/avfilter.h"
-#include "libavfilter/avfiltergraph.h"
 #include "libavfilter/buffersink.h"
 #include "libavformat/avio_internal.h"
 #include "libavformat/internal.h"
@@ -121,7 +120,7 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
 {
     LavfiContext *lavfi = avctx->priv_data;
     AVFilterInOut *input_links = NULL, *output_links = NULL, *inout;
-    AVFilter *buffersink, *abuffersink;
+    const AVFilter *buffersink, *abuffersink;
     int *pix_fmts = create_all_formats(AV_PIX_FMT_NB);
     enum AVMediaType type;
     int ret = 0, i, n;

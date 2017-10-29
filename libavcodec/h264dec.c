@@ -50,10 +50,10 @@
 #include "mathops.h"
 #include "me_cmp.h"
 #include "mpegutils.h"
+#include "mpeg4video.h"
 #include "profiles.h"
 #include "rectangle.h"
 #include "thread.h"
-#include "vdpau_compat.h"
 
 const uint16_t ff_h264_mb_sizes[4] = { 256, 384, 512, 768 };
 
@@ -527,10 +527,6 @@ static void flush_dpb(AVCodecContext *avctx)
     h->context_initialized = 0;
 }
 
-#if FF_API_CAP_VDPAU
-static const uint8_t start_code[] = { 0x00, 0x00, 0x01 };
-#endif
-
 static int get_last_needed_nal(H264Context *h)
 {
     int nals_needed = 0;
@@ -688,11 +684,6 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
                 if (h->avctx->hwaccel &&
                     (ret = h->avctx->hwaccel->start_frame(h->avctx, buf, buf_size)) < 0)
                     goto end;
-#if FF_API_CAP_VDPAU
-                if (CONFIG_H264_VDPAU_DECODER &&
-                    h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU)
-                    ff_vdpau_h264_picture_start(h);
-#endif
             }
 
             max_slice_ctx = avctx->hwaccel ? 1 : h->nb_slice_ctx;
@@ -701,18 +692,6 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
                     ret = avctx->hwaccel->decode_slice(avctx, nal->raw_data, nal->raw_size);
                     h->nb_slice_ctx_queued = 0;
                 } else
-#if FF_API_CAP_VDPAU
-            if (CONFIG_H264_VDPAU_DECODER &&
-                       h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU) {
-                ff_vdpau_add_data_chunk(h->cur_pic_ptr->f->data[0],
-                                        start_code,
-                                        sizeof(start_code));
-                ff_vdpau_add_data_chunk(h->cur_pic_ptr->f->data[0],
-                                        nal->raw_data,
-                                        nal->raw_size);
-                ret = 0;
-            } else
-#endif
                     ret = ff_h264_execute_decode_slices(h);
                 if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
                     goto end;
@@ -728,11 +707,6 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
             h->has_recovery_point = h->has_recovery_point || h->sei.recovery_point.recovery_frame_cnt != -1;
             if (avctx->debug & FF_DEBUG_GREEN_MD)
                 debug_green_metadata(&h->sei.green_metadata, h->avctx);
-#if FF_API_AFD
-FF_DISABLE_DEPRECATION_WARNINGS
-            h->avctx->dtg_active_format = h->sei.afd.active_format_description;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif /* FF_API_AFD */
             if (ret < 0 && (h->avctx->err_recognition & AV_EF_EXPLODE))
                 goto end;
             break;
@@ -1075,29 +1049,3 @@ AVCodec ff_h264_decoder = {
     .profiles              = NULL_IF_CONFIG_SMALL(ff_h264_profiles),
     .priv_class            = &h264_class,
 };
-
-#if CONFIG_H264_VDPAU_DECODER && FF_API_VDPAU
-static const AVClass h264_vdpau_class = {
-    .class_name = "H264 VDPAU Decoder",
-    .item_name  = av_default_item_name,
-    .option     = h264_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-AVCodec ff_h264_vdpau_decoder = {
-    .name           = "h264_vdpau",
-    .long_name      = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (VDPAU acceleration)"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_H264,
-    .priv_data_size = sizeof(H264Context),
-    .init           = h264_decode_init,
-    .close          = h264_decode_end,
-    .decode         = h264_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HWACCEL_VDPAU,
-    .flush          = flush_dpb,
-    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_VDPAU_H264,
-                                                     AV_PIX_FMT_NONE},
-    .profiles       = NULL_IF_CONFIG_SMALL(ff_h264_profiles),
-    .priv_class     = &h264_vdpau_class,
-};
-#endif

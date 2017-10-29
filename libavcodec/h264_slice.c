@@ -497,11 +497,7 @@ static int h264_frame_start(H264Context *h)
 
     if ((ret = alloc_picture(h, pic)) < 0)
         return ret;
-    if(!h->frame_recovered && !h->avctx->hwaccel
-#if FF_API_CAP_VDPAU
-       && !(h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU)
-#endif
-       )
+    if(!h->frame_recovered && !h->avctx->hwaccel)
         ff_color_frame(pic->f, c);
 
     h->cur_pic_ptr = pic;
@@ -759,7 +755,6 @@ static enum AVPixelFormat get_pixel_format(H264Context *h, int force_callback)
 #define HWACCEL_MAX (CONFIG_H264_DXVA2_HWACCEL + \
                      (CONFIG_H264_D3D11VA_HWACCEL * 2) + \
                      CONFIG_H264_VAAPI_HWACCEL + \
-                     (CONFIG_H264_VDA_HWACCEL * 2) + \
                      CONFIG_H264_VIDEOTOOLBOX_HWACCEL + \
                      CONFIG_H264_VDPAU_HWACCEL)
     enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmt = pix_fmts;
@@ -837,10 +832,6 @@ static enum AVPixelFormat get_pixel_format(H264Context *h, int force_callback)
 #endif
 #if CONFIG_H264_VAAPI_HWACCEL
             *fmt++ = AV_PIX_FMT_VAAPI;
-#endif
-#if CONFIG_H264_VDA_HWACCEL
-            *fmt++ = AV_PIX_FMT_VDA_VLD;
-            *fmt++ = AV_PIX_FMT_VDA;
 #endif
 #if CONFIG_H264_VIDEOTOOLBOX_HWACCEL
             *fmt++ = AV_PIX_FMT_VIDEOTOOLBOX;
@@ -938,17 +929,6 @@ static int h264_slice_header_init(H264Context *h)
         av_log(h->avctx, AV_LOG_ERROR, "Could not allocate memory\n");
         goto fail;
     }
-
-#if FF_API_CAP_VDPAU
-    if (h->avctx->codec &&
-        h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU &&
-        (sps->bit_depth_luma != 8 || sps->chroma_format_idc > 1)) {
-        av_log(h->avctx, AV_LOG_ERROR,
-                "VDPAU decoding does not support video colorspace.\n");
-        ret = AVERROR_INVALIDDATA;
-        goto fail;
-    }
-#endif
 
     if (sps->bit_depth_luma < 8 || sps->bit_depth_luma > 14 ||
         sps->bit_depth_luma == 11 || sps->bit_depth_luma == 13
@@ -2738,11 +2718,7 @@ int ff_h264_execute_decode_slices(H264Context *h)
 
     h->slice_ctx[0].next_slice_idx = INT_MAX;
 
-    if (h->avctx->hwaccel || context_count < 1
-#if FF_API_CAP_VDPAU
-        || h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU
-#endif
-        )
+    if (h->avctx->hwaccel || context_count < 1)
         return 0;
 
     av_assert0(context_count && h->slice_ctx[context_count - 1].mb_y < h->mb_height);

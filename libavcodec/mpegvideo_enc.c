@@ -415,21 +415,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
         s->intra_only = 0;
     }
 
-#if FF_API_MOTION_EST
-FF_DISABLE_DEPRECATION_WARNINGS
-    s->me_method = avctx->me_method;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     /* Fixed QSCALE */
     s->fixed_qscale = !!(avctx->flags & AV_CODEC_FLAG_QSCALE);
-
-#if FF_API_MPV_OPT
-    FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->border_masking != 0.0)
-        s->border_masking = avctx->border_masking;
-    FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     s->adaptive_quant = (s->avctx->lumi_masking ||
                          s->avctx->dark_masking ||
@@ -760,15 +747,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         return AVERROR(EINVAL);
     }
 
-#if FF_API_QUANT_BIAS
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->intra_quant_bias != FF_DEFAULT_QUANT_BIAS)
-        s->intra_quant_bias = avctx->intra_quant_bias;
-    if (avctx->inter_quant_bias != FF_DEFAULT_QUANT_BIAS)
-        s->inter_quant_bias = avctx->inter_quant_bias;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     av_log(avctx, AV_LOG_DEBUG, "intra_quant_bias = %d inter_quant_bias = %d\n",s->intra_quant_bias,s->inter_quant_bias);
 
     if (avctx->codec_id == AV_CODEC_ID_MPEG4 &&
@@ -1043,19 +1021,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
                           31, 0);
     }
 
-#if FF_API_RC_STRATEGY
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (!s->rc_strategy)
-        s->rc_strategy = s->avctx->rc_strategy;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     if (ff_rate_control_init(s) < 0)
         return -1;
-
-#if FF_API_RC_STRATEGY
-    av_assert0(MPV_RC_STRATEGY_XVID == FF_RC_STRATEGY_XVID);
-#endif
 
     if ((s->avctx->flags & AV_CODEC_FLAG_PASS2) && s->rc_strategy == MPV_RC_STRATEGY_XVID) {
 #if CONFIG_LIBXVID
@@ -1068,53 +1035,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (ret < 0)
             return ret;
     }
-
-#if FF_API_ERROR_RATE
-    FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->error_rate)
-        s->error_rate = avctx->error_rate;
-    FF_ENABLE_DEPRECATION_WARNINGS;
-#endif
-
-#if FF_API_NORMALIZE_AQP
-    FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->flags & CODEC_FLAG_NORMALIZE_AQP)
-        s->mpv_flags |= FF_MPV_FLAG_NAQ;
-    FF_ENABLE_DEPRECATION_WARNINGS;
-#endif
-
-#if FF_API_MV0
-    FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->flags & CODEC_FLAG_MV0)
-        s->mpv_flags |= FF_MPV_FLAG_MV0;
-    FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
-#if FF_API_MPV_OPT
-    FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->rc_qsquish != 0.0)
-        s->rc_qsquish = avctx->rc_qsquish;
-    if (avctx->rc_qmod_amp != 0.0)
-        s->rc_qmod_amp = avctx->rc_qmod_amp;
-    if (avctx->rc_qmod_freq)
-        s->rc_qmod_freq = avctx->rc_qmod_freq;
-    if (avctx->rc_buffer_aggressivity != 1.0)
-        s->rc_buffer_aggressivity = avctx->rc_buffer_aggressivity;
-    if (avctx->rc_initial_cplx != 0.0)
-        s->rc_initial_cplx = avctx->rc_initial_cplx;
-    if (avctx->lmin)
-        s->lmin = avctx->lmin;
-    if (avctx->lmax)
-        s->lmax = avctx->lmax;
-
-    if (avctx->rc_eq) {
-        av_freep(&s->rc_eq);
-        s->rc_eq = av_strdup(avctx->rc_eq);
-        if (!s->rc_eq)
-            return AVERROR(ENOMEM);
-    }
-    FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
 #if FF_API_PRIVATE_OPT
     FF_DISABLE_DEPRECATION_WARNINGS

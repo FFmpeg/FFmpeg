@@ -252,9 +252,6 @@ typedef struct MpegEncContext {
     int16_t (*b_field_mv_table[2][2][2])[2];///< MV table (4MV per MB) interlaced B-frame encoding
     uint8_t (*p_field_select_table[2]);
     uint8_t (*b_field_select_table[2][2]);
-#if FF_API_MOTION_EST
-    int me_method;                       ///< ME algorithm
-#endif
     int motion_est;                      ///< ME algorithm
     int me_penalty_compensation;
     int me_pre;                          ///< prepass for motion estimation

@@ -27,7 +27,6 @@
 #include "libavcodec/bytestream.h"
 #include "libavutil/avstring.h"
 #include "libavutil/base64.h"
-#include "libavutil/hmac.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/lfg.h"
 #include "libavutil/md5.h"
@@ -987,41 +986,6 @@ static int gen_fcsubscribe_stream(URLContext *s, RTMPContext *rt,
     ff_amf_write_string(&p, subscribe);
 
     return rtmp_send_packet(rt, &pkt, 1);
-}
-
-int ff_rtmp_calc_digest(const uint8_t *src, int len, int gap,
-                        const uint8_t *key, int keylen, uint8_t *dst)
-{
-    AVHMAC *hmac;
-
-    hmac = av_hmac_alloc(AV_HMAC_SHA256);
-    if (!hmac)
-        return AVERROR(ENOMEM);
-
-    av_hmac_init(hmac, key, keylen);
-    if (gap <= 0) {
-        av_hmac_update(hmac, src, len);
-    } else { //skip 32 bytes used for storing digest
-        av_hmac_update(hmac, src, gap);
-        av_hmac_update(hmac, src + gap + 32, len - gap - 32);
-    }
-    av_hmac_final(hmac, dst, 32);
-
-    av_hmac_free(hmac);
-
-    return 0;
-}
-
-int ff_rtmp_calc_digest_pos(const uint8_t *buf, int off, int mod_val,
-                            int add_val)
-{
-    int i, digest_pos = 0;
-
-    for (i = 0; i < 4; i++)
-        digest_pos += buf[i + off];
-    digest_pos = digest_pos % mod_val + add_val;
-
-    return digest_pos;
 }
 
 /**

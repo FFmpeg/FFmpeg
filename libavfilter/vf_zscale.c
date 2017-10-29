@@ -321,7 +321,7 @@ static int print_zimg_error(AVFilterContext *ctx)
 
     av_log(ctx, AV_LOG_ERROR, "code %d: %s\n", err_code, err_msg);
 
-    return err_code;
+    return AVERROR_EXTERNAL;
 }
 
 static int convert_chroma_location(enum AVChromaLocation chroma_location)
@@ -624,7 +624,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
 
     ret = zimg_filter_graph_process(s->graph, &src_buf, &dst_buf, s->tmp, 0, 0, 0, 0);
     if (ret) {
-        print_zimg_error(link->dst);
+        ret = print_zimg_error(link->dst);
         goto fail;
     }
 
@@ -639,7 +639,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
 
         ret = zimg_filter_graph_process(s->alpha_graph, &src_buf, &dst_buf, s->tmp, 0, 0, 0, 0);
         if (ret) {
-            print_zimg_error(link->dst);
+            ret = print_zimg_error(link->dst);
             goto fail;
         }
     } else if (odesc->flags & AV_PIX_FMT_FLAG_ALPHA) {
@@ -673,6 +673,7 @@ static void uninit(AVFilterContext *ctx)
     ZScaleContext *s = ctx->priv;
 
     zimg_filter_graph_free(s->graph);
+    zimg_filter_graph_free(s->alpha_graph);
     av_freep(&s->tmp);
     s->tmp_size = 0;
 }

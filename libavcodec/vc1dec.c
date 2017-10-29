@@ -37,7 +37,6 @@
 #include "profiles.h"
 #include "vc1.h"
 #include "vc1data.h"
-#include "vdpau_compat.h"
 #include "libavutil/avassert.h"
 
 
@@ -657,15 +656,6 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
         return buf_size;
     }
 
-#if FF_API_CAP_VDPAU
-    if (s->avctx->codec->capabilities&AV_CODEC_CAP_HWACCEL_VDPAU) {
-        if (v->profile < PROFILE_ADVANCED)
-            avctx->pix_fmt = AV_PIX_FMT_VDPAU_WMV3;
-        else
-            avctx->pix_fmt = AV_PIX_FMT_VDPAU_VC1;
-    }
-#endif
-
     //for advanced profile we may need to parse and unescape data
     if (avctx->codec_id == AV_CODEC_ID_VC1 || avctx->codec_id == AV_CODEC_ID_VC1IMAGE) {
         int buf_size2 = 0;
@@ -684,21 +674,13 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                 if (size <= 0) continue;
                 switch (AV_RB32(start)) {
                 case VC1_CODE_FRAME:
-                    if (avctx->hwaccel
-#if FF_API_CAP_VDPAU
-                        || s->avctx->codec->capabilities&AV_CODEC_CAP_HWACCEL_VDPAU
-#endif
-                        )
+                    if (avctx->hwaccel)
                         buf_start = start;
                     buf_size2 = vc1_unescape_buffer(start + 4, size, buf2);
                     break;
                 case VC1_CODE_FIELD: {
                     int buf_size3;
-                    if (avctx->hwaccel
-#if FF_API_CAP_VDPAU
-                        || s->avctx->codec->capabilities&AV_CODEC_CAP_HWACCEL_VDPAU
-#endif
-                        )
+                    if (avctx->hwaccel)
                         buf_start_second_field = start;
                     tmp = av_realloc_array(slices, sizeof(*slices), (n_slices+1));
                     if (!tmp) {
@@ -764,11 +746,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                 ret = AVERROR_INVALIDDATA;
                 goto err;
             } else { // found field marker, unescape second field
-                if (avctx->hwaccel
-#if FF_API_CAP_VDPAU
-                    || s->avctx->codec->capabilities&AV_CODEC_CAP_HWACCEL_VDPAU
-#endif
-                    )
+                if (avctx->hwaccel)
                     buf_start_second_field = divider;
                 tmp = av_realloc_array(slices, sizeof(*slices), (n_slices+1));
                 if (!tmp) {
@@ -917,17 +895,6 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
     s->me.qpel_put = s->qdsp.put_qpel_pixels_tab;
     s->me.qpel_avg = s->qdsp.avg_qpel_pixels_tab;
 
-#if FF_API_CAP_VDPAU
-    if ((CONFIG_VC1_VDPAU_DECODER)
-        &&s->avctx->codec->capabilities&AV_CODEC_CAP_HWACCEL_VDPAU) {
-        if (v->field_mode && buf_start_second_field) {
-            ff_vdpau_vc1_decode_picture(s, buf_start, buf_start_second_field - buf_start);
-            ff_vdpau_vc1_decode_picture(s, buf_start_second_field, (buf + buf_size) - buf_start_second_field);
-        } else {
-            ff_vdpau_vc1_decode_picture(s, buf_start, (buf + buf_size) - buf_start);
-        }
-    } else
-#endif
     if (avctx->hwaccel) {
         s->mb_y = 0;
         if (v->field_mode && buf_start_second_field) {
@@ -1190,38 +1157,6 @@ AVCodec ff_wmv3_decoder = {
     .flush          = ff_mpeg_flush,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .pix_fmts       = vc1_hwaccel_pixfmt_list_420,
-    .profiles       = NULL_IF_CONFIG_SMALL(ff_vc1_profiles)
-};
-#endif
-
-#if CONFIG_WMV3_VDPAU_DECODER && FF_API_VDPAU
-AVCodec ff_wmv3_vdpau_decoder = {
-    .name           = "wmv3_vdpau",
-    .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Video 9 VDPAU"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_WMV3,
-    .priv_data_size = sizeof(VC1Context),
-    .init           = vc1_decode_init,
-    .close          = ff_vc1_decode_end,
-    .decode         = vc1_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HWACCEL_VDPAU,
-    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_VDPAU_WMV3, AV_PIX_FMT_NONE },
-    .profiles       = NULL_IF_CONFIG_SMALL(ff_vc1_profiles)
-};
-#endif
-
-#if CONFIG_VC1_VDPAU_DECODER && FF_API_VDPAU
-AVCodec ff_vc1_vdpau_decoder = {
-    .name           = "vc1_vdpau",
-    .long_name      = NULL_IF_CONFIG_SMALL("SMPTE VC-1 VDPAU"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_VC1,
-    .priv_data_size = sizeof(VC1Context),
-    .init           = vc1_decode_init,
-    .close          = ff_vc1_decode_end,
-    .decode         = vc1_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HWACCEL_VDPAU,
-    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_VDPAU_VC1, AV_PIX_FMT_NONE },
     .profiles       = NULL_IF_CONFIG_SMALL(ff_vc1_profiles)
 };
 #endif

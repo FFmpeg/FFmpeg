@@ -149,10 +149,10 @@ static inline int strict_pthread_once(pthread_once_t *once_control, void (*init_
 
 #define AVMutex char
 
-#define ff_mutex_init(mutex, attr) (0)
-#define ff_mutex_lock(mutex) (0)
-#define ff_mutex_unlock(mutex) (0)
-#define ff_mutex_destroy(mutex) (0)
+static inline int ff_mutex_init(AVMutex *mutex, const void *attr){ return 0; }
+static inline int ff_mutex_lock(AVMutex *mutex){ return 0; }
+static inline int ff_mutex_unlock(AVMutex *mutex){ return 0; }
+static inline int ff_mutex_destroy(AVMutex *mutex){ return 0; }
 
 #define AVOnce char
 #define AV_ONCE_INIT 0

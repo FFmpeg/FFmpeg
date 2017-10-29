@@ -146,7 +146,7 @@ int ff_dca_parse_core_frame_header(DCACoreFrameHeader *h, GetBitContext *gb)
     return 0;
 }
 
-int avpriv_dca_parse_core_frame_header(DCACoreFrameHeader *h, uint8_t *buf, int size)
+int avpriv_dca_parse_core_frame_header(DCACoreFrameHeader *h, const uint8_t *buf, int size)
 {
     GetBitContext gb;
 

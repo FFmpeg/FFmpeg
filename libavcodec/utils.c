@@ -191,23 +191,6 @@ av_cold void avcodec_register(AVCodec *codec)
         codec->init_static_data(codec);
 }
 
-#if FF_API_EMU_EDGE
-unsigned avcodec_get_edge_width(void)
-{
-    return EDGE_WIDTH;
-}
-#endif
-
-#if FF_API_SET_DIMENSIONS
-void avcodec_set_dimensions(AVCodecContext *s, int width, int height)
-{
-    int ret = ff_set_dimensions(s, width, height);
-    if (ret < 0) {
-        av_log(s, AV_LOG_WARNING, "Failed to set dimensions %d %d\n", width, height);
-    }
-}
-#endif
-
 int ff_set_dimensions(AVCodecContext *s, int width, int height)
 {
     int ret = av_image_check_size2(width, height, s->max_pixels, AV_PIX_FMT_NONE, 0, s);
@@ -833,12 +816,6 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         avctx->lowres = avctx->codec->max_lowres;
     }
 
-#if FF_API_VISMV
-    if (avctx->debug_mv)
-        av_log(avctx, AV_LOG_WARNING, "The 'vismv' option is deprecated, "
-               "see the codecview filter instead.\n");
-#endif
-
     if (av_codec_is_encoder(avctx->codec)) {
         int i;
 #if FF_API_CODED_FRAME
@@ -1024,11 +1001,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
     ret=0;
-
-#if FF_API_AUDIOENC_DELAY
-    if (av_codec_is_encoder(avctx->codec))
-        avctx->delay = avctx->initial_padding;
-#endif
 
     if (av_codec_is_decoder(avctx->codec)) {
         if (!avctx->bit_rate)
@@ -1910,35 +1882,6 @@ int ff_match_2uint16(const uint16_t(*tab)[2], int size, int a, int b)
     for (i = 0; i < size && !(tab[i][0] == a && tab[i][1] == b); i++) ;
     return i;
 }
-
-#if FF_API_MISSING_SAMPLE
-FF_DISABLE_DEPRECATION_WARNINGS
-void av_log_missing_feature(void *avc, const char *feature, int want_sample)
-{
-    av_log(avc, AV_LOG_WARNING, "%s is not implemented. Update your FFmpeg "
-            "version to the newest one from Git. If the problem still "
-            "occurs, it means that your file has a feature which has not "
-            "been implemented.\n", feature);
-    if(want_sample)
-        av_log_ask_for_sample(avc, NULL);
-}
-
-void av_log_ask_for_sample(void *avc, const char *msg, ...)
-{
-    va_list argument_list;
-
-    va_start(argument_list, msg);
-
-    if (msg)
-        av_vlog(avc, AV_LOG_WARNING, msg, argument_list);
-    av_log(avc, AV_LOG_WARNING, "If you want to help, upload a sample "
-            "of this file to ftp://upload.ffmpeg.org/incoming/ "
-            "and contact the ffmpeg-devel mailing list. (ffmpeg-devel@ffmpeg.org)\n");
-
-    va_end(argument_list);
-}
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif /* FF_API_MISSING_SAMPLE */
 
 static AVHWAccel *first_hwaccel = NULL;
 static AVHWAccel **last_hwaccel = &first_hwaccel;

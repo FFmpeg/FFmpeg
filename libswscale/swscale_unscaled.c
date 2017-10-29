@@ -110,24 +110,6 @@ DECLARE_ALIGNED(8, static const uint8_t, dithers)[8][8][8]={
   { 112, 16,104,  8,118, 22,110, 14,},
 }};
 
-static const uint16_t dither_scale[15][16]={
-{    2,    3,    3,    5,    5,    5,    5,    5,    5,    5,    5,    5,    5,    5,    5,    5,},
-{    2,    3,    7,    7,   13,   13,   25,   25,   25,   25,   25,   25,   25,   25,   25,   25,},
-{    3,    3,    4,   15,   15,   29,   57,   57,   57,  113,  113,  113,  113,  113,  113,  113,},
-{    3,    4,    4,    5,   31,   31,   61,  121,  241,  241,  241,  241,  481,  481,  481,  481,},
-{    3,    4,    5,    5,    6,   63,   63,  125,  249,  497,  993,  993,  993,  993,  993, 1985,},
-{    3,    5,    6,    6,    6,    7,  127,  127,  253,  505, 1009, 2017, 4033, 4033, 4033, 4033,},
-{    3,    5,    6,    7,    7,    7,    8,  255,  255,  509, 1017, 2033, 4065, 8129,16257,16257,},
-{    3,    5,    6,    8,    8,    8,    8,    9,  511,  511, 1021, 2041, 4081, 8161,16321,32641,},
-{    3,    5,    7,    8,    9,    9,    9,    9,   10, 1023, 1023, 2045, 4089, 8177,16353,32705,},
-{    3,    5,    7,    8,   10,   10,   10,   10,   10,   11, 2047, 2047, 4093, 8185,16369,32737,},
-{    3,    5,    7,    8,   10,   11,   11,   11,   11,   11,   12, 4095, 4095, 8189,16377,32753,},
-{    3,    5,    7,    9,   10,   12,   12,   12,   12,   12,   12,   13, 8191, 8191,16381,32761,},
-{    3,    5,    7,    9,   10,   12,   13,   13,   13,   13,   13,   13,   14,16383,16383,32765,},
-{    3,    5,    7,    9,   10,   12,   14,   14,   14,   14,   14,   14,   14,   15,32767,32767,},
-{    3,    5,    7,    9,   11,   12,   14,   15,   15,   15,   15,   15,   15,   15,   16,65535,},
-};
-
 
 static void fillPlane(uint8_t *plane, int stride, int width, int height, int y,
                       uint8_t val)
@@ -1502,24 +1484,63 @@ static int packedCopyWrapper(SwsContext *c, const uint8_t *src[],
 }
 
 #define DITHER_COPY(dst, dstStride, src, srcStride, bswap, dbswap)\
-    uint16_t scale= dither_scale[dst_depth-1][src_depth-1];\
-    int shift= src_depth-dst_depth + dither_scale[src_depth-2][dst_depth-1];\
-    for (i = 0; i < height; i++) {\
-        const uint8_t *dither= dithers[src_depth-9][i&7];\
-        for (j = 0; j < length-7; j+=8){\
-            dst[j+0] = dbswap((bswap(src[j+0]) + dither[0])*scale>>shift);\
-            dst[j+1] = dbswap((bswap(src[j+1]) + dither[1])*scale>>shift);\
-            dst[j+2] = dbswap((bswap(src[j+2]) + dither[2])*scale>>shift);\
-            dst[j+3] = dbswap((bswap(src[j+3]) + dither[3])*scale>>shift);\
-            dst[j+4] = dbswap((bswap(src[j+4]) + dither[4])*scale>>shift);\
-            dst[j+5] = dbswap((bswap(src[j+5]) + dither[5])*scale>>shift);\
-            dst[j+6] = dbswap((bswap(src[j+6]) + dither[6])*scale>>shift);\
-            dst[j+7] = dbswap((bswap(src[j+7]) + dither[7])*scale>>shift);\
+    unsigned shift= src_depth-dst_depth, tmp;\
+    if (c->dither == SWS_DITHER_NONE) {\
+        for (i = 0; i < height; i++) {\
+            for (j = 0; j < length-7; j+=8) {\
+                dst[j+0] = dbswap(bswap(src[j+0])>>shift);\
+                dst[j+1] = dbswap(bswap(src[j+1])>>shift);\
+                dst[j+2] = dbswap(bswap(src[j+2])>>shift);\
+                dst[j+3] = dbswap(bswap(src[j+3])>>shift);\
+                dst[j+4] = dbswap(bswap(src[j+4])>>shift);\
+                dst[j+5] = dbswap(bswap(src[j+5])>>shift);\
+                dst[j+6] = dbswap(bswap(src[j+6])>>shift);\
+                dst[j+7] = dbswap(bswap(src[j+7])>>shift);\
+            }\
+            for (; j < length; j++) {\
+                dst[j] = dbswap(bswap(src[j])>>shift);\
+            }\
+            dst += dstStride;\
+            src += srcStride;\
         }\
-        for (; j < length; j++)\
-            dst[j] = dbswap((bswap(src[j]) + dither[j&7])*scale>>shift);\
-        dst += dstStride;\
-        src += srcStride;\
+    } else if (shiftonly) {\
+        for (i = 0; i < height; i++) {\
+            const uint8_t *dither= dithers[shift-1][i&7];\
+            for (j = 0; j < length-7; j+=8) {\
+                tmp = (bswap(src[j+0]) + dither[0])>>shift; dst[j+0] = dbswap(tmp - (tmp>>dst_depth));\
+                tmp = (bswap(src[j+1]) + dither[1])>>shift; dst[j+1] = dbswap(tmp - (tmp>>dst_depth));\
+                tmp = (bswap(src[j+2]) + dither[2])>>shift; dst[j+2] = dbswap(tmp - (tmp>>dst_depth));\
+                tmp = (bswap(src[j+3]) + dither[3])>>shift; dst[j+3] = dbswap(tmp - (tmp>>dst_depth));\
+                tmp = (bswap(src[j+4]) + dither[4])>>shift; dst[j+4] = dbswap(tmp - (tmp>>dst_depth));\
+                tmp = (bswap(src[j+5]) + dither[5])>>shift; dst[j+5] = dbswap(tmp - (tmp>>dst_depth));\
+                tmp = (bswap(src[j+6]) + dither[6])>>shift; dst[j+6] = dbswap(tmp - (tmp>>dst_depth));\
+                tmp = (bswap(src[j+7]) + dither[7])>>shift; dst[j+7] = dbswap(tmp - (tmp>>dst_depth));\
+            }\
+            for (; j < length; j++) {\
+                tmp = (bswap(src[j]) + dither[j&7])>>shift; dst[j] = dbswap(tmp - (tmp>>dst_depth));\
+            }\
+            dst += dstStride;\
+            src += srcStride;\
+        }\
+    } else {\
+        for (i = 0; i < height; i++) {\
+            const uint8_t *dither= dithers[shift-1][i&7];\
+            for (j = 0; j < length-7; j+=8) {\
+                tmp = bswap(src[j+0]); dst[j+0] = dbswap((tmp - (tmp>>dst_depth) + dither[0])>>shift);\
+                tmp = bswap(src[j+1]); dst[j+1] = dbswap((tmp - (tmp>>dst_depth) + dither[1])>>shift);\
+                tmp = bswap(src[j+2]); dst[j+2] = dbswap((tmp - (tmp>>dst_depth) + dither[2])>>shift);\
+                tmp = bswap(src[j+3]); dst[j+3] = dbswap((tmp - (tmp>>dst_depth) + dither[3])>>shift);\
+                tmp = bswap(src[j+4]); dst[j+4] = dbswap((tmp - (tmp>>dst_depth) + dither[4])>>shift);\
+                tmp = bswap(src[j+5]); dst[j+5] = dbswap((tmp - (tmp>>dst_depth) + dither[5])>>shift);\
+                tmp = bswap(src[j+6]); dst[j+6] = dbswap((tmp - (tmp>>dst_depth) + dither[6])>>shift);\
+                tmp = bswap(src[j+7]); dst[j+7] = dbswap((tmp - (tmp>>dst_depth) + dither[7])>>shift);\
+            }\
+            for (; j < length; j++) {\
+                tmp = bswap(src[j]); dst[j] = dbswap((tmp - (tmp>>dst_depth) + dither[j&7])>>shift);\
+            }\
+            dst += dstStride;\
+            src += srcStride;\
+        }\
     }
 
 static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],

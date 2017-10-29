@@ -63,7 +63,6 @@ enum HWAccelID {
     HWACCEL_AUTO,
     HWACCEL_VDPAU,
     HWACCEL_DXVA2,
-    HWACCEL_VDA,
     HWACCEL_VIDEOTOOLBOX,
     HWACCEL_QSV,
     HWACCEL_VAAPI,
@@ -161,6 +160,7 @@ typedef struct OptionsContext {
     float mux_preload;
     float mux_max_delay;
     int shortest;
+    int bitexact;
 
     int video_disable;
     int audio_disable;
@@ -624,7 +624,6 @@ extern const AVIOInterruptCB int_cb;
 
 extern const OptionDef options[];
 extern const HWAccel hwaccels[];
-extern int hwaccel_lax_profile_check;
 extern AVBufferRef *hw_device_ctx;
 #if CONFIG_QSV
 extern char *qsv_device;
@@ -662,7 +661,6 @@ int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *frame);
 
 int ffmpeg_parse_options(int argc, char **argv);
 
-int vda_init(AVCodecContext *s);
 int videotoolbox_init(AVCodecContext *s);
 int qsv_init(AVCodecContext *s);
 int cuvid_init(AVCodecContext *s);

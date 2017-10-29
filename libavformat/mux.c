@@ -255,19 +255,10 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
 FF_DISABLE_DEPRECATION_WARNINGS
     if (s->nb_streams && s->streams[0]->codec->flags & AV_CODEC_FLAG_BITEXACT) {
         if (!(s->flags & AVFMT_FLAG_BITEXACT)) {
-#if FF_API_LAVF_BITEXACT
-            av_log(s, AV_LOG_WARNING,
-                   "Setting the AVFormatContext to bitexact mode, because "
-                   "the AVCodecContext is in that mode. This behavior will "
-                   "change in the future. To keep the current behavior, set "
-                   "AVFormatContext.flags |= AVFMT_FLAG_BITEXACT.\n");
-            s->flags |= AVFMT_FLAG_BITEXACT;
-#else
             av_log(s, AV_LOG_WARNING,
                    "The AVFormatContext is not in set to bitexact mode, only "
                    "the AVCodecContext. If this is not intended, set "
                    "AVFormatContext.flags |= AVFMT_FLAG_BITEXACT.\n");
-#endif
         }
     }
 FF_ENABLE_DEPRECATION_WARNINGS
@@ -283,17 +274,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     for (i = 0; i < s->nb_streams; i++) {
         st  = s->streams[i];
         par = st->codecpar;
-
-#if FF_API_LAVF_CODEC_TB && FF_API_LAVF_AVCTX
-FF_DISABLE_DEPRECATION_WARNINGS
-        if (!st->time_base.num && st->codec->time_base.num) {
-            av_log(s, AV_LOG_WARNING, "Using AVStream.codec.time_base as a "
-                   "timebase hint to the muxer is deprecated. Set "
-                   "AVStream.time_base instead.\n");
-            avpriv_set_pts_info(st, 64, st->codec->time_base.num, st->codec->time_base.den);
-        }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
 #if FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -694,7 +674,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
  */
 static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret, did_split;
+    int ret;
     int64_t pts_backup, dts_backup;
 
     pts_backup = pkt->pts;
@@ -759,12 +739,6 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
-#if FF_API_LAVF_MERGE_SD
-FF_DISABLE_DEPRECATION_WARNINGS
-    did_split = av_packet_split_side_data(pkt);
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     if (!s->internal->header_written) {
         ret = s->internal->write_header_ret ? s->internal->write_header_ret : write_header_internal(s);
         if (ret < 0)
@@ -787,12 +761,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
 fail:
-#if FF_API_LAVF_MERGE_SD
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (did_split)
-        av_packet_merge_side_data(pkt);
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     if (ret < 0) {
         pkt->pts = pts_backup;
@@ -888,16 +856,6 @@ static int do_packet_auto_bsf(AVFormatContext *s, AVPacket *pkt) {
                 st->internal->bitstream_checked = 1;
         }
     }
-
-#if FF_API_LAVF_MERGE_SD
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (st->internal->nb_bsfcs) {
-        ret = av_packet_split_side_data(pkt);
-        if (ret < 0)
-            av_log(s, AV_LOG_WARNING, "Failed to split side data before bitstream filter\n");
-    }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     for (i = 0; i < st->internal->nb_bsfcs; i++) {
         AVBSFContext *ctx = st->internal->bsfcs[i];
