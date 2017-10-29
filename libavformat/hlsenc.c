@@ -1080,7 +1080,7 @@ static int hls_window(AVFormatContext *s, int last)
                 avio_printf(out, ",BYTERANGE=\"%"PRId64"@%"PRId64"\"", en->size, en->pos);
             }
             avio_printf(out, "\n");
-        } else {
+        }
             if (hls->flags & HLS_ROUND_DURATIONS)
                 avio_printf(out, "#EXTINF:%ld,\n",  lrint(en->duration));
             else
@@ -1088,7 +1088,7 @@ static int hls_window(AVFormatContext *s, int last)
             if (byterange_mode)
                 avio_printf(out, "#EXT-X-BYTERANGE:%"PRId64"@%"PRId64"\n",
                             en->size, en->pos);
-        }
+
         if (hls->flags & HLS_PROGRAM_DATE_TIME) {
             time_t tt, wrongsecs;
             int milli;
@@ -1113,11 +1113,9 @@ static int hls_window(AVFormatContext *s, int last)
             avio_printf(out, "#EXT-X-PROGRAM-DATE-TIME:%s.%03d%s\n", buf0, milli, buf1);
             prog_date_time += en->duration;
         }
-        if (!((hls->segment_type == SEGMENT_TYPE_FMP4) && (en == hls->segments))) {
             if (hls->baseurl)
                 avio_printf(out, "%s", hls->baseurl);
             avio_printf(out, "%s\n", en->filename);
-        }
     }
 
     if (last && (hls->flags & HLS_OMIT_ENDLIST)==0)
