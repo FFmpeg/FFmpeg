@@ -75,7 +75,7 @@ typedef struct PaletteGenContext {
     struct range_box boxes[256];            // define the segmentation of the colorspace (the final palette)
     int nb_boxes;                           // number of boxes (increase will segmenting them)
     int palette_pushed;                     // if the palette frame is pushed into the outlink or not
-    uint8_t[4] transparency_color;          // background color for transparency
+    uint8_t transparency_color[4];          // background color for transparency
 } PaletteGenContext;
 
 #define OFFSET(x) offsetof(PaletteGenContext, x)
