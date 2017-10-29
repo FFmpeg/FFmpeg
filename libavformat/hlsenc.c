@@ -1335,6 +1335,7 @@ static int hls_write_header(AVFormatContext *s)
     AVDictionary *options = NULL;
     int basename_size = 0;
     int vtt_basename_size = 0;
+    int fmp4_init_filename_len = strlen(hls->fmp4_init_filename) + 1;
 
     if (hls->segment_type == SEGMENT_TYPE_FMP4) {
         pattern = "%d.m4s";
@@ -1445,7 +1446,6 @@ static int hls_write_header(AVFormatContext *s)
     }
 
     if (av_strcasecmp(hls->fmp4_init_filename, "init.mp4")) {
-        int fmp4_init_filename_len = strlen(hls->fmp4_init_filename) + 1;
         hls->base_output_dirname = av_malloc(fmp4_init_filename_len);
         if (!hls->base_output_dirname) {
             ret = AVERROR(ENOMEM);
@@ -1453,19 +1453,25 @@ static int hls_write_header(AVFormatContext *s)
         }
         av_strlcpy(hls->base_output_dirname, hls->fmp4_init_filename, fmp4_init_filename_len);
     } else {
-        hls->base_output_dirname = av_malloc(basename_size);
+        if (basename_size > 0) {
+            hls->base_output_dirname = av_malloc(basename_size);
+        } else {
+            hls->base_output_dirname = av_malloc(strlen(hls->fmp4_init_filename));
+        }
         if (!hls->base_output_dirname) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
 
-        av_strlcpy(hls->base_output_dirname, s->filename, basename_size);
-        p = strrchr(hls->base_output_dirname, '/');
+        if (basename_size > 0) {
+            av_strlcpy(hls->base_output_dirname, s->filename, basename_size);
+            p = strrchr(hls->base_output_dirname, '/');
+        }
         if (p) {
             *(p + 1) = '\0';
             av_strlcat(hls->base_output_dirname, hls->fmp4_init_filename, basename_size);
         } else {
-            av_strlcpy(hls->base_output_dirname, hls->fmp4_init_filename, basename_size);
+            av_strlcpy(hls->base_output_dirname, hls->fmp4_init_filename, fmp4_init_filename_len);
         }
     }
 
