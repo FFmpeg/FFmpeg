@@ -987,8 +987,8 @@ typedef struct AVStream {
     AVRational r_frame_rate;
 
     /**
-     * String containing paris of key and values describing recommended encoder configuration.
-     * Paris are separated by ','.
+     * String containing pairs of key and values describing recommended encoder configuration.
+     * Pairs are separated by ','.
      * Keys are separated from values by '='.
      */
     char *recommended_encoder_configuration;
