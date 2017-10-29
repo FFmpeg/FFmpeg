@@ -322,6 +322,7 @@ static void register_all(void)
     REGISTER_MUXDEMUX(TTA,              tta);
     REGISTER_DEMUXER (TXD,              txd);
     REGISTER_DEMUXER (TTY,              tty);
+    REGISTER_DEMUXER (TY,               ty);
     REGISTER_MUXER   (UNCODEDFRAMECRC,  uncodedframecrc);
     REGISTER_DEMUXER (V210,             v210);
     REGISTER_DEMUXER (V210X,            v210x);

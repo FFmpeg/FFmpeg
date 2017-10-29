@@ -8,6 +8,7 @@ version <next>:
 - VDA dropped (use VideoToolbox instead)
 - MagicYUV encoder
 - Raw AMR-NB and AMR-WB demuxers
+- TiVo ty/ty+ demuxer
 
 
 version 3.4:
