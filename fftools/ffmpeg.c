@@ -4146,14 +4146,17 @@ static int seek_to_start(InputFile *ifile, AVFormatContext *is)
                 AVRational sample_rate = {1, avctx->sample_rate};
 
                 duration = av_rescale_q(ist->nb_samples, sample_rate, ist->st->time_base);
-            } else
+            } else {
                 continue;
+            }
         } else {
             if (ist->framerate.num) {
                 duration = av_rescale_q(1, av_inv_q(ist->framerate), ist->st->time_base);
             } else if (ist->st->avg_frame_rate.num) {
                 duration = av_rescale_q(1, av_inv_q(ist->st->avg_frame_rate), ist->st->time_base);
-            } else duration = 1;
+            } else {
+                duration = 1;
+            }
         }
         if (!ifile->duration)
             ifile->time_base = ist->st->time_base;
