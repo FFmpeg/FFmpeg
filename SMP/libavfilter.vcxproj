@@ -454,7 +454,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libavfilter\avfilter.h" />
-    <ClInclude Include="..\libavfilter\avfiltergraph.h" />
     <ClInclude Include="..\libavfilter\buffersink.h" />
     <ClInclude Include="..\libavfilter\buffersrc.h" />
     <ClInclude Include="..\libavfilter\version.h" />
@@ -726,7 +725,6 @@
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter
@@ -795,7 +793,6 @@ cd $(ProjectDir)
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter
@@ -871,7 +868,6 @@ cd $(ProjectDir)
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter
@@ -945,7 +941,6 @@ cd $(ProjectDir)
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter
@@ -1021,7 +1016,6 @@ cd $(ProjectDir)
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter
@@ -1095,7 +1089,6 @@ cd $(ProjectDir)
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter
@@ -1170,7 +1163,6 @@ cd $(ProjectDir)
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter
@@ -1243,7 +1235,6 @@ cd $(ProjectDir)
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter
@@ -1324,7 +1315,6 @@ cd $(ProjectDir)
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter
@@ -1404,7 +1394,6 @@ cd $(ProjectDir)
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter
@@ -1485,7 +1474,6 @@ cd $(ProjectDir)
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter
@@ -1565,7 +1553,6 @@ cd $(ProjectDir)
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter
@@ -1638,7 +1625,6 @@ cd $(ProjectDir)
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter
@@ -1711,7 +1697,6 @@ cd $(ProjectDir)
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\avfilter.h "$(OutDir)"\include\libavfilter
-copy ..\libavfilter\avfiltergraph.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersink.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\buffersrc.h "$(OutDir)"\include\libavfilter
 copy ..\libavfilter\version.h "$(OutDir)"\include\libavfilter

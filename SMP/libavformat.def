@@ -5,7 +5,6 @@ EXPORTS
     av_codec_get_id
     av_codec_get_tag
     av_codec_get_tag2
-    av_convert_lang_to
     av_demuxer_open
     av_dump_format
     av_filename_number_test
@@ -181,5 +180,4 @@ EXPORTS
     ffurl_close
     ffurl_open
     ffurl_write
-    url_feof
     av_format_ffversion DATA

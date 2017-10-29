@@ -1,10 +1,5 @@
 EXPORTS
-    audio_resample
-    audio_resample_close
-    av_audio_convert
-    av_audio_convert_alloc
-    av_audio_convert_free
-    av_audio_resample_init
+    av_ac3_parse_header
     av_bitstream_filter_close
     av_bitstream_filter_filter
     av_bitstream_filter_init
@@ -74,8 +69,6 @@ EXPORTS
     av_jni_get_java_vm
     av_jni_set_java_vm
     av_lockmgr_register
-    av_log_ask_for_sample
-    av_log_missing_feature
     av_mdct_calc
     av_mdct_end
     av_mdct_init
@@ -118,10 +111,6 @@ EXPORTS
     av_register_bitstream_filter
     av_register_codec_parser
     av_register_hwaccel
-    av_resample
-    av_resample_close
-    av_resample_compensate
-    av_resample_init
     av_shrink_packet
     av_vorbis_parse_frame
     av_vorbis_parse_frame_flags
@@ -166,7 +155,6 @@ EXPORTS
     avcodec_get_chroma_sub_sample
     avcodec_get_class
     avcodec_get_context_defaults3
-    avcodec_get_edge_width
     avcodec_get_frame_class
     avcodec_get_name
     avcodec_get_pix_fmt_loss
@@ -188,7 +176,6 @@ EXPORTS
     avcodec_register_all
     avcodec_send_frame
     avcodec_send_packet
-    avcodec_set_dimensions
     avcodec_string
     avcodec_version
     avpicture_alloc
@@ -207,7 +194,6 @@ EXPORTS
     avpriv_dca_parse_core_frame_header
     avpriv_dnxhd_get_frame_size
     avpriv_dnxhd_get_interlaced
-    avpriv_dnxhd_parse_header_prefix
     avpriv_do_elbg
     avpriv_exif_decode_ifd
     avpriv_find_pix_fmt
@@ -218,8 +204,6 @@ EXPORTS
     avpriv_h264_has_num_reorder_frames
     avpriv_init_elbg
     avpriv_lock_avformat
-    avpriv_mpa_decode_header
-    avpriv_mpa_decode_header2
     avpriv_mpeg4audio_get_config
     avpriv_mpegaudio_decode_header
     avpriv_put_string

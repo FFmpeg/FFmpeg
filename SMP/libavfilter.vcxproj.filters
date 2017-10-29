@@ -1037,9 +1037,6 @@
     <ClInclude Include="..\libavfilter\avfilter.h">
       <Filter>Header Files\libavfilter</Filter>
     </ClInclude>
-    <ClInclude Include="..\libavfilter\avfiltergraph.h">
-      <Filter>Header Files\libavfilter</Filter>
-    </ClInclude>
     <ClInclude Include="..\libavfilter\buffersink.h">
       <Filter>Header Files\libavfilter</Filter>
     </ClInclude>

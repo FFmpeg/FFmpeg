@@ -188,8 +188,7 @@
     <ClCompile Include="..\libavformat\c93.c" />
     <ClCompile Include="..\libavformat\cafdec.c" />
     <ClCompile Include="..\libavformat\caf.c" />
-    <ClCompile Include="..\libavformat\mov.c" />
-    <ClCompile Include="..\libavformat\replaygain.c" />
+    <ClCompile Include="..\libavformat\mov_esds.c" />
     <ClCompile Include="..\libavformat\cafenc.c" />
     <ClCompile Include="..\libavformat\cavsvideodec.c" />
     <ClCompile Include="..\libavformat\cdg.c" />
@@ -231,6 +230,7 @@
     <ClCompile Include="..\libavformat\flacdec.c" />
     <ClCompile Include="..\libavformat\flac_picture.c" />
     <ClCompile Include="..\libavformat\oggparsevorbis.c" />
+    <ClCompile Include="..\libavformat\replaygain.c" />
     <ClCompile Include="..\libavformat\vorbiscomment.c" />
     <ClCompile Include="..\libavformat\flacenc.c" />
     <ClCompile Include="..\libavformat\flacenc_header.c" />
@@ -312,6 +312,7 @@
     <ClCompile Include="..\libavformat\mlvdec.c" />
     <ClCompile Include="..\libavformat\mm.c" />
     <ClCompile Include="..\libavformat\mmf.c" />
+    <ClCompile Include="..\libavformat\mov.c" />
     <ClCompile Include="..\libavformat\movenc.c" />
     <ClCompile Include="..\libavformat\vpcc.c" />
     <ClCompile Include="..\libavformat\movenchint.c" />
@@ -498,6 +499,7 @@
     <ClCompile Include="..\libavformat\crypto.c" />
     <ClCompile Include="..\libavformat\data_uri.c" />
     <ClCompile Include="..\libavformat\rtmpcrypt.c" />
+    <ClCompile Include="..\libavformat\rtmpdigest.c" />
     <ClCompile Include="..\libavformat\rtmpdh.c" />
     <ClCompile Include="..\libavformat\rtmphttp.c" />
     <ClCompile Include="..\libavformat\file.c" />

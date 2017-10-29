@@ -33,7 +33,6 @@
 #include "libavcodec/vp3dsp.h"
 #include "libavcodec/vorbisdsp.h"
 #include "libavcodec/videodsp.h"
-#include "libavcodec/vdpau_compat.h"
 #if !((HAVE_6REGS && HAVE_MMX_INLINE)||(HAVE_6REGS && HAVE_MMXEXT_INLINE))
 #include "libavcodec/x86/vc1dsp.h"
 #endif
@@ -188,6 +187,7 @@ void ff_h264qpel_init_aarch64(H264QpelContext *c, int bit_depth) {return;}
 void ff_h264qpel_init_arm(H264QpelContext *c, int bit_depth) {return;}
 void ff_h264qpel_init_mips(H264QpelContext *c, int bit_depth) {return;}
 void ff_h264qpel_init_ppc(H264QpelContext *c, int bit_depth) {return;}
+void ff_hevc_dsp_init_arm(HEVCDSPContext *c, const int bit_depth) {return;}
 void ff_hevc_dsp_init_mips(HEVCDSPContext *c, const int bit_depth) {return;}
 void ff_hevc_dsp_init_ppc(HEVCDSPContext *c, const int bit_depth) {return;}
 #if !(ARCH_X86_64)
@@ -3437,7 +3437,6 @@ void ff_hevc_v_loop_filter_luma_8_sse2(uint8_t *pix, ptrdiff_t stride, int beta,
 #if !(ARCH_X86_64)
 void ff_hevc_v_loop_filter_luma_8_ssse3(uint8_t *pix, ptrdiff_t stride, int beta, int *tc, uint8_t *no_p, uint8_t *no_q) {return;}
 #endif
-void ff_hevcdsp_init_arm(HEVCDSPContext *c, const int bit_depth) {return;}
 void ff_hpeldsp_init_aarch64(HpelDSPContext *c, int flags) {return;}
 void ff_hpeldsp_init_alpha(HpelDSPContext *c, int flags) {return;}
 void ff_hpeldsp_init_arm(HpelDSPContext *c, int flags) {return;}
@@ -3568,17 +3567,6 @@ void ff_vc1dsp_init_mmx(VC1DSPContext *dsp) {return;}
 void ff_vc1dsp_init_mmxext(VC1DSPContext *dsp) {return;}
 #endif
 void ff_vc1dsp_init_ppc(VC1DSPContext *c) {return;}
-void ff_vdpau_add_data_chunk(uint8_t *data, const uint8_t *buf,
-                             int buf_size) {return;}
-void ff_vdpau_h264_picture_complete(H264Context *h) {return;}
-void ff_vdpau_h264_picture_start(H264Context *h) {return;}
-void ff_vdpau_h264_set_reference_frames(H264Context *h) {return;}
-void ff_vdpau_mpeg4_decode_picture(Mpeg4DecContext *s, const uint8_t *buf,
-                                   int buf_size) {return;}
-void ff_vdpau_mpeg_picture_complete(MpegEncContext *s, const uint8_t *buf,
-                                    int buf_size, int slice_count) {return;}
-void ff_vdpau_vc1_decode_picture(MpegEncContext *s, const uint8_t *buf,
-                                 int buf_size) {return;}
 void ff_videodsp_init_aarch64(VideoDSPContext *ctx, int bpc) {return;}
 void ff_videodsp_init_arm(VideoDSPContext *ctx, int bpc) {return;}
 void ff_videodsp_init_mips(VideoDSPContext *ctx, int bpc) {return;}
@@ -3635,8 +3623,6 @@ const AVCodec ff_h264_rkmpp_decoder = {0};
 const AVCodec ff_h264_v4l2m2m_decoder = {0};
 const AVCodec ff_h264_v4l2m2m_encoder = {0};
 const AVCodec ff_h264_vaapi_encoder = {0};
-const AVCodec ff_h264_vda_decoder = {0};
-const AVCodec ff_h264_vdpau_decoder = {0};
 const AVCodec ff_h264_videotoolbox_encoder = {0};
 const AVCodec ff_hap_encoder = {0};
 const AVCodec ff_hevc_mediacodec_decoder = {0};
@@ -3676,7 +3662,6 @@ const AVCodec ff_mp1_at_decoder = {0};
 const AVCodec ff_mp2_at_decoder = {0};
 const AVCodec ff_mp3_at_decoder = {0};
 const AVCodec ff_mpeg1_v4l2m2m_decoder = {0};
-const AVCodec ff_mpeg1_vdpau_decoder = {0};
 const AVCodec ff_mpeg2_crystalhd_decoder = {0};
 const AVCodec ff_mpeg2_mediacodec_decoder = {0};
 const AVCodec ff_mpeg2_mmal_decoder = {0};
@@ -3687,9 +3672,6 @@ const AVCodec ff_mpeg4_mediacodec_decoder = {0};
 const AVCodec ff_mpeg4_mmal_decoder = {0};
 const AVCodec ff_mpeg4_v4l2m2m_decoder = {0};
 const AVCodec ff_mpeg4_v4l2m2m_encoder = {0};
-const AVCodec ff_mpeg4_vdpau_decoder = {0};
-const AVCodec ff_mpeg_vdpau_decoder = {0};
-const AVCodec ff_mpeg_xvmc_decoder = {0};
 const AVCodec ff_msmpeg4_crystalhd_decoder = {0};
 const AVCodec ff_pcm_alaw_at_decoder = {0};
 const AVCodec ff_pcm_alaw_at_encoder = {0};
@@ -3700,7 +3682,6 @@ const AVCodec ff_qdmc_at_decoder = {0};
 const AVCodec ff_vc1_crystalhd_decoder = {0};
 const AVCodec ff_vc1_mmal_decoder = {0};
 const AVCodec ff_vc1_v4l2m2m_decoder = {0};
-const AVCodec ff_vc1_vdpau_decoder = {0};
 const AVCodec ff_vp8_mediacodec_decoder = {0};
 const AVCodec ff_vp8_rkmpp_decoder = {0};
 const AVCodec ff_vp8_v4l2m2m_decoder = {0};
@@ -3711,7 +3692,6 @@ const AVCodec ff_vp9_rkmpp_decoder = {0};
 const AVCodec ff_vp9_v4l2m2m_decoder = {0};
 const AVCodec ff_vp9_vaapi_encoder = {0};
 const AVCodec ff_wmv3_crystalhd_decoder = {0};
-const AVCodec ff_wmv3_vdpau_decoder = {0};
 const AVHWAccel ff_h263_vaapi_hwaccel = {0};
 const AVHWAccel ff_h263_videotoolbox_hwaccel = {0};
 #if !(CONFIG_H264_D3D11VA2_HWACCEL)
@@ -3723,8 +3703,6 @@ const AVHWAccel ff_h264_d3d11va_hwaccel = {0};
 const AVHWAccel ff_h264_mediacodec_hwaccel = {0};
 const AVHWAccel ff_h264_mmal_hwaccel = {0};
 const AVHWAccel ff_h264_vaapi_hwaccel = {0};
-const AVHWAccel ff_h264_vda_hwaccel = {0};
-const AVHWAccel ff_h264_vda_old_hwaccel = {0};
 const AVHWAccel ff_h264_vdpau_hwaccel = {0};
 const AVHWAccel ff_h264_videotoolbox_hwaccel = {0};
 #if !(CONFIG_HEVC_D3D11VA2_HWACCEL)

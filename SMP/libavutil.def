@@ -485,7 +485,6 @@ EXPORTS
     avpriv_dict_set_timestamp
     avpriv_emms_asm
     avpriv_float_dsp_alloc
-    avpriv_frame_get_metadatap
     avpriv_get_gamma_from_trc
     avpriv_get_trc_function_from_trc
     avpriv_init_lls
