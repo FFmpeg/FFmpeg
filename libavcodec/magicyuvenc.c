@@ -344,7 +344,7 @@ static int encode_table(AVCodecContext *avctx, uint8_t *dst,
 
     for (i = 0; i < 256; i++) {
         counts[i].prob++;
-        counts[i].value = i;
+        counts[i].value = 255 - i;
     }
 
     magy_huffman_compute_bits(counts, he, 256, 16);
