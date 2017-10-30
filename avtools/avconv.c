@@ -2553,9 +2553,9 @@ static int seek_to_start(InputFile *ifile, AVFormatContext *is)
                 continue;
         } else {
             if (ist->framerate.num) {
-                duration = av_rescale_q(1, ist->framerate, ist->st->time_base);
+                duration = FFMAX(av_rescale_q(1, av_inv_q(ist->framerate), ist->st->time_base), 1);
             } else if (ist->st->avg_frame_rate.num) {
-                duration = av_rescale_q(1, ist->st->avg_frame_rate, ist->st->time_base);
+                duration = FFMAX(av_rescale_q(1, av_inv_q(ist->st->avg_frame_rate), ist->st->time_base), 1);
             } else duration = 1;
         }
         if (!ifile->duration)
