@@ -3892,10 +3892,6 @@ case $target_os in
         ;;
     mingw32*|mingw64*)
         target_os=mingw32
-        LIBTARGET=i386
-        if enabled x86_64; then
-            LIBTARGET="i386:x86-64"
-        fi
         if enabled shared; then
             # Cannot build both shared and static libs when using dllexport.
             disable static
@@ -3907,7 +3903,7 @@ case $target_os in
         SLIBSUF=".dll"
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(NAME)-$(LIBVERSION)$(SLIBSUF)'
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(NAME)-$(LIBMAJOR)$(SLIBSUF)'
-        SLIB_EXTRA_CMD=-'$(DLLTOOL) -m $(LIBTARGET) -d $$(@:$(SLIBSUF)=.def) -l $(SUBDIR)$(SLIBNAME:$(SLIBSUF)=.lib) -D $(SLIBNAME_WITH_MAJOR)'
+        SLIB_EXTRA_CMD='cp $(SUBDIR)lib$(SLIBNAME:$(SLIBSUF)=.dll.a) $(SUBDIR)$(SLIBNAME:$(SLIBSUF)=.lib)'
         SLIB_INSTALL_NAME='$(SLIBNAME_WITH_MAJOR)'
         SLIB_INSTALL_LINKS=
         SLIB_INSTALL_EXTRA_SHLIB='$(SLIBNAME:$(SLIBSUF)=.lib)'
@@ -3915,7 +3911,6 @@ case $target_os in
         SLIB_CREATE_DEF_CMD='ARCH="$(ARCH)" AR="$(AR_CMD)" NM="$(NM_CMD)" $(SRC_PATH)/compat/windows/makedef $(SUBDIR)lib$(NAME).ver $(OBJS) > $$(@:$(SLIBSUF)=.def)'
         SHFLAGS='-shared -Wl,--out-implib,$(SUBDIR)lib$(SLIBNAME:$(SLIBSUF)=.dll.a) -Wl,--enable-auto-image-base $$(@:$(SLIBSUF)=.def)'
         enabled x86_64 && objformat="win64" || objformat="win32"
-        dlltool="${cross_prefix}dlltool"
         ranlib=:
         enable dos_paths
         ;;
@@ -5260,7 +5255,6 @@ X86ASM_O=$X86ASM_O
 LD_O=$LD_O
 LD_LIB=$LD_LIB
 LD_PATH=$LD_PATH
-DLLTOOL=$dlltool
 LDFLAGS=$LDFLAGS
 LDEXEFLAGS=$LDEXEFLAGS
 LDSOFLAGS=$LDSOFLAGS
@@ -5307,7 +5301,6 @@ LIB_INSTALL_EXTRA_CMD=$LIB_INSTALL_EXTRA_CMD
 EXTRALIBS=$extralibs
 COMPAT_OBJS=$compat_objs
 INSTALL=install
-LIBTARGET=${LIBTARGET}
 SLIBNAME=${SLIBNAME}
 SLIBNAME_WITH_VERSION=${SLIBNAME_WITH_VERSION}
 SLIBNAME_WITH_MAJOR=${SLIBNAME_WITH_MAJOR}
