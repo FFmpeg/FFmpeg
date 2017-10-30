@@ -119,7 +119,7 @@ uint64_t ff_truehd_layout(int chanmap)
     return layout;
 }
 
-static int ff_mlp_get_major_sync_size(const uint8_t * buf, int bufsize)
+static int mlp_get_major_sync_size(const uint8_t * buf, int bufsize)
 {
     int has_extension, extensions = 0;
     int size = 28;
@@ -149,7 +149,7 @@ int ff_mlp_read_major_sync(void *log, MLPHeaderInfo *mh, GetBitContext *gb)
 
     av_assert1(get_bits_count(gb) == 0);
 
-    header_size = ff_mlp_get_major_sync_size(gb->buffer, gb->size_in_bits >> 3);
+    header_size = mlp_get_major_sync_size(gb->buffer, gb->size_in_bits >> 3);
     if (header_size < 0 || gb->size_in_bits < header_size << 3) {
         av_log(log, AV_LOG_ERROR, "packet too short, unable to read major sync\n");
         return -1;
