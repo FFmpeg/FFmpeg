@@ -25,10 +25,10 @@
  */
 
 #include "avcodec.h"
+#include "bytestream.h"
+#include "get_bits.h"
 #include "idctdsp.h"
 #include "internal.h"
-#include "get_bits.h"
-#include "bytestream.h"
 
 #define NUM_DC_CODES 127
 #define NUM_AC_CODES 103
@@ -129,6 +129,7 @@ typedef struct CLVContext {
     int            luma_dc_quant, chroma_dc_quant, ac_quant;
     DECLARE_ALIGNED(16, int16_t, block)[64];
     int            top_dc[3], left_dc[4];
+    int            iframes_warning;
 } CLVContext;
 
 static inline int decode_block(CLVContext *ctx, int16_t *blk, int has_ac,
@@ -179,12 +180,12 @@ static inline int decode_block(CLVContext *ctx, int16_t *blk, int has_ac,
 }
 
 #define DCT_TEMPLATE(blk, step, bias, shift, dshift, OP)                \
-    const int t0 = OP( 2841 * blk[1 * step] +  565 * blk[7 * step]);    \
-    const int t1 = OP(  565 * blk[1 * step] - 2841 * blk[7 * step]);    \
-    const int t2 = OP( 1609 * blk[5 * step] + 2408 * blk[3 * step]);    \
-    const int t3 = OP( 2408 * blk[5 * step] - 1609 * blk[3 * step]);    \
-    const int t4 = OP( 1108 * blk[2 * step] - 2676 * blk[6 * step]);    \
-    const int t5 = OP( 2676 * blk[2 * step] + 1108 * blk[6 * step]);    \
+    const int t0 = OP(2841 * blk[1 * step] +  565 * blk[7 * step]);     \
+    const int t1 = OP( 565 * blk[1 * step] - 2841 * blk[7 * step]);     \
+    const int t2 = OP(1609 * blk[5 * step] + 2408 * blk[3 * step]);     \
+    const int t3 = OP(2408 * blk[5 * step] - 1609 * blk[3 * step]);     \
+    const int t4 = OP(1108 * blk[2 * step] - 2676 * blk[6 * step]);     \
+    const int t5 = OP(2676 * blk[2 * step] + 1108 * blk[6 * step]);     \
     const int t6 = ((blk[0 * step] + blk[4 * step]) * (1 << dshift)) + bias;  \
     const int t7 = ((blk[0 * step] - blk[4 * step]) * (1 << dshift)) + bias;  \
     const int t8 = t0 + t2;                                             \
@@ -225,9 +226,7 @@ static void clv_dct(int16_t *block)
 
 static int decode_mb(CLVContext *c, int x, int y)
 {
-    int i;
-    int has_ac[6];
-    int off;
+    int i, has_ac[6], off;
 
     for (i = 0; i < 6; i++)
         has_ac[i] = get_bits1(&c->gb);
@@ -247,7 +246,8 @@ static int decode_mb(CLVContext *c, int x, int y)
         clv_dct(c->block);
         if (i == 2)
             off += c->pic->linesize[0] * 8;
-        c->idsp.put_pixels_clamped(c->block, c->pic->data[0] + off + (i & 1) * 8,
+        c->idsp.put_pixels_clamped(c->block,
+                                   c->pic->data[0] + off + (i & 1) * 8,
                                    c->pic->linesize[0]);
     }
 
@@ -279,12 +279,11 @@ static int clv_decode_frame(AVCodecContext *avctx, void *data,
     CLVContext *c = avctx->priv_data;
     GetByteContext gb;
     uint32_t frame_type;
-    int i, j;
-    int ret;
+    int i, j, ret;
     int mb_ret = 0;
 
     bytestream2_init(&gb, buf, buf_size);
-    if (avctx->codec_tag == MKTAG('C','L','V','1')) {
+    if (avctx->codec_tag == MKTAG('C', 'L', 'V', '1')) {
         int skip = bytestream2_get_byte(&gb);
         bytestream2_skip(&gb, (skip + 1) * 8);
     }
@@ -301,7 +300,8 @@ static int clv_decode_frame(AVCodecContext *avctx, void *data,
             return ret;
 
         c->pic->key_frame = frame_type & 0x20 ? 1 : 0;
-        c->pic->pict_type = frame_type & 0x20 ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
+        c->pic->pict_type = frame_type & 0x20 ? AV_PICTURE_TYPE_I
+                                              : AV_PICTURE_TYPE_P;
 
         bytestream2_get_be32(&gb); // frame size;
         c->ac_quant        = bytestream2_get_byte(&gb);
@@ -309,7 +309,7 @@ static int clv_decode_frame(AVCodecContext *avctx, void *data,
         c->chroma_dc_quant = 32;
 
         if ((ret = init_get_bits8(&c->gb, buf + bytestream2_tell(&gb),
-                                  (buf_size - bytestream2_tell(&gb)))) < 0)
+                                  buf_size - bytestream2_tell(&gb))) < 0)
             return ret;
 
         for (i = 0; i < 3; i++)
@@ -330,6 +330,10 @@ static int clv_decode_frame(AVCodecContext *avctx, void *data,
 
         *got_frame = 1;
     } else {
+        if (!c->iframes_warning)
+            avpriv_report_missing_feature(avctx, "Non-I-frames in Clearvideo");
+        c->iframes_warning = 1;
+        return AVERROR_PATCHWELCOME;
     }
 
     return mb_ret < 0 ? mb_ret : buf_size;
@@ -337,19 +341,18 @@ static int clv_decode_frame(AVCodecContext *avctx, void *data,
 
 static av_cold int clv_decode_init(AVCodecContext *avctx)
 {
-    CLVContext * const c = avctx->priv_data;
+    CLVContext *const c = avctx->priv_data;
     int ret;
-
-    c->avctx = avctx;
 
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
-    c->pic = av_frame_alloc();
+    c->avctx           = avctx;
+    c->mb_width        = FFALIGN(avctx->width,  16) >> 4;
+    c->mb_height       = FFALIGN(avctx->height, 16) >> 4;
+    c->iframes_warning = 0;
+    c->pic             = av_frame_alloc();
     if (!c->pic)
         return AVERROR(ENOMEM);
-
-    c->mb_width  = FFALIGN(avctx->width,  16) >> 4;
-    c->mb_height = FFALIGN(avctx->height, 16) >> 4;
 
     ff_idctdsp_init(&c->idsp, avctx);
     ret = init_vlc(&c->dc_vlc, 9, NUM_DC_CODES,
@@ -373,7 +376,7 @@ static av_cold int clv_decode_init(AVCodecContext *avctx)
 
 static av_cold int clv_decode_end(AVCodecContext *avctx)
 {
-    CLVContext * const c = avctx->priv_data;
+    CLVContext *const c = avctx->priv_data;
 
     av_frame_free(&c->pic);
 
@@ -385,6 +388,7 @@ static av_cold int clv_decode_end(AVCodecContext *avctx)
 
 AVCodec ff_clearvideo_decoder = {
     .name           = "clearvideo",
+    .long_name      = NULL_IF_CONFIG_SMALL("Iterated Systems ClearVideo"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_CLEARVIDEO,
     .priv_data_size = sizeof(CLVContext),
@@ -392,5 +396,5 @@ AVCodec ff_clearvideo_decoder = {
     .close          = clv_decode_end,
     .decode         = clv_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Iterated Systems ClearVideo"),
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
