@@ -180,6 +180,11 @@ static const uint64_t thd_channel_order[] = {
     AV_CH_LOW_FREQUENCY_2,                                   // LFE2
 };
 
+static int mlp_channel_layout_subset(uint64_t channel_layout, uint64_t mask)
+{
+    return channel_layout && ((channel_layout & mask) == channel_layout);
+}
+
 static uint64_t thd_channel_layout_extract_channel(uint64_t channel_layout,
                                                    int index)
 {
@@ -533,7 +538,7 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
     s->max_channel        = max_channel;
     s->max_matrix_channel = max_matrix_channel;
 
-    if (ff_mlp_channel_layout_subset(m->avctx->request_channel_layout, s->mask) &&
+    if (mlp_channel_layout_subset(m->avctx->request_channel_layout, s->mask) &&
         m->max_decoded_substream > substr) {
         av_log(m->avctx, AV_LOG_DEBUG,
                "Extracting %d-channel downmix (0x%"PRIx64") from substream %d. "

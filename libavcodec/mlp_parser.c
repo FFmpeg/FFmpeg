@@ -119,11 +119,6 @@ uint64_t ff_truehd_layout(int chanmap)
     return layout;
 }
 
-int ff_mlp_channel_layout_subset(uint64_t channel_layout, uint64_t mask)
-{
-    return channel_layout && ((channel_layout & mask) == channel_layout);
-}
-
 static int mlp_get_major_sync_size(const uint8_t * buf, int bufsize)
 {
     int has_extension, extensions = 0;
@@ -346,8 +341,6 @@ static int mlp_parse(AVCodecParserContext *s,
     } else {
         GetBitContext gb;
         MLPHeaderInfo mh;
-        int stereo_requested = ff_mlp_channel_layout_subset(avctx->request_channel_layout,
-                                                            AV_CH_LAYOUT_STEREO);
 
         init_get_bits(&gb, buf + 4, (buf_size - 4) << 3);
         if (ff_mlp_read_major_sync(avctx, &mh, &gb) < 0)
@@ -364,21 +357,11 @@ static int mlp_parse(AVCodecParserContext *s,
         if(!avctx->channels || !avctx->channel_layout) {
         if (mh.stream_type == 0xbb) {
             /* MLP stream */
-            if (stereo_requested && mh.num_substreams > 1) {
-                avctx->channels       = 2;
-                avctx->channel_layout = AV_CH_LAYOUT_STEREO;
-            } else {
-                avctx->channels       = mh.channels_mlp;
-                avctx->channel_layout = mh.channel_layout_mlp;
-            }
+            avctx->channels       = mh.channels_mlp;
+            avctx->channel_layout = mh.channel_layout_mlp;
         } else { /* mh.stream_type == 0xba */
             /* TrueHD stream */
-            if (stereo_requested && mh.num_substreams > 1) {
-                avctx->channels       = 2;
-                avctx->channel_layout = AV_CH_LAYOUT_STEREO;
-            } else if (!mh.channels_thd_stream2 ||
-                       ff_mlp_channel_layout_subset(avctx->request_channel_layout,
-                                                    mh.channel_layout_thd_stream1)) {
+            if (!mh.channels_thd_stream2) {
                 avctx->channels       = mh.channels_thd_stream1;
                 avctx->channel_layout = mh.channel_layout_thd_stream1;
             } else {
