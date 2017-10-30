@@ -55,8 +55,8 @@
      (x) == AV_PIX_FMT_RGB32_1 ||         \
      (x) == AV_PIX_FMT_YUVA420P)
 
-static uint64_t getSSD(const uint8_t *src1, const uint8_t *src2, int stride1,
-                       int stride2, int w, int h)
+static uint64_t getSSD(const uint8_t *src1, const uint8_t *src2,
+                       int stride1, int stride2, int w, int h)
 {
     int x, y;
     uint64_t ssd = 0;
@@ -80,7 +80,7 @@ struct Results {
 
 // test by ref -> src -> dst -> out & compare out against ref
 // ref & out are YV12
-static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
+static int doTest(const uint8_t * const ref[4], int refStride[4], int w, int h,
                   enum AVPixelFormat srcFormat, enum AVPixelFormat dstFormat,
                   int srcW, int srcH, int dstW, int dstH, int flags,
                   struct Results *r)
@@ -90,7 +90,7 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
     const AVPixFmtDescriptor *desc_dst      = av_pix_fmt_desc_get(dstFormat);
     static enum AVPixelFormat cur_srcFormat;
     static int cur_srcW, cur_srcH;
-    static uint8_t *src[4];
+    static const uint8_t *src[4];
     static int srcStride[4];
     uint8_t *dst[4] = { 0 };
     uint8_t *out[4] = { 0 };
@@ -132,7 +132,8 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
             res = -1;
             goto end;
         }
-        sws_scale(srcContext, (const uint8_t * const*)ref, refStride, 0, h, src, srcStride);
+        sws_scale(srcContext, ref, refStride, 0, h,
+                  (uint8_t * const *) src, srcStride);
         sws_freeContext(srcContext);
 
         cur_srcFormat = srcFormat;
@@ -211,7 +212,8 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
             res = -1;
             goto end;
         }
-        sws_scale(outContext, (const uint8_t * const*)dst, dstStride, 0, dstH, out, refStride);
+        sws_scale(outContext, (const uint8_t * const *) dst, dstStride, 0, dstH,
+                  out, refStride);
 
         ssdY = getSSD(ref[0], out[0], refStride[0], refStride[0], w, h);
         if (hasChroma(srcFormat) && hasChroma(dstFormat)) {
@@ -249,7 +251,8 @@ end:
     return res;
 }
 
-static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h,
+static void selfTest(const uint8_t * const ref[4], int refStride[4],
+                     int w, int h,
                      enum AVPixelFormat srcFormat_in,
                      enum AVPixelFormat dstFormat_in)
 {
@@ -299,7 +302,8 @@ static void selfTest(uint8_t *ref[4], int refStride[4], int w, int h,
     }
 }
 
-static int fileTest(uint8_t *ref[4], int refStride[4], int w, int h, FILE *fp,
+static int fileTest(const uint8_t * const ref[4], int refStride[4],
+                    int w, int h, FILE *fp,
                     enum AVPixelFormat srcFormat_in,
                     enum AVPixelFormat dstFormat_in)
 {
@@ -362,7 +366,7 @@ int main(int argc, char **argv)
     const uint8_t * const rgb_src[4] = { rgb_data, NULL, NULL, NULL };
     int rgb_stride[4]   = { 4 * W, 0, 0, 0 };
     uint8_t *data       = av_malloc(4 * W * H);
-    uint8_t *src[4]     = { data, data + W * H, data + W * H * 2, data + W * H * 3 };
+    const uint8_t * const src[4] = { data, data + W * H, data + W * H * 2, data + W * H * 3 };
     int stride[4]       = { W, W, W, W };
     int x, y;
     struct SwsContext *sws;
@@ -418,7 +422,7 @@ bad_option:
     for (y = 0; y < H; y++)
         for (x = 0; x < W * 4; x++)
             rgb_data[ x + y * 4 * W] = av_lfg_get(&rand);
-    sws_scale(sws, rgb_src, rgb_stride, 0, H / 12, src, stride);
+    sws_scale(sws, rgb_src, rgb_stride, 0, H / 12, (uint8_t * const *) src, stride);
     sws_freeContext(sws);
     av_free(rgb_data);
 
