@@ -68,4 +68,6 @@ uint64_t ff_truehd_layout(int chanmap);
 
 extern const uint64_t ff_mlp_layout[32];
 
+int ff_mlp_channel_layout_subset(uint64_t channel_layout, uint64_t mask);
+
 #endif /* AVCODEC_MLP_PARSER_H */
