@@ -3120,7 +3120,7 @@ static void set_encoder_id(OutputFile *of, OutputStream *ost)
     uint8_t *encoder_string;
     int encoder_string_len;
     int format_flags = 0;
-    int codec_flags = 0;
+    int codec_flags = ost->enc_ctx->flags;
 
     if (av_dict_get(ost->st->metadata, "encoder",  NULL, 0))
         return;
