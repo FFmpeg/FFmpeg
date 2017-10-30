@@ -159,26 +159,29 @@ function ff_hevc_transform_luma_4x4_neon_8, export=1
         bx lr
 endfunc
 
-function ff_hevc_idct_4x4_dc_8_neon, export=1
+.macro idct_4x4_dc bitdepth
+function ff_hevc_idct_4x4_dc_\bitdepth\()_neon, export=1
         ldrsh           r1, [r0]
-        ldr             r2, =0x20
+        ldr             r2, =(1 << (13 - \bitdepth))
         add             r1, #1
         asr             r1, #1
         add             r1, r2
-        asr             r1, #6
+        asr             r1, #(14 - \bitdepth)
         vdup.16         q0, r1
         vdup.16         q1, r1
         vst1.16         {q0, q1}, [r0, :128]
         bx              lr
 endfunc
+.endm
 
-function ff_hevc_idct_8x8_dc_8_neon, export=1
+.macro idct_8x8_dc bitdepth
+function ff_hevc_idct_8x8_dc_\bitdepth\()_neon, export=1
         ldrsh           r1, [r0]
-        ldr             r2, =0x20
+        ldr             r2, =(1 << (13 - \bitdepth))
         add             r1, #1
         asr             r1, #1
         add             r1, r2
-        asr             r1, #6
+        asr             r1, #(14 - \bitdepth)
         vdup.16         q8, r1
         vdup.16         q9, r1
         vmov.16         q10, q8
@@ -190,14 +193,16 @@ function ff_hevc_idct_8x8_dc_8_neon, export=1
         vstm            r0, {q8-q15}
         bx              lr
 endfunc
+.endm
 
-function ff_hevc_idct_16x16_dc_8_neon, export=1
+.macro idct_16x16_dc bitdepth
+function ff_hevc_idct_16x16_dc_\bitdepth\()_neon, export=1
         ldrsh           r1, [r0]
-        ldr             r2, =0x20
+        ldr             r2, =(1 << (13 - \bitdepth))
         add             r1, #1
         asr             r1, #1
         add             r1, r2
-        asr             r1, #6
+        asr             r1, #(14 - \bitdepth)
         vdup.16         q8, r1
         vdup.16         q9, r1
         vmov.16         q10, q8
@@ -212,14 +217,16 @@ function ff_hevc_idct_16x16_dc_8_neon, export=1
         vstm            r0, {q8-q15}
         bx              lr
 endfunc
+.endm
 
-function ff_hevc_idct_32x32_dc_8_neon, export=1
+.macro idct_32x32_dc bitdepth
+function ff_hevc_idct_32x32_dc_\bitdepth\()_neon, export=1
         ldrsh           r1, [r0]
-        ldr             r2, =0x20
+        ldr             r2, =(1 << (13 - \bitdepth))
         add             r1, #1
         asr             r1, #1
         add             r1, r2
-        asr             r1, #6
+        asr             r1, #(14 - \bitdepth)
         mov             r3, #16
         vdup.16         q8, r1
         vdup.16         q9, r1
@@ -234,6 +241,7 @@ function ff_hevc_idct_32x32_dc_8_neon, export=1
         bne             1b
         bx              lr
 endfunc
+.endm
 
 .macro sum_sub out, in, c, op
   .ifc \op, +
@@ -625,8 +633,16 @@ tr_16x4 secondpass_10, 20 - 10
 .ltorg
 
 idct_4x4 8
+idct_4x4_dc 8
 idct_4x4 10
+idct_4x4_dc 10
 idct_8x8 8
+idct_8x8_dc 8
 idct_8x8 10
+idct_8x8_dc 10
 idct_16x16 8
+idct_16x16_dc 8
 idct_16x16 10
+idct_16x16_dc 10
+idct_32x32_dc 8
+idct_32x32_dc 10
