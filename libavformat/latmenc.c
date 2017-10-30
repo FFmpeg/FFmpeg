@@ -128,7 +128,7 @@ static void latm_write_frame_header(AVFormatContext *s, PutBitContext *bs)
                 int ret = init_get_bits8(&gb, par->extradata, par->extradata_size);
                 av_assert0(ret >= 0); // extradata size has been checked already, so this should not fail
                 skip_bits_long(&gb, ctx->off + 3);
-                avpriv_copy_pce_data(bs, &gb);
+                ff_copy_pce_data(bs, &gb);
             }
         }
 

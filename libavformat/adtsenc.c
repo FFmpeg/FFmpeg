@@ -85,7 +85,7 @@ static int adts_decode_extradata(AVFormatContext *s, ADTSContext *adts, const ui
         init_put_bits(&pb, adts->pce_data, MAX_PCE_SIZE);
 
         put_bits(&pb, 3, 5); //ID_PCE
-        adts->pce_size = (avpriv_copy_pce_data(&pb, &gb) + 3) / 8;
+        adts->pce_size = (ff_copy_pce_data(&pb, &gb) + 3) / 8;
         flush_put_bits(&pb);
     }
 
