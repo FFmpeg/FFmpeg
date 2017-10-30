@@ -2955,7 +2955,7 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
     uint8_t layout_map[MAX_ELEM_ID*4][3];
     int layout_map_tags, ret;
 
-    size = avpriv_aac_parse_header(gb, &hdr_info);
+    size = ff_adts_header_parse(gb, &hdr_info);
     if (size > 0) {
         if (!ac->warned_num_aac_frames && hdr_info.num_aac_frames != 1) {
             // This is 2 for "VLB " audio in NSV files.

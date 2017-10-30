@@ -20,13 +20,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_AACADTSDEC_H
-#define AVCODEC_AACADTSDEC_H
+#ifndef AVCODEC_ADTS_HEADER_H
+#define AVCODEC_ADTS_HEADER_H
 
-#include <stdint.h>
 #include "get_bits.h"
-
-#define AAC_ADTS_HEADER_SIZE 7
 
 typedef struct AACADTSHeaderInfo {
     uint32_t sample_rate;
@@ -40,7 +37,6 @@ typedef struct AACADTSHeaderInfo {
 } AACADTSHeaderInfo;
 
 /**
- * Parse AAC frame header.
  * Parse the ADTS frame header to the end of the variable header, which is
  * the first 54 bits.
  * @param[in]  gbc BitContext containing the first 54 bits of the frame.
@@ -49,6 +45,6 @@ typedef struct AACADTSHeaderInfo {
  * -2 if the version element is invalid, -3 if the sample rate
  * element is invalid, or -4 if the bit rate element is invalid.
  */
-int avpriv_aac_parse_header(GetBitContext *gbc, AACADTSHeaderInfo *hdr);
+int ff_adts_header_parse(GetBitContext *gbc, AACADTSHeaderInfo *hdr);
 
-#endif /* AVCODEC_AACADTSDEC_H */
+#endif /* AVCODEC_ADTS_HEADER_H */

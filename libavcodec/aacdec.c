@@ -50,11 +50,11 @@
 #include "aac.h"
 #include "aactab.h"
 #include "aacdectab.h"
+#include "adts_header.h"
 #include "cbrt_data.h"
 #include "sbr.h"
 #include "aacsbr.h"
 #include "mpeg4audio.h"
-#include "aacadtsdec.h"
 #include "profiles.h"
 #include "libavutil/intfloat.h"
 

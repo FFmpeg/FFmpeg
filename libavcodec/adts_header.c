@@ -22,11 +22,12 @@
  */
 
 #include "aac_ac3_parser.h"
-#include "aacadtsdec.h"
+#include "adts_header.h"
+#include "adts_parser.h"
 #include "get_bits.h"
 #include "mpeg4audio.h"
 
-int avpriv_aac_parse_header(GetBitContext *gbc, AACADTSHeaderInfo *hdr)
+int ff_adts_header_parse(GetBitContext *gbc, AACADTSHeaderInfo *hdr)
 {
     int size, rdb, ch, sr;
     int aot, crc_abs;
@@ -51,7 +52,7 @@ int avpriv_aac_parse_header(GetBitContext *gbc, AACADTSHeaderInfo *hdr)
     skip_bits1(gbc);             /* copyright_identification_bit */
     skip_bits1(gbc);             /* copyright_identification_start */
     size = get_bits(gbc, 13);    /* aac_frame_length */
-    if (size < AAC_ADTS_HEADER_SIZE)
+    if (size < AV_AAC_ADTS_HEADER_SIZE)
         return AAC_AC3_PARSE_ERROR_FRAME_SIZE;
 
     skip_bits(gbc, 11);          /* adts_buffer_fullness */
