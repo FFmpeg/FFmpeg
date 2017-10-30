@@ -50,20 +50,21 @@ function ff_hevc_add_residual_4x4_8_neon, export=1
 endfunc
 
 function ff_hevc_add_residual_8x8_8_neon, export=1
+        add             r12, r0, r2
+        add             r2,  r2, r2
         mov             r3,   #8
 1:      subs            r3,   #2
-        vld1.16         {q0-q1}, [r1, :128]!
-        vld1.8          {d16},   [r0, :64]
-        add             r12, r0, r2
+        vld1.8          {d16},   [r0,  :64]
         vld1.8          {d17},   [r12, :64]
         vmovl.u8        q9,   d16
+        vld1.16         {q0-q1}, [r1,  :128]!
         vmovl.u8        q8,   d17
         vqadd.s16       q0,   q9
         vqadd.s16       q1,   q8
         vqmovun.s16     d0,   q0
         vqmovun.s16     d1,   q1
-        vst1.8          d0,   [r0, :64], r2
-        vst1.8          d1,   [r0, :64], r2
+        vst1.8          d0,   [r0,  :64], r2
+        vst1.8          d1,   [r12, :64], r2
         bne             1b
         bx              lr
 endfunc
@@ -96,24 +97,42 @@ function ff_hevc_add_residual_16x16_8_neon, export=1
 endfunc
 
 function ff_hevc_add_residual_32x32_8_neon, export=1
+        vpush           {q4-q7}
+        add             r12, r0, r2
+        add             r2,  r2, r2
         mov             r3,  #32
-1:      subs            r3,  #1
-        vldm            r1!, {q0-q3}
-        vld1.8          {q8, q9}, [r0, :128]
-        vmovl.u8        q10, d16
-        vmovl.u8        q11, d17
-        vmovl.u8        q12, d18
-        vmovl.u8        q13, d19
-        vqadd.s16       q0,  q10
-        vqadd.s16       q1,  q11
-        vqadd.s16       q2,  q12
-        vqadd.s16       q3,  q13
+1:      subs            r3,  #2
+        vld1.8          {q12, q13}, [r0,  :128]
+        vmovl.u8        q8,  d24
+        vmovl.u8        q9,  d25
+        vld1.8          {q14, q15}, [r12, :128]
+        vmovl.u8        q10, d26
+        vmovl.u8        q11, d27
+        vmovl.u8        q12, d28
+        vldm            r1!, {q0-q7}
+        vmovl.u8        q13, d29
+        vmovl.u8        q14, d30
+        vmovl.u8        q15, d31
+        vqadd.s16       q0,  q8
+        vqadd.s16       q1,  q9
+        vqadd.s16       q2,  q10
+        vqadd.s16       q3,  q11
+        vqadd.s16       q4,  q12
+        vqadd.s16       q5,  q13
+        vqadd.s16       q6,  q14
+        vqadd.s16       q7,  q15
         vqmovun.s16     d0,  q0
         vqmovun.s16     d1,  q1
         vqmovun.s16     d2,  q2
         vqmovun.s16     d3,  q3
+        vqmovun.s16     d4,  q4
+        vqmovun.s16     d5,  q5
         vst1.8          {q0, q1}, [r0, :128], r2
+        vqmovun.s16     d6,  q6
+        vqmovun.s16     d7,  q7
+        vst1.8          {q2, q3}, [r12, :128], r2
         bne             1b
+        vpop            {q4-q7}
         bx              lr
 endfunc
 
