@@ -204,6 +204,7 @@ static const struct {
     { "FMA3",     "fma3",     AV_CPU_FLAG_FMA3 },
     { "FMA4",     "fma4",     AV_CPU_FLAG_FMA4 },
     { "AVX2",     "avx2",     AV_CPU_FLAG_AVX2 },
+    { "AVX-512",  "avx512",   AV_CPU_FLAG_AVX512 },
 #endif
     { NULL }
 };
