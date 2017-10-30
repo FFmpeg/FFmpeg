@@ -29,75 +29,92 @@ const trans, align=4
         .short 57, 43, 25, 9
 endconst
 
-function ff_hevc_add_residual_4x4_neon_8, export=1
-        vldm        r1, {q0-q1}
-        vld1.32     d4[0], [r0], r2
-        vld1.32     d4[1], [r0], r2
-        vld1.32     d5[0], [r0], r2
-        vld1.32     d5[1], [r0], r2
-        sub         r0, r0, r2, lsl #2
-        vmovl.u8    q8, d4
-        vmovl.u8    q9, d5
-        vqadd.s16   q0, q0, q8
-        vqadd.s16   q1, q1, q9
-        vqmovun.s16 d0, q0
-        vqmovun.s16 d1, q1
-        vst1.32     d0[0], [r0], r2
-        vst1.32     d0[1], [r0], r2
-        vst1.32     d1[0], [r0], r2
-        vst1.32     d1[1], [r0], r2
-        bx          lr
+function ff_hevc_add_residual_4x4_8_neon, export=1
+        vld1.16         {q0-q1}, [r1, :128]
+        vld1.32         d4[0], [r0, :32], r2
+        vld1.32         d4[1], [r0, :32], r2
+        vld1.32         d5[0], [r0, :32], r2
+        vld1.32         d5[1], [r0, :32], r2
+        sub             r0, r0, r2, lsl #2
+        vmovl.u8        q8, d4
+        vmovl.u8        q9, d5
+        vqadd.s16       q0, q0, q8
+        vqadd.s16       q1, q1, q9
+        vqmovun.s16     d0, q0
+        vqmovun.s16     d1, q1
+        vst1.32         d0[0], [r0, :32], r2
+        vst1.32         d0[1], [r0, :32], r2
+        vst1.32         d1[0], [r0, :32], r2
+        vst1.32         d1[1], [r0, :32], r2
+        bx              lr
 endfunc
 
-function ff_hevc_add_residual_8x8_neon_8, export=1
-        mov         r3,   #8
-1:      subs        r3,   #1
-        vld1.16     {q0}, [r1]!
-        vld1.8      d16,  [r0]
-        vmovl.u8    q8,   d16
-        vqadd.s16   q0,   q8
-        vqmovun.s16 d0,   q0
-        vst1.32     d0,   [r0], r2
-        bne         1b
-        bx          lr
+function ff_hevc_add_residual_8x8_8_neon, export=1
+        mov             r3,   #8
+1:      subs            r3,   #2
+        vld1.16         {q0-q1}, [r1, :128]!
+        vld1.8          {d16},   [r0, :64]
+        add             r12, r0, r2
+        vld1.8          {d17},   [r12, :64]
+        vmovl.u8        q9,   d16
+        vmovl.u8        q8,   d17
+        vqadd.s16       q0,   q9
+        vqadd.s16       q1,   q8
+        vqmovun.s16     d0,   q0
+        vqmovun.s16     d1,   q1
+        vst1.8          d0,   [r0, :64], r2
+        vst1.8          d1,   [r0, :64], r2
+        bne             1b
+        bx              lr
 endfunc
 
-function ff_hevc_add_residual_16x16_neon_8, export=1
-        mov         r3,   #16
-1:      subs        r3,   #1
-        vld1.16     {q0, q1}, [r1]!
-        vld1.8      {q8},  [r0]
-        vmovl.u8    q9,  d16
-        vmovl.u8    q10, d17
-        vqadd.s16   q0,  q9
-        vqadd.s16   q1,  q10
-        vqmovun.s16 d0,  q0
-        vqmovun.s16 d1,  q1
-        vst1.8      {q0},   [r0], r2
-        bne         1b
-        bx          lr
+function ff_hevc_add_residual_16x16_8_neon, export=1
+        mov             r3,  #16
+        add             r12, r0, r2
+        add             r2,  r2, r2
+1:      subs            r3,  #2
+        vld1.8          {q8},     [r0, :128]
+        vld1.16         {q0, q1}, [r1, :128]!
+        vld1.8          {q11},    [r12, :128]
+        vld1.16         {q2, q3}, [r1, :128]!
+        vmovl.u8        q9,  d16
+        vmovl.u8        q10, d17
+        vmovl.u8        q12, d22
+        vmovl.u8        q13, d23
+        vqadd.s16       q0,  q9
+        vqadd.s16       q1,  q10
+        vqadd.s16       q2,  q12
+        vqadd.s16       q3,  q13
+        vqmovun.s16     d0,  q0
+        vqmovun.s16     d1,  q1
+        vqmovun.s16     d2,  q2
+        vqmovun.s16     d3,  q3
+        vst1.8          {q0},     [r0, :128], r2
+        vst1.8          {q1},     [r12, :128], r2
+        bne             1b
+        bx              lr
 endfunc
 
-function ff_hevc_add_residual_32x32_neon_8, export=1
-        mov         r3,   #32
-1:      subs        r3,   #1
-        vldm        r1!, {q0-q3}
-        vld1.8      {q8, q9},  [r0]
-        vmovl.u8    q10, d16
-        vmovl.u8    q11, d17
-        vmovl.u8    q12, d18
-        vmovl.u8    q13, d19
-        vqadd.s16   q0,  q10
-        vqadd.s16   q1,  q11
-        vqadd.s16   q2,  q12
-        vqadd.s16   q3,  q13
-        vqmovun.s16 d0,  q0
-        vqmovun.s16 d1,  q1
-        vqmovun.s16 d2,  q2
-        vqmovun.s16 d3,  q3
-        vst1.8     {q0, q1},   [r0], r2
-        bne         1b
-        bx          lr
+function ff_hevc_add_residual_32x32_8_neon, export=1
+        mov             r3,  #32
+1:      subs            r3,  #1
+        vldm            r1!, {q0-q3}
+        vld1.8          {q8, q9}, [r0, :128]
+        vmovl.u8        q10, d16
+        vmovl.u8        q11, d17
+        vmovl.u8        q12, d18
+        vmovl.u8        q13, d19
+        vqadd.s16       q0,  q10
+        vqadd.s16       q1,  q11
+        vqadd.s16       q2,  q12
+        vqadd.s16       q3,  q13
+        vqmovun.s16     d0,  q0
+        vqmovun.s16     d1,  q1
+        vqmovun.s16     d2,  q2
+        vqmovun.s16     d3,  q3
+        vst1.8          {q0, q1}, [r0, :128], r2
+        bne             1b
+        bx              lr
 endfunc
 
 /* uses registers q2 - q9 for temp values */
