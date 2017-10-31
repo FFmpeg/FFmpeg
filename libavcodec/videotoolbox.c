@@ -27,6 +27,7 @@
 #include "libavutil/avutil.h"
 #include "libavutil/hwcontext.h"
 #include "bytestream.h"
+#include "decode.h"
 #include "h264dec.h"
 #include "hevcdec.h"
 #include "mpegvideo.h"
@@ -70,6 +71,10 @@ static int videotoolbox_buffer_copy(VTContext *vtctx,
 
 int ff_videotoolbox_alloc_frame(AVCodecContext *avctx, AVFrame *frame)
 {
+    int ret = ff_attach_decode_data(frame);
+    if (ret < 0)
+        return ret;
+
     frame->width  = avctx->width;
     frame->height = avctx->height;
     frame->format = avctx->pix_fmt;
