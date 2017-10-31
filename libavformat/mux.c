@@ -876,7 +876,9 @@ static int do_packet_auto_bsf(AVFormatContext *s, AVPacket *pkt) {
             av_log(ctx, AV_LOG_ERROR,
                     "Failed to send packet to filter %s for stream %d\n",
                     ctx->filter->name, pkt->stream_index);
-            return ret;
+            if (s->error_recognition & AV_EF_EXPLODE)
+                return ret;
+            return 0;
         }
     }
     return 1;
