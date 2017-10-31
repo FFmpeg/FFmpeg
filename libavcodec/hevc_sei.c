@@ -272,8 +272,8 @@ static int decode_nal_sei_alternative_transfer(HEVCSEIAlternativeTransfer *s, Ge
     return 0;
 }
 
-static int decode_nal_sei_prefix(GetBitContext *gb, HEVCSEI *s, const HEVCParamSets *ps,
-                                 int type, int size, void *logctx)
+static int decode_nal_sei_prefix(GetBitContext *gb, void *logctx, HEVCSEI *s,
+                                 const HEVCParamSets *ps, int type, int size)
 {
     switch (type) {
     case 256:  // Mismatched value from HM 8.1
@@ -301,8 +301,8 @@ static int decode_nal_sei_prefix(GetBitContext *gb, HEVCSEI *s, const HEVCParamS
     }
 }
 
-static int decode_nal_sei_suffix(GetBitContext *gb, HEVCSEI *s,
-                                 int type, int size, void *logctx)
+static int decode_nal_sei_suffix(GetBitContext *gb, void *logctx, HEVCSEI *s,
+                                 int type, int size)
 {
     switch (type) {
     case HEVC_SEI_TYPE_DECODED_PICTURE_HASH:
@@ -314,9 +314,8 @@ static int decode_nal_sei_suffix(GetBitContext *gb, HEVCSEI *s,
     }
 }
 
-static int decode_nal_sei_message(GetBitContext *gb, HEVCSEI *s,
-                                  const HEVCParamSets *ps, int nal_unit_type,
-                                  void *logctx)
+static int decode_nal_sei_message(GetBitContext *gb, void *logctx, HEVCSEI *s,
+                                  const HEVCParamSets *ps, int nal_unit_type)
 {
     int payload_type = 0;
     int payload_size = 0;
@@ -333,9 +332,9 @@ static int decode_nal_sei_message(GetBitContext *gb, HEVCSEI *s,
         payload_size += byte;
     }
     if (nal_unit_type == HEVC_NAL_SEI_PREFIX) {
-        return decode_nal_sei_prefix(gb, s, ps, payload_type, payload_size, logctx);
+        return decode_nal_sei_prefix(gb, logctx, s, ps, payload_type, payload_size);
     } else { /* nal_unit_type == NAL_SEI_SUFFIX */
-        return decode_nal_sei_suffix(gb, s, payload_type, payload_size, logctx);
+        return decode_nal_sei_suffix(gb, logctx, s, payload_type, payload_size);
     }
 }
 
@@ -350,7 +349,7 @@ int ff_hevc_decode_nal_sei(GetBitContext *gb, void *logctx, HEVCSEI *s,
     int ret;
 
     do {
-        ret = decode_nal_sei_message(gb, s, ps, type, logctx);
+        ret = decode_nal_sei_message(gb, logctx, s, ps, type);
         if (ret < 0)
             return ret;
     } while (more_rbsp_data(gb));
