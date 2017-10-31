@@ -1026,6 +1026,7 @@ typedef struct AVStream {
         double (*duration_error)[2][MAX_STD_TIMEBASES];
         int64_t codec_info_duration;
         int64_t codec_info_duration_fields;
+        int frame_delay_evidence;
 
         /**
          * 0  -> decoder has not been searched for yet.

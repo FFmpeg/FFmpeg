@@ -3628,6 +3628,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         /* check if one codec still needs to be handled */
         for (i = 0; i < ic->nb_streams; i++) {
             int fps_analyze_framecount = 20;
+            int count;
 
             st = ic->streams[i];
             if (!has_codec_parameters(st, NULL))
@@ -3644,14 +3645,18 @@ FF_ENABLE_DEPRECATION_WARNINGS
             if (st->disposition & AV_DISPOSITION_ATTACHED_PIC)
                 fps_analyze_framecount = 0;
             /* variable fps and no guess at the real fps */
+            count = (ic->iformat->flags & AVFMT_NOTIMESTAMPS) ?
+                       st->info->codec_info_duration_fields/2 :
+                       st->info->duration_count;
             if (!(st->r_frame_rate.num && st->avg_frame_rate.num) &&
                 st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-                int count = (ic->iformat->flags & AVFMT_NOTIMESTAMPS) ?
-                    st->info->codec_info_duration_fields/2 :
-                    st->info->duration_count;
                 if (count < fps_analyze_framecount)
                     break;
             }
+            // Look at the first 3 frames if there is evidence of frame delay
+            // but the decoder delay is not set.
+            if (st->info->frame_delay_evidence && count < 2 && st->internal->avctx->has_b_frames == 0)
+                break;
             if (!st->internal->avctx->extradata &&
                 (!st->internal->extract_extradata.inited ||
                  st->internal->extract_extradata.bsf) &&
@@ -3801,10 +3806,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 st->info->codec_info_duration_fields += st->parser && st->need_parsing && avctx->ticks_per_frame ==2 ? st->parser->repeat_pict + 1 : 2;
             }
         }
+        if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
 #if FF_API_R_FRAME_RATE
-        if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
             ff_rfps_add_frame(ic, st, pkt->dts);
 #endif
+            if (pkt->dts != pkt->pts && pkt->dts != AV_NOPTS_VALUE && pkt->pts != AV_NOPTS_VALUE)
+                st->info->frame_delay_evidence = 1;
+        }
         if (!st->internal->avctx->extradata) {
             ret = extract_extradata(st, pkt);
             if (ret < 0)
