@@ -40,7 +40,7 @@ typedef struct HEVCParserContext {
 
     H2645Packet pkt;
     HEVCParamSets ps;
-    HEVCSEIContext sei;
+    HEVCSEI sei;
     SliceHeader sh;
 
     int parsed_extradata;
@@ -54,7 +54,7 @@ static int hevc_parse_slice_header(AVCodecParserContext *s, H2645NAL *nal,
 {
     HEVCParserContext *ctx = s->priv_data;
     HEVCParamSets *ps = &ctx->ps;
-    HEVCSEIContext *sei = &ctx->sei;
+    HEVCSEI *sei = &ctx->sei;
     SliceHeader *sh = &ctx->sh;
     GetBitContext *gb = &nal->gb;
     const HEVCWindow *ow;
@@ -180,7 +180,7 @@ static int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
 {
     HEVCParserContext *ctx = s->priv_data;
     HEVCParamSets *ps = &ctx->ps;
-    HEVCSEIContext *sei = &ctx->sei;
+    HEVCSEI *sei = &ctx->sei;
     int is_global = buf == avctx->extradata;
     int ret, i;
 

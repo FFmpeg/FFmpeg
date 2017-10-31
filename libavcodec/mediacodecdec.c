@@ -182,7 +182,7 @@ static int hevc_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
     int ret;
 
     HEVCParamSets ps;
-    HEVCSEIContext sei;
+    HEVCSEI sei;
 
     const HEVCVPS *vps = NULL;
     const HEVCPPS *pps = NULL;

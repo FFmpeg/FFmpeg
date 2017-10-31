@@ -405,6 +405,7 @@ typedef struct HEVCContext {
     uint8_t *sao_pixel_buffer_v[3];
 
     HEVCParamSets ps;
+    HEVCSEI sei;
 
     AVBufferPool *tab_mvf_pool;
     AVBufferPool *rpl_tab_pool;
@@ -480,8 +481,6 @@ typedef struct HEVCContext {
 
     int nal_length_size;    ///< Number of bytes used for nal length (1, 2 or 4)
     int nuh_layer_id;
-
-    HEVCSEIContext sei;
 } HEVCContext;
 
 /**
