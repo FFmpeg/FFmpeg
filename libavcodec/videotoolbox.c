@@ -947,6 +947,19 @@ fail:
     return err;
 }
 
+static int videotoolbox_frame_params(AVCodecContext *avctx,
+                                     AVBufferRef *hw_frames_ctx)
+{
+    AVHWFramesContext *frames_ctx = (AVHWFramesContext*)hw_frames_ctx->data;
+
+    frames_ctx->format            = AV_PIX_FMT_VIDEOTOOLBOX;
+    frames_ctx->width             = avctx->coded_width;
+    frames_ctx->height            = avctx->coded_height;
+    frames_ctx->sw_format         = AV_PIX_FMT_NV12;
+
+    return 0;
+}
+
 AVHWAccel ff_h263_videotoolbox_hwaccel = {
     .name           = "h263_videotoolbox",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -956,6 +969,7 @@ AVHWAccel ff_h263_videotoolbox_hwaccel = {
     .start_frame    = videotoolbox_mpeg_start_frame,
     .decode_slice   = videotoolbox_mpeg_decode_slice,
     .end_frame      = videotoolbox_mpeg_end_frame,
+    .frame_params   = videotoolbox_frame_params,
     .init           = videotoolbox_common_init,
     .uninit         = videotoolbox_uninit,
     .priv_data_size = sizeof(VTContext),
@@ -970,6 +984,7 @@ AVHWAccel ff_hevc_videotoolbox_hwaccel = {
     .start_frame    = ff_videotoolbox_h264_start_frame,
     .decode_slice   = ff_videotoolbox_h264_decode_slice,
     .end_frame      = videotoolbox_hevc_end_frame,
+    .frame_params   = videotoolbox_frame_params,
     .init           = videotoolbox_common_init,
     .uninit         = ff_videotoolbox_uninit,
     .priv_data_size = sizeof(VTContext),
@@ -984,6 +999,7 @@ AVHWAccel ff_h264_videotoolbox_hwaccel = {
     .start_frame    = ff_videotoolbox_h264_start_frame,
     .decode_slice   = ff_videotoolbox_h264_decode_slice,
     .end_frame      = videotoolbox_h264_end_frame,
+    .frame_params   = videotoolbox_frame_params,
     .init           = videotoolbox_common_init,
     .uninit         = videotoolbox_uninit,
     .priv_data_size = sizeof(VTContext),
@@ -998,6 +1014,7 @@ AVHWAccel ff_mpeg1_videotoolbox_hwaccel = {
     .start_frame    = videotoolbox_mpeg_start_frame,
     .decode_slice   = videotoolbox_mpeg_decode_slice,
     .end_frame      = videotoolbox_mpeg_end_frame,
+    .frame_params   = videotoolbox_frame_params,
     .init           = videotoolbox_common_init,
     .uninit         = videotoolbox_uninit,
     .priv_data_size = sizeof(VTContext),
@@ -1012,6 +1029,7 @@ AVHWAccel ff_mpeg2_videotoolbox_hwaccel = {
     .start_frame    = videotoolbox_mpeg_start_frame,
     .decode_slice   = videotoolbox_mpeg_decode_slice,
     .end_frame      = videotoolbox_mpeg_end_frame,
+    .frame_params   = videotoolbox_frame_params,
     .init           = videotoolbox_common_init,
     .uninit         = videotoolbox_uninit,
     .priv_data_size = sizeof(VTContext),
@@ -1026,6 +1044,7 @@ AVHWAccel ff_mpeg4_videotoolbox_hwaccel = {
     .start_frame    = videotoolbox_mpeg_start_frame,
     .decode_slice   = videotoolbox_mpeg_decode_slice,
     .end_frame      = videotoolbox_mpeg_end_frame,
+    .frame_params   = videotoolbox_frame_params,
     .init           = videotoolbox_common_init,
     .uninit         = videotoolbox_uninit,
     .priv_data_size = sizeof(VTContext),
