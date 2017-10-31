@@ -23,8 +23,6 @@
 
 #include <stdint.h>
 
-#include "libavutil/md5.h"
-
 #include "get_bits.h"
 
 /**
@@ -60,7 +58,6 @@ typedef enum {
 } HEVC_SEI_Type;
 
 typedef struct HEVCSEIPictureHash {
-    struct AVMD5 *md5_ctx;
     uint8_t       md5[3][16];
     uint8_t is_md5;
 } HEVCSEIPictureHash;
