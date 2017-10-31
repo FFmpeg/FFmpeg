@@ -345,9 +345,9 @@ struct eac3_info {
 #if CONFIG_AC3_PARSER
 static int handle_eac3(MOVMuxContext *mov, AVPacket *pkt, MOVTrack *track)
 {
-    AC3HeaderInfo tmp, *hdr = &tmp;
+    AC3HeaderInfo *hdr = NULL;
     struct eac3_info *info;
-    int num_blocks;
+    int num_blocks, ret;
 
     if (!track->eac3_priv && !(track->eac3_priv = av_mallocz(sizeof(*info))))
         return AVERROR(ENOMEM);
@@ -357,9 +357,10 @@ static int handle_eac3(MOVMuxContext *mov, AVPacket *pkt, MOVTrack *track)
         /* drop the packets until we see a good one */
         if (!track->entry) {
             av_log(mov, AV_LOG_WARNING, "Dropping invalid packet from start of the stream\n");
-            return 0;
-        }
-        return AVERROR_INVALIDDATA;
+            ret = 0;
+        } else
+            ret = AVERROR_INVALIDDATA;
+        goto end;
     }
 
     info->data_rate = FFMAX(info->data_rate, hdr->bit_rate / 1000);
@@ -367,20 +368,25 @@ static int handle_eac3(MOVMuxContext *mov, AVPacket *pkt, MOVTrack *track)
 
     if (!info->ec3_done) {
         /* AC-3 substream must be the first one */
-        if (hdr->bitstream_id <= 10 && hdr->substreamid != 0)
-            return AVERROR(EINVAL);
+        if (hdr->bitstream_id <= 10 && hdr->substreamid != 0) {
+            ret = AVERROR(EINVAL);
+            goto end;
+        }
 
         /* this should always be the case, given that our AC-3 parser
          * concatenates dependent frames to their independent parent */
         if (hdr->frame_type == EAC3_FRAME_TYPE_INDEPENDENT) {
             /* substream ids must be incremental */
-            if (hdr->substreamid > info->num_ind_sub + 1)
-                return AVERROR(EINVAL);
+            if (hdr->substreamid > info->num_ind_sub + 1) {
+                ret = AVERROR(EINVAL);
+                goto end;
+            }
 
             if (hdr->substreamid == info->num_ind_sub + 1) {
                 //info->num_ind_sub++;
                 avpriv_request_sample(track->par, "Multiple independent substreams");
-                return AVERROR_PATCHWELCOME;
+                ret = AVERROR_PATCHWELCOME;
+                goto end;
             } else if (hdr->substreamid < info->num_ind_sub ||
                        hdr->substreamid == 0 && info->substream[0].bsid) {
                 info->ec3_done = 1;
@@ -402,12 +408,14 @@ static int handle_eac3(MOVMuxContext *mov, AVPacket *pkt, MOVTrack *track)
 
             while (cumul_size != pkt->size) {
                 GetBitContext gbc;
-                int i, ret;
+                int i;
                 ret = avpriv_ac3_parse_header(&hdr, pkt->data + cumul_size, pkt->size - cumul_size);
                 if (ret < 0)
-                    return AVERROR_INVALIDDATA;
-                if (hdr->frame_type != EAC3_FRAME_TYPE_DEPENDENT)
-                    return AVERROR(EINVAL);
+                    goto end;
+                if (hdr->frame_type != EAC3_FRAME_TYPE_DEPENDENT) {
+                    ret = AVERROR(EINVAL);
+                    goto end;
+                }
                 info->substream[parent].num_dep_sub++;
                 ret /= 8;
 
@@ -433,37 +441,43 @@ static int handle_eac3(MOVMuxContext *mov, AVPacket *pkt, MOVTrack *track)
     }
 
 concatenate:
-    if (!info->num_blocks && num_blocks == 6)
-        return pkt->size;
-    else if (info->num_blocks + num_blocks > 6)
-        return AVERROR_INVALIDDATA;
+    if (!info->num_blocks && num_blocks == 6) {
+        ret = pkt->size;
+        goto end;
+    }
+    else if (info->num_blocks + num_blocks > 6) {
+        ret = AVERROR_INVALIDDATA;
+        goto end;
+    }
 
     if (!info->num_blocks) {
-        int ret = av_packet_ref(&info->pkt, pkt);
-        if (ret < 0)
-            return ret;
-        info->num_blocks = num_blocks;
-        return 0;
+        ret = av_packet_ref(&info->pkt, pkt);
+        if (!ret)
+            info->num_blocks = num_blocks;
+        goto end;
     } else {
-        int ret;
         if ((ret = av_grow_packet(&info->pkt, pkt->size)) < 0)
-            return ret;
+            goto end;
         memcpy(info->pkt.data + info->pkt.size - pkt->size, pkt->data, pkt->size);
         info->num_blocks += num_blocks;
         info->pkt.duration += pkt->duration;
         if ((ret = av_copy_packet_side_data(&info->pkt, pkt)) < 0)
-            return ret;
+            goto end;
         if (info->num_blocks != 6)
-            return 0;
+            goto end;
         av_packet_unref(pkt);
         ret = av_packet_ref(pkt, &info->pkt);
         if (ret < 0)
-            return ret;
+            goto end;
         av_packet_unref(&info->pkt);
         info->num_blocks = 0;
     }
+    ret = pkt->size;
 
-    return pkt->size;
+end:
+    av_free(hdr);
+
+    return ret;
 }
 #endif
 
