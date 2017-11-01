@@ -101,6 +101,7 @@ Stuff that didn't reach the codebase:
 - use av_cpu_max_align() instead of hardcoding alignment requirements (see https://ffmpeg.org/pipermail/ffmpeg-devel/2017-September/215834.html)
   - f44ec22e0 lavc: use av_cpu_max_align() instead of hardcoding alignment requirements
   - 4de220d2e frame: allow align=0 (meaning automatic) for av_frame_get_buffer()
+- Support recovery from an already present HLS playlist (see 16cb06bb30)
 
 Collateral damage that needs work locally:
 ------------------------------------------
