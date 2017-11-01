@@ -31,7 +31,7 @@
 
 #if HAVE_ALTIVEC
 static int ssd_int8_vs_int16_altivec(const int8_t *pix1, const int16_t *pix2,
-                                     int size)
+                                     intptr_t size)
 {
     int i, size16 = size >> 4;
     vector signed char vpix1;
