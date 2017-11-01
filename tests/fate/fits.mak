@@ -8,7 +8,7 @@ tests/data/fits-multi.fits: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 map.tests/data/lena-gray.fits    := gray8
 map.tests/data/lena-gbrp.fits    := rgb24
 map.tests/data/lena-gbrp16.fits  := rgb48
-map.tests/data/lena-gbrap16.fits := rgba64
+map.tests/data/lena-gbrap16le.fits := rgba64
 
 tests/data/lena%.fits: TAG = GEN
 tests/data/lena%.fits: NAME = $(map.$(@))
@@ -37,7 +37,7 @@ fate-fitsdec%: PIXFMT = $(word 3, $(subst -, ,$(@)))
 fate-fitsdec%: SRC = $(TARGET_PATH)/tests/data/lena-$(PIXFMT).fits
 fate-fitsdec%: CMD = framecrc -i $(SRC) -pix_fmt $(PIXFMT)
 
-FATE_FITS_DEC_PIXFMT = gray gbrp gbrp16 gbrap16
+FATE_FITS_DEC_PIXFMT = gray gbrp gbrp16 gbrap16le
 $(FATE_FITS_DEC_PIXFMT:%=fate-fitsdec-%): fate-fitsdec-%: tests/data/lena-%.fits
 FATE_FITS_DEC-$(call ALLYES, FITS_DEMUXER IMAGE2_DEMUXER FITS_DECODER PNG_DECODER FITS_ENCODER FITS_MUXER) += $(FATE_FITS_DEC_PIXFMT:%=fate-fitsdec-%)
 
