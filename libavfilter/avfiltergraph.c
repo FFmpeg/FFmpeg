@@ -28,6 +28,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -260,6 +261,27 @@ static int graph_config_links(AVFilterGraph *graph, AVClass *log_ctx)
         }
     }
 
+    return 0;
+}
+
+static int graph_check_links(AVFilterGraph *graph, AVClass *log_ctx)
+{
+    AVFilterContext *f;
+    AVFilterLink *l;
+    unsigned i, j;
+    int ret;
+
+    for (i = 0; i < graph->nb_filters; i++) {
+        f = graph->filters[i];
+        for (j = 0; j < f->nb_outputs; j++) {
+            l = f->outputs[j];
+            if (l->type == AVMEDIA_TYPE_VIDEO) {
+                ret = av_image_check_size2(l->w, l->h, INT64_MAX, l->format, 0, f);
+                if (ret < 0)
+                    return ret;
+            }
+        }
+    }
     return 0;
 }
 
@@ -1255,6 +1277,8 @@ int avfilter_graph_config(AVFilterGraph *graphctx, void *log_ctx)
     if ((ret = graph_config_formats(graphctx, log_ctx)))
         return ret;
     if ((ret = graph_config_links(graphctx, log_ctx)))
+        return ret;
+    if ((ret = graph_check_links(graphctx, log_ctx)))
         return ret;
     if ((ret = graph_config_pointers(graphctx, log_ctx)))
         return ret;
