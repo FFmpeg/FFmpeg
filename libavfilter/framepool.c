@@ -71,7 +71,7 @@ FFFramePool *ff_frame_pool_video_init(AVBufferRef* (*alloc)(int size),
     pool->format = format;
     pool->align = align;
 
-    if ((ret = av_image_check_size(width, height, 0, NULL)) < 0) {
+    if ((ret = av_image_check_size2(width, height, INT64_MAX, format, 0, NULL)) < 0) {
         goto fail;
     }
 
