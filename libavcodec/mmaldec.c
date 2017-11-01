@@ -844,6 +844,7 @@ static const AVOption options[]={
 #define FFMMAL_DEC_CLASS(NAME) \
     static const AVClass ffmmal_##NAME##_dec_class = { \
         .class_name = "mmal_" #NAME "_dec", \
+        .item_name  = av_default_item_name, \
         .option     = options, \
         .version    = LIBAVUTIL_VERSION_INT, \
     };
