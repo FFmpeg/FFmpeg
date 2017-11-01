@@ -595,7 +595,7 @@ static const AVClass tls_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const URLProtocol ff_tls_schannel_protocol = {
+const URLProtocol ff_tls_protocol = {
     .name           = "tls",
     .url_open2      = tls_open,
     .url_read       = tls_read,

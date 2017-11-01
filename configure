@@ -3160,21 +3160,14 @@ rtmpte_protocol_suggest="zlib"
 rtmpts_protocol_select="ffrtmphttp_protocol https_protocol"
 rtmpts_protocol_suggest="zlib"
 rtp_protocol_select="udp_protocol"
+schannel_conflict="openssl gnutls"
 sctp_protocol_deps="struct_sctp_event_subscribe struct_msghdr_msg_flags"
 sctp_protocol_select="network"
+securetransport_conflict="openssl gnutls"
 srtp_protocol_select="rtp_protocol srtp"
 tcp_protocol_select="network"
-tls_gnutls_protocol_conflict="tls_schannel_protocol tls_securetransport_protocol"
-tls_gnutls_protocol_deps="gnutls"
-tls_gnutls_protocol_select="tcp_protocol"
-tls_openssl_protocol_conflict="tls_schannel_protocol tls_securetransport_protocol tls_gnutls_protocol"
-tls_openssl_protocol_deps="openssl"
-tls_openssl_protocol_select="tcp_protocol"
-tls_schannel_protocol_deps="schannel"
-tls_schannel_protocol_select="tcp_protocol"
-tls_securetransport_protocol_deps="securetransport"
-tls_securetransport_protocol_select="tcp_protocol"
-tls_protocol_deps_any="tls_schannel_protocol tls_securetransport_protocol tls_gnutls_protocol tls_openssl_protocol"
+tls_protocol_deps_any="gnutls openssl schannel securetransport"
+tls_protocol_select="tcp_protocol"
 udp_protocol_select="network"
 udplite_protocol_select="network"
 unix_protocol_deps="sys_un_h"
@@ -3751,6 +3744,9 @@ enabled gpl && map "die_license_disabled_gpl nonfree" $EXTERNAL_LIBRARY_NONFREE_
 map "die_license_disabled nonfree" $HWACCEL_LIBRARY_NONFREE_LIST
 
 enabled version3 && { enabled gpl && enable gplv3 || enable lgplv3; }
+
+enabled_all gnutls openssl &&
+    die "GnuTLS and OpenSSL must not be enabled at the same time."
 
 # Disable all the library-specific components if the library itself
 # is disabled, see AVCODEC_LIST and following _LIST variables.
