@@ -662,7 +662,8 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
     /* get output buffer */
     frame->nb_samples = unp_size / (avctx->channels * (bits + 1));
     if (unp_size % (avctx->channels * (bits + 1))) {
-        av_log(avctx, AV_LOG_ERROR, "unp_size %d is odd\n", unp_size);
+        av_log(avctx, AV_LOG_ERROR,
+               "The buffer does not contain an integer number of samples\n");
         return AVERROR(EINVAL);
     }
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
