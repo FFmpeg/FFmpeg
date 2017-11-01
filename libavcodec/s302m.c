@@ -212,10 +212,10 @@ static const AVOption s302m_options[] = {
 };
 
 static const AVClass s302m_class = {
-    "SMPTE 302M Decoder",
-    av_default_item_name,
-    s302m_options,
-    LIBAVUTIL_VERSION_INT,
+    .class_name = "SMPTE 302M Decoder",
+    .item_name  = av_default_item_name,
+    .option     = s302m_options,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 AVCodec ff_s302m_decoder = {
