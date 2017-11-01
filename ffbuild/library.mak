@@ -1,6 +1,6 @@
 include $(SRC_PATH)/ffbuild/common.mak
 
-ifeq (,$(filter %clean,$(MAKECMDGOALS)))
+ifeq (,$(filter %clean config,$(MAKECMDGOALS)))
 -include $(SUBDIR)lib$(NAME).version
 endif
 
