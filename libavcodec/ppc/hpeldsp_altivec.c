@@ -84,7 +84,7 @@ void ff_avg_pixels16_altivec(uint8_t *block, const uint8_t *pixels, ptrdiff_t li
 /* next one assumes that ((line_size % 8) == 0) */
 static void avg_pixels8_altivec(uint8_t * block, const uint8_t * pixels, ptrdiff_t line_size, int h)
 {
-    register vector unsigned char pixelsv1, pixelsv2, pixelsv, blockv;
+    register vector unsigned char pixelsv, blockv;
     int i;
 
    for (i = 0; i < h; i++) {
