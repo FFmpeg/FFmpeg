@@ -43,6 +43,7 @@ static const SoftFloat FLOAT_EPSILON    = { 0x29F16B12, -16};
 static const SoftFloat FLOAT_1584893192 = { 0x32B771ED,   1};
 static const SoftFloat FLOAT_100000     = { 0x30D40000,  17};
 static const SoftFloat FLOAT_0999999    = { 0x3FFFFBCE,   0};
+static const SoftFloat FLOAT_MIN        = { 0x20000000,   MIN_EXP};
 
 static inline av_const double av_sf2double(SoftFloat v) {
     v.exp -= ONE_BITS +1;
