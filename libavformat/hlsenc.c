@@ -1444,35 +1444,35 @@ static int hls_write_header(AVFormatContext *s)
     }
 
     if (hls->segment_type == SEGMENT_TYPE_FMP4) {
-    if (av_strcasecmp(hls->fmp4_init_filename, "init.mp4")) {
-        hls->base_output_dirname = av_malloc(fmp4_init_filename_len);
-        if (!hls->base_output_dirname) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
-        av_strlcpy(hls->base_output_dirname, hls->fmp4_init_filename, fmp4_init_filename_len);
-    } else {
-        if (basename_size > 0) {
-            hls->base_output_dirname = av_malloc(basename_size);
-        } else {
-            hls->base_output_dirname = av_malloc(strlen(hls->fmp4_init_filename));
-        }
-        if (!hls->base_output_dirname) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
-
-        if (basename_size > 0) {
-            av_strlcpy(hls->base_output_dirname, s->filename, basename_size);
-            p = strrchr(hls->base_output_dirname, '/');
-        }
-        if (p) {
-            *(p + 1) = '\0';
-            av_strlcat(hls->base_output_dirname, hls->fmp4_init_filename, basename_size);
-        } else {
+        if (av_strcasecmp(hls->fmp4_init_filename, "init.mp4")) {
+            hls->base_output_dirname = av_malloc(fmp4_init_filename_len);
+            if (!hls->base_output_dirname) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
             av_strlcpy(hls->base_output_dirname, hls->fmp4_init_filename, fmp4_init_filename_len);
+        } else {
+            if (basename_size > 0) {
+                hls->base_output_dirname = av_malloc(basename_size);
+            } else {
+                hls->base_output_dirname = av_malloc(strlen(hls->fmp4_init_filename));
+            }
+            if (!hls->base_output_dirname) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+
+            if (basename_size > 0) {
+                av_strlcpy(hls->base_output_dirname, s->filename, basename_size);
+                p = strrchr(hls->base_output_dirname, '/');
+            }
+            if (p) {
+                *(p + 1) = '\0';
+                av_strlcat(hls->base_output_dirname, hls->fmp4_init_filename, basename_size);
+            } else {
+                av_strlcpy(hls->base_output_dirname, hls->fmp4_init_filename, fmp4_init_filename_len);
+            }
         }
-    }
     }
 
     if (!hls->use_localtime) {
