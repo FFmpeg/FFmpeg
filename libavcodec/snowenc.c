@@ -22,6 +22,7 @@
 #include "libavutil/libm.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
+#include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "snow_dwt.h"
@@ -127,7 +128,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
         av_log(avctx, AV_LOG_ERROR, "pixel format not supported\n");
         return AVERROR_PATCHWELCOME;
     }
-    avcodec_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_h_shift, &s->chroma_v_shift);
+
+    ret = av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_h_shift,
+                                           &s->chroma_v_shift);
+    if (ret) {
+        av_log(avctx, AV_LOG_ERROR, "pixel format invalid or unknown\n");
+        return ret;
+    }
 
     ff_set_cmp(&s->mecc, s->mecc.me_cmp, s->avctx->me_cmp);
     ff_set_cmp(&s->mecc, s->mecc.me_sub_cmp, s->avctx->me_sub_cmp);
