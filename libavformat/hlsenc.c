@@ -1443,6 +1443,7 @@ static int hls_write_header(AVFormatContext *s)
         }
     }
 
+    if (hls->segment_type == SEGMENT_TYPE_FMP4) {
     if (av_strcasecmp(hls->fmp4_init_filename, "init.mp4")) {
         hls->base_output_dirname = av_malloc(fmp4_init_filename_len);
         if (!hls->base_output_dirname) {
@@ -1471,6 +1472,7 @@ static int hls_write_header(AVFormatContext *s)
         } else {
             av_strlcpy(hls->base_output_dirname, hls->fmp4_init_filename, fmp4_init_filename_len);
         }
+    }
     }
 
     if (!hls->use_localtime) {
