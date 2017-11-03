@@ -102,10 +102,6 @@ static int rtmfp_close(URLContext *s)
     return 0;
 }
 
-static void onSocketError(const char* err) {
-  av_log(NULL, AV_LOG_ERROR, "Error on RTMFP socket : %s\n", err);
-}
-
 static void onStatusEvent(const char* code, const char* description) {
   av_log(NULL, AV_LOG_INFO, "onStatusEvent : %s - %s\n", code, description);
 }
@@ -145,7 +141,6 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
     RTMFP_SetIntParameter("logLevel", level);
 
     RTMFP_Init(&ctx->rtmfp, &ctx->group, 1);
-    ctx->rtmfp.pOnSocketError = onSocketError;
     ctx->rtmfp.pOnStatusEvent = onStatusEvent;
     ctx->rtmfp.isBlocking = 1;
     ctx->rtmfp.swfUrl = ctx->swfUrl;
