@@ -3014,34 +3014,99 @@ static int get_edit_list_entry(MOVContext *mov,
 }
 
 /**
- * Find the closest previous frame to the timestamp, in e_old index
+ * Find the closest previous frame to the timestamp_pts, in e_old index
  * entries. Searching for just any frame / just key frames can be controlled by
  * last argument 'flag'.
- * Returns the index of the entry in st->index_entries if successful,
- * else returns -1.
+ * Note that if ctts_data is not NULL, we will always search for a key frame
+ * irrespective of the value of 'flag'. If we don't find any keyframe, we will
+ * return the first frame of the video.
+ *
+ * Here the timestamp_pts is considered to be a presentation timestamp and
+ * the timestamp of index entries are considered to be decoding timestamps.
+ *
+ * Returns 0 if successful in finding a frame, else returns -1.
+ * Places the found index corresponding output arg.
+ *
+ * If ctts_old is not NULL, then refines the searched entry by searching
+ * backwards from the found timestamp, to find the frame with correct PTS.
+ *
+ * Places the found ctts_index and ctts_sample in corresponding output args.
  */
-static int64_t find_prev_closest_index(AVStream *st,
-                                       AVIndexEntry *e_old,
-                                       int nb_old,
-                                       int64_t timestamp,
-                                       int flag)
+static int find_prev_closest_index(AVStream *st,
+                                   AVIndexEntry *e_old,
+                                   int nb_old,
+                                   MOVStts* ctts_data,
+                                   int64_t ctts_count,
+                                   int64_t timestamp_pts,
+                                   int flag,
+                                   int64_t* index,
+                                   int64_t* ctts_index,
+                                   int64_t* ctts_sample)
 {
+    MOVStreamContext *msc = st->priv_data;
     AVIndexEntry *e_keep = st->index_entries;
     int nb_keep = st->nb_index_entries;
-    int64_t found = -1;
     int64_t i = 0;
+    int64_t index_ctts_count;
+
+    av_assert0(index);
+
+    // If dts_shift > 0, then all the index timestamps will have to be offset by
+    // at least dts_shift amount to obtain PTS.
+    // Hence we decrement the searched timestamp_pts by dts_shift to find the closest index element.
+    if (msc->dts_shift > 0) {
+        timestamp_pts -= msc->dts_shift;
+    }
 
     st->index_entries = e_old;
     st->nb_index_entries = nb_old;
-    found = av_index_search_timestamp(st, timestamp, flag | AVSEEK_FLAG_BACKWARD);
+    *index = av_index_search_timestamp(st, timestamp_pts, flag | AVSEEK_FLAG_BACKWARD);
 
     // Keep going backwards in the index entries until the timestamp is the same.
-    if (found >= 0) {
-        for (i = found; i > 0 && e_old[i].timestamp == e_old[i - 1].timestamp;
+    if (*index >= 0) {
+        for (i = *index; i > 0 && e_old[i].timestamp == e_old[i - 1].timestamp;
              i--) {
             if ((flag & AVSEEK_FLAG_ANY) ||
                 (e_old[i - 1].flags & AVINDEX_KEYFRAME)) {
-                found = i - 1;
+                *index = i - 1;
+            }
+        }
+    }
+
+    // If we have CTTS then refine the search, by searching backwards over PTS
+    // computed by adding corresponding CTTS durations to index timestamps.
+    if (ctts_data && *index >= 0) {
+        av_assert0(ctts_index);
+        av_assert0(ctts_sample);
+        // Find out the ctts_index for the found frame.
+        *ctts_index = 0;
+        *ctts_sample = 0;
+        for (index_ctts_count = 0; index_ctts_count < *index; index_ctts_count++) {
+            if (*ctts_index < ctts_count) {
+                (*ctts_sample)++;
+                if (ctts_data[*ctts_index].count == *ctts_sample) {
+                    (*ctts_index)++;
+                    *ctts_sample = 0;
+                }
+            }
+        }
+
+        while (*index >= 0 && (*ctts_index) >= 0) {
+            // Find a "key frame" with PTS <= timestamp_pts (So that we can decode B-frames correctly).
+            // No need to add dts_shift to the timestamp here becase timestamp_pts has already been
+            // compensated by dts_shift above.
+            if ((e_old[*index].timestamp + ctts_data[*ctts_index].duration) <= timestamp_pts &&
+                (e_old[*index].flags & AVINDEX_KEYFRAME)) {
+                break;
+            }
+
+            (*index)--;
+            if (*ctts_sample == 0) {
+                (*ctts_index)--;
+                if (*ctts_index >= 0)
+                  *ctts_sample = ctts_data[*ctts_index].count - 1;
+            } else {
+                (*ctts_sample)--;
             }
         }
     }
@@ -3049,7 +3114,7 @@ static int64_t find_prev_closest_index(AVStream *st,
     /* restore AVStream state*/
     st->index_entries = e_keep;
     st->nb_index_entries = nb_keep;
-    return found;
+    return *index >= 0 ? 0 : -1;
 }
 
 /**
@@ -3220,10 +3285,8 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
     int64_t empty_edits_sum_duration = 0;
     int64_t edit_list_index = 0;
     int64_t index;
-    int64_t index_ctts_count;
     int flags;
     int64_t start_dts = 0;
-    int64_t edit_list_media_time_dts = 0;
     int64_t edit_list_start_encountered = 0;
     int64_t search_timestamp = 0;
     int64_t* frame_duration_buffer = NULL;
@@ -3293,17 +3356,11 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
                 st->skip_samples = msc->start_pad = 0;
         }
 
-        //find closest previous key frame
-        edit_list_media_time_dts = edit_list_media_time;
-        if (msc->dts_shift > 0) {
-            edit_list_media_time_dts -= msc->dts_shift;
-        }
-
         // While reordering frame index according to edit list we must handle properly
         // the scenario when edit list entry starts from none key frame.
         // We find closest previous key frame and preserve it and consequent frames in index.
         // All frames which are outside edit list entry time boundaries will be dropped after decoding.
-        search_timestamp = edit_list_media_time_dts;
+        search_timestamp = edit_list_media_time;
         if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             // Audio decoders like AAC need need a decoder delay samples previous to the current sample,
             // to correctly decode this frame. Hence for audio we seek to a frame 1 sec. before the
@@ -3311,38 +3368,24 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
             search_timestamp = FFMAX(search_timestamp - msc->time_scale, e_old[0].timestamp);
         }
 
-        index = find_prev_closest_index(st, e_old, nb_old, search_timestamp, 0);
-        if (index == -1) {
+        if (find_prev_closest_index(st, e_old, nb_old, ctts_data_old, ctts_count_old, search_timestamp, 0,
+                                    &index, &ctts_index_old, &ctts_sample_old) < 0) {
             av_log(mov->fc, AV_LOG_WARNING,
                    "st: %d edit list: %"PRId64" Missing key frame while searching for timestamp: %"PRId64"\n",
                    st->index, edit_list_index, search_timestamp);
-            index = find_prev_closest_index(st, e_old, nb_old, search_timestamp, AVSEEK_FLAG_ANY);
-
-            if (index == -1) {
+            if (find_prev_closest_index(st, e_old, nb_old, ctts_data_old, ctts_count_old, search_timestamp, AVSEEK_FLAG_ANY,
+                                        &index, &ctts_index_old, &ctts_sample_old) < 0) {
                 av_log(mov->fc, AV_LOG_WARNING,
                        "st: %d edit list %"PRId64" Cannot find an index entry before timestamp: %"PRId64".\n"
                        "Rounding edit list media time to zero.\n",
                        st->index, edit_list_index, search_timestamp);
                 index = 0;
+                ctts_index_old = 0;
+                ctts_sample_old = 0;
                 edit_list_media_time = 0;
             }
         }
         current = e_old + index;
-
-        ctts_index_old = 0;
-        ctts_sample_old = 0;
-
-        // set ctts_index properly for the found key frame
-        for (index_ctts_count = 0; index_ctts_count < index; index_ctts_count++) {
-            if (ctts_data_old && ctts_index_old < ctts_count_old) {
-                ctts_sample_old++;
-                if (ctts_data_old[ctts_index_old].count == ctts_sample_old) {
-                    ctts_index_old++;
-                    ctts_sample_old = 0;
-                }
-            }
-        }
-
         edit_list_start_ctts_sample = ctts_sample_old;
 
         // Iterate over index and arrange it according to edit list

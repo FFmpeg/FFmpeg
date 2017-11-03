@@ -9,6 +9,7 @@ FATE_MOV = fate-mov-3elist \
            fate-mov-invalid-elst-entry-count \
            fate-mov-gpmf-remux \
            fate-mov-440hz-10ms \
+           fate-mov-ibi-elst-starts-b \
 
 FATE_MOV_FFPROBE = fate-mov-aac-2048-priming \
                    fate-mov-zombie \
@@ -46,6 +47,13 @@ fate-mov-440hz-10ms: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/440hz-10ms.m4a
 
 # Makes sure that we handle invalid edit list entry count correctly.
 fate-mov-invalid-elst-entry-count: CMD = framemd5 -flags +bitexact -i $(TARGET_SAMPLES)/mov/invalid_elst_entry_count.mov
+
+# Makes sure that 1st key-frame is picked when,
+#    i) One B-frame between 2 key-frames
+#   ii) Edit list starts on B-frame.
+#  iii) Both key-frames have their DTS < edit list start
+# i.e.  Pts Order: I-B-I
+fate-mov-ibi-elst-starts-b: CMD = framemd5 -flags +bitexact -i $(TARGET_SAMPLES)/mov/mov_ibi_elst_starts_b.mov
 
 fate-mov-aac-2048-priming: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_packets -print_format compact $(TARGET_SAMPLES)/mov/aac-2048-priming.mov
 
