@@ -29,19 +29,6 @@ static const uint8_t ff_hevc_mask_arr[16 * 2] __attribute__((aligned(0x40))) = {
     0, 1, 1, 2, 2, 3, 3, 4, 16, 17, 17, 18, 18, 19, 19, 20
 };
 
-#define HEVC_HV_UNIW_RND_CLIP4(in0, in1, in2, in3, wgt, offset, rnd,       \
-                               out0, out1, out2, out3)                     \
-{                                                                          \
-    MUL4(in0, wgt, in1, wgt, in2, wgt, in3, wgt, out0, out1, out2, out3);  \
-    SRAR_W4_SW(out0, out1, out2, out3, rnd);                               \
-    ADD4(out0, offset, out1, offset, out2, offset, out3, offset,           \
-         out0, out1, out2, out3);                                          \
-    out0 = CLIP_SW_0_255(out0);                                            \
-    out1 = CLIP_SW_0_255(out1);                                            \
-    out2 = CLIP_SW_0_255(out2);                                            \
-    out3 = CLIP_SW_0_255(out3);                                            \
-}
-
 #define HEVC_UNIW_RND_CLIP2(in0, in1, wgt, offset, rnd,              \
                             out0_r, out1_r, out0_l, out1_l)          \
 {                                                                    \
@@ -2382,19 +2369,19 @@ static void hevc_hz_uniwgt_4t_4x2_msa(uint8_t *src,
                                       uint8_t *dst,
                                       int32_t dst_stride,
                                       const int8_t *filter,
-                                      int32_t height,
                                       int32_t weight,
                                       int32_t offset,
                                       int32_t rnd_val)
 {
+    v16u8 out;
     v8i16 filt0, filt1;
     v16i8 src0, src1, vec0, vec1;
     v16i8 mask1;
     v8i16 dst0;
     v4i32 dst0_r, dst0_l;
-    v8i16 filter_vec, const_vec;
-    v4i32 weight_vec, offset_vec, rnd_vec;
-    v16i8 mask0 = { 0, 1, 1, 2, 2, 3, 3, 4, 16, 17, 17, 18, 18, 19, 19, 20 };
+    v8i16 filter_vec, weight_vec_h, offset_vec, denom_vec;
+    v4i32 weight_vec, rnd_vec;
+    v16i8 mask0 = LD_SB(&ff_hevc_mask_arr[16]);
 
     src -= 1;
 
@@ -2405,29 +2392,33 @@ static void hevc_hz_uniwgt_4t_4x2_msa(uint8_t *src,
 
     weight = weight & 0x0000FFFF;
 
-    const_vec = __msa_ldi_h(128);
-    const_vec <<= 6;
-
     weight_vec = __msa_fill_w(weight);
-    offset_vec = __msa_fill_w(offset);
     rnd_vec = __msa_fill_w(rnd_val);
+
+    weight *= 128;
+    rnd_val -= 6;
+
+    weight_vec_h = __msa_fill_h(weight);
+    offset_vec = __msa_fill_h(offset);
+    denom_vec = __msa_fill_h(rnd_val);
+
+    weight_vec_h = __msa_srar_h(weight_vec_h, denom_vec);
+    offset_vec = __msa_adds_s_h(offset_vec, weight_vec_h);
 
     LD_SB2(src, src_stride, src0, src1);
     XORI_B2_128_SB(src0, src1);
 
     VSHF_B2_SB(src0, src1, src0, src1, mask0, mask1, vec0, vec1);
-    dst0 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst0, dst0);
+    dst0 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
 
     ILVRL_H2_SW(dst0, dst0, dst0_r, dst0_l);
     DOTP_SH2_SW(dst0_r, dst0_l, weight_vec, weight_vec, dst0_r, dst0_l);
     SRAR_W2_SW(dst0_r, dst0_l, rnd_vec);
-    ADD2(dst0_r, offset_vec, dst0_l, offset_vec, dst0_r, dst0_l);
-    dst0_r = CLIP_SW_0_255(dst0_r);
-    dst0_l = CLIP_SW_0_255(dst0_l);
-
-    HEVC_PCK_SW_SB2(dst0_l, dst0_r, dst0_r);
-    ST4x2_UB(dst0_r, dst, dst_stride);
+    dst0 = __msa_pckev_h((v8i16) dst0_l, (v8i16) dst0_r);
+    dst0 = __msa_adds_s_h(dst0, offset_vec);
+    dst0 = CLIP_SH_0_255_MAX_SATU(dst0);
+    out = (v16u8) __msa_pckev_b((v16i8) dst0, (v16i8) dst0);
+    ST4x2_UB(out, dst, dst_stride);
     dst += (4 * dst_stride);
 }
 
@@ -2436,19 +2427,18 @@ static void hevc_hz_uniwgt_4t_4x4_msa(uint8_t *src,
                                       uint8_t *dst,
                                       int32_t dst_stride,
                                       const int8_t *filter,
-                                      int32_t height,
                                       int32_t weight,
                                       int32_t offset,
                                       int32_t rnd_val)
 {
+    v16u8 out;
     v8i16 filt0, filt1;
     v16i8 src0, src1, src2, src3;
-    v16i8 mask1, vec0, vec1;
+    v16i8 mask1, vec0, vec1, vec2, vec3;
     v8i16 dst0, dst1;
-    v4i32 dst0_r, dst1_r, dst0_l, dst1_l;
-    v8i16 filter_vec, const_vec;
-    v4i32 weight_vec, offset_vec, rnd_vec;
-    v16i8 mask0 = { 0, 1, 1, 2, 2, 3, 3, 4, 16, 17, 17, 18, 18, 19, 19, 20 };
+    v8i16 filter_vec, weight_vec_h, offset_vec, denom_vec;
+    v4i32 weight_vec, rnd_vec;
+    v16i8 mask0 = LD_SB(&ff_hevc_mask_arr[16]);
 
     src -= 1;
 
@@ -2460,29 +2450,32 @@ static void hevc_hz_uniwgt_4t_4x4_msa(uint8_t *src,
 
     weight = weight & 0x0000FFFF;
 
-    const_vec = __msa_ldi_h(128);
-    const_vec <<= 6;
-
     weight_vec = __msa_fill_w(weight);
-    offset_vec = __msa_fill_w(offset);
     rnd_vec = __msa_fill_w(rnd_val);
+
+    weight *= 128;
+    rnd_val -= 6;
+
+    weight_vec_h = __msa_fill_h(weight);
+    offset_vec = __msa_fill_h(offset);
+    denom_vec = __msa_fill_h(rnd_val);
+
+    weight_vec_h = __msa_srar_h(weight_vec_h, denom_vec);
+    offset_vec = __msa_adds_s_h(offset_vec, weight_vec_h);
 
     LD_SB4(src, src_stride, src0, src1, src2, src3);
     XORI_B4_128_SB(src0, src1, src2, src3);
 
     VSHF_B2_SB(src0, src1, src0, src1, mask0, mask1, vec0, vec1);
-    dst0 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst0, dst0);
+    VSHF_B2_SB(src2, src3, src2, src3, mask0, mask1, vec2, vec3);
+    dst0 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+    dst1 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
 
-    VSHF_B2_SB(src2, src3, src2, src3, mask0, mask1, vec0, vec1);
-    dst1 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst1, dst1);
+    HEVC_UNIW_RND_CLIP2_MAX_SATU_H(dst0, dst1, weight_vec, offset_vec, rnd_vec,
+                                   dst0, dst1);
 
-    HEVC_UNIW_RND_CLIP2(dst0, dst1, weight_vec, offset_vec, rnd_vec,
-                        dst0_r, dst1_r, dst0_l, dst1_l);
-
-    HEVC_PCK_SW_SB4(dst0_l, dst0_r, dst1_l, dst1_r, dst0_r);
-    ST4x4_UB(dst0_r, dst0_r, 0, 1, 2, 3, dst, dst_stride);
+    out = (v16u8) __msa_pckev_b((v16i8) dst1, (v16i8) dst0);
+    ST4x4_UB(out, out, 0, 1, 2, 3, dst, dst_stride);
     dst += (4 * dst_stride);
 }
 
@@ -2497,14 +2490,15 @@ static void hevc_hz_uniwgt_4t_4x8multiple_msa(uint8_t *src,
                                               int32_t rnd_val)
 {
     uint32_t loop_cnt;
+    v16u8 out0, out1;
     v8i16 filt0, filt1;
     v16i8 src0, src1, src2, src3, src4, src5, src6, src7;
-    v16i8 mask1, vec0, vec1;
+    v16i8 mask1, vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7;
     v8i16 dst0, dst1, dst2, dst3;
-    v4i32 dst0_r, dst1_r, dst2_r, dst3_r, dst0_l, dst1_l, dst2_l, dst3_l;
-    v8i16 filter_vec, const_vec;
-    v4i32 weight_vec, offset_vec, rnd_vec;
-    v16i8 mask0 = { 0, 1, 1, 2, 2, 3, 3, 4, 16, 17, 17, 18, 18, 19, 19, 20 };
+    v8i16 filter_vec;
+    v8i16 weight_vec_h, offset_vec, denom_vec;
+    v4i32 weight_vec, rnd_vec;
+    v16i8 mask0 = LD_SB(&ff_hevc_mask_arr[16]);
 
     src -= 1;
 
@@ -2512,12 +2506,19 @@ static void hevc_hz_uniwgt_4t_4x8multiple_msa(uint8_t *src,
     SPLATI_H2_SH(filter_vec, 0, 1, filt0, filt1);
 
     weight = weight & 0x0000FFFF;
-    const_vec = __msa_ldi_h(128);
-    const_vec <<= 6;
 
     weight_vec = __msa_fill_w(weight);
-    offset_vec = __msa_fill_w(offset);
     rnd_vec = __msa_fill_w(rnd_val);
+
+    weight *= 128;
+    rnd_val -= 6;
+
+    weight_vec_h = __msa_fill_h(weight);
+    offset_vec = __msa_fill_h(offset);
+    denom_vec = __msa_fill_h(rnd_val);
+
+    weight_vec_h = __msa_srar_h(weight_vec_h, denom_vec);
+    offset_vec = __msa_adds_s_h(offset_vec, weight_vec_h);
 
     mask1 = mask0 + 2;
 
@@ -2528,29 +2529,20 @@ static void hevc_hz_uniwgt_4t_4x8multiple_msa(uint8_t *src,
         XORI_B8_128_SB(src0, src1, src2, src3, src4, src5, src6, src7);
 
         VSHF_B2_SB(src0, src1, src0, src1, mask0, mask1, vec0, vec1);
-        dst0 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst0, dst0);
+        VSHF_B2_SB(src2, src3, src2, src3, mask0, mask1, vec2, vec3);
+        VSHF_B2_SB(src4, src5, src4, src5, mask0, mask1, vec4, vec5);
+        VSHF_B2_SB(src6, src7, src6, src7, mask0, mask1, vec6, vec7);
+        dst0 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+        dst1 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+        dst2 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
+        dst3 = HEVC_FILT_4TAP_SH(vec6, vec7, filt0, filt1);
 
-        VSHF_B2_SB(src2, src3, src2, src3, mask0, mask1, vec0, vec1);
-        dst1 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst1, dst1);
+        HEVC_UNIW_RND_CLIP4_MAX_SATU_H(dst0, dst1, dst2, dst3,
+                                       weight_vec, offset_vec, rnd_vec,
+                                       dst0, dst1, dst2, dst3);
 
-        VSHF_B2_SB(src4, src5, src4, src5, mask0, mask1, vec0, vec1);
-        dst2 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst2, dst2);
-
-        VSHF_B2_SB(src6, src7, src6, src7, mask0, mask1, vec0, vec1);
-        dst3 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst3, dst3);
-
-        HEVC_UNIW_RND_CLIP4(dst0, dst1, dst2, dst3,
-                            weight_vec, offset_vec, rnd_vec,
-                            dst0_r, dst1_r, dst2_r, dst3_r,
-                            dst0_l, dst1_l, dst2_l, dst3_l);
-
-        HEVC_PCK_SW_SB8(dst0_l, dst0_r, dst1_l, dst1_r,
-                        dst2_l, dst2_r, dst3_l, dst3_r, dst0_r, dst1_r);
-        ST4x8_UB(dst0_r, dst1_r, dst, dst_stride);
+        PCKEV_B2_UB(dst1, dst0, dst3, dst2, out0, out1);
+        ST4x8_UB(out0, out1, dst, dst_stride);
         dst += (8 * dst_stride);
     }
 }
@@ -2567,10 +2559,10 @@ static void hevc_hz_uniwgt_4t_4w_msa(uint8_t *src,
 {
     if (2 == height) {
         hevc_hz_uniwgt_4t_4x2_msa(src, src_stride, dst, dst_stride,
-                                  filter, height, weight, offset, rnd_val);
+                                  filter, weight, offset, rnd_val);
     } else if (4 == height) {
         hevc_hz_uniwgt_4t_4x4_msa(src, src_stride, dst, dst_stride,
-                                  filter, height, weight, offset, rnd_val);
+                                  filter, weight, offset, rnd_val);
     } else if (8 == height || 16 == height) {
         hevc_hz_uniwgt_4t_4x8multiple_msa(src, src_stride, dst, dst_stride,
                                           filter, height, weight,
@@ -2588,16 +2580,15 @@ static void hevc_hz_uniwgt_4t_6w_msa(uint8_t *src,
                                      int32_t offset,
                                      int32_t rnd_val)
 {
-    uint32_t loop_cnt;
+    v16u8 out0, out1, out2, out3;
     v8i16 filt0, filt1;
-    v16i8 src0, src1, src2, src3;
-    v16i8 mask0 = { 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8 };
+    v16i8 src0, src1, src2, src3, src4, src5, src6, src7;
+    v16i8 mask0 = LD_SB(ff_hevc_mask_arr);
     v16i8 mask1;
-    v16i8 vec0, vec1;
-    v8i16 dst0, dst1, dst2, dst3;
-    v4i32 dst0_r, dst1_r, dst2_r, dst3_r, dst0_l, dst1_l, dst2_l, dst3_l;
-    v8i16 filter_vec, const_vec;
-    v4i32 weight_vec, offset_vec, rnd_vec;
+    v16i8 vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7;
+    v8i16 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
+    v8i16 filter_vec, weight_vec_h, offset_vec, denom_vec;
+    v4i32 weight_vec, rnd_vec;
 
     src -= 1;
 
@@ -2605,48 +2596,53 @@ static void hevc_hz_uniwgt_4t_6w_msa(uint8_t *src,
     SPLATI_H2_SH(filter_vec, 0, 1, filt0, filt1);
 
     weight = weight & 0x0000FFFF;
-    const_vec = __msa_ldi_h(128);
-    const_vec <<= 6;
 
     weight_vec = __msa_fill_w(weight);
-    offset_vec = __msa_fill_w(offset);
     rnd_vec = __msa_fill_w(rnd_val);
+
+    weight *= 128;
+    rnd_val -= 6;
+
+    weight_vec_h = __msa_fill_h(weight);
+    offset_vec = __msa_fill_h(offset);
+    denom_vec = __msa_fill_h(rnd_val);
+
+    weight_vec_h = __msa_srar_h(weight_vec_h, denom_vec);
+    offset_vec = __msa_adds_s_h(offset_vec, weight_vec_h);
 
     mask1 = mask0 + 2;
 
-    for (loop_cnt = (height >> 2); loop_cnt--;) {
-        LD_SB4(src, src_stride, src0, src1, src2, src3);
-        src += (4 * src_stride);
+    LD_SB8(src, src_stride, src0, src1, src2, src3, src4, src5, src6, src7);
+    XORI_B8_128_SB(src0, src1, src2, src3, src4, src5, src6, src7);
+    VSHF_B2_SB(src0, src0, src0, src0, mask0, mask1, vec0, vec1);
+    VSHF_B2_SB(src1, src1, src1, src1, mask0, mask1, vec2, vec3);
+    VSHF_B2_SB(src2, src2, src2, src2, mask0, mask1, vec4, vec5);
+    VSHF_B2_SB(src3, src3, src3, src3, mask0, mask1, vec6, vec7);
+    dst0 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+    dst1 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+    dst2 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
+    dst3 = HEVC_FILT_4TAP_SH(vec6, vec7, filt0, filt1);
+    VSHF_B2_SB(src4, src4, src4, src4, mask0, mask1, vec0, vec1);
+    VSHF_B2_SB(src5, src5, src5, src5, mask0, mask1, vec2, vec3);
+    VSHF_B2_SB(src6, src6, src6, src6, mask0, mask1, vec4, vec5);
+    VSHF_B2_SB(src7, src7, src7, src7, mask0, mask1, vec6, vec7);
+    dst4 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+    dst5 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+    dst6 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
+    dst7 = HEVC_FILT_4TAP_SH(vec6, vec7, filt0, filt1);
 
-        XORI_B4_128_SB(src0, src1, src2, src3);
+    HEVC_UNIW_RND_CLIP4_MAX_SATU_H(dst0, dst1, dst2, dst3,
+                                   weight_vec, offset_vec, rnd_vec,
+                                   dst0, dst1, dst2, dst3);
+    HEVC_UNIW_RND_CLIP4_MAX_SATU_H(dst4, dst5, dst6, dst7,
+                                   weight_vec, offset_vec, rnd_vec,
+                                   dst4, dst5, dst6, dst7);
 
-        VSHF_B2_SB(src0, src0, src0, src0, mask0, mask1, vec0, vec1);
-        dst0 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst0, dst0);
-
-        VSHF_B2_SB(src1, src1, src1, src1, mask0, mask1, vec0, vec1);
-        dst1 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst1, dst1);
-
-        VSHF_B2_SB(src2, src2, src2, src2, mask0, mask1, vec0, vec1);
-        dst2 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst2, dst2);
-
-        VSHF_B2_SB(src3, src3, src3, src3, mask0, mask1, vec0, vec1);
-        dst3 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst3, dst3);
-
-        HEVC_UNIW_RND_CLIP4(dst0, dst1, dst2, dst3,
-                            weight_vec, offset_vec, rnd_vec,
-                            dst0_r, dst1_r, dst2_r, dst3_r,
-                            dst0_l, dst1_l, dst2_l, dst3_l);
-
-        HEVC_PCK_SW_SB8(dst0_l, dst0_r, dst1_l, dst1_r,
-                        dst2_l, dst2_r, dst3_l, dst3_r, dst0_r, dst1_r);
-
-        ST6x4_UB(dst0_r, dst1_r, dst, dst_stride);
-        dst += (4 * dst_stride);
-    }
+    PCKEV_B2_UB(dst1, dst0, dst3, dst2, out0, out1);
+    PCKEV_B2_UB(dst5, dst4, dst7, dst6, out2, out3);
+    ST6x4_UB(out0, out1, dst, dst_stride);
+    dst += (4 * dst_stride);
+    ST6x4_UB(out2, out3, dst, dst_stride);
 }
 
 static void hevc_hz_uniwgt_4t_8x2_msa(uint8_t *src,
@@ -2654,19 +2650,18 @@ static void hevc_hz_uniwgt_4t_8x2_msa(uint8_t *src,
                                       uint8_t *dst,
                                       int32_t dst_stride,
                                       const int8_t *filter,
-                                      int32_t height,
                                       int32_t weight,
                                       int32_t offset,
                                       int32_t rnd_val)
 {
+    v16u8 out;
     v8i16 filt0, filt1, dst0, dst1;
     v16i8 src0, src1;
-    v16i8 mask0 = { 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8 };
+    v16i8 mask0 = LD_SB(ff_hevc_mask_arr);
     v16i8 mask1;
-    v16i8 vec0, vec1;
-    v8i16 filter_vec, const_vec;
-    v4i32 dst0_r, dst1_r, dst0_l, dst1_l;
-    v4i32 weight_vec, offset_vec, rnd_vec;
+    v16i8 vec0, vec1, vec2, vec3;
+    v8i16 filter_vec, weight_vec_h, offset_vec, denom_vec;
+    v4i32 weight_vec, rnd_vec;
 
     src -= 1;
 
@@ -2674,12 +2669,19 @@ static void hevc_hz_uniwgt_4t_8x2_msa(uint8_t *src,
     SPLATI_H2_SH(filter_vec, 0, 1, filt0, filt1);
 
     weight = weight & 0x0000FFFF;
-    const_vec = __msa_ldi_h(128);
-    const_vec <<= 6;
 
     weight_vec = __msa_fill_w(weight);
-    offset_vec = __msa_fill_w(offset);
     rnd_vec = __msa_fill_w(rnd_val);
+
+    weight *= 128;
+    rnd_val -= 6;
+
+    weight_vec_h = __msa_fill_h(weight);
+    offset_vec = __msa_fill_h(offset);
+    denom_vec = __msa_fill_h(rnd_val);
+
+    weight_vec_h = __msa_srar_h(weight_vec_h, denom_vec);
+    offset_vec = __msa_adds_s_h(offset_vec, weight_vec_h);
 
     mask1 = mask0 + 2;
 
@@ -2687,39 +2689,32 @@ static void hevc_hz_uniwgt_4t_8x2_msa(uint8_t *src,
     XORI_B2_128_SB(src0, src1);
 
     VSHF_B2_SB(src0, src0, src0, src0, mask0, mask1, vec0, vec1);
-    dst0 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst0, dst0);
-    VSHF_B2_SB(src1, src1, src1, src1, mask0, mask1, vec0, vec1);
-    dst1 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst1, dst1);
+    VSHF_B2_SB(src1, src1, src1, src1, mask0, mask1, vec2, vec3);
+    dst0 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+    dst1 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
 
-    HEVC_UNIW_RND_CLIP2(dst0, dst1, weight_vec, offset_vec, rnd_vec,
-                        dst0_r, dst1_r, dst0_l, dst1_l);
+    HEVC_UNIW_RND_CLIP2_MAX_SATU_H(dst0, dst1, weight_vec, offset_vec, rnd_vec,
+                                   dst0, dst1);
 
-    HEVC_PCK_SW_SB4(dst0_l, dst0_r, dst1_l, dst1_r, dst0_r);
-    ST8x2_UB(dst0_r, dst, dst_stride);
+    out = (v16u8) __msa_pckev_b((v16i8) dst1, (v16i8) dst0);
+    ST8x2_UB(out, dst, dst_stride);
 }
 
-static void hevc_hz_uniwgt_4t_8x6_msa(uint8_t *src,
+static void hevc_hz_uniwgt_4t_8x4_msa(uint8_t *src,
                                       int32_t src_stride,
                                       uint8_t *dst,
                                       int32_t dst_stride,
                                       const int8_t *filter,
-                                      int32_t height,
                                       int32_t weight,
                                       int32_t offset,
                                       int32_t rnd_val)
 {
-    v8i16 filt0, filt1;
-    v16i8 src0, src1, src2, src3, src4, src5;
-    v16i8 mask0 = { 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8 };
-    v16i8 mask1;
-    v16i8 vec0, vec1;
-    v8i16 dst0, dst1, dst2, dst3, dst4, dst5;
-    v8i16 filter_vec, const_vec;
-    v4i32 dst0_r, dst1_r, dst2_r, dst3_r, dst4_r, dst5_r;
-    v4i32 dst0_l, dst1_l, dst2_l, dst3_l, dst4_l, dst5_l;
-    v4i32 weight_vec, offset_vec, rnd_vec;
+    v16u8 out0, out1;
+    v16i8 src0, src1, src2, src3;
+    v16i8 mask0, mask1, vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7;
+    v8i16 filt0, filt1, dst0, dst1, dst2, dst3;
+    v8i16 filter_vec, weight_vec_h, offset_vec, denom_vec;
+    v4i32 weight_vec, rnd_vec;
 
     src -= 1;
 
@@ -2727,61 +2722,113 @@ static void hevc_hz_uniwgt_4t_8x6_msa(uint8_t *src,
     SPLATI_H2_SH(filter_vec, 0, 1, filt0, filt1);
 
     weight = weight & 0x0000FFFF;
-    const_vec = __msa_ldi_h(128);
-    const_vec <<= 6;
+    weight_vec = __msa_fill_w(weight);
+    rnd_vec = __msa_fill_w(rnd_val);
+
+    weight *= 128;
+    rnd_val -= 6;
+
+    weight_vec_h = __msa_fill_h(weight);
+    offset_vec = __msa_fill_h(offset);
+    denom_vec = __msa_fill_h(rnd_val);
+
+    weight_vec_h = __msa_srar_h(weight_vec_h, denom_vec);
+    offset_vec = __msa_adds_s_h(offset_vec, weight_vec_h);
+
+    mask0 = LD_SB(&ff_hevc_mask_arr[0]);
+    mask1 = mask0 + 2;
+
+    LD_SB4(src, src_stride, src0, src1, src2, src3);
+    XORI_B4_128_SB(src0, src1, src2, src3);
+    VSHF_B2_SB(src0, src0, src0, src0, mask0, mask1, vec0, vec1);
+    VSHF_B2_SB(src1, src1, src1, src1, mask0, mask1, vec2, vec3);
+    VSHF_B2_SB(src2, src2, src2, src2, mask0, mask1, vec4, vec5);
+    VSHF_B2_SB(src3, src3, src3, src3, mask0, mask1, vec6, vec7);
+    dst0 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+    dst1 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+    dst2 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
+    dst3 = HEVC_FILT_4TAP_SH(vec6, vec7, filt0, filt1);
+
+    HEVC_UNIW_RND_CLIP4_MAX_SATU_H(dst0, dst1, dst2, dst3,
+                                   weight_vec, offset_vec, rnd_vec,
+                                   dst0, dst1, dst2, dst3);
+
+    PCKEV_B2_UB(dst1, dst0, dst3, dst2, out0, out1);
+    ST8x4_UB(out0, out1, dst, dst_stride);
+}
+
+static void hevc_hz_uniwgt_4t_8x6_msa(uint8_t *src,
+                                      int32_t src_stride,
+                                      uint8_t *dst,
+                                      int32_t dst_stride,
+                                      const int8_t *filter,
+                                      int32_t weight,
+                                      int32_t offset,
+                                      int32_t rnd_val)
+{
+    v16u8 out0, out1, out2;
+    v8i16 filt0, filt1;
+    v16i8 src0, src1, src2, src3, src4, src5;
+    v16i8 mask0 = LD_SB(&ff_hevc_mask_arr[0]);
+    v16i8 mask1;
+    v16i8 vec11;
+    v16i8 vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7, vec8, vec9, vec10;
+    v8i16 dst0, dst1, dst2, dst3, dst4, dst5;
+    v8i16 filter_vec, weight_vec_h, offset_vec, denom_vec;
+    v4i32 weight_vec, rnd_vec;
+
+    src -= 1;
+
+    filter_vec = LD_SH(filter);
+    SPLATI_H2_SH(filter_vec, 0, 1, filt0, filt1);
+
+    weight = weight & 0x0000FFFF;
 
     weight_vec = __msa_fill_w(weight);
-    offset_vec = __msa_fill_w(offset);
     rnd_vec = __msa_fill_w(rnd_val);
+
+    weight *= 128;
+    rnd_val -= 6;
+
+    weight_vec_h = __msa_fill_h(weight);
+    offset_vec = __msa_fill_h(offset);
+    denom_vec = __msa_fill_h(rnd_val);
+
+    weight_vec_h = __msa_srar_h(weight_vec_h, denom_vec);
+    offset_vec = __msa_adds_s_h(offset_vec, weight_vec_h);
 
     mask1 = mask0 + 2;
 
     LD_SB6(src, src_stride, src0, src1, src2, src3, src4, src5);
-    LD_SB6(src, src_stride, src0, src1, src2, src3, src4, src5);
     XORI_B6_128_SB(src0, src1, src2, src3, src4, src5);
 
     VSHF_B2_SB(src0, src0, src0, src0, mask0, mask1, vec0, vec1);
-    dst0 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst0, dst0);
+    VSHF_B2_SB(src1, src1, src1, src1, mask0, mask1, vec2, vec3);
+    VSHF_B2_SB(src2, src2, src2, src2, mask0, mask1, vec4, vec5);
+    VSHF_B2_SB(src3, src3, src3, src3, mask0, mask1, vec6, vec7);
+    VSHF_B2_SB(src4, src4, src4, src4, mask0, mask1, vec8, vec9);
+    VSHF_B2_SB(src5, src5, src5, src5, mask0, mask1, vec10, vec11);
+    dst0 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+    dst1 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+    dst2 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
+    dst3 = HEVC_FILT_4TAP_SH(vec6, vec7, filt0, filt1);
+    dst4 = HEVC_FILT_4TAP_SH(vec8, vec9, filt0, filt1);
+    dst5 = HEVC_FILT_4TAP_SH(vec10, vec11, filt0, filt1);
 
-    VSHF_B2_SB(src1, src1, src1, src1, mask0, mask1, vec0, vec1);
-    dst1 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst1, dst1);
+    HEVC_UNIW_RND_CLIP4_MAX_SATU_H(dst0, dst1, dst2, dst3,
+                                   weight_vec, offset_vec, rnd_vec,
+                                   dst0, dst1, dst2, dst3);
 
-    VSHF_B2_SB(src2, src2, src2, src2, mask0, mask1, vec0, vec1);
-    dst2 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst2, dst2);
+    HEVC_UNIW_RND_CLIP2_MAX_SATU_H(dst4, dst5, weight_vec, offset_vec, rnd_vec,
+                                   dst4, dst5);
 
-    VSHF_B2_SB(src3, src3, src3, src3, mask0, mask1, vec0, vec1);
-    dst3 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst3, dst3);
-
-    VSHF_B2_SB(src4, src4, src4, src4, mask0, mask1, vec0, vec1);
-    dst4 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst4, dst4);
-
-    VSHF_B2_SB(src5, src5, src5, src5, mask0, mask1, vec0, vec1);
-    dst5 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst5, dst5);
-
-    HEVC_UNIW_RND_CLIP4(dst0, dst1, dst2, dst3,
-                        weight_vec, offset_vec, rnd_vec,
-                        dst0_r, dst1_r, dst2_r, dst3_r,
-                        dst0_l, dst1_l, dst2_l, dst3_l);
-
-    HEVC_UNIW_RND_CLIP2(dst4, dst5, weight_vec, offset_vec, rnd_vec,
-                        dst4_r, dst5_r, dst4_l, dst5_l);
-
-    HEVC_PCK_SW_SB12(dst0_l, dst0_r, dst1_l, dst1_r,
-                     dst2_l, dst2_r, dst3_l, dst3_r,
-                     dst4_l, dst4_r, dst5_l, dst5_r, dst0_r, dst1_r, dst2_r);
-
-    ST8x4_UB(dst0_r, dst1_r, dst, dst_stride);
+    PCKEV_B3_UB(dst1, dst0, dst3, dst2, dst5, dst4, out0, out1, out2);
+    ST8x4_UB(out0, out1, dst, dst_stride);
     dst += (4 * dst_stride);
-    ST8x2_UB(dst2_r, dst, dst_stride);
+    ST8x2_UB(out2, dst, dst_stride);
 }
 
-static void hevc_hz_uniwgt_4t_8x4multiple_msa(uint8_t *src,
+static void hevc_hz_uniwgt_4t_8x8multiple_msa(uint8_t *src,
                                               int32_t src_stride,
                                               uint8_t *dst,
                                               int32_t dst_stride,
@@ -2793,14 +2840,14 @@ static void hevc_hz_uniwgt_4t_8x4multiple_msa(uint8_t *src,
 {
     uint32_t loop_cnt;
     v8i16 filt0, filt1;
-    v16i8 src0, src1, src2, src3;
-    v16i8 mask0 = { 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8 };
+    v16u8 out0, out1, out2, out3;
+    v16i8 src0, src1, src2, src3, src4, src5, src6, src7;
+    v16i8 mask0 = LD_SB(&ff_hevc_mask_arr[0]);
     v16i8 mask1;
-    v16i8 vec0, vec1;
-    v8i16 dst0, dst1, dst2, dst3;
-    v8i16 filter_vec, const_vec;
-    v4i32 dst0_r, dst1_r, dst2_r, dst3_r, dst0_l, dst1_l, dst2_l, dst3_l;
-    v4i32 weight_vec, offset_vec, rnd_vec;
+    v16i8 vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7;
+    v8i16 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
+    v8i16 filter_vec, weight_vec_h, offset_vec, denom_vec;
+    v4i32 weight_vec, rnd_vec;
 
     src -= 1;
 
@@ -2808,47 +2855,56 @@ static void hevc_hz_uniwgt_4t_8x4multiple_msa(uint8_t *src,
     SPLATI_H2_SH(filter_vec, 0, 1, filt0, filt1);
 
     weight = weight & 0x0000FFFF;
-    const_vec = __msa_ldi_h(128);
-    const_vec <<= 6;
 
     weight_vec = __msa_fill_w(weight);
-    offset_vec = __msa_fill_w(offset);
     rnd_vec = __msa_fill_w(rnd_val);
+
+    weight *= 128;
+    rnd_val -= 6;
+
+    weight_vec_h = __msa_fill_h(weight);
+    offset_vec = __msa_fill_h(offset);
+    denom_vec = __msa_fill_h(rnd_val);
+
+    weight_vec_h = __msa_srar_h(weight_vec_h, denom_vec);
+    offset_vec = __msa_adds_s_h(offset_vec, weight_vec_h);
 
     mask1 = mask0 + 2;
 
-    for (loop_cnt = (height >> 2); loop_cnt--;) {
-        LD_SB4(src, src_stride, src0, src1, src2, src3);
-        src += (4 * src_stride);
-
-        XORI_B4_128_SB(src0, src1, src2, src3);
+    for (loop_cnt = (height >> 3); loop_cnt--;) {
+        LD_SB8(src, src_stride, src0, src1, src2, src3, src4, src5, src6, src7);
+        src += (8 * src_stride);
+        XORI_B8_128_SB(src0, src1, src2, src3, src4, src5, src6, src7);
 
         VSHF_B2_SB(src0, src0, src0, src0, mask0, mask1, vec0, vec1);
-        dst0 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst0, dst0);
+        VSHF_B2_SB(src1, src1, src1, src1, mask0, mask1, vec2, vec3);
+        VSHF_B2_SB(src2, src2, src2, src2, mask0, mask1, vec4, vec5);
+        VSHF_B2_SB(src3, src3, src3, src3, mask0, mask1, vec6, vec7);
+        dst0 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+        dst1 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+        dst2 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
+        dst3 = HEVC_FILT_4TAP_SH(vec6, vec7, filt0, filt1);
+        VSHF_B2_SB(src4, src4, src4, src4, mask0, mask1, vec0, vec1);
+        VSHF_B2_SB(src5, src5, src5, src5, mask0, mask1, vec2, vec3);
+        VSHF_B2_SB(src6, src6, src6, src6, mask0, mask1, vec4, vec5);
+        VSHF_B2_SB(src7, src7, src7, src7, mask0, mask1, vec6, vec7);
+        dst4 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+        dst5 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+        dst6 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
+        dst7 = HEVC_FILT_4TAP_SH(vec6, vec7, filt0, filt1);
 
-        VSHF_B2_SB(src1, src1, src1, src1, mask0, mask1, vec0, vec1);
-        dst1 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst1, dst1);
+        HEVC_UNIW_RND_CLIP4_MAX_SATU_H(dst0, dst1, dst2, dst3,
+                                       weight_vec, offset_vec, rnd_vec,
+                                       dst0, dst1, dst2, dst3);
 
-        VSHF_B2_SB(src2, src2, src2, src2, mask0, mask1, vec0, vec1);
-        dst2 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst2, dst2);
+        HEVC_UNIW_RND_CLIP4_MAX_SATU_H(dst4, dst5, dst6, dst7,
+                                       weight_vec, offset_vec, rnd_vec,
+                                       dst4, dst5, dst6, dst7);
 
-        VSHF_B2_SB(src3, src3, src3, src3, mask0, mask1, vec0, vec1);
-        dst3 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst3, dst3);
-
-        HEVC_UNIW_RND_CLIP4(dst0, dst1, dst2, dst3,
-                            weight_vec, offset_vec, rnd_vec,
-                            dst0_r, dst1_r, dst2_r, dst3_r,
-                            dst0_l, dst1_l, dst2_l, dst3_l);
-
-        HEVC_PCK_SW_SB8(dst0_l, dst0_r, dst1_l, dst1_r,
-                        dst2_l, dst2_r, dst3_l, dst3_r, dst0_r, dst1_r);
-
-        ST8x4_UB(dst0_r, dst1_r, dst, dst_stride);
-        dst += (4 * dst_stride);
+        PCKEV_B2_UB(dst1, dst0, dst3, dst2, out0, out1);
+        PCKEV_B2_UB(dst5, dst4, dst7, dst6, out2, out3);
+        ST8x8_UB(out0, out1, out2, out3, dst, dst_stride);
+        dst += (8 * dst_stride);
     }
 }
 
@@ -2864,12 +2920,15 @@ static void hevc_hz_uniwgt_4t_8w_msa(uint8_t *src,
 {
     if (2 == height) {
         hevc_hz_uniwgt_4t_8x2_msa(src, src_stride, dst, dst_stride,
-                                  filter, height, weight, offset, rnd_val);
+                                  filter, weight, offset, rnd_val);
+    } else if (4 == height) {
+        hevc_hz_uniwgt_4t_8x4_msa(src, src_stride, dst, dst_stride,
+                                  filter, weight, offset, rnd_val);
     } else if (6 == height) {
         hevc_hz_uniwgt_4t_8x6_msa(src, src_stride, dst, dst_stride,
-                                  filter, height, weight, offset, rnd_val);
+                                  filter, weight, offset, rnd_val);
     } else {
-        hevc_hz_uniwgt_4t_8x4multiple_msa(src, src_stride, dst, dst_stride,
+        hevc_hz_uniwgt_4t_8x8multiple_msa(src, src_stride, dst, dst_stride,
                                           filter, height, weight, offset,
                                           rnd_val);
     }
@@ -2886,19 +2945,18 @@ static void hevc_hz_uniwgt_4t_12w_msa(uint8_t *src,
                                       int32_t rnd_val)
 {
     uint32_t loop_cnt;
+    v16u8 out0, out1, out2;
     v8i16 filt0, filt1;
     v16i8 src0, src1, src2, src3;
-    v16i8 mask0 = { 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8 };
+    v16i8 mask0 = LD_SB(&ff_hevc_mask_arr[0]);
     v16i8 mask2 = { 8, 9, 9, 10, 10, 11, 11, 12, 24, 25, 25, 26, 26, 27, 27, 28
     };
     v16i8 mask1;
-    v16i8 vec0, vec1;
+    v16i8 vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7, vec8, vec9, vec10;
     v8i16 dst0, dst1, dst2, dst3, dst4, dst5;
-    v8i16 filter_vec, const_vec;
-    v16i8 mask3;
-    v4i32 dst0_r, dst1_r, dst2_r, dst3_r, dst4_r, dst5_r;
-    v4i32 dst0_l, dst1_l, dst2_l, dst3_l, dst4_l, dst5_l;
-    v4i32 weight_vec, offset_vec, rnd_vec;
+    v8i16 filter_vec, weight_vec_h, offset_vec, denom_vec;
+    v16i8 mask3, vec11;
+    v4i32 weight_vec, rnd_vec;
 
     src -= 1;
 
@@ -2906,60 +2964,51 @@ static void hevc_hz_uniwgt_4t_12w_msa(uint8_t *src,
     SPLATI_H2_SH(filter_vec, 0, 1, filt0, filt1);
 
     weight = weight & 0x0000FFFF;
-    const_vec = __msa_ldi_h(128);
-    const_vec <<= 6;
 
     weight_vec = __msa_fill_w(weight);
-    offset_vec = __msa_fill_w(offset);
     rnd_vec = __msa_fill_w(rnd_val);
+
+    weight *= 128;
+    rnd_val -= 6;
+
+    weight_vec_h = __msa_fill_h(weight);
+    offset_vec = __msa_fill_h(offset);
+    denom_vec = __msa_fill_h(rnd_val);
+
+    weight_vec_h = __msa_srar_h(weight_vec_h, denom_vec);
+    offset_vec = __msa_adds_s_h(offset_vec, weight_vec_h);
 
     mask1 = mask0 + 2;
     mask3 = mask2 + 2;
 
-    for (loop_cnt = (height >> 2); loop_cnt--;) {
+    for (loop_cnt = 4; loop_cnt--;) {
         LD_SB4(src, src_stride, src0, src1, src2, src3);
         src += (4 * src_stride);
 
         XORI_B4_128_SB(src0, src1, src2, src3);
 
         VSHF_B2_SB(src0, src0, src0, src0, mask0, mask1, vec0, vec1);
-        dst0 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst0, dst0);
+        VSHF_B2_SB(src1, src1, src1, src1, mask0, mask1, vec2, vec3);
+        VSHF_B2_SB(src2, src2, src2, src2, mask0, mask1, vec4, vec5);
+        VSHF_B2_SB(src3, src3, src3, src3, mask0, mask1, vec6, vec7);
+        VSHF_B2_SB(src0, src1, src0, src1, mask2, mask3, vec8, vec9);
+        VSHF_B2_SB(src2, src3, src2, src3, mask2, mask3, vec10, vec11);
+        dst0 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+        dst1 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+        dst2 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
+        dst3 = HEVC_FILT_4TAP_SH(vec6, vec7, filt0, filt1);
+        dst4 = HEVC_FILT_4TAP_SH(vec8, vec9, filt0, filt1);
+        dst5 = HEVC_FILT_4TAP_SH(vec10, vec11, filt0, filt1);
 
-        VSHF_B2_SB(src1, src1, src1, src1, mask0, mask1, vec0, vec1);
-        dst1 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst1, dst1);
+        HEVC_UNIW_RND_CLIP4_MAX_SATU_H(dst0, dst1, dst2, dst3,
+                                       weight_vec, offset_vec, rnd_vec,
+                                       dst0, dst1, dst2, dst3);
 
-        VSHF_B2_SB(src2, src2, src2, src2, mask0, mask1, vec0, vec1);
-        dst2 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst2, dst2);
+        HEVC_UNIW_RND_CLIP2_MAX_SATU_H(dst4, dst5, weight_vec, offset_vec,
+                                       rnd_vec, dst4, dst5);
 
-        VSHF_B2_SB(src3, src3, src3, src3, mask0, mask1, vec0, vec1);
-        dst3 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst3, dst3);
-
-        VSHF_B2_SB(src0, src1, src0, src1, mask2, mask3, vec0, vec1);
-        dst4 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst4, dst4);
-
-        VSHF_B2_SB(src2, src3, src2, src3, mask2, mask3, vec0, vec1);
-        dst5 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst5, dst5);
-
-        HEVC_UNIW_RND_CLIP4(dst0, dst1, dst2, dst3,
-                            weight_vec, offset_vec, rnd_vec,
-                            dst0_r, dst1_r, dst2_r, dst3_r,
-                            dst0_l, dst1_l, dst2_l, dst3_l);
-
-        HEVC_UNIW_RND_CLIP2(dst4, dst5, weight_vec, offset_vec, rnd_vec,
-                            dst4_r, dst5_r, dst4_l, dst5_l);
-
-        HEVC_PCK_SW_SB12(dst0_l, dst0_r, dst1_l, dst1_r,
-                         dst2_l, dst2_r, dst3_l, dst3_r,
-                         dst4_l, dst4_r, dst5_l, dst5_r,
-                         dst0_r, dst1_r, dst2_r);
-
-        ST12x4_UB(dst0_r, dst1_r, dst2_r, dst, dst_stride);
+        PCKEV_B3_UB(dst1, dst0, dst3, dst2, dst5, dst4, out0, out1, out2);
+        ST12x4_UB(out0, out1, out2, dst, dst_stride);
         dst += (4 * dst_stride);
     }
 }
@@ -2975,15 +3024,15 @@ static void hevc_hz_uniwgt_4t_16w_msa(uint8_t *src,
                                       int32_t rnd_val)
 {
     uint32_t loop_cnt;
+    v16u8 out0, out1, out2, out3;
     v16i8 src0, src1, src2, src3, src4, src5, src6, src7;
     v8i16 filt0, filt1;
-    v16i8 mask0 = { 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8 };
+    v16i8 mask0 = LD_SB(&ff_hevc_mask_arr[0]);
     v16i8 mask1;
+    v16i8 vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7;
     v8i16 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
-    v16i8 vec0, vec1;
-    v8i16 filter_vec, const_vec;
-    v4i32 dst0_r, dst1_r, dst2_r, dst3_r, dst0_l, dst1_l, dst2_l, dst3_l;
-    v4i32 weight_vec, offset_vec, rnd_vec;
+    v8i16 filter_vec, weight_vec_h, offset_vec, denom_vec;
+    v4i32 weight_vec, rnd_vec;
 
     src -= 1;
 
@@ -2991,12 +3040,19 @@ static void hevc_hz_uniwgt_4t_16w_msa(uint8_t *src,
     SPLATI_H2_SH(filter_vec, 0, 1, filt0, filt1);
 
     weight = weight & 0x0000FFFF;
-    const_vec = __msa_ldi_h(128);
-    const_vec <<= 6;
 
     weight_vec = __msa_fill_w(weight);
-    offset_vec = __msa_fill_w(offset);
     rnd_vec = __msa_fill_w(rnd_val);
+
+    weight *= 128;
+    rnd_val -= 6;
+
+    weight_vec_h = __msa_fill_h(weight);
+    offset_vec = __msa_fill_h(offset);
+    denom_vec = __msa_fill_h(rnd_val);
+
+    weight_vec_h = __msa_srar_h(weight_vec_h, denom_vec);
+    offset_vec = __msa_adds_s_h(offset_vec, weight_vec_h);
 
     mask1 = mask0 + 2;
 
@@ -3008,56 +3064,35 @@ static void hevc_hz_uniwgt_4t_16w_msa(uint8_t *src,
         XORI_B8_128_SB(src0, src1, src2, src3, src4, src5, src6, src7);
 
         VSHF_B2_SB(src0, src0, src0, src0, mask0, mask1, vec0, vec1);
-        dst0 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst0, dst0);
-
-        VSHF_B2_SB(src1, src1, src1, src1, mask0, mask1, vec0, vec1);
-        dst1 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst1, dst1);
-
-        VSHF_B2_SB(src2, src2, src2, src2, mask0, mask1, vec0, vec1);
-        dst2 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst2, dst2);
-
-        VSHF_B2_SB(src3, src3, src3, src3, mask0, mask1, vec0, vec1);
-        dst3 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst3, dst3);
-
+        VSHF_B2_SB(src1, src1, src1, src1, mask0, mask1, vec2, vec3);
+        VSHF_B2_SB(src2, src2, src2, src2, mask0, mask1, vec4, vec5);
+        VSHF_B2_SB(src3, src3, src3, src3, mask0, mask1, vec6, vec7);
+        dst0 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+        dst1 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+        dst2 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
+        dst3 = HEVC_FILT_4TAP_SH(vec6, vec7, filt0, filt1);
         VSHF_B2_SB(src4, src4, src4, src4, mask0, mask1, vec0, vec1);
-        dst4 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst4, dst4);
+        VSHF_B2_SB(src5, src5, src5, src5, mask0, mask1, vec2, vec3);
+        VSHF_B2_SB(src6, src6, src6, src6, mask0, mask1, vec4, vec5);
+        VSHF_B2_SB(src7, src7, src7, src7, mask0, mask1, vec6, vec7);
+        dst4 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+        dst5 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+        dst6 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
+        dst7 = HEVC_FILT_4TAP_SH(vec6, vec7, filt0, filt1);
 
-        VSHF_B2_SB(src5, src5, src5, src5, mask0, mask1, vec0, vec1);
-        dst5 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst5, dst5);
+        HEVC_UNIW_RND_CLIP4_MAX_SATU_H(dst0, dst1, dst2, dst3,
+                                       weight_vec, offset_vec, rnd_vec,
+                                       dst0, dst1, dst2, dst3);
 
-        VSHF_B2_SB(src6, src6, src6, src6, mask0, mask1, vec0, vec1);
-        dst6 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst6, dst6);
+        HEVC_UNIW_RND_CLIP4_MAX_SATU_H(dst4, dst5, dst6, dst7,
+                                       weight_vec, offset_vec, rnd_vec,
+                                       dst4, dst5, dst6, dst7);
 
-        VSHF_B2_SB(src7, src7, src7, src7, mask0, mask1, vec0, vec1);
-        dst7 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst7, dst7);
+        PCKEV_B4_UB(dst1, dst0, dst3, dst2, dst5, dst4, dst7, dst6,
+                    out0, out1, out2, out3);
 
-        HEVC_UNIW_RND_CLIP4(dst0, dst1, dst2, dst3,
-                            weight_vec, offset_vec, rnd_vec,
-                            dst0_r, dst1_r, dst2_r, dst3_r,
-                            dst0_l, dst1_l, dst2_l, dst3_l);
-
-        HEVC_PCK_SW_SB8(dst0_l, dst0_r, dst1_l, dst1_r,
-                        dst2_l, dst2_r, dst3_l, dst3_r, dst0_r, dst1_r);
-        ST_SW2(dst0_r, dst1_r, dst, dst_stride);
-        dst += (2 * dst_stride);
-
-        HEVC_UNIW_RND_CLIP4(dst4, dst5, dst6, dst7,
-                            weight_vec, offset_vec, rnd_vec,
-                            dst0_r, dst1_r, dst2_r, dst3_r,
-                            dst0_l, dst1_l, dst2_l, dst3_l);
-
-        HEVC_PCK_SW_SB8(dst0_l, dst0_r, dst1_l, dst1_r,
-                        dst2_l, dst2_r, dst3_l, dst3_r, dst0_r, dst1_r);
-        ST_SW2(dst0_r, dst1_r, dst, dst_stride);
-        dst += (2 * dst_stride);
+        ST_UB4(out0, out1, out2, out3, dst, dst_stride);
+        dst += (4 * dst_stride);
     }
 }
 
@@ -3072,16 +3107,14 @@ static void hevc_hz_uniwgt_4t_24w_msa(uint8_t *src,
                                       int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    uint8_t *dst_tmp = dst + 16;
+    v16u8 out0, out1, out2;
     v16i8 src0, src1, src2, src3;
     v8i16 filt0, filt1;
-    v8i16 dst0, dst1, dst2, dst3;
-    v16i8 mask0 = { 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8 };
-    v16i8 mask1, mask2, mask3;
-    v16i8 vec0, vec1;
-    v8i16 filter_vec, const_vec;
-    v4i32 dst0_r, dst1_r, dst2_r, dst3_r, dst0_l, dst1_l, dst2_l, dst3_l;
-    v4i32 weight_vec, offset_vec, rnd_vec;
+    v16i8 mask0, mask1, mask2, mask3;
+    v16i8 vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7;
+    v8i16 dst0, dst1, dst2, dst3, dst4, dst5;
+    v8i16 filter_vec, weight_vec_h, offset_vec, denom_vec;
+    v4i32 weight_vec, rnd_vec;
 
     src -= 1;
 
@@ -3089,19 +3122,25 @@ static void hevc_hz_uniwgt_4t_24w_msa(uint8_t *src,
     SPLATI_H2_SH(filter_vec, 0, 1, filt0, filt1);
 
     weight = weight & 0x0000FFFF;
-    const_vec = __msa_ldi_h(128);
-    const_vec <<= 6;
-
     weight_vec = __msa_fill_w(weight);
-    offset_vec = __msa_fill_w(offset);
     rnd_vec = __msa_fill_w(rnd_val);
 
+    weight *= 128;
+    rnd_val -= 6;
+
+    weight_vec_h = __msa_fill_h(weight);
+    offset_vec = __msa_fill_h(offset);
+    denom_vec = __msa_fill_h(rnd_val);
+
+    weight_vec_h = __msa_srar_h(weight_vec_h, denom_vec);
+    offset_vec = __msa_adds_s_h(offset_vec, weight_vec_h);
+
+    mask0 = LD_SB(&ff_hevc_mask_arr[0]);
     mask1 = mask0 + 2;
     mask2 = mask0 + 8;
     mask3 = mask0 + 10;
 
-    for (loop_cnt = (height >> 1); loop_cnt--;) {
-        /* 16 width */
+    for (loop_cnt = 16; loop_cnt--;) {
         LD_SB2(src, src_stride, src0, src2);
         LD_SB2(src + 16, src_stride, src1, src3);
         src += (2 * src_stride);
@@ -3109,46 +3148,29 @@ static void hevc_hz_uniwgt_4t_24w_msa(uint8_t *src,
         XORI_B4_128_SB(src0, src1, src2, src3);
 
         VSHF_B2_SB(src0, src0, src0, src0, mask0, mask1, vec0, vec1);
-        dst0 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst0, dst0);
-
-        VSHF_B2_SB(src0, src1, src0, src1, mask2, mask3, vec0, vec1);
-        dst1 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst1, dst1);
-
-        VSHF_B2_SB(src2, src2, src2, src2, mask0, mask1, vec0, vec1);
-        dst2 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst2, dst2);
-
-        VSHF_B2_SB(src2, src3, src2, src3, mask2, mask3, vec0, vec1);
-        dst3 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst3, dst3);
-
-        HEVC_UNIW_RND_CLIP4(dst0, dst1, dst2, dst3,
-                            weight_vec, offset_vec, rnd_vec,
-                            dst0_r, dst1_r, dst2_r, dst3_r,
-                            dst0_l, dst1_l, dst2_l, dst3_l);
-
-        HEVC_PCK_SW_SB8(dst0_l, dst0_r, dst1_l, dst1_r,
-                        dst2_l, dst2_r, dst3_l, dst3_r, dst0_r, dst1_r);
-        ST_SW2(dst0_r, dst1_r, dst, dst_stride);
-        dst += (2 * dst_stride);
-
-        /* 8 width */
+        VSHF_B2_SB(src0, src1, src0, src1, mask2, mask3, vec2, vec3);
+        VSHF_B2_SB(src2, src2, src2, src2, mask0, mask1, vec4, vec5);
+        VSHF_B2_SB(src2, src3, src2, src3, mask2, mask3, vec6, vec7);
+        dst0 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+        dst1 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+        dst2 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
+        dst3 = HEVC_FILT_4TAP_SH(vec6, vec7, filt0, filt1);
         VSHF_B2_SB(src1, src1, src1, src1, mask0, mask1, vec0, vec1);
-        dst0 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst0, dst0);
+        VSHF_B2_SB(src3, src3, src3, src3, mask0, mask1, vec2, vec3);
+        dst4 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+        dst5 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
 
-        VSHF_B2_SB(src3, src3, src3, src3, mask0, mask1, vec0, vec1);
-        dst1 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst1, dst1);
+        HEVC_UNIW_RND_CLIP4_MAX_SATU_H(dst0, dst1, dst2, dst3,
+                                       weight_vec, offset_vec, rnd_vec,
+                                       dst0, dst1, dst2, dst3);
 
-        HEVC_UNIW_RND_CLIP2(dst0, dst1, weight_vec, offset_vec, rnd_vec,
-                            dst0_r, dst1_r, dst0_l, dst1_l);
+        HEVC_UNIW_RND_CLIP2_MAX_SATU_H(dst4, dst5, weight_vec, offset_vec,
+                                       rnd_vec, dst4, dst5);
 
-        HEVC_PCK_SW_SB4(dst0_l, dst0_r, dst1_l, dst1_r, dst0_r);
-        ST8x2_UB(dst0_r, dst_tmp, dst_stride);
-        dst_tmp += (2 * dst_stride);
+        PCKEV_B3_UB(dst1, dst0, dst3, dst2, dst5, dst4, out0, out1, out2);
+        ST_UB2(out0, out1, dst, dst_stride);
+        ST8x2_UB(out2, dst + 16, dst_stride);
+        dst += (2 * dst_stride);
     }
 }
 
@@ -3163,15 +3185,15 @@ static void hevc_hz_uniwgt_4t_32w_msa(uint8_t *src,
                                       int32_t rnd_val)
 {
     uint32_t loop_cnt;
-    v16i8 src0, src1, src2;
+    v16u8 out0, out1, out2, out3;
+    v16i8 src0, src1, src2, src3, src4, src5;
     v8i16 filt0, filt1;
-    v16i8 mask0 = { 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8 };
+    v16i8 mask0 = LD_SB(&ff_hevc_mask_arr[0]);
     v16i8 mask1, mask2, mask3;
-    v8i16 dst0, dst1, dst2, dst3;
-    v16i8 vec0, vec1;
-    v8i16 filter_vec, const_vec;
-    v4i32 dst0_r, dst1_r, dst2_r, dst3_r, dst0_l, dst1_l, dst2_l, dst3_l;
-    v4i32 weight_vec, offset_vec, rnd_vec;
+    v16i8 vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7;
+    v8i16 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
+    v8i16 filter_vec, weight_vec_h, offset_vec, denom_vec;
+    v4i32 weight_vec, rnd_vec;
 
     src -= 1;
 
@@ -3179,12 +3201,19 @@ static void hevc_hz_uniwgt_4t_32w_msa(uint8_t *src,
     SPLATI_H2_SH(filter_vec, 0, 1, filt0, filt1);
 
     weight = weight & 0x0000FFFF;
-    const_vec = __msa_ldi_h(128);
-    const_vec <<= 6;
 
     weight_vec = __msa_fill_w(weight);
-    offset_vec = __msa_fill_w(offset);
     rnd_vec = __msa_fill_w(rnd_val);
+
+    weight *= 128;
+    rnd_val -= 6;
+
+    weight_vec_h = __msa_fill_h(weight);
+    offset_vec = __msa_fill_h(offset);
+    denom_vec = __msa_fill_h(rnd_val);
+
+    weight_vec_h = __msa_srar_h(weight_vec_h, denom_vec);
+    offset_vec = __msa_adds_s_h(offset_vec, weight_vec_h);
 
     mask1 = mask0 + 2;
     mask2 = mask0 + 8;
@@ -3194,65 +3223,40 @@ static void hevc_hz_uniwgt_4t_32w_msa(uint8_t *src,
         LD_SB2(src, 16, src0, src1);
         src2 = LD_SB(src + 24);
         src += src_stride;
-
-        XORI_B3_128_SB(src0, src1, src2);
-
-        VSHF_B2_SB(src0, src0, src0, src0, mask0, mask1, vec0, vec1);
-        dst0 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst0, dst0);
-
-        VSHF_B2_SB(src0, src1, src0, src1, mask2, mask3, vec0, vec1);
-        dst1 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst1, dst1);
-
-        VSHF_B2_SB(src1, src1, src1, src1, mask0, mask1, vec0, vec1);
-        dst2 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst2, dst2);
-
-        VSHF_B2_SB(src2, src2, src2, src2, mask0, mask1, vec0, vec1);
-        dst3 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst3, dst3);
-
-        HEVC_UNIW_RND_CLIP4(dst0, dst1, dst2, dst3,
-                            weight_vec, offset_vec, rnd_vec,
-                            dst0_r, dst1_r, dst2_r, dst3_r,
-                            dst0_l, dst1_l, dst2_l, dst3_l);
-
-        HEVC_PCK_SW_SB8(dst0_l, dst0_r, dst1_l, dst1_r,
-                        dst2_l, dst2_r, dst3_l, dst3_r, dst0_r, dst1_r);
-        ST_SW2(dst0_r, dst1_r, dst, 16);
-        dst += dst_stride;
-
-        LD_SB2(src, 16, src0, src1);
-        src2 = LD_SB(src + 24);
+        LD_SB2(src, 16, src3, src4);
+        src5 = LD_SB(src + 24);
         src += src_stride;
-
-        XORI_B3_128_SB(src0, src1, src2);
-
+        XORI_B6_128_SB(src0, src1, src2, src3, src4, src5);
         VSHF_B2_SB(src0, src0, src0, src0, mask0, mask1, vec0, vec1);
-        dst0 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst0, dst0);
+        VSHF_B2_SB(src0, src1, src0, src1, mask2, mask3, vec2, vec3);
+        VSHF_B2_SB(src1, src1, src1, src1, mask0, mask1, vec4, vec5);
+        VSHF_B2_SB(src2, src2, src2, src2, mask0, mask1, vec6, vec7);
+        dst0 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+        dst1 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+        dst2 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
+        dst3 = HEVC_FILT_4TAP_SH(vec6, vec7, filt0, filt1);
+        VSHF_B2_SB(src3, src3, src3, src3, mask0, mask1, vec0, vec1);
+        VSHF_B2_SB(src3, src4, src3, src4, mask2, mask3, vec2, vec3);
+        VSHF_B2_SB(src4, src4, src4, src4, mask0, mask1, vec4, vec5);
+        VSHF_B2_SB(src5, src5, src5, src5, mask0, mask1, vec6, vec7);
+        dst4 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+        dst5 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+        dst6 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
+        dst7 = HEVC_FILT_4TAP_SH(vec6, vec7, filt0, filt1);
 
-        VSHF_B2_SB(src0, src1, src0, src1, mask2, mask3, vec0, vec1);
-        dst1 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst1, dst1);
+        HEVC_UNIW_RND_CLIP4_MAX_SATU_H(dst0, dst1, dst2, dst3,
+                                       weight_vec, offset_vec, rnd_vec,
+                                       dst0, dst1, dst2, dst3);
 
-        VSHF_B2_SB(src1, src1, src1, src1, mask0, mask1, vec0, vec1);
-        dst2 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst2, dst2);
+        HEVC_UNIW_RND_CLIP4_MAX_SATU_H(dst4, dst5, dst6, dst7,
+                                       weight_vec, offset_vec, rnd_vec,
+                                       dst4, dst5, dst6, dst7);
 
-        VSHF_B2_SB(src2, src2, src2, src2, mask0, mask1, vec0, vec1);
-        dst3 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst3, dst3);
-
-        HEVC_UNIW_RND_CLIP4(dst0, dst1, dst2, dst3,
-                            weight_vec, offset_vec, rnd_vec,
-                            dst0_r, dst1_r, dst2_r, dst3_r,
-                            dst0_l, dst1_l, dst2_l, dst3_l);
-
-        HEVC_PCK_SW_SB8(dst0_l, dst0_r, dst1_l, dst1_r,
-                        dst2_l, dst2_r, dst3_l, dst3_r, dst0_r, dst1_r);
-        ST_SW2(dst0_r, dst1_r, dst, 16);
+        PCKEV_B2_UB(dst1, dst0, dst3, dst2, out0, out1);
+        PCKEV_B2_UB(dst5, dst4, dst7, dst6, out2, out3);
+        ST_UB2(out0, out1, dst, 16);
+        dst += dst_stride;
+        ST_UB2(out2, out3, dst, 16);
         dst += dst_stride;
     }
 }
