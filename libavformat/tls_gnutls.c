@@ -75,6 +75,7 @@ static int print_tls_error(URLContext *h, int ret)
 {
     switch (ret) {
     case GNUTLS_E_AGAIN:
+        return AVERROR(EAGAIN);
     case GNUTLS_E_INTERRUPTED:
 #ifdef GNUTLS_E_PREMATURE_TERMINATION
     case GNUTLS_E_PREMATURE_TERMINATION:
@@ -114,7 +115,10 @@ static ssize_t gnutls_url_pull(gnutls_transport_ptr_t transport,
         return ret;
     if (ret == AVERROR_EXIT)
         return 0;
-    errno = EIO;
+    if (ret == AVERROR(EAGAIN))
+        errno = EAGAIN;
+    else
+        errno = EIO;
     return -1;
 }
 
@@ -127,7 +131,10 @@ static ssize_t gnutls_url_push(gnutls_transport_ptr_t transport,
         return ret;
     if (ret == AVERROR_EXIT)
         return 0;
-    errno = EIO;
+    if (ret == AVERROR(EAGAIN))
+        errno = EAGAIN;
+    else
+        errno = EIO;
     return -1;
 }
 
@@ -223,7 +230,11 @@ fail:
 static int tls_read(URLContext *h, uint8_t *buf, int size)
 {
     TLSContext *c = h->priv_data;
-    int ret = gnutls_record_recv(c->session, buf, size);
+    int ret;
+    // Set or clear the AVIO_FLAG_NONBLOCK on c->tls_shared.tcp
+    c->tls_shared.tcp->flags &= ~AVIO_FLAG_NONBLOCK;
+    c->tls_shared.tcp->flags |= h->flags & AVIO_FLAG_NONBLOCK;
+    ret = gnutls_record_recv(c->session, buf, size);
     if (ret > 0)
         return ret;
     if (ret == 0)
@@ -234,7 +245,11 @@ static int tls_read(URLContext *h, uint8_t *buf, int size)
 static int tls_write(URLContext *h, const uint8_t *buf, int size)
 {
     TLSContext *c = h->priv_data;
-    int ret = gnutls_record_send(c->session, buf, size);
+    int ret;
+    // Set or clear the AVIO_FLAG_NONBLOCK on c->tls_shared.tcp
+    c->tls_shared.tcp->flags &= ~AVIO_FLAG_NONBLOCK;
+    c->tls_shared.tcp->flags |= h->flags & AVIO_FLAG_NONBLOCK;
+    ret = gnutls_record_send(c->session, buf, size);
     if (ret > 0)
         return ret;
     if (ret == 0)
