@@ -29,7 +29,6 @@
 
 #include "libavutil/buffer.h"
 
-#include "config.h"
 #include "avcodec.h"
 
 typedef struct ThreadFrame {

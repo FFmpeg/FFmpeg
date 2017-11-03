@@ -22,9 +22,9 @@
 #ifndef AVFORMAT_TLS_H
 #define AVFORMAT_TLS_H
 
-#include "config.h"
-#include "url.h"
 #include "libavutil/opt.h"
+
+#include "url.h"
 
 typedef struct TLSShared {
     char *ca_file;
