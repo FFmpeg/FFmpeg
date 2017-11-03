@@ -116,6 +116,12 @@ void ff_openssl_deinit(void)
 
 static int print_tls_error(URLContext *h, int ret)
 {
+    TLSContext *c = h->priv_data;
+    if (h->flags & AVIO_FLAG_NONBLOCK) {
+        int err = SSL_get_error(c->ssl, ret);
+        if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_READ)
+            return AVERROR(EAGAIN);
+    }
     av_log(h, AV_LOG_ERROR, "%s\n", ERR_error_string(ERR_get_error(), NULL));
     return AVERROR(EIO);
 }
@@ -171,6 +177,8 @@ static int url_bio_bread(BIO *b, char *buf, int len)
     if (ret >= 0)
         return ret;
     BIO_clear_retry_flags(b);
+    if (ret == AVERROR(EAGAIN))
+        BIO_set_retry_read(b);
     if (ret == AVERROR_EXIT)
         return 0;
     return -1;
@@ -183,6 +191,8 @@ static int url_bio_bwrite(BIO *b, const char *buf, int len)
     if (ret >= 0)
         return ret;
     BIO_clear_retry_flags(b);
+    if (ret == AVERROR(EAGAIN))
+        BIO_set_retry_write(b);
     if (ret == AVERROR_EXIT)
         return 0;
     return -1;
@@ -302,7 +312,11 @@ fail:
 static int tls_read(URLContext *h, uint8_t *buf, int size)
 {
     TLSContext *c = h->priv_data;
-    int ret = SSL_read(c->ssl, buf, size);
+    int ret;
+    // Set or clear the AVIO_FLAG_NONBLOCK on c->tls_shared.tcp
+    c->tls_shared.tcp->flags &= ~AVIO_FLAG_NONBLOCK;
+    c->tls_shared.tcp->flags |= h->flags & AVIO_FLAG_NONBLOCK;
+    ret = SSL_read(c->ssl, buf, size);
     if (ret > 0)
         return ret;
     if (ret == 0)
@@ -313,7 +327,11 @@ static int tls_read(URLContext *h, uint8_t *buf, int size)
 static int tls_write(URLContext *h, const uint8_t *buf, int size)
 {
     TLSContext *c = h->priv_data;
-    int ret = SSL_write(c->ssl, buf, size);
+    int ret;
+    // Set or clear the AVIO_FLAG_NONBLOCK on c->tls_shared.tcp
+    c->tls_shared.tcp->flags &= ~AVIO_FLAG_NONBLOCK;
+    c->tls_shared.tcp->flags |= h->flags & AVIO_FLAG_NONBLOCK;
+    ret = SSL_write(c->ssl, buf, size);
     if (ret > 0)
         return ret;
     if (ret == 0)
