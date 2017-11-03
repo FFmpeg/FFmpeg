@@ -21,30 +21,6 @@
 #include "libavutil/mips/generic_macros_msa.h"
 #include "h264dsp_mips.h"
 
-#define AVC_CALC_DPADD_H_6PIX_2COEFF_SH(in0, in1, in2, in3, in4, in5)    \
-( {                                                                      \
-    v4i32 tmp0_m, tmp1_m;                                                \
-    v8i16 out0_m, out1_m, out2_m, out3_m;                                \
-    v8i16 minus5h_m = __msa_ldi_h(-5);                                   \
-    v8i16 plus20h_m = __msa_ldi_h(20);                                   \
-                                                                         \
-    ILVRL_H2_SW(in5, in0, tmp0_m, tmp1_m);                               \
-                                                                         \
-    tmp0_m = __msa_hadd_s_w((v8i16) tmp0_m, (v8i16) tmp0_m);             \
-    tmp1_m = __msa_hadd_s_w((v8i16) tmp1_m, (v8i16) tmp1_m);             \
-                                                                         \
-    ILVRL_H2_SH(in1, in4, out0_m, out1_m);                               \
-    DPADD_SH2_SW(out0_m, out1_m, minus5h_m, minus5h_m, tmp0_m, tmp1_m);  \
-    ILVRL_H2_SH(in2, in3, out2_m, out3_m);                               \
-    DPADD_SH2_SW(out2_m, out3_m, plus20h_m, plus20h_m, tmp0_m, tmp1_m);  \
-                                                                         \
-    SRARI_W2_SW(tmp0_m, tmp1_m, 10);                                     \
-    SAT_SW2_SW(tmp0_m, tmp1_m, 7);                                       \
-    out0_m = __msa_pckev_h((v8i16) tmp1_m, (v8i16) tmp0_m);              \
-                                                                         \
-    out0_m;                                                              \
-} )
-
 static const uint8_t luma_mask_arr[16 * 8] = {
     /* 8 width cases */
     0, 5, 1, 6, 2, 7, 3, 8, 4, 9, 5, 10, 6, 11, 7, 12,
@@ -74,44 +50,6 @@ static const uint8_t luma_mask_arr[16 * 8] = {
     ILVRL_B2_SB(vec3, vec2, tmp0_m, tmp1_m);                                 \
     DPADD_SB2_SH(tmp0_m, tmp1_m, plus20b_m, plus20b_m, out1, out2);          \
 }
-
-#define AVC_CALC_DPADD_H_6PIX_2COEFF_R_SH(vec0, vec1, vec2, vec3, vec4, vec5)  \
-( {                                                                            \
-    v4i32 tmp1_m;                                                              \
-    v8i16 tmp2_m, tmp3_m;                                                      \
-    v8i16 minus5h_m = __msa_ldi_h(-5);                                         \
-    v8i16 plus20h_m = __msa_ldi_h(20);                                         \
-                                                                               \
-    tmp1_m = (v4i32) __msa_ilvr_h((v8i16) vec5, (v8i16) vec0);                 \
-    tmp1_m = __msa_hadd_s_w((v8i16) tmp1_m, (v8i16) tmp1_m);                   \
-                                                                               \
-    ILVR_H2_SH(vec1, vec4, vec2, vec3, tmp2_m, tmp3_m);                        \
-    DPADD_SH2_SW(tmp2_m, tmp3_m, minus5h_m, plus20h_m, tmp1_m, tmp1_m);        \
-                                                                               \
-    tmp1_m = __msa_srari_w(tmp1_m, 10);                                        \
-    tmp1_m = __msa_sat_s_w(tmp1_m, 7);                                         \
-                                                                               \
-    tmp2_m = __msa_pckev_h((v8i16) tmp1_m, (v8i16) tmp1_m);                    \
-                                                                               \
-    tmp2_m;                                                                    \
-} )
-
-#define AVC_XOR_VSHF_B_AND_APPLY_6TAP_HORIZ_FILT_SH(src0, src1,              \
-                                                    mask0, mask1, mask2)     \
-( {                                                                          \
-    v8i16 hz_out_m;                                                          \
-    v16i8 vec0_m, vec1_m, vec2_m;                                            \
-    v16i8 minus5b_m = __msa_ldi_b(-5);                                       \
-    v16i8 plus20b_m = __msa_ldi_b(20);                                       \
-                                                                             \
-    vec0_m = __msa_vshf_b((v16i8) mask0, (v16i8) src1, (v16i8) src0);        \
-    hz_out_m = __msa_hadd_s_h(vec0_m, vec0_m);                               \
-                                                                             \
-    VSHF_B2_SB(src0, src1, src0, src1, mask1, mask2, vec1_m, vec2_m);        \
-    DPADD_SB2_SH(vec1_m, vec2_m, minus5b_m, plus20b_m, hz_out_m, hz_out_m);  \
-                                                                             \
-    hz_out_m;                                                                \
-} )
 
 #define AVC_HORZ_FILTER_SH(in0, in1, mask0, mask1, mask2)  \
 ( {                                                        \
@@ -415,150 +353,6 @@ static void avc_luma_hv_qrt_16x16_msa(const uint8_t *src_x,
         src_x_tmp += 8;
         src_y_tmp += 8;
         dst_tmp += 8;
-    }
-}
-
-static void avc_luma_hz_and_aver_dst_4x4_msa(const uint8_t *src,
-                                             int32_t src_stride,
-                                             uint8_t *dst, int32_t dst_stride)
-{
-    v16i8 src0, src1, src2, src3;
-    v16u8 dst0, dst1, dst2, dst3, res;
-    v8i16 res0, res1;
-    v16i8 mask0, mask1, mask2;
-    v16i8 vec0, vec1, vec2, vec3, vec4, vec5;
-    v16i8 minus5b = __msa_ldi_b(-5);
-    v16i8 plus20b = __msa_ldi_b(20);
-
-    LD_SB3(&luma_mask_arr[48], 16, mask0, mask1, mask2);
-    LD_SB4(src, src_stride, src0, src1, src2, src3);
-
-    LD_UB4(dst, dst_stride, dst0, dst1, dst2, dst3);
-    XORI_B4_128_SB(src0, src1, src2, src3);
-    VSHF_B2_SB(src0, src1, src2, src3, mask0, mask0, vec0, vec1);
-    HADD_SB2_SH(vec0, vec1, res0, res1);
-    VSHF_B2_SB(src0, src1, src2, src3, mask1, mask1, vec2, vec3);
-    DPADD_SB2_SH(vec2, vec3, minus5b, minus5b, res0, res1);
-    VSHF_B2_SB(src0, src1, src2, src3, mask2, mask2, vec4, vec5);
-    DPADD_SB2_SH(vec4, vec5, plus20b, plus20b, res0, res1);
-    SRARI_H2_SH(res0, res1, 5);
-    SAT_SH2_SH(res0, res1, 7);
-    res = PCKEV_XORI128_UB(res0, res1);
-    ILVR_W2_UB(dst1, dst0, dst3, dst2, dst0, dst1);
-
-    dst0 = (v16u8) __msa_pckev_d((v2i64) dst1, (v2i64) dst0);
-    res = __msa_aver_u_b(res, dst0);
-
-    ST4x4_UB(res, res, 0, 1, 2, 3, dst, dst_stride);
-}
-
-static void avc_luma_hz_and_aver_dst_8x8_msa(const uint8_t *src,
-                                             int32_t src_stride,
-                                             uint8_t *dst, int32_t dst_stride)
-{
-    uint32_t loop_cnt;
-    v16i8 src0, src1, src2, src3;
-    v16u8 dst0, dst1, dst2, dst3;
-    v8i16 res0, res1, res2, res3;
-    v16i8 mask0, mask1, mask2;
-    v16i8 vec0, vec1, vec2, vec3, vec4, vec5;
-    v16i8 vec6, vec7, vec8, vec9, vec10, vec11;
-    v16i8 minus5b = __msa_ldi_b(-5);
-    v16i8 plus20b = __msa_ldi_b(20);
-
-    LD_SB3(&luma_mask_arr[0], 16, mask0, mask1, mask2);
-
-    for (loop_cnt = 2; loop_cnt--;) {
-        LD_SB4(src, src_stride, src0, src1, src2, src3);
-        src += (4 * src_stride);
-
-        LD_UB4(dst, dst_stride, dst0, dst1, dst2, dst3);
-
-        XORI_B4_128_SB(src0, src1, src2, src3);
-        VSHF_B2_SB(src0, src0, src1, src1, mask0, mask0, vec0, vec1);
-        VSHF_B2_SB(src2, src2, src3, src3, mask0, mask0, vec2, vec3);
-        HADD_SB4_SH(vec0, vec1, vec2, vec3, res0, res1, res2, res3);
-        VSHF_B2_SB(src0, src0, src1, src1, mask1, mask1, vec4, vec5);
-        VSHF_B2_SB(src2, src2, src3, src3, mask1, mask1, vec6, vec7);
-        DPADD_SB4_SH(vec4, vec5, vec6, vec7, minus5b, minus5b, minus5b, minus5b,
-                     res0, res1, res2, res3);
-        VSHF_B2_SB(src0, src0, src1, src1, mask2, mask2, vec8, vec9);
-        VSHF_B2_SB(src2, src2, src3, src3, mask2, mask2, vec10, vec11);
-        DPADD_SB4_SH(vec8, vec9, vec10, vec11, plus20b, plus20b, plus20b,
-                     plus20b, res0, res1, res2, res3);
-        SRARI_H4_SH(res0, res1, res2, res3, 5);
-        SAT_SH4_SH(res0, res1, res2, res3, 7);
-        ILVR_D2_UB(dst1, dst0, dst3, dst2, dst0, dst1);
-        CONVERT_UB_AVG_ST8x4_UB(res0, res1, res2, res3, dst0, dst1,
-                                dst, dst_stride);
-
-        dst += (4 * dst_stride);
-    }
-}
-
-static void avc_luma_hz_and_aver_dst_16x16_msa(const uint8_t *src,
-                                               int32_t src_stride,
-                                               uint8_t *dst, int32_t dst_stride)
-{
-    uint32_t loop_cnt;
-    v16i8 src0, src1, src2, src3, src4, src5, src6, src7;
-    v16u8 dst0, dst1, dst2, dst3;
-    v16i8 mask0, mask1, mask2;
-    v8i16 res0, res1, res2, res3, res4, res5, res6, res7;
-    v16i8 vec0, vec1, vec2, vec3, vec4, vec5;
-    v16i8 vec6, vec7, vec8, vec9, vec10, vec11;
-    v16i8 minus5b = __msa_ldi_b(-5);
-    v16i8 plus20b = __msa_ldi_b(20);
-
-    LD_SB3(&luma_mask_arr[0], 16, mask0, mask1, mask2);
-
-    for (loop_cnt = 4; loop_cnt--;) {
-        LD_SB2(src, 8, src0, src1);
-        src += src_stride;
-        LD_SB2(src, 8, src2, src3);
-        src += src_stride;
-
-        LD_UB4(dst, dst_stride, dst0, dst1, dst2, dst3);
-
-        XORI_B4_128_SB(src0, src1, src2, src3);
-        VSHF_B2_SB(src0, src0, src1, src1, mask0, mask0, vec0, vec3);
-        VSHF_B2_SB(src2, src2, src3, src3, mask0, mask0, vec6, vec9);
-        VSHF_B2_SB(src0, src0, src1, src1, mask1, mask1, vec1, vec4);
-        VSHF_B2_SB(src2, src2, src3, src3, mask1, mask1, vec7, vec10);
-        VSHF_B2_SB(src0, src0, src1, src1, mask2, mask2, vec2, vec5);
-        VSHF_B2_SB(src2, src2, src3, src3, mask2, mask2, vec8, vec11);
-        HADD_SB4_SH(vec0, vec3, vec6, vec9, res0, res1, res2, res3);
-        DPADD_SB4_SH(vec1, vec4, vec7, vec10, minus5b, minus5b, minus5b,
-                     minus5b, res0, res1, res2, res3);
-        DPADD_SB4_SH(vec2, vec5, vec8, vec11, plus20b, plus20b, plus20b,
-                     plus20b, res0, res1, res2, res3);
-        LD_SB2(src, 8, src4, src5);
-        src += src_stride;
-        LD_SB2(src, 8, src6, src7);
-        src += src_stride;
-        XORI_B4_128_SB(src4, src5, src6, src7);
-        VSHF_B2_SB(src4, src4, src5, src5, mask0, mask0, vec0, vec3);
-        VSHF_B2_SB(src6, src6, src7, src7, mask0, mask0, vec6, vec9);
-        VSHF_B2_SB(src4, src4, src5, src5, mask1, mask1, vec1, vec4);
-        VSHF_B2_SB(src6, src6, src7, src7, mask1, mask1, vec7, vec10);
-        VSHF_B2_SB(src4, src4, src5, src5, mask2, mask2, vec2, vec5);
-        VSHF_B2_SB(src6, src6, src7, src7, mask2, mask2, vec8, vec11);
-        HADD_SB4_SH(vec0, vec3, vec6, vec9, res4, res5, res6, res7);
-        DPADD_SB4_SH(vec1, vec4, vec7, vec10, minus5b, minus5b, minus5b,
-                     minus5b, res4, res5, res6, res7);
-        DPADD_SB4_SH(vec2, vec5, vec8, vec11, plus20b, plus20b, plus20b,
-                     plus20b, res4, res5, res6, res7);
-        SRARI_H4_SH(res0, res1, res2, res3, 5);
-        SRARI_H4_SH(res4, res5, res6, res7, 5);
-        SAT_SH4_SH(res0, res1, res2, res3, 7);
-        SAT_SH4_SH(res4, res5, res6, res7, 7);
-        PCKEV_B4_SB(res1, res0, res3, res2, res5, res4, res7, res6,
-                    vec0, vec1, vec2, vec3);
-        XORI_B4_128_SB(vec0, vec1, vec2, vec3);
-        AVER_UB4_UB(vec0, dst0, vec1, dst1, vec2, dst2, vec3, dst3,
-                    dst0, dst1, dst2, dst3);
-        ST_UB4(dst0, dst1, dst2, dst3, dst, dst_stride);
-        dst += (4 * dst_stride);
     }
 }
 
@@ -967,184 +761,6 @@ static void avc_luma_vt_qrt_and_aver_dst_16x16_msa(const uint8_t *src,
         src2 = src6;
         src3 = src7;
         src4 = src8;
-    }
-}
-
-static void avc_luma_midv_qrt_and_aver_dst_4w_msa(const uint8_t *src,
-                                                  int32_t src_stride,
-                                                  uint8_t *dst,
-                                                  int32_t dst_stride,
-                                                  int32_t height,
-                                                  uint8_t ver_offset)
-{
-    int32_t loop_cnt;
-    int32_t out0, out1;
-    v16i8 src0, src1, src2, src3, src4;
-    v16u8 dst0, dst1;
-    v16i8 mask0, mask1, mask2;
-    v8i16 hz_out0, hz_out1, hz_out2, hz_out3;
-    v8i16 hz_out4, hz_out5, hz_out6;
-    v8i16 res0, res1, res2, res3;
-    v16u8 vec0, vec1;
-
-    LD_SB3(&luma_mask_arr[48], 16, mask0, mask1, mask2);
-    LD_SB5(src, src_stride, src0, src1, src2, src3, src4);
-    src += (5 * src_stride);
-
-    XORI_B5_128_SB(src0, src1, src2, src3, src4);
-
-    hz_out0 = AVC_XOR_VSHF_B_AND_APPLY_6TAP_HORIZ_FILT_SH(src0, src1,
-                                                          mask0, mask1, mask2);
-    hz_out2 = AVC_XOR_VSHF_B_AND_APPLY_6TAP_HORIZ_FILT_SH(src2, src3,
-                                                          mask0, mask1, mask2);
-
-    PCKOD_D2_SH(hz_out0, hz_out0, hz_out2, hz_out2, hz_out1, hz_out3);
-
-    hz_out4 = AVC_HORZ_FILTER_SH(src4, src4, mask0, mask1, mask2);
-
-    for (loop_cnt = (height >> 1); loop_cnt--;) {
-        LD_SB2(src, src_stride, src0, src1);
-        src += (2 * src_stride);
-
-        XORI_B2_128_SB(src0, src1);
-        LD_UB2(dst, dst_stride, dst0, dst1);
-        hz_out5 = AVC_XOR_VSHF_B_AND_APPLY_6TAP_HORIZ_FILT_SH(src0, src1,
-                                                              mask0, mask1,
-                                                              mask2);
-        hz_out6 = (v8i16) __msa_pckod_d((v2i64) hz_out5, (v2i64) hz_out5);
-        res0 = AVC_CALC_DPADD_H_6PIX_2COEFF_R_SH(hz_out0, hz_out1, hz_out2,
-                                                 hz_out3, hz_out4, hz_out5);
-        res2 = AVC_CALC_DPADD_H_6PIX_2COEFF_R_SH(hz_out1, hz_out2, hz_out3,
-                                                 hz_out4, hz_out5, hz_out6);
-
-        if (ver_offset) {
-            res1 = __msa_srari_h(hz_out3, 5);
-            res3 = __msa_srari_h(hz_out4, 5);
-        } else {
-            res1 = __msa_srari_h(hz_out2, 5);
-            res3 = __msa_srari_h(hz_out3, 5);
-        }
-
-        SAT_SH2_SH(res1, res3, 7);
-
-        res0 = __msa_aver_s_h(res0, res1);
-        res1 = __msa_aver_s_h(res2, res3);
-
-        vec0 = PCKEV_XORI128_UB(res0, res0);
-        vec1 = PCKEV_XORI128_UB(res1, res1);
-
-        AVER_UB2_UB(vec0, dst0, vec1, dst1, dst0, dst1);
-
-        out0 = __msa_copy_u_w((v4i32) dst0, 0);
-        out1 = __msa_copy_u_w((v4i32) dst1, 0);
-        SW(out0, dst);
-        dst += dst_stride;
-        SW(out1, dst);
-        dst += dst_stride;
-
-        hz_out0 = hz_out2;
-        hz_out1 = hz_out3;
-        hz_out2 = hz_out4;
-        hz_out3 = hz_out5;
-        hz_out4 = hz_out6;
-    }
-}
-
-static void avc_luma_midv_qrt_and_aver_dst_8w_msa(const uint8_t *src,
-                                                  int32_t src_stride,
-                                                  uint8_t *dst,
-                                                  int32_t dst_stride,
-                                                  int32_t height,
-                                                  uint8_t vert_offset)
-{
-    int32_t loop_cnt;
-    v16i8 src0, src1, src2, src3, src4;
-    v16u8 dst0, dst1, dst2, dst3;
-    v16i8 mask0, mask1, mask2;
-    v8i16 hz_out0, hz_out1, hz_out2, hz_out3;
-    v8i16 hz_out4, hz_out5, hz_out6, hz_out7, hz_out8;
-    v8i16 res0, res1, res2, res3;
-    v8i16 res4, res5, res6, res7;
-
-    LD_SB3(&luma_mask_arr[0], 16, mask0, mask1, mask2);
-
-    LD_SB5(src, src_stride, src0, src1, src2, src3, src4);
-    XORI_B5_128_SB(src0, src1, src2, src3, src4);
-    src += (5 * src_stride);
-
-    hz_out0 = AVC_HORZ_FILTER_SH(src0, src0, mask0, mask1, mask2);
-    hz_out1 = AVC_HORZ_FILTER_SH(src1, src1, mask0, mask1, mask2);
-    hz_out2 = AVC_HORZ_FILTER_SH(src2, src2, mask0, mask1, mask2);
-    hz_out3 = AVC_HORZ_FILTER_SH(src3, src3, mask0, mask1, mask2);
-    hz_out4 = AVC_HORZ_FILTER_SH(src4, src4, mask0, mask1, mask2);
-
-    for (loop_cnt = (height >> 2); loop_cnt--;) {
-        LD_SB4(src, src_stride, src0, src1, src2, src3);
-        XORI_B4_128_SB(src0, src1, src2, src3);
-        src += (4 * src_stride);
-
-        LD_UB4(dst, dst_stride, dst0, dst1, dst2, dst3);
-
-        hz_out5 = AVC_HORZ_FILTER_SH(src0, src0, mask0, mask1, mask2);
-        hz_out6 = AVC_HORZ_FILTER_SH(src1, src1, mask0, mask1, mask2);
-        hz_out7 = AVC_HORZ_FILTER_SH(src2, src2, mask0, mask1, mask2);
-        hz_out8 = AVC_HORZ_FILTER_SH(src3, src3, mask0, mask1, mask2);
-
-        res0 = AVC_CALC_DPADD_H_6PIX_2COEFF_SH(hz_out0, hz_out1, hz_out2,
-                                               hz_out3, hz_out4, hz_out5);
-        res2 = AVC_CALC_DPADD_H_6PIX_2COEFF_SH(hz_out1, hz_out2, hz_out3,
-                                               hz_out4, hz_out5, hz_out6);
-        res4 = AVC_CALC_DPADD_H_6PIX_2COEFF_SH(hz_out2, hz_out3, hz_out4,
-                                               hz_out5, hz_out6, hz_out7);
-        res6 = AVC_CALC_DPADD_H_6PIX_2COEFF_SH(hz_out3, hz_out4, hz_out5,
-                                               hz_out6, hz_out7, hz_out8);
-
-        if (vert_offset) {
-            res1 = __msa_srari_h(hz_out3, 5);
-            res3 = __msa_srari_h(hz_out4, 5);
-            res5 = __msa_srari_h(hz_out5, 5);
-            res7 = __msa_srari_h(hz_out6, 5);
-        } else {
-            res1 = __msa_srari_h(hz_out2, 5);
-            res3 = __msa_srari_h(hz_out3, 5);
-            res5 = __msa_srari_h(hz_out4, 5);
-            res7 = __msa_srari_h(hz_out5, 5);
-        }
-
-        SAT_SH4_SH(res1, res3, res5, res7, 7);
-
-        res0 = __msa_aver_s_h(res0, res1);
-        res1 = __msa_aver_s_h(res2, res3);
-        res2 = __msa_aver_s_h(res4, res5);
-        res3 = __msa_aver_s_h(res6, res7);
-        ILVR_D2_UB(dst1, dst0, dst3, dst2, dst0, dst1);
-        CONVERT_UB_AVG_ST8x4_UB(res0, res1, res2, res3, dst0, dst1,
-                                dst, dst_stride);
-        dst += (4 * dst_stride);
-
-        hz_out0 = hz_out4;
-        hz_out1 = hz_out5;
-        hz_out2 = hz_out6;
-        hz_out3 = hz_out7;
-        hz_out4 = hz_out8;
-    }
-}
-
-static void avc_luma_midv_qrt_and_aver_dst_16w_msa(const uint8_t *src,
-                                                   int32_t src_stride,
-                                                   uint8_t *dst,
-                                                   int32_t dst_stride,
-                                                   int32_t height,
-                                                   uint8_t vert_offset)
-{
-    int32_t multiple8_cnt;
-
-    for (multiple8_cnt = 2; multiple8_cnt--;) {
-        avc_luma_midv_qrt_and_aver_dst_8w_msa(src, src_stride, dst, dst_stride,
-                                              height, vert_offset);
-
-        src += 8;
-        dst += 8;
     }
 }
 
@@ -3978,19 +3594,151 @@ void ff_avg_h264_qpel4_mc30_msa(uint8_t *dst, const uint8_t *src,
 void ff_avg_h264_qpel16_mc20_msa(uint8_t *dst, const uint8_t *src,
                                  ptrdiff_t stride)
 {
-    avc_luma_hz_and_aver_dst_16x16_msa(src - 2, stride, dst, stride);
+    uint32_t loop_cnt;
+    v16u8 dst0, dst1, dst2, dst3;
+    v16i8 src0, src1, src2, src3, src4, src5, src6, src7, mask0, mask1, mask2;
+    v16i8 vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7, vec8, vec9, vec10;
+    v16i8 vec11;
+    v8i16 res0, res1, res2, res3, res4, res5, res6, res7;
+    v16i8 minus5b = __msa_ldi_b(-5);
+    v16i8 plus20b = __msa_ldi_b(20);
+
+    LD_SB3(&luma_mask_arr[0], 16, mask0, mask1, mask2);
+    src -= 2;
+
+    for (loop_cnt = 4; loop_cnt--;) {
+        LD_SB2(src, 8, src0, src1);
+        src += stride;
+        LD_SB2(src, 8, src2, src3);
+        src += stride;
+        LD_SB2(src, 8, src4, src5);
+        src += stride;
+        LD_SB2(src, 8, src6, src7);
+        src += stride;
+
+        LD_UB4(dst, stride, dst0, dst1, dst2, dst3);
+        XORI_B8_128_SB(src0, src1, src2, src3, src4, src5, src6, src7);
+        VSHF_B2_SB(src0, src0, src1, src1, mask0, mask0, vec0, vec3);
+        VSHF_B2_SB(src2, src2, src3, src3, mask0, mask0, vec6, vec9);
+        VSHF_B2_SB(src0, src0, src1, src1, mask1, mask1, vec1, vec4);
+        VSHF_B2_SB(src2, src2, src3, src3, mask1, mask1, vec7, vec10);
+        VSHF_B2_SB(src0, src0, src1, src1, mask2, mask2, vec2, vec5);
+        VSHF_B2_SB(src2, src2, src3, src3, mask2, mask2, vec8, vec11);
+        HADD_SB4_SH(vec0, vec3, vec6, vec9, res0, res1, res2, res3);
+        DPADD_SB4_SH(vec1, vec4, vec7, vec10, minus5b, minus5b, minus5b,
+                     minus5b, res0, res1, res2, res3);
+        DPADD_SB4_SH(vec2, vec5, vec8, vec11, plus20b, plus20b, plus20b,
+                     plus20b, res0, res1, res2, res3);
+        VSHF_B2_SB(src4, src4, src5, src5, mask0, mask0, vec0, vec3);
+        VSHF_B2_SB(src6, src6, src7, src7, mask0, mask0, vec6, vec9);
+        VSHF_B2_SB(src4, src4, src5, src5, mask1, mask1, vec1, vec4);
+        VSHF_B2_SB(src6, src6, src7, src7, mask1, mask1, vec7, vec10);
+        VSHF_B2_SB(src4, src4, src5, src5, mask2, mask2, vec2, vec5);
+        VSHF_B2_SB(src6, src6, src7, src7, mask2, mask2, vec8, vec11);
+        HADD_SB4_SH(vec0, vec3, vec6, vec9, res4, res5, res6, res7);
+        DPADD_SB4_SH(vec1, vec4, vec7, vec10, minus5b, minus5b, minus5b,
+                     minus5b, res4, res5, res6, res7);
+        DPADD_SB4_SH(vec2, vec5, vec8, vec11, plus20b, plus20b, plus20b,
+                     plus20b, res4, res5, res6, res7);
+        SRARI_H4_SH(res0, res1, res2, res3, 5);
+        SRARI_H4_SH(res4, res5, res6, res7, 5);
+        SAT_SH4_SH(res0, res1, res2, res3, 7);
+        SAT_SH4_SH(res4, res5, res6, res7, 7);
+        PCKEV_B4_SB(res1, res0, res3, res2, res5, res4, res7, res6, vec0, vec1,
+                    vec2, vec3);
+        XORI_B4_128_SB(vec0, vec1, vec2, vec3);
+        AVER_UB2_UB(vec0, dst0, vec1, dst1, dst0, dst1);
+        AVER_UB2_UB(vec2, dst2, vec3, dst3, dst2, dst3);
+        ST_UB4(dst0, dst1, dst2, dst3, dst, stride);
+        dst += (4 * stride);
+    }
 }
 
 void ff_avg_h264_qpel8_mc20_msa(uint8_t *dst, const uint8_t *src,
                                 ptrdiff_t stride)
 {
-    avc_luma_hz_and_aver_dst_8x8_msa(src - 2, stride, dst, stride);
+    uint64_t tp0, tp1, tp2, tp3;
+    v16u8 out0, out1, out2 = { 0 }, out3 = { 0 };
+    v16u8 out4, out5, out6 = { 0 }, out7 = { 0 };
+    v16i8 src0, src1, src2, src3, src4, src5, src6, src7, mask0, mask1, mask2;
+    v16i8 vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7, vec8, vec9, vec10;
+    v16i8 vec11;
+    v8i16 res0, res1, res2, res3, res4, res5, res6, res7;
+    v16i8 minus5b = __msa_ldi_b(-5);
+    v16i8 plus20b = __msa_ldi_b(20);
+
+    LD_SB3(&luma_mask_arr[0], 16, mask0, mask1, mask2);
+
+    LD_SB8(src - 2, stride, src0, src1, src2, src3, src4, src5, src6, src7);
+    XORI_B8_128_SB(src0, src1, src2, src3, src4, src5, src6, src7);
+    VSHF_B2_SB(src0, src0, src1, src1, mask0, mask0, vec0, vec1);
+    VSHF_B2_SB(src2, src2, src3, src3, mask0, mask0, vec2, vec3);
+    HADD_SB4_SH(vec0, vec1, vec2, vec3, res0, res1, res2, res3);
+    VSHF_B2_SB(src0, src0, src1, src1, mask1, mask1, vec4, vec5);
+    VSHF_B2_SB(src2, src2, src3, src3, mask1, mask1, vec6, vec7);
+    DPADD_SB4_SH(vec4, vec5, vec6, vec7, minus5b, minus5b, minus5b, minus5b,
+                 res0, res1, res2, res3);
+    VSHF_B2_SB(src0, src0, src1, src1, mask2, mask2, vec8, vec9);
+    VSHF_B2_SB(src2, src2, src3, src3, mask2, mask2, vec10, vec11);
+    DPADD_SB4_SH(vec8, vec9, vec10, vec11, plus20b, plus20b, plus20b, plus20b,
+                 res0, res1, res2, res3);
+    VSHF_B2_SB(src4, src4, src5, src5, mask0, mask0, vec0, vec1);
+    VSHF_B2_SB(src6, src6, src7, src7, mask0, mask0, vec2, vec3);
+    HADD_SB4_SH(vec0, vec1, vec2, vec3, res4, res5, res6, res7);
+    VSHF_B2_SB(src4, src4, src5, src5, mask1, mask1, vec4, vec5);
+    VSHF_B2_SB(src6, src6, src7, src7, mask1, mask1, vec6, vec7);
+    DPADD_SB4_SH(vec4, vec5, vec6, vec7, minus5b, minus5b, minus5b, minus5b,
+                 res4, res5, res6, res7);
+    VSHF_B2_SB(src4, src4, src5, src5, mask2, mask2, vec8, vec9);
+    VSHF_B2_SB(src6, src6, src7, src7, mask2, mask2, vec10, vec11);
+    DPADD_SB4_SH(vec8, vec9, vec10, vec11, plus20b, plus20b, plus20b, plus20b,
+                 res4, res5, res6, res7);
+    SRARI_H4_SH(res0, res1, res2, res3, 5);
+    SRARI_H4_SH(res4, res5, res6, res7, 5);
+    SAT_SH4_SH(res0, res1, res2, res3, 7);
+    SAT_SH4_SH(res4, res5, res6, res7, 7);
+    out0 = PCKEV_XORI128_UB(res0, res1);
+    out1 = PCKEV_XORI128_UB(res2, res3);
+    out4 = PCKEV_XORI128_UB(res4, res5);
+    out5 = PCKEV_XORI128_UB(res6, res7);
+    LD4(dst, stride, tp0, tp1, tp2, tp3);
+    INSERT_D2_UB(tp0, tp1, out2);
+    INSERT_D2_UB(tp2, tp3, out3);
+    LD4(dst + 4 * stride, stride, tp0, tp1, tp2, tp3);
+    INSERT_D2_UB(tp0, tp1, out6);
+    INSERT_D2_UB(tp2, tp3, out7);
+    AVER_UB2_UB(out0, out2, out1, out3, out0, out1);
+    AVER_UB2_UB(out4, out6, out5, out7, out4, out5);
+    ST8x8_UB(out0, out1, out4, out5, dst, stride);
 }
 
 void ff_avg_h264_qpel4_mc20_msa(uint8_t *dst, const uint8_t *src,
                                 ptrdiff_t stride)
 {
-    avc_luma_hz_and_aver_dst_4x4_msa(src - 2, stride, dst, stride);
+    uint32_t tp0, tp1, tp2, tp3;
+    v16u8 res, dst0 = { 0 };
+    v16i8 src0, src1, src2, src3, vec0, vec1, vec2, vec3, vec4, vec5;
+    v16i8 mask0, mask1, mask2;
+    v8i16 res0, res1;
+    v16i8 minus5b = __msa_ldi_b(-5);
+    v16i8 plus20b = __msa_ldi_b(20);
+
+    LD_SB3(&luma_mask_arr[48], 16, mask0, mask1, mask2);
+    LD_SB4(src - 2, stride, src0, src1, src2, src3);
+    XORI_B4_128_SB(src0, src1, src2, src3);
+    VSHF_B2_SB(src0, src1, src2, src3, mask0, mask0, vec0, vec1);
+    HADD_SB2_SH(vec0, vec1, res0, res1);
+    VSHF_B2_SB(src0, src1, src2, src3, mask1, mask1, vec2, vec3);
+    DPADD_SB2_SH(vec2, vec3, minus5b, minus5b, res0, res1);
+    VSHF_B2_SB(src0, src1, src2, src3, mask2, mask2, vec4, vec5);
+    DPADD_SB2_SH(vec4, vec5, plus20b, plus20b, res0, res1);
+    SRARI_H2_SH(res0, res1, 5);
+    SAT_SH2_SH(res0, res1, 7);
+    res = PCKEV_XORI128_UB(res0, res1);
+    LW4(dst, stride, tp0, tp1, tp2, tp3);
+    INSERT_W4_UB(tp0, tp1, tp2, tp3, dst0);
+    res = __msa_aver_u_b(res, dst0);
+    ST4x4_UB(res, res, 0, 1, 2, 3, dst, stride);
 }
 
 void ff_avg_h264_qpel16_mc01_msa(uint8_t *dst, const uint8_t *src,
@@ -4137,43 +3885,689 @@ void ff_avg_h264_qpel4_mc33_msa(uint8_t *dst, const uint8_t *src,
 void ff_avg_h264_qpel16_mc21_msa(uint8_t *dst, const uint8_t *src,
                                  ptrdiff_t stride)
 {
-    avc_luma_midv_qrt_and_aver_dst_16w_msa(src - (2 * stride) - 2,
-                                           stride, dst, stride, 16, 0);
+    uint64_t tp0, tp1, tp2, tp3;
+    uint8_t *dst_tmp = dst;
+    const uint8_t *src_tmp = src - (2 * stride) - 2;
+    uint32_t multiple8_cnt, loop_cnt;
+    const int32_t filt_const0 = 0xfffb0001;
+    const int32_t filt_const1 = 0x140014;
+    const int32_t filt_const2 = 0x1fffb;
+    v16u8 out0, out1, dst0 = { 0 }, dst1 = { 0 };
+    v16i8 src0, src1, src2, src3, src4, src5, src6, src7, src8, mask0, mask1;
+    v16i8 mask2;
+    v8i16 hz_out0, hz_out1, hz_out2, hz_out3, hz_out4, hz_out5, hz_out6;
+    v8i16 hz_out7, hz_out8, tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
+    v8i16 hz_out10_r, hz_out21_r, hz_out32_r, hz_out43_r, hz_out54_r;
+    v8i16 hz_out65_r, hz_out76_r, hz_out87_r, hz_out10_l, hz_out21_l;
+    v8i16 hz_out32_l, hz_out43_l, hz_out54_l, hz_out65_l, hz_out76_l;
+    v8i16 hz_out87_l, filt0, filt1, filt2;
+    v4i32 tmp0_w, tmp1_w;
+
+    filt0 = (v8i16) __msa_fill_w(filt_const0);
+    filt1 = (v8i16) __msa_fill_w(filt_const1);
+    filt2 = (v8i16) __msa_fill_w(filt_const2);
+
+    LD_SB3(&luma_mask_arr[0], 16, mask0, mask1, mask2);
+
+    for (multiple8_cnt = 2; multiple8_cnt--;) {
+        dst = dst_tmp;
+        src = src_tmp;
+
+        LD_SB5(src, stride, src0, src1, src2, src3, src4);
+        XORI_B5_128_SB(src0, src1, src2, src3, src4);
+        src += (5 * stride);
+
+        hz_out0 = AVC_HORZ_FILTER_SH(src0, src0, mask0, mask1, mask2);
+        hz_out1 = AVC_HORZ_FILTER_SH(src1, src1, mask0, mask1, mask2);
+        hz_out2 = AVC_HORZ_FILTER_SH(src2, src2, mask0, mask1, mask2);
+        hz_out3 = AVC_HORZ_FILTER_SH(src3, src3, mask0, mask1, mask2);
+        hz_out4 = AVC_HORZ_FILTER_SH(src4, src4, mask0, mask1, mask2);
+
+        for (loop_cnt = 4; loop_cnt--;) {
+            LD_SB2(src, stride, src5, src6);
+            src += (2 * stride);
+
+            XORI_B2_128_SB(src5, src6);
+            hz_out5 = AVC_HORZ_FILTER_SH(src5, src5, mask0, mask1, mask2);
+            hz_out6 = AVC_HORZ_FILTER_SH(src6, src6, mask0, mask1, mask2);
+            ILVR_H4_SH(hz_out1, hz_out0, hz_out2, hz_out1, hz_out3, hz_out2,
+                       hz_out4, hz_out3, hz_out10_r, hz_out21_r, hz_out32_r,
+                       hz_out43_r);
+            ILVL_H4_SH(hz_out1, hz_out0, hz_out2, hz_out1, hz_out3, hz_out2,
+                       hz_out4, hz_out3, hz_out10_l, hz_out21_l, hz_out32_l,
+                       hz_out43_l);
+            ILVR_H2_SH(hz_out5, hz_out4, hz_out6, hz_out5, hz_out54_r,
+                       hz_out65_r);
+            ILVL_H2_SH(hz_out5, hz_out4, hz_out6, hz_out5, hz_out54_l,
+                       hz_out65_l);
+            tmp0_w = AVC_DOT_SW3_SW(hz_out10_r, hz_out32_r, hz_out54_r, filt0,
+                                    filt1, filt2);
+            tmp1_w = AVC_DOT_SW3_SW(hz_out10_l, hz_out32_l, hz_out54_l, filt0,
+                                    filt1, filt2);
+            tmp0 = __msa_pckev_h((v8i16) tmp1_w, (v8i16) tmp0_w);
+            tmp0_w = AVC_DOT_SW3_SW(hz_out21_r, hz_out43_r, hz_out65_r, filt0,
+                                    filt1, filt2);
+            tmp1_w = AVC_DOT_SW3_SW(hz_out21_l, hz_out43_l, hz_out65_l, filt0,
+                                    filt1, filt2);
+            tmp2 = __msa_pckev_h((v8i16) tmp1_w, (v8i16) tmp0_w);
+
+            tmp1 = __msa_srari_h(hz_out2, 5);
+            tmp3 = __msa_srari_h(hz_out3, 5);
+            SAT_SH2_SH(tmp1, tmp3, 7);
+
+            tmp0 = __msa_aver_s_h(tmp0, tmp1);
+            tmp1 = __msa_aver_s_h(tmp2, tmp3);
+
+            LD2(dst, stride, tp0, tp1);
+            INSERT_D2_UB(tp0, tp1, dst0);
+
+            out0 = PCKEV_XORI128_UB(tmp0, tmp1);
+            dst0 = __msa_aver_u_b(out0, dst0);
+            ST8x2_UB(dst0, dst, stride);
+            dst += (2 * stride);
+
+            LD_SB2(src, stride, src7, src8);
+            src += (2 * stride);
+
+            XORI_B2_128_SB(src7, src8);
+            hz_out7 = AVC_HORZ_FILTER_SH(src7, src7, mask0, mask1, mask2);
+            hz_out8 = AVC_HORZ_FILTER_SH(src8, src8, mask0, mask1, mask2);
+            ILVR_H2_SH(hz_out7, hz_out6, hz_out8, hz_out7, hz_out76_r,
+                       hz_out87_r);
+            ILVL_H2_SH(hz_out7, hz_out6, hz_out8, hz_out7, hz_out76_l,
+                       hz_out87_l);
+            tmp0_w = AVC_DOT_SW3_SW(hz_out32_r, hz_out54_r, hz_out76_r, filt0,
+                                    filt1, filt2);
+            tmp1_w = AVC_DOT_SW3_SW(hz_out32_l, hz_out54_l, hz_out76_l, filt0,
+                                    filt1, filt2);
+            tmp4 = __msa_pckev_h((v8i16) tmp1_w, (v8i16) tmp0_w);
+            tmp0_w = AVC_DOT_SW3_SW(hz_out43_r, hz_out65_r, hz_out87_r, filt0,
+                                    filt1, filt2);
+            tmp1_w = AVC_DOT_SW3_SW(hz_out43_l, hz_out65_l, hz_out87_l, filt0,
+                                    filt1, filt2);
+            tmp6 = __msa_pckev_h((v8i16) tmp1_w, (v8i16) tmp0_w);
+
+            tmp5 = __msa_srari_h(hz_out4, 5);
+            tmp7 = __msa_srari_h(hz_out5, 5);
+            SAT_SH2_SH(tmp5, tmp7, 7);
+
+            tmp2 = __msa_aver_s_h(tmp4, tmp5);
+            tmp3 = __msa_aver_s_h(tmp6, tmp7);
+
+            LD2(dst, stride, tp2, tp3);
+            INSERT_D2_UB(tp2, tp3, dst1);
+
+            out1 = PCKEV_XORI128_UB(tmp2, tmp3);
+            dst1 = __msa_aver_u_b(out1, dst1);
+            ST8x2_UB(dst1, dst, stride);
+            dst += (2 * stride);
+
+            hz_out0 = hz_out4;
+            hz_out1 = hz_out5;
+            hz_out2 = hz_out6;
+            hz_out3 = hz_out7;
+            hz_out4 = hz_out8;
+        }
+
+        src_tmp += 8;
+        dst_tmp += 8;
+    }
 }
 
 void ff_avg_h264_qpel16_mc23_msa(uint8_t *dst, const uint8_t *src,
                                  ptrdiff_t stride)
 {
-    avc_luma_midv_qrt_and_aver_dst_16w_msa(src - (2 * stride) - 2,
-                                           stride, dst, stride, 16, 1);
+    uint64_t tp0, tp1, tp2, tp3;
+    uint8_t *dst_tmp = dst;
+    const uint8_t *src_tmp = src - (2 * stride) - 2;
+    uint32_t multiple8_cnt, loop_cnt;
+    const int32_t filt_const0 = 0xfffb0001;
+    const int32_t filt_const1 = 0x140014;
+    const int32_t filt_const2 = 0x1fffb;
+    v16u8 out0, out1, dst0 = { 0 }, dst1 = { 0 };
+    v16i8 src0, src1, src2, src3, src4, src5, src6, src7, src8, mask0, mask1;
+    v16i8 mask2;
+    v8i16 hz_out0, hz_out1, hz_out2, hz_out3, hz_out4, hz_out5, hz_out6;
+    v8i16 hz_out7, hz_out8, tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
+    v8i16 hz_out10_r, hz_out21_r, hz_out32_r, hz_out43_r, hz_out54_r;
+    v8i16 hz_out65_r, hz_out76_r, hz_out87_r, hz_out10_l, hz_out21_l;
+    v8i16 hz_out32_l, hz_out43_l, hz_out54_l, hz_out65_l, hz_out76_l;
+    v8i16 hz_out87_l, filt0, filt1, filt2;
+    v4i32 tmp0_w, tmp1_w;
+
+    filt0 = (v8i16) __msa_fill_w(filt_const0);
+    filt1 = (v8i16) __msa_fill_w(filt_const1);
+    filt2 = (v8i16) __msa_fill_w(filt_const2);
+
+    LD_SB3(&luma_mask_arr[0], 16, mask0, mask1, mask2);
+
+    for (multiple8_cnt = 2; multiple8_cnt--;) {
+        dst = dst_tmp;
+        src = src_tmp;
+
+        LD_SB5(src, stride, src0, src1, src2, src3, src4);
+        XORI_B5_128_SB(src0, src1, src2, src3, src4);
+        src += (5 * stride);
+
+        hz_out0 = AVC_HORZ_FILTER_SH(src0, src0, mask0, mask1, mask2);
+        hz_out1 = AVC_HORZ_FILTER_SH(src1, src1, mask0, mask1, mask2);
+        hz_out2 = AVC_HORZ_FILTER_SH(src2, src2, mask0, mask1, mask2);
+        hz_out3 = AVC_HORZ_FILTER_SH(src3, src3, mask0, mask1, mask2);
+        hz_out4 = AVC_HORZ_FILTER_SH(src4, src4, mask0, mask1, mask2);
+
+        for (loop_cnt = 4; loop_cnt--;) {
+            LD_SB2(src, stride, src5, src6);
+            src += (2 * stride);
+
+            XORI_B2_128_SB(src5, src6);
+            hz_out5 = AVC_HORZ_FILTER_SH(src5, src5, mask0, mask1, mask2);
+            hz_out6 = AVC_HORZ_FILTER_SH(src6, src6, mask0, mask1, mask2);
+            ILVR_H4_SH(hz_out1, hz_out0, hz_out2, hz_out1, hz_out3, hz_out2,
+                       hz_out4, hz_out3, hz_out10_r, hz_out21_r, hz_out32_r,
+                       hz_out43_r);
+            ILVL_H4_SH(hz_out1, hz_out0, hz_out2, hz_out1, hz_out3, hz_out2,
+                       hz_out4, hz_out3, hz_out10_l, hz_out21_l, hz_out32_l,
+                       hz_out43_l);
+            ILVR_H2_SH(hz_out5, hz_out4, hz_out6, hz_out5, hz_out54_r, hz_out65_r);
+            ILVL_H2_SH(hz_out5, hz_out4, hz_out6, hz_out5, hz_out54_l, hz_out65_l);
+
+            tmp0_w = AVC_DOT_SW3_SW(hz_out10_r, hz_out32_r, hz_out54_r, filt0,
+                                    filt1, filt2);
+            tmp1_w = AVC_DOT_SW3_SW(hz_out10_l, hz_out32_l, hz_out54_l, filt0,
+                                    filt1, filt2);
+            tmp0 = __msa_pckev_h((v8i16) tmp1_w, (v8i16) tmp0_w);
+            tmp0_w = AVC_DOT_SW3_SW(hz_out21_r, hz_out43_r, hz_out65_r, filt0,
+                                    filt1, filt2);
+            tmp1_w = AVC_DOT_SW3_SW(hz_out21_l, hz_out43_l, hz_out65_l, filt0,
+                                    filt1, filt2);
+            tmp2 = __msa_pckev_h((v8i16) tmp1_w, (v8i16) tmp0_w);
+
+            tmp1 = __msa_srari_h(hz_out3, 5);
+            tmp3 = __msa_srari_h(hz_out4, 5);
+            SAT_SH2_SH(tmp1, tmp3, 7);
+
+            tmp0 = __msa_aver_s_h(tmp0, tmp1);
+            tmp1 = __msa_aver_s_h(tmp2, tmp3);
+
+            LD2(dst, stride, tp0, tp1);
+            INSERT_D2_UB(tp0, tp1, dst0);
+            out0 = PCKEV_XORI128_UB(tmp0, tmp1);
+            dst0 = __msa_aver_u_b(out0, dst0);
+            ST8x2_UB(dst0, dst, stride);
+            dst += (2 * stride);
+
+            LD_SB2(src, stride, src7, src8);
+            src += (2 * stride);
+
+            XORI_B2_128_SB(src7, src8);
+            hz_out7 = AVC_HORZ_FILTER_SH(src7, src7, mask0, mask1, mask2);
+            hz_out8 = AVC_HORZ_FILTER_SH(src8, src8, mask0, mask1, mask2);
+            ILVR_H2_SH(hz_out7, hz_out6, hz_out8, hz_out7, hz_out76_r,
+                       hz_out87_r);
+            ILVL_H2_SH(hz_out7, hz_out6, hz_out8, hz_out7, hz_out76_l,
+                       hz_out87_l);
+            tmp0_w = AVC_DOT_SW3_SW(hz_out32_r, hz_out54_r, hz_out76_r, filt0,
+                                    filt1, filt2);
+            tmp1_w = AVC_DOT_SW3_SW(hz_out32_l, hz_out54_l, hz_out76_l, filt0,
+                                    filt1, filt2);
+            tmp4 = __msa_pckev_h((v8i16) tmp1_w, (v8i16) tmp0_w);
+            tmp0_w = AVC_DOT_SW3_SW(hz_out43_r, hz_out65_r, hz_out87_r, filt0,
+                                    filt1, filt2);
+            tmp1_w = AVC_DOT_SW3_SW(hz_out43_l, hz_out65_l, hz_out87_l, filt0,
+                                    filt1, filt2);
+            tmp6 = __msa_pckev_h((v8i16) tmp1_w, (v8i16) tmp0_w);
+
+            tmp5 = __msa_srari_h(hz_out5, 5);
+            tmp7 = __msa_srari_h(hz_out6, 5);
+            SAT_SH2_SH(tmp5, tmp7, 7);
+
+            tmp2 = __msa_aver_s_h(tmp4, tmp5);
+            tmp3 = __msa_aver_s_h(tmp6, tmp7);
+
+            LD2(dst, stride, tp2, tp3);
+            INSERT_D2_UB(tp2, tp3, dst1);
+            out1 = PCKEV_XORI128_UB(tmp2, tmp3);
+            dst1 = __msa_aver_u_b(out1, dst1);
+            ST8x2_UB(dst1, dst, stride);
+            dst += (2 * stride);
+
+            hz_out0 = hz_out4;
+            hz_out1 = hz_out5;
+            hz_out2 = hz_out6;
+            hz_out3 = hz_out7;
+            hz_out4 = hz_out8;
+        }
+
+        src_tmp += 8;
+        dst_tmp += 8;
+    }
 }
 
 void ff_avg_h264_qpel8_mc21_msa(uint8_t *dst, const uint8_t *src,
                                 ptrdiff_t stride)
 {
-    avc_luma_midv_qrt_and_aver_dst_8w_msa(src - (2 * stride) - 2,
-                                          stride, dst, stride, 8, 0);
+    const int32_t filt_const0 = 0xfffb0001;
+    const int32_t filt_const1 = 0x140014;
+    const int32_t filt_const2 = 0x1fffb;
+    uint64_t tp0, tp1, tp2, tp3;
+    v16u8 dst0 = { 0 }, dst1 = { 0 }, out0, out1;
+    v16i8 src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10;
+    v16i8 src11, src12, mask0, mask1, mask2;
+    v8i16 hz_out0, hz_out1, hz_out2, hz_out3, hz_out4, hz_out5, hz_out6;
+    v8i16 hz_out7, hz_out8, hz_out9, hz_out10, hz_out11, hz_out12;
+    v8i16 hz_out10_r, hz_out21_r, hz_out32_r, hz_out43_r, hz_out54_r;
+    v8i16 hz_out65_r, hz_out76_r, hz_out87_r, hz_out89_r, hz_out910_r;
+    v8i16 hz_out1110_r, hz_out1211_r, tmp0, tmp1, tmp2, tmp3;
+    v8i16 hz_out10_l, hz_out21_l, hz_out32_l, hz_out43_l, hz_out54_l;
+    v8i16 hz_out65_l, hz_out76_l, hz_out87_l, hz_out89_l, hz_out910_l;
+    v8i16 hz_out1110_l, hz_out1211_l, filt0, filt1, filt2;
+    v4i32 tmp0_w, tmp1_w;
+
+    LD_SB3(&luma_mask_arr[0], 16, mask0, mask1, mask2);
+
+    filt0 = (v8i16) __msa_fill_w(filt_const0);
+    filt1 = (v8i16) __msa_fill_w(filt_const1);
+    filt2 = (v8i16) __msa_fill_w(filt_const2);
+
+    src -= ((2 * stride) + 2);
+
+    LD_SB5(src, stride, src0, src1, src2, src3, src4);
+    XORI_B5_128_SB(src0, src1, src2, src3, src4);
+    src += (5 * stride);
+
+    hz_out0 = AVC_HORZ_FILTER_SH(src0, src0, mask0, mask1, mask2);
+    hz_out1 = AVC_HORZ_FILTER_SH(src1, src1, mask0, mask1, mask2);
+    hz_out2 = AVC_HORZ_FILTER_SH(src2, src2, mask0, mask1, mask2);
+    hz_out3 = AVC_HORZ_FILTER_SH(src3, src3, mask0, mask1, mask2);
+    hz_out4 = AVC_HORZ_FILTER_SH(src4, src4, mask0, mask1, mask2);
+
+    LD_SB4(src, stride, src5, src6, src7, src8);
+    src += (4 * stride);
+    XORI_B4_128_SB(src5, src6, src7, src8);
+
+    hz_out5 = AVC_HORZ_FILTER_SH(src5, src5, mask0, mask1, mask2);
+    hz_out6 = AVC_HORZ_FILTER_SH(src6, src6, mask0, mask1, mask2);
+    hz_out7 = AVC_HORZ_FILTER_SH(src7, src7, mask0, mask1, mask2);
+    hz_out8 = AVC_HORZ_FILTER_SH(src8, src8, mask0, mask1, mask2);
+
+    ILVR_H4_SH(hz_out1, hz_out0, hz_out2, hz_out1, hz_out3, hz_out2, hz_out4,
+               hz_out3, hz_out10_r, hz_out21_r, hz_out32_r, hz_out43_r);
+    ILVL_H4_SH(hz_out1, hz_out0, hz_out2, hz_out1, hz_out3, hz_out2, hz_out4,
+               hz_out3, hz_out10_l, hz_out21_l, hz_out32_l, hz_out43_l);
+    ILVR_H4_SH(hz_out5, hz_out4, hz_out6, hz_out5, hz_out7, hz_out6, hz_out8,
+               hz_out7, hz_out54_r, hz_out65_r, hz_out76_r, hz_out87_r);
+    ILVL_H4_SH(hz_out5, hz_out4, hz_out6, hz_out5, hz_out7, hz_out6, hz_out8,
+               hz_out7, hz_out54_l, hz_out65_l, hz_out76_l, hz_out87_l);
+
+    tmp0_w = AVC_DOT_SW3_SW(hz_out10_r, hz_out32_r, hz_out54_r, filt0, filt1,
+                            filt2);
+    tmp1_w = AVC_DOT_SW3_SW(hz_out10_l, hz_out32_l, hz_out54_l, filt0, filt1,
+                            filt2);
+    tmp0 = __msa_pckev_h((v8i16) tmp1_w, (v8i16) tmp0_w);
+    tmp0_w = AVC_DOT_SW3_SW(hz_out21_r, hz_out43_r, hz_out65_r, filt0, filt1,
+                            filt2);
+    tmp1_w = AVC_DOT_SW3_SW(hz_out21_l, hz_out43_l, hz_out65_l, filt0, filt1,
+                            filt2);
+    tmp1 = __msa_pckev_h((v8i16) tmp1_w, (v8i16) tmp0_w);
+    tmp0_w = AVC_DOT_SW3_SW(hz_out32_r, hz_out54_r, hz_out76_r, filt0, filt1,
+                            filt2);
+    tmp1_w = AVC_DOT_SW3_SW(hz_out32_l, hz_out54_l, hz_out76_l, filt0, filt1,
+                            filt2);
+    tmp2 = __msa_pckev_h((v8i16) tmp1_w, (v8i16) tmp0_w);
+    tmp0_w = AVC_DOT_SW3_SW(hz_out43_r, hz_out65_r, hz_out87_r, filt0, filt1,
+                            filt2);
+    tmp1_w = AVC_DOT_SW3_SW(hz_out43_l, hz_out65_l, hz_out87_l, filt0, filt1,
+                            filt2);
+    tmp3 = __msa_pckev_h((v8i16) tmp1_w, (v8i16) tmp0_w);
+
+    SRARI_H4_SH(hz_out2, hz_out3, hz_out4, hz_out5, 5);
+    SAT_SH4_SH(hz_out2, hz_out3, hz_out4, hz_out5, 7);
+
+    LD4(dst, stride, tp0, tp1, tp2, tp3);
+    INSERT_D2_UB(tp0, tp1, dst0);
+    INSERT_D2_UB(tp2, tp3, dst1);
+
+    tmp0 = __msa_aver_s_h(tmp0, hz_out2);
+    tmp1 = __msa_aver_s_h(tmp1, hz_out3);
+    tmp2 = __msa_aver_s_h(tmp2, hz_out4);
+    tmp3 = __msa_aver_s_h(tmp3, hz_out5);
+
+    out0 = PCKEV_XORI128_UB(tmp0, tmp1);
+    out1 = PCKEV_XORI128_UB(tmp2, tmp3);
+    AVER_UB2_UB(out0, dst0, out1, dst1, dst0, dst1);
+    ST8x4_UB(dst0, dst1, dst, stride);
+    dst += (4 * stride);
+
+    LD_SB4(src, stride, src9, src10, src11, src12);
+    XORI_B4_128_SB(src9, src10, src11, src12);
+    hz_out9 = AVC_HORZ_FILTER_SH(src9, src9, mask0, mask1, mask2);
+    hz_out10 = AVC_HORZ_FILTER_SH(src10, src10, mask0, mask1, mask2);
+    hz_out11 = AVC_HORZ_FILTER_SH(src11, src11, mask0, mask1, mask2);
+    hz_out12 = AVC_HORZ_FILTER_SH(src12, src12, mask0, mask1, mask2);
+    ILVR_H4_SH(hz_out9, hz_out8, hz_out10, hz_out9, hz_out11, hz_out10,
+               hz_out12, hz_out11, hz_out89_r, hz_out910_r, hz_out1110_r,
+               hz_out1211_r);
+    ILVL_H4_SH(hz_out9, hz_out8, hz_out10, hz_out9, hz_out11, hz_out10,
+               hz_out12, hz_out11, hz_out89_l, hz_out910_l, hz_out1110_l,
+               hz_out1211_l);
+    tmp0_w = AVC_DOT_SW3_SW(hz_out54_r, hz_out76_r, hz_out89_r, filt0, filt1,
+                            filt2);
+    tmp1_w = AVC_DOT_SW3_SW(hz_out54_l, hz_out76_l, hz_out89_l, filt0, filt1,
+                            filt2);
+    tmp0 = __msa_pckev_h((v8i16) tmp1_w, (v8i16) tmp0_w);
+    tmp0_w = AVC_DOT_SW3_SW(hz_out65_r, hz_out87_r, hz_out910_r, filt0, filt1,
+                            filt2);
+    tmp1_w = AVC_DOT_SW3_SW(hz_out65_l, hz_out87_l, hz_out910_l, filt0, filt1,
+                            filt2);
+    tmp1 = __msa_pckev_h((v8i16) tmp1_w, (v8i16) tmp0_w);
+    tmp0_w = AVC_DOT_SW3_SW(hz_out76_r, hz_out89_r, hz_out1110_r, filt0, filt1,
+                            filt2);
+    tmp1_w = AVC_DOT_SW3_SW(hz_out76_l, hz_out89_l, hz_out1110_l, filt0, filt1,
+                            filt2);
+    tmp2 = __msa_pckev_h((v8i16) tmp1_w, (v8i16) tmp0_w);
+    tmp0_w = AVC_DOT_SW3_SW(hz_out87_r, hz_out910_r, hz_out1211_r, filt0, filt1,
+                            filt2);
+    tmp1_w = AVC_DOT_SW3_SW(hz_out87_l, hz_out910_l, hz_out1211_l, filt0, filt1,
+                            filt2);
+    tmp3 = __msa_pckev_h((v8i16) tmp1_w, (v8i16) tmp0_w);
+
+    SRARI_H4_SH(hz_out6, hz_out7, hz_out8, hz_out9, 5);
+    SAT_SH4_SH(hz_out6, hz_out7, hz_out8, hz_out9, 7);
+
+    LD4(dst, stride, tp0, tp1, tp2, tp3);
+    INSERT_D2_UB(tp0, tp1, dst0);
+    INSERT_D2_UB(tp2, tp3, dst1);
+
+    tmp0 = __msa_aver_s_h(tmp0, hz_out6);
+    tmp1 = __msa_aver_s_h(tmp1, hz_out7);
+    tmp2 = __msa_aver_s_h(tmp2, hz_out8);
+    tmp3 = __msa_aver_s_h(tmp3, hz_out9);
+
+    out0 = PCKEV_XORI128_UB(tmp0, tmp1);
+    out1 = PCKEV_XORI128_UB(tmp2, tmp3);
+    AVER_UB2_UB(out0, dst0, out1, dst1, dst0, dst1);
+    ST8x4_UB(dst0, dst1, dst, stride);
 }
 
 void ff_avg_h264_qpel8_mc23_msa(uint8_t *dst, const uint8_t *src,
                                 ptrdiff_t stride)
 {
-    avc_luma_midv_qrt_and_aver_dst_8w_msa(src - (2 * stride) - 2,
-                                          stride, dst, stride, 8, 1);
+    const int32_t filt_const0 = 0xfffb0001;
+    const int32_t filt_const1 = 0x140014;
+    const int32_t filt_const2 = 0x1fffb;
+    uint64_t tp0, tp1, tp2, tp3;
+    v16u8 dst0 = { 0 }, dst1 = { 0 }, out0, out1;
+    v16i8 src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10;
+    v16i8 src11, src12, mask0, mask1, mask2;
+    v8i16 hz_out0, hz_out1, hz_out2, hz_out3, hz_out4, hz_out5, hz_out6;
+    v8i16 hz_out7, hz_out8, hz_out9, hz_out10, hz_out11, hz_out12;
+    v8i16 hz_out10_r, hz_out21_r, hz_out32_r, hz_out43_r, hz_out54_r;
+    v8i16 hz_out65_r, hz_out76_r, hz_out87_r, hz_out89_r, hz_out910_r;
+    v8i16 hz_out1110_r, hz_out1211_r, tmp0, tmp1, tmp2, tmp3;
+    v8i16 hz_out10_l, hz_out21_l, hz_out32_l, hz_out43_l, hz_out54_l;
+    v8i16 hz_out65_l, hz_out76_l, hz_out87_l, hz_out89_l, hz_out910_l;
+    v8i16 hz_out1110_l, hz_out1211_l, filt0, filt1, filt2;
+    v4i32 tmp0_w, tmp1_w;
+
+    LD_SB3(&luma_mask_arr[0], 16, mask0, mask1, mask2);
+
+    filt0 = (v8i16) __msa_fill_w(filt_const0);
+    filt1 = (v8i16) __msa_fill_w(filt_const1);
+    filt2 = (v8i16) __msa_fill_w(filt_const2);
+
+    src -= ((2 * stride) + 2);
+
+    LD_SB5(src, stride, src0, src1, src2, src3, src4);
+    XORI_B5_128_SB(src0, src1, src2, src3, src4);
+    src += (5 * stride);
+
+    hz_out0 = AVC_HORZ_FILTER_SH(src0, src0, mask0, mask1, mask2);
+    hz_out1 = AVC_HORZ_FILTER_SH(src1, src1, mask0, mask1, mask2);
+    hz_out2 = AVC_HORZ_FILTER_SH(src2, src2, mask0, mask1, mask2);
+    hz_out3 = AVC_HORZ_FILTER_SH(src3, src3, mask0, mask1, mask2);
+    hz_out4 = AVC_HORZ_FILTER_SH(src4, src4, mask0, mask1, mask2);
+
+    LD_SB4(src, stride, src5, src6, src7, src8);
+    src += (4 * stride);
+    XORI_B4_128_SB(src5, src6, src7, src8);
+
+    hz_out5 = AVC_HORZ_FILTER_SH(src5, src5, mask0, mask1, mask2);
+    hz_out6 = AVC_HORZ_FILTER_SH(src6, src6, mask0, mask1, mask2);
+    hz_out7 = AVC_HORZ_FILTER_SH(src7, src7, mask0, mask1, mask2);
+    hz_out8 = AVC_HORZ_FILTER_SH(src8, src8, mask0, mask1, mask2);
+
+    ILVR_H4_SH(hz_out1, hz_out0, hz_out2, hz_out1, hz_out3, hz_out2, hz_out4,
+               hz_out3, hz_out10_r, hz_out21_r, hz_out32_r, hz_out43_r);
+    ILVL_H4_SH(hz_out1, hz_out0, hz_out2, hz_out1, hz_out3, hz_out2, hz_out4,
+               hz_out3, hz_out10_l, hz_out21_l, hz_out32_l, hz_out43_l);
+    ILVR_H4_SH(hz_out5, hz_out4, hz_out6, hz_out5, hz_out7, hz_out6, hz_out8,
+               hz_out7, hz_out54_r, hz_out65_r, hz_out76_r, hz_out87_r);
+    ILVL_H4_SH(hz_out5, hz_out4, hz_out6, hz_out5, hz_out7, hz_out6, hz_out8,
+               hz_out7, hz_out54_l, hz_out65_l, hz_out76_l, hz_out87_l);
+
+    tmp0_w = AVC_DOT_SW3_SW(hz_out10_r, hz_out32_r, hz_out54_r, filt0, filt1,
+                            filt2);
+    tmp1_w = AVC_DOT_SW3_SW(hz_out10_l, hz_out32_l, hz_out54_l, filt0, filt1,
+                            filt2);
+    tmp0 = __msa_pckev_h((v8i16) tmp1_w, (v8i16) tmp0_w);
+    tmp0_w = AVC_DOT_SW3_SW(hz_out21_r, hz_out43_r, hz_out65_r, filt0, filt1,
+                            filt2);
+    tmp1_w = AVC_DOT_SW3_SW(hz_out21_l, hz_out43_l, hz_out65_l, filt0, filt1,
+                            filt2);
+    tmp1 = __msa_pckev_h((v8i16) tmp1_w, (v8i16) tmp0_w);
+    tmp0_w = AVC_DOT_SW3_SW(hz_out32_r, hz_out54_r, hz_out76_r, filt0, filt1,
+                            filt2);
+    tmp1_w = AVC_DOT_SW3_SW(hz_out32_l, hz_out54_l, hz_out76_l, filt0, filt1,
+                            filt2);
+    tmp2 = __msa_pckev_h((v8i16) tmp1_w, (v8i16) tmp0_w);
+    tmp0_w = AVC_DOT_SW3_SW(hz_out43_r, hz_out65_r, hz_out87_r, filt0, filt1,
+                            filt2);
+    tmp1_w = AVC_DOT_SW3_SW(hz_out43_l, hz_out65_l, hz_out87_l, filt0, filt1,
+                            filt2);
+    tmp3 = __msa_pckev_h((v8i16) tmp1_w, (v8i16) tmp0_w);
+
+    SRARI_H4_SH(hz_out3, hz_out4, hz_out5, hz_out6, 5);
+    SAT_SH4_SH(hz_out3, hz_out4, hz_out5, hz_out6, 7);
+
+    LD4(dst, stride, tp0, tp1, tp2, tp3);
+    INSERT_D2_UB(tp0, tp1, dst0);
+    INSERT_D2_UB(tp2, tp3, dst1);
+
+    tmp0 = __msa_aver_s_h(tmp0, hz_out3);
+    tmp1 = __msa_aver_s_h(tmp1, hz_out4);
+    tmp2 = __msa_aver_s_h(tmp2, hz_out5);
+    tmp3 = __msa_aver_s_h(tmp3, hz_out6);
+
+    out0 = PCKEV_XORI128_UB(tmp0, tmp1);
+    out1 = PCKEV_XORI128_UB(tmp2, tmp3);
+    AVER_UB2_UB(out0, dst0, out1, dst1, dst0, dst1);
+    ST8x4_UB(dst0, dst1, dst, stride);
+    dst += (4 * stride);
+
+    LD_SB4(src, stride, src9, src10, src11, src12);
+    XORI_B4_128_SB(src9, src10, src11, src12);
+    hz_out9 = AVC_HORZ_FILTER_SH(src9, src9, mask0, mask1, mask2);
+    hz_out10 = AVC_HORZ_FILTER_SH(src10, src10, mask0, mask1, mask2);
+    hz_out11 = AVC_HORZ_FILTER_SH(src11, src11, mask0, mask1, mask2);
+    hz_out12 = AVC_HORZ_FILTER_SH(src12, src12, mask0, mask1, mask2);
+    ILVR_H4_SH(hz_out9, hz_out8, hz_out10, hz_out9, hz_out11, hz_out10,
+               hz_out12, hz_out11, hz_out89_r, hz_out910_r, hz_out1110_r,
+               hz_out1211_r);
+    ILVL_H4_SH(hz_out9, hz_out8, hz_out10, hz_out9, hz_out11, hz_out10,
+               hz_out12, hz_out11, hz_out89_l, hz_out910_l, hz_out1110_l,
+               hz_out1211_l);
+    tmp0_w = AVC_DOT_SW3_SW(hz_out54_r, hz_out76_r, hz_out89_r, filt0, filt1,
+                            filt2);
+    tmp1_w = AVC_DOT_SW3_SW(hz_out54_l, hz_out76_l, hz_out89_l, filt0, filt1,
+                            filt2);
+    tmp0 = __msa_pckev_h((v8i16) tmp1_w, (v8i16) tmp0_w);
+    tmp0_w = AVC_DOT_SW3_SW(hz_out65_r, hz_out87_r, hz_out910_r, filt0, filt1,
+                            filt2);
+    tmp1_w = AVC_DOT_SW3_SW(hz_out65_l, hz_out87_l, hz_out910_l, filt0, filt1,
+                            filt2);
+    tmp1 = __msa_pckev_h((v8i16) tmp1_w, (v8i16) tmp0_w);
+    tmp0_w = AVC_DOT_SW3_SW(hz_out76_r, hz_out89_r, hz_out1110_r, filt0, filt1,
+                            filt2);
+    tmp1_w = AVC_DOT_SW3_SW(hz_out76_l, hz_out89_l, hz_out1110_l, filt0, filt1,
+                            filt2);
+    tmp2 = __msa_pckev_h((v8i16) tmp1_w, (v8i16) tmp0_w);
+    tmp0_w = AVC_DOT_SW3_SW(hz_out87_r, hz_out910_r, hz_out1211_r, filt0, filt1,
+                            filt2);
+    tmp1_w = AVC_DOT_SW3_SW(hz_out87_l, hz_out910_l, hz_out1211_l, filt0, filt1,
+                            filt2);
+    tmp3 = __msa_pckev_h((v8i16) tmp1_w, (v8i16) tmp0_w);
+
+    SRARI_H4_SH(hz_out7, hz_out8, hz_out9, hz_out10, 5);
+    SAT_SH4_SH(hz_out7, hz_out8, hz_out9, hz_out10, 7);
+
+    LD4(dst, stride, tp0, tp1, tp2, tp3);
+    INSERT_D2_UB(tp0, tp1, dst0);
+    INSERT_D2_UB(tp2, tp3, dst1);
+
+    tmp0 = __msa_aver_s_h(tmp0, hz_out7);
+    tmp1 = __msa_aver_s_h(tmp1, hz_out8);
+    tmp2 = __msa_aver_s_h(tmp2, hz_out9);
+    tmp3 = __msa_aver_s_h(tmp3, hz_out10);
+
+    out0 = PCKEV_XORI128_UB(tmp0, tmp1);
+    out1 = PCKEV_XORI128_UB(tmp2, tmp3);
+    AVER_UB2_UB(out0, dst0, out1, dst1, dst0, dst1);
+    ST8x4_UB(dst0, dst1, dst, stride);
 }
 
 void ff_avg_h264_qpel4_mc21_msa(uint8_t *dst, const uint8_t *src,
                                 ptrdiff_t stride)
 {
-    avc_luma_midv_qrt_and_aver_dst_4w_msa(src - (2 * stride) - 2,
-                                          stride, dst, stride, 4, 0);
+    uint32_t tp0, tp1, tp2, tp3;
+    const int32_t filt_const0 = 0xfffb0001;
+    const int32_t filt_const1 = 0x140014;
+    const int32_t filt_const2 = 0x1fffb;
+    v16u8 res, out = { 0 };
+    v16i8 src0, src1, src2, src3, src4, src5, src6, src7, src8;
+    v16i8 mask0, mask1, mask2;
+    v8i16 hz_out0, hz_out1, hz_out2, hz_out3, hz_out4, hz_out5, hz_out6;
+    v8i16 hz_out7, hz_out8, dst0, dst1, filt0, filt1, filt2;
+    v8i16 hz_out10_r, hz_out21_r, hz_out32_r, hz_out43_r, hz_out54_r;
+    v8i16 hz_out65_r, hz_out76_r, hz_out87_r;
+    v4i32 tmp0, tmp1;
+
+    LD_SB3(&luma_mask_arr[48], 16, mask0, mask1, mask2);
+
+    filt0 = (v8i16) __msa_fill_w(filt_const0);
+    filt1 = (v8i16) __msa_fill_w(filt_const1);
+    filt2 = (v8i16) __msa_fill_w(filt_const2);
+
+    src -= ((2 * stride) + 2);
+
+    LD_SB5(src, stride, src0, src1, src2, src3, src4);
+    src += (5 * stride);
+    LD_SB4(src, stride, src5, src6, src7, src8);
+
+    XORI_B5_128_SB(src0, src1, src2, src3, src4);
+    XORI_B4_128_SB(src5, src6, src7, src8);
+
+    hz_out0 = AVC_HORZ_FILTER_SH(src0, src1, mask0, mask1, mask2);
+    hz_out2 = AVC_HORZ_FILTER_SH(src2, src3, mask0, mask1, mask2);
+    hz_out4 = AVC_HORZ_FILTER_SH(src4, src5, mask0, mask1, mask2);
+    hz_out6 = AVC_HORZ_FILTER_SH(src6, src7, mask0, mask1, mask2);
+    hz_out8 = AVC_HORZ_FILTER_SH(src8, src8, mask0, mask1, mask2);
+    PCKOD_D2_SH(hz_out0, hz_out0, hz_out2, hz_out2, hz_out1, hz_out3);
+    PCKOD_D2_SH(hz_out4, hz_out4, hz_out6, hz_out6, hz_out5, hz_out7);
+
+    ILVR_H4_SH(hz_out1, hz_out0, hz_out2, hz_out1, hz_out3, hz_out2, hz_out4,
+               hz_out3, hz_out10_r, hz_out21_r, hz_out32_r, hz_out43_r);
+    ILVR_H4_SH(hz_out5, hz_out4, hz_out6, hz_out5, hz_out7, hz_out6, hz_out8,
+               hz_out7, hz_out54_r, hz_out65_r, hz_out76_r, hz_out87_r);
+
+    tmp0 = AVC_DOT_SW3_SW(hz_out10_r, hz_out32_r, hz_out54_r, filt0, filt1,
+                          filt2);
+    tmp1 = AVC_DOT_SW3_SW(hz_out21_r, hz_out43_r, hz_out65_r, filt0, filt1,
+                          filt2);
+    dst0 = __msa_pckev_h((v8i16) tmp1, (v8i16) tmp0);
+    tmp0 = AVC_DOT_SW3_SW(hz_out32_r, hz_out54_r, hz_out76_r, filt0, filt1,
+                          filt2);
+    tmp1 = AVC_DOT_SW3_SW(hz_out43_r, hz_out65_r, hz_out87_r, filt0, filt1,
+                          filt2);
+    dst1 = __msa_pckev_h((v8i16) tmp1, (v8i16) tmp0);
+
+    SRARI_H2_SH(hz_out2, hz_out4, 5);
+    SAT_SH2_SH(hz_out2, hz_out4, 7);
+
+    dst0 = __msa_aver_s_h(dst0, hz_out2);
+    dst1 = __msa_aver_s_h(dst1, hz_out4);
+    LW4(dst, stride, tp0, tp1, tp2, tp3);
+    INSERT_W4_UB(tp0, tp1, tp2, tp3, out);
+    res = PCKEV_XORI128_UB(dst0, dst1);
+    res = __msa_aver_u_b(res, out);
+    ST4x4_UB(res, res, 0, 1, 2, 3, dst, stride);
 }
 
 void ff_avg_h264_qpel4_mc23_msa(uint8_t *dst, const uint8_t *src,
                                 ptrdiff_t stride)
 {
-    avc_luma_midv_qrt_and_aver_dst_4w_msa(src - (2 * stride) - 2,
-                                          stride, dst, stride, 4, 1);
+    const int32_t filt_const0 = 0xfffb0001;
+    const int32_t filt_const1 = 0x140014;
+    const int32_t filt_const2 = 0x1fffb;
+    uint32_t tp0, tp1, tp2, tp3;
+    v16u8 res, out = { 0 };
+    v16i8 src0, src1, src2, src3, src4, src5, src6, src7, src8;
+    v16i8 mask0, mask1, mask2;
+    v8i16 hz_out0, hz_out1, hz_out2, hz_out3, hz_out4, hz_out5, hz_out6;
+    v8i16 hz_out7, hz_out8, dst0, dst1, filt0, filt1, filt2;
+    v8i16 hz_out10_r, hz_out21_r, hz_out32_r, hz_out43_r, hz_out54_r;
+    v8i16 hz_out65_r, hz_out76_r, hz_out87_r;
+    v4i32 tmp0, tmp1;
+
+    LD_SB3(&luma_mask_arr[48], 16, mask0, mask1, mask2);
+
+    filt0 = (v8i16) __msa_fill_w(filt_const0);
+    filt1 = (v8i16) __msa_fill_w(filt_const1);
+    filt2 = (v8i16) __msa_fill_w(filt_const2);
+
+    src -= ((2 * stride) + 2);
+
+    LD_SB5(src, stride, src0, src1, src2, src3, src4);
+    src += (5 * stride);
+    LD_SB4(src, stride, src5, src6, src7, src8);
+
+    XORI_B5_128_SB(src0, src1, src2, src3, src4);
+    XORI_B4_128_SB(src5, src6, src7, src8);
+
+    hz_out0 = AVC_HORZ_FILTER_SH(src0, src1, mask0, mask1, mask2);
+    hz_out2 = AVC_HORZ_FILTER_SH(src2, src3, mask0, mask1, mask2);
+    hz_out4 = AVC_HORZ_FILTER_SH(src4, src5, mask0, mask1, mask2);
+    hz_out6 = AVC_HORZ_FILTER_SH(src6, src7, mask0, mask1, mask2);
+    hz_out8 = AVC_HORZ_FILTER_SH(src8, src8, mask0, mask1, mask2);
+    PCKOD_D2_SH(hz_out0, hz_out0, hz_out2, hz_out2, hz_out1, hz_out3);
+    PCKOD_D2_SH(hz_out4, hz_out4, hz_out6, hz_out6, hz_out5, hz_out7);
+
+    ILVR_H4_SH(hz_out1, hz_out0, hz_out2, hz_out1, hz_out3, hz_out2, hz_out4,
+               hz_out3, hz_out10_r, hz_out21_r, hz_out32_r, hz_out43_r);
+    ILVR_H4_SH(hz_out5, hz_out4, hz_out6, hz_out5, hz_out7, hz_out6, hz_out8,
+               hz_out7, hz_out54_r, hz_out65_r, hz_out76_r, hz_out87_r);
+
+    tmp0 = AVC_DOT_SW3_SW(hz_out10_r, hz_out32_r, hz_out54_r, filt0, filt1,
+                          filt2);
+    tmp1 = AVC_DOT_SW3_SW(hz_out21_r, hz_out43_r, hz_out65_r, filt0, filt1,
+                          filt2);
+    dst0 = __msa_pckev_h((v8i16) tmp1, (v8i16) tmp0);
+    tmp0 = AVC_DOT_SW3_SW(hz_out32_r, hz_out54_r, hz_out76_r, filt0, filt1,
+                          filt2);
+    tmp1 = AVC_DOT_SW3_SW(hz_out43_r, hz_out65_r, hz_out87_r, filt0, filt1,
+                          filt2);
+    dst1 = __msa_pckev_h((v8i16) tmp1, (v8i16) tmp0);
+
+    PCKEV_D2_SH(hz_out4, hz_out3, hz_out6, hz_out5, hz_out0, hz_out1);
+    SRARI_H2_SH(hz_out0, hz_out1, 5);
+    SAT_SH2_SH(hz_out0, hz_out1, 7);
+
+    dst0 = __msa_aver_s_h(dst0, hz_out0);
+    dst1 = __msa_aver_s_h(dst1, hz_out1);
+    LW4(dst, stride, tp0, tp1, tp2, tp3);
+    INSERT_W4_UB(tp0, tp1, tp2, tp3, out);
+    res = PCKEV_XORI128_UB(dst0, dst1);
+    res = __msa_aver_u_b(res, out);
+    ST4x4_UB(res, res, 0, 1, 2, 3, dst, stride);
 }
 
 void ff_avg_h264_qpel16_mc02_msa(uint8_t *dst, const uint8_t *src,
