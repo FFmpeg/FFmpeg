@@ -1028,7 +1028,7 @@ static int videotoolbox_frame_params(AVCodecContext *avctx,
     return 0;
 }
 
-AVHWAccel ff_h263_videotoolbox_hwaccel = {
+const AVHWAccel ff_h263_videotoolbox_hwaccel = {
     .name           = "h263_videotoolbox",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H263,
@@ -1043,7 +1043,7 @@ AVHWAccel ff_h263_videotoolbox_hwaccel = {
     .priv_data_size = sizeof(VTContext),
 };
 
-AVHWAccel ff_hevc_videotoolbox_hwaccel = {
+const AVHWAccel ff_hevc_videotoolbox_hwaccel = {
     .name           = "hevc_videotoolbox",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_HEVC,
@@ -1059,7 +1059,7 @@ AVHWAccel ff_hevc_videotoolbox_hwaccel = {
     .priv_data_size = sizeof(VTContext),
 };
 
-AVHWAccel ff_h264_videotoolbox_hwaccel = {
+const AVHWAccel ff_h264_videotoolbox_hwaccel = {
     .name           = "h264_videotoolbox",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H264,
@@ -1075,7 +1075,7 @@ AVHWAccel ff_h264_videotoolbox_hwaccel = {
     .priv_data_size = sizeof(VTContext),
 };
 
-AVHWAccel ff_mpeg1_videotoolbox_hwaccel = {
+const AVHWAccel ff_mpeg1_videotoolbox_hwaccel = {
     .name           = "mpeg1_videotoolbox",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MPEG1VIDEO,
@@ -1090,7 +1090,7 @@ AVHWAccel ff_mpeg1_videotoolbox_hwaccel = {
     .priv_data_size = sizeof(VTContext),
 };
 
-AVHWAccel ff_mpeg2_videotoolbox_hwaccel = {
+const AVHWAccel ff_mpeg2_videotoolbox_hwaccel = {
     .name           = "mpeg2_videotoolbox",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MPEG2VIDEO,
@@ -1105,7 +1105,7 @@ AVHWAccel ff_mpeg2_videotoolbox_hwaccel = {
     .priv_data_size = sizeof(VTContext),
 };
 
-AVHWAccel ff_mpeg4_videotoolbox_hwaccel = {
+const AVHWAccel ff_mpeg4_videotoolbox_hwaccel = {
     .name           = "mpeg4_videotoolbox",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MPEG4,

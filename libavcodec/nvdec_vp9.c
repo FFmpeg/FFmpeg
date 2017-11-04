@@ -169,7 +169,7 @@ static int nvdec_vp9_frame_params(AVCodecContext *avctx,
     return ff_nvdec_frame_params(avctx, hw_frames_ctx, 8);
 }
 
-AVHWAccel ff_vp9_nvdec_hwaccel = {
+const AVHWAccel ff_vp9_nvdec_hwaccel = {
     .name                 = "vp9_nvdec",
     .type                 = AVMEDIA_TYPE_VIDEO,
     .id                   = AV_CODEC_ID_VP9,

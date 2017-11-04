@@ -168,7 +168,7 @@ static int vaapi_vp9_decode_slice(AVCodecContext *avctx,
     return 0;
 }
 
-AVHWAccel ff_vp9_vaapi_hwaccel = {
+const AVHWAccel ff_vp9_vaapi_hwaccel = {
     .name                 = "vp9_vaapi",
     .type                 = AVMEDIA_TYPE_VIDEO,
     .id                   = AV_CODEC_ID_VP9,

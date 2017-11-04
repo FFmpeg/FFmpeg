@@ -110,7 +110,7 @@ static int nvdec_vc1_frame_params(AVCodecContext *avctx,
     return ff_nvdec_frame_params(avctx, hw_frames_ctx, 2);
 }
 
-AVHWAccel ff_vc1_nvdec_hwaccel = {
+const AVHWAccel ff_vc1_nvdec_hwaccel = {
     .name                 = "vc1_nvdec",
     .type                 = AVMEDIA_TYPE_VIDEO,
     .id                   = AV_CODEC_ID_VC1,
@@ -125,7 +125,7 @@ AVHWAccel ff_vc1_nvdec_hwaccel = {
 };
 
 #if CONFIG_WMV3_NVDEC_HWACCEL
-AVHWAccel ff_wmv3_nvdec_hwaccel = {
+const AVHWAccel ff_wmv3_nvdec_hwaccel = {
     .name                 = "wmv3_nvdec",
     .type                 = AVMEDIA_TYPE_VIDEO,
     .id                   = AV_CODEC_ID_WMV3,

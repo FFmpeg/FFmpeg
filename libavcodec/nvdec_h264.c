@@ -163,7 +163,7 @@ static int nvdec_h264_frame_params(AVCodecContext *avctx,
     return ff_nvdec_frame_params(avctx, hw_frames_ctx, sps->ref_frame_count + sps->num_reorder_frames);
 }
 
-AVHWAccel ff_h264_nvdec_hwaccel = {
+const AVHWAccel ff_h264_nvdec_hwaccel = {
     .name                 = "h264_nvdec",
     .type                 = AVMEDIA_TYPE_VIDEO,
     .id                   = AV_CODEC_ID_H264,

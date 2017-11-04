@@ -106,7 +106,7 @@ static int nvdec_mpeg4_frame_params(AVCodecContext *avctx,
     return ff_nvdec_frame_params(avctx, hw_frames_ctx, 2);
 }
 
-AVHWAccel ff_mpeg4_nvdec_hwaccel = {
+const AVHWAccel ff_mpeg4_nvdec_hwaccel = {
     .name                 = "mpeg4_nvdec",
     .type                 = AVMEDIA_TYPE_VIDEO,
     .id                   = AV_CODEC_ID_MPEG4,

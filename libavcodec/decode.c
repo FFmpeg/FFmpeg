@@ -1252,7 +1252,7 @@ static int hwaccel_init(AVCodecContext *avctx,
             return AVERROR(ENOMEM);
     }
 
-    avctx->hwaccel = (AVHWAccel*)hwaccel;
+    avctx->hwaccel = hwaccel;
     if (hwaccel->init) {
         err = hwaccel->init(avctx);
         if (err < 0) {

@@ -2635,7 +2635,7 @@ typedef struct AVCodecContext {
      * - encoding: unused.
      * - decoding: Set by libavcodec
      */
-    struct AVHWAccel *hwaccel;
+    const struct AVHWAccel *hwaccel;
 
     /**
      * Hardware accelerator context.
