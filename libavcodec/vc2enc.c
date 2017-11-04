@@ -167,7 +167,7 @@ typedef struct VC2EncContext {
     int slice_max_bytes;
     int slice_min_bytes;
     int q_ceil;
-    int64_t q_avg;
+    int q_avg;
 
     /* Options */
     double tolerance;
@@ -755,7 +755,7 @@ static int calc_slice_sizes(VC2EncContext *s)
     for (i = 0; i < s->num_x*s->num_y; i++) {
         SliceArgs *args = &enc_args[i];
         total_bytes_needed += args->bytes;
-        s->q_avg += args->quant_idx;
+        s->q_avg = (s->q_avg + args->quant_idx)/2;
     }
 
     return total_bytes_needed;
@@ -1045,7 +1045,7 @@ static av_cold int vc2_encode_end(AVCodecContext *avctx)
     int i;
     VC2EncContext *s = avctx->priv_data;
 
-    av_log(avctx, AV_LOG_INFO, "Qavg: %f\n", (float)s->q_avg / (s->num_x*s->num_y));
+    av_log(avctx, AV_LOG_INFO, "Qavg: %i\n", s->q_avg);
 
     for (i = 0; i < 3; i++) {
         ff_vc2enc_free_transforms(&s->transform_args[i].t);
