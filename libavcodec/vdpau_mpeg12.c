@@ -103,7 +103,7 @@ static int vdpau_mpeg1_init(AVCodecContext *avctx)
                                 VDP_DECODER_LEVEL_MPEG1_NA);
 }
 
-AVHWAccel ff_mpeg1_vdpau_hwaccel = {
+const AVHWAccel ff_mpeg1_vdpau_hwaccel = {
     .name           = "mpeg1_vdpau",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MPEG1VIDEO,
@@ -138,7 +138,7 @@ static int vdpau_mpeg2_init(AVCodecContext *avctx)
     return ff_vdpau_common_init(avctx, profile, VDP_DECODER_LEVEL_MPEG2_HL);
 }
 
-AVHWAccel ff_mpeg2_vdpau_hwaccel = {
+const AVHWAccel ff_mpeg2_vdpau_hwaccel = {
     .name           = "mpeg2_vdpau",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MPEG2VIDEO,

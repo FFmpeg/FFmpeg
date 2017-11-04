@@ -163,7 +163,7 @@ static int cuvid_h264_decode_init(AVCodecContext *avctx)
     return ff_cuvid_decode_init(avctx, sps->ref_frame_count + sps->num_reorder_frames);
 }
 
-AVHWAccel ff_h264_cuvid_hwaccel = {
+const AVHWAccel ff_h264_cuvid_hwaccel = {
     .name                 = "h264_cuvid",
     .type                 = AVMEDIA_TYPE_VIDEO,
     .id                   = AV_CODEC_ID_H264,

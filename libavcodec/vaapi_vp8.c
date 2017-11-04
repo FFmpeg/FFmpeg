@@ -220,7 +220,7 @@ fail:
     return err;
 }
 
-AVHWAccel ff_vp8_vaapi_hwaccel = {
+const AVHWAccel ff_vp8_vaapi_hwaccel = {
     .name                 = "vp8_vaapi",
     .type                 = AVMEDIA_TYPE_VIDEO,
     .id                   = AV_CODEC_ID_VP8,

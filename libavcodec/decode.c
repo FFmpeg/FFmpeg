@@ -812,7 +812,7 @@ static int hwaccel_init(AVCodecContext *avctx,
             return AVERROR(ENOMEM);
     }
 
-    avctx->hwaccel = (AVHWAccel*)hwaccel;
+    avctx->hwaccel = hwaccel;
     err = hwaccel->init(avctx);
     if (err < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed setup for format %s: "

@@ -266,7 +266,7 @@ static int cuvid_hevc_decode_init(AVCodecContext *avctx)
     return ff_cuvid_decode_init(avctx, sps->temporal_layer[sps->max_sub_layers - 1].max_dec_pic_buffering + 1);
 }
 
-AVHWAccel ff_hevc_cuvid_hwaccel = {
+const AVHWAccel ff_hevc_cuvid_hwaccel = {
     .name                 = "hevc_cuvid",
     .type                 = AVMEDIA_TYPE_VIDEO,
     .id                   = AV_CODEC_ID_HEVC,

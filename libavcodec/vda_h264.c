@@ -247,7 +247,7 @@ static int vda_h264_uninit(AVCodecContext *avctx)
     return 0;
 }
 
-AVHWAccel ff_h264_vda_old_hwaccel = {
+const AVHWAccel ff_h264_vda_old_hwaccel = {
     .name           = "h264_vda",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H264,
@@ -483,7 +483,7 @@ static int vda_h264_alloc_frame(AVCodecContext *avctx, AVFrame *frame)
     return 0;
 }
 
-AVHWAccel ff_h264_vda_hwaccel = {
+const AVHWAccel ff_h264_vda_hwaccel = {
     .name           = "h264_vda",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H264,

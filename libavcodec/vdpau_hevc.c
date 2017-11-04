@@ -413,7 +413,7 @@ static int vdpau_hevc_init(AVCodecContext *avctx)
     return ff_vdpau_common_init(avctx, profile, level);
 }
 
-AVHWAccel ff_hevc_vdpau_hwaccel = {
+const AVHWAccel ff_hevc_vdpau_hwaccel = {
     .name           = "hevc_vdpau",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_HEVC,

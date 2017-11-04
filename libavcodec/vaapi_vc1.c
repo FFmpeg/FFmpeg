@@ -388,7 +388,7 @@ static int vaapi_vc1_decode_slice(AVCodecContext *avctx, const uint8_t *buffer, 
 }
 
 #if CONFIG_WMV3_VAAPI_HWACCEL
-AVHWAccel ff_wmv3_vaapi_hwaccel = {
+const AVHWAccel ff_wmv3_vaapi_hwaccel = {
     .name                 = "wmv3_vaapi",
     .type                 = AVMEDIA_TYPE_VIDEO,
     .id                   = AV_CODEC_ID_WMV3,
@@ -405,7 +405,7 @@ AVHWAccel ff_wmv3_vaapi_hwaccel = {
 };
 #endif
 
-AVHWAccel ff_vc1_vaapi_hwaccel = {
+const AVHWAccel ff_vc1_vaapi_hwaccel = {
     .name                 = "vc1_vaapi",
     .type                 = AVMEDIA_TYPE_VIDEO,
     .id                   = AV_CODEC_ID_VC1,
