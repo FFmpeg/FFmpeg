@@ -56,6 +56,7 @@ static int generate_fake_vps(QSVEncContext *q, AVCodecContext *avctx)
     PutByteContext pbc;
 
     GetBitContext gb;
+    H2645RBSP sps_rbsp = { NULL };
     H2645NAL sps_nal = { NULL };
     HEVCSPS sps = { 0 };
     HEVCVPS vps = { 0 };
@@ -69,8 +70,12 @@ static int generate_fake_vps(QSVEncContext *q, AVCodecContext *avctx)
         return AVERROR_UNKNOWN;
     }
 
+    av_fast_padded_malloc(&sps_rbsp.rbsp_buffer, &sps_rbsp.rbsp_buffer_alloc_size, avctx->extradata_size);
+    if (!sps_rbsp.rbsp_buffer)
+        return AVERROR(ENOMEM);
+
     /* parse the SPS */
-    ret = ff_h2645_extract_rbsp(avctx->extradata + 4, avctx->extradata_size - 4, &sps_nal, 1);
+    ret = ff_h2645_extract_rbsp(avctx->extradata + 4, avctx->extradata_size - 4, &sps_rbsp, &sps_nal, 1);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error unescaping the SPS buffer\n");
         return ret;
@@ -78,7 +83,7 @@ static int generate_fake_vps(QSVEncContext *q, AVCodecContext *avctx)
 
     ret = init_get_bits8(&gb, sps_nal.data, sps_nal.size);
     if (ret < 0) {
-        av_freep(&sps_nal.rbsp_buffer);
+        av_freep(&sps_rbsp.rbsp_buffer);
         return ret;
     }
 
@@ -87,13 +92,13 @@ static int generate_fake_vps(QSVEncContext *q, AVCodecContext *avctx)
     if (type != HEVC_NAL_SPS) {
         av_log(avctx, AV_LOG_ERROR, "Unexpected NAL type in the extradata: %d\n",
                type);
-        av_freep(&sps_nal.rbsp_buffer);
+        av_freep(&sps_rbsp.rbsp_buffer);
         return AVERROR_INVALIDDATA;
     }
     get_bits(&gb, 9);
 
     ret = ff_hevc_parse_sps(&sps, &gb, &sps_id, 0, NULL, avctx);
-    av_freep(&sps_nal.rbsp_buffer);
+    av_freep(&sps_rbsp.rbsp_buffer);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error parsing the SPS\n");
         return ret;
