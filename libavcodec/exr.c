@@ -855,7 +855,7 @@ static int pxr24_uncompress(EXRContext *s, const uint8_t *src,
                 in     = ptr[2] + td->xsize;
 
                 for (j = 0; j < td->xsize; ++j) {
-                    uint32_t diff = (*(ptr[0]++) << 24) |
+                    uint32_t diff = ((unsigned)*(ptr[0]++) << 24) |
                                     (*(ptr[1]++) << 16) |
                                     (*(ptr[2]++) << 8);
                     pixel += diff;
