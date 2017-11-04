@@ -91,10 +91,10 @@ void FUNCC(ff_h264_idct8_add)(uint8_t *_dst, int16_t *_block, int stride){
         const int a5 = -block[i+1*8] + block[i+7*8] + block[i+5*8] + (block[i+5*8]>>1);
         const int a7 =  block[i+3*8] + block[i+5*8] + block[i+1*8] + (block[i+1*8]>>1);
 
-        const int b1 = (a7>>2) + a1;
-        const int b3 =  a3 + (a5>>2);
-        const int b5 = (a3>>2) - a5;
-        const int b7 =  a7 - (a1>>2);
+        const int b1 = (a7>>2) + (unsigned)a1;
+        const int b3 =  (unsigned)a3 + (a5>>2);
+        const int b5 = (a3>>2) - (unsigned)a5;
+        const int b7 =  (unsigned)a7 - (a1>>2);
 
         block[i+0*8] = b0 + b7;
         block[i+7*8] = b0 - b7;
