@@ -1286,7 +1286,7 @@ If enabled, try to verify the peer that we are communicating with.
 Note, if using OpenSSL, this currently only makes sure that the
 peer certificate is signed by one of the root certificates in the CA
 database, but it does not validate that the certificate actually
-matches the host name we are trying to connect to. (With GnuTLS,
+matches the host name we are trying to connect to. (With other backends,
 the host name is validated as well.)
 
 This is disabled by default since it requires a CA database to be

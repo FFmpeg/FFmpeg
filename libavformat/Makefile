@@ -593,6 +593,7 @@ OBJS-$(CONFIG_SUBFILE_PROTOCOL)          += subfile.o
 OBJS-$(CONFIG_TEE_PROTOCOL)              += teeproto.o tee_common.o
 OBJS-$(CONFIG_TCP_PROTOCOL)              += tcp.o
 TLS-OBJS-$(CONFIG_GNUTLS)                += tls_gnutls.o
+TLS-OBJS-$(CONFIG_LIBTLS)                += tls_libtls.o
 TLS-OBJS-$(CONFIG_OPENSSL)               += tls_openssl.o
 TLS-OBJS-$(CONFIG_SECURETRANSPORT)       += tls_securetransport.o
 TLS-OBJS-$(CONFIG_SCHANNEL)              += tls_schannel.o

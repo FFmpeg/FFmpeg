@@ -214,7 +214,7 @@ External library support:
   --enable-gmp             enable gmp, needed for rtmp(t)e support
                            if openssl or librtmp is not used [no]
   --enable-gnutls          enable gnutls, needed for https support
-                           if openssl is not used [no]
+                           if openssl or libtls is not used [no]
   --disable-iconv          disable iconv [autodetect]
   --enable-jni             enable JNI support [no]
   --enable-ladspa          enable LADSPA audio filtering [no]
@@ -259,6 +259,8 @@ External library support:
   --enable-libssh          enable SFTP protocol via libssh [no]
   --enable-libtesseract    enable Tesseract, needed for ocr filter [no]
   --enable-libtheora       enable Theora encoding via libtheora [no]
+  --enable-libtls          enable LibreSSL (via libtls), needed for https support
+                           if openssl or gnutls is not used [no]
   --enable-libtwolame      enable MP2 encoding via libtwolame [no]
   --enable-libv4l2         enable libv4l2/v4l-utils [no]
   --enable-libvidstab      enable video stabilization using vid.stab [no]
@@ -292,7 +294,7 @@ External library support:
   --enable-opencl          enable OpenCL processing [no]
   --enable-opengl          enable OpenGL rendering [no]
   --enable-openssl         enable openssl, needed for https support
-                           if gnutls is not used [no]
+                           if gnutls or libtls is not used [no]
   --disable-sndio          disable sndio support [autodetect]
   --disable-schannel       disable SChannel SSP, needed for TLS support on
                            Windows if openssl and gnutls are not used [autodetect]
@@ -1563,6 +1565,7 @@ EXTERNAL_LIBRARY_NONFREE_LIST="
     libndi_newtek
     libfdk_aac
     openssl
+    libtls
 "
 
 EXTERNAL_LIBRARY_VERSION3_LIST="
@@ -3143,6 +3146,7 @@ librtmpt_protocol_deps="librtmp"
 librtmpte_protocol_deps="librtmp"
 libsmbclient_protocol_deps="libsmbclient gplv3"
 libssh_protocol_deps="libssh"
+libtls_conflict="openssl gnutls"
 mmsh_protocol_select="http_protocol"
 mmst_protocol_select="network"
 rtmp_protocol_conflict="librtmp_protocol"
@@ -3160,13 +3164,13 @@ rtmpte_protocol_suggest="zlib"
 rtmpts_protocol_select="ffrtmphttp_protocol https_protocol"
 rtmpts_protocol_suggest="zlib"
 rtp_protocol_select="udp_protocol"
-schannel_conflict="openssl gnutls"
+schannel_conflict="openssl gnutls libtls"
 sctp_protocol_deps="struct_sctp_event_subscribe struct_msghdr_msg_flags"
 sctp_protocol_select="network"
-securetransport_conflict="openssl gnutls"
+securetransport_conflict="openssl gnutls libtls"
 srtp_protocol_select="rtp_protocol srtp"
 tcp_protocol_select="network"
-tls_protocol_deps_any="gnutls openssl schannel securetransport"
+tls_protocol_deps_any="gnutls openssl schannel securetransport libtls"
 tls_protocol_select="tcp_protocol"
 udp_protocol_select="network"
 udplite_protocol_select="network"
@@ -5890,6 +5894,8 @@ enabled libssh            && require_pkg_config libssh libssh libssh/sftp.h sftp
 enabled libspeex          && require_pkg_config libspeex speex speex/speex.h speex_decoder_init
 enabled libtesseract      && require_pkg_config libtesseract tesseract tesseract/capi.h TessBaseAPICreate
 enabled libtheora         && require libtheora theora/theoraenc.h th_info_init -ltheoraenc -ltheoradec -logg
+enabled libtls            && { use_pkg_config libtls libtls tls.h tls_configure ||
+                               require libtls tls.h tls_configure -ltls; }
 enabled libtwolame        && require libtwolame twolame.h twolame_init -ltwolame &&
                              { check_lib libtwolame twolame.h twolame_encode_buffer_float32_interleaved -ltwolame ||
                                die "ERROR: libtwolame must be installed and version must be >= 0.3.10"; }

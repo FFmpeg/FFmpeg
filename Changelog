@@ -26,6 +26,7 @@ version <next>:
 - video fillborders filter
 - video setrange filter
 - nsp demuxer
+- support LibreSSL (via libtls)
 
 
 version 3.4:
