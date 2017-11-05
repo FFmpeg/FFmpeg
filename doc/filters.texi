@@ -7365,7 +7365,9 @@ format. It can be used with or without text parameter. @var{timecode_rate}
 option must be specified.
 
 @item timecode_rate, rate, r
-Set the timecode frame rate (timecode only).
+Set the timecode frame rate (timecode only). Value will be rounded to nearest
+integer. Minimum value is "1".
+Drop-frame timecode is supported for frame rates 30 & 60.
 
 @item tc24hmax
 If set to 1, the output of the timecode option will wrap around at 24 hours.
