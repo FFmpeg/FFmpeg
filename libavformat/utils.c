@@ -123,8 +123,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 int64_t av_stream_get_end_pts(const AVStream *st)
 {
-    if (st->priv_pts) {
-        return st->priv_pts->val;
+    if (st->internal->priv_pts) {
+        return st->internal->priv_pts->val;
     } else
         return AV_NOPTS_VALUE;
 }
@@ -4263,6 +4263,7 @@ static void free_stream(AVStream **pst)
             av_bsf_free(&st->internal->bsfcs[i]);
             av_freep(&st->internal->bsfcs);
         }
+        av_freep(&st->internal->priv_pts);
         av_bsf_free(&st->internal->extract_extradata.bsf);
         av_packet_free(&st->internal->extract_extradata.pkt);
     }
@@ -4282,7 +4283,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         av_freep(&st->info->duration_error);
     av_freep(&st->info);
     av_freep(&st->recommended_encoder_configuration);
-    av_freep(&st->priv_pts);
 
     av_freep(pst);
 }

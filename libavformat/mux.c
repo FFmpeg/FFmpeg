@@ -432,16 +432,16 @@ static int init_pts(AVFormatContext *s)
             break;
         }
 
-        if (!st->priv_pts)
-            st->priv_pts = av_mallocz(sizeof(*st->priv_pts));
-        if (!st->priv_pts)
+        if (!st->internal->priv_pts)
+            st->internal->priv_pts = av_mallocz(sizeof(*st->internal->priv_pts));
+        if (!st->internal->priv_pts)
             return AVERROR(ENOMEM);
 
         if (den != AV_NOPTS_VALUE) {
             if (den <= 0)
                 return AVERROR_INVALIDDATA;
 
-            frac_init(st->priv_pts, 0, 0, den);
+            frac_init(st->internal->priv_pts, 0, 0, den);
         }
     }
 
@@ -601,7 +601,7 @@ static int compute_muxer_pkt_fields(AVFormatContext *s, AVStream *st, AVPacket *
         }
         pkt->dts =
 //        pkt->pts= st->cur_dts;
-            pkt->pts = st->priv_pts->val;
+            pkt->pts = st->internal->priv_pts->val;
     }
 
     //calculate dts from pts
@@ -638,7 +638,7 @@ static int compute_muxer_pkt_fields(AVFormatContext *s, AVStream *st, AVPacket *
             av_ts2str(pkt->pts), av_ts2str(pkt->dts));
 
     st->cur_dts = pkt->dts;
-    st->priv_pts->val = pkt->dts;
+    st->internal->priv_pts->val = pkt->dts;
 
     /* update pts */
     switch (st->codecpar->codec_type) {
@@ -650,12 +650,12 @@ static int compute_muxer_pkt_fields(AVFormatContext *s, AVStream *st, AVPacket *
         /* HACK/FIXME, we skip the initial 0 size packets as they are most
          * likely equal to the encoder delay, but it would be better if we
          * had the real timestamps from the encoder */
-        if (frame_size >= 0 && (pkt->size || st->priv_pts->num != st->priv_pts->den >> 1 || st->priv_pts->val)) {
-            frac_add(st->priv_pts, (int64_t)st->time_base.den * frame_size);
+        if (frame_size >= 0 && (pkt->size || st->internal->priv_pts->num != st->internal->priv_pts->den >> 1 || st->internal->priv_pts->val)) {
+            frac_add(st->internal->priv_pts, (int64_t)st->time_base.den * frame_size);
         }
         break;
     case AVMEDIA_TYPE_VIDEO:
-        frac_add(st->priv_pts, (int64_t)st->time_base.den * st->time_base.num);
+        frac_add(st->internal->priv_pts, (int64_t)st->time_base.den * st->time_base.num);
         break;
     }
     return 0;

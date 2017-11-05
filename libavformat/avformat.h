@@ -1200,8 +1200,6 @@ typedef struct AVStream {
      */
     AVRational display_aspect_ratio;
 
-    struct FFFrac *priv_pts;
-
     /**
      * An opaque field for libavformat internal usage.
      * Must not be accessed in any way by callers.
