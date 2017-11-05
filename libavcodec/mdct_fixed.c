@@ -39,13 +39,13 @@ void ff_mdct_calcw_c(FFTContext *s, FFTDouble *out, const FFTSample *input)
 
     /* pre rotation */
     for(i=0;i<n8;i++) {
-        re = RSCALE(-input[2*i+n3] - input[n3-1-2*i]);
-        im = RSCALE(-input[n4+2*i] + input[n4-1-2*i]);
+        re = RSCALE(-input[2*i+n3], - input[n3-1-2*i]);
+        im = RSCALE(-input[n4+2*i], + input[n4-1-2*i]);
         j = revtab[i];
         CMUL(x[j].re, x[j].im, re, im, -tcos[i], tsin[i]);
 
-        re = RSCALE( input[2*i]    - input[n2-1-2*i]);
-        im = RSCALE(-input[n2+2*i] - input[ n-1-2*i]);
+        re = RSCALE( input[2*i]   , - input[n2-1-2*i]);
+        im = RSCALE(-input[n2+2*i], - input[ n-1-2*i]);
         j = revtab[n8 + i];
         CMUL(x[j].re, x[j].im, re, im, -tcos[n8 + i], tsin[n8 + i]);
     }
