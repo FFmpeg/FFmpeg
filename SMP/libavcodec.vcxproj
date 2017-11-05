@@ -162,6 +162,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\libavcodec\ac3_parser.c" />
+    <ClCompile Include="..\libavcodec\adts_parser.c" />
     <ClCompile Include="..\libavcodec\allcodecs.c" />
     <ClCompile Include="..\libavcodec\avdct.c" />
     <ClCompile Include="..\libavcodec\avpacket.c" />
@@ -193,6 +194,8 @@
     <ClCompile Include="..\libavcodec\aandcttab.c" />
     <ClCompile Include="..\libavcodec\ac3.c" />
     <ClCompile Include="..\libavcodec\ac3tab.c" />
+    <ClCompile Include="..\libavcodec\adts_header.c" />
+    <ClCompile Include="..\libavcodec\mpeg4audio.c" />
     <ClCompile Include="..\libavcodec\audio_frame_queue.c" />
     <ClCompile Include="..\libavcodec\cabac.c" />
     <ClCompile Include="..\libavcodec\cbs.c" />
@@ -287,8 +290,6 @@
     <ClCompile Include="..\libavcodec\aactab.c" />
     <ClCompile Include="..\libavcodec\aacsbr.c" />
     <ClCompile Include="..\libavcodec\aacps_float.c" />
-    <ClCompile Include="..\libavcodec\aacadtsdec.c" />
-    <ClCompile Include="..\libavcodec\mpeg4audio.c" />
     <ClCompile Include="..\libavcodec\kbdwin.c" />
     <ClCompile Include="..\libavcodec\aacpsdsp_float.c" />
     <ClCompile Include="..\libavcodec\cbrt_data.c" />
@@ -1159,6 +1160,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libavcodec\ac3_parser.h" />
+    <ClInclude Include="..\libavcodec\adts_parser.h" />
     <ClInclude Include="..\libavcodec\avcodec.h" />
     <ClInclude Include="..\libavcodec\avdct.h" />
     <ClInclude Include="..\libavcodec\avfft.h" />
@@ -1443,6 +1445,7 @@
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\ac3_parser.h "$(OutDir)"\include\libavcodec
+copy ..\libavcodec\adts_parser.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avcodec.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avdct.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avfft.h "$(OutDir)"\include\libavcodec
@@ -1524,6 +1527,7 @@ cd $(ProjectDir)
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\ac3_parser.h "$(OutDir)"\include\libavcodec
+copy ..\libavcodec\adts_parser.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avcodec.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avdct.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avfft.h "$(OutDir)"\include\libavcodec
@@ -1612,6 +1616,7 @@ cd $(ProjectDir)
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\ac3_parser.h "$(OutDir)"\include\libavcodec
+copy ..\libavcodec\adts_parser.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avcodec.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avdct.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avfft.h "$(OutDir)"\include\libavcodec
@@ -1698,6 +1703,7 @@ cd $(ProjectDir)
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\ac3_parser.h "$(OutDir)"\include\libavcodec
+copy ..\libavcodec\adts_parser.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avcodec.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avdct.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avfft.h "$(OutDir)"\include\libavcodec
@@ -1786,6 +1792,7 @@ cd $(ProjectDir)
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\ac3_parser.h "$(OutDir)"\include\libavcodec
+copy ..\libavcodec\adts_parser.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avcodec.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avdct.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avfft.h "$(OutDir)"\include\libavcodec
@@ -1872,6 +1879,7 @@ cd $(ProjectDir)
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\ac3_parser.h "$(OutDir)"\include\libavcodec
+copy ..\libavcodec\adts_parser.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avcodec.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avdct.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avfft.h "$(OutDir)"\include\libavcodec
@@ -1959,6 +1967,7 @@ cd $(ProjectDir)
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\ac3_parser.h "$(OutDir)"\include\libavcodec
+copy ..\libavcodec\adts_parser.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avcodec.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avdct.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avfft.h "$(OutDir)"\include\libavcodec
@@ -2044,6 +2053,7 @@ cd $(ProjectDir)
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\ac3_parser.h "$(OutDir)"\include\libavcodec
+copy ..\libavcodec\adts_parser.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avcodec.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avdct.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avfft.h "$(OutDir)"\include\libavcodec
@@ -2137,6 +2147,7 @@ cd $(ProjectDir)
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\ac3_parser.h "$(OutDir)"\include\libavcodec
+copy ..\libavcodec\adts_parser.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avcodec.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avdct.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avfft.h "$(OutDir)"\include\libavcodec
@@ -2229,6 +2240,7 @@ cd $(ProjectDir)
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\ac3_parser.h "$(OutDir)"\include\libavcodec
+copy ..\libavcodec\adts_parser.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avcodec.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avdct.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avfft.h "$(OutDir)"\include\libavcodec
@@ -2322,6 +2334,7 @@ cd $(ProjectDir)
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\ac3_parser.h "$(OutDir)"\include\libavcodec
+copy ..\libavcodec\adts_parser.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avcodec.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avdct.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avfft.h "$(OutDir)"\include\libavcodec
@@ -2414,6 +2427,7 @@ cd $(ProjectDir)
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\ac3_parser.h "$(OutDir)"\include\libavcodec
+copy ..\libavcodec\adts_parser.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avcodec.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avdct.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avfft.h "$(OutDir)"\include\libavcodec
@@ -2499,6 +2513,7 @@ cd $(ProjectDir)
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\ac3_parser.h "$(OutDir)"\include\libavcodec
+copy ..\libavcodec\adts_parser.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avcodec.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avdct.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avfft.h "$(OutDir)"\include\libavcodec
@@ -2584,6 +2599,7 @@ cd $(ProjectDir)
       <Command>mkdir "$(OutDir)"\include
 mkdir "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\ac3_parser.h "$(OutDir)"\include\libavcodec
+copy ..\libavcodec\adts_parser.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avcodec.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avdct.h "$(OutDir)"\include\libavcodec
 copy ..\libavcodec\avfft.h "$(OutDir)"\include\libavcodec

@@ -292,7 +292,9 @@ EXPORTS
     av_log_set_level
     av_lzo1x_decode
     av_malloc
+    av_malloc_array
     av_mallocz
+    av_mallocz_array
     av_mastering_display_metadata_alloc
     av_mastering_display_metadata_create_side_data
     av_match_list

@@ -1,5 +1,6 @@
 EXPORTS
     av_ac3_parse_header
+    av_adts_header_parse
     av_bitstream_filter_close
     av_bitstream_filter_filter
     av_bitstream_filter_init
@@ -183,13 +184,11 @@ EXPORTS
     avpicture_free
     avpicture_get_size
     avpicture_layout
-    avpriv_aac_parse_header
     avpriv_ac3_parse_header
     avpriv_align_put_bits
     avpriv_bprint_to_extradata
     avpriv_codec_get_cap_skip_frame_fill_param
     avpriv_copy_bits
-    avpriv_copy_pce_data
     avpriv_dca_convert_bitstream
     avpriv_dca_parse_core_frame_header
     avpriv_dnxhd_get_frame_size

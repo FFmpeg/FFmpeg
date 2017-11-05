@@ -520,8 +520,8 @@
     <ClCompile Include="..\libavformat\subfile.c" />
     <ClCompile Include="..\libavformat\teeproto.c" />
     <ClCompile Include="..\libavformat\tcp.c" />
-    <ClCompile Include="..\libavformat\tls_gnutls.c" />
     <ClCompile Include="..\libavformat\tls.c" />
+    <ClCompile Include="..\libavformat\tls_gnutls.c" />
     <ClCompile Include="..\libavformat\udp.c" />
     <ClCompile Include="libavformat\golomb_tab_wrap.c" />
     <ClCompile Include="libavformat\log2_tab_wrap.c" />
