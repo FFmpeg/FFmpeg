@@ -26,6 +26,7 @@
 #include <stdatomic.h>
 
 #include "libavutil/buffer.h"
+#include "libavutil/md5.h"
 
 #include "avcodec.h"
 #include "bswapdsp.h"
@@ -405,6 +406,8 @@ typedef struct HEVCContext {
     uint8_t *sao_pixel_buffer_v[3];
 
     HEVCParamSets ps;
+    HEVCSEI sei;
+    struct AVMD5 *md5_ctx;
 
     AVBufferPool *tab_mvf_pool;
     AVBufferPool *rpl_tab_pool;
@@ -480,8 +483,6 @@ typedef struct HEVCContext {
 
     int nal_length_size;    ///< Number of bytes used for nal length (1, 2 or 4)
     int nuh_layer_id;
-
-    HEVCSEIContext sei;
 } HEVCContext;
 
 /**

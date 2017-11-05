@@ -107,10 +107,10 @@ void FUNCC(ff_h264_idct8_add)(uint8_t *_dst, int16_t *_block, int stride){
     }
     for( i = 0; i < 8; i++ )
     {
-        const unsigned a0 =  block[0+i*8] + block[4+i*8];
-        const unsigned a2 =  block[0+i*8] - block[4+i*8];
-        const unsigned a4 = (block[2+i*8]>>1) - block[6+i*8];
-        const unsigned a6 = (block[6+i*8]>>1) + block[2+i*8];
+        const unsigned a0 =  block[0+i*8] + (unsigned)block[4+i*8];
+        const unsigned a2 =  block[0+i*8] - (unsigned)block[4+i*8];
+        const unsigned a4 = (block[2+i*8]>>1) - (unsigned)block[6+i*8];
+        const unsigned a6 = (block[6+i*8]>>1) + (unsigned)block[2+i*8];
 
         const unsigned b0 = a0 + a6;
         const unsigned b2 = a2 + a4;

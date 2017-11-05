@@ -1532,7 +1532,7 @@ int ff_inlink_consume_samples(AVFilterLink *link, unsigned min, unsigned max,
         return 0;
     if (link->status_in)
         min = FFMIN(min, ff_framequeue_queued_samples(&link->fifo));
-    ret = take_samples(link, min, link->max_samples, &frame);
+    ret = take_samples(link, min, max, &frame);
     if (ret < 0)
         return ret;
     consume_update(link, frame);

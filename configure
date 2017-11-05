@@ -540,7 +540,7 @@ filter(){
     pat=$1
     shift
     for v; do
-        eval "case $v in $pat) printf '%s ' $v ;; esac"
+        eval "case '$v' in $pat) printf '%s ' '$v' ;; esac"
     done
 }
 
@@ -548,7 +548,7 @@ filter_out(){
     pat=$1
     shift
     for v; do
-        eval "case $v in $pat) ;; *) printf '%s ' $v ;; esac"
+        eval "case '$v' in $pat) ;; *) printf '%s ' '$v' ;; esac"
     done
 }
 
@@ -1908,7 +1908,6 @@ HAVE_LIST_PUB="
 "
 
 HEADERS_LIST="
-    altivec_h
     arpa_inet_h
     asm_types_h
     cdio_paranoia_h
@@ -2052,7 +2051,7 @@ SYSTEM_FUNCS="
 "
 
 TOOLCHAIN_FEATURES="
-    as_dn_directive
+    as_arch_directive
     as_fpu_directive
     as_func
     as_object_arch
@@ -2135,6 +2134,7 @@ HAVE_LIST="
 CONFIG_EXTRA="
     aandcttables
     ac3dsp
+    adts_header
     audio_frame_queue
     audiodsp
     blockdsp
@@ -2323,25 +2323,25 @@ setend_deps="arm"
 
 map 'eval ${v}_inline_deps=inline_asm' $ARCH_EXT_LIST_ARM
 
-loongson2_deps="mips"
-loongson3_deps="mips"
-mipsfpu_deps="mips"
-mipsdsp_deps="mips"
-mipsdspr2_deps="mips"
-mips32r2_deps="mips"
-mips32r5_deps="mips"
-mips32r6_deps="mips"
-mips64r2_deps="mips"
-mips64r6_deps="mips"
-msa_deps="mipsfpu"
-mmi_deps="mips"
-
 altivec_deps="ppc"
 dcbzl_deps="ppc"
 ldbrx_deps="ppc"
 ppc4xx_deps="ppc"
 vsx_deps="altivec"
 power8_deps="vsx"
+
+loongson2_deps="mips"
+loongson3_deps="mips"
+mips32r2_deps="mips"
+mips32r5_deps="mips"
+mips32r6_deps="mips"
+mips64r2_deps="mips"
+mips64r6_deps="mips"
+mipsfpu_deps="mips"
+mipsdsp_deps="mips"
+mipsdspr2_deps="mips"
+mmi_deps="mips"
+msa_deps="mipsfpu"
 
 cpunop_deps="i686"
 x86_64_select="i686"
@@ -2366,7 +2366,7 @@ fma4_deps="avx"
 avx2_deps="avx"
 
 mmx_external_deps="x86asm"
-mmx_inline_deps="inline_asm"
+mmx_inline_deps="inline_asm x86"
 mmx_suggest="mmx_external mmx_inline"
 
 for ext in $(filter_out mmx $ARCH_EXT_LIST_X86_SIMD); do
@@ -2403,8 +2403,10 @@ cbs_mpeg2_select="cbs"
 dct_select="rdft"
 dirac_parse_select="golomb"
 error_resilience_select="me_cmp"
-faandct_deps="faan fdctdsp"
-faanidct_deps="faan idctdsp"
+faandct_deps="faan"
+faandct_select="fdctdsp"
+faanidct_deps="faan"
+faanidct_select="idctdsp"
 h264dsp_select="startcode"
 hevcparse_select="golomb"
 frame_thread_encoder_deps="encoders threads"
@@ -2421,7 +2423,7 @@ vc1dsp_select="h264chroma qpeldsp startcode"
 rdft_select="fft"
 
 # decoders / encoders
-aac_decoder_select="mdct15 mdct sinewin"
+aac_decoder_select="adts_header mdct15 mdct sinewin"
 aac_fixed_decoder_select="mdct sinewin"
 aac_encoder_select="audio_frame_queue iirfilter lpc mdct sinewin"
 aac_latm_decoder_select="aac_decoder aac_latm_parser"
@@ -2613,8 +2615,6 @@ utvideo_decoder_select="bswapdsp llviddsp"
 utvideo_encoder_select="bswapdsp huffman llvidencdsp"
 vble_decoder_select="llviddsp"
 vc1_decoder_select="blockdsp h263_decoder h264qpel intrax8 mpegvideo vc1dsp"
-vc1_qsv_decoder_deps="libmfx"
-vc1_qsv_decoder_select="qsvdec vc1_qsv_hwaccel vc1_parser"
 vc1image_decoder_select="vc1_decoder"
 vorbis_decoder_select="mdct"
 vorbis_encoder_select="mdct"
@@ -2718,7 +2718,6 @@ mpeg2_dxva2_hwaccel_select="mpeg2video_decoder"
 mpeg2_mediacodec_hwaccel_deps="mediacodec"
 mpeg2_mmal_hwaccel_deps="mmal"
 mpeg2_qsv_hwaccel_deps="libmfx"
-mpeg2_qsv_hwaccel_select="qsvdec_mpeg2"
 mpeg2_vaapi_hwaccel_deps="vaapi"
 mpeg2_vaapi_hwaccel_select="mpeg2video_decoder"
 mpeg2_vdpau_hwaccel_deps="vdpau"
@@ -2747,7 +2746,6 @@ vc1_dxva2_hwaccel_deps="dxva2"
 vc1_dxva2_hwaccel_select="vc1_decoder"
 vc1_mmal_hwaccel_deps="mmal"
 vc1_qsv_hwaccel_deps="libmfx"
-vc1_qsv_hwaccel_select="qsvdec_vc1"
 vc1_vaapi_hwaccel_deps="vaapi"
 vc1_vaapi_hwaccel_select="vc1_decoder"
 vc1_vdpau_hwaccel_deps="vdpau"
@@ -2776,6 +2774,7 @@ wmv3_vdpau_hwaccel_select="vc1_vdpau_hwaccel"
 # hardware-accelerated codecs
 omx_deps="libdl pthreads"
 omx_rpi_select="omx"
+qsv_deps="libmfx"
 qsvdec_select="qsv"
 qsvenc_select="qsv"
 vaapi_encode_deps="vaapi"
@@ -2800,9 +2799,7 @@ h264_mediacodec_decoder_select="h264_mp4toannexb_bsf h264_parser"
 h264_mmal_decoder_deps="mmal"
 h264_nvenc_encoder_deps="nvenc"
 h264_omx_encoder_deps="omx"
-h264_qsv_decoder_deps="libmfx"
 h264_qsv_decoder_select="h264_mp4toannexb_bsf h264_parser qsvdec h264_qsv_hwaccel"
-h264_qsv_encoder_deps="libmfx"
 h264_qsv_encoder_select="qsvenc"
 h264_rkmpp_decoder_deps="rkmpp"
 h264_rkmpp_decoder_select="h264_mp4toannexb_bsf"
@@ -2815,9 +2812,7 @@ hevc_cuvid_decoder_select="hevc_mp4toannexb_bsf"
 hevc_mediacodec_decoder_deps="mediacodec"
 hevc_mediacodec_decoder_select="hevc_mp4toannexb_bsf hevc_parser"
 hevc_nvenc_encoder_deps="nvenc"
-hevc_qsv_decoder_deps="libmfx"
 hevc_qsv_decoder_select="hevc_mp4toannexb_bsf hevc_parser qsvdec hevc_qsv_hwaccel"
-hevc_qsv_encoder_deps="libmfx"
 hevc_qsv_encoder_select="hevcparse qsvenc"
 hevc_rkmpp_decoder_deps="rkmpp"
 hevc_rkmpp_decoder_select="hevc_mp4toannexb_bsf"
@@ -2834,9 +2829,7 @@ mpeg2_crystalhd_decoder_select="crystalhd"
 mpeg2_cuvid_decoder_deps="cuda cuvid"
 mpeg2_mmal_decoder_deps="mmal"
 mpeg2_mediacodec_decoder_deps="mediacodec"
-mpeg2_qsv_decoder_deps="libmfx"
 mpeg2_qsv_decoder_select="qsvdec mpeg2_qsv_hwaccel"
-mpeg2_qsv_encoder_deps="libmfx"
 mpeg2_qsv_encoder_select="qsvenc"
 mpeg2_vaapi_encoder_deps="VAEncPictureParameterBufferMPEG2"
 mpeg2_vaapi_encoder_select="cbs_mpeg2 vaapi_encode"
@@ -2854,10 +2847,10 @@ nvenc_hevc_encoder_select="hevc_nvenc_encoder"
 vc1_crystalhd_decoder_select="crystalhd"
 vc1_cuvid_decoder_deps="cuda cuvid"
 vc1_mmal_decoder_deps="mmal"
+vc1_qsv_decoder_select="qsvdec vc1_qsv_hwaccel vc1_parser"
 vc1_v4l2m2m_decoder_deps="v4l2_m2m vc1_v4l2_m2m"
 vp8_cuvid_decoder_deps="cuda cuvid"
 vp8_mediacodec_decoder_deps="mediacodec"
-vp8_qsv_decoder_deps="libmfx"
 vp8_qsv_decoder_select="qsvdec vp8_qsv_hwaccel vp8_parser"
 vp8_rkmpp_decoder_deps="rkmpp"
 vp8_vaapi_encoder_deps="VAEncPictureParameterBufferVP8"
@@ -2873,6 +2866,7 @@ vp9_v4l2m2m_decoder_deps="v4l2_m2m vp9_v4l2_m2m"
 wmv3_crystalhd_decoder_select="crystalhd"
 
 # parsers
+aac_parser_select="adts_header"
 h264_parser_select="golomb h264dsp h264parse"
 hevc_parser_select="hevcparse"
 mpegaudio_parser_select="mpegaudioheader"
@@ -2881,6 +2875,7 @@ mpeg4video_parser_select="h263dsp mpegvideo qpeldsp"
 vc1_parser_select="vc1dsp"
 
 # bitstream_filters
+aac_adtstoasc_bsf_select="adts_header"
 h264_metadata_bsf_select="cbs_h264"
 h264_redundant_pps_bsf_select="cbs_h264"
 hevc_metadata_bsf_select="cbs_h265"
@@ -3047,7 +3042,8 @@ sap_demuxer_select="sdp_demuxer"
 sap_muxer_select="rtp_muxer rtp_protocol rtpenc_chain"
 sdp_demuxer_select="rtpdec"
 smoothstreaming_muxer_select="ismv_muxer"
-spdif_muxer_select="aac_parser"
+spdif_demuxer_select="adts_header"
+spdif_muxer_select="adts_header"
 spx_muxer_select="ogg_muxer"
 swf_demuxer_suggest="zlib"
 tak_demuxer_select="tak_parser"
@@ -3156,21 +3152,14 @@ rtmpte_protocol_suggest="zlib"
 rtmpts_protocol_select="ffrtmphttp_protocol https_protocol"
 rtmpts_protocol_suggest="zlib"
 rtp_protocol_select="udp_protocol"
+schannel_conflict="openssl gnutls"
 sctp_protocol_deps="struct_sctp_event_subscribe struct_msghdr_msg_flags"
 sctp_protocol_select="network"
+securetransport_conflict="openssl gnutls"
 srtp_protocol_select="rtp_protocol srtp"
 tcp_protocol_select="network"
-tls_gnutls_protocol_conflict="tls_schannel_protocol tls_securetransport_protocol"
-tls_gnutls_protocol_deps="gnutls"
-tls_gnutls_protocol_select="tcp_protocol"
-tls_openssl_protocol_conflict="tls_schannel_protocol tls_securetransport_protocol tls_gnutls_protocol"
-tls_openssl_protocol_deps="openssl"
-tls_openssl_protocol_select="tcp_protocol"
-tls_schannel_protocol_deps="schannel"
-tls_schannel_protocol_select="tcp_protocol"
-tls_securetransport_protocol_deps="securetransport"
-tls_securetransport_protocol_select="tcp_protocol"
-tls_protocol_deps_any="tls_schannel_protocol tls_securetransport_protocol tls_gnutls_protocol tls_openssl_protocol"
+tls_protocol_deps_any="gnutls openssl schannel securetransport"
+tls_protocol_select="tcp_protocol"
 udp_protocol_select="network"
 udplite_protocol_select="network"
 unix_protocol_deps="sys_un_h"
@@ -3747,6 +3736,9 @@ enabled gpl && map "die_license_disabled_gpl nonfree" $EXTERNAL_LIBRARY_NONFREE_
 map "die_license_disabled nonfree" $HWACCEL_LIBRARY_NONFREE_LIST
 
 enabled version3 && { enabled gpl && enable gplv3 || enable lgplv3; }
+
+enabled_all gnutls openssl &&
+    die "GnuTLS and OpenSSL must not be enabled at the same time."
 
 # Disable all the library-specific components if the library itself
 # is disabled, see AVCODEC_LIST and following _LIST variables.
@@ -5244,10 +5236,10 @@ probe_libc(){
             (__MINGW32_MAJOR_VERSION == 3 && __MINGW32_MINOR_VERSION >= 15)" ||
             die "ERROR: MinGW32 runtime version must be >= 3.15."
         add_${pfx}cppflags -U__STRICT_ANSI__ -D__USE_MINGW_ANSI_STDIO=1
-        check_${pfx}cpp_condition _mingw.h "defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0502" ||
-            add_${pfx}cppflags -D_WIN32_WINNT=0x0502
         check_${pfx}cpp_condition _mingw.h "__MSVCRT_VERSION__ < 0x0700" &&
             add_${pfx}cppflags -D__MSVCRT_VERSION__=0x0700
+        check_${pfx}cpp_condition windows.h "defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0502" &&
+            add_${pfx}cppflags -D_WIN32_WINNT=0x0502
         eval test \$${pfx_no_}cc_type = "gcc" &&
             add_${pfx}cppflags -D__printf__=__gnu_printf__
     elif check_${pfx}cpp_condition crtversion.h "defined _VC_CRT_MAJOR_VERSION"; then
@@ -5519,9 +5511,8 @@ EOF
 
     check_inline_asm asm_mod_q '"add r0, %Q0, %R0" :: "r"((long long)0)'
 
-    check_as <<EOF && enable as_dn_directive
-ra .dn d0.i16
-.unreq ra
+    check_as <<EOF && enable as_arch_directive
+.arch armv7-a
 EOF
     check_as <<EOF && enable as_fpu_directive
 .fpu neon
@@ -5580,29 +5571,23 @@ elif enabled ppc; then
     check_inline_asm ppc4xx    '"maclhw r10, r11, r12"'
     check_inline_asm xform_asm '"lwzx %1, %y0" :: "Z"(*(int*)0), "r"(0)'
 
-    # AltiVec flags: The FSF version of GCC differs from the Apple version
     if enabled altivec; then
-        check_cflags -maltivec -mabi=altivec &&
-        { check_header altivec.h && inc_altivec_h="#include <altivec.h>" ; } ||
-        check_cflags -faltivec
+        check_cflags -maltivec -mabi=altivec
 
         # check if our compiler supports Motorola AltiVec C API
-        check_cc <<EOF || disable altivec
-$inc_altivec_h
-int main(void) {
-    vector signed int v1 = (vector signed int) { 0 };
-    vector signed int v2 = (vector signed int) { 1 };
-    v1 = vec_add(v1, v2);
-    return 0;
-}
-EOF
+        check_code cc altivec.h "vector signed int v1 = (vector signed int) { 0 };
+                                 vector signed int v2 = (vector signed int) { 1 };
+                                 v1 = vec_add(v1, v2);" ||
+            disable altivec
 
         enabled altivec || warn "Altivec disabled, possibly missing --cpu flag"
     fi
 
     if enabled vsx; then
         check_cflags -mvsx &&
-        check_builtin vec_vsx_ld "altivec.h" "__builtin_vec_vsx_ld" || disable vsx
+        check_code cc altivec.h "int v[4] = { 0 };
+                                 vector signed int v1 = vec_vsx_ld(0, v);" ||
+            disable vsx
     fi
 
     if enabled power8; then

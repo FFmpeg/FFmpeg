@@ -124,7 +124,7 @@ static int decode_nal_sei_display_orientation(HEVCSEIDisplayOrientation *s, GetB
     return 0;
 }
 
-static int decode_nal_sei_pic_timing(HEVCSEIContext *s, GetBitContext *gb, const HEVCParamSets *ps,
+static int decode_nal_sei_pic_timing(HEVCSEI *s, GetBitContext *gb, const HEVCParamSets *ps,
                                      void *logctx, int size)
 {
     HEVCSEIPictureTiming *h = &s->picture_timing;
@@ -205,7 +205,7 @@ static int decode_registered_user_data_closed_caption(HEVCSEIA53Caption *s, GetB
     return 0;
 }
 
-static int decode_nal_sei_user_data_registered_itu_t_t35(HEVCSEIContext *s, GetBitContext *gb,
+static int decode_nal_sei_user_data_registered_itu_t_t35(HEVCSEI *s, GetBitContext *gb,
                                                          int size)
 {
     uint32_t country_code;
@@ -236,7 +236,7 @@ static int decode_nal_sei_user_data_registered_itu_t_t35(HEVCSEIContext *s, GetB
     return 0;
 }
 
-static int decode_nal_sei_active_parameter_sets(HEVCSEIContext *s, GetBitContext *gb, void *logctx)
+static int decode_nal_sei_active_parameter_sets(HEVCSEI *s, GetBitContext *gb, void *logctx)
 {
     int num_sps_ids_minus1;
     int i;
@@ -272,8 +272,8 @@ static int decode_nal_sei_alternative_transfer(HEVCSEIAlternativeTransfer *s, Ge
     return 0;
 }
 
-static int decode_nal_sei_prefix(GetBitContext *gb, HEVCSEIContext *s, const HEVCParamSets *ps,
-                                 int type, int size, void *logctx)
+static int decode_nal_sei_prefix(GetBitContext *gb, void *logctx, HEVCSEI *s,
+                                 const HEVCParamSets *ps, int type, int size)
 {
     switch (type) {
     case 256:  // Mismatched value from HM 8.1
@@ -301,8 +301,8 @@ static int decode_nal_sei_prefix(GetBitContext *gb, HEVCSEIContext *s, const HEV
     }
 }
 
-static int decode_nal_sei_suffix(GetBitContext *gb, HEVCSEIContext *s,
-                                 int type, int size, void *logctx)
+static int decode_nal_sei_suffix(GetBitContext *gb, void *logctx, HEVCSEI *s,
+                                 int type, int size)
 {
     switch (type) {
     case HEVC_SEI_TYPE_DECODED_PICTURE_HASH:
@@ -314,9 +314,8 @@ static int decode_nal_sei_suffix(GetBitContext *gb, HEVCSEIContext *s,
     }
 }
 
-static int decode_nal_sei_message(GetBitContext *gb, HEVCSEIContext *s,
-                                  const HEVCParamSets *ps, int nal_unit_type,
-                                  void *logctx)
+static int decode_nal_sei_message(GetBitContext *gb, void *logctx, HEVCSEI *s,
+                                  const HEVCParamSets *ps, int nal_unit_type)
 {
     int payload_type = 0;
     int payload_size = 0;
@@ -333,9 +332,9 @@ static int decode_nal_sei_message(GetBitContext *gb, HEVCSEIContext *s,
         payload_size += byte;
     }
     if (nal_unit_type == HEVC_NAL_SEI_PREFIX) {
-        return decode_nal_sei_prefix(gb, s, ps, payload_type, payload_size, logctx);
+        return decode_nal_sei_prefix(gb, logctx, s, ps, payload_type, payload_size);
     } else { /* nal_unit_type == NAL_SEI_SUFFIX */
-        return decode_nal_sei_suffix(gb, s, payload_type, payload_size, logctx);
+        return decode_nal_sei_suffix(gb, logctx, s, payload_type, payload_size);
     }
 }
 
@@ -344,20 +343,20 @@ static int more_rbsp_data(GetBitContext *gb)
     return get_bits_left(gb) > 0 && show_bits(gb, 8) != 0x80;
 }
 
-int ff_hevc_decode_nal_sei(GetBitContext *gb, void *logctx, HEVCSEIContext *s,
+int ff_hevc_decode_nal_sei(GetBitContext *gb, void *logctx, HEVCSEI *s,
                            const HEVCParamSets *ps, int type)
 {
     int ret;
 
     do {
-        ret = decode_nal_sei_message(gb, s, ps, type, logctx);
+        ret = decode_nal_sei_message(gb, logctx, s, ps, type);
         if (ret < 0)
             return ret;
     } while (more_rbsp_data(gb));
     return 1;
 }
 
-void ff_hevc_reset_sei(HEVCSEIContext *s)
+void ff_hevc_reset_sei(HEVCSEI *s)
 {
     s->a53_caption.a53_caption_size = 0;
     av_freep(&s->a53_caption.a53_caption);

@@ -75,16 +75,6 @@ int ff_getaddrinfo(const char *node, const char *service,
     struct addrinfo *ai;
     struct sockaddr_in *sin;
 
-#if HAVE_WINSOCK2_H
-    int (WSAAPI *win_getaddrinfo)(const char *node, const char *service,
-                                  const struct addrinfo *hints,
-                                  struct addrinfo **res);
-    HMODULE ws2mod = GetModuleHandle("ws2_32.dll");
-    win_getaddrinfo = GetProcAddress(ws2mod, "getaddrinfo");
-    if (win_getaddrinfo)
-        return win_getaddrinfo(node, service, hints, res);
-#endif /* HAVE_WINSOCK2_H */
-
     *res = NULL;
     sin  = av_mallocz(sizeof(struct sockaddr_in));
     if (!sin)
@@ -148,17 +138,6 @@ int ff_getaddrinfo(const char *node, const char *service,
 
 void ff_freeaddrinfo(struct addrinfo *res)
 {
-#if HAVE_WINSOCK2_H
-    void (WSAAPI *win_freeaddrinfo)(struct addrinfo *res);
-    HMODULE ws2mod = GetModuleHandle("ws2_32.dll");
-    win_freeaddrinfo = (void (WSAAPI *)(struct addrinfo *res))
-                       GetProcAddress(ws2mod, "freeaddrinfo");
-    if (win_freeaddrinfo) {
-        win_freeaddrinfo(res);
-        return;
-    }
-#endif /* HAVE_WINSOCK2_H */
-
     av_freep(&res->ai_canonname);
     av_freep(&res->ai_addr);
     av_freep(&res);
@@ -169,16 +148,6 @@ int ff_getnameinfo(const struct sockaddr *sa, int salen,
                    char *serv, int servlen, int flags)
 {
     const struct sockaddr_in *sin = (const struct sockaddr_in *)sa;
-
-#if HAVE_WINSOCK2_H
-    int (WSAAPI *win_getnameinfo)(const struct sockaddr *sa, socklen_t salen,
-                                  char *host, DWORD hostlen,
-                                  char *serv, DWORD servlen, int flags);
-    HMODULE ws2mod = GetModuleHandle("ws2_32.dll");
-    win_getnameinfo = GetProcAddress(ws2mod, "getnameinfo");
-    if (win_getnameinfo)
-        return win_getnameinfo(sa, salen, host, hostlen, serv, servlen, flags);
-#endif /* HAVE_WINSOCK2_H */
 
     if (sa->sa_family != AF_INET)
         return EAI_FAMILY;

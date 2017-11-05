@@ -80,6 +80,15 @@
     out_m;                                                       \
 } )
 
+#define HEVC_FILT_4TAP_SH(in0, in1, filt0, filt1)                \
+( {                                                              \
+    v8i16 out_m;                                                 \
+                                                                 \
+    out_m = __msa_dotp_s_h((v16i8) in0, (v16i8) filt0);          \
+    out_m = __msa_dpadd_s_h(out_m, (v16i8) in1, (v16i8) filt1);  \
+    out_m;                                                       \
+} )
+
 #define HEVC_FILT_4TAP(in0, in1, filt0, filt1)           \
 ( {                                                      \
     v4i32 out_m;                                         \

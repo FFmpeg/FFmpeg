@@ -857,8 +857,8 @@ static void test2_fill_picture(AVFilterContext *ctx, AVFrame *frame)
         uint8_t alpha[256];
 
         r = s->pts;
-        for (y = ymin; y < ymax - 15; y += 16) {
-            for (x = xmin; x < xmax - 15; x += 16) {
+        for (y = ymin; y + 15 < ymax; y += 16) {
+            for (x = xmin; x + 15 < xmax; x += 16) {
                 if ((x ^ y) & 16)
                     continue;
                 for (i = 0; i < 256; i++) {

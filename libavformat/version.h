@@ -33,7 +33,7 @@
 // Also please add any ticket numbers that you believe might be affected here
 #define LIBAVFORMAT_VERSION_MAJOR  58
 #define LIBAVFORMAT_VERSION_MINOR   0
-#define LIBAVFORMAT_VERSION_MICRO 101
+#define LIBAVFORMAT_VERSION_MICRO 102
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
                                                LIBAVFORMAT_VERSION_MINOR, \
@@ -75,6 +75,12 @@
 #endif
 #ifndef FF_API_OLD_ROTATE_API
 #define FF_API_OLD_ROTATE_API           (LIBAVFORMAT_VERSION_MAJOR < 59)
+#endif
+#ifndef FF_API_FORMAT_GET_SET
+#define FF_API_FORMAT_GET_SET           (LIBAVFORMAT_VERSION_MAJOR < 59)
+#endif
+#ifndef FF_API_OLD_AVIO_EOF_0
+#define FF_API_OLD_AVIO_EOF_0           (LIBAVFORMAT_VERSION_MAJOR < 59)
 #endif
 
 

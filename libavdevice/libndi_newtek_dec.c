@@ -189,7 +189,7 @@ static int ndi_create_video_stream(AVFormatContext *avctx, NDIlib_video_frame_t 
     }
 
     st->time_base                   = NDI_TIME_BASE_Q;
-    av_stream_set_r_frame_rate(st, av_make_q(v->frame_rate_N, v->frame_rate_D));
+    st->r_frame_rate                = av_make_q(v->frame_rate_N, v->frame_rate_D);
 
     tmp = av_mul_q(av_d2q(v->picture_aspect_ratio, INT_MAX), (AVRational){v->yres, v->xres});
     av_reduce(&st->sample_aspect_ratio.num, &st->sample_aspect_ratio.den, tmp.num, tmp.den, 1000);

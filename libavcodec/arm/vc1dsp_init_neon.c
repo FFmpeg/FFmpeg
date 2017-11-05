@@ -22,8 +22,6 @@
 #include "libavcodec/vc1dsp.h"
 #include "vc1dsp.h"
 
-#include "config.h"
-
 void ff_vc1_inv_trans_8x8_neon(int16_t *block);
 void ff_vc1_inv_trans_4x8_neon(uint8_t *dest, ptrdiff_t stride, int16_t *block);
 void ff_vc1_inv_trans_8x4_neon(uint8_t *dest, ptrdiff_t stride, int16_t *block);
@@ -95,7 +93,6 @@ av_cold void ff_vc1dsp_init_neon(VC1DSPContext *dsp)
     dsp->vc1_inv_trans_4x4_dc = ff_vc1_inv_trans_4x4_dc_neon;
 
     dsp->put_vc1_mspel_pixels_tab[1][ 0] = ff_put_pixels8x8_neon;
-    if (HAVE_AS_DN_DIRECTIVE) {
     FN_ASSIGN(1, 0);
     FN_ASSIGN(2, 0);
     FN_ASSIGN(3, 0);
@@ -114,7 +111,6 @@ av_cold void ff_vc1dsp_init_neon(VC1DSPContext *dsp)
     FN_ASSIGN(1, 3);
     FN_ASSIGN(2, 3);
     FN_ASSIGN(3, 3);
-    }
 
     dsp->put_no_rnd_vc1_chroma_pixels_tab[0] = ff_put_vc1_chroma_mc8_neon;
     dsp->avg_no_rnd_vc1_chroma_pixels_tab[0] = ff_avg_vc1_chroma_mc8_neon;

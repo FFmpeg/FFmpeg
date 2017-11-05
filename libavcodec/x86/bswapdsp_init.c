@@ -25,6 +25,7 @@
 
 void ff_bswap32_buf_sse2(uint32_t *dst, const uint32_t *src, int w);
 void ff_bswap32_buf_ssse3(uint32_t *dst, const uint32_t *src, int w);
+void ff_bswap32_buf_avx2(uint32_t *dst, const uint32_t *src, int w);
 
 av_cold void ff_bswapdsp_init_x86(BswapDSPContext *c)
 {
@@ -34,4 +35,6 @@ av_cold void ff_bswapdsp_init_x86(BswapDSPContext *c)
         c->bswap_buf = ff_bswap32_buf_sse2;
     if (EXTERNAL_SSSE3(cpu_flags))
         c->bswap_buf = ff_bswap32_buf_ssse3;
+    if (EXTERNAL_AVX2_FAST(cpu_flags))
+        c->bswap_buf = ff_bswap32_buf_avx2;
 }

@@ -66,83 +66,6 @@ static unsigned long openssl_thread_id(void)
 #endif
 #endif
 
-static int url_bio_create(BIO *b)
-{
-#if OPENSSL_VERSION_NUMBER >= 0x1010000fL
-    BIO_set_init(b, 1);
-    BIO_set_data(b, NULL);
-    BIO_set_flags(b, 0);
-#else
-    b->init = 1;
-    b->ptr = NULL;
-    b->flags = 0;
-#endif
-    return 1;
-}
-
-static int url_bio_destroy(BIO *b)
-{
-    return 1;
-}
-
-#if OPENSSL_VERSION_NUMBER >= 0x1010000fL
-#define GET_BIO_DATA(x) BIO_get_data(x)
-#else
-#define GET_BIO_DATA(x) (x)->ptr
-#endif
-
-static int url_bio_bread(BIO *b, char *buf, int len)
-{
-    URLContext *h = GET_BIO_DATA(b);
-    int ret = ffurl_read(h, buf, len);
-    if (ret >= 0)
-        return ret;
-    BIO_clear_retry_flags(b);
-    if (ret == AVERROR_EXIT)
-        return 0;
-    return -1;
-}
-
-static int url_bio_bwrite(BIO *b, const char *buf, int len)
-{
-    URLContext *h = GET_BIO_DATA(b);
-    int ret = ffurl_write(h, buf, len);
-    if (ret >= 0)
-        return ret;
-    BIO_clear_retry_flags(b);
-    if (ret == AVERROR_EXIT)
-        return 0;
-    return -1;
-}
-
-static long url_bio_ctrl(BIO *b, int cmd, long num, void *ptr)
-{
-    if (cmd == BIO_CTRL_FLUSH) {
-        BIO_clear_retry_flags(b);
-        return 1;
-    }
-    return 0;
-}
-
-static int url_bio_bputs(BIO *b, const char *str)
-{
-    return url_bio_bwrite(b, str, strlen(str));
-}
-
-#if OPENSSL_VERSION_NUMBER < 0x1010000fL
-static BIO_METHOD url_bio_method = {
-    .type = BIO_TYPE_SOURCE_SINK,
-    .name = "urlprotocol bio",
-    .bwrite = url_bio_bwrite,
-    .bread = url_bio_bread,
-    .bputs = url_bio_bputs,
-    .bgets = NULL,
-    .ctrl = url_bio_ctrl,
-    .create = url_bio_create,
-    .destroy = url_bio_destroy,
-};
-#endif
-
 int ff_openssl_init(void)
 {
     avpriv_lock_avformat();
@@ -193,6 +116,12 @@ void ff_openssl_deinit(void)
 
 static int print_tls_error(URLContext *h, int ret)
 {
+    TLSContext *c = h->priv_data;
+    if (h->flags & AVIO_FLAG_NONBLOCK) {
+        int err = SSL_get_error(c->ssl, ret);
+        if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_READ)
+            return AVERROR(EAGAIN);
+    }
     av_log(h, AV_LOG_ERROR, "%s\n", ERR_error_string(ERR_get_error(), NULL));
     return AVERROR(EIO);
 }
@@ -215,6 +144,87 @@ static int tls_close(URLContext *h)
     ff_openssl_deinit();
     return 0;
 }
+
+static int url_bio_create(BIO *b)
+{
+#if OPENSSL_VERSION_NUMBER >= 0x1010000fL
+    BIO_set_init(b, 1);
+    BIO_set_data(b, NULL);
+    BIO_set_flags(b, 0);
+#else
+    b->init = 1;
+    b->ptr = NULL;
+    b->flags = 0;
+#endif
+    return 1;
+}
+
+static int url_bio_destroy(BIO *b)
+{
+    return 1;
+}
+
+#if OPENSSL_VERSION_NUMBER >= 0x1010000fL
+#define GET_BIO_DATA(x) BIO_get_data(x)
+#else
+#define GET_BIO_DATA(x) (x)->ptr
+#endif
+
+static int url_bio_bread(BIO *b, char *buf, int len)
+{
+    URLContext *h = GET_BIO_DATA(b);
+    int ret = ffurl_read(h, buf, len);
+    if (ret >= 0)
+        return ret;
+    BIO_clear_retry_flags(b);
+    if (ret == AVERROR(EAGAIN))
+        BIO_set_retry_read(b);
+    if (ret == AVERROR_EXIT)
+        return 0;
+    return -1;
+}
+
+static int url_bio_bwrite(BIO *b, const char *buf, int len)
+{
+    URLContext *h = GET_BIO_DATA(b);
+    int ret = ffurl_write(h, buf, len);
+    if (ret >= 0)
+        return ret;
+    BIO_clear_retry_flags(b);
+    if (ret == AVERROR(EAGAIN))
+        BIO_set_retry_write(b);
+    if (ret == AVERROR_EXIT)
+        return 0;
+    return -1;
+}
+
+static long url_bio_ctrl(BIO *b, int cmd, long num, void *ptr)
+{
+    if (cmd == BIO_CTRL_FLUSH) {
+        BIO_clear_retry_flags(b);
+        return 1;
+    }
+    return 0;
+}
+
+static int url_bio_bputs(BIO *b, const char *str)
+{
+    return url_bio_bwrite(b, str, strlen(str));
+}
+
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL
+static BIO_METHOD url_bio_method = {
+    .type = BIO_TYPE_SOURCE_SINK,
+    .name = "urlprotocol bio",
+    .bwrite = url_bio_bwrite,
+    .bread = url_bio_bread,
+    .bputs = url_bio_bputs,
+    .bgets = NULL,
+    .ctrl = url_bio_ctrl,
+    .create = url_bio_create,
+    .destroy = url_bio_destroy,
+};
+#endif
 
 static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **options)
 {
@@ -302,7 +312,11 @@ fail:
 static int tls_read(URLContext *h, uint8_t *buf, int size)
 {
     TLSContext *c = h->priv_data;
-    int ret = SSL_read(c->ssl, buf, size);
+    int ret;
+    // Set or clear the AVIO_FLAG_NONBLOCK on c->tls_shared.tcp
+    c->tls_shared.tcp->flags &= ~AVIO_FLAG_NONBLOCK;
+    c->tls_shared.tcp->flags |= h->flags & AVIO_FLAG_NONBLOCK;
+    ret = SSL_read(c->ssl, buf, size);
     if (ret > 0)
         return ret;
     if (ret == 0)
@@ -313,7 +327,11 @@ static int tls_read(URLContext *h, uint8_t *buf, int size)
 static int tls_write(URLContext *h, const uint8_t *buf, int size)
 {
     TLSContext *c = h->priv_data;
-    int ret = SSL_write(c->ssl, buf, size);
+    int ret;
+    // Set or clear the AVIO_FLAG_NONBLOCK on c->tls_shared.tcp
+    c->tls_shared.tcp->flags &= ~AVIO_FLAG_NONBLOCK;
+    c->tls_shared.tcp->flags |= h->flags & AVIO_FLAG_NONBLOCK;
+    ret = SSL_write(c->ssl, buf, size);
     if (ret > 0)
         return ret;
     if (ret == 0)
@@ -339,7 +357,7 @@ static const AVClass tls_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const URLProtocol ff_tls_openssl_protocol = {
+const URLProtocol ff_tls_protocol = {
     .name           = "tls",
     .url_open2      = tls_open,
     .url_read       = tls_read,

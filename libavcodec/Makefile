@@ -2,6 +2,7 @@ NAME = avcodec
 DESC = FFmpeg codec library
 
 HEADERS = ac3_parser.h                                                  \
+          adts_parser.h                                                 \
           avcodec.h                                                     \
           avdct.h                                                       \
           avfft.h                                                       \
@@ -20,6 +21,7 @@ HEADERS = ac3_parser.h                                                  \
           xvmc.h                                                        \
 
 OBJS = ac3_parser.o                                                     \
+       adts_parser.o                                                    \
        allcodecs.o                                                      \
        avdct.o                                                          \
        avpacket.o                                                       \
@@ -52,6 +54,7 @@ OBJS = ac3_parser.o                                                     \
 # subsystems
 OBJS-$(CONFIG_AANDCTTABLES)            += aandcttab.o
 OBJS-$(CONFIG_AC3DSP)                  += ac3dsp.o ac3.o ac3tab.o
+OBJS-$(CONFIG_ADTS_HEADER)             += adts_header.o mpeg4audio.o
 OBJS-$(CONFIG_AUDIO_FRAME_QUEUE)       += audio_frame_queue.o
 OBJS-$(CONFIG_AUDIODSP)                += audiodsp.o
 OBJS-$(CONFIG_BLOCKDSP)                += blockdsp.o
@@ -148,10 +151,10 @@ OBJS-$(CONFIG_ZERO12V_DECODER)         += 012v.o
 OBJS-$(CONFIG_A64MULTI_ENCODER)        += a64multienc.o elbg.o
 OBJS-$(CONFIG_A64MULTI5_ENCODER)       += a64multienc.o elbg.o
 OBJS-$(CONFIG_AAC_DECODER)             += aacdec.o aactab.o aacsbr.o aacps_float.o \
-                                          aacadtsdec.o mpeg4audio.o kbdwin.o \
+                                          mpeg4audio.o kbdwin.o \
                                           sbrdsp.o aacpsdsp_float.o cbrt_data.o
 OBJS-$(CONFIG_AAC_FIXED_DECODER)       += aacdec_fixed.o aactab.o aacsbr_fixed.o aacps_fixed.o \
-                                          aacadtsdec.o mpeg4audio.o kbdwin.o \
+                                          mpeg4audio.o kbdwin.o \
                                           sbrdsp_fixed.o aacpsdsp_fixed.o cbrt_data_fixed.o
 OBJS-$(CONFIG_AAC_ENCODER)             += aacenc.o aaccoder.o aacenctab.o    \
                                           aacpsy.o aactab.o      \
@@ -880,7 +883,6 @@ OBJS-$(CONFIG_MXF_MUXER)               += dnxhddata.o
 OBJS-$(CONFIG_NUT_MUXER)               += mpegaudiodata.o
 OBJS-$(CONFIG_NUT_DEMUXER)             += mpegaudiodata.o mpeg4audio.o
 OBJS-$(CONFIG_RTP_MUXER)               += mpeg4audio.o
-OBJS-$(CONFIG_SPDIF_DEMUXER)           += aacadtsdec.o mpeg4audio.o
 OBJS-$(CONFIG_SPDIF_MUXER)             += dca.o
 OBJS-$(CONFIG_TAK_DEMUXER)             += tak.o
 OBJS-$(CONFIG_WEBM_MUXER)              += mpeg4audio.o
@@ -957,7 +959,7 @@ OBJS-$(CONFIG_LIBZVBI_TELETEXT_DECODER)   += libzvbi-teletextdec.o ass.o
 # parsers
 OBJS-$(CONFIG_AAC_LATM_PARSER)         += latm_parser.o
 OBJS-$(CONFIG_AAC_PARSER)              += aac_parser.o aac_ac3_parser.o \
-                                          aacadtsdec.o mpeg4audio.o
+                                          mpeg4audio.o
 OBJS-$(CONFIG_AC3_PARSER)              += ac3tab.o aac_ac3_parser.o
 OBJS-$(CONFIG_ADX_PARSER)              += adx_parser.o adx.o
 OBJS-$(CONFIG_BMP_PARSER)              += bmp_parser.o
@@ -1003,8 +1005,7 @@ OBJS-$(CONFIG_VP9_PARSER)              += vp9_parser.o
 OBJS-$(CONFIG_XMA_PARSER)              += xma_parser.o
 
 # bitstream filters
-OBJS-$(CONFIG_AAC_ADTSTOASC_BSF)          += aac_adtstoasc_bsf.o aacadtsdec.o \
-                                             mpeg4audio.o
+OBJS-$(CONFIG_AAC_ADTSTOASC_BSF)          += aac_adtstoasc_bsf.o mpeg4audio.o
 OBJS-$(CONFIG_CHOMP_BSF)                  += chomp_bsf.o
 OBJS-$(CONFIG_DUMP_EXTRADATA_BSF)         += dump_extradata_bsf.o
 OBJS-$(CONFIG_DCA_CORE_BSF)               += dca_core_bsf.o

@@ -2823,10 +2823,10 @@ static const AVOption mpeg4_options[] = {
 };
 
 static const AVClass mpeg4_class = {
-    "MPEG4 Video Decoder",
-    av_default_item_name,
-    mpeg4_options,
-    LIBAVUTIL_VERSION_INT,
+    .class_name = "MPEG4 Video Decoder",
+    .item_name  = av_default_item_name,
+    .option     = mpeg4_options,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 AVCodec ff_mpeg4_decoder = {

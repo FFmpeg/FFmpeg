@@ -1969,9 +1969,15 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     InputFile   *f = input_files [ist->file_index];
     int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ? 0 : of->start_time;
     int64_t ost_tb_start_time = av_rescale_q(start_time, AV_TIME_BASE_Q, ost->mux_timebase);
-    AVPacket opkt;
+    AVPacket opkt = { 0 };
 
     av_init_packet(&opkt);
+
+    // EOF: flush output bitstream filters.
+    if (!pkt) {
+        output_packet(of, &opkt, ost, 1);
+        return;
+    }
 
     if ((!ost->frame_number && !(pkt->flags & AV_PKT_FLAG_KEY)) &&
         !ost->copy_initial_nonkeyframes)
@@ -2693,7 +2699,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
     }
 
     /* handle stream copy */
-    if (!ist->decoding_needed) {
+    if (!ist->decoding_needed && pkt) {
         ist->dts = ist->next_dts;
         switch (ist->dec_ctx->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
@@ -2719,7 +2725,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
         ist->pts = ist->dts;
         ist->next_pts = ist->next_dts;
     }
-    for (i = 0; pkt && i < nb_output_streams; i++) {
+    for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
 
         if (!check_output_constraints(ist, ost) || ost->encoding_needed)
@@ -3120,7 +3126,7 @@ static void set_encoder_id(OutputFile *of, OutputStream *ost)
     uint8_t *encoder_string;
     int encoder_string_len;
     int format_flags = 0;
-    int codec_flags = 0;
+    int codec_flags = ost->enc_ctx->flags;
 
     if (av_dict_get(ost->st->metadata, "encoder",  NULL, 0))
         return;
@@ -4140,14 +4146,17 @@ static int seek_to_start(InputFile *ifile, AVFormatContext *is)
                 AVRational sample_rate = {1, avctx->sample_rate};
 
                 duration = av_rescale_q(ist->nb_samples, sample_rate, ist->st->time_base);
-            } else
+            } else {
                 continue;
+            }
         } else {
             if (ist->framerate.num) {
-                duration = av_rescale_q(1, ist->framerate, ist->st->time_base);
+                duration = av_rescale_q(1, av_inv_q(ist->framerate), ist->st->time_base);
             } else if (ist->st->avg_frame_rate.num) {
-                duration = av_rescale_q(1, ist->st->avg_frame_rate, ist->st->time_base);
-            } else duration = 1;
+                duration = av_rescale_q(1, av_inv_q(ist->st->avg_frame_rate), ist->st->time_base);
+            } else {
+                duration = 1;
+            }
         }
         if (!ifile->duration)
             ifile->time_base = ist->st->time_base;
@@ -4600,7 +4609,7 @@ static int transcode(void)
     /* at the end of stream, we must flush the decoder buffers */
     for (i = 0; i < nb_input_streams; i++) {
         ist = input_streams[i];
-        if (!input_files[ist->file_index]->eof_reached && ist->decoding_needed) {
+        if (!input_files[ist->file_index]->eof_reached) {
             process_input_packet(ist, NULL, 0);
         }
     }

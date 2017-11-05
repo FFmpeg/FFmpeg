@@ -279,8 +279,9 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
         goto error;
     }
 
-    if (smacker_decode_bigtree(gb, &huff, &ctx, 0) < 0)
-        err = -1;
+    res = smacker_decode_bigtree(gb, &huff, &ctx, 0);
+    if (res < 0)
+        err = res;
     skip_bits1(gb);
     if(ctx.last[0] == -1) ctx.last[0] = huff.current++;
     if(ctx.last[1] == -1) ctx.last[1] = huff.current++;
@@ -600,7 +601,7 @@ static av_cold int smka_decode_init(AVCodecContext *avctx)
 {
     if (avctx->channels < 1 || avctx->channels > 2) {
         av_log(avctx, AV_LOG_ERROR, "invalid number of channels\n");
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
     }
     avctx->channel_layout = (avctx->channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
     avctx->sample_fmt = avctx->bits_per_coded_sample == 8 ? AV_SAMPLE_FMT_U8 : AV_SAMPLE_FMT_S16;
@@ -630,7 +631,7 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
 
     if (buf_size <= 4) {
         av_log(avctx, AV_LOG_ERROR, "packet is too small\n");
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
     }
 
     unp_size = AV_RL32(buf);
@@ -652,18 +653,19 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
     bits = get_bits1(&gb);
     if (stereo ^ (avctx->channels != 1)) {
         av_log(avctx, AV_LOG_ERROR, "channels mismatch\n");
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
     }
     if (bits == (avctx->sample_fmt == AV_SAMPLE_FMT_U8)) {
         av_log(avctx, AV_LOG_ERROR, "sample format mismatch\n");
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
     }
 
     /* get output buffer */
     frame->nb_samples = unp_size / (avctx->channels * (bits + 1));
     if (unp_size % (avctx->channels * (bits + 1))) {
-        av_log(avctx, AV_LOG_ERROR, "unp_size %d is odd\n", unp_size);
-        return AVERROR(EINVAL);
+        av_log(avctx, AV_LOG_ERROR,
+               "The buffer does not contain an integer number of samples\n");
+        return AVERROR_INVALIDDATA;
     }
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;

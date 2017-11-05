@@ -131,7 +131,7 @@ CFDataRef ff_videotoolbox_hvcc_extradata_create(AVCodecContext *avctx)
     int vt_extradata_size = 23 + 5 + vps->data_size + 5 + sps->data_size + 3;
     uint8_t *vt_extradata;
 
-    for (i = 0; i < MAX_PPS_COUNT; i++) {
+    for (i = 0; i < HEVC_MAX_PPS_COUNT; i++) {
         if (h->ps.pps_list[i]) {
             const HEVCPPS *pps = (const HEVCPPS *)h->ps.pps_list[i]->data;
             vt_extradata_size += 2 + pps->data_size;
@@ -258,7 +258,7 @@ CFDataRef ff_videotoolbox_hvcc_extradata_create(AVCodecContext *avctx)
              HEVC_NAL_PPS & 0x3f);
     AV_WB16(p + 1, num_pps);
     p += 3;
-    for (i = 0; i < MAX_PPS_COUNT; i++) {
+    for (i = 0; i < HEVC_MAX_PPS_COUNT; i++) {
         if (h->ps.pps_list[i]) {
             const HEVCPPS *pps = (const HEVCPPS *)h->ps.pps_list[i]->data;
             AV_WB16(p, pps->data_size);

@@ -584,6 +584,12 @@ static char *sdp_write_media_attributes(char *buff, int size, AVStream *st, int 
                                          payload_type,
                                          p->sample_rate, p->channels);
             break;
+        case AV_CODEC_ID_PCM_S24BE:
+            if (payload_type >= RTP_PT_PRIVATE)
+                av_strlcatf(buff, size, "a=rtpmap:%d L24/%d/%d\r\n",
+                                         payload_type,
+                                         p->sample_rate, p->channels);
+            break;
         case AV_CODEC_ID_PCM_MULAW:
             if (payload_type >= RTP_PT_PRIVATE)
                 av_strlcatf(buff, size, "a=rtpmap:%d PCMU/%d/%d\r\n",

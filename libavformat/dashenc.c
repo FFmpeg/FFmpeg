@@ -55,6 +55,8 @@ typedef struct AdaptationSet {
     char id[10];
     enum AVMediaType media_type;
     AVDictionary *metadata;
+    AVRational min_frame_rate, max_frame_rate;
+    int ambiguous_frame_rate;
 } AdaptationSet;
 
 typedef struct OutputStream {
@@ -97,8 +99,6 @@ typedef struct DASHContext {
     const char *single_file_name;
     const char *init_seg_name;
     const char *media_seg_name;
-    AVRational min_frame_rate, max_frame_rate;
-    int ambiguous_frame_rate;
     const char *utc_timing_url;
 } DASHContext;
 
@@ -393,8 +393,8 @@ static int write_adaptation_set(AVFormatContext *s, AVIOContext *out, int as_ind
 
     avio_printf(out, "\t\t<AdaptationSet id=\"%s\" contentType=\"%s\" segmentAlignment=\"true\" bitstreamSwitching=\"true\"",
                 as->id, as->media_type == AVMEDIA_TYPE_VIDEO ? "video" : "audio");
-    if (as->media_type == AVMEDIA_TYPE_VIDEO && c->max_frame_rate.num && !c->ambiguous_frame_rate)
-        avio_printf(out, " %s=\"%d/%d\"", (av_cmp_q(c->min_frame_rate, c->max_frame_rate) < 0) ? "maxFrameRate" : "frameRate", c->max_frame_rate.num, c->max_frame_rate.den);
+    if (as->media_type == AVMEDIA_TYPE_VIDEO && as->max_frame_rate.num && !as->ambiguous_frame_rate && av_cmp_q(as->min_frame_rate, as->max_frame_rate) < 0)
+        avio_printf(out, " maxFrameRate=\"%d/%d\"", as->max_frame_rate.num, as->max_frame_rate.den);
     lang = av_dict_get(as->metadata, "language", NULL, 0);
     if (lang)
         avio_printf(out, " lang=\"%s\"", lang->value);
@@ -677,7 +677,6 @@ static int dash_init(AVFormatContext *s)
         c->single_file = 1;
     if (c->single_file)
         c->use_template = 0;
-    c->ambiguous_frame_rate = 0;
 
     av_strlcpy(c->dirname, s->filename, sizeof(c->dirname));
     ptr = strrchr(c->dirname, '/');
@@ -753,6 +752,7 @@ static int dash_init(AVFormatContext *s)
         avcodec_parameters_copy(st->codecpar, s->streams[i]->codecpar);
         st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
         st->time_base = s->streams[i]->time_base;
+        st->avg_frame_rate = s->streams[i]->avg_frame_rate;
         ctx->avoid_negative_ts = s->avoid_negative_ts;
         ctx->flags = s->flags;
 
@@ -778,8 +778,11 @@ static int dash_init(AVFormatContext *s)
         } else {
             av_dict_set_int(&opts, "cluster_time_limit", c->min_seg_duration / 1000, 0);
             av_dict_set_int(&opts, "cluster_size_limit", 5 * 1024 * 1024, 0); // set a large cluster size limit
+            av_dict_set_int(&opts, "dash", 1, 0);
+            av_dict_set_int(&opts, "dash_track_number", i + 1, 0);
+            av_dict_set_int(&opts, "live", 1, 0);
         }
-        if ((ret = avformat_write_header(ctx, &opts)) < 0)
+        if ((ret = avformat_init_output(ctx, &opts)) < 0)
             return ret;
         os->ctx_inited = 1;
         avio_flush(ctx->pb);
@@ -802,12 +805,12 @@ static int dash_init(AVFormatContext *s)
         if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
             AVRational avg_frame_rate = s->streams[i]->avg_frame_rate;
             if (avg_frame_rate.num > 0) {
-                if (av_cmp_q(avg_frame_rate, c->min_frame_rate) < 0)
-                    c->min_frame_rate = avg_frame_rate;
-                if (av_cmp_q(c->max_frame_rate, avg_frame_rate) < 0)
-                    c->max_frame_rate = avg_frame_rate;
+                if (av_cmp_q(avg_frame_rate, as->min_frame_rate) < 0)
+                    as->min_frame_rate = avg_frame_rate;
+                if (av_cmp_q(as->max_frame_rate, avg_frame_rate) < 0)
+                    as->max_frame_rate = avg_frame_rate;
             } else {
-                c->ambiguous_frame_rate = 1;
+                as->ambiguous_frame_rate = 1;
             }
             c->has_video = 1;
         }
@@ -947,6 +950,7 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
 
     for (i = 0; i < s->nb_streams; i++) {
         OutputStream *os = &c->streams[i];
+        AVStream *st = s->streams[i];
         char filename[1024] = "", full_path[1024], temp_path[1024];
         int range_length, index_length = 0;
 
@@ -1001,7 +1005,7 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
 
         if (!os->bit_rate) {
             // calculate average bitrate of first segment
-            int64_t bitrate = (int64_t) range_length * 8 * AV_TIME_BASE / (os->max_pts - os->start_pts);
+            int64_t bitrate = (int64_t) range_length * 8 / ((os->max_pts - os->start_pts) * av_q2d(st->time_base));
             if (bitrate >= 0) {
                 os->bit_rate = bitrate;
                 snprintf(os->bandwidth_str, sizeof(os->bandwidth_str),

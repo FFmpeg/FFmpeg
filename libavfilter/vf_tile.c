@@ -23,6 +23,7 @@
  * tile video filter
  */
 
+#include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
@@ -43,8 +44,6 @@ typedef struct TileContext {
     AVFrame *out_ref;
     uint8_t rgba_color[4];
 } TileContext;
-
-#define REASONABLE_SIZE 1024
 
 #define OFFSET(x) offsetof(TileContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
@@ -68,10 +67,19 @@ static av_cold int init(AVFilterContext *ctx)
 {
     TileContext *tile = ctx->priv;
 
-    if (tile->w > REASONABLE_SIZE || tile->h > REASONABLE_SIZE) {
+    if (tile->w > UINT_MAX / tile->h) {
         av_log(ctx, AV_LOG_ERROR, "Tile size %ux%u is insane.\n",
                tile->w, tile->h);
         return AVERROR(EINVAL);
+    }
+
+    if (tile->padding) {
+        if ((tile->w - 1 > (UINT32_MAX - 2 * tile->margin) / tile->padding) ||
+            (tile->h - 1 > (UINT32_MAX - 2 * tile->margin) / tile->padding)) {
+            av_log(ctx, AV_LOG_ERROR, "Combination of Tile size %ux%u, padding %d and margin %d overflows.\n",
+                   tile->w, tile->h, tile->padding, tile->margin);
+            return AVERROR(EINVAL);
+        }
     }
 
     if (tile->nb_frames == 0) {
@@ -142,6 +150,7 @@ static void draw_blank_frame(AVFilterContext *ctx, AVFrame *out_buf)
                       x0, y0, inlink->w, inlink->h);
     tile->current++;
 }
+
 static int end_last_frame(AVFilterContext *ctx)
 {
     TileContext *tile     = ctx->priv;

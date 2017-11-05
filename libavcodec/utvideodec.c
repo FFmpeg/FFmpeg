@@ -229,6 +229,16 @@ fail:
     return AVERROR_INVALIDDATA;
 }
 
+static int compute_cmask(int plane_no, int interlaced, enum AVPixelFormat pix_fmt)
+{
+    const int is_luma = (pix_fmt == AV_PIX_FMT_YUV420P) && !plane_no;
+
+    if (interlaced)
+        return ~(1 + 2 * is_luma);
+
+    return ~is_luma;
+}
+
 static int decode_plane(UtvideoContext *c, int plane_no,
                         uint8_t *dst, int step, ptrdiff_t stride,
                         int width, int height,
@@ -239,7 +249,7 @@ static int decode_plane(UtvideoContext *c, int plane_no,
     VLC vlc;
     GetBitContext gb;
     int prev, fsym;
-    const int cmask = c->interlaced ? ~(1 + 2 * (!plane_no && c->avctx->pix_fmt == AV_PIX_FMT_YUV420P)) : ~(!plane_no && c->avctx->pix_fmt == AV_PIX_FMT_YUV420P);
+    const int cmask = compute_cmask(plane_no, c->interlaced, c->avctx->pix_fmt);
 
     if (build_huff(src, &vlc, &fsym)) {
         av_log(c->avctx, AV_LOG_ERROR, "Cannot build Huffman codes\n");

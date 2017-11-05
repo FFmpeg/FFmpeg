@@ -26,6 +26,7 @@
  * @author Marco Gerards <marco@gnu.org>, David Conrad, Jordi Ortiz <nenjordi@gmail.com>
  */
 
+#include "libavutil/pixdesc.h"
 #include "libavutil/thread.h"
 #include "avcodec.h"
 #include "get_bits.h"
@@ -1927,7 +1928,10 @@ static int get_buffer_with_edge(AVCodecContext *avctx, AVFrame *f, int flags)
 {
     int ret, i;
     int chroma_x_shift, chroma_y_shift;
-    avcodec_get_chroma_sub_sample(avctx->pix_fmt, &chroma_x_shift, &chroma_y_shift);
+    ret = av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt, &chroma_x_shift,
+                                           &chroma_y_shift);
+    if (ret < 0)
+        return ret;
 
     f->width  = avctx->width  + 2 * EDGE_WIDTH;
     f->height = avctx->height + 2 * EDGE_WIDTH + 2;
@@ -2126,7 +2130,11 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
 
         s->pshift = s->bit_depth > 8;
 
-        avcodec_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_x_shift, &s->chroma_y_shift);
+        ret = av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt,
+                                               &s->chroma_x_shift,
+                                               &s->chroma_y_shift);
+        if (ret < 0)
+            return ret;
 
         ret = alloc_sequence_buffers(s);
         if (ret < 0)
