@@ -7,6 +7,7 @@ version <next>:
   requires 2.1 (or later) and pkg-config.
 - VDA dropped (use VideoToolbox instead)
 - MagicYUV encoder
+- Raw AMR-NB and AMR-WB demuxers
 
 
 version 3.4:

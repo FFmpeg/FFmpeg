@@ -63,6 +63,8 @@ static void register_all(void)
     REGISTER_MUXDEMUX(AIFF,             aiff);
     REGISTER_DEMUXER (AIX,              aix);
     REGISTER_MUXDEMUX(AMR,              amr);
+    REGISTER_DEMUXER (AMRNB,            amrnb);
+    REGISTER_DEMUXER (AMRWB,            amrwb);
     REGISTER_DEMUXER (ANM,              anm);
     REGISTER_DEMUXER (APC,              apc);
     REGISTER_DEMUXER (APE,              ape);
