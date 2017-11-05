@@ -309,7 +309,7 @@ static av_always_inline void predict(PredictorState *ps, int *coef,
             if (shift > 0) {
                 *coef += (unsigned)((pv.mant + (1 << (shift - 1))) >> shift);
             } else
-                *coef += (unsigned)(pv.mant << -shift);
+                *coef += (unsigned)pv.mant << -shift;
         }
     }
 
