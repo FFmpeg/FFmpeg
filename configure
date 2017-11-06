@@ -4455,9 +4455,6 @@ if test -n "$sysroot"; then
         gcc|llvm_gcc|clang)
             add_cppflags --sysroot="$sysroot"
             add_ldflags --sysroot="$sysroot"
-# On Darwin --sysroot may be ignored, -isysroot always affects headers and linking
-            add_cppflags -isysroot "$sysroot"
-            add_ldflags -isysroot "$sysroot"
         ;;
         tms470)
             add_cppflags -I"$sysinclude"
@@ -5012,6 +5009,10 @@ case $target_os in
             { check_cflags -mdynamic-no-pic && add_asflags -mdynamic-no-pic; }
         check_header dispatch/dispatch.h &&
             add_cppflags '-I\$(SRC_PATH)/compat/dispatch_semaphore'
+        if test -n "$sysroot"; then
+            is_in -isysroot $cc $CPPFLAGS $CFLAGS || check_cppflags -isysroot $sysroot
+            is_in -isysroot $ld $LDFLAGS          || check_ldflags  -isysroot $sysroot
+        fi
         version_script='-exported_symbols_list'
         VERSION_SCRIPT_POSTPROCESS_CMD='tr " " "\n" | sed -n /global:/,/local:/p | grep ";" | tr ";" "\n" | sed -E "s/(.+)/_\1/g" | sed -E "s/(.+[^*])$$$$/\1*/"'
         ;;
