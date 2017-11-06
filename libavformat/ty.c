@@ -108,11 +108,16 @@ typedef struct TYDemuxContext {
 
 static int ty_probe(AVProbeData *p)
 {
-    if (AV_RB32(p->buf) == TIVO_PES_FILEID &&
-        AV_RB32(p->buf + 4) == 0x02 &&
-        AV_RB32(p->buf + 8) == CHUNK_SIZE) {
-        return AVPROBE_SCORE_MAX;
+    int i;
+
+    for (i = 0; i + 12 < p->buf_size; i += CHUNK_SIZE) {
+        if (AV_RB32(p->buf + i) == TIVO_PES_FILEID &&
+            AV_RB32(p->buf + i + 4) == 0x02 &&
+            AV_RB32(p->buf + i + 8) == CHUNK_SIZE) {
+            return AVPROBE_SCORE_MAX;
+        }
     }
+
     return 0;
 }
 
