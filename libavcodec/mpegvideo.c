@@ -876,7 +876,7 @@ static void clear_context(MpegEncContext *s)
  */
 av_cold int ff_mpv_common_init(MpegEncContext *s)
 {
-    int i;
+    int i, ret;
     int nb_slices = (HAVE_THREADS &&
                      s->avctx->active_thread_type & FF_THREAD_SLICE) ?
                     s->avctx->thread_count : 1;
@@ -915,10 +915,11 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
     dct_init(s);
 
     /* set chroma shifts */
-    avcodec_get_chroma_sub_sample(s->avctx->pix_fmt,
-                                  &s->chroma_x_shift,
-                                  &s->chroma_y_shift);
-
+    ret = av_pix_fmt_get_chroma_sub_sample(s->avctx->pix_fmt,
+                                           &s->chroma_x_shift,
+                                           &s->chroma_y_shift);
+    if (ret)
+        return ret;
 
     FF_ALLOCZ_OR_GOTO(s->avctx, s->picture,
                       MAX_PICTURE_COUNT * sizeof(Picture), fail);
@@ -1452,6 +1453,7 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict, uint8_t *mbskip_
         const int mv_stride      = (mb_width << mv_sample_log2) +
                                    (avctx->codec->id == AV_CODEC_ID_H264 ? 0 : 1);
         int mb_x, mb_y, mbcount = 0;
+        int ret;
 
         /* size is width * height * 2 * 4 where 2 is for directions and 4 is
          * for the maximum number of MB (4 MB in case of IS_8x8) */
@@ -1616,7 +1618,9 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict, uint8_t *mbskip_
         if (low_delay)
             *low_delay = 0; // needed to see the vectors without trashing the buffers
 
-        avcodec_get_chroma_sub_sample(avctx->pix_fmt, &h_chroma_shift, &v_chroma_shift);
+        ret = av_pix_fmt_get_chroma_sub_sample (avctx->pix_fmt, &h_chroma_shift, &v_chroma_shift);
+        if (ret)
+            return ret;
 
         av_frame_make_writable(pict);
 

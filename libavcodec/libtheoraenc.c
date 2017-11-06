@@ -208,7 +208,9 @@ static av_cold int encode_init(AVCodecContext* avc_context)
         av_log(avc_context, AV_LOG_ERROR, "Unsupported pix_fmt\n");
         return AVERROR(EINVAL);
     }
-    avcodec_get_chroma_sub_sample(avc_context->pix_fmt, &h->uv_hshift, &h->uv_vshift);
+    ret = av_pix_fmt_get_chroma_sub_sample(avc_context->pix_fmt, &h->uv_hshift, &h->uv_vshift);
+    if (ret)
+        return ret;
 
     if (avc_context->flags & AV_CODEC_FLAG_QSCALE) {
         /* Clip global_quality in QP units to the [0 - 10] range

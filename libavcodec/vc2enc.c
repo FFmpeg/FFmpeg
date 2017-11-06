@@ -1063,7 +1063,7 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
 {
     Plane *p;
     SubBand *b;
-    int i, j, level, o, shift;
+    int i, j, level, o, shift, ret;
     const AVPixFmtDescriptor *fmt = av_pix_fmt_desc_get(avctx->pix_fmt);
     const int depth = fmt->comp[0].depth;
     VC2EncContext *s = avctx->priv_data;
@@ -1138,7 +1138,9 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
     }
 
     /* Chroma subsampling */
-    avcodec_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_x_shift, &s->chroma_y_shift);
+    ret = av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_x_shift, &s->chroma_y_shift);
+    if (ret)
+        return ret;
 
     /* Bit depth and color range index */
     if (depth == 8 && avctx->color_range == AVCOL_RANGE_JPEG) {
