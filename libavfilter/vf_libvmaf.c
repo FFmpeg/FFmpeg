@@ -40,7 +40,6 @@ typedef struct LIBVMAFContext {
     const AVClass *class;
     FFFrameSync fs;
     const AVPixFmtDescriptor *desc;
-    char *format;
     int width;
     int height;
     double vmaf_score;
@@ -149,6 +148,7 @@ static void compute_vmaf_score(LIBVMAFContext *s)
 {
     int (*read_frame)(float *ref_data, float *main_data, float *temp_data,
                       int stride, void *ctx);
+    char *format;
 
     if (s->desc->comp[0].depth <= 8) {
         read_frame = read_frame_8bit;
@@ -156,7 +156,9 @@ static void compute_vmaf_score(LIBVMAFContext *s)
         read_frame = read_frame_10bit;
     }
 
-    s->vmaf_score = compute_vmaf(s->format, s->width, s->height, read_frame, s,
+    format = (char *) s->desc->name;
+
+    s->vmaf_score = compute_vmaf(format, s->width, s->height, read_frame, s,
                                  s->model_path, s->log_path, s->log_fmt, 0, 0,
                                  s->enable_transform, s->phone_model, s->psnr,
                                  s->ssim, s->ms_ssim, s->pool);
@@ -257,7 +259,6 @@ static int config_input_ref(AVFilterLink *inlink)
 
     return 0;
 }
-
 
 static int config_output(AVFilterLink *outlink)
 {
