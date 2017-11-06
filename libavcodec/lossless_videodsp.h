@@ -29,7 +29,7 @@
 #include "libavutil/cpu.h"
 
 typedef struct LLVidDSPContext {
-    void (*add_bytes)(uint8_t *dst /* align 16 */, uint8_t *src /* align 16 */,
+    void (*add_bytes)(uint8_t *dst /* align 32 */, uint8_t *src /* align 32 */,
                       ptrdiff_t w);
     void (*add_median_pred)(uint8_t *dst, const uint8_t *top,
                             const uint8_t *diff, ptrdiff_t w,

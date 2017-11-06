@@ -217,6 +217,11 @@ ADD_BYTES
 INIT_XMM sse2
 ADD_BYTES
 
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+ADD_BYTES
+%endif
+
 %macro ADD_HFYU_LEFT_LOOP_INT16 2 ; %1 = dst alignment (a/u), %2 = src alignment (a/u)
     add     wd, wd
     add     srcq, wq
