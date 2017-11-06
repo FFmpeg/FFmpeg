@@ -9885,24 +9885,15 @@ distances from the focal point in the source and target images, respectively.
 
 @section libvmaf
 
-Obtain the average VMAF (Video Multi-Method Assessment Fusion)
+Obtain the VMAF (Video Multi-Method Assessment Fusion)
 score between two input videos.
 
-This filter takes two input videos.
-
-Both video inputs must have the same resolution and pixel format for
-this filter to work correctly. Also it assumes that both inputs
-have the same number of frames, which are compared one by one.
-
-The obtained average VMAF score is printed through the logging system.
+The obtained VMAF score is printed through the logging system.
 
 It requires Netflix's vmaf library (libvmaf) as a pre-requisite.
 After installing the library it can be enabled using:
 @code{./configure --enable-libvmaf}.
 If no model path is specified it uses the default model: @code{vmaf_v0.6.1.pkl}.
-
-On the below examples the input file @file{main.mpg} being processed is
-compared with the reference file @file{ref.mpg}.
 
 The filter has following options:
 
@@ -9934,12 +9925,14 @@ Enables computing ssim along with vmaf.
 Enables computing ms_ssim along with vmaf.
 
 @item pool
-Set the pool method to be used for computing vmaf.
+Set the pool method (mean, min or harmonic mean) to be used for computing vmaf.
 @end table
 
 This filter also supports the @ref{framesync} options.
 
-For example:
+On the below examples the input file @file{main.mpg} being processed is
+compared with the reference file @file{ref.mpg}.
+
 @example
 ffmpeg -i main.mpg -i ref.mpg -lavfi libvmaf -f null -
 @end example
