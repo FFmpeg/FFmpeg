@@ -753,8 +753,13 @@ static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_ou
             goto fail;
         }
 
-        for(i=0; i<sub->num_rects; i++)
+        for (i = 0; i < sub->num_rects; i++) {
             sub->rects[i] = av_mallocz(sizeof(*sub->rects[i]));
+            if (!sub->rects[i]) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+        }
 
         i = 0;
 
