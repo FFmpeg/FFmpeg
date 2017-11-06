@@ -1892,6 +1892,7 @@ ARCH_FEATURES="
     local_aligned
     simd_align_16
     simd_align_32
+    simd_align_64
 "
 
 BUILTIN_LIST="
@@ -2394,6 +2395,7 @@ fast_clz_if_any="aarch64 alpha avr32 mips ppc x86"
 fast_unaligned_if_any="aarch64 ppc x86"
 simd_align_16_if_any="altivec neon sse"
 simd_align_32_if_any="avx"
+simd_align_64_if_any="avx512"
 
 # system capabilities
 symver_if_any="symver_asm_label symver_gnu_asm"

@@ -87,7 +87,9 @@
 
 #define FF_SIGNBIT(x) ((x) >> CHAR_BIT * sizeof(x) - 1)
 
-#if HAVE_SIMD_ALIGN_32
+#if HAVE_SIMD_ALIGN_64
+#   define STRIDE_ALIGN 64 /* AVX-512 */
+#elif HAVE_SIMD_ALIGN_32
 #   define STRIDE_ALIGN 32
 #elif HAVE_SIMD_ALIGN_16
 #   define STRIDE_ALIGN 16
