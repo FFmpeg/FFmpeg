@@ -49,8 +49,7 @@ $(TOOLOBJS): | tools
 
 OBJDIRS := $(OBJDIRS) $(dir $(OBJS) $(HOBJS) $(HOSTOBJS) $(TESTOBJS))
 
-CLEANSUFFIXES     = *.d *.o *~ *.h.c *.gcda *.gcno *.map *.ver *.version
-DISTCLEANSUFFIXES = *.pc
+CLEANSUFFIXES     = *.d *.gcda *.gcno *.h.c *.map *.o *.pc *.ver *.version *~
 LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a
 
 define RULES

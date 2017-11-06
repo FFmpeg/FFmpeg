@@ -172,7 +172,6 @@ clean::
 	$(RM) -rf coverage.info lcov
 
 distclean::
-	$(RM) $(DISTCLEANSUFFIXES)
 	$(RM) .version avversion.h config.asm config.h mapfile \
             avbuild/.config avbuild/config.* libavutil/avconfig.h \
             libavcodec/bsf_list.c libavformat/protocol_list.c
