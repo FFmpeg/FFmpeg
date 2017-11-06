@@ -1569,6 +1569,7 @@ EXTERNAL_LIBRARY_VERSION3_LIST="
     gmp
     libopencore_amrnb
     libopencore_amrwb
+    libvmaf
     libvo_amrwbenc
     rkmpp
 "
@@ -1625,7 +1626,6 @@ EXTERNAL_LIBRARY_LIST="
     libtheora
     libtwolame
     libv4l2
-    libvmaf
     libvorbis
     libvpx
     libwavpack
