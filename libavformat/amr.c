@@ -210,7 +210,6 @@ static int amrnb_read_header(AVFormatContext *s)
     AVStream *st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codecpar->codec_tag      = MKTAG('s', 'a', 'm', 'r');
     st->codecpar->codec_id       = AV_CODEC_ID_AMR_NB;
     st->codecpar->sample_rate    = 8000;
     st->codecpar->channels       = 1;
@@ -267,7 +266,6 @@ static int amrwb_read_header(AVFormatContext *s)
     AVStream *st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codecpar->codec_tag      = MKTAG('s', 'a', 'w', 'b');
     st->codecpar->codec_id       = AV_CODEC_ID_AMR_WB;
     st->codecpar->sample_rate    = 16000;
     st->codecpar->channels       = 1;
