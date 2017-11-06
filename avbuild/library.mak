@@ -39,7 +39,7 @@ $(TESTPROGS) $(TOOLS): %$(EXESUF): %.o
 $(SUBDIR)lib$(NAME).version: $(SUBDIR)version.h | $(SUBDIR)
 	$$(M) $$(SRC_PATH)/avbuild/libversion.sh $(NAME) $$< > $$@
 
-$(SUBDIR)lib$(NAME).pc: $(SUBDIR)version.h | $(SUBDIR)
+$(SUBDIR)lib$(NAME).pc: $(SUBDIR)version.h avbuild/config.sh | $(SUBDIR)
 	$$(M) $$(SRC_PATH)/avbuild/pkgconfig_generate.sh $(NAME) "$(DESC)"
 
 $(SUBDIR)lib$(NAME).ver: $(SUBDIR)lib$(NAME).v $(OBJS)
