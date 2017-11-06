@@ -249,7 +249,11 @@ static int analyze_chunk(AVFormatContext *s, const uint8_t *chunk)
      * in MPEG packets to determine tivo_type */
     if (ty->tivo_type == TIVO_TYPE_UNKNOWN) {
         uint32_t data_offset = 16 * num_recs;
+
         for (i = 0; i < num_recs; i++) {
+            if (data_offset + hdrs[i].rec_size > CHUNK_SIZE)
+                break;
+
             if ((hdrs[i].subrec_type << 0x08 | hdrs[i].rec_type) == 0x3c0 && hdrs[i].rec_size > 15) {
                 /* first make sure we're aligned */
                 int pes_offset = find_es_header(ty_MPEGAudioPacket,
