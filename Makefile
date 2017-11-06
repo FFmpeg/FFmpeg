@@ -161,7 +161,7 @@ install-data: $(DATA_FILES)
 	$(Q)mkdir -p "$(DATADIR)"
 	$(INSTALL) -m 644 $(DATA_FILES) "$(DATADIR)"
 
-uninstall: uninstall-libs uninstall-headers uninstall-data
+uninstall: uninstall-data uninstall-headers uninstall-libs uninstall-pkgconfig
 
 uninstall-data:
 	$(RM) -r "$(DATADIR)"

@@ -92,8 +92,10 @@ uninstall-libs::
 
 uninstall-headers::
 	$(RM) $(addprefix "$(INCINSTDIR)/",$(HEADERS) $(BUILT_HEADERS))
-	$(RM) "$(LIBDIR)/pkgconfig/lib$(NAME).pc"
 	-rmdir "$(INCINSTDIR)"
+
+uninstall-pkgconfig::
+	$(RM) "$(LIBDIR)/pkgconfig/lib$(NAME).pc"
 endef
 
 $(eval $(RULES))
