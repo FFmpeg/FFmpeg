@@ -1453,7 +1453,6 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict, uint8_t *mbskip_
         const int mv_stride      = (mb_width << mv_sample_log2) +
                                    (avctx->codec->id == AV_CODEC_ID_H264 ? 0 : 1);
         int mb_x, mb_y, mbcount = 0;
-        int ret;
 
         /* size is width * height * 2 * 4 where 2 is for directions and 4 is
          * for the maximum number of MB (4 MB in case of IS_8x8) */
@@ -1609,7 +1608,7 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict, uint8_t *mbskip_
     if ((avctx->debug & (FF_DEBUG_VIS_QP | FF_DEBUG_VIS_MB_TYPE)) ||
         (avctx->debug_mv)) {
         int mb_y;
-        int i;
+        int i, ret;
         int h_chroma_shift, v_chroma_shift, block_height;
         const int mv_sample_log2 = avctx->codec_id == AV_CODEC_ID_H264 || avctx->codec_id == AV_CODEC_ID_SVQ3 ? 2 : 1;
         const int mv_stride      = (mb_width << mv_sample_log2) +
