@@ -21,6 +21,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#include "config.h"
 #if (_WIN32_WINNT < 0x0602) || HAVE_WINRT
 #include "libavutil/wchar_filename.h"
 #endif
