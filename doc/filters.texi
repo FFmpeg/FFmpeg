@@ -14441,6 +14441,10 @@ refer to the pad video filter.
 Specify the color of the unused area. For the syntax of this option, check the
 "Color" section in the ffmpeg-utils manual. The default value of @var{color}
 is "black".
+
+@item overlap
+Set the number of frames to overlap when tiling several successive frames together.
+The value must be between @code{0} and @var{nb_frames - 1}.
 @end table
 
 @subsection Examples
