@@ -601,17 +601,16 @@ static inline int binkb_get_value(BinkContext *c, int bundle_num)
  * @param quant_matrices quantization matrices
  * @return 0 for success, negative value in other cases
  */
-static int read_dct_coeffs(GetBitContext *gb, int32_t block[64], const uint8_t *scan,
-                           const int32_t quant_matrices[16][64], int q)
+static int read_dct_coeffs(GetBitContext *gb, int32_t block[64],
+                           const uint8_t *scan, int *coef_count_,
+                           int coef_idx[64], int q)
 {
     int coef_list[128];
     int mode_list[128];
     int i, t, bits, ccoef, mode, sign;
     int list_start = 64, list_end = 64, list_pos;
     int coef_count = 0;
-    int coef_idx[64];
     int quant_idx;
-    const int32_t *quant;
 
     coef_list[list_end] = 4;  mode_list[list_end++] = 0;
     coef_list[list_end] = 24; mode_list[list_end++] = 0;
@@ -690,15 +689,21 @@ static int read_dct_coeffs(GetBitContext *gb, int32_t block[64], const uint8_t *
         }
     }
 
-    quant = quant_matrices[quant_idx];
+    *coef_count_ = coef_count;
 
+    return quant_idx;
+}
+
+static void unquantize_dct_coeffs(int32_t block[64], const int32_t quant[64],
+                                  int coef_count, int coef_idx[64],
+                                  const uint8_t *scan)
+{
+    int i;
     block[0] = (block[0] * quant[0]) >> 11;
     for (i = 0; i < coef_count; i++) {
         int idx = coef_idx[i];
         block[scan[idx]] = (block[scan[idx]] * quant[idx]) >> 11;
     }
-
-    return 0;
 }
 
 /**
@@ -817,7 +822,7 @@ static int binkb_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
     LOCAL_ALIGNED_16(int32_t, dctblock, [64]);
     int coordmap[64];
     int ybias = is_key ? -15 : 0;
-    int qp;
+    int qp, quant_idx, coef_count, coef_idx[64];
 
     const int stride = frame->linesize[plane_idx];
     int bw = is_chroma ? (c->avctx->width  + 15) >> 4 : (c->avctx->width  + 7) >> 3;
@@ -872,7 +877,9 @@ static int binkb_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
                 memset(dctblock, 0, sizeof(*dctblock) * 64);
                 dctblock[0] = binkb_get_value(c, BINKB_SRC_INTRA_DC);
                 qp = binkb_get_value(c, BINKB_SRC_INTRA_Q);
-                read_dct_coeffs(gb, dctblock, bink_scan, (const int32_t (*)[64])binkb_intra_quant, qp);
+                if ((quant_idx = read_dct_coeffs(gb, dctblock, bink_scan, &coef_count, coef_idx, qp)) < 0)
+                    return quant_idx;
+                unquantize_dct_coeffs(dctblock, binkb_intra_quant[quant_idx], coef_count, coef_idx, bink_scan);
                 c->binkdsp.idct_put(dst, stride, dctblock);
                 break;
             case 3:
@@ -905,7 +912,9 @@ static int binkb_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
                 memset(dctblock, 0, sizeof(*dctblock) * 64);
                 dctblock[0] = binkb_get_value(c, BINKB_SRC_INTER_DC);
                 qp = binkb_get_value(c, BINKB_SRC_INTER_Q);
-                read_dct_coeffs(gb, dctblock, bink_scan, (const int32_t (*)[64])binkb_inter_quant, qp);
+                if ((quant_idx = read_dct_coeffs(gb, dctblock, bink_scan, &coef_count, coef_idx, qp)) < 0)
+                    return quant_idx;
+                unquantize_dct_coeffs(dctblock, binkb_inter_quant[quant_idx], coef_count, coef_idx, bink_scan);
                 c->binkdsp.idct_add(dst, stride, dctblock);
                 break;
             case 5:
@@ -979,7 +988,7 @@ static int bink_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
     LOCAL_ALIGNED_32(int16_t, block, [64]);
     LOCAL_ALIGNED_16(uint8_t, ublock, [64]);
     LOCAL_ALIGNED_16(int32_t, dctblock, [64]);
-    int coordmap[64];
+    int coordmap[64], quant_idx, coef_count, coef_idx[64];
 
     const int stride = frame->linesize[plane_idx];
     int bw = is_chroma ? (c->avctx->width  + 15) >> 4 : (c->avctx->width  + 7) >> 3;
@@ -1065,7 +1074,9 @@ static int bink_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
                 case INTRA_BLOCK:
                     memset(dctblock, 0, sizeof(*dctblock) * 64);
                     dctblock[0] = get_value(c, BINK_SRC_INTRA_DC);
-                    read_dct_coeffs(gb, dctblock, bink_scan, bink_intra_quant, -1);
+                    if ((quant_idx = read_dct_coeffs(gb, dctblock, bink_scan, &coef_count, coef_idx, -1)) < 0)
+                        return quant_idx;
+                    unquantize_dct_coeffs(dctblock, bink_intra_quant[quant_idx], coef_count, coef_idx, bink_scan);
                     c->binkdsp.idct_put(ublock, 8, dctblock);
                     break;
                 case FILL_BLOCK:
@@ -1138,7 +1149,9 @@ static int bink_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
             case INTRA_BLOCK:
                 memset(dctblock, 0, sizeof(*dctblock) * 64);
                 dctblock[0] = get_value(c, BINK_SRC_INTRA_DC);
-                read_dct_coeffs(gb, dctblock, bink_scan, bink_intra_quant, -1);
+                if ((quant_idx = read_dct_coeffs(gb, dctblock, bink_scan, &coef_count, coef_idx, -1)) < 0)
+                    return quant_idx;
+                unquantize_dct_coeffs(dctblock, bink_intra_quant[quant_idx], coef_count, coef_idx, bink_scan);
                 c->binkdsp.idct_put(dst, stride, dctblock);
                 break;
             case FILL_BLOCK:
@@ -1152,7 +1165,9 @@ static int bink_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
                     return ret;
                 memset(dctblock, 0, sizeof(*dctblock) * 64);
                 dctblock[0] = get_value(c, BINK_SRC_INTER_DC);
-                read_dct_coeffs(gb, dctblock, bink_scan, bink_inter_quant, -1);
+                if ((quant_idx = read_dct_coeffs(gb, dctblock, bink_scan, &coef_count, coef_idx, -1)) < 0)
+                    return quant_idx;
+                unquantize_dct_coeffs(dctblock, bink_inter_quant[quant_idx], coef_count, coef_idx, bink_scan);
                 c->binkdsp.idct_add(dst, stride, dctblock);
                 break;
             case PATTERN_BLOCK:
