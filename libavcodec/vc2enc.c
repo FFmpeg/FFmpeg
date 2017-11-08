@@ -1106,8 +1106,9 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
 
         /* DWT init */
         if (ff_vc2enc_init_transforms(&s->transform_args[i].t,
-                                        s->plane[0].coef_stride,
-                                        s->plane[0].dwt_height))
+                                      s->plane[i].coef_stride,
+                                      s->plane[i].dwt_height,
+                                      s->slice_width, s->slice_height))
             goto alloc_fail;
     }
 
