@@ -37,8 +37,6 @@
     } while (0)
 
 #define init_buffer(a0, a1, type, width)\
-    type *a0 = av_mallocz_array(width, sizeof(type));\
-    type *a1 = av_mallocz_array(width, sizeof(type));\
     if (!a0 || !a1)\
         fail();\
     randomize_buffers(a0, width * sizeof(type));\
@@ -48,12 +46,15 @@ static void check_add_bytes(LLVidDSPContext c, int width)
 {
     uint8_t *dst0 = av_mallocz(width);
     uint8_t *dst1 = av_mallocz(width);
+    uint8_t *src0 = av_mallocz_array(width, sizeof(uint8_t));
+    uint8_t *src1 = av_mallocz_array(width, sizeof(uint8_t));
+    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, uint8_t *src, ptrdiff_t w);
+
     init_buffer(src0, src1, uint8_t, width);
 
     if (!dst0 || !dst1)
         fail();
 
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, uint8_t *src, ptrdiff_t w);
 
     if (check_func(c.add_bytes, "add_bytes")) {
         call_ref(dst0, src0, width);
@@ -73,6 +74,14 @@ static void check_add_median_pred(LLVidDSPContext c, int width) {
     int A0, A1, B0, B1;
     uint8_t *dst0 = av_mallocz(width);
     uint8_t *dst1 = av_mallocz(width);
+    uint8_t *src0 = av_mallocz_array(width, sizeof(uint8_t));
+    uint8_t *src1 = av_mallocz_array(width, sizeof(uint8_t));
+    uint8_t *diff0 = av_mallocz_array(width, sizeof(uint8_t));
+    uint8_t *diff1 = av_mallocz_array(width, sizeof(uint8_t));
+    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, const uint8_t *src1,
+                      const uint8_t *diff, ptrdiff_t w,
+                      int *left, int *left_top);
+
     init_buffer(src0, src1, uint8_t, width);
     init_buffer(diff0, diff1, uint8_t, width);
 
@@ -81,9 +90,6 @@ static void check_add_median_pred(LLVidDSPContext c, int width) {
     A1 = A0;
     B1 = B0;
 
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, const uint8_t *src1,
-                      const uint8_t *diff, ptrdiff_t w,
-                      int *left, int *left_top);
 
     if (check_func(c.add_median_pred, "add_median_pred")) {
         call_ref(dst0, src0, diff0, width, &A0, &B0);
@@ -105,12 +111,14 @@ static void check_add_left_pred(LLVidDSPContext c, int width, int acc, const cha
 {
     uint8_t *dst0 = av_mallocz(width);
     uint8_t *dst1 = av_mallocz(width);
+    uint8_t *src0 = av_mallocz_array(width, sizeof(uint8_t));
+    uint8_t *src1 = av_mallocz_array(width, sizeof(uint8_t));
+    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, uint8_t *src, ptrdiff_t w, int acc);
+
     init_buffer(src0, src1, uint8_t, width);
 
     if (!dst0 || !dst1)
         fail();
-
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, uint8_t *src, ptrdiff_t w, int acc);
 
     if (check_func(c.add_left_pred, "%s", report)) {
         call_ref(dst0, src0, width, acc);
@@ -130,12 +138,14 @@ static void check_add_left_pred_16(LLVidDSPContext c, unsigned mask, int width, 
 {
     uint16_t *dst0 = av_mallocz_array(width, sizeof(uint16_t));
     uint16_t *dst1 = av_mallocz_array(width, sizeof(uint16_t));
+    uint16_t *src0 = av_mallocz_array(width, sizeof(uint16_t));
+    uint16_t *src1 = av_mallocz_array(width, sizeof(uint16_t));
+    declare_func_emms(AV_CPU_FLAG_MMX, void, uint16_t *dst, uint16_t *src, unsigned mask, ptrdiff_t w, unsigned acc);
+
     init_buffer(src0, src1, uint16_t, width);
 
     if (!dst0 || !dst1)
         fail();
-
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint16_t *dst, uint16_t *src, unsigned mask, ptrdiff_t w, unsigned acc);
 
     if (check_func(c.add_left_pred_int16, "%s", report)) {
         call_ref(dst0, src0, mask, width, acc);
