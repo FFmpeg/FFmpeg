@@ -100,6 +100,7 @@ typedef struct DASHContext {
     const char *init_seg_name;
     const char *media_seg_name;
     const char *utc_timing_url;
+    const char *user_agent;
 } DASHContext;
 
 static struct codec_string {
@@ -208,6 +209,12 @@ static int flush_dynbuf(OutputStream *os, int *range_length)
 
     // re-open buffer
     return avio_open_dyn_buf(&os->ctx->pb);
+}
+
+static void set_http_options(AVDictionary **options, DASHContext *c)
+{
+    if (c->user_agent)
+        av_dict_set(options, "user_agent", c->user_agent, 0);
 }
 
 static int flush_init_segment(AVFormatContext *s, OutputStream *os)
@@ -575,16 +582,19 @@ static int write_manifest(AVFormatContext *s, int final)
     int use_rename = proto && !strcmp(proto, "file");
     static unsigned int warned_non_file = 0;
     AVDictionaryEntry *title = av_dict_get(s->metadata, "title", NULL, 0);
+    AVDictionary *opts = NULL;
 
     if (!use_rename && !warned_non_file++)
         av_log(s, AV_LOG_ERROR, "Cannot use rename on non file protocol, this may lead to races and temporary partial files\n");
 
     snprintf(temp_filename, sizeof(temp_filename), use_rename ? "%s.tmp" : "%s", s->filename);
-    ret = s->io_open(s, &out, temp_filename, AVIO_FLAG_WRITE, NULL);
+    set_http_options(&opts, c);
+    ret = s->io_open(s, &out, temp_filename, AVIO_FLAG_WRITE, &opts);
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", temp_filename);
         return ret;
     }
+    av_dict_free(&opts);
     avio_printf(out, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
     avio_printf(out, "<MPD xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"
                 "\txmlns=\"urn:mpeg:dash:schema:mpd:2011\"\n"
@@ -768,9 +778,11 @@ static int dash_init(AVFormatContext *s)
             ff_dash_fill_tmpl_params(os->initfile, sizeof(os->initfile), c->init_seg_name, i, 0, os->bit_rate, 0);
         }
         snprintf(filename, sizeof(filename), "%s%s", c->dirname, os->initfile);
-        ret = s->io_open(s, &os->out, filename, AVIO_FLAG_WRITE, NULL);
+        set_http_options(&opts, c);
+        ret = s->io_open(s, &os->out, filename, AVIO_FLAG_WRITE, &opts);
         if (ret < 0)
             return ret;
+        av_dict_free(&opts);
         os->init_start_pos = 0;
 
         if (!strcmp(os->format_name, "mp4")) {
@@ -974,12 +986,15 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
         }
 
         if (!c->single_file) {
+            AVDictionary *opts = NULL;
             ff_dash_fill_tmpl_params(filename, sizeof(filename), c->media_seg_name, i, os->segment_index, os->bit_rate, os->start_pts);
             snprintf(full_path, sizeof(full_path), "%s%s", c->dirname, filename);
             snprintf(temp_path, sizeof(temp_path), use_rename ? "%s.tmp" : "%s", full_path);
-            ret = s->io_open(s, &os->out, temp_path, AVIO_FLAG_WRITE, NULL);
+            set_http_options(&opts, c);
+            ret = s->io_open(s, &os->out, temp_path, AVIO_FLAG_WRITE, &opts);
             if (ret < 0)
                 break;
+            av_dict_free(&opts);
             if (!strcmp(os->format_name, "mp4"))
                 write_styp(os->ctx->pb);
         } else {
@@ -1190,6 +1205,7 @@ static const AVOption options[] = {
     { "init_seg_name", "DASH-templated name to used for the initialization segment", OFFSET(init_seg_name), AV_OPT_TYPE_STRING, {.str = "init-stream$RepresentationID$.m4s"}, 0, 0, E },
     { "media_seg_name", "DASH-templated name to used for the media segments", OFFSET(media_seg_name), AV_OPT_TYPE_STRING, {.str = "chunk-stream$RepresentationID$-$Number%05d$.m4s"}, 0, 0, E },
     { "utc_timing_url", "URL of the page that will return the UTC timestamp in ISO format", OFFSET(utc_timing_url), AV_OPT_TYPE_STRING, { 0 }, 0, 0, E },
+    { "http_user_agent", "override User-Agent field in HTTP header", OFFSET(user_agent), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, E},
     { NULL },
 };
 
