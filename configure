@@ -3313,7 +3313,7 @@ avformat_deps="avcodec avutil"
 avformat_suggest="libm network zlib"
 avresample_deps="avutil"
 avresample_suggest="libm"
-avutil_suggest="clock_gettime libm libdrm libmfx opencl user32 vaapi videotoolbox corefoundation corevideo coremedia wincrypt"
+avutil_suggest="clock_gettime cuda libm libdrm libmfx opencl user32 vaapi videotoolbox corefoundation corevideo coremedia wincrypt"
 postproc_deps="avutil gpl"
 postproc_suggest="libm"
 swresample_deps="avutil"
@@ -3323,7 +3323,7 @@ swscale_suggest="libm"
 
 avcodec_extralibs="pthreads_extralibs iconv_extralibs"
 avfilter_extralibs="pthreads_extralibs"
-avutil_extralibs="nanosleep_extralibs pthreads_extralibs vaapi_drm_extralibs vaapi_x11_extralibs vdpau_x11_extralibs"
+avutil_extralibs="d3d11va_extralibs nanosleep_extralibs pthreads_extralibs vaapi_drm_extralibs vaapi_x11_extralibs vdpau_x11_extralibs"
 
 # programs
 ffmpeg_deps="avcodec avfilter avformat swresample"
