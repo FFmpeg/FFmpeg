@@ -362,6 +362,7 @@ static int config_props_ref(AVFilterLink *outlink)
     outlink->h = inlink->h;
     outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
     outlink->time_base = inlink->time_base;
+    outlink->frame_rate = inlink->frame_rate;
 
     return 0;
 }
