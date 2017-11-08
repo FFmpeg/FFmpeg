@@ -538,14 +538,14 @@ static int check_sync_pes(AVFormatContext *s, AVPacket *pkt,
 
     if (offset < 0 || offset + ty->pes_length > rec_len) {
         /* entire PES header not present */
-        ff_dlog(s, "PES header at %d not complete in record. storing.\n", offset);
+        ff_dlog(s, "PES header at %"PRId32" not complete in record. storing.\n", offset);
         /* save the partial pes header */
         if (offset < 0) {
             /* no header found, fake some 00's (this works, believe me) */
             memset(ty->pes_buffer, 0, 4);
             ty->pes_buf_cnt = 4;
             if (rec_len > 4)
-                ff_dlog(s, "PES header not found in record of %d bytes!\n", rec_len);
+                ff_dlog(s, "PES header not found in record of %"PRId32" bytes!\n", rec_len);
             return -1;
         }
         /* copy the partial pes header we found */
