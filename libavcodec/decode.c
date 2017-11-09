@@ -749,6 +749,11 @@ static int compat_decode(AVCodecContext *avctx, AVFrame *frame,
 
     av_assert0(avci->compat_decode_consumed == 0);
 
+    if (avci->draining_done && pkt && pkt->size != 0) {
+        av_log(avctx, AV_LOG_WARNING, "Got unexpected packet after EOF\n");
+        avcodec_flush_buffers(avctx);
+    }
+
     *got_frame = 0;
     avci->compat_decode = 1;
 
