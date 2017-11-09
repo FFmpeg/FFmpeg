@@ -25,6 +25,19 @@
 #include "avcodec.h"
 
 
+/*
+ * This defines a framework for converting between a coded bitstream
+ * and structures defining all individual syntax elements found in
+ * such a stream.
+ *
+ * Conversion in both directions is possible.  Given a coded bitstream
+ * (any meaningful fragment), it can be parsed and decomposed into
+ * syntax elements stored in a set of codec-specific structures.
+ * Similarly, given a set of those same codec-specific structures the
+ * syntax elements can be serialised and combined to create a coded
+ * bitstream.
+ */
+
 struct CodedBitstreamType;
 
 /**
@@ -39,7 +52,7 @@ typedef uint32_t CodedBitstreamUnitType;
 /**
  * Coded bitstream unit structure.
  *
- * A bitstream unit the the smallest element of a bitstream which
+ * A bitstream unit the smallest element of a bitstream which
  * is meaningful on its own.  For example, an H.264 NAL unit.
  *
  * See the codec-specific header for the meaning of this for any
@@ -52,7 +65,7 @@ typedef struct CodedBitstreamUnit {
     CodedBitstreamUnitType type;
 
     /**
-     * Pointer to the bitstream form of this unit.
+     * Pointer to the directly-parsable bitstream form of this unit.
      *
      * May be NULL if the unit currently only exists in decomposed form.
      */
@@ -114,7 +127,7 @@ typedef struct CodedBitstreamFragment {
     /**
      * Number of units in this fragment.
      *
-     * This may be zero if the fragment only exists in bistream form
+     * This may be zero if the fragment only exists in bitstream form
      * and has not been decomposed.
      */
     int              nb_units;
@@ -162,7 +175,7 @@ typedef struct CodedBitstreamContext {
     /**
      * Length of the decompose_unit_types array.
      */
-    int    nb_decompose_unit_types;
+    int nb_decompose_unit_types;
 
     /**
      * Enable trace output during read/write operations.
@@ -204,6 +217,10 @@ int ff_cbs_read_extradata(CodedBitstreamContext *ctx,
 /**
  * Read the data bitstream from a packet into a fragment, then
  * split into units and decompose.
+ *
+ * This also updates the internal state of the coded bitstream context
+ * with any persistent data from the fragment which may be required to
+ * read following fragments (e.g. parameter sets).
  */
 int ff_cbs_read_packet(CodedBitstreamContext *ctx,
                        CodedBitstreamFragment *frag,
@@ -212,6 +229,10 @@ int ff_cbs_read_packet(CodedBitstreamContext *ctx,
 /**
  * Read a bitstream from a memory region into a fragment, then
  * split into units and decompose.
+ *
+ * This also updates the internal state of the coded bitstream context
+ * with any persistent data from the fragment which may be required to
+ * read following fragments (e.g. parameter sets).
  */
 int ff_cbs_read(CodedBitstreamContext *ctx,
                 CodedBitstreamFragment *frag,
@@ -225,12 +246,18 @@ int ff_cbs_read(CodedBitstreamContext *ctx,
  * data buffer.  When modifying the content of decomposed units, this
  * can be used to regenerate the bitstream form of units or the whole
  * fragment so that it can be extracted for other use.
+ *
+ * This also updates the internal state of the coded bitstream context
+ * with any persistent data from the fragment which may be required to
+ * write following fragments (e.g. parameter sets).
  */
 int ff_cbs_write_fragment_data(CodedBitstreamContext *ctx,
                                CodedBitstreamFragment *frag);
 
 /**
  * Write the bitstream of a fragment to the extradata in codec parameters.
+ *
+ * This replaces any existing extradata in the structure.
  */
 int ff_cbs_write_extradata(CodedBitstreamContext *ctx,
                            AVCodecParameters *par,
