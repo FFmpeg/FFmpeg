@@ -862,6 +862,8 @@ static int decode_iccp_chunk(PNGDecContext *s, int length, AVFrame *f)
         return ret;
 
     av_bprint_finalize(&bp, (char **)&data);
+    if (!data)
+        return AVERROR(ENOMEM);
 
     sd = av_frame_new_side_data(f, AV_FRAME_DATA_ICC_PROFILE, bp.len);
     if (!sd) {
