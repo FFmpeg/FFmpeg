@@ -524,9 +524,9 @@ static int decode_text_chunk(PNGDecContext *s, uint32_t length, int compressed,
         if ((ret = decode_zbuf(&bp, data, data_end)) < 0)
             return ret;
         text_len = bp.len;
-        av_bprint_finalize(&bp, (char **)&text);
-        if (!text)
-            return AVERROR(ENOMEM);
+        ret = av_bprint_finalize(&bp, (char **)&text);
+        if (ret < 0)
+            return ret;
     } else {
         text = (uint8_t *)data;
         text_len = data_end - text;
@@ -862,9 +862,9 @@ static int decode_iccp_chunk(PNGDecContext *s, int length, AVFrame *f)
     if ((ret = decode_zbuf(&bp, s->gb.buffer, s->gb.buffer + length)) < 0)
         return ret;
 
-    av_bprint_finalize(&bp, (char **)&data);
-    if (!data)
-        return AVERROR(ENOMEM);
+    ret = av_bprint_finalize(&bp, (char **)&data);
+    if (ret < 0)
+        return ret;
 
     sd = av_frame_new_side_data(f, AV_FRAME_DATA_ICC_PROFILE, bp.len);
     if (!sd) {
@@ -1317,9 +1317,9 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
 
             av_bprint_init(&bp, 0, -1);
             av_bprintf(&bp, "%i/%i", num, 100000);
-            av_bprint_finalize(&bp, &gamma_str);
-            if (!gamma_str)
-                return AVERROR(ENOMEM);
+            ret = av_bprint_finalize(&bp, &gamma_str);
+            if (ret < 0)
+                return ret;
 
             av_dict_set(&p->metadata, "gamma", gamma_str, AV_DICT_DONT_STRDUP_VAL);
 
