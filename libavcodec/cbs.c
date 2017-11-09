@@ -260,7 +260,7 @@ int ff_cbs_write_packet(CodedBitstreamContext *ctx,
     if (err < 0)
         return err;
 
-    av_new_packet(pkt, frag->data_size);
+    err = av_new_packet(pkt, frag->data_size);
     if (err < 0)
         return err;
 
