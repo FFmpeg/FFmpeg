@@ -28,6 +28,15 @@
 struct CodedBitstreamType;
 
 /**
+ * The codec-specific type of a bitstream unit.
+ *
+ * H.264 / AVC: nal_unit_type
+ * H.265 / HEVC: nal_unit_type
+ * MPEG-2: start code value (without prefix)
+ */
+typedef uint32_t CodedBitstreamUnitType;
+
+/**
  * Coded bitstream unit structure.
  *
  * A bitstream unit the the smallest element of a bitstream which
@@ -40,7 +49,7 @@ typedef struct CodedBitstreamUnit {
     /**
      * Codec-specific type of this unit.
      */
-    uint32_t type;
+    CodedBitstreamUnitType type;
 
     /**
      * Pointer to the bitstream form of this unit.
@@ -149,7 +158,7 @@ typedef struct CodedBitstreamContext {
      * Types not in this list will be available in bitstream form only.
      * If NULL, all supported types will be decomposed.
      */
-    uint32_t *decompose_unit_types;
+    CodedBitstreamUnitType *decompose_unit_types;
     /**
      * Length of the decompose_unit_types array.
      */
@@ -250,7 +259,8 @@ void ff_cbs_fragment_uninit(CodedBitstreamContext *ctx,
  */
 int ff_cbs_insert_unit_content(CodedBitstreamContext *ctx,
                                CodedBitstreamFragment *frag,
-                               int position, uint32_t type,
+                               int position,
+                               CodedBitstreamUnitType type,
                                void *content);
 
 /**
@@ -260,7 +270,8 @@ int ff_cbs_insert_unit_content(CodedBitstreamContext *ctx,
  */
 int ff_cbs_insert_unit_data(CodedBitstreamContext *ctx,
                             CodedBitstreamFragment *frag,
-                            int position, uint32_t type,
+                            int position,
+                            CodedBitstreamUnitType type,
                             uint8_t *data, size_t data_size);
 
 /**

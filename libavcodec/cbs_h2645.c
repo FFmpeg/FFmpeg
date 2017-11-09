@@ -1213,7 +1213,7 @@ static int cbs_h265_write_nal_unit(CodedBitstreamContext *ctx,
 
     default:
         av_log(ctx->log_ctx, AV_LOG_ERROR, "Write unimplemented for "
-               "NAL unit type %d.\n", unit->type);
+               "NAL unit type %"PRIu32".\n", unit->type);
         return AVERROR_PATCHWELCOME;
     }
 

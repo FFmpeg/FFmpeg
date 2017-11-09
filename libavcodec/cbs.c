@@ -137,10 +137,10 @@ static int cbs_read_fragment_content(CodedBitstreamContext *ctx,
         if (err == AVERROR(ENOSYS)) {
             av_log(ctx->log_ctx, AV_LOG_WARNING,
                    "Decomposition unimplemented for unit %d "
-                   "(type %d).\n", i, frag->units[i].type);
+                   "(type %"PRIu32").\n", i, frag->units[i].type);
         } else if (err < 0) {
             av_log(ctx->log_ctx, AV_LOG_ERROR, "Failed to read unit %d "
-                   "(type %d).\n", i, frag->units[i].type);
+                   "(type %"PRIu32").\n", i, frag->units[i].type);
             return err;
         }
     }
@@ -225,7 +225,7 @@ int ff_cbs_write_fragment_data(CodedBitstreamContext *ctx,
         err = ctx->codec->write_unit(ctx, &frag->units[i]);
         if (err < 0) {
             av_log(ctx->log_ctx, AV_LOG_ERROR, "Failed to write unit %d "
-                   "(type %d).\n", i, frag->units[i].type);
+                   "(type %"PRIu32").\n", i, frag->units[i].type);
             return err;
         }
     }
@@ -421,7 +421,8 @@ static int cbs_insert_unit(CodedBitstreamContext *ctx,
 
 int ff_cbs_insert_unit_content(CodedBitstreamContext *ctx,
                                CodedBitstreamFragment *frag,
-                               int position, uint32_t type,
+                               int position,
+                               CodedBitstreamUnitType type,
                                void *content)
 {
     int err;
@@ -443,7 +444,8 @@ int ff_cbs_insert_unit_content(CodedBitstreamContext *ctx,
 
 int ff_cbs_insert_unit_data(CodedBitstreamContext *ctx,
                             CodedBitstreamFragment *frag,
-                            int position, uint32_t type,
+                            int position,
+                            CodedBitstreamUnitType type,
                             uint8_t *data, size_t data_size)
 {
     int err;
