@@ -21,43 +21,6 @@
 #ifndef AVCODEC_MIPS_HEVC_MACROS_MSA_H
 #define AVCODEC_MIPS_HEVC_MACROS_MSA_H
 
-#define HEVC_PCK_SW_SB2(in0, in1, out)                            \
-{                                                                 \
-    v8i16 tmp0_m;                                                 \
-                                                                  \
-    tmp0_m = __msa_pckev_h((v8i16) in0, (v8i16) in1);             \
-    out = (v4i32) __msa_pckev_b((v16i8) tmp0_m, (v16i8) tmp0_m);  \
-}
-
-#define HEVC_PCK_SW_SB4(in0, in1, in2, in3, out)                  \
-{                                                                 \
-    v8i16 tmp0_m, tmp1_m;                                         \
-                                                                  \
-    PCKEV_H2_SH(in0, in1, in2, in3, tmp0_m, tmp1_m);              \
-    out = (v4i32) __msa_pckev_b((v16i8) tmp1_m, (v16i8) tmp0_m);  \
-}
-
-#define HEVC_PCK_SW_SB8(in0, in1, in2, in3, in4, in5, in6, in7, out0, out1)  \
-{                                                                            \
-    v8i16 tmp0_m, tmp1_m, tmp2_m, tmp3_m;                                    \
-                                                                             \
-    PCKEV_H4_SH(in0, in1, in2, in3, in4, in5, in6, in7,                      \
-                tmp0_m, tmp1_m, tmp2_m, tmp3_m);                             \
-    PCKEV_B2_SW(tmp1_m, tmp0_m, tmp3_m, tmp2_m, out0, out1);                 \
-}
-
-#define HEVC_PCK_SW_SB12(in0, in1, in2, in3, in4, in5, in6, in7,   \
-                         in8, in9, in10, in11, out0, out1, out2)   \
-{                                                                  \
-    v8i16 tmp0_m, tmp1_m, tmp2_m, tmp3_m, tmp4_m, tmp5_m;          \
-                                                                   \
-    PCKEV_H4_SH(in0, in1, in2, in3, in4, in5, in6, in7,            \
-                tmp0_m, tmp1_m, tmp2_m, tmp3_m);                   \
-    PCKEV_H2_SH(in8, in9, in10, in11, tmp4_m, tmp5_m);             \
-    PCKEV_B2_SW(tmp1_m, tmp0_m, tmp3_m, tmp2_m, out0, out1);       \
-    out2 = (v4i32) __msa_pckev_b((v16i8) tmp5_m, (v16i8) tmp4_m);  \
-}
-
 #define HEVC_FILT_8TAP_SH(in0, in1, in2, in3,                    \
                           filt0, filt1, filt2, filt3)            \
 ( {                                                              \
