@@ -262,8 +262,8 @@ static uint8_t* teletext_data_unit_from_ancillary_packet(uint16_t *py, uint16_t 
     return tgt;
 }
 
-uint8_t *vanc_to_cc(AVFormatContext *avctx, uint16_t *buf, size_t words,
-    unsigned &cc_count)
+static uint8_t *vanc_to_cc(AVFormatContext *avctx, uint16_t *buf, size_t words,
+                           unsigned &cc_count)
 {
     size_t i, len = (buf[5] & 0xff) + 6 + 1;
     uint8_t cdp_sum, rate;
@@ -352,8 +352,8 @@ uint8_t *vanc_to_cc(AVFormatContext *avctx, uint16_t *buf, size_t words,
     return cc;
 }
 
-uint8_t *get_metadata(AVFormatContext *avctx, uint16_t *buf, size_t width,
-                      uint8_t *tgt, size_t tgt_size, AVPacket *pkt)
+static uint8_t *get_metadata(AVFormatContext *avctx, uint16_t *buf, size_t width,
+                             uint8_t *tgt, size_t tgt_size, AVPacket *pkt)
 {
     decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
     uint16_t *max_buf = buf + width;
