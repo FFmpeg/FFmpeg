@@ -287,8 +287,8 @@ static int vaapi_decode_make_config(AVCodecContext *avctx,
     VAStatus vas;
     int err, i, j;
     const AVCodecDescriptor *codec_desc;
-    VAProfile profile, va_profile, *profile_list = NULL;
-    int profile_count, exact_match, alt_profile;
+    VAProfile *profile_list = NULL, matched_va_profile;
+    int profile_count, exact_match, matched_ff_profile;
     const AVPixFmtDescriptor *sw_desc, *desc;
 
     AVHWDeviceContext    *device = (AVHWDeviceContext*)device_ref->data;
@@ -317,7 +317,7 @@ static int vaapi_decode_make_config(AVCodecContext *avctx,
         goto fail;
     }
 
-    profile = VAProfileNone;
+    matched_va_profile = VAProfileNone;
     exact_match = 0;
 
     for (i = 0; i < FF_ARRAY_ELEMS(vaapi_profile_map); i++) {
@@ -326,23 +326,22 @@ static int vaapi_decode_make_config(AVCodecContext *avctx,
             continue;
         if (avctx->profile == vaapi_profile_map[i].codec_profile)
             profile_match = 1;
-        profile = vaapi_profile_map[i].va_profile;
         for (j = 0; j < profile_count; j++) {
-            if (profile == profile_list[j]) {
+            if (vaapi_profile_map[i].va_profile == profile_list[j]) {
                 exact_match = profile_match;
                 break;
             }
         }
         if (j < profile_count) {
+            matched_va_profile = vaapi_profile_map[i].va_profile;
+            matched_ff_profile = vaapi_profile_map[i].codec_profile;
             if (exact_match)
                 break;
-            alt_profile = vaapi_profile_map[i].codec_profile;
-            va_profile = vaapi_profile_map[i].va_profile;
         }
     }
     av_freep(&profile_list);
 
-    if (profile == VAProfileNone) {
+    if (matched_va_profile == VAProfileNone) {
         av_log(avctx, AV_LOG_ERROR, "No support for codec %s "
                "profile %d.\n", codec_desc->name, avctx->profile);
         err = AVERROR(ENOSYS);
@@ -356,8 +355,7 @@ static int vaapi_decode_make_config(AVCodecContext *avctx,
                    codec_desc->name, avctx->profile);
             av_log(avctx, AV_LOG_WARNING, "Using possibly-"
                    "incompatible profile %d instead.\n",
-                   alt_profile);
-            profile = va_profile;
+                   matched_ff_profile);
         } else {
             av_log(avctx, AV_LOG_VERBOSE, "Codec %s profile %d not "
                    "supported for hardware decode.\n",
@@ -367,7 +365,7 @@ static int vaapi_decode_make_config(AVCodecContext *avctx,
         }
     }
 
-    vas = vaCreateConfig(hwctx->display, profile,
+    vas = vaCreateConfig(hwctx->display, matched_va_profile,
                          VAEntrypointVLD, NULL, 0,
                          va_config);
     if (vas != VA_STATUS_SUCCESS) {
