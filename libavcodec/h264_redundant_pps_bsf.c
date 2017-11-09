@@ -28,8 +28,8 @@
 
 
 typedef struct H264RedundantPPSContext {
-    CodedBitstreamContext input;
-    CodedBitstreamContext output;
+    CodedBitstreamContext *input;
+    CodedBitstreamContext *output;
 
     CodedBitstreamFragment access_unit;
 
@@ -77,7 +77,7 @@ static int h264_redundant_pps_filter(AVBSFContext *bsf, AVPacket *out)
     if (err < 0)
         return err;
 
-    err = ff_cbs_read_packet(&ctx->input, au, in);
+    err = ff_cbs_read_packet(ctx->input, au, in);
     if (err < 0)
         return err;
 
@@ -92,7 +92,7 @@ static int h264_redundant_pps_filter(AVBSFContext *bsf, AVPacket *out)
             if (!au_has_sps) {
                 av_log(ctx, AV_LOG_VERBOSE, "Deleting redundant PPS "
                        "at %"PRId64".\n", in->pts);
-                ff_cbs_delete_unit(&ctx->input, au, i);
+                ff_cbs_delete_unit(ctx->input, au, i);
             }
         }
         if (nal->type == H264_NAL_SLICE ||
@@ -102,11 +102,11 @@ static int h264_redundant_pps_filter(AVBSFContext *bsf, AVPacket *out)
         }
     }
 
-    err = ff_cbs_write_packet(&ctx->output, out, au);
+    err = ff_cbs_write_packet(ctx->output, out, au);
     if (err < 0)
         return err;
 
-    ff_cbs_fragment_uninit(&ctx->output, au);
+    ff_cbs_fragment_uninit(ctx->output, au);
 
     err = av_packet_copy_props(out, in);
     if (err < 0)
@@ -134,7 +134,7 @@ static int h264_redundant_pps_init(AVBSFContext *bsf)
     ctx->global_pic_init_qp = 26;
 
     if (bsf->par_in->extradata) {
-        err = ff_cbs_read_extradata(&ctx->input, au, bsf->par_in);
+        err = ff_cbs_read_extradata(ctx->input, au, bsf->par_in);
         if (err < 0) {
             av_log(bsf, AV_LOG_ERROR, "Failed to read extradata.\n");
             return err;
@@ -145,13 +145,13 @@ static int h264_redundant_pps_init(AVBSFContext *bsf)
                 h264_redundant_pps_fixup_pps(ctx, au->units[i].content);
         }
 
-        err = ff_cbs_write_extradata(&ctx->output, bsf->par_out, au);
+        err = ff_cbs_write_extradata(ctx->output, bsf->par_out, au);
         if (err < 0) {
             av_log(bsf, AV_LOG_ERROR, "Failed to write extradata.\n");
             return err;
         }
 
-        ff_cbs_fragment_uninit(&ctx->output, au);
+        ff_cbs_fragment_uninit(ctx->output, au);
     }
 
     return 0;

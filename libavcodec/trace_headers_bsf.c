@@ -27,7 +27,7 @@
 
 
 typedef struct TraceHeadersContext {
-    CodedBitstreamContext cbc;
+    CodedBitstreamContext *cbc;
 } TraceHeadersContext;
 
 
@@ -40,21 +40,21 @@ static int trace_headers_init(AVBSFContext *bsf)
     if (err < 0)
         return err;
 
-    ctx->cbc.trace_enable = 1;
-    ctx->cbc.trace_level  = AV_LOG_INFO;
+    ctx->cbc->trace_enable = 1;
+    ctx->cbc->trace_level  = AV_LOG_INFO;
 
     if (bsf->par_in->extradata) {
         CodedBitstreamFragment ps;
 
         av_log(bsf, AV_LOG_INFO, "Extradata\n");
 
-        err = ff_cbs_read_extradata(&ctx->cbc, &ps, bsf->par_in);
+        err = ff_cbs_read_extradata(ctx->cbc, &ps, bsf->par_in);
         if (err < 0) {
             av_log(bsf, AV_LOG_ERROR, "Failed to read extradata.\n");
             return err;
         }
 
-        ff_cbs_fragment_uninit(&ctx->cbc, &ps);
+        ff_cbs_fragment_uninit(ctx->cbc, &ps);
     }
 
     return 0;
@@ -97,11 +97,11 @@ static int trace_headers(AVBSFContext *bsf, AVPacket *out)
 
     av_log(bsf, AV_LOG_INFO, "Packet: %d bytes%s.\n", in->size, tmp);
 
-    err = ff_cbs_read_packet(&ctx->cbc, &au, in);
+    err = ff_cbs_read_packet(ctx->cbc, &au, in);
     if (err < 0)
         return err;
 
-    ff_cbs_fragment_uninit(&ctx->cbc, &au);
+    ff_cbs_fragment_uninit(ctx->cbc, &au);
 
     av_packet_move_ref(out, in);
     av_packet_free(&in);

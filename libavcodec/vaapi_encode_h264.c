@@ -78,7 +78,7 @@ typedef struct VAAPIEncodeH264Context {
     int cpb_delay;
     int dpb_delay;
 
-    CodedBitstreamContext cbc;
+    CodedBitstreamContext *cbc;
     CodedBitstreamFragment current_access_unit;
     int aud_needed;
     int sei_needed;
@@ -104,7 +104,7 @@ static int vaapi_encode_h264_write_access_unit(AVCodecContext *avctx,
     VAAPIEncodeH264Context *priv = ctx->priv_data;
     int err;
 
-    err = ff_cbs_write_fragment_data(&priv->cbc, au);
+    err = ff_cbs_write_fragment_data(priv->cbc, au);
     if (err < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed to write packed header.\n");
         return err;
@@ -132,7 +132,7 @@ static int vaapi_encode_h264_add_nal(AVCodecContext *avctx,
     H264RawNALUnitHeader *header = nal_unit;
     int err;
 
-    err = ff_cbs_insert_unit_content(&priv->cbc, au, -1,
+    err = ff_cbs_insert_unit_content(priv->cbc, au, -1,
                                      header->nal_unit_type, nal_unit);
     if (err < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed to add NAL unit: "
@@ -168,7 +168,7 @@ static int vaapi_encode_h264_write_sequence_header(AVCodecContext *avctx,
 
     err = vaapi_encode_h264_write_access_unit(avctx, data, data_len, au);
 fail:
-    ff_cbs_fragment_uninit(&priv->cbc, au);
+    ff_cbs_fragment_uninit(priv->cbc, au);
     return err;
 }
 
@@ -195,7 +195,7 @@ static int vaapi_encode_h264_write_slice_header(AVCodecContext *avctx,
 
     err = vaapi_encode_h264_write_access_unit(avctx, data, data_len, au);
 fail:
-    ff_cbs_fragment_uninit(&priv->cbc, au);
+    ff_cbs_fragment_uninit(priv->cbc, au);
     return err;
 }
 
@@ -255,7 +255,7 @@ static int vaapi_encode_h264_write_extra_header(AVCodecContext *avctx,
         if (err < 0)
             goto fail;
 
-        ff_cbs_fragment_uninit(&priv->cbc, au);
+        ff_cbs_fragment_uninit(priv->cbc, au);
 
         *type = VAEncPackedHeaderRawData;
         return 0;
@@ -277,7 +277,7 @@ static int vaapi_encode_h264_write_extra_header(AVCodecContext *avctx,
     }
 
 fail:
-    ff_cbs_fragment_uninit(&priv->cbc, au);
+    ff_cbs_fragment_uninit(priv->cbc, au);
     return err;
 }
 

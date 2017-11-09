@@ -35,7 +35,7 @@ enum {
 typedef struct H264MetadataContext {
     const AVClass *class;
 
-    CodedBitstreamContext cbc;
+    CodedBitstreamContext *cbc;
     CodedBitstreamFragment access_unit;
 
     H264RawAUD aud_nal;
@@ -214,7 +214,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
     if (err < 0)
         goto fail;
 
-    err = ff_cbs_read_packet(&ctx->cbc, au, in);
+    err = ff_cbs_read_packet(ctx->cbc, au, in);
     if (err < 0) {
         av_log(bsf, AV_LOG_ERROR, "Failed to read packet.\n");
         goto fail;
@@ -229,7 +229,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
     // If an AUD is present, it must be the first NAL unit.
     if (au->units[0].type == H264_NAL_AUD) {
         if (ctx->aud == REMOVE)
-            ff_cbs_delete_unit(&ctx->cbc, au, 0);
+            ff_cbs_delete_unit(ctx->cbc, au, 0);
     } else {
         if (ctx->aud == INSERT) {
             static const int primary_pic_type_table[] = {
@@ -269,7 +269,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
             aud->nal_unit_header.nal_unit_type = H264_NAL_AUD;
             aud->primary_pic_type = j;
 
-            err = ff_cbs_insert_unit_content(&ctx->cbc, au,
+            err = ff_cbs_insert_unit_content(ctx->cbc, au,
                                              0, H264_NAL_AUD, aud);
             if (err < 0) {
                 av_log(bsf, AV_LOG_ERROR, "Failed to insert AUD.\n");
@@ -314,7 +314,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
 
             sei->nal_unit_header.nal_unit_type = H264_NAL_SEI;
 
-            err = ff_cbs_insert_unit_content(&ctx->cbc, au,
+            err = ff_cbs_insert_unit_content(ctx->cbc, au,
                                              sei_pos, H264_NAL_SEI, sei);
             if (err < 0) {
                 av_log(bsf, AV_LOG_ERROR, "Failed to insert SEI.\n");
@@ -375,7 +375,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
         ++sei->payload_count;
     }
 
-    err = ff_cbs_write_packet(&ctx->cbc, out, au);
+    err = ff_cbs_write_packet(ctx->cbc, out, au);
     if (err < 0) {
         av_log(bsf, AV_LOG_ERROR, "Failed to write packet.\n");
         goto fail;
@@ -387,7 +387,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
 
     err = 0;
 fail:
-    ff_cbs_fragment_uninit(&ctx->cbc, au);
+    ff_cbs_fragment_uninit(ctx->cbc, au);
     av_freep(&sei_udu_string);
 
     av_packet_free(&in);
@@ -406,7 +406,7 @@ static int h264_metadata_init(AVBSFContext *bsf)
         return err;
 
     if (bsf->par_in->extradata) {
-        err = ff_cbs_read_extradata(&ctx->cbc, au, bsf->par_in);
+        err = ff_cbs_read_extradata(ctx->cbc, au, bsf->par_in);
         if (err < 0) {
             av_log(bsf, AV_LOG_ERROR, "Failed to read extradata.\n");
             goto fail;
@@ -420,7 +420,7 @@ static int h264_metadata_init(AVBSFContext *bsf)
             }
         }
 
-        err = ff_cbs_write_extradata(&ctx->cbc, bsf->par_out, au);
+        err = ff_cbs_write_extradata(ctx->cbc, bsf->par_out, au);
         if (err < 0) {
             av_log(bsf, AV_LOG_ERROR, "Failed to write extradata.\n");
             goto fail;
@@ -429,7 +429,7 @@ static int h264_metadata_init(AVBSFContext *bsf)
 
     err = 0;
 fail:
-    ff_cbs_fragment_uninit(&ctx->cbc, au);
+    ff_cbs_fragment_uninit(ctx->cbc, au);
     return err;
 }
 

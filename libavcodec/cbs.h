@@ -169,15 +169,15 @@ typedef struct CodedBitstreamContext {
 
 
 /**
- * Initialise a new context for the given codec.
+ * Create and initialise a new context for the given codec.
  */
-int ff_cbs_init(CodedBitstreamContext *ctx,
+int ff_cbs_init(CodedBitstreamContext **ctx,
                 enum AVCodecID codec_id, void *log_ctx);
 
 /**
  * Close a context and free all internal state.
  */
-void ff_cbs_close(CodedBitstreamContext *ctx);
+void ff_cbs_close(CodedBitstreamContext **ctx);
 
 
 /**

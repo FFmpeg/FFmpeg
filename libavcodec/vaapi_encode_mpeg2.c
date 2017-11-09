@@ -52,7 +52,7 @@ typedef struct VAAPIEncodeMPEG2Context {
     unsigned int f_code_horizontal;
     unsigned int f_code_vertical;
 
-    CodedBitstreamContext cbc;
+    CodedBitstreamContext *cbc;
     CodedBitstreamFragment current_fragment;
 } VAAPIEncodeMPEG2Context;
 
@@ -65,7 +65,7 @@ static int vaapi_encode_mpeg2_write_fragment(AVCodecContext *avctx,
     VAAPIEncodeMPEG2Context *priv = ctx->priv_data;
     int err;
 
-    err = ff_cbs_write_fragment_data(&priv->cbc, frag);
+    err = ff_cbs_write_fragment_data(priv->cbc, frag);
     if (err < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed to write packed header.\n");
         return err;
@@ -92,7 +92,7 @@ static int vaapi_encode_mpeg2_add_header(AVCodecContext *avctx,
     VAAPIEncodeMPEG2Context *priv = ctx->priv_data;
     int err;
 
-    err = ff_cbs_insert_unit_content(&priv->cbc, frag, -1, type, header);
+    err = ff_cbs_insert_unit_content(priv->cbc, frag, -1, type, header);
     if (err < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed to add header: "
                "type = %d.\n", type);
@@ -132,7 +132,7 @@ static int vaapi_encode_mpeg2_write_sequence_header(AVCodecContext *avctx,
 
     err = vaapi_encode_mpeg2_write_fragment(avctx, data, data_len, frag);
 fail:
-    ff_cbs_fragment_uninit(&priv->cbc, frag);
+    ff_cbs_fragment_uninit(priv->cbc, frag);
     return 0;
 }
 
@@ -157,7 +157,7 @@ static int vaapi_encode_mpeg2_write_picture_header(AVCodecContext *avctx,
 
     err = vaapi_encode_mpeg2_write_fragment(avctx, data, data_len, frag);
 fail:
-    ff_cbs_fragment_uninit(&priv->cbc, frag);
+    ff_cbs_fragment_uninit(priv->cbc, frag);
     return 0;
 }
 

@@ -39,9 +39,10 @@ static const CodedBitstreamType *cbs_type_table[] = {
 #endif
 };
 
-int ff_cbs_init(CodedBitstreamContext *ctx,
+int ff_cbs_init(CodedBitstreamContext **ctx_ptr,
                 enum AVCodecID codec_id, void *log_ctx)
 {
+    CodedBitstreamContext *ctx;
     const CodedBitstreamType *type;
     int i;
 
@@ -55,27 +56,40 @@ int ff_cbs_init(CodedBitstreamContext *ctx,
     if (!type)
         return AVERROR(EINVAL);
 
+    ctx = av_mallocz(sizeof(*ctx));
+    if (!ctx)
+        return AVERROR(ENOMEM);
+
     ctx->log_ctx = log_ctx;
     ctx->codec   = type;
 
     ctx->priv_data = av_mallocz(ctx->codec->priv_data_size);
-    if (!ctx->priv_data)
+    if (!ctx->priv_data) {
+        av_freep(&ctx);
         return AVERROR(ENOMEM);
+    }
 
     ctx->decompose_unit_types = NULL;
 
     ctx->trace_enable = 0;
     ctx->trace_level  = AV_LOG_TRACE;
 
+    *ctx_ptr = ctx;
     return 0;
 }
 
-void ff_cbs_close(CodedBitstreamContext *ctx)
+void ff_cbs_close(CodedBitstreamContext **ctx_ptr)
 {
+    CodedBitstreamContext *ctx = *ctx_ptr;
+
+    if (!ctx)
+        return;
+
     if (ctx->codec && ctx->codec->close)
         ctx->codec->close(ctx);
 
     av_freep(&ctx->priv_data);
+    av_freep(ctx_ptr);
 }
 
 static void cbs_unit_uninit(CodedBitstreamContext *ctx,
