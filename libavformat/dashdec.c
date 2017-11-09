@@ -1079,9 +1079,8 @@ static int64_t calc_min_seg_no(AVFormatContext *s, struct representation *pls)
     return num;
 }
 
-static int64_t calc_max_seg_no(struct representation *pls)
+static int64_t calc_max_seg_no(struct representation *pls, DASHContext *c)
 {
-    DASHContext *c = pls->parent->priv_data;
     int64_t num = 0;
 
     if (pls->n_fragments) {
@@ -1101,21 +1100,21 @@ static int64_t calc_max_seg_no(struct representation *pls)
     return num;
 }
 
-static void move_timelines(struct representation *rep_src, struct representation *rep_dest)
+static void move_timelines(struct representation *rep_src, struct representation *rep_dest, DASHContext *c)
 {
     if (rep_dest && rep_src ) {
         free_timelines_list(rep_dest);
         rep_dest->timelines    = rep_src->timelines;
         rep_dest->n_timelines  = rep_src->n_timelines;
         rep_dest->first_seq_no = rep_src->first_seq_no;
-        rep_dest->last_seq_no = calc_max_seg_no(rep_dest);
+        rep_dest->last_seq_no = calc_max_seg_no(rep_dest, c);
         rep_src->timelines = NULL;
         rep_src->n_timelines = 0;
         rep_dest->cur_seq_no = rep_src->cur_seq_no;
     }
 }
 
-static void move_segments(struct representation *rep_src, struct representation *rep_dest)
+static void move_segments(struct representation *rep_src, struct representation *rep_dest, DASHContext *c)
 {
     if (rep_dest && rep_src ) {
         free_fragment_list(rep_dest);
@@ -1126,7 +1125,7 @@ static void move_segments(struct representation *rep_src, struct representation 
         rep_dest->fragments    = rep_src->fragments;
         rep_dest->n_fragments  = rep_src->n_fragments;
         rep_dest->parent  = rep_src->parent;
-        rep_dest->last_seq_no = calc_max_seg_no(rep_dest);
+        rep_dest->last_seq_no = calc_max_seg_no(rep_dest, c);
         rep_src->fragments = NULL;
         rep_src->n_fragments = 0;
     }
@@ -1163,21 +1162,21 @@ static int refresh_manifest(AVFormatContext *s)
         if (cur_video && cur_video->timelines) {
             c->cur_video->cur_seq_no = calc_next_seg_no_from_timelines(c->cur_video, currentVideoTime * cur_video->fragment_timescale - 1);
             if (c->cur_video->cur_seq_no >= 0) {
-                move_timelines(c->cur_video, cur_video);
+                move_timelines(c->cur_video, cur_video, c);
             }
         }
         if (cur_audio && cur_audio->timelines) {
             c->cur_audio->cur_seq_no = calc_next_seg_no_from_timelines(c->cur_audio, currentAudioTime * cur_audio->fragment_timescale - 1);
             if (c->cur_audio->cur_seq_no >= 0) {
-               move_timelines(c->cur_audio, cur_audio);
+               move_timelines(c->cur_audio, cur_audio, c);
             }
         }
     }
     if (cur_video && cur_video->fragments) {
-        move_segments(c->cur_video, cur_video);
+        move_segments(c->cur_video, cur_video, c);
     }
     if (cur_audio && cur_audio->fragments) {
-        move_segments(c->cur_audio, cur_audio);
+        move_segments(c->cur_audio, cur_audio, c);
     }
 
 finish:
@@ -1226,7 +1225,7 @@ static struct fragment *get_current_fragment(struct representation *pls)
     }
     if (c->is_live) {
         min_seq_no = calc_min_seg_no(pls->parent, pls);
-        max_seq_no = calc_max_seg_no(pls);
+        max_seq_no = calc_max_seg_no(pls, c);
 
         if (pls->timelines || pls->fragments) {
             refresh_manifest(pls->parent);
@@ -1564,7 +1563,7 @@ static int open_demux_for_component(AVFormatContext *s, struct representation *p
 
     pls->parent = s;
     pls->cur_seq_no  = calc_cur_seg_no(s, pls);
-    pls->last_seq_no = calc_max_seg_no(pls);
+    pls->last_seq_no = calc_max_seg_no(pls, s->priv_data);
 
     ret = reopen_demux_for_component(s, pls);
     if (ret < 0) {
