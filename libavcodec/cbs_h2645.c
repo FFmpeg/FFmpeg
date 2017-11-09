@@ -821,6 +821,7 @@ static int cbs_h264_read_nal_unit(CodedBitstreamContext *ctx,
             err = cbs_h264_read_sei(ctx, &bc, sei);
             if (err < 0) {
                 cbs_h264_free_sei(sei);
+                av_free(sei);
                 return err;
             }
 
