@@ -55,6 +55,8 @@ static void put_pce(PutBitContext *pb, AVCodecContext *avctx)
     int i, j;
     AACEncContext *s = avctx->priv_data;
     AACPCEInfo *pce = &s->pce;
+    const int bitexact = avctx->flags & AV_CODEC_FLAG_BITEXACT;
+    const char *aux_data = bitexact ? "Lavc" : LIBAVCODEC_IDENT;
 
     put_bits(pb, 4, 0);
 
@@ -81,20 +83,26 @@ static void put_pce(PutBitContext *pb, AVCodecContext *avctx)
     }
 
     avpriv_align_put_bits(pb);
-    put_bits(pb, 8, 0);
+    put_bits(pb, 8, strlen(aux_data));
+    avpriv_put_string(pb, aux_data, 0);
 }
 
 /**
  * Make AAC audio config object.
  * @see 1.6.2.1 "Syntax - AudioSpecificConfig"
  */
-static void put_audio_specific_config(AVCodecContext *avctx)
+static int put_audio_specific_config(AVCodecContext *avctx)
 {
     PutBitContext pb;
     AACEncContext *s = avctx->priv_data;
     int channels = (!s->needs_pce)*(s->channels - (s->channels == 8 ? 1 : 0));
+    const int max_size = 32;
 
-    init_put_bits(&pb, avctx->extradata, avctx->extradata_size);
+    avctx->extradata = av_mallocz(max_size);
+    if (!avctx->extradata)
+        return AVERROR(ENOMEM);
+
+    init_put_bits(&pb, avctx->extradata, max_size);
     put_bits(&pb, 5, s->profile+1); //profile
     put_bits(&pb, 4, s->samplerate_index); //sample rate index
     put_bits(&pb, 4, channels);
@@ -110,6 +118,9 @@ static void put_audio_specific_config(AVCodecContext *avctx)
     put_bits(&pb, 5,  AOT_SBR);
     put_bits(&pb, 1,  0);
     flush_put_bits(&pb);
+    avctx->extradata_size = put_bits_count(&pb) >> 3;
+
+    return 0;
 }
 
 void ff_quantize_band_cost_cache_init(struct AACEncContext *s)
@@ -931,7 +942,6 @@ static av_cold int alloc_buffers(AVCodecContext *avctx, AACEncContext *s)
     int ch;
     FF_ALLOCZ_ARRAY_OR_GOTO(avctx, s->buffer.samples, s->channels, 3 * 1024 * sizeof(s->buffer.samples[0]), alloc_fail);
     FF_ALLOCZ_ARRAY_OR_GOTO(avctx, s->cpe, s->chan_map[0], sizeof(ChannelElement), alloc_fail);
-    FF_ALLOCZ_OR_GOTO(avctx, avctx->extradata, 5 + AV_INPUT_BUFFER_PADDING_SIZE, alloc_fail);
 
     for(ch = 0; ch < s->channels; ch++)
         s->planar_samples[ch] = s->buffer.samples + 3 * 1024 * ch;
@@ -956,7 +966,6 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
 
     /* Constants */
     s->last_frame_pb_count = 0;
-    avctx->extradata_size = 20;
     avctx->frame_size = 1024;
     avctx->initial_padding = 1024;
     s->lambda = avctx->global_quality > 0 ? avctx->global_quality : 120;
@@ -1071,7 +1080,8 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     if ((ret = alloc_buffers(avctx, s)) < 0)
         goto fail;
 
-    put_audio_specific_config(avctx);
+    if ((ret = put_audio_specific_config(avctx)))
+        goto fail;
 
     sizes[0]   = ff_aac_swb_size_1024[s->samplerate_index];
     sizes[1]   = ff_aac_swb_size_128[s->samplerate_index];
