@@ -181,7 +181,8 @@ static int cbs_mpeg2_read_unit(CodedBitstreamContext *ctx,
         len = unit->data_size;
 
         slice->data_size = len - pos / 8;
-        slice->data = av_malloc(slice->data_size);
+        slice->data = av_malloc(slice->data_size +
+                                AV_INPUT_BUFFER_PADDING_SIZE);
         if (!slice->data) {
             av_free(slice);
             return AVERROR(ENOMEM);
@@ -189,6 +190,8 @@ static int cbs_mpeg2_read_unit(CodedBitstreamContext *ctx,
 
         memcpy(slice->data,
                unit->data + pos / 8, slice->data_size);
+        memset(slice->data + slice->data_size, 0,
+               AV_INPUT_BUFFER_PADDING_SIZE);
         slice->data_bit_start = pos % 8;
 
         unit->content = slice;
