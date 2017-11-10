@@ -654,6 +654,14 @@ static int videotoolbox_h264_end_frame(AVCodecContext *avctx)
     return ret;
 }
 
+static int videotoolbox_hevc_decode_params(AVCodecContext *avctx,
+                                           int type,
+                                           const uint8_t *buffer,
+                                           uint32_t size)
+{
+    return ff_videotoolbox_h264_decode_slice(avctx, buffer, size);
+}
+
 static int videotoolbox_hevc_end_frame(AVCodecContext *avctx)
 {
     HEVCContext *h = avctx->priv_data;
@@ -1040,6 +1048,7 @@ AVHWAccel ff_hevc_videotoolbox_hwaccel = {
     .alloc_frame    = ff_videotoolbox_alloc_frame,
     .start_frame    = ff_videotoolbox_h264_start_frame,
     .decode_slice   = ff_videotoolbox_h264_decode_slice,
+    .decode_params  = videotoolbox_hevc_decode_params,
     .end_frame      = videotoolbox_hevc_end_frame,
     .frame_params   = videotoolbox_frame_params,
     .init           = videotoolbox_common_init,
