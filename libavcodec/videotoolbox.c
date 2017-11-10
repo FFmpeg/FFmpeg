@@ -849,15 +849,15 @@ static int videotoolbox_default_init(AVCodecContext *avctx)
 static void videotoolbox_default_free(AVCodecContext *avctx)
 {
     AVVideotoolboxContext *videotoolbox = videotoolbox_get_context(avctx);
+    if (!videotoolbox)
+        return;
 
-    if (videotoolbox) {
-        if (videotoolbox->cm_fmt_desc)
-            CFRelease(videotoolbox->cm_fmt_desc);
+    if (videotoolbox->cm_fmt_desc)
+        CFRelease(videotoolbox->cm_fmt_desc);
 
-        if (videotoolbox->session) {
-            VTDecompressionSessionInvalidate(videotoolbox->session);
-            CFRelease(videotoolbox->session);
-        }
+    if (videotoolbox->session) {
+        VTDecompressionSessionInvalidate(videotoolbox->session);
+        CFRelease(videotoolbox->session);
     }
 }
 
