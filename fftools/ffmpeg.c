@@ -4198,9 +4198,11 @@ static int process_input(int file_index)
         return ret;
     }
     if (ret < 0 && ifile->loop) {
-        if ((ret = seek_to_start(ifile, is)) < 0)
-            return ret;
-        ret = get_input_packet(ifile, &pkt);
+        ret = seek_to_start(ifile, is);
+        if (ret < 0)
+            av_log(NULL, AV_LOG_WARNING, "Seek to start failed.\n");
+        else
+            ret = get_input_packet(ifile, &pkt);
         if (ret == AVERROR(EAGAIN)) {
             ifile->eagain = 1;
             return ret;
