@@ -406,6 +406,7 @@ static void register_all(void)
     REGISTER_DECODER(AMRNB,             amrnb);
     REGISTER_DECODER(AMRWB,             amrwb);
     REGISTER_DECODER(APE,               ape);
+    REGISTER_ENCDEC (APTX,              aptx);
     REGISTER_DECODER(ATRAC1,            atrac1);
     REGISTER_DECODER(ATRAC3,            atrac3);
     REGISTER_DECODER(ATRAC3AL,          atrac3al);
