@@ -2824,23 +2824,55 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
 
     switch (s->nal_unit_type) {
     case HEVC_NAL_VPS:
+        if (s->avctx->hwaccel && s->avctx->hwaccel->decode_params) {
+            ret = s->avctx->hwaccel->decode_params(s->avctx,
+                                                   nal->type,
+                                                   nal->raw_data,
+                                                   nal->raw_size);
+            if (ret < 0)
+                goto fail;
+        }
         ret = ff_hevc_decode_nal_vps(gb, s->avctx, &s->ps);
         if (ret < 0)
             goto fail;
         break;
     case HEVC_NAL_SPS:
+        if (s->avctx->hwaccel && s->avctx->hwaccel->decode_params) {
+            ret = s->avctx->hwaccel->decode_params(s->avctx,
+                                                   nal->type,
+                                                   nal->raw_data,
+                                                   nal->raw_size);
+            if (ret < 0)
+                goto fail;
+        }
         ret = ff_hevc_decode_nal_sps(gb, s->avctx, &s->ps,
                                      s->apply_defdispwin);
         if (ret < 0)
             goto fail;
         break;
     case HEVC_NAL_PPS:
+        if (s->avctx->hwaccel && s->avctx->hwaccel->decode_params) {
+            ret = s->avctx->hwaccel->decode_params(s->avctx,
+                                                   nal->type,
+                                                   nal->raw_data,
+                                                   nal->raw_size);
+            if (ret < 0)
+                goto fail;
+        }
         ret = ff_hevc_decode_nal_pps(gb, s->avctx, &s->ps);
         if (ret < 0)
             goto fail;
         break;
     case HEVC_NAL_SEI_PREFIX:
     case HEVC_NAL_SEI_SUFFIX:
+        if (s->avctx->hwaccel && s->avctx->hwaccel->decode_params) {
+            ret = s->avctx->hwaccel->decode_params(s->avctx,
+                                                   nal->type,
+                                                   nal->raw_data,
+                                                   nal->raw_size);
+            if (ret < 0)
+                goto fail;
+        }
         ret = ff_hevc_decode_nal_sei(gb, s->avctx, &s->sei, &s->ps, s->nal_unit_type);
         if (ret < 0)
             goto fail;
