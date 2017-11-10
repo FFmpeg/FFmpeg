@@ -1808,13 +1808,13 @@ static int get_audio_frame_duration(enum AVCodecID id, int sr, int ch, int ba,
                 /* calc from frame_bytes, channels, and bits_per_coded_sample */
                 switch (id) {
                 case AV_CODEC_ID_PCM_DVD:
-                    if(bps<4)
+                    if(bps<4 || frame_bytes<3)
                         return 0;
-                    return 2 * (frame_bytes / ((bps * 2 / 8) * ch));
+                    return 2 * ((frame_bytes - 3) / ((bps * 2 / 8) * ch));
                 case AV_CODEC_ID_PCM_BLURAY:
-                    if(bps<4)
+                    if(bps<4 || frame_bytes<4)
                         return 0;
-                    return frame_bytes / ((FFALIGN(ch, 2) * bps) / 8);
+                    return (frame_bytes - 4) / ((FFALIGN(ch, 2) * bps) / 8);
                 case AV_CODEC_ID_S302M:
                     return 2 * (frame_bytes / ((bps + 4) / 4)) / ch;
                 }
