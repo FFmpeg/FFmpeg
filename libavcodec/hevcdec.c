@@ -503,13 +503,14 @@ static int hls_slice_header(HEVCContext *s)
         }
         ff_hevc_clear_refs(s);
 
+        ret = set_sps(s, sps, sps->pix_fmt);
+        if (ret < 0)
+            return ret;
+
         pix_fmt = get_format(s, sps);
         if (pix_fmt < 0)
             return pix_fmt;
-
-        ret = set_sps(s, sps, pix_fmt);
-        if (ret < 0)
-            return ret;
+        s->avctx->pix_fmt = pix_fmt;
 
         s->seq_decode = (s->seq_decode + 1) & 0xff;
         s->max_ra     = INT_MAX;
