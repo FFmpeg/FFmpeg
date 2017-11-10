@@ -38,6 +38,12 @@ typedef struct VTContext {
     // Non-NULL if the new hwaccel API is used. This is only a separate struct
     // to ease compatibility with the old API.
     struct AVVideotoolboxContext *vt_ctx;
+
+    // Current H264 parameters (used to trigger decoder restart on SPS changes).
+    uint8_t                     *sps;
+    uint32_t                    sps_len;
+    unsigned int                sps_capa;
+    bool                        reconfig_needed;
 } VTContext;
 
 int ff_videotoolbox_alloc_frame(AVCodecContext *avctx, AVFrame *frame);

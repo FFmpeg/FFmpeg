@@ -42,6 +42,9 @@ enum { kCMVideoCodecType_HEVC = 'hvc1' };
 
 #define VIDEOTOOLBOX_ESDS_EXTRADATA_PADDING  12
 
+static void videotoolbox_stop(AVCodecContext *avctx);
+static int videotoolbox_start(AVCodecContext *avctx);
+
 static void videotoolbox_buffer_release(void *opaque, uint8_t *data)
 {
     CVPixelBufferRef cv_buffer = (CVImageBufferRef)data;
@@ -307,6 +310,27 @@ int ff_videotoolbox_h264_start_frame(AVCodecContext *avctx,
     return 0;
 }
 
+static int videotoolbox_h264_decode_params(AVCodecContext *avctx,
+                                           int type,
+                                           const uint8_t *buffer,
+                                           uint32_t size)
+{
+    VTContext *vtctx = avctx->internal->hwaccel_priv_data;
+
+    if (type == H264_NAL_SPS) {
+        if (!vtctx->sps || vtctx->sps_len != size || memcmp(buffer, vtctx->sps, size) != 0) {
+            vtctx->sps = av_fast_realloc(vtctx->sps, &vtctx->sps_capa, size);
+            if (vtctx->sps)
+                memcpy(vtctx->sps, buffer, size);
+            vtctx->reconfig_needed = true;
+            vtctx->sps_len = size;
+        }
+    }
+
+    // pass-through new PPS to the decoder
+    return ff_videotoolbox_h264_decode_slice(avctx, buffer, size);
+}
+
 int ff_videotoolbox_h264_decode_slice(AVCodecContext *avctx,
                                       const uint8_t *buffer,
                                       uint32_t size)
@@ -339,6 +363,7 @@ int ff_videotoolbox_uninit(AVCodecContext *avctx)
     VTContext *vtctx = avctx->internal->hwaccel_priv_data;
     if (vtctx) {
         av_freep(&vtctx->bitstream);
+        av_freep(&vtctx->sps);
         if (vtctx->frame)
             CVPixelBufferRelease(vtctx->frame);
     }
@@ -591,17 +616,30 @@ static int videotoolbox_common_end_frame(AVCodecContext *avctx, AVFrame *frame)
     AVVideotoolboxContext *videotoolbox = videotoolbox_get_context(avctx);
     VTContext *vtctx = avctx->internal->hwaccel_priv_data;
 
-    if (!videotoolbox->session || !vtctx->bitstream)
+    if (vtctx->reconfig_needed == true) {
+        vtctx->reconfig_needed = false;
+        av_log(avctx, AV_LOG_VERBOSE, "VideoToolbox decoder needs reconfig, restarting..\n");
+        videotoolbox_stop(avctx);
+        if (videotoolbox_start(avctx) != 0) {
+            return AVERROR_EXTERNAL;
+        }
+    }
+
+    if (!videotoolbox->session || !vtctx->bitstream || !vtctx->bitstream_size)
         return AVERROR_INVALIDDATA;
 
     status = videotoolbox_session_decode_frame(avctx);
     if (status != noErr) {
+        if (status == kVTVideoDecoderMalfunctionErr || status == kVTInvalidSessionErr)
+            vtctx->reconfig_needed = true;
         av_log(avctx, AV_LOG_ERROR, "Failed to decode frame (%s, %d)\n", videotoolbox_error_string(status), (int)status);
         return AVERROR_UNKNOWN;
     }
 
-    if (!vtctx->frame)
+    if (!vtctx->frame) {
+        vtctx->reconfig_needed = true;
         return AVERROR_UNKNOWN;
+    }
 
     return videotoolbox_buffer_create(avctx, frame);
 }
@@ -1018,6 +1056,7 @@ AVHWAccel ff_h264_videotoolbox_hwaccel = {
     .alloc_frame    = ff_videotoolbox_alloc_frame,
     .start_frame    = ff_videotoolbox_h264_start_frame,
     .decode_slice   = ff_videotoolbox_h264_decode_slice,
+    .decode_params  = videotoolbox_h264_decode_params,
     .end_frame      = videotoolbox_h264_end_frame,
     .frame_params   = videotoolbox_frame_params,
     .init           = videotoolbox_common_init,
