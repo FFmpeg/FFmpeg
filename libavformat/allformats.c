@@ -69,6 +69,7 @@ static void register_all(void)
     REGISTER_DEMUXER (APC,              apc);
     REGISTER_DEMUXER (APE,              ape);
     REGISTER_MUXDEMUX(APNG,             apng);
+    REGISTER_MUXDEMUX(APTX,             aptx);
     REGISTER_DEMUXER (AQTITLE,          aqtitle);
     REGISTER_MUXDEMUX(ASF,              asf);
     REGISTER_DEMUXER (ASF_O,            asf_o);

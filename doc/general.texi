@@ -441,6 +441,7 @@ library:
 @item raw AC-3                  @tab X @tab X
 @item raw AMR-NB                @tab   @tab X
 @item raw AMR-WB                @tab   @tab X
+@item raw aptX                  @tab X @tab X
 @item raw Chinese AVS video     @tab X @tab X
 @item raw CRI ADX               @tab X @tab X
 @item raw Dirac                 @tab X @tab X
