@@ -2782,11 +2782,12 @@ fail:
     av_freep(&avc);
 }
 
-static const HWAccel *get_hwaccel(enum AVPixelFormat pix_fmt)
+static const HWAccel *get_hwaccel(enum AVPixelFormat pix_fmt, enum HWAccelID selected_hwaccel_id)
 {
     int i;
     for (i = 0; hwaccels[i].name; i++)
-        if (hwaccels[i].pix_fmt == pix_fmt)
+        if (hwaccels[i].pix_fmt == pix_fmt &&
+            (!selected_hwaccel_id || selected_hwaccel_id == HWACCEL_AUTO || hwaccels[i].id == selected_hwaccel_id))
             return &hwaccels[i];
     return NULL;
 }
@@ -2804,7 +2805,7 @@ static enum AVPixelFormat get_format(AVCodecContext *s, const enum AVPixelFormat
         if (!(desc->flags & AV_PIX_FMT_FLAG_HWACCEL))
             break;
 
-        hwaccel = get_hwaccel(*p);
+        hwaccel = get_hwaccel(*p, ist->hwaccel_id);
         if (!hwaccel ||
             (ist->active_hwaccel_id && ist->active_hwaccel_id != hwaccel->id) ||
             (ist->hwaccel_id != HWACCEL_AUTO && ist->hwaccel_id != hwaccel->id))
