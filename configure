@@ -4144,9 +4144,8 @@ extern_prefix=${sym%%ff_extern*}
 
 ! disabled inline_asm && check_inline_asm inline_asm '"" ::'
 
-_restrict=
-for restrict_keyword in restrict __restrict__ __restrict; do
-    check_cc <<EOF && _restrict=$restrict_keyword && break
+for restrict_keyword in restrict __restrict__ __restrict ""; do
+    check_cc <<EOF && break
 void foo(char * $restrict_keyword p);
 EOF
 done
@@ -4974,9 +4973,9 @@ elif enabled_any msvc icl; then
     # MSVC 2013 and newer can handle it fine.
     # If this declspec fails, force including stdlib.h before the restrict redefinition
     # happens in config.h.
-    if [ $_restrict != restrict ]; then
+    if [ $restrict_keyword != restrict ]; then
         check_cc <<EOF || add_cflags -FIstdlib.h
-__declspec($_restrict) void* foo(int);
+__declspec($restrict_keyword) void *foo(int);
 EOF
     fi
 fi
@@ -5323,11 +5322,13 @@ cat > $TMPH <<EOF
 #define LIBAV_LICENSE "$(c_escape $license)"
 #define AVCONV_DATADIR "$(eval c_escape $datadir)"
 #define CC_IDENT "$(c_escape ${cc_ident:-Unknown compiler})"
-#define restrict $_restrict
 #define EXTERN_PREFIX "${extern_prefix}"
 #define EXTERN_ASM ${extern_prefix}
 #define SLIBSUF "$SLIBSUF"
 EOF
+
+test $restrict_keyword != restrict &&
+    echo "#define restrict $restrict_keyword" >> $TMPH
 
 test -n "$malloc_prefix" &&
     echo "#define MALLOC_PREFIX $malloc_prefix" >>$TMPH
