@@ -11,6 +11,8 @@ version <next>:
 - TiVo ty/ty+ demuxer
 - Intel QSV-accelerated MJPEG encoding
 - PCE support for extended channel layouts in the AAC encoder
+- native aptX encoder and decoder
+- Raw aptX muxer and demuxer
 
 
 version 3.4:
