@@ -620,6 +620,18 @@ static int decode_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
         av_assert0((frame->private_ref && frame->private_ref->size == sizeof(FrameDecodeData)) ||
                    !(avctx->codec->capabilities & AV_CODEC_CAP_DR1));
 
+        if (frame->private_ref) {
+            FrameDecodeData *fdd = (FrameDecodeData*)frame->private_ref->data;
+
+            if (fdd->post_process) {
+                ret = fdd->post_process(avctx, frame);
+                if (ret < 0) {
+                    av_frame_unref(frame);
+                    return ret;
+                }
+            }
+        }
+
         av_buffer_unref(&frame->private_ref);
     }
 
@@ -1565,6 +1577,9 @@ static void validate_avframe_allocation(AVCodecContext *avctx, AVFrame *frame)
 static void decode_data_free(void *opaque, uint8_t *data)
 {
     FrameDecodeData *fdd = (FrameDecodeData*)data;
+
+    if (fdd->post_process_opaque_free)
+        fdd->post_process_opaque_free(fdd->post_process_opaque);
 
     av_freep(&fdd);
 }
