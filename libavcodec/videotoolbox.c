@@ -702,45 +702,43 @@ static CFDictionaryRef videotoolbox_decoder_config_create(CMVideoCodecType codec
                          kVTVideoDecoderSpecification_RequireHardwareAcceleratedVideoDecoder,
                          kCFBooleanTrue);
 
-    if (1) {
-        CFMutableDictionaryRef avc_info;
-        CFDataRef data = NULL;
+    CFMutableDictionaryRef avc_info;
+    CFDataRef data = NULL;
 
-        avc_info = CFDictionaryCreateMutable(kCFAllocatorDefault,
-                                             1,
-                                             &kCFTypeDictionaryKeyCallBacks,
-                                             &kCFTypeDictionaryValueCallBacks);
+    avc_info = CFDictionaryCreateMutable(kCFAllocatorDefault,
+                                         1,
+                                         &kCFTypeDictionaryKeyCallBacks,
+                                         &kCFTypeDictionaryValueCallBacks);
 
-        switch (codec_type) {
-        case kCMVideoCodecType_MPEG4Video :
-            if (avctx->extradata_size)
-                data = videotoolbox_esds_extradata_create(avctx);
-            if (data)
-                CFDictionarySetValue(avc_info, CFSTR("esds"), data);
-            break;
-        case kCMVideoCodecType_H264 :
-            data = ff_videotoolbox_avcc_extradata_create(avctx);
-            if (data)
-                CFDictionarySetValue(avc_info, CFSTR("avcC"), data);
-            break;
-        case kCMVideoCodecType_HEVC :
-            data = ff_videotoolbox_hvcc_extradata_create(avctx);
-            if (data)
-                CFDictionarySetValue(avc_info, CFSTR("hvcC"), data);
-            break;
-        default:
-            break;
-        }
-
-        CFDictionarySetValue(config_info,
-                kCMFormatDescriptionExtension_SampleDescriptionExtensionAtoms,
-                avc_info);
-
+    switch (codec_type) {
+    case kCMVideoCodecType_MPEG4Video :
+        if (avctx->extradata_size)
+            data = videotoolbox_esds_extradata_create(avctx);
         if (data)
-            CFRelease(data);
-
-        CFRelease(avc_info);
+            CFDictionarySetValue(avc_info, CFSTR("esds"), data);
+        break;
+    case kCMVideoCodecType_H264 :
+        data = ff_videotoolbox_avcc_extradata_create(avctx);
+        if (data)
+            CFDictionarySetValue(avc_info, CFSTR("avcC"), data);
+        break;
+    case kCMVideoCodecType_HEVC :
+        data = ff_videotoolbox_hvcc_extradata_create(avctx);
+        if (data)
+            CFDictionarySetValue(avc_info, CFSTR("hvcC"), data);
+        break;
+    default:
+        break;
     }
+
+    CFDictionarySetValue(config_info,
+            kCMFormatDescriptionExtension_SampleDescriptionExtensionAtoms,
+            avc_info);
+
+    if (data)
+        CFRelease(data);
+
+    CFRelease(avc_info);
     return config_info;
 }
 
