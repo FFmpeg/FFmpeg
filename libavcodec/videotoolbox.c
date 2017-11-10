@@ -88,7 +88,7 @@ int ff_videotoolbox_alloc_frame(AVCodecContext *avctx, AVFrame *frame)
 
 CFDataRef ff_videotoolbox_avcc_extradata_create(AVCodecContext *avctx)
 {
-    H264Context *h     = avctx->priv_data;
+    H264Context *h = avctx->priv_data;
     CFDataRef data = NULL;
     uint8_t *p;
     int vt_extradata_size = 6 + 2 + h->ps.sps->data_size + 3 + h->ps.pps->data_size;
@@ -897,7 +897,7 @@ static int videotoolbox_start(AVCodecContext *avctx)
     case kVTVideoDecoderMalfunctionErr:
         av_log(avctx, AV_LOG_VERBOSE, "VideoToolbox malfunction.\n");
         return AVERROR(EINVAL);
-    case kVTVideoDecoderBadDataErr :
+    case kVTVideoDecoderBadDataErr:
         av_log(avctx, AV_LOG_VERBOSE, "VideoToolbox reported invalid data.\n");
         return AVERROR_INVALIDDATA;
     case 0:
