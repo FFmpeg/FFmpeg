@@ -2003,10 +2003,8 @@ SYSTEM_FUNCS="
     clock_gettime
     closesocket
     CommandLineToArgvW
-    CoTaskMemFree
     CryptGenRandom
     fcntl
-    flt_lim
     fork
     getaddrinfo
     gethrtime
@@ -2023,7 +2021,6 @@ SYSTEM_FUNCS="
     inet_aton
     isatty
     kbhit
-    LoadLibrary
     localtime_r
     lstat
     lzo1x_999_compress
