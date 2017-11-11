@@ -1921,7 +1921,6 @@ HEADERS_LIST="
     dxva_h
     ES2_gl_h
     io_h
-    mach_mach_time_h
     machine_ioctl_bt848_h
     machine_ioctl_meteor_h
     malloc_h
@@ -5706,7 +5705,6 @@ check_func  getopt
 check_func  getrusage
 check_func  gettimeofday
 check_func  isatty
-check_func  mach_absolute_time
 check_func  mkstemp
 check_func  mmap
 check_func  mprotect
@@ -5723,6 +5721,7 @@ check_func  usleep
 check_func_headers conio.h kbhit
 check_func_headers io.h setmode
 check_func_headers lzo/lzo1x.h lzo1x_999_compress
+check_func_headers mach/mach_time.h mach_absolute_time
 check_func_headers stdlib.h getenv
 check_func_headers sys/stat.h lstat
 
@@ -5748,7 +5747,6 @@ check_header dxva.h
 check_header dxva2api.h -D_WIN32_WINNT=0x0600
 check_header io.h
 check_header libcrystalhd/libcrystalhd_if.h
-check_header mach/mach_time.h
 check_header malloc.h
 check_header net/udplite.h
 check_header poll.h
