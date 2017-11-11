@@ -489,9 +489,21 @@ int ff_nvdec_frame_params(AVCodecContext *avctx,
     frames_ctx->format            = AV_PIX_FMT_CUDA;
     frames_ctx->width             = avctx->coded_width;
     frames_ctx->height            = avctx->coded_height;
-    frames_ctx->sw_format         = sw_desc->comp[0].depth > 8 ?
-                                    AV_PIX_FMT_P010 : AV_PIX_FMT_NV12;
     frames_ctx->initial_pool_size = dpb_size;
+
+    switch (sw_desc->comp[0].depth) {
+    case 8:
+        frames_ctx->sw_format = AV_PIX_FMT_NV12;
+        break;
+    case 10:
+        frames_ctx->sw_format = AV_PIX_FMT_P010;
+        break;
+    case 12:
+        frames_ctx->sw_format = AV_PIX_FMT_P016;
+        break;
+    default:
+        return AVERROR(EINVAL);
+    }
 
     return 0;
 }
