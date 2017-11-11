@@ -24,6 +24,7 @@
 #include <limits.h>
 
 #include "avcodec.h"
+#include "decode.h"
 #include "internal.h"
 #include "h264dec.h"
 #include "vc1.h"
@@ -110,6 +111,25 @@ int av_vdpau_get_surface_parameters(AVCodecContext *avctx,
     return 0;
 }
 
+int ff_vdpau_common_frame_params(AVCodecContext *avctx,
+                                 AVBufferRef *hw_frames_ctx)
+{
+    AVHWFramesContext *hw_frames = (AVHWFramesContext*)hw_frames_ctx->data;
+    VdpChromaType type;
+    uint32_t width;
+    uint32_t height;
+
+    if (av_vdpau_get_surface_parameters(avctx, &type, &width, &height))
+        return AVERROR(EINVAL);
+
+    hw_frames->format    = AV_PIX_FMT_VDPAU;
+    hw_frames->sw_format = avctx->sw_pix_fmt;
+    hw_frames->width     = width;
+    hw_frames->height    = height;
+
+    return 0;
+}
+
 int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
                          int level)
 {
@@ -127,6 +147,7 @@ int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
     VdpChromaType type;
     uint32_t width;
     uint32_t height;
+    int ret;
 
     vdctx->width            = UINT32_MAX;
     vdctx->height           = UINT32_MAX;
@@ -154,41 +175,14 @@ int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
             type != VDP_CHROMA_TYPE_420)
             return AVERROR(ENOSYS);
     } else {
-        AVHWFramesContext *frames_ctx = NULL;
+        AVHWFramesContext *frames_ctx;
         AVVDPAUDeviceContext *dev_ctx;
 
-        // We assume the hw_frames_ctx always survives until ff_vdpau_common_uninit
-        // is called. This holds true as the user is not allowed to touch
-        // hw_device_ctx, or hw_frames_ctx after get_format (and ff_get_format
-        // itself also uninits before unreffing hw_frames_ctx).
-        if (avctx->hw_frames_ctx) {
-            frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
-        } else if (avctx->hw_device_ctx) {
-            int ret;
+        ret = ff_decode_get_hw_frames_ctx(avctx, AV_HWDEVICE_TYPE_VDPAU);
+        if (ret < 0)
+            return ret;
 
-            avctx->hw_frames_ctx = av_hwframe_ctx_alloc(avctx->hw_device_ctx);
-            if (!avctx->hw_frames_ctx)
-                return AVERROR(ENOMEM);
-
-            frames_ctx            = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
-            frames_ctx->format    = AV_PIX_FMT_VDPAU;
-            frames_ctx->sw_format = avctx->sw_pix_fmt;
-            frames_ctx->width     = avctx->coded_width;
-            frames_ctx->height    = avctx->coded_height;
-
-            ret = av_hwframe_ctx_init(avctx->hw_frames_ctx);
-            if (ret < 0) {
-                av_buffer_unref(&avctx->hw_frames_ctx);
-                return ret;
-            }
-        }
-
-        if (!frames_ctx) {
-            av_log(avctx, AV_LOG_ERROR, "A hardware frames context is "
-                   "required for VDPAU decoding.\n");
-            return AVERROR(EINVAL);
-        }
-
+        frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
         dev_ctx = frames_ctx->device_ctx->hwctx;
 
         vdctx->device           = dev_ctx->device;

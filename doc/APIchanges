@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2017-xx-xx - xxxxxxx - lavc 58.3.100 - avcodec.h
+  Add avcodec_get_hw_frames_parameters().
+
 -------- 8< --------- FFmpeg 3.4 was cut here -------- 8< ---------
 
 2017-09-28 - b6cf66ae1c - lavc 57.106.104 - avcodec.h

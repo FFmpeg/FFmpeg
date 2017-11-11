@@ -29,6 +29,7 @@
 #include "libavutil/time.h"
 
 #include "avcodec.h"
+#include "decode.h"
 #include "dxva2_internal.h"
 
 /* define all the GUIDs used directly here,
@@ -576,14 +577,20 @@ static void ff_dxva2_unlock(AVCodecContext *avctx)
 #endif
 }
 
-// This must work before the decoder is created.
-// This somehow needs to be exported to the user.
-static void dxva_adjust_hwframes(AVCodecContext *avctx, AVHWFramesContext *frames_ctx)
+int ff_dxva2_common_frame_params(AVCodecContext *avctx,
+                                 AVBufferRef *hw_frames_ctx)
 {
-    FFDXVASharedContext *sctx = DXVA_SHARED_CONTEXT(avctx);
+    AVHWFramesContext *frames_ctx = (AVHWFramesContext *)hw_frames_ctx->data;
+    AVHWDeviceContext *device_ctx = frames_ctx->device_ctx;
     int surface_alignment, num_surfaces;
 
-    frames_ctx->format = sctx->pix_fmt;
+    if (device_ctx->type == AV_HWDEVICE_TYPE_DXVA2) {
+        frames_ctx->format = AV_PIX_FMT_DXVA2_VLD;
+    } else if (device_ctx->type == AV_HWDEVICE_TYPE_D3D11VA) {
+        frames_ctx->format = AV_PIX_FMT_D3D11;
+    } else {
+        return AVERROR(EINVAL);
+    }
 
     /* decoding MPEG-2 requires additional alignment on some Intel GPUs,
     but it causes issues for H.264 on certain AMD GPUs..... */
@@ -596,8 +603,8 @@ static void dxva_adjust_hwframes(AVCodecContext *avctx, AVHWFramesContext *frame
     else
         surface_alignment = 16;
 
-    /* 4 base work surfaces */
-    num_surfaces = 4;
+    /* 1 base work surface */
+    num_surfaces = 1;
 
     /* add surfaces based on number of possible refs */
     if (avctx->codec_id == AV_CODEC_ID_H264 || avctx->codec_id == AV_CODEC_ID_HEVC)
@@ -633,12 +640,16 @@ static void dxva_adjust_hwframes(AVCodecContext *avctx, AVHWFramesContext *frame
         frames_hwctx->BindFlags |= D3D11_BIND_DECODER;
     }
 #endif
+
+    return 0;
 }
 
 int ff_dxva2_decode_init(AVCodecContext *avctx)
 {
     FFDXVASharedContext *sctx = DXVA_SHARED_CONTEXT(avctx);
-    AVHWFramesContext *frames_ctx = NULL;
+    AVHWFramesContext *frames_ctx;
+    enum AVHWDeviceType dev_type = avctx->hwaccel->pix_fmt == AV_PIX_FMT_DXVA2_VLD
+                            ? AV_HWDEVICE_TYPE_DXVA2 : AV_HWDEVICE_TYPE_D3D11VA;
     int ret = 0;
 
     // Old API.
@@ -648,32 +659,14 @@ int ff_dxva2_decode_init(AVCodecContext *avctx)
     // (avctx->pix_fmt is not updated yet at this point)
     sctx->pix_fmt = avctx->hwaccel->pix_fmt;
 
-    if (!avctx->hw_frames_ctx && !avctx->hw_device_ctx) {
-        av_log(avctx, AV_LOG_ERROR, "Either a hw_frames_ctx or a hw_device_ctx needs to be set for hardware decoding.\n");
-        return AVERROR(EINVAL);
-    }
+    ret = ff_decode_get_hw_frames_ctx(avctx, dev_type);
+    if (ret < 0)
+        return ret;
 
-    if (avctx->hw_frames_ctx) {
-        frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
-    } else {
-        avctx->hw_frames_ctx = av_hwframe_ctx_alloc(avctx->hw_device_ctx);
-        if (!avctx->hw_frames_ctx)
-            return AVERROR(ENOMEM);
-
-        frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
-
-        dxva_adjust_hwframes(avctx, frames_ctx);
-
-        ret = av_hwframe_ctx_init(avctx->hw_frames_ctx);
-        if (ret < 0)
-            goto fail;
-    }
-
+    frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
     sctx->device_ctx = frames_ctx->device_ctx;
 
-    if (frames_ctx->format != sctx->pix_fmt ||
-        !((sctx->pix_fmt == AV_PIX_FMT_D3D11 && CONFIG_D3D11VA) ||
-          (sctx->pix_fmt == AV_PIX_FMT_DXVA2_VLD && CONFIG_DXVA2))) {
+    if (frames_ctx->format != sctx->pix_fmt) {
         av_log(avctx, AV_LOG_ERROR, "Invalid pixfmt for hwaccel!\n");
         ret = AVERROR(EINVAL);
         goto fail;
