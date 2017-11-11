@@ -74,6 +74,56 @@ static int map_chroma_format(enum AVPixelFormat pix_fmt)
     return -1;
 }
 
+static int nvdec_test_capabilities(NVDECDecoder *decoder,
+                                   CUVIDDECODECREATEINFO *params, void *logctx)
+{
+    CUresult err;
+    CUVIDDECODECAPS caps = { 0 };
+
+    caps.eCodecType      = params->CodecType;
+    caps.eChromaFormat   = params->ChromaFormat;
+    caps.nBitDepthMinus8 = params->bitDepthMinus8;
+
+    err = decoder->cvdl->cuvidGetDecoderCaps(&caps);
+    if (err != CUDA_SUCCESS) {
+        av_log(logctx, AV_LOG_ERROR, "Failed querying decoder capabilities\n");
+        return AVERROR_UNKNOWN;
+    }
+
+    av_log(logctx, AV_LOG_VERBOSE, "NVDEC capabilities:\n");
+    av_log(logctx, AV_LOG_VERBOSE, "format supported: %s, max_mb_count: %d\n",
+           caps.bIsSupported ? "yes" : "no", caps.nMaxMBCount);
+    av_log(logctx, AV_LOG_VERBOSE, "min_width: %d, max_width: %d\n",
+           caps.nMinWidth, caps.nMaxWidth);
+    av_log(logctx, AV_LOG_VERBOSE, "min_height: %d, max_height: %d\n",
+           caps.nMinHeight, caps.nMaxHeight);
+
+    if (!caps.bIsSupported) {
+        av_log(logctx, AV_LOG_ERROR, "Hardware is lacking required capabilities\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (params->ulWidth > caps.nMaxWidth || params->ulWidth < caps.nMinWidth) {
+        av_log(logctx, AV_LOG_ERROR, "Video width %d not within range from %d to %d\n",
+               (int)params->ulWidth, caps.nMinWidth, caps.nMaxWidth);
+        return AVERROR(EINVAL);
+    }
+
+    if (params->ulHeight > caps.nMaxHeight || params->ulHeight < caps.nMinHeight) {
+        av_log(logctx, AV_LOG_ERROR, "Video height %d not within range from %d to %d\n",
+               (int)params->ulHeight, caps.nMinHeight, caps.nMaxHeight);
+        return AVERROR(EINVAL);
+    }
+
+    if ((params->ulWidth * params->ulHeight) / 256 > caps.nMaxMBCount) {
+        av_log(logctx, AV_LOG_ERROR, "Video macroblock count %d exceeds maximum of %d\n",
+               (int)(params->ulWidth * params->ulHeight) / 256, caps.nMaxMBCount);
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
+}
+
 static void nvdec_decoder_free(void *opaque, uint8_t *data)
 {
     NVDECDecoder *decoder = (NVDECDecoder*)data;
@@ -129,6 +179,12 @@ static int nvdec_decoder_create(AVBufferRef **out, AVBufferRef *hw_device_ref,
     err = decoder->cudl->cuCtxPushCurrent(decoder->cuda_ctx);
     if (err != CUDA_SUCCESS) {
         ret = AVERROR_UNKNOWN;
+        goto fail;
+    }
+
+    ret = nvdec_test_capabilities(decoder, params, logctx);
+    if (ret < 0) {
+        decoder->cudl->cuCtxPopCurrent(&dummy);
         goto fail;
     }
 
