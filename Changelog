@@ -14,6 +14,7 @@ version <next>:
 - native aptX encoder and decoder
 - Raw aptX muxer and demuxer
 - NVIDIA NVDEC-accelerated H.264 and HEVC hwaccel decoding
+- Intel QSV-accelerated overlay filter
 
 
 version 3.4:

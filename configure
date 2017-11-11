@@ -2196,6 +2196,7 @@ CONFIG_EXTRA="
     qsv
     qsvdec
     qsvenc
+    qsvvpp
     rangecoder
     riffdec
     riffenc
@@ -2783,6 +2784,7 @@ omx_rpi_select="omx"
 qsv_deps="libmfx"
 qsvdec_select="qsv"
 qsvenc_select="qsv"
+qsvvpp_select="qsv"
 vaapi_encode_deps="vaapi"
 v4l2_m2m_deps_any="linux_videodev2_h"
 
@@ -3228,6 +3230,8 @@ negate_filter_deps="lut_filter"
 nnedi_filter_deps="gpl"
 ocr_filter_deps="libtesseract"
 ocv_filter_deps="libopencv"
+overlay_qsv_filter_deps="libmfx"
+overlay_qsv_filter_select="qsvvpp"
 owdenoise_filter_deps="gpl"
 pan_filter_deps="swresample"
 perspective_filter_deps="gpl"
@@ -3279,6 +3283,8 @@ zmq_filter_deps="libzmq"
 zoompan_filter_deps="swscale"
 zscale_filter_deps="libzimg const_nan"
 scale_vaapi_filter_deps="vaapi VAProcPipelineParameterBuffer"
+vpp_qsv_filter_deps="libmfx"
+vpp_qsv_filter_select="qsvvpp"
 
 # examples
 avio_dir_cmd_deps="avformat avutil"
