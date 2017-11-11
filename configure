@@ -1269,8 +1269,8 @@ check_lib_cpp(){
         enable $name && eval ${name}_extralibs="\$@"
 }
 
-check_pkg_config(){
-    log check_pkg_config "$@"
+test_pkg_config(){
+    log test_pkg_config "$@"
     name="$1"
     pkg_version="$2"
     pkg="${2%% *}"
@@ -1285,6 +1285,13 @@ check_pkg_config(){
         enable $name &&
         set_sanitized "${name}_cflags"    $pkg_cflags &&
         set_sanitized "${name}_extralibs" $pkg_libs
+}
+
+check_pkg_config(){
+    log check_pkg_config "$@"
+    name="$1"
+    test_pkg_config "$@" &&
+        eval add_cflags \$${name}_cflags
 }
 
 check_exec(){
@@ -1395,17 +1402,10 @@ require_cpp_condition(){
     check_cpp_condition "$header" "$condition" "$@" || die "ERROR: $condition not satisfied"
 }
 
-use_pkg_config(){
-    log use_pkg_config "$@"
-    name="$1"
-    check_pkg_config "$@" || return 1
-    add_cflags    $(get_sanitized "${name}_cflags")
-}
-
 require_pkg_config(){
     log require_pkg_config "$@"
     pkg_version="$2"
-    use_pkg_config "$@" || die "ERROR: $pkg_version not found using pkg-config$pkg_config_fail_message"
+    check_pkg_config "$@" || die "ERROR: $pkg_version not found using pkg-config$pkg_config_fail_message"
 }
 
 hostcc_e(){
@@ -5965,7 +5965,7 @@ enabled libcelt           && require libcelt celt/celt.h celt_decode -lcelt0 &&
 enabled libcaca           && require_pkg_config libcaca caca caca.h caca_create_canvas
 enabled libdc1394         && require_pkg_config libdc1394 libdc1394-2 dc1394/dc1394.h dc1394_new
 enabled libdrm            && require_pkg_config libdrm libdrm xf86drm.h drmGetVersion
-enabled libfdk_aac        && { use_pkg_config libfdk_aac fdk-aac "fdk-aac/aacenc_lib.h" aacEncOpen ||
+enabled libfdk_aac        && { check_pkg_config libfdk_aac fdk-aac "fdk-aac/aacenc_lib.h" aacEncOpen ||
                                { require libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-aac &&
                                  warn "using libfdk without pkg-config"; } }
 flite_extralibs="-lflite_cmu_time_awb -lflite_cmu_us_awb -lflite_cmu_us_kal -lflite_cmu_us_kal16 -lflite_cmu_us_rms -lflite_cmu_us_slt -lflite_usenglish -lflite_cmulex -lflite"
@@ -5974,7 +5974,7 @@ enabled fontconfig        && enable libfontconfig
 enabled libfontconfig     && require_pkg_config libfontconfig fontconfig "fontconfig/fontconfig.h" FcInit
 enabled libfreetype       && require_pkg_config libfreetype freetype2 "ft2build.h FT_FREETYPE_H" FT_Init_FreeType
 enabled libfribidi        && require_pkg_config libfribidi fribidi fribidi.h fribidi_version_info
-enabled libgme            && { use_pkg_config libgme libgme gme/gme.h gme_new_emu ||
+enabled libgme            && { check_pkg_config libgme libgme gme/gme.h gme_new_emu ||
                                require libgme gme/gme.h gme_new_emu -lgme -lstdc++; }
 enabled libgsm            && { for gsm_hdr in "gsm.h" "gsm/gsm.h"; do
                                    check_lib libgsm "${gsm_hdr}" gsm_create -lgsm && break;
@@ -5987,7 +5987,7 @@ enabled libkvazaar        && require_pkg_config libkvazaar "kvazaar >= 0.8.1" kv
 # Media SDK or Intel Media Server Studio, these don't come with
 # pkg-config support.  Instead, users should make sure that the build
 # can find the libraries and headers through other means.
-enabled libmfx            && { use_pkg_config libmfx libmfx "mfx/mfxvideo.h" MFXInit ||
+enabled libmfx            && { check_pkg_config libmfx libmfx "mfx/mfxvideo.h" MFXInit ||
                                { require libmfx "mfx/mfxvideo.h" MFXInit "-llibmfx $advapi32_extralibs" && warn "using libmfx without pkg-config"; } }
 enabled libmodplug        && require_pkg_config libmodplug libmodplug libmodplug/modplug.h ModPlug_Load
 enabled libmp3lame        && require "libmp3lame >= 3.98.3" lame/lame.h lame_set_VBR_quality -lmp3lame
@@ -5998,11 +5998,11 @@ enabled libnpp            && { check_lib libnpp npp.h nppGetLibVersion -lnppig -
 enabled libopencore_amrnb && require libopencore_amrnb opencore-amrnb/interf_dec.h Decoder_Interface_init -lopencore-amrnb
 enabled libopencore_amrwb && require libopencore_amrwb opencore-amrwb/dec_if.h D_IF_init -lopencore-amrwb
 enabled libopencv         && { check_header opencv2/core/core_c.h &&
-                               { use_pkg_config libopencv opencv opencv2/core/core_c.h cvCreateImageHeader ||
+                               { check_pkg_config libopencv opencv opencv2/core/core_c.h cvCreateImageHeader ||
                                  require libopencv opencv2/core/core_c.h cvCreateImageHeader -lopencv_core -lopencv_imgproc; } ||
                                require_pkg_config libopencv opencv opencv/cxcore.h cvCreateImageHeader; }
 enabled libopenh264       && require_pkg_config libopenh264 openh264 wels/codec_api.h WelsGetCodecVersion
-enabled libopenjpeg       && { use_pkg_config libopenjpeg "libopenjp2 >= 2.1.0" openjpeg.h opj_version ||
+enabled libopenjpeg       && { check_pkg_config libopenjpeg "libopenjp2 >= 2.1.0" openjpeg.h opj_version ||
                                { require_pkg_config libopenjpeg "libopenjp2 >= 2.1.0" openjpeg.h opj_version -DOPJ_STATIC && add_cppflags -DOPJ_STATIC; } }
 enabled libopenmpt        && require_pkg_config libopenmpt "libopenmpt >= 0.2.6557" libopenmpt/libopenmpt.h openmpt_module_create -lstdc++ && append libopenmpt_extralibs "-lstdc++"
 enabled libopus           && {
@@ -6018,7 +6018,7 @@ enabled librsvg           && require_pkg_config librsvg librsvg-2.0 librsvg-2.0/
 enabled librtmp           && require_pkg_config librtmp librtmp librtmp/rtmp.h RTMP_Socket
 enabled librubberband     && require_pkg_config librubberband "rubberband >= 1.8.1" rubberband/rubberband-c.h rubberband_new -lstdc++ && append librubberband_extralibs "-lstdc++"
 enabled libshine          && require_pkg_config libshine shine shine/layer3.h shine_encode_buffer
-enabled libsmbclient      && { use_pkg_config libsmbclient smbclient libsmbclient.h smbc_init ||
+enabled libsmbclient      && { check_pkg_config libsmbclient smbclient libsmbclient.h smbc_init ||
                                require libsmbclient libsmbclient.h smbc_init -lsmbclient; }
 enabled libsnappy         && require libsnappy snappy-c.h snappy_compress -lsnappy -lstdc++
 enabled libsoxr           && require libsoxr soxr.h soxr_create -lsoxr
@@ -6038,21 +6038,21 @@ enabled libvorbis         && require_pkg_config libvorbis vorbis vorbis/codec.h 
 
 enabled libvpx            && {
     enabled libvpx_vp8_decoder && {
-        use_pkg_config libvpx_vp8_decoder "vpx >= 0.9.1" "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_vp8_dx ||
+        check_pkg_config libvpx_vp8_decoder "vpx >= 0.9.1" "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_vp8_dx ||
             check_lib libvpx_vp8_decoder "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_dec_init_ver -lvpx ||
                 die "ERROR: libvpx decoder version must be >=0.9.1";
     }
     enabled libvpx_vp8_encoder && {
-        use_pkg_config libvpx_vp8_encoder "vpx >= 0.9.7" "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_vp8_cx ||
+        check_pkg_config libvpx_vp8_encoder "vpx >= 0.9.7" "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_vp8_cx ||
             check_lib libvpx_vp8_encoder "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_enc_init_ver VP8E_SET_MAX_INTRA_BITRATE_PCT" -lvpx ||
                 die "ERROR: libvpx encoder version must be >=0.9.7";
     }
     enabled libvpx_vp9_decoder && {
-        use_pkg_config libvpx_vp9_decoder "vpx >= 1.3.0" "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_vp9_dx ||
+        check_pkg_config libvpx_vp9_decoder "vpx >= 1.3.0" "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_vp9_dx ||
             check_lib libvpx_vp9_decoder "vpx/vpx_decoder.h vpx/vp8dx.h" "vpx_codec_vp9_dx" -lvpx
     }
     enabled libvpx_vp9_encoder && {
-        use_pkg_config libvpx_vp9_encoder "vpx >= 1.3.0" "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_vp9_cx ||
+        check_pkg_config libvpx_vp9_encoder "vpx >= 1.3.0" "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_vp9_cx ||
             check_lib libvpx_vp9_encoder "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_vp9_cx VP9E_SET_AQ_MODE" -lvpx
     }
     if disabled_all libvpx_vp8_decoder libvpx_vp9_decoder libvpx_vp8_encoder libvpx_vp9_encoder; then
@@ -6063,8 +6063,8 @@ enabled libvpx            && {
 enabled libwavpack        && require libwavpack wavpack/wavpack.h WavpackOpenFileOutput  -lwavpack
 enabled libwebp           && {
     enabled libwebp_encoder      && require_pkg_config libwebp "libwebp >= 0.2.0" webp/encode.h WebPGetEncoderVersion
-    enabled libwebp_anim_encoder && use_pkg_config libwebp_anim_encoder "libwebpmux >= 0.4.0" webp/mux.h WebPAnimEncoderOptionsInit; }
-enabled libx264           && { use_pkg_config libx264 x264 "stdint.h x264.h" x264_encoder_encode ||
+    enabled libwebp_anim_encoder && check_pkg_config libwebp_anim_encoder "libwebpmux >= 0.4.0" webp/mux.h WebPAnimEncoderOptionsInit; }
+enabled libx264           && { check_pkg_config libx264 x264 "stdint.h x264.h" x264_encoder_encode ||
                                { require libx264 "stdint.h x264.h" x264_encoder_encode -lx264 &&
                                  warn "using libx264 without pkg-config"; } } &&
                              require_cpp_condition x264.h "X264_BUILD >= 118" &&
@@ -6109,8 +6109,8 @@ enabled omx               && require_header OMX_Core.h
 enabled omx_rpi           && { check_header OMX_Core.h ||
                                { ! enabled cross_compile && add_cflags -isystem/opt/vc/include/IL && check_header OMX_Core.h ; } ||
                                die "ERROR: OpenMAX IL headers not found"; } && enable omx
-enabled openssl           && { use_pkg_config openssl openssl openssl/ssl.h OPENSSL_init_ssl ||
-                               use_pkg_config openssl openssl openssl/ssl.h SSL_library_init ||
+enabled openssl           && { check_pkg_config openssl openssl openssl/ssl.h OPENSSL_init_ssl ||
+                               check_pkg_config openssl openssl openssl/ssl.h SSL_library_init ||
                                check_lib openssl openssl/ssl.h SSL_library_init -lssl -lcrypto ||
                                check_lib openssl openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
                                check_lib openssl openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
@@ -6138,7 +6138,7 @@ fi
 
 if enabled sdl2; then
     SDL2_CONFIG="${cross_prefix}sdl2-config"
-    if check_pkg_config sdl2 "sdl2 >= 2.0.1 sdl2 < 2.1.0" SDL_events.h SDL_PollEvent; then
+    if test_pkg_config sdl2 "sdl2 >= 2.0.1 sdl2 < 2.1.0" SDL_events.h SDL_PollEvent; then
         check_func SDL_Init $sdl2_extralibs $sdl2_cflags ||
             disable sdl2
     elif "${SDL2_CONFIG}" --version > /dev/null 2>&1; then
@@ -6228,7 +6228,7 @@ EOF
 fi
 check_header soundcard.h
 
-enabled alsa && use_pkg_config alsa alsa "alsa/asoundlib.h" snd_pcm_htimestamp ||
+enabled alsa && check_pkg_config alsa alsa "alsa/asoundlib.h" snd_pcm_htimestamp ||
     check_lib alsa alsa/asoundlib.h snd_pcm_htimestamp -lasound
 
 enabled libjack &&
@@ -6237,20 +6237,20 @@ enabled libjack &&
 enabled sndio && check_lib sndio sndio.h sio_open -lsndio
 
 if enabled libcdio; then
-    use_pkg_config libcdio libcdio_paranoia "cdio/cdda.h cdio/paranoia.h" cdio_cddap_open ||
-    use_pkg_config libcdio libcdio_paranoia "cdio/paranoia/cdda.h cdio/paranoia/paranoia.h" cdio_cddap_open ||
+    check_pkg_config libcdio libcdio_paranoia "cdio/cdda.h cdio/paranoia.h" cdio_cddap_open ||
+    check_pkg_config libcdio libcdio_paranoia "cdio/paranoia/cdda.h cdio/paranoia/paranoia.h" cdio_cddap_open ||
     check_lib libcdio "cdio/cdda.h cdio/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio ||
     check_lib libcdio "cdio/paranoia/cdda.h cdio/paranoia/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio ||
     die "ERROR: No usable libcdio/cdparanoia found"
 fi
 
-enabled libxcb && use_pkg_config libxcb "xcb >= 1.4" xcb/xcb.h xcb_connect ||
+enabled libxcb && check_pkg_config libxcb "xcb >= 1.4" xcb/xcb.h xcb_connect ||
     disable libxcb_shm libxcb_shape libxcb_xfixes
 
 if enabled libxcb; then
-    enabled libxcb_shm    && use_pkg_config libxcb_shm    xcb-shm    xcb/shm.h    xcb_shm_attach
-    enabled libxcb_shape  && use_pkg_config libxcb_shape  xcb-shape  xcb/shape.h  xcb_shape_get_rectangles
-    enabled libxcb_xfixes && use_pkg_config libxcb_xfixes xcb-xfixes xcb/xfixes.h xcb_xfixes_get_cursor_image
+    enabled libxcb_shm    && check_pkg_config libxcb_shm    xcb-shm    xcb/shm.h    xcb_shm_attach
+    enabled libxcb_shape  && check_pkg_config libxcb_shape  xcb-shape  xcb/shape.h  xcb_shape_get_rectangles
+    enabled libxcb_xfixes && check_pkg_config libxcb_xfixes xcb-xfixes xcb/xfixes.h xcb_xfixes_get_cursor_image
 fi
 
 check_func_headers "windows.h" CreateDIBSection "$gdigrab_indev_extralibs"
