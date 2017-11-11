@@ -1926,7 +1926,6 @@ HEADERS_LIST="
     dxgidebug_h
     dxva_h
     ES2_gl_h
-    gsm_h
     io_h
     mach_mach_time_h
     machine_ioctl_bt848_h
@@ -5937,9 +5936,7 @@ enabled libfreetype       && require_pkg_config libfreetype freetype2 "ft2build.
 enabled libfribidi        && require_pkg_config libfribidi fribidi fribidi.h fribidi_version_info
 enabled libgme            && { check_pkg_config libgme libgme gme/gme.h gme_new_emu ||
                                require libgme gme/gme.h gme_new_emu -lgme -lstdc++; }
-enabled libgsm            && { for gsm_hdr in "gsm.h" "gsm/gsm.h"; do
-                                   check_lib libgsm "${gsm_hdr}" gsm_create -lgsm && break;
-                               done || die "ERROR: libgsm not found"; }
+enabled libgsm            && require libgsm gsm.h gsm_create -lgsm
 enabled libilbc           && require libilbc ilbc.h WebRtcIlbcfix_InitDecode -lilbc $pthreads_extralibs
 enabled libkvazaar        && require_pkg_config libkvazaar "kvazaar >= 0.8.1" kvazaar.h kvz_api_get
 # While it may appear that require is being used as a pkg-config
