@@ -613,7 +613,6 @@ static int decode_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
     if (ret == AVERROR_EOF)
         avci->draining_done = 1;
 
-    /* free the per-frame decode data */
     if (!ret) {
         /* the only case where decode data is not set should be decoders
          * that do not call ff_get_buffer() */
@@ -631,9 +630,10 @@ static int decode_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
                 }
             }
         }
-
-        av_buffer_unref(&frame->private_ref);
     }
+
+    /* free the per-frame decode data */
+    av_buffer_unref(&frame->private_ref);
 
     return ret;
 }
