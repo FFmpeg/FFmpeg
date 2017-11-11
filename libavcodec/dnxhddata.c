@@ -1100,13 +1100,6 @@ int avpriv_dnxhd_get_interlaced(int cid)
     return ff_dnxhd_cid_table[i].flags & DNXHD_INTERLACED ? 1 : 0;
 }
 
-#if LIBAVCODEC_VERSION_MAJOR < 58
-uint64_t avpriv_dnxhd_parse_header_prefix(const uint8_t *buf)
-{
-    return ff_dnxhd_parse_header_prefix(buf);
-}
-#endif
-
 static int dnxhd_find_hr_cid(AVCodecContext *avctx)
 {
     switch (avctx->profile) {

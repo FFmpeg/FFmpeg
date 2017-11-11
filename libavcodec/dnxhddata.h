@@ -105,8 +105,5 @@ static av_always_inline int ff_dnxhd_get_hr_frame_size(int cid, int w, int h)
 
 int avpriv_dnxhd_get_frame_size(int cid);
 int avpriv_dnxhd_get_interlaced(int cid);
-#if LIBAVCODEC_VERSION_MAJOR < 58
-attribute_deprecated
-uint64_t avpriv_dnxhd_parse_header_prefix(const uint8_t *buf);
-#endif
+
 #endif /* AVCODEC_DNXHDDATA_H */
