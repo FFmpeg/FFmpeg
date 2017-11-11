@@ -40,7 +40,7 @@
 #endif
 #endif
 
-#if defined(_WIN32) && !defined(__MINGW32CE__)
+#ifdef _WIN32
 #  include <fcntl.h>
 #  ifdef lseek
 #   undef lseek
@@ -54,7 +54,7 @@
 #   undef fstat
 #  endif
 #  define fstat(f,s) _fstati64((f), (s))
-#endif /* defined(_WIN32) && !defined(__MINGW32CE__) */
+#endif /* defined(_WIN32) */
 
 
 #ifdef __ANDROID__
@@ -139,9 +139,7 @@ int ff_poll(struct pollfd *fds, nfds_t numfds, int timeout);
 #endif /* HAVE_POLL_H */
 #endif /* CONFIG_NETWORK */
 
-#if defined(__MINGW32CE__)
-#define mkdir(a, b) _mkdir(a)
-#elif defined(_WIN32)
+#ifdef _WIN32
 #include <stdio.h>
 #include <windows.h>
 #include "libavutil/wchar_filename.h"

@@ -5033,16 +5033,10 @@ case $target_os in
         die "Native MSYS builds are discouraged, please use the MINGW environment."
         ;;
     mingw32*|mingw64*)
-        if test $target_os = "mingw32ce"; then
-            disable network
-        else
-            target_os=mingw32
-        fi
+        target_os=mingw32
         LIBTARGET=i386
         if enabled x86_64; then
             LIBTARGET="i386:x86-64"
-        elif enabled arm; then
-            LIBTARGET=arm-wince
         fi
         enabled shared && ! enabled small && check_cmd $windres --version && enable gnu_windres
         enabled x86_32 && check_ldflags -Wl,--large-address-aware
