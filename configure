@@ -2000,7 +2000,6 @@ SYSTEM_FUNCS="
     CommandLineToArgvW
     CryptGenRandom
     fcntl
-    fork
     getaddrinfo
     gethrtime
     getopt
