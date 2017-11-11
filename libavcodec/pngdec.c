@@ -662,10 +662,10 @@ static int decode_idat_chunk(AVCodecContext *avctx, PNGDecContext *s,
                 s->color_type == PNG_COLOR_TYPE_GRAY_ALPHA) {
             avctx->pix_fmt = AV_PIX_FMT_YA16BE;
         } else {
-            av_log(avctx, AV_LOG_ERROR, "unsupported bit depth %d "
-                    "and color type %d\n",
-                    s->bit_depth, s->color_type);
-            return AVERROR_INVALIDDATA;
+            avpriv_report_missing_feature(avctx,
+                                          "Bit depth %d color type %d",
+                                          s->bit_depth, s->color_type);
+            return AVERROR_PATCHWELCOME;
         }
 
         if (s->has_trns && s->color_type != PNG_COLOR_TYPE_PALETTE) {
