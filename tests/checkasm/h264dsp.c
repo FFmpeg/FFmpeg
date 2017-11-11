@@ -228,13 +228,13 @@ static void check_idct(void)
 
 static void check_idct_multiple(void)
 {
-    LOCAL_ALIGNED_16(uint8_t, dst_full,   [16 * 16 * 2]);
-    LOCAL_ALIGNED_16(int16_t, coef_full,  [16 * 16 * 2]);
-    LOCAL_ALIGNED_16(uint8_t, dst0, [16 * 16 * 2]);
-    LOCAL_ALIGNED_16(uint8_t, dst1, [16 * 16 * 2]);
+    LOCAL_ALIGNED_16(uint8_t, dst_full,  [16 * 16 * 2]);
+    LOCAL_ALIGNED_16(int16_t, coef_full, [16 * 16 * 2]);
+    LOCAL_ALIGNED_16(uint8_t, dst0,  [16 * 16 * 2]);
+    LOCAL_ALIGNED_16(uint8_t, dst1,  [16 * 16 * 2]);
     LOCAL_ALIGNED_16(int16_t, coef0, [16 * 16 * 2]);
     LOCAL_ALIGNED_16(int16_t, coef1, [16 * 16 * 2]);
-    LOCAL_ALIGNED_16(uint8_t, nnzc, [15*8]);
+    LOCAL_ALIGNED_16(uint8_t, nnzc,  [15 * 8]);
     H264DSPContext h;
     int bit_depth, i, y, func;
     declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, const int *block_offset, int16_t *block, int stride, const uint8_t nnzc[15*8]);
@@ -285,8 +285,8 @@ static void check_idct_multiple(void)
                            &dst[PIXEL_STRIDE * y], sz * SIZEOF_PIXEL);
 
                 if (nnz > 1)
-                    nnz = sz*sz;
-                memcpy(&coef_full[i*SIZEOF_COEF/sizeof(coef[0])],
+                    nnz = sz * sz;
+                memcpy(&coef_full[i * SIZEOF_COEF/sizeof(coef[0])],
                        coef, nnz * SIZEOF_COEF);
 
                 if (intra && nnz == 1)
