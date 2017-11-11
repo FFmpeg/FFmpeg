@@ -82,6 +82,15 @@ ELF     .size   \name, . - \name
         adrp            \rd, \val+(\offset)@PAGE
         add             \rd, \rd, \val+(\offset)@PAGEOFF
     .endif
+#elif CONFIG_PIC && defined(_WIN32)
+    .if \offset < 0
+        adrp            \rd, \val
+        add             \rd, \rd, :lo12:\val
+        sub             \rd, \rd, -(\offset)
+    .else
+        adrp            \rd, \val+(\offset)
+        add             \rd, \rd, :lo12:\val+(\offset)
+    .endif
 #elif CONFIG_PIC
         adrp            \rd, \val+(\offset)
         add             \rd, \rd, :lo12:\val+(\offset)
