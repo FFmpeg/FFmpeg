@@ -27,6 +27,13 @@
 #include "libavutil/fifo.h"
 #include "libavutil/opt.h"
 
+#if CONFIG_D3D11VA
+#define COBJMACROS
+#include "libavutil/hwcontext_d3d11va.h"
+#else
+typedef void ID3D11Device;
+#endif
+
 #include "avcodec.h"
 
 #define MAX_REGISTERED_FRAMES 64
@@ -107,6 +114,7 @@ typedef struct NvencContext
     NV_ENC_CONFIG encode_config;
     CUcontext cu_context;
     CUcontext cu_context_internal;
+    ID3D11Device *d3d11_device;
 
     int nb_surfaces;
     NvencSurface *surfaces;
@@ -119,7 +127,8 @@ typedef struct NvencContext
     int encoder_flushing;
 
     struct {
-        CUdeviceptr ptr;
+        void *ptr;
+        int ptr_index;
         NV_ENC_REGISTERED_PTR regptr;
         int mapped;
     } registered_frames[MAX_REGISTERED_FRAMES];

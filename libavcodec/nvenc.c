@@ -45,6 +45,9 @@ const enum AVPixelFormat ff_nvenc_pix_fmts[] = {
     AV_PIX_FMT_0RGB32,
     AV_PIX_FMT_0BGR32,
     AV_PIX_FMT_CUDA,
+#if CONFIG_D3D11VA
+    AV_PIX_FMT_D3D11,
+#endif
     AV_PIX_FMT_NONE
 };
 
@@ -172,6 +175,9 @@ static int nvenc_push_context(AVCodecContext *avctx)
     NvencDynLoadFunctions *dl_fn = &ctx->nvenc_dload_funcs;
     CUresult cu_res;
 
+    if (ctx->d3d11_device)
+        return 0;
+
     cu_res = dl_fn->cuda_dl->cuCtxPushCurrent(ctx->cu_context);
     if (cu_res != CUDA_SUCCESS) {
         av_log(avctx, AV_LOG_ERROR, "cuCtxPushCurrent failed\n");
@@ -187,6 +193,9 @@ static int nvenc_pop_context(AVCodecContext *avctx)
     NvencDynLoadFunctions *dl_fn = &ctx->nvenc_dload_funcs;
     CUresult cu_res;
     CUcontext dummy;
+
+    if (ctx->d3d11_device)
+        return 0;
 
     cu_res = dl_fn->cuda_dl->cuCtxPopCurrent(&dummy);
     if (cu_res != CUDA_SUCCESS) {
@@ -206,8 +215,13 @@ static av_cold int nvenc_open_session(AVCodecContext *avctx)
 
     params.version    = NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER;
     params.apiVersion = NVENCAPI_VERSION;
-    params.device     = ctx->cu_context;
-    params.deviceType = NV_ENC_DEVICE_TYPE_CUDA;
+    if (ctx->d3d11_device) {
+        params.device     = ctx->d3d11_device;
+        params.deviceType = NV_ENC_DEVICE_TYPE_DIRECTX;
+    } else {
+        params.device     = ctx->cu_context;
+        params.deviceType = NV_ENC_DEVICE_TYPE_CUDA;
+    }
 
     ret = p_nvenc->nvEncOpenEncodeSessionEx(&params, &ctx->nvencoder);
     if (ret != NV_ENC_SUCCESS) {
@@ -458,23 +472,48 @@ static av_cold int nvenc_setup_device(AVCodecContext *avctx)
         return AVERROR_BUG;
     }
 
-    if (avctx->pix_fmt == AV_PIX_FMT_CUDA || avctx->hw_frames_ctx || avctx->hw_device_ctx) {
+    if (avctx->pix_fmt == AV_PIX_FMT_CUDA || avctx->pix_fmt == AV_PIX_FMT_D3D11 || avctx->hw_frames_ctx || avctx->hw_device_ctx) {
         AVHWFramesContext   *frames_ctx;
         AVHWDeviceContext   *hwdev_ctx;
-        AVCUDADeviceContext *device_hwctx;
+        AVCUDADeviceContext *cuda_device_hwctx = NULL;
+#if CONFIG_D3D11VA
+        AVD3D11VADeviceContext *d3d11_device_hwctx = NULL;
+#endif
         int ret;
 
         if (avctx->hw_frames_ctx) {
             frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
-            device_hwctx = frames_ctx->device_ctx->hwctx;
+            if (frames_ctx->format == AV_PIX_FMT_CUDA)
+                cuda_device_hwctx = frames_ctx->device_ctx->hwctx;
+#if CONFIG_D3D11VA
+            else if (frames_ctx->format == AV_PIX_FMT_D3D11)
+                d3d11_device_hwctx = frames_ctx->device_ctx->hwctx;
+#endif
+            else
+                return AVERROR(EINVAL);
         } else if (avctx->hw_device_ctx) {
             hwdev_ctx = (AVHWDeviceContext*)avctx->hw_device_ctx->data;
-            device_hwctx = hwdev_ctx->hwctx;
+            if (hwdev_ctx->type == AV_HWDEVICE_TYPE_CUDA)
+                cuda_device_hwctx = hwdev_ctx->hwctx;
+#if CONFIG_D3D11VA
+            else if (hwdev_ctx->type == AV_HWDEVICE_TYPE_D3D11VA)
+                d3d11_device_hwctx = hwdev_ctx->hwctx;
+#endif
+            else
+                return AVERROR(EINVAL);
         } else {
             return AVERROR(EINVAL);
         }
 
-        ctx->cu_context = device_hwctx->cuda_ctx;
+        if (cuda_device_hwctx) {
+            ctx->cu_context = cuda_device_hwctx->cuda_ctx;
+        }
+#if CONFIG_D3D11VA
+        else if (d3d11_device_hwctx) {
+            ctx->d3d11_device = d3d11_device_hwctx->device;
+            ID3D11Device_AddRef(ctx->d3d11_device);
+        }
+#endif
 
         ret = nvenc_open_session(avctx);
         if (ret < 0)
@@ -1205,7 +1244,7 @@ static av_cold int nvenc_alloc_surface(AVCodecContext *avctx, int idx)
     NV_ENC_CREATE_BITSTREAM_BUFFER allocOut = { 0 };
     allocOut.version = NV_ENC_CREATE_BITSTREAM_BUFFER_VER;
 
-    if (avctx->pix_fmt == AV_PIX_FMT_CUDA) {
+    if (avctx->pix_fmt == AV_PIX_FMT_CUDA || avctx->pix_fmt == AV_PIX_FMT_D3D11) {
         ctx->surfaces[idx].in_ref = av_frame_alloc();
         if (!ctx->surfaces[idx].in_ref)
             return AVERROR(ENOMEM);
@@ -1237,7 +1276,7 @@ static av_cold int nvenc_alloc_surface(AVCodecContext *avctx, int idx)
     nv_status = p_nvenc->nvEncCreateBitstreamBuffer(ctx->nvencoder, &allocOut);
     if (nv_status != NV_ENC_SUCCESS) {
         int err = nvenc_print_error(avctx, nv_status, "CreateBitstreamBuffer failed");
-        if (avctx->pix_fmt != AV_PIX_FMT_CUDA)
+        if (avctx->pix_fmt != AV_PIX_FMT_CUDA && avctx->pix_fmt != AV_PIX_FMT_D3D11)
             p_nvenc->nvEncDestroyInputBuffer(ctx->nvencoder, ctx->surfaces[idx].input_surface);
         av_frame_free(&ctx->surfaces[idx].in_ref);
         return err;
@@ -1351,7 +1390,7 @@ av_cold int ff_nvenc_encode_close(AVCodecContext *avctx)
     av_fifo_freep(&ctx->output_surface_queue);
     av_fifo_freep(&ctx->unused_surface_queue);
 
-    if (ctx->surfaces && avctx->pix_fmt == AV_PIX_FMT_CUDA) {
+    if (ctx->surfaces && (avctx->pix_fmt == AV_PIX_FMT_CUDA || avctx->pix_fmt == AV_PIX_FMT_D3D11)) {
         for (i = 0; i < ctx->nb_surfaces; ++i) {
             if (ctx->surfaces[i].input_surface) {
                  p_nvenc->nvEncUnmapInputResource(ctx->nvencoder, ctx->surfaces[i].in_map.mappedResource);
@@ -1366,7 +1405,7 @@ av_cold int ff_nvenc_encode_close(AVCodecContext *avctx)
 
     if (ctx->surfaces) {
         for (i = 0; i < ctx->nb_surfaces; ++i) {
-            if (avctx->pix_fmt != AV_PIX_FMT_CUDA)
+            if (avctx->pix_fmt != AV_PIX_FMT_CUDA && avctx->pix_fmt != AV_PIX_FMT_D3D11)
                 p_nvenc->nvEncDestroyInputBuffer(ctx->nvencoder, ctx->surfaces[i].input_surface);
             av_frame_free(&ctx->surfaces[i].in_ref);
             p_nvenc->nvEncDestroyBitstreamBuffer(ctx->nvencoder, ctx->surfaces[i].output_surface);
@@ -1388,6 +1427,13 @@ av_cold int ff_nvenc_encode_close(AVCodecContext *avctx)
         dl_fn->cuda_dl->cuCtxDestroy(ctx->cu_context_internal);
     ctx->cu_context = ctx->cu_context_internal = NULL;
 
+#if CONFIG_D3D11VA
+    if (ctx->d3d11_device) {
+        ID3D11Device_Release(ctx->d3d11_device);
+        ctx->d3d11_device = NULL;
+    }
+#endif
+
     nvenc_free_functions(&dl_fn->nvenc_dl);
     cuda_free_functions(&dl_fn->cuda_dl);
 
@@ -1403,7 +1449,7 @@ av_cold int ff_nvenc_encode_init(AVCodecContext *avctx)
     NvencContext *ctx = avctx->priv_data;
     int ret;
 
-    if (avctx->pix_fmt == AV_PIX_FMT_CUDA) {
+    if (avctx->pix_fmt == AV_PIX_FMT_CUDA || avctx->pix_fmt == AV_PIX_FMT_D3D11) {
         AVHWFramesContext *frames_ctx;
         if (!avctx->hw_frames_ctx) {
             av_log(avctx, AV_LOG_ERROR,
@@ -1411,6 +1457,11 @@ av_cold int ff_nvenc_encode_init(AVCodecContext *avctx)
             return AVERROR(EINVAL);
         }
         frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
+        if (frames_ctx->format != avctx->pix_fmt) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "hw_frames_ctx must match the GPU frame type\n");
+            return AVERROR(EINVAL);
+        }
         ctx->data_pix_fmt = frames_ctx->sw_format;
     } else {
         ctx->data_pix_fmt = avctx->pix_fmt;
@@ -1516,7 +1567,9 @@ static int nvenc_register_frame(AVCodecContext *avctx, const AVFrame *frame)
     int i, idx, ret;
 
     for (i = 0; i < ctx->nb_registered_frames; i++) {
-        if (ctx->registered_frames[i].ptr == (CUdeviceptr)frame->data[0])
+        if (avctx->pix_fmt == AV_PIX_FMT_CUDA && ctx->registered_frames[i].ptr == frame->data[0])
+            return i;
+        else if (avctx->pix_fmt == AV_PIX_FMT_D3D11 && ctx->registered_frames[i].ptr == frame->data[0] && ctx->registered_frames[i].ptr_index == (intptr_t)frame->data[1])
             return i;
     }
 
@@ -1525,11 +1578,18 @@ static int nvenc_register_frame(AVCodecContext *avctx, const AVFrame *frame)
         return idx;
 
     reg.version            = NV_ENC_REGISTER_RESOURCE_VER;
-    reg.resourceType       = NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR;
     reg.width              = frames_ctx->width;
     reg.height             = frames_ctx->height;
     reg.pitch              = frame->linesize[0];
     reg.resourceToRegister = frame->data[0];
+
+    if (avctx->pix_fmt == AV_PIX_FMT_CUDA) {
+        reg.resourceType   = NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR;
+    }
+    else if (avctx->pix_fmt == AV_PIX_FMT_D3D11) {
+        reg.resourceType     = NV_ENC_INPUT_RESOURCE_TYPE_DIRECTX;
+        reg.subResourceIndex = (intptr_t)frame->data[1];
+    }
 
     reg.bufferFormat       = nvenc_map_buffer_format(frames_ctx->sw_format);
     if (reg.bufferFormat == NV_ENC_BUFFER_FORMAT_UNDEFINED) {
@@ -1544,8 +1604,9 @@ static int nvenc_register_frame(AVCodecContext *avctx, const AVFrame *frame)
         return AVERROR_UNKNOWN;
     }
 
-    ctx->registered_frames[idx].ptr    = (CUdeviceptr)frame->data[0];
-    ctx->registered_frames[idx].regptr = reg.registeredResource;
+    ctx->registered_frames[idx].ptr       = frame->data[0];
+    ctx->registered_frames[idx].ptr_index = reg.subResourceIndex;
+    ctx->registered_frames[idx].regptr    = reg.registeredResource;
     return idx;
 }
 
@@ -1559,10 +1620,10 @@ static int nvenc_upload_frame(AVCodecContext *avctx, const AVFrame *frame,
     int res;
     NVENCSTATUS nv_status;
 
-    if (avctx->pix_fmt == AV_PIX_FMT_CUDA) {
+    if (avctx->pix_fmt == AV_PIX_FMT_CUDA || avctx->pix_fmt == AV_PIX_FMT_D3D11) {
         int reg_idx = nvenc_register_frame(avctx, frame);
         if (reg_idx < 0) {
-            av_log(avctx, AV_LOG_ERROR, "Could not register an input CUDA frame\n");
+            av_log(avctx, AV_LOG_ERROR, "Could not register an input HW frame\n");
             return reg_idx;
         }
 
@@ -1731,7 +1792,7 @@ static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, NvencSur
         nvenc_print_error(avctx, nv_status, "Failed unlocking bitstream buffer, expect the gates of mordor to open");
 
 
-    if (avctx->pix_fmt == AV_PIX_FMT_CUDA) {
+    if (avctx->pix_fmt == AV_PIX_FMT_CUDA || avctx->pix_fmt == AV_PIX_FMT_D3D11) {
         p_nvenc->nvEncUnmapInputResource(ctx->nvencoder, tmpoutsurf->in_map.mappedResource);
         av_frame_unref(tmpoutsurf->in_ref);
         ctx->registered_frames[tmpoutsurf->reg_idx].mapped = 0;
@@ -1818,7 +1879,7 @@ int ff_nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
     NV_ENC_PIC_PARAMS pic_params = { 0 };
     pic_params.version = NV_ENC_PIC_PARAMS_VER;
 
-    if (!ctx->cu_context || !ctx->nvencoder)
+    if ((!ctx->cu_context && !ctx->d3d11_device) || !ctx->nvencoder)
         return AVERROR(EINVAL);
 
     if (ctx->encoder_flushing)
@@ -1915,7 +1976,7 @@ int ff_nvenc_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
 
     NvencContext *ctx = avctx->priv_data;
 
-    if (!ctx->cu_context || !ctx->nvencoder)
+    if ((!ctx->cu_context && !ctx->d3d11_device) || !ctx->nvencoder)
         return AVERROR(EINVAL);
 
     if (output_ready(avctx, ctx->encoder_flushing)) {
