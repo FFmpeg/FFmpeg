@@ -63,7 +63,7 @@
 #endif
 #endif
 
-#if defined(_MSC_VER) && CONFIG_SHARED
+#if defined(_WIN32) && CONFIG_SHARED
 #ifdef BUILDING_avutil
 #    define av_export_avutil __declspec(dllexport)
 #else
