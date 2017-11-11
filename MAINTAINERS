@@ -158,7 +158,7 @@ Codecs:
   cpia.c                                Stephan Hilb
   crystalhd.c                           Philip Langdale
   cscd.c                                Reimar Doeffinger
-  cuvid.c                               Timo Rothenpieler
+  cuviddec.c                            Timo Rothenpieler
   dca*                                  foo86
   dirac*                                Rostislav Pehlivanov
   dnxhd*                                Baptiste Coudurier
@@ -213,7 +213,7 @@ Codecs:
   msrle.c                               Mike Melanson
   msvideo1.c                            Mike Melanson
   nuv.c                                 Reimar Doeffinger
-  nvenc*                                Timo Rothenpieler
+  nvdec*, nvenc*                        Timo Rothenpieler
   opus*                                 Rostislav Pehlivanov
   paf.*                                 Paul B Mahol
   pcx.c                                 Ivo van Poorten
