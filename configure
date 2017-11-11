@@ -5969,7 +5969,7 @@ enabled libsmbclient      && { check_pkg_config libsmbclient smbclient libsmbcli
 enabled libsnappy         && require libsnappy snappy-c.h snappy_compress -lsnappy -lstdc++
 enabled libsoxr           && require libsoxr soxr.h soxr_create -lsoxr
 enabled libssh            && require_pkg_config libssh libssh libssh/sftp.h sftp_init
-enabled libspeex          && require_pkg_config libspeex speex speex/speex.h speex_decoder_init -lspeex
+enabled libspeex          && require_pkg_config libspeex speex speex/speex.h speex_decoder_init
 enabled libtesseract      && require_pkg_config libtesseract tesseract tesseract/capi.h TessBaseAPICreate
 enabled libtheora         && require libtheora theora/theoraenc.h th_info_init -ltheoraenc -ltheoradec -logg
 enabled libtwolame        && require libtwolame twolame.h twolame_init -ltwolame &&
