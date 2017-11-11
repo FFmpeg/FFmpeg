@@ -4000,24 +4000,6 @@ armasm_flags(){
    done
 }
 
-ccc_flags(){
-    for flag; do
-        case $flag in
-            -std=c99)           echo -c99                       ;;
-            -mcpu=*)            echo -arch ${flag#*=}           ;;
-            -mieee)             echo -ieee                      ;;
-            -O*|-fast)          echo $flag                      ;;
-            -fno-math-errno)    echo -assume nomath_errno       ;;
-            -g)                 echo -g3                        ;;
-            -Wall)              echo -msg_enable level2         ;;
-            -Wno-pointer-sign)  echo -msg_disable ptrmismatch1  ;;
-            -Wl,*)              echo $flag                      ;;
-            -f*|-W*)                                            ;;
-            *)                  echo $flag                      ;;
-        esac
-   done
-}
-
 cparser_flags(){
     for flag; do
         case $flag in
@@ -4232,13 +4214,6 @@ probe_cc(){
         _ident=$($_cc -qversion 2>/dev/null | head -n1)
         _cflags_speed='-O5'
         _cflags_size='-O5 -qcompact'
-    elif $_cc -V 2>/dev/null | grep -q Compaq; then
-        _type=ccc
-        _ident=$($_cc -V | head -n1 | cut -d' ' -f1-3)
-        _DEPFLAGS='-M'
-        _cflags_speed='-fast'
-        _cflags_size='-O1'
-        _flags_filter=ccc_flags
     elif $_cc --vsn 2>/dev/null | grep -Eq "ARM (C/C\+\+ )?Compiler"; then
         test -d "$sysroot" || die "No valid sysroot specified."
         _type=armcc
@@ -5183,9 +5158,6 @@ case $target_os in
                       -l:drtaeabi.dso -l:scppnwdl.dso -lsupc++ -lgcc \
                       -l:libc.dso -l:libm.dso -l:euser.dso -l:libcrt0.lib
         ;;
-    osf1)
-        add_cppflags -D_OSF_SOURCE -D_POSIX_PII -D_REENTRANT
-        ;;
     minix)
         ;;
     none)
@@ -5327,8 +5299,6 @@ case $libc_type in
             add_cppflags -D__builtin_memset=memset
             add_cppflags -D__gnuc_va_list=va_list -D_VA_LIST_DEFINED
             add_cflags   -pds=48    # incompatible redefinition of macro
-        elif enabled ccc; then
-            add_ldflags -Wl,-z,now  # calls to libots crash without this
         fi
         ;;
 esac
@@ -6507,12 +6477,6 @@ if enabled icc; then
             check_cflags -falign-stack=maintain-16-byte ||
             disable aligned_stack
     fi
-elif enabled ccc; then
-    # disable some annoying warnings
-    add_cflags -msg_disable bitnotint
-    add_cflags -msg_disable mixfuncvoid
-    add_cflags -msg_disable nonstandcast
-    add_cflags -msg_disable unsupieee
 elif enabled gcc; then
     check_optflags -fno-tree-vectorize
     check_cflags -Werror=format-security
@@ -6608,12 +6572,6 @@ esac
 case $ld_type in
     clang)
         check_ldflags -Qunused-arguments
-    ;;
-esac
-
-case $target_os in
-    osf1)
-        enabled ccc && add_ldflags '-Wl,-expect_unresolved,*'
     ;;
 esac
 
