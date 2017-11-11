@@ -1107,13 +1107,15 @@ check_stripflags(){
 
 check_header(){
     log check_header "$@"
-    header=$1
+    headers=$1
     shift
-    disable_sanitized $header
-    check_cpp "$@" <<EOF && enable_sanitized $header
-#include <$header>
-int x;
-EOF
+    disable_sanitized $headers
+    {
+        for hdr in $headers; do
+            print_include $hdr
+        done
+        echo "int x;"
+    } | check_cpp "$@" && enable_sanitized $headers
 }
 
 check_header_objcc(){
@@ -1389,9 +1391,9 @@ require_cpp(){
 
 require_header(){
     log require "$@"
-    header="$1"
+    headers="$1"
     shift
-    check_header "$header" "$@" || die "ERROR: $header header not found"
+    check_header "$headers" "$@" || die "ERROR: $headers not found"
 }
 
 require_cpp_condition(){
@@ -6148,13 +6150,10 @@ check_cpp_condition vfw.h "WM_CAP_DRIVER_CONNECT > WM_USER" && enable vfwcap_def
 check_type "dshow.h" IBaseFilter
 
 # check for ioctl_meteor.h, ioctl_bt848.h and alternatives
-{ check_header dev/bktr/ioctl_meteor.h &&
-  check_header dev/bktr/ioctl_bt848.h; } ||
-{ check_header machine/ioctl_meteor.h &&
-  check_header machine/ioctl_bt848.h; } ||
-{ check_header dev/video/meteor/ioctl_meteor.h &&
-  check_header dev/video/bktr/ioctl_bt848.h; } ||
-check_header dev/ic/bt8xx.h
+check_header "dev/bktr/ioctl_meteor.h dev/bktr/ioctl_bt848.h"                   ||
+    check_header "machine/ioctl_meteor.h machine/ioctl_bt848.h"                 ||
+    check_header "dev/video/meteor/ioctl_meteor.h dev/video/bktr/ioctl_bt848.h" ||
+    check_header "dev/ic/bt8xx.h"
 
 if check_struct sys/soundcard.h audio_buf_info bytes; then
     enable_sanitized sys/soundcard.h
