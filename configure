@@ -1934,7 +1934,6 @@ HEADERS_LIST="
     opencv2_core_core_c_h
     OpenGL_gl3_h
     poll_h
-    soundcard_h
     stdatomic_h
     sys_param_h
     sys_resource_h
@@ -3097,8 +3096,8 @@ libcdio_indev_deps="libcdio"
 libdc1394_indev_deps="libdc1394"
 openal_indev_deps="openal"
 opengl_outdev_deps="opengl"
-oss_indev_deps_any="soundcard_h sys_soundcard_h"
-oss_outdev_deps_any="soundcard_h sys_soundcard_h"
+oss_indev_deps_any="sys_soundcard_h"
+oss_outdev_deps_any="sys_soundcard_h"
 pulse_indev_deps="libpulse"
 pulse_outdev_deps="libpulse"
 sdl2_outdev_deps="sdl2"
@@ -6184,7 +6183,6 @@ else
     audio_buf_info abc;
 EOF
 fi
-check_header soundcard.h
 
 enabled alsa && check_pkg_config alsa alsa "alsa/asoundlib.h" snd_pcm_htimestamp ||
     check_lib alsa alsa/asoundlib.h snd_pcm_htimestamp -lasound
