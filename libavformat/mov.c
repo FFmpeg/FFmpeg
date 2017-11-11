@@ -2548,15 +2548,18 @@ static int mov_read_stsd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     /* Prepare space for hosting multiple extradata. */
     sc->extradata = av_mallocz_array(entries, sizeof(*sc->extradata));
+    if (!sc->extradata)
+        return AVERROR(ENOMEM);
+
     sc->extradata_size = av_mallocz_array(entries, sizeof(*sc->extradata_size));
-    if (!sc->extradata_size || !sc->extradata) {
+    if (!sc->extradata_size) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }
 
     ret = ff_mov_read_stsd_entries(c, pb, entries);
     if (ret < 0)
-        return ret;
+        goto fail;
 
     sc->stsd_count = entries;
 
