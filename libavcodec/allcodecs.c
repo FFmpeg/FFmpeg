@@ -123,6 +123,7 @@ static void register_all(void)
     REGISTER_HWACCEL(VP9_D3D11VA2,      vp9_d3d11va2);
     REGISTER_HWACCEL(VP9_DXVA2,         vp9_dxva2);
     REGISTER_HWACCEL(VP9_MEDIACODEC,    vp9_mediacodec);
+    REGISTER_HWACCEL(VP9_NVDEC,         vp9_nvdec);
     REGISTER_HWACCEL(VP9_VAAPI,         vp9_vaapi);
     REGISTER_HWACCEL(WMV3_D3D11VA,      wmv3_d3d11va);
     REGISTER_HWACCEL(WMV3_D3D11VA2,     wmv3_d3d11va2);

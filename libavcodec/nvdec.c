@@ -54,6 +54,7 @@ static int map_avcodec_id(enum AVCodecID id)
     switch (id) {
     case AV_CODEC_ID_H264: return cudaVideoCodec_H264;
     case AV_CODEC_ID_HEVC: return cudaVideoCodec_HEVC;
+    case AV_CODEC_ID_VP9:  return cudaVideoCodec_VP9;
     }
     return -1;
 }
