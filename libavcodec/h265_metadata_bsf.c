@@ -440,7 +440,7 @@ static const AVClass h265_metadata_class = {
     .class_name = "h265_metadata_bsf",
     .item_name  = av_default_item_name,
     .option     = h265_metadata_options,
-    .version    = LIBAVCODEC_VERSION_MAJOR,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 static const enum AVCodecID h265_metadata_codec_ids[] = {
