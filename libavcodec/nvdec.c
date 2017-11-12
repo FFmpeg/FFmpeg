@@ -292,8 +292,15 @@ int ff_nvdec_decode_init(AVCodecContext *avctx)
     params.ulNumOutputSurfaces = 1;
 
     ret = nvdec_decoder_create(&ctx->decoder_ref, frames_ctx->device_ref, &params, avctx);
-    if (ret < 0)
+    if (ret < 0) {
+        if (params.ulNumDecodeSurfaces > 32) {
+            av_log(avctx, AV_LOG_WARNING, "Using more than 32 (%d) decode surfaces might cause nvdec to fail.\n",
+                   (int)params.ulNumDecodeSurfaces);
+            av_log(avctx, AV_LOG_WARNING, "Try lowering the amount of threads. Using %d right now.\n",
+                   avctx->thread_count);
+        }
         return ret;
+    }
 
     pool = av_mallocz(sizeof(*pool));
     if (!pool) {
