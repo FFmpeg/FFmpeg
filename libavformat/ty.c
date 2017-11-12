@@ -440,6 +440,8 @@ static int get_chunk(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
 
     ty->rec_hdrs = parse_chunk_headers(ty->chunk + 4, num_recs);
+    if (!ty->rec_hdrs)
+        return AVERROR(ENOMEM);
     ty->cur_chunk_pos += 16 * num_recs;
 
     return 0;
@@ -723,8 +725,8 @@ static int ty_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR_EOF;
 
     while (ret <= 0) {
-        if (ty->first_chunk || ty->cur_rec >= ty->num_recs) {
-            if (get_chunk(s) < 0 || ty->num_recs == 0)
+        if (!ty->rec_hdrs || ty->first_chunk || ty->cur_rec >= ty->num_recs) {
+            if (get_chunk(s) < 0 || ty->num_recs <= 0)
                 return AVERROR_EOF;
         }
 
