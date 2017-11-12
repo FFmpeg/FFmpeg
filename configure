@@ -639,13 +639,13 @@ disable_weak(){
 
 enable_sanitized(){
     for var; do
-        enable $(echo "$var" | sed 's/[^A-Za-z0-9_]/_/g')
+        enable $(sanitize_var_name $var)
     done
 }
 
 disable_sanitized(){
     for var; do
-        disable $(echo "$var" | sed 's/[^A-Za-z0-9_]/_/g')
+        disable $(sanitize_var_name $var)
     done
 }
 
@@ -678,17 +678,17 @@ enable_deep_weak(){
 }
 
 requested(){
-    test "${1#!}" = "$1" && op='=' || op=!=
+    test "${1#!}" = "$1" && op="=" || op="!="
     eval test "x\$${1#!}_requested" $op "xyes"
 }
 
 enabled(){
-    test "${1#!}" = "$1" && op='=' || op=!=
+    test "${1#!}" = "$1" && op="=" || op="!="
     eval test "x\$${1#!}" $op "xyes"
 }
 
 disabled(){
-    test "${1#!}" = "$1" && op='=' || op=!=
+    test "${1#!}" = "$1" && op="=" || op="!="
     eval test "x\$${1#!}" $op "xno"
 }
 
@@ -1081,6 +1081,7 @@ check_objcflags(){
 
 test_ldflags(){
     log test_ldflags "$@"
+    set -- $($ldflags_filter "$@")
     check_ld "cc" "$@" <<EOF
 int main(void){ return 0; }
 EOF
@@ -1390,14 +1391,14 @@ require_cpp(){
 }
 
 require_header(){
-    log require "$@"
+    log require_header "$@"
     headers="$1"
     shift
     check_header "$headers" "$@" || die "ERROR: $headers not found"
 }
 
 require_cpp_condition(){
-    log require "$@"
+    log require_cpp_condition "$@"
     header="$1"
     condition="$2"
     shift 2
