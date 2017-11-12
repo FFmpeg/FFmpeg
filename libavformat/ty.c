@@ -378,6 +378,8 @@ static void parse_master(AVFormatContext *s)
 
     ty->cur_chunk_pos = 32;
     for (j = 0; j < ty->seq_table_size; j++) {
+        if (ty->cur_chunk_pos >= CHUNK_SIZE - 8)
+            return;
         ty->seq_table[j].timestamp = AV_RB64(ty->chunk + ty->cur_chunk_pos);
         ty->cur_chunk_pos += 8;
         if (map_size > 8) {
