@@ -671,6 +671,7 @@ static void register_all(void)
     REGISTER_ENCODER(HEVC_QSV,          hevc_qsv);
     REGISTER_ENCODER(HEVC_V4L2M2M,      hevc_v4l2m2m);
     REGISTER_ENCODER(HEVC_VAAPI,        hevc_vaapi);
+    REGISTER_ENCODER(HEVC_VIDEOTOOLBOX, hevc_videotoolbox);
     REGISTER_ENCODER(LIBKVAZAAR,        libkvazaar);
     REGISTER_DECODER(MJPEG_CUVID,       mjpeg_cuvid);
     REGISTER_ENCODER(MJPEG_QSV,         mjpeg_qsv);
