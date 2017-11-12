@@ -5266,12 +5266,11 @@ test "$?" != 0 && check_${pfx}cc -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600 <<
 void *v = localtime_r;
 EOF
 
+    eval test -n "\${${pfx}libc_type}" && enable ${pfx}libc_${libc_type}
 }
 
 probe_libc
-test -n "$libc_type" && enable libc_$libc_type
 probe_libc host_
-test -n "$host_libc_type" && enable host_libc_$host_libc_type
 
 # hacks for compiler/libc/os combinations
 
