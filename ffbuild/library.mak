@@ -39,7 +39,7 @@ $(TESTPROGS) $(TOOLS): %$(EXESUF): %.o
 $(SUBDIR)lib$(NAME).version: $(SUBDIR)version.h | $(SUBDIR)
 	$$(M) $$(SRC_PATH)/ffbuild/libversion.sh $(NAME) $$< > $$@
 
-$(SUBDIR)lib$(FULLNAME).pc: $(SUBDIR)version.h | $(SUBDIR)
+$(SUBDIR)lib$(FULLNAME).pc: $(SUBDIR)version.h ffbuild/config.sh | $(SUBDIR)
 	$$(M) $$(SRC_PATH)/ffbuild/pkgconfig_generate.sh $(NAME) "$(DESC)"
 
 $(SUBDIR)lib$(NAME).ver: $(SUBDIR)lib$(NAME).v $(OBJS)
