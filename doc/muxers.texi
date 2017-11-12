@@ -468,9 +468,12 @@ By default, the muxer creates a file for each segment produced. These files
 have the same name as the playlist, followed by a sequential number and a
 .ts extension.
 
+Make sure to require a closed GOP when encoding and to set the GOP
+size to fit your segment time constraint.
+
 For example, to convert an input file with @command{ffmpeg}:
 @example
-ffmpeg -i in.nut out.m3u8
+ffmpeg -i in.mkv -c:v h264 -flags +cgop -g 30 -hls_time 1 out.m3u8
 @end example
 This example will produce the playlist, @file{out.m3u8}, and segment files:
 @file{out0.ts}, @file{out1.ts}, @file{out2.ts}, etc.
@@ -1649,6 +1652,9 @@ segment would usually span. Otherwise, the segment will be filled with the next
 packet written. Defaults to @code{0}.
 @end table
 
+Make sure to require a closed GOP when encoding and to set the GOP
+size to fit your segment time constraint.
+
 @subsection Examples
 
 @itemize
@@ -1657,7 +1663,7 @@ Remux the content of file @file{in.mkv} to a list of segments
 @file{out-000.nut}, @file{out-001.nut}, etc., and write the list of
 generated segments to @file{out.list}:
 @example
-ffmpeg -i in.mkv -codec copy -map 0 -f segment -segment_list out.list out%03d.nut
+ffmpeg -i in.mkv -codec hevc -flags +cgop -g 60 -map 0 -f segment -segment_list out.list out%03d.nut
 @end example
 
 @item
