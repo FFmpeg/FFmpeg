@@ -764,6 +764,16 @@ static int ty_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
+static int ty_read_close(AVFormatContext *s)
+{
+    TYDemuxContext *ty = s->priv_data;
+
+    av_freep(&ty->seq_table);
+    av_freep(&ty->rec_hdrs);
+
+    return 0;
+}
+
 AVInputFormat ff_ty_demuxer = {
     .name           = "ty",
     .long_name      = NULL_IF_CONFIG_SMALL("TiVo TY Stream"),
@@ -771,6 +781,7 @@ AVInputFormat ff_ty_demuxer = {
     .read_probe     = ty_probe,
     .read_header    = ty_read_header,
     .read_packet    = ty_read_packet,
+    .read_close     = ty_read_close,
     .extensions     = "ty,ty+",
     .flags          = AVFMT_TS_DISCONT,
 };
