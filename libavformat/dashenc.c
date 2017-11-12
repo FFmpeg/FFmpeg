@@ -1005,7 +1005,9 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
 
         if (!os->bit_rate) {
             // calculate average bitrate of first segment
-            int64_t bitrate = (int64_t) range_length * 8 / ((os->max_pts - os->start_pts) * av_q2d(st->time_base));
+            int64_t bitrate = (int64_t) range_length * 8 * AV_TIME_BASE / av_rescale_q(os->max_pts - os->start_pts,
+                                                                                       st->time_base,
+                                                                                       AV_TIME_BASE_Q);
             if (bitrate >= 0) {
                 os->bit_rate = bitrate;
                 snprintf(os->bandwidth_str, sizeof(os->bandwidth_str),
