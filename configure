@@ -4873,7 +4873,7 @@ case $target_os in
         SHFLAGS=-shared
         add_cppflags '-I\$(SRC_PATH)/compat/aix'
         enabled shared && add_ldflags -Wl,-brtl
-        ar_default='ar -Xany'
+        arflags='-Xany -r -c'
         ;;
     android)
         disable symver
