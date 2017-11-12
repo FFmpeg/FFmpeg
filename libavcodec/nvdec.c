@@ -414,8 +414,10 @@ int ff_nvdec_start_frame(AVCodecContext *avctx, AVFrame *frame)
         return AVERROR(ENOMEM);
 
     cf->decoder_ref = av_buffer_ref(ctx->decoder_ref);
-    if (!cf->decoder_ref)
+    if (!cf->decoder_ref) {
+        ret = AVERROR(ENOMEM);
         goto fail;
+    }
 
     cf->idx_ref = av_buffer_pool_get(ctx->decoder_pool);
     if (!cf->idx_ref) {
