@@ -111,6 +111,7 @@
     <ClCompile Include="..\libavfilter\transform.c" />
     <ClCompile Include="..\libavfilter\video.c" />
     <ClCompile Include="..\libavfilter\pthread.c" />
+    <ClCompile Include="..\libavfilter\qsvvpp.c" />
     <ClCompile Include="..\libavfilter\f_bench.c" />
     <ClCompile Include="..\libavfilter\af_sidechaincompress.c" />
     <ClCompile Include="..\libavfilter\af_acopy.c" />
@@ -283,6 +284,7 @@
     <ClCompile Include="..\libavfilter\vf_noise.c" />
     <ClCompile Include="..\libavfilter\vf_null.c" />
     <ClCompile Include="..\libavfilter\vf_overlay.c" />
+    <ClCompile Include="..\libavfilter\vf_overlay_qsv.c" />
     <ClCompile Include="..\libavfilter\vf_owdenoise.c" />
     <ClCompile Include="..\libavfilter\vf_pad.c" />
     <ClCompile Include="..\libavfilter\vf_palettegen.c" />
@@ -335,6 +337,7 @@
     <ClCompile Include="..\libavfilter\vf_vflip.c" />
     <ClCompile Include="..\libavfilter\vf_vignette.c" />
     <ClCompile Include="..\libavfilter\vf_vmafmotion.c" />
+    <ClCompile Include="..\libavfilter\vf_vpp_qsv.c" />
     <ClCompile Include="..\libavfilter\vf_waveform.c" />
     <ClCompile Include="..\libavfilter\vf_xbr.c" />
     <ClCompile Include="..\libavfilter\vf_zoompan.c" />
@@ -719,7 +722,7 @@
       <OutputFile>$(OutDir)\lib\x86\$(TargetName)$(TargetExt)</OutputFile>
       <AdditionalDependencies>libassd.lib;libfontconfigd.lib;libfreetyped.lib;libfribidid.lib;libmfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
     <PostBuildEvent>
       <Command>mkdir "$(OutDir)"\include
@@ -787,7 +790,7 @@ cd $(ProjectDir)
       <OutputFile>$(OutDir)\lib\x64\$(TargetName)$(TargetExt)</OutputFile>
       <AdditionalDependencies>libassd.lib;libfontconfigd.lib;libfreetyped.lib;libfribidid.lib;libmfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
     <PostBuildEvent>
       <Command>mkdir "$(OutDir)"\include
@@ -861,7 +864,7 @@ cd $(ProjectDir)
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197 %(AdditionalOptions)</AdditionalOptions>
       <MinimumRequiredVersion>5.1</MinimumRequiredVersion>
     </Link>
     <PostBuildEvent>
@@ -935,7 +938,7 @@ cd $(ProjectDir)
       <AdditionalDependencies>avutild.lib;avcodecd.lib;avformatd.lib;swresampled.lib;postprocd.lib;swscaled.lib;assd.lib;fontconfigd.lib;freetyped.lib;fribidid.lib;mfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197 %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
       <Command>mkdir "$(OutDir)"\include
@@ -1009,7 +1012,7 @@ cd $(ProjectDir)
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197 %(AdditionalOptions)</AdditionalOptions>
       <MinimumRequiredVersion>5.1</MinimumRequiredVersion>
     </Link>
     <PostBuildEvent>
@@ -1082,7 +1085,7 @@ cd $(ProjectDir)
       <AdditionalDependencies>avutild.lib;avcodecd.lib;avformatd.lib;swresampled.lib;postprocd.lib;swscaled.lib;libassd.lib;libfontconfigd.lib;libfreetyped.lib;libfribidid.lib;libmfxd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197 %(AdditionalOptions)</AdditionalOptions>
       <MinimumRequiredVersion>6.0</MinimumRequiredVersion>
     </Link>
     <PostBuildEvent>
@@ -1157,7 +1160,7 @@ cd $(ProjectDir)
       <OutputFile>$(OutDir)\lib\x86\$(TargetName)$(TargetExt)</OutputFile>
       <AdditionalDependencies>libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
     <PostBuildEvent>
       <Command>mkdir "$(OutDir)"\include
@@ -1229,7 +1232,7 @@ cd $(ProjectDir)
       <OutputFile>$(OutDir)\lib\x64\$(TargetName)$(TargetExt)</OutputFile>
       <AdditionalDependencies>libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
     <PostBuildEvent>
       <Command>mkdir "$(OutDir)"\include
@@ -1308,7 +1311,7 @@ cd $(ProjectDir)
       <AdditionalDependencies>avutil.lib;avcodec.lib;avformat.lib;swresample.lib;postproc.lib;swscale.lib;ass.lib;fontconfig.lib;freetype.lib;fribidi.lib;mfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
-      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197 %(AdditionalOptions)</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
@@ -1387,7 +1390,7 @@ cd $(ProjectDir)
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
       <AdditionalDependencies>avutil.lib;avcodec.lib;avformat.lib;swresample.lib;postproc.lib;swscale.lib;ass.lib;fontconfig.lib;freetype.lib;fribidi.lib;mfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197 %(AdditionalOptions)</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
@@ -1467,7 +1470,7 @@ cd $(ProjectDir)
       <AdditionalDependencies>avutil.lib;avcodec.lib;avformat.lib;swresample.lib;postproc.lib;swscale.lib;libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
-      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197 %(AdditionalOptions)</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
@@ -1546,7 +1549,7 @@ cd $(ProjectDir)
       <ProfileGuidedDatabase>$(IntDir)\$(TargetName).pgd</ProfileGuidedDatabase>
       <AdditionalDependencies>avutil.lib;avcodec.lib;avformat.lib;swresample.lib;postproc.lib;swscale.lib;libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197 %(AdditionalOptions)</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
@@ -1619,7 +1622,7 @@ cd $(ProjectDir)
       <OutputFile>$(OutDir)\lib\x86\$(TargetName)$(TargetExt)</OutputFile>
       <AdditionalDependencies>libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x86\;$(ProjectDir)\..\..\prebuilt\lib\x86\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
     <PostBuildEvent>
       <Command>mkdir "$(OutDir)"\include
@@ -1691,7 +1694,7 @@ cd $(ProjectDir)
       <OutputFile>$(OutDir)\lib\x64\$(TargetName)$(TargetExt)</OutputFile>
       <AdditionalDependencies>libass.lib;libfontconfig.lib;libfreetype.lib;libfribidi.lib;libmfx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir)\lib\x64\;$(ProjectDir)\..\..\prebuilt\lib\x64\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197,4099 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/IGNORE:4006,4221,4049,4217,4197 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
     <PostBuildEvent>
       <Command>mkdir "$(OutDir)"\include

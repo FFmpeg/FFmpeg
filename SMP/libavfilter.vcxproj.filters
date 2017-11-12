@@ -156,6 +156,9 @@
     <ClCompile Include="..\libavfilter\pthread.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\qsvvpp.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\f_bench.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
@@ -672,6 +675,9 @@
     <ClCompile Include="..\libavfilter\vf_overlay.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_overlay_qsv.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_owdenoise.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
@@ -826,6 +832,9 @@
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_vmafmotion.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_vpp_qsv.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_waveform.c">

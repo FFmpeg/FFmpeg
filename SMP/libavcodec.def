@@ -157,6 +157,7 @@ EXPORTS
     avcodec_get_class
     avcodec_get_context_defaults3
     avcodec_get_frame_class
+    avcodec_get_hw_frames_parameters
     avcodec_get_name
     avcodec_get_pix_fmt_loss
     avcodec_get_subtitle_rect_class
