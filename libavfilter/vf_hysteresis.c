@@ -33,6 +33,7 @@
 
 typedef struct HysteresisContext {
     const AVClass *class;
+    FFFrameSync fs;
 
     int planes;
     int threshold;
@@ -40,7 +41,6 @@ typedef struct HysteresisContext {
     int width[4], height[4];
     int nb_planes;
     int depth;
-    FFFrameSync fs;
 
     uint8_t *map;
     uint32_t *xy;
@@ -57,8 +57,6 @@ static const AVOption hysteresis_options[] = {
     { "threshold", "set threshold", OFFSET(threshold), AV_OPT_TYPE_INT, {.i64=0},   0, UINT16_MAX, FLAGS },
     { NULL }
 };
-
-AVFILTER_DEFINE_CLASS(hysteresis);
 
 static int query_formats(AVFilterContext *ctx)
 {
@@ -350,6 +348,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->xy);
 }
 
+FRAMESYNC_DEFINE_CLASS(hysteresis, HysteresisContext, fs);
+
 static const AVFilterPad hysteresis_inputs[] = {
     {
         .name         = "base",
@@ -375,6 +375,7 @@ static const AVFilterPad hysteresis_outputs[] = {
 AVFilter ff_vf_hysteresis = {
     .name          = "hysteresis",
     .description   = NULL_IF_CONFIG_SMALL("Grow first stream into second stream by connecting components."),
+    .preinit       = hysteresis_framesync_preinit,
     .priv_size     = sizeof(HysteresisContext),
     .uninit        = uninit,
     .query_formats = query_formats,
