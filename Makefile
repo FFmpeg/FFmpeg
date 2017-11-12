@@ -134,9 +134,7 @@ uninstall-data:
 
 clean::
 	$(RM) $(CLEANSUFFIXES)
-	$(RM) $(CLEANSUFFIXES:%=compat/msvcrt/%)
-	$(RM) $(CLEANSUFFIXES:%=compat/atomics/pthread/%)
-	$(RM) $(CLEANSUFFIXES:%=compat/%)
+	$(RM) $(addprefix compat/,$(CLEANSUFFIXES)) $(addprefix compat/*/,$(CLEANSUFFIXES))
 	$(RM) -r coverage-html
 	$(RM) -rf coverage.info coverage.info.in lcov
 
