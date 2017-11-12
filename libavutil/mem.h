@@ -74,6 +74,19 @@
  */
 
 /**
+ * @def DECLARE_ASM_ALIGNED(n,t,v)
+ * Declare an aligned variable appropriate for use in inline assembly code.
+ *
+ * @code{.c}
+ * DECLARE_ASM_ALIGNED(16, uint64_t, pw_08) = UINT64_C(0x0008000800080008);
+ * @endcode
+ *
+ * @param n Minimum alignment in bytes
+ * @param t Type of the variable (or array element)
+ * @param v Name of the variable
+ */
+
+/**
  * @def DECLARE_ASM_CONST(n,t,v)
  * Declare a static constant aligned variable appropriate for use in inline
  * assembly code.
@@ -89,18 +102,22 @@
 
 #if defined(__INTEL_COMPILER) && __INTEL_COMPILER < 1110 || defined(__SUNPRO_C)
     #define DECLARE_ALIGNED(n,t,v)      t __attribute__ ((aligned (n))) v
+    #define DECLARE_ASM_ALIGNED(n,t,v)  t __attribute__ ((aligned (n))) v
     #define DECLARE_ASM_CONST(n,t,v)    const t __attribute__ ((aligned (n))) v
 #elif defined(__DJGPP__)
     #define DECLARE_ALIGNED(n,t,v)      t __attribute__ ((aligned (FFMIN(n, 16)))) v
     #define DECLARE_ASM_CONST(n,t,v)    static const t av_used __attribute__ ((aligned (FFMIN(n, 16)))) v
 #elif defined(__GNUC__) || defined(__clang__)
     #define DECLARE_ALIGNED(n,t,v)      t __attribute__ ((aligned (n))) v
+    #define DECLARE_ASM_ALIGNED(n,t,v)  t av_used __attribute__ ((aligned (n))) v
     #define DECLARE_ASM_CONST(n,t,v)    static const t av_used __attribute__ ((aligned (n))) v
 #elif defined(_MSC_VER)
     #define DECLARE_ALIGNED(n,t,v)      __declspec(align(n)) t v
+    #define DECLARE_ASM_ALIGNED(n,t,v)  __declspec(align(n)) t v
     #define DECLARE_ASM_CONST(n,t,v)    __declspec(align(n)) static const t v
 #else
     #define DECLARE_ALIGNED(n,t,v)      t v
+    #define DECLARE_ASM_ALIGNED(n,t,v)  t v
     #define DECLARE_ASM_CONST(n,t,v)    static const t v
 #endif
 
