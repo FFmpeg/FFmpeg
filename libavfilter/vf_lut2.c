@@ -304,20 +304,13 @@ static int lut2_config_output(AVFilterLink *outlink)
         av_log(ctx, AV_LOG_ERROR, "inputs must be of same pixel format\n");
         return AVERROR(EINVAL);
     }
-    if (srcx->w                       != srcy->w ||
-        srcx->h                       != srcy->h ||
-        srcx->sample_aspect_ratio.num != srcy->sample_aspect_ratio.num ||
-        srcx->sample_aspect_ratio.den != srcy->sample_aspect_ratio.den) {
+    if (srcx->w != srcy->w || srcx->h != srcy->h) {
         av_log(ctx, AV_LOG_ERROR, "First input link %s parameters "
-               "(size %dx%d, SAR %d:%d) do not match the corresponding "
-               "second input link %s parameters (%dx%d, SAR %d:%d)\n",
+               "(size %dx%d) do not match the corresponding "
+               "second input link %s parameters (size %dx%d)\n",
                ctx->input_pads[0].name, srcx->w, srcx->h,
-               srcx->sample_aspect_ratio.num,
-               srcx->sample_aspect_ratio.den,
                ctx->input_pads[1].name,
-               srcy->w, srcy->h,
-               srcy->sample_aspect_ratio.num,
-               srcy->sample_aspect_ratio.den);
+               srcy->w, srcy->h);
         return AVERROR(EINVAL);
     }
 
