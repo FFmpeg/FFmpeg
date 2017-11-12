@@ -245,7 +245,7 @@ Codecs:
   txd.c                                 Ivo van Poorten
   vc2*                                  Rostislav Pehlivanov
   vcr1.c                                Michael Niedermayer
-  videotoolboxenc.c                     Rick Kern
+  videotoolboxenc.c                     Rick Kern, Aman Gupta
   vima.c                                Paul B Mahol
   vorbisdec.c                           Denes Balatoni, David Conrad
   vorbisenc.c                           Oded Shimon
@@ -272,7 +272,7 @@ Hardware acceleration:
   vaapi*                                Gwenole Beauchesne
   vaapi_encode*                         Mark Thompson
   vdpau*                                Philip Langdale, Carl Eugen Hoyos
-  videotoolbox*                         Rick Kern
+  videotoolbox*                         Rick Kern, Aman Gupta
 
 
 libavdevice
