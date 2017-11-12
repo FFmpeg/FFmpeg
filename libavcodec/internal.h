@@ -69,6 +69,11 @@
  */
 #define FF_CODEC_CAP_SLICE_THREAD_HAS_MF    (1 << 5)
 
+/**
+ * Allow only AVHWAccels which have a matching decoder_class field.
+ */
+#define FF_CODEC_CAP_HWACCEL_REQUIRE_CLASS  (1 << 6)
+
 #ifdef TRACE
 #   define ff_tlog(ctx, ...) av_log(ctx, AV_LOG_TRACE, __VA_ARGS__)
 #else
@@ -408,5 +413,15 @@ int ff_alloc_a53_sei(const AVFrame *frame, size_t prefix_len,
  * bits per pixel.
  */
 int64_t ff_guess_coded_bitrate(AVCodecContext *avctx);
+
+#if defined(_WIN32) && CONFIG_SHARED
+#ifdef BUILDING_avcodec
+#    define av_export_avcodec __declspec(dllexport)
+#else
+#    define av_export_avcodec __declspec(dllimport)
+#endif
+#else
+#    define av_export_avcodec
+#endif
 
 #endif /* AVCODEC_INTERNAL_H */

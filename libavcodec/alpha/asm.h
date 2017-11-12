@@ -146,39 +146,6 @@ struct unaligned_long { uint64_t l; } __attribute__((packed));
 #define unpkbw(a)    ({ uint64_t __r; __asm__ (".arch ev6; unpkbw  %r1,%0"     : "=r" (__r) : "rJ"  (a));           __r; })
 #endif
 
-#elif defined(__DECC)           /* Digital/Compaq/hp "ccc" compiler */
-
-#include <c_asm.h>
-#define ldq(p) (*(const uint64_t *) (p))
-#define ldl(p) (*(const int32_t *)  (p))
-#define stq(l, p) do { *(uint64_t *) (p) = (l); } while (0)
-#define stl(l, p) do { *(int32_t *)  (p) = (l); } while (0)
-#define ldq_u(a)     asm ("ldq_u   %v0,0(%a0)", a)
-#define uldq(a)      (*(const __unaligned uint64_t *) (a))
-#define cmpbge(a, b) asm ("cmpbge  %a0,%a1,%v0", a, b)
-#define extql(a, b)  asm ("extql   %a0,%a1,%v0", a, b)
-#define extwl(a, b)  asm ("extwl   %a0,%a1,%v0", a, b)
-#define extqh(a, b)  asm ("extqh   %a0,%a1,%v0", a, b)
-#define zap(a, b)    asm ("zap     %a0,%a1,%v0", a, b)
-#define zapnot(a, b) asm ("zapnot  %a0,%a1,%v0", a, b)
-#define amask(a)     asm ("amask   %a0,%v0", a)
-#define implver()    asm ("implver %v0")
-#define rpcc()       asm ("rpcc           %v0")
-#define minub8(a, b) asm ("minub8  %a0,%a1,%v0", a, b)
-#define minsb8(a, b) asm ("minsb8  %a0,%a1,%v0", a, b)
-#define minuw4(a, b) asm ("minuw4  %a0,%a1,%v0", a, b)
-#define minsw4(a, b) asm ("minsw4  %a0,%a1,%v0", a, b)
-#define maxub8(a, b) asm ("maxub8  %a0,%a1,%v0", a, b)
-#define maxsb8(a, b) asm ("maxsb8  %a0,%a1,%v0", a, b)
-#define maxuw4(a, b) asm ("maxuw4  %a0,%a1,%v0", a, b)
-#define maxsw4(a, b) asm ("maxsw4  %a0,%a1,%v0", a, b)
-#define perr(a, b)   asm ("perr    %a0,%a1,%v0", a, b)
-#define pklb(a)      asm ("pklb    %a0,%v0", a)
-#define pkwb(a)      asm ("pkwb    %a0,%v0", a)
-#define unpkbl(a)    asm ("unpkbl  %a0,%v0", a)
-#define unpkbw(a)    asm ("unpkbw  %a0,%v0", a)
-#define wh64(a)      asm ("wh64    %a0", a)
-
 #else
 #error "Unknown compiler!"
 #endif

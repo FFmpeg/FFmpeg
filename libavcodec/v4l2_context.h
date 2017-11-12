@@ -135,7 +135,7 @@ void ff_v4l2_context_release(V4L2Context* ctx);
  *                those frames will be dropped.
  * @return 0 in case of success, a negative value representing the error otherwise.
  */
-int ff_v4l2_context_set_status(V4L2Context* ctx, int cmd);
+int ff_v4l2_context_set_status(V4L2Context* ctx, uint32_t cmd);
 
 /**
  * Dequeues a buffer from a V4L2Context to an AVPacket.

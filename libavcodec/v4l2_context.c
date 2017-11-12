@@ -484,7 +484,7 @@ static int v4l2_get_coded_format(V4L2Context* ctx, uint32_t *p)
   *
   *****************************************************************************/
 
-int ff_v4l2_context_set_status(V4L2Context* ctx, int cmd)
+int ff_v4l2_context_set_status(V4L2Context* ctx, uint32_t cmd)
 {
     int type = ctx->type;
     int ret;

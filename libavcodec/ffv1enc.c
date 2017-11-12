@@ -754,7 +754,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (!s->chroma_planes && s->version > 3)
         s->plane_count--;
 
-    avcodec_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_h_shift, &s->chroma_v_shift);
+    ret = av_pix_fmt_get_chroma_sub_sample (avctx->pix_fmt, &s->chroma_h_shift, &s->chroma_v_shift);
+    if (ret)
+        return ret;
+
     s->picture_number = 0;
 
     if (avctx->flags & (AV_CODEC_FLAG_PASS1 | AV_CODEC_FLAG_PASS2)) {

@@ -18,9 +18,9 @@ fate-vsynth%-asv1:               ENCOPTS = -qscale 10
 FATE_VCODEC-$(call ENCDEC, ASV2, AVI)   += asv2
 fate-vsynth%-asv2:               ENCOPTS = -qscale 10
 
-FATE_VCODEC-$(call ENCDEC, CINEPAK, MOV) += cinepak
-fate-vsynth%-cinepak:            ENCOPTS  = -c:v cinepak -frames 3
-fate-vsynth%-cinepak:            FMT      = mov
+FATE_VCODEC-$(call ENCDEC, CINEPAK, AVI) += cinepak
+fate-vsynth%-cinepak:            ENCOPTS = -s sqcif -strip_number_adaptivity 1
+fate-vsynth%-cinepak:            DECOPTS = -s sqcif
 
 FATE_VCODEC-$(call ENCDEC, CLJR, AVI)   += cljr
 fate-vsynth%-cljr:               ENCOPTS = -strict -1

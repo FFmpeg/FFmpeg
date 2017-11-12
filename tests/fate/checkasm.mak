@@ -30,5 +30,5 @@ $(FATE_CHECKASM): tests/checkasm/checkasm$(EXESUF)
 $(FATE_CHECKASM): CMD = run tests/checkasm/checkasm --test=$(@:fate-checkasm-%=%)
 $(FATE_CHECKASM): CMP = null
 
-FATE-$(CONFIG_STATIC) += $(FATE_CHECKASM)
+FATE += $(FATE_CHECKASM)
 fate-checkasm: $(FATE_CHECKASM)

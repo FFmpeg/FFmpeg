@@ -613,6 +613,28 @@ static int decode_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
     if (ret == AVERROR_EOF)
         avci->draining_done = 1;
 
+    if (!ret) {
+        /* the only case where decode data is not set should be decoders
+         * that do not call ff_get_buffer() */
+        av_assert0((frame->private_ref && frame->private_ref->size == sizeof(FrameDecodeData)) ||
+                   !(avctx->codec->capabilities & AV_CODEC_CAP_DR1));
+
+        if (frame->private_ref) {
+            FrameDecodeData *fdd = (FrameDecodeData*)frame->private_ref->data;
+
+            if (fdd->post_process) {
+                ret = fdd->post_process(avctx, frame);
+                if (ret < 0) {
+                    av_frame_unref(frame);
+                    return ret;
+                }
+            }
+        }
+    }
+
+    /* free the per-frame decode data */
+    av_buffer_unref(&frame->private_ref);
+
     return ret;
 }
 
@@ -1068,28 +1090,112 @@ enum AVPixelFormat avcodec_default_get_format(struct AVCodecContext *s, const en
     return fmt[0];
 }
 
-static AVHWAccel *find_hwaccel(enum AVCodecID codec_id,
+static AVHWAccel *find_hwaccel(AVCodecContext *avctx,
                                enum AVPixelFormat pix_fmt)
 {
     AVHWAccel *hwaccel = NULL;
+    const AVClass *av_class =
+        (avctx->codec->caps_internal & FF_CODEC_CAP_HWACCEL_REQUIRE_CLASS)
+        ? avctx->codec->priv_class : NULL;
 
-    while ((hwaccel = av_hwaccel_next(hwaccel)))
-        if (hwaccel->id == codec_id
+    while ((hwaccel = av_hwaccel_next(hwaccel))) {
+        if (hwaccel->decoder_class == av_class && hwaccel->id == avctx->codec_id
             && hwaccel->pix_fmt == pix_fmt)
             return hwaccel;
+    }
     return NULL;
+}
+
+int ff_decode_get_hw_frames_ctx(AVCodecContext *avctx,
+                                enum AVHWDeviceType dev_type)
+{
+    AVHWDeviceContext *device_ctx;
+    AVHWFramesContext *frames_ctx;
+    int ret;
+
+    if (!avctx->hwaccel)
+        return AVERROR(ENOSYS);
+
+    if (avctx->hw_frames_ctx)
+        return 0;
+    if (!avctx->hw_device_ctx) {
+        av_log(avctx, AV_LOG_ERROR, "A hardware frames or device context is "
+                "required for hardware accelerated decoding.\n");
+        return AVERROR(EINVAL);
+    }
+
+    device_ctx = (AVHWDeviceContext *)avctx->hw_device_ctx->data;
+    if (device_ctx->type != dev_type) {
+        av_log(avctx, AV_LOG_ERROR, "Device type %s expected for hardware "
+               "decoding, but got %s.\n", av_hwdevice_get_type_name(dev_type),
+               av_hwdevice_get_type_name(device_ctx->type));
+        return AVERROR(EINVAL);
+    }
+
+    ret = avcodec_get_hw_frames_parameters(avctx,
+                                           avctx->hw_device_ctx,
+                                           avctx->hwaccel->pix_fmt,
+                                           &avctx->hw_frames_ctx);
+    if (ret < 0)
+        return ret;
+
+    frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
+
+
+    if (frames_ctx->initial_pool_size) {
+        // We guarantee 4 base work surfaces. The function above guarantees 1
+        // (the absolute minimum), so add the missing count.
+        frames_ctx->initial_pool_size += 3;
+
+        // Add an additional surface per thread is frame threading is enabled.
+        if (avctx->active_thread_type & FF_THREAD_FRAME)
+            frames_ctx->initial_pool_size += avctx->thread_count;
+    }
+
+    ret = av_hwframe_ctx_init(avctx->hw_frames_ctx);
+    if (ret < 0) {
+        av_buffer_unref(&avctx->hw_frames_ctx);
+        return ret;
+    }
+
+    return 0;
+}
+
+int avcodec_get_hw_frames_parameters(AVCodecContext *avctx,
+                                     AVBufferRef *device_ref,
+                                     enum AVPixelFormat hw_pix_fmt,
+                                     AVBufferRef **out_frames_ref)
+{
+    AVBufferRef *frames_ref = NULL;
+    AVHWAccel *hwa = find_hwaccel(avctx, hw_pix_fmt);
+    int ret;
+
+    if (!hwa || !hwa->frame_params)
+        return AVERROR(ENOENT);
+
+    frames_ref = av_hwframe_ctx_alloc(device_ref);
+    if (!frames_ref)
+        return AVERROR(ENOMEM);
+
+    ret = hwa->frame_params(avctx, frames_ref);
+    if (ret >= 0) {
+        *out_frames_ref = frames_ref;
+    } else {
+        av_buffer_unref(&frames_ref);
+    }
+    return ret;
 }
 
 static int setup_hwaccel(AVCodecContext *avctx,
                          const enum AVPixelFormat fmt,
                          const char *name)
 {
-    AVHWAccel *hwa = find_hwaccel(avctx->codec_id, fmt);
+    AVHWAccel *hwa = find_hwaccel(avctx, fmt);
     int ret        = 0;
 
     if (!hwa) {
         av_log(avctx, AV_LOG_ERROR,
-               "Could not find an AVHWAccel for the pixel format: %s",
+               "Could not find an AVHWAccel for the pixel format: %s\n",
                name);
         return AVERROR(ENOENT);
     }
@@ -1552,6 +1658,43 @@ static void validate_avframe_allocation(AVCodecContext *avctx, AVFrame *frame)
     }
 }
 
+static void decode_data_free(void *opaque, uint8_t *data)
+{
+    FrameDecodeData *fdd = (FrameDecodeData*)data;
+
+    if (fdd->post_process_opaque_free)
+        fdd->post_process_opaque_free(fdd->post_process_opaque);
+
+    if (fdd->hwaccel_priv_free)
+        fdd->hwaccel_priv_free(fdd->hwaccel_priv);
+
+    av_freep(&fdd);
+}
+
+int ff_attach_decode_data(AVFrame *frame)
+{
+    AVBufferRef *fdd_buf;
+    FrameDecodeData *fdd;
+
+    av_assert1(!frame->private_ref);
+    av_buffer_unref(&frame->private_ref);
+
+    fdd = av_mallocz(sizeof(*fdd));
+    if (!fdd)
+        return AVERROR(ENOMEM);
+
+    fdd_buf = av_buffer_create((uint8_t*)fdd, sizeof(*fdd), decode_data_free,
+                               NULL, AV_BUFFER_FLAG_READONLY);
+    if (!fdd_buf) {
+        av_freep(&fdd);
+        return AVERROR(ENOMEM);
+    }
+
+    frame->private_ref = fdd_buf;
+
+    return 0;
+}
+
 static int get_buffer_internal(AVCodecContext *avctx, AVFrame *frame, int flags)
 {
     const AVHWAccel *hwaccel = avctx->hwaccel;
@@ -1588,8 +1731,14 @@ static int get_buffer_internal(AVCodecContext *avctx, AVFrame *frame, int flags)
         avctx->sw_pix_fmt = avctx->pix_fmt;
 
     ret = avctx->get_buffer2(avctx, frame, flags);
-    if (ret >= 0)
-        validate_avframe_allocation(avctx, frame);
+    if (ret < 0)
+        goto end;
+
+    validate_avframe_allocation(avctx, frame);
+
+    ret = ff_attach_decode_data(frame);
+    if (ret < 0)
+        goto end;
 
 end:
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO && !override_dimensions &&

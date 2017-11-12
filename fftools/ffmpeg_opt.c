@@ -90,6 +90,10 @@ const HWAccel hwaccels[] = {
     { "vaapi", hwaccel_decode_init, HWACCEL_VAAPI, AV_PIX_FMT_VAAPI,
       AV_HWDEVICE_TYPE_VAAPI },
 #endif
+#if CONFIG_NVDEC
+    { "nvdec", hwaccel_decode_init, HWACCEL_NVDEC, AV_PIX_FMT_CUDA,
+       AV_HWDEVICE_TYPE_CUDA },
+#endif
 #if CONFIG_CUVID
     { "cuvid", cuvid_init, HWACCEL_CUVID, AV_PIX_FMT_CUDA,
       AV_HWDEVICE_TYPE_NONE },

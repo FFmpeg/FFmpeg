@@ -1756,6 +1756,10 @@ static int synth_superframe(AVCodecContext *ctx, AVFrame *frame,
             stabilize_lsps(lsps[n], s->lsps);
     }
 
+    /* synth_superframe can run multiple times per packet
+     * free potential previous frame */
+    av_frame_unref(frame);
+
     /* get output buffer */
     frame->nb_samples = MAX_SFRAMESIZE;
     if ((res = ff_get_buffer(ctx, frame, 0)) < 0)

@@ -70,6 +70,7 @@ static void register_all(void)
     REGISTER_HWACCEL(H264_DXVA2,        h264_dxva2);
     REGISTER_HWACCEL(H264_MEDIACODEC,   h264_mediacodec);
     REGISTER_HWACCEL(H264_MMAL,         h264_mmal);
+    REGISTER_HWACCEL(H264_NVDEC,        h264_nvdec);
     REGISTER_HWACCEL(H264_QSV,          h264_qsv);
     REGISTER_HWACCEL(H264_VAAPI,        h264_vaapi);
     REGISTER_HWACCEL(H264_VDPAU,        h264_vdpau);
@@ -78,6 +79,7 @@ static void register_all(void)
     REGISTER_HWACCEL(HEVC_D3D11VA,      hevc_d3d11va);
     REGISTER_HWACCEL(HEVC_D3D11VA2,     hevc_d3d11va2);
     REGISTER_HWACCEL(HEVC_DXVA2,        hevc_dxva2);
+    REGISTER_HWACCEL(HEVC_NVDEC,        hevc_nvdec);
     REGISTER_HWACCEL(HEVC_MEDIACODEC,   hevc_mediacodec);
     REGISTER_HWACCEL(HEVC_QSV,          hevc_qsv);
     REGISTER_HWACCEL(HEVC_VAAPI,        hevc_vaapi);
@@ -406,6 +408,7 @@ static void register_all(void)
     REGISTER_DECODER(AMRNB,             amrnb);
     REGISTER_DECODER(AMRWB,             amrwb);
     REGISTER_DECODER(APE,               ape);
+    REGISTER_ENCDEC (APTX,              aptx);
     REGISTER_DECODER(ATRAC1,            atrac1);
     REGISTER_DECODER(ATRAC3,            atrac3);
     REGISTER_DECODER(ATRAC3AL,          atrac3al);
@@ -669,6 +672,7 @@ static void register_all(void)
     REGISTER_ENCODER(HEVC_VAAPI,        hevc_vaapi);
     REGISTER_ENCODER(LIBKVAZAAR,        libkvazaar);
     REGISTER_DECODER(MJPEG_CUVID,       mjpeg_cuvid);
+    REGISTER_ENCODER(MJPEG_QSV,         mjpeg_qsv);
     REGISTER_ENCODER(MJPEG_VAAPI,       mjpeg_vaapi);
     REGISTER_DECODER(MPEG1_CUVID,       mpeg1_cuvid);
     REGISTER_DECODER(MPEG2_CUVID,       mpeg2_cuvid);

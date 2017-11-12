@@ -353,7 +353,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             if (s->seq_disp_ext == 1 || (s->seq_disp_ext == -1 && use_seq_disp_ext)) {
                 put_header(s, EXT_START_CODE);
                 put_bits(&s->pb, 4, 2);                         // sequence display extension
-                put_bits(&s->pb, 3, 0);                         // video_format: 0 is components
+                put_bits(&s->pb, 3, 5);                         // video_format: 5 is unspecified
                 put_bits(&s->pb, 1, 1);                         // colour_description
                 put_bits(&s->pb, 8, s->avctx->color_primaries); // colour_primaries
                 put_bits(&s->pb, 8, s->avctx->color_trc);       // transfer_characteristics

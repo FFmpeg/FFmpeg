@@ -36,9 +36,11 @@ pb_zzzzzzzz67676767: db -1,-1,-1,-1,-1,-1,-1,-1, 6, 7, 6, 7, 6, 7, 6, 7
 
 SECTION .text
 
+;------------------------------------------------------------------------------
 ; void ff_add_median_pred_mmxext(uint8_t *dst, const uint8_t *top,
 ;                                const uint8_t *diff, int w,
 ;                                int *left, int *left_top)
+;------------------------------------------------------------------------------
 %macro MEDIAN_PRED 0
 cglobal add_median_pred, 6,6,8, dst, top, diff, w, left, left_top
     movu    m0, [topq]
@@ -149,7 +151,9 @@ MEDIAN_PRED
     RET
 %endmacro
 
+;------------------------------------------------------------------------------
 ; int ff_add_left_pred(uint8_t *dst, const uint8_t *src, int w, int left)
+;------------------------------------------------------------------------------
 INIT_MMX ssse3
 cglobal add_left_pred, 3,3,7, dst, src, w, left
 .skip_prologue:
@@ -178,6 +182,9 @@ cglobal add_left_pred_unaligned, 3,3,7, dst, src, w, left
 .src_unaligned:
     ADD_LEFT_LOOP 0, 0
 
+;------------------------------------------------------------------------------
+; void ff_add_bytes(uint8_t *dst, uint8_t *src, ptrdiff_t w);
+;------------------------------------------------------------------------------
 %macro ADD_BYTES 0
 cglobal add_bytes, 3,4,2, dst, src, w, size
     mov  sizeq, wq
@@ -216,6 +223,11 @@ ADD_BYTES
 %endif
 INIT_XMM sse2
 ADD_BYTES
+
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+ADD_BYTES
+%endif
 
 %macro ADD_HFYU_LEFT_LOOP_INT16 2 ; %1 = dst alignment (a/u), %2 = src alignment (a/u)
     add     wd, wd
@@ -258,7 +270,9 @@ ADD_BYTES
     RET
 %endmacro
 
+;---------------------------------------------------------------------------------------------
 ; int add_left_pred_int16(uint16_t *dst, const uint16_t *src, unsigned mask, int w, int left)
+;---------------------------------------------------------------------------------------------
 INIT_MMX ssse3
 cglobal add_left_pred_int16, 4,4,8, dst, src, mask, w, left
 .skip_prologue:

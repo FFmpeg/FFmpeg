@@ -25,6 +25,7 @@
  */
 
 #include "avcodec.h"
+#include "decode.h"
 #include "internal.h"
 
 #include "libavutil/internal.h"
@@ -97,6 +98,12 @@ static int wrapped_avframe_decode(AVCodecContext *avctx, void *data,
         return err;
 
     av_frame_move_ref(out, in);
+
+    err = ff_attach_decode_data(out);
+    if (err < 0) {
+        av_frame_unref(out);
+        return err;
+    }
 
     *got_frame = 1;
     return 0;

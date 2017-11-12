@@ -2782,11 +2782,12 @@ fail:
     av_freep(&avc);
 }
 
-static const HWAccel *get_hwaccel(enum AVPixelFormat pix_fmt)
+static const HWAccel *get_hwaccel(enum AVPixelFormat pix_fmt, enum HWAccelID selected_hwaccel_id)
 {
     int i;
     for (i = 0; hwaccels[i].name; i++)
-        if (hwaccels[i].pix_fmt == pix_fmt)
+        if (hwaccels[i].pix_fmt == pix_fmt &&
+            (!selected_hwaccel_id || selected_hwaccel_id == HWACCEL_AUTO || hwaccels[i].id == selected_hwaccel_id))
             return &hwaccels[i];
     return NULL;
 }
@@ -2804,7 +2805,7 @@ static enum AVPixelFormat get_format(AVCodecContext *s, const enum AVPixelFormat
         if (!(desc->flags & AV_PIX_FMT_FLAG_HWACCEL))
             break;
 
-        hwaccel = get_hwaccel(*p);
+        hwaccel = get_hwaccel(*p, ist->hwaccel_id);
         if (!hwaccel ||
             (ist->active_hwaccel_id && ist->active_hwaccel_id != hwaccel->id) ||
             (ist->hwaccel_id != HWACCEL_AUTO && ist->hwaccel_id != hwaccel->id))
@@ -4198,9 +4199,11 @@ static int process_input(int file_index)
         return ret;
     }
     if (ret < 0 && ifile->loop) {
-        if ((ret = seek_to_start(ifile, is)) < 0)
-            return ret;
-        ret = get_input_packet(ifile, &pkt);
+        ret = seek_to_start(ifile, is);
+        if (ret < 0)
+            av_log(NULL, AV_LOG_WARNING, "Seek to start failed.\n");
+        else
+            ret = get_input_packet(ifile, &pkt);
         if (ret == AVERROR(EAGAIN)) {
             ifile->eagain = 1;
             return ret;

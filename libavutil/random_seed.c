@@ -26,7 +26,7 @@
 #if HAVE_IO_H
 #include <io.h>
 #endif
-#if HAVE_CRYPTGENRANDOM
+#if HAVE_WINCRYPT
 #include <windows.h>
 #include <wincrypt.h>
 #endif
@@ -121,7 +121,7 @@ uint32_t av_get_random_seed(void)
 {
     uint32_t seed;
 
-#if HAVE_CRYPTGENRANDOM
+#if HAVE_WINCRYPT
     HCRYPTPROV provider;
     if (CryptAcquireContext(&provider, NULL, NULL, PROV_RSA_FULL,
                             CRYPT_VERIFYCONTEXT | CRYPT_SILENT)) {

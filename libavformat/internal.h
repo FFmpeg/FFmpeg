@@ -196,6 +196,8 @@ struct AVStreamInternal {
      * Whether the internal avctx needs to be updated from codecpar (after a late change to codecpar)
      */
     int need_context_update;
+
+    FFFrac *priv_pts;
 };
 
 #ifdef __GNUC__

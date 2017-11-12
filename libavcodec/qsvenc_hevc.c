@@ -186,6 +186,9 @@ static av_cold int qsv_enc_init(AVCodecContext *avctx)
         }
     }
 
+    // HEVC and H264 meaning of the value is shifted by 1, make it consistent
+    q->qsv.idr_interval++;
+
     ret = ff_qsv_enc_init(avctx, &q->qsv);
     if (ret < 0)
         return ret;
@@ -214,12 +217,20 @@ static av_cold int qsv_enc_close(AVCodecContext *avctx)
     return ff_qsv_enc_close(avctx, &q->qsv);
 }
 
+#if defined(_WIN32)
+#define LOAD_PLUGIN_DEFAULT LOAD_PLUGIN_HEVC_SW
+#else
+#define LOAD_PLUGIN_DEFAULT LOAD_PLUGIN_HEVC_HW
+#endif
+
 #define OFFSET(x) offsetof(QSVHEVCEncContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     QSV_COMMON_OPTS
 
-    { "load_plugin", "A user plugin to load in an internal session", OFFSET(load_plugin), AV_OPT_TYPE_INT, { .i64 = LOAD_PLUGIN_HEVC_SW }, LOAD_PLUGIN_NONE, LOAD_PLUGIN_HEVC_HW, VE, "load_plugin" },
+    { "idr_interval", "Distance (in I-frames) between IDR frames", OFFSET(qsv.idr_interval), AV_OPT_TYPE_INT, { .i64 = 0 }, -1, INT_MAX, VE, "idr_interval" },
+    { "begin_only", "Output an IDR-frame only at the beginning of the stream", 0, AV_OPT_TYPE_CONST, { .i64 = -1 }, 0, 0, VE, "idr_interval" },
+    { "load_plugin", "A user plugin to load in an internal session", OFFSET(load_plugin), AV_OPT_TYPE_INT, { .i64 = LOAD_PLUGIN_DEFAULT }, LOAD_PLUGIN_NONE, LOAD_PLUGIN_HEVC_HW, VE, "load_plugin" },
     { "none",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = LOAD_PLUGIN_NONE },    0, 0, VE, "load_plugin" },
     { "hevc_sw",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = LOAD_PLUGIN_HEVC_SW }, 0, 0, VE, "load_plugin" },
     { "hevc_hw",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = LOAD_PLUGIN_HEVC_HW }, 0, 0, VE, "load_plugin" },

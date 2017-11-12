@@ -328,17 +328,17 @@ static void free_representation(struct representation *pls)
     }
 
     av_freep(&pls->url_template);
-    av_freep(pls);
+    av_freep(&pls);
 }
 
-static void set_httpheader_options(DASHContext *c, AVDictionary *opts)
+static void set_httpheader_options(DASHContext *c, AVDictionary **opts)
 {
     // broker prior HTTP options that should be consistent across requests
-    av_dict_set(&opts, "user-agent", c->user_agent, 0);
-    av_dict_set(&opts, "cookies", c->cookies, 0);
-    av_dict_set(&opts, "headers", c->headers, 0);
+    av_dict_set(opts, "user-agent", c->user_agent, 0);
+    av_dict_set(opts, "cookies", c->cookies, 0);
+    av_dict_set(opts, "headers", c->headers, 0);
     if (c->is_live) {
-        av_dict_set(&opts, "seekable", "0", 0);
+        av_dict_set(opts, "seekable", "0", 0);
     }
 }
 static void update_options(char **dest, const char *name, void *src)
@@ -885,7 +885,7 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
     if (!in) {
         close_in = 1;
 
-        set_httpheader_options(c, opts);
+        set_httpheader_options(c, &opts);
         ret = avio_open2(&in, url, AVIO_FLAG_READ, c->interrupt_callback, &opts);
         av_dict_free(&opts);
         if (ret < 0)
@@ -1079,9 +1079,8 @@ static int64_t calc_min_seg_no(AVFormatContext *s, struct representation *pls)
     return num;
 }
 
-static int64_t calc_max_seg_no(struct representation *pls)
+static int64_t calc_max_seg_no(struct representation *pls, DASHContext *c)
 {
-    DASHContext *c = pls->parent->priv_data;
     int64_t num = 0;
 
     if (pls->n_fragments) {
@@ -1101,21 +1100,21 @@ static int64_t calc_max_seg_no(struct representation *pls)
     return num;
 }
 
-static void move_timelines(struct representation *rep_src, struct representation *rep_dest)
+static void move_timelines(struct representation *rep_src, struct representation *rep_dest, DASHContext *c)
 {
     if (rep_dest && rep_src ) {
         free_timelines_list(rep_dest);
         rep_dest->timelines    = rep_src->timelines;
         rep_dest->n_timelines  = rep_src->n_timelines;
         rep_dest->first_seq_no = rep_src->first_seq_no;
-        rep_dest->last_seq_no = calc_max_seg_no(rep_dest);
+        rep_dest->last_seq_no = calc_max_seg_no(rep_dest, c);
         rep_src->timelines = NULL;
         rep_src->n_timelines = 0;
         rep_dest->cur_seq_no = rep_src->cur_seq_no;
     }
 }
 
-static void move_segments(struct representation *rep_src, struct representation *rep_dest)
+static void move_segments(struct representation *rep_src, struct representation *rep_dest, DASHContext *c)
 {
     if (rep_dest && rep_src ) {
         free_fragment_list(rep_dest);
@@ -1126,7 +1125,7 @@ static void move_segments(struct representation *rep_src, struct representation 
         rep_dest->fragments    = rep_src->fragments;
         rep_dest->n_fragments  = rep_src->n_fragments;
         rep_dest->parent  = rep_src->parent;
-        rep_dest->last_seq_no = calc_max_seg_no(rep_dest);
+        rep_dest->last_seq_no = calc_max_seg_no(rep_dest, c);
         rep_src->fragments = NULL;
         rep_src->n_fragments = 0;
     }
@@ -1163,21 +1162,21 @@ static int refresh_manifest(AVFormatContext *s)
         if (cur_video && cur_video->timelines) {
             c->cur_video->cur_seq_no = calc_next_seg_no_from_timelines(c->cur_video, currentVideoTime * cur_video->fragment_timescale - 1);
             if (c->cur_video->cur_seq_no >= 0) {
-                move_timelines(c->cur_video, cur_video);
+                move_timelines(c->cur_video, cur_video, c);
             }
         }
         if (cur_audio && cur_audio->timelines) {
             c->cur_audio->cur_seq_no = calc_next_seg_no_from_timelines(c->cur_audio, currentAudioTime * cur_audio->fragment_timescale - 1);
             if (c->cur_audio->cur_seq_no >= 0) {
-               move_timelines(c->cur_audio, cur_audio);
+               move_timelines(c->cur_audio, cur_audio, c);
             }
         }
     }
     if (cur_video && cur_video->fragments) {
-        move_segments(c->cur_video, cur_video);
+        move_segments(c->cur_video, cur_video, c);
     }
     if (cur_audio && cur_audio->fragments) {
-        move_segments(c->cur_audio, cur_audio);
+        move_segments(c->cur_audio, cur_audio, c);
     }
 
 finish:
@@ -1226,7 +1225,7 @@ static struct fragment *get_current_fragment(struct representation *pls)
     }
     if (c->is_live) {
         min_seq_no = calc_min_seg_no(pls->parent, pls);
-        max_seq_no = calc_max_seg_no(pls);
+        max_seq_no = calc_max_seg_no(pls, c);
 
         if (pls->timelines || pls->fragments) {
             refresh_manifest(pls->parent);
@@ -1302,7 +1301,7 @@ static int open_input(DASHContext *c, struct representation *pls, struct fragmen
     char url[MAX_URL_SIZE];
     int ret;
 
-    set_httpheader_options(c, opts);
+    set_httpheader_options(c, &opts);
     if (seg->size >= 0) {
         /* try to restrict the HTTP request to the part we want
          * (if this is in fact a HTTP request) */
@@ -1466,8 +1465,12 @@ static int save_avio_options(AVFormatContext *s)
         if (av_opt_get(s->pb, *opt, AV_OPT_SEARCH_CHILDREN, &buf) >= 0) {
             if (buf[0] != '\0') {
                 ret = av_dict_set(&c->avio_opts, *opt, buf, AV_DICT_DONT_STRDUP_VAL);
-                if (ret < 0)
+                if (ret < 0) {
+                    av_freep(&buf);
                     return ret;
+                }
+            } else {
+                av_freep(&buf);
             }
         }
         opt++;
@@ -1560,7 +1563,7 @@ static int open_demux_for_component(AVFormatContext *s, struct representation *p
 
     pls->parent = s;
     pls->cur_seq_no  = calc_cur_seg_no(s, pls);
-    pls->last_seq_no = calc_max_seg_no(pls);
+    pls->last_seq_no = calc_max_seg_no(pls, s->priv_data);
 
     ret = reopen_demux_for_component(s, pls);
     if (ret < 0) {

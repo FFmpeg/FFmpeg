@@ -126,7 +126,7 @@ static int build_huff(const uint8_t *src, VLC *vlc, int *fsym)
 }
 
 static int decode_plane10(UtvideoContext *c, int plane_no,
-                          uint16_t *dst, int step, ptrdiff_t stride,
+                          uint16_t *dst, ptrdiff_t stride,
                           int width, int height,
                           const uint8_t *src, const uint8_t *huff,
                           int use_pred)
@@ -152,7 +152,7 @@ static int decode_plane10(UtvideoContext *c, int plane_no,
 
             prev = 0x200;
             for (j = sstart; j < send; j++) {
-                for (i = 0; i < width * step; i += step) {
+                for (i = 0; i < width; i++) {
                     pix = fsym;
                     if (use_pred) {
                         prev += pix;
@@ -195,8 +195,7 @@ static int decode_plane10(UtvideoContext *c, int plane_no,
 
         prev = 0x200;
         for (j = sstart; j < send; j++) {
-            int ws = width * step;
-            for (i = 0; i < ws; i += step) {
+            for (i = 0; i < width; i++) {
                 pix = get_vlc2(&gb, vlc.table, VLC_BITS, 3);
                 if (pix < 0) {
                     av_log(c->avctx, AV_LOG_ERROR, "Decoding error\n");
@@ -240,7 +239,7 @@ static int compute_cmask(int plane_no, int interlaced, enum AVPixelFormat pix_fm
 }
 
 static int decode_plane(UtvideoContext *c, int plane_no,
-                        uint8_t *dst, int step, ptrdiff_t stride,
+                        uint8_t *dst, ptrdiff_t stride,
                         int width, int height,
                         const uint8_t *src, int use_pred)
 {
@@ -266,7 +265,7 @@ static int decode_plane(UtvideoContext *c, int plane_no,
 
             prev = 0x80;
             for (j = sstart; j < send; j++) {
-                for (i = 0; i < width * step; i += step) {
+                for (i = 0; i < width; i++) {
                     pix = fsym;
                     if (use_pred) {
                         prev += pix;
@@ -310,8 +309,7 @@ static int decode_plane(UtvideoContext *c, int plane_no,
 
         prev = 0x80;
         for (j = sstart; j < send; j++) {
-            int ws = width * step;
-            for (i = 0; i < ws; i += step) {
+            for (i = 0; i < width; i++) {
                 pix = get_vlc2(&gb, vlc.table, VLC_BITS, 3);
                 if (pix < 0) {
                     av_log(c->avctx, AV_LOG_ERROR, "Decoding error\n");
@@ -634,7 +632,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     case AV_PIX_FMT_GBRP:
     case AV_PIX_FMT_GBRAP:
         for (i = 0; i < c->planes; i++) {
-            ret = decode_plane(c, i, frame.f->data[i], 1,
+            ret = decode_plane(c, i, frame.f->data[i],
                                frame.f->linesize[i], avctx->width,
                                avctx->height, plane_start[i],
                                c->frame_pred == PRED_LEFT);
@@ -671,7 +669,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     case AV_PIX_FMT_GBRAP10:
     case AV_PIX_FMT_GBRP10:
         for (i = 0; i < c->planes; i++) {
-            ret = decode_plane10(c, i, (uint16_t *)frame.f->data[i], 1,
+            ret = decode_plane10(c, i, (uint16_t *)frame.f->data[i],
                                  frame.f->linesize[i] / 2, avctx->width,
                                  avctx->height, plane_start[i],
                                  plane_start[i + 1] - 1024,
@@ -685,7 +683,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         break;
     case AV_PIX_FMT_YUV420P:
         for (i = 0; i < 3; i++) {
-            ret = decode_plane(c, i, frame.f->data[i], 1, frame.f->linesize[i],
+            ret = decode_plane(c, i, frame.f->data[i], frame.f->linesize[i],
                                avctx->width >> !!i, avctx->height >> !!i,
                                plane_start[i], c->frame_pred == PRED_LEFT);
             if (ret)
@@ -717,7 +715,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         break;
     case AV_PIX_FMT_YUV422P:
         for (i = 0; i < 3; i++) {
-            ret = decode_plane(c, i, frame.f->data[i], 1, frame.f->linesize[i],
+            ret = decode_plane(c, i, frame.f->data[i], frame.f->linesize[i],
                                avctx->width >> !!i, avctx->height,
                                plane_start[i], c->frame_pred == PRED_LEFT);
             if (ret)
@@ -747,7 +745,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         break;
     case AV_PIX_FMT_YUV444P:
         for (i = 0; i < 3; i++) {
-            ret = decode_plane(c, i, frame.f->data[i], 1, frame.f->linesize[i],
+            ret = decode_plane(c, i, frame.f->data[i], frame.f->linesize[i],
                                avctx->width, avctx->height,
                                plane_start[i], c->frame_pred == PRED_LEFT);
             if (ret)
@@ -777,7 +775,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         break;
     case AV_PIX_FMT_YUV422P10:
         for (i = 0; i < 3; i++) {
-            ret = decode_plane10(c, i, (uint16_t *)frame.f->data[i], 1, frame.f->linesize[i] / 2,
+            ret = decode_plane10(c, i, (uint16_t *)frame.f->data[i], frame.f->linesize[i] / 2,
                                  avctx->width >> !!i, avctx->height,
                                  plane_start[i], plane_start[i + 1] - 1024, c->frame_pred == PRED_LEFT);
             if (ret)

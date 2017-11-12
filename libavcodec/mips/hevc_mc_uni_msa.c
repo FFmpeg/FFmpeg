@@ -283,25 +283,6 @@ static void copy_width64_msa(uint8_t *src, int32_t src_stride,
     }
 }
 
-static const uint8_t mc_filt_mask_arr[16 * 3] = {
-    /* 8 width cases */
-    0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8,
-    /* 4 width cases */
-    0, 1, 1, 2, 2, 3, 3, 4, 16, 17, 17, 18, 18, 19, 19, 20,
-    /* 4 width cases */
-    8, 9, 9, 10, 10, 11, 11, 12, 24, 25, 25, 26, 26, 27, 27, 28
-};
-
-#define FILT_4TAP_DPADD_S_H(vec0, vec1, filt0, filt1)           \
-( {                                                             \
-    v8i16 tmp0;                                                 \
-                                                                \
-    tmp0 = __msa_dotp_s_h((v16i8) vec0, (v16i8) filt0);         \
-    tmp0 = __msa_dpadd_s_h(tmp0, (v16i8) vec1, (v16i8) filt1);  \
-                                                                \
-    tmp0;                                                       \
-} )
-
 static void common_hz_8t_4x4_msa(uint8_t *src, int32_t src_stride,
                                  uint8_t *dst, int32_t dst_stride,
                                  const int8_t *filter)
@@ -3109,19 +3090,18 @@ static void hevc_hv_uni_4t_4x2_msa(uint8_t *src,
                                    uint8_t *dst,
                                    int32_t dst_stride,
                                    const int8_t *filter_x,
-                                   const int8_t *filter_y,
-                                   int32_t height)
+                                   const int8_t *filter_y)
 {
+    v16u8 out;
     v16i8 src0, src1, src2, src3, src4;
     v8i16 filt0, filt1;
-    v4i32 filt_h0, filt_h1;
-    v16i8 mask0 = { 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8 };
+    v8i16 filt_h0, filt_h1;
+    v16i8 mask0 = LD_SB(ff_hevc_mask_arr + 16);
     v16i8 mask1;
-    v8i16 filter_vec, const_vec;
+    v8i16 filter_vec, tmp;
     v16i8 vec0, vec1, vec2, vec3, vec4, vec5;
-    v8i16 dst0, dst1, dst2, dst3, dst4;
-    v4i32 dst0_r, dst1_r;
-    v8i16 dst10_r, dst32_r, dst21_r, dst43_r;
+    v8i16 dst20, dst31, dst42, dst10, dst32, dst21, dst43;
+    v4i32 dst0, dst1;
 
     src -= (src_stride + 1);
 
@@ -3129,60 +3109,35 @@ static void hevc_hv_uni_4t_4x2_msa(uint8_t *src,
     SPLATI_H2_SH(filter_vec, 0, 1, filt0, filt1);
 
     filter_vec = LD_SH(filter_y);
-    vec0 = __msa_clti_s_b((v16i8) filter_vec, 0);
-    filter_vec = (v8i16) __msa_ilvr_b(vec0, (v16i8) filter_vec);
+    UNPCK_R_SB_SH(filter_vec, filter_vec);
 
-    SPLATI_W2_SW(filter_vec, 0, filt_h0, filt_h1);
+    SPLATI_W2_SH(filter_vec, 0, filt_h0, filt_h1);
 
     mask1 = mask0 + 2;
 
-    const_vec = __msa_ldi_h(128);
-    const_vec <<= 6;
+    LD_SB5(src, src_stride, src0, src1, src2, src3, src4);
+    XORI_B5_128_SB(src0, src1, src2, src3, src4);
 
-    LD_SB3(src, src_stride, src0, src1, src2);
-    src += (3 * src_stride);
+    VSHF_B2_SB(src0, src2, src0, src2, mask0, mask1, vec0, vec1);
+    VSHF_B2_SB(src1, src3, src1, src3, mask0, mask1, vec2, vec3);
+    VSHF_B2_SB(src2, src4, src2, src4, mask0, mask1, vec4, vec5);
 
-    XORI_B3_128_SB(src0, src1, src2);
+    dst20 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+    dst31 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+    dst42 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
 
-    VSHF_B2_SB(src0, src0, src0, src0, mask0, mask1, vec0, vec1);
-    VSHF_B2_SB(src1, src1, src1, src1, mask0, mask1, vec2, vec3);
-    VSHF_B2_SB(src2, src2, src2, src2, mask0, mask1, vec4, vec5);
+    ILVRL_H2_SH(dst31, dst20, dst10, dst32);
+    ILVRL_H2_SH(dst42, dst31, dst21, dst43);
 
-    dst0 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst0, dst0);
-    dst1 = const_vec;
-    DPADD_SB2_SH(vec2, vec3, filt0, filt1, dst1, dst1);
-    dst2 = const_vec;
-    DPADD_SB2_SH(vec4, vec5, filt0, filt1, dst2, dst2);
-
-    ILVR_H2_SH(dst1, dst0, dst2, dst1, dst10_r, dst21_r);
-    LD_SB2(src, src_stride, src3, src4);
-    XORI_B2_128_SB(src3, src4);
-
-    /* row 3 */
-    VSHF_B2_SB(src3, src3, src3, src3, mask0, mask1, vec0, vec1);
-    dst3 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst3, dst3);
-
-    dst32_r = __msa_ilvr_h(dst3, dst2);
-    dst0_r = HEVC_FILT_4TAP(dst10_r, dst32_r, filt_h0, filt_h1);
-    dst0_r >>= 6;
-
-    /* row 4 */
-    VSHF_B2_SB(src4, src4, src4, src4, mask0, mask1, vec0, vec1);
-    dst4 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst4, dst4);
-
-    dst43_r = __msa_ilvr_h(dst4, dst3);
-    dst1_r = HEVC_FILT_4TAP(dst21_r, dst43_r, filt_h0, filt_h1);
-    dst1_r >>= 6;
-
-    dst0_r = (v4i32) __msa_pckev_h((v8i16) dst1_r, (v8i16) dst0_r);
-    dst0_r = (v4i32) __msa_srari_h((v8i16) dst0_r, 6);
-    dst0_r = (v4i32) CLIP_SH_0_255(dst0_r);
-    dst0_r = (v4i32) __msa_pckev_b((v16i8) dst0_r, (v16i8) dst0_r);
-
-    ST4x2_UB(dst0_r, dst, dst_stride);
+    dst0 = HEVC_FILT_4TAP(dst10, dst32, filt_h0, filt_h1);
+    dst1 = HEVC_FILT_4TAP(dst21, dst43, filt_h0, filt_h1);
+    dst0 >>= 6;
+    dst1 >>= 6;
+    tmp = __msa_pckev_h((v8i16) dst1, (v8i16) dst0);
+    tmp = __msa_srari_h(tmp, 6);
+    tmp = __msa_sat_s_h(tmp, 7);
+    out = PCKEV_XORI128_UB(tmp, tmp);
+    ST4x2_UB(out, dst, dst_stride);
 }
 
 static void hevc_hv_uni_4t_4x4_msa(uint8_t *src,
@@ -3190,20 +3145,19 @@ static void hevc_hv_uni_4t_4x4_msa(uint8_t *src,
                                    uint8_t *dst,
                                    int32_t dst_stride,
                                    const int8_t *filter_x,
-                                   const int8_t *filter_y,
-                                   int32_t height)
+                                   const int8_t *filter_y)
 {
+    v16u8 out;
     v16i8 src0, src1, src2, src3, src4, src5, src6;
     v8i16 filt0, filt1;
-    v4i32 filt_h0, filt_h1;
-    v16i8 mask0 = { 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8 };
+    v8i16 filt_h0, filt_h1;
+    v16i8 mask0 = LD_SB(ff_hevc_mask_arr + 16);
     v16i8 mask1;
-    v8i16 filter_vec, const_vec;
-    v16i8 vec0, vec1, vec2, vec3, vec4, vec5;
-    v8i16 dst0, dst1, dst2, dst3, dst4, dst5;
-    v4i32 dst0_r, dst1_r, dst2_r, dst3_r;
-    v8i16 out0_r, out1_r;
-    v8i16 dst10_r, dst32_r, dst21_r, dst43_r;
+    v16i8 vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7;
+    v8i16 filter_vec, tmp0, tmp1;
+    v8i16 dst30, dst41, dst52, dst63;
+    v8i16 dst10, dst32, dst54, dst21, dst43, dst65;
+    v4i32 dst0, dst1, dst2, dst3;
 
     src -= (src_stride + 1);
 
@@ -3211,78 +3165,38 @@ static void hevc_hv_uni_4t_4x4_msa(uint8_t *src,
     SPLATI_H2_SH(filter_vec, 0, 1, filt0, filt1);
 
     filter_vec = LD_SH(filter_y);
-    vec0 = __msa_clti_s_b((v16i8) filter_vec, 0);
-    filter_vec = (v8i16) __msa_ilvr_b(vec0, (v16i8) filter_vec);
+    UNPCK_R_SB_SH(filter_vec, filter_vec);
 
-    SPLATI_W2_SW(filter_vec, 0, filt_h0, filt_h1);
+    SPLATI_W2_SH(filter_vec, 0, filt_h0, filt_h1);
 
     mask1 = mask0 + 2;
 
-    const_vec = __msa_ldi_h(128);
-    const_vec <<= 6;
+    LD_SB7(src, src_stride, src0, src1, src2, src3, src4, src5, src6);
+    XORI_B7_128_SB(src0, src1, src2, src3, src4, src5, src6);
 
-    LD_SB3(src, src_stride, src0, src1, src2);
-    src += (3 * src_stride);
+    VSHF_B2_SB(src0, src3, src0, src3, mask0, mask1, vec0, vec1);
+    VSHF_B2_SB(src1, src4, src1, src4, mask0, mask1, vec2, vec3);
+    VSHF_B2_SB(src2, src5, src2, src5, mask0, mask1, vec4, vec5);
+    VSHF_B2_SB(src3, src6, src3, src6, mask0, mask1, vec6, vec7);
 
-    XORI_B3_128_SB(src0, src1, src2);
+    dst30 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+    dst41 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+    dst52 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
+    dst63 = HEVC_FILT_4TAP_SH(vec6, vec7, filt0, filt1);
 
-    VSHF_B2_SB(src0, src0, src0, src0, mask0, mask1, vec0, vec1);
-    VSHF_B2_SB(src1, src1, src1, src1, mask0, mask1, vec2, vec3);
-    VSHF_B2_SB(src2, src2, src2, src2, mask0, mask1, vec4, vec5);
-
-    dst0 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst0, dst0);
-    dst1 = const_vec;
-    DPADD_SB2_SH(vec2, vec3, filt0, filt1, dst1, dst1);
-    dst2 = const_vec;
-    DPADD_SB2_SH(vec4, vec5, filt0, filt1, dst2, dst2);
-
-    ILVR_H2_SH(dst1, dst0, dst2, dst1, dst10_r, dst21_r);
-    LD_SB4(src, src_stride, src3, src4, src5, src6);
-    XORI_B4_128_SB(src3, src4, src5, src6);
-
-    /* row 3 */
-    VSHF_B2_SB(src3, src3, src3, src3, mask0, mask1, vec0, vec1);
-    dst3 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst3, dst3);
-
-    dst32_r = __msa_ilvr_h(dst3, dst2);
-    dst0_r = HEVC_FILT_4TAP(dst10_r, dst32_r, filt_h0, filt_h1);
-    dst0_r >>= 6;
-
-    /* row 4 */
-    VSHF_B2_SB(src4, src4, src4, src4, mask0, mask1, vec0, vec1);
-    dst4 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst4, dst4);
-
-    dst43_r = __msa_ilvr_h(dst4, dst3);
-    dst1_r = HEVC_FILT_4TAP(dst21_r, dst43_r, filt_h0, filt_h1);
-    dst1_r >>= 6;
-
-    /* row 5 */
-    VSHF_B2_SB(src5, src5, src5, src5, mask0, mask1, vec0, vec1);
-    dst5 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst5, dst5);
-
-    dst10_r = __msa_ilvr_h(dst5, dst4);
-    dst2_r = HEVC_FILT_4TAP(dst32_r, dst10_r, filt_h0, filt_h1);
-    dst2_r >>= 6;
-
-    /* row 6 */
-    VSHF_B2_SB(src6, src6, src6, src6, mask0, mask1, vec0, vec1);
-    dst2 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst2, dst2);
-
-    dst21_r = __msa_ilvr_h(dst2, dst5);
-    dst3_r = HEVC_FILT_4TAP(dst43_r, dst21_r, filt_h0, filt_h1);
-    dst3_r >>= 6;
-
-    PCKEV_H2_SH(dst1_r, dst0_r, dst3_r, dst2_r, out0_r, out1_r);
-    SRARI_H2_SH(out0_r, out1_r, 6);
-    CLIP_SH2_0_255(out0_r, out1_r);
-    out0_r = (v8i16) __msa_pckev_b((v16i8) out1_r, (v16i8) out0_r);
-
-    ST4x4_UB(out0_r, out0_r, 0, 1, 2, 3, dst, dst_stride);
+    ILVRL_H2_SH(dst41, dst30, dst10, dst43);
+    ILVRL_H2_SH(dst52, dst41, dst21, dst54);
+    ILVRL_H2_SH(dst63, dst52, dst32, dst65);
+    dst0 = HEVC_FILT_4TAP(dst10, dst32, filt_h0, filt_h1);
+    dst1 = HEVC_FILT_4TAP(dst21, dst43, filt_h0, filt_h1);
+    dst2 = HEVC_FILT_4TAP(dst32, dst54, filt_h0, filt_h1);
+    dst3 = HEVC_FILT_4TAP(dst43, dst65, filt_h0, filt_h1);
+    SRA_4V(dst0, dst1, dst2, dst3, 6);
+    PCKEV_H2_SH(dst1, dst0, dst3, dst2, tmp0, tmp1);
+    SRARI_H2_SH(tmp0, tmp1, 6);
+    SAT_SH2_SH(tmp0, tmp1, 7);
+    out = PCKEV_XORI128_UB(tmp0, tmp1);
+    ST4x4_UB(out, out, 0, 1, 2, 3, dst, dst_stride);
 }
 
 static void hevc_hv_uni_4t_4multx8mult_msa(uint8_t *src,
@@ -3294,19 +3208,20 @@ static void hevc_hv_uni_4t_4multx8mult_msa(uint8_t *src,
                                            int32_t height)
 {
     uint32_t loop_cnt;
+    v16u8 out0, out1;
     v16i8 src0, src1, src2, src3, src4, src5;
     v16i8 src6, src7, src8, src9, src10;
     v8i16 filt0, filt1;
-    v4i32 filt_h0, filt_h1;
-    v16i8 mask0 = { 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8 };
+    v8i16 filt_h0, filt_h1;
+    v16i8 mask0 = LD_SB(ff_hevc_mask_arr + 16);
     v16i8 mask1;
-    v8i16 filter_vec, const_vec;
-    v16i8 vec0, vec1, vec2, vec3, vec4, vec5;
-    v8i16 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7, dst8, dst9;
+    v8i16 filter_vec, tmp0, tmp1, tmp2, tmp3;
+    v16i8 vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7;
+    v8i16 dst10, dst21, dst22, dst73, dst84, dst95, dst106;
     v4i32 dst0_r, dst1_r, dst2_r, dst3_r, dst4_r, dst5_r, dst6_r, dst7_r;
     v8i16 dst10_r, dst32_r, dst54_r, dst76_r;
     v8i16 dst21_r, dst43_r, dst65_r, dst87_r;
-    v8i16 out0_r, out1_r, out2_r, out3_r;
+    v8i16 dst98_r, dst109_r;
 
     src -= (src_stride + 1);
 
@@ -3314,33 +3229,23 @@ static void hevc_hv_uni_4t_4multx8mult_msa(uint8_t *src,
     SPLATI_H2_SH(filter_vec, 0, 1, filt0, filt1);
 
     filter_vec = LD_SH(filter_y);
-    vec0 = __msa_clti_s_b((v16i8) filter_vec, 0);
-    filter_vec = (v8i16) __msa_ilvr_b(vec0, (v16i8) filter_vec);
+    UNPCK_R_SB_SH(filter_vec, filter_vec);
 
-    SPLATI_W2_SW(filter_vec, 0, filt_h0, filt_h1);
+    SPLATI_W2_SH(filter_vec, 0, filt_h0, filt_h1);
 
     mask1 = mask0 + 2;
-
-    const_vec = __msa_ldi_h(128);
-    const_vec <<= 6;
 
     LD_SB3(src, src_stride, src0, src1, src2);
     src += (3 * src_stride);
 
     XORI_B3_128_SB(src0, src1, src2);
 
-    VSHF_B2_SB(src0, src0, src0, src0, mask0, mask1, vec0, vec1);
-    VSHF_B2_SB(src1, src1, src1, src1, mask0, mask1, vec2, vec3);
-    VSHF_B2_SB(src2, src2, src2, src2, mask0, mask1, vec4, vec5);
-
-    dst0 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst0, dst0);
-    dst1 = const_vec;
-    DPADD_SB2_SH(vec2, vec3, filt0, filt1, dst1, dst1);
-    dst2 = const_vec;
-    DPADD_SB2_SH(vec4, vec5, filt0, filt1, dst2, dst2);
-
-    ILVR_H2_SH(dst1, dst0, dst2, dst1, dst10_r, dst21_r);
+    VSHF_B2_SB(src0, src1, src0, src1, mask0, mask1, vec0, vec1);
+    VSHF_B2_SB(src1, src2, src1, src2, mask0, mask1, vec2, vec3);
+    dst10 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+    dst21 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+    ILVRL_H2_SH(dst21, dst10, dst10_r, dst21_r);
+    dst22 = (v8i16) __msa_splati_d((v2i64) dst21, 1);
 
     for (loop_cnt = height >> 3; loop_cnt--;) {
         LD_SB8(src, src_stride,
@@ -3349,88 +3254,46 @@ static void hevc_hv_uni_4t_4multx8mult_msa(uint8_t *src,
 
         XORI_B8_128_SB(src3, src4, src5, src6, src7, src8, src9, src10);
 
-        /* row 3 */
-        VSHF_B2_SB(src3, src3, src3, src3, mask0, mask1, vec0, vec1);
-        dst3 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst3, dst3);
+        VSHF_B2_SB(src3, src7, src3, src7, mask0, mask1, vec0, vec1);
+        VSHF_B2_SB(src4, src8, src4, src8, mask0, mask1, vec2, vec3);
+        VSHF_B2_SB(src5, src9, src5, src9, mask0, mask1, vec4, vec5);
+        VSHF_B2_SB(src6, src10, src6, src10, mask0, mask1, vec6, vec7);
 
-        dst32_r = __msa_ilvr_h(dst3, dst2);
+        dst73 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+        dst84 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+        dst95 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
+        dst106 = HEVC_FILT_4TAP_SH(vec6, vec7, filt0, filt1);
+
+        dst32_r = __msa_ilvr_h(dst73, dst22);
+        ILVRL_H2_SH(dst84, dst73, dst43_r, dst87_r);
+        ILVRL_H2_SH(dst95, dst84, dst54_r, dst98_r);
+        ILVRL_H2_SH(dst106, dst95, dst65_r, dst109_r);
+        dst22 = (v8i16) __msa_splati_d((v2i64) dst73, 1);
+        dst76_r = __msa_ilvr_h(dst22, dst106);
+
         dst0_r = HEVC_FILT_4TAP(dst10_r, dst32_r, filt_h0, filt_h1);
-        dst0_r >>= 6;
-
-        /* row 4 */
-        VSHF_B2_SB(src4, src4, src4, src4, mask0, mask1, vec0, vec1);
-        dst4 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst4, dst4);
-
-        dst43_r = __msa_ilvr_h(dst4, dst3);
         dst1_r = HEVC_FILT_4TAP(dst21_r, dst43_r, filt_h0, filt_h1);
-        dst1_r >>= 6;
-
-        /* row 5 */
-        VSHF_B2_SB(src5, src5, src5, src5, mask0, mask1, vec0, vec1);
-        dst5 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst5, dst5);
-
-        dst54_r = __msa_ilvr_h(dst5, dst4);
         dst2_r = HEVC_FILT_4TAP(dst32_r, dst54_r, filt_h0, filt_h1);
-        dst2_r >>= 6;
-
-        /* row 6 */
-        VSHF_B2_SB(src6, src6, src6, src6, mask0, mask1, vec0, vec1);
-        dst6 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst6, dst6);
-
-        dst65_r = __msa_ilvr_h(dst6, dst5);
         dst3_r = HEVC_FILT_4TAP(dst43_r, dst65_r, filt_h0, filt_h1);
-        dst3_r >>= 6;
-
-        /* row 7 */
-        VSHF_B2_SB(src7, src7, src7, src7, mask0, mask1, vec0, vec1);
-        dst7 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst7, dst7);
-
-        dst76_r = __msa_ilvr_h(dst7, dst6);
         dst4_r = HEVC_FILT_4TAP(dst54_r, dst76_r, filt_h0, filt_h1);
-        dst4_r >>= 6;
-
-        /* row 8 */
-        VSHF_B2_SB(src8, src8, src8, src8, mask0, mask1, vec0, vec1);
-        dst8 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst8, dst8);
-
-        dst87_r = __msa_ilvr_h(dst8, dst7);
         dst5_r = HEVC_FILT_4TAP(dst65_r, dst87_r, filt_h0, filt_h1);
-        dst5_r >>= 6;
-
-        /* row 9 */
-        VSHF_B2_SB(src9, src9, src9, src9, mask0, mask1, vec0, vec1);
-        dst9 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst9, dst9);
-
-        dst10_r = __msa_ilvr_h(dst9, dst8);
-        dst6_r = HEVC_FILT_4TAP(dst76_r, dst10_r, filt_h0, filt_h1);
-        dst6_r >>= 6;
-
-        /* row 10 */
-        VSHF_B2_SB(src10, src10, src10, src10, mask0, mask1, vec0, vec1);
-        dst2 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst2, dst2);
-
-        dst21_r = __msa_ilvr_h(dst2, dst9);
-        dst7_r = HEVC_FILT_4TAP(dst87_r, dst21_r, filt_h0, filt_h1);
-        dst7_r >>= 6;
-
+        dst6_r = HEVC_FILT_4TAP(dst76_r, dst98_r, filt_h0, filt_h1);
+        dst7_r = HEVC_FILT_4TAP(dst87_r, dst109_r, filt_h0, filt_h1);
+        SRA_4V(dst0_r, dst1_r, dst2_r, dst3_r, 6);
+        SRA_4V(dst4_r, dst5_r, dst6_r, dst7_r, 6);
         PCKEV_H4_SH(dst1_r, dst0_r, dst3_r, dst2_r,
                     dst5_r, dst4_r, dst7_r, dst6_r,
-                    out0_r, out1_r, out2_r, out3_r);
-
-        SRARI_H4_SH(out0_r, out1_r, out2_r, out3_r, 6);
-        CLIP_SH4_0_255(out0_r, out1_r, out2_r, out3_r);
-
-        PCKEV_B2_SH(out1_r, out0_r, out3_r, out2_r, out0_r, out1_r);
-        ST4x8_UB(out0_r, out1_r, dst, dst_stride);
+                    tmp0, tmp1, tmp2, tmp3);
+        SRARI_H4_SH(tmp0, tmp1, tmp2, tmp3, 6);
+        SAT_SH4_SH(tmp0, tmp1, tmp2, tmp3, 7);
+        out0 = PCKEV_XORI128_UB(tmp0, tmp1);
+        out1 = PCKEV_XORI128_UB(tmp2, tmp3);
+        ST4x8_UB(out0, out1, dst, dst_stride);
         dst += (8 * dst_stride);
+
+        dst10_r = dst98_r;
+        dst21_r = dst109_r;
+        dst22 = (v8i16) __msa_splati_d((v2i64) dst106, 1);
     }
 }
 
@@ -3444,10 +3307,10 @@ static void hevc_hv_uni_4t_4w_msa(uint8_t *src,
 {
     if (2 == height) {
         hevc_hv_uni_4t_4x2_msa(src, src_stride, dst, dst_stride,
-                               filter_x, filter_y, height);
+                               filter_x, filter_y);
     } else if (4 == height) {
         hevc_hv_uni_4t_4x4_msa(src, src_stride, dst, dst_stride,
-                               filter_x, filter_y, height);
+                               filter_x, filter_y);
     } else if (0 == (height % 8)) {
         hevc_hv_uni_4t_4multx8mult_msa(src, src_stride, dst, dst_stride,
                                        filter_x, filter_y, height);
@@ -3462,19 +3325,23 @@ static void hevc_hv_uni_4t_6w_msa(uint8_t *src,
                                   const int8_t *filter_y,
                                   int32_t height)
 {
-    uint32_t loop_cnt;
+    v16u8 out0, out1, out2;
     v16i8 src0, src1, src2, src3, src4, src5, src6;
+    v16i8 src7, src8, src9, src10;
     v8i16 filt0, filt1;
-    v4i32 filt_h0, filt_h1;
-    v16i8 mask0 = { 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8 };
+    v16i8 vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7;
+    v16i8 mask0 = LD_SB(ff_hevc_mask_arr);
     v16i8 mask1;
-    v8i16 filter_vec, const_vec;
-    v16i8 vec0, vec1, vec2, vec3, vec4, vec5;
-    v8i16 dst0, dst1, dst2, dst3, dst4, dst5;
+    v8i16 filt_h0, filt_h1, filter_vec;
+    v8i16 dsth0, dsth1, dsth2, dsth3, dsth4, dsth5, dsth6, dsth7, dsth8, dsth9;
+    v8i16 dsth10, tmp0, tmp1, tmp2, tmp3, tmp4, tmp5;
     v4i32 dst0_r, dst0_l, dst1_r, dst1_l, dst2_r, dst2_l, dst3_r, dst3_l;
+    v4i32 dst4_r, dst5_r, dst6_r, dst7_r;
     v8i16 dst10_r, dst32_r, dst21_r, dst43_r;
     v8i16 dst10_l, dst32_l, dst21_l, dst43_l;
-    v8i16 out0_r, out1_r, out2_r, out3_r;
+    v8i16 dst54_r, dst76_r, dst98_r, dst65_r, dst87_r, dst109_r;
+    v8i16 dst98_l, dst65_l, dst54_l, dst76_l, dst87_l, dst109_l;
+    v8i16 dst1021_l, dst3243_l, dst5465_l, dst7687_l, dst98109_l;
 
     src -= (src_stride + 1);
 
@@ -3482,15 +3349,11 @@ static void hevc_hv_uni_4t_6w_msa(uint8_t *src,
     SPLATI_H2_SH(filter_vec, 0, 1, filt0, filt1);
 
     filter_vec = LD_SH(filter_y);
-    vec0 = __msa_clti_s_b((v16i8) filter_vec, 0);
-    filter_vec = (v8i16) __msa_ilvr_b(vec0, (v16i8) filter_vec);
+    UNPCK_R_SB_SH(filter_vec, filter_vec);
 
-    SPLATI_W2_SW(filter_vec, 0, filt_h0, filt_h1);
+    SPLATI_W2_SH(filter_vec, 0, filt_h0, filt_h1);
 
     mask1 = mask0 + 2;
-
-    const_vec = __msa_ldi_h(128);
-    const_vec <<= 6;
 
     LD_SB3(src, src_stride, src0, src1, src2);
     src += (3 * src_stride);
@@ -3501,79 +3364,78 @@ static void hevc_hv_uni_4t_6w_msa(uint8_t *src,
     VSHF_B2_SB(src1, src1, src1, src1, mask0, mask1, vec2, vec3);
     VSHF_B2_SB(src2, src2, src2, src2, mask0, mask1, vec4, vec5);
 
-    dst0 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst0, dst0);
-    dst1 = const_vec;
-    DPADD_SB2_SH(vec2, vec3, filt0, filt1, dst1, dst1);
-    dst2 = const_vec;
-    DPADD_SB2_SH(vec4, vec5, filt0, filt1, dst2, dst2);
+    dsth0 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+    dsth1 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+    dsth2 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
 
-    ILVRL_H2_SH(dst1, dst0, dst10_r, dst10_l);
-    ILVRL_H2_SH(dst2, dst1, dst21_r, dst21_l);
+    ILVRL_H2_SH(dsth1, dsth0, dst10_r, dst10_l);
+    ILVRL_H2_SH(dsth2, dsth1, dst21_r, dst21_l);
 
-    for (loop_cnt = height >> 2; loop_cnt--;) {
-        LD_SB4(src, src_stride, src3, src4, src5, src6);
-        src += (4 * src_stride);
+    LD_SB8(src, src_stride, src3, src4, src5, src6, src7, src8, src9, src10);
+    XORI_B8_128_SB(src3, src4, src5, src6, src7, src8, src9, src10);
 
-        XORI_B4_128_SB(src3, src4, src5, src6);
+    VSHF_B2_SB(src3, src3, src3, src3, mask0, mask1, vec0, vec1);
+    VSHF_B2_SB(src4, src4, src4, src4, mask0, mask1, vec2, vec3);
+    VSHF_B2_SB(src5, src5, src5, src5, mask0, mask1, vec4, vec5);
+    VSHF_B2_SB(src6, src6, src6, src6, mask0, mask1, vec6, vec7);
 
-        /* row 3 */
-        VSHF_B2_SB(src3, src3, src3, src3, mask0, mask1, vec0, vec1);
-        dst3 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst3, dst3);
+    dsth3 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+    dsth4 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+    dsth5 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
+    dsth6 = HEVC_FILT_4TAP_SH(vec6, vec7, filt0, filt1);
 
-        ILVRL_H2_SH(dst3, dst2, dst32_r, dst32_l);
-        dst0_r = HEVC_FILT_4TAP(dst10_r, dst32_r, filt_h0, filt_h1);
-        dst0_l = HEVC_FILT_4TAP(dst10_l, dst32_l, filt_h0, filt_h1);
-        dst0_r >>= 6;
-        dst0_l >>= 6;
+    VSHF_B2_SB(src7, src7, src7, src7, mask0, mask1, vec0, vec1);
+    VSHF_B2_SB(src8, src8, src8, src8, mask0, mask1, vec2, vec3);
+    VSHF_B2_SB(src9, src9, src9, src9, mask0, mask1, vec4, vec5);
+    VSHF_B2_SB(src10, src10, src10, src10, mask0, mask1, vec6, vec7);
 
-        /* row 4 */
-        VSHF_B2_SB(src4, src4, src4, src4, mask0, mask1, vec0, vec1);
-        dst4 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst4, dst4);
+    dsth7 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+    dsth8 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+    dsth9 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
+    dsth10 = HEVC_FILT_4TAP_SH(vec6, vec7, filt0, filt1);
 
-        ILVRL_H2_SH(dst4, dst3, dst43_r, dst43_l);
-        dst1_r = HEVC_FILT_4TAP(dst21_r, dst43_r, filt_h0, filt_h1);
-        dst1_l = HEVC_FILT_4TAP(dst21_l, dst43_l, filt_h0, filt_h1);
-        dst1_r >>= 6;
-        dst1_l >>= 6;
+    ILVRL_H2_SH(dsth3, dsth2, dst32_r, dst32_l);
+    ILVRL_H2_SH(dsth4, dsth3, dst43_r, dst43_l);
+    ILVRL_H2_SH(dsth5, dsth4, dst54_r, dst54_l);
+    ILVRL_H2_SH(dsth6, dsth5, dst65_r, dst65_l);
+    ILVRL_H2_SH(dsth7, dsth6, dst76_r, dst76_l);
+    ILVRL_H2_SH(dsth8, dsth7, dst87_r, dst87_l);
+    ILVRL_H2_SH(dsth9, dsth8, dst98_r, dst98_l);
+    ILVRL_H2_SH(dsth10, dsth9, dst109_r, dst109_l);
 
-        /* row 5 */
-        VSHF_B2_SB(src5, src5, src5, src5, mask0, mask1, vec0, vec1);
-        dst5 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst5, dst5);
+    PCKEV_D2_SH(dst21_l, dst10_l, dst43_l, dst32_l, dst1021_l, dst3243_l);
+    PCKEV_D2_SH(dst65_l, dst54_l, dst87_l, dst76_l, dst5465_l, dst7687_l);
+    dst98109_l = (v8i16) __msa_pckev_d((v2i64) dst109_l, (v2i64) dst98_l);
 
-        ILVRL_H2_SH(dst5, dst4, dst10_r, dst10_l);
-        dst2_r = HEVC_FILT_4TAP(dst32_r, dst10_r, filt_h0, filt_h1);
-        dst2_l = HEVC_FILT_4TAP(dst32_l, dst10_l, filt_h0, filt_h1);
-
-        dst2_r >>= 6;
-        dst2_l >>= 6;
-
-        /* row 6 */
-        VSHF_B2_SB(src6, src6, src6, src6, mask0, mask1, vec0, vec1);
-        dst2 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst2, dst2);
-
-        ILVRL_H2_SH(dst2, dst5, dst21_r, dst21_l);
-        dst3_r = HEVC_FILT_4TAP(dst43_r, dst21_r, filt_h0, filt_h1);
-        dst3_l = HEVC_FILT_4TAP(dst43_l, dst21_l, filt_h0, filt_h1);
-
-        dst3_r >>= 6;
-        dst3_l >>= 6;
-
-        PCKEV_H4_SH(dst0_l, dst0_r, dst1_l, dst1_r,
-                    dst2_l, dst2_r, dst3_l, dst3_r,
-                    out0_r, out1_r, out2_r, out3_r);
-
-        SRARI_H4_SH(out0_r, out1_r, out2_r, out3_r, 6);
-        CLIP_SH4_0_255(out0_r, out1_r, out2_r, out3_r);
-
-        PCKEV_B2_SH(out1_r, out0_r, out3_r, out2_r, out0_r, out1_r);
-        ST6x4_UB(out0_r, out1_r, dst, dst_stride);
-        dst += (4 * dst_stride);
-    }
+    dst0_r = HEVC_FILT_4TAP(dst10_r, dst32_r, filt_h0, filt_h1);
+    dst1_r = HEVC_FILT_4TAP(dst21_r, dst43_r, filt_h0, filt_h1);
+    dst2_r = HEVC_FILT_4TAP(dst32_r, dst54_r, filt_h0, filt_h1);
+    dst3_r = HEVC_FILT_4TAP(dst43_r, dst65_r, filt_h0, filt_h1);
+    dst4_r = HEVC_FILT_4TAP(dst54_r, dst76_r, filt_h0, filt_h1);
+    dst5_r = HEVC_FILT_4TAP(dst65_r, dst87_r, filt_h0, filt_h1);
+    dst6_r = HEVC_FILT_4TAP(dst76_r, dst98_r, filt_h0, filt_h1);
+    dst7_r = HEVC_FILT_4TAP(dst87_r, dst109_r, filt_h0, filt_h1);
+    dst0_l = HEVC_FILT_4TAP(dst1021_l, dst3243_l, filt_h0, filt_h1);
+    dst1_l = HEVC_FILT_4TAP(dst3243_l, dst5465_l, filt_h0, filt_h1);
+    dst2_l = HEVC_FILT_4TAP(dst5465_l, dst7687_l, filt_h0, filt_h1);
+    dst3_l = HEVC_FILT_4TAP(dst7687_l, dst98109_l, filt_h0, filt_h1);
+    SRA_4V(dst0_r, dst1_r, dst2_r, dst3_r, 6);
+    SRA_4V(dst4_r, dst5_r, dst6_r, dst7_r, 6);
+    SRA_4V(dst0_l, dst1_l, dst2_l, dst3_l, 6);
+    PCKEV_H2_SH(dst1_r, dst0_r, dst3_r, dst2_r, tmp0, tmp1);
+    PCKEV_H2_SH(dst5_r, dst4_r, dst7_r, dst6_r, tmp2, tmp3);
+    PCKEV_H2_SH(dst1_l, dst0_l, dst3_l, dst2_l, tmp4, tmp5);
+    SRARI_H4_SH(tmp0, tmp1, tmp2, tmp3, 6);
+    SRARI_H2_SH(tmp4, tmp5, 6);
+    SAT_SH4_SH(tmp0, tmp1, tmp2, tmp3,7);
+    SAT_SH2_SH(tmp4, tmp5,7);
+    out0 = PCKEV_XORI128_UB(tmp0, tmp1);
+    out1 = PCKEV_XORI128_UB(tmp2, tmp3);
+    out2 = PCKEV_XORI128_UB(tmp4, tmp5);
+    ST4x8_UB(out0, out1, dst, dst_stride);
+    ST2x4_UB(out2, 0, dst + 4, dst_stride);
+    dst += 4 * dst_stride;
+    ST2x4_UB(out2, 4, dst + 4, dst_stride);
 }
 
 static void hevc_hv_uni_4t_8x2_msa(uint8_t *src,
@@ -3581,16 +3443,15 @@ static void hevc_hv_uni_4t_8x2_msa(uint8_t *src,
                                    uint8_t *dst,
                                    int32_t dst_stride,
                                    const int8_t *filter_x,
-                                   const int8_t *filter_y,
-                                   int32_t height)
+                                   const int8_t *filter_y)
 {
+    v16u8 out;
     v16i8 src0, src1, src2, src3, src4;
     v8i16 filt0, filt1;
-    v4i32 filt_h0, filt_h1;
-    v16i8 mask0 = { 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8 };
+    v8i16 filt_h0, filt_h1, filter_vec;
+    v16i8 mask0 = LD_SB(ff_hevc_mask_arr);
     v16i8 mask1;
-    v8i16 filter_vec, const_vec;
-    v16i8 vec0, vec1, vec2, vec3, vec4, vec5;
+    v16i8 vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7, vec8, vec9;
     v8i16 dst0, dst1, dst2, dst3, dst4;
     v4i32 dst0_r, dst0_l, dst1_r, dst1_l;
     v8i16 dst10_r, dst32_r, dst21_r, dst43_r;
@@ -3603,66 +3464,125 @@ static void hevc_hv_uni_4t_8x2_msa(uint8_t *src,
     SPLATI_H2_SH(filter_vec, 0, 1, filt0, filt1);
 
     filter_vec = LD_SH(filter_y);
-    vec0 = __msa_clti_s_b((v16i8) filter_vec, 0);
-    filter_vec = (v8i16) __msa_ilvr_b(vec0, (v16i8) filter_vec);
+    UNPCK_R_SB_SH(filter_vec, filter_vec);
 
-    SPLATI_W2_SW(filter_vec, 0, filt_h0, filt_h1);
+    SPLATI_W2_SH(filter_vec, 0, filt_h0, filt_h1);
 
     mask1 = mask0 + 2;
 
-    const_vec = __msa_ldi_h(128);
-    const_vec <<= 6;
-
-    LD_SB3(src, src_stride, src0, src1, src2);
-    src += (3 * src_stride);
-
-    XORI_B3_128_SB(src0, src1, src2);
+    LD_SB5(src, src_stride, src0, src1, src2, src3, src4);
+    XORI_B5_128_SB(src0, src1, src2, src3, src4);
 
     VSHF_B2_SB(src0, src0, src0, src0, mask0, mask1, vec0, vec1);
     VSHF_B2_SB(src1, src1, src1, src1, mask0, mask1, vec2, vec3);
     VSHF_B2_SB(src2, src2, src2, src2, mask0, mask1, vec4, vec5);
+    VSHF_B2_SB(src3, src3, src3, src3, mask0, mask1, vec6, vec7);
+    VSHF_B2_SB(src4, src4, src4, src4, mask0, mask1, vec8, vec9);
 
-    dst0 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst0, dst0);
-    dst1 = const_vec;
-    DPADD_SB2_SH(vec2, vec3, filt0, filt1, dst1, dst1);
-    dst2 = const_vec;
-    DPADD_SB2_SH(vec4, vec5, filt0, filt1, dst2, dst2);
-
+    dst0 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+    dst1 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+    dst2 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
+    dst3 = HEVC_FILT_4TAP_SH(vec6, vec7, filt0, filt1);
+    dst4 = HEVC_FILT_4TAP_SH(vec8, vec9, filt0, filt1);
     ILVRL_H2_SH(dst1, dst0, dst10_r, dst10_l);
     ILVRL_H2_SH(dst2, dst1, dst21_r, dst21_l);
-
-    LD_SB2(src, src_stride, src3, src4);
-    XORI_B2_128_SB(src3, src4);
-
-    /* row 3 */
-    VSHF_B2_SB(src3, src3, src3, src3, mask0, mask1, vec0, vec1);
-    dst3 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst3, dst3);
-
     ILVRL_H2_SH(dst3, dst2, dst32_r, dst32_l);
+    ILVRL_H2_SH(dst4, dst3, dst43_r, dst43_l);
     dst0_r = HEVC_FILT_4TAP(dst10_r, dst32_r, filt_h0, filt_h1);
     dst0_l = HEVC_FILT_4TAP(dst10_l, dst32_l, filt_h0, filt_h1);
-    dst0_r >>= 6;
-    dst0_l >>= 6;
-
-    /* row 4 */
-    VSHF_B2_SB(src4, src4, src4, src4, mask0, mask1, vec0, vec1);
-    dst4 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst4, dst4);
-
-    ILVRL_H2_SH(dst4, dst3, dst43_r, dst43_l);
     dst1_r = HEVC_FILT_4TAP(dst21_r, dst43_r, filt_h0, filt_h1);
     dst1_l = HEVC_FILT_4TAP(dst21_l, dst43_l, filt_h0, filt_h1);
-    dst1_r >>= 6;
-    dst1_l >>= 6;
-
+    SRA_4V(dst0_r, dst0_l, dst1_r, dst1_l, 6);
     PCKEV_H2_SH(dst0_l, dst0_r, dst1_l, dst1_r, out0_r, out1_r);
     SRARI_H2_SH(out0_r, out1_r, 6);
-    CLIP_SH2_0_255(out0_r, out1_r);
-    out0_r = (v8i16) __msa_pckev_b((v16i8) out1_r, (v16i8) out0_r);
+    SAT_SH2_SH(out0_r, out1_r, 7);
+    out = PCKEV_XORI128_UB(out0_r, out1_r);
+    ST8x2_UB(out, dst, dst_stride);
+}
 
-    ST8x2_UB(out0_r, dst, dst_stride);
+static void hevc_hv_uni_4t_8multx4_msa(uint8_t *src,
+                                       int32_t src_stride,
+                                       uint8_t *dst,
+                                       int32_t dst_stride,
+                                       const int8_t *filter_x,
+                                       const int8_t *filter_y,
+                                       int32_t width8mult)
+{
+    uint32_t cnt;
+    v16u8 out0, out1;
+    v16i8 src0, src1, src2, src3, src4, src5, src6, mask0, mask1;
+    v16i8 vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7;
+    v8i16 filt0, filt1, filt_h0, filt_h1, filter_vec;
+    v8i16 dst0, dst1, dst2, dst3, dst4, dst5, dst6, tmp0, tmp1, tmp2, tmp3;
+    v4i32 dst0_r, dst0_l, dst1_r, dst1_l, dst2_r, dst2_l, dst3_r, dst3_l;
+    v8i16 dst10_r, dst32_r, dst54_r, dst21_r, dst43_r, dst65_r;
+    v8i16 dst10_l, dst32_l, dst54_l, dst21_l, dst43_l, dst65_l;
+
+    src -= (src_stride + 1);
+
+    filter_vec = LD_SH(filter_x);
+    SPLATI_H2_SH(filter_vec, 0, 1, filt0, filt1);
+
+    filter_vec = LD_SH(filter_y);
+    UNPCK_R_SB_SH(filter_vec, filter_vec);
+
+    SPLATI_W2_SH(filter_vec, 0, filt_h0, filt_h1);
+
+    mask0 = LD_SB(ff_hevc_mask_arr);
+    mask1 = mask0 + 2;
+
+    for (cnt = width8mult; cnt--;) {
+        LD_SB7(src, src_stride, src0, src1, src2, src3, src4, src5, src6);
+        src += 8;
+        XORI_B7_128_SB(src0, src1, src2, src3, src4, src5, src6);
+
+        VSHF_B2_SB(src0, src0, src0, src0, mask0, mask1, vec0, vec1);
+        VSHF_B2_SB(src1, src1, src1, src1, mask0, mask1, vec2, vec3);
+        VSHF_B2_SB(src2, src2, src2, src2, mask0, mask1, vec4, vec5);
+
+        dst0 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+        dst1 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+        dst2 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
+
+        ILVRL_H2_SH(dst1, dst0, dst10_r, dst10_l);
+        ILVRL_H2_SH(dst2, dst1, dst21_r, dst21_l);
+
+        VSHF_B2_SB(src3, src3, src3, src3, mask0, mask1, vec0, vec1);
+        VSHF_B2_SB(src4, src4, src4, src4, mask0, mask1, vec2, vec3);
+        VSHF_B2_SB(src5, src5, src5, src5, mask0, mask1, vec4, vec5);
+        VSHF_B2_SB(src6, src6, src6, src6, mask0, mask1, vec6, vec7);
+
+        dst3 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+        dst4 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+        dst5 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
+        dst6 = HEVC_FILT_4TAP_SH(vec6, vec7, filt0, filt1);
+
+        ILVRL_H2_SH(dst3, dst2, dst32_r, dst32_l);
+        ILVRL_H2_SH(dst4, dst3, dst43_r, dst43_l);
+        ILVRL_H2_SH(dst5, dst4, dst54_r, dst54_l);
+        ILVRL_H2_SH(dst6, dst5, dst65_r, dst65_l);
+
+        dst0_r = HEVC_FILT_4TAP(dst10_r, dst32_r, filt_h0, filt_h1);
+        dst0_l = HEVC_FILT_4TAP(dst10_l, dst32_l, filt_h0, filt_h1);
+        dst1_r = HEVC_FILT_4TAP(dst21_r, dst43_r, filt_h0, filt_h1);
+        dst1_l = HEVC_FILT_4TAP(dst21_l, dst43_l, filt_h0, filt_h1);
+        dst2_r = HEVC_FILT_4TAP(dst32_r, dst54_r, filt_h0, filt_h1);
+        dst2_l = HEVC_FILT_4TAP(dst32_l, dst54_l, filt_h0, filt_h1);
+        dst3_r = HEVC_FILT_4TAP(dst43_r, dst65_r, filt_h0, filt_h1);
+        dst3_l = HEVC_FILT_4TAP(dst43_l, dst65_l, filt_h0, filt_h1);
+
+        SRA_4V(dst0_r, dst0_l, dst1_r, dst1_l, 6);
+        SRA_4V(dst2_r, dst2_l, dst3_r, dst3_l, 6);
+
+        PCKEV_H4_SH(dst0_l, dst0_r, dst1_l, dst1_r, dst2_l, dst2_r, dst3_l,
+                    dst3_r, tmp0, tmp1, tmp2, tmp3);
+        SRARI_H4_SH(tmp0, tmp1, tmp2, tmp3, 6);
+        SAT_SH4_SH(tmp0, tmp1, tmp2, tmp3, 7);
+        out0 = PCKEV_XORI128_UB(tmp0, tmp1);
+        out1 = PCKEV_XORI128_UB(tmp2, tmp3);
+        ST8x4_UB(out0, out1, dst, dst_stride);
+        dst += 8;
+    }
 }
 
 static void hevc_hv_uni_4t_8x6_msa(uint8_t *src,
@@ -3670,16 +3590,16 @@ static void hevc_hv_uni_4t_8x6_msa(uint8_t *src,
                                    uint8_t *dst,
                                    int32_t dst_stride,
                                    const int8_t *filter_x,
-                                   const int8_t *filter_y,
-                                   int32_t height)
+                                   const int8_t *filter_y)
 {
+    v16u8 out0, out1, out2;
     v16i8 src0, src1, src2, src3, src4, src5, src6, src7, src8;
     v8i16 filt0, filt1;
-    v4i32 filt_h0, filt_h1;
-    v16i8 mask0 = { 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8 };
+    v8i16 filt_h0, filt_h1, filter_vec;
+    v16i8 mask0 = LD_SB(ff_hevc_mask_arr);
     v16i8 mask1;
-    v8i16 filter_vec, const_vec;
-    v16i8 vec0, vec1, vec2, vec3, vec4, vec5;
+    v16i8 vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7, vec8, vec9;
+    v16i8 vec10, vec11, vec12, vec13, vec14, vec15, vec16, vec17;
     v8i16 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7, dst8;
     v4i32 dst0_r, dst0_l, dst1_r, dst1_l, dst2_r, dst2_l, dst3_r, dst3_l;
     v4i32 dst4_r, dst4_l, dst5_r, dst5_l;
@@ -3695,157 +3615,104 @@ static void hevc_hv_uni_4t_8x6_msa(uint8_t *src,
     SPLATI_H2_SH(filter_vec, 0, 1, filt0, filt1);
 
     filter_vec = LD_SH(filter_y);
-    vec0 = __msa_clti_s_b((v16i8) filter_vec, 0);
-    filter_vec = (v8i16) __msa_ilvr_b(vec0, (v16i8) filter_vec);
+    UNPCK_R_SB_SH(filter_vec, filter_vec);
 
-    SPLATI_W2_SW(filter_vec, 0, filt_h0, filt_h1);
+    SPLATI_W2_SH(filter_vec, 0, filt_h0, filt_h1);
 
     mask1 = mask0 + 2;
 
-    const_vec = __msa_ldi_h(128);
-    const_vec <<= 6;
+    LD_SB5(src, src_stride, src0, src1, src2, src3, src4);
+    src += (5 * src_stride);
+    LD_SB4(src, src_stride, src5, src6, src7, src8);
 
-    LD_SB3(src, src_stride, src0, src1, src2);
-    src += (3 * src_stride);
-
-    XORI_B3_128_SB(src0, src1, src2);
+    XORI_B5_128_SB(src0, src1, src2, src3, src4);
+    XORI_B4_128_SB(src5, src6, src7, src8);
 
     VSHF_B2_SB(src0, src0, src0, src0, mask0, mask1, vec0, vec1);
     VSHF_B2_SB(src1, src1, src1, src1, mask0, mask1, vec2, vec3);
     VSHF_B2_SB(src2, src2, src2, src2, mask0, mask1, vec4, vec5);
+    VSHF_B2_SB(src3, src3, src3, src3, mask0, mask1, vec6, vec7);
+    VSHF_B2_SB(src4, src4, src4, src4, mask0, mask1, vec8, vec9);
+    VSHF_B2_SB(src5, src5, src5, src5, mask0, mask1, vec10, vec11);
+    VSHF_B2_SB(src6, src6, src6, src6, mask0, mask1, vec12, vec13);
+    VSHF_B2_SB(src7, src7, src7, src7, mask0, mask1, vec14, vec15);
+    VSHF_B2_SB(src8, src8, src8, src8, mask0, mask1, vec16, vec17);
 
-    dst0 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst0, dst0);
-    dst1 = const_vec;
-    DPADD_SB2_SH(vec2, vec3, filt0, filt1, dst1, dst1);
-    dst2 = const_vec;
-    DPADD_SB2_SH(vec4, vec5, filt0, filt1, dst2, dst2);
+    dst0 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+    dst1 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+    dst2 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
+    dst3 = HEVC_FILT_4TAP_SH(vec6, vec7, filt0, filt1);
+    dst4 = HEVC_FILT_4TAP_SH(vec8, vec9, filt0, filt1);
+    dst5 = HEVC_FILT_4TAP_SH(vec10, vec11, filt0, filt1);
+    dst6 = HEVC_FILT_4TAP_SH(vec12, vec13, filt0, filt1);
+    dst7 = HEVC_FILT_4TAP_SH(vec14, vec15, filt0, filt1);
+    dst8 = HEVC_FILT_4TAP_SH(vec16, vec17, filt0, filt1);
 
     ILVRL_H2_SH(dst1, dst0, dst10_r, dst10_l);
     ILVRL_H2_SH(dst2, dst1, dst21_r, dst21_l);
-
-    LD_SB2(src, src_stride, src3, src4);
-    src += (2 * src_stride);
-
-    XORI_B2_128_SB(src3, src4);
-
-    /* row 3 */
-    VSHF_B2_SB(src3, src3, src3, src3, mask0, mask1, vec0, vec1);
-    dst3 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst3, dst3);
-
     ILVRL_H2_SH(dst3, dst2, dst32_r, dst32_l);
+    ILVRL_H2_SH(dst4, dst3, dst43_r, dst43_l);
+    ILVRL_H2_SH(dst5, dst4, dst54_r, dst54_l);
+    ILVRL_H2_SH(dst6, dst5, dst65_r, dst65_l);
+    ILVRL_H2_SH(dst7, dst6, dst76_r, dst76_l);
+    ILVRL_H2_SH(dst8, dst7, dst87_r, dst87_l);
+
     dst0_r = HEVC_FILT_4TAP(dst10_r, dst32_r, filt_h0, filt_h1);
     dst0_l = HEVC_FILT_4TAP(dst10_l, dst32_l, filt_h0, filt_h1);
-
-    dst0_r >>= 6;
-    dst0_l >>= 6;
-
-    /* row 4 */
-    VSHF_B2_SB(src4, src4, src4, src4, mask0, mask1, vec0, vec1);
-    dst4 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst4, dst4);
-
-    ILVRL_H2_SH(dst4, dst3, dst43_r, dst43_l);
     dst1_r = HEVC_FILT_4TAP(dst21_r, dst43_r, filt_h0, filt_h1);
     dst1_l = HEVC_FILT_4TAP(dst21_l, dst43_l, filt_h0, filt_h1);
-    dst1_r >>= 6;
-    dst1_l >>= 6;
-
-    LD_SB2(src, src_stride, src5, src6);
-    src += (2 * src_stride);
-
-    XORI_B2_128_SB(src5, src6);
-
-    /* row 5 */
-    VSHF_B2_SB(src5, src5, src5, src5, mask0, mask1, vec0, vec1);
-    dst5 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst5, dst5);
-
-    ILVRL_H2_SH(dst5, dst4, dst54_r, dst54_l);
     dst2_r = HEVC_FILT_4TAP(dst32_r, dst54_r, filt_h0, filt_h1);
     dst2_l = HEVC_FILT_4TAP(dst32_l, dst54_l, filt_h0, filt_h1);
-    dst2_r >>= 6;
-    dst2_l >>= 6;
-
-    /* row 6 */
-    VSHF_B2_SB(src6, src6, src6, src6, mask0, mask1, vec0, vec1);
-    dst6 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst6, dst6);
-
-    ILVRL_H2_SH(dst6, dst5, dst65_r, dst65_l);
     dst3_r = HEVC_FILT_4TAP(dst43_r, dst65_r, filt_h0, filt_h1);
     dst3_l = HEVC_FILT_4TAP(dst43_l, dst65_l, filt_h0, filt_h1);
-    dst3_r >>= 6;
-    dst3_l >>= 6;
-
-    LD_SB2(src, src_stride, src7, src8);
-    src += (2 * src_stride);
-
-    XORI_B2_128_SB(src7, src8);
-
-    /* row 7 */
-    VSHF_B2_SB(src7, src7, src7, src7, mask0, mask1, vec0, vec1);
-    dst7 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst7, dst7);
-
-    ILVRL_H2_SH(dst7, dst6, dst76_r, dst76_l);
     dst4_r = HEVC_FILT_4TAP(dst54_r, dst76_r, filt_h0, filt_h1);
     dst4_l = HEVC_FILT_4TAP(dst54_l, dst76_l, filt_h0, filt_h1);
-
-    dst4_r >>= 6;
-    dst4_l >>= 6;
-
-    /* row 8 */
-    VSHF_B2_SB(src8, src8, src8, src8, mask0, mask1, vec0, vec1);
-    dst8 = const_vec;
-    DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst8, dst8);
-
-    ILVRL_H2_SH(dst8, dst7, dst87_r, dst87_l);
     dst5_r = HEVC_FILT_4TAP(dst65_r, dst87_r, filt_h0, filt_h1);
     dst5_l = HEVC_FILT_4TAP(dst65_l, dst87_l, filt_h0, filt_h1);
-    dst5_r >>= 6;
-    dst5_l >>= 6;
 
+    SRA_4V(dst0_r, dst0_l, dst1_r, dst1_l, 6);
+    SRA_4V(dst2_r, dst2_l, dst3_r, dst3_l, 6);
+    SRA_4V(dst4_r, dst4_l, dst5_r, dst5_l, 6);
     PCKEV_H4_SH(dst0_l, dst0_r, dst1_l, dst1_r,
                 dst2_l, dst2_r, dst3_l, dst3_r, out0_r, out1_r, out2_r, out3_r);
     PCKEV_H2_SH(dst4_l, dst4_r, dst5_l, dst5_r, out4_r, out5_r);
     SRARI_H4_SH(out0_r, out1_r, out2_r, out3_r, 6);
     SRARI_H2_SH(out4_r, out5_r, 6);
-    CLIP_SH4_0_255(out0_r, out1_r, out2_r, out3_r);
-    CLIP_SH2_0_255(out4_r, out5_r);
+    SAT_SH4_SH(out0_r, out1_r, out2_r, out3_r, 7);
+    SAT_SH2_SH(out4_r, out5_r, 7);
+    out0 = PCKEV_XORI128_UB(out0_r, out1_r);
+    out1 = PCKEV_XORI128_UB(out2_r, out3_r);
+    out2 = PCKEV_XORI128_UB(out4_r, out5_r);
 
-    PCKEV_B2_SH(out1_r, out0_r, out3_r, out2_r, out0_r, out1_r);
-    out2_r = (v8i16) __msa_pckev_b((v16i8) out5_r, (v16i8) out4_r);
-
-    ST8x4_UB(out0_r, out1_r, dst, dst_stride);
+    ST8x4_UB(out0, out1, dst, dst_stride);
     dst += (4 * dst_stride);
-    ST8x2_UB(out2_r, dst, dst_stride);
+    ST8x2_UB(out2, dst, dst_stride);
 }
 
-static void hevc_hv_uni_4t_8w_mult_msa(uint8_t *src,
-                                       int32_t src_stride,
-                                       uint8_t *dst,
-                                       int32_t dst_stride,
-                                       const int8_t *filter_x,
-                                       const int8_t *filter_y,
-                                       int32_t height,
-                                       int32_t width)
+static void hevc_hv_uni_4t_8multx4mult_msa(uint8_t *src,
+                                           int32_t src_stride,
+                                           uint8_t *dst,
+                                           int32_t dst_stride,
+                                           const int8_t *filter_x,
+                                           const int8_t *filter_y,
+                                           int32_t height,
+                                           int32_t width8mult)
 {
     uint32_t loop_cnt, cnt;
     uint8_t *src_tmp;
     uint8_t *dst_tmp;
+    v16u8 out0, out1;
     v16i8 src0, src1, src2, src3, src4, src5, src6;
     v8i16 filt0, filt1;
-    v4i32 filt_h0, filt_h1;
-    v16i8 mask0 = { 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8 };
+    v8i16 filt_h0, filt_h1, filter_vec;
+    v16i8 mask0 = LD_SB(ff_hevc_mask_arr);
     v16i8 mask1;
-    v8i16 filter_vec, const_vec;
-    v16i8 vec0, vec1, vec2, vec3, vec4, vec5;
+    v16i8 vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7;
     v8i16 dst0, dst1, dst2, dst3, dst4, dst5;
     v4i32 dst0_r, dst0_l, dst1_r, dst1_l, dst2_r, dst2_l, dst3_r, dst3_l;
     v8i16 dst10_r, dst32_r, dst21_r, dst43_r;
     v8i16 dst10_l, dst32_l, dst21_l, dst43_l;
+    v8i16 dst54_r, dst54_l, dst65_r, dst65_l, dst6;
     v8i16 out0_r, out1_r, out2_r, out3_r;
 
     src -= (src_stride + 1);
@@ -3854,17 +3721,13 @@ static void hevc_hv_uni_4t_8w_mult_msa(uint8_t *src,
     SPLATI_H2_SH(filter_vec, 0, 1, filt0, filt1);
 
     filter_vec = LD_SH(filter_y);
-    vec0 = __msa_clti_s_b((v16i8) filter_vec, 0);
-    filter_vec = (v8i16) __msa_ilvr_b(vec0, (v16i8) filter_vec);
+    UNPCK_R_SB_SH(filter_vec, filter_vec);
 
-    SPLATI_W2_SW(filter_vec, 0, filt_h0, filt_h1);
+    SPLATI_W2_SH(filter_vec, 0, filt_h0, filt_h1);
 
     mask1 = mask0 + 2;
 
-    const_vec = __msa_ldi_h(128);
-    const_vec <<= 6;
-
-    for (cnt = width >> 3; cnt--;) {
+    for (cnt = width8mult; cnt--;) {
         src_tmp = src;
         dst_tmp = dst;
 
@@ -3877,79 +3740,62 @@ static void hevc_hv_uni_4t_8w_mult_msa(uint8_t *src,
         VSHF_B2_SB(src1, src1, src1, src1, mask0, mask1, vec2, vec3);
         VSHF_B2_SB(src2, src2, src2, src2, mask0, mask1, vec4, vec5);
 
-        dst0 = const_vec;
-        DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst0, dst0);
-        dst1 = const_vec;
-        DPADD_SB2_SH(vec2, vec3, filt0, filt1, dst1, dst1);
-        dst2 = const_vec;
-        DPADD_SB2_SH(vec4, vec5, filt0, filt1, dst2, dst2);
+        dst0 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+        dst1 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+        dst2 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
 
         ILVRL_H2_SH(dst1, dst0, dst10_r, dst10_l);
         ILVRL_H2_SH(dst2, dst1, dst21_r, dst21_l);
 
-        for (loop_cnt = height >> 2; loop_cnt--;) {
+        for (loop_cnt = (height >> 2); loop_cnt--;) {
             LD_SB4(src_tmp, src_stride, src3, src4, src5, src6);
             src_tmp += (4 * src_stride);
 
             XORI_B4_128_SB(src3, src4, src5, src6);
 
-            /* row 3 */
             VSHF_B2_SB(src3, src3, src3, src3, mask0, mask1, vec0, vec1);
-            dst3 = const_vec;
-            DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst3, dst3);
+            VSHF_B2_SB(src4, src4, src4, src4, mask0, mask1, vec2, vec3);
+            VSHF_B2_SB(src5, src5, src5, src5, mask0, mask1, vec4, vec5);
+            VSHF_B2_SB(src6, src6, src6, src6, mask0, mask1, vec6, vec7);
+
+            dst3 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+            dst4 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+            dst5 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
+            dst6 = HEVC_FILT_4TAP_SH(vec6, vec7, filt0, filt1);
 
             ILVRL_H2_SH(dst3, dst2, dst32_r, dst32_l);
+            ILVRL_H2_SH(dst4, dst3, dst43_r, dst43_l);
+            ILVRL_H2_SH(dst5, dst4, dst54_r, dst54_l);
+            ILVRL_H2_SH(dst6, dst5, dst65_r, dst65_l);
+
             dst0_r = HEVC_FILT_4TAP(dst10_r, dst32_r, filt_h0, filt_h1);
             dst0_l = HEVC_FILT_4TAP(dst10_l, dst32_l, filt_h0, filt_h1);
-
-            dst0_r >>= 6;
-            dst0_l >>= 6;
-
-            /* row 4 */
-            VSHF_B2_SB(src4, src4, src4, src4, mask0, mask1, vec0, vec1);
-            dst4 = const_vec;
-            DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst4, dst4);
-
-            ILVRL_H2_SH(dst4, dst3, dst43_r, dst43_l);
             dst1_r = HEVC_FILT_4TAP(dst21_r, dst43_r, filt_h0, filt_h1);
             dst1_l = HEVC_FILT_4TAP(dst21_l, dst43_l, filt_h0, filt_h1);
-            dst1_r >>= 6;
-            dst1_l >>= 6;
+            dst2_r = HEVC_FILT_4TAP(dst32_r, dst54_r, filt_h0, filt_h1);
+            dst2_l = HEVC_FILT_4TAP(dst32_l, dst54_l, filt_h0, filt_h1);
+            dst3_r = HEVC_FILT_4TAP(dst43_r, dst65_r, filt_h0, filt_h1);
+            dst3_l = HEVC_FILT_4TAP(dst43_l, dst65_l, filt_h0, filt_h1);
 
-            /* row 5 */
-            VSHF_B2_SB(src5, src5, src5, src5, mask0, mask1, vec0, vec1);
-            dst5 = const_vec;
-            DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst5, dst5);
-
-            ILVRL_H2_SH(dst5, dst4, dst10_r, dst10_l);
-            dst2_r = HEVC_FILT_4TAP(dst32_r, dst10_r, filt_h0, filt_h1);
-            dst2_l = HEVC_FILT_4TAP(dst32_l, dst10_l, filt_h0, filt_h1);
-
-            dst2_r >>= 6;
-            dst2_l >>= 6;
-
-            /* row 6 */
-            VSHF_B2_SB(src6, src6, src6, src6, mask0, mask1, vec0, vec1);
-            dst2 = const_vec;
-            DPADD_SB2_SH(vec0, vec1, filt0, filt1, dst2, dst2);
-
-            ILVRL_H2_SH(dst2, dst5, dst21_r, dst21_l);
-            dst3_r = HEVC_FILT_4TAP(dst43_r, dst21_r, filt_h0, filt_h1);
-            dst3_l = HEVC_FILT_4TAP(dst43_l, dst21_l, filt_h0, filt_h1);
-
-            dst3_r >>= 6;
-            dst3_l >>= 6;
+            SRA_4V(dst0_r, dst0_l, dst1_r, dst1_l, 6);
+            SRA_4V(dst2_r, dst2_l, dst3_r, dst3_l, 6);
 
             PCKEV_H4_SH(dst0_l, dst0_r, dst1_l, dst1_r,
                         dst2_l, dst2_r, dst3_l, dst3_r,
                         out0_r, out1_r, out2_r, out3_r);
 
             SRARI_H4_SH(out0_r, out1_r, out2_r, out3_r, 6);
-            CLIP_SH4_0_255(out0_r, out1_r, out2_r, out3_r);
-
-            PCKEV_B2_SH(out1_r, out0_r, out3_r, out2_r, out0_r, out1_r);
-            ST8x4_UB(out0_r, out1_r, dst_tmp, dst_stride);
+            SAT_SH4_SH(out0_r, out1_r, out2_r, out3_r, 7);
+            out0 = PCKEV_XORI128_UB(out0_r, out1_r);
+            out1 = PCKEV_XORI128_UB(out2_r, out3_r);
+            ST8x4_UB(out0, out1, dst_tmp, dst_stride);
             dst_tmp += (4 * dst_stride);
+
+            dst10_r = dst54_r;
+            dst10_l = dst54_l;
+            dst21_r = dst65_r;
+            dst21_l = dst65_l;
+            dst2 = dst6;
         }
 
         src += 8;
@@ -3967,13 +3813,16 @@ static void hevc_hv_uni_4t_8w_msa(uint8_t *src,
 {
     if (2 == height) {
         hevc_hv_uni_4t_8x2_msa(src, src_stride, dst, dst_stride,
-                               filter_x, filter_y, height);
+                               filter_x, filter_y);
+    } else if (4 == height) {
+        hevc_hv_uni_4t_8multx4_msa(src, src_stride, dst, dst_stride,
+                                   filter_x, filter_y, 1);
     } else if (6 == height) {
         hevc_hv_uni_4t_8x6_msa(src, src_stride, dst, dst_stride,
-                               filter_x, filter_y, height);
+                               filter_x, filter_y);
     } else if (0 == (height % 4)) {
-        hevc_hv_uni_4t_8w_mult_msa(src, src_stride, dst, dst_stride,
-                                   filter_x, filter_y, height, 8);
+        hevc_hv_uni_4t_8multx4mult_msa(src, src_stride, dst, dst_stride,
+                                       filter_x, filter_y, height, 1);
     }
 }
 
@@ -3985,11 +3834,164 @@ static void hevc_hv_uni_4t_12w_msa(uint8_t *src,
                                    const int8_t *filter_y,
                                    int32_t height)
 {
-    hevc_hv_uni_4t_8w_mult_msa(src, src_stride, dst, dst_stride,
-                               filter_x, filter_y, height, 8);
+    uint32_t loop_cnt;
+    uint8_t *src_tmp, *dst_tmp;
+    v16u8 out0, out1;
+    v16i8 src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10;
+    v16i8 vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7;
+    v16i8 mask0, mask1, mask2, mask3;
+    v8i16 filt0, filt1, filt_h0, filt_h1, filter_vec, tmp0, tmp1, tmp2, tmp3;
+    v8i16 dsth0, dsth1, dsth2, dsth3, dsth4, dsth5, dsth6;
+    v8i16 dst10, dst21, dst22, dst73, dst84, dst95, dst106;
+    v8i16 dst76_r, dst98_r, dst87_r, dst109_r;
+    v8i16 dst10_r, dst32_r, dst54_r, dst21_r, dst43_r, dst65_r;
+    v8i16 dst10_l, dst32_l, dst54_l, dst21_l, dst43_l, dst65_l;
+    v4i32 dst0_r, dst0_l, dst1_r, dst1_l, dst2_r, dst2_l, dst3_r, dst3_l;
+    v4i32 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
 
-    hevc_hv_uni_4t_4w_msa(src + 8, src_stride, dst + 8, dst_stride,
-                          filter_x, filter_y, height);
+    src -= (src_stride + 1);
+
+    filter_vec = LD_SH(filter_x);
+    SPLATI_H2_SH(filter_vec, 0, 1, filt0, filt1);
+
+    filter_vec = LD_SH(filter_y);
+    UNPCK_R_SB_SH(filter_vec, filter_vec);
+
+    SPLATI_W2_SH(filter_vec, 0, filt_h0, filt_h1);
+
+    mask0 = LD_SB(ff_hevc_mask_arr);
+    mask1 = mask0 + 2;
+
+    src_tmp = src;
+    dst_tmp = dst;
+
+    LD_SB3(src_tmp, src_stride, src0, src1, src2);
+    src_tmp += (3 * src_stride);
+
+    XORI_B3_128_SB(src0, src1, src2);
+
+    VSHF_B2_SB(src0, src0, src0, src0, mask0, mask1, vec0, vec1);
+    VSHF_B2_SB(src1, src1, src1, src1, mask0, mask1, vec2, vec3);
+    VSHF_B2_SB(src2, src2, src2, src2, mask0, mask1, vec4, vec5);
+
+    dsth0 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+    dsth1 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+    dsth2 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
+
+    ILVRL_H2_SH(dsth1, dsth0, dst10_r, dst10_l);
+    ILVRL_H2_SH(dsth2, dsth1, dst21_r, dst21_l);
+
+    for (loop_cnt = 4; loop_cnt--;) {
+        LD_SB4(src_tmp, src_stride, src3, src4, src5, src6);
+        src_tmp += (4 * src_stride);
+        XORI_B4_128_SB(src3, src4, src5, src6);
+
+        VSHF_B2_SB(src3, src3, src3, src3, mask0, mask1, vec0, vec1);
+        VSHF_B2_SB(src4, src4, src4, src4, mask0, mask1, vec2, vec3);
+        VSHF_B2_SB(src5, src5, src5, src5, mask0, mask1, vec4, vec5);
+        VSHF_B2_SB(src6, src6, src6, src6, mask0, mask1, vec6, vec7);
+
+        dsth3 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+        dsth4 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+        dsth5 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
+        dsth6 = HEVC_FILT_4TAP_SH(vec6, vec7, filt0, filt1);
+
+        ILVRL_H2_SH(dsth3, dsth2, dst32_r, dst32_l);
+        ILVRL_H2_SH(dsth4, dsth3, dst43_r, dst43_l);
+        ILVRL_H2_SH(dsth5, dsth4, dst54_r, dst54_l);
+        ILVRL_H2_SH(dsth6, dsth5, dst65_r, dst65_l);
+
+        dst0_r = HEVC_FILT_4TAP(dst10_r, dst32_r, filt_h0, filt_h1);
+        dst0_l = HEVC_FILT_4TAP(dst10_l, dst32_l, filt_h0, filt_h1);
+        dst1_r = HEVC_FILT_4TAP(dst21_r, dst43_r, filt_h0, filt_h1);
+        dst1_l = HEVC_FILT_4TAP(dst21_l, dst43_l, filt_h0, filt_h1);
+        dst2_r = HEVC_FILT_4TAP(dst32_r, dst54_r, filt_h0, filt_h1);
+        dst2_l = HEVC_FILT_4TAP(dst32_l, dst54_l, filt_h0, filt_h1);
+        dst3_r = HEVC_FILT_4TAP(dst43_r, dst65_r, filt_h0, filt_h1);
+        dst3_l = HEVC_FILT_4TAP(dst43_l, dst65_l, filt_h0, filt_h1);
+
+        SRA_4V(dst0_r, dst0_l, dst1_r, dst1_l, 6);
+        SRA_4V(dst2_r, dst2_l, dst3_r, dst3_l, 6);
+
+        PCKEV_H4_SH(dst0_l, dst0_r, dst1_l, dst1_r, dst2_l, dst2_r, dst3_l,
+                    dst3_r, tmp0, tmp1, tmp2, tmp3);
+        SRARI_H4_SH(tmp0, tmp1, tmp2, tmp3, 6);
+        SAT_SH4_SH(tmp0, tmp1, tmp2, tmp3, 7);
+        out0 = PCKEV_XORI128_UB(tmp0, tmp1);
+        out1 = PCKEV_XORI128_UB(tmp2, tmp3);
+        ST8x4_UB(out0, out1, dst_tmp, dst_stride);
+        dst_tmp += (4 * dst_stride);
+
+        dst10_r = dst54_r;
+        dst10_l = dst54_l;
+        dst21_r = dst65_r;
+        dst21_l = dst65_l;
+        dsth2 = dsth6;
+    }
+
+    src += 8;
+    dst += 8;
+
+    mask2 = LD_SB(ff_hevc_mask_arr + 16);
+    mask3 = mask2 + 2;
+
+    LD_SB3(src, src_stride, src0, src1, src2);
+    src += (3 * src_stride);
+    XORI_B3_128_SB(src0, src1, src2);
+    VSHF_B2_SB(src0, src1, src0, src1, mask2, mask3, vec0, vec1);
+    VSHF_B2_SB(src1, src2, src1, src2, mask2, mask3, vec2, vec3);
+
+    dst10 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+    dst21 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+
+    ILVRL_H2_SH(dst21, dst10, dst10_r, dst21_r);
+    dst22 = (v8i16) __msa_splati_d((v2i64) dst21, 1);
+
+    for (loop_cnt = 2; loop_cnt--;) {
+        LD_SB8(src, src_stride,
+               src3, src4, src5, src6, src7, src8, src9, src10);
+        src += (8 * src_stride);
+        XORI_B8_128_SB(src3, src4, src5, src6, src7, src8, src9, src10);
+        VSHF_B2_SB(src3, src7, src3, src7, mask2, mask3, vec0, vec1);
+        VSHF_B2_SB(src4, src8, src4, src8, mask2, mask3, vec2, vec3);
+        VSHF_B2_SB(src5, src9, src5, src9, mask2, mask3, vec4, vec5);
+        VSHF_B2_SB(src6, src10, src6, src10, mask2, mask3, vec6, vec7);
+
+        dst73 = HEVC_FILT_4TAP_SH(vec0, vec1, filt0, filt1);
+        dst84 = HEVC_FILT_4TAP_SH(vec2, vec3, filt0, filt1);
+        dst95 = HEVC_FILT_4TAP_SH(vec4, vec5, filt0, filt1);
+        dst106 = HEVC_FILT_4TAP_SH(vec6, vec7, filt0, filt1);
+
+        dst32_r = __msa_ilvr_h(dst73, dst22);
+        ILVRL_H2_SH(dst84, dst73, dst43_r, dst87_r);
+        ILVRL_H2_SH(dst95, dst84, dst54_r, dst98_r);
+        ILVRL_H2_SH(dst106, dst95, dst65_r, dst109_r);
+        dst22 = (v8i16) __msa_splati_d((v2i64) dst73, 1);
+        dst76_r = __msa_ilvr_h(dst22, dst106);
+
+        dst0 = HEVC_FILT_4TAP(dst10_r, dst32_r, filt_h0, filt_h1);
+        dst1 = HEVC_FILT_4TAP(dst21_r, dst43_r, filt_h0, filt_h1);
+        dst2 = HEVC_FILT_4TAP(dst32_r, dst54_r, filt_h0, filt_h1);
+        dst3 = HEVC_FILT_4TAP(dst43_r, dst65_r, filt_h0, filt_h1);
+        dst4 = HEVC_FILT_4TAP(dst54_r, dst76_r, filt_h0, filt_h1);
+        dst5 = HEVC_FILT_4TAP(dst65_r, dst87_r, filt_h0, filt_h1);
+        dst6 = HEVC_FILT_4TAP(dst76_r, dst98_r, filt_h0, filt_h1);
+        dst7 = HEVC_FILT_4TAP(dst87_r, dst109_r, filt_h0, filt_h1);
+        SRA_4V(dst0, dst1, dst2, dst3, 6);
+        SRA_4V(dst4, dst5, dst6, dst7, 6);
+        PCKEV_H4_SH(dst1, dst0, dst3, dst2, dst5, dst4, dst7, dst6,
+                    tmp0, tmp1, tmp2, tmp3);
+        SRARI_H4_SH(tmp0, tmp1, tmp2, tmp3, 6);
+        SAT_SH4_SH(tmp0, tmp1, tmp2, tmp3, 7);
+        out0 = PCKEV_XORI128_UB(tmp0, tmp1);
+        out1 = PCKEV_XORI128_UB(tmp2, tmp3);
+        ST4x8_UB(out0, out1, dst, dst_stride);
+        dst += (8 * dst_stride);
+
+        dst10_r = dst98_r;
+        dst21_r = dst109_r;
+        dst22 = (v8i16) __msa_splati_d((v2i64) dst106, 1);
+    }
 }
 
 static void hevc_hv_uni_4t_16w_msa(uint8_t *src,
@@ -4000,8 +4002,13 @@ static void hevc_hv_uni_4t_16w_msa(uint8_t *src,
                                    const int8_t *filter_y,
                                    int32_t height)
 {
-    hevc_hv_uni_4t_8w_mult_msa(src, src_stride, dst, dst_stride,
-                               filter_x, filter_y, height, 16);
+    if (4 == height) {
+        hevc_hv_uni_4t_8multx4_msa(src, src_stride, dst, dst_stride, filter_x,
+                                   filter_y, 2);
+    } else {
+        hevc_hv_uni_4t_8multx4mult_msa(src, src_stride, dst, dst_stride,
+                                       filter_x, filter_y, height, 2);
+    }
 }
 
 static void hevc_hv_uni_4t_24w_msa(uint8_t *src,
@@ -4012,8 +4019,8 @@ static void hevc_hv_uni_4t_24w_msa(uint8_t *src,
                                    const int8_t *filter_y,
                                    int32_t height)
 {
-    hevc_hv_uni_4t_8w_mult_msa(src, src_stride, dst, dst_stride,
-                               filter_x, filter_y, height, 24);
+    hevc_hv_uni_4t_8multx4mult_msa(src, src_stride, dst, dst_stride,
+                                   filter_x, filter_y, height, 3);
 }
 
 static void hevc_hv_uni_4t_32w_msa(uint8_t *src,
@@ -4024,8 +4031,8 @@ static void hevc_hv_uni_4t_32w_msa(uint8_t *src,
                                    const int8_t *filter_y,
                                    int32_t height)
 {
-    hevc_hv_uni_4t_8w_mult_msa(src, src_stride, dst, dst_stride,
-                               filter_x, filter_y, height, 32);
+    hevc_hv_uni_4t_8multx4mult_msa(src, src_stride, dst, dst_stride,
+                                   filter_x, filter_y, height, 4);
 }
 
 #define UNI_MC_COPY(WIDTH)                                                 \

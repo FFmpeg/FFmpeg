@@ -10,6 +10,7 @@ FATE_MOV = fate-mov-3elist \
            fate-mov-gpmf-remux \
            fate-mov-440hz-10ms \
            fate-mov-ibi-elst-starts-b \
+           fate-mov-elst-ends-betn-b-and-i \
 
 FATE_MOV_FFPROBE = fate-mov-aac-2048-priming \
                    fate-mov-zombie \
@@ -41,6 +42,9 @@ fate-mov-1elist-ends-last-bframe: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/mov-1e
 
 # Makes sure that we handle timestamps of packets in case of multiple edit lists with one of them ending on a B-frame correctly.
 fate-mov-2elist-elist1-ends-bframe: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/mov-2elist-elist1-ends-bframe.mov
+
+# Makes sure that if edit list ends on a B-frame but before the I-frame, then we output the B-frame but discard the I-frame.
+fate-mov-elst-ends-betn-b-and-i: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/elst_ends_betn_b_and_i.mp4
 
 # Makes sure that we handle edit lists and start padding correctly.
 fate-mov-440hz-10ms: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/440hz-10ms.m4a

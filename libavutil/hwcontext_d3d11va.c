@@ -123,6 +123,7 @@ static void d3d11va_frames_uninit(AVHWFramesContext *ctx)
 static void free_texture(void *opaque, uint8_t *data)
 {
     ID3D11Texture2D_Release((ID3D11Texture2D *)opaque);
+    av_free(data);
 }
 
 static AVBufferRef *wrap_texture_buf(ID3D11Texture2D *tex, int index)

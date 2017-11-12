@@ -29,7 +29,7 @@
 #include <io.h>
 #endif
 
-#if defined(_WIN32) && !defined(__MINGW32CE__)
+#ifdef _WIN32
 #undef open
 #undef lseek
 #undef stat

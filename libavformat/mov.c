@@ -2548,15 +2548,18 @@ static int mov_read_stsd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     /* Prepare space for hosting multiple extradata. */
     sc->extradata = av_mallocz_array(entries, sizeof(*sc->extradata));
+    if (!sc->extradata)
+        return AVERROR(ENOMEM);
+
     sc->extradata_size = av_mallocz_array(entries, sizeof(*sc->extradata_size));
-    if (!sc->extradata_size || !sc->extradata) {
+    if (!sc->extradata_size) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }
 
     ret = ff_mov_read_stsd_entries(c, pb, entries);
     if (ret < 0)
-        return ret;
+        goto fail;
 
     sc->stsd_count = entries;
 
@@ -3295,6 +3298,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
     int packet_skip_samples = 0;
     MOVIndexRange *current_index_range;
     int i;
+    int found_keyframe_after_edit = 0;
 
     if (!msc->elst_data || msc->elst_count <= 0 || nb_old <= 0) {
         return;
@@ -3390,6 +3394,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
 
         // Iterate over index and arrange it according to edit list
         edit_list_start_encountered = 0;
+        found_keyframe_after_edit = 0;
         for (; current < e_old_end; current++, index++) {
             // check  if frame outside edit list mark it for discard
             frame_duration = (current + 1 <  e_old_end) ?
@@ -3502,18 +3507,26 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
             }
 
             // Break when found first key frame after edit entry completion
-            if (((curr_cts + frame_duration) >= (edit_list_duration + edit_list_media_time)) &&
+            if ((curr_cts + frame_duration >= (edit_list_duration + edit_list_media_time)) &&
                 ((flags & AVINDEX_KEYFRAME) || ((st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)))) {
-
-                if (ctts_data_old && ctts_sample_old != 0) {
-                    if (add_ctts_entry(&msc->ctts_data, &msc->ctts_count,
-                                       &msc->ctts_allocated_size,
-                                       ctts_sample_old - edit_list_start_ctts_sample,
-                                       ctts_data_old[ctts_index_old].duration) == -1) {
-                        av_log(mov->fc, AV_LOG_ERROR, "Cannot add CTTS entry %"PRId64" - {%"PRId64", %d}\n",
-                               ctts_index_old, ctts_sample_old - edit_list_start_ctts_sample,
-                               ctts_data_old[ctts_index_old].duration);
-                        break;
+                if (ctts_data_old) {
+                    // If we have CTTS and this is the the first keyframe after edit elist,
+                    // wait for one more, because there might be trailing B-frames after this I-frame
+                    // that do belong to the edit.
+                    if (st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO && found_keyframe_after_edit == 0) {
+                        found_keyframe_after_edit = 1;
+                        continue;
+                    }
+                    if (ctts_sample_old != 0) {
+                        if (add_ctts_entry(&msc->ctts_data, &msc->ctts_count,
+                                           &msc->ctts_allocated_size,
+                                           ctts_sample_old - edit_list_start_ctts_sample,
+                                           ctts_data_old[ctts_index_old].duration) == -1) {
+                            av_log(mov->fc, AV_LOG_ERROR, "Cannot add CTTS entry %"PRId64" - {%"PRId64", %d}\n",
+                                   ctts_index_old, ctts_sample_old - edit_list_start_ctts_sample,
+                                   ctts_data_old[ctts_index_old].duration);
+                            break;
+                        }
                     }
                 }
                 break;

@@ -383,12 +383,17 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
     av_buffer_unref(&dst->opaque_ref);
+    av_buffer_unref(&dst->private_ref);
     if (src->opaque_ref) {
         dst->opaque_ref = av_buffer_ref(src->opaque_ref);
         if (!dst->opaque_ref)
             return AVERROR(ENOMEM);
     }
-
+    if (src->private_ref) {
+        dst->private_ref = av_buffer_ref(src->private_ref);
+        if (!dst->private_ref)
+            return AVERROR(ENOMEM);
+    }
     return 0;
 }
 
@@ -524,6 +529,7 @@ void av_frame_unref(AVFrame *frame)
     av_buffer_unref(&frame->hw_frames_ctx);
 
     av_buffer_unref(&frame->opaque_ref);
+    av_buffer_unref(&frame->private_ref);
 
     get_frame_defaults(frame);
 }

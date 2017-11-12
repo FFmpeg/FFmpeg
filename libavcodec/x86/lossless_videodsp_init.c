@@ -25,6 +25,7 @@
 
 void ff_add_bytes_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t w);
 void ff_add_bytes_sse2(uint8_t *dst, uint8_t *src, ptrdiff_t w);
+void ff_add_bytes_avx2(uint8_t *dst, uint8_t *src, ptrdiff_t w);
 
 void ff_add_median_pred_mmxext(uint8_t *dst, const uint8_t *top,
                                const uint8_t *diff, ptrdiff_t w,
@@ -114,5 +115,8 @@ void ff_llviddsp_init_x86(LLVidDSPContext *c)
 
     if (EXTERNAL_SSE4(cpu_flags)) {
         c->add_left_pred_int16 = ff_add_left_pred_int16_sse4;
+    }
+    if (EXTERNAL_AVX2_FAST(cpu_flags)) {
+        c->add_bytes       = ff_add_bytes_avx2;
     }
 }

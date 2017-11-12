@@ -43,6 +43,7 @@ static const SoftFloat FLOAT_EPSILON    = { 0x29F16B12, -16};                   
 static const SoftFloat FLOAT_1584893192 = { 0x32B771ED,   1};                   ///< 1.584893192 (10^.2)
 static const SoftFloat FLOAT_100000     = { 0x30D40000,  17};                   ///< 100000
 static const SoftFloat FLOAT_0999999    = { 0x3FFFFBCE,   0};                   ///< 0.999999
+static const SoftFloat FLOAT_MIN        = { 0x20000000,   MIN_EXP};
 
 
 /**

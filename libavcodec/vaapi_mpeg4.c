@@ -189,6 +189,7 @@ AVHWAccel ff_mpeg4_vaapi_hwaccel = {
     .frame_priv_data_size = sizeof(VAAPIDecodePicture),
     .init                 = &ff_vaapi_decode_init,
     .uninit               = &ff_vaapi_decode_uninit,
+    .frame_params         = &ff_vaapi_common_frame_params,
     .priv_data_size       = sizeof(VAAPIDecodeContext),
     .caps_internal        = HWACCEL_CAP_ASYNC_SAFE,
 };
@@ -206,6 +207,7 @@ AVHWAccel ff_h263_vaapi_hwaccel = {
     .frame_priv_data_size = sizeof(VAAPIDecodePicture),
     .init                 = &ff_vaapi_decode_init,
     .uninit               = &ff_vaapi_decode_uninit,
+    .frame_params         = &ff_vaapi_common_frame_params,
     .priv_data_size       = sizeof(VAAPIDecodeContext),
     .caps_internal        = HWACCEL_CAP_ASYNC_SAFE,
 };
