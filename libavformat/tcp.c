@@ -275,7 +275,7 @@ static int tcp_get_window_size(URLContext *h)
 {
     TCPContext *s = h->priv_data;
     int avail;
-    int avail_len = sizeof(avail);
+    socklen_t avail_len = sizeof(avail);
 
 #if HAVE_WINSOCK2_H
     /* SO_RCVBUF with winsock only reports the actual TCP window size when
