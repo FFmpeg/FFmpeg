@@ -37,7 +37,7 @@
 #include "qsvvpp.h"
 
 #define OFFSET(x) offsetof(VPPContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM)
 
 /* number of video enhancement filters */
 #define ENH_FILTERS_COUNT (5)
