@@ -1986,6 +1986,17 @@ MATH_FUNCS="
     truncf
 "
 
+SYSTEM_FEATURES="
+    atomics_native
+    dos_paths
+    libc_msvcrt
+    MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS
+    section_data_rel_ro
+    threads
+    uwp
+    winrt
+"
+
 SYSTEM_FUNCS="
     access
     aligned_malloc
@@ -2035,6 +2046,13 @@ SYSTEM_FUNCS="
     UTGetOSTypeFromString
     VirtualAlloc
     wglGetProcAddress
+"
+
+SYSTEM_LIBRARIES="
+    vaapi_drm
+    vaapi_x11
+    vdpau_x11
+    wincrypt
 "
 
 TOOLCHAIN_FEATURES="
@@ -2093,27 +2111,17 @@ HAVE_LIST="
     $HEADERS_LIST
     $INTRINSICS_LIST
     $MATH_FUNCS
+    $SYSTEM_FEATURES
     $SYSTEM_FUNCS
+    $SYSTEM_LIBRARIES
     $THREADS_LIST
     $TOOLCHAIN_FEATURES
     $TYPES_LIST
-    atomics_native
-    dos_paths
-    libc_msvcrt
     makeinfo
     makeinfo_html
-    MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS
     perl
     pod2man
-    section_data_rel_ro
     texi2html
-    threads
-    uwp
-    vaapi_drm
-    vaapi_x11
-    vdpau_x11
-    winrt
-    wincrypt
 "
 
 # options emitted with CONFIG_ prefix but not available on the command line
