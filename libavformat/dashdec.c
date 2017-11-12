@@ -328,17 +328,17 @@ static void free_representation(struct representation *pls)
     }
 
     av_freep(&pls->url_template);
-    av_freep(pls);
+    av_freep(&pls);
 }
 
-static void set_httpheader_options(DASHContext *c, AVDictionary *opts)
+static void set_httpheader_options(DASHContext *c, AVDictionary **opts)
 {
     // broker prior HTTP options that should be consistent across requests
-    av_dict_set(&opts, "user-agent", c->user_agent, 0);
-    av_dict_set(&opts, "cookies", c->cookies, 0);
-    av_dict_set(&opts, "headers", c->headers, 0);
+    av_dict_set(opts, "user-agent", c->user_agent, 0);
+    av_dict_set(opts, "cookies", c->cookies, 0);
+    av_dict_set(opts, "headers", c->headers, 0);
     if (c->is_live) {
-        av_dict_set(&opts, "seekable", "0", 0);
+        av_dict_set(opts, "seekable", "0", 0);
     }
 }
 static void update_options(char **dest, const char *name, void *src)
@@ -885,7 +885,7 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
     if (!in) {
         close_in = 1;
 
-        set_httpheader_options(c, opts);
+        set_httpheader_options(c, &opts);
         ret = avio_open2(&in, url, AVIO_FLAG_READ, c->interrupt_callback, &opts);
         av_dict_free(&opts);
         if (ret < 0)
@@ -1301,7 +1301,7 @@ static int open_input(DASHContext *c, struct representation *pls, struct fragmen
     char url[MAX_URL_SIZE];
     int ret;
 
-    set_httpheader_options(c, opts);
+    set_httpheader_options(c, &opts);
     if (seg->size >= 0) {
         /* try to restrict the HTTP request to the part we want
          * (if this is in fact a HTTP request) */
@@ -1465,8 +1465,12 @@ static int save_avio_options(AVFormatContext *s)
         if (av_opt_get(s->pb, *opt, AV_OPT_SEARCH_CHILDREN, &buf) >= 0) {
             if (buf[0] != '\0') {
                 ret = av_dict_set(&c->avio_opts, *opt, buf, AV_DICT_DONT_STRDUP_VAL);
-                if (ret < 0)
+                if (ret < 0) {
+                    av_freep(&buf);
                     return ret;
+                }
+            } else {
+                av_freep(&buf);
             }
         }
         opt++;
