@@ -430,9 +430,6 @@ int ff_nvdec_frame_params(AVCodecContext *avctx,
         return AVERROR(EINVAL);
     }
 
-    if (avctx->thread_type & FF_THREAD_FRAME)
-        dpb_size += avctx->thread_count;
-
     frames_ctx->format            = AV_PIX_FMT_CUDA;
     frames_ctx->width             = avctx->coded_width;
     frames_ctx->height            = avctx->coded_height;
