@@ -407,11 +407,11 @@ static int get_params_size(
     size_t i;
     int status;
     status = vtctx->get_param_set_func(vid_fmt,
-                                                                0,
-                                                                NULL,
-                                                                NULL,
-                                                                &ps_count,
-                                                                NULL);
+                                       0,
+                                       NULL,
+                                       NULL,
+                                       &ps_count,
+                                       NULL);
     if (status) {
         is_count_bad = 1;
         ps_count     = 0;
@@ -422,11 +422,11 @@ static int get_params_size(
         const uint8_t *ps;
         size_t ps_size;
         status = vtctx->get_param_set_func(vid_fmt,
-                                                                    i,
-                                                                    &ps,
-                                                                    &ps_size,
-                                                                    NULL,
-                                                                    NULL);
+                                           i,
+                                           &ps,
+                                           &ps_size,
+                                           NULL,
+                                           NULL);
         if (status) {
             /*
              * When ps_count is invalid, status != 0 ends the loop normally
@@ -463,11 +463,11 @@ static int copy_param_sets(
     size_t i;
 
     status = vtctx->get_param_set_func(vid_fmt,
-                                                                0,
-                                                                NULL,
-                                                                NULL,
-                                                                &ps_count,
-                                                                NULL);
+                                       0,
+                                       NULL,
+                                       NULL,
+                                       &ps_count,
+                                       NULL);
     if (status) {
         is_count_bad = 1;
         ps_count     = 0;
@@ -481,11 +481,11 @@ static int copy_param_sets(
         size_t next_offset;
 
         status = vtctx->get_param_set_func(vid_fmt,
-                                                                    i,
-                                                                    &ps,
-                                                                    &ps_size,
-                                                                    NULL,
-                                                                    NULL);
+                                           i,
+                                           &ps,
+                                           &ps_size,
+                                           NULL,
+                                           NULL);
         if (status) {
             if (i > 0 && is_count_bad) status = 0;
 
@@ -597,11 +597,11 @@ static int get_length_code_size(
     }
 
     status = vtctx->get_param_set_func(vid_fmt,
-                                                                0,
-                                                                NULL,
-                                                                NULL,
-                                                                NULL,
-                                                                &isize);
+                                       0,
+                                       NULL,
+                                       NULL,
+                                       NULL,
+                                       &isize);
     if (status) {
         av_log(avctx, AV_LOG_ERROR, "Error getting length code size: %d\n", status);
         return AVERROR_EXTERNAL;
@@ -1018,55 +1018,55 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
     }
 
     if (vtctx->codec_id == AV_CODEC_ID_H264) {
-    // kVTCompressionPropertyKey_DataRateLimits is not available for HEVC
-    bytes_per_second_value = max_rate >> 3;
-    bytes_per_second = CFNumberCreate(kCFAllocatorDefault,
-                                      kCFNumberSInt64Type,
-                                      &bytes_per_second_value);
-    if (!bytes_per_second) {
-        return AVERROR(ENOMEM);
-    }
-    one_second_value = 1;
-    one_second = CFNumberCreate(kCFAllocatorDefault,
-                                kCFNumberSInt64Type,
-                                &one_second_value);
-    if (!one_second) {
-        CFRelease(bytes_per_second);
-        return AVERROR(ENOMEM);
-    }
-    nums[0] = (void *)bytes_per_second;
-    nums[1] = (void *)one_second;
-    data_rate_limits = CFArrayCreate(kCFAllocatorDefault,
-                                     (const void **)nums,
-                                     2,
-                                     &kCFTypeArrayCallBacks);
+        // kVTCompressionPropertyKey_DataRateLimits is not available for HEVC
+        bytes_per_second_value = max_rate >> 3;
+        bytes_per_second = CFNumberCreate(kCFAllocatorDefault,
+                                          kCFNumberSInt64Type,
+                                          &bytes_per_second_value);
+        if (!bytes_per_second) {
+            return AVERROR(ENOMEM);
+        }
+        one_second_value = 1;
+        one_second = CFNumberCreate(kCFAllocatorDefault,
+                                    kCFNumberSInt64Type,
+                                    &one_second_value);
+        if (!one_second) {
+            CFRelease(bytes_per_second);
+            return AVERROR(ENOMEM);
+        }
+        nums[0] = (void *)bytes_per_second;
+        nums[1] = (void *)one_second;
+        data_rate_limits = CFArrayCreate(kCFAllocatorDefault,
+                                         (const void **)nums,
+                                         2,
+                                         &kCFTypeArrayCallBacks);
 
-    if (!data_rate_limits) {
+        if (!data_rate_limits) {
+            CFRelease(bytes_per_second);
+            CFRelease(one_second);
+            return AVERROR(ENOMEM);
+        }
+        status = VTSessionSetProperty(vtctx->session,
+                                      kVTCompressionPropertyKey_DataRateLimits,
+                                      data_rate_limits);
+
         CFRelease(bytes_per_second);
         CFRelease(one_second);
-        return AVERROR(ENOMEM);
-    }
-    status = VTSessionSetProperty(vtctx->session,
-                                  kVTCompressionPropertyKey_DataRateLimits,
-                                  data_rate_limits);
+        CFRelease(data_rate_limits);
 
-    CFRelease(bytes_per_second);
-    CFRelease(one_second);
-    CFRelease(data_rate_limits);
-
-    if (status) {
-        av_log(avctx, AV_LOG_ERROR, "Error setting max bitrate property: %d\n", status);
-        return AVERROR_EXTERNAL;
-    }
-
-    if (profile_level) {
-        status = VTSessionSetProperty(vtctx->session,
-                                      kVTCompressionPropertyKey_ProfileLevel,
-                                      profile_level);
         if (status) {
-            av_log(avctx, AV_LOG_ERROR, "Error setting profile/level property: %d\n", status);
+            av_log(avctx, AV_LOG_ERROR, "Error setting max bitrate property: %d\n", status);
+            return AVERROR_EXTERNAL;
         }
-    }
+
+        if (profile_level) {
+            status = VTSessionSetProperty(vtctx->session,
+                                        kVTCompressionPropertyKey_ProfileLevel,
+                                        profile_level);
+            if (status) {
+                av_log(avctx, AV_LOG_ERROR, "Error setting profile/level property: %d\n", status);
+            }
+        }
     }
 
     if (avctx->gop_size > 0) {
@@ -1284,20 +1284,20 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
     vtctx->codec_id = avctx->codec_id;
 
     if (vtctx->codec_id == AV_CODEC_ID_H264) {
-    vtctx->get_param_set_func = CMVideoFormatDescriptionGetH264ParameterSetAtIndex;
+        vtctx->get_param_set_func = CMVideoFormatDescriptionGetH264ParameterSetAtIndex;
 
-    vtctx->has_b_frames = avctx->max_b_frames > 0;
-    if(vtctx->has_b_frames && vtctx->profile == H264_PROF_BASELINE){
-        av_log(avctx, AV_LOG_WARNING, "Cannot use B-frames with baseline profile. Output will not contain B-frames.\n");
-        vtctx->has_b_frames = false;
-    }
+        vtctx->has_b_frames = avctx->max_b_frames > 0;
+        if(vtctx->has_b_frames && vtctx->profile == H264_PROF_BASELINE){
+            av_log(avctx, AV_LOG_WARNING, "Cannot use B-frames with baseline profile. Output will not contain B-frames.\n");
+            vtctx->has_b_frames = false;
+        }
 
-    if (vtctx->entropy == VT_CABAC && vtctx->profile == H264_PROF_BASELINE) {
-        av_log(avctx, AV_LOG_WARNING, "CABAC entropy requires 'main' or 'high' profile, but baseline was requested. Encode will not use CABAC entropy.\n");
-        vtctx->entropy = VT_ENTROPY_NOT_SET;
-    }
+        if (vtctx->entropy == VT_CABAC && vtctx->profile == H264_PROF_BASELINE) {
+            av_log(avctx, AV_LOG_WARNING, "CABAC entropy requires 'main' or 'high' profile, but baseline was requested. Encode will not use CABAC entropy.\n");
+            vtctx->entropy = VT_ENTROPY_NOT_SET;
+        }
 
-    if (!get_vt_h264_profile_level(avctx, &profile_level)) return AVERROR(EINVAL);
+        if (!get_vt_h264_profile_level(avctx, &profile_level)) return AVERROR(EINVAL);
     } else {
         vtctx->get_param_set_func = compat_keys.CMVideoFormatDescriptionGetHEVCParameterSetAtIndex;
         if (!vtctx->get_param_set_func) return AVERROR(EINVAL);
