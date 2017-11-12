@@ -2039,13 +2039,13 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
                         }
                         if (colour_depth[1] <= 8) {
                             g = bytestream2_get_byteu(&s->g) << 8 - colour_depth[1];
-                            r |= r >> colour_depth[1];
+                            g |= g >> colour_depth[1];
                         } else {
                             g = bytestream2_get_be16u(&s->g) >> colour_depth[1] - 8;
                         }
                         if (colour_depth[2] <= 8) {
                             b = bytestream2_get_byteu(&s->g) << 8 - colour_depth[2];
-                            r |= r >> colour_depth[2];
+                            b |= b >> colour_depth[2];
                         } else {
                             b = bytestream2_get_be16u(&s->g) >> colour_depth[2] - 8;
                         }
