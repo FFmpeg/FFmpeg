@@ -61,10 +61,6 @@ clean::
 	$(RM) $(addprefix $(SUBDIR),$(CLEANFILES) $(CLEANSUFFIXES) $(LIBSUFFIXES)) \
 	    $(CLEANSUFFIXES:%=$(SUBDIR)$(ARCH)/%) $(CLEANSUFFIXES:%=$(SUBDIR)tests/%)
 
-distclean:: clean
-	$(RM) $(DISTCLEANSUFFIXES:%=$(SUBDIR)%) $(DISTCLEANSUFFIXES:%=$(SUBDIR)$(ARCH)/%) \
-            $(DISTCLEANSUFFIXES:%=$(SUBDIR)tests/%)
-
 install-lib$(NAME)-shared: $(SUBDIR)$(SLIBNAME)
 	$(Q)mkdir -p "$(SHLIBDIR)"
 	$$(INSTALL) -m 755 $$< "$(SHLIBDIR)/$(SLIB_INSTALL_NAME)"
