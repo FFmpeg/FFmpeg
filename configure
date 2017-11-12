@@ -3724,6 +3724,17 @@ enable_weak $HWACCEL_AUTODETECT_LIBRARY_LIST
 
 disabled logging && logfile=/dev/null
 
+# we need to build at least one lib type
+if ! enabled_any static shared; then
+    cat <<EOF
+At least one library type must be built.
+Specify --enable-static to build the static libraries or --enable-shared to
+build the shared libraries as well. To only build the shared libraries specify
+--disable-static in addition to --enable-shared.
+EOF
+    exit 1
+fi
+
 die_license_disabled() {
     enabled $1 || { enabled $v && die "$v is $1 and --enable-$1 is not specified."; }
 }
@@ -5306,17 +5317,6 @@ set_default libdir
 
 set_default $PATHS_LIST
 set_default nm
-
-# we need to build at least one lib type
-if ! enabled_any static shared; then
-    cat <<EOF
-At least one library type must be built.
-Specify --enable-static to build the static libraries or --enable-shared to
-build the shared libraries as well. To only build the shared libraries specify
---disable-static in addition to --enable-shared.
-EOF
-    exit 1
-fi
 
 disabled optimizations || enabled ossfuzz || check_cflags -fomit-frame-pointer
 
