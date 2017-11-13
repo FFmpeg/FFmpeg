@@ -2877,7 +2877,7 @@ static int init_input_stream(int ist_index, char *error, int error_len)
 
         /* Useful for subtitles retiming by lavf (FIXME), skipping samples in
          * audio, and video decoders such as cuvid or mediacodec */
-        av_codec_set_pkt_timebase(ist->dec_ctx, ist->st->time_base);
+        ist->dec_ctx->pkt_timebase = ist->st->time_base;
 
         if (!av_dict_get(ist->decoder_opts, "threads", NULL, 0))
             av_dict_set(&ist->decoder_opts, "threads", "auto", 0);

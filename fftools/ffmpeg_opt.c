@@ -794,8 +794,8 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
             if(!ist->dec)
                 ist->dec = avcodec_find_decoder(par->codec_id);
 #if FF_API_LOWRES
-            if (av_codec_get_lowres(st->codec)) {
-                av_codec_set_lowres(ist->dec_ctx, av_codec_get_lowres(st->codec));
+            if (st->codec->lowres) {
+                ist->dec_ctx->lowres = st->codec->lowres;
                 ist->dec_ctx->width  = st->codec->width;
                 ist->dec_ctx->height = st->codec->height;
                 ist->dec_ctx->coded_width  = st->codec->coded_width;
@@ -1663,7 +1663,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
                 av_log(NULL, AV_LOG_FATAL, "Could not allocate memory for intra matrix.\n");
                 exit_program(1);
             }
-            av_codec_set_chroma_intra_matrix(video_enc, p);
+            video_enc->chroma_intra_matrix = p;
             parse_matrix_coeffs(p, chroma_intra_matrix);
         }
         MATCH_PER_STREAM_OPT(inter_matrices, str, inter_matrix, oc, st);
