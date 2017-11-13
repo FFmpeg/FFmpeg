@@ -246,7 +246,7 @@ static int update_context_from_thread(AVCodecContext *dst, AVCodecContext *src, 
 {
     int err = 0;
 
-    if (dst != src && (for_user || !(av_codec_get_codec_descriptor(src)->props & AV_CODEC_PROP_INTRA_ONLY))) {
+    if (dst != src && (for_user || !(src->codec_descriptor->props & AV_CODEC_PROP_INTRA_ONLY))) {
         dst->time_base = src->time_base;
         dst->framerate = src->framerate;
         dst->width     = src->width;
