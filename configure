@@ -7011,7 +7011,7 @@ EOF
 
 for lib in $LIBRARY_LIST; do
     lib_deps="$(eval echo \$${lib}_deps)"
-    echo ${lib}_deps=\"$lib_deps\" >> ffbuild/config.sh
+    echo ${lib}_deps=\"$lib_deps\" >> $TMPH
 done
 
 cp_if_changed $TMPH ffbuild/config.sh
