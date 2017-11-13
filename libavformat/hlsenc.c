@@ -1455,7 +1455,7 @@ static int hls_write_header(AVFormatContext *s)
             if (basename_size > 0) {
                 hls->base_output_dirname = av_malloc(basename_size);
             } else {
-                hls->base_output_dirname = av_malloc(strlen(hls->fmp4_init_filename));
+                hls->base_output_dirname = av_malloc(strlen(hls->fmp4_init_filename) + 1);
             }
             if (!hls->base_output_dirname) {
                 ret = AVERROR(ENOMEM);
