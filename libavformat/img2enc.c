@@ -42,6 +42,7 @@ typedef struct VideoMuxData {
     char target[4][1024];
     int update;
     int use_strftime;
+    int frame_pts;
     const char *muxer;
     int use_rename;
 } VideoMuxData;
@@ -97,6 +98,11 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
             tm = localtime_r(&now0, &tmpbuf);
             if (!strftime(filename, sizeof(filename), img->path, tm)) {
                 av_log(s, AV_LOG_ERROR, "Could not get frame filename with strftime\n");
+                return AVERROR(EINVAL);
+            }
+        } else if (img->frame_pts) {
+            if (av_get_frame_filename2(filename, sizeof(filename), img->path, pkt->pts, AV_FRAME_FILENAME_FLAGS_MULTIPLE) < 0) {
+                av_log(s, AV_LOG_ERROR, "Cannot write filename by pts of the frames.");
                 return AVERROR(EINVAL);
             }
         } else if (av_get_frame_filename2(filename, sizeof(filename), img->path,
@@ -206,6 +212,7 @@ static const AVOption muxoptions[] = {
     { "update",       "continuously overwrite one file", OFFSET(update),  AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0,       1, ENC },
     { "start_number", "set first number in the sequence", OFFSET(img_number), AV_OPT_TYPE_INT,  { .i64 = 1 }, 0, INT_MAX, ENC },
     { "strftime",     "use strftime for filename", OFFSET(use_strftime),  AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, ENC },
+    { "frame_pts",    "use current frame pts for filename", OFFSET(frame_pts),  AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, ENC },
     { "atomic_writing", "write files atomically (using temporary files and renames)", OFFSET(use_rename), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, ENC },
     { NULL },
 };
