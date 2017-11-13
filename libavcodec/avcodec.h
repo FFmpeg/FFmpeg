@@ -3235,22 +3235,41 @@ typedef struct AVCodecContext {
     int apply_cropping;
 } AVCodecContext;
 
+#if FF_API_CODEC_GET_SET
+/**
+ * Accessors for some AVCodecContext fields. These used to be provided for ABI
+ * compatibility, and do not need to be used anymore.
+ */
+attribute_deprecated
 AVRational av_codec_get_pkt_timebase         (const AVCodecContext *avctx);
+attribute_deprecated
 void       av_codec_set_pkt_timebase         (AVCodecContext *avctx, AVRational val);
 
+attribute_deprecated
 const AVCodecDescriptor *av_codec_get_codec_descriptor(const AVCodecContext *avctx);
+attribute_deprecated
 void                     av_codec_set_codec_descriptor(AVCodecContext *avctx, const AVCodecDescriptor *desc);
 
+attribute_deprecated
 unsigned av_codec_get_codec_properties(const AVCodecContext *avctx);
 
+#if FF_API_LOWRES
+attribute_deprecated
 int  av_codec_get_lowres(const AVCodecContext *avctx);
+attribute_deprecated
 void av_codec_set_lowres(AVCodecContext *avctx, int val);
+#endif
 
+attribute_deprecated
 int  av_codec_get_seek_preroll(const AVCodecContext *avctx);
+attribute_deprecated
 void av_codec_set_seek_preroll(AVCodecContext *avctx, int val);
 
+attribute_deprecated
 uint16_t *av_codec_get_chroma_intra_matrix(const AVCodecContext *avctx);
+attribute_deprecated
 void av_codec_set_chroma_intra_matrix(AVCodecContext *avctx, uint16_t *val);
+#endif
 
 /**
  * AVProfile.
@@ -3387,7 +3406,10 @@ typedef struct AVCodec {
     const char *bsfs;
 } AVCodec;
 
+#if FF_API_CODEC_GET_SET
+attribute_deprecated
 int av_codec_get_max_lowres(const AVCodec *codec);
+#endif
 
 struct MpegEncContext;
 
