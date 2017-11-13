@@ -364,8 +364,12 @@ static int map_ssl_error(OSStatus status, size_t processed)
 static int tls_read(URLContext *h, uint8_t *buf, int size)
 {
     TLSContext *c = h->priv_data;
-    size_t processed = 0;
-    int ret = SSLRead(c->ssl_context, buf, size, &processed);
+    size_t available = 0, processed = 0;
+    int ret;
+    SSLGetBufferedReadSize(c->ssl_context, &available);
+    if (available)
+        size = FFMIN(available, size);
+    ret = SSLRead(c->ssl_context, buf, size, &processed);
     ret = map_ssl_error(ret, processed);
     if (ret > 0)
         return ret;
