@@ -6495,6 +6495,15 @@ flatten_extralibs(){
     fi
 }
 
+flatten_extralibs_wrapper(){
+    list_name=$1
+    flatten_extralibs $list_name
+    unique $list_name
+    resolve $list_name
+    eval $list_name=\$\(\$ldflags_filter \$$list_name\)
+    eval printf \''%s'\' \""\$$list_name"\"
+}
+
 for linkunit in $LIBRARY_LIST; do
     unset current_extralibs
     eval components=\$$(toupper ${linkunit})_COMPONENTS_LIST
@@ -6507,10 +6516,7 @@ for linkunit in $LIBRARY_LIST; do
 done
 
 for linkunit in $LIBRARY_LIST $PROGRAM_LIST $EXTRALIBS_LIST; do
-    flatten_extralibs ${linkunit}_extralibs
-    unique  ${linkunit}_extralibs
-    resolve ${linkunit}_extralibs
-    eval ${linkunit}_extralibs=\$\(\$ldflags_filter \$${linkunit}_extralibs\)
+    eval ${linkunit}_extralibs=\$\(flatten_extralibs_wrapper ${linkunit}_extralibs\)
 done
 
 map 'enabled $v && intrinsics=${v#intrinsics_}' $INTRINSICS_LIST
