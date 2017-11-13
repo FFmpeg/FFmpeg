@@ -42,9 +42,6 @@ enum { kCMVideoCodecType_HEVC = 'hvc1' };
 
 #define VIDEOTOOLBOX_ESDS_EXTRADATA_PADDING  12
 
-static void videotoolbox_stop(AVCodecContext *avctx);
-static int videotoolbox_start(AVCodecContext *avctx);
-
 static void videotoolbox_buffer_release(void *opaque, uint8_t *data)
 {
     CVPixelBufferRef cv_buffer = (CVImageBufferRef)data;
@@ -597,105 +594,67 @@ static OSStatus videotoolbox_session_decode_frame(AVCodecContext *avctx)
     return status;
 }
 
-static const char *videotoolbox_error_string(OSStatus status)
+static CMVideoFormatDescriptionRef videotoolbox_format_desc_create(CMVideoCodecType codec_type,
+                                                                   CFDictionaryRef decoder_spec,
+                                                                   int width,
+                                                                   int height)
 {
-    switch (status) {
-        case kVTVideoDecoderBadDataErr:
-            return "bad data";
-        case kVTVideoDecoderMalfunctionErr:
-            return "decoder malfunction";
-        case kVTInvalidSessionErr:
-            return "invalid session";
-    }
-    return "unknown";
-}
-
-static int videotoolbox_common_end_frame(AVCodecContext *avctx, AVFrame *frame)
-{
+    CMFormatDescriptionRef cm_fmt_desc;
     OSStatus status;
-    AVVideotoolboxContext *videotoolbox = videotoolbox_get_context(avctx);
-    VTContext *vtctx = avctx->internal->hwaccel_priv_data;
 
-    if (vtctx->reconfig_needed == true) {
-        vtctx->reconfig_needed = false;
-        av_log(avctx, AV_LOG_VERBOSE, "VideoToolbox decoder needs reconfig, restarting..\n");
-        videotoolbox_stop(avctx);
-        if (videotoolbox_start(avctx) != 0) {
-            return AVERROR_EXTERNAL;
-        }
-    }
+    status = CMVideoFormatDescriptionCreate(kCFAllocatorDefault,
+                                            codec_type,
+                                            width,
+                                            height,
+                                            decoder_spec, // Dictionary of extension
+                                            &cm_fmt_desc);
 
-    if (!videotoolbox->session || !vtctx->bitstream || !vtctx->bitstream_size)
-        return AVERROR_INVALIDDATA;
+    if (status)
+        return NULL;
 
-    status = videotoolbox_session_decode_frame(avctx);
-    if (status != noErr) {
-        if (status == kVTVideoDecoderMalfunctionErr || status == kVTInvalidSessionErr)
-            vtctx->reconfig_needed = true;
-        av_log(avctx, AV_LOG_ERROR, "Failed to decode frame (%s, %d)\n", videotoolbox_error_string(status), (int)status);
-        return AVERROR_UNKNOWN;
-    }
-
-    if (!vtctx->frame) {
-        vtctx->reconfig_needed = true;
-        return AVERROR_UNKNOWN;
-    }
-
-    return videotoolbox_buffer_create(avctx, frame);
+    return cm_fmt_desc;
 }
 
-static int videotoolbox_h264_end_frame(AVCodecContext *avctx)
+static CFDictionaryRef videotoolbox_buffer_attributes_create(int width,
+                                                             int height,
+                                                             OSType pix_fmt)
 {
-    H264Context *h = avctx->priv_data;
-    AVFrame *frame = h->cur_pic_ptr->f;
-    VTContext *vtctx = avctx->internal->hwaccel_priv_data;
-    int ret = videotoolbox_common_end_frame(avctx, frame);
-    vtctx->bitstream_size = 0;
-    return ret;
-}
+    CFMutableDictionaryRef buffer_attributes;
+    CFMutableDictionaryRef io_surface_properties;
+    CFNumberRef cv_pix_fmt;
+    CFNumberRef w;
+    CFNumberRef h;
 
-static int videotoolbox_hevc_decode_params(AVCodecContext *avctx,
-                                           int type,
-                                           const uint8_t *buffer,
-                                           uint32_t size)
-{
-    return ff_videotoolbox_h264_decode_slice(avctx, buffer, size);
-}
+    w = CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &width);
+    h = CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &height);
+    cv_pix_fmt = CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &pix_fmt);
 
-static int videotoolbox_hevc_end_frame(AVCodecContext *avctx)
-{
-    HEVCContext *h = avctx->priv_data;
-    AVFrame *frame = h->ref->frame;
-    VTContext *vtctx = avctx->internal->hwaccel_priv_data;
-    int ret;
+    buffer_attributes = CFDictionaryCreateMutable(kCFAllocatorDefault,
+                                                  4,
+                                                  &kCFTypeDictionaryKeyCallBacks,
+                                                  &kCFTypeDictionaryValueCallBacks);
+    io_surface_properties = CFDictionaryCreateMutable(kCFAllocatorDefault,
+                                                      0,
+                                                      &kCFTypeDictionaryKeyCallBacks,
+                                                      &kCFTypeDictionaryValueCallBacks);
 
-    ret = videotoolbox_common_end_frame(avctx, frame);
-    vtctx->bitstream_size = 0;
-    return ret;
-}
+    if (pix_fmt)
+        CFDictionarySetValue(buffer_attributes, kCVPixelBufferPixelFormatTypeKey, cv_pix_fmt);
+    CFDictionarySetValue(buffer_attributes, kCVPixelBufferIOSurfacePropertiesKey, io_surface_properties);
+    CFDictionarySetValue(buffer_attributes, kCVPixelBufferWidthKey, w);
+    CFDictionarySetValue(buffer_attributes, kCVPixelBufferHeightKey, h);
+#if TARGET_OS_IPHONE
+    CFDictionarySetValue(buffer_attributes, kCVPixelBufferOpenGLESCompatibilityKey, kCFBooleanTrue);
+#else
+    CFDictionarySetValue(buffer_attributes, kCVPixelBufferIOSurfaceOpenGLTextureCompatibilityKey, kCFBooleanTrue);
+#endif
 
-static int videotoolbox_mpeg_start_frame(AVCodecContext *avctx,
-                                         const uint8_t *buffer,
-                                         uint32_t size)
-{
-    VTContext *vtctx = avctx->internal->hwaccel_priv_data;
+    CFRelease(io_surface_properties);
+    CFRelease(cv_pix_fmt);
+    CFRelease(w);
+    CFRelease(h);
 
-    return videotoolbox_buffer_copy(vtctx, buffer, size);
-}
-
-static int videotoolbox_mpeg_decode_slice(AVCodecContext *avctx,
-                                          const uint8_t *buffer,
-                                          uint32_t size)
-{
-    return 0;
-}
-
-static int videotoolbox_mpeg_end_frame(AVCodecContext *avctx)
-{
-    MpegEncContext *s = avctx->priv_data;
-    AVFrame *frame = s->current_picture_ptr->f;
-
-    return videotoolbox_common_end_frame(avctx, frame);
+    return buffer_attributes;
 }
 
 static CFDictionaryRef videotoolbox_decoder_config_create(CMVideoCodecType codec_type,
@@ -748,69 +707,6 @@ static CFDictionaryRef videotoolbox_decoder_config_create(CMVideoCodecType codec
 
     CFRelease(avc_info);
     return config_info;
-}
-
-static CFDictionaryRef videotoolbox_buffer_attributes_create(int width,
-                                                             int height,
-                                                             OSType pix_fmt)
-{
-    CFMutableDictionaryRef buffer_attributes;
-    CFMutableDictionaryRef io_surface_properties;
-    CFNumberRef cv_pix_fmt;
-    CFNumberRef w;
-    CFNumberRef h;
-
-    w = CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &width);
-    h = CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &height);
-    cv_pix_fmt = CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &pix_fmt);
-
-    buffer_attributes = CFDictionaryCreateMutable(kCFAllocatorDefault,
-                                                  4,
-                                                  &kCFTypeDictionaryKeyCallBacks,
-                                                  &kCFTypeDictionaryValueCallBacks);
-    io_surface_properties = CFDictionaryCreateMutable(kCFAllocatorDefault,
-                                                      0,
-                                                      &kCFTypeDictionaryKeyCallBacks,
-                                                      &kCFTypeDictionaryValueCallBacks);
-
-    if (pix_fmt)
-        CFDictionarySetValue(buffer_attributes, kCVPixelBufferPixelFormatTypeKey, cv_pix_fmt);
-    CFDictionarySetValue(buffer_attributes, kCVPixelBufferIOSurfacePropertiesKey, io_surface_properties);
-    CFDictionarySetValue(buffer_attributes, kCVPixelBufferWidthKey, w);
-    CFDictionarySetValue(buffer_attributes, kCVPixelBufferHeightKey, h);
-#if TARGET_OS_IPHONE
-    CFDictionarySetValue(buffer_attributes, kCVPixelBufferOpenGLESCompatibilityKey, kCFBooleanTrue);
-#else
-    CFDictionarySetValue(buffer_attributes, kCVPixelBufferIOSurfaceOpenGLTextureCompatibilityKey, kCFBooleanTrue);
-#endif
-
-    CFRelease(io_surface_properties);
-    CFRelease(cv_pix_fmt);
-    CFRelease(w);
-    CFRelease(h);
-
-    return buffer_attributes;
-}
-
-static CMVideoFormatDescriptionRef videotoolbox_format_desc_create(CMVideoCodecType codec_type,
-                                                                   CFDictionaryRef decoder_spec,
-                                                                   int width,
-                                                                   int height)
-{
-    CMFormatDescriptionRef cm_fmt_desc;
-    OSStatus status;
-
-    status = CMVideoFormatDescriptionCreate(kCFAllocatorDefault,
-                                            codec_type,
-                                            width,
-                                            height,
-                                            decoder_spec, // Dictionary of extension
-                                            &cm_fmt_desc);
-
-    if (status)
-        return NULL;
-
-    return cm_fmt_desc;
 }
 
 static int videotoolbox_start(AVCodecContext *avctx)
@@ -924,6 +820,107 @@ static void videotoolbox_stop(AVCodecContext *avctx)
         CFRelease(videotoolbox->session);
         videotoolbox->session = NULL;
     }
+}
+
+static const char *videotoolbox_error_string(OSStatus status)
+{
+    switch (status) {
+        case kVTVideoDecoderBadDataErr:
+            return "bad data";
+        case kVTVideoDecoderMalfunctionErr:
+            return "decoder malfunction";
+        case kVTInvalidSessionErr:
+            return "invalid session";
+    }
+    return "unknown";
+}
+
+static int videotoolbox_common_end_frame(AVCodecContext *avctx, AVFrame *frame)
+{
+    OSStatus status;
+    AVVideotoolboxContext *videotoolbox = videotoolbox_get_context(avctx);
+    VTContext *vtctx = avctx->internal->hwaccel_priv_data;
+
+    if (vtctx->reconfig_needed == true) {
+        vtctx->reconfig_needed = false;
+        av_log(avctx, AV_LOG_VERBOSE, "VideoToolbox decoder needs reconfig, restarting..\n");
+        videotoolbox_stop(avctx);
+        if (videotoolbox_start(avctx) != 0) {
+            return AVERROR_EXTERNAL;
+        }
+    }
+
+    if (!videotoolbox->session || !vtctx->bitstream || !vtctx->bitstream_size)
+        return AVERROR_INVALIDDATA;
+
+    status = videotoolbox_session_decode_frame(avctx);
+    if (status != noErr) {
+        if (status == kVTVideoDecoderMalfunctionErr || status == kVTInvalidSessionErr)
+            vtctx->reconfig_needed = true;
+        av_log(avctx, AV_LOG_ERROR, "Failed to decode frame (%s, %d)\n", videotoolbox_error_string(status), (int)status);
+        return AVERROR_UNKNOWN;
+    }
+
+    if (!vtctx->frame) {
+        vtctx->reconfig_needed = true;
+        return AVERROR_UNKNOWN;
+    }
+
+    return videotoolbox_buffer_create(avctx, frame);
+}
+
+static int videotoolbox_h264_end_frame(AVCodecContext *avctx)
+{
+    H264Context *h = avctx->priv_data;
+    AVFrame *frame = h->cur_pic_ptr->f;
+    VTContext *vtctx = avctx->internal->hwaccel_priv_data;
+    int ret = videotoolbox_common_end_frame(avctx, frame);
+    vtctx->bitstream_size = 0;
+    return ret;
+}
+
+static int videotoolbox_hevc_decode_params(AVCodecContext *avctx,
+                                           int type,
+                                           const uint8_t *buffer,
+                                           uint32_t size)
+{
+    return ff_videotoolbox_h264_decode_slice(avctx, buffer, size);
+}
+
+static int videotoolbox_hevc_end_frame(AVCodecContext *avctx)
+{
+    HEVCContext *h = avctx->priv_data;
+    AVFrame *frame = h->ref->frame;
+    VTContext *vtctx = avctx->internal->hwaccel_priv_data;
+    int ret;
+
+    ret = videotoolbox_common_end_frame(avctx, frame);
+    vtctx->bitstream_size = 0;
+    return ret;
+}
+
+static int videotoolbox_mpeg_start_frame(AVCodecContext *avctx,
+                                         const uint8_t *buffer,
+                                         uint32_t size)
+{
+    VTContext *vtctx = avctx->internal->hwaccel_priv_data;
+
+    return videotoolbox_buffer_copy(vtctx, buffer, size);
+}
+
+static int videotoolbox_mpeg_decode_slice(AVCodecContext *avctx,
+                                          const uint8_t *buffer,
+                                          uint32_t size)
+{
+    return 0;
+}
+
+static int videotoolbox_mpeg_end_frame(AVCodecContext *avctx)
+{
+    MpegEncContext *s = avctx->priv_data;
+    AVFrame *frame = s->current_picture_ptr->f;
+
+    return videotoolbox_common_end_frame(avctx, frame);
 }
 
 static int videotoolbox_uninit(AVCodecContext *avctx)
