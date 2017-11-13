@@ -920,7 +920,7 @@ static int decode_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
 
     // reconstruct all samples from residuals
     if (bd->ra_block) {
-        for (smp = 0; smp < opt_order; smp++) {
+        for (smp = 0; smp < FFMIN(opt_order, block_length); smp++) {
             y = 1 << 19;
 
             for (sb = 0; sb < smp; sb++)
