@@ -413,7 +413,7 @@ static av_cold int init_subtitles(AVFilterContext *ctx)
      *
      * That API is old and needs to be reworked to match behaviour with A/V.
      */
-    av_codec_set_pkt_timebase(dec_ctx, st->time_base);
+    dec_ctx->pkt_timebase = st->time_base;
 
     ret = avcodec_open2(dec_ctx, NULL, &codec_opts);
     if (ret < 0)
