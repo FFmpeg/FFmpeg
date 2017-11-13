@@ -609,7 +609,7 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
                         if (ret >= 0) {
                             AVRational tb = (AVRational){1, frame->sample_rate};
                             if (frame->pts != AV_NOPTS_VALUE)
-                                frame->pts = av_rescale_q(frame->pts, av_codec_get_pkt_timebase(d->avctx), tb);
+                                frame->pts = av_rescale_q(frame->pts, d->avctx->pkt_timebase, tb);
                             else if (d->next_pts != AV_NOPTS_VALUE)
                                 frame->pts = av_rescale_q(d->next_pts, d->next_pts_tb, tb);
                             if (frame->pts != AV_NOPTS_VALUE) {
@@ -2563,7 +2563,7 @@ static int stream_component_open(VideoState *is, int stream_index)
     ret = avcodec_parameters_to_context(avctx, ic->streams[stream_index]->codecpar);
     if (ret < 0)
         goto fail;
-    av_codec_set_pkt_timebase(avctx, ic->streams[stream_index]->time_base);
+    avctx->pkt_timebase = ic->streams[stream_index]->time_base;
 
     codec = avcodec_find_decoder(avctx->codec_id);
 
@@ -2584,12 +2584,12 @@ static int stream_component_open(VideoState *is, int stream_index)
     }
 
     avctx->codec_id = codec->id;
-    if(stream_lowres > av_codec_get_max_lowres(codec)){
+    if (stream_lowres > codec->max_lowres) {
         av_log(avctx, AV_LOG_WARNING, "The maximum value for lowres supported by the decoder is %d\n",
-                av_codec_get_max_lowres(codec));
-        stream_lowres = av_codec_get_max_lowres(codec);
+                codec->max_lowres);
+        stream_lowres = codec->max_lowres;
     }
-    av_codec_set_lowres(avctx, stream_lowres);
+    avctx->lowres = stream_lowres;
 
     if (fast)
         avctx->flags2 |= AV_CODEC_FLAG2_FAST;
