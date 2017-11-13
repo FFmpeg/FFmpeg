@@ -66,6 +66,7 @@ typedef struct HTTPContext {
     int http_code;
     /* Used if "Transfer-Encoding: chunked" otherwise -1. */
     uint64_t chunksize;
+    int chunkend;
     uint64_t off, end_off, filesize;
     char *location;
     HTTPAuthState auth_state;
@@ -305,6 +306,7 @@ int ff_http_do_new_request(URLContext *h, const char *uri)
     AVDictionary *options = NULL;
     int ret;
 
+    s->chunkend      = 0;
     s->off           = 0;
     s->icy_data_read = 0;
     av_free(s->location);
@@ -1281,6 +1283,9 @@ static int http_buf_read(URLContext *h, uint8_t *buf, int size)
     int len;
 
     if (s->chunksize != UINT64_MAX) {
+        if (s->chunkend) {
+            return AVERROR_EOF;
+        }
         if (!s->chunksize) {
             char line[32];
             int err;
@@ -1296,7 +1301,12 @@ static int http_buf_read(URLContext *h, uint8_t *buf, int size)
                    "Chunked encoding data size: %"PRIu64"\n",
                     s->chunksize);
 
-            if (!s->chunksize) {
+            if (!s->chunksize && s->multiple_requests) {
+                http_get_line(s, line, sizeof(line)); // read empty chunk
+                s->chunkend = 1;
+                return 0;
+            }
+            else if (!s->chunksize) {
                 av_log(h, AV_LOG_DEBUG, "Last chunk received, closing conn\n");
                 ffurl_closep(&s->hd);
                 return 0;
