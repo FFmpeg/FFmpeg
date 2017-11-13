@@ -1293,7 +1293,7 @@ static int http_buf_read(URLContext *h, uint8_t *buf, int size)
             s->chunksize = strtoull(line, NULL, 16);
 
             av_log(h, AV_LOG_TRACE,
-                   "Chunked encoding data size: %"PRIu64"'\n",
+                   "Chunked encoding data size: %"PRIu64"\n",
                     s->chunksize);
 
             if (!s->chunksize) {
