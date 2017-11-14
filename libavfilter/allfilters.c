@@ -339,6 +339,7 @@ static void register_all(void)
     REGISTER_FILTER(TRIM,           trim,           vf);
     REGISTER_FILTER(UNPREMULTIPLY,  unpremultiply,  vf);
     REGISTER_FILTER(UNSHARP,        unsharp,        vf);
+    REGISTER_FILTER(UNSHARP_OPENCL, unsharp_opencl, vf);
     REGISTER_FILTER(USPP,           uspp,           vf);
     REGISTER_FILTER(VAGUEDENOISER,  vaguedenoiser,  vf);
     REGISTER_FILTER(VECTORSCOPE,    vectorscope,    vf);
