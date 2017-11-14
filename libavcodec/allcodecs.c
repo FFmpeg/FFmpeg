@@ -111,6 +111,7 @@ static void register_all(void)
     REGISTER_HWACCEL(VC1_D3D11VA,       vc1_d3d11va);
     REGISTER_HWACCEL(VC1_D3D11VA2,      vc1_d3d11va2);
     REGISTER_HWACCEL(VC1_DXVA2,         vc1_dxva2);
+    REGISTER_HWACCEL(VC1_NVDEC,         vc1_nvdec);
     REGISTER_HWACCEL(VC1_VAAPI,         vc1_vaapi);
     REGISTER_HWACCEL(VC1_VDPAU,         vc1_vdpau);
     REGISTER_HWACCEL(VC1_MMAL,          vc1_mmal);
@@ -128,6 +129,7 @@ static void register_all(void)
     REGISTER_HWACCEL(WMV3_D3D11VA,      wmv3_d3d11va);
     REGISTER_HWACCEL(WMV3_D3D11VA2,     wmv3_d3d11va2);
     REGISTER_HWACCEL(WMV3_DXVA2,        wmv3_dxva2);
+    REGISTER_HWACCEL(WMV3_NVDEC,        wmv3_nvdec);
     REGISTER_HWACCEL(WMV3_VAAPI,        wmv3_vaapi);
     REGISTER_HWACCEL(WMV3_VDPAU,        wmv3_vdpau);
 
