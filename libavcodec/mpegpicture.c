@@ -22,6 +22,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
+#include "libavutil/pixdesc.h"
 
 #include "avcodec.h"
 #include "motion_est.h"
@@ -155,7 +156,8 @@ static int alloc_frame_buffer(AVCodecContext *avctx,  Picture *pic,
         return -1;
     }
 
-    if (pic->f->linesize[1] != pic->f->linesize[2]) {
+    if (av_pix_fmt_count_planes(pic->f->format) > 2 &&
+        pic->f->linesize[1] != pic->f->linesize[2]) {
         av_log(avctx, AV_LOG_ERROR,
                "get_buffer() failed (uv stride mismatch)\n");
         ff_mpeg_unref_picture(avctx, pic);
