@@ -79,8 +79,6 @@ HEADERS = adler32.h                                                     \
 
 HEADERS-$(CONFIG_LZO)                   += lzo.h
 
-HEADERS-$(CONFIG_OPENCL)                += opencl.h
-
 ARCH_HEADERS = bswap.h                                                  \
                intmath.h                                                \
                intreadwrite.h                                           \
@@ -164,7 +162,6 @@ OBJS-$(CONFIG_DXVA2)                    += hwcontext_dxva2.o
 OBJS-$(CONFIG_QSV)                   += hwcontext_qsv.o
 OBJS-$(CONFIG_LIBDRM)                   += hwcontext_drm.o
 OBJS-$(CONFIG_LZO)                      += lzo.o
-OBJS-$(CONFIG_OPENCL)                   += opencl.o opencl_internal.o
 OBJS-$(CONFIG_OPENCL)                   += hwcontext_opencl.o
 OBJS-$(CONFIG_VAAPI)                    += hwcontext_vaapi.o
 OBJS-$(CONFIG_VIDEOTOOLBOX)             += hwcontext_videotoolbox.o
@@ -187,7 +184,6 @@ SKIPHEADERS-$(CONFIG_VDPAU)            += hwcontext_vdpau.h
 SKIPHEADERS-$(HAVE_ATOMICS_GCC)        += atomic_gcc.h
 SKIPHEADERS-$(HAVE_ATOMICS_SUNCC)      += atomic_suncc.h
 SKIPHEADERS-$(HAVE_ATOMICS_WIN32)      += atomic_win32.h
-SKIPHEADERS-$(CONFIG_OPENCL)           += opencl.h
 
 TESTPROGS = adler32                                                     \
             aes                                                         \

@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2017-11-xx - xxxxxxx - lavu 55.3.0 - opencl.h
+  Remove experiental OpenCL API (av_opencl_*).
+
 2017-11-xx - xxxxxxx - lavu 55.2.0 - hwcontext.h hwcontext_opencl.h
   Add AV_HWDEVICE_TYPE_OPENCL and a new installed header with
   OpenCL-specific hwcontext definitions.

@@ -6913,10 +6913,6 @@ Default value is @samp{exhaustive}.
 If set then a detailed log of the motion search is written to the
 specified file.
 
-@item opencl
-If set to 1, specify using OpenCL capabilities, only available if
-FFmpeg was configured with @code{--enable-opencl}. Default value is 0.
-
 @end table
 
 @section despill
@@ -15047,10 +15043,6 @@ Negative values will blur the input video, while positive values will
 sharpen it, a value of zero will disable the effect.
 
 Default value is 0.0.
-
-@item opencl
-If set to 1, specify using OpenCL capabilities, only available if
-FFmpeg was configured with @code{--enable-opencl}. Default value is 0.
 
 @end table
 
