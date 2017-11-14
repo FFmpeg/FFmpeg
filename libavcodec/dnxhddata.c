@@ -1158,7 +1158,7 @@ void ff_dnxhd_print_profiles(AVCodecContext *avctx, int loglevel)
 
             av_log(avctx, loglevel, "Frame size: %dx%d%c; bitrate: %dMbps; pixel format: %s\n",
                    cid->width, cid->height, cid->flags & DNXHD_INTERLACED ? 'i' : 'p', cid->bit_rates[j],
-                   cid->bit_depth == 10 ? "yuv422p10" : "yuv422p");
+                   cid->flags & DNXHD_444 ? "yuv444p10, gbrp10" : cid->bit_depth == 10 ? "yuv422p10" : "yuv422p");
         }
     }
 }
