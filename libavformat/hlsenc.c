@@ -108,6 +108,9 @@ typedef struct HLSContext {
     uint32_t start_sequence_source_type;  // enum StartSequenceSourceType
     AVOutputFormat *oformat;
     AVOutputFormat *vtt_oformat;
+    AVIOContext *out;
+    int packets_written;
+    int init_range_length;
 
     AVFormatContext *avf;
     AVFormatContext *vtt_avf;
@@ -598,6 +601,7 @@ static int hls_mux_init(AVFormatContext *s)
         st->time_base = s->streams[i]->time_base;
         av_dict_copy(&st->metadata, s->streams[i]->metadata, 0);
     }
+    hls->packets_written = 1;
     hls->start_pos = 0;
     hls->new_start = 1;
     hls->fmp4_init_mode = 0;
@@ -607,9 +611,14 @@ static int hls_mux_init(AVFormatContext *s)
             av_log(s, AV_LOG_WARNING, "Multi-file byterange mode is currently unsupported in the HLS muxer.\n");
             return AVERROR_PATCHWELCOME;
         }
+        hls->packets_written = 0;
+        hls->init_range_length = 0;
         hls->fmp4_init_mode = !byterange_mode;
         set_http_options(s, &options, hls);
-        if ((ret = s->io_open(s, &oc->pb, hls->base_output_dirname, AVIO_FLAG_WRITE, &options)) < 0) {
+        if ((ret = avio_open_dyn_buf(&oc->pb)) < 0)
+            return ret;
+
+        if ((ret = s->io_open(s, &hls->out, hls->base_output_dirname, AVIO_FLAG_WRITE, &options)) < 0) {
             av_log(s, AV_LOG_ERROR, "Failed to open segment '%s'\n", hls->fmp4_init_filename);
             return ret;
         }
@@ -634,6 +643,7 @@ static int hls_mux_init(AVFormatContext *s)
             av_dict_free(&options);
             return AVERROR(EINVAL);
         }
+        avio_flush(oc->pb);
         av_dict_free(&options);
     }
     return 0;
@@ -1600,6 +1610,8 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
     int is_ref_pkt = 1;
     int ret = 0, can_split = 1;
     int stream_index = 0;
+    int range_length = 0;
+    uint8_t *buffer = NULL;
 
     if (hls->sequence - hls->nb_entries > hls->start_sequence && hls->init_time > 0) {
         /* reset end_pts, hls->recording_time at end of the init hls list */
@@ -1645,7 +1657,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
 
     }
-    if (hls->fmp4_init_mode || can_split && av_compare_ts(pkt->pts - hls->start_pts, st->time_base,
+    if (hls->packets_written && can_split && av_compare_ts(pkt->pts - hls->start_pts, st->time_base,
                                    end_pts, AV_TIME_BASE_Q) >= 0) {
         int64_t new_start_pos;
         char *old_filename = av_strdup(hls->avf->filename);
@@ -1661,7 +1673,17 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         hls->size = new_start_pos - hls->start_pos;
 
         if (!byterange_mode) {
-            ff_format_io_close(s, &oc->pb);
+            if (hls->segment_type == SEGMENT_TYPE_FMP4 && !hls->init_range_length) {
+                avio_flush(oc->pb);
+                range_length = avio_close_dyn_buf(oc->pb, &buffer);
+                avio_write(hls->out, buffer, range_length);
+                hls->init_range_length = range_length;
+                avio_open_dyn_buf(&oc->pb);
+                hls->packets_written = 0;
+                ff_format_io_close(s, &hls->out);
+            } else {
+                ff_format_io_close(s, &oc->pb);
+            }
             if (hls->vtt_avf) {
                 ff_format_io_close(s, &hls->vtt_avf->pb);
             }
@@ -1719,6 +1741,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
             }
     }
 
+    hls->packets_written++;
     ret = ff_write_chained(oc, stream_index, pkt, s, 0);
 
     return ret;
