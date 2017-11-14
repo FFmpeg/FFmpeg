@@ -3380,13 +3380,11 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
             if (find_prev_closest_index(st, e_old, nb_old, ctts_data_old, ctts_count_old, search_timestamp, AVSEEK_FLAG_ANY,
                                         &index, &ctts_index_old, &ctts_sample_old) < 0) {
                 av_log(mov->fc, AV_LOG_WARNING,
-                       "st: %d edit list %"PRId64" Cannot find an index entry before timestamp: %"PRId64".\n"
-                       "Rounding edit list media time to zero.\n",
+                       "st: %d edit list %"PRId64" Cannot find an index entry before timestamp: %"PRId64".\n",
                        st->index, edit_list_index, search_timestamp);
                 index = 0;
                 ctts_index_old = 0;
                 ctts_sample_old = 0;
-                edit_list_media_time = 0;
             }
         }
         current = e_old + index;
