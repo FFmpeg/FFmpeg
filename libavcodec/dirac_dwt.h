@@ -102,7 +102,7 @@ void ff_spatial_idwt_slice2(DWTContext *d, int y);
     (b2 + ((int)(-b0 + 9U*b1 + 9U*b3 - b4 + 8) >> 4))
 
 #define COMPOSE_DD137iL0(b0, b1, b2, b3, b4)\
-    (b2 - ((-b0 + 9*b1 + 9*b3 - b4 + 16) >> 5))
+    (b2 - ((int)(-b0 + 9U*b1 + 9U*b3 - b4 + 16) >> 5))
 
 #define COMPOSE_HAARiL0(b0, b1)\
     (b0 - ((b1 + 1) >> 1))
