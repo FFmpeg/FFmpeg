@@ -470,6 +470,7 @@ the encoding process. It is made of "@var{key}=@var{value}" lines. @var{key}
 consists of only alphanumeric characters. The last key of a sequence of
 progress information is always "progress".
 
+@anchor{stdin option}
 @item -stdin
 Enable interaction on standard input. On by default unless standard input is
 used as an input. To explicitly disable interaction you need to specify

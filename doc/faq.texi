@@ -501,6 +501,71 @@ ffmpeg -i ega_screen.nut -vf setdar=4/3 ega_screen_anamorphic.nut
 ffmpeg -i ega_screen.nut -aspect 4/3 -c copy ega_screen_overridden.nut
 @end example
 
+@anchor{background task}
+@section How do I run ffmpeg as a background task?
+
+ffmpeg normally checks the console input, for entries like "q" to stop
+and "?" to give help, while performing operations. ffmpeg does not have a way of
+detecting when it is running as a background task.
+When it checks the console input, that can cause the process running ffmpeg
+in the background to suspend.
+
+To prevent those input checks, allowing ffmpeg to run as a background task,
+use the @url{ffmpeg.html#stdin-option, @code{-nostdin} option}
+in the ffmpeg invocation. This is effective whether you run ffmpeg in a shell
+or invoke ffmpeg in its own process via an operating system API.
+
+As an alternative, when you are running ffmpeg in a shell, you can redirect
+standard input to @code{/dev/null} (on Linux and Mac OS)
+or @code{NUL} (on Windows). You can do this redirect either
+on the ffmpeg invocation, or from a shell script which calls ffmpeg.
+
+For example:
+
+@example
+ffmpeg -nostdin -i INPUT OUTPUT
+@end example
+
+or (on Linux, Mac OS, and other UNIX-like shells):
+
+@example
+ffmpeg -i INPUT OUTPUT </dev/null
+@end example
+
+or (on Windows):
+
+@example
+ffmpeg -i INPUT OUTPUT <NUL
+@end example
+
+@section How do I prevent ffmpeg from suspending with a message like @emph{suspended (tty output)}?
+
+If you run ffmpeg in the background, you may find that its process suspends.
+There may be a message like @emph{suspended (tty output)}. The question is how
+to prevent the process from being suspended.
+
+For example:
+
+@example
+% ffmpeg -i INPUT OUTPUT &> ~/tmp/log.txt &
+[1] 93352
+%
+[1]  + suspended (tty output)  ffmpeg -i INPUT OUTPUT &>
+@end example
+
+The message "tty output" notwithstanding, the problem here is that
+ffmpeg normally checks the console input when it runs. The operating system
+detects this, and suspends the process until you can bring it to the
+foreground and attend to it.
+
+The solution is to use the right techniques to tell ffmpeg not to consult
+console input. You can use the
+@url{ffmpeg.html#stdin-option, @code{-nostdin} option},
+or redirect standard input with @code{< /dev/null}.
+See FAQ
+@ref{background task, @emph{How do I run ffmpeg as a background task?}}
+for details.
+
 @chapter Development
 
 @section Are there examples illustrating how to use the FFmpeg libraries, particularly libavcodec and libavformat?
