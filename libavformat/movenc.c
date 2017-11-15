@@ -6513,6 +6513,7 @@ static const AVCodecTag codec_3gp_tags[] = {
 const AVCodecTag codec_mp4_tags[] = {
     { AV_CODEC_ID_MPEG4       , MKTAG('m', 'p', '4', 'v') },
     { AV_CODEC_ID_H264        , MKTAG('a', 'v', 'c', '1') },
+    { AV_CODEC_ID_H264        , MKTAG('a', 'v', 'c', '3') },
     { AV_CODEC_ID_HEVC        , MKTAG('h', 'e', 'v', '1') },
     { AV_CODEC_ID_HEVC        , MKTAG('h', 'v', 'c', '1') },
     { AV_CODEC_ID_MPEG2VIDEO  , MKTAG('m', 'p', '4', 'v') },
