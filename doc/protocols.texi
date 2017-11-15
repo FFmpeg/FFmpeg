@@ -1186,6 +1186,7 @@ Accepted options:
 Start offset of the extracted segment, in bytes.
 @item end
 End offset of the extracted segment, in bytes.
+If set to 0, extract till end of file.
 @end table
 
 Examples:
@@ -1199,6 +1200,11 @@ subfile,,start,153391104,end,268142592,,:/media/dvd/VIDEO_TS/VTS_08_1.VOB
 Play an AVI file directly from a TAR archive:
 @example
 subfile,,start,183241728,end,366490624,,:archive.tar
+@end example
+
+Play a MPEG-TS file from start offset till end:
+@example
+subfile,,start,32815239,end,0,,:video.ts
 @end example
 
 @section tee
