@@ -539,6 +539,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     } else {
         frame->key_frame = 0;
         frame->pict_type = AV_PICTURE_TYPE_P;
+        if (c->decomp_len < 2LL * ((c->width + c->bw - 1) / c->bw) * ((c->height + c->bh - 1) / c->bh))
+            return AVERROR_INVALIDDATA;
         if (c->decomp_len)
             c->decode_xor(c);
     }
