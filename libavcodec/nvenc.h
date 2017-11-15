@@ -19,6 +19,13 @@
 #ifndef AVCODEC_NVENC_H
 #define AVCODEC_NVENC_H
 
+#if CONFIG_D3D11VA
+#define COBJMACROS
+#include "libavutil/hwcontext_d3d11va.h"
+#else
+typedef void ID3D11Device;
+#endif
+
 #include "compat/nvenc/nvEncodeAPI.h"
 
 #include "config.h"
@@ -26,13 +33,6 @@
 #include "compat/cuda/dynlink_loader.h"
 #include "libavutil/fifo.h"
 #include "libavutil/opt.h"
-
-#if CONFIG_D3D11VA
-#define COBJMACROS
-#include "libavutil/hwcontext_d3d11va.h"
-#else
-typedef void ID3D11Device;
-#endif
 
 #include "avcodec.h"
 

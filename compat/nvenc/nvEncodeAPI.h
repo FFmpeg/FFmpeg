@@ -77,7 +77,7 @@ extern "C" {
 typedef RECT NVENC_RECT;
 #else
 // =========================================================================================
-#ifndef GUID
+#if !defined(GUID) && !defined(GUID_DEFINED)
 /*!
  * \struct GUID
  * Abstracts the GUID structure for non-windows platforms.
