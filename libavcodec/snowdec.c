@@ -437,6 +437,8 @@ static int decode_blocks(SnowContext *s){
 
     for(y=0; y<h; y++){
         for(x=0; x<w; x++){
+            if (s->c.bytestream >= s->c.bytestream_end)
+                return AVERROR_INVALIDDATA;
             if ((res = decode_q_branch(s, 0, x, y)) < 0)
                 return res;
         }
