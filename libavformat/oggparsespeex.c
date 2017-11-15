@@ -68,6 +68,10 @@ static int speex_header(AVFormatContext *s, int idx) {
         }
 
         st->codecpar->sample_rate = AV_RL32(p + 36);
+        if (st->codecpar->sample_rate <= 0) {
+            av_log(s, AV_LOG_ERROR, "Invalid sample rate %d\n", st->codecpar->sample_rate);
+            return AVERROR_INVALIDDATA;
+        }
         st->codecpar->channels = AV_RL32(p + 48);
         if (st->codecpar->channels < 1 || st->codecpar->channels > 2) {
             av_log(s, AV_LOG_ERROR, "invalid channel count. Speex must be mono or stereo.\n");
@@ -78,6 +82,13 @@ static int speex_header(AVFormatContext *s, int idx) {
 
         spxp->packet_size  = AV_RL32(p + 56);
         frames_per_packet  = AV_RL32(p + 64);
+        if (spxp->packet_size < 0 ||
+            frames_per_packet < 0 ||
+            spxp->packet_size * (int64_t)frames_per_packet > INT32_MAX / 256) {
+            av_log(s, AV_LOG_ERROR, "invalid packet_size, frames_per_packet %d %d\n", spxp->packet_size, frames_per_packet);
+            spxp->packet_size = 0;
+            return AVERROR_INVALIDDATA;
+        }
         if (frames_per_packet)
             spxp->packet_size *= frames_per_packet;
 

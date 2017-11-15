@@ -162,10 +162,10 @@ static const AVOption v210dec_options[] = {
 };
 
 static const AVClass v210dec_class = {
-    "V210 Decoder",
-    av_default_item_name,
-    v210dec_options,
-    LIBAVUTIL_VERSION_INT,
+    .class_name = "V210 Decoder",
+    .item_name  = av_default_item_name,
+    .option     = v210dec_options,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 AVCodec ff_v210_decoder = {

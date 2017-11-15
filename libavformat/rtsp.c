@@ -670,7 +670,6 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
 
 int ff_sdp_parse(AVFormatContext *s, const char *content)
 {
-    RTSPState *rt = s->priv_data;
     const char *p;
     int letter, i;
     /* Some SDP lines, particularly for Realmedia or ASF RTSP streams,
@@ -717,8 +716,6 @@ int ff_sdp_parse(AVFormatContext *s, const char *content)
         av_freep(&s1->default_exclude_source_addrs[i]);
     av_freep(&s1->default_exclude_source_addrs);
 
-    rt->p = av_malloc_array(rt->nb_rtsp_streams + 1, sizeof(struct pollfd) * 2);
-    if (!rt->p) return AVERROR(ENOMEM);
     return 0;
 }
 #endif /* CONFIG_RTPDEC */
@@ -1340,8 +1337,7 @@ static int rtsp_send_cmd_with_content_async(AVFormatContext *s,
     ffurl_write(rt->rtsp_hd_out, out_buf, strlen(out_buf));
     if (send_content_length > 0 && send_content) {
         if (rt->control_transport == RTSP_MODE_TUNNEL) {
-            av_log(s, AV_LOG_ERROR, "tunneling of RTSP requests "
-                                    "with content data not supported\n");
+            avpriv_report_missing_feature(s, "Tunneling of RTSP requests with content data");
             return AVERROR_PATCHWELCOME;
         }
         ffurl_write(rt->rtsp_hd_out, send_content, send_content_length);
@@ -1922,28 +1918,50 @@ redirect:
 #endif /* CONFIG_RTSP_DEMUXER || CONFIG_RTSP_MUXER */
 
 #if CONFIG_RTPDEC
+static int parse_rtsp_message(AVFormatContext *s)
+{
+    RTSPState *rt = s->priv_data;
+    int ret;
+
+    if (rt->rtsp_flags & RTSP_FLAG_LISTEN) {
+        if (rt->state == RTSP_STATE_STREAMING) {
+            if (!ff_rtsp_parse_streaming_commands(s))
+                return AVERROR_EOF;
+            else
+                av_log(s, AV_LOG_WARNING,
+                       "Unable to answer to TEARDOWN\n");
+        } else
+            return 0;
+    } else {
+        RTSPMessageHeader reply;
+        ret = ff_rtsp_read_reply(s, &reply, NULL, 0, NULL);
+        if (ret < 0)
+            return ret;
+        /* XXX: parse message */
+        if (rt->state != RTSP_STATE_STREAMING)
+            return 0;
+    }
+
+    return 0;
+}
+
 static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
                            uint8_t *buf, int buf_size, int64_t wait_end)
 {
     RTSPState *rt = s->priv_data;
     RTSPStream *rtsp_st;
-    int n, i, ret, tcp_fd, timeout_cnt = 0;
-    int max_p = 0;
+    int n, i, ret, timeout_cnt = 0;
     struct pollfd *p = rt->p;
     int *fds = NULL, fdsnum, fdsidx;
 
-    for (;;) {
-        if (ff_check_interrupt(&s->interrupt_callback))
-            return AVERROR_EXIT;
-        if (wait_end && wait_end - av_gettime_relative() < 0)
-            return AVERROR(EAGAIN);
-        max_p = 0;
+    if (!p) {
+        p = rt->p = av_malloc_array(2 * (rt->nb_rtsp_streams + 1), sizeof(struct pollfd));
+        if (!p)
+            return AVERROR(ENOMEM);
+
         if (rt->rtsp_hd) {
-            tcp_fd = ffurl_get_file_handle(rt->rtsp_hd);
-            p[max_p].fd = tcp_fd;
-            p[max_p++].events = POLLIN;
-        } else {
-            tcp_fd = -1;
+            p[rt->max_p].fd = ffurl_get_file_handle(rt->rtsp_hd);
+            p[rt->max_p++].events = POLLIN;
         }
         for (i = 0; i < rt->nb_rtsp_streams; i++) {
             rtsp_st = rt->rtsp_streams[i];
@@ -1959,15 +1977,22 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
                     return AVERROR_INVALIDDATA;
                 }
                 for (fdsidx = 0; fdsidx < fdsnum; fdsidx++) {
-                    p[max_p].fd       = fds[fdsidx];
-                    p[max_p++].events = POLLIN;
+                    p[rt->max_p].fd       = fds[fdsidx];
+                    p[rt->max_p++].events = POLLIN;
                 }
                 av_freep(&fds);
             }
         }
-        n = poll(p, max_p, POLL_TIMEOUT_MS);
+    }
+
+    for (;;) {
+        if (ff_check_interrupt(&s->interrupt_callback))
+            return AVERROR_EXIT;
+        if (wait_end && wait_end - av_gettime_relative() < 0)
+            return AVERROR(EAGAIN);
+        n = poll(p, rt->max_p, POLL_TIMEOUT_MS);
         if (n > 0) {
-            int j = 1 - (tcp_fd == -1);
+            int j = rt->rtsp_hd ? 1 : 0;
             timeout_cnt = 0;
             for (i = 0; i < rt->nb_rtsp_streams; i++) {
                 rtsp_st = rt->rtsp_streams[i];
@@ -1983,25 +2008,8 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
                 }
             }
 #if CONFIG_RTSP_DEMUXER
-            if (tcp_fd != -1 && p[0].revents & POLLIN) {
-                if (rt->rtsp_flags & RTSP_FLAG_LISTEN) {
-                    if (rt->state == RTSP_STATE_STREAMING) {
-                        if (!ff_rtsp_parse_streaming_commands(s))
-                            return AVERROR_EOF;
-                        else
-                            av_log(s, AV_LOG_WARNING,
-                                   "Unable to answer to TEARDOWN\n");
-                    } else
-                        return 0;
-                } else {
-                    RTSPMessageHeader reply;
-                    ret = ff_rtsp_read_reply(s, &reply, NULL, 0, NULL);
-                    if (ret < 0)
-                        return ret;
-                    /* XXX: parse message */
-                    if (rt->state != RTSP_STATE_STREAMING)
-                        return 0;
-                }
+            if (rt->rtsp_hd && p[0].revents & POLLIN) {
+                return parse_rtsp_message(s);
             }
 #endif
         } else if (n == 0 && ++timeout_cnt >= MAX_TIMEOUTS) {
@@ -2053,6 +2061,44 @@ static int pick_stream(AVFormatContext *s, RTSPStream **rtsp_st,
     }
     av_log(s, AV_LOG_WARNING, "Unable to pick stream for packet\n");
     return AVERROR(EAGAIN);
+}
+
+static int read_packet(AVFormatContext *s,
+                       RTSPStream **rtsp_st, RTSPStream *first_queue_st,
+                       int64_t wait_end)
+{
+    RTSPState *rt = s->priv_data;
+    int len;
+
+    switch(rt->lower_transport) {
+    default:
+#if CONFIG_RTSP_DEMUXER
+    case RTSP_LOWER_TRANSPORT_TCP:
+        len = ff_rtsp_tcp_read_packet(s, rtsp_st, rt->recvbuf, RECVBUF_SIZE);
+        break;
+#endif
+    case RTSP_LOWER_TRANSPORT_UDP:
+    case RTSP_LOWER_TRANSPORT_UDP_MULTICAST:
+        len = udp_read_packet(s, rtsp_st, rt->recvbuf, RECVBUF_SIZE, wait_end);
+        if (len > 0 && (*rtsp_st)->transport_priv && rt->transport == RTSP_TRANSPORT_RTP)
+            ff_rtp_check_and_send_back_rr((*rtsp_st)->transport_priv, (*rtsp_st)->rtp_handle, NULL, len);
+        break;
+    case RTSP_LOWER_TRANSPORT_CUSTOM:
+        if (first_queue_st && rt->transport == RTSP_TRANSPORT_RTP &&
+            wait_end && wait_end < av_gettime_relative())
+            len = AVERROR(EAGAIN);
+        else
+            len = avio_read_partial(s->pb, rt->recvbuf, RECVBUF_SIZE);
+        len = pick_stream(s, rtsp_st, rt->recvbuf, len);
+        if (len > 0 && (*rtsp_st)->transport_priv && rt->transport == RTSP_TRANSPORT_RTP)
+            ff_rtp_check_and_send_back_rr((*rtsp_st)->transport_priv, NULL, s->pb, len);
+        break;
+    }
+
+    if (len == 0)
+        return AVERROR_EOF;
+
+    return len;
 }
 
 int ff_rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt)
@@ -2119,30 +2165,7 @@ redo:
             return AVERROR(ENOMEM);
     }
 
-    switch(rt->lower_transport) {
-    default:
-#if CONFIG_RTSP_DEMUXER
-    case RTSP_LOWER_TRANSPORT_TCP:
-        len = ff_rtsp_tcp_read_packet(s, &rtsp_st, rt->recvbuf, RECVBUF_SIZE);
-        break;
-#endif
-    case RTSP_LOWER_TRANSPORT_UDP:
-    case RTSP_LOWER_TRANSPORT_UDP_MULTICAST:
-        len = udp_read_packet(s, &rtsp_st, rt->recvbuf, RECVBUF_SIZE, wait_end);
-        if (len > 0 && rtsp_st->transport_priv && rt->transport == RTSP_TRANSPORT_RTP)
-            ff_rtp_check_and_send_back_rr(rtsp_st->transport_priv, rtsp_st->rtp_handle, NULL, len);
-        break;
-    case RTSP_LOWER_TRANSPORT_CUSTOM:
-        if (first_queue_st && rt->transport == RTSP_TRANSPORT_RTP &&
-            wait_end && wait_end < av_gettime_relative())
-            len = AVERROR(EAGAIN);
-        else
-            len = ffio_read_partial(s->pb, rt->recvbuf, RECVBUF_SIZE);
-        len = pick_stream(s, &rtsp_st, rt->recvbuf, len);
-        if (len > 0 && rtsp_st->transport_priv && rt->transport == RTSP_TRANSPORT_RTP)
-            ff_rtp_check_and_send_back_rr(rtsp_st->transport_priv, NULL, s->pb, len);
-        break;
-    }
+    len = read_packet(s, &rtsp_st, first_queue_st, wait_end);
     if (len == AVERROR(EAGAIN) && first_queue_st &&
         rt->transport == RTSP_TRANSPORT_RTP) {
         av_log(s, AV_LOG_WARNING,
@@ -2153,8 +2176,7 @@ redo:
     }
     if (len < 0)
         return len;
-    if (len == 0)
-        return AVERROR_EOF;
+
     if (rt->transport == RTSP_TRANSPORT_RDT) {
         ret = ff_rdt_parse_packet(rtsp_st->transport_priv, pkt, &rt->recvbuf, len);
     } else if (rt->transport == RTSP_TRANSPORT_RTP) {

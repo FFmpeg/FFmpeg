@@ -115,7 +115,7 @@ SECTION .text
 %endmacro
 
 %macro vp6_filter_diag4 0
-; void ff_vp6_filter_diag4_<opt>(uint8_t *dst, uint8_t *src, int stride,
+; void ff_vp6_filter_diag4_<opt>(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
 ;                                const int16_t h_weight[4], const int16_t v_weights[4])
 cglobal vp6_filter_diag4, 5, 7, 8
     mov          r5, rsp         ; backup stack pointer
@@ -125,9 +125,6 @@ cglobal vp6_filter_diag4, 5, 7, 8
 %else
     sub         rsp, 8*15
     movq         m6, [pw_64]
-%endif
-%if ARCH_X86_64
-    movsxd       r2, r2d
 %endif
 
     sub          r1, r2

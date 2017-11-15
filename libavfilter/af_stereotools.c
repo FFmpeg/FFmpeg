@@ -33,6 +33,8 @@ typedef struct StereoToolsContext {
     int phase_l;
     int phase_r;
     int mode;
+    int bmode_in;
+    int bmode_out;
     double slev;
     double sbal;
     double mlev;
@@ -67,7 +69,7 @@ static const AVOption stereotools_options[] = {
     { "muter",       "mute R",           OFFSET(mute_r),      AV_OPT_TYPE_BOOL,   {.i64=0},   0,          1, A },
     { "phasel",      "phase L",          OFFSET(phase_l),     AV_OPT_TYPE_BOOL,   {.i64=0},   0,          1, A },
     { "phaser",      "phase R",          OFFSET(phase_r),     AV_OPT_TYPE_BOOL,   {.i64=0},   0,          1, A },
-    { "mode",        "set stereo mode",  OFFSET(mode),        AV_OPT_TYPE_INT,    {.i64=0},   0,          6, A, "mode" },
+    { "mode",        "set stereo mode",  OFFSET(mode),        AV_OPT_TYPE_INT,    {.i64=0},   0,          8, A, "mode" },
     {     "lr>lr",   0,                  0,                   AV_OPT_TYPE_CONST,  {.i64=0},   0,          0, A, "mode" },
     {     "lr>ms",   0,                  0,                   AV_OPT_TYPE_CONST,  {.i64=1},   0,          0, A, "mode" },
     {     "ms>lr",   0,                  0,                   AV_OPT_TYPE_CONST,  {.i64=2},   0,          0, A, "mode" },
@@ -75,6 +77,8 @@ static const AVOption stereotools_options[] = {
     {     "lr>rr",   0,                  0,                   AV_OPT_TYPE_CONST,  {.i64=4},   0,          0, A, "mode" },
     {     "lr>l+r",  0,                  0,                   AV_OPT_TYPE_CONST,  {.i64=5},   0,          0, A, "mode" },
     {     "lr>rl",   0,                  0,                   AV_OPT_TYPE_CONST,  {.i64=6},   0,          0, A, "mode" },
+    {     "ms>ll",   0,                  0,                   AV_OPT_TYPE_CONST,  {.i64=7},   0,          0, A, "mode" },
+    {     "ms>rr",   0,                  0,                   AV_OPT_TYPE_CONST,  {.i64=8},   0,          0, A, "mode" },
     { "slev",        "set side level",   OFFSET(slev),        AV_OPT_TYPE_DOUBLE, {.dbl=1},   0.015625,  64, A },
     { "sbal",        "set side balance", OFFSET(sbal),        AV_OPT_TYPE_DOUBLE, {.dbl=0},  -1,          1, A },
     { "mlev",        "set middle level", OFFSET(mlev),        AV_OPT_TYPE_DOUBLE, {.dbl=1},   0.015625,  64, A },
@@ -83,6 +87,11 @@ static const AVOption stereotools_options[] = {
     { "delay",       "set delay",        OFFSET(delay),       AV_OPT_TYPE_DOUBLE, {.dbl=0}, -20,         20, A },
     { "sclevel",     "set S/C level",    OFFSET(sc_level),    AV_OPT_TYPE_DOUBLE, {.dbl=1},   1,        100, A },
     { "phase",       "set stereo phase", OFFSET(phase),       AV_OPT_TYPE_DOUBLE, {.dbl=0},   0,        360, A },
+    { "bmode_in",    "set balance in mode", OFFSET(bmode_in), AV_OPT_TYPE_INT,    {.i64=0},   0,          2, A, "bmode" },
+    {     "balance",   0,                0,                   AV_OPT_TYPE_CONST,  {.i64=0},   0,          0, A, "bmode" },
+    {     "amplitude", 0,                0,                   AV_OPT_TYPE_CONST,  {.i64=1},   0,          0, A, "bmode" },
+    {     "power",     0,                0,                   AV_OPT_TYPE_CONST,  {.i64=2},   0,          0, A, "bmode" },
+    { "bmode_out", "set balance out mode", OFFSET(bmode_out), AV_OPT_TYPE_INT,    {.i64=0},   0,          2, A, "bmode" },
     { NULL }
 };
 
@@ -167,13 +176,31 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     dst = (double *)out->data[0];
 
     for (n = 0; n < in->nb_samples; n++, src += 2, dst += 2) {
-        double L = src[0], R = src[1], l, r, m, S;
+        double L = src[0], R = src[1], l, r, m, S, gl, gr, gd;
 
         L *= level_in;
         R *= level_in;
 
-        L *= 1. - FFMAX(0., balance_in);
-        R *= 1. + FFMIN(0., balance_in);
+        gl = 1. - FFMAX(0., balance_in);
+        gr = 1. + FFMIN(0., balance_in);
+        switch (s->bmode_in) {
+        case 1:
+            gd = gl - gr;
+            gl = 1. + gd;
+            gr = 1. - gd;
+            break;
+        case 2:
+            if (balance_in < 0.) {
+                gr = FFMAX(0.5, gr);
+                gl = 1. / gr;
+            } else if (balance_in > 0.) {
+                gl = FFMAX(0.5, gl);
+                gr = 1. / gl;
+            }
+            break;
+        }
+        L *= gl;
+        R *= gr;
 
         if (s->softclip) {
             R = s->inv_atan_shape * atan(R * sc_level);
@@ -222,6 +249,16 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             L = l;
             R = r;
             break;
+        case 7:
+            l = L * mlev * FFMIN(1., 2. - mpan) + R * slev * FFMIN(1., 2. - sbal);
+            L = l;
+            R = l;
+            break;
+        case 8:
+            r = L * mlev * FFMIN(1., mpan)      - R * slev * FFMIN(1., sbal);
+            L = r;
+            R = r;
+            break;
         }
 
         L *= 1. - mute_l;
@@ -253,8 +290,27 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
         s->pos = (s->pos + 2) % s->length;
 
-        L *= 1. - FFMAX(0., balance_out);
-        R *= 1. + FFMIN(0., balance_out);
+        gl = 1. - FFMAX(0., balance_out);
+        gr = 1. + FFMIN(0., balance_out);
+        switch (s->bmode_out) {
+        case 1:
+            gd = gl - gr;
+            gl = 1. + gd;
+            gr = 1. - gd;
+            break;
+        case 2:
+            if (balance_out < 0.) {
+                gr = FFMAX(0.5, gr);
+                gl = 1. / gr;
+            } else if (balance_out > 0.) {
+                gl = FFMAX(0.5, gl);
+                gr = 1. / gl;
+            }
+            break;
+        }
+        L *= gl;
+        R *= gr;
+
 
         L *= level_out;
         R *= level_out;

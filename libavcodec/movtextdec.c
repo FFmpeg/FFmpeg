@@ -116,6 +116,8 @@ static void mov_text_cleanup(MovTextContext *m)
             av_freep(&m->s[i]);
         }
         av_freep(&m->s);
+        m->count_s = 0;
+        m->style_entries = 0;
     }
 }
 
@@ -279,11 +281,13 @@ static int decode_hclr(const uint8_t *tsmb, MovTextContext *m, AVPacket *avpkt)
 static int decode_styl(const uint8_t *tsmb, MovTextContext *m, AVPacket *avpkt)
 {
     int i;
-    m->style_entries = AV_RB16(tsmb);
+    int style_entries = AV_RB16(tsmb);
     tsmb += 2;
     // A single style record is of length 12 bytes.
-    if (m->tracksize + m->size_var + 2 + m->style_entries * 12 > avpkt->size)
+    if (m->tracksize + m->size_var + 2 + style_entries * 12 > avpkt->size)
         return -1;
+
+    m->style_entries = style_entries;
 
     m->box_flags |= STYL_BOX;
     for(i = 0; i < m->style_entries; i++) {
@@ -432,6 +436,7 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
     int text_length, tsmb_type, ret_tsmb;
     uint64_t tsmb_size;
     const uint8_t *tsmb;
+    size_t i;
 
     if (!ptr || avpkt->size < 2)
         return AVERROR_INVALIDDATA;
@@ -455,6 +460,8 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
     end = ptr + FFMIN(2 + text_length, avpkt->size);
     ptr += 2;
 
+    mov_text_cleanup(m);
+
     tsmb_size = 0;
     m->tracksize = 2 + text_length;
     m->style_entries = 0;
@@ -471,10 +478,6 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
             tsmb_type = AV_RB32(tsmb);
             tsmb += 4;
 
-            if (tsmb_size == 0) {
-              return AVERROR_INVALIDDATA;
-            }
-
             if (tsmb_size == 1) {
                 if (m->tracksize + 16 > avpkt->size)
                     break;
@@ -485,10 +488,15 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
                 m->size_var = 8;
             //size_var is equal to 8 or 16 depending on the size of box
 
-            if (m->tracksize + tsmb_size > avpkt->size)
+            if (tsmb_size == 0) {
+                av_log(avctx, AV_LOG_ERROR, "tsmb_size is 0\n");
+                return AVERROR_INVALIDDATA;
+            }
+
+            if (tsmb_size > avpkt->size - m->tracksize)
                 break;
 
-            for (size_t i = 0; i < box_count; i++) {
+            for (i = 0; i < box_count; i++) {
                 if (tsmb_type == box_types[i].type) {
                     if (m->tracksize + m->size_var + box_types[i].base_size > avpkt->size)
                         break;
@@ -516,6 +524,7 @@ static int mov_text_decode_close(AVCodecContext *avctx)
 {
     MovTextContext *m = avctx->priv_data;
     mov_text_cleanup_ftab(m);
+    mov_text_cleanup(m);
     return 0;
 }
 

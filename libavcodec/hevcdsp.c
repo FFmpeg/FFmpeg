@@ -91,7 +91,7 @@ static const int8_t transform[32][32] = {
       90, -90,  88, -85,  82, -78,  73, -67,  61, -54,  46, -38,  31, -22,  13,  -4 },
 };
 
-DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_filters[7][4]) = {
+DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_filters)[7][4] = {
     { -2, 58, 10, -2},
     { -4, 54, 16, -2},
     { -6, 46, 28, -4},
@@ -101,7 +101,7 @@ DECLARE_ALIGNED(16, const int8_t, ff_hevc_epel_filters[7][4]) = {
     { -2, 10, 58, -2},
 };
 
-DECLARE_ALIGNED(16, const int8_t, ff_hevc_qpel_filters[3][16]) = {
+DECLARE_ALIGNED(16, const int8_t, ff_hevc_qpel_filters)[3][16] = {
     { -1,  4,-10, 58, 17, -5,  1,  0, -1,  4,-10, 58, 17, -5,  1,  0},
     { -1,  4,-11, 40, 40,-11,  4, -1, -1,  4,-11, 40, 40,-11,  4, -1},
     {  0,  1, -5, 17, 58,-10,  4, -1,  0,  1, -5, 17, 58,-10,  4, -1}
@@ -195,13 +195,13 @@ void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)
 
 #define HEVC_DSP(depth)                                                     \
     hevcdsp->put_pcm                = FUNC(put_pcm, depth);                 \
-    hevcdsp->transform_add[0]       = FUNC(transform_add4x4, depth);        \
-    hevcdsp->transform_add[1]       = FUNC(transform_add8x8, depth);        \
-    hevcdsp->transform_add[2]       = FUNC(transform_add16x16, depth);      \
-    hevcdsp->transform_add[3]       = FUNC(transform_add32x32, depth);      \
-    hevcdsp->transform_skip         = FUNC(transform_skip, depth);          \
+    hevcdsp->add_residual[0]        = FUNC(add_residual4x4, depth);         \
+    hevcdsp->add_residual[1]        = FUNC(add_residual8x8, depth);         \
+    hevcdsp->add_residual[2]        = FUNC(add_residual16x16, depth);       \
+    hevcdsp->add_residual[3]        = FUNC(add_residual32x32, depth);       \
+    hevcdsp->dequant                = FUNC(dequant, depth);                 \
     hevcdsp->transform_rdpcm        = FUNC(transform_rdpcm, depth);         \
-    hevcdsp->idct_4x4_luma          = FUNC(transform_4x4_luma, depth);      \
+    hevcdsp->transform_4x4_luma     = FUNC(transform_4x4_luma, depth);      \
     hevcdsp->idct[0]                = FUNC(idct_4x4, depth);                \
     hevcdsp->idct[1]                = FUNC(idct_8x8, depth);                \
     hevcdsp->idct[2]                = FUNC(idct_16x16, depth);              \
@@ -257,10 +257,12 @@ int i = 0;
         break;
     }
 
+    if (ARCH_ARM)
+        ff_hevc_dsp_init_arm(hevcdsp, bit_depth);
+    if (ARCH_PPC)
+        ff_hevc_dsp_init_ppc(hevcdsp, bit_depth);
     if (ARCH_X86)
         ff_hevc_dsp_init_x86(hevcdsp, bit_depth);
-    if (ARCH_ARM)
-        ff_hevcdsp_init_arm(hevcdsp, bit_depth);
     if (ARCH_MIPS)
         ff_hevc_dsp_init_mips(hevcdsp, bit_depth);
 }

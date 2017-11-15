@@ -244,6 +244,13 @@ static int vpx_decode(AVCodecContext *avctx,
          (img_alpha = vpx_codec_get_frame(&ctx->decoder_alpha, &iter_alpha)))) {
         uint8_t *planes[4];
         int linesizes[4];
+
+        if (img->d_w > img->w || img->d_h > img->h) {
+            av_log(avctx, AV_LOG_ERROR, "Display dimensions %dx%d exceed storage %dx%d\n",
+                   img->d_w, img->d_h, img->w, img->h);
+            return AVERROR_EXTERNAL;
+        }
+
         if ((ret = set_pix_fmt(avctx, img, ctx->has_alpha_channel)) < 0) {
 #ifdef VPX_IMG_FMT_HIGHBITDEPTH
             av_log(avctx, AV_LOG_ERROR, "Unsupported output colorspace (%d) / bit_depth (%d)\n",

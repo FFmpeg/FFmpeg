@@ -26,7 +26,6 @@
 #include "avcodec.h"
 #include "libavutil/opt.h"
 #include "libavutil/avassert.h"
-#include "libavutil/atomic.h"
 #include "libavutil/avstring.h"
 #include "libavcodec/avcodec.h"
 #include "libavutil/pixdesc.h"
@@ -34,12 +33,116 @@
 #include <pthread.h>
 #include "h264.h"
 #include "h264_sei.h"
+#include <dlfcn.h>
 
-#if !CONFIG_VT_BT2020
-# define kCVImageBufferColorPrimaries_ITU_R_2020   CFSTR("ITU_R_2020")
-# define kCVImageBufferTransferFunction_ITU_R_2020 CFSTR("ITU_R_2020")
-# define kCVImageBufferYCbCrMatrix_ITU_R_2020      CFSTR("ITU_R_2020")
+#if !HAVE_KCMVIDEOCODECTYPE_HEVC
+enum { kCMVideoCodecType_HEVC = 'hvc1' };
 #endif
+
+typedef OSStatus (*getParameterSetAtIndex)(CMFormatDescriptionRef videoDesc,
+                                           size_t parameterSetIndex,
+                                           const uint8_t * _Nullable *parameterSetPointerOut,
+                                           size_t *parameterSetSizeOut,
+                                           size_t *parameterSetCountOut,
+                                           int *NALUnitHeaderLengthOut);
+
+//These symbols may not be present
+static struct{
+    CFStringRef kCVImageBufferColorPrimaries_ITU_R_2020;
+    CFStringRef kCVImageBufferTransferFunction_ITU_R_2020;
+    CFStringRef kCVImageBufferYCbCrMatrix_ITU_R_2020;
+
+    CFStringRef kVTCompressionPropertyKey_H264EntropyMode;
+    CFStringRef kVTH264EntropyMode_CAVLC;
+    CFStringRef kVTH264EntropyMode_CABAC;
+
+    CFStringRef kVTProfileLevel_H264_Baseline_4_0;
+    CFStringRef kVTProfileLevel_H264_Baseline_4_2;
+    CFStringRef kVTProfileLevel_H264_Baseline_5_0;
+    CFStringRef kVTProfileLevel_H264_Baseline_5_1;
+    CFStringRef kVTProfileLevel_H264_Baseline_5_2;
+    CFStringRef kVTProfileLevel_H264_Baseline_AutoLevel;
+    CFStringRef kVTProfileLevel_H264_Main_4_2;
+    CFStringRef kVTProfileLevel_H264_Main_5_1;
+    CFStringRef kVTProfileLevel_H264_Main_5_2;
+    CFStringRef kVTProfileLevel_H264_Main_AutoLevel;
+    CFStringRef kVTProfileLevel_H264_High_3_0;
+    CFStringRef kVTProfileLevel_H264_High_3_1;
+    CFStringRef kVTProfileLevel_H264_High_3_2;
+    CFStringRef kVTProfileLevel_H264_High_4_0;
+    CFStringRef kVTProfileLevel_H264_High_4_1;
+    CFStringRef kVTProfileLevel_H264_High_4_2;
+    CFStringRef kVTProfileLevel_H264_High_5_1;
+    CFStringRef kVTProfileLevel_H264_High_5_2;
+    CFStringRef kVTProfileLevel_H264_High_AutoLevel;
+
+    CFStringRef kVTProfileLevel_HEVC_Main_AutoLevel;
+    CFStringRef kVTProfileLevel_HEVC_Main10_AutoLevel;
+
+    CFStringRef kVTCompressionPropertyKey_RealTime;
+
+    CFStringRef kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder;
+    CFStringRef kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder;
+
+    getParameterSetAtIndex CMVideoFormatDescriptionGetHEVCParameterSetAtIndex;
+} compat_keys;
+
+#define GET_SYM(symbol, defaultVal)                                     \
+do{                                                                     \
+    CFStringRef* handle = (CFStringRef*)dlsym(RTLD_DEFAULT, #symbol);   \
+    if(!handle)                                                         \
+        compat_keys.symbol = CFSTR(defaultVal);                         \
+    else                                                                \
+        compat_keys.symbol = *handle;                                   \
+}while(0)
+
+static pthread_once_t once_ctrl = PTHREAD_ONCE_INIT;
+
+static void loadVTEncSymbols(){
+    compat_keys.CMVideoFormatDescriptionGetHEVCParameterSetAtIndex =
+        (getParameterSetAtIndex)dlsym(
+            RTLD_DEFAULT,
+            "CMVideoFormatDescriptionGetHEVCParameterSetAtIndex"
+        );
+
+    GET_SYM(kCVImageBufferColorPrimaries_ITU_R_2020,   "ITU_R_2020");
+    GET_SYM(kCVImageBufferTransferFunction_ITU_R_2020, "ITU_R_2020");
+    GET_SYM(kCVImageBufferYCbCrMatrix_ITU_R_2020,      "ITU_R_2020");
+
+    GET_SYM(kVTCompressionPropertyKey_H264EntropyMode, "H264EntropyMode");
+    GET_SYM(kVTH264EntropyMode_CAVLC, "CAVLC");
+    GET_SYM(kVTH264EntropyMode_CABAC, "CABAC");
+
+    GET_SYM(kVTProfileLevel_H264_Baseline_4_0,       "H264_Baseline_4_0");
+    GET_SYM(kVTProfileLevel_H264_Baseline_4_2,       "H264_Baseline_4_2");
+    GET_SYM(kVTProfileLevel_H264_Baseline_5_0,       "H264_Baseline_5_0");
+    GET_SYM(kVTProfileLevel_H264_Baseline_5_1,       "H264_Baseline_5_1");
+    GET_SYM(kVTProfileLevel_H264_Baseline_5_2,       "H264_Baseline_5_2");
+    GET_SYM(kVTProfileLevel_H264_Baseline_AutoLevel, "H264_Baseline_AutoLevel");
+    GET_SYM(kVTProfileLevel_H264_Main_4_2,           "H264_Main_4_2");
+    GET_SYM(kVTProfileLevel_H264_Main_5_1,           "H264_Main_5_1");
+    GET_SYM(kVTProfileLevel_H264_Main_5_2,           "H264_Main_5_2");
+    GET_SYM(kVTProfileLevel_H264_Main_AutoLevel,     "H264_Main_AutoLevel");
+    GET_SYM(kVTProfileLevel_H264_High_3_0,           "H264_High_3_0");
+    GET_SYM(kVTProfileLevel_H264_High_3_1,           "H264_High_3_1");
+    GET_SYM(kVTProfileLevel_H264_High_3_2,           "H264_High_3_2");
+    GET_SYM(kVTProfileLevel_H264_High_4_0,           "H264_High_4_0");
+    GET_SYM(kVTProfileLevel_H264_High_4_1,           "H264_High_4_1");
+    GET_SYM(kVTProfileLevel_H264_High_4_2,           "H264_High_4_2");
+    GET_SYM(kVTProfileLevel_H264_High_5_1,           "H264_High_5_1");
+    GET_SYM(kVTProfileLevel_H264_High_5_2,           "H264_High_5_2");
+    GET_SYM(kVTProfileLevel_H264_High_AutoLevel,     "H264_High_AutoLevel");
+
+    GET_SYM(kVTProfileLevel_HEVC_Main_AutoLevel,     "HEVC_Main_AutoLevel");
+    GET_SYM(kVTProfileLevel_HEVC_Main10_AutoLevel,   "HEVC_Main10_AutoLevel");
+
+    GET_SYM(kVTCompressionPropertyKey_RealTime, "RealTime");
+
+    GET_SYM(kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder,
+            "EnableHardwareAcceleratedVideoEncoder");
+    GET_SYM(kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder,
+            "RequireHardwareAcceleratedVideoEncoder");
+}
 
 typedef enum VT_H264Profile {
     H264_PROF_AUTO,
@@ -54,6 +157,13 @@ typedef enum VTH264Entropy{
     VT_CAVLC,
     VT_CABAC
 } VTH264Entropy;
+
+typedef enum VT_HEVCProfile {
+    HEVC_PROF_AUTO,
+    HEVC_PROF_MAIN,
+    HEVC_PROF_MAIN10,
+    HEVC_PROF_COUNT
+} VT_HEVCProfile;
 
 static const uint8_t start_code[] = { 0, 0, 0, 1 };
 
@@ -71,10 +181,12 @@ typedef struct BufNode {
 
 typedef struct VTEncContext {
     AVClass *class;
+    enum AVCodecID codec_id;
     VTCompressionSessionRef session;
     CFStringRef ycbcr_matrix;
     CFStringRef color_primaries;
     CFStringRef transfer_function;
+    getParameterSetAtIndex get_param_set_func;
 
     pthread_mutex_t lock;
     pthread_cond_t  cv_sample_sent;
@@ -270,6 +382,7 @@ static CMVideoCodecType get_cm_codec_type(enum AVCodecID id)
 {
     switch (id) {
     case AV_CODEC_ID_H264: return kCMVideoCodecType_H264;
+    case AV_CODEC_ID_HEVC: return kCMVideoCodecType_HEVC;
     default:               return 0;
     }
 }
@@ -287,17 +400,18 @@ static int get_params_size(
     CMVideoFormatDescriptionRef vid_fmt,
     size_t                      *size)
 {
+    VTEncContext *vtctx = avctx->priv_data;
     size_t total_size = 0;
     size_t ps_count;
     int is_count_bad = 0;
     size_t i;
     int status;
-    status = CMVideoFormatDescriptionGetH264ParameterSetAtIndex(vid_fmt,
-                                                                0,
-                                                                NULL,
-                                                                NULL,
-                                                                &ps_count,
-                                                                NULL);
+    status = vtctx->get_param_set_func(vid_fmt,
+                                       0,
+                                       NULL,
+                                       NULL,
+                                       &ps_count,
+                                       NULL);
     if (status) {
         is_count_bad = 1;
         ps_count     = 0;
@@ -307,12 +421,12 @@ static int get_params_size(
     for (i = 0; i < ps_count || is_count_bad; i++) {
         const uint8_t *ps;
         size_t ps_size;
-        status = CMVideoFormatDescriptionGetH264ParameterSetAtIndex(vid_fmt,
-                                                                    i,
-                                                                    &ps,
-                                                                    &ps_size,
-                                                                    NULL,
-                                                                    NULL);
+        status = vtctx->get_param_set_func(vid_fmt,
+                                           i,
+                                           &ps,
+                                           &ps_size,
+                                           NULL,
+                                           NULL);
         if (status) {
             /*
              * When ps_count is invalid, status != 0 ends the loop normally
@@ -341,18 +455,19 @@ static int copy_param_sets(
     uint8_t                     *dst,
     size_t                      dst_size)
 {
+    VTEncContext *vtctx = avctx->priv_data;
     size_t ps_count;
     int is_count_bad = 0;
     int status;
     size_t offset = 0;
     size_t i;
 
-    status = CMVideoFormatDescriptionGetH264ParameterSetAtIndex(vid_fmt,
-                                                                0,
-                                                                NULL,
-                                                                NULL,
-                                                                &ps_count,
-                                                                NULL);
+    status = vtctx->get_param_set_func(vid_fmt,
+                                       0,
+                                       NULL,
+                                       NULL,
+                                       &ps_count,
+                                       NULL);
     if (status) {
         is_count_bad = 1;
         ps_count     = 0;
@@ -365,12 +480,12 @@ static int copy_param_sets(
         size_t ps_size;
         size_t next_offset;
 
-        status = CMVideoFormatDescriptionGetH264ParameterSetAtIndex(vid_fmt,
-                                                                    i,
-                                                                    &ps,
-                                                                    &ps_size,
-                                                                    NULL,
-                                                                    NULL);
+        status = vtctx->get_param_set_func(vid_fmt,
+                                           i,
+                                           &ps,
+                                           &ps_size,
+                                           NULL,
+                                           NULL);
         if (status) {
             if (i > 0 && is_count_bad) status = 0;
 
@@ -470,6 +585,7 @@ static int get_length_code_size(
     CMSampleBufferRef sample_buffer,
     size_t            *size)
 {
+    VTEncContext *vtctx = avctx->priv_data;
     CMVideoFormatDescriptionRef vid_fmt;
     int isize;
     int status;
@@ -480,12 +596,12 @@ static int get_length_code_size(
         return AVERROR_EXTERNAL;
     }
 
-    status = CMVideoFormatDescriptionGetH264ParameterSetAtIndex(vid_fmt,
-                                                                0,
-                                                                NULL,
-                                                                NULL,
-                                                                NULL,
-                                                                &isize);
+    status = vtctx->get_param_set_func(vid_fmt,
+                                       0,
+                                       NULL,
+                                       NULL,
+                                       NULL,
+                                       &isize);
     if (status) {
         av_log(avctx, AV_LOG_ERROR, "Error getting length code size: %d\n", status);
         return AVERROR_EXTERNAL;
@@ -501,8 +617,8 @@ static int get_length_code_size(
  * If profile_level_val is NULL and this method returns true, don't specify the
  * profile/level to the encoder.
  */
-static bool get_vt_profile_level(AVCodecContext *avctx,
-                                 CFStringRef    *profile_level_val)
+static bool get_vt_h264_profile_level(AVCodecContext *avctx,
+                                      CFStringRef    *profile_level_val)
 {
     VTEncContext *vtctx = avctx->priv_data;
     int64_t profile = vtctx->profile;
@@ -520,48 +636,102 @@ static bool get_vt_profile_level(AVCodecContext *avctx,
 
         case H264_PROF_BASELINE:
             switch (vtctx->level) {
-                case  0: *profile_level_val = kVTProfileLevel_H264_Baseline_AutoLevel; break;
+                case  0: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_Baseline_AutoLevel; break;
                 case 13: *profile_level_val = kVTProfileLevel_H264_Baseline_1_3;       break;
                 case 30: *profile_level_val = kVTProfileLevel_H264_Baseline_3_0;       break;
                 case 31: *profile_level_val = kVTProfileLevel_H264_Baseline_3_1;       break;
                 case 32: *profile_level_val = kVTProfileLevel_H264_Baseline_3_2;       break;
-                case 40: *profile_level_val = kVTProfileLevel_H264_Baseline_4_0;       break;
+                case 40: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_Baseline_4_0;       break;
                 case 41: *profile_level_val = kVTProfileLevel_H264_Baseline_4_1;       break;
-                case 42: *profile_level_val = kVTProfileLevel_H264_Baseline_4_2;       break;
-                case 50: *profile_level_val = kVTProfileLevel_H264_Baseline_5_0;       break;
-                case 51: *profile_level_val = kVTProfileLevel_H264_Baseline_5_1;       break;
-                case 52: *profile_level_val = kVTProfileLevel_H264_Baseline_5_2;       break;
+                case 42: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_Baseline_4_2;       break;
+                case 50: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_Baseline_5_0;       break;
+                case 51: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_Baseline_5_1;       break;
+                case 52: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_Baseline_5_2;       break;
             }
             break;
 
         case H264_PROF_MAIN:
             switch (vtctx->level) {
-                case  0: *profile_level_val = kVTProfileLevel_H264_Main_AutoLevel; break;
+                case  0: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_Main_AutoLevel; break;
                 case 30: *profile_level_val = kVTProfileLevel_H264_Main_3_0;       break;
                 case 31: *profile_level_val = kVTProfileLevel_H264_Main_3_1;       break;
                 case 32: *profile_level_val = kVTProfileLevel_H264_Main_3_2;       break;
                 case 40: *profile_level_val = kVTProfileLevel_H264_Main_4_0;       break;
                 case 41: *profile_level_val = kVTProfileLevel_H264_Main_4_1;       break;
-                case 42: *profile_level_val = kVTProfileLevel_H264_Main_4_2;       break;
+                case 42: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_Main_4_2;       break;
                 case 50: *profile_level_val = kVTProfileLevel_H264_Main_5_0;       break;
-                case 51: *profile_level_val = kVTProfileLevel_H264_Main_5_1;       break;
-                case 52: *profile_level_val = kVTProfileLevel_H264_Main_5_2;       break;
+                case 51: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_Main_5_1;       break;
+                case 52: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_Main_5_2;       break;
             }
             break;
 
         case H264_PROF_HIGH:
             switch (vtctx->level) {
-                case  0: *profile_level_val = kVTProfileLevel_H264_High_AutoLevel; break;
-                case 30: *profile_level_val = kVTProfileLevel_H264_High_3_0;       break;
-                case 31: *profile_level_val = kVTProfileLevel_H264_High_3_1;       break;
-                case 32: *profile_level_val = kVTProfileLevel_H264_High_3_2;       break;
-                case 40: *profile_level_val = kVTProfileLevel_H264_High_4_0;       break;
-                case 41: *profile_level_val = kVTProfileLevel_H264_High_4_1;       break;
-                case 42: *profile_level_val = kVTProfileLevel_H264_High_4_2;       break;
+                case  0: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_High_AutoLevel; break;
+                case 30: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_High_3_0;       break;
+                case 31: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_High_3_1;       break;
+                case 32: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_High_3_2;       break;
+                case 40: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_High_4_0;       break;
+                case 41: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_High_4_1;       break;
+                case 42: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_High_4_2;       break;
                 case 50: *profile_level_val = kVTProfileLevel_H264_High_5_0;       break;
-                case 51: *profile_level_val = kVTProfileLevel_H264_High_5_1;       break;
-                case 52: *profile_level_val = kVTProfileLevel_H264_High_5_2;       break;
+                case 51: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_High_5_1;       break;
+                case 52: *profile_level_val =
+                                  compat_keys.kVTProfileLevel_H264_High_5_2;       break;
             }
+            break;
+    }
+
+    if (!*profile_level_val) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid Profile/Level.\n");
+        return false;
+    }
+
+    return true;
+}
+
+/*
+ * Returns true on success.
+ *
+ * If profile_level_val is NULL and this method returns true, don't specify the
+ * profile/level to the encoder.
+ */
+static bool get_vt_hevc_profile_level(AVCodecContext *avctx,
+                                      CFStringRef    *profile_level_val)
+{
+    VTEncContext *vtctx = avctx->priv_data;
+    int64_t profile = vtctx->profile;
+
+    *profile_level_val = NULL;
+
+    switch (profile) {
+        case HEVC_PROF_AUTO:
+            return true;
+        case HEVC_PROF_MAIN:
+            *profile_level_val =
+                compat_keys.kVTProfileLevel_HEVC_Main_AutoLevel;
+            break;
+        case HEVC_PROF_MAIN10:
+            *profile_level_val =
+                compat_keys.kVTProfileLevel_HEVC_Main10_AutoLevel;
             break;
     }
 
@@ -701,7 +871,7 @@ static int get_cv_color_primaries(AVCodecContext *avctx,
             break;
 
         case AVCOL_PRI_BT2020:
-            *primaries = kCVImageBufferColorPrimaries_ITU_R_2020;
+            *primaries = compat_keys.kCVImageBufferColorPrimaries_ITU_R_2020;
             break;
 
         default:
@@ -748,7 +918,7 @@ static int get_cv_transfer_function(AVCodecContext *avctx,
 
         case AVCOL_TRC_BT2020_10:
         case AVCOL_TRC_BT2020_12:
-            *transfer_fnc = kCVImageBufferTransferFunction_ITU_R_2020;
+            *transfer_fnc = compat_keys.kCVImageBufferTransferFunction_ITU_R_2020;
             break;
 
         default:
@@ -779,7 +949,7 @@ static int get_cv_ycbcr_matrix(AVCodecContext *avctx, CFStringRef *matrix) {
             break;
 
         case AVCOL_SPC_BT2020_NCL:
-            *matrix = kCVImageBufferYCbCrMatrix_ITU_R_2020;
+            *matrix = compat_keys.kCVImageBufferYCbCrMatrix_ITU_R_2020;
             break;
 
         default:
@@ -800,7 +970,14 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
 {
     VTEncContext *vtctx = avctx->priv_data;
     SInt32       bit_rate = avctx->bit_rate;
+    SInt32       max_rate = avctx->rc_max_rate;
     CFNumberRef  bit_rate_num;
+    CFNumberRef  bytes_per_second;
+    CFNumberRef  one_second;
+    CFArrayRef   data_rate_limits;
+    int64_t      bytes_per_second_value = 0;
+    int64_t      one_second_value = 0;
+    void         *nums[2];
 
     int status = VTCompressionSessionCreate(kCFAllocatorDefault,
                                             avctx->width,
@@ -840,13 +1017,55 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
         return AVERROR_EXTERNAL;
     }
 
-    if (profile_level) {
+    if (vtctx->codec_id == AV_CODEC_ID_H264) {
+        // kVTCompressionPropertyKey_DataRateLimits is not available for HEVC
+        bytes_per_second_value = max_rate >> 3;
+        bytes_per_second = CFNumberCreate(kCFAllocatorDefault,
+                                          kCFNumberSInt64Type,
+                                          &bytes_per_second_value);
+        if (!bytes_per_second) {
+            return AVERROR(ENOMEM);
+        }
+        one_second_value = 1;
+        one_second = CFNumberCreate(kCFAllocatorDefault,
+                                    kCFNumberSInt64Type,
+                                    &one_second_value);
+        if (!one_second) {
+            CFRelease(bytes_per_second);
+            return AVERROR(ENOMEM);
+        }
+        nums[0] = (void *)bytes_per_second;
+        nums[1] = (void *)one_second;
+        data_rate_limits = CFArrayCreate(kCFAllocatorDefault,
+                                         (const void **)nums,
+                                         2,
+                                         &kCFTypeArrayCallBacks);
+
+        if (!data_rate_limits) {
+            CFRelease(bytes_per_second);
+            CFRelease(one_second);
+            return AVERROR(ENOMEM);
+        }
         status = VTSessionSetProperty(vtctx->session,
-                                      kVTCompressionPropertyKey_ProfileLevel,
-                                      profile_level);
+                                      kVTCompressionPropertyKey_DataRateLimits,
+                                      data_rate_limits);
+
+        CFRelease(bytes_per_second);
+        CFRelease(one_second);
+        CFRelease(data_rate_limits);
+
         if (status) {
-            av_log(avctx, AV_LOG_ERROR, "Error setting profile/level property: %d\n", status);
+            av_log(avctx, AV_LOG_ERROR, "Error setting max bitrate property: %d\n", status);
             return AVERROR_EXTERNAL;
+        }
+
+        if (profile_level) {
+            status = VTSessionSetProperty(vtctx->session,
+                                        kVTCompressionPropertyKey_ProfileLevel,
+                                        profile_level);
+            if (status) {
+                av_log(avctx, AV_LOG_ERROR, "Error setting profile/level property: %d\n", status);
+            }
         }
     }
 
@@ -1012,22 +1231,21 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
 
     if (vtctx->entropy != VT_ENTROPY_NOT_SET) {
         CFStringRef entropy = vtctx->entropy == VT_CABAC ?
-                                kVTH264EntropyMode_CABAC:
-                                kVTH264EntropyMode_CAVLC;
+                                compat_keys.kVTH264EntropyMode_CABAC:
+                                compat_keys.kVTH264EntropyMode_CAVLC;
 
         status = VTSessionSetProperty(vtctx->session,
-                                      kVTCompressionPropertyKey_H264EntropyMode,
+                                      compat_keys.kVTCompressionPropertyKey_H264EntropyMode,
                                       entropy);
 
         if (status) {
             av_log(avctx, AV_LOG_ERROR, "Error setting entropy property: %d\n", status);
-            return AVERROR_EXTERNAL;
         }
     }
 
     if (vtctx->realtime) {
         status = VTSessionSetProperty(vtctx->session,
-                                      kVTCompressionPropertyKey_RealTime,
+                                      compat_keys.kVTCompressionPropertyKey_RealTime,
                                       kCFBooleanTrue);
 
         if (status) {
@@ -1055,24 +1273,36 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
     CFNumberRef            gamma_level = NULL;
     int                    status;
 
+    pthread_once(&once_ctrl, loadVTEncSymbols);
+
     codec_type = get_cm_codec_type(avctx->codec_id);
     if (!codec_type) {
         av_log(avctx, AV_LOG_ERROR, "Error: no mapping for AVCodecID %d\n", avctx->codec_id);
         return AVERROR(EINVAL);
     }
 
-    vtctx->has_b_frames = avctx->max_b_frames > 0;
-    if(vtctx->has_b_frames && vtctx->profile == H264_PROF_BASELINE){
-        av_log(avctx, AV_LOG_WARNING, "Cannot use B-frames with baseline profile. Output will not contain B-frames.\n");
-        vtctx->has_b_frames = false;
-    }
+    vtctx->codec_id = avctx->codec_id;
 
-    if (vtctx->entropy == VT_CABAC && vtctx->profile == H264_PROF_BASELINE) {
-        av_log(avctx, AV_LOG_WARNING, "CABAC entropy requires 'main' or 'high' profile, but baseline was requested. Encode will not use CABAC entropy.\n");
-        vtctx->entropy = VT_ENTROPY_NOT_SET;
-    }
+    if (vtctx->codec_id == AV_CODEC_ID_H264) {
+        vtctx->get_param_set_func = CMVideoFormatDescriptionGetH264ParameterSetAtIndex;
 
-    if (!get_vt_profile_level(avctx, &profile_level)) return AVERROR(EINVAL);
+        vtctx->has_b_frames = avctx->max_b_frames > 0;
+        if(vtctx->has_b_frames && vtctx->profile == H264_PROF_BASELINE){
+            av_log(avctx, AV_LOG_WARNING, "Cannot use B-frames with baseline profile. Output will not contain B-frames.\n");
+            vtctx->has_b_frames = false;
+        }
+
+        if (vtctx->entropy == VT_CABAC && vtctx->profile == H264_PROF_BASELINE) {
+            av_log(avctx, AV_LOG_WARNING, "CABAC entropy requires 'main' or 'high' profile, but baseline was requested. Encode will not use CABAC entropy.\n");
+            vtctx->entropy = VT_ENTROPY_NOT_SET;
+        }
+
+        if (!get_vt_h264_profile_level(avctx, &profile_level)) return AVERROR(EINVAL);
+    } else {
+        vtctx->get_param_set_func = compat_keys.CMVideoFormatDescriptionGetHEVCParameterSetAtIndex;
+        if (!vtctx->get_param_set_func) return AVERROR(EINVAL);
+        if (!get_vt_hevc_profile_level(avctx, &profile_level)) return AVERROR(EINVAL);
+    }
 
     vtctx->session = NULL;
 
@@ -1087,9 +1317,13 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
 
 #if !TARGET_OS_IPHONE
     if (!vtctx->allow_sw) {
-        CFDictionarySetValue(enc_info, kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder, kCFBooleanTrue);
+        CFDictionarySetValue(enc_info,
+                             compat_keys.kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder,
+                             kCFBooleanTrue);
     } else {
-        CFDictionarySetValue(enc_info, kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder,  kCFBooleanTrue);
+        CFDictionarySetValue(enc_info,
+                             compat_keys.kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder,
+                             kCFBooleanTrue);
     }
 #endif
 
@@ -1137,7 +1371,7 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
                                    kCFAllocatorDefault,
                                    &has_b_frames_cfbool);
 
-    if (!status) {
+    if (!status && has_b_frames_cfbool) {
         //Some devices don't output B-frames for main profile, even if requested.
         vtctx->has_b_frames = CFBooleanGetValue(has_b_frames_cfbool);
         CFRelease(has_b_frames_cfbool);
@@ -1451,7 +1685,7 @@ static int copy_replace_length_codes(
             remaining_dst_size--;
 
             wrote_bytes = write_sei(sei,
-                                    SEI_TYPE_USER_DATA_REGISTERED,
+                                    H264_SEI_TYPE_USER_DATA_REGISTERED,
                                     dst_data,
                                     remaining_dst_size);
 
@@ -1507,7 +1741,7 @@ static int copy_replace_length_codes(
                 return status;
 
             wrote_bytes = write_sei(sei,
-                                    SEI_TYPE_USER_DATA_REGISTERED,
+                                    H264_SEI_TYPE_USER_DATA_REGISTERED,
                                     new_sei,
                                     remaining_dst_size - old_sei_length);
             if (wrote_bytes < 0)
@@ -1603,7 +1837,7 @@ static int vtenc_cm_to_avpacket(
 
     if (sei) {
         size_t msg_size = get_sei_msg_bytes(sei,
-                                            SEI_TYPE_USER_DATA_REGISTERED);
+                                            H264_SEI_TYPE_USER_DATA_REGISTERED);
 
         sei_nalu_size = sizeof(start_code) + 1 + msg_size + 1;
     }
@@ -1678,7 +1912,7 @@ static int get_cv_pixel_info(
 {
     VTEncContext *vtctx = avctx->priv_data;
     int av_format       = frame->format;
-    int av_color_range  = av_frame_get_color_range(frame);
+    int av_color_range  = frame->color_range;
     int i;
     int range_guessed;
     int status;
@@ -1705,8 +1939,6 @@ static int get_cv_pixel_info(
                    "Color range not set for %s. Using MPEG range.\n",
                    av_get_pix_fmt_name(av_format));
         }
-
-        av_log(avctx, AV_LOG_WARNING, "");
     }
 
     switch (av_format) {
@@ -1925,7 +2157,7 @@ static int create_cv_pixel_buffer(AVCodecContext   *avctx,
             AV_LOG_ERROR,
             "Error: Cannot convert format %d color_range %d: %d\n",
             frame->format,
-            av_frame_get_color_range(frame),
+            frame->color_range,
             status
         );
 
@@ -2193,8 +2425,8 @@ static int vtenc_populate_extradata(AVCodecContext   *avctx,
     frame->format          = avctx->pix_fmt;
     frame->width           = avctx->width;
     frame->height          = avctx->height;
-    av_frame_set_colorspace(frame, avctx->colorspace);
-    av_frame_set_color_range(frame, avctx->color_range);
+    frame->colorspace      = avctx->colorspace;
+    frame->color_range     = avctx->color_range;
     frame->color_trc       = avctx->color_trc;
     frame->color_primaries = avctx->color_primaries;
 
@@ -2276,9 +2508,19 @@ static const enum AVPixelFormat pix_fmts[] = {
     AV_PIX_FMT_NONE
 };
 
-#define OFFSET(x) offsetof(VTEncContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
-static const AVOption options[] = {
+#define COMMON_OPTIONS \
+    { "allow_sw", "Allow software encoding", OFFSET(allow_sw), AV_OPT_TYPE_BOOL, \
+        { .i64 = 0 }, 0, 1, VE }, \
+    { "realtime", "Hint that encoding should happen in real-time if not faster (e.g. capturing from camera).", \
+        OFFSET(realtime), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE }, \
+    { "frames_before", "Other frames will come before the frames in this session. This helps smooth concatenation issues.", \
+        OFFSET(frames_before), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE }, \
+    { "frames_after", "Other frames will come after the frames in this session. This helps smooth concatenation issues.", \
+        OFFSET(frames_after), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
+
+#define OFFSET(x) offsetof(VTEncContext, x)
+static const AVOption h264_options[] = {
     { "profile", "Profile", OFFSET(profile), AV_OPT_TYPE_INT, { .i64 = H264_PROF_AUTO }, H264_PROF_AUTO, H264_PROF_COUNT, VE, "profile" },
     { "baseline", "Baseline Profile", 0, AV_OPT_TYPE_CONST, { .i64 = H264_PROF_BASELINE }, INT_MIN, INT_MAX, VE, "profile" },
     { "main",     "Main Profile",     0, AV_OPT_TYPE_CONST, { .i64 = H264_PROF_MAIN     }, INT_MIN, INT_MAX, VE, "profile" },
@@ -2296,32 +2538,22 @@ static const AVOption options[] = {
     { "5.1", "Level 5.1", 0, AV_OPT_TYPE_CONST, { .i64 = 51 }, INT_MIN, INT_MAX, VE, "level" },
     { "5.2", "Level 5.2", 0, AV_OPT_TYPE_CONST, { .i64 = 52 }, INT_MIN, INT_MAX, VE, "level" },
 
-    { "allow_sw", "Allow software encoding", OFFSET(allow_sw), AV_OPT_TYPE_BOOL,
-        { .i64 = 0 }, 0, 1, VE },
-
     { "coder", "Entropy coding", OFFSET(entropy), AV_OPT_TYPE_INT, { .i64 = VT_ENTROPY_NOT_SET }, VT_ENTROPY_NOT_SET, VT_CABAC, VE, "coder" },
     { "cavlc", "CAVLC entropy coding", 0, AV_OPT_TYPE_CONST, { .i64 = VT_CAVLC }, INT_MIN, INT_MAX, VE, "coder" },
     { "vlc",   "CAVLC entropy coding", 0, AV_OPT_TYPE_CONST, { .i64 = VT_CAVLC }, INT_MIN, INT_MAX, VE, "coder" },
     { "cabac", "CABAC entropy coding", 0, AV_OPT_TYPE_CONST, { .i64 = VT_CABAC }, INT_MIN, INT_MAX, VE, "coder" },
     { "ac",    "CABAC entropy coding", 0, AV_OPT_TYPE_CONST, { .i64 = VT_CABAC }, INT_MIN, INT_MAX, VE, "coder" },
 
-    { "realtime", "Hint that encoding should happen in real-time if not faster (e.g. capturing from camera).",
-        OFFSET(realtime), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
-
-    { "frames_before", "Other frames will come before the frames in this session. This helps smooth concatenation issues.",
-        OFFSET(frames_before), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
-    { "frames_after", "Other frames will come after the frames in this session. This helps smooth concatenation issues.",
-        OFFSET(frames_after), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
-
     { "a53cc", "Use A53 Closed Captions (if available)", OFFSET(a53_cc), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, VE },
 
+    COMMON_OPTIONS
     { NULL },
 };
 
 static const AVClass h264_videotoolbox_class = {
     .class_name = "h264_videotoolbox",
     .item_name  = av_default_item_name,
-    .option     = options,
+    .option     = h264_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
@@ -2337,6 +2569,38 @@ AVCodec ff_h264_videotoolbox_encoder = {
     .close            = vtenc_close,
     .capabilities     = AV_CODEC_CAP_DELAY,
     .priv_class       = &h264_videotoolbox_class,
+    .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE |
+                        FF_CODEC_CAP_INIT_CLEANUP,
+};
+
+static const AVOption hevc_options[] = {
+    { "profile", "Profile", OFFSET(profile), AV_OPT_TYPE_INT, { .i64 = HEVC_PROF_AUTO }, HEVC_PROF_AUTO, HEVC_PROF_COUNT, VE, "profile" },
+    { "main",     "Main Profile",     0, AV_OPT_TYPE_CONST, { .i64 = HEVC_PROF_MAIN   }, INT_MIN, INT_MAX, VE, "profile" },
+    { "main10",   "Main10 Profile",   0, AV_OPT_TYPE_CONST, { .i64 = HEVC_PROF_MAIN10 }, INT_MIN, INT_MAX, VE, "profile" },
+
+    COMMON_OPTIONS
+    { NULL },
+};
+
+static const AVClass hevc_videotoolbox_class = {
+    .class_name = "hevc_videotoolbox",
+    .item_name  = av_default_item_name,
+    .option     = hevc_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+AVCodec ff_hevc_videotoolbox_encoder = {
+    .name             = "hevc_videotoolbox",
+    .long_name        = NULL_IF_CONFIG_SMALL("VideoToolbox H.265 Encoder"),
+    .type             = AVMEDIA_TYPE_VIDEO,
+    .id               = AV_CODEC_ID_HEVC,
+    .priv_data_size   = sizeof(VTEncContext),
+    .pix_fmts         = pix_fmts,
+    .init             = vtenc_init,
+    .encode2          = vtenc_frame,
+    .close            = vtenc_close,
+    .capabilities     = AV_CODEC_CAP_DELAY,
+    .priv_class       = &hevc_videotoolbox_class,
     .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE |
                         FF_CODEC_CAP_INIT_CLEANUP,
 };

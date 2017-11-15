@@ -154,7 +154,7 @@ static const uint8_t string_table[256] = {
     n4    = (mean << 16) + mean;
 
 static int svq1_decode_block_intra(GetBitContext *bitbuf, uint8_t *pixels,
-                                   int pitch)
+                                   ptrdiff_t pitch)
 {
     uint32_t bit_cache;
     uint8_t *list[63];
@@ -221,7 +221,7 @@ static int svq1_decode_block_intra(GetBitContext *bitbuf, uint8_t *pixels,
 }
 
 static int svq1_decode_block_non_intra(GetBitContext *bitbuf, uint8_t *pixels,
-                                       int pitch)
+                                       ptrdiff_t pitch)
 {
     uint32_t bit_cache;
     uint8_t *list[63];
@@ -307,7 +307,7 @@ static int svq1_decode_motion_vector(GetBitContext *bitbuf, svq1_pmv *mv,
 }
 
 static void svq1_skip_block(uint8_t *current, uint8_t *previous,
-                            int pitch, int x, int y)
+                            ptrdiff_t pitch, int x, int y)
 {
     uint8_t *src;
     uint8_t *dst;
@@ -325,7 +325,7 @@ static void svq1_skip_block(uint8_t *current, uint8_t *previous,
 
 static int svq1_motion_inter_block(HpelDSPContext *hdsp, GetBitContext *bitbuf,
                                    uint8_t *current, uint8_t *previous,
-                                   int pitch, svq1_pmv *motion, int x, int y,
+                                   ptrdiff_t pitch, svq1_pmv *motion, int x, int y,
                                    int width, int height)
 {
     uint8_t *src;
@@ -368,7 +368,7 @@ static int svq1_motion_inter_block(HpelDSPContext *hdsp, GetBitContext *bitbuf,
 
 static int svq1_motion_inter_4v_block(HpelDSPContext *hdsp, GetBitContext *bitbuf,
                                       uint8_t *current, uint8_t *previous,
-                                      int pitch, svq1_pmv *motion, int x, int y,
+                                      ptrdiff_t pitch, svq1_pmv *motion, int x, int y,
                                       int width, int height)
 {
     uint8_t *src;
@@ -446,7 +446,7 @@ static int svq1_motion_inter_4v_block(HpelDSPContext *hdsp, GetBitContext *bitbu
 static int svq1_decode_delta_block(AVCodecContext *avctx, HpelDSPContext *hdsp,
                                    GetBitContext *bitbuf,
                                    uint8_t *current, uint8_t *previous,
-                                   int pitch, svq1_pmv *motion, int x, int y,
+                                   ptrdiff_t pitch, svq1_pmv *motion, int x, int y,
                                    int width, int height)
 {
     uint32_t block_type;

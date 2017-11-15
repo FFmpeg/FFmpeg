@@ -23,7 +23,7 @@
 
 #include "deshake.h"
 
-typedef struct {
+typedef struct float4 {
     float x;
     float y;
     float z;

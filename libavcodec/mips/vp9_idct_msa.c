@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Shivraj Patil (Shivraj.Patil@imgtec.com)
+ * Copyright (c) 2015 - 2017 Shivraj Patil (Shivraj.Patil@imgtec.com)
  *
  * This file is part of FFmpeg.
  *
@@ -352,6 +352,7 @@ static void vp9_idct4x4_1_add_msa(int16_t *input, uint8_t *dst,
     out = ROUND_POWER_OF_TWO((out * cospi_16_64), VP9_DCT_CONST_BITS);
     out = ROUND_POWER_OF_TWO(out, 4);
     vec = __msa_fill_h(out);
+    input[0] = 0;
 
     ADDBLK_ST4x4_UB(vec, vec, vec, vec, dst, dst_stride);
 }
@@ -360,9 +361,11 @@ static void vp9_idct4x4_colcol_addblk_msa(int16_t *input, uint8_t *dst,
                                           int32_t dst_stride)
 {
     v8i16 in0, in1, in2, in3;
+    v8i16 zero = { 0 };
 
     /* load vector elements of 4x4 block */
     LD4x4_SH(input, in0, in1, in2, in3);
+    ST_SH2(zero, zero, input, 8);
     /* rows */
     VP9_IDCT4x4(in0, in1, in2, in3, in0, in1, in2, in3);
     /* columns */
@@ -377,9 +380,11 @@ static void vp9_iadst4x4_colcol_addblk_msa(int16_t *input, uint8_t *dst,
                                            int32_t dst_stride)
 {
     v8i16 in0, in1, in2, in3;
+    v8i16 zero = { 0 };
 
     /* load vector elements of 4x4 block */
     LD4x4_SH(input, in0, in1, in2, in3);
+    ST_SH2(zero, zero, input, 8);
     /* rows */
     VP9_IADST4x4(in0, in1, in2, in3, in0, in1, in2, in3);
     /* columns */
@@ -394,9 +399,11 @@ static void vp9_iadst_idct_4x4_add_msa(int16_t *input, uint8_t *dst,
                                        int32_t dst_stride, int32_t eob)
 {
     v8i16 in0, in1, in2, in3;
+    v8i16 zero = { 0 };
 
     /* load vector elements of 4x4 block */
     LD4x4_SH(input, in0, in1, in2, in3);
+    ST_SH2(zero, zero, input, 8);
     /* cols */
     VP9_IADST4x4(in0, in1, in2, in3, in0, in1, in2, in3);
     /* columns */
@@ -411,9 +418,11 @@ static void vp9_idct_iadst_4x4_add_msa(int16_t *input, uint8_t *dst,
                                        int32_t dst_stride, int32_t eob)
 {
     v8i16 in0, in1, in2, in3;
+    v8i16 zero = { 0 };
 
     /* load vector elements of 4x4 block */
     LD4x4_SH(input, in0, in1, in2, in3);
+    ST_SH2(zero, zero, input, 8);
     /* cols */
     VP9_IDCT4x4(in0, in1, in2, in3, in0, in1, in2, in3);
     /* columns */
@@ -585,6 +594,7 @@ static void vp9_idct8x8_1_add_msa(int16_t *input, uint8_t *dst,
     out = ROUND_POWER_OF_TWO((out * cospi_16_64), VP9_DCT_CONST_BITS);
     val = ROUND_POWER_OF_TWO(out, 5);
     vec = __msa_fill_h(val);
+    input[0] = 0;
 
     VP9_ADDBLK_ST8x4_UB(dst, dst_stride, vec, vec, vec, vec);
     dst += (4 * dst_stride);
@@ -601,9 +611,9 @@ static void vp9_idct8x8_12_colcol_addblk_msa(int16_t *input, uint8_t *dst,
 
     /* load vector elements of 8x8 block */
     LD_SH8(input, 8, in0, in1, in2, in3, in4, in5, in6, in7);
+    ST_SH8(zero, zero, zero, zero, zero, zero, zero, zero, input, 8);
     ILVR_D2_SH(in1, in0, in3, in2, in0, in1);
     ILVR_D2_SH(in5, in4, in7, in6, in2, in3);
-    //TRANSPOSE8X4_SH_SH(in0, in1, in2, in3, in0, in1, in2, in3);
 
     /* stage1 */
     ILVL_H2_SH(in3, in0, in2, in1, s0, s1);
@@ -659,9 +669,11 @@ static void vp9_idct8x8_colcol_addblk_msa(int16_t *input, uint8_t *dst,
                                           int32_t dst_stride)
 {
     v8i16 in0, in1, in2, in3, in4, in5, in6, in7;
+    v8i16 zero = { 0 };
 
     /* load vector elements of 8x8 block */
     LD_SH8(input, 8, in0, in1, in2, in3, in4, in5, in6, in7);
+    ST_SH8(zero, zero, zero, zero, zero, zero, zero, zero, input, 8);
     /* 1D idct8x8 */
     VP9_IDCT8x8_1D(in0, in1, in2, in3, in4, in5, in6, in7,
                    in0, in1, in2, in3, in4, in5, in6, in7);
@@ -689,10 +701,11 @@ static void vp9_iadst8x8_colcol_addblk_msa(int16_t *input, uint8_t *dst,
     v8i16 out0, out1, out2, out3, out4, out5, out6, out7;
     v8i16 cnst0, cnst1, cnst2, cnst3, cnst4;
     v8i16 temp0, temp1, temp2, temp3, s0, s1;
-    v16i8 zero = { 0 };
+    v8i16 zero = { 0 };
 
     /* load vector elements of 8x8 block */
     LD_SH8(input, 8, in0, in1, in2, in3, in4, in5, in6, in7);
+    ST_SH8(zero, zero, zero, zero, zero, zero, zero, zero, input, 8);
 
     /* 1D adst8x8 */
     VP9_ADST8(in0, in1, in2, in3, in4, in5, in6, in7,
@@ -736,13 +749,13 @@ static void vp9_iadst8x8_colcol_addblk_msa(int16_t *input, uint8_t *dst,
     dst0 = LD_UB(dst + 0 * dst_stride);
     dst7 = LD_UB(dst + 7 * dst_stride);
 
-    res0 = (v8i16) __msa_ilvr_b(zero, (v16i8) dst0);
+    res0 = (v8i16) __msa_ilvr_b((v16i8) zero, (v16i8) dst0);
     res0 += out0;
     res0 = CLIP_SH_0_255(res0);
     res0 = (v8i16) __msa_pckev_b((v16i8) res0, (v16i8) res0);
     ST8x1_UB(res0, dst);
 
-    res7 = (v8i16) __msa_ilvr_b(zero, (v16i8) dst7);
+    res7 = (v8i16) __msa_ilvr_b((v16i8) zero, (v16i8) dst7);
     res7 += out7;
     res7 = CLIP_SH_0_255(res7);
     res7 = (v8i16) __msa_pckev_b((v16i8) res7, (v16i8) res7);
@@ -809,9 +822,11 @@ static void vp9_iadst_idct_8x8_add_msa(int16_t *input, uint8_t *dst,
                                        int32_t dst_stride, int32_t eob)
 {
     v8i16 in0, in1, in2, in3, in4, in5, in6, in7;
+    v8i16 zero = { 0 };
 
     /* load vector elements of 8x8 block */
     LD_SH8(input, 8, in1, in6, in3, in4, in5, in2, in7, in0);
+    ST_SH8(zero, zero, zero, zero, zero, zero, zero, zero, input, 8);
     /* 1D idct8x8 */
     VP9_IADST8x8_1D(in0, in1, in2, in3, in4, in5, in6, in7,
                     in0, in1, in2, in3, in4, in5, in6, in7);
@@ -834,9 +849,11 @@ static void vp9_idct_iadst_8x8_add_msa(int16_t *input, uint8_t *dst,
                                        int32_t dst_stride, int32_t eob)
 {
     v8i16 in0, in1, in2, in3, in4, in5, in6, in7;
+    v8i16 zero = { 0 };
 
     /* load vector elements of 8x8 block */
     LD_SH8(input, 8, in0, in1, in2, in3, in4, in5, in6, in7);
+    ST_SH8(zero, zero, zero, zero, zero, zero, zero, zero, input, 8);
 
     /* 1D idct8x8 */
     VP9_IDCT8x8_1D(in0, in1, in2, in3, in4, in5, in6, in7,
@@ -937,12 +954,16 @@ static void vp9_idct16_1d_columns_addblk_msa(int16_t *input, uint8_t *dst,
     v8i16 reg0, reg2, reg4, reg6, reg8, reg10, reg12, reg14;
     v8i16 reg3, reg13, reg11, reg5, reg7, reg9, reg1, reg15;
     v8i16 tmp5, tmp6, tmp7;
+    v8i16 zero = { 0 };
 
-    /* load up 8x8 */
-    LD_SH8(input, 16, reg0, reg1, reg2, reg3, reg4, reg5, reg6, reg7);
+    /* load up 8x16 */
+    LD_SH16(input, 16,
+            reg0, reg1, reg2, reg3, reg4, reg5, reg6, reg7,
+            reg8, reg9, reg10, reg11, reg12, reg13, reg14, reg15);
+
+    ST_SH8(zero, zero, zero, zero, zero, zero, zero, zero, input, 16);
     input += 8 * 16;
-    /* load bottom 8x8 */
-    LD_SH8(input, 16, reg8, reg9, reg10, reg11, reg12, reg13, reg14, reg15);
+    ST_SH8(zero, zero, zero, zero, zero, zero, zero, zero, input, 16);
 
     VP9_DOTP_CONST_PAIR(reg2, reg14, cospi_28_64, cospi_4_64, reg2, reg14);
     VP9_DOTP_CONST_PAIR(reg10, reg6, cospi_12_64, cospi_20_64, reg10, reg6);
@@ -1036,12 +1057,16 @@ static void vp9_idct16_1d_columns_msa(int16_t *input, int16_t *output)
     v8i16 reg0, reg2, reg4, reg6, reg8, reg10, reg12, reg14;
     v8i16 reg3, reg13, reg11, reg5, reg7, reg9, reg1, reg15;
     v8i16 tmp5, tmp6, tmp7;
+    v8i16 zero = { 0 };
 
-    /* load up 8x8 */
-    LD_SH8(input, 16, reg0, reg1, reg2, reg3, reg4, reg5, reg6, reg7);
-    input += 8 * 16;
-    /* load bottom 8x8 */
-    LD_SH8(input, 16, reg8, reg9, reg10, reg11, reg12, reg13, reg14, reg15);
+    /* load up 8x16 */
+    LD_SH16(input, 16,
+            reg0, reg1, reg2, reg3, reg4, reg5, reg6, reg7,
+            reg8, reg9, reg10, reg11, reg12, reg13, reg14, reg15);
+
+    ST_SH8(zero, zero, zero, zero, zero, zero, zero, zero, input, 16);
+    input += 16 * 8;
+    ST_SH8(zero, zero, zero, zero, zero, zero, zero, zero, input, 16);
 
     VP9_DOTP_CONST_PAIR(reg2, reg14, cospi_28_64, cospi_4_64, reg2, reg14);
     VP9_DOTP_CONST_PAIR(reg10, reg6, cospi_12_64, cospi_20_64, reg10, reg6);
@@ -1141,11 +1166,11 @@ static void vp9_idct16x16_1_add_msa(int16_t *input, uint8_t *dst,
     out = ROUND_POWER_OF_TWO((input[0] * cospi_16_64), VP9_DCT_CONST_BITS);
     out = ROUND_POWER_OF_TWO((out * cospi_16_64), VP9_DCT_CONST_BITS);
     out = ROUND_POWER_OF_TWO(out, 6);
+    input[0] = 0;
 
     vec = __msa_fill_h(out);
 
-    for (i = 4; i--;)
-    {
+    for (i = 4; i--;) {
         LD_UB4(dst, dst_stride, dst0, dst1, dst2, dst3);
         UNPCK_UB_SH(dst0, res0, res4);
         UNPCK_UB_SH(dst1, res1, res5);
@@ -1229,11 +1254,16 @@ static void vp9_iadst16_1d_columns_msa(int16_t *input, int16_t *output)
 {
     v8i16 r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15;
     v8i16 l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15;
+    v8i16 zero = { 0 };
 
     /* load input data */
     LD_SH16(input, 16,
             l0, l1, l2, l3, l4, l5, l6, l7,
             l8, l9, l10, l11, l12, l13, l14, l15);
+
+    ST_SH8(zero, zero, zero, zero, zero, zero, zero, zero, input, 16);
+    input += 16 * 8;
+    ST_SH8(zero, zero, zero, zero, zero, zero, zero, zero, input, 16);
 
     /* ADST in horizontal */
     VP9_IADST8x16_1D(l0, l1, l2, l3, l4, l5, l6, l7,
@@ -1591,9 +1621,11 @@ static void vp9_idct8x32_column_even_process_store(int16_t *tmp_buf,
     v8i16 vec0, vec1, vec2, vec3, loc0, loc1, loc2, loc3;
     v8i16 reg0, reg1, reg2, reg3, reg4, reg5, reg6, reg7;
     v8i16 stp0, stp1, stp2, stp3, stp4, stp5, stp6, stp7;
+    v8i16 zero = { 0 };
 
     /* Even stage 1 */
     LD_SH8(tmp_buf, (4 * 32), reg0, reg1, reg2, reg3, reg4, reg5, reg6, reg7);
+    ST_SH8(zero, zero, zero, zero, zero, zero, zero, zero, tmp_buf, (4 * 32));
     tmp_buf += (2 * 32);
 
     VP9_DOTP_CONST_PAIR(reg1, reg7, cospi_28_64, cospi_4_64, reg1, reg7);
@@ -1613,6 +1645,7 @@ static void vp9_idct8x32_column_even_process_store(int16_t *tmp_buf,
     /* Even stage 2 */
     /* Load 8 */
     LD_SH8(tmp_buf, (4 * 32), reg0, reg1, reg2, reg3, reg4, reg5, reg6, reg7);
+    ST_SH8(zero, zero, zero, zero, zero, zero, zero, zero, tmp_buf, (4 * 32));
 
     VP9_DOTP_CONST_PAIR(reg0, reg7, cospi_30_64, cospi_2_64, reg0, reg7);
     VP9_DOTP_CONST_PAIR(reg4, reg3, cospi_14_64, cospi_18_64, reg4, reg3);
@@ -1671,6 +1704,7 @@ static void vp9_idct8x32_column_odd_process_store(int16_t *tmp_buf,
 {
     v8i16 vec0, vec1, vec2, vec3, loc0, loc1, loc2, loc3;
     v8i16 reg0, reg1, reg2, reg3, reg4, reg5, reg6, reg7;
+    v8i16 zero = { 0 };
 
     /* Odd stage 1 */
     reg0 = LD_SH(tmp_buf + 32);
@@ -1681,6 +1715,15 @@ static void vp9_idct8x32_column_odd_process_store(int16_t *tmp_buf,
     reg5 = LD_SH(tmp_buf + 23 * 32);
     reg6 = LD_SH(tmp_buf + 25 * 32);
     reg7 = LD_SH(tmp_buf + 31 * 32);
+
+    ST_SH(zero, tmp_buf + 32);
+    ST_SH(zero, tmp_buf + 7 * 32);
+    ST_SH(zero, tmp_buf + 9 * 32);
+    ST_SH(zero, tmp_buf + 15 * 32);
+    ST_SH(zero, tmp_buf + 17 * 32);
+    ST_SH(zero, tmp_buf + 23 * 32);
+    ST_SH(zero, tmp_buf + 25 * 32);
+    ST_SH(zero, tmp_buf + 31 * 32);
 
     VP9_DOTP_CONST_PAIR(reg0, reg7, cospi_31_64, cospi_1_64, reg0, reg7);
     VP9_DOTP_CONST_PAIR(reg4, reg3, cospi_15_64, cospi_17_64, reg3, reg4);
@@ -1722,6 +1765,15 @@ static void vp9_idct8x32_column_odd_process_store(int16_t *tmp_buf,
     reg5 = LD_SH(tmp_buf + 21 * 32);
     reg6 = LD_SH(tmp_buf + 27 * 32);
     reg7 = LD_SH(tmp_buf + 29 * 32);
+
+    ST_SH(zero, tmp_buf + 3 * 32);
+    ST_SH(zero, tmp_buf + 5 * 32);
+    ST_SH(zero, tmp_buf + 11 * 32);
+    ST_SH(zero, tmp_buf + 13 * 32);
+    ST_SH(zero, tmp_buf + 19 * 32);
+    ST_SH(zero, tmp_buf + 21 * 32);
+    ST_SH(zero, tmp_buf + 27 * 32);
+    ST_SH(zero, tmp_buf + 29 * 32);
 
     VP9_DOTP_CONST_PAIR(reg1, reg6, cospi_27_64, cospi_5_64, reg1, reg6);
     VP9_DOTP_CONST_PAIR(reg5, reg2, cospi_11_64, cospi_21_64, reg2, reg5);
@@ -1901,11 +1953,11 @@ static void vp9_idct32x32_1_add_msa(int16_t *input, uint8_t *dst,
     out = ROUND_POWER_OF_TWO((input[0] * cospi_16_64), VP9_DCT_CONST_BITS);
     out = ROUND_POWER_OF_TWO((out * cospi_16_64), VP9_DCT_CONST_BITS);
     out = ROUND_POWER_OF_TWO(out, 6);
+    input[0] = 0;
 
     vec = __msa_fill_h(out);
 
-    for (i = 16; i--;)
-    {
+    for (i = 16; i--;) {
         LD_UB2(dst, 16, dst0, dst1);
         LD_UB2(dst + dst_stride, 16, dst2, dst3);
 
@@ -2004,11 +2056,9 @@ void ff_idct_idct_4x4_add_msa(uint8_t *dst, ptrdiff_t stride,
 {
     if (eob > 1) {
         vp9_idct4x4_colcol_addblk_msa(block, dst, stride);
-        memset(block, 0, 4 * 4 * sizeof(*block));
     }
     else {
         vp9_idct4x4_1_add_msa(block, dst, stride);
-        block[0] = 0;
     }
 }
 
@@ -2017,60 +2067,41 @@ void ff_idct_idct_8x8_add_msa(uint8_t *dst, ptrdiff_t stride,
 {
     if (eob == 1) {
         vp9_idct8x8_1_add_msa(block, dst, stride);
-        block[0] = 0;
     }
     else if (eob <= 12) {
         vp9_idct8x8_12_colcol_addblk_msa(block, dst, stride);
-        memset(block, 0, 4 * 8 * sizeof(*block));
     }
     else {
         vp9_idct8x8_colcol_addblk_msa(block, dst, stride);
-        memset(block, 0, 8 * 8 * sizeof(*block));
     }
 }
 
 void ff_idct_idct_16x16_add_msa(uint8_t *dst, ptrdiff_t stride,
                                 int16_t *block, int eob)
 {
-    int i;
-
     if (eob == 1) {
         /* DC only DCT coefficient. */
         vp9_idct16x16_1_add_msa(block, dst, stride);
-        block[0] = 0;
     }
     else if (eob <= 10) {
         vp9_idct16x16_10_colcol_addblk_msa(block, dst, stride);
-        for (i = 0; i < 4; ++i) {
-            memset(block, 0, 4 * sizeof(*block));
-            block += 16;
-        }
     }
     else {
         vp9_idct16x16_colcol_addblk_msa(block, dst, stride);
-        memset(block, 0, 16 * 16 * sizeof(*block));
     }
 }
 
 void ff_idct_idct_32x32_add_msa(uint8_t *dst, ptrdiff_t stride,
                                 int16_t *block, int eob)
 {
-    int i;
-
     if (eob == 1) {
         vp9_idct32x32_1_add_msa(block, dst, stride);
-        block[0] = 0;
     }
     else if (eob <= 34) {
         vp9_idct32x32_34_colcol_addblk_msa(block, dst, stride);
-        for (i = 0; i < 8; ++i) {
-            memset(block, 0, 8 * sizeof(*block));
-            block += 32;
-        }
     }
     else {
         vp9_idct32x32_colcol_addblk_msa(block, dst, stride);
-        memset(block, 0, 32 * 32 * sizeof(*block));
     }
 }
 
@@ -2078,61 +2109,52 @@ void ff_iadst_iadst_4x4_add_msa(uint8_t *dst, ptrdiff_t stride,
                                 int16_t *block, int eob)
 {
     vp9_iadst4x4_colcol_addblk_msa(block, dst, stride);
-    memset(block, 0, 4 * 4 * sizeof(*block));
 }
 
 void ff_iadst_iadst_8x8_add_msa(uint8_t *dst, ptrdiff_t stride,
                                 int16_t *block, int eob)
 {
     vp9_iadst8x8_colcol_addblk_msa(block, dst, stride);
-    memset(block, 0, 8 * 8 * sizeof(*block));
 }
 
 void ff_iadst_iadst_16x16_add_msa(uint8_t *dst, ptrdiff_t stride,
                                   int16_t *block, int eob)
 {
     vp9_iadst16x16_colcol_addblk_msa(block, dst, stride);
-    memset(block, 0, 16 * 16 * sizeof(*block));
 }
 
 void ff_idct_iadst_4x4_add_msa(uint8_t *dst, ptrdiff_t stride,
                                int16_t *block, int eob)
 {
     vp9_idct_iadst_4x4_add_msa(block, dst, stride, eob);
-    memset(block, 0, 4 * 4 * sizeof(*block));
 }
 
 void ff_idct_iadst_8x8_add_msa(uint8_t *dst, ptrdiff_t stride,
                                int16_t *block, int eob)
 {
     vp9_idct_iadst_8x8_add_msa(block, dst, stride, eob);
-    memset(block, 0, 8 * 8 * sizeof(*block));
 }
 
 void ff_idct_iadst_16x16_add_msa(uint8_t *dst, ptrdiff_t stride,
                                  int16_t *block, int eob)
 {
     vp9_idct_iadst_16x16_add_msa(block, dst, stride, eob);
-    memset(block, 0, 16 * 16 * sizeof(*block));
 }
 
 void ff_iadst_idct_4x4_add_msa(uint8_t *dst, ptrdiff_t stride,
                                int16_t *block, int eob)
 {
     vp9_iadst_idct_4x4_add_msa(block, dst, stride, eob);
-    memset(block, 0, 4 * 4 * sizeof(*block));
 }
 
 void ff_iadst_idct_8x8_add_msa(uint8_t *dst, ptrdiff_t stride,
                                int16_t *block, int eob)
 {
     vp9_iadst_idct_8x8_add_msa(block, dst, stride, eob);
-    memset(block, 0, 8 * 8 * sizeof(*block));
 }
 
 void ff_iadst_idct_16x16_add_msa(uint8_t *dst, ptrdiff_t stride,
                                  int16_t *block, int eob)
 {
     vp9_iadst_idct_16x16_add_msa(block, dst, stride, eob);
-    memset(block, 0, 16 * 16 * sizeof(*block));
 }

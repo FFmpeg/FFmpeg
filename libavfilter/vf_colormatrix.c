@@ -58,7 +58,7 @@ enum ColorMode {
     COLOR_MODE_COUNT
 };
 
-typedef struct {
+typedef struct ColorMatrixContext {
     const AVClass *class;
     int yuv_convert[25][3][3];
     int interlaced;
@@ -435,7 +435,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     av_frame_copy_props(out, in);
 
     if (color->source == COLOR_MODE_NONE) {
-        enum AVColorSpace cs = av_frame_get_colorspace(in);
+        enum AVColorSpace cs = in->colorspace;
         enum ColorMode source;
 
         switch(cs) {
@@ -456,11 +456,11 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         color->mode = color->source * 5 + color->dest;
 
     switch(color->dest) {
-    case COLOR_MODE_BT709    : av_frame_set_colorspace(out, AVCOL_SPC_BT709)     ; break;
-    case COLOR_MODE_FCC      : av_frame_set_colorspace(out, AVCOL_SPC_FCC)       ; break;
-    case COLOR_MODE_SMPTE240M: av_frame_set_colorspace(out, AVCOL_SPC_SMPTE240M) ; break;
-    case COLOR_MODE_BT601    : av_frame_set_colorspace(out, AVCOL_SPC_BT470BG)   ; break;
-    case COLOR_MODE_BT2020   : av_frame_set_colorspace(out, AVCOL_SPC_BT2020_NCL); break;
+    case COLOR_MODE_BT709    : out->colorspace = AVCOL_SPC_BT709     ; break;
+    case COLOR_MODE_FCC      : out->colorspace = AVCOL_SPC_FCC       ; break;
+    case COLOR_MODE_SMPTE240M: out->colorspace = AVCOL_SPC_SMPTE240M ; break;
+    case COLOR_MODE_BT601    : out->colorspace = AVCOL_SPC_BT470BG   ; break;
+    case COLOR_MODE_BT2020   : out->colorspace = AVCOL_SPC_BT2020_NCL; break;
     }
 
     td.src = in;

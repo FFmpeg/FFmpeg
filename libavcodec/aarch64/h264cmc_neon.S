@@ -21,10 +21,9 @@
 
 #include "libavutil/aarch64/asm.S"
 
-/* chroma_mc8(uint8_t *dst, uint8_t *src, int stride, int h, int x, int y) */
+/* chroma_mc8(uint8_t *dst, uint8_t *src, ptrdiff_t stride, int h, int x, int y) */
 .macro  h264_chroma_mc8 type, codec=h264
 function ff_\type\()_\codec\()_chroma_mc8_neon, export=1
-        sxtw            x2,  w2
   .ifc \type,avg
         mov             x8,  x0
   .endif
@@ -192,10 +191,9 @@ function ff_\type\()_\codec\()_chroma_mc8_neon, export=1
 endfunc
 .endm
 
-/* chroma_mc4(uint8_t *dst, uint8_t *src, int stride, int h, int x, int y) */
+/* chroma_mc4(uint8_t *dst, uint8_t *src, ptrdiff_t stride, int h, int x, int y) */
 .macro  h264_chroma_mc4 type, codec=h264
 function ff_\type\()_\codec\()_chroma_mc4_neon, export=1
-        sxtw            x2,  w2
   .ifc \type,avg
         mov             x8,  x0
   .endif
@@ -359,7 +357,6 @@ endfunc
 
 .macro  h264_chroma_mc2 type
 function ff_\type\()_h264_chroma_mc2_neon, export=1
-        sxtw            x2,  w2
         prfm            pldl1strm, [x1]
         prfm            pldl1strm, [x1, x2]
         orr             w7,  w4,  w5

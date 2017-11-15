@@ -52,14 +52,16 @@ void AAC_RENAME(ff_init_ff_sine_windows)(int index);
 
 extern SINETABLE(  32);
 extern SINETABLE(  64);
+extern SINETABLE( 120);
 extern SINETABLE( 128);
 extern SINETABLE( 256);
 extern SINETABLE( 512);
+extern SINETABLE( 960);
 extern SINETABLE(1024);
 extern SINETABLE(2048);
 extern SINETABLE(4096);
 extern SINETABLE(8192);
 
-extern SINETABLE_CONST INTFLOAT * const AAC_RENAME(ff_sine_windows)[14];
+extern SINETABLE_CONST INTFLOAT * const AAC_RENAME(ff_sine_windows)[16];
 
 #endif /* AVCODEC_SINEWIN_H */

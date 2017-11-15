@@ -527,7 +527,7 @@ static av_always_inline void filter_mb_dir(const H264Context *h, H264SliceContex
                 // Do not use s->qscale as luma quantizer because it has not the same
                 // value in IPCM macroblocks.
                 qp = (h->cur_pic.qscale_table[mb_xy] + h->cur_pic.qscale_table[mbn_xy] + 1) >> 1;
-                ff_tlog(h->avctx, "filter mb:%d/%d dir:%d edge:%d, QPy:%d ls:%d uvls:%d", mb_x, mb_y, dir, edge, qp, tmp_linesize, tmp_uvlinesize);
+                ff_tlog(h->avctx, "filter mb:%d/%d dir:%d, QPy:%d ls:%d uvls:%d", mb_x, mb_y, dir, qp, tmp_linesize, tmp_uvlinesize);
                 { int i; for (i = 0; i < 4; i++) ff_tlog(h->avctx, " bS[%d]:%d", i, bS[i]); ff_tlog(h->avctx, "\n"); }
                 filter_mb_edgeh( &img_y[j*linesize], tmp_linesize, bS, qp, a, b, h, 0 );
                 chroma_qp_avg[0] = (sl->chroma_qp[0] + get_chroma_qp(h->ps.pps, 0, h->cur_pic.qscale_table[mbn_xy]) + 1) >> 1;

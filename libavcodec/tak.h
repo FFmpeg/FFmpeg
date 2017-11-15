@@ -143,10 +143,14 @@ int ff_tak_check_crc(const uint8_t *buf, unsigned int buf_size);
 
 /**
  * Parse the Streaminfo metadata block.
- * @param[in]  gb pointer to GetBitContext
  * @param[out] s  storage for parsed information
+ * @param[in]  buf   input buffer
+ * @param[in]  size  size of input buffer in bytes
+ * @return non-zero on error, 0 if OK
  */
-void avpriv_tak_parse_streaminfo(GetBitContext *gb, TAKStreamInfo *s);
+int avpriv_tak_parse_streaminfo(TAKStreamInfo *s, const uint8_t *buf, int size);
+
+void ff_tak_parse_streaminfo(TAKStreamInfo *s, GetBitContext *gb);
 
 /**
  * Validate and decode a frame header.

@@ -120,10 +120,10 @@ static int s302m_decode_frame(AVCodecContext *avctx, void *data,
     if (avctx->bits_per_raw_sample == 24) {
         uint32_t *o = (uint32_t *)frame->data[0];
         for (; buf_size > 6; buf_size -= 7) {
-            *o++ = (ff_reverse[buf[2]]        << 24) |
+            *o++ = ((unsigned)ff_reverse[buf[2]]        << 24) |
                    (ff_reverse[buf[1]]        << 16) |
                    (ff_reverse[buf[0]]        <<  8);
-            *o++ = (ff_reverse[buf[6] & 0xf0] << 28) |
+            *o++ = ((unsigned)ff_reverse[buf[6] & 0xf0] << 28) |
                    (ff_reverse[buf[5]]        << 20) |
                    (ff_reverse[buf[4]]        << 12) |
                    (ff_reverse[buf[3] & 0x0f] <<  4);
@@ -142,10 +142,10 @@ static int s302m_decode_frame(AVCodecContext *avctx, void *data,
     } else if (avctx->bits_per_raw_sample == 20) {
         uint32_t *o = (uint32_t *)frame->data[0];
         for (; buf_size > 5; buf_size -= 6) {
-            *o++ = (ff_reverse[buf[2] & 0xf0] << 28) |
+            *o++ = ((unsigned)ff_reverse[buf[2] & 0xf0] << 28) |
                    (ff_reverse[buf[1]]        << 20) |
                    (ff_reverse[buf[0]]        << 12);
-            *o++ = (ff_reverse[buf[5] & 0xf0] << 28) |
+            *o++ = ((unsigned)ff_reverse[buf[5] & 0xf0] << 28) |
                    (ff_reverse[buf[4]]        << 20) |
                    (ff_reverse[buf[3]]        << 12);
             buf += 6;
@@ -201,7 +201,7 @@ static int s302m_decode_frame(AVCodecContext *avctx, void *data,
     return avpkt->size;
 }
 
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_DECODING_PARAM
+#define FLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_DECODING_PARAM
 static const AVOption s302m_options[] = {
     {"non_pcm_mode", "Chooses what to do with NON-PCM", offsetof(S302Context, non_pcm_mode), AV_OPT_TYPE_INT, {.i64 = 3}, 0, 3, FLAGS, "non_pcm_mode"},
     {"copy"        , "Pass NON-PCM through unchanged"     , 0, AV_OPT_TYPE_CONST, {.i64 = 0}, 0, 3, FLAGS, "non_pcm_mode"},
@@ -212,10 +212,10 @@ static const AVOption s302m_options[] = {
 };
 
 static const AVClass s302m_class = {
-    "SMPTE 302M Decoder",
-    av_default_item_name,
-    s302m_options,
-    LIBAVUTIL_VERSION_INT,
+    .class_name = "SMPTE 302M Decoder",
+    .item_name  = av_default_item_name,
+    .option     = s302m_options,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 AVCodec ff_s302m_decoder = {

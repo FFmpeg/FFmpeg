@@ -74,8 +74,8 @@ void ff_aac_ltp_insert_new_frame(AACEncContext *s)
 
 static void get_lag(float *buf, const float *new, LongTermPrediction *ltp)
 {
-    int i, j, lag, max_corr = 0;
-    float max_ratio;
+    int i, j, lag = 0, max_corr = 0;
+    float max_ratio = 0.0f;
     for (i = 0; i < 2048; i++) {
         float corr, s0 = 0.0f, s1 = 0.0f;
         const int start = FFMAX(0, i - 1024);

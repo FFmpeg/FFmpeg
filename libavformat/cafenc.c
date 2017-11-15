@@ -81,6 +81,8 @@ static uint32_t samples_per_packet(enum AVCodecID codec_id, int channels, int bl
         return 320;
     case AV_CODEC_ID_MP1:
         return 384;
+    case AV_CODEC_ID_OPUS:
+        return 960;
     case AV_CODEC_ID_MP2:
     case AV_CODEC_ID_MP3:
         return 1152;
@@ -121,12 +123,17 @@ static int caf_write_header(AVFormatContext *s)
         return AVERROR_PATCHWELCOME;
     }
 
+    if (par->codec_id == AV_CODEC_ID_OPUS && par->channels > 2) {
+        av_log(s, AV_LOG_ERROR, "Only mono and stereo are supported for Opus\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if (!codec_tag) {
         av_log(s, AV_LOG_ERROR, "unsupported codec\n");
         return AVERROR_INVALIDDATA;
     }
 
-    if (!par->block_align && !pb->seekable) {
+    if (!par->block_align && !(pb->seekable & AVIO_SEEKABLE_NORMAL)) {
         av_log(s, AV_LOG_ERROR, "Muxing variable packet size not supported on non seekable output\n");
         return AVERROR_INVALIDDATA;
     }
@@ -236,7 +243,7 @@ static int caf_write_trailer(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     AVCodecParameters *par = s->streams[0]->codecpar;
 
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         int64_t file_size = avio_tell(pb);
 
         avio_seek(pb, caf->data, SEEK_SET);

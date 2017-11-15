@@ -1,11 +1,12 @@
-ef8ce3cbd1d86113e7c991a816086068 *tests/data/fate/adtstoasc_ticket3715.mov
-33270 tests/data/fate/adtstoasc_ticket3715.mov
+0221e04333e6ac432fa42960502f0d5a *tests/data/fate/adtstoasc_ticket3715.mov
+33324 tests/data/fate/adtstoasc_ticket3715.mov
 #extradata 0:        2, 0x00340022
 #tb 0: 1/44100
 #media_type 0: audio
 #codec_id 0: aac
 #sample_rate 0: 44100
 #channel_layout 0: 3
+#channel_layout_name 0: stereo
 0,          0,          0,     1024,      371, 0x14b11a4f
 0,       1024,       1024,     1024,      402, 0x2f00c487
 0,       2048,       2048,     1024,      403, 0x1959c0d4

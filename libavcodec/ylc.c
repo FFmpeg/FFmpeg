@@ -31,6 +31,7 @@
 #include "get_bits.h"
 #include "huffyuvdsp.h"
 #include "internal.h"
+#include "thread.h"
 #include "unary.h"
 
 typedef struct YLCContext {
@@ -68,7 +69,7 @@ static void get_tree_codes(uint32_t *bits, int16_t *lens, uint8_t *xlat,
 
     s = nodes[node].sym;
     if (s != -1) {
-        bits[*pos] = (~pfx) & ((1 << FFMAX(pl, 1)) - 1);
+        bits[*pos] = (~pfx) & ((1ULL << FFMAX(pl, 1)) - 1);
         lens[*pos] = FFMAX(pl, 1);
         xlat[*pos] = s + (pl == 0);
         (*pos)++;
@@ -108,7 +109,7 @@ static int build_vlc(AVCodecContext *avctx, VLC *vlc, const uint32_t *table)
             int new_node = j;
             int first_node = cur_node;
             int second_node = cur_node;
-            int nd, st;
+            unsigned nd, st;
 
             nodes[cur_node].count = -1;
 
@@ -132,6 +133,10 @@ static int build_vlc(AVCodecContext *avctx, VLC *vlc, const uint32_t *table)
             st = nodes[first_node].count;
             nodes[second_node].count = 0;
             nodes[first_node].count  = 0;
+            if (nd >= UINT32_MAX - st) {
+                av_log(avctx, AV_LOG_ERROR, "count overflow\n");
+                return AVERROR_INVALIDDATA;
+            }
             nodes[cur_node].count = nd + st;
             nodes[cur_node].sym = -1;
             nodes[cur_node].n0 = cur_node;
@@ -282,6 +287,7 @@ static int decode_frame(AVCodecContext *avctx,
     int TL[4] = { 128, 128, 128, 128 };
     int L[4]  = { 128, 128, 128, 128 };
     YLCContext *s = avctx->priv_data;
+    ThreadFrame frame = { .f = data };
     const uint8_t *buf = avpkt->data;
     int ret, x, y, toffset, boffset;
     AVFrame * const p = data;
@@ -303,7 +309,7 @@ static int decode_frame(AVCodecContext *avctx,
     if (toffset >= boffset || boffset >= avpkt->size)
         return AVERROR_INVALIDDATA;
 
-    if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
         return ret;
 
     av_fast_malloc(&s->table_bits, &s->table_bits_size,
@@ -447,6 +453,24 @@ static int decode_frame(AVCodecContext *avctx,
     return avpkt->size;
 }
 
+#if HAVE_THREADS
+static int init_thread_copy(AVCodecContext *avctx)
+{
+    YLCContext *s = avctx->priv_data;
+
+    memset(&s->vlc[0], 0, sizeof(VLC));
+    memset(&s->vlc[1], 0, sizeof(VLC));
+    memset(&s->vlc[2], 0, sizeof(VLC));
+    memset(&s->vlc[3], 0, sizeof(VLC));
+    s->table_bits = NULL;
+    s->table_bits_size = 0;
+    s->bitstream_bits = NULL;
+    s->bitstream_bits_size = 0;
+
+    return 0;
+}
+#endif
+
 static av_cold int decode_end(AVCodecContext *avctx)
 {
     YLCContext *s = avctx->priv_data;
@@ -455,6 +479,10 @@ static av_cold int decode_end(AVCodecContext *avctx)
     ff_free_vlc(&s->vlc[1]);
     ff_free_vlc(&s->vlc[2]);
     ff_free_vlc(&s->vlc[3]);
+    av_freep(&s->table_bits);
+    s->table_bits_size = 0;
+    av_freep(&s->bitstream_bits);
+    s->bitstream_bits_size = 0;
 
     return 0;
 }
@@ -466,7 +494,9 @@ AVCodec ff_ylc_decoder = {
     .id             = AV_CODEC_ID_YLC,
     .priv_data_size = sizeof(YLCContext),
     .init           = decode_init,
+    .init_thread_copy = ONLY_IF_THREADS_ENABLED(init_thread_copy),
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

@@ -1,7 +1,7 @@
 ;*****************************************************************************
 ;* x86inc.asm: x264asm abstraction layer
 ;*****************************************************************************
-;* Copyright (C) 2005-2016 x264 project
+;* Copyright (C) 2005-2017 x264 project
 ;*
 ;* Authors: Loren Merritt <lorenm@u.washington.edu>
 ;*          Anton Mitrofanov <BugMaster@narod.ru>
@@ -87,7 +87,9 @@
 ; keep supporting OS/2.
 %macro SECTION_RODATA 0-1 16
     %ifidn __OUTPUT_FORMAT__,aout
-        section .text
+        SECTION .text
+    %elifidn __OUTPUT_FORMAT__,coff
+        SECTION .text
     %else
         SECTION .rodata align=%1
     %endif
@@ -385,7 +387,14 @@ DECLARE_REG_TMP_SIZE 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
     %ifnum %1
         %if %1 != 0 && required_stack_alignment > STACK_ALIGNMENT
             %if %1 > 0
+                ; Reserve an additional register for storing the original stack pointer, but avoid using
+                ; eax/rax for this purpose since it can potentially get overwritten as a return value.
                 %assign regs_used (regs_used + 1)
+                %if ARCH_X86_64 && regs_used == 7
+                    %assign regs_used 8
+                %elif ARCH_X86_64 == 0 && regs_used == 1
+                    %assign regs_used 2
+                %endif
             %endif
             %if ARCH_X86_64 && regs_used < 5 + UNIX64 * 3
                 ; Ensure that we don't clobber any registers containing arguments. For UNIX64 we also preserve r6 (rax)
@@ -419,10 +428,10 @@ DECLARE_REG 7,  rdi, 64
 DECLARE_REG 8,  rsi, 72
 DECLARE_REG 9,  rbx, 80
 DECLARE_REG 10, rbp, 88
-DECLARE_REG 11, R12, 96
-DECLARE_REG 12, R13, 104
-DECLARE_REG 13, R14, 112
-DECLARE_REG 14, R15, 120
+DECLARE_REG 11, R14, 96
+DECLARE_REG 12, R15, 104
+DECLARE_REG 13, R12, 112
+DECLARE_REG 14, R13, 120
 
 %macro PROLOGUE 2-5+ 0 ; #args, #regs, #xmm_regs, [stack_size,] arg_names...
     %assign num_args %1
@@ -468,41 +477,42 @@ DECLARE_REG 14, R15, 120
     WIN64_PUSH_XMM
 %endmacro
 
-%macro WIN64_RESTORE_XMM_INTERNAL 1
+%macro WIN64_RESTORE_XMM_INTERNAL 0
     %assign %%pad_size 0
     %if xmm_regs_used > 8
         %assign %%i xmm_regs_used
         %rep xmm_regs_used-8
             %assign %%i %%i-1
-            movaps xmm %+ %%i, [%1 + (%%i-8)*16 + stack_size + 32]
+            movaps xmm %+ %%i, [rsp + (%%i-8)*16 + stack_size + 32]
         %endrep
     %endif
     %if stack_size_padded > 0
         %if stack_size > 0 && required_stack_alignment > STACK_ALIGNMENT
             mov rsp, rstkm
         %else
-            add %1, stack_size_padded
+            add rsp, stack_size_padded
             %assign %%pad_size stack_size_padded
         %endif
     %endif
     %if xmm_regs_used > 7
-        movaps xmm7, [%1 + stack_offset - %%pad_size + 24]
+        movaps xmm7, [rsp + stack_offset - %%pad_size + 24]
     %endif
     %if xmm_regs_used > 6
-        movaps xmm6, [%1 + stack_offset - %%pad_size +  8]
+        movaps xmm6, [rsp + stack_offset - %%pad_size +  8]
     %endif
 %endmacro
 
-%macro WIN64_RESTORE_XMM 1
-    WIN64_RESTORE_XMM_INTERNAL %1
+%macro WIN64_RESTORE_XMM 0
+    WIN64_RESTORE_XMM_INTERNAL
     %assign stack_offset (stack_offset-stack_size_padded)
+    %assign stack_size_padded 0
     %assign xmm_regs_used 0
 %endmacro
 
 %define has_epilogue regs_used > 7 || xmm_regs_used > 6 || mmsize == 32 || stack_size > 0
 
 %macro RET 0
-    WIN64_RESTORE_XMM_INTERNAL rsp
+    WIN64_RESTORE_XMM_INTERNAL
     POP_IF_USED 14, 13, 12, 11, 10, 9, 8, 7
     %if mmsize == 32
         vzeroupper
@@ -523,10 +533,10 @@ DECLARE_REG 7,  R10, 16
 DECLARE_REG 8,  R11, 24
 DECLARE_REG 9,  rbx, 32
 DECLARE_REG 10, rbp, 40
-DECLARE_REG 11, R12, 48
-DECLARE_REG 12, R13, 56
-DECLARE_REG 13, R14, 64
-DECLARE_REG 14, R15, 72
+DECLARE_REG 11, R14, 48
+DECLARE_REG 12, R15, 56
+DECLARE_REG 13, R12, 64
+DECLARE_REG 14, R13, 72
 
 %macro PROLOGUE 2-5+ ; #args, #regs, #xmm_regs, [stack_size,] arg_names...
     %assign num_args %1
@@ -618,7 +628,7 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
 %if WIN64 == 0
     %macro WIN64_SPILL_XMM 1
     %endmacro
-    %macro WIN64_RESTORE_XMM 1
+    %macro WIN64_RESTORE_XMM 0
     %endmacro
     %macro WIN64_PUSH_XMM 0
     %endmacro
@@ -629,7 +639,7 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
 ; We can automatically detect "follows a branch", but not a branch target.
 ; (SSSE3 is a sufficient condition to know that your cpu doesn't have this problem.)
 %macro REP_RET 0
-    %if has_epilogue
+    %if has_epilogue || cpuflag(ssse3)
         RET
     %else
         rep ret
@@ -780,25 +790,25 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
 %assign cpuflags_sse      (1<<4) | cpuflags_mmx2
 %assign cpuflags_sse2     (1<<5) | cpuflags_sse
 %assign cpuflags_sse2slow (1<<6) | cpuflags_sse2
-%assign cpuflags_sse3     (1<<7) | cpuflags_sse2
-%assign cpuflags_ssse3    (1<<8) | cpuflags_sse3
-%assign cpuflags_sse4     (1<<9) | cpuflags_ssse3
-%assign cpuflags_sse42    (1<<10)| cpuflags_sse4
-%assign cpuflags_avx      (1<<11)| cpuflags_sse42
-%assign cpuflags_xop      (1<<12)| cpuflags_avx
-%assign cpuflags_fma4     (1<<13)| cpuflags_avx
-%assign cpuflags_fma3     (1<<14)| cpuflags_avx
-%assign cpuflags_avx2     (1<<15)| cpuflags_fma3
+%assign cpuflags_lzcnt    (1<<7) | cpuflags_sse2
+%assign cpuflags_sse3     (1<<8) | cpuflags_sse2
+%assign cpuflags_ssse3    (1<<9) | cpuflags_sse3
+%assign cpuflags_sse4     (1<<10)| cpuflags_ssse3
+%assign cpuflags_sse42    (1<<11)| cpuflags_sse4
+%assign cpuflags_aesni    (1<<12)| cpuflags_sse42
+%assign cpuflags_avx      (1<<13)| cpuflags_sse42
+%assign cpuflags_xop      (1<<14)| cpuflags_avx
+%assign cpuflags_fma4     (1<<15)| cpuflags_avx
+%assign cpuflags_fma3     (1<<16)| cpuflags_avx
+%assign cpuflags_bmi1     (1<<17)| cpuflags_avx|cpuflags_lzcnt
+%assign cpuflags_bmi2     (1<<18)| cpuflags_bmi1
+%assign cpuflags_avx2     (1<<19)| cpuflags_fma3|cpuflags_bmi2
 
-%assign cpuflags_cache32  (1<<16)
-%assign cpuflags_cache64  (1<<17)
-%assign cpuflags_slowctz  (1<<18)
-%assign cpuflags_lzcnt    (1<<19)
-%assign cpuflags_aligned  (1<<20) ; not a cpu feature, but a function variant
-%assign cpuflags_atom     (1<<21)
-%assign cpuflags_bmi1     (1<<22)|cpuflags_lzcnt
-%assign cpuflags_bmi2     (1<<23)|cpuflags_bmi1
-%assign cpuflags_aesni    (1<<24)|cpuflags_sse42
+%assign cpuflags_cache32  (1<<20)
+%assign cpuflags_cache64  (1<<21)
+%assign cpuflags_slowctz  (1<<22)
+%assign cpuflags_aligned  (1<<23) ; not a cpu feature, but a function variant
+%assign cpuflags_atom     (1<<24)
 
 ; Returns a boolean value expressing whether or not the specified cpuflag is enabled.
 %define    cpuflag(x) (((((cpuflags & (cpuflags_ %+ x)) ^ (cpuflags_ %+ x)) - 1) >> 31) & 1)
@@ -1030,7 +1040,11 @@ INIT_XMM
 
 ; Append cpuflags to the callee's name iff the appended name is known and the plain name isn't
 %macro call 1
-    call_internal %1 %+ SUFFIX, %1
+    %ifid %1
+        call_internal %1 %+ SUFFIX, %1
+    %else
+        call %1
+    %endif
 %endmacro
 %macro call_internal 2
     %xdefine %%i %2

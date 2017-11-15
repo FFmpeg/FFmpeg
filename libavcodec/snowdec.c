@@ -140,7 +140,7 @@ static inline void decode_subband_slice_buffered(SnowContext *s, SubBand *b, sli
         v = b->x_coeff[new_index].coeff;
         x = b->x_coeff[new_index++].x;
         while(x < w){
-            register int t= ( (v>>1)*qmul + qadd)>>QEXPSHIFT;
+            register int t= (int)( (v>>1)*(unsigned)qmul + qadd)>>QEXPSHIFT;
             register int u= -(v&1);
             line[x] = (t^u) - u;
 
@@ -228,9 +228,9 @@ static void dequantize_slice_buffered(SnowContext *s, slice_buffer * sb, SubBand
         for(x=0; x<w; x++){
             int i= line[x];
             if(i<0){
-                line[x]= -((-i*qmul + qadd)>>(QEXPSHIFT)); //FIXME try different bias
+                line[x]= -((-i*(unsigned)qmul + qadd)>>(QEXPSHIFT)); //FIXME try different bias
             }else if(i>0){
-                line[x]=  (( i*qmul + qadd)>>(QEXPSHIFT));
+                line[x]=  (( i*(unsigned)qmul + qadd)>>(QEXPSHIFT));
             }
         }
     }
@@ -355,7 +355,7 @@ static int decode_header(SnowContext *s){
                 Plane *p= &s->plane[plane_index];
                 p->diag_mc= get_rac(&s->c, s->header_state);
                 htaps= get_symbol(&s->c, s->header_state, 0)*2 + 2;
-                if((unsigned)htaps > HTAPS_MAX || htaps==0)
+                if((unsigned)htaps >= HTAPS_MAX || htaps==0)
                     return AVERROR_INVALIDDATA;
                 p->htaps= htaps;
                 for(i= htaps/2; i; i--){
@@ -374,7 +374,7 @@ static int decode_header(SnowContext *s){
         }
     }
 
-    s->spatial_decomposition_type+= get_symbol(&s->c, s->header_state, 1);
+    s->spatial_decomposition_type+= (unsigned)get_symbol(&s->c, s->header_state, 1);
     if(s->spatial_decomposition_type > 1U){
         av_log(s->avctx, AV_LOG_ERROR, "spatial_decomposition_type %d not supported\n", s->spatial_decomposition_type);
         return AVERROR_INVALIDDATA;
@@ -384,15 +384,25 @@ static int decode_header(SnowContext *s){
         av_log(s->avctx, AV_LOG_ERROR, "spatial_decomposition_count %d too large for size\n", s->spatial_decomposition_count);
         return AVERROR_INVALIDDATA;
     }
+    if (s->avctx->width > 65536-4) {
+        av_log(s->avctx, AV_LOG_ERROR, "Width %d is too large\n", s->avctx->width);
+        return AVERROR_INVALIDDATA;
+    }
 
 
-    s->qlog           += get_symbol(&s->c, s->header_state, 1);
-    s->mv_scale       += get_symbol(&s->c, s->header_state, 1);
-    s->qbias          += get_symbol(&s->c, s->header_state, 1);
-    s->block_max_depth+= get_symbol(&s->c, s->header_state, 1);
-    if(s->block_max_depth > 1 || s->block_max_depth < 0){
+    s->qlog           += (unsigned)get_symbol(&s->c, s->header_state, 1);
+    s->mv_scale       += (unsigned)get_symbol(&s->c, s->header_state, 1);
+    s->qbias          += (unsigned)get_symbol(&s->c, s->header_state, 1);
+    s->block_max_depth+= (unsigned)get_symbol(&s->c, s->header_state, 1);
+    if(s->block_max_depth > 1 || s->block_max_depth < 0 || s->mv_scale > 256U){
         av_log(s->avctx, AV_LOG_ERROR, "block_max_depth= %d is too large\n", s->block_max_depth);
         s->block_max_depth= 0;
+        s->mv_scale = 0;
+        return AVERROR_INVALIDDATA;
+    }
+    if (FFABS(s->qbias) > 127) {
+        av_log(s->avctx, AV_LOG_ERROR, "qbias %d is too large\n", s->qbias);
+        s->qbias = 0;
         return AVERROR_INVALIDDATA;
     }
 
@@ -507,13 +517,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             }
         }
 
-        {
         for(level=0; level<s->spatial_decomposition_count; level++){
             for(orientation=level ? 1 : 0; orientation<4; orientation++){
                 SubBand *b= &p->band[level][orientation];
                 unpack_coeffs(s, b, b->parent, orientation);
             }
-        }
         }
 
         {
@@ -577,7 +585,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 for(; yq<slice_h && yq<h; yq++){
                     IDWTELEM * line = slice_buffer_get_line(&s->sb, yq);
                     for(x=0; x<w; x++){
-                        line[x] <<= FRAC_BITS;
+                        line[x] *= 1<<FRAC_BITS;
                     }
                 }
             }

@@ -113,7 +113,7 @@ static int sox_read_header(AVFormatContext *s)
 
     st->codecpar->sample_rate           = sample_rate;
     st->codecpar->bits_per_coded_sample = 32;
-    st->codecpar->bit_rate              = st->codecpar->sample_rate *
+    st->codecpar->bit_rate              = (int64_t)st->codecpar->sample_rate *
                                           st->codecpar->bits_per_coded_sample *
                                           st->codecpar->channels;
     st->codecpar->block_align           = st->codecpar->bits_per_coded_sample *

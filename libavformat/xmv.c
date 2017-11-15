@@ -77,7 +77,7 @@ typedef struct XMVAudioPacket {
     /* Stream format properties. */
     uint16_t compression;     ///< The type of compression.
     uint16_t channels;        ///< Number of channels.
-    uint32_t sample_rate;     ///< Sampling rate.
+    int32_t sample_rate;      ///< Sampling rate.
     uint16_t bits_per_sample; ///< Bits per compressed sample.
     uint32_t bit_rate;        ///< Bits of compressed data per second.
     uint16_t flags;           ///< Flags
@@ -210,7 +210,7 @@ static int xmv_read_header(AVFormatContext *s)
             av_log(s, AV_LOG_WARNING, "Unsupported 5.1 ADPCM audio stream "
                                       "(0x%04X)\n", packet->flags);
 
-        if (!packet->channels || !packet->sample_rate ||
+        if (!packet->channels || packet->sample_rate <= 0 ||
              packet->channels >= UINT16_MAX / XMV_BLOCK_ALIGN_SIZE) {
             av_log(s, AV_LOG_ERROR, "Invalid parameters for audio track %"PRIu16".\n",
                    audio_track);

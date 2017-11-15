@@ -84,7 +84,7 @@ const int16_t ff_nelly_delta_table[32] = {
 
 static inline int signed_shift(int i, int shift) {
     if (shift > 0)
-        return i << shift;
+        return (unsigned)i << shift;
     return i >> -shift;
 }
 
@@ -108,7 +108,7 @@ static int headroom(int *la)
         return 31;
     }
     l = 30 - av_log2(FFABS(*la));
-    *la <<= l;
+    *la *= 1<<l;
     return l;
 }
 

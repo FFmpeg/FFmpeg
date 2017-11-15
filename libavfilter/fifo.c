@@ -129,7 +129,7 @@ static void buffer_offset(AVFilterLink *link, AVFrame *frame,
 static int calc_ptr_alignment(AVFrame *frame)
 {
     int planes = av_sample_fmt_is_planar(frame->format) ?
-                 av_frame_get_channels(frame) : 1;
+                 frame->channels : 1;
     int min_align = 128;
     int p;
 

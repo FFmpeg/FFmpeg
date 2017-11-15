@@ -35,27 +35,14 @@
 
 typedef struct SVCContext {
     ISVCDecoder *decoder;
-    AVBSFContext *bsf;
-    AVFifoBuffer *packet_fifo;
-    AVPacket pkt_filtered;
 } SVCContext;
 
 static av_cold int svc_decode_close(AVCodecContext *avctx)
 {
     SVCContext *s = avctx->priv_data;
-    AVPacket pkt;
 
     if (s->decoder)
         WelsDestroyDecoder(s->decoder);
-
-    while (s->packet_fifo && av_fifo_size(s->packet_fifo) >= sizeof(pkt)) {
-        av_fifo_generic_read(s->packet_fifo, &pkt, sizeof(pkt), NULL);
-        av_packet_unref(&pkt);
-    }
-
-    av_bsf_free(&s->bsf);
-    av_packet_unref(&s->pkt_filtered);
-    av_fifo_free(s->packet_fifo);
 
     return 0;
 }
@@ -71,16 +58,9 @@ static av_cold int svc_decode_init(AVCodecContext *avctx)
     if ((err = ff_libopenh264_check_version(avctx)) < 0)
         return err;
 
-    s->packet_fifo = av_fifo_alloc(sizeof(AVPacket));
-    if (!s->packet_fifo) {
-        err = AVERROR(ENOMEM);
-        goto fail;
-    }
-
     if (WelsCreateDecoder(&s->decoder)) {
         av_log(avctx, AV_LOG_ERROR, "Unable to create decoder\n");
-        err = AVERROR_UNKNOWN;
-        goto fail;
+        return AVERROR_UNKNOWN;
     }
 
     // Pass all libopenh264 messages to our callback, to allow ourselves to filter them.
@@ -98,46 +78,12 @@ static av_cold int svc_decode_init(AVCodecContext *avctx)
 
     if ((*s->decoder)->Initialize(s->decoder, &param) != cmResultSuccess) {
         av_log(avctx, AV_LOG_ERROR, "Initialize failed\n");
-        err = AVERROR_UNKNOWN;
-        goto fail;
+        return AVERROR_UNKNOWN;
     }
 
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
-fail:
-    return err;
-}
-
-static int init_bsf(AVCodecContext *avctx)
-{
-    SVCContext *s = avctx->priv_data;
-    const AVBitStreamFilter *filter;
-    int ret;
-
-    if (s->bsf)
-        return 0;
-
-    // If the input stream already is annex b, this BSF only passes the
-    // packets through unchanged.
-    filter = av_bsf_get_by_name("h264_mp4toannexb");
-    if (!filter)
-        return AVERROR_BUG;
-
-    ret = av_bsf_alloc(filter, &s->bsf);
-    if (ret < 0)
-        return ret;
-
-    ret = avcodec_parameters_from_context(s->bsf->par_in, avctx);
-    if (ret < 0)
-        return ret;
-
-    s->bsf->time_base_in = avctx->time_base;
-
-    ret = av_bsf_init(s->bsf);
-    if (ret < 0)
-        return ret;
-
-    return ret;
+    return 0;
 }
 
 static int svc_decode_frame(AVCodecContext *avctx, void *data,
@@ -146,89 +92,43 @@ static int svc_decode_frame(AVCodecContext *avctx, void *data,
     SVCContext *s = avctx->priv_data;
     SBufferInfo info = { 0 };
     uint8_t* ptrs[3];
-    int linesize[3];
+    int ret, linesize[3];
     AVFrame *avframe = data;
-    int ret;
     DECODING_STATE state;
 
-    if ((ret = init_bsf(avctx)) < 0)
-        return ret;
-
-    if (avpkt->size) {
-        AVPacket input_ref = { 0 };
-        if (av_fifo_space(s->packet_fifo) < sizeof(input_ref)) {
-            ret = av_fifo_realloc2(s->packet_fifo,
-                                   av_fifo_size(s->packet_fifo) + sizeof(input_ref));
-            if (ret < 0)
-                return ret;
-        }
-
-        ret = av_packet_ref(&input_ref, avpkt);
-        if (ret < 0)
-            return ret;
-        av_fifo_generic_write(s->packet_fifo, &input_ref, sizeof(input_ref), NULL);
+    state = (*s->decoder)->DecodeFrame2(s->decoder, avpkt->data, avpkt->size, ptrs, &info);
+    if (state != dsErrorFree) {
+        av_log(avctx, AV_LOG_ERROR, "DecodeFrame2 failed\n");
+        return AVERROR_UNKNOWN;
+    }
+    if (info.iBufferStatus != 1) {
+        av_log(avctx, AV_LOG_DEBUG, "No frame produced\n");
+        return avpkt->size;
     }
 
-    while (!*got_frame) {
-        /* prepare the input data -- convert to Annex B if needed */
-        if (s->pkt_filtered.size <= 0) {
-            AVPacket input_ref;
+    ret = ff_set_dimensions(avctx, info.UsrData.sSystemBuffer.iWidth, info.UsrData.sSystemBuffer.iHeight);
+    if (ret < 0)
+        return ret;
+    // The decoder doesn't (currently) support decoding into a user
+    // provided buffer, so do a copy instead.
+    if (ff_get_buffer(avctx, avframe, 0) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Unable to allocate buffer\n");
+        return AVERROR(ENOMEM);
+    }
 
-            /* no more data */
-            if (av_fifo_size(s->packet_fifo) < sizeof(AVPacket))
-                return avpkt->size ? avpkt->size : 0;
+    linesize[0] = info.UsrData.sSystemBuffer.iStride[0];
+    linesize[1] = linesize[2] = info.UsrData.sSystemBuffer.iStride[1];
+    av_image_copy(avframe->data, avframe->linesize, (const uint8_t **) ptrs, linesize, avctx->pix_fmt, avctx->width, avctx->height);
 
-            av_packet_unref(&s->pkt_filtered);
-
-            av_fifo_generic_read(s->packet_fifo, &input_ref, sizeof(input_ref), NULL);
-            ret = av_bsf_send_packet(s->bsf, &input_ref);
-            if (ret < 0) {
-                av_packet_unref(&input_ref);
-                return ret;
-            }
-
-            ret = av_bsf_receive_packet(s->bsf, &s->pkt_filtered);
-            if (ret < 0)
-                av_packet_move_ref(&s->pkt_filtered, &input_ref);
-            else
-                av_packet_unref(&input_ref);
-        }
-
-        state = (*s->decoder)->DecodeFrame2(s->decoder, s->pkt_filtered.data, s->pkt_filtered.size, ptrs, &info);
-        s->pkt_filtered.size = 0;
-        if (state != dsErrorFree) {
-            av_log(avctx, AV_LOG_ERROR, "DecodeFrame2 failed\n");
-            return AVERROR_UNKNOWN;
-        }
-        if (info.iBufferStatus != 1) {
-            av_log(avctx, AV_LOG_DEBUG, "No frame produced\n");
-            continue;
-        }
-
-        ret = ff_set_dimensions(avctx, info.UsrData.sSystemBuffer.iWidth, info.UsrData.sSystemBuffer.iHeight);
-        if (ret < 0)
-            return ret;
-        // The decoder doesn't (currently) support decoding into a user
-        // provided buffer, so do a copy instead.
-        if (ff_get_buffer(avctx, avframe, 0) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "Unable to allocate buffer\n");
-            return AVERROR(ENOMEM);
-        }
-
-        linesize[0] = info.UsrData.sSystemBuffer.iStride[0];
-        linesize[1] = linesize[2] = info.UsrData.sSystemBuffer.iStride[1];
-        av_image_copy(avframe->data, avframe->linesize, (const uint8_t **) ptrs, linesize, avctx->pix_fmt, avctx->width, avctx->height);
-
-        avframe->pts     = s->pkt_filtered.pts;
-        avframe->pkt_dts = s->pkt_filtered.dts;
+    avframe->pts     = avpkt->pts;
+    avframe->pkt_dts = avpkt->dts;
 #if FF_API_PKT_PTS
 FF_DISABLE_DEPRECATION_WARNINGS
-        avframe->pkt_pts = s->pkt_filtered.pts;
+    avframe->pkt_pts = avpkt->pts;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-        *got_frame = 1;
-    }
+    *got_frame = 1;
     return avpkt->size;
 }
 
@@ -246,4 +146,5 @@ AVCodec ff_libopenh264_decoder = {
     .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS | FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
+    .bsfs           = "h264_mp4toannexb",
 };

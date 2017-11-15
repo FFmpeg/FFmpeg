@@ -254,7 +254,7 @@ static int swscale(SwsContext *c, const uint8_t *src[],
     yuv2anyX_fn yuv2anyX             = c->yuv2anyX;
     const int chrSrcSliceY           =                srcSliceY >> c->chrSrcVSubSample;
     const int chrSrcSliceH           = AV_CEIL_RSHIFT(srcSliceH,   c->chrSrcVSubSample);
-    int should_dither                = is9_OR_10BPS(c->srcFormat) ||
+    int should_dither                = isNBPS(c->srcFormat) ||
                                        is16BPS(c->srcFormat);
     int lastDstY;
 
@@ -326,7 +326,7 @@ static int swscale(SwsContext *c, const uint8_t *src[],
         static int warnedAlready=0;
         int cpu_flags = av_get_cpu_flags();
         if (HAVE_MMXEXT && (cpu_flags & AV_CPU_FLAG_SSE2) && !warnedAlready){
-            av_log(c, AV_LOG_WARNING, "Warning: data is not aligned! This can lead to a speedloss\n");
+            av_log(c, AV_LOG_WARNING, "Warning: data is not aligned! This can lead to a speed loss\n");
             warnedAlready=1;
         }
     }
@@ -762,15 +762,18 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
     uint8_t *rgb0_tmp = NULL;
     int macro_height = isBayer(c->srcFormat) ? 2 : (1 << c->chrSrcVSubSample);
     // copy strides, so they can safely be modified
-    int srcStride2[4] = { srcStride[0], srcStride[1], srcStride[2],
-                            srcStride[3] };
-    int dstStride2[4] = { dstStride[0], dstStride[1], dstStride[2],
-                            dstStride[3] };
+    int srcStride2[4];
+    int dstStride2[4];
     int srcSliceY_internal = srcSliceY;
 
     if (!srcStride || !dstStride || !dst || !srcSlice) {
         av_log(c, AV_LOG_ERROR, "One of the input parameters to sws_scale() is NULL, please check the calling code\n");
         return 0;
+    }
+
+    for (i=0; i<4; i++) {
+        srcStride2[i] = srcStride[i];
+        dstStride2[i] = dstStride[i];
     }
 
     if ((srcSliceY & (macro_height-1)) ||

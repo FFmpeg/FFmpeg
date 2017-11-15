@@ -139,7 +139,7 @@ static int ast_write_trailer(AVFormatContext *s)
 
     av_log(s, AV_LOG_DEBUG, "total samples: %"PRId64"\n", samples);
 
-    if (s->pb->seekable) {
+    if (s->pb->seekable & AVIO_SEEKABLE_NORMAL) {
         /* Number of samples */
         avio_seek(pb, ast->samples, SEEK_SET);
         avio_wb32(pb, samples);

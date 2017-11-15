@@ -42,6 +42,8 @@ typedef struct RangeCoder {
     uint8_t *bytestream_start;
     uint8_t *bytestream;
     uint8_t *bytestream_end;
+    int overread;
+#define MAX_OVERREAD 2
 } RangeCoder;
 
 void ff_init_range_encoder(RangeCoder *c, uint8_t *buf, int buf_size);
@@ -106,9 +108,11 @@ static inline void refill(RangeCoder *c)
     if (c->range < 0x100) {
         c->range <<= 8;
         c->low   <<= 8;
-        if (c->bytestream < c->bytestream_end)
+        if (c->bytestream < c->bytestream_end) {
             c->low += c->bytestream[0];
-        c->bytestream++;
+            c->bytestream++;
+        } else
+            c->overread ++;
     }
 }
 
@@ -117,7 +121,6 @@ static inline int get_rac(RangeCoder *c, uint8_t *const state)
     int range1 = (c->range * (*state)) >> 8;
 
     c->range -= range1;
-#if 1
     if (c->low < c->range) {
         *state = c->zero_state[*state];
         refill(c);
@@ -129,19 +132,6 @@ static inline int get_rac(RangeCoder *c, uint8_t *const state)
         refill(c);
         return 1;
     }
-#else
-    {
-        int one_mask one_mask = (c->range - c->low - 1) >> 31;
-
-        c->low   -=           c->range  & one_mask;
-        c->range += (range1 - c->range) & one_mask;
-
-        *state = c->zero_state[(*state) + (256 & one_mask)];
-    }
-    refill(c);
-
-    return one_mask & 1;
-#endif
 }
 
 #endif /* AVCODEC_RANGECODER_H */

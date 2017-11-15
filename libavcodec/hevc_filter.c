@@ -26,7 +26,7 @@
 #include "libavutil/internal.h"
 
 #include "cabac_functions.h"
-#include "hevc.h"
+#include "hevcdec.h"
 
 #include "bit_depth_template.c"
 
@@ -139,7 +139,7 @@ static int get_qPy(HEVCContext *s, int xC, int yC)
 }
 
 static void copy_CTB(uint8_t *dst, const uint8_t *src, int width, int height,
-                     intptr_t stride_dst, intptr_t stride_src)
+                     ptrdiff_t stride_dst, ptrdiff_t stride_src)
 {
 int i, j;
 
@@ -170,7 +170,7 @@ static void copy_pixel(uint8_t *dst, const uint8_t *src, int pixel_shift)
 
 static void copy_vert(uint8_t *dst, const uint8_t *src,
                       int pixel_shift, int height,
-                      int stride_dst, int stride_src)
+                      ptrdiff_t stride_dst, ptrdiff_t stride_src)
 {
     int i;
     if (pixel_shift == 0) {
@@ -189,7 +189,7 @@ static void copy_vert(uint8_t *dst, const uint8_t *src,
 }
 
 static void copy_CTB_to_hv(HEVCContext *s, const uint8_t *src,
-                           int stride_src, int x, int y, int width, int height,
+                           ptrdiff_t stride_src, int x, int y, int width, int height,
                            int c_idx, int x_ctb, int y_ctb)
 {
     int sh = s->ps.sps->pixel_shift;
@@ -306,14 +306,14 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
     for (c_idx = 0; c_idx < (s->ps.sps->chroma_format_idc ? 3 : 1); c_idx++) {
         int x0       = x >> s->ps.sps->hshift[c_idx];
         int y0       = y >> s->ps.sps->vshift[c_idx];
-        int stride_src = s->frame->linesize[c_idx];
+        ptrdiff_t stride_src = s->frame->linesize[c_idx];
         int ctb_size_h = (1 << (s->ps.sps->log2_ctb_size)) >> s->ps.sps->hshift[c_idx];
         int ctb_size_v = (1 << (s->ps.sps->log2_ctb_size)) >> s->ps.sps->vshift[c_idx];
         int width    = FFMIN(ctb_size_h, (s->ps.sps->width  >> s->ps.sps->hshift[c_idx]) - x0);
         int height   = FFMIN(ctb_size_v, (s->ps.sps->height >> s->ps.sps->vshift[c_idx]) - y0);
         int tab      = sao_tab[(FFALIGN(width, 8) >> 3) - 1];
         uint8_t *src = &s->frame->data[c_idx][y0 * stride_src + (x0 << s->ps.sps->pixel_shift)];
-        int stride_dst;
+        ptrdiff_t stride_dst;
         uint8_t *dst;
 
         switch (sao->type_idx[c_idx]) {
@@ -470,7 +470,7 @@ static int get_pcm(HEVCContext *s, int x, int y)
 
 #define TC_CALC(qp, bs)                                                 \
     tctable[av_clip((qp) + DEFAULT_INTRA_TC_OFFSET * ((bs) - 1) +       \
-                    (tc_offset >> 1 << 1),                              \
+                    (tc_offset & -2),                                   \
                     0, MAX_QP + DEFAULT_INTRA_TC_OFFSET)]
 
 static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)

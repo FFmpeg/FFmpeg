@@ -27,6 +27,7 @@
 #ifndef AVUTIL_MD5_H
 #define AVUTIL_MD5_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include "attributes.h"
@@ -63,7 +64,11 @@ void av_md5_init(struct AVMD5 *ctx);
  * @param src input data to update hash with
  * @param len input data length
  */
+#if FF_API_CRYPTO_SIZE_T
 void av_md5_update(struct AVMD5 *ctx, const uint8_t *src, int len);
+#else
+void av_md5_update(struct AVMD5 *ctx, const uint8_t *src, size_t len);
+#endif
 
 /**
  * Finish hashing and output digest value.
@@ -80,7 +85,11 @@ void av_md5_final(struct AVMD5 *ctx, uint8_t *dst);
  * @param src The data to hash
  * @param len The length of the data, in bytes
  */
+#if FF_API_CRYPTO_SIZE_T
 void av_md5_sum(uint8_t *dst, const uint8_t *src, const int len);
+#else
+void av_md5_sum(uint8_t *dst, const uint8_t *src, size_t len);
+#endif
 
 /**
  * @}

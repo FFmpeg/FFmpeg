@@ -76,6 +76,7 @@ typedef struct ALACContext {
     uint8_t  rice_history_mult;
     uint8_t  rice_initial_history;
     uint8_t  rice_limit;
+    int      sample_rate;
 
     int extra_bits;     /**< number of extra bits beyond 16-bit */
     int nb_samples;     /**< number of samples in the current frame */
@@ -250,7 +251,7 @@ static int decode_element(AVCodecContext *avctx, AVFrame *frame, int ch_index,
     alac->extra_bits = get_bits(&alac->gb, 2) << 3;
     bps = alac->sample_size - alac->extra_bits + channels - 1;
     if (bps > 32U) {
-        av_log(avctx, AV_LOG_ERROR, "bps is unsupported: %d\n", bps);
+        avpriv_report_missing_feature(avctx, "bps %d", bps);
         return AVERROR_PATCHWELCOME;
     }
 
@@ -430,7 +431,7 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
             break;
         }
         if (element > TYPE_CPE && element != TYPE_LFE) {
-            av_log(avctx, AV_LOG_ERROR, "syntax element unsupported: %d\n", element);
+            avpriv_report_missing_feature(avctx, "Syntax element %d", element);
             return AVERROR_PATCHWELCOME;
         }
 
@@ -459,7 +460,7 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
                avpkt->size * 8 - get_bits_count(&alac->gb));
     }
 
-    if (alac->channels == ch)
+    if (alac->channels == ch && alac->nb_samples)
         *got_frame_ptr = 1;
     else
         av_log(avctx, AV_LOG_WARNING, "Failed to decode all channels\n");
@@ -523,7 +524,7 @@ static int alac_set_info(ALACContext *alac)
 
     alac->max_samples_per_frame = bytestream2_get_be32u(&gb);
     if (!alac->max_samples_per_frame ||
-        alac->max_samples_per_frame > INT_MAX / sizeof(int32_t)) {
+        alac->max_samples_per_frame > 4096 * 4096) {
         av_log(alac->avctx, AV_LOG_ERROR,
                "max samples per frame invalid: %"PRIu32"\n",
                alac->max_samples_per_frame);
@@ -538,7 +539,7 @@ static int alac_set_info(ALACContext *alac)
     bytestream2_get_be16u(&gb); // maxRun
     bytestream2_get_be32u(&gb); // max coded frame size
     bytestream2_get_be32u(&gb); // average bitrate
-    bytestream2_get_be32u(&gb); // samplerate
+    alac->sample_rate          = bytestream2_get_be32u(&gb);
 
     return 0;
 }
@@ -570,6 +571,7 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
              return AVERROR_PATCHWELCOME;
     }
     avctx->bits_per_raw_sample = alac->sample_size;
+    avctx->sample_rate         = alac->sample_rate;
 
     if (alac->channels < 1) {
         av_log(avctx, AV_LOG_WARNING, "Invalid channel count\n");
@@ -581,8 +583,8 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
             avctx->channels = alac->channels;
     }
     if (avctx->channels > ALAC_MAX_CHANNELS || avctx->channels <= 0 ) {
-        av_log(avctx, AV_LOG_ERROR, "Unsupported channel count: %d\n",
-               avctx->channels);
+        avpriv_report_missing_feature(avctx, "Channel count %d",
+                                      avctx->channels);
         return AVERROR_PATCHWELCOME;
     }
     avctx->channel_layout = ff_alac_channel_layouts[alac->channels - 1];

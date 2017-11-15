@@ -248,19 +248,19 @@ static VLC chroma422_dc_coeff_token_vlc;
 static VLC_TYPE chroma422_dc_coeff_token_vlc_table[8192][2];
 static const int chroma422_dc_coeff_token_vlc_table_size = 8192;
 
-static VLC total_zeros_vlc[15];
+static VLC total_zeros_vlc[15+1];
 static VLC_TYPE total_zeros_vlc_tables[15][512][2];
 static const int total_zeros_vlc_tables_size = 512;
 
-static VLC chroma_dc_total_zeros_vlc[3];
+static VLC chroma_dc_total_zeros_vlc[3+1];
 static VLC_TYPE chroma_dc_total_zeros_vlc_tables[3][8][2];
 static const int chroma_dc_total_zeros_vlc_tables_size = 8;
 
-static VLC chroma422_dc_total_zeros_vlc[7];
+static VLC chroma422_dc_total_zeros_vlc[7+1];
 static VLC_TYPE chroma422_dc_total_zeros_vlc_tables[7][32][2];
 static const int chroma422_dc_total_zeros_vlc_tables_size = 32;
 
-static VLC run_vlc[6];
+static VLC run_vlc[6+1];
 static VLC_TYPE run_vlc_tables[6][8][2];
 static const int run_vlc_tables_size = 8;
 
@@ -364,9 +364,9 @@ av_cold void ff_h264_decode_init_vlc(void){
         av_assert0(offset == FF_ARRAY_ELEMS(coeff_token_vlc_tables));
 
         for(i=0; i<3; i++){
-            chroma_dc_total_zeros_vlc[i].table = chroma_dc_total_zeros_vlc_tables[i];
-            chroma_dc_total_zeros_vlc[i].table_allocated = chroma_dc_total_zeros_vlc_tables_size;
-            init_vlc(&chroma_dc_total_zeros_vlc[i],
+            chroma_dc_total_zeros_vlc[i+1].table = chroma_dc_total_zeros_vlc_tables[i];
+            chroma_dc_total_zeros_vlc[i+1].table_allocated = chroma_dc_total_zeros_vlc_tables_size;
+            init_vlc(&chroma_dc_total_zeros_vlc[i+1],
                      CHROMA_DC_TOTAL_ZEROS_VLC_BITS, 4,
                      &chroma_dc_total_zeros_len [i][0], 1, 1,
                      &chroma_dc_total_zeros_bits[i][0], 1, 1,
@@ -374,9 +374,9 @@ av_cold void ff_h264_decode_init_vlc(void){
         }
 
         for(i=0; i<7; i++){
-            chroma422_dc_total_zeros_vlc[i].table = chroma422_dc_total_zeros_vlc_tables[i];
-            chroma422_dc_total_zeros_vlc[i].table_allocated = chroma422_dc_total_zeros_vlc_tables_size;
-            init_vlc(&chroma422_dc_total_zeros_vlc[i],
+            chroma422_dc_total_zeros_vlc[i+1].table = chroma422_dc_total_zeros_vlc_tables[i];
+            chroma422_dc_total_zeros_vlc[i+1].table_allocated = chroma422_dc_total_zeros_vlc_tables_size;
+            init_vlc(&chroma422_dc_total_zeros_vlc[i+1],
                      CHROMA422_DC_TOTAL_ZEROS_VLC_BITS, 8,
                      &chroma422_dc_total_zeros_len [i][0], 1, 1,
                      &chroma422_dc_total_zeros_bits[i][0], 1, 1,
@@ -384,9 +384,9 @@ av_cold void ff_h264_decode_init_vlc(void){
         }
 
         for(i=0; i<15; i++){
-            total_zeros_vlc[i].table = total_zeros_vlc_tables[i];
-            total_zeros_vlc[i].table_allocated = total_zeros_vlc_tables_size;
-            init_vlc(&total_zeros_vlc[i],
+            total_zeros_vlc[i+1].table = total_zeros_vlc_tables[i];
+            total_zeros_vlc[i+1].table_allocated = total_zeros_vlc_tables_size;
+            init_vlc(&total_zeros_vlc[i+1],
                      TOTAL_ZEROS_VLC_BITS, 16,
                      &total_zeros_len [i][0], 1, 1,
                      &total_zeros_bits[i][0], 1, 1,
@@ -394,9 +394,9 @@ av_cold void ff_h264_decode_init_vlc(void){
         }
 
         for(i=0; i<6; i++){
-            run_vlc[i].table = run_vlc_tables[i];
-            run_vlc[i].table_allocated = run_vlc_tables_size;
-            init_vlc(&run_vlc[i],
+            run_vlc[i+1].table = run_vlc_tables[i];
+            run_vlc[i+1].table_allocated = run_vlc_tables_size;
+            init_vlc(&run_vlc[i+1],
                      RUN_VLC_BITS, 7,
                      &run_len [i][0], 1, 1,
                      &run_bits[i][0], 1, 1,
@@ -570,13 +570,13 @@ static int decode_residual(const H264Context *h, H264SliceContext *sl,
     else{
         if (max_coeff <= 8) {
             if (max_coeff == 4)
-                zeros_left = get_vlc2(gb, (chroma_dc_total_zeros_vlc-1)[total_coeff].table,
+                zeros_left = get_vlc2(gb, chroma_dc_total_zeros_vlc[total_coeff].table,
                                       CHROMA_DC_TOTAL_ZEROS_VLC_BITS, 1);
             else
-                zeros_left = get_vlc2(gb, (chroma422_dc_total_zeros_vlc-1)[total_coeff].table,
+                zeros_left = get_vlc2(gb, chroma422_dc_total_zeros_vlc[total_coeff].table,
                                       CHROMA422_DC_TOTAL_ZEROS_VLC_BITS, 1);
         } else {
-            zeros_left= get_vlc2(gb, (total_zeros_vlc-1)[ total_coeff ].table, TOTAL_ZEROS_VLC_BITS, 1);
+            zeros_left= get_vlc2(gb, total_zeros_vlc[ total_coeff ].table, TOTAL_ZEROS_VLC_BITS, 1);
         }
     }
 
@@ -586,7 +586,7 @@ static int decode_residual(const H264Context *h, H264SliceContext *sl,
         ((type*)block)[*scantable] = level[0]; \
         for(i=1;i<total_coeff && zeros_left > 0;i++) { \
             if(zeros_left < 7) \
-                run_before= get_vlc2(gb, (run_vlc-1)[zeros_left].table, RUN_VLC_BITS, 1); \
+                run_before= get_vlc2(gb, run_vlc[zeros_left].table, RUN_VLC_BITS, 1); \
             else \
                 run_before= get_vlc2(gb, run7_vlc.table, RUN7_VLC_BITS, 2); \
             zeros_left -= run_before; \
@@ -601,7 +601,7 @@ static int decode_residual(const H264Context *h, H264SliceContext *sl,
         ((type*)block)[*scantable] = ((int)(level[0] * qmul[*scantable] + 32))>>6; \
         for(i=1;i<total_coeff && zeros_left > 0;i++) { \
             if(zeros_left < 7) \
-                run_before= get_vlc2(gb, (run_vlc-1)[zeros_left].table, RUN_VLC_BITS, 1); \
+                run_before= get_vlc2(gb, run_vlc[zeros_left].table, RUN_VLC_BITS, 1); \
             else \
                 run_before= get_vlc2(gb, run7_vlc.table, RUN7_VLC_BITS, 2); \
             zeros_left -= run_before; \
@@ -704,8 +704,8 @@ int ff_h264_decode_mb_cavlc(const H264Context *h, H264SliceContext *sl)
     int mb_xy;
     int partition_count;
     unsigned int mb_type, cbp;
-    int dct8x8_allowed= h->ps.pps->transform_8x8_mode;
-    int decode_chroma = h->ps.sps->chroma_format_idc == 1 || h->ps.sps->chroma_format_idc == 2;
+    int dct8x8_allowed = h->ps.pps->transform_8x8_mode;
+    const int decode_chroma = h->ps.sps->chroma_format_idc == 1 || h->ps.sps->chroma_format_idc == 2;
     const int pixel_shift = h->pixel_shift;
 
     mb_xy = sl->mb_xy = sl->mb_x + sl->mb_y*h->mb_stride;
@@ -1102,17 +1102,9 @@ decode_intra_mb:
         const uint8_t *scan, *scan8x8;
         const int max_qp = 51 + 6 * (h->ps.sps->bit_depth_luma - 8);
 
-        if(IS_INTERLACED(mb_type)){
-            scan8x8 = sl->qscale ? h->field_scan8x8_cavlc : h->field_scan8x8_cavlc_q0;
-            scan    = sl->qscale ? h->field_scan : h->field_scan_q0;
-        }else{
-            scan8x8 = sl->qscale ? h->zigzag_scan8x8_cavlc : h->zigzag_scan8x8_cavlc_q0;
-            scan    = sl->qscale ? h->zigzag_scan : h->zigzag_scan_q0;
-        }
-
         dquant= get_se_golomb(&sl->gb);
 
-        sl->qscale += dquant;
+        sl->qscale += (unsigned)dquant;
 
         if (((unsigned)sl->qscale) > max_qp){
             if (sl->qscale < 0) sl->qscale += max_qp + 1;
@@ -1125,6 +1117,14 @@ decode_intra_mb:
 
         sl->chroma_qp[0] = get_chroma_qp(h->ps.pps, 0, sl->qscale);
         sl->chroma_qp[1] = get_chroma_qp(h->ps.pps, 1, sl->qscale);
+
+        if(IS_INTERLACED(mb_type)){
+            scan8x8 = sl->qscale ? h->field_scan8x8_cavlc : h->field_scan8x8_cavlc_q0;
+            scan    = sl->qscale ? h->field_scan : h->field_scan_q0;
+        }else{
+            scan8x8 = sl->qscale ? h->zigzag_scan8x8_cavlc : h->zigzag_scan8x8_cavlc_q0;
+            scan    = sl->qscale ? h->zigzag_scan : h->zigzag_scan_q0;
+        }
 
         if ((ret = decode_luma_residual(h, sl, gb, scan, scan8x8, pixel_shift, mb_type, cbp, 0)) < 0 ) {
             return -1;

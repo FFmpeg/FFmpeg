@@ -44,7 +44,7 @@
 
 typedef struct RTPContext {
     const AVClass *class;
-    URLContext *rtp_hd, *rtcp_hd;
+    URLContext *rtp_hd, *rtcp_hd, *fec_hd;
     int rtp_fd, rtcp_fd, nb_ssm_include_addrs, nb_ssm_exclude_addrs;
     struct sockaddr_storage **ssm_include_addrs, **ssm_exclude_addrs;
     int write_to_source;
@@ -58,6 +58,7 @@ typedef struct RTPContext {
     int dscp;
     char *sources;
     char *block;
+    char *fec_options_str;
 } RTPContext;
 
 #define OFFSET(x) offsetof(RTPContext, x)
@@ -75,6 +76,7 @@ static const AVOption options[] = {
     { "dscp",               "DSCP class",                                                       OFFSET(dscp),            AV_OPT_TYPE_INT,    { .i64 = -1 },    -1, INT_MAX, .flags = D|E },
     { "sources",            "Source list",                                                      OFFSET(sources),         AV_OPT_TYPE_STRING, { .str = NULL },               .flags = D|E },
     { "block",              "Block list",                                                       OFFSET(block),           AV_OPT_TYPE_STRING, { .str = NULL },               .flags = D|E },
+    { "fec",                "FEC",                                                              OFFSET(fec_options_str), AV_OPT_TYPE_STRING, { .str = NULL },               .flags = E },
     { NULL }
 };
 
@@ -316,9 +318,11 @@ static void rtp_parse_addr_list(URLContext *h, char *buf,
 static int rtp_open(URLContext *h, const char *uri, int flags)
 {
     RTPContext *s = h->priv_data;
+    AVDictionary *fec_opts = NULL;
     int rtp_port;
     char hostname[256], include_sources[1024] = "", exclude_sources[1024] = "";
     char *sources = include_sources, *block = exclude_sources;
+    char *fec_protocol = NULL;
     char buf[1024];
     char path[1024];
     const char *p;
@@ -377,6 +381,31 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
         }
     }
 
+    if (s->fec_options_str) {
+        p = s->fec_options_str;
+
+        if (!(fec_protocol = av_get_token(&p, "="))) {
+            av_log(h, AV_LOG_ERROR, "Failed to parse the FEC protocol value\n");
+            goto fail;
+        }
+        if (strcmp(fec_protocol, "prompeg")) {
+            av_log(h, AV_LOG_ERROR, "Unsupported FEC protocol %s\n", fec_protocol);
+            goto fail;
+        }
+
+        p = s->fec_options_str + strlen(fec_protocol);
+        while (*p && *p == '=') p++;
+
+        if (av_dict_parse_string(&fec_opts, p, "=", ":", 0) < 0) {
+            av_log(h, AV_LOG_ERROR, "Failed to parse the FEC options\n");
+            goto fail;
+        }
+        if (s->ttl > 0) {
+            snprintf(buf, sizeof (buf), "%d", s->ttl);
+            av_dict_set(&fec_opts, "ttl", buf, 0);
+        }
+    }
+
     for (i = 0; i < max_retry_count; i++) {
         build_udp_url(s, buf, sizeof(buf),
                       hostname, rtp_port, s->local_rtpport,
@@ -412,6 +441,14 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
         break;
     }
 
+    s->fec_hd = NULL;
+    if (fec_protocol) {
+        ff_url_join(buf, sizeof(buf), fec_protocol, NULL, hostname, rtp_port, NULL);
+        if (ffurl_open_whitelist(&s->fec_hd, buf, flags, &h->interrupt_callback,
+                             &fec_opts, h->protocol_whitelist, h->protocol_blacklist, h) < 0)
+            goto fail;
+    }
+
     /* just to ease handle access. XXX: need to suppress direct handle
        access */
     s->rtp_fd = ffurl_get_file_handle(s->rtp_hd);
@@ -419,6 +456,10 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
 
     h->max_packet_size = s->rtp_hd->max_packet_size;
     h->is_streamed = 1;
+
+    av_free(fec_protocol);
+    av_dict_free(&fec_opts);
+
     return 0;
 
  fail:
@@ -426,6 +467,9 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
         ffurl_close(s->rtp_hd);
     if (s->rtcp_hd)
         ffurl_close(s->rtcp_hd);
+    ffurl_closep(&s->fec_hd);
+    av_free(fec_protocol);
+    av_dict_free(&fec_opts);
     return AVERROR(EIO);
 }
 
@@ -468,13 +512,12 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
         if (h->flags & AVIO_FLAG_NONBLOCK)
             return AVERROR(EAGAIN);
     }
-    return len;
 }
 
 static int rtp_write(URLContext *h, const uint8_t *buf, int size)
 {
     RTPContext *s = h->priv_data;
-    int ret;
+    int ret, ret_fec;
     URLContext *hd;
 
     if (size < 2)
@@ -543,7 +586,17 @@ static int rtp_write(URLContext *h, const uint8_t *buf, int size)
         hd = s->rtp_hd;
     }
 
-    ret = ffurl_write(hd, buf, size);
+    if ((ret = ffurl_write(hd, buf, size)) < 0) {
+        return ret;
+    }
+
+    if (s->fec_hd && !RTP_PT_IS_RTCP(buf[1])) {
+        if ((ret_fec = ffurl_write(s->fec_hd, buf, size)) < 0) {
+            av_log(h, AV_LOG_ERROR, "Failed to send FEC\n");
+            return ret_fec;
+        }
+    }
+
     return ret;
 }
 
@@ -561,6 +614,7 @@ static int rtp_close(URLContext *h)
 
     ffurl_close(s->rtp_hd);
     ffurl_close(s->rtcp_hd);
+    ffurl_closep(&s->fec_hd);
     return 0;
 }
 

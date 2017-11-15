@@ -26,6 +26,7 @@
  */
 
 #include <inttypes.h>
+#include <math.h>
 
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
@@ -106,6 +107,7 @@ typedef struct Jpeg2000DecoderContext {
     int             tile_width, tile_height;
     unsigned        numXtiles, numYtiles;
     int             maxtilelen;
+    AVRational      sar;
 
     Jpeg2000CodingStyle codsty[4];
     Jpeg2000QuantStyle  qntsty[4];
@@ -260,6 +262,7 @@ static int get_siz(Jpeg2000DecoderContext *s)
     uint32_t log2_chroma_wh = 0;
     const enum AVPixelFormat *possible_fmts = NULL;
     int possible_fmts_nb = 0;
+    int ret;
 
     if (bytestream2_get_bytes_left(&s->g) < 36) {
         av_log(s->avctx, AV_LOG_ERROR, "Insufficient space for SIZ\n");
@@ -296,6 +299,16 @@ static int get_siz(Jpeg2000DecoderContext *s)
         avpriv_request_sample(s->avctx, "Support for %d components",
                               ncomponents);
         return AVERROR_PATCHWELCOME;
+    }
+
+    if (s->tile_offset_x < 0 || s->tile_offset_y < 0 ||
+        s->image_offset_x < s->tile_offset_x ||
+        s->image_offset_y < s->tile_offset_y ||
+        s->tile_width  + (int64_t)s->tile_offset_x <= s->image_offset_x ||
+        s->tile_height + (int64_t)s->tile_offset_y <= s->image_offset_y
+    ) {
+        av_log(s->avctx, AV_LOG_ERROR, "Tile offsets are invalid\n");
+        return AVERROR_INVALIDDATA;
     }
 
     s->ncomponents = ncomponents;
@@ -349,10 +362,13 @@ static int get_siz(Jpeg2000DecoderContext *s)
     }
 
     /* compute image size with reduction factor */
-    s->avctx->width  = ff_jpeg2000_ceildivpow2(s->width  - s->image_offset_x,
-                                               s->reduction_factor);
-    s->avctx->height = ff_jpeg2000_ceildivpow2(s->height - s->image_offset_y,
-                                               s->reduction_factor);
+    ret = ff_set_dimensions(s->avctx,
+            ff_jpeg2000_ceildivpow2(s->width  - s->image_offset_x,
+                                               s->reduction_factor),
+            ff_jpeg2000_ceildivpow2(s->height - s->image_offset_y,
+                                               s->reduction_factor));
+    if (ret < 0)
+        return ret;
 
     if (s->avctx->profile == FF_PROFILE_JPEG2000_DCINEMA_2K ||
         s->avctx->profile == FF_PROFILE_JPEG2000_DCINEMA_4K) {
@@ -946,9 +962,9 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
             if (!cblk->npasses) {
                 int v = expn[bandno] + numgbits - 1 -
                         tag_tree_decode(s, prec->zerobits + cblkno, 100);
-                if (v < 0) {
+                if (v < 0 || v > 30) {
                     av_log(s->avctx, AV_LOG_ERROR,
-                           "nonzerobits %d invalid\n", v);
+                           "nonzerobits %d invalid or unsupported\n", v);
                     return AVERROR_INVALIDDATA;
                 }
                 cblk->nonzerobits = v;
@@ -1982,6 +1998,7 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
                 atom2_end  = bytestream2_tell(&s->g) + atom2_size - 8;
                 if (atom2_size < 8 || atom2_end > atom_end || atom2_end < atom2_size)
                     break;
+                atom2_size -= 8;
                 if (atom2 == JP2_CODESTREAM) {
                     return 1;
                 } else if (atom2 == MKBETAG('c','o','l','r') && atom2_size >= 7) {
@@ -2022,13 +2039,13 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
                         }
                         if (colour_depth[1] <= 8) {
                             g = bytestream2_get_byteu(&s->g) << 8 - colour_depth[1];
-                            r |= r >> colour_depth[1];
+                            g |= g >> colour_depth[1];
                         } else {
                             g = bytestream2_get_be16u(&s->g) >> colour_depth[1] - 8;
                         }
                         if (colour_depth[2] <= 8) {
                             b = bytestream2_get_byteu(&s->g) << 8 - colour_depth[2];
-                            r |= r >> colour_depth[2];
+                            b |= b >> colour_depth[2];
                         } else {
                             b = bytestream2_get_be16u(&s->g) >> colour_depth[2] - 8;
                         }
@@ -2043,6 +2060,39 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
                         if (cn < 4 && asoc < 4)
                             s->cdef[cn] = asoc;
                     }
+                } else if (atom2 == MKBETAG('r','e','s',' ') && atom2_size >= 18) {
+                    int64_t vnum, vden, hnum, hden, vexp, hexp;
+                    uint32_t resx;
+                    bytestream2_skip(&s->g, 4);
+                    resx = bytestream2_get_be32u(&s->g);
+                    if (resx != MKBETAG('r','e','s','c') && resx != MKBETAG('r','e','s','d')) {
+                        bytestream2_seek(&s->g, atom2_end, SEEK_SET);
+                        continue;
+                    }
+                    vnum = bytestream2_get_be16u(&s->g);
+                    vden = bytestream2_get_be16u(&s->g);
+                    hnum = bytestream2_get_be16u(&s->g);
+                    hden = bytestream2_get_be16u(&s->g);
+                    vexp = bytestream2_get_byteu(&s->g);
+                    hexp = bytestream2_get_byteu(&s->g);
+                    if (!vnum || !vden || !hnum || !hden) {
+                        bytestream2_seek(&s->g, atom2_end, SEEK_SET);
+                        av_log(s->avctx, AV_LOG_WARNING, "RES box invalid\n");
+                        continue;
+                    }
+                    if (vexp > hexp) {
+                        vexp -= hexp;
+                        hexp = 0;
+                    } else {
+                        hexp -= vexp;
+                        vexp = 0;
+                    }
+                    if (   INT64_MAX / (hnum * vden) > pow(10, hexp)
+                        && INT64_MAX / (vnum * hden) > pow(10, vexp))
+                        av_reduce(&s->sar.den, &s->sar.num,
+                                  hnum * vden * pow(10, hexp),
+                                  vnum * hden * pow(10, vexp),
+                                  INT32_MAX);
                 }
                 bytestream2_seek(&s->g, atom2_end, SEEK_SET);
             } while (atom_end - atom2_end >= 8);
@@ -2125,6 +2175,9 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
 
     if (s->avctx->pix_fmt == AV_PIX_FMT_PAL8)
         memcpy(picture->data[1], s->palette, 256 * sizeof(uint32_t));
+    if (s->sar.num && s->sar.den)
+        avctx->sample_aspect_ratio = s->sar;
+    s->sar.num = s->sar.den = 0;
 
     return bytestream2_tell(&s->g);
 

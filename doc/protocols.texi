@@ -5,6 +5,11 @@ The libavformat library provides some generic global options, which
 can be set on all the protocols. In addition each protocol may support
 so-called private options, which are specific for that component.
 
+Options may be set by specifying -@var{option} @var{value} in the
+FFmpeg tools, or by setting the value explicitly in the
+@code{AVFormatContext} options or using the @file{libavutil/opt.h} API
+for programmatic use.
+
 The list of supported options follows:
 
 @table @option
@@ -514,6 +519,41 @@ time, which is valuable if data transmission is slow.
 
 Note that some formats (typically MOV), require the output protocol to
 be seekable, so they will fail with the pipe output protocol.
+
+@section prompeg
+
+Pro-MPEG Code of Practice #3 Release 2 FEC protocol.
+
+The Pro-MPEG CoP#3 FEC is a 2D parity-check forward error correction mechanism
+for MPEG-2 Transport Streams sent over RTP.
+
+This protocol must be used in conjunction with the @code{rtp_mpegts} muxer and
+the @code{rtp} protocol.
+
+The required syntax is:
+@example
+-f rtp_mpegts -fec prompeg=@var{option}=@var{val}... rtp://@var{hostname}:@var{port}
+@end example
+
+The destination UDP ports are @code{port + 2} for the column FEC stream
+and @code{port + 4} for the row FEC stream.
+
+This protocol accepts the following options:
+@table @option
+
+@item l=@var{n}
+The number of columns (4-20, LxD <= 100)
+
+@item d=@var{n}
+The number of rows (4-20, LxD <= 100)
+
+@end table
+
+Example usage:
+
+@example
+-f rtp_mpegts -fec prompeg=l=8:d=4 rtp://@var{hostname}:@var{port}
+@end example
 
 @section rtmp
 

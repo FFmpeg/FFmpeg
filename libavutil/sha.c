@@ -311,7 +311,11 @@ av_cold int av_sha_init(AVSHA *ctx, int bits)
     return 0;
 }
 
-void av_sha_update(AVSHA* ctx, const uint8_t* data, unsigned int len)
+#if FF_API_CRYPTO_SIZE_T
+void av_sha_update(struct AVSHA *ctx, const uint8_t *data, unsigned int len)
+#else
+void av_sha_update(struct AVSHA *ctx, const uint8_t *data, size_t len)
+#endif
 {
     unsigned int i, j;
 

@@ -79,6 +79,12 @@ typedef struct ID3v2ExtraMetaPRIV {
     uint32_t datasize;
 } ID3v2ExtraMetaPRIV;
 
+typedef struct ID3v2ExtraMetaCHAP {
+    uint8_t *element_id;
+    uint32_t start, end;
+    AVDictionary *meta;
+} ID3v2ExtraMetaCHAP;
+
 /**
  * Detect ID3v2 Header.
  * @param buf   must be ID3v2_HEADER_SIZE byte long
@@ -97,8 +103,6 @@ int ff_id3v2_tag_len(const uint8_t *buf);
 /**
  * Read an ID3v2 tag into specified dictionary and retrieve supported extra metadata.
  *
- * Chapters are not currently read by this variant.
- *
  * @param metadata Parsed metadata is stored here
  * @param extra_meta If not NULL, extra metadata is parsed into a list of
  * ID3v2ExtraMeta structs and *extra_meta points to the head of the list
@@ -106,7 +110,7 @@ int ff_id3v2_tag_len(const uint8_t *buf);
 void ff_id3v2_read_dict(AVIOContext *pb, AVDictionary **metadata, const char *magic, ID3v2ExtraMeta **extra_meta);
 
 /**
- * Read an ID3v2 tag, including supported extra metadata and chapters.
+ * Read an ID3v2 tag, including supported extra metadata.
  *
  * Data is read from and stored to AVFormatContext.
  *
@@ -158,6 +162,11 @@ void ff_id3v2_free_extra_meta(ID3v2ExtraMeta **extra_meta);
  */
 int ff_id3v2_parse_apic(AVFormatContext *s, ID3v2ExtraMeta **extra_meta);
 
+/**
+ * Create chapters for all CHAP tags found in the ID3v2 header.
+ */
+int ff_id3v2_parse_chapters(AVFormatContext *s, ID3v2ExtraMeta **extra_meta);
+
 extern const AVMetadataConv ff_id3v2_34_metadata_conv[];
 extern const AVMetadataConv ff_id3v2_4_metadata_conv[];
 
@@ -180,6 +189,6 @@ extern const char ff_id3v2_3_tags[][4];
 
 extern const CodecMime ff_id3v2_mime_tags[];
 
-extern const char *ff_id3v2_picture_types[21];
+extern const char * const ff_id3v2_picture_types[21];
 
 #endif /* AVFORMAT_ID3V2_H */

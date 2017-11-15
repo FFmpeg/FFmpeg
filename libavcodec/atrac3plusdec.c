@@ -198,7 +198,7 @@ static av_cold int atrac3p_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void decode_residual_spectrum(Atrac3pChanUnitCtx *ctx,
+static void decode_residual_spectrum(ATRAC3PContext *ctx, Atrac3pChanUnitCtx *ch_unit,
                                      float out[2][ATRAC3P_FRAME_SAMPLES],
                                      int num_channels,
                                      AVCodecContext *avctx)
@@ -209,17 +209,17 @@ static void decode_residual_spectrum(Atrac3pChanUnitCtx *ctx,
     /* calculate RNG table index for each subband */
     int sb_RNG_index[ATRAC3P_SUBBANDS] = { 0 };
 
-    if (ctx->mute_flag) {
+    if (ch_unit->mute_flag) {
         for (ch = 0; ch < num_channels; ch++)
             memset(out[ch], 0, ATRAC3P_FRAME_SAMPLES * sizeof(*out[ch]));
         return;
     }
 
-    for (qu = 0, RNG_index = 0; qu < ctx->used_quant_units; qu++)
-        RNG_index += ctx->channels[0].qu_sf_idx[qu] +
-                     ctx->channels[1].qu_sf_idx[qu];
+    for (qu = 0, RNG_index = 0; qu < ch_unit->used_quant_units; qu++)
+        RNG_index += ch_unit->channels[0].qu_sf_idx[qu] +
+                     ch_unit->channels[1].qu_sf_idx[qu];
 
-    for (sb = 0; sb < ctx->num_coded_subbands; sb++, RNG_index += 128)
+    for (sb = 0; sb < ch_unit->num_coded_subbands; sb++, RNG_index += 128)
         sb_RNG_index[sb] = RNG_index & 0x3FC;
 
     /* inverse quant and power compensation */
@@ -227,35 +227,35 @@ static void decode_residual_spectrum(Atrac3pChanUnitCtx *ctx,
         /* clear channel's residual spectrum */
         memset(out[ch], 0, ATRAC3P_FRAME_SAMPLES * sizeof(*out[ch]));
 
-        for (qu = 0; qu < ctx->used_quant_units; qu++) {
-            src        = &ctx->channels[ch].spectrum[ff_atrac3p_qu_to_spec_pos[qu]];
+        for (qu = 0; qu < ch_unit->used_quant_units; qu++) {
+            src        = &ch_unit->channels[ch].spectrum[ff_atrac3p_qu_to_spec_pos[qu]];
             dst        = &out[ch][ff_atrac3p_qu_to_spec_pos[qu]];
             nspeclines = ff_atrac3p_qu_to_spec_pos[qu + 1] -
                          ff_atrac3p_qu_to_spec_pos[qu];
 
-            if (ctx->channels[ch].qu_wordlen[qu] > 0) {
-                q = ff_atrac3p_sf_tab[ctx->channels[ch].qu_sf_idx[qu]] *
-                    ff_atrac3p_mant_tab[ctx->channels[ch].qu_wordlen[qu]];
+            if (ch_unit->channels[ch].qu_wordlen[qu] > 0) {
+                q = ff_atrac3p_sf_tab[ch_unit->channels[ch].qu_sf_idx[qu]] *
+                    ff_atrac3p_mant_tab[ch_unit->channels[ch].qu_wordlen[qu]];
                 for (i = 0; i < nspeclines; i++)
                     dst[i] = src[i] * q;
             }
         }
 
-        for (sb = 0; sb < ctx->num_coded_subbands; sb++)
-            ff_atrac3p_power_compensation(ctx, ch, &out[ch][0],
+        for (sb = 0; sb < ch_unit->num_coded_subbands; sb++)
+            ff_atrac3p_power_compensation(ch_unit, ctx->fdsp, ch, &out[ch][0],
                                           sb_RNG_index[sb], sb);
     }
 
-    if (ctx->unit_type == CH_UNIT_STEREO) {
-        for (sb = 0; sb < ctx->num_coded_subbands; sb++) {
-            if (ctx->swap_channels[sb]) {
+    if (ch_unit->unit_type == CH_UNIT_STEREO) {
+        for (sb = 0; sb < ch_unit->num_coded_subbands; sb++) {
+            if (ch_unit->swap_channels[sb]) {
                 for (i = 0; i < ATRAC3P_SUBBAND_SAMPLES; i++)
                     FFSWAP(float, out[0][sb * ATRAC3P_SUBBAND_SAMPLES + i],
                                   out[1][sb * ATRAC3P_SUBBAND_SAMPLES + i]);
             }
 
             /* flip coefficients' sign if requested */
-            if (ctx->negate_coeffs[sb])
+            if (ch_unit->negate_coeffs[sb])
                 for (i = 0; i < ATRAC3P_SUBBAND_SAMPLES; i++)
                     out[1][sb * ATRAC3P_SUBBAND_SAMPLES + i] = -(out[1][sb * ATRAC3P_SUBBAND_SAMPLES + i]);
         }
@@ -369,7 +369,7 @@ static int atrac3p_decode_frame(AVCodecContext *avctx, void *data,
                                                   avctx)) < 0)
             return ret;
 
-        decode_residual_spectrum(&ctx->ch_units[ch_block], ctx->samples,
+        decode_residual_spectrum(ctx, &ctx->ch_units[ch_block], ctx->samples,
                                  channels_to_process, avctx);
         reconstruct_frame(ctx, &ctx->ch_units[ch_block],
                           channels_to_process, avctx);
@@ -384,7 +384,7 @@ static int atrac3p_decode_frame(AVCodecContext *avctx, void *data,
 
     *got_frame_ptr = 1;
 
-    return FFMIN(avctx->block_align, avpkt->size);
+    return avctx->codec_id == AV_CODEC_ID_ATRAC3P ? FFMIN(avctx->block_align, avpkt->size) : avpkt->size;
 }
 
 AVCodec ff_atrac3p_decoder = {
@@ -392,6 +392,18 @@ AVCodec ff_atrac3p_decoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("ATRAC3+ (Adaptive TRansform Acoustic Coding 3+)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_ATRAC3P,
+    .capabilities   = AV_CODEC_CAP_DR1,
+    .priv_data_size = sizeof(ATRAC3PContext),
+    .init           = atrac3p_decode_init,
+    .close          = atrac3p_decode_close,
+    .decode         = atrac3p_decode_frame,
+};
+
+AVCodec ff_atrac3pal_decoder = {
+    .name           = "atrac3plusal",
+    .long_name      = NULL_IF_CONFIG_SMALL("ATRAC3+ AL (Adaptive TRansform Acoustic Coding 3+ Advanced Lossless)"),
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = AV_CODEC_ID_ATRAC3PAL,
     .capabilities   = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(ATRAC3PContext),
     .init           = atrac3p_decode_init,

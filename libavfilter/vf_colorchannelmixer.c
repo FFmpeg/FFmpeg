@@ -30,7 +30,7 @@
 #define B 2
 #define A 3
 
-typedef struct {
+typedef struct ColorChannelMixerContext {
     const AVClass *class;
     double rr, rg, rb, ra;
     double gr, gg, gb, ga;

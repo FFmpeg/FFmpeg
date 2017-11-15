@@ -76,8 +76,9 @@ static const AVOption showcqt_options[] = {
     { "bar_g",    "set bargraph gamma", OFFSET(bar_g),      AV_OPT_TYPE_FLOAT, { .dbl = 1.0 },            1.0, 7.0,      FLAGS },
     { "gamma2",   "set bargraph gamma", OFFSET(bar_g),      AV_OPT_TYPE_FLOAT, { .dbl = 1.0 },            1.0, 7.0,      FLAGS },
     { "bar_t",  "set bar transparency", OFFSET(bar_t),      AV_OPT_TYPE_FLOAT, { .dbl = 1.0 },            0.0, 1.0,      FLAGS },
-    { "timeclamp",     "set timeclamp", OFFSET(timeclamp), AV_OPT_TYPE_DOUBLE, { .dbl = 0.17 },           0.1, 1.0,      FLAGS },
-    { "tc",            "set timeclamp", OFFSET(timeclamp), AV_OPT_TYPE_DOUBLE, { .dbl = 0.17 },           0.1, 1.0,      FLAGS },
+    { "timeclamp",     "set timeclamp", OFFSET(timeclamp), AV_OPT_TYPE_DOUBLE, { .dbl = 0.17 },         0.002, 1.0,      FLAGS },
+    { "tc",            "set timeclamp", OFFSET(timeclamp), AV_OPT_TYPE_DOUBLE, { .dbl = 0.17 },         0.002, 1.0,      FLAGS },
+    { "attack",      "set attack time", OFFSET(attack),    AV_OPT_TYPE_DOUBLE, { .dbl = 0 },              0.0, 1.0,      FLAGS },
     { "basefreq", "set base frequency", OFFSET(basefreq),  AV_OPT_TYPE_DOUBLE, { .dbl = BASEFREQ },      10.0, 100000.0, FLAGS },
     { "endfreq",   "set end frequency", OFFSET(endfreq),   AV_OPT_TYPE_DOUBLE, { .dbl = ENDFREQ },       10.0, 100000.0, FLAGS },
     { "coeffclamp",   "set coeffclamp", OFFSET(coeffclamp), AV_OPT_TYPE_FLOAT, { .dbl = 1.0 },            0.1, 10.0,     FLAGS },
@@ -152,6 +153,7 @@ static void common_uninit(ShowCQTContext *s)
     av_freep(&s->fft_data);
     av_freep(&s->fft_result);
     av_freep(&s->cqt_result);
+    av_freep(&s->attack_data);
     av_freep(&s->c_buf);
     av_freep(&s->h_buf);
     av_freep(&s->rcp_h_buf);
@@ -1138,6 +1140,14 @@ static int plot_cqt(AVFilterContext *ctx, AVFrame **frameout)
     last_time = av_gettime();
 
     memcpy(s->fft_result, s->fft_data, s->fft_len * sizeof(*s->fft_data));
+    if (s->attack_data) {
+        int k;
+        for (k = 0; k < s->remaining_fill_max; k++) {
+            s->fft_result[s->fft_len/2+k].re *= s->attack_data[k];
+            s->fft_result[s->fft_len/2+k].im *= s->attack_data[k];
+        }
+    }
+
     av_fft_permute(s->fft_ctx, s->fft_result);
     av_fft_calc(s->fft_ctx, s->fft_result);
     s->fft_result[s->fft_len] = s->fft_result[0];
@@ -1159,8 +1169,8 @@ static int plot_cqt(AVFilterContext *ctx, AVFrame **frameout)
         if (!out)
             return AVERROR(ENOMEM);
         out->sample_aspect_ratio = av_make_q(1, 1);
-        av_frame_set_color_range(out, AVCOL_RANGE_MPEG);
-        av_frame_set_colorspace(out, s->csp);
+        out->color_range = AVCOL_RANGE_MPEG;
+        out->colorspace = s->csp;
         UPDATE_TIME(s->alloc_time);
 
         if (s->bar_h) {
@@ -1366,7 +1376,7 @@ static int config_output(AVFilterLink *outlink)
     if ((ret = init_volume(s)) < 0)
         return ret;
 
-    s->fft_bits = ceil(log2(inlink->sample_rate * s->timeclamp));
+    s->fft_bits = FFMAX(ceil(log2(inlink->sample_rate * s->timeclamp)), 4);
     s->fft_len = 1 << s->fft_bits;
     av_log(ctx, AV_LOG_INFO, "fft_len = %d, cqt_len = %d.\n", s->fft_len, s->cqt_len);
 
@@ -1376,6 +1386,21 @@ static int config_output(AVFilterLink *outlink)
     s->cqt_result = av_malloc_array(s->cqt_len, sizeof(*s->cqt_result));
     if (!s->fft_ctx || !s->fft_data || !s->fft_result || !s->cqt_result)
         return AVERROR(ENOMEM);
+
+    s->remaining_fill_max = s->fft_len / 2;
+    if (s->attack > 0.0) {
+        int k;
+
+        s->remaining_fill_max = FFMIN(s->remaining_fill_max, ceil(inlink->sample_rate * s->attack));
+        s->attack_data = av_malloc_array(s->remaining_fill_max, sizeof(*s->attack_data));
+        if (!s->attack_data)
+            return AVERROR(ENOMEM);
+
+        for (k = 0; k < s->remaining_fill_max; k++) {
+            double y = M_PI * k / (inlink->sample_rate * s->attack);
+            s->attack_data[k] = 0.355768 + 0.487396 * cos(y) + 0.144232 * cos(2*y) + 0.012604 * cos(3*y);
+        }
+    }
 
     s->cqt_align = 1;
     s->cqt_calc = cqt_calc;
@@ -1435,7 +1460,7 @@ static int config_output(AVFilterLink *outlink)
     s->sono_count = 0;
     s->next_pts = 0;
     s->sono_idx = 0;
-    s->remaining_fill = s->fft_len / 2;
+    s->remaining_fill = s->remaining_fill_max;
     s->remaining_frac = 0;
     s->step_frac = av_div_q(av_make_q(inlink->sample_rate, s->count) , s->rate);
     s->step = (int)(s->step_frac.num / s->step_frac.den);
@@ -1463,15 +1488,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     AVFrame *out = NULL;
 
     if (!insamples) {
-        while (s->remaining_fill < s->fft_len / 2) {
-            memset(&s->fft_data[s->fft_len - s->remaining_fill], 0, sizeof(*s->fft_data) * s->remaining_fill);
+        while (s->remaining_fill < s->remaining_fill_max) {
+            memset(&s->fft_data[s->fft_len/2 + s->remaining_fill_max - s->remaining_fill], 0, sizeof(*s->fft_data) * s->remaining_fill);
             ret = plot_cqt(ctx, &out);
             if (ret < 0)
                 return ret;
 
             step = s->step + (s->step_frac.num + s->remaining_frac) / s->step_frac.den;
             s->remaining_frac = (s->step_frac.num + s->remaining_frac) % s->step_frac.den;
-            for (x = 0; x < (s->fft_len-step); x++)
+            for (x = 0; x < (s->fft_len/2 + s->remaining_fill_max - step); x++)
                 s->fft_data[x] = s->fft_data[x+step];
             s->remaining_fill += step;
 
@@ -1486,7 +1511,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 
     while (remaining) {
         i = insamples->nb_samples - remaining;
-        j = s->fft_len - s->remaining_fill;
+        j = s->fft_len/2 + s->remaining_fill_max - s->remaining_fill;
         if (remaining >= s->remaining_fill) {
             for (m = 0; m < s->remaining_fill; m++) {
                 s->fft_data[j+m].re = audio_data[2*(i+m)];
@@ -1500,7 +1525,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             remaining -= s->remaining_fill;
             if (out) {
                 int64_t pts = av_rescale_q(insamples->pts, inlink->time_base, av_make_q(1, inlink->sample_rate));
-                pts += insamples->nb_samples - remaining - s->fft_len/2;
+                pts += insamples->nb_samples - remaining - s->remaining_fill_max;
                 pts = av_rescale_q(pts, av_make_q(1, inlink->sample_rate), outlink->time_base);
                 if (FFABS(pts - out->pts) > PTS_TOLERANCE) {
                     av_log(ctx, AV_LOG_DEBUG, "changing pts from %"PRId64" (%.3f) to %"PRId64" (%.3f).\n",
@@ -1518,7 +1543,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             }
             step = s->step + (s->step_frac.num + s->remaining_frac) / s->step_frac.den;
             s->remaining_frac = (s->step_frac.num + s->remaining_frac) % s->step_frac.den;
-            for (m = 0; m < s->fft_len-step; m++)
+            for (m = 0; m < s->fft_len/2 + s->remaining_fill_max - step; m++)
                 s->fft_data[m] = s->fft_data[m+step];
             s->remaining_fill = step;
         } else {

@@ -116,6 +116,7 @@ typedef struct MOVTrack {
     int64_t     start_cts;
     int64_t     end_pts;
     int         end_reliable;
+    int64_t     dts_shift;
 
     int         hint_track;   ///< the track that hints this track, -1 if no hint track is set
     int         src_track;    ///< the track that this hint (or tmcd) track describes
@@ -240,6 +241,8 @@ typedef struct MOVMuxContext {
 #define FF_MOV_FLAG_WRITE_COLR            (1 << 15)
 #define FF_MOV_FLAG_WRITE_GAMA            (1 << 16)
 #define FF_MOV_FLAG_USE_MDTA              (1 << 17)
+#define FF_MOV_FLAG_SKIP_TRAILER          (1 << 18)
+#define FF_MOV_FLAG_NEGATIVE_CTS_OFFSETS  (1 << 19)
 
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt);
 

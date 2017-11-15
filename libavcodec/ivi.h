@@ -87,8 +87,8 @@ extern const uint8_t ff_ivi_direct_scan_4x4[16];
 /**
  *  Declare inverse transform function types
  */
-typedef void (InvTransformPtr)(const int32_t *in, int16_t *out, uint32_t pitch, const uint8_t *flags);
-typedef void (DCTransformPtr) (const int32_t *in, int16_t *out, uint32_t pitch, int blk_size);
+typedef void (InvTransformPtr)(const int32_t *in, int16_t *out, ptrdiff_t pitch, const uint8_t *flags);
+typedef void (DCTransformPtr) (const int32_t *in, int16_t *out, ptrdiff_t pitch, int blk_size);
 
 
 /**
@@ -153,7 +153,7 @@ typedef struct IVIBandDesc {
     int16_t         *ref_buf;       ///< pointer to the reference frame buffer (for motion compensation)
     int16_t         *b_ref_buf;     ///< pointer to the second reference frame buffer (for motion compensation)
     int16_t         *bufs[4];       ///< array of pointers to the band buffers
-    int             pitch;          ///< pitch associated with the buffers above
+    ptrdiff_t       pitch;          ///< pitch associated with the buffers above
     int             is_empty;       ///< = 1 if this band doesn't contain any data
     int             mb_size;        ///< macroblock size
     int             blk_size;       ///< block size
@@ -322,8 +322,8 @@ int  ff_ivi_dec_huff_desc(GetBitContext *gb, int desc_coded, int which_tab,
  *  @param[in]      is_indeo4  flag signalling if it is Indeo 4 or not
  *  @return             result code: 0 - OK
  */
-int  ff_ivi_init_planes(IVIPlaneDesc *planes, const IVIPicConfig *cfg,
-                        int is_indeo4);
+int  ff_ivi_init_planes(AVCodecContext *avctx, IVIPlaneDesc *planes,
+                        const IVIPicConfig *cfg, int is_indeo4);
 
 /**
  *  Initialize tile and macroblock descriptors.

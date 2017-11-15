@@ -313,26 +313,6 @@ int ff_init_me(MpegEncContext *s){
         return -1;
     }
 
-#if FF_API_MOTION_EST
-    //special case of snow is needed because snow uses its own iterative ME code
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (s->motion_est == FF_ME_EPZS) {
-        if (s->me_method == ME_ZERO)
-            s->motion_est = FF_ME_ZERO;
-        else if (s->me_method == ME_EPZS)
-            s->motion_est = FF_ME_EPZS;
-        else if (s->me_method == ME_X1)
-            s->motion_est = FF_ME_XONE;
-        else if (s->avctx->codec_id != AV_CODEC_ID_SNOW) {
-            av_log(s->avctx, AV_LOG_ERROR,
-                   "me_method is only allowed to be set to zero and epzs; "
-                   "for hex,umh,full and others see dia_size\n");
-            return -1;
-        }
-    }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     c->avctx= s->avctx;
 
     if(s->codec_id == AV_CODEC_ID_H261)
@@ -956,10 +936,10 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
             P_TOPRIGHT[1] = s->current_picture.motion_val[0][mot_xy - mot_stride + 2][1];
             if (P_TOP[1] > (c->ymax << shift))
                 P_TOP[1] =  c->ymax << shift;
-            if (P_TOPRIGHT[0] < (c->xmin << shift))
-                P_TOPRIGHT[0] =  c->xmin << shift;
-            if (P_TOPRIGHT[1] > (c->ymax << shift))
-                P_TOPRIGHT[1] =  c->ymax << shift;
+            if (P_TOPRIGHT[0] < (c->xmin * (1 << shift)))
+                P_TOPRIGHT[0] =  c->xmin * (1 << shift);
+            if (P_TOPRIGHT[1] > (c->ymax * (1 << shift)))
+                P_TOPRIGHT[1] =  c->ymax * (1 << shift);
 
             P_MEDIAN[0] = mid_pred(P_LEFT[0], P_TOP[0], P_TOPRIGHT[0]);
             P_MEDIAN[1] = mid_pred(P_LEFT[1], P_TOP[1], P_TOPRIGHT[1]);

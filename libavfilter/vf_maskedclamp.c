@@ -37,6 +37,7 @@ typedef struct MaskedClampContext {
     int undershoot;
     int overshoot;
 
+    int linesize[4];
     int width[4], height[4];
     int nb_planes;
     int depth;
@@ -50,9 +51,9 @@ typedef struct MaskedClampContext {
 } MaskedClampContext;
 
 static const AVOption maskedclamp_options[] = {
-    { "undershoot", "set undershoot", OFFSET(undershoot), AV_OPT_TYPE_INT, {.i64=0},   0, INT_MAX, FLAGS },
-    { "overshoot",  "set overshoot",  OFFSET(overshoot),  AV_OPT_TYPE_INT, {.i64=0},   0, INT_MAX, FLAGS },
-    { "planes",     "set planes",     OFFSET(planes),     AV_OPT_TYPE_INT, {.i64=0xF}, 0, 0xF,     FLAGS },
+    { "undershoot", "set undershoot", OFFSET(undershoot), AV_OPT_TYPE_INT, {.i64=0},   0, UINT16_MAX, FLAGS },
+    { "overshoot",  "set overshoot",  OFFSET(overshoot),  AV_OPT_TYPE_INT, {.i64=0},   0, UINT16_MAX, FLAGS },
+    { "planes",     "set planes",     OFFSET(planes),     AV_OPT_TYPE_INT, {.i64=0xF}, 0, 0xF,        FLAGS },
     { NULL }
 };
 
@@ -76,8 +77,8 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVA420P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA444P16,
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
-        AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GBRAP16,
-        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY16,
+        AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GBRAP16,
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_NONE
     };
 
@@ -112,7 +113,7 @@ static int process_frame(FFFrameSync *fs)
         for (p = 0; p < s->nb_planes; p++) {
             if (!((1 << p) & s->planes)) {
                 av_image_copy_plane(out->data[p], out->linesize[p], base->data[p], base->linesize[p],
-                                    s->width[p], s->height[p]);
+                                    s->linesize[p], s->height[p]);
                 continue;
             }
 
@@ -195,9 +196,12 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     MaskedClampContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    int vsub, hsub;
+    int vsub, hsub, ret;
 
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
+
+    if ((ret = av_image_fill_linesizes(s->linesize, inlink->format, inlink->w)) < 0)
+        return ret;
 
     hsub = desc->log2_chroma_w;
     vsub = desc->log2_chroma_h;
@@ -231,27 +235,15 @@ static int config_output(AVFilterLink *outlink)
         av_log(ctx, AV_LOG_ERROR, "inputs must be of same pixel format\n");
         return AVERROR(EINVAL);
     }
-    if (base->w                       != dark->w ||
-        base->h                       != dark->h ||
-        base->sample_aspect_ratio.num != dark->sample_aspect_ratio.num ||
-        base->sample_aspect_ratio.den != dark->sample_aspect_ratio.den ||
-        base->w                       != bright->w ||
-        base->h                       != bright->h ||
-        base->sample_aspect_ratio.num != bright->sample_aspect_ratio.num ||
-        base->sample_aspect_ratio.den != bright->sample_aspect_ratio.den) {
+    if (base->w != dark->w   || base->h != dark->h ||
+        base->w != bright->w || base->h != bright->h) {
         av_log(ctx, AV_LOG_ERROR, "First input link %s parameters "
-               "(size %dx%d, SAR %d:%d) do not match the corresponding "
-               "second input link %s parameters (%dx%d, SAR %d:%d) "
-               "and/or third input link %s parameters (%dx%d, SAR %d:%d)\n",
+               "(size %dx%d) do not match the corresponding "
+               "second input link %s parameters (%dx%d) "
+               "and/or third input link %s parameters (size %dx%d)\n",
                ctx->input_pads[0].name, base->w, base->h,
-               base->sample_aspect_ratio.num,
-               base->sample_aspect_ratio.den,
                ctx->input_pads[1].name, dark->w, dark->h,
-               dark->sample_aspect_ratio.num,
-               dark->sample_aspect_ratio.den,
-               ctx->input_pads[2].name, bright->w, bright->h,
-               bright->sample_aspect_ratio.num,
-               bright->sample_aspect_ratio.den);
+               ctx->input_pads[2].name, bright->w, bright->h);
         return AVERROR(EINVAL);
     }
 
@@ -283,16 +275,10 @@ static int config_output(AVFilterLink *outlink)
     return ff_framesync_configure(&s->fs);
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
+static int activate(AVFilterContext *ctx)
 {
-    MaskedClampContext *s = inlink->dst->priv;
-    return ff_framesync_filter_frame(&s->fs, inlink, buf);
-}
-
-static int request_frame(AVFilterLink *outlink)
-{
-    MaskedClampContext *s = outlink->src->priv;
-    return ff_framesync_request_frame(&s->fs, outlink);
+    MaskedClampContext *s = ctx->priv;
+    return ff_framesync_activate(&s->fs);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -306,18 +292,15 @@ static const AVFilterPad maskedclamp_inputs[] = {
     {
         .name         = "base",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
         .config_props = config_input,
     },
     {
         .name         = "dark",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
     },
     {
         .name         = "bright",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -327,7 +310,6 @@ static const AVFilterPad maskedclamp_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
-        .request_frame = request_frame,
     },
     { NULL }
 };
@@ -337,6 +319,7 @@ AVFilter ff_vf_maskedclamp = {
     .description   = NULL_IF_CONFIG_SMALL("Clamp first stream with second stream and third stream."),
     .priv_size     = sizeof(MaskedClampContext),
     .uninit        = uninit,
+    .activate      = activate,
     .query_formats = query_formats,
     .inputs        = maskedclamp_inputs,
     .outputs       = maskedclamp_outputs,

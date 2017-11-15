@@ -3081,7 +3081,7 @@ static av_always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int st
 #endif //TEMPLATE_PP_MMX
 
 static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
-                                const QP_STORE_T QPs[], int QPStride, int isColor, PPContext *c);
+                                const int8_t QPs[], int QPStride, int isColor, PPContext *c);
 
 /**
  * Copy a block from src to dst and fixes the blacklevel.
@@ -3309,7 +3309,7 @@ static inline void RENAME(prefetcht2)(const void *p)
  * Filter array of bytes (Y or U or V values)
  */
 static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
-                                const QP_STORE_T QPs[], int QPStride, int isColor, PPContext *c2)
+                                const int8_t QPs[], int QPStride, int isColor, PPContext *c2)
 {
     DECLARE_ALIGNED(8, PPContext, c)= *c2; //copy to stack for faster access
     int x,y;

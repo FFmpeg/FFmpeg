@@ -58,11 +58,7 @@ int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
 {
     int alloc_size = FFALIGN(FFABS(linesize) + 64, 32);
 
-    if (avctx->hwaccel
-#if FF_API_CAP_VDPAU
-        || avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU
-#endif
-        )
+    if (avctx->hwaccel)
         return 0;
 
     if (linesize < 24) {
@@ -76,7 +72,7 @@ int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
     // at uvlinesize. It supports only YUV420 so 24x24 is enough
     // linesize * interlaced * MBsize
     // we also use this buffer for encoding in encode_mb_internal() needig an additional 32 lines
-    FF_ALLOCZ_ARRAY_OR_GOTO(avctx, sc->edge_emu_buffer, alloc_size, 4 * 68,
+    FF_ALLOCZ_ARRAY_OR_GOTO(avctx, sc->edge_emu_buffer, alloc_size, 4 * 70,
                       fail);
 
     FF_ALLOCZ_ARRAY_OR_GOTO(avctx, me->scratchpad, alloc_size, 4 * 16 * 2,
@@ -202,7 +198,10 @@ static int alloc_picture_tables(AVCodecContext *avctx, Picture *pic, int encodin
             return AVERROR(ENOMEM);
     }
 
-    if (out_format == FMT_H263 || encoding || avctx->debug_mv ||
+    if (out_format == FMT_H263 || encoding ||
+#if FF_API_DEBUG_MV
+        avctx->debug_mv ||
+#endif
         (avctx->flags2 & AV_CODEC_FLAG2_EXPORT_MVS)) {
         int mv_size        = 2 * (b8_array_size + 4) * sizeof(int16_t);
         int ref_index_size = 4 * mb_array_size;

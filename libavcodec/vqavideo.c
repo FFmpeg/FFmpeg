@@ -384,12 +384,8 @@ static int vqa_decode_chunk(VqaContext *s, AVFrame *frame)
             break;
 
         default:
-            av_log(s->avctx, AV_LOG_ERROR, "Found unknown chunk type: %c%c%c%c (%08X)\n",
-            (chunk_type >> 24) & 0xFF,
-            (chunk_type >> 16) & 0xFF,
-            (chunk_type >>  8) & 0xFF,
-            (chunk_type >>  0) & 0xFF,
-            chunk_type);
+            av_log(s->avctx, AV_LOG_ERROR, "Found unknown chunk type: %s (%08X)\n",
+                   av_fourcc2str(av_bswap32(chunk_type)), chunk_type);
             break;
         }
 

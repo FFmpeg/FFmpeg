@@ -25,7 +25,7 @@
 #include "libavutil/lfg.h"
 #include "libavutil/random_seed.h"
 
-typedef struct {
+typedef struct ANoiseSrcContext {
     const AVClass *class;
     int sample_rate;
     double amplitude;
@@ -41,24 +41,35 @@ typedef struct {
     AVLFG c;
 } ANoiseSrcContext;
 
+enum NoiseMode {
+    NM_WHITE,
+    NM_PINK,
+    NM_BROWN,
+    NM_BLUE,
+    NM_VIOLET,
+    NM_NB
+};
+
 #define OFFSET(x) offsetof(ANoiseSrcContext, x)
 #define FLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption anoisesrc_options[] = {
-    { "sample_rate",  "set sample rate",  OFFSET(sample_rate),  AV_OPT_TYPE_INT,       {.i64 = 48000},  15,  INT_MAX,    FLAGS },
-    { "r",            "set sample rate",  OFFSET(sample_rate),  AV_OPT_TYPE_INT,       {.i64 = 48000},  15,  INT_MAX,    FLAGS },
-    { "amplitude",    "set amplitude",    OFFSET(amplitude),    AV_OPT_TYPE_DOUBLE,    {.dbl = 1.},     0.,  1.,         FLAGS },
-    { "a",            "set amplitude",    OFFSET(amplitude),    AV_OPT_TYPE_DOUBLE,    {.dbl = 1.},     0.,  1.,         FLAGS },
-    { "duration",     "set duration",     OFFSET(duration),     AV_OPT_TYPE_DURATION,  {.i64 =  0},      0,  INT64_MAX,  FLAGS },
-    { "d",            "set duration",     OFFSET(duration),     AV_OPT_TYPE_DURATION,  {.i64 =  0},      0,  INT64_MAX,  FLAGS },
-    { "color",        "set noise color",  OFFSET(color),        AV_OPT_TYPE_INT,       {.i64 =  1},      0,  2,          FLAGS, "color" },
-    { "colour",       "set noise color",  OFFSET(color),        AV_OPT_TYPE_INT,       {.i64 =  1},      0,  2,          FLAGS, "color" },
-    { "c",            "set noise color",  OFFSET(color),        AV_OPT_TYPE_INT,       {.i64 =  0},      0,  2,          FLAGS, "color" },
-    {     "white",    0,                  0,                    AV_OPT_TYPE_CONST,     {.i64 =  0},      0,  0,          FLAGS, "color" },
-    {     "pink",     0,                  0,                    AV_OPT_TYPE_CONST,     {.i64 =  1},      0,  0,          FLAGS, "color" },
-    {     "brown",    0,                  0,                    AV_OPT_TYPE_CONST,     {.i64 =  2},      0,  0,          FLAGS, "color" },
-    { "seed",         "set random seed",  OFFSET(seed),         AV_OPT_TYPE_INT64,     {.i64 = -1},     -1,  UINT_MAX,   FLAGS },
-    { "s",            "set random seed",  OFFSET(seed),         AV_OPT_TYPE_INT64,     {.i64 = -1},     -1,  UINT_MAX,   FLAGS },
+    { "sample_rate",  "set sample rate",  OFFSET(sample_rate),  AV_OPT_TYPE_INT,       {.i64 = 48000},     15,  INT_MAX,    FLAGS },
+    { "r",            "set sample rate",  OFFSET(sample_rate),  AV_OPT_TYPE_INT,       {.i64 = 48000},     15,  INT_MAX,    FLAGS },
+    { "amplitude",    "set amplitude",    OFFSET(amplitude),    AV_OPT_TYPE_DOUBLE,    {.dbl = 1.},        0.,  1.,         FLAGS },
+    { "a",            "set amplitude",    OFFSET(amplitude),    AV_OPT_TYPE_DOUBLE,    {.dbl = 1.},        0.,  1.,         FLAGS },
+    { "duration",     "set duration",     OFFSET(duration),     AV_OPT_TYPE_DURATION,  {.i64 =  0},         0,  INT64_MAX,  FLAGS },
+    { "d",            "set duration",     OFFSET(duration),     AV_OPT_TYPE_DURATION,  {.i64 =  0},         0,  INT64_MAX,  FLAGS },
+    { "color",        "set noise color",  OFFSET(color),        AV_OPT_TYPE_INT,       {.i64 =  0},         0,  NM_NB - 1,  FLAGS, "color" },
+    { "colour",       "set noise color",  OFFSET(color),        AV_OPT_TYPE_INT,       {.i64 =  0},         0,  NM_NB - 1,  FLAGS, "color" },
+    { "c",            "set noise color",  OFFSET(color),        AV_OPT_TYPE_INT,       {.i64 =  0},         0,  NM_NB - 1,  FLAGS, "color" },
+    {     "white",    0,                  0,                    AV_OPT_TYPE_CONST,     {.i64 = NM_WHITE},   0,  0,          FLAGS, "color" },
+    {     "pink",     0,                  0,                    AV_OPT_TYPE_CONST,     {.i64 = NM_PINK},    0,  0,          FLAGS, "color" },
+    {     "brown",    0,                  0,                    AV_OPT_TYPE_CONST,     {.i64 = NM_BROWN},   0,  0,          FLAGS, "color" },
+    {     "blue",     0,                  0,                    AV_OPT_TYPE_CONST,     {.i64 = NM_BLUE},    0,  0,          FLAGS, "color" },
+    {     "violet",   0,                  0,                    AV_OPT_TYPE_CONST,     {.i64 = NM_VIOLET},  0,  0,          FLAGS, "color" },
+    { "seed",         "set random seed",  OFFSET(seed),         AV_OPT_TYPE_INT64,     {.i64 = -1},        -1,  UINT_MAX,   FLAGS },
+    { "s",            "set random seed",  OFFSET(seed),         AV_OPT_TYPE_INT64,     {.i64 = -1},        -1,  UINT_MAX,   FLAGS },
     { "nb_samples",   "set the number of samples per requested frame", OFFSET(nb_samples), AV_OPT_TYPE_INT, {.i64 = 1024}, 1, INT_MAX, FLAGS },
     { "n",            "set the number of samples per requested frame", OFFSET(nb_samples), AV_OPT_TYPE_INT, {.i64 = 1024}, 1, INT_MAX, FLAGS },
     {NULL}
@@ -103,7 +114,7 @@ static av_cold int query_formats(AVFilterContext *ctx)
 static double white_filter(double white, double *buf)
 {
     return white;
-};
+}
 
 static double pink_filter(double white, double *buf)
 {
@@ -121,6 +132,22 @@ static double pink_filter(double white, double *buf)
     return pink * 0.11;
 }
 
+static double blue_filter(double white, double *buf)
+{
+    double blue;
+
+    /* Same as pink_filter but subtract the offsets rather than add */
+    buf[0] = 0.0555179 * white - 0.99886 * buf[0];
+    buf[1] = 0.0750759 * white - 0.99332 * buf[1];
+    buf[2] = 0.1538520 * white - 0.96900 * buf[2];
+    buf[3] = 0.3104856 * white - 0.86650 * buf[3];
+    buf[4] = 0.5329522 * white - 0.55000 * buf[4];
+    buf[5] = -0.016898 * white + 0.76160 * buf[5];
+    blue = buf[0] + buf[1] + buf[2] + buf[3] + buf[4] + buf[5] + buf[6] + white * 0.5362;
+    buf[6] = white * 0.115926;
+    return blue * 0.11;
+}
+
 static double brown_filter(double white, double *buf)
 {
     double brown;
@@ -128,6 +155,15 @@ static double brown_filter(double white, double *buf)
     brown = ((0.02 * white) + buf[0]) / 1.02;
     buf[0] = brown;
     return brown * 3.5;
+}
+
+static double violet_filter(double white, double *buf)
+{
+    double violet;
+
+    violet = ((0.02 * white) - buf[0]) / 1.02;
+    buf[0] = violet;
+    return violet * 3.5;
 }
 
 static av_cold int config_props(AVFilterLink *outlink)
@@ -144,9 +180,11 @@ static av_cold int config_props(AVFilterLink *outlink)
     s->duration = av_rescale(s->duration, s->sample_rate, AV_TIME_BASE);
 
     switch (s->color) {
-    case 0: s->filter = white_filter; break;
-    case 1: s->filter = pink_filter;  break;
-    case 2: s->filter = brown_filter; break;
+    case NM_WHITE:  s->filter = white_filter;  break;
+    case NM_PINK:   s->filter = pink_filter;   break;
+    case NM_BROWN:  s->filter = brown_filter;  break;
+    case NM_BLUE:   s->filter = blue_filter;   break;
+    case NM_VIOLET: s->filter = violet_filter; break;
     }
 
     return 0;

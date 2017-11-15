@@ -3,6 +3,7 @@
 ;*
 ;* Copyright (C) 2014 Kieran Kunhya <kierank@obe.tv>
 ;* Copyright (c) 2014 Michael Niedermayer <michaelni@gmx.at>
+;* Copyright (c) 2017 Thomas Mundt <tmundt75@gmail.com>
 ;*
 ;* This file is part of FFmpeg.
 ;*
@@ -25,36 +26,169 @@
 
 SECTION_RODATA
 
+pw_4: times 8 dw 4
+
 SECTION .text
 
-%macro LOWPASS_LINE 0
-cglobal lowpass_line, 5, 5, 7
-    add r0, r1
-    add r2, r1
-    add r3, r1
-    add r4, r1
-    neg r1
+%macro LOWPASS 1
+    add dstq, hq
+    add srcq, hq
+    add mrefq, srcq
+    add prefq, srcq
+    neg hq
 
-    pcmpeqb m6, m6
+    pcmpeq%1 m6, m6
 
 .loop:
-    mova m0, [r3+r1]
-    mova m1, [r3+r1+mmsize]
-    pavgb m0, [r4+r1]
-    pavgb m1, [r4+r1+mmsize]
+    mova m0, [mrefq+hq]
+    mova m1, [mrefq+hq+mmsize]
+    pavg%1 m0, [prefq+hq]
+    pavg%1 m1, [prefq+hq+mmsize]
     pxor m0, m6
     pxor m1, m6
-    pxor m2, m6, [r2+r1]
-    pxor m3, m6, [r2+r1+mmsize]
-    pavgb m0, m2
-    pavgb m1, m3
+    pxor m2, m6, [srcq+hq]
+    pxor m3, m6, [srcq+hq+mmsize]
+    pavg%1 m0, m2
+    pavg%1 m1, m3
     pxor m0, m6
     pxor m1, m6
-    mova [r0+r1], m0
-    mova [r0+r1+mmsize], m1
+    mova [dstq+hq], m0
+    mova [dstq+hq+mmsize], m1
 
-    add r1, 2*mmsize
+    add hq, 2*mmsize
     jl .loop
+REP_RET
+%endmacro
+
+%macro LOWPASS_LINE 0
+cglobal lowpass_line, 5, 5, 7, dst, h, src, mref, pref
+    LOWPASS b
+
+cglobal lowpass_line_16, 5, 5, 7, dst, h, src, mref, pref
+    shl hq, 1
+    LOWPASS w
+%endmacro
+
+%macro LOWPASS_LINE_COMPLEX 0
+cglobal lowpass_line_complex, 5, 5, 8, dst, h, src, mref, pref
+    pxor m7, m7
+.loop:
+    mova m0, [srcq+mrefq]
+    mova m2, [srcq+prefq]
+    mova m1, m0
+    mova m3, m2
+    punpcklbw m0, m7
+    punpcklbw m2, m7
+    punpckhbw m1, m7
+    punpckhbw m3, m7
+    paddw m0, m2
+    paddw m1, m3
+    mova m6, m0
+    mova m5, m1
+    mova m2, [srcq]
+    mova m3, m2
+    punpcklbw m2, m7
+    punpckhbw m3, m7
+    paddw m0, m2
+    paddw m1, m3
+    psllw m2, 1
+    psllw m3, 1
+    paddw m0, m2
+    paddw m1, m3
+    psllw m0, 1
+    psllw m1, 1
+    pcmpgtw m6, m2
+    pcmpgtw m5, m3
+    packsswb m6, m5
+    mova m2, [srcq+mrefq*2]
+    mova m4, [srcq+prefq*2]
+    mova m3, m2
+    mova m5, m4
+    punpcklbw m2, m7
+    punpcklbw m4, m7
+    punpckhbw m3, m7
+    punpckhbw m5, m7
+    paddw m2, m4
+    paddw m3, m5
+    paddw m0, [pw_4]
+    paddw m1, [pw_4]
+    psubusw m0, m2
+    psubusw m1, m3
+    psrlw m0, 3
+    psrlw m1, 3
+    packuswb m0, m1
+    mova m1, m0
+    pmaxub m0, [srcq]
+    pminub m1, [srcq]
+    pand m0, m6
+    pandn m6, m1
+    por m0, m6
+    mova [dstq], m0
+
+    add dstq, mmsize
+    add srcq, mmsize
+    sub hd, mmsize
+    jg .loop
+REP_RET
+
+cglobal lowpass_line_complex_12, 5, 5, 8, 16, dst, h, src, mref, pref, clip_max
+    movd m7, DWORD clip_maxm
+    SPLATW m7, m7, 0
+    mova [rsp], m7
+.loop:
+    mova m0, [srcq+mrefq]
+    mova m1, [srcq+mrefq+mmsize]
+    mova m2, [srcq+prefq]
+    mova m3, [srcq+prefq+mmsize]
+    paddw m0, m2
+    paddw m1, m3
+    mova m6, m0
+    mova m7, m1
+    mova m2, [srcq]
+    mova m3, [srcq+mmsize]
+    paddw m0, m2
+    paddw m1, m3
+    psllw m2, 1
+    psllw m3, 1
+    paddw m0, m2
+    paddw m1, m3
+    psllw m0, 1
+    psllw m1, 1
+    pcmpgtw m6, m2
+    pcmpgtw m7, m3
+    mova m2, [srcq+2*mrefq]
+    mova m3, [srcq+2*mrefq+mmsize]
+    mova m4, [srcq+2*prefq]
+    mova m5, [srcq+2*prefq+mmsize]
+    paddw m2, m4
+    paddw m3, m5
+    paddw m0, [pw_4]
+    paddw m1, [pw_4]
+    psubusw m0, m2
+    psubusw m1, m3
+    psrlw m0, 3
+    psrlw m1, 3
+    pminsw m0, [rsp]
+    pminsw m1, [rsp]
+    mova m2, m0
+    mova m3, m1
+    pmaxsw m0, [srcq]
+    pmaxsw m1, [srcq+mmsize]
+    pminsw m2, [srcq]
+    pminsw m3, [srcq+mmsize]
+    pand m0, m6
+    pand m1, m7
+    pandn m6, m2
+    pandn m7, m3
+    por m0, m6
+    por m1, m7
+    mova [dstq], m0
+    mova [dstq+mmsize], m1
+
+    add dstq, 2*mmsize
+    add srcq, 2*mmsize
+    sub hd, mmsize
+    jg .loop
 REP_RET
 %endmacro
 
@@ -63,3 +197,6 @@ LOWPASS_LINE
 
 INIT_XMM avx
 LOWPASS_LINE
+
+INIT_XMM sse2
+LOWPASS_LINE_COMPLEX

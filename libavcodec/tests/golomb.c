@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "libavutil/internal.h"
 #include "libavutil/mem.h"
 
 #include "libavcodec/get_bits.h"
@@ -72,6 +73,24 @@ int main(void)
         if (j != EXTEND(i)) {
             fprintf(stderr, "get_ue_golomb_long: expected %d, got %d. "
                     "bits: %8x\n", EXTEND(i), j, s);
+            ret = 1;
+        }
+    }
+
+#define EXTEND_L(i) ((i) << 4 | (i) & 15)
+    init_put_bits(&pb, temp, SIZE);
+    for (i = 0; i < COUNT; i++)
+        set_ue_golomb_long(&pb, EXTEND_L(i));
+    flush_put_bits(&pb);
+
+    init_get_bits(&gb, temp, 8 * SIZE);
+    for (i = 0; i < COUNT; i++) {
+        int j, s = show_bits_long(&gb, 32);
+
+        j = get_ue_golomb_long(&gb);
+        if (j != EXTEND_L(i)) {
+            fprintf(stderr, "get_ue_golomb_long: expected %d, got %d. "
+                    "bits: %8x\n", EXTEND_L(i), j, s);
             ret = 1;
         }
     }

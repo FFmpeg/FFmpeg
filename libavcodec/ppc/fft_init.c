@@ -23,7 +23,6 @@
 #include "config.h"
 #include "libavutil/cpu.h"
 #include "libavutil/ppc/cpu.h"
-#include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/fft.h"
 
@@ -43,7 +42,7 @@ void ff_fft_calc_altivec(FFTContext *s, FFTComplex *z);
 void ff_fft_calc_interleave_altivec(FFTContext *s, FFTComplex *z);
 #endif
 
-#if HAVE_GNU_AS && HAVE_ALTIVEC
+#if HAVE_GNU_AS && HAVE_ALTIVEC && (HAVE_BIGENDIAN || HAVE_VSX)
 static void imdct_half_altivec(FFTContext *s, FFTSample *output, const FFTSample *input)
 {
     int j, k;
@@ -147,11 +146,11 @@ static void imdct_calc_altivec(FFTContext *s, FFTSample *output, const FFTSample
         p1[k]    = vec_perm(b, b, vcprm(3,2,1,0));
     }
 }
-#endif /* HAVE_GNU_AS && HAVE_ALTIVEC && HAVE_BIGENDIAN */
+#endif /* HAVE_GNU_AS && HAVE_ALTIVEC && (HAVE_BIGENDIAN || HAVE_VSX) */
 
 av_cold void ff_fft_init_ppc(FFTContext *s)
 {
-#if HAVE_GNU_AS && HAVE_ALTIVEC
+#if HAVE_GNU_AS && HAVE_ALTIVEC && (HAVE_BIGENDIAN || HAVE_VSX)
     if (!PPC_ALTIVEC(av_get_cpu_flags()))
         return;
 

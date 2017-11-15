@@ -47,11 +47,16 @@ static av_cold int libopus_decode_init(AVCodecContext *avc)
     int ret, channel_map = 0, gain_db = 0, nb_streams, nb_coupled;
     uint8_t mapping_arr[8] = { 0, 1 }, *mapping;
 
+    avc->channels = avc->extradata_size >= 10 ? avc->extradata[9] : (avc->channels == 1) ? 1 : 2;
+    if (avc->channels <= 0) {
+        av_log(avc, AV_LOG_WARNING,
+               "Invalid number of channels %d, defaulting to stereo\n", avc->channels);
+        avc->channels = 2;
+    }
+
     avc->sample_rate    = 48000;
     avc->sample_fmt     = avc->request_sample_fmt == AV_SAMPLE_FMT_FLT ?
                           AV_SAMPLE_FMT_FLT : AV_SAMPLE_FMT_S16;
-    avc->channel_layout = avc->channels > 8 ? 0 :
-                          ff_vorbis_channel_layouts[avc->channels - 1];
 
     if (avc->extradata_size >= OPUS_HEAD_SIZE) {
         opus->pre_skip = AV_RL16(avc->extradata + 10);
@@ -75,14 +80,35 @@ static av_cold int libopus_decode_init(AVCodecContext *avc)
         mapping    = mapping_arr;
     }
 
-    if (avc->channels > 2 && avc->channels <= 8) {
-        const uint8_t *vorbis_offset = ff_vorbis_channel_layout_offsets[avc->channels - 1];
-        int ch;
+    if (channel_map == 1) {
+        avc->channel_layout = avc->channels > 8 ? 0 :
+                              ff_vorbis_channel_layouts[avc->channels - 1];
+        if (avc->channels > 2 && avc->channels <= 8) {
+            const uint8_t *vorbis_offset = ff_vorbis_channel_layout_offsets[avc->channels - 1];
+            int ch;
 
-        /* Remap channels from Vorbis order to ffmpeg order */
-        for (ch = 0; ch < avc->channels; ch++)
-            mapping_arr[ch] = mapping[vorbis_offset[ch]];
-        mapping = mapping_arr;
+            /* Remap channels from Vorbis order to ffmpeg order */
+            for (ch = 0; ch < avc->channels; ch++)
+                mapping_arr[ch] = mapping[vorbis_offset[ch]];
+            mapping = mapping_arr;
+        }
+    } else if (channel_map == 2) {
+        int ambisonic_order = ff_sqrt(avc->channels) - 1;
+        if (avc->channels != (ambisonic_order + 1) * (ambisonic_order + 1) &&
+            avc->channels != (ambisonic_order + 1) * (ambisonic_order + 1) + 2) {
+            av_log(avc, AV_LOG_ERROR,
+                   "Channel mapping 2 is only specified for channel counts"
+                   " which can be written as (n + 1)^2 or (n + 2)^2 + 2"
+                   " for nonnegative integer n\n");
+            return AVERROR_INVALIDDATA;
+        }
+        if (avc->channels > 227) {
+            av_log(avc, AV_LOG_ERROR, "Too many channels\n");
+            return AVERROR_INVALIDDATA;
+        }
+        avc->channel_layout = 0;
+    } else {
+        avc->channel_layout = 0;
     }
 
     opus->dec = opus_multistream_decoder_create(avc->sample_rate, avc->channels,

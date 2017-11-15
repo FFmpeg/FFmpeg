@@ -26,6 +26,12 @@
 #include "mem.h"
 #include "samplefmt.h"
 
+
+static AVFrameSideData *frame_new_side_data(AVFrame *frame,
+                                            enum AVFrameSideDataType type,
+                                            AVBufferRef *buf);
+
+#if FF_API_FRAME_GET_SET
 MAKE_ACCESSORS(AVFrame, frame, int64_t, best_effort_timestamp)
 MAKE_ACCESSORS(AVFrame, frame, int64_t, pkt_duration)
 MAKE_ACCESSORS(AVFrame, frame, int64_t, pkt_pos)
@@ -37,13 +43,12 @@ MAKE_ACCESSORS(AVFrame, frame, int,     decode_error_flags)
 MAKE_ACCESSORS(AVFrame, frame, int,     pkt_size)
 MAKE_ACCESSORS(AVFrame, frame, enum AVColorSpace, colorspace)
 MAKE_ACCESSORS(AVFrame, frame, enum AVColorRange, color_range)
+#endif
 
 #define CHECK_CHANNELS_CONSISTENCY(frame) \
     av_assert2(!(frame)->channel_layout || \
                (frame)->channels == \
                av_get_channel_layout_nb_channels((frame)->channel_layout))
-
-AVDictionary **avpriv_frame_get_metadatap(AVFrame *frame) {return &frame->metadata;};
 
 #if FF_API_FRAME_QP
 int av_frame_set_qp_table(AVFrame *f, AVBufferRef *buf, int stride, int qp_type)
@@ -176,6 +181,9 @@ static int get_video_buffer(AVFrame *frame, int align)
         return ret;
 
     if (!frame->linesize[0]) {
+        if (align <= 0)
+            align = 32; /* STRIDE_ALIGN. Should be av_cpu_max_align() */
+
         for(i=1; i<=align; i+=i) {
             ret = av_image_fill_linesizes(frame->linesize, frame->format,
                                           FFALIGN(frame->width, i));
@@ -292,6 +300,10 @@ static int frame_copy_props(AVFrame *dst, const AVFrame *src, int force_copy)
     dst->key_frame              = src->key_frame;
     dst->pict_type              = src->pict_type;
     dst->sample_aspect_ratio    = src->sample_aspect_ratio;
+    dst->crop_top               = src->crop_top;
+    dst->crop_bottom            = src->crop_bottom;
+    dst->crop_left              = src->crop_left;
+    dst->crop_right             = src->crop_right;
     dst->pts                    = src->pts;
     dst->repeat_pict            = src->repeat_pict;
     dst->interlaced_frame       = src->interlaced_frame;
@@ -344,18 +356,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
             }
             memcpy(sd_dst->data, sd_src->data, sd_src->size);
         } else {
-            sd_dst = av_frame_new_side_data(dst, sd_src->type, 0);
+            sd_dst = frame_new_side_data(dst, sd_src->type, av_buffer_ref(sd_src->buf));
             if (!sd_dst) {
                 wipe_side_data(dst);
                 return AVERROR(ENOMEM);
             }
-            sd_dst->buf = av_buffer_ref(sd_src->buf);
-            if (!sd_dst->buf) {
-                wipe_side_data(dst);
-                return AVERROR(ENOMEM);
-            }
-            sd_dst->data = sd_dst->buf->data;
-            sd_dst->size = sd_dst->buf->size;
         }
         av_dict_copy(&sd_dst->metadata, sd_src->metadata, 0);
     }
@@ -377,6 +382,18 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
+    av_buffer_unref(&dst->opaque_ref);
+    av_buffer_unref(&dst->private_ref);
+    if (src->opaque_ref) {
+        dst->opaque_ref = av_buffer_ref(src->opaque_ref);
+        if (!dst->opaque_ref)
+            return AVERROR(ENOMEM);
+    }
+    if (src->private_ref) {
+        dst->private_ref = av_buffer_ref(src->private_ref);
+        if (!dst->private_ref)
+            return AVERROR(ENOMEM);
+    }
     return 0;
 }
 
@@ -511,6 +528,9 @@ void av_frame_unref(AVFrame *frame)
 
     av_buffer_unref(&frame->hw_frames_ctx);
 
+    av_buffer_unref(&frame->opaque_ref);
+    av_buffer_unref(&frame->private_ref);
+
     get_frame_defaults(frame);
 }
 
@@ -622,40 +642,47 @@ AVBufferRef *av_frame_get_plane_buffer(AVFrame *frame, int plane)
     return NULL;
 }
 
-AVFrameSideData *av_frame_new_side_data(AVFrame *frame,
-                                        enum AVFrameSideDataType type,
-                                        int size)
+static AVFrameSideData *frame_new_side_data(AVFrame *frame,
+                                            enum AVFrameSideDataType type,
+                                            AVBufferRef *buf)
 {
     AVFrameSideData *ret, **tmp;
 
-    if (frame->nb_side_data > INT_MAX / sizeof(*frame->side_data) - 1)
+    if (!buf)
         return NULL;
+
+    if (frame->nb_side_data > INT_MAX / sizeof(*frame->side_data) - 1)
+        goto fail;
 
     tmp = av_realloc(frame->side_data,
                      (frame->nb_side_data + 1) * sizeof(*frame->side_data));
     if (!tmp)
-        return NULL;
+        goto fail;
     frame->side_data = tmp;
 
     ret = av_mallocz(sizeof(*ret));
     if (!ret)
-        return NULL;
+        goto fail;
 
-    if (size > 0) {
-        ret->buf = av_buffer_alloc(size);
-        if (!ret->buf) {
-            av_freep(&ret);
-            return NULL;
-        }
-
-        ret->data = ret->buf->data;
-        ret->size = size;
-    }
+    ret->buf = buf;
+    ret->data = ret->buf->data;
+    ret->size = buf->size;
     ret->type = type;
 
     frame->side_data[frame->nb_side_data++] = ret;
 
     return ret;
+fail:
+    av_buffer_unref(&buf);
+    return NULL;
+}
+
+AVFrameSideData *av_frame_new_side_data(AVFrame *frame,
+                                        enum AVFrameSideDataType type,
+                                        int size)
+{
+
+    return frame_new_side_data(frame, type, av_buffer_alloc(size));
 }
 
 AVFrameSideData *av_frame_get_side_data(const AVFrame *frame,
@@ -723,7 +750,7 @@ int av_frame_copy(AVFrame *dst, const AVFrame *src)
 
     if (dst->width > 0 && dst->height > 0)
         return frame_copy_video(dst, src);
-    else if (dst->nb_samples > 0 && dst->channel_layout)
+    else if (dst->nb_samples > 0 && dst->channels > 0)
         return frame_copy_audio(dst, src);
 
     return AVERROR(EINVAL);
@@ -758,7 +785,109 @@ const char *av_frame_side_data_name(enum AVFrameSideDataType type)
     case AV_FRAME_DATA_SKIP_SAMPLES:    return "Skip samples";
     case AV_FRAME_DATA_AUDIO_SERVICE_TYPE:          return "Audio service type";
     case AV_FRAME_DATA_MASTERING_DISPLAY_METADATA:  return "Mastering display metadata";
+    case AV_FRAME_DATA_CONTENT_LIGHT_LEVEL:         return "Content light level metadata";
     case AV_FRAME_DATA_GOP_TIMECODE:                return "GOP timecode";
+    case AV_FRAME_DATA_ICC_PROFILE:                 return "ICC profile";
     }
     return NULL;
+}
+
+static int calc_cropping_offsets(size_t offsets[4], const AVFrame *frame,
+                                 const AVPixFmtDescriptor *desc)
+{
+    int i, j;
+
+    for (i = 0; frame->data[i]; i++) {
+        const AVComponentDescriptor *comp = NULL;
+        int shift_x = (i == 1 || i == 2) ? desc->log2_chroma_w : 0;
+        int shift_y = (i == 1 || i == 2) ? desc->log2_chroma_h : 0;
+
+        if (desc->flags & (AV_PIX_FMT_FLAG_PAL | AV_PIX_FMT_FLAG_PSEUDOPAL) && i == 1) {
+            offsets[i] = 0;
+            break;
+        }
+
+        /* find any component descriptor for this plane */
+        for (j = 0; j < desc->nb_components; j++) {
+            if (desc->comp[j].plane == i) {
+                comp = &desc->comp[j];
+                break;
+            }
+        }
+        if (!comp)
+            return AVERROR_BUG;
+
+        offsets[i] = (frame->crop_top  >> shift_y) * frame->linesize[i] +
+                     (frame->crop_left >> shift_x) * comp->step;
+    }
+
+    return 0;
+}
+
+int av_frame_apply_cropping(AVFrame *frame, int flags)
+{
+    const AVPixFmtDescriptor *desc;
+    size_t offsets[4];
+    int i;
+
+    if (!(frame->width > 0 && frame->height > 0))
+        return AVERROR(EINVAL);
+
+    if (frame->crop_left >= INT_MAX - frame->crop_right        ||
+        frame->crop_top  >= INT_MAX - frame->crop_bottom       ||
+        (frame->crop_left + frame->crop_right) >= frame->width ||
+        (frame->crop_top + frame->crop_bottom) >= frame->height)
+        return AVERROR(ERANGE);
+
+    desc = av_pix_fmt_desc_get(frame->format);
+    if (!desc)
+        return AVERROR_BUG;
+
+    /* Apply just the right/bottom cropping for hwaccel formats. Bitstream
+     * formats cannot be easily handled here either (and corresponding decoders
+     * should not export any cropping anyway), so do the same for those as well.
+     * */
+    if (desc->flags & (AV_PIX_FMT_FLAG_BITSTREAM | AV_PIX_FMT_FLAG_HWACCEL)) {
+        frame->width      -= frame->crop_right;
+        frame->height     -= frame->crop_bottom;
+        frame->crop_right  = 0;
+        frame->crop_bottom = 0;
+        return 0;
+    }
+
+    /* calculate the offsets for each plane */
+    calc_cropping_offsets(offsets, frame, desc);
+
+    /* adjust the offsets to avoid breaking alignment */
+    if (!(flags & AV_FRAME_CROP_UNALIGNED)) {
+        int log2_crop_align = frame->crop_left ? ff_ctz(frame->crop_left) : INT_MAX;
+        int min_log2_align = INT_MAX;
+
+        for (i = 0; frame->data[i]; i++) {
+            int log2_align = offsets[i] ? ff_ctz(offsets[i]) : INT_MAX;
+            min_log2_align = FFMIN(log2_align, min_log2_align);
+        }
+
+        /* we assume, and it should always be true, that the data alignment is
+         * related to the cropping alignment by a constant power-of-2 factor */
+        if (log2_crop_align < min_log2_align)
+            return AVERROR_BUG;
+
+        if (min_log2_align < 5) {
+            frame->crop_left &= ~((1 << (5 + log2_crop_align - min_log2_align)) - 1);
+            calc_cropping_offsets(offsets, frame, desc);
+        }
+    }
+
+    for (i = 0; frame->data[i]; i++)
+        frame->data[i] += offsets[i];
+
+    frame->width      -= (frame->crop_left + frame->crop_right);
+    frame->height     -= (frame->crop_top  + frame->crop_bottom);
+    frame->crop_left   = 0;
+    frame->crop_right  = 0;
+    frame->crop_top    = 0;
+    frame->crop_bottom = 0;
+
+    return 0;
 }

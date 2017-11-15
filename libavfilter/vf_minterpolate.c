@@ -654,7 +654,7 @@ static int cluster_mvs(MIContext *mi_ctx)
                 dx = avg_x - mv_x;
                 dy = avg_y - mv_y;
 
-                if (FFABS(avg_x - mv_x) > CLUSTER_THRESHOLD || FFABS(avg_y - mv_y) > CLUSTER_THRESHOLD) {
+                if (FFABS(dx) > CLUSTER_THRESHOLD || FFABS(dy) > CLUSTER_THRESHOLD) {
 
                     for (d = 1; d < 5; d++)
                         for (y = FFMAX(mb_y - d, 0); y < FFMIN(mb_y + d + 1, mi_ctx->b_height); y++)
@@ -721,7 +721,7 @@ static int inject_frame(AVFilterLink *inlink, AVFrame *avf_in)
 {
     AVFilterContext *ctx = inlink->dst;
     MIContext *mi_ctx = ctx->priv;
-    Frame frame_tmp, *frame;
+    Frame frame_tmp;
     int mb_x, mb_y, dir;
 
     av_frame_free(&mi_ctx->frames[0].avf);
@@ -729,7 +729,6 @@ static int inject_frame(AVFilterLink *inlink, AVFrame *avf_in)
     memmove(&mi_ctx->frames[0], &mi_ctx->frames[1], sizeof(mi_ctx->frames[0]) * (NB_FRAMES - 1));
     mi_ctx->frames[NB_FRAMES - 1] = frame_tmp;
     mi_ctx->frames[NB_FRAMES - 1].avf = avf_in;
-    frame = &mi_ctx->frames[NB_FRAMES - 1];
 
     if (mi_ctx->mi_mode == MI_MODE_MCI) {
 

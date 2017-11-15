@@ -142,13 +142,6 @@ static int vmd_read_header(AVFormatContext *s)
         st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codecpar->codec_id   = AV_CODEC_ID_VMDAUDIO;
         st->codecpar->codec_tag  = 0;  /* no fourcc */
-        if (vmd->vmd_header[811] & 0x80) {
-            st->codecpar->channels       = 2;
-            st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
-        } else {
-            st->codecpar->channels       = 1;
-            st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
-        }
         st->codecpar->sample_rate = vmd->sample_rate;
         st->codecpar->block_align = AV_RL16(&vmd->vmd_header[806]);
         if (st->codecpar->block_align & 0x8000) {
@@ -156,6 +149,19 @@ static int vmd_read_header(AVFormatContext *s)
             st->codecpar->block_align = -(st->codecpar->block_align - 0x10000);
         } else {
             st->codecpar->bits_per_coded_sample = 8;
+        }
+        if (vmd->vmd_header[811] & 0x80) {
+            st->codecpar->channels       = 2;
+            st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
+        } else if (vmd->vmd_header[811] & 0x2) {
+            /* Shivers 2 stereo audio */
+            /* Frame length is for 1 channel */
+            st->codecpar->channels       = 2;
+            st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
+            st->codecpar->block_align = st->codecpar->block_align << 1;
+        } else {
+            st->codecpar->channels       = 1;
+            st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
         }
         st->codecpar->bit_rate = st->codecpar->sample_rate *
             st->codecpar->bits_per_coded_sample * st->codecpar->channels;

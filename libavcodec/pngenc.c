@@ -22,7 +22,7 @@
 #include "avcodec.h"
 #include "internal.h"
 #include "bytestream.h"
-#include "huffyuvencdsp.h"
+#include "lossless_videoencdsp.h"
 #include "png.h"
 #include "apng.h"
 
@@ -47,7 +47,7 @@ typedef struct APNGFctlChunk {
 
 typedef struct PNGEncContext {
     AVClass *class;
-    HuffYUVEncDSPContext hdsp;
+    LLVidEncDSPContext llvidencdsp;
 
     uint8_t *bytestream;
     uint8_t *bytestream_start;
@@ -159,7 +159,7 @@ static void sub_left_prediction(PNGEncContext *c, uint8_t *dst, const uint8_t *s
     for (x = 0; x < unaligned_w; x++)
         *dst++ = *src1++ - *src2++;
     size -= unaligned_w;
-    c->hdsp.diff_bytes(dst, src1, src2, size);
+    c->llvidencdsp.diff_bytes(dst, src1, src2, size);
 }
 
 static void png_filter_row(PNGEncContext *c, uint8_t *dst, int filter_type,
@@ -175,7 +175,7 @@ static void png_filter_row(PNGEncContext *c, uint8_t *dst, int filter_type,
         sub_left_prediction(c, dst, src, bpp, size);
         break;
     case PNG_FILTER_VALUE_UP:
-        c->hdsp.diff_bytes(dst, src, top, size);
+        c->llvidencdsp.diff_bytes(dst, src, top, size);
         break;
     case PNG_FILTER_VALUE_AVG:
         for (i = 0; i < bpp; i++)
@@ -873,7 +873,7 @@ static int encode_apng(AVCodecContext *avctx, AVPacket *pkt,
         if (!pict)
             return AVERROR(EINVAL);
 
-        s->bytestream = s->extra_data = av_malloc(FF_MIN_BUFFER_SIZE);
+        s->bytestream = s->extra_data = av_malloc(AV_INPUT_BUFFER_MIN_SIZE);
         if (!s->extra_data)
             return AVERROR(ENOMEM);
 
@@ -1015,7 +1015,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    ff_huffyuvencdsp_init(&s->hdsp);
+    ff_llvidencdsp_init(&s->llvidencdsp);
 
 #if FF_API_PRIVATE_OPT
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -1167,7 +1167,7 @@ AVCodec ff_apng_encoder = {
     .init           = png_enc_init,
     .close          = png_enc_close,
     .encode2        = encode_apng,
-    .capabilities   = CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,
         AV_PIX_FMT_RGB48BE, AV_PIX_FMT_RGBA64BE,

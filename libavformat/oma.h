@@ -35,6 +35,8 @@ enum {
     OMA_CODECID_MP3     = 3,
     OMA_CODECID_LPCM    = 4,
     OMA_CODECID_WMA     = 5,
+    OMA_CODECID_ATRAC3PAL = 33,
+    OMA_CODECID_ATRAC3AL  = 34,
 };
 
 extern const uint16_t ff_oma_srate_tab[8];

@@ -21,7 +21,6 @@
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
-#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 
@@ -175,12 +174,10 @@ int av_bsf_init(AVBSFContext *ctx)
 
 int av_bsf_send_packet(AVBSFContext *ctx, AVPacket *pkt)
 {
-    if (!pkt) {
+    if (!pkt || (!pkt->data && !pkt->side_data_elems)) {
         ctx->internal->eof = 1;
         return 0;
     }
-
-    av_assert0(pkt->data || pkt->side_data);
 
     if (ctx->internal->eof) {
         av_log(ctx, AV_LOG_ERROR, "A non-NULL packet sent after an EOF.\n");
@@ -403,7 +400,7 @@ void av_bsf_list_free(AVBSFList **lst)
 {
     int i;
 
-    if (*lst)
+    if (!*lst)
         return;
 
     for (i = 0; i < (*lst)->nb_bsfs; ++i)
@@ -514,8 +511,10 @@ int av_bsf_list_parse_str(const char *str, AVBSFContext **bsf_lst)
     if (!lst)
         return AVERROR(ENOMEM);
 
-    if (!(dup = buf = av_strdup(str)))
-        return AVERROR(ENOMEM);
+    if (!(dup = buf = av_strdup(str))) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
 
     while (1) {
         bsf_str = av_strtok(buf, ",", &saveptr);

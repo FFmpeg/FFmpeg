@@ -24,7 +24,7 @@
 cextern pw_9
 cextern pw_128
 
-section .text
+SECTION .text
 
 %if HAVE_MMX_INLINE
 
@@ -155,7 +155,7 @@ cglobal vc1_%2_hor_16b_shift2, 4, 5, 0, dst, stride, src, rnd, h
     mov                hq, 8
     sub              srcq, 2
     sub              rndd, (-1+9+9-1) * 1024 ; add -1024 bias
-    LOAD_ROUNDER_MMX rndq
+    LOAD_ROUNDER_MMX rndd
     mova               m5, [pw_9]
     mova               m6, [pw_128]
     pxor               m0, m0
@@ -225,7 +225,7 @@ HOR_16B_SHIFT2 OP_AVG, avg
     mov%1 [linesize3q +destq], m5
 %endmacro
 
-; ff_vc1_inv_trans_?x?_dc_mmxext(uint8_t *dest, int linesize, int16_t *block)
+; ff_vc1_inv_trans_?x?_dc_mmxext(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
 INIT_MMX mmxext
 cglobal vc1_inv_trans_4x4_dc, 3,4,0, dest, linesize, block
     movsx         r3d, WORD [blockq]

@@ -42,13 +42,12 @@ static const uint8_t tmode_bits[TMODE_COUNT][4] = {
     { 2, 2, 2, 2 }
 };
 
-#define BITALLOC_12_COUNT    5
 #define BITALLOC_12_VLC_BITS 9
-static const uint8_t bitalloc_12_vlc_bits[BITALLOC_12_COUNT] = {
+static const uint8_t bitalloc_12_vlc_bits[DCA_BITALLOC_12_COUNT] = {
     9, 7, 7, 9, 9
 };
 
-static const uint16_t bitalloc_12_codes[BITALLOC_12_COUNT][12] = {
+static const uint16_t bitalloc_12_codes[DCA_BITALLOC_12_COUNT][12] = {
     { 0x0000, 0x0002, 0x0006, 0x000E, 0x001E, 0x003E, 0x00FF, 0x00FE,
       0x01FB, 0x01FA, 0x01F9, 0x01F8, },
     { 0x0001, 0x0000, 0x0002, 0x000F, 0x000C, 0x001D, 0x0039, 0x0038,
@@ -61,7 +60,7 @@ static const uint16_t bitalloc_12_codes[BITALLOC_12_COUNT][12] = {
       0x0079, 0x0078, 0x00FB, 0x00FA, }
 };
 
-static const uint8_t bitalloc_12_bits[BITALLOC_12_COUNT][12] = {
+static const uint8_t bitalloc_12_bits[DCA_BITALLOC_12_COUNT][12] = {
     { 1, 2, 3, 4, 5, 6, 8, 8, 9, 9,  9,  9 },
     { 1, 2, 3, 5, 5, 6, 7, 7, 7, 7,  7,  7 },
     { 2, 3, 3, 3, 3, 4, 4, 4, 5, 6,  7,  7 },
@@ -1334,4 +1333,46 @@ av_cold void ff_dca_init_vlcs(void)
     LBR_INIT_VLC(ff_dca_vlc_rsd,         rsd,         6);
 
     vlcs_initialized = 1;
+}
+
+uint32_t ff_dca_vlc_calc_quant_bits(int *values, uint8_t n, uint8_t sel, uint8_t table)
+{
+    uint8_t i, id;
+    uint32_t sum = 0;
+    for (i = 0; i < n; i++) {
+        id = values[i] - bitalloc_offsets[table];
+        av_assert0(id < bitalloc_sizes[table]);
+        sum += bitalloc_bits[table][sel][id];
+    }
+    return sum;
+}
+
+void ff_dca_vlc_enc_quant(PutBitContext *pb, int *values, uint8_t n, uint8_t sel, uint8_t table)
+{
+    uint8_t i, id;
+    for (i = 0; i < n; i++) {
+        id = values[i] - bitalloc_offsets[table];
+        av_assert0(id < bitalloc_sizes[table]);
+        put_bits(pb, bitalloc_bits[table][sel][id], bitalloc_codes[table][sel][id]);
+    }
+}
+
+uint32_t ff_dca_vlc_calc_alloc_bits(int *values, uint8_t n, uint8_t sel)
+{
+    uint8_t i, id;
+    uint32_t sum = 0;
+    for (i = 0; i < n; i++) {
+        id = values[i] - 1;
+        sum += bitalloc_12_bits[sel][id];
+    }
+    return sum;
+}
+
+void ff_dca_vlc_enc_alloc(PutBitContext *pb, int *values, uint8_t n, uint8_t sel)
+{
+    uint8_t i, id;
+    for (i = 0; i < n; i++) {
+        id = values[i] - 1;
+        put_bits(pb, bitalloc_12_bits[sel][id], bitalloc_12_codes[sel][id]);
+    }
 }

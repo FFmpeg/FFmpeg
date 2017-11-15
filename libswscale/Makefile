@@ -1,6 +1,5 @@
-include $(SUBDIR)../config.mak
-
 NAME = swscale
+DESC = FFmpeg image rescaling library
 
 HEADERS = swscale.h                                                     \
           version.h                                                     \
@@ -26,4 +25,5 @@ OBJS-$(CONFIG_SHARED)        += log2_tab.o
 SLIBOBJS-$(HAVE_GNU_WINDRES) += swscaleres.o
 
 TESTPROGS = colorspace                                                  \
+            pixdesc_query                                               \
             swscale                                                     \

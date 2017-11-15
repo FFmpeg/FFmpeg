@@ -162,7 +162,7 @@ function ff_h264_idct_add8_neon, export=1
         mov             w19, w3                 // stride
         movrel          x13, X(ff_h264_idct_dc_add_neon)
         movrel          x14, X(ff_h264_idct_add_neon)
-        movrel          x7,  scan8+16
+        movrel          x7,  scan8, 16
         mov             x10, #0
         mov             x11, #16
 1:      mov             w2,  w19
@@ -264,6 +264,7 @@ endfunc
 
 function ff_h264_idct8_add_neon, export=1
         movi            v19.8H,   #0
+        sxtw            x2,       w2
         ld1             {v24.8H, v25.8H}, [x1]
         st1             {v19.8H},  [x1],   #16
         st1             {v19.8H},  [x1],   #16

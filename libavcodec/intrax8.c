@@ -544,7 +544,7 @@ static void x8_ac_compensation(IntraX8Context *const w, const int direction,
 }
 
 static void dsp_x8_put_solidcolor(const uint8_t pix, uint8_t *dst,
-                                  const int linesize)
+                                  const ptrdiff_t linesize)
 {
     int k;
     for (k = 0; k < 8; k++) {
@@ -696,7 +696,7 @@ block_placed:
 
     if (w->loopfilter) {
         uint8_t *ptr = w->dest[chroma];
-        int linesize = w->frame->linesize[!!chroma];
+        ptrdiff_t linesize = w->frame->linesize[!!chroma];
 
         if (!((w->edges & 2) || (zeros_only && (w->orient | 4) == 4)))
             w->dsp.h_loop_filter(ptr, linesize, w->quant);
@@ -712,8 +712,8 @@ static void x8_init_block_index(IntraX8Context *w, AVFrame *frame)
 {
     // not parent codec linesize as this would be wrong for field pics
     // not that IntraX8 has interlacing support ;)
-    const int linesize   = frame->linesize[0];
-    const int uvlinesize = frame->linesize[1];
+    const ptrdiff_t linesize   = frame->linesize[0];
+    const ptrdiff_t uvlinesize = frame->linesize[1];
 
     w->dest[0] = frame->data[0];
     w->dest[1] = frame->data[1];
@@ -770,7 +770,7 @@ av_cold void ff_intrax8_common_end(IntraX8Context *w)
     av_freep(&w->prediction_table);
 }
 
-int ff_intrax8_decode_picture(IntraX8Context *const w, Picture *pict,
+int ff_intrax8_decode_picture(IntraX8Context *w, Picture *pict,
                               GetBitContext *gb, int *mb_x, int *mb_y,
                               int dquant, int quant_offset,
                               int loopfilter, int lowdelay)

@@ -25,7 +25,6 @@
 
 SECTION_RODATA
 
-align 16
 pw_1024:   times 8 dw 1 << (16 - 6) ; pw_1024
 
 sixtap_filter_hb_m:  times 8 db   1, -5

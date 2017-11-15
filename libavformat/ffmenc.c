@@ -95,40 +95,12 @@ static void write_header_chunk(AVIOContext *pb, AVIOContext *dpb, unsigned id)
     av_free(dyn_buf);
 }
 
-static int ffm_write_header_codec_private_ctx(AVFormatContext *s, AVCodecContext *ctx, int type)
-{
-    AVIOContext *pb = s->pb;
-    AVIOContext *tmp;
-    char *buf = NULL;
-    int ret;
-    const AVCodec *enc = ctx->codec ? ctx->codec : avcodec_find_encoder(ctx->codec_id);
-
-    if (!enc) {
-        av_log(s, AV_LOG_WARNING, "Stream codec is not found. Codec private options are not stored.\n");
-        return 0;
-    }
-    if (ctx->priv_data && enc->priv_class && enc->priv_data_size) {
-        if ((ret = av_opt_serialize(ctx->priv_data, AV_OPT_FLAG_ENCODING_PARAM | type,
-                                    AV_OPT_SERIALIZE_SKIP_DEFAULTS, &buf, '=', ',')) < 0)
-            return ret;
-        if (buf && strlen(buf)) {
-            if (avio_open_dyn_buf(&tmp) < 0) {
-                av_free(buf);
-                return AVERROR(ENOMEM);
-            }
-            avio_put_str(tmp, buf);
-            write_header_chunk(pb, tmp, MKBETAG('C', 'P', 'R', 'V'));
-        }
-        av_free(buf);
-    }
-    return 0;
-}
-
-static int ffm_write_header_codec_ctx(AVIOContext *pb, AVCodecContext *ctx, unsigned tag, int type)
+static int ffm_write_header_codec_ctx(AVIOContext *pb, AVCodecParameters *ctxpar, unsigned tag, int type)
 {
     AVIOContext *tmp;
     char *buf = NULL;
     int ret, need_coma = 0;
+    AVCodecContext *ctx = NULL;
 
 #define SKIP_DEFAULTS   AV_OPT_SERIALIZE_SKIP_DEFAULTS
 #define OPT_FLAGS_EXACT AV_OPT_SERIALIZE_OPT_FLAGS_EXACT
@@ -136,6 +108,16 @@ static int ffm_write_header_codec_ctx(AVIOContext *pb, AVCodecContext *ctx, unsi
 
     if (avio_open_dyn_buf(&tmp) < 0)
         return AVERROR(ENOMEM);
+
+    // AVCodecParameters does not suport AVOptions, we thus must copy it over to a context that does
+    // otherwise it could be used directly and this would be much simpler
+    ctx = avcodec_alloc_context3(NULL);
+    if (!ctx) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+    avcodec_parameters_to_context(ctx, ctxpar);
+
     if ((ret = av_opt_serialize(ctx, ENC | type, SKIP_DEFAULTS, &buf, '=', ',')) < 0)
         goto fail;
     if (buf && strlen(buf)) {
@@ -153,10 +135,12 @@ static int ffm_write_header_codec_ctx(AVIOContext *pb, AVCodecContext *ctx, unsi
     av_freep(&buf);
     avio_w8(tmp, 0);
     write_header_chunk(pb, tmp, tag);
+    avcodec_free_context(&ctx);
     return 0;
   fail:
     av_free(buf);
     ffio_free_dyn_buf(&tmp);
+    avcodec_free_context(&ctx);
     return ret;
 
 #undef SKIP_DEFAULTS
@@ -164,11 +148,11 @@ static int ffm_write_header_codec_ctx(AVIOContext *pb, AVCodecContext *ctx, unsi
 #undef ENC
 }
 
-static int ffm_write_recommended_config(AVIOContext *pb, AVCodecContext *ctx, unsigned tag,
+static int ffm_write_recommended_config(AVIOContext *pb, AVCodecParameters *codecpar, unsigned tag,
                                         const char *configuration)
 {
     int ret;
-    const AVCodec *enc = ctx->codec ? ctx->codec : avcodec_find_encoder(ctx->codec_id);
+    const AVCodec *enc = avcodec_find_encoder(codecpar->codec_id);
     AVIOContext *tmp;
     AVDictionaryEntry *t = NULL;
     AVDictionary *all = NULL, *comm = NULL, *prv = NULL;
@@ -223,7 +207,7 @@ static int ffm_write_header(AVFormatContext *s)
     FFMContext *ffm = s->priv_data;
     AVStream *st;
     AVIOContext *pb = s->pb;
-    AVCodecContext *codec;
+    AVCodecParameters *codecpar;
     int bit_rate, i, ret;
 
     if ((ret = ff_parse_creation_time_metadata(s, &ffm->start_time, 0)) < 0)
@@ -243,7 +227,7 @@ static int ffm_write_header(AVFormatContext *s)
     bit_rate = 0;
     for(i=0;i<s->nb_streams;i++) {
         st = s->streams[i];
-        bit_rate += st->codec->bit_rate;
+        bit_rate += st->codecpar->bit_rate;
     }
     avio_wb32(pb, bit_rate);
 
@@ -251,46 +235,54 @@ static int ffm_write_header(AVFormatContext *s)
 
     /* list of streams */
     for(i=0;i<s->nb_streams;i++) {
+        int flags = 0;
         st = s->streams[i];
         avpriv_set_pts_info(st, 64, 1, 1000000);
         if(avio_open_dyn_buf(&pb) < 0)
             return AVERROR(ENOMEM);
 
-        codec = st->codec;
+        codecpar = st->codecpar;
         /* generic info */
-        avio_wb32(pb, codec->codec_id);
-        avio_w8(pb, codec->codec_type);
-        avio_wb32(pb, codec->bit_rate);
-        avio_wb32(pb, codec->flags);
-        avio_wb32(pb, codec->flags2);
-        avio_wb32(pb, codec->debug);
-        if (codec->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
-            avio_wb32(pb, codec->extradata_size);
-            avio_write(pb, codec->extradata, codec->extradata_size);
+        avio_wb32(pb, codecpar->codec_id);
+        avio_w8(pb, codecpar->codec_type);
+        avio_wb32(pb, codecpar->bit_rate);
+        if (codecpar->extradata_size)
+            flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+
+        // If the user is not providing us with a configuration we have to fill it in as we cannot access the encoder
+        if (!st->recommended_encoder_configuration) {
+            if (s->flags & AVFMT_FLAG_BITEXACT)
+                flags |= AV_CODEC_FLAG_BITEXACT;
+        }
+
+        avio_wb32(pb, flags);
+        avio_wb32(pb, 0); // flags2
+        avio_wb32(pb, 0); // debug
+        if (codecpar->extradata_size) {
+            avio_wb32(pb, codecpar->extradata_size);
+            avio_write(pb, codecpar->extradata, codecpar->extradata_size);
         }
         write_header_chunk(s->pb, pb, MKBETAG('C', 'O', 'M', 'M'));
         /* specific info */
-        switch(codec->codec_type) {
+        switch(codecpar->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
             if (st->recommended_encoder_configuration) {
                 av_log(NULL, AV_LOG_DEBUG, "writing recommended configuration: %s\n",
                        st->recommended_encoder_configuration);
-                if ((ret = ffm_write_recommended_config(s->pb, codec, MKBETAG('S', '2', 'V', 'I'),
+                if ((ret = ffm_write_recommended_config(s->pb, codecpar, MKBETAG('S', '2', 'V', 'I'),
                                                         st->recommended_encoder_configuration)) < 0)
                 return ret;
-            } else if ((ret = ffm_write_header_codec_ctx(s->pb, codec, MKBETAG('S', '2', 'V', 'I'), AV_OPT_FLAG_VIDEO_PARAM)) < 0 ||
-                       (ret = ffm_write_header_codec_private_ctx(s, codec, AV_OPT_FLAG_VIDEO_PARAM)) < 0)
+            } else if ((ret = ffm_write_header_codec_ctx(s->pb, codecpar, MKBETAG('S', '2', 'V', 'I'), AV_OPT_FLAG_VIDEO_PARAM)) < 0)
                 return ret;
             break;
         case AVMEDIA_TYPE_AUDIO:
             if (st->recommended_encoder_configuration) {
                 av_log(NULL, AV_LOG_DEBUG, "writing recommended configuration: %s\n",
                        st->recommended_encoder_configuration);
-                if ((ret = ffm_write_recommended_config(s->pb, codec, MKBETAG('S', '2', 'A', 'U'),
+                if ((ret = ffm_write_recommended_config(s->pb, codecpar, MKBETAG('S', '2', 'A', 'U'),
                                                         st->recommended_encoder_configuration)) < 0)
                 return ret;
-            } else if ((ret = ffm_write_header_codec_ctx(s->pb, codec, MKBETAG('S', '2', 'A', 'U'), AV_OPT_FLAG_AUDIO_PARAM)) < 0 ||
-                     (ret = ffm_write_header_codec_private_ctx(s, codec, AV_OPT_FLAG_AUDIO_PARAM)) < 0)
+            } else if ((ret = ffm_write_header_codec_ctx(s->pb, codecpar, MKBETAG('S', '2', 'A', 'U'), AV_OPT_FLAG_AUDIO_PARAM)) < 0)
                 return ret;
             break;
         default:

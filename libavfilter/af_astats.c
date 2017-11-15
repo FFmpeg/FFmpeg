@@ -28,6 +28,7 @@
 
 typedef struct ChannelStats {
     double last;
+    double min_non_zero;
     double sigma_x, sigma_x2;
     double avg_sigma_x2, min_sigma_x2, max_sigma_x2;
     double min, max;
@@ -36,12 +37,13 @@ typedef struct ChannelStats {
     double min_runs, max_runs;
     double min_diff, max_diff;
     double diff1_sum;
+    double diff1_sum_x2;
     uint64_t mask, imask;
     uint64_t min_count, max_count;
     uint64_t nb_samples;
 } ChannelStats;
 
-typedef struct {
+typedef struct AudioStatsContext {
     const AVClass *class;
     ChannelStats *chstats;
     int nb_channels;
@@ -109,18 +111,18 @@ static void reset_stats(AudioStatsContext *s)
 
         p->min = p->nmin = p->min_sigma_x2 = DBL_MAX;
         p->max = p->nmax = p->max_sigma_x2 = DBL_MIN;
+        p->min_non_zero = DBL_MAX;
         p->min_diff = DBL_MAX;
         p->max_diff = DBL_MIN;
         p->sigma_x = 0;
         p->sigma_x2 = 0;
         p->avg_sigma_x2 = 0;
-        p->min_sigma_x2 = 0;
-        p->max_sigma_x2 = 0;
         p->min_run = 0;
         p->max_run = 0;
         p->min_runs = 0;
         p->max_runs = 0;
         p->diff1_sum = 0;
+        p->diff1_sum_x2 = 0;
         p->mask = 0;
         p->imask = 0xFFFFFFFFFFFFFFFF;
         p->min_count = 0;
@@ -178,6 +180,9 @@ static inline void update_stat(AudioStatsContext *s, ChannelStats *p, double d, 
         p->min_runs += p->min_run * p->min_run;
     }
 
+    if (d != 0 && FFABS(d) < p->min_non_zero)
+        p->min_non_zero = FFABS(d);
+
     if (d > p->max) {
         p->max = d;
         p->nmax = nd;
@@ -197,6 +202,7 @@ static inline void update_stat(AudioStatsContext *s, ChannelStats *p, double d, 
     p->min_diff = FFMIN(p->min_diff, fabs(d - p->last));
     p->max_diff = FFMAX(p->max_diff, fabs(d - p->last));
     p->diff1_sum += fabs(d - p->last);
+    p->diff1_sum_x2 += (d - p->last) * (d - p->last);
     p->last = d;
     p->mask |= i;
     p->imask &= i;
@@ -232,6 +238,7 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
            nmin = DBL_MAX, nmax = DBL_MIN,
            max_sigma_x = 0,
            diff1_sum = 0,
+           diff1_sum_x2 = 0,
            sigma_x = 0,
            sigma_x2 = 0,
            min_sigma_x2 = DBL_MAX,
@@ -251,7 +258,8 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
         nmax = FFMAX(nmax, p->nmax);
         min_diff = FFMIN(min_diff, p->min_diff);
         max_diff = FFMAX(max_diff, p->max_diff);
-        diff1_sum += p->diff1_sum,
+        diff1_sum += p->diff1_sum;
+        diff1_sum_x2 += p->diff1_sum_x2;
         min_sigma_x2 = FFMIN(min_sigma_x2, p->min_sigma_x2);
         max_sigma_x2 = FFMAX(max_sigma_x2, p->max_sigma_x2);
         sigma_x += p->sigma_x;
@@ -272,6 +280,7 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
         set_meta(metadata, c + 1, "Min_difference", "%f", p->min_diff);
         set_meta(metadata, c + 1, "Max_difference", "%f", p->max_diff);
         set_meta(metadata, c + 1, "Mean_difference", "%f", p->diff1_sum / (p->nb_samples - 1));
+        set_meta(metadata, c + 1, "RMS_difference", "%f", sqrt(p->diff1_sum_x2 / (p->nb_samples - 1)));
         set_meta(metadata, c + 1, "Peak_level", "%f", LINEAR_TO_DB(FFMAX(-p->nmin, p->nmax)));
         set_meta(metadata, c + 1, "RMS_level", "%f", LINEAR_TO_DB(sqrt(p->sigma_x2 / p->nb_samples)));
         set_meta(metadata, c + 1, "RMS_peak", "%f", LINEAR_TO_DB(sqrt(p->max_sigma_x2)));
@@ -282,6 +291,7 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
         bit_depth(s, p->mask, p->imask, &depth);
         set_meta(metadata, c + 1, "Bit_depth", "%f", depth.num);
         set_meta(metadata, c + 1, "Bit_depth2", "%f", depth.den);
+        set_meta(metadata, c + 1, "Dynamic_range", "%f", LINEAR_TO_DB(2 * FFMAX(FFABS(p->min), FFABS(p->max))/ p->min_non_zero));
     }
 
     set_meta(metadata, 0, "Overall.DC_offset", "%f", max_sigma_x / (nb_samples / s->nb_channels));
@@ -290,6 +300,7 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
     set_meta(metadata, 0, "Overall.Min_difference", "%f", min_diff);
     set_meta(metadata, 0, "Overall.Max_difference", "%f", max_diff);
     set_meta(metadata, 0, "Overall.Mean_difference", "%f", diff1_sum / (nb_samples - s->nb_channels));
+    set_meta(metadata, 0, "Overall.RMS_difference", "%f", sqrt(diff1_sum_x2 / (nb_samples - s->nb_channels)));
     set_meta(metadata, 0, "Overall.Peak_level", "%f", LINEAR_TO_DB(FFMAX(-nmin, nmax)));
     set_meta(metadata, 0, "Overall.RMS_level", "%f", LINEAR_TO_DB(sqrt(sigma_x2 / nb_samples)));
     set_meta(metadata, 0, "Overall.RMS_peak", "%f", LINEAR_TO_DB(sqrt(max_sigma_x2)));
@@ -305,7 +316,7 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
 static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 {
     AudioStatsContext *s = inlink->dst->priv;
-    AVDictionary **metadata = avpriv_frame_get_metadatap(buf);
+    AVDictionary **metadata = &buf->metadata;
     const int channels = s->nb_channels;
     int i, c;
 
@@ -419,6 +430,7 @@ static void print_stats(AVFilterContext *ctx)
            min = DBL_MAX, max = DBL_MIN, min_diff = DBL_MAX, max_diff = 0,
            nmin = DBL_MAX, nmax = DBL_MIN,
            max_sigma_x = 0,
+           diff1_sum_x2 = 0,
            diff1_sum = 0,
            sigma_x = 0,
            sigma_x2 = 0,
@@ -439,7 +451,8 @@ static void print_stats(AVFilterContext *ctx)
         nmax = FFMAX(nmax, p->nmax);
         min_diff = FFMIN(min_diff, p->min_diff);
         max_diff = FFMAX(max_diff, p->max_diff);
-        diff1_sum += p->diff1_sum,
+        diff1_sum_x2 += p->diff1_sum_x2;
+        diff1_sum += p->diff1_sum;
         min_sigma_x2 = FFMIN(min_sigma_x2, p->min_sigma_x2);
         max_sigma_x2 = FFMAX(max_sigma_x2, p->max_sigma_x2);
         sigma_x += p->sigma_x;
@@ -461,6 +474,7 @@ static void print_stats(AVFilterContext *ctx)
         av_log(ctx, AV_LOG_INFO, "Min difference: %f\n", p->min_diff);
         av_log(ctx, AV_LOG_INFO, "Max difference: %f\n", p->max_diff);
         av_log(ctx, AV_LOG_INFO, "Mean difference: %f\n", p->diff1_sum / (p->nb_samples - 1));
+        av_log(ctx, AV_LOG_INFO, "RMS difference: %f\n", sqrt(p->diff1_sum_x2 / (p->nb_samples - 1)));
         av_log(ctx, AV_LOG_INFO, "Peak level dB: %f\n", LINEAR_TO_DB(FFMAX(-p->nmin, p->nmax)));
         av_log(ctx, AV_LOG_INFO, "RMS level dB: %f\n", LINEAR_TO_DB(sqrt(p->sigma_x2 / p->nb_samples)));
         av_log(ctx, AV_LOG_INFO, "RMS peak dB: %f\n", LINEAR_TO_DB(sqrt(p->max_sigma_x2)));
@@ -471,6 +485,7 @@ static void print_stats(AVFilterContext *ctx)
         av_log(ctx, AV_LOG_INFO, "Peak count: %"PRId64"\n", p->min_count + p->max_count);
         bit_depth(s, p->mask, p->imask, &depth);
         av_log(ctx, AV_LOG_INFO, "Bit depth: %u/%u\n", depth.num, depth.den);
+        av_log(ctx, AV_LOG_INFO, "Dynamic range: %f\n", LINEAR_TO_DB(2 * FFMAX(FFABS(p->min), FFABS(p->max))/ p->min_non_zero));
     }
 
     av_log(ctx, AV_LOG_INFO, "Overall\n");
@@ -480,6 +495,7 @@ static void print_stats(AVFilterContext *ctx)
     av_log(ctx, AV_LOG_INFO, "Min difference: %f\n", min_diff);
     av_log(ctx, AV_LOG_INFO, "Max difference: %f\n", max_diff);
     av_log(ctx, AV_LOG_INFO, "Mean difference: %f\n", diff1_sum / (nb_samples - s->nb_channels));
+    av_log(ctx, AV_LOG_INFO, "RMS difference: %f\n", sqrt(diff1_sum_x2 / (nb_samples - s->nb_channels)));
     av_log(ctx, AV_LOG_INFO, "Peak level dB: %f\n", LINEAR_TO_DB(FFMAX(-nmin, nmax)));
     av_log(ctx, AV_LOG_INFO, "RMS level dB: %f\n", LINEAR_TO_DB(sqrt(sigma_x2 / nb_samples)));
     av_log(ctx, AV_LOG_INFO, "RMS peak dB: %f\n", LINEAR_TO_DB(sqrt(max_sigma_x2)));

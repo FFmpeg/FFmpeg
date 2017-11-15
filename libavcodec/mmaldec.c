@@ -31,10 +31,10 @@
 #include <interface/mmal/util/mmal_util_params.h>
 #include <interface/mmal/util/mmal_default_components.h>
 #include <interface/mmal/vc/mmal_vc_api.h>
+#include <stdatomic.h>
 
 #include "avcodec.h"
 #include "internal.h"
-#include "libavutil/atomic.h"
 #include "libavutil/avassert.h"
 #include "libavutil/buffer.h"
 #include "libavutil/common.h"
@@ -55,7 +55,7 @@ typedef struct FFBufferEntry {
 // refcounting for AVFrames, we can free the MMAL_POOL_T only after all AVFrames
 // have been unreferenced.
 typedef struct FFPoolRef {
-    volatile int refcount;
+    atomic_int refcount;
     MMAL_POOL_T *pool;
 } FFPoolRef;
 
@@ -83,7 +83,7 @@ typedef struct MMALDecodeContext {
     FFBufferEntry *waiting_buffers, *waiting_buffers_tail;
 
     int64_t packets_sent;
-    volatile int packets_buffered;
+    atomic_int packets_buffered;
     int64_t frames_output;
     int eos_received;
     int eos_sent;
@@ -98,7 +98,8 @@ typedef struct MMALDecodeContext {
 
 static void ffmmal_poolref_unref(FFPoolRef *ref)
 {
-    if (ref && avpriv_atomic_int_add_and_fetch(&ref->refcount, -1) == 0) {
+    if (ref &&
+        atomic_fetch_add_explicit(&ref->refcount, -1, memory_order_acq_rel) == 1) {
         mmal_pool_destroy(ref->pool);
         av_free(ref);
     }
@@ -134,7 +135,7 @@ static int ffmmal_set_ref(AVFrame *frame, FFPoolRef *pool,
         return AVERROR(ENOMEM);
     }
 
-    avpriv_atomic_int_add_and_fetch(&ref->pool->refcount, 1);
+    atomic_fetch_add_explicit(&ref->pool->refcount, 1, memory_order_relaxed);
     mmal_buffer_header_acquire(buffer);
 
     frame->format = AV_PIX_FMT_MMAL;
@@ -165,14 +166,14 @@ static void ffmmal_stop_decoder(AVCodecContext *avctx)
         ctx->waiting_buffers = buffer->next;
 
         if (buffer->flags & MMAL_BUFFER_HEADER_FLAG_FRAME_END)
-            avpriv_atomic_int_add_and_fetch(&ctx->packets_buffered, -1);
+            atomic_fetch_add(&ctx->packets_buffered, -1);
 
         av_buffer_unref(&buffer->ref);
         av_free(buffer);
     }
     ctx->waiting_buffers_tail = NULL;
 
-    av_assert0(avpriv_atomic_int_get(&ctx->packets_buffered) == 0);
+    av_assert0(atomic_load(&ctx->packets_buffered) == 0);
 
     ctx->frames_output = ctx->eos_received = ctx->eos_sent = ctx->packets_sent = ctx->extradata_sent = 0;
 }
@@ -204,7 +205,7 @@ static void input_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
         FFBufferEntry *entry = buffer->user_data;
         av_buffer_unref(&entry->ref);
         if (entry->flags & MMAL_BUFFER_HEADER_FLAG_FRAME_END)
-            avpriv_atomic_int_add_and_fetch(&ctx->packets_buffered, -1);
+            atomic_fetch_add(&ctx->packets_buffered, -1);
         av_free(entry);
     }
     mmal_buffer_header_release(buffer);
@@ -227,9 +228,8 @@ static void control_port_cb(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
         status = *(uint32_t *)buffer->data;
         av_log(avctx, AV_LOG_ERROR, "MMAL error %d on control port\n", (int)status);
     } else {
-        char s[20];
-        av_get_codec_tag_string(s, sizeof(s), buffer->cmd);
-        av_log(avctx, AV_LOG_WARNING, "Unknown MMAL event %s on control port\n", s);
+        av_log(avctx, AV_LOG_WARNING, "Unknown MMAL event %s on control port\n",
+               av_fourcc2str(buffer->cmd));
     }
 
     mmal_buffer_header_release(buffer);
@@ -283,7 +283,7 @@ static int ffmal_update_format(AVCodecContext *avctx)
         ret = AVERROR(ENOMEM);
         goto fail;
     }
-    ctx->pool_out->refcount = 1;
+    atomic_init(&ctx->pool_out->refcount, 1);
 
     if (!format_out)
         goto fail;
@@ -351,7 +351,6 @@ static av_cold int ffmmal_init_decoder(AVCodecContext *avctx)
     MMAL_STATUS_T status;
     MMAL_ES_FORMAT_T *format_in;
     MMAL_COMPONENT_T *decoder;
-    char tmp[32];
     int ret = 0;
 
     bcm_host_init();
@@ -398,8 +397,8 @@ static av_cold int ffmmal_init_decoder(AVCodecContext *avctx)
     format_in->es->video.par.den = avctx->sample_aspect_ratio.den;
     format_in->flags = MMAL_ES_FORMAT_FLAG_FRAMED;
 
-    av_get_codec_tag_string(tmp, sizeof(tmp), format_in->encoding);
-    av_log(avctx, AV_LOG_DEBUG, "Using MMAL %s encoding.\n", tmp);
+    av_log(avctx, AV_LOG_DEBUG, "Using MMAL %s encoding.\n",
+           av_fourcc2str(format_in->encoding));
 
 #if HAVE_MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS
     if (mmal_port_parameter_set_uint32(decoder->input[0], MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS,
@@ -542,7 +541,7 @@ static int ffmmal_add_packet(AVCodecContext *avctx, AVPacket *avpkt,
 
         if (!size) {
             buffer->flags |= MMAL_BUFFER_HEADER_FLAG_FRAME_END;
-            avpriv_atomic_int_add_and_fetch(&ctx->packets_buffered, 1);
+            atomic_fetch_add(&ctx->packets_buffered, 1);
         }
 
         if (!buffer->length) {
@@ -607,7 +606,7 @@ static int ffmmal_fill_input_port(AVCodecContext *avctx)
             mmal_buffer_header_release(mbuffer);
             av_buffer_unref(&buffer->ref);
             if (buffer->flags & MMAL_BUFFER_HEADER_FLAG_FRAME_END)
-                avpriv_atomic_int_add_and_fetch(&ctx->packets_buffered, -1);
+                atomic_fetch_add(&ctx->packets_buffered, -1);
             av_free(buffer);
         }
 
@@ -689,7 +688,7 @@ static int ffmmal_read_frame(AVCodecContext *avctx, AVFrame *frame, int *got_fra
         // excessive buffering.
         // We also wait if we sent eos, but didn't receive it yet (think of decoding
         // stream with a very low number of frames).
-        if (avpriv_atomic_int_get(&ctx->packets_buffered) > MAX_DELAYED_FRAMES ||
+        if (atomic_load(&ctx->packets_buffered) > MAX_DELAYED_FRAMES ||
             (ctx->packets_sent && ctx->eos_sent)) {
             // MMAL will ignore broken input packets, which means the frame we
             // expect here may never arrive. Dealing with this correctly is
@@ -741,9 +740,8 @@ static int ffmmal_read_frame(AVCodecContext *avctx, AVFrame *frame, int *got_fra
             mmal_buffer_header_release(buffer);
             continue;
         } else if (buffer->cmd) {
-            char s[20];
-            av_get_codec_tag_string(s, sizeof(s), buffer->cmd);
-            av_log(avctx, AV_LOG_WARNING, "Unknown MMAL event %s on output port\n", s);
+            av_log(avctx, AV_LOG_WARNING, "Unknown MMAL event %s on output port\n",
+                   av_fourcc2str(buffer->cmd));
             goto done;
         } else if (buffer->length == 0) {
             // Unused output buffer that got drained after format change.
@@ -846,6 +844,7 @@ static const AVOption options[]={
 #define FFMMAL_DEC_CLASS(NAME) \
     static const AVClass ffmmal_##NAME##_dec_class = { \
         .class_name = "mmal_" #NAME "_dec", \
+        .item_name  = av_default_item_name, \
         .option     = options, \
         .version    = LIBAVUTIL_VERSION_INT, \
     };

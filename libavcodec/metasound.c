@@ -170,9 +170,10 @@ static int metasound_read_bitstream(AVCodecContext *avctx, TwinVQContext *tctx,
     int channels              = tctx->avctx->channels;
     int sub;
     GetBitContext gb;
-    int i, j, k;
+    int i, j, k, ret;
 
-    init_get_bits(&gb, buf, buf_size * 8);
+    if ((ret = init_get_bits8(&gb, buf, buf_size)) < 0)
+        return ret;
 
     for (tctx->cur_frame = 0; tctx->cur_frame < tctx->frames_per_packet;
          tctx->cur_frame++) {

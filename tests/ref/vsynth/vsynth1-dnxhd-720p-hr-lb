@@ -1,4 +1,4 @@
 08cbfe9b9f671cdb9dddc9307121d107 *tests/data/fate/vsynth1-dnxhd-720p-hr-lb.dnxhd
 409600 tests/data/fate/vsynth1-dnxhd-720p-hr-lb.dnxhd
-22eb87f0f8a50278355006fef70073a9 *tests/data/fate/vsynth1-dnxhd-720p-hr-lb.out.rawvideo
-stddev:    7.49 PSNR: 30.63 MAXDIFF:   64 bytes:  7603200/   608256
+77e510e3538313b1cbafb86ed248d2df *tests/data/fate/vsynth1-dnxhd-720p-hr-lb.out.rawvideo
+stddev:    7.50 PSNR: 30.62 MAXDIFF:   64 bytes:  7603200/   760320

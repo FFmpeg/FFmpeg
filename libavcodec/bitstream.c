@@ -28,7 +28,6 @@
  * bitstream api.
  */
 
-#include "libavutil/atomic.h"
 #include "libavutil/avassert.h"
 #include "libavutil/qsort.h"
 #include "avcodec.h"
@@ -99,9 +98,11 @@ void avpriv_copy_bits(PutBitContext *pb, const uint8_t *src, int length)
     case 2:                                                 \
         v = *(const uint16_t *)ptr;                         \
         break;                                              \
-    default:                                                \
+    case 4:                                                 \
         v = *(const uint32_t *)ptr;                         \
         break;                                              \
+    default:                                                \
+        av_assert1(0);                                      \
     }                                                       \
 }
 
@@ -124,14 +125,6 @@ static int alloc_table(VLC *vlc, int size, int use_static)
         memset(vlc->table + vlc->table_allocated - (1 << vlc->bits), 0, sizeof(VLC_TYPE) * 2 << vlc->bits);
     }
     return index;
-}
-
-static av_always_inline uint32_t bitswap_32(uint32_t x)
-{
-    return (uint32_t)ff_reverse[ x        & 0xFF] << 24 |
-           (uint32_t)ff_reverse[(x >> 8)  & 0xFF] << 16 |
-           (uint32_t)ff_reverse[(x >> 16) & 0xFF] << 8  |
-           (uint32_t)ff_reverse[ x >> 24];
 }
 
 typedef struct VLCcode {
@@ -183,7 +176,7 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
         n      = codes[i].bits;
         code   = codes[i].code;
         symbol = codes[i].symbol;
-        ff_dlog(NULL, "i=%d n=%d code=0x%x\n", i, n, code);
+        ff_dlog(NULL, "i=%d n=%d code=0x%"PRIx32"\n", i, n, code);
         if (n <= table_nb_bits) {
             /* no need to add another table */
             j = code >> (32 - table_nb_bits);
@@ -264,7 +257,7 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
    'bits' or 'codes' tables.
 
    'xxx_size' : gives the number of bytes of each entry of the 'bits'
-   or 'codes' tables.
+   or 'codes' tables. Currently 1,2 and 4 are supported.
 
    'wrap' and 'size' make it possible to use any memory configuration and types
    (byte/word/long) to store the 'bits', 'codes', and 'symbols' tables.
@@ -317,7 +310,8 @@ int ff_init_vlc_sparse(VLC *vlc_arg, int nb_bits, int nb_codes,
         }                                                                   \
         GET_DATA(buf[j].code, codes, i, codes_wrap, codes_size);            \
         if (buf[j].code >= (1LL<<buf[j].bits)) {                            \
-            av_log(NULL, AV_LOG_ERROR, "Invalid code %x for %d in init_vlc\n", buf[j].code, i);\
+            av_log(NULL, AV_LOG_ERROR, "Invalid code %"PRIx32" for %d in "  \
+                   "init_vlc\n", buf[j].code, i);                           \
             if (!(flags & INIT_VLC_USE_NEW_STATIC))                         \
                 av_free(buf);                                               \
             return -1;                                                      \

@@ -201,12 +201,12 @@ static int check_slice_size(AVCodecContext *avctx,
 
     if (slice_size > src_size - off) {
         av_log(avctx, AV_LOG_ERROR,
-               "invalid slice size %"PRIu32" (only %"PRIu32" bytes left)\n",
+               "invalid slice size %d (only %d bytes left)\n",
                slice_size, src_size - off);
         return AVERROR_INVALIDDATA;
     }
     if (slice_size <= 16) {
-        av_log(avctx, AV_LOG_ERROR, "invalid slice size %"PRIu32"\n",
+        av_log(avctx, AV_LOG_ERROR, "invalid slice size %d\n",
                slice_size);
         return AVERROR_INVALIDDATA;
     }
@@ -214,7 +214,7 @@ static int check_slice_size(AVCodecContext *avctx,
     cur_slice_size = AV_RL32(src + off);
     if (cur_slice_size != slice_size - 16) {
         av_log(avctx, AV_LOG_ERROR,
-               "Slice sizes mismatch: got %"PRIu32" instead of %"PRIu32"\n",
+               "Slice sizes mismatch: got %d instead of %d\n",
                cur_slice_size, slice_size - 16);
     }
 

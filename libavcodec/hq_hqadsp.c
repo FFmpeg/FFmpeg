@@ -30,7 +30,7 @@
 #define FIX_1_414 23170
 #define FIX_2_613 21407 // divided by two to fit the range
 
-#define IDCTMUL(a, b) ((a) * (b) >> 16)
+#define IDCTMUL(a, b) ((int)((a) * (unsigned)(b)) >> 16)
 
 static inline void idct_row(int16_t *blk)
 {

@@ -258,7 +258,7 @@ static inline uint8_t adpcm_yamaha_compress_sample(ADPCMChannelStatus *c,
     c->predictor += ((c->step * ff_adpcm_yamaha_difflookup[nibble]) / 8);
     c->predictor = av_clip_int16(c->predictor);
     c->step = (c->step * ff_adpcm_yamaha_indexscale[nibble]) >> 8;
-    c->step = av_clip(c->step, 127, 24567);
+    c->step = av_clip(c->step, 127, 24576);
 
     return nibble;
 }
@@ -415,7 +415,7 @@ static void adpcm_compress_trellis(AVCodecContext *avctx,
             } else { //AV_CODEC_ID_ADPCM_YAMAHA
                 LOOP_NODES(yamaha, step,
                            av_clip((step * ff_adpcm_yamaha_indexscale[nibble]) >> 8,
-                                   127, 24567));
+                                   127, 24576));
 #undef LOOP_NODES
 #undef STORE_NODE
             }

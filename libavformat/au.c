@@ -321,7 +321,7 @@ static int au_write_trailer(AVFormatContext *s)
     AUContext *au = s->priv_data;
     int64_t file_size = avio_tell(pb);
 
-    if (s->pb->seekable && file_size < INT32_MAX) {
+    if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) && file_size < INT32_MAX) {
         /* update file size */
         avio_seek(pb, 8, SEEK_SET);
         avio_wb32(pb, (uint32_t)(file_size - au->header_size));

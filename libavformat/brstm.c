@@ -230,7 +230,7 @@ static int read_header(AVFormatContext *s)
     b->current_block = 0;
     b->block_count = read32(s);
     if (b->block_count > UINT16_MAX) {
-        av_log(s, AV_LOG_WARNING, "too many blocks: %u\n", b->block_count);
+        av_log(s, AV_LOG_WARNING, "too many blocks: %"PRIu32"\n", b->block_count);
         return AVERROR_INVALIDDATA;
     }
 

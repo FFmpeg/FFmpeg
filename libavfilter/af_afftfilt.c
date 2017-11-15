@@ -166,7 +166,7 @@ static int config_input(AVFilterLink *inlink)
                                       sizeof(*s->window_func_lut));
     if (!s->window_func_lut)
         return AVERROR(ENOMEM);
-    ff_generate_window_func(s->window_func_lut, s->window_size, s->win_func, &overlap);
+    generate_window_func(s->window_func_lut, s->window_size, s->win_func, &overlap);
     if (s->overlap == 1)
         s->overlap = overlap;
 
@@ -371,6 +371,9 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->real);
     av_freep(&s->imag);
     av_frame_free(&s->buffer);
+    av_freep(&s->window_func_lut);
+
+    av_audio_fifo_free(s->fifo);
 }
 
 static const AVFilterPad inputs[] = {

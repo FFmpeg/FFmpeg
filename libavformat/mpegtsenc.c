@@ -46,6 +46,7 @@
 typedef struct MpegTSSection {
     int pid;
     int cc;
+    int discontinuity;
     void (*write_packet)(struct MpegTSSection *s, const uint8_t *packet);
     void *opaque;
 } MpegTSSection;
@@ -104,6 +105,7 @@ typedef struct MpegTSWrite {
 #define MPEGTS_FLAG_AAC_LATM        0x02
 #define MPEGTS_FLAG_PAT_PMT_AT_FRAMES           0x04
 #define MPEGTS_FLAG_SYSTEM_B        0x08
+#define MPEGTS_FLAG_DISCONT         0x10
     int flags;
     int copyts;
     int tables_version;
@@ -153,6 +155,12 @@ static void mpegts_write_section(MpegTSSection *s, uint8_t *buf, int len)
         *q++  = s->pid;
         s->cc = s->cc + 1 & 0xf;
         *q++  = 0x10 | s->cc;
+        if (s->discontinuity) {
+            q[-1] |= 0x20;
+            *q++ = 1;
+            *q++ = 0x80;
+            s->discontinuity = 0;
+        }
         if (first)
             *q++ = 0; /* 0 offset */
         len1 = TS_PACKET_SIZE - (q - packet);
@@ -223,6 +231,7 @@ typedef struct MpegTSWriteStream {
     struct MpegTSService *service;
     int pid; /* stream associated pid */
     int cc;
+    int discontinuity;
     int payload_size;
     int first_pts_check; ///< first pts check needed
     int prev_payload_key;
@@ -253,6 +262,28 @@ static void mpegts_write_pat(AVFormatContext *s)
     }
     mpegts_write_section1(&ts->pat, PAT_TID, ts->tsid, ts->tables_version, 0, 0,
                           data, q - data);
+}
+
+/* NOTE: !str is accepted for an empty string */
+static void putstr8(uint8_t **q_ptr, const char *str, int write_len)
+{
+    uint8_t *q;
+    int len;
+
+    q = *q_ptr;
+    if (!str)
+        len = 0;
+    else
+        len = strlen(str);
+    if (write_len)
+        *q++ = len;
+    if (!str) {
+        *q_ptr = q;
+        return;
+    }
+    memcpy(q, str, len);
+    q     += len;
+    *q_ptr = q;
 }
 
 static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
@@ -611,12 +642,15 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                 *q++ = 'V';
                 *q++ = 'A';
             } else if (st->codecpar->codec_id == AV_CODEC_ID_TIMED_ID3) {
-                *q++ = 0x5; /* MPEG-2 registration descriptor */
-                *q++ = 4;
-                *q++ = 'I';
-                *q++ = 'D';
-                *q++ = '3';
-                *q++ = ' ';
+                const char *tag = "ID3 ";
+                *q++ = 0x26; /* metadata descriptor */
+                *q++ = 13;
+                put16(&q, 0xffff);    /* metadata application format */
+                putstr8(&q, tag, 0);
+                *q++ = 0xff;        /* metadata format */
+                putstr8(&q, tag, 0);
+                *q++ = 0;            /* metadata service ID */
+                *q++ = 0xF;          /* metadata_locator_record_flag|MPEG_carriage_flags|reserved */
             }
             break;
         }
@@ -635,23 +669,6 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
     mpegts_write_section1(&service->pmt, PMT_TID, service->sid, ts->tables_version, 0, 0,
                           data, q - data);
     return 0;
-}
-
-/* NOTE: !str is accepted for an empty string */
-static void putstr8(uint8_t **q_ptr, const char *str)
-{
-    uint8_t *q;
-    int len;
-
-    q = *q_ptr;
-    if (!str)
-        len = 0;
-    else
-        len = strlen(str);
-    *q++ = len;
-    memcpy(q, str, len);
-    q     += len;
-    *q_ptr = q;
 }
 
 static void mpegts_write_sdt(AVFormatContext *s)
@@ -678,8 +695,8 @@ static void mpegts_write_sdt(AVFormatContext *s)
         desc_len_ptr = q;
         q++;
         *q++         = ts->service_type;
-        putstr8(&q, service->provider_name);
-        putstr8(&q, service->name);
+        putstr8(&q, service->provider_name, 1);
+        putstr8(&q, service->name, 1);
         desc_len_ptr[0] = q - desc_len_ptr - 1;
 
         /* fill descriptor length */
@@ -782,6 +799,7 @@ static int mpegts_init(AVFormatContext *s)
         service->pmt.write_packet = section_write_packet;
         service->pmt.opaque       = s;
         service->pmt.cc           = 15;
+        service->pmt.discontinuity= ts->flags & MPEGTS_FLAG_DISCONT;
     } else {
         for (i = 0; i < s->nb_programs; i++) {
             AVProgram *program = s->programs[i];
@@ -800,6 +818,7 @@ static int mpegts_init(AVFormatContext *s)
             service->pmt.write_packet = section_write_packet;
             service->pmt.opaque       = s;
             service->pmt.cc           = 15;
+            service->pmt.discontinuity= ts->flags & MPEGTS_FLAG_DISCONT;
             service->program          = program;
         }
     }
@@ -808,11 +827,13 @@ static int mpegts_init(AVFormatContext *s)
     /* Initialize at 15 so that it wraps and is equal to 0 for the
      * first packet we write. */
     ts->pat.cc           = 15;
+    ts->pat.discontinuity= ts->flags & MPEGTS_FLAG_DISCONT;
     ts->pat.write_packet = section_write_packet;
     ts->pat.opaque       = s;
 
     ts->sdt.pid          = SDT_PID;
     ts->sdt.cc           = 15;
+    ts->sdt.discontinuity= ts->flags & MPEGTS_FLAG_DISCONT;
     ts->sdt.write_packet = section_write_packet;
     ts->sdt.opaque       = s;
 
@@ -883,6 +904,7 @@ static int mpegts_init(AVFormatContext *s)
         ts_st->payload_dts     = AV_NOPTS_VALUE;
         ts_st->first_pts_check = 1;
         ts_st->cc              = 15;
+        ts_st->discontinuity   = ts->flags & MPEGTS_FLAG_DISCONT;
         /* update PCR pid by using the first video stream */
         if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
             service->pcr_pid == 0x1fff) {
@@ -1078,6 +1100,10 @@ static void mpegts_insert_pcr_only(AVFormatContext *s, AVStream *st)
     /* Continuity Count field does not increment (see 13818-1 section 2.4.3.3) */
     *q++ = TS_PACKET_SIZE - 5; /* Adaptation Field Length */
     *q++ = 0x10;               /* Adaptation flags: PCR present */
+    if (ts_st->discontinuity) {
+        q[-1] |= 0x80;
+        ts_st->discontinuity = 0;
+    }
 
     /* PCR coded into 6 bytes */
     q += write_pcr_bits(q, get_pcr(ts, s->pb));
@@ -1195,6 +1221,11 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
         *q++      = ts_st->pid;
         ts_st->cc = ts_st->cc + 1 & 0xf;
         *q++      = 0x10 | ts_st->cc; // payload indicator + CC
+        if (ts_st->discontinuity) {
+            set_af_flag(buf, 0x80);
+            q = get_ts_payload_start(buf);
+            ts_st->discontinuity = 0;
+        }
         if (key && is_start && pts != AV_NOPTS_VALUE) {
             // set Random Access for key frames
             if (ts_st->pid == ts_st->service->pcr_pid)
@@ -1406,7 +1437,8 @@ int ff_check_h264_startcode(AVFormatContext *s, const AVStream *st, const AVPack
             return AVERROR_INVALIDDATA;
         }
         av_log(s, AV_LOG_WARNING, "H.264 bitstream error, startcode missing, size %d", pkt->size);
-        if (pkt->size) av_log(s, AV_LOG_WARNING, " data %08X", AV_RB32(pkt->data));
+        if (pkt->size)
+            av_log(s, AV_LOG_WARNING, " data %08"PRIX32, AV_RB32(pkt->data));
         av_log(s, AV_LOG_WARNING, "\n");
     }
     return 0;
@@ -1420,7 +1452,8 @@ static int check_hevc_startcode(AVFormatContext *s, const AVStream *st, const AV
             return AVERROR_PATCHWELCOME;
         }
         av_log(s, AV_LOG_WARNING, "HEVC bitstream error, startcode missing, size %d", pkt->size);
-        if (pkt->size) av_log(s, AV_LOG_WARNING, " data %08X", AV_RB32(pkt->data));
+        if (pkt->size)
+            av_log(s, AV_LOG_WARNING, " data %08"PRIX32, AV_RB32(pkt->data));
         av_log(s, AV_LOG_WARNING, "\n");
     }
     return 0;
@@ -1538,7 +1571,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 
         do {
             p = avpriv_find_start_code(p, buf_end, &state);
-            av_log(s, AV_LOG_TRACE, "nal %d\n", state & 0x1f);
+            av_log(s, AV_LOG_TRACE, "nal %"PRId32"\n", state & 0x1f);
             if ((state & 0x1f) == 7)
                 extradd = 0;
         } while (p < buf_end && (state & 0x1f) != 9 &&
@@ -1592,9 +1625,39 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
             }
         }
     } else if (st->codecpar->codec_id == AV_CODEC_ID_HEVC) {
+        const uint8_t *p = buf, *buf_end = p + size;
+        uint32_t state = -1;
+        int extradd = (pkt->flags & AV_PKT_FLAG_KEY) ? st->codecpar->extradata_size : 0;
         int ret = check_hevc_startcode(s, st, pkt);
         if (ret < 0)
             return ret;
+
+        if (extradd && AV_RB24(st->codecpar->extradata) > 1)
+            extradd = 0;
+
+        do {
+            p = avpriv_find_start_code(p, buf_end, &state);
+            av_log(s, AV_LOG_TRACE, "nal %"PRId32"\n", (state & 0x7e)>>1);
+            if ((state & 0x7e) == 2*32)
+                extradd = 0;
+        } while (p < buf_end && (state & 0x7e) != 2*35 &&
+                 (state & 0x7e) >= 2*32);
+
+        if ((state & 0x7e) < 2*16 && (state & 0x7e) >= 2*24)
+            extradd = 0;
+        if ((state & 0x7e) != 2*35) { // AUD NAL
+            data = av_malloc(pkt->size + 7 + extradd);
+            if (!data)
+                return AVERROR(ENOMEM);
+            memcpy(data + 7, st->codecpar->extradata, extradd);
+            memcpy(data + 7 + extradd, pkt->data, pkt->size);
+            AV_WB32(data, 0x00000001);
+            data[4] = 2*35;
+            data[5] = 1;
+            data[6] = 0x50; // any slice type (0x4) + rbsp stop one bit
+            buf     = data;
+            size    = pkt->size + 7 + extradd;
+        }
     } else if (st->codecpar->codec_id == AV_CODEC_ID_OPUS) {
         if (pkt->size < 2) {
             av_log(s, AV_LOG_ERROR, "Opus packet too short\n");
@@ -1872,6 +1935,9 @@ static const AVOption options[] = {
     { "system_b", "Conform to System B (DVB) instead of System A (ATSC)",
       0, AV_OPT_TYPE_CONST, { .i64 = MPEGTS_FLAG_SYSTEM_B }, 0, INT_MAX,
       AV_OPT_FLAG_ENCODING_PARAM, "mpegts_flags" },
+    { "initial_discontinuity", "Mark initial packets as discontinuous",
+      0, AV_OPT_TYPE_CONST, { .i64 = MPEGTS_FLAG_DISCONT }, 0, INT_MAX,
+      AV_OPT_FLAG_ENCODING_PARAM, "mpegts_flags" },
     // backward compatibility
     { "resend_headers", "Reemit PAT/PMT before writing the next packet",
       offsetof(MpegTSWrite, reemit_pat_pmt), AV_OPT_TYPE_INT,
@@ -1885,7 +1951,7 @@ static const AVOption options[] = {
     { "omit_video_pes_length", "Omit the PES packet length for video packets",
       offsetof(MpegTSWrite, omit_video_pes_length), AV_OPT_TYPE_BOOL,
       { .i64 = 1 }, 0, 1, AV_OPT_FLAG_ENCODING_PARAM },
-    { "pcr_period", "PCR retransmission time",
+    { "pcr_period", "PCR retransmission time in milliseconds",
       offsetof(MpegTSWrite, pcr_period), AV_OPT_TYPE_INT,
       { .i64 = PCR_RETRANS_TIME }, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { "pat_period", "PAT/PMT retransmission time limit in seconds",

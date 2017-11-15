@@ -147,7 +147,7 @@ static int flac_write_trailer(struct AVFormatContext *s)
     if (!c->write_header || !streaminfo)
         return 0;
 
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         /* rewrite the STREAMINFO header block data */
         file_size = avio_tell(pb);
         avio_seek(pb, 8, SEEK_SET);

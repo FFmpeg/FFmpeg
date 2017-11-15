@@ -112,7 +112,7 @@ static inline void FUNC(idctRowCondDC_extrashift)(int16_t *row, int extra_shift)
 static inline void FUNC(idctRowCondDC)(int16_t *row, int extra_shift)
 #endif
 {
-    int a0, a1, a2, a3, b0, b1, b2, b3;
+    SUINT a0, a1, a2, a3, b0, b1, b2, b3;
 
 #if HAVE_FAST_64BIT
 #define ROW0_MASK (0xffffLL << 48 * HAVE_BIGENDIAN)
@@ -187,14 +187,14 @@ static inline void FUNC(idctRowCondDC)(int16_t *row, int extra_shift)
         MAC(b3, -W1, row[7]);
     }
 
-    row[0] = (a0 + b0) >> (ROW_SHIFT + extra_shift);
-    row[7] = (a0 - b0) >> (ROW_SHIFT + extra_shift);
-    row[1] = (a1 + b1) >> (ROW_SHIFT + extra_shift);
-    row[6] = (a1 - b1) >> (ROW_SHIFT + extra_shift);
-    row[2] = (a2 + b2) >> (ROW_SHIFT + extra_shift);
-    row[5] = (a2 - b2) >> (ROW_SHIFT + extra_shift);
-    row[3] = (a3 + b3) >> (ROW_SHIFT + extra_shift);
-    row[4] = (a3 - b3) >> (ROW_SHIFT + extra_shift);
+    row[0] = (int)(a0 + b0) >> (ROW_SHIFT + extra_shift);
+    row[7] = (int)(a0 - b0) >> (ROW_SHIFT + extra_shift);
+    row[1] = (int)(a1 + b1) >> (ROW_SHIFT + extra_shift);
+    row[6] = (int)(a1 - b1) >> (ROW_SHIFT + extra_shift);
+    row[2] = (int)(a2 + b2) >> (ROW_SHIFT + extra_shift);
+    row[5] = (int)(a2 - b2) >> (ROW_SHIFT + extra_shift);
+    row[3] = (int)(a3 + b3) >> (ROW_SHIFT + extra_shift);
+    row[4] = (int)(a3 - b3) >> (ROW_SHIFT + extra_shift);
 }
 
 #define IDCT_COLS do {                                  \
@@ -250,31 +250,31 @@ static inline void FUNC(idctRowCondDC)(int16_t *row, int extra_shift)
 #ifdef EXTRA_SHIFT
 static inline void FUNC(idctSparseCol_extrashift)(int16_t *col)
 #else
-static inline void FUNC(idctSparseColPut)(pixel *dest, int line_size,
+static inline void FUNC(idctSparseColPut)(pixel *dest, ptrdiff_t line_size,
                                           int16_t *col)
 {
-    int a0, a1, a2, a3, b0, b1, b2, b3;
+    SUINT a0, a1, a2, a3, b0, b1, b2, b3;
 
     IDCT_COLS;
 
-    dest[0] = av_clip_pixel((a0 + b0) >> COL_SHIFT);
+    dest[0] = av_clip_pixel((int)(a0 + b0) >> COL_SHIFT);
     dest += line_size;
-    dest[0] = av_clip_pixel((a1 + b1) >> COL_SHIFT);
+    dest[0] = av_clip_pixel((int)(a1 + b1) >> COL_SHIFT);
     dest += line_size;
-    dest[0] = av_clip_pixel((a2 + b2) >> COL_SHIFT);
+    dest[0] = av_clip_pixel((int)(a2 + b2) >> COL_SHIFT);
     dest += line_size;
-    dest[0] = av_clip_pixel((a3 + b3) >> COL_SHIFT);
+    dest[0] = av_clip_pixel((int)(a3 + b3) >> COL_SHIFT);
     dest += line_size;
-    dest[0] = av_clip_pixel((a3 - b3) >> COL_SHIFT);
+    dest[0] = av_clip_pixel((int)(a3 - b3) >> COL_SHIFT);
     dest += line_size;
-    dest[0] = av_clip_pixel((a2 - b2) >> COL_SHIFT);
+    dest[0] = av_clip_pixel((int)(a2 - b2) >> COL_SHIFT);
     dest += line_size;
-    dest[0] = av_clip_pixel((a1 - b1) >> COL_SHIFT);
+    dest[0] = av_clip_pixel((int)(a1 - b1) >> COL_SHIFT);
     dest += line_size;
-    dest[0] = av_clip_pixel((a0 - b0) >> COL_SHIFT);
+    dest[0] = av_clip_pixel((int)(a0 - b0) >> COL_SHIFT);
 }
 
-static inline void FUNC(idctSparseColAdd)(pixel *dest, int line_size,
+static inline void FUNC(idctSparseColAdd)(pixel *dest, ptrdiff_t line_size,
                                           int16_t *col)
 {
     int a0, a1, a2, a3, b0, b1, b2, b3;
@@ -316,7 +316,7 @@ static inline void FUNC(idctSparseCol)(int16_t *col)
 }
 
 #ifndef EXTRA_SHIFT
-void FUNC(ff_simple_idct_put)(uint8_t *dest_, int line_size, int16_t *block)
+void FUNC(ff_simple_idct_put)(uint8_t *dest_, ptrdiff_t line_size, int16_t *block)
 {
     pixel *dest = (pixel *)dest_;
     int i;
@@ -330,7 +330,7 @@ void FUNC(ff_simple_idct_put)(uint8_t *dest_, int line_size, int16_t *block)
         FUNC(idctSparseColPut)(dest + i, line_size, block + i);
 }
 
-void FUNC(ff_simple_idct_add)(uint8_t *dest_, int line_size, int16_t *block)
+void FUNC(ff_simple_idct_add)(uint8_t *dest_, ptrdiff_t line_size, int16_t *block)
 {
     pixel *dest = (pixel *)dest_;
     int i;

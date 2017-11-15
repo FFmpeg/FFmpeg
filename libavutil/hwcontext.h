@@ -25,11 +25,15 @@
 #include "pixfmt.h"
 
 enum AVHWDeviceType {
+    AV_HWDEVICE_TYPE_NONE,
     AV_HWDEVICE_TYPE_VDPAU,
     AV_HWDEVICE_TYPE_CUDA,
     AV_HWDEVICE_TYPE_VAAPI,
     AV_HWDEVICE_TYPE_DXVA2,
     AV_HWDEVICE_TYPE_QSV,
+    AV_HWDEVICE_TYPE_VIDEOTOOLBOX,
+    AV_HWDEVICE_TYPE_D3D11VA,
+    AV_HWDEVICE_TYPE_DRM,
 };
 
 typedef struct AVHWDeviceInternal AVHWDeviceInternal;
@@ -223,10 +227,36 @@ typedef struct AVHWFramesContext {
 } AVHWFramesContext;
 
 /**
- * Allocate an AVHWDeviceContext for a given pixel format.
+ * Look up an AVHWDeviceType by name.
  *
- * @param format a hwaccel pixel format (AV_PIX_FMT_FLAG_HWACCEL must be set
- *               on the corresponding format descriptor)
+ * @param name String name of the device type (case-insensitive).
+ * @return The type from enum AVHWDeviceType, or AV_HWDEVICE_TYPE_NONE if
+ *         not found.
+ */
+enum AVHWDeviceType av_hwdevice_find_type_by_name(const char *name);
+
+/** Get the string name of an AVHWDeviceType.
+ *
+ * @param type Type from enum AVHWDeviceType.
+ * @return Pointer to a static string containing the name, or NULL if the type
+ *         is not valid.
+ */
+const char *av_hwdevice_get_type_name(enum AVHWDeviceType type);
+
+/**
+ * Iterate over supported device types.
+ *
+ * @param type AV_HWDEVICE_TYPE_NONE initially, then the previous type
+ *             returned by this function in subsequent iterations.
+ * @return The next usable device type from enum AVHWDeviceType, or
+ *         AV_HWDEVICE_TYPE_NONE if there are no more.
+ */
+enum AVHWDeviceType av_hwdevice_iterate_types(enum AVHWDeviceType prev);
+
+/**
+ * Allocate an AVHWDeviceContext for a given hardware type.
+ *
+ * @param type the type of the hardware device to allocate.
  * @return a reference to the newly created AVHWDeviceContext on success or NULL
  *         on failure.
  */
@@ -269,6 +299,32 @@ int av_hwdevice_ctx_init(AVBufferRef *ref);
  */
 int av_hwdevice_ctx_create(AVBufferRef **device_ctx, enum AVHWDeviceType type,
                            const char *device, AVDictionary *opts, int flags);
+
+/**
+ * Create a new device of the specified type from an existing device.
+ *
+ * If the source device is a device of the target type or was originally
+ * derived from such a device (possibly through one or more intermediate
+ * devices of other types), then this will return a reference to the
+ * existing device of the same type as is requested.
+ *
+ * Otherwise, it will attempt to derive a new device from the given source
+ * device.  If direct derivation to the new type is not implemented, it will
+ * attempt the same derivation from each ancestor of the source device in
+ * turn looking for an implemented derivation method.
+ *
+ * @param dst_ctx On success, a reference to the newly-created
+ *                AVHWDeviceContext.
+ * @param type    The type of the new device to create.
+ * @param src_ctx A reference to an existing AVHWDeviceContext which will be
+ *                used to create the new device.
+ * @param flags   Currently unused; should be set to zero.
+ * @return        Zero on success, a negative AVERROR code on failure.
+ */
+int av_hwdevice_ctx_create_derived(AVBufferRef **dst_ctx,
+                                   enum AVHWDeviceType type,
+                                   AVBufferRef *src_ctx, int flags);
+
 
 /**
  * Allocate an AVHWFramesContext tied to a given device context.
@@ -317,6 +373,14 @@ int av_hwframe_get_buffer(AVBufferRef *hwframe_ctx, AVFrame *frame, int flags);
  * data buffers will be allocated by this function using av_frame_get_buffer().
  * If dst->format is set, then this format will be used, otherwise (when
  * dst->format is AV_PIX_FMT_NONE) the first acceptable format will be chosen.
+ *
+ * The two frames must have matching allocated dimensions (i.e. equal to
+ * AVHWFramesContext.width/height), since not all device types support
+ * transferring a sub-rectangle of the whole surface. The display dimensions
+ * (i.e. AVFrame.width/height) may be smaller than the allocated dimensions, but
+ * also have to be equal for both frames. When the display dimensions are
+ * smaller than the allocated dimensions, the content of the padding in the
+ * destination frame is unspecified.
  *
  * @param dst the destination frame. dst is not touched on failure.
  * @param src the source frame.
@@ -410,7 +474,7 @@ void *av_hwdevice_hwconfig_alloc(AVBufferRef *device_ctx);
  * configuration is provided, returns the maximum possible capabilities
  * of the device.
  *
- * @param device_ctx a reference to the associated AVHWDeviceContext.
+ * @param ref a reference to the associated AVHWDeviceContext.
  * @param hwconfig a filled HW-specific configuration structure, or NULL
  *        to return the maximum possible capabilities of the device.
  * @return AVHWFramesConstraints structure describing the constraints
@@ -425,5 +489,94 @@ AVHWFramesConstraints *av_hwdevice_get_hwframe_constraints(AVBufferRef *ref,
  * @param constraints The (filled or unfilled) AVHWFrameConstraints structure.
  */
 void av_hwframe_constraints_free(AVHWFramesConstraints **constraints);
+
+
+/**
+ * Flags to apply to frame mappings.
+ */
+enum {
+    /**
+     * The mapping must be readable.
+     */
+    AV_HWFRAME_MAP_READ      = 1 << 0,
+    /**
+     * The mapping must be writeable.
+     */
+    AV_HWFRAME_MAP_WRITE     = 1 << 1,
+    /**
+     * The mapped frame will be overwritten completely in subsequent
+     * operations, so the current frame data need not be loaded.  Any values
+     * which are not overwritten are unspecified.
+     */
+    AV_HWFRAME_MAP_OVERWRITE = 1 << 2,
+    /**
+     * The mapping must be direct.  That is, there must not be any copying in
+     * the map or unmap steps.  Note that performance of direct mappings may
+     * be much lower than normal memory.
+     */
+    AV_HWFRAME_MAP_DIRECT    = 1 << 3,
+};
+
+/**
+ * Map a hardware frame.
+ *
+ * This has a number of different possible effects, depending on the format
+ * and origin of the src and dst frames.  On input, src should be a usable
+ * frame with valid buffers and dst should be blank (typically as just created
+ * by av_frame_alloc()).  src should have an associated hwframe context, and
+ * dst may optionally have a format and associated hwframe context.
+ *
+ * If src was created by mapping a frame from the hwframe context of dst,
+ * then this function undoes the mapping - dst is replaced by a reference to
+ * the frame that src was originally mapped from.
+ *
+ * If both src and dst have an associated hwframe context, then this function
+ * attempts to map the src frame from its hardware context to that of dst and
+ * then fill dst with appropriate data to be usable there.  This will only be
+ * possible if the hwframe contexts and associated devices are compatible -
+ * given compatible devices, av_hwframe_ctx_create_derived() can be used to
+ * create a hwframe context for dst in which mapping should be possible.
+ *
+ * If src has a hwframe context but dst does not, then the src frame is
+ * mapped to normal memory and should thereafter be usable as a normal frame.
+ * If the format is set on dst, then the mapping will attempt to create dst
+ * with that format and fail if it is not possible.  If format is unset (is
+ * AV_PIX_FMT_NONE) then dst will be mapped with whatever the most appropriate
+ * format to use is (probably the sw_format of the src hwframe context).
+ *
+ * A return value of AVERROR(ENOSYS) indicates that the mapping is not
+ * possible with the given arguments and hwframe setup, while other return
+ * values indicate that it failed somehow.
+ *
+ * @param dst Destination frame, to contain the mapping.
+ * @param src Source frame, to be mapped.
+ * @param flags Some combination of AV_HWFRAME_MAP_* flags.
+ * @return Zero on success, negative AVERROR code on failure.
+ */
+int av_hwframe_map(AVFrame *dst, const AVFrame *src, int flags);
+
+
+/**
+ * Create and initialise an AVHWFramesContext as a mapping of another existing
+ * AVHWFramesContext on a different device.
+ *
+ * av_hwframe_ctx_init() should not be called after this.
+ *
+ * @param derived_frame_ctx  On success, a reference to the newly created
+ *                           AVHWFramesContext.
+ * @param derived_device_ctx A reference to the device to create the new
+ *                           AVHWFramesContext on.
+ * @param source_frame_ctx   A reference to an existing AVHWFramesContext
+ *                           which will be mapped to the derived context.
+ * @param flags  Some combination of AV_HWFRAME_MAP_* flags, defining the
+ *               mapping parameters to apply to frames which are allocated
+ *               in the derived device.
+ * @return       Zero on success, negative AVERROR code on failure.
+ */
+int av_hwframe_ctx_create_derived(AVBufferRef **derived_frame_ctx,
+                                  enum AVPixelFormat format,
+                                  AVBufferRef *derived_device_ctx,
+                                  AVBufferRef *source_frame_ctx,
+                                  int flags);
 
 #endif /* AVUTIL_HWCONTEXT_H */

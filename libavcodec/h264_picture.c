@@ -41,7 +41,6 @@
 #include "mpegutils.h"
 #include "rectangle.h"
 #include "thread.h"
-#include "vdpau_compat.h"
 
 void ff_h264_unref_picture(H264Context *h, H264Picture *pic)
 {
@@ -70,8 +69,8 @@ int ff_h264_ref_picture(H264Context *h, H264Picture *dst, H264Picture *src)
 
     av_assert0(!dst->f->buf[0]);
     av_assert0(src->f->buf[0]);
+    av_assert0(src->tf.f == src->f);
 
-    src->tf.f = src->f;
     dst->tf.f = dst->f;
     ret = ff_thread_ref_frame(&dst->tf, &src->tf);
     if (ret < 0)
@@ -109,14 +108,10 @@ int ff_h264_ref_picture(H264Context *h, H264Picture *dst, H264Picture *src)
     dst->poc           = src->poc;
     dst->frame_num     = src->frame_num;
     dst->mmco_reset    = src->mmco_reset;
-    dst->pic_id        = src->pic_id;
     dst->long_ref      = src->long_ref;
     dst->mbaff         = src->mbaff;
     dst->field_picture = src->field_picture;
     dst->reference     = src->reference;
-    dst->crop          = src->crop;
-    dst->crop_left     = src->crop_left;
-    dst->crop_top      = src->crop_top;
     dst->recovered     = src->recovered;
     dst->invalid_gap   = src->invalid_gap;
     dst->sei_recovery_frame_cnt = src->sei_recovery_frame_cnt;
@@ -156,12 +151,6 @@ int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup)
     int err = 0;
     h->mb_y = 0;
 
-#if FF_API_CAP_VDPAU
-    if (CONFIG_H264_VDPAU_DECODER &&
-        h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU)
-        ff_vdpau_h264_set_reference_frames(h);
-#endif
-
     if (in_setup || !(avctx->active_thread_type & FF_THREAD_FRAME)) {
         if (!h->droppable) {
             err = ff_h264_execute_ref_pic_marking(h);
@@ -178,12 +167,6 @@ int ff_h264_field_end(H264Context *h, H264SliceContext *sl, int in_setup)
             av_log(avctx, AV_LOG_ERROR,
                    "hardware accelerator failed to decode picture\n");
     }
-
-#if FF_API_CAP_VDPAU
-    if (CONFIG_H264_VDPAU_DECODER &&
-        h->avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU)
-        ff_vdpau_h264_picture_complete(h);
-#endif
 
     if (!in_setup && !h->droppable)
         ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX,

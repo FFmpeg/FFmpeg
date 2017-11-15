@@ -23,9 +23,14 @@
 
 #include "bufferqueue.h"
 
+enum EOFAction {
+    EOF_ACTION_REPEAT,
+    EOF_ACTION_ENDALL,
+    EOF_ACTION_PASS
+};
+
 /*
  * TODO
- * Callback-based API similar to dualinput.
  * Export convenient options.
  */
 
@@ -41,16 +46,9 @@
  * situations where some stream extend beyond the beginning or the end of
  * others can be configured.
  *
- * The basic working of this API is the following:
- *
- * - When a frame is available on any input, add it using
- *   ff_framesync_add_frame().
- *
- * - When a frame event is ready to be processed (i.e. after adding a frame
- *   or when requested on input):
- *   - call ff_framesync_next();
- *   - if fs->frame_ready is true, process the frames;
- *   - call ff_framesync_drop().
+ * The basic working of this API is the following: set the on_event
+ * callback, then call ff_framesync_activate() from the filter's activate
+ * callback.
  */
 
 /**
@@ -81,11 +79,6 @@ enum FFFrameSyncExtMode {
  * Input stream structure
  */
 typedef struct FFFrameSyncIn {
-
-    /**
-     * Queue of incoming AVFrame, and NULL to mark EOF
-     */
-    struct FFBufQueue queue;
 
     /**
      * Extrapolation mode for timestamps before the first frame
@@ -152,7 +145,11 @@ typedef struct FFFrameSyncIn {
  */
 typedef struct FFFrameSync {
     const AVClass *class;
-    void *parent;
+
+    /**
+     * Parent filter context.
+     */
+    AVFilterContext *parent;
 
     /**
      * Number of input streams
@@ -205,19 +202,37 @@ typedef struct FFFrameSync {
      */
     FFFrameSyncIn *in;
 
+    int opt_repeatlast;
+    int opt_shortest;
+    int opt_eof_action;
+
 } FFFrameSync;
+
+/**
+ * Get the class for the framesync object.
+ */
+const AVClass *framesync_get_class(void);
+
+/**
+ * Pre-initialize a frame sync structure.
+ *
+ * It sets the class pointer and inits the options to their default values.
+ * The entire structure is expected to be already set to 0.
+ * This step is optional, but necessary to use the options.
+ */
+void ff_framesync_preinit(FFFrameSync *fs);
 
 /**
  * Initialize a frame sync structure.
  *
- * The entire structure is expected to be already set to 0.
+ * The entire structure is expected to be already set to 0 or preinited.
  *
  * @param  fs      frame sync structure to initialize
- * @param  parent  parent object, used for logging
+ * @param  parent  parent AVFilterContext object
  * @param  nb_in   number of inputs
  * @return  >= 0 for success or a negative error code
  */
-int ff_framesync_init(FFFrameSync *fs, void *parent, unsigned nb_in);
+int ff_framesync_init(FFFrameSync *fs, AVFilterContext *parent, unsigned nb_in);
 
 /**
  * Configure a frame sync structure.
@@ -234,29 +249,6 @@ int ff_framesync_configure(FFFrameSync *fs);
 void ff_framesync_uninit(FFFrameSync *fs);
 
 /**
- * Add a frame to an input
- *
- * Typically called from the filter_frame() method.
- *
- * @param fs     frame sync structure
- * @param in     index of the input
- * @param frame  input frame, or NULL for EOF
- */
-int ff_framesync_add_frame(FFFrameSync *fs, unsigned in, AVFrame *frame);
-
-/**
- * Prepare the next frame event.
- *
- * The status of the operation can be found in fs->frame_ready and fs->eof.
- */
-void ff_framesync_next(FFFrameSync *fs);
-
-/**
- * Drop the current frame event.
- */
-void ff_framesync_drop(FFFrameSync *fs);
-
-/**
  * Get the current frame in an input.
  *
  * @param fs      frame sync structure
@@ -267,31 +259,63 @@ void ff_framesync_drop(FFFrameSync *fs);
  *                duplicated or removed from the framesync structure
  */
 int ff_framesync_get_frame(FFFrameSync *fs, unsigned in, AVFrame **rframe,
-                           unsigned get);
+                            unsigned get);
 
 /**
- * Process one or several frame using the on_event callback.
+ * Examine the frames in the filter's input and try to produce output.
  *
- * @return  number of frames processed or negative error code
+ * This function can be the complete implementation of the activate
+ * method of a filter using framesync.
  */
-int ff_framesync_process_frame(FFFrameSync *fs, unsigned all);
-
-
-/**
- * Accept a frame on a filter input.
- *
- * This function can be the complete implementation of all filter_frame
- * methods of a filter using framesync.
- */
-int ff_framesync_filter_frame(FFFrameSync *fs, AVFilterLink *inlink,
-                              AVFrame *in);
+int ff_framesync_activate(FFFrameSync *fs);
 
 /**
- * Request a frame on the filter output.
+ * Initialize a frame sync structure for dualinput.
  *
- * This function can be the complete implementation of all filter_frame
- * methods of a filter using framesync if it has only one output.
+ * Compared to generic framesync, dualinput assumes the first input is the
+ * main one and the filtering is performed on it. The first input will be
+ * the only one with sync set and generic timeline support will just pass it
+ * unchanged when disabled.
+ *
+ * Equivalent to ff_framesync_init(fs, parent, 2) then setting the time
+ * base, sync and ext modes on the inputs.
  */
-int ff_framesync_request_frame(FFFrameSync *fs, AVFilterLink *outlink);
+int ff_framesync_init_dualinput(FFFrameSync *fs, AVFilterContext *parent);
+
+/**
+ * @param f0  used to return the main frame
+ * @param f1  used to return the second frame, or NULL if disabled
+ * @return  >=0 for success or AVERROR code
+ */
+int ff_framesync_dualinput_get(FFFrameSync *fs, AVFrame **f0, AVFrame **f1);
+
+/**
+ * Same as ff_framesync_dualinput_get(), but make sure that f0 is writable.
+ */
+int ff_framesync_dualinput_get_writable(FFFrameSync *fs, AVFrame **f0, AVFrame **f1);
+
+#define FRAMESYNC_DEFINE_CLASS(name, context, field) \
+static int name##_framesync_preinit(AVFilterContext *ctx) { \
+    context *s = ctx->priv; \
+    ff_framesync_preinit(&s->field); \
+    return 0; \
+} \
+static const AVClass *name##_child_class_next(const AVClass *prev) { \
+    return prev ? NULL : framesync_get_class(); \
+} \
+static void *name##_child_next(void *obj, void *prev) { \
+    context *s = obj; \
+    s->fs.class = framesync_get_class(); /* FIXME */ \
+    return prev ? NULL : &s->field; \
+} \
+static const AVClass name##_class = { \
+    .class_name       = #name, \
+    .item_name        = av_default_item_name, \
+    .option           = name##_options, \
+    .version          = LIBAVUTIL_VERSION_INT, \
+    .category         = AV_CLASS_CATEGORY_FILTER, \
+    .child_class_next = name##_child_class_next, \
+    .child_next       = name##_child_next, \
+}
 
 #endif /* AVFILTER_FRAMESYNC_H */

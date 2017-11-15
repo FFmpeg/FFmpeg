@@ -126,6 +126,7 @@ static int daala_header(AVFormatContext *s, int idx)
         if (hdr->gpshift >= 32) {
             av_log(s, AV_LOG_ERROR, "Too large gpshift %d (>= 32).\n",
                    hdr->gpshift);
+            hdr->gpshift = 0;
             return AVERROR_INVALIDDATA;
         }
         hdr->gpmask  = (1U << hdr->gpshift) - 1;
@@ -232,7 +233,7 @@ static int daala_packet(AVFormatContext *s, int idx)
         os->lastpts = os->lastdts = daala_gptopts(s, idx, os->granule, NULL) - duration;
         if(s->streams[idx]->start_time == AV_NOPTS_VALUE) {
             s->streams[idx]->start_time = os->lastpts;
-            if (s->streams[idx]->duration)
+            if (s->streams[idx]->duration != AV_NOPTS_VALUE)
                 s->streams[idx]->duration -= s->streams[idx]->start_time;
         }
     }

@@ -120,7 +120,7 @@ static void filter(AVFilterContext *ctx)
     Type type, best_type;
     RepeatedField repeat;
     int match = 0;
-    AVDictionary **metadata = avpriv_frame_get_metadatap(idet->cur);
+    AVDictionary **metadata = &idet->cur->metadata;
 
     for (i = 0; i < idet->csp->nb_components; i++) {
         int w = idet->cur->width;

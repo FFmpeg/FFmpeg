@@ -1,6 +1,6 @@
 05d66e60ab22ee004720e0051af0fe74 *tests/data/fate/h264_mp4toannexb_ticket2991.h264
 1985815 tests/data/fate/h264_mp4toannexb_ticket2991.h264
-#extradata 0:       79, 0x1ec61105
+#extradata 0:       47, 0x3a590d55
 #tb 0: 1/1200000
 #media_type 0: video
 #codec_id 0: h264

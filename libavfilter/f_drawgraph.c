@@ -200,7 +200,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_frame_copy_props(out, in);
     }
 
-    metadata = av_frame_get_metadata(in);
+    metadata = in->metadata;
 
     for (i = 0; i < 4; i++) {
         double values[VAR_VARS_NB];

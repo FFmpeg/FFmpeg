@@ -252,14 +252,7 @@ static inline void put_vlc_symbol(PutBitContext *pb, VlcState *const state,
 
     av_assert2(k <= 13);
 
-#if 0 // JPEG LS
-    if (k == 0 && 2 * state->drift <= -state->count)
-        code = v ^ (-1);
-    else
-        code = v;
-#else
     code = v ^ ((2 * state->drift + state->count) >> 31);
-#endif
 
     ff_dlog(NULL, "v:%d/%d bias:%d error:%d drift:%d count:%d k:%d\n", v, code,
             state->bias, state->error_sum, state->drift, state->count, k);
@@ -573,15 +566,22 @@ FF_ENABLE_DEPRECATION_WARNINGS
     case AV_PIX_FMT_YUVA420P9:
         if (!avctx->bits_per_raw_sample)
             s->bits_per_raw_sample = 9;
+    case AV_PIX_FMT_GRAY10:
     case AV_PIX_FMT_YUV444P10:
     case AV_PIX_FMT_YUV420P10:
     case AV_PIX_FMT_YUV422P10:
     case AV_PIX_FMT_YUVA444P10:
     case AV_PIX_FMT_YUVA422P10:
     case AV_PIX_FMT_YUVA420P10:
-        s->packed_at_lsb = 1;
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
             s->bits_per_raw_sample = 10;
+    case AV_PIX_FMT_GRAY12:
+    case AV_PIX_FMT_YUV444P12:
+    case AV_PIX_FMT_YUV420P12:
+    case AV_PIX_FMT_YUV422P12:
+        s->packed_at_lsb = 1;
+        if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
+            s->bits_per_raw_sample = 12;
     case AV_PIX_FMT_GRAY16:
     case AV_PIX_FMT_YUV444P16:
     case AV_PIX_FMT_YUV422P16:
@@ -754,7 +754,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (!s->chroma_planes && s->version > 3)
         s->plane_count--;
 
-    avcodec_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_h_shift, &s->chroma_v_shift);
+    ret = av_pix_fmt_get_chroma_sub_sample (avctx->pix_fmt, &s->chroma_h_shift, &s->chroma_v_shift);
+    if (ret)
+        return ret;
+
     s->picture_number = 0;
 
     if (avctx->flags & (AV_CODEC_FLAG_PASS1 | AV_CODEC_FLAG_PASS2)) {
@@ -848,10 +851,22 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
     if (s->version > 1) {
+        int plane_count = 1 + 2*s->chroma_planes + s->transparency;
+        int max_h_slices = AV_CEIL_RSHIFT(avctx->width , s->chroma_h_shift);
+        int max_v_slices = AV_CEIL_RSHIFT(avctx->height, s->chroma_v_shift);
         s->num_v_slices = (avctx->width > 352 || avctx->height > 288 || !avctx->slices) ? 2 : 1;
-        for (; s->num_v_slices < 9; s->num_v_slices++) {
+
+        s->num_v_slices = FFMIN(s->num_v_slices, max_v_slices);
+
+        for (; s->num_v_slices < 32; s->num_v_slices++) {
             for (s->num_h_slices = s->num_v_slices; s->num_h_slices < 2*s->num_v_slices; s->num_h_slices++) {
-                if (avctx->slices == s->num_h_slices * s->num_v_slices && avctx->slices <= 64 || !avctx->slices)
+                int maxw = (avctx->width  + s->num_h_slices - 1) / s->num_h_slices;
+                int maxh = (avctx->height + s->num_v_slices - 1) / s->num_v_slices;
+                if (s->num_h_slices > max_h_slices || s->num_v_slices > max_v_slices)
+                    continue;
+                if (maxw * maxh * (int64_t)(s->bits_per_raw_sample+1) * plane_count > 8<<24)
+                    continue;
+                if (avctx->slices == s->num_h_slices * s->num_v_slices && avctx->slices <= MAX_SLICES || !avctx->slices)
                     goto slices_ok;
             }
         }
@@ -1089,7 +1104,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     FFV1Context *f      = avctx->priv_data;
     RangeCoder *const c = &f->slice_context[0]->c;
     AVFrame *const p    = f->picture.f;
-    int used_count      = 0;
     uint8_t keystate    = 128;
     uint8_t *buf_p;
     int i, ret;
@@ -1145,6 +1159,11 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if (f->version > 3)
         maxsize = AV_INPUT_BUFFER_MIN_SIZE + avctx->width*avctx->height*3LL*4;
 
+    if (maxsize > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE - 32) {
+        av_log(avctx, AV_LOG_WARNING, "Cannot allocate worst case packet size, the encoding could fail\n");
+        maxsize = INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE - 32;
+    }
+
     if ((ret = ff_alloc_packet2(avctx, pkt, maxsize, 0)) < 0)
         return ret;
 
@@ -1178,11 +1197,17 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
 
-    for (i = 1; i < f->slice_count; i++) {
+    for (i = 0; i < f->slice_count; i++) {
         FFV1Context *fs = f->slice_context[i];
-        uint8_t *start  = pkt->data + (pkt->size - used_count) * (int64_t)i / f->slice_count;
+        uint8_t *start  = pkt->data + pkt->size * (int64_t)i / f->slice_count;
         int len         = pkt->size / f->slice_count;
-        ff_init_range_encoder(&fs->c, start, len);
+        if (i) {
+            ff_init_range_encoder(&fs->c, start, len);
+        } else {
+            av_assert0(fs->c.bytestream_end >= fs->c.bytestream_start + len);
+            av_assert0(fs->c.bytestream < fs->c.bytestream_start + len);
+            fs->c.bytestream_end = fs->c.bytestream_start + len;
+        }
     }
     avctx->execute(avctx, encode_slice, &f->slice_context[0], NULL,
                    f->slice_count, sizeof(void *));
@@ -1292,12 +1317,14 @@ AVCodec ff_ffv1_encoder = {
         AV_PIX_FMT_YUV410P,   AV_PIX_FMT_0RGB32,    AV_PIX_FMT_RGB32,     AV_PIX_FMT_YUV420P16,
         AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16, AV_PIX_FMT_YUV444P9,  AV_PIX_FMT_YUV422P9,
         AV_PIX_FMT_YUV420P9,  AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
+        AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV444P12,
         AV_PIX_FMT_YUVA444P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA420P16,
         AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA420P10,
         AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA420P9,
         AV_PIX_FMT_GRAY16,    AV_PIX_FMT_GRAY8,     AV_PIX_FMT_GBRP9,     AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_GBRP12,    AV_PIX_FMT_GBRP14,
         AV_PIX_FMT_YA8,
+        AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12,
         AV_PIX_FMT_GBRP16, AV_PIX_FMT_RGB48,
         AV_PIX_FMT_NONE
 

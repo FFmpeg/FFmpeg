@@ -31,7 +31,7 @@
 #include "formats.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct FilterParam {
     float radius;
     float pre_filter_radius;
     float strength;
@@ -46,7 +46,7 @@ typedef struct {
     int color_diff_coeff[COLOR_DIFF_COEFF_SIZE];
 } FilterParam;
 
-typedef struct {
+typedef struct SabContext {
     const AVClass *class;
     FilterParam  luma;
     FilterParam  chroma;

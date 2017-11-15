@@ -133,7 +133,7 @@ static void horizontal_compose_haar1i##ext(uint8_t *_b, uint8_t *_tmp, int w)\
 }\
 \
 
-#if HAVE_YASM
+#if HAVE_X86ASM
 #if !ARCH_X86_64
 COMPOSE_VERTICAL(_mmx, 4)
 #endif
@@ -160,7 +160,7 @@ static void horizontal_compose_dd97i_ssse3(uint8_t *_b, uint8_t *_tmp, int w)
 
 void ff_spatial_idwt_init_x86(DWTContext *d, enum dwt_type type)
 {
-#if HAVE_YASM
+#if HAVE_X86ASM
   int mm_flags = av_get_cpu_flags();
 
 #if !ARCH_X86_64
@@ -225,5 +225,5 @@ void ff_spatial_idwt_init_x86(DWTContext *d, enum dwt_type type)
         d->horizontal_compose = horizontal_compose_dd97i_ssse3;
         break;
     }
-#endif // HAVE_YASM
+#endif // HAVE_X86ASM
 }

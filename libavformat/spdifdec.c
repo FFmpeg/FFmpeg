@@ -25,18 +25,22 @@
  * @author Anssi Hannula
  */
 
+#include "libavutil/bswap.h"
+
+#include "libavcodec/ac3.h"
+#include "libavcodec/adts_parser.h"
+
 #include "avformat.h"
 #include "spdif.h"
-#include "libavcodec/ac3.h"
-#include "libavcodec/aacadtsdec.h"
 
 static int spdif_get_offset_and_codec(AVFormatContext *s,
                                       enum IEC61937DataType data_type,
                                       const char *buf, int *offset,
                                       enum AVCodecID *codec)
 {
-    AACADTSHeaderInfo aac_hdr;
-    GetBitContext gbc;
+    uint32_t samples;
+    uint8_t frames;
+    int ret;
 
     switch (data_type & 0xff) {
     case IEC61937_AC3:
@@ -56,13 +60,13 @@ static int spdif_get_offset_and_codec(AVFormatContext *s,
         *codec = AV_CODEC_ID_MP3;
         break;
     case IEC61937_MPEG2_AAC:
-        init_get_bits(&gbc, buf, AAC_ADTS_HEADER_SIZE * 8);
-        if (avpriv_aac_parse_header(&gbc, &aac_hdr) < 0) {
+        ret = av_adts_header_parse(buf, &samples, &frames);
+        if (ret < 0) {
             if (s) /* be silent during a probe */
                 av_log(s, AV_LOG_ERROR, "Invalid AAC packet in IEC 61937\n");
-            return AVERROR_INVALIDDATA;
+            return ret;
         }
-        *offset = aac_hdr.samples << 2;
+        *offset = samples << 2;
         *codec = AV_CODEC_ID_AAC;
         break;
     case IEC61937_MPEG2_LAYER1_LSF:
@@ -100,7 +104,7 @@ static int spdif_get_offset_and_codec(AVFormatContext *s,
 }
 
 /* Largest offset between bursts we currently handle, i.e. AAC with
-   aac_hdr.samples = 4096 */
+   samples = 4096 */
 #define SPDIF_MAX_OFFSET 16384
 
 static int spdif_probe(AVProbeData *p)
@@ -132,7 +136,7 @@ int ff_spdif_probe(const uint8_t *p_buf, int buf_size, enum AVCodecID *codec)
             } else
                 consecutive_codes = 0;
 
-            if (buf + 4 + AAC_ADTS_HEADER_SIZE > p_buf + buf_size)
+            if (buf + 4 + AV_AAC_ADTS_HEADER_SIZE > p_buf + buf_size)
                 break;
 
             /* continue probing to find more sync codes */

@@ -86,23 +86,24 @@ static const uint32_t T[64] = { // T[i]= fabs(sin(i+1)<<32)
                                                                         \
         if (i < 32) {                                                   \
             if (i < 16)                                                 \
-                a += (d ^ (b & (c ^ d)))  + X[       i  & 15];          \
+                a += (d ^ (b & (c ^ d)))  + AV_RL32(X+(       i  & 15));\
             else                                                        \
-                a += ((d & b) | (~d & c)) + X[(1 + 5*i) & 15];          \
+                a += ((d & b) | (~d & c)) + AV_RL32(X+((1 + 5*i) & 15));\
         } else {                                                        \
             if (i < 48)                                                 \
-                a += (b ^ c ^ d)          + X[(5 + 3*i) & 15];          \
+                a += (b ^ c ^ d)          + AV_RL32(X+((5 + 3*i) & 15));\
             else                                                        \
-                a += (c ^ (b | ~d))       + X[(    7*i) & 15];          \
+                a += (c ^ (b | ~d))       + AV_RL32(X+((    7*i) & 15));\
         }                                                               \
         a = b + (a << t | a >> (32 - t));                               \
     } while (0)
 
-static void body(uint32_t ABCD[4], uint32_t *src, int nblocks)
+static void body(uint32_t ABCD[4], const uint8_t *src, int nblocks)
 {
     int i av_unused;
     int n;
-    uint32_t a, b, c, d, t, *X;
+    const uint32_t *X;
+    uint32_t a, b, c, d, t;
 
     for (n = 0; n < nblocks; n++) {
         a = ABCD[3];
@@ -110,12 +111,7 @@ static void body(uint32_t ABCD[4], uint32_t *src, int nblocks)
         c = ABCD[1];
         d = ABCD[0];
 
-        X = src + n * 16;
-
-#if HAVE_BIGENDIAN
-        for (i = 0; i < 16; i++)
-            X[i] = av_bswap32(X[i]);
-#endif
+        X = (const uint32_t *)src + n * 16;
 
 #if CONFIG_SMALL
         for (i = 0; i < 64; i++) {
@@ -154,7 +150,11 @@ void av_md5_init(AVMD5 *ctx)
     ctx->ABCD[3] = 0x67452301;
 }
 
+#if FF_API_CRYPTO_SIZE_T
 void av_md5_update(AVMD5 *ctx, const uint8_t *src, int len)
+#else
+void av_md5_update(AVMD5 *ctx, const uint8_t *src, size_t len)
+#endif
 {
     const uint8_t *end;
     int j;
@@ -169,19 +169,19 @@ void av_md5_update(AVMD5 *ctx, const uint8_t *src, int len)
         len -= cnt;
         if (j + cnt < 64)
             return;
-        body(ctx->ABCD, (uint32_t *)ctx->block, 1);
+        body(ctx->ABCD, ctx->block, 1);
     }
 
     end = src + (len & ~63);
-    if (HAVE_BIGENDIAN || (!HAVE_FAST_UNALIGNED && ((intptr_t)src & 3))) {
+    if (!HAVE_FAST_UNALIGNED && ((intptr_t)src & 3)) {
        while (src < end) {
            memcpy(ctx->block, src, 64);
-           body(ctx->ABCD, (uint32_t *) ctx->block, 1);
+           body(ctx->ABCD, ctx->block, 1);
            src += 64;
         }
     } else {
         int nblocks = len / 64;
-        body(ctx->ABCD, (uint32_t *)src, nblocks);
+        body(ctx->ABCD, src, nblocks);
         src = end;
     }
     len &= 63;
@@ -204,7 +204,11 @@ void av_md5_final(AVMD5 *ctx, uint8_t *dst)
         AV_WL32(dst + 4 * i, ctx->ABCD[3 - i]);
 }
 
+#if FF_API_CRYPTO_SIZE_T
 void av_md5_sum(uint8_t *dst, const uint8_t *src, const int len)
+#else
+void av_md5_sum(uint8_t *dst, const uint8_t *src, size_t len)
+#endif
 {
     AVMD5 ctx;
 

@@ -68,7 +68,6 @@ Set the number of channels. Default is 2.
 AVFoundation input device.
 
 AVFoundation is the currently recommended framework by Apple for streamgrabbing on OSX >= 10.7 as well as on iOS.
-The older QTKit framework has been marked deprecated since OSX version 10.7.
 
 The input filename has to be given in the following syntax:
 @example
@@ -215,8 +214,9 @@ need to configure with the appropriate @code{--extra-cflags}
 and @code{--extra-ldflags}.
 On Windows, you need to run the IDL files through @command{widl}.
 
-DeckLink is very picky about the formats it supports. Pixel format is
-uyvy422 or v210, framerate and video size must be determined for your device with
+DeckLink is very picky about the formats it supports. Pixel format of the
+input can be set with @option{raw_format}.
+Framerate and video size must be determined for your device with
 @command{-list_formats 1}. Audio sample rate is always 48 kHz and the number
 of channels can be 2, 8 or 16. Note that all audio channels are bundled in one single
 audio track.
@@ -233,19 +233,48 @@ Defaults to @option{false}.
 If set to @option{true}, print a list of supported formats and exit.
 Defaults to @option{false}.
 
+@item format_code <FourCC>
+This sets the input video format to the format given by the FourCC. To see
+the supported values of your device(s) use @option{list_formats}.
+Note that there is a FourCC @option{'pal '} that can also be used
+as @option{pal} (3 letters).
+
 @item bm_v210
+This is a deprecated option, you can use @option{raw_format} instead.
 If set to @samp{1}, video is captured in 10 bit v210 instead
 of uyvy422. Not all Blackmagic devices support this option.
 
+@item raw_format
+Set the pixel format of the captured video.
+Available values are:
+@table @samp
+@item uyvy422
+
+@item yuv422p10
+
+@item argb
+
+@item bgra
+
+@item rgb10
+
+@end table
+
 @item teletext_lines
 If set to nonzero, an additional teletext stream will be captured from the
-vertical ancillary data. This option is a bitmask of the VBI lines checked,
-specifically lines 6 to 22, and lines 318 to 335. Line 6 is the LSB in the mask.
-Selected lines which do not contain teletext information will be ignored. You
-can use the special @option{all} constant to select all possible lines, or
-@option{standard} to skip lines 6, 318 and 319, which are not compatible with all
-receivers. Capturing teletext only works for SD PAL sources in 8 bit mode.
-To use this option, ffmpeg needs to be compiled with @code{--enable-libzvbi}.
+vertical ancillary data. Both SD PAL (576i) and HD (1080i or 1080p)
+sources are supported. In case of HD sources, OP47 packets are decoded.
+
+This option is a bitmask of the SD PAL VBI lines captured, specifically lines 6
+to 22, and lines 318 to 335. Line 6 is the LSB in the mask. Selected lines
+which do not contain teletext information will be ignored. You can use the
+special @option{all} constant to select all possible lines, or
+@option{standard} to skip lines 6, 318 and 319, which are not compatible with
+all receivers.
+
+For SD sources, ffmpeg needs to be compiled with @code{--enable-libzvbi}. For
+HD sources, on older (pre-4K) DeckLink card models you have to capture in 10
+bit mode.
 
 @item channels
 Defines number of audio channels to capture. Must be @samp{2}, @samp{8} or @samp{16}.
@@ -277,6 +306,15 @@ Sets the audio packet timestamp source. Must be @samp{video}, @samp{audio},
 If set to @samp{true}, color bars are drawn in the event of a signal loss.
 Defaults to @samp{true}.
 
+@item queue_size
+Sets maximum input buffer size in bytes. If the buffering reaches this value,
+incoming frames will be dropped.
+Defaults to @samp{1073741824}.
+
+@item audio_depth
+Sets the audio sample bit depth. Must be @samp{16} or @samp{32}.
+Defaults to @samp{16}.
+
 @end table
 
 @subsection Examples
@@ -296,21 +334,131 @@ ffmpeg -f decklink -list_formats 1 -i 'Intensity Pro'
 @end example
 
 @item
-Capture video clip at 1080i50 (format 11):
+Capture video clip at 1080i50:
 @example
-ffmpeg -f decklink -i 'Intensity Pro@@11' -acodec copy -vcodec copy output.avi
+ffmpeg -format_code Hi50 -f decklink -i 'Intensity Pro' -c:a copy -c:v copy output.avi
 @end example
 
 @item
 Capture video clip at 1080i50 10 bit:
 @example
-ffmpeg -bm_v210 1 -f decklink -i 'UltraStudio Mini Recorder@@11' -acodec copy -vcodec copy output.avi
+ffmpeg -bm_v210 1 -format_code Hi50 -f decklink -i 'UltraStudio Mini Recorder' -c:a copy -c:v copy output.avi
 @end example
 
 @item
 Capture video clip at 1080i50 with 16 audio channels:
 @example
-ffmpeg -channels 16 -f decklink -i 'UltraStudio Mini Recorder@@11' -acodec copy -vcodec copy output.avi
+ffmpeg -channels 16 -format_code Hi50 -f decklink -i 'UltraStudio Mini Recorder' -c:a copy -c:v copy output.avi
+@end example
+
+@end itemize
+
+@section kmsgrab
+
+KMS video input device.
+
+Captures the KMS scanout framebuffer associated with a specified CRTC or plane as a
+DRM object that can be passed to other hardware functions.
+
+Requires either DRM master or CAP_SYS_ADMIN to run.
+
+If you don't understand what all of that means, you probably don't want this.  Look at
+@option{x11grab} instead.
+
+@subsection Options
+
+@table @option
+
+@item device
+DRM device to capture on.  Defaults to @option{/dev/dri/card0}.
+
+@item format
+Pixel format of the framebuffer.  Defaults to @option{bgr0}.
+
+@item format_modifier
+Format modifier to signal on output frames.  This is necessary to import correctly into
+some APIs, but can't be autodetected.  See the libdrm documentation for possible values.
+
+@item crtc_id
+KMS CRTC ID to define the capture source.  The first active plane on the given CRTC
+will be used.
+
+@item plane_id
+KMS plane ID to define the capture source.  Defaults to the first active plane found if
+neither @option{crtc_id} nor @option{plane_id} are specified.
+
+@item framerate
+Framerate to capture at.  This is not synchronised to any page flipping or framebuffer
+changes - it just defines the interval at which the framebuffer is sampled.  Sampling
+faster than the framebuffer update rate will generate independent frames with the same
+content.  Defaults to @code{30}.
+
+@end table
+
+@subsection Examples
+
+@itemize
+
+@item
+Capture from the first active plane, download the result to normal frames and encode.
+This will only work if the framebuffer is both linear and mappable - if not, the result
+may be scrambled or fail to download.
+@example
+ffmpeg -f kmsgrab -i - -vf 'hwdownload,format=bgr0' output.mp4
+@end example
+
+@item
+Capture from CRTC ID 42 at 60fps, map the result to VAAPI, convert to NV12 and encode as H.264.
+@example
+ffmpeg -crtc_id 42 -framerate 60 -f kmsgrab -i - -vf 'hwmap=derive_device=vaapi,scale_vaapi=w=1920:h=1080:format=nv12' -c:v h264_vaapi output.mp4
+@end example
+
+@end itemize
+
+@section libndi_newtek
+
+The libndi_newtek input device provides capture capabilities for using NDI (Network
+Device Interface, standard created by NewTek).
+
+Input filename is a NDI source name that could be found by sending -find_sources 1
+to command line - it has no specific syntax but human-readable formatted.
+
+To enable this input device, you need the NDI SDK and you
+need to configure with the appropriate @code{--extra-cflags}
+and @code{--extra-ldflags}.
+
+@subsection Options
+
+@table @option
+
+@item find_sources
+If set to @option{true}, print a list of found/available NDI sources and exit.
+Defaults to @option{false}.
+
+@item wait_sources
+Override time to wait until the number of online sources have changed.
+Defaults to @option{0.5}.
+
+@item allow_video_fields
+When this flag is @option{false}, all video that you receive will be progressive.
+Defaults to @option{true}.
+
+@end table
+
+@subsection Examples
+
+@itemize
+
+@item
+List input devices:
+@example
+ffmpeg -f libndi_newtek -find_sources 1 -i dummy
+@end example
+
+@item
+Restream to NDI:
+@example
+ffmpeg -f libndi_newtek -i "DEV-5.INTERNAL.M1STEREO.TV (NDI_SOURCE_NAME_1)" -f libndi_newtek -y NDI_SOURCE_NAME_2
 @end example
 
 @end itemize
@@ -514,31 +662,6 @@ $ ffmpeg -f dshow -show_video_device_dialog true -crossbar_video_input_pin_numbe
 @end example
 
 @end itemize
-
-@section dv1394
-
-Linux DV 1394 input device.
-
-@subsection Options
-
-@table @option
-
-@item framerate
-Set the frame rate. Default is 25.
-
-@item standard
-
-Available values are:
-@table @samp
-@item pal
-
-@item ntsc
-
-@end table
-
-Default value is @code{ntsc}.
-
-@end table
 
 @section fbdev
 
@@ -1076,49 +1199,6 @@ Record a stream from default device:
 ffmpeg -f pulse -i default /tmp/pulse.wav
 @end example
 
-@section qtkit
-
-QTKit input device.
-
-The filename passed as input is parsed to contain either a device name or index.
-The device index can also be given by using -video_device_index.
-A given device index will override any given device name.
-If the desired device consists of numbers only, use -video_device_index to identify it.
-The default device will be chosen if an empty string  or the device name "default" is given.
-The available devices can be enumerated by using -list_devices.
-
-@example
-ffmpeg -f qtkit -i "0" out.mpg
-@end example
-
-@example
-ffmpeg -f qtkit -video_device_index 0 -i "" out.mpg
-@end example
-
-@example
-ffmpeg -f qtkit -i "default" out.mpg
-@end example
-
-@example
-ffmpeg -f qtkit -list_devices true -i ""
-@end example
-
-@subsection Options
-
-@table @option
-
-@item frame_rate
-Set frame rate. Default is 30.
-
-@item list_devices
-If set to @code{true}, print a list of devices and exit. Default is
-@code{false}.
-
-@item video_device_index
-Select the video device by index for devices with the same name (starts at 0).
-
-@end table
-
 @section sndio
 
 sndio input device.
@@ -1305,9 +1385,6 @@ To enable this input device during configuration you need libxcb
 installed on your system. It will be automatically detected during
 configuration.
 
-Alternatively, the configure option @option{--enable-x11grab} exists
-for legacy Xlib users.
-
 This device allows one to capture a region of an X11 display.
 
 The filename passed as input has the syntax:
@@ -1394,11 +1471,6 @@ ffmpeg -f x11grab -follow_mouse centered -show_region 1 -framerate 25 -video_siz
 
 @item video_size
 Set the video frame size. Default value is @code{vga}.
-
-@item use_shm
-Use the MIT-SHM extension for shared memory. Default value is @code{1}.
-It may be necessary to disable it for remote displays (legacy x11grab
-only).
 
 @item grab_x
 @item grab_y

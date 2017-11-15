@@ -204,7 +204,7 @@ static int flic_read_packet(AVFormatContext *s,
     int ret = 0;
     unsigned char preamble[FLIC_PREAMBLE_SIZE];
 
-    while (!packet_read) {
+    while (!packet_read && !avio_feof(pb)) {
 
         if ((ret = avio_read(pb, preamble, FLIC_PREAMBLE_SIZE)) !=
             FLIC_PREAMBLE_SIZE) {
@@ -256,7 +256,7 @@ static int flic_read_packet(AVFormatContext *s,
         }
     }
 
-    return ret;
+    return avio_feof(pb) ? AVERROR_EOF : ret;
 }
 
 AVInputFormat ff_flic_demuxer = {

@@ -79,46 +79,46 @@ audio|1|53760|1.120000|53760|1.120000|1920|0.040000|N/A|N/A|3840|501248|K_
 video|0|28|1.120000|28|1.120000|1|0.040000|N/A|N/A|13350|505856|__
 audio|1|55680|1.160000|55680|1.160000|1920|0.040000|N/A|N/A|3840|519680|K_
 video|0|25|1.000000|24|0.960000|1|0.040000|N/A|N/A|24801|6144|K_|1
-Strings Metadata|8
+Strings Metadata
 audio|1|48000|1.000000|48000|1.000000|1920|0.040000|N/A|N/A|3840|31232|K_|1
-Strings Metadata|8
+Strings Metadata
 video|0|28|1.120000|25|1.000000|1|0.040000|N/A|N/A|16743|35840|__|1
-Strings Metadata|8
+Strings Metadata
 audio|1|49920|1.040000|49920|1.040000|1920|0.040000|N/A|N/A|3840|52736|K_|1
-Strings Metadata|8
+Strings Metadata
 video|0|26|1.040000|26|1.040000|1|0.040000|N/A|N/A|13812|57344|__|1
-Strings Metadata|8
+Strings Metadata
 audio|1|51840|1.080000|51840|1.080000|1920|0.040000|N/A|N/A|3840|71680|K_|1
-Strings Metadata|8
+Strings Metadata
 video|0|27|1.080000|27|1.080000|1|0.040000|N/A|N/A|13607|76288|__|1
-Strings Metadata|8
+Strings Metadata
 audio|1|53760|1.120000|53760|1.120000|1920|0.040000|N/A|N/A|3840|90112|K_|1
-Strings Metadata|8
+Strings Metadata
 video|0|31|1.240000|28|1.120000|1|0.040000|N/A|N/A|16158|94720|__|1
-Strings Metadata|8
+Strings Metadata
 audio|1|55680|1.160000|55680|1.160000|1920|0.040000|N/A|N/A|3840|111104|K_|1
-Strings Metadata|8
+Strings Metadata
 video|0|29|1.160000|29|1.160000|1|0.040000|N/A|N/A|13943|115712|__|1
-Strings Metadata|8
+Strings Metadata
 audio|1|57600|1.200000|57600|1.200000|1920|0.040000|N/A|N/A|3840|130048|K_|1
-Strings Metadata|8
+Strings Metadata
 video|0|30|1.200000|30|1.200000|1|0.040000|N/A|N/A|11223|134656|__|1
-Strings Metadata|8
+Strings Metadata
 audio|1|59520|1.240000|59520|1.240000|1920|0.040000|N/A|N/A|3840|145920|K_|1
-Strings Metadata|8
+Strings Metadata
 video|0|34|1.360000|31|1.240000|1|0.040000|N/A|N/A|20298|150528|__|1
-Strings Metadata|8
+Strings Metadata
 audio|1|61440|1.280000|61440|1.280000|1920|0.040000|N/A|N/A|3840|171008|K_|1
-Strings Metadata|8
+Strings Metadata
 video|0|32|1.280000|32|1.280000|1|0.040000|N/A|N/A|13341|175616|__|1
-Strings Metadata|8
+Strings Metadata
 audio|1|63360|1.320000|63360|1.320000|1920|0.040000|N/A|N/A|3840|189440|K_|1
-Strings Metadata|8
+Strings Metadata
 video|0|33|1.320000|33|1.320000|1|0.040000|N/A|N/A|12362|194048|__|1
-Strings Metadata|8
+Strings Metadata
 audio|1|65280|1.360000|65280|1.360000|1920|0.040000|N/A|N/A|3840|206848|K_|1
-Strings Metadata|8
+Strings Metadata
 video|0|37|1.480000|34|1.360000|1|0.040000|N/A|N/A|24786|211456|K_|1
-Strings Metadata|8
+Strings Metadata
 0|mpeg2video|4|video|1/25|[0][0][0][0]|0x0000|352|288|0|0|1|1:1|11:9|yuv420p|8|tv|unknown|unknown|unknown|left|progressive|N/A|1|N/A|25/1|25/1|1/25|N/A|N/A|N/A|N/A|N/A|N/A|N/A|N/A|N/A|51|0|0|0|0|0|0|0|0|0|0|0|0|0x060A2B340101010501010D001300000000000000000000000000000000000001
 1|pcm_s16le|unknown|audio|1/48000|[0][0][0][0]|0x0000|s16|48000|1|unknown|16|N/A|0/0|0/0|1/48000|0|0.000000|N/A|N/A|768000|N/A|N/A|N/A|N/A|50|0|0|0|0|0|0|0|0|0|0|0|0|0x060A2B340101010501010D001300000000000000000000000000000000000001

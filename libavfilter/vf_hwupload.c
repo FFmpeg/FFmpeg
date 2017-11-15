@@ -74,17 +74,15 @@ static int hwupload_query_formats(AVFilterContext *avctx)
     if (input_pix_fmts) {
         for (i = 0; input_pix_fmts[i] != AV_PIX_FMT_NONE; i++) {
             err = ff_add_format(&input_formats, input_pix_fmts[i]);
-            if (err < 0) {
-                ff_formats_unref(&input_formats);
+            if (err < 0)
                 goto fail;
-            }
         }
     }
 
-    ff_formats_ref(input_formats, &avctx->inputs[0]->out_formats);
-
-    ff_formats_ref(ff_make_format_list(output_pix_fmts),
-                   &avctx->outputs[0]->in_formats);
+    if ((err = ff_formats_ref(input_formats, &avctx->inputs[0]->out_formats)) < 0 ||
+        (err = ff_formats_ref(ff_make_format_list(output_pix_fmts),
+                              &avctx->outputs[0]->in_formats)) < 0)
+        goto fail;
 
     av_hwframe_constraints_free(&constraints);
     return 0;
@@ -161,15 +159,10 @@ static int hwupload_filter_frame(AVFilterLink *link, AVFrame *input)
     if (input->format == outlink->format)
         return ff_filter_frame(outlink, input);
 
-    output = av_frame_alloc();
+    output = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!output) {
-        err = AVERROR(ENOMEM);
-        goto fail;
-    }
-
-    err = av_hwframe_get_buffer(ctx->hwframes_ref, output, 0);
-    if (err < 0) {
         av_log(ctx, AV_LOG_ERROR, "Failed to allocate frame to upload to.\n");
+        err = AVERROR(ENOMEM);
         goto fail;
     }
 
@@ -238,4 +231,5 @@ AVFilter ff_vf_hwupload = {
     .priv_class    = &hwupload_class,
     .inputs        = hwupload_inputs,
     .outputs       = hwupload_outputs,
+    .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

@@ -337,7 +337,7 @@ av_cold void ff_sws_init_swscale_ppc(SwsContext *c)
     if (c->srcBpc == 8 && c->dstBpc <= 14) {
         c->hyScale = c->hcScale = hScale_altivec_real;
     }
-    if (!is16BPS(dstFormat) && !is9_OR_10BPS(dstFormat) &&
+    if (!is16BPS(dstFormat) && !isNBPS(dstFormat) &&
         dstFormat != AV_PIX_FMT_NV12 && dstFormat != AV_PIX_FMT_NV21 &&
         !c->needAlpha) {
         c->yuv2planeX = yuv2planeX_altivec;

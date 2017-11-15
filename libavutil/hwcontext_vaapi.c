@@ -25,6 +25,11 @@
 #   include <va/va_drm.h>
 #endif
 
+#if CONFIG_LIBDRM
+#   include <va/va_drmcommon.h>
+#   include <drm_fourcc.h>
+#endif
+
 #include <fcntl.h>
 #if HAVE_UNISTD_H
 #   include <unistd.h>
@@ -40,6 +45,10 @@
 #include "mem.h"
 #include "pixdesc.h"
 #include "pixfmt.h"
+
+#if CONFIG_LIBDRM
+#   include "hwcontext_drm.h"
+#endif
 
 typedef struct VAAPIDevicePriv {
 #if HAVE_VAAPI_X11
@@ -70,20 +79,12 @@ typedef struct VAAPIFramesContext {
     int derive_works;
 } VAAPIFramesContext;
 
-enum {
-    VAAPI_MAP_READ   = 0x01,
-    VAAPI_MAP_WRITE  = 0x02,
-    VAAPI_MAP_DIRECT = 0x04,
-};
-
-typedef struct VAAPISurfaceMap {
-    // The source hardware frame of this mapping (with hw_frames_ctx set).
-    const AVFrame *source;
-    // VAAPI_MAP_* flags which apply to this mapping.
-    int flags;
+typedef struct VAAPIMapping {
     // Handle to the derived or copied image which is mapped.
     VAImage image;
-} VAAPISurfaceMap;
+    // The mapping flags actually used.
+    int flags;
+} VAAPIMapping;
 
 #define MAP(va, rt, av) { \
         VA_FOURCC_ ## va, \
@@ -92,7 +93,7 @@ typedef struct VAAPISurfaceMap {
     }
 // The map fourcc <-> pix_fmt isn't bijective because of the annoying U/V
 // plane swap cases.  The frame handling below tries to hide these.
-static struct {
+static const struct {
     unsigned int fourcc;
     unsigned int rt_format;
     enum AVPixelFormat pix_fmt;
@@ -142,7 +143,8 @@ static int vaapi_get_image_format(AVHWDeviceContext *hwdev,
 
     for (i = 0; i < ctx->nb_formats; i++) {
         if (ctx->formats[i].pix_fmt == pix_fmt) {
-            *image_format = &ctx->formats[i].image_format;
+            if (image_format)
+                *image_format = &ctx->formats[i].image_format;
             return 0;
         }
     }
@@ -162,7 +164,8 @@ static int vaapi_frames_get_constraints(AVHWDeviceContext *hwdev,
     unsigned int fourcc;
     int err, i, j, attr_count, pix_fmt_count;
 
-    if (config) {
+    if (config &&
+        !(hwctx->driver_quirks & AV_VAAPI_DRIVER_QUIRK_SURFACE_ATTRIBUTES)) {
         attr_count = 0;
         vas = vaQuerySurfaceAttributes(hwctx->display, config->config_id,
                                        0, &attr_count);
@@ -265,12 +268,35 @@ fail:
     return err;
 }
 
+static const struct {
+    const char *friendly_name;
+    const char *match_string;
+    unsigned int quirks;
+} vaapi_driver_quirks_table[] = {
+    {
+        "Intel i965 (Quick Sync)",
+        "i965",
+        AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS,
+    },
+    {
+        "Intel iHD",
+        "ubit",
+        AV_VAAPI_DRIVER_QUIRK_ATTRIB_MEMTYPE,
+    },
+    {
+        "VDPAU wrapper",
+        "Splitted-Desktop Systems VDPAU backend for VA-API",
+        AV_VAAPI_DRIVER_QUIRK_SURFACE_ATTRIBUTES,
+    },
+};
+
 static int vaapi_device_init(AVHWDeviceContext *hwdev)
 {
     VAAPIDeviceContext *ctx = hwdev->internal->priv;
     AVVAAPIDeviceContext *hwctx = hwdev->hwctx;
     VAImageFormat *image_list = NULL;
     VAStatus vas;
+    const char *vendor_string;
     int err, i, image_count;
     enum AVPixelFormat pix_fmt;
     unsigned int fourcc;
@@ -309,6 +335,32 @@ static int vaapi_device_init(AVHWDeviceContext *hwdev)
             ctx->formats[ctx->nb_formats].pix_fmt      = pix_fmt;
             ctx->formats[ctx->nb_formats].image_format = image_list[i];
             ++ctx->nb_formats;
+        }
+    }
+
+    if (hwctx->driver_quirks & AV_VAAPI_DRIVER_QUIRK_USER_SET) {
+        av_log(hwdev, AV_LOG_VERBOSE, "Not detecting driver: "
+               "quirks set by user.\n");
+    } else {
+        // Detect the driver in use and set quirk flags if necessary.
+        vendor_string = vaQueryVendorString(hwctx->display);
+        hwctx->driver_quirks = 0;
+        if (vendor_string) {
+            for (i = 0; i < FF_ARRAY_ELEMS(vaapi_driver_quirks_table); i++) {
+                if (strstr(vendor_string,
+                           vaapi_driver_quirks_table[i].match_string)) {
+                    av_log(hwdev, AV_LOG_VERBOSE, "Matched \"%s\" as known "
+                           "driver \"%s\".\n", vendor_string,
+                           vaapi_driver_quirks_table[i].friendly_name);
+                    hwctx->driver_quirks |=
+                        vaapi_driver_quirks_table[i].quirks;
+                    break;
+                }
+            }
+            if (!(i < FF_ARRAY_ELEMS(vaapi_driver_quirks_table))) {
+                av_log(hwdev, AV_LOG_VERBOSE, "Unknown driver \"%s\", "
+                       "assuming standard behaviour.\n", vendor_string);
+            }
         }
     }
 
@@ -352,6 +404,10 @@ static AVBufferRef *vaapi_pool_alloc(void *opaque, int size)
     VASurfaceID surface_id;
     VAStatus vas;
     AVBufferRef *ref;
+
+    if (hwfc->initial_pool_size > 0 &&
+        avfc->nb_surfaces >= hwfc->initial_pool_size)
+        return NULL;
 
     vas = vaCreateSurfaces(hwctx->display, ctx->rt_format,
                            hwfc->width, hwfc->height,
@@ -410,42 +466,48 @@ static int vaapi_frames_init(AVHWFramesContext *hwfc)
     }
 
     if (!hwfc->pool) {
-        int need_memory_type = 1, need_pixel_format = 1;
-        for (i = 0; i < avfc->nb_attributes; i++) {
-            if (ctx->attributes[i].type == VASurfaceAttribMemoryType)
-                need_memory_type  = 0;
-            if (ctx->attributes[i].type == VASurfaceAttribPixelFormat)
-                need_pixel_format = 0;
-        }
-        ctx->nb_attributes =
-            avfc->nb_attributes + need_memory_type + need_pixel_format;
+        if (!(hwctx->driver_quirks & AV_VAAPI_DRIVER_QUIRK_SURFACE_ATTRIBUTES)) {
+            int need_memory_type = !(hwctx->driver_quirks & AV_VAAPI_DRIVER_QUIRK_ATTRIB_MEMTYPE);
+            int need_pixel_format = 1;
+            for (i = 0; i < avfc->nb_attributes; i++) {
+                if (ctx->attributes[i].type == VASurfaceAttribMemoryType)
+                    need_memory_type  = 0;
+                if (ctx->attributes[i].type == VASurfaceAttribPixelFormat)
+                    need_pixel_format = 0;
+            }
+            ctx->nb_attributes =
+                avfc->nb_attributes + need_memory_type + need_pixel_format;
 
-        ctx->attributes = av_malloc(ctx->nb_attributes *
+            ctx->attributes = av_malloc(ctx->nb_attributes *
                                         sizeof(*ctx->attributes));
-        if (!ctx->attributes) {
-            err = AVERROR(ENOMEM);
-            goto fail;
-        }
+            if (!ctx->attributes) {
+                err = AVERROR(ENOMEM);
+                goto fail;
+            }
 
-        for (i = 0; i < avfc->nb_attributes; i++)
-            ctx->attributes[i] = avfc->attributes[i];
-        if (need_memory_type) {
-            ctx->attributes[i++] = (VASurfaceAttrib) {
-                .type          = VASurfaceAttribMemoryType,
-                .flags         = VA_SURFACE_ATTRIB_SETTABLE,
-                .value.type    = VAGenericValueTypeInteger,
-                .value.value.i = VA_SURFACE_ATTRIB_MEM_TYPE_VA,
-            };
+            for (i = 0; i < avfc->nb_attributes; i++)
+                ctx->attributes[i] = avfc->attributes[i];
+            if (need_memory_type) {
+                ctx->attributes[i++] = (VASurfaceAttrib) {
+                    .type          = VASurfaceAttribMemoryType,
+                    .flags         = VA_SURFACE_ATTRIB_SETTABLE,
+                    .value.type    = VAGenericValueTypeInteger,
+                    .value.value.i = VA_SURFACE_ATTRIB_MEM_TYPE_VA,
+                };
+            }
+            if (need_pixel_format) {
+                ctx->attributes[i++] = (VASurfaceAttrib) {
+                    .type          = VASurfaceAttribPixelFormat,
+                    .flags         = VA_SURFACE_ATTRIB_SETTABLE,
+                    .value.type    = VAGenericValueTypeInteger,
+                    .value.value.i = fourcc,
+                };
+            }
+            av_assert0(i == ctx->nb_attributes);
+        } else {
+            ctx->attributes = NULL;
+            ctx->nb_attributes = 0;
         }
-        if (need_pixel_format) {
-            ctx->attributes[i++] = (VASurfaceAttrib) {
-                .type          = VASurfaceAttribPixelFormat,
-                .flags         = VA_SURFACE_ATTRIB_SETTABLE,
-                .value.type    = VAGenericValueTypeInteger,
-                .value.value.i = fourcc,
-            };
-        }
-        av_assert0(i == ctx->nb_attributes);
 
         ctx->rt_format = rt_format;
 
@@ -587,17 +649,15 @@ static int vaapi_transfer_get_formats(AVHWFramesContext *hwfc,
     return 0;
 }
 
-static void vaapi_unmap_frame(void *opaque, uint8_t *data)
+static void vaapi_unmap_frame(AVHWFramesContext *hwfc,
+                              HWMapDescriptor *hwmap)
 {
-    AVHWFramesContext *hwfc = opaque;
     AVVAAPIDeviceContext *hwctx = hwfc->device_ctx->hwctx;
-    VAAPISurfaceMap *map = (VAAPISurfaceMap*)data;
-    const AVFrame *src;
+    VAAPIMapping           *map = hwmap->priv;
     VASurfaceID surface_id;
     VAStatus vas;
 
-    src = map->source;
-    surface_id = (VASurfaceID)(uintptr_t)src->data[3];
+    surface_id = (VASurfaceID)(uintptr_t)hwmap->source->data[3];
     av_log(hwfc, AV_LOG_DEBUG, "Unmap surface %#x.\n", surface_id);
 
     vas = vaUnmapBuffer(hwctx->display, map->image.buf);
@@ -606,8 +666,8 @@ static void vaapi_unmap_frame(void *opaque, uint8_t *data)
                "%#x: %d (%s).\n", surface_id, vas, vaErrorStr(vas));
     }
 
-    if ((map->flags & VAAPI_MAP_WRITE) &&
-        !(map->flags & VAAPI_MAP_DIRECT)) {
+    if ((map->flags & AV_HWFRAME_MAP_WRITE) &&
+        !(map->flags & AV_HWFRAME_MAP_DIRECT)) {
         vas = vaPutImage(hwctx->display, surface_id, map->image.image_id,
                          0, 0, hwfc->width, hwfc->height,
                          0, 0, hwfc->width, hwfc->height);
@@ -633,7 +693,7 @@ static int vaapi_map_frame(AVHWFramesContext *hwfc,
     VAAPIFramesContext *ctx = hwfc->internal->priv;
     VASurfaceID surface_id;
     VAImageFormat *image_format;
-    VAAPISurfaceMap *map;
+    VAAPIMapping *map;
     VAStatus vas;
     void *address = NULL;
     int err, i;
@@ -641,13 +701,13 @@ static int vaapi_map_frame(AVHWFramesContext *hwfc,
     surface_id = (VASurfaceID)(uintptr_t)src->data[3];
     av_log(hwfc, AV_LOG_DEBUG, "Map surface %#x.\n", surface_id);
 
-    if (!ctx->derive_works && (flags & VAAPI_MAP_DIRECT)) {
+    if (!ctx->derive_works && (flags & AV_HWFRAME_MAP_DIRECT)) {
         // Requested direct mapping but it is not possible.
         return AVERROR(EINVAL);
     }
     if (dst->format == AV_PIX_FMT_NONE)
         dst->format = hwfc->sw_format;
-    if (dst->format != hwfc->sw_format && (flags & VAAPI_MAP_DIRECT)) {
+    if (dst->format != hwfc->sw_format && (flags & AV_HWFRAME_MAP_DIRECT)) {
         // Requested direct mapping but the formats do not match.
         return AVERROR(EINVAL);
     }
@@ -658,12 +718,10 @@ static int vaapi_map_frame(AVHWFramesContext *hwfc,
         return AVERROR(EINVAL);
     }
 
-    map = av_malloc(sizeof(VAAPISurfaceMap));
+    map = av_malloc(sizeof(*map));
     if (!map)
         return AVERROR(ENOMEM);
-
-    map->source         = src;
-    map->flags          = flags;
+    map->flags = flags;
     map->image.image_id = VA_INVALID_ID;
 
     vas = vaSyncSurface(hwctx->display, surface_id);
@@ -681,8 +739,8 @@ static int vaapi_map_frame(AVHWFramesContext *hwfc,
     // faster with a copy routine which is aware of the limitation, but we
     // assume for now that the user is not aware of that and would therefore
     // prefer not to be given direct-mapped memory if they request read access.
-    if (ctx->derive_works &&
-        ((flags & VAAPI_MAP_DIRECT) || !(flags & VAAPI_MAP_READ))) {
+    if (ctx->derive_works && dst->format == hwfc->sw_format &&
+        ((flags & AV_HWFRAME_MAP_DIRECT) || !(flags & AV_HWFRAME_MAP_READ))) {
         vas = vaDeriveImage(hwctx->display, surface_id, &map->image);
         if (vas != VA_STATUS_SUCCESS) {
             av_log(hwfc, AV_LOG_ERROR, "Failed to derive image from "
@@ -698,7 +756,7 @@ static int vaapi_map_frame(AVHWFramesContext *hwfc,
             err = AVERROR(EIO);
             goto fail;
         }
-        map->flags |= VAAPI_MAP_DIRECT;
+        map->flags |= AV_HWFRAME_MAP_DIRECT;
     } else {
         vas = vaCreateImage(hwctx->display, image_format,
                             hwfc->width, hwfc->height, &map->image);
@@ -709,7 +767,7 @@ static int vaapi_map_frame(AVHWFramesContext *hwfc,
             err = AVERROR(EIO);
             goto fail;
         }
-        if (flags & VAAPI_MAP_READ) {
+        if (!(flags & AV_HWFRAME_MAP_OVERWRITE)) {
             vas = vaGetImage(hwctx->display, surface_id, 0, 0,
                              hwfc->width, hwfc->height, map->image.image_id);
             if (vas != VA_STATUS_SUCCESS) {
@@ -730,6 +788,11 @@ static int vaapi_map_frame(AVHWFramesContext *hwfc,
         goto fail;
     }
 
+    err = ff_hwframe_map_create(src->hw_frames_ctx,
+                                dst, src, &vaapi_unmap_frame, map);
+    if (err < 0)
+        goto fail;
+
     dst->width  = src->width;
     dst->height = src->height;
 
@@ -744,13 +807,6 @@ static int vaapi_map_frame(AVHWFramesContext *hwfc,
         map->image.format.fourcc == VA_FOURCC_YV12) {
         // Chroma planes are YVU rather than YUV, so swap them.
         FFSWAP(uint8_t*, dst->data[1], dst->data[2]);
-    }
-
-    dst->buf[0] = av_buffer_create((uint8_t*)map, sizeof(*map),
-                                   &vaapi_unmap_frame, hwfc, 0);
-    if (!dst->buf[0]) {
-        err = AVERROR(ENOMEM);
-        goto fail;
     }
 
     return 0;
@@ -772,14 +828,20 @@ static int vaapi_transfer_data_from(AVHWFramesContext *hwfc,
     AVFrame *map;
     int err;
 
+    if (dst->width > hwfc->width || dst->height > hwfc->height)
+        return AVERROR(EINVAL);
+
     map = av_frame_alloc();
     if (!map)
         return AVERROR(ENOMEM);
     map->format = dst->format;
 
-    err = vaapi_map_frame(hwfc, map, src, VAAPI_MAP_READ);
+    err = vaapi_map_frame(hwfc, map, src, AV_HWFRAME_MAP_READ);
     if (err)
         goto fail;
+
+    map->width  = dst->width;
+    map->height = dst->height;
 
     err = av_frame_copy(dst, map);
     if (err)
@@ -797,14 +859,20 @@ static int vaapi_transfer_data_to(AVHWFramesContext *hwfc,
     AVFrame *map;
     int err;
 
+    if (src->width > hwfc->width || src->height > hwfc->height)
+        return AVERROR(EINVAL);
+
     map = av_frame_alloc();
     if (!map)
         return AVERROR(ENOMEM);
     map->format = src->format;
 
-    err = vaapi_map_frame(hwfc, map, dst, VAAPI_MAP_WRITE);
+    err = vaapi_map_frame(hwfc, map, dst, AV_HWFRAME_MAP_WRITE | AV_HWFRAME_MAP_OVERWRITE);
     if (err)
         goto fail;
+
+    map->width  = src->width;
+    map->height = src->height;
 
     err = av_frame_copy(map, src);
     if (err)
@@ -814,6 +882,301 @@ static int vaapi_transfer_data_to(AVHWFramesContext *hwfc,
 fail:
     av_frame_free(&map);
     return err;
+}
+
+static int vaapi_map_to_memory(AVHWFramesContext *hwfc, AVFrame *dst,
+                               const AVFrame *src, int flags)
+{
+    int err;
+
+    if (dst->format != AV_PIX_FMT_NONE) {
+        err = vaapi_get_image_format(hwfc->device_ctx, dst->format, NULL);
+        if (err < 0)
+            return AVERROR(ENOSYS);
+    }
+
+    err = vaapi_map_frame(hwfc, dst, src, flags);
+    if (err)
+        return err;
+
+    err = av_frame_copy_props(dst, src);
+    if (err)
+        return err;
+
+    return 0;
+}
+
+#if CONFIG_LIBDRM
+
+#define DRM_MAP(va, layers, ...) { \
+        VA_FOURCC_ ## va, \
+        layers, \
+        { __VA_ARGS__ } \
+    }
+static const struct {
+    uint32_t va_fourcc;
+    int   nb_layer_formats;
+    uint32_t layer_formats[AV_DRM_MAX_PLANES];
+} vaapi_drm_format_map[] = {
+#ifdef DRM_FORMAT_R8
+    DRM_MAP(NV12, 2, DRM_FORMAT_R8,  DRM_FORMAT_RG88),
+#endif
+    DRM_MAP(NV12, 1, DRM_FORMAT_NV12),
+#if defined(VA_FOURCC_P010) && defined(DRM_FORMAT_R16)
+    DRM_MAP(P010, 2, DRM_FORMAT_R16, DRM_FORMAT_RG1616),
+#endif
+    DRM_MAP(BGRA, 1, DRM_FORMAT_ARGB8888),
+    DRM_MAP(BGRX, 1, DRM_FORMAT_XRGB8888),
+    DRM_MAP(RGBA, 1, DRM_FORMAT_ABGR8888),
+    DRM_MAP(RGBX, 1, DRM_FORMAT_XBGR8888),
+#ifdef VA_FOURCC_ABGR
+    DRM_MAP(ABGR, 1, DRM_FORMAT_RGBA8888),
+    DRM_MAP(XBGR, 1, DRM_FORMAT_RGBX8888),
+#endif
+    DRM_MAP(ARGB, 1, DRM_FORMAT_BGRA8888),
+    DRM_MAP(XRGB, 1, DRM_FORMAT_BGRX8888),
+};
+#undef DRM_MAP
+
+static void vaapi_unmap_from_drm(AVHWFramesContext *dst_fc,
+                                 HWMapDescriptor *hwmap)
+{
+    AVVAAPIDeviceContext *dst_dev = dst_fc->device_ctx->hwctx;
+
+    VASurfaceID surface_id = (VASurfaceID)(uintptr_t)hwmap->priv;
+
+    av_log(dst_fc, AV_LOG_DEBUG, "Destroy surface %#x.\n", surface_id);
+
+    vaDestroySurfaces(dst_dev->display, &surface_id, 1);
+}
+
+static int vaapi_map_from_drm(AVHWFramesContext *src_fc, AVFrame *dst,
+                              const AVFrame *src, int flags)
+{
+    AVHWFramesContext      *dst_fc =
+        (AVHWFramesContext*)dst->hw_frames_ctx->data;
+    AVVAAPIDeviceContext  *dst_dev = dst_fc->device_ctx->hwctx;
+    const AVDRMFrameDescriptor *desc;
+    VASurfaceID surface_id;
+    VAStatus vas;
+    uint32_t va_fourcc, va_rt_format;
+    int err, i, j, k;
+
+    unsigned long buffer_handle;
+    VASurfaceAttribExternalBuffers buffer_desc;
+    VASurfaceAttrib attrs[2] = {
+        {
+            .type  = VASurfaceAttribMemoryType,
+            .flags = VA_SURFACE_ATTRIB_SETTABLE,
+            .value.type    = VAGenericValueTypeInteger,
+            .value.value.i = VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME,
+        },
+        {
+            .type  = VASurfaceAttribExternalBufferDescriptor,
+            .flags = VA_SURFACE_ATTRIB_SETTABLE,
+            .value.type    = VAGenericValueTypePointer,
+            .value.value.p = &buffer_desc,
+        }
+    };
+
+    desc = (AVDRMFrameDescriptor*)src->data[0];
+
+    if (desc->nb_objects != 1) {
+        av_log(dst_fc, AV_LOG_ERROR, "VAAPI can only map frames "
+               "made from a single DRM object.\n");
+        return AVERROR(EINVAL);
+    }
+
+    va_fourcc = 0;
+    for (i = 0; i < FF_ARRAY_ELEMS(vaapi_drm_format_map); i++) {
+        if (desc->nb_layers != vaapi_drm_format_map[i].nb_layer_formats)
+            continue;
+        for (j = 0; j < desc->nb_layers; j++) {
+            if (desc->layers[j].format !=
+                vaapi_drm_format_map[i].layer_formats[j])
+                break;
+        }
+        if (j != desc->nb_layers)
+            continue;
+        va_fourcc = vaapi_drm_format_map[i].va_fourcc;
+        break;
+    }
+    if (!va_fourcc) {
+        av_log(dst_fc, AV_LOG_ERROR, "DRM format not supported "
+               "by VAAPI.\n");
+        return AVERROR(EINVAL);
+    }
+
+    av_log(dst_fc, AV_LOG_DEBUG, "Map DRM object %d to VAAPI as "
+           "%08x.\n", desc->objects[0].fd, va_fourcc);
+
+    for (i = 0; i < FF_ARRAY_ELEMS(vaapi_format_map); i++) {
+        if (vaapi_format_map[i].fourcc == va_fourcc)
+            va_rt_format = vaapi_format_map[i].rt_format;
+    }
+
+    buffer_handle = desc->objects[0].fd;
+    buffer_desc.pixel_format = va_fourcc;
+    buffer_desc.width        = src_fc->width;
+    buffer_desc.height       = src_fc->height;
+    buffer_desc.data_size    = desc->objects[0].size;
+    buffer_desc.buffers      = &buffer_handle;
+    buffer_desc.num_buffers  = 1;
+    buffer_desc.flags        = 0;
+
+    k = 0;
+    for (i = 0; i < desc->nb_layers; i++) {
+        for (j = 0; j < desc->layers[i].nb_planes; j++) {
+            buffer_desc.pitches[k] = desc->layers[i].planes[j].pitch;
+            buffer_desc.offsets[k] = desc->layers[i].planes[j].offset;
+            ++k;
+        }
+    }
+    buffer_desc.num_planes = k;
+
+    vas = vaCreateSurfaces(dst_dev->display, va_rt_format,
+                           src->width, src->height,
+                           &surface_id, 1,
+                           attrs, FF_ARRAY_ELEMS(attrs));
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(dst_fc, AV_LOG_ERROR, "Failed to create surface from DRM "
+               "object: %d (%s).\n", vas, vaErrorStr(vas));
+        return AVERROR(EIO);
+    }
+    av_log(dst_fc, AV_LOG_DEBUG, "Create surface %#x.\n", surface_id);
+
+    err = ff_hwframe_map_create(dst->hw_frames_ctx, dst, src,
+                                &vaapi_unmap_from_drm,
+                                (void*)(uintptr_t)surface_id);
+    if (err < 0)
+        return err;
+
+    dst->width   = src->width;
+    dst->height  = src->height;
+    dst->data[3] = (uint8_t*)(uintptr_t)surface_id;
+
+    av_log(dst_fc, AV_LOG_DEBUG, "Mapped DRM object %d to "
+           "surface %#x.\n", desc->objects[0].fd, surface_id);
+
+    return 0;
+}
+
+static void vaapi_unmap_to_drm(AVHWFramesContext *dst_fc,
+                               HWMapDescriptor *hwmap)
+{
+    AVDRMFrameDescriptor *drm_desc = hwmap->priv;
+    int i;
+
+    for (i = 0; i < drm_desc->nb_objects; i++)
+        close(drm_desc->objects[i].fd);
+
+    av_freep(&drm_desc);
+}
+
+static int vaapi_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
+                            const AVFrame *src, int flags)
+{
+#if VA_CHECK_VERSION(1, 1, 0)
+    AVVAAPIDeviceContext *hwctx = hwfc->device_ctx->hwctx;
+    VASurfaceID surface_id;
+    VAStatus vas;
+    VADRMPRIMESurfaceDescriptor va_desc;
+    AVDRMFrameDescriptor *drm_desc = NULL;
+    int err, i, j;
+
+    surface_id = (VASurfaceID)(uintptr_t)src->data[3];
+
+    vas = vaExportSurfaceHandle(hwctx->display, surface_id,
+                                VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
+                                VA_EXPORT_SURFACE_READ_ONLY |
+                                VA_EXPORT_SURFACE_SEPARATE_LAYERS,
+                                &va_desc);
+    if (vas != VA_STATUS_SUCCESS) {
+        if (vas == VA_STATUS_ERROR_UNIMPLEMENTED)
+            return AVERROR(ENOSYS);
+        av_log(hwfc, AV_LOG_ERROR, "Failed to export surface %#x: "
+               "%d (%s).\n", surface_id, vas, vaErrorStr(vas));
+        return AVERROR(EIO);
+    }
+
+    drm_desc = av_mallocz(sizeof(*drm_desc));
+    if (!drm_desc) {
+        err = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    // By some bizarre coincidence, these structures are very similar...
+    drm_desc->nb_objects = va_desc.num_objects;
+    for (i = 0; i < va_desc.num_objects; i++) {
+        drm_desc->objects[i].fd   = va_desc.objects[i].fd;
+        drm_desc->objects[i].size = va_desc.objects[i].size;
+        drm_desc->objects[i].format_modifier =
+            va_desc.objects[i].drm_format_modifier;
+    }
+    drm_desc->nb_layers = va_desc.num_layers;
+    for (i = 0; i < va_desc.num_layers; i++) {
+        drm_desc->layers[i].format    = va_desc.layers[i].drm_format;
+        drm_desc->layers[i].nb_planes = va_desc.layers[i].num_planes;
+        for (j = 0; j < va_desc.layers[i].num_planes; j++) {
+            drm_desc->layers[i].planes[j].object_index =
+                va_desc.layers[i].object_index[j];
+            drm_desc->layers[i].planes[j].offset =
+                va_desc.layers[i].offset[j];
+            drm_desc->layers[i].planes[j].pitch =
+                va_desc.layers[i].pitch[j];
+        }
+    }
+
+    err = ff_hwframe_map_create(src->hw_frames_ctx, dst, src,
+                                &vaapi_unmap_to_drm, drm_desc);
+    if (err < 0)
+        goto fail;
+
+    dst->width   = src->width;
+    dst->height  = src->height;
+    dst->data[0] = (uint8_t*)drm_desc;
+
+    return 0;
+
+fail:
+    for (i = 0; i < va_desc.num_objects; i++)
+        close(va_desc.objects[i].fd);
+    av_freep(&drm_desc);
+    return err;
+#else
+    // Older versions without vaExportSurfaceHandle() are not supported -
+    // in theory this is possible with a combination of vaDeriveImage()
+    // and vaAcquireBufferHandle(), but it doesn't carry enough metadata
+    // to actually use the result in a generic way.
+    return AVERROR(ENOSYS);
+#endif
+}
+#endif
+
+static int vaapi_map_to(AVHWFramesContext *hwfc, AVFrame *dst,
+                        const AVFrame *src, int flags)
+{
+    switch (src->format) {
+#if CONFIG_LIBDRM
+    case AV_PIX_FMT_DRM_PRIME:
+        return vaapi_map_from_drm(hwfc, dst, src, flags);
+#endif
+    default:
+        return AVERROR(ENOSYS);
+    }
+}
+
+static int vaapi_map_from(AVHWFramesContext *hwfc, AVFrame *dst,
+                          const AVFrame *src, int flags)
+{
+    switch (dst->format) {
+#if CONFIG_LIBDRM
+    case AV_PIX_FMT_DRM_PRIME:
+        return vaapi_map_to_drm(hwfc, dst, src, flags);
+#endif
+    default:
+        return vaapi_map_to_memory(hwfc, dst, src, flags);
+    }
 }
 
 static void vaapi_device_free(AVHWDeviceContext *ctx)
@@ -835,14 +1198,53 @@ static void vaapi_device_free(AVHWDeviceContext *ctx)
     av_freep(&priv);
 }
 
+#if CONFIG_VAAPI_1
+static void vaapi_device_log_error(void *context, const char *message)
+{
+    AVHWDeviceContext *ctx = context;
+
+    av_log(ctx, AV_LOG_ERROR, "libva: %s", message);
+}
+
+static void vaapi_device_log_info(void *context, const char *message)
+{
+    AVHWDeviceContext *ctx = context;
+
+    av_log(ctx, AV_LOG_VERBOSE, "libva: %s", message);
+}
+#endif
+
+static int vaapi_device_connect(AVHWDeviceContext *ctx,
+                                VADisplay display)
+{
+    AVVAAPIDeviceContext *hwctx = ctx->hwctx;
+    int major, minor;
+    VAStatus vas;
+
+#if CONFIG_VAAPI_1
+    vaSetErrorCallback(display, &vaapi_device_log_error, ctx);
+    vaSetInfoCallback (display, &vaapi_device_log_info,  ctx);
+#endif
+
+    hwctx->display = display;
+
+    vas = vaInitialize(display, &major, &minor);
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to initialise VAAPI "
+               "connection: %d (%s).\n", vas, vaErrorStr(vas));
+        return AVERROR(EIO);
+    }
+    av_log(ctx, AV_LOG_VERBOSE, "Initialised VAAPI connection: "
+           "version %d.%d\n", major, minor);
+
+    return 0;
+}
+
 static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
                                AVDictionary *opts, int flags)
 {
-    AVVAAPIDeviceContext *hwctx = ctx->hwctx;
     VAAPIDevicePriv *priv;
-    VADisplay display = 0;
-    VAStatus vas;
-    int major, minor;
+    VADisplay display = NULL;
 
     priv = av_mallocz(sizeof(*priv));
     if (!priv)
@@ -875,22 +1277,25 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
 #endif
 
 #if HAVE_VAAPI_DRM
-    if (!display && device) {
+    if (!display) {
         // Try to open the device as a DRM path.
-        priv->drm_fd = open(device, O_RDWR);
+        // Default to using the first render node if the user did not
+        // supply a path.
+        const char *path = device ? device : "/dev/dri/renderD128";
+        priv->drm_fd = open(path, O_RDWR);
         if (priv->drm_fd < 0) {
             av_log(ctx, AV_LOG_VERBOSE, "Cannot open DRM device %s.\n",
-                   device);
+                   path);
         } else {
             display = vaGetDisplayDRM(priv->drm_fd);
             if (!display) {
                 av_log(ctx, AV_LOG_ERROR, "Cannot open a VA display "
-                       "from DRM device %s.\n", device);
+                       "from DRM device %s.\n", path);
                 return AVERROR_UNKNOWN;
             }
 
             av_log(ctx, AV_LOG_VERBOSE, "Opened VA display via "
-                   "DRM device %s.\n", device);
+                   "DRM device %s.\n", path);
         }
     }
 #endif
@@ -901,18 +1306,45 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
         return AVERROR(EINVAL);
     }
 
-    hwctx->display = display;
+    return vaapi_device_connect(ctx, display);
+}
 
-    vas = vaInitialize(display, &major, &minor);
-    if (vas != VA_STATUS_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to initialise VAAPI "
-               "connection: %d (%s).\n", vas, vaErrorStr(vas));
-        return AVERROR(EIO);
+static int vaapi_device_derive(AVHWDeviceContext *ctx,
+                               AVHWDeviceContext *src_ctx, int flags)
+{
+#if CONFIG_LIBDRM
+    if (src_ctx->type == AV_HWDEVICE_TYPE_DRM) {
+        AVDRMDeviceContext *src_hwctx = src_ctx->hwctx;
+        VADisplay *display;
+        VAAPIDevicePriv *priv;
+
+        if (src_hwctx->fd < 0) {
+            av_log(ctx, AV_LOG_ERROR, "DRM instance requires an associated "
+                   "device to derive a VA display from.\n");
+            return AVERROR(EINVAL);
+        }
+
+        priv = av_mallocz(sizeof(*priv));
+        if (!priv)
+            return AVERROR(ENOMEM);
+
+        // Inherits the fd from the source context, which will close it.
+        priv->drm_fd = -1;
+
+        ctx->user_opaque = priv;
+        ctx->free        = &vaapi_device_free;
+
+        display = vaGetDisplayDRM(src_hwctx->fd);
+        if (!display) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to open a VA display from "
+                   "DRM device.\n");
+            return AVERROR(EIO);
+        }
+
+        return vaapi_device_connect(ctx, display);
     }
-    av_log(ctx, AV_LOG_VERBOSE, "Initialised VAAPI connection: "
-           "version %d.%d\n", major, minor);
-
-    return 0;
+#endif
+    return AVERROR(ENOSYS);
 }
 
 const HWContextType ff_hwcontext_type_vaapi = {
@@ -926,6 +1358,7 @@ const HWContextType ff_hwcontext_type_vaapi = {
     .frames_priv_size       = sizeof(VAAPIFramesContext),
 
     .device_create          = &vaapi_device_create,
+    .device_derive          = &vaapi_device_derive,
     .device_init            = &vaapi_device_init,
     .device_uninit          = &vaapi_device_uninit,
     .frames_get_constraints = &vaapi_frames_get_constraints,
@@ -935,6 +1368,8 @@ const HWContextType ff_hwcontext_type_vaapi = {
     .transfer_get_formats   = &vaapi_transfer_get_formats,
     .transfer_data_to       = &vaapi_transfer_data_to,
     .transfer_data_from     = &vaapi_transfer_data_from,
+    .map_to                 = &vaapi_map_to,
+    .map_from               = &vaapi_map_from,
 
     .pix_fmts = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_VAAPI,

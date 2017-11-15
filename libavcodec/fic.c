@@ -34,6 +34,7 @@ typedef struct FICThreadContext {
     int slice_h;
     int src_size;
     int y_off;
+    int p_frame;
 } FICThreadContext;
 
 typedef struct FICContext {
@@ -84,26 +85,26 @@ static const uint8_t fic_header[7] = { 0, 0, 1, 'F', 'I', 'C', 'V' };
 
 static av_always_inline void fic_idct(int16_t *blk, int step, int shift, int rnd)
 {
-    const int t0 =  27246 * blk[3 * step] + 18405 * blk[5 * step];
-    const int t1 =  27246 * blk[5 * step] - 18405 * blk[3 * step];
-    const int t2 =   6393 * blk[7 * step] + 32139 * blk[1 * step];
-    const int t3 =   6393 * blk[1 * step] - 32139 * blk[7 * step];
-    const int t4 = 5793 * (t2 + t0 + 0x800 >> 12);
-    const int t5 = 5793 * (t3 + t1 + 0x800 >> 12);
-    const int t6 = t2 - t0;
-    const int t7 = t3 - t1;
-    const int t8 =  17734 * blk[2 * step] - 42813 * blk[6 * step];
-    const int t9 =  17734 * blk[6 * step] + 42814 * blk[2 * step];
-    const int tA = (blk[0 * step] - blk[4 * step] << 15) + rnd;
-    const int tB = (blk[0 * step] + blk[4 * step] << 15) + rnd;
-    blk[0 * step] = (  t4       + t9 + tB) >> shift;
-    blk[1 * step] = (  t6 + t7  + t8 + tA) >> shift;
-    blk[2 * step] = (  t6 - t7  - t8 + tA) >> shift;
-    blk[3 * step] = (  t5       - t9 + tB) >> shift;
-    blk[4 * step] = ( -t5       - t9 + tB) >> shift;
-    blk[5 * step] = (-(t6 - t7) - t8 + tA) >> shift;
-    blk[6 * step] = (-(t6 + t7) + t8 + tA) >> shift;
-    blk[7 * step] = ( -t4       + t9 + tB) >> shift;
+    const unsigned t0 =  27246 * blk[3 * step] + 18405 * blk[5 * step];
+    const unsigned t1 =  27246 * blk[5 * step] - 18405 * blk[3 * step];
+    const unsigned t2 =   6393 * blk[7 * step] + 32139 * blk[1 * step];
+    const unsigned t3 =   6393 * blk[1 * step] - 32139 * blk[7 * step];
+    const unsigned t4 = 5793U * ((int)(t2 + t0 + 0x800) >> 12);
+    const unsigned t5 = 5793U * ((int)(t3 + t1 + 0x800) >> 12);
+    const unsigned t6 = t2 - t0;
+    const unsigned t7 = t3 - t1;
+    const unsigned t8 =  17734 * blk[2 * step] - 42813 * blk[6 * step];
+    const unsigned t9 =  17734 * blk[6 * step] + 42814 * blk[2 * step];
+    const unsigned tA = (blk[0 * step] - blk[4 * step]) * 32768 + rnd;
+    const unsigned tB = (blk[0 * step] + blk[4 * step]) * 32768 + rnd;
+    blk[0 * step] = (int)(  t4       + t9 + tB) >> shift;
+    blk[1 * step] = (int)(  t6 + t7  + t8 + tA) >> shift;
+    blk[2 * step] = (int)(  t6 - t7  - t8 + tA) >> shift;
+    blk[3 * step] = (int)(  t5       - t9 + tB) >> shift;
+    blk[4 * step] = (int)( -t5       - t9 + tB) >> shift;
+    blk[5 * step] = (int)(-(t6 - t7) - t8 + tA) >> shift;
+    blk[6 * step] = (int)(-(t6 + t7) + t8 + tA) >> shift;
+    blk[7 * step] = (int)( -t4       + t9 + tB) >> shift;
 }
 
 static void fic_idct_put(uint8_t *dst, int stride, int16_t *block)
@@ -133,16 +134,13 @@ static void fic_idct_put(uint8_t *dst, int stride, int16_t *block)
     }
 }
 static int fic_decode_block(FICContext *ctx, GetBitContext *gb,
-                            uint8_t *dst, int stride, int16_t *block)
+                            uint8_t *dst, int stride, int16_t *block, int *is_p)
 {
     int i, num_coeff;
 
     /* Is it a skip block? */
     if (get_bits1(gb)) {
-        /* This is a P-frame. */
-        ctx->frame->key_frame = 0;
-        ctx->frame->pict_type = AV_PICTURE_TYPE_P;
-
+        *is_p = 1;
         return 0;
     }
 
@@ -152,9 +150,13 @@ static int fic_decode_block(FICContext *ctx, GetBitContext *gb,
     if (num_coeff > 64)
         return AVERROR_INVALIDDATA;
 
-    for (i = 0; i < num_coeff; i++)
-        block[ff_zigzag_direct[i]] = get_se_golomb(gb) *
+    for (i = 0; i < num_coeff; i++) {
+        int v = get_se_golomb(gb);
+        if (v < -2048 || v > 2048)
+             return AVERROR_INVALIDDATA;
+        block[ff_zigzag_direct[i]] = v *
                                      ctx->qmat[ff_zigzag_direct[i]];
+    }
 
     fic_idct_put(dst, stride, block);
 
@@ -182,7 +184,8 @@ static int fic_decode_slice(AVCodecContext *avctx, void *tdata)
             for (x = 0; x < (ctx->aligned_width >> !!p); x += 8) {
                 int ret;
 
-                if ((ret = fic_decode_block(ctx, &gb, dst + x, stride, tctx->block)) != 0)
+                if ((ret = fic_decode_block(ctx, &gb, dst + x, stride,
+                                            tctx->block, &tctx->p_frame)) != 0)
                     return ret;
             }
 
@@ -348,15 +351,6 @@ static int fic_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    /*
-     * Set the frametype to I initially. It will be set to P if the frame
-     * has any dependencies (skip blocks). There will be a race condition
-     * inside the slice decode function to set these, but we do not care.
-     * since they will only ever be set to 0/P.
-     */
-    ctx->frame->key_frame = 1;
-    ctx->frame->pict_type = AV_PICTURE_TYPE_I;
-
     /* Allocate slice data. */
     av_fast_malloc(&ctx->slice_data, &ctx->slice_data_size,
                    nslices * sizeof(ctx->slice_data[0]));
@@ -398,6 +392,15 @@ static int fic_decode_frame(AVCodecContext *avctx, void *data,
                               NULL, nslices, sizeof(ctx->slice_data[0]))) < 0)
         return ret;
 
+    ctx->frame->key_frame = 1;
+    ctx->frame->pict_type = AV_PICTURE_TYPE_I;
+    for (slice = 0; slice < nslices; slice++) {
+        if (ctx->slice_data[slice].p_frame) {
+            ctx->frame->key_frame = 0;
+            ctx->frame->pict_type = AV_PICTURE_TYPE_P;
+            break;
+        }
+    }
     av_frame_free(&ctx->final_frame);
     ctx->final_frame = av_frame_clone(ctx->frame);
     if (!ctx->final_frame) {

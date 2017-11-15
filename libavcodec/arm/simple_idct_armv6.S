@@ -390,7 +390,7 @@ function ff_simple_idct_armv6, export=1
         pop    {r4-r11, pc}
 endfunc
 
-/* ff_simple_idct_add_armv6(uint8_t *dest, int line_size, int16_t *data); */
+/* ff_simple_idct_add_armv6(uint8_t *dest, ptrdiff_t line_size, int16_t *data); */
 function ff_simple_idct_add_armv6, export=1
         push   {r0, r1, r4-r11, lr}
         sub    sp, sp, #128
@@ -407,7 +407,7 @@ function ff_simple_idct_add_armv6, export=1
         pop    {r4-r11, pc}
 endfunc
 
-/* ff_simple_idct_put_armv6(uint8_t *dest, int line_size, int16_t *data); */
+/* ff_simple_idct_put_armv6(uint8_t *dest, ptrdiff_t line_size, int16_t *data); */
 function ff_simple_idct_put_armv6, export=1
         push   {r0, r1, r4-r11, lr}
         sub    sp, sp, #128

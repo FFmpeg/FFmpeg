@@ -43,7 +43,7 @@ int ff_raw_read_partial_packet(AVFormatContext *s, AVPacket *pkt)
 
     pkt->pos= avio_tell(s->pb);
     pkt->stream_index = 0;
-    ret = ffio_read_partial(s->pb, pkt->data, size);
+    ret = avio_read_partial(s->pb, pkt->data, size);
     if (ret < 0) {
         av_packet_unref(pkt);
         return ret;

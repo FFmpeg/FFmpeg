@@ -74,10 +74,10 @@ static VLC ivi_mb_vlc_tabs [8]; ///< static macroblock Huffman tables
 static VLC ivi_blk_vlc_tabs[8]; ///< static block Huffman tables
 
 typedef void (*ivi_mc_func) (int16_t *buf, const int16_t *ref_buf,
-                             uint32_t pitch, int mc_type);
+                             ptrdiff_t pitch, int mc_type);
 typedef void (*ivi_mc_avg_func) (int16_t *buf, const int16_t *ref_buf1,
                                  const int16_t *ref_buf2,
-                                 uint32_t pitch, int mc_type, int mc_type2);
+                                 ptrdiff_t pitch, int mc_type, int mc_type2);
 
 static int ivi_mc(IVIBandDesc *band, ivi_mc_func mc, ivi_mc_avg_func mc_avg,
                   int offs, int mv_x, int mv_y, int mv_x2, int mv_y2,
@@ -302,7 +302,7 @@ static av_cold void ivi_free_buffers(IVIPlaneDesc *planes)
     }
 }
 
-av_cold int ff_ivi_init_planes(IVIPlaneDesc *planes, const IVIPicConfig *cfg,
+av_cold int ff_ivi_init_planes(AVCodecContext *avctx, IVIPlaneDesc *planes, const IVIPicConfig *cfg,
                                int is_indeo4)
 {
     int p, b;
@@ -312,7 +312,7 @@ av_cold int ff_ivi_init_planes(IVIPlaneDesc *planes, const IVIPicConfig *cfg,
 
     ivi_free_buffers(planes);
 
-    if (av_image_check_size(cfg->pic_width, cfg->pic_height, 0, NULL) < 0 ||
+    if (av_image_check_size2(cfg->pic_width, cfg->pic_height, avctx->max_pixels, AV_PIX_FMT_YUV410P, 0, avctx) < 0 ||
         cfg->luma_bands < 1 || cfg->chroma_bands < 1)
         return AVERROR_INVALIDDATA;
 
@@ -903,11 +903,11 @@ static uint16_t ivi_calc_band_checksum(IVIBandDesc *band)
  *  @param[out]  dst        pointer to the buffer receiving converted pixels
  *  @param[in]   dst_pitch  pitch for moving to the next y line
  */
-static void ivi_output_plane(IVIPlaneDesc *plane, uint8_t *dst, int dst_pitch)
+static void ivi_output_plane(IVIPlaneDesc *plane, uint8_t *dst, ptrdiff_t dst_pitch)
 {
     int             x, y;
     const int16_t   *src  = plane->bands[0].buf;
-    uint32_t        pitch = plane->bands[0].pitch;
+    ptrdiff_t       pitch = plane->bands[0].pitch;
 
     if (!src)
         return;
@@ -1060,7 +1060,9 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int             buf_size = avpkt->size;
     int             result, p, b;
 
-    init_get_bits(&ctx->gb, buf, buf_size * 8);
+    result = init_get_bits8(&ctx->gb, buf, buf_size);
+    if (result < 0)
+        return result;
     ctx->frame_data = buf;
     ctx->frame_size = buf_size;
 
@@ -1203,6 +1205,9 @@ av_cold int ff_ivi_decode_close(AVCodecContext *avctx)
 
     if (ctx->mb_vlc.cust_tab.table)
         ff_free_vlc(&ctx->mb_vlc.cust_tab);
+
+    if (ctx->blk_vlc.cust_tab.table)
+        ff_free_vlc(&ctx->blk_vlc.cust_tab);
 
     av_frame_free(&ctx->p_frame);
 

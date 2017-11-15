@@ -26,7 +26,7 @@
 #include "libavutil/mips/mmiutils.h"
 
 void ff_get_pixels_8_mmi(int16_t *av_restrict block, const uint8_t *pixels,
-        ptrdiff_t line_size)
+                         ptrdiff_t stride)
 {
     double ftmp[7];
     DECLARE_VAR_ALL64;
@@ -36,7 +36,7 @@ void ff_get_pixels_8_mmi(int16_t *av_restrict block, const uint8_t *pixels,
         "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
 
         MMI_LDC1(%[ftmp1], %[pixels], 0x00)
-        MMI_LDXC1(%[ftmp2], %[pixels], %[line_size], 0x00)
+        MMI_LDXC1(%[ftmp2], %[pixels], %[stride], 0x00)
         "punpcklbh  %[ftmp3],   %[ftmp1],       %[ftmp0]                \n\t"
         "punpckhbh  %[ftmp4],   %[ftmp1],       %[ftmp0]                \n\t"
         "punpcklbh  %[ftmp5],   %[ftmp2],       %[ftmp0]                \n\t"
@@ -45,10 +45,10 @@ void ff_get_pixels_8_mmi(int16_t *av_restrict block, const uint8_t *pixels,
         MMI_SDC1(%[ftmp4], %[block], 0x08)
         MMI_SDC1(%[ftmp5], %[block], 0x10)
         MMI_SDC1(%[ftmp6], %[block], 0x18)
-        PTR_ADDU   "%[pixels],  %[pixels],      %[line_size_x2]         \n\t"
+        PTR_ADDU   "%[pixels],  %[pixels],      %[stride_x2]            \n\t"
 
         MMI_LDC1(%[ftmp1], %[pixels], 0x00)
-        MMI_LDXC1(%[ftmp2], %[pixels], %[line_size], 0x00)
+        MMI_LDXC1(%[ftmp2], %[pixels], %[stride], 0x00)
         "punpcklbh  %[ftmp3],   %[ftmp1],       %[ftmp0]                \n\t"
         "punpckhbh  %[ftmp4],   %[ftmp1],       %[ftmp0]                \n\t"
         "punpcklbh  %[ftmp5],   %[ftmp2],       %[ftmp0]                \n\t"
@@ -57,10 +57,10 @@ void ff_get_pixels_8_mmi(int16_t *av_restrict block, const uint8_t *pixels,
         MMI_SDC1(%[ftmp4], %[block], 0x28)
         MMI_SDC1(%[ftmp5], %[block], 0x30)
         MMI_SDC1(%[ftmp6], %[block], 0x38)
-        PTR_ADDU   "%[pixels],  %[pixels],      %[line_size_x2]         \n\t"
+        PTR_ADDU   "%[pixels],  %[pixels],      %[stride_x2]            \n\t"
 
         MMI_LDC1(%[ftmp1], %[pixels], 0x00)
-        MMI_LDXC1(%[ftmp2], %[pixels], %[line_size], 0x00)
+        MMI_LDXC1(%[ftmp2], %[pixels], %[stride], 0x00)
         "punpcklbh  %[ftmp3],   %[ftmp1],       %[ftmp0]                \n\t"
         "punpckhbh  %[ftmp4],   %[ftmp1],       %[ftmp0]                \n\t"
         "punpcklbh  %[ftmp5],   %[ftmp2],       %[ftmp0]                \n\t"
@@ -69,10 +69,10 @@ void ff_get_pixels_8_mmi(int16_t *av_restrict block, const uint8_t *pixels,
         MMI_SDC1(%[ftmp4], %[block], 0x48)
         MMI_SDC1(%[ftmp5], %[block], 0x50)
         MMI_SDC1(%[ftmp6], %[block], 0x58)
-        PTR_ADDU   "%[pixels],  %[pixels],      %[line_size_x2]         \n\t"
+        PTR_ADDU   "%[pixels],  %[pixels],      %[stride_x2]            \n\t"
 
         MMI_LDC1(%[ftmp1], %[pixels], 0x00)
-        MMI_LDXC1(%[ftmp2], %[pixels], %[line_size], 0x00)
+        MMI_LDXC1(%[ftmp2], %[pixels], %[stride], 0x00)
         "punpcklbh  %[ftmp3],   %[ftmp1],       %[ftmp0]                \n\t"
         "punpckhbh  %[ftmp4],   %[ftmp1],       %[ftmp0]                \n\t"
         "punpcklbh  %[ftmp5],   %[ftmp2],       %[ftmp0]                \n\t"
@@ -88,14 +88,14 @@ void ff_get_pixels_8_mmi(int16_t *av_restrict block, const uint8_t *pixels,
           RESTRICT_ASM_ALL64
           RESTRICT_ASM_ADDRT
           [pixels]"+&r"(pixels)
-        : [block]"r"((mips_reg)block),      [line_size]"r"((mips_reg)line_size),
-          [line_size_x2]"r"((mips_reg)(line_size<<1))
+        : [block]"r"((mips_reg)block),      [stride]"r"((mips_reg)stride),
+          [stride_x2]"r"((mips_reg)(stride<<1))
         : "memory"
     );
 }
 
 void ff_diff_pixels_mmi(int16_t *av_restrict block, const uint8_t *src1,
-        const uint8_t *src2, int stride)
+        const uint8_t *src2, ptrdiff_t stride)
 {
     double ftmp[5];
     mips_reg tmp[1];

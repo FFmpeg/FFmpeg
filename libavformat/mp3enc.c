@@ -144,7 +144,7 @@ static int mp3_write_xing(AVFormatContext *s)
     int ver = 0;
     int bytes_needed;
 
-    if (!s->pb->seekable || !mp3->write_xing)
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL) || !mp3->write_xing)
         return 0;
 
     for (i = 0; i < FF_ARRAY_ELEMS(avpriv_mpa_freq_tab); i++) {
@@ -319,7 +319,7 @@ static int mp3_write_audio_packet(AVFormatContext *s, AVPacket *pkt)
             if ((mpah.bit_rate == 0) || (mp3->initial_bitrate != mpah.bit_rate))
                 mp3->has_variable_bitrate = 1;
         } else {
-            av_log(s, AV_LOG_WARNING, "Audio packet of size %d (starting with %08X...) "
+            av_log(s, AV_LOG_WARNING, "Audio packet of size %d (starting with %08"PRIX32"...) "
                    "is invalid, writing it anyway.\n", pkt->size, h);
         }
 
@@ -490,21 +490,6 @@ static int query_codec(enum AVCodecID id, int std_compliance)
     return -1;
 }
 
-#if CONFIG_MP2_MUXER
-AVOutputFormat ff_mp2_muxer = {
-    .name              = "mp2",
-    .long_name         = NULL_IF_CONFIG_SMALL("MP2 (MPEG audio layer 2)"),
-    .mime_type         = "audio/mpeg",
-    .extensions        = "mp2,m2a,mpa",
-    .audio_codec       = AV_CODEC_ID_MP2,
-    .video_codec       = AV_CODEC_ID_NONE,
-    .write_packet      = ff_raw_write_packet,
-    .flags             = AVFMT_NOTIMESTAMPS,
-};
-#endif
-
-#if CONFIG_MP3_MUXER
-
 static const AVOption options[] = {
     { "id3v2_version", "Select ID3v2 version to write. Currently 3 and 4 are supported.",
       offsetof(MP3Context, id3v2_version), AV_OPT_TYPE_INT, {.i64 = 4}, 0, 4, AV_OPT_FLAG_ENCODING_PARAM},
@@ -530,18 +515,13 @@ static int mp3_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (mp3->pics_to_write) {
             /* buffer audio packets until we get all the pictures */
             AVPacketList *pktl = av_mallocz(sizeof(*pktl));
-            int ret;
-            if (!pktl) {
+
+            if (!pktl || av_packet_ref(&pktl->pkt, pkt) < 0) {
+                av_freep(&pktl);
                 av_log(s, AV_LOG_WARNING, "Not enough memory to buffer audio. Skipping picture streams\n");
                 mp3->pics_to_write = 0;
                 mp3_queue_flush(s);
                 return mp3_write_audio_packet(s, pkt);
-            }
-
-            ret = av_copy_packet(&pktl->pkt, pkt);
-            if (ret < 0) {
-                av_freep(&pktl);
-                return ret;
             }
 
             if (mp3->queue_end)
@@ -652,4 +632,3 @@ AVOutputFormat ff_mp3_muxer = {
     .flags             = AVFMT_NOTIMESTAMPS,
     .priv_class        = &mp3_muxer_class,
 };
-#endif

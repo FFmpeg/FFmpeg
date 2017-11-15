@@ -33,7 +33,7 @@
 #include "libavutil/pixdesc.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct GEQContext {
     const AVClass *class;
     AVExpr *e[4];               ///< expressions for each plane
     char *expr_str[4+3];        ///< expression strings for each plane
@@ -41,6 +41,7 @@ typedef struct {
     int hsub, vsub;             ///< chroma subsampling
     int planes;                 ///< number of planes
     int is_rgb;
+    int bps;
 } GEQContext;
 
 enum { Y = 0, U, V, A, G, B, R };
@@ -74,7 +75,7 @@ static inline double getpix(void *priv, double x, double y, int plane)
     GEQContext *geq = priv;
     AVFrame *picref = geq->picref;
     const uint8_t *src = picref->data[plane];
-    const int linesize = picref->linesize[plane];
+    int linesize = picref->linesize[plane];
     const int w = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(picref->width,  geq->hsub) : picref->width;
     const int h = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(picref->height, geq->vsub) : picref->height;
 
@@ -87,8 +88,16 @@ static inline double getpix(void *priv, double x, double y, int plane)
     x -= xi;
     y -= yi;
 
-    return (1-y)*((1-x)*src[xi +  yi    * linesize] + x*src[xi + 1 +  yi    * linesize])
-          +   y *((1-x)*src[xi + (yi+1) * linesize] + x*src[xi + 1 + (yi+1) * linesize]);
+    if (geq->bps > 8) {
+        const uint16_t *src16 = (const uint16_t*)src;
+        linesize /= 2;
+
+        return (1-y)*((1-x)*src16[xi +  yi    * linesize] + x*src16[xi + 1 +  yi    * linesize])
+              +   y *((1-x)*src16[xi + (yi+1) * linesize] + x*src16[xi + 1 + (yi+1) * linesize]);
+    } else {
+        return (1-y)*((1-x)*src[xi +  yi    * linesize] + x*src[xi + 1 +  yi    * linesize])
+              +   y *((1-x)*src[xi + (yi+1) * linesize] + x*src[xi + 1 + (yi+1) * linesize]);
+    }
 }
 
 //TODO: cubic interpolate
@@ -129,8 +138,11 @@ static av_cold int geq_init(AVFilterContext *ctx)
         if (!geq->expr_str[V]) geq->expr_str[V] = av_strdup(geq->expr_str[U]);
     }
 
-    if (!geq->expr_str[A])
-        geq->expr_str[A] = av_strdup("255");
+    if (!geq->expr_str[A]) {
+        char bps_string[8];
+        snprintf(bps_string, sizeof(bps_string), "%d", (1<<geq->bps) - 1);
+        geq->expr_str[A] = av_strdup(bps_string);
+    }
     if (!geq->expr_str[G])
         geq->expr_str[G] = av_strdup("g(X,Y)");
     if (!geq->expr_str[B])
@@ -171,10 +183,27 @@ static int geq_query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV411P,  AV_PIX_FMT_YUV410P,  AV_PIX_FMT_YUV440P,
         AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA420P,
         AV_PIX_FMT_GRAY8,
+        AV_PIX_FMT_YUV444P9,  AV_PIX_FMT_YUV422P9,  AV_PIX_FMT_YUV420P9,
+        AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA420P9,
+        AV_PIX_FMT_YUV444P10,  AV_PIX_FMT_YUV422P10,  AV_PIX_FMT_YUV420P10,
+        AV_PIX_FMT_YUV440P10,
+        AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA420P10,
+        AV_PIX_FMT_GRAY10,
+        AV_PIX_FMT_YUV444P12,  AV_PIX_FMT_YUV422P12,  AV_PIX_FMT_YUV420P12,
+        AV_PIX_FMT_GRAY12,
+        AV_PIX_FMT_YUV444P14,  AV_PIX_FMT_YUV422P14,  AV_PIX_FMT_YUV420P14,
+        AV_PIX_FMT_YUV444P16,  AV_PIX_FMT_YUV422P16,  AV_PIX_FMT_YUV420P16,
+        AV_PIX_FMT_YUVA444P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA420P16,
+        AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_NONE
     };
     static const enum AVPixelFormat rgb_pix_fmts[] = {
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP,
+        AV_PIX_FMT_GBRP9,
+        AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRAP10,
+        AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12,
+        AV_PIX_FMT_GBRP14,
+        AV_PIX_FMT_GBRP16, AV_PIX_FMT_GBRAP16,
         AV_PIX_FMT_NONE
     };
     AVFilterFormats *fmts_list;
@@ -198,6 +227,8 @@ static int geq_config_props(AVFilterLink *inlink)
     geq->hsub = desc->log2_chroma_w;
     geq->vsub = desc->log2_chroma_h;
     geq->planes = desc->nb_components;
+    geq->bps    = desc->comp[0].depth;
+
     return 0;
 }
 
@@ -208,7 +239,7 @@ static int geq_filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFrame *out;
     double values[VAR_VARS_NB] = {
-        [VAR_N] = inlink->frame_count,
+        [VAR_N] = inlink->frame_count_out,
         [VAR_T] = in->pts == AV_NOPTS_VALUE ? NAN : in->pts * av_q2d(inlink->time_base),
     };
 
@@ -223,6 +254,7 @@ static int geq_filter_frame(AVFilterLink *inlink, AVFrame *in)
     for (plane = 0; plane < geq->planes && out->data[plane]; plane++) {
         int x, y;
         uint8_t *dst = out->data[plane];
+        uint16_t *dst16 = (uint16_t*)out->data[plane];
         const int linesize = out->linesize[plane];
         const int w = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(inlink->w, geq->hsub) : inlink->w;
         const int h = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(inlink->h, geq->vsub) : inlink->h;
@@ -234,11 +266,19 @@ static int geq_filter_frame(AVFilterLink *inlink, AVFrame *in)
 
         for (y = 0; y < h; y++) {
             values[VAR_Y] = y;
-            for (x = 0; x < w; x++) {
-                values[VAR_X] = x;
-                dst[x] = av_expr_eval(geq->e[plane], values, geq);
+            if (geq->bps > 8) {
+                for (x = 0; x < w; x++) {
+                    values[VAR_X] = x;
+                    dst16[x] = av_expr_eval(geq->e[plane], values, geq);
+                }
+                dst16 += linesize / 2;
+            } else {
+                for (x = 0; x < w; x++) {
+                    values[VAR_X] = x;
+                    dst[x] = av_expr_eval(geq->e[plane], values, geq);
+                }
+                dst += linesize;
             }
-            dst += linesize;
         }
     }
 

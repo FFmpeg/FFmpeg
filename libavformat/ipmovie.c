@@ -58,7 +58,7 @@
 #define OPCODE_INIT_AUDIO_BUFFERS      0x03
 #define OPCODE_START_STOP_AUDIO        0x04
 #define OPCODE_INIT_VIDEO_BUFFERS      0x05
-#define OPCODE_UNKNOWN_06              0x06
+#define OPCODE_VIDEO_DATA_06           0x06
 #define OPCODE_SEND_BUFFER             0x07
 #define OPCODE_AUDIO_FRAME             0x08
 #define OPCODE_SILENCE_FRAME           0x09
@@ -66,10 +66,10 @@
 #define OPCODE_CREATE_GRADIENT         0x0B
 #define OPCODE_SET_PALETTE             0x0C
 #define OPCODE_SET_PALETTE_COMPRESSED  0x0D
-#define OPCODE_UNKNOWN_0E              0x0E
+#define OPCODE_SET_SKIP_MAP            0x0E
 #define OPCODE_SET_DECODING_MAP        0x0F
-#define OPCODE_UNKNOWN_10              0x10
-#define OPCODE_VIDEO_DATA              0x11
+#define OPCODE_VIDEO_DATA_10           0x10
+#define OPCODE_VIDEO_DATA_11           0x11
 #define OPCODE_UNKNOWN_12              0x12
 #define OPCODE_UNKNOWN_13              0x13
 #define OPCODE_UNKNOWN_14              0x14
@@ -91,6 +91,8 @@ typedef struct IPMVEContext {
     uint32_t     palette[256];
     int          has_palette;
     int          changed;
+    uint8_t      send_buffer;
+    uint8_t      frame_format;
 
     unsigned int audio_bits;
     unsigned int audio_channels;
@@ -105,6 +107,8 @@ typedef struct IPMVEContext {
     int audio_chunk_size;
     int64_t video_chunk_offset;
     int video_chunk_size;
+    int64_t skip_map_chunk_offset;
+    int skip_map_chunk_size;
     int64_t decode_map_chunk_offset;
     int decode_map_chunk_size;
 
@@ -152,11 +156,11 @@ static int load_ipmovie_packet(IPMVEContext *s, AVIOContext *pb,
 
         chunk_type = CHUNK_VIDEO;
 
-    } else if (s->decode_map_chunk_offset) {
+    } else if (s->frame_format) {
 
-        /* send both the decode map and the video data together */
+        /* send the frame format, decode map, the video data, skip map, and the send_buffer flag together */
 
-        if (av_new_packet(pkt, 2 + s->decode_map_chunk_size + s->video_chunk_size))
+        if (av_new_packet(pkt, 8 + s->decode_map_chunk_size + s->video_chunk_size + s->skip_map_chunk_size))
             return CHUNK_NOMEM;
 
         if (s->has_palette) {
@@ -174,25 +178,53 @@ static int load_ipmovie_packet(IPMVEContext *s, AVIOContext *pb,
             ff_add_param_change(pkt, 0, 0, 0, s->video_width, s->video_height);
             s->changed = 0;
         }
-        pkt->pos= s->decode_map_chunk_offset;
-        avio_seek(pb, s->decode_map_chunk_offset, SEEK_SET);
-        s->decode_map_chunk_offset = 0;
 
-        AV_WL16(pkt->data, s->decode_map_chunk_size);
-        if (avio_read(pb, pkt->data + 2, s->decode_map_chunk_size) !=
-            s->decode_map_chunk_size) {
-            av_packet_unref(pkt);
-            return CHUNK_EOF;
-        }
+        AV_WL8(pkt->data, s->frame_format);
+        AV_WL8(pkt->data + 1, s->send_buffer);
+        AV_WL16(pkt->data + 2, s->video_chunk_size);
+        AV_WL16(pkt->data + 4, s->decode_map_chunk_size);
+        AV_WL16(pkt->data + 6, s->skip_map_chunk_size);
 
+        s->frame_format = 0;
+        s->send_buffer = 0;
+
+        pkt->pos = s->video_chunk_offset;
         avio_seek(pb, s->video_chunk_offset, SEEK_SET);
         s->video_chunk_offset = 0;
 
-        if (avio_read(pb, pkt->data + 2 + s->decode_map_chunk_size,
-            s->video_chunk_size) != s->video_chunk_size) {
+        if (avio_read(pb, pkt->data + 8, s->video_chunk_size) !=
+            s->video_chunk_size) {
             av_packet_unref(pkt);
             return CHUNK_EOF;
         }
+
+        if (s->decode_map_chunk_size) {
+            pkt->pos = s->decode_map_chunk_offset;
+            avio_seek(pb, s->decode_map_chunk_offset, SEEK_SET);
+            s->decode_map_chunk_offset = 0;
+
+            if (avio_read(pb, pkt->data + 8 + s->video_chunk_size,
+                s->decode_map_chunk_size) != s->decode_map_chunk_size) {
+                av_packet_unref(pkt);
+                return CHUNK_EOF;
+            }
+        }
+
+        if (s->skip_map_chunk_size) {
+            pkt->pos = s->skip_map_chunk_offset;
+            avio_seek(pb, s->skip_map_chunk_offset, SEEK_SET);
+            s->skip_map_chunk_offset = 0;
+
+            if (avio_read(pb, pkt->data + 8 + s->video_chunk_size + s->decode_map_chunk_size,
+                s->skip_map_chunk_size) != s->skip_map_chunk_size) {
+                av_packet_unref(pkt);
+                return CHUNK_EOF;
+            }
+        }
+
+        s->video_chunk_size = 0;
+        s->decode_map_chunk_size = 0;
+        s->skip_map_chunk_size = 0;
 
         pkt->stream_index = s->video_stream_index;
         pkt->pts = s->video_pts;
@@ -358,9 +390,6 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
                 break;
             }
             s->frame_pts_inc = ((uint64_t)AV_RL32(&scratch[0])) * AV_RL16(&scratch[4]);
-            av_log(s->avf, AV_LOG_TRACE, "  %.2f frames/second (timer div = %d, subdiv = %d)\n",
-                    1000000.0 / s->frame_pts_inc, AV_RL32(&scratch[0]),
-                    AV_RL16(&scratch[4]));
             break;
 
         case OPCODE_INIT_AUDIO_BUFFERS:
@@ -433,9 +462,6 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
                     s->video_width, s->video_height);
             break;
 
-        case OPCODE_UNKNOWN_06:
-        case OPCODE_UNKNOWN_0E:
-        case OPCODE_UNKNOWN_10:
         case OPCODE_UNKNOWN_12:
         case OPCODE_UNKNOWN_13:
         case OPCODE_UNKNOWN_14:
@@ -447,6 +473,7 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
         case OPCODE_SEND_BUFFER:
             av_log(s->avf, AV_LOG_TRACE, "send buffer\n");
             avio_skip(pb, opcode_size);
+            s->send_buffer = 1;
             break;
 
         case OPCODE_AUDIO_FRAME:
@@ -516,6 +543,15 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
             avio_skip(pb, opcode_size);
             break;
 
+        case OPCODE_SET_SKIP_MAP:
+            av_log(s->avf, AV_LOG_TRACE, "set skip map\n");
+
+            /* log position and move on for now */
+            s->skip_map_chunk_offset = avio_tell(pb);
+            s->skip_map_chunk_size = opcode_size;
+            avio_skip(pb, opcode_size);
+            break;
+
         case OPCODE_SET_DECODING_MAP:
             av_log(s->avf, AV_LOG_TRACE, "set decoding map\n");
 
@@ -525,8 +561,29 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
             avio_skip(pb, opcode_size);
             break;
 
-        case OPCODE_VIDEO_DATA:
-            av_log(s->avf, AV_LOG_TRACE, "set video data\n");
+        case OPCODE_VIDEO_DATA_06:
+            av_log(s->avf, AV_LOG_TRACE, "set video data format 0x06\n");
+            s->frame_format = 0x06;
+
+            /* log position and move on for now */
+            s->video_chunk_offset = avio_tell(pb);
+            s->video_chunk_size = opcode_size;
+            avio_skip(pb, opcode_size);
+            break;
+
+        case OPCODE_VIDEO_DATA_10:
+            av_log(s->avf, AV_LOG_TRACE, "set video data format 0x10\n");
+            s->frame_format = 0x10;
+
+            /* log position and move on for now */
+            s->video_chunk_offset = avio_tell(pb);
+            s->video_chunk_size = opcode_size;
+            avio_skip(pb, opcode_size);
+            break;
+
+        case OPCODE_VIDEO_DATA_11:
+            av_log(s->avf, AV_LOG_TRACE, "set video data format 0x11\n");
+            s->frame_format = 0x11;
 
             /* log position and move on for now */
             s->video_chunk_offset = avio_tell(pb);
@@ -592,7 +649,10 @@ static int ipmovie_read_header(AVFormatContext *s)
     /* initialize private context members */
     ipmovie->video_pts = ipmovie->audio_frame_count = 0;
     ipmovie->audio_chunk_offset = ipmovie->video_chunk_offset =
-    ipmovie->decode_map_chunk_offset = 0;
+    ipmovie->decode_map_chunk_offset = ipmovie->skip_map_chunk_offset = 0;
+    ipmovie->decode_map_chunk_size = ipmovie->video_chunk_size =
+    ipmovie->skip_map_chunk_size = 0;
+    ipmovie->send_buffer = ipmovie->frame_format = 0;
 
     /* on the first read, this will position the stream at the first chunk */
     ipmovie->next_chunk_offset = avio_tell(pb) + 4;
@@ -653,6 +713,8 @@ static int ipmovie_read_packet(AVFormatContext *s,
         ret = AVERROR(EIO);
     else if (ret == CHUNK_NOMEM)
         ret = AVERROR(ENOMEM);
+    else if (ret == CHUNK_END || ret == CHUNK_SHUTDOWN)
+        ret = AVERROR_EOF;
     else if (ret == CHUNK_VIDEO)
         ret = 0;
     else if (ret == CHUNK_INIT_VIDEO || ret == CHUNK_INIT_AUDIO)

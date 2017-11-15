@@ -35,7 +35,7 @@ static av_always_inline void FUNC(intra_pred)(HEVCContext *s, int x0, int y0,
 #define MVF(x, y) \
     (s->ref->tab_mvf[(x) + (y) * min_pu_width])
 #define MVF_PU(x, y) \
-    MVF(PU(x0 + ((x) << hshift)), PU(y0 + ((y) << vshift)))
+    MVF(PU(x0 + ((x) * (1 << hshift))), PU(y0 + ((y) * (1 << vshift))))
 #define IS_INTRA(x, y) \
     (MVF_PU(x, y).pred_flag == PF_INTRA)
 #define MIN_TB_ADDR_ZS(x, y) \

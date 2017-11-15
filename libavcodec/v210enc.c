@@ -110,6 +110,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     ff_v210enc_init(s);
 
+    avctx->bits_per_coded_sample = 20;
+    avctx->bit_rate = ff_guess_coded_bitrate(avctx) * 16 / 15;
+
     return 0;
 }
 

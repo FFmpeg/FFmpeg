@@ -187,32 +187,32 @@ HEVC_SAMPLES_444_12BIT =        \
 
 define FATE_HEVC_TEST
 FATE_HEVC += fate-hevc-conformance-$(1)
-fate-hevc-conformance-$(1): CMD = framecrc -flags unaligned -vsync drop -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bit
+fate-hevc-conformance-$(1): CMD = framecrc -flags unaligned -vsync drop -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bit -pix_fmt yuv420p
 endef
 
 define FATE_HEVC_TEST_10BIT
 FATE_HEVC += fate-hevc-conformance-$(1)
-fate-hevc-conformance-$(1): CMD = framecrc -flags unaligned -vsync drop -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bit -pix_fmt yuv420p10le
+fate-hevc-conformance-$(1): CMD = framecrc -flags unaligned -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bit -pix_fmt yuv420p10le
 endef
 
 define FATE_HEVC_TEST_422_10BIT
 FATE_HEVC += fate-hevc-conformance-$(1)
-fate-hevc-conformance-$(1): CMD = framecrc -flags unaligned -vsync drop -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bit -pix_fmt yuv422p10le
+fate-hevc-conformance-$(1): CMD = framecrc -flags unaligned -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bit -pix_fmt yuv422p10le
 endef
 
 define FATE_HEVC_TEST_422_10BIN
 FATE_HEVC += fate-hevc-conformance-$(1)
-fate-hevc-conformance-$(1): CMD = framecrc -flags unaligned -vsync drop -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bin -pix_fmt yuv422p10le
+fate-hevc-conformance-$(1): CMD = framecrc -flags unaligned -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bin -pix_fmt yuv422p10le
 endef
 
 define FATE_HEVC_TEST_444_8BIT
 FATE_HEVC += fate-hevc-conformance-$(1)
-fate-hevc-conformance-$(1): CMD = framecrc -flags unaligned -vsync drop -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bit
+fate-hevc-conformance-$(1): CMD = framecrc -flags unaligned -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bit -pix_fmt yuv444p
 endef
 
 define FATE_HEVC_TEST_444_12BIT
 FATE_HEVC += fate-hevc-conformance-$(1)
-fate-hevc-conformance-$(1): CMD = framecrc -flags unaligned -vsync drop -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bit -pix_fmt yuv444p12le
+fate-hevc-conformance-$(1): CMD = framecrc -flags unaligned -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bit -pix_fmt yuv444p12le
 endef
 
 $(foreach N,$(HEVC_SAMPLES),$(eval $(call FATE_HEVC_TEST,$(N))))
@@ -225,6 +225,9 @@ $(foreach N,$(HEVC_SAMPLES_444_12BIT),$(eval $(call FATE_HEVC_TEST_444_12BIT,$(N
 fate-hevc-paramchange-yuv420p-yuv420p10: CMD = framecrc -vsync 0 -i $(TARGET_SAMPLES)/hevc/paramchange_yuv420p_yuv420p10.hevc -sws_flags area+accurate_rnd+bitexact
 FATE_HEVC += fate-hevc-paramchange-yuv420p-yuv420p10
 
+fate-hevc-paired-fields: CMD = probeframes -show_entries frame=interlaced_frame,top_field_first $(TARGET_SAMPLES)/hevc/paired_fields.hevc
+FATE_HEVC_FFPROBE-$(call DEMDEC, HEVC, HEVC) += fate-hevc-paired-fields
+
 tests/data/hevc-mp4.mov: TAG = GEN
 tests/data/hevc-mp4.mov: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
@@ -232,12 +235,18 @@ tests/data/hevc-mp4.mov: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 
 FATE_HEVC-$(call ALLYES, HEVC_DEMUXER MOV_DEMUXER HEVC_MP4TOANNEXB_BSF MOV_MUXER HEVC_MUXER) += fate-hevc-bsf-mp4toannexb
 fate-hevc-bsf-mp4toannexb: tests/data/hevc-mp4.mov
-fate-hevc-bsf-mp4toannexb: CMD = md5 -i $(TARGET_PATH)/tests/data/hevc-mp4.mov -vcodec copy -fflags +bitexact -f hevc
+fate-hevc-bsf-mp4toannexb: CMD = md5 -i $(TARGET_PATH)/tests/data/hevc-mp4.mov -c:v copy -fflags +bitexact -f hevc
 fate-hevc-bsf-mp4toannexb: CMP = oneline
 fate-hevc-bsf-mp4toannexb: REF = 1873662a3af1848c37e4eb25722c8df9
 
 FATE_HEVC-$(call DEMDEC, HEVC, HEVC) += $(FATE_HEVC)
 
-FATE_SAMPLES_AVCONV += $(FATE_HEVC-yes)
+# this sample has two stsd entries and needs to reload extradata
+FATE_HEVC-$(call DEMDEC, MOV, HEVC) += fate-hevc-extradata-reload
 
-fate-hevc: $(FATE_HEVC-yes)
+fate-hevc-extradata-reload: CMD = framemd5 -i $(TARGET_SAMPLES)/hevc/extradata-reload-multi-stsd.mov -sws_flags bitexact
+
+FATE_SAMPLES_AVCONV += $(FATE_HEVC-yes)
+FATE_SAMPLES_FFPROBE += $(FATE_HEVC_FFPROBE-yes)
+
+fate-hevc: $(FATE_HEVC-yes) $(FATE_HEVC_FFPROBE-yes)

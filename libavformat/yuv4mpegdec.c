@@ -126,6 +126,12 @@ static int yuv4_read_header(AVFormatContext *s)
                 pix_fmt = AV_PIX_FMT_YUV444P;
             } else if (strncmp("mono16", tokstart, 6) == 0) {
                 pix_fmt = AV_PIX_FMT_GRAY16;
+            } else if (strncmp("mono12", tokstart, 6) == 0) {
+                pix_fmt = AV_PIX_FMT_GRAY12;
+            } else if (strncmp("mono10", tokstart, 6) == 0) {
+                pix_fmt = AV_PIX_FMT_GRAY10;
+            } else if (strncmp("mono9", tokstart, 5) == 0) {
+                pix_fmt = AV_PIX_FMT_GRAY9;
             } else if (strncmp("mono", tokstart, 4) == 0) {
                 pix_fmt = AV_PIX_FMT_GRAY8;
             } else {
@@ -295,9 +301,10 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
     ret = av_get_packet(s->pb, pkt, s->packet_size - Y4M_FRAME_MAGIC_LEN);
     if (ret < 0)
         return ret;
-    else if (ret != s->packet_size - Y4M_FRAME_MAGIC_LEN)
+    else if (ret != s->packet_size - Y4M_FRAME_MAGIC_LEN) {
+        av_packet_unref(pkt);
         return s->pb->eof_reached ? AVERROR_EOF : AVERROR(EIO);
-
+    }
     pkt->stream_index = 0;
     pkt->pts = (off - s->internal->data_offset) / s->packet_size;
     pkt->duration = 1;

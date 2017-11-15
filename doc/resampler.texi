@@ -132,12 +132,13 @@ For swr only, set resampling phase shift, default value is 10, and must be in
 the interval [0,30].
 
 @item linear_interp
-Use linear interpolation if set to 1, default value is 0.
+Use linear interpolation when enabled (the default). Disable it if you want
+to preserve speed instead of quality when exact_rational fails.
 
 @item exact_rational
 For swr only, when enabled, try to use exact phase_count based on input and
 output sample rate. However, if it is larger than @code{1 << phase_shift},
-the phase_count will be @code{1 << phase_shift} as fallback. Default is disabled.
+the phase_count will be @code{1 << phase_shift} as fallback. Default is enabled.
 
 @item cutoff
 Set cutoff frequency (swr: 6dB point; soxr: 0dB point) ratio; must be a float

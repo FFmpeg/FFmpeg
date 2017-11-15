@@ -16,6 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/timer.h"
+
 #include "libavutil/des.c"
 
 #include <stdint.h>
@@ -34,7 +36,7 @@ static uint64_t rand64(void)
 
 static const uint8_t test_key[] = { 0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0 };
 static const DECLARE_ALIGNED(8, uint8_t, plain)[] = { 0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10 };
-static const DECLARE_ALIGNED(8, uint8_t, crypt)[] = { 0x4a, 0xb6, 0x5b, 0x3d, 0x4b, 0x06, 0x15, 0x18 };
+static const DECLARE_ALIGNED(8, uint8_t, crypt_ref)[] = { 0x4a, 0xb6, 0x5b, 0x3d, 0x4b, 0x06, 0x15, 0x18 };
 static DECLARE_ALIGNED(8, uint8_t, tmp)[8];
 static DECLARE_ALIGNED(8, uint8_t, large_buffer)[10002][8];
 static const uint8_t cbc_key[] = {
@@ -67,25 +69,28 @@ static int run_test(int cbc, int decrypt)
     }
 }
 
+union word_byte {
+    uint64_t word;
+    uint8_t byte[8];
+};
+
 int main(void)
 {
     AVDES d;
     int i;
-    uint64_t key[3];
-    uint64_t data;
-    uint64_t ct;
+    union word_byte key[3], data, ct;
     uint64_t roundkeys[16];
     srand(av_gettime());
-    key[0] = AV_RB64(test_key);
-    data   = AV_RB64(plain);
-    gen_roundkeys(roundkeys, key[0]);
-    if (des_encdec(data, roundkeys, 0) != AV_RB64(crypt)) {
+    key[0].word = AV_RB64(test_key);
+    data.word   = AV_RB64(plain);
+    gen_roundkeys(roundkeys, key[0].word);
+    if (des_encdec(data.word, roundkeys, 0) != AV_RB64(crypt_ref)) {
         printf("Test 1 failed\n");
         return 1;
     }
     av_des_init(&d, test_key, 64, 0);
     av_des_crypt(&d, tmp, plain, 1, NULL, 0);
-    if (memcmp(tmp, crypt, sizeof(crypt))) {
+    if (memcmp(tmp, crypt_ref, sizeof(crypt_ref))) {
         printf("Public API decryption failed\n");
         return 1;
     }
@@ -94,15 +99,15 @@ int main(void)
         return 1;
     }
     for (i = 0; i < 1000; i++) {
-        key[0] = rand64();
-        key[1] = rand64();
-        key[2] = rand64();
-        data   = rand64();
-        av_des_init(&d, (uint8_t *) key, 192, 0);
-        av_des_crypt(&d, (uint8_t *) &ct, (uint8_t *) &data, 1, NULL, 0);
-        av_des_init(&d, (uint8_t *) key, 192, 1);
-        av_des_crypt(&d, (uint8_t *) &ct, (uint8_t *) &ct, 1, NULL, 1);
-        if (ct != data) {
+        key[0].word = rand64();
+        key[1].word = rand64();
+        key[2].word = rand64();
+        data.word   = rand64();
+        av_des_init(&d, key[0].byte, 192, 0);
+        av_des_crypt(&d, ct.byte, data.byte, 1, NULL, 0);
+        av_des_init(&d, key[0].byte, 192, 1);
+        av_des_crypt(&d, ct.byte, ct.byte, 1, NULL, 1);
+        if (ct.word != data.word) {
             printf("Test 2 failed\n");
             return 1;
         }

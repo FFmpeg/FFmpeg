@@ -37,7 +37,7 @@
 #include "formats.h"
 #include "video.h"
 
-typedef struct {
+typedef struct CellAutoContext {
     const AVClass *class;
     int w, h;
     char *filename;
@@ -199,7 +199,7 @@ static av_cold int init(AVFilterContext *ctx)
     }
 
     av_log(ctx, AV_LOG_VERBOSE,
-           "s:%dx%d r:%d/%d rule:%d stitch:%d scroll:%d full:%d seed:%u\n",
+           "s:%dx%d r:%d/%d rule:%d stitch:%d scroll:%d full:%d seed:%"PRIu32"\n",
            s->w, s->h, s->frame_rate.num, s->frame_rate.den,
            s->rule, s->stitch, s->scroll, s->start_full,
            s->random_seed);

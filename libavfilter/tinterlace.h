@@ -27,8 +27,15 @@
 #ifndef AVFILTER_TINTERLACE_H
 #define AVFILTER_TINTERLACE_H
 
+#include "libavutil/bswap.h"
 #include "libavutil/opt.h"
+#include "libavutil/pixdesc.h"
+#include "drawutils.h"
 #include "avfilter.h"
+
+#define TINTERLACE_FLAG_VLPF 01
+#define TINTERLACE_FLAG_EXACT_TB 2
+#define TINTERLACE_FLAG_CVLPF 4
 
 enum TInterlaceMode {
     MODE_MERGE = 0,
@@ -42,7 +49,7 @@ enum TInterlaceMode {
     MODE_NB,
 };
 
-typedef struct {
+typedef struct TInterlaceContext {
     const AVClass *class;
     int mode;                   ///< TInterlaceMode, interlace mode selected
     AVRational preout_time_base;
@@ -53,8 +60,11 @@ typedef struct {
     AVFrame *next;
     uint8_t *black_data[4];     ///< buffer used to fill padded lines
     int black_linesize[4];
+    FFDrawContext draw;
+    FFDrawColor color;
+    const AVPixFmtDescriptor *csp;
     void (*lowpass_line)(uint8_t *dstp, ptrdiff_t width, const uint8_t *srcp,
-                         const uint8_t *srcp_above, const uint8_t *srcp_below);
+                         ptrdiff_t mref, ptrdiff_t pref, int clip_max);
 } TInterlaceContext;
 
 void ff_tinterlace_init_x86(TInterlaceContext *interlace);

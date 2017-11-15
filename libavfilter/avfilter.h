@@ -195,6 +195,21 @@ typedef struct AVFilter {
      */
 
     /**
+     * Filter pre-initialization function
+     *
+     * This callback will be called immediately after the filter context is
+     * allocated, to allow allocating and initing sub-objects.
+     *
+     * If this callback is not NULL, the uninit callback will be called on
+     * allocation failure.
+     *
+     * @return 0 on success,
+     *         AVERROR code on failure (but the code will be
+     *           dropped and treated as ENOMEM by the calling code)
+     */
+    int (*preinit)(AVFilterContext *ctx);
+
+    /**
      * Filter initialization function.
      *
      * This callback will be called only once during the filter lifetime, after
@@ -268,6 +283,8 @@ typedef struct AVFilter {
 
     int priv_size;      ///< size of private data to allocate for the filter
 
+    int flags_internal; ///< Additional flags for avfilter internal use only.
+
     /**
      * Used by the filter registration system. Must not be touched by any other
      * code.
@@ -294,6 +311,20 @@ typedef struct AVFilter {
      * used for providing binary data.
      */
     int (*init_opaque)(AVFilterContext *ctx, void *opaque);
+
+    /**
+     * Filter activation function.
+     *
+     * Called when any processing is needed from the filter, instead of any
+     * filter_frame and request_frame on pads.
+     *
+     * The function must examine inlinks and outlinks and perform a single
+     * step of processing. If there is nothing to do, the function must do
+     * nothing and not return an error. If more steps are or may be
+     * possible, it must use ff_filter_set_ready() to schedule another
+     * activation.
+     */
+    int (*activate)(AVFilterContext *ctx);
 } AVFilter;
 
 /**
@@ -368,6 +399,13 @@ struct AVFilterContext {
      * Overrides global number of threads set per filter graph.
      */
     int nb_threads;
+
+    /**
+     * Ready status of the filter.
+     * A non-0 value means that the filter needs activating;
+     * a higher value suggests a more urgent activation.
+     */
+    unsigned ready;
 };
 
 /**
@@ -376,6 +414,11 @@ struct AVFilterContext {
  * the pads involved. In addition, this link also contains the parameters
  * which have been negotiated and agreed upon between the filter, such as
  * image dimensions, format, etc.
+ *
+ * Applications must not normally access the link structure directly.
+ * Use the buffersrc and buffersink API instead.
+ * In the future, access to the header may be reserved for filters
+ * implementation.
  */
 struct AVFilterLink {
     AVFilterContext *src;       ///< source filter
@@ -509,18 +552,6 @@ struct AVFilterLink {
     int max_samples;
 
     /**
-     * Link status.
-     * If not zero, all attempts of filter_frame or request_frame
-     * will fail with the corresponding code, and if necessary the reference
-     * will be destroyed.
-     * If request_frame returns an error, the status is set on the
-     * corresponding link.
-     * It can be set also be set by either the source or the destination
-     * filter.
-     */
-    int status;
-
-    /**
      * Number of channels.
      */
     int channels;
@@ -533,19 +564,12 @@ struct AVFilterLink {
     /**
      * Number of past frames sent through the link.
      */
-    int64_t frame_count;
+    int64_t frame_count_in, frame_count_out;
 
     /**
-     * A pointer to a FFVideoFramePool struct.
+     * A pointer to a FFFramePool struct.
      */
-    void *video_frame_pool;
-
-    /**
-     * True if a frame is currently wanted on the input of this filter.
-     * Set when ff_request_frame() is called by the output,
-     * cleared when the request is handled or forwarded.
-     */
-    int frame_wanted_in;
+    void *frame_pool;
 
     /**
      * True if a frame is currently wanted on the output of this filter.
@@ -559,6 +583,51 @@ struct AVFilterLink {
      * AVHWFramesContext describing the frames.
      */
     AVBufferRef *hw_frames_ctx;
+
+#ifndef FF_INTERNAL_FIELDS
+
+    /**
+     * Internal structure members.
+     * The fields below this limit are internal for libavfilter's use
+     * and must in no way be accessed by applications.
+     */
+    char reserved[0xF000];
+
+#else /* FF_INTERNAL_FIELDS */
+
+    /**
+     * Queue of frames waiting to be filtered.
+     */
+    FFFrameQueue fifo;
+
+    /**
+     * If set, the source filter can not generate a frame as is.
+     * The goal is to avoid repeatedly calling the request_frame() method on
+     * the same link.
+     */
+    int frame_blocked_in;
+
+    /**
+     * Link input status.
+     * If not zero, all attempts of filter_frame will fail with the
+     * corresponding code.
+     */
+    int status_in;
+
+    /**
+     * Timestamp of the input status change.
+     */
+    int64_t status_in_pts;
+
+    /**
+     * Link output status.
+     * If not zero, all attempts of request_frame will fail with the
+     * corresponding code.
+     */
+    int status_out;
+
+#endif /* FF_INTERNAL_FIELDS */
+
 };
 
 /**
@@ -611,12 +680,6 @@ int avfilter_process_command(AVFilterContext *filter, const char *cmd, const cha
 /** Initialize the filter system. Register all builtin filters. */
 void avfilter_register_all(void);
 
-#if FF_API_OLD_FILTER_REGISTER
-/** Uninitialize the filter system. Unregister all filters. */
-attribute_deprecated
-void avfilter_uninit(void);
-#endif
-
 /**
  * Register a filter. This is only needed if you plan to use
  * avfilter_get_by_name later to lookup the AVFilter structure by name. A
@@ -636,10 +699,7 @@ int avfilter_register(AVFilter *filter);
  * @return     the filter definition, if any matching one is registered.
  *             NULL if none found.
  */
-#if !FF_API_NOCONST_GET_NAME
-const
-#endif
-AVFilter *avfilter_get_by_name(const char *name);
+const AVFilter *avfilter_get_by_name(const char *name);
 
 /**
  * Iterate over all registered filters.
@@ -647,49 +707,6 @@ AVFilter *avfilter_get_by_name(const char *name);
  * prev is the last filter. If prev is NULL, return the first registered filter.
  */
 const AVFilter *avfilter_next(const AVFilter *prev);
-
-#if FF_API_OLD_FILTER_REGISTER
-/**
- * If filter is NULL, returns a pointer to the first registered filter pointer,
- * if filter is non-NULL, returns the next pointer after filter.
- * If the returned pointer points to NULL, the last registered filter
- * was already reached.
- * @deprecated use avfilter_next()
- */
-attribute_deprecated
-AVFilter **av_filter_next(AVFilter **filter);
-#endif
-
-#if FF_API_AVFILTER_OPEN
-/**
- * Create a filter instance.
- *
- * @param filter_ctx put here a pointer to the created filter context
- * on success, NULL on failure
- * @param filter    the filter to create an instance of
- * @param inst_name Name to give to the new instance. Can be NULL for none.
- * @return >= 0 in case of success, a negative error code otherwise
- * @deprecated use avfilter_graph_alloc_filter() instead
- */
-attribute_deprecated
-int avfilter_open(AVFilterContext **filter_ctx, AVFilter *filter, const char *inst_name);
-#endif
-
-
-#if FF_API_AVFILTER_INIT_FILTER
-/**
- * Initialize a filter.
- *
- * @param filter the filter to initialize
- * @param args   A string of parameters to use when initializing the filter.
- *               The format and meaning of this string varies by filter.
- * @param opaque Any extra non-string data needed by the filter. The meaning
- *               of this parameter varies by filter.
- * @return       zero on success
- */
-attribute_deprecated
-int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque);
-#endif
 
 /**
  * Initialize a filter with the supplied parameters.
@@ -789,7 +806,9 @@ typedef struct AVFilterGraph {
     unsigned nb_filters;
 
     char *scale_sws_opts; ///< sws options to use for the auto-inserted scale filters
-    char *resample_lavr_opts;   ///< libavresample options to use for the auto-inserted resample filters
+#if FF_API_LAVR_OPTS
+    attribute_deprecated char *resample_lavr_opts;   ///< libavresample options to use for the auto-inserted resample filters
+#endif
 
     /**
      * Type of multithreading allowed for filters in this graph. A combination
@@ -887,20 +906,6 @@ AVFilterContext *avfilter_graph_alloc_filter(AVFilterGraph *graph,
  * cannot be found.
  */
 AVFilterContext *avfilter_graph_get_filter(AVFilterGraph *graph, const char *name);
-
-#if FF_API_AVFILTER_OPEN
-/**
- * Add an existing filter instance to a filter graph.
- *
- * @param graphctx  the filter graph
- * @param filter the filter to be added
- *
- * @deprecated use avfilter_graph_alloc_filter() to allocate a filter in a
- * filter graph
- */
-attribute_deprecated
-int avfilter_graph_add_filter(AVFilterGraph *graphctx, AVFilterContext *filter);
-#endif
 
 /**
  * Create and add a filter instance into an existing graph.

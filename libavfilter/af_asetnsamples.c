@@ -33,7 +33,7 @@
 #include "internal.h"
 #include "formats.h"
 
-typedef struct {
+typedef struct ASNSContext {
     const AVClass *class;
     int nb_out_samples;  ///< how many samples to output
     AVAudioFifo *fifo;   ///< samples are queued here

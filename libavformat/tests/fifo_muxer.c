@@ -25,6 +25,7 @@
 #include "libavutil/avassert.h"
 #include "libavformat/avformat.h"
 #include "libavformat/url.h"
+#include "libavformat/network.h"
 
 #define MAX_TST_PACKETS 128
 #define SLEEPTIME_50_MS 50000
@@ -150,6 +151,9 @@ static int prepare_packet(AVPacket *pkt,const FailingMuxerPacketData *pkt_data, 
 {
     int ret;
     FailingMuxerPacketData *data = av_malloc(sizeof(*data));
+    if (!data) {
+        return AVERROR(ENOMEM);
+    }
     memcpy(data, pkt_data, sizeof(FailingMuxerPacketData));
     ret = av_packet_from_data(pkt, (uint8_t*) data, sizeof(*data));
 

@@ -75,11 +75,11 @@
 #include "aac.h"
 #include "aactab.h"
 #include "aacdectab.h"
+#include "adts_header.h"
 #include "cbrt_data.h"
 #include "sbr.h"
 #include "aacsbr.h"
 #include "mpeg4audio.h"
-#include "aacadtsdec.h"
 #include "profiles.h"
 #include "libavutil/intfloat.h"
 
@@ -125,7 +125,7 @@ static inline int *DEC_SQUAD(int *dst, unsigned idx)
 static inline int *DEC_UPAIR(int *dst, unsigned idx, unsigned sign)
 {
     dst[0] = (idx & 15) * (1 - (sign & 0xFFFFFFFE));
-    dst[1] = (idx >> 4 & 15) * (1 - ((sign & 1) << 1));
+    dst[1] = (idx >> 4 & 15) * (1 - ((sign & 1) * 2));
 
     return dst + 2;
 }
@@ -134,16 +134,16 @@ static inline int *DEC_UQUAD(int *dst, unsigned idx, unsigned sign)
 {
     unsigned nz = idx >> 12;
 
-    dst[0] = (idx & 3) * (1 + (((int)sign >> 31) << 1));
+    dst[0] = (idx & 3) * (1 + (((int)sign >> 31) * 2));
     sign <<= nz & 1;
     nz >>= 1;
-    dst[1] = (idx >> 2 & 3) * (1 + (((int)sign >> 31) << 1));
+    dst[1] = (idx >> 2 & 3) * (1 + (((int)sign >> 31) * 2));
     sign <<= nz & 1;
     nz >>= 1;
-    dst[2] = (idx >> 4 & 3) * (1 + (((int)sign >> 31) << 1));
+    dst[2] = (idx >> 4 & 3) * (1 + (((int)sign >> 31) * 2));
     sign <<= nz & 1;
     nz >>= 1;
-    dst[3] = (idx >> 6 & 3) * (1 + (((int)sign >> 31) << 1));
+    dst[3] = (idx >> 6 & 3) * (1 + (((int)sign >> 31) * 2));
 
     return dst + 4;
 }
@@ -171,20 +171,25 @@ static void subband_scale(int *dst, int *src, int scale, int offset, int len)
 
     s = offset - (s >> 2);
 
-    if (s > 0) {
+    if (s > 31) {
+        for (i=0; i<len; i++) {
+            dst[i] = 0;
+        }
+    } else if (s > 0) {
         round = 1 << (s-1);
         for (i=0; i<len; i++) {
             out = (int)(((int64_t)src[i] * c) >> 32);
             dst[i] = ((int)(out+round) >> s) * ssign;
         }
-    }
-    else {
+    } else if (s > -32) {
         s = s + 32;
-        round = 1 << (s-1);
+        round = 1U << (s-1);
         for (i=0; i<len; i++) {
             out = (int)((int64_t)((int64_t)src[i] * c + round) >> s);
-            dst[i] = out * ssign;
+            dst[i] = out * (unsigned)ssign;
         }
+    } else {
+        av_log(NULL, AV_LOG_ERROR, "Overflow in subband_scale()\n");
     }
 }
 
@@ -203,8 +208,12 @@ static void noise_scale(int *coefs, int scale, int band_energy, int len)
     c /= band_energy;
     s = 21 + nlz - (s >> 2);
 
-    if (s > 0) {
-        round = 1 << (s-1);
+    if (s > 31) {
+        for (i=0; i<len; i++) {
+            coefs[i] = 0;
+        }
+    } else if (s >= 0) {
+        round = s ? 1 << (s-1) : 0;
         for (i=0; i<len; i++) {
             out = (int)(((int64_t)coefs[i] * c) >> 32);
             coefs[i] = ((int)(out+round) >> s) * ssign;
@@ -296,8 +305,12 @@ static av_always_inline void predict(PredictorState *ps, int *coef,
     if (output_enable) {
         int shift = 28 - pv.exp;
 
-        if (shift < 31)
-            *coef += (pv.mant + (1 << (shift - 1))) >> shift;
+        if (shift < 31) {
+            if (shift > 0) {
+                *coef += (unsigned)((pv.mant + (1 << (shift - 1))) >> shift);
+            } else
+                *coef += (unsigned)pv.mant << -shift;
+        }
     }
 
     e0 = av_int2sf(*coef, 2);
@@ -362,7 +375,9 @@ static void apply_dependent_coupling_fixed(AACContext *ac,
                     shift = (gain-1024) >> 3;
                 }
 
-                if (shift < 0) {
+                if (shift < -31) {
+                    // Nothing to do
+                } else if (shift < 0) {
                     shift = -shift;
                     round = 1 << (shift - 1);
 
@@ -379,7 +394,7 @@ static void apply_dependent_coupling_fixed(AACContext *ac,
                         for (k = offsets[i]; k < offsets[i + 1]; k++) {
                             tmp = (int)(((int64_t)src[group * 128 + k] * c + \
                                         (int64_t)0x1000000000) >> 37);
-                            dest[group * 128 + k] += tmp << shift;
+                            dest[group * 128 + k] += tmp * (1U << shift);
                         }
                     }
                 }
@@ -407,7 +422,9 @@ static void apply_independent_coupling_fixed(AACContext *ac,
 
     c = cce_scale_fixed[gain & 7];
     shift = (gain-1024) >> 3;
-    if (shift < 0) {
+    if (shift < -31) {
+        return;
+    } else if (shift < 0) {
         shift = -shift;
         round = 1 << (shift - 1);
 
@@ -419,7 +436,7 @@ static void apply_independent_coupling_fixed(AACContext *ac,
     else {
       for (i = 0; i < len; i++) {
           tmp = (int)(((int64_t)src[i] * c + (int64_t)0x1000000000) >> 37);
-          dest[i] += tmp << shift;
+          dest[i] += tmp * (1 << shift);
       }
     }
 }

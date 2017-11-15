@@ -38,7 +38,7 @@ static int rso_write_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    if (!s->pb->seekable) {
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL)) {
         av_log(s, AV_LOG_ERROR, "muxer does not support non seekable output\n");
         return AVERROR_INVALIDDATA;
     }
@@ -50,7 +50,7 @@ static int rso_write_header(AVFormatContext *s)
     }
 
     if (par->codec_id == AV_CODEC_ID_ADPCM_IMA_WAV) {
-        av_log(s, AV_LOG_ERROR, "ADPCM in RSO not implemented\n");
+        avpriv_report_missing_feature(s, "ADPCM in RSO");
         return AVERROR_PATCHWELCOME;
     }
 

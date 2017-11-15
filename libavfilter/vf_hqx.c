@@ -34,7 +34,7 @@
 
 typedef int (*hqxfunc_t)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 
-typedef struct {
+typedef struct HQXContext {
     const AVClass *class;
     int n;
     hqxfunc_t func;

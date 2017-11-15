@@ -32,6 +32,7 @@
 #    define DELEM  double
 #    define FELEM  double
 #    define FELEM2 double
+#    define FOFFSET 0
 #    define OUT(d, v) d = v
 
 #elif    defined(TEMPLATE_RESAMPLE_FLT)
@@ -41,6 +42,7 @@
 #    define DELEM  float
 #    define FELEM  float
 #    define FELEM2 float
+#    define FOFFSET 0
 #    define OUT(d, v) d = v
 
 #elif defined(TEMPLATE_RESAMPLE_S32)
@@ -52,8 +54,8 @@
 #    define FELEM2 int64_t
 #    define FELEM_MAX INT32_MAX
 #    define FELEM_MIN INT32_MIN
-#    define OUT(d, v) (v) = ((v) + (1<<(FILTER_SHIFT-1)))>>FILTER_SHIFT;\
-                      (d) = av_clipl_int32(v)
+#    define FOFFSET (1<<(FILTER_SHIFT-1))
+#    define OUT(d, v) (d) = av_clipl_int32((v)>>FILTER_SHIFT)
 
 #elif    defined(TEMPLATE_RESAMPLE_S16)
 
@@ -65,8 +67,8 @@
 #    define FELEML int64_t
 #    define FELEM_MAX INT16_MAX
 #    define FELEM_MIN INT16_MIN
-#    define OUT(d, v) (v) = ((v) + (1<<(FILTER_SHIFT-1)))>>FILTER_SHIFT;\
-                      (d) = av_clip_int16(v)
+#    define FOFFSET (1<<(FILTER_SHIFT-1))
+#    define OUT(d, v) (d) = av_clip_int16((v)>>FILTER_SHIFT)
 
 #endif
 
@@ -102,12 +104,20 @@ static int RENAME(resample_common)(ResampleContext *c,
     for (dst_index = 0; dst_index < n; dst_index++) {
         FELEM *filter = ((FELEM *) c->filter_bank) + c->filter_alloc * index;
 
-        FELEM2 val=0;
+        FELEM2 val = FOFFSET;
+        FELEM2 val2= 0;
         int i;
-        for (i = 0; i < c->filter_length; i++) {
-            val += src[sample_index + i] * (FELEM2)filter[i];
+        for (i = 0; i + 1 < c->filter_length; i+=2) {
+            val  += src[sample_index + i    ] * (FELEM2)filter[i    ];
+            val2 += src[sample_index + i + 1] * (FELEM2)filter[i + 1];
         }
-        OUT(dst[dst_index], val);
+        if (i < c->filter_length)
+            val  += src[sample_index + i    ] * (FELEM2)filter[i    ];
+#ifdef FELEML
+        OUT(dst[dst_index], val + (FELEML)val2);
+#else
+        OUT(dst[dst_index], val + val2);
+#endif
 
         frac  += c->dst_incr_mod;
         index += c->dst_incr_div;
@@ -151,7 +161,7 @@ static int RENAME(resample_linear)(ResampleContext *c,
 
     for (dst_index = 0; dst_index < n; dst_index++) {
         FELEM *filter = ((FELEM *) c->filter_bank) + c->filter_alloc * index;
-        FELEM2 val=0, v2 = 0;
+        FELEM2 val = FOFFSET, v2 = FOFFSET;
 
         int i;
         for (i = 0; i < c->filter_length; i++) {
@@ -199,3 +209,4 @@ static int RENAME(resample_linear)(ResampleContext *c,
 #undef FELEM_MAX
 #undef FELEM_MIN
 #undef OUT
+#undef FOFFSET

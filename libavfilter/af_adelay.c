@@ -171,11 +171,6 @@ static int config_input(AVFilterLink *inlink)
         s->max_delay = FFMAX(s->max_delay, d->delay);
     }
 
-    if (!s->max_delay) {
-        av_log(ctx, AV_LOG_ERROR, "At least one delay >0 must be specified.\n");
-        return AVERROR(EINVAL);
-    }
-
     switch (inlink->format) {
     case AV_SAMPLE_FMT_U8P : s->delay_channel = delay_channel_u8p ; break;
     case AV_SAMPLE_FMT_S16P: s->delay_channel = delay_channel_s16p; break;

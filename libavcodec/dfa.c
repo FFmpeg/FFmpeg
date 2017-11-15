@@ -67,7 +67,8 @@ static int decode_tsw1(GetByteContext *gb, uint8_t *frame, int width, int height
     const uint8_t *frame_start = frame;
     const uint8_t *frame_end   = frame + width * height;
     int mask = 0x10000, bitbuf = 0;
-    int v, count, segments;
+    int v, count;
+    unsigned segments;
     unsigned offset;
 
     segments = bytestream2_get_le32(gb);
@@ -148,6 +149,8 @@ static int decode_dds1(GetByteContext *gb, uint8_t *frame, int width, int height
     int mask = 0x10000, bitbuf = 0;
     int i, v, offset, count, segments;
 
+    if ((width | height) & 1)
+        return AVERROR_INVALIDDATA;
     segments = bytestream2_get_le16(gb);
     while (segments--) {
         if (bytestream2_get_bytes_left(gb) < 2)
@@ -175,7 +178,7 @@ static int decode_dds1(GetByteContext *gb, uint8_t *frame, int width, int height
                 return AVERROR_INVALIDDATA;
             frame += v;
         } else {
-            if (frame_end - frame < width + 3)
+            if (width < 4 || frame_end - frame < width + 4)
                 return AVERROR_INVALIDDATA;
             frame[0] = frame[1] =
             frame[width] = frame[width + 1] =  bytestream2_get_byte(gb);
@@ -249,7 +252,7 @@ static int decode_wdlt(GetByteContext *gb, uint8_t *frame, int width, int height
         segments = bytestream2_get_le16u(gb);
         while ((segments & 0xC000) == 0xC000) {
             unsigned skip_lines = -(int16_t)segments;
-            unsigned delta = -((int16_t)segments * width);
+            int64_t delta = -((int16_t)segments * (int64_t)width);
             if (frame_end - frame <= delta || y + lines + skip_lines > height)
                 return AVERROR_INVALIDDATA;
             frame    += delta;
@@ -329,7 +332,7 @@ static const chunk_decoder decoder[8] = {
     decode_tdlt, decode_dsw1, decode_blck, decode_dds1,
 };
 
-static const char* chunk_name[8] = {
+static const char * const chunk_name[8] = {
     "COPY", "TSW1", "BDLT", "WDLT", "TDLT", "DSW1", "BLCK", "DDS1"
 };
 

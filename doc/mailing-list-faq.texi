@@ -1,0 +1,366 @@
+\input texinfo @c -*- texinfo -*-
+@documentencoding UTF-8
+
+@settitle FFmpeg Mailing List FAQ
+@titlepage
+@center @titlefont{FFmpeg Mailing List FAQ}
+@end titlepage
+
+@top
+
+@contents
+
+@chapter General Questions
+
+@section What is a mailing list?
+
+A mailing list is not much different than emailing someone, but the
+main difference is that your message is received by everyone who
+subscribes to the list. It is somewhat like a forum but in email form.
+
+See the @url{https://lists.ffmpeg.org/pipermail/ffmpeg-user/, ffmpeg-user archives}
+for examples.
+
+@section What type of questions can I ask?
+
+@itemize
+@item
+@url{https://lists.ffmpeg.org/mailman/listinfo/ffmpeg-user/, ffmpeg-user}:
+For questions involving unscripted usage or compilation of the FFmpeg
+command-line tools (@command{ffmpeg}, @command{ffprobe}, @command{ffplay},
+@command{ffserver}).
+
+@item
+@url{https://lists.ffmpeg.org/mailman/listinfo/libav-user/, libav-user}:
+For questions involving the FFmpeg libav* libraries (libavcodec,
+libavformat, libavfilter, etc).
+
+@item
+@url{https://lists.ffmpeg.org/mailman/listinfo/ffmpeg-devel/, ffmpeg-devel}:
+For discussions involving the development of FFmpeg and for submitting
+patches. User questions should be asked at ffmpeg-user or libav-user.
+@end itemize
+
+To report a bug see @url{https://ffmpeg.org/bugreports.html}.
+
+We cannot provide help for scripts and/or third-party tools.
+
+@anchor{How do I ask a question or send a message to a mailing list?}
+@section How do I ask a question or send a message to a mailing list?
+
+All you have to do is send an email:
+
+@itemize
+@item
+Email @email{ffmpeg-user@@ffmpeg.org} to send a message to the
+ffmpeg-user mailing list.
+
+@item
+Email @email{libav-user@@ffmpeg.org} to send a message to the
+libav-user mailing list.
+@end itemize
+
+If you are not subscribed to the mailing list then your question must be
+manually approved. Approval may take several days, but the wait is
+usually less. If you want the message to be sent with no delay then you
+must subscribe first. See @ref{How do I subscribe?}
+
+Please do not send a message, subscribe, and re-send the message: this
+results in duplicates, causes more work for the admins, and may lower
+your chance at getting an answer. However, you may do so if you first
+@ref{How do I delete my message in the moderation queue?, delete your original message from the moderation queue}.
+
+@chapter Subscribing / Unsubscribing
+
+@section What does subscribing do?
+
+Subscribing allows two things:
+
+@itemize
+@item
+Your messages will show up in the mailing list without waiting in the
+moderation queue and needing to be manually approved by a mailing list
+admin.
+
+@item
+You will receive all messages to the mailing list including replies to
+your messages. Non-subscribed users do not receive any messages.
+@end itemize
+
+@section Do I need to subscribe?
+
+No. You can still send a message to the mailing list without
+subscribing. See @ref{How do I ask a question or send a message to a mailing list?}
+
+However, your message will need to be manually approved by a mailing
+list admin, and you will not receive any mailing list messages or
+replies.
+
+You can ask to be CCd in your message, but replying users will
+sometimes forget to do so.
+
+You may also view and reply to messages via the @ref{Where are the archives?, archives}.
+
+@anchor{How do I subscribe?}
+@section How do I subscribe?
+
+Email @email{ffmpeg-user-request@@ffmpeg.org} with the subject
+@emph{subscribe}.
+
+Or visit the @url{https://lists.ffmpeg.org/mailman/listinfo/ffmpeg-user/, ffmpeg-user mailing list info page}
+and refer to the @emph{Subscribing to ffmpeg-user} section.
+
+The process is the same for the other mailing lists.
+
+@section How do I unsubscribe?
+
+Email @email{ffmpeg-user-request@@ffmpeg.org} with subject @emph{unsubscribe}.
+
+Or visit the @url{https://lists.ffmpeg.org/mailman/listinfo/ffmpeg-user/, ffmpeg-user mailing list info page},
+scroll to bottom of page, enter your email address in the box, and click
+the @emph{Unsubscribe or edit options} button.
+
+The process is the same for the other mailing lists.
+
+Please avoid asking a mailing list admin to unsubscribe you unless you
+are absolutely unable to do so by yourself. See @ref{Who do I contact if I have a problem with the mailing list?}
+
+@chapter Moderation Queue
+@anchor{Why is my message awaiting moderator approval?}
+@section Why is my message awaiting moderator approval?
+
+Some messages are automatically held in the @emph{moderation queue} and
+must be manually approved by a mailing list admin:
+
+These are:
+
+@itemize
+@item
+Messages from users who are @strong{not} subscribed.
+
+@item
+Messages that exceed the @ref{What is the message size limit?, message size limit}.
+
+@item
+Messages from users whose accounts have been set with the @emph{moderation flag}
+(very rarely occurs, but may if a user repeatedly ignores the rules
+or is abusive towards others).
+@end itemize
+
+@section How long does it take for my message in the moderation queue to be approved?
+
+The queue is usually checked once or twice a day, but on occasion
+several days may pass before someone checks the queue.
+
+@anchor{How do I delete my message in the moderation queue?}
+@section How do I delete my message in the moderation queue?
+
+You should have received an email with the subject @emph{Your message to ffmpeg-user awaits moderator approval}.
+A link is in the message that will allow you to delete your message
+unless a mailing list admin already approved or rejected it.
+
+@chapter Archives
+
+@anchor{Where are the archives?}
+@section Where are the archives?
+
+See the @emph{Archives} section on the @url{https://ffmpeg.org/contact.html, FFmpeg Contact}
+page for links to all FFmpeg mailing list archives.
+
+Note that the archives are split by month. Discussions that span
+several months will be split into separate months in the archives.
+
+@section How do I reply to a message in the archives?
+
+Click the email link at the top of the message just under the subject
+title. The link will provide the proper headers to keep the message
+within the thread.
+
+@section How do I search the archives?
+
+Perform a site search using your favorite search engine. Example:
+
+@t{site:lists.ffmpeg.org/pipermail/ffmpeg-user/ "search term"}
+
+@chapter Other
+
+@section Is there an alternative to the mailing list?
+
+You can ask for help in the official @t{#ffmpeg} IRC channel on Freenode.
+
+Some users prefer the third-party Nabble interface which presents the
+mailing lists in a typical forum layout.
+
+There are also numerous third-party help sites such as Super User and
+r/ffmpeg on reddit.
+
+@anchor{What is top-posting?}
+@section What is top-posting?
+
+See @url{https://en.wikipedia.org/wiki/Posting_style#Top-posting}.
+
+Instead, use trimmed interleaved/inline replies (@url{https://lists.ffmpeg.org/pipermail/ffmpeg-user/2017-April/035849.html, example}).
+
+@anchor{What is the message size limit?}
+@section What is the message size limit?
+
+The message size limit is 500 kilobytes for the user lists and 1000
+kilobytes for ffmpeg-devel. Please provide links to larger files instead
+of attaching them.
+
+@section Where can I upload sample files?
+
+Anywhere that is not too annoying for us to use.
+
+Google Drive and Dropbox are acceptable if you need a file host, and
+0x0.st is good for files under 256 MiB.
+
+Small, short samples are preferred if possible.
+
+@section Will I receive spam if I send and/or subscribe to a mailing list?
+
+Highly unlikely.
+
+@itemize
+@item
+The list of subscribed users is not public.
+
+@item
+Email addresses in the archives are obfuscated.
+
+@item
+Several unique test email accounts were utilized and none have yet
+received any spam.
+@end itemize
+
+However, you may see a spam in the mailing lists on rare occasions:
+
+@itemize
+@item
+Spam in the moderation queue may be accidentally approved due to human
+error.
+
+@item
+There have been a few messages from subscribed users who had their own
+email addresses hacked and spam messages from (or appearing to be from)
+the hacked account were sent to their contacts (a mailing list being a
+contact in these cases).
+
+@item
+If you are subscribed to the bug tracker mailing list (ffmpeg-trac) you
+may see the occasional spam as a false bug report, but we take measures
+to try to prevent this.
+@end itemize
+
+@section How do I filter mailing list messages?
+
+Use the @emph{List-Id}. For example, the ffmpeg-user mailing list is
+@t{ffmpeg-user.ffmpeg.org}. You can view the List-Id in the raw message
+or headers.
+
+You can then filter the mailing list messages to their own folder.
+
+@chapter Rules and Etiquette
+
+@section What are the rules and the proper etiquette?
+
+There may seem to be many things to remember, but we want to help and
+following these guidelines will allow you to get answers more quickly
+and help avoid getting ignored.
+
+@itemize
+@item
+Always show your actual, unscripted @command{ffmpeg} command and the
+complete, uncut console output from your command.
+
+@item
+Use the most simple and minimal command that still shows the issue you
+are encountering.
+
+@item
+Provide all necessary information so others can attempt to duplicate
+your issue. This includes the actual command, complete uncut console
+output, and any inputs that are required to duplicate the issue.
+
+@item
+Use the latest @command{ffmpeg} build you can get. See the @url{https://ffmpeg.org/download.html, FFmpeg Download}
+page for links to recent builds for Linux, macOS, and Windows. Or
+compile from the current git master branch.
+
+@item
+Avoid @url{https://en.wikipedia.org/wiki/Posting_style#Top-posting, top-posting}.
+Also see @ref{What is top-posting?}
+
+@item
+Avoid hijacking threads. Thread hijacking is replying to a message and
+changing the subject line to something unrelated to the original thread.
+Most email clients will still show the renamed message under the
+original thread. This can be confusing and these types of messages are
+often ignored.
+
+@item
+Do not send screenshots. Copy and paste console text instead of making
+screenshots of the text.
+
+@item
+Avoid sending email disclaimers and legalese if possible as this is a
+public list.
+
+@item
+Avoid using the @code{-loglevel debug}, @code{-loglevel quiet}, and
+@command{-hide_banner} options unless requested to do so.
+
+@item
+If you attach files avoid compressing small files. Uncompressed is
+preferred.
+
+@item
+Please do not send HTML-only messages. The mailing list will ignore the
+HTML component of your message. Most mail clients will automatically
+include a text component: this is what the mailing list will use.
+
+@item
+Configuring your mail client to break lines after 70 or so characters is
+recommended.
+
+@item
+Avoid sending the same message to multiple mailing lists.
+
+@item
+Please follow our @url{https://ffmpeg.org/developer.html#Code-of-conduct, Code of Conduct}.
+@end itemize
+
+@chapter Help
+
+@section Why am I not receiving any messages?
+
+Some email providers have blacklists or spam filters that block or mark
+the mailing list messages as false positives. Unfortunately, the user is
+often not aware of this and is often out of their control.
+
+When possible we attempt to notify the provider to be removed from the
+blacklists or filters.
+
+@section Why are my sent messages not showing up?
+
+Excluding @ref{Why is my message awaiting moderator approval?, messages that are held in the moderation queue}
+there are a few other reasons why your messages may fail to appear:
+
+@itemize
+@item
+HTML-only messages are ignored by the mailing lists. Most mail clients
+automatically include a text component alongside HTML email: this is what
+the mailing list will use. If it does not then consider your client to be
+broken, because sending a text component along with the HTML component to
+form a multi-part message is recommended by email standards.
+
+@item
+Check your spam folder.
+@end itemize
+
+@anchor{Who do I contact if I have a problem with the mailing list?}
+@section Who do I contact if I have a problem with the mailing list?
+
+Send a message to @email{ffmpeg-user-owner@@ffmpeg.org}.
+
+@bye

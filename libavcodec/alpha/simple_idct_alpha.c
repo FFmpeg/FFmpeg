@@ -290,13 +290,13 @@ void ff_simple_idct_axp(int16_t *block)
     }
 }
 
-void ff_simple_idct_put_axp(uint8_t *dest, int line_size, int16_t *block)
+void ff_simple_idct_put_axp(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
 {
     ff_simple_idct_axp(block);
     put_pixels_clamped_axp_p(block, dest, line_size);
 }
 
-void ff_simple_idct_add_axp(uint8_t *dest, int line_size, int16_t *block)
+void ff_simple_idct_add_axp(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
 {
     ff_simple_idct_axp(block);
     add_pixels_clamped_axp_p(block, dest, line_size);

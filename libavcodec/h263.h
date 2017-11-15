@@ -27,9 +27,7 @@
 #include "h263data.h"
 #include "rl.h"
 
-#if !FF_API_ASPECT_EXTENDED
 #define FF_ASPECT_EXTENDED 15
-#endif
 #define INT_BIT (CHAR_BIT * sizeof(int))
 
 // The defines below define the number of bits that are read at once for

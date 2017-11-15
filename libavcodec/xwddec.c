@@ -157,9 +157,9 @@ static int xwd_decode_frame(AVCodecContext *avctx, void *data,
     case XWD_GRAY_SCALE:
         if (bpp != 1 && bpp != 8)
             return AVERROR_INVALIDDATA;
-        if (pixdepth == 1) {
+        if (bpp == 1 && pixdepth == 1) {
             avctx->pix_fmt = AV_PIX_FMT_MONOWHITE;
-        } else if (pixdepth == 8) {
+        } else if (bpp == 8 && pixdepth == 8) {
             avctx->pix_fmt = AV_PIX_FMT_GRAY8;
         }
         break;

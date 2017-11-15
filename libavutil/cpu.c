@@ -16,8 +16,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stddef.h>
 #include <stdint.h>
+#include <stdatomic.h>
 
+#include "attributes.h"
 #include "cpu.h"
 #include "cpu_internal.h"
 #include "config.h"
@@ -44,10 +47,24 @@
 #include <unistd.h>
 #endif
 
-static int flags, checked;
+static atomic_int cpu_flags = ATOMIC_VAR_INIT(-1);
+
+static int get_cpu_flags(void)
+{
+    if (ARCH_AARCH64)
+        return ff_get_cpu_flags_aarch64();
+    if (ARCH_ARM)
+        return ff_get_cpu_flags_arm();
+    if (ARCH_PPC)
+        return ff_get_cpu_flags_ppc();
+    if (ARCH_X86)
+        return ff_get_cpu_flags_x86();
+    return 0;
+}
 
 void av_force_cpu_flags(int arg){
-    if (   (arg & ( AV_CPU_FLAG_3DNOW    |
+    if (ARCH_X86 &&
+           (arg & ( AV_CPU_FLAG_3DNOW    |
                     AV_CPU_FLAG_3DNOWEXT |
                     AV_CPU_FLAG_MMXEXT   |
                     AV_CPU_FLAG_SSE      |
@@ -69,33 +86,23 @@ void av_force_cpu_flags(int arg){
         arg |= AV_CPU_FLAG_MMX;
     }
 
-    flags   = arg;
-    checked = arg != -1;
+    atomic_store_explicit(&cpu_flags, arg, memory_order_relaxed);
 }
 
 int av_get_cpu_flags(void)
 {
-    if (checked)
-        return flags;
-
-    if (ARCH_AARCH64)
-        flags = ff_get_cpu_flags_aarch64();
-    if (ARCH_ARM)
-        flags = ff_get_cpu_flags_arm();
-    if (ARCH_PPC)
-        flags = ff_get_cpu_flags_ppc();
-    if (ARCH_X86)
-        flags = ff_get_cpu_flags_x86();
-
-    checked = 1;
+    int flags = atomic_load_explicit(&cpu_flags, memory_order_relaxed);
+    if (flags == -1) {
+        flags = get_cpu_flags();
+        atomic_store_explicit(&cpu_flags, flags, memory_order_relaxed);
+    }
     return flags;
 }
 
 void av_set_cpu_flags_mask(int mask)
 {
-    checked       = 0;
-    flags         = av_get_cpu_flags() & mask;
-    checked       = 1;
+    atomic_store_explicit(&cpu_flags, get_cpu_flags() & mask,
+                          memory_order_relaxed);
 }
 
 int av_parse_cpu_flags(const char *s)
@@ -293,4 +300,18 @@ int av_cpu_count(void)
     }
 
     return nb_cpus;
+}
+
+size_t av_cpu_max_align(void)
+{
+    if (ARCH_AARCH64)
+        return ff_get_cpu_max_align_aarch64();
+    if (ARCH_ARM)
+        return ff_get_cpu_max_align_arm();
+    if (ARCH_PPC)
+        return ff_get_cpu_max_align_ppc();
+    if (ARCH_X86)
+        return ff_get_cpu_max_align_x86();
+
+    return 8;
 }

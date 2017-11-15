@@ -19,6 +19,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
 #include "libavutil/thread.h"
@@ -73,6 +74,7 @@ typedef struct FifoContext {
     int restart_with_keyframe;
 
     pthread_mutex_t overflow_flag_lock;
+    int overflow_flag_lock_initialized;
     /* Value > 0 signals queue overflow */
     volatile uint8_t overflow_flag;
 
@@ -206,7 +208,7 @@ static int fifo_thread_write_trailer(FifoThreadContext *ctx)
 
 static int fifo_thread_dispatch_message(FifoThreadContext *ctx, FifoMessage *msg)
 {
-    int ret;
+    int ret = AVERROR(EINVAL);
 
     if (!ctx->header_written) {
         ret = fifo_thread_write_header(ctx);
@@ -216,6 +218,7 @@ static int fifo_thread_dispatch_message(FifoThreadContext *ctx, FifoMessage *msg
 
     switch(msg->type) {
     case FIFO_WRITE_HEADER:
+        av_assert0(ret >= 0);
         return ret;
     case FIFO_WRITE_PACKET:
         return fifo_thread_write_packet(ctx, &msg->pkt);
@@ -223,6 +226,7 @@ static int fifo_thread_dispatch_message(FifoThreadContext *ctx, FifoMessage *msg
         return fifo_thread_flush_output(ctx);
     }
 
+    av_assert0(0);
     return AVERROR(EINVAL);
 }
 
@@ -438,13 +442,14 @@ static void *fifo_consumer_thread(void *data)
     return NULL;
 }
 
-static int fifo_mux_init(AVFormatContext *avf, AVOutputFormat *oformat)
+static int fifo_mux_init(AVFormatContext *avf, AVOutputFormat *oformat,
+                         const char *filename)
 {
     FifoContext *fifo = avf->priv_data;
     AVFormatContext *avf2;
     int ret = 0, i;
 
-    ret = avformat_alloc_output_context2(&avf2, oformat, NULL, NULL);
+    ret = avformat_alloc_output_context2(&avf2, oformat, NULL, filename);
     if (ret < 0)
         return ret;
 
@@ -501,7 +506,7 @@ static int fifo_init(AVFormatContext *avf)
         return ret;
     }
 
-    ret = fifo_mux_init(avf, oformat);
+    ret = fifo_mux_init(avf, oformat, avf->filename);
     if (ret < 0)
         return ret;
 
@@ -515,6 +520,7 @@ static int fifo_init(AVFormatContext *avf)
     ret = pthread_mutex_init(&fifo->overflow_flag_lock, NULL);
     if (ret < 0)
         return AVERROR(ret);
+    fifo->overflow_flag_lock_initialized = 1;
 
     return 0;
 }
@@ -601,7 +607,8 @@ static void fifo_deinit(AVFormatContext *avf)
     av_dict_free(&fifo->format_options);
     avformat_free_context(fifo->avf);
     av_thread_message_queue_free(&fifo->queue);
-    pthread_mutex_destroy(&fifo->overflow_flag_lock);
+    if (fifo->overflow_flag_lock_initialized)
+        pthread_mutex_destroy(&fifo->overflow_flag_lock);
 }
 
 #define OFFSET(x) offsetof(FifoContext, x)

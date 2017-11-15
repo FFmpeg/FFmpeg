@@ -161,10 +161,6 @@ typedef struct H264Picture {
     int recovered;          ///< picture at IDR or recovery point + recovery count
     int invalid_gap;
     int sei_recovery_frame_cnt;
-
-    int crop;
-    int crop_left;
-    int crop_top;
 } H264Picture;
 
 typedef struct H264Ref {
@@ -353,6 +349,7 @@ typedef struct H264Context {
 
     H264SliceContext *slice_ctx;
     int            nb_slice_ctx;
+    int            nb_slice_ctx_queued;
 
     H2645Packet pkt;
 
@@ -362,20 +359,13 @@ typedef struct H264Context {
     int width, height;
     int chroma_x_shift, chroma_y_shift;
 
-    /**
-     * Backup frame properties: needed, because they can be different
-     * between returned frame and last decoded frame.
-     **/
-    int backup_width;
-    int backup_height;
-    enum AVPixelFormat backup_pix_fmt;
-
     int droppable;
     int coded_picture_number;
 
     int context_initialized;
     int flags;
     int workaround_bugs;
+    int x264_build;
     /* Set when slice threading is used and at least one slice uses deblocking
      * mode 1 (i.e. across slice boundaries). Then we disable the loop filter
      * during normal MB decoding and execute it serially at the end.
@@ -386,6 +376,11 @@ typedef struct H264Context {
      * Set to 1 when the current picture is IDR, 0 otherwise.
      */
     int picture_idr;
+
+    int crop_left;
+    int crop_right;
+    int crop_top;
+    int crop_bottom;
 
     int8_t(*intra4x4_pred_mode);
     H264PredContext hpc;
@@ -446,6 +441,8 @@ typedef struct H264Context {
     int nal_ref_idc;
     int nal_unit_type;
 
+    int has_slice;          ///< slice NAL is found in the packet, set by decode_nal_units, its state does not need to be preserved outside h264_decode_frame()
+
     /**
      * Used to parse AVC variant of H.264
      */
@@ -488,20 +485,6 @@ typedef struct H264Context {
      * current slice number, used to initialize slice_num of each thread/context
      */
     int current_slice;
-
-    /**
-     * Max number of threads / contexts.
-     * This is equal to AVCodecContext.thread_count unless
-     * multithreaded decoding is impossible, in which case it is
-     * reduced to 1.
-     */
-    int max_contexts;
-
-    /**
-     *  1 if the single thread fallback warning has already been
-     *  displayed, 0 otherwise.
-     */
-    int single_decode_warning;
 
     /** @} */
 
@@ -553,6 +536,11 @@ typedef struct H264Context {
     int cur_bit_depth_luma;
     int16_t slice_row[MAX_SLICES]; ///< to detect when MAX_SLICES is too low
 
+    /* original AVCodecContext dimensions, used to handle container
+     * cropping */
+    int width_from_caller;
+    int height_from_caller;
+
     int enable_er;
 
     H264SEIContext sei;
@@ -590,7 +578,6 @@ int ff_h264_decode_ref_pic_marking(H264SliceContext *sl, GetBitContext *gb,
                                    const H2645NAL *nal, void *logctx);
 
 void ff_h264_hl_decode_mb(const H264Context *h, H264SliceContext *sl);
-int ff_h264_decode_init(AVCodecContext *avctx);
 void ff_h264_decode_init_vlc(void);
 
 /**
@@ -846,10 +833,14 @@ void ff_h264_draw_horiz_band(const H264Context *h, H264SliceContext *sl, int y, 
 
 int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl,
                                 const H2645NAL *nal);
-#define SLICE_SINGLETHREAD 1
-#define SLICE_SKIPED 2
-
-int ff_h264_execute_decode_slices(H264Context *h, unsigned context_count);
+/**
+ * Submit a slice for decoding.
+ *
+ * Parse the slice header, starting a new field/frame if necessary. If any
+ * slices are queued for the previous field, they are decoded.
+ */
+int ff_h264_queue_decode_slice(H264Context *h, const H2645NAL *nal);
+int ff_h264_execute_decode_slices(H264Context *h);
 int ff_h264_update_thread_context(AVCodecContext *dst,
                                   const AVCodecContext *src);
 

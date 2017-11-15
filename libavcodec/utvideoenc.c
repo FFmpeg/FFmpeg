@@ -33,7 +33,6 @@
 #include "bswapdsp.h"
 #include "bytestream.h"
 #include "put_bits.h"
-#include "huffyuvencdsp.h"
 #include "mathops.h"
 #include "utvideo.h"
 #include "huffman.h"
@@ -120,7 +119,7 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
     }
 
     ff_bswapdsp_init(&c->bdsp);
-    ff_huffyuvencdsp_init(&c->hdsp);
+    ff_llvidencdsp_init(&c->llvidencdsp);
 
 #if FF_API_PRIVATE_OPT
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -243,8 +242,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return 0;
 }
 
-static void mangle_rgb_planes(uint8_t *dst[4], int dst_stride, uint8_t *src,
-                              int step, int stride, int width, int height)
+static void mangle_rgb_planes(uint8_t *dst[4], ptrdiff_t dst_stride,
+                              uint8_t *src, int step, ptrdiff_t stride,
+                              int width, int height)
 {
     int i, j;
     int k = 2 * dst_stride;
@@ -277,7 +277,7 @@ static void mangle_rgb_planes(uint8_t *dst[4], int dst_stride, uint8_t *src,
 }
 
 /* Write data to a plane with left prediction */
-static void left_predict(uint8_t *src, uint8_t *dst, int stride,
+static void left_predict(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
                          int width, int height)
 {
     int i, j;
@@ -293,9 +293,12 @@ static void left_predict(uint8_t *src, uint8_t *dst, int stride,
     }
 }
 
+#undef A
+#undef B
+
 /* Write data to a plane with median prediction */
-static void median_predict(UtvideoContext *c, uint8_t *src, uint8_t *dst, int stride,
-                           int width, int height)
+static void median_predict(UtvideoContext *c, uint8_t *src, uint8_t *dst,
+                           ptrdiff_t stride, int width, int height)
 {
     int i, j;
     int A, B;
@@ -321,7 +324,7 @@ static void median_predict(UtvideoContext *c, uint8_t *src, uint8_t *dst, int st
 
     /* Rest of the coded part uses median prediction */
     for (j = 1; j < height; j++) {
-        c->hdsp.sub_hfyu_median_pred(dst, src - stride, src, width, &A, &B);
+        c->llvidencdsp.sub_median_pred(dst, src - stride, src, width, &A, &B);
         dst += width;
         src += stride;
     }
@@ -396,7 +399,7 @@ static int write_huff_codes(uint8_t *src, uint8_t *dst, int dst_size,
 }
 
 static int encode_plane(AVCodecContext *avctx, uint8_t *src,
-                        uint8_t *dst, int stride, int plane_no,
+                        uint8_t *dst, ptrdiff_t stride, int plane_no,
                         int width, int height, PutByteContext *pb)
 {
     UtvideoContext *c        = avctx->priv_data;

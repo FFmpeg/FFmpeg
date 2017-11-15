@@ -45,6 +45,7 @@ static void process_client(AVIOContext *client, const char *in_uri)
         // may return empty string.
         if (resource && strlen(resource))
             break;
+        av_freep(&resource);
     }
     if (ret < 0)
         goto end;
@@ -93,6 +94,7 @@ end:
     avio_close(client);
     fprintf(stderr, "Closing input\n");
     avio_close(input);
+    av_freep(&resource);
 }
 
 int main(int argc, char **argv)

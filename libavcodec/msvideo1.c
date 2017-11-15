@@ -301,6 +301,12 @@ static int msvideo1_decode_frame(AVCodecContext *avctx,
     s->buf = buf;
     s->size = buf_size;
 
+    // Discard frame if its smaller than the minimum frame size
+    if (buf_size < (avctx->width/4) * (avctx->height/4) / 512) {
+        av_log(avctx, AV_LOG_ERROR, "Packet is too small\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
         return ret;
 

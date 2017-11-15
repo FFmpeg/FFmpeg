@@ -27,7 +27,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
-#if HAVE_SYS_MMAN_H
+#if HAVE_MMAP
 #include <sys/mman.h>
 #if defined(MAP_ANON) && !defined(MAP_ANONYMOUS)
 #define MAP_ANONYMOUS MAP_ANON
@@ -131,6 +131,12 @@ static const FormatEntry format_entries[AV_PIX_FMT_NB] = {
     [AV_PIX_FMT_RGB0]        = { 1, 1 },
     [AV_PIX_FMT_0BGR]        = { 1, 1 },
     [AV_PIX_FMT_BGR0]        = { 1, 1 },
+    [AV_PIX_FMT_GRAY9BE]     = { 1, 1 },
+    [AV_PIX_FMT_GRAY9LE]     = { 1, 1 },
+    [AV_PIX_FMT_GRAY10BE]    = { 1, 1 },
+    [AV_PIX_FMT_GRAY10LE]    = { 1, 1 },
+    [AV_PIX_FMT_GRAY12BE]    = { 1, 1 },
+    [AV_PIX_FMT_GRAY12LE]    = { 1, 1 },
     [AV_PIX_FMT_GRAY16BE]    = { 1, 1 },
     [AV_PIX_FMT_GRAY16LE]    = { 1, 1 },
     [AV_PIX_FMT_YUV440P]     = { 1, 1 },
@@ -218,19 +224,19 @@ static const FormatEntry format_entries[AV_PIX_FMT_NB] = {
     [AV_PIX_FMT_GBRP9BE]     = { 1, 1 },
     [AV_PIX_FMT_GBRP10LE]    = { 1, 1 },
     [AV_PIX_FMT_GBRP10BE]    = { 1, 1 },
-    [AV_PIX_FMT_GBRAP10LE]   = { 1, 0 },
-    [AV_PIX_FMT_GBRAP10BE]   = { 1, 0 },
+    [AV_PIX_FMT_GBRAP10LE]   = { 1, 1 },
+    [AV_PIX_FMT_GBRAP10BE]   = { 1, 1 },
     [AV_PIX_FMT_GBRP12LE]    = { 1, 1 },
     [AV_PIX_FMT_GBRP12BE]    = { 1, 1 },
-    [AV_PIX_FMT_GBRAP12LE]   = { 1, 0 },
-    [AV_PIX_FMT_GBRAP12BE]   = { 1, 0 },
+    [AV_PIX_FMT_GBRAP12LE]   = { 1, 1 },
+    [AV_PIX_FMT_GBRAP12BE]   = { 1, 1 },
     [AV_PIX_FMT_GBRP14LE]    = { 1, 1 },
     [AV_PIX_FMT_GBRP14BE]    = { 1, 1 },
-    [AV_PIX_FMT_GBRP16LE]    = { 1, 0 },
-    [AV_PIX_FMT_GBRP16BE]    = { 1, 0 },
+    [AV_PIX_FMT_GBRP16LE]    = { 1, 1 },
+    [AV_PIX_FMT_GBRP16BE]    = { 1, 1 },
     [AV_PIX_FMT_GBRAP]       = { 1, 1 },
-    [AV_PIX_FMT_GBRAP16LE]   = { 1, 0 },
-    [AV_PIX_FMT_GBRAP16BE]   = { 1, 0 },
+    [AV_PIX_FMT_GBRAP16LE]   = { 1, 1 },
+    [AV_PIX_FMT_GBRAP16BE]   = { 1, 1 },
     [AV_PIX_FMT_BAYER_BGGR8] = { 1, 0 },
     [AV_PIX_FMT_BAYER_RGGB8] = { 1, 0 },
     [AV_PIX_FMT_BAYER_GBRG8] = { 1, 0 },
@@ -248,6 +254,8 @@ static const FormatEntry format_entries[AV_PIX_FMT_NB] = {
     [AV_PIX_FMT_AYUV64LE]    = { 1, 1},
     [AV_PIX_FMT_P010LE]      = { 1, 1 },
     [AV_PIX_FMT_P010BE]      = { 1, 1 },
+    [AV_PIX_FMT_P016LE]      = { 1, 0 },
+    [AV_PIX_FMT_P016BE]      = { 1, 0 },
 };
 
 int sws_isSupportedInput(enum AVPixelFormat pix_fmt)
@@ -440,15 +448,7 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
                                       (8 * B + 24 * C) * (1 << 30);
                     }
                     coeff /= (1LL<<54)/fone;
-                }
-#if 0
-                else if (flags & SWS_X) {
-                    double p  = param ? param * 0.01 : 0.3;
-                    coeff     = d ? sin(d * M_PI) / (d * M_PI) : 1.0;
-                    coeff    *= pow(2.0, -p * d * d);
-                }
-#endif
-                else if (flags & SWS_X) {
+                } else if (flags & SWS_X) {
                     double A = param[0] != SWS_PARAM_DEFAULT ? param[0] : 1.0;
                     double c;
 
@@ -1018,6 +1018,12 @@ static int handle_jpeg(enum AVPixelFormat *format)
         return 1;
     case AV_PIX_FMT_GRAY8:
     case AV_PIX_FMT_YA8:
+    case AV_PIX_FMT_GRAY9LE:
+    case AV_PIX_FMT_GRAY9BE:
+    case AV_PIX_FMT_GRAY10LE:
+    case AV_PIX_FMT_GRAY10BE:
+    case AV_PIX_FMT_GRAY12LE:
+    case AV_PIX_FMT_GRAY12BE:
     case AV_PIX_FMT_GRAY16LE:
     case AV_PIX_FMT_GRAY16BE:
     case AV_PIX_FMT_YA16BE:
@@ -1568,7 +1574,11 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
         }
     }
 
-#define USE_MMAP (HAVE_MMAP && HAVE_MPROTECT && defined MAP_ANONYMOUS)
+#if HAVE_MMAP && HAVE_MPROTECT && defined(MAP_ANONYMOUS)
+#define USE_MMAP 1
+#else
+#define USE_MMAP 0
+#endif
 
     /* precalculate horizontal scaler filter coefficients */
     {

@@ -490,7 +490,7 @@ int main(int argc, char **argv)
             av_log(NULL, AV_LOG_INFO, "DCT_III");
         else
             av_log(NULL, AV_LOG_INFO, "DCT_II");
-            dct_init(&d, fft_nbits, do_inverse ? DCT_III : DCT_II);
+        dct_init(&d, fft_nbits, do_inverse ? DCT_III : DCT_II);
         break;
 #    endif /* CONFIG_DCT */
 #endif /* FFT_FLOAT */

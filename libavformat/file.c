@@ -112,6 +112,8 @@ static int file_read(URLContext *h, unsigned char *buf, int size)
     ret = read(c->fd, buf, size);
     if (ret == 0 && c->follow)
         return AVERROR(EAGAIN);
+    if (ret == 0)
+        return AVERROR_EOF;
     return (ret == -1) ? AVERROR(errno) : ret;
 }
 
@@ -226,6 +228,11 @@ static int file_open(URLContext *h, const char *filename, int flags)
     c->fd = fd;
 
     h->is_streamed = !fstat(fd, &st) && S_ISFIFO(st.st_mode);
+
+    /* Buffer writes more than the default 32k to improve throughput especially
+     * with networked file systems */
+    if (!h->is_streamed && flags & AVIO_FLAG_WRITE)
+        h->min_packet_size = h->max_packet_size = 262144;
 
     return 0;
 }

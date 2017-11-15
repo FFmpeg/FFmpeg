@@ -97,9 +97,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     var_values[VAR_A]   = (float) inlink->w / inlink->h;
     var_values[VAR_SAR] = inlink->sample_aspect_ratio.num ? av_q2d(inlink->sample_aspect_ratio) : 1;
     var_values[VAR_DAR] = var_values[VAR_A] * var_values[VAR_SAR];
-    var_values[VAR_N]   = inlink->frame_count;
+    var_values[VAR_N]   = inlink->frame_count_out;
     var_values[VAR_T]   = in->pts == AV_NOPTS_VALUE ? NAN : in->pts * av_q2d(inlink->time_base);
-    var_values[VAR_POS] = av_frame_get_pkt_pos(in) == -1 ? NAN : av_frame_get_pkt_pos(in);
+    var_values[VAR_POS] = in->pkt_pos ? NAN : in->pkt_pos;
 
     ret = av_expr_parse_and_eval(&dw, s->w,
                                  var_names, &var_values[0],

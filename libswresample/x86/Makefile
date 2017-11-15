@@ -1,4 +1,4 @@
-YASM-OBJS                       += x86/audio_convert.o\
+X86ASM-OBJS                     += x86/audio_convert.o\
                                    x86/rematrix.o\
                                    x86/resample.o\
 

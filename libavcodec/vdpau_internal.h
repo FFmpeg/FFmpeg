@@ -28,6 +28,8 @@
 #include <vdpau/vdpau.h>
 
 #include "libavutil/frame.h"
+#include "libavutil/hwcontext.h"
+#include "libavutil/hwcontext_vdpau.h"
 
 #include "avcodec.h"
 #include "vdpau.h"
@@ -117,5 +119,7 @@ int ff_vdpau_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
 int ff_vdpau_mpeg_end_frame(AVCodecContext *avctx);
 int ff_vdpau_add_buffer(struct vdpau_picture_context *pic, const uint8_t *buf,
                         uint32_t buf_size);
+int ff_vdpau_common_frame_params(AVCodecContext *avctx,
+                                 AVBufferRef *hw_frames_ctx);
 
 #endif /* AVCODEC_VDPAU_INTERNAL_H */

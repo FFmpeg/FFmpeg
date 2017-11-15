@@ -46,6 +46,7 @@
 #include "bytestream.h"
 #include "internal.h"
 #include "lcl.h"
+#include "thread.h"
 
 #if CONFIG_ZLIB_DECODER
 #include <zlib.h>
@@ -157,6 +158,7 @@ static int zlib_decomp(AVCodecContext *avctx, const uint8_t *src, int src_len, i
 static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *avpkt)
 {
     AVFrame *frame = data;
+    ThreadFrame tframe = { .f = data };
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     LclDecContext * const c = avctx->priv_data;
@@ -173,7 +175,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     unsigned int len = buf_size;
     int linesize;
 
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, &tframe, 0)) < 0)
         return ret;
 
     outptr = frame->data[0]; // Output image pointer
@@ -458,6 +460,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         return AVERROR_INVALIDDATA;
     }
 
+    frame->key_frame = 1;
+    frame->pict_type = AV_PICTURE_TYPE_I;
+
     *got_frame = 1;
 
     /* always report that the buffer was completely consumed */
@@ -618,6 +623,13 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
+#if HAVE_THREADS
+static int init_thread_copy(AVCodecContext *avctx)
+{
+    return decode_init(avctx);
+}
+#endif
+
 static av_cold int decode_end(AVCodecContext *avctx)
 {
     LclDecContext * const c = avctx->priv_data;
@@ -639,9 +651,11 @@ AVCodec ff_mszh_decoder = {
     .id             = AV_CODEC_ID_MSZH,
     .priv_data_size = sizeof(LclDecContext),
     .init           = decode_init,
+    .init_thread_copy = ONLY_IF_THREADS_ENABLED(init_thread_copy),
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 
@@ -653,8 +667,10 @@ AVCodec ff_zlib_decoder = {
     .id             = AV_CODEC_ID_ZLIB,
     .priv_data_size = sizeof(LclDecContext),
     .init           = decode_init,
+    .init_thread_copy = ONLY_IF_THREADS_ENABLED(init_thread_copy),
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif

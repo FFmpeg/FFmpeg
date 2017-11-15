@@ -142,7 +142,7 @@ Alignment:
 Some instructions on some architectures have strict alignment restrictions,
 for example most SSE/SSE2 instructions on x86.
 The minimum guaranteed alignment is written in the .h files, for example:
-    void (*put_pixels_clamped)(const int16_t *block/*align 16*/, UINT8 *pixels/*align 8*/, int line_size);
+    void (*put_pixels_clamped)(const int16_t *block/*align 16*/, uint8_t *pixels/*align 8*/, ptrdiff_t stride);
 
 
 General Tips:
@@ -161,8 +161,8 @@ do{
 For x86, mark registers that are clobbered in your asm. This means both
 general x86 registers (e.g. eax) as well as XMM registers. This last one is
 particularly important on Win64, where xmm6-15 are callee-save, and not
-restoring their contents leads to undefined results. In external asm (e.g.
-yasm), you do this by using:
+restoring their contents leads to undefined results. In external asm,
+you do this by using:
 cglobal function_name, num_args, num_regs, num_xmm_regs
 In inline asm, you specify clobbered registers at the end of your asm:
 __asm__(".." ::: "%eax").
@@ -199,12 +199,12 @@ actual lines causing issues.
 Inline asm vs. external asm
 ---------------------------
 Both inline asm (__asm__("..") in a .c file, handled by a compiler such as gcc)
-and external asm (.s or .asm files, handled by an assembler such as yasm/nasm)
+and external asm (.s or .asm files, handled by an assembler such as nasm/yasm)
 are accepted in FFmpeg. Which one to use differs per specific case.
 
 - if your code is intended to be inlined in a C function, inline asm is always
    better, because external asm cannot be inlined
-- if your code calls external functions, yasm is always better
+- if your code calls external functions, external asm is always better
 - if your code takes huge and complex structs as function arguments (e.g.
    MpegEncContext; note that this is not ideal and is discouraged if there
    are alternatives), then inline asm is always better, because predicting

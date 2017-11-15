@@ -90,7 +90,7 @@ static const AVOption avectorscope_options[] = {
     { "gf", "set green fade",     OFFSET(fade[1]), AV_OPT_TYPE_INT, {.i64=10}, 0, 255, FLAGS },
     { "bf", "set blue fade",      OFFSET(fade[2]), AV_OPT_TYPE_INT, {.i64=5},  0, 255, FLAGS },
     { "af", "set alpha fade",     OFFSET(fade[3]), AV_OPT_TYPE_INT, {.i64=5},  0, 255, FLAGS },
-    { "zoom", "set zoom factor",  OFFSET(zoom), AV_OPT_TYPE_DOUBLE, {.dbl=1},  1, 10, FLAGS },
+    { "zoom", "set zoom factor",  OFFSET(zoom), AV_OPT_TYPE_DOUBLE, {.dbl=1},  0, 10, FLAGS },
     { "draw", "set draw mode", OFFSET(draw), AV_OPT_TYPE_INT, {.i64=DOT}, 0, DRAW_NB-1, FLAGS, "draw" },
     { "dot",   "", 0, AV_OPT_TYPE_CONST, {.i64=DOT} , 0, 0, FLAGS, "draw" },
     { "line",  "", 0, AV_OPT_TYPE_CONST, {.i64=LINE}, 0, 0, FLAGS, "draw" },
@@ -234,7 +234,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     const int hh = s->hh;
     unsigned x, y;
     unsigned prev_x = s->prev_x, prev_y = s->prev_y;
-    const double zoom = s->zoom;
+    double zoom = s->zoom;
     int i;
 
     if (!s->outpicref || s->outpicref->width  != outlink->w ||
@@ -246,12 +246,42 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             return AVERROR(ENOMEM);
         }
 
+        s->outpicref->sample_aspect_ratio = (AVRational){1,1};
         for (i = 0; i < outlink->h; i++)
             memset(s->outpicref->data[0] + i * s->outpicref->linesize[0], 0, outlink->w * 4);
     }
     s->outpicref->pts = insamples->pts;
 
     fade(s);
+
+    if (zoom < 1) {
+        float max = 0;
+
+        switch (insamples->format) {
+        case AV_SAMPLE_FMT_S16: {
+            int16_t *samples = (int16_t *)insamples->data[0];
+
+            for (i = 0; i < insamples->nb_samples * 2; i++) {
+                float sample = samples[i] / (float)INT16_MAX;
+                max = FFMAX(FFABS(sample), max);
+            }
+
+            }
+            break;
+        case AV_SAMPLE_FMT_FLT: {
+            float *samples = (float *)insamples->data[0];
+
+            for (i = 0; i < insamples->nb_samples * 2; i++) {
+                max = FFMAX(FFABS(samples[i]), max);
+            }
+            }
+            break;
+        default:
+            av_assert2(0);
+        }
+
+        zoom = 1. / max;
+    }
 
     for (i = 0; i < insamples->nb_samples; i++) {
         int16_t *samples = (int16_t *)insamples->data[0] + i * 2;
@@ -267,6 +297,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             src[0] = samplesf[0];
             src[1] = samplesf[1];
             break;
+        default:
+            av_assert2(0);
         }
 
         switch (s->scale) {

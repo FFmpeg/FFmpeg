@@ -49,7 +49,7 @@ typedef struct MimicContext {
 
     ThreadFrame     frames     [16];
 
-    DECLARE_ALIGNED(16, int16_t, dct_block)[64];
+    DECLARE_ALIGNED(32, int16_t, dct_block)[64];
 
     GetBitContext   gb;
     ScanTable       scantable;
@@ -260,9 +260,9 @@ static int vlc_decode_block(MimicContext *ctx, int num_coeffs, int qscale)
         /* FFmpeg's IDCT behaves somewhat different from the original code, so
          * a factor of 4 was added to the input */
 
-        coeff = vlcdec_lookup[num_bits][value];
+        coeff = ((int8_t*)vlcdec_lookup[num_bits])[value];
         if (pos < 3)
-            coeff <<= 4;
+            coeff *= 16;
         else /* TODO Use >> 10 instead of / 1001 */
             coeff = (coeff * qscale) / 1001;
 
@@ -390,9 +390,11 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
             return AVERROR_INVALIDDATA;
         }
 
+        res = ff_set_dimensions(avctx, width, height);
+        if (res < 0)
+            return res;
+
         ctx->avctx     = avctx;
-        avctx->width   = width;
-        avctx->height  = height;
         avctx->pix_fmt = AV_PIX_FMT_YUV420P;
         for (i = 0; i < 3; i++) {
             ctx->num_vblocks[i] = AV_CEIL_RSHIFT(height,   3 + !!i);
@@ -445,9 +447,6 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
 
     ctx->prev_index = ctx->next_prev_index;
     ctx->cur_index  = ctx->next_cur_index;
-
-    /* Only release frames that aren't used for backreferences anymore */
-    ff_thread_release_buffer(avctx, &ctx->frames[ctx->cur_index]);
 
     return buf_size;
 }

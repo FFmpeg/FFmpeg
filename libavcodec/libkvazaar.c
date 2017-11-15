@@ -21,13 +21,17 @@
  */
 
 #include <kvazaar.h>
+#include <stdint.h>
 #include <string.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/dict.h"
 #include "libavutil/error.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
+#include "libavutil/log.h"
+#include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
 
@@ -227,7 +231,7 @@ static int libkvazaar_encode(AVCodecContext *avctx,
         kvz_data_chunk *chunk = NULL;
         uint64_t written = 0;
 
-        retval = ff_alloc_packet(avpkt, len_out);
+        retval = ff_alloc_packet2(avctx, avpkt, len_out, len_out);
         if (retval < 0) {
             av_log(avctx, AV_LOG_ERROR, "Failed to allocate output packet.\n");
             goto done;

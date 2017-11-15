@@ -30,7 +30,7 @@
 
 #include "vidstabutils.h"
 
-typedef struct {
+typedef struct StabData {
     const AVClass *class;
 
     VSMotionDetect md;

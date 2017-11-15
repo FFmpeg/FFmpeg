@@ -27,7 +27,7 @@
 static av_cold int m101_decode_init(AVCodecContext *avctx)
 {
     if (avctx->extradata_size < 6*4) {
-        avpriv_request_sample(avctx, "Missing or too small extradata (size %d)\n", avctx->extradata_size);
+        avpriv_request_sample(avctx, "Missing or too small extradata (size %d)", avctx->extradata_size);
         return AVERROR_INVALIDDATA;
     }
 
@@ -36,7 +36,7 @@ static av_cold int m101_decode_init(AVCodecContext *avctx)
     else if (avctx->extradata[2*4] == 8) {
         avctx->pix_fmt = AV_PIX_FMT_YUYV422;
     } else {
-        avpriv_request_sample(avctx, "BPS %d\n", avctx->extradata[2*4]);
+        avpriv_request_sample(avctx, "BPS %d", avctx->extradata[2*4]);
         return AVERROR_INVALIDDATA;
     }
 

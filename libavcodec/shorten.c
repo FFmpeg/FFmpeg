@@ -27,6 +27,7 @@
 
 #include <limits.h>
 #include "avcodec.h"
+#include "bswapdsp.h"
 #include "bytestream.h"
 #include "get_bits.h"
 #include "golomb.h"
@@ -109,12 +110,16 @@ typedef struct ShortenContext {
     int32_t lpcqoffset;
     int got_header;
     int got_quit_command;
+    int swap;
+    BswapDSPContext bdsp;
 } ShortenContext;
 
 static av_cold int shorten_decode_init(AVCodecContext *avctx)
 {
     ShortenContext *s = avctx->priv_data;
     s->avctx          = avctx;
+
+    ff_bswapdsp_init(&s->bdsp);
 
     return 0;
 }
@@ -155,8 +160,11 @@ static int allocate_buffers(ShortenContext *s)
 
 static inline unsigned int get_uint(ShortenContext *s, int k)
 {
-    if (s->version != 0)
+    if (s->version != 0) {
         k = get_ur_golomb_shorten(&s->gb, ULONGSIZE);
+        if (k > 31U)
+            return AVERROR_INVALIDDATA;
+    }
     return get_ur_golomb_shorten(&s->gb, k);
 }
 
@@ -202,6 +210,7 @@ static int init_offset(ShortenContext *s)
 static int decode_aiff_header(AVCodecContext *avctx, const uint8_t *header,
                               int header_size)
 {
+    ShortenContext *s = avctx->priv_data;
     int len, bps, exp;
     GetByteContext gb;
     uint64_t val;
@@ -217,7 +226,8 @@ static int decode_aiff_header(AVCodecContext *avctx, const uint8_t *header,
     bytestream2_skip(&gb, 4); /* chunk size */
 
     tag = bytestream2_get_le32(&gb);
-    if (tag != MKTAG('A', 'I', 'F', 'F')) {
+    if (tag != MKTAG('A', 'I', 'F', 'F') &&
+        tag != MKTAG('A', 'I', 'F', 'C')) {
         av_log(avctx, AV_LOG_ERROR, "missing AIFF tag\n");
         return AVERROR_INVALIDDATA;
     }
@@ -240,6 +250,8 @@ static int decode_aiff_header(AVCodecContext *avctx, const uint8_t *header,
     bytestream2_skip(&gb, 6);
     bps = bytestream2_get_be16(&gb);
     avctx->bits_per_coded_sample = bps;
+
+    s->swap = tag == MKTAG('A', 'I', 'F', 'C');
 
     if (bps != 16 && bps != 8) {
         av_log(avctx, AV_LOG_ERROR, "unsupported number of bits per sample: %d\n", bps);
@@ -433,6 +445,10 @@ static int read_header(ShortenContext *s)
         s->blocksize = blocksize;
 
         maxnlpc  = get_uint(s, LPCQSIZE);
+        if (maxnlpc > 1024U) {
+            av_log(s->avctx, AV_LOG_ERROR, "maxnlpc is: %d\n", maxnlpc);
+            return AVERROR_INVALIDDATA;
+        }
         s->nmean = get_uint(s, 0);
 
         skip_bytes = get_uint(s, NSKIPSIZE);
@@ -445,12 +461,6 @@ static int read_header(ShortenContext *s)
             skip_bits(&s->gb, 8);
     }
     s->nwrap = FFMAX(NWRAP, maxnlpc);
-
-    if ((ret = allocate_buffers(s)) < 0)
-        return ret;
-
-    if ((ret = init_offset(s)) < 0)
-        return ret;
 
     if (s->version > 1)
         s->lpcqoffset = V2LPCQOFFSET;
@@ -482,11 +492,19 @@ static int read_header(ShortenContext *s)
         if ((ret = decode_aiff_header(s->avctx, s->header, s->header_size)) < 0)
             return ret;
     } else {
-        avpriv_report_missing_feature(s->avctx, "unsupported bit packing %X", AV_RL32(s->header));
+        avpriv_report_missing_feature(s->avctx, "unsupported bit packing %"
+                                      PRIX32, AV_RL32(s->header));
         return AVERROR_PATCHWELCOME;
     }
 
 end:
+
+    if ((ret = allocate_buffers(s)) < 0)
+        return ret;
+
+    if ((ret = init_offset(s)) < 0)
+        return ret;
+
     s->cur_chan = 0;
     s->bitshift = 0;
 
@@ -617,8 +635,8 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
             case FN_BLOCKSIZE: {
                 unsigned blocksize = get_uint(s, av_log2(s->blocksize));
                 if (blocksize > s->blocksize) {
-                    av_log(avctx, AV_LOG_ERROR,
-                           "Increasing block size is not supported\n");
+                    avpriv_report_missing_feature(avctx,
+                                                  "Increasing block size");
                     return AVERROR_PATCHWELCOME;
                 }
                 if (!blocksize || blocksize > MAX_BLOCKSIZE) {
@@ -648,6 +666,10 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
                  * of get_sr_golomb_shorten(). */
                 if (s->version == 0)
                     residual_size--;
+                if (residual_size > 30U) {
+                    av_log(avctx, AV_LOG_ERROR, "residual size unsupportd: %d\n", residual_size);
+                    return AVERROR_INVALIDDATA;
+                }
             }
 
             /* calculate sample offset using means from previous blocks */
@@ -721,6 +743,11 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
                             break;
                         }
                     }
+                    if (s->swap && s->internal_ftype != TYPE_U8)
+                        s->bdsp.bswap16_buf(((uint16_t **)frame->extended_data)[chan],
+                                            ((uint16_t **)frame->extended_data)[chan],
+                                            s->blocksize);
+
                 }
 
                 *got_frame_ptr = 1;

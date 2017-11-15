@@ -128,6 +128,7 @@ typedef struct AC3DecodeContext {
     int phase_flags_in_use;                 ///< phase flags in use                     (phsflginu)
     int phase_flags[AC3_MAX_CPL_BANDS];     ///< phase flags                            (phsflg)
     int num_cpl_bands;                      ///< number of coupling bands               (ncplbnd)
+    uint8_t cpl_band_struct[AC3_MAX_CPL_BANDS];
     uint8_t cpl_band_sizes[AC3_MAX_CPL_BANDS]; ///< number of coeffs in each coupling band
     int firstchincpl;                       ///< first channel in coupling
     int first_cpl_coords[AC3_MAX_CHANNELS]; ///< first coupling coordinates states      (firstcplcos)
@@ -144,6 +145,7 @@ typedef struct AC3DecodeContext {
     int spx_dst_start_freq;                     ///< spx starting frequency bin for copying (copystartmant)
                                                 ///< the copy region ends at the start of the spx region.
     int num_spx_bands;                          ///< number of spx bands                    (nspxbnds)
+    uint8_t spx_band_struct[SPX_MAX_BANDS];
     uint8_t spx_band_sizes[SPX_MAX_BANDS];      ///< number of bins in each spx band
     uint8_t first_spx_coords[AC3_MAX_CHANNELS]; ///< first spx coordinates states           (firstspxcos)
     INTFLOAT spx_noise_blend[AC3_MAX_CHANNELS][SPX_MAX_BANDS]; ///< spx noise blending factor  (nblendfact)
@@ -159,7 +161,7 @@ typedef struct AC3DecodeContext {
     int fbw_channels;                           ///< number of full-bandwidth channels
     int channels;                               ///< number of total channels
     int lfe_ch;                                 ///< index of LFE channel
-    SHORTFLOAT downmix_coeffs[AC3_MAX_CHANNELS][2];  ///< stereo downmix coefficients
+    SHORTFLOAT *downmix_coeffs[2];              ///< stereo downmix coefficients
     int downmixed;                              ///< indicates if coeffs are currently downmixed
     int output_mode;                            ///< output channel configuration
     int out_channels;                           ///< number of output channels
@@ -175,6 +177,10 @@ typedef struct AC3DecodeContext {
 ///@name Bandwidth
     int start_freq[AC3_MAX_CHANNELS];       ///< start frequency bin                    (strtmant)
     int end_freq[AC3_MAX_CHANNELS];         ///< end frequency bin                      (endmant)
+///@}
+
+///@name Consistent noise generation
+    int consistent_noise_generation;        ///< seed noise generation with AC-3 frame on decode
 ///@}
 
 ///@name Rematrixing

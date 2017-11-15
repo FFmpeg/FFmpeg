@@ -239,7 +239,7 @@ static int mpc8_read_header(AVFormatContext *s)
     avio_skip(pb, 4); //CRC
     c->ver = avio_r8(pb);
     if(c->ver != 8){
-        av_log(s, AV_LOG_ERROR, "Unknown stream version %d\n", c->ver);
+        avpriv_report_missing_feature(s, "Stream version %d", c->ver);
         return AVERROR_PATCHWELCOME;
     }
     c->samples = ffio_read_varlen(pb);
@@ -264,7 +264,7 @@ static int mpc8_read_header(AVFormatContext *s)
     if (size > 0)
         avio_skip(pb, size);
 
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         int64_t pos = avio_tell(s->pb);
         c->apetag_start = ff_ape_parse_tag(s);
         avio_seek(s->pb, pos, SEEK_SET);

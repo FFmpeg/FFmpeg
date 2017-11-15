@@ -1,4 +1,4 @@
-b1b2dd35bcb3d5c20651ffe0da55cb46 *tests/data/fate/vsynth_lena-bpp15.avi
+64516ba947d531db2bccc2ecc338b7be *tests/data/fate/vsynth_lena-bpp15.avi
 10144452 tests/data/fate/vsynth_lena-bpp15.avi
 ccf6fc507e938e8cc5c2a97b644de51c *tests/data/fate/vsynth_lena-bpp15.out.rawvideo
 stddev:   32.84 PSNR: 17.80 MAXDIFF:   92 bytes:  7603200/  7603200

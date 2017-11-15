@@ -18,12 +18,32 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/**
+ * @file
+ * Stereoscopic video
+ */
+
 #ifndef AVUTIL_STEREO3D_H
 #define AVUTIL_STEREO3D_H
 
 #include <stdint.h>
 
 #include "frame.h"
+
+/**
+ * @addtogroup lavu_video
+ * @{
+ *
+ * @defgroup lavu_video_stereo3d Stereo3D types and functions
+ * @{
+ */
+
+/**
+ * @addtogroup lavu_video_stereo3d
+ * A stereoscopic video file consists in multiple views embedded in a single
+ * frame, usually describing two views of a scene. This file describes all
+ * possible codec-independent view arrangements.
+ * */
 
 /**
  * List of possible 3D Types
@@ -37,41 +57,49 @@ enum AVStereo3DType {
     /**
      * Views are next to each other.
      *
+     * @code{.unparsed}
      *    LLLLRRRR
      *    LLLLRRRR
      *    LLLLRRRR
      *    ...
+     * @endcode
      */
     AV_STEREO3D_SIDEBYSIDE,
 
     /**
      * Views are on top of each other.
      *
+     * @code{.unparsed}
      *    LLLLLLLL
      *    LLLLLLLL
      *    RRRRRRRR
      *    RRRRRRRR
+     * @endcode
      */
     AV_STEREO3D_TOPBOTTOM,
 
     /**
      * Views are alternated temporally.
      *
+     * @code{.unparsed}
      *     frame0   frame1   frame2   ...
      *    LLLLLLLL RRRRRRRR LLLLLLLL
      *    LLLLLLLL RRRRRRRR LLLLLLLL
      *    LLLLLLLL RRRRRRRR LLLLLLLL
      *    ...      ...      ...
+     * @endcode
      */
     AV_STEREO3D_FRAMESEQUENCE,
 
     /**
      * Views are packed in a checkerboard-like structure per pixel.
      *
+     * @code{.unparsed}
      *    LRLRLRLR
      *    RLRLRLRL
      *    LRLRLRLR
      *    ...
+     * @endcode
      */
     AV_STEREO3D_CHECKERBOARD,
 
@@ -79,30 +107,36 @@ enum AVStereo3DType {
      * Views are next to each other, but when upscaling
      * apply a checkerboard pattern.
      *
+     * @code{.unparsed}
      *     LLLLRRRR          L L L L    R R R R
      *     LLLLRRRR    =>     L L L L  R R R R
      *     LLLLRRRR          L L L L    R R R R
      *     LLLLRRRR           L L L L  R R R R
+     * @endcode
      */
     AV_STEREO3D_SIDEBYSIDE_QUINCUNX,
 
     /**
      * Views are packed per line, as if interlaced.
      *
+     * @code{.unparsed}
      *    LLLLLLLL
      *    RRRRRRRR
      *    LLLLLLLL
      *    ...
+     * @endcode
      */
     AV_STEREO3D_LINES,
 
     /**
      * Views are packed per column.
      *
+     * @code{.unparsed}
      *    LRLRLRLR
      *    LRLRLRLR
      *    LRLRLRLR
      *    ...
+     * @endcode
      */
     AV_STEREO3D_COLUMNS,
 };
@@ -161,10 +195,15 @@ const char *av_stereo3d_type_name(unsigned int type);
 /**
  * Get the AVStereo3DType form a human-readable name.
  *
- * @param type The input string.
+ * @param name The input string.
  *
  * @return The AVStereo3DType value, or -1 if not found.
  */
 int av_stereo3d_from_name(const char *name);
+
+/**
+ * @}
+ * @}
+ */
 
 #endif /* AVUTIL_STEREO3D_H */

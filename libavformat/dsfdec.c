@@ -53,8 +53,10 @@ static void read_id3(AVFormatContext *s, uint64_t id3pos)
         return;
 
     ff_id3v2_read(s, ID3v2_DEFAULT_MAGIC, &id3v2_extra_meta, 0);
-    if (id3v2_extra_meta)
+    if (id3v2_extra_meta) {
         ff_id3v2_parse_apic(s, &id3v2_extra_meta);
+        ff_id3v2_parse_chapters(s, &id3v2_extra_meta);
+    }
     ff_id3v2_free_extra_meta(&id3v2_extra_meta);
 }
 
@@ -77,7 +79,7 @@ static int dsf_read_header(AVFormatContext *s)
 
     avio_skip(pb, 8);
     id3pos = avio_rl64(pb);
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         read_id3(s, id3pos);
         avio_seek(pb, 28, SEEK_SET);
     }

@@ -92,12 +92,12 @@ using the value "enable", which is mainly useful for debugging or disabled using
 
 @item aac_is
 Sets intensity stereo coding tool usage. By default, it's enabled and will
-automatically toggle IS for similar pairs of stereo bands if it's benefitial.
+automatically toggle IS for similar pairs of stereo bands if it's beneficial.
 Can be disabled for debugging by setting the value to "disable".
 
 @item aac_pns
 Uses perceptual noise substitution to replace low entropy high frequency bands
-with imperceivable white noise during the decoding process. By default, it's
+with imperceptible white noise during the decoding process. By default, it's
 enabled, but can be disabled for debugging purposes by using "disable".
 
 @item aac_tns
@@ -488,6 +488,10 @@ is an optional AC-3 feature that increases quality by selectively encoding
 the left/right channels as mid/side. This option is enabled by default, and it
 is highly recommended that it be left as enabled except for testing purposes.
 
+@item cutoff @var{frequency}
+Set lowpass cutoff frequency. If unspecified, the encoder selects a default
+determined by various other encoding parameters.
+
 @end table
 
 @subsection Floating-Point-Only AC-3 Encoding Options
@@ -545,7 +549,8 @@ The following options are supported by FFmpeg's flac encoder.
 @table @option
 @item compression_level
 Sets the compression level, which chooses defaults for many other options
-if they are not set explicitly.
+if they are not set explicitly. Valid values are from 0 to 12, 5 is the
+default.
 
 @item frame_size
 Sets the size of the frames in samples per channel.
@@ -594,7 +599,7 @@ Channel mode
 @item auto
 The mode is chosen automatically for each frame
 @item indep
-Chanels are independently coded
+Channels are independently coded
 @item left_side
 @item right_side
 @item mid_side
@@ -610,6 +615,27 @@ Multi Dimensional Quantization. If set to 1 then a 2nd stage LPC algorithm is
 applied after the first stage to finetune the coefficients. This is quite slow
 and slightly improves compression.
 
+@end table
+
+@anchor{opusenc}
+@section opus
+
+Opus encoder.
+
+This is a native FFmpeg encoder for the Opus format. Currently its in development and
+only implements the CELT part of the codec. Its quality is usually worse and at best
+is equal to the libopus encoder.
+
+@subsection Options
+
+@table @option
+@item b
+Set bit rate in bits/s. If unspecified it uses the number of channels and the layout
+to make a good guess.
+
+@item opus_delay
+Sets the maximum delay in milliseconds. Lower delays than 20ms will very quickly
+decrease quality.
 @end table
 
 @anchor{libfdk-aac-enc}
@@ -817,6 +843,10 @@ Set algorithm quality. Valid arguments are integers in the 0-9 range,
 with 0 meaning highest quality but slowest, and 9 meaning fastest
 while producing the worst quality.
 
+@item cutoff (@emph{--lowpass})
+Set lowpass cutoff frequency. If unspecified, the encoder dynamically
+adjusts the cutoff.
+
 @item reservoir
 Enable use of bit reservoir when set to 1. Default value is 1. LAME
 has this enabled by default, but can be overridden by use
@@ -867,6 +897,90 @@ otherwise libavcodec will round to the nearest valid bitrate.
 @item dtx
 Allow discontinuous transmission (generate comfort noise) when set to 1. The
 default value is 0 (disabled).
+
+@end table
+
+@section libopus
+
+libopus Opus Interactive Audio Codec encoder wrapper.
+
+Requires the presence of the libopus headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libopus}.
+
+@subsection Option Mapping
+
+Most libopus options are modelled after the @command{opusenc} utility from
+opus-tools. The following is an option mapping chart describing options
+supported by the libopus wrapper, and their @command{opusenc}-equivalent
+in parentheses.
+
+@table @option
+
+@item b (@emph{bitrate})
+Set the bit rate in bits/s.  FFmpeg's @option{b} option is
+expressed in bits/s, while @command{opusenc}'s @option{bitrate} in
+kilobits/s.
+
+@item vbr (@emph{vbr}, @emph{hard-cbr}, and @emph{cvbr})
+Set VBR mode. The FFmpeg @option{vbr} option has the following
+valid arguments, with the @command{opusenc} equivalent options
+in parentheses:
+
+@table @samp
+@item off (@emph{hard-cbr})
+Use constant bit rate encoding.
+
+@item on (@emph{vbr})
+Use variable bit rate encoding (the default).
+
+@item constrained (@emph{cvbr})
+Use constrained variable bit rate encoding.
+@end table
+
+@item compression_level (@emph{comp})
+Set encoding algorithm complexity. Valid options are integers in
+the 0-10 range. 0 gives the fastest encodes but lower quality, while 10
+gives the highest quality but slowest encoding. The default is 10.
+
+@item frame_duration (@emph{framesize})
+Set maximum frame size, or duration of a frame in milliseconds. The
+argument must be exactly the following: 2.5, 5, 10, 20, 40, 60. Smaller
+frame sizes achieve lower latency but less quality at a given bitrate.
+Sizes greater than 20ms are only interesting at fairly low bitrates.
+The default is 20ms.
+
+@item packet_loss (@emph{expect-loss})
+Set expected packet loss percentage. The default is 0.
+
+@item application (N.A.)
+Set intended application type. Valid options are listed below:
+
+@table @samp
+@item voip
+Favor improved speech intelligibility.
+@item audio
+Favor faithfulness to the input (the default).
+@item lowdelay
+Restrict to only the lowest delay modes.
+@end table
+
+@item cutoff (N.A.)
+Set cutoff bandwidth in Hz. The argument must be exactly one of the
+following: 4000, 6000, 8000, 12000, or 20000, corresponding to
+narrowband, mediumband, wideband, super wideband, and fullband
+respectively. The default is 0 (cutoff disabled).
+
+@item mapping_family (@emph{mapping_family})
+Set channel mapping family to be used by the encoder. The default value of -1
+uses mapping family 0 for mono and stereo inputs, and mapping family 1
+otherwise. The default also disables the surround masking and LFE bandwidth
+optimzations in libopus, and requires that the input contains 8 channels or
+fewer.
+
+Other values include 0 for mono and stereo, 1 for surround sound with masking
+and LFE bandwidth optimizations, and 255 for independent streams with an
+unspecified channel layout.
 
 @end table
 
@@ -1009,90 +1123,6 @@ default value is 0 (disabled).
 
 @end table
 
-@section libopus
-
-libopus Opus Interactive Audio Codec encoder wrapper.
-
-Requires the presence of the libopus headers and library during
-configuration. You need to explicitly configure the build with
-@code{--enable-libopus}.
-
-@subsection Option Mapping
-
-Most libopus options are modelled after the @command{opusenc} utility from
-opus-tools. The following is an option mapping chart describing options
-supported by the libopus wrapper, and their @command{opusenc}-equivalent
-in parentheses.
-
-@table @option
-
-@item b (@emph{bitrate})
-Set the bit rate in bits/s.  FFmpeg's @option{b} option is
-expressed in bits/s, while @command{opusenc}'s @option{bitrate} in
-kilobits/s.
-
-@item vbr (@emph{vbr}, @emph{hard-cbr}, and @emph{cvbr})
-Set VBR mode. The FFmpeg @option{vbr} option has the following
-valid arguments, with the @command{opusenc} equivalent options
-in parentheses:
-
-@table @samp
-@item off (@emph{hard-cbr})
-Use constant bit rate encoding.
-
-@item on (@emph{vbr})
-Use variable bit rate encoding (the default).
-
-@item constrained (@emph{cvbr})
-Use constrained variable bit rate encoding.
-@end table
-
-@item compression_level (@emph{comp})
-Set encoding algorithm complexity. Valid options are integers in
-the 0-10 range. 0 gives the fastest encodes but lower quality, while 10
-gives the highest quality but slowest encoding. The default is 10.
-
-@item frame_duration (@emph{framesize})
-Set maximum frame size, or duration of a frame in milliseconds. The
-argument must be exactly the following: 2.5, 5, 10, 20, 40, 60. Smaller
-frame sizes achieve lower latency but less quality at a given bitrate.
-Sizes greater than 20ms are only interesting at fairly low bitrates.
-The default is 20ms.
-
-@item packet_loss (@emph{expect-loss})
-Set expected packet loss percentage. The default is 0.
-
-@item application (N.A.)
-Set intended application type. Valid options are listed below:
-
-@table @samp
-@item voip
-Favor improved speech intelligibility.
-@item audio
-Favor faithfulness to the input (the default).
-@item lowdelay
-Restrict to only the lowest delay modes.
-@end table
-
-@item cutoff (N.A.)
-Set cutoff bandwidth in Hz. The argument must be exactly one of the
-following: 4000, 6000, 8000, 12000, or 20000, corresponding to
-narrowband, mediumband, wideband, super wideband, and fullband
-respectively. The default is 0 (cutoff disabled).
-
-@item mapping_family (@emph{mapping_family})
-Set channel mapping family to be used by the encoder. The default value of -1
-uses mapping family 0 for mono and stereo inputs, and mapping family 1
-otherwise. The default also disables the surround masking and LFE bandwidth
-optimzations in libopus, and requires that the input contains 8 channels or
-fewer.
-
-Other values include 0 for mono and stereo, 1 for surround sound with masking
-and LFE bandwidth optimizations, and 255 for independent streams with an
-unspecified channel layout.
-
-@end table
-
 @section libvorbis
 
 libvorbis encoder wrapper.
@@ -1192,6 +1222,27 @@ Same as @samp{3}, but with extra processing enabled.
 @end table
 @end table
 
+@anchor{mjpegenc}
+@section mjpeg
+
+Motion JPEG encoder.
+
+@subsection Options
+
+@table @option
+@item huffman
+Set the huffman encoding strategy. Possible values:
+
+@table @samp
+@item default
+Use the default huffman tables. This is the default strategy.
+
+@item optimal
+Compute and use optimal huffman tables.
+
+@end table
+@end table
+
 @anchor{wavpackenc}
 @section wavpack
 
@@ -1261,6 +1312,81 @@ disabled
 A description of some of the currently available video encoders
 follows.
 
+@section Hap
+
+Vidvox Hap video encoder.
+
+@subsection Options
+
+@table @option
+@item format @var{integer}
+Specifies the Hap format to encode.
+
+@table @option
+@item hap
+@item hap_alpha
+@item hap_q
+@end table
+
+Default value is @option{hap}.
+
+@item chunks @var{integer}
+Specifies the number of chunks to split frames into, between 1 and 64. This
+permits multithreaded decoding of large frames, potentially at the cost of
+data-rate. The encoder may modify this value to divide frames evenly.
+
+Default value is @var{1}.
+
+@item compressor @var{integer}
+Specifies the second-stage compressor to use. If set to @option{none},
+@option{chunks} will be limited to 1, as chunked uncompressed frames offer no
+benefit.
+
+@table @option
+@item none
+@item snappy
+@end table
+
+Default value is @option{snappy}.
+
+@end table
+
+@section jpeg2000
+
+The native jpeg 2000 encoder is lossy by default, the @code{-q:v}
+option can be used to set the encoding quality. Lossless encoding
+can be selected with @code{-pred 1}.
+
+@subsection Options
+
+@table @option
+@item format
+Can be set to either @code{j2k} or @code{jp2} (the default) that
+makes it possible to store non-rgb pix_fmts.
+
+@end table
+
+@section libkvazaar
+
+Kvazaar H.265/HEVC encoder.
+
+Requires the presence of the libkvazaar headers and library during
+configuration. You need to explicitly configure the build with
+@option{--enable-libkvazaar}.
+
+@subsection Options
+
+@table @option
+
+@item b
+Set target video bitrate in bit/s and enable rate control.
+
+@item kvazaar-params
+Set kvazaar parameters as a list of @var{name}=@var{value} pairs separated
+by commas (,). See kvazaar documentation for a list of options.
+
+@end table
+
 @section libopenh264
 
 Cisco libopenh264 H.264/MPEG-4 AVC encoder wrapper.
@@ -1325,30 +1451,6 @@ Set maximum NAL size in bytes.
 
 @item allow_skip_frames
 Allow skipping frames to hit the target bitrate if set to 1.
-@end table
-
-@section jpeg2000
-
-The native jpeg 2000 encoder is lossy by default, the @code{-q:v}
-option can be used to set the encoding quality. Lossless encoding
-can be selected with @code{-pred 1}.
-
-@subsection Options
-
-@table @option
-@item format
-Can be set to either @code{j2k} or @code{jp2} (the default) that
-makes it possible to store non-rgb pix_fmts.
-
-@end table
-
-@section snow
-
-@subsection Options
-
-@table @option
-@item iterative_dia_size
-dia size for the iterative motion estimation
 @end table
 
 @section libtheora
@@ -1564,7 +1666,7 @@ option to 2.
 Enable frame parallel decodability features.
 @item aq-mode
 Set adaptive quantization mode (0: off (default), 1: variance 2: complexity, 3:
-cyclic refresh).
+cyclic refresh, 4: equator360).
 @item colorspace @emph{color-space}
 Set input color space. The VP9 bitstream supports signaling the following
 colorspaces:
@@ -1577,13 +1679,14 @@ colorspaces:
 @item @samp{smpte240m} @emph{smpte240}
 @item @samp{bt2020_ncl} @emph{bt2020}
 @end table
+@item row-mt @var{boolean}
+Enable row based multi-threading.
 @end table
 
 @end table
 
 For more information about libvpx see:
 @url{http://www.webmproject.org/}
-
 
 @section libwebp
 
@@ -1690,7 +1793,7 @@ the documentation of the undocumented generic options, see
 @ref{codec-options,,the Codec Options chapter}.
 
 To get a more accurate and extensive documentation of the libx264
-options, invoke the command @command{x264 --full-help} or consult
+options, invoke the command @command{x264 --fullhelp} or consult
 the libx264 documentation.
 
 @table @option
@@ -1750,6 +1853,10 @@ Exhaustive search.
 @item tesa (@emph{tesa})
 Hadamard exhaustive search (slowest).
 @end table
+
+@item forced-idr
+Normally, when forcing a I-frame type, the encoder can select any type
+of I-frame. This option forces it to choose an IDR-frame.
 
 @item subq (@emph{subme})
 Sub-pixel motion estimation method.
@@ -1999,7 +2106,7 @@ is kept undocumented for some reason.
 
 For example to specify libx264 encoding options with @command{ffmpeg}:
 @example
-ffmpeg -i foo.mpg -vcodec libx264 -x264opts keyint=123:min-keyint=20 -an out.mkv
+ffmpeg -i foo.mpg -c:v libx264 -x264opts keyint=123:min-keyint=20 -an out.mkv
 @end example
 
 @item a53cc @var{boolean}
@@ -2040,6 +2147,10 @@ Set the x265 preset.
 
 @item tune
 Set the x265 tune parameter.
+
+@item forced-idr
+Normally, when forcing a I-frame type, the encoder can select any type
+of I-frame. This option forces it to choose an IDR-frame.
 
 @item x265-params
 Set x265 options using a list of @var{key}=@var{value} couples separated
@@ -2270,6 +2381,7 @@ Select the ProRes profile to encode
 @item standard
 @item hq
 @item 4444
+@item 4444xq
 @end table
 
 @item quant_mat @var{integer}
@@ -2318,27 +2430,6 @@ Setting a higher @option{bits_per_mb} limit will improve the speed.
 
 For the fastest encoding speed set the @option{qscale} parameter (4 is the
 recommended value) and do not set a size constraint.
-
-@section libkvazaar
-
-Kvazaar H.265/HEVC encoder.
-
-Requires the presence of the libkvazaar headers and library during
-configuration. You need to explicitly configure the build with
-@option{--enable-libkvazaar}.
-
-@subsection Options
-
-@table @option
-
-@item b
-Set target video bitrate in bit/s and enable rate control.
-
-@item kvazaar-params
-Set kvazaar parameters as a list of @var{name}=@var{value} pairs separated
-by commas (,). See kvazaar documentation for a list of options.
-
-@end table
 
 @section QSV encoders
 
@@ -2427,6 +2518,126 @@ Setting the @option{coder} option to the value @var{vlc} will make the H.264
 encoder use CAVLC instead of CABAC.
 
 @end itemize
+
+@section snow
+
+@subsection Options
+
+@table @option
+@item iterative_dia_size
+dia size for the iterative motion estimation
+@end table
+
+@section VAAPI encoders
+
+Wrappers for hardware encoders accessible via VAAPI.
+
+These encoders only accept input in VAAPI hardware surfaces.  If you have input
+in software frames, use the @option{hwupload} filter to upload them to the GPU.
+
+The following standard libavcodec options are used:
+@itemize
+@item
+@option{g} / @option{gop_size}
+@item
+@option{bf} / @option{max_b_frames}
+@item
+@option{profile}
+@item
+@option{level}
+@item
+@option{b} / @option{bit_rate}
+@item
+@option{maxrate} / @option{rc_max_rate}
+@item
+@option{bufsize} / @option{rc_buffer_size}
+@item
+@option{rc_init_occupancy} / @option{rc_initial_buffer_occupancy}
+@item
+@option{compression_level}
+
+Speed / quality tradeoff: higher values are faster / worse quality.
+@item
+@option{q} / @option{global_quality}
+
+Size / quality tradeoff: higher values are smaller / worse quality.
+@item
+@option{qmin}
+(only: @option{qmax} is not supported)
+@item
+@option{i_qfactor} / @option{i_quant_factor}
+@item
+@option{i_qoffset} / @option{i_quant_offset}
+@item
+@option{b_qfactor} / @option{b_quant_factor}
+@item
+@option{b_qoffset} / @option{b_quant_offset}
+@end itemize
+
+@table @option
+
+@item h264_vaapi
+@option{profile} sets the value of @emph{profile_idc} and the @emph{constraint_set*_flag}s.
+@option{level} sets the value of @emph{level_idc}.
+
+@table @option
+@item low_power
+Use low-power encoding mode.
+@item coder
+Set entropy encoder (default is @emph{cabac}).  Possible values:
+
+@table @samp
+@item ac
+@item cabac
+Use CABAC.
+
+@item vlc
+@item cavlc
+Use CAVLC.
+@end table
+@end table
+
+@item hevc_vaapi
+@option{profile} and @option{level} set the values of
+@emph{general_profile_idc} and @emph{general_level_idc} respectively.
+
+@item mjpeg_vaapi
+Always encodes using the standard quantisation and huffman tables -
+@option{global_quality} scales the standard quantisation table (range 1-100).
+
+@item mpeg2_vaapi
+@option{profile} and @option{level} set the value of @emph{profile_and_level_indication}.
+
+No rate control is supported.
+
+@item vp8_vaapi
+B-frames are not supported.
+
+@option{global_quality} sets the @emph{q_idx} used for non-key frames (range 0-127).
+
+@table @option
+@item loop_filter_level
+@item loop_filter_sharpness
+Manually set the loop filter parameters.
+@end table
+
+@item vp9_vaapi
+@option{global_quality} sets the @emph{q_idx} used for P-frames (range 0-255).
+
+@table @option
+@item loop_filter_level
+@item loop_filter_sharpness
+Manually set the loop filter parameters.
+@end table
+
+B-frames are supported, but the output stream is always in encode order rather than display
+order.  If B-frames are enabled, it may be necessary to use the @option{vp9_raw_reorder}
+bitstream filter to modify the output stream to display frames in the correct order.
+
+Only normal frames are produced - the @option{vp9_superframe} bitstream filter may be
+required to produce a stream usable with all decoders.
+
+@end table
 
 @section vc2
 

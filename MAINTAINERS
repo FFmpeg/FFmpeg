@@ -47,6 +47,7 @@ project server                          Árpád Gereöffy, Michael Niedermayer, 
 presets                                 Robert Swain
 metadata subsystem                      Aurelien Jacobs
 release management                      Michael Niedermayer
+API tests                               Ludmila Glinskih
 
 
 Communication
@@ -59,6 +60,7 @@ mailing lists                           Baptiste Coudurier, Lou Logan
 Google+                                 Paul B Mahol, Michael Niedermayer, Alexander Strasser
 Twitter                                 Lou Logan, Reynaldo H. Verdejo Pinochet
 Launchpad                               Timothy Gu
+ffmpeg-security                         Andreas Cadhalpun, Carl Eugen Hoyos, Clément Bœsch, Michael Niedermayer, Reimar Doeffinger, Rodger Combs, wm4
 
 
 libavutil
@@ -114,6 +116,8 @@ Generic Parts:
     lzw.*                               Michael Niedermayer
   floating point AAN DCT:
     faandct.c, faandct.h                Michael Niedermayer
+  Non-power-of-two MDCT:
+    mdct15.c, mdct15.h                  Rostislav Pehlivanov
   Golomb coding:
     golomb.c, golomb.h                  Michael Niedermayer
   motion estimation:
@@ -154,9 +158,11 @@ Codecs:
   cpia.c                                Stephan Hilb
   crystalhd.c                           Philip Langdale
   cscd.c                                Reimar Doeffinger
-  cuvid.c                               Timo Rothenpieler
+  cuviddec.c                            Timo Rothenpieler
+  dca*                                  foo86
   dirac*                                Rostislav Pehlivanov
   dnxhd*                                Baptiste Coudurier
+  dolby_e*                              foo86
   dpcm.c                                Mike Melanson
   dss_sp.c                              Oleksij Rempel
   dv.c                                  Roman Shaposhnik
@@ -164,6 +170,7 @@ Codecs:
   eacmv*, eaidct*, eat*                 Peter Ross
   evrc*                                 Paul B Mahol
   exif.c, exif.h                        Thilo Borgmann
+  exr.c                                 Martin Vignali
   ffv1*                                 Michael Niedermayer
   ffwavesynth.c                         Nicolas George
   fifo.c                                Jan Sebechlebsky
@@ -175,7 +182,7 @@ Codecs:
   h263*                                 Michael Niedermayer
   h264*                                 Loren Merritt, Michael Niedermayer
   hap*                                  Tom Butterworth
-  huffyuv*                              Michael Niedermayer, Christophe Gisquet
+  huffyuv*                              Michael Niedermayer
   idcinvideo.c                          Mike Melanson
   interplayvideo.c                      Mike Melanson
   jni*, ffjni*                          Matthieu Bouron
@@ -188,7 +195,6 @@ Codecs:
   libkvazaar.c                          Arttu Ylä-Outinen
   libopenjpeg.c                         Jaikrishnan Menon
   libopenjpegenc.c                      Michael Bradshaw
-  libschroedinger*                      David Conrad
   libtheoraenc.c                        David Conrad
   libvorbis.c                           David Conrad
   libvpx*                               James Zern
@@ -207,14 +213,15 @@ Codecs:
   msrle.c                               Mike Melanson
   msvideo1.c                            Mike Melanson
   nuv.c                                 Reimar Doeffinger
-  nvenc*                                Timo Rothenpieler
+  nvdec*, nvenc*                        Timo Rothenpieler
+  opus*                                 Rostislav Pehlivanov
   paf.*                                 Paul B Mahol
   pcx.c                                 Ivo van Poorten
   pgssubdec.c                           Reimar Doeffinger
   ptx.c                                 Ivo van Poorten
   qcelp*                                Reynaldo H. Verdejo Pinochet
   qdm2.c, qdm2data.h                    Roberto Togni
-  qsv*                                  Ivan Uskov
+  qsv*                                  Mark Thompson
   qtrle.c                               Mike Melanson
   ra144.c, ra144.h, ra288.c, ra288.h    Roberto Togni
   resample2.c                           Michael Niedermayer
@@ -222,12 +229,12 @@ Codecs:
   rpza.c                                Roberto Togni
   rtjpeg.c, rtjpeg.h                    Reimar Doeffinger
   rv10.c                                Michael Niedermayer
-  rv4*                                  Christophe Gisquet
   s3tc*                                 Ivo van Poorten
   smc.c                                 Mike Melanson
   smvjpegdec.c                          Ash Hughes
   snow*                                 Michael Niedermayer, Loren Merritt
   sonic.c                               Alex Beregszaszi
+  speedhq.c                             Steinar H. Gunderson
   srt*                                  Aurelien Jacobs
   sunrast.c                             Ivo van Poorten
   svq3.c                                Michael Niedermayer
@@ -236,11 +243,9 @@ Codecs:
   tta.c                                 Alex Beregszaszi, Jaikrishnan Menon
   ttaenc.c                              Paul B Mahol
   txd.c                                 Ivo van Poorten
-  vc1*                                  Christophe Gisquet
   vc2*                                  Rostislav Pehlivanov
   vcr1.c                                Michael Niedermayer
-  vda_h264_dec.c                        Xidorn Quan
-  videotoolboxenc.c                     Rick Kern
+  videotoolboxenc.c                     Rick Kern, Aman Gupta
   vima.c                                Paul B Mahol
   vorbisdec.c                           Denes Balatoni, David Conrad
   vorbisenc.c                           Oded Shimon
@@ -261,12 +266,13 @@ Codecs:
 
 Hardware acceleration:
   crystalhd.c                           Philip Langdale
-  dxva2*                                Hendrik Leppkes, Laurent Aimar
+  dxva2*                                Hendrik Leppkes, Laurent Aimar, Steve Lhomme
+  d3d11va*                              Steve Lhomme
   mediacodec*                           Matthieu Bouron
   vaapi*                                Gwenole Beauchesne
   vaapi_encode*                         Mark Thompson
   vdpau*                                Philip Langdale, Carl Eugen Hoyos
-  videotoolbox*                         Rick Kern
+  videotoolbox*                         Rick Kern, Aman Gupta
 
 
 libavdevice
@@ -276,7 +282,7 @@ libavdevice
 
 
   avfoundation.m                        Thilo Borgmann
-  decklink*                             Deti Fliegl
+  decklink*                             Marton Balint
   dshow.c                               Roger Pack (CC rogerdpack@gmail.com)
   fbdev_enc.c                           Lukasz Marek
   gdigrab.c                             Roger Pack (CC rogerdpack@gmail.com)
@@ -285,7 +291,6 @@ libavdevice
   libdc1394.c                           Roman Shaposhnik
   opengl_enc.c                          Lukasz Marek
   pulse_audio_enc.c                     Lukasz Marek
-  qtkit.m                               Thilo Borgmann
   sdl                                   Stefano Sabatini
   sdl2.c                                Josh de Kock
   v4l2.c                                Giorgio Vazzana
@@ -324,6 +329,7 @@ Filters:
   avf_avectorscope.c                    Paul B Mahol
   avf_showcqt.c                         Muhammad Faiz
   vf_blend.c                            Paul B Mahol
+  vf_bwdif                              Thomas Mundt (CC <thomas.mundt@hr.de>)
   vf_chromakey.c                        Timo Rothenpieler
   vf_colorchannelmixer.c                Paul B Mahol
   vf_colorbalance.c                     Paul B Mahol
@@ -339,6 +345,7 @@ Filters:
   vf_hqx.c                              Clément Bœsch
   vf_idet.c                             Pascal Massimino
   vf_il.c                               Paul B Mahol
+  vf_(t)interlace                       Thomas Mundt (CC <thomas.mundt@hr.de>)
   vf_lenscorrection.c                   Daniel Oberhoff
   vf_mergeplanes.c                      Paul B Mahol
   vf_mestimate.c                        Davinder Singh
@@ -384,23 +391,27 @@ Muxers/Demuxers:
   avisynth.c                            Stephen Hutchinson
   avr.c                                 Paul B Mahol
   bink.c                                Peter Ross
+  boadec.c                              Michael Niedermayer
   brstm.c                               Paul B Mahol
   caf*                                  Peter Ross
   cdxl.c                                Paul B Mahol
   crc.c                                 Michael Niedermayer
+  dashdec.c                             Steven Liu
   daud.c                                Reimar Doeffinger
   dss.c                                 Oleksij Rempel
+  dtsdec.c                              foo86
   dtshddec.c                            Paul B Mahol
   dv.c                                  Roman Shaposhnik
   electronicarts.c                      Peter Ross
   epafdec.c                             Paul B Mahol
   ffm*                                  Baptiste Coudurier
   flic.c                                Mike Melanson
-  flvdec.c, flvenc.c                    Michael Niedermayer
+  flvdec.c                              Michael Niedermayer
+  flvenc.c                              Michael Niedermayer, Steven Liu
   gxf.c                                 Reimar Doeffinger
   gxfenc.c                              Baptiste Coudurier
   hls.c                                 Anssi Hannula
-  hls encryption (hlsenc.c)             Christian Suloway, Steven Liu
+  hlsenc.c                              Christian Suloway, Steven Liu
   idcin.c                               Mike Melanson
   idroqdec.c                            Mike Melanson
   iff.c                                 Jaikrishnan Menon
@@ -410,7 +421,6 @@ Muxers/Demuxers:
   iss.c                                 Stefan Gehrer
   jvdec.c                               Peter Ross
   libmodplug.c                          Clément Bœsch
-  libnut.c                              Oded Shimon
   libopenmpt.c                          Josh de Kock
   lmlm4.c                               Ivo van Poorten
   lvfdec.c                              Paul B Mahol
@@ -433,7 +443,6 @@ Muxers/Demuxers:
   msnwc_tcp.c                           Ramiro Polla
   mtv.c                                 Reynaldo H. Verdejo Pinochet
   mxf*                                  Baptiste Coudurier
-  mxfdec.c                              Tomas Härdin
   nistspheredec.c                       Paul B Mahol
   nsvdec.c                              Francois Revol
   nut*                                  Michael Niedermayer
@@ -462,6 +471,7 @@ Muxers/Demuxers:
   rtpdec_vc2hq.*, rtpenc_vc2hq.*        Thomas Volkert
   rtpdec_vp9.c                          Thomas Volkert
   rtpenc_mpv.*, rtpenc_aac.*            Martin Storsjo
+  s337m.c                               foo86
   sbgdec.c                              Nicolas George
   sdp.c                                 Martin Storsjo
   segafilm.c                            Mike Melanson
@@ -511,7 +521,7 @@ Operating systems / CPU architectures
 =====================================
 
 Alpha                                   Falk Hueffner
-MIPS                                    Nedeljko Babic
+MIPS                                    Manojkumar Bhosale
 Mac OS X / PowerPC                      Romain Dolbeau, Guillaume Poirier
 Amiga / PowerPC                         Colin Ward
 Windows MinGW                           Alex Beregszaszi, Ramiro Polla
@@ -521,6 +531,33 @@ Windows ICL                             Matthew Oliver
 ADI/Blackfin DSP                        Marc Hoffman
 Sparc                                   Roman Shaposhnik
 OS/2                                    KO Myung-Hun
+
+
+Developers with git write access who are currently not maintaining any specific part
+====================================================================================
+Alex Converse
+Andreas Cadhalpun
+Anuradha Suraparaju
+Ben Littler
+Benjamin Larsson
+Bobby Bingham
+Daniel Verkamp
+Derek Buitenhuis
+Ganesh Ajjanagadde
+Henrik Gramner
+Ivan Uskov
+James Darnley
+Jan Ekström
+Joakim Plate
+Kieran Kunhya
+Kirill Gavrilov
+Martin Storsjö
+Panagiotis Issaris
+Pedro Arthur
+Sebastien Zwickert
+Vittorio Giovara
+wm4
+(this list is incomplete)
 
 
 Releases
@@ -550,6 +587,7 @@ FFmpeg release signing key    FCF9 86EA 15E6 E293 A564 4F10 B432 2F04 D676 58D8
 Ganesh Ajjanagadde            C96A 848E 97C3 CEA2 AB72 5CE4 45F9 6A2D 3C36 FB1B
 Gwenole Beauchesne            2E63 B3A6 3E44 37E2 017D 2704 53C7 6266 B153 99C4
 Jaikrishnan Menon             61A1 F09F 01C9 2D45 78E1 C862 25DC 8831 AF70 D368
+James Almer                   7751 2E8C FD94 A169 57E6 9A7A 1463 01AD 7376 59E0
 Jean Delvare                  7CA6 9F44 60F1 BDC4 1FD2 C858 A552 6B9B B3CD 4E6A
 Loren Merritt                 ABD9 08F4 C920 3F65 D8BE 35D7 1540 DAA7 060F 56DE
 Lou Logan                     7D68 DC73 CBEF EABB 671A B6CF 621C 2E28 82F8 DC3A
@@ -565,6 +603,7 @@ Reynaldo H. Verdejo Pinochet  6E27 CD34 170C C78E 4D4F 5F40 C18E 077F 3114 452A
 Robert Swain                  EE7A 56EA 4A81 A7B5 2001 A521 67FA 362D A2FC 3E71
 Sascha Sommer                 38A0 F88B 868E 9D3A 97D4 D6A0 E823 706F 1E07 0D3C
 Stefano Sabatini              0D0B AD6B 5330 BBAD D3D6 6A0C 719C 2839 FC43 2D5F
+Steinar H. Gunderson          C2E9 004F F028 C18E 4EAD DB83 7F61 7561 7797 8F76
 Stephan Hilb                  4F38 0B3A 5F39 B99B F505 E562 8D5C 5554 4E17 8863
 Tiancheng "Timothy" Gu        9456 AFC0 814A 8139 E994 8351 7FE6 B095 B582 B0D4
 Tim Nicholson                 38CF DB09 3ED0 F607 8B67 6CED 0C0B FC44 8B0B FC83

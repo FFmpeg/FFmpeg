@@ -21,7 +21,9 @@
 
 int main(void)
 {
-    volatile int val = 1;
+    volatile int val      = 1;
+    void *tmp1            = (int *)&val;
+    void * volatile *tmp2 = &tmp1;
     int res;
 
     res = avpriv_atomic_int_add_and_fetch(&val, 1);
@@ -29,6 +31,8 @@ int main(void)
     avpriv_atomic_int_set(&val, 3);
     res = avpriv_atomic_int_get(&val);
     av_assert0(res == 3);
+    avpriv_atomic_ptr_cas(tmp2, tmp1, &res);
+    av_assert0(*tmp2 == &res);
 
     return 0;
 }

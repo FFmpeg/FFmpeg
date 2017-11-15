@@ -13,7 +13,8 @@ FFmpeg tools. For programmatic use, they can be set explicitly in the
 @anchor{sws_flags}
 @item sws_flags
 Set the scaler flags. This is also used to set the scaling
-algorithm. Only a single algorithm should be selected.
+algorithm. Only a single algorithm should be selected. Default
+value is @samp{bicubic}.
 
 It accepts the following values:
 @table @samp

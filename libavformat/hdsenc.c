@@ -145,7 +145,7 @@ static void hds_free(AVFormatContext *s)
         if (os->ctx && os->ctx_inited)
             av_write_trailer(os->ctx);
         if (os->ctx)
-            av_freep(&os->ctx->pb);
+            avio_context_free(&os->ctx->pb);
         if (os->ctx)
             avformat_free_context(os->ctx);
         av_freep(&os->metadata);
@@ -420,7 +420,6 @@ static int hds_write_header(AVFormatContext *s)
         if (!os->has_video && c->min_frag_duration <= 0) {
             av_log(s, AV_LOG_WARNING,
                    "No video stream in output stream %d and no min frag duration set\n", i);
-            ret = AVERROR(EINVAL);
         }
         os->fragment_index = 1;
         write_abst(s, os, 0);

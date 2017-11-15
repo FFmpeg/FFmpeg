@@ -450,7 +450,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     if (CONFIG_OPENCL && deshake->opencl) {
         ret = ff_opencl_deshake_process_inout_buf(link->dst,in, out);
         if (ret < 0)
-            return ret;
+            goto fail;
     }
 
     if (deshake->cx < 0 || deshake->cy < 0 || deshake->cw < 0 || deshake->ch < 0) {
@@ -536,13 +536,16 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     av_frame_free(&deshake->ref);
 
     if (ret < 0)
-        return ret;
+        goto fail;
 
     // Store the current frame as the reference frame for calculating the
     // motion of the next frame
     deshake->ref = in;
 
     return ff_filter_frame(outlink, out);
+fail:
+    av_frame_free(&out);
+    return ret;
 }
 
 static const AVFilterPad deshake_inputs[] = {

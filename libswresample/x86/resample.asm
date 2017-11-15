@@ -203,7 +203,7 @@ cglobal resample_common_%1, 1, 7, 2, ctx, phase_count, dst, frac, \
     ; horizontal sum & store
 %if mmsize == 32
     vextractf128                 xm1, m0, 0x1
-    addps                        xm0, xm1
+    addp%4                       xm0, xm1
 %endif
     movhlps                      xm1, xm0
 %ifidn %1, float
@@ -489,8 +489,8 @@ cglobal resample_linear_%1, 1, 7, 5, ctx, min_filter_length_x4, filter2, \
 %if mmsize == 32
     vextractf128                 xm1, m0, 0x1
     vextractf128                 xm3, m2, 0x1
-    addps                        xm0, xm1
-    addps                        xm2, xm3
+    addp%4                       xm0, xm1
+    addp%4                       xm2, xm3
 %endif
     cvtsi2s%4                    xm1, fracd
     subp%4                       xm2, xm0
@@ -608,3 +608,12 @@ RESAMPLE_FNS int16, 2, 1
 
 INIT_XMM sse2
 RESAMPLE_FNS double, 8, 3, d, pdbl_1
+
+%if HAVE_AVX_EXTERNAL
+INIT_YMM avx
+RESAMPLE_FNS double, 8, 3, d, pdbl_1
+%endif
+%if HAVE_FMA3_EXTERNAL
+INIT_YMM fma3
+RESAMPLE_FNS double, 8, 3, d, pdbl_1
+%endif

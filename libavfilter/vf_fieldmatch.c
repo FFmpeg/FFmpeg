@@ -72,7 +72,7 @@ enum comb_dbg {
     NB_COMBDBG
 };
 
-typedef struct {
+typedef struct FieldMatchContext {
     const AVClass *class;
 
     AVFrame *prv,  *src,  *nxt;     ///< main sliding window of 3 frames
@@ -740,7 +740,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     /* scene change check */
     if (fm->combmatch == COMBMATCH_SC) {
-        if (fm->lastn == outlink->frame_count - 1) {
+        if (fm->lastn == outlink->frame_count_in - 1) {
             if (fm->lastscdiff > fm->scthresh)
                 sc = 1;
         } else if (luma_abs_diff(fm->prv, fm->src) > fm->scthresh) {
@@ -748,7 +748,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
 
         if (!sc) {
-            fm->lastn = outlink->frame_count;
+            fm->lastn = outlink->frame_count_in;
             fm->lastscdiff = luma_abs_diff(fm->src, fm->nxt);
             sc = fm->lastscdiff > fm->scthresh;
         }
@@ -807,7 +807,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     dst->interlaced_frame = combs[match] >= fm->combpel;
     if (dst->interlaced_frame) {
         av_log(ctx, AV_LOG_WARNING, "Frame #%"PRId64" at %s is still interlaced\n",
-               outlink->frame_count, av_ts2timestr(in->pts, &inlink->time_base));
+               outlink->frame_count_in, av_ts2timestr(in->pts, &inlink->time_base));
         dst->top_field_first = field;
     }
 
@@ -904,17 +904,24 @@ static av_cold int fieldmatch_init(AVFilterContext *ctx)
         .filter_frame = filter_frame,
         .config_props = config_input,
     };
+    int ret;
 
     if (!pad.name)
         return AVERROR(ENOMEM);
-    ff_insert_inpad(ctx, INPUT_MAIN, &pad);
+    if ((ret = ff_insert_inpad(ctx, INPUT_MAIN, &pad)) < 0) {
+        av_freep(&pad.name);
+        return ret;
+    }
 
     if (fm->ppsrc) {
         pad.name = av_strdup("clean_src");
         pad.config_props = NULL;
         if (!pad.name)
             return AVERROR(ENOMEM);
-        ff_insert_inpad(ctx, INPUT_CLEANSRC, &pad);
+        if ((ret = ff_insert_inpad(ctx, INPUT_CLEANSRC, &pad)) < 0) {
+            av_freep(&pad.name);
+            return ret;
+        }
     }
 
     if ((fm->blockx & (fm->blockx - 1)) ||

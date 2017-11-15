@@ -2185,7 +2185,7 @@ static void decode_aybri(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
             dst_v[x] = get_bits(gb, 8);
         }
     } else {
-        int pred[4] = { 125, 125, -128, -128 };
+        int pred[4] = { 125, s->alt ? 125 : -146, -128, -128 };
 
         for (x = 0; x < avctx->width; x++) {
             int a, y, u, v;
@@ -2263,7 +2263,7 @@ static void decode_aybr(AVCodecContext *avctx, AVFrame *p, GetBitContext *gb)
             dst_v[x] = get_bits(gb, 8);
         }
     } else {
-        int pred[4] = { 125, 125, -128, -128 };
+        int pred[4] = { 125, s->alt ? 125 : -146, -128, -128 };
 
         for (x = 0; x < avctx->width; x++) {
             int a, y, u, v;
@@ -2879,7 +2879,6 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame *p = data;
     GetBitContext gb;
     unsigned format;
-    char format_str[32];
     int ret;
 
     if (avpkt->size <= 20)
@@ -2891,8 +2890,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     s->alt = 0;
     format = AV_RL32(avpkt->data + 16);
-    av_get_codec_tag_string(format_str, sizeof(format_str), format);
-    av_log(avctx, AV_LOG_DEBUG, "format: %s\n", format_str);
+    av_log(avctx, AV_LOG_DEBUG, "format: %s\n", av_fourcc2str(format));
     switch (format) {
     case MKTAG(' ', 'R', 'G', 'B'):
         avctx->pix_fmt = AV_PIX_FMT_RGB0;
@@ -2959,6 +2957,7 @@ static int decode_frame(AVCodecContext *avctx,
         }
         break;
     case MKTAG('A', 'Y', 'B', 'R'):
+        s->alt = 1;
     case MKTAG('A', 'Y', 'b', 'R'):
         avctx->pix_fmt = AV_PIX_FMT_YUVA444P;
         s->decode_frame = decode_aybr;
@@ -2968,6 +2967,7 @@ static int decode_frame(AVCodecContext *avctx,
         }
         break;
     case MKTAG('A', 'y', 'B', 'R'):
+        s->alt = 1;
     case MKTAG('A', 'y', 'b', 'R'):
         avctx->pix_fmt = AV_PIX_FMT_YUVA444P;
         s->decode_frame = decode_aybri;
@@ -3103,6 +3103,11 @@ static int decode_frame(AVCodecContext *avctx,
     default:
         avpriv_request_sample(avctx, "unsupported format: 0x%X", format);
         return AVERROR_PATCHWELCOME;
+    }
+
+    if (avpkt->size < 20 + avctx->width * avctx->height / 16) {
+        av_log(avctx, AV_LOG_ERROR, "Input packet too small\n");
+        return AVERROR_INVALIDDATA;
     }
 
     if (s->format != format) {

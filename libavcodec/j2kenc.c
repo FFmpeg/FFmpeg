@@ -69,6 +69,7 @@
 #include "bytestream.h"
 #include "jpeg2000.h"
 #include "libavutil/common.h"
+#include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
 
 #define NMSEDEC_BITS 7
@@ -1150,8 +1151,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
     } else{ // planar YUV
         s->planar = 1;
         s->ncomponents = 3;
-        avcodec_get_chroma_sub_sample(avctx->pix_fmt,
-                s->chroma_shift, s->chroma_shift + 1);
+        ret = av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt,
+                                               s->chroma_shift, s->chroma_shift + 1);
+        if (ret)
+            return ret;
     }
 
     ff_jpeg2000_init_tier1_luts();

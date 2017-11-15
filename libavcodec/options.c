@@ -119,6 +119,7 @@ static int init_context_defaults(AVCodecContext *s, const AVCodec *codec)
     s->execute2            = avcodec_default_execute2;
     s->sample_aspect_ratio = (AVRational){0,1};
     s->pix_fmt             = AV_PIX_FMT_NONE;
+    s->sw_pix_fmt          = AV_PIX_FMT_NONE;
     s->sample_fmt          = AV_SAMPLE_FMT_NONE;
 
     s->reordered_opaque    = AV_NOPTS_VALUE;
@@ -187,6 +188,31 @@ void avcodec_free_context(AVCodecContext **pavctx)
 }
 
 #if FF_API_COPY_CONTEXT
+static void copy_context_reset(AVCodecContext *avctx)
+{
+    int i;
+
+    av_opt_free(avctx);
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
+    av_frame_free(&avctx->coded_frame);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+    av_freep(&avctx->rc_override);
+    av_freep(&avctx->intra_matrix);
+    av_freep(&avctx->inter_matrix);
+    av_freep(&avctx->extradata);
+    av_freep(&avctx->subtitle_header);
+    av_buffer_unref(&avctx->hw_frames_ctx);
+    av_buffer_unref(&avctx->hw_device_ctx);
+    for (i = 0; i < avctx->nb_coded_side_data; i++)
+        av_freep(&avctx->coded_side_data[i].data);
+    av_freep(&avctx->coded_side_data);
+    avctx->subtitle_header_size = 0;
+    avctx->nb_coded_side_data = 0;
+    avctx->extradata_size = 0;
+}
+
 int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
 {
     const AVCodec *orig_codec = dest->codec;
@@ -199,12 +225,7 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
         return AVERROR(EINVAL);
     }
 
-    av_opt_free(dest);
-    av_freep(&dest->rc_override);
-    av_freep(&dest->intra_matrix);
-    av_freep(&dest->inter_matrix);
-    av_freep(&dest->extradata);
-    av_freep(&dest->subtitle_header);
+    copy_context_reset(dest);
 
     memcpy(dest, src, sizeof(*dest));
     av_opt_copy(dest, src);
@@ -229,11 +250,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     /* reallocate values that should be allocated separately */
     dest->extradata       = NULL;
+    dest->coded_side_data = NULL;
     dest->intra_matrix    = NULL;
     dest->inter_matrix    = NULL;
     dest->rc_override     = NULL;
     dest->subtitle_header = NULL;
     dest->hw_frames_ctx   = NULL;
+    dest->hw_device_ctx   = NULL;
+    dest->nb_coded_side_data = 0;
 
 #define alloc_and_copy_or_fail(obj, size, pad) \
     if (src->obj && size > 0) { \
@@ -263,15 +287,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return 0;
 
 fail:
-    av_freep(&dest->subtitle_header);
-    av_freep(&dest->rc_override);
-    av_freep(&dest->intra_matrix);
-    av_freep(&dest->inter_matrix);
-    av_freep(&dest->extradata);
-    av_buffer_unref(&dest->hw_frames_ctx);
-    dest->subtitle_header_size = 0;
-    dest->extradata_size = 0;
-    av_opt_free(dest);
+    copy_context_reset(dest);
     return AVERROR(ENOMEM);
 }
 #endif

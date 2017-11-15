@@ -143,7 +143,7 @@ static int chs_parse_header(DCAXllDecoder *s, DCAXllChSet *c, DCAExssAsset *asse
 
     // Storage unit width
     c->storage_bit_res = get_bits(&s->gb, 5) + 1;
-    if (c->storage_bit_res != 16 && c->storage_bit_res != 24) {
+    if (c->storage_bit_res != 16 && c->storage_bit_res != 20 && c->storage_bit_res != 24) {
         avpriv_request_sample(s->avctx, "%d-bit XLL storage resolution", c->storage_bit_res);
         return AVERROR_PATCHWELCOME;
     }
@@ -652,13 +652,13 @@ static void chs_filter_band_data(DCAXllDecoder *s, DCAXllChSet *c, int band)
                 int64_t err = 0;
                 for (k = 0; k < order; k++)
                     err += (int64_t)buf[j + k] * coeff[order - k - 1];
-                buf[j + k] -= clip23(norm16(err));
+                buf[j + k] -= (SUINT)clip23(norm16(err));
             }
         } else {
             // Inverse fixed coefficient prediction
             for (j = 0; j < b->fixed_pred_order[i]; j++)
                 for (k = 1; k < nsamples; k++)
-                    buf[k] += buf[k - 1];
+                    buf[k] += (unsigned)buf[k - 1];
         }
     }
 
@@ -717,10 +717,10 @@ static void chs_assemble_msbs_lsbs(DCAXllDecoder *s, DCAXllChSet *c, int band)
                 int32_t *lsb = b->lsb_sample_buffer[ch];
                 int adj = b->bit_width_adjust[ch];
                 for (n = 0; n < nsamples; n++)
-                    msb[n] = msb[n] * (1 << shift) + (lsb[n] << adj);
+                    msb[n] = msb[n] * (SUINT)(1 << shift) + (lsb[n] << adj);
             } else {
                 for (n = 0; n < nsamples; n++)
-                    msb[n] = msb[n] * (1 << shift);
+                    msb[n] = msb[n] * (SUINT)(1 << shift);
             }
         }
     }
@@ -1028,7 +1028,7 @@ static int parse_band_data(DCAXllDecoder *s)
                             return ret;
                         chs_clear_band_data(s, c, band, seg);
                     }
-                    s->gb.index = navi_pos;
+                    skip_bits_long(&s->gb, navi_pos - get_bits_count(&s->gb));
                 }
                 navi_ptr++;
             }
@@ -1308,11 +1308,11 @@ static int combine_residual_frame(DCAXllDecoder *s, DCAXllChSet *c)
             // Undo embedded core downmix pre-scaling
             int scale_inv = o->dmix_scale_inv[c->hier_ofs + ch];
             for (n = 0; n < nsamples; n++)
-                dst[n] += clip23((mul16(src[n], scale_inv) + round) >> shift);
+                dst[n] += (SUINT)clip23((mul16(src[n], scale_inv) + round) >> shift);
         } else {
             // No downmix scaling
             for (n = 0; n < nsamples; n++)
-                dst[n] += (src[n] + round) >> shift;
+                dst[n] += (unsigned)((src[n] + round) >> shift);
         }
     }
 
@@ -1415,9 +1415,12 @@ int ff_dca_xll_filter_frame(DCAXllDecoder *s, AVFrame *frame)
     switch (p->storage_bit_res) {
     case 16:
         avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
+        shift = 16 - p->pcm_bit_res;
         break;
+    case 20:
     case 24:
         avctx->sample_fmt = AV_SAMPLE_FMT_S32P;
+        shift = 24 - p->pcm_bit_res;
         break;
     default:
         return AVERROR(EINVAL);
@@ -1438,17 +1441,16 @@ int ff_dca_xll_filter_frame(DCAXllDecoder *s, AVFrame *frame)
                                        s->output_mask);
     }
 
-    shift = p->storage_bit_res - p->pcm_bit_res;
     for (i = 0; i < avctx->channels; i++) {
         int32_t *samples = s->output_samples[ch_remap[i]];
         if (frame->format == AV_SAMPLE_FMT_S16P) {
             int16_t *plane = (int16_t *)frame->extended_data[i];
             for (k = 0; k < nsamples; k++)
-                plane[k] = av_clip_int16(samples[k] * (1 << shift));
+                plane[k] = av_clip_int16(samples[k] * (SUINT)(1 << shift));
         } else {
             int32_t *plane = (int32_t *)frame->extended_data[i];
             for (k = 0; k < nsamples; k++)
-                plane[k] = clip23(samples[k] * (1 << shift)) * (1 << 8);
+                plane[k] = clip23(samples[k] * (SUINT)(1 << shift)) * (1 << 8);
         }
     }
 

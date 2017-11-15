@@ -109,6 +109,8 @@ static int get_dimension(GetBitContext *gb, const int *dim)
         val = dim[get_bits1(gb) - val];
     if(!val){
         do{
+            if (get_bits_left(gb) < 8)
+                return AVERROR_INVALIDDATA;
             t = get_bits(gb, 8);
             val += t << 2;
         }while(t == 0xFF);
@@ -187,7 +189,7 @@ static int rv40_decode_intra_types(RV34DecContext *r, GetBitContext *gb, int8_t 
             A = ptr[-r->intra_types_stride + 1]; // it won't be used for the last coefficient in a row
             B = ptr[-r->intra_types_stride];
             C = ptr[-1];
-            pattern = A + (B << 4) + (C << 8);
+            pattern = A + B * (1 << 4) + C * (1 << 8);
             for(k = 0; k < MODE2_PATTERNS_NUM; k++)
                 if(pattern == rv40_aic_table_index[k])
                     break;

@@ -71,6 +71,11 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
+color_range=unknown
+color_space=unknown
+color_primaries=unknown
+color_transfer=unknown
+chroma_location=unspecified
 [/FRAME]
 [PACKET]
 codec_type=video
@@ -111,6 +116,11 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
+color_range=unknown
+color_space=unknown
+color_primaries=unknown
+color_transfer=unknown
+chroma_location=unspecified
 [/FRAME]
 [PACKET]
 codec_type=audio
@@ -185,6 +195,11 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
+color_range=unknown
+color_space=unknown
+color_primaries=unknown
+color_transfer=unknown
+chroma_location=unspecified
 [/FRAME]
 [PACKET]
 codec_type=video
@@ -225,6 +240,11 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
+color_range=unknown
+color_space=unknown
+color_primaries=unknown
+color_transfer=unknown
+chroma_location=unspecified
 [/FRAME]
 [PACKET]
 codec_type=audio
@@ -333,6 +353,11 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
+color_range=unknown
+color_space=unknown
+color_primaries=unknown
+color_transfer=unknown
+chroma_location=unspecified
 [/FRAME]
 [PACKET]
 codec_type=video
@@ -373,6 +398,11 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
+color_range=unknown
+color_space=unknown
+color_primaries=unknown
+color_transfer=unknown
+chroma_location=unspecified
 [/FRAME]
 [PACKET]
 codec_type=audio
@@ -415,11 +445,11 @@ pts=5120
 pts_time=0.116100
 dts=5120
 dts_time=0.116100
-duration=1024
-duration_time=0.023220
+duration=393
+duration_time=0.008912
 convergence_duration=N/A
 convergence_duration_time=N/A
-size=2048
+size=786
 pos=792304
 flags=K_
 [/PACKET]
@@ -433,12 +463,12 @@ pkt_dts=5120
 pkt_dts_time=0.116100
 best_effort_timestamp=5120
 best_effort_timestamp_time=0.116100
-pkt_duration=1024
-pkt_duration_time=0.023220
+pkt_duration=393
+pkt_duration_time=0.008912
 pkt_pos=792304
-pkt_size=2048
+pkt_size=786
 sample_fmt=s16
-nb_samples=1024
+nb_samples=393
 channels=1
 channel_layout=unknown
 [/FRAME]
@@ -454,7 +484,7 @@ duration_time=0.040000
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=230400
-pos=794382
+pos=793120
 flags=K_
 [/PACKET]
 [FRAME]
@@ -469,7 +499,7 @@ best_effort_timestamp=6144
 best_effort_timestamp_time=0.120000
 pkt_duration=2048
 pkt_duration_time=0.040000
-pkt_pos=794382
+pkt_pos=793120
 pkt_size=230400
 width=320
 height=240
@@ -481,6 +511,11 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
+color_range=unknown
+color_space=unknown
+color_primaries=unknown
+color_transfer=unknown
+chroma_location=unspecified
 [/FRAME]
 [PACKET]
 codec_type=video
@@ -494,7 +529,7 @@ duration_time=0.040000
 convergence_duration=N/A
 convergence_duration_time=N/A
 size=30000
-pos=1024806
+pos=1023544
 flags=K_
 [/PACKET]
 [FRAME]
@@ -509,7 +544,7 @@ best_effort_timestamp=6144
 best_effort_timestamp_time=0.120000
 pkt_duration=2048
 pkt_duration_time=0.040000
-pkt_pos=1024806
+pkt_pos=1023544
 pkt_size=30000
 width=100
 height=100
@@ -521,6 +556,11 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
+color_range=unknown
+color_space=unknown
+color_primaries=unknown
+color_transfer=unknown
+chroma_location=unspecified
 [/FRAME]
 [STREAM]
 index=0
@@ -581,7 +621,7 @@ sample_aspect_ratio=1:1
 display_aspect_ratio=4:3
 pix_fmt=rgb24
 level=-99
-color_range=N/A
+color_range=unknown
 color_space=unknown
 color_transfer=unknown
 color_primaries=unknown
@@ -636,7 +676,7 @@ sample_aspect_ratio=1:1
 display_aspect_ratio=1:1
 pix_fmt=rgb24
 level=-99
-color_range=N/A
+color_range=unknown
 color_space=unknown
 color_transfer=unknown
 color_primaries=unknown
@@ -679,8 +719,8 @@ nb_programs=0
 format_name=nut
 start_time=0.000000
 duration=0.120000
-size=1054887
-bit_rate=70325800
+size=1053624
+bit_rate=70241600
 probe_score=100
 TAG:title=ffprobe test file
 TAG:comment='A comment with CSV, XML & JSON special chars': <tag value="x">

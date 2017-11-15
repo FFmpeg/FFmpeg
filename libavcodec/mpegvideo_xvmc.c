@@ -182,7 +182,7 @@ static void ff_xvmc_decode_mb(struct MpegEncContext *s)
         return;
     }
 
-    // from ff_mpv_decode_mb(), update DC predictors for P macroblocks
+    // from ff_mpv_reconstruct_mb(), update DC predictors for P macroblocks
     if (!s->mb_intra) {
         s->last_dc[0] =
         s->last_dc[1] =

@@ -128,11 +128,9 @@ static int get_aiff_header(AVFormatContext *s, int size,
     } else if (version == AIFF_C_VERSION1) {
         par->codec_tag = avio_rl32(pb);
         par->codec_id  = ff_codec_get_id(ff_codec_aiff_tags, par->codec_tag);
-        if (par->codec_id == AV_CODEC_ID_NONE) {
-            char tag[32];
-            av_get_codec_tag_string(tag, sizeof(tag), par->codec_tag);
-            avpriv_request_sample(s, "unknown or unsupported codec tag: %s", tag);
-        }
+        if (par->codec_id == AV_CODEC_ID_NONE)
+            avpriv_request_sample(s, "unknown or unsupported codec tag: %s",
+                                  av_fourcc2str(par->codec_tag));
         size -= 4;
     }
 
@@ -181,7 +179,7 @@ static int get_aiff_header(AVFormatContext *s, int size,
         par->block_align = (av_get_bits_per_sample(par->codec_id) * par->channels) >> 3;
 
     if (aiff->block_duration) {
-        par->bit_rate = par->sample_rate * (par->block_align << 3) /
+        par->bit_rate = (int64_t)par->sample_rate * (par->block_align << 3) /
                         aiff->block_duration;
     }
 
@@ -260,7 +258,8 @@ static int aiff_read_header(AVFormatContext *s)
             position = avio_tell(pb);
             ff_id3v2_read(s, ID3v2_DEFAULT_MAGIC, &id3v2_extra_meta, size);
             if (id3v2_extra_meta)
-                if ((ret = ff_id3v2_parse_apic(s, &id3v2_extra_meta)) < 0) {
+                if ((ret = ff_id3v2_parse_apic(s, &id3v2_extra_meta)) < 0 ||
+                    (ret = ff_id3v2_parse_chapters(s, &id3v2_extra_meta)) < 0) {
                     ff_id3v2_free_extra_meta(&id3v2_extra_meta);
                     return ret;
                 }
@@ -288,9 +287,9 @@ static int aiff_read_header(AVFormatContext *s)
             offset = avio_rb32(pb);      /* Offset of sound data */
             avio_rb32(pb);               /* BlockSize... don't care */
             offset += avio_tell(pb);    /* Compute absolute data offset */
-            if (st->codecpar->block_align && !pb->seekable)    /* Assume COMM already parsed */
+            if (st->codecpar->block_align && !(pb->seekable & AVIO_SEEKABLE_NORMAL))    /* Assume COMM already parsed */
                 goto got_sound;
-            if (!pb->seekable) {
+            if (!(pb->seekable & AVIO_SEEKABLE_NORMAL)) {
                 av_log(s, AV_LOG_ERROR, "file is not seekable\n");
                 return -1;
             }
@@ -318,7 +317,7 @@ static int aiff_read_header(AVFormatContext *s)
                     st->codecpar->block_align = 35;
                 }
                 aiff->block_duration = 160;
-                st->codecpar->bit_rate = st->codecpar->sample_rate * (st->codecpar->block_align << 3) /
+                st->codecpar->bit_rate = (int64_t)st->codecpar->sample_rate * (st->codecpar->block_align << 3) /
                                          aiff->block_duration;
             }
             break;
@@ -330,9 +329,13 @@ static int aiff_read_header(AVFormatContext *s)
             if (offset > 0 && st->codecpar->block_align) // COMM && SSND
                 goto got_sound;
         default: /* Jump */
-            if (size & 1)   /* Always even aligned */
-                size++;
             avio_skip(pb, size);
+        }
+
+        /* Skip required padding byte for odd-sized chunks. */
+        if (size & 1) {
+            filesize--;
+            avio_skip(pb, 1);
         }
     }
 

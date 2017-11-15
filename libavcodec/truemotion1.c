@@ -177,10 +177,10 @@ static int make_ydt15_entry(int p1, int p2, int16_t *ydt)
     int lo, hi;
 
     lo = ydt[p1];
-    lo += (lo << 5) + (lo << 10);
+    lo += (lo * 32) + (lo * 1024);
     hi = ydt[p2];
-    hi += (hi << 5) + (hi << 10);
-    return (lo + (hi << 16)) << 1;
+    hi += (hi * 32) + (hi * 1024);
+    return (lo + (hi * (1U << 16))) * 2;
 }
 
 static int make_cdt15_entry(int p1, int p2, int16_t *cdt)
@@ -188,9 +188,9 @@ static int make_cdt15_entry(int p1, int p2, int16_t *cdt)
     int r, b, lo;
 
     b = cdt[p2];
-    r = cdt[p1] << 10;
+    r = cdt[p1] * 1024;
     lo = b + r;
-    return (lo + (lo << 16)) << 1;
+    return (lo + (lo * (1U << 16))) * 2;
 }
 
 #if HAVE_BIGENDIAN
@@ -489,8 +489,10 @@ static av_cold int truemotion1_decode_init(AVCodecContext *avctx)
     /* there is a vertical predictor for each pixel in a line; each vertical
      * predictor is 0 to start with */
     av_fast_malloc(&s->vert_pred, &s->vert_pred_size, s->avctx->width * sizeof(unsigned int));
-    if (!s->vert_pred)
+    if (!s->vert_pred) {
+        av_frame_free(&s->frame);
         return AVERROR(ENOMEM);
+    }
 
     return 0;
 }

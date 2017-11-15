@@ -500,7 +500,7 @@ static int swf_write_trailer(AVFormatContext *s)
     put_swf_end_tag(s);
 
     /* patch file size and number of frames if not streamed */
-    if (s->pb->seekable && video_par) {
+    if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) && video_par) {
         file_size = avio_tell(pb);
         avio_seek(pb, 4, SEEK_SET);
         avio_wl32(pb, file_size);

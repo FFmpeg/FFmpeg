@@ -269,7 +269,7 @@ static int decode_fctl_chunk(AVFormatContext *s, APNGDemuxContext *ctx, AVPacket
     /* default is hundredths of seconds */
     if (!delay_den)
         delay_den = 100;
-    if (!delay_num || delay_den / delay_num > ctx->max_fps) {
+    if (!delay_num || (ctx->max_fps && delay_den / delay_num > ctx->max_fps)) {
         delay_num = 1;
         delay_den = ctx->default_fps;
     }
@@ -404,13 +404,9 @@ static int apng_read_packet(AVFormatContext *s, AVPacket *pkt)
             return ret;
         return 0;
     default:
-        {
-        char tag_buf[32];
-
-        av_get_codec_tag_string(tag_buf, sizeof(tag_buf), tag);
-        avpriv_request_sample(s, "In-stream tag=%s (0x%08X) len=%"PRIu32, tag_buf, tag, len);
+        avpriv_request_sample(s, "In-stream tag=%s (0x%08"PRIX32") len=%"PRIu32,
+                              av_fourcc2str(tag), tag, len);
         avio_skip(pb, len + 4);
-        }
     }
 
     /* Handle the unsupported yet cases */
@@ -421,7 +417,7 @@ static const AVOption options[] = {
     { "ignore_loop", "ignore loop setting"                         , offsetof(APNGDemuxContext, ignore_loop),
       AV_OPT_TYPE_BOOL, { .i64 = 1 }              , 0, 1      , AV_OPT_FLAG_DECODING_PARAM },
     { "max_fps"    , "maximum framerate (0 is no limit)"           , offsetof(APNGDemuxContext, max_fps),
-      AV_OPT_TYPE_INT, { .i64 = DEFAULT_APNG_FPS }, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+      AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
     { "default_fps", "default framerate (0 is as fast as possible)", offsetof(APNGDemuxContext, default_fps),
       AV_OPT_TYPE_INT, { .i64 = DEFAULT_APNG_FPS }, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
     { NULL },

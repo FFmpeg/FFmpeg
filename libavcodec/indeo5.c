@@ -113,7 +113,7 @@ static int decode_gop_header(IVI45DecContext *ctx, AVCodecContext *avctx)
 
     /* check if picture layout was changed and reallocate buffers */
     if (ivi_pic_config_cmp(&pic_conf, &ctx->pic_conf) || ctx->gop_invalid) {
-        result = ff_ivi_init_planes(ctx->planes, &pic_conf, 0);
+        result = ff_ivi_init_planes(avctx, ctx->planes, &pic_conf, 0);
         if (result < 0) {
             av_log(avctx, AV_LOG_ERROR, "Couldn't reallocate color planes!\n");
             return result;
@@ -657,7 +657,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ctx->pic_conf.tile_height   = avctx->height;
     ctx->pic_conf.luma_bands    = ctx->pic_conf.chroma_bands = 1;
 
-    result = ff_ivi_init_planes(ctx->planes, &ctx->pic_conf, 0);
+    result = ff_ivi_init_planes(avctx, ctx->planes, &ctx->pic_conf, 0);
     if (result) {
         av_log(avctx, AV_LOG_ERROR, "Couldn't allocate color planes!\n");
         return AVERROR_INVALIDDATA;

@@ -351,6 +351,59 @@ IDCT_ADD8
 %endif
 
 ;-----------------------------------------------------------------------------
+; void ff_h264_idct_add8_422_10(pixel **dst, const int *block_offset,
+;                               int16_t *block, int stride,
+;                               const uint8_t nnzc[6*8])
+;-----------------------------------------------------------------------------
+%assign last_block 44
+
+%macro IDCT_ADD8_422 0
+
+cglobal h264_idct_add8_422_10, 5, 8, 7
+    movsxdifnidn r3, r3d
+%if ARCH_X86_64
+    mov      r7, r0
+%endif
+
+    add      r2, 1024
+    mov      r0, [r0]
+    ADD16_OP_INTRA 16, 4+ 6*8
+    ADD16_OP_INTRA 18, 4+ 7*8
+    ADD16_OP_INTRA 24, 4+ 8*8 ; i+4
+    ADD16_OP_INTRA 26, 4+ 9*8 ; i+4
+    add      r2, 1024-128*4
+
+%if ARCH_X86_64
+    mov      r0, [r7+gprsize]
+%else
+    mov      r0, r0m
+    mov      r0, [r0+gprsize]
+%endif
+
+    ADD16_OP_INTRA 32, 4+11*8
+    ADD16_OP_INTRA 34, 4+12*8
+    ADD16_OP_INTRA 40, 4+13*8 ; i+4
+    ADD16_OP_INTRA 42, 4+14*8 ; i+4
+REP_RET
+    AC 16
+    AC 18
+    AC 24 ; i+4
+    AC 26 ; i+4
+    AC 32
+    AC 34
+    AC 40 ; i+4
+    AC 42 ; i+4
+
+%endmacro
+
+INIT_XMM sse2
+IDCT_ADD8_422
+%if HAVE_AVX_EXTERNAL
+INIT_XMM avx
+IDCT_ADD8_422
+%endif
+
+;-----------------------------------------------------------------------------
 ; void ff_h264_idct8_add_10(pixel *dst, int16_t *block, int stride)
 ;-----------------------------------------------------------------------------
 %macro IDCT8_1D 2

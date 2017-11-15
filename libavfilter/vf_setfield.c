@@ -35,7 +35,7 @@ enum SetFieldMode {
     MODE_PROG,
 };
 
-typedef struct {
+typedef struct SetFieldContext {
     const AVClass *class;
     int mode;                   ///< SetFieldMode
 } SetFieldContext;

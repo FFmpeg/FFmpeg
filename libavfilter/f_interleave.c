@@ -26,6 +26,10 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
+
+#define FF_INTERNAL_FIELDS 1
+#include "framequeue.h"
+
 #include "avfilter.h"
 #include "bufferqueue.h"
 #include "formats.h"
@@ -33,7 +37,7 @@
 #include "audio.h"
 #include "video.h"
 
-typedef struct {
+typedef struct InterleaveContext {
     const AVClass *class;
     int nb_inputs;
     struct FFBufQueue *queues;
@@ -59,7 +63,7 @@ inline static int push_frame(AVFilterContext *ctx)
     for (i = 0; i < ctx->nb_inputs; i++) {
         struct FFBufQueue *q = &s->queues[i];
 
-        if (!q->available && !ctx->inputs[i]->status)
+        if (!q->available && !ctx->inputs[i]->status_out)
             return 0;
         if (q->available) {
             frame = ff_bufqueue_peek(q, 0);
@@ -106,7 +110,7 @@ static av_cold int init(AVFilterContext *ctx)
 {
     InterleaveContext *s = ctx->priv;
     const AVFilterPad *outpad = &ctx->filter->outputs[0];
-    int i;
+    int i, ret;
 
     s->queues = av_calloc(s->nb_inputs, sizeof(s->queues[0]));
     if (!s->queues)
@@ -129,7 +133,10 @@ static av_cold int init(AVFilterContext *ctx)
         default:
             av_assert0(0);
         }
-        ff_insert_inpad(ctx, i, &inpad);
+        if ((ret = ff_insert_inpad(ctx, i, &inpad)) < 0) {
+            av_freep(&inpad.name);
+            return ret;
+        }
     }
 
     return 0;
@@ -190,7 +197,7 @@ static int request_frame(AVFilterLink *outlink)
     int i, ret;
 
     for (i = 0; i < ctx->nb_inputs; i++) {
-        if (!s->queues[i].available && !ctx->inputs[i]->status) {
+        if (!s->queues[i].available && !ctx->inputs[i]->status_out) {
             ret = ff_request_frame(ctx->inputs[i]);
             if (ret != AVERROR_EOF)
                 return ret;

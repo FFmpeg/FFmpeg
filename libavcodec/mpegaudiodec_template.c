@@ -251,9 +251,9 @@ static inline int l3_unscale(int value, int exponent)
     if(e < 1)
         av_log(NULL, AV_LOG_WARNING, "l3_unscale: e is %d\n", e);
 #endif
-    if (e > 31)
+    if (e > (SUINT)31)
         return 0;
-    m = (m + (1 << (e - 1))) >> e;
+    m = (m + ((1U << e)>>1)) >> e;
 
     return m;
 }
@@ -280,7 +280,8 @@ static av_cold void decode_init_static(void)
         scale_factor_mult[i][0] = MULLx(norm, FIXR(1.0          * 2.0), FRAC_BITS);
         scale_factor_mult[i][1] = MULLx(norm, FIXR(0.7937005259 * 2.0), FRAC_BITS);
         scale_factor_mult[i][2] = MULLx(norm, FIXR(0.6299605249 * 2.0), FRAC_BITS);
-        ff_dlog(NULL, "%d: norm=%x s=%x %x %x\n", i, norm,
+        ff_dlog(NULL, "%d: norm=%x s=%"PRIx32" %"PRIx32" %"PRIx32"\n", i,
+                (unsigned)norm,
                 scale_factor_mult[i][0],
                 scale_factor_mult[i][1],
                 scale_factor_mult[i][2]);
@@ -457,9 +458,9 @@ static av_cold int decode_init(AVCodecContext * avctx)
 
 /* 12 points IMDCT. We compute it "by hand" by factorizing obvious
    cases. */
-static void imdct12(INTFLOAT *out, INTFLOAT *in)
+static void imdct12(INTFLOAT *out, SUINTFLOAT *in)
 {
-    INTFLOAT in0, in1, in2, in3, in4, in5, t1, t2;
+    SUINTFLOAT in0, in1, in2, in3, in4, in5, t1, t2;
 
     in0  = in[0*3];
     in1  = in[1*3] + in[0*3];
@@ -898,8 +899,8 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
 
             exponent= exponents[s_index];
 
-            ff_dlog(s->avctx, "region=%d n=%d x=%d y=%d exp=%d\n",
-                    i, g->region_size[i] - j, x, y, exponent);
+            ff_dlog(s->avctx, "region=%d n=%d y=%d exp=%d\n",
+                    i, g->region_size[i] - j, y, exponent);
             if (y & 16) {
                 x = y >> 5;
                 y = y & 0x0f;
@@ -1038,7 +1039,8 @@ static void compute_stereo(MPADecodeContext *s, GranuleDef *g0, GranuleDef *g1)
 {
     int i, j, k, l;
     int sf_max, sf, len, non_zero_found;
-    INTFLOAT (*is_tab)[16], *tab0, *tab1, tmp0, tmp1, v1, v2;
+    INTFLOAT (*is_tab)[16], *tab0, *tab1, v1, v2;
+    SUINTFLOAT tmp0, tmp1;
     int non_zero_found_short[3];
 
     /* intensity stereo */
@@ -1182,9 +1184,9 @@ found2:
     } while (0)
 #else
 #define AA(j) do {                                              \
-        int tmp0 = ptr[-1-j];                                   \
-        int tmp1 = ptr[   j];                                   \
-        int tmp2 = MULH(tmp0 + tmp1, csa_table[j][0]);          \
+        SUINT tmp0 = ptr[-1-j];                                   \
+        SUINT tmp1 = ptr[   j];                                   \
+        SUINT tmp2 = MULH(tmp0 + tmp1, csa_table[j][0]);          \
         ptr[-1-j] = 4 * (tmp2 - MULH(tmp1, csa_table[j][2]));   \
         ptr[   j] = 4 * (tmp2 + MULH(tmp0, csa_table[j][3]));   \
     } while (0)
@@ -1665,7 +1667,7 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *got_frame_ptr,
     header = AV_RB32(buf);
     if (header>>8 == AV_RB32("TAG")>>8) {
         av_log(avctx, AV_LOG_DEBUG, "discarding ID3 tag\n");
-        return buf_size;
+        return buf_size + skipped;
     }
     ret = avpriv_mpegaudio_decode_header((MPADecodeHeader *)s, header);
     if (ret < 0) {
@@ -1827,6 +1829,9 @@ static av_cold int decode_close_mp3on4(AVCodecContext * avctx)
 {
     MP3On4DecodeContext *s = avctx->priv_data;
     int i;
+
+    if (s->mp3decctx[0])
+        av_freep(&s->mp3decctx[0]->fdsp);
 
     for (i = 0; i < s->frames; i++)
         av_freep(&s->mp3decctx[i]);

@@ -53,13 +53,16 @@ typedef struct ResampleContext {
     struct {
         void (*resample_one)(void *dst, const void *src,
                              int n, int64_t index, int64_t incr);
-        int (*resample)(struct ResampleContext *c, void *dst,
-                        const void *src, int n, int update_ctx);
+        int (*resample_common)(struct ResampleContext *c, void *dst,
+                               const void *src, int n, int update_ctx);
+        int (*resample_linear)(struct ResampleContext *c, void *dst,
+                               const void *src, int n, int update_ctx);
     } dsp;
 } ResampleContext;
 
 void swri_resample_dsp_init(ResampleContext *c);
 void swri_resample_dsp_x86_init(ResampleContext *c);
 void swri_resample_dsp_arm_init(ResampleContext *c);
+void swri_resample_dsp_aarch64_init(ResampleContext *c);
 
 #endif /* SWRESAMPLE_RESAMPLE_H */

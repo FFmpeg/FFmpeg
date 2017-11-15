@@ -29,7 +29,7 @@ cextern pw_2
 cextern pw_8
 cextern pw_16
 
-section .text
+SECTION .text
 
 ; %1 -= (%2 + %3 + 2)>>2     %4 is pw_2
 %macro COMPOSE_53iL0 4

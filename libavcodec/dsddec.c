@@ -31,10 +31,18 @@
 #include "avcodec.h"
 #include "dsd.h"
 
+#define DSD_SILENCE 0x69
+/* 0x69 = 01101001
+ * This pattern "on repeat" makes a low energy 352.8 kHz tone
+ * and a high energy 1.0584 MHz tone which should be filtered
+ * out completely by any playback system --> silence
+ */
+
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     DSDContext * s;
     int i;
+    uint8_t silence;
 
     ff_init_dsd_data();
 
@@ -42,15 +50,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (!s)
         return AVERROR(ENOMEM);
 
+    silence = avctx->codec_id == AV_CODEC_ID_DSD_LSBF || avctx->codec_id == AV_CODEC_ID_DSD_LSBF_PLANAR ? ff_reverse[DSD_SILENCE] : DSD_SILENCE;
     for (i = 0; i < avctx->channels; i++) {
         s[i].pos = 0;
-        memset(s[i].buf, 0x69, sizeof(s[i].buf));
-
-        /* 0x69 = 01101001
-         * This pattern "on repeat" makes a low energy 352.8 kHz tone
-         * and a high energy 1.0584 MHz tone which should be filtered
-         * out completely by any playback system --> silence
-         */
+        memset(s[i].buf, silence, sizeof(s[i].buf));
     }
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;

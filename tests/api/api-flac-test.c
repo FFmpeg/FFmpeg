@@ -156,7 +156,7 @@ static int run_test(AVCodec *enc, AVCodec *dec, AVCodecContext *enc_ctx,
 
         generate_raw_frame((uint16_t*)(in_frame->data[0]), i, enc_ctx->sample_rate,
                            enc_ctx->channels, enc_ctx->frame_size);
-        in_frame_bytes = in_frame->nb_samples * av_frame_get_channels(in_frame) * sizeof(uint16_t);
+        in_frame_bytes = in_frame->nb_samples * in_frame->channels * sizeof(uint16_t);
         if (in_frame_bytes > in_frame->linesize[0]) {
             av_log(NULL, AV_LOG_ERROR, "Incorrect value of input frame linesize\n");
             return 1;
@@ -197,7 +197,7 @@ static int run_test(AVCodec *enc, AVCodec *dec, AVCodecContext *enc_ctx,
                     av_log(NULL, AV_LOG_ERROR, "Error frames before and after decoding has different sample format\n");
                     return AVERROR_UNKNOWN;
                 }
-                out_frame_bytes = out_frame->nb_samples * av_frame_get_channels(out_frame) * sizeof(uint16_t);
+                out_frame_bytes = out_frame->nb_samples * out_frame->channels * sizeof(uint16_t);
                 if (out_frame_bytes > out_frame->linesize[0]) {
                     av_log(NULL, AV_LOG_ERROR, "Incorrect value of output frame linesize\n");
                     return 1;

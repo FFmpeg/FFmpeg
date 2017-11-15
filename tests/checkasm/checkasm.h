@@ -25,32 +25,54 @@
 
 #include <stdint.h>
 #include "config.h"
+
+#if CONFIG_LINUX_PERF
+#include <unistd.h> // read(3)
+#include <sys/ioctl.h>
+#include <asm/unistd.h>
+#include <linux/perf_event.h>
+#endif
+
 #include "libavutil/avstring.h"
 #include "libavutil/cpu.h"
 #include "libavutil/internal.h"
 #include "libavutil/lfg.h"
 #include "libavutil/timer.h"
 
+void checkasm_check_aacpsdsp(void);
 void checkasm_check_alacdsp(void);
+void checkasm_check_audiodsp(void);
 void checkasm_check_blend(void);
+void checkasm_check_blockdsp(void);
 void checkasm_check_bswapdsp(void);
 void checkasm_check_colorspace(void);
+void checkasm_check_exrdsp(void);
+void checkasm_check_fixed_dsp(void);
 void checkasm_check_flacdsp(void);
+void checkasm_check_float_dsp(void);
 void checkasm_check_fmtconvert(void);
+void checkasm_check_g722dsp(void);
 void checkasm_check_h264dsp(void);
 void checkasm_check_h264pred(void);
 void checkasm_check_h264qpel(void);
+void checkasm_check_hevc_add_res(void);
+void checkasm_check_hevc_idct(void);
 void checkasm_check_jpeg2000dsp(void);
+void checkasm_check_llviddsp(void);
 void checkasm_check_pixblockdsp(void);
+void checkasm_check_sbrdsp(void);
 void checkasm_check_synth_filter(void);
 void checkasm_check_v210enc(void);
+void checkasm_check_vp8dsp(void);
 void checkasm_check_vp9dsp(void);
 void checkasm_check_videodsp(void);
+
+struct CheckasmPerf;
 
 void *checkasm_check_func(void *func, const char *name, ...) av_printf_format(2, 3);
 int checkasm_bench_func(void);
 void checkasm_fail_func(const char *msg, ...) av_printf_format(1, 2);
-void checkasm_update_bench(int iterations, uint64_t cycles);
+struct CheckasmPerf *checkasm_get_perf_context(void);
 void checkasm_report(const char *name, ...) av_printf_format(1, 2);
 
 /* float compare utilities */
@@ -63,6 +85,9 @@ int float_near_abs_eps_array(const float *a, const float *b, float eps,
                              unsigned len);
 int float_near_abs_eps_array_ulp(const float *a, const float *b, float eps,
                                  unsigned max_ulp, unsigned len);
+int double_near_abs_eps(double a, double b, double eps);
+int double_near_abs_eps_array(const double *a, const double *b, double eps,
+                              unsigned len);
 
 extern AVLFG checkasm_lfg;
 #define rnd() av_lfg_get(&checkasm_lfg)
@@ -77,6 +102,7 @@ static av_unused void *func_ref, *func_new;
 /* Declare the function prototype. The first argument is the return value, the remaining
  * arguments are the function parameters. Naming parameters is optional. */
 #define declare_func(ret, ...) declare_new(ret, __VA_ARGS__) typedef ret func_type(__VA_ARGS__)
+#define declare_func_float(ret, ...) declare_new_float(ret, __VA_ARGS__) typedef ret func_type(__VA_ARGS__)
 #define declare_func_emms(cpu_flags, ret, ...) declare_new_emms(cpu_flags, ret, __VA_ARGS__) typedef ret func_type(__VA_ARGS__)
 
 /* Indicate that the current test has failed */
@@ -88,13 +114,16 @@ static av_unused void *func_ref, *func_new;
 /* Call the reference function */
 #define call_ref(...) ((func_type *)func_ref)(__VA_ARGS__)
 
-#if ARCH_X86 && HAVE_YASM
+#if ARCH_X86 && HAVE_X86ASM
 /* Verifies that clobbered callee-saved registers are properly saved and restored
  * and that either no MMX registers are touched or emms is issued */
 void checkasm_checked_call(void *func, ...);
 /* Verifies that clobbered callee-saved registers are properly saved and restored
  * and issues emms for asm functions which are not required to do so */
 void checkasm_checked_call_emms(void *func, ...);
+/* Verifies that clobbered callee-saved registers are properly saved and restored
+ * but doesn't issue emms. Meant for dsp functions returning float or double */
+void checkasm_checked_call_float(void *func, ...);
 
 #if ARCH_X86_64
 /* Evil hack: detect incorrect assumptions that 32-bit ints are zero-extended to 64-bit.
@@ -109,6 +138,8 @@ void checkasm_checked_call_emms(void *func, ...);
 void checkasm_stack_clobber(uint64_t clobber, ...);
 #define declare_new(ret, ...) ret (*checked_call)(void *, int, int, int, int, int, __VA_ARGS__)\
                               = (void *)checkasm_checked_call;
+#define declare_new_float(ret, ...) ret (*checked_call)(void *, int, int, int, int, int, __VA_ARGS__)\
+                                    = (void *)checkasm_checked_call_float;
 #define declare_new_emms(cpu_flags, ret, ...) \
     ret (*checked_call)(void *, int, int, int, int, int, __VA_ARGS__) = \
         ((cpu_flags) & av_get_cpu_flags()) ? (void *)checkasm_checked_call_emms : \
@@ -119,6 +150,7 @@ void checkasm_stack_clobber(uint64_t clobber, ...);
                       checked_call(func_new, 0, 0, 0, 0, 0, __VA_ARGS__))
 #elif ARCH_X86_32
 #define declare_new(ret, ...) ret (*checked_call)(void *, __VA_ARGS__) = (void *)checkasm_checked_call;
+#define declare_new_float(ret, ...) ret (*checked_call)(void *, __VA_ARGS__) = (void *)checkasm_checked_call_float;
 #define declare_new_emms(cpu_flags, ret, ...) ret (*checked_call)(void *, __VA_ARGS__) = \
         ((cpu_flags) & av_get_cpu_flags()) ? (void *)checkasm_checked_call_emms :        \
                                              (void *)checkasm_checked_call;
@@ -134,11 +166,17 @@ extern void (*checkasm_checked_call)(void *func, int dummy, ...);
 #define declare_new(ret, ...) ret (*checked_call)(void *, int dummy, __VA_ARGS__) = (void *)checkasm_checked_call;
 #define call_new(...) checked_call(func_new, 0, __VA_ARGS__)
 #elif ARCH_AARCH64 && !defined(__APPLE__)
+void checkasm_stack_clobber(uint64_t clobber, ...);
 void checkasm_checked_call(void *func, ...);
-#define declare_new(ret, ...) ret (*checked_call)(void *, __VA_ARGS__) = (void *)checkasm_checked_call;
-#define call_new(...) checked_call(func_new, __VA_ARGS__)
+#define declare_new(ret, ...) ret (*checked_call)(void *, int, int, int, int, int, int, int, __VA_ARGS__)\
+                              = (void *)checkasm_checked_call;
+#define CLOB (UINT64_C(0xdeadbeefdeadbeef))
+#define call_new(...) (checkasm_stack_clobber(CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,\
+                                              CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB,CLOB),\
+                      checked_call(func_new, 0, 0, 0, 0, 0, 0, 0, __VA_ARGS__))
 #else
 #define declare_new(ret, ...)
+#define declare_new_float(ret, ...)
 #define declare_new_emms(cpu_flags, ret, ...)
 /* Call the function */
 #define call_new(...) ((func_type *)func_new)(__VA_ARGS__)
@@ -147,33 +185,63 @@ void checkasm_checked_call(void *func, ...);
 #ifndef declare_new_emms
 #define declare_new_emms(cpu_flags, ret, ...) declare_new(ret, __VA_ARGS__)
 #endif
+#ifndef declare_new_float
+#define declare_new_float(ret, ...) declare_new(ret, __VA_ARGS__)
+#endif
+
+typedef struct CheckasmPerf {
+    int sysfd;
+    uint64_t cycles;
+    int iterations;
+} CheckasmPerf;
+
+#if defined(AV_READ_TIME) || CONFIG_LINUX_PERF
+
+#if CONFIG_LINUX_PERF
+#define PERF_START(t) do {                              \
+    ioctl(sysfd, PERF_EVENT_IOC_RESET, 0);              \
+    ioctl(sysfd, PERF_EVENT_IOC_ENABLE, 0);             \
+} while (0)
+#define PERF_STOP(t) do {                               \
+    ioctl(sysfd, PERF_EVENT_IOC_DISABLE, 0);            \
+    read(sysfd, &t, sizeof(t));                         \
+} while (0)
+#else
+#define PERF_START(t) t = AV_READ_TIME()
+#define PERF_STOP(t)  t = AV_READ_TIME() - t
+#endif
 
 /* Benchmark the function */
-#ifdef AV_READ_TIME
 #define bench_new(...)\
     do {\
         if (checkasm_bench_func()) {\
+            struct CheckasmPerf *perf = checkasm_get_perf_context();\
+            av_unused const int sysfd = perf->sysfd;\
             func_type *tfunc = func_new;\
             uint64_t tsum = 0;\
             int ti, tcount = 0;\
+            uint64_t t = 0; \
             for (ti = 0; ti < BENCH_RUNS; ti++) {\
-                uint64_t t = AV_READ_TIME();\
+                PERF_START(t);\
                 tfunc(__VA_ARGS__);\
                 tfunc(__VA_ARGS__);\
                 tfunc(__VA_ARGS__);\
                 tfunc(__VA_ARGS__);\
-                t = AV_READ_TIME() - t;\
+                PERF_STOP(t);\
                 if (t*tcount <= tsum*4 && ti > 0) {\
                     tsum += t;\
                     tcount++;\
                 }\
             }\
             emms_c();\
-            checkasm_update_bench(tcount, tsum);\
+            perf->cycles += t;\
+            perf->iterations++;\
         }\
     } while (0)
 #else
 #define bench_new(...) while(0)
+#define PERF_START(t)  while(0)
+#define PERF_STOP(t)   while(0)
 #endif
 
 #endif /* TESTS_CHECKASM_CHECKASM_H */

@@ -27,6 +27,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/qsort.h"
+#include "libavutil/intreadwrite.h"
 #include "avfilter.h"
 #include "internal.h"
 
@@ -60,7 +61,7 @@ enum {
 #define NBITS 5
 #define HIST_SIZE (1<<(3*NBITS))
 
-typedef struct {
+typedef struct PaletteGenContext {
     const AVClass *class;
 
     int max_colors;
@@ -74,6 +75,7 @@ typedef struct {
     struct range_box boxes[256];            // define the segmentation of the colorspace (the final palette)
     int nb_boxes;                           // number of boxes (increase will segmenting them)
     int palette_pushed;                     // if the palette frame is pushed into the outlink or not
+    uint8_t transparency_color[4];          // background color for transparency
 } PaletteGenContext;
 
 #define OFFSET(x) offsetof(PaletteGenContext, x)
@@ -81,6 +83,7 @@ typedef struct {
 static const AVOption palettegen_options[] = {
     { "max_colors", "set the maximum number of colors to use in the palette", OFFSET(max_colors), AV_OPT_TYPE_INT, {.i64=256}, 4, 256, FLAGS },
     { "reserve_transparent", "reserve a palette entry for transparency", OFFSET(reserve_transparent), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
+    { "transparency_color", "set a background color for transparency", OFFSET(transparency_color), AV_OPT_TYPE_COLOR, {.str="lime"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "stats_mode", "set statistics mode", OFFSET(stats_mode), AV_OPT_TYPE_INT, {.i64=STATS_MODE_ALL_FRAMES}, 0, NB_STATS_MODE-1, FLAGS, "mode" },
         { "full", "compute full frame histograms", 0, AV_OPT_TYPE_CONST, {.i64=STATS_MODE_ALL_FRAMES}, INT_MIN, INT_MAX, FLAGS, "mode" },
         { "diff", "compute histograms only for the part that differs from previous frame", 0, AV_OPT_TYPE_CONST, {.i64=STATS_MODE_DIFF_FRAMES}, INT_MIN, INT_MAX, FLAGS, "mode" },
@@ -95,15 +98,10 @@ static int query_formats(AVFilterContext *ctx)
     static const enum AVPixelFormat in_fmts[]  = {AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE};
     static const enum AVPixelFormat out_fmts[] = {AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE};
     int ret;
-    AVFilterFormats *in  = ff_make_format_list(in_fmts);
-    AVFilterFormats *out = ff_make_format_list(out_fmts);
-    if (!in || !out) {
-        av_freep(&in);
-        av_freep(&out);
-        return AVERROR(ENOMEM);
-    }
-    if ((ret = ff_formats_ref(in , &ctx->inputs[0]->out_formats)) < 0 ||
-        (ret = ff_formats_ref(out, &ctx->outputs[0]->in_formats)) < 0)
+
+    if ((ret = ff_formats_ref(ff_make_format_list(in_fmts) , &ctx->inputs[0]->out_formats)) < 0)
+        return ret;
+    if ((ret = ff_formats_ref(ff_make_format_list(out_fmts), &ctx->outputs[0]->in_formats)) < 0)
         return ret;
     return 0;
 }
@@ -244,7 +242,7 @@ static void write_palette(AVFilterContext *ctx, AVFrame *out)
             if (box_id < s->nb_boxes) {
                 pal[x] = s->boxes[box_id++].color;
                 if ((x || y) && pal[x] == last_color)
-                    av_log(ctx, AV_LOG_WARNING, "Dupped color: %08X\n", pal[x]);
+                    av_log(ctx, AV_LOG_WARNING, "Dupped color: %08"PRIX32"\n", pal[x]);
                 last_color = pal[x];
             } else {
                 pal[x] = 0xff000000; // pad with black
@@ -255,7 +253,7 @@ static void write_palette(AVFilterContext *ctx, AVFrame *out)
 
     if (s->reserve_transparent) {
         av_assert0(s->nb_boxes < 256);
-        pal[out->width - pal_linesize - 1] = 0x0000ff00; // add a green transparent color
+        pal[out->width - pal_linesize - 1] = AV_RB32(&s->transparency_color) >> 8;
     }
 }
 

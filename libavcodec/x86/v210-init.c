@@ -27,7 +27,7 @@ extern void ff_v210_planar_unpack_aligned_avx(const uint32_t *src, uint16_t *y, 
 
 av_cold void ff_v210_x86_init(V210DecContext *s)
 {
-#if HAVE_YASM
+#if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
 
     if (s->aligned_input) {

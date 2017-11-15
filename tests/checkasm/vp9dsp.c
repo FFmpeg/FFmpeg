@@ -22,7 +22,7 @@
 #include <string.h>
 #include "checkasm.h"
 #include "libavcodec/vp9data.h"
-#include "libavcodec/vp9dsp.h"
+#include "libavcodec/vp9.h"
 #include "libavutil/common.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
@@ -259,7 +259,7 @@ static int copy_subcoefs(int16_t *out, const int16_t *in, enum TxfmMode tx,
     // test
 
     int n;
-    const int16_t *scan = vp9_scans[tx][txtp];
+    const int16_t *scan = ff_vp9_scans[tx][txtp];
     int eob;
 
     for (n = 0; n < sz * sz; n++) {
@@ -331,14 +331,21 @@ static void check_itxfm(void)
             int n_txtps = tx < TX_32X32 ? N_TXFM_TYPES : 1;
 
             for (txtp = 0; txtp < n_txtps; txtp++) {
-                if (check_func(dsp.itxfm_add[tx][txtp], "vp9_inv_%s_%dx%d_add_%d",
-                               tx == 4 ? "wht_wht" : txtp_types[txtp], sz, sz,
-                               bit_depth)) {
-                    randomize_buffers();
-                    ftx(coef, tx, txtp, sz, bit_depth);
-
-                    for (sub = (txtp == 0) ? 1 : 2; sub <= sz; sub <<= 1) {
+                // skip testing sub-IDCTs for WHT or ADST since they don't
+                // implement it in any of the SIMD functions. If they do,
+                // consider changing this to ensure we have complete test
+                // coverage. Test sub=1 for dc-only, then 2, 4, 8, 12, etc,
+                // since the arm version can distinguish them at that level.
+                for (sub = (txtp == 0 && tx < 4) ? 1 : sz; sub <= sz;
+                     sub < 4 ? (sub <<= 1) : (sub += 4)) {
+                    if (check_func(dsp.itxfm_add[tx][txtp],
+                                   "vp9_inv_%s_%dx%d_sub%d_add_%d",
+                                   tx == 4 ? "wht_wht" : txtp_types[txtp],
+                                   sz, sz, sub, bit_depth)) {
                         int eob;
+
+                        randomize_buffers();
+                        ftx(coef, tx, txtp, sz, bit_depth);
 
                         if (sub < sz) {
                             eob = copy_subcoefs(subcoef0, coef, tx, txtp,
@@ -357,8 +364,9 @@ static void check_itxfm(void)
                             !iszero(subcoef0, sz * sz * SIZEOF_COEF) ||
                             !iszero(subcoef1, sz * sz * SIZEOF_COEF))
                             fail();
+
+                        bench_new(dst, sz * SIZEOF_PIXEL, coef, eob);
                     }
-                    bench_new(dst, sz * SIZEOF_PIXEL, coef, sz * sz);
                 }
             }
         }

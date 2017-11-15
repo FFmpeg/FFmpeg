@@ -40,6 +40,8 @@ typedef struct {
     AVBSFContext **bsfs; ///< bitstream filters per stream
 
     SlaveFailurePolicy on_fail;
+    int use_fifo;
+    AVDictionary *fifo_options;
 
     /** map from input to output streams indexes,
      * disabled output streams are set to -1 */
@@ -52,15 +54,28 @@ typedef struct TeeContext {
     unsigned nb_slaves;
     unsigned nb_alive;
     TeeSlave *slaves;
+    int use_fifo;
+    AVDictionary *fifo_options;
+    char *fifo_options_str;
 } TeeContext;
 
 static const char *const slave_delim     = "|";
 static const char *const slave_bsfs_spec_sep = "/";
 static const char *const slave_select_sep = ",";
 
+#define OFFSET(x) offsetof(TeeContext, x)
+static const AVOption options[] = {
+        {"use_fifo", "Use fifo pseudo-muxer to separate actual muxers from encoder",
+         OFFSET(use_fifo), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
+        {"fifo_options", "fifo pseudo-muxer options", OFFSET(fifo_options_str),
+         AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, AV_OPT_FLAG_ENCODING_PARAM},
+        {NULL}
+};
+
 static const AVClass tee_muxer_class = {
     .class_name = "Tee muxer",
     .item_name  = av_default_item_name,
+    .option = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
@@ -79,6 +94,29 @@ static inline int parse_slave_failure_policy_option(const char *opt, TeeSlave *t
     /* Set failure behaviour to abort, so invalid option error will not be ignored */
     tee_slave->on_fail = ON_SLAVE_FAILURE_ABORT;
     return AVERROR(EINVAL);
+}
+
+static int parse_slave_fifo_options(const char *use_fifo,
+                                    const char *fifo_options, TeeSlave *tee_slave)
+{
+    int ret = 0;
+
+    if (use_fifo) {
+        /*TODO - change this to use proper function for parsing boolean
+         *       options when there is one */
+        if (av_match_name(use_fifo, "true,y,yes,enable,enabled,on,1")) {
+            tee_slave->use_fifo = 1;
+        } else if (av_match_name(use_fifo, "false,n,no,disable,disabled,off,0")) {
+            tee_slave->use_fifo = 0;
+        } else {
+            return AVERROR(EINVAL);
+        }
+    }
+
+    if (fifo_options)
+        ret = av_dict_parse_string(&tee_slave->fifo_options, fifo_options, "=", ":", 0);
+
+    return ret;
 }
 
 static int close_slave(TeeSlave *tee_slave)
@@ -125,6 +163,7 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
     AVDictionaryEntry *entry;
     char *filename;
     char *format = NULL, *select = NULL, *on_fail = NULL;
+    char *use_fifo = NULL, *fifo_options_str = NULL;
     AVFormatContext *avf2 = NULL;
     AVStream *st, *st2;
     int stream_count;
@@ -145,6 +184,8 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
     STEAL_OPTION("f", format);
     STEAL_OPTION("select", select);
     STEAL_OPTION("onfail", on_fail);
+    STEAL_OPTION("use_fifo", use_fifo);
+    STEAL_OPTION("fifo_options", fifo_options_str);
 
     ret = parse_slave_failure_policy_option(on_fail, tee_slave);
     if (ret < 0) {
@@ -153,7 +194,39 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
         goto end;
     }
 
-    ret = avformat_alloc_output_context2(&avf2, NULL, format, filename);
+    ret = parse_slave_fifo_options(use_fifo, fifo_options_str, tee_slave);
+    if (ret < 0) {
+        av_log(avf, AV_LOG_ERROR, "Error parsing fifo options: %s\n", av_err2str(ret));
+        goto end;
+    }
+
+    if (tee_slave->use_fifo) {
+
+        if (options) {
+            char *format_options_str = NULL;
+            ret = av_dict_get_string(options, &format_options_str, '=', ':');
+            if (ret < 0)
+                goto end;
+
+            ret = av_dict_set(&tee_slave->fifo_options, "format_opts", format_options_str,
+                              AV_DICT_DONT_STRDUP_VAL);
+            if (ret < 0)
+                goto end;
+        }
+
+        if (format) {
+            ret = av_dict_set(&tee_slave->fifo_options, "fifo_format", format,
+                              AV_DICT_DONT_STRDUP_VAL);
+            format = NULL;
+            if (ret < 0)
+                goto end;
+        }
+
+        av_dict_free(&options);
+        options = tee_slave->fifo_options;
+    }
+    ret = avformat_alloc_output_context2(&avf2, NULL,
+                                         tee_slave->use_fifo ? "fifo" :format, filename);
     if (ret < 0)
         goto end;
     tee_slave->avf = avf2;
@@ -394,6 +467,12 @@ static int tee_write_header(AVFormatContext *avf)
             filename++;
     }
 
+    if (tee->fifo_options_str) {
+        ret = av_dict_parse_string(&tee->fifo_options, tee->fifo_options_str, "=", ":", 0);
+        if (ret < 0)
+            goto fail;
+    }
+
     if (!(tee->slaves = av_mallocz_array(nb_slaves, sizeof(*tee->slaves)))) {
         ret = AVERROR(ENOMEM);
         goto fail;
@@ -401,6 +480,12 @@ static int tee_write_header(AVFormatContext *avf)
     tee->nb_slaves = tee->nb_alive = nb_slaves;
 
     for (i = 0; i < nb_slaves; i++) {
+
+        tee->slaves[i].use_fifo = tee->use_fifo;
+        ret = av_dict_copy(&tee->slaves[i].fifo_options, tee->fifo_options, 0);
+        if (ret < 0)
+            goto fail;
+
         if ((ret = open_slave(avf, slaves[i], &tee->slaves[i])) < 0) {
             ret = tee_process_slave_failure(avf, i, ret);
             if (ret < 0)

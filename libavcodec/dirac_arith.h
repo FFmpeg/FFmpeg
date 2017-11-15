@@ -190,6 +190,7 @@ static inline int dirac_get_arith_int(DiracArith *c, int follow_ctx, int data_ct
     return ret;
 }
 
+void ff_dirac_init_arith_tables(void);
 void ff_dirac_init_arith_decoder(DiracArith *c, GetBitContext *gb, int length);
 
 #endif /* AVCODEC_DIRAC_ARITH_H */

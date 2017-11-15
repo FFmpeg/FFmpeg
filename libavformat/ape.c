@@ -57,7 +57,6 @@ typedef struct APEContext {
     APEFrame *frames;
 
     /* Info from Descriptor Block */
-    char magic[4];
     int16_t fileversion;
     int16_t padding1;
     uint32_t descriptorlength;
@@ -102,7 +101,6 @@ static void ape_dumpinfo(AVFormatContext * s, APEContext * ape_ctx)
     int i;
 
     av_log(s, AV_LOG_DEBUG, "Descriptor Block:\n\n");
-    av_log(s, AV_LOG_DEBUG, "magic                = \"%c%c%c%c\"\n", ape_ctx->magic[0], ape_ctx->magic[1], ape_ctx->magic[2], ape_ctx->magic[3]);
     av_log(s, AV_LOG_DEBUG, "fileversion          = %"PRId16"\n", ape_ctx->fileversion);
     av_log(s, AV_LOG_DEBUG, "descriptorlength     = %"PRIu32"\n", ape_ctx->descriptorlength);
     av_log(s, AV_LOG_DEBUG, "headerlength         = %"PRIu32"\n", ape_ctx->headerlength);
@@ -374,7 +372,7 @@ static int ape_read_header(AVFormatContext * s)
     }
 
     /* try to read APE tags */
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         ff_ape_parse_tag(s);
         avio_seek(pb, 0, SEEK_SET);
     }

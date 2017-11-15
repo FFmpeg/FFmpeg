@@ -55,7 +55,7 @@ typedef struct EQParameters {
 
 } EQParameters;
 
-typedef struct {
+typedef struct EQContext {
     const AVClass *class;
 
     EQParameters param[3];

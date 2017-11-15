@@ -52,30 +52,35 @@ enum Scale {
 };
 
 #define NB_GAIN_ENTRY_MAX 4096
-typedef struct {
+typedef struct GainEntry {
     double  freq;
     double  gain;
 } GainEntry;
 
-typedef struct {
+typedef struct OverlapIndex {
     int buf_idx;
     int overlap_idx;
 } OverlapIndex;
 
-typedef struct {
+typedef struct FIREqualizerContext {
     const AVClass *class;
 
     RDFTContext   *analysis_rdft;
     RDFTContext   *analysis_irdft;
     RDFTContext   *rdft;
     RDFTContext   *irdft;
+    FFTContext    *fft_ctx;
+    RDFTContext   *cepstrum_rdft;
+    RDFTContext   *cepstrum_irdft;
     int           analysis_rdft_len;
     int           rdft_len;
+    int           cepstrum_len;
 
     float         *analysis_buf;
     float         *dump_buf;
     float         *kernel_tmp_buf;
     float         *kernel_buf;
+    float         *cepstrum_buf;
     float         *conv_buf;
     OverlapIndex  *conv_idx;
     int           fir_len;
@@ -97,6 +102,8 @@ typedef struct {
     int           scale;
     char          *dumpfile;
     int           dumpscale;
+    int           fft2;
+    int           min_phase;
 
     int           nb_gain_entry;
     int           gain_entry_err;
@@ -132,6 +139,8 @@ static const AVOption firequalizer_options[] = {
         { "loglog", "logarithmic-freq logarithmic-gain", 0, AV_OPT_TYPE_CONST, { .i64 = SCALE_LOGLOG }, 0, 0, FLAGS, "scale" },
     { "dumpfile", "set dump file", OFFSET(dumpfile), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, FLAGS },
     { "dumpscale", "set dump scale", OFFSET(dumpscale), AV_OPT_TYPE_INT, { .i64 = SCALE_LINLOG }, 0, NB_SCALE-1, FLAGS, "scale" },
+    { "fft2", "set 2-channels fft", OFFSET(fft2), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
+    { "min_phase", "set minimum phase mode", OFFSET(min_phase), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -143,12 +152,19 @@ static void common_uninit(FIREqualizerContext *s)
     av_rdft_end(s->analysis_irdft);
     av_rdft_end(s->rdft);
     av_rdft_end(s->irdft);
+    av_fft_end(s->fft_ctx);
+    av_rdft_end(s->cepstrum_rdft);
+    av_rdft_end(s->cepstrum_irdft);
     s->analysis_rdft = s->analysis_irdft = s->rdft = s->irdft = NULL;
+    s->fft_ctx = NULL;
+    s->cepstrum_rdft = NULL;
+    s->cepstrum_irdft = NULL;
 
     av_freep(&s->analysis_buf);
     av_freep(&s->dump_buf);
     av_freep(&s->kernel_tmp_buf);
     av_freep(&s->kernel_buf);
+    av_freep(&s->cepstrum_buf);
     av_freep(&s->conv_buf);
     av_freep(&s->conv_idx);
 }
@@ -192,8 +208,8 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_samplerates(ctx, formats);
 }
 
-static void fast_convolute(FIREqualizerContext *s, const float *kernel_buf, float *conv_buf,
-                           OverlapIndex *idx, float *data, int nsamples)
+static void fast_convolute(FIREqualizerContext *av_restrict s, const float *av_restrict kernel_buf, float *av_restrict conv_buf,
+                           OverlapIndex *av_restrict idx, float *av_restrict data, int nsamples)
 {
     if (nsamples <= s->nsamples_max) {
         float *buf = conv_buf + idx->buf_idx * s->rdft_len;
@@ -230,6 +246,110 @@ static void fast_convolute(FIREqualizerContext *s, const float *kernel_buf, floa
     }
 }
 
+static void fast_convolute_nonlinear(FIREqualizerContext *av_restrict s, const float *av_restrict kernel_buf,
+                                     float *av_restrict conv_buf, OverlapIndex *av_restrict idx,
+                                     float *av_restrict data, int nsamples)
+{
+    if (nsamples <= s->nsamples_max) {
+        float *buf = conv_buf + idx->buf_idx * s->rdft_len;
+        float *obuf = conv_buf + !idx->buf_idx * s->rdft_len + idx->overlap_idx;
+        int k;
+
+        memcpy(buf, data, nsamples * sizeof(*data));
+        memset(buf + nsamples, 0, (s->rdft_len - nsamples) * sizeof(*data));
+        av_rdft_calc(s->rdft, buf);
+
+        buf[0] *= kernel_buf[0];
+        buf[1] *= kernel_buf[1];
+        for (k = 2; k < s->rdft_len; k += 2) {
+            float re, im;
+            re = buf[k] * kernel_buf[k] - buf[k+1] * kernel_buf[k+1];
+            im = buf[k] * kernel_buf[k+1] + buf[k+1] * kernel_buf[k];
+            buf[k] = re;
+            buf[k+1] = im;
+        }
+
+        av_rdft_calc(s->irdft, buf);
+        for (k = 0; k < s->rdft_len - idx->overlap_idx; k++)
+            buf[k] += obuf[k];
+        memcpy(data, buf, nsamples * sizeof(*data));
+        idx->buf_idx = !idx->buf_idx;
+        idx->overlap_idx = nsamples;
+    } else {
+        while (nsamples > s->nsamples_max * 2) {
+            fast_convolute_nonlinear(s, kernel_buf, conv_buf, idx, data, s->nsamples_max);
+            data += s->nsamples_max;
+            nsamples -= s->nsamples_max;
+        }
+        fast_convolute_nonlinear(s, kernel_buf, conv_buf, idx, data, nsamples/2);
+        fast_convolute_nonlinear(s, kernel_buf, conv_buf, idx, data + nsamples/2, nsamples - nsamples/2);
+    }
+}
+
+static void fast_convolute2(FIREqualizerContext *av_restrict s, const float *av_restrict kernel_buf, FFTComplex *av_restrict conv_buf,
+                            OverlapIndex *av_restrict idx, float *av_restrict data0, float *av_restrict data1, int nsamples)
+{
+    if (nsamples <= s->nsamples_max) {
+        FFTComplex *buf = conv_buf + idx->buf_idx * s->rdft_len;
+        FFTComplex *obuf = conv_buf + !idx->buf_idx * s->rdft_len + idx->overlap_idx;
+        int center = s->fir_len/2;
+        int k;
+        float tmp;
+
+        memset(buf, 0, center * sizeof(*buf));
+        for (k = 0; k < nsamples; k++) {
+            buf[center+k].re = data0[k];
+            buf[center+k].im = data1[k];
+        }
+        memset(buf + center + nsamples, 0, (s->rdft_len - nsamples - center) * sizeof(*buf));
+        av_fft_permute(s->fft_ctx, buf);
+        av_fft_calc(s->fft_ctx, buf);
+
+        /* swap re <-> im, do backward fft using forward fft_ctx */
+        /* normalize with 0.5f */
+        tmp = buf[0].re;
+        buf[0].re = 0.5f * kernel_buf[0] * buf[0].im;
+        buf[0].im = 0.5f * kernel_buf[0] * tmp;
+        for (k = 1; k < s->rdft_len/2; k++) {
+            int m = s->rdft_len - k;
+            tmp = buf[k].re;
+            buf[k].re = 0.5f * kernel_buf[k] * buf[k].im;
+            buf[k].im = 0.5f * kernel_buf[k] * tmp;
+            tmp = buf[m].re;
+            buf[m].re = 0.5f * kernel_buf[k] * buf[m].im;
+            buf[m].im = 0.5f * kernel_buf[k] * tmp;
+        }
+        tmp = buf[k].re;
+        buf[k].re = 0.5f * kernel_buf[k] * buf[k].im;
+        buf[k].im = 0.5f * kernel_buf[k] * tmp;
+
+        av_fft_permute(s->fft_ctx, buf);
+        av_fft_calc(s->fft_ctx, buf);
+
+        for (k = 0; k < s->rdft_len - idx->overlap_idx; k++) {
+            buf[k].re += obuf[k].re;
+            buf[k].im += obuf[k].im;
+        }
+
+        /* swapped re <-> im */
+        for (k = 0; k < nsamples; k++) {
+            data0[k] = buf[k].im;
+            data1[k] = buf[k].re;
+        }
+        idx->buf_idx = !idx->buf_idx;
+        idx->overlap_idx = nsamples;
+    } else {
+        while (nsamples > s->nsamples_max * 2) {
+            fast_convolute2(s, kernel_buf, conv_buf, idx, data0, data1, s->nsamples_max);
+            data0 += s->nsamples_max;
+            data1 += s->nsamples_max;
+            nsamples -= s->nsamples_max;
+        }
+        fast_convolute2(s, kernel_buf, conv_buf, idx, data0, data1, nsamples/2);
+        fast_convolute2(s, kernel_buf, conv_buf, idx, data0 + nsamples/2, data1 + nsamples/2, nsamples - nsamples/2);
+    }
+}
+
 static void dump_fir(AVFilterContext *ctx, FILE *fp, int ch)
 {
     FIREqualizerContext *s = ctx->priv;
@@ -241,10 +361,15 @@ static void dump_fir(AVFilterContext *ctx, FILE *fp, int ch)
     double delay = s->zero_phase ? 0.0 : (double) center / rate;
     double vx, ya, yb;
 
-    s->analysis_buf[0] *= s->rdft_len/2;
-    for (x = 1; x <= center; x++) {
-        s->analysis_buf[x] *= s->rdft_len/2;
-        s->analysis_buf[s->analysis_rdft_len - x] *= s->rdft_len/2;
+    if (!s->min_phase) {
+        s->analysis_buf[0] *= s->rdft_len/2;
+        for (x = 1; x <= center; x++) {
+            s->analysis_buf[x] *= s->rdft_len/2;
+            s->analysis_buf[s->analysis_rdft_len - x] *= s->rdft_len/2;
+        }
+    } else {
+        for (x = 0; x < s->fir_len; x++)
+            s->analysis_buf[x] *= s->rdft_len/2;
     }
 
     if (ch)
@@ -252,11 +377,16 @@ static void dump_fir(AVFilterContext *ctx, FILE *fp, int ch)
 
     fprintf(fp, "# time[%d] (time amplitude)\n", ch);
 
+    if (!s->min_phase) {
     for (x = center; x > 0; x--)
         fprintf(fp, "%15.10f %15.10f\n", delay - (double) x / rate, (double) s->analysis_buf[s->analysis_rdft_len - x]);
 
     for (x = 0; x <= center; x++)
         fprintf(fp, "%15.10f %15.10f\n", delay + (double)x / rate , (double) s->analysis_buf[x]);
+    } else {
+        for (x = 0; x < s->fir_len; x++)
+            fprintf(fp, "%15.10f %15.10f\n", (double)x / rate, (double) s->analysis_buf[x]);
+    }
 
     av_rdft_calc(s->analysis_rdft, s->analysis_buf);
 
@@ -268,7 +398,9 @@ static void dump_fir(AVFilterContext *ctx, FILE *fp, int ch)
         if (xlog)
             vx = log2(0.05*vx);
         ya = s->dump_buf[i];
-        yb = s->analysis_buf[i];
+        yb = s->min_phase && (i > 1) ? hypotf(s->analysis_buf[i], s->analysis_buf[i+1]) : s->analysis_buf[i];
+        if (s->min_phase)
+            yb = fabs(yb);
         if (ylog) {
             ya = 20.0 * log10(fabs(ya));
             yb = 20.0 * log10(fabs(yb));
@@ -418,6 +550,54 @@ enum VarOffset {
     VAR_NB
 };
 
+static void generate_min_phase_kernel(FIREqualizerContext *s, float *rdft_buf)
+{
+    int k, cepstrum_len = s->cepstrum_len, rdft_len = s->rdft_len;
+    double norm = 2.0 / cepstrum_len;
+    double minval = 1e-7 / rdft_len;
+
+    memset(s->cepstrum_buf, 0, cepstrum_len * sizeof(*s->cepstrum_buf));
+    memcpy(s->cepstrum_buf, rdft_buf, rdft_len/2 * sizeof(*rdft_buf));
+    memcpy(s->cepstrum_buf + cepstrum_len - rdft_len/2, rdft_buf + rdft_len/2, rdft_len/2  * sizeof(*rdft_buf));
+
+    av_rdft_calc(s->cepstrum_rdft, s->cepstrum_buf);
+
+    s->cepstrum_buf[0] = log(FFMAX(s->cepstrum_buf[0], minval));
+    s->cepstrum_buf[1] = log(FFMAX(s->cepstrum_buf[1], minval));
+
+    for (k = 2; k < cepstrum_len; k += 2) {
+        s->cepstrum_buf[k] = log(FFMAX(s->cepstrum_buf[k], minval));
+        s->cepstrum_buf[k+1] = 0;
+    }
+
+    av_rdft_calc(s->cepstrum_irdft, s->cepstrum_buf);
+
+    memset(s->cepstrum_buf + cepstrum_len/2 + 1, 0, (cepstrum_len/2 - 1) * sizeof(*s->cepstrum_buf));
+    for (k = 1; k < cepstrum_len/2; k++)
+        s->cepstrum_buf[k] *= 2;
+
+    av_rdft_calc(s->cepstrum_rdft, s->cepstrum_buf);
+
+    s->cepstrum_buf[0] = exp(s->cepstrum_buf[0] * norm) * norm;
+    s->cepstrum_buf[1] = exp(s->cepstrum_buf[1] * norm) * norm;
+    for (k = 2; k < cepstrum_len; k += 2) {
+        double mag = exp(s->cepstrum_buf[k] * norm) * norm;
+        double ph = s->cepstrum_buf[k+1] * norm;
+        s->cepstrum_buf[k] = mag * cos(ph);
+        s->cepstrum_buf[k+1] = mag * sin(ph);
+    }
+
+    av_rdft_calc(s->cepstrum_irdft, s->cepstrum_buf);
+    memset(rdft_buf, 0, s->rdft_len * sizeof(*rdft_buf));
+    memcpy(rdft_buf, s->cepstrum_buf, s->fir_len * sizeof(*rdft_buf));
+
+    if (s->dumpfile) {
+        memset(s->analysis_buf, 0, s->analysis_rdft_len * sizeof(*s->analysis_buf));
+        memcpy(s->analysis_buf, s->cepstrum_buf, s->fir_len * sizeof(*s->analysis_buf));
+    }
+
+}
+
 static int generate_kernel(AVFilterContext *ctx, const char *gain, const char *gain_entry)
 {
     FIREqualizerContext *s = ctx->priv;
@@ -480,7 +660,7 @@ static int generate_kernel(AVFilterContext *ctx, const char *gain, const char *g
             if (xlog)
                 vars[VAR_F] = log2(0.05 * vars[VAR_F]);
             result = av_expr_eval(gain_expr, vars, ctx);
-            s->analysis_buf[2*k] = ylog ? pow(10.0, 0.05 * result) : result;
+            s->analysis_buf[2*k] = ylog ? pow(10.0, 0.05 * result) : s->min_phase ? fabs(result) : result;
             s->analysis_buf[2*k+1] = 0.0;
         }
 
@@ -535,6 +715,8 @@ static int generate_kernel(AVFilterContext *ctx, const char *gain, const char *g
         memset(s->analysis_buf + center + 1, 0, (s->analysis_rdft_len - s->fir_len) * sizeof(*s->analysis_buf));
         memcpy(rdft_buf, s->analysis_buf, s->rdft_len/2 * sizeof(*s->analysis_buf));
         memcpy(rdft_buf + s->rdft_len/2, s->analysis_buf + s->analysis_rdft_len - s->rdft_len/2, s->rdft_len/2 * sizeof(*s->analysis_buf));
+        if (s->min_phase)
+            generate_min_phase_kernel(s, rdft_buf);
         av_rdft_calc(s->rdft, rdft_buf);
 
         for (k = 0; k < s->rdft_len; k++) {
@@ -547,10 +729,12 @@ static int generate_kernel(AVFilterContext *ctx, const char *gain, const char *g
             }
         }
 
-        rdft_buf[s->rdft_len-1] = rdft_buf[1];
-        for (k = 0; k < s->rdft_len/2; k++)
-            rdft_buf[k] = rdft_buf[2*k];
-        rdft_buf[s->rdft_len/2] = rdft_buf[s->rdft_len-1];
+        if (!s->min_phase) {
+            rdft_buf[s->rdft_len-1] = rdft_buf[1];
+            for (k = 0; k < s->rdft_len/2; k++)
+                rdft_buf[k] = rdft_buf[2*k];
+            rdft_buf[s->rdft_len/2] = rdft_buf[s->rdft_len-1];
+        }
 
         if (dump_fp)
             dump_fir(ctx, dump_fp, ch);
@@ -598,6 +782,28 @@ static int config_input(AVFilterLink *inlink)
     if (!(s->rdft = av_rdft_init(rdft_bits, DFT_R2C)) || !(s->irdft = av_rdft_init(rdft_bits, IDFT_C2R)))
         return AVERROR(ENOMEM);
 
+    if (s->fft2 && !s->multi && inlink->channels > 1 && !(s->fft_ctx = av_fft_init(rdft_bits, 0)))
+        return AVERROR(ENOMEM);
+
+    if (s->min_phase) {
+        int cepstrum_bits = rdft_bits + 2;
+        if (cepstrum_bits > RDFT_BITS_MAX) {
+            av_log(ctx, AV_LOG_ERROR, "too large delay, please decrease it.\n");
+            return AVERROR(EINVAL);
+        }
+
+        cepstrum_bits = FFMIN(RDFT_BITS_MAX, cepstrum_bits + 1);
+        s->cepstrum_rdft = av_rdft_init(cepstrum_bits, DFT_R2C);
+        s->cepstrum_irdft = av_rdft_init(cepstrum_bits, IDFT_C2R);
+        if (!s->cepstrum_rdft || !s->cepstrum_irdft)
+            return AVERROR(ENOMEM);
+
+        s->cepstrum_len = 1 << cepstrum_bits;
+        s->cepstrum_buf = av_malloc_array(s->cepstrum_len, sizeof(*s->cepstrum_buf));
+        if (!s->cepstrum_buf)
+            return AVERROR(ENOMEM);
+    }
+
     for ( ; rdft_bits <= RDFT_BITS_MAX; rdft_bits++) {
         s->analysis_rdft_len = 1 << rdft_bits;
         if (inlink->sample_rate <= s->accuracy * s->analysis_rdft_len)
@@ -640,16 +846,30 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     FIREqualizerContext *s = ctx->priv;
     int ch;
 
-    for (ch = 0; ch < inlink->channels; ch++) {
-        fast_convolute(s, s->kernel_buf + (s->multi ? ch * s->rdft_len : 0),
-                       s->conv_buf + 2 * ch * s->rdft_len, s->conv_idx + ch,
-                       (float *) frame->extended_data[ch], frame->nb_samples);
+    if (!s->min_phase) {
+        for (ch = 0; ch + 1 < inlink->channels && s->fft_ctx; ch += 2) {
+            fast_convolute2(s, s->kernel_buf, (FFTComplex *)(s->conv_buf + 2 * ch * s->rdft_len),
+                            s->conv_idx + ch, (float *) frame->extended_data[ch],
+                            (float *) frame->extended_data[ch+1], frame->nb_samples);
+        }
+
+        for ( ; ch < inlink->channels; ch++) {
+            fast_convolute(s, s->kernel_buf + (s->multi ? ch * s->rdft_len : 0),
+                        s->conv_buf + 2 * ch * s->rdft_len, s->conv_idx + ch,
+                        (float *) frame->extended_data[ch], frame->nb_samples);
+        }
+    } else {
+        for (ch = 0; ch < inlink->channels; ch++) {
+            fast_convolute_nonlinear(s, s->kernel_buf + (s->multi ? ch * s->rdft_len : 0),
+                                     s->conv_buf + 2 * ch * s->rdft_len, s->conv_idx + ch,
+                                     (float *) frame->extended_data[ch], frame->nb_samples);
+        }
     }
 
     s->next_pts = AV_NOPTS_VALUE;
     if (frame->pts != AV_NOPTS_VALUE) {
         s->next_pts = frame->pts + av_rescale_q(frame->nb_samples, av_make_q(1, inlink->sample_rate), inlink->time_base);
-        if (s->zero_phase)
+        if (s->zero_phase && !s->min_phase)
             frame->pts -= av_rescale_q(s->fir_len/2, av_make_q(1, inlink->sample_rate), inlink->time_base);
     }
     s->frame_nsamples_max = FFMAX(s->frame_nsamples_max, frame->nb_samples);

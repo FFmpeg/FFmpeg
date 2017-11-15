@@ -130,7 +130,7 @@ static int audio_write_frame(AVFormatContext *s1, int stream_index,
     pkt.data     = (*frame)->data[0];
     pkt.size     = (*frame)->nb_samples * s->frame_size;
     pkt.dts      = (*frame)->pkt_dts;
-    pkt.duration = av_frame_get_pkt_duration(*frame);
+    pkt.duration = (*frame)->pkt_duration;
     return audio_write_packet(s1, &pkt);
 }
 

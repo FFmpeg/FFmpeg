@@ -29,6 +29,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
+#include "libavutil/parseutils.h"
 
 #include "avformat.h"
 #include "http.h"
@@ -48,6 +49,8 @@
 #define MAX_REDIRECTS 8
 #define HTTP_SINGLE   1
 #define HTTP_MUTLI    2
+#define MAX_EXPIRY    19
+#define WHITESPACES " \n\t\r"
 typedef enum {
     LOWER_PROTO,
     READ_HEADERS,
@@ -62,8 +65,9 @@ typedef struct HTTPContext {
     int line_count;
     int http_code;
     /* Used if "Transfer-Encoding: chunked" otherwise -1. */
-    int64_t chunksize;
-    int64_t off, end_off, filesize;
+    uint64_t chunksize;
+    int chunkend;
+    uint64_t off, end_off, filesize;
     char *location;
     HTTPAuthState auth_state;
     HTTPAuthState proxy_auth_state;
@@ -95,9 +99,9 @@ typedef struct HTTPContext {
     AVDictionary *cookie_dict;
     int icy;
     /* how much data was read since the last ICY metadata packet */
-    int icy_data_read;
+    uint64_t icy_data_read;
     /* after how many bytes of read data a new metadata packet will be found */
-    int icy_metaint;
+    uint64_t icy_metaint;
     char *icy_metadata_headers;
     char *icy_metadata_packet;
     AVDictionary *metadata;
@@ -302,6 +306,7 @@ int ff_http_do_new_request(URLContext *h, const char *uri)
     AVDictionary *options = NULL;
     int ret;
 
+    s->chunkend      = 0;
     s->off           = 0;
     s->icy_data_read = 0;
     av_free(s->location);
@@ -489,7 +494,7 @@ static int http_open(URLContext *h, const char *uri, int flags,
     else
         h->is_streamed = 1;
 
-    s->filesize = -1;
+    s->filesize = UINT64_MAX;
     s->location = av_strdup(uri);
     if (!s->location)
         return AVERROR(ENOMEM);
@@ -616,9 +621,9 @@ static void parse_content_range(URLContext *h, const char *p)
 
     if (!strncmp(p, "bytes ", 6)) {
         p     += 6;
-        s->off = strtoll(p, NULL, 10);
+        s->off = strtoull(p, NULL, 10);
         if ((slash = strchr(p, '/')) && strlen(slash) > 0)
-            s->filesize = strtoll(slash + 1, NULL, 10);
+            s->filesize = strtoull(slash + 1, NULL, 10);
     }
     if (s->seekable == -1 && (!s->is_akamai || s->filesize != 2147483647))
         h->is_streamed = 0; /* we _can_ in fact seek */
@@ -680,9 +685,111 @@ static int parse_icy(HTTPContext *s, const char *tag, const char *p)
     return 0;
 }
 
+static int parse_set_cookie_expiry_time(const char *exp_str, struct tm *buf)
+{
+    char exp_buf[MAX_EXPIRY];
+    int i, j, exp_buf_len = MAX_EXPIRY-1;
+    char *expiry;
+
+    // strip off any punctuation or whitespace
+    for (i = 0, j = 0; exp_str[i] != '\0' && j < exp_buf_len; i++) {
+        if ((exp_str[i] >= '0' && exp_str[i] <= '9') ||
+            (exp_str[i] >= 'A' && exp_str[i] <= 'Z') ||
+            (exp_str[i] >= 'a' && exp_str[i] <= 'z')) {
+            exp_buf[j] = exp_str[i];
+            j++;
+        }
+    }
+    exp_buf[j] = '\0';
+    expiry = exp_buf;
+
+    // move the string beyond the day of week
+    while ((*expiry < '0' || *expiry > '9') && *expiry != '\0')
+        expiry++;
+
+    return av_small_strptime(expiry, "%d%b%Y%H%M%S", buf) ? 0 : AVERROR(EINVAL);
+}
+
+static int parse_set_cookie(const char *set_cookie, AVDictionary **dict)
+{
+    char *param, *next_param, *cstr, *back;
+
+    if (!(cstr = av_strdup(set_cookie)))
+        return AVERROR(EINVAL);
+
+    // strip any trailing whitespace
+    back = &cstr[strlen(cstr)-1];
+    while (strchr(WHITESPACES, *back)) {
+        *back='\0';
+        back--;
+    }
+
+    next_param = cstr;
+    while ((param = av_strtok(next_param, ";", &next_param))) {
+        char *name, *value;
+        param += strspn(param, WHITESPACES);
+        if ((name = av_strtok(param, "=", &value))) {
+            if (av_dict_set(dict, name, value, 0) < 0) {
+                av_free(cstr);
+                return -1;
+            }
+        }
+    }
+
+    av_free(cstr);
+    return 0;
+}
+
 static int parse_cookie(HTTPContext *s, const char *p, AVDictionary **cookies)
 {
+    AVDictionary *new_params = NULL;
+    AVDictionaryEntry *e, *cookie_entry;
     char *eql, *name;
+
+    // ensure the cookie is parsable
+    if (parse_set_cookie(p, &new_params))
+        return -1;
+
+    // if there is no cookie value there is nothing to parse
+    cookie_entry = av_dict_get(new_params, "", NULL, AV_DICT_IGNORE_SUFFIX);
+    if (!cookie_entry || !cookie_entry->value) {
+        av_dict_free(&new_params);
+        return -1;
+    }
+
+    // ensure the cookie is not expired or older than an existing value
+    if ((e = av_dict_get(new_params, "expires", NULL, 0)) && e->value) {
+        struct tm new_tm = {0};
+        if (!parse_set_cookie_expiry_time(e->value, &new_tm)) {
+            AVDictionaryEntry *e2;
+
+            // if the cookie has already expired ignore it
+            if (av_timegm(&new_tm) < av_gettime() / 1000000) {
+                av_dict_free(&new_params);
+                return -1;
+            }
+
+            // only replace an older cookie with the same name
+            e2 = av_dict_get(*cookies, cookie_entry->key, NULL, 0);
+            if (e2 && e2->value) {
+                AVDictionary *old_params = NULL;
+                if (!parse_set_cookie(p, &old_params)) {
+                    e2 = av_dict_get(old_params, "expires", NULL, 0);
+                    if (e2 && e2->value) {
+                        struct tm old_tm = {0};
+                        if (!parse_set_cookie_expiry_time(e->value, &old_tm)) {
+                            if (av_timegm(&new_tm) < av_timegm(&old_tm)) {
+                                av_dict_free(&new_params);
+                                av_dict_free(&old_params);
+                                return -1;
+                            }
+                        }
+                    }
+                }
+                av_dict_free(&old_params);
+            }
+        }
+    }
 
     // duplicate the cookie name (dict will dupe the value)
     if (!(eql = strchr(p, '='))) return AVERROR(EINVAL);
@@ -808,8 +915,9 @@ static int process_line(URLContext *h, char *line, int line_count,
             if ((ret = parse_location(s, p)) < 0)
                 return ret;
             *new_location = 1;
-        } else if (!av_strcasecmp(tag, "Content-Length") && s->filesize == -1) {
-            s->filesize = strtoll(p, NULL, 10);
+        } else if (!av_strcasecmp(tag, "Content-Length") &&
+                   s->filesize == UINT64_MAX) {
+            s->filesize = strtoull(p, NULL, 10);
         } else if (!av_strcasecmp(tag, "Content-Range")) {
             parse_content_range(h, p);
         } else if (!av_strcasecmp(tag, "Accept-Ranges") &&
@@ -818,7 +926,7 @@ static int process_line(URLContext *h, char *line, int line_count,
             h->is_streamed = 0;
         } else if (!av_strcasecmp(tag, "Transfer-Encoding") &&
                    !av_strncasecmp(p, "chunked", 7)) {
-            s->filesize  = -1;
+            s->filesize  = UINT64_MAX;
             s->chunksize = 0;
         } else if (!av_strcasecmp(tag, "WWW-Authenticate")) {
             ff_http_auth_handle_header(&s->auth_state, tag, p);
@@ -842,7 +950,7 @@ static int process_line(URLContext *h, char *line, int line_count,
             if (parse_cookie(s, p, &s->cookie_dict))
                 av_log(h, AV_LOG_WARNING, "Unable to parse '%s'\n", p);
         } else if (!av_strcasecmp(tag, "Icy-MetaInt")) {
-            s->icy_metaint = strtoll(p, NULL, 10);
+            s->icy_metaint = strtoull(p, NULL, 10);
         } else if (!av_strncasecmp(tag, "Icy-", 4)) {
             if ((ret = parse_icy(s, tag, p)) < 0)
                 return ret;
@@ -867,7 +975,7 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path,
     // cookie strings will look like Set-Cookie header field values.  Multiple
     // Set-Cookie fields will result in multiple values delimited by a newline
     int ret = 0;
-    char *next, *cookie, *set_cookies = av_strdup(s->cookies), *cset_cookies = set_cookies;
+    char *cookie, *set_cookies = av_strdup(s->cookies), *next = set_cookies;
 
     if (!set_cookies) return AVERROR(EINVAL);
 
@@ -875,87 +983,81 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path,
     av_dict_free(&s->cookie_dict);
 
     *cookies = NULL;
-    while ((cookie = av_strtok(set_cookies, "\n", &next))) {
-        int domain_offset = 0;
-        char *param, *next_param, *cdomain = NULL, *cpath = NULL, *cvalue = NULL;
-        set_cookies = NULL;
+    while ((cookie = av_strtok(next, "\n", &next))) {
+        AVDictionary *cookie_params = NULL;
+        AVDictionaryEntry *cookie_entry, *e;
 
         // store the cookie in a dict in case it is updated in the response
         if (parse_cookie(s, cookie, &s->cookie_dict))
             av_log(s, AV_LOG_WARNING, "Unable to parse '%s'\n", cookie);
 
-        while ((param = av_strtok(cookie, "; ", &next_param))) {
-            if (cookie) {
-                // first key-value pair is the actual cookie value
-                cvalue = av_strdup(param);
-                cookie = NULL;
-            } else if (!av_strncasecmp("path=",   param, 5)) {
-                av_free(cpath);
-                cpath = av_strdup(&param[5]);
-            } else if (!av_strncasecmp("domain=", param, 7)) {
-                // if the cookie specifies a sub-domain, skip the leading dot thereby
-                // supporting URLs that point to sub-domains and the master domain
-                int leading_dot = (param[7] == '.');
-                av_free(cdomain);
-                cdomain = av_strdup(&param[7+leading_dot]);
-            } else {
-                // ignore unknown attributes
+        // continue on to the next cookie if this one cannot be parsed
+        if (parse_set_cookie(cookie, &cookie_params))
+            continue;
+
+        // if the cookie has no value, skip it
+        cookie_entry = av_dict_get(cookie_params, "", NULL, AV_DICT_IGNORE_SUFFIX);
+        if (!cookie_entry || !cookie_entry->value) {
+            av_dict_free(&cookie_params);
+            continue;
+        }
+
+        // if the cookie has expired, don't add it
+        if ((e = av_dict_get(cookie_params, "expires", NULL, 0)) && e->value) {
+            struct tm tm_buf = {0};
+            if (!parse_set_cookie_expiry_time(e->value, &tm_buf)) {
+                if (av_timegm(&tm_buf) < av_gettime() / 1000000) {
+                    av_dict_free(&cookie_params);
+                    continue;
+                }
             }
         }
-        if (!cdomain)
-            cdomain = av_strdup(domain);
 
-        // ensure all of the necessary values are valid
-        if (!cdomain || !cpath || !cvalue) {
-            av_log(s, AV_LOG_WARNING,
-                   "Invalid cookie found, no value, path or domain specified\n");
-            goto done_cookie;
+        // if no domain in the cookie assume it appied to this request
+        if ((e = av_dict_get(cookie_params, "domain", NULL, 0)) && e->value) {
+            // find the offset comparison is on the min domain (b.com, not a.b.com)
+            int domain_offset = strlen(domain) - strlen(e->value);
+            if (domain_offset < 0) {
+                av_dict_free(&cookie_params);
+                continue;
+            }
+
+            // match the cookie domain
+            if (av_strcasecmp(&domain[domain_offset], e->value)) {
+                av_dict_free(&cookie_params);
+                continue;
+            }
         }
 
-        // check if the request path matches the cookie path
-        if (av_strncasecmp(path, cpath, strlen(cpath)))
-            goto done_cookie;
-
-        // the domain should be at least the size of our cookie domain
-        domain_offset = strlen(domain) - strlen(cdomain);
-        if (domain_offset < 0)
-            goto done_cookie;
-
-        // match the cookie domain
-        if (av_strcasecmp(&domain[domain_offset], cdomain))
-            goto done_cookie;
+        // ensure this cookie matches the path
+        e = av_dict_get(cookie_params, "path", NULL, 0);
+        if (!e || av_strncasecmp(path, e->value, strlen(e->value))) {
+            av_dict_free(&cookie_params);
+            continue;
+        }
 
         // cookie parameters match, so copy the value
         if (!*cookies) {
-            if (!(*cookies = av_strdup(cvalue))) {
+            if (!(*cookies = av_asprintf("%s=%s", cookie_entry->key, cookie_entry->value))) {
                 ret = AVERROR(ENOMEM);
-                goto done_cookie;
+                break;
             }
         } else {
             char *tmp = *cookies;
-            size_t str_size = strlen(cvalue) + strlen(*cookies) + 3;
+            size_t str_size = strlen(cookie_entry->key) + strlen(cookie_entry->value) + strlen(*cookies) + 4;
             if (!(*cookies = av_malloc(str_size))) {
                 ret = AVERROR(ENOMEM);
-                goto done_cookie;
+                av_free(tmp);
+                break;
             }
-            snprintf(*cookies, str_size, "%s; %s", tmp, cvalue);
+            snprintf(*cookies, str_size, "%s; %s=%s", tmp, cookie_entry->key, cookie_entry->value);
             av_free(tmp);
-        }
-
-        done_cookie:
-        av_freep(&cdomain);
-        av_freep(&cpath);
-        av_freep(&cvalue);
-        if (ret < 0) {
-            if (*cookies) av_freep(cookies);
-            av_free(cset_cookies);
-            return ret;
         }
     }
 
-    av_free(cset_cookies);
+    av_free(set_cookies);
 
-    return 0;
+    return ret;
 }
 
 static inline int has_header(const char *str, const char *header)
@@ -972,7 +1074,7 @@ static int http_read_header(URLContext *h, int *new_location)
     char line[MAX_URL_SIZE];
     int err = 0;
 
-    s->chunksize = -1;
+    s->chunksize = UINT64_MAX;
 
     for (;;) {
         if ((err = http_get_line(s, line, sizeof(line))) < 0)
@@ -1006,10 +1108,11 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     int post, err;
     char headers[HTTP_HEADERS_SIZE] = "";
     char *authstr = NULL, *proxyauthstr = NULL;
-    int64_t off = s->off;
+    uint64_t off = s->off;
     int len = 0;
     const char *method;
     int send_expect_100 = 0;
+    int ret;
 
     /* send http header */
     post = h->flags & AVIO_FLAG_WRITE;
@@ -1060,7 +1163,7 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     // server supports seeking by analysing the reply headers.
     if (!has_header(s->headers, "\r\nRange: ") && !post && (s->off > 0 || s->end_off || s->seekable == -1)) {
         len += av_strlcatf(headers + len, sizeof(headers) - len,
-                           "Range: bytes=%"PRId64"-", s->off);
+                           "Range: bytes=%"PRIu64"-", s->off);
         if (s->end_off)
             len += av_strlcatf(headers + len, sizeof(headers) - len,
                                "%"PRId64, s->end_off - 1);
@@ -1106,7 +1209,7 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     if (s->headers)
         av_strlcpy(headers + len, s->headers, sizeof(headers) - len);
 
-    snprintf(s->buffer, sizeof(s->buffer),
+    ret = snprintf(s->buffer, sizeof(s->buffer),
              "%s %s HTTP/1.1\r\n"
              "%s"
              "%s"
@@ -1122,6 +1225,14 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
 
     av_log(h, AV_LOG_DEBUG, "request: %s\n", s->buffer);
 
+    if (strlen(headers) + 1 == sizeof(headers) ||
+        ret >= sizeof(s->buffer)) {
+        av_log(h, AV_LOG_ERROR, "overlong headers\n");
+        err = AVERROR(EINVAL);
+        goto done;
+    }
+
+
     if ((err = ffurl_write(s->hd, s->buffer, strlen(s->buffer))) < 0)
         goto done;
 
@@ -1135,10 +1246,13 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     s->line_count       = 0;
     s->off              = 0;
     s->icy_data_read    = 0;
-    s->filesize         = -1;
+    s->filesize         = UINT64_MAX;
     s->willclose        = 0;
     s->end_chunked_post = 0;
     s->end_header       = 0;
+#if CONFIG_ZLIB
+    s->compressed       = 0;
+#endif
     if (post && !s->post_data && !send_expect_100) {
         /* Pretend that it did work. We didn't read any header yet, since
          * we've still to send the POST data, but the code calling this
@@ -1167,6 +1281,45 @@ static int http_buf_read(URLContext *h, uint8_t *buf, int size)
 {
     HTTPContext *s = h->priv_data;
     int len;
+
+    if (s->chunksize != UINT64_MAX) {
+        if (s->chunkend) {
+            return AVERROR_EOF;
+        }
+        if (!s->chunksize) {
+            char line[32];
+            int err;
+
+            do {
+                if ((err = http_get_line(s, line, sizeof(line))) < 0)
+                    return err;
+            } while (!*line);    /* skip CR LF from last chunk */
+
+            s->chunksize = strtoull(line, NULL, 16);
+
+            av_log(h, AV_LOG_TRACE,
+                   "Chunked encoding data size: %"PRIu64"\n",
+                    s->chunksize);
+
+            if (!s->chunksize && s->multiple_requests) {
+                http_get_line(s, line, sizeof(line)); // read empty chunk
+                s->chunkend = 1;
+                return 0;
+            }
+            else if (!s->chunksize) {
+                av_log(h, AV_LOG_DEBUG, "Last chunk received, closing conn\n");
+                ffurl_closep(&s->hd);
+                return 0;
+            }
+            else if (s->chunksize == UINT64_MAX) {
+                av_log(h, AV_LOG_ERROR, "Invalid chunk size %"PRIu64"\n",
+                       s->chunksize);
+                return AVERROR(EINVAL);
+            }
+        }
+        size = FFMIN(size, s->chunksize);
+    }
+
     /* read bytes from input buffer first */
     len = s->buf_end - s->buf_ptr;
     if (len > 0) {
@@ -1175,15 +1328,13 @@ static int http_buf_read(URLContext *h, uint8_t *buf, int size)
         memcpy(buf, s->buf_ptr, len);
         s->buf_ptr += len;
     } else {
-        int64_t target_end = s->end_off ? s->end_off : s->filesize;
-        if ((!s->willclose || s->chunksize < 0) &&
-            target_end >= 0 && s->off >= target_end)
+        uint64_t target_end = s->end_off ? s->end_off : s->filesize;
+        if ((!s->willclose || s->chunksize == UINT64_MAX) && s->off >= target_end)
             return AVERROR_EOF;
         len = ffurl_read(s->hd, buf, size);
-        if (!len && (!s->willclose || s->chunksize < 0) &&
-            target_end >= 0 && s->off < target_end) {
+        if (!len && (!s->willclose || s->chunksize == UINT64_MAX) && s->off < target_end) {
             av_log(h, AV_LOG_ERROR,
-                   "Stream ends prematurely at %"PRId64", should be %"PRId64"\n",
+                   "Stream ends prematurely at %"PRIu64", should be %"PRIu64"\n",
                    s->off, target_end
                   );
             return AVERROR(EIO);
@@ -1191,8 +1342,10 @@ static int http_buf_read(URLContext *h, uint8_t *buf, int size)
     }
     if (len > 0) {
         s->off += len;
-        if (s->chunksize > 0)
+        if (s->chunksize > 0 && s->chunksize != UINT64_MAX) {
+            av_assert0(s->chunksize >= len);
             s->chunksize -= len;
+        }
     }
     return len;
 }
@@ -1247,25 +1400,6 @@ static int http_read_stream(URLContext *h, uint8_t *buf, int size)
             return err;
     }
 
-    if (s->chunksize >= 0) {
-        if (!s->chunksize) {
-            char line[32];
-
-                do {
-                    if ((err = http_get_line(s, line, sizeof(line))) < 0)
-                        return err;
-                } while (!*line);    /* skip CR LF from last chunk */
-
-                s->chunksize = strtoll(line, NULL, 16);
-
-                av_log(NULL, AV_LOG_TRACE, "Chunked encoding data size: %"PRId64"'\n",
-                        s->chunksize);
-
-                if (!s->chunksize)
-                    return 0;
-        }
-        size = FFMIN(size, s->chunksize);
-    }
 #if CONFIG_ZLIB
     if (s->compressed)
         return http_buf_read_compressed(h, buf, size);
@@ -1273,17 +1407,17 @@ static int http_read_stream(URLContext *h, uint8_t *buf, int size)
     read_ret = http_buf_read(h, buf, size);
     if (   (read_ret  < 0 && s->reconnect        && (!h->is_streamed || s->reconnect_streamed) && s->filesize > 0 && s->off < s->filesize)
         || (read_ret == 0 && s->reconnect_at_eof && (!h->is_streamed || s->reconnect_streamed))) {
-        int64_t target = h->is_streamed ? 0 : s->off;
+        uint64_t target = h->is_streamed ? 0 : s->off;
 
         if (s->reconnect_delay > s->reconnect_delay_max)
             return AVERROR(EIO);
 
-        av_log(h, AV_LOG_INFO, "Will reconnect at %"PRId64" error=%s.\n", s->off, av_err2str(read_ret));
+        av_log(h, AV_LOG_INFO, "Will reconnect at %"PRIu64" error=%s.\n", s->off, av_err2str(read_ret));
         av_usleep(1000U*1000*s->reconnect_delay);
         s->reconnect_delay = 1 + 2*s->reconnect_delay;
         seek_ret = http_seek_internal(h, target, SEEK_SET, 1);
         if (seek_ret != target) {
-            av_log(h, AV_LOG_ERROR, "Failed to reconnect at %"PRId64".\n", target);
+            av_log(h, AV_LOG_ERROR, "Failed to reconnect at %"PRIu64".\n", target);
             return read_ret;
         }
 
@@ -1338,10 +1472,11 @@ static int store_icy(URLContext *h, int size)
 {
     HTTPContext *s = h->priv_data;
     /* until next metadata packet */
-    int remaining = s->icy_metaint - s->icy_data_read;
+    uint64_t remaining;
 
-    if (remaining < 0)
+    if (s->icy_metaint < s->icy_data_read)
         return AVERROR_INVALIDDATA;
+    remaining = s->icy_metaint - s->icy_data_read;
 
     if (!remaining) {
         /* The metadata packet is variable sized. It has a 1 byte header
@@ -1455,7 +1590,7 @@ static int64_t http_seek_internal(URLContext *h, int64_t off, int whence, int fo
 {
     HTTPContext *s = h->priv_data;
     URLContext *old_hd = s->hd;
-    int64_t old_off = s->off;
+    uint64_t old_off = s->off;
     uint8_t old_buf[BUFFER_SIZE];
     int old_buf_size, ret;
     AVDictionary *options = NULL;
@@ -1466,7 +1601,7 @@ static int64_t http_seek_internal(URLContext *h, int64_t off, int whence, int fo
              ((whence == SEEK_CUR && off == 0) ||
               (whence == SEEK_SET && off == s->off)))
         return s->off;
-    else if ((s->filesize == -1 && whence == SEEK_END))
+    else if ((s->filesize == UINT64_MAX && whence == SEEK_END))
         return AVERROR(ENOSYS);
 
     if (whence == SEEK_CUR)
@@ -1513,6 +1648,12 @@ static int http_get_file_handle(URLContext *h)
     return ffurl_get_file_handle(s->hd);
 }
 
+static int http_get_short_seek(URLContext *h)
+{
+    HTTPContext *s = h->priv_data;
+    return ffurl_get_short_seek(s->hd);
+}
+
 #define HTTP_CLASS(flavor)                          \
 static const AVClass flavor ## _context_class = {   \
     .class_name = # flavor,                         \
@@ -1534,6 +1675,7 @@ const URLProtocol ff_http_protocol = {
     .url_seek            = http_seek,
     .url_close           = http_close,
     .url_get_file_handle = http_get_file_handle,
+    .url_get_short_seek  = http_get_short_seek,
     .url_shutdown        = http_shutdown,
     .priv_data_size      = sizeof(HTTPContext),
     .priv_data_class     = &http_context_class,
@@ -1553,6 +1695,7 @@ const URLProtocol ff_https_protocol = {
     .url_seek            = http_seek,
     .url_close           = http_close,
     .url_get_file_handle = http_get_file_handle,
+    .url_get_short_seek  = http_get_short_seek,
     .url_shutdown        = http_shutdown,
     .priv_data_size      = sizeof(HTTPContext),
     .priv_data_class     = &https_context_class,
@@ -1621,7 +1764,7 @@ redo:
     s->buf_ptr    = s->buffer;
     s->buf_end    = s->buffer;
     s->line_count = 0;
-    s->filesize   = -1;
+    s->filesize   = UINT64_MAX;
     cur_auth_type = s->proxy_auth_state.auth_type;
 
     /* Note: This uses buffering, potentially reading more than the

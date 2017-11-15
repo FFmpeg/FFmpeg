@@ -54,16 +54,18 @@ typedef struct ZmbvEncContext {
     int comp_size;
     int keyint, curfrm;
     z_stream zstream;
+
+    int score_tab[256];
 } ZmbvEncContext;
 
-static int score_tab[256];
 
 /** Block comparing function
  * XXX should be optimized and moved to DSPContext
  * TODO handle out of edge ME
  */
-static inline int block_cmp(uint8_t *src, int stride, uint8_t *src2, int stride2,
-                            int bw, int bh, int *xored)
+static inline int block_cmp(ZmbvEncContext *c, uint8_t *src, int stride,
+                            uint8_t *src2, int stride2, int bw, int bh,
+                            int *xored)
 {
     int sum = 0;
     int i, j;
@@ -81,7 +83,7 @@ static inline int block_cmp(uint8_t *src, int stride, uint8_t *src2, int stride2
     }
 
     for(i = 1; i < 256; i++)
-        sum += score_tab[histogram[i]];
+        sum += c->score_tab[histogram[i]];
 
     return sum;
 }
@@ -97,14 +99,14 @@ static int zmbv_me(ZmbvEncContext *c, uint8_t *src, int sstride, uint8_t *prev,
     *mx = *my = 0;
     bw = FFMIN(ZMBV_BLOCK, c->avctx->width - x);
     bh = FFMIN(ZMBV_BLOCK, c->avctx->height - y);
-    bv = block_cmp(src, sstride, prev, pstride, bw, bh, xored);
+    bv = block_cmp(c, src, sstride, prev, pstride, bw, bh, xored);
     if(!bv) return 0;
     for(ty = FFMAX(y - c->range, 0); ty < FFMIN(y + c->range, c->avctx->height - bh); ty++){
         for(tx = FFMAX(x - c->range, 0); tx < FFMIN(x + c->range, c->avctx->width - bw); tx++){
             if(tx == x && ty == y) continue; // we already tested this block
             dx = tx - x;
             dy = ty - y;
-            tv = block_cmp(src, sstride, prev + dx + dy*pstride, pstride, bw, bh, xored);
+            tv = block_cmp(c, src, sstride, prev + dx + dy * pstride, pstride, bw, bh, xored);
             if(tv < bv){
                  bv = tv;
                  *mx = dx;
@@ -277,7 +279,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     int lvl = 9;
 
     for(i=1; i<256; i++)
-        score_tab[i]= -i * log2(i/(double)(ZMBV_BLOCK*ZMBV_BLOCK)) * 256;
+        c->score_tab[i] = -i * log2(i / (double)(ZMBV_BLOCK * ZMBV_BLOCK)) * 256;
 
     c->avctx = avctx;
 

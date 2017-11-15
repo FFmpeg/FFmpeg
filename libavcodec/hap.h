@@ -34,6 +34,7 @@ enum HapTextureFormat {
     HAP_FMT_RGBDXT1   = 0x0B,
     HAP_FMT_RGBADXT5  = 0x0E,
     HAP_FMT_YCOCGDXT5 = 0x0F,
+    HAP_FMT_RGTC1     = 0x01,
 };
 
 enum HapCompressor {
@@ -65,6 +66,7 @@ typedef struct HapContext {
 
     enum HapTextureFormat opt_tex_fmt; /* Texture type (encoder only) */
     int opt_chunk_count; /* User-requested chunk count (encoder only) */
+    int opt_compressor; /* User-requested compressor (encoder only) */
 
     int chunk_count;
     HapChunk *chunks;

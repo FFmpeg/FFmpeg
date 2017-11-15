@@ -30,7 +30,7 @@
 #include "avfilter.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct BlackDetectContext {
     const AVClass *class;
     double  black_min_duration_time; ///< minimum duration of detected black, in seconds
     int64_t black_min_duration;      ///< minimum duration of detected black, expressed in timebase units
@@ -155,7 +155,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
 
     av_log(ctx, AV_LOG_DEBUG,
            "frame:%"PRId64" picture_black_ratio:%f pts:%s t:%s type:%c\n",
-           inlink->frame_count, picture_black_ratio,
+           inlink->frame_count_out, picture_black_ratio,
            av_ts2str(picref->pts), av_ts2timestr(picref->pts, &inlink->time_base),
            av_get_picture_type_char(picref->pict_type));
 
@@ -164,7 +164,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
             /* black starts here */
             blackdetect->black_started = 1;
             blackdetect->black_start = picref->pts;
-            av_dict_set(avpriv_frame_get_metadatap(picref), "lavfi.black_start",
+            av_dict_set(&picref->metadata, "lavfi.black_start",
                 av_ts2timestr(blackdetect->black_start, &inlink->time_base), 0);
         }
     } else if (blackdetect->black_started) {
@@ -172,7 +172,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
         blackdetect->black_started = 0;
         blackdetect->black_end = picref->pts;
         check_black_end(ctx);
-        av_dict_set(avpriv_frame_get_metadatap(picref), "lavfi.black_end",
+        av_dict_set(&picref->metadata, "lavfi.black_end",
             av_ts2timestr(blackdetect->black_end, &inlink->time_base), 0);
     }
 

@@ -21,6 +21,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
+#include "libavutil/crc.h"
 #include "libavutil/mem.h"
 #include "libavutil/x86/asm.h"
 #include "libavfilter/vf_spp.h"
@@ -223,10 +224,15 @@ av_cold void ff_spp_init_x86(SPPContext *s)
     int cpu_flags = av_get_cpu_flags();
 
     if (cpu_flags & AV_CPU_FLAG_MMX) {
+        static const uint32_t mmx_idct_perm_crc = 0xe5e8adc4;
+        uint32_t idct_perm_crc =
+            av_crc(av_crc_get_table(AV_CRC_32_IEEE), 0,
+                   s->dct->idct_permutation,
+                   sizeof(s->dct->idct_permutation));
         int64_t bps;
         s->store_slice = store_slice_mmx;
         av_opt_get_int(s->dct, "bits_per_sample", 0, &bps);
-        if (bps <= 8) {
+        if (bps <= 8 && idct_perm_crc == mmx_idct_perm_crc) {
             switch (s->mode) {
             case 0: s->requantize = hardthresh_mmx; break;
             case 1: s->requantize = softthresh_mmx; break;

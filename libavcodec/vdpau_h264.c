@@ -27,6 +27,7 @@
 #include "internal.h"
 #include "h264dec.h"
 #include "h264_ps.h"
+#include "hwaccel.h"
 #include "mpegutils.h"
 #include "vdpau.h"
 #include "vdpau_internal.h"
@@ -272,5 +273,7 @@ AVHWAccel ff_h264_vdpau_hwaccel = {
     .frame_priv_data_size = sizeof(struct vdpau_picture_context),
     .init           = vdpau_h264_init,
     .uninit         = ff_vdpau_common_uninit,
+    .frame_params   = ff_vdpau_common_frame_params,
     .priv_data_size = sizeof(VDPAUContext),
+    .caps_internal  = HWACCEL_CAP_ASYNC_SAFE,
 };

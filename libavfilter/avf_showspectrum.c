@@ -48,7 +48,7 @@ enum ColorMode    { CHANNEL, INTENSITY, RAINBOW, MORELAND, NEBULAE, FIRE, FIERY,
 enum SlideMode    { REPLACE, SCROLL, FULLFRAME, RSCROLL, NB_SLIDES };
 enum Orientation  { VERTICAL, HORIZONTAL, NB_ORIENTATIONS };
 
-typedef struct {
+typedef struct ShowSpectrumContext {
     const AVClass *class;
     int w, h;
     AVFrame *outpicref;
@@ -299,11 +299,14 @@ static int config_output(AVFilterLink *outlink)
     int i, fft_bits, h, w;
     float overlap;
 
+    s->pts = AV_NOPTS_VALUE;
+
     if (!strcmp(ctx->filter->name, "showspectrumpic"))
         s->single_pic = 1;
 
     outlink->w = s->w;
     outlink->h = s->h;
+    outlink->sample_aspect_ratio = (AVRational){1,1};
 
     if (s->legend) {
         s->start_x = log10(inlink->sample_rate) * 25;
@@ -400,7 +403,7 @@ static int config_output(AVFilterLink *outlink)
                          sizeof(*s->window_func_lut));
         if (!s->window_func_lut)
             return AVERROR(ENOMEM);
-        ff_generate_window_func(s->window_func_lut, s->win_size, s->win_func, &overlap);
+        generate_window_func(s->window_func_lut, s->win_size, s->win_func, &overlap);
         if (s->overlap == 1)
             s->overlap = overlap;
         s->hop_size = (1. - s->overlap) * s->win_size;
@@ -420,13 +423,13 @@ static int config_output(AVFilterLink *outlink)
             ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!outpicref)
             return AVERROR(ENOMEM);
-        outlink->sample_aspect_ratio = (AVRational){1,1};
+        outpicref->sample_aspect_ratio = (AVRational){1,1};
         for (i = 0; i < outlink->h; i++) {
             memset(outpicref->data[0] + i * outpicref->linesize[0],   0, outlink->w);
             memset(outpicref->data[1] + i * outpicref->linesize[1], 128, outlink->w);
             memset(outpicref->data[2] + i * outpicref->linesize[2], 128, outlink->w);
         }
-        av_frame_set_color_range(outpicref, AVCOL_RANGE_JPEG);
+        outpicref->color_range = AVCOL_RANGE_JPEG;
     }
 
     if ((s->orientation == VERTICAL   && s->xpos >= s->w) ||
@@ -1022,17 +1025,19 @@ static int showspectrumpic_request_frame(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     ShowSpectrumContext *s = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
-    int ret;
+    int ret, samples;
 
     ret = ff_request_frame(inlink);
-    if (ret == AVERROR_EOF && s->outpicref) {
-        int samples = av_audio_fifo_size(s->fifo);
+    samples = av_audio_fifo_size(s->fifo);
+    if (ret == AVERROR_EOF && s->outpicref && samples > 0) {
         int consumed = 0;
         int y, x = 0, sz = s->orientation == VERTICAL ? s->w : s->h;
         int ch, spf, spb;
         AVFrame *fin;
 
         spf = s->win_size * (samples / ((s->win_size * sz) * ceil(samples / (float)(s->win_size * sz))));
+        spf = FFMAX(1, spf);
+
         spb = (samples / (spf * sz)) * spf;
 
         fin = ff_get_audio_buffer(inlink, s->win_size);
@@ -1120,13 +1125,13 @@ static int showspectrumpic_request_frame(AVFilterLink *outlink)
                         dst[x] = 200;
                     }
                     for (y = 0; y < h; y += 40) {
-                        float hz = y * (inlink->sample_rate / 2) / (float)(1 << (int)ceil(log2(h)));
+                        float hertz = y * (inlink->sample_rate / 2) / (float)(1 << (int)ceil(log2(h)));
                         char *units;
 
-                        if (hz == 0)
+                        if (hertz == 0)
                             units = av_asprintf("DC");
                         else
-                            units = av_asprintf("%.2f", hz);
+                            units = av_asprintf("%.2f", hertz);
                         if (!units)
                             return AVERROR(ENOMEM);
 
@@ -1185,13 +1190,13 @@ static int showspectrumpic_request_frame(AVFilterLink *outlink)
                         dst[x] = 200;
                     }
                     for (x = 0; x < w; x += 80) {
-                        float hz = x * (inlink->sample_rate / 2) / (float)(1 << (int)ceil(log2(w)));
+                        float hertz = x * (inlink->sample_rate / 2) / (float)(1 << (int)ceil(log2(w)));
                         char *units;
 
-                        if (hz == 0)
+                        if (hertz == 0)
                             units = av_asprintf("DC");
                         else
-                            units = av_asprintf("%.2f", hz);
+                            units = av_asprintf("%.2f", hertz);
                         if (!units)
                             return AVERROR(ENOMEM);
 
@@ -1255,6 +1260,7 @@ static int showspectrumpic_request_frame(AVFilterLink *outlink)
                     if (!text)
                         continue;
                     drawtext(s->outpicref, s->w + s->start_x + 35, s->start_y + y - 5, text, 0);
+                    av_free(text);
                 }
             }
         }

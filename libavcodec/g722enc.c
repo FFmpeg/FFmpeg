@@ -61,11 +61,6 @@ static av_cold int g722_encode_init(AVCodecContext * avctx)
     G722Context *c = avctx->priv_data;
     int ret;
 
-    if (avctx->channels != 1) {
-        av_log(avctx, AV_LOG_ERROR, "Only mono tracks are allowed.\n");
-        return AVERROR_INVALIDDATA;
-    }
-
     c->band[0].scale_factor = 8;
     c->band[1].scale_factor = 2;
     c->prev_samples_pos = 22;
@@ -381,15 +376,15 @@ static int g722_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 }
 
 AVCodec ff_adpcm_g722_encoder = {
-    .name           = "g722",
-    .long_name      = NULL_IF_CONFIG_SMALL("G.722 ADPCM"),
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_ADPCM_G722,
-    .priv_data_size = sizeof(G722Context),
-    .init           = g722_encode_init,
-    .close          = g722_encode_close,
-    .encode2        = g722_encode_frame,
-    .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME,
-    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
-                                                     AV_SAMPLE_FMT_NONE },
+    .name            = "g722",
+    .long_name       = NULL_IF_CONFIG_SMALL("G.722 ADPCM"),
+    .type            = AVMEDIA_TYPE_AUDIO,
+    .id              = AV_CODEC_ID_ADPCM_G722,
+    .priv_data_size  = sizeof(G722Context),
+    .init            = g722_encode_init,
+    .close           = g722_encode_close,
+    .encode2         = g722_encode_frame,
+    .capabilities    = AV_CODEC_CAP_SMALL_LAST_FRAME,
+    .sample_fmts     = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE },
+    .channel_layouts = (const uint64_t[]){ AV_CH_LAYOUT_MONO, 0 },
 };

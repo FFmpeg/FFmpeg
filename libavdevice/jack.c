@@ -94,13 +94,9 @@ static int process_callback(jack_nframes_t nframes, void *arg)
 
     /* Copy and interleave audio data from the JACK buffer into the packet */
     for (i = 0; i < self->nports; i++) {
-    #if HAVE_JACK_PORT_GET_LATENCY_RANGE
         jack_latency_range_t range;
         jack_port_get_latency_range(self->ports[i], JackCaptureLatency, &range);
         latency += range.max;
-    #else
-        latency += jack_port_get_total_latency(self->client, self->ports[i]);
-    #endif
         buffer = jack_port_get_buffer(self->ports[i], self->buffer_size);
         for (j = 0; j < self->buffer_size; j++)
             pkt_data[j * self->nports + i] = buffer[j];

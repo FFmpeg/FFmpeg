@@ -404,7 +404,8 @@ static int rv34_decode_inter_mb_header(RV34DecContext *r, int8_t *intra_types)
             r->mb_type[mb_pos] = RV34_MB_B_DIRECT;
     }
     r->is16 = !!IS_INTRA16x16(s->current_picture_ptr->mb_type[mb_pos]);
-    rv34_decode_mv(r, r->block_type);
+    if (rv34_decode_mv(r, r->block_type) < 0)
+        return -1;
     if(r->block_type == RV34_MB_SKIP){
         fill_rectangle(intra_types, 4, 4, r->intra_types_stride, 0, sizeof(intra_types[0]));
         return 0;
@@ -520,7 +521,7 @@ static int calc_add_mv(RV34DecContext *r, int dir, int val)
 {
     int mul = dir ? -r->mv_weight2 : r->mv_weight1;
 
-    return (val * mul + 0x2000) >> 14;
+    return (int)(val * (SUINT)mul + 0x2000) >> 14;
 }
 
 /**
@@ -866,6 +867,11 @@ static int rv34_decode_mv(RV34DecContext *r, int block_type)
     for(i = 0; i < num_mvs[block_type]; i++){
         r->dmv[i][0] = get_interleaved_se_golomb(gb);
         r->dmv[i][1] = get_interleaved_se_golomb(gb);
+        if (r->dmv[i][0] == INVALID_VLC ||
+            r->dmv[i][1] == INVALID_VLC) {
+            r->dmv[i][0] = r->dmv[i][1] = 0;
+            return AVERROR_INVALIDDATA;
+        }
     }
     switch(block_type){
     case RV34_MB_TYPE_INTRA:
@@ -1585,10 +1591,13 @@ int ff_rv34_decode_update_thread_context(AVCodecContext *dst, const AVCodecConte
     return ff_mpeg_update_thread_context(dst, src);
 }
 
-static int get_slice_offset(AVCodecContext *avctx, const uint8_t *buf, int n)
+static int get_slice_offset(AVCodecContext *avctx, const uint8_t *buf, int n, int slice_count, int buf_size)
 {
-    if(avctx->slice_count) return avctx->slice_offset[n];
-    else                   return AV_RL32(buf + n*8 - 4) == 1 ? AV_RL32(buf + n*8) :  AV_RB32(buf + n*8);
+    if (n < slice_count) {
+        if(avctx->slice_count) return avctx->slice_offset[n];
+        else                   return AV_RL32(buf + n*8 - 4) == 1 ? AV_RL32(buf + n*8) :  AV_RB32(buf + n*8);
+    } else
+        return buf_size;
 }
 
 static int finish_frame(AVCodecContext *avctx, AVFrame *pict)
@@ -1627,7 +1636,7 @@ static AVRational update_sar(int old_w, int old_h, AVRational sar, int new_w, in
     if (!sar.num)
         sar = (AVRational){1, 1};
 
-    sar = av_mul_q(sar, (AVRational){new_h * old_w, new_w * old_h});
+    sar = av_mul_q(sar, av_mul_q((AVRational){new_h, new_w}, (AVRational){old_w, old_h}));
     return sar;
 }
 
@@ -1646,6 +1655,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
     const uint8_t *slices_hdr = NULL;
     int last = 0;
     int faulty_b = 0;
+    int offset;
 
     /* no supplementary picture */
     if (buf_size == 0) {
@@ -1668,13 +1678,13 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
     }else
         slice_count = avctx->slice_count;
 
+    offset = get_slice_offset(avctx, slices_hdr, 0, slice_count, buf_size);
     //parse first slice header to check whether this frame can be decoded
-    if(get_slice_offset(avctx, slices_hdr, 0) < 0 ||
-       get_slice_offset(avctx, slices_hdr, 0) > buf_size){
+    if(offset < 0 || offset > buf_size){
         av_log(avctx, AV_LOG_ERROR, "Slice offset is invalid\n");
         return AVERROR_INVALIDDATA;
     }
-    init_get_bits(&s->gb, buf+get_slice_offset(avctx, slices_hdr, 0), (buf_size-get_slice_offset(avctx, slices_hdr, 0))*8);
+    init_get_bits(&s->gb, buf+offset, (buf_size-offset)*8);
     if(r->parse_slice_header(r, &r->s.gb, &si) < 0 || si.start){
         av_log(avctx, AV_LOG_ERROR, "First slice header is incorrect\n");
         return AVERROR_INVALIDDATA;
@@ -1752,6 +1762,9 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
                 r->mv_weight1 = r->mv_weight2 = r->weight1 = r->weight2 = 8192;
                 r->scaled_weight = 0;
             }else{
+                if (FFMAX(dist0, dist1) > refdist)
+                    av_log(avctx, AV_LOG_TRACE, "distance overflow\n");
+
                 r->mv_weight1 = (dist0 << 14) / refdist;
                 r->mv_weight2 = (dist1 << 14) / refdist;
                 if((r->mv_weight1|r->mv_weight2) & 511){
@@ -1777,40 +1790,32 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
 
     for(i = 0; i < slice_count; i++){
-        int offset = get_slice_offset(avctx, slices_hdr, i);
+        int offset  = get_slice_offset(avctx, slices_hdr, i  , slice_count, buf_size);
+        int offset1 = get_slice_offset(avctx, slices_hdr, i+1, slice_count, buf_size);
         int size;
-        if(i+1 == slice_count)
-            size = buf_size - offset;
-        else
-            size = get_slice_offset(avctx, slices_hdr, i+1) - offset;
 
-        if(offset < 0 || offset > buf_size){
+        if(offset < 0 || offset > offset1 || offset1 > buf_size){
             av_log(avctx, AV_LOG_ERROR, "Slice offset is invalid\n");
             break;
         }
+        size = offset1 - offset;
 
         r->si.end = s->mb_width * s->mb_height;
         s->mb_num_left = r->s.mb_x + r->s.mb_y*r->s.mb_width - r->si.start;
 
         if(i+1 < slice_count){
-            if (get_slice_offset(avctx, slices_hdr, i+1) < 0 ||
-                get_slice_offset(avctx, slices_hdr, i+1) > buf_size) {
+            int offset2 = get_slice_offset(avctx, slices_hdr, i+2, slice_count, buf_size);
+            if (offset2 < offset1 || offset2 > buf_size) {
                 av_log(avctx, AV_LOG_ERROR, "Slice offset is invalid\n");
                 break;
             }
-            init_get_bits(&s->gb, buf+get_slice_offset(avctx, slices_hdr, i+1), (buf_size-get_slice_offset(avctx, slices_hdr, i+1))*8);
+            init_get_bits(&s->gb, buf+offset1, (buf_size-offset1)*8);
             if(r->parse_slice_header(r, &r->s.gb, &si) < 0){
-                if(i+2 < slice_count)
-                    size = get_slice_offset(avctx, slices_hdr, i+2) - offset;
-                else
-                    size = buf_size - offset;
+                size = offset2 - offset;
             }else
                 r->si.end = si.start;
         }
-        if (size < 0 || size > buf_size - offset) {
-            av_log(avctx, AV_LOG_ERROR, "Slice size is invalid\n");
-            break;
-        }
+        av_assert0 (size >= 0 && size <= buf_size - offset);
         last = rv34_decode_slice(r, r->si.end, buf + offset, size);
         if(last)
             break;

@@ -19,6 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/* Include internal.h first to avoid conflict between winsock.h (used by
+ * DeckLink headers) and winsock2.h (used by libavformat) in MSVC++ builds */
+extern "C" {
+#include "libavformat/internal.h"
+}
+
 #include <DeckLinkAPI.h>
 #ifdef _WIN32
 #include <DeckLinkAPI_i.c>
@@ -26,13 +32,12 @@
 #include <DeckLinkAPIDispatch.cpp>
 #endif
 
-#include <pthread.h>
-#include <semaphore.h>
-
 extern "C" {
 #include "libavformat/avformat.h"
-#include "libavformat/internal.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/intreadwrite.h"
+#include "libavutil/bswap.h"
+#include "avdevice.h"
 }
 
 #include "decklink_common.h"
@@ -80,7 +85,7 @@ static char *dup_cfstring_to_utf8(CFStringRef w)
 }
 #define DECKLINK_STR    const __CFString *
 #define DECKLINK_STRDUP dup_cfstring_to_utf8
-#define DECKLINK_FREE(s) free((void *) s)
+#define DECKLINK_FREE(s) CFRelease(s)
 #define DECKLINK_BOOL bool
 #else
 #define DECKLINK_STR    const char *
@@ -130,9 +135,23 @@ static int decklink_select_input(AVFormatContext *avctx, BMDDeckLinkConfiguratio
     return 0;
 }
 
+static DECKLINK_BOOL field_order_eq(enum AVFieldOrder field_order, BMDFieldDominance bmd_field_order)
+{
+    if (field_order == AV_FIELD_UNKNOWN)
+        return true;
+    if ((field_order == AV_FIELD_TT || field_order == AV_FIELD_TB) && bmd_field_order == bmdUpperFieldFirst)
+        return true;
+    if ((field_order == AV_FIELD_BB || field_order == AV_FIELD_BT) && bmd_field_order == bmdLowerFieldFirst)
+        return true;
+    if (field_order == AV_FIELD_PROGRESSIVE && (bmd_field_order == bmdProgressiveFrame || bmd_field_order == bmdProgressiveSegmentedFrame))
+        return true;
+    return false;
+}
+
 int ff_decklink_set_format(AVFormatContext *avctx,
                                int width, int height,
                                int tb_num, int tb_den,
+                               enum AVFieldOrder field_order,
                                decklink_direction_t direction, int num)
 {
     struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
@@ -143,8 +162,8 @@ int ff_decklink_set_format(AVFormatContext *avctx,
     int i = 1;
     HRESULT res;
 
-    av_log(avctx, AV_LOG_DEBUG, "Trying to find mode for frame size %dx%d, frame timing %d/%d, direction %d, mode number %d\n",
-        width, height, tb_num, tb_den, direction, num);
+    av_log(avctx, AV_LOG_DEBUG, "Trying to find mode for frame size %dx%d, frame timing %d/%d, field order %d, direction %d, mode number %d, format code %s\n",
+        width, height, tb_num, tb_den, field_order, direction, num, (cctx->format_code) ? cctx->format_code : "(unset)");
 
     if (ctx->duplex_mode) {
         DECKLINK_BOOL duplex_supported = false;
@@ -181,24 +200,34 @@ int ff_decklink_set_format(AVFormatContext *avctx,
             return AVERROR(EIO);
     }
 
+    char format_buf[] = "    ";
+    if (cctx->format_code)
+        memcpy(format_buf, cctx->format_code, FFMIN(strlen(cctx->format_code), sizeof(format_buf)));
+    BMDDisplayMode target_mode = (BMDDisplayMode)AV_RB32(format_buf);
     AVRational target_tb = av_make_q(tb_num, tb_den);
     ctx->bmd_mode = bmdModeUnknown;
     while ((ctx->bmd_mode == bmdModeUnknown) && itermode->Next(&mode) == S_OK) {
         BMDTimeValue bmd_tb_num, bmd_tb_den;
         int bmd_width  = mode->GetWidth();
         int bmd_height = mode->GetHeight();
+        BMDDisplayMode bmd_mode = mode->GetDisplayMode();
+        BMDFieldDominance bmd_field_dominance = mode->GetFieldDominance();
 
         mode->GetFrameRate(&bmd_tb_num, &bmd_tb_den);
         AVRational mode_tb = av_make_q(bmd_tb_num, bmd_tb_den);
 
-        if ((bmd_width == width && bmd_height == height &&
-            !av_cmp_q(mode_tb, target_tb)) || i == num) {
-            ctx->bmd_mode   = mode->GetDisplayMode();
+        if ((bmd_width == width &&
+             bmd_height == height &&
+             !av_cmp_q(mode_tb, target_tb) &&
+             field_order_eq(field_order, bmd_field_dominance))
+             || i == num
+             || target_mode == bmd_mode) {
+            ctx->bmd_mode   = bmd_mode;
             ctx->bmd_width  = bmd_width;
             ctx->bmd_height = bmd_height;
             ctx->bmd_tb_den = bmd_tb_den;
             ctx->bmd_tb_num = bmd_tb_num;
-            ctx->bmd_field_dominance = mode->GetFieldDominance();
+            ctx->bmd_field_dominance = bmd_field_dominance;
             av_log(avctx, AV_LOG_INFO, "Found Decklink mode %d x %d with rate %.2f%s\n",
                 bmd_width, bmd_height, 1/av_q2d(mode_tb),
                 (ctx->bmd_field_dominance==bmdLowerFieldFirst || ctx->bmd_field_dominance==bmdUpperFieldFirst)?"(i)":"");
@@ -213,7 +242,7 @@ int ff_decklink_set_format(AVFormatContext *avctx,
     if (ctx->bmd_mode == bmdModeUnknown)
         return -1;
     if (direction == DIRECTION_IN) {
-        if (ctx->dli->DoesSupportVideoMode(ctx->bmd_mode, bmdFormat8BitYUV,
+        if (ctx->dli->DoesSupportVideoMode(ctx->bmd_mode, (BMDPixelFormat) cctx->raw_format,
                                            bmdVideoOutputFlagDefault,
                                            &support, NULL) != S_OK)
             return -1;
@@ -230,27 +259,103 @@ int ff_decklink_set_format(AVFormatContext *avctx,
 }
 
 int ff_decklink_set_format(AVFormatContext *avctx, decklink_direction_t direction, int num) {
-    return ff_decklink_set_format(avctx, 0, 0, 0, 0, direction, num);
+    return ff_decklink_set_format(avctx, 0, 0, 0, 0, AV_FIELD_UNKNOWN, direction, num);
 }
 
-int ff_decklink_list_devices(AVFormatContext *avctx)
+int ff_decklink_list_devices(AVFormatContext *avctx,
+                             struct AVDeviceInfoList *device_list,
+                             int show_inputs, int show_outputs)
 {
     IDeckLink *dl = NULL;
     IDeckLinkIterator *iter = CreateDeckLinkIteratorInstance();
+    int ret = 0;
+
     if (!iter) {
         av_log(avctx, AV_LOG_ERROR, "Could not create DeckLink iterator\n");
         return AVERROR(EIO);
     }
-    av_log(avctx, AV_LOG_INFO, "Blackmagic DeckLink devices:\n");
-    while (iter->Next(&dl) == S_OK) {
+
+    while (ret == 0 && iter->Next(&dl) == S_OK) {
+        IDeckLinkOutput *output_config;
+        IDeckLinkInput *input_config;
         const char *displayName;
+        AVDeviceInfo *new_device = NULL;
+        int add = 0;
+
         ff_decklink_get_display_name(dl, &displayName);
-        av_log(avctx, AV_LOG_INFO, "\t'%s'\n", displayName);
-        av_free((void *) displayName);
+
+        if (show_outputs) {
+            if (dl->QueryInterface(IID_IDeckLinkOutput, (void **)&output_config) == S_OK) {
+                output_config->Release();
+                add = 1;
+            }
+        }
+
+        if (show_inputs) {
+            if (dl->QueryInterface(IID_IDeckLinkInput, (void **)&input_config) == S_OK) {
+                input_config->Release();
+                add = 1;
+            }
+        }
+
+        if (add == 1) {
+            new_device = (AVDeviceInfo *) av_mallocz(sizeof(AVDeviceInfo));
+            if (!new_device) {
+                ret = AVERROR(ENOMEM);
+                goto next;
+            }
+            new_device->device_name = av_strdup(displayName);
+            if (!new_device->device_name) {
+                ret = AVERROR(ENOMEM);
+                goto next;
+            }
+
+            new_device->device_description = av_strdup(displayName);
+            if (!new_device->device_description) {
+                av_freep(&new_device->device_name);
+                ret = AVERROR(ENOMEM);
+                goto next;
+            }
+
+            if ((ret = av_dynarray_add_nofree(&device_list->devices,
+                                              &device_list->nb_devices, new_device)) < 0) {
+                av_freep(&new_device->device_name);
+                av_freep(&new_device->device_description);
+                av_freep(&new_device);
+                goto next;
+            }
+        }
+
+    next:
+        av_freep(&displayName);
         dl->Release();
     }
     iter->Release();
-    return 0;
+    return ret;
+}
+
+/* This is a wrapper around the ff_decklink_list_devices() which dumps the
+   output to av_log() and exits (for backward compatibility with the
+   "-list_devices" argument). */
+void ff_decklink_list_devices_legacy(AVFormatContext *avctx,
+                                     int show_inputs, int show_outputs)
+{
+    struct AVDeviceInfoList *device_list = NULL;
+    int ret;
+
+    device_list = (struct AVDeviceInfoList *) av_mallocz(sizeof(AVDeviceInfoList));
+    if (!device_list)
+        return;
+
+    ret = ff_decklink_list_devices(avctx, device_list, show_inputs, show_outputs);
+    if (ret == 0) {
+        av_log(avctx, AV_LOG_INFO, "Blackmagic DeckLink %s devices:\n",
+               show_inputs ? "input" : "output");
+        for (int i = 0; i < device_list->nb_devices; i++) {
+            av_log(avctx, AV_LOG_INFO, "\t'%s'\n", device_list->devices[i]->device_name);
+        }
+    }
+    avdevice_free_list_devices(&device_list);
 }
 
 int ff_decklink_list_formats(AVFormatContext *avctx, decklink_direction_t direction)
@@ -259,7 +364,7 @@ int ff_decklink_list_formats(AVFormatContext *avctx, decklink_direction_t direct
     struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
     IDeckLinkDisplayModeIterator *itermode;
     IDeckLinkDisplayMode *mode;
-    int i=0;
+    uint32_t format_code;
     HRESULT res;
 
     if (direction == DIRECTION_IN) {
@@ -280,13 +385,14 @@ int ff_decklink_list_formats(AVFormatContext *avctx, decklink_direction_t direct
             return AVERROR(EIO);
     }
 
-    av_log(avctx, AV_LOG_INFO, "Supported formats for '%s':\n",
+    av_log(avctx, AV_LOG_INFO, "Supported formats for '%s':\n\tformat_code\tdescription",
                avctx->filename);
     while (itermode->Next(&mode) == S_OK) {
         BMDTimeValue tb_num, tb_den;
         mode->GetFrameRate(&tb_num, &tb_den);
-        av_log(avctx, AV_LOG_INFO, "\t%d\t%ldx%ld at %d/%d fps",
-                ++i,mode->GetWidth(), mode->GetHeight(),
+        format_code = av_bswap32(mode->GetDisplayMode());
+        av_log(avctx, AV_LOG_INFO, "\n\t%.4s\t\t%ldx%ld at %d/%d fps",
+                (char*) &format_code, mode->GetWidth(), mode->GetHeight(),
                 (int) tb_den, (int) tb_num);
         switch (mode->GetFieldDominance()) {
         case bmdLowerFieldFirst:
@@ -294,9 +400,9 @@ int ff_decklink_list_formats(AVFormatContext *avctx, decklink_direction_t direct
         case bmdUpperFieldFirst:
         av_log(avctx, AV_LOG_INFO, " (interlaced, upper field first)"); break;
         }
-        av_log(avctx, AV_LOG_INFO, "\n");
         mode->Release();
     }
+    av_log(avctx, AV_LOG_INFO, "\n");
 
     itermode->Release();
 

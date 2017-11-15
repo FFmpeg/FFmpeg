@@ -323,7 +323,7 @@ get_cache:
                                   st, rdt->rmst[st->index], pkt);
         if (rdt->audio_pkt_cnt == 0 &&
             st->codecpar->codec_id == AV_CODEC_ID_AAC)
-            av_freep(&rdt->rmctx->pb);
+            avio_context_free(&rdt->rmctx->pb);
     }
     pkt->stream_index = st->index;
     pkt->pts = *timestamp;

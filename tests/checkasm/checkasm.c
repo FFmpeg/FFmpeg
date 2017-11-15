@@ -20,6 +20,14 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include "config.h"
+
+#if CONFIG_LINUX_PERF
+# ifndef _GNU_SOURCE
+#  define _GNU_SOURCE // for syscall (performance monitoring API)
+# endif
+#endif
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -65,8 +73,18 @@ static const struct {
     void (*func)(void);
 } tests[] = {
 #if CONFIG_AVCODEC
+    #if CONFIG_AAC_DECODER
+        { "aacpsdsp", checkasm_check_aacpsdsp },
+        { "sbrdsp",   checkasm_check_sbrdsp },
+    #endif
     #if CONFIG_ALAC_DECODER
         { "alacdsp", checkasm_check_alacdsp },
+    #endif
+    #if CONFIG_AUDIODSP
+        { "audiodsp", checkasm_check_audiodsp },
+    #endif
+    #if CONFIG_BLOCKDSP
+        { "blockdsp", checkasm_check_blockdsp },
     #endif
     #if CONFIG_BSWAPDSP
         { "bswapdsp", checkasm_check_bswapdsp },
@@ -74,11 +92,17 @@ static const struct {
     #if CONFIG_DCA_DECODER
         { "synth_filter", checkasm_check_synth_filter },
     #endif
+    #if CONFIG_EXR_DECODER
+        { "exrdsp", checkasm_check_exrdsp },
+    #endif
     #if CONFIG_FLACDSP
         { "flacdsp", checkasm_check_flacdsp },
     #endif
     #if CONFIG_FMTCONVERT
         { "fmtconvert", checkasm_check_fmtconvert },
+    #endif
+    #if CONFIG_G722DSP
+        { "g722dsp", checkasm_check_g722dsp },
     #endif
     #if CONFIG_H264DSP
         { "h264dsp", checkasm_check_h264dsp },
@@ -89,14 +113,24 @@ static const struct {
     #if CONFIG_H264QPEL
         { "h264qpel", checkasm_check_h264qpel },
     #endif
+    #if CONFIG_HEVC_DECODER
+        { "hevc_add_res", checkasm_check_hevc_add_res },
+        { "hevc_idct", checkasm_check_hevc_idct },
+    #endif
     #if CONFIG_JPEG2000_DECODER
         { "jpeg2000dsp", checkasm_check_jpeg2000dsp },
+    #endif
+    #if CONFIG_HUFFYUVDSP
+        { "llviddsp", checkasm_check_llviddsp },
     #endif
     #if CONFIG_PIXBLOCKDSP
         { "pixblockdsp", checkasm_check_pixblockdsp },
     #endif
     #if CONFIG_V210_ENCODER
         { "v210enc", checkasm_check_v210enc },
+    #endif
+    #if CONFIG_VP8DSP
+        { "vp8dsp", checkasm_check_vp8dsp },
     #endif
     #if CONFIG_VP9_DECODER
         { "vp9dsp", checkasm_check_vp9dsp },
@@ -112,6 +146,10 @@ static const struct {
     #if CONFIG_COLORSPACE_FILTER
         { "vf_colorspace", checkasm_check_colorspace },
     #endif
+#endif
+#if CONFIG_AVUTIL
+        { "fixed_dsp", checkasm_check_fixed_dsp },
+        { "float_dsp", checkasm_check_float_dsp },
 #endif
     { NULL }
 };
@@ -163,8 +201,7 @@ typedef struct CheckasmFuncVersion {
     void *func;
     int ok;
     int cpu;
-    int iterations;
-    uint64_t cycles;
+    CheckasmPerf perf;
 } CheckasmFuncVersion;
 
 /* Binary search tree node */
@@ -185,9 +222,14 @@ static struct {
     int bench_pattern_len;
     int num_checked;
     int num_failed;
+
+    /* perf */
     int nop_time;
+    int sysfd;
+
     int cpu_flag;
     const char *cpu_flag_name;
+    const char *test_name;
 } state;
 
 /* PRNG state */
@@ -211,7 +253,7 @@ int float_near_ulp(float a, float b, unsigned max_ulp)
         return a == b;
     }
 
-    if (abs(x.i - y.i) <= max_ulp)
+    if (llabs((int64_t)x.i - y.i) <= max_ulp)
         return 1;
 
     return 0;
@@ -260,6 +302,25 @@ int float_near_abs_eps_array_ulp(const float *a, const float *b, float eps,
 
     for (i = 0; i < len; i++) {
         if (!float_near_abs_eps_ulp(a[i], b[i], eps, max_ulp))
+            return 0;
+    }
+    return 1;
+}
+
+int double_near_abs_eps(double a, double b, double eps)
+{
+    double abs_diff = fabs(a - b);
+
+    return abs_diff < eps;
+}
+
+int double_near_abs_eps_array(const double *a, const double *b, double eps,
+                              unsigned len)
+{
+    unsigned i;
+
+    for (i = 0; i < len; i++) {
+        if (!double_near_abs_eps(a[i], b[i], eps))
             return 0;
     }
     return 1;
@@ -349,7 +410,6 @@ static const char *cpu_suffix(int cpu)
     return "c";
 }
 
-#ifdef AV_READ_TIME
 static int cmp_nop(const void *a, const void *b)
 {
     return *(const uint16_t*)a - *(const uint16_t*)b;
@@ -360,10 +420,13 @@ static int measure_nop_time(void)
 {
     uint16_t nops[10000];
     int i, nop_sum = 0;
+    av_unused const int sysfd = state.sysfd;
 
+    uint64_t t = 0;
     for (i = 0; i < 10000; i++) {
-        uint64_t t = AV_READ_TIME();
-        nops[i] = AV_READ_TIME() - t;
+        PERF_START(t);
+        PERF_STOP(t);
+        nops[i] = t;
     }
 
     qsort(nops, 10000, sizeof(uint16_t), cmp_nop);
@@ -383,8 +446,9 @@ static void print_benchs(CheckasmFunc *f)
         if (f->versions.cpu || f->versions.next) {
             CheckasmFuncVersion *v = &f->versions;
             do {
-                if (v->iterations) {
-                    int decicycles = (10*v->cycles/v->iterations - state.nop_time) / 4;
+                CheckasmPerf *p = &v->perf;
+                if (p->iterations) {
+                    int decicycles = (10*p->cycles/p->iterations - state.nop_time) / 4;
                     printf("%s_%s: %d.%d\n", f->name, cpu_suffix(v->cpu), decicycles/10, decicycles%10);
                 }
             } while ((v = v->next));
@@ -393,7 +457,6 @@ static void print_benchs(CheckasmFunc *f)
         print_benchs(f->child[1]);
     }
 }
-#endif
 
 /* ASCIIbetical sort except preserving natural order for numbers */
 static int cmp_func_names(const char *a, const char *b)
@@ -479,6 +542,8 @@ static void check_cpu_flag(const char *name, int flag)
 
         state.cpu_flag_name = name;
         for (i = 0; tests[i].func; i++) {
+            if (state.test_name && strcmp(tests[i].name, state.test_name))
+                continue;
             state.current_test_name = tests[i].name;
             tests[i].func();
         }
@@ -494,9 +559,67 @@ static void print_cpu_name(void)
     }
 }
 
+#if CONFIG_LINUX_PERF
+static int bench_init_linux(void)
+{
+    struct perf_event_attr attr = {
+        .type           = PERF_TYPE_HARDWARE,
+        .size           = sizeof(struct perf_event_attr),
+        .config         = PERF_COUNT_HW_CPU_CYCLES,
+        .disabled       = 1, // start counting only on demand
+        .exclude_kernel = 1,
+        .exclude_hv     = 1,
+    };
+
+    printf("benchmarking with Linux Perf Monitoring API\n");
+
+    state.sysfd = syscall(__NR_perf_event_open, &attr, 0, -1, -1, 0);
+    if (state.sysfd == -1) {
+        perror("syscall");
+        return -1;
+    }
+    return 0;
+}
+#endif
+
+static int bench_init_ffmpeg(void)
+{
+#ifdef AV_READ_TIME
+    printf("benchmarking with native FFmpeg timers\n");
+    return 0;
+#else
+    fprintf(stderr, "checkasm: --bench is not supported on your system\n");
+    return -1;
+#endif
+}
+
+static int bench_init(void)
+{
+#if CONFIG_LINUX_PERF
+    int ret = bench_init_linux();
+#else
+    int ret = bench_init_ffmpeg();
+#endif
+    if (ret < 0)
+        return ret;
+
+    state.nop_time = measure_nop_time();
+    printf("nop: %d.%d\n", state.nop_time/10, state.nop_time%10);
+    return 0;
+}
+
+static void bench_uninit(void)
+{
+#if CONFIG_LINUX_PERF
+    if (state.sysfd > 0)
+        close(state.sysfd);
+#endif
+}
+
 int main(int argc, char *argv[])
 {
-    int i, seed, ret = 0;
+    unsigned int seed = av_get_random_seed();
+    int i, ret = 0;
 
 #if ARCH_ARM && HAVE_ARMV5TE_EXTERNAL
     if (have_vfp(av_get_cpu_flags()) || have_neon(av_get_cpu_flags()))
@@ -508,22 +631,25 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    if (argc > 1 && !strncmp(argv[1], "--bench", 7)) {
-#ifndef AV_READ_TIME
-        fprintf(stderr, "checkasm: --bench is not supported on your system\n");
-        return 1;
-#endif
-        if (argv[1][7] == '=') {
-            state.bench_pattern = argv[1] + 8;
-            state.bench_pattern_len = strlen(state.bench_pattern);
-        } else
-            state.bench_pattern = "";
+    while (argc > 1) {
+        if (!strncmp(argv[1], "--bench", 7)) {
+            if (bench_init() < 0)
+                return 1;
+            if (argv[1][7] == '=') {
+                state.bench_pattern = argv[1] + 8;
+                state.bench_pattern_len = strlen(state.bench_pattern);
+            } else
+                state.bench_pattern = "";
+        } else if (!strncmp(argv[1], "--test=", 7)) {
+            state.test_name = argv[1] + 7;
+        } else {
+            seed = strtoul(argv[1], NULL, 10);
+        }
 
         argc--;
         argv++;
     }
 
-    seed = (argc > 1) ? atoi(argv[1]) : av_get_random_seed();
     fprintf(stderr, "checkasm: using random seed %u\n", seed);
     av_lfg_init(&checkasm_lfg, seed);
 
@@ -536,16 +662,13 @@ int main(int argc, char *argv[])
         ret = 1;
     } else {
         fprintf(stderr, "checkasm: all %d tests passed\n", state.num_checked);
-#ifdef AV_READ_TIME
         if (state.bench_pattern) {
-            state.nop_time = measure_nop_time();
-            printf("nop: %d.%d\n", state.nop_time/10, state.nop_time%10);
             print_benchs(state.funcs);
         }
-#endif
     }
 
     destroy_func_tree(state.funcs);
+    bench_uninit();
     return ret;
 }
 
@@ -623,11 +746,13 @@ void checkasm_fail_func(const char *msg, ...)
     }
 }
 
-/* Update benchmark results of the current function */
-void checkasm_update_bench(int iterations, uint64_t cycles)
+/* Get the benchmark context of the current function */
+CheckasmPerf *checkasm_get_perf_context(void)
 {
-    state.current_func_ver->iterations += iterations;
-    state.current_func_ver->cycles += cycles;
+    CheckasmPerf *perf = &state.current_func_ver->perf;
+    memset(perf, 0, sizeof(*perf));
+    perf->sysfd = state.sysfd;
+    return perf;
 }
 
 /* Print the outcome of all tests performed since the last time this function was called */

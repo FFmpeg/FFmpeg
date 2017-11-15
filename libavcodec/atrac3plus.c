@@ -109,8 +109,8 @@ av_cold void ff_atrac3p_init_vlcs(void)
         NULL, NULL, atrac3p_ct_huff_xlat1, NULL
     };
 
-    static const  int sf_nb_bits[8]  = {  9,  9,  9,  9,  6,  6,  7,  7 };
-    static const  int sf_nb_codes[8] = { 64, 64, 64, 64, 16, 16, 16, 16 };
+    static const int sf_nb_bits[8]  = {  9,  9,  9,  9,  6,  6,  7,  7 };
+    static const int sf_nb_codes[8] = { 64, 64, 64, 64, 16, 16, 16, 16 };
     static const uint8_t  * const sf_bits[8]  = {
         atrac3p_sf_huff_bits1, atrac3p_sf_huff_bits1, atrac3p_sf_huff_bits2,
         atrac3p_sf_huff_bits3, atrac3p_sf_huff_bits4, atrac3p_sf_huff_bits4,

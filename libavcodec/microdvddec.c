@@ -214,7 +214,7 @@ static void microdvd_open_tags(AVBPrint *new_line, struct microdvd_tag *tags)
             break;
 
         case 'c':
-            av_bprintf(new_line, "{\\c&H%06X&}", tags[i].data1);
+            av_bprintf(new_line, "{\\c&H%06"PRIX32"&}", tags[i].data1);
             break;
 
         case 'f':
@@ -223,7 +223,7 @@ static void microdvd_open_tags(AVBPrint *new_line, struct microdvd_tag *tags)
             break;
 
         case 's':
-            av_bprintf(new_line, "{\\fs%d}", tags[i].data1);
+            av_bprintf(new_line, "{\\fs%"PRId32"}", tags[i].data1);
             break;
 
         case 'p':
@@ -232,7 +232,7 @@ static void microdvd_open_tags(AVBPrint *new_line, struct microdvd_tag *tags)
             break;
 
         case 'o':
-            av_bprintf(new_line, "{\\pos(%d,%d)}",
+            av_bprintf(new_line, "{\\pos(%"PRId32",%"PRId32")}",
                        tags[i].data1, tags[i].data2);
             break;
         }

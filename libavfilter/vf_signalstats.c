@@ -33,7 +33,7 @@ enum FilterMode {
     FILT_NUMB
 };
 
-typedef struct {
+typedef struct SignalstatsContext {
     const AVClass *class;
     int chromah;    // height of chroma plane
     int chromaw;    // width of chroma plane

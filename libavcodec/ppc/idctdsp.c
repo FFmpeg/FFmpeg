@@ -30,17 +30,16 @@
  * IDCT function itself was to factor out the partial transposition, and to
  * perform a full transpose at the end of the function. */
 
+#include "config.h"
+
 #include <stdlib.h>
 #include <string.h>
-#include "config.h"
-#if HAVE_ALTIVEC_H
-#include <altivec.h>
-#endif
 
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/ppc/cpu.h"
-#include "libavutil/ppc/types_altivec.h"
+#include "libavutil/ppc/util_altivec.h"
+
 #include "libavcodec/idctdsp.h"
 
 #if HAVE_ALTIVEC
@@ -169,7 +168,7 @@ static void idct_altivec(int16_t *blk)
     block[7] = vx7;
 }
 
-static void idct_put_altivec(uint8_t *dest, int stride, int16_t *blk)
+static void idct_put_altivec(uint8_t *dest, ptrdiff_t stride, int16_t *blk)
 {
     vec_s16 *block = (vec_s16 *) blk;
     vec_u8 tmp;
@@ -198,7 +197,7 @@ static void idct_put_altivec(uint8_t *dest, int stride, int16_t *blk)
     COPY(dest, vx7);
 }
 
-static void idct_add_altivec(uint8_t *dest, int stride, int16_t *blk)
+static void idct_add_altivec(uint8_t *dest, ptrdiff_t stride, int16_t *blk)
 {
     vec_s16 *block = (vec_s16 *) blk;
     vec_u8 tmp;

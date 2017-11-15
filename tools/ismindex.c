@@ -47,8 +47,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "cmdutils.h"
-
 #include "libavformat/avformat.h"
 #include "libavformat/isom.h"
 #include "libavformat/os_support.h"

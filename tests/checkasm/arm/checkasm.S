@@ -22,7 +22,13 @@
 
 #include "libavutil/arm/asm.S"
 
-const register_init
+/* override fpu so that NEON instructions are rejected */
+#if HAVE_VFP
+FPU     .fpu            vfp
+ELF     .eabi_attribute 10, 0           @ suppress Tag_FP_arch
+#endif
+
+const register_init, align=3
     .quad 0x21f86d66c8ca00ce
     .quad 0x75b6ba21077c48ad
     .quad 0xed56bb2dcb3c7736
@@ -33,14 +39,21 @@ const register_init
     .quad 0x249214109d5d1c88
 endconst
 
-const error_message
-    .asciz "failed to preserve register"
+const error_message_fpscr
+    .asciz "failed to preserve register FPSCR, changed bits: %x"
+error_message_gpr:
+    .asciz "failed to preserve register r%d"
+error_message_vfp:
+    .asciz "failed to preserve register d%d"
 endconst
 
 @ max number of args used by any asm function.
 #define MAX_ARGS 15
 
-#define ARG_STACK 4*(MAX_ARGS - 2)
+#define ARG_STACK 4*(MAX_ARGS - 4)
+
+@ align the used stack space to 8 to preserve the stack alignment
+#define ARG_STACK_A (((ARG_STACK + pushed + 7) & ~7) - pushed)
 
 .macro clobbercheck variant
 .equ pushed, 4*9
@@ -59,10 +72,10 @@ function checkasm_checked_call_\variant, export=1
 .endif
     ldm         r12, {r4-r11}
 
-    sub         sp,  sp,  #ARG_STACK
+    sub         sp,  sp,  #ARG_STACK_A
 .equ pos, 0
-.rept MAX_ARGS-2
-    ldr         r12, [sp, #ARG_STACK + pushed + 8 + pos]
+.rept MAX_ARGS-4
+    ldr         r12, [sp, #ARG_STACK_A + pushed + 8 + pos]
     str         r12, [sp, #pos]
 .equ pos, pos + 4
 .endr
@@ -70,45 +83,51 @@ function checkasm_checked_call_\variant, export=1
     mov         r12, r0
     mov         r0,  r2
     mov         r1,  r3
-    ldrd        r2,  r3,  [sp, #ARG_STACK + pushed]
+    ldrd        r2,  r3,  [sp, #ARG_STACK_A + pushed]
     blx         r12
-    add         sp,  sp,  #ARG_STACK
+    add         sp,  sp,  #ARG_STACK_A
 
     push        {r0, r1}
     movrel      r12, register_init
-    mov         r3,  #0
 .ifc \variant, vfp
-.macro check_reg_vfp, dreg, inc=8
-    ldrd        r0,  r1,  [r12], #\inc
-    vmov        r2,  lr,  \dreg
-    eor         r0,  r0,  r2
-    eor         r1,  r1,  lr
-    orr         r3,  r3,  r0
-    orr         r3,  r3,  r1
+.macro check_reg_vfp, dreg, offset
+    ldrd        r2,  r3,  [r12, #8 * (\offset)]
+    vmov        r0,  lr,  \dreg
+    eor         r2,  r2,  r0
+    eor         r3,  r3,  lr
+    orrs        r2,  r2,  r3
+    bne         4f
 .endm
 
-.irp n, 8, 9, 10, 11, 12, 13, 14
-    check_reg_vfp d\n
+.irp n, 8, 9, 10, 11, 12, 13, 14, 15
+    @ keep track of the checked double/SIMD register
+    mov         r1,  #\n
+    check_reg_vfp d\n, \n-8
 .endr
-    check_reg_vfp d15, -56
 .purgem check_reg_vfp
 
-    fmrx        r0,  FPSCR
-    ldr         r1,  [sp, #8]
-    eor         r0,  r0,  r1
+    fmrx        r1,  FPSCR
+    ldr         r3,  [sp, #8]
+    eor         r1,  r1,  r3
+    @ Ignore changes in bits 0-4 and 7
+    bic         r1,  r1,  #0x9f
     @ Ignore changes in the topmost 5 bits
-    lsl         r0,  r0,  #5
-    orr         r3,  r3,  r0
+    bics        r1,  r1,  #0xf8000000
+    bne         3f
 .endif
 
+    @ keep track of the checked GPR
+    mov         r1,  #4
 .macro check_reg reg1, reg2=
-    ldrd        r0,  r1,  [r12], #8
-    eor         r0,  r0,  \reg1
-    orrs        r3,  r3,  r0
+    ldrd        r2,  r3,  [r12], #8
+    eors        r2,  r2,  \reg1
+    bne         2f
+    add         r1,  r1,  #1
 .ifnb \reg2
-    eor         r1,  r1,  \reg2
-    orrs        r3,  r3,  r1
+    eors        r3,  r3,  \reg2
+    bne         2f
 .endif
+    add         r1,  r1,  #1
 .endm
     check_reg   r4,  r5
     check_reg   r6,  r7
@@ -121,9 +140,16 @@ function checkasm_checked_call_\variant, export=1
     check_reg   r10, r11
 .purgem check_reg
 
-    beq         0f
-
-    movrel      r0, error_message
+    b           0f
+4:
+    movrel      r0, error_message_vfp
+    b           1f
+3:
+    movrel      r0, error_message_fpscr
+    b           1f
+2:
+    movrel      r0, error_message_gpr
+1:
     blx         X(checkasm_fail_func)
 0:
     pop         {r0, r1}

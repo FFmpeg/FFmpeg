@@ -465,7 +465,7 @@ static inline void mv_pred_direct(AVSContext *h, cavs_vector *pmv_fw,
                                   cavs_vector *col_mv)
 {
     cavs_vector *pmv_bw = pmv_fw + MV_BWD_OFFS;
-    int den = h->direct_den[col_mv->ref];
+    unsigned den = h->direct_den[col_mv->ref];
     int m = FF_SIGNBIT(col_mv->x);
 
     pmv_fw->dist = h->dist[1];
@@ -545,7 +545,7 @@ static inline int dequant(AVSContext *h, int16_t *level_buf, uint8_t *run_buf,
  */
 static int decode_residual_block(AVSContext *h, GetBitContext *gb,
                                  const struct dec_2dvlc *r, int esc_golomb_order,
-                                 int qp, uint8_t *dst, int stride)
+                                 int qp, uint8_t *dst, ptrdiff_t stride)
 {
     int i, esc_code, level, mask, ret;
     unsigned int level_code, run;
@@ -615,7 +615,7 @@ static inline int decode_residual_inter(AVSContext *h)
 
     /* get quantizer */
     if (h->cbp && !h->qp_fixed)
-        h->qp = (h->qp + get_se_golomb(&h->gb)) & 63;
+        h->qp = (h->qp + (unsigned)get_se_golomb(&h->gb)) & 63;
     for (block = 0; block < 4; block++)
         if (h->cbp & (1 << block))
             decode_residual_block(h, &h->gb, inter_dec, 0, h->qp,
@@ -684,7 +684,7 @@ static int decode_mb_i(AVSContext *h, int cbp_code)
     }
     h->cbp = cbp_tab[cbp_code][0];
     if (h->cbp && !h->qp_fixed)
-        h->qp = (h->qp + get_se_golomb(gb)) & 63; //qp_delta
+        h->qp = (h->qp + (unsigned)get_se_golomb(gb)) & 63; //qp_delta
 
     /* luma intra prediction interleaved with residual decode/transform/add */
     for (block = 0; block < 4; block++) {
@@ -1031,6 +1031,10 @@ static int decode_pic(AVSContext *h)
     h->scale_den[1] = h->dist[1] ? 512/h->dist[1] : 0;
     if (h->cur.f->pict_type == AV_PICTURE_TYPE_B) {
         h->sym_factor = h->dist[0] * h->scale_den[1];
+        if (FFABS(h->sym_factor) > 32768) {
+            av_log(h->avctx, AV_LOG_ERROR, "sym_factor %d too large\n", h->sym_factor);
+            return AVERROR_INVALIDDATA;
+        }
     } else {
         h->direct_den[0] = h->dist[0] ? 16384 / h->dist[0] : 0;
         h->direct_den[1] = h->dist[1] ? 16384 / h->dist[1] : 0;
@@ -1066,10 +1070,14 @@ static int decode_pic(AVSContext *h)
     } else {
         h->alpha_offset = h->beta_offset  = 0;
     }
+
+    ret = 0;
     if (h->cur.f->pict_type == AV_PICTURE_TYPE_I) {
         do {
             check_for_slice(h);
-            decode_mb_i(h, 0);
+            ret = decode_mb_i(h, 0);
+            if (ret < 0)
+                break;
         } while (ff_cavs_next_mb(h));
     } else if (h->cur.f->pict_type == AV_PICTURE_TYPE_P) {
         do {
@@ -1082,10 +1090,12 @@ static int decode_pic(AVSContext *h)
             } else {
                 mb_type = get_ue_golomb(&h->gb) + P_SKIP + h->skip_mode_flag;
                 if (mb_type > P_8X8)
-                    decode_mb_i(h, mb_type - P_8X8 - 1);
+                    ret = decode_mb_i(h, mb_type - P_8X8 - 1);
                 else
                     decode_mb_p(h, mb_type);
             }
+            if (ret < 0)
+                break;
         } while (ff_cavs_next_mb(h));
     } else { /* AV_PICTURE_TYPE_B */
         do {
@@ -1094,23 +1104,25 @@ static int decode_pic(AVSContext *h)
             if (h->skip_mode_flag && (skip_count < 0))
                 skip_count = get_ue_golomb(&h->gb);
             if (h->skip_mode_flag && skip_count--) {
-                decode_mb_b(h, B_SKIP);
+                ret = decode_mb_b(h, B_SKIP);
             } else {
                 mb_type = get_ue_golomb(&h->gb) + B_SKIP + h->skip_mode_flag;
                 if (mb_type > B_8X8)
-                    decode_mb_i(h, mb_type - B_8X8 - 1);
+                    ret = decode_mb_i(h, mb_type - B_8X8 - 1);
                 else
-                    decode_mb_b(h, mb_type);
+                    ret = decode_mb_b(h, mb_type);
             }
+            if (ret < 0)
+                break;
         } while (ff_cavs_next_mb(h));
     }
     emms_c();
-    if (h->cur.f->pict_type != AV_PICTURE_TYPE_B) {
+    if (ret >= 0 && h->cur.f->pict_type != AV_PICTURE_TYPE_B) {
         av_frame_unref(h->DPB[1].f);
         FFSWAP(AVSFrame, h->cur, h->DPB[1]);
         FFSWAP(AVSFrame, h->DPB[0], h->DPB[1]);
     }
-    return 0;
+    return ret;
 }
 
 /*****************************************************************************

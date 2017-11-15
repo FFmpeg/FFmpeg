@@ -139,7 +139,6 @@ AVFilter ff_af_asidedata = {
     .priv_size     = sizeof(SideDataContext),
     .priv_class    = &asidedata_class,
     .init          = init,
-    .query_formats = ff_query_formats_all,
     .inputs        = ainputs,
     .outputs       = aoutputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,

@@ -199,7 +199,7 @@ static void dequant_subband_ ## PX ## _c(uint8_t *src, uint8_t *dst, ptrdiff_t s
         for (i = 0; i < tot_h; i++) {                                                      \
             c = *src_r++;                                                                  \
             sign = FFSIGN(c)*(!!c);                                                        \
-            c = (FFABS(c)*qf + qs) >> 2;                                                   \
+            c = (FFABS(c)*(unsigned)qf + qs) >> 2;                                                   \
             *dst_r++ = c*sign;                                                             \
         }                                                                                  \
         src += tot_h << (sizeof(PX) >> 1);                                                 \

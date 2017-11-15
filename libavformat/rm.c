@@ -43,5 +43,6 @@ const AVCodecTag ff_rm_codec_tags[] = {
     { AV_CODEC_ID_AAC,    MKTAG('r','a','a','c') },
     { AV_CODEC_ID_AAC,    MKTAG('r','a','c','p') },
     { AV_CODEC_ID_RALF,   MKTAG('L','S','D',':') },
+    { AV_CODEC_ID_CLEARVIDEO, MKTAG('C','L','V','1') },
     { AV_CODEC_ID_NONE },
 };

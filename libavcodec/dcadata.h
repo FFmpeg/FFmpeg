@@ -23,15 +23,21 @@
 
 #include <stdint.h>
 
+#include "dcahuff.h"
+
+#define DCA_ADPCM_COEFFS        4
+#define DCA_ADPCM_VQCODEBOOK_SZ 4096
+
 extern const uint32_t ff_dca_bit_rates[32];
 
 extern const uint8_t ff_dca_channels[16];
 
-extern const uint8_t ff_dca_bits_per_sample[8];
-
 extern const uint8_t ff_dca_dmix_primary_nch[8];
 
-extern const int16_t ff_dca_adpcm_vb[4096][4];
+extern const uint8_t ff_dca_quant_index_sel_nbits[DCA_CODE_BOOKS];
+extern const uint8_t ff_dca_quant_index_group_size[DCA_CODE_BOOKS];
+
+extern const int16_t ff_dca_adpcm_vb[DCA_ADPCM_VQCODEBOOK_SZ][DCA_ADPCM_COEFFS];
 
 extern const uint32_t ff_dca_scale_factor_quant6[64];
 extern const uint32_t ff_dca_scale_factor_quant7[128];

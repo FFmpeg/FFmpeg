@@ -12,7 +12,7 @@
 
 @chapter Synopsis
 
-ffmpeg [@var{global_options}] @{[@var{input_file_options}] -i @file{input_file}@} ... @{[@var{output_file_options}] @file{output_file}@} ...
+ffmpeg [@var{global_options}] @{[@var{input_file_options}] -i @file{input_url}@} ... @{[@var{output_file_options}] @file{output_url}@} ...
 
 @chapter Description
 @c man begin DESCRIPTION
@@ -24,10 +24,10 @@ rates and resize video on the fly with a high quality polyphase filter.
 @command{ffmpeg} reads from an arbitrary number of input "files" (which can be regular
 files, pipes, network streams, grabbing devices, etc.), specified by the
 @code{-i} option, and writes to an arbitrary number of output "files", which are
-specified by a plain output filename. Anything found on the command line which
-cannot be interpreted as an option is considered to be an output filename.
+specified by a plain output url. Anything found on the command line which
+cannot be interpreted as an option is considered to be an output url.
 
-Each input or output file can, in principle, contain any number of streams of
+Each input or output url can, in principle, contain any number of streams of
 different types (video/audio/subtitle/attachment/data). The allowed number and/or
 types of streams may be limited by the container format. Selecting which
 streams from which inputs will go into which output is either done automatically
@@ -243,8 +243,8 @@ Force input or output file format. The format is normally auto detected for inpu
 files and guessed from the file extension for output files, so this option is not
 needed in most cases.
 
-@item -i @var{filename} (@emph{input})
-input file name
+@item -i @var{url} (@emph{input})
+input file url
 
 @item -y (@emph{global})
 Overwrite output files without asking.
@@ -281,7 +281,7 @@ libx264, and the 138th audio, which will be encoded with libvorbis.
 When used as an input option (before @code{-i}), limit the @var{duration} of
 data read from the input file.
 
-When used as an output option (before an output filename), stop writing the
+When used as an output option (before an output url), stop writing the
 output after its duration reaches @var{duration}.
 
 @var{duration} must be a time duration specification,
@@ -310,7 +310,7 @@ extra segment between the seek point and @var{position} will be decoded and
 discarded. When doing stream copy or when @option{-noaccurate_seek} is used, it
 will be preserved.
 
-When used as an output option (before an output filename), decodes but discards
+When used as an output option (before an output url), decodes but discards
 input until the timestamps reach @var{position}.
 
 @var{position} must be a time duration specification,
@@ -357,6 +357,40 @@ To set the language of the first audio stream:
 ffmpeg -i INPUT -metadata:s:a:0 language=eng OUTPUT
 @end example
 
+@item -disposition[:stream_specifier] @var{value} (@emph{output,per-stream})
+Sets the disposition for a stream.
+
+This option overrides the disposition copied from the input stream. It is also
+possible to delete the disposition by setting it to 0.
+
+The following dispositions are recognized:
+@table @option
+@item default
+@item dub
+@item original
+@item comment
+@item lyrics
+@item karaoke
+@item forced
+@item hearing_impaired
+@item visual_impaired
+@item clean_effects
+@item captions
+@item descriptions
+@item metadata
+@end table
+
+For example, to make the second audio stream the default stream:
+@example
+ffmpeg -i in.mkv -disposition:a:1 default out.mkv
+@end example
+
+To make the second subtitle stream the default stream and remove the default
+disposition from the first subtitle stream:
+@example
+ffmpeg -i INPUT -disposition:s:0 0 -disposition:s:1 default OUTPUT
+@end example
+
 @item -program [title=@var{title}:][program_num=@var{program_num}:]st=@var{stream}[:st=@var{stream}...] (@emph{output})
 
 Creates a program with the specified @var{title}, @var{program_num} and adds the specified
@@ -380,7 +414,8 @@ ffmpeg -i myfile.avi -target vcd -bf 2 /tmp/vcd.mpg
 @end example
 
 @item -dframes @var{number} (@emph{output})
-Set the number of data frames to output. This is an alias for @code{-frames:d}.
+Set the number of data frames to output. This is an obsolete alias for
+@code{-frames:d}, which you should use instead.
 
 @item -frames[:@var{stream_specifier}] @var{framecount} (@emph{output,per-stream})
 Stop writing to the stream after @var{framecount} frames.
@@ -414,6 +449,11 @@ want to create filtergraphs with multiple inputs and/or outputs.
 This option is similar to @option{-filter}, the only difference is that its
 argument is the name of the file from which a filtergraph description is to be
 read.
+
+@item -filter_threads @var{nb_threads} (@emph{global})
+Defines how many threads are used to process a filter pipeline. Each pipeline
+will produce a thread pool with this many threads available for parallel processing.
+The default is the number of available CPUs.
 
 @item -pre[:@var{stream_specifier}] @var{preset_name} (@emph{output,per-stream})
 Specify the preset for matching stream(s).
@@ -490,7 +530,8 @@ Disable automatically rotating video based on file metadata.
 
 @table @option
 @item -vframes @var{number} (@emph{output})
-Set the number of video frames to output. This is an alias for @code{-frames:v}.
+Set the number of video frames to output. This is an obsolete alias for
+@code{-frames:v}, which you should use instead.
 @item -r[:@var{stream_specifier}] @var{fps} (@emph{input/output,per-stream})
 Set frame rate (Hz value, fraction or abbreviation).
 
@@ -597,6 +638,16 @@ Calculate PSNR of compressed frames.
 Dump video coding statistics to @file{vstats_HHMMSS.log}.
 @item -vstats_file @var{file}
 Dump video coding statistics to @var{file}.
+@item -vstats_version @var{file}
+Specifies which version of the vstats format to use. Default is 2.
+
+version = 1 :
+
+@code{frame= %5d q= %2.1f PSNR= %6.2f f_size= %6d s_size= %8.0fkB time= %0.3f br= %7.1fkbits/s avg_br= %7.1fkbits/s}
+
+version > 1:
+
+@code{out= %2d st= %2d frame= %5d q= %2.1f PSNR= %6.2f f_size= %6d s_size= %8.0fkB time= %0.3f br= %7.1fkbits/s avg_br= %7.1fkbits/s}
 @item -top[:@var{stream_specifier}] @var{n} (@emph{output,per-stream})
 top=1/bottom=0/auto=-1 field first
 @item -dc @var{precision}
@@ -664,6 +715,67 @@ would be more efficient.
 When doing stream copy, copy also non-key frames found at the
 beginning.
 
+@item -init_hw_device @var{type}[=@var{name}][:@var{device}[,@var{key=value}...]]
+Initialise a new hardware device of type @var{type} called @var{name}, using the
+given device parameters.
+If no name is specified it will receive a default name of the form "@var{type}%d".
+
+The meaning of @var{device} and the following arguments depends on the
+device type:
+@table @option
+
+@item cuda
+@var{device} is the number of the CUDA device.
+
+@item dxva2
+@var{device} is the number of the Direct3D 9 display adapter.
+
+@item vaapi
+@var{device} is either an X11 display name or a DRM render node.
+If not specified, it will attempt to open the default X11 display (@emph{$DISPLAY})
+and then the first DRM render node (@emph{/dev/dri/renderD128}).
+
+@item vdpau
+@var{device} is an X11 display name.
+If not specified, it will attempt to open the default X11 display (@emph{$DISPLAY}).
+
+@item qsv
+@var{device} selects a value in @samp{MFX_IMPL_*}. Allowed values are:
+@table @option
+@item auto
+@item sw
+@item hw
+@item auto_any
+@item hw_any
+@item hw2
+@item hw3
+@item hw4
+@end table
+If not specified, @samp{auto_any} is used.
+(Note that it may be easier to achieve the desired result for QSV by creating the
+platform-appropriate subdevice (@samp{dxva2} or @samp{vaapi}) and then deriving a
+QSV device from that.)
+
+@end table
+
+@item -init_hw_device @var{type}[=@var{name}]@@@var{source}
+Initialise a new hardware device of type @var{type} called @var{name},
+deriving it from the existing device with the name @var{source}.
+
+@item -init_hw_device list
+List all hardware device types supported in this build of ffmpeg.
+
+@item -filter_hw_device @var{name}
+Pass the hardware device called @var{name} to all filters in any filter graph.
+This can be used to set the device to upload to with the @code{hwupload} filter,
+or the device to map to with the @code{hwmap} filter.  Other filters may also
+make use of this parameter when they require a hardware device.  Note that this
+is typically only required when the input is not already in hardware frames -
+when it is, filters will derive the device they require from the context of the
+frames they receive as input.
+
+This is a global setting, so all filters will receive the same device.
+
 @item -hwaccel[:@var{stream_specifier}] @var{hwaccel} (@emph{input,per-stream})
 Use hardware acceleration to decode the matching stream(s). The allowed values
 of @var{hwaccel} are:
@@ -674,14 +786,14 @@ Do not use any hardware acceleration (the default).
 @item auto
 Automatically select the hardware acceleration method.
 
-@item vda
-Use Apple VDA hardware acceleration.
-
 @item vdpau
 Use VDPAU (Video Decode and Presentation API for Unix) hardware acceleration.
 
 @item dxva2
 Use DXVA2 (DirectX Video Acceleration) hardware acceleration.
+
+@item vaapi
+Use VAAPI (Video Acceleration API) hardware acceleration.
 
 @item qsv
 Use the Intel QuickSync Video acceleration for video transcoding.
@@ -706,33 +818,11 @@ useful for testing.
 @item -hwaccel_device[:@var{stream_specifier}] @var{hwaccel_device} (@emph{input,per-stream})
 Select a device to use for hardware acceleration.
 
-This option only makes sense when the @option{-hwaccel} option is also
-specified. Its exact meaning depends on the specific hardware acceleration
-method chosen.
-
-@table @option
-@item vdpau
-For VDPAU, this option specifies the X11 display/screen to use. If this option
-is not specified, the value of the @var{DISPLAY} environment variable is used
-
-@item dxva2
-For DXVA2, this option should contain the number of the display adapter to use.
-If this option is not specified, the default adapter is used.
-
-@item qsv
-For QSV, this option corresponds to the values of MFX_IMPL_* . Allowed values
-are:
-@table @option
-@item auto
-@item sw
-@item hw
-@item auto_any
-@item hw_any
-@item hw2
-@item hw3
-@item hw4
-@end table
-@end table
+This option only makes sense when the @option{-hwaccel} option is also specified.
+It can either refer to an existing device created with @option{-init_hw_device}
+by name, or it can create a new device as if
+@samp{-init_hw_device} @var{type}:@var{hwaccel_device}
+were called immediately before.
 
 @item -hwaccels
 List all hardware acceleration methods supported in this build of ffmpeg.
@@ -743,7 +833,8 @@ List all hardware acceleration methods supported in this build of ffmpeg.
 
 @table @option
 @item -aframes @var{number} (@emph{output})
-Set the number of audio frames to output. This is an alias for @code{-frames:a}.
+Set the number of audio frames to output. This is an obsolete alias for
+@code{-frames:a}, which you should use instead.
 @item -ar[:@var{stream_specifier}] @var{freq} (@emph{input/output,per-stream})
 Set the audio sampling frequency. For output streams it is set by
 default to the frequency of the corresponding input stream. For input
@@ -822,7 +913,7 @@ Set the size of the canvas used to render subtitles.
 @section Advanced options
 
 @table @option
-@item -map [-]@var{input_file_id}[:@var{stream_specifier}][,@var{sync_file_id}[:@var{stream_specifier}]] | @var{[linklabel]} (@emph{output})
+@item -map [-]@var{input_file_id}[:@var{stream_specifier}][?][,@var{sync_file_id}[:@var{stream_specifier}]] | @var{[linklabel]} (@emph{output})
 
 Designate one or more input streams as a source for the output file. Each input
 stream is identified by the input file index @var{input_file_id} and
@@ -837,6 +928,11 @@ the source for output stream 1, etc.
 
 A @code{-} character before the stream identifier creates a "negative" mapping.
 It disables matching streams from already created mappings.
+
+A trailing @code{?} after the stream index will allow the map to be
+optional: if the map matches no streams the map will be ignored instead
+of failing. Note the map will still fail if an invalid input file index
+is used; such as if the map refers to a non-existent input.
 
 An alternative @var{[linklabel]} form will map outputs from complex filter
 graphs (see the @option{-filter_complex} option) to the output file.
@@ -875,6 +971,13 @@ To map all the streams except the second audio, use negative mappings
 ffmpeg -i INPUT -map 0 -map -0:a:1 OUTPUT
 @end example
 
+To map the video and audio streams from the first input, and using the
+trailing @code{?}, ignore the audio mapping if no audio streams exist in
+the first input:
+@example
+ffmpeg -i INPUT -map 0:v -map 0:a? OUTPUT
+@end example
+
 To pick the English audio stream:
 @example
 ffmpeg -i INPUT -map 0:m:language:eng OUTPUT
@@ -890,7 +993,7 @@ such streams is attempted.
 Allow input streams with unknown type to be copied instead of failing if copying
 such streams is attempted.
 
-@item -map_channel [@var{input_file_id}.@var{stream_specifier}.@var{channel_id}|-1][:@var{output_file_id}.@var{stream_specifier}]
+@item -map_channel [@var{input_file_id}.@var{stream_specifier}.@var{channel_id}|-1][?][:@var{output_file_id}.@var{stream_specifier}]
 Map an audio channel from a given input to an output. If
 @var{output_file_id}.@var{stream_specifier} is not set, the audio channel will
 be mapped on all the audio streams.
@@ -898,6 +1001,10 @@ be mapped on all the audio streams.
 Using "-1" instead of
 @var{input_file_id}.@var{stream_specifier}.@var{channel_id} will map a muted
 channel.
+
+A trailing @code{?} will allow the map_channel to be
+optional: if the map_channel matches no channel the map_channel will be ignored instead
+of failing.
 
 For example, assuming @var{INPUT} is a stereo audio file, you can switch the
 two audio channels with the following command:
@@ -944,6 +1051,13 @@ mono audio streams into one single stereo channel audio stream (and keep the
 video stream), you can use the following command:
 @example
 ffmpeg -i input.mkv -filter_complex "[0:1] [0:2] amerge" -c:a pcm_s16le -c:v copy output.mkv
+@end example
+
+To map the first two audio channels from the first input, and using the
+trailing @code{?}, ignore the audio channel mapping if the first input is
+mono instead of stereo:
+@example
+ffmpeg -i INPUT -map_channel 0.0.0 -map_channel 0.0.1? OUTPUT
 @end example
 
 @item -map_metadata[:@var{metadata_spec_out}] @var{infile}[:@var{metadata_spec_in}] (@emph{output,per-metadata})
@@ -1112,6 +1226,32 @@ Try to make the choice automatically, in order to generate a sane output.
 
 Default value is -1.
 
+@item -enc_time_base[:@var{stream_specifier}] @var{timebase} (@emph{output,per-stream})
+Set the encoder timebase. @var{timebase} is a floating point number,
+and can assume one of the following values:
+
+@table @option
+@item 0
+Assign a default value according to the media type.
+
+For video - use 1/framerate, for audio - use 1/samplerate.
+
+@item -1
+Use the input stream timebase when possible.
+
+If an input stream is not available, the default timebase will be used.
+
+@item >0
+Use the provided number as the timebase.
+
+This field can be provided as a ratio of two integers (e.g. 1:24, 1:48000)
+or as a floating point number (e.g. 0.04166, 2.0833e-5)
+@end table
+
+Default value is 0.
+
+@item -bitexact (@emph{input/output})
+Enable bitexact mode for (de)muxer and (de/en)coder
 @item -shortest (@emph{output})
 Finish encoding when the shortest input stream ends.
 @item -dts_delta_threshold
@@ -1129,7 +1269,7 @@ may be reassigned to a different value.
 For example, to set the stream 0 PID to 33 and the stream 1 PID to 36 for
 an output mpegts file:
 @example
-ffmpeg -i infile -streamid 0:33 -streamid 1:36 out.ts
+ffmpeg -i inurl -streamid 0:33 -streamid 1:36 out.ts
 @end example
 
 @item -bsf[:@var{stream_specifier}] @var{bitstream_filters} (@emph{output,per-stream})
@@ -1200,6 +1340,11 @@ To generate 5 seconds of pure red video using lavfi @code{color} source:
 @example
 ffmpeg -filter_complex 'color=c=red' -t 5 out.mkv
 @end example
+
+@item -filter_complex_threads @var{nb_threads} (@emph{global})
+Defines how many threads are used to process a filter_complex graph.
+Similar to filter_threads but used for @code{-filter_complex} graphs only.
+The default is the number of available CPUs.
 
 @item -lavfi @var{filtergraph} (@emph{global})
 Define a complex filtergraph, i.e. one with arbitrary number of inputs and/or
@@ -1493,7 +1638,7 @@ to enable LAME support by passing @code{--enable-libmp3lame} to configure.
 The mapping is particularly useful for DVD transcoding
 to get the desired audio language.
 
-NOTE: To see the supported input formats, use @code{ffmpeg -formats}.
+NOTE: To see the supported input formats, use @code{ffmpeg -demuxers}.
 
 @item
 You can extract images from a video, or create a video from many images:
@@ -1508,8 +1653,8 @@ output them in files named @file{foo-001.jpeg}, @file{foo-002.jpeg},
 etc. Images will be rescaled to fit the new WxH values.
 
 If you want to extract just a limited number of frames, you can use the
-above command in combination with the -vframes or -t option, or in
-combination with -ss to start extracting from a certain point in time.
+above command in combination with the @code{-frames:v} or @code{-t} option,
+or in combination with -ss to start extracting from a certain point in time.
 
 For creating a video from many images:
 @example

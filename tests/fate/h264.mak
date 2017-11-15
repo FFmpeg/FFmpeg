@@ -191,19 +191,33 @@ FATE_H264_REINIT_TESTS := large_420_8-to-small_420_8                    \
 FATE_H264  := $(FATE_H264:%=fate-h264-conformance-%)                    \
               $(FATE_H264_REINIT_TESTS:%=fate-h264-reinit-%)            \
               fate-h264-extreme-plane-pred                              \
+              fate-h264-intra-refresh-recovery                          \
               fate-h264-lossless                                        \
               fate-h264-3386                                            \
+              fate-h264-missing-frame                                   \
+              fate-h264-ref-pic-mod-overflow                            \
 
 FATE_H264-$(call DEMDEC, H264, H264) += $(FATE_H264)
 FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-crop-to-container
+
+# this sample has two stsd entries and needs to reload extradata
+FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-extradata-reload
+
 FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-interlace-crop
 
 # this sample has invalid reference list modification, but decodes fine
 # by using a previous ref frame instead of a missing one
 FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-invalid-ref-mod
 
+# this sample gives an explicit size for a single NAL unit, but contains
+# several NAL units
+FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-mixed-nal-coding
+
 # this sample has invalid extradata that is not escaped
 FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-unescaped-extradata
+
+# this sample contains field-coded frames, with both fields in a single packet
+FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-twofields-packet
 
 FATE_H264-$(call ALLYES, MOV_DEMUXER H264_MP4TOANNEXB_BSF H264_MUXER) += fate-h264-bsf-mp4toannexb
 FATE_H264-$(call DEMDEC, MATROSKA, H264) += fate-h264-direct-bff
@@ -405,21 +419,27 @@ fate-h264-conformance-sva_fm1_e:                  CMD = framecrc -vsync drop -i 
 fate-h264-conformance-sva_nl1_b:                  CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/SVA_NL1_B.264
 fate-h264-conformance-sva_nl2_e:                  CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/h264-conformance/SVA_NL2_E.264
 
-fate-h264-bsf-mp4toannexb:                        CMD = md5 -i $(TARGET_SAMPLES)/h264/interlaced_crop.mp4 -vcodec copy -f h264
+fate-h264-bsf-mp4toannexb:                        CMD = md5 -i $(TARGET_SAMPLES)/h264/interlaced_crop.mp4 -c:v copy -f h264
 
 fate-h264-crop-to-container:                      CMD = framemd5 -i $(TARGET_SAMPLES)/h264/crop-to-container-dims-canon.mov
-fate-h264-extreme-plane-pred:                     CMD = framemd5 -i $(TARGET_SAMPLES)/h264/extreme-plane-pred.h264
-fate-h264-interlace-crop:                         CMD = framecrc -i $(TARGET_SAMPLES)/h264/interlaced_crop.mp4 -vframes 3
-fate-h264-lossless:                               CMD = framecrc -i $(TARGET_SAMPLES)/h264/lossless.h264
 fate-h264-direct-bff:                             CMD = framecrc -i $(TARGET_SAMPLES)/h264/direct-bff.mkv
+fate-h264-extradata-reload:                       CMD = framemd5 -i $(TARGET_SAMPLES)/h264/extradata-reload-multi-stsd.mov
+fate-h264-extreme-plane-pred:                     CMD = framemd5 -i $(TARGET_SAMPLES)/h264/extreme-plane-pred.h264
+fate-h264-interlace-crop:                         CMD = framecrc -i $(TARGET_SAMPLES)/h264/interlaced_crop.mp4 -frames:v 3
 fate-h264-brokensps-2580:                         CMD = framecrc -i $(TARGET_SAMPLES)/h264/brokensps.flv -vf format=yuv420p,scale=w=192:h=144 -sws_flags bitexact+bilinear
 fate-h264-xavc-4389:                              CMD = framecrc -i $(TARGET_SAMPLES)/h264/SonyXAVC_LongGOP_green_pixelation_early_Frames.MXF -pix_fmt yuv422p10le
-fate-h264-attachment-631:                         CMD = framecrc -i $(TARGET_SAMPLES)/h264/attachment631-small.mp4 -an -max_error_rate 0.95
+fate-h264-attachment-631:                         CMD = framecrc -i $(TARGET_SAMPLES)/h264/attachment631-small.mp4 -an -max_error_rate 0.96
 fate-h264-skip-nokey:                             CMD = framecrc -skip_frame nokey -i $(TARGET_SAMPLES)/h264/h264_intra_first-small.ts
 fate-h264-skip-nointra:                           CMD = framecrc -skip_frame nointra -i $(TARGET_SAMPLES)/h264/h264_intra_first-small.ts
+fate-h264-intra-refresh-recovery:                 CMD = framecrc -i $(TARGET_SAMPLES)/h264/intra_refresh.h264 -frames:v 10
 fate-h264-invalid-ref-mod:                        CMD = framecrc -i $(TARGET_SAMPLES)/h264/h264refframeregression.mp4 -an -frames 10 -pix_fmt yuv420p10le
+fate-h264-lossless:                               CMD = framecrc -i $(TARGET_SAMPLES)/h264/lossless.h264
+fate-h264-mixed-nal-coding:                       CMD = framecrc -i $(TARGET_SAMPLES)/h264/mixed-nal-coding.mp4
+fate-h264-ref-pic-mod-overflow:                   CMD = framecrc -i $(TARGET_SAMPLES)/h264/ref-pic-mod-overflow.h264
+fate-h264-twofields-packet:                       CMD = framecrc -i $(TARGET_SAMPLES)/h264/twofields_packet.mp4 -an -frames 30
 fate-h264-unescaped-extradata:                    CMD = framecrc -i $(TARGET_SAMPLES)/h264/unescaped_extradata.mp4 -an -frames 10
 fate-h264-3386:                                   CMD = framecrc -i $(TARGET_SAMPLES)/h264/bbc2.sample.h264
+fate-h264-missing-frame:                          CMD = framecrc -i $(TARGET_SAMPLES)/h264/nondeterministic_cut.h264
 
 fate-h264-reinit-%:                               CMD = framecrc -i $(TARGET_SAMPLES)/h264/$(@:fate-h264-%=%).h264 -vf format=yuv444p10le,scale=w=352:h=288
 

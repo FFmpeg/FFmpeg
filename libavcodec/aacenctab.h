@@ -36,12 +36,23 @@
 /** Total number of codebooks, including special ones **/
 #define CB_TOT_ALL 15
 
-#define AAC_MAX_CHANNELS 8
+#define AAC_MAX_CHANNELS 16
 
 extern const uint8_t *ff_aac_swb_size_1024[];
 extern const int      ff_aac_swb_size_1024_len;
 extern const uint8_t *ff_aac_swb_size_128[];
 extern const int      ff_aac_swb_size_128_len;
+
+/* Supported layouts without using a PCE */
+static const int64_t aac_normal_chan_layouts[7] = {
+    AV_CH_LAYOUT_MONO,
+    AV_CH_LAYOUT_STEREO,
+    AV_CH_LAYOUT_SURROUND,
+    AV_CH_LAYOUT_4POINT0,
+    AV_CH_LAYOUT_5POINT0_BACK,
+    AV_CH_LAYOUT_5POINT1_BACK,
+    AV_CH_LAYOUT_7POINT1,
+};
 
 /** default channel configurations */
 static const uint8_t aac_chan_configs[AAC_MAX_CHANNELS][6] = {

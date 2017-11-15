@@ -142,7 +142,7 @@ static void mp3_parse_info_tag(AVFormatContext *s, AVStream *st,
                                MPADecodeHeader *c, uint32_t spf)
 {
 #define LAST_BITS(k, n) ((k) & ((1 << (n)) - 1))
-#define MIDDLE_BITS(k, m, n) LAST_BITS((k) >> (m), ((n) - (m)))
+#define MIDDLE_BITS(k, m, n) LAST_BITS((k) >> (m), ((n) - (m) + 1))
 
     uint16_t crc;
     uint32_t v;
@@ -349,6 +349,9 @@ static int mp3_read_header(AVFormatContext *s)
     int ret;
     int i;
 
+    s->metadata = s->internal->id3v2_meta;
+    s->internal->id3v2_meta = NULL;
+
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
@@ -367,7 +370,7 @@ static int mp3_read_header(AVFormatContext *s)
     if (!av_dict_get(s->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX))
         ff_id3v1_read(s);
 
-    if(s->pb->seekable)
+    if(s->pb->seekable & AVIO_SEEKABLE_NORMAL)
         mp3->filesize = avio_size(s->pb);
 
     if (mp3_parse_vbr_tags(s, st, off) < 0)
@@ -457,7 +460,8 @@ static int check(AVIOContext *pb, int64_t pos, uint32_t *ret_header)
         return CHECK_SEEK_FAILED;
 
     ret = avio_read(pb, &header_buf[0], 4);
-    if (ret < 0)
+    /* We should always find four bytes for a valid mpa header. */
+    if (ret < 4)
         return CHECK_SEEK_FAILED;
 
     header = AV_RB32(&header_buf[0]);

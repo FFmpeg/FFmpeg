@@ -113,10 +113,14 @@ static int sami_paragraph_to_ass(AVCodecContext *avctx, const char *src)
 
     av_bprint_clear(&sami->full);
     if (sami->source.len) {
-        ff_htmlmarkup_to_ass(avctx, dst_source, sami->source.str);
+        ret = ff_htmlmarkup_to_ass(avctx, dst_source, sami->source.str);
+        if (ret < 0)
+            goto end;
         av_bprintf(&sami->full, "{\\i1}%s{\\i0}\\N", sami->encoded_source.str);
     }
-    ff_htmlmarkup_to_ass(avctx, dst_content, sami->content.str);
+    ret = ff_htmlmarkup_to_ass(avctx, dst_content, sami->content.str);
+    if (ret < 0)
+        goto end;
     av_bprintf(&sami->full, "%s", sami->encoded_content.str);
 
 end:

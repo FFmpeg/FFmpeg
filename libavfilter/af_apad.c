@@ -34,7 +34,7 @@
 #include "audio.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct APadContext {
     const AVClass *class;
     int64_t next_pts;
 
@@ -119,7 +119,7 @@ static int request_frame(AVFilterLink *outlink)
 
         av_samples_set_silence(outsamplesref->extended_data, 0,
                                n_out,
-                               av_frame_get_channels(outsamplesref),
+                               outsamplesref->channels,
                                outsamplesref->format);
 
         outsamplesref->pts = s->next_pts;

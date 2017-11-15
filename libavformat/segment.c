@@ -24,8 +24,6 @@
  * @url{http://tools.ietf.org/id/draft-pantos-http-live-streaming}
  */
 
-/* #define DEBUG */
-
 #include <float.h>
 #include <time.h>
 
@@ -87,7 +85,6 @@ typedef struct SegmentContext {
     int64_t clocktime_offset; //< clock offset for cutting the segments at regular clock time
     int64_t clocktime_wrap_duration; //< wrapping duration considered for starting a new segment
     int64_t last_val;      ///< remember last time for wrap around detection
-    int64_t last_cut;      ///< remember last cut
     int cut_pending;
     int header_written;    ///< whether we've already called avformat_write_header
 
@@ -114,7 +111,7 @@ typedef struct SegmentContext {
     int  write_header_trailer; /**< Set by a private option. */
     char *header_filename;  ///< filename to write the output header to
 
-    int reset_timestamps;  ///< reset timestamps at the begin of each segment
+    int reset_timestamps;  ///< reset timestamps at the beginning of each segment
     int64_t initial_offset;    ///< initial timestamps offset, expressed in microseconds
     char *reference_stream_specifier; ///< reference stream specifier
     int   reference_stream_index;
@@ -354,6 +351,9 @@ static int segment_end(AVFormatContext *s, int write_trailer, int is_last)
     int i;
     int err;
 
+    if (!oc || !oc->pb)
+        return AVERROR(EINVAL);
+
     av_write_frame(oc, NULL); /* Flush any buffered data (fragmented mp4) */
     if (write_trailer)
         ret = av_write_trailer(oc);
@@ -569,7 +569,7 @@ static int open_null_ctx(AVIOContext **ctx)
 static void close_null_ctxp(AVIOContext **pb)
 {
     av_freep(&(*pb)->buffer);
-    av_freep(pb);
+    avio_context_free(pb);
 }
 
 static int select_reference_stream(AVFormatContext *s)
@@ -798,9 +798,26 @@ static int seg_write_header(AVFormatContext *s)
 {
     SegmentContext *seg = s->priv_data;
     AVFormatContext *oc = seg->avf;
-    int ret;
+    int ret, i;
 
     if (!seg->header_written) {
+        for (i = 0; i < s->nb_streams; i++) {
+            AVStream *st = oc->streams[i];
+            AVCodecParameters *ipar, *opar;
+
+            ipar = s->streams[i]->codecpar;
+            opar = oc->streams[i]->codecpar;
+            avcodec_parameters_copy(opar, ipar);
+            if (!oc->oformat->codec_tag ||
+                av_codec_get_id (oc->oformat->codec_tag, ipar->codec_tag) == opar->codec_id ||
+                av_codec_get_tag(oc->oformat->codec_tag, ipar->codec_id) <= 0) {
+                opar->codec_tag = ipar->codec_tag;
+            } else {
+                opar->codec_tag = 0;
+            }
+            st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
+            st->time_base = s->streams[i]->time_base;
+        }
         ret = avformat_write_header(oc, NULL);
         if (ret < 0)
             return ret;
@@ -833,7 +850,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t usecs;
     int64_t wrapped_val;
 
-    if (!seg->avf)
+    if (!seg->avf || !seg->avf->pb)
         return AVERROR(EINVAL);
 
 calc_times:
@@ -850,10 +867,8 @@ calc_times:
             localtime_r(&sec, &ti);
             usecs = (int64_t)(ti.tm_hour * 3600 + ti.tm_min * 60 + ti.tm_sec) * 1000000 + (avgt % 1000000);
             wrapped_val = (usecs + seg->clocktime_offset) % seg->time;
-            if (seg->last_cut != usecs && wrapped_val < seg->last_val && wrapped_val < seg->clocktime_wrap_duration) {
+            if (wrapped_val < seg->last_val && wrapped_val < seg->clocktime_wrap_duration)
                 seg->cut_pending = 1;
-                seg->last_cut = usecs;
-            }
             seg->last_val = wrapped_val;
         } else {
             end_pts = seg->time * (seg->segment_count + 1);
@@ -978,6 +993,25 @@ fail:
     return ret;
 }
 
+static int seg_check_bitstream(struct AVFormatContext *s, const AVPacket *pkt)
+{
+    SegmentContext *seg = s->priv_data;
+    AVFormatContext *oc = seg->avf;
+    if (oc->oformat->check_bitstream) {
+        int ret = oc->oformat->check_bitstream(oc, pkt);
+        if (ret == 1) {
+            AVStream *st = s->streams[pkt->stream_index];
+            AVStream *ost = oc->streams[pkt->stream_index];
+            st->internal->bsfcs = ost->internal->bsfcs;
+            st->internal->nb_bsfcs = ost->internal->nb_bsfcs;
+            ost->internal->bsfcs = NULL;
+            ost->internal->nb_bsfcs = 0;
+        }
+        return ret;
+    }
+    return 1;
+}
+
 #define OFFSET(x) offsetof(SegmentContext, x)
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
@@ -1018,7 +1052,7 @@ static const AVOption options[] = {
 
     { "individual_header_trailer", "write header/trailer to each segment", OFFSET(individual_header_trailer), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, E },
     { "write_header_trailer", "write a header to the first segment and a trailer to the last one", OFFSET(write_header_trailer), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, E },
-    { "reset_timestamps", "reset timestamps at the begin of each segment", OFFSET(reset_timestamps), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, E },
+    { "reset_timestamps", "reset timestamps at the beginning of each segment", OFFSET(reset_timestamps), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, E },
     { "initial_offset", "set initial timestamp offset", OFFSET(initial_offset), AV_OPT_TYPE_DURATION, {.i64 = 0}, -INT64_MAX, INT64_MAX, E },
     { "write_empty_segments", "allow writing empty 'filler' segments", OFFSET(write_empty), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, E },
     { NULL },
@@ -1041,6 +1075,7 @@ AVOutputFormat ff_segment_muxer = {
     .write_packet   = seg_write_packet,
     .write_trailer  = seg_write_trailer,
     .deinit         = seg_free,
+    .check_bitstream = seg_check_bitstream,
     .priv_class     = &seg_class,
 };
 
@@ -1061,5 +1096,6 @@ AVOutputFormat ff_stream_segment_muxer = {
     .write_packet   = seg_write_packet,
     .write_trailer  = seg_write_trailer,
     .deinit         = seg_free,
+    .check_bitstream = seg_check_bitstream,
     .priv_class     = &sseg_class,
 };

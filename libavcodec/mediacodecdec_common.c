@@ -23,7 +23,6 @@
 #include <string.h>
 #include <sys/types.h>
 
-#include "libavutil/atomic.h"
 #include "libavutil/common.h"
 #include "libavutil/mem.h"
 #include "libavutil/log.h"
@@ -143,7 +142,7 @@ static enum AVPixelFormat mcdec_map_color_format(AVCodecContext *avctx,
 
 static void ff_mediacodec_dec_ref(MediaCodecDecContext *s)
 {
-    avpriv_atomic_int_add_and_fetch(&s->refcount, 1);
+    atomic_fetch_add(&s->refcount, 1);
 }
 
 static void ff_mediacodec_dec_unref(MediaCodecDecContext *s)
@@ -151,7 +150,7 @@ static void ff_mediacodec_dec_unref(MediaCodecDecContext *s)
     if (!s)
         return;
 
-    if (!avpriv_atomic_int_add_and_fetch(&s->refcount, -1)) {
+    if (atomic_fetch_sub(&s->refcount, 1) == 1) {
         if (s->codec) {
             ff_AMediaCodec_delete(s->codec);
             s->codec = NULL;
@@ -176,7 +175,7 @@ static void mediacodec_buffer_release(void *opaque, uint8_t *data)
 {
     AVMediaCodecBuffer *buffer = opaque;
     MediaCodecDecContext *ctx = buffer->ctx;
-    int released = avpriv_atomic_int_get(&buffer->released);
+    int released = atomic_load(&buffer->released);
 
     if (!released) {
         ff_AMediaCodec_releaseOutputBuffer(ctx->codec, buffer->index, 0);
@@ -221,7 +220,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         goto fail;
     }
 
-    buffer->released = 0;
+    atomic_init(&buffer->released, 0);
 
     frame->buf[0] = av_buffer_create(NULL,
                                      0,
@@ -283,10 +282,16 @@ static int mediacodec_wrap_sw_buffer(AVCodecContext *avctx,
      * on the last avpacket received which is not in sync with the frame:
      *   * N avpackets can be pushed before 1 frame is actually returned
      *   * 0-sized avpackets are pushed to flush remaining frames at EOS */
-    frame->pts = info->presentationTimeUs;
+    if (avctx->pkt_timebase.num && avctx->pkt_timebase.den) {
+        frame->pts = av_rescale_q(info->presentationTimeUs,
+                                      av_make_q(1, 1000000),
+                                      avctx->pkt_timebase);
+    } else {
+        frame->pts = info->presentationTimeUs;
+    }
 #if FF_API_PKT_PTS
 FF_DISABLE_DEPRECATION_WARNINGS
-    frame->pkt_pts = info->presentationTimeUs;
+    frame->pkt_pts = frame->pts;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     frame->pkt_dts = AV_NOPTS_VALUE;
@@ -465,7 +470,7 @@ int ff_mediacodec_dec_init(AVCodecContext *avctx, MediaCodecDecContext *s,
         AV_PIX_FMT_NONE,
     };
 
-    s->refcount = 1;
+    atomic_init(&s->refcount, 1);
 
     pix_fmt = ff_get_format(avctx, pix_fmts);
     if (pix_fmt == AV_PIX_FMT_MEDIACODEC) {
@@ -479,7 +484,7 @@ int ff_mediacodec_dec_init(AVCodecContext *avctx, MediaCodecDecContext *s,
 
     profile = ff_AMediaCodecProfile_getProfileFromAVCodecContext(avctx);
     if (profile < 0) {
-        av_log(avctx, AV_LOG_WARNING, "Unsupported or unknown profile");
+        av_log(avctx, AV_LOG_WARNING, "Unsupported or unknown profile\n");
     }
 
     s->codec_name = ff_AMediaCodecList_getCodecNameByType(mime, profile, 0, avctx);
@@ -614,7 +619,7 @@ int ff_mediacodec_dec_decode(AVCodecContext *avctx, MediaCodecDecContext *s,
             memcpy(data, pkt->data + offset, size);
             offset += size;
 
-            if (s->surface && avctx->pkt_timebase.num && avctx->pkt_timebase.den) {
+            if (avctx->pkt_timebase.num && avctx->pkt_timebase.den) {
                 pts = av_rescale_q(pts, avctx->pkt_timebase, av_make_q(1, 1000000));
             }
 
@@ -725,7 +730,7 @@ int ff_mediacodec_dec_decode(AVCodecContext *avctx, MediaCodecDecContext *s,
 
 int ff_mediacodec_dec_flush(AVCodecContext *avctx, MediaCodecDecContext *s)
 {
-    if (!s->surface || avpriv_atomic_int_get(&s->refcount) == 1) {
+    if (!s->surface || atomic_load(&s->refcount) == 1) {
         int ret;
 
         /* No frames (holding a reference to the codec) are retained by the
@@ -764,6 +769,13 @@ AVHWAccel ff_hevc_mediacodec_hwaccel = {
     .name    = "mediacodec",
     .type    = AVMEDIA_TYPE_VIDEO,
     .id      = AV_CODEC_ID_HEVC,
+    .pix_fmt = AV_PIX_FMT_MEDIACODEC,
+};
+
+AVHWAccel ff_mpeg2_mediacodec_hwaccel = {
+    .name    = "mediacodec",
+    .type    = AVMEDIA_TYPE_VIDEO,
+    .id      = AV_CODEC_ID_MPEG2VIDEO,
     .pix_fmt = AV_PIX_FMT_MEDIACODEC,
 };
 

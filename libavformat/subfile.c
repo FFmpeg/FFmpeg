@@ -102,7 +102,7 @@ static int subfile_read(URLContext *h, unsigned char *buf, int size)
     int ret;
 
     if (rest <= 0)
-        return 0;
+        return AVERROR_EOF;
     size = FFMIN(size, rest);
     ret = ffurl_read(c->h, buf, size);
     if (ret >= 0)

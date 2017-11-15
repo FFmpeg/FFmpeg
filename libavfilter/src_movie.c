@@ -37,7 +37,11 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/timestamp.h"
+
+#include "libavcodec/avcodec.h"
+
 #include "libavformat/avformat.h"
+
 #include "audio.h"
 #include "avfilter.h"
 #include "formats.h"
@@ -309,7 +313,10 @@ static av_cold int movie_common_init(AVFilterContext *ctx)
             return AVERROR(ENOMEM);
         pad.config_props  = movie_config_output_props;
         pad.request_frame = movie_request_frame;
-        ff_insert_outpad(ctx, i, &pad);
+        if ((ret = ff_insert_outpad(ctx, i, &pad)) < 0) {
+            av_freep(&pad.name);
+            return ret;
+        }
         if ( movie->st[i].st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
             !movie->st[i].st->codecpar->channel_layout) {
             ret = guess_channel_layout(&movie->st[i], i, ctx);
@@ -555,7 +562,7 @@ static int movie_push_frame(AVFilterContext *ctx, unsigned out_id)
         return 0;
     }
 
-    frame->pts = av_frame_get_best_effort_timestamp(frame);
+    frame->pts = frame->best_effort_timestamp;
     if (frame->pts != AV_NOPTS_VALUE) {
         if (movie->ts_offset)
             frame->pts += av_rescale_q_rnd(movie->ts_offset, AV_TIME_BASE_Q, outlink->time_base, AV_ROUND_UP);

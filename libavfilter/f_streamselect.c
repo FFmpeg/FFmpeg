@@ -48,12 +48,6 @@ static const AVOption streamselect_options[] = {
 
 AVFILTER_DEFINE_CLASS(streamselect);
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *in)
-{
-    StreamSelectContext *s = inlink->dst->priv;
-    return ff_framesync_filter_frame(&s->fs, inlink, in);
-}
-
 static int process_frame(FFFrameSync *fs)
 {
     AVFilterContext *ctx = fs->parent;
@@ -72,7 +66,7 @@ static int process_frame(FFFrameSync *fs)
                 AVFrame *out;
 
                 if (s->is_audio && s->last_pts[j] == in[j]->pts &&
-                    ctx->outputs[i]->frame_count > 0)
+                    ctx->outputs[i]->frame_count_in > 0)
                     continue;
                 out = av_frame_clone(in[j]);
                 if (!out)
@@ -90,10 +84,10 @@ static int process_frame(FFFrameSync *fs)
     return ret;
 }
 
-static int request_frame(AVFilterLink *outlink)
+static int activate(AVFilterContext *ctx)
 {
-    StreamSelectContext *s = outlink->src->priv;
-    return ff_framesync_request_frame(&s->fs, outlink);
+    StreamSelectContext *s = ctx->priv;
+    return ff_framesync_activate(&s->fs);
 }
 
 static int config_output(AVFilterLink *outlink)
@@ -151,9 +145,8 @@ static int config_output(AVFilterLink *outlink)
     return ff_framesync_configure(&s->fs);
 }
 
-static int parse_definition(AVFilterContext *ctx, int nb_pads, void *filter_frame, int is_audio)
+static int parse_definition(AVFilterContext *ctx, int nb_pads, int is_input, int is_audio)
 {
-    const int is_input = !!filter_frame;
     const char *padtype = is_input ? "in" : "out";
     int i = 0, ret = 0;
 
@@ -169,11 +162,9 @@ static int parse_definition(AVFilterContext *ctx, int nb_pads, void *filter_fram
         av_log(ctx, AV_LOG_DEBUG, "Add %s pad %s\n", padtype, pad.name);
 
         if (is_input) {
-            pad.filter_frame = filter_frame;
             ret = ff_insert_inpad(ctx, i, &pad);
         } else {
             pad.config_props  = config_output;
-            pad.request_frame = request_frame;
             ret = ff_insert_outpad(ctx, i, &pad);
         }
 
@@ -281,8 +272,8 @@ static av_cold int init(AVFilterContext *ctx)
     if (!s->last_pts)
         return AVERROR(ENOMEM);
 
-    if ((ret = parse_definition(ctx, s->nb_inputs, filter_frame, s->is_audio)) < 0 ||
-        (ret = parse_definition(ctx, nb_outputs, NULL, s->is_audio)) < 0)
+    if ((ret = parse_definition(ctx, s->nb_inputs, 1, s->is_audio)) < 0 ||
+        (ret = parse_definition(ctx, nb_outputs, 0, s->is_audio)) < 0)
         return ret;
 
     av_log(ctx, AV_LOG_DEBUG, "Configured with %d inpad and %d outpad\n",
@@ -332,6 +323,7 @@ AVFilter ff_vf_streamselect = {
     .query_formats   = query_formats,
     .process_command = process_command,
     .uninit          = uninit,
+    .activate        = activate,
     .priv_size       = sizeof(StreamSelectContext),
     .priv_class      = &streamselect_class,
     .flags           = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_DYNAMIC_OUTPUTS,
@@ -347,6 +339,7 @@ AVFilter ff_af_astreamselect = {
     .query_formats   = query_formats,
     .process_command = process_command,
     .uninit          = uninit,
+    .activate        = activate,
     .priv_size       = sizeof(StreamSelectContext),
     .priv_class      = &astreamselect_class,
     .flags           = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_DYNAMIC_OUTPUTS,

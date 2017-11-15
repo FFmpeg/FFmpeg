@@ -12,7 +12,7 @@
 
 @chapter Synopsis
 
-ffprobe [@var{options}] [@file{input_file}]
+ffprobe [@var{options}] [@file{input_url}]
 
 @chapter Description
 @c man begin DESCRIPTION
@@ -24,8 +24,8 @@ For example it can be used to check the format of the container used
 by a multimedia stream and the format and type of each media stream
 contained in it.
 
-If a filename is specified in input, ffprobe will try to open and
-probe the file content. If the file cannot be opened or recognized as
+If a url is specified in input, ffprobe will try to open and
+probe the url content. If the url cannot be opened or recognized as
 a multimedia file, a positive exit code is returned.
 
 ffprobe may be employed both as a standalone application or in
@@ -208,6 +208,13 @@ multimedia stream.
 The information for each single frame is printed within a dedicated
 section with name "FRAME" or "SUBTITLE".
 
+@item -show_log @var{loglevel}
+Show logging information from the decoder about each frame according to
+the value set in @var{loglevel}, (see @code{-loglevel}). This option requires @code{-show_frames}.
+
+The information for each log message is printed within a dedicated
+section with name "LOG".
+
 @item -show_streams
 Show information about each media stream contained in the input
 multimedia stream.
@@ -332,8 +339,8 @@ with name "PIXEL_FORMAT".
 Force bitexact output, useful to produce output which is not dependent
 on the specific build.
 
-@item -i @var{input_file}
-Read @var{input_file}.
+@item -i @var{input_url}
+Read @var{input_url}.
 
 @end table
 @c man end
@@ -464,7 +471,7 @@ Perform no escaping.
 @end table
 
 @item print_section, p
-Print the section name at the begin of each line if the value is
+Print the section name at the beginning of each line if the value is
 @code{1}, disable it with value set to @code{0}. Default value is
 @code{1}.
 

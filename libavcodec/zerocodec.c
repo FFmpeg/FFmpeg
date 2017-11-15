@@ -149,4 +149,5 @@ AVCodec ff_zerocodec_decoder = {
     .decode         = zerocodec_decode_frame,
     .close          = zerocodec_decode_close,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

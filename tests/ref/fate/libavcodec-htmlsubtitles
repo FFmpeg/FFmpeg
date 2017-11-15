@@ -1,0 +1,8 @@
+<<hello>> --> <<hello>>
+<<<b>hello</b>>> --> <<{\b1}hello{\b0}>>
+< hello < 2000 > world > --> < hello < 2000 > world >
+<h1>TITLE</h1> --> TITLE
+< font color=red >red</font> --> {\c&HFF&}red{\c}
+Foo <foo@bar.com> --> Foo <foo@bar.com>
+<b> foo <I> bar </B> bla </i> --> {\b1} foo {\i1} bar {\b0} bla {\i0}
+A<br>B<BR/>C<br  / >D<  Br >E<brk><brk/> --> A\NB\NC\ND\NE

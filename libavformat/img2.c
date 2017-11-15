@@ -65,6 +65,8 @@ const IdStrMap ff_img_tags[] = {
     { AV_CODEC_ID_SUNRAST,    "im24"     },
     { AV_CODEC_ID_SUNRAST,    "im32"     },
     { AV_CODEC_ID_SUNRAST,    "sunras"   },
+    { AV_CODEC_ID_SVG,        "svg"      },
+    { AV_CODEC_ID_SVG,        "svgz"     },
     { AV_CODEC_ID_JPEG2000,   "j2c"      },
     { AV_CODEC_ID_JPEG2000,   "jp2"      },
     { AV_CODEC_ID_JPEG2000,   "jpc"      },
@@ -75,6 +77,7 @@ const IdStrMap ff_img_tags[] = {
     { AV_CODEC_ID_V210X,      "yuv10"    },
     { AV_CODEC_ID_WEBP,       "webp"     },
     { AV_CODEC_ID_XBM,        "xbm"      },
+    { AV_CODEC_ID_XPM,        "xpm"      },
     { AV_CODEC_ID_XFACE,      "xface"    },
     { AV_CODEC_ID_XWD,        "xwd"      },
     { AV_CODEC_ID_NONE,       NULL       }

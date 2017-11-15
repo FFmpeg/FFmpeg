@@ -40,6 +40,7 @@
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "get_bits.h"
+#include "bytestream.h"
 #include "internal.h"
 #include "mpegaudio.h"
 #include "mpegaudiodsp.h"
@@ -1605,9 +1606,8 @@ static av_cold void qdm2_init_static_data(void) {
 static av_cold int qdm2_decode_init(AVCodecContext *avctx)
 {
     QDM2Context *s = avctx->priv_data;
-    uint8_t *extradata;
-    int extradata_size;
     int tmp_val, tmp, size;
+    GetByteContext gb;
 
     qdm2_init_static_data();
 
@@ -1650,55 +1650,39 @@ static av_cold int qdm2_decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    extradata      = avctx->extradata;
-    extradata_size = avctx->extradata_size;
+    bytestream2_init(&gb, avctx->extradata, avctx->extradata_size);
 
-    while (extradata_size > 7) {
-        if (!memcmp(extradata, "frmaQDM", 7))
+    while (bytestream2_get_bytes_left(&gb) > 8) {
+        if (bytestream2_peek_be64(&gb) == (((uint64_t)MKBETAG('f','r','m','a') << 32) |
+                                            (uint64_t)MKBETAG('Q','D','M','2')))
             break;
-        extradata++;
-        extradata_size--;
+        bytestream2_skip(&gb, 1);
     }
 
-    if (extradata_size < 12) {
+    if (bytestream2_get_bytes_left(&gb) < 12) {
         av_log(avctx, AV_LOG_ERROR, "not enough extradata (%i)\n",
-               extradata_size);
+               bytestream2_get_bytes_left(&gb));
         return AVERROR_INVALIDDATA;
     }
 
-    if (memcmp(extradata, "frmaQDM", 7)) {
-        av_log(avctx, AV_LOG_ERROR, "invalid headers, QDM? not found\n");
-        return AVERROR_INVALIDDATA;
-    }
+    bytestream2_skip(&gb, 8);
+    size = bytestream2_get_be32(&gb);
 
-    if (extradata[7] == 'C') {
-//        s->is_qdmc = 1;
-        avpriv_report_missing_feature(avctx, "QDMC version 1");
-        return AVERROR_PATCHWELCOME;
-    }
-
-    extradata += 8;
-    extradata_size -= 8;
-
-    size = AV_RB32(extradata);
-
-    if(size > extradata_size){
+    if (size > bytestream2_get_bytes_left(&gb)) {
         av_log(avctx, AV_LOG_ERROR, "extradata size too small, %i < %i\n",
-               extradata_size, size);
+               bytestream2_get_bytes_left(&gb), size);
         return AVERROR_INVALIDDATA;
     }
 
-    extradata += 4;
     av_log(avctx, AV_LOG_DEBUG, "size: %d\n", size);
-    if (AV_RB32(extradata) != MKBETAG('Q','D','C','A')) {
+    if (bytestream2_get_be32(&gb) != MKBETAG('Q','D','C','A')) {
         av_log(avctx, AV_LOG_ERROR, "invalid extradata, expecting QDCA\n");
         return AVERROR_INVALIDDATA;
     }
 
-    extradata += 8;
+    bytestream2_skip(&gb, 4);
 
-    avctx->channels = s->nb_channels = s->channels = AV_RB32(extradata);
-    extradata += 4;
+    avctx->channels = s->nb_channels = s->channels = bytestream2_get_be32(&gb);
     if (s->channels <= 0 || s->channels > MPA_MAX_CHANNELS) {
         av_log(avctx, AV_LOG_ERROR, "Invalid number of channels\n");
         return AVERROR_INVALIDDATA;
@@ -1706,19 +1690,11 @@ static av_cold int qdm2_decode_init(AVCodecContext *avctx)
     avctx->channel_layout = avctx->channels == 2 ? AV_CH_LAYOUT_STEREO :
                                                    AV_CH_LAYOUT_MONO;
 
-    avctx->sample_rate = AV_RB32(extradata);
-    extradata += 4;
-
-    avctx->bit_rate = AV_RB32(extradata);
-    extradata += 4;
-
-    s->group_size = AV_RB32(extradata);
-    extradata += 4;
-
-    s->fft_size = AV_RB32(extradata);
-    extradata += 4;
-
-    s->checksum_size = AV_RB32(extradata);
+    avctx->sample_rate = bytestream2_get_be32(&gb);
+    avctx->bit_rate = bytestream2_get_be32(&gb);
+    s->group_size = bytestream2_get_be32(&gb);
+    s->fft_size = bytestream2_get_be32(&gb);
+    s->checksum_size = bytestream2_get_be32(&gb);
     if (s->checksum_size >= 1U << 28) {
         av_log(avctx, AV_LOG_ERROR, "data block size too large (%u)\n", s->checksum_size);
         return AVERROR_INVALIDDATA;

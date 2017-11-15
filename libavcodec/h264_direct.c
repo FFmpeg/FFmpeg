@@ -39,12 +39,22 @@ static int get_scale_factor(H264SliceContext *sl,
                             int poc, int poc1, int i)
 {
     int poc0 = sl->ref_list[0][i].poc;
-    int td = av_clip_int8(poc1 - poc0);
+    int64_t pocdiff = poc1 - (int64_t)poc0;
+    int td = av_clip_int8(pocdiff);
+
+    if (pocdiff != (int)pocdiff)
+        avpriv_request_sample(sl->h264->avctx, "pocdiff overflow\n");
+
     if (td == 0 || sl->ref_list[0][i].parent->long_ref) {
         return 256;
     } else {
-        int tb = av_clip_int8(poc - poc0);
+        int64_t pocdiff0 = poc - (int64_t)poc0;
+        int tb = av_clip_int8(pocdiff0);
         int tx = (16384 + (FFABS(td) >> 1)) / td;
+
+        if (pocdiff0 != (int)pocdiff0)
+            av_log(sl->h264->avctx, AV_LOG_DEBUG, "pocdiff0 overflow\n");
+
         return av_clip_intp2((tb * tx + 32) >> 6, 10);
     }
 }
@@ -128,7 +138,11 @@ void ff_h264_direct_ref_list_init(const H264Context *const h, H264SliceContext *
         memcpy(cur->ref_poc[1],   cur->ref_poc[0],   sizeof(cur->ref_poc[0]));
     }
 
-    cur->mbaff = FRAME_MBAFF(h);
+    if (h->current_slice == 0) {
+        cur->mbaff = FRAME_MBAFF(h);
+    } else {
+        av_assert0(cur->mbaff == FRAME_MBAFF(h));
+    }
 
     sl->col_fieldoff = 0;
 
@@ -396,7 +410,7 @@ single_col:
              (l1ref0[0] < 0 && !l1ref1[0] &&
               FFABS(l1mv1[0][0]) <= 1 &&
               FFABS(l1mv1[0][1]) <= 1 &&
-              h->sei.unregistered.x264_build > 33U))) {
+              h->x264_build > 33U))) {
             a = b = 0;
             if (ref[0] > 0)
                 a = mv[0];
@@ -431,7 +445,7 @@ single_col:
                 (l1ref0[i8] == 0 ||
                  (l1ref0[i8] < 0 &&
                   l1ref1[i8] == 0 &&
-                  h->sei.unregistered.x264_build > 33U))) {
+                  h->x264_build > 33U))) {
                 const int16_t (*l1mv)[2] = l1ref0[i8] == 0 ? l1mv0 : l1mv1;
                 if (IS_SUB_8X8(sub_mb_type)) {
                     const int16_t *mv_col = l1mv[x8 * 3 + y8 * 3 * b4_stride];
@@ -614,7 +628,7 @@ single_col:
 
                 {
                     const int16_t *mv_col = l1mv[x8 * 3 + y8 * b4_stride];
-                    int my_col            = (mv_col[1] << y_shift) / 2;
+                    int my_col            = (mv_col[1] * (1 << y_shift)) / 2;
                     int mx                = (scale * mv_col[0] + 128) >> 8;
                     int my                = (scale * my_col    + 128) >> 8;
                     fill_rectangle(&sl->mv_cache[0][scan8[i8 * 4]], 2, 2, 8,

@@ -29,6 +29,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
+#include "libavcodec/internal.h"
 #include "avformat.h"
 #include "internal.h"
 
@@ -153,13 +154,21 @@ static int parse_strk(AVFormatContext *s,
     fourxm->tracks[track].audio_pts   = 0;
 
     if (fourxm->tracks[track].channels    <= 0 ||
+        fourxm->tracks[track].channels     > FF_SANE_NB_CHANNELS ||
         fourxm->tracks[track].sample_rate <= 0 ||
-        fourxm->tracks[track].bits        <= 0) {
+        fourxm->tracks[track].bits        <= 0 ||
+        fourxm->tracks[track].bits         > INT_MAX / FF_SANE_NB_CHANNELS) {
         av_log(s, AV_LOG_ERROR, "audio header invalid\n");
         return AVERROR_INVALIDDATA;
     }
     if (!fourxm->tracks[track].adpcm && fourxm->tracks[track].bits<8) {
         av_log(s, AV_LOG_ERROR, "bits unspecified for non ADPCM\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (fourxm->tracks[track].sample_rate > INT64_MAX / fourxm->tracks[track].bits / fourxm->tracks[track].channels) {
+        av_log(s, AV_LOG_ERROR, "Overflow during bit rate calculation %d * %d * %d\n",
+               fourxm->tracks[track].sample_rate, fourxm->tracks[track].bits, fourxm->tracks[track].channels);
         return AVERROR_INVALIDDATA;
     }
 
@@ -178,7 +187,7 @@ static int parse_strk(AVFormatContext *s,
     st->codecpar->channels              = fourxm->tracks[track].channels;
     st->codecpar->sample_rate           = fourxm->tracks[track].sample_rate;
     st->codecpar->bits_per_coded_sample = fourxm->tracks[track].bits;
-    st->codecpar->bit_rate              = st->codecpar->channels *
+    st->codecpar->bit_rate              = (int64_t)st->codecpar->channels *
                                           st->codecpar->sample_rate *
                                           st->codecpar->bits_per_coded_sample;
     st->codecpar->block_align           = st->codecpar->channels *

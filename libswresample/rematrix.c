@@ -371,9 +371,10 @@ av_cold static int auto_matrix(SwrContext *s)
                            s->matrix[1] - s->matrix[0], s->matrix_encoding, s);
 
     if (ret >= 0 && s->int_sample_fmt == AV_SAMPLE_FMT_FLTP) {
-        int i;
-        for (i = 0; i < FF_ARRAY_ELEMS(s->matrix[0])*FF_ARRAY_ELEMS(s->matrix[0]); i++)
-            s->matrix_flt[0][i] = s->matrix[0][i];
+        int i, j;
+        for (i = 0; i < FF_ARRAY_ELEMS(s->matrix[0]); i++)
+            for (j = 0; j < FF_ARRAY_ELEMS(s->matrix[0]); j++)
+                s->matrix_flt[i][j] = s->matrix[i][j];
     }
 
     return ret;
@@ -444,14 +445,23 @@ av_cold int swri_rematrix_init(SwrContext *s){
         s->mix_2_1_f = (mix_2_1_func_type*)sum2_double;
         s->mix_any_f = (mix_any_func_type*)get_mix_any_func_double(s);
     }else if(s->midbuf.fmt == AV_SAMPLE_FMT_S32P){
-        // Only for dithering currently
-//         s->native_matrix = av_calloc(nb_in * nb_out, sizeof(double));
         s->native_one    = av_mallocz(sizeof(int));
         if (!s->native_one)
             return AVERROR(ENOMEM);
-//         for (i = 0; i < nb_out; i++)
-//             for (j = 0; j < nb_in; j++)
-//                 ((double*)s->native_matrix)[i * nb_in + j] = s->matrix[i][j];
+        s->native_matrix = av_calloc(nb_in * nb_out, sizeof(int));
+        if (!s->native_matrix) {
+            av_freep(&s->native_one);
+            return AVERROR(ENOMEM);
+        }
+        for (i = 0; i < nb_out; i++) {
+            double rem = 0;
+
+            for (j = 0; j < nb_in; j++) {
+                double target = s->matrix[i][j] * 32768 + rem;
+                ((int*)s->native_matrix)[i * nb_in + j] = lrintf(target);
+                rem += target - ((int*)s->native_matrix)[i * nb_in + j];
+            }
+        }
         *((int*)s->native_one) = 32768;
         s->mix_1_1_f = (mix_1_1_func_type*)copy_s32;
         s->mix_2_1_f = (mix_2_1_func_type*)sum2_s32;
@@ -469,7 +479,7 @@ av_cold int swri_rematrix_init(SwrContext *s){
         s->matrix_ch[i][0]= ch_in;
     }
 
-    if(HAVE_YASM && HAVE_MMX)
+    if(HAVE_X86ASM && HAVE_MMX)
         return swri_rematrix_init_x86(s);
 
     return 0;

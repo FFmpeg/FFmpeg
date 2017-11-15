@@ -30,18 +30,21 @@ function ff_rdft_calc_neon, export=1
 
         lsls            r6,  r6,  #31
         bne             1f
-        add             r0,  r4,  #20
+        add             r0,  r4,  #24
         bl              X(ff_fft_permute_neon)
-        add             r0,  r4,  #20
+        add             r0,  r4,  #24
         mov             r1,  r5
         bl              X(ff_fft_calc_neon)
 1:
         ldr             r12, [r4, #0]           @ nbits
         mov             r2,  #1
+        ldr             r8,  [r4, #20]          @ negative_sin
         lsl             r12, r2,  r12
         add             r0,  r5,  #8
+        lsl             r8,  r8,  #31
         add             r1,  r5,  r12, lsl #2
         lsr             r12, r12, #2
+        vdup.32         d26, r8
         ldr             r2,  [r4, #12]          @ tcos
         sub             r12, r12, #2
         ldr             r3,  [r4, #16]          @ tsin
@@ -55,6 +58,7 @@ function ff_rdft_calc_neon, export=1
         vld1.32         {d5},     [r3,:64]!     @ tsin[i]
         vmov.f32        d18, #0.5               @ k1
         vdup.32         d19, r6
+        veor            d5,  d26, d5
         pld             [r0, #32]
         veor            d19, d18, d19           @ k2
         vmov.i32        d16, #0
@@ -90,6 +94,7 @@ function ff_rdft_calc_neon, export=1
         vld1.32         {d5},     [r3,:64]!     @  tsin[i]
         veor            d24, d22, d17           @  ev.re,-ev.im
         vrev64.32       d3,  d23                @  od.re, od.im
+        veor            d5, d26, d5
         pld             [r2, #32]
         veor            d2,  d3,  d16           @ -od.re, od.im
         pld             [r3, #32]
@@ -140,10 +145,10 @@ function ff_rdft_calc_neon, export=1
 
         vmul.f32        d22, d22, d18
         vst1.32         {d22},    [r5,:64]
-        add             r0,  r4,  #20
+        add             r0,  r4,  #24
         mov             r1,  r5
         bl              X(ff_fft_permute_neon)
-        add             r0,  r4,  #20
+        add             r0,  r4,  #24
         mov             r1,  r5
         pop             {r4-r8,lr}
         b               X(ff_fft_calc_neon)

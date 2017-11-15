@@ -127,6 +127,7 @@ PRED16x16(plane_svq3, 8, ssse3)
 PRED16x16(tm_vp8, 8, mmx)
 PRED16x16(tm_vp8, 8, mmxext)
 PRED16x16(tm_vp8, 8, sse2)
+PRED16x16(tm_vp8, 8, avx2)
 
 PRED8x8(top_dc, 8, mmxext)
 PRED8x8(dc_rv40, 8, mmxext)
@@ -321,6 +322,12 @@ av_cold void ff_h264_pred_init_x86(H264PredContext *h, int codec_id,
                 } else {
                     h->pred16x16[PLANE_PRED8x8] = ff_pred16x16_plane_h264_8_ssse3;
                 }
+            }
+        }
+
+        if(EXTERNAL_AVX2(cpu_flags)){
+            if (codec_id == AV_CODEC_ID_VP8) {
+                h->pred16x16[PLANE_PRED8x8    ] = ff_pred16x16_tm_vp8_8_avx2;
             }
         }
     } else if (bit_depth == 10) {

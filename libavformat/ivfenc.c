@@ -75,7 +75,7 @@ static int ivf_write_trailer(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     IVFEncContext *ctx = s->priv_data;
 
-    if (pb->seekable && ctx->frame_cnt > 1) {
+    if ((pb->seekable & AVIO_SEEKABLE_NORMAL) && ctx->frame_cnt > 1) {
         size_t end = avio_tell(pb);
 
         avio_seek(pb, 24, SEEK_SET);

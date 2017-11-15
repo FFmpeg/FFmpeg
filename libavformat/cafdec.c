@@ -166,6 +166,14 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
             }
             avio_skip(pb, size - ALAC_NEW_KUKI);
         }
+    } else if (st->codecpar->codec_id == AV_CODEC_ID_OPUS) {
+        // The data layout for Opus is currently unknown, so we do not export
+        // extradata at all. Multichannel streams are not supported.
+        if (st->codecpar->channels > 2) {
+            avpriv_request_sample(s, "multichannel Opus in CAF");
+            return AVERROR_PATCHWELCOME;
+        }
+        avio_skip(pb, size);
     } else {
         av_freep(&st->codecpar->extradata);
         if (ff_get_extradata(s, st->codecpar, pb, size) < 0)
@@ -257,7 +265,7 @@ static int read_header(AVFormatContext *s)
 
         /* stop at data chunk if seeking is not supported or
            data chunk size is unknown */
-        if (found_data && (caf->data_size < 0 || !pb->seekable))
+        if (found_data && (caf->data_size < 0 || !(pb->seekable & AVIO_SEEKABLE_NORMAL)))
             break;
 
         tag  = avio_rb32(pb);
@@ -271,7 +279,7 @@ static int read_header(AVFormatContext *s)
             avio_skip(pb, 4); /* edit count */
             caf->data_start = avio_tell(pb);
             caf->data_size  = size < 0 ? -1 : size - 4;
-            if (caf->data_size > 0 && pb->seekable)
+            if (caf->data_size > 0 && (pb->seekable & AVIO_SEEKABLE_NORMAL))
                 avio_skip(pb, caf->data_size);
             found_data = 1;
             break;
@@ -298,11 +306,9 @@ static int read_header(AVFormatContext *s)
             break;
 
         default:
-#define _(x) ((x) >= ' ' ? (x) : ' ')
             av_log(s, AV_LOG_WARNING,
-                   "skipping CAF chunk: %08"PRIX32" (%c%c%c%c), size %"PRId64"\n",
-                tag, _(tag>>24), _((tag>>16)&0xFF), _((tag>>8)&0xFF), _(tag&0xFF), size);
-#undef _
+                   "skipping CAF chunk: %08"PRIX32" (%s), size %"PRId64"\n",
+                   tag, av_fourcc2str(av_bswap32(tag)), size);
         case MKBETAG('f','r','e','e'):
             if (size < 0)
                 return AVERROR_INVALIDDATA;
@@ -323,8 +329,13 @@ static int read_header(AVFormatContext *s)
         if (caf->data_size > 0)
             st->nb_frames = (caf->data_size / caf->bytes_per_packet) * caf->frames_per_packet;
     } else if (st->nb_index_entries && st->duration > 0) {
-        st->codecpar->bit_rate = st->codecpar->sample_rate * caf->data_size * 8 /
-                                 st->duration;
+        if (st->codecpar->sample_rate && caf->data_size / st->duration > INT64_MAX / st->codecpar->sample_rate / 8) {
+            av_log(s, AV_LOG_ERROR, "Overflow during bit rate calculation %d * 8 * %"PRId64"\n",
+                   st->codecpar->sample_rate, caf->data_size / st->duration);
+            return AVERROR_INVALIDDATA;
+        }
+        st->codecpar->bit_rate = st->codecpar->sample_rate * 8LL *
+                                 (caf->data_size / st->duration);
     } else {
         av_log(s, AV_LOG_ERROR, "Missing packet table. It is required when "
                                 "block size or frame size are variable.\n");

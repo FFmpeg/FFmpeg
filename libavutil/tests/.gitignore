@@ -1,6 +1,8 @@
 /adler32
 /aes
+/aes_ctr
 /atomic
+/audio_fifo
 /avstring
 /base64
 /blowfish
@@ -9,6 +11,7 @@
 /cast5
 /color_utils
 /cpu
+/cpu_init
 /crc
 /des
 /dict
@@ -17,9 +20,9 @@
 /eval
 /fifo
 /file
-/float_dsp
 /hash
 /hmac
+/imgutils
 /lfg
 /lls
 /log
@@ -31,6 +34,7 @@
 /pca
 /pixdesc
 /pixelutils
+/pixfmt_best
 /random_seed
 /rational
 /ripemd

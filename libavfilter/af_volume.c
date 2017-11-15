@@ -393,9 +393,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     }
     vol->var_values[VAR_PTS] = TS2D(buf->pts);
     vol->var_values[VAR_T  ] = TS2T(buf->pts, inlink->time_base);
-    vol->var_values[VAR_N  ] = inlink->frame_count;
+    vol->var_values[VAR_N  ] = inlink->frame_count_out;
 
-    pos = av_frame_get_pkt_pos(buf);
+    pos = buf->pkt_pos;
     vol->var_values[VAR_POS] = pos == -1 ? NAN : pos;
     if (vol->eval_mode == EVAL_MODE_FRAME)
         set_volume(ctx);
@@ -411,8 +411,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         out_buf = buf;
     } else {
         out_buf = ff_get_audio_buffer(inlink, nb_samples);
-        if (!out_buf)
+        if (!out_buf) {
+            av_frame_free(&buf);
             return AVERROR(ENOMEM);
+        }
         ret = av_frame_copy_props(out_buf, buf);
         if (ret < 0) {
             av_frame_free(&out_buf);

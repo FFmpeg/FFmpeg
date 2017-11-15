@@ -88,14 +88,14 @@ static inline void s_zero(int cur_diff, struct G722Band *band)
         ACCUM(3, band->diff_mem[2], 1);
         ACCUM(2, band->diff_mem[1], 1);
         ACCUM(1, band->diff_mem[0], 1);
-        ACCUM(0, cur_diff << 1, 1);
+        ACCUM(0, cur_diff * 2, 1);
     } else {
         ACCUM(5, band->diff_mem[4], 0);
         ACCUM(4, band->diff_mem[3], 0);
         ACCUM(3, band->diff_mem[2], 0);
         ACCUM(2, band->diff_mem[1], 0);
         ACCUM(1, band->diff_mem[0], 0);
-        ACCUM(0, cur_diff << 1, 0);
+        ACCUM(0, cur_diff * 2, 0);
     }
     #undef ACCUM
     band->s_zero = s_zero;
@@ -119,14 +119,14 @@ static void do_adaptive_prediction(struct G722Band *band, const int cur_diff)
     band->part_reconst_mem[0] = cur_part_reconst;
 
     band->pole_mem[1] = av_clip((sg[0] * av_clip(band->pole_mem[0], -8191, 8191) >> 5) +
-                                (sg[1] << 7) + (band->pole_mem[1] * 127 >> 7), -12288, 12288);
+                                (sg[1] * 128) + (band->pole_mem[1] * 127 >> 7), -12288, 12288);
 
     limit = 15360 - band->pole_mem[1];
     band->pole_mem[0] = av_clip(-192 * sg[0] + (band->pole_mem[0] * 255 >> 8), -limit, limit);
 
     s_zero(cur_diff, band);
 
-    cur_qtzd_reconst = av_clip_int16((band->s_predictor + cur_diff) << 1);
+    cur_qtzd_reconst = av_clip_int16((band->s_predictor + cur_diff) * 2);
     band->s_predictor = av_clip_int16(band->s_zero +
                                       (band->pole_mem[0] * cur_qtzd_reconst >> 15) +
                                       (band->pole_mem[1] * band->prev_qtzd_reconst >> 15));

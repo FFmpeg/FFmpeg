@@ -25,6 +25,7 @@
  */
 
 #include "libavutil/attributes.h"
+#include "libavutil/float_dsp.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
@@ -225,6 +226,8 @@ static int pcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
 typedef struct PCMDecode {
     short   table[256];
+    AVFloatDSPContext *fdsp;
+    float   scale;
 } PCMDecode;
 
 static av_cold int pcm_decode_init(AVCodecContext *avctx)
@@ -246,6 +249,13 @@ static av_cold int pcm_decode_init(AVCodecContext *avctx)
         for (i = 0; i < 256; i++)
             s->table[i] = ulaw2linear(i);
         break;
+    case AV_CODEC_ID_PCM_F16LE:
+    case AV_CODEC_ID_PCM_F24LE:
+        s->scale = 1. / (1 << (avctx->bits_per_coded_sample - 1));
+        s->fdsp = avpriv_float_dsp_alloc(0);
+        if (!s->fdsp)
+            return AVERROR(ENOMEM);
+        break;
     default:
         break;
     }
@@ -254,6 +264,15 @@ static av_cold int pcm_decode_init(AVCodecContext *avctx)
 
     if (avctx->sample_fmt == AV_SAMPLE_FMT_S32)
         avctx->bits_per_raw_sample = av_get_bits_per_sample(avctx->codec_id);
+
+    return 0;
+}
+
+static av_cold int pcm_decode_close(AVCodecContext *avctx)
+{
+    PCMDecode *s = avctx->priv_data;
+
+    av_freep(&s->fdsp);
 
     return 0;
 }
@@ -400,6 +419,8 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
         break;
     case AV_CODEC_ID_PCM_S32LE:
     case AV_CODEC_ID_PCM_F32LE:
+    case AV_CODEC_ID_PCM_F24LE:
+    case AV_CODEC_ID_PCM_F16LE:
         DECODE(32, le32, src, samples, n, 0, 0)
         break;
     case AV_CODEC_ID_PCM_S32LE_PLANAR:
@@ -433,6 +454,8 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
         break;
     case AV_CODEC_ID_PCM_F64LE:
     case AV_CODEC_ID_PCM_F32LE:
+    case AV_CODEC_ID_PCM_F24LE:
+    case AV_CODEC_ID_PCM_F16LE:
     case AV_CODEC_ID_PCM_S64LE:
     case AV_CODEC_ID_PCM_S32LE:
     case AV_CODEC_ID_PCM_S16LE:
@@ -495,6 +518,14 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
         return -1;
     }
 
+    if (avctx->codec_id == AV_CODEC_ID_PCM_F16LE ||
+        avctx->codec_id == AV_CODEC_ID_PCM_F24LE) {
+        s->fdsp->vector_fmul_scalar((float *)frame->extended_data[0],
+                                    (const float *)frame->extended_data[0],
+                                    s->scale, FFALIGN(frame->nb_samples * avctx->channels, 4));
+        emms_c();
+    }
+
     *got_frame_ptr = 1;
 
     return buf_size;
@@ -530,6 +561,7 @@ AVCodec ff_ ## name_ ## _decoder = {                                        \
     .id             = AV_CODEC_ID_ ## id_,                                  \
     .priv_data_size = sizeof(PCMDecode),                                    \
     .init           = pcm_decode_init,                                      \
+    .close          = pcm_decode_close,                                     \
     .decode         = pcm_decode_frame,                                     \
     .capabilities   = AV_CODEC_CAP_DR1,                                     \
     .sample_fmts    = (const enum AVSampleFormat[]){ sample_fmt_,           \
@@ -549,6 +581,8 @@ AVCodec ff_ ## name_ ## _decoder = {                                        \
 
 /* Note: Do not forget to add new entries to the Makefile as well. */
 PCM_CODEC  (PCM_ALAW,         AV_SAMPLE_FMT_S16, pcm_alaw,         "PCM A-law / G.711 A-law");
+PCM_DECODER(PCM_F16LE,        AV_SAMPLE_FMT_FLT, pcm_f16le,        "PCM 16.8 floating point little-endian");
+PCM_DECODER(PCM_F24LE,        AV_SAMPLE_FMT_FLT, pcm_f24le,        "PCM 24.0 floating point little-endian");
 PCM_CODEC  (PCM_F32BE,        AV_SAMPLE_FMT_FLT, pcm_f32be,        "PCM 32-bit floating point big-endian");
 PCM_CODEC  (PCM_F32LE,        AV_SAMPLE_FMT_FLT, pcm_f32le,        "PCM 32-bit floating point little-endian");
 PCM_CODEC  (PCM_F64BE,        AV_SAMPLE_FMT_DBL, pcm_f64be,        "PCM 64-bit floating point big-endian");

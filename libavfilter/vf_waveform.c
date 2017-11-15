@@ -166,7 +166,7 @@ static const enum AVPixelFormat in_lowpass_pix_fmts[] = {
     AV_PIX_FMT_YUVJ440P, AV_PIX_FMT_YUVJ411P, AV_PIX_FMT_YUVJ420P,
     AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P,
     AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA420P,
-    AV_PIX_FMT_GRAY8,
+    AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12,
     AV_PIX_FMT_YUV444P9, AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV420P9,
     AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA420P9,
     AV_PIX_FMT_YUV444P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV420P10,
@@ -218,12 +218,12 @@ static const enum AVPixelFormat out_rgb9_lowpass_pix_fmts[] = {
 };
 
 static const enum AVPixelFormat out_rgb10_lowpass_pix_fmts[] = {
-    AV_PIX_FMT_GBRP10,
+    AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRAP10,
     AV_PIX_FMT_NONE
 };
 
 static const enum AVPixelFormat out_rgb12_lowpass_pix_fmts[] = {
-    AV_PIX_FMT_GBRP12,
+    AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12,
     AV_PIX_FMT_NONE
 };
 
@@ -249,6 +249,21 @@ static const enum AVPixelFormat out_yuv12_lowpass_pix_fmts[] = {
 
 static const enum AVPixelFormat out_gray8_lowpass_pix_fmts[] = {
     AV_PIX_FMT_GRAY8,
+    AV_PIX_FMT_NONE
+};
+
+static const enum AVPixelFormat out_gray9_lowpass_pix_fmts[] = {
+    AV_PIX_FMT_GRAY9,
+    AV_PIX_FMT_NONE
+};
+
+static const enum AVPixelFormat out_gray10_lowpass_pix_fmts[] = {
+    AV_PIX_FMT_GRAY10,
+    AV_PIX_FMT_NONE
+};
+
+static const enum AVPixelFormat out_gray12_lowpass_pix_fmts[] = {
+    AV_PIX_FMT_GRAY12,
     AV_PIX_FMT_NONE
 };
 
@@ -301,6 +316,12 @@ static int query_formats(AVFilterContext *ctx)
 
     if (s->filter == LOWPASS && ncomp == 1 && depth == 8)
         out_pix_fmts = out_gray8_lowpass_pix_fmts;
+    else if (s->filter == LOWPASS && ncomp == 1 && depth == 9)
+        out_pix_fmts = out_gray9_lowpass_pix_fmts;
+    else if (s->filter == LOWPASS && ncomp == 1 && depth == 10)
+        out_pix_fmts = out_gray10_lowpass_pix_fmts;
+    else if (s->filter == LOWPASS && ncomp == 1 && depth == 12)
+        out_pix_fmts = out_gray12_lowpass_pix_fmts;
     else if (rgb && depth == 8 && ncomp > 2)
         out_pix_fmts = out_rgb8_lowpass_pix_fmts;
     else if (rgb && depth == 9 && ncomp > 2)
@@ -2740,7 +2761,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         return AVERROR(ENOMEM);
     }
     out->pts = in->pts;
-    av_frame_set_color_range(out, AVCOL_RANGE_JPEG);
+    out->color_range = AVCOL_RANGE_JPEG;
 
     for (k = 0; k < s->dcomp; k++) {
         if (s->bits <= 8) {

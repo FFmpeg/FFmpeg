@@ -387,8 +387,7 @@ static int vfw_read_header(AVFormatContext *s)
     if (par->format == AV_PIX_FMT_NONE) {
         par->codec_id = vfw_codecid(biCompression);
         if (par->codec_id == AV_CODEC_ID_NONE) {
-            av_log(s, AV_LOG_ERROR, "Unknown compression type. "
-                             "Please report verbose (-v 9) debug information.\n");
+            avpriv_report_missing_feature(s, "This compression type");
             vfw_read_close(s);
             return AVERROR_PATCHWELCOME;
         }

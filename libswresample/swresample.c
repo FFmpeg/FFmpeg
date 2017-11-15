@@ -84,9 +84,6 @@ struct SwrContext *swr_alloc_set_opts(struct SwrContext *s,
     if (av_opt_set_int(s, "isr", in_sample_rate,  0) < 0)
         goto fail;
 
-    if (av_opt_set_int(s, "tsf", AV_SAMPLE_FMT_NONE,   0) < 0)
-        goto fail;
-
     if (av_opt_set_int(s, "ich", av_get_channel_layout_nb_channels(s-> user_in_ch_layout), 0) < 0)
         goto fail;
 
@@ -226,6 +223,8 @@ av_cold int swr_init(struct SwrContext *s){
         }else if(   av_get_planar_sample_fmt(s-> in_sample_fmt) == AV_SAMPLE_FMT_S32P
                  && av_get_planar_sample_fmt(s->out_sample_fmt) == AV_SAMPLE_FMT_S32P
                  && !s->rematrix
+                 && s->out_sample_rate == s->in_sample_rate
+                 && !(s->flags & SWR_FLAG_RESAMPLE)
                  && s->engine != SWR_ENGINE_SOXR){
             s->int_sample_fmt= AV_SAMPLE_FMT_S32P;
         }else if(av_get_bytes_per_sample(s->in_sample_fmt) <= 4){
@@ -241,7 +240,7 @@ av_cold int swr_init(struct SwrContext *s){
         &&s->int_sample_fmt != AV_SAMPLE_FMT_S64P
         &&s->int_sample_fmt != AV_SAMPLE_FMT_FLTP
         &&s->int_sample_fmt != AV_SAMPLE_FMT_DBLP){
-        av_log(s, AV_LOG_ERROR, "Requested sample format %s is not supported internally, S16/S32/S64/FLT/DBL is supported\n", av_get_sample_fmt_name(s->int_sample_fmt));
+        av_log(s, AV_LOG_ERROR, "Requested sample format %s is not supported internally, s16p/s32p/s64p/fltp/dblp are supported\n", av_get_sample_fmt_name(s->int_sample_fmt));
         return AVERROR(EINVAL);
     }
 
@@ -277,7 +276,7 @@ av_cold int swr_init(struct SwrContext *s){
         && s->int_sample_fmt != AV_SAMPLE_FMT_FLTP
         && s->int_sample_fmt != AV_SAMPLE_FMT_DBLP
         && s->resample){
-        av_log(s, AV_LOG_ERROR, "Resampling only supported with internal s16/s32/flt/dbl\n");
+        av_log(s, AV_LOG_ERROR, "Resampling only supported with internal s16p/s32p/fltp/dblp\n");
         ret = AVERROR(EINVAL);
         goto fail;
     }
@@ -413,9 +412,9 @@ int swri_realloc_audio(AudioData *a, int count){
         return AVERROR(ENOMEM);
     for(i=0; i<a->ch_count; i++){
         a->ch[i]= a->data + i*(a->planar ? countb : a->bps);
-        if(a->planar) memcpy(a->ch[i], old.ch[i], a->count*a->bps);
+        if(a->count && a->planar) memcpy(a->ch[i], old.ch[i], a->count*a->bps);
     }
-    if(!a->planar) memcpy(a->ch[0], old.ch[0], a->count*a->ch_count*a->bps);
+    if(a->count && !a->planar) memcpy(a->ch[0], old.ch[0], a->count*a->ch_count*a->bps);
     av_freep(&old.data);
     a->count= count;
 

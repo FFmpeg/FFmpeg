@@ -223,7 +223,7 @@ static int svq3_decode_end(AVCodecContext *avctx);
 
 static void svq3_luma_dc_dequant_idct_c(int16_t *output, int16_t *input, int qp)
 {
-    const int qmul = svq3_dequant_coeff[qp];
+    const unsigned qmul = svq3_dequant_coeff[qp];
 #define stride 16
     int i;
     int temp[16];
@@ -248,10 +248,10 @@ static void svq3_luma_dc_dequant_idct_c(int16_t *output, int16_t *input, int qp)
         const int z2     =  7 *  temp[4 * 1 + i] - 17 * temp[4 * 3 + i];
         const int z3     = 17 *  temp[4 * 1 + i] +  7 * temp[4 * 3 + i];
 
-        output[stride *  0 + offset] = (z0 + z3) * qmul + 0x80000 >> 20;
-        output[stride *  2 + offset] = (z1 + z2) * qmul + 0x80000 >> 20;
-        output[stride *  8 + offset] = (z1 - z2) * qmul + 0x80000 >> 20;
-        output[stride * 10 + offset] = (z0 - z3) * qmul + 0x80000 >> 20;
+        output[stride *  0 + offset] = (int)((z0 + z3) * qmul + 0x80000) >> 20;
+        output[stride *  2 + offset] = (int)((z1 + z2) * qmul + 0x80000) >> 20;
+        output[stride *  8 + offset] = (int)((z1 - z2) * qmul + 0x80000) >> 20;
+        output[stride * 10 + offset] = (int)((z0 - z3) * qmul + 0x80000) >> 20;
     }
 }
 #undef stride
@@ -263,7 +263,7 @@ static void svq3_add_idct_c(uint8_t *dst, int16_t *block,
     int i;
 
     if (dc) {
-        dc       = 13 * 13 * (dc == 1 ? 1538 * block[0]
+        dc       = 13 * 13 * (dc == 1 ? 1538U* block[0]
                                       : qmul * (block[0] >> 3) / 2);
         block[0] = 0;
     }
@@ -281,16 +281,16 @@ static void svq3_add_idct_c(uint8_t *dst, int16_t *block,
     }
 
     for (i = 0; i < 4; i++) {
-        const int z0 = 13 * (block[i + 4 * 0] +      block[i + 4 * 2]);
-        const int z1 = 13 * (block[i + 4 * 0] -      block[i + 4 * 2]);
-        const int z2 =  7 *  block[i + 4 * 1] - 17 * block[i + 4 * 3];
-        const int z3 = 17 *  block[i + 4 * 1] +  7 * block[i + 4 * 3];
-        const int rr = (dc + 0x80000);
+        const unsigned z0 = 13 * (block[i + 4 * 0] +      block[i + 4 * 2]);
+        const unsigned z1 = 13 * (block[i + 4 * 0] -      block[i + 4 * 2]);
+        const unsigned z2 =  7 *  block[i + 4 * 1] - 17 * block[i + 4 * 3];
+        const unsigned z3 = 17 *  block[i + 4 * 1] +  7 * block[i + 4 * 3];
+        const int rr = (dc + 0x80000u);
 
-        dst[i + stride * 0] = av_clip_uint8(dst[i + stride * 0] + ((z0 + z3) * qmul + rr >> 20));
-        dst[i + stride * 1] = av_clip_uint8(dst[i + stride * 1] + ((z1 + z2) * qmul + rr >> 20));
-        dst[i + stride * 2] = av_clip_uint8(dst[i + stride * 2] + ((z1 - z2) * qmul + rr >> 20));
-        dst[i + stride * 3] = av_clip_uint8(dst[i + stride * 3] + ((z0 - z3) * qmul + rr >> 20));
+        dst[i + stride * 0] = av_clip_uint8(dst[i + stride * 0] + ((int)((z0 + z3) * qmul + rr) >> 20));
+        dst[i + stride * 1] = av_clip_uint8(dst[i + stride * 1] + ((int)((z1 + z2) * qmul + rr) >> 20));
+        dst[i + stride * 2] = av_clip_uint8(dst[i + stride * 2] + ((int)((z1 - z2) * qmul + rr) >> 20));
+        dst[i + stride * 3] = av_clip_uint8(dst[i + stride * 3] + ((int)((z0 - z3) * qmul + rr) >> 20));
     }
 
     memset(block, 0, 16 * sizeof(int16_t));
@@ -524,8 +524,8 @@ static inline int svq3_mc_dir(SVQ3Context *s, int size, int mode,
             if (mode != PREDICT_MODE) {
                 svq3_pred_motion(s, k, part_width >> 2, dir, 1, &mx, &my);
             } else {
-                mx = s->next_pic->motion_val[0][b_xy][0] << 1;
-                my = s->next_pic->motion_val[0][b_xy][1] << 1;
+                mx = s->next_pic->motion_val[0][b_xy][0] * 2;
+                my = s->next_pic->motion_val[0][b_xy][1] * 2;
 
                 if (dir == 0) {
                     mx = mx * s->frame_num_offset /
@@ -551,7 +551,7 @@ static inline int svq3_mc_dir(SVQ3Context *s, int size, int mode,
                 dy = get_interleaved_se_golomb(&s->gb_slice);
                 dx = get_interleaved_se_golomb(&s->gb_slice);
 
-                if (dx == INVALID_VLC || dy == INVALID_VLC) {
+                if (dx != (int16_t)dx || dy != (int16_t)dy) {
                     av_log(s->avctx, AV_LOG_ERROR, "invalid MV vlc\n");
                     return -1;
                 }
@@ -562,8 +562,8 @@ static inline int svq3_mc_dir(SVQ3Context *s, int size, int mode,
                 int fx, fy;
                 mx  = (mx + 1 >> 1) + dx;
                 my  = (my + 1 >> 1) + dy;
-                fx  = (unsigned)(mx + 0x3000) / 3 - 0x1000;
-                fy  = (unsigned)(my + 0x3000) / 3 - 0x1000;
+                fx  = (unsigned)(mx + 0x30000) / 3 - 0x10000;
+                fy  = (unsigned)(my + 0x30000) / 3 - 0x10000;
                 dxy = (mx - 3 * fx) + 4 * (my - 3 * fy);
 
                 svq3_mc_dir_part(s, x, y, part_width, part_height,
@@ -571,8 +571,8 @@ static inline int svq3_mc_dir(SVQ3Context *s, int size, int mode,
                 mx += mx;
                 my += my;
             } else if (mode == HALFPEL_MODE || mode == PREDICT_MODE) {
-                mx  = (unsigned)(mx + 1 + 0x3000) / 3 + dx - 0x1000;
-                my  = (unsigned)(my + 1 + 0x3000) / 3 + dy - 0x1000;
+                mx  = (unsigned)(mx + 1 + 0x30000) / 3 + dx - 0x10000;
+                my  = (unsigned)(my + 1 + 0x30000) / 3 + dy - 0x10000;
                 dxy = (mx & 1) + 2 * (my & 1);
 
                 svq3_mc_dir_part(s, x, y, part_width, part_height,
@@ -580,8 +580,8 @@ static inline int svq3_mc_dir(SVQ3Context *s, int size, int mode,
                 mx *= 3;
                 my *= 3;
             } else {
-                mx = (unsigned)(mx + 3 + 0x6000) / 6 + dx - 0x1000;
-                my = (unsigned)(my + 3 + 0x6000) / 6 + dy - 0x1000;
+                mx = (unsigned)(mx + 3 + 0x60000) / 6 + dx - 0x10000;
+                my = (unsigned)(my + 3 + 0x60000) / 6 + dy - 0x10000;
 
                 svq3_mc_dir_part(s, x, y, part_width, part_height,
                                  mx, my, 0, 0, dir, avg);
@@ -627,11 +627,6 @@ static av_always_inline void hl_decode_mb_idct_luma(SVQ3Context *s,
                                 s->qscale, IS_INTRA(mb_type) ? 1 : 0);
             }
     }
-}
-
-static av_always_inline int dctcoef_get(int16_t *mb, int index)
-{
-    return AV_RN16A(mb + index);
 }
 
 static av_always_inline void hl_decode_mb_predict_luma(SVQ3Context *s,
@@ -1041,17 +1036,16 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
         slice_bits   = slice_length * 8;
         slice_bytes  = slice_length + length - 1;
 
-        if (8LL*slice_bytes > get_bits_left(&s->gb)) {
-            av_log(avctx, AV_LOG_ERROR, "slice after bitstream end\n");
-            return -1;
-        }
-
         skip_bits(&s->gb, 8);
 
         av_fast_malloc(&s->slice_buf, &s->slice_size, slice_bytes + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!s->slice_buf)
             return AVERROR(ENOMEM);
 
+        if (slice_bytes * 8LL > get_bits_left(&s->gb)) {
+            av_log(avctx, AV_LOG_ERROR, "slice after bitstream end\n");
+            return AVERROR_INVALIDDATA;
+        }
         memcpy(s->slice_buf, s->gb.buffer + s->gb.index / 8, slice_bytes);
 
         init_get_bits(&s->gb_slice, s->slice_buf, slice_bits);
@@ -1070,14 +1064,16 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
         av_log(s->avctx, AV_LOG_ERROR, "illegal slice type %u \n", slice_id);
         return -1;
     }
+    if (get_bits1(&s->gb_slice)) {
+        avpriv_report_missing_feature(s->avctx, "Media key encryption");
+        return AVERROR_PATCHWELCOME;
+    }
 
     s->slice_type = ff_h264_golomb_to_pict_type[slice_id];
 
     if ((header & 0x9F) == 2) {
-        i = (s->mb_num < 64) ? 6 : (1 + av_log2(s->mb_num - 1));
+        i = (s->mb_num < 64) ? 5 : av_log2(s->mb_num - 1);
         get_bits(&s->gb_slice, i);
-    } else {
-        skip_bits1(&s->gb_slice);
     }
 
     s->slice_num      = get_bits(&s->gb_slice, 8);
@@ -1556,7 +1552,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
                         return -1;
                 }
                 if (s->slice_type != s->pict_type) {
-                    avpriv_request_sample(avctx, "non constant slice type\n");
+                    avpriv_request_sample(avctx, "non constant slice type");
                 }
                 /* TODO: support s->mb_skip_run */
             }

@@ -29,7 +29,7 @@ void ff_ps_mul_pair_single_neon(float (*dst)[2], float (*src0)[2],
                                 float *src1, int n);
 void ff_ps_hybrid_analysis_neon(float (*out)[2], float (*in)[2],
                                 const float (*filter)[8][2],
-                                int stride, int n);
+                                ptrdiff_t stride, int n);
 void ff_ps_hybrid_analysis_ileave_neon(float (*out)[32][2], float L[2][38][64],
                                        int i, int len);
 void ff_ps_hybrid_synthesis_deint_neon(float out[2][38][64], float (*in)[32][2],

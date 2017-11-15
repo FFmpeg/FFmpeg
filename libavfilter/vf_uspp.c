@@ -37,7 +37,7 @@
 #define MAX_LEVEL 8 /* quality levels */
 #define BLOCK 16
 
-typedef struct {
+typedef struct USPPContext {
     const AVClass *av_class;
     int log2_count;
     int hsub, vsub;
@@ -228,8 +228,8 @@ static void filter(USPPContext *p, uint8_t *dst[3], uint8_t *src[3],
         p->frame->quality = ff_norm_qscale((qpsum + qpcount/2) / qpcount, p->qscale_type) * FF_QP2LAMBDA;
     }
 //    init per MB qscale stuff FIXME
-    p->frame->height = height;
-    p->frame->width  = width;
+    p->frame->height = height + BLOCK;
+    p->frame->width  = width + BLOCK;
 
     for (i = 0; i < count; i++) {
         const int x1 = offset[i+count-1][0];
@@ -357,7 +357,7 @@ static int config_input(AVFilterLink *inlink)
         avctx_enc->gop_size = INT_MAX;
         avctx_enc->max_b_frames = 0;
         avctx_enc->pix_fmt = inlink->format;
-        avctx_enc->flags = AV_CODEC_FLAG_QSCALE | CODEC_FLAG_LOW_DELAY;
+        avctx_enc->flags = AV_CODEC_FLAG_QSCALE | AV_CODEC_FLAG_LOW_DELAY;
         avctx_enc->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
         avctx_enc->global_quality = 123;
         av_dict_set(&opts, "no_bitstream", "1", 0);

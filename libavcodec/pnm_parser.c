@@ -56,15 +56,6 @@ retry:
             }
             goto retry;
         }
-#if 0
-        if (pc->index && pc->index * 2 + AV_INPUT_BUFFER_PADDING_SIZE < pc->buffer_size && buf_size > pc->index) {
-            memcpy(pc->buffer + pc->index, buf, pc->index);
-            pc->index += pc->index;
-            buf       += pc->index;
-            buf_size  -= pc->index;
-            goto retry;
-        }
-#endif
         next = END_NOT_FOUND;
     } else if (pnmctx.type < 4) {
         next = END_NOT_FOUND;

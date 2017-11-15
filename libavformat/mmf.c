@@ -147,7 +147,7 @@ static int mmf_write_trailer(AVFormatContext *s)
     int64_t pos, size;
     int gatetime;
 
-    if (s->pb->seekable) {
+    if (s->pb->seekable & AVIO_SEEKABLE_NORMAL) {
         /* Fill in length fields */
         end_tag_be(pb, mmf->awapos);
         end_tag_be(pb, mmf->atrpos);

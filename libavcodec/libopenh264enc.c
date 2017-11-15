@@ -75,7 +75,10 @@ static const AVOption options[] = {
 };
 
 static const AVClass class = {
-    "libopenh264enc", av_default_item_name, options, LIBAVUTIL_VERSION_INT
+    .class_name = "libvo_amrwbenc",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 static av_cold int svc_encode_close(AVCodecContext *avctx)
@@ -100,8 +103,6 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
 
     if ((err = ff_libopenh264_check_version(avctx)) < 0)
         return err;
-    // Use a default error for multiple error paths below
-    err = AVERROR_UNKNOWN;
 
     if (WelsCreateSVCEncoder(&s->encoder)) {
         av_log(avctx, AV_LOG_ERROR, "Unable to create encoder\n");
@@ -114,10 +115,10 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
 
     // Set the logging callback function to one that uses av_log() (see implementation above).
     callback_function = (WelsTraceCallback) ff_libopenh264_trace_callback;
-    (*s->encoder)->SetOption(s->encoder, ENCODER_OPTION_TRACE_CALLBACK, (void *)&callback_function);
+    (*s->encoder)->SetOption(s->encoder, ENCODER_OPTION_TRACE_CALLBACK, &callback_function);
 
     // Set the AVCodecContext as the libopenh264 callback context so that it can be passed to av_log().
-    (*s->encoder)->SetOption(s->encoder, ENCODER_OPTION_TRACE_CALLBACK_CONTEXT, (void *)&avctx);
+    (*s->encoder)->SetOption(s->encoder, ENCODER_OPTION_TRACE_CALLBACK_CONTEXT, &avctx);
 
     (*s->encoder)->GetDefaultParams(s->encoder, &param);
 
@@ -167,7 +168,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         av_log(avctx, AV_LOG_ERROR,
                "Invalid combination -slices %d and -max_nal_size %d.\n",
                avctx->slices, s->max_nal_size);
-        goto fail;
+        return AVERROR(EINVAL);
     }
 
     if (avctx->slices > 1)
@@ -195,13 +196,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
         } else {
             av_log(avctx, AV_LOG_ERROR, "Invalid -max_nal_size, "
                    "specify a valid max_nal_size to use -slice_mode dyn\n");
-            goto fail;
+            return AVERROR(EINVAL);
         }
     }
 
     if ((*s->encoder)->InitializeExt(s->encoder, &param) != cmResultSuccess) {
         av_log(avctx, AV_LOG_ERROR, "Initialize failed\n");
-        goto fail;
+        return AVERROR_UNKNOWN;
     }
 
     if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
@@ -211,27 +212,19 @@ FF_ENABLE_DEPRECATION_WARNINGS
         for (i = 0; i < fbi.sLayerInfo[0].iNalCount; i++)
             size += fbi.sLayerInfo[0].pNalLengthInByte[i];
         avctx->extradata = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
-        if (!avctx->extradata) {
-            err = AVERROR(ENOMEM);
-            goto fail;
-        }
+        if (!avctx->extradata)
+            return AVERROR(ENOMEM);
         avctx->extradata_size = size;
         memcpy(avctx->extradata, fbi.sLayerInfo[0].pBsBuf, size);
     }
 
     props = ff_add_cpb_side_data(avctx);
-    if (!props) {
-        err = AVERROR(ENOMEM);
-        goto fail;
-    }
+    if (!props)
+        return AVERROR(ENOMEM);
     props->max_bitrate = param.iMaxBitrate;
     props->avg_bitrate = param.iTargetBitrate;
 
     return 0;
-
-fail:
-    svc_encode_close(avctx);
-    return err;
 }
 
 static int svc_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
@@ -304,6 +297,7 @@ AVCodec ff_libopenh264_encoder = {
     .encode2        = svc_encode_frame,
     .close          = svc_encode_close,
     .capabilities   = AV_CODEC_CAP_AUTO_THREADS,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P,
                                                     AV_PIX_FMT_NONE },
     .priv_class     = &class,

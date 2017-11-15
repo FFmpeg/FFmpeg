@@ -25,16 +25,16 @@
 #include "avfilter.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct Coeffs {
     FFTSample *val;
     int start, len;
 } Coeffs;
 
-typedef struct {
+typedef struct RGBFloat {
     float r, g, b;
 } RGBFloat;
 
-typedef struct {
+typedef struct YUVFloat {
     float y, u, v;
 } YUVFloat;
 
@@ -43,7 +43,7 @@ typedef union {
     YUVFloat yuv;
 } ColorFloat;
 
-typedef struct {
+typedef struct ShowCQTContext {
     const AVClass       *class;
     AVFilterContext     *ctx;
     AVFrame             *axis_frame;
@@ -55,6 +55,7 @@ typedef struct {
     AVRational          step_frac;
     int                 remaining_frac;
     int                 remaining_fill;
+    int                 remaining_fill_max;
     int64_t             next_pts;
     double              *freq;
     FFTContext          *fft_ctx;
@@ -62,6 +63,7 @@ typedef struct {
     FFTComplex          *fft_data;
     FFTComplex          *fft_result;
     FFTComplex          *cqt_result;
+    float               *attack_data;
     int                 fft_bits;
     int                 fft_len;
     int                 cqt_len;
@@ -104,6 +106,7 @@ typedef struct {
     float               bar_g;
     float               bar_t;
     double              timeclamp;
+    double              attack;
     double              basefreq;
     double              endfreq;
     float               coeffclamp; /* deprecated - ignored */

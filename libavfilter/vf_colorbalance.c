@@ -31,13 +31,13 @@
 #define B 2
 #define A 3
 
-typedef struct {
+typedef struct Range {
     double shadows;
     double midtones;
     double highlights;
 } Range;
 
-typedef struct {
+typedef struct ColorBalanceContext {
     const AVClass *class;
     Range cyan_red;
     Range magenta_green;

@@ -58,7 +58,7 @@ enum preset {
     NB_PRESETS,
 };
 
-typedef struct {
+typedef struct CurvesContext {
     const AVClass *class;
     int preset;
     char *comp_points_str[NB_COMP + 1];

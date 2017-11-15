@@ -42,7 +42,7 @@
 #include "internal.h"
 #include "get_bits.h"
 #include "fft.h"
-#include "imdct15.h"
+#include "mdct15.h"
 #include "lpc.h"
 #include "kbdwin.h"
 #include "sinewin.h"
@@ -50,11 +50,11 @@
 #include "aac.h"
 #include "aactab.h"
 #include "aacdectab.h"
+#include "adts_header.h"
 #include "cbrt_data.h"
 #include "sbr.h"
 #include "aacsbr.h"
 #include "mpeg4audio.h"
-#include "aacadtsdec.h"
 #include "profiles.h"
 #include "libavutil/intfloat.h"
 
@@ -284,29 +284,35 @@ static int latm_decode_audio_specific_config(struct LATMContext *latmctx,
     AACContext *ac        = &latmctx->aac_ctx;
     AVCodecContext *avctx = ac->avctx;
     MPEG4AudioConfig m4ac = { 0 };
+    GetBitContext gbc;
     int config_start_bit  = get_bits_count(gb);
     int sync_extension    = 0;
-    int bits_consumed, esize;
+    int bits_consumed, esize, i;
 
-    if (asclen) {
+    if (asclen > 0) {
         sync_extension = 1;
         asclen         = FFMIN(asclen, get_bits_left(gb));
-    } else
-        asclen         = get_bits_left(gb);
-
-    if (config_start_bit % 8) {
-        avpriv_request_sample(latmctx->aac_ctx.avctx,
-                              "Non-byte-aligned audio-specific config");
-        return AVERROR_PATCHWELCOME;
+        init_get_bits(&gbc, gb->buffer, config_start_bit + asclen);
+        skip_bits_long(&gbc, config_start_bit);
+    } else if (asclen == 0) {
+        gbc = *gb;
+    } else {
+        return AVERROR_INVALIDDATA;
     }
-    if (asclen <= 0)
-        return AVERROR_INVALIDDATA;
-    bits_consumed = decode_audio_specific_config(NULL, avctx, &m4ac,
-                                         gb->buffer + (config_start_bit / 8),
-                                         asclen, sync_extension);
 
-    if (bits_consumed < 0)
+    if (get_bits_left(gb) <= 0)
         return AVERROR_INVALIDDATA;
+
+    bits_consumed = decode_audio_specific_config_gb(NULL, avctx, &m4ac,
+                                                    &gbc, config_start_bit,
+                                                    sync_extension);
+
+    if (bits_consumed < config_start_bit)
+        return AVERROR_INVALIDDATA;
+    bits_consumed -= config_start_bit;
+
+    if (asclen == 0)
+      asclen = bits_consumed;
 
     if (!latmctx->initialized ||
         ac->oc[1].m4ac.sample_rate != m4ac.sample_rate ||
@@ -319,7 +325,7 @@ static int latm_decode_audio_specific_config(struct LATMContext *latmctx,
         }
         latmctx->initialized = 0;
 
-        esize = (bits_consumed+7) / 8;
+        esize = (asclen + 7) / 8;
 
         if (avctx->extradata_size < esize) {
             av_free(avctx->extradata);
@@ -329,12 +335,15 @@ static int latm_decode_audio_specific_config(struct LATMContext *latmctx,
         }
 
         avctx->extradata_size = esize;
-        memcpy(avctx->extradata, gb->buffer + (config_start_bit/8), esize);
+        gbc = *gb;
+        for (i = 0; i < esize; i++) {
+          avctx->extradata[i] = get_bits(&gbc, 8);
+        }
         memset(avctx->extradata+esize, 0, AV_INPUT_BUFFER_PADDING_SIZE);
     }
-    skip_bits_long(gb, bits_consumed);
+    skip_bits_long(gb, asclen);
 
-    return bits_consumed;
+    return 0;
 }
 
 static int read_stream_mux_config(struct LATMContext *latmctx,
@@ -375,8 +384,6 @@ static int read_stream_mux_config(struct LATMContext *latmctx,
             int ascLen = latm_get_value(gb);
             if ((ret = latm_decode_audio_specific_config(latmctx, gb, ascLen)) < 0)
                 return ret;
-            ascLen -= ret;
-            skip_bits_long(gb, ascLen);
         }
 
         latmctx->frame_length_type = get_bits(gb, 3);
@@ -424,6 +431,8 @@ static int read_payload_length_info(struct LATMContext *ctx, GetBitContext *gb)
     if (ctx->frame_length_type == 0) {
         int mux_slot_length = 0;
         do {
+            if (get_bits_left(gb) < 8)
+                return AVERROR_INVALIDDATA;
             tmp = get_bits(gb, 8);
             mux_slot_length += tmp;
         } while (tmp == 255);
@@ -449,11 +458,11 @@ static int read_audio_mux_element(struct LATMContext *latmctx,
     } else if (!latmctx->aac_ctx.avctx->extradata) {
         av_log(latmctx->aac_ctx.avctx, AV_LOG_DEBUG,
                "no decoder config found\n");
-        return AVERROR(EAGAIN);
+        return 1;
     }
     if (latmctx->audio_mux_version_A == 0) {
         int mux_slot_length_bytes = read_payload_length_info(latmctx, gb);
-        if (mux_slot_length_bytes * 8 > get_bits_left(gb)) {
+        if (mux_slot_length_bytes < 0 || mux_slot_length_bytes * 8LL > get_bits_left(gb)) {
             av_log(latmctx->aac_ctx.avctx, AV_LOG_ERROR, "incomplete frame\n");
             return AVERROR_INVALIDDATA;
         } else if (mux_slot_length_bytes * 8 + 256 < get_bits_left(gb)) {
@@ -486,8 +495,8 @@ static int latm_decode_frame(AVCodecContext *avctx, void *out,
     if (muxlength > avpkt->size)
         return AVERROR_INVALIDDATA;
 
-    if ((err = read_audio_mux_element(latmctx, &gb)) < 0)
-        return err;
+    if ((err = read_audio_mux_element(latmctx, &gb)))
+        return (err < 0) ? err : avpkt->size;
 
     if (!latmctx->initialized) {
         if (!avctx->extradata) {

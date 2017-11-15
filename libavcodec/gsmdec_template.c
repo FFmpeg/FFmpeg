@@ -41,7 +41,7 @@ static void apcm_dequant_add(GetBitContext *gb, int16_t *dst, const int *frame_b
 
 static inline int gsm_mult(int a, int b)
 {
-    return (a * b + (1 << 14)) >> 15;
+    return (int)(a * (SUINT)b + (1 << 14)) >> 15;
 }
 
 static void long_term_synth(int16_t *dst, int lag, int gain_idx)

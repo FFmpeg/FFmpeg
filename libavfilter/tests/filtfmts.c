@@ -25,8 +25,12 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/samplefmt.h"
 
+#define FF_INTERNAL_FIELDS 1
+#include "libavfilter/framequeue.h"
+
 #include "libavfilter/avfilter.h"
 #include "libavfilter/formats.h"
+#include "libavfilter/internal.h"
 
 static void print_formats(AVFilterContext *filter_ctx)
 {
@@ -69,7 +73,7 @@ static void print_formats(AVFilterContext *filter_ctx)
 
 int main(int argc, char **argv)
 {
-    AVFilter *filter;
+    const AVFilter *filter;
     AVFilterContext *filter_ctx;
     AVFilterGraph *graph_ctx;
     const char *filter_name;

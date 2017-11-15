@@ -6,6 +6,7 @@
 #codec_id 0: pcm_s16le
 #sample_rate 0: 8000
 #channel_layout 0: 4
+#channel_layout_name 0: mono
 #stream#, dts,        pts, duration,     size, hash
 0,          0,          0,     8192,    16384, a0cf3a0953adce1a1032a4fd2da00a52
 0,       8192,       8192,     8192,    16384, c750c1b76a203556dd60d73d261529e9

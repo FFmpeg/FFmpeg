@@ -628,7 +628,7 @@ static int dct_sad8x8_c(MpegEncContext *s, uint8_t *src1,
 
     av_assert2(h == 8);
 
-    s->pdsp.diff_pixels(temp, src1, src2, stride);
+    s->pdsp.diff_pixels_unaligned(temp, src1, src2, stride);
     s->fdsp.fdct(temp);
     return s->mecc.sum_abs_dctelem(temp);
 }
@@ -668,7 +668,7 @@ static int dct264_sad8x8_c(MpegEncContext *s, uint8_t *src1,
     int16_t dct[8][8];
     int i, sum = 0;
 
-    s->pdsp.diff_pixels(dct[0], src1, src2, stride);
+    s->pdsp.diff_pixels_unaligned(dct[0], src1, src2, stride);
 
 #define SRC(x) dct[i][x]
 #define DST(x, v) dct[i][x] = v
@@ -695,7 +695,7 @@ static int dct_max8x8_c(MpegEncContext *s, uint8_t *src1,
 
     av_assert2(h == 8);
 
-    s->pdsp.diff_pixels(temp, src1, src2, stride);
+    s->pdsp.diff_pixels_unaligned(temp, src1, src2, stride);
     s->fdsp.fdct(temp);
 
     for (i = 0; i < 64; i++)
@@ -714,7 +714,7 @@ static int quant_psnr8x8_c(MpegEncContext *s, uint8_t *src1,
     av_assert2(h == 8);
     s->mb_intra = 0;
 
-    s->pdsp.diff_pixels(temp, src1, src2, stride);
+    s->pdsp.diff_pixels_unaligned(temp, src1, src2, stride);
 
     memcpy(bak, temp, 64 * sizeof(int16_t));
 
@@ -817,7 +817,7 @@ static int bit8x8_c(MpegEncContext *s, uint8_t *src1, uint8_t *src2,
 
     av_assert2(h == 8);
 
-    s->pdsp.diff_pixels(temp, src1, src2, stride);
+    s->pdsp.diff_pixels_unaligned(temp, src1, src2, stride);
 
     s->block_last_index[0 /* FIXME */] =
     last                               =

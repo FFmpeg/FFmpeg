@@ -24,7 +24,7 @@
 #include "avfilter.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct VolDetectContext {
     /**
      * Number of samples at each PCM value.
      * histogram[0x8000 + i] is the number of samples at value i.
@@ -41,9 +41,19 @@ static int query_formats(AVFilterContext *ctx)
         AV_SAMPLE_FMT_NONE
     };
     AVFilterFormats *formats;
+    AVFilterChannelLayouts *layouts;
+    int ret;
 
     if (!(formats = ff_make_format_list(sample_fmts)))
         return AVERROR(ENOMEM);
+
+    layouts = ff_all_channel_counts();
+    if (!layouts)
+        return AVERROR(ENOMEM);
+    ret = ff_set_common_channel_layouts(ctx, layouts);
+    if (ret < 0)
+        return ret;
+
     return ff_set_common_formats(ctx, formats);
 }
 
@@ -51,9 +61,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *samples)
 {
     AVFilterContext *ctx = inlink->dst;
     VolDetectContext *vd = ctx->priv;
-    int64_t layout  = samples->channel_layout;
     int nb_samples  = samples->nb_samples;
-    int nb_channels = av_get_channel_layout_nb_channels(layout);
+    int nb_channels = samples->channels;
     int nb_planes   = nb_channels;
     int plane, i;
     int16_t *pcm;

@@ -182,14 +182,19 @@ static int write_representation(AVFormatContext *s, AVStream *stream, char *id,
     AVDictionaryEntry *cues_end = av_dict_get(stream->metadata, CUES_END, NULL, 0);
     AVDictionaryEntry *filename = av_dict_get(stream->metadata, FILENAME, NULL, 0);
     AVDictionaryEntry *bandwidth = av_dict_get(stream->metadata, BANDWIDTH, NULL, 0);
+    const char *bandwidth_str;
     if ((w->is_live && (!filename)) ||
         (!w->is_live && (!irange || !cues_start || !cues_end || !filename || !bandwidth))) {
         return AVERROR_INVALIDDATA;
     }
     avio_printf(s->pb, "<Representation id=\"%s\"", id);
-    // FIXME: For live, This should be obtained from the input file or as an AVOption.
-    avio_printf(s->pb, " bandwidth=\"%s\"",
-                w->is_live ? (stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO ? "128000" : "1000000") : bandwidth->value);
+    // if bandwidth for live was not provided, use a default
+    if (w->is_live && !bandwidth) {
+        bandwidth_str = (stream->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) ? "128000" : "1000000";
+    } else {
+        bandwidth_str = bandwidth->value;
+    }
+    avio_printf(s->pb, " bandwidth=\"%s\"", bandwidth_str);
     if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && output_width)
         avio_printf(s->pb, " width=\"%d\"", stream->codecpar->width);
     if (stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && output_height)
@@ -283,33 +288,55 @@ static int parse_filename(char *filename, char **representation_id,
     char *period_pos = NULL;
     char *temp_pos = NULL;
     char *filename_str = av_strdup(filename);
-    if (!filename_str) return AVERROR(ENOMEM);
+    int ret = 0;
+
+    if (!filename_str) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
     temp_pos = av_stristr(filename_str, "_");
     while (temp_pos) {
         underscore_pos = temp_pos + 1;
         temp_pos = av_stristr(temp_pos + 1, "_");
     }
-    if (!underscore_pos) return AVERROR_INVALIDDATA;
+    if (!underscore_pos) {
+        ret = AVERROR_INVALIDDATA;
+        goto end;
+    }
     period_pos = av_stristr(underscore_pos, ".");
-    if (!period_pos) return AVERROR_INVALIDDATA;
+    if (!period_pos) {
+        ret = AVERROR_INVALIDDATA;
+        goto end;
+    }
     *(underscore_pos - 1) = 0;
     if (representation_id) {
         *representation_id = av_malloc(period_pos - underscore_pos + 1);
-        if (!(*representation_id)) return AVERROR(ENOMEM);
+        if (!(*representation_id)) {
+            ret = AVERROR(ENOMEM);
+            goto end;
+        }
         av_strlcpy(*representation_id, underscore_pos, period_pos - underscore_pos + 1);
     }
     if (initialization_pattern) {
         *initialization_pattern = av_asprintf("%s_$RepresentationID$.hdr",
                                               filename_str);
-        if (!(*initialization_pattern)) return AVERROR(ENOMEM);
+        if (!(*initialization_pattern)) {
+            ret = AVERROR(ENOMEM);
+            goto end;
+        }
     }
     if (media_pattern) {
         *media_pattern = av_asprintf("%s_$RepresentationID$_$Number$.chk",
                                      filename_str);
-        if (!(*media_pattern)) return AVERROR(ENOMEM);
+        if (!(*media_pattern)) {
+            ret = AVERROR(ENOMEM);
+            goto end;
+        }
     }
-    av_free(filename_str);
-    return 0;
+
+end:
+    av_freep(&filename_str);
+    return ret;
 }
 
 /*
@@ -428,6 +455,10 @@ static int parse_adaptation_sets(AVFormatContext *s)
     char *p = w->adaptation_sets;
     char *q;
     enum { new_set, parsed_id, parsing_streams } state;
+    if (!w->adaptation_sets) {
+        av_log(s, AV_LOG_ERROR, "The 'adaptation_sets' option must be set.\n");
+        return AVERROR(EINVAL);
+    }
     // syntax id=0,streams=0,1,2 id=1,streams=3,4 and so on
     state = new_set;
     while (p < w->adaptation_sets + strlen(w->adaptation_sets)) {
@@ -458,7 +489,11 @@ static int parse_adaptation_sets(AVFormatContext *s)
             if (as->streams == NULL)
                 return AVERROR(ENOMEM);
             as->streams[as->nb_streams - 1] = to_integer(p, q - p + 1);
-            if (as->streams[as->nb_streams - 1] < 0) return -1;
+            if (as->streams[as->nb_streams - 1] < 0 ||
+                as->streams[as->nb_streams - 1] >= s->nb_streams) {
+                av_log(s, AV_LOG_ERROR, "Invalid value for 'streams' in adapation_sets.\n");
+                return AVERROR(EINVAL);
+            }
             if (*q == '\0') break;
             if (*q == ' ') state = new_set;
             p = ++q;

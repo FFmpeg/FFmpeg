@@ -18,23 +18,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdint.h>
-
 #include "config.h"
-#if HAVE_ALTIVEC_H
-#include <altivec.h>
-#endif
+
+#include <stdint.h>
 
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/ppc/cpu.h"
-#include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
+
 #include "libavcodec/svq1enc.h"
 
 #if HAVE_ALTIVEC
 static int ssd_int8_vs_int16_altivec(const int8_t *pix1, const int16_t *pix2,
-                                     int size)
+                                     intptr_t size)
 {
     int i, size16 = size >> 4;
     vector signed char vpix1;

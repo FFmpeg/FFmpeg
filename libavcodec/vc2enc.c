@@ -1063,7 +1063,7 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
 {
     Plane *p;
     SubBand *b;
-    int i, j, level, o, shift;
+    int i, j, level, o, shift, ret;
     const AVPixFmtDescriptor *fmt = av_pix_fmt_desc_get(avctx->pix_fmt);
     const int depth = fmt->comp[0].depth;
     VC2EncContext *s = avctx->priv_data;
@@ -1124,12 +1124,12 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
     }
 
     if (s->base_vf <= 0) {
-        if (avctx->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL) {
+        if (avctx->strict_std_compliance < FF_COMPLIANCE_STRICT) {
             s->strict_compliance = s->base_vf = 0;
-            av_log(avctx, AV_LOG_WARNING, "Disabling strict compliance\n");
+            av_log(avctx, AV_LOG_WARNING, "Format does not strictly comply with VC2 specs\n");
         } else {
             av_log(avctx, AV_LOG_WARNING, "Given format does not strictly comply with "
-                   "the specifications, please add a -strict -1 flag to use it\n");
+                   "the specifications, decrease strictness to use it.\n");
             return AVERROR_UNKNOWN;
         }
     } else {
@@ -1138,7 +1138,9 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
     }
 
     /* Chroma subsampling */
-    avcodec_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_x_shift, &s->chroma_y_shift);
+    ret = av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_x_shift, &s->chroma_y_shift);
+    if (ret)
+        return ret;
 
     /* Bit depth and color range index */
     if (depth == 8 && avctx->color_range == AVCOL_RANGE_JPEG) {
@@ -1190,7 +1192,8 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
         /* DWT init */
         if (ff_vc2enc_init_transforms(&s->transform_args[i].t,
                                       s->plane[i].coef_stride,
-                                      s->plane[i].dwt_height))
+                                      s->plane[i].dwt_height,
+                                      s->slice_width, s->slice_height))
             goto alloc_fail;
     }
 

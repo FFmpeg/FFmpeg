@@ -152,12 +152,12 @@ static int filter_postscale(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
     ThreadData *td = arg;
     const int height = td->height;
     const int width = td->width;
-    const int64_t numpixels = width * height;
-    const int slice_start = (numpixels *  jobnr   ) / nb_jobs;
-    const int slice_end   = (numpixels * (jobnr+1)) / nb_jobs;
+    const int64_t numpixels = width * (int64_t)height;
+    const unsigned slice_start = (numpixels *  jobnr   ) / nb_jobs;
+    const unsigned slice_end   = (numpixels * (jobnr+1)) / nb_jobs;
     const float postscale = s->postscale * s->postscaleV;
     float *buffer = s->buffer;
-    int i;
+    unsigned i;
 
     for (i = slice_start; i < slice_end; i++)
         buffer[i] *= postscale;
@@ -201,8 +201,8 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVA420P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA444P16,
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
-        AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GBRAP16,
-        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY16,
+        AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GBRAP16,
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_NONE
     };
 

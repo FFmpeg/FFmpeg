@@ -673,7 +673,7 @@ static const uint16_t order_MODE_23k85[] = {
 };
 
 /** Reordering array addresses for each mode */
-static const uint16_t* amr_bit_orderings_by_mode[] = {
+static const uint16_t * const amr_bit_orderings_by_mode[] = {
     order_MODE_6k60,
     order_MODE_8k85,
     order_MODE_12k65,

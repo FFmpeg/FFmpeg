@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/bswap.h"
+#include "libavcodec/internal.h"
 #include "avformat.h"
 #include "internal.h"
 
@@ -68,7 +69,7 @@ static int xvag_read_header(AVFormatContext *s)
 
     if (st->codecpar->sample_rate <= 0)
         return AVERROR_INVALIDDATA;
-    if (st->codecpar->channels <= 0)
+    if (st->codecpar->channels <= 0 || st->codecpar->channels > FF_SANE_NB_CHANNELS)
         return AVERROR_INVALIDDATA;
 
     switch (codec) {

@@ -351,12 +351,12 @@ static av_cold int libopus_encode_init(AVCodecContext *avctx)
         avctx->bit_rate = 64000 * opus->stream_count +
                           32000 * coupled_stream_count;
         av_log(avctx, AV_LOG_WARNING,
-               "No bit rate set. Defaulting to %"PRId64" bps.\n", (int64_t)avctx->bit_rate);
+               "No bit rate set. Defaulting to %"PRId64" bps.\n", avctx->bit_rate);
     }
 
     if (avctx->bit_rate < 500 || avctx->bit_rate > 256000 * avctx->channels) {
         av_log(avctx, AV_LOG_ERROR, "The bit rate %"PRId64" bps is unsupported. "
-               "Please choose a value between 500 and %d.\n", (int64_t)avctx->bit_rate,
+               "Please choose a value between 500 and %d.\n", avctx->bit_rate,
                256000 * avctx->channels);
         ret = AVERROR(EINVAL);
         goto fail;
@@ -368,7 +368,7 @@ static av_cold int libopus_encode_init(AVCodecContext *avctx)
         goto fail;
     }
 
-    /* Header includes channel mapping table if and only if mapping family is 0 */
+    /* Header includes channel mapping table if and only if mapping family is NOT 0 */
     header_size = 19 + (mapping_family == 0 ? 0 : 2 + avctx->channels);
     avctx->extradata = av_malloc(header_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!avctx->extradata) {

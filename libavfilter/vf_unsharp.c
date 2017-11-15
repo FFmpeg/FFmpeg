@@ -258,8 +258,10 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
 end:
     av_frame_free(&in);
 
-    if (ret < 0)
+    if (ret < 0) {
+        av_frame_free(&out);
         return ret;
+    }
     return ff_filter_frame(outlink, out);
 }
 

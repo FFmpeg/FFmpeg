@@ -158,7 +158,7 @@ int ff_init_slice_from_src(SwsSlice * s, uint8_t *src[4], int stride[4], int src
                         chrY + chrH,
                         lumY + lumH};
 
-    const uint8_t *src_[4] = {src[0] + (relative ? 0 : start[0]) * stride[0],
+    uint8_t *const src_[4] = {src[0] + (relative ? 0 : start[0]) * stride[0],
                               src[1] + (relative ? 0 : start[1]) * stride[1],
                               src[2] + (relative ? 0 : start[2]) * stride[2],
                               src[3] + (relative ? 0 : start[3]) * stride[3]};

@@ -206,6 +206,9 @@ static int ftp_send_command(FTPContext *s, const char *command,
     if (response)
         *response = NULL;
 
+    if (!s->conn_control)
+        return AVERROR(EIO);
+
     if ((err = ffurl_write(s->conn_control, command, strlen(command))) < 0)
         return err;
     if (!err)

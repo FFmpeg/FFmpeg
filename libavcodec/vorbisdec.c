@@ -731,7 +731,7 @@ static int vorbis_parse_setup_hdr_residues(vorbis_context *vc)
         if (!res_setup->classifs)
             return AVERROR(ENOMEM);
 
-        ff_dlog(NULL, "    begin %d end %d part.size %d classif.s %d classbook %d \n",
+        ff_dlog(NULL, "    begin %"PRIu32" end %"PRIu32" part.size %u classif.s %"PRIu8" classbook %"PRIu8"\n",
                 res_setup->begin, res_setup->end, res_setup->partition_size,
                 res_setup->classifications, res_setup->classbook);
 
@@ -876,7 +876,7 @@ static int create_map(vorbis_context *vc, unsigned floor_number)
     }
 
     for (idx = 0; idx <= n; ++idx) {
-        ff_dlog(NULL, "floor0 map: map at pos %d is %d\n", idx, map[idx]);
+        ff_dlog(NULL, "floor0 map: map at pos %d is %"PRId32"\n", idx, map[idx]);
     }
 
     return 0;
@@ -1012,7 +1012,7 @@ static int vorbis_parse_id_hdr(vorbis_context *vc)
     if (!vc->fdsp)
         return AVERROR(ENOMEM);
 
-    ff_dlog(NULL, " vorbis version %d \n audio_channels %d \n audio_samplerate %d \n bitrate_max %d \n bitrate_nom %d \n bitrate_min %d \n blk_0 %d blk_1 %d \n ",
+    ff_dlog(NULL, " vorbis version %"PRIu32" \n audio_channels %"PRIu8" \n audio_samplerate %"PRIu32" \n bitrate_max %"PRIu32" \n bitrate_nom %"PRIu32" \n bitrate_min %"PRIu32" \n blk_0 %"PRIu32" blk_1 %"PRIu32" \n ",
             vc->version, vc->audio_channels, vc->audio_samplerate, vc->bitrate_maximum, vc->bitrate_nominal, vc->bitrate_minimum, vc->blocksize[0], vc->blocksize[1]);
 
 /*

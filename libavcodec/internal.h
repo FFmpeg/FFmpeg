@@ -48,8 +48,8 @@
 #define FF_CODEC_CAP_INIT_CLEANUP           (1 << 1)
 /**
  * Decoders marked with FF_CODEC_CAP_SETS_PKT_DTS want to set
- * AVFrame.pkt_dts manually. If the flag is set, utils.c won't overwrite
- * this field. If it's unset, utils.c tries to guess the pkt_dts field
+ * AVFrame.pkt_dts manually. If the flag is set, decode.c won't overwrite
+ * this field. If it's unset, decode.c tries to guess the pkt_dts field
  * from the input AVPacket.
  */
 #define FF_CODEC_CAP_SETS_PKT_DTS           (1 << 2)
@@ -58,6 +58,21 @@
  * skipped due to the skip_frame setting.
  */
 #define FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM  (1 << 3)
+/**
+ * The decoder sets the cropping fields in the output frames manually.
+ * If this cap is set, the generic code will initialize output frame
+ * dimensions to coded rather than display values.
+ */
+#define FF_CODEC_CAP_EXPORTS_CROPPING       (1 << 4)
+/**
+ * Codec initializes slice-based threading with a main function
+ */
+#define FF_CODEC_CAP_SLICE_THREAD_HAS_MF    (1 << 5)
+
+/**
+ * Allow only AVHWAccels which have a matching decoder_class field.
+ */
+#define FF_CODEC_CAP_HWACCEL_REQUIRE_CLASS  (1 << 6)
 
 #ifdef TRACE
 #   define ff_tlog(ctx, ...) av_log(ctx, AV_LOG_TRACE, __VA_ARGS__)
@@ -66,15 +81,18 @@
 #endif
 
 
-#if !FF_API_QUANT_BIAS
 #define FF_DEFAULT_QUANT_BIAS 999999
-#endif
+
+#define FF_QSCALE_TYPE_MPEG1 0
+#define FF_QSCALE_TYPE_MPEG2 1
+#define FF_QSCALE_TYPE_H264  2
+#define FF_QSCALE_TYPE_VP56  3
 
 #define FF_SANE_NB_CHANNELS 64U
 
 #define FF_SIGNBIT(x) ((x) >> CHAR_BIT * sizeof(x) - 1)
 
-#if HAVE_AVX
+#if HAVE_SIMD_ALIGN_32
 #   define STRIDE_ALIGN 32
 #elif HAVE_SIMD_ALIGN_16
 #   define STRIDE_ALIGN 16
@@ -100,6 +118,16 @@ typedef struct FramePool {
     int channels;
     int samples;
 } FramePool;
+
+typedef struct DecodeSimpleContext {
+    AVPacket *in_pkt;
+    AVFrame  *out_frame;
+} DecodeSimpleContext;
+
+typedef struct DecodeFilterContext {
+    AVBSFContext **bsfs;
+    int         nb_bsfs;
+} DecodeFilterContext;
 
 typedef struct AVCodecInternal {
     /**
@@ -137,11 +165,14 @@ typedef struct AVCodecInternal {
 
     void *thread_ctx;
 
+    DecodeSimpleContext ds;
+    DecodeFilterContext filter;
+
     /**
-     * Current packet as passed into the decoder, to avoid having to pass the
-     * packet into every function.
+     * Properties (timestamps+side data) extracted from the last packet passed
+     * for decoding.
      */
-    AVPacket *pkt;
+    AVPacket *last_pkt_props;
 
     /**
      * temporary buffer used for encoders to store their bitstream
@@ -173,7 +204,23 @@ typedef struct AVCodecInternal {
     int buffer_pkt_valid; // encoding: packet without data can be valid
     AVFrame *buffer_frame;
     int draining_done;
+    /* set to 1 when the caller is using the old decoding API */
+    int compat_decode;
+    int compat_decode_warned;
+    /* this variable is set by the decoder internals to signal to the old
+     * API compat wrappers the amount of data consumed from the last packet */
+    size_t compat_decode_consumed;
+    /* when a partial packet has been consumed, this stores the remaining size
+     * of the packet (that should be submitted in the next decode call */
+    size_t compat_decode_partial_size;
+    AVFrame *compat_decode_frame;
+
     int showed_multi_packet_warning;
+
+    int skip_samples_multiplier;
+
+    /* to prevent infinite loop on errors when draining */
+    int nb_draining_errors;
 } AVCodecInternal;
 
 struct AVCodecDefault {
@@ -262,7 +309,7 @@ static av_always_inline int64_t ff_samples_to_time_base(AVCodecContext *avctx,
 static av_always_inline float ff_exp2fi(int x) {
     /* Normal range */
     if (-126 <= x && x <= 128)
-        return av_int2float(x+127 << 23);
+        return av_int2float((x+127) << 23);
     /* Too large */
     else if (x > 128)
         return INFINITY;
@@ -360,5 +407,21 @@ int ff_side_data_set_encoder_stats(AVPacket *pkt, int quality, int64_t *error, i
  */
 int ff_alloc_a53_sei(const AVFrame *frame, size_t prefix_len,
                      void **data, size_t *sei_size);
+
+/**
+ * Get an estimated video bitrate based on frame size, frame rate and coded
+ * bits per pixel.
+ */
+int64_t ff_guess_coded_bitrate(AVCodecContext *avctx);
+
+#if defined(_WIN32) && CONFIG_SHARED
+#ifdef BUILDING_avcodec
+#    define av_export_avcodec __declspec(dllexport)
+#else
+#    define av_export_avcodec __declspec(dllimport)
+#endif
+#else
+#    define av_export_avcodec
+#endif
 
 #endif /* AVCODEC_INTERNAL_H */

@@ -464,16 +464,16 @@ static void sr_1d97_int(int32_t *p, int i0, int i1)
     extend97_int(p, i0, i1);
 
     for (i = (i0 >> 1) - 1; i < (i1 >> 1) + 2; i++)
-        p[2 * i]     -= (I_LFTG_DELTA * (p[2 * i - 1] + p[2 * i + 1]) + (1 << 15)) >> 16;
+        p[2 * i]     -= (I_LFTG_DELTA * (p[2 * i - 1] + (int64_t)p[2 * i + 1]) + (1 << 15)) >> 16;
     /* step 4 */
     for (i = (i0 >> 1) - 1; i < (i1 >> 1) + 1; i++)
-        p[2 * i + 1] -= (I_LFTG_GAMMA * (p[2 * i]     + p[2 * i + 2]) + (1 << 15)) >> 16;
+        p[2 * i + 1] -= (I_LFTG_GAMMA * (p[2 * i]     + (int64_t)p[2 * i + 2]) + (1 << 15)) >> 16;
     /*step 5*/
     for (i = (i0 >> 1); i < (i1 >> 1) + 1; i++)
-        p[2 * i]     += (I_LFTG_BETA  * (p[2 * i - 1] + p[2 * i + 1]) + (1 << 15)) >> 16;
+        p[2 * i]     += (I_LFTG_BETA  * (p[2 * i - 1] + (int64_t)p[2 * i + 1]) + (1 << 15)) >> 16;
     /* step 6 */
     for (i = (i0 >> 1); i < (i1 >> 1); i++)
-        p[2 * i + 1] += (I_LFTG_ALPHA * (p[2 * i]     + p[2 * i + 2]) + (1 << 15)) >> 16;
+        p[2 * i + 1] += (I_LFTG_ALPHA * (p[2 * i]     + (int64_t)p[2 * i + 2]) + (1 << 15)) >> 16;
 }
 
 static void dwt_decode97_int(DWTContext *s, int32_t *t)
@@ -488,7 +488,7 @@ static void dwt_decode97_int(DWTContext *s, int32_t *t)
     line += 5;
 
     for (i = 0; i < w * h; i++)
-        data[i] <<= I_PRESHIFT;
+        data[i] *= 1LL << I_PRESHIFT;
 
     for (lev = 0; lev < s->ndeclevels; lev++) {
         int lh = s->linelen[lev][0],

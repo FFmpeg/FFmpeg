@@ -47,7 +47,6 @@
 #include "profiles.h"
 #include "thread.h"
 #include "version.h"
-#include "vdpau_compat.h"
 #include "xvmc_internal.h"
 
 typedef struct Mpeg1Context {
@@ -497,7 +496,7 @@ static inline int mpeg2_decode_block_intra(MpegEncContext *s,
     dc  = s->last_dc[component];
     dc += diff;
     s->last_dc[component] = dc;
-    block[0] = dc << (3 - s->intra_dc_precision);
+    block[0] = dc * (1 << (3 - s->intra_dc_precision));
     ff_tlog(s->avctx, "dc=%d\n", block[0]);
     mismatch = block[0] ^ 1;
     i = 0;
@@ -865,8 +864,8 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
                                                    s->last_mv[i][0][1]);
                             /* full_pel: only for MPEG-1 */
                             if (s->full_pel[i]) {
-                                s->mv[i][0][0] <<= 1;
-                                s->mv[i][0][1] <<= 1;
+                                s->mv[i][0][0] *= 2;
+                                s->mv[i][0][1] *= 2;
                             }
                         }
                     }
@@ -948,8 +947,8 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
                         dmy = get_dmv(s);
 
 
-                        s->last_mv[i][0][1] = my << my_shift;
-                        s->last_mv[i][1][1] = my << my_shift;
+                        s->last_mv[i][0][1] = my * (1 << my_shift);
+                        s->last_mv[i][1][1] = my * (1 << my_shift);
 
                         s->mv[i][0][0] = mx;
                         s->mv[i][0][1] = my;
@@ -994,7 +993,7 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
 
             cbp = get_vlc2(&s->gb, ff_mb_pat_vlc.table, MB_PAT_VLC_BITS, 1);
             if (mb_block_count > 6) {
-                cbp <<= mb_block_count - 6;
+                cbp *= 1 << mb_block_count - 6;
                 cbp  |= get_bits(&s->gb, mb_block_count - 6);
                 s->bdsp.clear_blocks(s->block[6]);
             }
@@ -1134,9 +1133,6 @@ static const enum AVPixelFormat mpeg1_hwaccel_pixfmt_list_420[] = {
 #if CONFIG_MPEG1_XVMC_HWACCEL
     AV_PIX_FMT_XVMC,
 #endif
-#if CONFIG_MPEG1_VDPAU_DECODER && FF_API_VDPAU
-    AV_PIX_FMT_VDPAU_MPEG1,
-#endif
 #if CONFIG_MPEG1_VDPAU_HWACCEL
     AV_PIX_FMT_VDPAU,
 #endif
@@ -1148,9 +1144,6 @@ static const enum AVPixelFormat mpeg2_hwaccel_pixfmt_list_420[] = {
 #if CONFIG_MPEG2_XVMC_HWACCEL
     AV_PIX_FMT_XVMC,
 #endif
-#if CONFIG_MPEG_VDPAU_DECODER && FF_API_VDPAU
-    AV_PIX_FMT_VDPAU_MPEG2,
-#endif
 #if CONFIG_MPEG2_VDPAU_HWACCEL
     AV_PIX_FMT_VDPAU,
 #endif
@@ -1159,6 +1152,7 @@ static const enum AVPixelFormat mpeg2_hwaccel_pixfmt_list_420[] = {
 #endif
 #if CONFIG_MPEG2_D3D11VA_HWACCEL
     AV_PIX_FMT_D3D11VA_VLD,
+    AV_PIX_FMT_D3D11,
 #endif
 #if CONFIG_MPEG2_VAAPI_HWACCEL
     AV_PIX_FMT_VAAPI,
@@ -1179,12 +1173,6 @@ static const enum AVPixelFormat mpeg12_pixfmt_list_444[] = {
     AV_PIX_FMT_YUV444P,
     AV_PIX_FMT_NONE
 };
-
-#if FF_API_VDPAU
-static inline int uses_vdpau(AVCodecContext *avctx) {
-    return avctx->pix_fmt == AV_PIX_FMT_VDPAU_MPEG1 || avctx->pix_fmt == AV_PIX_FMT_VDPAU_MPEG2;
-}
-#endif
 
 static enum AVPixelFormat mpeg_get_pixelformat(AVCodecContext *avctx)
 {
@@ -1210,24 +1198,15 @@ static enum AVPixelFormat mpeg_get_pixelformat(AVCodecContext *avctx)
 static void setup_hwaccel_for_pixfmt(AVCodecContext *avctx)
 {
     // until then pix_fmt may be changed right after codec init
-    if (avctx->hwaccel
-#if FF_API_VDPAU
-        || uses_vdpau(avctx)
-#endif
-        )
+    if (avctx->hwaccel)
         if (avctx->idct_algo == FF_IDCT_AUTO)
-            avctx->idct_algo = FF_IDCT_SIMPLE;
+            avctx->idct_algo = FF_IDCT_NONE;
 
     if (avctx->hwaccel && avctx->pix_fmt == AV_PIX_FMT_XVMC) {
         Mpeg1Context *s1 = avctx->priv_data;
         MpegEncContext *s = &s1->mpeg_enc_ctx;
 
         s->pack_pblocks = 1;
-#if FF_API_XVMC
-FF_DISABLE_DEPRECATION_WARNINGS
-        avctx->xvmc_acceleration = 2;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif /* FF_API_XVMC */
     }
 }
 
@@ -1242,7 +1221,8 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
 
     if (avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO) {
         // MPEG-1 aspect
-        avctx->sample_aspect_ratio = av_d2q(1.0 / ff_mpeg1_aspect[s->aspect_ratio_info], 255);
+        AVRational aspect_inv = av_d2q(ff_mpeg1_aspect[s->aspect_ratio_info], 255);
+        avctx->sample_aspect_ratio = (AVRational) { aspect_inv.den, aspect_inv.num };
     } else { // MPEG-2
         // MPEG-2 aspect
         if (s->aspect_ratio_info > 1) {
@@ -1655,7 +1635,6 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
             if (sd)
                 memcpy(sd->data, s1->a53_caption, s1->a53_caption_size);
             av_freep(&s1->a53_caption);
-            avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
         }
 
         if (s1->has_stereo3d) {
@@ -1867,7 +1846,7 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
         s->dest[1] +=(16 >> lowres) >> s->chroma_x_shift;
         s->dest[2] +=(16 >> lowres) >> s->chroma_x_shift;
 
-        ff_mpv_decode_mb(s, s->block);
+        ff_mpv_reconstruct_mb(s, s->block);
 
         if (++s->mb_x >= s->mb_width) {
             const int mb_size = 16 >> s->avctx->lowres;
@@ -2258,6 +2237,7 @@ static int mpeg_decode_a53_cc(AVCodecContext *avctx,
             s1->a53_caption      = av_malloc(s1->a53_caption_size);
             if (s1->a53_caption)
                 memcpy(s1->a53_caption, p + 7, s1->a53_caption_size);
+            avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
         }
         return 1;
     } else if (buf_size >= 11 &&
@@ -2313,6 +2293,7 @@ static int mpeg_decode_a53_cc(AVCodecContext *avctx,
                     p += 6;
                 }
             }
+            avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
         }
         return 1;
     }
@@ -2353,11 +2334,6 @@ static void mpeg_decode_user_data(AVCodecContext *avctx,
         if (flags & 0x40) {
             if (buf_end - p < 1)
                 return;
-#if FF_API_AFD
-FF_DISABLE_DEPRECATION_WARNINGS
-            avctx->dtg_active_format = p[0] & 0x0f;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif /* FF_API_AFD */
             s1->has_afd = 1;
             s1->afd     = p[0] & 0x0f;
         }
@@ -2456,12 +2432,6 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
                     for (i = 0; i < s->slice_count; i++)
                         s2->er.error_count += s2->thread_context[i]->er.error_count;
                 }
-
-#if FF_API_VDPAU
-                if ((CONFIG_MPEG_VDPAU_DECODER || CONFIG_MPEG1_VDPAU_DECODER)
-                    && uses_vdpau(avctx))
-                    ff_vdpau_mpeg_picture_complete(s2, buf, buf_size, s->slice_count);
-#endif
 
                 ret = slice_end(avctx, picture);
                 if (ret < 0)
@@ -2659,6 +2629,8 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
                     if (s2->pict_type == AV_PICTURE_TYPE_B) {
                         if (!s2->closed_gop) {
                             skip_frame = 1;
+                            av_log(s2->avctx, AV_LOG_DEBUG,
+                                   "Skipping B slice due to open GOP\n");
                             break;
                         }
                     }
@@ -2670,6 +2642,8 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
                      * we have an invalid header. */
                     if (s2->pict_type == AV_PICTURE_TYPE_P && !s->sync) {
                         skip_frame = 1;
+                        av_log(s2->avctx, AV_LOG_DEBUG,
+                               "Skipping P slice due to !sync\n");
                         break;
                     }
                 }
@@ -2709,13 +2683,6 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
                            "current_picture not initialized\n");
                     return AVERROR_INVALIDDATA;
                 }
-
-#if FF_API_VDPAU
-                if (uses_vdpau(avctx)) {
-                    s->slice_count++;
-                    break;
-                }
-#endif
 
                 if (HAVE_THREADS &&
                     (avctx->active_thread_type & FF_THREAD_SLICE) &&
@@ -2868,6 +2835,7 @@ AVCodec ff_mpeg1video_decoder = {
     .capabilities          = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 |
                              AV_CODEC_CAP_TRUNCATED | AV_CODEC_CAP_DELAY |
                              AV_CODEC_CAP_SLICE_THREADS,
+    .caps_internal         = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .flush                 = flush,
     .max_lowres            = 3,
     .update_thread_context = ONLY_IF_THREADS_ENABLED(mpeg_decode_update_thread_context)
@@ -2885,6 +2853,7 @@ AVCodec ff_mpeg2video_decoder = {
     .capabilities   = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 |
                       AV_CODEC_CAP_TRUNCATED | AV_CODEC_CAP_DELAY |
                       AV_CODEC_CAP_SLICE_THREADS,
+    .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .flush          = flush,
     .max_lowres     = 3,
     .profiles       = NULL_IF_CONFIG_SMALL(ff_mpeg2_video_profiles),
@@ -2901,76 +2870,7 @@ AVCodec ff_mpegvideo_decoder = {
     .close          = mpeg_decode_end,
     .decode         = mpeg_decode_frame,
     .capabilities   = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_TRUNCATED | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS,
+    .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .flush          = flush,
     .max_lowres     = 3,
 };
-
-#if FF_API_XVMC
-#if CONFIG_MPEG_XVMC_DECODER
-FF_DISABLE_DEPRECATION_WARNINGS
-static av_cold int mpeg_mc_decode_init(AVCodecContext *avctx)
-{
-    if (avctx->active_thread_type & FF_THREAD_SLICE)
-        return -1;
-    if (!(avctx->slice_flags & SLICE_FLAG_CODED_ORDER))
-        return -1;
-    if (!(avctx->slice_flags & SLICE_FLAG_ALLOW_FIELD)) {
-        ff_dlog(avctx, "mpeg12.c: XvMC decoder will work better if SLICE_FLAG_ALLOW_FIELD is set\n");
-    }
-    mpeg_decode_init(avctx);
-
-    avctx->pix_fmt           = AV_PIX_FMT_XVMC_MPEG2_IDCT;
-    avctx->xvmc_acceleration = 2; // 2 - the blocks are packed!
-
-    return 0;
-}
-
-AVCodec ff_mpeg_xvmc_decoder = {
-    .name           = "mpegvideo_xvmc",
-    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-1/2 video XvMC (X-Video Motion Compensation)"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MPEG2VIDEO_XVMC,
-    .priv_data_size = sizeof(Mpeg1Context),
-    .init           = mpeg_mc_decode_init,
-    .close          = mpeg_decode_end,
-    .decode         = mpeg_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 |
-                      AV_CODEC_CAP_TRUNCATED | CODEC_CAP_HWACCEL |
-                      AV_CODEC_CAP_DELAY,
-    .flush          = flush,
-};
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-#endif /* FF_API_XVMC */
-
-#if CONFIG_MPEG_VDPAU_DECODER && FF_API_VDPAU
-AVCodec ff_mpeg_vdpau_decoder = {
-    .name           = "mpegvideo_vdpau",
-    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-1/2 video (VDPAU acceleration)"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MPEG2VIDEO,
-    .priv_data_size = sizeof(Mpeg1Context),
-    .init           = mpeg_decode_init,
-    .close          = mpeg_decode_end,
-    .decode         = mpeg_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_TRUNCATED |
-                      AV_CODEC_CAP_HWACCEL_VDPAU | AV_CODEC_CAP_DELAY,
-    .flush          = flush,
-};
-#endif
-
-#if CONFIG_MPEG1_VDPAU_DECODER && FF_API_VDPAU
-AVCodec ff_mpeg1_vdpau_decoder = {
-    .name           = "mpeg1video_vdpau",
-    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-1 video (VDPAU acceleration)"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MPEG1VIDEO,
-    .priv_data_size = sizeof(Mpeg1Context),
-    .init           = mpeg_decode_init,
-    .close          = mpeg_decode_end,
-    .decode         = mpeg_decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_TRUNCATED |
-                      AV_CODEC_CAP_HWACCEL_VDPAU | AV_CODEC_CAP_DELAY,
-    .flush          = flush,
-};
-#endif

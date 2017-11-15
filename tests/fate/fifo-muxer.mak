@@ -1,4 +1,4 @@
-fate-fifo-muxer-h264: CMD = ffmpeg -i $(TARGET_SAMPLES)/mkv/1242-small.mkv -vframes 11\
+fate-fifo-muxer-h264: CMD = ffmpeg -i $(TARGET_SAMPLES)/mkv/1242-small.mkv -frames:v 11\
                             -c:v copy -c:a copy -map v:0 -map a:0 -flags +bitexact\
                             -fflags +bitexact -f fifo -fifo_format framecrc -
 fate-fifo-muxer-h264: REF = $(SRC_PATH)/tests/ref/fate/mkv-1242
@@ -13,7 +13,7 @@ FATE_SAMPLES_FIFO_MUXER-$(call ALLYES, FIFO_MUXER, WAV_DEMUXER) += fate-fifo-mux
 
 fate-fifo-muxer-tst: libavformat/tests/fifo_muxer$(EXESUF)
 fate-fifo-muxer-tst: CMD = run libavformat/tests/fifo_muxer$(EXESUF)
-FATE_FIFO_MUXER-$(CONFIG_FIFO_MUXER) += fate-fifo-muxer-tst
+FATE_FIFO_MUXER-$(call ALLYES, FIFO_MUXER NETWORK) += fate-fifo-muxer-tst
 
 FATE_SAMPLES_FFMPEG += $(FATE_SAMPLES_FIFO_MUXER-yes)
 FATE_FFMPEG += $(FATE_FIFO_MUXER-yes)

@@ -34,172 +34,28 @@
 #include "idctdsp.h"
 #include "config.h"
 
-#if HAVE_MMX_INLINE
 
-/* in/out: mma=mma+mmb, mmb=mmb-mma */
-#define SUMSUB_BA( a, b ) \
-    "paddw "#b", "#a" \n\t"\
-    "paddw "#b", "#b" \n\t"\
-    "psubw "#a", "#b" \n\t"
+#if HAVE_MMX_EXTERNAL
 
-/*****************************************************************************
- *
- * inverse transform
- *
- ****************************************************************************/
+void ff_cavs_idct8_mmx(int16_t *out, const int16_t *in);
 
-static inline void cavs_idct8_1d(int16_t *block, uint64_t bias)
+static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, ptrdiff_t stride)
 {
-    __asm__ volatile(
-        "movq 112(%0), %%mm4  \n\t" /* mm4 = src7 */
-        "movq  16(%0), %%mm5  \n\t" /* mm5 = src1 */
-        "movq  80(%0), %%mm2  \n\t" /* mm2 = src5 */
-        "movq  48(%0), %%mm7  \n\t" /* mm7 = src3 */
-        "movq   %%mm4, %%mm0  \n\t"
-        "movq   %%mm5, %%mm3  \n\t"
-        "movq   %%mm2, %%mm6  \n\t"
-        "movq   %%mm7, %%mm1  \n\t"
-
-        "paddw  %%mm4, %%mm4  \n\t" /* mm4 = 2*src7 */
-        "paddw  %%mm3, %%mm3  \n\t" /* mm3 = 2*src1 */
-        "paddw  %%mm6, %%mm6  \n\t" /* mm6 = 2*src5 */
-        "paddw  %%mm1, %%mm1  \n\t" /* mm1 = 2*src3 */
-        "paddw  %%mm4, %%mm0  \n\t" /* mm0 = 3*src7 */
-        "paddw  %%mm3, %%mm5  \n\t" /* mm5 = 3*src1 */
-        "paddw  %%mm6, %%mm2  \n\t" /* mm2 = 3*src5 */
-        "paddw  %%mm1, %%mm7  \n\t" /* mm7 = 3*src3 */
-        "psubw  %%mm4, %%mm5  \n\t" /* mm5 = 3*src1 - 2*src7 = a0 */
-        "paddw  %%mm6, %%mm7  \n\t" /* mm7 = 3*src3 + 2*src5 = a1 */
-        "psubw  %%mm2, %%mm1  \n\t" /* mm1 = 2*src3 - 3*src5 = a2 */
-        "paddw  %%mm0, %%mm3  \n\t" /* mm3 = 2*src1 + 3*src7 = a3 */
-
-        "movq   %%mm5, %%mm4  \n\t"
-        "movq   %%mm7, %%mm6  \n\t"
-        "movq   %%mm3, %%mm0  \n\t"
-        "movq   %%mm1, %%mm2  \n\t"
-        SUMSUB_BA( %%mm7, %%mm5 )   /* mm7 = a0 + a1  mm5 = a0 - a1 */
-        "paddw  %%mm3, %%mm7  \n\t" /* mm7 = a0 + a1 + a3 */
-        "paddw  %%mm1, %%mm5  \n\t" /* mm5 = a0 - a1 + a2 */
-        "paddw  %%mm7, %%mm7  \n\t"
-        "paddw  %%mm5, %%mm5  \n\t"
-        "paddw  %%mm6, %%mm7  \n\t" /* mm7 = b4 */
-        "paddw  %%mm4, %%mm5  \n\t" /* mm5 = b5 */
-
-        SUMSUB_BA( %%mm1, %%mm3 )   /* mm1 = a3 + a2  mm3 = a3 - a2 */
-        "psubw  %%mm1, %%mm4  \n\t" /* mm4 = a0 - a2 - a3 */
-        "movq   %%mm4, %%mm1  \n\t" /* mm1 = a0 - a2 - a3 */
-        "psubw  %%mm6, %%mm3  \n\t" /* mm3 = a3 - a2 - a1 */
-        "paddw  %%mm1, %%mm1  \n\t"
-        "paddw  %%mm3, %%mm3  \n\t"
-        "psubw  %%mm2, %%mm1  \n\t" /* mm1 = b7 */
-        "paddw  %%mm0, %%mm3  \n\t" /* mm3 = b6 */
-
-        "movq  32(%0), %%mm2  \n\t" /* mm2 = src2 */
-        "movq  96(%0), %%mm6  \n\t" /* mm6 = src6 */
-        "movq   %%mm2, %%mm4  \n\t"
-        "movq   %%mm6, %%mm0  \n\t"
-        "psllw  $2,    %%mm4  \n\t" /* mm4 = 4*src2 */
-        "psllw  $2,    %%mm6  \n\t" /* mm6 = 4*src6 */
-        "paddw  %%mm4, %%mm2  \n\t" /* mm2 = 5*src2 */
-        "paddw  %%mm6, %%mm0  \n\t" /* mm0 = 5*src6 */
-        "paddw  %%mm2, %%mm2  \n\t"
-        "paddw  %%mm0, %%mm0  \n\t"
-        "psubw  %%mm0, %%mm4  \n\t" /* mm4 = 4*src2 - 10*src6 = a7 */
-        "paddw  %%mm2, %%mm6  \n\t" /* mm6 = 4*src6 + 10*src2 = a6 */
-
-        "movq    (%0), %%mm2  \n\t" /* mm2 = src0 */
-        "movq  64(%0), %%mm0  \n\t" /* mm0 = src4 */
-        SUMSUB_BA( %%mm0, %%mm2 )   /* mm0 = src0+src4  mm2 = src0-src4 */
-        "psllw  $3,    %%mm0  \n\t"
-        "psllw  $3,    %%mm2  \n\t"
-        "paddw  %1,    %%mm0  \n\t" /* add rounding bias */
-        "paddw  %1,    %%mm2  \n\t" /* add rounding bias */
-
-        SUMSUB_BA( %%mm6, %%mm0 )   /* mm6 = a4 + a6  mm0 = a4 - a6 */
-        SUMSUB_BA( %%mm4, %%mm2 )   /* mm4 = a5 + a7  mm2 = a5 - a7 */
-        SUMSUB_BA( %%mm7, %%mm6 )   /* mm7 = dst0  mm6 = dst7 */
-        SUMSUB_BA( %%mm5, %%mm4 )   /* mm5 = dst1  mm4 = dst6 */
-        SUMSUB_BA( %%mm3, %%mm2 )   /* mm3 = dst2  mm2 = dst5 */
-        SUMSUB_BA( %%mm1, %%mm0 )   /* mm1 = dst3  mm0 = dst4 */
-        :: "r"(block), "m"(bias)
-    );
-}
-
-#define SBUTTERFLY(a,b,t,n,m)\
-    "mov" #m " " #a ", " #t "         \n\t" /* abcd */\
-    "punpckl" #n " " #b ", " #a "     \n\t" /* aebf */\
-    "punpckh" #n " " #b ", " #t "     \n\t" /* cgdh */\
-
-#define TRANSPOSE4(a,b,c,d,t)\
-    SBUTTERFLY(a,b,t,wd,q) /* a=aebf t=cgdh */\
-    SBUTTERFLY(c,d,b,wd,q) /* c=imjn b=kolp */\
-    SBUTTERFLY(a,c,d,dq,q) /* a=aeim d=bfjn */\
-    SBUTTERFLY(t,b,c,dq,q) /* t=cgko c=dhlp */
-
-static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
-{
-    int i;
     LOCAL_ALIGNED(16, int16_t, b2, [64]);
-
-    for(i=0; i<2; i++){
-        cavs_idct8_1d(block + 4 * i, ff_pw_4.a);
-
-        __asm__ volatile(
-            "psraw     $3, %%mm7  \n\t"
-            "psraw     $3, %%mm6  \n\t"
-            "psraw     $3, %%mm5  \n\t"
-            "psraw     $3, %%mm4  \n\t"
-            "psraw     $3, %%mm3  \n\t"
-            "psraw     $3, %%mm2  \n\t"
-            "psraw     $3, %%mm1  \n\t"
-            "psraw     $3, %%mm0  \n\t"
-            "movq   %%mm7,  (%0)  \n\t"
-            TRANSPOSE4( %%mm0, %%mm2, %%mm4, %%mm6, %%mm7 )
-            "movq   %%mm0,  8(%0)  \n\t"
-            "movq   %%mm6, 24(%0)  \n\t"
-            "movq   %%mm7, 40(%0)  \n\t"
-            "movq   %%mm4, 56(%0)  \n\t"
-            "movq    (%0),  %%mm7  \n\t"
-            TRANSPOSE4( %%mm7, %%mm5, %%mm3, %%mm1, %%mm0 )
-            "movq   %%mm7,   (%0)  \n\t"
-            "movq   %%mm1, 16(%0)  \n\t"
-            "movq   %%mm0, 32(%0)  \n\t"
-            "movq   %%mm3, 48(%0)  \n\t"
-            :
-            : "r"(b2 + 32 * i)
-            : "memory"
-        );
-    }
-
-    for(i=0; i<2; i++){
-        cavs_idct8_1d(b2+4*i, ff_pw_64.a);
-
-        __asm__ volatile(
-            "psraw     $7, %%mm7  \n\t"
-            "psraw     $7, %%mm6  \n\t"
-            "psraw     $7, %%mm5  \n\t"
-            "psraw     $7, %%mm4  \n\t"
-            "psraw     $7, %%mm3  \n\t"
-            "psraw     $7, %%mm2  \n\t"
-            "psraw     $7, %%mm1  \n\t"
-            "psraw     $7, %%mm0  \n\t"
-            "movq   %%mm7,    (%0)  \n\t"
-            "movq   %%mm5,  16(%0)  \n\t"
-            "movq   %%mm3,  32(%0)  \n\t"
-            "movq   %%mm1,  48(%0)  \n\t"
-            "movq   %%mm0,  64(%0)  \n\t"
-            "movq   %%mm2,  80(%0)  \n\t"
-            "movq   %%mm4,  96(%0)  \n\t"
-            "movq   %%mm6, 112(%0)  \n\t"
-            :: "r"(b2+4*i)
-            : "memory"
-        );
-    }
-
-    ff_add_pixels_clamped(b2, dst, stride);
+    ff_cavs_idct8_mmx(b2, block);
+    ff_add_pixels_clamped_mmx(b2, dst, stride);
 }
 
-#endif /* HAVE_MMX_INLINE */
+void ff_cavs_idct8_sse2(int16_t *out, const int16_t *in);
+
+static void cavs_idct8_add_sse2(uint8_t *dst, int16_t *block, ptrdiff_t stride)
+{
+    LOCAL_ALIGNED(16, int16_t, b2, [64]);
+    ff_cavs_idct8_sse2(b2, block);
+    ff_add_pixels_clamped_sse2(b2, dst, stride);
+}
+
+#endif /* HAVE_MMX_EXTERNAL */
 
 #if (HAVE_MMXEXT_INLINE || HAVE_AMD3DNOW_INLINE)
 
@@ -334,7 +190,8 @@ static void cavs_idct8_add_mmx(uint8_t *dst, int16_t *block, int stride)
    }
 
 #define QPEL_CAVS(OPNAME, OP, MMX)\
-static void OPNAME ## cavs_qpel8_h_ ## MMX(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride){\
+static void OPNAME ## cavs_qpel8_h_ ## MMX(uint8_t *dst, const uint8_t *src, ptrdiff_t dstStride, ptrdiff_t srcStride)\
+{\
     int h=8;\
     __asm__ volatile(\
         "pxor %%mm7, %%mm7          \n\t"\
@@ -382,43 +239,53 @@ static void OPNAME ## cavs_qpel8_h_ ## MMX(uint8_t *dst, const uint8_t *src, int
     );\
 }\
 \
-static inline void OPNAME ## cavs_qpel8or16_v1_ ## MMX(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h){\
+static inline void OPNAME ## cavs_qpel8or16_v1_ ## MMX(uint8_t *dst, const uint8_t *src, ptrdiff_t dstStride, ptrdiff_t srcStride, int h)\
+{                                                                       \
   QPEL_CAVSVNUM(QPEL_CAVSV1,OP,ff_pw_64,ff_pw_96,ff_pw_42)      \
 }\
 \
-static inline void OPNAME ## cavs_qpel8or16_v2_ ## MMX(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h){\
+static inline void OPNAME ## cavs_qpel8or16_v2_ ## MMX(uint8_t *dst, const uint8_t *src, ptrdiff_t dstStride, ptrdiff_t srcStride, int h)\
+{                                                                       \
   QPEL_CAVSVNUM(QPEL_CAVSV2,OP,ff_pw_4,ff_pw_5,ff_pw_42)        \
 }\
 \
-static inline void OPNAME ## cavs_qpel8or16_v3_ ## MMX(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h){\
+static inline void OPNAME ## cavs_qpel8or16_v3_ ## MMX(uint8_t *dst, const uint8_t *src, ptrdiff_t dstStride, ptrdiff_t srcStride, int h)\
+{                                                                       \
   QPEL_CAVSVNUM(QPEL_CAVSV3,OP,ff_pw_64,ff_pw_96,ff_pw_42)      \
 }\
 \
-static void OPNAME ## cavs_qpel8_v1_ ## MMX(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride){\
+static void OPNAME ## cavs_qpel8_v1_ ## MMX(uint8_t *dst, const uint8_t *src, ptrdiff_t dstStride, ptrdiff_t srcStride)\
+{                                                                       \
     OPNAME ## cavs_qpel8or16_v1_ ## MMX(dst  , src  , dstStride, srcStride, 8);\
 }\
-static void OPNAME ## cavs_qpel16_v1_ ## MMX(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride){\
+static void OPNAME ## cavs_qpel16_v1_ ## MMX(uint8_t *dst, const uint8_t *src, ptrdiff_t dstStride, ptrdiff_t srcStride)\
+{                                                                       \
     OPNAME ## cavs_qpel8or16_v1_ ## MMX(dst  , src  , dstStride, srcStride, 16);\
     OPNAME ## cavs_qpel8or16_v1_ ## MMX(dst+8, src+8, dstStride, srcStride, 16);\
 }\
 \
-static void OPNAME ## cavs_qpel8_v2_ ## MMX(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride){\
+static void OPNAME ## cavs_qpel8_v2_ ## MMX(uint8_t *dst, const uint8_t *src, ptrdiff_t dstStride, ptrdiff_t srcStride)\
+{                                                                       \
     OPNAME ## cavs_qpel8or16_v2_ ## MMX(dst  , src  , dstStride, srcStride, 8);\
 }\
-static void OPNAME ## cavs_qpel16_v2_ ## MMX(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride){\
+static void OPNAME ## cavs_qpel16_v2_ ## MMX(uint8_t *dst, const uint8_t *src, ptrdiff_t dstStride, ptrdiff_t srcStride)\
+{                                                                       \
     OPNAME ## cavs_qpel8or16_v2_ ## MMX(dst  , src  , dstStride, srcStride, 16);\
     OPNAME ## cavs_qpel8or16_v2_ ## MMX(dst+8, src+8, dstStride, srcStride, 16);\
 }\
 \
-static void OPNAME ## cavs_qpel8_v3_ ## MMX(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride){\
+static void OPNAME ## cavs_qpel8_v3_ ## MMX(uint8_t *dst, const uint8_t *src, ptrdiff_t dstStride, ptrdiff_t srcStride)\
+{                                                                       \
     OPNAME ## cavs_qpel8or16_v3_ ## MMX(dst  , src  , dstStride, srcStride, 8);\
 }\
-static void OPNAME ## cavs_qpel16_v3_ ## MMX(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride){\
+static void OPNAME ## cavs_qpel16_v3_ ## MMX(uint8_t *dst, const uint8_t *src, ptrdiff_t dstStride, ptrdiff_t srcStride)\
+{                                                                       \
     OPNAME ## cavs_qpel8or16_v3_ ## MMX(dst  , src  , dstStride, srcStride, 16);\
     OPNAME ## cavs_qpel8or16_v3_ ## MMX(dst+8, src+8, dstStride, srcStride, 16);\
 }\
 \
-static void OPNAME ## cavs_qpel16_h_ ## MMX(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride){\
+static void OPNAME ## cavs_qpel16_h_ ## MMX(uint8_t *dst, const uint8_t *src, ptrdiff_t dstStride, ptrdiff_t srcStride)\
+{                                                                       \
     OPNAME ## cavs_qpel8_h_ ## MMX(dst  , src  , dstStride, srcStride);\
     OPNAME ## cavs_qpel8_h_ ## MMX(dst+8, src+8, dstStride, srcStride);\
     src += 8*srcStride;\
@@ -518,12 +385,10 @@ static av_cold void cavsdsp_init_mmx(CAVSDSPContext *c,
     c->put_cavs_qpel_pixels_tab[1][0] = put_cavs_qpel8_mc00_mmx;
     c->avg_cavs_qpel_pixels_tab[0][0] = avg_cavs_qpel16_mc00_mmx;
     c->avg_cavs_qpel_pixels_tab[1][0] = avg_cavs_qpel8_mc00_mmx;
-#endif
 
-#if HAVE_MMX_INLINE
     c->cavs_idct8_add = cavs_idct8_add_mmx;
     c->idct_perm      = FF_IDCT_PERM_TRANSPOSE;
-#endif /* HAVE_MMX_INLINE */
+#endif /* HAVE_MMX_EXTERNAL */
 }
 
 #define DSPFUNC(PFX, IDX, NUM, EXT)                                                       \
@@ -565,7 +430,9 @@ av_cold void ff_cavsdsp_init_x86(CAVSDSPContext *c, AVCodecContext *avctx)
 {
     av_unused int cpu_flags = av_get_cpu_flags();
 
-    cavsdsp_init_mmx(c, avctx);
+    if (X86_MMX(cpu_flags))
+        cavsdsp_init_mmx(c, avctx);
+
 #if HAVE_AMD3DNOW_INLINE
     if (INLINE_AMD3DNOW(cpu_flags))
         cavsdsp_init_3dnow(c, avctx);
@@ -588,6 +455,9 @@ av_cold void ff_cavsdsp_init_x86(CAVSDSPContext *c, AVCodecContext *avctx)
     if (EXTERNAL_SSE2(cpu_flags)) {
         c->put_cavs_qpel_pixels_tab[0][0] = put_cavs_qpel16_mc00_sse2;
         c->avg_cavs_qpel_pixels_tab[0][0] = avg_cavs_qpel16_mc00_sse2;
+
+        c->cavs_idct8_add = cavs_idct8_add_sse2;
+        c->idct_perm      = FF_IDCT_PERM_TRANSPOSE;
     }
 #endif
 }

@@ -38,7 +38,7 @@ void ff_vector_clip_int32_int_sse2(int32_t *dst, const int32_t *src,
 void ff_vector_clip_int32_sse4(int32_t *dst, const int32_t *src,
                                int32_t min, int32_t max, unsigned int len);
 void ff_vector_clipf_sse(float *dst, const float *src,
-                         float min, float max, int len);
+                         int len, float min, float max);
 
 av_cold void ff_audiodsp_init_x86(AudioDSPContext *c)
 {

@@ -175,7 +175,7 @@ static int flush_packet(AVFormatContext *s, AVPacket *new)
 
     av_packet_unref(gif->prev_pkt);
     if (new)
-        av_copy_packet(gif->prev_pkt, new);
+        av_packet_ref(gif->prev_pkt, new);
 
     return 0;
 }
@@ -186,7 +186,7 @@ static int gif_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVStream *video_st = s->streams[0];
 
     if (!gif->prev_pkt) {
-        gif->prev_pkt = av_malloc(sizeof(*gif->prev_pkt));
+        gif->prev_pkt = av_packet_alloc();
         if (!gif->prev_pkt)
             return AVERROR(ENOMEM);
 
@@ -206,7 +206,7 @@ static int gif_write_packet(AVFormatContext *s, AVPacket *pkt)
             gif_image_write_header(s->pb, video_st, gif->loop, palette);
         }
 
-        return av_copy_packet(gif->prev_pkt, pkt);
+        return av_packet_ref(gif->prev_pkt, pkt);
     }
     return flush_packet(s, pkt);
 }

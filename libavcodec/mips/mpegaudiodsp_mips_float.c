@@ -62,7 +62,7 @@
 #if !HAVE_MIPS32R6 && !HAVE_MIPS64R6
 
 static void ff_mpadsp_apply_window_mips_float(float *synth_buf, float *window,
-                               int *dither_state, float *samples, int incr)
+                               int *dither_state, float *samples, ptrdiff_t incr)
 {
     register const float *w, *w2, *p;
     int j;

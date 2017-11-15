@@ -17,6 +17,9 @@
  */
 
 // LCOV_EXCL_START
+
+#include "libavutil/timer.h"
+
 #include <string.h>
 
 #include "libavutil/aes.h"

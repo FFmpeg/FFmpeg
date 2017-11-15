@@ -110,6 +110,12 @@ Show version.
 @item -formats
 Show available formats (including devices).
 
+@item -demuxers
+Show available demuxers.
+
+@item -muxers
+Show available muxers.
+
 @item -devices
 Show available devices.
 
@@ -147,7 +153,7 @@ Show channel names and standard channel layouts.
 Show recognized color names.
 
 @item -sources @var{device}[,@var{opt1}=@var{val1}[,@var{opt2}=@var{val2}]...]
-Show autodetected sources of the intput device.
+Show autodetected sources of the input device.
 Some devices may provide system-dependent source names that cannot be autodetected.
 The returned list cannot be assumed to be always complete.
 @example

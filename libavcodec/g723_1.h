@@ -55,7 +55,7 @@
  * @param b 16 bit multiplier
  */
 #define MULL2(a, b) \
-        ((((a) >> 16) * (b) << 1) + (((a) & 0xffff) * (b) >> 15))
+        ((((a) >> 16) * (b) * 2) + (((a) & 0xffff) * (b) >> 15))
 
 /**
  * G723.1 frame types

@@ -69,7 +69,7 @@ int av_thread_message_queue_alloc(AVThreadMessageQueue **mq,
         pthread_cond_destroy(&rmq->cond_recv);
         pthread_mutex_destroy(&rmq->lock);
         av_free(rmq);
-        return AVERROR(ret);
+        return AVERROR(ENOMEM);
     }
     rmq->elsize = elsize;
     *mq = rmq;

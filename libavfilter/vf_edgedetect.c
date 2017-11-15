@@ -44,7 +44,7 @@ struct plane_info {
     char     *directions;
 };
 
-typedef struct {
+typedef struct EdgeDetectContext {
     const AVClass *class;
     struct plane_info planes[3];
     int nb_planes;

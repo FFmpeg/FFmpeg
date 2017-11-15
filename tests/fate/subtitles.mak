@@ -14,7 +14,7 @@ FATE_SUBTITLES_ASS-$(CONFIG_ASS_DEMUXER) += fate-sub-ssa-to-ass-remux
 fate-sub-ssa-to-ass-remux: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/a9-misc.ssa -c copy
 
 FATE_SUBTITLES-$(call ALLYES, ASS_DEMUXER, MATROSKA_MUXER) += fate-binsub-mksenc
-fate-binsub-mksenc: CMD = md5 -i $(TARGET_SAMPLES)/sub/1ededcbd7b.ass -c copy -f matroska -flags +bitexact -fflags +bitexact
+fate-binsub-mksenc: CMD = md5pipe -i $(TARGET_SAMPLES)/sub/1ededcbd7b.ass -c copy -f matroska -flags +bitexact -fflags +bitexact
 
 FATE_SUBTITLES_ASS-$(call DEMDEC, JACOSUB, JACOSUB) += fate-sub-jacosub
 fate-sub-jacosub: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/JACOsub_capability_tester.jss
@@ -55,6 +55,9 @@ fate-sub-sami2: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/SAMI_multilang_twea
 FATE_SUBTITLES_ASS-$(call DEMDEC, SRT, SUBRIP) += fate-sub-srt
 fate-sub-srt: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/SubRip_capability_tester.srt
 
+FATE_SUBTITLES_ASS-$(call DEMDEC, SRT, SUBRIP) += fate-sub-srt-badsyntax
+fate-sub-srt-badsyntax: CMD = fmtstdout ass -i $(TARGET_SAMPLES)/sub/badsyntax.srt
+
 FATE_SUBTITLES-$(call ALLYES, SRT_DEMUXER SUBRIP_DECODER SRT_MUXER) += fate-sub-srt-rrn-remux
 fate-sub-srt-rrn-remux: CMD = fmtstdout srt -i $(TARGET_SAMPLES)/sub/ticket5032-rrn.srt -c:s copy
 
@@ -93,6 +96,9 @@ fate-sub-textenc: CMD = fmtstdout srt -i $(TARGET_SAMPLES)/sub/SubRip_capability
 
 FATE_SUBTITLES_ASS-$(call ALLYES, MICRODVD_DEMUXER MICRODVD_DECODER ICONV) += fate-sub-charenc
 fate-sub-charenc: CMD = fmtstdout ass -sub_charenc cp1251 -i $(TARGET_SAMPLES)/sub/cp1251-subtitles.sub
+
+FATE_SUBTITLES-$(call DEMDEC, SCC, CCAPTION) += fate-sub-scc
+fate-sub-scc: CMD = fmtstdout ass -ss 57 -i $(TARGET_SAMPLES)/sub/witch.scc
 
 FATE_SUBTITLES-$(call ENCMUX, ASS, ASS) += $(FATE_SUBTITLES_ASS-yes)
 FATE_SUBTITLES += $(FATE_SUBTITLES-yes)
