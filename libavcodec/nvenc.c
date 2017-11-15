@@ -1293,7 +1293,7 @@ static av_cold int nvenc_alloc_surface(AVCodecContext *avctx, int idx)
 static av_cold int nvenc_setup_surfaces(AVCodecContext *avctx)
 {
     NvencContext *ctx = avctx->priv_data;
-    int i, res;
+    int i, res = 0, res2;
 
     ctx->surfaces = av_mallocz_array(ctx->nb_surfaces, sizeof(*ctx->surfaces));
     if (!ctx->surfaces)
@@ -1320,17 +1320,15 @@ static av_cold int nvenc_setup_surfaces(AVCodecContext *avctx)
 
     for (i = 0; i < ctx->nb_surfaces; i++) {
         if ((res = nvenc_alloc_surface(avctx, i)) < 0)
-        {
-            nvenc_pop_context(avctx);
-            return res;
-        }
+            goto fail;
     }
 
-    res = nvenc_pop_context(avctx);
-    if (res < 0)
-        return res;
+fail:
+    res2 = nvenc_pop_context(avctx);
+    if (res2 < 0)
+        return res2;
 
-    return 0;
+    return res;
 }
 
 static av_cold int nvenc_setup_extradata(AVCodecContext *avctx)
