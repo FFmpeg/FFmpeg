@@ -96,6 +96,7 @@ static void register_all(void)
     REGISTER_HWACCEL(MPEG2_D3D11VA2,    mpeg2_d3d11va2);
     REGISTER_HWACCEL(MPEG2_DXVA2,       mpeg2_dxva2);
     REGISTER_HWACCEL(MPEG2_MMAL,        mpeg2_mmal);
+    REGISTER_HWACCEL(MPEG2_NVDEC,       mpeg2_nvdec);
     REGISTER_HWACCEL(MPEG2_QSV,         mpeg2_qsv);
     REGISTER_HWACCEL(MPEG2_VAAPI,       mpeg2_vaapi);
     REGISTER_HWACCEL(MPEG2_VDPAU,       mpeg2_vdpau);
