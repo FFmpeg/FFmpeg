@@ -1130,6 +1130,9 @@ static void quant_matrix_rebuild(uint16_t *matrix, const uint8_t *old_perm,
 }
 
 static const enum AVPixelFormat mpeg1_hwaccel_pixfmt_list_420[] = {
+#if CONFIG_MPEG1_NVDEC_HWACCEL
+    AV_PIX_FMT_CUDA,
+#endif
 #if CONFIG_MPEG1_XVMC_HWACCEL
     AV_PIX_FMT_XVMC,
 #endif

@@ -1,5 +1,5 @@
 /*
- * MPEG-2 HW decode acceleration through NVDEC
+ * MPEG-1/2 HW decode acceleration through NVDEC
  *
  * Copyright (c) 2017 Philip Langdale
  *
@@ -95,6 +95,22 @@ AVHWAccel ff_mpeg2_nvdec_hwaccel = {
     .name                 = "mpeg2_nvdec",
     .type                 = AVMEDIA_TYPE_VIDEO,
     .id                   = AV_CODEC_ID_MPEG2VIDEO,
+    .pix_fmt              = AV_PIX_FMT_CUDA,
+    .start_frame          = nvdec_mpeg12_start_frame,
+    .end_frame            = ff_nvdec_simple_end_frame,
+    .decode_slice         = ff_nvdec_simple_decode_slice,
+    .frame_params         = nvdec_mpeg12_frame_params,
+    .init                 = ff_nvdec_decode_init,
+    .uninit               = ff_nvdec_decode_uninit,
+    .priv_data_size       = sizeof(NVDECContext),
+};
+#endif
+
+#if CONFIG_MPEG1_NVDEC_HWACCEL
+AVHWAccel ff_mpeg1_nvdec_hwaccel = {
+    .name                 = "mpeg1_nvdec",
+    .type                 = AVMEDIA_TYPE_VIDEO,
+    .id                   = AV_CODEC_ID_MPEG1VIDEO,
     .pix_fmt              = AV_PIX_FMT_CUDA,
     .start_frame          = nvdec_mpeg12_start_frame,
     .end_frame            = ff_nvdec_simple_end_frame,

@@ -849,6 +849,7 @@ OBJS-$(CONFIG_HEVC_NVDEC_HWACCEL)         += nvdec_hevc.o
 OBJS-$(CONFIG_HEVC_QSV_HWACCEL)           += qsvdec_h2645.o
 OBJS-$(CONFIG_HEVC_VAAPI_HWACCEL)         += vaapi_hevc.o
 OBJS-$(CONFIG_HEVC_VDPAU_HWACCEL)         += vdpau_hevc.o
+OBJS-$(CONFIG_MPEG1_NVDEC_HWACCEL)        += nvdec_mpeg12.o
 OBJS-$(CONFIG_MPEG1_VDPAU_HWACCEL)        += vdpau_mpeg12.o
 OBJS-$(CONFIG_MPEG1_VIDEOTOOLBOX_HWACCEL) += videotoolbox.o
 OBJS-$(CONFIG_MPEG1_XVMC_HWACCEL)         += mpegvideo_xvmc.o
