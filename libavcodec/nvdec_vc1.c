@@ -25,13 +25,13 @@
 #include "decode.h"
 #include "vc1.h"
 
-static unsigned char get_ref_idx(AVFrame *frame)
+static int get_ref_idx(AVFrame *frame)
 {
     FrameDecodeData *fdd;
     NVDECFrame *cf;
 
     if (!frame || !frame->private_ref)
-        return 255;
+        return -1;
 
     fdd = (FrameDecodeData*)frame->private_ref->data;
     cf  = (NVDECFrame*)fdd->hwaccel_priv;
