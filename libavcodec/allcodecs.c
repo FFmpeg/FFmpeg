@@ -106,6 +106,7 @@ static void register_all(void)
     REGISTER_HWACCEL(MPEG4_CUVID,       mpeg4_cuvid);
     REGISTER_HWACCEL(MPEG4_MEDIACODEC,  mpeg4_mediacodec);
     REGISTER_HWACCEL(MPEG4_MMAL,        mpeg4_mmal);
+    REGISTER_HWACCEL(MPEG4_NVDEC,       mpeg4_nvdec);
     REGISTER_HWACCEL(MPEG4_VAAPI,       mpeg4_vaapi);
     REGISTER_HWACCEL(MPEG4_VDPAU,       mpeg4_vdpau);
     REGISTER_HWACCEL(MPEG4_VIDEOTOOLBOX, mpeg4_videotoolbox);
