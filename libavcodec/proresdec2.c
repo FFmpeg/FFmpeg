@@ -517,8 +517,8 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
     int luma_stride, chroma_stride;
     int y_data_size, u_data_size, v_data_size, a_data_size;
     uint8_t *dest_y, *dest_u, *dest_v, *dest_a;
-    int16_t qmat_luma_scaled[64];
-    int16_t qmat_chroma_scaled[64];
+    LOCAL_ALIGNED_16(int16_t, qmat_luma_scaled,  [64]);
+    LOCAL_ALIGNED_16(int16_t, qmat_chroma_scaled,[64]);
     int mb_x_shift;
     int ret;
 
