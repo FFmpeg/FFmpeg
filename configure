@@ -3377,6 +3377,7 @@ pkg_config_default=pkg-config
 ranlib_default="ranlib"
 strip_default="strip"
 version_script='--version-script'
+objformat="elf32"
 x86asmexe_default="nasm"
 windres_default="windres"
 nvcc_default="nvcc"
@@ -4820,52 +4821,44 @@ check_64bit(){
     expr=$3
     check_code cc "" "int test[2*($expr) - 1]" &&
         subarch=$arch64 || subarch=$arch32
+    enable $subarch
 }
 
 case "$arch" in
     aarch64|alpha|ia64)
-        spic=$shared
+        enabled shared && enable_weak pic
     ;;
     mips)
         check_64bit mips mips64 '_MIPS_SIM > 1'
-        spic=$shared
+        enabled shared && enable_weak pic
     ;;
     parisc)
         check_64bit parisc parisc64 'sizeof(void *) > 4'
-        spic=$shared
+        enabled shared && enable_weak pic
     ;;
     ppc)
         check_64bit ppc ppc64 'sizeof(void *) > 4'
-        spic=$shared
+        enabled shared && enable_weak pic
     ;;
     s390)
         check_64bit s390 s390x 'sizeof(void *) > 4'
-        spic=$shared
+        enabled shared && enable_weak pic
     ;;
     sparc)
         check_64bit sparc sparc64 'sizeof(void *) > 4'
-        spic=$shared
+        enabled shared && enable_weak pic
     ;;
     x86)
         check_64bit x86_32 x86_64 'sizeof(void *) > 4'
-        # Treat x32 as x64 for now. Note it also needs spic=$shared
+        # Treat x32 as x64 for now. Note it also needs pic if shared
         test "$subarch" = "x86_32" && check_cpp_condition stddef.h 'defined(__x86_64__)' &&
-            subarch=x86_64
-        if test "$subarch" = "x86_64"; then
-            spic=$shared
+            subarch=x86_64 && enable x86_64 && disable x86_32
+        if enabled x86_64; then
+            enabled shared && enable_weak pic
+            objformat=elf64
         fi
     ;;
-    ppc)
-        check_cc <<EOF && subarch="ppc64"
-        int test[(int)sizeof(char*) - 7];
-EOF
-    ;;
 esac
-
-enable $subarch
-enabled spic && enable_weak pic
-
-enabled x86_64 && objformat=elf64 || objformat="elf32"
 
 # OS specific
 case $target_os in
