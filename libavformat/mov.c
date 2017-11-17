@@ -3553,6 +3553,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
     // Free the old index and the old CTTS structures
     av_free(e_old);
     av_free(ctts_data_old);
+    av_freep(&frame_duration_buffer);
 
     // Null terminate the index ranges array
     current_index_range++;
