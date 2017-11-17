@@ -20,17 +20,21 @@
 
 #include "config.h"
 #include "libavutil/attributes.h"
+#include "libavutil/thread.h"
 #include "mpegaudiodsp.h"
 #include "dct.h"
 #include "dct32.h"
+
+static AVOnce mpadsp_float_table_init = AV_ONCE_INIT;
+static AVOnce mpadsp_fixed_table_init = AV_ONCE_INIT;
 
 av_cold void ff_mpadsp_init(MPADSPContext *s)
 {
     DCTContext dct;
 
     ff_dct_init(&dct, 5, DCT_II);
-    ff_init_mpadsp_tabs_float();
-    ff_init_mpadsp_tabs_fixed();
+    ff_thread_once(&mpadsp_float_table_init, &ff_init_mpadsp_tabs_float);
+    ff_thread_once(&mpadsp_fixed_table_init, &ff_init_mpadsp_tabs_fixed);
 
     s->apply_window_float = ff_mpadsp_apply_window_float;
     s->apply_window_fixed = ff_mpadsp_apply_window_fixed;
