@@ -1734,13 +1734,14 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
 
             if (next_pkt->dts != AV_NOPTS_VALUE) {
                 int wrap_bits = s->streams[next_pkt->stream_index]->pts_wrap_bits;
+                av_assert2(wrap_bits <= 64);
                 // last dts seen for this stream. if any of packets following
                 // current one had no dts, we will set this to AV_NOPTS_VALUE.
                 int64_t last_dts = next_pkt->dts;
                 while (pktl && next_pkt->pts == AV_NOPTS_VALUE) {
                     if (pktl->pkt.stream_index == next_pkt->stream_index &&
-                        (av_compare_mod(next_pkt->dts, pktl->pkt.dts, 2LL << (wrap_bits - 1)) < 0)) {
-                        if (av_compare_mod(pktl->pkt.pts, pktl->pkt.dts, 2LL << (wrap_bits - 1))) {
+                        av_compare_mod(next_pkt->dts, pktl->pkt.dts, 2ULL << (wrap_bits - 1)) < 0) {
+                        if (av_compare_mod(pktl->pkt.pts, pktl->pkt.dts, 2ULL << (wrap_bits - 1))) {
                             // not B-frame
                             next_pkt->pts = pktl->pkt.dts;
                         }
