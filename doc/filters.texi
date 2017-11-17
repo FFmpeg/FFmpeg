@@ -14637,6 +14637,11 @@ is "black".
 @item overlap
 Set the number of frames to overlap when tiling several successive frames together.
 The value must be between @code{0} and @var{nb_frames - 1}.
+
+@item init_padding
+Set the number of frames to initially be empty before displaying first output frame.
+This controls how soon will one get first output frame.
+The value must be between @code{0} and @var{nb_frames - 1}.
 @end table
 
 @subsection Examples
