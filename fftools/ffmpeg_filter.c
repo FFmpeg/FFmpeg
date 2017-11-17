@@ -340,6 +340,7 @@ int init_complex_filtergraph(FilterGraph *fg)
     graph = avfilter_graph_alloc();
     if (!graph)
         return AVERROR(ENOMEM);
+    graph->nb_threads = 1;
 
     ret = avfilter_graph_parse2(graph, fg->graph_desc, &inputs, &outputs);
     if (ret < 0)
