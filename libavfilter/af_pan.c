@@ -166,6 +166,7 @@ static av_cold int init(AVFilterContext *ctx)
             goto fail;
         }
         /* gains */
+        sign = 1;
         while (1) {
             gain = 1;
             if (sscanf(arg, "%lf%n *%n", &gain, &len, &len))
