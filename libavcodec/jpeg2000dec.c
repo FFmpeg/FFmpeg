@@ -1001,10 +1001,18 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
 
                 if ((ret = get_bits(s, av_log2(newpasses1) + cblk->lblock)) < 0)
                     return ret;
-                if (ret > sizeof(cblk->data)) {
+                if (ret > cblk->data_allocated) {
+                    size_t new_size = FFMAX(2*cblk->data_allocated, ret);
+                    void *new = av_realloc(cblk->data, new_size);
+                    if (new) {
+                        cblk->data = new;
+                        cblk->data_allocated = new_size;
+                    }
+                }
+                if (ret > cblk->data_allocated) {
                     avpriv_request_sample(s->avctx,
                                         "Block with lengthinc greater than %"SIZE_SPECIFIER"",
-                                        sizeof(cblk->data));
+                                        cblk->data_allocated);
                     return AVERROR_PATCHWELCOME;
                 }
                 cblk->lengthinc[cblk->nb_lengthinc++] = ret;
@@ -1030,8 +1038,16 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
         for (cblkno = 0; cblkno < nb_code_blocks; cblkno++) {
             Jpeg2000Cblk *cblk = prec->cblk + cblkno;
             for (cwsno = 0; cwsno < cblk->nb_lengthinc; cwsno ++) {
+                if (cblk->data_allocated < cblk->length + cblk->lengthinc[cwsno] + 4) {
+                    size_t new_size = FFMAX(2*cblk->data_allocated, cblk->length + cblk->lengthinc[cwsno] + 4);
+                    void *new = av_realloc(cblk->data, new_size);
+                    if (new) {
+                        cblk->data = new;
+                        cblk->data_allocated = new_size;
+                    }
+                }
                 if (   bytestream2_get_bytes_left(&s->g) < cblk->lengthinc[cwsno]
-                    || sizeof(cblk->data) < cblk->length + cblk->lengthinc[cwsno] + 4
+                    || cblk->data_allocated < cblk->length + cblk->lengthinc[cwsno] + 4
                 ) {
                     av_log(s->avctx, AV_LOG_ERROR,
                         "Block length %"PRIu16" or lengthinc %d is too large, left %d\n",

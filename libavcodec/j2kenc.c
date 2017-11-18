@@ -663,7 +663,8 @@ static void encode_cblk(Jpeg2000EncoderContext *s, Jpeg2000T1Context *t1, Jpeg20
         bpno = cblk->nonzerobits - 1;
     }
 
-    ff_mqc_initenc(&t1->mqc, cblk->data);
+    cblk->data[0] = 0;
+    ff_mqc_initenc(&t1->mqc, cblk->data + 1);
 
     for (passno = 0; bpno >= 0; passno++){
         nmsedec=0;
@@ -796,7 +797,7 @@ static int encode_packet(Jpeg2000EncoderContext *s, Jpeg2000ResLevel *rlevel, in
                 if (cblk->ninclpasses){
                     if (s->buf_end - s->buf < cblk->passes[cblk->ninclpasses-1].rate)
                         return -1;
-                    bytestream_put_buffer(&s->buf, cblk->data,   cblk->passes[cblk->ninclpasses-1].rate
+                    bytestream_put_buffer(&s->buf, cblk->data + 1,   cblk->passes[cblk->ninclpasses-1].rate
                                                                - cblk->passes[cblk->ninclpasses-1].flushed_len);
                     bytestream_put_buffer(&s->buf, cblk->passes[cblk->ninclpasses-1].flushed,
                                                    cblk->passes[cblk->ninclpasses-1].flushed_len);
@@ -937,6 +938,9 @@ static int encode_tile(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile, int tileno
                                 }
                             }
                         }
+                        prec->cblk[cblkno].data = av_malloc(1 + 8192);
+                        if (!prec->cblk[cblkno].data)
+                            return AVERROR(ENOMEM);
                         encode_cblk(s, &t1, prec->cblk + cblkno, tile, xx1 - xx0, yy1 - yy0,
                                     bandpos, codsty->nreslevels - reslevelno - 1);
                         xx0 = xx1;

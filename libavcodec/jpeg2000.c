@@ -357,7 +357,6 @@ static int init_prec(Jpeg2000Band *band,
                                  comp->reslevel[reslevelno-1].coord[1][0];
         }
 
-        cblk->zero      = 0;
         cblk->lblock    = 3;
         cblk->length    = 0;
         memset(cblk->lengthinc, 0, sizeof(cblk->lengthinc));
@@ -598,9 +597,18 @@ void ff_jpeg2000_cleanup(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty)
             for (precno = 0; precno < reslevel->num_precincts_x * reslevel->num_precincts_y; precno++) {
                 if (band->prec) {
                     Jpeg2000Prec *prec = band->prec + precno;
+                    int nb_code_blocks = prec->nb_codeblocks_height * prec->nb_codeblocks_width;
+
                     av_freep(&prec->zerobits);
                     av_freep(&prec->cblkincl);
-                    av_freep(&prec->cblk);
+                    if (prec->cblk) {
+                        int cblkno;
+                        for (cblkno = 0; cblkno < nb_code_blocks; cblkno ++) {
+                            Jpeg2000Cblk *cblk = &prec->cblk[cblkno];
+                            av_freep(&cblk->data);
+                        }
+                        av_freep(&prec->cblk);
+                    }
                 }
             }
 
