@@ -2599,6 +2599,9 @@ int vp78_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         // avctx->pix_fmt already set in caller.
     } else if (!is_vp7 && s->pix_fmt == AV_PIX_FMT_NONE) {
         enum AVPixelFormat pix_fmts[] = {
+#if CONFIG_VP8_VAAPI_HWACCEL
+            AV_PIX_FMT_VAAPI,
+#endif
             AV_PIX_FMT_YUV420P,
             AV_PIX_FMT_NONE,
         };
@@ -2944,6 +2947,9 @@ AVCodec ff_vp8_decoder = {
     .init_thread_copy      = ONLY_IF_THREADS_ENABLED(vp8_decode_init_thread_copy),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(vp8_decode_update_thread_context),
     .hw_configs            = (const AVCodecHWConfigInternal*[]) {
+#if CONFIG_VP8_VAAPI_HWACCEL
+                               HWACCEL_VAAPI(vp8),
+#endif
                                NULL
                            },
 };
