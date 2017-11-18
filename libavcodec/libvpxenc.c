@@ -131,9 +131,7 @@ static const char *const ctlidstr[] = {
     [VP9E_SET_TILE_ROWS]               = "VP9E_SET_TILE_ROWS",
     [VP9E_SET_FRAME_PARALLEL_DECODING] = "VP9E_SET_FRAME_PARALLEL_DECODING",
     [VP9E_SET_AQ_MODE]                 = "VP9E_SET_AQ_MODE",
-#if VPX_ENCODER_ABI_VERSION > 8
     [VP9E_SET_COLOR_SPACE]             = "VP9E_SET_COLOR_SPACE",
-#endif
 #if VPX_ENCODER_ABI_VERSION >= 11
     [VP9E_SET_COLOR_RANGE]             = "VP9E_SET_COLOR_RANGE",
 #endif
@@ -170,7 +168,7 @@ static av_cold void dump_enc_cfg(AVCodecContext *avctx,
     av_log(avctx, level, "vpx_codec_enc_cfg\n");
     av_log(avctx, level, "generic settings\n"
            "  %*s%u\n  %*s%u\n  %*s%u\n  %*s%u\n  %*s%u\n"
-#if CONFIG_LIBVPX_VP9_ENCODER && defined(VPX_IMG_FMT_HIGHBITDEPTH)
+#if CONFIG_LIBVPX_VP9_ENCODER
            "  %*s%u\n  %*s%u\n"
 #endif
            "  %*s{%u/%u}\n  %*s%u\n  %*s%d\n  %*s%u\n",
@@ -179,7 +177,7 @@ static av_cold void dump_enc_cfg(AVCodecContext *avctx,
            width, "g_profile:",         cfg->g_profile,
            width, "g_w:",               cfg->g_w,
            width, "g_h:",               cfg->g_h,
-#if CONFIG_LIBVPX_VP9_ENCODER && defined(VPX_IMG_FMT_HIGHBITDEPTH)
+#if CONFIG_LIBVPX_VP9_ENCODER
            width, "g_bit_depth:",       cfg->g_bit_depth,
            width, "g_input_bit_depth:", cfg->g_input_bit_depth,
 #endif
@@ -324,9 +322,7 @@ static int set_pix_fmt(AVCodecContext *avctx, vpx_codec_caps_t codec_caps,
                        vpx_img_fmt_t *img_fmt)
 {
     VPxContext av_unused *ctx = avctx->priv_data;
-#ifdef VPX_IMG_FMT_HIGHBITDEPTH
     enccfg->g_bit_depth = enccfg->g_input_bit_depth = 8;
-#endif
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_YUV420P:
     case AV_PIX_FMT_YUVA420P:
@@ -337,19 +333,16 @@ static int set_pix_fmt(AVCodecContext *avctx, vpx_codec_caps_t codec_caps,
         enccfg->g_profile = 1;
         *img_fmt = VPX_IMG_FMT_I422;
         return 0;
-#if VPX_IMAGE_ABI_VERSION >= 3
     case AV_PIX_FMT_YUV440P:
         enccfg->g_profile = 1;
         *img_fmt = VPX_IMG_FMT_I440;
         return 0;
     case AV_PIX_FMT_GBRP:
         ctx->vpx_cs = VPX_CS_SRGB;
-#endif
     case AV_PIX_FMT_YUV444P:
         enccfg->g_profile = 1;
         *img_fmt = VPX_IMG_FMT_I444;
         return 0;
-#ifdef VPX_IMG_FMT_HIGHBITDEPTH
     case AV_PIX_FMT_YUV420P10:
     case AV_PIX_FMT_YUV420P12:
         if (codec_caps & VPX_CODEC_CAP_HIGHBITDEPTH) {
@@ -372,7 +365,6 @@ static int set_pix_fmt(AVCodecContext *avctx, vpx_codec_caps_t codec_caps,
             return 0;
         }
         break;
-#if VPX_IMAGE_ABI_VERSION >= 3
     case AV_PIX_FMT_YUV440P10:
     case AV_PIX_FMT_YUV440P12:
         if (codec_caps & VPX_CODEC_CAP_HIGHBITDEPTH) {
@@ -387,7 +379,6 @@ static int set_pix_fmt(AVCodecContext *avctx, vpx_codec_caps_t codec_caps,
     case AV_PIX_FMT_GBRP10:
     case AV_PIX_FMT_GBRP12:
         ctx->vpx_cs = VPX_CS_SRGB;
-#endif
     case AV_PIX_FMT_YUV444P10:
     case AV_PIX_FMT_YUV444P12:
         if (codec_caps & VPX_CODEC_CAP_HIGHBITDEPTH) {
@@ -400,7 +391,6 @@ static int set_pix_fmt(AVCodecContext *avctx, vpx_codec_caps_t codec_caps,
             return 0;
         }
         break;
-#endif
     default:
         break;
     }
@@ -408,7 +398,6 @@ static int set_pix_fmt(AVCodecContext *avctx, vpx_codec_caps_t codec_caps,
     return AVERROR_INVALIDDATA;
 }
 
-#if VPX_ENCODER_ABI_VERSION > 8
 static void set_colorspace(AVCodecContext *avctx)
 {
     enum vpx_color_space vpx_cs;
@@ -434,7 +423,6 @@ static void set_colorspace(AVCodecContext *avctx)
     }
     codecctl_int(avctx, VP9E_SET_COLOR_SPACE, vpx_cs);
 }
-#endif
 
 #if VPX_ENCODER_ABI_VERSION >= 11
 static void set_color_range(AVCodecContext *avctx)
@@ -701,9 +689,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             codecctl_int(avctx, VP9E_SET_FRAME_PARALLEL_DECODING, ctx->frame_parallel);
         if (ctx->aq_mode >= 0)
             codecctl_int(avctx, VP9E_SET_AQ_MODE, ctx->aq_mode);
-#if VPX_ENCODER_ABI_VERSION > 8
         set_colorspace(avctx);
-#endif
 #if VPX_ENCODER_ABI_VERSION >= 11
         set_color_range(avctx);
 #endif
@@ -726,7 +712,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     //provide dummy value to initialize wrapper, values will be updated each _encode()
     vpx_img_wrap(&ctx->rawimg, img_fmt, avctx->width, avctx->height, 1,
                  (unsigned char*)1);
-#if CONFIG_LIBVPX_VP9_ENCODER && defined(VPX_IMG_FMT_HIGHBITDEPTH)
+#if CONFIG_LIBVPX_VP9_ENCODER
     if (avctx->codec_id == AV_CODEC_ID_VP9 && (codec_caps & VPX_CODEC_CAP_HIGHBITDEPTH))
         ctx->rawimg.bit_depth = enccfg.g_bit_depth;
 #endif
@@ -1066,11 +1052,6 @@ static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
 
 #define OFFSET(x) offsetof(VPxContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
-
-#ifndef VPX_ERROR_RESILIENT_DEFAULT
-#define VPX_ERROR_RESILIENT_DEFAULT 1
-#define VPX_ERROR_RESILIENT_PARTITIONS 2
-#endif
 
 #define COMMON_OPTIONS \
     { "auto-alt-ref",    "Enable use of alternate reference " \
