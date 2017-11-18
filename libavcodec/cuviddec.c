@@ -835,7 +835,7 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
         goto error;
     }
 
-    ret = cuvid_load_functions(&ctx->cvdl);
+    ret = cuvid_load_functions(&ctx->cvdl, avctx);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed loading nvcuvid.\n");
         goto error;

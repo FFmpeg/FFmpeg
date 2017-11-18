@@ -176,7 +176,7 @@ static int nvdec_decoder_create(AVBufferRef **out, AVBufferRef *hw_device_ref,
     decoder->cuda_ctx = device_hwctx->cuda_ctx;
     decoder->cudl = device_hwctx->internal->cuda_dl;
 
-    ret = cuvid_load_functions(&decoder->cvdl);
+    ret = cuvid_load_functions(&decoder->cvdl, logctx);
     if (ret < 0) {
         av_log(logctx, AV_LOG_ERROR, "Failed loading nvcuvid.\n");
         goto fail;

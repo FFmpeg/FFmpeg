@@ -336,7 +336,7 @@ static int cuda_device_init(AVHWDeviceContext *ctx)
     }
 
     if (!hwctx->internal->cuda_dl) {
-        ret = cuda_load_functions(&hwctx->internal->cuda_dl);
+        ret = cuda_load_functions(&hwctx->internal->cuda_dl, ctx);
         if (ret < 0) {
             av_log(ctx, AV_LOG_ERROR, "Could not dynamically load CUDA\n");
             goto error;
