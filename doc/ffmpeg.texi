@@ -289,8 +289,8 @@ see @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) 
 
 -to and -t are mutually exclusive and -t has priority.
 
-@item -to @var{position} (@emph{output})
-Stop writing the output at @var{position}.
+@item -to @var{position} (@emph{input/output})
+Stop writing the output or reading the input at @var{position}.
 @var{position} must be a time duration specification,
 see @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}.
 
