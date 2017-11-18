@@ -16,6 +16,7 @@ version <next>:
 - NVIDIA NVDEC-accelerated H.264, HEVC, MPEG-2, VC1 and VP9 hwaccel decoding
 - Intel QSV-accelerated overlay filter
 - mcompand audio filter
+- acontrast audio filter
 
 
 version 3.4:

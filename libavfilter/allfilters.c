@@ -42,6 +42,7 @@ static void register_all(void)
 {
     REGISTER_FILTER(ABENCH,         abench,         af);
     REGISTER_FILTER(ACOMPRESSOR,    acompressor,    af);
+    REGISTER_FILTER(ACONTRAST,      acontrast,      af);
     REGISTER_FILTER(ACOPY,          acopy,          af);
     REGISTER_FILTER(ACROSSFADE,     acrossfade,     af);
     REGISTER_FILTER(ACRUSHER,       acrusher,       af);

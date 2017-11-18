@@ -429,6 +429,16 @@ How much to use compressed signal in output. Default is 1.
 Range is between 0 and 1.
 @end table
 
+@section acontrast
+Simple audio dynamic range commpression/expansion filter.
+
+The filter accepts the following options:
+
+@table @option
+@item contrast
+Set contrast. Default is 33. Allowed range is between 0 and 100.
+@end table
+
 @section acopy
 
 Copy the input audio source unchanged to the output. This is mainly useful for
