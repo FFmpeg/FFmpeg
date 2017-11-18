@@ -220,13 +220,18 @@ static void sub2video_push_ref(InputStream *ist, int64_t pts)
 {
     AVFrame *frame = ist->sub2video.frame;
     int i;
+    int ret;
 
     av_assert1(frame->data[0]);
     ist->sub2video.last_pts = frame->pts = pts;
-    for (i = 0; i < ist->nb_filters; i++)
-        av_buffersrc_add_frame_flags(ist->filters[i]->filter, frame,
-                                     AV_BUFFERSRC_FLAG_KEEP_REF |
-                                     AV_BUFFERSRC_FLAG_PUSH);
+    for (i = 0; i < ist->nb_filters; i++) {
+        ret = av_buffersrc_add_frame_flags(ist->filters[i]->filter, frame,
+                                           AV_BUFFERSRC_FLAG_KEEP_REF |
+                                           AV_BUFFERSRC_FLAG_PUSH);
+        if (ret != AVERROR_EOF && ret < 0)
+            av_log(NULL, AV_LOG_WARNING, "Error while add the frame to buffer source(%s).\n",
+                   av_err2str(ret));
+    }
 }
 
 void sub2video_update(InputStream *ist, AVSubtitle *sub)
@@ -295,11 +300,15 @@ static void sub2video_heartbeat(InputStream *ist, int64_t pts)
 static void sub2video_flush(InputStream *ist)
 {
     int i;
+    int ret;
 
     if (ist->sub2video.end_pts < INT64_MAX)
         sub2video_update(ist, NULL);
-    for (i = 0; i < ist->nb_filters; i++)
-        av_buffersrc_add_frame(ist->filters[i]->filter, NULL);
+    for (i = 0; i < ist->nb_filters; i++) {
+        ret = av_buffersrc_add_frame(ist->filters[i]->filter, NULL);
+        if (ret != AVERROR_EOF && ret < 0)
+            av_log(NULL, AV_LOG_WARNING, "Flush the frame error.\n");
+    }
 }
 
 /* end of sub2video hack */
@@ -327,13 +336,14 @@ static int main_return_code = 0;
 static void
 sigterm_handler(int sig)
 {
+    int ret;
     received_sigterm = sig;
     received_nb_signals++;
     term_exit_sigsafe();
     if(received_nb_signals > 3) {
-        write(2/*STDERR_FILENO*/, "Received > 3 system signals, hard exiting\n",
-                           strlen("Received > 3 system signals, hard exiting\n"));
-
+        ret = write(2/*STDERR_FILENO*/, "Received > 3 system signals, hard exiting\n",
+                    strlen("Received > 3 system signals, hard exiting\n"));
+        if (ret < 0) { /* Do nothing */ };
         exit(123);
     }
 }
