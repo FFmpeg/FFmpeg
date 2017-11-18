@@ -155,6 +155,7 @@ typedef struct SpecifierOpt {
         uint8_t *str;
         int        i;
         int64_t  i64;
+        uint64_t ui64;
         float      f;
         double   dbl;
     } u;
