@@ -475,6 +475,36 @@ finish:
     return ret;
 }
 
+int ff_nvdec_simple_end_frame(AVCodecContext *avctx)
+{
+    NVDECContext *ctx = avctx->internal->hwaccel_priv_data;
+    int ret = ff_nvdec_end_frame(avctx);
+    ctx->bitstream = NULL;
+    return ret;
+}
+
+int ff_nvdec_simple_decode_slice(AVCodecContext *avctx, const uint8_t *buffer,
+                                 uint32_t size)
+{
+    NVDECContext *ctx = avctx->internal->hwaccel_priv_data;
+    void *tmp;
+
+    tmp = av_fast_realloc(ctx->slice_offsets, &ctx->slice_offsets_allocated,
+                          (ctx->nb_slices + 1) * sizeof(*ctx->slice_offsets));
+    if (!tmp)
+        return AVERROR(ENOMEM);
+    ctx->slice_offsets = tmp;
+
+    if (!ctx->bitstream)
+        ctx->bitstream = (uint8_t*)buffer;
+
+    ctx->slice_offsets[ctx->nb_slices] = buffer - ctx->bitstream;
+    ctx->bitstream_len += size;
+    ctx->nb_slices++;
+
+    return 0;
+}
+
 int ff_nvdec_frame_params(AVCodecContext *avctx,
                           AVBufferRef *hw_frames_ctx,
                           int dpb_size)
@@ -519,4 +549,20 @@ int ff_nvdec_frame_params(AVCodecContext *avctx,
     }
 
     return 0;
+}
+
+int ff_nvdec_get_ref_idx(AVFrame *frame)
+{
+    FrameDecodeData *fdd;
+    NVDECFrame *cf;
+
+    if (!frame || !frame->private_ref)
+        return -1;
+
+    fdd = (FrameDecodeData*)frame->private_ref->data;
+    cf  = (NVDECFrame*)fdd->hwaccel_priv;
+    if (!cf)
+        return -1;
+
+    return cf->idx;
 }

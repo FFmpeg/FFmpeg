@@ -28,20 +28,6 @@
 #include "internal.h"
 #include "vp9shared.h"
 
-static unsigned char get_ref_idx(AVFrame *frame)
-{
-    FrameDecodeData *fdd;
-    NVDECFrame *cf;
-
-    if (!frame || !frame->private_ref)
-        return 255;
-
-    fdd = (FrameDecodeData*)frame->private_ref->data;
-    cf  = (NVDECFrame*)fdd->hwaccel_priv;
-
-    return cf->idx;
-}
-
 static int nvdec_vp9_start_frame(AVCodecContext *avctx, const uint8_t *buffer, uint32_t size)
 {
     VP9SharedContext *h = avctx->priv_data;
@@ -72,9 +58,9 @@ static int nvdec_vp9_start_frame(AVCodecContext *avctx, const uint8_t *buffer, u
             .width                    = cur_frame->width,
             .height                   = cur_frame->height,
 
-            .LastRefIdx               = get_ref_idx(h->refs[h->h.refidx[0]].f),
-            .GoldenRefIdx             = get_ref_idx(h->refs[h->h.refidx[1]].f),
-            .AltRefIdx                = get_ref_idx(h->refs[h->h.refidx[2]].f),
+            .LastRefIdx               = ff_nvdec_get_ref_idx(h->refs[h->h.refidx[0]].f),
+            .GoldenRefIdx             = ff_nvdec_get_ref_idx(h->refs[h->h.refidx[1]].f),
+            .AltRefIdx                = ff_nvdec_get_ref_idx(h->refs[h->h.refidx[2]].f),
 
             .profile                  = h->h.profile,
             .frameContextIdx          = h->h.framectxid,
@@ -176,35 +162,6 @@ static int nvdec_vp9_start_frame(AVCodecContext *avctx, const uint8_t *buffer, u
     return 0;
 }
 
-static int nvdec_vp9_end_frame(AVCodecContext *avctx)
-{
-    NVDECContext *ctx = avctx->internal->hwaccel_priv_data;
-    int ret = ff_nvdec_end_frame(avctx);
-    ctx->bitstream = NULL;
-    return ret;
-}
-
-static int nvdec_vp9_decode_slice(AVCodecContext *avctx, const uint8_t *buffer, uint32_t size)
-{
-    NVDECContext *ctx = avctx->internal->hwaccel_priv_data;
-    void *tmp;
-
-    tmp = av_fast_realloc(ctx->slice_offsets, &ctx->slice_offsets_allocated,
-                          (ctx->nb_slices + 1) * sizeof(*ctx->slice_offsets));
-    if (!tmp)
-        return AVERROR(ENOMEM);
-    ctx->slice_offsets = tmp;
-
-    if (!ctx->bitstream)
-        ctx->bitstream = (uint8_t*)buffer;
-
-    ctx->slice_offsets[ctx->nb_slices] = buffer - ctx->bitstream;
-    ctx->bitstream_len += size;
-    ctx->nb_slices++;
-
-    return 0;
-}
-
 static int nvdec_vp9_frame_params(AVCodecContext *avctx,
                                   AVBufferRef *hw_frames_ctx)
 {
@@ -218,8 +175,8 @@ AVHWAccel ff_vp9_nvdec_hwaccel = {
     .id                   = AV_CODEC_ID_VP9,
     .pix_fmt              = AV_PIX_FMT_CUDA,
     .start_frame          = nvdec_vp9_start_frame,
-    .end_frame            = nvdec_vp9_end_frame,
-    .decode_slice         = nvdec_vp9_decode_slice,
+    .end_frame            = ff_nvdec_simple_end_frame,
+    .decode_slice         = ff_nvdec_simple_decode_slice,
     .frame_params         = nvdec_vp9_frame_params,
     .init                 = ff_nvdec_decode_init,
     .uninit               = ff_nvdec_decode_uninit,
