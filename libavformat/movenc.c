@@ -252,6 +252,30 @@ static int mov_write_stss_tag(AVIOContext *pb, MOVTrack *track, uint32_t flag)
     return update_size(pb, pos);
 }
 
+/* Sample dependency atom */
+static int mov_write_sdtp_tag(AVIOContext *pb, MOVTrack *track)
+{
+    int i;
+    uint8_t leading, dependent, reference, redundancy;
+    int64_t pos = avio_tell(pb);
+    avio_wb32(pb, 0); // size
+    ffio_wfourcc(pb, "sdtp");
+    avio_wb32(pb, 0); // version & flags
+    for (i = 0; i < track->entry; i++) {
+        dependent = MOV_SAMPLE_DEPENDENCY_YES;
+        leading = reference = redundancy = MOV_SAMPLE_DEPENDENCY_UNKNOWN;
+        if (track->cluster[i].flags & MOV_DISPOSABLE_SAMPLE) {
+            reference = MOV_SAMPLE_DEPENDENCY_NO;
+        }
+        if (track->cluster[i].flags & MOV_SYNC_SAMPLE) {
+            dependent = MOV_SAMPLE_DEPENDENCY_NO;
+        }
+        avio_w8(pb, (leading << 6)   | (dependent << 4) |
+                    (reference << 2) | redundancy);
+    }
+    return update_size(pb, pos);
+}
+
 static int mov_write_amr_tag(AVIOContext *pb, MOVTrack *track)
 {
     avio_wb32(pb, 0x11); /* size */
@@ -2353,6 +2377,8 @@ static int mov_write_stbl_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext
          track->par->codec_tag == MKTAG('r','t','p',' ')) &&
         track->has_keyframes && track->has_keyframes < track->entry)
         mov_write_stss_tag(pb, track, MOV_SYNC_SAMPLE);
+    if (track->par->codec_type == AVMEDIA_TYPE_VIDEO && track->has_disposable)
+        mov_write_sdtp_tag(pb, track);
     if (track->mode == MODE_MOV && track->flags & MOV_TRACK_STPS)
         mov_write_stss_tag(pb, track, MOV_PARTIAL_SYNC_SAMPLE);
     if (track->par->codec_type == AVMEDIA_TYPE_VIDEO &&
@@ -5315,6 +5341,10 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
         if (trk->cluster[trk->entry].flags & MOV_SYNC_SAMPLE)
             trk->has_keyframes++;
+    }
+    if (pkt->flags & AV_PKT_FLAG_DISPOSABLE) {
+        trk->cluster[trk->entry].flags |= MOV_DISPOSABLE_SAMPLE;
+        trk->has_disposable++;
     }
     trk->entry++;
     trk->sample_count += samples_in_chunk;
