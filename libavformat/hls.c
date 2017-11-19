@@ -111,7 +111,7 @@ struct playlist {
     int start_seq_no;
     int n_segments;
     struct segment **segments;
-    int needed, cur_needed;
+    int needed;
     int cur_seq_no;
     int64_t cur_seg_offset;
     int64_t last_load_time;
@@ -1258,11 +1258,31 @@ static int64_t default_reload_interval(struct playlist *pls)
                           pls->target_duration;
 }
 
+static int playlist_needed(struct playlist *pls)
+{
+    int i;
+
+    /* If there is no context or streams yet, the playlist is needed */
+    if (!pls->ctx || !pls->n_main_streams)
+        return 1;
+
+    /* check if any of the streams in the playlist are needed */
+    for (i = 0; i < pls->n_main_streams; i++) {
+        if (pls->main_streams[i]->discard < AVDISCARD_ALL) {
+            /* some stream needed => playlist needed */
+            return 1;
+        }
+    }
+
+    /* No streams were needed */
+    return 0;
+}
+
 static int read_data(void *opaque, uint8_t *buf, int buf_size)
 {
     struct playlist *v = opaque;
     HLSContext *c = v->parent->priv_data;
-    int ret, i;
+    int ret;
     int just_opened = 0;
     int reload_count = 0;
 
@@ -1276,15 +1296,8 @@ restart:
 
         /* Check that the playlist is still needed before opening a new
          * segment. */
-        if (v->ctx && v->ctx->nb_streams) {
-            v->needed = 0;
-            for (i = 0; i < v->n_main_streams; i++) {
-                if (v->main_streams[i]->discard < AVDISCARD_ALL) {
-                    v->needed = 1;
-                    break;
-                }
-            }
-        }
+        v->needed = playlist_needed(v);
+
         if (!v->needed) {
             av_log(v->parent, AV_LOG_INFO, "No longer receiving playlist %d\n",
                 v->index);
@@ -1841,20 +1854,15 @@ static int recheck_discard_flags(AVFormatContext *s, int first)
 {
     HLSContext *c = s->priv_data;
     int i, changed = 0;
+    int cur_needed;
 
     /* Check if any new streams are needed */
-    for (i = 0; i < c->n_playlists; i++)
-        c->playlists[i]->cur_needed = 0;
-
-    for (i = 0; i < s->nb_streams; i++) {
-        AVStream *st = s->streams[i];
-        struct playlist *pls = c->playlists[s->streams[i]->id];
-        if (st->discard < AVDISCARD_ALL)
-            pls->cur_needed = 1;
-    }
     for (i = 0; i < c->n_playlists; i++) {
         struct playlist *pls = c->playlists[i];
-        if (pls->cur_needed && !pls->needed) {
+
+        cur_needed = playlist_needed(c->playlists[i]);
+
+        if (cur_needed && !pls->needed) {
             pls->needed = 1;
             changed = 1;
             pls->cur_seq_no = select_cur_seq_no(c, pls);
@@ -1866,7 +1874,7 @@ static int recheck_discard_flags(AVFormatContext *s, int first)
                 pls->seek_stream_index = -1;
             }
             av_log(s, AV_LOG_INFO, "Now receiving playlist %d, segment %d\n", i, pls->cur_seq_no);
-        } else if (first && !pls->cur_needed && pls->needed) {
+        } else if (first && !cur_needed && pls->needed) {
             if (pls->input)
                 ff_format_io_close(pls->parent, &pls->input);
             pls->needed = 0;
