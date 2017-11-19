@@ -239,7 +239,6 @@
     <ClCompile Include="..\libavcodec\msmpeg4data.c" />
     <ClCompile Include="..\libavcodec\ivi_dsp.c" />
     <ClCompile Include="..\libavcodec\jpegtables.c" />
-    <ClCompile Include="..\libavcodec\libxvid_rc.c" />
     <ClCompile Include="..\libavcodec\lpc.c" />
     <ClCompile Include="..\libavcodec\lsp.c" />
     <ClCompile Include="..\libavcodec\lzf.c" />
@@ -849,7 +848,10 @@
     <ClCompile Include="..\libavcodec\dxva2_hevc.c" />
     <ClCompile Include="..\libavcodec\nvdec_hevc.c" />
     <ClCompile Include="..\libavcodec\dxva2_mpeg2.c" />
+    <ClCompile Include="..\libavcodec\nvdec_mpeg12.c" />
     <ClCompile Include="..\libavcodec\dxva2_vc1.c" />
+    <ClCompile Include="..\libavcodec\nvdec_vc1.c" />
+    <ClCompile Include="..\libavcodec\nvdec_vp9.c" />
     <ClCompile Include="..\libavcodec\libilbc.c" />
     <ClCompile Include="..\libavcodec\libmp3lame.c" />
     <ClCompile Include="..\libavcodec\libopusdec.c" />
@@ -866,6 +868,7 @@
     <ClCompile Include="..\libavcodec\libx264.c" />
     <ClCompile Include="..\libavcodec\libx265.c" />
     <ClCompile Include="..\libavcodec\libxvid.c" />
+    <ClCompile Include="..\libavcodec\libxvid_rc.c" />
     <ClCompile Include="..\libavcodec\latm_parser.c" />
     <ClCompile Include="..\libavcodec\aac_parser.c" />
     <ClCompile Include="..\libavcodec\aac_ac3_parser.c" />

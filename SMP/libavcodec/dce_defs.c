@@ -3630,6 +3630,7 @@ const AVCodec ff_hevc_rkmpp_decoder = {0};
 const AVCodec ff_hevc_v4l2m2m_decoder = {0};
 const AVCodec ff_hevc_v4l2m2m_encoder = {0};
 const AVCodec ff_hevc_vaapi_encoder = {0};
+const AVCodec ff_hevc_videotoolbox_encoder = {0};
 const AVCodec ff_ilbc_at_decoder = {0};
 const AVCodec ff_ilbc_at_encoder = {0};
 const AVCodec ff_libcelt_decoder = {0};
