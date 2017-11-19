@@ -1260,7 +1260,10 @@ static int64_t default_reload_interval(struct playlist *pls)
 
 static int playlist_needed(struct playlist *pls)
 {
-    int i;
+    AVFormatContext *s = pls->parent;
+    int i, j;
+    int stream_needed = 0;
+    int first_st;
 
     /* If there is no context or streams yet, the playlist is needed */
     if (!pls->ctx || !pls->n_main_streams)
@@ -1269,12 +1272,35 @@ static int playlist_needed(struct playlist *pls)
     /* check if any of the streams in the playlist are needed */
     for (i = 0; i < pls->n_main_streams; i++) {
         if (pls->main_streams[i]->discard < AVDISCARD_ALL) {
-            /* some stream needed => playlist needed */
-            return 1;
+            stream_needed = 1;
+            break;
         }
     }
 
-    /* No streams were needed */
+    /* If all streams in the playlist were discarded, the playlist is not
+     * needed (regardless of whether whole programs are discarded or not). */
+    if (!stream_needed)
+        return 0;
+
+    /* Otherwise, check if all the programs (variants) this playlist is in are
+     * discarded. Since all streams in the playlist are part of the same programs
+     * we can just check the programs of the first stream. */
+
+    first_st = pls->main_streams[0]->index;
+
+    for (i = 0; i < s->nb_programs; i++) {
+        AVProgram *program = s->programs[i];
+        if (program->discard < AVDISCARD_ALL) {
+            for (j = 0; j < program->nb_stream_indexes; j++) {
+                if (program->stream_index[j] == first_st) {
+                    /* playlist is in an undiscarded program */
+                    return 1;
+                }
+            }
+        }
+    }
+
+    /* some streams were not discarded but all the programs were */
     return 0;
 }
 
