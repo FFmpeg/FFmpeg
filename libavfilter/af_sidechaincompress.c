@@ -241,14 +241,13 @@ static int activate(AVFilterContext *ctx)
     }
     FF_FILTER_FORWARD_STATUS(ctx->inputs[0], ctx->outputs[0]);
     FF_FILTER_FORWARD_STATUS(ctx->inputs[1], ctx->outputs[0]);
-    /* TODO reindent */
-        if (ff_outlink_frame_wanted(ctx->outputs[0])) {
-            if (!av_audio_fifo_size(s->fifo[0]))
-                ff_inlink_request_frame(ctx->inputs[0]);
-            if (!av_audio_fifo_size(s->fifo[1]))
-                ff_inlink_request_frame(ctx->inputs[1]);
-        }
-        return 0;
+    if (ff_outlink_frame_wanted(ctx->outputs[0])) {
+        if (!av_audio_fifo_size(s->fifo[0]))
+            ff_inlink_request_frame(ctx->inputs[0]);
+        if (!av_audio_fifo_size(s->fifo[1]))
+            ff_inlink_request_frame(ctx->inputs[1]);
+    }
+    return 0;
 }
 
 static int query_formats(AVFilterContext *ctx)
