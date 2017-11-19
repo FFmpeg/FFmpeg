@@ -58,6 +58,7 @@ static int map_avcodec_id(enum AVCodecID id)
     case AV_CODEC_ID_MPEG2VIDEO: return cudaVideoCodec_MPEG2;
     case AV_CODEC_ID_MPEG4:      return cudaVideoCodec_MPEG4;
     case AV_CODEC_ID_VC1:        return cudaVideoCodec_VC1;
+    case AV_CODEC_ID_VP8:        return cudaVideoCodec_VP8;
     case AV_CODEC_ID_VP9:        return cudaVideoCodec_VP9;
     case AV_CODEC_ID_WMV3:       return cudaVideoCodec_VC1;
     }

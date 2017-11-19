@@ -2602,6 +2602,9 @@ int vp78_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 #if CONFIG_VP8_VAAPI_HWACCEL
             AV_PIX_FMT_VAAPI,
 #endif
+#if CONFIG_VP8_NVDEC_HWACCEL
+            AV_PIX_FMT_CUDA,
+#endif
             AV_PIX_FMT_YUV420P,
             AV_PIX_FMT_NONE,
         };
@@ -2949,6 +2952,9 @@ AVCodec ff_vp8_decoder = {
     .hw_configs            = (const AVCodecHWConfigInternal*[]) {
 #if CONFIG_VP8_VAAPI_HWACCEL
                                HWACCEL_VAAPI(vp8),
+#endif
+#if CONFIG_VP8_NVDEC_HWACCEL
+                               HWACCEL_NVDEC(vp8),
 #endif
                                NULL
                            },
