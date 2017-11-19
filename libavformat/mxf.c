@@ -137,6 +137,7 @@ static const MXFSamplesPerFrame mxf_spf[] = {
     { { 1001, 60000 }, { 801,  801,  801,  801,  800,  0 } }, // NTSC 59.94
     { { 1, 25 },       { 1920, 0,    0,    0,    0,    0 } }, // PAL 25
     { { 1, 50 },       { 960,  0,    0,    0,    0,    0 } }, // PAL 50
+    { { 1, 60 },       { 800,  0,    0,    0,    0,    0 } },
 };
 
 static const AVRational mxf_time_base[] = {
@@ -146,6 +147,7 @@ static const AVRational mxf_time_base[] = {
     { 1001, 60000 },
     { 1, 25 },
     { 1, 50 },
+    { 1, 60 },
     { 0, 0}
 };
 

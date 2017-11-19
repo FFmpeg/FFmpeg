@@ -109,6 +109,7 @@ typedef struct VPxEncoderContext {
     int vpx_cs;
     float level;
     int row_mt;
+    int tune_content;
 } VPxContext;
 
 /** String mappings for enum vp8e_enc_control_id */
@@ -142,6 +143,9 @@ static const char *const ctlidstr[] = {
 #endif
 #ifdef VPX_CTRL_VP9E_SET_ROW_MT
     [VP9E_SET_ROW_MT]                  = "VP9E_SET_ROW_MT",
+#endif
+#ifdef VPX_CTRL_VP9E_SET_TUNE_CONTENT
+    [VP9E_SET_TUNE_CONTENT]            = "VP9E_SET_TUNE_CONTENT",
 #endif
 #endif
 };
@@ -710,6 +714,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (ctx->row_mt >= 0)
             codecctl_int(avctx, VP9E_SET_ROW_MT, ctx->row_mt);
 #endif
+#ifdef VPX_CTRL_VP9E_SET_TUNE_CONTENT
+        if (ctx->tune_content >= 0)
+            codecctl_int(avctx, VP9E_SET_TUNE_CONTENT, ctx->tune_content);
+#endif
     }
 #endif
 
@@ -1139,6 +1147,18 @@ static const AVOption vp9_options[] = {
 #endif
 #ifdef VPX_CTRL_VP9E_SET_ROW_MT
     {"row-mt", "Row based multi-threading", OFFSET(row_mt), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+#endif
+#ifdef VPX_CTRL_VP9E_SET_TUNE_CONTENT
+#if VPX_ENCODER_ABI_VERSION >= 14
+    { "tune-content",    "Tune content type", OFFSET(tune_content), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 2, VE, "tune_content" },
+#else
+    { "tune-content",    "Tune content type", OFFSET(tune_content), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, VE, "tune_content" },
+#endif
+    { "default",         "Regular video content",                  0, AV_OPT_TYPE_CONST, {.i64 = 0}, 0, 0, VE, "tune_content" },
+    { "screen",          "Screen capture content",                 0, AV_OPT_TYPE_CONST, {.i64 = 1}, 0, 0, VE, "tune_content" },
+#if VPX_ENCODER_ABI_VERSION >= 14
+    { "film",            "Film content; improves grain retention", 0, AV_OPT_TYPE_CONST, {.i64 = 2}, 0, 0, VE, "tune_content" },
+#endif
 #endif
     LEGACY_OPTIONS
     { NULL }

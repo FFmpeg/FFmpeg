@@ -169,7 +169,10 @@ fail:
 
 static int update_size(AVCodecContext *avctx, int w, int h)
 {
-#define HWACCEL_MAX (CONFIG_VP9_DXVA2_HWACCEL + CONFIG_VP9_D3D11VA_HWACCEL * 2 + CONFIG_VP9_VAAPI_HWACCEL)
+#define HWACCEL_MAX (CONFIG_VP9_DXVA2_HWACCEL + \
+                     CONFIG_VP9_D3D11VA_HWACCEL * 2 + \
+                     CONFIG_VP9_NVDEC_HWACCEL + \
+                     CONFIG_VP9_VAAPI_HWACCEL)
     enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmtp = pix_fmts;
     VP9Context *s = avctx->priv_data;
     uint8_t *p;
@@ -191,12 +194,18 @@ static int update_size(AVCodecContext *avctx, int w, int h)
             *fmtp++ = AV_PIX_FMT_D3D11VA_VLD;
             *fmtp++ = AV_PIX_FMT_D3D11;
 #endif
+#if CONFIG_VP9_NVDEC_HWACCEL
+            *fmtp++ = AV_PIX_FMT_CUDA;
+#endif
 #if CONFIG_VP9_VAAPI_HWACCEL
             *fmtp++ = AV_PIX_FMT_VAAPI;
 #endif
             break;
         case AV_PIX_FMT_YUV420P10:
         case AV_PIX_FMT_YUV420P12:
+#if CONFIG_VP9_NVDEC_HWACCEL
+            *fmtp++ = AV_PIX_FMT_CUDA;
+#endif
 #if CONFIG_VP9_VAAPI_HWACCEL
             *fmtp++ = AV_PIX_FMT_VAAPI;
 #endif

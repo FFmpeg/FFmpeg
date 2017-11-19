@@ -2910,7 +2910,7 @@ static int open_input_file(InputFile *ifile, const char *filename)
                 av_dict_set(&codec_opts, "threads", "1", 0);
             }
 
-            av_codec_set_pkt_timebase(ist->dec_ctx, stream->time_base);
+            ist->dec_ctx->pkt_timebase = stream->time_base;
             ist->dec_ctx->framerate = stream->avg_frame_rate;
 
             if (avcodec_open2(ist->dec_ctx, codec, &opts) < 0) {

@@ -52,8 +52,12 @@ typedef struct NVDECFramePool {
 static int map_avcodec_id(enum AVCodecID id)
 {
     switch (id) {
-    case AV_CODEC_ID_H264: return cudaVideoCodec_H264;
-    case AV_CODEC_ID_HEVC: return cudaVideoCodec_HEVC;
+    case AV_CODEC_ID_H264:       return cudaVideoCodec_H264;
+    case AV_CODEC_ID_HEVC:       return cudaVideoCodec_HEVC;
+    case AV_CODEC_ID_MPEG2VIDEO: return cudaVideoCodec_MPEG2;
+    case AV_CODEC_ID_VC1:        return cudaVideoCodec_VC1;
+    case AV_CODEC_ID_VP9:        return cudaVideoCodec_VP9;
+    case AV_CODEC_ID_WMV3:       return cudaVideoCodec_VC1;
     }
     return -1;
 }
@@ -72,6 +76,56 @@ static int map_chroma_format(enum AVPixelFormat pix_fmt)
         return cudaVideoChromaFormat_444;
 
     return -1;
+}
+
+static int nvdec_test_capabilities(NVDECDecoder *decoder,
+                                   CUVIDDECODECREATEINFO *params, void *logctx)
+{
+    CUresult err;
+    CUVIDDECODECAPS caps = { 0 };
+
+    caps.eCodecType      = params->CodecType;
+    caps.eChromaFormat   = params->ChromaFormat;
+    caps.nBitDepthMinus8 = params->bitDepthMinus8;
+
+    err = decoder->cvdl->cuvidGetDecoderCaps(&caps);
+    if (err != CUDA_SUCCESS) {
+        av_log(logctx, AV_LOG_ERROR, "Failed querying decoder capabilities\n");
+        return AVERROR_UNKNOWN;
+    }
+
+    av_log(logctx, AV_LOG_VERBOSE, "NVDEC capabilities:\n");
+    av_log(logctx, AV_LOG_VERBOSE, "format supported: %s, max_mb_count: %d\n",
+           caps.bIsSupported ? "yes" : "no", caps.nMaxMBCount);
+    av_log(logctx, AV_LOG_VERBOSE, "min_width: %d, max_width: %d\n",
+           caps.nMinWidth, caps.nMaxWidth);
+    av_log(logctx, AV_LOG_VERBOSE, "min_height: %d, max_height: %d\n",
+           caps.nMinHeight, caps.nMaxHeight);
+
+    if (!caps.bIsSupported) {
+        av_log(logctx, AV_LOG_ERROR, "Hardware is lacking required capabilities\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (params->ulWidth > caps.nMaxWidth || params->ulWidth < caps.nMinWidth) {
+        av_log(logctx, AV_LOG_ERROR, "Video width %d not within range from %d to %d\n",
+               (int)params->ulWidth, caps.nMinWidth, caps.nMaxWidth);
+        return AVERROR(EINVAL);
+    }
+
+    if (params->ulHeight > caps.nMaxHeight || params->ulHeight < caps.nMinHeight) {
+        av_log(logctx, AV_LOG_ERROR, "Video height %d not within range from %d to %d\n",
+               (int)params->ulHeight, caps.nMinHeight, caps.nMaxHeight);
+        return AVERROR(EINVAL);
+    }
+
+    if ((params->ulWidth * params->ulHeight) / 256 > caps.nMaxMBCount) {
+        av_log(logctx, AV_LOG_ERROR, "Video macroblock count %d exceeds maximum of %d\n",
+               (int)(params->ulWidth * params->ulHeight) / 256, caps.nMaxMBCount);
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
 }
 
 static void nvdec_decoder_free(void *opaque, uint8_t *data)
@@ -129,6 +183,12 @@ static int nvdec_decoder_create(AVBufferRef **out, AVBufferRef *hw_device_ref,
     err = decoder->cudl->cuCtxPushCurrent(decoder->cuda_ctx);
     if (err != CUDA_SUCCESS) {
         ret = AVERROR_UNKNOWN;
+        goto fail;
+    }
+
+    ret = nvdec_test_capabilities(decoder, params, logctx);
+    if (ret < 0) {
+        decoder->cudl->cuCtxPopCurrent(&dummy);
         goto fail;
     }
 
@@ -235,8 +295,15 @@ int ff_nvdec_decode_init(AVCodecContext *avctx)
     params.ulNumOutputSurfaces = 1;
 
     ret = nvdec_decoder_create(&ctx->decoder_ref, frames_ctx->device_ref, &params, avctx);
-    if (ret < 0)
+    if (ret < 0) {
+        if (params.ulNumDecodeSurfaces > 32) {
+            av_log(avctx, AV_LOG_WARNING, "Using more than 32 (%d) decode surfaces might cause nvdec to fail.\n",
+                   (int)params.ulNumDecodeSurfaces);
+            av_log(avctx, AV_LOG_WARNING, "Try lowering the amount of threads. Using %d right now.\n",
+                   avctx->thread_count);
+        }
         return ret;
+    }
 
     pool = av_mallocz(sizeof(*pool));
     if (!pool) {
@@ -350,8 +417,10 @@ int ff_nvdec_start_frame(AVCodecContext *avctx, AVFrame *frame)
         return AVERROR(ENOMEM);
 
     cf->decoder_ref = av_buffer_ref(ctx->decoder_ref);
-    if (!cf->decoder_ref)
+    if (!cf->decoder_ref) {
+        ret = AVERROR(ENOMEM);
         goto fail;
+    }
 
     cf->idx_ref = av_buffer_pool_get(ctx->decoder_pool);
     if (!cf->idx_ref) {
@@ -430,15 +499,24 @@ int ff_nvdec_frame_params(AVCodecContext *avctx,
         return AVERROR(EINVAL);
     }
 
-    if (avctx->thread_type & FF_THREAD_FRAME)
-        dpb_size += avctx->thread_count;
-
     frames_ctx->format            = AV_PIX_FMT_CUDA;
     frames_ctx->width             = avctx->coded_width;
     frames_ctx->height            = avctx->coded_height;
-    frames_ctx->sw_format         = sw_desc->comp[0].depth > 8 ?
-                                    AV_PIX_FMT_P010 : AV_PIX_FMT_NV12;
     frames_ctx->initial_pool_size = dpb_size;
+
+    switch (sw_desc->comp[0].depth) {
+    case 8:
+        frames_ctx->sw_format = AV_PIX_FMT_NV12;
+        break;
+    case 10:
+        frames_ctx->sw_format = AV_PIX_FMT_P010;
+        break;
+    case 12:
+        frames_ctx->sw_format = AV_PIX_FMT_P016;
+        break;
+    default:
+        return AVERROR(EINVAL);
+    }
 
     return 0;
 }

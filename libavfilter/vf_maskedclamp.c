@@ -235,27 +235,15 @@ static int config_output(AVFilterLink *outlink)
         av_log(ctx, AV_LOG_ERROR, "inputs must be of same pixel format\n");
         return AVERROR(EINVAL);
     }
-    if (base->w                       != dark->w ||
-        base->h                       != dark->h ||
-        base->sample_aspect_ratio.num != dark->sample_aspect_ratio.num ||
-        base->sample_aspect_ratio.den != dark->sample_aspect_ratio.den ||
-        base->w                       != bright->w ||
-        base->h                       != bright->h ||
-        base->sample_aspect_ratio.num != bright->sample_aspect_ratio.num ||
-        base->sample_aspect_ratio.den != bright->sample_aspect_ratio.den) {
+    if (base->w != dark->w   || base->h != dark->h ||
+        base->w != bright->w || base->h != bright->h) {
         av_log(ctx, AV_LOG_ERROR, "First input link %s parameters "
-               "(size %dx%d, SAR %d:%d) do not match the corresponding "
-               "second input link %s parameters (%dx%d, SAR %d:%d) "
-               "and/or third input link %s parameters (%dx%d, SAR %d:%d)\n",
+               "(size %dx%d) do not match the corresponding "
+               "second input link %s parameters (%dx%d) "
+               "and/or third input link %s parameters (size %dx%d)\n",
                ctx->input_pads[0].name, base->w, base->h,
-               base->sample_aspect_ratio.num,
-               base->sample_aspect_ratio.den,
                ctx->input_pads[1].name, dark->w, dark->h,
-               dark->sample_aspect_ratio.num,
-               dark->sample_aspect_ratio.den,
-               ctx->input_pads[2].name, bright->w, bright->h,
-               bright->sample_aspect_ratio.num,
-               bright->sample_aspect_ratio.den);
+               ctx->input_pads[2].name, bright->w, bright->h);
         return AVERROR(EINVAL);
     }
 

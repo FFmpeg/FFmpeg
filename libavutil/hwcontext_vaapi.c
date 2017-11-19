@@ -1076,7 +1076,7 @@ static void vaapi_unmap_to_drm(AVHWFramesContext *dst_fc,
 static int vaapi_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
                             const AVFrame *src, int flags)
 {
-#if CONFIG_VAAPI_1
+#if VA_CHECK_VERSION(1, 1, 0)
     AVVAAPIDeviceContext *hwctx = hwfc->device_ctx->hwctx;
     VASurfaceID surface_id;
     VAStatus vas;

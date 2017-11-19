@@ -183,13 +183,22 @@ static int decode_q_branch(SnowContext *s, int level, int x, int y){
         int my_context= av_log2(2*FFABS(left->my - top->my)) + 0*av_log2(2*FFABS(tr->my - top->my));
 
         type= get_rac(&s->c, &s->block_state[1 + left->type + top->type]) ? BLOCK_INTRA : 0;
-
         if(type){
+            int ld, cbd, crd;
             pred_mv(s, &mx, &my, 0, left, top, tr);
-            l += get_symbol(&s->c, &s->block_state[32], 1);
+            ld = get_symbol(&s->c, &s->block_state[32], 1);
+            if (ld < -255 || ld > 255) {
+                return AVERROR_INVALIDDATA;
+            }
+            l += ld;
             if (s->nb_planes > 2) {
-                cb+= get_symbol(&s->c, &s->block_state[64], 1);
-                cr+= get_symbol(&s->c, &s->block_state[96], 1);
+                cbd = get_symbol(&s->c, &s->block_state[64], 1);
+                crd = get_symbol(&s->c, &s->block_state[96], 1);
+                if (cbd < -255 || cbd > 255 || crd < -255 || crd > 255) {
+                    return AVERROR_INVALIDDATA;
+                }
+                cb += cbd;
+                cr += crd;
             }
         }else{
             if(s->ref_frames > 1)
@@ -374,7 +383,7 @@ static int decode_header(SnowContext *s){
         }
     }
 
-    s->spatial_decomposition_type+= get_symbol(&s->c, s->header_state, 1);
+    s->spatial_decomposition_type+= (unsigned)get_symbol(&s->c, s->header_state, 1);
     if(s->spatial_decomposition_type > 1U){
         av_log(s->avctx, AV_LOG_ERROR, "spatial_decomposition_type %d not supported\n", s->spatial_decomposition_type);
         return AVERROR_INVALIDDATA;
@@ -390,10 +399,10 @@ static int decode_header(SnowContext *s){
     }
 
 
-    s->qlog           += get_symbol(&s->c, s->header_state, 1);
-    s->mv_scale       += get_symbol(&s->c, s->header_state, 1);
-    s->qbias          += get_symbol(&s->c, s->header_state, 1);
-    s->block_max_depth+= get_symbol(&s->c, s->header_state, 1);
+    s->qlog           += (unsigned)get_symbol(&s->c, s->header_state, 1);
+    s->mv_scale       += (unsigned)get_symbol(&s->c, s->header_state, 1);
+    s->qbias          += (unsigned)get_symbol(&s->c, s->header_state, 1);
+    s->block_max_depth+= (unsigned)get_symbol(&s->c, s->header_state, 1);
     if(s->block_max_depth > 1 || s->block_max_depth < 0 || s->mv_scale > 256U){
         av_log(s->avctx, AV_LOG_ERROR, "block_max_depth= %d is too large\n", s->block_max_depth);
         s->block_max_depth= 0;
@@ -428,6 +437,8 @@ static int decode_blocks(SnowContext *s){
 
     for(y=0; y<h; y++){
         for(x=0; x<w; x++){
+            if (s->c.bytestream >= s->c.bytestream_end)
+                return AVERROR_INVALIDDATA;
             if ((res = decode_q_branch(s, 0, x, y)) < 0)
                 return res;
         }

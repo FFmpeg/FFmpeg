@@ -11,6 +11,8 @@ FATE_MOV = fate-mov-3elist \
            fate-mov-440hz-10ms \
            fate-mov-ibi-elst-starts-b \
            fate-mov-elst-ends-betn-b-and-i \
+           fate-mov-frag-overlap \
+           fate-mov-bbi-elst-starts-b \
 
 FATE_MOV_FFPROBE = fate-mov-aac-2048-priming \
                    fate-mov-zombie \
@@ -58,6 +60,14 @@ fate-mov-invalid-elst-entry-count: CMD = framemd5 -flags +bitexact -i $(TARGET_S
 #  iii) Both key-frames have their DTS < edit list start
 # i.e.  Pts Order: I-B-I
 fate-mov-ibi-elst-starts-b: CMD = framemd5 -flags +bitexact -i $(TARGET_SAMPLES)/mov/mov_ibi_elst_starts_b.mov
+
+# Makes sure that we handle overlapping framgments
+fate-mov-frag-overlap: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/frag_overlap.mp4
+
+# Makes sure that we pick the right frames according to edit list when there is no keyframe with PTS < edit list start.
+# For example, when video starts on a B-frame, and edit list starts on that B-frame too.
+# GOP structure : B B I in presentation order.
+fate-mov-bbi-elst-starts-b: CMD = framemd5 -flags +bitexact -i $(TARGET_SAMPLES)/h264/twofields_packet.mp4
 
 fate-mov-aac-2048-priming: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_packets -print_format compact $(TARGET_SAMPLES)/mov/aac-2048-priming.mov
 

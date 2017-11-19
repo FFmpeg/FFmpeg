@@ -1188,6 +1188,10 @@ static void set_frag_stream(MOVFragmentIndex *frag_index, int id)
 static MOVFragmentStreamInfo * get_current_frag_stream_info(
     MOVFragmentIndex *frag_index)
 {
+    if (frag_index->current < 0 ||
+        frag_index->current >= frag_index->nb_items)
+        return NULL;
+
     MOVFragmentIndexItem * item = &frag_index->item[frag_index->current];
     if (item->current >= 0 && item->current < item->nb_stream_info)
         return &item->stream_info[item->current];
@@ -2595,6 +2599,8 @@ static int mov_read_stsc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     avio_rb24(pb); /* flags */
 
     entries = avio_rb32(pb);
+    if ((uint64_t)entries * 12 + 4 > atom.size)
+        return AVERROR_INVALIDDATA;
 
     av_log(c->fc, AV_LOG_TRACE, "track[%u].stsc.entries = %u\n", c->fc->nb_streams - 1, entries);
 
@@ -3380,13 +3386,11 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
             if (find_prev_closest_index(st, e_old, nb_old, ctts_data_old, ctts_count_old, search_timestamp, AVSEEK_FLAG_ANY,
                                         &index, &ctts_index_old, &ctts_sample_old) < 0) {
                 av_log(mov->fc, AV_LOG_WARNING,
-                       "st: %d edit list %"PRId64" Cannot find an index entry before timestamp: %"PRId64".\n"
-                       "Rounding edit list media time to zero.\n",
+                       "st: %d edit list %"PRId64" Cannot find an index entry before timestamp: %"PRId64".\n",
                        st->index, edit_list_index, search_timestamp);
                 index = 0;
                 ctts_index_old = 0;
                 ctts_sample_old = 0;
-                edit_list_media_time = 0;
             }
         }
         current = e_old + index;
@@ -3553,6 +3557,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
     // Free the old index and the old CTTS structures
     av_free(e_old);
     av_free(ctts_data_old);
+    av_freep(&frame_duration_buffer);
 
     // Null terminate the index ranges array
     current_index_range++;

@@ -4028,11 +4028,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
             ret = avcodec_parameters_from_context(st->codecpar, st->internal->avctx);
             if (ret < 0)
                 goto find_stream_info_err;
+#if FF_API_LOWRES
             // The decoder might reduce the video size by the lowres factor.
-            if (av_codec_get_lowres(st->internal->avctx) && orig_w) {
+            if (st->internal->avctx->lowres && orig_w) {
                 st->codecpar->width = orig_w;
                 st->codecpar->height = orig_h;
             }
+#endif
         }
 
 #if FF_API_LAVF_AVCTX
@@ -4041,13 +4043,15 @@ FF_DISABLE_DEPRECATION_WARNINGS
         if (ret < 0)
             goto find_stream_info_err;
 
+#if FF_API_LOWRES
         // The old API (AVStream.codec) "requires" the resolution to be adjusted
         // by the lowres factor.
-        if (av_codec_get_lowres(st->internal->avctx) && st->internal->avctx->width) {
-            av_codec_set_lowres(st->codec, av_codec_get_lowres(st->internal->avctx));
+        if (st->internal->avctx->lowres && st->internal->avctx->width) {
+            st->codec->lowres = st->internal->avctx->lowres;
             st->codec->width = st->internal->avctx->width;
             st->codec->height = st->internal->avctx->height;
         }
+#endif
 
         if (st->codec->codec_tag != MKTAG('t','m','c','d')) {
             st->codec->time_base = st->internal->avctx->time_base;
@@ -4763,10 +4767,10 @@ void avpriv_set_pts_info(AVStream *s, int pts_wrap_bits,
     s->time_base     = new_tb;
 #if FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
-    av_codec_set_pkt_timebase(s->codec, new_tb);
+    s->codec->pkt_timebase = new_tb;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-    av_codec_set_pkt_timebase(s->internal->avctx, new_tb);
+    s->internal->avctx->pkt_timebase = new_tb;
     s->pts_wrap_bits = pts_wrap_bits;
 }
 

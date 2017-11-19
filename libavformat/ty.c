@@ -378,6 +378,8 @@ static void parse_master(AVFormatContext *s)
 
     ty->cur_chunk_pos = 32;
     for (j = 0; j < ty->seq_table_size; j++) {
+        if (ty->cur_chunk_pos >= CHUNK_SIZE - 8)
+            return;
         ty->seq_table[j].timestamp = AV_RB64(ty->chunk + ty->cur_chunk_pos);
         ty->cur_chunk_pos += 8;
         if (map_size > 8) {
@@ -440,6 +442,8 @@ static int get_chunk(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
 
     ty->rec_hdrs = parse_chunk_headers(ty->chunk + 4, num_recs);
+    if (!ty->rec_hdrs)
+        return AVERROR(ENOMEM);
     ty->cur_chunk_pos += 16 * num_recs;
 
     return 0;
@@ -723,8 +727,8 @@ static int ty_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR_EOF;
 
     while (ret <= 0) {
-        if (ty->first_chunk || ty->cur_rec >= ty->num_recs) {
-            if (get_chunk(s) < 0 || ty->num_recs == 0)
+        if (!ty->rec_hdrs || ty->first_chunk || ty->cur_rec >= ty->num_recs) {
+            if (get_chunk(s) < 0 || ty->num_recs <= 0)
                 return AVERROR_EOF;
         }
 
@@ -762,6 +766,16 @@ static int ty_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
+static int ty_read_close(AVFormatContext *s)
+{
+    TYDemuxContext *ty = s->priv_data;
+
+    av_freep(&ty->seq_table);
+    av_freep(&ty->rec_hdrs);
+
+    return 0;
+}
+
 AVInputFormat ff_ty_demuxer = {
     .name           = "ty",
     .long_name      = NULL_IF_CONFIG_SMALL("TiVo TY Stream"),
@@ -769,6 +783,7 @@ AVInputFormat ff_ty_demuxer = {
     .read_probe     = ty_probe,
     .read_header    = ty_read_header,
     .read_packet    = ty_read_packet,
+    .read_close     = ty_read_close,
     .extensions     = "ty,ty+",
     .flags          = AVFMT_TS_DISCONT,
 };

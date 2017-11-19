@@ -257,9 +257,6 @@ static int decode_unregistered_user_data(H264SEIUnregistered *h, GetBitContext *
     if (e == 1 && build == 1 && !strncmp(user_data+16, "x264 - core 0000", 16))
         h->x264_build = 67;
 
-    if (strlen(user_data + 16) > 0)
-        av_log(logctx, AV_LOG_DEBUG, "user data:\"%s\"\n", user_data + 16);
-
     av_free(user_data);
     return 0;
 }

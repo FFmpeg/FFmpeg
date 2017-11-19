@@ -43,6 +43,8 @@
 #define SMKTREE_BITS 9
 #define SMK_NODE 0x80000000
 
+#define SMKTREE_DECODE_MAX_RECURSION 32
+#define SMKTREE_DECODE_BIG_MAX_RECURSION 500
 
 typedef struct SmackVContext {
     AVCodecContext *avctx;
@@ -95,10 +97,11 @@ enum SmkBlockTypes {
  */
 static int smacker_decode_tree(GetBitContext *gb, HuffContext *hc, uint32_t prefix, int length)
 {
-    if(length > 32 || length > 3*SMKTREE_BITS) {
-        av_log(NULL, AV_LOG_ERROR, "length too long\n");
+    if (length > SMKTREE_DECODE_MAX_RECURSION || length > 3 * SMKTREE_BITS) {
+        av_log(NULL, AV_LOG_ERROR, "Maximum tree recursion level exceeded.\n");
         return AVERROR_INVALIDDATA;
     }
+
     if(!get_bits1(gb)){ //Leaf
         if(hc->current >= hc->length){
             av_log(NULL, AV_LOG_ERROR, "Tree size exceeded!\n");
@@ -129,12 +132,15 @@ static int smacker_decode_tree(GetBitContext *gb, HuffContext *hc, uint32_t pref
 /**
  * Decode header tree
  */
-static int smacker_decode_bigtree(GetBitContext *gb, HuffContext *hc, DBCtx *ctx, int length)
+static int smacker_decode_bigtree(GetBitContext *gb, HuffContext *hc,
+                                  DBCtx *ctx, int length)
 {
-    if(length > 500) { // Larger length can cause segmentation faults due to too deep recursion.
-        av_log(NULL, AV_LOG_ERROR, "length too long\n");
+    // Larger length can cause segmentation faults due to too deep recursion.
+    if (length > SMKTREE_DECODE_BIG_MAX_RECURSION) {
+        av_log(NULL, AV_LOG_ERROR, "Maximum bigtree recursion level exceeded.\n");
         return AVERROR_INVALIDDATA;
     }
+
     if (hc->current + 1 >= hc->length) {
         av_log(NULL, AV_LOG_ERROR, "Tree size exceeded!\n");
         return AVERROR_INVALIDDATA;

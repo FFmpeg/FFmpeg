@@ -42,7 +42,7 @@
 #define OVERLAY 1
 
 #define OFFSET(x) offsetof(QSVOverlayContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM)
 
 enum var_name {
     VAR_MAIN_iW,     VAR_MW,

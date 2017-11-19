@@ -794,8 +794,8 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
             if(!ist->dec)
                 ist->dec = avcodec_find_decoder(par->codec_id);
 #if FF_API_LOWRES
-            if (av_codec_get_lowres(st->codec)) {
-                av_codec_set_lowres(ist->dec_ctx, av_codec_get_lowres(st->codec));
+            if (st->codec->lowres) {
+                ist->dec_ctx->lowres = st->codec->lowres;
                 ist->dec_ctx->width  = st->codec->width;
                 ist->dec_ctx->height = st->codec->height;
                 ist->dec_ctx->coded_width  = st->codec->coded_width;
@@ -975,6 +975,21 @@ static int open_input_file(OptionsContext *o, const char *filename)
     char *subtitle_codec_name = NULL;
     char *    data_codec_name = NULL;
     int scan_all_pmts_set = 0;
+
+    if (o->stop_time != INT64_MAX && o->recording_time != INT64_MAX) {
+        o->stop_time = INT64_MAX;
+        av_log(NULL, AV_LOG_WARNING, "-t and -to cannot be used together; using -t.\n");
+    }
+
+    if (o->stop_time != INT64_MAX && o->recording_time == INT64_MAX) {
+        int64_t start_time = o->start_time == AV_NOPTS_VALUE ? 0 : o->start_time;
+        if (o->stop_time <= start_time) {
+            av_log(NULL, AV_LOG_ERROR, "-to value smaller than -ss; aborting.\n");
+            exit_program(1);
+        } else {
+            o->recording_time = o->stop_time - start_time;
+        }
+    }
 
     if (o->format) {
         if (!(file_iformat = av_find_input_format(o->format))) {
@@ -1663,7 +1678,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
                 av_log(NULL, AV_LOG_FATAL, "Could not allocate memory for intra matrix.\n");
                 exit_program(1);
             }
-            av_codec_set_chroma_intra_matrix(video_enc, p);
+            video_enc->chroma_intra_matrix = p;
             parse_matrix_coeffs(p, chroma_intra_matrix);
         }
         MATCH_PER_STREAM_OPT(inter_matrices, str, inter_matrix, oc, st);
@@ -3407,7 +3422,7 @@ const OptionDef options[] = {
                         OPT_INPUT | OPT_OUTPUT,                      { .off = OFFSET(recording_time) },
         "record or transcode \"duration\" seconds of audio/video",
         "duration" },
-    { "to",             HAS_ARG | OPT_TIME | OPT_OFFSET | OPT_OUTPUT,  { .off = OFFSET(stop_time) },
+    { "to",             HAS_ARG | OPT_TIME | OPT_OFFSET | OPT_INPUT | OPT_OUTPUT,  { .off = OFFSET(stop_time) },
         "record or transcode stop time", "time_stop" },
     { "fs",             HAS_ARG | OPT_INT64 | OPT_OFFSET | OPT_OUTPUT, { .off = OFFSET(limit_filesize) },
         "set the limit file size in bytes", "limit_size" },

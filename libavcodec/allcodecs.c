@@ -96,6 +96,7 @@ static void register_all(void)
     REGISTER_HWACCEL(MPEG2_D3D11VA2,    mpeg2_d3d11va2);
     REGISTER_HWACCEL(MPEG2_DXVA2,       mpeg2_dxva2);
     REGISTER_HWACCEL(MPEG2_MMAL,        mpeg2_mmal);
+    REGISTER_HWACCEL(MPEG2_NVDEC,       mpeg2_nvdec);
     REGISTER_HWACCEL(MPEG2_QSV,         mpeg2_qsv);
     REGISTER_HWACCEL(MPEG2_VAAPI,       mpeg2_vaapi);
     REGISTER_HWACCEL(MPEG2_VDPAU,       mpeg2_vdpau);
@@ -111,6 +112,7 @@ static void register_all(void)
     REGISTER_HWACCEL(VC1_D3D11VA,       vc1_d3d11va);
     REGISTER_HWACCEL(VC1_D3D11VA2,      vc1_d3d11va2);
     REGISTER_HWACCEL(VC1_DXVA2,         vc1_dxva2);
+    REGISTER_HWACCEL(VC1_NVDEC,         vc1_nvdec);
     REGISTER_HWACCEL(VC1_VAAPI,         vc1_vaapi);
     REGISTER_HWACCEL(VC1_VDPAU,         vc1_vdpau);
     REGISTER_HWACCEL(VC1_MMAL,          vc1_mmal);
@@ -123,10 +125,12 @@ static void register_all(void)
     REGISTER_HWACCEL(VP9_D3D11VA2,      vp9_d3d11va2);
     REGISTER_HWACCEL(VP9_DXVA2,         vp9_dxva2);
     REGISTER_HWACCEL(VP9_MEDIACODEC,    vp9_mediacodec);
+    REGISTER_HWACCEL(VP9_NVDEC,         vp9_nvdec);
     REGISTER_HWACCEL(VP9_VAAPI,         vp9_vaapi);
     REGISTER_HWACCEL(WMV3_D3D11VA,      wmv3_d3d11va);
     REGISTER_HWACCEL(WMV3_D3D11VA2,     wmv3_d3d11va2);
     REGISTER_HWACCEL(WMV3_DXVA2,        wmv3_dxva2);
+    REGISTER_HWACCEL(WMV3_NVDEC,        wmv3_nvdec);
     REGISTER_HWACCEL(WMV3_VAAPI,        wmv3_vaapi);
     REGISTER_HWACCEL(WMV3_VDPAU,        wmv3_vdpau);
 
@@ -670,6 +674,7 @@ static void register_all(void)
     REGISTER_ENCODER(HEVC_QSV,          hevc_qsv);
     REGISTER_ENCODER(HEVC_V4L2M2M,      hevc_v4l2m2m);
     REGISTER_ENCODER(HEVC_VAAPI,        hevc_vaapi);
+    REGISTER_ENCODER(HEVC_VIDEOTOOLBOX, hevc_videotoolbox);
     REGISTER_ENCODER(LIBKVAZAAR,        libkvazaar);
     REGISTER_DECODER(MJPEG_CUVID,       mjpeg_cuvid);
     REGISTER_ENCODER(MJPEG_QSV,         mjpeg_qsv);

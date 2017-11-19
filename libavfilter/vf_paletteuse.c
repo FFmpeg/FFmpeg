@@ -380,8 +380,11 @@ static av_always_inline int get_dst_color_err(PaletteUseContext *s,
     const uint8_t r = c >> 16 & 0xff;
     const uint8_t g = c >>  8 & 0xff;
     const uint8_t b = c       & 0xff;
+    uint32_t dstc;
     const int dstx = color_get(s, c, a, r, g, b, search_method);
-    const uint32_t dstc = s->palette[dstx];
+    if (dstx < 0)
+        return dstx;
+    dstc = s->palette[dstx];
     *er = r - (dstc >> 16 & 0xff);
     *eg = g - (dstc >>  8 & 0xff);
     *eb = b - (dstc       & 0xff);

@@ -181,7 +181,7 @@ static int vp9_superframe_init(AVBSFContext *ctx)
     VP9BSFContext *s = ctx->priv_data;
     int n;
 
-    // alloc cached data
+    // alloc cache packets
     for (n = 0; n < MAX_CACHE; n++) {
         s->cache[n] = av_packet_alloc();
         if (!s->cache[n])

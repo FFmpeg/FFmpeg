@@ -607,9 +607,10 @@ static int activate(AVFilterContext *ctx)
         int64_t pts;
 
         if ((ret = ff_inlink_consume_frame(ctx->inputs[0], &frame)) > 0) {
-            if ((ret = filter_frame(ctx, &out, frame, frame)) < 0)
-                return ret;
+            ret = filter_frame(ctx, &out, frame, frame);
             av_frame_free(&frame);
+            if (ret < 0)
+                return ret;
             ret = ff_filter_frame(ctx->outputs[0], out);
         }
         if (ret < 0) {

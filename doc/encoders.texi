@@ -1681,6 +1681,8 @@ colorspaces:
 @end table
 @item row-mt @var{boolean}
 Enable row based multi-threading.
+@item tune-content
+Set content type: default (0), screen (1), film (2).
 @end table
 
 @end table

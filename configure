@@ -462,7 +462,6 @@ EOF
   exit 0
 }
 
-quotes='""'
 if test -t 1 && which tput >/dev/null 2>&1; then
     ncolors=$(tput colors)
     if test -n "$ncolors" && test $ncolors -ge 8; then
@@ -639,13 +638,13 @@ disable_weak(){
 
 enable_sanitized(){
     for var; do
-        enable $(echo "$var" | sed 's/[^A-Za-z0-9_]/_/g')
+        enable $(sanitize_var_name $var)
     done
 }
 
 disable_sanitized(){
     for var; do
-        disable $(echo "$var" | sed 's/[^A-Za-z0-9_]/_/g')
+        disable $(sanitize_var_name $var)
     done
 }
 
@@ -678,17 +677,17 @@ enable_deep_weak(){
 }
 
 requested(){
-    test "${1#!}" = "$1" && op='=' || op=!=
+    test "${1#!}" = "$1" && op="=" || op="!="
     eval test "x\$${1#!}_requested" $op "xyes"
 }
 
 enabled(){
-    test "${1#!}" = "$1" && op='=' || op=!=
+    test "${1#!}" = "$1" && op="=" || op="!="
     eval test "x\$${1#!}" $op "xyes"
 }
 
 disabled(){
-    test "${1#!}" = "$1" && op='=' || op=!=
+    test "${1#!}" = "$1" && op="=" || op="!="
     eval test "x\$${1#!}" $op "xno"
 }
 
@@ -1081,6 +1080,7 @@ check_objcflags(){
 
 test_ldflags(){
     log test_ldflags "$@"
+    set -- $($ldflags_filter "$@")
     check_ld "cc" "$@" <<EOF
 int main(void){ return 0; }
 EOF
@@ -1390,14 +1390,14 @@ require_cpp(){
 }
 
 require_header(){
-    log require "$@"
+    log require_header "$@"
     headers="$1"
     shift
     check_header "$headers" "$@" || die "ERROR: $headers not found"
 }
 
 require_cpp_condition(){
-    log require "$@"
+    log require_cpp_condition "$@"
     header="$1"
     condition="$2"
     shift 2
@@ -1986,6 +1986,17 @@ MATH_FUNCS="
     truncf
 "
 
+SYSTEM_FEATURES="
+    atomics_native
+    dos_paths
+    libc_msvcrt
+    MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS
+    section_data_rel_ro
+    threads
+    uwp
+    winrt
+"
+
 SYSTEM_FUNCS="
     access
     aligned_malloc
@@ -2023,6 +2034,7 @@ SYSTEM_FUNCS="
     posix_memalign
     pthread_cancel
     sched_getaffinity
+    SecItemImport
     SetConsoleTextAttribute
     SetConsoleCtrlHandler
     setmode
@@ -2035,6 +2047,13 @@ SYSTEM_FUNCS="
     UTGetOSTypeFromString
     VirtualAlloc
     wglGetProcAddress
+"
+
+SYSTEM_LIBRARIES="
+    vaapi_drm
+    vaapi_x11
+    vdpau_x11
+    wincrypt
 "
 
 TOOLCHAIN_FEATURES="
@@ -2093,27 +2112,17 @@ HAVE_LIST="
     $HEADERS_LIST
     $INTRINSICS_LIST
     $MATH_FUNCS
+    $SYSTEM_FEATURES
     $SYSTEM_FUNCS
+    $SYSTEM_LIBRARIES
     $THREADS_LIST
     $TOOLCHAIN_FEATURES
     $TYPES_LIST
-    atomics_native
-    dos_paths
-    libc_msvcrt
     makeinfo
     makeinfo_html
-    MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS
     perl
     pod2man
-    section_data_rel_ro
     texi2html
-    threads
-    uwp
-    vaapi_drm
-    vaapi_x11
-    vdpau_x11
-    winrt
-    wincrypt
 "
 
 # options emitted with CONFIG_ prefix but not available on the command line
@@ -2641,6 +2650,7 @@ cuda_deps_any="libdl LoadLibrary"
 cuvid_deps="cuda"
 d3d11va_deps="dxva_h ID3D11VideoDecoder ID3D11VideoContext"
 dxva2_deps="dxva2api_h DXVA2_ConfigPictureDecode ole32 user32"
+nvdec_deps="cuda"
 videotoolbox_hwaccel_deps="videotoolbox pthreads"
 videotoolbox_hwaccel_extralibs="-framework QuartzCore"
 xvmc_deps="X11_extensions_XvMClib_h"
@@ -2649,7 +2659,6 @@ h263_vaapi_hwaccel_deps="vaapi"
 h263_vaapi_hwaccel_select="h263_decoder"
 h263_videotoolbox_hwaccel_deps="videotoolbox"
 h263_videotoolbox_hwaccel_select="h263_decoder"
-h264_cuvid_hwaccel_deps="cuda cuvid"
 h264_cuvid_hwaccel_select="h264_cuvid_decoder"
 h264_d3d11va_hwaccel_deps="d3d11va"
 h264_d3d11va_hwaccel_select="h264_decoder"
@@ -2659,7 +2668,7 @@ h264_dxva2_hwaccel_deps="dxva2"
 h264_dxva2_hwaccel_select="h264_decoder"
 h264_mediacodec_hwaccel_deps="mediacodec"
 h264_mmal_hwaccel_deps="mmal"
-h264_nvdec_hwaccel_deps="cuda nvdec"
+h264_nvdec_hwaccel_deps="nvdec"
 h264_nvdec_hwaccel_select="h264_decoder"
 h264_qsv_hwaccel_deps="libmfx"
 h264_vaapi_hwaccel_deps="vaapi"
@@ -2668,7 +2677,6 @@ h264_vdpau_hwaccel_deps="vdpau"
 h264_vdpau_hwaccel_select="h264_decoder"
 h264_videotoolbox_hwaccel_deps="videotoolbox"
 h264_videotoolbox_hwaccel_select="h264_decoder"
-hevc_cuvid_hwaccel_deps="cuda cuvid"
 hevc_cuvid_hwaccel_select="hevc_cuvid_decoder"
 hevc_d3d11va_hwaccel_deps="d3d11va DXVA_PicParams_HEVC"
 hevc_d3d11va_hwaccel_select="hevc_decoder"
@@ -2677,7 +2685,7 @@ hevc_d3d11va2_hwaccel_deps="d3d11va DXVA_PicParams_HEVC"
 hevc_d3d11va2_hwaccel_select="hevc_decoder"
 hevc_dxva2_hwaccel_deps="dxva2 DXVA_PicParams_HEVC"
 hevc_dxva2_hwaccel_select="hevc_decoder"
-hevc_nvdec_hwaccel_deps="cuda nvdec"
+hevc_nvdec_hwaccel_deps="nvdec"
 hevc_nvdec_hwaccel_select="hevc_decoder"
 hevc_qsv_hwaccel_deps="libmfx"
 hevc_vaapi_hwaccel_deps="vaapi VAPictureParameterBufferHEVC"
@@ -2686,11 +2694,9 @@ hevc_vdpau_hwaccel_deps="vdpau VdpPictureInfoHEVC"
 hevc_vdpau_hwaccel_select="hevc_decoder"
 hevc_videotoolbox_hwaccel_deps="videotoolbox"
 hevc_videotoolbox_hwaccel_select="hevc_decoder"
-mjpeg_cuvid_hwaccel_deps="cuda cuvid"
 mjpeg_cuvid_hwaccel_select="mjpeg_cuvid_decoder"
 mpeg_xvmc_hwaccel_deps="xvmc"
 mpeg_xvmc_hwaccel_select="mpeg2video_decoder"
-mpeg1_cuvid_hwaccel_deps="cuda cuvid"
 mpeg1_cuvid_hwaccel_select="mpeg1_cuvid_decoder"
 mpeg1_vdpau_hwaccel_deps="vdpau"
 mpeg1_vdpau_hwaccel_select="mpeg1video_decoder"
@@ -2698,7 +2704,6 @@ mpeg1_videotoolbox_hwaccel_deps="videotoolbox"
 mpeg1_videotoolbox_hwaccel_select="mpeg1video_decoder"
 mpeg1_xvmc_hwaccel_deps="xvmc"
 mpeg1_xvmc_hwaccel_select="mpeg1video_decoder"
-mpeg2_cuvid_hwaccel_deps="cuda cuvid"
 mpeg2_cuvid_hwaccel_select="mpeg2_cuvid_decoder"
 mpeg2_d3d11va_hwaccel_deps="d3d11va"
 mpeg2_d3d11va_hwaccel_select="mpeg2video_decoder"
@@ -2708,6 +2713,8 @@ mpeg2_dxva2_hwaccel_deps="dxva2"
 mpeg2_dxva2_hwaccel_select="mpeg2video_decoder"
 mpeg2_mediacodec_hwaccel_deps="mediacodec"
 mpeg2_mmal_hwaccel_deps="mmal"
+mpeg2_nvdec_hwaccel_deps="nvdec"
+mpeg2_nvdec_hwaccel_select="mpeg2video_decoder"
 mpeg2_qsv_hwaccel_deps="libmfx"
 mpeg2_vaapi_hwaccel_deps="vaapi"
 mpeg2_vaapi_hwaccel_select="mpeg2video_decoder"
@@ -2717,7 +2724,6 @@ mpeg2_videotoolbox_hwaccel_deps="videotoolbox"
 mpeg2_videotoolbox_hwaccel_select="mpeg2video_decoder"
 mpeg2_xvmc_hwaccel_deps="xvmc"
 mpeg2_xvmc_hwaccel_select="mpeg2video_decoder"
-mpeg4_cuvid_hwaccel_deps="cuda cuvid"
 mpeg4_cuvid_hwaccel_select="mpeg4_cuvid_decoder"
 mpeg4_mediacodec_hwaccel_deps="mediacodec"
 mpeg4_mmal_hwaccel_deps="mmal"
@@ -2727,7 +2733,6 @@ mpeg4_vdpau_hwaccel_deps="vdpau"
 mpeg4_vdpau_hwaccel_select="mpeg4_decoder"
 mpeg4_videotoolbox_hwaccel_deps="videotoolbox"
 mpeg4_videotoolbox_hwaccel_select="mpeg4_decoder"
-vc1_cuvid_hwaccel_deps="cuda cuvid"
 vc1_cuvid_hwaccel_select="vc1_cuvid_decoder"
 vc1_d3d11va_hwaccel_deps="d3d11va"
 vc1_d3d11va_hwaccel_select="vc1_decoder"
@@ -2736,14 +2741,14 @@ vc1_d3d11va2_hwaccel_select="vc1_decoder"
 vc1_dxva2_hwaccel_deps="dxva2"
 vc1_dxva2_hwaccel_select="vc1_decoder"
 vc1_mmal_hwaccel_deps="mmal"
+vc1_nvdec_hwaccel_deps="nvdec"
+vc1_nvdec_hwaccel_select="vc1_decoder"
 vc1_qsv_hwaccel_deps="libmfx"
 vc1_vaapi_hwaccel_deps="vaapi"
 vc1_vaapi_hwaccel_select="vc1_decoder"
 vc1_vdpau_hwaccel_deps="vdpau"
 vc1_vdpau_hwaccel_select="vc1_decoder"
-vp8_cuvid_hwaccel_deps="cuda cuvid"
 vp8_cuvid_hwaccel_select="vp8_cuvid_decoder"
-vp9_cuvid_hwaccel_deps="cuda cuvid"
 vp9_cuvid_hwaccel_select="vp9_cuvid_decoder"
 vp8_mediacodec_hwaccel_deps="mediacodec"
 vp8_qsv_hwaccel_deps="libmfx"
@@ -2754,11 +2759,14 @@ vp9_d3d11va2_hwaccel_select="vp9_decoder"
 vp9_dxva2_hwaccel_deps="dxva2 DXVA_PicParams_VP9"
 vp9_dxva2_hwaccel_select="vp9_decoder"
 vp9_mediacodec_hwaccel_deps="mediacodec"
+vp9_nvdec_hwaccel_deps="nvdec"
+vp9_nvdec_hwaccel_select="vp9_decoder"
 vp9_vaapi_hwaccel_deps="vaapi VADecPictureParameterBufferVP9_bit_depth"
 vp9_vaapi_hwaccel_select="vp9_decoder"
 wmv3_d3d11va_hwaccel_select="vc1_d3d11va_hwaccel"
 wmv3_d3d11va2_hwaccel_select="vc1_d3d11va2_hwaccel"
 wmv3_dxva2_hwaccel_select="vc1_dxva2_hwaccel"
+wmv3_nvdec_hwaccel_select="vc1_nvdec_hwaccel"
 wmv3_vaapi_hwaccel_select="vc1_vaapi_hwaccel"
 wmv3_vdpau_hwaccel_select="vc1_vdpau_hwaccel"
 
@@ -2784,7 +2792,7 @@ nvenc_encoder_deps="nvenc"
 h263_v4l2m2m_decoder_deps="v4l2_m2m h263_v4l2_m2m"
 h263_v4l2m2m_encoder_deps="v4l2_m2m h263_v4l2_m2m"
 h264_crystalhd_decoder_select="crystalhd h264_mp4toannexb_bsf h264_parser"
-h264_cuvid_decoder_deps="cuda cuvid"
+h264_cuvid_decoder_deps="cuvid"
 h264_cuvid_decoder_select="h264_mp4toannexb_bsf"
 h264_mediacodec_decoder_deps="mediacodec"
 h264_mediacodec_decoder_select="h264_mp4toannexb_bsf h264_parser"
@@ -2799,7 +2807,7 @@ h264_vaapi_encoder_deps="VAEncPictureParameterBufferH264"
 h264_vaapi_encoder_select="cbs_h264 vaapi_encode"
 h264_v4l2m2m_decoder_deps="v4l2_m2m h264_v4l2_m2m"
 h264_v4l2m2m_encoder_deps="v4l2_m2m h264_v4l2_m2m"
-hevc_cuvid_decoder_deps="cuda cuvid"
+hevc_cuvid_decoder_deps="cuvid"
 hevc_cuvid_decoder_select="hevc_mp4toannexb_bsf"
 hevc_mediacodec_decoder_deps="mediacodec"
 hevc_mediacodec_decoder_select="hevc_mp4toannexb_bsf hevc_parser"
@@ -2812,15 +2820,15 @@ hevc_vaapi_encoder_deps="VAEncPictureParameterBufferHEVC"
 hevc_vaapi_encoder_select="cbs_h265 vaapi_encode"
 hevc_v4l2m2m_decoder_deps="v4l2_m2m hevc_v4l2_m2m"
 hevc_v4l2m2m_encoder_deps="v4l2_m2m hevc_v4l2_m2m"
-mjpeg_cuvid_decoder_deps="cuda cuvid"
+mjpeg_cuvid_decoder_deps="cuvid"
 mjpeg_qsv_encoder_deps="libmfx"
 mjpeg_qsv_encoder_select="qsvenc"
 mjpeg_vaapi_encoder_deps="VAEncPictureParameterBufferJPEG"
 mjpeg_vaapi_encoder_select="vaapi_encode jpegtables"
-mpeg1_cuvid_decoder_deps="cuda cuvid"
+mpeg1_cuvid_decoder_deps="cuvid"
 mpeg1_v4l2m2m_decoder_deps="v4l2_m2m mpeg1_v4l2_m2m"
 mpeg2_crystalhd_decoder_select="crystalhd"
-mpeg2_cuvid_decoder_deps="cuda cuvid"
+mpeg2_cuvid_decoder_deps="cuvid"
 mpeg2_mmal_decoder_deps="mmal"
 mpeg2_mediacodec_decoder_deps="mediacodec"
 mpeg2_qsv_decoder_select="qsvdec mpeg2_qsv_hwaccel"
@@ -2829,7 +2837,7 @@ mpeg2_vaapi_encoder_deps="VAEncPictureParameterBufferMPEG2"
 mpeg2_vaapi_encoder_select="cbs_mpeg2 vaapi_encode"
 mpeg2_v4l2m2m_decoder_deps="v4l2_m2m mpeg2_v4l2_m2m"
 mpeg4_crystalhd_decoder_select="crystalhd"
-mpeg4_cuvid_decoder_deps="cuda cuvid"
+mpeg4_cuvid_decoder_deps="cuvid"
 mpeg4_mediacodec_decoder_deps="mediacodec"
 mpeg4_mmal_decoder_deps="mmal"
 mpeg4_omx_encoder_deps="omx"
@@ -2839,11 +2847,11 @@ msmpeg4_crystalhd_decoder_select="crystalhd"
 nvenc_h264_encoder_select="h264_nvenc_encoder"
 nvenc_hevc_encoder_select="hevc_nvenc_encoder"
 vc1_crystalhd_decoder_select="crystalhd"
-vc1_cuvid_decoder_deps="cuda cuvid"
+vc1_cuvid_decoder_deps="cuvid"
 vc1_mmal_decoder_deps="mmal"
 vc1_qsv_decoder_select="qsvdec vc1_qsv_hwaccel vc1_parser"
 vc1_v4l2m2m_decoder_deps="v4l2_m2m vc1_v4l2_m2m"
-vp8_cuvid_decoder_deps="cuda cuvid"
+vp8_cuvid_decoder_deps="cuvid"
 vp8_mediacodec_decoder_deps="mediacodec"
 vp8_qsv_decoder_select="qsvdec vp8_qsv_hwaccel vp8_parser"
 vp8_rkmpp_decoder_deps="rkmpp"
@@ -2851,7 +2859,7 @@ vp8_vaapi_encoder_deps="VAEncPictureParameterBufferVP8"
 vp8_vaapi_encoder_select="vaapi_encode"
 vp8_v4l2m2m_decoder_deps="v4l2_m2m vp8_v4l2_m2m"
 vp8_v4l2m2m_encoder_deps="v4l2_m2m vp8_v4l2_m2m"
-vp9_cuvid_decoder_deps="cuda cuvid"
+vp9_cuvid_decoder_deps="cuvid"
 vp9_mediacodec_decoder_deps="mediacodec"
 vp9_rkmpp_decoder_deps="rkmpp"
 vp9_vaapi_encoder_deps="VAEncPictureParameterBufferVP9"
@@ -2914,6 +2922,8 @@ pcm_mulaw_at_encoder_select="audio_frame_queue"
 chromaprint_muxer_deps="chromaprint"
 h264_videotoolbox_encoder_deps="pthreads"
 h264_videotoolbox_encoder_select="videotoolbox_encoder"
+hevc_videotoolbox_encoder_deps="pthreads"
+hevc_videotoolbox_encoder_select="videotoolbox_encoder"
 libcelt_decoder_deps="libcelt"
 libfdk_aac_decoder_deps="libfdk_aac"
 libfdk_aac_encoder_deps="libfdk_aac"
@@ -3369,6 +3379,7 @@ pkg_config_default=pkg-config
 ranlib_default="ranlib"
 strip_default="strip"
 version_script='--version-script'
+objformat="elf32"
 x86asmexe_default="nasm"
 windres_default="windres"
 nvcc_default="nvcc"
@@ -3724,6 +3735,19 @@ enable_weak $HWACCEL_AUTODETECT_LIBRARY_LIST
 
 disabled logging && logfile=/dev/null
 
+# command line configuration sanity checks
+
+# we need to build at least one lib type
+if ! enabled_any static shared; then
+    cat <<EOF
+At least one library type must be built.
+Specify --enable-static to build the static libraries or --enable-shared to
+build the shared libraries as well. To only build the shared libraries specify
+--disable-static in addition to --enable-shared.
+EOF
+    exit 1
+fi
+
 die_license_disabled() {
     enabled $1 || { enabled $v && die "$v is $1 and --enable-$1 is not specified."; }
 }
@@ -3864,11 +3888,10 @@ case "$toolchain" in
     ;;
 esac
 
-test -n "$cross_prefix" && enable cross_compile
-
-if enabled cross_compile; then
+if test -n "$cross_prefix"; then
     test -n "$arch" && test -n "$target_os" ||
         die "Must specify target arch (--arch) and OS (--target-os) when cross-compiling"
+    enable cross_compile
 fi
 
 ar_default="${cross_prefix}${ar_default}"
@@ -4065,17 +4088,6 @@ icc_flags(){
     done
 }
 
-pgi_flags(){
-    for flag; do
-        case $flag in
-            -flto)                echo -Mipa=fast,libopt,libinline,vestigial ;;
-            -fomit-frame-pointer) echo -Mnoframe ;;
-            -g)                   echo -gopt ;;
-            *)                    echo $flag ;;
-        esac
-    done
-}
-
 suncc_flags(){
     for flag; do
         case $flag in
@@ -4116,35 +4128,6 @@ suncc_flags(){
             -f*-*|-W*|-mimpure-text)                      ;;
             -shared)              echo -G                 ;;
             *)                    echo $flag              ;;
-        esac
-    done
-}
-
-tms470_flags(){
-    for flag; do
-        case $flag in
-            -march=*|-mcpu=*)
-                case "${flag#*=}" in
-                    armv7-a|cortex-a*)      echo -mv=7a8 ;;
-                    armv7-r|cortex-r*)      echo -mv=7r4 ;;
-                    armv7-m|cortex-m*)      echo -mv=7m3 ;;
-                    armv6*|arm11*)          echo -mv=6   ;;
-                    armv5*e|arm[79]*e*|arm9[24]6*|arm96*|arm102[26])
-                                            echo -mv=5e  ;;
-                    armv4*|arm7*|arm9[24]*) echo -mv=4   ;;
-                esac
-                ;;
-            -mfpu=neon)     echo --float_support=vfpv3 --neon ;;
-            -mfpu=vfp)      echo --float_support=vfpv2        ;;
-            -mfpu=vfpv3)    echo --float_support=vfpv3        ;;
-            -mfpu=vfpv3-d16) echo --float_support=vfpv3d16    ;;
-            -msoft-float)   echo --float_support=vfplib       ;;
-            -O[0-3]|-mf=*)  echo $flag                        ;;
-            -g)             echo -g -mn                       ;;
-            -pds=*)         echo $flag                        ;;
-            -D*|-I*)        echo $flag                        ;;
-            --gcc|--abi=*)  echo $flag                        ;;
-            -me)            echo $flag                        ;;
         esac
     done
 }
@@ -4217,16 +4200,6 @@ probe_cc(){
         _depflags='-MMD'
         _cflags_speed='-O3'
         _cflags_size='-Os'
-    elif $_cc -version 2>/dev/null | grep -Eq 'TMS470|TI ARM'; then
-        _type=tms470
-        _ident=$($_cc -version | head -n1 | tr -s ' ')
-        _flags='--gcc --abi=eabi -me'
-        _cc_e='-ppl -fe=$@'
-        _cc_o='-fe=$@'
-        _depflags='-ppa -ppd=$(@:.o=.d)'
-        _cflags_speed='-O3 -mf=5'
-        _cflags_size='-O3 -mf=2'
-        _flags_filter=tms470_flags
     elif $_cc -v 2>&1 | grep -q clang; then
         _type=clang
         _ident=$($_cc --version 2>/dev/null | head -n1)
@@ -4256,14 +4229,6 @@ probe_cc(){
         _cflags_speed='-O2'
         _cflags_size='-Os'
         _flags_filter='filter_out -Wdisabled-optimization|-Wtype-limits|-fno-signed-zeros'
-    elif $_cc -V 2>&1 | grep -q Portland; then
-        _type=pgi
-        _ident="PGI $($_cc -V 2>&1 | awk '/^pgcc/ { print $2; exit }')"
-        opt_common='-alias=ansi -Mdse -Mlre -Mpre'
-        _cflags_speed="-O3 -Mautoinline -Munroll=c:4 $opt_common"
-        _cflags_size="-O2 -Munroll=c:1 $opt_common"
-        _cflags_noopt="-O"
-        _flags_filter=pgi_flags
     elif $_cc 2>&1 | grep -q 'Microsoft.*ARM.*Assembler'; then
         _type=armasm
         _ident=$($_cc | head -n1)
@@ -4412,12 +4377,6 @@ fi
 if $ar 2>&1 | grep -q Microsoft; then
     arflags="-nologo"
     ar_o='-out:$@'
-elif $ar 2>&1 | grep -q 'Texas Instruments'; then
-    arflags="rq"
-    ar_o='$@'
-elif $ar 2>&1 | grep -q 'Usage: ar.*-X.*any'; then
-    arflags='-Xany -r -c'
-    ar_o='$@'
 elif $ar 2>&1 | grep -q "\[D\] "; then
     arflags="rcD"
     ar_o='$@'
@@ -4436,10 +4395,6 @@ if test -n "$sysroot"; then
         gcc|llvm_gcc|clang)
             add_cppflags --sysroot="$sysroot"
             add_ldflags --sysroot="$sysroot"
-        ;;
-        tms470)
-            add_cppflags -I"$sysinclude"
-            add_ldflags  --sysroot="$sysroot"
         ;;
     esac
 fi
@@ -4868,52 +4823,44 @@ check_64bit(){
     expr=$3
     check_code cc "" "int test[2*($expr) - 1]" &&
         subarch=$arch64 || subarch=$arch32
+    enable $subarch
 }
 
 case "$arch" in
     aarch64|alpha|ia64)
-        spic=$shared
+        enabled shared && enable_weak pic
     ;;
     mips)
         check_64bit mips mips64 '_MIPS_SIM > 1'
-        spic=$shared
+        enabled shared && enable_weak pic
     ;;
     parisc)
         check_64bit parisc parisc64 'sizeof(void *) > 4'
-        spic=$shared
+        enabled shared && enable_weak pic
     ;;
     ppc)
         check_64bit ppc ppc64 'sizeof(void *) > 4'
-        spic=$shared
+        enabled shared && enable_weak pic
     ;;
     s390)
         check_64bit s390 s390x 'sizeof(void *) > 4'
-        spic=$shared
+        enabled shared && enable_weak pic
     ;;
     sparc)
         check_64bit sparc sparc64 'sizeof(void *) > 4'
-        spic=$shared
+        enabled shared && enable_weak pic
     ;;
     x86)
         check_64bit x86_32 x86_64 'sizeof(void *) > 4'
-        # Treat x32 as x64 for now. Note it also needs spic=$shared
+        # Treat x32 as x64 for now. Note it also needs pic if shared
         test "$subarch" = "x86_32" && check_cpp_condition stddef.h 'defined(__x86_64__)' &&
-            subarch=x86_64
-        if test "$subarch" = "x86_64"; then
-            spic=$shared
+            subarch=x86_64 && enable x86_64 && disable x86_32
+        if enabled x86_64; then
+            enabled shared && enable_weak pic
+            objformat=elf64
         fi
     ;;
-    ppc)
-        check_cc <<EOF && subarch="ppc64"
-        int test[(int)sizeof(char*) - 7];
-EOF
-    ;;
 esac
-
-enable $subarch
-enabled spic && enable_weak pic
-
-enabled x86_64 && objformat=elf64 || objformat="elf32"
 
 # OS specific
 case $target_os in
@@ -4921,6 +4868,7 @@ case $target_os in
         SHFLAGS=-shared
         add_cppflags '-I\$(SRC_PATH)/compat/aix'
         enabled shared && add_ldflags -Wl,-brtl
+        arflags='-Xany -r -c'
         ;;
     android)
         disable symver
@@ -4936,7 +4884,7 @@ case $target_os in
         ;;
     sunos)
         SHFLAGS='-shared -Wl,-h,$$(@F)'
-        enabled x86 && SHFLAGS="-mimpure-text $SHFLAGS"
+        enabled x86 && append SHFLAGS -mimpure-text
         network_extralibs="-lsocket -lnsl"
         add_cppflags -D__EXTENSIONS__
         # When using suncc to build, the Solaris linker will mark
@@ -5002,10 +4950,6 @@ case $target_os in
         ;;
     mingw32*|mingw64*)
         target_os=mingw32
-        LIBTARGET=i386
-        if enabled x86_64; then
-            LIBTARGET="i386:x86-64"
-        fi
         if enabled shared; then
             # Cannot build both shared and static libs when using dllexport.
             disable static
@@ -5017,15 +4961,14 @@ case $target_os in
         SLIBSUF=".dll"
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME)-$(LIBVERSION)$(SLIBSUF)'
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME)-$(LIBMAJOR)$(SLIBSUF)'
-        SLIB_EXTRA_CMD=-'$(DLLTOOL) -m $(LIBTARGET) -d $$(@:$(SLIBSUF)=.def) -l $(SUBDIR)$(SLIBNAME:$(SLIBSUF)=.lib) -D $(SLIBNAME_WITH_MAJOR)'
+        SLIB_EXTRA_CMD='cp $(SUBDIR)lib$(SLIBNAME:$(SLIBSUF)=.dll.a) $(SUBDIR)$(SLIBNAME:$(SLIBSUF)=.lib)'
         SLIB_INSTALL_NAME='$(SLIBNAME_WITH_MAJOR)'
         SLIB_INSTALL_LINKS=
         SLIB_INSTALL_EXTRA_SHLIB='$(SLIBNAME:$(SLIBSUF)=.lib)'
         SLIB_INSTALL_EXTRA_LIB='lib$(SLIBNAME:$(SLIBSUF)=.dll.a) $(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.def)'
-        SLIB_CREATE_DEF_CMD='ARCH="$(ARCH)" AR="$(AR_CMD)" NM="$(NM_CMD)" $(SRC_PATH)/compat/windows/makedef $(SUBDIR)lib$(NAME).ver $(OBJS) > $$(@:$(SLIBSUF)=.def)'
+        SLIB_CREATE_DEF_CMD='EXTERN_PREFIX="$(EXTERN_PREFIX)" AR="$(AR_CMD)" NM="$(NM_CMD)" $(SRC_PATH)/compat/windows/makedef $(SUBDIR)lib$(NAME).ver $(OBJS) > $$(@:$(SLIBSUF)=.def)'
         SHFLAGS='-shared -Wl,--out-implib,$(SUBDIR)lib$(SLIBNAME:$(SLIBSUF)=.dll.a) -Wl,--disable-auto-image-base $$(@:$(SLIBSUF)=.def)'
         enabled x86_64 && objformat="win64" || objformat="win32"
-        dlltool="${cross_prefix}dlltool"
         ranlib=:
         enable dos_paths
         check_ldflags -Wl,--nxcompat,--dynamicbase
@@ -5059,7 +5002,7 @@ case $target_os in
         SLIBSUF=".dll"
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME)-$(LIBVERSION)$(SLIBSUF)'
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME)-$(LIBMAJOR)$(SLIBSUF)'
-        SLIB_CREATE_DEF_CMD='$(SRC_PATH)/compat/windows/makedef $(SUBDIR)lib$(NAME).ver $(OBJS) > $$(@:$(SLIBSUF)=.def)'
+        SLIB_CREATE_DEF_CMD='EXTERN_PREFIX="$(EXTERN_PREFIX)" $(SRC_PATH)/compat/windows/makedef $(SUBDIR)lib$(NAME).ver $(OBJS) > $$(@:$(SLIBSUF)=.def)'
         SLIB_INSTALL_NAME='$(SLIBNAME_WITH_MAJOR)'
         SLIB_INSTALL_LINKS=
         SLIB_INSTALL_EXTRA_SHLIB='$(SLIBNAME:$(SLIBSUF)=.lib)'
@@ -5266,12 +5209,11 @@ test "$?" != 0 && check_${pfx}cc -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600 <<
 void *v = localtime_r;
 EOF
 
+    eval test -n "\${${pfx}libc_type}" && enable ${pfx}libc_${libc_type}
 }
 
 probe_libc
-test -n "$libc_type" && enable libc_$libc_type
 probe_libc host_
-test -n "$host_libc_type" && enable host_libc_$host_libc_type
 
 # hacks for compiler/libc/os combinations
 
@@ -5279,25 +5221,10 @@ case $libc_type in
     bionic)
         add_compat strtod.o strtod=avpriv_strtod
         ;;
-    glibc)
-        if enabled tms470; then
-            CPPFLAGS="-I${source_path}/compat/tms470 ${CPPFLAGS}"
-            add_cppflags -D__USER_LABEL_PREFIX__=
-            add_cppflags -D__builtin_memset=memset
-            add_cppflags -D__gnuc_va_list=va_list -D_VA_LIST_DEFINED
-            add_cflags   -pds=48    # incompatible redefinition of macro
-        fi
-        ;;
 esac
 
 check_compile_assert flt_lim "float.h limits.h" "DBL_MAX == (double)DBL_MAX" ||
     add_cppflags '-I\$(SRC_PATH)/compat/float'
-
-esc(){
-    echo "$*" | sed 's/%/%25/g;s/:/%3a/g'
-}
-
-echo "config:$arch:$subarch:$cpu:$target_os:$(esc $cc_ident):$(esc $FFMPEG_CONFIGURATION)" > ffbuild/config.fate
 
 check_cpp_condition stdlib.h "defined(__PIC__) || defined(__pic__) || defined(PIC)" && enable_weak pic
 
@@ -5307,17 +5234,6 @@ set_default libdir
 
 set_default $PATHS_LIST
 set_default nm
-
-# we need to build at least one lib type
-if ! enabled_any static shared; then
-    cat <<EOF
-At least one library type must be built.
-Specify --enable-static to build the static libraries or --enable-shared to
-build the shared libraries as well. To only build the shared libraries specify
---disable-static in addition to --enable-shared.
-EOF
-    exit 1
-fi
 
 disabled optimizations || enabled ossfuzz || check_cflags -fomit-frame-pointer
 
@@ -5853,15 +5769,12 @@ if ! disabled pthreads && ! enabled w32threads && ! enabled os2threads; then
         enable pthreads
     fi
     check_code cc "pthread.h" "static pthread_mutex_t atomic_lock = PTHREAD_MUTEX_INITIALIZER" || disable pthreads
+
+    if enabled pthreads; then
+        check_builtin sem_timedwait semaphore.h "sem_t *s; sem_init(s,0,0); sem_timedwait(s,0); sem_destroy(s)" $pthreads_extralibs
+        check_func pthread_cancel $pthreads_extralibs
+    fi
 fi
-
-
-if enabled pthreads; then
-  check_func pthread_cancel $pthreads_extralibs
-fi
-
-enabled pthreads &&
-    check_builtin sem_timedwait semaphore.h "sem_t *s; sem_init(s,0,0); sem_timedwait(s,0); sem_destroy(s)" $pthreads_extralibs
 
 enabled  zlib && check_lib zlib   zlib.h      zlibVersion    -lz
 enabled bzlib && check_lib bzlib bzlib.h BZ2_bzlibVersion    -lbz2
@@ -6111,8 +6024,11 @@ fi
 
 enabled securetransport &&
     check_func SecIdentityCreate "-Wl,-framework,CoreFoundation -Wl,-framework,Security" &&
-    check_lib securetransport "Security/SecureTransport.h Security/Security.h" "SSLCreateContext SecItemImport" "-Wl,-framework,CoreFoundation -Wl,-framework,Security" ||
+    check_lib securetransport "Security/SecureTransport.h Security/Security.h" "SSLCreateContext" "-Wl,-framework,CoreFoundation -Wl,-framework,Security" ||
         disable securetransport
+
+enabled securetransport &&
+    check_func SecItemImport "-Wl,-framework,CoreFoundation -Wl,-framework,Security"
 
 enabled schannel &&
     check_func_headers "windows.h security.h" InitializeSecurityContext -DSECURITY_WIN32 -lsecur32 &&
@@ -6368,6 +6284,7 @@ if enabled proper_dce; then
     echo "X { local: *; };" > $TMPV
     if test_ldflags -Wl,${version_script},$TMPV; then
         append SHFLAGS '-Wl,${version_script},\$(SUBDIR)lib\$(NAME).ver'
+        quotes='""'
         check_cc <<EOF && enable symver_asm_label
 void ff_foo(void) __asm__ ("av_foo@VERSION");
 void ff_foo(void) { ${inline_asm+__asm__($quotes);} }
@@ -6481,9 +6398,6 @@ elif enabled armcc; then
     add_cflags -W${armcc_opt},--diag_suppress=3343 # hardfp compat
     add_cflags -W${armcc_opt},--diag_suppress=167  # pointer sign
     add_cflags -W${armcc_opt},--diag_suppress=513  # pointer sign
-elif enabled tms470; then
-    add_cflags -pds=824 -pds=837
-    disable inline_asm
 elif enabled pathscale; then
     add_cflags -fstrict-overflow -OPT:wrap_around_unsafe_opt=OFF
     disable inline_asm
@@ -6583,6 +6497,15 @@ flatten_extralibs(){
     fi
 }
 
+flatten_extralibs_wrapper(){
+    list_name=$1
+    flatten_extralibs $list_name
+    unique $list_name
+    resolve $list_name
+    eval $list_name=\$\(\$ldflags_filter \$$list_name\)
+    eval printf \''%s'\' \""\$$list_name"\"
+}
+
 for linkunit in $LIBRARY_LIST; do
     unset current_extralibs
     eval components=\$$(toupper ${linkunit})_COMPONENTS_LIST
@@ -6595,10 +6518,7 @@ for linkunit in $LIBRARY_LIST; do
 done
 
 for linkunit in $LIBRARY_LIST $PROGRAM_LIST $EXTRALIBS_LIST; do
-    flatten_extralibs ${linkunit}_extralibs
-    unique  ${linkunit}_extralibs
-    resolve ${linkunit}_extralibs
-    eval ${linkunit}_extralibs=\$\(\$ldflags_filter \$${linkunit}_extralibs\)
+    eval ${linkunit}_extralibs=\$\(flatten_extralibs_wrapper ${linkunit}_extralibs\)
 done
 
 map 'enabled $v && intrinsics=${v#intrinsics_}' $INTRINSICS_LIST
@@ -6816,11 +6736,20 @@ fi
 
 echo "License: $license"
 
-echo "Creating configuration files ..."
-
 fi # test "$quiet" != "yes"
 
+if test -n "$WARNINGS"; then
+    printf "\n%s%s$WARNINGS%s" "$warn_color" "$bold_color" "$reset_color"
+    enabled fatal_warnings && exit 1
+fi
+
 test -e Makefile || echo "include $source_path/Makefile" > Makefile
+
+esc(){
+    echo "$*" | sed 's/%/%25/g;s/:/%3a/g'
+}
+
+echo "config:$arch:$subarch:$cpu:$target_os:$(esc $cc_ident):$(esc $FFMPEG_CONFIGURATION)" > ffbuild/config.fate
 
 enabled stripping || strip="echo skipping strip"
 enabled stripping || striptype=""
@@ -6850,6 +6779,7 @@ endif
 CC_IDENT=$cc_ident
 ARCH=$arch
 INTRINSICS=$intrinsics
+EXTERN_PREFIX=$extern_prefix
 CC=$cc
 CXX=$cxx
 AS=$as
@@ -6895,7 +6825,6 @@ LD_O=$LD_O
 X86ASM_O=$X86ASM_O
 LD_LIB=$LD_LIB
 LD_PATH=$LD_PATH
-DLLTOOL=$dlltool
 WINDRES=$windres
 DEPWINDRES=$dep_cc
 DOXYGEN=$doxygen
@@ -6949,7 +6878,6 @@ LIB_INSTALL_EXTRA_CMD=$LIB_INSTALL_EXTRA_CMD
 EXTRALIBS=$extralibs
 COMPAT_OBJS=$compat_objs
 INSTALL=$install
-LIBTARGET=${LIBTARGET}
 SLIBNAME=${SLIBNAME}
 SLIBNAME_WITH_VERSION=${SLIBNAME_WITH_VERSION}
 SLIBNAME_WITH_MAJOR=${SLIBNAME_WITH_MAJOR}
@@ -6999,7 +6927,9 @@ test -n "$malloc_prefix" &&
 
 if enabled x86asm; then
     append config_files $TMPASM
-    printf '' >$TMPASM
+    cat > $TMPASM <<EOF
+; Automatically generated by configure - do not modify!
+EOF
 fi
 
 enabled getenv || echo "#define getenv(x) NULL" >> $TMPH
@@ -7026,7 +6956,7 @@ touch ffbuild/.config
 enabled x86asm && cp_if_changed $TMPASM config.asm
 
 cat > $TMPH <<EOF
-/* Generated by ffconf */
+/* Generated by ffmpeg configure */
 #ifndef AVUTIL_AVCONFIG_H
 #define AVUTIL_AVCONFIG_H
 EOF
@@ -7054,14 +6984,9 @@ print_enabled_components(){
 print_enabled_components libavcodec/bsf_list.c AVBitStreamFilter bitstream_filters $BSF_LIST
 print_enabled_components libavformat/protocol_list.c URLProtocol url_protocols $PROTOCOL_LIST
 
-if test -n "$WARNINGS"; then
-    printf "\n%s%s$WARNINGS%s" "$warn_color" "$bold_color" "$reset_color"
-    enabled fatal_warnings && exit 1
-fi
-
 # Settings for pkg-config files
 
-cat > ffbuild/config.sh <<EOF
+cat > $TMPH <<EOF
 # Automatically generated by configure - do not modify!
 shared=$shared
 build_suffix=$build_suffix
@@ -7085,5 +7010,7 @@ EOF
 
 for lib in $LIBRARY_LIST; do
     lib_deps="$(eval echo \$${lib}_deps)"
-    echo ${lib}_deps=\"$lib_deps\" >> ffbuild/config.sh
+    echo ${lib}_deps=\"$lib_deps\" >> $TMPH
 done
+
+cp_if_changed $TMPH ffbuild/config.sh

@@ -37,6 +37,7 @@
  */
 
 #include <d3d11.h>
+#include <stdint.h>
 
 /**
  * This struct is allocated as AVHWDeviceContext.hwctx
