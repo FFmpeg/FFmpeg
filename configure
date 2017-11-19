@@ -4957,7 +4957,7 @@ case $target_os in
     mingw32*|mingw64*)
         target_os=mingw32
         if enabled shared; then
-            # Cannot build both shared and static libs when using dllexport.
+            # Cannot build both shared and static libs when using dllimport.
             disable static
         fi
         enabled shared && ! enabled small && check_cmd $windres --version && enable gnu_windres

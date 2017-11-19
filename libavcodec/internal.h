@@ -414,12 +414,8 @@ int ff_alloc_a53_sei(const AVFrame *frame, size_t prefix_len,
  */
 int64_t ff_guess_coded_bitrate(AVCodecContext *avctx);
 
-#if defined(_WIN32) && CONFIG_SHARED
-#ifdef BUILDING_avcodec
-#    define av_export_avcodec __declspec(dllexport)
-#else
+#if defined(_WIN32) && CONFIG_SHARED && !defined(BUILDING_avcodec)
 #    define av_export_avcodec __declspec(dllimport)
-#endif
 #else
 #    define av_export_avcodec
 #endif
