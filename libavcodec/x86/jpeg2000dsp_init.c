@@ -26,6 +26,8 @@
 
 void ff_ict_float_sse(void *src0, void *src1, void *src2, int csize);
 void ff_ict_float_avx(void *src0, void *src1, void *src2, int csize);
+void ff_ict_float_fma3(void *src0, void *src1, void *src2, int csize);
+void ff_ict_float_fma4(void *src0, void *src1, void *src2, int csize);
 void ff_rct_int_sse2 (void *src0, void *src1, void *src2, int csize);
 void ff_rct_int_avx2 (void *src0, void *src1, void *src2, int csize);
 
@@ -42,6 +44,14 @@ av_cold void ff_jpeg2000dsp_init_x86(Jpeg2000DSPContext *c)
 
     if (EXTERNAL_AVX_FAST(cpu_flags)) {
         c->mct_decode[FF_DWT97] = ff_ict_float_avx;
+    }
+
+    if (EXTERNAL_FMA4(cpu_flags)) {
+        c->mct_decode[FF_DWT97] = ff_ict_float_fma4;
+    }
+
+    if (EXTERNAL_FMA3_FAST(cpu_flags)) {
+        c->mct_decode[FF_DWT97] = ff_ict_float_fma3;
     }
 
     if (EXTERNAL_AVX2_FAST(cpu_flags)) {
