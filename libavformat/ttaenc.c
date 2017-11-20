@@ -35,16 +35,17 @@ typedef struct TTAMuxContext {
     int last_frame;
 } TTAMuxContext;
 
-static int tta_write_header(AVFormatContext *s)
+static int tta_init(AVFormatContext *s)
 {
     TTAMuxContext *tta = s->priv_data;
-    AVCodecParameters *par = s->streams[0]->codecpar;
-    int ret;
+    AVCodecParameters *par;
 
     if (s->nb_streams != 1) {
         av_log(s, AV_LOG_ERROR, "Only one stream is supported\n");
         return AVERROR(EINVAL);
     }
+    par = s->streams[0]->codecpar;
+
     if (par->codec_id != AV_CODEC_ID_TTA) {
         av_log(s, AV_LOG_ERROR, "Unsupported codec\n");
         return AVERROR(EINVAL);
@@ -53,6 +54,23 @@ static int tta_write_header(AVFormatContext *s)
         av_log(s, AV_LOG_ERROR, "Invalid TTA extradata\n");
         return AVERROR_INVALIDDATA;
     }
+
+    /* Prevent overflow */
+    if (par->sample_rate > 0x7FFFFFu) {
+        av_log(s, AV_LOG_ERROR, "Sample rate too large\n");
+        return AVERROR(EINVAL);
+    }
+    tta->frame_size = par->sample_rate * 256 / 245;
+    avpriv_set_pts_info(s->streams[0], 64, 1, par->sample_rate);
+
+    return 0;
+}
+
+static int tta_write_header(AVFormatContext *s)
+{
+    TTAMuxContext *tta = s->priv_data;
+    AVCodecParameters *par = s->streams[0]->codecpar;
+    int ret;
 
     if ((ret = avio_open_dyn_buf(&tta->seek_table)) < 0)
         return ret;
@@ -66,13 +84,6 @@ static int tta_write_header(AVFormatContext *s)
     avio_wl16(s->pb, par->channels);
     avio_wl16(s->pb, par->bits_per_raw_sample);
     avio_wl32(s->pb, par->sample_rate);
-    /* Prevent overflow */
-    if (par->sample_rate > 0x7FFFFFu) {
-        av_log(s, AV_LOG_ERROR, "Sample rate too large\n");
-        return AVERROR(EINVAL);
-    }
-    tta->frame_size = par->sample_rate * 256 / 245;
-    avpriv_set_pts_info(s->streams[0], 64, 1, par->sample_rate);
 
     return 0;
 }
@@ -167,6 +178,7 @@ AVOutputFormat ff_tta_muxer = {
     .priv_data_size    = sizeof(TTAMuxContext),
     .audio_codec       = AV_CODEC_ID_TTA,
     .video_codec       = AV_CODEC_ID_NONE,
+    .init              = tta_init,
     .write_header      = tta_write_header,
     .write_packet      = tta_write_packet,
     .write_trailer     = tta_write_trailer,
