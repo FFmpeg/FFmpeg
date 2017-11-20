@@ -708,8 +708,10 @@ static int ogg_read_header(AVFormatContext *s)
                    "Headers mismatch for stream %d: "
                    "expected %d received %d.\n",
                    i, os->codec->nb_header, os->nb_header);
-            if (s->error_recognition & AV_EF_EXPLODE)
+            if (s->error_recognition & AV_EF_EXPLODE) {
+                ogg_read_close(s);
                 return AVERROR_INVALIDDATA;
+            }
         }
         if (os->start_granule != OGG_NOGRANULE_VALUE)
             os->lastpts = s->streams[i]->start_time =
