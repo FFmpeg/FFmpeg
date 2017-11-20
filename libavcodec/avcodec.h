@@ -1238,7 +1238,7 @@ enum AVPacketSideDataType {
      * u8    reason for end   skip (0=padding silence, 1=convergence)
      * @endcode
      */
-    AV_PKT_DATA_SKIP_SAMPLES=70,
+    AV_PKT_DATA_SKIP_SAMPLES,
 
     /**
      * An AV_PKT_DATA_JP_DUALMONO side data packet indicates that
@@ -1327,7 +1327,7 @@ enum AVPacketSideDataType {
     AV_PKT_DATA_A53_CC,
 
     /**
-     * The number of side data elements (in fact a bit more than it).
+     * The number of side data types.
      * This is not part of the public API/ABI in the sense that it may
      * change when new side data types are added.
      * This must stay the last enum value.
