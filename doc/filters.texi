@@ -7142,7 +7142,8 @@ value @code{invert} is used, the box edge color is the same as the
 video with inverted luma.
 
 @item thickness, t
-The expression which sets the thickness of the box edge. Default value is @code{3}.
+The expression which sets the thickness of the box edge.
+A value of @code{fill} will create a filled box. Default value is @code{3}.
 
 See below for the list of accepted constants.
 @end table
@@ -7205,7 +7206,7 @@ drawbox=x=10:y=20:w=200:h=60:color=red@@0.5
 @item
 Fill the box with pink color:
 @example
-drawbox=x=10:y=10:w=100:h=100:color=pink@@0.5:t=max
+drawbox=x=10:y=10:w=100:h=100:color=pink@@0.5:t=fill
 @end example
 
 @item

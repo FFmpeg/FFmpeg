@@ -47,7 +47,7 @@ static const char *const var_names[] = {
     "h",              ///< height of the rendered box
     "w",              ///< width  of the rendered box
     "t",
-    "max",
+    "fill",
     NULL
 };
 
