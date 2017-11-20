@@ -171,17 +171,6 @@ FATE_AFILTER-$(call ALLYES, HLS_DEMUXER MPEGTS_MUXER MPEGTS_DEMUXER AEVALSRC_FIL
 fate-filter-hls-append: tests/data/hls-list-append.m3u8
 fate-filter-hls-append: CMD = framecrc -flags +bitexact -i $(TARGET_PATH)/tests/data/hls-list-append.m3u8 -af asetpts=RTCTIME
 
-tests/data/hls-vs-with-master.m3u8: TAG = GEN
-tests/data/hls-vs-with-master.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
-	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
-        -f lavfi -i "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t):d=20" -flags +bitexact -codec:a:0 mp2fixed -b:a:0 32k -codec:a:1 mp2fixed -b:a:1 128k -map 0 -map 0 \
-        -f hls -var_stream_map "a:0 a:1" -hls_time 10 -master_pl_name hls-master.m3u8 -hls_segment_filename $(TARGET_PATH)/tests/data/hls-vs-with-master-%03d.ts \
-        $(TARGET_PATH)/tests/data/hls-vs.m3u8 2>/dev/null
-
-FATE_AFILTER-$(call ALLYES, HLS_DEMUXER MPEGTS_MUXER MPEGTS_DEMUXER AEVALSRC_FILTER LAVFI_INDEV MP2FIXED_ENCODER) += fate-filter-hls-vs-with-master
-fate-filter-hls-vs-with-master: tests/data/hls-vs-with-master.m3u8
-fate-filter-hls-vs-with-master: CMD = run $(FFMPEG) -nostdin -nostats -cpuflags all -flags +bitexact -hwaccel none -threads 1 -thread_type frame+slice -i $(TARGET_PATH)/tests/data/hls-vs_0.m3u8 -af asetpts=RTCTIME -flags +bitexact -fflags +bitexact -f framecrc -; run $(FFMPEG) -nostdin -nostats -cpuflags all -flags +bitexact -hwaccel none -threads 1 -thread_type frame+slice -i $(TARGET_PATH)/tests/data/hls-vs_1.m3u8 -af asetpts=RTCTIME -flags +bitexact -fflags +bitexact -f framecrc -; cat $(TARGET_PATH)/tests/data/hls-master.m3u8
-
 FATE_AMIX += fate-filter-amix-simple
 fate-filter-amix-simple: CMD = ffmpeg -filter_complex amix -i $(SRC) -ss 3 -i $(SRC1) -f f32le -
 fate-filter-amix-simple: REF = $(SAMPLES)/filter/amix_simple.pcm
