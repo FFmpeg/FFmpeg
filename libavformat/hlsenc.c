@@ -1264,7 +1264,7 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
                 tm = gmtime_r(&tt, &tmpbuf);
                 tm->tm_isdst = dst;
                 wrongsecs = mktime(tm);
-                tz_min = (abs(wrongsecs - tt) + 30) / 60;
+                tz_min = (FFABS(wrongsecs - tt) + 30) / 60;
                 snprintf(buf1, sizeof(buf1),
                          "%c%02d%02d",
                          wrongsecs <= tt ? '+' : '-',
