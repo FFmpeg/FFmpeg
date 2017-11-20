@@ -989,7 +989,6 @@ static int qsv_device_derive_from_child(AVHWDeviceContext *ctx,
                                         int flags)
 {
     AVQSVDeviceContext *hwctx = ctx->hwctx;
-    QSVDeviceContext       *s = ctx->internal->priv;
 
     mfxVersion    ver = { { 3, 1 } };
     mfxHDL        handle;
