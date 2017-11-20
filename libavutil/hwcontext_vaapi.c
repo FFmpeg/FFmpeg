@@ -101,7 +101,9 @@ static const struct {
     MAP(NV12, YUV420,  NV12),
     MAP(YV12, YUV420,  YUV420P), // With U/V planes swapped.
     MAP(IYUV, YUV420,  YUV420P),
-  //MAP(I420, YUV420,  YUV420P), // Not in libva but used by Intel driver.
+#ifdef VA_FOURCC_I420
+    MAP(I420, YUV420,  YUV420P),
+#endif
 #ifdef VA_FOURCC_YV16
     MAP(YV16, YUV422,  YUV422P), // With U/V planes swapped.
 #endif
