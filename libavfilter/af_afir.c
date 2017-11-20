@@ -267,11 +267,13 @@ static int read_ir(AVFilterLink *link, AVFrame *frame)
 {
     AVFilterContext *ctx = link->dst;
     AudioFIRContext *s = ctx->priv;
-    int nb_taps, max_nb_taps;
+    int nb_taps, max_nb_taps, ret;
 
-    av_audio_fifo_write(s->fifo[1], (void **)frame->extended_data,
-                        frame->nb_samples);
+    ret = av_audio_fifo_write(s->fifo[1], (void **)frame->extended_data,
+                             frame->nb_samples);
     av_frame_free(&frame);
+    if (ret < 0)
+        return ret;
 
     nb_taps = av_audio_fifo_size(s->fifo[1]);
     max_nb_taps = MAX_IR_DURATION * ctx->outputs[0]->sample_rate;
@@ -288,14 +290,17 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     AVFilterContext *ctx = link->dst;
     AudioFIRContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    int ret = 0;
+    int ret;
 
-    av_audio_fifo_write(s->fifo[0], (void **)frame->extended_data,
-                        frame->nb_samples);
-    if (s->pts == AV_NOPTS_VALUE)
+    ret = av_audio_fifo_write(s->fifo[0], (void **)frame->extended_data,
+                              frame->nb_samples);
+    if (ret > 0 && s->pts == AV_NOPTS_VALUE)
         s->pts = frame->pts;
 
     av_frame_free(&frame);
+
+    if (ret < 0)
+        return ret;
 
     if (!s->have_coeffs && s->eof_coeffs) {
         ret = convert_coeffs(ctx);
@@ -307,10 +312,10 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
         while (av_audio_fifo_size(s->fifo[0]) >= s->part_size) {
             ret = fir_frame(s, outlink);
             if (ret < 0)
-                break;
+                return ret;
         }
     }
-    return ret;
+    return 0;
 }
 
 static int request_frame(AVFilterLink *outlink)
@@ -334,9 +339,11 @@ static int request_frame(AVFilterLink *outlink)
 
             if (!silence)
                 return AVERROR(ENOMEM);
-            av_audio_fifo_write(s->fifo[0], (void **)silence->extended_data,
-                        silence->nb_samples);
+            ret = av_audio_fifo_write(s->fifo[0], (void **)silence->extended_data,
+                                      silence->nb_samples);
             av_frame_free(&silence);
+            if (ret < 0)
+                return ret;
             s->need_padding = 0;
         }
 
