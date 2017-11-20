@@ -10569,6 +10569,34 @@ Default method is @samp{fdiff}.
 Scene change detection threshold. Default is @code{5.0}.
 @end table
 
+@section mix
+
+Mix several video input streams into one video stream.
+
+A description of the accepted options follows.
+
+@table @option
+@item nb_inputs
+The number of inputs. If unspecified, it defaults to 2.
+
+@item weights
+Specify weight of each input video stream as sequence.
+Each weight is separated by space.
+
+@item duration
+Specify how end of stream is determined.
+@table @samp
+@item longest
+The duration of the longest input. (default)
+
+@item shortest
+The duration of the shortest input.
+
+@item first
+The duration of the first input.
+@end table
+@end table
+
 @section mpdecimate
 
 Drop frames that do not differ greatly from the previous frame in

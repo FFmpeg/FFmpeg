@@ -250,6 +250,7 @@ static void register_all(void)
     REGISTER_FILTER(METADATA,       metadata,       vf);
     REGISTER_FILTER(MIDEQUALIZER,   midequalizer,   vf);
     REGISTER_FILTER(MINTERPOLATE,   minterpolate,   vf);
+    REGISTER_FILTER(MIX,            mix,            vf);
     REGISTER_FILTER(MPDECIMATE,     mpdecimate,     vf);
     REGISTER_FILTER(NEGATE,         negate,         vf);
     REGISTER_FILTER(NLMEANS,        nlmeans,        vf);

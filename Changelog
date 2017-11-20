@@ -18,6 +18,7 @@ version <next>:
 - mcompand audio filter
 - acontrast audio filter
 - OpenCL overlay filter
+- video mix filter
 
 
 version 3.4:
