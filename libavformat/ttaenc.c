@@ -29,7 +29,7 @@
 
 typedef struct TTAMuxContext {
     AVIOContext *seek_table;
-    AVIOContext *data;
+    AVPacketList *queue, *queue_end;
     uint32_t nb_samples;
     int frame_size;
     int last_frame;
@@ -56,10 +56,6 @@ static int tta_write_header(AVFormatContext *s)
 
     if ((ret = avio_open_dyn_buf(&tta->seek_table)) < 0)
         return ret;
-    if ((ret = avio_open_dyn_buf(&tta->data)) < 0) {
-        ffio_free_dyn_buf(&tta->seek_table);
-        return ret;
-    }
 
     /* Ignore most extradata information if present. It can be innacurate
        if for example remuxing from Matroska */
@@ -84,8 +80,23 @@ static int tta_write_header(AVFormatContext *s)
 static int tta_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     TTAMuxContext *tta = s->priv_data;
+    AVPacketList *pktl = av_mallocz(sizeof(*pktl));
+    int ret;
 
-    avio_write(tta->data, pkt->data, pkt->size);
+    if (!pktl)
+        return AVERROR(ENOMEM);
+
+    ret = av_packet_ref(&pktl->pkt, pkt);
+    if (ret < 0) {
+        av_free(pktl);
+        return ret;
+    }
+    if (tta->queue_end)
+        tta->queue_end->next = pktl;
+    else
+        tta->queue = pktl;
+    tta->queue_end = pktl;
+
     avio_wl32(tta->seek_table, pkt->size);
     tta->nb_samples += pkt->duration;
 
@@ -104,6 +115,21 @@ static int tta_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     return 0;
+}
+
+static void tta_queue_flush(AVFormatContext *s)
+{
+    TTAMuxContext *tta = s->priv_data;
+    AVPacketList *pktl;
+
+    while (pktl = tta->queue) {
+        AVPacket *pkt = &pktl->pkt;
+        avio_write(s->pb, pkt->data, pkt->size);
+        av_packet_unref(pkt);
+        tta->queue = pktl->next;
+        av_free(pktl);
+    }
+    tta->queue_end = NULL;
 }
 
 static int tta_write_trailer(AVFormatContext *s)
@@ -125,9 +151,7 @@ static int tta_write_trailer(AVFormatContext *s)
     av_free(ptr);
 
     /* Write audio data */
-    size = avio_close_dyn_buf(tta->data, &ptr);
-    avio_write(s->pb, ptr, size);
-    av_free(ptr);
+    tta_queue_flush(s);
 
     ff_ape_write_tag(s);
     avio_flush(s->pb);
