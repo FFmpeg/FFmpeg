@@ -197,8 +197,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     int ch, n, ret, i, j, k;
     int start = s->start, end = s->end;
 
-    av_audio_fifo_write(s->fifo, (void **)frame->extended_data, frame->nb_samples);
+    ret = av_audio_fifo_write(s->fifo, (void **)frame->extended_data, frame->nb_samples);
     av_frame_free(&frame);
+    if (ret < 0)
+        return ret;
 
     while (av_audio_fifo_size(s->fifo) >= window_size) {
         if (!in) {
@@ -316,7 +318,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     }
 
     av_frame_free(&in);
-    return ret;
+    return ret < 0 ? ret : 0;
 }
 
 static int query_formats(AVFilterContext *ctx)
