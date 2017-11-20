@@ -117,7 +117,7 @@ int32_t ff_mlp_pack_output(int32_t lossless_check_data,
                           (1U << output_shift[mat_ch]);
             lossless_check_data ^= (sample & 0xffffff) << mat_ch;
             if (is32)
-                *data_32++ = sample * 256;
+                *data_32++ = sample * 256U;
             else
                 *data_16++ = sample >> 8;
         }
