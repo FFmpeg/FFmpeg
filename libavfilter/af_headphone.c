@@ -324,15 +324,18 @@ static int read_ir(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
     HeadphoneContext *s = ctx->priv;
-    int ir_len, max_ir_len, input_number;
+    int ir_len, max_ir_len, input_number, ret;
 
     for (input_number = 0; input_number < s->nb_inputs; input_number++)
         if (inlink == ctx->inputs[input_number])
             break;
 
-    av_audio_fifo_write(s->in[input_number].fifo, (void **)frame->extended_data,
-                        frame->nb_samples);
+    ret = av_audio_fifo_write(s->in[input_number].fifo, (void **)frame->extended_data,
+                             frame->nb_samples);
     av_frame_free(&frame);
+
+    if (ret < 0)
+        return ret;
 
     ir_len = av_audio_fifo_size(s->in[input_number].fifo);
     max_ir_len = 65536;
@@ -572,12 +575,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterLink *outlink = ctx->outputs[0];
     int ret = 0;
 
-    av_audio_fifo_write(s->in[0].fifo, (void **)in->extended_data,
-                        in->nb_samples);
+    ret = av_audio_fifo_write(s->in[0].fifo, (void **)in->extended_data,
+                             in->nb_samples);
     if (s->pts == AV_NOPTS_VALUE)
         s->pts = in->pts;
 
     av_frame_free(&in);
+
+    if (ret < 0)
+        return ret;
 
     if (!s->have_hrirs && s->eof_hrirs) {
         ret = convert_coeffs(ctx, inlink);
@@ -589,10 +595,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         while (av_audio_fifo_size(s->in[0].fifo) >= s->size) {
             ret = headphone_frame(s, outlink);
             if (ret < 0)
-                break;
+                return ret;
         }
     }
-    return ret;
+
+    return 0;
 }
 
 static int query_formats(AVFilterContext *ctx)
