@@ -828,6 +828,26 @@ out_1.m3u8, out_2.m3u8 and out_3.m3u8 will be created.
 
 By default, a single hls variant containing all the encoded streams is created.
 
+@item master_pl_name
+Create HLS master playlist with the given name.
+
+@example
+ffmpeg -re -i in.ts -f hls -master_pl_name master.m3u8 http://example.com/live/out.m3u8
+@end example
+This example creates HLS master playlist with name master.m3u8 and it is
+published at http://example.com/live/
+
+@item master_pl_publish_rate
+Publish master play list repeatedly every after specified number of segment intervals.
+
+@example
+ffmpeg -re -i in.ts -f hls -master_pl_name master.m3u8 \
+-hls_time 2 -master_pl_publish_rate 30 http://example.com/live/out.m3u8
+@end example
+
+This example creates HLS master playlist with name master.m3u8 and keep
+publishing it repeatedly every after 30 segments i.e. every after 60s.
+
 @end table
 
 @anchor{ico}

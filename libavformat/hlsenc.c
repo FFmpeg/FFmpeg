@@ -145,6 +145,7 @@ typedef struct VariantStream {
 
     AVStream **streams;
     unsigned int nb_streams;
+    int m3u8_created; /* status of media play-list creation */
     char *baseurl;
 } VariantStream;
 
@@ -196,7 +197,13 @@ typedef struct HLSContext {
 
     VariantStream *var_streams;
     unsigned int nb_varstreams;
+
+    int master_m3u8_created; /* status of master play-list creation */
+    char *master_m3u8_url; /* URL of the master m3u8 file */
+    int version; /* HLS version */
     char *var_stream_map; /* user specified variant stream map string */
+    char *master_pl_name;
+    unsigned int master_publish_rate;
 } HLSContext;
 
 static int get_int_from_double(double val)
@@ -1039,6 +1046,126 @@ static void hls_rename_temp_file(AVFormatContext *s, AVFormatContext *oc)
     oc->filename[len-4] = '\0';
 }
 
+static int get_relative_url(const char *master_url, const char *media_url,
+                            char *rel_url, int rel_url_buf_size)
+{
+    char *p = NULL;
+    int base_len = -1;
+    p = strrchr(master_url, '/') ? strrchr(master_url, '/') :\
+            strrchr(master_url, '\\');
+    if (p) {
+        base_len = FFABS(p - master_url);
+        if (av_strncasecmp(master_url, media_url, base_len)) {
+            av_log(NULL, AV_LOG_WARNING, "Unable to find relative url\n");
+            return AVERROR(EINVAL);
+        }
+    }
+    av_strlcpy(rel_url, &(media_url[base_len + 1]), rel_url_buf_size);
+    return 0;
+}
+
+static int create_master_playlist(AVFormatContext *s,
+                                  VariantStream * const input_vs)
+{
+    HLSContext *hls = s->priv_data;
+    VariantStream *vs;
+    AVStream *vid_st, *aud_st;
+    AVIOContext *master_pb = 0;
+    AVDictionary *options = NULL;
+    unsigned int i, j;
+    int m3u8_name_size, ret, bandwidth;
+    char *m3U8_rel_name;
+
+    input_vs->m3u8_created = 1;
+    if (!hls->master_m3u8_created) {
+        /* For the first time, wait until all the media playlists are created */
+        for (i = 0; i < hls->nb_varstreams; i++)
+            if (!hls->var_streams[i].m3u8_created)
+                return 0;
+    } else {
+         /* Keep publishing the master playlist at the configured rate */
+        if (&hls->var_streams[0] != input_vs || !hls->master_publish_rate ||
+            input_vs->number % hls->master_publish_rate)
+            return 0;
+    }
+
+    if (hls->user_agent)
+      av_dict_set(&options, "user-agent", hls->user_agent, 0);
+
+    ret = s->io_open(s, &master_pb, hls->master_m3u8_url, AVIO_FLAG_WRITE,\
+                     &options);
+    av_dict_free(&options);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Failed to open master play list file '%s'\n",
+                hls->master_m3u8_url);
+        goto fail;
+    }
+
+    avio_printf(master_pb, "#EXTM3U\n");
+    avio_printf(master_pb, "#EXT-X-VERSION:%d\n", hls->version);
+
+    /* For variant streams with video add #EXT-X-STREAM-INF tag with attributes*/
+    for (i = 0; i < hls->nb_varstreams; i++) {
+        vs = &(hls->var_streams[i]);
+
+        m3u8_name_size = strlen(vs->m3u8_name) + 1;
+        m3U8_rel_name = av_malloc(m3u8_name_size);
+        if (!m3U8_rel_name) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+        av_strlcpy(m3U8_rel_name, vs->m3u8_name, m3u8_name_size);
+        ret = get_relative_url(hls->master_m3u8_url, vs->m3u8_name,
+                               m3U8_rel_name, m3u8_name_size);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Unable to find relative URL\n");
+            goto fail;
+        }
+
+        vid_st = NULL;
+        aud_st = NULL;
+        for (j = 0; j < vs->nb_streams; j++) {
+            if (vs->streams[j]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
+                vid_st = vs->streams[j];
+            else if (vs->streams[j]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
+                aud_st = vs->streams[j];
+        }
+
+        if (!vid_st && !aud_st) {
+            av_log(NULL, AV_LOG_WARNING, "Media stream not found\n");
+            continue;
+        }
+
+        bandwidth = 0;
+        if (vid_st)
+            bandwidth += vid_st->codecpar->bit_rate;
+        if (aud_st)
+            bandwidth += aud_st->codecpar->bit_rate;
+        bandwidth += bandwidth / 10;
+
+        if (!bandwidth) {
+            av_log(NULL, AV_LOG_WARNING,
+                    "Bandwidth info not available, set audio and video bitrates\n");
+            av_freep(&m3U8_rel_name);
+            continue;
+        }
+
+        avio_printf(master_pb, "#EXT-X-STREAM-INF:BANDWIDTH=%d", bandwidth);
+        if (vid_st && vid_st->codecpar->width > 0 && vid_st->codecpar->height > 0)
+            avio_printf(master_pb, ",RESOLUTION=%dx%d", vid_st->codecpar->width,
+                    vid_st->codecpar->height);
+        avio_printf(master_pb, "\n%s\n\n", m3U8_rel_name);
+
+        av_freep(&m3U8_rel_name);
+    }
+fail:
+    if(ret >=0)
+        hls->master_m3u8_created = 1;
+    av_freep(&m3U8_rel_name);
+    ff_format_io_close(s, &master_pb);
+    return ret;
+}
+
 static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
 {
     HLSContext *hls = s->priv_data;
@@ -1049,7 +1176,6 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
     AVIOContext *sub_out = NULL;
     char temp_filename[1024];
     int64_t sequence = FFMAX(hls->start_sequence, vs->sequence - vs->nb_entries);
-    int version = 3;
     const char *proto = avio_find_protocol_name(s->filename);
     int use_rename = proto && !strcmp(proto, "file");
     static unsigned warned_non_file;
@@ -1059,13 +1185,14 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
     double prog_date_time = vs->initial_prog_date_time;
     int byterange_mode = (hls->flags & HLS_SINGLE_FILE) || (hls->max_seg_size > 0);
 
+    hls->version = 3;
     if (byterange_mode) {
-        version = 4;
+        hls->version = 4;
         sequence = 0;
     }
 
     if (hls->segment_type == SEGMENT_TYPE_FMP4) {
-        version = 7;
+        hls->version = 7;
     }
 
     if (!use_rename && !warned_non_file++)
@@ -1082,7 +1209,7 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
     }
 
     vs->discontinuity_set = 0;
-    write_m3u8_head_block(hls, out, version, target_duration, sequence);
+    write_m3u8_head_block(hls, out, hls->version, target_duration, sequence);
     if (hls->pl_type == PLAYLIST_TYPE_EVENT) {
         avio_printf(out, "#EXT-X-PLAYLIST-TYPE:EVENT\n");
     } else if (hls->pl_type == PLAYLIST_TYPE_VOD) {
@@ -1158,7 +1285,7 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
     if( vs->vtt_m3u8_name ) {
         if ((ret = s->io_open(s, &sub_out, vs->vtt_m3u8_name, AVIO_FLAG_WRITE, &options)) < 0)
             goto fail;
-        write_m3u8_head_block(hls, sub_out, version, target_duration, sequence);
+        write_m3u8_head_block(hls, sub_out, hls->version, target_duration, sequence);
 
         for (en = vs->segments; en; en = en->next) {
             avio_printf(sub_out, "#EXTINF:%f,\n", en->duration);
@@ -1181,6 +1308,11 @@ fail:
     ff_format_io_close(s, &sub_out);
     if (ret >= 0 && use_rename)
         ff_rename(temp_filename, vs->m3u8_name, s);
+
+    if (ret >= 0 && hls->master_pl_name)
+        if (create_master_playlist(s, vs) < 0)
+            av_log(s, AV_LOG_WARNING, "Master playlist creation failed\n");
+
     return ret;
 }
 
@@ -1509,6 +1641,32 @@ static int update_variant_stream_info(AVFormatContext *s) {
     return 0;
 }
 
+static int update_master_pl_info(AVFormatContext *s) {
+    HLSContext *hls = s->priv_data;
+    int m3u8_name_size, ret;
+    char *p;
+
+    m3u8_name_size = strlen(s->filename) + strlen(hls->master_pl_name) + 1;
+    hls->master_m3u8_url = av_malloc(m3u8_name_size);
+    if (!hls->master_m3u8_url) {
+        ret = AVERROR(ENOMEM);
+        return ret;
+    }
+
+    av_strlcpy(hls->master_m3u8_url, s->filename, m3u8_name_size);
+    p = strrchr(hls->master_m3u8_url, '/') ?
+            strrchr(hls->master_m3u8_url, '/') :
+            strrchr(hls->master_m3u8_url, '\\');
+    if (p) {
+        *(p + 1) = '\0';
+        av_strlcat(hls->master_m3u8_url, hls->master_pl_name, m3u8_name_size);
+    } else {
+        av_strlcpy(hls->master_m3u8_url, hls->master_pl_name, m3u8_name_size);
+    }
+
+    return 0;
+}
+
 static int hls_write_header(AVFormatContext *s)
 {
     HLSContext *hls = s->priv_data;
@@ -1535,6 +1693,15 @@ static int hls_write_header(AVFormatContext *s)
         ret = AVERROR(EINVAL);
         av_log(s, AV_LOG_ERROR, "Periodic re-key not supported when more than one variant streams are present\n");
         goto fail;
+    }
+
+    if (hls->master_pl_name) {
+        ret = update_master_pl_info(s);
+        if (ret < 0) {
+            av_log(s, AV_LOG_ERROR, "Master stream info update failed with status %x\n",
+                    ret);
+            goto fail;
+        }
     }
 
     if (hls->segment_type == SEGMENT_TYPE_FMP4) {
@@ -1873,9 +2040,9 @@ fail:
                 avformat_free_context(vs->avf);
             if (vs->vtt_avf)
                 avformat_free_context(vs->vtt_avf);
-
         }
         av_freep(&hls->var_streams);
+        av_freep(&hls->master_m3u8_url);
     }
     return ret;
 }
@@ -2112,6 +2279,7 @@ static int hls_write_trailer(struct AVFormatContext *s)
 
     av_freep(&hls->key_basename);
     av_freep(&hls->var_streams);
+    av_freep(&hls->master_m3u8_url);
     return 0;
 }
 
@@ -2167,6 +2335,8 @@ static const AVOption options[] = {
     {"datetime", "current datetime as YYYYMMDDhhmmss", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_START_SEQUENCE_AS_FORMATTED_DATETIME }, INT_MIN, INT_MAX, E, "start_sequence_source_type" },
     {"http_user_agent", "override User-Agent field in HTTP header", OFFSET(user_agent), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
     {"var_stream_map", "Variant stream map string", OFFSET(var_stream_map), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
+    {"master_pl_name", "Create HLS master playlist with this name", OFFSET(master_pl_name), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
+    {"master_pl_publish_rate", "Publish master play list every after this many segment intervals", OFFSET(master_publish_rate), AV_OPT_TYPE_INT, {.i64 = 0}, 0, UINT_MAX, E},
     { NULL },
 };
 
