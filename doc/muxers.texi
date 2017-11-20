@@ -797,6 +797,37 @@ files.
 @item http_user_agent
 Override User-Agent field in HTTP header. Applicable only for HTTP output.
 
+@item var_stream_map
+Map string which specifies how to group the audio, video and subtitle streams
+into different variant streams. The variant stream groups are separated
+by space.
+Expected string format is like this "a:0,v:0 a:1,v:1 ....". Here a:, v:, s: are
+the keys to specify audio, video and subtitle streams respectively.
+Allowed values are 0 to 9 (limited just based on practical usage).
+
+@example
+ffmpeg -re -i in.ts -b:v:0 1000k -b:v:1 256k -b:a:0 64k -b:a:1 32k \
+  -map 0:v -map 0:a -map 0:v -map 0:a -f hls -var_stream_map "v:0,a:0 v:1,a:1" \
+  http://example.com/live/out.m3u8
+@end example
+This example creates two hls variant streams. The first variant stream will
+contain video stream of bitrate 1000k and audio stream of bitrate 64k and the
+second variant stream will contain video stream of bitrate 256k and audio
+stream of bitrate 32k. Here, two media playlist with file names out_1.m3u8 and
+out_2.m3u8 will be created.
+@example
+ffmpeg -re -i in.ts -b:v:0 1000k -b:v:1 256k -b:a:0 64k \
+  -map 0:v -map 0:a -map 0:v -f hls -var_stream_map "v:0 a:0 v:1" \
+  http://example.com/live/out.m3u8
+@end example
+This example creates three hls variant streams. The first variant stream will
+be a video only stream with video bitrate 1000k, the second variant stream will
+be an audio only stream with bitrate 64k and the third variant stream will be a
+video only stream with bitrate 256k. Here, three media playlist with file names
+out_1.m3u8, out_2.m3u8 and out_3.m3u8 will be created.
+
+By default, a single hls variant containing all the encoded streams is created.
+
 @end table
 
 @anchor{ico}
