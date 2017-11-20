@@ -44,12 +44,6 @@ Use 1/4 pel motion compensation.
 Use loop filter.
 @item qscale
 Use fixed qscale.
-@item gmc
-Use gmc.
-@item mv0
-Always try a mb with mv=<0,0>.
-@item input_preserved
-
 @item pass1
 Use internal 2pass ratecontrol in first pass mode.
 @item pass2
@@ -62,8 +56,6 @@ Do not draw edges.
 Set error[?] variables during encoding.
 @item truncated
 
-@item naq
-Normalize adaptive quantization.
 @item ildct
 Use interlaced DCT.
 @item low_delay
