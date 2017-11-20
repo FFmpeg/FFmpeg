@@ -1350,18 +1350,19 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     AudioSurroundContext *s = ctx->priv;
+    int ret;
 
-    av_audio_fifo_write(s->fifo, (void **)in->extended_data,
-                        in->nb_samples);
-
-    if (s->pts == AV_NOPTS_VALUE)
+    ret = av_audio_fifo_write(s->fifo, (void **)in->extended_data,
+                              in->nb_samples);
+    if (ret >= 0 && s->pts == AV_NOPTS_VALUE)
         s->pts = in->pts;
 
     av_frame_free(&in);
+    if (ret < 0)
+        return ret;
 
     while (av_audio_fifo_size(s->fifo) >= s->buf_size) {
         AVFrame *out;
-        int ret;
 
         ret = av_audio_fifo_peek(s->fifo, (void **)s->input->extended_data, s->buf_size);
         if (ret < 0)
