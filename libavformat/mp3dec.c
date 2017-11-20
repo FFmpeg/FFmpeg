@@ -508,9 +508,9 @@ static int64_t mp3_sync(AVFormatContext *s, int64_t target_pos, int flags)
                     return AVERROR(EINVAL);
                 }
             }
-            if ((target_pos - pos)*dir <= 0 && abs(MIN_VALID/2-j) < score) {
+            if ((target_pos - pos)*dir <= 0 && FFABS(MIN_VALID/2-j) < score) {
                 candidate = pos;
-                score = abs(MIN_VALID/2-j);
+                score = FFABS(MIN_VALID/2-j);
             }
             pos += ret;
         }
