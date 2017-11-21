@@ -110,6 +110,7 @@ typedef struct VPxEncoderContext {
     float level;
     int row_mt;
     int tune_content;
+    int corpus_complexity;
 } VPxContext;
 
 /** String mappings for enum vp8e_enc_control_id */
@@ -213,6 +214,10 @@ static av_cold void dump_enc_cfg(AVCodecContext *avctx,
            width, "rc_2pass_vbr_bias_pct:",       cfg->rc_2pass_vbr_bias_pct,
            width, "rc_2pass_vbr_minsection_pct:", cfg->rc_2pass_vbr_minsection_pct,
            width, "rc_2pass_vbr_maxsection_pct:", cfg->rc_2pass_vbr_maxsection_pct);
+#if VPX_ENCODER_ABI_VERSION >= 14
+    av_log(avctx, level, "  %*s%u\n",
+           width, "rc_2pass_vbr_corpus_complexity:", cfg->rc_2pass_vbr_corpus_complexity);
+#endif
     av_log(avctx, level, "keyframing settings\n"
            "  %*s%d\n  %*s%u\n  %*s%u\n",
            width, "kf_mode:",     cfg->kf_mode,
@@ -565,6 +570,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (avctx->rc_max_rate)
         enccfg.rc_2pass_vbr_maxsection_pct =
             avctx->rc_max_rate * 100LL / avctx->bit_rate;
+#if CONFIG_LIBVPX_VP9_ENCODER
+    if (avctx->codec_id == AV_CODEC_ID_VP9) {
+#if VPX_ENCODER_ABI_VERSION >= 14
+        if (ctx->corpus_complexity >= 0)
+            enccfg.rc_2pass_vbr_corpus_complexity = ctx->corpus_complexity;
+#endif
+    }
+#endif
 
     if (avctx->rc_buffer_size)
         enccfg.rc_buf_sz         =
@@ -1140,6 +1153,9 @@ static const AVOption vp9_options[] = {
 #if VPX_ENCODER_ABI_VERSION >= 14
     { "film",            "Film content; improves grain retention", 0, AV_OPT_TYPE_CONST, {.i64 = 2}, 0, 0, VE, "tune_content" },
 #endif
+#endif
+#if VPX_ENCODER_ABI_VERSION >= 14
+    { "corpus-complexity", "corpus vbr complexity midpoint", OFFSET(corpus_complexity), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 10000, VE },
 #endif
     LEGACY_OPTIONS
     { NULL }
