@@ -53,6 +53,11 @@ ADD_INT16
 INIT_XMM sse2
 ADD_INT16
 
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+ADD_INT16
+%endif
+
 ; void add_hfyu_left_pred_bgr32(uint8_t *dst, const uint8_t *src,
 ;                               intptr_t w, uint8_t *left)
 %macro LEFT_BGR32 0

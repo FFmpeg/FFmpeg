@@ -21,8 +21,8 @@
 ;******************************************************************************
 
 %macro INT16_LOOP 2 ; %1 = a/u (aligned/unaligned), %2 = add/sub
-    movd    m4, maskd
-    SPLATW  m4, m4
+    movd    xm4, maskd
+    SPLATW  m4, xm4
     add     wd, wd
     test    wq, 2*mmsize - 1
     jz %%.tomainloop
