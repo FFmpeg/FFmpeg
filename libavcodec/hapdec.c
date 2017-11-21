@@ -3,6 +3,8 @@
  * Copyright (C) 2015 Vittorio Giovara <vittorio.giovara@gmail.com>
  * Copyright (C) 2015 Tom Butterworth <bangnoise@gmail.com>
  *
+ * HapQA and HAPAlphaOnly added by Jokyo Images
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -157,14 +159,16 @@ static int hap_parse_frame_header(AVCodecContext *avctx)
     const char *compressorstr;
     int i, ret;
 
-    ret = parse_section_header(gbc, &section_size, &section_type);
+    ret = parse_section_header(gbc, &ctx->texture_section_size, &section_type);
     if (ret != 0)
         return ret;
 
     if ((avctx->codec_tag == MKTAG('H','a','p','1') && (section_type & 0x0F) != HAP_FMT_RGBDXT1) ||
         (avctx->codec_tag == MKTAG('H','a','p','5') && (section_type & 0x0F) != HAP_FMT_RGBADXT5) ||
         (avctx->codec_tag == MKTAG('H','a','p','Y') && (section_type & 0x0F) != HAP_FMT_YCOCGDXT5) ||
-        (avctx->codec_tag == MKTAG('H','a','p','A') && (section_type & 0x0F) != HAP_FMT_RGTC1)) {
+        (avctx->codec_tag == MKTAG('H','a','p','A') && (section_type & 0x0F) != HAP_FMT_RGTC1) ||
+        ((avctx->codec_tag == MKTAG('H','a','p','M') && (section_type & 0x0F) != HAP_FMT_RGTC1) &&
+                                                        (section_type & 0x0F) != HAP_FMT_YCOCGDXT5)) {
         av_log(avctx, AV_LOG_ERROR,
                "Invalid texture format %#04x.\n", section_type & 0x0F);
         return AVERROR_INVALIDDATA;
@@ -177,7 +181,7 @@ static int hap_parse_frame_header(AVCodecContext *avctx)
             if (ret == 0) {
                 ctx->chunks[0].compressor = section_type & 0xF0;
                 ctx->chunks[0].compressed_offset = 0;
-                ctx->chunks[0].compressed_size = section_size;
+                ctx->chunks[0].compressed_size = ctx->texture_section_size;
             }
             if (ctx->chunks[0].compressor == HAP_COMP_NONE) {
                 compressorstr = "none";
@@ -298,6 +302,9 @@ static int decompress_texture_thread_internal(AVCodecContext *avctx, void *arg,
             if (texture_num == 0) {
                 ctx->tex_fun(p + x * 16, frame->linesize[0],
                              d + (off + x) * ctx->tex_rat);
+            } else {
+                ctx->tex_fun2(p + x * 16, frame->linesize[0],
+                              d + (off + x) * ctx->tex_rat2);
             }
         }
     }
@@ -311,6 +318,12 @@ static int decompress_texture_thread(AVCodecContext *avctx, void *arg,
     return decompress_texture_thread_internal(avctx, arg, slice, thread_nb, 0);
 }
 
+static int decompress_texture2_thread(AVCodecContext *avctx, void *arg,
+                                      int slice, int thread_nb)
+{
+    return decompress_texture_thread_internal(avctx, arg, slice, thread_nb, 1);
+}
+
 static int hap_decode(AVCodecContext *avctx, void *data,
                       int *got_frame, AVPacket *avpkt)
 {
@@ -318,12 +331,27 @@ static int hap_decode(AVCodecContext *avctx, void *data,
     ThreadFrame tframe;
     int ret, i, t;
     int tex_size;
+    int section_size;
+    enum HapSectionType section_type;
     int start_texture_section = 0;
     int tex_rat[2] = {0, 0};
 
     bytestream2_init(&ctx->gbc, avpkt->data, avpkt->size);
 
     tex_rat[0] = ctx->tex_rat;
+
+    /* check for multi texture header */
+    if (ctx->texture_count == 2) {
+        ret = parse_section_header(&ctx->gbc, &section_size, &section_type);
+        if (ret != 0)
+            return ret;
+        if ((section_type & 0x0F) != 0x0D) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid section type in 2 textures mode %#04x.\n", section_type);
+            return AVERROR_INVALIDDATA;
+        }
+        start_texture_section = 4;
+        tex_rat[1] = ctx->tex_rat2;
+    }
 
     /* Get the output frame ready to receive data */
     tframe.f = data;
@@ -339,6 +367,8 @@ static int hap_decode(AVCodecContext *avctx, void *data,
         if (ret < 0)
             return ret;
 
+        start_texture_section += ctx->texture_section_size + 4;
+
         if (avctx->codec->update_thread_context)
             ff_thread_finish_setup(avctx);
 
@@ -346,7 +376,7 @@ static int hap_decode(AVCodecContext *avctx, void *data,
         if (hap_can_use_tex_in_place(ctx)) {
             /* Only DXTC texture compression in a contiguous block */
             ctx->tex_data = ctx->gbc.buffer;
-            tex_size = bytestream2_get_bytes_left(&ctx->gbc);
+            tex_size = FFMIN(ctx->texture_section_size, bytestream2_get_bytes_left(&ctx->gbc));
         } else {
             /* Perform the second-stage decompression */
             ret = av_reallocp(&ctx->tex_buf, ctx->tex_size);
@@ -367,7 +397,7 @@ static int hap_decode(AVCodecContext *avctx, void *data,
 
         if (tex_size < (avctx->coded_width  / TEXTURE_BLOCK_W)
             *(avctx->coded_height / TEXTURE_BLOCK_H)
-            *ctx->tex_rat) {
+            *tex_rat[t]) {
             av_log(avctx, AV_LOG_ERROR, "Insufficient data\n");
             return AVERROR_INVALIDDATA;
         }
@@ -375,6 +405,9 @@ static int hap_decode(AVCodecContext *avctx, void *data,
         /* Use the decompress function on the texture, one block per thread */
         if (t == 0){
             avctx->execute2(avctx, decompress_texture_thread, tframe.f, NULL, ctx->slice_count);
+        } else{
+            tframe.f = data;
+            avctx->execute2(avctx, decompress_texture2_thread, tframe.f, NULL, ctx->slice_count);
         }
     }
 
@@ -432,8 +465,14 @@ static av_cold int hap_init(AVCodecContext *avctx)
         avctx->pix_fmt = AV_PIX_FMT_RGB0;
         break;
     case MKTAG('H','a','p','M'):
-        avpriv_report_missing_feature(avctx, "HapQAlpha");
-        return AVERROR_PATCHWELCOME;
+        texture_name  = "DXT5-YCoCg-scaled / RGTC1";
+        ctx->tex_rat  = 16;
+        ctx->tex_rat2 = 8;
+        ctx->tex_fun  = ctx->dxtc.dxt5ys_block;
+        ctx->tex_fun2 = ctx->dxtc.rgtc1u_alpha_block;
+        avctx->pix_fmt = AV_PIX_FMT_RGBA;
+        ctx->texture_count = 2;
+        break;
     default:
         return AVERROR_DECODER_NOT_FOUND;
     }
