@@ -29,26 +29,36 @@ SECTION .text
 
 %include "libavcodec/x86/huffyuvdsp_template.asm"
 
+;------------------------------------------------------------------------------
 ; void ff_diff_int16(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
 ;                    unsigned mask, int w);
+;------------------------------------------------------------------------------
 
-%if ARCH_X86_32
-INIT_MMX mmx
+%macro DIFF_INT16 0
 cglobal diff_int16, 5,5,5, dst, src1, src2, mask, w, tmp
-    INT16_LOOP a, sub
-%endif
-
-INIT_XMM sse2
-cglobal diff_int16, 5,5,5, dst, src1, src2, mask, w, tmp
+%if mmsize > 8
     test src1q, mmsize-1
     jnz .unaligned
     test src2q, mmsize-1
     jnz .unaligned
     test dstq, mmsize-1
     jnz .unaligned
+%endif
     INT16_LOOP a, sub
+%if mmsize > 8
 .unaligned:
     INT16_LOOP u, sub
+%endif
+%endmacro
+
+%if ARCH_X86_32
+INIT_MMX mmx
+DIFF_INT16
+%endif
+
+INIT_XMM sse2
+DIFF_INT16
+
 
 INIT_MMX mmxext
 cglobal sub_hfyu_median_pred_int16, 7,7,0, dst, src1, src2, mask, w, left, left_top
