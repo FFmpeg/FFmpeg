@@ -334,47 +334,47 @@ static int hap_decode(AVCodecContext *avctx, void *data,
     for (t = 0; t < ctx->texture_count; t++) {
         bytestream2_seek(&ctx->gbc, start_texture_section, SEEK_SET);
 
-    /* Check for section header */
-    ret = hap_parse_frame_header(avctx);
-    if (ret < 0)
-        return ret;
-
-    if (avctx->codec->update_thread_context)
-        ff_thread_finish_setup(avctx);
-
-    /* Unpack the DXT texture */
-    if (hap_can_use_tex_in_place(ctx)) {
-        /* Only DXTC texture compression in a contiguous block */
-        ctx->tex_data = ctx->gbc.buffer;
-        tex_size = bytestream2_get_bytes_left(&ctx->gbc);
-    } else {
-        /* Perform the second-stage decompression */
-        ret = av_reallocp(&ctx->tex_buf, ctx->tex_size);
+        /* Check for section header */
+        ret = hap_parse_frame_header(avctx);
         if (ret < 0)
             return ret;
 
-        avctx->execute2(avctx, decompress_chunks_thread, NULL,
-                        ctx->chunk_results, ctx->chunk_count);
+        if (avctx->codec->update_thread_context)
+            ff_thread_finish_setup(avctx);
 
-        for (i = 0; i < ctx->chunk_count; i++) {
-            if (ctx->chunk_results[i] < 0)
-                return ctx->chunk_results[i];
+        /* Unpack the DXT texture */
+        if (hap_can_use_tex_in_place(ctx)) {
+            /* Only DXTC texture compression in a contiguous block */
+            ctx->tex_data = ctx->gbc.buffer;
+            tex_size = bytestream2_get_bytes_left(&ctx->gbc);
+        } else {
+            /* Perform the second-stage decompression */
+            ret = av_reallocp(&ctx->tex_buf, ctx->tex_size);
+            if (ret < 0)
+                return ret;
+
+            avctx->execute2(avctx, decompress_chunks_thread, NULL,
+                            ctx->chunk_results, ctx->chunk_count);
+
+            for (i = 0; i < ctx->chunk_count; i++) {
+                if (ctx->chunk_results[i] < 0)
+                    return ctx->chunk_results[i];
+            }
+
+            ctx->tex_data = ctx->tex_buf;
+            tex_size = ctx->tex_size;
         }
 
-        ctx->tex_data = ctx->tex_buf;
-        tex_size = ctx->tex_size;
-    }
+        if (tex_size < (avctx->coded_width  / TEXTURE_BLOCK_W)
+            *(avctx->coded_height / TEXTURE_BLOCK_H)
+            *ctx->tex_rat) {
+            av_log(avctx, AV_LOG_ERROR, "Insufficient data\n");
+            return AVERROR_INVALIDDATA;
+        }
 
-    if (tex_size < (avctx->coded_width  / TEXTURE_BLOCK_W)
-                  *(avctx->coded_height / TEXTURE_BLOCK_H)
-                  *ctx->tex_rat) {
-        av_log(avctx, AV_LOG_ERROR, "Insufficient data\n");
-        return AVERROR_INVALIDDATA;
-    }
-
-    /* Use the decompress function on the texture, one block per thread */
+        /* Use the decompress function on the texture, one block per thread */
         if (t == 0){
-    avctx->execute2(avctx, decompress_texture_thread, tframe.f, NULL, ctx->slice_count);
+            avctx->execute2(avctx, decompress_texture_thread, tframe.f, NULL, ctx->slice_count);
         }
     }
 
