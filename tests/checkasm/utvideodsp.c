@@ -63,9 +63,9 @@ LOCAL_ALIGNED_32(type, src_b1, [BUFFER_SIZE]);  \
 declare_func(void, type *src_r, type *src_g, type *src_b,   \
              ptrdiff_t linesize_r, ptrdiff_t linesize_g,    \
              ptrdiff_t linesize_b, int width, int height);  \
-memset(src_r0, 0, BUFFER_SIZE);                 \
-memset(src_g0, 0, BUFFER_SIZE);                 \
-memset(src_b0, 0, BUFFER_SIZE);                 \
+memset(src_r0, 0, BUFFER_SIZE * sizeof(type));  \
+memset(src_g0, 0, BUFFER_SIZE * sizeof(type));  \
+memset(src_b0, 0, BUFFER_SIZE * sizeof(type));  \
 randomize_plane(src_r0, type);                  \
 randomize_plane(src_g0, type);                  \
 randomize_plane(src_b0, type);                  \
