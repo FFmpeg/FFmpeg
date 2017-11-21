@@ -29,11 +29,10 @@ pw_1023: times 8  dw 1023
 
 SECTION .text
 
-INIT_XMM sse2
-
 ; void restore_rgb_planes(uint8_t *src_r, uint8_t *src_g, uint8_t *src_b,
 ;                         ptrdiff_t linesize_r, ptrdiff_t linesize_g, ptrdiff_t linesize_b,
 ;                         int width, int height)
+%macro RESTORE_RGB_PLANES 0
 cglobal restore_rgb_planes, 7 + ARCH_X86_64, 7 + ARCH_X86_64 * 2, 4, src_r, src_g, src_b, linesize_r, linesize_g, linesize_b, w, h, x
     movsxdifnidn wq, wd
     add      src_rq, wq
@@ -68,7 +67,12 @@ DEFINE_ARGS src_r, src_g, src_b, linesize_r, linesize_g, linesize_b, x
     sub        hd, 1
     jg .nextrow
     REP_RET
+%endmacro
 
+INIT_XMM sse2
+RESTORE_RGB_PLANES
+
+%macro RESTORE_RGB_PLANES10 0
 cglobal restore_rgb_planes10, 7 + ARCH_X86_64, 7 + ARCH_X86_64 * 2, 5, src_r, src_g, src_b, linesize_r, linesize_g, linesize_b, w, h, x
     shl          wd, 1
     shl linesize_rq, 1
@@ -109,3 +113,7 @@ DEFINE_ARGS src_r, src_g, src_b, linesize_r, linesize_g, linesize_b, x
     sub        hd, 1
     jg .nextrow
     REP_RET
+%endmacro
+
+INIT_XMM sse2
+RESTORE_RGB_PLANES10
