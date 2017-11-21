@@ -24,9 +24,9 @@
 
 SECTION_RODATA
 
-pb_128:  times 16 db 128
-pw_512:  times 8  dw 512
-pw_1023: times 8  dw 1023
+cextern pb_80
+cextern pw_512
+cextern pw_1023
 
 SECTION .text
 
@@ -48,11 +48,7 @@ DEFINE_ARGS src_r, src_g, src_b, linesize_r, linesize_g, linesize_b, x
 %define wq r6m
 %define hd r7mp
 %endif
-%if mmsize == 32
-    vbroadcasti128 m3, [pb_128]
-%else
-    mova         m3, [pb_128]
-%endif
+    mova         m3, [pb_80]
 .nextrow:
     mov          xq, wq
 
@@ -98,13 +94,8 @@ cglobal restore_rgb_planes10, 7 + ARCH_X86_64, 7 + ARCH_X86_64 * 2, 5, src_r, sr
     add      src_rq, wq
     add      src_gq, wq
     add      src_bq, wq
-%if mmsize == 32
-    vbroadcasti128 m3, [pw_512]
-    vbroadcasti128 m4, [pw_1023]
-%else
     mova         m3, [pw_512]
     mova         m4, [pw_1023]
-%endif
     neg          wq
 %if ARCH_X86_64 == 0
     mov          wm, wq
