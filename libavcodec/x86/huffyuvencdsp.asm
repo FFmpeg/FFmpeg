@@ -59,6 +59,10 @@ DIFF_INT16
 INIT_XMM sse2
 DIFF_INT16
 
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+DIFF_INT16
+%endif
 
 INIT_MMX mmxext
 cglobal sub_hfyu_median_pred_int16, 7,7,0, dst, src1, src2, mask, w, left, left_top
