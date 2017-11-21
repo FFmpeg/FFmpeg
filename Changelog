@@ -19,6 +19,7 @@ version <next>:
 - acontrast audio filter
 - OpenCL overlay filter
 - video mix filter
+- video normalize filter
 
 
 version 3.4:

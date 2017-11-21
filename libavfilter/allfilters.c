@@ -257,6 +257,7 @@ static void register_all(void)
     REGISTER_FILTER(NNEDI,          nnedi,          vf);
     REGISTER_FILTER(NOFORMAT,       noformat,       vf);
     REGISTER_FILTER(NOISE,          noise,          vf);
+    REGISTER_FILTER(NORMALIZE,      normalize,      vf);
     REGISTER_FILTER(NULL,           null,           vf);
     REGISTER_FILTER(OCR,            ocr,            vf);
     REGISTER_FILTER(OCV,            ocv,            vf);
