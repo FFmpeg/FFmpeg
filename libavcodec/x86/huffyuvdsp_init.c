@@ -28,6 +28,7 @@
 
 void ff_add_int16_mmx(uint16_t *dst, const uint16_t *src, unsigned mask, int w);
 void ff_add_int16_sse2(uint16_t *dst, const uint16_t *src, unsigned mask, int w);
+
 void ff_add_hfyu_left_pred_bgr32_mmx(uint8_t *dst, const uint8_t *src,
                                      intptr_t w, uint8_t *left);
 void ff_add_hfyu_left_pred_bgr32_sse2(uint8_t *dst, const uint8_t *src,
