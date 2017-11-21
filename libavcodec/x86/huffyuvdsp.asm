@@ -26,21 +26,32 @@ SECTION .text
 
 %include "libavcodec/x86/huffyuvdsp_template.asm"
 
-%if ARCH_X86_32
-INIT_MMX mmx
-cglobal add_int16, 4,4,5, dst, src, mask, w, tmp
-    INT16_LOOP a, add
-%endif
+;------------------------------------------------------------------------------
+; void (*add_int16)(uint16_t *dst, const uint16_t *src, unsigned mask, int w);
+;------------------------------------------------------------------------------
 
-INIT_XMM sse2
+%macro ADD_INT16 0
 cglobal add_int16, 4,4,5, dst, src, mask, w, tmp
+%if mmsize > 8
     test srcq, mmsize-1
     jnz .unaligned
     test dstq, mmsize-1
     jnz .unaligned
+%endif
     INT16_LOOP a, add
+%if mmsize > 8
 .unaligned:
     INT16_LOOP u, add
+%endif
+%endmacro
+
+%if ARCH_X86_32
+INIT_MMX mmx
+ADD_INT16
+%endif
+
+INIT_XMM sse2
+ADD_INT16
 
 ; void add_hfyu_left_pred_bgr32(uint8_t *dst, const uint8_t *src,
 ;                               intptr_t w, uint8_t *left)
