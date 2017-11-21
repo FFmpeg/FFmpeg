@@ -266,8 +266,8 @@ static int decompress_chunks_thread(AVCodecContext *avctx, void *arg,
     return 0;
 }
 
-static int decompress_texture_thread(AVCodecContext *avctx, void *arg,
-                                     int slice, int thread_nb)
+static int decompress_texture_thread_internal(AVCodecContext *avctx, void *arg,
+                                              int slice, int thread_nb, int texture_num)
 {
     HapContext *ctx = avctx->priv_data;
     AVFrame *frame = arg;
@@ -295,12 +295,20 @@ static int decompress_texture_thread(AVCodecContext *avctx, void *arg,
         uint8_t *p = frame->data[0] + y * frame->linesize[0] * TEXTURE_BLOCK_H;
         int off  = y * w_block;
         for (x = 0; x < w_block; x++) {
-            ctx->tex_fun(p + x * 16, frame->linesize[0],
-                         d + (off + x) * ctx->tex_rat);
+            if (texture_num == 0) {
+                ctx->tex_fun(p + x * 16, frame->linesize[0],
+                             d + (off + x) * ctx->tex_rat);
+            }
         }
     }
 
     return 0;
+}
+
+static int decompress_texture_thread(AVCodecContext *avctx, void *arg,
+                                     int slice, int thread_nb)
+{
+    return decompress_texture_thread_internal(avctx, arg, slice, thread_nb, 0);
 }
 
 static int hap_decode(AVCodecContext *avctx, void *data,
@@ -308,21 +316,29 @@ static int hap_decode(AVCodecContext *avctx, void *data,
 {
     HapContext *ctx = avctx->priv_data;
     ThreadFrame tframe;
-    int ret, i;
+    int ret, i, t;
     int tex_size;
+    int start_texture_section = 0;
+    int tex_rat[2] = {0, 0};
 
     bytestream2_init(&ctx->gbc, avpkt->data, avpkt->size);
 
-    /* Check for section header */
-    ret = hap_parse_frame_header(avctx);
-    if (ret < 0)
-        return ret;
+    tex_rat[0] = ctx->tex_rat;
 
     /* Get the output frame ready to receive data */
     tframe.f = data;
     ret = ff_thread_get_buffer(avctx, &tframe, 0);
     if (ret < 0)
         return ret;
+
+    for (t = 0; t < ctx->texture_count; t++) {
+        bytestream2_seek(&ctx->gbc, start_texture_section, SEEK_SET);
+
+    /* Check for section header */
+    ret = hap_parse_frame_header(avctx);
+    if (ret < 0)
+        return ret;
+
     if (avctx->codec->update_thread_context)
         ff_thread_finish_setup(avctx);
 
@@ -357,7 +373,10 @@ static int hap_decode(AVCodecContext *avctx, void *data,
     }
 
     /* Use the decompress function on the texture, one block per thread */
+        if (t == 0){
     avctx->execute2(avctx, decompress_texture_thread, tframe.f, NULL, ctx->slice_count);
+        }
+    }
 
     /* Frame is ready to be output */
     tframe.f->pict_type = AV_PICTURE_TYPE_I;
@@ -384,6 +403,8 @@ static av_cold int hap_init(AVCodecContext *avctx)
     avctx->coded_height = FFALIGN(avctx->height, TEXTURE_BLOCK_H);
 
     ff_texturedsp_init(&ctx->dxtc);
+
+    ctx->texture_count  = 1;
 
     switch (avctx->codec_tag) {
     case MKTAG('H','a','p','1'):

@@ -81,6 +81,8 @@ typedef struct HapContext {
 
     int slice_count;         /* Number of slices for threaded operations */
 
+    int texture_count;      /* 2 for HAQA, 1 for other version */
+
     /* Pointer to the selected compress or decompress function */
     int (*tex_fun)(uint8_t *dst, ptrdiff_t stride, const uint8_t *block);
 } HapContext;
