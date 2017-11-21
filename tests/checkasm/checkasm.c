@@ -117,6 +117,9 @@ static const struct {
         { "hevc_add_res", checkasm_check_hevc_add_res },
         { "hevc_idct", checkasm_check_hevc_idct },
     #endif
+    #if CONFIG_HUFFYUV_DECODER
+        { "huffyuvdsp", checkasm_check_huffyuvdsp },
+    #endif
     #if CONFIG_JPEG2000_DECODER
         { "jpeg2000dsp", checkasm_check_jpeg2000dsp },
     #endif
