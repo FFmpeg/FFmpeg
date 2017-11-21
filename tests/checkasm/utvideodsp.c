@@ -27,7 +27,7 @@
 
 #define WIDTH 240
 #define HEIGHT 120
-#define WIDTH_PADDED (WIDTH+WIDTH%32)
+#define WIDTH_PADDED (WIDTH + 16) /* padded to 32 */
 #define BUFFER_SIZE (WIDTH_PADDED * HEIGHT)
 
 
