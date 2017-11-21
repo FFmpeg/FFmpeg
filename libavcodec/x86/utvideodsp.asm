@@ -1,6 +1,7 @@
 ;******************************************************************************
 ;* SIMD-optimized UTVideo functions
 ;* Copyright (c) 2017 Paul B Mahol
+;* Copyright (c) 2017 Jokyo Images
 ;*
 ;* This file is part of FFmpeg.
 ;*
@@ -45,7 +46,11 @@ DEFINE_ARGS src_r, src_g, src_b, linesize_r, linesize_g, linesize_b, x
 %define wq r6m
 %define hd r7mp
 %endif
+%if mmsize == 32
+    vbroadcasti128 m3, [pb_128]
+%else
     mova         m3, [pb_128]
+%endif
 .nextrow:
     mov          xq, wq
 
@@ -72,6 +77,11 @@ DEFINE_ARGS src_r, src_g, src_b, linesize_r, linesize_g, linesize_b, x
 INIT_XMM sse2
 RESTORE_RGB_PLANES
 
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+RESTORE_RGB_PLANES
+%endif
+
 %macro RESTORE_RGB_PLANES10 0
 cglobal restore_rgb_planes10, 7 + ARCH_X86_64, 7 + ARCH_X86_64 * 2, 5, src_r, src_g, src_b, linesize_r, linesize_g, linesize_b, w, h, x
     shl          wd, 1
@@ -81,8 +91,13 @@ cglobal restore_rgb_planes10, 7 + ARCH_X86_64, 7 + ARCH_X86_64 * 2, 5, src_r, sr
     add      src_rq, wq
     add      src_gq, wq
     add      src_bq, wq
+%if mmsize == 32
+    vbroadcasti128 m3, [pw_512]
+    vbroadcasti128 m4, [pw_1023]
+%else
     mova         m3, [pw_512]
     mova         m4, [pw_1023]
+%endif
     neg          wq
 %if ARCH_X86_64 == 0
     mov          wm, wq
@@ -117,3 +132,8 @@ DEFINE_ARGS src_r, src_g, src_b, linesize_r, linesize_g, linesize_b, x
 
 INIT_XMM sse2
 RESTORE_RGB_PLANES10
+
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+RESTORE_RGB_PLANES10
+%endif
