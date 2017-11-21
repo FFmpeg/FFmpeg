@@ -17232,6 +17232,26 @@ Cubic root.
 Logarithmic.
 @end table
 
+@item swap
+Swap left channel axis with right channel axis.
+
+@item mirror
+Mirror axis.
+
+@table @samp
+@item none
+No mirror.
+
+@item x
+Mirror only x axis.
+
+@item y
+Mirror only y axis.
+
+@item xy
+Mirror both axis.
+@end table
+
 @end table
 
 @subsection Examples

@@ -65,6 +65,8 @@ typedef struct AudioVectorScopeContext {
     int contrast[4];
     int fade[4];
     double zoom;
+    int swap;
+    int mirror;
     unsigned prev_x, prev_y;
     AVRational frame_rate;
 } AudioVectorScopeContext;
@@ -99,6 +101,12 @@ static const AVOption avectorscope_options[] = {
     { "sqrt",  "square root", 0, AV_OPT_TYPE_CONST, {.i64=SQRT}, 0, 0, FLAGS, "scale" },
     { "cbrt",  "cube root",   0, AV_OPT_TYPE_CONST, {.i64=CBRT}, 0, 0, FLAGS, "scale" },
     { "log",   "logarithmic", 0, AV_OPT_TYPE_CONST, {.i64=LOG},  0, 0, FLAGS, "scale" },
+    { "swap", "swap x axis with y axis", OFFSET(swap), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
+    { "mirror", "mirror axis", OFFSET(mirror), AV_OPT_TYPE_INT, {.i64=2}, 0, 3, FLAGS, "mirror" },
+    { "none",  "no mirror", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "mirror" },
+    { "x",  "mirror x",     0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "mirror" },
+    { "y",  "mirror y",     0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "mirror" },
+    { "xy", "mirror both",  0, AV_OPT_TYPE_CONST, {.i64=3}, 0, 0, FLAGS, "mirror" },
     { NULL }
 };
 
@@ -315,6 +323,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             src[1] = FFSIGN(src[1]) * logf(1 + FFABS(src[1])) / logf(2);
             break;
         }
+
+        if (s->mirror & 1)
+            src[0] = -src[0];
+
+        if (s->mirror & 2)
+            src[1] = -src[1];
+
+        if (s->swap)
+            FFSWAP(float, src[0], src[1]);;
 
         if (s->mode == LISSAJOUS) {
             x = ((src[1] - src[0]) * zoom / 2 + 1) * hw;
