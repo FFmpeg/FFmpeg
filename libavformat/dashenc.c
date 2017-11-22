@@ -1219,6 +1219,7 @@ static const AVClass dash_class = {
 AVOutputFormat ff_dash_muxer = {
     .name           = "dash",
     .long_name      = NULL_IF_CONFIG_SMALL("DASH Muxer"),
+    .extensions     = "mpd",
     .priv_data_size = sizeof(DASHContext),
     .audio_codec    = AV_CODEC_ID_AAC,
     .video_codec    = AV_CODEC_ID_H264,
