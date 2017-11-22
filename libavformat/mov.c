@@ -2438,8 +2438,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
     MOVStreamContext *sc;
     int pseudo_stream_id;
 
-    if (c->fc->nb_streams < 1)
-        return 0;
+    av_assert0 (c->fc->nb_streams >= 1);
     st = c->fc->streams[c->fc->nb_streams-1];
     sc = st->priv_data;
 
