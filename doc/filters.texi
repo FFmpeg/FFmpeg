@@ -1144,7 +1144,7 @@ The filter accepts the following options:
 
 @table @option
 @item loop
-Set the number of loops.
+Set the number of loops. Setting this value to -1 will result in infinite loops.
 
 @item size
 Set maximal number of samples.
@@ -9991,7 +9991,7 @@ The filter accepts the following options:
 
 @table @option
 @item loop
-Set the number of loops.
+Set the number of loops. Setting this value to -1 will result in infinite loops.
 
 @item size
 Set maximal size in number of frames.
