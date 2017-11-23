@@ -88,6 +88,7 @@ typedef enum HLSFlags {
     HLS_SECOND_LEVEL_SEGMENT_SIZE = (1 << 10), // include segment size (bytes) in segment filenames when use_localtime  e.g.: %%014s
     HLS_TEMP_FILE = (1 << 11),
     HLS_PERIODIC_REKEY = (1 << 12),
+    HLS_INDEPENDENT_SEGMENTS = (1 << 13),
 } HLSFlags;
 
 typedef enum {
@@ -1190,6 +1191,10 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
         sequence = 0;
     }
 
+    if (hls->flags & HLS_INDEPENDENT_SEGMENTS) {
+        hls->version = 6;
+    }
+
     if (hls->segment_type == SEGMENT_TYPE_FMP4) {
         hls->version = 7;
     }
@@ -1218,6 +1223,9 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
     if((hls->flags & HLS_DISCONT_START) && sequence==hls->start_sequence && vs->discontinuity_set==0 ){
         avio_printf(out, "#EXT-X-DISCONTINUITY\n");
         vs->discontinuity_set = 1;
+    }
+    if (vs->has_video && (hls->flags & HLS_INDEPENDENT_SEGMENTS)) {
+        avio_printf(out, "#EXT-X-INDEPENDENT-SEGMENTS\n");
     }
     for (en = vs->segments; en; en = en->next) {
         if ((hls->encrypt || hls->key_info_file) && (!key_uri || strcmp(en->key_uri, key_uri) ||
@@ -1730,6 +1738,14 @@ static int hls_write_header(AVFormatContext *s)
     hls->recording_time = (hls->init_time ? hls->init_time : hls->time) * AV_TIME_BASE;
     vs->start_pts      = AV_NOPTS_VALUE;
     vs->current_segment_final_filename_fmt[0] = '\0';
+
+    if (hls->flags & HLS_SPLIT_BY_TIME && hls->flags & HLS_INDEPENDENT_SEGMENTS) {
+        // Independent segments cannot be guaranteed when splitting by time
+        hls->flags &= ~HLS_INDEPENDENT_SEGMENTS;
+        av_log(s, AV_LOG_WARNING,
+               "'split_by_time' and 'independent_segments' cannot be enabled together. "
+               "Disabling 'independent_segments' flag\n");
+    }
 
     if (hls->flags & HLS_PROGRAM_DATE_TIME) {
         time_t now0;
@@ -2322,6 +2338,7 @@ static const AVOption options[] = {
     {"second_level_segment_duration", "include segment duration in segment filenames when use_localtime", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_SECOND_LEVEL_SEGMENT_DURATION }, 0, UINT_MAX,   E, "flags"},
     {"second_level_segment_size", "include segment size in segment filenames when use_localtime", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_SECOND_LEVEL_SEGMENT_SIZE }, 0, UINT_MAX,   E, "flags"},
     {"periodic_rekey", "reload keyinfo file periodically for re-keying", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_PERIODIC_REKEY }, 0, UINT_MAX,   E, "flags"},
+    {"independent_segments", "add EXT-X-INDEPENDENT-SEGMENTS, whenever applicable", 0, AV_OPT_TYPE_CONST, { .i64 = HLS_INDEPENDENT_SEGMENTS }, 0, UINT_MAX, E, "flags"},
     {"use_localtime", "set filename expansion with strftime at segment creation", OFFSET(use_localtime), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, E },
     {"use_localtime_mkdir", "create last directory component in strftime-generated filename", OFFSET(use_localtime_mkdir), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, E },
     {"hls_playlist_type", "set the HLS playlist type", OFFSET(pl_type), AV_OPT_TYPE_INT, {.i64 = PLAYLIST_TYPE_NONE }, 0, PLAYLIST_TYPE_NB-1, E, "pl_type" },

@@ -737,6 +737,10 @@ The file specified by @code{hls_key_info_file} will be checked periodically and
 detect updates to the encryption info. Be sure to replace this file atomically,
 including the file containing the AES encryption key.
 
+@item independent_segments
+Add the @code{#EXT-X-INDEPENDENT-SEGMENTS} to playlists that has video segments
+and when all the segments of that playlist are guaranteed to start with a Key frame.
+
 @item split_by_time
 Allow segments to start on frames other than keyframes. This improves
 behavior on some players when the time between keyframes is inconsistent,
