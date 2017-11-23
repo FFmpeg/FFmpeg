@@ -1733,6 +1733,7 @@ static int mov_read_ares(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 par->width = 1440;
             return 0;
         } else if ((par->codec_tag == MKTAG('A', 'V', 'd', '1') ||
+                    par->codec_tag == MKTAG('A', 'V', 'j', '2') ||
                     par->codec_tag == MKTAG('A', 'V', 'd', 'n')) &&
                    atom.size >= 24) {
             int num, den;
