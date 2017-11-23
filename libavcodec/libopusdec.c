@@ -24,6 +24,7 @@
 
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/ffmath.h"
 
 #include "avcodec.h"
 #include "internal.h"
