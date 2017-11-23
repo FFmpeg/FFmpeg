@@ -1145,12 +1145,13 @@ The filter accepts the following options:
 @table @option
 @item loop
 Set the number of loops. Setting this value to -1 will result in infinite loops.
+Default is 0.
 
 @item size
-Set maximal number of samples.
+Set maximal number of samples. Default is 0.
 
 @item start
-Set first sample of loop.
+Set first sample of loop. Default is 0.
 @end table
 
 @anchor{amerge}
@@ -9992,12 +9993,13 @@ The filter accepts the following options:
 @table @option
 @item loop
 Set the number of loops. Setting this value to -1 will result in infinite loops.
+Default is 0.
 
 @item size
-Set maximal size in number of frames.
+Set maximal size in number of frames. Default is 0.
 
 @item start
-Set first frame of loop.
+Set first frame of loop. Default is 0.
 @end table
 
 @anchor{lut3d}
