@@ -3281,6 +3281,65 @@ lowpass=c=LFE
 @end example
 @end itemize
 
+@section lv2
+
+Load a LV2 (LADSPA Version 2) plugin.
+
+To enable compilation of this filter you need to configure FFmpeg with
+@code{--enable-lv2}.
+
+@table @option
+@item plugin, p
+Specifies the plugin URI. You may need to escape ':'.
+
+@item controls, c
+Set the '|' separated list of controls which are zero or more floating point
+values that determine the behavior of the loaded plugin (for example delay,
+threshold or gain).
+If @option{controls} is set to @code{help}, all available controls and
+their valid ranges are printed.
+
+@item sample_rate, s
+Specify the sample rate, default to 44100. Only used if plugin have
+zero inputs.
+
+@item nb_samples, n
+Set the number of samples per channel per each output frame, default
+is 1024. Only used if plugin have zero inputs.
+
+@item duration, d
+Set the minimum duration of the sourced audio. See
+@ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}
+for the accepted syntax.
+Note that the resulting duration may be greater than the specified duration,
+as the generated audio is always cut at the end of a complete frame.
+If not specified, or the expressed duration is negative, the audio is
+supposed to be generated forever.
+Only used if plugin have zero inputs.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Apply bass enhancer plugin from Calf:
+@example
+lv2=p=http\\\\://calf.sourceforge.net/plugins/BassEnhancer:c=amount=2
+@end example
+
+@item
+Apply bass vinyl plugin from Calf:
+@example
+lv2=p=http\\\\://calf.sourceforge.net/plugins/Vinyl:c=drone=0.2|aging=0.5
+@end example
+
+@item
+Apply bit crusher plugin from ArtyFX:
+@example
+lv2=p=http\\\\://www.openavproductions.com/artyfx#bitta:c=crush=0.3
+@end example
+@end itemize
+
 @section mcompand
 Multiband Compress or expand the audio's dynamic range.
 

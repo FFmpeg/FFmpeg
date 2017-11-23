@@ -112,6 +112,7 @@ static void register_all(void)
     REGISTER_FILTER(LADSPA,         ladspa,         af);
     REGISTER_FILTER(LOUDNORM,       loudnorm,       af);
     REGISTER_FILTER(LOWPASS,        lowpass,        af);
+    REGISTER_FILTER(LV2,            lv2,            af);
     REGISTER_FILTER(MCOMPAND,       mcompand,       af);
     REGISTER_FILTER(PAN,            pan,            af);
     REGISTER_FILTER(REPLAYGAIN,     replaygain,     af);

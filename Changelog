@@ -20,6 +20,7 @@ version <next>:
 - OpenCL overlay filter
 - video mix filter
 - video normalize filter
+- audio lv2 wrapper filter
 
 
 version 3.4:
