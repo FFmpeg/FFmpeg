@@ -1074,7 +1074,7 @@ static int create_master_playlist(AVFormatContext *s,
     AVDictionary *options = NULL;
     unsigned int i, j;
     int m3u8_name_size, ret, bandwidth;
-    char *m3U8_rel_name;
+    char *m3u8_rel_name;
 
     input_vs->m3u8_created = 1;
     if (!hls->master_m3u8_created) {
@@ -1108,14 +1108,14 @@ static int create_master_playlist(AVFormatContext *s,
         vs = &(hls->var_streams[i]);
 
         m3u8_name_size = strlen(vs->m3u8_name) + 1;
-        m3U8_rel_name = av_malloc(m3u8_name_size);
-        if (!m3U8_rel_name) {
+        m3u8_rel_name = av_malloc(m3u8_name_size);
+        if (!m3u8_rel_name) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
-        av_strlcpy(m3U8_rel_name, vs->m3u8_name, m3u8_name_size);
+        av_strlcpy(m3u8_rel_name, vs->m3u8_name, m3u8_name_size);
         ret = get_relative_url(hls->master_m3u8_url, vs->m3u8_name,
-                               m3U8_rel_name, m3u8_name_size);
+                               m3u8_rel_name, m3u8_name_size);
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Unable to find relative URL\n");
             goto fail;
@@ -1145,7 +1145,7 @@ static int create_master_playlist(AVFormatContext *s,
         if (!bandwidth) {
             av_log(NULL, AV_LOG_WARNING,
                     "Bandwidth info not available, set audio and video bitrates\n");
-            av_freep(&m3U8_rel_name);
+            av_freep(&m3u8_rel_name);
             continue;
         }
 
@@ -1153,14 +1153,14 @@ static int create_master_playlist(AVFormatContext *s,
         if (vid_st && vid_st->codecpar->width > 0 && vid_st->codecpar->height > 0)
             avio_printf(master_pb, ",RESOLUTION=%dx%d", vid_st->codecpar->width,
                     vid_st->codecpar->height);
-        avio_printf(master_pb, "\n%s\n\n", m3U8_rel_name);
+        avio_printf(master_pb, "\n%s\n\n", m3u8_rel_name);
 
-        av_freep(&m3U8_rel_name);
+        av_freep(&m3u8_rel_name);
     }
 fail:
     if(ret >=0)
         hls->master_m3u8_created = 1;
-    av_freep(&m3U8_rel_name);
+    av_freep(&m3u8_rel_name);
     ff_format_io_close(s, &master_pb);
     return ret;
 }
