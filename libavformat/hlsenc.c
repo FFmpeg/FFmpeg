@@ -1089,8 +1089,7 @@ static int create_master_playlist(AVFormatContext *s,
             return 0;
     }
 
-    if (hls->user_agent)
-      av_dict_set(&options, "user-agent", hls->user_agent, 0);
+    set_http_options(s, &options, hls);
 
     ret = s->io_open(s, &master_pb, hls->master_m3u8_url, AVIO_FLAG_WRITE,\
                      &options);
