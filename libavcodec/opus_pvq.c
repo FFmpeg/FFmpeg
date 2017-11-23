@@ -925,7 +925,8 @@ static float pvq_band_cost(CeltPVQ *pvq, CeltFrame *f, OpusRangeCoder *rc, int b
 
     for (i = 0; i < band_size; i++) {
         err_x += (X[i] - X_orig[i])*(X[i] - X_orig[i]);
-        err_y += (Y[i] - Y_orig[i])*(Y[i] - Y_orig[i]);
+        if (Y)
+            err_y += (Y[i] - Y_orig[i])*(Y[i] - Y_orig[i]);
     }
 
     dist = sqrtf(err_x) + sqrtf(err_y);
