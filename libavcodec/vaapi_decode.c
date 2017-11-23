@@ -379,6 +379,8 @@ static const struct {
     MAP(HEVC,        HEVC_MAIN,       HEVCMain    ),
     MAP(HEVC,        HEVC_MAIN_10,    HEVCMain10  ),
 #endif
+    MAP(MJPEG,       MJPEG_HUFFMAN_BASELINE_DCT,
+                                      JPEGBaseline),
     MAP(WMV3,        VC1_SIMPLE,      VC1Simple   ),
     MAP(WMV3,        VC1_MAIN,        VC1Main     ),
     MAP(WMV3,        VC1_COMPLEX,     VC1Advanced ),

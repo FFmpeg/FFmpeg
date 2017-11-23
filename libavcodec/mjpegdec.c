@@ -650,6 +650,9 @@ unk_pixfmt:
         s->avctx->pix_fmt = s->hwaccel_pix_fmt;
     } else {
         enum AVPixelFormat pix_fmts[] = {
+#if CONFIG_MJPEG_VAAPI_HWACCEL
+            AV_PIX_FMT_VAAPI,
+#endif
             s->avctx->pix_fmt,
             AV_PIX_FMT_NONE,
         };
@@ -2777,6 +2780,9 @@ AVCodec ff_mjpeg_decoder = {
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .hw_configs     = (const AVCodecHWConfigInternal*[]) {
+#if CONFIG_MJPEG_VAAPI_HWACCEL
+                        HWACCEL_VAAPI(mjpeg),
+#endif
                         NULL
                     },
 };
