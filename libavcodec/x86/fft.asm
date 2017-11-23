@@ -199,7 +199,7 @@ SECTION .text
     vextractf128  %4 %+ H(%5), %3, 0
     vextractf128   %4(%5 + 1), %2, 1
     vextractf128  %4 %+ H(%5 + 1), %3, 1
-%elif cpuflag(sse)
+%elif cpuflag(sse) || cpuflag(3dnow)
     mova     %3, %2
     unpcklps %2, %1
     unpckhps %3, %1
