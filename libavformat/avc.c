@@ -105,17 +105,22 @@ int ff_avc_parse_nal_units_buf(const uint8_t *buf_in, uint8_t **buf, int *size)
 
 int ff_isom_write_avcc(AVIOContext *pb, const uint8_t *data, int len)
 {
+    uint8_t *buf = NULL, *end, *start = NULL;
+    uint8_t *sps = NULL, *pps = NULL;
+    uint32_t sps_size = 0, pps_size = 0;
+    int ret;
+
     if (len <= 6)
         return AVERROR_INVALIDDATA;
 
         /* check for H.264 start code */
-        if (AV_RB32(data) == 0x00000001 ||
-            AV_RB24(data) == 0x000001) {
-            uint8_t *buf=NULL, *end, *start;
-            uint32_t sps_size=0, pps_size=0;
-            uint8_t *sps=0, *pps=0;
+        if (AV_RB32(data) != 0x00000001 &&
+            AV_RB24(data) != 0x000001) {
+            avio_write(pb, data, len);
+            return 0;
+        }
 
-            int ret = ff_avc_parse_nal_units_buf(data, &buf, &len);
+            ret = ff_avc_parse_nal_units_buf(data, &buf, &len);
             if (ret < 0)
                 return ret;
             start = buf;
@@ -156,9 +161,6 @@ int ff_isom_write_avcc(AVIOContext *pb, const uint8_t *data, int len)
             avio_wb16(pb, pps_size);
             avio_write(pb, pps, pps_size);
             av_free(start);
-        } else {
-            avio_write(pb, data, len);
-        }
     return 0;
 }
 
