@@ -145,8 +145,10 @@ int ff_isom_write_avcc(AVIOContext *pb, const uint8_t *data, int len)
         buf += size;
     }
 
-    if (!sps || !pps || sps_size < 4 || sps_size > UINT16_MAX || pps_size > UINT16_MAX)
-        return AVERROR_INVALIDDATA;
+    if (!sps || !pps || sps_size < 4 || sps_size > UINT16_MAX || pps_size > UINT16_MAX) {
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
+    }
 
     avio_w8(pb, 1); /* version */
     avio_w8(pb, sps[1]); /* profile */
@@ -160,9 +162,11 @@ int ff_isom_write_avcc(AVIOContext *pb, const uint8_t *data, int len)
     avio_w8(pb, 1); /* number of pps */
     avio_wb16(pb, pps_size);
     avio_write(pb, pps, pps_size);
+
+fail:
     av_free(start);
 
-    return 0;
+    return ret;
 }
 
 int ff_avc_write_annexb_extradata(const uint8_t *in, uint8_t **buf, int *size)
