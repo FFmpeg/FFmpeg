@@ -56,6 +56,7 @@
 #include "version.h"
 #include <stdlib.h>
 #include <stdarg.h>
+#include <stdatomic.h>
 #include <limits.h>
 #include <float.h>
 #if CONFIG_ICONV
@@ -114,7 +115,7 @@ static int (*lockmgr_cb)(void **mutex, enum AVLockOp op) = NULL;
 
 
 volatile int ff_avcodec_locked;
-static int volatile entangled_thread_counter = 0;
+static atomic_int entangled_thread_counter = ATOMIC_VAR_INIT(0);
 static void *codec_mutex;
 static void *avformat_mutex;
 
@@ -1944,11 +1945,11 @@ int ff_lock_avcodec(AVCodecContext *log_ctx, const AVCodec *codec)
             return -1;
     }
 
-    if (avpriv_atomic_int_add_and_fetch(&entangled_thread_counter, 1) != 1) {
+    if (atomic_fetch_add(&entangled_thread_counter, 1)) {
         av_log(log_ctx, AV_LOG_ERROR,
                "Insufficient thread locking. At least %d threads are "
                "calling avcodec_open2() at the same time right now.\n",
-               entangled_thread_counter);
+               atomic_load(&entangled_thread_counter));
         if (!lockmgr_cb)
             av_log(log_ctx, AV_LOG_ERROR, "No lock manager is set, please see av_lockmgr_register()\n");
         ff_avcodec_locked = 1;
@@ -1967,7 +1968,7 @@ int ff_unlock_avcodec(const AVCodec *codec)
 
     av_assert0(ff_avcodec_locked);
     ff_avcodec_locked = 0;
-    avpriv_atomic_int_add_and_fetch(&entangled_thread_counter, -1);
+    atomic_fetch_add(&entangled_thread_counter, -1);
     if (lockmgr_cb) {
         if ((*lockmgr_cb)(&codec_mutex, AV_LOCK_RELEASE))
             return -1;
