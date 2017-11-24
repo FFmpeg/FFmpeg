@@ -938,7 +938,8 @@ static int encode_tile(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile, int tileno
                                 }
                             }
                         }
-                        prec->cblk[cblkno].data = av_malloc(1 + 8192);
+                        if (!prec->cblk[cblkno].data)
+                            prec->cblk[cblkno].data = av_malloc(1 + 8192);
                         if (!prec->cblk[cblkno].data)
                             return AVERROR(ENOMEM);
                         encode_cblk(s, &t1, prec->cblk + cblkno, tile, xx1 - xx0, yy1 - yy0,
