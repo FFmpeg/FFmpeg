@@ -105,7 +105,9 @@ int ff_avc_parse_nal_units_buf(const uint8_t *buf_in, uint8_t **buf, int *size)
 
 int ff_isom_write_avcc(AVIOContext *pb, const uint8_t *data, int len)
 {
-    if (len > 6) {
+    if (len <= 6)
+        return AVERROR_INVALIDDATA;
+
         /* check for H.264 start code */
         if (AV_RB32(data) == 0x00000001 ||
             AV_RB24(data) == 0x000001) {
@@ -157,7 +159,6 @@ int ff_isom_write_avcc(AVIOContext *pb, const uint8_t *data, int len)
         } else {
             avio_write(pb, data, len);
         }
-    }
     return 0;
 }
 
