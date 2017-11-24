@@ -532,8 +532,8 @@ int ff_nvdec_frame_params(AVCodecContext *avctx,
     }
 
     frames_ctx->format            = AV_PIX_FMT_CUDA;
-    frames_ctx->width             = avctx->coded_width;
-    frames_ctx->height            = avctx->coded_height;
+    frames_ctx->width             = (avctx->coded_width + 1) & ~1;
+    frames_ctx->height            = (avctx->coded_height + 1) & ~1;
     frames_ctx->initial_pool_size = dpb_size;
 
     switch (sw_desc->comp[0].depth) {
