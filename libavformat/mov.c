@@ -4816,7 +4816,7 @@ static int mov_read_sidx(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 MOVFragmentStreamInfo * si;
                 si = &item->stream_info[j];
                 if (si->sidx_pts != AV_NOPTS_VALUE) {
-                    ref_st = c->fc->streams[i];
+                    ref_st = c->fc->streams[j];
                     ref_sc = ref_st->priv_data;
                     break;
                 }
