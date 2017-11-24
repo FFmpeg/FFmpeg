@@ -23,7 +23,7 @@
 int ff_mov_read_esds(AVFormatContext *fc, AVIOContext *pb)
 {
     AVStream *st;
-    int tag;
+    int tag, ret = 0;
 
     if (fc->nb_streams < 1)
         return 0;
@@ -38,6 +38,7 @@ int ff_mov_read_esds(AVFormatContext *fc, AVIOContext *pb)
 
     ff_mp4_read_descr(fc, pb, &tag);
     if (tag == MP4DecConfigDescrTag)
-        ff_mp4_read_dec_config_descr(fc, st, pb);
-    return 0;
+        ret = ff_mp4_read_dec_config_descr(fc, st, pb);
+
+    return ret;
 }
