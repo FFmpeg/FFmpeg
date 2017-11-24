@@ -113,54 +113,55 @@ int ff_isom_write_avcc(AVIOContext *pb, const uint8_t *data, int len)
     if (len <= 6)
         return AVERROR_INVALIDDATA;
 
-        /* check for H.264 start code */
-        if (AV_RB32(data) != 0x00000001 &&
-            AV_RB24(data) != 0x000001) {
-            avio_write(pb, data, len);
-            return 0;
+    /* check for H.264 start code */
+    if (AV_RB32(data) != 0x00000001 &&
+        AV_RB24(data) != 0x000001) {
+        avio_write(pb, data, len);
+        return 0;
+    }
+
+    ret = ff_avc_parse_nal_units_buf(data, &buf, &len);
+    if (ret < 0)
+        return ret;
+    start = buf;
+    end = buf + len;
+
+    /* look for sps and pps */
+    while (end - buf > 4) {
+        uint32_t size;
+        uint8_t nal_type;
+        size = FFMIN(AV_RB32(buf), end - buf - 4);
+        buf += 4;
+        nal_type = buf[0] & 0x1f;
+
+        if (nal_type == 7) { /* SPS */
+            sps = buf;
+            sps_size = size;
+        } else if (nal_type == 8) { /* PPS */
+            pps = buf;
+            pps_size = size;
         }
 
-            ret = ff_avc_parse_nal_units_buf(data, &buf, &len);
-            if (ret < 0)
-                return ret;
-            start = buf;
-            end = buf + len;
+        buf += size;
+    }
 
-            /* look for sps and pps */
-            while (end - buf > 4) {
-                uint32_t size;
-                uint8_t nal_type;
-                size = FFMIN(AV_RB32(buf), end - buf - 4);
-                buf += 4;
-                nal_type = buf[0] & 0x1f;
+    if (!sps || !pps || sps_size < 4 || sps_size > UINT16_MAX || pps_size > UINT16_MAX)
+        return AVERROR_INVALIDDATA;
 
-                if (nal_type == 7) { /* SPS */
-                    sps = buf;
-                    sps_size = size;
-                } else if (nal_type == 8) { /* PPS */
-                    pps = buf;
-                    pps_size = size;
-                }
+    avio_w8(pb, 1); /* version */
+    avio_w8(pb, sps[1]); /* profile */
+    avio_w8(pb, sps[2]); /* profile compat */
+    avio_w8(pb, sps[3]); /* level */
+    avio_w8(pb, 0xff); /* 6 bits reserved (111111) + 2 bits nal size length - 1 (11) */
+    avio_w8(pb, 0xe1); /* 3 bits reserved (111) + 5 bits number of sps (00001) */
 
-                buf += size;
-            }
+    avio_wb16(pb, sps_size);
+    avio_write(pb, sps, sps_size);
+    avio_w8(pb, 1); /* number of pps */
+    avio_wb16(pb, pps_size);
+    avio_write(pb, pps, pps_size);
+    av_free(start);
 
-            if (!sps || !pps || sps_size < 4 || sps_size > UINT16_MAX || pps_size > UINT16_MAX)
-                return AVERROR_INVALIDDATA;
-
-            avio_w8(pb, 1); /* version */
-            avio_w8(pb, sps[1]); /* profile */
-            avio_w8(pb, sps[2]); /* profile compat */
-            avio_w8(pb, sps[3]); /* level */
-            avio_w8(pb, 0xff); /* 6 bits reserved (111111) + 2 bits nal size length - 1 (11) */
-            avio_w8(pb, 0xe1); /* 3 bits reserved (111) + 5 bits number of sps (00001) */
-
-            avio_wb16(pb, sps_size);
-            avio_write(pb, sps, sps_size);
-            avio_w8(pb, 1); /* number of pps */
-            avio_wb16(pb, pps_size);
-            avio_write(pb, pps, pps_size);
-            av_free(start);
     return 0;
 }
 
