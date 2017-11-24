@@ -49,6 +49,8 @@ typedef struct LibRTMFPContext {
     const char*         app;
     const char*         pageUrl;
     const char*         flashVer;
+    const char*         host;
+    const char*         hostIPv6;
 
     // General options
     int                 socketReceiveSize;
@@ -147,6 +149,8 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
     ctx->rtmfp.app = ctx->app;
     ctx->rtmfp.pageUrl = ctx->pageUrl;
     ctx->rtmfp.flashVer = ctx->flashVer;
+    ctx->rtmfp.host = ctx->host;
+    ctx->rtmfp.hostIPv6 = ctx->hostIPv6;
 
     RTMFP_LogSetCallback(rtmfp_log);
     /*RTMFP_ActiveDump();
@@ -264,6 +268,8 @@ static const AVOption options[] = {
     {"rtmfp_app", "Name of application to connect to on the RTMFP server (by default 'live')", OFFSET(app), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     {"rtmfp_pageurl", "URL of the web page in which the media was embedded. By default no value will be sent.", OFFSET(pageUrl), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC},
     {"rtmfp_flashver", "Version of the Flash plugin used to run the SWF player. By default 'WIN 20,0,0,286'", OFFSET(flashVer), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    {"rtmfp_host", "IPv4 host address to bind to (use this if you ave multiple interfaces)", OFFSET(host), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    {"rtmfp_hostIPv6", "IPv6 host address to bind to (use this if you ave multiple interfaces)", OFFSET(hostIPv6), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     { NULL },
 };
 
