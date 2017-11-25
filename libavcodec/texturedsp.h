@@ -53,6 +53,7 @@ typedef struct TextureDSPContext {
     int (*dxt5ys_block)      (uint8_t *dst, ptrdiff_t stride, const uint8_t *block);
     int (*rgtc1s_block)      (uint8_t *dst, ptrdiff_t stride, const uint8_t *block);
     int (*rgtc1u_block)      (uint8_t *dst, ptrdiff_t stride, const uint8_t *block);
+    int (*rgtc1u_gray_block) (uint8_t *dst, ptrdiff_t stride, const uint8_t *block);
     int (*rgtc1u_alpha_block)(uint8_t *dst, ptrdiff_t stride, const uint8_t *block);
     int (*rgtc2s_block)      (uint8_t *dst, ptrdiff_t stride, const uint8_t *block);
     int (*rgtc2u_block)      (uint8_t *dst, ptrdiff_t stride, const uint8_t *block);
