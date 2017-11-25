@@ -883,6 +883,7 @@ static void opencl_device_uninit(AVHWDeviceContext *hwdev)
             av_log(hwdev, AV_LOG_ERROR, "Failed to release internal "
                    "command queue reference: %d.\n", cle);
         }
+        priv->command_queue = NULL;
     }
 }
 
