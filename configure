@@ -5816,10 +5816,6 @@ done
 
 # these are off by default, so fail if requested and not available
 enabled cuda_sdk          && require cuda_sdk cuda.h cuCtxCreate -lcuda
-enabled cuvid             && { enabled cuda ||
-                               die "ERROR: CUVID requires CUDA"; }
-enabled nvdec             && { enabled cuda ||
-                               die "ERROR: NVDEC hwaccel requires CUDA"; }
 enabled chromaprint       && require chromaprint chromaprint.h chromaprint_get_version -lchromaprint
 enabled decklink          && { require_header DeckLinkAPI.h &&
                                { check_cpp_condition DeckLinkAPIVersion.h "BLACKMAGIC_DECKLINK_API_VERSION >= 0x0a060100" || die "ERROR: Decklink API version must be >= 10.6.1."; } }
