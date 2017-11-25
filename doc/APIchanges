@@ -15,17 +15,17 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
-2017-11-xx - xxxxxxx - lavu 55.3.0 - opencl.h
-  Remove experiental OpenCL API (av_opencl_*).
+2017-11-22 - 3650cb2dfa - lavu 55.3.100 - opencl.h
+  Remove experimental OpenCL API (av_opencl_*).
 
-2017-11-xx - xxxxxxx - lavu 55.2.0 - hwcontext.h hwcontext_opencl.h
+2017-11-22 - b25d8ef0a7 - lavu 55.2.100 - hwcontext.h hwcontext_opencl.h
   Add AV_HWDEVICE_TYPE_OPENCL and a new installed header with
   OpenCL-specific hwcontext definitions.
 
-2017-11-xx - xxxxxxx - lavu 55.1.0 - pixfmt.h
+2017-11-22 - a050f56c09 - lavu 55.1.100 - pixfmt.h
   Add AV_PIX_FMT_OPENCL.
 
-2017-xx-xx - xxxxxxx - lavc 58.3.100 - avcodec.h
+2017-11-11 - 48e4eda11d - lavc 58.3.100 - avcodec.h
   Add avcodec_get_hw_frames_parameters().
 
 -------- 8< --------- FFmpeg 3.4 was cut here -------- 8< ---------
