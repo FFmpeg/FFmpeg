@@ -111,10 +111,10 @@ void ff_spatial_idwt_slice2(DWTContext *d, int y);
     (b0 + b1)
 
 #define COMPOSE_FIDELITYiL0(b0, b1, b2, b3, b4, b5, b6, b7, b8)\
-    (b4 - ((int)(-8*(b0+(unsigned)b8) + 21*(b1+(unsigned)b7) - 46*(b2+(unsigned)b6) + 161*(b3+(unsigned)b5) + 128) >> 8))
+    ((unsigned)b4 - ((int)(-8*(b0+(unsigned)b8) + 21*(b1+(unsigned)b7) - 46*(b2+(unsigned)b6) + 161*(b3+(unsigned)b5) + 128) >> 8))
 
 #define COMPOSE_FIDELITYiH0(b0, b1, b2, b3, b4, b5, b6, b7, b8)\
-    (b4 + ((int)(-2*(b0+(unsigned)b8) + 10*(b1+(unsigned)b7) - 25*(b2+(unsigned)b6) +  81*(b3+(unsigned)b5) + 128) >> 8))
+    ((unsigned)b4 + ((int)(-2*(b0+(unsigned)b8) + 10*(b1+(unsigned)b7) - 25*(b2+(unsigned)b6) +  81*(b3+(unsigned)b5) + 128) >> 8))
 
 #define COMPOSE_DAUB97iL1(b0, b1, b2)\
     (b1 - ((int)(1817*(b0 + (unsigned)b2) + 2048) >> 12))
