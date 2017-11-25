@@ -114,7 +114,7 @@ static int (*lockmgr_cb)(void **mutex, enum AVLockOp op) = NULL;
 #endif
 
 
-volatile int ff_avcodec_locked;
+static atomic_bool ff_avcodec_locked;
 static atomic_int entangled_thread_counter = ATOMIC_VAR_INIT(0);
 static void *codec_mutex;
 static void *avformat_mutex;
@@ -1937,6 +1937,7 @@ int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op))
 
 int ff_lock_avcodec(AVCodecContext *log_ctx, const AVCodec *codec)
 {
+    _Bool exp = 0;
     if (codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE || !codec->init)
         return 0;
 
@@ -1952,22 +1953,21 @@ int ff_lock_avcodec(AVCodecContext *log_ctx, const AVCodec *codec)
                atomic_load(&entangled_thread_counter));
         if (!lockmgr_cb)
             av_log(log_ctx, AV_LOG_ERROR, "No lock manager is set, please see av_lockmgr_register()\n");
-        ff_avcodec_locked = 1;
+        atomic_store(&ff_avcodec_locked, 1);
         ff_unlock_avcodec(codec);
         return AVERROR(EINVAL);
     }
-    av_assert0(!ff_avcodec_locked);
-    ff_avcodec_locked = 1;
+    av_assert0(atomic_compare_exchange_strong(&ff_avcodec_locked, &exp, 1));
     return 0;
 }
 
 int ff_unlock_avcodec(const AVCodec *codec)
 {
+    _Bool exp = 1;
     if (codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE || !codec->init)
         return 0;
 
-    av_assert0(ff_avcodec_locked);
-    ff_avcodec_locked = 0;
+    av_assert0(atomic_compare_exchange_strong(&ff_avcodec_locked, &exp, 0));
     atomic_fetch_add(&entangled_thread_counter, -1);
     if (lockmgr_cb) {
         if ((*lockmgr_cb)(&codec_mutex, AV_LOCK_RELEASE))
