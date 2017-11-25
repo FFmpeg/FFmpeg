@@ -300,10 +300,10 @@ static int decompress_texture_thread_internal(AVCodecContext *avctx, void *arg,
         int off  = y * w_block;
         for (x = 0; x < w_block; x++) {
             if (texture_num == 0) {
-                ctx->tex_fun(p + x * 16, frame->linesize[0],
+                ctx->tex_fun(p + x * 4 * ctx->uncompress_pix_size, frame->linesize[0],
                              d + (off + x) * ctx->tex_rat);
             } else {
-                ctx->tex_fun2(p + x * 16, frame->linesize[0],
+                ctx->tex_fun2(p + x * 4 * ctx->uncompress_pix_size, frame->linesize[0],
                               d + (off + x) * ctx->tex_rat2);
             }
         }
@@ -438,6 +438,7 @@ static av_cold int hap_init(AVCodecContext *avctx)
     ff_texturedsp_init(&ctx->dxtc);
 
     ctx->texture_count  = 1;
+    ctx->uncompress_pix_size = 4;
 
     switch (avctx->codec_tag) {
     case MKTAG('H','a','p','1'):
@@ -461,8 +462,9 @@ static av_cold int hap_init(AVCodecContext *avctx)
     case MKTAG('H','a','p','A'):
         texture_name = "RGTC1";
         ctx->tex_rat = 8;
-        ctx->tex_fun = ctx->dxtc.rgtc1u_block;
-        avctx->pix_fmt = AV_PIX_FMT_RGB0;
+        ctx->tex_fun = ctx->dxtc.rgtc1u_gray_block;
+        avctx->pix_fmt = AV_PIX_FMT_GRAY8;
+        ctx->uncompress_pix_size = 1;
         break;
     case MKTAG('H','a','p','M'):
         texture_name  = "DXT5-YCoCg-scaled / RGTC1";
