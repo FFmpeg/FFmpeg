@@ -373,12 +373,16 @@ static void restore_median_planar(UtvideoContext *c, uint8_t *src, ptrdiff_t str
         C        = bsrc[-stride];
         bsrc[0] += C;
         A        = bsrc[0];
-        for (i = 1; i < width; i++) {
+        for (i = 1; i < FFMIN(width, 16); i++) { /* scalar loop (DSP need align 16) */
             B        = bsrc[i - stride];
             bsrc[i] += mid_pred(A, B, (uint8_t)(A + B - C));
             C        = B;
             A        = bsrc[i];
         }
+        if (width > 16)
+            c->llviddsp.add_median_pred(bsrc + 16, bsrc - stride + 16,
+                                        bsrc + 16, width - 16, &A, &B);
+
         bsrc += stride;
         // the rest of lines use continuous median prediction
         for (j = 2; j < slice_height; j++) {
@@ -424,12 +428,16 @@ static void restore_median_planar_il(UtvideoContext *c, uint8_t *src, ptrdiff_t 
         C        = bsrc[-stride2];
         bsrc[0] += C;
         A        = bsrc[0];
-        for (i = 1; i < width; i++) {
+        for (i = 1; i < FFMIN(width, 16); i++) { /* scalar loop (DSP need align 16) */
             B        = bsrc[i - stride2];
             bsrc[i] += mid_pred(A, B, (uint8_t)(A + B - C));
             C        = B;
             A        = bsrc[i];
         }
+        if (width > 16)
+            c->llviddsp.add_median_pred(bsrc + 16, bsrc - stride2 + 16,
+                                        bsrc + 16, width - 16, &A, &B);
+
         c->llviddsp.add_median_pred(bsrc + stride, bsrc - stride,
                                         bsrc + stride, width, &A, &B);
         bsrc += stride2;
