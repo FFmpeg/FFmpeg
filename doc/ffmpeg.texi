@@ -757,6 +757,43 @@ If not specified, @samp{auto_any} is used.
 platform-appropriate subdevice (@samp{dxva2} or @samp{vaapi}) and then deriving a
 QSV device from that.)
 
+@item opencl
+@var{device} selects the platform and device as @emph{platform_index.device_index}.
+
+The set of devices can also be filtered using the key-value pairs to find only
+devices matching particular platform or device strings.
+
+The strings usable as filters are:
+@table @option
+@item platform_profile
+@item platform_version
+@item platform_name
+@item platform_vendor
+@item platform_extensions
+@item device_name
+@item device_vendor
+@item driver_version
+@item device_version
+@item device_profile
+@item device_extensions
+@item device_type
+@end table
+
+The indices and filters must together uniquely select a device.
+
+Examples:
+@table @emph
+@item -init_hw_device opencl:0.1
+Choose the second device on the first platform.
+
+@item -init_hw_device opencl:,device_name=Foo9000
+Choose the device with a name containing the string @emph{Foo9000}.
+
+@item -init_hw_device opencl:1,device_type=gpu,device_extensions=cl_khr_fp16
+Choose the GPU device on the second platform supporting the @emph{cl_khr_fp16}
+extension.
+@end table
+
 @end table
 
 @item -init_hw_device @var{type}[=@var{name}]@@@var{source}
