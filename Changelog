@@ -22,6 +22,7 @@ version <next>:
 - video normalize filter
 - audio lv2 wrapper filter
 - VAAPI VP8 decoding
+- AMD AMF H.264 and HEVC encoders
 
 
 version 3.4:

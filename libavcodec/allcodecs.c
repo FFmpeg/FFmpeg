@@ -576,6 +576,7 @@ static void register_all(void)
      * above is available */
     REGISTER_ENCODER(H263_V4L2M2M,      h263_v4l2m2m);
     REGISTER_ENCDEC (LIBOPENH264,       libopenh264);
+    REGISTER_ENCODER(H264_AMF,          h264_amf);
     REGISTER_DECODER(H264_CUVID,        h264_cuvid);
     REGISTER_ENCODER(H264_NVENC,        h264_nvenc);
     REGISTER_ENCODER(H264_OMX,          h264_omx);
@@ -588,6 +589,7 @@ static void register_all(void)
     REGISTER_ENCODER(NVENC_H264,        nvenc_h264);
     REGISTER_ENCODER(NVENC_HEVC,        nvenc_hevc);
 #endif
+    REGISTER_ENCODER(HEVC_AMF,          hevc_amf);
     REGISTER_DECODER(HEVC_CUVID,        hevc_cuvid);
     REGISTER_DECODER(HEVC_MEDIACODEC,   hevc_mediacodec);
     REGISTER_ENCODER(HEVC_NVENC,        hevc_nvenc);
