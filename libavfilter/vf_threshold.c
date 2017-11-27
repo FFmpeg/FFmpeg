@@ -155,7 +155,7 @@ static void threshold8(const uint8_t *in, const uint8_t *threshold,
         in        += ilinesize;
         threshold += tlinesize;
         min       += flinesize;
-        max       += flinesize;
+        max       += slinesize;
         out       += olinesize;
     }
 }
@@ -183,7 +183,7 @@ static void threshold16(const uint8_t *iin, const uint8_t *tthreshold,
         in        += ilinesize / 2;
         threshold += tlinesize / 2;
         min       += flinesize / 2;
-        max       += flinesize / 2;
+        max       += slinesize / 2;
         out       += olinesize / 2;
     }
 }
