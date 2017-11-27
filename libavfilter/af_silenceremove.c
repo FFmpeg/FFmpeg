@@ -469,7 +469,7 @@ static int request_frame(AVFilterLink *outlink)
                                         (AVRational){1, outlink->sample_rate},
                                         outlink->time_base);
 
-            ret = ff_filter_frame(ctx->inputs[0], frame);
+            ret = ff_filter_frame(outlink, frame);
         }
         s->mode = SILENCE_STOP;
     }
