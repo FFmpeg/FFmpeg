@@ -64,11 +64,20 @@ static int nvdec_vp8_start_frame(AVCodecContext *avctx, const uint8_t *buffer, u
             .LastRefIdx                  = safe_get_ref_idx(h->framep[VP56_FRAME_PREVIOUS]),
             .GoldenRefIdx                = safe_get_ref_idx(h->framep[VP56_FRAME_GOLDEN]),
             .AltRefIdx                   = safe_get_ref_idx(h->framep[VP56_FRAME_GOLDEN2]),
-
-            .frame_type                  = !h->keyframe,
-            .version                     = h->profile,
-            .show_frame                  = !h->invisible,
-            .update_mb_segmentation_data = h->segmentation.enabled ? h->segmentation.update_feature_data : 0,
+            /*
+             * Explicit braces for anonymous inners to work around limitations
+             * in ancient versions of gcc.
+             */
+            {
+                {
+                    .frame_type                  = !h->keyframe,
+                    .version                     = h->profile,
+                    .show_frame                  = !h->invisible,
+                    .update_mb_segmentation_data = h->segmentation.enabled ?
+                                                   h->segmentation.update_feature_data :
+                                                   0,
+                }
+            }
        }
     };
 
