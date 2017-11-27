@@ -4176,8 +4176,10 @@ static int mov_read_custom(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             break;
 
         *p = av_malloc(len + 1);
-        if (!*p)
+        if (!*p) {
+            ret = AVERROR(ENOMEM);
             break;
+        }
         ret = ffio_read_size(pb, *p, len);
         if (ret < 0) {
             av_freep(p);
