@@ -1763,8 +1763,10 @@ static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, NvencSur
     }
     slice_offsets = av_mallocz(slice_mode_data * sizeof(*slice_offsets));
 
-    if (!slice_offsets)
+    if (!slice_offsets) {
+        res = AVERROR(ENOMEM);
         goto error;
+    }
 
     lock_params.version = NV_ENC_LOCK_BITSTREAM_VER;
 
