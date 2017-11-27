@@ -1859,25 +1859,7 @@ static int mkv_write_header(AVFormatContext *s)
         av_dict_get(s->metadata, "alpha_mode", NULL, 0))
         version = 4;
 
-    if (s->nb_streams > MAX_TRACKS) {
-        av_log(s, AV_LOG_ERROR,
-               "At most %d streams are supported for muxing in Matroska\n",
-               MAX_TRACKS);
-        return AVERROR(EINVAL);
-    }
-
     for (i = 0; i < s->nb_streams; i++) {
-        if (s->streams[i]->codecpar->codec_id == AV_CODEC_ID_ATRAC3 ||
-            s->streams[i]->codecpar->codec_id == AV_CODEC_ID_COOK ||
-            s->streams[i]->codecpar->codec_id == AV_CODEC_ID_RA_288 ||
-            s->streams[i]->codecpar->codec_id == AV_CODEC_ID_SIPR ||
-            s->streams[i]->codecpar->codec_id == AV_CODEC_ID_RV10 ||
-            s->streams[i]->codecpar->codec_id == AV_CODEC_ID_RV20) {
-            av_log(s, AV_LOG_ERROR,
-                   "The Matroska muxer does not yet support muxing %s\n",
-                   avcodec_get_name(s->streams[i]->codecpar->codec_id));
-            return AVERROR_PATCHWELCOME;
-        }
         if (s->streams[i]->codecpar->codec_id == AV_CODEC_ID_OPUS ||
             av_dict_get(s->streams[i]->metadata, "stereo_mode", NULL, 0) ||
             av_dict_get(s->streams[i]->metadata, "alpha_mode", NULL, 0))
@@ -2655,6 +2637,27 @@ static int mkv_query_codec(enum AVCodecID codec_id, int std_compliance)
 static int mkv_init(struct AVFormatContext *s)
 {
     int i;
+
+    if (s->nb_streams > MAX_TRACKS) {
+        av_log(s, AV_LOG_ERROR,
+               "At most %d streams are supported for muxing in Matroska\n",
+               MAX_TRACKS);
+        return AVERROR(EINVAL);
+    }
+
+    for (i = 0; i < s->nb_streams; i++) {
+        if (s->streams[i]->codecpar->codec_id == AV_CODEC_ID_ATRAC3 ||
+            s->streams[i]->codecpar->codec_id == AV_CODEC_ID_COOK ||
+            s->streams[i]->codecpar->codec_id == AV_CODEC_ID_RA_288 ||
+            s->streams[i]->codecpar->codec_id == AV_CODEC_ID_SIPR ||
+            s->streams[i]->codecpar->codec_id == AV_CODEC_ID_RV10 ||
+            s->streams[i]->codecpar->codec_id == AV_CODEC_ID_RV20) {
+            av_log(s, AV_LOG_ERROR,
+                   "The Matroska muxer does not yet support muxing %s\n",
+                   avcodec_get_name(s->streams[i]->codecpar->codec_id));
+            return AVERROR_PATCHWELCOME;
+        }
+    }
 
     if (s->avoid_negative_ts < 0) {
         s->avoid_negative_ts = 1;
