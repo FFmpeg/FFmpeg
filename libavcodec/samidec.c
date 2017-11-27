@@ -48,6 +48,9 @@ static int sami_paragraph_to_ass(AVCodecContext *avctx, const char *src)
     AVBPrint *dst_content = &sami->encoded_content;
     AVBPrint *dst_source = &sami->encoded_source;
 
+    if (!dupsrc)
+        return AVERROR(ENOMEM);
+
     av_bprint_clear(&sami->encoded_content);
     av_bprint_clear(&sami->content);
     av_bprint_clear(&sami->encoded_source);
