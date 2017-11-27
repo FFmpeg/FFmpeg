@@ -2000,6 +2000,8 @@ static int read_ffserver_streams(OptionsContext *o, AVFormatContext *s, const ch
 {
     int i, err;
     AVFormatContext *ic = avformat_alloc_context();
+    if (!ic)
+        return AVERROR(ENOMEM);
 
     ic->interrupt_callback = int_cb;
     err = avformat_open_input(&ic, filename, NULL, NULL);
