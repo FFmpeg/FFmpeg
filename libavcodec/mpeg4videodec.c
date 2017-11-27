@@ -2857,7 +2857,7 @@ AVCodec ff_mpeg4_decoder = {
     .update_thread_context = ONLY_IF_THREADS_ENABLED(mpeg4_update_thread_context),
     .priv_class = &mpeg4_class,
     .hw_configs            = (const AVCodecHWConfigInternal*[]) {
-#if CONFIG_MPEG2_NVDEC_HWACCEL
+#if CONFIG_MPEG4_NVDEC_HWACCEL
                                HWACCEL_NVDEC(mpeg4),
 #endif
 #if CONFIG_MPEG4_VAAPI_HWACCEL
