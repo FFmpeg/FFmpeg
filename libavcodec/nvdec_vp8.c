@@ -65,20 +65,19 @@ static int nvdec_vp8_start_frame(AVCodecContext *avctx, const uint8_t *buffer, u
             .GoldenRefIdx                = safe_get_ref_idx(h->framep[VP56_FRAME_GOLDEN]),
             .AltRefIdx                   = safe_get_ref_idx(h->framep[VP56_FRAME_GOLDEN2]),
             /*
-             * Explicit braces for anonymous inners to work around limitations
-             * in ancient versions of gcc.
+             * Explicit braces for anonymous inners and unnamed fields
+             * to work around limitations in ancient versions of gcc.
              */
-            {
-                {
-                    .frame_type                  = !h->keyframe,
-                    .version                     = h->profile,
-                    .show_frame                  = !h->invisible,
-                    .update_mb_segmentation_data = h->segmentation.enabled ?
-                                                   h->segmentation.update_feature_data :
-                                                   0,
+            { // union
+                { // struct
+                    !h->keyframe,             // frame_type
+                    h->profile,               // version
+                    !h->invisible,            // show_frame
+                    h->segmentation.enabled ? // update_mb_segmentation_data
+                        h->segmentation.update_feature_data : 0,
                 }
             }
-       }
+        }
     };
 
     return 0;
