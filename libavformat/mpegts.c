@@ -2285,6 +2285,9 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
             tss->last_cc < 0 ||
             expected_cc == cc;
 
+# KJSL hack
+    cc_ok = 1;
+
     tss->last_cc = cc;
     if (!cc_ok) {
         av_log(ts->stream, AV_LOG_DEBUG,
