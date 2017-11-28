@@ -1965,6 +1965,10 @@ static int mkv_write_header(AVFormatContext *s)
     // initialize stream_duration fields
     mkv->stream_durations = av_mallocz(s->nb_streams * sizeof(int64_t));
     mkv->stream_duration_offsets = av_mallocz(s->nb_streams * sizeof(int64_t));
+    if (!mkv->stream_durations || !mkv->stream_duration_offsets) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
 
     ret = mkv_write_tracks(s);
     if (ret < 0)
