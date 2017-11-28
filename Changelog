@@ -21,6 +21,7 @@ version <next>:
 - video mix filter
 - video normalize filter
 - audio lv2 wrapper filter
+- VAAPI VP8 decoding
 
 
 version 3.4:
