@@ -119,7 +119,8 @@ CFDataRef ff_videotoolbox_avcc_extradata_create(AVCodecContext *avctx)
 
     // save sps header (profile/level) used to create decoder session,
     // so we can detect changes and recreate it.
-    memcpy(vtctx->sps, h->ps.sps->data + 1, 3);
+    if (vtctx)
+        memcpy(vtctx->sps, h->ps.sps->data + 1, 3);
 
     data = CFDataCreate(kCFAllocatorDefault, vt_extradata, vt_extradata_size);
     av_free(vt_extradata);
@@ -323,6 +324,11 @@ static int videotoolbox_h264_decode_params(AVCodecContext *avctx,
                                            uint32_t size)
 {
     VTContext *vtctx = avctx->internal->hwaccel_priv_data;
+    H264Context *h = avctx->priv_data;
+
+    // save sps header (profile/level) used to create decoder session
+    if (!vtctx->sps[0])
+        memcpy(vtctx->sps, h->ps.sps->data + 1, 3);
 
     if (type == H264_NAL_SPS) {
         if (size > 4 && memcmp(vtctx->sps, buffer + 1, 3) != 0) {
