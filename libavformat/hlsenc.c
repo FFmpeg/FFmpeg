@@ -1737,6 +1737,7 @@ static int hls_write_header(AVFormatContext *s)
     vs->sequence       = hls->start_sequence;
     hls->recording_time = (hls->init_time ? hls->init_time : hls->time) * AV_TIME_BASE;
     vs->start_pts      = AV_NOPTS_VALUE;
+    vs->end_pts      = AV_NOPTS_VALUE;
     vs->current_segment_final_filename_fmt[0] = '\0';
 
     if (hls->flags & HLS_SPLIT_BY_TIME && hls->flags & HLS_INDEPENDENT_SEGMENTS) {
@@ -2111,7 +2112,6 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (vs->start_pts == AV_NOPTS_VALUE) {
         vs->start_pts = pkt->pts;
-        vs->end_pts   = pkt->pts;
     }
 
     if (vs->has_video) {
@@ -2123,6 +2123,8 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         is_ref_pkt = can_split = 0;
 
     if (is_ref_pkt) {
+        if (vs->end_pts == AV_NOPTS_VALUE)
+            vs->end_pts = pkt->pts;
         if (vs->new_start) {
             vs->new_start = 0;
             vs->duration = (double)(pkt->pts - vs->end_pts)
