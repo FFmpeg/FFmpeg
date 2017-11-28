@@ -2285,18 +2285,19 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
             tss->last_cc < 0 ||
             expected_cc == cc;
 
-# KJSL hack
-    cc_ok = 1;
+// KJSL hack
 
     tss->last_cc = cc;
     if (!cc_ok) {
         av_log(ts->stream, AV_LOG_DEBUG,
-               "Continuity check failed for pid %d expected %d got %d\n",
+               "Continuity check failed for pid %d expected %d got %d KJSL: IGNORING\n",
                pid, expected_cc, cc);
-        if (tss->type == MPEGTS_PES) {
-            PESContext *pc = tss->u.pes_filter.opaque;
-            pc->flags |= AV_PKT_FLAG_CORRUPT;
-        }
+        cc_ok = 1;
+
+     //   if (tss->type == MPEGTS_PES) {
+     //       PESContext *pc = tss->u.pes_filter.opaque;
+     //       pc->flags |= AV_PKT_FLAG_CORRUPT;
+     //   }
     }
 
     p = packet + 4;
