@@ -19,7 +19,11 @@
 #ifndef AVUTIL_HWCONTEXT_OPENCL_H
 #define AVUTIL_HWCONTEXT_OPENCL_H
 
+#ifdef __APPLE__
+#include <OpenCL/cl.h>
+#else
 #include <CL/cl.h>
+#endif
 
 #include "frame.h"
 
