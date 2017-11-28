@@ -125,7 +125,7 @@ static int vp8_packet(AVFormatContext *s, int idx)
         os->lastdts = vp8_gptopts(s, idx, os->granule, NULL) - duration;
         if(s->streams[idx]->start_time == AV_NOPTS_VALUE) {
             s->streams[idx]->start_time = os->lastpts;
-            if (s->streams[idx]->duration)
+            if (s->streams[idx]->duration && s->streams[idx]->duration != AV_NOPTS_VALUE)
                 s->streams[idx]->duration -= s->streams[idx]->start_time;
         }
     }
