@@ -980,6 +980,19 @@ fail:
     return AVERROR(ENOMEM);
 }
 
+URLContext* ffio_geturlcontext(AVIOContext *s)
+{
+    AVIOInternal *internal;
+    if (!s)
+        return NULL;
+
+    internal = s->opaque;
+    if (internal && s->read_packet == io_read_packet)
+        return internal->h;
+    else
+        return NULL;
+}
+
 int ffio_ensure_seekback(AVIOContext *s, int64_t buf_size)
 {
     uint8_t *buffer;

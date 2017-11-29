@@ -133,6 +133,14 @@ int ffio_open_dyn_packet_buf(AVIOContext **s, int max_packet_size);
 int ffio_fdopen(AVIOContext **s, URLContext *h);
 
 /**
+ * Return the URLContext associated with the AVIOContext
+ *
+ * @param s IO context
+ * @return pointer to URLContext or NULL.
+ */
+URLContext *ffio_geturlcontext(AVIOContext *s);
+
+/**
  * Open a write-only fake memory stream. The written data is not stored
  * anywhere - this is only used for measuring the amount of data
  * written.
