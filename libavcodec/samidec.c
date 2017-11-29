@@ -138,9 +138,12 @@ static int sami_decode_frame(AVCodecContext *avctx,
     const char *ptr = avpkt->data;
     SAMIContext *sami = avctx->priv_data;
 
-    if (ptr && avpkt->size > 0 && !sami_paragraph_to_ass(avctx, ptr)) {
+    if (ptr && avpkt->size > 0) {
+        int ret = sami_paragraph_to_ass(avctx, ptr);
+        if (ret < 0)
+            return ret;
         // TODO: pass escaped sami->encoded_source.str as source
-        int ret = ff_ass_add_rect(sub, sami->full.str, sami->readorder++, 0, NULL, NULL);
+        ret = ff_ass_add_rect(sub, sami->full.str, sami->readorder++, 0, NULL, NULL);
         if (ret < 0)
             return ret;
     }
