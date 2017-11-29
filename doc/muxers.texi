@@ -854,6 +854,9 @@ ffmpeg -re -i in.ts -f hls -master_pl_name master.m3u8 \
 This example creates HLS master playlist with name master.m3u8 and keep
 publishing it repeatedly every after 30 segments i.e. every after 60s.
 
+@item http_persistent
+Use persistent HTTP connections. Applicable only for HTTP output.
+
 @end table
 
 @anchor{ico}

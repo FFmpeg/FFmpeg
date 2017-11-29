@@ -45,6 +45,7 @@
 
 #include "avformat.h"
 #include "avio_internal.h"
+#include "http.h"
 #include "internal.h"
 #include "os_support.h"
 
@@ -205,6 +206,7 @@ typedef struct HLSContext {
     char *var_stream_map; /* user specified variant stream map string */
     char *master_pl_name;
     unsigned int master_publish_rate;
+    int http_persistent;
 } HLSContext;
 
 static int get_int_from_double(double val)
@@ -245,10 +247,38 @@ static int mkdir_p(const char *path) {
     return ret;
 }
 
+static int is_http_proto(char *filename) {
+    const char *proto = avio_find_protocol_name(filename);
+    return proto ? (!av_strcasecmp(proto, "http") || !av_strcasecmp(proto, "https")) : 0;
+}
+
+static int hlsenc_io_open(AVFormatContext *s, AVIOContext **pb, char *filename,
+                          AVDictionary **options) {
+    HLSContext *hls = s->priv_data;
+    int http_base_proto = is_http_proto(filename);
+    int err;
+    if (!*pb || !http_base_proto || !hls->http_persistent) {
+        err = s->io_open(s, pb, filename, AVIO_FLAG_WRITE, options);
+    } else {
+        URLContext *http_url_context = ffio_geturlcontext(*pb);
+        av_assert0(http_url_context);
+        err = ff_http_do_new_request(http_url_context, filename);
+    }
+    return err;
+}
+
+static void hlsenc_io_close(AVFormatContext *s, AVIOContext **pb, char *filename) {
+    HLSContext *hls = s->priv_data;
+    int http_base_proto = is_http_proto(filename);
+
+    if (!http_base_proto || !hls->http_persistent || hls->key_info_file || hls->encrypt) {
+        ff_format_io_close(s, pb);
+    }
+}
+
 static void set_http_options(AVFormatContext *s, AVDictionary **options, HLSContext *c)
 {
-    const char *proto = avio_find_protocol_name(s->filename);
-    int http_base_proto = proto ? (!av_strcasecmp(proto, "http") || !av_strcasecmp(proto, "https")) : 0;
+    int http_base_proto = is_http_proto(s->filename);
 
     if (c->method) {
         av_dict_set(options, "method", c->method, 0);
@@ -258,6 +288,8 @@ static void set_http_options(AVFormatContext *s, AVDictionary **options, HLSCont
     }
     if (c->user_agent)
         av_dict_set(options, "user_agent", c->user_agent, 0);
+    if (c->http_persistent)
+        av_dict_set_int(options, "multiple_requests", 1, 0);
 
 }
 
@@ -1437,17 +1469,17 @@ static int hls_start(AVFormatContext *s, VariantStream *vs)
             err = AVERROR(ENOMEM);
             goto fail;
         }
-        err = s->io_open(s, &oc->pb, filename, AVIO_FLAG_WRITE, &options);
+        err = hlsenc_io_open(s, &oc->pb, filename, &options);
         av_free(filename);
         av_dict_free(&options);
         if (err < 0)
             return err;
     } else
-        if ((err = s->io_open(s, &oc->pb, oc->filename, AVIO_FLAG_WRITE, &options)) < 0)
+        if ((err = hlsenc_io_open(s, &oc->pb, oc->filename, &options)) < 0)
             goto fail;
     if (vs->vtt_basename) {
         set_http_options(s, &options, c);
-        if ((err = s->io_open(s, &vtt_oc->pb, vtt_oc->filename, AVIO_FLAG_WRITE, &options)) < 0)
+        if ((err = hlsenc_io_open(s, &vtt_oc->pb, vtt_oc->filename, &options)) < 0)
             goto fail;
     }
     av_dict_free(&options);
@@ -2165,11 +2197,12 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
                 avio_open_dyn_buf(&oc->pb);
                 vs->packets_written = 0;
                 ff_format_io_close(s, &vs->out);
+                hlsenc_io_close(s, &vs->out, vs->base_output_dirname);
             } else {
-                ff_format_io_close(s, &oc->pb);
+                hlsenc_io_close(s, &oc->pb, oc->filename);
             }
             if (vs->vtt_avf) {
-                ff_format_io_close(s, &vs->vtt_avf->pb);
+                hlsenc_io_close(s, &vs->vtt_avf->pb, vs->vtt_avf->filename);
             }
         }
         if ((hls->flags & HLS_TEMP_FILE) && oc->filename[0]) {
@@ -2355,6 +2388,7 @@ static const AVOption options[] = {
     {"var_stream_map", "Variant stream map string", OFFSET(var_stream_map), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
     {"master_pl_name", "Create HLS master playlist with this name", OFFSET(master_pl_name), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
     {"master_pl_publish_rate", "Publish master play list every after this many segment intervals", OFFSET(master_publish_rate), AV_OPT_TYPE_INT, {.i64 = 0}, 0, UINT_MAX, E},
+    {"http_persistent", "Use persistent HTTP connections", OFFSET(http_persistent), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, E },
     { NULL },
 };
 
