@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFORMAT_HLSPLAYLIST_H_
-#define AVFORMAT_HLSPLAYLIST_H_
+#ifndef AVFORMAT_HLSPLAYLIST_H
+#define AVFORMAT_HLSPLAYLIST_H
 
 #include "libavutil/common.h"
 
