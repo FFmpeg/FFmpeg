@@ -26,7 +26,6 @@
 
 #include "libavutil/fifo.h"
 
-#include "config.h"
 #include "avcodec.h"
 
 
