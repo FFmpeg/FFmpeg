@@ -23,7 +23,11 @@
 #ifndef AVFORMAT_HLSPLAYLIST_H
 #define AVFORMAT_HLSPLAYLIST_H
 
+#include <stdint.h>
+
 #include "libavutil/common.h"
+#include "avformat.h"
+#include "avio.h"
 
 typedef enum {
     PLAYLIST_TYPE_NONE,
