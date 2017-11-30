@@ -663,7 +663,8 @@ static void encode_cblk(Jpeg2000EncoderContext *s, Jpeg2000T1Context *t1, Jpeg20
     cblk->ninclpasses = passno;
 
     // TODO: optional flush on each pass
-    cblk->passes[passno-1].rate = ff_mqc_flush(&t1->mqc);
+    if (passno)
+        cblk->passes[passno-1].rate = ff_mqc_flush(&t1->mqc);
 }
 
 /* tier-2 routines: */
