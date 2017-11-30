@@ -2890,6 +2890,7 @@ trace_headers_bsf_select="cbs_h264 cbs_h265 cbs_mpeg2"
 
 # external libraries
 aac_at_decoder_deps="audiotoolbox"
+aac_at_decoder_select="aac_adtstoasc_bsf"
 ac3_at_decoder_deps="audiotoolbox"
 ac3_at_decoder_select="ac3_parser"
 adpcm_ima_qt_at_decoder_deps="audiotoolbox"
