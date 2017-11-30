@@ -322,10 +322,11 @@ static int decode_frame_packing_arrangement(H264SEIFramePacking *h,
         h->quincunx_sampling_flag         = get_bits1(gb);
         h->content_interpretation_type    = get_bits(gb, 6);
 
-        // the following skips: spatial_flipping_flag, frame0_flipped_flag,
-        // field_views_flag, current_frame_is_frame0_flag,
+        // spatial_flipping_flag, frame0_flipped_flag, field_views_flag
+        skip_bits(gb, 3);
+        h->current_frame_is_frame0_flag = get_bits1(gb);
         // frame0_self_contained_flag, frame1_self_contained_flag
-        skip_bits(gb, 6);
+        skip_bits(gb, 2);
 
         if (!h->quincunx_sampling_flag && h->frame_packing_arrangement_type != 5)
             skip_bits(gb, 16);      // frame[01]_grid_position_[xy]

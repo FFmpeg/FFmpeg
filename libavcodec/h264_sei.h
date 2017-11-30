@@ -125,6 +125,7 @@ typedef struct H264SEIFramePacking {
     int frame_packing_arrangement_repetition_period;
     int content_interpretation_type;
     int quincunx_sampling_flag;
+    int current_frame_is_frame0_flag;
 } H264SEIFramePacking;
 
 typedef struct H264SEIDisplayOrientation {

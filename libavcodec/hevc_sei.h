@@ -67,6 +67,7 @@ typedef struct HEVCSEIFramePacking {
     int arrangement_type;
     int content_interpretation_type;
     int quincunx_subsampling;
+    int current_frame_is_frame0_flag;
 } HEVCSEIFramePacking;
 
 typedef struct HEVCSEIDisplayOrientation {
