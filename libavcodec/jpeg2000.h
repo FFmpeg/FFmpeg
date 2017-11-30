@@ -173,7 +173,7 @@ typedef struct Jpeg2000Cblk {
     int nb_terminations;
     int nb_terminationsinc;
     int data_start[JPEG2000_MAX_PASSES];
-    Jpeg2000Pass passes[JPEG2000_MAX_PASSES];
+    Jpeg2000Pass *passes;
     int coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
 } Jpeg2000Cblk; // code block
 
