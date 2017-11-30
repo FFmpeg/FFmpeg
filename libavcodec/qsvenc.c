@@ -532,14 +532,6 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     if (avctx->codec_id != AV_CODEC_ID_HEVC) {
         q->extco.Header.BufferId      = MFX_EXTBUFF_CODING_OPTION;
         q->extco.Header.BufferSz      = sizeof(q->extco);
-#if FF_API_CODER_TYPE
-FF_DISABLE_DEPRECATION_WARNINGS
-        if (avctx->coder_type != 0)
-            q->cavlc = avctx->coder_type == FF_CODER_TYPE_VLC;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-        q->extco.CAVLC = q->cavlc ? MFX_CODINGOPTION_ON
-                                  : MFX_CODINGOPTION_UNKNOWN;
 
         q->extco.PicTimingSEI         = q->pic_timing_sei ?
                                         MFX_CODINGOPTION_ON : MFX_CODINGOPTION_UNKNOWN;
@@ -548,6 +540,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
             q->extco.RateDistortionOpt = q->rdo > 0 ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
 
         if (avctx->codec_id == AV_CODEC_ID_H264) {
+#if FF_API_CODER_TYPE
+FF_DISABLE_DEPRECATION_WARNINGS
+            if (avctx->coder_type >= 0)
+                q->cavlc = avctx->coder_type == FF_CODER_TYPE_VLC;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+            q->extco.CAVLC = q->cavlc ? MFX_CODINGOPTION_ON
+                                      : MFX_CODINGOPTION_UNKNOWN;
+
             if (avctx->strict_std_compliance != FF_COMPLIANCE_NORMAL)
                 q->extco.NalHrdConformance = avctx->strict_std_compliance > FF_COMPLIANCE_NORMAL ?
                                              MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
