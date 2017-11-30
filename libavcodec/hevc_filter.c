@@ -842,9 +842,34 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
 void ff_hevc_hls_filter(HEVCContext *s, int x, int y, int ctb_size)
 {
     int x_end = x >= s->ps.sps->width  - ctb_size;
-    if (s->avctx->skip_loop_filter < AVDISCARD_ALL)
+    int skip = 0, is_n = 0;
+    switch (s->nal_unit_type) {
+    case HEVC_NAL_TRAIL_N:
+    case HEVC_NAL_TSA_N:
+    case HEVC_NAL_STSA_N:
+    case HEVC_NAL_RADL_N:
+    case HEVC_NAL_RASL_N:
+    case HEVC_NAL_VCL_N10:
+    case HEVC_NAL_VCL_N12:
+    case HEVC_NAL_VCL_N14:
+    case HEVC_NAL_BLA_N_LP:
+    case HEVC_NAL_IDR_N_LP:
+        is_n = 1;
+        break;
+    default: break;
+    }
+    if (s->avctx->skip_loop_filter >= AVDISCARD_ALL ||
+        (s->avctx->skip_loop_filter >= AVDISCARD_NONKEY && !IS_IDR(s)) ||
+        (s->avctx->skip_loop_filter >= AVDISCARD_NONINTRA &&
+         s->sh.slice_type != HEVC_SLICE_I) ||
+        (s->avctx->skip_loop_filter >= AVDISCARD_BIDIR &&
+         s->sh.slice_type == HEVC_SLICE_B) ||
+        (s->avctx->skip_loop_filter >= AVDISCARD_NONREF && is_n))
+        skip = 1;
+
+    if (!skip)
         deblocking_filter_CTB(s, x, y);
-    if (s->ps.sps->sao_enabled) {
+    if (s->ps.sps->sao_enabled && !skip) {
         int y_end = y >= s->ps.sps->height - ctb_size;
         if (y && x)
             sao_filter_CTB(s, x - ctb_size, y - ctb_size);
