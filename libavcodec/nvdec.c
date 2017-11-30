@@ -91,6 +91,18 @@ static int nvdec_test_capabilities(NVDECDecoder *decoder,
     caps.eChromaFormat   = params->ChromaFormat;
     caps.nBitDepthMinus8 = params->bitDepthMinus8;
 
+    if (!decoder->cvdl->cuvidGetDecoderCaps) {
+        av_log(logctx, AV_LOG_WARNING, "Used Nvidia driver is too old to perform a capability check.\n");
+        av_log(logctx, AV_LOG_WARNING, "The minimum required version is "
+#if defined(_WIN32) || defined(__CYGWIN__)
+            "378.66"
+#else
+            "378.13"
+#endif
+            ". Continuing blind.\n");
+        return 0;
+    }
+
     err = decoder->cvdl->cuvidGetDecoderCaps(&caps);
     if (err != CUDA_SUCCESS) {
         av_log(logctx, AV_LOG_ERROR, "Failed querying decoder capabilities\n");
