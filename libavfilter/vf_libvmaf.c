@@ -176,14 +176,14 @@ static int do_vmaf(FFFrameSync *fs)
 {
     AVFilterContext *ctx = fs->parent;
     LIBVMAFContext *s = ctx->priv;
-    AVFrame *main, *ref;
+    AVFrame *master, *ref;
     int ret;
 
-    ret = ff_framesync_dualinput_get(fs, &main, &ref);
+    ret = ff_framesync_dualinput_get(fs, &master, &ref);
     if (ret < 0)
         return ret;
     if (!ref)
-        return ff_filter_frame(ctx->outputs[0], main);
+        return ff_filter_frame(ctx->outputs[0], master);
 
     pthread_mutex_lock(&s->lock);
 
@@ -192,14 +192,14 @@ static int do_vmaf(FFFrameSync *fs)
     }
 
     av_frame_ref(s->gref, ref);
-    av_frame_ref(s->gmain, main);
+    av_frame_ref(s->gmain, master);
 
     s->frame_set = 1;
 
     pthread_cond_signal(&s->cond);
     pthread_mutex_unlock(&s->lock);
 
-    return ff_filter_frame(ctx->outputs[0], main);
+    return ff_filter_frame(ctx->outputs[0], master);
 }
 
 static av_cold int init(AVFilterContext *ctx)
