@@ -67,7 +67,7 @@ int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, unsigned num)
     if (bits[p] > 32)
         return AVERROR_INVALIDDATA;
     for (i = 0; i < bits[p]; ++i)
-        exit_at_level[i+1] = 1 << i;
+        exit_at_level[i+1] = 1u << i;
 
     ++p;
 
