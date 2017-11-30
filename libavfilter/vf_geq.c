@@ -33,6 +33,9 @@
 #include "libavutil/pixdesc.h"
 #include "internal.h"
 
+static const char *const var_names[] = {   "X",   "Y",   "W",   "H",   "N",   "SW",   "SH",   "T",        NULL };
+enum                                   { VAR_X, VAR_Y, VAR_W, VAR_H, VAR_N, VAR_SW, VAR_SH, VAR_T, VAR_VARS_NB };
+
 typedef struct GEQContext {
     const AVClass *class;
     AVExpr *e[4];               ///< expressions for each plane
@@ -106,9 +109,6 @@ static double lum(void *priv, double x, double y) { return getpix(priv, x, y, 0)
 static double  cb(void *priv, double x, double y) { return getpix(priv, x, y, 1); }
 static double  cr(void *priv, double x, double y) { return getpix(priv, x, y, 2); }
 static double alpha(void *priv, double x, double y) { return getpix(priv, x, y, 3); }
-
-static const char *const var_names[] = {   "X",   "Y",   "W",   "H",   "N",   "SW",   "SH",   "T",        NULL };
-enum                                   { VAR_X, VAR_Y, VAR_W, VAR_H, VAR_N, VAR_SW, VAR_SH, VAR_T, VAR_VARS_NB };
 
 static av_cold int geq_init(AVFilterContext *ctx)
 {
