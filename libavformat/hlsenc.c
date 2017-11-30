@@ -203,11 +203,6 @@ typedef struct HLSContext {
     int http_persistent;
 } HLSContext;
 
-static int get_int_from_double(double val)
-{
-    return (int)((val - (int)val) >= 0.001) ? (int)(val + 1) : (int)val;
-}
-
 static int mkdir_p(const char *path) {
     int ret = 0;
     char *temp = av_strdup(path);
@@ -1211,7 +1206,7 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
 
     for (en = vs->segments; en; en = en->next) {
         if (target_duration <= en->duration)
-            target_duration = get_int_from_double(en->duration);
+            target_duration = hls_get_int_from_double(en->duration);
     }
 
     vs->discontinuity_set = 0;
