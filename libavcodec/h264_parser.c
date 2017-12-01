@@ -259,7 +259,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
     s->picture_structure = AV_PICTURE_STRUCTURE_UNKNOWN;
 
     ff_h264_sei_uninit(&p->sei);
-    p->sei.frame_packing.frame_packing_arrangement_cancel_flag = -1;
+    p->sei.frame_packing.arrangement_cancel_flag = -1;
 
     if (!buf_size)
         return 0;

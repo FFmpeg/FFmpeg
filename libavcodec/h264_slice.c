@@ -1198,13 +1198,13 @@ static int h264_export_frame_props(H264Context *h)
     }
 
     if (h->sei.frame_packing.present &&
-        h->sei.frame_packing.frame_packing_arrangement_type <= 6 &&
+        h->sei.frame_packing.arrangement_type <= 6 &&
         h->sei.frame_packing.content_interpretation_type > 0 &&
         h->sei.frame_packing.content_interpretation_type < 3) {
         H264SEIFramePacking *fp = &h->sei.frame_packing;
         AVStereo3D *stereo = av_stereo3d_create_side_data(cur->f);
         if (stereo) {
-        switch (fp->frame_packing_arrangement_type) {
+        switch (fp->arrangement_type) {
         case 0:
             stereo->type = AV_STEREO3D_CHECKERBOARD;
             break;
@@ -1234,7 +1234,7 @@ static int h264_export_frame_props(H264Context *h)
         if (fp->content_interpretation_type == 2)
             stereo->flags = AV_STEREO3D_FLAG_INVERT;
 
-        if (fp->frame_packing_arrangement_type == 5) {
+        if (fp->arrangement_type == 5) {
             if (fp->current_frame_is_frame0_flag)
                 stereo->view = AV_STEREO3D_VIEW_LEFT;
             else
