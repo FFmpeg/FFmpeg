@@ -58,6 +58,7 @@ static int set_hwframe_ctx(AVCodecContext *ctx, AVBufferRef *hw_device_ctx)
     if ((err = av_hwframe_ctx_init(hw_frames_ref)) < 0) {
         fprintf(stderr, "Failed to initialize VAAPI frame context."
                 "Error code: %s\n",av_err2str(err));
+        av_buffer_unref(&hw_frames_ref);
         return err;
     }
     ctx->hw_frames_ctx = av_buffer_ref(hw_frames_ref);
