@@ -25,6 +25,7 @@ version <next>:
 - AMD AMF H.264 and HEVC encoders
 - video fillborders filter
 - video setrange filter
+- nsp demuxer
 
 
 version 3.4:
