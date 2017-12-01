@@ -28,6 +28,7 @@
 
 #include "avcodec.h"
 #include "decode.h"
+#include "hwaccel.h"
 #include "internal.h"
 #include "libavutil/buffer.h"
 #include "libavutil/common.h"
@@ -563,6 +564,10 @@ static void rkmpp_flush(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Failed to reset MPI (code = %d)\n", ret);
 }
 
+static const AVCodecHWConfigInternal *rkmpp_hw_configs[] = {
+    HW_CONFIG_INTERNAL(DRM_PRIME),
+    NULL
+};
 
 #define RKMPP_DEC_CLASS(NAME) \
     static const AVClass rkmpp_##NAME##_dec_class = { \
@@ -587,6 +592,7 @@ static void rkmpp_flush(AVCodecContext *avctx)
         .caps_internal  = AV_CODEC_CAP_AVOID_PROBING, \
         .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_DRM_PRIME, \
                                                          AV_PIX_FMT_NONE}, \
+        .hw_configs     = rkmpp_hw_configs, \
         .bsfs           = BSFS, \
     };
 
