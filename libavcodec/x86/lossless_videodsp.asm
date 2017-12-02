@@ -164,7 +164,7 @@ cglobal add_left_pred, 3,3,7, dst, src, w, left
     psllq   m0, 56
     ADD_LEFT_LOOP 1, 1
 
-INIT_XMM ssse3
+%macro ADD_LEFT_PRED_UNALIGNED 0
 cglobal add_left_pred_unaligned, 3,3,7, dst, src, w, left
     mova    m5, [pb_15]
     mova    m6, [pb_zzzzzzzz77777777]
@@ -181,6 +181,10 @@ cglobal add_left_pred_unaligned, 3,3,7, dst, src, w, left
     ADD_LEFT_LOOP 0, 1
 .src_unaligned:
     ADD_LEFT_LOOP 0, 0
+%endmacro
+
+INIT_XMM ssse3
+ADD_LEFT_PRED_UNALIGNED
 
 ;------------------------------------------------------------------------------
 ; void ff_add_bytes(uint8_t *dst, uint8_t *src, ptrdiff_t w);
