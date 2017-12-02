@@ -185,8 +185,15 @@ static inline int silk_is_lpc_stable(const int16_t lpc[16], int order)
         row = lpc32[k & 1];
 
         for (j = 0; j < k; j++) {
-            int x = prevrow[j] - ROUND_MULL(prevrow[k - j - 1], rc, 31);
-            row[j] = ROUND_MULL(x, gain, fbits);
+            int x = av_sat_sub32(prevrow[j], ROUND_MULL(prevrow[k - j - 1], rc, 31));
+            int64_t tmp = ROUND_MULL(x, gain, fbits);
+
+            /* per RFC 8251 section 6, if this calculation overflows, the filter
+               is considered unstable. */
+            if (tmp < INT32_MIN || tmp > INT32_MAX)
+                return 0;
+
+            row[j] = (int32_t)tmp;
         }
     }
 }
