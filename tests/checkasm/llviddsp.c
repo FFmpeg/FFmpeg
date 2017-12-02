@@ -165,6 +165,33 @@ static void check_add_left_pred_16(LLVidDSPContext c, unsigned mask, int width, 
     av_free(dst1);
 }
 
+static void check_add_gradient_pred(LLVidDSPContext c, int w) {
+    int src_size, stride;
+    uint8_t *src0, *src1;
+    stride = w + 32;
+    src_size = (stride + 32) * 2; /* dsp need previous line, and ignore the start of the line */
+    src0 = av_mallocz(src_size);
+    src1 = av_mallocz(src_size);
+
+    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *src, const ptrdiff_t stride,
+                      const ptrdiff_t width);
+
+    init_buffer(src0, src1, uint8_t, src_size);
+
+    if (check_func(c.add_gradient_pred, "add_gradient_pred")) {
+        call_ref(src0 + stride + 32, stride, w);
+        call_new(src1 + stride + 32, stride, w);
+        if (memcmp(src0, src1, stride)||/* previous line doesn't change */
+            memcmp(src0+stride, src1 + stride, w + 32)) {
+            fail();
+        }
+        bench_new(src1 + stride + 32, stride, w);
+    }
+
+    av_free(src0);
+    av_free(src1);
+}
+
 void checkasm_check_llviddsp(void)
 {
     LLVidDSPContext c;
@@ -187,4 +214,7 @@ void checkasm_check_llviddsp(void)
 
     check_add_left_pred_16(c, 255, width, accRnd, "add_left_pred_int16");
     report("add_left_pred_int16");
+
+    check_add_gradient_pred(c, width);
+    report("add_gradient_pred");
 }
