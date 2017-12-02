@@ -114,40 +114,54 @@ MEDIAN_PRED
     add     dstq, wq
     neg     wq
 %%.loop:
+    pshufb  xm0, xm5
 %if %2
     mova    m1, [srcq+wq]
 %else
     movu    m1, [srcq+wq]
 %endif
-    mova    m2, m1
-    psllw   m1, 8
+    psllw   m2, m1, 8
     paddb   m1, m2
-    mova    m2, m1
-    pshufb  m1, m3
+    pshufb  m2, m1, m3
     paddb   m1, m2
-    pshufb  m0, m5
-    mova    m2, m1
-    pshufb  m1, m4
+    pshufb  m2, m1, m4
     paddb   m1, m2
-%if mmsize == 16
-    mova    m2, m1
-    pshufb  m1, m6
+%if mmsize >= 16
+    pshufb  m2, m1, m6
     paddb   m1, m2
 %endif
-    paddb   m0, m1
+    paddb   xm0, xm1
 %if %1
-    mova    [dstq+wq], m0
+    mova    [dstq+wq], xm0
 %else
-    movq    [dstq+wq], m0
-    movhps  [dstq+wq+8], m0
+    movq    [dstq+wq], xm0
+    movhps  [dstq+wq+8], xm0
+%endif
+
+%if mmsize == 32
+    vextracti128    xm2, m1, 1 ; get second lane of the ymm
+    pshufb          xm0, xm5   ; set alls val to last val of the first lane
+    paddb           xm0, xm2
+;store val
+%if %1
+    mova    [dstq+wq+16], xm0
+%else;
+    movq    [dstq+wq+16], xm0
+    movhps  [dstq+wq+16+8], xm0
+%endif
 %endif
     add     wq, mmsize
     jl %%.loop
+%if mmsize == 32
+    mov    eax, [dstq -1]
+    and    eax, 0xff
+%else;
     mov     eax, mmsize-1
     sub     eax, wd
     movd    m1, eax
     pshufb  m0, m1
     movd    eax, m0
+%endif
     RET
 %endmacro
 
@@ -166,15 +180,15 @@ cglobal add_left_pred, 3,3,7, dst, src, w, left
 
 %macro ADD_LEFT_PRED_UNALIGNED 0
 cglobal add_left_pred_unaligned, 3,3,7, dst, src, w, left
-    mova    m5, [pb_15]
-    mova    m6, [pb_zzzzzzzz77777777]
-    mova    m4, [pb_zzzz3333zzzzbbbb]
-    mova    m3, [pb_zz11zz55zz99zzdd]
-    movd    m0, leftm
-    pslldq  m0, 15
-    test    srcq, 15
+    mova    xm5, [pb_15]
+    VBROADCASTI128    m6, [pb_zzzzzzzz77777777]
+    VBROADCASTI128    m4, [pb_zzzz3333zzzzbbbb]
+    VBROADCASTI128    m3, [pb_zz11zz55zz99zzdd]
+    movd    xm0, leftm
+    pslldq  xm0, 15
+    test    srcq, mmsize - 1
     jnz .src_unaligned
-    test    dstq, 15
+    test    dstq, mmsize - 1
     jnz .dst_unaligned
     ADD_LEFT_LOOP 1, 1
 .dst_unaligned:
@@ -185,6 +199,11 @@ cglobal add_left_pred_unaligned, 3,3,7, dst, src, w, left
 
 INIT_XMM ssse3
 ADD_LEFT_PRED_UNALIGNED
+
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+ADD_LEFT_PRED_UNALIGNED
+%endif
 
 ;------------------------------------------------------------------------------
 ; void ff_add_bytes(uint8_t *dst, uint8_t *src, ptrdiff_t w);
