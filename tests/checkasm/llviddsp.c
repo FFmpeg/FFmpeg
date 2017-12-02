@@ -109,11 +109,12 @@ static void check_add_median_pred(LLVidDSPContext c, int width) {
 
 static void check_add_left_pred(LLVidDSPContext c, int width, int acc, const char * report)
 {
+    int res0, res1;
     uint8_t *dst0 = av_mallocz(width);
     uint8_t *dst1 = av_mallocz(width);
     uint8_t *src0 = av_mallocz_array(width, sizeof(uint8_t));
     uint8_t *src1 = av_mallocz_array(width, sizeof(uint8_t));
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, uint8_t *src, ptrdiff_t w, int acc);
+    declare_func_emms(AV_CPU_FLAG_MMX, int, uint8_t *dst, uint8_t *src, ptrdiff_t w, int acc);
 
     init_buffer(src0, src1, uint8_t, width);
 
@@ -121,9 +122,10 @@ static void check_add_left_pred(LLVidDSPContext c, int width, int acc, const cha
         fail();
 
     if (check_func(c.add_left_pred, "%s", report)) {
-        call_ref(dst0, src0, width, acc);
-        call_new(dst1, src1, width, acc);
-        if (memcmp(dst0, dst1, width))
+        res0 = call_ref(dst0, src0, width, acc);
+        res1 = call_new(dst1, src1, width, acc);
+        if ((res0 & 0xFF) != (res1 & 0xFF)||\
+            memcmp(dst0, dst1, width))
             fail();
         bench_new(dst1, src1, width, acc);
     }
@@ -136,11 +138,12 @@ static void check_add_left_pred(LLVidDSPContext c, int width, int acc, const cha
 
 static void check_add_left_pred_16(LLVidDSPContext c, unsigned mask, int width, unsigned acc, const char * report)
 {
+    int res0, res1;
     uint16_t *dst0 = av_mallocz_array(width, sizeof(uint16_t));
     uint16_t *dst1 = av_mallocz_array(width, sizeof(uint16_t));
     uint16_t *src0 = av_mallocz_array(width, sizeof(uint16_t));
     uint16_t *src1 = av_mallocz_array(width, sizeof(uint16_t));
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint16_t *dst, uint16_t *src, unsigned mask, ptrdiff_t w, unsigned acc);
+    declare_func_emms(AV_CPU_FLAG_MMX, int, uint16_t *dst, uint16_t *src, unsigned mask, ptrdiff_t w, unsigned acc);
 
     init_buffer(src0, src1, uint16_t, width);
 
@@ -148,9 +151,10 @@ static void check_add_left_pred_16(LLVidDSPContext c, unsigned mask, int width, 
         fail();
 
     if (check_func(c.add_left_pred_int16, "%s", report)) {
-        call_ref(dst0, src0, mask, width, acc);
-        call_new(dst1, src1, mask, width, acc);
-        if (memcmp(dst0, dst1, width))
+        res0 = call_ref(dst0, src0, mask, width, acc);
+        res1 = call_new(dst1, src1, mask, width, acc);
+        if ((res0 &0xFFFF) != (res1 &0xFFFF)||\
+            memcmp(dst0, dst1, width))
             fail();
         bench_new(dst1, src1, mask, width, acc);
     }
