@@ -2,6 +2,7 @@
 ;* SIMD lossless video DSP utils
 ;* Copyright (c) 2008 Loren Merritt
 ;* Copyright (c) 2014 Michael Niedermayer
+;* Copyright (c) 2017 Jokyo Images
 ;*
 ;* This file is part of FFmpeg.
 ;*
@@ -325,3 +326,82 @@ cglobal add_left_pred_int16, 4,4,8, dst, src, mask, w, left
     ADD_HFYU_LEFT_LOOP_INT16 u, a
 .src_unaligned:
     ADD_HFYU_LEFT_LOOP_INT16 u, u
+
+
+;---------------------------------------------------------------------------------------------
+; void add_gradient_pred(uint8_t *src, const ptrdiff_t stride, const ptrdiff_t width)
+;---------------------------------------------------------------------------------------------
+%macro ADD_GRADIENT_PRED 0
+cglobal add_gradient_pred, 3,4,5, src, stride, width, tmp
+    mova         xm0, [pb_15]
+
+;load src - 1 in xm1
+    movd         xm1, [srcq-1]
+%if cpuflag(avx2)
+    vpbroadcastb xm1, xm1
+%else
+    pxor         xm2, xm2
+    pshufb       xm1, xm2
+%endif
+
+    add    srcq, widthq
+    neg  widthq
+    neg strideq
+
+.loop:
+    lea    tmpq, [srcq + strideq]
+    mova     m2, [tmpq + widthq] ; A = src[x-stride]
+    movu     m3, [tmpq + widthq - 1] ; B = src[x - (stride + 1)]
+    mova     m4, [srcq + widthq] ; current val (src[x])
+
+    psubb    m2, m3; A - B
+
+; prefix sum A-B
+    pslldq   m3, m2, 1
+    paddb    m2, m3
+    pslldq   m3, m2, 2
+    paddb    m2, m3
+    pslldq   m3, m2, 4
+    paddb    m2, m3
+    pslldq   m3, m2, 8
+    paddb    m2, m3
+
+; prefix sum current val
+    pslldq   m3, m4, 1
+    paddb    m4, m3
+    pslldq   m3, m4, 2
+    paddb    m4, m3
+    pslldq   m3, m4, 4
+    paddb    m4, m3
+    pslldq   m3, m4, 8
+    paddb    m4, m3
+
+; last sum
+    paddb                    m2, m4 ; current + (A - B)
+
+    paddb                   xm1, xm2 ; += C
+    mova        [srcq + widthq], xm1 ; store
+
+    pshufb                  xm1, xm0 ; put last val in all val of xm1
+
+%if mmsize == 32
+    vextracti128            xm2, m2, 1 ; get second lane of the ymm
+    paddb                   xm1, xm2; += C
+
+    mova   [srcq + widthq + 16], xm1 ; store
+    pshufb                  xm1, xm0 ; put last val in all val of m1
+%endif
+
+    add         widthq, mmsize
+    jl .loop
+    RET
+
+%endmacro
+
+INIT_XMM ssse3
+ADD_GRADIENT_PRED
+
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+ADD_GRADIENT_PRED
+%endif

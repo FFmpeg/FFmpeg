@@ -39,6 +39,7 @@ typedef struct LLVidDSPContext {
 
     int  (*add_left_pred_int16)(uint16_t *dst, const uint16_t *src,
                                 unsigned mask, ptrdiff_t w, unsigned left);
+    void (*add_gradient_pred)(uint8_t *src /* align 32 */, const ptrdiff_t stride, const ptrdiff_t width);
 } LLVidDSPContext;
 
 void ff_llviddsp_init(LLVidDSPContext *llviddsp);
