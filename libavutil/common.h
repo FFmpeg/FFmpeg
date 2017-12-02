@@ -260,11 +260,35 @@ static av_always_inline int av_sat_add32_c(int a, int b)
  *
  * @param  a first value
  * @param  b value doubled and added to a
- * @return sum with signed saturation
+ * @return sum sat(a + sat(2*b)) with signed saturation
  */
 static av_always_inline int av_sat_dadd32_c(int a, int b)
 {
     return av_sat_add32(a, av_sat_add32(b, b));
+}
+
+/**
+ * Subtract two signed 32-bit values with saturation.
+ *
+ * @param  a one value
+ * @param  b another value
+ * @return difference with signed saturation
+ */
+static av_always_inline int av_sat_sub32_c(int a, int b)
+{
+    return av_clipl_int32((int64_t)a - b);
+}
+
+/**
+ * Subtract a doubled value from another value with saturation at both stages.
+ *
+ * @param  a first value
+ * @param  b value doubled and subtracted from a
+ * @return difference sat(a - sat(2*b)) with signed saturation
+ */
+static av_always_inline int av_sat_dsub32_c(int a, int b)
+{
+    return av_sat_sub32(a, av_sat_add32(b, b));
 }
 
 /**
@@ -512,6 +536,12 @@ static av_always_inline av_const int av_parity_c(uint32_t v)
 #endif
 #ifndef av_sat_dadd32
 #   define av_sat_dadd32    av_sat_dadd32_c
+#endif
+#ifndef av_sat_sub32
+#   define av_sat_sub32     av_sat_sub32_c
+#endif
+#ifndef av_sat_dsub32
+#   define av_sat_dsub32    av_sat_dsub32_c
 #endif
 #ifndef av_clipf
 #   define av_clipf         av_clipf_c
