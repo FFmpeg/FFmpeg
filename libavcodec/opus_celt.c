@@ -712,9 +712,21 @@ static void celt_decode_bands(CeltFrame *f, OpusRangeCoder *rc)
             b = av_clip_uintp2(FFMIN(f->remaining2 + 1, f->pulses[i] + curr_balance), 14);
         }
 
-        if (ff_celt_freq_bands[i] - ff_celt_freq_range[i] >= ff_celt_freq_bands[f->start_band] &&
-            (update_lowband || lowband_offset == 0))
+        if ((ff_celt_freq_bands[i] - ff_celt_freq_range[i] >= ff_celt_freq_bands[f->start_band] ||
+            i == f->start_band + 1) && (update_lowband || lowband_offset == 0))
             lowband_offset = i;
+
+        if (i == f->start_band + 1) {
+            /* Special Hybrid Folding (RFC 8251 section 9). Copy the first band into
+            the second to ensure the second band never has to use the LCG. */
+            int offset = 8 * ff_celt_freq_bands[i];
+            int count = 8 * (ff_celt_freq_range[i] - ff_celt_freq_range[i-1]);
+
+            memcpy(&norm[offset], &norm[offset - count], count * sizeof(float));
+
+            if (f->channels == 2)
+                memcpy(&norm2[offset], &norm2[offset - count], count * sizeof(float));
+        }
 
         /* Get a conservative estimate of the collapse_mask's for the bands we're
            going to be folding from. */
@@ -728,7 +740,7 @@ static void celt_decode_bands(CeltFrame *f, OpusRangeCoder *rc)
             foldstart = lowband_offset;
             while (ff_celt_freq_bands[--foldstart] > effective_lowband);
             foldend = lowband_offset - 1;
-            while (ff_celt_freq_bands[++foldend] < effective_lowband + ff_celt_freq_range[i]);
+            while (++foldend < i && ff_celt_freq_bands[foldend] < effective_lowband + ff_celt_freq_range[i]);
 
             cm[0] = cm[1] = 0;
             for (j = foldstart; j < foldend; j++) {
