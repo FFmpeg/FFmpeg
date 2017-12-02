@@ -90,8 +90,9 @@ static inline void sub_left_prediction_bgr32(HYuvContext *s, uint8_t *dst,
     g = *green;
     b = *blue;
     a = *alpha;
+    int min_width = FFMIN(w, 8);
 
-    for (i = 0; i < FFMIN(w, 4); i++) {
+    for (i = 0; i < min_width; i++) {
         const int rt = src[i * 4 + R];
         const int gt = src[i * 4 + G];
         const int bt = src[i * 4 + B];
@@ -106,7 +107,7 @@ static inline void sub_left_prediction_bgr32(HYuvContext *s, uint8_t *dst,
         a = at;
     }
 
-    s->llvidencdsp.diff_bytes(dst + 16, src + 16, src + 12, w * 4 - 16);
+    s->llvidencdsp.diff_bytes(dst + 32, src + 32, src + 32 - 4, w * 4 - 32);
 
     *red   = src[(w - 1) * 4 + R];
     *green = src[(w - 1) * 4 + G];
