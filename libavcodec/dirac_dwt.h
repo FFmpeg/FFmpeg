@@ -117,16 +117,16 @@ void ff_spatial_idwt_slice2(DWTContext *d, int y);
     ((unsigned)b4 + ((int)(-2*(b0+(unsigned)b8) + 10*(b1+(unsigned)b7) - 25*(b2+(unsigned)b6) +  81*(b3+(unsigned)b5) + 128) >> 8))
 
 #define COMPOSE_DAUB97iL1(b0, b1, b2)\
-    (b1 - ((int)(1817*(b0 + (unsigned)b2) + 2048) >> 12))
+    ((unsigned)(b1) - ((int)(1817*(b0 + (unsigned)b2) + 2048) >> 12))
 
 #define COMPOSE_DAUB97iH1(b0, b1, b2)\
-    (b1 - ((int)( 113*(b0 + (unsigned)b2) + 64) >> 7))
+    ((unsigned)(b1) - ((int)( 113*(b0 + (unsigned)b2) + 64) >> 7))
 
 #define COMPOSE_DAUB97iL0(b0, b1, b2)\
-    (b1 + ((int)( 217*(b0 + (unsigned)b2) + 2048) >> 12))
+    ((unsigned)(b1) + ((int)( 217*(b0 + (unsigned)b2) + 2048) >> 12))
 
 #define COMPOSE_DAUB97iH0(b0, b1, b2)\
-    (b1 + ((int)(6497*(b0 + (unsigned)b2) + 2048) >> 12))
+    ((unsigned)(b1) + ((int)(6497*(b0 + (unsigned)b2) + 2048) >> 12))
 
 
 #endif /* AVCODEC_DWT_H */
