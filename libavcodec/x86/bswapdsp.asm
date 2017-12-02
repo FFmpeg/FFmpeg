@@ -104,11 +104,7 @@ SECTION .text
 %if cpuflag(ssse3)||cpuflag(avx2)
 cglobal bswap32_buf, 3,4,3
     mov      r3, r1
-%if cpuflag(avx2)
-    vbroadcasti128  m2, [pb_bswap32]
-%else
-    mova     m2, [pb_bswap32]
-%endif
+    VBROADCASTI128  m2, [pb_bswap32]
 %else
 cglobal bswap32_buf, 3,4,5
     mov      r3, r1
