@@ -80,12 +80,12 @@ static inline int sub_left_prediction(HYuvContext *s, uint8_t *dst,
             }
             return left;
         } else {
-            for (i = 0; i < 16; i++) {
+            for (i = 0; i < 32; i++) {
                 const int temp = src16[i];
                 dst16[i] = temp - left;
                 left   = temp;
             }
-            s->hencdsp.diff_int16(dst16 + 16, src16 + 16, src16 + 15, s->n - 1, w - 16);
+            s->hencdsp.diff_int16(dst16 + 32, src16 + 32, src16 + 31, s->n - 1, w - 32);
             return src16[w-1];
         }
     }
