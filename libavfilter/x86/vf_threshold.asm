@@ -32,15 +32,15 @@ SECTION .text
 
 %macro THRESHOLD_8 0
 cglobal threshold8, 10, 13, 5, in, threshold, min, max, out, ilinesize, tlinesize, flinesize, slinesize, olinesize, w, h, x
-    mov         wd, dword wm
-    mov         hd, dword hm
+    mov             wd, dword wm
+    mov             hd, dword hm
     VBROADCASTI128  m4, [pb_128]
-    add        inq, wq
-    add thresholdq, wq
-    add       minq, wq
-    add       maxq, wq
-    add       outq, wq
-    neg         wq
+    add            inq, wq
+    add     thresholdq, wq
+    add           minq, wq
+    add           maxq, wq
+    add           outq, wq
+    neg             wq
 .nextrow:
     mov         xq, wq
 
