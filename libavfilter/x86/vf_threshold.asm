@@ -34,7 +34,7 @@ SECTION .text
 cglobal threshold8, 10, 13, 5, in, threshold, min, max, out, ilinesize, tlinesize, flinesize, slinesize, olinesize, w, h, x
     mov         wd, dword wm
     mov         hd, dword hm
-    mova        m4, [pb_128]
+    VBROADCASTI128  m4, [pb_128]
     add        inq, wq
     add thresholdq, wq
     add       minq, wq
@@ -69,5 +69,10 @@ RET
 
 INIT_XMM sse4
 THRESHOLD_8
+
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+THRESHOLD_8
+%endif
 
 %endif

@@ -30,12 +30,26 @@ void ff_threshold8_sse4(const uint8_t *in, const uint8_t *threshold,
                         ptrdiff_t flinesize, ptrdiff_t slinesize,
                         ptrdiff_t olinesize,
                         int w, int h);
+void ff_threshold8_avx2(const uint8_t *in, const uint8_t *threshold,
+                        const uint8_t *min, const uint8_t *max,
+                        uint8_t *out,
+                        ptrdiff_t ilinesize, ptrdiff_t tlinesize,
+                        ptrdiff_t flinesize, ptrdiff_t slinesize,
+                        ptrdiff_t olinesize,
+                        int w, int h);
 
 av_cold void ff_threshold_init_x86(ThresholdContext *s)
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (ARCH_X86_64 && EXTERNAL_SSE4(cpu_flags) && s->depth == 8) {
-        s->threshold = ff_threshold8_sse4;
+    if (ARCH_X86_64) {
+        if (s->depth == 8) {
+            if (EXTERNAL_SSE4(cpu_flags)) {
+                s->threshold = ff_threshold8_sse4;
+            }
+            if (EXTERNAL_AVX2_FAST(cpu_flags)) {
+                s->threshold = ff_threshold8_avx2;
+            }
+        }
     }
 }
