@@ -18496,6 +18496,37 @@ asetpts=N/SR/TB
 
 @end itemize
 
+@section setrange
+
+Force color range for the output video frame.
+
+The @code{setrange} filter marks the color range property for the
+output frames. It does not change the input frame, but only sets the
+corresponding property, which affects how the frame is treated by
+following filters.
+
+The filter accepts the following options:
+
+@table @option
+
+@item range
+Available values are:
+
+@table @samp
+@item auto
+Keep the same color range property.
+
+@item unspecified, unknown
+Set the color range as unspecified.
+
+@item limited, tv, mpeg
+Set the color range as limited.
+
+@item full, pc, jpeg
+Set the color range as full.
+@end table
+@end table
+
 @section settb, asettb
 
 Set the timebase to use for the output frames timestamps.

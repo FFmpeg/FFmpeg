@@ -24,6 +24,7 @@ version <next>:
 - VAAPI VP8 decoding
 - AMD AMF H.264 and HEVC encoders
 - video fillborders filter
+- video setrange filter
 
 
 version 3.4:

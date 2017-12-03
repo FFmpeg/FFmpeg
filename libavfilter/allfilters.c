@@ -309,6 +309,7 @@ static void register_all(void)
     REGISTER_FILTER(SETDAR,         setdar,         vf);
     REGISTER_FILTER(SETFIELD,       setfield,       vf);
     REGISTER_FILTER(SETPTS,         setpts,         vf);
+    REGISTER_FILTER(SETRANGE,       setrange,       vf);
     REGISTER_FILTER(SETSAR,         setsar,         vf);
     REGISTER_FILTER(SETTB,          settb,          vf);
     REGISTER_FILTER(SHOWINFO,       showinfo,       vf);

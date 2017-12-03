@@ -300,6 +300,7 @@ OBJS-$(CONFIG_SEPARATEFIELDS_FILTER)         += vf_separatefields.o
 OBJS-$(CONFIG_SETDAR_FILTER)                 += vf_aspect.o
 OBJS-$(CONFIG_SETFIELD_FILTER)               += vf_setfield.o
 OBJS-$(CONFIG_SETPTS_FILTER)                 += setpts.o
+OBJS-$(CONFIG_SETRANGE_FILTER)               += vf_setparams.o
 OBJS-$(CONFIG_SETSAR_FILTER)                 += vf_aspect.o
 OBJS-$(CONFIG_SETTB_FILTER)                  += settb.o
 OBJS-$(CONFIG_SHOWINFO_FILTER)               += vf_showinfo.o
