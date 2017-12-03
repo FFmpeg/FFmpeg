@@ -185,6 +185,13 @@ static int config_input(AVFilterLink *inlink)
     s->width[0]  = s->width[3]  = inlink->w;
     s->depth = desc->comp[0].depth;
 
+    ff_threshold_init(s);
+
+    return 0;
+}
+
+void ff_threshold_init(ThresholdContext *s)
+{
     if (s->depth == 8) {
         s->threshold = threshold8;
         s->bpc = 1;
@@ -195,8 +202,6 @@ static int config_input(AVFilterLink *inlink)
 
     if (ARCH_X86)
         ff_threshold_init_x86(s);
-
-    return 0;
 }
 
 static int config_output(AVFilterLink *outlink)
