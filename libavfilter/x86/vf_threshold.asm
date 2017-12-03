@@ -30,7 +30,7 @@ pb_128: times 16 db 128
 
 SECTION .text
 
-INIT_XMM sse4
+%macro THRESHOLD_8 0
 cglobal threshold8, 10, 13, 5, in, threshold, min, max, out, ilinesize, tlinesize, flinesize, slinesize, olinesize, w, h, x
     mov         wd, dword wm
     mov         hd, dword hm
@@ -65,5 +65,9 @@ cglobal threshold8, 10, 13, 5, in, threshold, min, max, out, ilinesize, tlinesiz
     sub         hd, 1
     jg .nextrow
 RET
+%endmacro
+
+INIT_XMM sse4
+THRESHOLD_8
 
 %endif
