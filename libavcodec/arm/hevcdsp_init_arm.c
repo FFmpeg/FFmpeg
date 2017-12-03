@@ -61,6 +61,55 @@ void ff_hevc_idct_8x8_10_neon(int16_t *coeffs, int col_limit);
 void ff_hevc_idct_16x16_10_neon(int16_t *coeffs, int col_limit);
 void ff_hevc_idct_32x32_10_neon(int16_t *coeffs, int col_limit);
 
+void ff_hevc_get_pixels_4_8_neon(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
+                                 ptrdiff_t srcstride, int height, int mx, int my,
+                                 int16_t *mcbuffer);
+void ff_hevc_get_pixels_4_10_neon(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
+                                  ptrdiff_t srcstride, int height, int mx, int my,
+                                  int16_t *mcbuffer);
+void ff_hevc_get_pixels_8_8_neon(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
+                                 ptrdiff_t srcstride, int height, int mx, int my,
+                                 int16_t *mcbuffer);
+void ff_hevc_get_pixels_8_10_neon(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
+                                  ptrdiff_t srcstride, int height, int mx, int my,
+                                  int16_t *mcbuffer);
+void ff_hevc_get_pixels_12_8_neon(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
+                                  ptrdiff_t srcstride, int height, int mx, int my,
+                                  int16_t *mcbuffer);
+void ff_hevc_get_pixels_12_10_neon(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
+                                   ptrdiff_t srcstride, int height, int mx, int my,
+                                   int16_t *mcbuffer);
+void ff_hevc_get_pixels_16_8_neon(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
+                                  ptrdiff_t srcstride, int height, int mx, int my,
+                                  int16_t *mcbuffer);
+void ff_hevc_get_pixels_16_10_neon(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
+                                   ptrdiff_t srcstride, int height, int mx, int my,
+                                   int16_t *mcbuffer);
+void ff_hevc_get_pixels_24_8_neon(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
+                                  ptrdiff_t srcstride, int height, int mx, int my,
+                                  int16_t *mcbuffer);
+void ff_hevc_get_pixels_24_10_neon(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
+                                   ptrdiff_t srcstride, int height, int mx, int my,
+                                   int16_t *mcbuffer);
+void ff_hevc_get_pixels_32_8_neon(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
+                                  ptrdiff_t srcstride, int height, int mx, int my,
+                                  int16_t *mcbuffer);
+void ff_hevc_get_pixels_32_10_neon(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
+                                   ptrdiff_t srcstride, int height, int mx, int my,
+                                   int16_t *mcbuffer);
+void ff_hevc_get_pixels_48_8_neon(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
+                                  ptrdiff_t srcstride, int height, int mx, int my,
+                                  int16_t *mcbuffer);
+void ff_hevc_get_pixels_48_10_neon(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
+                                   ptrdiff_t srcstride, int height, int mx, int my,
+                                   int16_t *mcbuffer);
+void ff_hevc_get_pixels_64_8_neon(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
+                                  ptrdiff_t srcstride, int height, int mx, int my,
+                                  int16_t *mcbuffer);
+void ff_hevc_get_pixels_64_10_neon(int16_t *dst, ptrdiff_t dststride, uint8_t *src,
+                                   ptrdiff_t srcstride, int height, int mx, int my,
+                                   int16_t *mcbuffer);
+
 av_cold void ff_hevc_dsp_init_arm(HEVCDSPContext *c, int bit_depth)
 {
     int cpu_flags = av_get_cpu_flags();
@@ -81,6 +130,15 @@ av_cold void ff_hevc_dsp_init_arm(HEVCDSPContext *c, int bit_depth)
             c->idct[1] = ff_hevc_idct_8x8_8_neon;
             c->idct[2] = ff_hevc_idct_16x16_8_neon;
             c->idct[3] = ff_hevc_idct_32x32_8_neon;
+
+            c->put_hevc_qpel[0][0][0] = ff_hevc_get_pixels_4_8_neon;
+            c->put_hevc_qpel[0][0][1] = ff_hevc_get_pixels_8_8_neon;
+            c->put_hevc_qpel[0][0][2] = ff_hevc_get_pixels_12_8_neon;
+            c->put_hevc_qpel[0][0][3] = ff_hevc_get_pixels_16_8_neon;
+            c->put_hevc_qpel[0][0][4] = ff_hevc_get_pixels_24_8_neon;
+            c->put_hevc_qpel[0][0][5] = ff_hevc_get_pixels_32_8_neon;
+            c->put_hevc_qpel[0][0][6] = ff_hevc_get_pixels_48_8_neon;
+            c->put_hevc_qpel[0][0][7] = ff_hevc_get_pixels_64_8_neon;
         }
         if (bit_depth == 10) {
             c->add_residual[0] = ff_hevc_add_residual_4x4_10_neon;
@@ -97,6 +155,15 @@ av_cold void ff_hevc_dsp_init_arm(HEVCDSPContext *c, int bit_depth)
             c->idct[1] = ff_hevc_idct_8x8_10_neon;
             c->idct[2] = ff_hevc_idct_16x16_10_neon;
             c->idct[3] = ff_hevc_idct_32x32_10_neon;
+
+            c->put_hevc_qpel[0][0][0] = ff_hevc_get_pixels_4_10_neon;
+            c->put_hevc_qpel[0][0][1] = ff_hevc_get_pixels_8_10_neon;
+            c->put_hevc_qpel[0][0][2] = ff_hevc_get_pixels_12_10_neon;
+            c->put_hevc_qpel[0][0][3] = ff_hevc_get_pixels_16_10_neon;
+            c->put_hevc_qpel[0][0][4] = ff_hevc_get_pixels_24_10_neon;
+            c->put_hevc_qpel[0][0][5] = ff_hevc_get_pixels_32_10_neon;
+            c->put_hevc_qpel[0][0][6] = ff_hevc_get_pixels_48_10_neon;
+            c->put_hevc_qpel[0][0][7] = ff_hevc_get_pixels_64_10_neon;
         }
     }
 }
