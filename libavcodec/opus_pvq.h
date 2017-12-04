@@ -37,10 +37,7 @@ struct CeltPVQ {
     DECLARE_ALIGNED(32, float, hadamard_tmp)[256];
 
     float (*pvq_search)(float *X, int *y, int K, int N);
-
     QUANT_FN(*quant_band);
-    float (*band_cost)(struct CeltPVQ *pvq, CeltFrame *f, OpusRangeCoder *rc,
-                       int band, float *bits, float lambda);
 };
 
 void ff_opus_dsp_init_x86(struct CeltPVQ *s);
