@@ -109,7 +109,10 @@ int ff_hls_write_file_entry(AVIOContext *out, int insert_discont,
         tt = (int64_t)*prog_date_time;
         milli = av_clip(lrint(1000*(*prog_date_time - tt)), 0, 999);
         tm = localtime_r(&tt, &tmpbuf);
-        strftime(buf0, sizeof(buf0), "%Y-%m-%dT%H:%M:%S", tm);
+        if (!strftime(buf0, sizeof(buf0), "%Y-%m-%dT%H:%M:%S", tm)) {
+            av_log(NULL, AV_LOG_DEBUG, "strftime error in ff_hls_write_file_entry\n");
+            return AVERROR_UNKNOWN;
+        }
         if (!strftime(buf1, sizeof(buf1), "%z", tm) || buf1[1]<'0' ||buf1[1]>'2') {
             int tz_min, dst = tm->tm_isdst;
             tm = gmtime_r(&tt, &tmpbuf);
