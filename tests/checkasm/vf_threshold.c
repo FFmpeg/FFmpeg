@@ -42,15 +42,15 @@ static void check_threshold_8(void){
     ptrdiff_t line_size = WIDTH_PADDED;
     int w = WIDTH;
 
-    ThresholdContext s;
-    s.depth = 8;
-    ff_threshold_init(&s);
-
     declare_func(void, const uint8_t *in, const uint8_t *threshold,
                  const uint8_t *min, const uint8_t *max, uint8_t *out,
                  ptrdiff_t ilinesize, ptrdiff_t tlinesize,
                  ptrdiff_t flinesize, ptrdiff_t slinesize,
                  ptrdiff_t olinesize, int w, int h);
+
+    ThresholdContext s;
+    s.depth = 8;
+    ff_threshold_init(&s);
 
     memset(in,     0, WIDTH_PADDED);
     memset(threshold, 0, WIDTH_PADDED);
