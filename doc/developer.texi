@@ -380,12 +380,28 @@ always check values read from some untrusted source before using them
 as array index or other risky things.
 
 @section Documentation/Other
+@subheading Subscribe to the ffmpeg-devel mailing list.
+It is important to be subscribed to the
+@uref{https://lists.ffmpeg.org/mailman/listinfo/ffmpeg-devel, ffmpeg-devel}
+mailing list. Almost any non-trivial patch is to be sent there for review.
+Other developers may have comments about your contribution. We expect you see
+those comments, and to improve it if requested. (N.B. Experienced committers
+have other channels, and may sometimes skip review for trivial fixes.) Also,
+discussion here about bug fixes and FFmpeg improvements by other developers may
+be helpful information for you. Finally, by being a list subscriber, your
+contribution will be posted immediately to the list, without the moderation
+hold which messages from non-subscribers experience.
+
+However, it is more important to the project that we receive your patch than
+that you be subscribed to the ffmpeg-devel list. If you have a patch, and don't
+want to subscribe and discuss the patch, then please do send it to the list
+anyway.
 
 @subheading Subscribe to the ffmpeg-cvslog mailing list.
-It is important to do this as the diffs of all commits are sent there and
-reviewed by all the other developers. Bugs and possible improvements or
-general questions regarding commits are discussed there. We expect you to
-react if problems with your code are uncovered.
+Diffs of all commits are sent to the
+@uref{https://lists.ffmpeg.org/mailman/listinfo/ffmpeg-cvslog, ffmpeg-cvslog}
+mailing list. Some developers read this list to review all code base changes
+from all sources. Subscribing to this list is not mandatory.
 
 @subheading Keep the documentation up to date.
 Update the documentation if you change behavior or add features. If you are
