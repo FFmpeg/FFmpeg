@@ -1,10 +1,6 @@
 # The samples were produced by simply rewrapping the official test vectors from
-# their custom format into Matroska.
-# The reference files were created with our decoder and tested against the
-# libopus output with the official opus_compare tool. We cannot use libopus
-# output as reference directly, because the use of different resamplers would
-# require too high fuzz values, which can hide bugs.
-# Before adding new tests here, always make sure they pass opus_compare.
+# their custom format into Matroska. The reference decoded outputs are from the
+# newest testvectors file from RFC8251
 
 OPUS_CELT_SAMPLES   = $(addprefix testvector, 01 07 11) tron.6ch.tinypkts
 OPUS_HYBRID_SAMPLES = $(addprefix testvector, 05 06)
@@ -28,11 +24,12 @@ FATE_OPUS := $(sort $(FATE_OPUS))
 $(FATE_OPUS): CMP = stddev
 $(FATE_OPUS): CMP_UNIT = s16
 $(FATE_OPUS): FUZZ = 3
+fate-opus-testvector01: CMP_TARGET = 1
 fate-opus-testvector02: CMP_TARGET = 191
 fate-opus-testvector03: CMP_TARGET = 139
 fate-opus-testvector04: CMP_TARGET = 119
-fate-opus-testvector05: CMP_TARGET = 108
-fate-opus-testvector06: CMP_TARGET = 106
+fate-opus-testvector05: CMP_TARGET = 109
+fate-opus-testvector06: CMP_TARGET = 109
 fate-opus-testvector08: CMP_TARGET = 6
 fate-opus-testvector10: CMP_TARGET = 38
 fate-opus-testvector12: CMP_TARGET = 160
