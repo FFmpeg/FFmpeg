@@ -997,7 +997,8 @@ void ff_celt_free(CeltFrame **f)
     av_freep(f);
 }
 
-int ff_celt_init(AVCodecContext *avctx, CeltFrame **f, int output_channels)
+int ff_celt_init(AVCodecContext *avctx, CeltFrame **f, int output_channels,
+                 int apply_phase_inv)
 {
     CeltFrame *frm;
     int i, ret;
@@ -1014,6 +1015,7 @@ int ff_celt_init(AVCodecContext *avctx, CeltFrame **f, int output_channels)
 
     frm->avctx           = avctx;
     frm->output_channels = output_channels;
+    frm->apply_phase_inv = apply_phase_inv;
 
     for (i = 0; i < FF_ARRAY_ELEMS(frm->imdct); i++)
         if ((ret = ff_mdct15_init(&frm->imdct[i], 1, i + 3, -1.0f/32768)) < 0)

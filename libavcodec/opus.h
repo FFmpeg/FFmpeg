@@ -150,7 +150,9 @@ typedef struct ChannelMap {
 } ChannelMap;
 
 typedef struct OpusContext {
+    AVClass *av_class;
     OpusStreamContext *streams;
+    int apply_phase_inv;
 
     /* current output buffers for each streams */
     float **out;

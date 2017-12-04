@@ -643,6 +643,7 @@ static av_always_inline uint32_t quant_band_template(CeltPVQ *pvq, CeltFrame *f,
                 }
             } else {
                 inv = (b > 2 << 3 && f->remaining2 > 2 << 3) ? ff_opus_rc_dec_log(rc, 2) : 0;
+                inv = f->apply_phase_inv ? inv : 0;
             }
             itheta = 0;
         }
