@@ -5559,7 +5559,8 @@ static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         if (ret < 0)
             return ret;
         if (!sc->spherical)
-            av_log(c->fc, AV_LOG_WARNING, "Invalid spherical metadata found\n");    }
+            av_log(c->fc, AV_LOG_WARNING, "Invalid spherical metadata found\n");
+    }
 
     return 0;
 }
