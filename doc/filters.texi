@@ -6025,7 +6025,7 @@ colorspace=smpte240m
 
 @section convolution
 
-Apply convolution 3x3 or 5x5 filter.
+Apply convolution 3x3, 5x5 or 7x7 filter.
 
 The filter accepts the following options:
 
@@ -6035,7 +6035,7 @@ The filter accepts the following options:
 @item 2m
 @item 3m
 Set matrix for each plane.
-Matrix is sequence of 9 or 25 signed integers.
+Matrix is sequence of 9, 25 or 49 signed integers.
 
 @item 0rdiv
 @item 1rdiv
