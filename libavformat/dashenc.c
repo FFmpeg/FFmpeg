@@ -384,7 +384,9 @@ static void output_segment_list(OutputStream *os, AVIOContext *out, DASHContext 
 
         avio_close(out_hls);
         if (use_rename)
-            avpriv_io_move(temp_filename_hls, filename_hls);
+            if (avpriv_io_move(temp_filename_hls, filename_hls) < 0) {
+                av_log(os->ctx, AV_LOG_WARNING, "renaming file %s to %s failed\n\n", temp_filename_hls, filename_hls);
+            }
     }
 
 }
