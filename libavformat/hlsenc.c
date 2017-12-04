@@ -1236,11 +1236,13 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
                                    hls->flags & HLS_SINGLE_FILE, en->size, en->pos);
         }
 
-        ff_hls_write_file_entry(out, en->discont, byterange_mode,
+        ret = ff_hls_write_file_entry(out, en->discont, byterange_mode,
                                 en->duration, hls->flags & HLS_ROUND_DURATIONS,
                                 en->size, en->pos, vs->baseurl,
                                 en->filename, prog_date_time_p);
-
+        if (ret < 0) {
+            av_log(s, AV_LOG_WARNING, "ff_hls_write_file_entry get error\n");
+        }
     }
 
     if (last && (hls->flags & HLS_OMIT_ENDLIST)==0)
@@ -1251,11 +1253,13 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
             goto fail;
         ff_hls_write_playlist_header(sub_out, hls->version, hls->allowcache,
                                      target_duration, sequence, PLAYLIST_TYPE_NONE);
-
         for (en = vs->segments; en; en = en->next) {
-            ff_hls_write_file_entry(sub_out, 0, byterange_mode,
+            ret = ff_hls_write_file_entry(sub_out, 0, byterange_mode,
                                     en->duration, 0, en->size, en->pos,
                                     vs->baseurl, en->sub_filename, NULL);
+            if (ret < 0) {
+                av_log(s, AV_LOG_WARNING, "ff_hls_write_file_entry get error\n");
+            }
         }
 
         if (last)

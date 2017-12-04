@@ -82,14 +82,14 @@ void ff_hls_write_init_file(AVIOContext *out, char *filename,
     avio_printf(out, "\n");
 }
 
-void ff_hls_write_file_entry(AVIOContext *out, int insert_discont,
+int ff_hls_write_file_entry(AVIOContext *out, int insert_discont,
                              int byterange_mode,
                              double duration, int round_duration,
                              int64_t size, int64_t pos, //Used only if HLS_SINGLE_FILE flag is set
                              char *baseurl, //Ignored if NULL
                              char *filename, double *prog_date_time) {
     if (!out || !filename)
-        return;
+        return AVERROR(EINVAL);
 
     if (insert_discont) {
         avio_printf(out, "#EXT-X-DISCONTINUITY\n");
@@ -128,6 +128,8 @@ void ff_hls_write_file_entry(AVIOContext *out, int insert_discont,
     if (baseurl)
         avio_printf(out, "%s", baseurl);
     avio_printf(out, "%s\n", filename);
+
+    return 0;
 }
 
 void ff_hls_write_end_list (AVIOContext *out) {

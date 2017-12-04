@@ -49,7 +49,7 @@ void ff_hls_write_playlist_header(AVIOContext *out, int version, int allowcache,
                                   uint32_t playlist_type);
 void ff_hls_write_init_file(AVIOContext *out, char *filename,
                             int byterange_mode, int64_t size, int64_t pos);
-void ff_hls_write_file_entry(AVIOContext *out, int insert_discont,
+int ff_hls_write_file_entry(AVIOContext *out, int insert_discont,
                              int byterange_mode,
                              double duration, int round_duration,
                              int64_t size, int64_t pos, //Used only if HLS_SINGLE_FILE flag is set

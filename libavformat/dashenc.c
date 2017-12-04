@@ -342,6 +342,7 @@ static void output_segment_list(OutputStream *os, AVIOContext *out, DASHContext 
         AVIOContext *out_hls = NULL;
         AVDictionary *http_opts = NULL;
         int target_duration = 0;
+        int ret = 0;
         const char *proto = avio_find_protocol_name(c->dirname);
         int use_rename = proto && !strcmp(proto, "file");
 
@@ -368,11 +369,14 @@ static void output_segment_list(OutputStream *os, AVIOContext *out, DASHContext 
 
         for (i = start_index; i < os->nb_segments; i++) {
             Segment *seg = os->segments[i];
-            ff_hls_write_file_entry(out_hls, 0, c->single_file,
+            ret = ff_hls_write_file_entry(out_hls, 0, c->single_file,
                                     (double) seg->duration / timescale, 0,
                                     seg->range_length, seg->start_pos, NULL,
                                     c->single_file ? os->initfile : seg->file,
                                     NULL);
+            if (ret < 0) {
+                av_log(os->ctx, AV_LOG_WARNING, "ff_hls_write_file_entry get error\n");
+            }
         }
 
         if (final)
