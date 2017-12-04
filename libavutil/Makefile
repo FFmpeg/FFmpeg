@@ -37,6 +37,7 @@ HEADERS = adler32.h                                                     \
           hwcontext_drm.h                                               \
           hwcontext_dxva2.h                                             \
           hwcontext_qsv.h                                               \
+          hwcontext_mediacodec.h                                        \
           hwcontext_vaapi.h                                             \
           hwcontext_videotoolbox.h                                      \
           hwcontext_vdpau.h                                             \
@@ -166,6 +167,7 @@ OBJS-$(CONFIG_OPENCL)                   += hwcontext_opencl.o
 OBJS-$(CONFIG_VAAPI)                    += hwcontext_vaapi.o
 OBJS-$(CONFIG_VIDEOTOOLBOX)             += hwcontext_videotoolbox.o
 OBJS-$(CONFIG_VDPAU)                    += hwcontext_vdpau.o
+OBJS-$(CONFIG_MEDIACODEC)               += hwcontext_mediacodec.o
 
 OBJS += $(COMPAT_OBJS:%=../compat/%)
 
