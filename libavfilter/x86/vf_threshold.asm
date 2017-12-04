@@ -52,7 +52,7 @@ cglobal threshold8, 10, 13, 5, in, threshold, min, max, out, ilinesize, tlinesiz
         pxor            m0, m4
         pxor            m1, m4
         pcmpgtb         m0, m1
-        pblendvb        m3, m2, m0
+        PBLENDVB        m3, m2, m0
         movu   [outq + xq], m3
         add             xq, mmsize
     jl .loop
