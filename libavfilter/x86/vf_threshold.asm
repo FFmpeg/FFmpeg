@@ -22,8 +22,6 @@
 
 %include "libavutil/x86/x86util.asm"
 
-%if ARCH_X86_64
-
 SECTION_RODATA
 
 pb_128: times 16 db 128
@@ -31,9 +29,20 @@ pb_128: times 16 db 128
 SECTION .text
 
 %macro THRESHOLD_8 0
+%if ARCH_X86_64
 cglobal threshold8, 10, 13, 5, in, threshold, min, max, out, ilinesize, tlinesize, flinesize, slinesize, olinesize, w, h, x
     mov             wd, dword wm
     mov             hd, dword hm
+%else
+cglobal threshold8, 5, 7, 5, in, threshold, min, max, out, w, x
+    mov             wd, r10m
+%define     ilinesizeq  r5mp
+%define     tlinesizeq  r6mp
+%define     flinesizeq  r7mp
+%define     slinesizeq  r8mp
+%define     olinesizeq  r9mp
+%define             hd  r11mp
+%endif
     VBROADCASTI128  m4, [pb_128]
     add            inq, wq
     add     thresholdq, wq
@@ -73,6 +82,4 @@ THRESHOLD_8
 %if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
 THRESHOLD_8
-%endif
-
 %endif
