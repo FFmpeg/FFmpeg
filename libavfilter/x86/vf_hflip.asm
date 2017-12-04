@@ -30,7 +30,7 @@ pb_flip_short: db 14,15,12,13,10,11,8,9,6,7,4,5,2,3,0,1
 SECTION .text
 
 INIT_XMM ssse3
-cglobal hflip_byte, 3, 6, 3, src, dst, w, x, v, r
+cglobal hflip_byte, 3, 5, 3, src, dst, w, r, x
     mova    m0, [pb_flip_byte]
     mov     xq, 0
     mov     wd, dword wm
@@ -59,16 +59,16 @@ cglobal hflip_byte, 3, 6, 3, src, dst, w, x, v, r
 
     .loop1:
         neg    xq
-        mov    vb, [srcq + xq]
+        mov    rb, [srcq + xq]
         neg    xq
-        mov    [dstq + xq], vb
+        mov    [dstq + xq], rb
         add    xq, 1
         cmp    xq, wq
         jl .loop1
     .end:
 RET
 
-cglobal hflip_short, 3, 6, 3, src, dst, w, x, v, r
+cglobal hflip_short, 3, 5, 3, src, dst, w, r, x
     mova    m0, [pb_flip_short]
     mov     xq, 0
     mov     wd, dword wm
@@ -98,9 +98,9 @@ cglobal hflip_short, 3, 6, 3, src, dst, w, x, v, r
 
     .loop1:
         neg    xq
-        mov    vw, [srcq + xq]
+        mov    rw, [srcq + xq]
         neg    xq
-        mov    [dstq + xq], vw
+        mov    [dstq + xq], rw
         add    xq, 2
         cmp    xq, wq
         jl .loop1
