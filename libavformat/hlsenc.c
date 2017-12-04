@@ -45,7 +45,9 @@
 
 #include "avformat.h"
 #include "avio_internal.h"
+#if CONFIG_HTTP_PROTOCOL
 #include "http.h"
+#endif
 #include "hlsplaylist.h"
 #include "internal.h"
 #include "os_support.h"
@@ -245,13 +247,15 @@ static int hlsenc_io_open(AVFormatContext *s, AVIOContext **pb, char *filename,
                           AVDictionary **options) {
     HLSContext *hls = s->priv_data;
     int http_base_proto = is_http_proto(filename);
-    int err;
+    int err = AVERROR_MUXER_NOT_FOUND;
     if (!*pb || !http_base_proto || !hls->http_persistent) {
         err = s->io_open(s, pb, filename, AVIO_FLAG_WRITE, options);
+#if CONFIG_HTTP_PROTOCOL
     } else {
         URLContext *http_url_context = ffio_geturlcontext(*pb);
         av_assert0(http_url_context);
         err = ff_http_do_new_request(http_url_context, filename);
+#endif
     }
     return err;
 }
