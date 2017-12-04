@@ -316,7 +316,7 @@ static int bands_dist(OpusPsyContext *s, CeltFrame *f, float *total_dist)
     OpusRangeCoder dump;
 
     ff_opus_rc_enc_init(&dump);
-    ff_celt_enc_bitalloc(&dump, f);
+    ff_celt_enc_bitalloc(f, &dump);
 
     for (i = 0; i < CELT_MAX_BANDS; i++) {
         float bits = 0.0f;

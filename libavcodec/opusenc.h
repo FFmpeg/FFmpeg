@@ -51,6 +51,6 @@ typedef struct OpusPacketInfo {
     int frames;
 } OpusPacketInfo;
 
-void ff_celt_enc_bitalloc(OpusRangeCoder *rc, CeltFrame *f);
+void ff_celt_enc_bitalloc(CeltFrame *f, OpusRangeCoder *rc);
 
 #endif /* AVCODEC_OPUSENC_H */

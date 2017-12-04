@@ -191,4 +191,7 @@ int ff_silk_decode_superframe(SilkContext *s, OpusRangeCoder *rc,
                               enum OpusBandwidth bandwidth, int coded_channels,
                               int duration_ms);
 
+/* Encode or decode CELT bands */
+void ff_celt_quant_bands(CeltFrame *f, OpusRangeCoder *rc);
+
 #endif /* AVCODEC_OPUS_H */
