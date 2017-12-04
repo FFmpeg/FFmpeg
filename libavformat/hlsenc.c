@@ -1921,14 +1921,11 @@ static int hls_write_header(AVFormatContext *s)
     }
 
     if (hls->baseurl) {
-        int baseurl_len;
-        baseurl_len = strlen(hls->baseurl);
-        vs->baseurl = av_malloc(baseurl_len);
+        vs->baseurl = av_strdup(hls->baseurl);
         if (!vs->baseurl) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
-        av_strlcpy(vs->baseurl, hls->baseurl, baseurl_len);
     }
 
     if ((hls->flags & HLS_SINGLE_FILE) && (hls->segment_type == SEGMENT_TYPE_FMP4)) {
