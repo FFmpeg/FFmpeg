@@ -2,10 +2,10 @@
 # their custom format into Matroska. The reference decoded outputs are from the
 # newest testvectors file from RFC8251
 
-OPUS_CELT_SAMPLES   = $(addprefix testvector, 11) tron.6ch.tinypkts
+OPUS_CELT_SAMPLES   = $(addprefix testvector, 01 11) tron.6ch.tinypkts
 OPUS_HYBRID_SAMPLES = $(addprefix testvector, 05 06)
 OPUS_SILK_SAMPLES   = $(addprefix testvector, 02 03 04)
-OPUS_SAMPLES        = $(addprefix testvector, 08 10 12)
+OPUS_SAMPLES        = $(addprefix testvector, 07 08 09 10 12)
 
 define FATE_OPUS_TEST
 FATE_OPUS     += fate-opus-$(1)
@@ -24,13 +24,17 @@ FATE_OPUS := $(sort $(FATE_OPUS))
 $(FATE_OPUS): CMP = stddev
 $(FATE_OPUS): CMP_UNIT = s16
 $(FATE_OPUS): FUZZ = 3
+fate-opus-testvector01: CMP_TARGET = 0
 fate-opus-testvector02: CMP_TARGET = 191
 fate-opus-testvector03: CMP_TARGET = 139
 fate-opus-testvector04: CMP_TARGET = 119
 fate-opus-testvector05: CMP_TARGET = 109
 fate-opus-testvector06: CMP_TARGET = 109
+fate-opus-testvector07: CMP_TARGET = 0
 fate-opus-testvector08: CMP_TARGET = 6
+fate-opus-testvector09: CMP_TARGET = 0
 fate-opus-testvector10: CMP_TARGET = 38
+fate-opus-testvector11: CMP_TARGET = 0
 fate-opus-testvector12: CMP_TARGET = 160
 
 $(FATE_OPUS_CELT): CMP = oneoff
