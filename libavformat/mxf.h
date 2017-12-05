@@ -45,7 +45,6 @@ enum MXFMetadataSetType {
     SubDescriptor,
     IndexTableSegment,
     EssenceContainerData,
-    TypeBottom,// add metadata type before this
     EssenceGroup,
     TaggedValue,
 };

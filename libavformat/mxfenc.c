@@ -386,6 +386,7 @@ typedef struct MXFContext {
     uint32_t tagged_value_count;
     AVRational audio_edit_rate;
     int store_user_comments;
+    int track_instance_count; // used to generate MXFTrack uuids
 } MXFContext;
 
 static const uint8_t uuid_base[]            = { 0xAD,0xAB,0x44,0x24,0x2f,0x25,0x4d,0xc7,0x92,0xff,0x29,0xbd };
@@ -853,7 +854,7 @@ static void mxf_write_track(AVFormatContext *s, AVStream *st, MXFPackage *packag
 
     // write track uid
     mxf_write_local_tag(pb, 16, 0x3C0A);
-    mxf_write_uuid(pb, package->type == MaterialPackage ? Track : Track + TypeBottom, st->index);
+    mxf_write_uuid(pb, Track, mxf->track_instance_count);
     PRINT_KEY(s, "track uid", pb->buf_ptr - 16);
 
     // write track id
@@ -884,7 +885,7 @@ static void mxf_write_track(AVFormatContext *s, AVStream *st, MXFPackage *packag
 
     // write sequence refs
     mxf_write_local_tag(pb, 16, 0x4803);
-    mxf_write_uuid(pb, package->type == MaterialPackage ? Sequence: Sequence + TypeBottom, st->index);
+    mxf_write_uuid(pb, Sequence, mxf->track_instance_count);
 }
 
 static const uint8_t smpte_12m_timecode_track_data_ul[] = { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x01,0x03,0x02,0x01,0x01,0x00,0x00,0x00 };
@@ -924,7 +925,7 @@ static void mxf_write_sequence(AVFormatContext *s, AVStream *st, MXFPackage *pac
     klv_encode_ber_length(pb, 80);
 
     mxf_write_local_tag(pb, 16, 0x3C0A);
-    mxf_write_uuid(pb, package->type == MaterialPackage ? Sequence: Sequence + TypeBottom, st->index);
+    mxf_write_uuid(pb, Sequence, mxf->track_instance_count);
 
     PRINT_KEY(s, "sequence uid", pb->buf_ptr - 16);
     mxf_write_common_fields(s, st);
@@ -936,9 +937,8 @@ static void mxf_write_sequence(AVFormatContext *s, AVStream *st, MXFPackage *pac
         component = TimecodeComponent;
     else
         component = SourceClip;
-    if (package->type == SourcePackage)
-        component += TypeBottom;
-    mxf_write_uuid(pb, component, st->index);
+
+    mxf_write_uuid(pb, component, mxf->track_instance_count);
 }
 
 static void mxf_write_timecode_component(AVFormatContext *s, AVStream *st, MXFPackage *package)
@@ -951,8 +951,7 @@ static void mxf_write_timecode_component(AVFormatContext *s, AVStream *st, MXFPa
 
     // UID
     mxf_write_local_tag(pb, 16, 0x3C0A);
-    mxf_write_uuid(pb, package->type == MaterialPackage ? TimecodeComponent :
-                   TimecodeComponent + TypeBottom, st->index);
+    mxf_write_uuid(pb, TimecodeComponent, mxf->track_instance_count);
 
     mxf_write_common_fields(s, st);
 
@@ -971,6 +970,7 @@ static void mxf_write_timecode_component(AVFormatContext *s, AVStream *st, MXFPa
 
 static void mxf_write_structural_component(AVFormatContext *s, AVStream *st, MXFPackage *package)
 {
+    MXFContext *mxf = s->priv_data;
     AVIOContext *pb = s->pb;
     int i;
 
@@ -980,7 +980,7 @@ static void mxf_write_structural_component(AVFormatContext *s, AVStream *st, MXF
 
     // write uid
     mxf_write_local_tag(pb, 16, 0x3C0A);
-    mxf_write_uuid(pb, package->type == MaterialPackage ? SourceClip: SourceClip + TypeBottom, st->index);
+    mxf_write_uuid(pb, SourceClip, mxf->track_instance_count);
 
     PRINT_KEY(s, "structural component uid", pb->buf_ptr - 16);
     mxf_write_common_fields(s, st);
@@ -1357,7 +1357,7 @@ static void mxf_write_package(AVFormatContext *s, MXFPackage *package)
 
     // write package umid
     mxf_write_local_tag(pb, 32, 0x4401);
-    mxf_write_umid(s, package->type == SourcePackage);
+    mxf_write_umid(s, package->instance);
     PRINT_KEY(s, "package umid second part", pb->buf_ptr - 16);
 
     // package name
@@ -1375,10 +1375,9 @@ static void mxf_write_package(AVFormatContext *s, MXFPackage *package)
     // write track refs
     mxf_write_local_tag(pb, track_count*16 + 8, 0x4403);
     mxf_write_refs_count(pb, track_count);
-    mxf_write_uuid(pb, package->type == MaterialPackage ? Track :
-                   Track + TypeBottom, -1); // timecode track
-    for (i = 0; i < s->nb_streams; i++)
-        mxf_write_uuid(pb, package->type == MaterialPackage ? Track : Track + TypeBottom, i);
+    // these are the uuids of the tracks the will be written in mxf_write_track
+    for (i = 0; i < track_count; i++)
+        mxf_write_uuid(pb, Track,  mxf->track_instance_count + i);
 
     // write user comment refs
     if (mxf->store_user_comments) {
@@ -1398,16 +1397,26 @@ static void mxf_write_package(AVFormatContext *s, MXFPackage *package)
             mxf_write_uuid(pb, SubDescriptor, 0);
     }
 
+    /*
+     * for every 1 track in a package there is 1 sequence and 1 component.
+     * all 3 of these elements share the same instance number for generating
+     * there instance uuids. mxf->track_instance_count stores this value.
+     * mxf->track_instance_count is incremented after a group of all 3 of
+     * these elements are written.
+     */
+
     // write timecode track
     mxf_write_track(s, mxf->timecode_track, package);
     mxf_write_sequence(s, mxf->timecode_track, package);
     mxf_write_timecode_component(s, mxf->timecode_track, package);
+    mxf->track_instance_count++;
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
         mxf_write_track(s, st, package);
         mxf_write_sequence(s, st, package);
         mxf_write_structural_component(s, st, package);
+        mxf->track_instance_count++;
 
         if (package->type == SourcePackage) {
             MXFStreamContext *sc = st->priv_data;
@@ -1440,14 +1449,16 @@ static int mxf_write_essence_container_data(AVFormatContext *s)
 
 static int mxf_write_header_metadata_sets(AVFormatContext *s)
 {
+    MXFContext *mxf = s->priv_data;
     AVDictionaryEntry *entry = NULL;
     AVStream *st = NULL;
     int i;
 
-    MXFPackage packages[2] = {};
+    MXFPackage packages[2] = {{0}};
     int package_count = 2;
     packages[0].type = MaterialPackage;
     packages[1].type = SourcePackage;
+    packages[1].instance = 1;
 
     if (entry = av_dict_get(s->metadata, "material_package_name", NULL, 0))
        packages[0].name = entry->value;
@@ -1468,6 +1479,7 @@ static int mxf_write_header_metadata_sets(AVFormatContext *s)
     mxf_write_preface(s);
     mxf_write_identification(s);
     mxf_write_content_storage(s, packages, package_count);
+    mxf->track_instance_count = 0;
     for (i = 0; i < package_count; i++)
         mxf_write_package(s, &packages[i]);
     mxf_write_essence_container_data(s);
