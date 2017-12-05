@@ -105,6 +105,7 @@ typedef struct MXFPackage {
     char *name;
     enum MXFMetadataSetType type;
     int instance;
+    struct MXFPackage *ref;
 } MXFPackage;
 
 enum ULIndex {
@@ -991,19 +992,32 @@ static void mxf_write_structural_component(AVFormatContext *s, AVStream *st, MXF
 
     // write source package uid, end of the reference
     mxf_write_local_tag(pb, 32, 0x1101);
-    if (package->type == SourcePackage) {
+    if (!package->ref) {
         for (i = 0; i < 4; i++)
             avio_wb64(pb, 0);
     } else
-        mxf_write_umid(s, 1);
+        mxf_write_umid(s, package->ref->instance);
 
     // write source track id
     mxf_write_local_tag(pb, 4, 0x1102);
-    if (package->type == SourcePackage)
+    if (package->type == SourcePackage && !package->ref)
         avio_wb32(pb, 0);
     else
         avio_wb32(pb, st->index+2);
 }
+
+static void mxf_write_tape_descriptor(AVFormatContext *s)
+{
+    AVIOContext *pb = s->pb;
+
+    mxf_write_metadata_key(pb, 0x012e00);
+    PRINT_KEY(s, "tape descriptor key", pb->buf_ptr - 16);
+    klv_encode_ber_length(pb, 20);
+    mxf_write_local_tag(pb, 16, 0x3C0A);
+    mxf_write_uuid(pb, TapeDescriptor, 0);
+    PRINT_KEY(s, "tape_desc uid", pb->buf_ptr - 16);
+}
+
 
 static void mxf_write_multi_descriptor(AVFormatContext *s)
 {
@@ -1388,13 +1402,17 @@ static void mxf_write_package(AVFormatContext *s, MXFPackage *package)
     }
 
     // write multiple descriptor reference
-    if (package->type == SourcePackage) {
+    if (package->type == SourcePackage && package->instance == 1) {
         mxf_write_local_tag(pb, 16, 0x4701);
         if (s->nb_streams > 1) {
             mxf_write_uuid(pb, MultipleDescriptor, 0);
             mxf_write_multi_descriptor(s);
         } else
             mxf_write_uuid(pb, SubDescriptor, 0);
+    } else if (package->type == SourcePackage && package->instance == 2) {
+        mxf_write_local_tag(pb, 16, 0x4701);
+        mxf_write_uuid(pb, TapeDescriptor, 0);
+        mxf_write_tape_descriptor(s);
     }
 
     /*
@@ -1418,7 +1436,7 @@ static void mxf_write_package(AVFormatContext *s, MXFPackage *package)
         mxf_write_structural_component(s, st, package);
         mxf->track_instance_count++;
 
-        if (package->type == SourcePackage) {
+        if (package->type == SourcePackage && package->instance == 1) {
             MXFStreamContext *sc = st->priv_data;
             mxf_essence_container_uls[sc->index].write_desc(s, st);
         }
@@ -1453,12 +1471,13 @@ static int mxf_write_header_metadata_sets(AVFormatContext *s)
     AVDictionaryEntry *entry = NULL;
     AVStream *st = NULL;
     int i;
-
-    MXFPackage packages[2] = {{0}};
+    MXFPackage packages[3] = {{0}};
     int package_count = 2;
     packages[0].type = MaterialPackage;
     packages[1].type = SourcePackage;
     packages[1].instance = 1;
+    packages[0].ref = &packages[1];
+
 
     if (entry = av_dict_get(s->metadata, "material_package_name", NULL, 0))
        packages[0].name = entry->value;
@@ -1474,6 +1493,15 @@ static int mxf_write_header_metadata_sets(AVFormatContext *s)
                 break;
             }
         }
+    }
+
+    entry = av_dict_get(s->metadata, "reel_name", NULL, 0);
+    if (entry) {
+        packages[2].name = entry->value;
+        packages[2].type = SourcePackage;
+        packages[2].instance = 2;
+        packages[1].ref = &packages[2];
+        package_count = 3;
     }
 
     mxf_write_preface(s);
