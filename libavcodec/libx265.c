@@ -342,6 +342,13 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
+#if X265_BUILD >= 130
+    if (x265pic_out.sliceType == X265_TYPE_B)
+#else
+    if (x265pic_out.frameData.sliceType == 'b')
+#endif
+        pkt->flags |= AV_PKT_FLAG_DISPOSABLE;
+
     *got_packet = 1;
     return 0;
 }
