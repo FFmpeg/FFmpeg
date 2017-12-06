@@ -52,7 +52,7 @@ fate-mov-elst-ends-betn-b-and-i: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/elst_en
 fate-mov-440hz-10ms: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/440hz-10ms.m4a
 
 # Makes sure that we handle invalid edit list entry count correctly.
-fate-mov-invalid-elst-entry-count: CMD = framemd5 -flags +bitexact -i $(TARGET_SAMPLES)/mov/invalid_elst_entry_count.mov
+fate-mov-invalid-elst-entry-count: CMD = framemd5 -idct simple -flags +bitexact -i $(TARGET_SAMPLES)/mov/invalid_elst_entry_count.mov
 
 # Makes sure that 1st key-frame is picked when,
 #    i) One B-frame between 2 key-frames
