@@ -59,7 +59,7 @@ static int vp9_superframe_split_filter(AVBSFContext *ctx, AVPacket *out)
 
             if (in->size >= idx_size && in->data[in->size - idx_size] == marker) {
                 GetByteContext bc;
-                int total_size = 0;
+                int64_t total_size = 0;
 
                 bytestream2_init(&bc, in->data + in->size + 1 - idx_size,
                                  nb_frames * length_size);
@@ -70,7 +70,7 @@ static int vp9_superframe_split_filter(AVBSFContext *ctx, AVPacket *out)
                         frame_size |= bytestream2_get_byte(&bc) << (j * 8);
 
                     total_size += frame_size;
-                    if (total_size > in->size - idx_size) {
+                    if (frame_size < 0 || total_size > in->size - idx_size) {
                         av_log(ctx, AV_LOG_ERROR,
                                "Invalid frame size in a superframe: %d\n", frame_size);
                         ret = AVERROR(EINVAL);
