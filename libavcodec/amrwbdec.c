@@ -611,7 +611,7 @@ static float voice_factor(float *p_vector, float p_gain,
                                                           AMRWB_SFR_SIZE) *
                     f_gain * f_gain;
 
-    return (p_ener - f_ener) / (p_ener + f_ener);
+    return (p_ener - f_ener) / (p_ener + f_ener + 0.01);
 }
 
 /**
