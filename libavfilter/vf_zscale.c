@@ -615,7 +615,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
             s->alpha_dst_format.width = out->width;
             s->alpha_dst_format.height = out->height;
             s->alpha_dst_format.depth = odesc->comp[0].depth;
-            s->alpha_dst_format.pixel_type = (desc->flags & AV_PIX_FMT_FLAG_FLOAT) ? ZIMG_PIXEL_FLOAT : odesc->comp[0].depth > 8 ? ZIMG_PIXEL_WORD : ZIMG_PIXEL_BYTE;
+            s->alpha_dst_format.pixel_type = (odesc->flags & AV_PIX_FMT_FLAG_FLOAT) ? ZIMG_PIXEL_FLOAT : odesc->comp[0].depth > 8 ? ZIMG_PIXEL_WORD : ZIMG_PIXEL_BYTE;
             s->alpha_dst_format.color_family = ZIMG_COLOR_GREY;
 
             zimg_filter_graph_free(s->alpha_graph);
