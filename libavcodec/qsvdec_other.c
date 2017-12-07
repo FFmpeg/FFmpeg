@@ -60,6 +60,11 @@ static av_cold int qsv_decode_close(AVCodecContext *avctx)
 {
     QSVOtherContext *s = avctx->priv_data;
 
+#if CONFIG_VP8_QSV_DECODER
+    if (avctx->codec_id == AV_CODEC_ID_VP8)
+        av_freep(&s->qsv.load_plugins);
+#endif
+
     ff_qsv_decode_close(&s->qsv);
 
     qsv_clear_buffers(s);
