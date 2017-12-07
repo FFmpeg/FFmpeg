@@ -114,6 +114,12 @@ typedef struct MOVEncryptionIndex {
     // settings will be used.
     unsigned int nb_encrypted_samples;
     AVEncryptionInfo **encrypted_samples;
+
+    uint8_t* auxiliary_info_sizes;
+    size_t auxiliary_info_sample_count;
+    uint8_t auxiliary_info_default_size;
+    size_t* auxiliary_offsets;  ///< Absolute seek position
+    size_t auxiliary_offsets_count;
 } MOVEncryptionIndex;
 
 typedef struct MOVFragmentStreamInfo {
