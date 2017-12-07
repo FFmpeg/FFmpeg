@@ -32,7 +32,7 @@ SECTION .text
 INIT_XMM ssse3
 cglobal hflip_byte, 3, 5, 3, src, dst, w, r, x
     mova    m0, [pb_flip_byte]
-    mov     xq, 0
+    xor     xq, xq
     movsxdifnidn wq, wd
     mov     rq, wq
     and     rq, 2 * mmsize - 1
@@ -70,7 +70,7 @@ RET
 
 cglobal hflip_short, 3, 5, 3, src, dst, w, r, x
     mova    m0, [pb_flip_short]
-    mov     xq, 0
+    xor     xq, xq
     add     wd, wd
     mov     rq, wq
     and     rq, 2 * mmsize - 1
