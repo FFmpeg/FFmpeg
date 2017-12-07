@@ -6,6 +6,8 @@ FATE_MOV = fate-mov-3elist \
            fate-mov-1elist-ends-last-bframe \
            fate-mov-2elist-elist1-ends-bframe \
            fate-mov-3elist-encrypted \
+           fate-mov-frag-encrypted \
+           fate-mov-tenc-only-encrypted \
            fate-mov-invalid-elst-entry-count \
            fate-mov-gpmf-remux \
            fate-mov-440hz-10ms \
@@ -38,6 +40,12 @@ fate-mov-3elist-1ctts: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/mov-3elist-1ctts.
 
 # Edit list with encryption
 fate-mov-3elist-encrypted: CMD = framemd5 -decryption_key 12345678901234567890123456789012 -i $(TARGET_SAMPLES)/mov/mov-3elist-encrypted.mov
+
+# Fragmented encryption with senc boxes in movie fragments.
+fate-mov-frag-encrypted: CMD = framemd5 -decryption_key 12345678901234567890123456789012 -i $(TARGET_SAMPLES)/mov/mov-frag-encrypted.mp4
+
+# Full-sample encryption and constant IV using only tenc atom (no senc/saio/saiz).
+fate-mov-tenc-only-encrypted: CMD = framemd5 -decryption_key 12345678901234567890123456789012 -i $(TARGET_SAMPLES)/mov/mov-tenc-only-encrypted.mp4
 
 # Makes sure that the CTTS is also modified when we fix avindex in mov.c while parsing edit lists.
 fate-mov-elist-starts-ctts-2ndsample: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/mov-elist-starts-ctts-2ndsample.mov

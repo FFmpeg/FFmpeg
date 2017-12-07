@@ -41,7 +41,7 @@ typedef struct AVSubsampleEncryptionInfo {
  * The size of this struct is not part of the public ABI.
  */
 typedef struct AVEncryptionInfo {
-    /** The fourcc encryption scheme. */
+    /** The fourcc encryption scheme, in big-endian byte order. */
     uint32_t scheme;
 
     /**
