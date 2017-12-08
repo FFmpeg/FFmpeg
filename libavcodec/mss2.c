@@ -464,9 +464,9 @@ static int decode_wmv9(AVCodecContext *avctx, const uint8_t *buf, int buf_size,
     return 0;
 }
 
-typedef struct Rectangle {
+struct Rectangle {
     int coded, x, y, w, h;
-} Rectangle;
+};
 
 #define MAX_WMV9_RECTANGLES 20
 #define ARITH2_PADDING 2
@@ -485,7 +485,7 @@ static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     int keyframe, has_wmv9, has_mv, is_rle, is_555, ret;
 
-    Rectangle wmv9rects[MAX_WMV9_RECTANGLES], *r;
+    struct Rectangle wmv9rects[MAX_WMV9_RECTANGLES], *r;
     int used_rects = 0, i, implicit_rect = 0, av_uninit(wmv9_mask);
 
     if ((ret = init_get_bits8(&gb, buf, buf_size)) < 0)
