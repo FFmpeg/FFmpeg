@@ -1991,8 +1991,10 @@ static int mov_read_stco(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     sc->chunk_count = i;
 
-    if (pb->eof_reached)
+    if (pb->eof_reached) {
+        av_log(c->fc, AV_LOG_WARNING, "reached eof, corrupted STCO atom\n");
         return AVERROR_EOF;
+    }
 
     return 0;
 }
@@ -2522,8 +2524,10 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
         sc->stsd_count++;
     }
 
-    if (pb->eof_reached)
+    if (pb->eof_reached) {
+        av_log(c->fc, AV_LOG_WARNING, "reached eof, corrupted STSD atom\n");
         return AVERROR_EOF;
+    }
 
     return 0;
 }
@@ -2624,8 +2628,10 @@ static int mov_read_stsc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     sc->stsc_count = i;
 
-    if (pb->eof_reached)
+    if (pb->eof_reached) {
+        av_log(c->fc, AV_LOG_WARNING, "reached eof, corrupted STSC atom\n");
         return AVERROR_EOF;
+    }
 
     return 0;
 }
@@ -2676,8 +2682,10 @@ static int mov_read_stps(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     sc->stps_count = i;
 
-    if (pb->eof_reached)
+    if (pb->eof_reached) {
+        av_log(c->fc, AV_LOG_WARNING, "reached eof, corrupted STPS atom\n");
         return AVERROR_EOF;
+    }
 
     return 0;
 }
@@ -2723,8 +2731,10 @@ static int mov_read_stss(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     sc->keyframe_count = i;
 
-    if (pb->eof_reached)
+    if (pb->eof_reached) {
+        av_log(c->fc, AV_LOG_WARNING, "reached eof, corrupted STSS atom\n");
         return AVERROR_EOF;
+    }
 
     return 0;
 }
@@ -2808,8 +2818,10 @@ static int mov_read_stsz(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     av_free(buf);
 
-    if (pb->eof_reached)
+    if (pb->eof_reached) {
+        av_log(c->fc, AV_LOG_WARNING, "reached eof, corrupted STSZ atom\n");
         return AVERROR_EOF;
+    }
 
     return 0;
 }
@@ -2870,8 +2882,10 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     sc->duration_for_fps  += duration;
     sc->nb_frames_for_fps += total_sample_count;
 
-    if (pb->eof_reached)
+    if (pb->eof_reached) {
+        av_log(c->fc, AV_LOG_WARNING, "reached eof, corrupted STTS atom\n");
         return AVERROR_EOF;
+    }
 
     st->nb_frames= total_sample_count;
     if (duration)
@@ -2947,8 +2961,10 @@ static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     sc->ctts_count = ctts_count;
 
-    if (pb->eof_reached)
+    if (pb->eof_reached) {
+        av_log(c->fc, AV_LOG_WARNING, "reached eof, corrupted CTTS atom\n");
         return AVERROR_EOF;
+    }
 
     av_log(c->fc, AV_LOG_TRACE, "dts shift %d\n", sc->dts_shift);
 
@@ -2994,7 +3010,12 @@ static int mov_read_sbgp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     sc->rap_group_count = i;
 
-    return pb->eof_reached ? AVERROR_EOF : 0;
+    if (pb->eof_reached) {
+        av_log(c->fc, AV_LOG_WARNING, "reached eof, corrupted SBGP atom\n");
+        return AVERROR_EOF;
+    }
+
+    return 0;
 }
 
 /**
@@ -4743,8 +4764,10 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     fix_frag_index_entries(&c->frag_index, next_frag_index,
                            frag->track_id, entries);
 
-    if (pb->eof_reached)
+    if (pb->eof_reached) {
+        av_log(c->fc, AV_LOG_WARNING, "reached eof, corrupted TRUN atom\n");
         return AVERROR_EOF;
+    }
 
     frag->implicit_offset = offset;
 
