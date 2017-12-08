@@ -481,13 +481,12 @@ void ff_celt_quant_bands(CeltFrame *f, OpusRangeCoder *rc)
         if (i == f->start_band + 1) {
             /* Special Hybrid Folding (RFC 8251 section 9). Copy the first band into
             the second to ensure the second band never has to use the LCG. */
-            int offset = 8 * ff_celt_freq_bands[i];
-            int count = 8 * (ff_celt_freq_range[i] - ff_celt_freq_range[i-1]);
+            int count = (ff_celt_freq_range[i] - ff_celt_freq_range[i-1]) << f->size;
 
-            memcpy(&norm1[offset], &norm1[offset - count], count * sizeof(float));
+            memcpy(&norm1[band_offset], &norm1[band_offset - count], count * sizeof(float));
 
             if (f->channels == 2)
-                memcpy(&norm2[offset], &norm2[offset - count], count * sizeof(float));
+                memcpy(&norm2[band_offset], &norm2[band_offset - count], count * sizeof(float));
         }
 
         /* Get a conservative estimate of the collapse_mask's for the bands we're
