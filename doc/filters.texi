@@ -13086,13 +13086,13 @@ a specific value used for the output and encoder. If not specified, the
 range depends on the pixel format. Possible values:
 
 @table @samp
-@item auto
+@item auto/unknown
 Choose automatically.
 
 @item jpeg/full/pc
 Set full range (0-255 in case of 8-bit luma).
 
-@item mpeg/tv
+@item mpeg/limited/tv
 Set "MPEG" range (16-235 in case of 8-bit luma).
 @end table
 
