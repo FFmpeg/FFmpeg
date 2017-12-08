@@ -295,6 +295,7 @@ static int query_formats(AVFilterContext *ctx)
     case FLAT:    in_pix_fmts = in_flat_pix_fmts;    break;
     case ACOLOR:
     case COLOR:   in_pix_fmts = in_color_pix_fmts;   break;
+    default: return AVERROR_BUG;
     }
 
     if (!ctx->inputs[0]->out_formats) {
