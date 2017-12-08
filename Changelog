@@ -1,6 +1,79 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 3.4.1:
+- avcodec/diracdsp: Fix integer overflow in PUT_SIGNED_RECT_CLAMPED()
+- avcodec/dirac_dwt: Fix integer overflows in COMPOSE_DAUB97*
+- avcodec/extract_extradata_bsf: Fix leak discovered via fuzzing
+- avcodec/vorbis: Fix another 1 << 31 > int32_t::max() with 1u.
+- avcodec/vorbis: 1 << 31 > int32_t::max(), so use 1u << 31 instead.
+- avformat/utils: Prevent undefined shift with wrap_bits > 64.
+- avcodec/j2kenc: Fix out of array access in encode_cblk()
+- avcodec/hevcdsp_template: Fix undefined shift in put_hevc_epel_bi_w_h()
+- lavf/mov: fix huge alloc in mov_read_ctts
+- avcodec/mlpdsp: Fix signed integer overflow, 2nd try
+- avcodec/h264idct_template: Fix integer overflow in ff_h264_idct8_add
+- avcodec/kgv1dec: Check that there is enough input for maximum RLE compression
+- avformat/aacdec: Fix leak in adts_aac_read_packet()
+- avcodec/dirac_dwt: Fix integer overflow in COMPOSE_FIDELITYi*
+- avcodec/sbrdsp_fixed: Fix integer overflow
+- avcodec/mpeg4videodec: Check also for negative versions in the validity check
+- Close ogg stream upon error when using AV_EF_EXPLODE.
+- Fix undefined shift on assumed 8-bit input.
+- Use ff_thread_once for fixed, float table init.
+- Fix leak of frame_duration_buffer in mov_fix_index().
+- avformat/mov: Propagate errors in mov_switch_root.
+- avcodec/hevcdsp_template: Fix invalid shift in put_hevc_epel_bi_w_v()
+- avcodec/mlpdsp: Fix undefined shift ff_mlp_pack_output()
+- avcodec/zmbv: Check that the buffer is large enough for mvec
+- avcodec/dirac_dwt: Fix integer overflow in COMPOSE_DD137iL0()
+- avcodec/wmv2dec: Check end of bitstream in parse_mb_skip() and ff_wmv2_decode_mb()
+- avcodec/snowdec: Check for remaining bitstream in decode_blocks()
+- avcodec/snowdec: Check intra block dc differences.
+- avformat/mov: Check size of STSC allocation
+- avcodec/vc2enc: Clear coef_buf on allocation
+- avcodec/h264dec: Fix potential array overread
+- avcodec/x86/mpegvideodsp: Fix signedness bug in need_emu
+- avcodec/aacpsdsp_template: Fix integer overflows in ps_decorrelate_c()
+- avcodec/aacdec_fixed: Fix undefined shift
+- avcodec/mdct_*: Fix integer overflow in addition in RESCALE()
+- avcodec/snowdec: Fix integer overflow in header parsing
+- avcodec/cngdec: Fix integer clipping
+- avcodec/sbrdsp_fixed: Fix integer overflow in shift in sbr_hf_g_filt_c()
+- avcodec/aacsbr_fixed: Fix division by zero in sbr_gain_calc()
+- avutil/softfloat: Add FLOAT_MIN
+- avcodec/h264idct_template: Fix integer overflows in ff_h264_idct8_add()
+- avcodec/xan: Check for bitstream end in xan_huffman_decode()
+- avcodec/exr: fix undefined shift in pxr24_uncompress()
+- avformat: Free the internal codec context at the end
+- avcodec/h264idct_template: Fix integer overflows in ff_h264_idct8_add()
+- avcodec/xan: Improve overlapping check
+- avcodec/aacdec_fixed: Fix integer overflow in apply_dependent_coupling_fixed()
+- avcodec/aacdec_fixed: Fix integer overflow in predict()
+- avcodec/jpeglsdec: Check for end of bitstream in ls_decode_line()
+- avcodec/jpeglsdec: Check ilv for being a supported value
+- tests/ffserver.regression.ref: update checksums to what ffserver currently produces
+- ffserver: Fix off by 1 error in path
+- avcodec/proresdec: align dequantization matrix buffers
+- avformat/matroskaenc: add missing allocation failure checks for stream durations
+- avformat/matroskaenc: actually enforce the stream limit
+- configure: Fix dependencies of aac_at decoder.
+- Don't manipulate duration when it's AV_NOPTS_VALUE.
+- lavfi/af_pan: fix sign handling in channel coefficient parser
+- avformat/hlsenc: write fmp4 init header after first AV frame
+- avformat/hlsenc: allocate space for terminating null
+- avformat/hlsenc: reindent hlsenc code
+- avformat/hlsenc: check hls segment mode for ignore the init filename
+- avformat/hlsenc: reindent hlsenc code
+- avformat/hlsenc: fix missing first segment bug in fmp4 mode
+- avformat/hlsenc: fix base_output_dirname is null when basename_size is 0 bug
+- ffplay: use SDL2 audio API
+- ffplay: only use hardware accelerated SDL texture formats
+- ffplay: create the window and the renderer before starting playback
+- ffmpeg: always init output stream before reaping filters
+- vc2enc_dwt: pad the temporary buffer by the slice size
+- lavu/arm: Check for have_vfp_vm instead of !have_vfpv3 for float_dsp_vfp
+
 version 3.4:
 - deflicker video filter
 - doubleweave video filter
