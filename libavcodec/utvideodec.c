@@ -502,6 +502,7 @@ static void restore_gradient_planar_il(UtvideoContext *c, uint8_t *src, ptrdiff_
     int slice_start, slice_height;
     const int cmask   = ~(rmode ? 3 : 1);
     const ptrdiff_t stride2 = stride << 1;
+    int min_width = FFMIN(width, 32);
 
     for (slice = 0; slice < slices; slice++) {
         slice_start    = ((slice * height) / slices) & cmask;
@@ -523,12 +524,15 @@ static void restore_gradient_planar_il(UtvideoContext *c, uint8_t *src, ptrdiff_
         for (j = 1; j < slice_height; j++) {
             // second line - first element has top prediction, the rest uses gradient
             bsrc[0] = (bsrc[0] + bsrc[-stride2]) & 0xFF;
-            for (i = 1; i < width; i++) {
+            for (i = 1; i < min_width; i++) { /* dsp need align 32 */
                 A = bsrc[i - stride2];
                 B = bsrc[i - (stride2 + 1)];
                 C = bsrc[i - 1];
                 bsrc[i] = (A - B + C + bsrc[i]) & 0xFF;
             }
+            if (width > 32)
+                c->llviddsp.add_gradient_pred(bsrc + 32, stride2, width - 32);
+
             A = bsrc[-stride];
             B = bsrc[-(1 + stride + stride - width)];
             C = bsrc[width - 1];
