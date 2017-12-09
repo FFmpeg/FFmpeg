@@ -73,8 +73,6 @@ typedef struct FrameRateContext {
     int64_t srce_pts_dest[N_SRCE];      ///< pts for source frames scaled to output timebase
     int64_t pts;                        ///< pts of frame we are working on
 
-    int (*blend_frames)(AVFilterContext *ctx, float interpolate,
-                        AVFrame *copy_src1, AVFrame *copy_src2);
     int max;
     int bitdepth;
     AVFrame *work;
@@ -321,16 +319,16 @@ static int filter_slice16(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
     return 0;
 }
 
-static int blend_frames16(AVFilterContext *ctx, float interpolate,
-                          AVFrame *copy_src1, AVFrame *copy_src2)
+static int blend_frames(AVFilterContext *ctx, float interpolate,
+                        AVFrame *copy_src1, AVFrame *copy_src2)
 {
     FrameRateContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     double interpolate_scene_score = 0;
 
     if ((s->flags & FRAMERATE_FLAG_SCD) && copy_src2) {
-        interpolate_scene_score = get_scene_score16(ctx, copy_src1, copy_src2);
-        ff_dlog(ctx, "blend_frames16() interpolate scene score:%f\n", interpolate_scene_score);
+        interpolate_scene_score = s->bitdepth == 8 ? get_scene_score(ctx, copy_src1, copy_src2) : get_scene_score16(ctx, copy_src1, copy_src2);
+        ff_dlog(ctx, "blend_frames() interpolate scene score:%f\n", interpolate_scene_score);
     }
     // decide if the shot-change detection allows us to blend two frames
     if (interpolate_scene_score < s->scene_score && copy_src2) {
@@ -347,42 +345,8 @@ static int blend_frames16(AVFilterContext *ctx, float interpolate,
 
         av_frame_copy_props(s->work, s->srce[s->crnt]);
 
-        ff_dlog(ctx, "blend_frames16() INTERPOLATE to create work frame\n");
-        ctx->internal->execute(ctx, filter_slice16, &td, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
-        return 1;
-    }
-    return 0;
-}
-
-static int blend_frames8(AVFilterContext *ctx, float interpolate,
-                         AVFrame *copy_src1, AVFrame *copy_src2)
-{
-    FrameRateContext *s = ctx->priv;
-    AVFilterLink *outlink = ctx->outputs[0];
-    double interpolate_scene_score = 0;
-
-    if ((s->flags & FRAMERATE_FLAG_SCD) && copy_src2) {
-        interpolate_scene_score = get_scene_score(ctx, copy_src1, copy_src2);
-        ff_dlog(ctx, "blend_frames8() interpolate scene score:%f\n", interpolate_scene_score);
-    }
-    // decide if the shot-change detection allows us to blend two frames
-    if (interpolate_scene_score < s->scene_score && copy_src2) {
-        ThreadData td;
-        td.copy_src1 = copy_src1;
-        td.copy_src2 = copy_src2;
-        td.src2_factor = fabsf(interpolate);
-        td.src1_factor = 256 - td.src2_factor;
-
-        // get work-space for output frame
-        s->work = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-        if (!s->work)
-            return AVERROR(ENOMEM);
-
-        av_frame_copy_props(s->work, s->srce[s->crnt]);
-
-        ff_dlog(ctx, "blend_frames8() INTERPOLATE to create work frame\n");
-        ctx->internal->execute(ctx, filter_slice8, &td, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
-
+        ff_dlog(ctx, "blend_frames() INTERPOLATE to create work frame\n");
+        ctx->internal->execute(ctx, s->bitdepth == 8 ? filter_slice8 : filter_slice16, &td, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
         return 1;
     }
     return 0;
@@ -458,7 +422,7 @@ static int process_work_frame(AVFilterContext *ctx, int stop)
             ff_dlog(ctx, "process_work_frame() interpolate source is:PREV\n");
             copy_src2 = s->srce[s->prev];
         }
-        if (s->blend_frames(ctx, interpolate, copy_src1, copy_src2))
+        if (blend_frames(ctx, interpolate, copy_src1, copy_src2))
             goto copy_done;
         else
             ff_dlog(ctx, "process_work_frame() CUT - DON'T INTERPOLATE\n");
@@ -622,10 +586,6 @@ static int config_input(AVFilterLink *inlink)
 
     s->srce_time_base = inlink->time_base;
 
-    if (s->bitdepth == 8)
-        s->blend_frames = blend_frames8;
-    else
-        s->blend_frames = blend_frames16;
     s->max = 1 << (s->bitdepth);
 
     return 0;
