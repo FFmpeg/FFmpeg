@@ -133,41 +133,35 @@ static av_always_inline int64_t sad_8x8_16(const uint16_t *src1, ptrdiff_t strid
     return sum;
 }
 
-static double get_scene_score16(AVFilterContext *ctx, AVFrame *crnt, AVFrame *next)
+static int64_t scene_sad16(FrameRateContext *s, const uint16_t *p1, int p1_linesize, const uint16_t* p2, int p2_linesize, int height)
 {
-    FrameRateContext *s = ctx->priv;
-    double ret = 0;
-
-    ff_dlog(ctx, "get_scene_score16()\n");
-
-    if (crnt &&
-        crnt->height == next->height &&
-        crnt->width  == next->width) {
-        int x, y;
-        int64_t sad;
-        double mafd, diff;
-        const uint16_t *p1 = (const uint16_t *)crnt->data[0];
-        const uint16_t *p2 = (const uint16_t *)next->data[0];
-        const int p1_linesize = crnt->linesize[0] / 2;
-        const int p2_linesize = next->linesize[0] / 2;
-
-        ff_dlog(ctx, "get_scene_score16() process\n");
-
-        for (sad = y = 0; y < crnt->height; y += 8) {
-            for (x = 0; x < p1_linesize; x += 8) {
-                sad += sad_8x8_16(p1 + y * p1_linesize + x,
-                                  p1_linesize,
-                                  p2 + y * p2_linesize + x,
-                                  p2_linesize);
-            }
+    int64_t sad;
+    int x, y;
+    for (sad = y = 0; y < height; y += 8) {
+        for (x = 0; x < p1_linesize; x += 8) {
+            sad += sad_8x8_16(p1 + y * p1_linesize + x,
+                              p1_linesize,
+                              p2 + y * p2_linesize + x,
+                              p2_linesize);
         }
-        mafd = sad / (crnt->height * crnt->width * 3);
-        diff = fabs(mafd - s->prev_mafd);
-        ret  = av_clipf(FFMIN(mafd, diff), 0, 100.0);
-        s->prev_mafd = mafd;
     }
-    ff_dlog(ctx, "get_scene_score16() result is:%f\n", ret);
-    return ret;
+    return sad;
+}
+
+static int64_t scene_sad8(FrameRateContext *s, uint8_t *p1, int p1_linesize, uint8_t* p2, int p2_linesize, int height)
+{
+    int64_t sad;
+    int x, y;
+    for (sad = y = 0; y < height; y += 8) {
+        for (x = 0; x < p1_linesize; x += 8) {
+            sad += s->sad(p1 + y * p1_linesize + x,
+                          p1_linesize,
+                          p2 + y * p2_linesize + x,
+                          p2_linesize);
+        }
+    }
+    emms_c();
+    return sad;
 }
 
 static double get_scene_score(AVFilterContext *ctx, AVFrame *crnt, AVFrame *next)
@@ -180,31 +174,21 @@ static double get_scene_score(AVFilterContext *ctx, AVFrame *crnt, AVFrame *next
     if (crnt &&
         crnt->height == next->height &&
         crnt->width  == next->width) {
-        int x, y;
         int64_t sad;
         double mafd, diff;
-        uint8_t *p1 = crnt->data[0];
-        uint8_t *p2 = next->data[0];
-        const int p1_linesize = crnt->linesize[0];
-        const int p2_linesize = next->linesize[0];
 
         ff_dlog(ctx, "get_scene_score() process\n");
+        if (s->bitdepth == 8)
+            sad = scene_sad8(s, crnt->data[0], crnt->linesize[0], next->data[0], next->linesize[0], crnt->height);
+        else
+            sad = scene_sad16(s, (const uint16_t*)crnt->data[0], crnt->linesize[0] >> 1, (const uint16_t*)next->data[0], next->linesize[0] >> 1, crnt->height);
 
-        for (sad = y = 0; y < crnt->height; y += 8) {
-            for (x = 0; x < p1_linesize; x += 8) {
-                sad += s->sad(p1 + y * p1_linesize + x,
-                              p1_linesize,
-                              p2 + y * p2_linesize + x,
-                              p2_linesize);
-            }
-        }
-        emms_c();
         mafd = sad / (crnt->height * crnt->width * 3);
         diff = fabs(mafd - s->prev_mafd);
         ret  = av_clipf(FFMIN(mafd, diff), 0, 100.0);
         s->prev_mafd = mafd;
     }
-        ff_dlog(ctx, "get_scene_score() result is:%f\n", ret);
+    ff_dlog(ctx, "get_scene_score() result is:%f\n", ret);
     return ret;
 }
 
@@ -327,7 +311,7 @@ static int blend_frames(AVFilterContext *ctx, float interpolate,
     double interpolate_scene_score = 0;
 
     if ((s->flags & FRAMERATE_FLAG_SCD) && copy_src2) {
-        interpolate_scene_score = s->bitdepth == 8 ? get_scene_score(ctx, copy_src1, copy_src2) : get_scene_score16(ctx, copy_src1, copy_src2);
+        interpolate_scene_score = get_scene_score(ctx, copy_src1, copy_src2);
         ff_dlog(ctx, "blend_frames() interpolate scene score:%f\n", interpolate_scene_score);
     }
     // decide if the shot-change detection allows us to blend two frames
