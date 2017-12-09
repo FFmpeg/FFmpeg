@@ -210,6 +210,117 @@ static double get_scene_score(AVFilterContext *ctx, AVFrame *crnt, AVFrame *next
     return ret;
 }
 
+typedef struct ThreadData {
+    AVFrame *copy_src1, *copy_src2;
+    uint16_t src1_factor, src2_factor;
+} ThreadData;
+
+static int filter_slice8(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
+{
+    FrameRateContext *s = ctx->priv;
+    ThreadData *td = arg;
+    uint16_t src1_factor = td->src1_factor;
+    uint16_t src2_factor = td->src2_factor;
+    int plane, line, pixel;
+
+    for (plane = 0; plane < 4 && td->copy_src1->data[plane] && td->copy_src2->data[plane]; plane++) {
+        int cpy_line_width = s->line_size[plane];
+        uint8_t *cpy_src1_data = td->copy_src1->data[plane];
+        int cpy_src1_line_size = td->copy_src1->linesize[plane];
+        uint8_t *cpy_src2_data = td->copy_src2->data[plane];
+        int cpy_src2_line_size = td->copy_src2->linesize[plane];
+        int cpy_src_h = (plane > 0 && plane < 3) ? (td->copy_src1->height >> s->vsub) : (td->copy_src1->height);
+        uint8_t *cpy_dst_data = s->work->data[plane];
+        int cpy_dst_line_size = s->work->linesize[plane];
+        const int start = (cpy_src_h *  job   ) / nb_jobs;
+        const int end   = (cpy_src_h * (job+1)) / nb_jobs;
+        cpy_src1_data += start * cpy_src1_line_size;
+        cpy_src2_data += start * cpy_src2_line_size;
+        cpy_dst_data += start * cpy_dst_line_size;
+
+        if (plane <1 || plane >2) {
+            // luma or alpha
+            for (line = start; line < end; line++) {
+                for (pixel = 0; pixel < cpy_line_width; pixel++) {
+                    // integer version of (src1 * src1_factor) + (src2 + src2_factor) + 0.5
+                    // 0.5 is for rounding
+                    // 128 is the integer representation of 0.5 << 8
+                    cpy_dst_data[pixel] = ((cpy_src1_data[pixel] * src1_factor) + (cpy_src2_data[pixel] * src2_factor) + 128) >> 8;
+                }
+                cpy_src1_data += cpy_src1_line_size;
+                cpy_src2_data += cpy_src2_line_size;
+                cpy_dst_data += cpy_dst_line_size;
+            }
+        } else {
+            // chroma
+            for (line = start; line < end; line++) {
+                for (pixel = 0; pixel < cpy_line_width; pixel++) {
+                    // as above
+                    // because U and V are based around 128 we have to subtract 128 from the components.
+                    // 32896 is the integer representation of 128.5 << 8
+                    cpy_dst_data[pixel] = (((cpy_src1_data[pixel] - 128) * src1_factor) + ((cpy_src2_data[pixel] - 128) * src2_factor) + 32896) >> 8;
+                }
+                cpy_src1_data += cpy_src1_line_size;
+                cpy_src2_data += cpy_src2_line_size;
+                cpy_dst_data += cpy_dst_line_size;
+            }
+        }
+    }
+
+    return 0;
+}
+
+static int filter_slice16(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
+{
+    FrameRateContext *s = ctx->priv;
+    ThreadData *td = arg;
+    uint16_t src1_factor = td->src1_factor;
+    uint16_t src2_factor = td->src2_factor;
+    const int half = s->max / 2;
+    const int uv = (s->max + 1) * half;
+    const int shift = s->bitdepth;
+    int plane, line, pixel;
+
+    for (plane = 0; plane < 4 && td->copy_src1->data[plane] && td->copy_src2->data[plane]; plane++) {
+        int cpy_line_width = s->line_size[plane];
+        const uint16_t *cpy_src1_data = (const uint16_t *)td->copy_src1->data[plane];
+        int cpy_src1_line_size = td->copy_src1->linesize[plane] / 2;
+        const uint16_t *cpy_src2_data = (const uint16_t *)td->copy_src2->data[plane];
+        int cpy_src2_line_size = td->copy_src2->linesize[plane] / 2;
+        int cpy_src_h = (plane > 0 && plane < 3) ? (td->copy_src1->height >> s->vsub) : (td->copy_src1->height);
+        uint16_t *cpy_dst_data = (uint16_t *)s->work->data[plane];
+        int cpy_dst_line_size = s->work->linesize[plane] / 2;
+        const int start = (cpy_src_h *  job   ) / nb_jobs;
+        const int end   = (cpy_src_h * (job+1)) / nb_jobs;
+        cpy_src1_data += start * cpy_src1_line_size;
+        cpy_src2_data += start * cpy_src2_line_size;
+        cpy_dst_data += start * cpy_dst_line_size;
+
+        if (plane <1 || plane >2) {
+            // luma or alpha
+            for (line = start; line < end; line++) {
+                for (pixel = 0; pixel < cpy_line_width; pixel++)
+                    cpy_dst_data[pixel] = ((cpy_src1_data[pixel] * src1_factor) + (cpy_src2_data[pixel] * src2_factor) + half) >> shift;
+                cpy_src1_data += cpy_src1_line_size;
+                cpy_src2_data += cpy_src2_line_size;
+                cpy_dst_data += cpy_dst_line_size;
+            }
+        } else {
+            // chroma
+            for (line = start; line < end; line++) {
+                for (pixel = 0; pixel < cpy_line_width; pixel++) {
+                    cpy_dst_data[pixel] = (((cpy_src1_data[pixel] - half) * src1_factor) + ((cpy_src2_data[pixel] - half) * src2_factor) + uv) >> shift;
+                }
+                cpy_src1_data += cpy_src1_line_size;
+                cpy_src2_data += cpy_src2_line_size;
+                cpy_dst_data += cpy_dst_line_size;
+            }
+        }
+    }
+
+    return 0;
+}
+
 static int blend_frames16(AVFilterContext *ctx, float interpolate,
                           AVFrame *copy_src1, AVFrame *copy_src2)
 {
@@ -223,12 +334,11 @@ static int blend_frames16(AVFilterContext *ctx, float interpolate,
     }
     // decide if the shot-change detection allows us to blend two frames
     if (interpolate_scene_score < s->scene_score && copy_src2) {
-        uint16_t src2_factor = fabsf(interpolate) * (1 << (s->bitdepth - 8));
-        uint16_t src1_factor = s->max - src2_factor;
-        const int half = s->max / 2;
-        const int uv = (s->max + 1) * half;
-        const int shift = s->bitdepth;
-        int plane, line, pixel;
+        ThreadData td;
+        td.copy_src1 = copy_src1;
+        td.copy_src2 = copy_src2;
+        td.src2_factor = fabsf(interpolate) * (1 << (s->bitdepth - 8));
+        td.src1_factor = s->max - td.src2_factor;
 
         // get work-space for output frame
         s->work = ff_get_video_buffer(outlink, outlink->w, outlink->h);
@@ -238,37 +348,7 @@ static int blend_frames16(AVFilterContext *ctx, float interpolate,
         av_frame_copy_props(s->work, s->srce[s->crnt]);
 
         ff_dlog(ctx, "blend_frames16() INTERPOLATE to create work frame\n");
-        for (plane = 0; plane < 4 && copy_src1->data[plane] && copy_src2->data[plane]; plane++) {
-            int cpy_line_width = s->line_size[plane];
-            const uint16_t *cpy_src1_data = (const uint16_t *)copy_src1->data[plane];
-            int cpy_src1_line_size = copy_src1->linesize[plane] / 2;
-            const uint16_t *cpy_src2_data = (const uint16_t *)copy_src2->data[plane];
-            int cpy_src2_line_size = copy_src2->linesize[plane] / 2;
-            int cpy_src_h = (plane > 0 && plane < 3) ? (copy_src1->height >> s->vsub) : (copy_src1->height);
-            uint16_t *cpy_dst_data = (uint16_t *)s->work->data[plane];
-            int cpy_dst_line_size = s->work->linesize[plane] / 2;
-
-            if (plane <1 || plane >2) {
-                // luma or alpha
-                for (line = 0; line < cpy_src_h; line++) {
-                    for (pixel = 0; pixel < cpy_line_width; pixel++)
-                        cpy_dst_data[pixel] = ((cpy_src1_data[pixel] * src1_factor) + (cpy_src2_data[pixel] * src2_factor) + half) >> shift;
-                    cpy_src1_data += cpy_src1_line_size;
-                    cpy_src2_data += cpy_src2_line_size;
-                    cpy_dst_data += cpy_dst_line_size;
-                }
-            } else {
-                // chroma
-                for (line = 0; line < cpy_src_h; line++) {
-                    for (pixel = 0; pixel < cpy_line_width; pixel++) {
-                        cpy_dst_data[pixel] = (((cpy_src1_data[pixel] - half) * src1_factor) + ((cpy_src2_data[pixel] - half) * src2_factor) + uv) >> shift;
-                    }
-                    cpy_src1_data += cpy_src1_line_size;
-                    cpy_src2_data += cpy_src2_line_size;
-                    cpy_dst_data += cpy_dst_line_size;
-                }
-            }
-        }
+        ctx->internal->execute(ctx, filter_slice16, &td, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
         return 1;
     }
     return 0;
@@ -287,9 +367,11 @@ static int blend_frames8(AVFilterContext *ctx, float interpolate,
     }
     // decide if the shot-change detection allows us to blend two frames
     if (interpolate_scene_score < s->scene_score && copy_src2) {
-        uint16_t src2_factor = fabsf(interpolate);
-        uint16_t src1_factor = 256 - src2_factor;
-        int plane, line, pixel;
+        ThreadData td;
+        td.copy_src1 = copy_src1;
+        td.copy_src2 = copy_src2;
+        td.src2_factor = fabsf(interpolate);
+        td.src1_factor = 256 - td.src2_factor;
 
         // get work-space for output frame
         s->work = ff_get_video_buffer(outlink, outlink->w, outlink->h);
@@ -299,43 +381,8 @@ static int blend_frames8(AVFilterContext *ctx, float interpolate,
         av_frame_copy_props(s->work, s->srce[s->crnt]);
 
         ff_dlog(ctx, "blend_frames8() INTERPOLATE to create work frame\n");
-        for (plane = 0; plane < 4 && copy_src1->data[plane] && copy_src2->data[plane]; plane++) {
-            int cpy_line_width = s->line_size[plane];
-            uint8_t *cpy_src1_data = copy_src1->data[plane];
-            int cpy_src1_line_size = copy_src1->linesize[plane];
-            uint8_t *cpy_src2_data = copy_src2->data[plane];
-            int cpy_src2_line_size = copy_src2->linesize[plane];
-            int cpy_src_h = (plane > 0 && plane < 3) ? (copy_src1->height >> s->vsub) : (copy_src1->height);
-            uint8_t *cpy_dst_data = s->work->data[plane];
-            int cpy_dst_line_size = s->work->linesize[plane];
-            if (plane <1 || plane >2) {
-                // luma or alpha
-                for (line = 0; line < cpy_src_h; line++) {
-                    for (pixel = 0; pixel < cpy_line_width; pixel++) {
-                        // integer version of (src1 * src1_factor) + (src2 + src2_factor) + 0.5
-                        // 0.5 is for rounding
-                        // 128 is the integer representation of 0.5 << 8
-                        cpy_dst_data[pixel] = ((cpy_src1_data[pixel] * src1_factor) + (cpy_src2_data[pixel] * src2_factor) + 128) >> 8;
-                    }
-                    cpy_src1_data += cpy_src1_line_size;
-                    cpy_src2_data += cpy_src2_line_size;
-                    cpy_dst_data += cpy_dst_line_size;
-                }
-            } else {
-                // chroma
-                for (line = 0; line < cpy_src_h; line++) {
-                    for (pixel = 0; pixel < cpy_line_width; pixel++) {
-                        // as above
-                        // because U and V are based around 128 we have to subtract 128 from the components.
-                        // 32896 is the integer representation of 128.5 << 8
-                        cpy_dst_data[pixel] = (((cpy_src1_data[pixel] - 128) * src1_factor) + ((cpy_src2_data[pixel] - 128) * src2_factor) + 32896) >> 8;
-                    }
-                    cpy_src1_data += cpy_src1_line_size;
-                    cpy_src2_data += cpy_src2_line_size;
-                    cpy_dst_data += cpy_dst_line_size;
-                }
-            }
-        }
+        ctx->internal->execute(ctx, filter_slice8, &td, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
+
         return 1;
     }
     return 0;
@@ -738,4 +785,5 @@ AVFilter ff_vf_framerate = {
     .query_formats = query_formats,
     .inputs        = framerate_inputs,
     .outputs       = framerate_outputs,
+    .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };
