@@ -9121,7 +9121,7 @@ Specify the level at which a scene change is detected as a value between
 0 and 100 to indicate a new scene; a low value reflects a low
 probability for the current frame to introduce a new scene, while a higher
 value means the current frame is more likely to be one.
-The default is @code{7}.
+The default is @code{8.2}.
 
 @item flags
 Specify flags influencing the filter process.
