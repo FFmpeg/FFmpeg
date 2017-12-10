@@ -307,8 +307,8 @@ cglobal add_left_pred_int16, 4,4,8, dst, src, mask, w, left
     SPLATW  m7 ,m7
     ADD_HFYU_LEFT_LOOP_INT16 a, a
 
-INIT_XMM sse4
-cglobal add_left_pred_int16, 4,4,8, dst, src, mask, w, left
+INIT_XMM ssse3
+cglobal add_left_pred_int16_unaligned, 4,4,8, dst, src, mask, w, left
     mova    m5, [pb_ef]
     mova    m4, [pb_zzzzzzzz67676767]
     mova    m3, [pb_zzzz2323zzzzabab]

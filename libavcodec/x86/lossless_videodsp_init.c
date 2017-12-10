@@ -42,7 +42,7 @@ int  ff_add_left_pred_unaligned_avx2(uint8_t *dst, const uint8_t *src,
                                      ptrdiff_t w, int left);
 
 int ff_add_left_pred_int16_ssse3(uint16_t *dst, const uint16_t *src, unsigned mask, ptrdiff_t w, unsigned acc);
-int ff_add_left_pred_int16_sse4(uint16_t *dst, const uint16_t *src, unsigned mask, ptrdiff_t w, unsigned acc);
+int ff_add_left_pred_int16_unaligned_ssse3(uint16_t *dst, const uint16_t *src, unsigned mask, ptrdiff_t w, unsigned acc);
 
 void ff_add_gradient_pred_ssse3(uint8_t *src, const ptrdiff_t stride, const ptrdiff_t width);
 void ff_add_gradient_pred_avx2(uint8_t *src, const ptrdiff_t stride, const ptrdiff_t width);
@@ -117,11 +117,9 @@ void ff_llviddsp_init_x86(LLVidDSPContext *c)
 
     if (EXTERNAL_SSSE3_FAST(cpu_flags)) {
         c->add_left_pred = ff_add_left_pred_unaligned_ssse3;
+        c->add_left_pred_int16 = ff_add_left_pred_int16_unaligned_ssse3;
     }
 
-    if (EXTERNAL_SSE4(cpu_flags)) {
-        c->add_left_pred_int16 = ff_add_left_pred_int16_sse4;
-    }
     if (EXTERNAL_AVX2_FAST(cpu_flags)) {
         c->add_bytes       = ff_add_bytes_avx2;
         c->add_left_pred   = ff_add_left_pred_unaligned_avx2;
