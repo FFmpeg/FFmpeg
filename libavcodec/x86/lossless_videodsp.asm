@@ -154,8 +154,7 @@ MEDIAN_PRED
     add     wq, mmsize
     jl %%.loop
 %if mmsize == 32
-    mov    eax, [dstq -1]
-    and    eax, 0xff
+    movzx   eax, byte [dstq - 1]
 %else;
     mov     eax, mmsize-1
     sub     eax, wd
