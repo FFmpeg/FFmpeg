@@ -51,7 +51,6 @@
 #include "mathops.h"
 #include "me_cmp.h"
 #include "mpegutils.h"
-#include "mpeg4video.h"
 #include "profiles.h"
 #include "rectangle.h"
 #include "thread.h"
