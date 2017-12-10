@@ -86,11 +86,11 @@ static inline void sub_left_prediction_bgr32(HYuvContext *s, uint8_t *dst,
 {
     int i;
     int r, g, b, a;
+    int min_width = FFMIN(w, 8);
     r = *red;
     g = *green;
     b = *blue;
     a = *alpha;
-    int min_width = FFMIN(w, 8);
 
     for (i = 0; i < min_width; i++) {
         const int rt = src[i * 4 + R];
