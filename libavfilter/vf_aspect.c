@@ -125,9 +125,11 @@ static int get_aspect_ratio(AVFilterLink *inlink, AVRational *aspect_ratio)
 
 #if CONFIG_SETDAR_FILTER
 
-static int setdar_config_props(AVFilterLink *inlink)
+static int setdar_config_props(AVFilterLink *outlink)
 {
-    AspectContext *s = inlink->dst->priv;
+    AVFilterContext *ctx = outlink->src;
+    AVFilterLink *inlink = ctx->inputs[0];
+    AspectContext *s = ctx->priv;
     AVRational dar;
     AVRational old_dar;
     AVRational old_sar = inlink->sample_aspect_ratio;
@@ -140,17 +142,17 @@ static int setdar_config_props(AVFilterLink *inlink)
         av_reduce(&s->sar.num, &s->sar.den,
                    s->dar.num * inlink->h,
                    s->dar.den * inlink->w, INT_MAX);
-        inlink->sample_aspect_ratio = s->sar;
+        outlink->sample_aspect_ratio = s->sar;
         dar = s->dar;
     } else {
-        inlink->sample_aspect_ratio = (AVRational){ 1, 1 };
+        outlink->sample_aspect_ratio = (AVRational){ 1, 1 };
         dar = (AVRational){ inlink->w, inlink->h };
     }
 
     compute_dar(&old_dar, old_sar, inlink->w, inlink->h);
-    av_log(inlink->dst, AV_LOG_VERBOSE, "w:%d h:%d dar:%d/%d sar:%d/%d -> dar:%d/%d sar:%d/%d\n",
+    av_log(ctx, AV_LOG_VERBOSE, "w:%d h:%d dar:%d/%d sar:%d/%d -> dar:%d/%d sar:%d/%d\n",
            inlink->w, inlink->h, old_dar.num, old_dar.den, old_sar.num, old_sar.den,
-           dar.num, dar.den, inlink->sample_aspect_ratio.num, inlink->sample_aspect_ratio.den);
+           dar.num, dar.den, outlink->sample_aspect_ratio.num, outlink->sample_aspect_ratio.den);
 
     return 0;
 }
@@ -169,7 +171,6 @@ static const AVFilterPad avfilter_vf_setdar_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .config_props = setdar_config_props,
         .filter_frame = filter_frame,
     },
     { NULL }
@@ -179,6 +180,7 @@ static const AVFilterPad avfilter_vf_setdar_outputs[] = {
     {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
+        .config_props = setdar_config_props,
     },
     { NULL }
 };
@@ -196,9 +198,11 @@ AVFilter ff_vf_setdar = {
 
 #if CONFIG_SETSAR_FILTER
 
-static int setsar_config_props(AVFilterLink *inlink)
+static int setsar_config_props(AVFilterLink *outlink)
 {
-    AspectContext *s = inlink->dst->priv;
+    AVFilterContext *ctx = outlink->src;
+    AVFilterLink *inlink = ctx->inputs[0];
+    AspectContext *s = ctx->priv;
     AVRational old_sar = inlink->sample_aspect_ratio;
     AVRational old_dar, dar;
     int ret;
@@ -206,13 +210,13 @@ static int setsar_config_props(AVFilterLink *inlink)
     if ((ret = get_aspect_ratio(inlink, &s->sar)))
         return ret;
 
-    inlink->sample_aspect_ratio = s->sar;
+    outlink->sample_aspect_ratio = s->sar;
 
     compute_dar(&old_dar, old_sar, inlink->w, inlink->h);
     compute_dar(&dar, s->sar, inlink->w, inlink->h);
-    av_log(inlink->dst, AV_LOG_VERBOSE, "w:%d h:%d sar:%d/%d dar:%d/%d -> sar:%d/%d dar:%d/%d\n",
+    av_log(ctx, AV_LOG_VERBOSE, "w:%d h:%d sar:%d/%d dar:%d/%d -> sar:%d/%d dar:%d/%d\n",
            inlink->w, inlink->h, old_sar.num, old_sar.den, old_dar.num, old_dar.den,
-           inlink->sample_aspect_ratio.num, inlink->sample_aspect_ratio.den, dar.num, dar.den);
+           outlink->sample_aspect_ratio.num, outlink->sample_aspect_ratio.den, dar.num, dar.den);
 
     return 0;
 }
@@ -231,7 +235,6 @@ static const AVFilterPad avfilter_vf_setsar_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .config_props = setsar_config_props,
         .filter_frame = filter_frame,
     },
     { NULL }
@@ -241,6 +244,7 @@ static const AVFilterPad avfilter_vf_setsar_outputs[] = {
     {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
+        .config_props = setsar_config_props,
     },
     { NULL }
 };
