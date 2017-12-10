@@ -2,6 +2,9 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 3.4.1:
+- avcodec/vp9_superframe_split_bsf: Fix integer overflow in frame_size/total_size checks
+- avcodec/amrwbdec: Fix division by 0 in voice_factor()
+- avformat/utils: Fix warning: ISO C90 forbids mixed declarations and code
 - avcodec/decode: reset codec on receiving packet after EOF in compat_decode
 - avcodec/diracdsp: Fix integer overflow in PUT_SIGNED_RECT_CLAMPED()
 - avcodec/dirac_dwt: Fix integer overflows in COMPOSE_DAUB97*
