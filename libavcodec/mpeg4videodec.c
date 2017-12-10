@@ -1754,6 +1754,37 @@ static int mpeg4_decode_profile_level(MpegEncContext *s, GetBitContext *gb)
     return 0;
 }
 
+static int mpeg4_decode_visual_object(MpegEncContext *s, GetBitContext *gb)
+{
+    int visual_object_type;
+    int is_visual_object_identifier = get_bits1(gb);
+
+    if (is_visual_object_identifier) {
+        skip_bits(gb, 4+3);
+    }
+    visual_object_type = get_bits(gb, 4);
+
+    if (visual_object_type == VOT_VIDEO_ID ||
+        visual_object_type == VOT_STILL_TEXTURE_ID) {
+        int video_signal_type = get_bits1(gb);
+        if (video_signal_type) {
+            int video_format = get_bits(gb, 3);
+            int video_range = get_bits1(gb);
+            int color_description = get_bits1(gb);
+
+            s->avctx->color_range = video_range ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
+
+            if (color_description) {
+                s->avctx->color_primaries = get_bits(gb, 8);
+                s->avctx->color_trc       = get_bits(gb, 8);
+                s->avctx->colorspace      = get_bits(gb, 8);
+            }
+        }
+    }
+
+    return 0;
+}
+
 static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
 {
     MpegEncContext *s = &ctx->m;
@@ -2684,6 +2715,8 @@ int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb)
             mpeg4_decode_gop_header(s, gb);
         } else if (startcode == VOS_STARTCODE) {
             mpeg4_decode_profile_level(s, gb);
+        } else if (startcode == VISUAL_OBJ_STARTCODE) {
+            mpeg4_decode_visual_object(s, gb);
         } else if (startcode == VOP_STARTCODE) {
             break;
         }

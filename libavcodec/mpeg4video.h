@@ -43,6 +43,9 @@
 #define ACE_VO_TYPE             12
 #define ADV_SIMPLE_VO_TYPE      17
 
+#define VOT_VIDEO_ID 1
+#define VOT_STILL_TEXTURE_ID 2
+
 // aspect_ratio_info
 #define EXTENDED_PAR 15
 
