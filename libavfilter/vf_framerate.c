@@ -136,12 +136,12 @@ static av_always_inline int64_t sad_8x8_16(const uint16_t *src1, ptrdiff_t strid
     return sum;
 }
 
-static int64_t scene_sad16(FrameRateContext *s, const uint16_t *p1, int p1_linesize, const uint16_t* p2, int p2_linesize, int height)
+static int64_t scene_sad16(FrameRateContext *s, const uint16_t *p1, int p1_linesize, const uint16_t* p2, int p2_linesize, const int width, const int height)
 {
     int64_t sad;
     int x, y;
-    for (sad = y = 0; y < height; y += 8) {
-        for (x = 0; x < p1_linesize; x += 8) {
+    for (sad = y = 0; y < height - 7; y += 8) {
+        for (x = 0; x < width - 7; x += 8) {
             sad += sad_8x8_16(p1 + y * p1_linesize + x,
                               p1_linesize,
                               p2 + y * p2_linesize + x,
@@ -151,12 +151,12 @@ static int64_t scene_sad16(FrameRateContext *s, const uint16_t *p1, int p1_lines
     return sad;
 }
 
-static int64_t scene_sad8(FrameRateContext *s, uint8_t *p1, int p1_linesize, uint8_t* p2, int p2_linesize, int height)
+static int64_t scene_sad8(FrameRateContext *s, uint8_t *p1, int p1_linesize, uint8_t* p2, int p2_linesize, const int width, const int height)
 {
     int64_t sad;
     int x, y;
-    for (sad = y = 0; y < height; y += 8) {
-        for (x = 0; x < p1_linesize; x += 8) {
+    for (sad = y = 0; y < height - 7; y += 8) {
+        for (x = 0; x < width - 7; x += 8) {
             sad += s->sad(p1 + y * p1_linesize + x,
                           p1_linesize,
                           p2 + y * p2_linesize + x,
@@ -181,11 +181,11 @@ static double get_scene_score(AVFilterContext *ctx, AVFrame *crnt, AVFrame *next
 
         ff_dlog(ctx, "get_scene_score() process\n");
         if (s->bitdepth == 8)
-            sad = scene_sad8(s, crnt->data[0], crnt->linesize[0], next->data[0], next->linesize[0], crnt->height);
+            sad = scene_sad8(s, crnt->data[0], crnt->linesize[0], next->data[0], next->linesize[0], crnt->width, crnt->height);
         else
-            sad = scene_sad16(s, (const uint16_t*)crnt->data[0], crnt->linesize[0] >> 1, (const uint16_t*)next->data[0], next->linesize[0] >> 1, crnt->height);
+            sad = scene_sad16(s, (const uint16_t*)crnt->data[0], crnt->linesize[0] / 2, (const uint16_t*)next->data[0], next->linesize[0] / 2, crnt->width, crnt->height);
 
-        mafd = (double)sad * 100.0 / (crnt->height * crnt->width) / (1 << s->bitdepth);
+        mafd = (double)sad * 100.0 / FFMAX(1, (crnt->height & ~7) * (crnt->width & ~7)) / (1 << s->bitdepth);
         diff = fabs(mafd - s->prev_mafd);
         ret  = av_clipf(FFMIN(mafd, diff), 0, 100.0);
         s->prev_mafd = mafd;
