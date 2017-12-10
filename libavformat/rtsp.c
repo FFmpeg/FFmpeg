@@ -2009,7 +2009,9 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
             }
 #if CONFIG_RTSP_DEMUXER
             if (rt->rtsp_hd && p[0].revents & POLLIN) {
-                return parse_rtsp_message(s);
+                if ((ret = parse_rtsp_message(s)) < 0) {
+                    return ret;
+                }
             }
 #endif
         } else if (n == 0 && ++timeout_cnt >= MAX_TIMEOUTS) {
