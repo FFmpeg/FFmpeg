@@ -168,13 +168,13 @@ static void check_add_left_pred_16(LLVidDSPContext c, unsigned mask, int width, 
 static void check_add_gradient_pred(LLVidDSPContext c, int w) {
     int src_size, stride;
     uint8_t *src0, *src1;
+    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *src, const ptrdiff_t stride,
+                      const ptrdiff_t width);
+
     stride = w + 32;
     src_size = (stride + 32) * 2; /* dsp need previous line, and ignore the start of the line */
     src0 = av_mallocz(src_size);
     src1 = av_mallocz(src_size);
-
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *src, const ptrdiff_t stride,
-                      const ptrdiff_t width);
 
     init_buffer(src0, src1, uint8_t, src_size);
 
