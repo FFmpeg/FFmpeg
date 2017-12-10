@@ -71,6 +71,7 @@ typedef struct FrameRateContext {
 
     AVFrame *srce[N_SRCE];              ///< buffered source frames
     int64_t srce_pts_dest[N_SRCE];      ///< pts for source frames scaled to output timebase
+    double srce_score[N_SRCE];          ///< scene change score compared to the next srce frame
     int64_t pts;                        ///< pts of frame we are working on
 
     int max;
@@ -113,9 +114,11 @@ static void next_source(AVFilterContext *ctx)
     for (i = s->last; i > s->frst; i--) {
         ff_dlog(ctx, "next_source() copy %d to %d\n", i - 1, i);
         s->srce[i] = s->srce[i - 1];
+        s->srce_score[i] = s->srce_score[i - 1];
     }
     ff_dlog(ctx, "next_source() make %d null\n", s->frst);
     s->srce[s->frst] = NULL;
+    s->srce_score[s->frst] = -1.0;
 }
 
 static av_always_inline int64_t sad_8x8_16(const uint16_t *src1, ptrdiff_t stride1,
@@ -171,8 +174,7 @@ static double get_scene_score(AVFilterContext *ctx, AVFrame *crnt, AVFrame *next
 
     ff_dlog(ctx, "get_scene_score()\n");
 
-    if (crnt &&
-        crnt->height == next->height &&
+    if (crnt->height == next->height &&
         crnt->width  == next->width) {
         int64_t sad;
         double mafd, diff;
@@ -304,21 +306,26 @@ static int filter_slice16(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
 }
 
 static int blend_frames(AVFilterContext *ctx, float interpolate,
-                        AVFrame *copy_src1, AVFrame *copy_src2)
+                        int src1, int src2)
 {
     FrameRateContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     double interpolate_scene_score = 0;
 
-    if ((s->flags & FRAMERATE_FLAG_SCD) && copy_src2) {
-        interpolate_scene_score = get_scene_score(ctx, copy_src1, copy_src2);
+    if ((s->flags & FRAMERATE_FLAG_SCD) && s->srce[src1] && s->srce[src2]) {
+        int i1 = src1 < src2 ? src1 : src2;
+        int i2 = src1 < src2 ? src2 : src1;
+        if (i2 == i1 + 1 && s->srce_score[i1] >= 0.0)
+            interpolate_scene_score = s->srce_score[i1];
+        else
+            interpolate_scene_score = s->srce_score[i1] = get_scene_score(ctx, s->srce[i1], s->srce[i2]);
         ff_dlog(ctx, "blend_frames() interpolate scene score:%f\n", interpolate_scene_score);
     }
     // decide if the shot-change detection allows us to blend two frames
-    if (interpolate_scene_score < s->scene_score && copy_src2) {
+    if (interpolate_scene_score < s->scene_score && s->srce[src2]) {
         ThreadData td;
-        td.copy_src1 = copy_src1;
-        td.copy_src2 = copy_src2;
+        td.copy_src1 = s->srce[src1];
+        td.copy_src2 = s->srce[src2];
         td.src2_factor = fabsf(interpolate) * (1 << (s->bitdepth - 8));
         td.src1_factor = s->max - td.src2_factor;
 
@@ -340,8 +347,8 @@ static int process_work_frame(AVFilterContext *ctx, int stop)
 {
     FrameRateContext *s = ctx->priv;
     int64_t work_next_pts;
-    AVFrame *copy_src1;
     float interpolate;
+    int src1, src2;
 
     ff_dlog(ctx, "process_work_frame()\n");
 
@@ -385,28 +392,26 @@ static int process_work_frame(AVFilterContext *ctx, int stop)
     // calculate interpolation
     interpolate = ((s->pts - s->srce_pts_dest[s->crnt]) * 256.0 / s->average_srce_pts_dest_delta);
     ff_dlog(ctx, "process_work_frame() interpolate:%f/256\n", interpolate);
-    copy_src1 = s->srce[s->crnt];
+    src1 = s->crnt;
     if (interpolate > s->interp_end) {
         ff_dlog(ctx, "process_work_frame() source is:NEXT\n");
-        copy_src1 = s->srce[s->next];
+        src1 = s->next;
     }
     if (s->srce[s->prev] && interpolate < -s->interp_end) {
         ff_dlog(ctx, "process_work_frame() source is:PREV\n");
-        copy_src1 = s->srce[s->prev];
+        src1 = s->prev;
     }
 
     // decide whether to blend two frames
     if ((interpolate >= s->interp_start && interpolate <= s->interp_end) || (interpolate <= -s->interp_start && interpolate >= -s->interp_end)) {
-        AVFrame *copy_src2;
-
         if (interpolate > 0) {
             ff_dlog(ctx, "process_work_frame() interpolate source is:NEXT\n");
-            copy_src2 = s->srce[s->next];
+            src2 = s->next;
         } else {
             ff_dlog(ctx, "process_work_frame() interpolate source is:PREV\n");
-            copy_src2 = s->srce[s->prev];
+            src2 = s->prev;
         }
-        if (blend_frames(ctx, interpolate, copy_src1, copy_src2))
+        if (blend_frames(ctx, interpolate, src1, src2))
             goto copy_done;
         else
             ff_dlog(ctx, "process_work_frame() CUT - DON'T INTERPOLATE\n");
@@ -414,7 +419,7 @@ static int process_work_frame(AVFilterContext *ctx, int stop)
 
     ff_dlog(ctx, "process_work_frame() COPY to the work frame\n");
     // copy the frame we decided is our base source
-    s->work = av_frame_clone(copy_src1);
+    s->work = av_frame_clone(s->srce[src1]);
     if (!s->work)
         return AVERROR(ENOMEM);
 
@@ -504,6 +509,7 @@ static void set_work_frame_pts(AVFilterContext *ctx)
 static av_cold int init(AVFilterContext *ctx)
 {
     FrameRateContext *s = ctx->priv;
+    int i;
 
     s->dest_frame_num = 0;
 
@@ -512,6 +518,9 @@ static av_cold int init(AVFilterContext *ctx)
 
     s->next = s->crnt - 1;
     s->prev = s->crnt + 1;
+
+    for (i = 0; i < N_SRCE; i++)
+        s->srce_score[i] = -1.0;
 
     return 0;
 }
