@@ -518,7 +518,6 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                 AVFilterContext *convert;
                 const AVFilter *filter;
                 AVFilterLink *inlink, *outlink;
-                char scale_args[256];
                 char inst_name[30];
 
                 if (graph->disable_auto_convert) {
@@ -555,10 +554,6 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
 
                     snprintf(inst_name, sizeof(inst_name), "auto_resampler_%d",
                              resampler_count++);
-                    scale_args[0] = '\0';
-                    if (graph->aresample_swr_opts)
-                        snprintf(scale_args, sizeof(scale_args), "%s",
-                                 graph->aresample_swr_opts);
                     if ((ret = avfilter_graph_create_filter(&convert, filter,
                                                             inst_name, graph->aresample_swr_opts,
                                                             NULL, graph)) < 0)
