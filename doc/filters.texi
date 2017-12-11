@@ -17099,28 +17099,24 @@ The sources accept the following parameters:
 
 @table @option
 
-@item alpha
-Specify the alpha (opacity) of the background, only available in the
-@code{testsrc2} source. The value must be between 0 (fully transparent) and
-255 (fully opaque, the default).
-
-@item color, c
-Specify the color of the source, only available in the @code{color}
-source. For the syntax of this option, check the "Color" section in the
-ffmpeg-utils manual.
-
 @item level
 Specify the level of the Hald CLUT, only available in the @code{haldclutsrc}
 source. A level of @code{N} generates a picture of @code{N*N*N} by @code{N*N*N}
 pixels to be used as identity matrix for 3D lookup tables. Each component is
 coded on a @code{1/(N*N)} scale.
 
+@item color, c
+Specify the color of the source, only available in the @code{color}
+source. For the syntax of this option, check the "Color" section in the
+ffmpeg-utils manual.
+
 @item size, s
 Specify the size of the sourced video. For the syntax of this option, check the
 @ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
 The default value is @code{320x240}.
 
-This option is not available with the @code{haldclutsrc} filter.
+This option is not available with the @code{allrgb}, @code{allyuv}, and
+@code{haldclutsrc} filters.
 
 @item rate, r
 Specify the frame rate of the sourced video, as the number of frames
@@ -17129,9 +17125,6 @@ generated per second. It has to be a string in the format
 number or a valid video frame rate abbreviation. The default value is
 "25".
 
-@item sar
-Set the sample aspect ratio of the sourced video.
-
 @item duration, d
 Set the duration of the sourced video. See
 @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}
@@ -17139,6 +17132,14 @@ for the accepted syntax.
 
 If not specified, or the expressed duration is negative, the video is
 supposed to be generated forever.
+
+@item sar
+Set the sample aspect ratio of the sourced video.
+
+@item alpha
+Specify the alpha (opacity) of the background, only available in the
+@code{testsrc2} source. The value must be between 0 (fully transparent) and
+255 (fully opaque, the default).
 
 @item decimals, n
 Set the number of decimals to show in the timestamp, only available in the
@@ -17149,27 +17150,32 @@ timestamp value multiplied by the power of 10 of the specified
 value. Default value is 0.
 @end table
 
-For example the following:
+@subsection Examples
+
+@itemize
+@item
+Generate a video with a duration of 5.3 seconds, with size
+176x144 and a frame rate of 10 frames per second:
 @example
 testsrc=duration=5.3:size=qcif:rate=10
 @end example
 
-will generate a video with a duration of 5.3 seconds, with size
-176x144 and a frame rate of 10 frames per second.
-
+@item
 The following graph description will generate a red source
 with an opacity of 0.2, with size "qcif" and a frame rate of 10
-frames per second.
+frames per second:
 @example
 color=c=red@@0.2:s=qcif:r=10
 @end example
 
+@item
 If the input content is to be ignored, @code{nullsrc} can be used. The
 following command generates noise in the luminance plane by employing
 the @code{geq} filter:
 @example
 nullsrc=s=256x256, geq=random(1)*255:128:128
 @end example
+@end itemize
 
 @subsection Commands
 
