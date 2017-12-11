@@ -445,6 +445,14 @@ static int init_pts(AVFormatContext *s)
         }
     }
 
+    if (s->avoid_negative_ts < 0) {
+        av_assert2(s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_AUTO);
+        if (s->oformat->flags & (AVFMT_TS_NEGATIVE | AVFMT_NOTIMESTAMPS)) {
+            s->avoid_negative_ts = 0;
+        } else
+            s->avoid_negative_ts = AVFMT_AVOID_NEG_TS_MAKE_NON_NEGATIVE;
+    }
+
     return 0;
 }
 
@@ -471,14 +479,6 @@ int avformat_init_output(AVFormatContext *s, AVDictionary **options)
     if (s->oformat->init && ret) {
         if ((ret = init_pts(s)) < 0)
             return ret;
-
-        if (s->avoid_negative_ts < 0) {
-            av_assert2(s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_AUTO);
-            if (s->oformat->flags & (AVFMT_TS_NEGATIVE | AVFMT_NOTIMESTAMPS)) {
-                s->avoid_negative_ts = 0;
-            } else
-                s->avoid_negative_ts = AVFMT_AVOID_NEG_TS_MAKE_NON_NEGATIVE;
-        }
 
         return AVSTREAM_INIT_IN_INIT_OUTPUT;
     }
@@ -512,14 +512,6 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
     if (!s->internal->streams_initialized) {
         if ((ret = init_pts(s)) < 0)
             goto fail;
-
-        if (s->avoid_negative_ts < 0) {
-            av_assert2(s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_AUTO);
-            if (s->oformat->flags & (AVFMT_TS_NEGATIVE | AVFMT_NOTIMESTAMPS)) {
-                s->avoid_negative_ts = 0;
-            } else
-                s->avoid_negative_ts = AVFMT_AVOID_NEG_TS_MAKE_NON_NEGATIVE;
-        }
     }
 
     return streams_already_initialized;
