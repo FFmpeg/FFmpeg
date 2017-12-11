@@ -215,6 +215,8 @@ AVCodec ff_ ## NAME ## _v4l2m2m_decoder = { \
     .receive_frame  = v4l2_receive_frame,\
     .close          = ff_v4l2_m2m_codec_end,\
     .bsfs           = bsf_name, \
+    .capabilities   = AV_CODEC_CAP_HARDWARE, \
+    .wrapper_name   = "v4l2m2m", \
 };
 
 M2MDEC(h264,  "H.264", AV_CODEC_ID_H264,       "h264_mp4toannexb");

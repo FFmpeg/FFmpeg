@@ -1127,13 +1127,14 @@ static const AVCodecHWConfigInternal *cuvid_hw_configs[] = {
         .decode         = cuvid_decode_frame, \
         .receive_frame  = cuvid_output_frame, \
         .flush          = cuvid_flush, \
-        .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING, \
+        .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE, \
         .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_CUDA, \
                                                         AV_PIX_FMT_NV12, \
                                                         AV_PIX_FMT_P010, \
                                                         AV_PIX_FMT_P016, \
                                                         AV_PIX_FMT_NONE }, \
         .hw_configs     = cuvid_hw_configs, \
+        .wrapper_name   = "cuvid", \
     };
 
 #if CONFIG_HEVC_CUVID_DECODER

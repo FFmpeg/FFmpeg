@@ -1046,6 +1046,20 @@ typedef struct RcOverride{
 #define AV_CODEC_CAP_LOSSLESS         0x80000000
 
 /**
+ * Codec is backed by a hardware implementation. Typically used to
+ * identify a non-hwaccel hardware decoder. For information about hwaccels, use
+ * avcodec_get_hw_config() instead.
+ */
+#define AV_CODEC_CAP_HARDWARE            (1 << 18)
+
+/**
+ * Codec is potentially backed by a hardware implementation, but not
+ * necessarily. This is used instead of AV_CODEC_CAP_HARDWARE, if the
+ * implementation provides some sort of internal fallback.
+ */
+#define AV_CODEC_CAP_HYBRID              (1 << 19)
+
+/**
  * Pan Scan area.
  * This specifies the area which should be displayed.
  * Note there may be multiple such areas for one frame.
@@ -3376,6 +3390,18 @@ typedef struct AVCodec {
     uint8_t max_lowres;                     ///< maximum value for lowres supported by the decoder
     const AVClass *priv_class;              ///< AVClass for the private context
     const AVProfile *profiles;              ///< array of recognized profiles, or NULL if unknown, array is terminated by {FF_PROFILE_UNKNOWN}
+
+    /**
+     * Group name of the codec implementation.
+     * This is a short symbolic name of the wrapper backing this codec. A
+     * wrapper uses some kind of external implementation for the codec, such
+     * as an external library, or a codec implementation provided by the OS or
+     * the hardware.
+     * If this field is NULL, this is a builtin, libavcodec native codec.
+     * If non-NULL, this will be the suffix in AVCodec.name in most cases
+     * (usually AVCodec.name will be of the form "<codec_name>_<wrapper_name>").
+     */
+    const char *wrapper_name;
 
     /*****************************************************************
      * No fields below this line are part of the public API. They

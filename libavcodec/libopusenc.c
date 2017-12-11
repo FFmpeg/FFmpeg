@@ -566,4 +566,5 @@ AVCodec ff_libopus_encoder = {
     .supported_samplerates = libopus_sample_rates,
     .priv_class      = &libopus_class,
     .defaults        = libopus_defaults,
+    .wrapper_name    = "libopus",
 };

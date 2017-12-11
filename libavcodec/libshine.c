@@ -146,4 +146,5 @@ AVCodec ff_libshine_encoder = {
     .channel_layouts       = (const uint64_t[]) { AV_CH_LAYOUT_MONO,
                                                   AV_CH_LAYOUT_STEREO,
                                                   0 },
+    .wrapper_name          = "libshine",
 };

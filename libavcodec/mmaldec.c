@@ -840,12 +840,13 @@ static const AVOption options[]={
         .decode         = ffmmal_decode, \
         .flush          = ffmmal_flush, \
         .priv_class     = &ffmmal_##NAME##_dec_class, \
-        .capabilities   = AV_CODEC_CAP_DELAY, \
+        .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE, \
         .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS, \
         .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_MMAL, \
                                                          AV_PIX_FMT_YUV420P, \
                                                          AV_PIX_FMT_NONE}, \
         .hw_configs     = mmal_hw_configs, \
+        .wrapper_name   = "mmal", \
     };
 
 FFMMAL_DEC(h264, AV_CODEC_ID_H264)

@@ -223,4 +223,5 @@ AVCodec ff_libopus_decoder = {
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLT,
                                                      AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
+    .wrapper_name   = "libopus",
 };

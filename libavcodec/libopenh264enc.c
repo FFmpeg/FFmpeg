@@ -301,4 +301,5 @@ AVCodec ff_libopenh264_encoder = {
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P,
                                                     AV_PIX_FMT_NONE },
     .priv_class     = &class,
+    .wrapper_name   = "libopenh264",
 };

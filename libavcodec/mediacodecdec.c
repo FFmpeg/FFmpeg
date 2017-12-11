@@ -539,10 +539,11 @@ AVCodec ff_h264_mediacodec_decoder = {
     .decode         = mediacodec_decode_frame,
     .flush          = mediacodec_decode_flush,
     .close          = mediacodec_decode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE,
     .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
     .bsfs           = "h264_mp4toannexb",
     .hw_configs     = mediacodec_hw_configs,
+    .wrapper_name   = "mediacodec",
 };
 #endif
 
@@ -557,10 +558,11 @@ AVCodec ff_hevc_mediacodec_decoder = {
     .decode         = mediacodec_decode_frame,
     .flush          = mediacodec_decode_flush,
     .close          = mediacodec_decode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE,
     .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
     .bsfs           = "hevc_mp4toannexb",
     .hw_configs     = mediacodec_hw_configs,
+    .wrapper_name   = "mediacodec",
 };
 #endif
 
@@ -575,9 +577,10 @@ AVCodec ff_mpeg2_mediacodec_decoder = {
     .decode         = mediacodec_decode_frame,
     .flush          = mediacodec_decode_flush,
     .close          = mediacodec_decode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE,
     .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
     .hw_configs     = mediacodec_hw_configs,
+    .wrapper_name   = "mediacodec",
 };
 #endif
 
@@ -592,9 +595,10 @@ AVCodec ff_mpeg4_mediacodec_decoder = {
     .decode         = mediacodec_decode_frame,
     .flush          = mediacodec_decode_flush,
     .close          = mediacodec_decode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE,
     .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
     .hw_configs     = mediacodec_hw_configs,
+    .wrapper_name   = "mediacodec",
 };
 #endif
 
@@ -609,9 +613,10 @@ AVCodec ff_vp8_mediacodec_decoder = {
     .decode         = mediacodec_decode_frame,
     .flush          = mediacodec_decode_flush,
     .close          = mediacodec_decode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE,
     .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
     .hw_configs     = mediacodec_hw_configs,
+    .wrapper_name   = "mediacodec",
 };
 #endif
 
@@ -626,8 +631,9 @@ AVCodec ff_vp9_mediacodec_decoder = {
     .decode         = mediacodec_decode_frame,
     .flush          = mediacodec_decode_flush,
     .close          = mediacodec_decode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE,
     .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
     .hw_configs     = mediacodec_hw_configs,
+    .wrapper_name   = "mediacodec",
 };
 #endif

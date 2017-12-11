@@ -442,4 +442,5 @@ AVCodec ff_libx265_encoder = {
     .priv_class       = &class,
     .defaults         = x265_defaults,
     .capabilities     = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS,
+    .wrapper_name     = "libx265",
 };
