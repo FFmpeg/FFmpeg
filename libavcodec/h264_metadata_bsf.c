@@ -63,6 +63,8 @@ typedef struct H264MetadataContext {
 
     const char *sei_user_data;
     int sei_first_au;
+
+    int delete_filler;
 } H264MetadataContext;
 
 
@@ -346,6 +348,44 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
         }
     }
 
+    if (ctx->delete_filler) {
+        for (i = 0; i < au->nb_units; i++) {
+            if (au->units[i].type == H264_NAL_FILLER_DATA) {
+                // Filler NAL units.
+                err = ff_cbs_delete_unit(ctx->cbc, au, i);
+                if (err < 0) {
+                    av_log(bsf, AV_LOG_ERROR, "Failed to delete "
+                           "filler NAL.\n");
+                    goto fail;
+                }
+                --i;
+                continue;
+            }
+
+            if (au->units[i].type == H264_NAL_SEI) {
+                // Filler SEI messages.
+                H264RawSEI *sei = au->units[i].content;
+
+                for (j = 0; j < sei->payload_count; j++) {
+                    if (sei->payload[j].payload_type ==
+                        H264_SEI_TYPE_FILLER_PAYLOAD) {
+                        err = ff_cbs_h264_delete_sei_message(ctx->cbc, au,
+                                                             &au->units[i], j);
+                        if (err < 0) {
+                            av_log(bsf, AV_LOG_ERROR, "Failed to delete "
+                                   "filler SEI message.\n");
+                            goto fail;
+                        }
+                        // Renumbering might have happened, start again at
+                        // the same NAL unit position.
+                        --i;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     err = ff_cbs_write_packet(ctx->cbc, out, au);
     if (err < 0) {
         av_log(bsf, AV_LOG_ERROR, "Failed to write packet.\n");
@@ -464,6 +504,9 @@ static const AVOption h264_metadata_options[] = {
 
     { "sei_user_data", "Insert SEI user data (UUID+string)",
         OFFSET(sei_user_data), AV_OPT_TYPE_STRING, { .str = NULL } },
+
+    { "delete_filler", "Delete all filler (both NAL and SEI)",
+        OFFSET(delete_filler), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1 },
 
     { NULL }
 };
