@@ -241,6 +241,7 @@ int ff_init_buffer_info(AVCodecContext *s, AVFrame *frame);
 
 void ff_color_frame(AVFrame *frame, const int color[4]);
 
+extern volatile int ff_avcodec_locked;
 int ff_lock_avcodec(AVCodecContext *log_ctx, const AVCodec *codec);
 int ff_unlock_avcodec(const AVCodec *codec);
 
