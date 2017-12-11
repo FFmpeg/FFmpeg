@@ -131,7 +131,7 @@ static int config_props(AVFilterLink *inlink)
     const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(inlink->format);
     const int hsub = pix_desc->log2_chroma_w;
     const int vsub = pix_desc->log2_chroma_h;
-    int nb_planes, i;
+    int nb_planes;
 
     av_image_fill_max_pixsteps(s->max_step, NULL, pix_desc);
     s->planewidth[0]  = s->planewidth[3]  = inlink->w;
@@ -141,8 +141,15 @@ static int config_props(AVFilterLink *inlink)
 
     nb_planes = av_pix_fmt_count_planes(inlink->format);
 
+    return ff_hflip_init(s, s->max_step, nb_planes);
+}
+
+int ff_hflip_init(FlipContext *s, int step[4], int nb_planes)
+{
+    int i;
+
     for (i = 0; i < nb_planes; i++) {
-        switch (s->max_step[i]) {
+        switch (step[i]) {
         case 1: s->flip_line[i] = hflip_byte_c;  break;
         case 2: s->flip_line[i] = hflip_short_c; break;
         case 3: s->flip_line[i] = hflip_b24_c;   break;
@@ -153,9 +160,8 @@ static int config_props(AVFilterLink *inlink)
             return AVERROR_BUG;
         }
     }
-
     if (ARCH_X86)
-        ff_hflip_init_x86(s, s->max_step, nb_planes);
+        ff_hflip_init_x86(s, step, nb_planes);
 
     return 0;
 }
