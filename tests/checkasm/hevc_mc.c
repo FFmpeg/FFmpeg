@@ -291,13 +291,13 @@ static void check_qpel(HEVCDSPContext *h, int16_t *dst0, int16_t *dst1,
 
 void checkasm_check_hevc_mc(void)
 {
-    DECLARE_ALIGNED(16, uint8_t,  buf8_0)[BUF_SIZE];
-    DECLARE_ALIGNED(16, uint8_t,  buf8_1)[BUF_SIZE];
+    LOCAL_ALIGNED(16, uint8_t,  buf8_0, [BUF_SIZE]);
+    LOCAL_ALIGNED(16, uint8_t,  buf8_1, [BUF_SIZE]);
 
-    DECLARE_ALIGNED(16, int16_t, buf16_0)[BUF_SIZE];
-    DECLARE_ALIGNED(16, int16_t, buf16_1)[BUF_SIZE];
+    LOCAL_ALIGNED(16, int16_t, buf16_0, [BUF_SIZE]);
+    LOCAL_ALIGNED(16, int16_t, buf16_1, [BUF_SIZE]);
 
-    DECLARE_ALIGNED(16, int16_t, mcbuffer)[BUF_SIZE];
+    LOCAL_ALIGNED(16, int16_t, mcbuffer, [BUF_SIZE]);
 
     HEVCDSPContext h;
     int bit_depth;
