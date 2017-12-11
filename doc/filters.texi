@@ -7146,6 +7146,11 @@ The expression which sets the thickness of the box edge.
 A value of @code{fill} will create a filled box. Default value is @code{3}.
 
 See below for the list of accepted constants.
+
+@item replace
+Applicable if the input has alpha. With value @code{1}, the pixels of the painted box
+will overwrite the video's color and alpha pixels.
+Default is @code{0}, which composites the box onto the input, leaving the video's alpha intact.
 @end table
 
 The parameters for @var{x}, @var{y}, @var{w} and @var{h} and @var{t} are expressions containing the
@@ -7243,6 +7248,11 @@ video with inverted luma.
 The expression which sets the thickness of the grid line. Default value is @code{1}.
 
 See below for the list of accepted constants.
+
+@item replace
+Applicable if the input has alpha. With @code{1} the pixels of the painted grid
+will overwrite the video's color and alpha pixels.
+Default is @code{0}, which composites the grid onto the input, leaving the video's alpha intact.
 @end table
 
 The parameters for @var{x}, @var{y}, @var{w} and @var{h} and @var{t} are expressions containing the
