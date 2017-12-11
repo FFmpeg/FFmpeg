@@ -674,6 +674,8 @@ static int cbs_h26 ## h26n ## _replace_ ## ps_var(CodedBitstreamContext *ctx, \
                " id : %d.\n", id); \
         return AVERROR_INVALIDDATA; \
     } \
+    if (priv->ps_var[id] == priv->active_ ## ps_var) \
+        priv->active_ ## ps_var = NULL ; \
     av_freep(&priv->ps_var[id]); \
     priv->ps_var[id] = av_malloc(sizeof(*ps_var)); \
     if (!priv->ps_var[id]) \
