@@ -135,7 +135,7 @@ static int cbs_read_fragment_content(CodedBitstreamContext *ctx,
 
         err = ctx->codec->read_unit(ctx, &frag->units[i]);
         if (err == AVERROR(ENOSYS)) {
-            av_log(ctx->log_ctx, AV_LOG_WARNING,
+            av_log(ctx->log_ctx, AV_LOG_VERBOSE,
                    "Decomposition unimplemented for unit %d "
                    "(type %"PRIu32").\n", i, frag->units[i].type);
         } else if (err < 0) {
