@@ -1646,40 +1646,40 @@ static int hls_write_header(AVFormatContext *s)
     for (i = 0; i < hls->nb_varstreams; i++) {
         vs = &hls->var_streams[i];
 
-    av_dict_copy(&options, hls->format_options, 0);
-    ret = avformat_write_header(vs->avf, &options);
-    if (av_dict_count(options)) {
-        av_log(s, AV_LOG_ERROR, "Some of provided format options in '%s' are not recognized\n", hls->format_options_str);
-        ret = AVERROR(EINVAL);
+        av_dict_copy(&options, hls->format_options, 0);
+        ret = avformat_write_header(vs->avf, &options);
+        if (av_dict_count(options)) {
+            av_log(s, AV_LOG_ERROR, "Some of provided format options in '%s' are not recognized\n", hls->format_options_str);
+            ret = AVERROR(EINVAL);
+            av_dict_free(&options);
+            goto fail;
+        }
         av_dict_free(&options);
-        goto fail;
-    }
-    av_dict_free(&options);
-    //av_assert0(s->nb_streams == hls->avf->nb_streams);
-    for (j = 0; j < vs->nb_streams; j++) {
-        AVStream *inner_st;
-        AVStream *outer_st = vs->streams[j];
+        //av_assert0(s->nb_streams == hls->avf->nb_streams);
+        for (j = 0; j < vs->nb_streams; j++) {
+            AVStream *inner_st;
+            AVStream *outer_st = vs->streams[j];
 
-        if (hls->max_seg_size > 0) {
-            if ((outer_st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) &&
-                (outer_st->codecpar->bit_rate > hls->max_seg_size)) {
-                av_log(s, AV_LOG_WARNING, "Your video bitrate is bigger than hls_segment_size, "
-                       "(%"PRId64 " > %"PRId64 "), the result maybe not be what you want.",
-                       outer_st->codecpar->bit_rate, hls->max_seg_size);
+            if (hls->max_seg_size > 0) {
+                if ((outer_st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) &&
+                    (outer_st->codecpar->bit_rate > hls->max_seg_size)) {
+                    av_log(s, AV_LOG_WARNING, "Your video bitrate is bigger than hls_segment_size, "
+                           "(%"PRId64 " > %"PRId64 "), the result maybe not be what you want.",
+                           outer_st->codecpar->bit_rate, hls->max_seg_size);
+                }
             }
-        }
 
-        if (outer_st->codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE)
-            inner_st = vs->avf->streams[j];
-        else if (vs->vtt_avf)
-            inner_st = vs->vtt_avf->streams[0];
-        else {
-            /* We have a subtitle stream, when the user does not want one */
-            inner_st = NULL;
-            continue;
+            if (outer_st->codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE)
+                inner_st = vs->avf->streams[j];
+            else if (vs->vtt_avf)
+                inner_st = vs->vtt_avf->streams[0];
+            else {
+                /* We have a subtitle stream, when the user does not want one */
+                inner_st = NULL;
+                continue;
+            }
+            avpriv_set_pts_info(outer_st, inner_st->pts_wrap_bits, inner_st->time_base.num, inner_st->time_base.den);
         }
-        avpriv_set_pts_info(outer_st, inner_st->pts_wrap_bits, inner_st->time_base.num, inner_st->time_base.den);
-    }
     }
 fail:
 
