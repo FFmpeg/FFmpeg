@@ -138,8 +138,10 @@ int ff_isom_write_avcc(AVIOContext *pb, const uint8_t *data, int len)
                 buf += size;
             }
 
-            if (!sps || !pps || sps_size < 4 || sps_size > UINT16_MAX || pps_size > UINT16_MAX)
+            if (!sps || !pps || sps_size < 4 || sps_size > UINT16_MAX || pps_size > UINT16_MAX){
+                av_free(start);
                 return AVERROR_INVALIDDATA;
+            }
 
             avio_w8(pb, 1); /* version */
             avio_w8(pb, sps[1]); /* profile */
