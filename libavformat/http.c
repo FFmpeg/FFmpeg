@@ -306,6 +306,22 @@ int ff_http_do_new_request(URLContext *h, const char *uri)
     HTTPContext *s = h->priv_data;
     AVDictionary *options = NULL;
     int ret;
+    char hostname1[1024], hostname2[1024], proto1[10], proto2[10];
+    int port1, port2;
+
+    av_url_split(proto1, sizeof(proto1), NULL, 0,
+                 hostname1, sizeof(hostname1), &port1,
+                 NULL, 0, s->location);
+    av_url_split(proto2, sizeof(proto2), NULL, 0,
+                 hostname2, sizeof(hostname2), &port2,
+                 NULL, 0, uri);
+    if (port1 != port2 || strncmp(hostname1, hostname2, sizeof(hostname2)) != 0) {
+        av_log(h, AV_LOG_ERROR, "Cannot reuse HTTP connection for different host: %s:%d != %s:%d\n",
+            hostname1, port1,
+            hostname2, port2
+        );
+        return AVERROR(EINVAL);
+    }
 
     ret = http_shutdown(h, h->flags);
     if (ret < 0)
