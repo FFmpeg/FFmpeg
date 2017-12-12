@@ -5918,11 +5918,11 @@ enabled libvpx            && {
     }
     enabled libvpx_vp9_decoder && {
         check_pkg_config libvpx_vp9_decoder "vpx >= 1.4.0" "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_vp9_dx ||
-            check_lib libvpx_vp9_decoder "vpx/vpx_decoder.h vpx/vp8dx.h" "vpx_codec_vp9_dx VPX_IMG_FMT_HIGHBITDEPTH" -lvpx
+            check_lib libvpx_vp9_decoder "vpx/vpx_decoder.h vpx/vp8dx.h" "vpx_codec_vp9_dx VPX_IMG_FMT_HIGHBITDEPTH" "-lvpx $libm_extralibs"
     }
     enabled libvpx_vp9_encoder && {
         check_pkg_config libvpx_vp9_encoder "vpx >= 1.4.0" "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_vp9_cx ||
-            check_lib libvpx_vp9_encoder "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_vp9_cx VPX_IMG_FMT_HIGHBITDEPTH" -lvpx
+            check_lib libvpx_vp9_encoder "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_vp9_cx VPX_IMG_FMT_HIGHBITDEPTH" "-lvpx $libm_extralibs"
     }
     if disabled_all libvpx_vp8_decoder libvpx_vp9_decoder libvpx_vp8_encoder libvpx_vp9_encoder; then
         die "libvpx enabled but no supported decoders found"
