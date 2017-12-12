@@ -96,6 +96,8 @@ struct playlist {
     uint8_t* read_buffer;
     AVIOContext *input;
     int input_read_done;
+    AVIOContext *input_next;
+    int input_next_requested;
     AVFormatContext *parent;
     int index;
     AVFormatContext *ctx;
@@ -209,6 +211,7 @@ typedef struct HLSContext {
     char *allowed_extensions;
     int max_reload;
     int http_persistent;
+    int http_multiple;
     AVIOContext *playlist_pb;
 } HLSContext;
 
@@ -261,6 +264,9 @@ static void free_playlist_list(HLSContext *c)
         if (pls->input)
             ff_format_io_close(c->ctx, &pls->input);
         pls->input_read_done = 0;
+        if (pls->input_next)
+            ff_format_io_close(c->ctx, &pls->input_next);
+        pls->input_next_requested = 0;
         if (pls->ctx) {
             pls->ctx->pb = NULL;
             avformat_close_input(&pls->ctx);
@@ -924,6 +930,14 @@ static struct segment *current_segment(struct playlist *pls)
     return pls->segments[pls->cur_seq_no - pls->start_seq_no];
 }
 
+static struct segment *next_segment(struct playlist *pls)
+{
+    int n = pls->cur_seq_no - pls->start_seq_no + 1;
+    if (n >= pls->n_segments)
+        return NULL;
+    return pls->segments[n];
+}
+
 enum ReadFromURLMode {
     READ_NORMAL,
     READ_COMPLETE,
@@ -1365,6 +1379,7 @@ static int read_data(void *opaque, uint8_t *buf, int buf_size)
     int ret;
     int just_opened = 0;
     int reload_count = 0;
+    struct segment *seg;
 
 restart:
     if (!v->needed)
@@ -1372,7 +1387,6 @@ restart:
 
     if (!v->input || (c->http_persistent && v->input_read_done)) {
         int64_t reload_interval;
-        struct segment *seg;
 
         /* Check that the playlist is still needed before opening a new
          * segment. */
@@ -1430,16 +1444,37 @@ reload:
         if (ret)
             return ret;
 
-        ret = open_input(c, v, seg, &v->input);
+        if (c->http_multiple && av_strstart(seg->url, "http", NULL) && v->input_next_requested) {
+            FFSWAP(AVIOContext *, v->input, v->input_next);
+            v->input_next_requested = 0;
+            ret = 0;
+        } else {
+            ret = open_input(c, v, seg, &v->input);
+        }
         if (ret < 0) {
             if (ff_check_interrupt(c->interrupt_callback))
                 return AVERROR_EXIT;
-            av_log(v->parent, AV_LOG_WARNING, "Failed to open segment of playlist %d\n",
+            av_log(v->parent, AV_LOG_WARNING, "Failed to open segment %d of playlist %d\n",
+                   v->cur_seq_no,
                    v->index);
             v->cur_seq_no += 1;
             goto reload;
         }
         just_opened = 1;
+    }
+
+    seg = next_segment(v);
+    if (c->http_multiple && !v->input_next_requested && seg) {
+        ret = open_input(c, v, seg, &v->input_next);
+        if (ret < 0) {
+            if (ff_check_interrupt(c->interrupt_callback))
+                return AVERROR_EXIT;
+            av_log(v->parent, AV_LOG_WARNING, "Failed to open segment %d of playlist %d\n",
+                   v->cur_seq_no + 1,
+                   v->index);
+        } else {
+            v->input_next_requested = 1;
+        }
     }
 
     if (v->init_sec_buf_read_offset < v->init_sec_data_len) {
@@ -1964,6 +1999,9 @@ static int recheck_discard_flags(AVFormatContext *s, int first)
             if (pls->input)
                 ff_format_io_close(pls->parent, &pls->input);
             pls->input_read_done = 0;
+            if (pls->input_next)
+                ff_format_io_close(pls->parent, &pls->input_next);
+            pls->input_next_requested = 0;
             pls->needed = 0;
             changed = 1;
             av_log(s, AV_LOG_INFO, "No longer receiving playlist %d\n", i);
@@ -2199,6 +2237,9 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
         if (pls->input)
             ff_format_io_close(pls->parent, &pls->input);
         pls->input_read_done = 0;
+        if (pls->input_next)
+            ff_format_io_close(pls->parent, &pls->input_next);
+        pls->input_next_requested = 0;
         av_packet_unref(&pls->pkt);
         reset_packet(&pls->pkt);
         pls->pb.eof_reached = 0;
@@ -2255,6 +2296,8 @@ static const AVOption hls_options[] = {
         OFFSET(max_reload), AV_OPT_TYPE_INT, {.i64 = 1000}, 0, INT_MAX, FLAGS},
     {"http_persistent", "Use persistent HTTP connections",
         OFFSET(http_persistent), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, FLAGS },
+    {"http_multiple", "Use multiple HTTP connections for fetching segments",
+        OFFSET(http_multiple), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, FLAGS},
     {NULL}
 };
 

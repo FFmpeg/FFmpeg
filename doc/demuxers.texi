@@ -320,6 +320,10 @@ Default value is 1000.
 @item http_persistent
 Use persistent HTTP connections. Applicable only for HTTP streams.
 Enabled by default.
+
+@item http_multiple
+Use multiple HTTP connections for downloading HTTP segments.
+Enabled by default.
 @end table
 
 @section image2
