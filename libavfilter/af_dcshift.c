@@ -28,7 +28,7 @@
 typedef struct DCShiftContext {
     const AVClass *class;
     double dcshift;
-    double limiterthreshhold;
+    double limiterthreshold;
     double limitergain;
 } DCShiftContext;
 
@@ -47,7 +47,7 @@ static av_cold int init(AVFilterContext *ctx)
 {
     DCShiftContext *s = ctx->priv;
 
-    s->limiterthreshhold = INT32_MAX * (1.0 - (fabs(s->dcshift) - s->limitergain));
+    s->limiterthreshold = INT32_MAX * (1.0 - (fabs(s->dcshift) - s->limitergain));
 
     return 0;
 }
@@ -106,14 +106,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
                 d = src[j];
 
-                if (d > s->limiterthreshhold && dcshift > 0) {
-                    d = (d - s->limiterthreshhold) * s->limitergain /
-                             (INT32_MAX - s->limiterthreshhold) +
-                             s->limiterthreshhold + dcshift;
-                } else if (d < -s->limiterthreshhold && dcshift < 0) {
-                    d = (d + s->limiterthreshhold) * s->limitergain /
-                             (INT32_MAX - s->limiterthreshhold) -
-                             s->limiterthreshhold + dcshift;
+                if (d > s->limiterthreshold && dcshift > 0) {
+                    d = (d - s->limiterthreshold) * s->limitergain /
+                             (INT32_MAX - s->limiterthreshold) +
+                             s->limiterthreshold + dcshift;
+                } else if (d < -s->limiterthreshold && dcshift < 0) {
+                    d = (d + s->limiterthreshold) * s->limitergain /
+                             (INT32_MAX - s->limiterthreshold) -
+                             s->limiterthreshold + dcshift;
                 } else {
                     d = dcshift * INT32_MAX + d;
                 }
