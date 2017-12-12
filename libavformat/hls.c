@@ -1149,7 +1149,7 @@ static void intercept_id3(struct playlist *pls, uint8_t *buf,
         pls->is_id3_timestamped = (pls->id3_mpegts_timestamp != AV_NOPTS_VALUE);
 }
 
-static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg)
+static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg, AVIOContext **in)
 {
     AVDictionary *opts = NULL;
     int ret;
@@ -1176,7 +1176,7 @@ static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg)
            seg->url, seg->url_offset, pls->index);
 
     if (seg->key_type == KEY_NONE) {
-        ret = open_url(pls->parent, &pls->input, seg->url, c->avio_opts, opts, &is_http);
+        ret = open_url(pls->parent, in, seg->url, c->avio_opts, opts, &is_http);
     } else if (seg->key_type == KEY_AES_128) {
         AVDictionary *opts2 = NULL;
         char iv[33], key[33], url[MAX_URL_SIZE];
@@ -1207,7 +1207,7 @@ static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg)
         av_dict_set(&opts2, "key", key, 0);
         av_dict_set(&opts2, "iv", iv, 0);
 
-        ret = open_url(pls->parent, &pls->input, url, opts2, opts, &is_http);
+        ret = open_url(pls->parent, in, url, opts2, opts, &is_http);
 
         av_dict_free(&opts2);
 
@@ -1234,11 +1234,11 @@ static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg)
      * noticed without the call, though.
      */
     if (ret == 0 && !is_http && seg->key_type == KEY_NONE && seg->url_offset) {
-        int64_t seekret = avio_seek(pls->input, seg->url_offset, SEEK_SET);
+        int64_t seekret = avio_seek(*in, seg->url_offset, SEEK_SET);
         if (seekret < 0) {
             av_log(pls->parent, AV_LOG_ERROR, "Unable to seek to offset %"PRId64" of HLS segment '%s'\n", seg->url_offset, seg->url);
             ret = seekret;
-            ff_format_io_close(pls->parent, &pls->input);
+            ff_format_io_close(pls->parent, in);
         }
     }
 
@@ -1264,7 +1264,7 @@ static int update_init_section(struct playlist *pls, struct segment *seg)
     if (!seg->init_section)
         return 0;
 
-    ret = open_input(c, pls, seg->init_section);
+    ret = open_input(c, pls, seg->init_section, &pls->input);
     if (ret < 0) {
         av_log(pls->parent, AV_LOG_WARNING,
                "Failed to open an initialization section in playlist %d\n",
@@ -1430,7 +1430,7 @@ reload:
         if (ret)
             return ret;
 
-        ret = open_input(c, v, seg);
+        ret = open_input(c, v, seg, &v->input);
         if (ret < 0) {
             if (ff_check_interrupt(c->interrupt_callback))
                 return AVERROR_EXIT;
