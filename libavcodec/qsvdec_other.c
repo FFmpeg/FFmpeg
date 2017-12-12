@@ -190,11 +190,12 @@ AVCodec ff_mpeg2_qsv_decoder = {
     .decode         = qsv_decode_frame,
     .flush          = qsv_decode_flush,
     .close          = qsv_decode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_HYBRID,
     .priv_class     = &mpeg2_qsv_class,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
                                                     AV_PIX_FMT_QSV,
                                                     AV_PIX_FMT_NONE },
+    .wrapper_name   = "qsv",
 };
 #endif
 
@@ -225,11 +226,12 @@ AVCodec ff_vc1_qsv_decoder = {
     .decode         = qsv_decode_frame,
     .flush          = qsv_decode_flush,
     .close          = qsv_decode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_HYBRID,
     .priv_class     = &vc1_qsv_class,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
                                                     AV_PIX_FMT_QSV,
                                                     AV_PIX_FMT_NONE },
+    .wrapper_name   = "qsv",
 };
 #endif
 
@@ -260,10 +262,11 @@ AVCodec ff_vp8_qsv_decoder = {
     .decode         = qsv_decode_frame,
     .flush          = qsv_decode_flush,
     .close          = qsv_decode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_HYBRID,
     .priv_class     = &vp8_qsv_class,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
                                                     AV_PIX_FMT_QSV,
                                                     AV_PIX_FMT_NONE },
+    .wrapper_name   = "qsv",
 };
 #endif

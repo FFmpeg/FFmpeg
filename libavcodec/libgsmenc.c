@@ -117,6 +117,7 @@ AVCodec ff_libgsm_encoder = {
     .close          = libgsm_encode_close,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
+    .wrapper_name   = "libgsm",
 };
 
 AVCodec ff_libgsm_ms_encoder = {
@@ -129,4 +130,5 @@ AVCodec ff_libgsm_ms_encoder = {
     .close          = libgsm_encode_close,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
+    .wrapper_name   = "libgsm",
 };

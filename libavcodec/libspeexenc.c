@@ -366,4 +366,5 @@ AVCodec ff_libspeex_encoder = {
     .supported_samplerates = (const int[]){ 8000, 16000, 32000, 0 },
     .priv_class     = &class,
     .defaults       = defaults,
+    .wrapper_name   = "libspeex",
 };

@@ -191,4 +191,5 @@ AVCodec ff_libvo_aacenc_encoder = {
     .capabilities   = AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
+    .wrapper_name   = "libvo_aacenc",
 };

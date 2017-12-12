@@ -222,4 +222,5 @@ AVCodec ff_libtwolame_encoder = {
         AV_CH_LAYOUT_STEREO,
         0 },
     .supported_samplerates = twolame_samplerates,
+    .wrapper_name   = "libtwolame",
 };

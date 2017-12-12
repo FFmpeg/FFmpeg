@@ -481,4 +481,5 @@ AVCodec ff_libschroedinger_encoder = {
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_NONE
     },
+    .wrapper_name   = "libschroedinger",
 };

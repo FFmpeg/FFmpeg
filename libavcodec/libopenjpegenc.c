@@ -426,4 +426,5 @@ AVCodec ff_libopenjpeg_encoder = {
         AV_PIX_FMT_NONE
     },
     .priv_class     = &class,
+    .wrapper_name   = "libopenjpeg",
 };

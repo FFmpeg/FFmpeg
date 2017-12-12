@@ -237,4 +237,5 @@ AVCodec ff_libfaac_encoder = {
                                                      AV_SAMPLE_FMT_NONE },
     .profiles       = NULL_IF_CONFIG_SMALL(profiles),
     .channel_layouts = faac_channel_layouts,
+    .wrapper_name   = "libfaac",
 };

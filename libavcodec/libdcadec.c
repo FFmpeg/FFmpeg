@@ -202,4 +202,5 @@ AVCodec ff_libdcadec_decoder = {
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S32P, AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_NONE },
     .profiles       = NULL_IF_CONFIG_SMALL(profiles),
+    .wrapper_name   = "libdcadec",
 };

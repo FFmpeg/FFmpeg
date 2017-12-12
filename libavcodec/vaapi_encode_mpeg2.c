@@ -669,10 +669,11 @@ AVCodec ff_mpeg2_vaapi_encoder = {
     .init           = &vaapi_encode_mpeg2_init,
     .encode2        = &ff_vaapi_encode2,
     .close          = &vaapi_encode_mpeg2_close,
-    .capabilities   = AV_CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE,
     .defaults       = vaapi_encode_mpeg2_defaults,
     .pix_fmts = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_VAAPI,
         AV_PIX_FMT_NONE,
     },
+    .wrapper_name   = "vaapi",
 };
