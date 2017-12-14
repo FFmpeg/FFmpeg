@@ -1644,8 +1644,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
         {
             ret = decode_tiles(avctx, data, size);
-            if (ret < 0)
+            if (ret < 0) {
+                ff_thread_report_progress(&s->s.frames[CUR_FRAME].tf, INT_MAX, 0);
                 return ret;
+            }
         }
 
         // Sum all counts fields into td[0].counts for tile threading
