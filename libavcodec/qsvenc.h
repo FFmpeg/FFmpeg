@@ -55,6 +55,13 @@
 #define QSV_HAVE_QVBR   0
 #endif
 
+#if !QSV_HAVE_LA_DS
+#define MFX_LOOKAHEAD_DS_UNKNOWN 0
+#define MFX_LOOKAHEAD_DS_OFF 0
+#define MFX_LOOKAHEAD_DS_2x 0
+#define MFX_LOOKAHEAD_DS_4x 0
+#endif
+
 #define QSV_COMMON_OPTS \
 { "async_depth", "Maximum processing parallelism", OFFSET(qsv.async_depth), AV_OPT_TYPE_INT, { .i64 = ASYNC_DEPTH_DEFAULT }, 0, INT_MAX, VE },                          \
 { "avbr_accuracy",    "Accuracy of the AVBR ratecontrol",    OFFSET(qsv.avbr_accuracy),    AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },                             \

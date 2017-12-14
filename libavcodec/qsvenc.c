@@ -599,6 +599,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
             q->extco2.Trellis = q->trellis;
 #endif
 
+#if QSV_HAVE_LA_DS
+            q->extco2.LookAheadDS = q->look_ahead_downsampling;
+#endif
+
 #if QSV_HAVE_BREF_TYPE
 #if FF_API_PRIVATE_OPT
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -615,10 +619,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
             q->extparam_internal[q->nb_extparam_internal++] = (mfxExtBuffer *)&q->extco2;
-
-#if QSV_HAVE_LA_DS
-            q->extco2.LookAheadDS           = q->look_ahead_downsampling;
-#endif
         }
 #endif
     }
