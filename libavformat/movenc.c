@@ -1809,23 +1809,30 @@ static int mov_write_colr_tag(AVIOContext *pb, MOVTrack *track)
         ffio_wfourcc(pb, "nclc");
     switch (track->par->color_primaries) {
     case AVCOL_PRI_BT709:     avio_wb16(pb, 1); break;
+    case AVCOL_PRI_BT470BG:   avio_wb16(pb, 5); break;
     case AVCOL_PRI_SMPTE170M:
     case AVCOL_PRI_SMPTE240M: avio_wb16(pb, 6); break;
-    case AVCOL_PRI_BT470BG:   avio_wb16(pb, 5); break;
+    case AVCOL_PRI_BT2020:    avio_wb16(pb, 9); break;
+    case AVCOL_PRI_SMPTE431:  avio_wb16(pb, 11); break;
+    case AVCOL_PRI_SMPTE432:  avio_wb16(pb, 12); break;
     default:                  avio_wb16(pb, 2);
     }
     switch (track->par->color_trc) {
-    case AVCOL_TRC_BT709:     avio_wb16(pb, 1); break;
-    case AVCOL_TRC_SMPTE170M: avio_wb16(pb, 1); break; // remapped
-    case AVCOL_TRC_SMPTE240M: avio_wb16(pb, 7); break;
-    default:                  avio_wb16(pb, 2);
+    case AVCOL_TRC_BT709:        avio_wb16(pb, 1); break;
+    case AVCOL_TRC_SMPTE170M:    avio_wb16(pb, 1); break; // remapped
+    case AVCOL_TRC_SMPTE240M:    avio_wb16(pb, 7); break;
+    case AVCOL_TRC_SMPTEST2084:  avio_wb16(pb, 16); break;
+    case AVCOL_TRC_SMPTE428:     avio_wb16(pb, 17); break;
+    case AVCOL_TRC_ARIB_STD_B67: avio_wb16(pb, 18); break;
+    default:                     avio_wb16(pb, 2);
     }
     switch (track->par->color_space) {
-    case AVCOL_SPC_BT709:     avio_wb16(pb, 1); break;
+    case AVCOL_SPC_BT709:      avio_wb16(pb, 1); break;
     case AVCOL_SPC_BT470BG:
-    case AVCOL_SPC_SMPTE170M: avio_wb16(pb, 6); break;
-    case AVCOL_SPC_SMPTE240M: avio_wb16(pb, 7); break;
-    default:                  avio_wb16(pb, 2);
+    case AVCOL_SPC_SMPTE170M:  avio_wb16(pb, 6); break;
+    case AVCOL_SPC_SMPTE240M:  avio_wb16(pb, 7); break;
+    case AVCOL_SPC_BT2020_NCL: avio_wb16(pb, 9); break;
+    default:                   avio_wb16(pb, 2);
     }
 
     if (track->mode == MODE_MP4) {
