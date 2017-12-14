@@ -40,8 +40,8 @@ SECTION .text
     pcmpeq%1 m6, m6
 
 .loop:
-    mova m0, [mrefq+hq]
-    mova m1, [mrefq+hq+mmsize]
+    movu m0, [mrefq+hq]
+    movu m1, [mrefq+hq+mmsize]
     pavg%1 m0, [prefq+hq]
     pavg%1 m1, [prefq+hq+mmsize]
     pxor m0, m6
