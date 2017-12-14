@@ -44,9 +44,16 @@
 #define QSV_HAVE_LA     QSV_VERSION_ATLEAST(1, 7)
 #define QSV_HAVE_LA_DS  QSV_VERSION_ATLEAST(1, 8)
 #define QSV_HAVE_LA_HRD QSV_VERSION_ATLEAST(1, 11)
+
+#if defined(_WIN32)
 #define QSV_HAVE_ICQ    QSV_VERSION_ATLEAST(1, 8)
 #define QSV_HAVE_VCM    QSV_VERSION_ATLEAST(1, 8)
 #define QSV_HAVE_QVBR   QSV_VERSION_ATLEAST(1, 11)
+#else
+#define QSV_HAVE_ICQ    0
+#define QSV_HAVE_VCM    0
+#define QSV_HAVE_QVBR   0
+#endif
 
 #define QSV_COMMON_OPTS \
 { "async_depth", "Maximum processing parallelism", OFFSET(qsv.async_depth), AV_OPT_TYPE_INT, { .i64 = ASYNC_DEPTH_DEFAULT }, 0, INT_MAX, VE },                          \
