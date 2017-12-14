@@ -495,6 +495,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
 #if QSV_HAVE_VCM
     case MFX_RATECONTROL_VCM:
 #endif
+        q->param.mfx.BufferSizeInKB   = avctx->rc_buffer_size / 8000;
         q->param.mfx.InitialDelayInKB = avctx->rc_initial_buffer_occupancy / 1000;
         q->param.mfx.TargetKbps       = avctx->bit_rate / 1000;
         q->param.mfx.MaxKbps          = avctx->rc_max_rate / 1000;
