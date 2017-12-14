@@ -588,8 +588,7 @@ static const AVCodecHWConfigInternal *rkmpp_hw_configs[] = {
         .receive_frame  = rkmpp_receive_frame, \
         .flush          = rkmpp_flush, \
         .priv_class     = &rkmpp_##NAME##_dec_class, \
-        .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE, \
-        .caps_internal  = AV_CODEC_CAP_AVOID_PROBING, \
+        .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE, \
         .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_DRM_PRIME, \
                                                          AV_PIX_FMT_NONE}, \
         .hw_configs     = rkmpp_hw_configs, \
