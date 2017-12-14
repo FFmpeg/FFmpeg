@@ -287,6 +287,12 @@ static int select_rc_mode(AVCodecContext *avctx, QSVEncContext *q)
         return AVERROR(EINVAL);
     }
 
+    if (!want_qscale && avctx->global_quality > 0 && !QSV_HAVE_ICQ){
+        av_log(avctx, AV_LOG_ERROR,
+               "ICQ ratecontrol mode requested, but is not supported by this SDK version\n");
+        return AVERROR(ENOSYS);
+    }
+
     if (want_qscale) {
         rc_mode = MFX_RATECONTROL_CQP;
         rc_desc = "constant quantization parameter (CQP)";
