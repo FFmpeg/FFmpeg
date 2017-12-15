@@ -95,7 +95,6 @@ Stuff that didn't reach the codebase:
   - 0cef06df0 checkasm: add HEVC MC tests
   - e7078e842 hevcdsp: add x86 SIMD for MC
   - 7993ec19a hevc: Add hevc_get_pixel_4/8/12/16/24/32/48/64
-- VAAPI VP8 decode hwaccel (currently under review: http://ffmpeg.org/pipermail/ffmpeg-devel/2017-February/thread.html#207348)
 - Removal of the custom atomic API (5cc0057f49, see http://ffmpeg.org/pipermail/ffmpeg-devel/2017-March/209003.html)
 - new bitstream reader (see http://ffmpeg.org/pipermail/ffmpeg-devel/2017-April/209609.html)
 - use of the bsf instead of our parser for vp9 superframes (see fa1749dd34)
