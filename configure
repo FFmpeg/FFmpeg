@@ -4521,6 +4521,7 @@ elif enabled arm; then
         elif check_arm_arch 6J;       then echo armv6j
         elif check_arm_arch 6K;       then echo armv6k
         elif check_arm_arch 6Z;       then echo armv6z
+        elif check_arm_arch 6KZ;      then echo armv6zk
         elif check_arm_arch 6ZK;      then echo armv6zk
         elif check_arm_arch 6T2;      then echo armv6t2
         elif check_arm_arch 7;        then echo armv7
