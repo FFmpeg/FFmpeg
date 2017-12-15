@@ -344,11 +344,15 @@ static int decode_nal_sei_message(HEVCContext *s)
     av_log(s->avctx, AV_LOG_DEBUG, "Decoding SEI\n");
 
     while (byte == 0xFF) {
+        if (get_bits_left(gb) < 16 || payload_type > INT_MAX - 255)
+            return AVERROR_INVALIDDATA;
         byte          = get_bits(gb, 8);
         payload_type += byte;
     }
     byte = 0xFF;
     while (byte == 0xFF) {
+        if (get_bits_left(gb) < 8 + 8LL*payload_size)
+            return AVERROR_INVALIDDATA;
         byte          = get_bits(gb, 8);
         payload_size += byte;
     }
