@@ -266,6 +266,8 @@ static void hlsenc_io_close(AVFormatContext *s, AVIOContext **pb, char *filename
 
     if (!http_base_proto || !hls->http_persistent || hls->key_info_file || hls->encrypt) {
         ff_format_io_close(s, pb);
+    } else {
+        avio_flush(*pb);
     }
 }
 
