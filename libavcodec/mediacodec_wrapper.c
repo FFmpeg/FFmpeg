@@ -1206,6 +1206,9 @@ fail:
     }
 
     if (ret < 0) {
+        if (codec->object) {
+            (*env)->DeleteGlobalRef(env, codec->object);
+        }
         ff_jni_reset_jfields(env, &codec->jfields, jni_amediacodec_mapping, 1, codec);
         av_freep(&codec);
     }
