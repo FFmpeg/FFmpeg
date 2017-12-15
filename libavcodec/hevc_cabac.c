@@ -646,8 +646,10 @@ int ff_hevc_cu_qp_delta_abs(HEVCContext *s)
             suffix_val += 1 << k;
             k++;
         }
-        if (k == CABAC_MAX_BIN)
+        if (k == CABAC_MAX_BIN) {
             av_log(s->avctx, AV_LOG_ERROR, "CABAC_MAX_BIN : %d\n", k);
+            return AVERROR_INVALIDDATA;
+        }
 
         while (k--)
             suffix_val += get_cabac_bypass(&s->HEVClc->cc) << k;
