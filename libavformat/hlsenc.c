@@ -203,6 +203,8 @@ typedef struct HLSContext {
     char *master_pl_name;
     unsigned int master_publish_rate;
     int http_persistent;
+    AVIOContext *m3u8_out;
+    AVIOContext *sub_m3u8_out;
 } HLSContext;
 
 static int mkdir_p(const char *path) {
@@ -1085,7 +1087,6 @@ static int create_master_playlist(AVFormatContext *s,
     HLSContext *hls = s->priv_data;
     VariantStream *vs;
     AVStream *vid_st, *aud_st;
-    AVIOContext *master_pb = 0;
     AVDictionary *options = NULL;
     unsigned int i, j;
     int m3u8_name_size, ret, bandwidth;
@@ -1106,8 +1107,7 @@ static int create_master_playlist(AVFormatContext *s,
 
     set_http_options(s, &options, hls);
 
-    ret = s->io_open(s, &master_pb, hls->master_m3u8_url, AVIO_FLAG_WRITE,\
-                     &options);
+    ret = hlsenc_io_open(s, &hls->m3u8_out, hls->master_m3u8_url, &options);
     av_dict_free(&options);
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR, "Failed to open master play list file '%s'\n",
@@ -1115,7 +1115,7 @@ static int create_master_playlist(AVFormatContext *s,
         goto fail;
     }
 
-    ff_hls_write_playlist_version(master_pb, hls->version);
+    ff_hls_write_playlist_version(hls->m3u8_out, hls->version);
 
     /* For variant streams with video add #EXT-X-STREAM-INF tag with attributes*/
     for (i = 0; i < hls->nb_varstreams; i++) {
@@ -1156,7 +1156,7 @@ static int create_master_playlist(AVFormatContext *s,
             bandwidth += aud_st->codecpar->bit_rate;
         bandwidth += bandwidth / 10;
 
-        ff_hls_write_stream_info(vid_st, master_pb, bandwidth, m3u8_rel_name);
+        ff_hls_write_stream_info(vid_st, hls->m3u8_out, bandwidth, m3u8_rel_name);
 
         av_freep(&m3u8_rel_name);
     }
@@ -1164,7 +1164,7 @@ fail:
     if(ret >=0)
         hls->master_m3u8_created = 1;
     av_freep(&m3u8_rel_name);
-    ff_format_io_close(s, &master_pb);
+    hlsenc_io_close(s, &hls->m3u8_out, hls->master_m3u8_url);
     return ret;
 }
 
@@ -1174,8 +1174,6 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
     HLSSegment *en;
     int target_duration = 0;
     int ret = 0;
-    AVIOContext *out = NULL;
-    AVIOContext *sub_out = NULL;
     char temp_filename[1024];
     int64_t sequence = FFMAX(hls->start_sequence, vs->sequence - vs->nb_entries);
     const char *proto = avio_find_protocol_name(s->filename);
@@ -1207,7 +1205,7 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
 
     set_http_options(s, &options, hls);
     snprintf(temp_filename, sizeof(temp_filename), use_rename ? "%s.tmp" : "%s", vs->m3u8_name);
-    if ((ret = s->io_open(s, &out, temp_filename, AVIO_FLAG_WRITE, &options)) < 0)
+    if ((ret = hlsenc_io_open(s, &hls->m3u8_out, temp_filename, &options)) < 0)
         goto fail;
 
     for (en = vs->segments; en; en = en->next) {
@@ -1216,67 +1214,67 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
     }
 
     vs->discontinuity_set = 0;
-    ff_hls_write_playlist_header(out, hls->version, hls->allowcache,
+    ff_hls_write_playlist_header(hls->m3u8_out, hls->version, hls->allowcache,
                                  target_duration, sequence, hls->pl_type);
 
     if((hls->flags & HLS_DISCONT_START) && sequence==hls->start_sequence && vs->discontinuity_set==0 ){
-        avio_printf(out, "#EXT-X-DISCONTINUITY\n");
+        avio_printf(hls->m3u8_out, "#EXT-X-DISCONTINUITY\n");
         vs->discontinuity_set = 1;
     }
     if (vs->has_video && (hls->flags & HLS_INDEPENDENT_SEGMENTS)) {
-        avio_printf(out, "#EXT-X-INDEPENDENT-SEGMENTS\n");
+        avio_printf(hls->m3u8_out, "#EXT-X-INDEPENDENT-SEGMENTS\n");
     }
     for (en = vs->segments; en; en = en->next) {
         if ((hls->encrypt || hls->key_info_file) && (!key_uri || strcmp(en->key_uri, key_uri) ||
                                     av_strcasecmp(en->iv_string, iv_string))) {
-            avio_printf(out, "#EXT-X-KEY:METHOD=AES-128,URI=\"%s\"", en->key_uri);
+            avio_printf(hls->m3u8_out, "#EXT-X-KEY:METHOD=AES-128,URI=\"%s\"", en->key_uri);
             if (*en->iv_string)
-                avio_printf(out, ",IV=0x%s", en->iv_string);
-            avio_printf(out, "\n");
+                avio_printf(hls->m3u8_out, ",IV=0x%s", en->iv_string);
+            avio_printf(hls->m3u8_out, "\n");
             key_uri = en->key_uri;
             iv_string = en->iv_string;
         }
 
         if ((hls->segment_type == SEGMENT_TYPE_FMP4) && (en == vs->segments)) {
-            ff_hls_write_init_file(out, vs->fmp4_init_filename,
+            ff_hls_write_init_file(hls->m3u8_out, vs->fmp4_init_filename,
                                    hls->flags & HLS_SINGLE_FILE, en->size, en->pos);
         }
 
-        ret = ff_hls_write_file_entry(out, en->discont, byterange_mode,
-                                en->duration, hls->flags & HLS_ROUND_DURATIONS,
-                                en->size, en->pos, vs->baseurl,
-                                en->filename, prog_date_time_p);
+        ret = ff_hls_write_file_entry(hls->m3u8_out, en->discont, byterange_mode,
+                                      en->duration, hls->flags & HLS_ROUND_DURATIONS,
+                                      en->size, en->pos, vs->baseurl,
+                                      en->filename, prog_date_time_p);
         if (ret < 0) {
             av_log(s, AV_LOG_WARNING, "ff_hls_write_file_entry get error\n");
         }
     }
 
     if (last && (hls->flags & HLS_OMIT_ENDLIST)==0)
-        ff_hls_write_end_list(out);
+        ff_hls_write_end_list(hls->m3u8_out);
 
     if( vs->vtt_m3u8_name ) {
-        if ((ret = s->io_open(s, &sub_out, vs->vtt_m3u8_name, AVIO_FLAG_WRITE, &options)) < 0)
+        if ((ret = hlsenc_io_open(s, &hls->sub_m3u8_out, vs->vtt_m3u8_name, &options)) < 0)
             goto fail;
-        ff_hls_write_playlist_header(sub_out, hls->version, hls->allowcache,
+        ff_hls_write_playlist_header(hls->sub_m3u8_out, hls->version, hls->allowcache,
                                      target_duration, sequence, PLAYLIST_TYPE_NONE);
         for (en = vs->segments; en; en = en->next) {
-            ret = ff_hls_write_file_entry(sub_out, 0, byterange_mode,
-                                    en->duration, 0, en->size, en->pos,
-                                    vs->baseurl, en->sub_filename, NULL);
+            ret = ff_hls_write_file_entry(hls->sub_m3u8_out, 0, byterange_mode,
+                                          en->duration, 0, en->size, en->pos,
+                                          vs->baseurl, en->sub_filename, NULL);
             if (ret < 0) {
                 av_log(s, AV_LOG_WARNING, "ff_hls_write_file_entry get error\n");
             }
         }
 
         if (last)
-            ff_hls_write_end_list(sub_out);
+            ff_hls_write_end_list(hls->sub_m3u8_out);
 
     }
 
 fail:
     av_dict_free(&options);
-    ff_format_io_close(s, &out);
-    ff_format_io_close(s, &sub_out);
+    hlsenc_io_close(s, &hls->m3u8_out, temp_filename);
+    hlsenc_io_close(s, &hls->sub_m3u8_out, vs->vtt_m3u8_name);
     if (ret >= 0 && use_rename)
         ff_rename(temp_filename, vs->m3u8_name, s);
 
