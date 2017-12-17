@@ -44,6 +44,7 @@ version <next>:
 - muxer/demuxer for raw codec2 files and .c2 files
 - Moved nvidia codec headers into an external repository.
   They can be found at http://git.videolan.org/?p=ffmpeg/nv-codec-headers.git
+- native SBC encoder and decoder
 
 
 version 3.4:
