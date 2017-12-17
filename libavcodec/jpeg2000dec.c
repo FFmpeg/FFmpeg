@@ -949,6 +949,7 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
         for (cblkno = 0; cblkno < nb_code_blocks; cblkno++) {
             Jpeg2000Cblk *cblk = prec->cblk + cblkno;
             int incl, newpasses, llen;
+            void *tmp;
 
             if (cblk->npasses)
                 incl = get_bits(s, 1);
@@ -988,6 +989,14 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
 
             cblk->nb_lengthinc = 0;
             cblk->nb_terminationsinc = 0;
+            av_free(cblk->lengthinc);
+            cblk->lengthinc  = av_mallocz_array(newpasses    , sizeof(*cblk->lengthinc));
+            if (!cblk->lengthinc)
+                return AVERROR(ENOMEM);
+            tmp = av_realloc_array(cblk->data_start, cblk->nb_terminations + newpasses + 1, sizeof(*cblk->data_start));
+            if (!tmp)
+                return AVERROR(ENOMEM);
+            cblk->data_start = tmp;
             do {
                 int newpasses1 = 0;
 
