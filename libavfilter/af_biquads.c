@@ -237,7 +237,7 @@ BIQUAD_FILTER(s32, int32_t, INT32_MIN, INT32_MAX, 1)
 BIQUAD_FILTER(flt, float,   -1., 1., 0)
 BIQUAD_FILTER(dbl, double,  -1., 1., 0)
 
-static int config_output(AVFilterLink *outlink)
+static int config_filter(AVFilterLink *outlink, int reset)
 {
     AVFilterContext *ctx    = outlink->src;
     BiquadsContext *s       = ctx->priv;
@@ -380,7 +380,8 @@ static int config_output(AVFilterLink *outlink)
     s->cache = av_realloc_f(s->cache, sizeof(ChanCache), inlink->channels);
     if (!s->cache)
         return AVERROR(ENOMEM);
-    memset(s->cache, 0, sizeof(ChanCache) * inlink->channels);
+    if (reset)
+        memset(s->cache, 0, sizeof(ChanCache) * inlink->channels);
 
     switch (inlink->format) {
     case AV_SAMPLE_FMT_S16P: s->filter = biquad_s16; break;
@@ -393,6 +394,11 @@ static int config_output(AVFilterLink *outlink)
     s->block_align = av_get_bytes_per_sample(inlink->format);
 
     return 0;
+}
+
+static int config_output(AVFilterLink *outlink)
+{
+    return config_filter(outlink, 1);
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
@@ -436,6 +442,116 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         av_frame_free(&buf);
 
     return ff_filter_frame(outlink, out_buf);
+}
+
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    BiquadsContext *s = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+
+    if ((!strcmp(cmd, "frequency") || !strcmp(cmd, "f")) &&
+        (s->filter_type == equalizer ||
+         s->filter_type == bass      ||
+         s->filter_type == treble    ||
+         s->filter_type == bandpass  ||
+         s->filter_type == bandreject||
+         s->filter_type == lowpass   ||
+         s->filter_type == highpass  ||
+         s->filter_type == allpass)) {
+        double freq;
+
+        if (sscanf(args, "%lf", &freq) != 1) {
+            av_log(ctx, AV_LOG_ERROR, "Invalid frequency value.\n");
+            return AVERROR(EINVAL);
+        }
+
+        s->frequency = freq;
+    } else if ((!strcmp(cmd, "gain") || !strcmp(cmd, "g")) &&
+        (s->filter_type == equalizer ||
+         s->filter_type == bass      ||
+         s->filter_type == treble)) {
+        double gain;
+
+        if (sscanf(args, "%lf", &gain) != 1) {
+            av_log(ctx, AV_LOG_ERROR, "Invalid gain value.\n");
+            return AVERROR(EINVAL);
+        }
+
+        s->gain = gain;
+    } else if ((!strcmp(cmd, "width") || !strcmp(cmd, "w")) &&
+        (s->filter_type == equalizer ||
+         s->filter_type == bass      ||
+         s->filter_type == treble    ||
+         s->filter_type == bandpass  ||
+         s->filter_type == bandreject||
+         s->filter_type == lowpass   ||
+         s->filter_type == highpass  ||
+         s->filter_type == allpass)) {
+        double width;
+
+        if (sscanf(args, "%lf", &width) != 1) {
+            av_log(ctx, AV_LOG_ERROR, "Invalid width value.\n");
+            return AVERROR(EINVAL);
+        }
+
+        s->width = width;
+    } else if ((!strcmp(cmd, "width_type") || !strcmp(cmd, "t")) &&
+        (s->filter_type == equalizer ||
+         s->filter_type == bass      ||
+         s->filter_type == treble    ||
+         s->filter_type == bandpass  ||
+         s->filter_type == bandreject||
+         s->filter_type == lowpass   ||
+         s->filter_type == highpass  ||
+         s->filter_type == allpass)) {
+        char width_type;
+
+        if (sscanf(args, "%c", &width_type) != 1) {
+            av_log(ctx, AV_LOG_ERROR, "Invalid width_type value.\n");
+            return AVERROR(EINVAL);
+        }
+
+        switch (width_type) {
+        case 'h': width_type = HERTZ;
+        case 'q': width_type = QFACTOR;
+        case 'o': width_type = OCTAVE;
+        case 's': width_type = SLOPE;
+        default:
+            av_log(ctx, AV_LOG_ERROR, "Invalid width_type value: %c\n", width_type);
+            return AVERROR(EINVAL);
+        }
+
+        s->width_type = width_type;
+    } else if ((!strcmp(cmd, "a0") ||
+                !strcmp(cmd, "a1") ||
+                !strcmp(cmd, "a2") ||
+                !strcmp(cmd, "b0") ||
+                !strcmp(cmd, "b1") ||
+                !strcmp(cmd, "b2")) &&
+               s->filter_type == biquad) {
+        double value;
+
+        if (sscanf(args, "%lf", &value) != 1) {
+            av_log(ctx, AV_LOG_ERROR, "Invalid biquad value.\n");
+            return AVERROR(EINVAL);
+        }
+
+        if (!strcmp(cmd, "a0"))
+            s->a0 = value;
+        else if (!strcmp(cmd, "a1"))
+            s->a1 = value;
+        else if (!strcmp(cmd, "a2"))
+            s->a2 = value;
+        else if (!strcmp(cmd, "b0"))
+            s->b0 = value;
+        else if (!strcmp(cmd, "b1"))
+            s->b1 = value;
+        else if (!strcmp(cmd, "b2"))
+            s->b2 = value;
+    }
+
+    return config_filter(outlink, 0);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -486,6 +602,7 @@ AVFilter ff_af_##name_ = {                         \
     .inputs        = inputs,                             \
     .outputs       = outputs,                            \
     .priv_class    = &name_##_class,                     \
+    .process_command = process_command,                  \
 }
 
 #if CONFIG_EQUALIZER_FILTER
