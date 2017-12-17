@@ -512,10 +512,10 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
         }
 
         switch (width_type) {
-        case 'h': width_type = HERTZ;
-        case 'q': width_type = QFACTOR;
-        case 'o': width_type = OCTAVE;
-        case 's': width_type = SLOPE;
+        case 'h': width_type = HERTZ;   break;
+        case 'q': width_type = QFACTOR; break;
+        case 'o': width_type = OCTAVE;  break;
+        case 's': width_type = SLOPE;   break;
         default:
             av_log(ctx, AV_LOG_ERROR, "Invalid width_type value: %c\n", width_type);
             return AVERROR(EINVAL);
