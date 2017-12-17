@@ -355,6 +355,7 @@ extern AVInputFormat  ff_sami_demuxer;
 extern AVInputFormat  ff_sap_demuxer;
 extern AVOutputFormat ff_sap_muxer;
 extern AVInputFormat  ff_sbc_demuxer;
+extern AVOutputFormat ff_sbc_muxer;
 extern AVInputFormat  ff_sbg_demuxer;
 extern AVInputFormat  ff_scc_demuxer;
 extern AVOutputFormat ff_scc_muxer;
