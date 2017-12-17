@@ -21,9 +21,7 @@
 
 #include "config.h"
 
-#if !(CONFIG_H264_D3D11VA2_HWACCEL||CONFIG_H264_D3D11VA_HWACCEL||CONFIG_HEVC_D3D11VA2_HWACCEL||CONFIG_HEVC_D3D11VA_HWACCEL||CONFIG_MPEG2_D3D11VA2_HWACCEL||CONFIG_MPEG2_D3D11VA_HWACCEL||CONFIG_VC1_D3D11VA2_HWACCEL||CONFIG_VC1_D3D11VA_HWACCEL||CONFIG_VP9_D3D11VA2_HWACCEL||CONFIG_VP9_D3D11VA_HWACCEL||CONFIG_VP9_DXVA2_HWACCEL||CONFIG_WMV3_D3D11VA2_HWACCEL||CONFIG_WMV3_D3D11VA_HWACCEL)
 #include "libavcodec/avcodec.h"
-#endif
 #include "libavcodec/xvmc_internal.h"
 #include "libavcodec/xvididct.h"
 #include "libavcodec/wmv2dsp.h"
@@ -3615,6 +3613,7 @@ const AVCodec ff_eac3_at_decoder = {0};
 const AVCodec ff_gsm_ms_at_decoder = {0};
 const AVCodec ff_h263_v4l2m2m_decoder = {0};
 const AVCodec ff_h263_v4l2m2m_encoder = {0};
+const AVCodec ff_h264_amf_encoder = {0};
 const AVCodec ff_h264_crystalhd_decoder = {0};
 const AVCodec ff_h264_mediacodec_decoder = {0};
 const AVCodec ff_h264_mmal_decoder = {0};
@@ -3625,6 +3624,7 @@ const AVCodec ff_h264_v4l2m2m_encoder = {0};
 const AVCodec ff_h264_vaapi_encoder = {0};
 const AVCodec ff_h264_videotoolbox_encoder = {0};
 const AVCodec ff_hap_encoder = {0};
+const AVCodec ff_hevc_amf_encoder = {0};
 const AVCodec ff_hevc_mediacodec_decoder = {0};
 const AVCodec ff_hevc_rkmpp_decoder = {0};
 const AVCodec ff_hevc_v4l2m2m_decoder = {0};
@@ -3693,75 +3693,3 @@ const AVCodec ff_vp9_rkmpp_decoder = {0};
 const AVCodec ff_vp9_v4l2m2m_decoder = {0};
 const AVCodec ff_vp9_vaapi_encoder = {0};
 const AVCodec ff_wmv3_crystalhd_decoder = {0};
-const AVHWAccel ff_h263_vaapi_hwaccel = {0};
-const AVHWAccel ff_h263_videotoolbox_hwaccel = {0};
-#if !(CONFIG_H264_D3D11VA2_HWACCEL)
-const AVHWAccel ff_h264_d3d11va2_hwaccel = {0};
-#endif
-#if !(CONFIG_H264_D3D11VA_HWACCEL)
-const AVHWAccel ff_h264_d3d11va_hwaccel = {0};
-#endif
-const AVHWAccel ff_h264_mediacodec_hwaccel = {0};
-const AVHWAccel ff_h264_mmal_hwaccel = {0};
-const AVHWAccel ff_h264_vaapi_hwaccel = {0};
-const AVHWAccel ff_h264_vdpau_hwaccel = {0};
-const AVHWAccel ff_h264_videotoolbox_hwaccel = {0};
-#if !(CONFIG_HEVC_D3D11VA2_HWACCEL)
-const AVHWAccel ff_hevc_d3d11va2_hwaccel = {0};
-#endif
-#if !(CONFIG_HEVC_D3D11VA_HWACCEL)
-const AVHWAccel ff_hevc_d3d11va_hwaccel = {0};
-#endif
-const AVHWAccel ff_hevc_mediacodec_hwaccel = {0};
-const AVHWAccel ff_hevc_vaapi_hwaccel = {0};
-const AVHWAccel ff_hevc_vdpau_hwaccel = {0};
-const AVHWAccel ff_hevc_videotoolbox_hwaccel = {0};
-const AVHWAccel ff_mpeg1_vdpau_hwaccel = {0};
-const AVHWAccel ff_mpeg1_videotoolbox_hwaccel = {0};
-const AVHWAccel ff_mpeg1_xvmc_hwaccel = {0};
-#if !(CONFIG_MPEG2_D3D11VA2_HWACCEL)
-const AVHWAccel ff_mpeg2_d3d11va2_hwaccel = {0};
-#endif
-#if !(CONFIG_MPEG2_D3D11VA_HWACCEL)
-const AVHWAccel ff_mpeg2_d3d11va_hwaccel = {0};
-#endif
-const AVHWAccel ff_mpeg2_mediacodec_hwaccel = {0};
-const AVHWAccel ff_mpeg2_mmal_hwaccel = {0};
-const AVHWAccel ff_mpeg2_vaapi_hwaccel = {0};
-const AVHWAccel ff_mpeg2_vdpau_hwaccel = {0};
-const AVHWAccel ff_mpeg2_videotoolbox_hwaccel = {0};
-const AVHWAccel ff_mpeg2_xvmc_hwaccel = {0};
-const AVHWAccel ff_mpeg4_mediacodec_hwaccel = {0};
-const AVHWAccel ff_mpeg4_mmal_hwaccel = {0};
-const AVHWAccel ff_mpeg4_vaapi_hwaccel = {0};
-const AVHWAccel ff_mpeg4_vdpau_hwaccel = {0};
-const AVHWAccel ff_mpeg4_videotoolbox_hwaccel = {0};
-#if !(CONFIG_VC1_D3D11VA2_HWACCEL)
-const AVHWAccel ff_vc1_d3d11va2_hwaccel = {0};
-#endif
-#if !(CONFIG_VC1_D3D11VA_HWACCEL)
-const AVHWAccel ff_vc1_d3d11va_hwaccel = {0};
-#endif
-const AVHWAccel ff_vc1_mmal_hwaccel = {0};
-const AVHWAccel ff_vc1_vaapi_hwaccel = {0};
-const AVHWAccel ff_vc1_vdpau_hwaccel = {0};
-const AVHWAccel ff_vp8_mediacodec_hwaccel = {0};
-#if !(CONFIG_VP9_D3D11VA2_HWACCEL)
-const AVHWAccel ff_vp9_d3d11va2_hwaccel = {0};
-#endif
-#if !(CONFIG_VP9_D3D11VA_HWACCEL)
-const AVHWAccel ff_vp9_d3d11va_hwaccel = {0};
-#endif
-#if !(CONFIG_VP9_DXVA2_HWACCEL)
-const AVHWAccel ff_vp9_dxva2_hwaccel = {0};
-#endif
-const AVHWAccel ff_vp9_mediacodec_hwaccel = {0};
-const AVHWAccel ff_vp9_vaapi_hwaccel = {0};
-#if !(CONFIG_WMV3_D3D11VA2_HWACCEL)
-const AVHWAccel ff_wmv3_d3d11va2_hwaccel = {0};
-#endif
-#if !(CONFIG_WMV3_D3D11VA_HWACCEL)
-const AVHWAccel ff_wmv3_d3d11va_hwaccel = {0};
-#endif
-const AVHWAccel ff_wmv3_vaapi_hwaccel = {0};
-const AVHWAccel ff_wmv3_vdpau_hwaccel = {0};

@@ -847,10 +847,12 @@
     <ClCompile Include="..\libavcodec\nvdec_h264.c" />
     <ClCompile Include="..\libavcodec\dxva2_hevc.c" />
     <ClCompile Include="..\libavcodec\nvdec_hevc.c" />
-    <ClCompile Include="..\libavcodec\dxva2_mpeg2.c" />
     <ClCompile Include="..\libavcodec\nvdec_mpeg12.c" />
+    <ClCompile Include="..\libavcodec\dxva2_mpeg2.c" />
+    <ClCompile Include="..\libavcodec\nvdec_mpeg4.c" />
     <ClCompile Include="..\libavcodec\dxva2_vc1.c" />
     <ClCompile Include="..\libavcodec\nvdec_vc1.c" />
+    <ClCompile Include="..\libavcodec\nvdec_vp8.c" />
     <ClCompile Include="..\libavcodec\nvdec_vp9.c" />
     <ClCompile Include="..\libavcodec\libilbc.c" />
     <ClCompile Include="..\libavcodec\libmp3lame.c" />

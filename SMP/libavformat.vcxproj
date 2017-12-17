@@ -199,6 +199,7 @@
     <ClCompile Include="..\libavformat\crcenc.c" />
     <ClCompile Include="..\libavformat\dash.c" />
     <ClCompile Include="..\libavformat\dashenc.c" />
+    <ClCompile Include="..\libavformat\hlsplaylist.c" />
     <ClCompile Include="..\libavformat\dashdec.c" />
     <ClCompile Include="..\libavformat\dauddec.c" />
     <ClCompile Include="..\libavformat\daudenc.c" />
@@ -343,6 +344,7 @@
     <ClCompile Include="..\libavformat\mxg.c" />
     <ClCompile Include="..\libavformat\ncdec.c" />
     <ClCompile Include="..\libavformat\nistspheredec.c" />
+    <ClCompile Include="..\libavformat\nspdec.c" />
     <ClCompile Include="..\libavformat\nsvdec.c" />
     <ClCompile Include="..\libavformat\nullenc.c" />
     <ClCompile Include="..\libavformat\nutdec.c" />

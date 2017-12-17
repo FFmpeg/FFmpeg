@@ -416,6 +416,9 @@
     <ClInclude Include="..\libavutil\hwcontext_qsv.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>
+    <ClInclude Include="..\libavutil\hwcontext_mediacodec.h">
+      <Filter>Header Files\libavutil</Filter>
+    </ClInclude>
     <ClInclude Include="..\libavutil\hwcontext_vaapi.h">
       <Filter>Header Files\libavutil</Filter>
     </ClInclude>

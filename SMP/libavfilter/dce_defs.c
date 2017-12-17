@@ -22,25 +22,11 @@
 #include "config.h"
 
 #include "libavfilter/avfilter.h"
-#include "libavfilter/deshake_opencl.h"
-#include "libavfilter/unsharp_opencl.h"
 
-int ff_opencl_apply_unsharp(AVFilterContext *ctx, AVFrame *in, AVFrame *out) {return 0;}
-int ff_opencl_deshake_init(AVFilterContext *ctx) {return 0;}
-int ff_opencl_deshake_process_inout_buf(AVFilterContext *ctx, AVFrame *in, AVFrame *out) {return 0;}
-int ff_opencl_transform(AVFilterContext *ctx,
-                        int width, int height, int cw, int ch,
-                        const float *matrix_y, const float *matrix_uv,
-                        enum InterpolateMethod interpolate,
-                        enum FillMethod fill, AVFrame *in, AVFrame *out) {return 0;}
-int ff_opencl_unsharp_init(AVFilterContext *ctx) {return 0;}
-int ff_opencl_unsharp_process_inout_buf(AVFilterContext *ctx, AVFrame *in, AVFrame *out) {return 0;}
 #if !(ARCH_X86_64)
 void ff_multiply3x3_sse2(int16_t *data[3], ptrdiff_t stride, int w, int h,
                          const int16_t coeff[3][3][8]) {return;}
 #endif
-void ff_opencl_deshake_uninit(AVFilterContext *ctx) {return;}
-void ff_opencl_unsharp_uninit(AVFilterContext *ctx) {return;}
 #if !(ARCH_X86_64)
 void ff_rgb2yuv_420p10_sse2(uint8_t *yuv_out[3], const ptrdiff_t yuv_stride[3], int16_t *rgb_in[3], ptrdiff_t rgb_stride, int w, int h, const int16_t coeff[3][3][8], const int16_t yuv_offset[8]) {return;}
 #endif
@@ -190,6 +176,7 @@ void ff_yuv2yuv_444p8to8_sse2(uint8_t *yuv_out[3], const ptrdiff_t yuv_out_strid
 const AVFilter ff_af_azmq = {0};
 const AVFilter ff_af_bs2b = {0};
 const AVFilter ff_af_ladspa = {0};
+const AVFilter ff_af_lv2 = {0};
 const AVFilter ff_af_resample = {0};
 const AVFilter ff_af_rubberband = {0};
 const AVFilter ff_af_sofalizer = {0};
@@ -200,10 +187,12 @@ const AVFilter ff_vf_frei0r = {0};
 const AVFilter ff_vf_libvmaf = {0};
 const AVFilter ff_vf_ocr = {0};
 const AVFilter ff_vf_ocv = {0};
+const AVFilter ff_vf_overlay_opencl = {0};
 const AVFilter ff_vf_scale_cuda = {0};
 const AVFilter ff_vf_scale_npp = {0};
 const AVFilter ff_vf_scale_vaapi = {0};
 const AVFilter ff_vf_thumbnail_cuda = {0};
+const AVFilter ff_vf_unsharp_opencl = {0};
 const AVFilter ff_vf_vidstabdetect = {0};
 const AVFilter ff_vf_vidstabtransform = {0};
 const AVFilter ff_vf_zmq = {0};
