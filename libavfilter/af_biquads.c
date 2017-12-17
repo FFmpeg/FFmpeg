@@ -73,7 +73,6 @@ enum FilterType {
     equalizer,
     bass,
     treble,
-    band,
     bandpass,
     bandreject,
     allpass,
