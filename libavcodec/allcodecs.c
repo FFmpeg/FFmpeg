@@ -453,6 +453,7 @@ extern AVCodec ff_ra_144_encoder;
 extern AVCodec ff_ra_144_decoder;
 extern AVCodec ff_ra_288_decoder;
 extern AVCodec ff_ralf_decoder;
+extern AVCodec ff_sbc_decoder;
 extern AVCodec ff_shorten_decoder;
 extern AVCodec ff_sipr_decoder;
 extern AVCodec ff_smackaud_decoder;
