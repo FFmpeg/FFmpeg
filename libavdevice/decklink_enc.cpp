@@ -162,6 +162,10 @@ static int decklink_setup_video(AVFormatContext *avctx, AVStream *st)
         return -1;
     }
 
+    if (ff_decklink_set_configs(avctx, DIRECTION_OUT) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Could not set output configuration\n");
+        return -1;
+    }
     if (ff_decklink_set_format(avctx, c->width, c->height,
                             st->time_base.num, st->time_base.den, c->field_order)) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported video size, framerate or field order!"

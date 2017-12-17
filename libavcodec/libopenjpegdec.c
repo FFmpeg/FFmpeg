@@ -512,4 +512,5 @@ AVCodec ff_libopenjpeg_decoder = {
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .max_lowres     = 31,
     .priv_class     = &openjpeg_class,
+    .wrapper_name   = "libopenjpeg",
 };

@@ -52,42 +52,30 @@ static inline int sub_left_prediction(HYuvContext *s, uint8_t *dst,
                                       const uint8_t *src, int w, int left)
 {
     int i;
+    int min_width = FFMIN(w, 32);
+
     if (s->bps <= 8) {
-        if (w < 32) {
-            for (i = 0; i < w; i++) {
-                const int temp = src[i];
-                dst[i] = temp - left;
-                left   = temp;
-            }
-            return left;
-        } else {
-            for (i = 0; i < 32; i++) {
-                const int temp = src[i];
-                dst[i] = temp - left;
-                left   = temp;
-            }
-            s->llvidencdsp.diff_bytes(dst + 32, src + 32, src + 31, w - 32);
-            return src[w-1];
+        for (i = 0; i < min_width; i++) { /* scalar loop before dsp call */
+            const int temp = src[i];
+            dst[i] = temp - left;
+            left   = temp;
         }
+        if (w < 32)
+            return left;
+        s->llvidencdsp.diff_bytes(dst + 32, src + 32, src + 31, w - 32);
+        return src[w-1];
     } else {
         const uint16_t *src16 = (const uint16_t *)src;
         uint16_t       *dst16 = (      uint16_t *)dst;
-        if (w < 32) {
-            for (i = 0; i < w; i++) {
-                const int temp = src16[i];
-                dst16[i] = temp - left;
-                left   = temp;
-            }
-            return left;
-        } else {
-            for (i = 0; i < 16; i++) {
-                const int temp = src16[i];
-                dst16[i] = temp - left;
-                left   = temp;
-            }
-            s->hencdsp.diff_int16(dst16 + 16, src16 + 16, src16 + 15, s->n - 1, w - 16);
-            return src16[w-1];
+        for (i = 0; i < min_width; i++) { /* scalar loop before dsp call */
+            const int temp = src16[i];
+            dst16[i] = temp - left;
+            left   = temp;
         }
+        if (w < 32)
+            return left;
+        s->hencdsp.diff_int16(dst16 + 32, src16 + 32, src16 + 31, s->n - 1, w - 32);
+        return src16[w-1];
     }
 }
 
@@ -98,12 +86,13 @@ static inline void sub_left_prediction_bgr32(HYuvContext *s, uint8_t *dst,
 {
     int i;
     int r, g, b, a;
+    int min_width = FFMIN(w, 8);
     r = *red;
     g = *green;
     b = *blue;
     a = *alpha;
 
-    for (i = 0; i < FFMIN(w, 4); i++) {
+    for (i = 0; i < min_width; i++) {
         const int rt = src[i * 4 + R];
         const int gt = src[i * 4 + G];
         const int bt = src[i * 4 + B];
@@ -118,7 +107,7 @@ static inline void sub_left_prediction_bgr32(HYuvContext *s, uint8_t *dst,
         a = at;
     }
 
-    s->llvidencdsp.diff_bytes(dst + 16, src + 16, src + 12, w * 4 - 16);
+    s->llvidencdsp.diff_bytes(dst + 32, src + 32, src + 32 - 4, w * 4 - 32);
 
     *red   = src[(w - 1) * 4 + R];
     *green = src[(w - 1) * 4 + G];

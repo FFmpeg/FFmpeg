@@ -133,11 +133,11 @@ static av_cold int nvenc_load_libraries(AVCodecContext *avctx)
     uint32_t nvenc_max_ver;
     int ret;
 
-    ret = cuda_load_functions(&dl_fn->cuda_dl);
+    ret = cuda_load_functions(&dl_fn->cuda_dl, avctx);
     if (ret < 0)
         return ret;
 
-    ret = nvenc_load_functions(&dl_fn->nvenc_dl);
+    ret = nvenc_load_functions(&dl_fn->nvenc_dl, avctx);
     if (ret < 0) {
         nvenc_print_driver_requirement(avctx, AV_LOG_ERROR);
         return ret;
@@ -1763,8 +1763,10 @@ static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, NvencSur
     }
     slice_offsets = av_mallocz(slice_mode_data * sizeof(*slice_offsets));
 
-    if (!slice_offsets)
+    if (!slice_offsets) {
+        res = AVERROR(ENOMEM);
         goto error;
+    }
 
     lock_params.version = NV_ENC_LOCK_BITSTREAM_VER;
 

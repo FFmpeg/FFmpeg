@@ -255,7 +255,7 @@ static void celt_frame_mdct(OpusEncContext *s, CeltFrame *f)
     }
 }
 
-static void celt_enc_tf(OpusRangeCoder *rc, CeltFrame *f)
+static void celt_enc_tf(CeltFrame *f, OpusRangeCoder *rc)
 {
     int i, tf_select = 0, diff = 0, tf_changed = 0, tf_select_needed;
     int bits = f->transient ? 2 : 4;
@@ -282,7 +282,7 @@ static void celt_enc_tf(OpusRangeCoder *rc, CeltFrame *f)
         f->tf_change[i] = ff_celt_tf_select[f->size][f->transient][tf_select][f->tf_change[i]];
 }
 
-void ff_celt_enc_bitalloc(OpusRangeCoder *rc, CeltFrame *f)
+void ff_celt_enc_bitalloc(CeltFrame *f, OpusRangeCoder *rc)
 {
     int i, j, low, high, total, done, bandbits, remaining, tbits_8ths;
     int skip_startband      = f->start_band;
@@ -690,7 +690,7 @@ static void exp_quant_coarse(OpusRangeCoder *rc, CeltFrame *f,
     }
 }
 
-static void celt_quant_coarse(OpusRangeCoder *rc, CeltFrame *f,
+static void celt_quant_coarse(CeltFrame *f, OpusRangeCoder *rc,
                               float last_energy[][CELT_MAX_BANDS])
 {
     uint32_t inter, intra;
@@ -710,7 +710,7 @@ static void celt_quant_coarse(OpusRangeCoder *rc, CeltFrame *f,
     }
 }
 
-static void celt_quant_fine(OpusRangeCoder *rc, CeltFrame *f)
+static void celt_quant_fine(CeltFrame *f, OpusRangeCoder *rc)
 {
     int i, ch;
     for (i = f->start_band; i < f->end_band; i++) {
@@ -744,95 +744,6 @@ static void celt_quant_final(OpusEncContext *s, OpusRangeCoder *rc, CeltFrame *f
                 block->error_energy[i] -= offset*(1 - 2*sign);
             }
         }
-    }
-}
-
-static void celt_quant_bands(OpusRangeCoder *rc, CeltFrame *f)
-{
-    float lowband_scratch[8 * 22];
-    float norm[2 * 8 * 100];
-
-    int totalbits = (f->framebits << 3) - f->anticollapse_needed;
-
-    int update_lowband = 1;
-    int lowband_offset = 0;
-
-    int i, j;
-
-    for (i = f->start_band; i < f->end_band; i++) {
-        uint32_t cm[2] = { (1 << f->blocks) - 1, (1 << f->blocks) - 1 };
-        int band_offset = ff_celt_freq_bands[i] << f->size;
-        int band_size   = ff_celt_freq_range[i] << f->size;
-        float *X = f->block[0].coeffs + band_offset;
-        float *Y = (f->channels == 2) ? f->block[1].coeffs + band_offset : NULL;
-
-        int consumed = opus_rc_tell_frac(rc);
-        float *norm2 = norm + 8 * 100;
-        int effective_lowband = -1;
-        int b = 0;
-
-        /* Compute how many bits we want to allocate to this band */
-        if (i != f->start_band)
-            f->remaining -= consumed;
-        f->remaining2 = totalbits - consumed - 1;
-        if (i <= f->coded_bands - 1) {
-            int curr_balance = f->remaining / FFMIN(3, f->coded_bands-i);
-            b = av_clip_uintp2(FFMIN(f->remaining2 + 1, f->pulses[i] + curr_balance), 14);
-        }
-
-        if (ff_celt_freq_bands[i] - ff_celt_freq_range[i] >= ff_celt_freq_bands[f->start_band] &&
-            (update_lowband || lowband_offset == 0))
-            lowband_offset = i;
-
-        /* Get a conservative estimate of the collapse_mask's for the bands we're
-        going to be folding from. */
-        if (lowband_offset != 0 && (f->spread != CELT_SPREAD_AGGRESSIVE ||
-                                    f->blocks > 1 || f->tf_change[i] < 0)) {
-            int foldstart, foldend;
-
-            /* This ensures we never repeat spectral content within one band */
-            effective_lowband = FFMAX(ff_celt_freq_bands[f->start_band],
-                                      ff_celt_freq_bands[lowband_offset] - ff_celt_freq_range[i]);
-            foldstart = lowband_offset;
-            while (ff_celt_freq_bands[--foldstart] > effective_lowband);
-            foldend = lowband_offset - 1;
-            while (ff_celt_freq_bands[++foldend] < effective_lowband + ff_celt_freq_range[i]);
-
-            cm[0] = cm[1] = 0;
-            for (j = foldstart; j < foldend; j++) {
-                cm[0] |= f->block[0].collapse_masks[j];
-                cm[1] |= f->block[f->channels - 1].collapse_masks[j];
-            }
-        }
-
-        if (f->dual_stereo && i == f->intensity_stereo) {
-            /* Switch off dual stereo to do intensity */
-            f->dual_stereo = 0;
-            for (j = ff_celt_freq_bands[f->start_band] << f->size; j < band_offset; j++)
-                norm[j] = (norm[j] + norm2[j]) / 2;
-        }
-
-        if (f->dual_stereo) {
-            cm[0] = f->pvq->encode_band(f->pvq, f, rc, i, X, NULL, band_size, b / 2, f->blocks,
-                                        effective_lowband != -1 ? norm + (effective_lowband << f->size) : NULL, f->size,
-                                        norm + band_offset, 0, 1.0f, lowband_scratch, cm[0]);
-
-            cm[1] = f->pvq->encode_band(f->pvq, f, rc, i, Y, NULL, band_size, b / 2, f->blocks,
-                                        effective_lowband != -1 ? norm2 + (effective_lowband << f->size) : NULL, f->size,
-                                        norm2 + band_offset, 0, 1.0f, lowband_scratch, cm[1]);
-        } else {
-            cm[0] = f->pvq->encode_band(f->pvq, f, rc, i, X, Y, band_size, b, f->blocks,
-                                        effective_lowband != -1 ? norm + (effective_lowband << f->size) : NULL, f->size,
-                                        norm + band_offset, 0, 1.0f, lowband_scratch, cm[0] | cm[1]);
-            cm[1] = cm[0];
-        }
-
-        f->block[0].collapse_masks[i]               = (uint8_t)cm[0];
-        f->block[f->channels - 1].collapse_masks[i] = (uint8_t)cm[1];
-        f->remaining += f->pulses[i] + consumed;
-
-        /* Update the folding position only as long as we have 1 bit/sample depth */
-        update_lowband = (b > band_size << 3);
     }
 }
 
@@ -883,11 +794,11 @@ static void celt_encode_frame(OpusEncContext *s, OpusRangeCoder *rc,
         ff_opus_rc_enc_log(rc, f->transient, 3);
 
     /* Main encoding */
-    celt_quant_coarse(rc, f, s->last_quantized_energy);
-    celt_enc_tf      (rc, f);
-    ff_celt_enc_bitalloc(rc, f);
-    celt_quant_fine  (rc, f);
-    celt_quant_bands (rc, f);
+    celt_quant_coarse   (f, rc, s->last_quantized_energy);
+    celt_enc_tf         (f, rc);
+    ff_celt_enc_bitalloc(f, rc);
+    celt_quant_fine     (f, rc);
+    ff_celt_quant_bands (f, rc);
 
     /* Anticollapse bit */
     if (f->anticollapse_needed)
@@ -1080,7 +991,7 @@ static av_cold int opus_encode_init(AVCodecContext *avctx)
 
     ff_af_queue_init(avctx, &s->afq);
 
-    if ((ret = ff_celt_pvq_init(&s->pvq)) < 0)
+    if ((ret = ff_celt_pvq_init(&s->pvq, 1)) < 0)
         return ret;
 
     if (!(s->dsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT)))
@@ -1117,6 +1028,7 @@ static av_cold int opus_encode_init(AVCodecContext *avctx)
         s->frame[i].avctx = s->avctx;
         s->frame[i].seed = 0;
         s->frame[i].pvq = s->pvq;
+        s->frame[i].apply_phase_inv = 1;
         s->frame[i].block[0].emph_coeff = s->frame[i].block[1].emph_coeff = 0.0f;
     }
 

@@ -90,6 +90,7 @@ int ff_videotoolbox_alloc_frame(AVCodecContext *avctx, AVFrame *frame)
 
 CFDataRef ff_videotoolbox_avcc_extradata_create(AVCodecContext *avctx)
 {
+    VTContext *vtctx = avctx->internal->hwaccel_priv_data;
     H264Context *h = avctx->priv_data;
     CFDataRef data = NULL;
     uint8_t *p;
@@ -115,6 +116,11 @@ CFDataRef ff_videotoolbox_avcc_extradata_create(AVCodecContext *avctx)
 
     p += 3 + h->ps.pps->data_size;
     av_assert0(p - vt_extradata == vt_extradata_size);
+
+    // save sps header (profile/level) used to create decoder session,
+    // so we can detect changes and recreate it.
+    if (vtctx)
+        memcpy(vtctx->sps, h->ps.sps->data + 1, 3);
 
     data = CFDataCreate(kCFAllocatorDefault, vt_extradata, vt_extradata_size);
     av_free(vt_extradata);
@@ -318,18 +324,20 @@ static int videotoolbox_h264_decode_params(AVCodecContext *avctx,
                                            uint32_t size)
 {
     VTContext *vtctx = avctx->internal->hwaccel_priv_data;
+    H264Context *h = avctx->priv_data;
+
+    // save sps header (profile/level) used to create decoder session
+    if (!vtctx->sps[0])
+        memcpy(vtctx->sps, h->ps.sps->data + 1, 3);
 
     if (type == H264_NAL_SPS) {
-        if (!vtctx->sps || vtctx->sps_len != size || memcmp(buffer, vtctx->sps, size) != 0) {
-            vtctx->sps = av_fast_realloc(vtctx->sps, &vtctx->sps_capa, size);
-            if (vtctx->sps)
-                memcpy(vtctx->sps, buffer, size);
+        if (size > 4 && memcmp(vtctx->sps, buffer + 1, 3) != 0) {
             vtctx->reconfig_needed = true;
-            vtctx->sps_len = size;
+            memcpy(vtctx->sps, buffer + 1, 3);
         }
     }
 
-    // pass-through new PPS to the decoder
+    // pass-through SPS/PPS changes to the decoder
     return ff_videotoolbox_h264_decode_slice(avctx, buffer, size);
 }
 
@@ -365,7 +373,6 @@ int ff_videotoolbox_uninit(AVCodecContext *avctx)
     VTContext *vtctx = avctx->internal->hwaccel_priv_data;
     if (vtctx) {
         av_freep(&vtctx->bitstream);
-        av_freep(&vtctx->sps);
         if (vtctx->frame)
             CVPixelBufferRelease(vtctx->frame);
     }
@@ -1027,7 +1034,7 @@ static int videotoolbox_frame_params(AVCodecContext *avctx,
     return 0;
 }
 
-AVHWAccel ff_h263_videotoolbox_hwaccel = {
+const AVHWAccel ff_h263_videotoolbox_hwaccel = {
     .name           = "h263_videotoolbox",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H263,
@@ -1042,7 +1049,7 @@ AVHWAccel ff_h263_videotoolbox_hwaccel = {
     .priv_data_size = sizeof(VTContext),
 };
 
-AVHWAccel ff_hevc_videotoolbox_hwaccel = {
+const AVHWAccel ff_hevc_videotoolbox_hwaccel = {
     .name           = "hevc_videotoolbox",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_HEVC,
@@ -1058,7 +1065,7 @@ AVHWAccel ff_hevc_videotoolbox_hwaccel = {
     .priv_data_size = sizeof(VTContext),
 };
 
-AVHWAccel ff_h264_videotoolbox_hwaccel = {
+const AVHWAccel ff_h264_videotoolbox_hwaccel = {
     .name           = "h264_videotoolbox",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H264,
@@ -1074,7 +1081,7 @@ AVHWAccel ff_h264_videotoolbox_hwaccel = {
     .priv_data_size = sizeof(VTContext),
 };
 
-AVHWAccel ff_mpeg1_videotoolbox_hwaccel = {
+const AVHWAccel ff_mpeg1_videotoolbox_hwaccel = {
     .name           = "mpeg1_videotoolbox",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MPEG1VIDEO,
@@ -1089,7 +1096,7 @@ AVHWAccel ff_mpeg1_videotoolbox_hwaccel = {
     .priv_data_size = sizeof(VTContext),
 };
 
-AVHWAccel ff_mpeg2_videotoolbox_hwaccel = {
+const AVHWAccel ff_mpeg2_videotoolbox_hwaccel = {
     .name           = "mpeg2_videotoolbox",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MPEG2VIDEO,
@@ -1104,7 +1111,7 @@ AVHWAccel ff_mpeg2_videotoolbox_hwaccel = {
     .priv_data_size = sizeof(VTContext),
 };
 
-AVHWAccel ff_mpeg4_videotoolbox_hwaccel = {
+const AVHWAccel ff_mpeg4_videotoolbox_hwaccel = {
     .name           = "mpeg4_videotoolbox",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MPEG4,

@@ -32,6 +32,7 @@
 
 #include "avcodec.h"
 #include "decode.h"
+#include "hwaccel.h"
 #include "internal.h"
 
 typedef struct CuvidContext
@@ -835,7 +836,7 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
         goto error;
     }
 
-    ret = cuvid_load_functions(&ctx->cvdl);
+    ret = cuvid_load_functions(&ctx->cvdl, avctx);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed loading nvcuvid.\n");
         goto error;
@@ -1094,19 +1095,25 @@ static const AVOption options[] = {
     { NULL }
 };
 
+static const AVCodecHWConfigInternal *cuvid_hw_configs[] = {
+    &(const AVCodecHWConfigInternal) {
+        .public = {
+            .pix_fmt     = AV_PIX_FMT_CUDA,
+            .methods     = AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX |
+                           AV_CODEC_HW_CONFIG_METHOD_INTERNAL,
+            .device_type = AV_HWDEVICE_TYPE_CUDA
+        },
+        .hwaccel = NULL,
+    },
+    NULL
+};
+
 #define DEFINE_CUVID_CODEC(x, X) \
     static const AVClass x##_cuvid_class = { \
         .class_name = #x "_cuvid", \
         .item_name = av_default_item_name, \
         .option = options, \
         .version = LIBAVUTIL_VERSION_INT, \
-    }; \
-    AVHWAccel ff_##x##_cuvid_hwaccel = { \
-        .name           = #x "_cuvid", \
-        .type           = AVMEDIA_TYPE_VIDEO, \
-        .id             = AV_CODEC_ID_##X, \
-        .pix_fmt        = AV_PIX_FMT_CUDA, \
-        .decoder_class  = &x##_cuvid_class, \
     }; \
     AVCodec ff_##x##_cuvid_decoder = { \
         .name           = #x "_cuvid", \
@@ -1120,13 +1127,14 @@ static const AVOption options[] = {
         .decode         = cuvid_decode_frame, \
         .receive_frame  = cuvid_output_frame, \
         .flush          = cuvid_flush, \
-        .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING, \
-        .caps_internal  = FF_CODEC_CAP_HWACCEL_REQUIRE_CLASS, \
+        .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE, \
         .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_CUDA, \
                                                         AV_PIX_FMT_NV12, \
                                                         AV_PIX_FMT_P010, \
                                                         AV_PIX_FMT_P016, \
                                                         AV_PIX_FMT_NONE }, \
+        .hw_configs     = cuvid_hw_configs, \
+        .wrapper_name   = "cuvid", \
     };
 
 #if CONFIG_HEVC_CUVID_DECODER

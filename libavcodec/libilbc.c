@@ -193,4 +193,5 @@ AVCodec ff_libilbc_encoder = {
                                                      AV_SAMPLE_FMT_NONE },
     .defaults       = ilbc_encode_defaults,
     .priv_class     = &ilbc_enc_class,
+    .wrapper_name   = "libbilbc",
 };

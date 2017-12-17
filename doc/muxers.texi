@@ -247,6 +247,11 @@ DASH-templated name to used for the initialization segment. Default is "init-str
 DASH-templated name to used for the media segments. Default is "chunk-stream$RepresentationID$-$Number%05d$.m4s"
 @item -utc_timing_url @var{utc_url}
 URL of the page that will return the UTC timestamp in ISO format. Example: "https://time.akamai.com/?iso"
+@item -http_user_agent @var{user_agent}
+Override User-Agent field in HTTP header. Applicable only for HTTP output.
+@item -hls_playlist @var{hls_playlist}
+Generate HLS playlist files as well. The master playlist is generated with the filename master.m3u8.
+One media playlist file is generated for each stream with filenames media_0.m3u8, media_1.m3u8, etc.
 @item -adaptation_sets @var{adaptation_sets}
 Assign streams to AdaptationSets. Syntax is "id=x,streams=a,b,c id=y,streams=d,e" with x and y being the IDs
 of the adaptation sets and a,b,c,d and e are the indices of the mapped streams.
@@ -735,6 +740,10 @@ The file specified by @code{hls_key_info_file} will be checked periodically and
 detect updates to the encryption info. Be sure to replace this file atomically,
 including the file containing the AES encryption key.
 
+@item independent_segments
+Add the @code{#EXT-X-INDEPENDENT-SEGMENTS} to playlists that has video segments
+and when all the segments of that playlist are guaranteed to start with a Key frame.
+
 @item split_by_time
 Allow segments to start on frames other than keyframes. This improves
 behavior on some players when the time between keyframes is inconsistent,
@@ -796,6 +805,60 @@ files.
 
 @item http_user_agent
 Override User-Agent field in HTTP header. Applicable only for HTTP output.
+
+@item var_stream_map
+Map string which specifies how to group the audio, video and subtitle streams
+into different variant streams. The variant stream groups are separated
+by space.
+Expected string format is like this "a:0,v:0 a:1,v:1 ....". Here a:, v:, s: are
+the keys to specify audio, video and subtitle streams respectively.
+Allowed values are 0 to 9 (limited just based on practical usage).
+
+@example
+ffmpeg -re -i in.ts -b:v:0 1000k -b:v:1 256k -b:a:0 64k -b:a:1 32k \
+  -map 0:v -map 0:a -map 0:v -map 0:a -f hls -var_stream_map "v:0,a:0 v:1,a:1" \
+  http://example.com/live/out.m3u8
+@end example
+This example creates two hls variant streams. The first variant stream will
+contain video stream of bitrate 1000k and audio stream of bitrate 64k and the
+second variant stream will contain video stream of bitrate 256k and audio
+stream of bitrate 32k. Here, two media playlist with file names out_1.m3u8 and
+out_2.m3u8 will be created.
+@example
+ffmpeg -re -i in.ts -b:v:0 1000k -b:v:1 256k -b:a:0 64k \
+  -map 0:v -map 0:a -map 0:v -f hls -var_stream_map "v:0 a:0 v:1" \
+  http://example.com/live/out.m3u8
+@end example
+This example creates three hls variant streams. The first variant stream will
+be a video only stream with video bitrate 1000k, the second variant stream will
+be an audio only stream with bitrate 64k and the third variant stream will be a
+video only stream with bitrate 256k. Here, three media playlist with file names
+out_1.m3u8, out_2.m3u8 and out_3.m3u8 will be created.
+
+By default, a single hls variant containing all the encoded streams is created.
+
+@item master_pl_name
+Create HLS master playlist with the given name.
+
+@example
+ffmpeg -re -i in.ts -f hls -master_pl_name master.m3u8 http://example.com/live/out.m3u8
+@end example
+This example creates HLS master playlist with name master.m3u8 and it is
+published at http://example.com/live/
+
+@item master_pl_publish_rate
+Publish master play list repeatedly every after specified number of segment intervals.
+
+@example
+ffmpeg -re -i in.ts -f hls -master_pl_name master.m3u8 \
+-hls_time 2 -master_pl_publish_rate 30 http://example.com/live/out.m3u8
+@end example
+
+This example creates HLS master playlist with name master.m3u8 and keep
+publishing it repeatedly every after 30 segments i.e. every after 60s.
+
+@item http_persistent
+Use persistent HTTP connections. Applicable only for HTTP output.
 
 @end table
 

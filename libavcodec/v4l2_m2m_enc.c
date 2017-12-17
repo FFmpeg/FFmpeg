@@ -335,6 +335,8 @@ AVCodec ff_ ## NAME ## _v4l2m2m_encoder = { \
     .send_frame     = v4l2_send_frame,\
     .receive_packet = v4l2_receive_packet,\
     .close          = ff_v4l2_m2m_codec_end,\
+    .capabilities   = AV_CODEC_CAP_HARDWARE, \
+    .wrapper_name   = "v4l2m2m", \
 };
 
 M2MENC(mpeg4,"MPEG4", AV_CODEC_ID_MPEG4);

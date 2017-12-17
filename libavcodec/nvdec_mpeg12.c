@@ -1,5 +1,5 @@
 /*
- * MPEG-2 HW decode acceleration through NVDEC
+ * MPEG-1/2 HW decode acceleration through NVDEC
  *
  * Copyright (c) 2017 Philip Langdale
  *
@@ -24,22 +24,6 @@
 #include "mpegvideo.h"
 #include "nvdec.h"
 #include "decode.h"
-
-static int get_ref_idx(AVFrame *frame)
-{
-    FrameDecodeData *fdd;
-    NVDECFrame *cf;
-
-    if (!frame || !frame->private_ref)
-        return -1;
-
-    fdd = (FrameDecodeData*)frame->private_ref->data;
-    cf  = (NVDECFrame*)fdd->hwaccel_priv;
-    if (!cf)
-        return -1;
-
-    return cf->idx;
-}
 
 static int nvdec_mpeg12_start_frame(AVCodecContext *avctx, const uint8_t *buffer, uint32_t size)
 {
@@ -71,8 +55,8 @@ static int nvdec_mpeg12_start_frame(AVCodecContext *avctx, const uint8_t *buffer
                              s->pict_type == AV_PICTURE_TYPE_P,
 
         .CodecSpecific.mpeg2 = {
-            .ForwardRefIdx     = get_ref_idx(s->last_picture.f),
-            .BackwardRefIdx    = get_ref_idx(s->next_picture.f),
+            .ForwardRefIdx     = ff_nvdec_get_ref_idx(s->last_picture.f),
+            .BackwardRefIdx    = ff_nvdec_get_ref_idx(s->next_picture.f),
 
             .picture_coding_type        = s->pict_type,
             .full_pel_forward_vector    = s->full_pel[0],
@@ -99,35 +83,6 @@ static int nvdec_mpeg12_start_frame(AVCodecContext *avctx, const uint8_t *buffer
     return 0;
 }
 
-static int nvdec_mpeg12_end_frame(AVCodecContext *avctx)
-{
-    NVDECContext *ctx = avctx->internal->hwaccel_priv_data;
-    int ret = ff_nvdec_end_frame(avctx);
-    ctx->bitstream = NULL;
-    return ret;
-}
-
-static int nvdec_mpeg12_decode_slice(AVCodecContext *avctx, const uint8_t *buffer, uint32_t size)
-{
-    NVDECContext *ctx = avctx->internal->hwaccel_priv_data;
-    void *tmp;
-
-    tmp = av_fast_realloc(ctx->slice_offsets, &ctx->slice_offsets_allocated,
-                          (ctx->nb_slices + 1) * sizeof(*ctx->slice_offsets));
-    if (!tmp)
-        return AVERROR(ENOMEM);
-    ctx->slice_offsets = tmp;
-
-    if (!ctx->bitstream)
-        ctx->bitstream = (uint8_t*)buffer;
-
-    ctx->slice_offsets[ctx->nb_slices] = buffer - ctx->bitstream;
-    ctx->bitstream_len += size;
-    ctx->nb_slices++;
-
-    return 0;
-}
-
 static int nvdec_mpeg12_frame_params(AVCodecContext *avctx,
                                   AVBufferRef *hw_frames_ctx)
 {
@@ -136,14 +91,30 @@ static int nvdec_mpeg12_frame_params(AVCodecContext *avctx,
 }
 
 #if CONFIG_MPEG2_NVDEC_HWACCEL
-AVHWAccel ff_mpeg2_nvdec_hwaccel = {
+const AVHWAccel ff_mpeg2_nvdec_hwaccel = {
     .name                 = "mpeg2_nvdec",
     .type                 = AVMEDIA_TYPE_VIDEO,
     .id                   = AV_CODEC_ID_MPEG2VIDEO,
     .pix_fmt              = AV_PIX_FMT_CUDA,
     .start_frame          = nvdec_mpeg12_start_frame,
-    .end_frame            = nvdec_mpeg12_end_frame,
-    .decode_slice         = nvdec_mpeg12_decode_slice,
+    .end_frame            = ff_nvdec_simple_end_frame,
+    .decode_slice         = ff_nvdec_simple_decode_slice,
+    .frame_params         = nvdec_mpeg12_frame_params,
+    .init                 = ff_nvdec_decode_init,
+    .uninit               = ff_nvdec_decode_uninit,
+    .priv_data_size       = sizeof(NVDECContext),
+};
+#endif
+
+#if CONFIG_MPEG1_NVDEC_HWACCEL
+const AVHWAccel ff_mpeg1_nvdec_hwaccel = {
+    .name                 = "mpeg1_nvdec",
+    .type                 = AVMEDIA_TYPE_VIDEO,
+    .id                   = AV_CODEC_ID_MPEG1VIDEO,
+    .pix_fmt              = AV_PIX_FMT_CUDA,
+    .start_frame          = nvdec_mpeg12_start_frame,
+    .end_frame            = ff_nvdec_simple_end_frame,
+    .decode_slice         = ff_nvdec_simple_decode_slice,
     .frame_params         = nvdec_mpeg12_frame_params,
     .init                 = ff_nvdec_decode_init,
     .uninit               = ff_nvdec_decode_uninit,

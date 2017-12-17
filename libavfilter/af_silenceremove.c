@@ -186,8 +186,17 @@ static int config_input(AVFilterLink *inlink)
 
     s->start_duration = av_rescale(s->start_duration, inlink->sample_rate,
                                    AV_TIME_BASE);
+    if (s->start_duration < 0) {
+        av_log(ctx, AV_LOG_WARNING, "start duration must be non-negative\n");
+        s->start_duration = -s->start_duration;
+    }
+
     s->stop_duration  = av_rescale(s->stop_duration, inlink->sample_rate,
                                    AV_TIME_BASE);
+    if (s->stop_duration < 0) {
+        av_log(ctx, AV_LOG_WARNING, "stop duration must be non-negative\n");
+        s->stop_duration = -s->stop_duration;
+    }
 
     s->start_holdoff = av_malloc_array(FFMAX(s->start_duration, 1),
                                        sizeof(*s->start_holdoff) *
@@ -469,7 +478,7 @@ static int request_frame(AVFilterLink *outlink)
                                         (AVRational){1, outlink->sample_rate},
                                         outlink->time_base);
 
-            ret = ff_filter_frame(ctx->inputs[0], frame);
+            ret = ff_filter_frame(outlink, frame);
         }
         s->mode = SILENCE_STOP;
     }

@@ -94,10 +94,9 @@ Stuff that didn't reach the codebase:
   - a853388d2 hevc: change the stride of the MC buffer to be in bytes instead of elements
   - 0cef06df0 checkasm: add HEVC MC tests
   - e7078e842 hevcdsp: add x86 SIMD for MC
-- VAAPI VP8 decode hwaccel (currently under review: http://ffmpeg.org/pipermail/ffmpeg-devel/2017-February/thread.html#207348)
+  - 7993ec19a hevc: Add hevc_get_pixel_4/8/12/16/24/32/48/64
 - Removal of the custom atomic API (5cc0057f49, see http://ffmpeg.org/pipermail/ffmpeg-devel/2017-March/209003.html)
 - new bitstream reader (see http://ffmpeg.org/pipermail/ffmpeg-devel/2017-April/209609.html)
-- use of the bsf instead of our parser for vp9 superframes (see fa1749dd34)
 - use av_cpu_max_align() instead of hardcoding alignment requirements (see https://ffmpeg.org/pipermail/ffmpeg-devel/2017-September/215834.html)
   - f44ec22e0 lavc: use av_cpu_max_align() instead of hardcoding alignment requirements
   - 4de220d2e frame: allow align=0 (meaning automatic) for av_frame_get_buffer()

@@ -429,6 +429,16 @@ How much to use compressed signal in output. Default is 1.
 Range is between 0 and 1.
 @end table
 
+@section acontrast
+Simple audio dynamic range commpression/expansion filter.
+
+The filter accepts the following options:
+
+@table @option
+@item contrast
+Set contrast. Default is 33. Allowed range is between 0 and 100.
+@end table
+
 @section acopy
 
 Copy the input audio source unchanged to the output. This is mainly useful for
@@ -1134,13 +1144,14 @@ The filter accepts the following options:
 
 @table @option
 @item loop
-Set the number of loops.
+Set the number of loops. Setting this value to -1 will result in infinite loops.
+Default is 0.
 
 @item size
-Set maximal number of samples.
+Set maximal number of samples. Default is 0.
 
 @item start
-Set first sample of loop.
+Set first sample of loop. Default is 0.
 @end table
 
 @anchor{amerge}
@@ -3267,6 +3278,65 @@ Specify which channels to filter, by default all available are filtered.
 Lowpass only LFE channel, it LFE is not present it does nothing:
 @example
 lowpass=c=LFE
+@end example
+@end itemize
+
+@section lv2
+
+Load a LV2 (LADSPA Version 2) plugin.
+
+To enable compilation of this filter you need to configure FFmpeg with
+@code{--enable-lv2}.
+
+@table @option
+@item plugin, p
+Specifies the plugin URI. You may need to escape ':'.
+
+@item controls, c
+Set the '|' separated list of controls which are zero or more floating point
+values that determine the behavior of the loaded plugin (for example delay,
+threshold or gain).
+If @option{controls} is set to @code{help}, all available controls and
+their valid ranges are printed.
+
+@item sample_rate, s
+Specify the sample rate, default to 44100. Only used if plugin have
+zero inputs.
+
+@item nb_samples, n
+Set the number of samples per channel per each output frame, default
+is 1024. Only used if plugin have zero inputs.
+
+@item duration, d
+Set the minimum duration of the sourced audio. See
+@ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}
+for the accepted syntax.
+Note that the resulting duration may be greater than the specified duration,
+as the generated audio is always cut at the end of a complete frame.
+If not specified, or the expressed duration is negative, the audio is
+supposed to be generated forever.
+Only used if plugin have zero inputs.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Apply bass enhancer plugin from Calf:
+@example
+lv2=p=http\\\\://calf.sourceforge.net/plugins/BassEnhancer:c=amount=2
+@end example
+
+@item
+Apply bass vinyl plugin from Calf:
+@example
+lv2=p=http\\\\://calf.sourceforge.net/plugins/Vinyl:c=drone=0.2|aging=0.5
+@end example
+
+@item
+Apply bit crusher plugin from ArtyFX:
+@example
+lv2=p=http\\\\://www.openavproductions.com/artyfx#bitta:c=crush=0.3
 @end example
 @end itemize
 
@@ -5955,7 +6025,7 @@ colorspace=smpte240m
 
 @section convolution
 
-Apply convolution 3x3 or 5x5 filter.
+Apply convolution 3x3, 5x5 or 7x7 filter.
 
 The filter accepts the following options:
 
@@ -5965,7 +6035,7 @@ The filter accepts the following options:
 @item 2m
 @item 3m
 Set matrix for each plane.
-Matrix is sequence of 9 or 25 signed integers.
+Matrix is sequence of 9, 25 or 49 signed integers.
 
 @item 0rdiv
 @item 1rdiv
@@ -6903,10 +6973,6 @@ Default value is @samp{exhaustive}.
 If set then a detailed log of the motion search is written to the
 specified file.
 
-@item opencl
-If set to 1, specify using OpenCL capabilities, only available if
-FFmpeg was configured with @code{--enable-opencl}. Default value is 0.
-
 @end table
 
 @section despill
@@ -7076,9 +7142,15 @@ value @code{invert} is used, the box edge color is the same as the
 video with inverted luma.
 
 @item thickness, t
-The expression which sets the thickness of the box edge. Default value is @code{3}.
+The expression which sets the thickness of the box edge.
+A value of @code{fill} will create a filled box. Default value is @code{3}.
 
 See below for the list of accepted constants.
+
+@item replace
+Applicable if the input has alpha. With value @code{1}, the pixels of the painted box
+will overwrite the video's color and alpha pixels.
+Default is @code{0}, which composites the box onto the input, leaving the video's alpha intact.
 @end table
 
 The parameters for @var{x}, @var{y}, @var{w} and @var{h} and @var{t} are expressions containing the
@@ -7139,7 +7211,7 @@ drawbox=x=10:y=20:w=200:h=60:color=red@@0.5
 @item
 Fill the box with pink color:
 @example
-drawbox=x=10:y=10:w=100:h=100:color=pink@@0.5:t=max
+drawbox=x=10:y=10:w=100:h=100:color=pink@@0.5:t=fill
 @end example
 
 @item
@@ -7176,6 +7248,11 @@ video with inverted luma.
 The expression which sets the thickness of the grid line. Default value is @code{1}.
 
 See below for the list of accepted constants.
+
+@item replace
+Applicable if the input has alpha. With @code{1} the pixels of the painted grid
+will overwrite the video's color and alpha pixels.
+Default is @code{0}, which composites the grid onto the input, leaving the video's alpha intact.
 @end table
 
 The parameters for @var{x}, @var{y}, @var{w} and @var{h} and @var{t} are expressions containing the
@@ -8542,6 +8619,48 @@ It is mainly useful when auto-inserted by the libavfilter
 framework.
 
 It does not take parameters.
+
+@section fillborders
+
+Fill borders of the input video, without changing video stream dimensions.
+Sometimes video can have garbage at the four edges and you may not want to
+crop video input to keep size multiple of some number.
+
+This filter accepts the following options:
+
+@table @option
+@item left
+Number of pixels to fill from left border.
+
+@item right
+Number of pixels to fill from right border.
+
+@item top
+Number of pixels to fill from top border.
+
+@item bottom
+Number of pixels to fill from bottom border.
+
+@item mode
+Set fill mode.
+
+It accepts the following values:
+@table @samp
+@item smear
+fill pixels using outermost pixels
+
+@item mirror
+fill pixels using mirroring
+
+@item fixed
+fill pixels with constant value
+@end table
+
+Default is @var{smear}.
+
+@item color
+Set color for pixels in fixed mode. Default is @var{black}.
+@end table
 
 @section find_rect
 
@@ -9985,13 +10104,14 @@ The filter accepts the following options:
 
 @table @option
 @item loop
-Set the number of loops.
+Set the number of loops. Setting this value to -1 will result in infinite loops.
+Default is 0.
 
 @item size
-Set maximal size in number of frames.
+Set maximal size in number of frames. Default is 0.
 
 @item start
-Set first frame of loop.
+Set first frame of loop. Default is 0.
 @end table
 
 @anchor{lut3d}
@@ -10561,6 +10681,34 @@ Default method is @samp{fdiff}.
 Scene change detection threshold. Default is @code{5.0}.
 @end table
 
+@section mix
+
+Mix several video input streams into one video stream.
+
+A description of the accepted options follows.
+
+@table @option
+@item nb_inputs
+The number of inputs. If unspecified, it defaults to 2.
+
+@item weights
+Specify weight of each input video stream as sequence.
+Each weight is separated by space.
+
+@item duration
+Specify how end of stream is determined.
+@table @samp
+@item longest
+The duration of the longest input. (default)
+
+@item shortest
+The duration of the shortest input.
+
+@item first
+The duration of the first input.
+@end table
+@end table
+
 @section mpdecimate
 
 Drop frames that do not differ greatly from the previous frame in
@@ -10829,6 +10977,86 @@ uniform noise (gaussian otherwise)
 Add temporal and uniform noise to input video:
 @example
 noise=alls=20:allf=t+u
+@end example
+
+@section normalize
+
+Normalize RGB video (aka histogram stretching, contrast stretching).
+See: https://en.wikipedia.org/wiki/Normalization_(image_processing)
+
+For each channel of each frame, the filter computes the input range and maps
+it linearly to the user-specified output range. The output range defaults
+to the full dynamic range from pure black to pure white.
+
+Temporal smoothing can be used on the input range to reduce flickering (rapid
+changes in brightness) caused when small dark or bright objects enter or leave
+the scene. This is similar to the auto-exposure (automatic gain control) on a
+video camera, and, like a video camera, it may cause a period of over- or
+under-exposure of the video.
+
+The R,G,B channels can be normalized independently, which may cause some
+color shifting, or linked together as a single channel, which prevents
+color shifting. Linked normalization preserves hue. Independent normalization
+does not, so it can be used to remove some color casts. Independent and linked
+normalization can be combined in any ratio.
+
+The normalize filter accepts the following options:
+
+@table @option
+@item blackpt
+@item whitept
+Colors which define the output range. The minimum input value is mapped to
+the @var{blackpt}. The maximum input value is mapped to the @var{whitept}.
+The defaults are black and white respectively. Specifying white for
+@var{blackpt} and black for @var{whitept} will give color-inverted,
+normalized video. Shades of grey can be used to reduce the dynamic range
+(contrast). Specifying saturated colors here can create some interesting
+effects.
+
+@item smoothing
+The number of previous frames to use for temporal smoothing. The input range
+of each channel is smoothed using a rolling average over the current frame
+and the @var{smoothing} previous frames. The default is 0 (no temporal
+smoothing).
+
+@item independence
+Controls the ratio of independent (color shifting) channel normalization to
+linked (color preserving) normalization. 0.0 is fully linked, 1.0 is fully
+independent. Defaults to 1.0 (fully independent).
+
+@item strength
+Overall strength of the filter. 1.0 is full strength. 0.0 is a rather
+expensive no-op. Defaults to 1.0 (full strength).
+
+@end table
+
+@subsection Examples
+
+Stretch video contrast to use the full dynamic range, with no temporal
+smoothing; may flicker depending on the source content:
+@example
+normalize=blackpt=black:whitept=white:smoothing=0
+@end example
+
+As above, but with 50 frames of temporal smoothing; flicker should be
+reduced, depending on the source content:
+@example
+normalize=blackpt=black:whitept=white:smoothing=50
+@end example
+
+As above, but with hue-preserving linked channel normalization:
+@example
+normalize=blackpt=black:whitept=white:smoothing=50:independence=0
+@end example
+
+As above, but with half strength:
+@example
+normalize=blackpt=black:whitept=white:smoothing=50:independence=0:strength=0.5
+@end example
+
+Map the darkest input color to red, the brightest input color to cyan:
+@example
+normalize=blackpt=red:whitept=cyan
 @end example
 
 @section null
@@ -11110,6 +11338,10 @@ Default value is @samp{yuv420}.
 
 @item repeatlast
 See @ref{framesync}.
+
+@item alpha
+Set format of alpha of the overlaid video, it can be @var{straight} or
+@var{premultiplied}. Default is @var{straight}.
 @end table
 
 The @option{x}, and @option{y} expressions can contain the following
@@ -12868,13 +13100,13 @@ a specific value used for the output and encoder. If not specified, the
 range depends on the pixel format. Possible values:
 
 @table @samp
-@item auto
+@item auto/unknown
 Choose automatically.
 
 @item jpeg/full/pc
 Set full range (0-255 in case of 8-bit luma).
 
-@item mpeg/tv
+@item mpeg/limited/tv
 Set "MPEG" range (16-235 in case of 8-bit luma).
 @end table
 
@@ -14461,6 +14693,11 @@ is "black".
 @item overlap
 Set the number of frames to overlap when tiling several successive frames together.
 The value must be between @code{0} and @var{nb_frames - 1}.
+
+@item init_padding
+Set the number of frames to initially be empty before displaying first output frame.
+This controls how soon will one get first output frame.
+The value must be between @code{0} and @var{nb_frames - 1}.
 @end table
 
 @subsection Examples
@@ -15037,10 +15274,6 @@ Negative values will blur the input video, while positive values will
 sharpen it, a value of zero will disable the effect.
 
 Default value is 0.0.
-
-@item opencl
-If set to 1, specify using OpenCL capabilities, only available if
-FFmpeg was configured with @code{--enable-opencl}. Default value is 0.
 
 @end table
 
@@ -16880,28 +17113,24 @@ The sources accept the following parameters:
 
 @table @option
 
-@item alpha
-Specify the alpha (opacity) of the background, only available in the
-@code{testsrc2} source. The value must be between 0 (fully transparent) and
-255 (fully opaque, the default).
-
-@item color, c
-Specify the color of the source, only available in the @code{color}
-source. For the syntax of this option, check the "Color" section in the
-ffmpeg-utils manual.
-
 @item level
 Specify the level of the Hald CLUT, only available in the @code{haldclutsrc}
 source. A level of @code{N} generates a picture of @code{N*N*N} by @code{N*N*N}
 pixels to be used as identity matrix for 3D lookup tables. Each component is
 coded on a @code{1/(N*N)} scale.
 
+@item color, c
+Specify the color of the source, only available in the @code{color}
+source. For the syntax of this option, check the "Color" section in the
+ffmpeg-utils manual.
+
 @item size, s
 Specify the size of the sourced video. For the syntax of this option, check the
 @ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
 The default value is @code{320x240}.
 
-This option is not available with the @code{haldclutsrc} filter.
+This option is not available with the @code{allrgb}, @code{allyuv}, and
+@code{haldclutsrc} filters.
 
 @item rate, r
 Specify the frame rate of the sourced video, as the number of frames
@@ -16910,9 +17139,6 @@ generated per second. It has to be a string in the format
 number or a valid video frame rate abbreviation. The default value is
 "25".
 
-@item sar
-Set the sample aspect ratio of the sourced video.
-
 @item duration, d
 Set the duration of the sourced video. See
 @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}
@@ -16920,6 +17146,14 @@ for the accepted syntax.
 
 If not specified, or the expressed duration is negative, the video is
 supposed to be generated forever.
+
+@item sar
+Set the sample aspect ratio of the sourced video.
+
+@item alpha
+Specify the alpha (opacity) of the background, only available in the
+@code{testsrc2} source. The value must be between 0 (fully transparent) and
+255 (fully opaque, the default).
 
 @item decimals, n
 Set the number of decimals to show in the timestamp, only available in the
@@ -16930,27 +17164,32 @@ timestamp value multiplied by the power of 10 of the specified
 value. Default value is 0.
 @end table
 
-For example the following:
+@subsection Examples
+
+@itemize
+@item
+Generate a video with a duration of 5.3 seconds, with size
+176x144 and a frame rate of 10 frames per second:
 @example
 testsrc=duration=5.3:size=qcif:rate=10
 @end example
 
-will generate a video with a duration of 5.3 seconds, with size
-176x144 and a frame rate of 10 frames per second.
-
+@item
 The following graph description will generate a red source
 with an opacity of 0.2, with size "qcif" and a frame rate of 10
-frames per second.
+frames per second:
 @example
 color=c=red@@0.2:s=qcif:r=10
 @end example
 
+@item
 If the input content is to be ignored, @code{nullsrc} can be used. The
 following command generates noise in the luminance plane by employing
 the @code{geq} filter:
 @example
 nullsrc=s=256x256, geq=random(1)*255:128:128
 @end example
+@end itemize
 
 @subsection Commands
 
@@ -17220,6 +17459,26 @@ Cubic root.
 
 @item log
 Logarithmic.
+@end table
+
+@item swap
+Swap left channel axis with right channel axis.
+
+@item mirror
+Mirror axis.
+
+@table @samp
+@item none
+No mirror.
+
+@item x
+Mirror only x axis.
+
+@item y
+Mirror only y axis.
+
+@item xy
+Mirror both axis.
 @end table
 
 @end table
@@ -18256,6 +18515,37 @@ asetpts=N/SR/TB
 @end example
 
 @end itemize
+
+@section setrange
+
+Force color range for the output video frame.
+
+The @code{setrange} filter marks the color range property for the
+output frames. It does not change the input frame, but only sets the
+corresponding property, which affects how the frame is treated by
+following filters.
+
+The filter accepts the following options:
+
+@table @option
+
+@item range
+Available values are:
+
+@table @samp
+@item auto
+Keep the same color range property.
+
+@item unspecified, unknown
+Set the color range as unspecified.
+
+@item limited, tv, mpeg
+Set the color range as limited.
+
+@item full, pc, jpeg
+Set the color range as full.
+@end table
+@end table
 
 @section settb, asettb
 

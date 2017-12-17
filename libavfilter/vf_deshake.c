@@ -60,7 +60,6 @@
 #include "libavutil/qsort.h"
 
 #include "deshake.h"
-#include "deshake_opencl.h"
 
 #define OFFSET(x) offsetof(DeshakeContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
@@ -83,7 +82,7 @@ static const AVOption deshake_options[] = {
         { "exhaustive", "exhaustive search",      0, AV_OPT_TYPE_CONST, {.i64=EXHAUSTIVE},       INT_MIN, INT_MAX, FLAGS, "smode" },
         { "less",       "less exhaustive search", 0, AV_OPT_TYPE_CONST, {.i64=SMART_EXHAUSTIVE}, INT_MIN, INT_MAX, FLAGS, "smode" },
     { "filename", "set motion search detailed log file name", OFFSET(filename), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
-    { "opencl", "use OpenCL filtering capabilities", OFFSET(opencl), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, .flags = FLAGS },
+    { "opencl", "ignored",                              OFFSET(opencl), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, .flags = FLAGS },
     { NULL }
 };
 
@@ -341,7 +340,6 @@ static int deshake_transform_c(AVFilterContext *ctx,
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    int ret;
     DeshakeContext *deshake = ctx->priv;
 
     deshake->sad = av_pixelutils_get_sad_fn(4, 4, 1, deshake); // 16x16, 2nd source unaligned
@@ -369,17 +367,7 @@ static av_cold int init(AVFilterContext *ctx)
         deshake->cx &= ~15;
     }
     deshake->transform = deshake_transform_c;
-    if (!CONFIG_OPENCL && deshake->opencl) {
-        av_log(ctx, AV_LOG_ERROR, "OpenCL support was not enabled in this build, cannot be selected\n");
-        return AVERROR(EINVAL);
-    }
 
-    if (CONFIG_OPENCL && deshake->opencl) {
-        deshake->transform = ff_opencl_transform;
-        ret = ff_opencl_deshake_init(ctx);
-        if (ret < 0)
-            return ret;
-    }
     av_log(ctx, AV_LOG_VERBOSE, "cx: %d, cy: %d, cw: %d, ch: %d, rx: %d, ry: %d, edge: %d blocksize: %d contrast: %d search: %d\n",
            deshake->cx, deshake->cy, deshake->cw, deshake->ch,
            deshake->rx, deshake->ry, deshake->edge, deshake->blocksize * 2, deshake->contrast, deshake->search);
@@ -416,9 +404,6 @@ static int config_props(AVFilterLink *link)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     DeshakeContext *deshake = ctx->priv;
-    if (CONFIG_OPENCL && deshake->opencl) {
-        ff_opencl_deshake_uninit(ctx);
-    }
     av_frame_free(&deshake->ref);
     av_freep(&deshake->angles);
     deshake->angles_size = 0;
@@ -446,12 +431,6 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         return AVERROR(ENOMEM);
     }
     av_frame_copy_props(out, in);
-
-    if (CONFIG_OPENCL && deshake->opencl) {
-        ret = ff_opencl_deshake_process_inout_buf(link->dst,in, out);
-        if (ret < 0)
-            goto fail;
-    }
 
     if (deshake->cx < 0 || deshake->cy < 0 || deshake->cw < 0 || deshake->ch < 0) {
         // Find the most likely global motion for the current frame

@@ -224,6 +224,7 @@ static void register_all(void)
     REGISTER_DEMUXER (MXG,              mxg);
     REGISTER_DEMUXER (NC,               nc);
     REGISTER_DEMUXER (NISTSPHERE,       nistsphere);
+    REGISTER_DEMUXER (NSP,              nsp);
     REGISTER_DEMUXER (NSV,              nsv);
     REGISTER_MUXER   (NULL,             null);
     REGISTER_MUXDEMUX(NUT,              nut);

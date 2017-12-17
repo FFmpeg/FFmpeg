@@ -45,6 +45,7 @@ typedef struct libx265Context {
     int   forced_idr;
     char *preset;
     char *tune;
+    char *profile;
     char *x265_opts;
 } libx265Context;
 
@@ -220,6 +221,18 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
         }
     }
 
+    if (ctx->profile) {
+        if (ctx->api->param_apply_profile(ctx->params, ctx->profile) < 0) {
+            int i;
+            av_log(avctx, AV_LOG_ERROR, "Invalid or incompatible profile set: %s.\n", ctx->profile);
+            av_log(avctx, AV_LOG_INFO, "Possible profiles:");
+            for (i = 0; x265_profile_names[i]; i++)
+                av_log(avctx, AV_LOG_INFO, " %s", x265_profile_names[i]);
+            av_log(avctx, AV_LOG_INFO, "\n");
+            return AVERROR(EINVAL);
+        }
+    }
+
     ctx->encoder = ctx->api->encoder_open(ctx->params);
     if (!ctx->encoder) {
         av_log(avctx, AV_LOG_ERROR, "Cannot open libx265 encoder.\n");
@@ -329,6 +342,13 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
+#if X265_BUILD >= 130
+    if (x265pic_out.sliceType == X265_TYPE_B)
+#else
+    if (x265pic_out.frameData.sliceType == 'b')
+#endif
+        pkt->flags |= AV_PKT_FLAG_DISPOSABLE;
+
     *got_packet = 1;
     return 0;
 }
@@ -392,6 +412,7 @@ static const AVOption options[] = {
     { "forced-idr",  "if forcing keyframes, force them as IDR frames",                              OFFSET(forced_idr),AV_OPT_TYPE_BOOL,   { .i64 =  0 },  0,       1, VE },
     { "preset",      "set the x265 preset",                                                         OFFSET(preset),    AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
     { "tune",        "set the x265 tune parameter",                                                 OFFSET(tune),      AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
+    { "profile",     "set the x265 profile",                                                        OFFSET(profile),   AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
     { "x265-params", "set the x265 configuration using a :-separated list of key=value parameters", OFFSET(x265_opts), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
     { NULL }
 };
@@ -421,4 +442,5 @@ AVCodec ff_libx265_encoder = {
     .priv_class       = &class,
     .defaults         = x265_defaults,
     .capabilities     = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS,
+    .wrapper_name     = "libx265",
 };

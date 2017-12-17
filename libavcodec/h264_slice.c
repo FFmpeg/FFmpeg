@@ -1198,41 +1198,48 @@ static int h264_export_frame_props(H264Context *h)
     }
 
     if (h->sei.frame_packing.present &&
-        h->sei.frame_packing.frame_packing_arrangement_type <= 6 &&
+        h->sei.frame_packing.arrangement_type <= 6 &&
         h->sei.frame_packing.content_interpretation_type > 0 &&
         h->sei.frame_packing.content_interpretation_type < 3) {
         H264SEIFramePacking *fp = &h->sei.frame_packing;
         AVStereo3D *stereo = av_stereo3d_create_side_data(cur->f);
         if (stereo) {
-        switch (fp->frame_packing_arrangement_type) {
-        case 0:
+        switch (fp->arrangement_type) {
+        case H264_SEI_FPA_TYPE_CHECKERBOARD:
             stereo->type = AV_STEREO3D_CHECKERBOARD;
             break;
-        case 1:
+        case H264_SEI_FPA_TYPE_INTERLEAVE_COLUMN:
             stereo->type = AV_STEREO3D_COLUMNS;
             break;
-        case 2:
+        case H264_SEI_FPA_TYPE_INTERLEAVE_ROW:
             stereo->type = AV_STEREO3D_LINES;
             break;
-        case 3:
+        case H264_SEI_FPA_TYPE_SIDE_BY_SIDE:
             if (fp->quincunx_sampling_flag)
                 stereo->type = AV_STEREO3D_SIDEBYSIDE_QUINCUNX;
             else
                 stereo->type = AV_STEREO3D_SIDEBYSIDE;
             break;
-        case 4:
+        case H264_SEI_FPA_TYPE_TOP_BOTTOM:
             stereo->type = AV_STEREO3D_TOPBOTTOM;
             break;
-        case 5:
+        case H264_SEI_FPA_TYPE_INTERLEAVE_TEMPORAL:
             stereo->type = AV_STEREO3D_FRAMESEQUENCE;
             break;
-        case 6:
+        case H264_SEI_FPA_TYPE_2D:
             stereo->type = AV_STEREO3D_2D;
             break;
         }
 
         if (fp->content_interpretation_type == 2)
             stereo->flags = AV_STEREO3D_FLAG_INVERT;
+
+        if (fp->arrangement_type == H264_SEI_FPA_TYPE_INTERLEAVE_TEMPORAL) {
+            if (fp->current_frame_is_frame0_flag)
+                stereo->view = AV_STEREO3D_VIEW_LEFT;
+            else
+                stereo->view = AV_STEREO3D_VIEW_RIGHT;
+        }
         }
     }
 

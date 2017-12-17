@@ -25,6 +25,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "error_resilience.h"
+#include "hwaccel.h"
 #include "idctdsp.h"
 #include "internal.h"
 #include "mpegutils.h"
@@ -2153,8 +2154,15 @@ static int decode_user_data(Mpeg4DecContext *ctx, GetBitContext *gb)
         e = sscanf(buf, "FFmpeg v%d.%d.%d / libavcodec build: %d", &ver, &ver2, &ver3, &build);
     if (e != 4) {
         e = sscanf(buf, "Lavc%d.%d.%d", &ver, &ver2, &ver3) + 1;
-        if (e > 1)
-            build = (ver << 16) + (ver2 << 8) + ver3;
+        if (e > 1) {
+            if (ver > 0xFFU || ver2 > 0xFFU || ver3 > 0xFFU) {
+                av_log(s->avctx, AV_LOG_WARNING,
+                     "Unknown Lavc version string encountered, %d.%d.%d; "
+                     "clamping sub-version values to 8-bits.\n",
+                     ver, ver2, ver3);
+            }
+            build = ((ver & 0xFF) << 16) + ((ver2 & 0xFF) << 8) + (ver3 & 0xFF);
+        }
     }
     if (e != 4) {
         if (strcmp(buf, "ffmpeg") == 0)
@@ -2848,4 +2856,19 @@ AVCodec ff_mpeg4_decoder = {
     .profiles              = NULL_IF_CONFIG_SMALL(ff_mpeg4_video_profiles),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(mpeg4_update_thread_context),
     .priv_class = &mpeg4_class,
+    .hw_configs            = (const AVCodecHWConfigInternal*[]) {
+#if CONFIG_MPEG4_NVDEC_HWACCEL
+                               HWACCEL_NVDEC(mpeg4),
+#endif
+#if CONFIG_MPEG4_VAAPI_HWACCEL
+                               HWACCEL_VAAPI(mpeg4),
+#endif
+#if CONFIG_MPEG4_VDPAU_HWACCEL
+                               HWACCEL_VDPAU(mpeg4),
+#endif
+#if CONFIG_MPEG4_VIDEOTOOLBOX_HWACCEL
+                               HWACCEL_VIDEOTOOLBOX(mpeg4),
+#endif
+                               NULL
+                           },
 };

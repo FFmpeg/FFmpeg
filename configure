@@ -185,7 +185,6 @@ Individual component options:
   --enable-filter=NAME     enable filter NAME
   --disable-filter=NAME    disable filter NAME
   --disable-filters        disable all filters
-  --disable-v4l2_m2m       disable V4L2 mem2mem code [autodetect]
 
 External library support:
 
@@ -215,7 +214,7 @@ External library support:
   --enable-gmp             enable gmp, needed for rtmp(t)e support
                            if openssl or librtmp is not used [no]
   --enable-gnutls          enable gnutls, needed for https support
-                           if openssl is not used [no]
+                           if openssl or libtls is not used [no]
   --disable-iconv          disable iconv [autodetect]
   --enable-jni             enable JNI support [no]
   --enable-ladspa          enable LADSPA audio filtering [no]
@@ -260,6 +259,8 @@ External library support:
   --enable-libssh          enable SFTP protocol via libssh [no]
   --enable-libtesseract    enable Tesseract, needed for ocr filter [no]
   --enable-libtheora       enable Theora encoding via libtheora [no]
+  --enable-libtls          enable LibreSSL (via libtls), needed for https support
+                           if openssl or gnutls is not used [no]
   --enable-libtwolame      enable MP2 encoding via libtwolame [no]
   --enable-libv4l2         enable libv4l2/v4l-utils [no]
   --enable-libvidstab      enable video stabilization using vid.stab [no]
@@ -283,16 +284,17 @@ External library support:
   --enable-libzimg         enable z.lib, needed for zscale filter [no]
   --enable-libzmq          enable message passing via libzmq [no]
   --enable-libzvbi         enable teletext support via libzvbi [no]
+  --enable-lv2             enable LV2 audio filtering [no]
   --disable-lzma           disable lzma [autodetect]
   --enable-decklink        enable Blackmagic DeckLink I/O support [no]
   --enable-libndi_newtek   enable Newteck NDI I/O support [no]
   --enable-mediacodec      enable Android MediaCodec support [no]
   --enable-libmysofa       enable libmysofa, needed for sofalizer filter [no]
   --enable-openal          enable OpenAL 1.1 capture support [no]
-  --enable-opencl          enable OpenCL code
+  --enable-opencl          enable OpenCL processing [no]
   --enable-opengl          enable OpenGL rendering [no]
   --enable-openssl         enable openssl, needed for https support
-                           if gnutls is not used [no]
+                           if gnutls or libtls is not used [no]
   --disable-sndio          disable sndio support [autodetect]
   --disable-schannel       disable SChannel SSP, needed for TLS support on
                            Windows if openssl and gnutls are not used [autodetect]
@@ -303,6 +305,7 @@ External library support:
   --disable-zlib           disable zlib [autodetect]
 
   The following libraries provide various hardware acceleration features:
+  --disable-amf            disable AMF video encoding code [autodetect]
   --disable-audiotoolbox   disable Apple AudioToolbox code [autodetect]
   --disable-cuda           disable dynamically linked Nvidia CUDA code [autodetect]
   --enable-cuda-sdk        enable CUDA features that require the CUDA SDK [no]
@@ -318,6 +321,7 @@ External library support:
   --enable-omx             enable OpenMAX IL code [no]
   --enable-omx-rpi         enable OpenMAX IL code for Raspberry Pi [no]
   --enable-rkmpp           enable Rockchip Media Process Platform code [no]
+  --disable-v4l2-m2m       disable V4L2 mem2mem code [autodetect]
   --disable-vaapi          disable Video Acceleration API (mainly Unix/Intel) code [autodetect]
   --disable-vdpau          disable Nvidia Video Decode and Presentation API for Unix code [autodetect]
   --disable-videotoolbox   disable VideoToolbox code [autodetect]
@@ -1521,6 +1525,7 @@ EXAMPLE_LIST="
     scaling_video_example
     transcode_aac_example
     transcoding_example
+    vaapi_encode_example
 "
 
 EXTERNAL_AUTODETECT_LIBRARY_LIST="
@@ -1560,6 +1565,7 @@ EXTERNAL_LIBRARY_NONFREE_LIST="
     libndi_newtek
     libfdk_aac
     openssl
+    libtls
 "
 
 EXTERNAL_LIBRARY_VERSION3_LIST="
@@ -1631,13 +1637,14 @@ EXTERNAL_LIBRARY_LIST="
     libzimg
     libzmq
     libzvbi
+    lv2
     mediacodec
     openal
-    opencl
     opengl
 "
 
 HWACCEL_AUTODETECT_LIBRARY_LIST="
+    amf
     audiotoolbox
     crystalhd
     cuda
@@ -1669,6 +1676,7 @@ HWACCEL_LIBRARY_LIST="
     libmfx
     mmal
     omx
+    opencl
 "
 
 DOCUMENT_LIST="
@@ -2120,6 +2128,11 @@ HAVE_LIST="
     $TYPES_LIST
     makeinfo
     makeinfo_html
+    opencl_d3d11
+    opencl_drm_arm
+    opencl_dxva2
+    opencl_vaapi_beignet
+    opencl_vaapi_intel_media
     perl
     pod2man
     texi2html
@@ -2437,8 +2450,11 @@ amrwb_decoder_select="lsp"
 amv_decoder_select="sp5x_decoder exif"
 amv_encoder_select="aandcttables jpegtables mpegvideoenc"
 ape_decoder_select="bswapdsp llauddsp"
-apng_decoder_select="zlib"
-apng_encoder_select="llvidencdsp zlib"
+apng_decoder_deps="zlib"
+apng_encoder_deps="zlib"
+apng_encoder_select="llvidencdsp"
+aptx_decoder_select="audio_frame_queue"
+aptx_encoder_select="audio_frame_queue"
 asv1_decoder_select="blockdsp bswapdsp idctdsp"
 asv1_encoder_select="bswapdsp fdctdsp pixblockdsp"
 asv2_decoder_select="blockdsp bswapdsp idctdsp"
@@ -2465,14 +2481,14 @@ dnxhd_encoder_select="aandcttables blockdsp fdctdsp idctdsp mpegvideoenc pixbloc
 dolby_e_decoder_select="mdct"
 dvvideo_decoder_select="dvprofile idctdsp"
 dvvideo_encoder_select="dvprofile fdctdsp me_cmp pixblockdsp"
-dxa_decoder_select="zlib"
+dxa_decoder_deps="zlib"
 dxv_decoder_select="lzf texturedsp"
 eac3_decoder_select="ac3_decoder"
 eac3_encoder_select="ac3_encoder"
 eamad_decoder_select="aandcttables blockdsp bswapdsp idctdsp mpegvideo"
 eatgq_decoder_select="aandcttables"
 eatqi_decoder_select="aandcttables blockdsp bswapdsp idctdsp"
-exr_decoder_select="zlib"
+exr_decoder_deps="zlib"
 ffv1_decoder_select="rangecoder"
 ffv1_encoder_select="rangecoder"
 ffvhuff_decoder_select="huffyuv_decoder"
@@ -2480,15 +2496,16 @@ ffvhuff_encoder_select="huffyuv_encoder"
 fic_decoder_select="golomb"
 flac_decoder_select="flacdsp"
 flac_encoder_select="bswapdsp flacdsp lpc"
-flashsv2_decoder_select="zlib"
-flashsv2_encoder_select="zlib"
-flashsv_decoder_select="zlib"
-flashsv_encoder_select="zlib"
+flashsv2_decoder_deps="zlib"
+flashsv2_encoder_deps="zlib"
+flashsv_decoder_deps="zlib"
+flashsv_encoder_deps="zlib"
 flv_decoder_select="h263_decoder"
 flv_encoder_select="h263_encoder"
 fourxm_decoder_select="blockdsp bswapdsp"
 fraps_decoder_select="bswapdsp huffman"
-g2m_decoder_select="blockdsp idctdsp jpegtables zlib"
+g2m_decoder_deps="zlib"
+g2m_decoder_select="blockdsp idctdsp jpegtables"
 g729_decoder_select="audiodsp"
 h261_decoder_select="mpegvideo"
 h261_encoder_select="aandcttables mpegvideoenc"
@@ -2546,7 +2563,7 @@ mpeg2video_encoder_select="aandcttables mpegvideoenc h263dsp"
 mpeg4_decoder_select="h263_decoder mpeg4video_parser"
 mpeg4_encoder_select="h263_encoder"
 msa1_decoder_select="mss34dsp"
-mscc_decoder_select="zlib"
+mscc_decoder_deps="zlib"
 msmpeg4v1_decoder_select="h263_decoder"
 msmpeg4v2_decoder_select="h263_decoder"
 msmpeg4v2_encoder_select="h263_encoder"
@@ -2562,8 +2579,9 @@ on2avc_decoder_select="mdct"
 opus_decoder_deps="swresample"
 opus_decoder_select="mdct15"
 opus_encoder_select="audio_frame_queue mdct15"
-png_decoder_select="zlib"
-png_encoder_select="llvidencdsp zlib"
+png_decoder_deps="zlib"
+png_encoder_deps="zlib"
+png_encoder_select="llvidencdsp"
 prores_decoder_select="blockdsp idctdsp"
 prores_encoder_select="fdctdsp"
 qcelp_decoder_select="lsp"
@@ -2572,7 +2590,7 @@ ra_144_decoder_select="audiodsp"
 ra_144_encoder_select="audio_frame_queue lpc audiodsp"
 ralf_decoder_select="golomb"
 rawvideo_decoder_select="bswapdsp"
-rscc_decoder_select="zlib"
+rscc_decoder_deps="zlib"
 rtjpeg_decoder_select="me_cmp"
 rv10_decoder_select="h263_decoder"
 rv10_encoder_select="h263_encoder"
@@ -2580,7 +2598,7 @@ rv20_decoder_select="h263_decoder"
 rv20_encoder_select="h263_encoder"
 rv30_decoder_select="golomb h264pred h264qpel mpegvideo rv34dsp"
 rv40_decoder_select="golomb h264pred h264qpel mpegvideo rv34dsp"
-screenpresso_decoder_select="zlib"
+screenpresso_decoder_deps="zlib"
 shorten_decoder_select="bswapdsp"
 sipr_decoder_select="lsp"
 snow_decoder_select="dwt h264qpel hpeldsp me_cmp rangecoder videodsp"
@@ -2589,13 +2607,14 @@ sonic_decoder_select="golomb rangecoder"
 sonic_encoder_select="golomb rangecoder"
 sonic_ls_encoder_select="golomb rangecoder"
 sp5x_decoder_select="mjpeg_decoder"
-srgc_decoder_select="zlib"
+srgc_decoder_deps="zlib"
 svq1_decoder_select="hpeldsp"
 svq1_encoder_select="aandcttables hpeldsp me_cmp mpegvideoenc"
 svq3_decoder_select="golomb h264dsp h264parse h264pred hpeldsp tpeldsp videodsp"
 svq3_decoder_suggest="zlib"
 tak_decoder_select="audiodsp"
-tdsc_decoder_select="zlib mjpeg_decoder"
+tdsc_decoder_deps="zlib"
+tdsc_decoder_select="mjpeg_decoder"
 theora_decoder_select="vp3_decoder"
 thp_decoder_select="mjpeg_decoder"
 tiff_decoder_suggest="zlib lzma"
@@ -2604,7 +2623,7 @@ truehd_decoder_select="mlp_parser"
 truehd_encoder_select="lpc"
 truemotion2_decoder_select="bswapdsp"
 truespeech_decoder_select="bswapdsp"
-tscc_decoder_select="zlib"
+tscc_decoder_deps="zlib"
 twinvq_decoder_select="mdct lsp sinewin"
 txd_decoder_select="texturedsp"
 utvideo_decoder_select="bswapdsp llviddsp"
@@ -2621,7 +2640,7 @@ vp6a_decoder_select="vp6_decoder"
 vp6f_decoder_select="vp6_decoder"
 vp7_decoder_select="h264pred videodsp vp8dsp"
 vp8_decoder_select="h264pred videodsp vp8dsp"
-vp9_decoder_select="videodsp vp9_parser"
+vp9_decoder_select="videodsp vp9_parser vp9_superframe_split_bsf"
 webp_decoder_select="vp8_decoder exif"
 wmalossless_decoder_select="llauddsp"
 wmapro_decoder_select="mdct sinewin wma_freqs"
@@ -2638,11 +2657,11 @@ wmv3_decoder_select="vc1_decoder"
 wmv3image_decoder_select="wmv3_decoder"
 xma1_decoder_select="wmapro_decoder"
 xma2_decoder_select="wmapro_decoder"
-zerocodec_decoder_select="zlib"
-zlib_decoder_select="zlib"
-zlib_encoder_select="zlib"
-zmbv_decoder_select="zlib"
-zmbv_encoder_select="zlib"
+zerocodec_decoder_deps="zlib"
+zlib_decoder_deps="zlib"
+zlib_encoder_deps="zlib"
+zmbv_decoder_deps="zlib"
+zmbv_encoder_deps="zlib"
 
 # hardware accelerators
 crystalhd_deps="libcrystalhd_libcrystalhd_if_h"
@@ -2659,63 +2678,52 @@ h263_vaapi_hwaccel_deps="vaapi"
 h263_vaapi_hwaccel_select="h263_decoder"
 h263_videotoolbox_hwaccel_deps="videotoolbox"
 h263_videotoolbox_hwaccel_select="h263_decoder"
-h264_cuvid_hwaccel_select="h264_cuvid_decoder"
 h264_d3d11va_hwaccel_deps="d3d11va"
 h264_d3d11va_hwaccel_select="h264_decoder"
 h264_d3d11va2_hwaccel_deps="d3d11va"
 h264_d3d11va2_hwaccel_select="h264_decoder"
 h264_dxva2_hwaccel_deps="dxva2"
 h264_dxva2_hwaccel_select="h264_decoder"
-h264_mediacodec_hwaccel_deps="mediacodec"
-h264_mmal_hwaccel_deps="mmal"
 h264_nvdec_hwaccel_deps="nvdec"
 h264_nvdec_hwaccel_select="h264_decoder"
-h264_qsv_hwaccel_deps="libmfx"
 h264_vaapi_hwaccel_deps="vaapi"
 h264_vaapi_hwaccel_select="h264_decoder"
 h264_vdpau_hwaccel_deps="vdpau"
 h264_vdpau_hwaccel_select="h264_decoder"
 h264_videotoolbox_hwaccel_deps="videotoolbox"
 h264_videotoolbox_hwaccel_select="h264_decoder"
-hevc_cuvid_hwaccel_select="hevc_cuvid_decoder"
 hevc_d3d11va_hwaccel_deps="d3d11va DXVA_PicParams_HEVC"
 hevc_d3d11va_hwaccel_select="hevc_decoder"
-hevc_mediacodec_hwaccel_deps="mediacodec"
 hevc_d3d11va2_hwaccel_deps="d3d11va DXVA_PicParams_HEVC"
 hevc_d3d11va2_hwaccel_select="hevc_decoder"
 hevc_dxva2_hwaccel_deps="dxva2 DXVA_PicParams_HEVC"
 hevc_dxva2_hwaccel_select="hevc_decoder"
 hevc_nvdec_hwaccel_deps="nvdec"
 hevc_nvdec_hwaccel_select="hevc_decoder"
-hevc_qsv_hwaccel_deps="libmfx"
 hevc_vaapi_hwaccel_deps="vaapi VAPictureParameterBufferHEVC"
 hevc_vaapi_hwaccel_select="hevc_decoder"
 hevc_vdpau_hwaccel_deps="vdpau VdpPictureInfoHEVC"
 hevc_vdpau_hwaccel_select="hevc_decoder"
 hevc_videotoolbox_hwaccel_deps="videotoolbox"
 hevc_videotoolbox_hwaccel_select="hevc_decoder"
-mjpeg_cuvid_hwaccel_select="mjpeg_cuvid_decoder"
 mpeg_xvmc_hwaccel_deps="xvmc"
 mpeg_xvmc_hwaccel_select="mpeg2video_decoder"
-mpeg1_cuvid_hwaccel_select="mpeg1_cuvid_decoder"
+mpeg1_nvdec_hwaccel_deps="nvdec"
+mpeg1_nvdec_hwaccel_select="mpeg1video_decoder"
 mpeg1_vdpau_hwaccel_deps="vdpau"
 mpeg1_vdpau_hwaccel_select="mpeg1video_decoder"
 mpeg1_videotoolbox_hwaccel_deps="videotoolbox"
 mpeg1_videotoolbox_hwaccel_select="mpeg1video_decoder"
 mpeg1_xvmc_hwaccel_deps="xvmc"
 mpeg1_xvmc_hwaccel_select="mpeg1video_decoder"
-mpeg2_cuvid_hwaccel_select="mpeg2_cuvid_decoder"
 mpeg2_d3d11va_hwaccel_deps="d3d11va"
 mpeg2_d3d11va_hwaccel_select="mpeg2video_decoder"
 mpeg2_d3d11va2_hwaccel_deps="d3d11va"
 mpeg2_d3d11va2_hwaccel_select="mpeg2video_decoder"
 mpeg2_dxva2_hwaccel_deps="dxva2"
 mpeg2_dxva2_hwaccel_select="mpeg2video_decoder"
-mpeg2_mediacodec_hwaccel_deps="mediacodec"
-mpeg2_mmal_hwaccel_deps="mmal"
 mpeg2_nvdec_hwaccel_deps="nvdec"
 mpeg2_nvdec_hwaccel_select="mpeg2video_decoder"
-mpeg2_qsv_hwaccel_deps="libmfx"
 mpeg2_vaapi_hwaccel_deps="vaapi"
 mpeg2_vaapi_hwaccel_select="mpeg2video_decoder"
 mpeg2_vdpau_hwaccel_deps="vdpau"
@@ -2724,41 +2732,36 @@ mpeg2_videotoolbox_hwaccel_deps="videotoolbox"
 mpeg2_videotoolbox_hwaccel_select="mpeg2video_decoder"
 mpeg2_xvmc_hwaccel_deps="xvmc"
 mpeg2_xvmc_hwaccel_select="mpeg2video_decoder"
-mpeg4_cuvid_hwaccel_select="mpeg4_cuvid_decoder"
-mpeg4_mediacodec_hwaccel_deps="mediacodec"
-mpeg4_mmal_hwaccel_deps="mmal"
+mpeg4_nvdec_hwaccel_deps="nvdec"
+mpeg4_nvdec_hwaccel_select="mpeg4_decoder"
 mpeg4_vaapi_hwaccel_deps="vaapi"
 mpeg4_vaapi_hwaccel_select="mpeg4_decoder"
 mpeg4_vdpau_hwaccel_deps="vdpau"
 mpeg4_vdpau_hwaccel_select="mpeg4_decoder"
 mpeg4_videotoolbox_hwaccel_deps="videotoolbox"
 mpeg4_videotoolbox_hwaccel_select="mpeg4_decoder"
-vc1_cuvid_hwaccel_select="vc1_cuvid_decoder"
 vc1_d3d11va_hwaccel_deps="d3d11va"
 vc1_d3d11va_hwaccel_select="vc1_decoder"
 vc1_d3d11va2_hwaccel_deps="d3d11va"
 vc1_d3d11va2_hwaccel_select="vc1_decoder"
 vc1_dxva2_hwaccel_deps="dxva2"
 vc1_dxva2_hwaccel_select="vc1_decoder"
-vc1_mmal_hwaccel_deps="mmal"
 vc1_nvdec_hwaccel_deps="nvdec"
 vc1_nvdec_hwaccel_select="vc1_decoder"
-vc1_qsv_hwaccel_deps="libmfx"
 vc1_vaapi_hwaccel_deps="vaapi"
 vc1_vaapi_hwaccel_select="vc1_decoder"
 vc1_vdpau_hwaccel_deps="vdpau"
 vc1_vdpau_hwaccel_select="vc1_decoder"
-vp8_cuvid_hwaccel_select="vp8_cuvid_decoder"
-vp9_cuvid_hwaccel_select="vp9_cuvid_decoder"
-vp8_mediacodec_hwaccel_deps="mediacodec"
-vp8_qsv_hwaccel_deps="libmfx"
+vp8_nvdec_hwaccel_deps="nvdec"
+vp8_nvdec_hwaccel_select="vp8_decoder"
+vp8_vaapi_hwaccel_deps="vaapi VAPictureParameterBufferVP8"
+vp8_vaapi_hwaccel_select="vp8_decoder"
 vp9_d3d11va_hwaccel_deps="d3d11va DXVA_PicParams_VP9"
 vp9_d3d11va_hwaccel_select="vp9_decoder"
 vp9_d3d11va2_hwaccel_deps="d3d11va DXVA_PicParams_VP9"
 vp9_d3d11va2_hwaccel_select="vp9_decoder"
 vp9_dxva2_hwaccel_deps="dxva2 DXVA_PicParams_VP9"
 vp9_dxva2_hwaccel_select="vp9_decoder"
-vp9_mediacodec_hwaccel_deps="mediacodec"
 vp9_nvdec_hwaccel_deps="nvdec"
 vp9_nvdec_hwaccel_select="vp9_decoder"
 vp9_vaapi_hwaccel_deps="vaapi VADecPictureParameterBufferVP9_bit_depth"
@@ -2785,12 +2788,14 @@ scale_npp_filter_deps="cuda libnpp"
 scale_cuda_filter_deps="cuda_sdk"
 thumbnail_cuda_filter_deps="cuda_sdk"
 
+amf_deps_any="libdl LoadLibrary"
 nvenc_deps="cuda"
 nvenc_deps_any="libdl LoadLibrary"
 nvenc_encoder_deps="nvenc"
 
 h263_v4l2m2m_decoder_deps="v4l2_m2m h263_v4l2_m2m"
 h263_v4l2m2m_encoder_deps="v4l2_m2m h263_v4l2_m2m"
+h264_amf_encoder_deps="amf"
 h264_crystalhd_decoder_select="crystalhd h264_mp4toannexb_bsf h264_parser"
 h264_cuvid_decoder_deps="cuvid"
 h264_cuvid_decoder_select="h264_mp4toannexb_bsf"
@@ -2799,7 +2804,7 @@ h264_mediacodec_decoder_select="h264_mp4toannexb_bsf h264_parser"
 h264_mmal_decoder_deps="mmal"
 h264_nvenc_encoder_deps="nvenc"
 h264_omx_encoder_deps="omx"
-h264_qsv_decoder_select="h264_mp4toannexb_bsf h264_parser qsvdec h264_qsv_hwaccel"
+h264_qsv_decoder_select="h264_mp4toannexb_bsf h264_parser qsvdec"
 h264_qsv_encoder_select="qsvenc"
 h264_rkmpp_decoder_deps="rkmpp"
 h264_rkmpp_decoder_select="h264_mp4toannexb_bsf"
@@ -2807,12 +2812,13 @@ h264_vaapi_encoder_deps="VAEncPictureParameterBufferH264"
 h264_vaapi_encoder_select="cbs_h264 vaapi_encode"
 h264_v4l2m2m_decoder_deps="v4l2_m2m h264_v4l2_m2m"
 h264_v4l2m2m_encoder_deps="v4l2_m2m h264_v4l2_m2m"
+hevc_amf_encoder_deps="amf"
 hevc_cuvid_decoder_deps="cuvid"
 hevc_cuvid_decoder_select="hevc_mp4toannexb_bsf"
 hevc_mediacodec_decoder_deps="mediacodec"
 hevc_mediacodec_decoder_select="hevc_mp4toannexb_bsf hevc_parser"
 hevc_nvenc_encoder_deps="nvenc"
-hevc_qsv_decoder_select="hevc_mp4toannexb_bsf hevc_parser qsvdec hevc_qsv_hwaccel"
+hevc_qsv_decoder_select="hevc_mp4toannexb_bsf hevc_parser qsvdec"
 hevc_qsv_encoder_select="hevcparse qsvenc"
 hevc_rkmpp_decoder_deps="rkmpp"
 hevc_rkmpp_decoder_select="hevc_mp4toannexb_bsf"
@@ -2831,7 +2837,7 @@ mpeg2_crystalhd_decoder_select="crystalhd"
 mpeg2_cuvid_decoder_deps="cuvid"
 mpeg2_mmal_decoder_deps="mmal"
 mpeg2_mediacodec_decoder_deps="mediacodec"
-mpeg2_qsv_decoder_select="qsvdec mpeg2_qsv_hwaccel"
+mpeg2_qsv_decoder_select="qsvdec mpegvideo_parser"
 mpeg2_qsv_encoder_select="qsvenc"
 mpeg2_vaapi_encoder_deps="VAEncPictureParameterBufferMPEG2"
 mpeg2_vaapi_encoder_select="cbs_mpeg2 vaapi_encode"
@@ -2849,11 +2855,11 @@ nvenc_hevc_encoder_select="hevc_nvenc_encoder"
 vc1_crystalhd_decoder_select="crystalhd"
 vc1_cuvid_decoder_deps="cuvid"
 vc1_mmal_decoder_deps="mmal"
-vc1_qsv_decoder_select="qsvdec vc1_qsv_hwaccel vc1_parser"
+vc1_qsv_decoder_select="qsvdec vc1_parser"
 vc1_v4l2m2m_decoder_deps="v4l2_m2m vc1_v4l2_m2m"
 vp8_cuvid_decoder_deps="cuvid"
 vp8_mediacodec_decoder_deps="mediacodec"
-vp8_qsv_decoder_select="qsvdec vp8_qsv_hwaccel vp8_parser"
+vp8_qsv_decoder_select="qsvdec vp8_parser"
 vp8_rkmpp_decoder_deps="rkmpp"
 vp8_vaapi_encoder_deps="VAEncPictureParameterBufferVP8"
 vp8_vaapi_encoder_select="vaapi_encode"
@@ -2887,6 +2893,7 @@ trace_headers_bsf_select="cbs_h264 cbs_h265 cbs_mpeg2"
 
 # external libraries
 aac_at_decoder_deps="audiotoolbox"
+aac_at_decoder_select="aac_adtstoasc_bsf"
 ac3_at_decoder_deps="audiotoolbox"
 ac3_at_decoder_select="ac3_parser"
 adpcm_ima_qt_at_decoder_deps="audiotoolbox"
@@ -3139,6 +3146,7 @@ librtmpt_protocol_deps="librtmp"
 librtmpte_protocol_deps="librtmp"
 libsmbclient_protocol_deps="libsmbclient gplv3"
 libssh_protocol_deps="libssh"
+libtls_conflict="openssl gnutls"
 mmsh_protocol_select="http_protocol"
 mmst_protocol_select="network"
 rtmp_protocol_conflict="librtmp_protocol"
@@ -3156,13 +3164,13 @@ rtmpte_protocol_suggest="zlib"
 rtmpts_protocol_select="ffrtmphttp_protocol https_protocol"
 rtmpts_protocol_suggest="zlib"
 rtp_protocol_select="udp_protocol"
-schannel_conflict="openssl gnutls"
+schannel_conflict="openssl gnutls libtls"
 sctp_protocol_deps="struct_sctp_event_subscribe struct_msghdr_msg_flags"
 sctp_protocol_select="network"
-securetransport_conflict="openssl gnutls"
+securetransport_conflict="openssl gnutls libtls"
 srtp_protocol_select="rtp_protocol srtp"
 tcp_protocol_select="network"
-tls_protocol_deps_any="gnutls openssl schannel securetransport"
+tls_protocol_deps_any="gnutls openssl schannel securetransport libtls"
 tls_protocol_select="tcp_protocol"
 udp_protocol_select="network"
 udplite_protocol_select="network"
@@ -3194,7 +3202,6 @@ deinterlace_qsv_filter_deps="libmfx"
 deinterlace_vaapi_filter_deps="vaapi"
 delogo_filter_deps="gpl"
 deshake_filter_select="pixelutils"
-deshake_filter_suggest="opencl"
 drawtext_filter_deps="libfreetype"
 drawtext_filter_suggest="libfontconfig libfribidi"
 elbg_filter_deps="avcodec"
@@ -3215,6 +3222,7 @@ hqdn3d_filter_deps="gpl"
 interlace_filter_deps="gpl"
 kerndeint_filter_deps="gpl"
 ladspa_filter_deps="ladspa libdl"
+lv2_filter_deps="lv2"
 mcdeint_filter_deps="avcodec gpl"
 movie_filter_deps="avcodec avformat"
 mpdecimate_filter_deps="gpl"
@@ -3224,6 +3232,7 @@ negate_filter_deps="lut_filter"
 nnedi_filter_deps="gpl"
 ocr_filter_deps="libtesseract"
 ocv_filter_deps="libopencv"
+overlay_opencl_filter_deps="opencl"
 overlay_qsv_filter_deps="libmfx"
 overlay_qsv_filter_select="qsvvpp"
 owdenoise_filter_deps="gpl"
@@ -3267,8 +3276,8 @@ tinterlace_filter_deps="gpl"
 tinterlace_merge_test_deps="tinterlace_filter"
 tinterlace_pad_test_deps="tinterlace_filter"
 tonemap_filter_deps="const_nan"
+unsharp_opencl_filter_deps="opencl"
 uspp_filter_deps="gpl avcodec"
-unsharp_filter_suggest="opencl"
 vaguedenoiser_filter_deps="gpl"
 vidstabdetect_filter_deps="libvidstab"
 vidstabtransform_filter_deps="libvidstab"
@@ -3302,6 +3311,7 @@ resampling_audio_example_deps="avutil swresample"
 scaling_video_example_deps="avutil swscale"
 transcode_aac_example_deps="avcodec avformat swresample"
 transcoding_example_deps="avfilter avcodec avformat avutil"
+vaapi_encode_example_deps="avcodec avutil"
 
 # EXTRALIBS_LIST
 cpu_init_extralibs="pthreads_extralibs"
@@ -3509,7 +3519,6 @@ find_things(){
 
 ENCODER_LIST=$(find_things  encoder  ENC      libavcodec/allcodecs.c)
 DECODER_LIST=$(find_things  decoder  DEC      libavcodec/allcodecs.c)
-HWACCEL_LIST=$(find_things  hwaccel  HWACCEL  libavcodec/allcodecs.c)
 PARSER_LIST=$(find_things   parser   PARSER   libavcodec/allcodecs.c)
 MUXER_LIST=$(find_things    muxer    _MUX     libavformat/allformats.c)
 DEMUXER_LIST=$(find_things  demuxer  DEMUX    libavformat/allformats.c)
@@ -3525,6 +3534,7 @@ find_things_extern(){
 }
 
 BSF_LIST=$(find_things_extern bsf AVBitStreamFilter libavcodec/bitstream_filters.c)
+HWACCEL_LIST=$(find_things_extern hwaccel AVHWAccel libavcodec/hwaccels.h)
 PROTOCOL_LIST=$(find_things_extern protocol URLProtocol libavformat/protocols.c)
 
 AVCODEC_COMPONENTS_LIST="
@@ -4515,6 +4525,7 @@ elif enabled arm; then
         elif check_arm_arch 6J;       then echo armv6j
         elif check_arm_arch 6K;       then echo armv6k
         elif check_arm_arch 6Z;       then echo armv6z
+        elif check_arm_arch 6KZ;      then echo armv6zk
         elif check_arm_arch 6ZK;      then echo armv6zk
         elif check_arm_arch 6T2;      then echo armv6t2
         elif check_arm_arch 7;        then echo armv7
@@ -4951,7 +4962,7 @@ case $target_os in
     mingw32*|mingw64*)
         target_os=mingw32
         if enabled shared; then
-            # Cannot build both shared and static libs when using dllexport.
+            # Cannot build both shared and static libs when using dllimport.
             disable static
         fi
         enabled shared && ! enabled small && check_cmd $windres --version && enable gnu_windres
@@ -5725,6 +5736,7 @@ check_type "windows.h d3d11.h" "ID3D11VideoContext"
 check_type "d3d9.h dxva2api.h" DXVA2_ConfigPictureDecode -D_WIN32_WINNT=0x0602
 
 check_type "va/va.h va/va_dec_hevc.h" "VAPictureParameterBufferHEVC"
+check_type "va/va.h va/va_dec_vp8.h" "VAPictureParameterBufferVP8"
 check_struct "va/va.h" "VADecPictureParameterBufferVP9" bit_depth
 check_type "va/va.h va/va_vpp.h" "VAProcPipelineParameterBuffer"
 check_type "va/va.h va/va_enc_h264.h" "VAEncPictureParameterBufferH264"
@@ -5801,10 +5813,6 @@ done
 
 # these are off by default, so fail if requested and not available
 enabled cuda_sdk          && require cuda_sdk cuda.h cuCtxCreate -lcuda
-enabled cuvid             && { enabled cuda ||
-                               die "ERROR: CUVID requires CUDA"; }
-enabled nvdec             && { enabled cuda ||
-                               die "ERROR: NVDEC hwaccel requires CUDA"; }
 enabled chromaprint       && require chromaprint chromaprint.h chromaprint_get_version -lchromaprint
 enabled decklink          && { require_header DeckLinkAPI.h &&
                                { check_cpp_condition DeckLinkAPIVersion.h "BLACKMAGIC_DECKLINK_API_VERSION >= 0x0a060100" || die "ERROR: Decklink API version must be >= 10.6.1."; } }
@@ -5814,6 +5822,7 @@ enabled gmp               && require gmp gmp.h mpz_export -lgmp
 enabled gnutls            && require_pkg_config gnutls gnutls gnutls/gnutls.h gnutls_global_init
 enabled jni               && { [ $target_os = "android" ] && check_header jni.h && enabled pthreads || die "ERROR: jni not found"; }
 enabled ladspa            && require_header ladspa.h
+enabled lv2               && require_pkg_config lv2 lilv-0 "lilv-0/lilv/lilv.h" lilv_world_new
 enabled libiec61883       && require libiec61883 libiec61883/iec61883.h iec61883_cmp_connect -lraw1394 -lavc1394 -lrom1394 -liec61883
 enabled libass            && require_pkg_config libass libass ass/ass.h ass_library_init
 enabled libbluray         && require_pkg_config libbluray libbluray libbluray/bluray.h bd_open
@@ -5885,6 +5894,8 @@ enabled libssh            && require_pkg_config libssh libssh libssh/sftp.h sftp
 enabled libspeex          && require_pkg_config libspeex speex speex/speex.h speex_decoder_init
 enabled libtesseract      && require_pkg_config libtesseract tesseract tesseract/capi.h TessBaseAPICreate
 enabled libtheora         && require libtheora theora/theoraenc.h th_info_init -ltheoraenc -ltheoradec -logg
+enabled libtls            && { use_pkg_config libtls libtls tls.h tls_configure ||
+                               require libtls tls.h tls_configure -ltls; }
 enabled libtwolame        && require libtwolame twolame.h twolame_init -ltwolame &&
                              { check_lib libtwolame twolame.h twolame_encode_buffer_float32_interleaved -ltwolame ||
                                die "ERROR: libtwolame must be installed and version must be >= 0.3.10"; }
@@ -5897,22 +5908,22 @@ enabled libvorbis         && require_pkg_config libvorbis vorbis vorbis/codec.h 
 
 enabled libvpx            && {
     enabled libvpx_vp8_decoder && {
-        check_pkg_config libvpx_vp8_decoder "vpx >= 0.9.1" "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_vp8_dx ||
-            check_lib libvpx_vp8_decoder "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_dec_init_ver -lvpx ||
-                die "ERROR: libvpx decoder version must be >=0.9.1";
+        check_pkg_config libvpx_vp8_decoder "vpx >= 1.4.0" "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_vp8_dx ||
+            check_lib libvpx_vp8_decoder "vpx/vpx_decoder.h vpx/vp8dx.h" "vpx_codec_dec_init_ver VPX_IMG_FMT_HIGHBITDEPTH" -lvpx ||
+                die "ERROR: libvpx decoder version must be >=1.4.0";
     }
     enabled libvpx_vp8_encoder && {
-        check_pkg_config libvpx_vp8_encoder "vpx >= 0.9.7" "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_vp8_cx ||
-            check_lib libvpx_vp8_encoder "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_enc_init_ver VP8E_SET_MAX_INTRA_BITRATE_PCT" -lvpx ||
-                die "ERROR: libvpx encoder version must be >=0.9.7";
+        check_pkg_config libvpx_vp8_encoder "vpx >= 1.4.0" "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_vp8_cx ||
+            check_lib libvpx_vp8_encoder "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_enc_init_ver VPX_IMG_FMT_HIGHBITDEPTH" -lvpx ||
+                die "ERROR: libvpx encoder version must be >=1.4.0";
     }
     enabled libvpx_vp9_decoder && {
-        check_pkg_config libvpx_vp9_decoder "vpx >= 1.3.0" "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_vp9_dx ||
-            check_lib libvpx_vp9_decoder "vpx/vpx_decoder.h vpx/vp8dx.h" "vpx_codec_vp9_dx" -lvpx
+        check_pkg_config libvpx_vp9_decoder "vpx >= 1.4.0" "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_vp9_dx ||
+            check_lib libvpx_vp9_decoder "vpx/vpx_decoder.h vpx/vp8dx.h" "vpx_codec_vp9_dx VPX_IMG_FMT_HIGHBITDEPTH" -lvpx
     }
     enabled libvpx_vp9_encoder && {
-        check_pkg_config libvpx_vp9_encoder "vpx >= 1.3.0" "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_vp9_cx ||
-            check_lib libvpx_vp9_encoder "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_vp9_cx VP9E_SET_AQ_MODE" -lvpx
+        check_pkg_config libvpx_vp9_encoder "vpx >= 1.4.0" "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_vp9_cx ||
+            check_lib libvpx_vp9_encoder "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_vp9_cx VPX_IMG_FMT_HIGHBITDEPTH" -lvpx
     }
     if disabled_all libvpx_vp8_decoder libvpx_vp9_decoder libvpx_vp8_encoder libvpx_vp9_encoder; then
         die "libvpx enabled but no supported decoders found"
@@ -5933,7 +5944,7 @@ enabled libx265           && require_pkg_config libx265 x265 x265.h x265_api_get
                              require_cpp_condition x265.h "X265_BUILD >= 68"
 enabled libxavs           && require libxavs "stdint.h xavs.h" xavs_encoder_encode "-lxavs $pthreads_extralibs $libm_extralibs"
 enabled libxvid           && require libxvid xvid.h xvid_global -lxvidcore
-enabled libzimg           && require_pkg_config libzimg "zimg >= 2.3.0" zimg.h zimg_get_api_version
+enabled libzimg           && require_pkg_config libzimg "zimg >= 2.6.2" zimg.h zimg_get_api_version
 enabled libzmq            && require_pkg_config libzmq libzmq zmq.h zmq_ctx_new
 enabled libzvbi           && require_pkg_config libzvbi zvbi-0.2 libzvbi.h vbi_decoder_new &&
                              { check_cpp_condition libzvbi.h "VBI_VERSION_MAJOR > 0 || VBI_VERSION_MINOR > 2 || VBI_VERSION_MINOR == 2 && VBI_VERSION_MICRO >= 28" ||
@@ -6145,6 +6156,30 @@ enabled vaapi &&
     check_cpp_condition "va/va.h" "VA_CHECK_VERSION(1, 0, 0)" &&
     enable vaapi_1
 
+if enabled_all opencl vaapi ; then
+    check_type "CL/cl_intel.h" "clCreateImageFromFdINTEL_fn" &&
+        enable opencl_vaapi_beignet
+    if enabled libmfx ; then
+        check_type "CL/cl.h CL/va_ext.h" "clCreateFromVA_APIMediaSurfaceINTEL_fn" &&
+            enable opencl_vaapi_intel_media
+    fi
+fi
+
+if enabled_all opencl dxva2 ; then
+    check_type "CL/cl_dx9_media_sharing.h" cl_dx9_surface_info_khr &&
+        enable opencl_dxva2
+fi
+
+if enabled_all opencl d3d11va ; then
+    check_type "CL/cl_d3d11.h" clGetDeviceIDsFromD3D11KHR_fn &&
+        enable opencl_d3d11
+fi
+
+if enabled_all opencl libdrm ; then
+    check_func_headers "CL/cl_ext.h" clImportMemoryARM &&
+        enable opencl_drm_arm
+fi
+
 enabled vdpau &&
     check_cpp_condition vdpau/vdpau.h "defined VDP_DECODER_PROFILE_MPEG4_PART2_ASP" ||
     disable vdpau
@@ -6173,6 +6208,11 @@ NV_ENCODE_API_FUNCTION_LIST flist;
 void f(void) { struct { const GUID guid; } s[] = { { NV_ENC_PRESET_HQ_GUID } }; }
 int main(void) { return 0; }
 EOF
+
+enabled amf &&
+    check_cpp_condition "AMF/core/Version.h" \
+        "(AMF_VERSION_MAJOR << 48 | AMF_VERSION_MINOR << 32 | AMF_VERSION_RELEASE << 16 | AMF_VERSION_BUILD_NUM) >= 0x0001000400040001" ||
+    disable amf
 
 # Funny iconv installations are not unusual, so check it after all flags have been set
 if enabled libc_iconv; then

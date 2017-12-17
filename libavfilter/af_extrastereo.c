@@ -90,9 +90,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         right   = average + mult * (right - average);
 
         if (s->clip) {
-            dst[n * 2    ] = av_clipf(left,  -1, 1);
-            dst[n * 2 + 1] = av_clipf(right, -1, 1);
+            left  = av_clipf(left,  -1, 1);
+            right = av_clipf(right, -1, 1);
         }
+
+        dst[n * 2    ] = left;
+        dst[n * 2 + 1] = right;
     }
 
     if (out != in)

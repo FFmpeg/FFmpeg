@@ -36,6 +36,7 @@
 #include "avc.h"
 #include "avformat.h"
 #include "avio_internal.h"
+#include "hlsplaylist.h"
 #include "internal.h"
 #include "isom.h"
 #include "os_support.h"
@@ -100,6 +101,9 @@ typedef struct DASHContext {
     const char *init_seg_name;
     const char *media_seg_name;
     const char *utc_timing_url;
+    const char *user_agent;
+    int hls_playlist;
+    int master_playlist_created;
 } DASHContext;
 
 static struct codec_string {
@@ -210,6 +214,20 @@ static int flush_dynbuf(OutputStream *os, int *range_length)
     return avio_open_dyn_buf(&os->ctx->pb);
 }
 
+static void set_http_options(AVDictionary **options, DASHContext *c)
+{
+    if (c->user_agent)
+        av_dict_set(options, "user_agent", c->user_agent, 0);
+}
+
+static void get_hls_playlist_name(char *playlist_name, int string_size,
+                                  const char *base_url, int id) {
+    if (base_url)
+        snprintf(playlist_name, string_size, "%smedia_%d.m3u8", base_url, id);
+    else
+        snprintf(playlist_name, string_size, "media_%d.m3u8", id);
+}
+
 static int flush_init_segment(AVFormatContext *s, OutputStream *os)
 {
     DASHContext *c = s->priv_data;
@@ -255,7 +273,8 @@ static void dash_free(AVFormatContext *s)
     av_freep(&c->streams);
 }
 
-static void output_segment_list(OutputStream *os, AVIOContext *out, DASHContext *c)
+static void output_segment_list(OutputStream *os, AVIOContext *out, DASHContext *c,
+                                int representation_id, int final)
 {
     int i, start_index = 0, start_number = 1;
     if (c->window_size) {
@@ -315,6 +334,61 @@ static void output_segment_list(OutputStream *os, AVIOContext *out, DASHContext 
         }
         avio_printf(out, "\t\t\t\t</SegmentList>\n");
     }
+    if (c->hls_playlist && start_index < os->nb_segments)
+    {
+        int timescale = os->ctx->streams[0]->time_base.den;
+        char temp_filename_hls[1024];
+        char filename_hls[1024];
+        AVIOContext *out_hls = NULL;
+        AVDictionary *http_opts = NULL;
+        int target_duration = 0;
+        int ret = 0;
+        const char *proto = avio_find_protocol_name(c->dirname);
+        int use_rename = proto && !strcmp(proto, "file");
+
+        get_hls_playlist_name(filename_hls, sizeof(filename_hls),
+                              c->dirname, representation_id);
+
+        snprintf(temp_filename_hls, sizeof(temp_filename_hls), use_rename ? "%s.tmp" : "%s", filename_hls);
+
+        set_http_options(&http_opts, c);
+        avio_open2(&out_hls, temp_filename_hls, AVIO_FLAG_WRITE, NULL, &http_opts);
+        av_dict_free(&http_opts);
+        for (i = start_index; i < os->nb_segments; i++) {
+            Segment *seg = os->segments[i];
+            double duration = (double) seg->duration / timescale;
+            if (target_duration <= duration)
+                target_duration = hls_get_int_from_double(duration);
+        }
+
+        ff_hls_write_playlist_header(out_hls, 6, -1, target_duration,
+                                     start_number, PLAYLIST_TYPE_NONE);
+
+        ff_hls_write_init_file(out_hls, os->initfile, c->single_file,
+                               os->init_range_length, os->init_start_pos);
+
+        for (i = start_index; i < os->nb_segments; i++) {
+            Segment *seg = os->segments[i];
+            ret = ff_hls_write_file_entry(out_hls, 0, c->single_file,
+                                    (double) seg->duration / timescale, 0,
+                                    seg->range_length, seg->start_pos, NULL,
+                                    c->single_file ? os->initfile : seg->file,
+                                    NULL);
+            if (ret < 0) {
+                av_log(os->ctx, AV_LOG_WARNING, "ff_hls_write_file_entry get error\n");
+            }
+        }
+
+        if (final)
+            ff_hls_write_end_list(out_hls);
+
+        avio_close(out_hls);
+        if (use_rename)
+            if (avpriv_io_move(temp_filename_hls, filename_hls) < 0) {
+                av_log(os->ctx, AV_LOG_WARNING, "renaming file %s to %s failed\n\n", temp_filename_hls, filename_hls);
+            }
+    }
+
 }
 
 static char *xmlescape(const char *str) {
@@ -384,7 +458,8 @@ static void format_date_now(char *buf, int size)
     }
 }
 
-static int write_adaptation_set(AVFormatContext *s, AVIOContext *out, int as_index)
+static int write_adaptation_set(AVFormatContext *s, AVIOContext *out, int as_index,
+                                int final)
 {
     DASHContext *c = s->priv_data;
     AdaptationSet *as = &c->as[as_index];
@@ -423,7 +498,7 @@ static int write_adaptation_set(AVFormatContext *s, AVIOContext *out, int as_ind
             avio_printf(out, "\t\t\t\t<AudioChannelConfiguration schemeIdUri=\"urn:mpeg:dash:23003:3:audio_channel_configuration:2011\" value=\"%d\" />\n",
                 s->streams[i]->codecpar->channels);
         }
-        output_segment_list(os, out, c);
+        output_segment_list(os, out, c, i, final);
         avio_printf(out, "\t\t\t</Representation>\n");
     }
     avio_printf(out, "\t\t</AdaptationSet>\n");
@@ -575,16 +650,19 @@ static int write_manifest(AVFormatContext *s, int final)
     int use_rename = proto && !strcmp(proto, "file");
     static unsigned int warned_non_file = 0;
     AVDictionaryEntry *title = av_dict_get(s->metadata, "title", NULL, 0);
+    AVDictionary *opts = NULL;
 
     if (!use_rename && !warned_non_file++)
         av_log(s, AV_LOG_ERROR, "Cannot use rename on non file protocol, this may lead to races and temporary partial files\n");
 
     snprintf(temp_filename, sizeof(temp_filename), use_rename ? "%s.tmp" : "%s", s->filename);
-    ret = s->io_open(s, &out, temp_filename, AVIO_FLAG_WRITE, NULL);
+    set_http_options(&opts, c);
+    ret = s->io_open(s, &out, temp_filename, AVIO_FLAG_WRITE, &opts);
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", temp_filename);
         return ret;
     }
+    av_dict_free(&opts);
     avio_printf(out, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
     avio_printf(out, "<MPD xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"
                 "\txmlns=\"urn:mpeg:dash:schema:mpd:2011\"\n"
@@ -640,7 +718,7 @@ static int write_manifest(AVFormatContext *s, int final)
     }
 
     for (i = 0; i < c->nb_as; i++) {
-        if ((ret = write_adaptation_set(s, out, i)) < 0)
+        if ((ret = write_adaptation_set(s, out, i, final)) < 0)
             return ret;
     }
     avio_printf(out, "\t</Period>\n");
@@ -652,8 +730,43 @@ static int write_manifest(AVFormatContext *s, int final)
     avio_flush(out);
     ff_format_io_close(s, &out);
 
-    if (use_rename)
-        return avpriv_io_move(temp_filename, s->filename);
+    if (use_rename) {
+        if ((ret = avpriv_io_move(temp_filename, s->filename)) < 0)
+            return ret;
+    }
+
+    if (c->hls_playlist && !c->master_playlist_created) {
+        char filename_hls[1024];
+
+        if (*c->dirname)
+            snprintf(filename_hls, sizeof(filename_hls), "%s/master.m3u8", c->dirname);
+        else
+            snprintf(filename_hls, sizeof(filename_hls), "master.m3u8");
+
+        snprintf(temp_filename, sizeof(temp_filename), use_rename ? "%s.tmp" : "%s", filename_hls);
+
+        set_http_options(&opts, c);
+        ret = avio_open2(&out, temp_filename, AVIO_FLAG_WRITE, NULL, &opts);
+        if (ret < 0) {
+            av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", temp_filename);
+            return ret;
+        }
+        av_dict_free(&opts);
+
+        ff_hls_write_playlist_version(out, 6);
+
+        for (i = 0; i < s->nb_streams; i++) {
+            char playlist_file[64];
+            AVStream *st = s->streams[i];
+            get_hls_playlist_name(playlist_file, sizeof(playlist_file), NULL, i);
+            ff_hls_write_stream_info(st, out, st->codecpar->bit_rate, playlist_file);
+        }
+        avio_close(out);
+        if (use_rename)
+            if ((ret = avpriv_io_move(temp_filename, filename_hls)) < 0)
+                return ret;
+        c->master_playlist_created = 1;
+    }
 
     return 0;
 }
@@ -768,9 +881,11 @@ static int dash_init(AVFormatContext *s)
             ff_dash_fill_tmpl_params(os->initfile, sizeof(os->initfile), c->init_seg_name, i, 0, os->bit_rate, 0);
         }
         snprintf(filename, sizeof(filename), "%s%s", c->dirname, os->initfile);
-        ret = s->io_open(s, &os->out, filename, AVIO_FLAG_WRITE, NULL);
+        set_http_options(&opts, c);
+        ret = s->io_open(s, &os->out, filename, AVIO_FLAG_WRITE, &opts);
         if (ret < 0)
             return ret;
+        av_dict_free(&opts);
         os->init_start_pos = 0;
 
         if (!strcmp(os->format_name, "mp4")) {
@@ -974,12 +1089,15 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
         }
 
         if (!c->single_file) {
+            AVDictionary *opts = NULL;
             ff_dash_fill_tmpl_params(filename, sizeof(filename), c->media_seg_name, i, os->segment_index, os->bit_rate, os->start_pts);
             snprintf(full_path, sizeof(full_path), "%s%s", c->dirname, filename);
             snprintf(temp_path, sizeof(temp_path), use_rename ? "%s.tmp" : "%s", full_path);
-            ret = s->io_open(s, &os->out, temp_path, AVIO_FLAG_WRITE, NULL);
+            set_http_options(&opts, c);
+            ret = s->io_open(s, &os->out, temp_path, AVIO_FLAG_WRITE, &opts);
             if (ret < 0)
                 break;
+            av_dict_free(&opts);
             if (!strcmp(os->format_name, "mp4"))
                 write_styp(os->ctx->pb);
         } else {
@@ -1190,6 +1308,8 @@ static const AVOption options[] = {
     { "init_seg_name", "DASH-templated name to used for the initialization segment", OFFSET(init_seg_name), AV_OPT_TYPE_STRING, {.str = "init-stream$RepresentationID$.m4s"}, 0, 0, E },
     { "media_seg_name", "DASH-templated name to used for the media segments", OFFSET(media_seg_name), AV_OPT_TYPE_STRING, {.str = "chunk-stream$RepresentationID$-$Number%05d$.m4s"}, 0, 0, E },
     { "utc_timing_url", "URL of the page that will return the UTC timestamp in ISO format", OFFSET(utc_timing_url), AV_OPT_TYPE_STRING, { 0 }, 0, 0, E },
+    { "http_user_agent", "override User-Agent field in HTTP header", OFFSET(user_agent), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, E},
+    { "hls_playlist", "Generate HLS playlist files(master.m3u8, media_%d.m3u8)", OFFSET(hls_playlist), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
     { NULL },
 };
 
@@ -1203,6 +1323,7 @@ static const AVClass dash_class = {
 AVOutputFormat ff_dash_muxer = {
     .name           = "dash",
     .long_name      = NULL_IF_CONFIG_SMALL("DASH Muxer"),
+    .extensions     = "mpd",
     .priv_data_size = sizeof(DASHContext),
     .audio_codec    = AV_CODEC_ID_AAC,
     .video_codec    = AV_CODEC_ID_H264,

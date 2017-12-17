@@ -54,8 +54,11 @@ static int map_avcodec_id(enum AVCodecID id)
     switch (id) {
     case AV_CODEC_ID_H264:       return cudaVideoCodec_H264;
     case AV_CODEC_ID_HEVC:       return cudaVideoCodec_HEVC;
+    case AV_CODEC_ID_MPEG1VIDEO: return cudaVideoCodec_MPEG1;
     case AV_CODEC_ID_MPEG2VIDEO: return cudaVideoCodec_MPEG2;
+    case AV_CODEC_ID_MPEG4:      return cudaVideoCodec_MPEG4;
     case AV_CODEC_ID_VC1:        return cudaVideoCodec_VC1;
+    case AV_CODEC_ID_VP8:        return cudaVideoCodec_VP8;
     case AV_CODEC_ID_VP9:        return cudaVideoCodec_VP9;
     case AV_CODEC_ID_WMV3:       return cudaVideoCodec_VC1;
     }
@@ -87,6 +90,18 @@ static int nvdec_test_capabilities(NVDECDecoder *decoder,
     caps.eCodecType      = params->CodecType;
     caps.eChromaFormat   = params->ChromaFormat;
     caps.nBitDepthMinus8 = params->bitDepthMinus8;
+
+    if (!decoder->cvdl->cuvidGetDecoderCaps) {
+        av_log(logctx, AV_LOG_WARNING, "Used Nvidia driver is too old to perform a capability check.\n");
+        av_log(logctx, AV_LOG_WARNING, "The minimum required version is "
+#if defined(_WIN32) || defined(__CYGWIN__)
+            "378.66"
+#else
+            "378.13"
+#endif
+            ". Continuing blind.\n");
+        return 0;
+    }
 
     err = decoder->cvdl->cuvidGetDecoderCaps(&caps);
     if (err != CUDA_SUCCESS) {
@@ -174,7 +189,7 @@ static int nvdec_decoder_create(AVBufferRef **out, AVBufferRef *hw_device_ref,
     decoder->cuda_ctx = device_hwctx->cuda_ctx;
     decoder->cudl = device_hwctx->internal->cuda_dl;
 
-    ret = cuvid_load_functions(&decoder->cvdl);
+    ret = cuvid_load_functions(&decoder->cvdl, logctx);
     if (ret < 0) {
         av_log(logctx, AV_LOG_ERROR, "Failed loading nvcuvid.\n");
         goto fail;
@@ -475,6 +490,36 @@ finish:
     return ret;
 }
 
+int ff_nvdec_simple_end_frame(AVCodecContext *avctx)
+{
+    NVDECContext *ctx = avctx->internal->hwaccel_priv_data;
+    int ret = ff_nvdec_end_frame(avctx);
+    ctx->bitstream = NULL;
+    return ret;
+}
+
+int ff_nvdec_simple_decode_slice(AVCodecContext *avctx, const uint8_t *buffer,
+                                 uint32_t size)
+{
+    NVDECContext *ctx = avctx->internal->hwaccel_priv_data;
+    void *tmp;
+
+    tmp = av_fast_realloc(ctx->slice_offsets, &ctx->slice_offsets_allocated,
+                          (ctx->nb_slices + 1) * sizeof(*ctx->slice_offsets));
+    if (!tmp)
+        return AVERROR(ENOMEM);
+    ctx->slice_offsets = tmp;
+
+    if (!ctx->bitstream)
+        ctx->bitstream = (uint8_t*)buffer;
+
+    ctx->slice_offsets[ctx->nb_slices] = buffer - ctx->bitstream;
+    ctx->bitstream_len += size;
+    ctx->nb_slices++;
+
+    return 0;
+}
+
 int ff_nvdec_frame_params(AVCodecContext *avctx,
                           AVBufferRef *hw_frames_ctx,
                           int dpb_size)
@@ -500,8 +545,8 @@ int ff_nvdec_frame_params(AVCodecContext *avctx,
     }
 
     frames_ctx->format            = AV_PIX_FMT_CUDA;
-    frames_ctx->width             = avctx->coded_width;
-    frames_ctx->height            = avctx->coded_height;
+    frames_ctx->width             = (avctx->coded_width + 1) & ~1;
+    frames_ctx->height            = (avctx->coded_height + 1) & ~1;
     frames_ctx->initial_pool_size = dpb_size;
 
     switch (sw_desc->comp[0].depth) {
@@ -519,4 +564,20 @@ int ff_nvdec_frame_params(AVCodecContext *avctx,
     }
 
     return 0;
+}
+
+int ff_nvdec_get_ref_idx(AVFrame *frame)
+{
+    FrameDecodeData *fdd;
+    NVDECFrame *cf;
+
+    if (!frame || !frame->private_ref)
+        return -1;
+
+    fdd = (FrameDecodeData*)frame->private_ref->data;
+    cf  = (NVDECFrame*)fdd->hwaccel_priv;
+    if (!cf)
+        return -1;
+
+    return cf->idx;
 }

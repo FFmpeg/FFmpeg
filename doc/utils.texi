@@ -1057,33 +1057,3 @@ indication of the corresponding powers of 10 and of 2.
 @end table
 
 @c man end EXPRESSION EVALUATION
-
-@chapter OpenCL Options
-@c man begin OPENCL OPTIONS
-
-When FFmpeg is configured with @code{--enable-opencl}, it is possible
-to set the options for the global OpenCL context.
-
-The list of supported options follows:
-
-@table @option
-@item build_options
-Set build options used to compile the registered kernels.
-
-See reference "OpenCL Specification Version: 1.2 chapter 5.6.4".
-
-@item platform_idx
-Select the index of the platform to run OpenCL code.
-
-The specified index must be one of the indexes in the device list
-which can be obtained with @code{ffmpeg -opencl_bench} or @code{av_opencl_get_device_list()}.
-
-@item device_idx
-Select the index of the device used to run OpenCL code.
-
-The specified index must be one of the indexes in the device list which
-can be obtained with @code{ffmpeg -opencl_bench} or @code{av_opencl_get_device_list()}.
-
-@end table
-
-@c man end OPENCL OPTIONS

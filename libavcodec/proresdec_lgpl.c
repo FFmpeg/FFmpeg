@@ -177,6 +177,7 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
     avctx->color_primaries = buf[14];
     avctx->color_trc       = buf[15];
     avctx->colorspace      = buf[16];
+    avctx->color_range     = AVCOL_RANGE_MPEG;
 
     ctx->qmat_changed = 0;
     ptr   = buf + 20;

@@ -69,7 +69,7 @@ static inline void max_nbits(int *nbits_ptr, int val)
 
     if (val == 0)
         return;
-    val = abs(val);
+    val = FFABS(val);
     n = 1;
     while (val != 0) {
         n++;

@@ -373,12 +373,16 @@ static void restore_median_planar(UtvideoContext *c, uint8_t *src, ptrdiff_t str
         C        = bsrc[-stride];
         bsrc[0] += C;
         A        = bsrc[0];
-        for (i = 1; i < width; i++) {
+        for (i = 1; i < FFMIN(width, 16); i++) { /* scalar loop (DSP need align 16) */
             B        = bsrc[i - stride];
             bsrc[i] += mid_pred(A, B, (uint8_t)(A + B - C));
             C        = B;
             A        = bsrc[i];
         }
+        if (width > 16)
+            c->llviddsp.add_median_pred(bsrc + 16, bsrc - stride + 16,
+                                        bsrc + 16, width - 16, &A, &B);
+
         bsrc += stride;
         // the rest of lines use continuous median prediction
         for (j = 2; j < slice_height; j++) {
@@ -424,12 +428,16 @@ static void restore_median_planar_il(UtvideoContext *c, uint8_t *src, ptrdiff_t 
         C        = bsrc[-stride2];
         bsrc[0] += C;
         A        = bsrc[0];
-        for (i = 1; i < width; i++) {
+        for (i = 1; i < FFMIN(width, 16); i++) { /* scalar loop (DSP need align 16) */
             B        = bsrc[i - stride2];
             bsrc[i] += mid_pred(A, B, (uint8_t)(A + B - C));
             C        = B;
             A        = bsrc[i];
         }
+        if (width > 16)
+            c->llviddsp.add_median_pred(bsrc + 16, bsrc - stride2 + 16,
+                                        bsrc + 16, width - 16, &A, &B);
+
         c->llviddsp.add_median_pred(bsrc + stride, bsrc - stride,
                                         bsrc + stride, width, &A, &B);
         bsrc += stride2;
@@ -452,6 +460,7 @@ static void restore_gradient_planar(UtvideoContext *c, uint8_t *src, ptrdiff_t s
     uint8_t *bsrc;
     int slice_start, slice_height;
     const int cmask = ~rmode;
+    int min_width = FFMIN(width, 32);
 
     for (slice = 0; slice < slices; slice++) {
         slice_start  = ((slice * height) / slices) & cmask;
@@ -471,12 +480,14 @@ static void restore_gradient_planar(UtvideoContext *c, uint8_t *src, ptrdiff_t s
         for (j = 1; j < slice_height; j++) {
             // second line - first element has top prediction, the rest uses gradient
             bsrc[0] = (bsrc[0] + bsrc[-stride]) & 0xFF;
-            for (i = 1; i < width; i++) {
+            for (i = 1; i < min_width; i++) { /* dsp need align 32 */
                 A = bsrc[i - stride];
                 B = bsrc[i - (stride + 1)];
                 C = bsrc[i - 1];
                 bsrc[i] = (A - B + C + bsrc[i]) & 0xFF;
             }
+            if (width > 32)
+                c->llviddsp.add_gradient_pred(bsrc + 32, stride, width - 32);
             bsrc += stride;
         }
     }

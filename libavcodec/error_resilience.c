@@ -807,7 +807,7 @@ void ff_er_frame_start(ERContext *s)
 
     memset(s->error_status_table, ER_MB_ERROR | VP_START | ER_MB_END,
            s->mb_stride * s->mb_height * sizeof(uint8_t));
-    s->error_count    = 3 * s->mb_num;
+    atomic_init(&s->error_count, 3 * s->mb_num);
     s->error_occurred = 0;
 }
 
@@ -852,20 +852,20 @@ void ff_er_add_slice(ERContext *s, int startx, int starty,
     mask &= ~VP_START;
     if (status & (ER_AC_ERROR | ER_AC_END)) {
         mask           &= ~(ER_AC_ERROR | ER_AC_END);
-        avpriv_atomic_int_add_and_fetch(&s->error_count, start_i - end_i - 1);
+        atomic_fetch_add(&s->error_count, start_i - end_i - 1);
     }
     if (status & (ER_DC_ERROR | ER_DC_END)) {
         mask           &= ~(ER_DC_ERROR | ER_DC_END);
-        avpriv_atomic_int_add_and_fetch(&s->error_count, start_i - end_i - 1);
+        atomic_fetch_add(&s->error_count, start_i - end_i - 1);
     }
     if (status & (ER_MV_ERROR | ER_MV_END)) {
         mask           &= ~(ER_MV_ERROR | ER_MV_END);
-        avpriv_atomic_int_add_and_fetch(&s->error_count, start_i - end_i - 1);
+        atomic_fetch_add(&s->error_count, start_i - end_i - 1);
     }
 
     if (status & ER_MB_ERROR) {
         s->error_occurred = 1;
-        avpriv_atomic_int_set(&s->error_count, INT_MAX);
+        atomic_store(&s->error_count, INT_MAX);
     }
 
     if (mask == ~0x7F) {
@@ -878,7 +878,7 @@ void ff_er_add_slice(ERContext *s, int startx, int starty,
     }
 
     if (end_i == s->mb_num)
-        avpriv_atomic_int_set(&s->error_count, INT_MAX);
+        atomic_store(&s->error_count, INT_MAX);
     else {
         s->error_status_table[end_xy] &= mask;
         s->error_status_table[end_xy] |= status;
@@ -893,7 +893,7 @@ void ff_er_add_slice(ERContext *s, int startx, int starty,
         prev_status &= ~ VP_START;
         if (prev_status != (ER_MV_END | ER_DC_END | ER_AC_END)) {
             s->error_occurred = 1;
-            avpriv_atomic_int_set(&s->error_count, INT_MAX);
+            atomic_store(&s->error_count, INT_MAX);
         }
     }
 }
@@ -910,10 +910,10 @@ void ff_er_frame_end(ERContext *s)
 
     /* We do not support ER of field pictures yet,
      * though it should not crash if enabled. */
-    if (!s->avctx->error_concealment || s->error_count == 0            ||
+    if (!s->avctx->error_concealment || !atomic_load(&s->error_count)  ||
         s->avctx->lowres                                               ||
         !er_supported(s)                                               ||
-        s->error_count == 3 * s->mb_width *
+        atomic_load(&s->error_count) == 3 * s->mb_width *
                           (s->avctx->skip_top + s->avctx->skip_bottom)) {
         return;
     }
@@ -927,7 +927,7 @@ void ff_er_frame_end(ERContext *s)
     if (   mb_x == s->mb_width
         && s->avctx->codec_id == AV_CODEC_ID_MPEG2VIDEO
         && (FFALIGN(s->avctx->height, 16)&16)
-        && s->error_count == 3 * s->mb_width * (s->avctx->skip_top + s->avctx->skip_bottom + 1)
+        && atomic_load(&s->error_count) == 3 * s->mb_width * (s->avctx->skip_top + s->avctx->skip_bottom + 1)
     ) {
         av_log(s->avctx, AV_LOG_DEBUG, "ignoring last missing slice\n");
         return;

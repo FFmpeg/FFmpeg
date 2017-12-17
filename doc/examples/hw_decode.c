@@ -44,34 +44,6 @@ static AVBufferRef *hw_device_ctx = NULL;
 static enum AVPixelFormat hw_pix_fmt;
 static FILE *output_file = NULL;
 
-static enum AVPixelFormat find_fmt_by_hw_type(const enum AVHWDeviceType type)
-{
-    enum AVPixelFormat fmt;
-
-    switch (type) {
-    case AV_HWDEVICE_TYPE_VAAPI:
-        fmt = AV_PIX_FMT_VAAPI;
-        break;
-    case AV_HWDEVICE_TYPE_DXVA2:
-        fmt = AV_PIX_FMT_DXVA2_VLD;
-        break;
-    case AV_HWDEVICE_TYPE_D3D11VA:
-        fmt = AV_PIX_FMT_D3D11;
-        break;
-    case AV_HWDEVICE_TYPE_VDPAU:
-        fmt = AV_PIX_FMT_VDPAU;
-        break;
-    case AV_HWDEVICE_TYPE_VIDEOTOOLBOX:
-        fmt = AV_PIX_FMT_VIDEOTOOLBOX;
-        break;
-    default:
-        fmt = AV_PIX_FMT_NONE;
-        break;
-    }
-
-    return fmt;
-}
-
 static int hw_decoder_init(AVCodecContext *ctx, const enum AVHWDeviceType type)
 {
     int err = 0;
@@ -184,18 +156,22 @@ int main(int argc, char *argv[])
     AVCodec *decoder = NULL;
     AVPacket packet;
     enum AVHWDeviceType type;
+    int i;
 
     if (argc < 4) {
-        fprintf(stderr, "Usage: %s <vaapi|vdpau|dxva2|d3d11va> <input file> <output file>\n", argv[0]);
+        fprintf(stderr, "Usage: %s <device type> <input file> <output file>\n", argv[0]);
         return -1;
     }
 
     av_register_all();
 
     type = av_hwdevice_find_type_by_name(argv[1]);
-    hw_pix_fmt = find_fmt_by_hw_type(type);
-    if (hw_pix_fmt == -1) {
-        fprintf(stderr, "Cannot support '%s' in this example.\n", argv[1]);
+    if (type == AV_HWDEVICE_TYPE_NONE) {
+        fprintf(stderr, "Device type %s is not supported.\n", argv[1]);
+        fprintf(stderr, "Available device types:");
+        while((type = av_hwdevice_iterate_types(type)) != AV_HWDEVICE_TYPE_NONE)
+            fprintf(stderr, " %s", av_hwdevice_get_type_name(type));
+        fprintf(stderr, "\n");
         return -1;
     }
 
@@ -217,6 +193,20 @@ int main(int argc, char *argv[])
         return -1;
     }
     video_stream = ret;
+
+    for (i = 0;; i++) {
+        const AVCodecHWConfig *config = avcodec_get_hw_config(decoder, i);
+        if (!config) {
+            fprintf(stderr, "Decoder %s does not support device type %s.\n",
+                    decoder->name, av_hwdevice_get_type_name(type));
+            return -1;
+        }
+        if (config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX &&
+            config->device_type == type) {
+            hw_pix_fmt = config->pix_fmt;
+            break;
+        }
+    }
 
     if (!(decoder_ctx = avcodec_alloc_context3(decoder)))
         return AVERROR(ENOMEM);

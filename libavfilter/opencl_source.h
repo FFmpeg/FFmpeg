@@ -1,8 +1,4 @@
 /*
- * Copyright (C) 2012 Peng Gao <peng@multicorewareinc.com>
- * Copyright (C) 2012 Li   Cao <li@multicorewareinc.com>
- * Copyright (C) 2012 Wei  Gao <weigao@multicorewareinc.com>
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -20,21 +16,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVUTIL_OPENCL_INTERNAL_H
-#define AVUTIL_OPENCL_INTERNAL_H
+#ifndef AVFILTER_OPENCL_SOURCE_H
+#define AVFILTER_OPENCL_SOURCE_H
 
-#include "attributes.h"
-#include "opencl.h"
+extern const char *ff_opencl_source_overlay;
+extern const char *ff_opencl_source_unsharp;
 
-#define FF_OPENCL_PARAM_INFO(a) ((void*)(&(a))), (sizeof(a))
-
-typedef struct {
-    cl_kernel kernel;
-    int param_num;
-    void *ctx;
-} FFOpenclParam;
-
-av_warn_unused_result
-int avpriv_opencl_set_parameter(FFOpenclParam *opencl_param, ...);
-
-#endif /* AVUTIL_OPENCL_INTERNAL_H */
+#endif /* AVFILTER_OPENCL_SOURCE_H */

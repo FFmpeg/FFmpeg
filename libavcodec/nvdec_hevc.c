@@ -266,7 +266,7 @@ static int nvdec_hevc_frame_params(AVCodecContext *avctx,
     return ff_nvdec_frame_params(avctx, hw_frames_ctx, sps->temporal_layer[sps->max_sub_layers - 1].max_dec_pic_buffering + 1);
 }
 
-AVHWAccel ff_hevc_nvdec_hwaccel = {
+const AVHWAccel ff_hevc_nvdec_hwaccel = {
     .name                 = "hevc_nvdec",
     .type                 = AVMEDIA_TYPE_VIDEO,
     .id                   = AV_CODEC_ID_HEVC,

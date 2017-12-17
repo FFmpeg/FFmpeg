@@ -59,29 +59,29 @@
 #define LOAD_LIBRARY(l, path)                                     \
     do {                                                          \
         if (!((l) = dlopen(path, RTLD_LAZY))) {                   \
-            av_log(NULL, AV_LOG_ERROR, "Cannot load %s\n", path); \
+            av_log(logctx, AV_LOG_ERROR, "Cannot load %s\n", path); \
             ret = AVERROR_UNKNOWN;                                \
             goto error;                                           \
         }                                                         \
-        av_log(NULL, AV_LOG_TRACE, "Loaded lib: %s\n", path);     \
+        av_log(logctx, AV_LOG_TRACE, "Loaded lib: %s\n", path);     \
     } while (0)
 
 #define LOAD_SYMBOL(fun, tp, symbol)                                \
     do {                                                            \
         if (!((f->fun) = (tp*)dlsym(f->lib, symbol))) {             \
-            av_log(NULL, AV_LOG_ERROR, "Cannot load %s\n", symbol); \
+            av_log(logctx, AV_LOG_ERROR, "Cannot load %s\n", symbol); \
             ret = AVERROR_UNKNOWN;                                  \
             goto error;                                             \
         }                                                           \
-        av_log(NULL, AV_LOG_TRACE, "Loaded sym: %s\n", symbol);     \
+        av_log(logctx, AV_LOG_TRACE, "Loaded sym: %s\n", symbol);     \
     } while (0)
 
 #define LOAD_SYMBOL_OPT(fun, tp, symbol)                                     \
     do {                                                                     \
         if (!((f->fun) = (tp*)dlsym(f->lib, symbol))) {                      \
-            av_log(NULL, AV_LOG_DEBUG, "Cannot load optional %s\n", symbol); \
+            av_log(logctx, AV_LOG_DEBUG, "Cannot load optional %s\n", symbol); \
         } else {                                                             \
-            av_log(NULL, AV_LOG_TRACE, "Loaded sym: %s\n", symbol);          \
+            av_log(logctx, AV_LOG_TRACE, "Loaded sym: %s\n", symbol);          \
         }                                                                    \
     } while (0)
 
@@ -187,7 +187,7 @@ static inline void nvenc_free_functions(NvencFunctions **functions)
 }
 
 #ifdef AV_COMPAT_DYNLINK_CUDA_H
-static inline int cuda_load_functions(CudaFunctions **functions)
+static inline int cuda_load_functions(CudaFunctions **functions, void *logctx)
 {
     GENERIC_LOAD_FUNC_PREAMBLE(CudaFunctions, cuda, CUDA_LIBNAME);
 
@@ -210,7 +210,7 @@ static inline int cuda_load_functions(CudaFunctions **functions)
 }
 #endif
 
-static inline int cuvid_load_functions(CuvidFunctions **functions)
+static inline int cuvid_load_functions(CuvidFunctions **functions, void *logctx)
 {
     GENERIC_LOAD_FUNC_PREAMBLE(CuvidFunctions, cuvid, NVCUVID_LIBNAME);
 
@@ -244,7 +244,7 @@ static inline int cuvid_load_functions(CuvidFunctions **functions)
     GENERIC_LOAD_FUNC_FINALE(cuvid);
 }
 
-static inline int nvenc_load_functions(NvencFunctions **functions)
+static inline int nvenc_load_functions(NvencFunctions **functions, void *logctx)
 {
     GENERIC_LOAD_FUNC_PREAMBLE(NvencFunctions, nvenc, NVENC_LIBNAME);
 

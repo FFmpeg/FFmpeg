@@ -1188,11 +1188,12 @@ static void set_frag_stream(MOVFragmentIndex *frag_index, int id)
 static MOVFragmentStreamInfo * get_current_frag_stream_info(
     MOVFragmentIndex *frag_index)
 {
+    MOVFragmentIndexItem *item;
     if (frag_index->current < 0 ||
         frag_index->current >= frag_index->nb_items)
         return NULL;
 
-    MOVFragmentIndexItem * item = &frag_index->item[frag_index->current];
+    item = &frag_index->item[frag_index->current];
     if (item->current >= 0 && item->current < item->nb_stream_info)
         return &item->stream_info[item->current];
 
@@ -1732,6 +1733,7 @@ static int mov_read_ares(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 par->width = 1440;
             return 0;
         } else if ((par->codec_tag == MKTAG('A', 'V', 'd', '1') ||
+                    par->codec_tag == MKTAG('A', 'V', 'j', '2') ||
                     par->codec_tag == MKTAG('A', 'V', 'd', 'n')) &&
                    atom.size >= 24) {
             int num, den;
@@ -1989,8 +1991,10 @@ static int mov_read_stco(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     sc->chunk_count = i;
 
-    if (pb->eof_reached)
+    if (pb->eof_reached) {
+        av_log(c->fc, AV_LOG_WARNING, "reached eof, corrupted STCO atom\n");
         return AVERROR_EOF;
+    }
 
     return 0;
 }
@@ -2436,8 +2440,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
     MOVStreamContext *sc;
     int pseudo_stream_id;
 
-    if (c->fc->nb_streams < 1)
-        return 0;
+    av_assert0 (c->fc->nb_streams >= 1);
     st = c->fc->streams[c->fc->nb_streams-1];
     sc = st->priv_data;
 
@@ -2463,8 +2466,10 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
         }
 
         if (mov_skip_multiple_stsd(c, pb, st->codecpar->codec_tag, format,
-                                   size - (avio_tell(pb) - start_pos)))
+                                   size - (avio_tell(pb) - start_pos))) {
+            sc->stsd_count++;
             continue;
+        }
 
         sc->pseudo_stream_id = st->codecpar->codec_tag ? -1 : pseudo_stream_id;
         sc->dref_id= dref_id;
@@ -2516,10 +2521,13 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
             av_freep(&st->codecpar->extradata);
             st->codecpar->extradata_size = 0;
         }
+        sc->stsd_count++;
     }
 
-    if (pb->eof_reached)
+    if (pb->eof_reached) {
+        av_log(c->fc, AV_LOG_WARNING, "reached eof, corrupted STSD atom\n");
         return AVERROR_EOF;
+    }
 
     return 0;
 }
@@ -2564,8 +2572,6 @@ static int mov_read_stsd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     ret = ff_mov_read_stsd_entries(c, pb, entries);
     if (ret < 0)
         goto fail;
-
-    sc->stsd_count = entries;
 
     /* Restore back the primary extradata. */
     av_freep(&st->codecpar->extradata);
@@ -2622,8 +2628,10 @@ static int mov_read_stsc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     sc->stsc_count = i;
 
-    if (pb->eof_reached)
+    if (pb->eof_reached) {
+        av_log(c->fc, AV_LOG_WARNING, "reached eof, corrupted STSC atom\n");
         return AVERROR_EOF;
+    }
 
     return 0;
 }
@@ -2674,8 +2682,10 @@ static int mov_read_stps(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     sc->stps_count = i;
 
-    if (pb->eof_reached)
+    if (pb->eof_reached) {
+        av_log(c->fc, AV_LOG_WARNING, "reached eof, corrupted STPS atom\n");
         return AVERROR_EOF;
+    }
 
     return 0;
 }
@@ -2721,8 +2731,10 @@ static int mov_read_stss(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     sc->keyframe_count = i;
 
-    if (pb->eof_reached)
+    if (pb->eof_reached) {
+        av_log(c->fc, AV_LOG_WARNING, "reached eof, corrupted STSS atom\n");
         return AVERROR_EOF;
+    }
 
     return 0;
 }
@@ -2806,8 +2818,10 @@ static int mov_read_stsz(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     av_free(buf);
 
-    if (pb->eof_reached)
+    if (pb->eof_reached) {
+        av_log(c->fc, AV_LOG_WARNING, "reached eof, corrupted STSZ atom\n");
         return AVERROR_EOF;
+    }
 
     return 0;
 }
@@ -2868,8 +2882,10 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     sc->duration_for_fps  += duration;
     sc->nb_frames_for_fps += total_sample_count;
 
-    if (pb->eof_reached)
+    if (pb->eof_reached) {
+        av_log(c->fc, AV_LOG_WARNING, "reached eof, corrupted STTS atom\n");
         return AVERROR_EOF;
+    }
 
     st->nb_frames= total_sample_count;
     if (duration)
@@ -2893,7 +2909,7 @@ static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     MOVStreamContext *sc;
-    unsigned int i, j, entries, ctts_count = 0;
+    unsigned int i, entries, ctts_count = 0;
 
     if (c->fc->nb_streams < 1)
         return 0;
@@ -2926,9 +2942,8 @@ static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             continue;
         }
 
-        /* Expand entries such that we have a 1-1 mapping with samples. */
-        for (j = 0; j < count; j++)
-            add_ctts_entry(&sc->ctts_data, &ctts_count, &sc->ctts_allocated_size, 1, duration);
+        add_ctts_entry(&sc->ctts_data, &ctts_count, &sc->ctts_allocated_size,
+                       count, duration);
 
         av_log(c->fc, AV_LOG_TRACE, "count=%d, duration=%d\n",
                 count, duration);
@@ -2946,8 +2961,10 @@ static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     sc->ctts_count = ctts_count;
 
-    if (pb->eof_reached)
+    if (pb->eof_reached) {
+        av_log(c->fc, AV_LOG_WARNING, "reached eof, corrupted CTTS atom\n");
         return AVERROR_EOF;
+    }
 
     av_log(c->fc, AV_LOG_TRACE, "dts shift %d\n", sc->dts_shift);
 
@@ -2993,7 +3010,12 @@ static int mov_read_sbgp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     sc->rap_group_count = i;
 
-    return pb->eof_reached ? AVERROR_EOF : 0;
+    if (pb->eof_reached) {
+        av_log(c->fc, AV_LOG_WARNING, "reached eof, corrupted SBGP atom\n");
+        return AVERROR_EOF;
+    }
+
+    return 0;
 }
 
 /**
@@ -3577,6 +3599,8 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
     unsigned int stps_index = 0;
     unsigned int i, j;
     uint64_t stream_size = 0;
+    MOVStts *ctts_data_old = sc->ctts_data;
+    unsigned int ctts_count_old = sc->ctts_count;
 
     if (sc->elst_count) {
         int i, edit_start_index = 0, multiple_edits = 0;
@@ -3644,6 +3668,28 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
             return;
         }
         st->index_entries_allocated_size = (st->nb_index_entries + sc->sample_count) * sizeof(*st->index_entries);
+
+        if (ctts_data_old) {
+            // Expand ctts entries such that we have a 1-1 mapping with samples
+            if (sc->sample_count >= UINT_MAX / sizeof(*sc->ctts_data))
+                return;
+            sc->ctts_count = 0;
+            sc->ctts_allocated_size = 0;
+            sc->ctts_data = av_fast_realloc(NULL, &sc->ctts_allocated_size,
+                                    sc->sample_count * sizeof(*sc->ctts_data));
+            if (!sc->ctts_data) {
+                av_free(ctts_data_old);
+                return;
+            }
+            for (i = 0; i < ctts_count_old &&
+                        sc->ctts_count < sc->sample_count; i++)
+                for (j = 0; j < ctts_data_old[i].count &&
+                            sc->ctts_count < sc->sample_count; j++)
+                    add_ctts_entry(&sc->ctts_data, &sc->ctts_count,
+                                   &sc->ctts_allocated_size, 1,
+                                   ctts_data_old[i].duration);
+            av_free(ctts_data_old);
+        }
 
         for (i = 0; i < sc->chunk_count; i++) {
             int64_t next_offset = i+1 < sc->chunk_count ? sc->chunk_offsets[i+1] : INT64_MAX;
@@ -4174,8 +4220,10 @@ static int mov_read_custom(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             break;
 
         *p = av_malloc(len + 1);
-        if (!*p)
+        if (!*p) {
+            ret = AVERROR(ENOMEM);
             break;
+        }
         ret = ffio_read_size(pb, *p, len);
         if (ret < 0) {
             av_freep(p);
@@ -4716,8 +4764,10 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     fix_frag_index_entries(&c->frag_index, next_frag_index,
                            frag->track_id, entries);
 
-    if (pb->eof_reached)
+    if (pb->eof_reached) {
+        av_log(c->fc, AV_LOG_WARNING, "reached eof, corrupted TRUN atom\n");
         return AVERROR_EOF;
+    }
 
     frag->implicit_offset = offset;
 
@@ -4813,7 +4863,7 @@ static int mov_read_sidx(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 MOVFragmentStreamInfo * si;
                 si = &item->stream_info[j];
                 if (si->sidx_pts != AV_NOPTS_VALUE) {
-                    ref_st = c->fc->streams[i];
+                    ref_st = c->fc->streams[j];
                     ref_sc = ref_st->priv_data;
                     break;
                 }
@@ -4890,6 +4940,7 @@ static int mov_read_cmov(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (ret < 0)
         goto free_and_return;
 
+    ret = AVERROR_INVALIDDATA;
     if (uncompress (moov_data, (uLongf *) &moov_len, (const Bytef *)cmov_data, cmov_len) != Z_OK)
         goto free_and_return;
     if (ffio_init_context(&ctx, moov_data, moov_len, 0, NULL, NULL, NULL, NULL) != 0)
@@ -5079,6 +5130,51 @@ static int mov_read_smdm(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+static int mov_read_mdcv(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    MOVStreamContext *sc;
+    const int mapping[3] = {1, 2, 0};
+    const int chroma_den = 50000;
+    const int luma_den = 10000;
+    int i;
+
+    if (c->fc->nb_streams < 1)
+        return AVERROR_INVALIDDATA;
+
+    sc = c->fc->streams[c->fc->nb_streams - 1]->priv_data;
+
+    if (atom.size < 24) {
+        av_log(c->fc, AV_LOG_ERROR, "Invalid Mastering Display Color Volume box\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    sc->mastering = av_mastering_display_metadata_alloc();
+    if (!sc->mastering)
+        return AVERROR(ENOMEM);
+
+    for (i = 0; i < 3; i++) {
+        const int j = mapping[i];
+        sc->mastering->display_primaries[j][0].num = avio_rb16(pb);
+        sc->mastering->display_primaries[j][0].den = chroma_den;
+        sc->mastering->display_primaries[j][1].num = avio_rb16(pb);
+        sc->mastering->display_primaries[j][1].den = chroma_den;
+    }
+    sc->mastering->white_point[0].num = avio_rb16(pb);
+    sc->mastering->white_point[0].den = chroma_den;
+    sc->mastering->white_point[1].num = avio_rb16(pb);
+    sc->mastering->white_point[1].den = chroma_den;
+
+    sc->mastering->max_luminance.num = avio_rb32(pb);
+    sc->mastering->max_luminance.den = luma_den;
+    sc->mastering->min_luminance.num = avio_rb32(pb);
+    sc->mastering->min_luminance.den = luma_den;
+
+    sc->mastering->has_luminance = 1;
+    sc->mastering->has_primaries = 1;
+
+    return 0;
+}
+
 static int mov_read_coll(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     MOVStreamContext *sc;
@@ -5100,6 +5196,30 @@ static int mov_read_coll(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
     }
     avio_skip(pb, 3); /* flags */
+
+    sc->coll = av_content_light_metadata_alloc(&sc->coll_size);
+    if (!sc->coll)
+        return AVERROR(ENOMEM);
+
+    sc->coll->MaxCLL  = avio_rb16(pb);
+    sc->coll->MaxFALL = avio_rb16(pb);
+
+    return 0;
+}
+
+static int mov_read_clli(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    MOVStreamContext *sc;
+
+    if (c->fc->nb_streams < 1)
+        return AVERROR_INVALIDDATA;
+
+    sc = c->fc->streams[c->fc->nb_streams - 1]->priv_data;
+
+    if (atom.size < 4) {
+        av_log(c->fc, AV_LOG_ERROR, "Empty Content Light Level Info box\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     sc->coll = av_content_light_metadata_alloc(&sc->coll_size);
     if (!sc->coll)
@@ -5462,7 +5582,8 @@ static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         if (ret < 0)
             return ret;
         if (!sc->spherical)
-            av_log(c->fc, AV_LOG_WARNING, "Invalid spherical metadata found\n");    }
+            av_log(c->fc, AV_LOG_WARNING, "Invalid spherical metadata found\n");
+    }
 
     return 0;
 }
@@ -5919,6 +6040,8 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('S','m','D','m'), mov_read_smdm },
 { MKTAG('C','o','L','L'), mov_read_coll },
 { MKTAG('v','p','c','C'), mov_read_vpcc },
+{ MKTAG('m','d','c','v'), mov_read_mdcv },
+{ MKTAG('c','l','l','i'), mov_read_clli },
 { 0, NULL }
 };
 
@@ -6531,13 +6654,13 @@ static int mov_read_header(AVFormatContext *s)
 
     /* check MOV header */
     do {
-    if (mov->moov_retry)
-        avio_seek(pb, 0, SEEK_SET);
-    if ((err = mov_read_default(mov, pb, atom)) < 0) {
-        av_log(s, AV_LOG_ERROR, "error reading header\n");
-        mov_read_close(s);
-        return err;
-    }
+        if (mov->moov_retry)
+            avio_seek(pb, 0, SEEK_SET);
+        if ((err = mov_read_default(mov, pb, atom)) < 0) {
+            av_log(s, AV_LOG_ERROR, "error reading header\n");
+            mov_read_close(s);
+            return err;
+        }
     } while ((pb->seekable & AVIO_SEEKABLE_NORMAL) && !mov->found_moov && !mov->moov_retry++);
     if (!mov->found_moov) {
         av_log(s, AV_LOG_ERROR, "moov atom not found\n");
@@ -6752,6 +6875,7 @@ static int should_retry(AVIOContext *pb, int error_code) {
 
 static int mov_switch_root(AVFormatContext *s, int64_t target, int index)
 {
+    int ret;
     MOVContext *mov = s->priv_data;
 
     if (index >= 0 && index < mov->frag_index.nb_items)
@@ -6774,8 +6898,10 @@ static int mov_switch_root(AVFormatContext *s, int64_t target, int index)
 
     mov->found_mdat = 0;
 
-    if (mov_read_default(mov, s->pb, (MOVAtom){ AV_RL32("root"), INT64_MAX }) < 0 ||
-        avio_feof(s->pb))
+    ret = mov_read_default(mov, s->pb, (MOVAtom){ AV_RL32("root"), INT64_MAX });
+    if (ret < 0)
+        return ret;
+    if (avio_feof(s->pb))
         return AVERROR_EOF;
     av_log(s, AV_LOG_TRACE, "read fragments, offset 0x%"PRIx64"\n", avio_tell(s->pb));
 

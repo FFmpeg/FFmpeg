@@ -101,7 +101,9 @@ static const struct {
     MAP(NV12, YUV420,  NV12),
     MAP(YV12, YUV420,  YUV420P), // With U/V planes swapped.
     MAP(IYUV, YUV420,  YUV420P),
-  //MAP(I420, YUV420,  YUV420P), // Not in libva but used by Intel driver.
+#ifdef VA_FOURCC_I420
+    MAP(I420, YUV420,  YUV420P),
+#endif
 #ifdef VA_FOURCC_YV16
     MAP(YV16, YUV422,  YUV422P), // With U/V planes swapped.
 #endif
@@ -625,24 +627,31 @@ static int vaapi_transfer_get_formats(AVHWFramesContext *hwfc,
                                       enum AVPixelFormat **formats)
 {
     VAAPIDeviceContext *ctx = hwfc->device_ctx->internal->priv;
-    enum AVPixelFormat *pix_fmts, preferred_format;
-    int i, k;
+    enum AVPixelFormat *pix_fmts;
+    int i, k, sw_format_available;
 
-    preferred_format = hwfc->sw_format;
+    sw_format_available = 0;
+    for (i = 0; i < ctx->nb_formats; i++) {
+        if (ctx->formats[i].pix_fmt == hwfc->sw_format)
+            sw_format_available = 1;
+    }
 
     pix_fmts = av_malloc((ctx->nb_formats + 1) * sizeof(*pix_fmts));
     if (!pix_fmts)
         return AVERROR(ENOMEM);
 
-    pix_fmts[0] = preferred_format;
-    k = 1;
+    if (sw_format_available) {
+        pix_fmts[0] = hwfc->sw_format;
+        k = 1;
+    } else {
+        k = 0;
+    }
     for (i = 0; i < ctx->nb_formats; i++) {
-        if (ctx->formats[i].pix_fmt == preferred_format)
+        if (ctx->formats[i].pix_fmt == hwfc->sw_format)
             continue;
         av_assert0(k < ctx->nb_formats);
         pix_fmts[k++] = ctx->formats[i].pix_fmt;
     }
-    av_assert0(k == ctx->nb_formats);
     pix_fmts[k] = AV_PIX_FMT_NONE;
 
     *formats = pix_fmts;

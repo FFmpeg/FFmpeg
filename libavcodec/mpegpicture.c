@@ -375,8 +375,10 @@ int ff_mpeg_ref_picture(AVCodecContext *avctx, Picture *dst, Picture *src)
 
     if (src->hwaccel_picture_private) {
         dst->hwaccel_priv_buf = av_buffer_ref(src->hwaccel_priv_buf);
-        if (!dst->hwaccel_priv_buf)
+        if (!dst->hwaccel_priv_buf) {
+            ret = AVERROR(ENOMEM);
             goto fail;
+        }
         dst->hwaccel_picture_private = dst->hwaccel_priv_buf->data;
     }
 

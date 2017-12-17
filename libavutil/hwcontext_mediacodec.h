@@ -1,6 +1,4 @@
 /*
- * Copyright (C) 2013 Wei Gao <weigao@multicorewareinc.com>
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -18,17 +16,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFILTER_UNSHARP_OPENCL_H
-#define AVFILTER_UNSHARP_OPENCL_H
+#ifndef AVUTIL_HWCONTEXT_MEDIACODEC_H
+#define AVUTIL_HWCONTEXT_MEDIACODEC_H
 
-#include "unsharp.h"
+/**
+ * MediaCodec details.
+ *
+ * Allocated as AVHWDeviceContext.hwctx
+ */
+typedef struct AVMediaCodecDeviceContext {
+    /**
+     * android/view/Surface handle, to be filled by the user.
+     *
+     * This is the default surface used by decoders on this device.
+     */
+    void *surface;
+} AVMediaCodecDeviceContext;
 
-int ff_opencl_unsharp_init(AVFilterContext *ctx);
-
-void ff_opencl_unsharp_uninit(AVFilterContext *ctx);
-
-int ff_opencl_unsharp_process_inout_buf(AVFilterContext *ctx, AVFrame *in, AVFrame *out);
-
-int ff_opencl_apply_unsharp(AVFilterContext *ctx, AVFrame *in, AVFrame *out);
-
-#endif /* AVFILTER_UNSHARP_OPENCL_H */
+#endif /* AVUTIL_HWCONTEXT_MEDIACODEC_H */

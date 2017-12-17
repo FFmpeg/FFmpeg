@@ -133,7 +133,7 @@ static av_always_inline SoftFloat autocorr_calc(int64_t accu)
 
         round = 1U << (nz-1);
         mant = (int)((accu + round) >> nz);
-        mant = (mant + 0x40)>>7;
+        mant = (mant + 0x40LL)>>7;
         mant *= 64;
         expo = nz + 15;
         return av_int2sf(mant, 30 - expo);

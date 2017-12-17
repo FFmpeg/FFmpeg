@@ -229,65 +229,6 @@ function ff_hevc_add_residual_32x32_10_neon, export=1
         bx              lr
 endfunc
 
-/* uses registers q2 - q9 for temp values */
-/* TODO: reorder */
-.macro tr4_luma_shift r0, r1, r2, r3, shift
-        vaddl.s16   q5, \r0, \r2    // c0 = src0 + src2
-        vaddl.s16   q2, \r2, \r3    // c1 = src2 + src3
-        vsubl.s16   q4, \r0, \r3    // c2 = src0 - src3
-        vmull.s16   q6, \r1, d0[0]  // c3 = 74 * src1
-
-        vaddl.s16   q7, \r0, \r3    // src0 + src3
-        vsubw.s16   q7, q7, \r2     // src0 - src2 + src3
-        vmul.s32    q7, q7, d0[0]   // dst2 = 74 * (src0 - src2 + src3)
-
-        vmul.s32    q8, q5, d0[1]   // 29 * c0
-        vmul.s32    q9, q2, d1[0]   // 55 * c1
-        vadd.s32    q8, q9          // 29 * c0 + 55 * c1
-        vadd.s32    q8, q6          // dst0 = 29 * c0 + 55 * c1 + c3
-
-        vmul.s32    q2, q2, d0[1]   // 29 * c1
-        vmul.s32    q9, q4, d1[0]   // 55 * c2
-        vsub.s32    q9, q2          // 55 * c2 - 29 * c1
-        vadd.s32    q9, q6          // dst1 = 55 * c2 - 29 * c1 + c3
-
-        vmul.s32    q5, q5, d1[0]   // 55 * c0
-        vmul.s32    q4, q4, d0[1]   // 29 * c2
-        vadd.s32    q5, q4          // 55 * c0 + 29 * c2
-        vsub.s32    q5, q6          // dst3 = 55 * c0 + 29 * c2 - c3
-
-        vqrshrn.s32   \r0, q8, \shift
-        vqrshrn.s32   \r1, q9, \shift
-        vqrshrn.s32   \r2, q7, \shift
-        vqrshrn.s32   \r3, q5, \shift
-.endm
-
-function ff_hevc_transform_luma_4x4_neon_8, export=1
-        vpush       {d8-d15}
-        vld1.16     {q14, q15}, [r0]  // coeffs
-        ldr         r3, =0x4a  // 74
-        vmov.32     d0[0], r3
-        ldr         r3, =0x1d  // 29
-        vmov.32     d0[1], r3
-        ldr         r3, =0x37  // 55
-        vmov.32     d1[0], r3
-
-        tr4_luma_shift d28, d29, d30, d31, #7
-
-        vtrn.16     d28, d29
-        vtrn.16     d30, d31
-        vtrn.32     q14, q15
-
-        tr4_luma_shift d28, d29, d30, d31, #12
-
-        vtrn.16     d28, d29
-        vtrn.16     d30, d31
-        vtrn.32     q14, q15
-        vst1.16     {q14, q15}, [r0]
-        vpop        {d8-d15}
-        bx lr
-endfunc
-
 .macro idct_4x4_dc bitdepth
 function ff_hevc_idct_4x4_dc_\bitdepth\()_neon, export=1
         ldrsh           r1, [r0]
@@ -1040,3 +981,63 @@ idct_32x32 8
 idct_32x32_dc 8
 idct_32x32 10
 idct_32x32_dc 10
+
+/* uses registers q2 - q9 for temp values */
+/* TODO: reorder */
+.macro tr4_luma_shift r0, r1, r2, r3, shift
+        vaddl.s16   q5, \r0, \r2    // c0 = src0 + src2
+        vaddl.s16   q2, \r2, \r3    // c1 = src2 + src3
+        vsubl.s16   q4, \r0, \r3    // c2 = src0 - src3
+        vmull.s16   q6, \r1, d0[0]  // c3 = 74 * src1
+
+        vaddl.s16   q7, \r0, \r3    // src0 + src3
+        vsubw.s16   q7, q7, \r2     // src0 - src2 + src3
+        vmul.s32    q7, q7, d0[0]   // dst2 = 74 * (src0 - src2 + src3)
+
+        vmul.s32    q8, q5, d0[1]   // 29 * c0
+        vmul.s32    q9, q2, d1[0]   // 55 * c1
+        vadd.s32    q8, q9          // 29 * c0 + 55 * c1
+        vadd.s32    q8, q6          // dst0 = 29 * c0 + 55 * c1 + c3
+
+        vmul.s32    q2, q2, d0[1]   // 29 * c1
+        vmul.s32    q9, q4, d1[0]   // 55 * c2
+        vsub.s32    q9, q2          // 55 * c2 - 29 * c1
+        vadd.s32    q9, q6          // dst1 = 55 * c2 - 29 * c1 + c3
+
+        vmul.s32    q5, q5, d1[0]   // 55 * c0
+        vmul.s32    q4, q4, d0[1]   // 29 * c2
+        vadd.s32    q5, q4          // 55 * c0 + 29 * c2
+        vsub.s32    q5, q6          // dst3 = 55 * c0 + 29 * c2 - c3
+
+        vqrshrn.s32   \r0, q8, \shift
+        vqrshrn.s32   \r1, q9, \shift
+        vqrshrn.s32   \r2, q7, \shift
+        vqrshrn.s32   \r3, q5, \shift
+.endm
+
+.ltorg
+function ff_hevc_transform_luma_4x4_neon_8, export=1
+        vpush       {d8-d15}
+        vld1.16     {q14, q15}, [r0]  // coeffs
+        ldr         r3, =0x4a  // 74
+        vmov.32     d0[0], r3
+        ldr         r3, =0x1d  // 29
+        vmov.32     d0[1], r3
+        ldr         r3, =0x37  // 55
+        vmov.32     d1[0], r3
+
+        tr4_luma_shift d28, d29, d30, d31, #7
+
+        vtrn.16     d28, d29
+        vtrn.16     d30, d31
+        vtrn.32     q14, q15
+
+        tr4_luma_shift d28, d29, d30, d31, #12
+
+        vtrn.16     d28, d29
+        vtrn.16     d30, d31
+        vtrn.32     q14, q15
+        vst1.16     {q14, q15}, [r0]
+        vpop        {d8-d15}
+        bx lr
+endfunc

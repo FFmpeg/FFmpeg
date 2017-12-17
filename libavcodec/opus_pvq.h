@@ -37,15 +37,12 @@ struct CeltPVQ {
     DECLARE_ALIGNED(32, float, hadamard_tmp)[256];
 
     float (*pvq_search)(float *X, int *y, int K, int N);
-
-    QUANT_FN(*decode_band);
-    QUANT_FN(*encode_band);
-    float (*band_cost)(struct CeltPVQ *pvq, CeltFrame *f, OpusRangeCoder *rc,
-                       int band, float *bits, float lambda);
+    QUANT_FN(*quant_band);
 };
 
-int  ff_celt_pvq_init  (struct CeltPVQ **pvq);
 void ff_opus_dsp_init_x86(struct CeltPVQ *s);
+
+int  ff_celt_pvq_init(struct CeltPVQ **pvq, int encode);
 void ff_celt_pvq_uninit(struct CeltPVQ **pvq);
 
 #endif /* AVCODEC_OPUS_PVQ_H */

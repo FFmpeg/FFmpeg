@@ -413,7 +413,7 @@ static int dxt5ys_block(uint8_t *dst, ptrdiff_t stride, const uint8_t *block)
 
 static inline void rgtc_block_internal(uint8_t *dst, ptrdiff_t stride,
                                        const uint8_t *block,
-                                       const int *color_tab, int alpha)
+                                       const int *color_tab, int mono, int offset, int pix_size)
 {
     uint8_t indices[16];
     int x, y;
@@ -430,19 +430,19 @@ static inline void rgtc_block_internal(uint8_t *dst, ptrdiff_t stride,
             /* Interval expansion from [-1 1] or [0 1] to [0 255]. */
             int c = color_tab[i];
 
-            if (alpha){
-                dst [x * 4 + y * stride + 3] = (uint8_t)c;
+            if (mono){
+                dst [x * pix_size + y * stride + offset] = (uint8_t)c;
             }
             else{
                 uint32_t pixel = RGBA(c, c, c, 255U);
-                AV_WL32(dst + x * 4 + y * stride, pixel);
+                AV_WL32(dst + x * pix_size + y * stride, pixel);
             }
         }
     }
 }
 
 static inline void rgtc1_block_internal(uint8_t *dst, ptrdiff_t stride,
-                                        const uint8_t *block, int sign, int alpha)
+                                        const uint8_t *block, int sign, int mono, int offset, int pix_size)
 {
     int color_table[8];
     int r0, r1;
@@ -478,7 +478,7 @@ static inline void rgtc1_block_internal(uint8_t *dst, ptrdiff_t stride,
         color_table[7] = 255;  /* max range */  // bit code 111
     }
 
-    rgtc_block_internal(dst, stride, block, color_table, alpha);
+    rgtc_block_internal(dst, stride, block, color_table, mono, offset, pix_size);
 }
 
 /**
@@ -492,7 +492,7 @@ static inline void rgtc1_block_internal(uint8_t *dst, ptrdiff_t stride,
  */
 static int rgtc1s_block(uint8_t *dst, ptrdiff_t stride, const uint8_t *block)
 {
-    rgtc1_block_internal(dst, stride, block, 1, 0);
+    rgtc1_block_internal(dst, stride, block, 1, 0, 0, 4);
 
     return 8;
 }
@@ -508,13 +508,13 @@ static int rgtc1s_block(uint8_t *dst, ptrdiff_t stride, const uint8_t *block)
  */
 static int rgtc1u_block(uint8_t *dst, ptrdiff_t stride, const uint8_t *block)
 {
-    rgtc1_block_internal(dst, stride, block, 0, 0);
+    rgtc1_block_internal(dst, stride, block, 0, 0, 0, 4);
 
     return 8;
 }
 
 /**
- * Decompress one block of a RGRC1 texture with unsigned components
+ * Decompress one block of a RGTC1 texture with unsigned components
  * and overwrite the alpha component in 'dst' (RGBA data).
  *
  * @param dst    output buffer.
@@ -524,7 +524,23 @@ static int rgtc1u_block(uint8_t *dst, ptrdiff_t stride, const uint8_t *block)
  */
 static int rgtc1u_alpha_block(uint8_t *dst, ptrdiff_t stride, const uint8_t *block)
 {
-    rgtc1_block_internal(dst, stride, block, 0, 1);
+    rgtc1_block_internal(dst, stride, block, 0, 1, 3, 4);
+
+    return 8;
+}
+
+/**
+ * Decompress one block of a RGTC1 texture with unsigned components
+ * to Gray 8.
+ *
+ * @param dst    output buffer.
+ * @param stride scanline in bytes.
+ * @param block  block to decompress.
+ * @return how much texture data has been consumed.
+ */
+static int rgtc1u_gray_block(uint8_t *dst, ptrdiff_t stride, const uint8_t *block)
+{
+    rgtc1_block_internal(dst, stride, block, 0, 1, 0, 1);
 
     return 8;
 }
@@ -538,8 +554,8 @@ static inline void rgtc2_block_internal(uint8_t *dst, ptrdiff_t stride,
     int x, y;
 
     /* Decompress the two channels separately and interleave them afterwards. */
-    rgtc1_block_internal(c0, 16, block, sign, 0);
-    rgtc1_block_internal(c1, 16, block + 8, sign, 0);
+    rgtc1_block_internal(c0, 16, block, sign, 0, 0, 4);
+    rgtc1_block_internal(c1, 16, block + 8, sign, 0, 0, 4);
 
     /* B is rebuilt exactly like a normal map. */
     for (y = 0; y < 4; y++) {
@@ -630,6 +646,7 @@ av_cold void ff_texturedsp_init(TextureDSPContext *c)
     c->dxt5ys_block       = dxt5ys_block;
     c->rgtc1s_block       = rgtc1s_block;
     c->rgtc1u_block       = rgtc1u_block;
+    c->rgtc1u_gray_block  = rgtc1u_gray_block;
     c->rgtc1u_alpha_block = rgtc1u_alpha_block;
     c->rgtc2s_block       = rgtc2s_block;
     c->rgtc2u_block       = rgtc2u_block;

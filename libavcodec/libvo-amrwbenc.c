@@ -152,4 +152,5 @@ AVCodec ff_libvo_amrwbenc_encoder = {
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
     .priv_class     = &amrwb_class,
+    .wrapper_name   = "libvo_amrwbenc",
 };

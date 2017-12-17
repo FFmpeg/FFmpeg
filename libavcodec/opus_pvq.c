@@ -486,8 +486,7 @@ static av_always_inline uint32_t quant_band_template(CeltPVQ *pvq, CeltFrame *f,
                                                      int duration, float *lowband_out,
                                                      int level, float gain,
                                                      float *lowband_scratch,
-                                                     int fill, int quant,
-                                                     QUANT_FN(*rec))
+                                                     int fill, int quant)
 {
     int i;
     const uint8_t *cache;
@@ -643,6 +642,7 @@ static av_always_inline uint32_t quant_band_template(CeltPVQ *pvq, CeltFrame *f,
                 }
             } else {
                 inv = (b > 2 << 3 && f->remaining2 > 2 << 3) ? ff_opus_rc_dec_log(rc, 2) : 0;
+                inv = f->apply_phase_inv ? inv : 0;
             }
             itheta = 0;
         }
@@ -699,8 +699,8 @@ static av_always_inline uint32_t quant_band_template(CeltPVQ *pvq, CeltFrame *f,
             sign = 1 - 2 * sign;
             /* We use orig_fill here because we want to fold the side, but if
             itheta==16384, we'll have cleared the low bits of fill. */
-            cm = rec(pvq, f, rc, band, x2, NULL, N, mbits, blocks, lowband, duration,
-                     lowband_out, level, gain, lowband_scratch, orig_fill);
+            cm = pvq->quant_band(pvq, f, rc, band, x2, NULL, N, mbits, blocks, lowband, duration,
+                                 lowband_out, level, gain, lowband_scratch, orig_fill);
             /* We don't split N=2 bands, so cm is either 1 or 0 (for a fold-collapse),
             and there's no need to worry about mixing with the other channel. */
             y2[0] = -sign * x2[1];
@@ -752,24 +752,25 @@ static av_always_inline uint32_t quant_band_template(CeltPVQ *pvq, CeltFrame *f,
             if (mbits >= sbits) {
                 /* In stereo mode, we do not apply a scaling to the mid
                  * because we need the normalized mid for folding later */
-                cm = rec(pvq, f, rc, band, X, NULL, N, mbits, blocks, lowband,
-                         duration, next_lowband_out1, next_level,
-                         stereo ? 1.0f : (gain * mid), lowband_scratch, fill);
+                cm = pvq->quant_band(pvq, f, rc, band, X, NULL, N, mbits, blocks,
+                                     lowband, duration, next_lowband_out1, next_level,
+                                     stereo ? 1.0f : (gain * mid), lowband_scratch, fill);
                 rebalance = mbits - (rebalance - f->remaining2);
                 if (rebalance > 3 << 3 && itheta != 0)
                     sbits += rebalance - (3 << 3);
 
                 /* For a stereo split, the high bits of fill are always zero,
                  * so no folding will be done to the side. */
-                cmt = rec(pvq, f, rc, band, Y, NULL, N, sbits, blocks, next_lowband2,
-                          duration, NULL, next_level, gain * side, NULL,
-                          fill >> blocks);
+                cmt = pvq->quant_band(pvq, f, rc, band, Y, NULL, N, sbits, blocks,
+                                      next_lowband2, duration, NULL, next_level,
+                                      gain * side, NULL, fill >> blocks);
                 cm |= cmt << ((B0 >> 1) & (stereo - 1));
             } else {
                 /* For a stereo split, the high bits of fill are always zero,
                  * so no folding will be done to the side. */
-                cm = rec(pvq, f, rc, band, Y, NULL, N, sbits, blocks, next_lowband2,
-                         duration, NULL, next_level, gain * side, NULL, fill >> blocks);
+                cm = pvq->quant_band(pvq, f, rc, band, Y, NULL, N, sbits, blocks,
+                                     next_lowband2, duration, NULL, next_level,
+                                     gain * side, NULL, fill >> blocks);
                 cm <<= ((B0 >> 1) & (stereo - 1));
                 rebalance = sbits - (rebalance - f->remaining2);
                 if (rebalance > 3 << 3 && itheta != 16384)
@@ -777,9 +778,9 @@ static av_always_inline uint32_t quant_band_template(CeltPVQ *pvq, CeltFrame *f,
 
                 /* In stereo mode, we do not apply a scaling to the mid because
                  * we need the normalized mid for folding later */
-                cm |= rec(pvq, f, rc, band, X, NULL, N, mbits, blocks, lowband, duration,
-                          next_lowband_out1, next_level, stereo ? 1.0f : (gain * mid),
-                          lowband_scratch, fill);
+                cm |= pvq->quant_band(pvq, f, rc, band, X, NULL, N, mbits, blocks,
+                                      lowband, duration, next_lowband_out1, next_level,
+                                      stereo ? 1.0f : (gain * mid), lowband_scratch, fill);
             }
         }
     } else {
@@ -873,80 +874,34 @@ static av_always_inline uint32_t quant_band_template(CeltPVQ *pvq, CeltFrame *f,
     return cm;
 }
 
-
 static QUANT_FN(pvq_decode_band)
 {
+#if CONFIG_OPUS_DECODER
     return quant_band_template(pvq, f, rc, band, X, Y, N, b, blocks, lowband, duration,
-                               lowband_out, level, gain, lowband_scratch, fill, 0,
-                               pvq->decode_band);
+                               lowband_out, level, gain, lowband_scratch, fill, 0);
+#else
+    return 0;
+#endif
 }
 
 static QUANT_FN(pvq_encode_band)
 {
+#if CONFIG_OPUS_ENCODER
     return quant_band_template(pvq, f, rc, band, X, Y, N, b, blocks, lowband, duration,
-                               lowband_out, level, gain, lowband_scratch, fill, 1,
-                               pvq->encode_band);
+                               lowband_out, level, gain, lowband_scratch, fill, 1);
+#else
+    return 0;
+#endif
 }
 
-static float pvq_band_cost(CeltPVQ *pvq, CeltFrame *f, OpusRangeCoder *rc, int band,
-                           float *bits, float lambda)
-{
-    int i, b = 0;
-    uint32_t cm[2] = { (1 << f->blocks) - 1, (1 << f->blocks) - 1 };
-    const int band_size = ff_celt_freq_range[band] << f->size;
-    float buf[176 * 2], lowband_scratch[176], norm1[176], norm2[176];
-    float dist, cost, err_x = 0.0f, err_y = 0.0f;
-    float *X = buf;
-    float *X_orig = f->block[0].coeffs + (ff_celt_freq_bands[band] << f->size);
-    float *Y = (f->channels == 2) ? &buf[176] : NULL;
-    float *Y_orig = f->block[1].coeffs + (ff_celt_freq_bands[band] << f->size);
-    OPUS_RC_CHECKPOINT_SPAWN(rc);
-
-    memcpy(X, X_orig, band_size*sizeof(float));
-    if (Y)
-        memcpy(Y, Y_orig, band_size*sizeof(float));
-
-    f->remaining2 = ((f->framebits << 3) - f->anticollapse_needed) - opus_rc_tell_frac(rc) - 1;
-    if (band <= f->coded_bands - 1) {
-        int curr_balance = f->remaining / FFMIN(3, f->coded_bands - band);
-        b = av_clip_uintp2(FFMIN(f->remaining2 + 1, f->pulses[band] + curr_balance), 14);
-    }
-
-    if (f->dual_stereo) {
-        pvq->encode_band(pvq, f, rc, band, X, NULL, band_size, b / 2, f->blocks, NULL,
-                         f->size, norm1, 0, 1.0f, lowband_scratch, cm[0]);
-
-        pvq->encode_band(pvq, f, rc, band, Y, NULL, band_size, b / 2, f->blocks, NULL,
-                         f->size, norm2, 0, 1.0f, lowband_scratch, cm[1]);
-    } else {
-        pvq->encode_band(pvq, f, rc, band, X, Y, band_size, b, f->blocks, NULL, f->size,
-                         norm1, 0, 1.0f, lowband_scratch, cm[0] | cm[1]);
-    }
-
-    for (i = 0; i < band_size; i++) {
-        err_x += (X[i] - X_orig[i])*(X[i] - X_orig[i]);
-        err_y += (Y[i] - Y_orig[i])*(Y[i] - Y_orig[i]);
-    }
-
-    dist = sqrtf(err_x) + sqrtf(err_y);
-    cost = OPUS_RC_CHECKPOINT_BITS(rc)/8.0f;
-    *bits += cost;
-
-    OPUS_RC_CHECKPOINT_ROLLBACK(rc);
-
-    return lambda*dist*cost;
-}
-
-int av_cold ff_celt_pvq_init(CeltPVQ **pvq)
+int av_cold ff_celt_pvq_init(CeltPVQ **pvq, int encode)
 {
     CeltPVQ *s = av_malloc(sizeof(CeltPVQ));
     if (!s)
         return AVERROR(ENOMEM);
 
-    s->pvq_search         = ppp_pvq_search_c;
-    s->decode_band        = pvq_decode_band;
-    s->encode_band        = pvq_encode_band;
-    s->band_cost          = pvq_band_cost;
+    s->pvq_search = ppp_pvq_search_c;
+    s->quant_band = encode ? pvq_encode_band : pvq_decode_band;
 
     if (ARCH_X86)
         ff_opus_dsp_init_x86(s);

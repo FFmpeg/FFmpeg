@@ -1,5 +1,6 @@
 /*
- * Copyright (C) 2013 Wei Gao <weigao@multicorewareinc.com>
+ * Copyright (c) 2007 Benoit Fouet
+ * Copyright (c) 2010 Stefano Sabatini
  *
  * This file is part of FFmpeg.
  *
@@ -18,12 +19,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFILTER_OPENCL_ALLKERNELS_H
-#define AVFILTER_OPENCL_ALLKERNELS_H
+#ifndef AVFILTER_HFLIP_H
+#define AVFILTER_HFLIP_H
 
 #include "avfilter.h"
-#include "config.h"
 
-void ff_opencl_register_filter_kernel_code_all(void);
+typedef struct FlipContext {
+    const AVClass *class;
+    int max_step[4];    ///< max pixel step for each plane, expressed as a number of bytes
+    int planewidth[4];  ///< width of each plane
+    int planeheight[4]; ///< height of each plane
 
-#endif /* AVFILTER_OPENCL_ALLKERNELS_H */
+    void (*flip_line[4])(const uint8_t *src, uint8_t *dst, int w);
+} FlipContext;
+
+int ff_hflip_init(FlipContext *s, int step[4], int nb_planes);
+void ff_hflip_init_x86(FlipContext *s, int step[4], int nb_planes);
+
+#endif /* AVFILTER_HFLIP_H */

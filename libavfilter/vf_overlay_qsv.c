@@ -415,6 +415,7 @@ static void overlay_qsv_uninit(AVFilterContext *ctx)
 static int overlay_qsv_query_formats(AVFilterContext *ctx)
 {
     int i;
+    int ret;
 
     static const enum AVPixelFormat main_in_fmts[] = {
         AV_PIX_FMT_YUV420P,
@@ -430,10 +431,15 @@ static int overlay_qsv_query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    for (i = 0; i < ctx->nb_inputs; i++)
-        ff_formats_ref(ff_make_format_list(main_in_fmts), &ctx->inputs[i]->out_formats);
+    for (i = 0; i < ctx->nb_inputs; i++) {
+        ret = ff_formats_ref(ff_make_format_list(main_in_fmts), &ctx->inputs[i]->out_formats);
+        if (ret < 0)
+            return ret;
+    }
 
-    ff_formats_ref(ff_make_format_list(out_pix_fmts), &ctx->outputs[0]->in_formats);
+    ret = ff_formats_ref(ff_make_format_list(out_pix_fmts), &ctx->outputs[0]->in_formats);
+    if (ret < 0)
+        return ret;
 
     return 0;
 }

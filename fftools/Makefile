@@ -29,7 +29,6 @@ $(1)$(PROGSSUF)_g$(EXESUF): FF_EXTRALIBS += $(EXTRALIBS-$(1))
 -include $$(OBJS-$(1):.o=.d)
 endef
 
-$(foreach P,$(AVPROGS-yes),$(eval OBJS-$(P)-$(CONFIG_OPENCL) += fftools/cmdutils_opencl.o))
 $(foreach P,$(AVPROGS-yes),$(eval $(call DOFFTOOL,$(P))))
 
 all: $(AVPROGS)

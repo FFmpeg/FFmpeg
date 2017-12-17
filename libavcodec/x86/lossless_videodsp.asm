@@ -2,6 +2,7 @@
 ;* SIMD lossless video DSP utils
 ;* Copyright (c) 2008 Loren Merritt
 ;* Copyright (c) 2014 Michael Niedermayer
+;* Copyright (c) 2017 Jokyo Images
 ;*
 ;* This file is part of FFmpeg.
 ;*
@@ -114,40 +115,53 @@ MEDIAN_PRED
     add     dstq, wq
     neg     wq
 %%.loop:
+    pshufb  xm0, xm5
 %if %2
     mova    m1, [srcq+wq]
 %else
     movu    m1, [srcq+wq]
 %endif
-    mova    m2, m1
-    psllw   m1, 8
+    psllw   m2, m1, 8
     paddb   m1, m2
-    mova    m2, m1
-    pshufb  m1, m3
+    pshufb  m2, m1, m3
     paddb   m1, m2
-    pshufb  m0, m5
-    mova    m2, m1
-    pshufb  m1, m4
+    pshufb  m2, m1, m4
     paddb   m1, m2
-%if mmsize == 16
-    mova    m2, m1
-    pshufb  m1, m6
+%if mmsize >= 16
+    pshufb  m2, m1, m6
     paddb   m1, m2
 %endif
-    paddb   m0, m1
+    paddb   xm0, xm1
 %if %1
-    mova    [dstq+wq], m0
+    mova    [dstq+wq], xm0
 %else
-    movq    [dstq+wq], m0
-    movhps  [dstq+wq+8], m0
+    movq    [dstq+wq], xm0
+    movhps  [dstq+wq+8], xm0
+%endif
+
+%if mmsize == 32
+    vextracti128    xm2, m1, 1 ; get second lane of the ymm
+    pshufb          xm0, xm5   ; set alls val to last val of the first lane
+    paddb           xm0, xm2
+;store val
+%if %1
+    mova    [dstq+wq+16], xm0
+%else;
+    movq    [dstq+wq+16], xm0
+    movhps  [dstq+wq+16+8], xm0
+%endif
 %endif
     add     wq, mmsize
     jl %%.loop
+%if mmsize == 32
+    movzx   eax, byte [dstq - 1]
+%else;
     mov     eax, mmsize-1
     sub     eax, wd
     movd    m1, eax
     pshufb  m0, m1
     movd    eax, m0
+%endif
     RET
 %endmacro
 
@@ -164,23 +178,32 @@ cglobal add_left_pred, 3,3,7, dst, src, w, left
     psllq   m0, 56
     ADD_LEFT_LOOP 1, 1
 
-INIT_XMM ssse3
+%macro ADD_LEFT_PRED_UNALIGNED 0
 cglobal add_left_pred_unaligned, 3,3,7, dst, src, w, left
-    mova    m5, [pb_15]
-    mova    m6, [pb_zzzzzzzz77777777]
-    mova    m4, [pb_zzzz3333zzzzbbbb]
-    mova    m3, [pb_zz11zz55zz99zzdd]
-    movd    m0, leftm
-    pslldq  m0, 15
-    test    srcq, 15
+    mova    xm5, [pb_15]
+    VBROADCASTI128    m6, [pb_zzzzzzzz77777777]
+    VBROADCASTI128    m4, [pb_zzzz3333zzzzbbbb]
+    VBROADCASTI128    m3, [pb_zz11zz55zz99zzdd]
+    movd    xm0, leftm
+    pslldq  xm0, 15
+    test    srcq, mmsize - 1
     jnz .src_unaligned
-    test    dstq, 15
+    test    dstq, mmsize - 1
     jnz .dst_unaligned
     ADD_LEFT_LOOP 1, 1
 .dst_unaligned:
     ADD_LEFT_LOOP 0, 1
 .src_unaligned:
     ADD_LEFT_LOOP 0, 0
+%endmacro
+
+INIT_XMM ssse3
+ADD_LEFT_PRED_UNALIGNED
+
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+ADD_LEFT_PRED_UNALIGNED
+%endif
 
 ;------------------------------------------------------------------------------
 ; void ff_add_bytes(uint8_t *dst, uint8_t *src, ptrdiff_t w);
@@ -284,8 +307,8 @@ cglobal add_left_pred_int16, 4,4,8, dst, src, mask, w, left
     SPLATW  m7 ,m7
     ADD_HFYU_LEFT_LOOP_INT16 a, a
 
-INIT_XMM sse4
-cglobal add_left_pred_int16, 4,4,8, dst, src, mask, w, left
+INIT_XMM ssse3
+cglobal add_left_pred_int16_unaligned, 4,4,8, dst, src, mask, w, left
     mova    m5, [pb_ef]
     mova    m4, [pb_zzzzzzzz67676767]
     mova    m3, [pb_zzzz2323zzzzabab]
@@ -302,3 +325,82 @@ cglobal add_left_pred_int16, 4,4,8, dst, src, mask, w, left
     ADD_HFYU_LEFT_LOOP_INT16 u, a
 .src_unaligned:
     ADD_HFYU_LEFT_LOOP_INT16 u, u
+
+
+;---------------------------------------------------------------------------------------------
+; void add_gradient_pred(uint8_t *src, const ptrdiff_t stride, const ptrdiff_t width)
+;---------------------------------------------------------------------------------------------
+%macro ADD_GRADIENT_PRED 0
+cglobal add_gradient_pred, 3,4,5, src, stride, width, tmp
+    mova         xm0, [pb_15]
+
+;load src - 1 in xm1
+    movd         xm1, [srcq-1]
+%if cpuflag(avx2)
+    vpbroadcastb xm1, xm1
+%else
+    pxor         xm2, xm2
+    pshufb       xm1, xm2
+%endif
+
+    add    srcq, widthq
+    neg  widthq
+    neg strideq
+
+.loop:
+    lea    tmpq, [srcq + strideq]
+    mova     m2, [tmpq + widthq] ; A = src[x-stride]
+    movu     m3, [tmpq + widthq - 1] ; B = src[x - (stride + 1)]
+    mova     m4, [srcq + widthq] ; current val (src[x])
+
+    psubb    m2, m3; A - B
+
+; prefix sum A-B
+    pslldq   m3, m2, 1
+    paddb    m2, m3
+    pslldq   m3, m2, 2
+    paddb    m2, m3
+    pslldq   m3, m2, 4
+    paddb    m2, m3
+    pslldq   m3, m2, 8
+    paddb    m2, m3
+
+; prefix sum current val
+    pslldq   m3, m4, 1
+    paddb    m4, m3
+    pslldq   m3, m4, 2
+    paddb    m4, m3
+    pslldq   m3, m4, 4
+    paddb    m4, m3
+    pslldq   m3, m4, 8
+    paddb    m4, m3
+
+; last sum
+    paddb                    m2, m4 ; current + (A - B)
+
+    paddb                   xm1, xm2 ; += C
+    mova        [srcq + widthq], xm1 ; store
+
+    pshufb                  xm1, xm0 ; put last val in all val of xm1
+
+%if mmsize == 32
+    vextracti128            xm2, m2, 1 ; get second lane of the ymm
+    paddb                   xm1, xm2; += C
+
+    mova   [srcq + widthq + 16], xm1 ; store
+    pshufb                  xm1, xm0 ; put last val in all val of m1
+%endif
+
+    add         widthq, mmsize
+    jl .loop
+    RET
+
+%endmacro
+
+INIT_XMM ssse3
+ADD_GRADIENT_PRED
+
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+ADD_GRADIENT_PRED
+%endif

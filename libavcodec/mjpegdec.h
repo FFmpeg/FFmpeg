@@ -39,6 +39,8 @@
 #include "hpeldsp.h"
 #include "idctdsp.h"
 
+#undef near /* This file uses struct member 'near' which in windows.h is defined as empty. */
+
 #define MAX_COMPONENTS 4
 
 typedef struct MJpegDecodeContext {

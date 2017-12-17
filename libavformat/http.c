@@ -171,6 +171,7 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
                         const char *hoststr, const char *auth,
                         const char *proxyauth, int *new_location);
 static int http_read_header(URLContext *h, int *new_location);
+static int http_shutdown(URLContext *h, int flags);
 
 void ff_http_init_auth_state(URLContext *dest, const URLContext *src)
 {
@@ -306,6 +307,11 @@ int ff_http_do_new_request(URLContext *h, const char *uri)
     AVDictionary *options = NULL;
     int ret;
 
+    ret = http_shutdown(h, h->flags);
+    if (ret < 0)
+        return ret;
+
+    s->end_chunked_post = 0;
     s->chunkend      = 0;
     s->off           = 0;
     s->icy_data_read = 0;

@@ -24,6 +24,7 @@
 
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/ffmath.h"
 
 #include "avcodec.h"
 #include "internal.h"
@@ -222,4 +223,5 @@ AVCodec ff_libopus_decoder = {
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLT,
                                                      AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
+    .wrapper_name   = "libopus",
 };

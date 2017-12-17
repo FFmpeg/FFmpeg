@@ -619,6 +619,7 @@ static const AVOption options[] = {
         }, \
         .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE, \
         .profiles       = PROFILES, \
+        .wrapper_name   = "at", \
     };
 
 static const uint64_t aac_at_channel_layouts[] = {

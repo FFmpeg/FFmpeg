@@ -378,6 +378,7 @@ AVCodec ff_libopencore_amrwb_decoder = {
     .close          = amr_wb_decode_close,
     .decode         = amr_wb_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .wrapper_name   = "libopencore_amrwb",
 };
 
 #endif /* CONFIG_LIBOPENCORE_AMRWB_DECODER */

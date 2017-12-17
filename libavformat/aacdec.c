@@ -139,7 +139,11 @@ static int adts_aac_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR_INVALIDDATA;
     }
 
-    return av_append_packet(s->pb, pkt, fsize - ADTS_HEADER_SIZE);
+    ret = av_append_packet(s->pb, pkt, fsize - ADTS_HEADER_SIZE);
+    if (ret < 0)
+        av_packet_unref(pkt);
+
+    return ret;
 }
 
 AVInputFormat ff_aac_demuxer = {

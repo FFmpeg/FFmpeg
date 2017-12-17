@@ -478,4 +478,5 @@ AVCodec ff_libxavs_encoder = {
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .priv_class     = &xavs_class,
     .defaults       = xavs_defaults,
+    .wrapper_name   = "libxavs",
 };

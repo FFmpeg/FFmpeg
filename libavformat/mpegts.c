@@ -2296,6 +2296,14 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
         }
     }
 
+    if (packet[1] & 0x80) {
+        av_log(ts->stream, AV_LOG_DEBUG, "Packet had TEI flag set; marking as corrupt\n");
+        if (tss->type == MPEGTS_PES) {
+            PESContext *pc = tss->u.pes_filter.opaque;
+            pc->flags |= AV_PKT_FLAG_CORRUPT;
+        }
+    }
+
     p = packet + 4;
     if (has_adaptation) {
         int64_t pcr_h;

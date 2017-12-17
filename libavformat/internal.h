@@ -121,12 +121,6 @@ struct AVFormatInternal {
     int avoid_negative_ts_use_pts;
 
     /**
-     * Whether or not a header has already been written
-     */
-    int header_written;
-    int write_header_ret;
-
-    /**
      * Timestamp of the end of the shortest stream.
      */
     int64_t shortest_end;

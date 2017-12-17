@@ -94,6 +94,22 @@ static av_always_inline int av_sat_dadd32_arm(int a, int b)
     return r;
 }
 
+#define av_sat_sub32 av_sat_sub32_arm
+static av_always_inline int av_sat_sub32_arm(int a, int b)
+{
+    int r;
+    __asm__ ("qsub %0, %1, %2" : "=r"(r) : "r"(a), "r"(b));
+    return r;
+}
+
+#define av_sat_dsub32 av_sat_dsub32_arm
+static av_always_inline int av_sat_dsub32_arm(int a, int b)
+{
+    int r;
+    __asm__ ("qdsub %0, %1, %2" : "=r"(r) : "r"(a), "r"(b));
+    return r;
+}
+
 #endif /* HAVE_ARMV6_INLINE */
 
 #if HAVE_ASM_MOD_Q

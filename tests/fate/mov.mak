@@ -52,7 +52,7 @@ fate-mov-elst-ends-betn-b-and-i: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/elst_en
 fate-mov-440hz-10ms: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/440hz-10ms.m4a
 
 # Makes sure that we handle invalid edit list entry count correctly.
-fate-mov-invalid-elst-entry-count: CMD = framemd5 -flags +bitexact -i $(TARGET_SAMPLES)/mov/invalid_elst_entry_count.mov
+fate-mov-invalid-elst-entry-count: CMD = framemd5 -idct simple -flags +bitexact -i $(TARGET_SAMPLES)/mov/invalid_elst_entry_count.mov
 
 # Makes sure that 1st key-frame is picked when,
 #    i) One B-frame between 2 key-frames
@@ -67,7 +67,7 @@ fate-mov-frag-overlap: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/frag_overlap.mp4
 # Makes sure that we pick the right frames according to edit list when there is no keyframe with PTS < edit list start.
 # For example, when video starts on a B-frame, and edit list starts on that B-frame too.
 # GOP structure : B B I in presentation order.
-fate-mov-bbi-elst-starts-b: CMD = framemd5 -flags +bitexact -i $(TARGET_SAMPLES)/h264/twofields_packet.mp4
+fate-mov-bbi-elst-starts-b: CMD = framemd5 -flags +bitexact -acodec aac_fixed -i $(TARGET_SAMPLES)/h264/twofields_packet.mp4
 
 fate-mov-aac-2048-priming: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_packets -print_format compact $(TARGET_SAMPLES)/mov/aac-2048-priming.mov
 

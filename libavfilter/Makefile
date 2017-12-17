@@ -19,7 +19,6 @@ OBJS = allfilters.o                                                     \
        framequeue.o                                                     \
        graphdump.o                                                      \
        graphparser.o                                                    \
-       opencl_allkernels.o                                              \
        transform.o                                                      \
        video.o                                                          \
 
@@ -31,6 +30,7 @@ OBJS-$(CONFIG_QSVVPP)                        += qsvvpp.o
 # audio filters
 OBJS-$(CONFIG_ABENCH_FILTER)                 += f_bench.o
 OBJS-$(CONFIG_ACOMPRESSOR_FILTER)            += af_sidechaincompress.o
+OBJS-$(CONFIG_ACONTRAST_FILTER)              += af_acontrast.o
 OBJS-$(CONFIG_ACOPY_FILTER)                  += af_acopy.o
 OBJS-$(CONFIG_ACROSSFADE_FILTER)             += af_afade.o
 OBJS-$(CONFIG_ACRUSHER_FILTER)               += af_acrusher.o
@@ -101,6 +101,7 @@ OBJS-$(CONFIG_JOIN_FILTER)                   += af_join.o
 OBJS-$(CONFIG_LADSPA_FILTER)                 += af_ladspa.o
 OBJS-$(CONFIG_LOUDNORM_FILTER)               += af_loudnorm.o ebur128.o
 OBJS-$(CONFIG_LOWPASS_FILTER)                += af_biquads.o
+OBJS-$(CONFIG_LV2_FILTER)                    += af_lv2.o
 OBJS-$(CONFIG_MCOMPAND_FILTER)               += af_mcompand.o
 OBJS-$(CONFIG_PAN_FILTER)                    += af_pan.o
 OBJS-$(CONFIG_REPLAYGAIN_FILTER)             += af_replaygain.o
@@ -191,6 +192,7 @@ OBJS-$(CONFIG_FIELD_FILTER)                  += vf_field.o
 OBJS-$(CONFIG_FIELDHINT_FILTER)              += vf_fieldhint.o
 OBJS-$(CONFIG_FIELDMATCH_FILTER)             += vf_fieldmatch.o
 OBJS-$(CONFIG_FIELDORDER_FILTER)             += vf_fieldorder.o
+OBJS-$(CONFIG_FILLBORDERS_FILTER)            += vf_fillborders.o
 OBJS-$(CONFIG_FIND_RECT_FILTER)              += vf_find_rect.o lavfutils.o
 OBJS-$(CONFIG_FLOODFILL_FILTER)              += vf_floodfill.o
 OBJS-$(CONFIG_FORMAT_FILTER)                 += vf_format.o
@@ -240,18 +242,21 @@ OBJS-$(CONFIG_MESTIMATE_FILTER)              += vf_mestimate.o motion_estimation
 OBJS-$(CONFIG_METADATA_FILTER)               += f_metadata.o
 OBJS-$(CONFIG_MIDEQUALIZER_FILTER)           += vf_midequalizer.o framesync.o
 OBJS-$(CONFIG_MINTERPOLATE_FILTER)           += vf_minterpolate.o motion_estimation.o
+OBJS-$(CONFIG_MIX_FILTER)                    += vf_mix.o
 OBJS-$(CONFIG_MPDECIMATE_FILTER)             += vf_mpdecimate.o
 OBJS-$(CONFIG_NEGATE_FILTER)                 += vf_lut.o
 OBJS-$(CONFIG_NLMEANS_FILTER)                += vf_nlmeans.o
 OBJS-$(CONFIG_NNEDI_FILTER)                  += vf_nnedi.o
 OBJS-$(CONFIG_NOFORMAT_FILTER)               += vf_format.o
 OBJS-$(CONFIG_NOISE_FILTER)                  += vf_noise.o
+OBJS-$(CONFIG_NORMALIZE_FILTER)              += vf_normalize.o
 OBJS-$(CONFIG_NULL_FILTER)                   += vf_null.o
 OBJS-$(CONFIG_OCR_FILTER)                    += vf_ocr.o
 OBJS-$(CONFIG_OCV_FILTER)                    += vf_libopencv.o
-OBJS-$(CONFIG_OPENCL)                        += deshake_opencl.o unsharp_opencl.o
 OBJS-$(CONFIG_OSCILLOSCOPE_FILTER)           += vf_datascope.o
 OBJS-$(CONFIG_OVERLAY_FILTER)                += vf_overlay.o framesync.o
+OBJS-$(CONFIG_OVERLAY_OPENCL_FILTER)         += vf_overlay_opencl.o opencl.o \
+                                                opencl/overlay.o framesync.o
 OBJS-$(CONFIG_OVERLAY_QSV_FILTER)            += vf_overlay_qsv.o
 OBJS-$(CONFIG_OWDENOISE_FILTER)              += vf_owdenoise.o
 OBJS-$(CONFIG_PAD_FILTER)                    += vf_pad.o
@@ -295,6 +300,7 @@ OBJS-$(CONFIG_SEPARATEFIELDS_FILTER)         += vf_separatefields.o
 OBJS-$(CONFIG_SETDAR_FILTER)                 += vf_aspect.o
 OBJS-$(CONFIG_SETFIELD_FILTER)               += vf_setfield.o
 OBJS-$(CONFIG_SETPTS_FILTER)                 += setpts.o
+OBJS-$(CONFIG_SETRANGE_FILTER)               += vf_setparams.o
 OBJS-$(CONFIG_SETSAR_FILTER)                 += vf_aspect.o
 OBJS-$(CONFIG_SETTB_FILTER)                  += settb.o
 OBJS-$(CONFIG_SHOWINFO_FILTER)               += vf_showinfo.o
@@ -328,6 +334,8 @@ OBJS-$(CONFIG_TRANSPOSE_FILTER)              += vf_transpose.o
 OBJS-$(CONFIG_TRIM_FILTER)                   += trim.o
 OBJS-$(CONFIG_UNPREMULTIPLY_FILTER)          += vf_premultiply.o framesync.o
 OBJS-$(CONFIG_UNSHARP_FILTER)                += vf_unsharp.o
+OBJS-$(CONFIG_UNSHARP_OPENCL_FILTER)         += vf_unsharp_opencl.o opencl.o \
+                                                opencl/unsharp.o
 OBJS-$(CONFIG_USPP_FILTER)                   += vf_uspp.o
 OBJS-$(CONFIG_VAGUEDENOISER_FILTER)          += vf_vaguedenoiser.o
 OBJS-$(CONFIG_VECTORSCOPE_FILTER)            += vf_vectorscope.o
@@ -391,11 +399,11 @@ OBJS-$(CONFIG_MOVIE_FILTER)                  += src_movie.o
 SLIBOBJS-$(HAVE_GNU_WINDRES)                 += avfilterres.o
 
 SKIPHEADERS-$(CONFIG_LIBVIDSTAB)             += vidstabutils.h
-SKIPHEADERS-$(CONFIG_OPENCL)                 += opencl_internal.h deshake_opencl_kernel.h unsharp_opencl_kernel.h
 
 OBJS-$(CONFIG_SHARED)                        += log2_tab.o
 
 SKIPHEADERS-$(CONFIG_QSVVPP)                 += qsvvpp.h
+SKIPHEADERS-$(CONFIG_OPENCL)                 += opencl.h
 
 TOOLS     = graph2dot
 TESTPROGS = drawutils filtfmts formats integral
@@ -404,3 +412,9 @@ TOOLS-$(CONFIG_LIBZMQ) += zmqsend
 
 clean::
 	$(RM) $(CLEANSUFFIXES:%=libavfilter/libmpcodecs/%)
+
+OPENCL = $(subst $(SRC_PATH)/,,$(wildcard $(SRC_PATH)/libavfilter/opencl/*.cl))
+.SECONDARY: $(OPENCL:.cl=.c)
+libavfilter/opencl/%.c: TAG = OPENCL
+libavfilter/opencl/%.c: $(SRC_PATH)/libavfilter/opencl/%.cl
+	$(M)$(SRC_PATH)/tools/cl2c $< $@

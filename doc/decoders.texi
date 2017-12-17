@@ -25,13 +25,6 @@ enabled decoders.
 A description of some of the currently available video decoders
 follows.
 
-@section hevc
-
-HEVC / H.265 decoder.
-
-Note: the @option{skip_loop_filter} option has effect only at level
-@code{all}.
-
 @section rawvideo
 
 Raw video decoder.

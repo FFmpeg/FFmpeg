@@ -2976,7 +2976,7 @@ static int64_t mxf_set_current_edit_unit(MXFContext *mxf, int64_t current_offset
     /* find mxf->current_edit_unit so that the next edit unit starts ahead of current_offset */
     while (mxf->current_edit_unit >= 0) {
         if (mxf_edit_unit_absolute_offset(mxf, t, mxf->current_edit_unit + 1, NULL, &next_ofs, 0) < 0)
-            return -1;
+            return -2;
 
         if (next_ofs <= last_ofs) {
             /* large next_ofs didn't change or current_edit_unit wrapped
@@ -3065,7 +3065,7 @@ static int mxf_set_pts(MXFContext *mxf, AVStream *st, AVPacket *pkt, int64_t nex
     AVCodecParameters *par = st->codecpar;
     MXFTrack *track = st->priv_data;
 
-    if (par->codec_type == AVMEDIA_TYPE_VIDEO && next_ofs >= 0) {
+    if (par->codec_type == AVMEDIA_TYPE_VIDEO && (next_ofs >= 0 || next_ofs == -2 && st->duration == mxf->current_edit_unit + 1)) {
         /* mxf->current_edit_unit good - see if we have an
          * index table to derive timestamps from */
         MXFIndexTable *t = &mxf->index_tables[0];

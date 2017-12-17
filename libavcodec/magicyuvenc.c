@@ -337,7 +337,7 @@ static int encode_table(AVCodecContext *avctx, uint8_t *dst,
                         int width, int height,
                         PutBitContext *pb, HuffEntry *he)
 {
-    PTable counts[256] = { 0 };
+    PTable counts[256] = { {0} };
     int i;
 
     count_usage(dst, width, height, counts);

@@ -93,6 +93,8 @@ typedef struct VAAPIEncodeH264Options {
     int coder;
     int aud;
     int sei;
+    int profile;
+    int level;
 } VAAPIEncodeH264Options;
 
 
@@ -886,6 +888,11 @@ static av_cold int vaapi_encode_h264_init(AVCodecContext *avctx)
 
     ctx->codec = &vaapi_encode_type_h264;
 
+    if (avctx->profile == FF_PROFILE_UNKNOWN)
+        avctx->profile = opt->profile;
+    if (avctx->level == FF_LEVEL_UNKNOWN)
+        avctx->level = opt->level;
+
     switch (avctx->profile) {
     case FF_PROFILE_H264_BASELINE:
         av_log(avctx, AV_LOG_WARNING, "H.264 baseline profile is not "
@@ -1010,12 +1017,49 @@ static const AVOption vaapi_encode_h264_options[] = {
     { "recovery_point", "Include recovery points where appropriate",
       0, AV_OPT_TYPE_CONST, { .i64 = SEI_RECOVERY_POINT },
       INT_MIN, INT_MAX, FLAGS, "sei" },
+
+    { "profile", "Set profile (profile_idc and constraint_set*_flag)",
+      OFFSET(profile), AV_OPT_TYPE_INT,
+      { .i64 = FF_PROFILE_H264_HIGH }, 0x0000, 0xffff, FLAGS, "profile" },
+
+#define PROFILE(name, value)  name, NULL, 0, AV_OPT_TYPE_CONST, \
+      { .i64 = value }, 0, 0, FLAGS, "profile"
+    { PROFILE("constrained_baseline", FF_PROFILE_H264_CONSTRAINED_BASELINE) },
+    { PROFILE("main",                 FF_PROFILE_H264_MAIN) },
+    { PROFILE("high",                 FF_PROFILE_H264_HIGH) },
+#undef PROFILE
+
+    { "level", "Set level (level_idc)",
+      OFFSET(level), AV_OPT_TYPE_INT,
+      { .i64 = 51 }, 0x00, 0xff, FLAGS, "level" },
+
+#define LEVEL(name, value) name, NULL, 0, AV_OPT_TYPE_CONST, \
+      { .i64 = value }, 0, 0, FLAGS, "level"
+    { LEVEL("1",   10) },
+    { LEVEL("1.1", 11) },
+    { LEVEL("1.2", 12) },
+    { LEVEL("1.3", 13) },
+    { LEVEL("2",   20) },
+    { LEVEL("2.1", 21) },
+    { LEVEL("2.2", 22) },
+    { LEVEL("3",   30) },
+    { LEVEL("3.1", 31) },
+    { LEVEL("3.2", 32) },
+    { LEVEL("4",   40) },
+    { LEVEL("4.1", 41) },
+    { LEVEL("4.2", 42) },
+    { LEVEL("5",   50) },
+    { LEVEL("5.1", 51) },
+    { LEVEL("5.2", 52) },
+    { LEVEL("6",   60) },
+    { LEVEL("6.1", 61) },
+    { LEVEL("6.2", 62) },
+#undef LEVEL
+
     { NULL },
 };
 
 static const AVCodecDefault vaapi_encode_h264_defaults[] = {
-    { "profile",        "100" },
-    { "level",          "51"  },
     { "b",              "0"   },
     { "bf",             "2"   },
     { "g",              "120" },
@@ -1045,10 +1089,11 @@ AVCodec ff_h264_vaapi_encoder = {
     .encode2        = &ff_vaapi_encode2,
     .close          = &vaapi_encode_h264_close,
     .priv_class     = &vaapi_encode_h264_class,
-    .capabilities   = AV_CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE,
     .defaults       = vaapi_encode_h264_defaults,
     .pix_fmts = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_VAAPI,
         AV_PIX_FMT_NONE,
     },
+    .wrapper_name   = "vaapi",
 };
