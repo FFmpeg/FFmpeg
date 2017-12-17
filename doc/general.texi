@@ -1142,7 +1142,7 @@ following image formats are supported:
     @tab Real low bitrate AC-3 codec
 @item RealAudio Lossless     @tab     @tab  X
 @item RealAudio SIPR / ACELP.NET @tab     @tab  X
-@item SBC (low-complexity subband codec) @tab     @tab  X
+@item SBC (low-complexity subband codec) @tab  X  @tab  X
     @tab Used in Bluetooth A2DP
 @item Shorten                @tab     @tab  X
 @item Sierra VMD audio       @tab     @tab  X

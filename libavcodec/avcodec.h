@@ -2926,6 +2926,8 @@ typedef struct AVCodecContext {
 #define FF_PROFILE_MJPEG_HUFFMAN_LOSSLESS                0xc3
 #define FF_PROFILE_MJPEG_JPEG_LS                         0xf7
 
+#define FF_PROFILE_SBC_MSBC                         1
+
     /**
      * level
      * - encoding: Set by user.
