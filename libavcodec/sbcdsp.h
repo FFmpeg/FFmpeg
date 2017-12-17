@@ -80,6 +80,7 @@ struct sbc_dsp_context {
  */
 void ff_sbcdsp_init(SBCDSPContext *s);
 
+void ff_sbcdsp_init_arm(SBCDSPContext *s);
 void ff_sbcdsp_init_x86(SBCDSPContext *s);
 
 #endif /* AVCODEC_SBCDSP_H */
