@@ -80,8 +80,10 @@ int main(int argc, char **argv){
     data   = malloc(datlen * sizeof(*data));
     signal = malloc(siglen * sizeof(*signal));
 
-    fread(data  , 1, datlen, f[0]);
-    fread(signal, 1, siglen, f[1]);
+    if (fread(data  , 1, datlen, f[0]) != datlen)
+        return 1;
+    if (fread(signal, 1, siglen, f[1]) != siglen)
+        return 1;
     datlen /= 2;
     siglen /= 2;
 
