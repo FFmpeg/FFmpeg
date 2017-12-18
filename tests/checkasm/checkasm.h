@@ -66,6 +66,7 @@ void checkasm_check_synth_filter(void);
 void checkasm_check_utvideodsp(void);
 void checkasm_check_v210enc(void);
 void checkasm_check_vf_hflip(void);
+void checkasm_check_vf_interlace(void);
 void checkasm_check_vf_threshold(void);
 void checkasm_check_vp8dsp(void);
 void checkasm_check_vp9dsp(void);

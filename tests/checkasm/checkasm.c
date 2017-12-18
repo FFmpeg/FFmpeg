@@ -155,6 +155,9 @@ static const struct {
     #if CONFIG_HFLIP_FILTER
         { "vf_hflip", checkasm_check_vf_hflip },
     #endif
+    #if CONFIG_INTERLACE_FILTER
+        { "vf_interlace", checkasm_check_vf_interlace },
+    #endif
     #if CONFIG_THRESHOLD_FILTER
         { "vf_threshold", checkasm_check_vf_threshold },
     #endif
