@@ -3536,7 +3536,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
             if ((curr_cts + frame_duration >= (edit_list_duration + edit_list_media_time)) &&
                 ((flags & AVINDEX_KEYFRAME) || ((st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)))) {
                 if (ctts_data_old) {
-                    // If we have CTTS and this is the the first keyframe after edit elist,
+                    // If we have CTTS and this is the first keyframe after edit elist,
                     // wait for one more, because there might be trailing B-frames after this I-frame
                     // that do belong to the edit.
                     if (st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO && found_keyframe_after_edit == 0) {
