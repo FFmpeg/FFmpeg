@@ -115,11 +115,11 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
     ctx->params->sourceHeight    = avctx->height;
     ctx->params->bEnablePsnr     = !!(avctx->flags & AV_CODEC_FLAG_PSNR);
 
-    if ((avctx->color_primaries <= AVCOL_PRI_BT2020 &&
+    if ((avctx->color_primaries <= AVCOL_PRI_SMPTE432 &&
          avctx->color_primaries != AVCOL_PRI_UNSPECIFIED) ||
-        (avctx->color_trc <= AVCOL_TRC_BT2020_12 &&
+        (avctx->color_trc <= AVCOL_TRC_ARIB_STD_B67 &&
          avctx->color_trc != AVCOL_TRC_UNSPECIFIED) ||
-        (avctx->colorspace <= AVCOL_SPC_BT2020_CL &&
+        (avctx->colorspace <= AVCOL_SPC_ICTCP &&
          avctx->colorspace != AVCOL_SPC_UNSPECIFIED)) {
 
         ctx->params->vui.bEnableVideoSignalTypePresentFlag  = 1;
