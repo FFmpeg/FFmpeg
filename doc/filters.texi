@@ -1136,6 +1136,23 @@ Specify the band-width of a filter in width_type units.
 Specify which channels to filter, by default all available are filtered.
 @end table
 
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item frequency, f
+Change allpass frequency.
+Syntax for the command is : "@var{frequency}"
+
+@item width_type, t
+Change allpass width_type.
+Syntax for the command is : "@var{width_type}"
+
+@item width, w
+Change allpass width.
+Syntax for the command is : "@var{width}"
+@end table
+
 @section aloop
 
 Loop audio samples.
@@ -1876,6 +1893,23 @@ Specify the band-width of a filter in width_type units.
 Specify which channels to filter, by default all available are filtered.
 @end table
 
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item frequency, f
+Change bandpass frequency.
+Syntax for the command is : "@var{frequency}"
+
+@item width_type, t
+Change bandpass width_type.
+Syntax for the command is : "@var{width_type}"
+
+@item width, w
+Change bandpass width.
+Syntax for the command is : "@var{width}"
+@end table
+
 @section bandreject
 
 Apply a two-pole Butterworth band-reject filter with central
@@ -1906,6 +1940,23 @@ Specify the band-width of a filter in width_type units.
 
 @item channels, c
 Specify which channels to filter, by default all available are filtered.
+@end table
+
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item frequency, f
+Change bandreject frequency.
+Syntax for the command is : "@var{frequency}"
+
+@item width_type, t
+Change bandreject width_type.
+Syntax for the command is : "@var{width_type}"
+
+@item width, w
+Change bandreject width.
+Syntax for the command is : "@var{width}"
 @end table
 
 @section bass
@@ -1947,6 +1998,27 @@ Determine how steep is the filter's shelf transition.
 Specify which channels to filter, by default all available are filtered.
 @end table
 
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item frequency, f
+Change bass frequency.
+Syntax for the command is : "@var{frequency}"
+
+@item width_type, t
+Change bass width_type.
+Syntax for the command is : "@var{width_type}"
+
+@item width, w
+Change bass width.
+Syntax for the command is : "@var{width}"
+
+@item gain, g
+Change bass gain.
+Syntax for the command is : "@var{gain}"
+@end table
+
 @section biquad
 
 Apply a biquad IIR filter with the given coefficients.
@@ -1954,6 +2026,20 @@ Where @var{b0}, @var{b1}, @var{b2} and @var{a0}, @var{a1}, @var{a2}
 are the numerator and denominator coefficients respectively.
 and @var{channels}, @var{c} specify which channels to filter, by default all
 available are filtered.
+
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item a0
+@item a1
+@item a2
+@item b0
+@item b1
+@item b2
+Change biquad parameter.
+Syntax for the command is : "@var{value}"
+@end table
 
 @section bs2b
 Bauer stereo to binaural transformation, which improves headphone listening of
@@ -2584,6 +2670,27 @@ equalizer=f=1000:t=q:w=1:g=2,equalizer=f=100:t=q:w=2:g=-5
 @end example
 @end itemize
 
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item frequency, f
+Change equalizer frequency.
+Syntax for the command is : "@var{frequency}"
+
+@item width_type, t
+Change equalizer width_type.
+Syntax for the command is : "@var{width_type}"
+
+@item width, w
+Change equalizer width.
+Syntax for the command is : "@var{width}"
+
+@item gain, g
+Change equalizer gain.
+Syntax for the command is : "@var{gain}"
+@end table
+
 @section extrastereo
 
 Linearly increases the difference between left and right channels which
@@ -2983,6 +3090,23 @@ The default is 0.707q and gives a Butterworth response.
 Specify which channels to filter, by default all available are filtered.
 @end table
 
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item frequency, f
+Change highpass frequency.
+Syntax for the command is : "@var{frequency}"
+
+@item width_type, t
+Change highpass width_type.
+Syntax for the command is : "@var{width_type}"
+
+@item width, w
+Change highpass width.
+Syntax for the command is : "@var{width}"
+@end table
+
 @section join
 
 Join multiple input streams into one multi-channel stream.
@@ -3280,6 +3404,23 @@ Lowpass only LFE channel, it LFE is not present it does nothing:
 lowpass=c=LFE
 @end example
 @end itemize
+
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item frequency, f
+Change lowpass frequency.
+Syntax for the command is : "@var{frequency}"
+
+@item width_type, t
+Change lowpass width_type.
+Syntax for the command is : "@var{width_type}"
+
+@item width, w
+Change lowpass width.
+Syntax for the command is : "@var{width}"
+@end table
 
 @section lv2
 
@@ -4160,6 +4301,27 @@ Determine how steep is the filter's shelf transition.
 
 @item channels, c
 Specify which channels to filter, by default all available are filtered.
+@end table
+
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item frequency, f
+Change treble frequency.
+Syntax for the command is : "@var{frequency}"
+
+@item width_type, t
+Change treble width_type.
+Syntax for the command is : "@var{width_type}"
+
+@item width, w
+Change treble width.
+Syntax for the command is : "@var{width}"
+
+@item gain, g
+Change treble gain.
+Syntax for the command is : "@var{gain}"
 @end table
 
 @section tremolo
