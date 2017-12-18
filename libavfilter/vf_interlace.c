@@ -185,6 +185,25 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_frame_free(&s->next);
 }
 
+void ff_interlace_init(InterlaceContext *s, int depth)
+{
+    if (s->lowpass) {
+        if (s->lowpass == VLPF_LIN) {
+            if (depth > 8)
+                s->lowpass_line = lowpass_line_c_16;
+            else
+                s->lowpass_line = lowpass_line_c;
+        } else if (s->lowpass == VLPF_CMP) {
+            if (depth > 8)
+                s->lowpass_line = lowpass_line_complex_c_16;
+            else
+                s->lowpass_line = lowpass_line_complex_c;
+        }
+        if (ARCH_X86)
+            ff_interlace_init_x86(s, depth);
+    }
+}
+
 static int config_out_props(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
@@ -210,21 +229,7 @@ static int config_out_props(AVFilterLink *outlink)
     outlink->frame_rate.den *= 2;
 
     s->csp = av_pix_fmt_desc_get(outlink->format);
-    if (s->lowpass) {
-        if (s->lowpass == VLPF_LIN) {
-            if (s->csp->comp[0].depth > 8)
-                s->lowpass_line = lowpass_line_c_16;
-            else
-                s->lowpass_line = lowpass_line_c;
-        } else if (s->lowpass == VLPF_CMP) {
-            if (s->csp->comp[0].depth > 8)
-                s->lowpass_line = lowpass_line_complex_c_16;
-            else
-                s->lowpass_line = lowpass_line_complex_c;
-        }
-        if (ARCH_X86)
-            ff_interlace_init_x86(s);
-    }
+    ff_interlace_init(s, s->csp->comp[0].depth);
 
     av_log(ctx, AV_LOG_VERBOSE, "%s interlacing %s lowpass filter\n",
            s->scan == MODE_TFF ? "tff" : "bff", (s->lowpass) ? "with" : "without");

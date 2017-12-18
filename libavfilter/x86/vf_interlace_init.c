@@ -48,11 +48,11 @@ void ff_lowpass_line_complex_12_sse2(uint8_t *dstp, ptrdiff_t linesize,
                                      const uint8_t *srcp, ptrdiff_t mref,
                                      ptrdiff_t pref, int clip_max);
 
-av_cold void ff_interlace_init_x86(InterlaceContext *s)
+av_cold void ff_interlace_init_x86(InterlaceContext *s, int depth)
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (s->csp->comp[0].depth > 8) {
+    if (depth > 8) {
         if (EXTERNAL_SSE2(cpu_flags)) {
             if (s->lowpass == VLPF_LIN)
                 s->lowpass_line = ff_lowpass_line_16_sse2;
