@@ -1036,6 +1036,8 @@ static av_cold int vaapi_encode_config_attributes(AVCodecContext *avctx)
             // Unfortunately we have to treat this as "don't know" and hope
             // for the best, because the Intel MJPEG encoder returns this
             // for all the interesting attributes.
+            av_log(avctx, AV_LOG_DEBUG, "Attribute (%d) is not supported.\n",
+                   attr[i].type);
             continue;
         }
         switch (attr[i].type) {
