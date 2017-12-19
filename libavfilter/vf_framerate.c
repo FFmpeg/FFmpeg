@@ -39,8 +39,6 @@
 #include "internal.h"
 #include "video.h"
 
-#define N_SRCE 3
-
 typedef struct FrameRateContext {
     const AVClass *class;
     // parameters
@@ -55,30 +53,25 @@ typedef struct FrameRateContext {
     int line_size[4];                   ///< bytes of pixel data per line for each plane
     int vsub;
 
-    int frst, next, prev, crnt, last;
-    int pending_srce_frames;            ///< how many input frames are still waiting to be processed
-    int flush;                          ///< are we flushing final frames
-    int pending_end_frame;              ///< flag indicating we are waiting to call filter_frame()
-
     AVRational srce_time_base;          ///< timebase of source
-
     AVRational dest_time_base;          ///< timebase of destination
-    int32_t dest_frame_num;
-    int64_t last_dest_frame_pts;        ///< pts of the last frame output
-    int64_t average_srce_pts_dest_delta;///< average input pts delta converted from input rate to output rate
-    int64_t average_dest_pts_delta;     ///< calculated average output pts delta
 
     av_pixelutils_sad_fn sad;           ///< Sum of the absolute difference function (scene detect only)
     double prev_mafd;                   ///< previous MAFD                           (scene detect only)
 
-    AVFrame *srce[N_SRCE];              ///< buffered source frames
-    int64_t srce_pts_dest[N_SRCE];      ///< pts for source frames scaled to output timebase
-    double srce_score[N_SRCE];          ///< scene change score compared to the next srce frame
-    int64_t pts;                        ///< pts of frame we are working on
-
     int max;
     int bitdepth;
     AVFrame *work;
+
+    AVFrame *f0;                        ///< last frame
+    AVFrame *f1;                        ///< current frame
+    int64_t pts0;                       ///< last frame pts in dest_time_base
+    int64_t pts1;                       ///< current frame pts in dest_time_base
+    int64_t delta;                      ///< pts1 to pts0 delta
+    double score;                       ///< scene change score (f0 to f1)
+    int flush;                          ///< 1 if the filter is being flushed
+    int64_t start_pts;                  ///< pts of the first output frame
+    int64_t n;                          ///< output frame counter
 } FrameRateContext;
 
 #define OFFSET(x) offsetof(FrameRateContext, x)
@@ -101,27 +94,6 @@ static const AVOption framerate_options[] = {
 };
 
 AVFILTER_DEFINE_CLASS(framerate);
-
-static void next_source(AVFilterContext *ctx)
-{
-    FrameRateContext *s = ctx->priv;
-    int i;
-
-    ff_dlog(ctx,  "next_source()\n");
-
-    if (s->srce[s->last] && s->srce[s->last] != s->srce[s->last-1]) {
-        ff_dlog(ctx, "next_source() unlink %d\n", s->last);
-        av_frame_free(&s->srce[s->last]);
-    }
-    for (i = s->last; i > s->frst; i--) {
-        ff_dlog(ctx, "next_source() copy %d to %d\n", i - 1, i);
-        s->srce[i] = s->srce[i - 1];
-        s->srce_score[i] = s->srce_score[i - 1];
-    }
-    ff_dlog(ctx, "next_source() make %d null\n", s->frst);
-    s->srce[s->frst] = NULL;
-    s->srce_score[s->frst] = -1.0;
-}
 
 static av_always_inline int64_t sad_8x8_16(const uint16_t *src1, ptrdiff_t stride1,
                                            const uint16_t *src2, ptrdiff_t stride2)
@@ -307,28 +279,25 @@ static int filter_slice16(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
     return 0;
 }
 
-static int blend_frames(AVFilterContext *ctx, int interpolate,
-                        int src1, int src2)
+static int blend_frames(AVFilterContext *ctx, int interpolate)
 {
     FrameRateContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     double interpolate_scene_score = 0;
 
-    if ((s->flags & FRAMERATE_FLAG_SCD) && s->srce[src1] && s->srce[src2]) {
-        int i1 = src1 < src2 ? src1 : src2;
-        int i2 = src1 < src2 ? src2 : src1;
-        if (i2 == i1 + 1 && s->srce_score[i1] >= 0.0)
-            interpolate_scene_score = s->srce_score[i1];
+    if ((s->flags & FRAMERATE_FLAG_SCD)) {
+        if (s->score >= 0.0)
+            interpolate_scene_score = s->score;
         else
-            interpolate_scene_score = s->srce_score[i1] = get_scene_score(ctx, s->srce[i1], s->srce[i2]);
+            interpolate_scene_score = s->score = get_scene_score(ctx, s->f0, s->f1);
         ff_dlog(ctx, "blend_frames() interpolate scene score:%f\n", interpolate_scene_score);
     }
     // decide if the shot-change detection allows us to blend two frames
-    if (interpolate_scene_score < s->scene_score && s->srce[src2]) {
+    if (interpolate_scene_score < s->scene_score) {
         ThreadData td;
-        td.copy_src1 = s->srce[src1];
-        td.copy_src2 = s->srce[src2];
-        td.src2_factor = FFABS(interpolate);
+        td.copy_src1 = s->f0;
+        td.copy_src2 = s->f1;
+        td.src2_factor = interpolate;
         td.src1_factor = s->max - td.src2_factor;
 
         // get work-space for output frame
@@ -336,7 +305,7 @@ static int blend_frames(AVFilterContext *ctx, int interpolate,
         if (!s->work)
             return AVERROR(ENOMEM);
 
-        av_frame_copy_props(s->work, s->srce[s->crnt]);
+        av_frame_copy_props(s->work, s->f0);
 
         ff_dlog(ctx, "blend_frames() INTERPOLATE to create work frame\n");
         ctx->internal->execute(ctx, s->bitdepth == 8 ? filter_slice8 : filter_slice16, &td, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
@@ -345,198 +314,65 @@ static int blend_frames(AVFilterContext *ctx, int interpolate,
     return 0;
 }
 
-static int process_work_frame(AVFilterContext *ctx, int stop)
+static int process_work_frame(AVFilterContext *ctx)
 {
     FrameRateContext *s = ctx->priv;
-    int64_t work_next_pts;
+    int64_t work_pts;
     int interpolate;
-    int src1, src2;
+    int ret;
 
-    ff_dlog(ctx, "process_work_frame()\n");
-
-    ff_dlog(ctx, "process_work_frame() pending_input_frames %d\n", s->pending_srce_frames);
-
-    if (s->srce[s->prev]) ff_dlog(ctx, "process_work_frame() srce prev pts:%"PRId64"\n", s->srce[s->prev]->pts);
-    if (s->srce[s->crnt]) ff_dlog(ctx, "process_work_frame() srce crnt pts:%"PRId64"\n", s->srce[s->crnt]->pts);
-    if (s->srce[s->next]) ff_dlog(ctx, "process_work_frame() srce next pts:%"PRId64"\n", s->srce[s->next]->pts);
-
-    if (!s->srce[s->crnt]) {
-        // the filter cannot do anything
-        ff_dlog(ctx, "process_work_frame() no current frame cached: move on to next frame, do not output a frame\n");
-        next_source(ctx);
+    if (!s->f1)
         return 0;
-    }
-
-    work_next_pts = s->pts + s->average_dest_pts_delta;
-
-    ff_dlog(ctx, "process_work_frame() work crnt pts:%"PRId64"\n", s->pts);
-    ff_dlog(ctx, "process_work_frame() work next pts:%"PRId64"\n", work_next_pts);
-    if (s->srce[s->prev])
-        ff_dlog(ctx, "process_work_frame() srce prev pts:%"PRId64" at dest time base:%u/%u\n",
-            s->srce_pts_dest[s->prev], s->dest_time_base.num, s->dest_time_base.den);
-    if (s->srce[s->crnt])
-        ff_dlog(ctx, "process_work_frame() srce crnt pts:%"PRId64" at dest time base:%u/%u\n",
-            s->srce_pts_dest[s->crnt], s->dest_time_base.num, s->dest_time_base.den);
-    if (s->srce[s->next])
-        ff_dlog(ctx, "process_work_frame() srce next pts:%"PRId64" at dest time base:%u/%u\n",
-            s->srce_pts_dest[s->next], s->dest_time_base.num, s->dest_time_base.den);
-
-    av_assert0(s->srce[s->next]);
-
-    // should filter be skipping input frame (output frame rate is lower than input frame rate)
-    if (!s->flush && s->pts >= s->srce_pts_dest[s->next]) {
-        ff_dlog(ctx, "process_work_frame() work crnt pts >= srce next pts: SKIP FRAME, move on to next frame, do not output a frame\n");
-        next_source(ctx);
-        s->pending_srce_frames--;
+    if (!s->f0 && !s->flush)
         return 0;
-    }
 
-    // calculate interpolation
-    interpolate = av_rescale(s->pts - s->srce_pts_dest[s->crnt], s->max, s->average_srce_pts_dest_delta);
-    ff_dlog(ctx, "process_work_frame() interpolate:%d/%d\n", interpolate, s->max);
-    src1 = s->crnt;
-    if (interpolate > s->interp_end) {
-        ff_dlog(ctx, "process_work_frame() source is:NEXT\n");
-        src1 = s->next;
-    }
-    if (s->srce[s->prev] && interpolate < -s->interp_end) {
-        ff_dlog(ctx, "process_work_frame() source is:PREV\n");
-        src1 = s->prev;
-    }
+    work_pts = s->start_pts + av_rescale_q(s->n, av_inv_q(s->dest_frame_rate), s->dest_time_base);
 
-    // decide whether to blend two frames
-    if ((interpolate >= s->interp_start && interpolate <= s->interp_end) || (interpolate <= -s->interp_start && interpolate >= -s->interp_end)) {
-        if (interpolate > 0) {
-            ff_dlog(ctx, "process_work_frame() interpolate source is:NEXT\n");
-            src2 = s->next;
+    if (work_pts >= s->pts1 && !s->flush)
+        return 0;
+
+    if (!s->f0) {
+        s->work = av_frame_clone(s->f1);
+    } else {
+        if (work_pts >= s->pts1 + s->delta && s->flush)
+            return 0;
+
+        interpolate = av_rescale(work_pts - s->pts0, s->max, s->delta);
+        ff_dlog(ctx, "process_work_frame() interpolate:%d/%d\n", interpolate, s->max);
+        if (interpolate > s->interp_end) {
+            s->work = av_frame_clone(s->f1);
+        } else if (interpolate < s->interp_start) {
+            s->work = av_frame_clone(s->f0);
         } else {
-            ff_dlog(ctx, "process_work_frame() interpolate source is:PREV\n");
-            src2 = s->prev;
+            ret = blend_frames(ctx, interpolate);
+            if (ret < 0)
+                return ret;
+            if (ret == 0)
+                s->work = av_frame_clone(interpolate > (s->max >> 1) ? s->f1 : s->f0);
         }
-        if (blend_frames(ctx, interpolate, src1, src2))
-            goto copy_done;
-        else
-            ff_dlog(ctx, "process_work_frame() CUT - DON'T INTERPOLATE\n");
     }
 
-    ff_dlog(ctx, "process_work_frame() COPY to the work frame\n");
-    // copy the frame we decided is our base source
-    s->work = av_frame_clone(s->srce[src1]);
     if (!s->work)
         return AVERROR(ENOMEM);
 
-copy_done:
-    s->work->pts = s->pts;
-
-    // should filter be re-using input frame (output frame rate is higher than input frame rate)
-    if (!s->flush && (work_next_pts + s->average_dest_pts_delta) < (s->srce_pts_dest[s->crnt] + s->average_srce_pts_dest_delta)) {
-        ff_dlog(ctx, "process_work_frame() REPEAT FRAME\n");
-    } else {
-        ff_dlog(ctx, "process_work_frame() CONSUME FRAME, move to next frame\n");
-        s->pending_srce_frames--;
-        next_source(ctx);
-    }
-    ff_dlog(ctx, "process_work_frame() output a frame\n");
-    s->dest_frame_num++;
-    if (stop)
-        s->pending_end_frame = 0;
-    s->last_dest_frame_pts = s->work->pts;
+    s->work->pts = work_pts;
+    s->n++;
 
     return 1;
-}
-
-static void set_srce_frame_dest_pts(AVFilterContext *ctx)
-{
-    FrameRateContext *s = ctx->priv;
-
-    ff_dlog(ctx, "set_srce_frame_output_pts()\n");
-
-    // scale the input pts from the timebase difference between input and output
-    if (s->srce[s->prev])
-        s->srce_pts_dest[s->prev] = av_rescale_q(s->srce[s->prev]->pts, s->srce_time_base, s->dest_time_base);
-    if (s->srce[s->crnt])
-        s->srce_pts_dest[s->crnt] = av_rescale_q(s->srce[s->crnt]->pts, s->srce_time_base, s->dest_time_base);
-    if (s->srce[s->next])
-        s->srce_pts_dest[s->next] = av_rescale_q(s->srce[s->next]->pts, s->srce_time_base, s->dest_time_base);
-}
-
-static void set_work_frame_pts(AVFilterContext *ctx)
-{
-    FrameRateContext *s = ctx->priv;
-    int64_t pts, average_srce_pts_delta = 0;
-
-    ff_dlog(ctx, "set_work_frame_pts()\n");
-
-    av_assert0(s->srce[s->next]);
-    av_assert0(s->srce[s->crnt]);
-
-    ff_dlog(ctx, "set_work_frame_pts() srce crnt pts:%"PRId64"\n", s->srce[s->crnt]->pts);
-    ff_dlog(ctx, "set_work_frame_pts() srce next pts:%"PRId64"\n", s->srce[s->next]->pts);
-    if (s->srce[s->prev])
-        ff_dlog(ctx, "set_work_frame_pts() srce prev pts:%"PRId64"\n", s->srce[s->prev]->pts);
-
-    average_srce_pts_delta = s->average_srce_pts_dest_delta;
-    ff_dlog(ctx, "set_work_frame_pts() initial average srce pts:%"PRId64"\n", average_srce_pts_delta);
-
-    set_srce_frame_dest_pts(ctx);
-
-    // calculate the PTS delta
-    if ((pts = (s->srce_pts_dest[s->next] - s->srce_pts_dest[s->crnt]))) {
-        average_srce_pts_delta = average_srce_pts_delta?((average_srce_pts_delta+pts)>>1):pts;
-    } else if (s->srce[s->prev] && (pts = (s->srce_pts_dest[s->crnt] - s->srce_pts_dest[s->prev]))) {
-        average_srce_pts_delta = average_srce_pts_delta?((average_srce_pts_delta+pts)>>1):pts;
-    }
-
-    s->average_srce_pts_dest_delta = average_srce_pts_delta;
-    ff_dlog(ctx, "set_work_frame_pts() average srce pts:%"PRId64"\n", average_srce_pts_delta);
-    ff_dlog(ctx, "set_work_frame_pts() average srce pts:%"PRId64" at dest time base:%u/%u\n",
-            s->average_srce_pts_dest_delta, s->dest_time_base.num, s->dest_time_base.den);
-
-    if (ctx->inputs[0] && !s->average_dest_pts_delta) {
-        int64_t d = av_q2d(av_inv_q(av_mul_q(s->dest_time_base, s->dest_frame_rate)));
-        s->average_dest_pts_delta = d;
-        ff_dlog(ctx, "set_work_frame_pts() average dest pts delta:%"PRId64"\n", s->average_dest_pts_delta);
-    }
-
-    if (!s->dest_frame_num) {
-        s->pts = s->last_dest_frame_pts = s->srce_pts_dest[s->crnt];
-    } else {
-        s->pts = s->last_dest_frame_pts + s->average_dest_pts_delta;
-    }
-
-    ff_dlog(ctx, "set_work_frame_pts() calculated pts:%"PRId64" at dest time base:%u/%u\n",
-            s->pts, s->dest_time_base.num, s->dest_time_base.den);
 }
 
 static av_cold int init(AVFilterContext *ctx)
 {
     FrameRateContext *s = ctx->priv;
-    int i;
-
-    s->dest_frame_num = 0;
-
-    s->crnt = (N_SRCE)>>1;
-    s->last = N_SRCE - 1;
-
-    s->next = s->crnt - 1;
-    s->prev = s->crnt + 1;
-
-    for (i = 0; i < N_SRCE; i++)
-        s->srce_score[i] = -1.0;
-
+    s->start_pts = AV_NOPTS_VALUE;
     return 0;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
     FrameRateContext *s = ctx->priv;
-    int i;
-
-    for (i = s->frst; i < s->last; i++) {
-        if (s->srce[i] && (s->srce[i] != s->srce[i + 1]))
-            av_frame_free(&s->srce[i]);
-    }
-    av_frame_free(&s->srce[s->last]);
+    av_frame_free(&s->f0);
+    av_frame_free(&s->f1);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -593,28 +429,48 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     int ret;
     AVFilterContext *ctx = inlink->dst;
     FrameRateContext *s = ctx->priv;
-
-    // we have one new frame
-    s->pending_srce_frames++;
+    int64_t pts;
 
     if (inpicref->interlaced_frame)
         av_log(ctx, AV_LOG_WARNING, "Interlaced frame found - the output will not be correct.\n");
 
-    // store the pointer to the new frame
-    av_frame_free(&s->srce[s->frst]);
-    s->srce[s->frst] = inpicref;
-
-    if (!s->pending_end_frame && s->srce[s->crnt]) {
-        set_work_frame_pts(ctx);
-        s->pending_end_frame = 1;
-    } else {
-        set_srce_frame_dest_pts(ctx);
+    if (inpicref->pts == AV_NOPTS_VALUE) {
+        av_log(ctx, AV_LOG_WARNING, "Ignoring frame without PTS.\n");
+        return 0;
     }
 
-    ret = process_work_frame(ctx, 1);
-    if (ret < 0)
-        return ret;
-    return ret ? ff_filter_frame(ctx->outputs[0], s->work) : 0;
+    pts = av_rescale_q(inpicref->pts, s->srce_time_base, s->dest_time_base);
+    if (s->f1 && pts == s->pts1) {
+        av_log(ctx, AV_LOG_WARNING, "Ignoring frame with same PTS.\n");
+        return 0;
+    }
+
+    av_frame_free(&s->f0);
+    s->f0 = s->f1;
+    s->pts0 = s->pts1;
+    s->f1 = inpicref;
+    s->pts1 = pts;
+    s->delta = s->pts1 - s->pts0;
+    s->score = -1.0;
+
+    if (s->delta < 0) {
+        av_log(ctx, AV_LOG_WARNING, "PTS discontinuity.\n");
+        s->start_pts = s->pts1;
+        s->n = 0;
+        av_frame_free(&s->f0);
+    }
+
+    if (s->start_pts == AV_NOPTS_VALUE)
+        s->start_pts = s->pts1;
+
+    do {
+        ret = process_work_frame(ctx);
+        if (ret <= 0)
+            return ret;
+        ret = ff_filter_frame(ctx->outputs[0], s->work);
+    } while (ret >= 0);
+
+    return ret;
 }
 
 static int config_output(AVFilterLink *outlink)
@@ -666,50 +522,21 @@ static int request_frame(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     FrameRateContext *s = ctx->priv;
-    int ret, i;
+    int ret;
 
     ff_dlog(ctx, "request_frame()\n");
 
-    // if there is no "next" frame AND we are not in flush then get one from our input filter
-    if (!s->srce[s->frst] && !s->flush)
-        goto request;
-
-    ff_dlog(ctx, "request_frame() REPEAT or FLUSH\n");
-
-    if (s->pending_srce_frames <= 0) {
-        ff_dlog(ctx, "request_frame() nothing else to do, return:EOF\n");
-        return AVERROR_EOF;
-    }
-
-    // otherwise, make brand-new frame and pass to our output filter
-    ff_dlog(ctx, "request_frame() FLUSH\n");
-
-    // back fill at end of file when source has no more frames
-    for (i = s->last; i > s->frst; i--) {
-        if (!s->srce[i - 1] && s->srce[i]) {
-            ff_dlog(ctx, "request_frame() copy:%d to:%d\n", i, i - 1);
-            s->srce[i - 1] = s->srce[i];
-        }
-    }
-
-    set_work_frame_pts(ctx);
-    ret = process_work_frame(ctx, 0);
-    if (ret < 0)
-        return ret;
-    if (ret)
-        return ff_filter_frame(ctx->outputs[0], s->work);
-
-request:
-    ff_dlog(ctx, "request_frame() call source's request_frame()\n");
     ret = ff_request_frame(ctx->inputs[0]);
-    if (ret < 0 && (ret != AVERROR_EOF)) {
-        ff_dlog(ctx, "request_frame() source's request_frame() returned error:%d\n", ret);
-        return ret;
-    } else if (ret == AVERROR_EOF) {
+    if (ret == AVERROR_EOF && s->f1 && !s->flush) {
         s->flush = 1;
+        ret = process_work_frame(ctx);
+        if (ret < 0)
+            return ret;
+        ret = ret ? ff_filter_frame(ctx->outputs[0], s->work) : AVERROR_EOF;
     }
+
     ff_dlog(ctx, "request_frame() source's request_frame() returned:%d\n", ret);
-    return 0;
+    return ret;
 }
 
 static const AVFilterPad framerate_inputs[] = {
