@@ -32,17 +32,11 @@ void ff_lowpass_line_sse2(uint8_t *dstp, ptrdiff_t linesize,
 void ff_lowpass_line_avx (uint8_t *dstp, ptrdiff_t linesize,
                           const uint8_t *srcp, ptrdiff_t mref,
                           ptrdiff_t pref, int clip_max);
-void ff_lowpass_line_avx2 (uint8_t *dstp, ptrdiff_t linesize,
-                          const uint8_t *srcp, ptrdiff_t mref,
-                          ptrdiff_t pref, int clip_max);
 
 void ff_lowpass_line_16_sse2(uint8_t *dstp, ptrdiff_t linesize,
                              const uint8_t *srcp, ptrdiff_t mref,
                              ptrdiff_t pref, int clip_max);
 void ff_lowpass_line_16_avx (uint8_t *dstp, ptrdiff_t linesize,
-                             const uint8_t *srcp, ptrdiff_t mref,
-                             ptrdiff_t pref, int clip_max);
-void ff_lowpass_line_16_avx2 (uint8_t *dstp, ptrdiff_t linesize,
                              const uint8_t *srcp, ptrdiff_t mref,
                              ptrdiff_t pref, int clip_max);
 
@@ -68,9 +62,6 @@ av_cold void ff_interlace_init_x86(InterlaceContext *s, int depth)
         if (EXTERNAL_AVX(cpu_flags))
             if (s->lowpass == VLPF_LIN)
                 s->lowpass_line = ff_lowpass_line_16_avx;
-        if (EXTERNAL_AVX2_FAST(cpu_flags))
-            if (s->lowpass == VLPF_LIN)
-                s->lowpass_line = ff_lowpass_line_16_avx2;
     } else {
         if (EXTERNAL_SSE2(cpu_flags)) {
             if (s->lowpass == VLPF_LIN)
@@ -81,8 +72,5 @@ av_cold void ff_interlace_init_x86(InterlaceContext *s, int depth)
         if (EXTERNAL_AVX(cpu_flags))
             if (s->lowpass == VLPF_LIN)
                 s->lowpass_line = ff_lowpass_line_avx;
-        if (EXTERNAL_AVX2_FAST(cpu_flags))
-            if (s->lowpass == VLPF_LIN)
-                s->lowpass_line = ff_lowpass_line_avx2;
     }
 }
