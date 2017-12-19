@@ -5894,8 +5894,7 @@ enabled libssh            && require_pkg_config libssh libssh libssh/sftp.h sftp
 enabled libspeex          && require_pkg_config libspeex speex speex/speex.h speex_decoder_init
 enabled libtesseract      && require_pkg_config libtesseract tesseract tesseract/capi.h TessBaseAPICreate
 enabled libtheora         && require libtheora theora/theoraenc.h th_info_init -ltheoraenc -ltheoradec -logg
-enabled libtls            && { check_pkg_config libtls libtls tls.h tls_configure ||
-                               require libtls tls.h tls_configure -ltls; }
+enabled libtls            && require_pkg_config libtls libtls tls.h tls_configure
 enabled libtwolame        && require libtwolame twolame.h twolame_init -ltwolame &&
                              { check_lib libtwolame twolame.h twolame_encode_buffer_float32_interleaved -ltwolame ||
                                die "ERROR: libtwolame must be installed and version must be >= 0.3.10"; }
