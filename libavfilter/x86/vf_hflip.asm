@@ -32,7 +32,7 @@ SECTION .text
 ;%1 byte or short, %2 b or w, %3 size in byte (1 for byte, 2 for short)
 %macro HFLIP 3
 cglobal hflip_%1, 3, 5, 3, src, dst, w, r, x
-    mova    m0, [pb_flip_%1]
+    VBROADCASTI128    m0, [pb_flip_%1]
     xor     xq, xq
 %if %3 == 1
     movsxdifnidn wq, wd
@@ -47,8 +47,13 @@ cglobal hflip_%1, 3, 5, 3, src, dst, w, r, x
 
     .loop0:
         neg     xq
+%if mmsize == 32
+        vpermq  m1, [srcq + xq -     mmsize + %3], 0x4e; flip each lane at load
+        vpermq  m2, [srcq + xq - 2 * mmsize + %3], 0x4e; flip each lane at load
+%else
         movu    m1, [srcq + xq -     mmsize + %3]
         movu    m2, [srcq + xq - 2 * mmsize + %3]
+%endif
         pshufb  m1, m0
         pshufb  m2, m0
         neg     xq
@@ -78,3 +83,8 @@ INIT_XMM ssse3
 HFLIP byte, b, 1
 HFLIP short, w, 2
 
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+HFLIP byte, b, 1
+HFLIP short, w, 2
+%endif
