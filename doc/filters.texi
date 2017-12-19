@@ -5370,6 +5370,49 @@ Set number of samples per each frame.
 Set window function to be used when generating FIR coefficients.
 @end table
 
+@section sinc
+
+Generate a sinc kaiser-windowed low-pass, high-pass, band-pass, or band-reject FIR coefficients.
+
+The resulting stream can be used with @ref{afir} filter for filtering the audio signal.
+
+The filter accepts the following options:
+
+@table @option
+@item sample_rate, r
+Set sample rate, default is 44100.
+
+@item nb_samples, n
+Set number of samples per each frame. Default is 1024.
+
+@item hp
+Set high-pass frequency. Default is 0.
+
+@item lp
+Set low-pass frequency. Default is 0.
+If high-pass frequency is lower than low-pass frequency and low-pass frequency
+is higher than 0 then filter will create band-pass filter coefficients,
+otherwise band-reject filter coefficients.
+
+@item phase
+Set filter phase response. Default is 50. Allowed range is from 0 to 100.
+
+@item beta
+Set Kaiser window beta.
+
+@item att
+Set stop-band attenuation. Default is 120dB, allowed range is from 40 to 180 dB.
+
+@item round
+Enable rounding, by default is disabled.
+
+@item hptaps
+Set number of taps for high-pass filter.
+
+@item lptaps
+Set number of taps for low-pass filter.
+@end table
+
 @section sine
 
 Generate an audio signal made of a sine wave with amplitude 1/8.
