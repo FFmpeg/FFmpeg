@@ -33,7 +33,7 @@ SECTION .text
 %macro HFLIP 3
 cglobal hflip_%1, 3, 5, 3, src, dst, w, r, x
     VBROADCASTI128    m0, [pb_flip_%1]
-    xor     xq, xq
+    xor               xq, xq
 %if %3 == 1
     movsxdifnidn wq, wd
 %else ; short
@@ -63,9 +63,9 @@ cglobal hflip_%1, 3, 5, 3, src, dst, w, r, x
         cmp     xq, wq
         jl .loop0
 
-        cmp    rq, 0
-        je .end
-        add    wq, rq
+    cmp    rq, 0
+    je .end
+    add    wq, rq
 
     .loop1:
         neg    xq
@@ -76,7 +76,7 @@ cglobal hflip_%1, 3, 5, 3, src, dst, w, r, x
         cmp    xq, wq
         jl .loop1
     .end:
-RET
+        RET
 %endmacro
 
 INIT_XMM ssse3
