@@ -53,6 +53,7 @@ version <next>:
 - bitstream filter for extracting E-AC-3 core
 - Haivision SRT protocol via libsrt
 - segafilm muxer
+- vfrdet filter
 
 
 version 3.4:

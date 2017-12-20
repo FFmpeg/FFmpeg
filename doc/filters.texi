@@ -16248,6 +16248,17 @@ For example, to vertically flip a video with @command{ffmpeg}:
 ffmpeg -i in.avi -vf "vflip" out.avi
 @end example
 
+@section vfrdet
+
+Detect variable frame rate video.
+
+This filter tries to detect if the input is variable or constant frame rate.
+
+At end it will output number of frames detected as having variable delta pts,
+and ones with constant delta pts.
+If there was frames with variable delta, than it will also show min and max delta
+encountered.
+
 @anchor{vignette}
 @section vignette
 
