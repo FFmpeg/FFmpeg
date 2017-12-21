@@ -1284,7 +1284,6 @@ static void do_exit(VideoState *is)
         SDL_DestroyRenderer(renderer);
     if (window)
         SDL_DestroyWindow(window);
-    av_lockmgr_register(NULL);
     uninit_opts();
 #if CONFIG_AVFILTER
     av_freep(&vfilters_list);
@@ -3641,27 +3640,6 @@ void show_help_default(const char *opt, const char *arg)
            );
 }
 
-static int lockmgr(void **mtx, enum AVLockOp op)
-{
-   switch(op) {
-      case AV_LOCK_CREATE:
-          *mtx = SDL_CreateMutex();
-          if(!*mtx) {
-              av_log(NULL, AV_LOG_FATAL, "SDL_CreateMutex(): %s\n", SDL_GetError());
-              return 1;
-          }
-          return 0;
-      case AV_LOCK_OBTAIN:
-          return !!SDL_LockMutex(*mtx);
-      case AV_LOCK_RELEASE:
-          return !!SDL_UnlockMutex(*mtx);
-      case AV_LOCK_DESTROY:
-          SDL_DestroyMutex(*mtx);
-          return 0;
-   }
-   return 1;
-}
-
 /* Called from the main */
 int main(int argc, char **argv)
 {
@@ -3722,11 +3700,6 @@ int main(int argc, char **argv)
 
     SDL_EventState(SDL_SYSWMEVENT, SDL_IGNORE);
     SDL_EventState(SDL_USEREVENT, SDL_IGNORE);
-
-    if (av_lockmgr_register(lockmgr)) {
-        av_log(NULL, AV_LOG_FATAL, "Could not initialize lock manager!\n");
-        do_exit(NULL);
-    }
 
     av_init_packet(&flush_pkt);
     flush_pkt.data = (uint8_t *)&flush_pkt;
