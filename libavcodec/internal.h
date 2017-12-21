@@ -247,9 +247,6 @@ extern volatile int ff_avcodec_locked;
 int ff_lock_avcodec(AVCodecContext *log_ctx, const AVCodec *codec);
 int ff_unlock_avcodec(const AVCodec *codec);
 
-int avpriv_lock_avformat(void);
-int avpriv_unlock_avformat(void);
-
 /**
  * Maximum size in bytes of extradata.
  * This value was chosen such that every bit of the buffer is

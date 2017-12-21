@@ -70,7 +70,6 @@ const char av_codec_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
 volatile int ff_avcodec_locked;
 static atomic_int entangled_thread_counter = ATOMIC_VAR_INIT(0);
 static AVMutex codec_mutex = AV_MUTEX_INITIALIZER;
-static AVMutex avformat_mutex = AV_MUTEX_INITIALIZER;
 
 void av_fast_padded_malloc(void *ptr, unsigned int *size, size_t min_size)
 {
@@ -1902,16 +1901,6 @@ int ff_unlock_avcodec(const AVCodec *codec)
         return -1;
 
     return 0;
-}
-
-int avpriv_lock_avformat(void)
-{
-    return ff_mutex_lock(&avformat_mutex) ? -1 : 0;
-}
-
-int avpriv_unlock_avformat(void)
-{
-    return ff_mutex_unlock(&avformat_mutex) ? -1 : 0;
 }
 
 unsigned int avpriv_toupper4(unsigned int x)

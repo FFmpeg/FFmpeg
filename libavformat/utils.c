@@ -32,6 +32,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/thread.h"
 #include "libavutil/time.h"
 #include "libavutil/time_internal.h"
 #include "libavutil/timestamp.h"
@@ -55,6 +56,8 @@
 #include "libavutil/ffversion.h"
 const char av_format_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
 
+static AVMutex avformat_mutex = AV_MUTEX_INITIALIZER;
+
 /**
  * @file
  * various utility functions for use within FFmpeg
@@ -75,6 +78,16 @@ const char *avformat_license(void)
 {
 #define LICENSE_PREFIX "libavformat license: "
     return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
+}
+
+int ff_lock_avformat(void)
+{
+    return ff_mutex_lock(&avformat_mutex) ? -1 : 0;
+}
+
+int ff_unlock_avformat(void)
+{
+    return ff_mutex_unlock(&avformat_mutex) ? -1 : 0;
 }
 
 #define RELATIVE_TS_BASE (INT64_MAX - (1LL<<48))

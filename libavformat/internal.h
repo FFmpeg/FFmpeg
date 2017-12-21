@@ -684,4 +684,8 @@ int ff_bprint_to_codecpar_extradata(AVCodecParameters *par, struct AVBPrint *buf
 int ff_interleaved_peek(AVFormatContext *s, int stream,
                         AVPacket *pkt, int add_offset);
 
+
+int ff_lock_avformat(void);
+int ff_unlock_avformat(void);
+
 #endif /* AVFORMAT_INTERNAL_H */
