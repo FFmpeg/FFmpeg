@@ -1972,6 +1972,8 @@ static int hls_write_trailer(struct AVFormatContext *s)
     av_freep(&vs->baseurl);
     }
 
+    ff_format_io_close(s, &hls->m3u8_out);
+    ff_format_io_close(s, &hls->sub_m3u8_out);
     av_freep(&hls->key_basename);
     av_freep(&hls->var_streams);
     av_freep(&hls->master_m3u8_url);
