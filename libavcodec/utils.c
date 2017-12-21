@@ -67,8 +67,6 @@
 #include "libavutil/ffversion.h"
 const char av_codec_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
 
-volatile int ff_avcodec_locked;
-static atomic_int entangled_thread_counter = ATOMIC_VAR_INIT(0);
 static AVMutex codec_mutex = AV_MUTEX_INITIALIZER;
 
 void av_fast_padded_malloc(void *ptr, unsigned int *size, size_t min_size)
@@ -550,6 +548,19 @@ static int64_t get_bit_rate(AVCodecContext *ctx)
     return bit_rate;
 }
 
+
+static void ff_lock_avcodec(AVCodecContext *log_ctx, const AVCodec *codec)
+{
+    if (!(codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE) && codec->init)
+        ff_mutex_lock(&codec_mutex);
+}
+
+static void ff_unlock_avcodec(const AVCodec *codec)
+{
+    if (!(codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE) && codec->init)
+        ff_mutex_unlock(&codec_mutex);
+}
+
 int attribute_align_arg ff_codec_open2_recursive(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options)
 {
     int ret = 0;
@@ -589,9 +600,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     if (options)
         av_dict_copy(&tmp, *options, 0);
 
-    ret = ff_lock_avcodec(avctx, codec);
-    if (ret < 0)
-        return ret;
+    ff_lock_avcodec(avctx, codec);
 
     avctx->internal = av_mallocz(sizeof(AVCodecInternal));
     if (!avctx->internal) {
@@ -1866,42 +1875,6 @@ int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op))
     return 0;
 }
 #endif
-
-int ff_lock_avcodec(AVCodecContext *log_ctx, const AVCodec *codec)
-{
-    if (codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE || !codec->init)
-        return 0;
-
-    if (ff_mutex_lock(&codec_mutex))
-        return -1;
-
-    if (atomic_fetch_add(&entangled_thread_counter, 1)) {
-        av_log(log_ctx, AV_LOG_ERROR,
-               "Insufficient thread locking. At least %d threads are "
-               "calling avcodec_open2() at the same time right now.\n",
-               atomic_load(&entangled_thread_counter));
-        ff_avcodec_locked = 1;
-        ff_unlock_avcodec(codec);
-        return AVERROR(EINVAL);
-    }
-    av_assert0(!ff_avcodec_locked);
-    ff_avcodec_locked = 1;
-    return 0;
-}
-
-int ff_unlock_avcodec(const AVCodec *codec)
-{
-    if (codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE || !codec->init)
-        return 0;
-
-    av_assert0(ff_avcodec_locked);
-    ff_avcodec_locked = 0;
-    atomic_fetch_add(&entangled_thread_counter, -1);
-    if (ff_mutex_unlock(&codec_mutex))
-        return -1;
-
-    return 0;
-}
 
 unsigned int avpriv_toupper4(unsigned int x)
 {
