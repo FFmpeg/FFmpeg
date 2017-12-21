@@ -621,8 +621,8 @@ static const AVOption equalizer_options[] = {
     {"o", "octave", 0, AV_OPT_TYPE_CONST, {.i64=OCTAVE}, 0, 0, FLAGS, "width_type"},
     {"s", "slope", 0, AV_OPT_TYPE_CONST, {.i64=SLOPE}, 0, 0, FLAGS, "width_type"},
     {"k", "kHz", 0, AV_OPT_TYPE_CONST, {.i64=KHERTZ}, 0, 0, FLAGS, "width_type"},
-    {"width", "set band-width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0, 999, FLAGS},
-    {"w",     "set band-width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0, 999, FLAGS},
+    {"width", "set band-width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0, 99999, FLAGS},
+    {"w",     "set band-width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0, 99999, FLAGS},
     {"gain", "set gain", OFFSET(gain), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, FLAGS},
     {"g",    "set gain", OFFSET(gain), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, FLAGS},
     {"channels", "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
@@ -708,8 +708,8 @@ static const AVOption bandreject_options[] = {
     {"o", "octave", 0, AV_OPT_TYPE_CONST, {.i64=OCTAVE}, 0, 0, FLAGS, "width_type"},
     {"s", "slope", 0, AV_OPT_TYPE_CONST, {.i64=SLOPE}, 0, 0, FLAGS, "width_type"},
     {"k", "kHz", 0, AV_OPT_TYPE_CONST, {.i64=KHERTZ}, 0, 0, FLAGS, "width_type"},
-    {"width", "set band-width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 999, FLAGS},
-    {"w",     "set band-width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 999, FLAGS},
+    {"width", "set band-width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 99999, FLAGS},
+    {"w",     "set band-width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 99999, FLAGS},
     {"channels", "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
     {"c",        "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
     {NULL}
@@ -783,12 +783,12 @@ DEFINE_BIQUAD_FILTER(allpass, "Apply a two-pole all-pass filter.");
 #endif  /* CONFIG_ALLPASS_FILTER */
 #if CONFIG_BIQUAD_FILTER
 static const AVOption biquad_options[] = {
-    {"a0", NULL, OFFSET(a0), AV_OPT_TYPE_DOUBLE, {.dbl=1}, INT16_MIN, INT16_MAX, FLAGS},
-    {"a1", NULL, OFFSET(a1), AV_OPT_TYPE_DOUBLE, {.dbl=1}, INT16_MIN, INT16_MAX, FLAGS},
-    {"a2", NULL, OFFSET(a2), AV_OPT_TYPE_DOUBLE, {.dbl=1}, INT16_MIN, INT16_MAX, FLAGS},
-    {"b0", NULL, OFFSET(b0), AV_OPT_TYPE_DOUBLE, {.dbl=1}, INT16_MIN, INT16_MAX, FLAGS},
-    {"b1", NULL, OFFSET(b1), AV_OPT_TYPE_DOUBLE, {.dbl=1}, INT16_MIN, INT16_MAX, FLAGS},
-    {"b2", NULL, OFFSET(b2), AV_OPT_TYPE_DOUBLE, {.dbl=1}, INT16_MIN, INT16_MAX, FLAGS},
+    {"a0", NULL, OFFSET(a0), AV_OPT_TYPE_DOUBLE, {.dbl=1}, INT32_MIN, INT32_MAX, FLAGS},
+    {"a1", NULL, OFFSET(a1), AV_OPT_TYPE_DOUBLE, {.dbl=1}, INT32_MIN, INT32_MAX, FLAGS},
+    {"a2", NULL, OFFSET(a2), AV_OPT_TYPE_DOUBLE, {.dbl=1}, INT32_MIN, INT32_MAX, FLAGS},
+    {"b0", NULL, OFFSET(b0), AV_OPT_TYPE_DOUBLE, {.dbl=1}, INT32_MIN, INT32_MAX, FLAGS},
+    {"b1", NULL, OFFSET(b1), AV_OPT_TYPE_DOUBLE, {.dbl=1}, INT32_MIN, INT32_MAX, FLAGS},
+    {"b2", NULL, OFFSET(b2), AV_OPT_TYPE_DOUBLE, {.dbl=1}, INT32_MIN, INT32_MAX, FLAGS},
     {"channels", "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
     {"c",        "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
     {NULL}
