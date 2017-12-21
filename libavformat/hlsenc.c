@@ -1806,14 +1806,14 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (!byterange_mode) {
             if (hls->segment_type == SEGMENT_TYPE_FMP4) {
                 if (!vs->init_range_length) {
-                avio_flush(oc->pb);
-                range_length = avio_close_dyn_buf(oc->pb, &buffer);
-                avio_write(vs->out, buffer, range_length);
-                vs->init_range_length = range_length;
-                avio_open_dyn_buf(&oc->pb);
-                vs->packets_written = 0;
-                ff_format_io_close(s, &vs->out);
-                hlsenc_io_close(s, &vs->out, vs->base_output_dirname);
+                    avio_flush(oc->pb);
+                    range_length = avio_close_dyn_buf(oc->pb, &buffer);
+                    avio_write(vs->out, buffer, range_length);
+                    vs->init_range_length = range_length;
+                    avio_open_dyn_buf(&oc->pb);
+                    vs->packets_written = 0;
+                    ff_format_io_close(s, &vs->out);
+                    hlsenc_io_close(s, &vs->out, vs->base_output_dirname);
                 }
             } else {
                 hlsenc_io_close(s, &oc->pb, oc->filename);
@@ -1847,7 +1847,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
             }
             ff_format_io_close(s, &vs->out);
         }
-            ret = hls_append_segment(s, hls, vs, vs->duration, vs->start_pos, vs->size);
+        ret = hls_append_segment(s, hls, vs, vs->duration, vs->start_pos, vs->size);
         vs->start_pos = new_start_pos;
         if (ret < 0) {
             av_free(old_filename);
@@ -1932,7 +1932,7 @@ static int hls_write_trailer(struct AVFormatContext *s)
     if (oc->pb) {
         vs->size = avio_tell(vs->avf->pb) - vs->start_pos;
         if (hls->segment_type != SEGMENT_TYPE_FMP4)
-        ff_format_io_close(s, &oc->pb);
+            ff_format_io_close(s, &oc->pb);
 
         if ((hls->flags & HLS_TEMP_FILE) && oc->filename[0]) {
             hls_rename_temp_file(s, oc);
@@ -2292,8 +2292,8 @@ static int hls_init(AVFormatContext *s)
             }
         }
 
-            if ((ret = hls_start(s, vs)) < 0)
-                goto fail;
+        if ((ret = hls_start(s, vs)) < 0)
+            goto fail;
     }
 
 fail:
