@@ -132,10 +132,6 @@ int ff_slice_thread_init(AVCodecContext *avctx)
     int thread_count = avctx->thread_count;
     static void (*mainfunc)(void *);
 
-#if HAVE_W32THREADS
-    w32thread_init();
-#endif
-
     // We cannot do this in the encoder init as the threads are created before
     if (av_codec_is_encoder(avctx->codec) &&
         avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO &&

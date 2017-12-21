@@ -28,6 +28,8 @@ version <next>:
 - nsp demuxer
 - support LibreSSL (via libtls)
 - AVX-512/ZMM support added
+- Dropped support for building for Windows XP. The minimum supported Windows
+  version is Windows Vista.
 
 
 version 3.4:
