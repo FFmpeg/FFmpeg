@@ -5210,20 +5210,14 @@ static int mov_read_mdcv(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     for (i = 0; i < 3; i++) {
         const int j = mapping[i];
-        sc->mastering->display_primaries[j][0].num = avio_rb16(pb);
-        sc->mastering->display_primaries[j][0].den = chroma_den;
-        sc->mastering->display_primaries[j][1].num = avio_rb16(pb);
-        sc->mastering->display_primaries[j][1].den = chroma_den;
+        sc->mastering->display_primaries[j][0] = av_make_q(avio_rb16(pb), chroma_den);
+        sc->mastering->display_primaries[j][1] = av_make_q(avio_rb16(pb), chroma_den);
     }
-    sc->mastering->white_point[0].num = avio_rb16(pb);
-    sc->mastering->white_point[0].den = chroma_den;
-    sc->mastering->white_point[1].num = avio_rb16(pb);
-    sc->mastering->white_point[1].den = chroma_den;
+    sc->mastering->white_point[0] = av_make_q(avio_rb16(pb), chroma_den);
+    sc->mastering->white_point[1] = av_make_q(avio_rb16(pb), chroma_den);
 
-    sc->mastering->max_luminance.num = avio_rb32(pb);
-    sc->mastering->max_luminance.den = luma_den;
-    sc->mastering->min_luminance.num = avio_rb32(pb);
-    sc->mastering->min_luminance.den = luma_den;
+    sc->mastering->max_luminance = av_make_q(avio_rb32(pb), luma_den);
+    sc->mastering->min_luminance = av_make_q(avio_rb32(pb), luma_den);
 
     sc->mastering->has_luminance = 1;
     sc->mastering->has_primaries = 1;
