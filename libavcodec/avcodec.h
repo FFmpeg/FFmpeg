@@ -5930,10 +5930,11 @@ attribute_deprecated
 AVHWAccel *av_hwaccel_next(const AVHWAccel *hwaccel);
 #endif
 
-
+#if FF_API_LOCKMGR
 /**
  * Lock operation used by lockmgr
  */
+attribute_deprecated
 enum AVLockOp {
   AV_LOCK_CREATE,  ///< Create a mutex
   AV_LOCK_OBTAIN,  ///< Lock the mutex
@@ -5963,8 +5964,13 @@ enum AVLockOp {
  *           mechanism (i.e. do not use a single static object to
  *           implement your lock manager). If cb is set to NULL the
  *           lockmgr will be unregistered.
+ *
+ * @deprecated This function does nothing, and always returns 0. Be sure to
+ *             build with thread support to get basic thread safety.
  */
+attribute_deprecated
 int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op));
+#endif
 
 /**
  * Get the type of the given codec.
