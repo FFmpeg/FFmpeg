@@ -1127,6 +1127,8 @@ Q-Factor
 octave
 @item s
 slope
+@item k
+kHz
 @end table
 
 @item width, w
@@ -1884,6 +1886,8 @@ Q-Factor
 octave
 @item s
 slope
+@item k
+kHz
 @end table
 
 @item width, w
@@ -1933,6 +1937,8 @@ Q-Factor
 octave
 @item s
 slope
+@item k
+kHz
 @end table
 
 @item width, w
@@ -1989,6 +1995,8 @@ Q-Factor
 octave
 @item s
 slope
+@item k
+kHz
 @end table
 
 @item width, w
@@ -2642,6 +2650,8 @@ Q-Factor
 octave
 @item s
 slope
+@item k
+kHz
 @end table
 
 @item width, w
@@ -3079,6 +3089,8 @@ Q-Factor
 octave
 @item s
 slope
+@item k
+kHz
 @end table
 
 @item width, w
@@ -3385,6 +3397,8 @@ Q-Factor
 octave
 @item s
 slope
+@item k
+kHz
 @end table
 
 @item width, w
@@ -4294,6 +4308,8 @@ Q-Factor
 octave
 @item s
 slope
+@item k
+kHz
 @end table
 
 @item width, w
