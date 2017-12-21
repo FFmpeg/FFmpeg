@@ -358,7 +358,7 @@ static void output_segment_list(OutputStream *os, AVIOContext *out, DASHContext 
             Segment *seg = os->segments[i];
             double duration = (double) seg->duration / timescale;
             if (target_duration <= duration)
-                target_duration = hls_get_int_from_double(duration);
+                target_duration = lrint(duration);
         }
 
         ff_hls_write_playlist_header(out_hls, 6, -1, target_duration,
