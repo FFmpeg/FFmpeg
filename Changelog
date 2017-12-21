@@ -22,6 +22,8 @@ version <next>:
 - Intel QSV-accelerated overlay filter
 - AV1 Support through libaom
 - Haivision SRT protocol via libsrt
+- Dropped support for building for Windows XP. The minimum supported Windows
+  version is Windows Vista.
 
 
 version 12:

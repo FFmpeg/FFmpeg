@@ -169,10 +169,6 @@ int ff_slice_thread_init(AVCodecContext *avctx)
     SliceThreadContext *c;
     int thread_count = avctx->thread_count;
 
-#if HAVE_W32THREADS
-    w32thread_init();
-#endif
-
     if (!thread_count) {
         int nb_cpus = av_cpu_count();
         av_log(avctx, AV_LOG_DEBUG, "detected %d logical cores\n", nb_cpus);

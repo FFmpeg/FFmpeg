@@ -1732,7 +1732,6 @@ TOOLCHAIN_FEATURES="
 "
 
 TYPES_LIST="
-    CONDITION_VARIABLE_Ptr
     CUVIDDECODECREATEINFO_bitDepthMinus8
     socklen_t
     struct_addrinfo
@@ -2002,7 +2001,7 @@ atomics_gcc_if="sync_val_compare_and_swap"
 atomics_suncc_if="atomic_cas_ptr machine_rw_barrier"
 atomics_win32_if="MemoryBarrier"
 atomics_native_if_any="$ATOMICS_LIST"
-w32threads_deps="atomics_native"
+w32threads_deps="atomics_native CONDITION_VARIABLE"
 threads_if_any="$THREADS_LIST"
 
 # subsystems
@@ -4103,12 +4102,16 @@ probe_libc(){
     elif test_${pfx}cpp_condition newlib.h "defined _NEWLIB_VERSION"; then
         eval ${pfx}libc_type=newlib
         add_${pfx}cppflags -U__STRICT_ANSI__ -D_XOPEN_SOURCE=600
+        test_${pfx}cpp_condition windows.h "!defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0600" &&
+            add_${pfx}cppflags -D_WIN32_WINNT=0x0600
     # MinGW64 is backwards compatible with MinGW32, so check for it first.
     elif test_${pfx}cpp_condition _mingw.h "defined __MINGW64_VERSION_MAJOR"; then
         eval ${pfx}libc_type=mingw64
         add_${pfx}cppflags -U__STRICT_ANSI__ -D__USE_MINGW_ANSI_STDIO=1
         eval test \$${pfx_no_}cc_type = "gcc" &&
             add_${pfx}cppflags -D__printf__=__gnu_printf__
+        test_${pfx}cpp_condition windows.h "!defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0600" &&
+            add_${pfx}cppflags -D_WIN32_WINNT=0x0600
     elif test_${pfx}cpp_condition _mingw.h "defined __MINGW_VERSION"  ||
          test_${pfx}cpp_condition _mingw.h "defined __MINGW32_VERSION"; then
         eval ${pfx}libc_type=mingw32
@@ -4118,8 +4121,8 @@ probe_libc(){
         add_${pfx}cppflags -U__STRICT_ANSI__ -D__USE_MINGW_ANSI_STDIO=1
         test_${pfx}cpp_condition _mingw.h "__MSVCRT_VERSION__ < 0x0700" &&
             add_${pfx}cppflags -D__MSVCRT_VERSION__=0x0700
-        test_${pfx}cpp_condition windows.h "defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0502" &&
-            add_${pfx}cppflags -D_WIN32_WINNT=0x0502
+        test_${pfx}cpp_condition windows.h "!defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0600" &&
+            add_${pfx}cppflags -D_WIN32_WINNT=0x0600
         eval test \$${pfx_no_}cc_type = "gcc" &&
             add_${pfx}cppflags -D__printf__=__gnu_printf__
     elif test_${pfx}cpp_condition crtversion.h "defined _VC_CRT_MAJOR_VERSION"; then
@@ -4139,14 +4142,14 @@ probe_libc(){
         # 0x601 by default unless something else is set by the user.
         # This can easily lead to us detecting functions only present
         # in such new versions and producing binaries requiring windows 7.0.
-        # Therefore explicitly set the default to XP unless the user has
+        # Therefore explicitly set the default to Vista unless the user has
         # set something else on the command line.
         # Don't do this if WINAPI_FAMILY is set and is set to a non-desktop
         # family. For these cases, configure is free to use any functions
         # found in the SDK headers by default. (Alternatively, we could force
         # _WIN32_WINNT to 0x0602 in that case.)
         test_${pfx}cpp_condition stdlib.h "defined(_WIN32_WINNT)" ||
-            { test_${pfx}cpp <<EOF && add_${pfx}cppflags -D_WIN32_WINNT=0x0502; }
+            { test_${pfx}cpp <<EOF && add_${pfx}cppflags -D_WIN32_WINNT=0x0600; }
 #ifdef WINAPI_FAMILY
 #include <winapifamily.h>
 #if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
@@ -4553,7 +4556,6 @@ check_func_headers windows.h MapViewOfFile
 check_func_headers windows.h SetConsoleTextAttribute
 check_func_headers windows.h Sleep
 check_func_headers windows.h VirtualAlloc
-check_struct windows.h "CONDITION_VARIABLE" Ptr
 
 check_header direct.h
 check_header dxgidebug.h
@@ -4605,7 +4607,8 @@ check_type "va/va.h va/va_enc_vp9.h"  "VAEncPictureParameterBufferVP9"
 check_type "vdpau/vdpau.h" "VdpPictureInfoHEVC"
 
 if ! disabled w32threads && ! enabled pthreads; then
-    check_lib w32threads "windows.h process.h" _beginthreadex
+    check_lib w32threads "windows.h process.h" _beginthreadex &&
+        check_type "windows.h" CONDITION_VARIABLE
 fi
 
 # check for some common methods of building with pthread support
