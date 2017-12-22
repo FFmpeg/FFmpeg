@@ -3979,11 +3979,25 @@ typedef struct AVCodecParameters {
 } AVCodecParameters;
 
 /**
+ * Iterate over all registered codecs.
+ *
+ * @param opaque a pointer where libavcodec will store the iteration state. Must
+ *               point to NULL to start the iteration.
+ *
+ * @return the next registered codec or NULL when the iteration is
+ *         finished
+ */
+const AVCodec *av_codec_iterate(void **opaque);
+
+#if FF_API_NEXT
+/**
  * If c is NULL, returns the first registered codec,
  * if c is non-NULL, returns the next registered codec after c,
  * or NULL if c is the last one.
  */
+attribute_deprecated
 AVCodec *av_codec_next(const AVCodec *c);
+#endif
 
 /**
  * Return the LIBAVCODEC_VERSION_INT constant.
@@ -4000,6 +4014,7 @@ const char *avcodec_configuration(void);
  */
 const char *avcodec_license(void);
 
+#if FF_API_NEXT
 /**
  * Register the codec codec and initialize libavcodec.
  *
@@ -4008,6 +4023,7 @@ const char *avcodec_license(void);
  *
  * @see avcodec_register_all()
  */
+attribute_deprecated
 void avcodec_register(AVCodec *codec);
 
 /**
@@ -4020,7 +4036,9 @@ void avcodec_register(AVCodec *codec);
  * @see av_register_codec_parser
  * @see av_register_bitstream_filter
  */
+attribute_deprecated
 void avcodec_register_all(void);
+#endif
 
 /**
  * Allocate an AVCodecContext and set its fields to default values. The
@@ -5120,8 +5138,21 @@ typedef struct AVCodecParser {
     struct AVCodecParser *next;
 } AVCodecParser;
 
+/**
+ * Iterate over all registered codec parsers.
+ *
+ * @param opaque a pointer where libavcodec will store the iteration state. Must
+ *               point to NULL to start the iteration.
+ *
+ * @return the next registered codec parser or NULL when the iteration is
+ *         finished
+ */
+const AVCodecParser *av_parser_iterate(void **opaque);
+
+attribute_deprecated
 AVCodecParser *av_parser_next(const AVCodecParser *c);
 
+attribute_deprecated
 void av_register_codec_parser(AVCodecParser *parser);
 AVCodecParserContext *av_parser_init(int codec_id);
 

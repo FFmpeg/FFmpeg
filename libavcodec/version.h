@@ -129,6 +129,9 @@
 #ifndef FF_API_LOCKMGR
 #define FF_API_LOCKMGR (LIBAVCODEC_VERSION_MAJOR < 59)
 #endif
+#ifndef FF_API_NEXT
+#define FF_API_NEXT              (LIBAVCODEC_VERSION_MAJOR < 59)
+#endif
 
 
 #endif /* AVCODEC_VERSION_H */
