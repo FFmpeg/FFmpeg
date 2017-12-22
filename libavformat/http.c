@@ -215,6 +215,7 @@ static int http_open_cnx_internal(URLContext *h, AVDictionary **options)
                  proxy_path && av_strstart(proxy_path, "http://", NULL);
 
     if (!strcmp(proto, "https")) {
+        av_dict_set_int(options, "fastopen", 0, 0);
         lower_proto = "tls";
         use_proxy   = 0;
         if (port < 0)
