@@ -135,9 +135,13 @@ static av_cold void uninit(AVFilterContext *ctx)
     AV_PIX_FMT_GBRP16LE,     AV_PIX_FMT_GBRAP12LE,    \
     AV_PIX_FMT_GBRAP16LE
 
+#define GRAY_FORMATS                            \
+    AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9LE, AV_PIX_FMT_GRAY10LE, \
+    AV_PIX_FMT_GRAY12LE, AV_PIX_FMT_GRAY16LE
+
 static const enum AVPixelFormat yuv_pix_fmts[] = { YUV_FORMATS, AV_PIX_FMT_NONE };
 static const enum AVPixelFormat rgb_pix_fmts[] = { RGB_FORMATS, AV_PIX_FMT_NONE };
-static const enum AVPixelFormat all_pix_fmts[] = { RGB_FORMATS, YUV_FORMATS, AV_PIX_FMT_NONE };
+static const enum AVPixelFormat all_pix_fmts[] = { RGB_FORMATS, YUV_FORMATS, GRAY_FORMATS, AV_PIX_FMT_NONE };
 
 static int query_formats(AVFilterContext *ctx)
 {
