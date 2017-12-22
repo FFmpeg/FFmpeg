@@ -542,7 +542,7 @@ static inline int ff_rename(const char *oldpath, const char *newpath, void *logc
     if (rename(oldpath, newpath) == -1) {
         ret = AVERROR(errno);
         if (logctx)
-            av_log(logctx, AV_LOG_ERROR, "failed to rename file %s to %s\n", oldpath, newpath);
+            av_log(logctx, AV_LOG_ERROR, "failed to rename file %s to %s: %s\n", oldpath, newpath, av_err2str(ret));
     }
     return ret;
 }
