@@ -152,7 +152,7 @@ static void FUNC(transform_skip)(int16_t *_coeffs, int16_t log2_size)
     } else {
         for (y = 0; y < size; y++) {
             for (x = 0; x < size; x++) {
-                *coeffs = *coeffs << -shift;
+                *coeffs = *(uint16_t*)coeffs << -shift;
                 coeffs++;
             }
         }
