@@ -327,6 +327,9 @@ int ff_http_do_new_request(URLContext *h, const char *uri)
     if (ret < 0)
         return ret;
 
+    if (s->willclose)
+        return AVERROR_EOF;
+
     s->end_chunked_post = 0;
     s->chunkend      = 0;
     s->off           = 0;
