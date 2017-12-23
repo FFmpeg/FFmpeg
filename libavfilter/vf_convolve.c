@@ -112,11 +112,13 @@ static int config_input_main(AVFilterLink *inlink)
     for (i = 0; i < s->nb_planes; i++) {
         int w = s->planewidth[i];
         int h = s->planeheight[i];
-        int n = FFMAX(w, h) * 10/9;
+        int n = FFMAX(w, h);
+
+        n += n / 2;
 
         for (fft_bits = 1; 1 << fft_bits < n; fft_bits++);
 
-        s->fft_bits[i] = fft_bits;
+        s->fft_bits[i] = fft_bits + 1;
         s->fft_len[i] = 1 << s->fft_bits[i];
 
         if (!(s->fft_hdata[i] = av_calloc(s->fft_len[i], s->fft_len[i] * sizeof(FFTComplex))))
@@ -173,7 +175,20 @@ static void fft_horizontal(ConvolveContext *s, FFTComplex *fft_hdata,
                 fft_hdata[y * n + x].im = 0;
             }
         }
+
+        for (; x < n / 2; x++) {
+            fft_hdata[y * n + x].re = 0;
+            fft_hdata[y * n + x].im = 0;
+        }
+
         for (; x < n; x++) {
+            fft_hdata[y * n + x].re = fft_hdata[y * n + n - x - 1].re;
+            fft_hdata[y * n + x].im = 0;
+        }
+    }
+
+    for (; y < n / 2; y++) {
+        for (x = 0; x < n; x++) {
             fft_hdata[y * n + x].re = 0;
             fft_hdata[y * n + x].im = 0;
         }
@@ -181,7 +196,7 @@ static void fft_horizontal(ConvolveContext *s, FFTComplex *fft_hdata,
 
     for (; y < n; y++) {
         for (x = 0; x < n; x++) {
-            fft_hdata[y * n + x].re = 0;
+            fft_hdata[y * n + x].re = fft_hdata[(n - y - 1) * n + x].re;
             fft_hdata[y * n + x].im = 0;
         }
     }
@@ -202,10 +217,7 @@ static void fft_vertical(ConvolveContext *s, FFTComplex *fft_hdata, FFTComplex *
             fft_vdata[y * n + x].re = fft_hdata[x * n + y].re;
             fft_vdata[y * n + x].im = fft_hdata[x * n + y].im;
         }
-        for (; x < n; x++) {
-            fft_vdata[y * n + x].re = 0;
-            fft_vdata[y * n + x].im = 0;
-        }
+
         av_fft_permute(s->fft[plane], fft_vdata + y * n);
         av_fft_calc(s->fft[plane], fft_vdata + y * n);
     }
@@ -218,6 +230,7 @@ static void ifft_vertical(ConvolveContext *s, int n, int plane)
     for (y = 0; y < n; y++) {
         av_fft_permute(s->ifft[plane], s->fft_vdata[plane] + y * n);
         av_fft_calc(s->ifft[plane], s->fft_vdata[plane] + y * n);
+
         for (x = 0; x < n; x++) {
             s->fft_hdata[plane][x * n + y].re = s->fft_vdata[plane][y * n + x].re;
             s->fft_hdata[plane][x * n + y].im = s->fft_vdata[plane][y * n + x].im;
