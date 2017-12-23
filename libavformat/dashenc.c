@@ -759,7 +759,8 @@ static int write_manifest(AVFormatContext *s, int final)
             char playlist_file[64];
             AVStream *st = s->streams[i];
             get_hls_playlist_name(playlist_file, sizeof(playlist_file), NULL, i);
-            ff_hls_write_stream_info(st, out, st->codecpar->bit_rate, playlist_file);
+            ff_hls_write_stream_info(st, out, st->codecpar->bit_rate,
+                    playlist_file, NULL);
         }
         avio_close(out);
         if (use_rename)

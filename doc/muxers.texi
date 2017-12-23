@@ -834,6 +834,18 @@ be a video only stream with video bitrate 1000k, the second variant stream will
 be an audio only stream with bitrate 64k and the third variant stream will be a
 video only stream with bitrate 256k. Here, three media playlist with file names
 out_1.m3u8, out_2.m3u8 and out_3.m3u8 will be created.
+@example
+ffmpeg -re -i in.ts -b:a:0 32k -b:a:1 64k -b:v:0 1000k -b:v:1 3000k  \
+  -map 0:a -map 0:a -map 0:v -map 0:v -f hls \
+  -var_stream_map "a:0,agroup:aud_low a:1,agroup:aud_high v:0,agroup:aud_low v:1,agroup:aud_high" \
+  -master_pl_name master.m3u8 \
+  http://example.com/live/out.m3u8
+@end example
+This example creates two audio only and two video only variant streams. In
+addition to the #EXT-X-STREAM-INF tag for each variant stream in the master
+playlist, #EXT-X-MEDIA tag is also added for the two audio only variant streams
+and they are mapped to the two video only variant streams with audio group names
+'aud_low' and 'aud_high'.
 
 By default, a single hls variant containing all the encoded streams is created.
 
