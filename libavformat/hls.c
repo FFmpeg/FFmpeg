@@ -670,9 +670,10 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
         if (ret == AVERROR_EXIT) {
             return ret;
         } else if (ret < 0) {
-            av_log(s, AV_LOG_WARNING,
-                "keepalive request failed for '%s', retrying with new connection: %s\n",
-                url, av_err2str(ret));
+            if (ret != AVERROR_EOF)
+                av_log(s, AV_LOG_WARNING,
+                    "keepalive request failed for '%s', retrying with new connection: %s\n",
+                    url, av_err2str(ret));
             ret = s->io_open(s, pb, url, AVIO_FLAG_READ, &tmp);
         }
     } else {
@@ -726,9 +727,10 @@ static int parse_playlist(HLSContext *c, const char *url,
         if (ret == AVERROR_EXIT) {
             return ret;
         } else if (ret < 0) {
-            av_log(c->ctx, AV_LOG_WARNING,
-                "keepalive request failed for '%s', retrying with new connection: %s\n",
-                url, av_err2str(ret));
+            if (ret != AVERROR_EOF)
+                av_log(c->ctx, AV_LOG_WARNING,
+                    "keepalive request failed for '%s', retrying with new connection: %s\n",
+                    url, av_err2str(ret));
             in = NULL;
         }
     }
