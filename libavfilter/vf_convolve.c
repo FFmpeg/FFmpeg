@@ -121,16 +121,16 @@ static int config_input_main(AVFilterLink *inlink)
         s->fft_bits[i] = fft_bits + 1;
         s->fft_len[i] = 1 << s->fft_bits[i];
 
-        if (!(s->fft_hdata[i] = av_calloc(s->fft_len[i], s->fft_len[i] * sizeof(FFTComplex))))
+        if (!(s->fft_hdata[i] = av_calloc(s->fft_len[i], (s->fft_len[i] + 1) * sizeof(FFTComplex))))
             return AVERROR(ENOMEM);
 
-        if (!(s->fft_vdata[i] = av_calloc(s->fft_len[i], s->fft_len[i] * sizeof(FFTComplex))))
+        if (!(s->fft_vdata[i] = av_calloc(s->fft_len[i], (s->fft_len[i] + 1) * sizeof(FFTComplex))))
             return AVERROR(ENOMEM);
 
-        if (!(s->fft_hdata_impulse[i] = av_calloc(s->fft_len[i], s->fft_len[i] * sizeof(FFTComplex))))
+        if (!(s->fft_hdata_impulse[i] = av_calloc(s->fft_len[i], (s->fft_len[i] + 1)* sizeof(FFTComplex))))
             return AVERROR(ENOMEM);
 
-        if (!(s->fft_vdata_impulse[i] = av_calloc(s->fft_len[i], s->fft_len[i] * sizeof(FFTComplex))))
+        if (!(s->fft_vdata_impulse[i] = av_calloc(s->fft_len[i], (s->fft_len[i] + 1) * sizeof(FFTComplex))))
             return AVERROR(ENOMEM);
     }
 
@@ -321,6 +321,9 @@ static int do_convolve(FFFrameSync *fs)
         }
 
         for (y = 0; y < n; y++) {
+
+            s->fft_vdata[plane][y*n + n].re = s->fft_vdata[plane][y*n + 0].im;
+            s->fft_vdata[plane][y*n + 0].im = 0;
             for (x = 0; x < n; x++) {
                 FFTSample re, im, ire, iim;
 
@@ -332,6 +335,8 @@ static int do_convolve(FFFrameSync *fs)
                 s->fft_vdata[plane][y*n + x].re = ire * re - iim * im;
                 s->fft_vdata[plane][y*n + x].im = iim * re + ire * im;
             }
+            s->fft_vdata[plane][y*n + n].re = s->fft_vdata[plane][y*n + 0].im * s->fft_vdata_impulse[plane][y*n + 0].im;
+            s->fft_vdata[plane][y*n + 0].im = s->fft_vdata[plane][y*n + n].re;
         }
 
         ifft_vertical(s, n, plane);
