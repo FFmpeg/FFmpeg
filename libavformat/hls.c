@@ -1197,7 +1197,7 @@ static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg, 
         AVDictionary *opts2 = NULL;
         char iv[33], key[33], url[MAX_URL_SIZE];
         if (strcmp(seg->key, pls->key_url)) {
-            AVIOContext *pb;
+            AVIOContext *pb = NULL;
             if (open_url(pls->parent, &pb, seg->key, c->avio_opts, opts, NULL) == 0) {
                 ret = avio_read(pb, pls->key, sizeof(pls->key));
                 if (ret != sizeof(pls->key)) {
