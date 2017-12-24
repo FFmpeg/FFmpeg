@@ -1497,7 +1497,7 @@ reload:
 
         return ret;
     }
-    if (c->http_persistent) {
+    if (c->http_persistent && av_strstart(seg->url, "http", NULL)) {
         v->input_read_done = 1;
     } else {
         ff_format_io_close(v->parent, &v->input);
