@@ -1487,7 +1487,8 @@ reload:
         return copy_size;
     }
 
-    ret = read_from_url(v, current_segment(v), buf, buf_size, READ_NORMAL);
+    seg = current_segment(v);
+    ret = read_from_url(v, seg, buf, buf_size, READ_NORMAL);
     if (ret > 0) {
         if (just_opened && v->is_id3_timestamped != 0) {
             /* Intercept ID3 tags here, elementary audio streams are required
