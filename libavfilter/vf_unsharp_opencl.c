@@ -331,7 +331,8 @@ static int unsharp_opencl_filter_frame(AVFilterLink *inlink, AVFrame *input)
         }
 
         av_log(avctx, AV_LOG_DEBUG, "Run kernel on plane %d "
-               "(%zux%zu).\n", p, global_work[0], global_work[1]);
+               "(%"SIZE_SPECIFIER"x%"SIZE_SPECIFIER").\n",
+               p, global_work[0], global_work[1]);
 
         cle = clEnqueueNDRangeKernel(ctx->command_queue, ctx->kernel, 2, NULL,
                                      global_work, ctx->global ? NULL : local_work,

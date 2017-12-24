@@ -456,9 +456,12 @@ static av_always_inline void blend_image_packed_rgb(AVFilterContext *ctx,
             default:
                 // main_value = main_value * (1 - alpha) + overlay_value * alpha
                 // since alpha is in the range 0-255, the result must divided by 255
-                d[dr] = is_straight ? FAST_DIV255(d[dr] * (255 - alpha) + S[sr] * alpha) : FAST_DIV255(d[dr] * (255 - alpha) + S[sr]);
-                d[dg] = is_straight ? FAST_DIV255(d[dg] * (255 - alpha) + S[sg] * alpha) : FAST_DIV255(d[dr] * (255 - alpha) + S[sr]);
-                d[db] = is_straight ? FAST_DIV255(d[db] * (255 - alpha) + S[sb] * alpha) : FAST_DIV255(d[dr] * (255 - alpha) + S[sr]);
+                d[dr] = is_straight ? FAST_DIV255(d[dr] * (255 - alpha) + S[sr] * alpha) :
+                        FFMIN(FAST_DIV255(d[dr] * (255 - alpha)) + S[sr], 255);
+                d[dg] = is_straight ? FAST_DIV255(d[dg] * (255 - alpha) + S[sg] * alpha) :
+                        FFMIN(FAST_DIV255(d[dg] * (255 - alpha)) + S[sg], 255);
+                d[db] = is_straight ? FAST_DIV255(d[db] * (255 - alpha) + S[sb] * alpha) :
+                        FFMIN(FAST_DIV255(d[db] * (255 - alpha)) + S[sb], 255);
             }
             if (main_has_alpha) {
                 switch (alpha) {
@@ -742,22 +745,22 @@ static void blend_image_gbrap_pm(AVFilterContext *ctx, AVFrame *dst, const AVFra
 
 static void blend_image_rgb(AVFilterContext *ctx, AVFrame *dst, const AVFrame *src, int x, int y)
 {
-    blend_image_packed_rgb(ctx, dst, src, 0, x, y, 0);
+    blend_image_packed_rgb(ctx, dst, src, 0, x, y, 1);
 }
 
 static void blend_image_rgba(AVFilterContext *ctx, AVFrame *dst, const AVFrame *src, int x, int y)
 {
-    blend_image_packed_rgb(ctx, dst, src, 1, x, y, 0);
+    blend_image_packed_rgb(ctx, dst, src, 1, x, y, 1);
 }
 
 static void blend_image_rgb_pm(AVFilterContext *ctx, AVFrame *dst, const AVFrame *src, int x, int y)
 {
-    blend_image_packed_rgb(ctx, dst, src, 0, x, y, 1);
+    blend_image_packed_rgb(ctx, dst, src, 0, x, y, 0);
 }
 
 static void blend_image_rgba_pm(AVFilterContext *ctx, AVFrame *dst, const AVFrame *src, int x, int y)
 {
-    blend_image_packed_rgb(ctx, dst, src, 1, x, y, 1);
+    blend_image_packed_rgb(ctx, dst, src, 1, x, y, 0);
 }
 
 static int config_input_main(AVFilterLink *inlink)

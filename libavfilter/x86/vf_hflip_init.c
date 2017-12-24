@@ -24,7 +24,9 @@
 #include "libavfilter/hflip.h"
 
 void ff_hflip_byte_ssse3(const uint8_t *src, uint8_t *dst, int w);
+void ff_hflip_byte_avx2(const uint8_t *src, uint8_t *dst, int w);
 void ff_hflip_short_ssse3(const uint8_t *src, uint8_t *dst, int w);
+void ff_hflip_short_avx2(const uint8_t *src, uint8_t *dst, int w);
 
 av_cold void ff_hflip_init_x86(FlipContext *s, int step[4], int nb_planes)
 {
@@ -32,10 +34,20 @@ av_cold void ff_hflip_init_x86(FlipContext *s, int step[4], int nb_planes)
     int i;
 
     for (i = 0; i < nb_planes; i++) {
-        if (EXTERNAL_SSSE3(cpu_flags) && step[i] == 1) {
-            s->flip_line[i] = ff_hflip_byte_ssse3;
-        } else if (EXTERNAL_SSSE3(cpu_flags) && step[i] == 2) {
-            s->flip_line[i] = ff_hflip_short_ssse3;
+        if (step[i] == 1) {
+            if (EXTERNAL_SSSE3(cpu_flags)) {
+                s->flip_line[i] = ff_hflip_byte_ssse3;
+            }
+            if (EXTERNAL_AVX2_FAST(cpu_flags)) {
+                s->flip_line[i] = ff_hflip_byte_avx2;
+            }
+        } else if (step[i] == 2) {
+            if (EXTERNAL_SSSE3(cpu_flags)) {
+                s->flip_line[i] = ff_hflip_short_ssse3;
+            }
+            if (EXTERNAL_AVX2_FAST(cpu_flags)) {
+                s->flip_line[i] = ff_hflip_short_avx2;
+            }
         }
     }
 }

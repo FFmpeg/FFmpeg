@@ -358,7 +358,7 @@ static void output_segment_list(OutputStream *os, AVIOContext *out, DASHContext 
             Segment *seg = os->segments[i];
             double duration = (double) seg->duration / timescale;
             if (target_duration <= duration)
-                target_duration = hls_get_int_from_double(duration);
+                target_duration = lrint(duration);
         }
 
         ff_hls_write_playlist_header(out_hls, 6, -1, target_duration,
@@ -759,7 +759,8 @@ static int write_manifest(AVFormatContext *s, int final)
             char playlist_file[64];
             AVStream *st = s->streams[i];
             get_hls_playlist_name(playlist_file, sizeof(playlist_file), NULL, i);
-            ff_hls_write_stream_info(st, out, st->codecpar->bit_rate, playlist_file);
+            ff_hls_write_stream_info(st, out, st->codecpar->bit_rate,
+                    playlist_file, NULL);
         }
         avio_close(out);
         if (use_rename)

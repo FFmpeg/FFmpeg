@@ -36,14 +36,9 @@ typedef enum {
     PLAYLIST_TYPE_NB,
 } PlaylistType;
 
-static inline int hls_get_int_from_double(double val)
-{
-    return (int)((val - (int)val) >= 0.001) ? (int)(val + 1) : (int)val;
-}
-
 void ff_hls_write_playlist_version(AVIOContext *out, int version);
 void ff_hls_write_stream_info(AVStream *st, AVIOContext *out,
-                              int bandwidth, char *filename);
+                              int bandwidth, char *filename, char *agroup);
 void ff_hls_write_playlist_header(AVIOContext *out, int version, int allowcache,
                                   int target_duration, int64_t sequence,
                                   uint32_t playlist_type);

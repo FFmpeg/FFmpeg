@@ -1127,6 +1127,8 @@ Q-Factor
 octave
 @item s
 slope
+@item k
+kHz
 @end table
 
 @item width, w
@@ -1134,6 +1136,23 @@ Specify the band-width of a filter in width_type units.
 
 @item channels, c
 Specify which channels to filter, by default all available are filtered.
+@end table
+
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item frequency, f
+Change allpass frequency.
+Syntax for the command is : "@var{frequency}"
+
+@item width_type, t
+Change allpass width_type.
+Syntax for the command is : "@var{width_type}"
+
+@item width, w
+Change allpass width.
+Syntax for the command is : "@var{width}"
 @end table
 
 @section aloop
@@ -1867,6 +1886,8 @@ Q-Factor
 octave
 @item s
 slope
+@item k
+kHz
 @end table
 
 @item width, w
@@ -1874,6 +1895,23 @@ Specify the band-width of a filter in width_type units.
 
 @item channels, c
 Specify which channels to filter, by default all available are filtered.
+@end table
+
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item frequency, f
+Change bandpass frequency.
+Syntax for the command is : "@var{frequency}"
+
+@item width_type, t
+Change bandpass width_type.
+Syntax for the command is : "@var{width_type}"
+
+@item width, w
+Change bandpass width.
+Syntax for the command is : "@var{width}"
 @end table
 
 @section bandreject
@@ -1899,6 +1937,8 @@ Q-Factor
 octave
 @item s
 slope
+@item k
+kHz
 @end table
 
 @item width, w
@@ -1906,6 +1946,23 @@ Specify the band-width of a filter in width_type units.
 
 @item channels, c
 Specify which channels to filter, by default all available are filtered.
+@end table
+
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item frequency, f
+Change bandreject frequency.
+Syntax for the command is : "@var{frequency}"
+
+@item width_type, t
+Change bandreject width_type.
+Syntax for the command is : "@var{width_type}"
+
+@item width, w
+Change bandreject width.
+Syntax for the command is : "@var{width}"
 @end table
 
 @section bass
@@ -1938,6 +1995,8 @@ Q-Factor
 octave
 @item s
 slope
+@item k
+kHz
 @end table
 
 @item width, w
@@ -1947,6 +2006,27 @@ Determine how steep is the filter's shelf transition.
 Specify which channels to filter, by default all available are filtered.
 @end table
 
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item frequency, f
+Change bass frequency.
+Syntax for the command is : "@var{frequency}"
+
+@item width_type, t
+Change bass width_type.
+Syntax for the command is : "@var{width_type}"
+
+@item width, w
+Change bass width.
+Syntax for the command is : "@var{width}"
+
+@item gain, g
+Change bass gain.
+Syntax for the command is : "@var{gain}"
+@end table
+
 @section biquad
 
 Apply a biquad IIR filter with the given coefficients.
@@ -1954,6 +2034,20 @@ Where @var{b0}, @var{b1}, @var{b2} and @var{a0}, @var{a1}, @var{a2}
 are the numerator and denominator coefficients respectively.
 and @var{channels}, @var{c} specify which channels to filter, by default all
 available are filtered.
+
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item a0
+@item a1
+@item a2
+@item b0
+@item b1
+@item b2
+Change biquad parameter.
+Syntax for the command is : "@var{value}"
+@end table
 
 @section bs2b
 Bauer stereo to binaural transformation, which improves headphone listening of
@@ -2556,6 +2650,8 @@ Q-Factor
 octave
 @item s
 slope
+@item k
+kHz
 @end table
 
 @item width, w
@@ -2583,6 +2679,27 @@ Apply 2 dB gain at 1000 Hz with Q 1 and attenuate 5 dB at 100 Hz with Q 2:
 equalizer=f=1000:t=q:w=1:g=2,equalizer=f=100:t=q:w=2:g=-5
 @end example
 @end itemize
+
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item frequency, f
+Change equalizer frequency.
+Syntax for the command is : "@var{frequency}"
+
+@item width_type, t
+Change equalizer width_type.
+Syntax for the command is : "@var{width_type}"
+
+@item width, w
+Change equalizer width.
+Syntax for the command is : "@var{width}"
+
+@item gain, g
+Change equalizer gain.
+Syntax for the command is : "@var{gain}"
+@end table
 
 @section extrastereo
 
@@ -2972,6 +3089,8 @@ Q-Factor
 octave
 @item s
 slope
+@item k
+kHz
 @end table
 
 @item width, w
@@ -2981,6 +3100,23 @@ The default is 0.707q and gives a Butterworth response.
 
 @item channels, c
 Specify which channels to filter, by default all available are filtered.
+@end table
+
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item frequency, f
+Change highpass frequency.
+Syntax for the command is : "@var{frequency}"
+
+@item width_type, t
+Change highpass width_type.
+Syntax for the command is : "@var{width_type}"
+
+@item width, w
+Change highpass width.
+Syntax for the command is : "@var{width}"
 @end table
 
 @section join
@@ -3261,6 +3397,8 @@ Q-Factor
 octave
 @item s
 slope
+@item k
+kHz
 @end table
 
 @item width, w
@@ -3280,6 +3418,23 @@ Lowpass only LFE channel, it LFE is not present it does nothing:
 lowpass=c=LFE
 @end example
 @end itemize
+
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item frequency, f
+Change lowpass frequency.
+Syntax for the command is : "@var{frequency}"
+
+@item width_type, t
+Change lowpass width_type.
+Syntax for the command is : "@var{width_type}"
+
+@item width, w
+Change lowpass width.
+Syntax for the command is : "@var{width}"
+@end table
 
 @section lv2
 
@@ -4153,6 +4308,8 @@ Q-Factor
 octave
 @item s
 slope
+@item k
+kHz
 @end table
 
 @item width, w
@@ -4160,6 +4317,27 @@ Determine how steep is the filter's shelf transition.
 
 @item channels, c
 Specify which channels to filter, by default all available are filtered.
+@end table
+
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item frequency, f
+Change treble frequency.
+Syntax for the command is : "@var{frequency}"
+
+@item width_type, t
+Change treble width_type.
+Syntax for the command is : "@var{width_type}"
+
+@item width, w
+Change treble width.
+Syntax for the command is : "@var{width}"
+
+@item gain, g
+Change treble gain.
+Syntax for the command is : "@var{gain}"
 @end table
 
 @section tremolo
@@ -8943,7 +9121,7 @@ Specify the level at which a scene change is detected as a value between
 0 and 100 to indicate a new scene; a low value reflects a low
 probability for the current frame to introduce a new scene, while a higher
 value means the current frame is more likely to be one.
-The default is @code{7}.
+The default is @code{8.2}.
 
 @item flags
 Specify flags influencing the filter process.

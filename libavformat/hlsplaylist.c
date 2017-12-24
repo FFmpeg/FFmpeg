@@ -36,7 +36,7 @@ void ff_hls_write_playlist_version(AVIOContext *out, int version) {
 }
 
 void ff_hls_write_stream_info(AVStream *st, AVIOContext *out,
-                              int bandwidth, char *filename) {
+                              int bandwidth, char *filename, char *agroup) {
     if (!out || !filename)
         return;
 
@@ -50,6 +50,8 @@ void ff_hls_write_stream_info(AVStream *st, AVIOContext *out,
     if (st && st->codecpar->width > 0 && st->codecpar->height > 0)
         avio_printf(out, ",RESOLUTION=%dx%d", st->codecpar->width,
                 st->codecpar->height);
+    if (agroup && strlen(agroup) > 0)
+        avio_printf(out, ",AUDIO=\"group_%s\"", agroup);
     avio_printf(out, "\n%s\n\n", filename);
 }
 
