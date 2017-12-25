@@ -917,21 +917,24 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
     %assign avx_enabled 0
     %define RESET_MM_PERMUTATION INIT_XMM %1
     %define mmsize 16
-    %define num_mmregs 8
-    %if ARCH_X86_64
-        %define num_mmregs 32
-    %endif
     %define mova movdqa
     %define movu movdqu
     %define movh movq
     %define movnta movntdq
+    INIT_CPUFLAGS %1
+    %define num_mmregs 8
+    %if ARCH_X86_64
+        %define num_mmregs 16
+        %if cpuflag(avx512)
+            %define num_mmregs 32
+        %endif
+    %endif
     %assign %%i 0
     %rep num_mmregs
         CAT_XDEFINE m, %%i, xmm %+ %%i
         CAT_XDEFINE nnxmm, %%i, %%i
         %assign %%i %%i+1
     %endrep
-    INIT_CPUFLAGS %1
     %if WIN64
         ; Swap callee-saved registers with volatile registers
         AVX512_MM_PERMUTATION 6
@@ -942,21 +945,24 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
     %assign avx_enabled 1
     %define RESET_MM_PERMUTATION INIT_YMM %1
     %define mmsize 32
-    %define num_mmregs 8
-    %if ARCH_X86_64
-        %define num_mmregs 32
-    %endif
     %define mova movdqa
     %define movu movdqu
     %undef movh
     %define movnta movntdq
+    INIT_CPUFLAGS %1
+    %define num_mmregs 8
+    %if ARCH_X86_64
+        %define num_mmregs 16
+        %if cpuflag(avx512)
+            %define num_mmregs 32
+        %endif
+    %endif
     %assign %%i 0
     %rep num_mmregs
         CAT_XDEFINE m, %%i, ymm %+ %%i
         CAT_XDEFINE nnymm, %%i, %%i
         %assign %%i %%i+1
     %endrep
-    INIT_CPUFLAGS %1
     AVX512_MM_PERMUTATION
 %endmacro
 
