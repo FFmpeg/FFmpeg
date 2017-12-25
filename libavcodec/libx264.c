@@ -272,6 +272,7 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
                       int *got_packet)
 {
     X264Context *x4 = ctx->priv_data;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(ctx->pix_fmt);
     x264_nal_t *nal;
     int nnal, i, ret;
     x264_picture_t pic_out = {0};
@@ -279,7 +280,7 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
 
     x264_picture_init( &x4->pic );
     x4->pic.img.i_csp   = x4->params.i_csp;
-    if (x264_bit_depth > 8)
+    if (desc->comp[0].depth > 8)
         x4->pic.img.i_csp |= X264_CSP_HIGH_DEPTH;
     x4->pic.img.i_plane = avfmt2_num_planes(ctx->pix_fmt);
 
