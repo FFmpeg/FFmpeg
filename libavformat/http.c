@@ -917,6 +917,8 @@ static int process_line(URLContext *h, char *line, int line_count,
             }
             av_log(h, AV_LOG_TRACE, "HTTP version string: %s\n", version);
         } else {
+            if (av_strncasecmp(p, "HTTP/1.0", 8) == 0)
+                s->willclose = 1;
             while (!av_isspace(*p) && *p != '\0')
                 p++;
             while (av_isspace(*p))
