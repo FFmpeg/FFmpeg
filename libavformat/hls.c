@@ -611,6 +611,9 @@ static void update_options(char **dest, const char *name, void *src)
 static int open_url_keepalive(AVFormatContext *s, AVIOContext **pb,
                               const char *url)
 {
+#if !CONFIG_HTTP_PROTOCOL
+    return AVERROR_PROTOCOL_NOT_FOUND;
+#else
     int ret;
     URLContext *uc = ffio_geturlcontext(*pb);
     av_assert0(uc);
@@ -620,6 +623,7 @@ static int open_url_keepalive(AVFormatContext *s, AVIOContext **pb,
         ff_format_io_close(s, pb);
     }
     return ret;
+#endif
 }
 
 static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
