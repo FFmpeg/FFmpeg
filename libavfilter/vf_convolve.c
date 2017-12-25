@@ -158,39 +158,37 @@ static void fft_horizontal(ConvolveContext *s, FFTComplex *fft_hdata,
     const int iw = (n - w) / 2, ih = (n - h) / 2;
     int y, x;
 
-    for (y = 0; y < n; y++) {
-        for (x = 0; x < n; x++) {
-            fft_hdata[y * n + x].re = 0;
-            fft_hdata[y * n + x].im = 0;
-        }
-    }
-
     if (s->depth == 8) {
         for (y = 0; y < h; y++) {
             const uint8_t *src = in->data[plane] + in->linesize[plane] * y;
 
             for (x = 0; x < w; x++) {
                 fft_hdata[(y + ih) * n + iw + x].re = src[x] * scale;
+                fft_hdata[(y + ih) * n + iw + x].im = 0;
             }
 
             for (x = 0; x < iw; x++) {
                 fft_hdata[(y + ih) * n + x].re = fft_hdata[(y + ih) * n + iw].re;
+                fft_hdata[(y + ih) * n + x].im = 0;
             }
 
             for (x = n - iw; x < n; x++) {
                 fft_hdata[(y + ih) * n + x].re = fft_hdata[(y + ih) * n + n - iw - 1].re;
+                fft_hdata[(y + ih) * n + x].im = 0;
             }
         }
 
         for (y = 0; y < ih; y++) {
             for (x = 0; x < n; x++) {
                 fft_hdata[y * n + x].re = fft_hdata[ih * n + x].re;
+                fft_hdata[y * n + x].im = 0;
             }
         }
 
         for (y = n - ih; y < n; y++) {
             for (x = 0; x < n; x++) {
                 fft_hdata[y * n + x].re = fft_hdata[(n - ih - 1) * n + x].re;
+                fft_hdata[y * n + x].im = 0;
             }
         }
     } else {
@@ -199,26 +197,31 @@ static void fft_horizontal(ConvolveContext *s, FFTComplex *fft_hdata,
 
             for (x = 0; x < w; x++) {
                 fft_hdata[(y + ih) * n + iw + x].re = src[x] * scale;
+                fft_hdata[(y + ih) * n + iw + x].im = 0;
             }
 
             for (x = 0; x < iw; x++) {
                 fft_hdata[(y + ih) * n + x].re = fft_hdata[(y + ih) * n + iw].re;
+                fft_hdata[(y + ih) * n + x].im = 0;
             }
 
             for (x = n - iw; x < n; x++) {
                 fft_hdata[(y + ih) * n + x].re = fft_hdata[(y + ih) * n + n - iw - 1].re;
+                fft_hdata[(y + ih) * n + x].im = 0;
             }
         }
 
         for (y = 0; y < ih; y++) {
             for (x = 0; x < n; x++) {
                 fft_hdata[y * n + x].re = fft_hdata[ih * n + x].re;
+                fft_hdata[y * n + x].im = 0;
             }
         }
 
         for (y = n - ih; y < n; y++) {
             for (x = 0; x < n; x++) {
                 fft_hdata[y * n + x].re = fft_hdata[(n - ih - 1) * n + x].re;
+                fft_hdata[y * n + x].im = 0;
             }
         }
     }
