@@ -15,6 +15,15 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2017-xx-xx - xxxxxxx - lavr 4.0.0 - avresample.h
+  Deprecate the entire library. Merged years ago to provide compatibility
+  with Libav, it remained unmaintained by the FFmpeg project and duplicated
+  functionality provided by libswresample.
+
+  In order to improve consistency and reduce attack surface, it has been deprecated.
+  Users of this library are asked to migrate to libswresample, which, as well as
+  providing more functionality, is faster and has higher accuracy.
+
 2017-xx-xx - xxxxxxx - lavc 58.9.100 - avcodec.h
   Deprecate av_lockmgr_register(). You need to build FFmpeg with threading
   support enabled to get basic thread-safety (which is the default build
