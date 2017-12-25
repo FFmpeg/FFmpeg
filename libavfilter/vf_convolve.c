@@ -153,7 +153,18 @@ static int config_input_impulse(AVFilterLink *inlink)
 }
 
 static void fft_horizontal(ConvolveContext *s, FFTComplex *fft_hdata,
-                           AVFrame *in, int w, int h, int n, int plane, float scale)
+                           int n, int plane)
+{
+    int y;
+
+    for (y = 0; y < n; y++) {
+        av_fft_permute(s->fft[plane], fft_hdata + y * n);
+        av_fft_calc(s->fft[plane], fft_hdata + y * n);
+    }
+}
+
+static void get_input(ConvolveContext *s, FFTComplex *fft_hdata,
+                      AVFrame *in, int w, int h, int n, int plane, float scale)
 {
     const int iw = (n - w) / 2, ih = (n - h) / 2;
     int y, x;
@@ -225,11 +236,6 @@ static void fft_horizontal(ConvolveContext *s, FFTComplex *fft_hdata,
             }
         }
     }
-
-    for (y = 0; y < n; y++) {
-        av_fft_permute(s->fft[plane], fft_hdata + y * n);
-        av_fft_calc(s->fft[plane], fft_hdata + y * n);
-    }
 }
 
 static void fft_vertical(ConvolveContext *s, FFTComplex *fft_hdata, FFTComplex *fft_vdata,
@@ -263,8 +269,19 @@ static void ifft_vertical(ConvolveContext *s, int n, int plane)
     }
 }
 
-static void ifft_horizontal(ConvolveContext *s, AVFrame *out,
-                            int w, int h, int n, int plane)
+static void ifft_horizontal(ConvolveContext *s, int n, int plane)
+{
+    FFTComplex *input = s->fft_hdata[plane];
+    int y;
+
+    for (y = 0; y < n; y++) {
+        av_fft_permute(s->ifft[plane], input + y * n);
+        av_fft_calc(s->ifft[plane], input + y * n);
+    }
+}
+
+static void get_output(ConvolveContext *s, AVFrame *out,
+                       int w, int h, int n, int plane)
 {
     FFTComplex *input = s->fft_hdata[plane];
     const float scale = 1.f / (n * n);
@@ -272,11 +289,6 @@ static void ifft_horizontal(ConvolveContext *s, AVFrame *out,
     const int hh = h / 2;
     const int hw = w / 2;
     int y, x;
-
-    for (y = 0; y < n; y++) {
-        av_fft_permute(s->ifft[plane], input + y * n);
-        av_fft_calc(s->ifft[plane], input + y * n);
-    }
 
     if (s->depth == 8) {
         for (y = 0; y < hh; y++) {
@@ -349,7 +361,8 @@ static int do_convolve(FFFrameSync *fs)
             continue;
         }
 
-        fft_horizontal(s, s->fft_hdata[plane], mainpic, w, h, n, plane, 1.f);
+        get_input(s, s->fft_hdata[plane], mainpic, w, h, n, plane, 1.f);
+        fft_horizontal(s, s->fft_hdata[plane], n, plane);
         fft_vertical(s, s->fft_hdata[plane], s->fft_vdata[plane],
                      n, plane);
 
@@ -371,7 +384,8 @@ static int do_convolve(FFFrameSync *fs)
             }
             total = FFMAX(1, total);
 
-            fft_horizontal(s, s->fft_hdata_impulse[plane], impulsepic, w, h, n, plane, 1 / total);
+            get_input(s, s->fft_hdata_impulse[plane], impulsepic, w, h, n, plane, 1 / total);
+            fft_horizontal(s, s->fft_hdata_impulse[plane], n, plane);
             fft_vertical(s, s->fft_hdata_impulse[plane], s->fft_vdata_impulse[plane],
                          n, plane);
 
@@ -395,7 +409,8 @@ static int do_convolve(FFFrameSync *fs)
         }
 
         ifft_vertical(s, n, plane);
-        ifft_horizontal(s, mainpic, w, h, n, plane);
+        ifft_horizontal(s, n, plane);
+        get_output(s, mainpic, w, h, n, plane);
     }
 
     return ff_filter_frame(outlink, mainpic);
