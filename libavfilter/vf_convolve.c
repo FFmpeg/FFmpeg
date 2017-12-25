@@ -377,6 +377,35 @@ static void get_output(ConvolveContext *s, AVFrame *out,
     }
 }
 
+static int complex_multiply(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ThreadData *td = arg;
+    FFTComplex *input = td->hdata;
+    FFTComplex *filter = td->vdata;
+    const int n = td->n;
+    int start = (n *  jobnr   ) / nb_jobs;
+    int end = (n * (jobnr+1)) / nb_jobs;
+    int y, x;
+
+    for (y = start; y < end; y++) {
+        int yn = y * n;
+
+        for (x = 0; x < n; x++) {
+            FFTSample re, im, ire, iim;
+
+            re = input[yn + x].re;
+            im = input[yn + x].im;
+            ire = filter[yn + x].re;
+            iim = filter[yn + x].im;
+
+            input[yn + x].re = ire * re - iim * im;
+            input[yn + x].im = iim * re + ire * im;
+        }
+    }
+
+    return 0;
+}
+
 static int do_convolve(FFFrameSync *fs)
 {
     AVFilterContext *ctx = fs->parent;
@@ -442,21 +471,10 @@ static int do_convolve(FFFrameSync *fs)
             s->got_impulse[plane] = 1;
         }
 
-        for (y = 0; y < n; y++) {
-            int yn = y * n;
+        td.hdata = input;
+        td.vdata = filter;
 
-            for (x = 0; x < n; x++) {
-                FFTSample re, im, ire, iim;
-
-                re = input[yn + x].re;
-                im = input[yn + x].im;
-                ire = filter[yn + x].re;
-                iim = filter[yn + x].im;
-
-                input[yn + x].re = ire * re - iim * im;
-                input[yn + x].im = iim * re + ire * im;
-            }
-        }
+        ctx->internal->execute(ctx, complex_multiply, &td, NULL, FFMIN3(MAX_THREADS, n, ff_filter_get_nb_threads(ctx)));
 
         td.hdata = s->fft_hdata[plane];
         td.vdata = s->fft_vdata[plane];
