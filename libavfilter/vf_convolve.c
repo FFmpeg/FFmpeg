@@ -266,6 +266,7 @@ static void ifft_vertical(ConvolveContext *s, int n, int plane)
 static void ifft_horizontal(ConvolveContext *s, AVFrame *out,
                             int w, int h, int n, int plane)
 {
+    FFTComplex *input = s->fft_hdata[plane];
     const float scale = 1.f / (n * n);
     const int max = (1 << s->depth) - 1;
     const int hh = h / 2;
@@ -273,51 +274,51 @@ static void ifft_horizontal(ConvolveContext *s, AVFrame *out,
     int y, x;
 
     for (y = 0; y < n; y++) {
-        av_fft_permute(s->ifft[plane], s->fft_hdata[plane] + y * n);
-        av_fft_calc(s->ifft[plane], s->fft_hdata[plane] + y * n);
+        av_fft_permute(s->ifft[plane], input + y * n);
+        av_fft_calc(s->ifft[plane], input + y * n);
     }
 
     if (s->depth == 8) {
         for (y = 0; y < hh; y++) {
             uint8_t *dst = out->data[plane] + (y + hh) * out->linesize[plane] + hw;
             for (x = 0; x < hw; x++)
-                dst[x] = av_clip_uint8(s->fft_hdata[plane][y * n + x].re * scale);
+                dst[x] = av_clip_uint8(input[y * n + x].re * scale);
         }
         for (y = 0; y < hh; y++) {
             uint8_t *dst = out->data[plane] + (y + hh) * out->linesize[plane];
             for (x = 0; x < hw; x++)
-                dst[x] = av_clip_uint8(s->fft_hdata[plane][y * n + n - hw + x].re * scale);
+                dst[x] = av_clip_uint8(input[y * n + n - hw + x].re * scale);
         }
         for (y = 0; y < hh; y++) {
             uint8_t *dst = out->data[plane] + y * out->linesize[plane] + hw;
             for (x = 0; x < hw; x++)
-                dst[x] = av_clip_uint8(s->fft_hdata[plane][(n - hh + y) * n + x].re * scale);
+                dst[x] = av_clip_uint8(input[(n - hh + y) * n + x].re * scale);
         }
         for (y = 0; y < hh; y++) {
             uint8_t *dst = out->data[plane] + y * out->linesize[plane];
             for (x = 0; x < hw; x++)
-                dst[x] = av_clip_uint8(s->fft_hdata[plane][(n - hh + y) * n + n - hw + x].re * scale);
+                dst[x] = av_clip_uint8(input[(n - hh + y) * n + n - hw + x].re * scale);
         }
     } else {
         for (y = 0; y < hh; y++) {
             uint16_t *dst = (uint16_t *)(out->data[plane] + (y + hh) * out->linesize[plane] + hw * 2);
             for (x = 0; x < hw; x++)
-                dst[x] = av_clip(s->fft_hdata[plane][y * n + x].re * scale, 0, max);
+                dst[x] = av_clip(input[y * n + x].re * scale, 0, max);
         }
         for (y = 0; y < hh; y++) {
             uint16_t *dst = (uint16_t *)(out->data[plane] + (y + hh) * out->linesize[plane]);
             for (x = 0; x < hw; x++)
-                dst[x] = av_clip(s->fft_hdata[plane][y * n + n - hw + x].re * scale, 0, max);
+                dst[x] = av_clip(input[y * n + n - hw + x].re * scale, 0, max);
         }
         for (y = 0; y < hh; y++) {
             uint16_t *dst = (uint16_t *)(out->data[plane] + y * out->linesize[plane] + hw * 2);
             for (x = 0; x < hw; x++)
-                dst[x] = av_clip(s->fft_hdata[plane][(n - hh + y) * n + x].re * scale, 0, max);
+                dst[x] = av_clip(input[(n - hh + y) * n + x].re * scale, 0, max);
         }
         for (y = 0; y < hh; y++) {
             uint16_t *dst = (uint16_t *)(out->data[plane] + y * out->linesize[plane]);
             for (x = 0; x < hw; x++)
-                dst[x] = av_clip(s->fft_hdata[plane][(n - hh + y) * n + n - hw + x].re * scale, 0, max);
+                dst[x] = av_clip(input[(n - hh + y) * n + n - hw + x].re * scale, 0, max);
         }
     }
 }
@@ -337,6 +338,8 @@ static int do_convolve(FFFrameSync *fs)
         return ff_filter_frame(outlink, mainpic);
 
     for (plane = 0; plane < s->nb_planes; plane++) {
+        FFTComplex *filter = s->fft_vdata_impulse[plane];
+        FFTComplex *input = s->fft_vdata[plane];
         const int n = s->fft_len[plane];
         const int w = s->planewidth[plane];
         const int h = s->planeheight[plane];
@@ -376,16 +379,18 @@ static int do_convolve(FFFrameSync *fs)
         }
 
         for (y = 0; y < n; y++) {
+            int yn = y * n;
+
             for (x = 0; x < n; x++) {
                 FFTSample re, im, ire, iim;
 
-                re = s->fft_vdata[plane][y*n + x].re;
-                im = s->fft_vdata[plane][y*n + x].im;
-                ire = s->fft_vdata_impulse[plane][y*n + x].re;
-                iim = s->fft_vdata_impulse[plane][y*n + x].im;
+                re = input[yn + x].re;
+                im = input[yn + x].im;
+                ire = filter[yn + x].re;
+                iim = filter[yn + x].im;
 
-                s->fft_vdata[plane][y*n + x].re = ire * re - iim * im;
-                s->fft_vdata[plane][y*n + x].im = iim * re + ire * im;
+                input[yn + x].re = ire * re - iim * im;
+                input[yn + x].im = iim * re + ire * im;
             }
         }
 
