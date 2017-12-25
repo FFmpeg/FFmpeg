@@ -323,9 +323,11 @@ int ff_http_do_new_request(URLContext *h, const char *uri)
         return AVERROR(EINVAL);
     }
 
-    ret = http_shutdown(h, h->flags);
-    if (ret < 0)
-        return ret;
+    if (!s->end_chunked_post) {
+        ret = http_shutdown(h, h->flags);
+        if (ret < 0)
+            return ret;
+    }
 
     if (s->willclose)
         return AVERROR_EOF;
