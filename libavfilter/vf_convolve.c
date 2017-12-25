@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <float.h>
+
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -51,8 +53,11 @@ typedef struct ConvolveContext {
     int depth;
     int planes;
     int impulse;
+    float noise;
     int nb_planes;
     int got_impulse[4];
+
+    int (*filter)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } ConvolveContext;
 
 #define OFFSET(x) offsetof(ConvolveContext, x)
@@ -63,10 +68,9 @@ static const AVOption convolve_options[] = {
     { "impulse", "when to process impulses",                OFFSET(impulse),  AV_OPT_TYPE_INT,   {.i64=1}, 0,  1, FLAGS, "impulse" },
     {   "first", "process only first impulse, ignore rest", 0,                AV_OPT_TYPE_CONST, {.i64=0}, 0,  0, FLAGS, "impulse" },
     {   "all",   "process all impulses",                    0,                AV_OPT_TYPE_CONST, {.i64=1}, 0,  0, FLAGS, "impulse" },
+    { "noise",   "set noise",                               OFFSET(noise),    AV_OPT_TYPE_FLOAT, {.dbl=0.0000001}, 0,  1, FLAGS },
     { NULL },
 };
-
-FRAMESYNC_DEFINE_CLASS(convolve, ConvolveContext, fs);
 
 static int query_formats(AVFilterContext *ctx)
 {
@@ -322,11 +326,9 @@ static int ifft_horizontal(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     return 0;
 }
 
-static void get_output(ConvolveContext *s, AVFrame *out,
-                       int w, int h, int n, int plane)
+static void get_output(ConvolveContext *s, FFTComplex *input, AVFrame *out,
+                       int w, int h, int n, int plane, float scale)
 {
-    FFTComplex *input = s->fft_hdata[plane];
-    const float scale = 1.f / (n * n);
     const int max = (1 << s->depth) - 1;
     const int hh = h / 2;
     const int hw = w / 2;
@@ -379,9 +381,11 @@ static void get_output(ConvolveContext *s, AVFrame *out,
 
 static int complex_multiply(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
+    ConvolveContext *s = ctx->priv;
     ThreadData *td = arg;
     FFTComplex *input = td->hdata;
     FFTComplex *filter = td->vdata;
+    const float noise = s->noise;
     const int n = td->n;
     int start = (n * jobnr) / nb_jobs;
     int end = (n * (jobnr+1)) / nb_jobs;
@@ -395,11 +399,43 @@ static int complex_multiply(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
 
             re = input[yn + x].re;
             im = input[yn + x].im;
-            ire = filter[yn + x].re;
+            ire = filter[yn + x].re + noise;
             iim = filter[yn + x].im;
 
             input[yn + x].re = ire * re - iim * im;
             input[yn + x].im = iim * re + ire * im;
+        }
+    }
+
+    return 0;
+}
+
+static int complex_divide(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ConvolveContext *s = ctx->priv;
+    ThreadData *td = arg;
+    FFTComplex *input = td->hdata;
+    FFTComplex *filter = td->vdata;
+    const float noise = s->noise;
+    const int n = td->n;
+    int start = (n * jobnr) / nb_jobs;
+    int end = (n * (jobnr+1)) / nb_jobs;
+    int y, x;
+
+    for (y = start; y < end; y++) {
+        int yn = y * n;
+
+        for (x = 0; x < n; x++) {
+            FFTSample re, im, ire, iim, div;
+
+            re = input[yn + x].re;
+            im = input[yn + x].im;
+            ire = filter[yn + x].re;
+            iim = filter[yn + x].im;
+            div = ire * ire + iim * iim + noise;
+
+            input[yn + x].re = (ire * re + iim * im) / div;
+            input[yn + x].im = (ire * im - iim * re) / div;
         }
     }
 
@@ -460,7 +496,7 @@ static int do_convolve(FFFrameSync *fs)
             }
             total = FFMAX(1, total);
 
-            get_input(s, s->fft_hdata_impulse[plane], impulsepic, w, h, n, plane, 1 / total);
+            get_input(s, s->fft_hdata_impulse[plane], impulsepic, w, h, n, plane, 1.f / total);
 
             td.hdata = s->fft_hdata_impulse[plane];
             td.vdata = s->fft_vdata_impulse[plane];
@@ -474,14 +510,15 @@ static int do_convolve(FFFrameSync *fs)
         td.hdata = input;
         td.vdata = filter;
 
-        ctx->internal->execute(ctx, complex_multiply, &td, NULL, FFMIN3(MAX_THREADS, n, ff_filter_get_nb_threads(ctx)));
+        ctx->internal->execute(ctx, s->filter, &td, NULL, FFMIN3(MAX_THREADS, n, ff_filter_get_nb_threads(ctx)));
 
         td.hdata = s->fft_hdata[plane];
         td.vdata = s->fft_vdata[plane];
 
         ctx->internal->execute(ctx, ifft_vertical, &td, NULL, FFMIN3(MAX_THREADS, n, ff_filter_get_nb_threads(ctx)));
         ctx->internal->execute(ctx, ifft_horizontal, &td, NULL, FFMIN3(MAX_THREADS, n, ff_filter_get_nb_threads(ctx)));
-        get_output(s, mainpic, w, h, n, plane);
+
+        get_output(s, s->fft_hdata[plane], mainpic, w, h, n, plane, 1.f / (n * n));
     }
 
     return ff_filter_frame(outlink, mainpic);
@@ -523,6 +560,21 @@ static int activate(AVFilterContext *ctx)
 {
     ConvolveContext *s = ctx->priv;
     return ff_framesync_activate(&s->fs);
+}
+
+static av_cold int init(AVFilterContext *ctx)
+{
+    ConvolveContext *s = ctx->priv;
+
+    if (!strcmp(ctx->filter->name, "convolve")) {
+        s->filter = complex_multiply;
+    } else if (!strcmp(ctx->filter->name, "deconvolve")) {
+        s->filter = complex_divide;
+    } else {
+        return AVERROR_BUG;
+    }
+
+    return 0;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -567,10 +619,15 @@ static const AVFilterPad convolve_outputs[] = {
     { NULL }
 };
 
+#if CONFIG_CONVOLVE_FILTER
+
+FRAMESYNC_DEFINE_CLASS(convolve, ConvolveContext, fs);
+
 AVFilter ff_vf_convolve = {
     .name          = "convolve",
     .description   = NULL_IF_CONFIG_SMALL("Convolve first video stream with second video stream."),
     .preinit       = convolve_framesync_preinit,
+    .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
     .activate      = activate,
@@ -580,3 +637,35 @@ AVFilter ff_vf_convolve = {
     .outputs       = convolve_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };
+
+#endif /* CONFIG_CONVOLVE_FILTER */
+
+#if CONFIG_DECONVOLVE_FILTER
+
+static const AVOption deconvolve_options[] = {
+    { "planes",  "set planes to deconvolve",                OFFSET(planes),   AV_OPT_TYPE_INT,   {.i64=7}, 0, 15, FLAGS },
+    { "impulse", "when to process impulses",                OFFSET(impulse),  AV_OPT_TYPE_INT,   {.i64=1}, 0,  1, FLAGS, "impulse" },
+    {   "first", "process only first impulse, ignore rest", 0,                AV_OPT_TYPE_CONST, {.i64=0}, 0,  0, FLAGS, "impulse" },
+    {   "all",   "process all impulses",                    0,                AV_OPT_TYPE_CONST, {.i64=1}, 0,  0, FLAGS, "impulse" },
+    { "noise",   "set noise",                               OFFSET(noise),    AV_OPT_TYPE_FLOAT, {.dbl=0.0000001}, 0,  1, FLAGS },
+    { NULL },
+};
+
+FRAMESYNC_DEFINE_CLASS(deconvolve, ConvolveContext, fs);
+
+AVFilter ff_vf_deconvolve = {
+    .name          = "deconvolve",
+    .description   = NULL_IF_CONFIG_SMALL("Deconvolve first video stream with second video stream."),
+    .preinit       = deconvolve_framesync_preinit,
+    .init          = init,
+    .uninit        = uninit,
+    .query_formats = query_formats,
+    .activate      = activate,
+    .priv_size     = sizeof(ConvolveContext),
+    .priv_class    = &deconvolve_class,
+    .inputs        = convolve_inputs,
+    .outputs       = convolve_outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
+};
+
+#endif /* CONFIG_DECONVOLVE_FILTER */
