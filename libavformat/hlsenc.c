@@ -1899,11 +1899,13 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
             if (ret < 0) {
                 av_log(NULL, AV_LOG_ERROR, "Failed to open file '%s'\n",
                     vs->avf->filename);
+                av_free(old_filename);
                 return ret;
             }
             write_styp(vs->out);
             ret = flush_dynbuf(vs, &range_length);
             if (ret < 0) {
+                av_free(old_filename);
                 return ret;
             }
             ff_format_io_close(s, &vs->out);
@@ -1979,16 +1981,17 @@ static int hls_write_trailer(struct AVFormatContext *s)
         ret = hlsenc_io_open(s, &vs->out, vs->avf->filename, NULL);
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Failed to open file '%s'\n", vs->avf->filename);
-            return AVERROR(ENOENT);
+            goto failed;
         }
         write_styp(vs->out);
         ret = flush_dynbuf(vs, &range_length);
         if (ret < 0) {
-            return ret;
+            goto failed;
         }
         ff_format_io_close(s, &vs->out);
     }
 
+failed:
     av_write_trailer(oc);
     if (oc->pb) {
         vs->size = avio_tell(vs->avf->pb) - vs->start_pos;
