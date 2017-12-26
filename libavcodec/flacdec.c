@@ -460,7 +460,7 @@ static inline int decode_subframe(FLACContext *s, int channel)
         return AVERROR_INVALIDDATA;
     }
 
-    if (wasted) {
+    if (wasted && wasted < 32) {
         int i;
         for (i = 0; i < s->blocksize; i++)
             decoded[i] = (unsigned)decoded[i] << wasted;
