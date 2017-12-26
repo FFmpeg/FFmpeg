@@ -302,7 +302,7 @@ static int decode_subframe_fixed(FLACContext *s, int32_t *decoded,
     if (pred_order > 2)
         c = b - decoded[pred_order-2] + decoded[pred_order-3];
     if (pred_order > 3)
-        d = c - decoded[pred_order-2] + 2*decoded[pred_order-3] - decoded[pred_order-4];
+        d = c - decoded[pred_order-2] + 2U*decoded[pred_order-3] - decoded[pred_order-4];
 
     switch (pred_order) {
     case 0:
