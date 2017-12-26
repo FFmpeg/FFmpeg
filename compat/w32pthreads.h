@@ -39,11 +39,6 @@
 #include <windows.h>
 #include <process.h>
 
-#if _WIN32_WINNT < 0x0600 && defined(__MINGW32__)
-#undef MemoryBarrier
-#define MemoryBarrier __sync_synchronize
-#endif
-
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/internal.h"
@@ -63,10 +58,8 @@ typedef CONDITION_VARIABLE pthread_cond_t;
 #define PTHREAD_MUTEX_INITIALIZER SRWLOCK_INIT
 #define PTHREAD_COND_INITIALIZER CONDITION_VARIABLE_INIT
 
-#if _WIN32_WINNT >= 0x0600
 #define InitializeCriticalSection(x) InitializeCriticalSectionEx(x, 0, 0)
 #define WaitForSingleObject(a, b) WaitForSingleObjectEx(a, b, FALSE)
-#endif
 
 static av_unused unsigned __stdcall attribute_align_arg win32thread_worker(void *arg)
 {
