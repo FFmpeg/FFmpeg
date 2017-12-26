@@ -74,6 +74,7 @@ typedef struct HTTPContext {
     char *http_proxy;
     char *headers;
     char *mime_type;
+    char *http_version;
     char *user_agent;
 #if FF_API_HTTP_USER_AGENT
     char *user_agent_deprecated;
@@ -144,6 +145,7 @@ static const AVOption options[] = {
     { "multiple_requests", "use persistent connections", OFFSET(multiple_requests), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, D | E },
     { "post_data", "set custom HTTP post data", OFFSET(post_data), AV_OPT_TYPE_BINARY, .flags = D | E },
     { "mime_type", "export the MIME type", OFFSET(mime_type), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, AV_OPT_FLAG_EXPORT | AV_OPT_FLAG_READONLY },
+    { "http_version", "export the http response version", OFFSET(http_version), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, AV_OPT_FLAG_EXPORT | AV_OPT_FLAG_READONLY },
     { "cookies", "set cookies to be sent in applicable future requests, use newline delimited Set-Cookie HTTP field value syntax", OFFSET(cookies), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D },
     { "icy", "request ICY metadata", OFFSET(icy), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, D },
     { "icy_metadata_headers", "return ICY metadata headers", OFFSET(icy_metadata_headers), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, AV_OPT_FLAG_EXPORT },
@@ -919,6 +921,12 @@ static int process_line(URLContext *h, char *line, int line_count,
         } else {
             if (av_strncasecmp(p, "HTTP/1.0", 8) == 0)
                 s->willclose = 1;
+            while (*p != '/' && *p != '\0')
+                p++;
+            while (*p == '/')
+                p++;
+            av_freep(&s->http_version);
+            s->http_version = av_strndup(p, 3);
             while (!av_isspace(*p) && *p != '\0')
                 p++;
             while (av_isspace(*p))
