@@ -725,8 +725,9 @@ static int parse_playlist(HLSContext *c, const char *url,
     struct variant_info variant_info;
     char tmp_str[MAX_URL_SIZE];
     struct segment *cur_init_section = NULL;
+    int is_http = av_strstart(url, "http", NULL);
 
-    if (!in && c->http_persistent && c->playlist_pb) {
+    if (is_http && !in && c->http_persistent && c->playlist_pb) {
         in = c->playlist_pb;
         ret = open_url_keepalive(c->ctx, &c->playlist_pb, url);
         if (ret == AVERROR_EXIT) {
@@ -760,7 +761,7 @@ static int parse_playlist(HLSContext *c, const char *url,
         if (ret < 0)
             return ret;
 
-        if (c->http_persistent)
+        if (is_http && c->http_persistent)
             c->playlist_pb = in;
         else
             close_in = 1;
