@@ -623,12 +623,13 @@ static int open_url_keepalive(AVFormatContext *s, AVIOContext **pb,
 }
 
 static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
-                    AVDictionary *opts, AVDictionary *opts2, int *is_http)
+                    AVDictionary *opts, AVDictionary *opts2, int *is_http_out)
 {
     HLSContext *c = s->priv_data;
     AVDictionary *tmp = NULL;
     const char *proto_name = NULL;
     int ret;
+    int is_http = 0;
 
     av_dict_copy(&tmp, opts, 0);
     av_dict_copy(&tmp, opts2, 0);
@@ -654,7 +655,7 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
             return AVERROR_INVALIDDATA;
         }
     } else if (av_strstart(proto_name, "http", NULL)) {
-        ;
+        is_http = 1;
     } else
         return AVERROR_INVALIDDATA;
 
@@ -665,7 +666,7 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
     else if (strcmp(proto_name, "file") || !strncmp(url, "file,", 5))
         return AVERROR_INVALIDDATA;
 
-    if (c->http_persistent && *pb && av_strstart(proto_name, "http", NULL)) {
+    if (is_http && c->http_persistent && *pb) {
         ret = open_url_keepalive(c->ctx, pb, url);
         if (ret == AVERROR_EXIT) {
             return ret;
@@ -696,8 +697,8 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
 
     av_dict_free(&tmp);
 
-    if (is_http)
-        *is_http = av_strstart(proto_name, "http", NULL);
+    if (is_http_out)
+        *is_http_out = is_http;
 
     return ret;
 }
