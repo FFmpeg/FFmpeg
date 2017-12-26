@@ -915,7 +915,7 @@ static void FUNC(put_hevc_qpel_bi_w_h)(uint8_t *_dst, ptrdiff_t _dststride, uint
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++)
             dst[x] = av_clip_pixel(((QPEL_FILTER(src, 1) >> (BIT_DEPTH - 8)) * wx1 + src2[x] * wx0 +
-                                    ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));
+                                    ((ox0 + ox1 + 1) * (1 << log2Wd))) >> (log2Wd + 1));
         src  += srcstride;
         dst  += dststride;
         src2 += MAX_PB_SIZE;
@@ -970,7 +970,7 @@ static void FUNC(put_hevc_qpel_bi_w_v)(uint8_t *_dst, ptrdiff_t _dststride, uint
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++)
             dst[x] = av_clip_pixel(((QPEL_FILTER(src, srcstride) >> (BIT_DEPTH - 8)) * wx1 + src2[x] * wx0 +
-                                    ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));
+                                    ((ox0 + ox1 + 1) * (1 << log2Wd))) >> (log2Wd + 1));
         src  += srcstride;
         dst  += dststride;
         src2 += MAX_PB_SIZE;
