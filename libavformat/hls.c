@@ -1452,7 +1452,7 @@ reload:
         if (ret)
             return ret;
 
-        if (c->http_multiple && av_strstart(seg->url, "http", NULL) && v->input_next_requested) {
+        if (c->http_multiple == 1 && v->input_next_requested) {
             FFSWAP(AVIOContext *, v->input, v->input_next);
             v->input_next_requested = 0;
             ret = 0;
@@ -1471,8 +1471,15 @@ reload:
         just_opened = 1;
     }
 
+    if (c->http_multiple == -1) {
+        uint8_t *http_version_opt = NULL;
+        av_opt_get(v->input, "http_version", AV_OPT_SEARCH_CHILDREN, &http_version_opt);
+        c->http_multiple = http_version_opt && strncmp((const char *)http_version_opt, "1.1", 3) == 0;
+    }
+
     seg = next_segment(v);
-    if (c->http_multiple && !v->input_next_requested && seg) {
+    if (c->http_multiple == 1 && !v->input_next_requested &&
+        seg && av_strstart(seg->url, "http", NULL)) {
         ret = open_input(c, v, seg, &v->input_next);
         if (ret < 0) {
             if (ff_check_interrupt(c->interrupt_callback))
@@ -2306,7 +2313,7 @@ static const AVOption hls_options[] = {
     {"http_persistent", "Use persistent HTTP connections",
         OFFSET(http_persistent), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, FLAGS },
     {"http_multiple", "Use multiple HTTP connections for fetching segments",
-        OFFSET(http_multiple), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, FLAGS},
+        OFFSET(http_multiple), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, FLAGS},
     {NULL}
 };
 
