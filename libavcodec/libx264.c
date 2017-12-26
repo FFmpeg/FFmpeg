@@ -895,14 +895,16 @@ static const enum AVPixelFormat pix_fmts_8bit_rgb[] = {
 
 static av_cold void X264_init_static(AVCodec *codec)
 {
-    if (X264_BIT_DEPTH == 8)
+#if X264_BUILD < 153
+    if (x264_bit_depth == 8)
         codec->pix_fmts = pix_fmts_8bit;
-    else if (X264_BIT_DEPTH == 9)
+    else if (x264_bit_depth == 9)
         codec->pix_fmts = pix_fmts_9bit;
-    else if (X264_BIT_DEPTH == 10)
+    else if (x264_bit_depth == 10)
         codec->pix_fmts = pix_fmts_10bit;
-    else /* X264_BIT_DEPTH == 0 */
-        codec->pix_fmts = pix_fmts;
+#else
+    codec->pix_fmts = pix_fmts;
+#endif
 }
 
 #define OFFSET(x) offsetof(X264Context, x)
