@@ -8220,6 +8220,20 @@ Set pal8 output pixel format. This option does not work with codebook
 length greater than 256.
 @end table
 
+@section entropy
+
+Measure graylevel entropy in histogram of color channels of video frames.
+
+It accepts the following parameters:
+
+@table @option
+@item mode
+Can be either @var{normal} or @var{diff}. Default is @var{normal}.
+
+@var{diff} mode measures entropy of histogram delta values, absolute differences
+between neighbour histogram values.
+@end table
+
 @section fade
 
 Apply a fade-in/out effect to the input video.

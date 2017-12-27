@@ -194,6 +194,7 @@ static void register_all(void)
     REGISTER_FILTER(DRAWTEXT,       drawtext,       vf);
     REGISTER_FILTER(EDGEDETECT,     edgedetect,     vf);
     REGISTER_FILTER(ELBG,           elbg,           vf);
+    REGISTER_FILTER(ENTROPY,        entropy,        vf);
     REGISTER_FILTER(EQ,             eq,             vf);
     REGISTER_FILTER(EROSION,        erosion,        vf);
     REGISTER_FILTER(EXTRACTPLANES,  extractplanes,  vf);

@@ -184,6 +184,7 @@ OBJS-$(CONFIG_DRAWGRID_FILTER)               += vf_drawbox.o
 OBJS-$(CONFIG_DRAWTEXT_FILTER)               += vf_drawtext.o
 OBJS-$(CONFIG_EDGEDETECT_FILTER)             += vf_edgedetect.o
 OBJS-$(CONFIG_ELBG_FILTER)                   += vf_elbg.o
+OBJS-$(CONFIG_ENTROPY_FILTER)                += vf_entropy.o
 OBJS-$(CONFIG_EQ_FILTER)                     += vf_eq.o
 OBJS-$(CONFIG_EROSION_FILTER)                += vf_neighbor.o
 OBJS-$(CONFIG_EXTRACTPLANES_FILTER)          += vf_extractplanes.o

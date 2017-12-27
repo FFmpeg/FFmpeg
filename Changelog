@@ -31,6 +31,7 @@ version <next>:
 - Dropped support for building for Windows XP. The minimum supported Windows
   version is Windows Vista.
 - deconvolve video filter
+- entropy video filter
 
 
 version 3.4:
