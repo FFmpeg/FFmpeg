@@ -121,16 +121,16 @@ static int config_input_main(AVFilterLink *inlink)
         s->fft_bits[i] = fft_bits;
         s->fft_len[i] = 1 << s->fft_bits[i];
 
-        if (!(s->fft_hdata[i] = av_calloc(s->fft_len[i] + 1, s->fft_len[i] * sizeof(FFTComplex))))
+        if (!(s->fft_hdata[i] = av_calloc(s->fft_len[i], s->fft_len[i] * sizeof(FFTComplex))))
             return AVERROR(ENOMEM);
 
-        if (!(s->fft_vdata[i] = av_calloc(s->fft_len[i] + 1, s->fft_len[i] * sizeof(FFTComplex))))
+        if (!(s->fft_vdata[i] = av_calloc(s->fft_len[i], s->fft_len[i] * sizeof(FFTComplex))))
             return AVERROR(ENOMEM);
 
-        if (!(s->fft_hdata_impulse[i] = av_calloc(s->fft_len[i] + 1, s->fft_len[i] * sizeof(FFTComplex))))
+        if (!(s->fft_hdata_impulse[i] = av_calloc(s->fft_len[i], s->fft_len[i] * sizeof(FFTComplex))))
             return AVERROR(ENOMEM);
 
-        if (!(s->fft_vdata_impulse[i] = av_calloc(s->fft_len[i] + 1, s->fft_len[i] * sizeof(FFTComplex))))
+        if (!(s->fft_vdata_impulse[i] = av_calloc(s->fft_len[i], s->fft_len[i] * sizeof(FFTComplex))))
             return AVERROR(ENOMEM);
     }
 
