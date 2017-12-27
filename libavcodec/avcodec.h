@@ -5933,8 +5933,9 @@ AVHWAccel *av_hwaccel_next(const AVHWAccel *hwaccel);
 #if FF_API_LOCKMGR
 /**
  * Lock operation used by lockmgr
+ *
+ * @deprecated Deprecated together with av_lockmgr_register().
  */
-attribute_deprecated
 enum AVLockOp {
   AV_LOCK_CREATE,  ///< Create a mutex
   AV_LOCK_OBTAIN,  ///< Lock the mutex
