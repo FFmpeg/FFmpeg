@@ -166,7 +166,7 @@ static int fft_horizontal(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
     FFTComplex *hdata = td->hdata;
     const int plane = td->plane;
     const int n = td->n;
-    int start = (n *  jobnr   ) / nb_jobs;
+    int start = (n * jobnr) / nb_jobs;
     int end = (n * (jobnr+1)) / nb_jobs;
     int y;
 
@@ -261,7 +261,7 @@ static int fft_vertical(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     FFTComplex *vdata = td->vdata;
     const int plane = td->plane;
     const int n = td->n;
-    int start = (n *  jobnr   ) / nb_jobs;
+    int start = (n * jobnr) / nb_jobs;
     int end = (n * (jobnr+1)) / nb_jobs;
     int y, x;
 
@@ -286,7 +286,7 @@ static int ifft_vertical(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     FFTComplex *vdata = td->vdata;
     const int plane = td->plane;
     const int n = td->n;
-    int start = (n *  jobnr   ) / nb_jobs;
+    int start = (n * jobnr) / nb_jobs;
     int end = (n * (jobnr+1)) / nb_jobs;
     int y, x;
 
@@ -310,7 +310,7 @@ static int ifft_horizontal(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     FFTComplex *hdata = td->hdata;
     const int plane = td->plane;
     const int n = td->n;
-    int start = (n *  jobnr   ) / nb_jobs;
+    int start = (n * jobnr) / nb_jobs;
     int end = (n * (jobnr+1)) / nb_jobs;
     int y;
 
@@ -383,7 +383,7 @@ static int complex_multiply(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
     FFTComplex *input = td->hdata;
     FFTComplex *filter = td->vdata;
     const int n = td->n;
-    int start = (n *  jobnr   ) / nb_jobs;
+    int start = (n * jobnr) / nb_jobs;
     int end = (n * (jobnr+1)) / nb_jobs;
     int y, x;
 
