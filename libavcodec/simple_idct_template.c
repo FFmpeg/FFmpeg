@@ -77,6 +77,10 @@
 #define ROW_SHIFT 13
 #define COL_SHIFT 18
 #define DC_SHIFT  1
+#   elif IN_IDCT_DEPTH == 32
+#define ROW_SHIFT 13
+#define COL_SHIFT 21
+#define DC_SHIFT  2
 #   else
 #define ROW_SHIFT 12
 #define COL_SHIFT 19
@@ -109,11 +113,13 @@
 #ifdef EXTRA_SHIFT
 static inline void FUNC(idctRowCondDC_extrashift)(int16_t *row, int extra_shift)
 #else
-static inline void FUNC(idctRowCondDC)(int16_t *row, int extra_shift)
+static inline void FUNC6(idctRowCondDC)(idctin *row, int extra_shift)
 #endif
 {
     SUINT a0, a1, a2, a3, b0, b1, b2, b3;
 
+// TODO: Add DC-only support for int32_t input
+#if IN_IDCT_DEPTH == 16
 #if HAVE_FAST_64BIT
 #define ROW0_MASK (0xffffLL << 48 * HAVE_BIGENDIAN)
     if (((AV_RN64A(row) & ~ROW0_MASK) | AV_RN64A(row+4)) == 0) {
@@ -148,6 +154,7 @@ static inline void FUNC(idctRowCondDC)(int16_t *row, int extra_shift)
         return;
     }
 #endif
+#endif
 
     a0 = (W4 * row[0]) + (1 << (ROW_SHIFT + extra_shift - 1));
     a1 = a0;
@@ -168,7 +175,11 @@ static inline void FUNC(idctRowCondDC)(int16_t *row, int extra_shift)
     b3 = MUL(W7, row[1]);
     MAC(b3, -W5, row[3]);
 
+#if IN_IDCT_DEPTH == 32
+    if (AV_RN64A(row + 4) | AV_RN64A(row + 6)) {
+#else
     if (AV_RN64A(row + 4)) {
+#endif
         a0 +=   W4*row[4] + W6*row[6];
         a1 += - W4*row[4] - W2*row[6];
         a2 += - W4*row[4] + W2*row[6];
@@ -250,8 +261,8 @@ static inline void FUNC(idctRowCondDC)(int16_t *row, int extra_shift)
 #ifdef EXTRA_SHIFT
 static inline void FUNC(idctSparseCol_extrashift)(int16_t *col)
 #else
-static inline void FUNC(idctSparseColPut)(pixel *dest, ptrdiff_t line_size,
-                                          int16_t *col)
+static inline void FUNC6(idctSparseColPut)(pixel *dest, ptrdiff_t line_size,
+                                          idctin *col)
 {
     SUINT a0, a1, a2, a3, b0, b1, b2, b3;
 
@@ -274,8 +285,8 @@ static inline void FUNC(idctSparseColPut)(pixel *dest, ptrdiff_t line_size,
     dest[0] = av_clip_pixel((int)(a0 - b0) >> COL_SHIFT);
 }
 
-static inline void FUNC(idctSparseColAdd)(pixel *dest, ptrdiff_t line_size,
-                                          int16_t *col)
+static inline void FUNC6(idctSparseColAdd)(pixel *dest, ptrdiff_t line_size,
+                                          idctin *col)
 {
     int a0, a1, a2, a3, b0, b1, b2, b3;
 
@@ -298,7 +309,7 @@ static inline void FUNC(idctSparseColAdd)(pixel *dest, ptrdiff_t line_size,
     dest[0] = av_clip_pixel(dest[0] + ((a0 - b0) >> COL_SHIFT));
 }
 
-static inline void FUNC(idctSparseCol)(int16_t *col)
+static inline void FUNC6(idctSparseCol)(idctin *col)
 #endif
 {
     int a0, a1, a2, a3, b0, b1, b2, b3;
@@ -316,7 +327,23 @@ static inline void FUNC(idctSparseCol)(int16_t *col)
 }
 
 #ifndef EXTRA_SHIFT
-void FUNC(ff_simple_idct_put)(uint8_t *dest_, ptrdiff_t line_size, int16_t *block)
+void FUNC6(ff_simple_idct_put)(uint8_t *dest_, ptrdiff_t line_size, int16_t *block_)
+{
+    idctin *block = (idctin *)block_;
+    pixel *dest = (pixel *)dest_;
+    int i;
+
+    line_size /= sizeof(pixel);
+
+    for (i = 0; i < 8; i++)
+        FUNC6(idctRowCondDC)(block + i*8, 0);
+
+    for (i = 0; i < 8; i++)
+        FUNC6(idctSparseColPut)(dest + i, line_size, block + i);
+}
+
+#if IN_IDCT_DEPTH == 16
+void FUNC6(ff_simple_idct_add)(uint8_t *dest_, ptrdiff_t line_size, int16_t *block)
 {
     pixel *dest = (pixel *)dest_;
     int i;
@@ -324,34 +351,21 @@ void FUNC(ff_simple_idct_put)(uint8_t *dest_, ptrdiff_t line_size, int16_t *bloc
     line_size /= sizeof(pixel);
 
     for (i = 0; i < 8; i++)
-        FUNC(idctRowCondDC)(block + i*8, 0);
+        FUNC6(idctRowCondDC)(block + i*8, 0);
 
     for (i = 0; i < 8; i++)
-        FUNC(idctSparseColPut)(dest + i, line_size, block + i);
+        FUNC6(idctSparseColAdd)(dest + i, line_size, block + i);
 }
 
-void FUNC(ff_simple_idct_add)(uint8_t *dest_, ptrdiff_t line_size, int16_t *block)
-{
-    pixel *dest = (pixel *)dest_;
-    int i;
-
-    line_size /= sizeof(pixel);
-
-    for (i = 0; i < 8; i++)
-        FUNC(idctRowCondDC)(block + i*8, 0);
-
-    for (i = 0; i < 8; i++)
-        FUNC(idctSparseColAdd)(dest + i, line_size, block + i);
-}
-
-void FUNC(ff_simple_idct)(int16_t *block)
+void FUNC6(ff_simple_idct)(int16_t *block)
 {
     int i;
 
     for (i = 0; i < 8; i++)
-        FUNC(idctRowCondDC)(block + i*8, 0);
+        FUNC6(idctRowCondDC)(block + i*8, 0);
 
     for (i = 0; i < 8; i++)
-        FUNC(idctSparseCol)(block + i);
+        FUNC6(idctSparseCol)(block + i);
 }
+#endif
 #endif

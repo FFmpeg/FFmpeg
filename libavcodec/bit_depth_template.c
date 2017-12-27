@@ -29,6 +29,7 @@
 #   undef pixel2
 #   undef pixel4
 #   undef dctcoef
+#   undef idctin
 #   undef INIT_CLIP
 #   undef no_rnd_avg_pixel4
 #   undef rnd_avg_pixel4
@@ -53,6 +54,16 @@
 #   define pixel4 uint64_t
 #   define dctcoef int32_t
 
+#ifdef IN_IDCT_DEPTH
+#if IN_IDCT_DEPTH == 32
+#   define idctin int32_t
+#else
+#   define idctin int16_t
+#endif
+#else
+#   define idctin int16_t
+#endif
+
 #   define INIT_CLIP
 #   define no_rnd_avg_pixel4 no_rnd_avg64
 #   define    rnd_avg_pixel4    rnd_avg64
@@ -71,6 +82,7 @@
 #   define pixel2 uint16_t
 #   define pixel4 uint32_t
 #   define dctcoef int16_t
+#   define idctin  int16_t
 
 #   define INIT_CLIP
 #   define no_rnd_avg_pixel4 no_rnd_avg32
@@ -87,7 +99,10 @@
 #   define CLIP(a) av_clip_uint8(a)
 #endif
 
-#define FUNC3(a, b, c)  a ## _ ## b ## c
+#define FUNC3(a, b, c)  a ## _ ## b ##  c
 #define FUNC2(a, b, c)  FUNC3(a, b, c)
 #define FUNC(a)  FUNC2(a, BIT_DEPTH,)
 #define FUNCC(a) FUNC2(a, BIT_DEPTH, _c)
+#define FUNC4(a, b, c)  a ## _int ## b ## _ ## c ## bit
+#define FUNC5(a, b, c)  FUNC4(a, b, c)
+#define FUNC6(a)  FUNC5(a, IN_IDCT_DEPTH, BIT_DEPTH)
