@@ -625,13 +625,15 @@ int64_t ffurl_size(URLContext *h)
 
 int ffurl_get_file_handle(URLContext *h)
 {
-    if (!h->prot->url_get_file_handle)
+    if (!h || !h->prot || !h->prot->url_get_file_handle)
         return -1;
     return h->prot->url_get_file_handle(h);
 }
 
 int ffurl_get_multi_file_handle(URLContext *h, int **handles, int *numhandles)
 {
+    if (!h || !h->prot)
+        return AVERROR(ENOSYS);
     if (!h->prot->url_get_multi_file_handle) {
         if (!h->prot->url_get_file_handle)
             return AVERROR(ENOSYS);
@@ -647,15 +649,15 @@ int ffurl_get_multi_file_handle(URLContext *h, int **handles, int *numhandles)
 
 int ffurl_get_short_seek(URLContext *h)
 {
-    if (!h->prot->url_get_short_seek)
+    if (!h || !h->prot || !h->prot->url_get_short_seek)
         return AVERROR(ENOSYS);
     return h->prot->url_get_short_seek(h);
 }
 
 int ffurl_shutdown(URLContext *h, int flags)
 {
-    if (!h->prot->url_shutdown)
-        return AVERROR(EINVAL);
+    if (!h || !h->prot || !h->prot->url_shutdown)
+        return AVERROR(ENOSYS);
     return h->prot->url_shutdown(h, flags);
 }
 
