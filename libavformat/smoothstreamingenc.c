@@ -221,8 +221,8 @@ static int write_manifest(AVFormatContext *s, int final)
     int ret, i, video_chunks = 0, audio_chunks = 0, video_streams = 0, audio_streams = 0;
     int64_t duration = 0;
 
-    snprintf(filename, sizeof(filename), "%s/Manifest", s->filename);
-    snprintf(temp_filename, sizeof(temp_filename), "%s/Manifest.tmp", s->filename);
+    snprintf(filename, sizeof(filename), "%s/Manifest", s->url);
+    snprintf(temp_filename, sizeof(temp_filename), "%s/Manifest.tmp", s->url);
     ret = s->io_open(s, &out, temp_filename, AVIO_FLAG_WRITE, NULL);
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", temp_filename);
@@ -295,7 +295,7 @@ static int ism_write_header(AVFormatContext *s)
     int ret = 0, i;
     AVOutputFormat *oformat;
 
-    if (mkdir(s->filename, 0777) == -1 && errno != EEXIST) {
+    if (mkdir(s->url, 0777) == -1 && errno != EEXIST) {
         ret = AVERROR(errno);
         av_log(s, AV_LOG_ERROR, "mkdir failed\n");
         goto fail;
@@ -324,7 +324,7 @@ static int ism_write_header(AVFormatContext *s)
             ret = AVERROR(EINVAL);
             goto fail;
         }
-        snprintf(os->dirname, sizeof(os->dirname), "%s/QualityLevels(%"PRId64")", s->filename, s->streams[i]->codecpar->bit_rate);
+        snprintf(os->dirname, sizeof(os->dirname), "%s/QualityLevels(%"PRId64")", s->url, s->streams[i]->codecpar->bit_rate);
         if (mkdir(os->dirname, 0777) == -1 && errno != EEXIST) {
             ret = AVERROR(errno);
             av_log(s, AV_LOG_ERROR, "mkdir failed\n");
@@ -609,9 +609,9 @@ static int ism_write_trailer(AVFormatContext *s)
 
     if (c->remove_at_exit) {
         char filename[1024];
-        snprintf(filename, sizeof(filename), "%s/Manifest", s->filename);
+        snprintf(filename, sizeof(filename), "%s/Manifest", s->url);
         unlink(filename);
-        rmdir(s->filename);
+        rmdir(s->url);
     }
 
     ism_free(s);

@@ -2061,7 +2061,7 @@ void ff_configure_buffers_for_index(AVFormatContext *s, int64_t time_tolerance)
     int64_t pos_delta = 0;
     int64_t skip = 0;
     //We could use URLProtocol flags here but as many user applications do not use URLProtocols this would be unreliable
-    const char *proto = avio_find_protocol_name(s->filename);
+    const char *proto = avio_find_protocol_name(s->url);
 
     if (!proto) {
         av_log(s, AV_LOG_INFO,

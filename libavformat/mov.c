@@ -4115,7 +4115,7 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (sc->dref_id-1 < sc->drefs_count && sc->drefs[sc->dref_id-1].path) {
         MOVDref *dref = &sc->drefs[sc->dref_id - 1];
         if (c->enable_drefs) {
-            if (mov_open_dref(c, &sc->pb, c->fc->filename, dref) < 0)
+            if (mov_open_dref(c, &sc->pb, c->fc->url, dref) < 0)
                 av_log(c->fc, AV_LOG_ERROR,
                        "stream %d, error opening alias: path='%s', dir='%s', "
                        "filename='%s', volume='%s', nlvl_from=%d, nlvl_to=%d\n",

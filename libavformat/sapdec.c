@@ -74,7 +74,7 @@ static int sap_read_header(AVFormatContext *s)
         return AVERROR(EIO);
 
     av_url_split(NULL, 0, NULL, 0, host, sizeof(host), &port,
-                 path, sizeof(path), s->filename);
+                 path, sizeof(path), s->url);
     if (port < 0)
         port = 9875;
 

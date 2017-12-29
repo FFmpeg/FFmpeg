@@ -1686,7 +1686,7 @@ int ff_rtsp_connect(AVFormatContext *s)
 redirect:
     /* extract hostname and port */
     av_url_split(proto, sizeof(proto), auth, sizeof(auth),
-                 host, sizeof(host), &port, path, sizeof(path), s->filename);
+                 host, sizeof(host), &port, path, sizeof(path), s->url);
 
     if (!strcmp(proto, "rtsps")) {
         lower_rtsp_proto         = "tls";
@@ -1717,7 +1717,7 @@ redirect:
         }
     }
 
-    /* Construct the URI used in request; this is similar to s->filename,
+    /* Construct the URI used in request; this is similar to s->url,
      * but with authentication credentials removed and RTSP specific options
      * stripped out. */
     ff_url_join(rt->control_uri, sizeof(rt->control_uri), proto, NULL,
@@ -1905,13 +1905,19 @@ redirect:
     ff_rtsp_close_streams(s);
     ff_rtsp_close_connections(s);
     if (reply->status_code >=300 && reply->status_code < 400 && s->iformat) {
-        av_strlcpy(s->filename, reply->location, sizeof(s->filename));
+        char *new_url = av_strdup(reply->location);
+        if (!new_url) {
+            err = AVERROR(ENOMEM);
+            goto fail2;
+        }
+        ff_format_set_url(s, new_url);
         rt->session_id[0] = '\0';
         av_log(s, AV_LOG_INFO, "Status %d: Redirecting to %s\n",
                reply->status_code,
-               s->filename);
+               s->url);
         goto redirect;
     }
+ fail2:
     ff_network_close();
     return err;
 }
@@ -2425,7 +2431,7 @@ static int rtp_read_header(AVFormatContext *s)
     if (!ff_network_init())
         return AVERROR(EIO);
 
-    ret = ffurl_open_whitelist(&in, s->filename, AVIO_FLAG_READ,
+    ret = ffurl_open_whitelist(&in, s->url, AVIO_FLAG_READ,
                      &s->interrupt_callback, NULL, s->protocol_whitelist, s->protocol_blacklist, NULL);
     if (ret)
         goto fail;
@@ -2476,7 +2482,7 @@ static int rtp_read_header(AVFormatContext *s)
     }
 
     av_url_split(NULL, 0, NULL, 0, host, sizeof(host), &port,
-                 NULL, 0, s->filename);
+                 NULL, 0, s->url);
 
     snprintf(sdp, sizeof(sdp),
              "v=0\r\nc=IN IP%d %s\r\nm=%s %d RTP/AVP %d\r\n",
