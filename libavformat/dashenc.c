@@ -737,6 +737,9 @@ static int write_manifest(AVFormatContext *s, int final)
 
     if (c->hls_playlist && !c->master_playlist_created) {
         char filename_hls[1024];
+        const char *audio_group = "A1";
+        int is_default = 1;
+        int max_audio_bitrate = 0;
 
         if (*c->dirname)
             snprintf(filename_hls, sizeof(filename_hls), "%s/master.m3u8", c->dirname);
@@ -758,9 +761,26 @@ static int write_manifest(AVFormatContext *s, int final)
         for (i = 0; i < s->nb_streams; i++) {
             char playlist_file[64];
             AVStream *st = s->streams[i];
+            if (st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO)
+                continue;
             get_hls_playlist_name(playlist_file, sizeof(playlist_file), NULL, i);
-            ff_hls_write_stream_info(st, out, st->codecpar->bit_rate,
-                    playlist_file, NULL);
+            ff_hls_write_audio_rendition(out, (char *)audio_group,
+                                         playlist_file, i, is_default);
+            max_audio_bitrate = FFMAX(st->codecpar->bit_rate, max_audio_bitrate);
+            is_default = 0;
+        }
+
+        for (i = 0; i < s->nb_streams; i++) {
+            char playlist_file[64];
+            AVStream *st = s->streams[i];
+            char *agroup = NULL;
+            int stream_bitrate = st->codecpar->bit_rate;
+            if ((st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) && max_audio_bitrate) {
+                agroup = (char *)audio_group;
+                stream_bitrate += max_audio_bitrate;
+            }
+            get_hls_playlist_name(playlist_file, sizeof(playlist_file), NULL, i);
+            ff_hls_write_stream_info(st, out, stream_bitrate, playlist_file, agroup);
         }
         avio_close(out);
         if (use_rename)
