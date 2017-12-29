@@ -247,8 +247,49 @@ static int decode_plane(UtvideoContext *c, int plane_no,
     int sstart, send;
     VLC vlc;
     GetBitContext gb;
-    int prev, fsym;
+    int ret, prev, fsym;
     const int cmask = compute_cmask(plane_no, c->interlaced, c->avctx->pix_fmt);
+
+    if (c->pack) {
+        send = 0;
+        for (slice = 0; slice < c->slices; slice++) {
+            GetBitContext cbit, pbit;
+            uint8_t *dest, *p;
+
+            ret = init_get_bits8(&cbit, c->control_stream[plane_no][slice], c->control_stream_size[plane_no][slice]);
+            if (ret < 0)
+                return ret;
+
+            ret = init_get_bits8(&pbit, c->packed_stream[plane_no][slice], c->packed_stream_size[plane_no][slice]);
+            if (ret < 0)
+                return ret;
+
+            sstart = send;
+            send   = (height * (slice + 1) / c->slices) & cmask;
+            dest   = dst + sstart * stride;
+
+            for (p = dest; p < dst + send * stride; p += 8) {
+                int bits = get_bits_le(&cbit, 3);
+
+                if (bits == 0) {
+                    *(uint64_t *) p = 0;
+                } else {
+                    uint32_t sub = 0x80 >> (8 - (bits + 1)), add;
+                    int k;
+
+                    for (k = 0; k < 8; k++) {
+
+                        p[k] = get_bits_le(&pbit, bits + 1);
+                        add = (~p[k] & sub) << (8 - bits);
+                        p[k] -= sub;
+                        p[k] += add;
+                    }
+                }
+            }
+        }
+
+        return 0;
+    }
 
     if (build_huff(src, &vlc, &fsym)) {
         av_log(c->avctx, AV_LOG_ERROR, "Cannot build Huffman codes\n");
@@ -566,7 +607,58 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     /* parse plane structure to get frame flags and validate slice offsets */
     bytestream2_init(&gb, buf, buf_size);
-    if (c->pro) {
+
+    if (c->pack) {
+        const uint8_t *packed_stream;
+        const uint8_t *control_stream;
+        GetByteContext pb;
+        uint32_t nb_cbs;
+        int left;
+
+        c->frame_info = PRED_GRADIENT << 8;
+
+        if (bytestream2_get_byte(&gb) != 1)
+            return AVERROR_INVALIDDATA;
+        bytestream2_skip(&gb, 3);
+        c->offset = bytestream2_get_le32(&gb);
+
+        if (buf_size <= c->offset + 8LL)
+            return AVERROR_INVALIDDATA;
+
+        bytestream2_init(&pb, buf + 8 + c->offset, buf_size - 8 - c->offset);
+
+        nb_cbs = bytestream2_get_le32(&pb);
+        if (nb_cbs > c->offset)
+            return AVERROR_INVALIDDATA;
+
+        packed_stream = buf + 8;
+        control_stream = packed_stream + (c->offset - nb_cbs);
+        left = control_stream - packed_stream;
+
+        for (i = 0; i < c->planes; i++) {
+            for (j = 0; j < c->slices; j++) {
+                c->packed_stream[i][j] = packed_stream;
+                c->packed_stream_size[i][j] = bytestream2_get_le32(&pb);
+                left -= c->packed_stream_size[i][j];
+                if (left < 0)
+                    return AVERROR_INVALIDDATA;
+                packed_stream += c->packed_stream_size[i][j];
+            }
+        }
+
+        left = buf + buf_size - control_stream;
+
+        for (i = 0; i < c->planes; i++) {
+            for (j = 0; j < c->slices; j++) {
+                c->control_stream[i][j] = control_stream;
+                c->control_stream_size[i][j] = bytestream2_get_le32(&pb);
+                left -= c->control_stream_size[i][j];
+                if (left < 0)
+                    return AVERROR_INVALIDDATA;
+                control_stream += c->control_stream_size[i][j];
+            }
+        }
+    } else if (c->pro) {
         if (bytestream2_get_bytes_left(&gb) < c->frame_info_size) {
             av_log(avctx, AV_LOG_ERROR, "Not enough data for frame information\n");
             return AVERROR_INVALIDDATA;
@@ -635,12 +727,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     max_slice_size += 4*avctx->width;
 
-    av_fast_malloc(&c->slice_bits, &c->slice_bits_size,
-                   max_slice_size + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!c->pack) {
+        av_fast_malloc(&c->slice_bits, &c->slice_bits_size,
+                       max_slice_size + AV_INPUT_BUFFER_PADDING_SIZE);
 
-    if (!c->slice_bits) {
-        av_log(avctx, AV_LOG_ERROR, "Cannot allocate temporary buffer\n");
-        return AVERROR(ENOMEM);
+        if (!c->slice_bits) {
+            av_log(avctx, AV_LOG_ERROR, "Cannot allocate temporary buffer\n");
+            return AVERROR(ENOMEM);
+        }
     }
 
     switch (c->avctx->pix_fmt) {
@@ -819,37 +913,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ff_bswapdsp_init(&c->bdsp);
     ff_llviddsp_init(&c->llviddsp);
 
-    if (avctx->extradata_size >= 16) {
-        av_log(avctx, AV_LOG_DEBUG, "Encoder version %d.%d.%d.%d\n",
-               avctx->extradata[3], avctx->extradata[2],
-               avctx->extradata[1], avctx->extradata[0]);
-        av_log(avctx, AV_LOG_DEBUG, "Original format %"PRIX32"\n",
-               AV_RB32(avctx->extradata + 4));
-        c->frame_info_size = AV_RL32(avctx->extradata + 8);
-        c->flags           = AV_RL32(avctx->extradata + 12);
-
-        if (c->frame_info_size != 4)
-            avpriv_request_sample(avctx, "Frame info not 4 bytes");
-        av_log(avctx, AV_LOG_DEBUG, "Encoding parameters %08"PRIX32"\n", c->flags);
-        c->slices      = (c->flags >> 24) + 1;
-        c->compression = c->flags & 1;
-        c->interlaced  = c->flags & 0x800;
-    } else if (avctx->extradata_size == 8) {
-        av_log(avctx, AV_LOG_DEBUG, "Encoder version %d.%d.%d.%d\n",
-               avctx->extradata[3], avctx->extradata[2],
-               avctx->extradata[1], avctx->extradata[0]);
-        av_log(avctx, AV_LOG_DEBUG, "Original format %"PRIX32"\n",
-               AV_RB32(avctx->extradata + 4));
-        c->interlaced  = 0;
-        c->pro         = 1;
-        c->frame_info_size = 4;
-    } else {
-        av_log(avctx, AV_LOG_ERROR,
-               "Insufficient extradata size %d, should be at least 16\n",
-               avctx->extradata_size);
-        return AVERROR_INVALIDDATA;
-    }
-
     c->slice_bits_size = 0;
 
     switch (avctx->codec_tag) {
@@ -903,9 +966,84 @@ static av_cold int decode_init(AVCodecContext *avctx)
         avctx->pix_fmt = AV_PIX_FMT_YUV444P;
         avctx->colorspace = AVCOL_SPC_BT709;
         break;
+    case MKTAG('U', 'M', 'Y', '2'):
+        c->planes      = 3;
+        c->pack        = 1;
+        avctx->pix_fmt = AV_PIX_FMT_YUV422P;
+        avctx->colorspace = AVCOL_SPC_BT470BG;
+        break;
+    case MKTAG('U', 'M', 'H', '2'):
+        c->planes      = 3;
+        c->pack        = 1;
+        avctx->pix_fmt = AV_PIX_FMT_YUV422P;
+        avctx->colorspace = AVCOL_SPC_BT709;
+        break;
+    case MKTAG('U', 'M', 'Y', '4'):
+        c->planes      = 3;
+        c->pack        = 1;
+        avctx->pix_fmt = AV_PIX_FMT_YUV444P;
+        avctx->colorspace = AVCOL_SPC_BT470BG;
+        break;
+    case MKTAG('U', 'M', 'H', '4'):
+        c->planes      = 3;
+        c->pack        = 1;
+        avctx->pix_fmt = AV_PIX_FMT_YUV444P;
+        avctx->colorspace = AVCOL_SPC_BT709;
+        break;
+    case MKTAG('U', 'M', 'R', 'G'):
+        c->planes      = 3;
+        c->pack        = 1;
+        avctx->pix_fmt = AV_PIX_FMT_GBRP;
+        break;
+    case MKTAG('U', 'M', 'R', 'A'):
+        c->planes      = 4;
+        c->pack        = 1;
+        avctx->pix_fmt = AV_PIX_FMT_GBRAP;
+        break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unknown Ut Video FOURCC provided (%08X)\n",
                avctx->codec_tag);
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (c->pack && avctx->extradata_size >= 16) {
+        av_log(avctx, AV_LOG_DEBUG, "Encoder version %d.%d.%d.%d\n",
+               avctx->extradata[3], avctx->extradata[2],
+               avctx->extradata[1], avctx->extradata[0]);
+        av_log(avctx, AV_LOG_DEBUG, "Original format %"PRIX32"\n",
+               AV_RB32(avctx->extradata + 4));
+        c->compression = avctx->extradata[8];
+        if (c->compression != 2)
+            avpriv_request_sample(avctx, "Unknown compression type");
+        c->slices      = avctx->extradata[9] + 1;
+    } else if (avctx->extradata_size >= 16) {
+        av_log(avctx, AV_LOG_DEBUG, "Encoder version %d.%d.%d.%d\n",
+               avctx->extradata[3], avctx->extradata[2],
+               avctx->extradata[1], avctx->extradata[0]);
+        av_log(avctx, AV_LOG_DEBUG, "Original format %"PRIX32"\n",
+               AV_RB32(avctx->extradata + 4));
+        c->frame_info_size = AV_RL32(avctx->extradata + 8);
+        c->flags           = AV_RL32(avctx->extradata + 12);
+
+        if (c->frame_info_size != 4)
+            avpriv_request_sample(avctx, "Frame info not 4 bytes");
+        av_log(avctx, AV_LOG_DEBUG, "Encoding parameters %08"PRIX32"\n", c->flags);
+        c->slices      = (c->flags >> 24) + 1;
+        c->compression = c->flags & 1;
+        c->interlaced  = c->flags & 0x800;
+    } else if (avctx->extradata_size == 8) {
+        av_log(avctx, AV_LOG_DEBUG, "Encoder version %d.%d.%d.%d\n",
+               avctx->extradata[3], avctx->extradata[2],
+               avctx->extradata[1], avctx->extradata[0]);
+        av_log(avctx, AV_LOG_DEBUG, "Original format %"PRIX32"\n",
+               AV_RB32(avctx->extradata + 4));
+        c->interlaced  = 0;
+        c->pro         = 1;
+        c->frame_info_size = 4;
+    } else {
+        av_log(avctx, AV_LOG_ERROR,
+               "Insufficient extradata size %d, should be at least 16\n",
+               avctx->extradata_size);
         return AVERROR_INVALIDDATA;
     }
 
