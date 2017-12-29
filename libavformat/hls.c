@@ -1479,7 +1479,7 @@ reload:
 
     seg = next_segment(v);
     if (c->http_multiple == 1 && !v->input_next_requested &&
-        seg && av_strstart(seg->url, "http", NULL)) {
+        seg && seg->key_type == KEY_NONE && av_strstart(seg->url, "http", NULL)) {
         ret = open_input(c, v, seg, &v->input_next);
         if (ret < 0) {
             if (ff_check_interrupt(c->interrupt_callback))
@@ -1511,7 +1511,8 @@ reload:
 
         return ret;
     }
-    if (c->http_persistent && av_strstart(seg->url, "http", NULL)) {
+    if (c->http_persistent &&
+        seg->key_type == KEY_NONE && av_strstart(seg->url, "http", NULL)) {
         v->input_read_done = 1;
     } else {
         ff_format_io_close(v->parent, &v->input);
