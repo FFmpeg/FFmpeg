@@ -311,6 +311,11 @@ int ff_http_do_new_request(URLContext *h, const char *uri)
     char hostname1[1024], hostname2[1024], proto1[10], proto2[10];
     int port1, port2;
 
+    if (!h->prot ||
+        !(!strcmp(h->prot->name, "http") ||
+          !strcmp(h->prot->name, "https")))
+        return AVERROR(EINVAL);
+
     av_url_split(proto1, sizeof(proto1), NULL, 0,
                  hostname1, sizeof(hostname1), &port1,
                  NULL, 0, s->location);
