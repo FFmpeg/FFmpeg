@@ -847,7 +847,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
 
     line_offset = AV_RL64(s->gb.buffer + jobnr * 8);
     // Check if the buffer has the required bytes needed from the offset
-    if (line_offset > buf_size - 8)
+    if (buf_size < 8 || line_offset > buf_size - 8)
         return AVERROR_INVALIDDATA;
 
     src  = buf + line_offset + 8;
@@ -856,7 +856,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
         return AVERROR_INVALIDDATA;
 
     data_size = AV_RL32(src - 4);
-    if (data_size <= 0 || data_size > buf_size)
+    if (data_size <= 0 || data_size > buf_size - line_offset - 8)
         return AVERROR_INVALIDDATA;
 
     s->ysize          = FFMIN(s->scan_lines_per_block, s->ymax - line + 1);
