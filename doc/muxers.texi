@@ -249,6 +249,8 @@ DASH-templated name to used for the media segments. Default is "chunk-stream$Rep
 URL of the page that will return the UTC timestamp in ISO format. Example: "https://time.akamai.com/?iso"
 @item -http_user_agent @var{user_agent}
 Override User-Agent field in HTTP header. Applicable only for HTTP output.
+@item -http_persistent @var{http_persistent}
+Use persistent HTTP connections. Applicable only for HTTP output.
 @item -hls_playlist @var{hls_playlist}
 Generate HLS playlist files as well. The master playlist is generated with the filename master.m3u8.
 One media playlist file is generated for each stream with filenames media_0.m3u8, media_1.m3u8, etc.
