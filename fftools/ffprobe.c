@@ -2778,7 +2778,7 @@ static int show_format(WriterContext *w, InputFile *ifile)
     int ret = 0;
 
     writer_print_section_header(w, SECTION_ID_FORMAT);
-    print_str_validate("filename", fmt_ctx->filename);
+    print_str_validate("filename", fmt_ctx->url);
     print_int("nb_streams",       fmt_ctx->nb_streams);
     print_int("nb_programs",      fmt_ctx->nb_programs);
     print_str("format_name",      fmt_ctx->iformat->name);

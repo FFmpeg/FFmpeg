@@ -171,8 +171,11 @@ static int open_output_file(const char *filename,
         goto cleanup;
     }
 
-    av_strlcpy((*output_format_context)->filename, filename,
-               sizeof((*output_format_context)->filename));
+    if (!((*output_format_context)->url = av_strdup(filename))) {
+        fprintf(stderr, "Could not allocate url.\n");
+        error = AVERROR(ENOMEM);
+        goto cleanup;
+    }
 
     /* Find the encoder to be used by its name. */
     if (!(output_codec = avcodec_find_encoder(AV_CODEC_ID_AAC))) {

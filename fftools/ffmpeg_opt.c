@@ -1271,7 +1271,7 @@ static int choose_encoder(OptionsContext *o, AVFormatContext *s, OutputStream *o
     if (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO || type == AVMEDIA_TYPE_SUBTITLE) {
         MATCH_PER_STREAM_OPT(codec_names, str, codec_name, s, ost->st);
         if (!codec_name) {
-            ost->st->codecpar->codec_id = av_guess_codec(s->oformat, NULL, s->filename,
+            ost->st->codecpar->codec_id = av_guess_codec(s->oformat, NULL, s->url,
                                                          NULL, ost->st->codecpar->codec_type);
             ost->enc = avcodec_find_encoder(ost->st->codecpar->codec_id);
             if (!ost->enc) {
@@ -2334,7 +2334,7 @@ loop_end:
 #endif
 
     if (!oc->nb_streams && !(oc->oformat->flags & AVFMT_NOSTREAMS)) {
-        av_dump_format(oc, nb_output_files - 1, oc->filename, 1);
+        av_dump_format(oc, nb_output_files - 1, oc->url, 1);
         av_log(NULL, AV_LOG_ERROR, "Output file #%d does not contain any stream\n", nb_output_files - 1);
         exit_program(1);
     }
@@ -2466,8 +2466,8 @@ loop_end:
 
     /* check filename in case of an image number is expected */
     if (oc->oformat->flags & AVFMT_NEEDNUMBER) {
-        if (!av_filename_number_test(oc->filename)) {
-            print_error(oc->filename, AVERROR(EINVAL));
+        if (!av_filename_number_test(oc->url)) {
+            print_error(oc->url, AVERROR(EINVAL));
             exit_program(1);
         }
     }

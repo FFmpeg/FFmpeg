@@ -1563,7 +1563,7 @@ static void print_final_stats(int64_t total_size)
         uint64_t total_packets = 0, total_size = 0;
 
         av_log(NULL, AV_LOG_VERBOSE, "Input file #%d (%s):\n",
-               i, f->ctx->filename);
+               i, f->ctx->url);
 
         for (j = 0; j < f->nb_streams; j++) {
             InputStream *ist = input_streams[f->ist_index + j];
@@ -1597,7 +1597,7 @@ static void print_final_stats(int64_t total_size)
         uint64_t total_packets = 0, total_size = 0;
 
         av_log(NULL, AV_LOG_VERBOSE, "Output file #%d (%s):\n",
-               i, of->ctx->filename);
+               i, of->ctx->url);
 
         for (j = 0; j < of->ctx->nb_streams; j++) {
             OutputStream *ost = output_streams[of->ost_index + j];
@@ -2105,7 +2105,7 @@ static void check_decode_result(InputStream *ist, int *got_output, int ret)
 
     if (exit_on_error && *got_output && ist) {
         if (ist->decoded_frame->decode_error_flags || (ist->decoded_frame->flags & AV_FRAME_FLAG_CORRUPT)) {
-            av_log(NULL, AV_LOG_FATAL, "%s: corrupt decoded frame in stream %d\n", input_files[ist->file_index]->ctx->filename, ist->st->index);
+            av_log(NULL, AV_LOG_FATAL, "%s: corrupt decoded frame in stream %d\n", input_files[ist->file_index]->ctx->url, ist->st->index);
             exit_program(1);
         }
     }
@@ -2989,7 +2989,7 @@ static int check_init_output_file(OutputFile *of, int file_index)
     //assert_avoptions(of->opts);
     of->header_written = 1;
 
-    av_dump_format(of->ctx, file_index, of->ctx->filename, 1);
+    av_dump_format(of->ctx, file_index, of->ctx->url, 1);
 
     if (sdp_filename || want_sdp)
         print_sdp();
@@ -4252,7 +4252,7 @@ static int process_input(int file_index)
     }
     if (ret < 0) {
         if (ret != AVERROR_EOF) {
-            print_error(is->filename, ret);
+            print_error(is->url, ret);
             if (exit_on_error)
                 exit_program(1);
         }
@@ -4301,7 +4301,7 @@ static int process_input(int file_index)
         goto discard_packet;
 
     if (exit_on_error && (pkt.flags & AV_PKT_FLAG_CORRUPT)) {
-        av_log(NULL, AV_LOG_FATAL, "%s: corrupt input packet in stream %d\n", is->filename, pkt.stream_index);
+        av_log(NULL, AV_LOG_FATAL, "%s: corrupt input packet in stream %d\n", is->url, pkt.stream_index);
         exit_program(1);
     }
 
@@ -4668,11 +4668,11 @@ static int transcode(void)
             av_log(NULL, AV_LOG_ERROR,
                    "Nothing was written into output file %d (%s), because "
                    "at least one of its streams received no packets.\n",
-                   i, os->filename);
+                   i, os->url);
             continue;
         }
         if ((ret = av_write_trailer(os)) < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Error writing trailer of %s: %s\n", os->filename, av_err2str(ret));
+            av_log(NULL, AV_LOG_ERROR, "Error writing trailer of %s: %s\n", os->url, av_err2str(ret));
             if (exit_on_error)
                 exit_program(1);
         }
