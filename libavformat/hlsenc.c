@@ -1169,10 +1169,8 @@ static int create_master_playlist(AVFormatContext *s,
             goto fail;
         }
 
-        avio_printf(hls->m3u8_out, "#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"group_%s\"",
-                vs->agroup);
-        avio_printf(hls->m3u8_out, ",NAME=\"audio_0\",DEFAULT=YES,URI=\"%s\"\n",
-                m3u8_rel_name);
+        ff_hls_write_audio_rendition(hls->m3u8_out, vs->agroup, m3u8_rel_name);
+
         av_freep(&m3u8_rel_name);
     }
 

@@ -37,6 +37,7 @@ typedef enum {
 } PlaylistType;
 
 void ff_hls_write_playlist_version(AVIOContext *out, int version);
+void ff_hls_write_audio_rendition(AVIOContext *out, char *agroup, char *filename);
 void ff_hls_write_stream_info(AVStream *st, AVIOContext *out,
                               int bandwidth, char *filename, char *agroup);
 void ff_hls_write_playlist_header(AVIOContext *out, int version, int allowcache,
