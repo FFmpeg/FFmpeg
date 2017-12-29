@@ -386,6 +386,9 @@ static int init_duplicate_context(MpegEncContext *s)
     for (i = 0; i < 12; i++) {
         s->pblocks[i] = &s->block[i];
     }
+
+    FF_ALLOCZ_OR_GOTO(s->avctx, s->block32, sizeof(*s->block32), fail)
+
     if (s->avctx->codec_tag == AV_RL32("VCR2")) {
         // exchange uv
         FFSWAP(void *, s->pblocks[4], s->pblocks[5]);
@@ -421,6 +424,7 @@ static void free_duplicate_context(MpegEncContext *s)
     av_freep(&s->me.map);
     av_freep(&s->me.score_map);
     av_freep(&s->blocks);
+    av_freep(&s->block32);
     av_freep(&s->ac_val_base);
     s->block = NULL;
 }
@@ -438,6 +442,7 @@ static void backup_duplicate_context(MpegEncContext *bak, MpegEncContext *src)
     COPY(me.score_map);
     COPY(blocks);
     COPY(block);
+    COPY(block32);
     COPY(start_mb_y);
     COPY(end_mb_y);
     COPY(me.map_generation);
@@ -811,6 +816,7 @@ static void clear_context(MpegEncContext *s)
     s->dct_error_sum = NULL;
     s->block = NULL;
     s->blocks = NULL;
+    s->block32 = NULL;
     memset(s->pblocks, 0, sizeof(s->pblocks));
     s->ac_val_base = NULL;
     s->ac_val[0] =
@@ -2120,8 +2126,31 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
                 ff_wmv2_add_mb(s, block, dest_y, dest_cb, dest_cr);
             }
         } else {
+            /* Only MPEG-4 Simple Studio Profile is supported in > 8-bit mode.
+               TODO: Integrate 10-bit properly into mpegvideo.c so that ER works properly */
+            if (s->avctx->bits_per_raw_sample > 8){
+                const int act_block_size = block_size * 2;
+                s->idsp.idct_put(dest_y,                           dct_linesize, (int16_t*)(*s->block32)[0]);
+                s->idsp.idct_put(dest_y              + act_block_size, dct_linesize, (int16_t*)(*s->block32)[1]);
+                s->idsp.idct_put(dest_y + dct_offset,              dct_linesize, (int16_t*)(*s->block32)[2]);
+                s->idsp.idct_put(dest_y + dct_offset + act_block_size, dct_linesize, (int16_t*)(*s->block32)[3]);
+
+                dct_linesize = uvlinesize << s->interlaced_dct;
+                dct_offset   = s->interlaced_dct ? uvlinesize : uvlinesize*block_size;
+
+                s->idsp.idct_put(dest_cb,              dct_linesize, (int16_t*)(*s->block32)[4]);
+                s->idsp.idct_put(dest_cr,              dct_linesize, (int16_t*)(*s->block32)[5]);
+                s->idsp.idct_put(dest_cb + dct_offset, dct_linesize, (int16_t*)(*s->block32)[6]);
+                s->idsp.idct_put(dest_cr + dct_offset, dct_linesize, (int16_t*)(*s->block32)[7]);
+                if(!s->chroma_x_shift){//Chroma444
+                    s->idsp.idct_put(dest_cb + act_block_size,              dct_linesize, (int16_t*)(*s->block32)[8]);
+                    s->idsp.idct_put(dest_cr + act_block_size,              dct_linesize, (int16_t*)(*s->block32)[9]);
+                    s->idsp.idct_put(dest_cb + act_block_size + dct_offset, dct_linesize, (int16_t*)(*s->block32)[10]);
+                    s->idsp.idct_put(dest_cr + act_block_size + dct_offset, dct_linesize, (int16_t*)(*s->block32)[11]);
+                }
+            }
             /* dct only in intra block */
-            if(s->encoding || !(s->codec_id==AV_CODEC_ID_MPEG1VIDEO || s->codec_id==AV_CODEC_ID_MPEG2VIDEO)){
+            else if(s->encoding || !(s->codec_id==AV_CODEC_ID_MPEG1VIDEO || s->codec_id==AV_CODEC_ID_MPEG2VIDEO)){
                 put_dct(s, block[0], 0, dest_y                          , dct_linesize, s->qscale);
                 put_dct(s, block[1], 1, dest_y              + block_size, dct_linesize, s->qscale);
                 put_dct(s, block[2], 2, dest_y + dct_offset             , dct_linesize, s->qscale);
@@ -2202,7 +2231,8 @@ void ff_mpeg_draw_horiz_band(MpegEncContext *s, int y, int h)
 void ff_init_block_index(MpegEncContext *s){ //FIXME maybe rename
     const int linesize   = s->current_picture.f->linesize[0]; //not s->linesize as this would be wrong for field pics
     const int uvlinesize = s->current_picture.f->linesize[1];
-    const int mb_size= 4 - s->avctx->lowres;
+    const int width_of_mb = (4 + (s->avctx->bits_per_raw_sample > 8)) - s->avctx->lowres;
+    const int height_of_mb = 4 - s->avctx->lowres;
 
     s->block_index[0]= s->b8_stride*(s->mb_y*2    ) - 2 + s->mb_x*2;
     s->block_index[1]= s->b8_stride*(s->mb_y*2    ) - 1 + s->mb_x*2;
@@ -2212,20 +2242,20 @@ void ff_init_block_index(MpegEncContext *s){ //FIXME maybe rename
     s->block_index[5]= s->mb_stride*(s->mb_y + s->mb_height + 2) + s->b8_stride*s->mb_height*2 + s->mb_x - 1;
     //block_index is not used by mpeg2, so it is not affected by chroma_format
 
-    s->dest[0] = s->current_picture.f->data[0] + (int)((s->mb_x - 1U) <<  mb_size);
-    s->dest[1] = s->current_picture.f->data[1] + (int)((s->mb_x - 1U) << (mb_size - s->chroma_x_shift));
-    s->dest[2] = s->current_picture.f->data[2] + (int)((s->mb_x - 1U) << (mb_size - s->chroma_x_shift));
+    s->dest[0] = s->current_picture.f->data[0] + (int)((s->mb_x - 1U) <<  width_of_mb);
+    s->dest[1] = s->current_picture.f->data[1] + (int)((s->mb_x - 1U) << (width_of_mb - s->chroma_x_shift));
+    s->dest[2] = s->current_picture.f->data[2] + (int)((s->mb_x - 1U) << (width_of_mb - s->chroma_x_shift));
 
     if(!(s->pict_type==AV_PICTURE_TYPE_B && s->avctx->draw_horiz_band && s->picture_structure==PICT_FRAME))
     {
         if(s->picture_structure==PICT_FRAME){
-        s->dest[0] += s->mb_y *   linesize << mb_size;
-        s->dest[1] += s->mb_y * uvlinesize << (mb_size - s->chroma_y_shift);
-        s->dest[2] += s->mb_y * uvlinesize << (mb_size - s->chroma_y_shift);
+        s->dest[0] += s->mb_y *   linesize << height_of_mb;
+        s->dest[1] += s->mb_y * uvlinesize << (height_of_mb - s->chroma_y_shift);
+        s->dest[2] += s->mb_y * uvlinesize << (height_of_mb - s->chroma_y_shift);
         }else{
-            s->dest[0] += (s->mb_y>>1) *   linesize << mb_size;
-            s->dest[1] += (s->mb_y>>1) * uvlinesize << (mb_size - s->chroma_y_shift);
-            s->dest[2] += (s->mb_y>>1) * uvlinesize << (mb_size - s->chroma_y_shift);
+            s->dest[0] += (s->mb_y>>1) *   linesize << height_of_mb;
+            s->dest[1] += (s->mb_y>>1) * uvlinesize << (height_of_mb - s->chroma_y_shift);
+            s->dest[2] += (s->mb_y>>1) * uvlinesize << (height_of_mb - s->chroma_y_shift);
             av_assert1((s->mb_y&1) == (s->picture_structure == PICT_BOTTOM_FIELD));
         }
     }
