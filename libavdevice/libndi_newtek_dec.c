@@ -149,7 +149,7 @@ static int ndi_read_header(AVFormatContext *avctx)
     }
 
     /* Find available sources. */
-    ret = ndi_find_sources(avctx, avctx->filename, &recv_create_desc.source_to_connect_to);
+    ret = ndi_find_sources(avctx, avctx->url, &recv_create_desc.source_to_connect_to);
     if (ctx->find_sources) {
         return AVERROR_EXIT;
     }

@@ -259,14 +259,14 @@ static int iec61883_read_header(AVFormatContext *context)
         goto fail;
     }
 
-    inport = strtol(context->filename, &endptr, 10);
-    if (endptr != context->filename && *endptr == '\0') {
+    inport = strtol(context->url, &endptr, 10);
+    if (endptr != context->url && *endptr == '\0') {
         av_log(context, AV_LOG_INFO, "Selecting IEEE1394 port: %d\n", inport);
         j = inport;
         nb_ports = inport + 1;
-    } else if (strcmp(context->filename, "auto")) {
+    } else if (strcmp(context->url, "auto")) {
         av_log(context, AV_LOG_ERROR, "Invalid input \"%s\", you should specify "
-               "\"auto\" for auto-detection, or the port number.\n", context->filename);
+               "\"auto\" for auto-detection, or the port number.\n", context->url);
         goto fail;
     }
 

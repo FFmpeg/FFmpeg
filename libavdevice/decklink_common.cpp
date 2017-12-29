@@ -404,7 +404,7 @@ int ff_decklink_list_formats(AVFormatContext *avctx, decklink_direction_t direct
     }
 
     av_log(avctx, AV_LOG_INFO, "Supported formats for '%s':\n\tformat_code\tdescription",
-               avctx->filename);
+               avctx->url);
     while (itermode->Next(&mode) == S_OK) {
         BMDTimeValue tb_num, tb_den;
         mode->GetFrameRate(&tb_num, &tb_den);

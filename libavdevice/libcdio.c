@@ -60,9 +60,9 @@ static av_cold int read_header(AVFormatContext *ctx)
 
     if (!(st = avformat_new_stream(ctx, NULL)))
         return AVERROR(ENOMEM);
-    s->drive = cdio_cddap_identify(ctx->filename, CDDA_MESSAGE_LOGIT, &err);
+    s->drive = cdio_cddap_identify(ctx->url, CDDA_MESSAGE_LOGIT, &err);
     if (!s->drive) {
-        av_log(ctx, AV_LOG_ERROR, "Could not open drive %s.\n", ctx->filename);
+        av_log(ctx, AV_LOG_ERROR, "Could not open drive %s.\n", ctx->url);
         return AVERROR(EINVAL);
     }
     if (err) {
@@ -70,7 +70,7 @@ static av_cold int read_header(AVFormatContext *ctx)
         free(err);
     }
     if ((ret = cdio_cddap_open(s->drive)) < 0 || !s->drive->opened) {
-        av_log(ctx, AV_LOG_ERROR, "Could not open disk in drive %s.\n", ctx->filename);
+        av_log(ctx, AV_LOG_ERROR, "Could not open disk in drive %s.\n", ctx->url);
         return AVERROR(EINVAL);
     }
 
