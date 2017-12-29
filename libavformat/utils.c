@@ -555,6 +555,11 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
     if ((ret = av_opt_set_dict(s, &tmp)) < 0)
         goto fail;
 
+    if (!(s->url = av_strdup(filename ? filename : ""))) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
     av_strlcpy(s->filename, filename ? filename : "", sizeof(s->filename));
     if ((ret = init_input(s, filename, &tmp)) < 0)
         goto fail;
@@ -4371,6 +4376,7 @@ void avformat_free_context(AVFormatContext *s)
     av_freep(&s->streams);
     flush_packet_queue(s);
     av_freep(&s->internal);
+    av_freep(&s->url);
     av_free(s);
 }
 
@@ -5635,4 +5641,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #else
     return st->internal->avctx->time_base;
 #endif
+}
+
+void ff_format_set_url(AVFormatContext *s, char *url)
+{
+    av_assert0(url);
+    av_freep(&s->url);
+    s->url = url;
+    av_strlcpy(s->filename, url, sizeof(s->filename));
 }

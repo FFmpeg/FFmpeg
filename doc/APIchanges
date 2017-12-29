@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2018-01-xx - xxxxxxx - lavf 58.7.100 - avformat.h
+  Add url field to AVFormatContext and add ff_format_set_url helper function.
+
 2018-01-xx - xxxxxxx - lavf 58.6.100 - avformat.h
   Add AVFMTCTX_UNSEEKABLE (for HLS demuxer).
 

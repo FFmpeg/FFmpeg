@@ -186,8 +186,12 @@ int avformat_alloc_output_context2(AVFormatContext **avctx, AVOutputFormat *ofor
     } else
         s->priv_data = NULL;
 
-    if (filename)
+    if (filename) {
         av_strlcpy(s->filename, filename, sizeof(s->filename));
+        if (!(s->url = av_strdup(filename)))
+            goto nomem;
+
+    }
     *avctx = s;
     return 0;
 nomem:
@@ -250,6 +254,11 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
     if (s->priv_data && s->oformat->priv_class && *(const AVClass**)s->priv_data==s->oformat->priv_class &&
         (ret = av_opt_set_dict2(s->priv_data, &tmp, AV_OPT_SEARCH_CHILDREN)) < 0)
         goto fail;
+
+    if (!s->url && !(s->url = av_strdup(s->filename))) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
 
 #if FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
