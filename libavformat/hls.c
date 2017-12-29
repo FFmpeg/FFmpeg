@@ -1682,7 +1682,7 @@ static int nested_io_open(AVFormatContext *s, AVIOContext **pb, const char *url,
     av_log(s, AV_LOG_ERROR,
            "A HLS playlist item '%s' referred to an external file '%s'. "
            "Opening this file was forbidden for security reasons\n",
-           s->filename, url);
+           s->url, url);
     return AVERROR(EPERM);
 }
 
@@ -1820,7 +1820,7 @@ static int hls_read_header(AVFormatContext *s)
         update_options(&c->http_proxy, "http_proxy", u);
     }
 
-    if ((ret = parse_playlist(c, s->filename, NULL, s->pb)) < 0)
+    if ((ret = parse_playlist(c, s->url, NULL, s->pb)) < 0)
         goto fail;
 
     if ((ret = save_avio_options(s)) < 0)
