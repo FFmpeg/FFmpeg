@@ -241,15 +241,10 @@ static int mkdir_p(const char *path) {
     return ret;
 }
 
-static int is_http_proto(char *filename) {
-    const char *proto = avio_find_protocol_name(filename);
-    return proto ? (!av_strcasecmp(proto, "http") || !av_strcasecmp(proto, "https")) : 0;
-}
-
 static int hlsenc_io_open(AVFormatContext *s, AVIOContext **pb, char *filename,
                           AVDictionary **options) {
     HLSContext *hls = s->priv_data;
-    int http_base_proto = filename ? is_http_proto(filename) : 0;
+    int http_base_proto = filename ? ff_is_http_proto(filename) : 0;
     int err = AVERROR_MUXER_NOT_FOUND;
     if (!*pb || !http_base_proto || !hls->http_persistent) {
         err = s->io_open(s, pb, filename, AVIO_FLAG_WRITE, options);
@@ -265,8 +260,7 @@ static int hlsenc_io_open(AVFormatContext *s, AVIOContext **pb, char *filename,
 
 static void hlsenc_io_close(AVFormatContext *s, AVIOContext **pb, char *filename) {
     HLSContext *hls = s->priv_data;
-    int http_base_proto = filename ? is_http_proto(filename) : 0;
-
+    int http_base_proto = filename ? ff_is_http_proto(filename) : 0;
     if (!http_base_proto || !hls->http_persistent || hls->key_info_file || hls->encrypt) {
         ff_format_io_close(s, pb);
 #if CONFIG_HTTP_PROTOCOL
@@ -281,7 +275,7 @@ static void hlsenc_io_close(AVFormatContext *s, AVIOContext **pb, char *filename
 
 static void set_http_options(AVFormatContext *s, AVDictionary **options, HLSContext *c)
 {
-    int http_base_proto = is_http_proto(s->filename);
+    int http_base_proto = ff_is_http_proto(s->filename);
 
     if (c->method) {
         av_dict_set(options, "method", c->method, 0);

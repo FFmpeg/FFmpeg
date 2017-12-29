@@ -5472,6 +5472,11 @@ void ff_format_io_close(AVFormatContext *s, AVIOContext **pb)
     *pb = NULL;
 }
 
+int ff_is_http_proto(char *filename) {
+    const char *proto = avio_find_protocol_name(filename);
+    return proto ? (!av_strcasecmp(proto, "http") || !av_strcasecmp(proto, "https")) : 0;
+}
+
 int ff_parse_creation_time_metadata(AVFormatContext *s, int64_t *timestamp, int return_seconds)
 {
     AVDictionaryEntry *entry;
