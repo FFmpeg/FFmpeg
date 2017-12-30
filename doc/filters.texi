@@ -6937,6 +6937,29 @@ Set whether or not chroma is considered in the metric calculations. Default is
 @code{1}.
 @end table
 
+@section deconvolve
+
+Apply 2D deconvolution of video stream in frequency domain using second stream
+as impulse.
+
+The filter accepts the following options:
+
+@table @option
+@item planes
+Set which planes to process.
+
+@item impulse
+Set which impulse video frames will be processed, can be @var{first}
+or @var{all}. Default is @var{all}.
+
+@item noise
+Set noise when doing divisions. Default is @var{0.0000001}. Useful when width
+and height are not same and not power of 2 or if stream prior to convolving
+had noise.
+@end table
+
+The @code{deconvolve} filter also supports the @ref{framesync} options.
+
 @section deflate
 
 Apply deflate effect to the video.

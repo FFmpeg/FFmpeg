@@ -315,7 +315,6 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
     h->flags                 = avctx->flags;
     h->poc.prev_poc_msb      = 1 << 16;
     h->recovery_frame        = -1;
-    h->x264_build            = -1;
     h->frame_recovered       = 0;
     h->poc.prev_frame_num    = -1;
     h->sei.frame_packing.arrangement_cancel_flag = -1;
@@ -1037,6 +1036,7 @@ static const AVOption h264_options[] = {
     { "is_avc", "is avc", OFFSET(is_avc), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, 0 },
     { "nal_length_size", "nal_length_size", OFFSET(nal_length_size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 4, 0 },
     { "enable_er", "Enable error resilience on damaged frames (unsafe)", OFFSET(enable_er), AV_OPT_TYPE_BOOL, { .i64 = -1 }, -1, 1, VD },
+    { "x264_build", "Assume this x264 version if no x264 version found in any SEI", OFFSET(x264_build), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, VD },
     { NULL },
 };
 

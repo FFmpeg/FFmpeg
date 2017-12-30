@@ -35,6 +35,16 @@ void ff_hls_write_playlist_version(AVIOContext *out, int version) {
     avio_printf(out, "#EXT-X-VERSION:%d\n", version);
 }
 
+void ff_hls_write_audio_rendition(AVIOContext *out, char *agroup,
+                                  char *filename, int name_id, int is_default) {
+    if (!out || !agroup || !filename)
+        return;
+
+    avio_printf(out, "#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID=\"group_%s\"", agroup);
+    avio_printf(out, ",NAME=\"audio_%d\",DEFAULT=%s,URI=\"%s\"\n", name_id,
+                     is_default ? "YES" : "NO", filename);
+}
+
 void ff_hls_write_stream_info(AVStream *st, AVIOContext *out,
                               int bandwidth, char *filename, char *agroup) {
     if (!out || !filename)

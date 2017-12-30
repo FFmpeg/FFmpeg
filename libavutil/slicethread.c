@@ -99,10 +99,6 @@ int avpriv_slicethread_create(AVSliceThread **pctx, void *priv,
     AVSliceThread *ctx;
     int nb_workers, i;
 
-#if HAVE_W32THREADS
-    w32thread_init();
-#endif
-
     av_assert0(nb_threads >= 0);
     if (!nb_threads) {
         int nb_cpus = av_cpu_count();

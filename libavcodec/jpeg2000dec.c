@@ -2009,7 +2009,16 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
            bytestream2_get_bytes_left(&s->g) >= 8) {
         atom_size = bytestream2_get_be32u(&s->g);
         atom      = bytestream2_get_be32u(&s->g);
-        atom_end  = bytestream2_tell(&s->g) + atom_size - 8;
+        if (atom_size == 1) {
+            if (bytestream2_get_be32u(&s->g)) {
+                avpriv_request_sample(s->avctx, "Huge atom");
+                return 0;
+            }
+            atom_size = bytestream2_get_be32u(&s->g);
+            atom_end  = bytestream2_tell(&s->g) + atom_size - 16;
+        } else {
+            atom_end  = bytestream2_tell(&s->g) + atom_size -  8;
+        }
 
         if (atom == JP2_CODESTREAM)
             return 1;

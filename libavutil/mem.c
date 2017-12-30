@@ -61,7 +61,7 @@ void  free(void *ptr);
 
 #include "mem_internal.h"
 
-#define ALIGN (HAVE_AVX ? 32 : 16)
+#define ALIGN (HAVE_AVX512 ? 64 : (HAVE_AVX ? 32 : 16))
 
 /* NOTE: if you want to override these functions with your own
  * implementations (not recommended) you have to link libav* as

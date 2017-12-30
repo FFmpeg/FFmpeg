@@ -67,58 +67,7 @@
 #include "libavutil/ffversion.h"
 const char av_codec_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
 
-#if HAVE_PTHREADS || HAVE_W32THREADS || HAVE_OS2THREADS
-static int default_lockmgr_cb(void **arg, enum AVLockOp op)
-{
-    void * volatile * mutex = arg;
-    int err;
-
-    switch (op) {
-    case AV_LOCK_CREATE:
-        return 0;
-    case AV_LOCK_OBTAIN:
-        if (!*mutex) {
-            pthread_mutex_t *tmp = av_malloc(sizeof(pthread_mutex_t));
-            if (!tmp)
-                return AVERROR(ENOMEM);
-            if ((err = pthread_mutex_init(tmp, NULL))) {
-                av_free(tmp);
-                return AVERROR(err);
-            }
-            if (avpriv_atomic_ptr_cas(mutex, NULL, tmp)) {
-                pthread_mutex_destroy(tmp);
-                av_free(tmp);
-            }
-        }
-
-        if ((err = pthread_mutex_lock(*mutex)))
-            return AVERROR(err);
-
-        return 0;
-    case AV_LOCK_RELEASE:
-        if ((err = pthread_mutex_unlock(*mutex)))
-            return AVERROR(err);
-
-        return 0;
-    case AV_LOCK_DESTROY:
-        if (*mutex)
-            pthread_mutex_destroy(*mutex);
-        av_free(*mutex);
-        avpriv_atomic_ptr_cas(mutex, *mutex, NULL);
-        return 0;
-    }
-    return 1;
-}
-static int (*lockmgr_cb)(void **mutex, enum AVLockOp op) = default_lockmgr_cb;
-#else
-static int (*lockmgr_cb)(void **mutex, enum AVLockOp op) = NULL;
-#endif
-
-
-volatile int ff_avcodec_locked;
-static atomic_int entangled_thread_counter = ATOMIC_VAR_INIT(0);
-static void *codec_mutex;
-static void *avformat_mutex;
+static AVMutex codec_mutex = AV_MUTEX_INITIALIZER;
 
 void av_fast_padded_malloc(void *ptr, unsigned int *size, size_t min_size)
 {
@@ -599,6 +548,19 @@ static int64_t get_bit_rate(AVCodecContext *ctx)
     return bit_rate;
 }
 
+
+static void ff_lock_avcodec(AVCodecContext *log_ctx, const AVCodec *codec)
+{
+    if (!(codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE) && codec->init)
+        ff_mutex_lock(&codec_mutex);
+}
+
+static void ff_unlock_avcodec(const AVCodec *codec)
+{
+    if (!(codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE) && codec->init)
+        ff_mutex_unlock(&codec_mutex);
+}
+
 int attribute_align_arg ff_codec_open2_recursive(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options)
 {
     int ret = 0;
@@ -638,9 +600,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     if (options)
         av_dict_copy(&tmp, *options, 0);
 
-    ret = ff_lock_avcodec(avctx, codec);
-    if (ret < 0)
-        return ret;
+    ff_lock_avcodec(avctx, codec);
 
     avctx->internal = av_mallocz(sizeof(AVCodecInternal));
     if (!avctx->internal) {
@@ -1909,97 +1869,12 @@ void av_register_hwaccel(AVHWAccel *hwaccel)
 }
 #endif
 
+#if FF_API_LOCKMGR
 int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op))
 {
-    if (lockmgr_cb) {
-        // There is no good way to rollback a failure to destroy the
-        // mutex, so we ignore failures.
-        lockmgr_cb(&codec_mutex,    AV_LOCK_DESTROY);
-        lockmgr_cb(&avformat_mutex, AV_LOCK_DESTROY);
-        lockmgr_cb     = NULL;
-        codec_mutex    = NULL;
-        avformat_mutex = NULL;
-    }
-
-    if (cb) {
-        void *new_codec_mutex    = NULL;
-        void *new_avformat_mutex = NULL;
-        int err;
-        if (err = cb(&new_codec_mutex, AV_LOCK_CREATE)) {
-            return err > 0 ? AVERROR_UNKNOWN : err;
-        }
-        if (err = cb(&new_avformat_mutex, AV_LOCK_CREATE)) {
-            // Ignore failures to destroy the newly created mutex.
-            cb(&new_codec_mutex, AV_LOCK_DESTROY);
-            return err > 0 ? AVERROR_UNKNOWN : err;
-        }
-        lockmgr_cb     = cb;
-        codec_mutex    = new_codec_mutex;
-        avformat_mutex = new_avformat_mutex;
-    }
-
     return 0;
 }
-
-int ff_lock_avcodec(AVCodecContext *log_ctx, const AVCodec *codec)
-{
-    if (codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE || !codec->init)
-        return 0;
-
-    if (lockmgr_cb) {
-        if ((*lockmgr_cb)(&codec_mutex, AV_LOCK_OBTAIN))
-            return -1;
-    }
-
-    if (atomic_fetch_add(&entangled_thread_counter, 1)) {
-        av_log(log_ctx, AV_LOG_ERROR,
-               "Insufficient thread locking. At least %d threads are "
-               "calling avcodec_open2() at the same time right now.\n",
-               atomic_load(&entangled_thread_counter));
-        if (!lockmgr_cb)
-            av_log(log_ctx, AV_LOG_ERROR, "No lock manager is set, please see av_lockmgr_register()\n");
-        ff_avcodec_locked = 1;
-        ff_unlock_avcodec(codec);
-        return AVERROR(EINVAL);
-    }
-    av_assert0(!ff_avcodec_locked);
-    ff_avcodec_locked = 1;
-    return 0;
-}
-
-int ff_unlock_avcodec(const AVCodec *codec)
-{
-    if (codec->caps_internal & FF_CODEC_CAP_INIT_THREADSAFE || !codec->init)
-        return 0;
-
-    av_assert0(ff_avcodec_locked);
-    ff_avcodec_locked = 0;
-    atomic_fetch_add(&entangled_thread_counter, -1);
-    if (lockmgr_cb) {
-        if ((*lockmgr_cb)(&codec_mutex, AV_LOCK_RELEASE))
-            return -1;
-    }
-
-    return 0;
-}
-
-int avpriv_lock_avformat(void)
-{
-    if (lockmgr_cb) {
-        if ((*lockmgr_cb)(&avformat_mutex, AV_LOCK_OBTAIN))
-            return -1;
-    }
-    return 0;
-}
-
-int avpriv_unlock_avformat(void)
-{
-    if (lockmgr_cb) {
-        if ((*lockmgr_cb)(&avformat_mutex, AV_LOCK_RELEASE))
-            return -1;
-    }
-    return 0;
-}
+#endif
 
 unsigned int avpriv_toupper4(unsigned int x)
 {

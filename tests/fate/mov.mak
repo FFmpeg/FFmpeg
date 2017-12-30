@@ -13,15 +13,15 @@ FATE_MOV = fate-mov-3elist \
            fate-mov-elst-ends-betn-b-and-i \
            fate-mov-frag-overlap \
            fate-mov-bbi-elst-starts-b \
-           fate-mov-guess-delay-1 \
-           fate-mov-guess-delay-2 \
-           fate-mov-guess-delay-3 \
 
 FATE_MOV_FFPROBE = fate-mov-aac-2048-priming \
                    fate-mov-zombie \
                    fate-mov-init-nonkeyframe \
                    fate-mov-displaymatrix \
                    fate-mov-spherical-mono \
+                   fate-mov-guess-delay-1 \
+                   fate-mov-guess-delay-2 \
+                   fate-mov-guess-delay-3 \
 
 FATE_SAMPLES_AVCONV += $(FATE_MOV)
 FATE_SAMPLES_FFPROBE += $(FATE_MOV_FFPROBE)

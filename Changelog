@@ -27,6 +27,10 @@ version <next>:
 - video setrange filter
 - nsp demuxer
 - support LibreSSL (via libtls)
+- AVX-512/ZMM support added
+- Dropped support for building for Windows XP. The minimum supported Windows
+  version is Windows Vista.
+- deconvolve video filter
 
 
 version 3.4:

@@ -1768,9 +1768,10 @@ static int mpeg4_decode_visual_object(MpegEncContext *s, GetBitContext *gb)
         visual_object_type == VOT_STILL_TEXTURE_ID) {
         int video_signal_type = get_bits1(gb);
         if (video_signal_type) {
-            int video_format = get_bits(gb, 3);
-            int video_range = get_bits1(gb);
-            int color_description = get_bits1(gb);
+            int video_range, color_description;
+            skip_bits(gb, 3); // video_format
+            video_range = get_bits1(gb);
+            color_description = get_bits1(gb);
 
             s->avctx->color_range = video_range ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
 

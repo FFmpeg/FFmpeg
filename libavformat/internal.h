@@ -622,6 +622,14 @@ int ff_format_output_open(AVFormatContext *s, const char *url, AVDictionary **op
 void ff_format_io_close(AVFormatContext *s, AVIOContext **pb);
 
 /**
+ * Utility function to check if the file uses http or https protocol
+ *
+ * @param s AVFormatContext
+ * @param filename URL or file name to open for writing
+ */
+int ff_is_http_proto(char *filename);
+
+/**
  * Parse creation_time in AVFormatContext metadata if exists and warn if the
  * parsing fails.
  *
@@ -683,5 +691,9 @@ int ff_bprint_to_codecpar_extradata(AVCodecParameters *par, struct AVBPrint *buf
  */
 int ff_interleaved_peek(AVFormatContext *s, int stream,
                         AVPacket *pkt, int add_offset);
+
+
+int ff_lock_avformat(void);
+int ff_unlock_avformat(void);
 
 #endif /* AVFORMAT_INTERNAL_H */

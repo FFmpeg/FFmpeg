@@ -55,20 +55,20 @@ typedef struct TLSContext {
 
 void ff_gnutls_init(void)
 {
-    avpriv_lock_avformat();
+    ff_lock_avformat();
 #if HAVE_THREADS && GNUTLS_VERSION_NUMBER < 0x020b00
     if (gcry_control(GCRYCTL_ANY_INITIALIZATION_P) == 0)
         gcry_control(GCRYCTL_SET_THREAD_CBS, &gcry_threads_pthread);
 #endif
     gnutls_global_init();
-    avpriv_unlock_avformat();
+    ff_unlock_avformat();
 }
 
 void ff_gnutls_deinit(void)
 {
-    avpriv_lock_avformat();
+    ff_lock_avformat();
     gnutls_global_deinit();
-    avpriv_unlock_avformat();
+    ff_unlock_avformat();
 }
 
 static int print_tls_error(URLContext *h, int ret)
