@@ -463,7 +463,7 @@ void av_memcpy_backptr(uint8_t *dst, int back, int cnt)
 
 void *av_fast_realloc(void *ptr, unsigned int *size, size_t min_size)
 {
-    if (min_size < *size)
+    if (min_size <= *size)
         return ptr;
 
     min_size = FFMAX(min_size + min_size / 16 + 32, min_size);
