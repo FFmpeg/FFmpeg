@@ -2,6 +2,7 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 2.8.14:
+- x264: Support version 153
 - avcodec/indeo5: Do not leave frame_type set to an invalid value
 - avcodec/hevc_ps: Check log2_sao_offset_scale_*
 - avcodec/mpeg4videodec: Avoid possibly aliasing violating casts
