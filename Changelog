@@ -2,6 +2,7 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 2.4.14:
+- x264: Support version 153
 - avcodec/exr: Check buf_size more completely
 - avcodec/flacdec: Fix overflow in multiplication in decode_subframe_fixed()
 - avcodec/hevcdsp_template: Fix Invalid shifts in put_hevc_qpel_bi_w_h() and put_hevc_qpel_bi_w_w()
