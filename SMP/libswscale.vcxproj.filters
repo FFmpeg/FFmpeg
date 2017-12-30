@@ -34,15 +34,15 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <YASM Include="..\libswscale\x86\input.asm">
+    <NASM Include="..\libswscale\x86\input.asm">
       <Filter>Source Files\libswscale\x86</Filter>
-    </YASM>
-    <YASM Include="..\libswscale\x86\output.asm">
+    </NASM>
+    <NASM Include="..\libswscale\x86\output.asm">
       <Filter>Source Files\libswscale\x86</Filter>
-    </YASM>
-    <YASM Include="..\libswscale\x86\scale.asm">
+    </NASM>
+    <NASM Include="..\libswscale\x86\scale.asm">
       <Filter>Source Files\libswscale\x86</Filter>
-    </YASM>
+    </NASM>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\libswscale\alphablend.c">

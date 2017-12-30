@@ -204,14 +204,12 @@ EXPORTS
     avpriv_get_raw_pix_fmt_tags
     avpriv_h264_has_num_reorder_frames
     avpriv_init_elbg
-    avpriv_lock_avformat
     avpriv_mpeg4audio_get_config
     avpriv_mpegaudio_decode_header
     avpriv_put_string
     avpriv_split_xiph_headers
     avpriv_tak_parse_streaminfo
     avpriv_toupper4
-    avpriv_unlock_avformat
     avsubtitle_free
     av_codec_ffversion DATA
     avpriv_ac3_channel_layout_tab DATA

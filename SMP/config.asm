@@ -41,19 +41,15 @@
 %define ARCH_TILEPRO 0
 %define ARCH_TOMI 0
 %define ARCH_X86 1
-%ifidn __OUTPUT_FORMAT__,x64
+%if __BITS__ = 64
 %define ARCH_X86_32 0
-%elifidn __OUTPUT_FORMAT__,win64
-%define ARCH_X86_32 0
-%elifidn __OUTPUT_FORMAT__,win32
+%elif __BITS__ = 32
 %define ARCH_X86_32 1
 %define PREFIX
 %endif
-%ifidn __OUTPUT_FORMAT__,x64
+%if __BITS__ = 64
 %define ARCH_X86_64 1
-%elifidn __OUTPUT_FORMAT__,win64
-%define ARCH_X86_64 1
-%elifidn __OUTPUT_FORMAT__,win32
+%elif __BITS__ = 32
 %define ARCH_X86_64 0
 %endif
 %define HAVE_ARMV5TE 0
@@ -75,6 +71,7 @@
 %define HAVE_AMD3DNOWEXT 1
 %define HAVE_AVX 1
 %define HAVE_AVX2 1
+%define HAVE_AVX512 1
 %define HAVE_FMA3 1
 %define HAVE_FMA4 1
 %define HAVE_MMX 1
@@ -86,7 +83,7 @@
 %define HAVE_SSE42 1
 %define HAVE_SSSE3 1
 %define HAVE_XOP 1
-%define HAVE_CPUNOP 1
+%define HAVE_CPUNOP 0
 %define HAVE_I686 1
 %define HAVE_MIPSFPU 0
 %define HAVE_MIPS32R2 0
@@ -119,6 +116,7 @@
 %define HAVE_AMD3DNOWEXT_EXTERNAL 1
 %define HAVE_AVX_EXTERNAL 1
 %define HAVE_AVX2_EXTERNAL 1
+%define HAVE_AVX512_EXTERNAL 1
 %define HAVE_FMA3_EXTERNAL 1
 %define HAVE_FMA4_EXTERNAL 1
 %define HAVE_MMX_EXTERNAL 1
@@ -130,7 +128,7 @@
 %define HAVE_SSE42_EXTERNAL 1
 %define HAVE_SSSE3_EXTERNAL 1
 %define HAVE_XOP_EXTERNAL 1
-%define HAVE_CPUNOP_EXTERNAL 1
+%define HAVE_CPUNOP_EXTERNAL 0
 %define HAVE_I686_EXTERNAL 1
 %define HAVE_MIPSFPU_EXTERNAL 0
 %define HAVE_MIPS32R2_EXTERNAL 0
@@ -163,6 +161,7 @@
 %define HAVE_AMD3DNOWEXT_INLINE 1
 %define HAVE_AVX_INLINE 1
 %define HAVE_AVX2_INLINE 1
+%define HAVE_AVX512_INLINE 1
 %define HAVE_FMA3_INLINE 1
 %define HAVE_FMA4_INLINE 1
 %define HAVE_MMX_INLINE 1
@@ -188,18 +187,14 @@
 %define HAVE_LOONGSON2_INLINE 0
 %define HAVE_LOONGSON3_INLINE 0
 %define HAVE_MMI_INLINE 0
-%ifidn __OUTPUT_FORMAT__,x64
+%if __BITS__ = 64
 %define HAVE_ALIGNED_STACK 1
-%elifidn __OUTPUT_FORMAT__,win64
-%define HAVE_ALIGNED_STACK 1
-%elifidn __OUTPUT_FORMAT__,win32
+%elif __BITS__ = 32
 %define HAVE_ALIGNED_STACK 0
 %endif
-%ifidn __OUTPUT_FORMAT__,x64
+%if __BITS__ = 64
 %define HAVE_FAST_64BIT 1
-%elifidn __OUTPUT_FORMAT__,win64
-%define HAVE_FAST_64BIT 1
-%elifidn __OUTPUT_FORMAT__,win32
+%elif __BITS__ = 32
 %define HAVE_FAST_64BIT 0
 %endif
 %define HAVE_FAST_CLZ 1
@@ -207,6 +202,7 @@
 %define HAVE_LOCAL_ALIGNED 1
 %define HAVE_SIMD_ALIGN_16 1
 %define HAVE_SIMD_ALIGN_32 1
+%define HAVE_SIMD_ALIGN_64 1
 %define HAVE_ATOMICS_GCC 0
 %define HAVE_ATOMICS_SUNCC 0
 %define HAVE_ATOMICS_WIN32 1
@@ -377,7 +373,6 @@
 %define HAVE_VFP_ARGS 0
 %define HAVE_XFORM_ASM 0
 %define HAVE_XMM_CLOBBERS 1
-%define HAVE_CONDITION_VARIABLE_PTR 1
 %define HAVE_KCMVIDEOCODECTYPE_HEVC 0
 %define HAVE_SOCKLEN_T 1
 %define HAVE_STRUCT_ADDRINFO 1
@@ -1672,6 +1667,7 @@
 %define CONFIG_DCTDNOIZ_FILTER 1
 %define CONFIG_DEBAND_FILTER 1
 %define CONFIG_DECIMATE_FILTER 1
+%define CONFIG_DECONVOLVE_FILTER 1
 %define CONFIG_DEFLATE_FILTER 1
 %define CONFIG_DEFLICKER_FILTER 1
 %define CONFIG_DEINTERLACE_QSV_FILTER 1

@@ -34,15 +34,15 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <YASM Include="..\libswresample\x86\audio_convert.asm">
+    <NASM Include="..\libswresample\x86\audio_convert.asm">
       <Filter>Source Files\libswresample\x86</Filter>
-    </YASM>
-    <YASM Include="..\libswresample\x86\rematrix.asm">
+    </NASM>
+    <NASM Include="..\libswresample\x86\rematrix.asm">
       <Filter>Source Files\libswresample\x86</Filter>
-    </YASM>
-    <YASM Include="..\libswresample\x86\resample.asm">
+    </NASM>
+    <NASM Include="..\libswresample\x86\resample.asm">
       <Filter>Source Files\libswresample\x86</Filter>
-    </YASM>
+    </NASM>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\libswresample\audioconvert.c">

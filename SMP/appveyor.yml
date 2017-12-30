@@ -109,12 +109,12 @@ before_build:
         $env:VCTargetsPath="$env:MSBUILDDIR\..\..\..\Microsoft.Cpp\v4.0\V${env:MSVC_VER}0"
     }
 
-# Download and install yasm integration
-- ps: (New-Object Net.WebClient).DownloadFile('https://github.com/ShiftMediaProject/VSYASM/releases/download/0.1/VSYASM.zip', "$pwd\yasm.zip")
-- ps: Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory("$pwd\yasm.zip", "$pwd\TempYASMUnpack")
-- cmd: call ".\TempYASMUnpack\install_script.bat"
-# Additional yasm location in order to fix gitlink error
-- ps: if ($env:MSVC_VER -ne 15) { Copy-Item -Force "TempYASMUnpack\*.*" "$env:VCTargetsPath\..\BuildCustomizations" }
+# Download and install nasm integration
+- ps: (New-Object Net.WebClient).DownloadFile('https://github.com/ShiftMediaProject/VSNASM/releases/download/0.3/VSNASM.zip', "$pwd\nasm.zip")
+- ps: Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory("$pwd\nasm.zip", "$pwd\TempNASMUnpack")
+- cmd: call ".\TempNASMUnpack\install_script.bat"
+# Additional nasm location in order to fix gitlink error
+- ps: if ($env:MSVC_VER -ne 15) { Copy-Item -Force "TempNASMUnpack\*.*" "$env:VCTargetsPath\..\BuildCustomizations" }
 
 # Use project supplied script to download all required dependency libraries
 - cmd: call "%APPVEYOR_BUILD_FOLDER%\SMP\project_get_dependencies.bat"
@@ -133,7 +133,7 @@ after_build:
 # Copy licenses for dependencies
 - cmd: copy /y %APPVEYOR_BUILD_FOLDER%\..\prebuilt\licenses\*.* %APPVEYOR_BUILD_FOLDER%\build_out\licenses\
 
-# Copy binary files to seperate artifact folder
+# Copy binary files to separate artifact folder
 - cmd: mkdir %APPVEYOR_BUILD_FOLDER%\build_bin\x86 >NUL 2>&1
 - cmd: copy /y %APPVEYOR_BUILD_FOLDER%\build_out\bin\x86\*.exe %APPVEYOR_BUILD_FOLDER%\build_bin\x86
 - cmd: mkdir %APPVEYOR_BUILD_FOLDER%\build_bin\x64 >NUL 2>&1

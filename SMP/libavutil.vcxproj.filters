@@ -40,27 +40,27 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <YASM Include="..\libavutil\x86\cpuid.asm">
+    <NASM Include="..\libavutil\x86\cpuid.asm">
       <Filter>Source Files\libavutil\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavutil\x86\emms.asm">
+    </NASM>
+    <NASM Include="..\libavutil\x86\emms.asm">
       <Filter>Source Files\libavutil\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavutil\x86\fixed_dsp.asm">
+    </NASM>
+    <NASM Include="..\libavutil\x86\fixed_dsp.asm">
       <Filter>Source Files\libavutil\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavutil\x86\float_dsp.asm">
+    </NASM>
+    <NASM Include="..\libavutil\x86\float_dsp.asm">
       <Filter>Source Files\libavutil\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavutil\x86\imgutils.asm">
+    </NASM>
+    <NASM Include="..\libavutil\x86\imgutils.asm">
       <Filter>Source Files\libavutil\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavutil\x86\lls.asm">
+    </NASM>
+    <NASM Include="..\libavutil\x86\lls.asm">
       <Filter>Source Files\libavutil\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavutil\x86\pixelutils.asm">
+    </NASM>
+    <NASM Include="..\libavutil\x86\pixelutils.asm">
       <Filter>Source Files\libavutil\x86</Filter>
-    </YASM>
+    </NASM>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\libavutil\adler32.c">

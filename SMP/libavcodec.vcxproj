@@ -69,96 +69,96 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <YASM Include="..\libavcodec\x86\ac3dsp.asm" />
-    <YASM Include="..\libavcodec\x86\ac3dsp_downmix.asm" />
-    <YASM Include="..\libavcodec\x86\audiodsp.asm" />
-    <YASM Include="..\libavcodec\x86\blockdsp.asm" />
-    <YASM Include="..\libavcodec\x86\bswapdsp.asm" />
-    <YASM Include="..\libavcodec\x86\dct32.asm" />
-    <YASM Include="..\libavcodec\x86\fft.asm" />
-    <YASM Include="..\libavcodec\x86\fmtconvert.asm" />
-    <YASM Include="..\libavcodec\x86\h263_loopfilter.asm" />
-    <YASM Include="..\libavcodec\x86\h264_chromamc.asm" />
-    <YASM Include="..\libavcodec\x86\h264_chromamc_10bit.asm" />
-    <YASM Include="..\libavcodec\x86\h264_deblock.asm" />
-    <YASM Include="..\libavcodec\x86\h264_deblock_10bit.asm" />
-    <YASM Include="..\libavcodec\x86\h264_idct.asm" />
-    <YASM Include="..\libavcodec\x86\h264_idct_10bit.asm" />
-    <YASM Include="..\libavcodec\x86\h264_weight.asm" />
-    <YASM Include="..\libavcodec\x86\h264_weight_10bit.asm" />
-    <YASM Include="..\libavcodec\x86\h264_intrapred.asm" />
-    <YASM Include="..\libavcodec\x86\h264_intrapred_10bit.asm" />
-    <YASM Include="..\libavcodec\x86\h264_qpel_8bit.asm" />
-    <YASM Include="..\libavcodec\x86\h264_qpel_10bit.asm" />
-    <YASM Include="..\libavcodec\x86\fpel.asm" />
-    <YASM Include="..\libavcodec\x86\qpel.asm" />
-    <YASM Include="..\libavcodec\x86\hpeldsp.asm" />
-    <YASM Include="..\libavcodec\x86\huffyuvdsp.asm" />
-    <YASM Include="..\libavcodec\x86\huffyuvencdsp.asm" />
-    <YASM Include="..\libavcodec\x86\idctdsp.asm" />
-    <YASM Include="..\libavcodec\x86\lossless_audiodsp.asm" />
-    <YASM Include="..\libavcodec\x86\lossless_videodsp.asm" />
-    <YASM Include="..\libavcodec\x86\lossless_videoencdsp.asm" />
-    <YASM Include="..\libavcodec\x86\mdct15.asm" />
-    <YASM Include="..\libavcodec\x86\me_cmp.asm" />
-    <YASM Include="..\libavcodec\x86\imdct36.asm" />
-    <YASM Include="..\libavcodec\x86\mpegvideoencdsp.asm" />
-    <YASM Include="..\libavcodec\x86\opus_pvq_search.asm" />
-    <YASM Include="..\libavcodec\x86\pixblockdsp.asm" />
-    <YASM Include="..\libavcodec\x86\qpeldsp.asm" />
-    <YASM Include="..\libavcodec\x86\rv34dsp.asm" />
-    <YASM Include="..\libavcodec\x86\vc1dsp_loopfilter.asm" />
-    <YASM Include="..\libavcodec\x86\vc1dsp_mc.asm" />
-    <YASM Include="..\libavcodec\x86\simple_idct10.asm" />
-    <YASM Include="..\libavcodec\x86\simple_idct.asm" />
-    <YASM Include="..\libavcodec\x86\videodsp.asm" />
-    <YASM Include="..\libavcodec\x86\vp3dsp.asm" />
-    <YASM Include="..\libavcodec\x86\vp8dsp.asm" />
-    <YASM Include="..\libavcodec\x86\vp8dsp_loopfilter.asm" />
-    <YASM Include="..\libavcodec\x86\aacpsdsp.asm" />
-    <YASM Include="..\libavcodec\x86\sbrdsp.asm" />
-    <YASM Include="..\libavcodec\x86\aacencdsp.asm" />
-    <YASM Include="..\libavcodec\x86\g722dsp.asm" />
-    <YASM Include="..\libavcodec\x86\alacdsp.asm" />
-    <YASM Include="..\libavcodec\x86\pngdsp.asm" />
-    <YASM Include="..\libavcodec\x86\cavsidct.asm" />
-    <YASM Include="..\libavcodec\x86\dcadsp.asm" />
-    <YASM Include="..\libavcodec\x86\synth_filter.asm" />
-    <YASM Include="..\libavcodec\x86\diracdsp.asm" />
-    <YASM Include="..\libavcodec\x86\dirac_dwt.asm" />
-    <YASM Include="..\libavcodec\x86\dnxhdenc.asm" />
-    <YASM Include="..\libavcodec\x86\exrdsp.asm" />
-    <YASM Include="..\libavcodec\x86\flacdsp.asm" />
-    <YASM Include="..\libavcodec\x86\flac_dsp_gpl.asm" />
-    <YASM Include="..\libavcodec\x86\hevc_add_res.asm" />
-    <YASM Include="..\libavcodec\x86\hevc_deblock.asm" />
-    <YASM Include="..\libavcodec\x86\hevc_idct.asm" />
-    <YASM Include="..\libavcodec\x86\hevc_mc.asm" />
-    <YASM Include="..\libavcodec\x86\hevc_sao.asm" />
-    <YASM Include="..\libavcodec\x86\hevc_sao_10bit.asm" />
-    <YASM Include="..\libavcodec\x86\jpeg2000dsp.asm" />
-    <YASM Include="..\libavcodec\x86\mlpdsp.asm" />
-    <YASM Include="..\libavcodec\x86\xvididct.asm" />
-    <YASM Include="..\libavcodec\x86\proresdsp.asm" />
-    <YASM Include="..\libavcodec\x86\rv40dsp.asm" />
-    <YASM Include="..\libavcodec\x86\svq1enc.asm" />
-    <YASM Include="..\libavcodec\x86\takdsp.asm" />
-    <YASM Include="..\libavcodec\x86\ttadsp.asm" />
-    <YASM Include="..\libavcodec\x86\ttaencdsp.asm" />
-    <YASM Include="..\libavcodec\x86\utvideodsp.asm" />
-    <YASM Include="..\libavcodec\x86\v210enc.asm" />
-    <YASM Include="..\libavcodec\x86\v210.asm" />
-    <YASM Include="..\libavcodec\x86\vorbisdsp.asm" />
-    <YASM Include="..\libavcodec\x86\hpeldsp_vp3.asm" />
-    <YASM Include="..\libavcodec\x86\vp6dsp.asm" />
-    <YASM Include="..\libavcodec\x86\vp9intrapred.asm" />
-    <YASM Include="..\libavcodec\x86\vp9intrapred_16bpp.asm" />
-    <YASM Include="..\libavcodec\x86\vp9itxfm.asm" />
-    <YASM Include="..\libavcodec\x86\vp9itxfm_16bpp.asm" />
-    <YASM Include="..\libavcodec\x86\vp9lpf.asm" />
-    <YASM Include="..\libavcodec\x86\vp9lpf_16bpp.asm" />
-    <YASM Include="..\libavcodec\x86\vp9mc.asm" />
-    <YASM Include="..\libavcodec\x86\vp9mc_16bpp.asm" />
+    <NASM Include="..\libavcodec\x86\ac3dsp.asm" />
+    <NASM Include="..\libavcodec\x86\ac3dsp_downmix.asm" />
+    <NASM Include="..\libavcodec\x86\audiodsp.asm" />
+    <NASM Include="..\libavcodec\x86\blockdsp.asm" />
+    <NASM Include="..\libavcodec\x86\bswapdsp.asm" />
+    <NASM Include="..\libavcodec\x86\dct32.asm" />
+    <NASM Include="..\libavcodec\x86\fft.asm" />
+    <NASM Include="..\libavcodec\x86\fmtconvert.asm" />
+    <NASM Include="..\libavcodec\x86\h263_loopfilter.asm" />
+    <NASM Include="..\libavcodec\x86\h264_chromamc.asm" />
+    <NASM Include="..\libavcodec\x86\h264_chromamc_10bit.asm" />
+    <NASM Include="..\libavcodec\x86\h264_deblock.asm" />
+    <NASM Include="..\libavcodec\x86\h264_deblock_10bit.asm" />
+    <NASM Include="..\libavcodec\x86\h264_idct.asm" />
+    <NASM Include="..\libavcodec\x86\h264_idct_10bit.asm" />
+    <NASM Include="..\libavcodec\x86\h264_weight.asm" />
+    <NASM Include="..\libavcodec\x86\h264_weight_10bit.asm" />
+    <NASM Include="..\libavcodec\x86\h264_intrapred.asm" />
+    <NASM Include="..\libavcodec\x86\h264_intrapred_10bit.asm" />
+    <NASM Include="..\libavcodec\x86\h264_qpel_8bit.asm" />
+    <NASM Include="..\libavcodec\x86\h264_qpel_10bit.asm" />
+    <NASM Include="..\libavcodec\x86\fpel.asm" />
+    <NASM Include="..\libavcodec\x86\qpel.asm" />
+    <NASM Include="..\libavcodec\x86\hpeldsp.asm" />
+    <NASM Include="..\libavcodec\x86\huffyuvdsp.asm" />
+    <NASM Include="..\libavcodec\x86\huffyuvencdsp.asm" />
+    <NASM Include="..\libavcodec\x86\idctdsp.asm" />
+    <NASM Include="..\libavcodec\x86\lossless_audiodsp.asm" />
+    <NASM Include="..\libavcodec\x86\lossless_videodsp.asm" />
+    <NASM Include="..\libavcodec\x86\lossless_videoencdsp.asm" />
+    <NASM Include="..\libavcodec\x86\mdct15.asm" />
+    <NASM Include="..\libavcodec\x86\me_cmp.asm" />
+    <NASM Include="..\libavcodec\x86\imdct36.asm" />
+    <NASM Include="..\libavcodec\x86\mpegvideoencdsp.asm" />
+    <NASM Include="..\libavcodec\x86\opus_pvq_search.asm" />
+    <NASM Include="..\libavcodec\x86\pixblockdsp.asm" />
+    <NASM Include="..\libavcodec\x86\qpeldsp.asm" />
+    <NASM Include="..\libavcodec\x86\rv34dsp.asm" />
+    <NASM Include="..\libavcodec\x86\vc1dsp_loopfilter.asm" />
+    <NASM Include="..\libavcodec\x86\vc1dsp_mc.asm" />
+    <NASM Include="..\libavcodec\x86\simple_idct10.asm" />
+    <NASM Include="..\libavcodec\x86\simple_idct.asm" />
+    <NASM Include="..\libavcodec\x86\videodsp.asm" />
+    <NASM Include="..\libavcodec\x86\vp3dsp.asm" />
+    <NASM Include="..\libavcodec\x86\vp8dsp.asm" />
+    <NASM Include="..\libavcodec\x86\vp8dsp_loopfilter.asm" />
+    <NASM Include="..\libavcodec\x86\aacpsdsp.asm" />
+    <NASM Include="..\libavcodec\x86\sbrdsp.asm" />
+    <NASM Include="..\libavcodec\x86\aacencdsp.asm" />
+    <NASM Include="..\libavcodec\x86\g722dsp.asm" />
+    <NASM Include="..\libavcodec\x86\alacdsp.asm" />
+    <NASM Include="..\libavcodec\x86\pngdsp.asm" />
+    <NASM Include="..\libavcodec\x86\cavsidct.asm" />
+    <NASM Include="..\libavcodec\x86\dcadsp.asm" />
+    <NASM Include="..\libavcodec\x86\synth_filter.asm" />
+    <NASM Include="..\libavcodec\x86\diracdsp.asm" />
+    <NASM Include="..\libavcodec\x86\dirac_dwt.asm" />
+    <NASM Include="..\libavcodec\x86\dnxhdenc.asm" />
+    <NASM Include="..\libavcodec\x86\exrdsp.asm" />
+    <NASM Include="..\libavcodec\x86\flacdsp.asm" />
+    <NASM Include="..\libavcodec\x86\flac_dsp_gpl.asm" />
+    <NASM Include="..\libavcodec\x86\hevc_add_res.asm" />
+    <NASM Include="..\libavcodec\x86\hevc_deblock.asm" />
+    <NASM Include="..\libavcodec\x86\hevc_idct.asm" />
+    <NASM Include="..\libavcodec\x86\hevc_mc.asm" />
+    <NASM Include="..\libavcodec\x86\hevc_sao.asm" />
+    <NASM Include="..\libavcodec\x86\hevc_sao_10bit.asm" />
+    <NASM Include="..\libavcodec\x86\jpeg2000dsp.asm" />
+    <NASM Include="..\libavcodec\x86\mlpdsp.asm" />
+    <NASM Include="..\libavcodec\x86\xvididct.asm" />
+    <NASM Include="..\libavcodec\x86\proresdsp.asm" />
+    <NASM Include="..\libavcodec\x86\rv40dsp.asm" />
+    <NASM Include="..\libavcodec\x86\svq1enc.asm" />
+    <NASM Include="..\libavcodec\x86\takdsp.asm" />
+    <NASM Include="..\libavcodec\x86\ttadsp.asm" />
+    <NASM Include="..\libavcodec\x86\ttaencdsp.asm" />
+    <NASM Include="..\libavcodec\x86\utvideodsp.asm" />
+    <NASM Include="..\libavcodec\x86\v210enc.asm" />
+    <NASM Include="..\libavcodec\x86\v210.asm" />
+    <NASM Include="..\libavcodec\x86\vorbisdsp.asm" />
+    <NASM Include="..\libavcodec\x86\hpeldsp_vp3.asm" />
+    <NASM Include="..\libavcodec\x86\vp6dsp.asm" />
+    <NASM Include="..\libavcodec\x86\vp9intrapred.asm" />
+    <NASM Include="..\libavcodec\x86\vp9intrapred_16bpp.asm" />
+    <NASM Include="..\libavcodec\x86\vp9itxfm.asm" />
+    <NASM Include="..\libavcodec\x86\vp9itxfm_16bpp.asm" />
+    <NASM Include="..\libavcodec\x86\vp9lpf.asm" />
+    <NASM Include="..\libavcodec\x86\vp9lpf_16bpp.asm" />
+    <NASM Include="..\libavcodec\x86\vp9mc.asm" />
+    <NASM Include="..\libavcodec\x86\vp9mc_16bpp.asm" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\libavcodec\ac3_parser.c" />
@@ -1309,7 +1309,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\yasm.props" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\nasm.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -1497,11 +1497,11 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+    <NASM>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;$(ProjectDir)\..\\$(ProjectName)\x86;%(IncludePaths)</IncludePaths>
       <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </YASM>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </NASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(ProjectDir)\..\..\prebuilt\include\opus;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -1579,11 +1579,11 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+    <NASM>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;$(ProjectDir)\..\\$(ProjectName)\x86;%(IncludePaths)</IncludePaths>
       <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </YASM>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </NASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(ProjectDir)\..\..\prebuilt\include\opus;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -1668,11 +1668,11 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+    <NASM>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;$(ProjectDir)\..\\$(ProjectName)\x86;%(IncludePaths)</IncludePaths>
       <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </YASM>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </NASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(ProjectDir)\..\..\prebuilt\include\opus;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -1755,11 +1755,11 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+    <NASM>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;$(ProjectDir)\..\\$(ProjectName)\x86;%(IncludePaths)</IncludePaths>
       <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </YASM>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </NASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(ProjectDir)\..\..\prebuilt\include\opus;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -1844,11 +1844,11 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+    <NASM>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;$(ProjectDir)\..\\$(ProjectName)\x86;%(IncludePaths)</IncludePaths>
       <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </YASM>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </NASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(ProjectDir)\..\..\prebuilt\include\opus;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -1931,11 +1931,11 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+    <NASM>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;$(ProjectDir)\..\\$(ProjectName)\x86;%(IncludePaths)</IncludePaths>
       <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </YASM>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </NASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(ProjectDir)\..\..\prebuilt\include\opus;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -2019,11 +2019,11 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+    <NASM>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;$(ProjectDir)\..\\$(ProjectName)\x86;%(IncludePaths)</IncludePaths>
       <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </YASM>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </NASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(ProjectDir)\..\..\prebuilt\include\opus;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -2105,11 +2105,11 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+    <NASM>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;$(ProjectDir)\..\\$(ProjectName)\x86;%(IncludePaths)</IncludePaths>
       <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </YASM>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </NASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(ProjectDir)\..\..\prebuilt\include\opus;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -2199,11 +2199,11 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+    <NASM>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;$(ProjectDir)\..\\$(ProjectName)\x86;%(IncludePaths)</IncludePaths>
       <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </YASM>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </NASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(ProjectDir)\..\..\prebuilt\include\opus;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -2292,11 +2292,11 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+    <NASM>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;$(ProjectDir)\..\\$(ProjectName)\x86;%(IncludePaths)</IncludePaths>
       <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </YASM>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </NASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(ProjectDir)\..\..\prebuilt\include\opus;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -2386,11 +2386,11 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+    <NASM>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;$(ProjectDir)\..\\$(ProjectName)\x86;%(IncludePaths)</IncludePaths>
       <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </YASM>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </NASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(ProjectDir)\..\..\prebuilt\include\opus;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -2479,11 +2479,11 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+    <NASM>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;$(ProjectDir)\..\\$(ProjectName)\x86;%(IncludePaths)</IncludePaths>
       <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </YASM>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </NASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(ProjectDir)\..\..\prebuilt\include\opus;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -2565,11 +2565,11 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+    <NASM>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;$(ProjectDir)\..\\$(ProjectName)\x86;%(IncludePaths)</IncludePaths>
       <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </YASM>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </NASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(ProjectDir)\..\..\prebuilt\include\opus;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -2651,11 +2651,11 @@ cd ../
 cd $(ProjectDir)
 )</Command>
     </PreBuildEvent>
-    <YASM>
-      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;%(IncludePaths)</IncludePaths>
+    <NASM>
+      <IncludePaths>$(ProjectDir);$(ProjectDir)\..\;$(ProjectDir)\..\\$(ProjectName)\x86;%(IncludePaths)</IncludePaths>
       <PreIncludeFiles>config.asm;%(PreIncludeFiles)</PreIncludeFiles>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </YASM>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </NASM>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(OutDir)\include\opus;$(ProjectDir)\..\..\prebuilt\include\opus;.\;..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_MSC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -2663,6 +2663,6 @@ cd $(ProjectDir)
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\yasm.targets" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\nasm.targets" />
   </ImportGroup>
 </Project>

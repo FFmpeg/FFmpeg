@@ -34,81 +34,81 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <YASM Include="..\libavfilter\x86\af_afir.asm">
+    <NASM Include="..\libavfilter\x86\af_afir.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\vf_blend.asm">
+    </NASM>
+    <NASM Include="..\libavfilter\x86\vf_blend.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\vf_bwdif.asm">
+    </NASM>
+    <NASM Include="..\libavfilter\x86\vf_bwdif.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\colorspacedsp.asm">
+    </NASM>
+    <NASM Include="..\libavfilter\x86\colorspacedsp.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\vf_fspp.asm">
+    </NASM>
+    <NASM Include="..\libavfilter\x86\vf_fspp.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\vf_gradfun.asm">
+    </NASM>
+    <NASM Include="..\libavfilter\x86\vf_gradfun.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\vf_hflip.asm">
+    </NASM>
+    <NASM Include="..\libavfilter\x86\vf_hflip.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\vf_hqdn3d.asm">
+    </NASM>
+    <NASM Include="..\libavfilter\x86\vf_hqdn3d.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\vf_idet.asm">
+    </NASM>
+    <NASM Include="..\libavfilter\x86\vf_idet.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\vf_interlace.asm">
+    </NASM>
+    <NASM Include="..\libavfilter\x86\vf_interlace.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\vf_limiter.asm">
+    </NASM>
+    <NASM Include="..\libavfilter\x86\vf_limiter.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\vf_maskedmerge.asm">
+    </NASM>
+    <NASM Include="..\libavfilter\x86\vf_maskedmerge.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\vf_pp7.asm">
+    </NASM>
+    <NASM Include="..\libavfilter\x86\vf_pp7.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\vf_psnr.asm">
+    </NASM>
+    <NASM Include="..\libavfilter\x86\vf_psnr.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\vf_pullup.asm">
+    </NASM>
+    <NASM Include="..\libavfilter\x86\vf_pullup.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\vf_removegrain.asm">
+    </NASM>
+    <NASM Include="..\libavfilter\x86\vf_removegrain.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\avf_showcqt.asm">
+    </NASM>
+    <NASM Include="..\libavfilter\x86\avf_showcqt.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\vf_ssim.asm">
+    </NASM>
+    <NASM Include="..\libavfilter\x86\vf_ssim.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\vf_stereo3d.asm">
+    </NASM>
+    <NASM Include="..\libavfilter\x86\vf_stereo3d.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\vf_threshold.asm">
+    </NASM>
+    <NASM Include="..\libavfilter\x86\vf_threshold.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\af_volume.asm">
+    </NASM>
+    <NASM Include="..\libavfilter\x86\af_volume.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\vf_w3fdif.asm">
+    </NASM>
+    <NASM Include="..\libavfilter\x86\vf_w3fdif.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\vf_yadif.asm">
+    </NASM>
+    <NASM Include="..\libavfilter\x86\vf_yadif.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\yadif-16.asm">
+    </NASM>
+    <NASM Include="..\libavfilter\x86\yadif-16.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
-    <YASM Include="..\libavfilter\x86\yadif-10.asm">
+    </NASM>
+    <NASM Include="..\libavfilter\x86\yadif-10.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
-    </YASM>
+    </NASM>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\libavfilter\allfilters.c">
