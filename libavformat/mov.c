@@ -2830,7 +2830,7 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     MOVStreamContext *sc;
-    unsigned int i, entries;
+    unsigned int i, entries, alloc_size = 0;
     int64_t duration=0;
     int64_t total_sample_count=0;
 
@@ -2848,15 +2848,24 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     if (sc->stts_data)
         av_log(c->fc, AV_LOG_WARNING, "Duplicated STTS atom\n");
-    av_free(sc->stts_data);
+    av_freep(&sc->stts_data);
     sc->stts_count = 0;
-    sc->stts_data = av_malloc_array(entries, sizeof(*sc->stts_data));
-    if (!sc->stts_data)
+    if (entries >= INT_MAX / sizeof(*sc->stts_data))
         return AVERROR(ENOMEM);
 
     for (i = 0; i < entries && !pb->eof_reached; i++) {
         int sample_duration;
         unsigned int sample_count;
+        unsigned min_entries = FFMIN(FFMAX(i, 1024 * 1024), entries);
+        MOVStts *stts_data = av_fast_realloc(sc->stts_data, &alloc_size,
+                                             min_entries * sizeof(*sc->stts_data));
+        if (!stts_data) {
+            av_freep(&sc->stts_data);
+            sc->stts_count = 0;
+            return AVERROR(ENOMEM);
+        }
+        sc->stts_count = min_entries;
+        sc->stts_data = stts_data;
 
         sample_count=avio_rb32(pb);
         sample_duration = avio_rb32(pb);
