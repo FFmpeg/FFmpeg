@@ -141,9 +141,12 @@ FOR /F "tokens=* USEBACKQ" %%F IN (`TYPE latest.json ^| FINDSTR /B "tag_name"`) 
 FOR /F "tokens=2 delims=: " %%F in ("%TAG%") DO SET TAG=%%F
 IF "%TAG%"=="" ( ECHO Failed getting latest %REPONAME% release tag information & EXIT /B 1 )
 REM Get download name of latest release
-FOR /F "tokens=* USEBACKQ" %%F IN (`TYPE latest.json ^| FINDSTR "name="`) DO SET LIBNAME=%%F
-SET LIBNAME=%LIBNAME:*name=%
-FOR /F "tokens=1 delims=_" %%F in ("%LIBNAME:~1%") DO SET LIBNAME=%%F
+SET LIBNAME=
+FOR /F "tokens=* USEBACKQ" %%F IN (`TYPE latest.json ^| FINDSTR "name="`) DO ( SET TEMPF=%%F
+    SET TEMPF=!TEMPF:*name=!
+    IF "!TEMPF:~1,3!"=="lib" ( SET LIBNAME=!TEMPF:~1! )
+)
+FOR /F "tokens=1 delims=_" %%F in ("%LIBNAME%") DO SET LIBNAME=%%F
 IF "%LIBNAME%"=="" ( ECHO Failed getting latest %REPONAME% release name information & EXIT /B 1 )
 DEL /F /Q latest.json
 REM Get the download location for the required tag
