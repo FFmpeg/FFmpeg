@@ -70,22 +70,22 @@ fate-utvideo: $(FATE_UTVIDEO)
 fate-utvideoenc%: CMD = framemd5 -f image2 -c:v pgmyuv -i $(TARGET_PATH)/tests/vsynth1/%02d.pgm -c:v utvideo -slices 1 -sws_flags +accurate_rnd+bitexact ${OPTS}
 
 FATE_UTVIDEOENC += fate-utvideoenc_rgba_left
-fate-utvideoenc_rgba_left: OPTS = -pix_fmt rgba -pred left
+fate-utvideoenc_rgba_left: OPTS = -pix_fmt gbrap -pred left
 
 FATE_UTVIDEOENC += fate-utvideoenc_rgba_median
-fate-utvideoenc_rgba_median: OPTS = -pix_fmt rgba -pred median
+fate-utvideoenc_rgba_median: OPTS = -pix_fmt gbrap -pred median
 
 FATE_UTVIDEOENC += fate-utvideoenc_rgba_none
-fate-utvideoenc_rgba_none: OPTS = -pix_fmt rgba -pred none
+fate-utvideoenc_rgba_none: OPTS = -pix_fmt gbrap -pred none
 
 FATE_UTVIDEOENC += fate-utvideoenc_rgb_left
-fate-utvideoenc_rgb_left: OPTS = -pix_fmt rgb24 -pred left
+fate-utvideoenc_rgb_left: OPTS = -pix_fmt gbrp -pred left
 
 FATE_UTVIDEOENC += fate-utvideoenc_rgb_median
-fate-utvideoenc_rgb_median: OPTS = -pix_fmt rgb24 -pred median
+fate-utvideoenc_rgb_median: OPTS = -pix_fmt gbrp -pred median
 
 FATE_UTVIDEOENC += fate-utvideoenc_rgb_none
-fate-utvideoenc_rgb_none: OPTS = -pix_fmt rgb24 -pred none
+fate-utvideoenc_rgb_none: OPTS = -pix_fmt gbrp -pred none
 
 FATE_UTVIDEOENC += fate-utvideoenc_yuv420_left
 fate-utvideoenc_yuv420_left: OPTS = -pix_fmt yuv420p -pred left
