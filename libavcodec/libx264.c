@@ -747,9 +747,6 @@ static const enum AVPixelFormat pix_fmts_all[] = {
     AV_PIX_FMT_YUVJ444P,
     AV_PIX_FMT_NV12,
     AV_PIX_FMT_NV16,
-#ifdef X264_CSP_NV21
-    AV_PIX_FMT_NV21,
-#endif
     AV_PIX_FMT_YUV420P10,
     AV_PIX_FMT_YUV422P10,
     AV_PIX_FMT_YUV444P10,
