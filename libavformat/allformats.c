@@ -282,10 +282,6 @@ static void register_all(void)
     REGISTER_DEMUXER (SDR2,             sdr2);
     REGISTER_DEMUXER (SDS,              sds);
     REGISTER_DEMUXER (SDX,              sdx);
-#if CONFIG_RTPDEC
-    ff_register_rtp_dynamic_payload_handlers();
-    ff_register_rdt_dynamic_payload_handlers();
-#endif
     REGISTER_DEMUXER (SEGAFILM,         segafilm);
     REGISTER_MUXER   (SEGMENT,          segment);
     REGISTER_MUXER   (SEGMENT,          stream_segment);

@@ -192,9 +192,30 @@ struct RTPDemuxContext {
     PayloadContext *dynamic_protocol_context;
 };
 
-void ff_register_dynamic_payload_handler(RTPDynamicProtocolHandler *handler);
+/**
+ * Iterate over all registered rtp dynamic protocol handlers.
+ *
+ * @param opaque a pointer where libavformat will store the iteration state. Must
+ *               point to NULL to start the iteration.
+ *
+ * @return the next registered rtp dynamic protocol handler or NULL when the iteration is
+ *         finished
+ */
+const RTPDynamicProtocolHandler *ff_rtp_handler_iterate(void **opaque);
+/**
+ * Find a registered rtp dynamic protocol handler with the specified name.
+ *
+ * @param name name of the requested rtp dynamic protocol handler
+ * @return A rtp dynamic protocol handler if one was found, NULL otherwise.
+ */
 RTPDynamicProtocolHandler *ff_rtp_handler_find_by_name(const char *name,
                                                   enum AVMediaType codec_type);
+/**
+ * Find a registered rtp dynamic protocol handler with a matching codec ID.
+ *
+ * @param id AVCodecID of the requested rtp dynamic protocol handler.
+ * @return A rtp dynamic protocol handler if one was found, NULL otherwise.
+ */
 RTPDynamicProtocolHandler *ff_rtp_handler_find_by_id(int id,
                                                 enum AVMediaType codec_type);
 
@@ -208,8 +229,6 @@ int ff_parse_fmtp(AVFormatContext *s,
                                     AVStream *stream,
                                     PayloadContext *data,
                                     const char *attr, const char *value));
-
-void ff_register_rtp_dynamic_payload_handlers(void);
 
 /**
  * Close the dynamic buffer and make a packet from it.
