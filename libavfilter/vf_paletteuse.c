@@ -1037,7 +1037,6 @@ static int load_apply_palette(FFFrameSync *fs)
 
 error:
     av_frame_free(&master);
-    av_frame_free(&second);
     return ret;
 }
 
