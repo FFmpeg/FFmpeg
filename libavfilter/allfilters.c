@@ -137,6 +137,7 @@ static void register_all(void)
     REGISTER_FILTER(ANOISESRC,      anoisesrc,      asrc);
     REGISTER_FILTER(ANULLSRC,       anullsrc,       asrc);
     REGISTER_FILTER(FLITE,          flite,          asrc);
+    REGISTER_FILTER(HILBERT,        hilbert,        asrc);
     REGISTER_FILTER(SINE,           sine,           asrc);
 
     REGISTER_FILTER(ANULLSINK,      anullsink,      asink);

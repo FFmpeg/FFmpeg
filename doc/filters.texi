@@ -926,6 +926,7 @@ afftfilt="1-clip((b/nb)*b,0,1)"
 @end example
 @end itemize
 
+@anchor{afir}
 @section afir
 
 Apply an arbitrary Frequency Impulse Response filter.
@@ -4872,6 +4873,33 @@ Generate 60 seconds of pink noise, with a 44.1 kHz sampling rate and an amplitud
 anoisesrc=d=60:c=pink:r=44100:a=0.5
 @end example
 @end itemize
+
+@section hilbert
+
+Generate odd-tap Hilbert transform FIR coefficients.
+
+The resulting stream can be used with @ref{afir} filter for phase-shifting
+the signal by 90 degrees.
+
+This is used in many matrix coding schemes and for analytic signal generation.
+The process is often written as a multiplication by i (or j), the imaginary unit.
+
+The filter accepts the following options:
+
+@table @option
+
+@item sample_rate, s
+Set sample rate, default is 44100.
+
+@item taps, t
+Set length of FIR filter, default is 22051.
+
+@item nb_samples, n
+Set number of samples per each frame.
+
+@item win_func, w
+Set window function to be used when generating FIR coefficients.
+@end table
 
 @section sine
 

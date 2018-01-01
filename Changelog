@@ -32,6 +32,7 @@ version <next>:
   version is Windows Vista.
 - deconvolve video filter
 - entropy video filter
+- hilbert audio filter source
 
 
 version 3.4:
