@@ -1455,7 +1455,7 @@ static int http_read_stream(URLContext *h, uint8_t *buf, int size)
         if (reconnect_delay > s->reconnect_delay_max)
             return AVERROR(EIO);
 
-        av_log(h, AV_LOG_INFO, "Will reconnect at %"PRIu64" error=%s.\n", s->off, av_err2str(read_ret));
+        av_log(h, AV_LOG_WARNING, "Will reconnect at %"PRIu64" in %d second(s), error=%s.\n", s->off, reconnect_delay, av_err2str(read_ret));
         err = ff_network_sleep_interruptible(1000U*1000*reconnect_delay, &h->interrupt_callback);
         if (err != AVERROR(ETIMEDOUT))
             return err;
