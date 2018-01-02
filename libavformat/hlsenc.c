@@ -1689,28 +1689,30 @@ static int update_variant_stream_info(AVFormatContext *s) {
 
 static int update_master_pl_info(AVFormatContext *s) {
     HLSContext *hls = s->priv_data;
-    int m3u8_name_size, ret;
-    char *p;
+    const char *dir;
+    char *fn;
+    int ret = 0;
 
-    m3u8_name_size = strlen(s->filename) + strlen(hls->master_pl_name) + 1;
-    hls->master_m3u8_url = av_malloc(m3u8_name_size);
+    fn = av_strdup(s->filename);
+    if (!fn) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    dir = av_dirname(fn);
+    if (dir && strcmp(dir, "."))
+        hls->master_m3u8_url = av_append_path_component(dir, hls->master_pl_name);
+    else
+        hls->master_m3u8_url = av_strdup(hls->master_pl_name);
+
     if (!hls->master_m3u8_url) {
         ret = AVERROR(ENOMEM);
-        return ret;
+        goto fail;
     }
 
-    av_strlcpy(hls->master_m3u8_url, s->filename, m3u8_name_size);
-    p = strrchr(hls->master_m3u8_url, '/') ?
-            strrchr(hls->master_m3u8_url, '/') :
-            strrchr(hls->master_m3u8_url, '\\');
-    if (p) {
-        *(p + 1) = '\0';
-        av_strlcat(hls->master_m3u8_url, hls->master_pl_name, m3u8_name_size);
-    } else {
-        av_strlcpy(hls->master_m3u8_url, hls->master_pl_name, m3u8_name_size);
-    }
-
-    return 0;
+fail:
+    av_freep(&fn);
+    return ret;
 }
 
 static int hls_write_header(AVFormatContext *s)
