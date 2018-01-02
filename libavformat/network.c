@@ -103,6 +103,24 @@ int ff_network_wait_fd_timeout(int fd, int write, int64_t timeout, AVIOInterrupt
     }
 }
 
+int ff_network_sleep_interruptible(int64_t timeout, AVIOInterruptCB *int_cb)
+{
+    int64_t wait_start = av_gettime_relative();
+
+    while (1) {
+        int64_t time_left;
+
+        if (ff_check_interrupt(int_cb))
+            return AVERROR_EXIT;
+
+        time_left = timeout - (av_gettime_relative() - wait_start);
+        if (time_left <= 0)
+            return AVERROR(ETIMEDOUT);
+
+        av_usleep(FFMIN(time_left, POLLING_TIME * 1000));
+    }
+}
+
 void ff_network_close(void)
 {
 #if HAVE_WINSOCK2_H

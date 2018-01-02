@@ -96,6 +96,15 @@ int ff_network_wait_fd(int fd, int write);
  */
 int ff_network_wait_fd_timeout(int fd, int write, int64_t timeout, AVIOInterruptCB *int_cb);
 
+/**
+ * Waits for up to 'timeout' microseconds. If the usert's int_cb is set and
+ * triggered, return before that.
+ * @timeout Timeout in microseconds. Maybe have lower actual precision.
+ * @param int_cb Interrupt callback, is checked regularly.
+ * @return AVERROR(ETIMEDOUT) if timeout expirted, AVERROR_EXIT if interrupted by int_cb
+ */
+int ff_network_sleep_interruptible(int64_t timeout, AVIOInterruptCB *int_cb);
+
 int ff_inet_aton (const char * str, struct in_addr * add);
 
 #if !HAVE_STRUCT_SOCKADDR_STORAGE
