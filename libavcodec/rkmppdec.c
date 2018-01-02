@@ -47,7 +47,6 @@ typedef struct {
     MppApi *mpi;
     MppBufferGroup frame_group;
 
-    char first_frame;
     char first_packet;
     char eos_reached;
 
@@ -329,28 +328,14 @@ static int rkmpp_retrieve_frame(AVCodecContext *avctx, AVFrame *frame)
     MppBuffer buffer = NULL;
     AVDRMFrameDescriptor *desc = NULL;
     AVDRMLayerDescriptor *layer = NULL;
-    int retrycount = 0;
     int mode;
     MppFrameFormat mppformat;
     uint32_t drmformat;
 
-    // on start of decoding, MPP can return -1, which is supposed to be expected
-    // this is due to some internal MPP init which is not completed, that will
-    // only happen in the first few frames queries, but should not be interpreted
-    // as an error, Therefore we need to retry a couple times when we get -1
-    // in order to let it time to complete it's init, then we sleep a bit between retries.
-retry_get_frame:
     ret = decoder->mpi->decode_get_frame(decoder->ctx, &mppframe);
-    if (ret != MPP_OK && ret != MPP_ERR_TIMEOUT && !decoder->first_frame) {
-        if (retrycount < 5) {
-            av_log(avctx, AV_LOG_DEBUG, "Failed to get a frame, retrying (code = %d, retrycount = %d)\n", ret, retrycount);
-            usleep(10000);
-            retrycount++;
-            goto retry_get_frame;
-        } else {
-            av_log(avctx, AV_LOG_ERROR, "Failed to get a frame from MPP (code = %d)\n", ret);
-            goto fail;
-        }
+    if (ret != MPP_OK && ret != MPP_ERR_TIMEOUT) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to get a frame from MPP (code = %d)\n", ret);
+        goto fail;
     }
 
     if (mppframe) {
@@ -366,7 +351,6 @@ retry_get_frame:
             avctx->height = mpp_frame_get_height(mppframe);
 
             decoder->mpi->control(decoder->ctx, MPP_DEC_SET_INFO_CHANGE_READY, NULL);
-            decoder->first_frame = 1;
 
             av_buffer_unref(&decoder->frames_ref);
 
@@ -480,7 +464,6 @@ retry_get_frame:
                 goto fail;
             }
 
-            decoder->first_frame = 0;
             return 0;
         } else {
             av_log(avctx, AV_LOG_ERROR, "Failed to retrieve the frame buffer, frame is dropped (code = %d)\n", ret);
@@ -560,7 +543,6 @@ static void rkmpp_flush(AVCodecContext *avctx)
 
     ret = decoder->mpi->reset(decoder->ctx);
     if (ret == MPP_OK) {
-        decoder->first_frame = 1;
         decoder->first_packet = 1;
     } else
         av_log(avctx, AV_LOG_ERROR, "Failed to reset MPI (code = %d)\n", ret);
