@@ -284,6 +284,7 @@ static void register_all(void)
     REGISTER_FILTER(PP7,            pp7,            vf);
     REGISTER_FILTER(PREMULTIPLY,    premultiply,    vf);
     REGISTER_FILTER(PREWITT,        prewitt,        vf);
+    REGISTER_FILTER(PROGRAM_OPENCL, program_opencl, vf);
     REGISTER_FILTER(PSEUDOCOLOR,    pseudocolor,    vf);
     REGISTER_FILTER(PSNR,           psnr,           vf);
     REGISTER_FILTER(PULLUP,         pullup,         vf);
@@ -378,6 +379,7 @@ static void register_all(void)
     REGISTER_FILTER(MANDELBROT,     mandelbrot,     vsrc);
     REGISTER_FILTER(MPTESTSRC,      mptestsrc,      vsrc);
     REGISTER_FILTER(NULLSRC,        nullsrc,        vsrc);
+    REGISTER_FILTER(OPENCLSRC,      openclsrc,      vsrc);
     REGISTER_FILTER(RGBTESTSRC,     rgbtestsrc,     vsrc);
     REGISTER_FILTER(SMPTEBARS,      smptebars,      vsrc);
     REGISTER_FILTER(SMPTEHDBARS,    smptehdbars,    vsrc);
