@@ -1549,7 +1549,8 @@ static int append_postfix(char *name, int name_buf_len, int i)
 
 static int validate_name(int nb_vs, const char *fn)
 {
-    const char *filename;
+    const char *filename, *subdir_name;
+    char *fn_dup = NULL;
     int ret = 0;
 
     if (!fn) {
@@ -1557,22 +1558,38 @@ static int validate_name(int nb_vs, const char *fn)
         goto fail;
     }
 
-    filename = av_basename(fn);
+    fn_dup = av_strdup(fn);
+    if (!fn_dup) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
 
-    if (nb_vs > 1 && !av_stristr(filename, "%v")) {
+    filename = av_basename(fn);
+    subdir_name = av_dirname(fn_dup);
+
+    if (nb_vs > 1 && !av_stristr(filename, "%v") && !av_stristr(subdir_name, "%v")) {
         av_log(NULL, AV_LOG_ERROR, "More than 1 variant streams are present, %%v is expected in the filename %s\n",
                 fn);
         ret = AVERROR(EINVAL);
         goto fail;
     }
 
+    if (av_stristr(filename, "%v") && av_stristr(subdir_name, "%v")) {
+        av_log(NULL, AV_LOG_ERROR, "%%v is expected either in filename or in the sub-directory name of file %s\n",
+                fn);
+        ret = AVERROR(EINVAL);
+        goto fail;
+    }
+
 fail:
+    av_freep(&fn_dup);
     return ret;
 }
 
 static int format_name(char *buf, int buf_len, int index)
 {
-    char *orig_buf_dup = NULL;
+    const char *proto, *dir;
+    char *orig_buf_dup = NULL, *mod_buf_dup = NULL;
     int ret = 0;
 
     if (!av_stristr(buf, "%v"))
@@ -1589,8 +1606,27 @@ static int format_name(char *buf, int buf_len, int index)
         goto fail;
     }
 
+    proto = avio_find_protocol_name(orig_buf_dup);
+    dir = av_dirname(orig_buf_dup);
+
+    /* if %v is present in the file's directory, create sub-directory */
+    if (av_stristr(dir, "%v") && proto && !strcmp(proto, "file")) {
+        mod_buf_dup = av_strdup(buf);
+        if (!mod_buf_dup) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+
+        dir = av_dirname(mod_buf_dup);
+        if (mkdir_p(dir) == -1 && errno != EEXIST) {
+            ret = AVERROR(errno);
+            goto fail;
+        }
+    }
+
 fail:
     av_freep(&orig_buf_dup);
+    av_freep(&mod_buf_dup);
     return ret;
 }
 
@@ -1737,16 +1773,30 @@ static int update_variant_stream_info(AVFormatContext *s) {
 static int update_master_pl_info(AVFormatContext *s) {
     HLSContext *hls = s->priv_data;
     const char *dir;
-    char *fn = NULL;
+    char *fn1= NULL, *fn2 = NULL;
     int ret = 0;
 
-    fn = av_strdup(s->filename);
-    if (!fn) {
+    fn1 = av_strdup(s->filename);
+    if (!fn1) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }
 
-    dir = av_dirname(fn);
+    dir = av_dirname(fn1);
+
+    /**
+     * if output file's directory has %v, variants are created in sub-directories
+     * then master is created at the sub-directories level
+     */
+    if (dir && av_stristr(av_basename(dir), "%v")) {
+        fn2 = av_strdup(dir);
+        if (!fn2) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+        dir = av_dirname(fn2);
+    }
+
     if (dir && strcmp(dir, "."))
         hls->master_m3u8_url = av_append_path_component(dir, hls->master_pl_name);
     else
@@ -1758,7 +1808,9 @@ static int update_master_pl_info(AVFormatContext *s) {
     }
 
 fail:
-    av_freep(&fn);
+    av_freep(&fn1);
+    av_freep(&fn2);
+
     return ret;
 }
 
