@@ -122,6 +122,7 @@ static void register_all(void)
     REGISTER_MUXER   (F4V,              f4v);
     REGISTER_MUXDEMUX(FFMETADATA,       ffmetadata);
     REGISTER_MUXER   (FIFO,             fifo);
+    REGISTER_MUXER   (FIFO,             fifo_test);
     REGISTER_MUXDEMUX(FILMSTRIP,        filmstrip);
     REGISTER_MUXDEMUX(FITS,             fits);
     REGISTER_MUXDEMUX(FLAC,             flac);
