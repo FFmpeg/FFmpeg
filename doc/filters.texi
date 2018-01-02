@@ -1060,6 +1060,41 @@ the reduction.
 Default is @code{average}. Can be @code{average} or @code{maximum}.
 @end table
 
+@section aiir
+
+Apply an arbitrary Infinite Impulse Response filter.
+
+It accepts the following parameters:
+
+@table @option
+@item a
+Set denominator/poles coefficients.
+
+@item b
+Set nominator/zeros coefficients.
+
+@item dry_gain
+Set input gain.
+
+@item wet_gain
+Set output gain.
+@end table
+
+Coefficients are separated by spaces and are in ascending order.
+Different coefficients can be provided for every channel, in such case
+use '|' to separate coefficients. Last provided coefficients will be
+used for all remaining channels.
+
+@subsection Examples
+
+@itemize
+@item
+Apply 2 pole elliptic notch at arround 5000Hz for 48000 Hz sample rate:
+@example
+aiir=b=7.957584807809675810E-1 -2.575128568908332300 3.674839853930788710 -2.57512875289799137 7.957586296317130880E-1:a=1 -2.86950072432325953 3.63022088054647218 -2.28075678147272232 6.361362326477423500E-1
+@end example
+@end itemize
+
 @section alimiter
 
 The limiter prevents an input signal from rising over a desired threshold.

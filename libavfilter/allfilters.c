@@ -54,6 +54,7 @@ static void register_all(void)
     REGISTER_FILTER(AFIR,           afir,           af);
     REGISTER_FILTER(AFORMAT,        aformat,        af);
     REGISTER_FILTER(AGATE,          agate,          af);
+    REGISTER_FILTER(AIIR,           aiir,           af);
     REGISTER_FILTER(AINTERLEAVE,    ainterleave,    af);
     REGISTER_FILTER(ALIMITER,       alimiter,       af);
     REGISTER_FILTER(ALLPASS,        allpass,        af);

@@ -33,6 +33,7 @@ version <next>:
 - deconvolve video filter
 - entropy video filter
 - hilbert audio filter source
+- aiir audio filter
 
 
 version 3.4:
