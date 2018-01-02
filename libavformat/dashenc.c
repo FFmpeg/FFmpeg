@@ -149,7 +149,10 @@ static void dashenc_io_close(AVFormatContext *s, AVIOContext **pb, char *filenam
         ff_format_io_close(s, pb);
 #if CONFIG_HTTP_PROTOCOL
     } else {
+        URLContext *http_url_context = ffio_geturlcontext(*pb);
+        av_assert0(http_url_context);
         avio_flush(*pb);
+        ffurl_shutdown(http_url_context, AVIO_FLAG_WRITE);
 #endif
     }
 }
