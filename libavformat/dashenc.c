@@ -1,6 +1,7 @@
 /*
  * MPEG-DASH ISO BMFF segmenter
  * Copyright (c) 2014 Martin Storsjo
+ * Copyright (c) 2018 Akamai Technologies, Inc.
  *
  * This file is part of FFmpeg.
  *
@@ -309,6 +310,9 @@ static void dash_free(AVFormatContext *s)
         av_free(os->segments);
     }
     av_freep(&c->streams);
+
+    ff_format_io_close(s, &c->mpd_out);
+    ff_format_io_close(s, &c->m3u8_out);
 }
 
 static void output_segment_list(OutputStream *os, AVIOContext *out, AVFormatContext *s,
