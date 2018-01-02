@@ -577,6 +577,17 @@ Should a relative path be specified, the path of the created segment
 files will be relative to the current working directory.
 When use_localtime_mkdir is set, the whole expanded value of @var{filename} will be written into the m3u8 segment list.
 
+When @code{var_stream_map} is set with two or more variant streams, the
+@var{filename} pattern must contain the string "%v", this string specifies
+the position of variant stream index in the generated segment file names.
+@example
+ffmpeg -i in.ts -b:v:0 1000k -b:v:1 256k -b:a:0 64k -b:a:1 32k \
+  -map 0:v -map 0:a -map 0:v -map 0:a -f hls -var_stream_map "v:0,a:0 v:1,a:1" \
+  -hls_segment_filename 'file_%v_%03d.ts' out_%v.m3u8
+@end example
+This example will produce the playlists segment file sets:
+@file{file_0_000.ts}, @file{file_0_001.ts}, @file{file_0_002.ts}, etc. and
+@file{file_1_000.ts}, @file{file_1_001.ts}, @file{file_1_002.ts}, etc.
 
 @item use_localtime
 Use strftime() on @var{filename} to expand the segment filename with localtime.
@@ -703,6 +714,10 @@ the fmp4 files is used in hls after version 7.
 @item hls_fmp4_init_filename @var{filename}
 set filename to the fragment files header file, default filename is @file{init.mp4}.
 
+When @code{var_stream_map} is set with two or more variant streams, the
+@var{filename} pattern must contain the string "%v", this string specifies
+the position of variant stream index in the generated init file names.
+
 @item hls_flags @var{flags}
 Possible values:
 
@@ -816,32 +831,36 @@ Expected string format is like this "a:0,v:0 a:1,v:1 ....". Here a:, v:, s: are
 the keys to specify audio, video and subtitle streams respectively.
 Allowed values are 0 to 9 (limited just based on practical usage).
 
+When there are two or more variant streams, the output filename pattern must
+contain the string "%v", this string specifies the position of variant stream
+index in the output media playlist filenames.
+
 @example
 ffmpeg -re -i in.ts -b:v:0 1000k -b:v:1 256k -b:a:0 64k -b:a:1 32k \
   -map 0:v -map 0:a -map 0:v -map 0:a -f hls -var_stream_map "v:0,a:0 v:1,a:1" \
-  http://example.com/live/out.m3u8
+  http://example.com/live/out_%v.m3u8
 @end example
 This example creates two hls variant streams. The first variant stream will
 contain video stream of bitrate 1000k and audio stream of bitrate 64k and the
 second variant stream will contain video stream of bitrate 256k and audio
-stream of bitrate 32k. Here, two media playlist with file names out_1.m3u8 and
-out_2.m3u8 will be created.
+stream of bitrate 32k. Here, two media playlist with file names out_0.m3u8 and
+out_1.m3u8 will be created.
 @example
 ffmpeg -re -i in.ts -b:v:0 1000k -b:v:1 256k -b:a:0 64k \
   -map 0:v -map 0:a -map 0:v -f hls -var_stream_map "v:0 a:0 v:1" \
-  http://example.com/live/out.m3u8
+  http://example.com/live/out_%v.m3u8
 @end example
 This example creates three hls variant streams. The first variant stream will
 be a video only stream with video bitrate 1000k, the second variant stream will
 be an audio only stream with bitrate 64k and the third variant stream will be a
 video only stream with bitrate 256k. Here, three media playlist with file names
-out_1.m3u8, out_2.m3u8 and out_3.m3u8 will be created.
+out_0.m3u8, out_1.m3u8 and out_2.m3u8 will be created.
 @example
 ffmpeg -re -i in.ts -b:a:0 32k -b:a:1 64k -b:v:0 1000k -b:v:1 3000k  \
   -map 0:a -map 0:a -map 0:v -map 0:v -f hls \
   -var_stream_map "a:0,agroup:aud_low a:1,agroup:aud_high v:0,agroup:aud_low v:1,agroup:aud_high" \
   -master_pl_name master.m3u8 \
-  http://example.com/live/out.m3u8
+  http://example.com/live/out_%v.m3u8
 @end example
 This example creates two audio only and two video only variant streams. In
 addition to the #EXT-X-STREAM-INF tag for each variant stream in the master

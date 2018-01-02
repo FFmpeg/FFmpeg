@@ -1528,7 +1528,7 @@ static const char * get_default_pattern_localtime_fmt(AVFormatContext *s)
     return (HAVE_LIBC_MSVCRT || !strftime(b, sizeof(b), "%s", p) || !strcmp(b, "%s")) ? "-%Y%m%d%H%M%S.ts" : "-%s.ts";
 }
 
-static int format_name(char *name, int name_buf_len, int i)
+static int append_postfix(char *name, int name_buf_len, int i)
 {
     char *p;
     char extension[10] = {'\0'};
@@ -1545,6 +1545,53 @@ static int format_name(char *name, int name_buf_len, int i)
         av_strlcat(name, extension, name_buf_len);
 
     return 0;
+}
+
+static int validate_name(int nb_vs, const char *fn)
+{
+    const char *filename;
+    int ret = 0;
+
+    if (!fn) {
+        ret = AVERROR(EINVAL);
+        goto fail;
+    }
+
+    filename = av_basename(fn);
+
+    if (nb_vs > 1 && !av_stristr(filename, "%v")) {
+        av_log(NULL, AV_LOG_ERROR, "More than 1 variant streams are present, %%v is expected in the filename %s\n",
+                fn);
+        ret = AVERROR(EINVAL);
+        goto fail;
+    }
+
+fail:
+    return ret;
+}
+
+static int format_name(char *buf, int buf_len, int index)
+{
+    char *orig_buf_dup = NULL;
+    int ret = 0;
+
+    if (!av_stristr(buf, "%v"))
+        return ret;
+
+    orig_buf_dup = av_strdup(buf);
+    if (!orig_buf_dup) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    if (replace_int_data_in_filename(buf, buf_len, orig_buf_dup, 'v', index) < 1) {
+        ret = AVERROR(EINVAL);
+        goto fail;
+    }
+
+fail:
+    av_freep(&orig_buf_dup);
+    return ret;
 }
 
 static int get_nth_codec_stream_index(AVFormatContext *s,
@@ -1690,7 +1737,7 @@ static int update_variant_stream_info(AVFormatContext *s) {
 static int update_master_pl_info(AVFormatContext *s) {
     HLSContext *hls = s->priv_data;
     const char *dir;
-    char *fn;
+    char *fn = NULL;
     int ret = 0;
 
     fn = av_strdup(s->filename);
@@ -2052,7 +2099,7 @@ static int hls_init(AVFormatContext *s)
     const char *pattern_localtime_fmt = get_default_pattern_localtime_fmt(s);
     const char *vtt_pattern = "%d.vtt";
     char *p = NULL;
-    int vtt_basename_size = 0, m3u8_name_size = 0;
+    int vtt_basename_size = 0;
     int fmp4_init_filename_len = strlen(hls->fmp4_init_filename) + 1;
 
     ret = update_variant_stream_info(s);
@@ -2066,6 +2113,28 @@ static int hls_init(AVFormatContext *s)
         ret = AVERROR(EINVAL);
         av_log(s, AV_LOG_ERROR, "Periodic re-key not supported when more than one variant streams are present\n");
         goto fail;
+    }
+
+    ret = validate_name(hls->nb_varstreams, s->filename);
+    if (ret < 0)
+        goto fail;
+
+    if (hls->segment_filename) {
+        ret = validate_name(hls->nb_varstreams, hls->segment_filename);
+        if (ret < 0)
+            goto fail;
+    }
+
+    if (av_strcasecmp(hls->fmp4_init_filename, "init.mp4")) {
+        ret = validate_name(hls->nb_varstreams, hls->fmp4_init_filename);
+        if (ret < 0)
+            goto fail;
+    }
+
+    if (hls->subtitle_filename) {
+        ret = validate_name(hls->nb_varstreams, hls->subtitle_filename);
+        if (ret < 0)
+            goto fail;
     }
 
     if (hls->master_pl_name) {
@@ -2100,6 +2169,16 @@ static int hls_init(AVFormatContext *s)
     hls->recording_time = (hls->init_time ? hls->init_time : hls->time) * AV_TIME_BASE;
     for (i = 0; i < hls->nb_varstreams; i++) {
         vs = &hls->var_streams[i];
+
+        vs->m3u8_name = av_strdup(s->filename);
+        if (!vs->m3u8_name ) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+        ret = format_name(vs->m3u8_name, strlen(s->filename) + 1, i);
+        if (ret < 0)
+            goto fail;
+
         vs->sequence       = hls->start_sequence;
         vs->start_pts      = AV_NOPTS_VALUE;
         vs->end_pts      = AV_NOPTS_VALUE;
@@ -2153,9 +2232,6 @@ static int hls_init(AVFormatContext *s)
         }
         if (hls->segment_filename) {
             basename_size = strlen(hls->segment_filename) + 1;
-            if (hls->nb_varstreams > 1) {
-                basename_size += strlen(POSTFIX_PATTERN);
-            }
             vs->basename = av_malloc(basename_size);
             if (!vs->basename) {
                 ret = AVERROR(ENOMEM);
@@ -2163,6 +2239,9 @@ static int hls_init(AVFormatContext *s)
             }
 
             av_strlcpy(vs->basename, hls->segment_filename, basename_size);
+            ret = format_name(vs->basename, basename_size, i);
+            if (ret < 0)
+                goto fail;
         } else {
             if (hls->flags & HLS_SINGLE_FILE) {
                 if (hls->segment_type == SEGMENT_TYPE_FMP4) {
@@ -2173,13 +2252,9 @@ static int hls_init(AVFormatContext *s)
             }
 
             if (hls->use_localtime) {
-                basename_size = strlen(s->filename) + strlen(pattern_localtime_fmt) + 1;
+                basename_size = strlen(vs->m3u8_name) + strlen(pattern_localtime_fmt) + 1;
             } else {
-                basename_size = strlen(s->filename) + strlen(pattern) + 1;
-            }
-
-            if (hls->nb_varstreams > 1) {
-                basename_size += strlen(POSTFIX_PATTERN);
+                basename_size = strlen(vs->m3u8_name) + strlen(pattern) + 1;
             }
 
             vs->basename = av_malloc(basename_size);
@@ -2188,7 +2263,7 @@ static int hls_init(AVFormatContext *s)
                 goto fail;
             }
 
-            av_strlcpy(vs->basename, s->filename, basename_size);
+            av_strlcpy(vs->basename, vs->m3u8_name, basename_size);
 
             p = strrchr(vs->basename, '.');
             if (p)
@@ -2198,28 +2273,6 @@ static int hls_init(AVFormatContext *s)
             } else {
                 av_strlcat(vs->basename, pattern, basename_size);
             }
-        }
-
-        m3u8_name_size = strlen(s->filename) + 1;
-        if (hls->nb_varstreams > 1) {
-            m3u8_name_size += strlen(POSTFIX_PATTERN);
-        }
-
-        vs->m3u8_name = av_malloc(m3u8_name_size);
-        if (!vs->m3u8_name ) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
-
-        av_strlcpy(vs->m3u8_name, s->filename, m3u8_name_size);
-
-        if (hls->nb_varstreams > 1) {
-            ret = format_name(vs->basename, basename_size, i);
-            if (ret < 0)
-                goto fail;
-            ret = format_name(vs->m3u8_name, m3u8_name_size, i);
-            if (ret < 0)
-                goto fail;
         }
 
         if (hls->segment_type == SEGMENT_TYPE_FMP4) {
@@ -2232,13 +2285,12 @@ static int hls_init(AVFormatContext *s)
             }
             av_strlcpy(vs->fmp4_init_filename, hls->fmp4_init_filename,
                        fmp4_init_filename_len);
-            if (hls->nb_varstreams > 1) {
+
+            if (av_strcasecmp(hls->fmp4_init_filename, "init.mp4")) {
                 ret = format_name(vs->fmp4_init_filename, fmp4_init_filename_len, i);
                 if (ret < 0)
                     goto fail;
-            }
 
-            if (av_strcasecmp(hls->fmp4_init_filename, "init.mp4")) {
                 fmp4_init_filename_len = strlen(vs->fmp4_init_filename) + 1;
                 vs->base_output_dirname = av_malloc(fmp4_init_filename_len);
                 if (!vs->base_output_dirname) {
@@ -2248,6 +2300,12 @@ static int hls_init(AVFormatContext *s)
                 av_strlcpy(vs->base_output_dirname, vs->fmp4_init_filename,
                            fmp4_init_filename_len);
             } else {
+                if (hls->nb_varstreams > 1) {
+                    ret = append_postfix(vs->fmp4_init_filename, fmp4_init_filename_len, i);
+                    if (ret < 0)
+                         goto fail;
+                }
+
                 fmp4_init_filename_len = strlen(vs->m3u8_name) +
                     strlen(vs->fmp4_init_filename) + 1;
 
@@ -2286,10 +2344,7 @@ static int hls_init(AVFormatContext *s)
 
             if (hls->flags & HLS_SINGLE_FILE)
                 vtt_pattern = ".vtt";
-            vtt_basename_size = strlen(s->filename) + strlen(vtt_pattern) + 1;
-            if (hls->nb_varstreams > 1) {
-                vtt_basename_size += strlen(POSTFIX_PATTERN);
-            }
+            vtt_basename_size = strlen(vs->m3u8_name) + strlen(vtt_pattern) + 1;
 
             vs->vtt_basename = av_malloc(vtt_basename_size);
             if (!vs->vtt_basename) {
@@ -2301,27 +2356,21 @@ static int hls_init(AVFormatContext *s)
                 ret = AVERROR(ENOMEM);
                 goto fail;
             }
-            av_strlcpy(vs->vtt_basename, s->filename, vtt_basename_size);
+            av_strlcpy(vs->vtt_basename, vs->m3u8_name, vtt_basename_size);
             p = strrchr(vs->vtt_basename, '.');
             if (p)
                 *p = '\0';
 
             if ( hls->subtitle_filename ) {
                 strcpy(vs->vtt_m3u8_name, hls->subtitle_filename);
+                ret = format_name(vs->vtt_m3u8_name, vtt_basename_size, i);
+                if (ret < 0)
+                    goto fail;
             } else {
                 strcpy(vs->vtt_m3u8_name, vs->vtt_basename);
                 av_strlcat(vs->vtt_m3u8_name, "_vtt.m3u8", vtt_basename_size);
             }
             av_strlcat(vs->vtt_basename, vtt_pattern, vtt_basename_size);
-
-            if (hls->nb_varstreams > 1) {
-                ret= format_name(vs->vtt_basename, vtt_basename_size, i);
-                if (ret < 0)
-                    goto fail;
-                ret = format_name(vs->vtt_m3u8_name, vtt_basename_size, i);
-                if (ret < 0)
-                    goto fail;
-            }
         }
 
         if (hls->baseurl) {
