@@ -118,10 +118,18 @@ enum AVCodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
 AVInputFormat *av_find_input_format(const char *short_name)
 {
     AVInputFormat *fmt = NULL;
+#if FF_API_NEXT
+FF_DISABLE_DEPRECATION_WARNINGS
+    while ((fmt = av_iformat_next(fmt)))
+        if (av_match_name(short_name, fmt->name))
+            return fmt;
+FF_ENABLE_DEPRECATION_WARNINGS
+#else
     void *i = 0;
     while ((fmt = av_demuxer_iterate(&i)))
         if (av_match_name(short_name, fmt->name))
             return fmt;
+#endif
     return NULL;
 }
 

@@ -47,4 +47,8 @@
  * the public API and may change, break or disappear at any time.
  */
 
+#ifndef FF_API_NEXT
+#define FF_API_NEXT              (LIBAVDEVICE_VERSION_MAJOR < 59)
+#endif
+
 #endif /* AVDEVICE_VERSION_H */

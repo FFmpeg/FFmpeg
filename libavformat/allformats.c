@@ -25,6 +25,9 @@
 #include "rdt.h"
 #include "url.h"
 #include "version.h"
+#if FF_API_NEXT
+#include "internal.h"
+#endif
 
 /* (de)muxers */
 extern AVOutputFormat ff_a64_muxer;
@@ -480,6 +483,7 @@ const AVOutputFormat *av_muxer_iterate(void **opaque)
 {
     uintptr_t i = (uintptr_t)*opaque;
     const AVOutputFormat *f = muxer_list[i];
+
     if (f)
         *opaque = (void*)(i + 1);
     return f;
@@ -498,6 +502,9 @@ const AVInputFormat *av_demuxer_iterate(void **opaque){
 FF_DISABLE_DEPRECATION_WARNINGS
 static AVOnce av_format_next_init = AV_ONCE_INIT;
 
+static const AVInputFormat * const *indev_list = NULL;
+static const AVOutputFormat * const *outdev_list = NULL;
+
 static void av_format_init_next(void)
 {
     AVOutputFormat *prevout = NULL, *out;
@@ -510,30 +517,61 @@ static void av_format_init_next(void)
         prevout = out;
     }
 
+    if (outdev_list) {
+        for (int j = 0; (out = (AVOutputFormat*)outdev_list[j]); j++) {
+            if (prevout)
+                prevout->next = out;
+            prevout = out;
+        }
+    }
+
     i = 0;
     while ((in = (AVInputFormat*)av_demuxer_iterate(&i))) {
         if (previn)
             previn->next = in;
         previn = in;
     }
+
+    if (indev_list) {
+        for (int j = 0; (in = (AVInputFormat*)indev_list[j]); j++) {
+            if (previn)
+                previn->next = in;
+            previn = in;
+        }
+    }
+
+}
+
+void avpriv_register_devices(const AVOutputFormat * const o[], const AVInputFormat * const i[])
+{
+    static AVMutex avpriv_register_devices_mutex = AV_MUTEX_INITIALIZER;
+    ff_mutex_lock(&avpriv_register_devices_mutex);
+    outdev_list = o;
+    indev_list = i;
+    av_format_init_next();
+    ff_mutex_unlock(&avpriv_register_devices_mutex);
 }
 
 AVInputFormat *av_iformat_next(const AVInputFormat *f)
 {
     ff_thread_once(&av_format_next_init, av_format_init_next);
+
     if (f)
         return f->next;
     else
-        return demuxer_list[0];
+    /* If there are no demuxers but input devices, then return the first input device.
+     * This will still return null if both there are both no demuxers or input devices. */
+        return demuxer_list[0] ? (AVInputFormat*)demuxer_list[0] : (indev_list ? (AVInputFormat*)indev_list[0] : NULL);
 }
 
 AVOutputFormat *av_oformat_next(const AVOutputFormat *f)
 {
     ff_thread_once(&av_format_next_init, av_format_init_next);
+
     if (f)
         return f->next;
     else
-        return muxer_list[0];
+        return muxer_list[0] ? (AVOutputFormat*)muxer_list[0] : (outdev_list ? (AVOutputFormat*)outdev_list[0] : NULL);
 }
 
 void av_register_all(void)

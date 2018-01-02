@@ -568,6 +568,12 @@ add_suffix(){
     for v; do echo ${v}${suffix}; done
 }
 
+remove_suffix(){
+    suffix=$1
+    shift
+    for v; do echo ${v%$suffix}; done
+}
+
 set_all(){
     value=$1
     shift
@@ -3525,17 +3531,18 @@ find_things(){
     sed -n "s/^[^#]*$pattern.*([^,]*, *\([^,]*\)\(,.*\)*).*/\1_$thing/p" "$file"
 }
 
-OUTDEV_LIST=$(find_things   outdev   OUTDEV   libavdevice/alldevices.c)
-INDEV_LIST=$(find_things    indev    _IN      libavdevice/alldevices.c)
 FILTER_LIST=$(find_things   filter   FILTER   libavfilter/allfilters.c)
 
 find_things_extern(){
     thing=$1
     pattern=$2
     file=$source_path/$3
-    sed -n "s/^[^#]*extern.*$pattern *ff_\([^ ]*\)_$thing;/\1_$thing/p" "$file"
+    out=${4:-$thing}
+    sed -n "s/^[^#]*extern.*$pattern *ff_\([^ ]*\)_$thing;/\1_$out/p" "$file"
 }
 
+OUTDEV_LIST=$(find_things_extern muxer AVOutputFormat libavdevice/alldevices.c outdev)
+INDEV_LIST=$(find_things_extern demuxer AVInputFormat libavdevice/alldevices.c indev)
 MUXER_LIST=$(find_things_extern muxer AVOutputFormat libavformat/allformats.c)
 DEMUXER_LIST=$(find_things_extern demuxer AVInputFormat libavformat/allformats.c)
 ENCODER_LIST=$(find_things_extern encoder AVCodec libavcodec/allcodecs.c)
@@ -7027,7 +7034,17 @@ print_enabled_components(){
     shift 3
     echo "static const $struct_name * const $name[] = {" > $TMPH
     for c in $*; do
-        enabled $c && printf "    &ff_%s,\n" $c >> $TMPH
+        if enabled $c; then
+            case $name in
+                indev_list)
+                    c=$(add_suffix _demuxer $(remove_suffix _indev $c))
+                ;;
+                outdev_list)
+                    c=$(add_suffix _muxer $(remove_suffix _outdev $c))
+                ;;
+            esac
+            printf "    &ff_%s,\n" $c >> $TMPH
+        fi
     done
     echo "    NULL };" >> $TMPH
     cp_if_changed $TMPH $file
@@ -7036,6 +7053,8 @@ print_enabled_components(){
 print_enabled_components libavcodec/codec_list.c AVCodec codec_list $CODEC_LIST
 print_enabled_components libavcodec/parser_list.c AVCodecParser parser_list $PARSER_LIST
 print_enabled_components libavcodec/bsf_list.c AVBitStreamFilter bitstream_filters $BSF_LIST
+print_enabled_components libavdevice/indev_list.c AVInputFormat indev_list $INDEV_LIST
+print_enabled_components libavdevice/outdev_list.c AVOutputFormat outdev_list $OUTDEV_LIST
 print_enabled_components libavformat/demuxer_list.c AVInputFormat demuxer_list $DEMUXER_LIST
 print_enabled_components libavformat/muxer_list.c AVOutputFormat muxer_list $MUXER_LIST
 print_enabled_components libavformat/protocol_list.c URLProtocol url_protocols $PROTOCOL_LIST
