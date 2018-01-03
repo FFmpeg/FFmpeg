@@ -417,7 +417,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     if (av_frame_is_writable(buf)) {
         out_buf = buf;
     } else {
-        out_buf = ff_get_audio_buffer(inlink, nb_samples);
+        out_buf = ff_get_audio_buffer(outlink, nb_samples);
         if (!out_buf) {
             av_frame_free(&buf);
             return AVERROR(ENOMEM);
