@@ -48,6 +48,7 @@ OBJS = ac3_parser.o                                                     \
 OBJS-$(CONFIG_AANDCTTABLES)            += aandcttab.o
 OBJS-$(CONFIG_AC3DSP)                  += ac3dsp.o
 OBJS-$(CONFIG_ADTS_HEADER)             += adts_header.o mpeg4audio.o
+OBJS-$(CONFIG_AMF)                     += amfenc.o
 OBJS-$(CONFIG_AUDIO_FRAME_QUEUE)       += audio_frame_queue.o
 OBJS-$(CONFIG_AUDIODSP)                += audiodsp.o
 OBJS-$(CONFIG_BLOCKDSP)                += blockdsp.o
@@ -271,6 +272,7 @@ OBJS-$(CONFIG_H264_DECODER)            += h264dec.o h264_cabac.o h264_cavlc.o \
                                           h264_mb.o h264_picture.o \
                                           h264_refs.o h264_sei.o \
                                           h264_slice.o h264data.o
+OBJS-$(CONFIG_H264_AMF_ENCODER)        += amfenc_h264.o
 OBJS-$(CONFIG_H264_MMAL_DECODER)       += mmaldec.o
 OBJS-$(CONFIG_H264_NVENC_ENCODER)      += nvenc_h264.o
 OBJS-$(CONFIG_H264_OMX_ENCODER)        += omx.o
@@ -282,6 +284,7 @@ OBJS-$(CONFIG_HAP_ENCODER)             += hapenc.o hap.o
 OBJS-$(CONFIG_HEVC_DECODER)            += hevcdec.o hevc_mvs.o hevc_sei.o \
                                           hevc_cabac.o hevc_refs.o hevcpred.o    \
                                           hevcdsp.o hevc_filter.o hevc_data.o
+OBJS-$(CONFIG_HEVC_AMF_ENCODER)        += amfenc_hevc.o
 OBJS-$(CONFIG_HEVC_NVENC_ENCODER)      += nvenc_hevc.o
 OBJS-$(CONFIG_HEVC_QSV_DECODER)        += qsvdec_h2645.o
 OBJS-$(CONFIG_HEVC_QSV_ENCODER)        += qsvenc_hevc.o hevc_ps_enc.o       \
@@ -808,6 +811,7 @@ SKIPHEADERS                            += %_tablegen.h                  \
                                           $(ARCH)/vp56_arith.h          \
 
 SKIPHEADERS-$(CONFIG_CUVID)            += cuvid.h
+SKIPHEADERS-$(CONFIG_AMF)              += amfenc.h
 SKIPHEADERS-$(CONFIG_D3D11VA)          += d3d11va.h dxva2_internal.h
 SKIPHEADERS-$(CONFIG_DXVA2)            += dxva2.h dxva2_internal.h
 SKIPHEADERS-$(CONFIG_LIBSCHROEDINGER)  += libschroedinger.h

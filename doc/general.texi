@@ -237,6 +237,16 @@ The dispatcher is open source and can be downloaded from
 with the @code{--enable-libmfx} option and @code{pkg-config} needs to be able to
 locate the dispatcher's @code{.pc} files.
 
+@section AMD VCE
+
+Libav can use the AMD Advanced Media Framework library for accelerated H.264 and HEVC encoding on VCE enabled hardware under Windows.
+
+To enable support you must obtain the AMF framework header files from @url{https://github.com/GPUOpen-LibrariesAndSDKs/AMF.git}.
+
+Create an @code{AMF/} directory in the system include path.
+Copy the contents of @code{AMF/amf/public/include/} into that directory.
+Then Configure Libav with @code{--enable-amf}.
+
 @chapter Supported File Formats and Codecs
 
 You can use the @code{-formats} and @code{-codecs} options to have an exhaustive list.

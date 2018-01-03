@@ -452,11 +452,13 @@ void avcodec_register_all(void)
     /* external libraries, that shouldn't be used by default if one of the
      * above is available */
     REGISTER_ENCDEC (LIBOPENH264,       libopenh264);
+    REGISTER_ENCODER(H264_AMF,          h264_amf);
     REGISTER_ENCODER(H264_NVENC,        h264_nvenc);
     REGISTER_ENCODER(H264_OMX,          h264_omx);
     REGISTER_ENCODER(H264_QSV,          h264_qsv);
     REGISTER_ENCODER(H264_VAAPI,        h264_vaapi);
     REGISTER_ENCODER(LIBKVAZAAR,        libkvazaar);
+    REGISTER_ENCODER(HEVC_AMF,          hevc_amf);
     REGISTER_ENCODER(HEVC_NVENC,        hevc_nvenc);
     REGISTER_ENCODER(HEVC_QSV,          hevc_qsv);
     REGISTER_ENCODER(HEVC_VAAPI,        hevc_vaapi);

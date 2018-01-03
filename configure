@@ -231,6 +231,7 @@ External library support:
   --enable-zlib              compression [autodetect]
 
   The following libraries provide various hardware acceleration features:
+  --enable-amf     AMF video encoding code [auto]
   --enable-cuda    Nvidia CUDA (dynamically linked)
   --enable-cuvid   Nvidia CUVID video decode acceleration
   --enable-d3d11va Microsoft Direct3D 11 video acceleration [auto]
@@ -1255,6 +1256,7 @@ HWACCEL_LIBRARY_NONFREE_LIST="
 "
 HWACCEL_LIBRARY_LIST="
     $HWACCEL_LIBRARY_NONFREE_LIST
+    amf
     d3d11va
     dxva2
     libmfx
@@ -2238,6 +2240,7 @@ wmv3_vaapi_hwaccel_select="vc1_vaapi_hwaccel"
 wmv3_vdpau_hwaccel_select="vc1_vdpau_hwaccel"
 
 # hardware-accelerated codecs
+amf_deps_any="libdl LoadLibrary"
 nvenc_deps_any="libdl LoadLibrary"
 omx_deps="libdl pthreads"
 omx_rpi_select="omx"
@@ -2250,6 +2253,7 @@ vaapi_encode_deps="vaapi"
 hwupload_cuda_filter_deps="cuda"
 scale_npp_filter_deps="cuda libnpp"
 
+h264_amf_encoder_deps="amf"
 h264_mmal_decoder_deps="mmal"
 h264_nvenc_encoder_deps="nvenc"
 h264_omx_encoder_deps="omx"
@@ -2257,6 +2261,7 @@ h264_qsv_decoder_select="h264_mp4toannexb_bsf h264_parser qsvdec"
 h264_qsv_encoder_select="qsvenc"
 h264_vaapi_encoder_deps="VAEncPictureParameterBufferH264"
 h264_vaapi_encoder_select="cbs_h264 vaapi_encode"
+hevc_amf_encoder_deps="amf"
 hevc_nvenc_encoder_deps="nvenc"
 hevc_qsv_decoder_select="hevc_mp4toannexb_bsf hevc_parser qsvdec"
 hevc_qsv_encoder_select="hevcparse qsvenc"
@@ -4573,6 +4578,11 @@ for func in $MATH_FUNCS; do
 done
 
 # these are off by default, so fail if requested and not available
+
+enabled amf &&
+    check_cpp_condition "AMF/core/Version.h" \
+        "(AMF_VERSION_MAJOR << 48 | AMF_VERSION_MINOR << 32 | AMF_VERSION_RELEASE << 16 | AMF_VERSION_BUILD_NUM) >= 0x0001000400040001" ||
+    disable amf
 enabled avisynth          && require_header avisynth/avisynth_c.h
 enabled avxsynth          && require_header avxsynth/avxsynth_c.h
 enabled cuda              && require cuda cuda.h cuInit -lcuda
