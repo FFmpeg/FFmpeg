@@ -416,15 +416,6 @@ done:
     return ret;
 }
 
-
-static int mediacodec_process_data(AVCodecContext *avctx, AVFrame *frame,
-                                   int *got_frame, AVPacket *pkt)
-{
-    MediaCodecH264DecContext *s = avctx->priv_data;
-
-    return ff_mediacodec_dec_decode(avctx, s->ctx, frame, got_frame, pkt);
-}
-
 static int mediacodec_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 {
     MediaCodecH264DecContext *s = avctx->priv_data;
@@ -505,7 +496,7 @@ static int mediacodec_receive_frame(AVCodecContext *avctx, AVFrame *frame)
             av_fifo_generic_read(s->fifo, &s->buffered_pkt, sizeof(s->buffered_pkt), NULL);
         }
 
-        ret = mediacodec_process_data(avctx, frame, &got_frame, &s->buffered_pkt);
+        ret = ff_mediacodec_dec_decode(avctx, s->ctx, frame, &got_frame, &s->buffered_pkt);
         if (ret < 0)
             return ret;
 
