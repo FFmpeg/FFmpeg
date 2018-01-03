@@ -1462,6 +1462,12 @@ static int h264_field_start(H264Context *h, const H264SliceContext *sl,
                  * one except for reference purposes. */
                 h->first_field = 1;
                 h->cur_pic_ptr = NULL;
+            } else if (h->cur_pic_ptr->reference & DELAYED_PIC_REF) {
+                /* This frame was already output, we cannot draw into it
+                 * anymore.
+                 */
+                h->first_field = 1;
+                h->cur_pic_ptr = NULL;
             } else {
                 /* Second field in complementary pair */
                 h->first_field = 0;
