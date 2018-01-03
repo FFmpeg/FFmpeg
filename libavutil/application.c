@@ -80,7 +80,7 @@ void av_application_will_http_open(AVApplicationContext *h, void *obj, const cha
     av_application_on_http_event(h, AVAPP_EVENT_WILL_HTTP_OPEN, &event);
 }
 
-void av_application_did_http_open(AVApplicationContext *h, void *obj, const char *url, int error, int http_code)
+void av_application_did_http_open(AVApplicationContext *h, void *obj, const char *url, int error, int http_code, int64_t filesize)
 {
     AVAppHttpEvent event = {0};
 
@@ -91,6 +91,7 @@ void av_application_did_http_open(AVApplicationContext *h, void *obj, const char
     av_strlcpy(event.url, url, sizeof(event.url));
     event.error     = error;
     event.http_code = http_code;
+    event.filesize  = filesize;
 
     av_application_on_http_event(h, AVAPP_EVENT_DID_HTTP_OPEN, &event);
 }

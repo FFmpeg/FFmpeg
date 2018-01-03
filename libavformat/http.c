@@ -570,7 +570,7 @@ static int http_open(URLContext *h, const char *uri, int flags,
     }
     av_application_will_http_open(s->app_ctx, (void*)h, uri);
     ret = http_open_cnx(h, options);
-    av_application_did_http_open(s->app_ctx, (void*)h, uri, ret, s->http_code);
+    av_application_did_http_open(s->app_ctx, (void*)h, uri, ret, s->http_code, s->filesize);
     if (ret < 0)
         av_dict_free(&s->chained_options);
     return ret;
