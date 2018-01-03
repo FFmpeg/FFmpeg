@@ -1633,6 +1633,12 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
                 h->missing_fields ++;
                 h->cur_pic_ptr = NULL;
                 h->first_field = FIELD_PICTURE(h);
+            } else if (h->cur_pic_ptr->reference & DELAYED_PIC_REF) {
+                /* This frame was already output, we cannot draw into it
+                 * anymore.
+                 */
+                h->first_field = 1;
+                h->cur_pic_ptr = NULL;
             } else {
                 h->missing_fields = 0;
                 if (h->cur_pic_ptr->frame_num != h->frame_num) {
