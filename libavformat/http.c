@@ -1452,6 +1452,9 @@ static int http_read_stream(URLContext *h, uint8_t *buf, int size)
         || (read_ret == AVERROR_EOF && s->reconnect_at_eof && (!h->is_streamed || s->reconnect_streamed))) {
         uint64_t target = h->is_streamed ? 0 : s->off;
 
+        if (read_ret == AVERROR_EXIT)
+            return read_ret;
+
         if (reconnect_delay > s->reconnect_delay_max)
             return AVERROR(EIO);
 
