@@ -310,25 +310,25 @@ static int geq_filter_frame(AVFilterLink *inlink, AVFrame *in)
     av_frame_copy_props(out, in);
 
     for (plane = 0; plane < geq->planes && out->data[plane]; plane++) {
-        const int w = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(inlink->w, geq->hsub) : inlink->w;
-        const int h = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(inlink->h, geq->vsub) : inlink->h;
+        const int width = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(inlink->w, geq->hsub) : inlink->w;
+        const int height = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(inlink->h, geq->vsub) : inlink->h;
         const int linesize = out->linesize[plane];
         ThreadData td;
 
         geq->dst = out->data[plane];
         geq->dst16 = (uint16_t*)out->data[plane];
 
-        geq->values[VAR_W]  = w;
-        geq->values[VAR_H]  = h;
-        geq->values[VAR_SW] = w / (double)inlink->w;
-        geq->values[VAR_SH] = h / (double)inlink->h;
+        geq->values[VAR_W]  = width;
+        geq->values[VAR_H]  = height;
+        geq->values[VAR_SW] = width / (double)inlink->w;
+        geq->values[VAR_SH] = height / (double)inlink->h;
 
-        td.width = w;
-        td.height = h;
+        td.width = width;
+        td.height = height;
         td.plane = plane;
         td.linesize = linesize;
 
-        ctx->internal->execute(ctx, slice_geq_filter, &td, NULL, FFMIN(h, nb_threads));
+        ctx->internal->execute(ctx, slice_geq_filter, &td, NULL, FFMIN(height, nb_threads));
     }
 
     av_frame_free(&geq->picref);
