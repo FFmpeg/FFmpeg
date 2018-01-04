@@ -383,6 +383,10 @@ static void celt_search_for_dual_stereo(OpusPsyContext *s, CeltFrame *f)
 {
     float td1, td2;
     f->dual_stereo = 0;
+
+    if (s->avctx->channels < 2)
+        return;
+
     bands_dist(s, f, &td1);
     f->dual_stereo = 1;
     bands_dist(s, f, &td2);
@@ -395,6 +399,9 @@ static void celt_search_for_intensity(OpusPsyContext *s, CeltFrame *f)
 {
     int i, best_band = CELT_MAX_BANDS - 1;
     float dist, best_dist = FLT_MAX;
+
+    if (s->avctx->channels < 2)
+        return;
 
     /* TODO: fix, make some heuristic up here using the lambda value */
     float end_band = 0;
