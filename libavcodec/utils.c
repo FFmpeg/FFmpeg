@@ -26,7 +26,6 @@
  */
 
 #include "config.h"
-#include "libavutil/atomic.h"
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
@@ -127,16 +126,23 @@ int av_codec_is_decoder(const AVCodec *codec)
     return codec && (codec->decode || codec->receive_frame);
 }
 
+static AVMutex codec_register_mutex = AV_MUTEX_INITIALIZER;
+
 av_cold void avcodec_register(AVCodec *codec)
 {
     AVCodec **p;
     avcodec_init();
-    p = last_avcodec;
-    codec->next = NULL;
 
-    while(*p || avpriv_atomic_ptr_cas((void * volatile *)p, NULL, codec))
+    ff_mutex_lock(&codec_register_mutex);
+    p = last_avcodec;
+
+    while (*p)
         p = &(*p)->next;
+    *p          = codec;
+    codec->next = NULL;
     last_avcodec = &codec->next;
+
+    ff_mutex_unlock(&codec_register_mutex);
 
     if (codec->init_static_data)
         codec->init_static_data(codec);
