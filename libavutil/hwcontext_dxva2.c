@@ -485,6 +485,7 @@ static int dxva2_device_create9ex(AVHWDeviceContext *ctx, UINT adapter)
     if (FAILED(hr))
         return AVERROR_UNKNOWN;
 
+    modeex.Size = sizeof(D3DDISPLAYMODEEX);
     hr = IDirect3D9Ex_GetAdapterDisplayModeEx(d3d9ex, adapter, &modeex, NULL);
     if (FAILED(hr)) {
         IDirect3D9Ex_Release(d3d9ex);
