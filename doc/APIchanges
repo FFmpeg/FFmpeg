@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2018-01-xx - xxxxxxx - lavfi 7.11.101 - avfilter.h
+  Deprecate avfilter_link_get_channels(). Use av_buffersink_get_channels().
+
 2017-xx-xx - xxxxxxx - lavr 4.0.0 - avresample.h
   Deprecate the entire library. Merged years ago to provide compatibility
   with Libav, it remained unmaintained by the FFmpeg project and duplicated
