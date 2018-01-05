@@ -448,6 +448,11 @@ struct AVFilterLink {
      */
     AVRational time_base;
 
+    /**
+     * Number of channels.
+     */
+    int channels;
+
     /*****************************************************************
      * All fields below this line are not part of the public API. They
      * may not be used outside of libavfilter and can be changed and
@@ -552,11 +557,6 @@ struct AVFilterLink {
     int max_samples;
 
     /**
-     * Number of channels.
-     */
-    int channels;
-
-    /**
      * Link processing flags.
      */
     unsigned flags;
@@ -647,10 +647,15 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
  */
 void avfilter_link_free(AVFilterLink **link);
 
+#if FF_API_FILTER_GET_SET
 /**
  * Get the number of channels of a link.
+ * @deprecated This accessor used to be provided for ABI compatibility, and
+ * does not need to be used anymore.
  */
+attribute_deprecated
 int avfilter_link_get_channels(AVFilterLink *link);
+#endif
 
 /**
  * Set the closed field of a link.
