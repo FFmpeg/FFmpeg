@@ -127,6 +127,9 @@ static void count_coefficients(char *item_str, int *nb_items)
 {
     char *p;
 
+    if (!item_str)
+        return;
+
     *nb_items = 1;
     for (p = item_str; *p && *p != '|'; p++) {
         if (*p == ' ')
@@ -170,10 +173,14 @@ static int read_channels(AVFilterContext *ctx, int channels, uint8_t *item_str, 
         if (!(arg = av_strtok(p, "|", &saveptr)))
             arg = prev_arg;
 
-        p = NULL;
+        if (!arg)
+            return AVERROR(EINVAL);
+
         count_coefficients(arg, &nb[i]);
-        cache[i] = av_calloc(nb[i], sizeof(cache[i]));
-        c[i] = av_calloc(nb[i], sizeof(c[i]));
+
+        p = NULL;
+        cache[i] = av_calloc(nb[i] + 1, sizeof(double));
+        c[i] = av_calloc(nb[i], sizeof(double));
         if (!c[i] || !cache[i])
             return AVERROR(ENOMEM);
 
@@ -263,6 +270,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+static av_cold int init(AVFilterContext *ctx)
+{
+    AudioIIRContext *s = ctx->priv;
+
+    if (!s->a_str || !s->b_str) {
+        av_log(ctx, AV_LOG_ERROR, "Valid coefficients are mandatory.\n");
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
+}
+
 static av_cold void uninit(AVFilterContext *ctx)
 {
     AudioIIRContext *s = ctx->priv;
@@ -326,6 +345,7 @@ AVFilter ff_af_aiir = {
     .name          = "aiir",
     .description   = NULL_IF_CONFIG_SMALL("Apply Infinite Impulse Response filter with supplied coefficients."),
     .priv_size     = sizeof(AudioIIRContext),
+    .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
     .inputs        = inputs,
