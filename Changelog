@@ -34,6 +34,7 @@ version <next>:
 - entropy video filter
 - hilbert audio filter source
 - aiir audio filter
+- aiff: add support for CD-ROM XA ADPCM
 
 
 version 3.4:

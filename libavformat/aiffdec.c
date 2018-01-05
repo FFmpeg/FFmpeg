@@ -332,6 +332,9 @@ static int aiff_read_header(AVFormatContext *s)
             /* This field is unknown and its data seems to be irrelevant */
             avio_rb32(pb);
             st->codecpar->block_align = avio_rb32(pb);
+
+            goto got_sound;
+            break;
         case 0:
             if (offset > 0 && st->codecpar->block_align) // COMM && SSND
                 goto got_sound;
