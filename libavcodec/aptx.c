@@ -188,7 +188,7 @@ typedef const struct {
     const int32_t *quantize_dither_factors;
     const int16_t *quantize_factor_select_offset;
     int tables_size;
-    int32_t quantized_bits;
+    int32_t factor_max;
     int32_t prediction_order;
 } ConstTables;
 
@@ -198,25 +198,25 @@ static ConstTables tables[NB_SUBBANDS] = {
               quantize_dither_factors_LF,
               quantize_factor_select_offset_LF,
               FF_ARRAY_ELEMS(quantize_intervals_LF),
-              7, 24 },
+              0x11FF, 24 },
     [MLF] = { quantize_intervals_MLF,
               invert_quantize_dither_factors_MLF,
               quantize_dither_factors_MLF,
               quantize_factor_select_offset_MLF,
               FF_ARRAY_ELEMS(quantize_intervals_MLF),
-              4, 12 },
+              0x14FF, 12 },
     [MHF] = { quantize_intervals_MHF,
               invert_quantize_dither_factors_MHF,
               quantize_dither_factors_MHF,
               quantize_factor_select_offset_MHF,
               FF_ARRAY_ELEMS(quantize_intervals_MHF),
-              2, 6 },
+              0x16FF, 6 },
     [HF]  = { quantize_intervals_HF,
               invert_quantize_dither_factors_HF,
               quantize_dither_factors_HF,
               quantize_factor_select_offset_HF,
               FF_ARRAY_ELEMS(quantize_intervals_HF),
-              3, 12 },
+              0x15FF, 12 },
 };
 
 static const int16_t quantization_factors[32] = {
@@ -530,16 +530,14 @@ static void aptx_invert_quantization(InvertQuantize *invert_quantize,
     qr = rshift64_clip24(((int64_t)qr<<32) + MUL64(dither, tables->invert_quantize_dither_factors[idx]), 32);
     invert_quantize->reconstructed_difference = MUL64(invert_quantize->quantization_factor, qr) >> 19;
 
-    shift = 24 - tables->quantized_bits;
-
     /* update factor_select */
     factor_select = 32620 * invert_quantize->factor_select;
     factor_select = rshift32(factor_select + (tables->quantize_factor_select_offset[idx] << 15), 15);
-    invert_quantize->factor_select = av_clip(factor_select, 0, (shift << 8) | 0xFF);
+    invert_quantize->factor_select = av_clip(factor_select, 0, tables->factor_max);
 
     /* update quantization factor */
     idx = (invert_quantize->factor_select & 0xFF) >> 3;
-    shift -= invert_quantize->factor_select >> 8;
+    shift = (tables->factor_max - invert_quantize->factor_select) >> 8;
     invert_quantize->quantization_factor = (quantization_factors[idx] << 11) >> shift;
 }
 
