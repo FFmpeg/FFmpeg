@@ -23,11 +23,6 @@ fate-cast5: libavutil/tests/cast5$(EXESUF)
 fate-cast5: CMD = run libavutil/tests/cast5
 fate-cast5: CMP = null
 
-FATE_LIBAVUTIL += fate-atomic
-fate-atomic: libavutil/tests/atomic$(EXESUF)
-fate-atomic: CMD = run libavutil/tests/atomic
-fate-atomic: CMP = null
-
 FATE_LIBAVUTIL += fate-audio_fifo
 fate-audio_fifo: libavutil/tests/audio_fifo$(EXESUF)
 fate-audio_fifo: CMD = run libavutil/tests/audio_fifo

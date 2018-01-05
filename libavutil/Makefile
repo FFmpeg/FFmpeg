@@ -155,8 +155,6 @@ OBJS = adler32.o                                                        \
        xtea.o                                                           \
        tea.o                                                            \
 
-OBJS-$(!HAVE_ATOMICS_NATIVE)            += atomic.o                     \
-
 OBJS-$(CONFIG_CUDA)                     += hwcontext_cuda.o
 OBJS-$(CONFIG_D3D11VA)                  += hwcontext_d3d11va.o
 OBJS-$(CONFIG_DXVA2)                    += hwcontext_dxva2.o
@@ -183,14 +181,10 @@ SKIPHEADERS-$(CONFIG_OPENCL)           += hwcontext_opencl.h
 SKIPHEADERS-$(CONFIG_VAAPI)            += hwcontext_vaapi.h
 SKIPHEADERS-$(CONFIG_VIDEOTOOLBOX)     += hwcontext_videotoolbox.h
 SKIPHEADERS-$(CONFIG_VDPAU)            += hwcontext_vdpau.h
-SKIPHEADERS-$(HAVE_ATOMICS_GCC)        += atomic_gcc.h
-SKIPHEADERS-$(HAVE_ATOMICS_SUNCC)      += atomic_suncc.h
-SKIPHEADERS-$(HAVE_ATOMICS_WIN32)      += atomic_win32.h
 
 TESTPROGS = adler32                                                     \
             aes                                                         \
             aes_ctr                                                     \
-            atomic                                                      \
             audio_fifo                                                  \
             avstring                                                    \
             base64                                                      \

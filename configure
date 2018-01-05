@@ -1998,7 +1998,6 @@ MATH_FUNCS="
 "
 
 SYSTEM_FEATURES="
-    atomics_native
     dos_paths
     libc_msvcrt
     MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS
@@ -2114,7 +2113,6 @@ HAVE_LIST="
     $(add_suffix _external $ARCH_EXT_LIST)
     $(add_suffix _inline   $ARCH_EXT_LIST)
     $ARCH_FEATURES
-    $ATOMICS_LIST
     $BUILTIN_LIST
     $COMPLEX_FUNCS
     $HAVE_LIST_CMDLINE
