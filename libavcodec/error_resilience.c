@@ -27,7 +27,6 @@
 
 #include <limits.h>
 
-#include "libavutil/atomic.h"
 #include "libavutil/internal.h"
 #include "avcodec.h"
 #include "error_resilience.h"
