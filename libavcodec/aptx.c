@@ -466,6 +466,7 @@ static void aptx_quantize_difference(Quantize *quantize,
     int64_t error;
 
     sample_difference_abs = FFABS(sample_difference);
+    sample_difference_abs = FFMIN(sample_difference_abs, (1 << 23) - 1);
 
     quantized_sample = aptx_bin_search(sample_difference_abs >> 4,
                                        quantization_factor,
@@ -478,7 +479,7 @@ static void aptx_quantize_difference(Quantize *quantize,
     mean = (intervals[1] + intervals[0]) / 2;
     interval = (intervals[1] - intervals[0]) * (-(sample_difference < 0) | 1);
 
-    dithered_sample = rshift64_clip24(MUL64(dither, interval) + ((int64_t)(mean + d) << 32), 32);
+    dithered_sample = rshift64_clip24(MUL64(dither, interval) + ((int64_t)av_clip_intp2(mean + d, 23) << 32), 32);
     error = ((int64_t)sample_difference_abs << 20) - MUL64(dithered_sample, quantization_factor);
     quantize->error = FFABS(rshift64(error, 23));
 
