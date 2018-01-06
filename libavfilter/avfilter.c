@@ -183,12 +183,10 @@ void avfilter_link_free(AVFilterLink **link)
     av_freep(link);
 }
 
-#if FF_API_FILTER_GET_SET
 int avfilter_link_get_channels(AVFilterLink *link)
 {
     return link->channels;
 }
-#endif
 
 void ff_filter_set_ready(AVFilterContext *filter, unsigned priority)
 {
