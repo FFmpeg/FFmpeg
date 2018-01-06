@@ -382,6 +382,7 @@ static int config_filter(AVFilterLink *outlink, int reset)
     s->b0 /= s->a0;
     s->b1 /= s->a0;
     s->b2 /= s->a0;
+    s->a0 /= s->a0;
 
     s->cache = av_realloc_f(s->cache, sizeof(ChanCache), inlink->channels);
     if (!s->cache)
