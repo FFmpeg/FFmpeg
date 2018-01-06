@@ -2858,6 +2858,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("aptX (Audio Processing Technology for Bluetooth)"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
+    {
+        .id        = AV_CODEC_ID_APTX_HD,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "aptx_hd",
+        .long_name = NULL_IF_CONFIG_SMALL("aptX HD (Audio Processing Technology for Bluetooth)"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
 
     /* subtitle codecs */
     {

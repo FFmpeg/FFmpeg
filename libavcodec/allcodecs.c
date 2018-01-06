@@ -386,6 +386,8 @@ extern AVCodec ff_amrwb_decoder;
 extern AVCodec ff_ape_decoder;
 extern AVCodec ff_aptx_encoder;
 extern AVCodec ff_aptx_decoder;
+extern AVCodec ff_aptx_hd_encoder;
+extern AVCodec ff_aptx_hd_decoder;
 extern AVCodec ff_atrac1_decoder;
 extern AVCodec ff_atrac3_decoder;
 extern AVCodec ff_atrac3al_decoder;
