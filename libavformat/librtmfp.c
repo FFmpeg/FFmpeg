@@ -163,6 +163,11 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
         return -1;
 
     av_log(NULL, AV_LOG_INFO, "RTMFP Connect called : %d\n", ctx->id);
+
+    // Wait for connection to happen
+    if (RTMFP_WaitForEvent(ctx->id, RTMFP_CONNECTED) == 0)
+        return -1;
+
     if (ctx->netgroup) {
         ctx->group.netGroup = ctx->netgroup;
         ctx->group.availabilityUpdatePeriod = ctx->updatePeriod;
