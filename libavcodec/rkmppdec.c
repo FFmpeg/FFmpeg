@@ -40,6 +40,7 @@
 
 #define RECEIVE_FRAME_TIMEOUT   100
 #define FRAMEGROUP_MAX_FRAMES   16
+#define INPUT_MAX_PACKETS       4
 
 typedef struct {
     MppCtx ctx;
@@ -515,16 +516,17 @@ static int rkmpp_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     RKMPPDecoder *decoder = (RKMPPDecoder *)rk_context->decoder_ref->data;
     int ret = MPP_NOK;
     AVPacket pkt = {0};
-    RK_S32 freeslots;
+    RK_S32 usedslots, freeslots;
 
     if (!decoder->eos_reached) {
         // we get the available slots in decoder
-        ret = decoder->mpi->control(decoder->ctx, MPP_DEC_GET_FREE_PACKET_SLOT_COUNT, &freeslots);
+        ret = decoder->mpi->control(decoder->ctx, MPP_DEC_GET_STREAM_COUNT, &usedslots);
         if (ret != MPP_OK) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to get decoder free slots (code = %d).\n", ret);
+            av_log(avctx, AV_LOG_ERROR, "Failed to get decoder used slots (code = %d).\n", ret);
             return ret;
         }
 
+        freeslots = INPUT_MAX_PACKETS - usedslots;
         if (freeslots > 0) {
             ret = ff_decode_get_packet(avctx, &pkt);
             if (ret < 0 && ret != AVERROR_EOF) {
@@ -541,7 +543,7 @@ static int rkmpp_receive_frame(AVCodecContext *avctx, AVFrame *frame)
         }
 
         // make sure we keep decoder full
-        if (freeslots > 1 && decoder->first_frame)
+        if (freeslots > 1)
             return AVERROR(EAGAIN);
     }
 
