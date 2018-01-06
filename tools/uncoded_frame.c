@@ -178,7 +178,7 @@ int main(int argc, char **argv)
             break;
         case AVMEDIA_TYPE_AUDIO:
             st->stream->codec->channel_layout = st->link->channel_layout;
-            st->stream->codec->channels = st->link->channels;
+            st->stream->codec->channels = avfilter_link_get_channels(st->link);
             st->stream->codec->sample_rate = st->link->sample_rate;
             st->stream->codec->sample_fmt = st->link->format;
             st->stream->codec->codec_id =
