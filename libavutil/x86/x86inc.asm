@@ -1,7 +1,7 @@
 ;*****************************************************************************
 ;* x86inc.asm: x264asm abstraction layer
 ;*****************************************************************************
-;* Copyright (C) 2005-2017 x264 project
+;* Copyright (C) 2005-2018 x264 project
 ;*
 ;* Authors: Loren Merritt <lorenm@u.washington.edu>
 ;*          Henrik Gramner <henrik@gramner.com>
@@ -892,6 +892,36 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
     %undef %1%2
 %endmacro
 
+%macro DEFINE_MMREGS 1 ; mmtype
+    %assign %%prev_mmregs 0
+    %ifdef num_mmregs
+        %assign %%prev_mmregs num_mmregs
+    %endif
+
+    %assign num_mmregs 8
+    %if ARCH_X86_64 && mmsize >= 16
+        %assign num_mmregs 16
+        %if cpuflag(avx512) || mmsize == 64
+            %assign num_mmregs 32
+        %endif
+    %endif
+
+    %assign %%i 0
+    %rep num_mmregs
+        CAT_XDEFINE m, %%i, %1 %+ %%i
+        CAT_XDEFINE nn%1, %%i, %%i
+        %assign %%i %%i+1
+    %endrep
+    %if %%prev_mmregs > num_mmregs
+        %rep %%prev_mmregs - num_mmregs
+            CAT_UNDEF m, %%i
+            CAT_UNDEF nn %+ mmtype, %%i
+            %assign %%i %%i+1
+        %endrep
+    %endif
+    %xdefine mmtype %1
+%endmacro
+
 ; Prefer registers 16-31 over 0-15 to avoid having to use vzeroupper
 %macro AVX512_MM_PERMUTATION 0-1 0 ; start_reg
     %if ARCH_X86_64 && cpuflag(avx512)
@@ -908,23 +938,12 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
     %assign avx_enabled 0
     %define RESET_MM_PERMUTATION INIT_MMX %1
     %define mmsize 8
-    %define num_mmregs 8
     %define mova movq
     %define movu movq
     %define movh movd
     %define movnta movntq
-    %assign %%i 0
-    %rep 8
-        CAT_XDEFINE m, %%i, mm %+ %%i
-        CAT_XDEFINE nnmm, %%i, %%i
-        %assign %%i %%i+1
-    %endrep
-    %rep 24
-        CAT_UNDEF m, %%i
-        CAT_UNDEF nnmm, %%i
-        %assign %%i %%i+1
-    %endrep
     INIT_CPUFLAGS %1
+    DEFINE_MMREGS mm
 %endmacro
 
 %macro INIT_XMM 0-1+
@@ -936,22 +955,9 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
     %define movh movq
     %define movnta movntdq
     INIT_CPUFLAGS %1
-    %define num_mmregs 8
-    %if ARCH_X86_64
-        %define num_mmregs 16
-        %if cpuflag(avx512)
-            %define num_mmregs 32
-        %endif
-    %endif
-    %assign %%i 0
-    %rep num_mmregs
-        CAT_XDEFINE m, %%i, xmm %+ %%i
-        CAT_XDEFINE nnxmm, %%i, %%i
-        %assign %%i %%i+1
-    %endrep
+    DEFINE_MMREGS xmm
     %if WIN64
-        ; Swap callee-saved registers with volatile registers
-        AVX512_MM_PERMUTATION 6
+        AVX512_MM_PERMUTATION 6 ; Swap callee-saved registers with volatile registers
     %endif
 %endmacro
 
@@ -964,19 +970,7 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
     %undef movh
     %define movnta movntdq
     INIT_CPUFLAGS %1
-    %define num_mmregs 8
-    %if ARCH_X86_64
-        %define num_mmregs 16
-        %if cpuflag(avx512)
-            %define num_mmregs 32
-        %endif
-    %endif
-    %assign %%i 0
-    %rep num_mmregs
-        CAT_XDEFINE m, %%i, ymm %+ %%i
-        CAT_XDEFINE nnymm, %%i, %%i
-        %assign %%i %%i+1
-    %endrep
+    DEFINE_MMREGS ymm
     AVX512_MM_PERMUTATION
 %endmacro
 
@@ -984,21 +978,12 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
     %assign avx_enabled 1
     %define RESET_MM_PERMUTATION INIT_ZMM %1
     %define mmsize 64
-    %define num_mmregs 8
-    %if ARCH_X86_64
-        %define num_mmregs 32
-    %endif
     %define mova movdqa
     %define movu movdqu
     %undef movh
     %define movnta movntdq
-    %assign %%i 0
-    %rep num_mmregs
-        CAT_XDEFINE m, %%i, zmm %+ %%i
-        CAT_XDEFINE nnzmm, %%i, %%i
-        %assign %%i %%i+1
-    %endrep
     INIT_CPUFLAGS %1
+    DEFINE_MMREGS zmm
     AVX512_MM_PERMUTATION
 %endmacro
 
