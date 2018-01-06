@@ -462,10 +462,12 @@ static void aptx_quantize_difference(Quantize *quantize,
 {
     const int32_t *intervals = tables->quantize_intervals;
     int32_t quantized_sample, dithered_sample, parity_change;
-    int32_t d, mean, interval, inv;
+    int32_t d, mean, interval, inv, sample_difference_abs;
     int64_t error;
 
-    quantized_sample = aptx_bin_search(FFABS(sample_difference) >> 4,
+    sample_difference_abs = FFABS(sample_difference);
+
+    quantized_sample = aptx_bin_search(sample_difference_abs >> 4,
                                        quantization_factor,
                                        intervals, tables->tables_size);
 
@@ -477,7 +479,7 @@ static void aptx_quantize_difference(Quantize *quantize,
     interval = (intervals[1] - intervals[0]) * (-(sample_difference < 0) | 1);
 
     dithered_sample = rshift64_clip24(MUL64(dither, interval) + ((int64_t)(mean + d) << 32), 32);
-    error = ((int64_t)FFABS(sample_difference) << 20) - MUL64(dithered_sample, quantization_factor);
+    error = ((int64_t)sample_difference_abs << 20) - MUL64(dithered_sample, quantization_factor);
     quantize->error = FFABS(rshift64(error, 23));
 
     parity_change = quantized_sample;
