@@ -11,7 +11,6 @@ typedef struct {
     AVFormatContext *mux;
     AVStream *stream;
     AVFilterContext *sink;
-    AVFilterLink *link;
 } Stream;
 
 static int create_sink(Stream *st, AVFilterGraph *graph,
@@ -36,7 +35,6 @@ static int create_sink(Stream *st, AVFilterGraph *graph,
     ret = avfilter_link(f, idx, st->sink, 0);
     if (ret < 0)
         return ret;
-    st->link = st->sink->inputs[0];
     return 0;
 }
 
@@ -163,24 +161,24 @@ int main(int argc, char **argv)
             av_log(NULL, AV_LOG_ERROR, "Failed to create output stream\n");
             goto fail;
         }
-        st->stream->codec->codec_type = st->link->type;
+        st->stream->codec->codec_type = av_buffersink_get_type(st->sink);
         st->stream->time_base = st->stream->codec->time_base =
-            st->link->time_base;
-        switch (st->link->type) {
+            av_buffersink_get_time_base(st->sink);
+        switch (av_buffersink_get_type(st->sink)) {
         case AVMEDIA_TYPE_VIDEO:
             st->stream->codec->codec_id = AV_CODEC_ID_RAWVIDEO;
             st->stream->avg_frame_rate =
             st->stream->  r_frame_rate = av_buffersink_get_frame_rate(st->sink);
-            st->stream->codec->width               = st->link->w;
-            st->stream->codec->height              = st->link->h;
-            st->stream->codec->sample_aspect_ratio = st->link->sample_aspect_ratio;
-            st->stream->codec->pix_fmt             = st->link->format;
+            st->stream->codec->width               = av_buffersink_get_w(st->sink);
+            st->stream->codec->height              = av_buffersink_get_h(st->sink);
+            st->stream->codec->sample_aspect_ratio = av_buffersink_get_sample_aspect_ratio(st->sink);
+            st->stream->codec->pix_fmt             = av_buffersink_get_format(st->sink);
             break;
         case AVMEDIA_TYPE_AUDIO:
-            st->stream->codec->channel_layout = st->link->channel_layout;
-            st->stream->codec->channels = avfilter_link_get_channels(st->link);
-            st->stream->codec->sample_rate = st->link->sample_rate;
-            st->stream->codec->sample_fmt = st->link->format;
+            st->stream->codec->channel_layout = av_buffersink_get_channel_layout(st->sink);
+            st->stream->codec->channels       = av_buffersink_get_channels(st->sink);
+            st->stream->codec->sample_rate    = av_buffersink_get_sample_rate(st->sink);
+            st->stream->codec->sample_fmt     = av_buffersink_get_format(st->sink);
             st->stream->codec->codec_id =
                 av_get_pcm_codec(st->stream->codec->sample_fmt, -1);
             break;
@@ -240,7 +238,7 @@ int main(int argc, char **argv)
                 }
                 if (frame->pts != AV_NOPTS_VALUE)
                     frame->pts = av_rescale_q(frame->pts,
-                                              st->link  ->time_base,
+                                              av_buffersink_get_time_base(st->sink),
                                               st->stream->time_base);
                 ret = av_interleaved_write_uncoded_frame(st->mux,
                                                          st->stream->index,
