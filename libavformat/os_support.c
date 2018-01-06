@@ -60,11 +60,6 @@ static int inet_aton(const char *str, struct in_addr *add)
 
     return 1;
 }
-#else
-static int inet_aton(const char *str, struct in_addr *add)
-{
-    return inet_aton(str, add);
-}
 #endif /* !HAVE_INET_ATON */
 
 #if !HAVE_GETADDRINFO
