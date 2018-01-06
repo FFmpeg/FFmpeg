@@ -37,6 +37,7 @@ version <next>:
 - aiff: add support for CD-ROM XA ADPCM
 - Removed the ffserver program
 - Removed the ffmenc and ffmdec muxer and demuxer
+- VideoToolbox HEVC encoder and hwaccel
 
 
 version 3.4:
