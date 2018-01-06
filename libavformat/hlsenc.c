@@ -352,14 +352,17 @@ fail:
     return;
 }
 
-static int replace_int_data_in_filename(char *buf, int buf_size, const char *filename, char placeholder, int64_t number)
+static int replace_int_data_in_filename(char **s, const char *filename, char placeholder, int64_t number)
 {
     const char *p;
-    char *q, buf1[20], c;
-    int nd, len, addchar_count;
+    char *new_filename;
+    char c;
+    int nd, addchar_count;
     int found_count = 0;
+    AVBPrint buf;
 
-    q = buf;
+    av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
+
     p = filename;
     for (;;) {
         c = *p;
@@ -376,13 +379,7 @@ static int replace_int_data_in_filename(char *buf, int buf_size, const char *fil
             }
 
             if (*(p + addchar_count) == placeholder) {
-                len = snprintf(buf1, sizeof(buf1), "%0*"PRId64, (number < 0) ? nd : nd++, number);
-                if (len < 1)  // returned error or empty buf1
-                    goto fail;
-                if ((q - buf + len) > buf_size - 1)
-                    goto fail;
-                memcpy(q, buf1, len);
-                q += len;
+                av_bprintf(&buf, "%0*"PRId64, (number < 0) ? nd : nd++, number);
                 p += (addchar_count + 1);
                 addchar_count = 0;
                 found_count++;
@@ -391,17 +388,17 @@ static int replace_int_data_in_filename(char *buf, int buf_size, const char *fil
         } else
             addchar_count = 1;
 
-        while (addchar_count--)
-            if ((q - buf) < buf_size - 1)
-                *q++ = *p++;
-            else
-                goto fail;
+        av_bprint_append_data(&buf, p, addchar_count);
+        p += addchar_count;
     }
-    *q = '\0';
+    if (!av_bprint_is_complete(&buf)) {
+        av_bprint_finalize(&buf, NULL);
+        return -1;
+    }
+    if (av_bprint_finalize(&buf, &new_filename) < 0 || !new_filename)
+        return -1;
+    *s = new_filename;
     return found_count;
-fail:
-    *q = '\0';
-    return -1;
 }
 
 static void write_styp(AVIOContext *pb)
@@ -813,13 +810,8 @@ static int sls_flags_filename_process(struct AVFormatContext *s, HLSContext *hls
         strlen(vs->current_segment_final_filename_fmt)) {
         av_strlcpy(vs->avf->filename, vs->current_segment_final_filename_fmt, sizeof(vs->avf->filename));
         if (hls->flags & HLS_SECOND_LEVEL_SEGMENT_SIZE) {
-            char * filename = av_strdup(vs->avf->filename);  // %%s will be %s after strftime
-            if (!filename) {
-                av_free(en);
-                return AVERROR(ENOMEM);
-            }
-            if (replace_int_data_in_filename(vs->avf->filename, sizeof(vs->avf->filename),
-                filename, 's', pos + size) < 1) {
+            char *filename = NULL;
+            if (replace_int_data_in_filename(&filename, vs->avf->filename, 's', pos + size) < 1) {
                 av_log(hls, AV_LOG_ERROR,
                        "Invalid second level segment filename template '%s', "
                         "you can try to remove second_level_segment_size flag\n",
@@ -828,16 +820,13 @@ static int sls_flags_filename_process(struct AVFormatContext *s, HLSContext *hls
                 av_free(en);
                 return AVERROR(EINVAL);
             }
+            av_strlcpy(vs->avf->filename, filename, sizeof(vs->avf->filename));
             av_free(filename);
         }
         if (hls->flags & HLS_SECOND_LEVEL_SEGMENT_DURATION) {
-            char * filename = av_strdup(vs->avf->filename);  // %%t will be %t after strftime
-            if (!filename) {
-                av_free(en);
-                return AVERROR(ENOMEM);
-            }
-            if (replace_int_data_in_filename(vs->avf->filename, sizeof(vs->avf->filename),
-                filename, 't',  (int64_t)round(duration * HLS_MICROSECOND_UNIT)) < 1) {
+            char *filename = NULL;
+            if (replace_int_data_in_filename(&filename, vs->avf->filename,
+                't',  (int64_t)round(duration * HLS_MICROSECOND_UNIT)) < 1) {
                 av_log(hls, AV_LOG_ERROR,
                        "Invalid second level segment filename template '%s', "
                         "you can try to remove second_level_segment_time flag\n",
@@ -846,6 +835,7 @@ static int sls_flags_filename_process(struct AVFormatContext *s, HLSContext *hls
                 av_free(en);
                 return AVERROR(EINVAL);
             }
+            av_strlcpy(vs->avf->filename, filename, sizeof(vs->avf->filename));
             av_free(filename);
         }
     }
@@ -905,14 +895,12 @@ static void sls_flag_file_rename(HLSContext *hls, VariantStream *vs, char *old_f
 static int sls_flag_use_localtime_filename(AVFormatContext *oc, HLSContext *c, VariantStream *vs)
 {
     if (c->flags & HLS_SECOND_LEVEL_SEGMENT_INDEX) {
-        char * filename = av_strdup(oc->filename);  // %%d will be %d after strftime
-        if (!filename)
-            return AVERROR(ENOMEM);
-        if (replace_int_data_in_filename(oc->filename, sizeof(oc->filename),
+        char *filename = NULL;
+        if (replace_int_data_in_filename(&filename,
 #if FF_API_HLS_WRAP
-            filename, 'd', c->wrap ? vs->sequence % c->wrap : vs->sequence) < 1) {
+            oc->filename, 'd', c->wrap ? vs->sequence % c->wrap : vs->sequence) < 1) {
 #else
-            filename, 'd', vs->sequence) < 1) {
+            oc->filename, 'd', vs->sequence) < 1) {
 #endif
             av_log(c, AV_LOG_ERROR, "Invalid second level segment filename template '%s', "
                     "you can try to remove second_level_segment_index flag\n",
@@ -920,35 +908,34 @@ static int sls_flag_use_localtime_filename(AVFormatContext *oc, HLSContext *c, V
             av_free(filename);
             return AVERROR(EINVAL);
         }
+        av_strlcpy(oc->filename, filename, sizeof(oc->filename));
         av_free(filename);
     }
     if (c->flags & (HLS_SECOND_LEVEL_SEGMENT_SIZE | HLS_SECOND_LEVEL_SEGMENT_DURATION)) {
         av_strlcpy(vs->current_segment_final_filename_fmt, oc->filename,
                    sizeof(vs->current_segment_final_filename_fmt));
         if (c->flags & HLS_SECOND_LEVEL_SEGMENT_SIZE) {
-            char * filename = av_strdup(oc->filename);  // %%s will be %s after strftime
-            if (!filename)
-                return AVERROR(ENOMEM);
-            if (replace_int_data_in_filename(oc->filename, sizeof(oc->filename), filename, 's', 0) < 1) {
+            char *filename = NULL;
+            if (replace_int_data_in_filename(&filename, oc->filename, 's', 0) < 1) {
                 av_log(c, AV_LOG_ERROR, "Invalid second level segment filename template '%s', "
                         "you can try to remove second_level_segment_size flag\n",
                        filename);
                 av_free(filename);
                 return AVERROR(EINVAL);
             }
+            av_strlcpy(oc->filename, filename, sizeof(oc->filename));
             av_free(filename);
         }
         if (c->flags & HLS_SECOND_LEVEL_SEGMENT_DURATION) {
-            char * filename = av_strdup(oc->filename);  // %%t will be %t after strftime
-            if (!filename)
-                return AVERROR(ENOMEM);
-            if (replace_int_data_in_filename(oc->filename, sizeof(oc->filename), filename, 't', 0) < 1) {
+            char *filename = NULL;
+            if (replace_int_data_in_filename(&filename, oc->filename, 't', 0) < 1) {
                 av_log(c, AV_LOG_ERROR, "Invalid second level segment filename template '%s', "
                         "you can try to remove second_level_segment_time flag\n",
                        filename);
                 av_free(filename);
                 return AVERROR(EINVAL);
             }
+            av_strlcpy(oc->filename, filename, sizeof(oc->filename));
             av_free(filename);
         }
     }
@@ -1460,15 +1447,19 @@ static int hls_start(AVFormatContext *s, VariantStream *vs)
             av_strlcpy(vtt_oc->filename, vs->vtt_basename,
                   sizeof(vtt_oc->filename));
     } else if (c->max_seg_size > 0) {
-        if (replace_int_data_in_filename(oc->filename, sizeof(oc->filename),
+        char *filename = NULL;
+        if (replace_int_data_in_filename(&filename,
 #if FF_API_HLS_WRAP
             vs->basename, 'd', c->wrap ? vs->sequence % c->wrap : vs->sequence) < 1) {
 #else
             vs->basename, 'd', vs->sequence) < 1) {
 #endif
+                av_free(filename);
                 av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s', you can try to use -use_localtime 1 with it\n", vs->basename);
                 return AVERROR(EINVAL);
         }
+        av_strlcpy(oc->filename, filename, sizeof(oc->filename));
+        av_free(filename);
     } else {
         if (c->use_localtime) {
             time_t now0;
@@ -1499,25 +1490,35 @@ static int hls_start(AVFormatContext *s, VariantStream *vs)
                 }
                 av_free(fn_copy);
             }
-        } else if (replace_int_data_in_filename(oc->filename, sizeof(oc->filename),
+        } else {
+            char *filename = NULL;
+            if (replace_int_data_in_filename(&filename,
 #if FF_API_HLS_WRAP
                    vs->basename, 'd', c->wrap ? vs->sequence % c->wrap : vs->sequence) < 1) {
 #else
                    vs->basename, 'd', vs->sequence) < 1) {
 #endif
-            av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s' you can try to use -use_localtime 1 with it\n", vs->basename);
-            return AVERROR(EINVAL);
+                av_free(filename);
+                av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s' you can try to use -use_localtime 1 with it\n", vs->basename);
+                return AVERROR(EINVAL);
+            }
+            av_strlcpy(oc->filename, filename, sizeof(oc->filename));
+            av_free(filename);
         }
         if( vs->vtt_basename) {
-            if (replace_int_data_in_filename(vtt_oc->filename, sizeof(vtt_oc->filename),
+            char *filename = NULL;
+            if (replace_int_data_in_filename(&filename,
 #if FF_API_HLS_WRAP
                 vs->vtt_basename, 'd', c->wrap ? vs->sequence % c->wrap : vs->sequence) < 1) {
 #else
                 vs->vtt_basename, 'd', vs->sequence) < 1) {
 #endif
+                av_free(filename);
                 av_log(vtt_oc, AV_LOG_ERROR, "Invalid segment filename template '%s'\n", vs->vtt_basename);
                 return AVERROR(EINVAL);
             }
+            av_strlcpy(vtt_oc->filename, filename, sizeof(vtt_oc->filename));
+            av_free(filename);
        }
     }
     vs->number++;
@@ -1677,7 +1678,7 @@ fail:
 static int format_name(char *buf, int buf_len, int index)
 {
     const char *proto, *dir;
-    char *orig_buf_dup = NULL, *mod_buf_dup = NULL;
+    char *orig_buf_dup = NULL, *mod_buf = NULL, *mod_buf_dup = NULL;
     int ret = 0;
 
     if (!av_stristr(buf, "%v"))
@@ -1689,10 +1690,11 @@ static int format_name(char *buf, int buf_len, int index)
         goto fail;
     }
 
-    if (replace_int_data_in_filename(buf, buf_len, orig_buf_dup, 'v', index) < 1) {
+    if (replace_int_data_in_filename(&mod_buf, orig_buf_dup, 'v', index) < 1) {
         ret = AVERROR(EINVAL);
         goto fail;
     }
+    av_strlcpy(buf, mod_buf, buf_len);
 
     proto = avio_find_protocol_name(orig_buf_dup);
     dir = av_dirname(orig_buf_dup);
@@ -1715,6 +1717,7 @@ static int format_name(char *buf, int buf_len, int index)
 fail:
     av_freep(&orig_buf_dup);
     av_freep(&mod_buf_dup);
+    av_freep(&mod_buf);
     return ret;
 }
 
