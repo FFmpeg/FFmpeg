@@ -2054,7 +2054,6 @@ static int open_output_file(OptionsContext *o, const char *filename)
 {
     AVFormatContext *oc;
     int i, j, err;
-    AVOutputFormat *file_oformat;
     OutputFile *of;
     OutputStream *ost;
     InputStream  *ist;
@@ -2103,7 +2102,6 @@ static int open_output_file(OptionsContext *o, const char *filename)
     if (o->recording_time != INT64_MAX)
         oc->duration = o->recording_time;
 
-    file_oformat= oc->oformat;
     oc->interrupt_callback = int_cb;
 
     e = av_dict_get(o->g->format_opts, "fflags", NULL, 0);
