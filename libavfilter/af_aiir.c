@@ -29,12 +29,13 @@
 
 typedef struct AudioIIRContext {
     const AVClass *class;
-    char *a_str, *b_str;
+    char *a_str, *b_str, *g_str;
     double dry_gain, wet_gain;
     int format;
 
     int *nb_a, *nb_b;
     double **a, **b;
+    double *g;
     double **input, **output;
     int clippings;
     int channels;
@@ -140,6 +141,38 @@ static void count_coefficients(char *item_str, int *nb_items)
     }
 }
 
+static int read_gains(AVFilterContext *ctx, char *item_str, int nb_items, double *dst)
+{
+    char *p, *arg, *old_str, *prev_arg = NULL, *saveptr = NULL;
+    int i;
+
+    p = old_str = av_strdup(item_str);
+    if (!p)
+        return AVERROR(ENOMEM);
+    for (i = 0; i < nb_items; i++) {
+        if (!(arg = av_strtok(p, "|", &saveptr)))
+            arg = prev_arg;
+
+        if (!arg) {
+            av_freep(&old_str);
+            return AVERROR(EINVAL);
+        }
+
+        p = NULL;
+        if (sscanf(arg, "%lf", &dst[i]) != 1) {
+            av_log(ctx, AV_LOG_ERROR, "Invalid gains supplied: %s\n", arg);
+            av_freep(&old_str);
+            return AVERROR(EINVAL);
+        }
+
+        prev_arg = arg;
+    }
+
+    av_freep(&old_str);
+
+    return 0;
+}
+
 static int read_tf_coefficients(AVFilterContext *ctx, char *item_str, int nb_items, double *dst)
 {
     char *p, *arg, *old_str, *saveptr = NULL;
@@ -155,6 +188,7 @@ static int read_tf_coefficients(AVFilterContext *ctx, char *item_str, int nb_ite
         p = NULL;
         if (sscanf(arg, "%lf", &dst[i]) != 1) {
             av_log(ctx, AV_LOG_ERROR, "Invalid coefficients supplied: %s\n", arg);
+            av_freep(&old_str);
             return AVERROR(EINVAL);
         }
     }
@@ -164,7 +198,7 @@ static int read_tf_coefficients(AVFilterContext *ctx, char *item_str, int nb_ite
     return 0;
 }
 
-static int read_zp_coefficients(AVFilterContext *ctx, char *item_str, int nb_items, double *dst, int is_zeros)
+static int read_zp_coefficients(AVFilterContext *ctx, char *item_str, int nb_items, double *dst)
 {
     char *p, *arg, *old_str, *saveptr = NULL;
     int i;
@@ -177,16 +211,10 @@ static int read_zp_coefficients(AVFilterContext *ctx, char *item_str, int nb_ite
             break;
 
         p = NULL;
-        if (i == 0 && is_zeros) {
-            if (sscanf(arg, "%lf", &dst[i]) != 1) {
-                av_log(ctx, AV_LOG_ERROR, "Invalid gain supplied: %s\n", arg);
-                return AVERROR(EINVAL);
-            }
-        } else {
-            if (sscanf(arg, "%lf %lfi", &dst[i*2], &dst[i*2+1]) != 2) {
-                av_log(ctx, AV_LOG_ERROR, "Invalid coefficients supplied: %s\n", arg);
-                return AVERROR(EINVAL);
-            }
+        if (sscanf(arg, "%lf %lfi", &dst[i*2], &dst[i*2+1]) != 2) {
+            av_log(ctx, AV_LOG_ERROR, "Invalid coefficients supplied: %s\n", arg);
+            av_freep(&old_str);
+            return AVERROR(EINVAL);
         }
     }
 
@@ -195,7 +223,7 @@ static int read_zp_coefficients(AVFilterContext *ctx, char *item_str, int nb_ite
     return 0;
 }
 
-static int read_channels(AVFilterContext *ctx, int channels, uint8_t *item_str, int *nb, double **c, double **cache, int is_zeros)
+static int read_channels(AVFilterContext *ctx, int channels, uint8_t *item_str, int *nb, double **c, double **cache)
 {
     AudioIIRContext *s = ctx->priv;
     char *p, *arg, *old_str, *prev_arg = NULL, *saveptr = NULL;
@@ -208,26 +236,30 @@ static int read_channels(AVFilterContext *ctx, int channels, uint8_t *item_str, 
         if (!(arg = av_strtok(p, "|", &saveptr)))
             arg = prev_arg;
 
-        if (!arg)
+        if (!arg) {
+            av_freep(&old_str);
             return AVERROR(EINVAL);
+        }
 
         count_coefficients(arg, &nb[i]);
 
         p = NULL;
         cache[i] = av_calloc(nb[i] + 1, sizeof(double));
         c[i] = av_calloc(nb[i] * (s->format + 1), sizeof(double));
-        if (!c[i] || !cache[i])
+        if (!c[i] || !cache[i]) {
+            av_freep(&old_str);
             return AVERROR(ENOMEM);
+        }
 
         if (s->format) {
-            ret = read_zp_coefficients(ctx, arg, nb[i], c[i], is_zeros);
-            if (is_zeros)
-                nb[i]--;
+            ret = read_zp_coefficients(ctx, arg, nb[i], c[i]);
         } else {
             ret = read_tf_coefficients(ctx, arg, nb[i], c[i]);
         }
-        if (ret < 0)
+        if (ret < 0) {
+            av_freep(&old_str);
             return ret;
+        }
         prev_arg = arg;
     }
 
@@ -288,7 +320,7 @@ static int convert_zp2tf(AVFilterContext *ctx, int channels)
     int ch, i, j, ret;
 
     for (ch = 0; ch < channels; ch++) {
-        double *topc, *botc, gain;
+        double *topc, *botc;
 
         topc = av_calloc((s->nb_b[ch] + 1) * 2, sizeof(*topc));
         botc = av_calloc((s->nb_a[ch] + 1) * 2, sizeof(*botc));
@@ -302,16 +334,15 @@ static int convert_zp2tf(AVFilterContext *ctx, int channels)
             return ret;
         }
 
-        ret = expand(ctx, &s->b[ch][2], s->nb_b[ch], topc);
+        ret = expand(ctx, s->b[ch], s->nb_b[ch], topc);
         if (ret < 0) {
             av_free(topc);
             av_free(botc);
             return ret;
         }
 
-        gain = s->b[ch][0];
         for (j = 0, i = s->nb_b[ch]; i >= 0; j++, i--) {
-            s->b[ch][j] = topc[2 * i] * gain;
+            s->b[ch][j] = topc[2 * i];
         }
         s->nb_b[ch]++;
 
@@ -337,6 +368,7 @@ static int config_output(AVFilterLink *outlink)
     s->channels = inlink->channels;
     s->a = av_calloc(inlink->channels, sizeof(*s->a));
     s->b = av_calloc(inlink->channels, sizeof(*s->b));
+    s->g = av_calloc(inlink->channels, sizeof(*s->g));
     s->nb_a = av_calloc(inlink->channels, sizeof(*s->nb_a));
     s->nb_b = av_calloc(inlink->channels, sizeof(*s->nb_b));
     s->input = av_calloc(inlink->channels, sizeof(*s->input));
@@ -344,11 +376,15 @@ static int config_output(AVFilterLink *outlink)
     if (!s->a || !s->b || !s->nb_a || !s->nb_b || !s->input || !s->output)
         return AVERROR(ENOMEM);
 
-    ret = read_channels(ctx, inlink->channels, s->a_str, s->nb_a, s->a, s->output, 0);
+    ret = read_gains(ctx, s->g_str, inlink->channels, s->g);
     if (ret < 0)
         return ret;
 
-    ret = read_channels(ctx, inlink->channels, s->b_str, s->nb_b, s->b, s->input, 1);
+    ret = read_channels(ctx, inlink->channels, s->a_str, s->nb_a, s->a, s->output);
+    if (ret < 0)
+        return ret;
+
+    ret = read_channels(ctx, inlink->channels, s->b_str, s->nb_b, s->b, s->input);
     if (ret < 0)
         return ret;
 
@@ -364,7 +400,7 @@ static int config_output(AVFilterLink *outlink)
         }
 
         for (i = 0; i < s->nb_b[ch]; i++) {
-            s->b[ch][i] /= s->a[ch][0];
+            s->b[ch][i] *= s->g[ch] / s->a[ch][0];
         }
     }
 
@@ -412,7 +448,7 @@ static av_cold int init(AVFilterContext *ctx)
 {
     AudioIIRContext *s = ctx->priv;
 
-    if (!s->a_str || !s->b_str) {
+    if (!s->a_str || !s->b_str || !s->g_str) {
         av_log(ctx, AV_LOG_ERROR, "Valid coefficients are mandatory.\n");
         return AVERROR(EINVAL);
     }
@@ -470,8 +506,9 @@ static const AVFilterPad outputs[] = {
 #define AF AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption aiir_options[] = {
-    { "a", "set A/denominator/poles coefficients", OFFSET(a_str),    AV_OPT_TYPE_STRING, {.str="1 1"}, 0, 0, AF },
-    { "b", "set B/numerator/zeros coefficients",   OFFSET(b_str),    AV_OPT_TYPE_STRING, {.str="1 1"}, 0, 0, AF },
+    { "z", "set B/numerator/zeros coefficients",   OFFSET(b_str),    AV_OPT_TYPE_STRING, {.str="1 1"}, 0, 0, AF },
+    { "p", "set A/denominator/poles coefficients", OFFSET(a_str),    AV_OPT_TYPE_STRING, {.str="1 1"}, 0, 0, AF },
+    { "k", "set channels gains",                   OFFSET(g_str),    AV_OPT_TYPE_STRING, {.str="1|1"}, 0, 0, AF },
     { "dry", "set dry gain",                       OFFSET(dry_gain), AV_OPT_TYPE_DOUBLE, {.dbl=1},     0, 1, AF },
     { "wet", "set wet gain",                       OFFSET(wet_gain), AV_OPT_TYPE_DOUBLE, {.dbl=1},     0, 1, AF },
     { "f", "set coefficients format",              OFFSET(format),   AV_OPT_TYPE_INT,    {.i64=0},     0, 1, AF, "format" },
