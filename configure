@@ -1899,7 +1899,6 @@ BUILTIN_LIST="
     MemoryBarrier
     mm_empty
     rdtsc
-    sarestart
     sem_timedwait
     sync_val_compare_and_swap
 "
@@ -5612,7 +5611,6 @@ fi
 check_builtin atomic_cas_ptr atomic.h "void **ptr; void *oldval, *newval; atomic_cas_ptr(ptr, oldval, newval)"
 check_builtin machine_rw_barrier mbarrier.h "__machine_rw_barrier()"
 check_builtin MemoryBarrier windows.h "MemoryBarrier()"
-check_builtin sarestart signal.h "SA_RESTART"
 check_builtin sync_val_compare_and_swap "" "int *ptr; int oldval, newval; __sync_val_compare_and_swap(ptr, oldval, newval)"
 check_builtin gmtime_r time.h "time_t *time; struct tm *tm; gmtime_r(time, tm)"
 check_builtin localtime_r time.h "time_t *time; struct tm *tm; localtime_r(time, tm)"
