@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <float.h>
+
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
@@ -29,6 +31,7 @@ typedef struct AudioIIRContext {
     const AVClass *class;
     char *a_str, *b_str;
     double dry_gain, wet_gain;
+    int format;
 
     int *nb_a, *nb_b;
     double **a, **b;
@@ -137,7 +140,7 @@ static void count_coefficients(char *item_str, int *nb_items)
     }
 }
 
-static int read_coefficients(AVFilterContext *ctx, char *item_str, int nb_items, double *dst)
+static int read_tf_coefficients(AVFilterContext *ctx, char *item_str, int nb_items, double *dst)
 {
     char *p, *arg, *old_str, *saveptr = NULL;
     int i;
@@ -161,8 +164,40 @@ static int read_coefficients(AVFilterContext *ctx, char *item_str, int nb_items,
     return 0;
 }
 
-static int read_channels(AVFilterContext *ctx, int channels, uint8_t *item_str, int *nb, double **c, double **cache)
+static int read_zp_coefficients(AVFilterContext *ctx, char *item_str, int nb_items, double *dst, int is_zeros)
 {
+    char *p, *arg, *old_str, *saveptr = NULL;
+    int i;
+
+    p = old_str = av_strdup(item_str);
+    if (!p)
+        return AVERROR(ENOMEM);
+    for (i = 0; i < nb_items; i++) {
+        if (!(arg = av_strtok(p, " ", &saveptr)))
+            break;
+
+        p = NULL;
+        if (i == 0 && is_zeros) {
+            if (sscanf(arg, "%lf", &dst[i]) != 1) {
+                av_log(ctx, AV_LOG_ERROR, "Invalid gain supplied: %s\n", arg);
+                return AVERROR(EINVAL);
+            }
+        } else {
+            if (sscanf(arg, "%lf %lfi", &dst[i*2], &dst[i*2+1]) != 2) {
+                av_log(ctx, AV_LOG_ERROR, "Invalid coefficients supplied: %s\n", arg);
+                return AVERROR(EINVAL);
+            }
+        }
+    }
+
+    av_freep(&old_str);
+
+    return 0;
+}
+
+static int read_channels(AVFilterContext *ctx, int channels, uint8_t *item_str, int *nb, double **c, double **cache, int is_zeros)
+{
+    AudioIIRContext *s = ctx->priv;
     char *p, *arg, *old_str, *prev_arg = NULL, *saveptr = NULL;
     int i, ret;
 
@@ -180,17 +215,114 @@ static int read_channels(AVFilterContext *ctx, int channels, uint8_t *item_str, 
 
         p = NULL;
         cache[i] = av_calloc(nb[i] + 1, sizeof(double));
-        c[i] = av_calloc(nb[i], sizeof(double));
+        c[i] = av_calloc(nb[i] * (s->format + 1), sizeof(double));
         if (!c[i] || !cache[i])
             return AVERROR(ENOMEM);
 
-        ret = read_coefficients(ctx, arg, nb[i], c[i]);
+        if (s->format) {
+            ret = read_zp_coefficients(ctx, arg, nb[i], c[i], is_zeros);
+            if (is_zeros)
+                nb[i]--;
+        } else {
+            ret = read_tf_coefficients(ctx, arg, nb[i], c[i]);
+        }
         if (ret < 0)
             return ret;
         prev_arg = arg;
     }
 
     av_freep(&old_str);
+
+    return 0;
+}
+
+static void multiply(double wre, double wim, int npz, double *coeffs)
+{
+    double nwre = -wre, nwim = -wim;
+    double cre, cim;
+    int i;
+
+    for (i = npz; i >= 1; i--) {
+        cre = coeffs[2 * i + 0];
+        cim = coeffs[2 * i + 1];
+
+        coeffs[2 * i + 0] = (nwre * cre - nwim * cim) + coeffs[2 * (i - 1) + 0];
+        coeffs[2 * i + 1] = (nwre * cim + nwim * cre) + coeffs[2 * (i - 1) + 1];
+    }
+
+    cre = coeffs[0];
+    cim = coeffs[1];
+    coeffs[0] = nwre * cre - nwim * cim;
+    coeffs[1] = nwre * cim + nwim * cre;
+}
+
+static int expand(AVFilterContext *ctx, double *pz, int nb, double *coeffs)
+{
+    int i;
+
+    coeffs[0] = 1.0;
+    coeffs[1] = 0.0;
+
+    for (i = 0; i < nb; i++) {
+        coeffs[2 * (i + 1)    ] = 0.0;
+        coeffs[2 * (i + 1) + 1] = 0.0;
+    }
+
+    for (i = 0; i < nb; i++)
+        multiply(pz[2 * i], pz[2 * i + 1], nb, coeffs);
+
+    for (i = 0; i < nb + 1; i++) {
+        if (fabs(coeffs[2 * i + 1]) > DBL_EPSILON) {
+            av_log(ctx, AV_LOG_ERROR, "coeff: %lf of z^%d is not real; poles/zeros are not complex conjugates.\n",
+                   coeffs[2 * i + i], i);
+            return AVERROR(EINVAL);
+        }
+    }
+
+    return 0;
+}
+
+static int convert_zp2tf(AVFilterContext *ctx, int channels)
+{
+    AudioIIRContext *s = ctx->priv;
+    int ch, i, j, ret;
+
+    for (ch = 0; ch < channels; ch++) {
+        double *topc, *botc, gain;
+
+        topc = av_calloc((s->nb_b[ch] + 1) * 2, sizeof(*topc));
+        botc = av_calloc((s->nb_a[ch] + 1) * 2, sizeof(*botc));
+        if (!topc || !botc)
+            return AVERROR(ENOMEM);
+
+        ret = expand(ctx, s->a[ch], s->nb_a[ch], botc);
+        if (ret < 0) {
+            av_free(topc);
+            av_free(botc);
+            return ret;
+        }
+
+        ret = expand(ctx, &s->b[ch][2], s->nb_b[ch], topc);
+        if (ret < 0) {
+            av_free(topc);
+            av_free(botc);
+            return ret;
+        }
+
+        gain = s->b[ch][0];
+        for (j = 0, i = s->nb_b[ch]; i >= 0; j++, i--) {
+            s->b[ch][j] = topc[2 * i] * gain;
+        }
+        s->nb_b[ch]++;
+
+        for (j = 0, i = s->nb_a[ch]; i >= 0; j++, i--) {
+            s->a[ch][j] = botc[2 * i];
+        }
+        s->nb_a[ch]++;
+
+        av_free(topc);
+        av_free(botc);
+    }
 
     return 0;
 }
@@ -212,13 +344,19 @@ static int config_output(AVFilterLink *outlink)
     if (!s->a || !s->b || !s->nb_a || !s->nb_b || !s->input || !s->output)
         return AVERROR(ENOMEM);
 
-    ret = read_channels(ctx, inlink->channels, s->a_str, s->nb_a, s->a, s->output);
+    ret = read_channels(ctx, inlink->channels, s->a_str, s->nb_a, s->a, s->output, 0);
     if (ret < 0)
         return ret;
 
-    ret = read_channels(ctx, inlink->channels, s->b_str, s->nb_b, s->b, s->input);
+    ret = read_channels(ctx, inlink->channels, s->b_str, s->nb_b, s->b, s->input, 1);
     if (ret < 0)
         return ret;
+
+    if (s->format) {
+        ret = convert_zp2tf(ctx, inlink->channels);
+        if (ret < 0)
+            return ret;
+    }
 
     for (ch = 0; ch < inlink->channels; ch++) {
         for (i = 1; i < s->nb_a[ch]; i++) {
@@ -336,6 +474,9 @@ static const AVOption aiir_options[] = {
     { "b", "set B/numerator/zeros coefficients",   OFFSET(b_str),    AV_OPT_TYPE_STRING, {.str="1 1"}, 0, 0, AF },
     { "dry", "set dry gain",                       OFFSET(dry_gain), AV_OPT_TYPE_DOUBLE, {.dbl=1},     0, 1, AF },
     { "wet", "set wet gain",                       OFFSET(wet_gain), AV_OPT_TYPE_DOUBLE, {.dbl=1},     0, 1, AF },
+    { "f", "set coefficients format",              OFFSET(format),   AV_OPT_TYPE_INT,    {.i64=0},     0, 1, AF, "format" },
+    { "tf", "transfer function",                   0,                AV_OPT_TYPE_CONST,  {.i64=0},     0, 0, AF, "format" },
+    { "zp", "Z-plane zeros/poles",                 0,                AV_OPT_TYPE_CONST,  {.i64=1},     0, 0, AF, "format" },
     { NULL },
 };
 
