@@ -21,6 +21,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#define FFT_FLOAT 0
+#define FFT_FIXED_32 1
+
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
@@ -33,6 +36,7 @@
 #include "dca_core.h"
 #include "dcadata.h"
 #include "dcaenc.h"
+#include "fft.h"
 #include "internal.h"
 #include "mathops.h"
 #include "put_bits.h"
@@ -56,6 +60,7 @@ typedef struct DCAEncContext {
     AVClass *class;
     PutBitContext pb;
     DCAADPCMEncContext adpcm_ctx;
+    FFTContext mdct;
     CompressionOptions options;
     int frame_size;
     int frame_bits;
@@ -154,6 +159,7 @@ static int encode_init(AVCodecContext *avctx)
     DCAEncContext *c = avctx->priv_data;
     uint64_t layout = avctx->channel_layout;
     int i, j, min_frame_bits;
+    int ret;
 
     if (subband_bufer_alloc(c))
         return AVERROR(ENOMEM);
@@ -231,6 +237,9 @@ static int encode_init(AVCodecContext *avctx)
 
     avctx->frame_size = 32 * SUBBAND_SAMPLES;
 
+    if ((ret = ff_mdct_init(&c->mdct, 9, 0, 1.0)) < 0)
+        return ret;
+
     if (!cos_table[0]) {
         int j, k;
 
@@ -296,6 +305,7 @@ static int encode_init(AVCodecContext *avctx)
 static av_cold int encode_close(AVCodecContext *avctx)
 {
     DCAEncContext *c = avctx->priv_data;
+    ff_mdct_end(&c->mdct);
     subband_bufer_free(c);
     ff_dcaadpcm_free(&c->adpcm_ctx);
 
@@ -305,16 +315,6 @@ static av_cold int encode_close(AVCodecContext *avctx)
 static inline int32_t cos_t(int x)
 {
     return cos_table[x & 2047];
-}
-
-static inline int32_t sin_t(int x)
-{
-    return cos_t(x - 512);
-}
-
-static inline int32_t half32(int32_t a)
-{
-    return (a + 1) >> 1;
 }
 
 static void subband_transform(DCAEncContext *c, const int32_t *input)
@@ -397,78 +397,6 @@ static void lfe_downsample(DCAEncContext *c, const int32_t *input)
     }
 }
 
-typedef struct {
-    int32_t re;
-    int32_t im;
-} cplx32;
-
-static void fft(const int32_t in[2 * 256], cplx32 out[256])
-{
-    cplx32 buf[256], rin[256], rout[256];
-    int i, j, k, l;
-
-    /* do two transforms in parallel */
-    for (i = 0; i < 256; i++) {
-        /* Apply the Hann window */
-        rin[i].re = mul32(in[2 * i], 0x3fffffff - (cos_t(8 * i + 2) >> 1));
-        rin[i].im = mul32(in[2 * i + 1], 0x3fffffff - (cos_t(8 * i + 6) >> 1));
-    }
-    /* pre-rotation */
-    for (i = 0; i < 256; i++) {
-        buf[i].re = mul32(cos_t(4 * i + 2), rin[i].re)
-                  - mul32(sin_t(4 * i + 2), rin[i].im);
-        buf[i].im = mul32(cos_t(4 * i + 2), rin[i].im)
-                  + mul32(sin_t(4 * i + 2), rin[i].re);
-    }
-
-    for (j = 256, l = 1; j != 1; j >>= 1, l <<= 1) {
-        for (k = 0; k < 256; k += j) {
-            for (i = k; i < k + j / 2; i++) {
-                cplx32 sum, diff;
-                int t = 8 * l * i;
-
-                sum.re = buf[i].re + buf[i + j / 2].re;
-                sum.im = buf[i].im + buf[i + j / 2].im;
-
-                diff.re = buf[i].re - buf[i + j / 2].re;
-                diff.im = buf[i].im - buf[i + j / 2].im;
-
-                buf[i].re = half32(sum.re);
-                buf[i].im = half32(sum.im);
-
-                buf[i + j / 2].re = mul32(diff.re, cos_t(t))
-                                  - mul32(diff.im, sin_t(t));
-                buf[i + j / 2].im = mul32(diff.im, cos_t(t))
-                                  + mul32(diff.re, sin_t(t));
-            }
-        }
-    }
-    /* post-rotation */
-    for (i = 0; i < 256; i++) {
-        int b = ff_reverse[i];
-        rout[i].re = mul32(buf[b].re, cos_t(4 * i))
-                   - mul32(buf[b].im, sin_t(4 * i));
-        rout[i].im = mul32(buf[b].im, cos_t(4 * i))
-                   + mul32(buf[b].re, sin_t(4 * i));
-    }
-    for (i = 0; i < 256; i++) {
-        /* separate the results of the two transforms */
-        cplx32 o1, o2;
-
-        o1.re =  rout[i].re - rout[255 - i].re;
-        o1.im =  rout[i].im + rout[255 - i].im;
-
-        o2.re =  rout[i].im - rout[255 - i].im;
-        o2.im = -rout[i].re - rout[255 - i].re;
-
-        /* combine them into one long transform */
-        out[i].re = mul32( o1.re + o2.re, cos_t(2 * i + 1))
-                  + mul32( o1.im - o2.im, sin_t(2 * i + 1));
-        out[i].im = mul32( o1.im + o2.im, cos_t(2 * i + 1))
-                  + mul32(-o1.re + o2.re, sin_t(2 * i + 1));
-    }
-}
-
 static int32_t get_cb(int32_t in)
 {
     int i, res;
@@ -493,21 +421,37 @@ static int32_t add_cb(int32_t a, int32_t b)
     return a + cb_to_add[a - b];
 }
 
-static void adjust_jnd(int samplerate_index,
+static void calc_power(DCAEncContext *c,
+                       const int32_t in[2 * 256], int32_t power[256])
+{
+    int i;
+    LOCAL_ALIGNED_32(int32_t, data,  [512]);
+    LOCAL_ALIGNED_32(int32_t, coeff, [256]);
+
+    for (i = 0; i < 512; i++) {
+        data[i] = norm__(mul32(in[i], 0x3fffffff - (cos_t(4 * i + 2) >> 1)), 4);
+    }
+    c->mdct.mdct_calc(&c->mdct, coeff, data);
+    for (i = 0; i < 256; i++) {
+        const int32_t cb = get_cb(coeff[i]);
+        power[i] = add_cb(cb, cb);
+    }
+}
+
+static void adjust_jnd(DCAEncContext *c,
                        const int32_t in[512], int32_t out_cb[256])
 {
     int32_t power[256];
-    cplx32 out[256];
     int32_t out_cb_unnorm[256];
     int32_t denom;
     const int32_t ca_cb = -1114;
     const int32_t cs_cb = 928;
+    const int samplerate_index = c->samplerate_index;
     int i, j;
 
-    fft(in, out);
+    calc_power(c, in, power);
 
     for (j = 0; j < 256; j++) {
-        power[j] = add_cb(get_cb(out[j].re), get_cb(out[j].im));
         out_cb_unnorm[j] = -2047; /* and can only grow */
     }
 
@@ -585,7 +529,7 @@ static void calc_masking(DCAEncContext *c, const int32_t *input)
                 data[i] = c->history[ch][k];
             for (k -= 512; i < 512; i++, k++)
                 data[i] = input[k * c->channels + chi];
-            adjust_jnd(c->samplerate_index, data, c->masking_curve_cb[ssf]);
+            adjust_jnd(c, data, c->masking_curve_cb[ssf]);
         }
     for (i = 0; i < 256; i++) {
         int32_t m = 2048;
