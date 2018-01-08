@@ -274,6 +274,7 @@ struct FFAMediaCodec {
     struct JNIAMediaCodecFields jfields;
 
     jobject object;
+    jobject buffer_info;
 
     jobject input_buffers;
     jobject output_buffers;
@@ -1143,6 +1144,7 @@ static inline FFAMediaCodec *codec_create(int method, const char *arg)
     FFAMediaCodec *codec = NULL;
     jstring jarg = NULL;
     jobject object = NULL;
+    jobject buffer_info = NULL;
     jmethodID create_id = NULL;
 
     codec = av_mallocz(sizeof(FFAMediaCodec));
@@ -1195,6 +1197,16 @@ static inline FFAMediaCodec *codec_create(int method, const char *arg)
         codec->has_get_i_o_buffer = 1;
     }
 
+    buffer_info = (*env)->NewObject(env, codec->jfields.mediainfo_class, codec->jfields.init_id);
+    if (ff_jni_exception_check(env, 1, codec) < 0) {
+        goto fail;
+    }
+
+    codec->buffer_info = (*env)->NewGlobalRef(env, buffer_info);
+    if (!codec->buffer_info) {
+        goto fail;
+    }
+
     ret = 0;
 fail:
     if (jarg) {
@@ -1205,10 +1217,19 @@ fail:
         (*env)->DeleteLocalRef(env, object);
     }
 
+    if (buffer_info) {
+        (*env)->DeleteLocalRef(env, buffer_info);
+    }
+
     if (ret < 0) {
         if (codec->object) {
             (*env)->DeleteGlobalRef(env, codec->object);
         }
+
+        if (codec->buffer_info) {
+            (*env)->DeleteGlobalRef(env, codec->buffer_info);
+        }
+
         ff_jni_reset_jfields(env, &codec->jfields, jni_amediacodec_mapping, 1, codec);
         av_freep(&codec);
     }
@@ -1245,6 +1266,9 @@ int ff_AMediaCodec_delete(FFAMediaCodec* codec)
 
     (*env)->DeleteGlobalRef(env, codec->object);
     codec->object = NULL;
+
+    (*env)->DeleteGlobalRef(env, codec->buffer_info);
+    codec->buffer_info = NULL;
 
     ff_jni_reset_jfields(env, &codec->jfields, jni_amediacodec_mapping, 1, codec);
 
@@ -1413,48 +1437,31 @@ ssize_t ff_AMediaCodec_dequeueOutputBuffer(FFAMediaCodec* codec, FFAMediaCodecBu
     int ret = 0;
     JNIEnv *env = NULL;
 
-    jobject mediainfo = NULL;
-
     JNI_GET_ENV_OR_RETURN(env, codec, AVERROR_EXTERNAL);
 
-    mediainfo = (*env)->NewObject(env, codec->jfields.mediainfo_class, codec->jfields.init_id);
+    ret = (*env)->CallIntMethod(env, codec->object, codec->jfields.dequeue_output_buffer_id, codec->buffer_info, timeoutUs);
     if (ff_jni_exception_check(env, 1, codec) < 0) {
-        ret = AVERROR_EXTERNAL;
-        goto fail;
+        return AVERROR_EXTERNAL;
     }
 
-    ret = (*env)->CallIntMethod(env, codec->object, codec->jfields.dequeue_output_buffer_id, mediainfo, timeoutUs);
+    info->flags = (*env)->GetIntField(env, codec->buffer_info, codec->jfields.flags_id);
     if (ff_jni_exception_check(env, 1, codec) < 0) {
-        ret = AVERROR_EXTERNAL;
-        goto fail;
+        return AVERROR_EXTERNAL;
     }
 
-    info->flags = (*env)->GetIntField(env, mediainfo, codec->jfields.flags_id);
+    info->offset = (*env)->GetIntField(env, codec->buffer_info, codec->jfields.offset_id);
     if (ff_jni_exception_check(env, 1, codec) < 0) {
-        ret = AVERROR_EXTERNAL;
-        goto fail;
+        return AVERROR_EXTERNAL;
     }
 
-    info->offset = (*env)->GetIntField(env, mediainfo, codec->jfields.offset_id);
+    info->presentationTimeUs = (*env)->GetLongField(env, codec->buffer_info, codec->jfields.presentation_time_us_id);
     if (ff_jni_exception_check(env, 1, codec) < 0) {
-        ret = AVERROR_EXTERNAL;
-        goto fail;
+        return AVERROR_EXTERNAL;
     }
 
-    info->presentationTimeUs = (*env)->GetLongField(env, mediainfo, codec->jfields.presentation_time_us_id);
+    info->size = (*env)->GetIntField(env, codec->buffer_info, codec->jfields.size_id);
     if (ff_jni_exception_check(env, 1, codec) < 0) {
-        ret = AVERROR_EXTERNAL;
-        goto fail;
-    }
-
-    info->size = (*env)->GetIntField(env, mediainfo, codec->jfields.size_id);
-    if (ff_jni_exception_check(env, 1, codec) < 0) {
-        ret = AVERROR_EXTERNAL;
-        goto fail;
-    }
-fail:
-    if (mediainfo) {
-        (*env)->DeleteLocalRef(env, mediainfo);
+        return AVERROR_EXTERNAL;
     }
 
     return ret;

@@ -115,7 +115,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 {
     AVFilterLink *outlink = inlink->dst->outputs[0];
     int16_t *taps, *endin, *in, *out;
-    AVFrame *outsamples = ff_get_audio_buffer(inlink, insamples->nb_samples);
+    AVFrame *outsamples = ff_get_audio_buffer(outlink, insamples->nb_samples);
     int len;
 
     if (!outsamples) {

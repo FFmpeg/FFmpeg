@@ -27,8 +27,7 @@ for examples.
 @item
 @url{https://lists.ffmpeg.org/mailman/listinfo/ffmpeg-user/, ffmpeg-user}:
 For questions involving unscripted usage or compilation of the FFmpeg
-command-line tools (@command{ffmpeg}, @command{ffprobe}, @command{ffplay},
-@command{ffserver}).
+command-line tools (@command{ffmpeg}, @command{ffprobe}, @command{ffplay}).
 
 @item
 @url{https://lists.ffmpeg.org/mailman/listinfo/libav-user/, libav-user}:

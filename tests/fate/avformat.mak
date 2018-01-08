@@ -9,7 +9,6 @@ FATE_LAVF-$(call ENCDEC,  BMP,                   IMAGE2)             += bmp
 FATE_LAVF-$(call ENCDEC,  PCM_S16BE,             CAF)                += caf
 FATE_LAVF-$(call ENCDEC,  DPX,                   IMAGE2)             += dpx
 FATE_LAVF-$(call ENCDEC2, DVVIDEO,    PCM_S16LE, AVI)                += dv_fmt
-FATE_LAVF-$(call ENCDEC2, MPEG1VIDEO, MP2,       FFM)                += ffm
 FATE_LAVF-$(call ENCDEC,  FITS,                  FITS)               += fits
 FATE_LAVF-$(call ENCDEC,  RAWVIDEO,              FILMSTRIP)          += flm
 FATE_LAVF-$(call ENCDEC,  FLV,                   FLV)                += flv_fmt

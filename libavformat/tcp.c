@@ -225,6 +225,8 @@ static int tcp_read(URLContext *h, uint8_t *buf, int size)
             return ret;
     }
     ret = recv(s->fd, buf, size, 0);
+    if (ret == 0)
+        return AVERROR_EOF;
     return ret < 0 ? ff_neterrno() : ret;
 }
 

@@ -47,8 +47,10 @@ typedef struct FrameRateContext {
     AVRational dest_frame_rate;         ///< output frames per second
     int flags;                          ///< flags affecting frame rate conversion algorithm
     double scene_score;                 ///< score that denotes a scene change has happened
-    int interp_start;                   ///< start of range to apply linear interpolation
-    int interp_end;                     ///< end of range to apply linear interpolation
+    int interp_start;                   ///< start of range to apply linear interpolation (same bitdepth as input)
+    int interp_end;                     ///< end of range to apply linear interpolation (same bitdepth as input)
+    int interp_start_param;             ///< start of range to apply linear interpolation
+    int interp_end_param;               ///< end of range to apply linear interpolation
 
     int line_size[4];                   ///< bytes of pixel data per line for each plane
     int vsub;
@@ -87,8 +89,8 @@ typedef struct FrameRateContext {
 static const AVOption framerate_options[] = {
     {"fps",                 "required output frames per second rate", OFFSET(dest_frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str="50"},             0,       INT_MAX, V|F },
 
-    {"interp_start",        "point to start linear interpolation",    OFFSET(interp_start),    AV_OPT_TYPE_INT,      {.i64=15},                 0,       255,     V|F },
-    {"interp_end",          "point to end linear interpolation",      OFFSET(interp_end),      AV_OPT_TYPE_INT,      {.i64=240},                0,       255,     V|F },
+    {"interp_start",        "point to start linear interpolation",    OFFSET(interp_start_param),AV_OPT_TYPE_INT,    {.i64=15},                 0,       255,     V|F },
+    {"interp_end",          "point to end linear interpolation",      OFFSET(interp_end_param),  AV_OPT_TYPE_INT,    {.i64=240},                0,       255,     V|F },
     {"scene",               "scene change level",                     OFFSET(scene_score),     AV_OPT_TYPE_DOUBLE,   {.dbl=8.2},                0,       INT_MAX, V|F },
 
     {"flags",               "set flags",                              OFFSET(flags),           AV_OPT_TYPE_FLAGS,    {.i64=1},                  0,       INT_MAX, V|F, "flags" },
@@ -305,7 +307,7 @@ static int filter_slice16(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
     return 0;
 }
 
-static int blend_frames(AVFilterContext *ctx, float interpolate,
+static int blend_frames(AVFilterContext *ctx, int interpolate,
                         int src1, int src2)
 {
     FrameRateContext *s = ctx->priv;
@@ -326,7 +328,7 @@ static int blend_frames(AVFilterContext *ctx, float interpolate,
         ThreadData td;
         td.copy_src1 = s->srce[src1];
         td.copy_src2 = s->srce[src2];
-        td.src2_factor = fabsf(interpolate) * (1 << (s->bitdepth - 8));
+        td.src2_factor = FFABS(interpolate);
         td.src1_factor = s->max - td.src2_factor;
 
         // get work-space for output frame
@@ -347,7 +349,7 @@ static int process_work_frame(AVFilterContext *ctx, int stop)
 {
     FrameRateContext *s = ctx->priv;
     int64_t work_next_pts;
-    float interpolate;
+    int interpolate;
     int src1, src2;
 
     ff_dlog(ctx, "process_work_frame()\n");
@@ -390,8 +392,8 @@ static int process_work_frame(AVFilterContext *ctx, int stop)
     }
 
     // calculate interpolation
-    interpolate = ((s->pts - s->srce_pts_dest[s->crnt]) * 256.0 / s->average_srce_pts_dest_delta);
-    ff_dlog(ctx, "process_work_frame() interpolate:%f/256\n", interpolate);
+    interpolate = av_rescale(s->pts - s->srce_pts_dest[s->crnt], s->max, s->average_srce_pts_dest_delta);
+    ff_dlog(ctx, "process_work_frame() interpolate:%d/%d\n", interpolate, s->max);
     src1 = s->crnt;
     if (interpolate > s->interp_end) {
         ff_dlog(ctx, "process_work_frame() source is:NEXT\n");
@@ -572,6 +574,8 @@ static int config_input(AVFilterLink *inlink)
 
     s->bitdepth = pix_desc->comp[0].depth;
     s->vsub = pix_desc->log2_chroma_h;
+    s->interp_start = s->interp_start_param << (s->bitdepth - 8);
+    s->interp_end = s->interp_end_param << (s->bitdepth - 8);
 
     s->sad = av_pixelutils_get_sad_fn(3, 3, 2, s); // 8x8 both sources aligned
     if (!s->sad)

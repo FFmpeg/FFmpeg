@@ -647,10 +647,14 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
  */
 void avfilter_link_free(AVFilterLink **link);
 
+#if FF_API_FILTER_GET_SET
 /**
  * Get the number of channels of a link.
+ * @deprecated Use av_buffersink_get_channels()
  */
+attribute_deprecated
 int avfilter_link_get_channels(AVFilterLink *link);
+#endif
 
 /**
  * Set the closed field of a link.

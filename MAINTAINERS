@@ -29,9 +29,6 @@ ffplay:
 ffprobe:
   ffprobe.c                             Stefano Sabatini
 
-ffserver:
-  ffserver.c                            Reynaldo H. Verdejo Pinochet
-
 Commandline utility code:
   cmdutils.c, cmdutils.h                Michael Niedermayer
 

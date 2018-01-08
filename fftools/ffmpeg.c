@@ -61,6 +61,7 @@
 #include "libavutil/timestamp.h"
 #include "libavutil/bprint.h"
 #include "libavutil/time.h"
+#include "libavutil/thread.h"
 #include "libavutil/threadmessage.h"
 #include "libavcodec/mathops.h"
 #include "libavformat/os_support.h"
@@ -96,10 +97,6 @@
 #include <termios.h>
 #elif HAVE_KBHIT
 #include <conio.h>
-#endif
-
-#if HAVE_PTHREADS
-#include <pthread.h>
 #endif
 
 #include <time.h>
@@ -161,7 +158,7 @@ static struct termios oldtty;
 static int restore_tty;
 #endif
 
-#if HAVE_PTHREADS
+#if HAVE_THREADS
 static void free_input_threads(void);
 #endif
 
@@ -578,7 +575,7 @@ static void ffmpeg_cleanup(int ret)
 
         av_freep(&output_streams[i]);
     }
-#if HAVE_PTHREADS
+#if HAVE_THREADS
     free_input_threads();
 #endif
     for (i = 0; i < nb_input_files; i++) {
@@ -3996,7 +3993,7 @@ static int check_keyboard_interaction(int64_t cur_time)
     return 0;
 }
 
-#if HAVE_PTHREADS
+#if HAVE_THREADS
 static void *input_thread(void *arg)
 {
     InputFile *f = arg;
@@ -4106,7 +4103,7 @@ static int get_input_packet(InputFile *f, AVPacket *pkt)
         }
     }
 
-#if HAVE_PTHREADS
+#if HAVE_THREADS
     if (nb_input_files > 1)
         return get_input_packet_mt(f, pkt);
 #endif
@@ -4615,7 +4612,7 @@ static int transcode(void)
 
     timer_start = av_gettime_relative();
 
-#if HAVE_PTHREADS
+#if HAVE_THREADS
     if ((ret = init_input_threads()) < 0)
         goto fail;
 #endif
@@ -4646,7 +4643,7 @@ static int transcode(void)
         /* dump report by using the output first video and audio streams */
         print_report(0, timer_start, cur_time);
     }
-#if HAVE_PTHREADS
+#if HAVE_THREADS
     free_input_threads();
 #endif
 
@@ -4712,7 +4709,7 @@ static int transcode(void)
     ret = 0;
 
  fail:
-#if HAVE_PTHREADS
+#if HAVE_THREADS
     free_input_threads();
 #endif
 

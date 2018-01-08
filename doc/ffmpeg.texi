@@ -1167,10 +1167,6 @@ loss).
 By default @command{ffmpeg} attempts to read the input(s) as fast as possible.
 This option will slow down the reading of the input(s) to the native frame rate
 of the input(s). It is useful for real-time output (e.g. live streaming).
-@item -loop_input
-Loop over the input stream. Currently it works only for image
-streams. This option is used for automatic FFserver testing.
-This option is deprecated, use -loop 1.
 @item -loop_output @var{number_of_times}
 Repeatedly loop output for formats that support looping such as animated GIF
 (0 will loop the output infinitely).
@@ -1411,16 +1407,6 @@ This option sets the maximum number of queued packets when reading from the
 file or device. With low latency / high rate live streams, packets may be
 discarded if they are not read in a timely manner; raising this value can
 avoid it.
-
-@item -override_ffserver (@emph{global})
-Overrides the input specifications from @command{ffserver}. Using this
-option you can map any input stream to @command{ffserver} and control
-many aspects of the encoding from @command{ffmpeg}. Without this
-option @command{ffmpeg} will transmit to @command{ffserver} what is
-requested by @command{ffserver}.
-
-The option is intended for cases where features are needed that cannot be
-specified to @command{ffserver} but can be to @command{ffmpeg}.
 
 @item -sdp_file @var{file} (@emph{global})
 Print sdp information for an output stream to @var{file}.
@@ -1776,7 +1762,7 @@ ffmpeg -i src.ext -lmax 21*QP2LAMBDA dst.ext
 @ifset config-not-all
 @url{ffmpeg-all.html,ffmpeg-all},
 @end ifset
-@url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe}, @url{ffserver.html,ffserver},
+@url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe},
 @url{ffmpeg-utils.html,ffmpeg-utils},
 @url{ffmpeg-scaler.html,ffmpeg-scaler},
 @url{ffmpeg-resampler.html,ffmpeg-resampler},
@@ -1795,7 +1781,7 @@ ffmpeg(1),
 @ifset config-not-all
 ffmpeg-all(1),
 @end ifset
-ffplay(1), ffprobe(1), ffserver(1),
+ffplay(1), ffprobe(1),
 ffmpeg-utils(1), ffmpeg-scaler(1), ffmpeg-resampler(1),
 ffmpeg-codecs(1), ffmpeg-bitstream-filters(1), ffmpeg-formats(1),
 ffmpeg-devices(1), ffmpeg-protocols(1), ffmpeg-filters(1)

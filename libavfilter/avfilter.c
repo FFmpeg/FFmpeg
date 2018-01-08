@@ -19,7 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/atomic.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/buffer.h"
@@ -33,6 +32,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/rational.h"
 #include "libavutil/samplefmt.h"
+#include "libavutil/thread.h"
 
 #define FF_INTERNAL_FIELDS 1
 #include "framequeue.h"
@@ -183,10 +183,12 @@ void avfilter_link_free(AVFilterLink **link)
     av_freep(link);
 }
 
+#if FF_API_FILTER_GET_SET
 int avfilter_link_get_channels(AVFilterLink *link)
 {
     return link->channels;
 }
+#endif
 
 void ff_filter_set_ready(AVFilterContext *filter, unsigned priority)
 {
@@ -590,18 +592,25 @@ const AVFilter *avfilter_get_by_name(const char *name)
     return NULL;
 }
 
+static AVMutex filter_register_mutex = AV_MUTEX_INITIALIZER;
+
 int avfilter_register(AVFilter *filter)
 {
-    AVFilter **f = last_filter;
+    AVFilter **f;
 
     /* the filter must select generic or internal exclusively */
     av_assert0((filter->flags & AVFILTER_FLAG_SUPPORT_TIMELINE) != AVFILTER_FLAG_SUPPORT_TIMELINE);
 
-    filter->next = NULL;
+    ff_mutex_lock(&filter_register_mutex);
+    f = last_filter;
 
-    while(*f || avpriv_atomic_ptr_cas((void * volatile *)f, NULL, filter))
+    while (*f)
         f = &(*f)->next;
+    *f = filter;
+    filter->next = NULL;
     last_filter = &filter->next;
+
+    ff_mutex_unlock(&filter_register_mutex);
 
     return 0;
 }

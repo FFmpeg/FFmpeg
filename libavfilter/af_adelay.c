@@ -192,7 +192,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     if (ctx->is_disabled || !s->delays)
         return ff_filter_frame(ctx->outputs[0], frame);
 
-    out_frame = ff_get_audio_buffer(inlink, frame->nb_samples);
+    out_frame = ff_get_audio_buffer(ctx->outputs[0], frame->nb_samples);
     if (!out_frame) {
         av_frame_free(&frame);
         return AVERROR(ENOMEM);

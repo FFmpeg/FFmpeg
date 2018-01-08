@@ -147,6 +147,26 @@ process.
 The only thing left is to automate the execution of the fate.sh script and
 the synchronisation of the samples directory.
 
+@chapter Uploading new samples to the fate suite
+
+This is for developers who have an account on the fate suite server.
+If you upload new samples, please make sure they are as small as possible,
+space on each client, network bandwidth and so on benefit from smaller test cases.
+Also keep in mind older checkouts use existing sample files, that means in
+practice generally do not replace, remove or overwrite files as it likely would
+break older checkouts or releases.
+
+@example
+#First update your local samples copy:
+rsync -vauL --chmod=Dg+s,Duo+x,ug+rw,o+r,o-w,+X fate-suite.ffmpeg.org:/home/samples/fate-suite/ ~/fate-suite
+
+#Then do a dry run checking what would be uploaded:
+rsync -vanL --no-g --chmod=Dg+s,Duo+x,ug+rw,o+r,o-w,+X ~/fate-suite/ fate-suite.ffmpeg.org:/home/samples/fate-suite
+
+#Upload the files:
+rsync -vaL  --no-g --chmod=Dg+s,Duo+x,ug+rw,o+r,o-w,+X ~/fate-suite/ fate-suite.ffmpeg.org:/home/samples/fate-suite
+@end example
+
 
 @chapter FATE makefile targets and variables
 

@@ -375,11 +375,14 @@ static int config_filter(AVFilterLink *outlink, int reset)
         av_assert0(0);
     }
 
+    av_log(ctx, AV_LOG_VERBOSE, "a=%lf %lf %lf:b=%lf %lf %lf\n", s->a0, s->a1, s->a2, s->b0, s->b1, s->b2);
+
     s->a1 /= s->a0;
     s->a2 /= s->a0;
     s->b0 /= s->a0;
     s->b1 /= s->a0;
     s->b2 /= s->a0;
+    s->a0 /= s->a0;
 
     s->cache = av_realloc_f(s->cache, sizeof(ChanCache), inlink->channels);
     if (!s->cache)
@@ -417,7 +420,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     if (av_frame_is_writable(buf)) {
         out_buf = buf;
     } else {
-        out_buf = ff_get_audio_buffer(inlink, nb_samples);
+        out_buf = ff_get_audio_buffer(outlink, nb_samples);
         if (!out_buf) {
             av_frame_free(&buf);
             return AVERROR(ENOMEM);

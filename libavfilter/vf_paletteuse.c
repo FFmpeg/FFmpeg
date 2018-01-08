@@ -894,9 +894,9 @@ static void set_processing_window(enum diff_mode diff_mode,
     *hp = height;
 }
 
-static AVFrame *apply_palette(AVFilterLink *inlink, AVFrame *in)
+static int apply_palette(AVFilterLink *inlink, AVFrame *in, AVFrame **outf)
 {
-    int x, y, w, h;
+    int x, y, w, h, ret;
     AVFilterContext *ctx = inlink->dst;
     PaletteUseContext *s = ctx->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
@@ -904,7 +904,8 @@ static AVFrame *apply_palette(AVFilterLink *inlink, AVFrame *in)
     AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
         av_frame_free(&in);
-        return NULL;
+        *outf = NULL;
+        return AVERROR(ENOMEM);
     }
     av_frame_copy_props(out, in);
 
@@ -918,21 +919,25 @@ static AVFrame *apply_palette(AVFilterLink *inlink, AVFrame *in)
         av_frame_make_writable(s->last_in) < 0) {
         av_frame_free(&in);
         av_frame_free(&out);
-        return NULL;
+        *outf = NULL;
+        return AVERROR(ENOMEM);
     }
 
     ff_dlog(ctx, "%dx%d rect: (%d;%d) -> (%d,%d) [area:%dx%d]\n",
             w, h, x, y, x+w, y+h, in->width, in->height);
 
-    if (s->set_frame(s, out, in, x, y, w, h) < 0) {
+    ret = s->set_frame(s, out, in, x, y, w, h);
+    if (ret < 0) {
         av_frame_free(&out);
-        return NULL;
+        *outf = NULL;
+        return ret;
     }
     memcpy(out->data[1], s->palette, AVPALETTE_SIZE);
     if (s->calc_mean_err)
         debug_mean_error(s, in, out, inlink->frame_count_out);
     av_frame_free(&in);
-    return out;
+    *outf = out;
+    return 0;
 }
 
 static int config_output(AVFilterLink *outlink)
@@ -1011,7 +1016,7 @@ static int load_apply_palette(FFFrameSync *fs)
     AVFilterContext *ctx = fs->parent;
     AVFilterLink *inlink = ctx->inputs[0];
     PaletteUseContext *s = ctx->priv;
-    AVFrame *master, *second, *out;
+    AVFrame *master, *second, *out = NULL;
     int ret;
 
     // writable for error diffusal dithering
@@ -1025,12 +1030,13 @@ static int load_apply_palette(FFFrameSync *fs)
     if (!s->palette_loaded) {
         load_palette(s, second);
     }
-    out = apply_palette(inlink, master);
+    ret = apply_palette(inlink, master, &out);
+    if (ret < 0)
+        goto error;
     return ff_filter_frame(ctx->outputs[0], out);
 
 error:
     av_frame_free(&master);
-    av_frame_free(&second);
     return ret;
 }
 

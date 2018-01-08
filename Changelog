@@ -31,6 +31,13 @@ version <next>:
 - Dropped support for building for Windows XP. The minimum supported Windows
   version is Windows Vista.
 - deconvolve video filter
+- entropy video filter
+- hilbert audio filter source
+- aiir audio filter
+- aiff: add support for CD-ROM XA ADPCM
+- Removed the ffserver program
+- Removed the ffmenc and ffmdec muxer and demuxer
+- VideoToolbox HEVC encoder and hwaccel
 
 
 version 3.4:

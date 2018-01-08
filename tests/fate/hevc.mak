@@ -168,6 +168,7 @@ HEVC_SAMPLES_444_8BIT =         \
 HEVC_SAMPLES_444_12BIT =        \
     IPCM_B_RExt_NEC             \
     PERSIST_RPARAM_A_RExt_Sony_1\
+    PERSIST_RPARAM_A_RExt_Sony_3\
     SAO_A_RExt_MediaTek_1       \
 
 

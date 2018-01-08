@@ -54,6 +54,7 @@ static void register_all(void)
     REGISTER_FILTER(AFIR,           afir,           af);
     REGISTER_FILTER(AFORMAT,        aformat,        af);
     REGISTER_FILTER(AGATE,          agate,          af);
+    REGISTER_FILTER(AIIR,           aiir,           af);
     REGISTER_FILTER(AINTERLEAVE,    ainterleave,    af);
     REGISTER_FILTER(ALIMITER,       alimiter,       af);
     REGISTER_FILTER(ALLPASS,        allpass,        af);
@@ -137,6 +138,7 @@ static void register_all(void)
     REGISTER_FILTER(ANOISESRC,      anoisesrc,      asrc);
     REGISTER_FILTER(ANULLSRC,       anullsrc,       asrc);
     REGISTER_FILTER(FLITE,          flite,          asrc);
+    REGISTER_FILTER(HILBERT,        hilbert,        asrc);
     REGISTER_FILTER(SINE,           sine,           asrc);
 
     REGISTER_FILTER(ANULLSINK,      anullsink,      asink);
@@ -194,6 +196,7 @@ static void register_all(void)
     REGISTER_FILTER(DRAWTEXT,       drawtext,       vf);
     REGISTER_FILTER(EDGEDETECT,     edgedetect,     vf);
     REGISTER_FILTER(ELBG,           elbg,           vf);
+    REGISTER_FILTER(ENTROPY,        entropy,        vf);
     REGISTER_FILTER(EQ,             eq,             vf);
     REGISTER_FILTER(EROSION,        erosion,        vf);
     REGISTER_FILTER(EXTRACTPLANES,  extractplanes,  vf);
@@ -281,6 +284,7 @@ static void register_all(void)
     REGISTER_FILTER(PP7,            pp7,            vf);
     REGISTER_FILTER(PREMULTIPLY,    premultiply,    vf);
     REGISTER_FILTER(PREWITT,        prewitt,        vf);
+    REGISTER_FILTER(PROGRAM_OPENCL, program_opencl, vf);
     REGISTER_FILTER(PSEUDOCOLOR,    pseudocolor,    vf);
     REGISTER_FILTER(PSNR,           psnr,           vf);
     REGISTER_FILTER(PULLUP,         pullup,         vf);
@@ -375,6 +379,7 @@ static void register_all(void)
     REGISTER_FILTER(MANDELBROT,     mandelbrot,     vsrc);
     REGISTER_FILTER(MPTESTSRC,      mptestsrc,      vsrc);
     REGISTER_FILTER(NULLSRC,        nullsrc,        vsrc);
+    REGISTER_FILTER(OPENCLSRC,      openclsrc,      vsrc);
     REGISTER_FILTER(RGBTESTSRC,     rgbtestsrc,     vsrc);
     REGISTER_FILTER(SMPTEBARS,      smptebars,      vsrc);
     REGISTER_FILTER(SMPTEHDBARS,    smptehdbars,    vsrc);

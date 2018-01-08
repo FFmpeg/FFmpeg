@@ -406,7 +406,7 @@ int ff_framesync_dualinput_get_writable(FFFrameSync *fs, AVFrame **f0, AVFrame *
     ret = ff_inlink_make_frame_writable(fs->parent->inputs[0], f0);
     if (ret < 0) {
         av_frame_free(f0);
-        av_frame_free(f1);
+        *f1 = NULL;
         return ret;
     }
     return 0;

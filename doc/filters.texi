@@ -926,6 +926,7 @@ afftfilt="1-clip((b/nb)*b,0,1)"
 @end example
 @end itemize
 
+@anchor{afir}
 @section afir
 
 Apply an arbitrary Frequency Impulse Response filter.
@@ -1058,6 +1059,60 @@ Choose if the average level between all channels or the louder channel affects
 the reduction.
 Default is @code{average}. Can be @code{average} or @code{maximum}.
 @end table
+
+@section aiir
+
+Apply an arbitrary Infinite Impulse Response filter.
+
+It accepts the following parameters:
+
+@table @option
+@item z
+Set numerator/zeros coefficients.
+
+@item p
+Set denominator/poles coefficients.
+
+@item k
+Set channels gains.
+
+@item dry_gain
+Set input gain.
+
+@item wet_gain
+Set output gain.
+
+@item f
+Set coefficients format.
+Can be @code{tf} - transfer function or @code{zp} - Z-plane zeros/poles.
+@end table
+
+Coefficients in @code{tf} format are separated by spaces and are in ascending
+order.
+
+Coefficients in @code{zp} format are separated by spaces and order of coefficients
+doesn't matter. Coefficients in @code{zp} format are complex numbers with @var{i}
+imaginary unit.
+
+Different coefficients and gains can be provided for every channel, in such case
+use '|' to separate coefficients or gains. Last provided coefficients will be
+used for all remaining channels.
+
+@subsection Examples
+
+@itemize
+@item
+Apply 2 pole elliptic notch at arround 5000Hz for 48000 Hz sample rate:
+@example
+aiir=k=1:z=7.957584807809675810E-1 -2.575128568908332300 3.674839853930788710 -2.57512875289799137 7.957586296317130880E-1:p=1 -2.86950072432325953 3.63022088054647218 -2.28075678147272232 6.361362326477423500E-1:f=tf
+@end example
+
+@item
+Same as above but in @code{zp} format:
+@example
+aiir=k=0.79575848078096756:z=0.80918701+0.58773007i 0.80918701-0.58773007i 0.80884700+0.58784055i 0.80884700-0.58784055i:p=0.63892345+0.59951235i 0.63892345-0.59951235i 0.79582691+0.44198673i 0.79582691-0.44198673i:f=zp
+@end example
+@end itemize
 
 @section alimiter
 
@@ -4873,6 +4928,33 @@ anoisesrc=d=60:c=pink:r=44100:a=0.5
 @end example
 @end itemize
 
+@section hilbert
+
+Generate odd-tap Hilbert transform FIR coefficients.
+
+The resulting stream can be used with @ref{afir} filter for phase-shifting
+the signal by 90 degrees.
+
+This is used in many matrix coding schemes and for analytic signal generation.
+The process is often written as a multiplication by i (or j), the imaginary unit.
+
+The filter accepts the following options:
+
+@table @option
+
+@item sample_rate, s
+Set sample rate, default is 44100.
+
+@item taps, t
+Set length of FIR filter, default is 22051.
+
+@item nb_samples, n
+Set number of samples per each frame.
+
+@item win_func, w
+Set window function to be used when generating FIR coefficients.
+@end table
+
 @section sine
 
 Generate an audio signal made of a sine wave with amplitude 1/8.
@@ -8218,6 +8300,20 @@ will try to use a good random seed on a best effort basis.
 @item pal8
 Set pal8 output pixel format. This option does not work with codebook
 length greater than 256.
+@end table
+
+@section entropy
+
+Measure graylevel entropy in histogram of color channels of video frames.
+
+It accepts the following parameters:
+
+@table @option
+@item mode
+Can be either @var{normal} or @var{diff}. Default is @var{normal}.
+
+@var{diff} mode measures entropy of histogram delta values, absolute differences
+between neighbour histogram values.
 @end table
 
 @section fade
@@ -12427,6 +12523,136 @@ Set value which will be multiplied with filtered result.
 @item delta
 Set value which will be added to filtered result.
 @end table
+
+@anchor{program_opencl}
+@section program_opencl
+
+Filter video using an OpenCL program.
+
+@table @option
+
+@item source
+OpenCL program source file.
+
+@item kernel
+Kernel name in program.
+
+@item inputs
+Number of inputs to the filter.  Defaults to 1.
+
+@item size, s
+Size of output frames.  Defaults to the same as the first input.
+
+@end table
+
+The program source file must contain a kernel function with the given name,
+which will be run once for each plane of the output.  Each run on a plane
+gets enqueued as a separate 2D global NDRange with one work-item for each
+pixel to be generated.  The global ID offset for each work-item is therefore
+the coordinates of a pixel in the destination image.
+
+The kernel function needs to take the following arguments:
+@itemize
+@item
+Destination image, @var{__write_only image2d_t}.
+
+This image will become the output; the kernel should write all of it.
+@item
+Frame index, @var{unsigned int}.
+
+This is a counter starting from zero and increasing by one for each frame.
+@item
+Source images, @var{__read_only image2d_t}.
+
+These are the most recent images on each input.  The kernel may read from
+them to generate the output, but they can't be written to.
+@end itemize
+
+Example programs:
+
+@itemize
+@item
+Copy the input to the output (output must be the same size as the input).
+@verbatim
+__kernel void copy(__write_only image2d_t destination,
+                   unsigned int index,
+                   __read_only  image2d_t source)
+{
+    const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE;
+
+    int2 location = (int2)(get_global_id(0), get_global_id(1));
+
+    float4 value = read_imagef(source, sampler, location);
+
+    write_imagef(destination, location, value);
+}
+@end verbatim
+
+@item
+Apply a simple transformation, rotating the input by an amount increasing
+with the index counter.  Pixel values are linearly interpolated by the
+sampler, and the output need not have the same dimensions as the input.
+@verbatim
+__kernel void rotate_image(__write_only image2d_t dst,
+                           unsigned int index,
+                           __read_only  image2d_t src)
+{
+    const sampler_t sampler = (CLK_NORMALIZED_COORDS_FALSE |
+                               CLK_FILTER_LINEAR);
+
+    float angle = (float)index / 100.0f;
+
+    float2 dst_dim = convert_float2(get_image_dim(dst));
+    float2 src_dim = convert_float2(get_image_dim(src));
+
+    float2 dst_cen = dst_dim / 2.0f;
+    float2 src_cen = src_dim / 2.0f;
+
+    int2   dst_loc = (int2)(get_global_id(0), get_global_id(1));
+
+    float2 dst_pos = convert_float2(dst_loc) - dst_cen;
+    float2 src_pos = {
+        cos(angle) * dst_pos.x - sin(angle) * dst_pos.y,
+        sin(angle) * dst_pos.x + cos(angle) * dst_pos.y
+    };
+    src_pos = src_pos * src_dim / dst_dim;
+
+    float2 src_loc = src_pos + src_cen;
+
+    if (src_loc.x < 0.0f      || src_loc.y < 0.0f ||
+        src_loc.x > src_dim.x || src_loc.y > src_dim.y)
+        write_imagef(dst, dst_loc, 0.5f);
+    else
+        write_imagef(dst, dst_loc, read_imagef(src, sampler, src_loc));
+}
+@end verbatim
+
+@item
+Blend two inputs together, with the amount of each input used varying
+with the index counter.
+@verbatim
+__kernel void blend_images(__write_only image2d_t dst,
+                           unsigned int index,
+                           __read_only  image2d_t src1,
+                           __read_only  image2d_t src2)
+{
+    const sampler_t sampler = (CLK_NORMALIZED_COORDS_FALSE |
+                               CLK_FILTER_LINEAR);
+
+    float blend = (cos((float)index / 50.0f) + 1.0f) / 2.0f;
+
+    int2  dst_loc = (int2)(get_global_id(0), get_global_id(1));
+    int2 src1_loc = dst_loc * get_image_dim(src1) / get_image_dim(dst);
+    int2 src2_loc = dst_loc * get_image_dim(src2) / get_image_dim(dst);
+
+    float4 val1 = read_imagef(src1, sampler, src1_loc);
+    float4 val2 = read_imagef(src2, sampler, src2_loc);
+
+    write_imagef(dst, dst_loc, val1 * blend + val2 * (1.0f - blend));
+}
+@end verbatim
+
+@end itemize
 
 @section pseudocolor
 
@@ -17401,6 +17627,78 @@ The @code{color} source supports the following commands:
 Set the color of the created image. Accepts the same syntax of the
 corresponding @option{color} option.
 @end table
+
+@section openclsrc
+
+Generate video using an OpenCL program.
+
+@table @option
+
+@item source
+OpenCL program source file.
+
+@item kernel
+Kernel name in program.
+
+@item size, s
+Size of frames to generate.  This must be set.
+
+@item format
+Pixel format to use for the generated frames.  This must be set.
+
+@item rate, r
+Number of frames generated every second.  Default value is '25'.
+
+@end table
+
+For details of how the program loading works, see the @ref{program_opencl}
+filter.
+
+Example programs:
+
+@itemize
+@item
+Generate a colour ramp by setting pixel values from the position of the pixel
+in the output image.  (Note that this will work with all pixel formats, but
+the generated output will not be the same.)
+@verbatim
+__kernel void ramp(__write_only image2d_t dst,
+                   unsigned int index)
+{
+    int2 loc = (int2)(get_global_id(0), get_global_id(1));
+
+    float4 val;
+    val.xy = val.zw = convert_float2(loc) / convert_float2(get_image_dim(dst));
+
+    write_imagef(dst, loc, val);
+}
+@end verbatim
+
+@item
+Generate a Sierpinski carpet pattern, panning by a single pixel each frame.
+@verbatim
+__kernel void sierpinski_carpet(__write_only image2d_t dst,
+                                unsigned int index)
+{
+    int2 loc = (int2)(get_global_id(0), get_global_id(1));
+
+    float4 value = 0.0f;
+    int x = loc.x + index;
+    int y = loc.y + index;
+    while (x > 0 || y > 0) {
+        if (x % 3 == 1 && y % 3 == 1) {
+            value = 1.0f;
+            break;
+        }
+        x /= 3;
+        y /= 3;
+    }
+
+    write_imagef(dst, loc, value);
+}
+@end verbatim
+
+@end itemize
 
 @c man end VIDEO SOURCES
 
