@@ -29,6 +29,8 @@ extern AVFilter ff_af_acontrast;
 extern AVFilter ff_af_acopy;
 extern AVFilter ff_af_acrossfade;
 extern AVFilter ff_af_acrusher;
+extern AVFilter ff_af_adeclick;
+extern AVFilter ff_af_adeclip;
 extern AVFilter ff_af_adelay;
 extern AVFilter ff_af_aderivative;
 extern AVFilter ff_af_aecho;

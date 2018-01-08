@@ -551,6 +551,102 @@ Set LFO range.
 Set LFO rate.
 @end table
 
+@section adeclick
+Remove impulsive noise from input audio.
+
+Samples detected as impulsive noise are replaced by interpolated samples using
+autoregressive modelling.
+
+@table @option
+@item w
+Set window size, in milliseconds. Allowed range is from @code{10} to
+@code{100}. Default value is @code{55} milliseconds.
+This sets size of window which will be processed at once.
+
+@item o
+Set window overlap, in percentage of window size. Allowed range is from
+@code{50} to @code{95}. Default value is @code{75} percent.
+Setting this to a very high value increases impulsive noise removal but makes
+whole process much slower.
+
+@item a
+Set autoregression order, in percentage of window size. Allowed range is from
+@code{0} to @code{25}. Default value is @code{2} percent. This option also
+controls quality of interpolated samples using neighbour good samples.
+
+@item t
+Set threshold value. Allowed range is from @code{1} to @code{100}.
+Default value is @code{2}.
+This controls the strength of impulsive noise which is going to be removed.
+The lower value, the more samples will be detected as impulsive noise.
+
+@item b
+Set burst fusion, in percentage of window size. Allowed range is @code{0} to
+@code{10}. Default value is @code{2}.
+If any two samples deteced as noise are spaced less than this value then any
+sample inbetween those two samples will be also detected as noise.
+
+@item m
+Set overlap method.
+
+It accepts the following values:
+@table @option
+@item a
+Select overlap-add method. Even not interpolated samples are slightly
+changed with this method.
+
+@item s
+Select overlap-save method. Not interpolated samples remain unchanged.
+@end table
+
+Default value is @code{a}.
+@end table
+
+@section adeclip
+Remove clipped samples from input audio.
+
+Samples detected as clipped are replaced by interpolated samples using
+autoregressive modelling.
+
+@table @option
+@item w
+Set window size, in milliseconds. Allowed range is from @code{10} to @code{100}.
+Default value is @code{55} milliseconds.
+This sets size of window which will be processed at once.
+
+@item o
+Set window overlap, in percentage of window size. Allowed range is from @code{50}
+to @code{95}. Default value is @code{75} percent.
+
+@item a
+Set autoregression order, in percentage of window size. Allowed range is from
+@code{0} to @code{25}. Default value is @code{8} percent. This option also controls
+quality of interpolated samples using neighbour good samples.
+
+@item t
+Set threshold value. Allowed range is from @code{1} to @code{100}.
+Default value is @code{10}. Higher values make clip detection less aggressive.
+
+@item n
+Set size of histogram used to detect clips. Allowed range is from @code{100} to @code{9999}.
+Default value is @code{1000}. Higher values make clip detection less aggressive.
+
+@item m
+Set overlap method.
+
+It accepts the following values:
+@table @option
+@item a
+Select overlap-add method. Even not interpolated samples are slightly changed
+with this method.
+
+@item s
+Select overlap-save method. Not interpolated samples remain unchanged.
+@end table
+
+Default value is @code{a}.
+@end table
+
 @section adelay
 
 Delay one or more audio channels.

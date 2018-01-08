@@ -11,6 +11,8 @@ version <next>:
 - support mbedTLS based TLS
 - DNN inference interface
 - Reimplemented SRCNN filter using DNN inference interface
+- adeclick filter
+- adeclip filter
 
 
 version 4.0:
