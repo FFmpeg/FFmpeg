@@ -106,7 +106,6 @@ ogm_header(AVFormatContext *s, int idx)
                 size -= 4;
             }
             if (size > 52) {
-                av_assert0(AV_INPUT_BUFFER_PADDING_SIZE <= 52);
                 size -= 52;
                 if (bytestream2_get_bytes_left(&p) < size)
                     return AVERROR_INVALIDDATA;
