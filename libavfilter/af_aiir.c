@@ -477,6 +477,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     }
     av_freep(&s->b);
 
+    av_freep(&s->g);
+
     av_freep(&s->input);
     av_freep(&s->output);
 
