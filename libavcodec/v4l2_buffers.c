@@ -62,7 +62,7 @@ static inline void v4l2_set_pts(V4L2Buffer *out, int64_t pts)
     out->buf.timestamp.tv_sec = v4l2_pts / USEC_PER_SEC;
 }
 
-static inline uint64_t v4l2_get_pts(V4L2Buffer *avbuf)
+static inline int64_t v4l2_get_pts(V4L2Buffer *avbuf)
 {
     V4L2m2mContext *s = buf_to_m2mctx(avbuf);
     AVRational v4l2_timebase = { 1, USEC_PER_SEC };
