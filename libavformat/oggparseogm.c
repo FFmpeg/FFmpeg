@@ -24,7 +24,6 @@
 
 #include <stdlib.h>
 
-#include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
 
 #include "libavcodec/bytestream.h"
