@@ -38,6 +38,7 @@ version <next>:
 - Removed the ffserver program
 - Removed the ffmenc and ffmdec muxer and demuxer
 - VideoToolbox HEVC encoder and hwaccel
+- VAAPI-accelerated ProcAmp (color balance) filter
 
 
 version 3.4:
