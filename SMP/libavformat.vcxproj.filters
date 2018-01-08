@@ -484,12 +484,6 @@
     <ClCompile Include="..\libavformat\epafdec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavformat\ffmdec.c">
-      <Filter>Source Files\libavformat</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavformat\ffmenc.c">
-      <Filter>Source Files\libavformat</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavformat\ffmetadec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>

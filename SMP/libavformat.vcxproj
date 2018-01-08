@@ -220,8 +220,6 @@
     <ClCompile Include="..\libavformat\eacdata.c" />
     <ClCompile Include="..\libavformat\electronicarts.c" />
     <ClCompile Include="..\libavformat\epafdec.c" />
-    <ClCompile Include="..\libavformat\ffmdec.c" />
-    <ClCompile Include="..\libavformat\ffmenc.c" />
     <ClCompile Include="..\libavformat\ffmetadec.c" />
     <ClCompile Include="..\libavformat\ffmetaenc.c" />
     <ClCompile Include="..\libavformat\fifo.c" />

@@ -126,6 +126,7 @@
     <ClCompile Include="..\libavfilter\af_afftfilt.c" />
     <ClCompile Include="..\libavfilter\af_aformat.c" />
     <ClCompile Include="..\libavfilter\af_agate.c" />
+    <ClCompile Include="..\libavfilter\af_aiir.c" />
     <ClCompile Include="..\libavfilter\f_interleave.c" />
     <ClCompile Include="..\libavfilter\af_alimiter.c" />
     <ClCompile Include="..\libavfilter\af_biquads.c" />
@@ -191,6 +192,7 @@
     <ClCompile Include="..\libavfilter\af_volumedetect.c" />
     <ClCompile Include="..\libavfilter\asrc_anoisesrc.c" />
     <ClCompile Include="..\libavfilter\asrc_anullsrc.c" />
+    <ClCompile Include="..\libavfilter\asrc_hilbert.c" />
     <ClCompile Include="..\libavfilter\asrc_sine.c" />
     <ClCompile Include="..\libavfilter\asink_anullsink.c" />
     <ClCompile Include="..\libavfilter\vf_extractplanes.c" />
@@ -240,6 +242,7 @@
     <ClCompile Include="..\libavfilter\vf_drawtext.c" />
     <ClCompile Include="..\libavfilter\vf_edgedetect.c" />
     <ClCompile Include="..\libavfilter\vf_elbg.c" />
+    <ClCompile Include="..\libavfilter\vf_entropy.c" />
     <ClCompile Include="..\libavfilter\vf_eq.c" />
     <ClCompile Include="..\libavfilter\vf_fade.c" />
     <ClCompile Include="..\libavfilter\vf_fftfilt.c" />

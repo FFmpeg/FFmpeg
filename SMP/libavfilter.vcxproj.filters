@@ -201,6 +201,9 @@
     <ClCompile Include="..\libavfilter\af_agate.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\af_aiir.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\f_interleave.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
@@ -396,6 +399,9 @@
     <ClCompile Include="..\libavfilter\asrc_anullsrc.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\asrc_hilbert.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\asrc_sine.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
@@ -541,6 +547,9 @@
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_elbg.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_entropy.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_eq.c">

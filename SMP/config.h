@@ -23,7 +23,7 @@
 #define SMP_CONFIG_H
 #define FFMPEG_CONFIGURATION "--enable-gpl --enable-version3 --enable-avisynth --enable-libmp3lame --enable-libvorbis --enable-libspeex --enable-libopus --enable-libilbc --enable-libtheora --enable-libx264 --enable-libx265 --enable-libxvid --enable-libvpx --enable-libgme --enable-libmodplug --enable-libsoxr --enable-libfreetype --enable-fontconfig --enable-libfribidi --enable-libass --enable-libxml2 --enable-gnutls --disable-schannel --enable-gmp --enable-libssh --enable-libcdio --enable-libbluray --enable-opengl --enable-libmfx --toolchain=msvc"
 #define FFMPEG_LICENSE "GPL version 3 or later"
-#define CONFIG_THIS_YEAR 2017
+#define CONFIG_THIS_YEAR 2018
 #define FFMPEG_DATADIR "."
 #define AVCONV_DATADIR "."
 #if defined(__INTEL_COMPILER)
@@ -233,9 +233,6 @@
 #define HAVE_SIMD_ALIGN_16 1
 #define HAVE_SIMD_ALIGN_32 1
 #define HAVE_SIMD_ALIGN_64 1
-#define HAVE_ATOMICS_GCC 0
-#define HAVE_ATOMICS_SUNCC 0
-#define HAVE_ATOMICS_WIN32 1
 #define HAVE_ATOMIC_CAS_PTR 0
 #define HAVE_MACHINE_RW_BARRIER 0
 #define HAVE_MEMORYBARRIER 1
@@ -245,7 +242,6 @@
 #   define HAVE_MM_EMPTY 0
 #endif
 #define HAVE_RDTSC 1
-#define HAVE_SARESTART 0
 #define HAVE_SEM_TIMEDWAIT 0
 #define HAVE_SYNC_VAL_COMPARE_AND_SWAP 0
 #define HAVE_CABS 0
@@ -326,7 +322,6 @@
 #define HAVE_SINF 1
 #define HAVE_TRUNC 1
 #define HAVE_TRUNCF 1
-#define HAVE_ATOMICS_NATIVE 1
 #define HAVE_DOS_PATHS 1
 #define HAVE_LIBC_MSVCRT 1
 #define HAVE_MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS 0
@@ -627,7 +622,6 @@
 #define CONFIG_SWSCALE 1
 #define CONFIG_FFPLAY 1
 #define CONFIG_FFPROBE 1
-#define CONFIG_FFSERVER 0
 #define CONFIG_FFMPEG 1
 #define CONFIG_DCT 1
 #define CONFIG_DWT 1
@@ -1635,6 +1629,7 @@
 #define CONFIG_AFIR_FILTER 1
 #define CONFIG_AFORMAT_FILTER 1
 #define CONFIG_AGATE_FILTER 1
+#define CONFIG_AIIR_FILTER 1
 #define CONFIG_AINTERLEAVE_FILTER 1
 #define CONFIG_ALIMITER_FILTER 1
 #define CONFIG_ALLPASS_FILTER 1
@@ -1717,6 +1712,7 @@
 #define CONFIG_ANOISESRC_FILTER 1
 #define CONFIG_ANULLSRC_FILTER 1
 #define CONFIG_FLITE_FILTER 0
+#define CONFIG_HILBERT_FILTER 1
 #define CONFIG_SINE_FILTER 1
 #define CONFIG_ANULLSINK_FILTER 1
 #define CONFIG_ALPHAEXTRACT_FILTER 1
@@ -1772,6 +1768,7 @@
 #define CONFIG_DRAWTEXT_FILTER 1
 #define CONFIG_EDGEDETECT_FILTER 1
 #define CONFIG_ELBG_FILTER 1
+#define CONFIG_ENTROPY_FILTER 1
 #define CONFIG_EQ_FILTER 1
 #define CONFIG_EROSION_FILTER 1
 #define CONFIG_EXTRACTPLANES_FILTER 1
@@ -1859,6 +1856,7 @@
 #define CONFIG_PP7_FILTER 1
 #define CONFIG_PREMULTIPLY_FILTER 1
 #define CONFIG_PREWITT_FILTER 1
+#define CONFIG_PROGRAM_OPENCL_FILTER 0
 #define CONFIG_PSEUDOCOLOR_FILTER 1
 #define CONFIG_PSNR_FILTER 1
 #define CONFIG_PULLUP_FILTER 1
@@ -1952,6 +1950,7 @@
 #define CONFIG_MANDELBROT_FILTER 1
 #define CONFIG_MPTESTSRC_FILTER 1
 #define CONFIG_NULLSRC_FILTER 1
+#define CONFIG_OPENCLSRC_FILTER 0
 #define CONFIG_RGBTESTSRC_FILTER 1
 #define CONFIG_SMPTEBARS_FILTER 1
 #define CONFIG_SMPTEHDBARS_FILTER 1
@@ -2042,7 +2041,6 @@
 #define CONFIG_EA_CDATA_DEMUXER 1
 #define CONFIG_EAC3_DEMUXER 1
 #define CONFIG_EPAF_DEMUXER 1
-#define CONFIG_FFM_DEMUXER 1
 #define CONFIG_FFMETADATA_DEMUXER 1
 #define CONFIG_FILMSTRIP_DEMUXER 1
 #define CONFIG_FITS_DEMUXER 1
@@ -2290,7 +2288,6 @@
 #define CONFIG_DV_MUXER 1
 #define CONFIG_EAC3_MUXER 1
 #define CONFIG_F4V_MUXER 1
-#define CONFIG_FFM_MUXER 1
 #define CONFIG_FFMETADATA_MUXER 1
 #define CONFIG_FIFO_MUXER 1
 #define CONFIG_FILMSTRIP_MUXER 1
