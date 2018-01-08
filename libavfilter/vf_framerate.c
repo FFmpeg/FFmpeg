@@ -38,52 +38,7 @@
 #include "avfilter.h"
 #include "internal.h"
 #include "video.h"
-
-#define BLEND_FUNC_PARAMS const uint8_t *src1, ptrdiff_t src1_linesize, \
-                          const uint8_t *src2, ptrdiff_t src2_linesize, \
-                          uint8_t *dst, ptrdiff_t dst_linesize, \
-                          ptrdiff_t width, ptrdiff_t height, \
-                          int factor1, int factor2, int half
-
-#define BLEND_FACTOR_DEPTH8   7
-#define BLEND_FACTOR_DEPTH16 15
-
-typedef void (*blend_func)(BLEND_FUNC_PARAMS);
-
-typedef struct FrameRateContext {
-    const AVClass *class;
-    // parameters
-    AVRational dest_frame_rate;         ///< output frames per second
-    int flags;                          ///< flags affecting frame rate conversion algorithm
-    double scene_score;                 ///< score that denotes a scene change has happened
-    int interp_start;                   ///< start of range to apply linear interpolation
-    int interp_end;                     ///< end of range to apply linear interpolation
-
-    int line_size[4];                   ///< bytes of pixel data per line for each plane
-    int vsub;
-
-    AVRational srce_time_base;          ///< timebase of source
-    AVRational dest_time_base;          ///< timebase of destination
-
-    av_pixelutils_sad_fn sad;           ///< Sum of the absolute difference function (scene detect only)
-    double prev_mafd;                   ///< previous MAFD                           (scene detect only)
-
-    int blend_factor_max;
-    int bitdepth;
-    AVFrame *work;
-
-    AVFrame *f0;                        ///< last frame
-    AVFrame *f1;                        ///< current frame
-    int64_t pts0;                       ///< last frame pts in dest_time_base
-    int64_t pts1;                       ///< current frame pts in dest_time_base
-    int64_t delta;                      ///< pts1 to pts0 delta
-    double score;                       ///< scene change score (f0 to f1)
-    int flush;                          ///< 1 if the filter is being flushed
-    int64_t start_pts;                  ///< pts of the first output frame
-    int64_t n;                          ///< output frame counter
-
-    blend_func blend;
-} FrameRateContext;
+#include "framerate.h"
 
 #define OFFSET(x) offsetof(FrameRateContext, x)
 #define V AV_OPT_FLAG_VIDEO_PARAM
@@ -246,7 +201,7 @@ static int blend_frames(AVFilterContext *ctx, int interpolate)
         av_frame_copy_props(s->work, s->f0);
 
         ff_dlog(ctx, "blend_frames() INTERPOLATE to create work frame\n");
-        ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
+        ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(FFMAX(1, outlink->h >> 2), ff_filter_get_nb_threads(ctx)));
         return 1;
     }
     return 0;
@@ -366,6 +321,19 @@ static void blend_frames16_c(BLEND_FUNC_PARAMS)
     }
 }
 
+void ff_framerate_init(FrameRateContext *s)
+{
+    if (s->bitdepth == 8) {
+        s->blend_factor_max = 1 << BLEND_FACTOR_DEPTH8;
+        s->blend = blend_frames_c;
+    } else {
+        s->blend_factor_max = 1 << BLEND_FACTOR_DEPTH16;
+        s->blend = blend_frames16_c;
+    }
+    if (ARCH_X86)
+        ff_framerate_init_x86(s);
+}
+
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -387,13 +355,7 @@ static int config_input(AVFilterLink *inlink)
 
     s->srce_time_base = inlink->time_base;
 
-    if (s->bitdepth == 8) {
-        s->blend_factor_max = 1 << BLEND_FACTOR_DEPTH8;
-        s->blend = blend_frames_c;
-    } else {
-        s->blend_factor_max = 1 << BLEND_FACTOR_DEPTH16;
-        s->blend = blend_frames16_c;
-    }
+    ff_framerate_init(s);
 
     return 0;
 }
