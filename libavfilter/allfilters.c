@@ -184,6 +184,7 @@ static void register_all(void)
     REGISTER_FILTER(DEINTERLACE_VAAPI, deinterlace_vaapi, vf);
     REGISTER_FILTER(DEJUDDER,       dejudder,       vf);
     REGISTER_FILTER(DELOGO,         delogo,         vf);
+    REGISTER_FILTER(DENOISE_VAAPI,  denoise_vaapi,  vf);
     REGISTER_FILTER(DESHAKE,        deshake,        vf);
     REGISTER_FILTER(DESPILL,        despill,        vf);
     REGISTER_FILTER(DETELECINE,     detelecine,     vf);
@@ -318,6 +319,7 @@ static void register_all(void)
     REGISTER_FILTER(SETRANGE,       setrange,       vf);
     REGISTER_FILTER(SETSAR,         setsar,         vf);
     REGISTER_FILTER(SETTB,          settb,          vf);
+    REGISTER_FILTER(SHARPNESS_VAAPI, sharpness_vaapi, vf);
     REGISTER_FILTER(SHOWINFO,       showinfo,       vf);
     REGISTER_FILTER(SHOWPALETTE,    showpalette,    vf);
     REGISTER_FILTER(SHUFFLEFRAMES,  shuffleframes,  vf);
