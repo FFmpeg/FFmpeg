@@ -196,32 +196,16 @@ static int filter_slice8(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
         cpy_src2_data += start * cpy_src2_line_size;
         cpy_dst_data += start * cpy_dst_line_size;
 
-        if (plane <1 || plane >2) {
-            // luma or alpha
-            for (line = start; line < end; line++) {
-                for (pixel = 0; pixel < cpy_line_width; pixel++) {
-                    // integer version of (src1 * src1_factor) + (src2 + src2_factor) + 0.5
-                    // 0.5 is for rounding
-                    // 128 is the integer representation of 0.5 << 8
-                    cpy_dst_data[pixel] = ((cpy_src1_data[pixel] * src1_factor) + (cpy_src2_data[pixel] * src2_factor) + 128) >> 8;
-                }
-                cpy_src1_data += cpy_src1_line_size;
-                cpy_src2_data += cpy_src2_line_size;
-                cpy_dst_data += cpy_dst_line_size;
+        for (line = start; line < end; line++) {
+            for (pixel = 0; pixel < cpy_line_width; pixel++) {
+                // integer version of (src1 * src1_factor) + (src2 + src2_factor) + 0.5
+                // 0.5 is for rounding
+                // 128 is the integer representation of 0.5 << 8
+                cpy_dst_data[pixel] = ((cpy_src1_data[pixel] * src1_factor) + (cpy_src2_data[pixel] * src2_factor) + 128) >> 8;
             }
-        } else {
-            // chroma
-            for (line = start; line < end; line++) {
-                for (pixel = 0; pixel < cpy_line_width; pixel++) {
-                    // as above
-                    // because U and V are based around 128 we have to subtract 128 from the components.
-                    // 32896 is the integer representation of 128.5 << 8
-                    cpy_dst_data[pixel] = (((cpy_src1_data[pixel] - 128) * src1_factor) + ((cpy_src2_data[pixel] - 128) * src2_factor) + 32896) >> 8;
-                }
-                cpy_src1_data += cpy_src1_line_size;
-                cpy_src2_data += cpy_src2_line_size;
-                cpy_dst_data += cpy_dst_line_size;
-            }
+            cpy_src1_data += cpy_src1_line_size;
+            cpy_src2_data += cpy_src2_line_size;
+            cpy_dst_data += cpy_dst_line_size;
         }
     }
 
@@ -235,7 +219,6 @@ static int filter_slice16(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
     uint16_t src1_factor = td->src1_factor;
     uint16_t src2_factor = td->src2_factor;
     const int half = s->max / 2;
-    const int uv = (s->max + 1) * half;
     const int shift = s->bitdepth;
     int plane, line, pixel;
 
@@ -254,25 +237,12 @@ static int filter_slice16(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
         cpy_src2_data += start * cpy_src2_line_size;
         cpy_dst_data += start * cpy_dst_line_size;
 
-        if (plane <1 || plane >2) {
-            // luma or alpha
-            for (line = start; line < end; line++) {
-                for (pixel = 0; pixel < cpy_line_width; pixel++)
-                    cpy_dst_data[pixel] = ((cpy_src1_data[pixel] * src1_factor) + (cpy_src2_data[pixel] * src2_factor) + half) >> shift;
-                cpy_src1_data += cpy_src1_line_size;
-                cpy_src2_data += cpy_src2_line_size;
-                cpy_dst_data += cpy_dst_line_size;
-            }
-        } else {
-            // chroma
-            for (line = start; line < end; line++) {
-                for (pixel = 0; pixel < cpy_line_width; pixel++) {
-                    cpy_dst_data[pixel] = (((cpy_src1_data[pixel] - half) * src1_factor) + ((cpy_src2_data[pixel] - half) * src2_factor) + uv) >> shift;
-                }
-                cpy_src1_data += cpy_src1_line_size;
-                cpy_src2_data += cpy_src2_line_size;
-                cpy_dst_data += cpy_dst_line_size;
-            }
+        for (line = start; line < end; line++) {
+            for (pixel = 0; pixel < cpy_line_width; pixel++)
+                cpy_dst_data[pixel] = ((cpy_src1_data[pixel] * src1_factor) + (cpy_src2_data[pixel] * src2_factor) + half) >> shift;
+            cpy_src1_data += cpy_src1_line_size;
+            cpy_src2_data += cpy_src2_line_size;
+            cpy_dst_data += cpy_dst_line_size;
         }
     }
 
