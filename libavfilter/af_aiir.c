@@ -42,6 +42,15 @@ typedef struct BiquadContext {
     double o1, o2;
 } BiquadContext;
 
+typedef struct IIRChannel {
+    int nb_ab[2];
+    double *ab[2];
+    double g;
+    double *cache[2];
+    BiquadContext *biquads;
+    int clippings;
+} IIRChannel;
+
 typedef struct AudioIIRContext {
     const AVClass *class;
     char *a_str, *b_str, *g_str;
@@ -50,12 +59,7 @@ typedef struct AudioIIRContext {
     int process;
     int precision;
 
-    int *nb_a, *nb_b;
-    double **a, **b;
-    double *g;
-    double **input, **output;
-    BiquadContext **biquads;
-    int *clippings;
+    IIRChannel *iir;
     int channels;
     enum AVSampleFormat sample_format;
 
@@ -103,12 +107,13 @@ static int iir_ch_## name(AVFilterContext *ctx, void *arg, int ch, int nb_jobs) 
     ThreadData *td = arg;                                               \
     AVFrame *in = td->in, *out = td->out;                               \
     const type *src = (const type *)in->extended_data[ch];              \
-    double *ic = (double *)s->input[ch];                                \
-    double *oc = (double *)s->output[ch];                               \
-    const int nb_a = s->nb_a[ch];                                       \
-    const int nb_b = s->nb_b[ch];                                       \
-    const double *a = s->a[ch];                                         \
-    const double *b = s->b[ch];                                         \
+    double *ic = (double *)s->iir[ch].cache[0];                         \
+    double *oc = (double *)s->iir[ch].cache[1];                         \
+    const int nb_a = s->iir[ch].nb_ab[0];                               \
+    const int nb_b = s->iir[ch].nb_ab[1];                               \
+    const double *a = s->iir[ch].ab[0];                                 \
+    const double *b = s->iir[ch].ab[1];                                 \
+    int *clippings = &s->iir[ch].clippings;                             \
     type *dst = (type *)out->extended_data[ch];                         \
     int n;                                                              \
                                                                         \
@@ -128,10 +133,10 @@ static int iir_ch_## name(AVFilterContext *ctx, void *arg, int ch, int nb_jobs) 
         oc[0] = sample;                                                 \
         sample *= og;                                                   \
         if (need_clipping && sample < min) {                            \
-            s->clippings[ch]++;                                         \
+            *clippings++;                                               \
             dst[n] = min;                                               \
         } else if (need_clipping && sample > max) {                     \
-            s->clippings[ch]++;                                         \
+            *clippings++;                                               \
             dst[n] = max;                                               \
         } else {                                                        \
             dst[n] = sample;                                            \
@@ -156,19 +161,21 @@ static int iir_ch_serial_## name(AVFilterContext *ctx, void *arg, int ch, int nb
     AVFrame *in = td->in, *out = td->out;                               \
     const type *src = (const type *)in->extended_data[ch];              \
     type *dst = (type *)out->extended_data[ch];                         \
-    int nb_biquads = (FFMAX(s->nb_a[ch], s->nb_b[ch]) + 1) / 2;         \
+    IIRChannel *iir = &s->iir[ch];                                      \
+    int *clippings = &iir->clippings;                                   \
+    int nb_biquads = (FFMAX(iir->nb_ab[0], iir->nb_ab[1]) + 1) / 2;     \
     int n, i;                                                           \
                                                                         \
     for (i = 0; i < nb_biquads; i++) {                                  \
-        const double a1 = -s->biquads[ch][i].a1;                        \
-        const double a2 = -s->biquads[ch][i].a2;                        \
-        const double b0 = s->biquads[ch][i].b0;                         \
-        const double b1 = s->biquads[ch][i].b1;                         \
-        const double b2 = s->biquads[ch][i].b2;                         \
-        double i1 = s->biquads[ch][i].i1;                               \
-        double i2 = s->biquads[ch][i].i2;                               \
-        double o1 = s->biquads[ch][i].o1;                               \
-        double o2 = s->biquads[ch][i].o2;                               \
+        const double a1 = -iir->biquads[i].a1;                          \
+        const double a2 = -iir->biquads[i].a2;                          \
+        const double b0 = iir->biquads[i].b0;                           \
+        const double b1 = iir->biquads[i].b1;                           \
+        const double b2 = iir->biquads[i].b2;                           \
+        double i1 = iir->biquads[i].i1;                                 \
+        double i2 = iir->biquads[i].i2;                                 \
+        double o1 = iir->biquads[i].o1;                                 \
+        double o2 = iir->biquads[i].o2;                                 \
                                                                         \
         for (n = 0; n < in->nb_samples; n++) {                          \
             double sample = ig * (i ? dst[n] : src[n]);                 \
@@ -181,19 +188,19 @@ static int iir_ch_serial_## name(AVFilterContext *ctx, void *arg, int ch, int nb
             o0 *= og;                                                   \
                                                                         \
             if (need_clipping && o0 < min) {                            \
-                s->clippings[ch]++;                                     \
+                *clippings++;                                           \
                 dst[n] = min;                                           \
             } else if (need_clipping && o0 > max) {                     \
-                s->clippings[ch]++;                                     \
+                *clippings++;                                           \
                 dst[n] = max;                                           \
             } else {                                                    \
                 dst[n] = o0;                                            \
             }                                                           \
         }                                                               \
-        s->biquads[ch][i].i1 = i1;                                      \
-        s->biquads[ch][i].i2 = i2;                                      \
-        s->biquads[ch][i].o1 = o1;                                      \
-        s->biquads[ch][i].o2 = o2;                                      \
+        iir->biquads[i].i1 = i1;                                        \
+        iir->biquads[i].i2 = i2;                                        \
+        iir->biquads[i].o1 = o1;                                        \
+        iir->biquads[i].o2 = o2;                                        \
     }                                                                   \
                                                                         \
     return 0;                                                           \
@@ -218,8 +225,9 @@ static void count_coefficients(char *item_str, int *nb_items)
     }
 }
 
-static int read_gains(AVFilterContext *ctx, char *item_str, int nb_items, double *dst)
+static int read_gains(AVFilterContext *ctx, char *item_str, int nb_items)
 {
+    AudioIIRContext *s = ctx->priv;
     char *p, *arg, *old_str, *prev_arg = NULL, *saveptr = NULL;
     int i;
 
@@ -236,7 +244,7 @@ static int read_gains(AVFilterContext *ctx, char *item_str, int nb_items, double
         }
 
         p = NULL;
-        if (sscanf(arg, "%lf", &dst[i]) != 1) {
+        if (sscanf(arg, "%lf", &s->iir[i].g) != 1) {
             av_log(ctx, AV_LOG_ERROR, "Invalid gains supplied: %s\n", arg);
             av_freep(&old_str);
             return AVERROR(EINVAL);
@@ -300,7 +308,7 @@ static int read_zp_coefficients(AVFilterContext *ctx, char *item_str, int nb_ite
     return 0;
 }
 
-static int read_channels(AVFilterContext *ctx, int channels, uint8_t *item_str, int *nb, double **c, double **cache)
+static int read_channels(AVFilterContext *ctx, int channels, uint8_t *item_str, int ab)
 {
     AudioIIRContext *s = ctx->priv;
     char *p, *arg, *old_str, *prev_arg = NULL, *saveptr = NULL;
@@ -310,6 +318,8 @@ static int read_channels(AVFilterContext *ctx, int channels, uint8_t *item_str, 
     if (!p)
         return AVERROR(ENOMEM);
     for (i = 0; i < channels; i++) {
+        IIRChannel *iir = &s->iir[i];
+
         if (!(arg = av_strtok(p, "|", &saveptr)))
             arg = prev_arg;
 
@@ -318,20 +328,20 @@ static int read_channels(AVFilterContext *ctx, int channels, uint8_t *item_str, 
             return AVERROR(EINVAL);
         }
 
-        count_coefficients(arg, &nb[i]);
+        count_coefficients(arg, &iir->nb_ab[ab]);
 
         p = NULL;
-        cache[i] = av_calloc(nb[i] + 1, sizeof(double));
-        c[i] = av_calloc(nb[i] * (s->format + 1), sizeof(double));
-        if (!c[i] || !cache[i]) {
+        iir->cache[ab] = av_calloc(iir->nb_ab[ab] + 1, sizeof(double));
+        iir->ab[ab] = av_calloc(iir->nb_ab[ab] * (s->format + 1), sizeof(double));
+        if (!iir->ab[ab] || !iir->cache[ab]) {
             av_freep(&old_str);
             return AVERROR(ENOMEM);
         }
 
         if (s->format) {
-            ret = read_zp_coefficients(ctx, arg, nb[i], c[i]);
+            ret = read_zp_coefficients(ctx, arg, iir->nb_ab[ab], iir->ab[ab]);
         } else {
-            ret = read_tf_coefficients(ctx, arg, nb[i], c[i]);
+            ret = read_tf_coefficients(ctx, arg, iir->nb_ab[ab], iir->ab[ab]);
         }
         if (ret < 0) {
             av_freep(&old_str);
@@ -397,36 +407,37 @@ static int convert_zp2tf(AVFilterContext *ctx, int channels)
     int ch, i, j, ret;
 
     for (ch = 0; ch < channels; ch++) {
+        IIRChannel *iir = &s->iir[ch];
         double *topc, *botc;
 
-        topc = av_calloc((s->nb_b[ch] + 1) * 2, sizeof(*topc));
-        botc = av_calloc((s->nb_a[ch] + 1) * 2, sizeof(*botc));
+        topc = av_calloc((iir->nb_ab[0] + 1) * 2, sizeof(*topc));
+        botc = av_calloc((iir->nb_ab[1] + 1) * 2, sizeof(*botc));
         if (!topc || !botc)
             return AVERROR(ENOMEM);
 
-        ret = expand(ctx, s->a[ch], s->nb_a[ch], botc);
+        ret = expand(ctx, iir->ab[0], iir->nb_ab[0], botc);
         if (ret < 0) {
             av_free(topc);
             av_free(botc);
             return ret;
         }
 
-        ret = expand(ctx, s->b[ch], s->nb_b[ch], topc);
+        ret = expand(ctx, iir->ab[1], iir->nb_ab[1], topc);
         if (ret < 0) {
             av_free(topc);
             av_free(botc);
             return ret;
         }
 
-        for (j = 0, i = s->nb_b[ch]; i >= 0; j++, i--) {
-            s->b[ch][j] = topc[2 * i];
+        for (j = 0, i = iir->nb_ab[1]; i >= 0; j++, i--) {
+            iir->ab[1][j] = topc[2 * i];
         }
-        s->nb_b[ch]++;
+        iir->nb_ab[1]++;
 
-        for (j = 0, i = s->nb_a[ch]; i >= 0; j++, i--) {
-            s->a[ch][j] = botc[2 * i];
+        for (j = 0, i = iir->nb_ab[0]; i >= 0; j++, i--) {
+            iir->ab[0][j] = botc[2 * i];
         }
-        s->nb_a[ch]++;
+        iir->nb_ab[0]++;
 
         av_free(topc);
         av_free(botc);
@@ -441,11 +452,12 @@ static int decompose_zp2biquads(AVFilterContext *ctx, int channels)
     int ch, ret;
 
     for (ch = 0; ch < channels; ch++) {
-        int nb_biquads = (FFMAX(s->nb_a[ch], s->nb_b[ch]) + 1) / 2;
+        IIRChannel *iir = &s->iir[ch];
+        int nb_biquads = (FFMAX(iir->nb_ab[0], iir->nb_ab[1]) + 1) / 2;
         int current_biquad = 0;
 
-        s->biquads[ch] = av_calloc(nb_biquads, sizeof(BiquadContext));
-        if (!s->biquads[ch])
+        iir->biquads = av_calloc(nb_biquads, sizeof(BiquadContext));
+        if (!iir->biquads)
             return AVERROR(ENOMEM);
 
         while (nb_biquads--) {
@@ -459,12 +471,12 @@ static int decompose_zp2biquads(AVFilterContext *ctx, int channels)
             double max_mag = 0;
             int i;
 
-            for (i = 0; i < s->nb_a[ch]; i++) {
+            for (i = 0; i < iir->nb_ab[0]; i++) {
                 double mag;
 
-                if (isnan(s->a[ch][2 * i]) || isnan(s->a[ch][2 * i + 1]))
+                if (isnan(iir->ab[0][2 * i]) || isnan(iir->ab[0][2 * i + 1]))
                     continue;
-                mag = hypot(s->a[ch][2 * i], s->a[ch][2 * i + 1]);
+                mag = hypot(iir->ab[0][2 * i], iir->ab[0][2 * i + 1]);
 
                 if (mag > max_mag) {
                     max_mag = mag;
@@ -472,12 +484,12 @@ static int decompose_zp2biquads(AVFilterContext *ctx, int channels)
                 }
             }
 
-            for (i = 0; i < s->nb_a[ch]; i++) {
-                if (isnan(s->a[ch][2 * i]) || isnan(s->a[ch][2 * i + 1]))
+            for (i = 0; i < iir->nb_ab[1]; i++) {
+                if (isnan(iir->ab[0][2 * i]) || isnan(iir->ab[0][2 * i + 1]))
                     continue;
 
-                if (s->a[ch][2 * i    ] ==  s->a[ch][2 * outmost_pole.a    ] &&
-                    s->a[ch][2 * i + 1] == -s->a[ch][2 * outmost_pole.a + 1]) {
+                if (iir->ab[0][2 * i    ] ==  iir->ab[0][2 * outmost_pole.a    ] &&
+                    iir->ab[0][2 * i + 1] == -iir->ab[0][2 * outmost_pole.a + 1]) {
                     outmost_pole.b = i;
                     break;
                 }
@@ -488,13 +500,13 @@ static int decompose_zp2biquads(AVFilterContext *ctx, int channels)
             if (outmost_pole.a < 0 || outmost_pole.b < 0)
                 return AVERROR(EINVAL);
 
-            for (i = 0; i < s->nb_b[ch]; i++) {
+            for (i = 0; i < iir->nb_ab[1]; i++) {
                 double distance;
 
-                if (isnan(s->b[ch][2 * i]) || isnan(s->b[ch][2 * i + 1]))
+                if (isnan(iir->ab[1][2 * i]) || isnan(iir->ab[1][2 * i + 1]))
                     continue;
-                distance = hypot(s->a[ch][2 * outmost_pole.a    ] - s->b[ch][2 * i    ],
-                                 s->a[ch][2 * outmost_pole.a + 1] - s->b[ch][2 * i + 1]);
+                distance = hypot(iir->ab[0][2 * outmost_pole.a    ] - iir->ab[1][2 * i    ],
+                                 iir->ab[0][2 * outmost_pole.a + 1] - iir->ab[1][2 * i + 1]);
 
                 if (distance < min_distance) {
                     min_distance = distance;
@@ -502,12 +514,12 @@ static int decompose_zp2biquads(AVFilterContext *ctx, int channels)
                 }
             }
 
-            for (i = 0; i < s->nb_b[ch]; i++) {
-                if (isnan(s->b[ch][2 * i]) || isnan(s->b[ch][2 * i + 1]))
+            for (i = 0; i < iir->nb_ab[1]; i++) {
+                if (isnan(iir->ab[1][2 * i]) || isnan(iir->ab[1][2 * i + 1]))
                     continue;
 
-                if (s->b[ch][2 * i    ] ==  s->b[ch][2 * nearest_zero.a    ] &&
-                    s->b[ch][2 * i + 1] == -s->b[ch][2 * nearest_zero.a + 1]) {
+                if (iir->ab[1][2 * i    ] ==  iir->ab[1][2 * nearest_zero.a    ] &&
+                    iir->ab[1][2 * i + 1] == -iir->ab[1][2 * nearest_zero.a + 1]) {
                     nearest_zero.b = i;
                     break;
                 }
@@ -518,11 +530,11 @@ static int decompose_zp2biquads(AVFilterContext *ctx, int channels)
             if (nearest_zero.a < 0 || nearest_zero.b < 0)
                 return AVERROR(EINVAL);
 
-            poles[0] = s->a[ch][2 * outmost_pole.a    ];
-            poles[1] = s->a[ch][2 * outmost_pole.a + 1];
+            poles[0] = iir->ab[0][2 * outmost_pole.a    ];
+            poles[1] = iir->ab[0][2 * outmost_pole.a + 1];
 
-            zeros[0] = s->b[ch][2 * nearest_zero.a    ];
-            zeros[1] = s->b[ch][2 * nearest_zero.a + 1];
+            zeros[0] = iir->ab[1][2 * nearest_zero.a    ];
+            zeros[1] = iir->ab[1][2 * nearest_zero.a + 1];
 
             if (nearest_zero.a == nearest_zero.b && outmost_pole.a == outmost_pole.b) {
                 zeros[2] = 0;
@@ -531,11 +543,11 @@ static int decompose_zp2biquads(AVFilterContext *ctx, int channels)
                 poles[2] = 0;
                 poles[3] = 0;
             } else {
-                poles[2] = s->a[ch][2 * outmost_pole.b    ];
-                poles[3] = s->a[ch][2 * outmost_pole.b + 1];
+                poles[2] = iir->ab[0][2 * outmost_pole.b    ];
+                poles[3] = iir->ab[0][2 * outmost_pole.b + 1];
 
-                zeros[2] = s->b[ch][2 * nearest_zero.b    ];
-                zeros[3] = s->b[ch][2 * nearest_zero.b + 1];
+                zeros[2] = iir->ab[1][2 * nearest_zero.b    ];
+                zeros[3] = iir->ab[1][2 * nearest_zero.b + 1];
             }
 
             ret = expand(ctx, zeros, 2, b);
@@ -546,25 +558,25 @@ static int decompose_zp2biquads(AVFilterContext *ctx, int channels)
             if (ret < 0)
                 return ret;
 
-            s->a[ch][2 * outmost_pole.a] = s->a[ch][2 * outmost_pole.a + 1] = NAN;
-            s->a[ch][2 * outmost_pole.b] = s->a[ch][2 * outmost_pole.b + 1] = NAN;
-            s->b[ch][2 * nearest_zero.a] = s->b[ch][2 * nearest_zero.a + 1] = NAN;
-            s->b[ch][2 * nearest_zero.b] = s->b[ch][2 * nearest_zero.b + 1] = NAN;
+            iir->ab[0][2 * outmost_pole.a] = iir->ab[0][2 * outmost_pole.a + 1] = NAN;
+            iir->ab[0][2 * outmost_pole.b] = iir->ab[0][2 * outmost_pole.b + 1] = NAN;
+            iir->ab[1][2 * nearest_zero.a] = iir->ab[1][2 * nearest_zero.a + 1] = NAN;
+            iir->ab[1][2 * nearest_zero.b] = iir->ab[1][2 * nearest_zero.b + 1] = NAN;
 
-            s->biquads[ch][current_biquad].a0 = 1.0;
-            s->biquads[ch][current_biquad].a1 = a[2] / a[4];
-            s->biquads[ch][current_biquad].a2 = a[0] / a[4];
-            s->biquads[ch][current_biquad].b0 = b[4] / a[4] * (current_biquad ? 1.0 : s->g[ch]);
-            s->biquads[ch][current_biquad].b1 = b[2] / a[4] * (current_biquad ? 1.0 : s->g[ch]);
-            s->biquads[ch][current_biquad].b2 = b[0] / a[4] * (current_biquad ? 1.0 : s->g[ch]);
+            iir->biquads[current_biquad].a0 = 1.0;
+            iir->biquads[current_biquad].a1 = a[2] / a[4];
+            iir->biquads[current_biquad].a2 = a[0] / a[4];
+            iir->biquads[current_biquad].b0 = b[4] / a[4] * (current_biquad ? 1.0 : iir->g);
+            iir->biquads[current_biquad].b1 = b[2] / a[4] * (current_biquad ? 1.0 : iir->g);
+            iir->biquads[current_biquad].b2 = b[0] / a[4] * (current_biquad ? 1.0 : iir->g);
 
             av_log(ctx, AV_LOG_VERBOSE, "a=%lf %lf %lf:b=%lf %lf %lf\n",
-                   s->biquads[ch][current_biquad].a0,
-                   s->biquads[ch][current_biquad].a1,
-                   s->biquads[ch][current_biquad].a2,
-                   s->biquads[ch][current_biquad].b0,
-                   s->biquads[ch][current_biquad].b1,
-                   s->biquads[ch][current_biquad].b2);
+                   iir->biquads[current_biquad].a0,
+                   iir->biquads[current_biquad].a1,
+                   iir->biquads[current_biquad].a2,
+                   iir->biquads[current_biquad].b0,
+                   iir->biquads[current_biquad].b1,
+                   iir->biquads[current_biquad].b2);
 
             current_biquad++;
         }
@@ -581,26 +593,19 @@ static int config_output(AVFilterLink *outlink)
     int ch, ret, i;
 
     s->channels = inlink->channels;
-    s->a = av_calloc(inlink->channels, sizeof(*s->a));
-    s->b = av_calloc(inlink->channels, sizeof(*s->b));
-    s->g = av_calloc(inlink->channels, sizeof(*s->g));
-    s->nb_a = av_calloc(inlink->channels, sizeof(*s->nb_a));
-    s->nb_b = av_calloc(inlink->channels, sizeof(*s->nb_b));
-    s->input = av_calloc(inlink->channels, sizeof(*s->input));
-    s->output = av_calloc(inlink->channels, sizeof(*s->output));
-    s->clippings = av_calloc(inlink->channels, sizeof(*s->clippings));
-    if (!s->a || !s->b || !s->nb_a || !s->nb_b || !s->input || !s->output || !s->clippings)
+    s->iir = av_calloc(s->channels, sizeof(*s->iir));
+    if (!s->iir)
         return AVERROR(ENOMEM);
 
-    ret = read_gains(ctx, s->g_str, inlink->channels, s->g);
+    ret = read_gains(ctx, s->g_str, inlink->channels);
     if (ret < 0)
         return ret;
 
-    ret = read_channels(ctx, inlink->channels, s->a_str, s->nb_a, s->a, s->output);
+    ret = read_channels(ctx, inlink->channels, s->a_str, 0);
     if (ret < 0)
         return ret;
 
-    ret = read_channels(ctx, inlink->channels, s->b_str, s->nb_b, s->b, s->input);
+    ret = read_channels(ctx, inlink->channels, s->b_str, 1);
     if (ret < 0)
         return ret;
 
@@ -620,21 +625,20 @@ static int config_output(AVFilterLink *outlink)
         if (inlink->format == AV_SAMPLE_FMT_S16P)
             av_log(ctx, AV_LOG_WARNING, "Serial cascading is not recommended for i16 precision.\n");
 
-        s->biquads = av_calloc(inlink->channels, sizeof(*s->biquads));
-        if (!s->biquads)
-            return AVERROR(ENOMEM);
         ret = decompose_zp2biquads(ctx, inlink->channels);
         if (ret < 0)
             return ret;
     }
 
     for (ch = 0; ch < inlink->channels; ch++) {
-        for (i = 1; i < s->nb_a[ch]; i++) {
-            s->a[ch][i] /= s->a[ch][0];
+        IIRChannel *iir = &s->iir[ch];
+
+        for (i = 1; i < iir->nb_ab[0]; i++) {
+            iir->ab[0][i] /= iir->ab[0][0];
         }
 
-        for (i = 0; i < s->nb_b[ch]; i++) {
-            s->b[ch][i] *= s->g[ch] / s->a[ch][0];
+        for (i = 0; i < iir->nb_ab[1]; i++) {
+            iir->ab[1][i] *= iir->g / iir->ab[0][0];
         }
     }
 
@@ -673,9 +677,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     ctx->internal->execute(ctx, s->iir_channel, &td, NULL, outlink->channels);
 
     for (ch = 0; ch < outlink->channels; ch++) {
-        if (s->clippings[ch] > 0)
-            av_log(ctx, AV_LOG_WARNING, "Channel %d clipping %d times. Please reduce gain.\n", ch, s->clippings[ch]);
-        s->clippings[ch] = 0;
+        if (s->iir[ch].clippings > 0)
+            av_log(ctx, AV_LOG_WARNING, "Channel %d clipping %d times. Please reduce gain.\n",
+                   ch, s->iir[ch].clippings);
+        s->iir[ch].clippings = 0;
     }
 
     if (in != out)
@@ -709,37 +714,17 @@ static av_cold void uninit(AVFilterContext *ctx)
     AudioIIRContext *s = ctx->priv;
     int ch;
 
-    if (s->a) {
+    if (s->iir) {
         for (ch = 0; ch < s->channels; ch++) {
-            av_freep(&s->a[ch]);
-            av_freep(&s->output[ch]);
+            IIRChannel *iir = &s->iir[ch];
+            av_freep(&iir->ab[0]);
+            av_freep(&iir->ab[1]);
+            av_freep(&iir->cache[0]);
+            av_freep(&iir->cache[1]);
+            av_freep(&iir->biquads);
         }
     }
-    av_freep(&s->a);
-
-    if (s->b) {
-        for (ch = 0; ch < s->channels; ch++) {
-            av_freep(&s->b[ch]);
-            av_freep(&s->input[ch]);
-        }
-    }
-    av_freep(&s->b);
-
-    av_freep(&s->g);
-    av_freep(&s->clippings);
-
-    av_freep(&s->input);
-    av_freep(&s->output);
-
-    if (s->biquads) {
-        for (ch = 0; ch < s->channels; ch++) {
-            av_freep(&s->biquads[ch]);
-        }
-    }
-    av_freep(&s->biquads);
-
-    av_freep(&s->nb_a);
-    av_freep(&s->nb_b);
+    av_freep(&s->iir);
 }
 
 static const AVFilterPad inputs[] = {
