@@ -12785,7 +12785,7 @@ sequential number of the input frame, starting from 1
 Mean Square Error pixel-by-pixel average difference of the compared
 frames, averaged over all the image components.
 
-@item mse_y, mse_u, mse_v, mse_r, mse_g, mse_g, mse_a
+@item mse_y, mse_u, mse_v, mse_r, mse_g, mse_b, mse_a
 Mean Square Error pixel-by-pixel average difference of the compared
 frames for the component specified by the suffix.
 
