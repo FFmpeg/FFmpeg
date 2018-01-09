@@ -321,7 +321,7 @@ static int decklink_write_video_packet(AVFormatContext *avctx, AVPacket *pkt)
     pthread_mutex_unlock(&ctx->mutex);
 
     /* Schedule frame for playback. */
-    hr = ctx->dlo->ScheduleVideoFrame((struct IDeckLinkVideoFrame *) frame,
+    hr = ctx->dlo->ScheduleVideoFrame((class IDeckLinkVideoFrame *) frame,
                                       pkt->pts * ctx->bmd_tb_num,
                                       ctx->bmd_tb_num, ctx->bmd_tb_den);
     /* Pass ownership to DeckLink, or release on failure */
