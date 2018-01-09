@@ -38,11 +38,9 @@
 
 #define V4L_M2M_DEFAULT_OPTS \
     { "num_output_buffers", "Number of buffers in the output context",\
-        OFFSET(output.num_buffers), AV_OPT_TYPE_INT, { .i64 = 16 }, 6, INT_MAX, FLAGS }
+        OFFSET(num_output_buffers), AV_OPT_TYPE_INT, { .i64 = 16 }, 6, INT_MAX, FLAGS }
 
-typedef struct V4L2m2mContext
-{
-    AVClass *class;
+typedef struct V4L2m2mContext {
     char devname[PATH_MAX];
     int fd;
 
@@ -50,17 +48,40 @@ typedef struct V4L2m2mContext
     V4L2Context capture;
     V4L2Context output;
 
-    /* refcount of buffers held by the user */
-    atomic_uint refcount;
-
     /* dynamic stream reconfig */
     AVCodecContext *avctx;
     sem_t refsync;
+    atomic_uint refcount;
     int reinit;
 
     /* null frame/packet received */
     int draining;
+
+    /* Reference to self; only valid while codec is active. */
+    AVBufferRef *self_ref;
 } V4L2m2mContext;
+
+typedef struct V4L2m2mPriv
+{
+    AVClass *class;
+
+    V4L2m2mContext *context;
+    AVBufferRef    *context_ref;
+
+    int num_output_buffers;
+    int num_capture_buffers;
+} V4L2m2mPriv;
+
+/**
+ * Allocate a new context and references for a V4L2 M2M instance.
+ *
+ * @param[in] ctx The AVCodecContext instantiated by the encoder/decoder.
+ * @param[out] ctx The V4L2m2mContext.
+ *
+ * @returns 0 in success, a negative error code otherwise.
+ */
+int ff_v4l2_m2m_create_context(AVCodecContext *avctx, V4L2m2mContext **s);
+
 
 /**
  * Probes the video nodes looking for the required codec capabilities.

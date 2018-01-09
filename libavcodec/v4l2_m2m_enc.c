@@ -242,7 +242,7 @@ static int v4l2_prepare_encoder(V4L2m2mContext *s)
 
 static int v4l2_send_frame(AVCodecContext *avctx, const AVFrame *frame)
 {
-    V4L2m2mContext *s = avctx->priv_data;
+    V4L2m2mContext *s = ((V4L2m2mPriv*)avctx->priv_data)->context;
     V4L2Context *const output = &s->output;
 
     return ff_v4l2_context_enqueue_frame(output, frame);
@@ -250,7 +250,7 @@ static int v4l2_send_frame(AVCodecContext *avctx, const AVFrame *frame)
 
 static int v4l2_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
 {
-    V4L2m2mContext *s = avctx->priv_data;
+    V4L2m2mContext *s = ((V4L2m2mPriv*)avctx->priv_data)->context;
     V4L2Context *const capture = &s->capture;
     V4L2Context *const output = &s->output;
     int ret;
@@ -280,10 +280,16 @@ dequeue:
 
 static av_cold int v4l2_encode_init(AVCodecContext *avctx)
 {
-    V4L2m2mContext *s = avctx->priv_data;
-    V4L2Context *capture = &s->capture;
-    V4L2Context *output = &s->output;
+    V4L2Context *capture, *output;
+    V4L2m2mContext *s;
     int ret;
+
+    ret = ff_v4l2_m2m_create_context(avctx, &s);
+    if (ret < 0)
+        return ret;
+
+    capture = &s->capture;
+    output  = &s->output;
 
     /* common settings output/capture */
     output->height = capture->height = avctx->height;
@@ -306,13 +312,13 @@ static av_cold int v4l2_encode_init(AVCodecContext *avctx)
     return v4l2_prepare_encoder(s);
 }
 
-#define OFFSET(x) offsetof(V4L2m2mContext, x)
+#define OFFSET(x) offsetof(V4L2m2mPriv, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 
 static const AVOption options[] = {
     V4L_M2M_DEFAULT_OPTS,
     { "num_capture_buffers", "Number of buffers in the capture context",
-        OFFSET(capture.num_buffers), AV_OPT_TYPE_INT, {.i64 = 4 }, 4, INT_MAX, FLAGS },
+        OFFSET(num_capture_buffers), AV_OPT_TYPE_INT, {.i64 = 4 }, 4, INT_MAX, FLAGS },
     { NULL },
 };
 
@@ -329,7 +335,7 @@ AVCodec ff_ ## NAME ## _v4l2m2m_encoder = { \
     .long_name      = NULL_IF_CONFIG_SMALL("V4L2 mem2mem " LONGNAME " encoder wrapper"),\
     .type           = AVMEDIA_TYPE_VIDEO,\
     .id             = CODEC ,\
-    .priv_data_size = sizeof(V4L2m2mContext),\
+    .priv_data_size = sizeof(V4L2m2mPriv),\
     .priv_class     = &v4l2_m2m_ ## NAME ##_enc_class,\
     .init           = v4l2_encode_init,\
     .send_frame     = v4l2_send_frame,\
