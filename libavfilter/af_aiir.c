@@ -604,7 +604,12 @@ static int config_output(AVFilterLink *outlink)
     if (ret < 0)
         return ret;
 
+    if (s->format == 0)
+        av_log(ctx, AV_LOG_WARNING, "tf coefficients format is not recommended for too high number of zeros/poles.\n");
+
     if (s->format == 1 && s->process == 0) {
+        av_log(ctx, AV_LOG_WARNING, "Direct processsing is not recommended for zp coefficients format.\n");
+
         ret = convert_zp2tf(ctx, inlink->channels);
         if (ret < 0)
             return ret;
@@ -612,6 +617,9 @@ static int config_output(AVFilterLink *outlink)
         av_log(ctx, AV_LOG_ERROR, "Serial cascading is not implemented for transfer function.\n");
         return AVERROR_PATCHWELCOME;
     } else if (s->format == 1 && s->process == 1) {
+        if (inlink->format == AV_SAMPLE_FMT_S16P)
+            av_log(ctx, AV_LOG_WARNING, "Serial cascading is not recommended for i16 precision.\n");
+
         s->biquads = av_calloc(inlink->channels, sizeof(*s->biquads));
         if (!s->biquads)
             return AVERROR(ENOMEM);
@@ -756,15 +764,15 @@ static const AVFilterPad outputs[] = {
 #define AF AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption aiir_options[] = {
-    { "z", "set B/numerator/zeros coefficients",   OFFSET(b_str),    AV_OPT_TYPE_STRING, {.str="1 1"}, 0, 0, AF },
-    { "p", "set A/denominator/poles coefficients", OFFSET(a_str),    AV_OPT_TYPE_STRING, {.str="1 1"}, 0, 0, AF },
+    { "z", "set B/numerator/zeros coefficients",   OFFSET(b_str),    AV_OPT_TYPE_STRING, {.str="1+0i 1-0i"}, 0, 0, AF },
+    { "p", "set A/denominator/poles coefficients", OFFSET(a_str),    AV_OPT_TYPE_STRING, {.str="1+0i 1-0i"}, 0, 0, AF },
     { "k", "set channels gains",                   OFFSET(g_str),    AV_OPT_TYPE_STRING, {.str="1|1"}, 0, 0, AF },
     { "dry", "set dry gain",                       OFFSET(dry_gain), AV_OPT_TYPE_DOUBLE, {.dbl=1},     0, 1, AF },
     { "wet", "set wet gain",                       OFFSET(wet_gain), AV_OPT_TYPE_DOUBLE, {.dbl=1},     0, 1, AF },
     { "f", "set coefficients format",              OFFSET(format),   AV_OPT_TYPE_INT,    {.i64=1},     0, 1, AF, "format" },
     { "tf", "transfer function",                   0,                AV_OPT_TYPE_CONST,  {.i64=0},     0, 0, AF, "format" },
     { "zp", "Z-plane zeros/poles",                 0,                AV_OPT_TYPE_CONST,  {.i64=1},     0, 0, AF, "format" },
-    { "r", "set kind of processing",               OFFSET(process),  AV_OPT_TYPE_INT,    {.i64=0},     0, 1, AF, "process" },
+    { "r", "set kind of processing",               OFFSET(process),  AV_OPT_TYPE_INT,    {.i64=1},     0, 1, AF, "process" },
     { "d", "direct",                               0,                AV_OPT_TYPE_CONST,  {.i64=0},     0, 0, AF, "process" },
     { "s", "serial cascading",                     0,                AV_OPT_TYPE_CONST,  {.i64=1},     0, 0, AF, "process" },
     { "e", "set precision",                        OFFSET(precision),AV_OPT_TYPE_INT,    {.i64=0},     0, 3, AF, "precision" },
