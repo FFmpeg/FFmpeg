@@ -1085,6 +1085,26 @@ Set output gain.
 @item f
 Set coefficients format.
 Can be @code{tf} - transfer function or @code{zp} - Z-plane zeros/poles.
+Default is @code{zp}.
+
+@item r
+Set kind of processing.
+Can be @code{d} - direct or @code{s} - serial cascading. Defauls is @code{s}.
+
+@item e
+Set filtering precision.
+
+@table @option
+@item dbl
+double-precision floating-point (default)
+@item flt
+single-precision floating-point
+@item i32
+32-bit integers
+@item i16
+16-bit integers
+@end table
+
 @end table
 
 Coefficients in @code{tf} format are separated by spaces and are in ascending
