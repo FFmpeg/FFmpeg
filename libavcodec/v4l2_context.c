@@ -290,7 +290,17 @@ start:
 
     /* 0. handle errors */
     if (pfd.revents & POLLERR) {
-        av_log(logger(ctx), AV_LOG_WARNING, "%s POLLERR\n", ctx->name);
+        /* if we are trying to get free buffers but none have been queued yet
+           no need to raise a warning */
+        if (timeout == 0) {
+            for (i = 0; i < ctx->num_buffers; i++) {
+                if (ctx->buffers[i].status != V4L2BUF_AVAILABLE)
+                    av_log(logger(ctx), AV_LOG_WARNING, "%s POLLERR\n", ctx->name);
+            }
+        }
+        else
+            av_log(logger(ctx), AV_LOG_WARNING, "%s POLLERR\n", ctx->name);
+
         return NULL;
     }
 
