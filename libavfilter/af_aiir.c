@@ -27,6 +27,10 @@
 #include "avfilter.h"
 #include "internal.h"
 
+typedef struct ThreadData {
+    AVFrame *in, *out;
+} ThreadData;
+
 typedef struct Pair {
     int a, b;
 } Pair;
@@ -51,11 +55,11 @@ typedef struct AudioIIRContext {
     double *g;
     double **input, **output;
     BiquadContext **biquads;
-    int clippings;
+    int *clippings;
     int channels;
     enum AVSampleFormat sample_format;
 
-    void (*iir_frame)(AVFilterContext *ctx, AVFrame *in, AVFrame *out);
+    int (*iir_channel)(AVFilterContext *ctx, void *arg, int ch, int nb_jobs);
 } AudioIIRContext;
 
 static int query_formats(AVFilterContext *ctx)
@@ -90,113 +94,115 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_samplerates(ctx, formats);
 }
 
-#define IIR_FRAME(name, type, min, max, need_clipping)                  \
-static void iir_frame_## name(AVFilterContext *ctx, AVFrame *in, AVFrame *out)  \
+#define IIR_CH(name, type, min, max, need_clipping)                     \
+static int iir_ch_## name(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)  \
 {                                                                       \
     AudioIIRContext *s = ctx->priv;                                     \
     const double ig = s->dry_gain;                                      \
     const double og = s->wet_gain;                                      \
-    int ch, n;                                                          \
+    ThreadData *td = arg;                                               \
+    AVFrame *in = td->in, *out = td->out;                               \
+    const type *src = (const type *)in->extended_data[ch];              \
+    double *ic = (double *)s->input[ch];                                \
+    double *oc = (double *)s->output[ch];                               \
+    const int nb_a = s->nb_a[ch];                                       \
+    const int nb_b = s->nb_b[ch];                                       \
+    const double *a = s->a[ch];                                         \
+    const double *b = s->b[ch];                                         \
+    type *dst = (type *)out->extended_data[ch];                         \
+    int n;                                                              \
                                                                         \
-    for (ch = 0; ch < out->channels; ch++) {                            \
-        const type *src = (const type *)in->extended_data[ch];          \
-        double *ic = (double *)s->input[ch];                            \
-        double *oc = (double *)s->output[ch];                           \
-        const int nb_a = s->nb_a[ch];                                   \
-        const int nb_b = s->nb_b[ch];                                   \
-        const double *a = s->a[ch];                                     \
-        const double *b = s->b[ch];                                     \
-        type *dst = (type *)out->extended_data[ch];                     \
+    for (n = 0; n < in->nb_samples; n++) {                              \
+        double sample = 0.;                                             \
+        int x;                                                          \
+                                                                        \
+        memmove(&ic[1], &ic[0], (nb_b - 1) * sizeof(*ic));              \
+        memmove(&oc[1], &oc[0], (nb_a - 1) * sizeof(*oc));              \
+        ic[0] = src[n] * ig;                                            \
+        for (x = 0; x < nb_b; x++)                                      \
+            sample += b[x] * ic[x];                                     \
+                                                                        \
+        for (x = 1; x < nb_a; x++)                                      \
+            sample -= a[x] * oc[x];                                     \
+                                                                        \
+        oc[0] = sample;                                                 \
+        sample *= og;                                                   \
+        if (need_clipping && sample < min) {                            \
+            s->clippings[ch]++;                                         \
+            dst[n] = min;                                               \
+        } else if (need_clipping && sample > max) {                     \
+            s->clippings[ch]++;                                         \
+            dst[n] = max;                                               \
+        } else {                                                        \
+            dst[n] = sample;                                            \
+        }                                                               \
+    }                                                                   \
+                                                                        \
+    return 0;                                                           \
+}
+
+IIR_CH(s16p, int16_t, INT16_MIN, INT16_MAX, 1)
+IIR_CH(s32p, int32_t, INT32_MIN, INT32_MAX, 1)
+IIR_CH(fltp, float,         -1.,        1., 0)
+IIR_CH(dblp, double,        -1.,        1., 0)
+
+#define SERIAL_IIR_CH(name, type, min, max, need_clipping)                  \
+static int iir_ch_serial_## name(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)  \
+{                                                                       \
+    AudioIIRContext *s = ctx->priv;                                     \
+    const double ig = s->dry_gain;                                      \
+    const double og = s->wet_gain;                                      \
+    ThreadData *td = arg;                                               \
+    AVFrame *in = td->in, *out = td->out;                               \
+    const type *src = (const type *)in->extended_data[ch];              \
+    type *dst = (type *)out->extended_data[ch];                         \
+    int nb_biquads = (FFMAX(s->nb_a[ch], s->nb_b[ch]) + 1) / 2;         \
+    int n, i;                                                           \
+                                                                        \
+    for (i = 0; i < nb_biquads; i++) {                                  \
+        const double a1 = -s->biquads[ch][i].a1;                        \
+        const double a2 = -s->biquads[ch][i].a2;                        \
+        const double b0 = s->biquads[ch][i].b0;                         \
+        const double b1 = s->biquads[ch][i].b1;                         \
+        const double b2 = s->biquads[ch][i].b2;                         \
+        double i1 = s->biquads[ch][i].i1;                               \
+        double i2 = s->biquads[ch][i].i2;                               \
+        double o1 = s->biquads[ch][i].o1;                               \
+        double o2 = s->biquads[ch][i].o2;                               \
                                                                         \
         for (n = 0; n < in->nb_samples; n++) {                          \
-            double sample = 0.;                                         \
-            int x;                                                      \
+            double sample = ig * (i ? dst[n] : src[n]);                 \
+            double o0 = sample * b0 + i1 * b1 + i2 * b2 + o1 * a1 + o2 * a2; \
                                                                         \
-            memmove(&ic[1], &ic[0], (nb_b - 1) * sizeof(*ic));          \
-            memmove(&oc[1], &oc[0], (nb_a - 1) * sizeof(*oc));          \
-            ic[0] = src[n] * ig;                                        \
-            for (x = 0; x < nb_b; x++)                                  \
-                sample += b[x] * ic[x];                                 \
+            i2 = i1;                                                    \
+            i1 = src[n];                                                \
+            o2 = o1;                                                    \
+            o1 = o0;                                                    \
+            o0 *= og;                                                   \
                                                                         \
-            for (x = 1; x < nb_a; x++)                                  \
-                sample -= a[x] * oc[x];                                 \
-                                                                        \
-            oc[0] = sample;                                             \
-            sample *= og;                                               \
-            if (need_clipping && sample < min) {                        \
-                s->clippings++;                                         \
+            if (need_clipping && o0 < min) {                            \
+                s->clippings[ch]++;                                     \
                 dst[n] = min;                                           \
-            } else if (need_clipping && sample > max) {                 \
-                s->clippings++;                                         \
+            } else if (need_clipping && o0 > max) {                     \
+                s->clippings[ch]++;                                     \
                 dst[n] = max;                                           \
             } else {                                                    \
-                dst[n] = sample;                                        \
+                dst[n] = o0;                                            \
             }                                                           \
         }                                                               \
+        s->biquads[ch][i].i1 = i1;                                      \
+        s->biquads[ch][i].i2 = i2;                                      \
+        s->biquads[ch][i].o1 = o1;                                      \
+        s->biquads[ch][i].o2 = o2;                                      \
     }                                                                   \
+                                                                        \
+    return 0;                                                           \
 }
 
-IIR_FRAME(s16p, int16_t, INT16_MIN, INT16_MAX, 1)
-IIR_FRAME(s32p, int32_t, INT32_MIN, INT32_MAX, 1)
-IIR_FRAME(fltp, float,         -1.,        1., 0)
-IIR_FRAME(dblp, double,        -1.,        1., 0)
-
-#define SERIAL_IIR_FRAME(name, type, min, max, need_clipping)                  \
-static void iir_frame_serial_## name(AVFilterContext *ctx, AVFrame *in, AVFrame *out)  \
-{                                                                       \
-    AudioIIRContext *s = ctx->priv;                                     \
-    const double ig = s->dry_gain;                                      \
-    const double og = s->wet_gain;                                      \
-    int ch, n, i;                                                       \
-                                                                        \
-    for (ch = 0; ch < out->channels; ch++) {                            \
-        const type *src = (const type *)in->extended_data[ch];          \
-        type *dst = (type *)out->extended_data[ch];                     \
-        int nb_biquads = (FFMAX(s->nb_a[ch], s->nb_b[ch]) + 1) / 2;     \
-                                                                        \
-        for (i = 0; i < nb_biquads; i++) {                              \
-            const double a1 = -s->biquads[ch][i].a1;                    \
-            const double a2 = -s->biquads[ch][i].a2;                    \
-            const double b0 = s->biquads[ch][i].b0;                     \
-            const double b1 = s->biquads[ch][i].b1;                     \
-            const double b2 = s->biquads[ch][i].b2;                     \
-            double i1 = s->biquads[ch][i].i1;                           \
-            double i2 = s->biquads[ch][i].i2;                           \
-            double o1 = s->biquads[ch][i].o1;                           \
-            double o2 = s->biquads[ch][i].o2;                           \
-                                                                        \
-            for (n = 0; n < in->nb_samples; n++) {                      \
-                double sample = ig * (i ? dst[n] : src[n]);             \
-                double o0 = sample * b0 + i1 * b1 + i2 * b2 + o1 * a1 + o2 * a2; \
-                                                                        \
-                i2 = i1;                                                \
-                i1 = src[n];                                            \
-                o2 = o1;                                                \
-                o1 = o0;                                                \
-                o0 *= og;                                               \
-                                                                        \
-                if (need_clipping && o0 < min) {                        \
-                    s->clippings++;                                     \
-                    dst[n] = min;                                       \
-                } else if (need_clipping && o0 > max) {                 \
-                    s->clippings++;                                     \
-                    dst[n] = max;                                       \
-                } else {                                                \
-                    dst[n] = o0;                                        \
-                }                                                       \
-            }                                                           \
-            s->biquads[ch][i].i1 = i1;                                  \
-            s->biquads[ch][i].i2 = i2;                                  \
-            s->biquads[ch][i].o1 = o1;                                  \
-            s->biquads[ch][i].o2 = o2;                                  \
-        }                                                               \
-    }                                                                   \
-}
-
-SERIAL_IIR_FRAME(s16p, int16_t, INT16_MIN, INT16_MAX, 1)
-SERIAL_IIR_FRAME(s32p, int32_t, INT32_MIN, INT32_MAX, 1)
-SERIAL_IIR_FRAME(fltp, float,         -1.,        1., 0)
-SERIAL_IIR_FRAME(dblp, double,        -1.,        1., 0)
+SERIAL_IIR_CH(s16p, int16_t, INT16_MIN, INT16_MAX, 1)
+SERIAL_IIR_CH(s32p, int32_t, INT32_MIN, INT32_MAX, 1)
+SERIAL_IIR_CH(fltp, float,         -1.,        1., 0)
+SERIAL_IIR_CH(dblp, double,        -1.,        1., 0)
 
 static void count_coefficients(char *item_str, int *nb_items)
 {
@@ -582,7 +588,8 @@ static int config_output(AVFilterLink *outlink)
     s->nb_b = av_calloc(inlink->channels, sizeof(*s->nb_b));
     s->input = av_calloc(inlink->channels, sizeof(*s->input));
     s->output = av_calloc(inlink->channels, sizeof(*s->output));
-    if (!s->a || !s->b || !s->nb_a || !s->nb_b || !s->input || !s->output)
+    s->clippings = av_calloc(inlink->channels, sizeof(*s->clippings));
+    if (!s->a || !s->b || !s->nb_a || !s->nb_b || !s->input || !s->output || !s->clippings)
         return AVERROR(ENOMEM);
 
     ret = read_gains(ctx, s->g_str, inlink->channels, s->g);
@@ -624,10 +631,10 @@ static int config_output(AVFilterLink *outlink)
     }
 
     switch (inlink->format) {
-    case AV_SAMPLE_FMT_DBLP: s->iir_frame = s->process == 1 ? iir_frame_serial_dblp : iir_frame_dblp; break;
-    case AV_SAMPLE_FMT_FLTP: s->iir_frame = s->process == 1 ? iir_frame_serial_fltp : iir_frame_fltp; break;
-    case AV_SAMPLE_FMT_S32P: s->iir_frame = s->process == 1 ? iir_frame_serial_s32p : iir_frame_s32p; break;
-    case AV_SAMPLE_FMT_S16P: s->iir_frame = s->process == 1 ? iir_frame_serial_s16p : iir_frame_s16p; break;
+    case AV_SAMPLE_FMT_DBLP: s->iir_channel = s->process == 1 ? iir_ch_serial_dblp : iir_ch_dblp; break;
+    case AV_SAMPLE_FMT_FLTP: s->iir_channel = s->process == 1 ? iir_ch_serial_fltp : iir_ch_fltp; break;
+    case AV_SAMPLE_FMT_S32P: s->iir_channel = s->process == 1 ? iir_ch_serial_s32p : iir_ch_s32p; break;
+    case AV_SAMPLE_FMT_S16P: s->iir_channel = s->process == 1 ? iir_ch_serial_s16p : iir_ch_s16p; break;
     }
 
     return 0;
@@ -638,7 +645,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterContext *ctx = inlink->dst;
     AudioIIRContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
+    ThreadData td;
     AVFrame *out;
+    int ch;
 
     if (av_frame_is_writable(in)) {
         out = in;
@@ -651,11 +660,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_frame_copy_props(out, in);
     }
 
-    s->iir_frame(ctx, in, out);
+    td.in  = in;
+    td.out = out;
+    ctx->internal->execute(ctx, s->iir_channel, &td, NULL, outlink->channels);
 
-    if (s->clippings > 0)
-        av_log(ctx, AV_LOG_WARNING, "clipping %d times. Please reduce gain.\n", s->clippings);
-    s->clippings = 0;
+    for (ch = 0; ch < outlink->channels; ch++) {
+        if (s->clippings[ch] > 0)
+            av_log(ctx, AV_LOG_WARNING, "Channel %d clipping %d times. Please reduce gain.\n", ch, s->clippings[ch]);
+        s->clippings[ch] = 0;
+    }
 
     if (in != out)
         av_frame_free(&in);
@@ -705,6 +718,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->b);
 
     av_freep(&s->g);
+    av_freep(&s->clippings);
 
     av_freep(&s->input);
     av_freep(&s->output);
@@ -767,10 +781,11 @@ AVFilter ff_af_aiir = {
     .name          = "aiir",
     .description   = NULL_IF_CONFIG_SMALL("Apply Infinite Impulse Response filter with supplied coefficients."),
     .priv_size     = sizeof(AudioIIRContext),
+    .priv_class    = &aiir_class,
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
     .inputs        = inputs,
     .outputs       = outputs,
-    .priv_class    = &aiir_class,
+    .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };
