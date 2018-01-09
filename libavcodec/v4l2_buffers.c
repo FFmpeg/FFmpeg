@@ -213,8 +213,14 @@ static void v4l2_free_buffer(void *opaque, uint8_t *unused)
         if (s->reinit) {
             if (!atomic_load(&s->refcount))
                 sem_post(&s->refsync);
-        } else if (avbuf->context->streamon)
-            ff_v4l2_buffer_enqueue(avbuf);
+        } else {
+            if (s->draining) {
+                /* no need to queue more buffers to the driver */
+                avbuf->status = V4L2BUF_AVAILABLE;
+            }
+            else if (avbuf->context->streamon)
+                ff_v4l2_buffer_enqueue(avbuf);
+        }
 
         av_buffer_unref(&avbuf->context_ref);
     }
