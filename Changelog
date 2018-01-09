@@ -1,6 +1,74 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 3.2.10:
+- avcodec/h264addpx_template: Fixes integer overflows
+- avcodec/dirac_dwt: Fix overflows in COMPOSE_HAARiH0/COMPOSE_HAARiL0
+- avcodec/diracdec: Fix integer overflow with quant
+- avcodec/opus_parser: Check payload_len in parse_opus_ts_header()
+- avcodec/jpeg2000dsp: Fix integer overflows in ict_int()
+- avcodec/h264_slice: Do not attempt to render into frames already output
+- avcodec/dnxhddec: Check dc vlc
+- x264: Support version 153
+- avcodec/exr: Check buf_size more completely
+- avcodec/flacdec: Fix overflow in multiplication in decode_subframe_fixed()
+- avcodec/hevcdsp_template: Fix Invalid shifts in put_hevc_qpel_bi_w_h() and put_hevc_qpel_bi_w_w()
+- avcodec/flacdec: avoid undefined shift
+- avcodec/hevcdsp_template.c: Fix undefined shift in FUNC(dequant)
+- avcodec/dirac_dwt: Fix integer overflow in COMPOSE_DD97iH0() and COMPOSE_DD137iL0()
+- avcodec/hevc_cabac: Fix integer overflow in ff_hevc_cu_qp_delta_abs()
+- tests/audiomatch: Add missing return code at the end of main()
+- avcodec/hevc_sei: Fix integer overflows in decode_nal_sei_message()
+- avcodec/hevcdsp_template: Fix undefined shift in put_hevc_qpel_bi_w_hv()
+- libavfilter/af_dcshift.c: Fixed repeated spelling error
+- avfilter/formats: fix wrong function name in error message
+- avcodec/amrwbdec: Fix division by 0 in voice_factor()
+- avcodec/diracdsp: Fix integer overflow in PUT_SIGNED_RECT_CLAMPED()
+- avcodec/dirac_dwt: Fix integer overflows in COMPOSE_DAUB97*
+- avcodec/vorbis: Fix another 1 << 31 > int32_t::max() with 1u.
+- Don't manipulate duration when it's AV_NOPTS_VALUE.
+- avcodec/vorbis: 1 << 31 > int32_t::max(), so use 1u << 31 instead.
+- avformat/utils: Prevent undefined shift with wrap_bits > 64.
+- avcodec/j2kenc: Fix out of array access in encode_cblk()
+- avcodec/hevcdsp_template: Fix undefined shift in put_hevc_epel_bi_w_h()
+- avcodec/mlpdsp: Fix signed integer overflow, 2nd try
+- avcodec/kgv1dec: Check that there is enough input for maximum RLE compression
+- avcodec/dirac_dwt: Fix integer overflow in COMPOSE_FIDELITYi*
+- avcodec/mpeg4videodec: Check also for negative versions in the validity check
+- Close ogg stream upon error when using AV_EF_EXPLODE.
+- Fix undefined shift on assumed 8-bit input.
+- Use ff_thread_once for fixed, float table init.
+- avformat/mov: Propagate errors in mov_switch_root.
+- avcodec/hevcdsp_template: Fix invalid shift in put_hevc_epel_bi_w_v()
+- avcodec/mlpdsp: Fix undefined shift ff_mlp_pack_output()
+- avcodec/zmbv: Check that the buffer is large enough for mvec
+- avcodec/dirac_dwt: Fix integer overflow in COMPOSE_DD137iL0()
+- avcodec/wmv2dec: Check end of bitstream in parse_mb_skip() and ff_wmv2_decode_mb()
+- avcodec/snowdec: Check for remaining bitstream in decode_blocks()
+- avcodec/snowdec: Check intra block dc differences.
+- avformat/mov: Check size of STSC allocation
+- avcodec/vc2enc: Clear coef_buf on allocation
+- avcodec/h264dec: Fix potential array overread
+- avcodec/x86/mpegvideodsp: Fix signedness bug in need_emu
+- avcodec/aacpsdsp_template: Fix integer overflows in ps_decorrelate_c()
+- avcodec/aacdec_fixed: Fix undefined shift
+- avcodec/mdct_*: Fix integer overflow in addition in RESCALE()
+- avcodec/snowdec: Fix integer overflow in header parsing
+- avcodec/cngdec: Fix integer clipping
+- avcodec/sbrdsp_fixed: Fix integer overflow in shift in sbr_hf_g_filt_c()
+- avcodec/aacsbr_fixed: Fix division by zero in sbr_gain_calc()
+- avutil/softfloat: Add FLOAT_MIN
+- avcodec/h264idct_template: Fix integer overflows in ff_h264_idct8_add()
+- avcodec/xan: Check for bitstream end in xan_huffman_decode()
+- avcodec/exr: fix undefined shift in pxr24_uncompress()
+- avformat: Free the internal codec context at the end
+- avcodec/xan: Improve overlapping check
+- avcodec/aacdec_fixed: Fix integer overflow in apply_dependent_coupling_fixed()
+- avcodec/aacdec_fixed: Fix integer overflow in predict()
+- avcodec/jpeglsdec: Check for end of bitstream in ls_decode_line()
+- avcodec/jpeglsdec: Check ilv for being a supported value
+- vc2enc_dwt: pad the temporary buffer by the slice size
+
 version 3.2.9:
 - avcodec/snowdec: Check mv_scale
 - avcodec/pafvideo: Check for bitstream end in decode_0()
