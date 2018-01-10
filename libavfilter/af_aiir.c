@@ -133,10 +133,10 @@ static int iir_ch_## name(AVFilterContext *ctx, void *arg, int ch, int nb_jobs) 
         oc[0] = sample;                                                 \
         sample *= og;                                                   \
         if (need_clipping && sample < min) {                            \
-            *clippings++;                                               \
+            (*clippings)++;                                             \
             dst[n] = min;                                               \
         } else if (need_clipping && sample > max) {                     \
-            *clippings++;                                               \
+            (*clippings)++;                                             \
             dst[n] = max;                                               \
         } else {                                                        \
             dst[n] = sample;                                            \
@@ -188,10 +188,10 @@ static int iir_ch_serial_## name(AVFilterContext *ctx, void *arg, int ch, int nb
             o0 *= og;                                                   \
                                                                         \
             if (need_clipping && o0 < min) {                            \
-                *clippings++;                                           \
+                (*clippings)++;                                         \
                 dst[n] = min;                                           \
             } else if (need_clipping && o0 > max) {                     \
-                *clippings++;                                           \
+                (*clippings)++;                                         \
                 dst[n] = max;                                           \
             } else {                                                    \
                 dst[n] = o0;                                            \
