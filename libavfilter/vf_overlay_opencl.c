@@ -250,6 +250,7 @@ fail_kernel_arg:
            kernel_arg, cle);
     err = AVERROR(EIO);
 fail:
+    av_frame_free(&output);
     return err;
 }
 
