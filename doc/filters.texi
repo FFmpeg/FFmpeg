@@ -1090,9 +1090,9 @@ Set coefficients format.
 transfer function
 @item zp
 Z-plane zeros/poles, cartesian (default)
-@item zpr
+@item pr
 Z-plane zeros/poles, polar radians
-@item zpd
+@item pd
 Z-plane zeros/poles, polar degrees
 @end table
 
