@@ -116,12 +116,14 @@ static int program_opencl_run(AVFilterContext *avctx)
         if (cle != CL_SUCCESS) {
             av_log(avctx, AV_LOG_ERROR, "Failed to set kernel "
                    "destination image argument: %d.\n", cle);
+            err = AVERROR_UNKNOWN;
             goto fail;
         }
         cle = clSetKernelArg(ctx->kernel, 1, sizeof(cl_uint), &ctx->index);
         if (cle != CL_SUCCESS) {
             av_log(avctx, AV_LOG_ERROR, "Failed to set kernel "
                    "index argument: %d.\n", cle);
+            err = AVERROR_UNKNOWN;
             goto fail;
         }
 
@@ -135,6 +137,7 @@ static int program_opencl_run(AVFilterContext *avctx)
             if (cle != CL_SUCCESS) {
                 av_log(avctx, AV_LOG_ERROR, "Failed to set kernel "
                        "source image argument %d: %d.\n", input, cle);
+                err = AVERROR_UNKNOWN;
                 goto fail;
             }
         }
