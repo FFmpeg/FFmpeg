@@ -1084,8 +1084,17 @@ Set output gain.
 
 @item f
 Set coefficients format.
-Can be @code{tf} - transfer function or @code{zp} - Z-plane zeros/poles.
-Default is @code{zp}.
+
+@table @samp
+@item tf
+transfer function
+@item zp
+Z-plane zeros/poles, cartesian (default)
+@item zpr
+Z-plane zeros/poles, polar radians
+@item zpd
+Z-plane zeros/poles, polar degrees
+@end table
 
 @item r
 Set kind of processing.
@@ -1094,7 +1103,7 @@ Can be @code{d} - direct or @code{s} - serial cascading. Defauls is @code{s}.
 @item e
 Set filtering precision.
 
-@table @option
+@table @samp
 @item dbl
 double-precision floating-point (default)
 @item flt
