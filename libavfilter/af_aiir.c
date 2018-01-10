@@ -404,7 +404,7 @@ static int expand(AVFilterContext *ctx, double *pz, int nb, double *coeffs)
 static int convert_zp2tf(AVFilterContext *ctx, int channels)
 {
     AudioIIRContext *s = ctx->priv;
-    int ch, i, j, ret;
+    int ch, i, j, ret = 0;
 
     for (ch = 0; ch < channels; ch++) {
         IIRChannel *iir = &s->iir[ch];
@@ -412,21 +412,19 @@ static int convert_zp2tf(AVFilterContext *ctx, int channels)
 
         topc = av_calloc((iir->nb_ab[0] + 1) * 2, sizeof(*topc));
         botc = av_calloc((iir->nb_ab[1] + 1) * 2, sizeof(*botc));
-        if (!topc || !botc)
-            return AVERROR(ENOMEM);
+        if (!topc || !botc) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
 
         ret = expand(ctx, iir->ab[0], iir->nb_ab[0], botc);
         if (ret < 0) {
-            av_free(topc);
-            av_free(botc);
-            return ret;
+            goto fail;
         }
 
         ret = expand(ctx, iir->ab[1], iir->nb_ab[1], topc);
         if (ret < 0) {
-            av_free(topc);
-            av_free(botc);
-            return ret;
+            goto fail;
         }
 
         for (j = 0, i = iir->nb_ab[1]; i >= 0; j++, i--) {
@@ -439,11 +437,14 @@ static int convert_zp2tf(AVFilterContext *ctx, int channels)
         }
         iir->nb_ab[0]++;
 
+fail:
         av_free(topc);
         av_free(botc);
+        if (ret < 0)
+            break;
     }
 
-    return 0;
+    return ret;
 }
 
 static int decompose_zp2biquads(AVFilterContext *ctx, int channels)
