@@ -217,8 +217,7 @@ close:
         fclose(fout);
     av_frame_free(&sw_frame);
     av_frame_free(&hw_frame);
-    if (avctx)
-        avcodec_free_context(&avctx);
+    avcodec_free_context(&avctx);
     av_buffer_unref(&hw_device_ctx);
 
     return err;
