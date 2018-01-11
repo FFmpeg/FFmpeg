@@ -1526,6 +1526,7 @@ EXAMPLE_LIST="
     transcode_aac_example
     transcoding_example
     vaapi_encode_example
+    vaapi_transcode_example
 "
 
 EXTERNAL_AUTODETECT_LIBRARY_LIST="
@@ -3320,6 +3321,7 @@ scaling_video_example_deps="avutil swscale"
 transcode_aac_example_deps="avcodec avformat swresample"
 transcoding_example_deps="avfilter avcodec avformat avutil"
 vaapi_encode_example_deps="avcodec avutil h264_vaapi_encoder"
+vaapi_transcode_example_deps="avcodec avformat avutil h264_vaapi_encoder"
 
 # EXTRALIBS_LIST
 cpu_init_extralibs="pthreads_extralibs"
