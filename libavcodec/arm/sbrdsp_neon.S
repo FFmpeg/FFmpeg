@@ -336,11 +336,11 @@ function ff_sbr_hf_apply_noise_0_neon, export=1
         vld1.32         {d0},     [r0,:64]
         vld1.32         {d6},     [lr,:64]
         vld1.32         {d2[]},   [r1,:32]!
-        vld1.32         {d3[]},   [r2,:32]!
+        vld1.32         {d18[]},  [r2,:32]!
         vceq.f32        d4,  d2,  #0
         veor            d2,  d2,  d3
         vmov            d1,  d0
-        vmla.f32        d0,  d6,  d3
+        vmla.f32        d0,  d6,  d18
         vadd.f32        s2,  s2,  s4
         vbif            d0,  d1,  d4
         vst1.32         {d0},     [r0,:64]!
