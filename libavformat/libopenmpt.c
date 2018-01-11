@@ -72,13 +72,14 @@ static int read_header_openmpt(AVFormatContext *s)
 {
     AVStream *st;
     OpenMPTContext *openmpt = s->priv_data;
-    int64_t size = avio_size(s->pb);
-    if (size <= 0)
-        return AVERROR_INVALIDDATA;
-    char *buf = av_malloc(size);
+    int64_t size;
+    char *buf;
     int ret;
 
-
+    size = avio_size(s->pb);
+    if (size <= 0)
+        return AVERROR_INVALIDDATA;
+    buf = av_malloc(size);
     if (!buf)
         return AVERROR(ENOMEM);
     size = avio_read(s->pb, buf, size);
