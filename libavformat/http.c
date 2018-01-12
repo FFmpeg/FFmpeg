@@ -538,7 +538,11 @@ static int http_accept(URLContext *s, URLContext **c)
         goto fail;
     cc->hd = cl;
     cc->is_multi_client = 1;
+    return 0;
 fail:
+    if (c) {
+        ffurl_closep(c);
+    }
     return ret;
 }
 
