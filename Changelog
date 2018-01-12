@@ -2,6 +2,7 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 3.2.10:
+- avformat/libssh: check the user provided a password before trying to use it
 - avcodec/h264addpx_template: Fixes integer overflows
 - avcodec/dirac_dwt: Fix overflows in COMPOSE_HAARiH0/COMPOSE_HAARiL0
 - avcodec/diracdec: Fix integer overflow with quant
