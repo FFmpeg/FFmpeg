@@ -64,8 +64,8 @@ static void scale_coefs (
     int dynrng,
     int len)
 {
-    int i, shift, round;
-    unsigned mul;
+    int i, shift;
+    unsigned mul, round;
     int temp, temp1, temp2, temp3, temp4, temp5, temp6, temp7;
 
     mul = (dynrng & 0x1f) + 0x20;
