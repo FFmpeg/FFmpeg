@@ -543,6 +543,9 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
         if (!reslevel->band)
             return AVERROR(ENOMEM);
 
+        if (reslevel->num_precincts_x * (uint64_t)reslevel->num_precincts_y * reslevel->nbands > avctx->max_pixels / sizeof(*reslevel->band->prec))
+            return AVERROR(ENOMEM);
+
         for (bandno = 0; bandno < reslevel->nbands; bandno++, gbandno++) {
             ret = init_band(avctx, reslevel,
                             comp, codsty, qntsty,
