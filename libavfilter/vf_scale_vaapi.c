@@ -240,6 +240,11 @@ static int scale_vaapi_config_output(AVFilterLink *outlink)
         goto fail;
     }
 
+    if (inlink->sample_aspect_ratio.num)
+        outlink->sample_aspect_ratio = av_mul_q((AVRational){outlink->h * inlink->w, outlink->w * inlink->h}, inlink->sample_aspect_ratio);
+    else
+        outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
+
     av_freep(&hwconfig);
     av_hwframe_constraints_free(&constraints);
     return 0;
