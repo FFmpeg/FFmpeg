@@ -295,11 +295,10 @@ static int encode_init(AVCodecContext *avctx)
 
 static av_cold int encode_close(AVCodecContext *avctx)
 {
-    if (avctx->priv_data) {
-        DCAEncContext *c = avctx->priv_data;
-        subband_bufer_free(c);
-        ff_dcaadpcm_free(&c->adpcm_ctx);
-    }
+    DCAEncContext *c = avctx->priv_data;
+    subband_bufer_free(c);
+    ff_dcaadpcm_free(&c->adpcm_ctx);
+
     return 0;
 }
 
@@ -1287,6 +1286,7 @@ AVCodec ff_dca_encoder = {
     .close                 = encode_close,
     .encode2               = encode_frame,
     .capabilities          = AV_CODEC_CAP_EXPERIMENTAL,
+    .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .sample_fmts           = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S32,
                                                             AV_SAMPLE_FMT_NONE },
     .supported_samplerates = sample_rates,
