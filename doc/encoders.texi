@@ -64,7 +64,6 @@ to find an optimal combination by adding or subtracting a specific value from
 all quantizers and adjusting some individual quantizer a little.  Will tune
 itself based on whether @option{aac_is}, @option{aac_ms} and @option{aac_pns}
 are enabled.
-This is the default choice for a coder.
 
 @item anmr
 Average noise to mask ratio (ANMR) trellis-based solution.
@@ -77,10 +76,10 @@ Not currently recommended.
 @item fast
 Constant quantizer method.
 
-This method sets a constant quantizer for all bands. This is the fastest of all
-the methods and has no rate control or support for @option{aac_is} or
-@option{aac_pns}.
-Not recommended.
+Uses a cheaper version of twoloop algorithm that doesn't try to do as many
+clever adjustments. Worse with low bitrates (less than 64kbps), but is better
+and much faster at higher bitrates.
+This is the default choice for a coder
 
 @end table
 
