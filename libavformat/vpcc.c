@@ -67,8 +67,8 @@ static int get_vpx_video_full_range_flag(enum AVColorRange color_range)
     return color_range == AVCOL_RANGE_JPEG;
 }
 
-int ff_isom_write_vpcc(AVFormatContext *s, AVIOContext *pb,
-                       AVCodecParameters *par)
+int ff_isom_get_vpcc_features(AVFormatContext *s, AVCodecParameters *par,
+                              VPCC *vpcc)
 {
     int profile = par->profile;
     int level = par->level == FF_LEVEL_UNKNOWN ? 0 : par->level;
@@ -90,9 +90,28 @@ int ff_isom_write_vpcc(AVFormatContext *s, AVIOContext *pb,
         }
     }
 
-    avio_w8(pb, profile);
-    avio_w8(pb, level);
-    avio_w8(pb, (bit_depth << 4) | (vpx_chroma_subsampling << 1) | vpx_video_full_range_flag);
+    vpcc->profile            = profile;
+    vpcc->level              = level;
+    vpcc->bitdepth           = bit_depth;
+    vpcc->chroma_subsampling = vpx_chroma_subsampling;
+    vpcc->full_range_flag    = vpx_video_full_range_flag;
+
+    return 0;
+}
+
+int ff_isom_write_vpcc(AVFormatContext *s, AVIOContext *pb,
+                       AVCodecParameters *par)
+{
+    VPCC vpcc;
+    int ret;
+
+    ret = ff_isom_get_vpcc_features(s, par, &vpcc);
+    if (ret < 0)
+        return ret;
+
+    avio_w8(pb, vpcc.profile);
+    avio_w8(pb, vpcc.level);
+    avio_w8(pb, (vpcc.bitdepth << 4) | (vpcc.chroma_subsampling << 1) | vpcc.full_range_flag);
     avio_w8(pb, par->color_primaries);
     avio_w8(pb, par->color_trc);
     avio_w8(pb, par->color_space);
