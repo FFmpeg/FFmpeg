@@ -646,6 +646,7 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
                                          xmlNodePtr adaptionset_node,
                                          xmlNodePtr mpd_baseurl_node,
                                          xmlNodePtr period_baseurl_node,
+                                         xmlNodePtr period_segmenttemplate_node,
                                          xmlNodePtr fragment_template_node,
                                          xmlNodePtr content_component_node,
                                          xmlNodePtr adaptionset_baseurl_node,
@@ -662,7 +663,7 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
     xmlNodePtr representation_segmentlist_node = NULL;
     xmlNodePtr segmentlists_tab[2];
     xmlNodePtr fragment_timeline_node = NULL;
-    xmlNodePtr fragment_templates_tab[3];
+    xmlNodePtr fragment_templates_tab[4];
     char *duration_val = NULL;
     char *presentation_timeoffset_val = NULL;
     char *startnumber_val = NULL;
@@ -702,18 +703,19 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
         baseurl_nodes[2] = adaptionset_baseurl_node;
         baseurl_nodes[3] = representation_baseurl_node;
 
-        if (representation_segmenttemplate_node || fragment_template_node) {
+        if (representation_segmenttemplate_node || fragment_template_node || period_segmenttemplate_node) {
             fragment_timeline_node = NULL;
             fragment_templates_tab[0] = representation_segmenttemplate_node;
             fragment_templates_tab[1] = adaptionset_segmentlist_node;
             fragment_templates_tab[2] = fragment_template_node;
+            fragment_templates_tab[3] = period_segmenttemplate_node;
 
-            presentation_timeoffset_val = get_val_from_nodes_tab(fragment_templates_tab, 3, "presentationTimeOffset");
-            duration_val = get_val_from_nodes_tab(fragment_templates_tab, 3, "duration");
-            startnumber_val = get_val_from_nodes_tab(fragment_templates_tab, 3, "startNumber");
-            timescale_val = get_val_from_nodes_tab(fragment_templates_tab, 3, "timescale");
-            initialization_val = get_val_from_nodes_tab(fragment_templates_tab, 3, "initialization");
-            media_val = get_val_from_nodes_tab(fragment_templates_tab, 3, "media");
+            presentation_timeoffset_val = get_val_from_nodes_tab(fragment_templates_tab, 4, "presentationTimeOffset");
+            duration_val = get_val_from_nodes_tab(fragment_templates_tab, 4, "duration");
+            startnumber_val = get_val_from_nodes_tab(fragment_templates_tab, 4, "startNumber");
+            timescale_val = get_val_from_nodes_tab(fragment_templates_tab, 4, "timescale");
+            initialization_val = get_val_from_nodes_tab(fragment_templates_tab, 4, "initialization");
+            media_val = get_val_from_nodes_tab(fragment_templates_tab, 4, "media");
 
             if (initialization_val) {
                 rep->init_section = av_mallocz(sizeof(struct fragment));
@@ -866,7 +868,8 @@ end:
 static int parse_manifest_adaptationset(AVFormatContext *s, const char *url,
                                         xmlNodePtr adaptionset_node,
                                         xmlNodePtr mpd_baseurl_node,
-                                        xmlNodePtr period_baseurl_node)
+                                        xmlNodePtr period_baseurl_node,
+                                        xmlNodePtr period_segmenttemplate_node)
 {
     int ret = 0;
     xmlNodePtr fragment_template_node = NULL;
@@ -890,6 +893,7 @@ static int parse_manifest_adaptationset(AVFormatContext *s, const char *url,
                                                 adaptionset_node,
                                                 mpd_baseurl_node,
                                                 period_baseurl_node,
+                                                period_segmenttemplate_node,
                                                 fragment_template_node,
                                                 content_component_node,
                                                 adaptionset_baseurl_node,
@@ -918,6 +922,7 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
     xmlNodePtr period_node = NULL;
     xmlNodePtr mpd_baseurl_node = NULL;
     xmlNodePtr period_baseurl_node = NULL;
+    xmlNodePtr period_segmenttemplate_node = NULL;
     xmlNodePtr adaptionset_node = NULL;
     xmlAttrPtr attr = NULL;
     char *val  = NULL;
@@ -1047,8 +1052,10 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
         while (adaptionset_node) {
             if (!av_strcasecmp(adaptionset_node->name, (const char *)"BaseURL")) {
                 period_baseurl_node = adaptionset_node;
+            } else if (!av_strcasecmp(adaptionset_node->name, (const char *)"SegmentTemplate")) {
+                period_segmenttemplate_node = adaptionset_node;
             } else if (!av_strcasecmp(adaptionset_node->name, (const char *)"AdaptationSet")) {
-                parse_manifest_adaptationset(s, url, adaptionset_node, mpd_baseurl_node, period_baseurl_node);
+                parse_manifest_adaptationset(s, url, adaptionset_node, mpd_baseurl_node, period_baseurl_node, period_segmenttemplate_node);
             }
             adaptionset_node = xmlNextElementSibling(adaptionset_node);
         }
