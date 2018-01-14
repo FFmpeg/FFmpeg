@@ -126,6 +126,9 @@ static const struct {
     #if CONFIG_HUFFYUVDSP
         { "llviddsp", checkasm_check_llviddsp },
     #endif
+    #if CONFIG_LLVIDENCDSP
+        { "llviddspenc", checkasm_check_llviddspenc },
+    #endif
     #if CONFIG_PIXBLOCKDSP
         { "pixblockdsp", checkasm_check_pixblockdsp },
     #endif
