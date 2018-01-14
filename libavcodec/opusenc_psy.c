@@ -119,7 +119,7 @@ static void step_collect_psy_metrics(OpusPsyContext *s, int index)
 
             for (j = 0; j < range; j++) {
                 const float c_s = coeffs[j]*coeffs[j];
-                dist_dev = (avg_c_s - c_s)*(avg_c_s - c_s);
+                dist_dev += (avg_c_s - c_s)*(avg_c_s - c_s);
             }
 
             st->tone[ch][i] += sqrtf(dist_dev);

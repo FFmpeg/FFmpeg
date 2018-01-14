@@ -21,6 +21,14 @@
 
 #include <libopenmpt/libopenmpt.h>
 #include <libopenmpt/libopenmpt_stream_callbacks_file.h>
+#include <libopenmpt/libopenmpt_version.h>
+/* Shims to support libopenmpt < 0.3.0 (as documented by libopenmpt) */
+#if !defined(OPENMPT_API_VERSION_MAKE)
+#define OPENMPT_API_VERSION_MAKE(major, minor, patch) (((major)<<24)|((minor)<<16)|((patch)<<0))
+#endif
+#if !defined(OPENMPT_API_VERSION_AT_LEAST)
+#define OPENMPT_API_VERSION_AT_LEAST(major, minor, patch) (OPENMPT_API_VERSION >= OPENMPT_API_VERSION_MAKE((major), (minor), (patch)))
+#endif
 
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
@@ -72,13 +80,17 @@ static int read_header_openmpt(AVFormatContext *s)
 {
     AVStream *st;
     OpenMPTContext *openmpt = s->priv_data;
-    int64_t size = avio_size(s->pb);
-    if (size <= 0)
-        return AVERROR_INVALIDDATA;
-    char *buf = av_malloc(size);
+    int64_t size;
+    char *buf;
+#if OPENMPT_API_VERSION_AT_LEAST(0,3,0)
+    int error;
+#endif
     int ret;
 
-
+    size = avio_size(s->pb);
+    if (size <= 0)
+        return AVERROR_INVALIDDATA;
+    buf = av_malloc(size);
     if (!buf)
         return AVERROR(ENOMEM);
     size = avio_read(s->pb, buf, size);
@@ -88,10 +100,24 @@ static int read_header_openmpt(AVFormatContext *s)
         return size;
     }
 
+#if OPENMPT_API_VERSION_AT_LEAST(0,3,0)
+    error = OPENMPT_ERROR_OK;
+    openmpt->module = openmpt_module_create_from_memory2(buf, size, openmpt_logfunc, s, NULL, NULL, &error, NULL, NULL);
+    av_freep(&buf);
+    if (!openmpt->module) {
+        if (error == OPENMPT_ERROR_OUT_OF_MEMORY)
+            return AVERROR(ENOMEM);
+        else if (error >= OPENMPT_ERROR_GENERAL)
+            return AVERROR_INVALIDDATA;
+        else
+            return AVERROR_UNKNOWN;
+    }
+#else
     openmpt->module = openmpt_module_create_from_memory(buf, size, openmpt_logfunc, s, NULL);
     av_freep(&buf);
     if (!openmpt->module)
             return AVERROR_INVALIDDATA;
+#endif
 
     openmpt->channels = av_get_channel_layout_nb_channels(openmpt->layout);
 

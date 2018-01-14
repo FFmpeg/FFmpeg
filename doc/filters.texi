@@ -1084,7 +1084,36 @@ Set output gain.
 
 @item f
 Set coefficients format.
-Can be @code{tf} - transfer function or @code{zp} - Z-plane zeros/poles.
+
+@table @samp
+@item tf
+transfer function
+@item zp
+Z-plane zeros/poles, cartesian (default)
+@item pr
+Z-plane zeros/poles, polar radians
+@item pd
+Z-plane zeros/poles, polar degrees
+@end table
+
+@item r
+Set kind of processing.
+Can be @code{d} - direct or @code{s} - serial cascading. Defauls is @code{s}.
+
+@item e
+Set filtering precision.
+
+@table @samp
+@item dbl
+double-precision floating-point (default)
+@item flt
+single-precision floating-point
+@item i32
+32-bit integers
+@item i16
+16-bit integers
+@end table
+
 @end table
 
 Coefficients in @code{tf} format are separated by spaces and are in ascending
@@ -1104,13 +1133,13 @@ used for all remaining channels.
 @item
 Apply 2 pole elliptic notch at arround 5000Hz for 48000 Hz sample rate:
 @example
-aiir=k=1:z=7.957584807809675810E-1 -2.575128568908332300 3.674839853930788710 -2.57512875289799137 7.957586296317130880E-1:p=1 -2.86950072432325953 3.63022088054647218 -2.28075678147272232 6.361362326477423500E-1:f=tf
+aiir=k=1:z=7.957584807809675810E-1 -2.575128568908332300 3.674839853930788710 -2.57512875289799137 7.957586296317130880E-1:p=1 -2.86950072432325953 3.63022088054647218 -2.28075678147272232 6.361362326477423500E-1:f=tf:r=d
 @end example
 
 @item
 Same as above but in @code{zp} format:
 @example
-aiir=k=0.79575848078096756:z=0.80918701+0.58773007i 0.80918701-0.58773007i 0.80884700+0.58784055i 0.80884700-0.58784055i:p=0.63892345+0.59951235i 0.63892345-0.59951235i 0.79582691+0.44198673i 0.79582691-0.44198673i:f=zp
+aiir=k=0.79575848078096756:z=0.80918701+0.58773007i 0.80918701-0.58773007i 0.80884700+0.58784055i 0.80884700-0.58784055i:p=0.63892345+0.59951235i 0.63892345-0.59951235i 0.79582691+0.44198673i 0.79582691-0.44198673i:f=zp:r=s
 @end example
 @end itemize
 
@@ -12785,7 +12814,7 @@ sequential number of the input frame, starting from 1
 Mean Square Error pixel-by-pixel average difference of the compared
 frames, averaged over all the image components.
 
-@item mse_y, mse_u, mse_v, mse_r, mse_g, mse_g, mse_a
+@item mse_y, mse_u, mse_v, mse_r, mse_g, mse_b, mse_a
 Mean Square Error pixel-by-pixel average difference of the compared
 frames for the component specified by the suffix.
 

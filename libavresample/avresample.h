@@ -103,7 +103,7 @@
 
 #define AVRESAMPLE_MAX_CHANNELS 32
 
-typedef attribute_deprecated struct AVAudioResampleContext AVAudioResampleContext;
+typedef struct AVAudioResampleContext AVAudioResampleContext;
 
 /**
  * @deprecated use libswresample

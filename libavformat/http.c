@@ -824,6 +824,7 @@ static int parse_cookie(HTTPContext *s, const char *p, AVDictionary **cookies)
             }
         }
     }
+    av_dict_free(&new_params);
 
     // duplicate the cookie name (dict will dupe the value)
     if (!(eql = strchr(p, '='))) return AVERROR(EINVAL);

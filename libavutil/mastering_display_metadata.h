@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2016 Neil Birkbeck <neil.birkbeck@gmail.com>
  *
  * This file is part of FFmpeg.
