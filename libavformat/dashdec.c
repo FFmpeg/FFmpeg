@@ -84,6 +84,8 @@ struct representation {
     int stream_index;
 
     enum AVMediaType type;
+    char id[20];
+    int bandwidth;
 
     int n_fragments;
     struct fragment **fragments; /* VOD list of fragment for profile */
@@ -801,6 +803,8 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
         if (rep) {
             if (rep->fragment_duration > 0 && !rep->fragment_timescale)
                 rep->fragment_timescale = 1;
+            rep->bandwidth = rep_bandwidth_val ? atoi(rep_bandwidth_val) : 0;
+            strncpy(rep->id, rep_id_val ? rep_id_val : "", sizeof(rep->id));
             if (type == AVMEDIA_TYPE_VIDEO) {
                 rep->rep_idx = video_rep_idx;
                 c->cur_video = rep;
@@ -1650,10 +1654,20 @@ static int dash_read_header(AVFormatContext *s)
         }
 
         if (c->cur_video) {
-            av_program_add_stream_index(s, 0, c->cur_video->stream_index);
+            int stream_index = c->cur_video->stream_index;
+            av_program_add_stream_index(s, 0, stream_index);
+            if (c->cur_video->bandwidth > 0)
+                av_dict_set_int(&s->streams[stream_index]->metadata, "variant_bitrate", c->cur_video->bandwidth, 0);
+            if (c->cur_video->id[0])
+                av_dict_set(&s->streams[stream_index]->metadata, "id", c->cur_video->id, 0);
         }
         if (c->cur_audio) {
-            av_program_add_stream_index(s, 0, c->cur_audio->stream_index);
+            int stream_index = c->cur_audio->stream_index;
+            av_program_add_stream_index(s, 0, stream_index);
+            if (c->cur_audio->bandwidth > 0)
+                av_dict_set_int(&s->streams[stream_index]->metadata, "variant_bitrate", c->cur_audio->bandwidth, 0);
+            if (c->cur_audio->id[0])
+                av_dict_set(&s->streams[stream_index]->metadata, "id", c->cur_audio->id, 0);
         }
     }
 
