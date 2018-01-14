@@ -74,10 +74,25 @@ static void sub_median_pred_c(uint8_t *dst, const uint8_t *src1,
     *left_top = lt;
 }
 
+static void sub_left_predict_c(uint8_t *dst, uint8_t *src,
+                               ptrdiff_t stride, ptrdiff_t width, int height)
+{
+    int i, j;
+    uint8_t prev = 0x80; /* Set the initial value */
+    for (j = 0; j < height; j++) {
+        for (i = 0; i < width; i++) {
+            *dst++ = src[i] - prev;
+            prev   = src[i];
+        }
+        src += stride;
+    }
+}
+
 av_cold void ff_llvidencdsp_init(LLVidEncDSPContext *c)
 {
     c->diff_bytes      = diff_bytes_c;
     c->sub_median_pred = sub_median_pred_c;
+    c->sub_left_predict = sub_left_predict_c;
 
     if (ARCH_X86)
         ff_llvidencdsp_init_x86(c);
