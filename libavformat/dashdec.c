@@ -1503,9 +1503,11 @@ restart:
     if (ret > 0)
         goto end;
 
-    if (!v->is_restart_needed)
-        v->cur_seq_no++;
-    v->is_restart_needed = 1;
+    if (c->is_live || v->cur_seq_no < v->last_seq_no) {
+        if (!v->is_restart_needed)
+            v->cur_seq_no++;
+        v->is_restart_needed = 1;
+    }
 
 end:
     return ret;
