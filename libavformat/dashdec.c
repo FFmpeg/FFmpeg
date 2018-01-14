@@ -648,7 +648,8 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
                                          xmlNodePtr period_baseurl_node,
                                          xmlNodePtr fragment_template_node,
                                          xmlNodePtr content_component_node,
-                                         xmlNodePtr adaptionset_baseurl_node)
+                                         xmlNodePtr adaptionset_baseurl_node,
+                                         xmlNodePtr adaptionset_segmentlist_node)
 {
     int32_t ret = 0;
     int32_t audio_rep_idx = 0;
@@ -659,8 +660,9 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
     xmlNodePtr representation_segmenttemplate_node = NULL;
     xmlNodePtr representation_baseurl_node = NULL;
     xmlNodePtr representation_segmentlist_node = NULL;
+    xmlNodePtr segmentlists_tab[2];
     xmlNodePtr fragment_timeline_node = NULL;
-    xmlNodePtr fragment_templates_tab[2];
+    xmlNodePtr fragment_templates_tab[3];
     char *duration_val = NULL;
     char *presentation_timeoffset_val = NULL;
     char *startnumber_val = NULL;
@@ -703,14 +705,15 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
         if (representation_segmenttemplate_node || fragment_template_node) {
             fragment_timeline_node = NULL;
             fragment_templates_tab[0] = representation_segmenttemplate_node;
-            fragment_templates_tab[1] = fragment_template_node;
+            fragment_templates_tab[1] = adaptionset_segmentlist_node;
+            fragment_templates_tab[2] = fragment_template_node;
 
-            presentation_timeoffset_val = get_val_from_nodes_tab(fragment_templates_tab, 2, "presentationTimeOffset");
-            duration_val = get_val_from_nodes_tab(fragment_templates_tab, 2, "duration");
-            startnumber_val = get_val_from_nodes_tab(fragment_templates_tab, 2, "startNumber");
-            timescale_val = get_val_from_nodes_tab(fragment_templates_tab, 2, "timescale");
-            initialization_val = get_val_from_nodes_tab(fragment_templates_tab, 2, "initialization");
-            media_val = get_val_from_nodes_tab(fragment_templates_tab, 2, "media");
+            presentation_timeoffset_val = get_val_from_nodes_tab(fragment_templates_tab, 3, "presentationTimeOffset");
+            duration_val = get_val_from_nodes_tab(fragment_templates_tab, 3, "duration");
+            startnumber_val = get_val_from_nodes_tab(fragment_templates_tab, 3, "startNumber");
+            timescale_val = get_val_from_nodes_tab(fragment_templates_tab, 3, "timescale");
+            initialization_val = get_val_from_nodes_tab(fragment_templates_tab, 3, "initialization");
+            media_val = get_val_from_nodes_tab(fragment_templates_tab, 3, "media");
 
             if (initialization_val) {
                 rep->init_section = av_mallocz(sizeof(struct fragment));
@@ -756,6 +759,8 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
 
             if (!fragment_timeline_node)
                 fragment_timeline_node = find_child_node_by_name(fragment_template_node, "SegmentTimeline");
+            if (!fragment_timeline_node)
+                fragment_timeline_node = find_child_node_by_name(adaptionset_segmentlist_node, "SegmentTimeline");
             if (fragment_timeline_node) {
                 fragment_timeline_node = xmlFirstElementChild(fragment_timeline_node);
                 while (fragment_timeline_node) {
@@ -784,8 +789,11 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
             // TODO: https://www.brendanlong.com/the-structure-of-an-mpeg-dash-mpd.html
             // http://www-itec.uni-klu.ac.at/dash/ddash/mpdGenerator.php?fragmentlength=15&type=full
             xmlNodePtr fragmenturl_node = NULL;
-            duration_val = xmlGetProp(representation_segmentlist_node, "duration");
-            timescale_val = xmlGetProp(representation_segmentlist_node, "timescale");
+            segmentlists_tab[0] = representation_segmentlist_node;
+            segmentlists_tab[1] = adaptionset_segmentlist_node;
+
+            duration_val = get_val_from_nodes_tab(segmentlists_tab, 2, "duration");
+            timescale_val = get_val_from_nodes_tab(segmentlists_tab, 2, "timescale");
             if (duration_val) {
                 rep->fragment_duration = (int64_t) strtoll(duration_val, NULL, 10);
                 xmlFree(duration_val);
@@ -810,6 +818,8 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
 
             if (!fragment_timeline_node)
                 fragment_timeline_node = find_child_node_by_name(fragment_template_node, "SegmentTimeline");
+            if (!fragment_timeline_node)
+                fragment_timeline_node = find_child_node_by_name(adaptionset_segmentlist_node, "SegmentTimeline");
             if (fragment_timeline_node) {
                 fragment_timeline_node = xmlFirstElementChild(fragment_timeline_node);
                 while (fragment_timeline_node) {
@@ -862,6 +872,7 @@ static int parse_manifest_adaptationset(AVFormatContext *s, const char *url,
     xmlNodePtr fragment_template_node = NULL;
     xmlNodePtr content_component_node = NULL;
     xmlNodePtr adaptionset_baseurl_node = NULL;
+    xmlNodePtr adaptionset_segmentlist_node = NULL;
     xmlNodePtr node = NULL;
 
     node = xmlFirstElementChild(adaptionset_node);
@@ -872,6 +883,8 @@ static int parse_manifest_adaptationset(AVFormatContext *s, const char *url,
             content_component_node = node;
         } else if (!av_strcasecmp(node->name, (const char *)"BaseURL")) {
             adaptionset_baseurl_node = node;
+        } else if (!av_strcasecmp(node->name, (const char *)"SegmentList")) {
+            adaptionset_segmentlist_node = node;
         } else if (!av_strcasecmp(node->name, (const char *)"Representation")) {
             ret = parse_manifest_representation(s, url, node,
                                                 adaptionset_node,
@@ -879,7 +892,8 @@ static int parse_manifest_adaptationset(AVFormatContext *s, const char *url,
                                                 period_baseurl_node,
                                                 fragment_template_node,
                                                 content_component_node,
-                                                adaptionset_baseurl_node);
+                                                adaptionset_baseurl_node,
+                                                adaptionset_segmentlist_node);
             if (ret < 0) {
                 return ret;
             }
@@ -1863,7 +1877,7 @@ set_seq_num:
     } else if (pls->fragment_duration > 0) {
         pls->cur_seq_no = pls->first_seq_no + ((seek_pos_msec * pls->fragment_timescale) / pls->fragment_duration) / 1000;
     } else {
-        av_log(pls->parent, AV_LOG_ERROR, "dash_seek missing fragment_duration\n");
+        av_log(pls->parent, AV_LOG_ERROR, "dash_seek missing timeline or fragment_duration\n");
         pls->cur_seq_no = pls->first_seq_no;
     }
     pls->cur_timestamp = 0;
