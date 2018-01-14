@@ -1826,19 +1826,22 @@ static int dash_close(AVFormatContext *s)
     return 0;
 }
 
-static int dash_seek(AVFormatContext *s, struct representation *pls, int64_t seek_pos_msec, int flags)
+static int dash_seek(AVFormatContext *s, struct representation *pls, int64_t seek_pos_msec, int flags, int dry_run)
 {
     int ret = 0;
     int i = 0;
     int j = 0;
     int64_t duration = 0;
 
-    av_log(pls->parent, AV_LOG_VERBOSE, "DASH seek pos[%"PRId64"ms], playlist %d\n", seek_pos_msec, pls->rep_idx);
+    av_log(pls->parent, AV_LOG_VERBOSE, "DASH seek pos[%"PRId64"ms], playlist %d%s\n",
+            seek_pos_msec, pls->rep_idx, dry_run ? " (dry)" : "");
 
     // single fragment mode
     if (pls->n_fragments == 1) {
         pls->cur_timestamp = 0;
         pls->cur_seg_offset = 0;
+        if (dry_run)
+            return 0;
         ff_read_frame_flush(pls->ctx);
         return av_seek_frame(pls->ctx, -1, seek_pos_msec * 1000, flags);
     }
@@ -1883,14 +1886,14 @@ set_seq_num:
     pls->cur_timestamp = 0;
     pls->cur_seg_offset = 0;
     pls->init_sec_buf_read_offset = 0;
-    ret = reopen_demux_for_component(s, pls);
+    ret = dry_run ? 0 : reopen_demux_for_component(s, pls);
 
     return ret;
 }
 
 static int dash_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int flags)
 {
-    int ret, i;
+    int ret = 0, i;
     DASHContext *c = s->priv_data;
     int64_t seek_pos_msec = av_rescale_rnd(timestamp, 1000,
                                            s->streams[stream_index]->time_base.den,
@@ -1899,16 +1902,14 @@ static int dash_read_seek(AVFormatContext *s, int stream_index, int64_t timestam
     if ((flags & AVSEEK_FLAG_BYTE) || c->is_live)
         return AVERROR(ENOSYS);
 
-    ret = AVERROR_EOF;
+    /* Seek in discarded streams with dry_run=1 to avoid reopening them */
     for (i = 0; i < c->n_videos; i++) {
-        if (c->videos[i]->stream_index == stream_index) {
-            ret = dash_seek(s, c->videos[i], seek_pos_msec, flags);
-        }
+        if (!ret)
+            ret = dash_seek(s, c->videos[i], seek_pos_msec, flags, !c->videos[i]->ctx);
     }
     for (i = 0; i < c->n_audios; i++) {
-        if (c->audios[i]->stream_index == stream_index) {
-            ret = dash_seek(s, c->audios[i], seek_pos_msec, flags);
-        }
+        if (!ret)
+            ret = dash_seek(s, c->audios[i], seek_pos_msec, flags, !c->audios[i]->ctx);
     }
 
     return ret;
