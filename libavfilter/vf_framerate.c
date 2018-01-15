@@ -43,7 +43,10 @@
                           const uint8_t *src2, ptrdiff_t src2_linesize, \
                           uint8_t *dst, ptrdiff_t dst_linesize, \
                           ptrdiff_t width, ptrdiff_t height, \
-                          int factor1, int factor2, int half, int shift
+                          int factor1, int factor2, int half
+
+#define BLEND_FACTOR_DEPTH8   7
+#define BLEND_FACTOR_DEPTH16 15
 
 typedef void (*blend_func)(BLEND_FUNC_PARAMS);
 
@@ -53,10 +56,8 @@ typedef struct FrameRateContext {
     AVRational dest_frame_rate;         ///< output frames per second
     int flags;                          ///< flags affecting frame rate conversion algorithm
     double scene_score;                 ///< score that denotes a scene change has happened
-    int interp_start;                   ///< start of range to apply linear interpolation (same bitdepth as input)
-    int interp_end;                     ///< end of range to apply linear interpolation (same bitdepth as input)
-    int interp_start_param;             ///< start of range to apply linear interpolation
-    int interp_end_param;               ///< end of range to apply linear interpolation
+    int interp_start;                   ///< start of range to apply linear interpolation
+    int interp_end;                     ///< end of range to apply linear interpolation
 
     int line_size[4];                   ///< bytes of pixel data per line for each plane
     int vsub;
@@ -67,7 +68,7 @@ typedef struct FrameRateContext {
     av_pixelutils_sad_fn sad;           ///< Sum of the absolute difference function (scene detect only)
     double prev_mafd;                   ///< previous MAFD                           (scene detect only)
 
-    int max;
+    int blend_factor_max;
     int bitdepth;
     AVFrame *work;
 
@@ -92,8 +93,8 @@ typedef struct FrameRateContext {
 static const AVOption framerate_options[] = {
     {"fps",                 "required output frames per second rate", OFFSET(dest_frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str="50"},             0,       INT_MAX, V|F },
 
-    {"interp_start",        "point to start linear interpolation",    OFFSET(interp_start_param),AV_OPT_TYPE_INT,    {.i64=15},                 0,       255,     V|F },
-    {"interp_end",          "point to end linear interpolation",      OFFSET(interp_end_param),  AV_OPT_TYPE_INT,    {.i64=240},                0,       255,     V|F },
+    {"interp_start",        "point to start linear interpolation",    OFFSET(interp_start),    AV_OPT_TYPE_INT,      {.i64=15},                 0,       255,     V|F },
+    {"interp_end",          "point to end linear interpolation",      OFFSET(interp_end),      AV_OPT_TYPE_INT,      {.i64=240},                0,       255,     V|F },
     {"scene",               "scene change level",                     OFFSET(scene_score),     AV_OPT_TYPE_DOUBLE,   {.dbl=8.2},                0,       INT_MAX, V|F },
 
     {"flags",               "set flags",                              OFFSET(flags),           AV_OPT_TYPE_FLAGS,    {.i64=1},                  0,       INT_MAX, V|F, "flags" },
@@ -210,7 +211,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
                  cpy_src2_data, cpy_src2_line_size,
                  cpy_dst_data,  cpy_dst_line_size,
                  cpy_line_width, end - start,
-                 src1_factor, src2_factor, s->max / 2, s->bitdepth);
+                 src1_factor, src2_factor, s->blend_factor_max >> 1);
     }
 
     return 0;
@@ -235,7 +236,7 @@ static int blend_frames(AVFilterContext *ctx, int interpolate)
         td.copy_src1 = s->f0;
         td.copy_src2 = s->f1;
         td.src2_factor = interpolate;
-        td.src1_factor = s->max - td.src2_factor;
+        td.src1_factor = s->blend_factor_max - td.src2_factor;
 
         // get work-space for output frame
         s->work = ff_get_video_buffer(outlink, outlink->w, outlink->h);
@@ -255,7 +256,7 @@ static int process_work_frame(AVFilterContext *ctx)
 {
     FrameRateContext *s = ctx->priv;
     int64_t work_pts;
-    int interpolate;
+    int64_t interpolate, interpolate8;
     int ret;
 
     if (!s->f1)
@@ -274,18 +275,19 @@ static int process_work_frame(AVFilterContext *ctx)
         if (work_pts >= s->pts1 + s->delta && s->flush)
             return 0;
 
-        interpolate = av_rescale(work_pts - s->pts0, s->max, s->delta);
-        ff_dlog(ctx, "process_work_frame() interpolate:%d/%d\n", interpolate, s->max);
-        if (interpolate > s->interp_end) {
+        interpolate = av_rescale(work_pts - s->pts0, s->blend_factor_max, s->delta);
+        interpolate8 = av_rescale(work_pts - s->pts0, 256, s->delta);
+        ff_dlog(ctx, "process_work_frame() interpolate: %"PRId64"/256\n", interpolate8);
+        if (interpolate >= s->blend_factor_max || interpolate8 > s->interp_end) {
             s->work = av_frame_clone(s->f1);
-        } else if (interpolate < s->interp_start) {
+        } else if (interpolate <= 0 || interpolate8 < s->interp_start) {
             s->work = av_frame_clone(s->f0);
         } else {
             ret = blend_frames(ctx, interpolate);
             if (ret < 0)
                 return ret;
             if (ret == 0)
-                s->work = av_frame_clone(interpolate > (s->max >> 1) ? s->f1 : s->f0);
+                s->work = av_frame_clone(interpolate > (s->blend_factor_max >> 1) ? s->f1 : s->f0);
         }
     }
 
@@ -337,12 +339,8 @@ static void blend_frames_c(BLEND_FUNC_PARAMS)
 {
     int line, pixel;
     for (line = 0; line < height; line++) {
-        for (pixel = 0; pixel < width; pixel++) {
-            // integer version of (src1 * factor1) + (src2 * factor2) + 0.5
-            // 0.5 is for rounding
-            // 128 is the integer representation of 0.5 << 8
-            dst[pixel] = ((src1[pixel] * factor1) + (src2[pixel] * factor2) + 128) >> 8;
-        }
+        for (pixel = 0; pixel < width; pixel++)
+            dst[pixel] = ((src1[pixel] * factor1) + (src2[pixel] * factor2) + half) >> BLEND_FACTOR_DEPTH8;
         src1 += src1_linesize;
         src2 += src2_linesize;
         dst  += dst_linesize;
@@ -361,7 +359,7 @@ static void blend_frames16_c(BLEND_FUNC_PARAMS)
     dst_linesize /= 2;
     for (line = 0; line < height; line++) {
         for (pixel = 0; pixel < width; pixel++)
-            dstw[pixel] = ((src1w[pixel] * factor1) + (src2w[pixel] * factor2) + half) >> shift;
+            dstw[pixel] = ((src1w[pixel] * factor1) + (src2w[pixel] * factor2) + half) >> BLEND_FACTOR_DEPTH16;
         src1w += src1_linesize;
         src2w += src2_linesize;
         dstw  += dst_linesize;
@@ -382,8 +380,6 @@ static int config_input(AVFilterLink *inlink)
 
     s->bitdepth = pix_desc->comp[0].depth;
     s->vsub = pix_desc->log2_chroma_h;
-    s->interp_start = s->interp_start_param << (s->bitdepth - 8);
-    s->interp_end = s->interp_end_param << (s->bitdepth - 8);
 
     s->sad = av_pixelutils_get_sad_fn(3, 3, 2, s); // 8x8 both sources aligned
     if (!s->sad)
@@ -391,11 +387,13 @@ static int config_input(AVFilterLink *inlink)
 
     s->srce_time_base = inlink->time_base;
 
-    s->max = 1 << (s->bitdepth);
-    if (s->bitdepth == 8)
+    if (s->bitdepth == 8) {
+        s->blend_factor_max = 1 << BLEND_FACTOR_DEPTH8;
         s->blend = blend_frames_c;
-    else
+    } else {
+        s->blend_factor_max = 1 << BLEND_FACTOR_DEPTH16;
         s->blend = blend_frames16_c;
+    }
 
     return 0;
 }
