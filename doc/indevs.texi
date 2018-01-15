@@ -298,11 +298,13 @@ Sets the audio input source. Must be @samp{unset}, @samp{embedded},
 
 @item video_pts
 Sets the video packet timestamp source. Must be @samp{video}, @samp{audio},
-@samp{reference} or @samp{wallclock}. Defaults to @samp{video}.
+@samp{reference}, @samp{wallclock} or @samp{abs_wallclock}.
+Defaults to @samp{video}.
 
 @item audio_pts
 Sets the audio packet timestamp source. Must be @samp{video}, @samp{audio},
-@samp{reference} or @samp{wallclock}. Defaults to @samp{audio}.
+@samp{reference}, @samp{wallclock} or @samp{abs_wallclock}.
+Defaults to @samp{audio}.
 
 @item draw_bars
 If set to @samp{true}, color bars are drawn in the event of a signal loss.

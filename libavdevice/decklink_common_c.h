@@ -28,6 +28,7 @@ typedef enum DecklinkPtsSource {
     PTS_SRC_VIDEO     = 2,
     PTS_SRC_REFERENCE = 3,
     PTS_SRC_WALLCLOCK = 4,
+    PTS_SRC_ABS_WALLCLOCK = 5,
     PTS_SRC_NB
 } DecklinkPtsSource;
 
