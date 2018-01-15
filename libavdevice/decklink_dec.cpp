@@ -586,7 +586,8 @@ static int64_t get_pkt_pts(IDeckLinkVideoInputFrame *videoFrame,
                            IDeckLinkAudioInputPacket *audioFrame,
                            int64_t wallclock,
                            DecklinkPtsSource pts_src,
-                           AVRational time_base, int64_t *initial_pts)
+                           AVRational time_base, int64_t *initial_pts,
+                           int copyts)
 {
     int64_t pts = AV_NOPTS_VALUE;
     BMDTimeValue bmd_pts;
@@ -619,10 +620,12 @@ static int64_t get_pkt_pts(IDeckLinkVideoInputFrame *videoFrame,
     if (res == S_OK)
         pts = bmd_pts / time_base.num;
 
-    if (pts != AV_NOPTS_VALUE && *initial_pts == AV_NOPTS_VALUE)
-        *initial_pts = pts;
-    if (*initial_pts != AV_NOPTS_VALUE)
-        pts -= *initial_pts;
+    if (!copyts) {
+        if (pts != AV_NOPTS_VALUE && *initial_pts == AV_NOPTS_VALUE)
+            *initial_pts = pts;
+        if (*initial_pts != AV_NOPTS_VALUE)
+            pts -= *initial_pts;
+    }
 
     return pts;
 }
@@ -635,6 +638,7 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
     BMDTimeValue frameTime;
     BMDTimeValue frameDuration;
     int64_t wallclock = 0;
+    struct decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
 
     if (ctx->autodetect) {
         if (videoFrame && !(videoFrame->GetFlags() & bmdFrameHasNoInputSource) &&
@@ -694,7 +698,7 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
             no_video = 0;
         }
 
-        pkt.pts = get_pkt_pts(videoFrame, audioFrame, wallclock, ctx->video_pts_source, ctx->video_st->time_base, &initial_video_pts);
+        pkt.pts = get_pkt_pts(videoFrame, audioFrame, wallclock, ctx->video_pts_source, ctx->video_st->time_base, &initial_video_pts, cctx->copyts);
         pkt.dts = pkt.pts;
 
         pkt.duration = frameDuration;
@@ -785,7 +789,7 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
         pkt.size = audioFrame->GetSampleFrameCount() * ctx->audio_st->codecpar->channels * (ctx->audio_depth / 8);
         audioFrame->GetBytes(&audioFrameBytes);
         audioFrame->GetPacketTime(&audio_pts, ctx->audio_st->time_base.den);
-        pkt.pts = get_pkt_pts(videoFrame, audioFrame, wallclock, ctx->audio_pts_source, ctx->audio_st->time_base, &initial_audio_pts);
+        pkt.pts = get_pkt_pts(videoFrame, audioFrame, wallclock, ctx->audio_pts_source, ctx->audio_st->time_base, &initial_audio_pts, cctx->copyts);
         pkt.dts = pkt.pts;
 
         //fprintf(stderr,"Audio Frame size %d ts %d\n", pkt.size, pkt.pts);

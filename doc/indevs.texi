@@ -317,6 +317,11 @@ Defaults to @samp{1073741824}.
 Sets the audio sample bit depth. Must be @samp{16} or @samp{32}.
 Defaults to @samp{16}.
 
+@item decklink_copyts
+If set to @option{true}, timestamps are forwarded as they are without removing
+the initial offset.
+Defaults to @option{false}.
+
 @end table
 
 @subsection Examples
