@@ -363,9 +363,10 @@ static int decode_header(SnowContext *s){
                 int htaps, i, sum=0;
                 Plane *p= &s->plane[plane_index];
                 p->diag_mc= get_rac(&s->c, s->header_state);
-                htaps= get_symbol(&s->c, s->header_state, 0)*2 + 2;
-                if((unsigned)htaps >= HTAPS_MAX || htaps==0)
+                htaps= get_symbol(&s->c, s->header_state, 0);
+                if((unsigned)htaps >= HTAPS_MAX/2 - 1)
                     return AVERROR_INVALIDDATA;
+                htaps = htaps*2 + 2;
                 p->htaps= htaps;
                 for(i= htaps/2; i; i--){
                     p->hcoeff[i]= get_symbol(&s->c, s->header_state, 0) * (1-2*(i&1));
