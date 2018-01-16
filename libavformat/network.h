@@ -75,7 +75,6 @@ int ff_neterrno(void);
 
 int ff_socket_nonblock(int socket, int enable);
 
-extern int ff_network_inited_globally;
 int ff_network_init(void);
 void ff_network_close(void);
 

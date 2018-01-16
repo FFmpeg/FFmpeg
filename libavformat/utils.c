@@ -4885,7 +4885,6 @@ int avformat_network_init(void)
 {
 #if CONFIG_NETWORK
     int ret;
-    ff_network_inited_globally = 1;
     if ((ret = ff_network_init()) < 0)
         return ret;
     if ((ret = ff_tls_init()) < 0)
@@ -4899,7 +4898,6 @@ int avformat_network_deinit(void)
 #if CONFIG_NETWORK
     ff_network_close();
     ff_tls_deinit();
-    ff_network_inited_globally = 0;
 #endif
     return 0;
 }

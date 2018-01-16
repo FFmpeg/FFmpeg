@@ -1998,17 +1998,24 @@ void av_register_input_format(AVInputFormat *format);
 void av_register_output_format(AVOutputFormat *format);
 
 /**
- * Do global initialization of network components. This is optional,
- * but recommended, since it avoids the overhead of implicitly
- * doing the setup for each session.
+ * Do global initialization of network libraries. This is optional,
+ * and not recommended anymore.
  *
- * Calling this function will become mandatory if using network
- * protocols at some major version bump.
+ * This functions only exists to work around thread-safety issues
+ * with older GnuTLS or OpenSSL libraries. If libavformat is linked
+ * to newer versions of those libraries, or if you do not use them,
+ * calling this function is unnecessary. Otherwise, you need to call
+ * this function before any other threads using them are started.
+ *
+ * This function will be deprecated once support for older GnuTLS and
+ * OpenSSL libraries is removed, and this function has no purpose
+ * anymore.
  */
 int avformat_network_init(void);
 
 /**
- * Undo the initialization done by avformat_network_init.
+ * Undo the initialization done by avformat_network_init. Call it only
+ * once for each time you called avformat_network_init.
  */
 int avformat_network_deinit(void);
 
