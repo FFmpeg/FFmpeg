@@ -157,7 +157,7 @@ static int amf_init_context(AVCodecContext *avctx)
     AmfContext         *ctx = avctx->priv_data;
     AMF_RESULT          res = AMF_OK;
 
-    // confugure AMF logger
+    // configure AMF logger
     // the return of these functions indicates old state and do not affect behaviour
     ctx->trace->pVtbl->EnableWriter(ctx->trace, AMF_TRACE_WRITER_DEBUG_OUTPUT, ctx->log_to_dbg != 0 );
     if (ctx->log_to_dbg)
@@ -414,7 +414,7 @@ static int amf_copy_buffer(AVCodecContext *avctx, AVPacket *pkt, AMFBuffer *buff
     return 0;
 }
 
-// amfenc API implmentation
+// amfenc API implementation
 int ff_amf_encode_init(AVCodecContext *avctx)
 {
     AmfContext     *ctx = avctx->priv_data;
