@@ -827,9 +827,8 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
 
 %assign cpuflags_cache32  (1<<21)
 %assign cpuflags_cache64  (1<<22)
-%assign cpuflags_slowctz  (1<<23)
-%assign cpuflags_aligned  (1<<24) ; not a cpu feature, but a function variant
-%assign cpuflags_atom     (1<<25)
+%assign cpuflags_aligned  (1<<23) ; not a cpu feature, but a function variant
+%assign cpuflags_atom     (1<<24)
 
 ; Returns a boolean value expressing whether or not the specified cpuflag is enabled.
 %define    cpuflag(x) (((((cpuflags & (cpuflags_ %+ x)) ^ (cpuflags_ %+ x)) - 1) >> 31) & 1)
