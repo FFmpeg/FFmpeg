@@ -1048,12 +1048,12 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
         }
         memcpy(s->slice_buf, s->gb.buffer + s->gb.index / 8, slice_bytes);
 
+        if (s->watermark_key) {
+            uint32_t header = AV_RL32(&s->slice_buf[1]);
+            AV_WL32(&s->slice_buf[1], header ^ s->watermark_key);
+        }
         init_get_bits(&s->gb_slice, s->slice_buf, slice_bits);
 
-        if (s->watermark_key) {
-            uint32_t header = AV_RL32(&s->gb_slice.buffer[1]);
-            AV_WL32(&s->gb_slice.buffer[1], header ^ s->watermark_key);
-        }
         if (length > 0) {
             memmove(s->slice_buf, &s->slice_buf[slice_length], length - 1);
         }
