@@ -1019,10 +1019,10 @@ typedef struct AVStream {
      *****************************************************************
      */
 
+#define MAX_STD_TIMEBASES (30*12+30+3+6)
     /**
      * Stream information used internally by avformat_find_stream_info()
      */
-#define MAX_STD_TIMEBASES (30*12+30+3+6)
     struct {
         int64_t last_dts;
         int64_t duration_gcd;
@@ -1859,7 +1859,7 @@ typedef struct AVFormatContext {
      */
     char *protocol_whitelist;
 
-    /*
+    /**
      * A callback for opening new IO streams.
      *
      * Whenever a muxer or a demuxer needs to open an IO stream (typically from
