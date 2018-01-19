@@ -256,6 +256,9 @@ static int mlp_parse(AVCodecParserContext *s,
     if (buf_size == 0)
         return 0;
 
+    if (s->flags & PARSER_FLAG_COMPLETE_FRAMES) {
+        next = buf_size;
+    } else {
     if (!mp->in_sync) {
         // Not in sync - find a major sync header
 
@@ -315,6 +318,7 @@ static int mlp_parse(AVCodecParserContext *s,
     }
 
     mp->bytes_left = 0;
+    }
 
     sync_present = (AV_RB32(buf + 4) & 0xfffffffe) == 0xf8726fba;
 
