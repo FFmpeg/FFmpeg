@@ -820,7 +820,7 @@ static int write_manifest(AVFormatContext *s, int final)
                 stream_bitrate += max_audio_bitrate;
             }
             get_hls_playlist_name(playlist_file, sizeof(playlist_file), NULL, i);
-            ff_hls_write_stream_info(st, out, stream_bitrate, playlist_file, agroup);
+            ff_hls_write_stream_info(st, out, stream_bitrate, playlist_file, agroup, NULL);
         }
         avio_close(out);
         if (use_rename)
