@@ -2512,10 +2512,12 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
     case AVMEDIA_TYPE_VIDEO:
         print_int("width",        par->width);
         print_int("height",       par->height);
+#if FF_API_LAVF_AVCTX
         if (dec_ctx) {
             print_int("coded_width",  dec_ctx->coded_width);
             print_int("coded_height", dec_ctx->coded_height);
         }
+#endif
         print_int("has_b_frames", par->video_delay);
         sar = av_guess_sample_aspect_ratio(fmt_ctx, stream, NULL);
         if (sar.den) {
@@ -2912,6 +2914,12 @@ static int open_input_file(InputFile *ifile, const char *filename)
 
             ist->dec_ctx->pkt_timebase = stream->time_base;
             ist->dec_ctx->framerate = stream->avg_frame_rate;
+#if FF_API_LAVF_AVCTX
+FF_DISABLE_DEPRECATION_WARNINGS
+            ist->dec_ctx->coded_width = stream->codec->coded_width;
+            ist->dec_ctx->coded_height = stream->codec->coded_height;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
             if (avcodec_open2(ist->dec_ctx, codec, &opts) < 0) {
                 av_log(NULL, AV_LOG_WARNING, "Could not open codec for input stream %d\n",
