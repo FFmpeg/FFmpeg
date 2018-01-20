@@ -359,17 +359,8 @@ static int hevc_split(AVCodecContext *avctx, const uint8_t *buf, int buf_size)
 static void hevc_parser_close(AVCodecParserContext *s)
 {
     HEVCParserContext *ctx = s->priv_data;
-    int i;
 
-    for (i = 0; i < FF_ARRAY_ELEMS(ctx->ps.vps_list); i++)
-        av_buffer_unref(&ctx->ps.vps_list[i]);
-    for (i = 0; i < FF_ARRAY_ELEMS(ctx->ps.sps_list); i++)
-        av_buffer_unref(&ctx->ps.sps_list[i]);
-    for (i = 0; i < FF_ARRAY_ELEMS(ctx->ps.pps_list); i++)
-        av_buffer_unref(&ctx->ps.pps_list[i]);
-
-    ctx->ps.sps = NULL;
-
+    ff_hevc_ps_uninit(&ctx->ps);
     ff_h2645_packet_uninit(&ctx->pkt);
     ff_hevc_reset_sei(&ctx->sei);
 
