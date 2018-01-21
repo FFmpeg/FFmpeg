@@ -361,7 +361,6 @@ static av_cold int amf_encode_init_h264(AVCodecContext *avctx)
 static const AVCodecDefault defaults[] = {
     { "refs",       "-1"  },
     { "aspect",     "0"   },
-    { "sar",        "0"   },
     { "qmin",       "-1"  },
     { "qmax",       "-1"  },
     { "b",          "2M"  },
@@ -376,7 +375,7 @@ static const AVClass h264_amf_class = {
     .option = options,
     .version = LIBAVUTIL_VERSION_INT,
 };
-//TODO declare as HW encoder when available
+
 AVCodec ff_h264_amf_encoder = {
     .name           = "h264_amf",
     .long_name      = NULL_IF_CONFIG_SMALL("AMD AMF H.264 Encoder"),
@@ -389,7 +388,8 @@ AVCodec ff_h264_amf_encoder = {
     .priv_data_size = sizeof(AmfContext),
     .priv_class     = &h264_amf_class,
     .defaults       = defaults,
-    .capabilities   = AV_CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .pix_fmts       = ff_amf_pix_fmts,
+    .wrapper_name   = "amf",
 };

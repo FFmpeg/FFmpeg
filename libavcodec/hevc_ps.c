@@ -1704,6 +1704,22 @@ err:
     return ret;
 }
 
+void ff_hevc_ps_uninit(HEVCParamSets *ps)
+{
+    int i;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(ps->vps_list); i++)
+        av_buffer_unref(&ps->vps_list[i]);
+    for (i = 0; i < FF_ARRAY_ELEMS(ps->sps_list); i++)
+        av_buffer_unref(&ps->sps_list[i]);
+    for (i = 0; i < FF_ARRAY_ELEMS(ps->pps_list); i++)
+        av_buffer_unref(&ps->pps_list[i]);
+
+    ps->sps = NULL;
+    ps->pps = NULL;
+    ps->vps = NULL;
+}
+
 int ff_hevc_compute_poc(const HEVCSPS *sps, int pocTid0, int poc_lsb, int nal_unit_type)
 {
     int max_poc_lsb  = 1 << sps->log2_max_poc_lsb;

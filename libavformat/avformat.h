@@ -986,12 +986,17 @@ typedef struct AVStream {
      */
     AVRational r_frame_rate;
 
+#if FF_API_LAVF_FFSERVER
     /**
      * String containing pairs of key and values describing recommended encoder configuration.
      * Pairs are separated by ','.
      * Keys are separated from values by '='.
+     *
+     * @deprecated unused
      */
+    attribute_deprecated
     char *recommended_encoder_configuration;
+#endif
 
     /**
      * Codec parameters associated with this stream. Allocated and freed by
@@ -1014,10 +1019,10 @@ typedef struct AVStream {
      *****************************************************************
      */
 
+#define MAX_STD_TIMEBASES (30*12+30+3+6)
     /**
      * Stream information used internally by avformat_find_stream_info()
      */
-#define MAX_STD_TIMEBASES (30*12+30+3+6)
     struct {
         int64_t last_dts;
         int64_t duration_gcd;
@@ -1217,10 +1222,12 @@ attribute_deprecated
 AVRational av_stream_get_r_frame_rate(const AVStream *s);
 attribute_deprecated
 void       av_stream_set_r_frame_rate(AVStream *s, AVRational r);
+#if FF_API_LAVF_FFSERVER
 attribute_deprecated
 char* av_stream_get_recommended_encoder_configuration(const AVStream *s);
 attribute_deprecated
 void  av_stream_set_recommended_encoder_configuration(AVStream *s, char *configuration);
+#endif
 #endif
 
 struct AVCodecParserContext *av_stream_get_parser(const AVStream *s);
@@ -1852,7 +1859,7 @@ typedef struct AVFormatContext {
      */
     char *protocol_whitelist;
 
-    /*
+    /**
      * A callback for opening new IO streams.
      *
      * Whenever a muxer or a demuxer needs to open an IO stream (typically from
@@ -1993,17 +2000,24 @@ void av_register_input_format(AVInputFormat *format);
 void av_register_output_format(AVOutputFormat *format);
 
 /**
- * Do global initialization of network components. This is optional,
- * but recommended, since it avoids the overhead of implicitly
- * doing the setup for each session.
+ * Do global initialization of network libraries. This is optional,
+ * and not recommended anymore.
  *
- * Calling this function will become mandatory if using network
- * protocols at some major version bump.
+ * This functions only exists to work around thread-safety issues
+ * with older GnuTLS or OpenSSL libraries. If libavformat is linked
+ * to newer versions of those libraries, or if you do not use them,
+ * calling this function is unnecessary. Otherwise, you need to call
+ * this function before any other threads using them are started.
+ *
+ * This function will be deprecated once support for older GnuTLS and
+ * OpenSSL libraries is removed, and this function has no purpose
+ * anymore.
  */
 int avformat_network_init(void);
 
 /**
- * Undo the initialization done by avformat_network_init.
+ * Undo the initialization done by avformat_network_init. Call it only
+ * once for each time you called avformat_network_init.
  */
 int avformat_network_deinit(void);
 

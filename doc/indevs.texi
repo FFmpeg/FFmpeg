@@ -298,11 +298,13 @@ Sets the audio input source. Must be @samp{unset}, @samp{embedded},
 
 @item video_pts
 Sets the video packet timestamp source. Must be @samp{video}, @samp{audio},
-@samp{reference} or @samp{wallclock}. Defaults to @samp{video}.
+@samp{reference}, @samp{wallclock} or @samp{abs_wallclock}.
+Defaults to @samp{video}.
 
 @item audio_pts
 Sets the audio packet timestamp source. Must be @samp{video}, @samp{audio},
-@samp{reference} or @samp{wallclock}. Defaults to @samp{audio}.
+@samp{reference}, @samp{wallclock} or @samp{abs_wallclock}.
+Defaults to @samp{audio}.
 
 @item draw_bars
 If set to @samp{true}, color bars are drawn in the event of a signal loss.
@@ -316,6 +318,11 @@ Defaults to @samp{1073741824}.
 @item audio_depth
 Sets the audio sample bit depth. Must be @samp{16} or @samp{32}.
 Defaults to @samp{16}.
+
+@item decklink_copyts
+If set to @option{true}, timestamps are forwarded as they are without removing
+the initial offset.
+Defaults to @option{false}.
 
 @end table
 

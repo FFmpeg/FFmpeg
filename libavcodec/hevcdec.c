@@ -3277,15 +3277,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
         av_frame_free(&s->DPB[i].frame);
     }
 
-    for (i = 0; i < FF_ARRAY_ELEMS(s->ps.vps_list); i++)
-        av_buffer_unref(&s->ps.vps_list[i]);
-    for (i = 0; i < FF_ARRAY_ELEMS(s->ps.sps_list); i++)
-        av_buffer_unref(&s->ps.sps_list[i]);
-    for (i = 0; i < FF_ARRAY_ELEMS(s->ps.pps_list); i++)
-        av_buffer_unref(&s->ps.pps_list[i]);
-    s->ps.sps = NULL;
-    s->ps.pps = NULL;
-    s->ps.vps = NULL;
+    ff_hevc_ps_uninit(&s->ps);
 
     av_freep(&s->sh.entry_point_offset);
     av_freep(&s->sh.offset);

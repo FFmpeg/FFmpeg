@@ -119,7 +119,11 @@ static int64_t wrap_timestamp(const AVStream *st, int64_t timestamp)
 
 #if FF_API_FORMAT_GET_SET
 MAKE_ACCESSORS(AVStream, stream, AVRational, r_frame_rate)
+#if FF_API_LAVF_FFSERVER
+FF_DISABLE_DEPRECATION_WARNINGS
 MAKE_ACCESSORS(AVStream, stream, char *, recommended_encoder_configuration)
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 MAKE_ACCESSORS(AVFormatContext, format, AVCodec *, video_codec)
 MAKE_ACCESSORS(AVFormatContext, format, AVCodec *, audio_codec)
 MAKE_ACCESSORS(AVFormatContext, format, AVCodec *, subtitle_codec)
@@ -4256,6 +4260,8 @@ int ff_stream_encode_params_copy(AVStream *dst, const AVStream *src)
         }
     }
 
+#if FF_API_LAVF_FFSERVER
+FF_DISABLE_DEPRECATION_WARNINGS
     av_freep(&dst->recommended_encoder_configuration);
     if (src->recommended_encoder_configuration) {
         const char *conf_str = src->recommended_encoder_configuration;
@@ -4263,6 +4269,8 @@ int ff_stream_encode_params_copy(AVStream *dst, const AVStream *src)
         if (!dst->recommended_encoder_configuration)
             return AVERROR(ENOMEM);
     }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     return 0;
 }
@@ -4310,7 +4318,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (st->info)
         av_freep(&st->info->duration_error);
     av_freep(&st->info);
+#if FF_API_LAVF_FFSERVER
+FF_DISABLE_DEPRECATION_WARNINGS
     av_freep(&st->recommended_encoder_configuration);
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     av_freep(pst);
 }
@@ -4873,7 +4885,6 @@ int avformat_network_init(void)
 {
 #if CONFIG_NETWORK
     int ret;
-    ff_network_inited_globally = 1;
     if ((ret = ff_network_init()) < 0)
         return ret;
     if ((ret = ff_tls_init()) < 0)
@@ -4887,7 +4898,6 @@ int avformat_network_deinit(void)
 #if CONFIG_NETWORK
     ff_network_close();
     ff_tls_deinit();
-    ff_network_inited_globally = 0;
 #endif
     return 0;
 }

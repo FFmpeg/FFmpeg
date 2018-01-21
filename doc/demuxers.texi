@@ -244,6 +244,16 @@ file subdir/file-2.wav
 @end example
 @end itemize
 
+@section dash
+
+Dynamic Adaptive Streaming over HTTP demuxer.
+
+This demuxer presents all AVStreams found in the manifest.
+By setting the discard flags on AVStreams the caller can decide
+which streams to actually receive.
+Each stream mirrors the @code{id} and @code{bandwidth} properties from the
+@code{<Representation>} as metadata keys named "id" and "variant_bitrate" respectively.
+
 @section flv, live_flv
 
 Adobe Flash Video Format demuxer.

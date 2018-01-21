@@ -15,6 +15,16 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2018-01-xx - xxxxxxx - lavf 58.5.100 - avformat.h
+  Explicitly make avformat_network_init() and avformat_network_deinit() optional.
+  If these are not called, network initialization and deinitialization is
+  automatic, and unlike in older versions, fully supported, unless libavformat
+  is linked to ancient GnuTLS and OpenSSL.
+
+2018-01-xx - xxxxxxx - lavf 58.4.100 - avformat.h
+  Deprecate AVStream.recommended_encoder_configuration. It was useful only for
+  FFserver, which has been removed.
+
 2018-01-xx - xxxxxxx - lavfi 7.11.101 - avfilter.h
   Deprecate avfilter_link_get_channels(). Use av_buffersink_get_channels().
 

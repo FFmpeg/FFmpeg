@@ -585,8 +585,10 @@ ULONG decklink_input_callback::Release(void)
 static int64_t get_pkt_pts(IDeckLinkVideoInputFrame *videoFrame,
                            IDeckLinkAudioInputPacket *audioFrame,
                            int64_t wallclock,
+                           int64_t abs_wallclock,
                            DecklinkPtsSource pts_src,
-                           AVRational time_base, int64_t *initial_pts)
+                           AVRational time_base, int64_t *initial_pts,
+                           int copyts)
 {
     int64_t pts = AV_NOPTS_VALUE;
     BMDTimeValue bmd_pts;
@@ -606,23 +608,30 @@ static int64_t get_pkt_pts(IDeckLinkVideoInputFrame *videoFrame,
                 res = videoFrame->GetHardwareReferenceTimestamp(time_base.den, &bmd_pts, &bmd_duration);
             break;
         case PTS_SRC_WALLCLOCK:
+            /* fall through */
+        case PTS_SRC_ABS_WALLCLOCK:
         {
             /* MSVC does not support compound literals like AV_TIME_BASE_Q
              * in C++ code (compiler error C4576) */
             AVRational timebase;
             timebase.num = 1;
             timebase.den = AV_TIME_BASE;
-            pts = av_rescale_q(wallclock, timebase, time_base);
+            if (pts_src == PTS_SRC_WALLCLOCK)
+                pts = av_rescale_q(wallclock, timebase, time_base);
+            else
+                pts = av_rescale_q(abs_wallclock, timebase, time_base);
             break;
         }
     }
     if (res == S_OK)
         pts = bmd_pts / time_base.num;
 
-    if (pts != AV_NOPTS_VALUE && *initial_pts == AV_NOPTS_VALUE)
-        *initial_pts = pts;
-    if (*initial_pts != AV_NOPTS_VALUE)
-        pts -= *initial_pts;
+    if (!copyts) {
+        if (pts != AV_NOPTS_VALUE && *initial_pts == AV_NOPTS_VALUE)
+            *initial_pts = pts;
+        if (*initial_pts != AV_NOPTS_VALUE)
+            pts -= *initial_pts;
+    }
 
     return pts;
 }
@@ -634,7 +643,8 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
     void *audioFrameBytes;
     BMDTimeValue frameTime;
     BMDTimeValue frameDuration;
-    int64_t wallclock = 0;
+    int64_t wallclock = 0, abs_wallclock = 0;
+    struct decklink_cctx *cctx = (struct decklink_cctx *) avctx->priv_data;
 
     if (ctx->autodetect) {
         if (videoFrame && !(videoFrame->GetFlags() & bmdFrameHasNoInputSource) &&
@@ -648,6 +658,8 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
     ctx->frameCount++;
     if (ctx->audio_pts_source == PTS_SRC_WALLCLOCK || ctx->video_pts_source == PTS_SRC_WALLCLOCK)
         wallclock = av_gettime_relative();
+    if (ctx->audio_pts_source == PTS_SRC_ABS_WALLCLOCK || ctx->video_pts_source == PTS_SRC_ABS_WALLCLOCK)
+        abs_wallclock = av_gettime();
 
     // Handle Video Frame
     if (videoFrame) {
@@ -694,7 +706,7 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
             no_video = 0;
         }
 
-        pkt.pts = get_pkt_pts(videoFrame, audioFrame, wallclock, ctx->video_pts_source, ctx->video_st->time_base, &initial_video_pts);
+        pkt.pts = get_pkt_pts(videoFrame, audioFrame, wallclock, abs_wallclock, ctx->video_pts_source, ctx->video_st->time_base, &initial_video_pts, cctx->copyts);
         pkt.dts = pkt.pts;
 
         pkt.duration = frameDuration;
@@ -785,7 +797,7 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
         pkt.size = audioFrame->GetSampleFrameCount() * ctx->audio_st->codecpar->channels * (ctx->audio_depth / 8);
         audioFrame->GetBytes(&audioFrameBytes);
         audioFrame->GetPacketTime(&audio_pts, ctx->audio_st->time_base.den);
-        pkt.pts = get_pkt_pts(videoFrame, audioFrame, wallclock, ctx->audio_pts_source, ctx->audio_st->time_base, &initial_audio_pts);
+        pkt.pts = get_pkt_pts(videoFrame, audioFrame, wallclock, abs_wallclock, ctx->audio_pts_source, ctx->audio_st->time_base, &initial_audio_pts, cctx->copyts);
         pkt.dts = pkt.pts;
 
         //fprintf(stderr,"Audio Frame size %d ts %d\n", pkt.size, pkt.pts);

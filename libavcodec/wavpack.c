@@ -433,8 +433,8 @@ static inline int wv_unpack_stereo(WavpackFrameContext *s, GetBitContext *gb,
                     L2 = L + ((s->decorr[i].weightA * (int64_t)A + 512) >> 10);
                     R2 = R + ((s->decorr[i].weightB * (int64_t)B + 512) >> 10);
                 } else {
-                    L2 = L + ((int)(s->decorr[i].weightA * (unsigned)A + 512) >> 10);
-                    R2 = R + ((int)(s->decorr[i].weightB * (unsigned)B + 512) >> 10);
+                    L2 = L + (unsigned)((int)(s->decorr[i].weightA * (unsigned)A + 512) >> 10);
+                    R2 = R + (unsigned)((int)(s->decorr[i].weightB * (unsigned)B + 512) >> 10);
                 }
                 if (A && L)
                     s->decorr[i].weightA -= ((((L ^ A) >> 30) & 2) - 1) * s->decorr[i].delta;
@@ -446,7 +446,7 @@ static inline int wv_unpack_stereo(WavpackFrameContext *s, GetBitContext *gb,
                 if (type != AV_SAMPLE_FMT_S16P)
                     L2 = L + ((s->decorr[i].weightA * (int64_t)s->decorr[i].samplesA[0] + 512) >> 10);
                 else
-                    L2 = L + ((int)(s->decorr[i].weightA * (unsigned)s->decorr[i].samplesA[0] + 512) >> 10);
+                    L2 = L + (unsigned)((int)(s->decorr[i].weightA * (unsigned)s->decorr[i].samplesA[0] + 512) >> 10);
                 UPDATE_WEIGHT_CLIP(s->decorr[i].weightA, s->decorr[i].delta, s->decorr[i].samplesA[0], L);
                 L = L2;
                 if (type != AV_SAMPLE_FMT_S16P)
@@ -460,7 +460,7 @@ static inline int wv_unpack_stereo(WavpackFrameContext *s, GetBitContext *gb,
                 if (type != AV_SAMPLE_FMT_S16P)
                     R2 = R + ((s->decorr[i].weightB * (int64_t)s->decorr[i].samplesB[0] + 512) >> 10);
                 else
-                    R2 = R + ((int)(s->decorr[i].weightB * (unsigned)s->decorr[i].samplesB[0] + 512) >> 10);
+                    R2 = R + (unsigned)((int)(s->decorr[i].weightB * (unsigned)s->decorr[i].samplesB[0] + 512) >> 10);
                 UPDATE_WEIGHT_CLIP(s->decorr[i].weightB, s->decorr[i].delta, s->decorr[i].samplesB[0], R);
                 R = R2;
 
@@ -472,7 +472,7 @@ static inline int wv_unpack_stereo(WavpackFrameContext *s, GetBitContext *gb,
                 if (type != AV_SAMPLE_FMT_S16P)
                     L2 = L + ((s->decorr[i].weightA * (int64_t)R2 + 512) >> 10);
                 else
-                    L2 = L + ((int)(s->decorr[i].weightA * (unsigned)R2 + 512) >> 10);
+                    L2 = L + (unsigned)((int)(s->decorr[i].weightA * (unsigned)R2 + 512) >> 10);
                 UPDATE_WEIGHT_CLIP(s->decorr[i].weightA, s->decorr[i].delta, R2, L);
                 L                        = L2;
                 s->decorr[i].samplesB[0] = L;
@@ -554,7 +554,7 @@ static inline int wv_unpack_mono(WavpackFrameContext *s, GetBitContext *gb,
             if (type != AV_SAMPLE_FMT_S16P)
                 S = T + ((s->decorr[i].weightA * (int64_t)A + 512) >> 10);
             else
-                S = T + ((int)(s->decorr[i].weightA * (unsigned)A + 512) >> 10);
+                S = T + (unsigned)((int)(s->decorr[i].weightA * (unsigned)A + 512) >> 10);
             if (A && T)
                 s->decorr[i].weightA -= ((((T ^ A) >> 30) & 2) - 1) * s->decorr[i].delta;
             s->decorr[i].samplesA[j] = T = S;

@@ -24,6 +24,7 @@
 #ifndef AVCODEC_V4L2_BUFFERS_H
 #define AVCODEC_V4L2_BUFFERS_H
 
+#include <stdatomic.h>
 #include <linux/videodev2.h>
 
 #include "avcodec.h"
@@ -40,6 +41,11 @@ enum V4L2Buffer_status {
 typedef struct V4L2Buffer {
     /* each buffer needs to have a reference to its context */
     struct V4L2Context *context;
+
+    /* This object is refcounted per-plane, so we need to keep track
+     * of how many context-refs we are holding. */
+    AVBufferRef *context_ref;
+    atomic_uint context_refcount;
 
     /* keep track of the mmap address and mmap length */
     struct V4L2Plane_info {

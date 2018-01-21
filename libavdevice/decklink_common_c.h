@@ -28,6 +28,8 @@ typedef enum DecklinkPtsSource {
     PTS_SRC_VIDEO     = 2,
     PTS_SRC_REFERENCE = 3,
     PTS_SRC_WALLCLOCK = 4,
+    PTS_SRC_ABS_WALLCLOCK = 5,
+    PTS_SRC_NB
 } DecklinkPtsSource;
 
 struct decklink_cctx {
@@ -52,6 +54,7 @@ struct decklink_cctx {
     char *format_code;
     int raw_format;
     int64_t queue_size;
+    int copyts;
 };
 
 #endif /* AVDEVICE_DECKLINK_COMMON_C_H */

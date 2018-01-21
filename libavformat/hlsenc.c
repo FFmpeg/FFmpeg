@@ -58,6 +58,11 @@ typedef enum {
   HLS_START_SEQUENCE_AS_FORMATTED_DATETIME = 2,  // YYYYMMDDhhmmss
 } StartSequenceSourceType;
 
+typedef enum {
+    CODEC_ATTRIBUTE_WRITTEN = 0,
+    CODEC_ATTRIBUTE_WILL_NOT_BE_WRITTEN,
+} CodecAttributeStatus;
+
 #define KEYSIZE 16
 #define LINE_BUFFER_SIZE 1024
 #define HLS_MICROSECOND_UNIT   1000000
@@ -142,6 +147,8 @@ typedef struct VariantStream {
     int fmp4_init_mode;
 
     AVStream **streams;
+    char codec_attr[128];
+    CodecAttributeStatus attr_status;
     unsigned int nb_streams;
     int m3u8_created; /* status of media play-list creation */
     char *agroup; /* audio group name */
@@ -288,6 +295,51 @@ static void set_http_options(AVFormatContext *s, AVDictionary **options, HLSCont
     if (c->http_persistent)
         av_dict_set_int(options, "multiple_requests", 1, 0);
 
+}
+
+static void write_codec_attr(AVStream *st, VariantStream *vs) {
+    int codec_strlen = strlen(vs->codec_attr);
+    char attr[32];
+
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE)
+        return;
+    if (vs->attr_status == CODEC_ATTRIBUTE_WILL_NOT_BE_WRITTEN)
+        return;
+
+    if (st->codecpar->codec_id == AV_CODEC_ID_H264) {
+        uint8_t *data = st->codecpar->extradata;
+        if (data && (data[0] | data[1] | data[2]) == 0 && data[3] == 1 && (data[4] & 0x1F) == 7) {
+            snprintf(attr, sizeof(attr),
+                     "avc1.%02x%02x%02x", data[5], data[6], data[7]);
+        } else {
+            goto fail;
+        }
+    } else if (st->codecpar->codec_id == AV_CODEC_ID_MP2) {
+        snprintf(attr, sizeof(attr), "mp4a.40.33");
+    } else if (st->codecpar->codec_id == AV_CODEC_ID_MP3) {
+        snprintf(attr, sizeof(attr), "mp4a.40.34");
+    } else if (st->codecpar->codec_id == AV_CODEC_ID_AAC) {
+        /* TODO : For HE-AAC, HE-AACv2, the last digit needs to be set to 5 and 29 respectively */
+        snprintf(attr, sizeof(attr), "mp4a.40.2");
+    } else if (st->codecpar->codec_id == AV_CODEC_ID_AC3) {
+        snprintf(attr, sizeof(attr), "ac-3");
+    } else if (st->codecpar->codec_id == AV_CODEC_ID_EAC3) {
+        snprintf(attr, sizeof(attr), "ec-3");
+    } else {
+        goto fail;
+    }
+    // Don't write the same attribute multiple times
+    if (!av_stristr(vs->codec_attr, attr)) {
+        snprintf(vs->codec_attr + codec_strlen,
+                 sizeof(vs->codec_attr) - codec_strlen,
+                 "%s%s", codec_strlen ? "," : "", attr);
+    }
+    return;
+
+fail:
+    vs->codec_attr[0] = '\0';
+    vs->attr_status = CODEC_ATTRIBUTE_WILL_NOT_BE_WRITTEN;
+    return;
 }
 
 static int replace_int_data_in_filename(char *buf, int buf_size, const char *filename, char placeholder, int64_t number)
@@ -1227,7 +1279,7 @@ static int create_master_playlist(AVFormatContext *s,
         bandwidth += bandwidth / 10;
 
         ff_hls_write_stream_info(vid_st, hls->m3u8_out, bandwidth, m3u8_rel_name,
-                aud_st ? vs->agroup : NULL);
+                aud_st ? vs->agroup : NULL, vs->codec_attr);
 
         av_freep(&m3u8_rel_name);
     }
@@ -1857,6 +1909,19 @@ static int hls_write_header(AVFormatContext *s)
                 continue;
             }
             avpriv_set_pts_info(outer_st, inner_st->pts_wrap_bits, inner_st->time_base.num, inner_st->time_base.den);
+            write_codec_attr(outer_st, vs);
+
+        }
+        /* Update the Codec Attr string for the mapped audio groups */
+        if (vs->has_video && vs->agroup) {
+            for (j = 0; j < hls->nb_varstreams; j++) {
+                VariantStream *vs_agroup = &(hls->var_streams[j]);
+                if (!vs_agroup->has_video && !vs_agroup->has_subtitle &&
+                    vs_agroup->agroup &&
+                    !av_strcasecmp(vs_agroup->agroup, vs->agroup)) {
+                    write_codec_attr(vs_agroup->streams[0], vs);
+                }
+            }
         }
     }
 fail:
