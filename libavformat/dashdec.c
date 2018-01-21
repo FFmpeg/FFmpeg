@@ -483,9 +483,10 @@ static char *get_content_url(xmlNodePtr *baseurl_nodes,
             return NULL;
         }
         av_strlcpy(tmp_str, url, sizeof(tmp_str));
-        av_free(url);
     }
     if (rep_bandwidth_val && tmp_str[0] != '\0') {
+        // free any previously assigned url before reassigning
+        av_free(url);
         url = av_strireplace(tmp_str, "$Bandwidth$", (const char*)rep_bandwidth_val);
         if (!url) {
             return NULL;
