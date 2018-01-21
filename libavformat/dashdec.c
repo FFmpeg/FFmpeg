@@ -552,6 +552,23 @@ static enum AVMediaType get_content_type(xmlNodePtr node)
     return type;
 }
 
+static struct fragment * get_Fragment(char *range)
+{
+    struct fragment * seg =  av_mallocz(sizeof(struct fragment));
+
+    if (!seg)
+        return NULL;
+
+    seg->size = -1;
+    if (range) {
+        char *str_end_offset;
+        char *str_offset = av_strtok(range, "-", &str_end_offset);
+        seg->url_offset = strtoll(str_offset, NULL, 10);
+        seg->size = strtoll(str_end_offset, NULL, 10) - seg->url_offset;
+    }
+    return seg;
+}
+
 static int parse_manifest_segmenturlnode(AVFormatContext *s, struct representation *rep,
                                          xmlNodePtr fragmenturl_node,
                                          xmlNodePtr *baseurl_nodes,
@@ -560,13 +577,16 @@ static int parse_manifest_segmenturlnode(AVFormatContext *s, struct representati
 {
     char *initialization_val = NULL;
     char *media_val = NULL;
+    char *range_val = NULL;
 
     if (!av_strcasecmp(fragmenturl_node->name, (const char *)"Initialization")) {
         initialization_val = xmlGetProp(fragmenturl_node, "sourceURL");
-        if (initialization_val) {
-            rep->init_section = av_mallocz(sizeof(struct fragment));
+        range_val = xmlGetProp(fragmenturl_node, "range");
+        if (initialization_val || range_val) {
+            rep->init_section = get_Fragment(range_val);
             if (!rep->init_section) {
                 xmlFree(initialization_val);
+                xmlFree(range_val);
                 return AVERROR(ENOMEM);
             }
             rep->init_section->url = get_content_url(baseurl_nodes, 4,
@@ -576,17 +596,20 @@ static int parse_manifest_segmenturlnode(AVFormatContext *s, struct representati
             if (!rep->init_section->url) {
                 av_free(rep->init_section);
                 xmlFree(initialization_val);
+                xmlFree(range_val);
                 return AVERROR(ENOMEM);
             }
-            rep->init_section->size = -1;
             xmlFree(initialization_val);
+            xmlFree(range_val);
         }
     } else if (!av_strcasecmp(fragmenturl_node->name, (const char *)"SegmentURL")) {
         media_val = xmlGetProp(fragmenturl_node, "media");
-        if (media_val) {
-            struct fragment *seg = av_mallocz(sizeof(struct fragment));
+        range_val = xmlGetProp(fragmenturl_node, "mediaRange");
+        if (media_val || range_val) {
+            struct fragment *seg = get_Fragment(range_val);
             if (!seg) {
                 xmlFree(media_val);
+                xmlFree(range_val);
                 return AVERROR(ENOMEM);
             }
             seg->url = get_content_url(baseurl_nodes, 4,
@@ -596,11 +619,12 @@ static int parse_manifest_segmenturlnode(AVFormatContext *s, struct representati
             if (!seg->url) {
                 av_free(seg);
                 xmlFree(media_val);
+                xmlFree(range_val);
                 return AVERROR(ENOMEM);
             }
-            seg->size = -1;
             dynarray_add(&rep->fragments, &rep->n_fragments, seg);
             xmlFree(media_val);
+            xmlFree(range_val);
         }
     }
 
