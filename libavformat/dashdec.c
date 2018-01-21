@@ -148,11 +148,18 @@ typedef struct DASHContext {
     char *headers;                       ///< holds HTTP headers set as an AVOption to the HTTP protocol context
     char *allowed_extensions;
     AVDictionary *avio_opts;
+    int max_url_size;
 } DASHContext;
 
-static int ishttp(char *url) {
+static int ishttp(char *url)
+{
     const char *proto_name = avio_find_protocol_name(url);
     return av_strstart(proto_name, "http", NULL);
+}
+
+static int aligned(int val)
+{
+    return ((val + 0x3F) >> 6) << 6;
 }
 
 static uint64_t get_current_time_in_sec(void)
@@ -453,6 +460,7 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
 
 static char *get_content_url(xmlNodePtr *baseurl_nodes,
                              int n_baseurl_nodes,
+                             int max_url_size,
                              char *rep_id_val,
                              char *rep_bandwidth_val,
                              char *val)
@@ -460,10 +468,12 @@ static char *get_content_url(xmlNodePtr *baseurl_nodes,
     int i;
     char *text;
     char *url = NULL;
-    char tmp_str[MAX_URL_SIZE];
-    char tmp_str_2[MAX_URL_SIZE];
+    char *tmp_str = av_mallocz(max_url_size);
+    char *tmp_str_2 = av_mallocz(max_url_size);
 
-    memset(tmp_str, 0, sizeof(tmp_str));
+    if (!tmp_str || !tmp_str_2) {
+        return NULL;
+    }
 
     for (i = 0; i < n_baseurl_nodes; ++i) {
         if (baseurl_nodes[i] &&
@@ -471,33 +481,36 @@ static char *get_content_url(xmlNodePtr *baseurl_nodes,
             baseurl_nodes[i]->children->type == XML_TEXT_NODE) {
             text = xmlNodeGetContent(baseurl_nodes[i]->children);
             if (text) {
-                memset(tmp_str, 0, sizeof(tmp_str));
-                memset(tmp_str_2, 0, sizeof(tmp_str_2));
-                ff_make_absolute_url(tmp_str_2, MAX_URL_SIZE, tmp_str, text);
-                av_strlcpy(tmp_str, tmp_str_2, sizeof(tmp_str));
+                memset(tmp_str, 0, max_url_size);
+                memset(tmp_str_2, 0, max_url_size);
+                ff_make_absolute_url(tmp_str_2, max_url_size, tmp_str, text);
+                av_strlcpy(tmp_str, tmp_str_2, max_url_size);
                 xmlFree(text);
             }
         }
     }
 
     if (val)
-        av_strlcat(tmp_str, (const char*)val, sizeof(tmp_str));
+        av_strlcat(tmp_str, (const char*)val, max_url_size);
 
     if (rep_id_val) {
         url = av_strireplace(tmp_str, "$RepresentationID$", (const char*)rep_id_val);
         if (!url) {
-            return NULL;
+            goto end;
         }
-        av_strlcpy(tmp_str, url, sizeof(tmp_str));
+        av_strlcpy(tmp_str, url, max_url_size);
     }
     if (rep_bandwidth_val && tmp_str[0] != '\0') {
         // free any previously assigned url before reassigning
         av_free(url);
         url = av_strireplace(tmp_str, "$Bandwidth$", (const char*)rep_bandwidth_val);
         if (!url) {
-            return NULL;
+            goto end;
         }
     }
+end:
+    av_free(tmp_str);
+    av_free(tmp_str_2);
     return url;
 }
 
@@ -582,9 +595,11 @@ static int parse_manifest_segmenturlnode(AVFormatContext *s, struct representati
                                          char *rep_id_val,
                                          char *rep_bandwidth_val)
 {
+    DASHContext *c = s->priv_data;
     char *initialization_val = NULL;
     char *media_val = NULL;
     char *range_val = NULL;
+    int max_url_size = c ? c->max_url_size: MAX_URL_SIZE;
 
     if (!av_strcasecmp(fragmenturl_node->name, (const char *)"Initialization")) {
         initialization_val = xmlGetProp(fragmenturl_node, "sourceURL");
@@ -597,6 +612,7 @@ static int parse_manifest_segmenturlnode(AVFormatContext *s, struct representati
                 return AVERROR(ENOMEM);
             }
             rep->init_section->url = get_content_url(baseurl_nodes, 4,
+                                                     max_url_size,
                                                      rep_id_val,
                                                      rep_bandwidth_val,
                                                      initialization_val);
@@ -621,6 +637,7 @@ static int parse_manifest_segmenturlnode(AVFormatContext *s, struct representati
                 return AVERROR(ENOMEM);
             }
             seg->url = get_content_url(baseurl_nodes, 4,
+                                       max_url_size,
                                        rep_id_val,
                                        rep_bandwidth_val,
                                        media_val);
@@ -675,7 +692,7 @@ static int parse_manifest_segmenttimeline(AVFormatContext *s, struct representat
     return 0;
 }
 
-static int resolve_content_path(AVFormatContext *s, const char *url, xmlNodePtr *baseurl_nodes, int n_baseurl_nodes) {
+static int resolve_content_path(AVFormatContext *s, const char *url, int *max_url_size, xmlNodePtr *baseurl_nodes, int n_baseurl_nodes) {
 
     char *tmp_str = NULL;
     char *path = NULL;
@@ -692,13 +709,13 @@ static int resolve_content_path(AVFormatContext *s, const char *url, xmlNodePtr 
     int updated = 0;
     int size = 0;
     int i;
-    int max_url_size = strlen(url);
+    int tmp_max_url_size = strlen(url);
 
     for (i = n_baseurl_nodes-1; i >= 0 ; i--) {
         text = xmlNodeGetContent(baseurl_nodes[i]);
         if (!text)
             continue;
-        max_url_size += strlen(text);
+        tmp_max_url_size += strlen(text);
         if (ishttp(text)) {
             xmlFree(text);
             break;
@@ -706,7 +723,8 @@ static int resolve_content_path(AVFormatContext *s, const char *url, xmlNodePtr 
         xmlFree(text);
     }
 
-    text = av_mallocz(max_url_size);
+    tmp_max_url_size = aligned(tmp_max_url_size);
+    text = av_mallocz(tmp_max_url_size);
     if (!text) {
         updated = AVERROR(ENOMEM);
         goto end;
@@ -716,8 +734,8 @@ static int resolve_content_path(AVFormatContext *s, const char *url, xmlNodePtr 
         size = strlen(mpdName);
     }
 
-    path = av_mallocz(max_url_size);
-    tmp_str = av_mallocz(max_url_size);
+    path = av_mallocz(tmp_max_url_size);
+    tmp_str = av_mallocz(tmp_max_url_size);
     if (!tmp_str || !path) {
         updated = AVERROR(ENOMEM);
         goto end;
@@ -760,7 +778,7 @@ static int resolve_content_path(AVFormatContext *s, const char *url, xmlNodePtr 
                 av_strlcpy(tmp_str, root_url, size + 1);
             }
             start = (text[0] == token);
-            av_strlcat(tmp_str, text + start, max_url_size);
+            av_strlcat(tmp_str, text + start, tmp_max_url_size);
             xmlNodeSetContent(baseurl_nodes[i], tmp_str);
             updated = 1;
             xmlFree(text);
@@ -768,6 +786,9 @@ static int resolve_content_path(AVFormatContext *s, const char *url, xmlNodePtr 
     }
 
 end:
+    if (tmp_max_url_size > *max_url_size) {
+        *max_url_size = tmp_max_url_size;
+    }
     av_free(path);
     av_free(tmp_str);
     return updated;
@@ -837,8 +858,9 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
         baseurl_nodes[2] = adaptionset_baseurl_node;
         baseurl_nodes[3] = representation_baseurl_node;
 
-        ret = resolve_content_path(s, url, baseurl_nodes, 4);
-        if (ret == AVERROR(ENOMEM) || (ret == 0)) {
+        ret = resolve_content_path(s, url, &c->max_url_size, baseurl_nodes, 4);
+        c->max_url_size = aligned(c->max_url_size  + strlen(rep_id_val) + strlen(rep_bandwidth_val));
+        if (ret == AVERROR(ENOMEM) || ret == 0) {
             goto end;
         }
         if (representation_segmenttemplate_node || fragment_template_node || period_segmenttemplate_node) {
@@ -862,7 +884,8 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
                     ret = AVERROR(ENOMEM);
                     goto end;
                 }
-                rep->init_section->url = get_content_url(baseurl_nodes, 4, rep_id_val, rep_bandwidth_val, initialization_val);
+                c->max_url_size = aligned(c->max_url_size  + strlen(initialization_val));
+                rep->init_section->url = get_content_url(baseurl_nodes, 4,  c->max_url_size, rep_id_val, rep_bandwidth_val, initialization_val);
                 if (!rep->init_section->url) {
                     av_free(rep->init_section);
                     av_free(rep);
@@ -874,7 +897,8 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
             }
 
             if (media_val) {
-                rep->url_template = get_content_url(baseurl_nodes, 4, rep_id_val, rep_bandwidth_val, media_val);
+                c->max_url_size = aligned(c->max_url_size  + strlen(media_val));
+                rep->url_template = get_content_url(baseurl_nodes, 4, c->max_url_size, rep_id_val, rep_bandwidth_val, media_val);
                 xmlFree(media_val);
             }
 
@@ -917,7 +941,7 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
                 ret = AVERROR(ENOMEM);
                 goto end;
             }
-            seg->url = get_content_url(baseurl_nodes, 4, rep_id_val, rep_bandwidth_val, NULL);
+            seg->url = get_content_url(baseurl_nodes, 4, c->max_url_size, rep_id_val, rep_bandwidth_val, NULL);
             if (!seg->url) {
                 av_free(seg);
                 ret = AVERROR(ENOMEM);
@@ -1461,19 +1485,22 @@ static struct fragment *get_current_fragment(struct representation *pls)
         }
     }
     if (seg) {
-        char tmpfilename[MAX_URL_SIZE];
-
-        ff_dash_fill_tmpl_params(tmpfilename, sizeof(tmpfilename), pls->url_template, 0, pls->cur_seq_no, 0, get_segment_start_time_based_on_timeline(pls, pls->cur_seq_no));
+        char *tmpfilename= av_mallocz(c->max_url_size);
+        if (!tmpfilename) {
+            return NULL;
+        }
+        ff_dash_fill_tmpl_params(tmpfilename, c->max_url_size, pls->url_template, 0, pls->cur_seq_no, 0, get_segment_start_time_based_on_timeline(pls, pls->cur_seq_no));
         seg->url = av_strireplace(pls->url_template, pls->url_template, tmpfilename);
         if (!seg->url) {
             av_log(pls->parent, AV_LOG_WARNING, "Unable to resolve template url '%s', try to use origin template\n", pls->url_template);
             seg->url = av_strdup(pls->url_template);
             if (!seg->url) {
                 av_log(pls->parent, AV_LOG_ERROR, "Cannot resolve template url '%s'\n", pls->url_template);
+                av_free(tmpfilename);
                 return NULL;
             }
         }
-
+        av_free(tmpfilename);
         seg->size = -1;
     }
 
@@ -1512,9 +1539,13 @@ static int read_from_url(struct representation *pls, struct fragment *seg,
 static int open_input(DASHContext *c, struct representation *pls, struct fragment *seg)
 {
     AVDictionary *opts = NULL;
-    char url[MAX_URL_SIZE];
-    int ret;
+    char *url = NULL;
+    int ret = 0;
 
+    url = av_mallocz(c->max_url_size);
+    if (!url) {
+        goto cleanup;
+    }
     set_httpheader_options(c, &opts);
     if (seg->size >= 0) {
         /* try to restrict the HTTP request to the part we want
@@ -1523,7 +1554,7 @@ static int open_input(DASHContext *c, struct representation *pls, struct fragmen
         av_dict_set_int(&opts, "end_offset", seg->url_offset + seg->size, 0);
     }
 
-    ff_make_absolute_url(url, MAX_URL_SIZE, c->base_url, seg->url);
+    ff_make_absolute_url(url, c->max_url_size, c->base_url, seg->url);
     av_log(pls->parent, AV_LOG_VERBOSE, "DASH request for url '%s', offset %"PRId64", playlist %d\n",
            url, seg->url_offset, pls->rep_idx);
     ret = open_url(pls->parent, &pls->input, url, c->avio_opts, opts, NULL);
@@ -1532,6 +1563,7 @@ static int open_input(DASHContext *c, struct representation *pls, struct fragmen
     }
 
 cleanup:
+    av_free(url);
     av_dict_free(&opts);
     pls->cur_seg_offset = 0;
     pls->cur_seg_size = seg->size;
