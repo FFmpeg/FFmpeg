@@ -390,7 +390,7 @@ int ff_v4l2_m2m_create_context(AVCodecContext *avctx, V4L2m2mContext **s)
     priv->context_ref = av_buffer_create((uint8_t *) *s, sizeof(V4L2m2mContext),
                                          &v4l2_m2m_destroy_context, NULL, 0);
     if (!priv->context_ref) {
-        av_free(s);
+        av_freep(s);
         return AVERROR(ENOMEM);
     }
 
