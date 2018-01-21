@@ -150,6 +150,11 @@ typedef struct DASHContext {
     AVDictionary *avio_opts;
 } DASHContext;
 
+static int ishttp(char *url) {
+    const char *proto_name = avio_find_protocol_name(url);
+    return av_strstart(proto_name, "http", NULL);
+}
+
 static uint64_t get_current_time_in_sec(void)
 {
     return  av_gettime() / 1000000;
@@ -421,7 +426,8 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
     else if (strcmp(proto_name, "file") || !strncmp(url, "file,", 5))
         return AVERROR_INVALIDDATA;
 
-    ret = s->io_open(s, pb, url, AVIO_FLAG_READ, &tmp);
+    av_freep(pb);
+    ret = avio_open2(pb, url, AVIO_FLAG_READ, c->interrupt_callback, &tmp);
     if (ret >= 0) {
         // update cookies on http response with setcookies.
         char *new_cookies = NULL;
@@ -566,6 +572,7 @@ static struct fragment * get_Fragment(char *range)
         seg->url_offset = strtoll(str_offset, NULL, 10);
         seg->size = strtoll(str_end_offset, NULL, 10) - seg->url_offset;
     }
+
     return seg;
 }
 
@@ -593,6 +600,7 @@ static int parse_manifest_segmenturlnode(AVFormatContext *s, struct representati
                                                      rep_id_val,
                                                      rep_bandwidth_val,
                                                      initialization_val);
+
             if (!rep->init_section->url) {
                 av_free(rep->init_section);
                 xmlFree(initialization_val);
@@ -667,6 +675,105 @@ static int parse_manifest_segmenttimeline(AVFormatContext *s, struct representat
     return 0;
 }
 
+static int resolve_content_path(AVFormatContext *s, const char *url, xmlNodePtr *baseurl_nodes, int n_baseurl_nodes) {
+
+    char *tmp_str = NULL;
+    char *path = NULL;
+    char *mpdName = NULL;
+    xmlNodePtr node = NULL;
+    char *baseurl = NULL;
+    char *root_url = NULL;
+    char *text = NULL;
+
+    int isRootHttp = 0;
+    char token ='/';
+    int start =  0;
+    int rootId = 0;
+    int updated = 0;
+    int size = 0;
+    int i;
+    int max_url_size = strlen(url);
+
+    for (i = n_baseurl_nodes-1; i >= 0 ; i--) {
+        text = xmlNodeGetContent(baseurl_nodes[i]);
+        if (!text)
+            continue;
+        max_url_size += strlen(text);
+        if (ishttp(text)) {
+            xmlFree(text);
+            break;
+        }
+        xmlFree(text);
+    }
+
+    text = av_mallocz(max_url_size);
+    if (!text) {
+        updated = AVERROR(ENOMEM);
+        goto end;
+    }
+    av_strlcpy(text, url, strlen(url)+1);
+    while (mpdName = av_strtok(text, "/", &text))  {
+        size = strlen(mpdName);
+    }
+
+    path = av_mallocz(max_url_size);
+    tmp_str = av_mallocz(max_url_size);
+    if (!tmp_str || !path) {
+        updated = AVERROR(ENOMEM);
+        goto end;
+    }
+
+    av_strlcpy (path, url, strlen(url) - size + 1);
+    for (rootId = n_baseurl_nodes - 1; rootId > 0; rootId --) {
+        if (!(node = baseurl_nodes[rootId])) {
+            continue;
+        }
+        if (ishttp(xmlNodeGetContent(node))) {
+            break;
+        }
+    }
+
+    node = baseurl_nodes[rootId];
+    baseurl = xmlNodeGetContent(node);
+    root_url = (av_strcasecmp(baseurl, "")) ? baseurl : path;
+    if (node) {
+        xmlNodeSetContent(node, root_url);
+        updated = 1;
+    }
+
+    size = strlen(root_url);
+    isRootHttp = ishttp(root_url);
+
+    if (root_url[size - 1] != token) {
+        av_strlcat(root_url, "/", size + 2);
+        size += 2;
+    }
+
+    for (i = 0; i < n_baseurl_nodes; ++i) {
+        if (i == rootId) {
+            continue;
+        }
+        text = xmlNodeGetContent(baseurl_nodes[i]);
+        if (text) {
+            memset(tmp_str, 0, strlen(tmp_str));
+            if (!ishttp(text) && isRootHttp) {
+                av_strlcpy(tmp_str, root_url, size + 1);
+            }
+            start = (text[0] == token);
+            av_strlcat(tmp_str, text + start, max_url_size);
+            xmlNodeSetContent(baseurl_nodes[i], tmp_str);
+            updated = 1;
+            xmlFree(text);
+        }
+    }
+
+end:
+    av_free(path);
+    av_free(tmp_str);
+    return updated;
+
+}
+
 static int parse_manifest_representation(AVFormatContext *s, const char *url,
                                          xmlNodePtr node,
                                          xmlNodePtr adaptionset_node,
@@ -730,6 +837,10 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
         baseurl_nodes[2] = adaptionset_baseurl_node;
         baseurl_nodes[3] = representation_baseurl_node;
 
+        ret = resolve_content_path(s, url, baseurl_nodes, 4);
+        if (ret == AVERROR(ENOMEM) || (ret == 0)) {
+            goto end;
+        }
         if (representation_segmenttemplate_node || fragment_template_node || period_segmenttemplate_node) {
             fragment_timeline_node = NULL;
             fragment_templates_tab[0] = representation_segmenttemplate_node;
@@ -1050,6 +1161,9 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
         }
 
         mpd_baseurl_node = find_child_node_by_name(node, "BaseURL");
+        if (!mpd_baseurl_node) {
+            mpd_baseurl_node = xmlNewNode(NULL, "BaseURL");
+        }
 
         // at now we can handle only one period, with the longest duration
         node = xmlFirstElementChild(node);
@@ -1415,18 +1529,6 @@ static int open_input(DASHContext *c, struct representation *pls, struct fragmen
     ret = open_url(pls->parent, &pls->input, url, c->avio_opts, opts, NULL);
     if (ret < 0) {
         goto cleanup;
-    }
-
-    /* Seek to the requested position. If this was a HTTP request, the offset
-     * should already be where want it to, but this allows e.g. local testing
-     * without a HTTP server. */
-    if (!ret && seg->url_offset) {
-        int64_t seekret = avio_seek(pls->input, seg->url_offset, SEEK_SET);
-        if (seekret < 0) {
-            av_log(pls->parent, AV_LOG_ERROR, "Unable to seek to offset %"PRId64" of DASH fragment '%s'\n", seg->url_offset, seg->url);
-            ret = (int) seekret;
-            ff_format_io_close(pls->parent, &pls->input);
-        }
     }
 
 cleanup:
