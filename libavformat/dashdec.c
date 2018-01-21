@@ -86,6 +86,7 @@ struct representation {
     enum AVMediaType type;
     char id[20];
     int bandwidth;
+    AVRational framerate;
     AVStream *assoc_stream; /* demuxer stream associated with this representation */
 
     int n_fragments;
@@ -674,6 +675,7 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
     xmlNodePtr representation_node = node;
     char *rep_id_val = xmlGetProp(representation_node, "id");
     char *rep_bandwidth_val = xmlGetProp(representation_node, "bandwidth");
+    char *rep_framerate_val = xmlGetProp(representation_node, "frameRate");
     enum AVMediaType type = AVMEDIA_TYPE_UNKNOWN;
 
     // try get information from representation
@@ -843,6 +845,13 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
                 rep->fragment_timescale = 1;
             rep->bandwidth = rep_bandwidth_val ? atoi(rep_bandwidth_val) : 0;
             strncpy(rep->id, rep_id_val ? rep_id_val : "", sizeof(rep->id));
+            rep->framerate = av_make_q(0, 0);
+            if (type == AVMEDIA_TYPE_VIDEO && rep_framerate_val) {
+                ret = av_parse_video_rate(&rep->framerate, rep_framerate_val);
+                if (ret < 0)
+                    av_log(s, AV_LOG_VERBOSE, "Ignoring invalid frame rate '%s'\n", rep_framerate_val);
+            }
+
             if (type == AVMEDIA_TYPE_VIDEO) {
                 rep->rep_idx = video_rep_idx;
                 dynarray_add(&c->videos, &c->n_videos, rep);
@@ -861,6 +870,8 @@ end:
         xmlFree(rep_id_val);
     if (rep_bandwidth_val)
         xmlFree(rep_bandwidth_val);
+    if (rep_framerate_val)
+        xmlFree(rep_framerate_val);
 
     return ret;
 }
@@ -1571,7 +1582,7 @@ static int reopen_demux_for_component(AVFormatContext *s, struct representation 
     AVInputFormat *in_fmt = NULL;
     AVDictionary  *in_fmt_opts = NULL;
     uint8_t *avio_ctx_buffer  = NULL;
-    int ret = 0;
+    int ret = 0, i;
 
     if (pls->ctx) {
         close_demux_for_component(pls);
@@ -1618,6 +1629,13 @@ static int reopen_demux_for_component(AVFormatContext *s, struct representation 
     if (ret < 0)
         goto fail;
     if (pls->n_fragments) {
+#if FF_API_R_FRAME_RATE
+        if (pls->framerate.den) {
+            for (i = 0; i < pls->ctx->nb_streams; i++)
+                pls->ctx->streams[i]->r_frame_rate = pls->framerate;
+        }
+#endif
+
         ret = avformat_find_stream_info(pls->ctx, NULL);
         if (ret < 0)
             goto fail;
