@@ -3525,8 +3525,6 @@ find_things(){
     sed -n "s/^[^#]*$pattern.*([^,]*, *\([^,]*\)\(,.*\)*).*/\1_$thing/p" "$file"
 }
 
-MUXER_LIST=$(find_things    muxer    _MUX     libavformat/allformats.c)
-DEMUXER_LIST=$(find_things  demuxer  DEMUX    libavformat/allformats.c)
 OUTDEV_LIST=$(find_things   outdev   OUTDEV   libavdevice/alldevices.c)
 INDEV_LIST=$(find_things    indev    _IN      libavdevice/alldevices.c)
 FILTER_LIST=$(find_things   filter   FILTER   libavfilter/allfilters.c)
@@ -3538,6 +3536,8 @@ find_things_extern(){
     sed -n "s/^[^#]*extern.*$pattern *ff_\([^ ]*\)_$thing;/\1_$thing/p" "$file"
 }
 
+MUXER_LIST=$(find_things_extern muxer AVOutputFormat libavformat/allformats.c)
+DEMUXER_LIST=$(find_things_extern demuxer AVInputFormat libavformat/allformats.c)
 ENCODER_LIST=$(find_things_extern encoder AVCodec libavcodec/allcodecs.c)
 DECODER_LIST=$(find_things_extern decoder AVCodec libavcodec/allcodecs.c)
 CODEC_LIST="
@@ -7036,6 +7036,8 @@ print_enabled_components(){
 print_enabled_components libavcodec/codec_list.c AVCodec codec_list $CODEC_LIST
 print_enabled_components libavcodec/parser_list.c AVCodecParser parser_list $PARSER_LIST
 print_enabled_components libavcodec/bsf_list.c AVBitStreamFilter bitstream_filters $BSF_LIST
+print_enabled_components libavformat/demuxer_list.c AVInputFormat demuxer_list $DEMUXER_LIST
+print_enabled_components libavformat/muxer_list.c AVOutputFormat muxer_list $MUXER_LIST
 print_enabled_components libavformat/protocol_list.c URLProtocol url_protocols $PROTOCOL_LIST
 
 # Settings for pkg-config files

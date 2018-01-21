@@ -2011,6 +2011,7 @@ const char *avformat_configuration(void);
  */
 const char *avformat_license(void);
 
+#if FF_API_NEXT
 /**
  * Initialize libavformat and register all the muxers, demuxers and
  * protocols. If you do not call this function, then you can select
@@ -2019,10 +2020,14 @@ const char *avformat_license(void);
  * @see av_register_input_format()
  * @see av_register_output_format()
  */
+attribute_deprecated
 void av_register_all(void);
 
+attribute_deprecated
 void av_register_input_format(AVInputFormat *format);
+attribute_deprecated
 void av_register_output_format(AVOutputFormat *format);
+#endif
 
 /**
  * Do global initialization of network libraries. This is optional,
@@ -2046,11 +2051,13 @@ int avformat_network_init(void);
  */
 int avformat_network_deinit(void);
 
+#if FF_API_NEXT
 /**
  * If f is NULL, returns the first registered input format,
  * if f is non-NULL, returns the next registered input format after f
  * or NULL if f is the last one.
  */
+attribute_deprecated
 AVInputFormat  *av_iformat_next(const AVInputFormat  *f);
 
 /**
@@ -2058,7 +2065,31 @@ AVInputFormat  *av_iformat_next(const AVInputFormat  *f);
  * if f is non-NULL, returns the next registered output format after f
  * or NULL if f is the last one.
  */
+attribute_deprecated
 AVOutputFormat *av_oformat_next(const AVOutputFormat *f);
+#endif
+
+/**
+ * Iterate over all registered muxers.
+ *
+ * @param opaque a pointer where libavformat will store the iteration state. Must
+ *               point to NULL to start the iteration.
+ *
+ * @return the next registered muxer or NULL when the iteration is
+ *         finished
+ */
+const AVOutputFormat *av_muxer_iterate(void **opaque);
+
+/**
+ * Iterate over all registered demuxers.
+ *
+ * @param opaque a pointer where libavformat will store the iteration state. Must
+ *               point to NULL to start the iteration.
+ *
+ * @return the next registered demuxer or NULL when the iteration is
+ *         finished
+ */
+const AVInputFormat *av_demuxer_iterate(void **opaque);
 
 /**
  * Allocate an AVFormatContext.

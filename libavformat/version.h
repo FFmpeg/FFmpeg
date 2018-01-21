@@ -91,6 +91,9 @@
 #ifndef FF_API_OLD_RTSP_OPTIONS
 #define FF_API_OLD_RTSP_OPTIONS         (LIBAVFORMAT_VERSION_MAJOR < 59)
 #endif
+#ifndef FF_API_NEXT
+#define FF_API_NEXT                     (LIBAVFORMAT_VERSION_MAJOR < 59)
+#endif
 
 
 #ifndef FF_API_R_FRAME_RATE
