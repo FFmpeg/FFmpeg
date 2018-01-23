@@ -395,6 +395,7 @@ Muxers/Demuxers:
   cdxl.c                                Paul B Mahol
   crc.c                                 Michael Niedermayer
   dashdec.c                             Steven Liu
+  dashenc.c                             Karthick Jeyapal
   daud.c                                Reimar Doeffinger
   dss.c                                 Oleksij Rempel
   dtsdec.c                              foo86
