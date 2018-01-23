@@ -78,6 +78,7 @@ struct video_data {
     int ts_mode;
     TimeFilter *timefilter;
     int64_t last_time_m;
+    int64_t last_pts;
 
     int buffers;
     atomic_int buffers_queued;
@@ -587,6 +588,16 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
         }
     }
     pkt->pts = buf_ts.tv_sec * INT64_C(1000000) + buf_ts.tv_usec;
+    if (pkt->pts) {
+        s->last_pts = pkt->pts;
+    } else if (s->last_pts) {
+        AVRational *framerate = &ctx->streams[0]->r_frame_rate;
+        pkt->pts = s->last_pts + INT64_C(1000000) / (framerate->num / framerate->den);
+        s->last_pts = pkt->pts;
+    } else {
+        av_log(ctx, AV_LOG_WARNING, "Timestamp is not set\n");
+    }
+
     convert_timestamp(ctx, &pkt->pts);
 
     return pkt->size;
