@@ -930,6 +930,11 @@ fail:
     av_free(new_url);
     if (close_in)
         ff_format_io_close(c->ctx, &in);
+    c->ctx->ctx_flags = c->ctx->ctx_flags & ~(unsigned)AVFMTCTX_UNSEEKABLE;
+    if (!c->n_variants || !c->variants[0]->n_playlists ||
+        !(c->variants[0]->playlists[0]->finished ||
+          c->variants[0]->playlists[0]->type == PLS_TYPE_EVENT))
+        c->ctx->ctx_flags |= AVFMTCTX_UNSEEKABLE;
     return ret;
 }
 
@@ -2213,8 +2218,7 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
     int stream_subdemuxer_index;
     int64_t first_timestamp, seek_timestamp, duration;
 
-    if ((flags & AVSEEK_FLAG_BYTE) ||
-        !(c->variants[0]->playlists[0]->finished || c->variants[0]->playlists[0]->type == PLS_TYPE_EVENT))
+    if ((flags & AVSEEK_FLAG_BYTE) || (c->ctx->ctx_flags & AVFMTCTX_UNSEEKABLE))
         return AVERROR(ENOSYS);
 
     first_timestamp = c->first_timestamp == AV_NOPTS_VALUE ?
