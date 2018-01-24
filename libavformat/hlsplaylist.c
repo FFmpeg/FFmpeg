@@ -47,7 +47,8 @@ void ff_hls_write_audio_rendition(AVIOContext *out, char *agroup,
 
 void ff_hls_write_stream_info(AVStream *st, AVIOContext *out,
                               int bandwidth, char *filename, char *agroup,
-                              char *codecs) {
+                              char *codecs, char *ccgroup) {
+
     if (!out || !filename)
         return;
 
@@ -65,6 +66,8 @@ void ff_hls_write_stream_info(AVStream *st, AVIOContext *out,
         avio_printf(out, ",CODECS=\"%s\"", codecs);
     if (agroup && strlen(agroup) > 0)
         avio_printf(out, ",AUDIO=\"group_%s\"", agroup);
+    if (ccgroup && strlen(ccgroup) > 0)
+        avio_printf(out, ",CLOSED-CAPTIONS=\"%s\"", ccgroup);
     avio_printf(out, "\n%s\n\n", filename);
 }
 

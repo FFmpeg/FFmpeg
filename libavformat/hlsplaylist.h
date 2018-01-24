@@ -41,7 +41,7 @@ void ff_hls_write_audio_rendition(AVIOContext *out, char *agroup,
                                   char *filename, int name_id, int is_default);
 void ff_hls_write_stream_info(AVStream *st, AVIOContext *out,
                               int bandwidth, char *filename, char *agroup,
-                              char *codecs);
+                              char *codecs, char *ccgroup);
 void ff_hls_write_playlist_header(AVIOContext *out, int version, int allowcache,
                                   int target_duration, int64_t sequence,
                                   uint32_t playlist_type);

@@ -152,8 +152,15 @@ typedef struct VariantStream {
     unsigned int nb_streams;
     int m3u8_created; /* status of media play-list creation */
     char *agroup; /* audio group name */
+    char *ccgroup; /* closed caption group name */
     char *baseurl;
 } VariantStream;
+
+typedef struct ClosedCaptionsStream {
+    char *ccgroup; /* closed caption group name */
+    char *instreamid; /* closed captions INSTREAM-ID */
+    char *language; /* closed captions langauge */
+} ClosedCaptionsStream;
 
 typedef struct HLSContext {
     const AVClass *class;  // Class for private options.
@@ -203,11 +210,14 @@ typedef struct HLSContext {
 
     VariantStream *var_streams;
     unsigned int nb_varstreams;
+    ClosedCaptionsStream *cc_streams;
+    unsigned int nb_ccstreams;
 
     int master_m3u8_created; /* status of master play-list creation */
     char *master_m3u8_url; /* URL of the master m3u8 file */
     int version; /* HLS version */
     char *var_stream_map; /* user specified variant stream map string */
+    char *cc_stream_map; /* user specified closed caption streams map string */
     char *master_pl_name;
     unsigned int master_publish_rate;
     int http_persistent;
@@ -1167,7 +1177,8 @@ static int create_master_playlist(AVFormatContext *s,
     AVDictionary *options = NULL;
     unsigned int i, j;
     int m3u8_name_size, ret, bandwidth;
-    char *m3u8_rel_name;
+    char *m3u8_rel_name, *ccgroup;
+    ClosedCaptionsStream *ccs;
 
     input_vs->m3u8_created = 1;
     if (!hls->master_m3u8_created) {
@@ -1193,6 +1204,16 @@ static int create_master_playlist(AVFormatContext *s,
     }
 
     ff_hls_write_playlist_version(hls->m3u8_out, hls->version);
+
+    for (i = 0; i < hls->nb_ccstreams; i++) {
+        ccs = &(hls->cc_streams[i]);
+        avio_printf(hls->m3u8_out, "#EXT-X-MEDIA:TYPE=CLOSED-CAPTIONS");
+        avio_printf(hls->m3u8_out, ",GROUP-ID=\"%s\"", ccs->ccgroup);
+        avio_printf(hls->m3u8_out, ",NAME=\"%s\"", ccs->instreamid);
+        if (ccs->language)
+            avio_printf(hls->m3u8_out, ",LANGUAGE=\"%s\"", ccs->language);
+        avio_printf(hls->m3u8_out, ",INSTREAM-ID=\"%s\"\n", ccs->instreamid);
+    }
 
     /* For audio only variant streams add #EXT-X-MEDIA tag with attributes*/
     for (i = 0; i < hls->nb_varstreams; i++) {
@@ -1278,8 +1299,23 @@ static int create_master_playlist(AVFormatContext *s,
             bandwidth += aud_st->codecpar->bit_rate;
         bandwidth += bandwidth / 10;
 
+        ccgroup = NULL;
+        if (vid_st && vs->ccgroup) {
+            /* check if this group name is available in the cc map string */
+            for (j = 0; j < hls->nb_ccstreams; j++) {
+                ccs = &(hls->cc_streams[j]);
+                if (!av_strcasecmp(ccs->ccgroup, vs->ccgroup)) {
+                    ccgroup = vs->ccgroup;
+                    break;
+                }
+            }
+            if (j == hls->nb_ccstreams)
+                av_log(NULL, AV_LOG_WARNING, "mapping ccgroup %s not found\n",
+                        vs->ccgroup);
+        }
+
         ff_hls_write_stream_info(vid_st, hls->m3u8_out, bandwidth, m3u8_rel_name,
-                aud_st ? vs->agroup : NULL, vs->codec_attr);
+                aud_st ? vs->agroup : NULL, vs->codec_attr, ccgroup);
 
         av_freep(&m3u8_rel_name);
     }
@@ -1766,6 +1802,11 @@ static int parse_variant_stream_mapstring(AVFormatContext *s)
                 if (!vs->agroup)
                     return AVERROR(ENOMEM);
                 continue;
+            } else if (av_strstart(keyval, "ccgroup:", &val)) {
+                vs->ccgroup = av_strdup(val);
+                if (!vs->ccgroup)
+                    return AVERROR(ENOMEM);
+                continue;
             } else if (av_strstart(keyval, "v:", &val)) {
                 codec_type = AVMEDIA_TYPE_VIDEO;
             } else if (av_strstart(keyval, "a:", &val)) {
@@ -1796,9 +1837,94 @@ static int parse_variant_stream_mapstring(AVFormatContext *s)
     return 0;
 }
 
+static int parse_cc_stream_mapstring(AVFormatContext *s)
+{
+    HLSContext *hls = s->priv_data;
+    int nb_ccstreams;
+    char *p, *q, *saveptr1, *saveptr2, *ccstr, *keyval;
+    const char *val;
+    ClosedCaptionsStream *ccs;
+
+    p = av_strdup(hls->cc_stream_map);
+    q = p;
+    while(av_strtok(q, " \t", &saveptr1)) {
+        q = NULL;
+        hls->nb_ccstreams++;
+    }
+    av_freep(&p);
+
+    hls->cc_streams = av_mallocz(sizeof(*hls->cc_streams) * hls->nb_ccstreams);
+    if (!hls->cc_streams)
+        return AVERROR(ENOMEM);
+
+    p = hls->cc_stream_map;
+    nb_ccstreams = 0;
+    while (ccstr = av_strtok(p, " \t", &saveptr1)) {
+        p = NULL;
+
+        if (nb_ccstreams < hls->nb_ccstreams)
+            ccs = &(hls->cc_streams[nb_ccstreams++]);
+        else
+            return AVERROR(EINVAL);
+
+        while (keyval = av_strtok(ccstr, ",", &saveptr2)) {
+            ccstr = NULL;
+
+            if (av_strstart(keyval, "ccgroup:", &val)) {
+                ccs->ccgroup = av_strdup(val);
+                if (!ccs->ccgroup)
+                    return AVERROR(ENOMEM);
+            } else if (av_strstart(keyval, "instreamid:", &val)) {
+                ccs->instreamid = av_strdup(val);
+                if (!ccs->instreamid)
+                    return AVERROR(ENOMEM);
+            } else if (av_strstart(keyval, "language:", &val)) {
+                ccs->language = av_strdup(val);
+                if (!ccs->language)
+                    return AVERROR(ENOMEM);
+            } else {
+                av_log(s, AV_LOG_ERROR, "Invalid keyval %s\n", keyval);
+                return AVERROR(EINVAL);
+            }
+        }
+
+        if (!ccs->ccgroup || !ccs->instreamid) {
+            av_log(s, AV_LOG_ERROR, "Insufficient parameters in cc stream map string\n");
+            return AVERROR(EINVAL);
+        }
+
+        if (av_strstart(ccs->instreamid, "CC", &val)) {
+            if(atoi(val) < 1 || atoi(val) > 4) {
+                av_log(s, AV_LOG_ERROR, "Invalid instream ID CC index %d in %s, range 1-4\n",
+                       atoi(val), ccs->instreamid);
+                return AVERROR(EINVAL);
+            }
+        } else if (av_strstart(ccs->instreamid, "SERVICE", &val)) {
+            if(atoi(val) < 1 || atoi(val) > 63) {
+                av_log(s, AV_LOG_ERROR, "Invalid instream ID SERVICE index %d in %s, range 1-63 \n",
+                       atoi(val), ccs->instreamid);
+                return AVERROR(EINVAL);
+            }
+        } else {
+            av_log(s, AV_LOG_ERROR, "Invalid instream ID %s, supported are CCn or SERIVICEn\n",
+                   ccs->instreamid);
+            return AVERROR(EINVAL);
+        }
+    }
+
+    return 0;
+}
+
 static int update_variant_stream_info(AVFormatContext *s) {
     HLSContext *hls = s->priv_data;
     unsigned int i;
+    int ret = 0;
+
+    if (hls->cc_stream_map) {
+        ret = parse_cc_stream_mapstring(s);
+        if (ret < 0)
+            return ret;
+    }
 
     if (hls->var_stream_map) {
         return parse_variant_stream_mapstring(s);
@@ -1815,6 +1941,13 @@ static int update_variant_stream_info(AVFormatContext *s) {
                                             hls->var_streams[0].nb_streams);
         if (!hls->var_streams[0].streams)
             return AVERROR(ENOMEM);
+
+        //by default, the first available ccgroup is mapped to the variant stream
+        if (hls->nb_ccstreams) {
+            hls->var_streams[0].ccgroup = av_strdup(hls->cc_streams[0].ccgroup);
+            if (!hls->var_streams[0].ccgroup)
+                return AVERROR(ENOMEM);
+        }
 
         for (i = 0; i < s->nb_streams; i++)
             hls->var_streams[0].streams[i] = s->streams[i];
@@ -2192,13 +2325,22 @@ failed:
     av_freep(&vs->m3u8_name);
     av_freep(&vs->streams);
     av_freep(&vs->agroup);
+    av_freep(&vs->ccgroup);
     av_freep(&vs->baseurl);
+    }
+
+    for (i = 0; i < hls->nb_ccstreams; i++) {
+        ClosedCaptionsStream *ccs = &hls->cc_streams[i];
+        av_freep(&ccs->ccgroup);
+        av_freep(&ccs->instreamid);
+        av_freep(&ccs->language);
     }
 
     ff_format_io_close(s, &hls->m3u8_out);
     ff_format_io_close(s, &hls->sub_m3u8_out);
     av_freep(&hls->key_basename);
     av_freep(&hls->var_streams);
+    av_freep(&hls->cc_streams);
     av_freep(&hls->master_m3u8_url);
     return 0;
 }
@@ -2535,13 +2677,21 @@ fail:
             av_freep(&vs->vtt_m3u8_name);
             av_freep(&vs->streams);
             av_freep(&vs->agroup);
+            av_freep(&vs->ccgroup);
             av_freep(&vs->baseurl);
             if (vs->avf)
                 avformat_free_context(vs->avf);
             if (vs->vtt_avf)
                 avformat_free_context(vs->vtt_avf);
         }
+        for (i = 0; i < hls->nb_ccstreams; i++) {
+            ClosedCaptionsStream *ccs = &hls->cc_streams[i];
+            av_freep(&ccs->ccgroup);
+            av_freep(&ccs->instreamid);
+            av_freep(&ccs->language);
+        }
         av_freep(&hls->var_streams);
+        av_freep(&hls->cc_streams);
         av_freep(&hls->master_m3u8_url);
     }
 
@@ -2601,6 +2751,7 @@ static const AVOption options[] = {
     {"datetime", "current datetime as YYYYMMDDhhmmss", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_START_SEQUENCE_AS_FORMATTED_DATETIME }, INT_MIN, INT_MAX, E, "start_sequence_source_type" },
     {"http_user_agent", "override User-Agent field in HTTP header", OFFSET(user_agent), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
     {"var_stream_map", "Variant stream map string", OFFSET(var_stream_map), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
+    {"cc_stream_map", "Closed captions stream map string", OFFSET(cc_stream_map), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
     {"master_pl_name", "Create HLS master playlist with this name", OFFSET(master_pl_name), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
     {"master_pl_publish_rate", "Publish master play list every after this many segment intervals", OFFSET(master_publish_rate), AV_OPT_TYPE_INT, {.i64 = 0}, 0, UINT_MAX, E},
     {"http_persistent", "Use persistent HTTP connections", OFFSET(http_persistent), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, E },
