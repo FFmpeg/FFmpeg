@@ -1422,8 +1422,9 @@ reload:
         if (!v->finished &&
             av_gettime_relative() - v->last_load_time >= reload_interval) {
             if ((ret = parse_playlist(c, v->url, v, NULL)) < 0) {
-                av_log(v->parent, AV_LOG_WARNING, "Failed to reload playlist %d\n",
-                       v->index);
+                if (ret != AVERROR_EXIT)
+                    av_log(v->parent, AV_LOG_WARNING, "Failed to reload playlist %d\n",
+                           v->index);
                 return ret;
             }
             /* If we need to reload the playlist again below (if
