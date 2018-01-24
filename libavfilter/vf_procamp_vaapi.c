@@ -44,8 +44,6 @@
 #define SATURATION_MAX       10.0F
 #define SATURATION_DEFAULT    1.0F
 
-#define EPSILON               0.00001F
-
 typedef struct ProcampVAAPIContext {
     VAAPIVPPContext vpp_ctx; // must be the first field
 
@@ -63,11 +61,6 @@ static float map(float x, float in_min, float in_max, float out_min, float out_m
     output = out_min + slope * (x - in_min);
 
     return (float)output;
-}
-
-static int fequal(float a, float b)
-{
-    return fabs(a-b) < EPSILON;
 }
 
 static int procamp_vaapi_build_filter_params(AVFilterContext *avctx)
@@ -93,41 +86,37 @@ static int procamp_vaapi_build_filter_params(AVFilterContext *avctx)
         return AVERROR(EIO);
     }
 
-    if (!fequal(ctx->bright, BRIGHTNESS_DEFAULT)) {
-        procamp_params[i].type   = VAProcFilterColorBalance;
-        procamp_params[i].attrib = VAProcColorBalanceBrightness;
-        procamp_params[i].value  = map(ctx->bright, BRIGHTNESS_MIN, BRIGHTNESS_MAX,
-                                       procamp_caps[VAProcColorBalanceBrightness-1].range.min_value,
-                                       procamp_caps[VAProcColorBalanceBrightness-1].range.max_value);
-        i++;
-    }
+    /* brightness */
+    procamp_params[i].type   = VAProcFilterColorBalance;
+    procamp_params[i].attrib = VAProcColorBalanceBrightness;
+    procamp_params[i].value  = map(ctx->bright, BRIGHTNESS_MIN, BRIGHTNESS_MAX,
+                                   procamp_caps[VAProcColorBalanceBrightness-1].range.min_value,
+                                   procamp_caps[VAProcColorBalanceBrightness-1].range.max_value);
+    i++;
 
-    if (!fequal(ctx->contrast, CONTRAST_DEFAULT)) {
-        procamp_params[i].type   = VAProcFilterColorBalance;
-        procamp_params[i].attrib = VAProcColorBalanceContrast;
-        procamp_params[i].value  = map(ctx->contrast, CONTRAST_MIN, CONTRAST_MAX,
-                                       procamp_caps[VAProcColorBalanceContrast-1].range.min_value,
-                                       procamp_caps[VAProcColorBalanceContrast-1].range.max_value);
-        i++;
-    }
+    /* contrast */
+    procamp_params[i].type   = VAProcFilterColorBalance;
+    procamp_params[i].attrib = VAProcColorBalanceContrast;
+    procamp_params[i].value  = map(ctx->contrast, CONTRAST_MIN, CONTRAST_MAX,
+                                   procamp_caps[VAProcColorBalanceContrast-1].range.min_value,
+                                   procamp_caps[VAProcColorBalanceContrast-1].range.max_value);
+    i++;
 
-    if (!fequal(ctx->hue, HUE_DEFAULT)) {
-        procamp_params[i].type   = VAProcFilterColorBalance;
-        procamp_params[i].attrib = VAProcColorBalanceHue;
-        procamp_params[i].value  = map(ctx->hue, HUE_MIN, HUE_MAX,
-                                       procamp_caps[VAProcColorBalanceHue-1].range.min_value,
-                                       procamp_caps[VAProcColorBalanceHue-1].range.max_value);
-        i++;
-    }
+    /* hue */
+    procamp_params[i].type   = VAProcFilterColorBalance;
+    procamp_params[i].attrib = VAProcColorBalanceHue;
+    procamp_params[i].value  = map(ctx->hue, HUE_MIN, HUE_MAX,
+                                   procamp_caps[VAProcColorBalanceHue-1].range.min_value,
+                                   procamp_caps[VAProcColorBalanceHue-1].range.max_value);
+    i++;
 
-    if (!fequal(ctx->saturation, SATURATION_DEFAULT)) {
-        procamp_params[i].type   = VAProcFilterColorBalance;
-        procamp_params[i].attrib = VAProcColorBalanceSaturation;
-        procamp_params[i].value  = map(ctx->saturation, SATURATION_MIN, SATURATION_MAX,
-                                       procamp_caps[VAProcColorBalanceSaturation-1].range.min_value,
-                                       procamp_caps[VAProcColorBalanceSaturation-1].range.max_value);
-        i++;
-    }
+    /* saturation */
+    procamp_params[i].type   = VAProcFilterColorBalance;
+    procamp_params[i].attrib = VAProcColorBalanceSaturation;
+    procamp_params[i].value  = map(ctx->saturation, SATURATION_MIN, SATURATION_MAX,
+                                   procamp_caps[VAProcColorBalanceSaturation-1].range.min_value,
+                                   procamp_caps[VAProcColorBalanceSaturation-1].range.max_value);
+    i++;
 
     return ff_vaapi_vpp_make_param_buffers(avctx,
                                            VAProcFilterParameterBufferType,
