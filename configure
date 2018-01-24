@@ -3319,7 +3319,7 @@ resampling_audio_example_deps="avutil swresample"
 scaling_video_example_deps="avutil swscale"
 transcode_aac_example_deps="avcodec avformat swresample"
 transcoding_example_deps="avfilter avcodec avformat avutil"
-vaapi_encode_example_deps="avcodec avutil"
+vaapi_encode_example_deps="avcodec avutil h264_vaapi_encoder"
 
 # EXTRALIBS_LIST
 cpu_init_extralibs="pthreads_extralibs"
