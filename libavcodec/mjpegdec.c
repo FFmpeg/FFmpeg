@@ -715,7 +715,7 @@ static int decode_block(MJpegDecodeContext *s, int16_t *block, int component,
         av_log(s->avctx, AV_LOG_ERROR, "error dc\n");
         return AVERROR_INVALIDDATA;
     }
-    val = val * quant_matrix[0] + s->last_dc[component];
+    val = val * (unsigned)quant_matrix[0] + s->last_dc[component];
     val = av_clip_int16(val);
     s->last_dc[component] = val;
     block[0] = val;
