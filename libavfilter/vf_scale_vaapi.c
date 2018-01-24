@@ -31,7 +31,7 @@
 #include "vaapi_vpp.h"
 
 typedef struct ScaleVAAPIContext {
-    VAAPIVPPContext vpp_ctx; // must be the first fileld
+    VAAPIVPPContext vpp_ctx; // must be the first field
 
     char *output_format_string;
 

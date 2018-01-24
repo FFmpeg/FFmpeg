@@ -47,7 +47,7 @@
 #define EPSILON               0.00001F
 
 typedef struct ProcampVAAPIContext {
-    VAAPIVPPContext vpp_ctx; // must be the first fileld
+    VAAPIVPPContext vpp_ctx; // must be the first field
 
     float bright;
     float hue;

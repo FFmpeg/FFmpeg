@@ -33,7 +33,7 @@
 #define MAX_REFERENCES 8
 
 typedef struct DeintVAAPIContext {
-    VAAPIVPPContext vpp_ctx; // must be the first fileld
+    VAAPIVPPContext vpp_ctx; // must be the first field
 
     int                mode;
     int                field_rate;

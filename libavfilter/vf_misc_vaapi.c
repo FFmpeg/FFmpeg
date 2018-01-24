@@ -38,13 +38,13 @@
 #define SHARPNESS_DEFAULT      44
 
 typedef struct DenoiseVAAPIContext {
-    VAAPIVPPContext vpp_ctx; // must be the first fileld
+    VAAPIVPPContext vpp_ctx; // must be the first field
 
     int denoise;         // enable denoise algo.
 } DenoiseVAAPIContext;
 
 typedef struct SharpnessVAAPIContext {
-    VAAPIVPPContext vpp_ctx; // must be the first fileld
+    VAAPIVPPContext vpp_ctx; // must be the first field
 
     int sharpness;       // enable sharpness.
 } SharpnessVAAPIContext;
