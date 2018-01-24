@@ -413,6 +413,7 @@ OBJS-$(CONFIG_SHARED)                        += log2_tab.o
 
 SKIPHEADERS-$(CONFIG_QSVVPP)                 += qsvvpp.h
 SKIPHEADERS-$(CONFIG_OPENCL)                 += opencl.h
+SKIPHEADERS-$(CONFIG_VAAPI)                  += vaapi_vpp.h
 
 TOOLS     = graph2dot
 TESTPROGS = drawutils filtfmts formats integral
