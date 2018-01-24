@@ -1324,6 +1324,11 @@ static int pps_range_extensions(GetBitContext *gb, AVCodecContext *avctx,
     pps->log2_sao_offset_scale_luma = get_ue_golomb_long(gb);
     pps->log2_sao_offset_scale_chroma = get_ue_golomb_long(gb);
 
+    if (   pps->log2_sao_offset_scale_luma   > FFMAX(sps->bit_depth        - 10, 0)
+        || pps->log2_sao_offset_scale_chroma > FFMAX(sps->bit_depth_chroma - 10, 0)
+    )
+        return AVERROR_INVALIDDATA;
+
     return(0);
 }
 
