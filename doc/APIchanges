@@ -15,6 +15,13 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2018-02-xx - xxxxxxx - lavf 58.8.100 - avformat.h
+  Deprecate the current names of the RTSP "timeout", "stimeout", "user-agent"
+  options. Introduce "listen_timeout" as replacement for the current "timeout"
+  option, and "user_agent" as replacement for "user-agent". Once the deprecation
+  is over, the old "timeout" option will be removed, and "stimeout" will be
+  renamed to "stimeout" (the "timeout" option will essentially change semantics).
+
 2018-01-xx - xxxxxxx - lavf 58.7.100 - avformat.h
   Deprecate AVFormatContext filename field which had limited length, use the
   new dynamically allocated url field instead.
