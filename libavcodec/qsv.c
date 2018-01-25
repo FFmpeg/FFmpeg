@@ -389,7 +389,7 @@ static mfxStatus qsv_frame_alloc(mfxHDL pthis, mfxFrameAllocRequest *req,
         mfxFrameInfo      *i  = &req->Info;
         mfxFrameInfo      *i1 = &frames_hwctx->surfaces[0].Info;
 
-        if (i->Width  != i1->Width  || i->Height != i1->Height ||
+        if (i->Width  > i1->Width  || i->Height > i1->Height ||
             i->FourCC != i1->FourCC || i->ChromaFormat != i1->ChromaFormat) {
             av_log(ctx->logctx, AV_LOG_ERROR, "Mismatching surface properties in an "
                    "allocation request: %dx%d %d %d vs %dx%d %d %d\n",

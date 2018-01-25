@@ -149,9 +149,6 @@ static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q)
             else if (frames_hwctx->frame_type & MFX_MEMTYPE_VIDEO_MEMORY_DECODER_TARGET)
                 iopattern = MFX_IOPATTERN_OUT_VIDEO_MEMORY;
         }
-
-        frame_width  = frames_hwctx->surfaces[0].Info.Width;
-        frame_height = frames_hwctx->surfaces[0].Info.Height;
     }
 
     if (!iopattern)
