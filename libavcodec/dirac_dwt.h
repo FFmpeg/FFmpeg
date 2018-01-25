@@ -93,10 +93,10 @@ void ff_spatial_idwt_slice2(DWTContext *d, int y);
 
 // shared stuff for simd optimizations
 #define COMPOSE_53iL0(b0, b1, b2)\
-    (b1 - ((int)(b0 + (unsigned)(b2) + 2) >> 2))
+    (b1 - (unsigned)((int)(b0 + (unsigned)(b2) + 2) >> 2))
 
 #define COMPOSE_DIRAC53iH0(b0, b1, b2)\
-    (b1 + ((int)(b0 + (unsigned)(b2) + 1) >> 1))
+    (b1 + (unsigned)((int)(b0 + (unsigned)(b2) + 1) >> 1))
 
 #define COMPOSE_DD97iH0(b0, b1, b2, b3, b4)\
     (int)(((unsigned)(b2) + ((int)(-b0 + 9U*b1 + 9U*b3 - b4 + 8) >> 4)))
