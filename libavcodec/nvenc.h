@@ -37,7 +37,6 @@ typedef struct NvencSurface
 {
     NV_ENC_INPUT_PTR input_surface;
     AVFrame *in_ref;
-    NV_ENC_MAP_INPUT_RESOURCE in_map;
     int reg_idx;
     int width;
     int height;
@@ -122,6 +121,7 @@ typedef struct NvencContext
         CUdeviceptr ptr;
         NV_ENC_REGISTERED_PTR regptr;
         int mapped;
+        NV_ENC_MAP_INPUT_RESOURCE in_map;
     } registered_frames[MAX_REGISTERED_FRAMES];
     int nb_registered_frames;
 
