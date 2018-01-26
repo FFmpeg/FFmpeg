@@ -1389,12 +1389,9 @@ av_cold int ff_nvenc_encode_close(AVCodecContext *avctx)
     av_fifo_freep(&ctx->unused_surface_queue);
 
     if (ctx->surfaces && (avctx->pix_fmt == AV_PIX_FMT_CUDA || avctx->pix_fmt == AV_PIX_FMT_D3D11)) {
-        for (i = 0; i < ctx->nb_surfaces; ++i) {
-            if (ctx->surfaces[i].input_surface) {
-                 p_nvenc->nvEncUnmapInputResource(ctx->nvencoder, ctx->surfaces[i].in_map.mappedResource);
-            }
-        }
         for (i = 0; i < ctx->nb_registered_frames; i++) {
+            if (ctx->registered_frames[i].mapped)
+                p_nvenc->nvEncUnmapInputResource(ctx->nvencoder, ctx->registered_frames[i].in_map.mappedResource);
             if (ctx->registered_frames[i].regptr)
                 p_nvenc->nvEncUnregisterResource(ctx->nvencoder, ctx->registered_frames[i].regptr);
         }
@@ -1629,19 +1626,23 @@ static int nvenc_upload_frame(AVCodecContext *avctx, const AVFrame *frame,
         if (res < 0)
             return res;
 
-        nvenc_frame->in_map.version = NV_ENC_MAP_INPUT_RESOURCE_VER;
-        nvenc_frame->in_map.registeredResource = ctx->registered_frames[reg_idx].regptr;
-        nv_status = p_nvenc->nvEncMapInputResource(ctx->nvencoder, &nvenc_frame->in_map);
-        if (nv_status != NV_ENC_SUCCESS) {
-            av_frame_unref(nvenc_frame->in_ref);
-            return nvenc_print_error(avctx, nv_status, "Error mapping an input resource");
+        if (!ctx->registered_frames[reg_idx].mapped) {
+            ctx->registered_frames[reg_idx].in_map.version = NV_ENC_MAP_INPUT_RESOURCE_VER;
+            ctx->registered_frames[reg_idx].in_map.registeredResource = ctx->registered_frames[reg_idx].regptr;
+            nv_status = p_nvenc->nvEncMapInputResource(ctx->nvencoder, &ctx->registered_frames[reg_idx].in_map);
+            if (nv_status != NV_ENC_SUCCESS) {
+                av_frame_unref(nvenc_frame->in_ref);
+                return nvenc_print_error(avctx, nv_status, "Error mapping an input resource");
+            }
         }
 
-        ctx->registered_frames[reg_idx].mapped = 1;
+        ctx->registered_frames[reg_idx].mapped += 1;
+
         nvenc_frame->reg_idx                   = reg_idx;
-        nvenc_frame->input_surface             = nvenc_frame->in_map.mappedResource;
-        nvenc_frame->format                    = nvenc_frame->in_map.mappedBufferFmt;
+        nvenc_frame->input_surface             = ctx->registered_frames[reg_idx].in_map.mappedResource;
+        nvenc_frame->format                    = ctx->registered_frames[reg_idx].in_map.mappedBufferFmt;
         nvenc_frame->pitch                     = frame->linesize[0];
+
         return 0;
     } else {
         NV_ENC_LOCK_INPUT_BUFFER lockBufferParams = { 0 };
@@ -1793,9 +1794,15 @@ static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, NvencSur
 
 
     if (avctx->pix_fmt == AV_PIX_FMT_CUDA || avctx->pix_fmt == AV_PIX_FMT_D3D11) {
-        p_nvenc->nvEncUnmapInputResource(ctx->nvencoder, tmpoutsurf->in_map.mappedResource);
+        ctx->registered_frames[tmpoutsurf->reg_idx].mapped -= 1;
+        if (ctx->registered_frames[tmpoutsurf->reg_idx].mapped == 0) {
+            p_nvenc->nvEncUnmapInputResource(ctx->nvencoder, ctx->registered_frames[tmpoutsurf->reg_idx].in_map.mappedResource);
+        } else if (ctx->registered_frames[tmpoutsurf->reg_idx].mapped < 0) {
+            res = AVERROR_BUG;
+            goto error;
+        }
+
         av_frame_unref(tmpoutsurf->in_ref);
-        ctx->registered_frames[tmpoutsurf->reg_idx].mapped = 0;
 
         tmpoutsurf->input_surface = NULL;
     }
