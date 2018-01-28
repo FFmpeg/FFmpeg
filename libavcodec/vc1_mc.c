@@ -689,6 +689,11 @@ void ff_vc1_mc_4mv_chroma4(VC1Context *v, int dir, int dir2, int avg)
     if (s->avctx->flags & AV_CODEC_FLAG_GRAY)
         return;
 
+    if (!s->last_picture.f->data[1]) {
+      av_log(s->avctx, AV_LOG_ERROR, "Bad data in last picture frame.\n");
+      return;
+    }
+
     for (i = 0; i < 4; i++) {
         int d = i < 2 ? dir: dir2;
         tx = s->mv[d][i][0];
