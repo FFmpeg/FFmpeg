@@ -1529,6 +1529,7 @@ static int nvenc_find_free_reg_resource(AVCodecContext *avctx)
     NvencContext *ctx = avctx->priv_data;
     NvencDynLoadFunctions *dl_fn = &ctx->nvenc_dload_funcs;
     NV_ENCODE_API_FUNCTION_LIST *p_nvenc = &dl_fn->nvenc_funcs;
+    NVENCSTATUS nv_status;
 
     int i;
 
@@ -1536,8 +1537,9 @@ static int nvenc_find_free_reg_resource(AVCodecContext *avctx)
         for (i = 0; i < ctx->nb_registered_frames; i++) {
             if (!ctx->registered_frames[i].mapped) {
                 if (ctx->registered_frames[i].regptr) {
-                    p_nvenc->nvEncUnregisterResource(ctx->nvencoder,
-                                                ctx->registered_frames[i].regptr);
+                    nv_status = p_nvenc->nvEncUnregisterResource(ctx->nvencoder, ctx->registered_frames[i].regptr);
+                    if (nv_status != NV_ENC_SUCCESS)
+                        return nvenc_print_error(avctx, nv_status, "Failed unregistering unused input resource");
                     ctx->registered_frames[i].regptr = NULL;
                 }
                 return i;
@@ -1789,15 +1791,25 @@ static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, NvencSur
     memcpy(pkt->data, lock_params.bitstreamBufferPtr, lock_params.bitstreamSizeInBytes);
 
     nv_status = p_nvenc->nvEncUnlockBitstream(ctx->nvencoder, tmpoutsurf->output_surface);
-    if (nv_status != NV_ENC_SUCCESS)
-        nvenc_print_error(avctx, nv_status, "Failed unlocking bitstream buffer, expect the gates of mordor to open");
+    if (nv_status != NV_ENC_SUCCESS) {
+        res = nvenc_print_error(avctx, nv_status, "Failed unlocking bitstream buffer, expect the gates of mordor to open");
+        goto error;
+    }
 
 
     if (avctx->pix_fmt == AV_PIX_FMT_CUDA || avctx->pix_fmt == AV_PIX_FMT_D3D11) {
         ctx->registered_frames[tmpoutsurf->reg_idx].mapped -= 1;
         if (ctx->registered_frames[tmpoutsurf->reg_idx].mapped == 0) {
-            p_nvenc->nvEncUnmapInputResource(ctx->nvencoder, ctx->registered_frames[tmpoutsurf->reg_idx].in_map.mappedResource);
-            p_nvenc->nvEncUnregisterResource(ctx->nvencoder, ctx->registered_frames[tmpoutsurf->reg_idx].regptr);
+            nv_status = p_nvenc->nvEncUnmapInputResource(ctx->nvencoder, ctx->registered_frames[tmpoutsurf->reg_idx].in_map.mappedResource);
+            if (nv_status != NV_ENC_SUCCESS) {
+                res = nvenc_print_error(avctx, nv_status, "Failed unmapping input resource");
+                goto error;
+            }
+            nv_status = p_nvenc->nvEncUnregisterResource(ctx->nvencoder, ctx->registered_frames[tmpoutsurf->reg_idx].regptr);
+            if (nv_status != NV_ENC_SUCCESS) {
+                res = nvenc_print_error(avctx, nv_status, "Failed unregistering input resource");
+                goto error;
+            }
             ctx->registered_frames[tmpoutsurf->reg_idx].regptr = NULL;
         } else if (ctx->registered_frames[tmpoutsurf->reg_idx].mapped < 0) {
             res = AVERROR_BUG;
