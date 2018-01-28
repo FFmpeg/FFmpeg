@@ -45,6 +45,12 @@ void av_aes_ctr_set_iv(struct AVAESCTR *a, const uint8_t* iv)
     a->block_offset = 0;
 }
 
+void av_aes_ctr_set_full_iv(struct AVAESCTR *a, const uint8_t* iv)
+{
+    memcpy(a->counter, iv, sizeof(a->counter));
+    a->block_offset = 0;
+}
+
 const uint8_t* av_aes_ctr_get_iv(struct AVAESCTR *a)
 {
     return a->counter;

@@ -1275,6 +1275,11 @@ typedef struct AVProgram {
 
 #define AVFMTCTX_NOHEADER      0x0001 /**< signal that no header is present
                                          (streams are added dynamically) */
+#define AVFMTCTX_UNSEEKABLE    0x0002 /**< signal that the stream is definitely
+                                         not seekable, and attempts to call the
+                                         seek function will fail. For some
+                                         network protocols (e.g. HLS), this can
+                                         change dynamically at runtime. */
 
 typedef struct AVChapter {
     int id;                 ///< unique ID to identify the chapter

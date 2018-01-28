@@ -240,6 +240,7 @@ Codecs:
   tta.c                                 Alex Beregszaszi, Jaikrishnan Menon
   ttaenc.c                              Paul B Mahol
   txd.c                                 Ivo van Poorten
+  v4l2_*                                Jorge Ramirez-Ortiz
   vc2*                                  Rostislav Pehlivanov
   vcr1.c                                Michael Niedermayer
   videotoolboxenc.c                     Rick Kern, Aman Gupta
@@ -394,6 +395,7 @@ Muxers/Demuxers:
   cdxl.c                                Paul B Mahol
   crc.c                                 Michael Niedermayer
   dashdec.c                             Steven Liu
+  dashenc.c                             Karthick Jeyapal
   daud.c                                Reimar Doeffinger
   dss.c                                 Oleksij Rempel
   dtsdec.c                              foo86

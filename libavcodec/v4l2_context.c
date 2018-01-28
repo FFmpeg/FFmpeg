@@ -446,9 +446,7 @@ static int v4l2_get_raw_format(V4L2Context* ctx, enum AVPixelFormat *p)
 
     if (pixfmt != AV_PIX_FMT_NONE) {
         ret = v4l2_try_raw_format(ctx, pixfmt);
-        if (ret)
-            pixfmt = AV_PIX_FMT_NONE;
-        else
+        if (!ret)
             return 0;
     }
 

@@ -930,6 +930,11 @@ fail:
     av_free(new_url);
     if (close_in)
         ff_format_io_close(c->ctx, &in);
+    c->ctx->ctx_flags = c->ctx->ctx_flags & ~(unsigned)AVFMTCTX_UNSEEKABLE;
+    if (!c->n_variants || !c->variants[0]->n_playlists ||
+        !(c->variants[0]->playlists[0]->finished ||
+          c->variants[0]->playlists[0]->type == PLS_TYPE_EVENT))
+        c->ctx->ctx_flags |= AVFMTCTX_UNSEEKABLE;
     return ret;
 }
 
@@ -1417,8 +1422,9 @@ reload:
         if (!v->finished &&
             av_gettime_relative() - v->last_load_time >= reload_interval) {
             if ((ret = parse_playlist(c, v->url, v, NULL)) < 0) {
-                av_log(v->parent, AV_LOG_WARNING, "Failed to reload playlist %d\n",
-                       v->index);
+                if (ret != AVERROR_EXIT)
+                    av_log(v->parent, AV_LOG_WARNING, "Failed to reload playlist %d\n",
+                           v->index);
                 return ret;
             }
             /* If we need to reload the playlist again below (if
@@ -2213,8 +2219,7 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
     int stream_subdemuxer_index;
     int64_t first_timestamp, seek_timestamp, duration;
 
-    if ((flags & AVSEEK_FLAG_BYTE) ||
-        !(c->variants[0]->playlists[0]->finished || c->variants[0]->playlists[0]->type == PLS_TYPE_EVENT))
+    if ((flags & AVSEEK_FLAG_BYTE) || (c->ctx->ctx_flags & AVFMTCTX_UNSEEKABLE))
         return AVERROR(ENOSYS);
 
     first_timestamp = c->first_timestamp == AV_NOPTS_VALUE ?
@@ -2333,6 +2338,7 @@ AVInputFormat ff_hls_demuxer = {
     .long_name      = NULL_IF_CONFIG_SMALL("Apple HTTP Live Streaming"),
     .priv_class     = &hls_class,
     .priv_data_size = sizeof(HLSContext),
+    .flags          = AVFMT_NOGENSEARCH,
     .read_probe     = hls_probe,
     .read_header    = hls_read_header,
     .read_packet    = hls_read_packet,

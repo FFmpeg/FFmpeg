@@ -406,6 +406,9 @@ void term_init(void)
 #ifdef SIGXCPU
     signal(SIGXCPU, sigterm_handler);
 #endif
+#ifdef SIGPIPE
+    signal(SIGPIPE, SIG_IGN); /* Broken pipe (POSIX). */
+#endif
 #if HAVE_SETCONSOLECTRLHANDLER
     SetConsoleCtrlHandler((PHANDLER_ROUTINE) CtrlHandler, TRUE);
 #endif

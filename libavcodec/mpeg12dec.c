@@ -2893,7 +2893,7 @@ AVCodec ff_mpeg1video_decoder = {
     .max_lowres            = 3,
     .update_thread_context = ONLY_IF_THREADS_ENABLED(mpeg_decode_update_thread_context),
     .hw_configs            = (const AVCodecHWConfigInternal*[]) {
-#if CONFIG_MPEG2_NVDEC_HWACCEL
+#if CONFIG_MPEG1_NVDEC_HWACCEL
                                HWACCEL_NVDEC(mpeg1),
 #endif
 #if CONFIG_MPEG1_VDPAU_HWACCEL
