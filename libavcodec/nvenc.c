@@ -1797,6 +1797,8 @@ static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, NvencSur
         ctx->registered_frames[tmpoutsurf->reg_idx].mapped -= 1;
         if (ctx->registered_frames[tmpoutsurf->reg_idx].mapped == 0) {
             p_nvenc->nvEncUnmapInputResource(ctx->nvencoder, ctx->registered_frames[tmpoutsurf->reg_idx].in_map.mappedResource);
+            p_nvenc->nvEncUnregisterResource(ctx->nvencoder, ctx->registered_frames[tmpoutsurf->reg_idx].regptr);
+            ctx->registered_frames[tmpoutsurf->reg_idx].regptr = NULL;
         } else if (ctx->registered_frames[tmpoutsurf->reg_idx].mapped < 0) {
             res = AVERROR_BUG;
             goto error;
