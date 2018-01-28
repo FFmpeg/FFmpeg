@@ -465,7 +465,7 @@ int ff_mpeg4_decode_video_packet_header(Mpeg4DecContext *ctx)
     }
 
     mb_num = get_bits(&s->gb, mb_num_bits);
-    if (mb_num >= s->mb_num) {
+    if (mb_num >= s->mb_num || !mb_num) {
         av_log(s->avctx, AV_LOG_ERROR,
                "illegal mb_num in video packet (%d %d) \n", mb_num, s->mb_num);
         return -1;
