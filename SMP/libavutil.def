@@ -11,6 +11,7 @@ EXPORTS
     av_aes_ctr_get_iv
     av_aes_ctr_increment_iv
     av_aes_ctr_init
+    av_aes_ctr_set_full_iv
     av_aes_ctr_set_iv
     av_aes_ctr_set_random_iv
     av_aes_init
