@@ -555,6 +555,7 @@ void ff_free_vlc(VLC *vlc);
  * @param max_depth is the number of times bits bits must be read to completely
  *                  read the longest vlc code
  *                  = (max_vlc_length + bits - 1) / bits
+ * @returns the code parsed or -1 if no vlc matches
  */
 static av_always_inline int get_vlc2(GetBitContext *s, VLC_TYPE (*table)[2],
                                      int bits, int max_depth)
