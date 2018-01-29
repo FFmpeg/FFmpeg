@@ -1257,15 +1257,12 @@ static int64_t calc_cur_seg_no(AVFormatContext *s, struct representation *pls)
         if (pls->n_fragments) {
             num = pls->first_seq_no;
         } else if (pls->n_timelines) {
-            start_time_offset = get_segment_start_time_based_on_timeline(pls, 0xFFFFFFFF) - pls->timelines[pls->first_seq_no]->starttime; // total duration of playlist
-            if (start_time_offset < 60 * pls->fragment_timescale)
-                start_time_offset = 0;
-            else
-                start_time_offset = start_time_offset - 60 * pls->fragment_timescale;
-
-            num = calc_next_seg_no_from_timelines(pls, pls->timelines[pls->first_seq_no]->starttime + start_time_offset);
+            start_time_offset = get_segment_start_time_based_on_timeline(pls, 0xFFFFFFFF) - 60 * pls->fragment_timescale; // 60 seconds before end
+            num = calc_next_seg_no_from_timelines(pls, start_time_offset);
             if (num == -1)
                 num = pls->first_seq_no;
+            else
+                num += pls->first_seq_no;
         } else if (pls->fragment_duration){
             if (pls->presentation_timeoffset) {
                 num = pls->presentation_timeoffset * pls->fragment_timescale / pls->fragment_duration;
