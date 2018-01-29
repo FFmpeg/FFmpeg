@@ -419,6 +419,7 @@ static const AVOption avcodec_options[] = {
 {"side_data_only_packets", NULL, OFFSET(side_data_only_packets), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, A|V|E },
 #endif
 {"apply_cropping", NULL, OFFSET(apply_cropping), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, V | D },
+{"extra_hw_frames", "Number of extra hardware frames to allocate for the user", OFFSET(extra_hw_frames), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, INT_MAX, V|D },
 {NULL},
 };
 

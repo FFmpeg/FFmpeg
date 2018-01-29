@@ -791,6 +791,15 @@ int avcodec_get_hw_frames_parameters(AVCodecContext *avctx,
 
     ret = hwa->frame_params(avctx, frames_ref);
     if (ret >= 0) {
+        AVHWFramesContext *frames_ctx = (AVHWFramesContext*)frames_ref->data;
+
+        if (frames_ctx->initial_pool_size) {
+            // If the user has requested that extra output surfaces be
+            // available then add them here.
+            if (avctx->extra_hw_frames > 0)
+                frames_ctx->initial_pool_size += avctx->extra_hw_frames;
+        }
+
         *out_frames_ref = frames_ref;
     } else {
         av_buffer_unref(&frames_ref);
