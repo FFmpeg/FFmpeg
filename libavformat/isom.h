@@ -224,16 +224,6 @@ typedef struct MOVStreamContext {
 
     int has_sidx;  // If there is an sidx entry for this stream.
     struct {
-        // TODO: Remove once old methods are removed from mov.c
-        int use_subsamples;
-        uint8_t* auxiliary_info;
-        uint8_t* auxiliary_info_end;
-        uint8_t* auxiliary_info_pos;
-        uint8_t auxiliary_info_default_size;
-        uint8_t* auxiliary_info_sizes;
-        size_t auxiliary_info_sizes_count;
-        int64_t auxiliary_info_index;
-
         struct AVAESCTR* aes_ctr;
         unsigned int per_sample_iv_size;  // Either 0, 8, or 16.
         AVEncryptionInfo *default_encrypted_sample;
