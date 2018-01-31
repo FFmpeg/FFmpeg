@@ -1,6 +1,52 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 3.4.2:
+- avcodec/dirac_dwt: Fix several integer overflows
+- avcodec/indeo5: Do not leave frame_type set to an invalid value
+- avcodec/hevc_ps: Check log2_sao_offset_scale_*
+- avcodec/mpeg4videodec: Avoid possibly aliasing violating casts
+- avcodec/get_bits: Document the return code of get_vlc2()
+- avcodec/mpeg4videodec: Check mb_num also against 0
+- avfilter/vf_transpose: Fix used plane count.
+- avcodec/hevc_cabac: Check prefix so as to avoid invalid shifts in coeff_abs_level_remaining_decode()
+- avcodec/mjpegdec: Fix integer overflow in DC dequantization
+- avcodec/dxtory: Fix bits left checks
+- avcodec/hevc_cabac: Move prefix check in coeff_abs_level_remaining_decode() down
+- avcodec/truemotion2: Fix integer overflow in TM2_RECALC_BLOCK()
+- avcodec/snowdec: Fix integer overflow before htaps check
+- avcodec/ulti: Check number of blocks at init
+- avcodec/wavpack: Fix integer overflows in wv_unpack_stereo / mono
+- avcodec/jpeg2000: Check sum of sizes of band->prec before allocating
+- avcodec/ac3dec_fixed: Fix integer overflow in scale_coefs()
+- avformat/lrcdec: Fix memory leak in lrc_read_header()
+- avformat/matroskadec: Fix float-cast-overflow undefined behavior in matroska_parse_tracks()
+- lavfi/deinterlace_vaapi: fix can't show full option information.
+- configure:version 3.4.1: bump year
+- avcodec/utils: Avoid hardcoding duplicated types in sizeof()
+- avcodec/arm/sbrdsp_neon: Use a free register instead of putting 2 things in one
+- avcodec/h264addpx_template: Fixes integer overflows
+- avcodec/dirac_dwt: Fix overflows in COMPOSE_HAARiH0/COMPOSE_HAARiL0
+- avcodec/diracdec: Fix integer overflow with quant
+- avcodec/opus_parser: Check payload_len in parse_opus_ts_header()
+- avcodec/jpeg2000dsp: Fix integer overflows in ict_int()
+- avcodec/h264_slice: Do not attempt to render into frames already output
+- avcodec/dnxhddec: Check dc vlc
+- avcodec/exr: Check buf_size more completely
+- avcodec/flacdec: Fix overflow in multiplication in decode_subframe_fixed()
+- avcodec/hevcdsp_template: Fix Invalid shifts in put_hevc_qpel_bi_w_h() and put_hevc_qpel_bi_w_w()
+- avcodec/flacdec: avoid undefined shift
+- avcodec/hevcdsp_template.c: Fix undefined shift in FUNC(dequant)
+- avcodec/dirac_dwt: Fix integer overflow in COMPOSE_DD97iH0() and COMPOSE_DD137iL0()
+- avcodec/hevc_cabac: Fix integer overflow in ff_hevc_cu_qp_delta_abs()
+- tests/audiomatch: Add missing return code at the end of main()
+- avcodec/hevc_sei: Fix integer overflows in decode_nal_sei_message()
+- avcodec/hevcdsp_template: Fix undefined shift in put_hevc_qpel_bi_w_hv()
+- avcodec/h264_parse: Treat escaped and unescaped decoding error equal in decode_extradata_ps_mp4()
+- avcodec/vp9: mark frame as finished on decode_tiles() failure
+- libavfilter/af_dcshift.c: Fixed repeated spelling error
+- avfilter/formats: fix wrong function name in error message
+
 version 3.4.1:
 - avcodec/vp9_superframe_split_bsf: Fix integer overflow in frame_size/total_size checks
 - avcodec/amrwbdec: Fix division by 0 in voice_factor()
