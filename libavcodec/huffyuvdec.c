@@ -913,6 +913,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     AVFrame *const p = data;
     int table_size = 0, ret;
 
+    if (buf_size < (width * height + 7)/8)
+        return AVERROR_INVALIDDATA;
+
     av_fast_padded_malloc(&s->bitstream_buffer,
                    &s->bitstream_buffer_size,
                    buf_size);
