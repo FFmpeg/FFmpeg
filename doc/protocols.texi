@@ -296,6 +296,9 @@ Use persistent connections if set to 1, default is 0.
 @item post_data
 Set custom HTTP post data.
 
+@item referer
+Set the Referer header. Include 'Referer: URL' header in HTTP request.
+
 @item user_agent
 Override the User-Agent header. If not specified the protocol will use a
 string describing the libavformat build. ("Lavf/<version>")
