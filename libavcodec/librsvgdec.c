@@ -82,8 +82,10 @@ static int librsvg_decode_frame(AVCodecContext *avctx, void *data, int *got_fram
 
     crender = cairo_create(image);
 
-    cairo_set_source_rgba(crender, 0.0, 0.0, 0.0, 1.0f);
-    cairo_paint_with_alpha(crender, 0.0f);
+    cairo_save(crender);
+    cairo_set_operator(crender, CAIRO_OPERATOR_CLEAR);
+    cairo_paint(crender);
+    cairo_restore(crender);
 
     cairo_scale(crender, dimensions.width / (double)unscaled_dimensions.width,
                 dimensions.height / (double)unscaled_dimensions.height);
