@@ -398,7 +398,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.i_log_level          = X264_LOG_DEBUG;
     x4->params.i_csp                = convert_pix_fmt(avctx->pix_fmt);
 #if X264_BUILD >= 153
-    x4->params.i_bitdepth           = av_pix_fmt_desc_get(avctx->pix_fmt)->comp[0].depth;
+    x4->params.i_bitdepth           = av_pix_fmt_desc_get(avctx->pix_fmt)->comp[0].depth_minus1 + 1;
 #endif
 
     OPT_STR("weightp", x4->wpredp);
