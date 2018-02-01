@@ -624,6 +624,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
         s->chroma_planes = 1;
         s->bits_per_raw_sample = 8;
         break;
+    case AV_PIX_FMT_RGBA64:
+        s->colorspace = 1;
+        s->transparency = 1;
+        s->chroma_planes = 1;
+        s->bits_per_raw_sample = 16;
+        s->use32bit = 1;
+        s->version = FFMAX(s->version, 1);
+        break;
     case AV_PIX_FMT_RGB48:
         s->colorspace = 1;
         s->chroma_planes = 1;
@@ -649,10 +657,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
             s->bits_per_raw_sample = 14;
     case AV_PIX_FMT_GBRP16:
+    case AV_PIX_FMT_GBRAP16:
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
             s->bits_per_raw_sample = 16;
         else if (!s->bits_per_raw_sample)
             s->bits_per_raw_sample = avctx->bits_per_raw_sample;
+        s->transparency = desc->nb_components == 4 || desc->nb_components == 2;
         s->colorspace = 1;
         s->chroma_planes = 1;
         if (s->bits_per_raw_sample >= 16) {
@@ -1024,9 +1034,10 @@ static int encode_slice(AVCodecContext *c, void *arg)
     const int ps     = av_pix_fmt_desc_get(c->pix_fmt)->comp[0].step;
     int ret;
     RangeCoder c_bak = fs->c;
-    const uint8_t *planes[3] = {p->data[0] + ps*x + y*p->linesize[0],
+    const uint8_t *planes[4] = {p->data[0] + ps*x + y*p->linesize[0],
                                 p->data[1] ? p->data[1] + ps*x + y*p->linesize[1] : NULL,
-                                p->data[2] ? p->data[2] + ps*x + y*p->linesize[2] : NULL};
+                                p->data[2] ? p->data[2] + ps*x + y*p->linesize[2] : NULL,
+                                p->data[3] ? p->data[3] + ps*x + y*p->linesize[3] : NULL};
 
     fs->slice_coding_mode = 0;
     if (f->version > 3) {
@@ -1318,6 +1329,7 @@ AVCodec ff_ffv1_encoder = {
         AV_PIX_FMT_YA8,
         AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12,
         AV_PIX_FMT_GBRP16, AV_PIX_FMT_RGB48,
+        AV_PIX_FMT_GBRAP16, AV_PIX_FMT_RGBA64,
         AV_PIX_FMT_NONE
 
     },
