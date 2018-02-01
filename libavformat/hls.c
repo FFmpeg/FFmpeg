@@ -202,6 +202,7 @@ typedef struct HLSContext {
     int64_t first_timestamp;
     int64_t cur_timestamp;
     AVIOInterruptCB *interrupt_callback;
+    char *referer;                       ///< holds HTTP referer set as an AVOption to the HTTP protocol context
     char *user_agent;                    ///< holds HTTP user agent set as an AVOption to the HTTP protocol context
     char *cookies;                       ///< holds HTTP cookie values set in either the initial response or as an AVOption to the HTTP protocol context
     char *headers;                       ///< holds HTTP headers set as an AVOption to the HTTP protocol context
@@ -1184,6 +1185,7 @@ static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg, 
 
     // broker prior HTTP options that should be consistent across requests
     av_dict_set(&opts, "user_agent", c->user_agent, 0);
+    av_dict_set(&opts, "referer", c->referer, 0);
     av_dict_set(&opts, "cookies", c->cookies, 0);
     av_dict_set(&opts, "headers", c->headers, 0);
     av_dict_set(&opts, "http_proxy", c->http_proxy, 0);
@@ -1658,7 +1660,7 @@ static int save_avio_options(AVFormatContext *s)
 {
     HLSContext *c = s->priv_data;
     static const char * const opts[] = {
-        "headers", "http_proxy", "user_agent", "user-agent", "cookies", NULL };
+        "headers", "http_proxy", "user_agent", "user-agent", "cookies", "referer", NULL };
     const char * const * opt = opts;
     uint8_t *buf;
     int ret = 0;
