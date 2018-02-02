@@ -5728,7 +5728,7 @@ attribute_deprecated
 void av_bitstream_filter_close(AVBitStreamFilterContext *bsf);
 /**
  * @deprecated the old bitstream filtering API (using AVBitStreamFilterContext)
- * is deprecated. Use av_bsf_next() from the new bitstream filtering API (using
+ * is deprecated. Use av_bsf_iterate() from the new bitstream filtering API (using
  * AVBSFContext).
  */
 attribute_deprecated
@@ -5750,7 +5750,11 @@ const AVBitStreamFilter *av_bsf_get_by_name(const char *name);
  * @return the next registered bitstream filter or NULL when the iteration is
  *         finished
  */
+const AVBitStreamFilter *av_bsf_iterate(void **opaque);
+#if FF_API_NEXT
+attribute_deprecated
 const AVBitStreamFilter *av_bsf_next(void **opaque);
+#endif
 
 /**
  * Allocate a context for a given bitstream filter. The caller must fill in the
