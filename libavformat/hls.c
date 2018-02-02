@@ -1062,6 +1062,7 @@ static void handle_id3(AVIOContext *pb, struct playlist *pls)
             /* demuxer not yet opened, defer picture attachment */
             pls->id3_deferred_extra = extra_meta;
 
+        ff_id3v2_parse_priv_dict(&metadata, &extra_meta);
         av_dict_copy(&pls->ctx->metadata, metadata, 0);
         pls->id3_initial = metadata;
 
@@ -1960,6 +1961,7 @@ static int hls_read_header(AVFormatContext *s)
         if (pls->id3_deferred_extra && pls->ctx->nb_streams == 1) {
             ff_id3v2_parse_apic(pls->ctx, &pls->id3_deferred_extra);
             avformat_queue_attached_pictures(pls->ctx);
+            ff_id3v2_parse_priv(pls->ctx, &pls->id3_deferred_extra);
             ff_id3v2_free_extra_meta(&pls->id3_deferred_extra);
             pls->id3_deferred_extra = NULL;
         }
@@ -1985,6 +1987,13 @@ static int hls_read_header(AVFormatContext *s)
         ret = update_streams_from_subdemuxer(s, pls);
         if (ret < 0)
             goto fail;
+
+        /*
+         * Copy any metadata from playlist to main streams, but do not set
+         * event flags.
+         */
+        if (pls->n_main_streams)
+            av_dict_copy(&pls->main_streams[0]->metadata, pls->ctx->metadata, 0);
 
         add_metadata_from_renditions(s, pls, AVMEDIA_TYPE_AUDIO);
         add_metadata_from_renditions(s, pls, AVMEDIA_TYPE_VIDEO);
@@ -2168,6 +2177,17 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
             av_packet_unref(&pls->pkt);
             reset_packet(&pls->pkt);
             return ret;
+        }
+
+        // If sub-demuxer reports updated metadata, copy it to the first stream
+        // and set its AVSTREAM_EVENT_FLAG_METADATA_UPDATED flag.
+        if (pls->ctx->event_flags & AVFMT_EVENT_FLAG_METADATA_UPDATED) {
+            if (pls->n_main_streams) {
+                st = pls->main_streams[0];
+                av_dict_copy(&st->metadata, pls->ctx->metadata, 0);
+                st->event_flags |= AVSTREAM_EVENT_FLAG_METADATA_UPDATED;
+            }
+            pls->ctx->event_flags &= ~AVFMT_EVENT_FLAG_METADATA_UPDATED;
         }
 
         /* check if noheader flag has been cleared by the subdemuxer */
