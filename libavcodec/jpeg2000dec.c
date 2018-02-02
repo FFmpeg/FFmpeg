@@ -34,6 +34,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/thread.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
@@ -2142,10 +2143,18 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
     return 0;
 }
 
+static av_cold void jpeg2000_init_static_data(void)
+{
+    ff_jpeg2000_init_tier1_luts();
+    ff_mqc_init_context_tables();
+}
+
 static av_cold int jpeg2000_decode_init(AVCodecContext *avctx)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
     Jpeg2000DecoderContext *s = avctx->priv_data;
 
+    ff_thread_once(&init_static_once, jpeg2000_init_static_data);
     ff_jpeg2000dsp_init(&s->dsp);
 
     return 0;
@@ -2223,12 +2232,6 @@ end:
     return ret;
 }
 
-static av_cold void jpeg2000_init_static_data(AVCodec *codec)
-{
-    ff_jpeg2000_init_tier1_luts();
-    ff_mqc_init_context_tables();
-}
-
 #define OFFSET(x) offsetof(Jpeg2000DecoderContext, x)
 #define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
 
@@ -2252,7 +2255,6 @@ AVCodec ff_jpeg2000_decoder = {
     .id               = AV_CODEC_ID_JPEG2000,
     .capabilities     = AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_DR1,
     .priv_data_size   = sizeof(Jpeg2000DecoderContext),
-    .init_static_data = jpeg2000_init_static_data,
     .init             = jpeg2000_decode_init,
     .decode           = jpeg2000_decode_frame,
     .priv_class       = &jpeg2000_class,
