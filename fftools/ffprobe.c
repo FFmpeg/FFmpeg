@@ -2915,10 +2915,8 @@ static int open_input_file(InputFile *ifile, const char *filename)
             ist->dec_ctx->pkt_timebase = stream->time_base;
             ist->dec_ctx->framerate = stream->avg_frame_rate;
 #if FF_API_LAVF_AVCTX
-FF_DISABLE_DEPRECATION_WARNINGS
             ist->dec_ctx->coded_width = stream->codec->coded_width;
             ist->dec_ctx->coded_height = stream->codec->coded_height;
-FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
             if (avcodec_open2(ist->dec_ctx, codec, &opts) < 0) {
