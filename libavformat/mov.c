@@ -3132,7 +3132,7 @@ static int find_prev_closest_index(AVStream *st,
             }
         }
 
-        while (*index >= 0 && (*ctts_index) >= 0) {
+        while (*index >= 0 && (*ctts_index) >= 0 && (*ctts_index) < ctts_count) {
             // Find a "key frame" with PTS <= timestamp_pts (So that we can decode B-frames correctly).
             // No need to add dts_shift to the timestamp here becase timestamp_pts has already been
             // compensated by dts_shift above.
