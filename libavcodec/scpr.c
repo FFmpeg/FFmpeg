@@ -679,6 +679,8 @@ static int decompress_p(AVCodecContext *avctx,
                                 return AVERROR_INVALIDDATA;
 
                             if (bx == 0) {
+                                if (by < 2)
+                                    return AVERROR_INVALIDDATA;
                                 z = backstep;
                             } else {
                                 z = 0;
@@ -708,6 +710,8 @@ static int decompress_p(AVCodecContext *avctx,
                                 return AVERROR_INVALIDDATA;
 
                             if (bx == 0) {
+                                if (by < 2)
+                                    return AVERROR_INVALIDDATA;
                                 z = backstep;
                             } else {
                                 z = 0;
