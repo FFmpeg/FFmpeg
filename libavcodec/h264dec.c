@@ -838,9 +838,6 @@ static int output_frame(H264Context *h, AVFrame *dst, H264Picture *srcp)
     AVFrame *src = srcp->f;
     int ret;
 
-    if (src->format == AV_PIX_FMT_VIDEOTOOLBOX && src->buf[0]->size == 1)
-        return AVERROR_INVALIDDATA;
-
     ret = av_frame_ref(dst, src);
     if (ret < 0)
         return ret;
