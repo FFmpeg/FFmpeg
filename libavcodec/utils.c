@@ -104,18 +104,6 @@ AVCodec *av_codec_next(const AVCodec *c)
         return first_avcodec;
 }
 
-static av_cold void avcodec_init(void)
-{
-    static int initialized = 0;
-
-    if (initialized != 0)
-        return;
-    initialized = 1;
-
-    if (CONFIG_ME_CMP)
-        ff_me_cmp_init_static();
-}
-
 int av_codec_is_encoder(const AVCodec *codec)
 {
     return codec && (codec->encode_sub || codec->encode2 ||codec->send_frame);
@@ -131,7 +119,6 @@ static AVMutex codec_register_mutex = AV_MUTEX_INITIALIZER;
 av_cold void avcodec_register(AVCodec *codec)
 {
     AVCodec **p;
-    avcodec_init();
 
     ff_mutex_lock(&codec_register_mutex);
     p = last_avcodec;
