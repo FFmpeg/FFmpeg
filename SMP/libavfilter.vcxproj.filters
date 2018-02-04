@@ -46,6 +46,9 @@
     <NASM Include="..\libavfilter\x86\colorspacedsp.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
     </NASM>
+    <NASM Include="..\libavfilter\x86\vf_framerate.asm">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </NASM>
     <NASM Include="..\libavfilter\x86\vf_fspp.asm">
       <Filter>Source Files\libavfilter\x86</Filter>
     </NASM>
@@ -591,9 +594,6 @@
     <ClCompile Include="..\libavfilter\vf_framepack.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavfilter\vf_framerate.c">
-      <Filter>Source Files\libavfilter</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavfilter\vf_framestep.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
@@ -939,6 +939,9 @@
     <ClCompile Include="..\libavfilter\x86\vf_gradfun_init.c">
       <Filter>Source Files\libavfilter\x86</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavfilter\x86\vf_framerate_init.c">
+      <Filter>Source Files\libavfilter\x86</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavfilter\x86\vf_hflip_init.c">
       <Filter>Source Files\libavfilter\x86</Filter>
     </ClCompile>
@@ -1012,6 +1015,9 @@
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\colorspacedsp.c">
+      <Filter>Source Files\libavfilter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavfilter\vf_framerate.c">
       <Filter>Source Files\libavfilter</Filter>
     </ClCompile>
     <ClCompile Include="..\libavfilter\vf_fspp.c">
