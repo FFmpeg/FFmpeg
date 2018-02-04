@@ -976,19 +976,21 @@ static void id3v2_parse(AVIOContext *pb, AVDictionary **metadata,
                 }
             }
             if (unsync || tunsync) {
-                int64_t end = avio_tell(pb) + tlen;
-                uint8_t *b;
+                uint8_t *b = buffer;
+                uint8_t *t = buffer;
+                uint8_t *end = t + tlen;
 
-                b = buffer;
-                while (avio_tell(pb) < end && b - buffer < tlen && !pb->eof_reached) {
-                    *b++ = avio_r8(pb);
-                    if (*(b - 1) == 0xff && avio_tell(pb) < end - 1 &&
-                        b - buffer < tlen &&
-                        !pb->eof_reached ) {
-                        uint8_t val = avio_r8(pb);
-                        *b++ = val ? val : avio_r8(pb);
-                    }
+                if (avio_read(pb, buffer, tlen) != tlen) {
+                    av_log(s, AV_LOG_ERROR, "Failed to read tag data\n");
+                    goto seek;
                 }
+
+                while (t != end) {
+                    *b++ = *t++;
+                    if (t != end && t[-1] == 0xff && !t[0])
+                        t++;
+                }
+
                 ffio_init_context(&pb_local, buffer, b - buffer, 0, NULL, NULL, NULL,
                                   NULL);
                 tlen = b - buffer;

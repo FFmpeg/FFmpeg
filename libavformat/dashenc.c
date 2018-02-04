@@ -692,7 +692,7 @@ static int write_manifest(AVFormatContext *s, int final)
     AVIOContext *out;
     char temp_filename[1024];
     int ret, i;
-    const char *proto = avio_find_protocol_name(s->filename);
+    const char *proto = avio_find_protocol_name(s->url);
     int use_rename = proto && !strcmp(proto, "file");
     static unsigned int warned_non_file = 0;
     AVDictionaryEntry *title = av_dict_get(s->metadata, "title", NULL, 0);
@@ -701,7 +701,7 @@ static int write_manifest(AVFormatContext *s, int final)
     if (!use_rename && !warned_non_file++)
         av_log(s, AV_LOG_ERROR, "Cannot use rename on non file protocol, this may lead to races and temporary partial files\n");
 
-    snprintf(temp_filename, sizeof(temp_filename), use_rename ? "%s.tmp" : "%s", s->filename);
+    snprintf(temp_filename, sizeof(temp_filename), use_rename ? "%s.tmp" : "%s", s->url);
     set_http_options(&opts, c);
     ret = dashenc_io_open(s, &c->mpd_out, temp_filename, &opts);
     if (ret < 0) {
@@ -778,7 +778,7 @@ static int write_manifest(AVFormatContext *s, int final)
     dashenc_io_close(s, &c->mpd_out, temp_filename);
 
     if (use_rename) {
-        if ((ret = avpriv_io_move(temp_filename, s->filename)) < 0)
+        if ((ret = avpriv_io_move(temp_filename, s->url)) < 0)
             return ret;
     }
 
@@ -859,14 +859,14 @@ static int dash_init(AVFormatContext *s)
     if (c->single_file)
         c->use_template = 0;
 
-    av_strlcpy(c->dirname, s->filename, sizeof(c->dirname));
+    av_strlcpy(c->dirname, s->url, sizeof(c->dirname));
     ptr = strrchr(c->dirname, '/');
     if (ptr) {
         av_strlcpy(basename, &ptr[1], sizeof(basename));
         ptr[1] = '\0';
     } else {
         c->dirname[0] = '\0';
-        av_strlcpy(basename, s->filename, sizeof(basename));
+        av_strlcpy(basename, s->url, sizeof(basename));
     }
 
     ptr = strrchr(basename, '.');
@@ -1025,7 +1025,7 @@ static int dash_write_header(AVFormatContext *s)
     }
     ret = write_manifest(s, 0);
     if (!ret)
-        av_log(s, AV_LOG_VERBOSE, "Manifest written to: %s\n", s->filename);
+        av_log(s, AV_LOG_VERBOSE, "Manifest written to: %s\n", s->url);
     return ret;
 }
 
@@ -1124,7 +1124,7 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
     DASHContext *c = s->priv_data;
     int i, ret = 0;
 
-    const char *proto = avio_find_protocol_name(s->filename);
+    const char *proto = avio_find_protocol_name(s->url);
     int use_rename = proto && !strcmp(proto, "file");
 
     int cur_flush_segment_index = 0;
@@ -1332,7 +1332,7 @@ static int dash_write_trailer(AVFormatContext *s)
             snprintf(filename, sizeof(filename), "%s%s", c->dirname, os->initfile);
             unlink(filename);
         }
-        unlink(s->filename);
+        unlink(s->url);
     }
 
     return 0;

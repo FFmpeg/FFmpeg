@@ -258,6 +258,8 @@ static int hevc_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
     }
 
 done:
+    ff_hevc_ps_uninit(&ps);
+
     av_freep(&vps_data);
     av_freep(&sps_data);
     av_freep(&pps_data);

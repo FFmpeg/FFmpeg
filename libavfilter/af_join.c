@@ -485,6 +485,9 @@ static int activate(AVFilterContext *ctx)
                 return 0;
             }
         }
+        if (!s->input_frames[0]) {
+            return 0;
+        }
     }
 
     nb_samples = s->input_frames[0]->nb_samples;

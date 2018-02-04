@@ -1390,6 +1390,7 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame,
 
     s->x = s->var_values[VAR_X] = av_expr_eval(s->x_pexpr, s->var_values, &s->prng);
     s->y = s->var_values[VAR_Y] = av_expr_eval(s->y_pexpr, s->var_values, &s->prng);
+    /* It is necessary if x is expressed from y  */
     s->x = s->var_values[VAR_X] = av_expr_eval(s->x_pexpr, s->var_values, &s->prng);
 
     update_alpha(s);

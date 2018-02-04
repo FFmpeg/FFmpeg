@@ -684,6 +684,9 @@ fate-filter-pixfmts-tinterlace_pad: CMD = pixfmts "pad"
 FATE_FILTER_PIXFMTS-$(CONFIG_TINTERLACE_FILTER) += fate-filter-pixfmts-tinterlace_vlpf
 fate-filter-pixfmts-tinterlace_vlpf: CMD = pixfmts "interleave_top:vlpf"
 
+FATE_FILTER_PIXFMTS-$(CONFIG_TRANSPOSE_FILTER) += fate-filter-pixfmts-transpose
+fate-filter-pixfmts-transpose: CMD = pixfmts "dir=cclock_flip"
+
 FATE_FILTER_PIXFMTS-$(CONFIG_VFLIP_FILTER) += fate-filter-pixfmts-vflip
 fate-filter-pixfmts-vflip: CMD = pixfmts
 

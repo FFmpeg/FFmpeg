@@ -99,8 +99,8 @@ static int get_chunk_filename(AVFormatContext *s, int is_header, char *filename)
         av_strlcpy(filename, wc->header_filename, strlen(wc->header_filename) + 1);
     } else {
         if (av_get_frame_filename(filename, MAX_FILENAME_SIZE,
-                                  s->filename, wc->chunk_index - 1) < 0) {
-            av_log(oc, AV_LOG_ERROR, "Invalid chunk filename template '%s'\n", s->filename);
+                                  s->url, wc->chunk_index - 1) < 0) {
+            av_log(oc, AV_LOG_ERROR, "Invalid chunk filename template '%s'\n", s->url);
             return AVERROR(EINVAL);
         }
     }
@@ -119,7 +119,7 @@ static int webm_chunk_write_header(AVFormatContext *s)
     if (s->nb_streams != 1) { return AVERROR_INVALIDDATA; }
 
     wc->chunk_index = wc->chunk_start_index;
-    wc->oformat = av_guess_format("webm", s->filename, "video/webm");
+    wc->oformat = av_guess_format("webm", s->url, "video/webm");
     if (!wc->oformat)
         return AVERROR_MUXER_NOT_FOUND;
 
@@ -127,12 +127,12 @@ static int webm_chunk_write_header(AVFormatContext *s)
     if (ret < 0)
         return ret;
     oc = wc->avf;
-    ret = get_chunk_filename(s, 1, oc->filename);
+    ret = get_chunk_filename(s, 1, oc->url);
     if (ret < 0)
         return ret;
     if (wc->http_method)
         av_dict_set(&options, "method", wc->http_method, 0);
-    ret = s->io_open(s, &oc->pb, oc->filename, AVIO_FLAG_WRITE, &options);
+    ret = s->io_open(s, &oc->pb, oc->url, AVIO_FLAG_WRITE, &options);
     av_dict_free(&options);
     if (ret < 0)
         return ret;

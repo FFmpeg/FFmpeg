@@ -16,6 +16,7 @@ FATE_CHECKASM = fate-checkasm-aacpsdsp                                  \
                 fate-checkasm-hevc_idct                                 \
                 fate-checkasm-jpeg2000dsp                               \
                 fate-checkasm-llviddsp                                  \
+                fate-checkasm-llviddspenc                               \
                 fate-checkasm-pixblockdsp                               \
                 fate-checkasm-sbrdsp                                    \
                 fate-checkasm-synth_filter                              \

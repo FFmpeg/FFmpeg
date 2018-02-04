@@ -703,7 +703,7 @@ static int vobsub_read_header(AVFormatContext *s)
 
     if (!vobsub->sub_name) {
         char *ext;
-        vobsub->sub_name = av_strdup(s->filename);
+        vobsub->sub_name = av_strdup(s->url);
         if (!vobsub->sub_name) {
             ret = AVERROR(ENOMEM);
             goto end;
@@ -718,7 +718,7 @@ static int vobsub_read_header(AVFormatContext *s)
             goto end;
         }
         memcpy(ext, !strncmp(ext, "IDX", 3) ? "SUB" : "sub", 3);
-        av_log(s, AV_LOG_VERBOSE, "IDX/SUB: %s -> %s\n", s->filename, vobsub->sub_name);
+        av_log(s, AV_LOG_VERBOSE, "IDX/SUB: %s -> %s\n", s->url, vobsub->sub_name);
     }
 
     if (!(iformat = av_find_input_format("mpeg"))) {

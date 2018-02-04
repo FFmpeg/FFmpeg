@@ -76,6 +76,7 @@ typedef struct HTTPContext {
     char *mime_type;
     char *http_version;
     char *user_agent;
+    char *referer;
 #if FF_API_HTTP_USER_AGENT
     char *user_agent_deprecated;
 #endif
@@ -138,6 +139,7 @@ static const AVOption options[] = {
     { "headers", "set custom HTTP headers, can override built in default headers", OFFSET(headers), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D | E },
     { "content_type", "set a specific content type for the POST messages", OFFSET(content_type), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D | E },
     { "user_agent", "override User-Agent header", OFFSET(user_agent), AV_OPT_TYPE_STRING, { .str = DEFAULT_USER_AGENT }, 0, 0, D },
+    { "referer", "override referer header", OFFSET(referer), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D },
 #if FF_API_HTTP_USER_AGENT
     { "user-agent", "override User-Agent header", OFFSET(user_agent_deprecated), AV_OPT_TYPE_STRING, { .str = DEFAULT_USER_AGENT }, 0, 0, D },
 #endif
@@ -1198,6 +1200,12 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     if (!has_header(s->headers, "\r\nUser-Agent: "))
         len += av_strlcatf(headers + len, sizeof(headers) - len,
                            "User-Agent: %s\r\n", s->user_agent);
+    if (s->referer) {
+        /* set default headers if needed */
+        if (!has_header(s->headers, "\r\nReferer: "))
+            len += av_strlcatf(headers + len, sizeof(headers) - len,
+                               "Referer: %s\r\n", s->referer);
+    }
     if (!has_header(s->headers, "\r\nAccept: "))
         len += av_strlcpy(headers + len, "Accept: */*\r\n",
                           sizeof(headers) - len);

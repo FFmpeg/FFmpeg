@@ -400,14 +400,14 @@ av_cold int ff_decklink_write_header(AVFormatContext *avctx)
         return AVERROR_EXIT;
     }
 
-    ret = ff_decklink_init_device(avctx, avctx->filename);
+    ret = ff_decklink_init_device(avctx, avctx->url);
     if (ret < 0)
         return ret;
 
     /* Get output device. */
     if (ctx->dl->QueryInterface(IID_IDeckLinkOutput, (void **) &ctx->dlo) != S_OK) {
         av_log(avctx, AV_LOG_ERROR, "Could not open output device from '%s'\n",
-               avctx->filename);
+               avctx->url);
         ret = AVERROR(EIO);
         goto error;
     }

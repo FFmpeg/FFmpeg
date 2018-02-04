@@ -951,7 +951,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         cctx->raw_format = MKBETAG('v','2','1','0');
     }
 
-    strcpy (fname, avctx->filename);
+    av_strlcpy(fname, avctx->url, sizeof(fname));
     tmp=strchr (fname, '@');
     if (tmp != NULL) {
         av_log(avctx, AV_LOG_WARNING, "The @mode syntax is deprecated and will be removed. Please use the -format_code option.\n");
@@ -966,7 +966,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
     /* Get input device. */
     if (ctx->dl->QueryInterface(IID_IDeckLinkInput, (void **) &ctx->dli) != S_OK) {
         av_log(avctx, AV_LOG_ERROR, "Could not open input device from '%s'\n",
-               avctx->filename);
+               avctx->url);
         ret = AVERROR(EIO);
         goto error;
     }

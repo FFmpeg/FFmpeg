@@ -233,7 +233,7 @@ static int ndi_write_header(AVFormatContext *avctx)
     int ret = 0;
     unsigned int n;
     struct NDIContext *ctx = avctx->priv_data;
-    const NDIlib_send_create_t ndi_send_desc = { .p_ndi_name = avctx->filename,
+    const NDIlib_send_create_t ndi_send_desc = { .p_ndi_name = avctx->url,
         .p_groups = NULL, .clock_video = ctx->clock_video, .clock_audio = ctx->clock_audio };
 
     if (!NDIlib_initialize()) {
@@ -260,7 +260,7 @@ static int ndi_write_header(AVFormatContext *avctx)
 
     ctx->ndi_send = NDIlib_send_create(&ndi_send_desc);
     if (!ctx->ndi_send) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to create NDI output %s\n", avctx->filename);
+        av_log(avctx, AV_LOG_ERROR, "Failed to create NDI output %s\n", avctx->url);
         ret = AVERROR_EXTERNAL;
     }
 
