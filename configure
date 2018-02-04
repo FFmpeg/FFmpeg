@@ -758,7 +758,7 @@ add_compat(){
     map 'add_cppflags -D$v' "$@"
 }
 
-check_cmd(){
+test_cmd(){
     log "$@"
     "$@" >> $logfile 2>&1
 }
@@ -771,36 +771,36 @@ cc_e(){
     eval printf '%s\\n' $CC_E
 }
 
-check_cc(){
-    log check_cc "$@"
+test_cc(){
+    log test_cc "$@"
     cat > $TMPC
     log_file $TMPC
-    check_cmd $cc $CPPFLAGS $CFLAGS "$@" $CC_C $(cc_o $TMPO) $TMPC
+    test_cmd $cc $CPPFLAGS $CFLAGS "$@" $CC_C $(cc_o $TMPO) $TMPC
 }
 
-check_objcc(){
-    log check_objcc "$@"
+test_objcc(){
+    log test_objcc "$@"
     cat > $TMPC
     log_file $TMPC
-    check_cmd $objcc $CPPFLAGS $CFLAGS $OBJCFLAGS "$@" $OBJCC_C $(cc_o $TMPO) $TMPC
+    test_cmd $objcc $CPPFLAGS $CFLAGS $OBJCFLAGS "$@" $OBJCC_C $(cc_o $TMPO) $TMPC
 }
 
-check_cpp(){
-    log check_cpp "$@"
+test_cpp(){
+    log test_cpp "$@"
     cat > $TMPC
     log_file $TMPC
-    check_cmd $cc $CPPFLAGS $CFLAGS "$@" $(cc_e $TMPO) $TMPC
+    test_cmd $cc $CPPFLAGS $CFLAGS "$@" $(cc_e $TMPO) $TMPC
 }
 
 as_o(){
     eval printf '%s\\n' $AS_O
 }
 
-check_as(){
-    log check_as "$@"
+test_as(){
+    log test_as "$@"
     cat > $TMPS
     log_file $TMPS
-    check_cmd $as $CPPFLAGS $ASFLAGS "$@" $AS_C $(as_o $TMPO) $TMPS
+    test_cmd $as $CPPFLAGS $ASFLAGS "$@" $AS_C $(as_o $TMPO) $TMPS
 }
 
 check_inline_asm(){
@@ -809,7 +809,7 @@ check_inline_asm(){
     code="$2"
     shift 2
     disable $name
-    check_cc "$@" <<EOF && enable $name
+    test_cc "$@" <<EOF && enable $name
 void foo(void){ __asm__ volatile($code); }
 EOF
 }
@@ -817,29 +817,29 @@ EOF
 check_insn(){
     log check_insn "$@"
     check_inline_asm ${1}_inline "$2"
-    echo "$2" | check_as && enable ${1}_external || disable ${1}_external
+    echo "$2" | test_as && enable ${1}_external || disable ${1}_external
 }
 
-check_x86asm(){
-    log check_x86asm "$@"
+test_x86asm(){
+    log test_x86asm "$@"
     echo "$1" > $TMPS
     log_file $TMPS
     shift 1
-    check_cmd $x86asmexe $X86ASMFLAGS "$@" -o $TMPO $TMPS
+    test_cmd $x86asmexe $X86ASMFLAGS "$@" -o $TMPO $TMPS
 }
 
 ld_o(){
     eval printf '%s\\n' $LD_O
 }
 
-check_ld(){
-    log check_ld "$@"
+test_ld(){
+    log test_ld "$@"
     flags=$(filter_out '-l*' "$@")
     libs=$(filter '-l*' "$@")
-    check_cc $($cflags_filter $flags) || return
+    test_cc $($cflags_filter $flags) || return
     flags=$($ldflags_filter $flags)
     libs=$($ldflags_filter $libs)
-    check_cmd $ld $LDFLAGS $flags $(ld_o $TMPE) $TMPO $libs $extralibs
+    test_cmd $ld $LDFLAGS $flags $(ld_o $TMPE) $TMPO $libs $extralibs
 }
 
 print_include(){
@@ -849,8 +849,8 @@ print_include(){
         echo "#include <$hdr>"
 }
 
-check_code(){
-    log check_code "$@"
+test_code(){
+    log test_code "$@"
     check=$1
     headers=$2
     code=$3
@@ -860,12 +860,12 @@ check_code(){
             print_include $hdr
         done
         echo "int main(void) { $code; return 0; }"
-    } | check_$check "$@"
+    } | test_$check "$@"
 }
 
 check_cppflags(){
     log check_cppflags "$@"
-    check_cpp "$@" <<EOF && append CPPFLAGS "$@"
+    test_cpp "$@" <<EOF && add_cppflags "$@"
 #include <stdlib.h>;
 EOF
 }
@@ -873,7 +873,7 @@ EOF
 test_cflags(){
     log test_cflags "$@"
     set -- $($cflags_filter "$@")
-    check_cc "$@" <<EOF
+    test_cc "$@" <<EOF
 int x;
 EOF
 }
@@ -886,7 +886,7 @@ check_cflags(){
 test_objcflags(){
     log test_objcflags "$@"
     set -- $($objcflags_filter "$@")
-    check_objcc "$@" <<EOF
+    test_objcc "$@" <<EOF
 int x;
 EOF
 }
@@ -899,7 +899,7 @@ check_objcflags(){
 test_ldflags(){
     log test_ldflags "$@"
     set -- $($ldflags_filter "$@")
-    check_ld "$@" <<EOF
+    test_ld "$@" <<EOF
 int main(void){ return 0; }
 EOF
 }
@@ -911,11 +911,11 @@ check_ldflags(){
 
 test_stripflags(){
     log test_stripflags "$@"
-    # call check_cc to get a fresh TMPO
-    check_cc <<EOF
+    # call test_cc to get a fresh TMPO
+    test_cc <<EOF
 int main(void) { return 0; }
 EOF
-    check_cmd $strip $STRIPFLAGS "$@" $TMPO
+    test_cmd $strip $STRIPFLAGS "$@" $TMPO
 }
 
 check_stripflags(){
@@ -933,7 +933,7 @@ check_header(){
             print_include $hdr
         done
         echo "int x;"
-    } | check_cpp "$@" && enable_sanitized $headers
+    } | test_cpp "$@" && enable_sanitized $headers
 }
 
 check_func(){
@@ -941,7 +941,7 @@ check_func(){
     func=$1
     shift
     disable $func
-    check_ld "$@" <<EOF && enable $func
+    test_ld "$@" <<EOF && enable $func
 extern int $func();
 int main(void){ $func(); }
 EOF
@@ -954,7 +954,7 @@ check_mathfunc(){
     shift 2
     test $narg = 2 && args="f, g" || args="f"
     disable $func
-    check_ld "$@" <<EOF && enable $func
+    test_ld "$@" <<EOF && enable $func
 #include <math.h>
 float foo(float f, float g) { return $func($args); }
 int main(void){ return 0; }
@@ -974,15 +974,15 @@ check_func_headers(){
             echo "long check_$func(void) { return (long) $func; }"
         done
         echo "int main(void) { return 0; }"
-    } | check_ld "$@" && enable $funcs && enable_sanitized $headers
+    } | test_ld "$@" && enable $funcs && enable_sanitized $headers
 }
 
-check_cpp_condition(){
-    log check_cpp_condition "$@"
+test_cpp_condition(){
+    log test_cpp_condition "$@"
     header=$1
     condition=$2
     shift 2
-    check_cpp "$@" <<EOF
+    test_cpp "$@" <<EOF
 #include <$header>
 #if !($condition)
 #error "unsatisfied condition: $condition"
@@ -996,7 +996,7 @@ test_cflags_cpp(){
     condition=$2
     shift 2
     set -- $($cflags_filter "$flags")
-    check_cpp "$@" <<EOF
+    test_cpp "$@" <<EOF
 #if !($condition)
 #error "unsatisfied condition: $condition"
 #endif
@@ -1023,7 +1023,7 @@ test_pkg_config(){
     funcs="$4"
     shift 4
     disable $name
-    check_cmd $pkg_config --exists --print-errors $pkg_version || return
+    test_cmd $pkg_config --exists --print-errors $pkg_version || return
     pkg_cflags=$($pkg_config --cflags $pkg_config_flags $pkg)
     pkg_libs=$($pkg_config --libs $pkg_config_flags $pkg)
     check_func_headers "$headers" "$funcs" $pkg_cflags $pkg_libs "$@" &&
@@ -1039,8 +1039,9 @@ check_pkg_config(){
         eval add_cflags \$${name}_cflags
 }
 
-check_exec(){
-    check_ld "$@" && { enabled cross_compile || $TMPE >> $logfile 2>&1; }
+test_exec(){
+    log test_exec "$@"
+    test_ld "$@" && { enabled cross_compile || $TMPE >> $logfile 2>&1; }
 }
 
 check_exec_crash(){
@@ -1053,7 +1054,7 @@ check_exec_crash(){
     # can redirect the "Terminated" message from the shell.  SIGBUS
     # is not defined by standard C so it is used conditionally.
 
-    (check_exec "$@") >> $logfile 2>&1 <<EOF
+    (test_exec "$@") >> $logfile 2>&1 <<EOF
 #include <signal.h>
 static void sighandler(int sig){
     raise(SIGTERM);
@@ -1080,7 +1081,7 @@ check_type(){
     type=$2
     shift 2
     disable_sanitized "$type"
-    check_code cc "$headers" "$type v" "$@" && enable_sanitized "$type"
+    test_code cc "$headers" "$type v" "$@" && enable_sanitized "$type"
 }
 
 check_struct(){
@@ -1090,7 +1091,7 @@ check_struct(){
     member=$3
     shift 3
     disable_sanitized "${struct}_${member}"
-    check_code cc "$headers" "const void *p = &(($struct *)0)->$member" "$@" &&
+    test_code cc "$headers" "const void *p = &(($struct *)0)->$member" "$@" &&
         enable_sanitized "${struct}_${member}"
 }
 
@@ -1099,7 +1100,7 @@ check_builtin(){
     name=$1
     shift
     disable "$name"
-    check_code ld "$@" && enable "$name"
+    test_code ld "$@" && enable "$name"
 }
 
 check_compile_assert(){
@@ -1109,7 +1110,7 @@ check_compile_assert(){
     condition=$3
     shift 3
     disable "$name"
-    check_code cc "$headers" "char c[2 * !!($condition) - 1]" "$@" && enable "$name"
+    test_code cc "$headers" "char c[2 * !!($condition) - 1]" "$@" && enable "$name"
 }
 
 require(){
@@ -1129,7 +1130,7 @@ require_header(){
 require_cpp_condition(){
     log require_cpp_condition "$@"
     condition="$2"
-    check_cpp_condition "$@" || die "ERROR: $condition not satisfied"
+    test_cpp_condition "$@" || die "ERROR: $condition not satisfied"
 }
 
 require_pkg_config(){
@@ -1146,23 +1147,23 @@ hostcc_o(){
     eval printf '%s\\n' $HOSTCC_O
 }
 
-check_host_cc(){
-    log check_host_cc "$@"
+test_host_cc(){
+    log test_host_cc "$@"
     cat > $TMPC
     log_file $TMPC
-    check_cmd $host_cc $host_cflags "$@" $HOSTCC_C $(hostcc_o $TMPO) $TMPC
+    test_cmd $host_cc $host_cflags "$@" $HOSTCC_C $(hostcc_o $TMPO) $TMPC
 }
 
-check_host_cpp(){
-    log check_host_cpp "$@"
+test_host_cpp(){
+    log test_host_cpp "$@"
     cat > $TMPC
     log_file $TMPC
-    check_cmd $host_cc $host_cppflags $host_cflags "$@" $(hostcc_e $TMPO) $TMPC
+    test_cmd $host_cc $host_cppflags $host_cflags "$@" $(hostcc_e $TMPO) $TMPC
 }
 
 check_host_cppflags(){
     log check_host_cppflags "$@"
-    check_host_cpp "$@" <<EOF && append host_cppflags "$@"
+    test_host_cpp "$@" <<EOF && append host_cppflags "$@"
 #include <stdlib.h>;
 EOF
 }
@@ -1170,17 +1171,17 @@ EOF
 check_host_cflags(){
     log check_host_cflags "$@"
     set -- $($host_cflags_filter "$@")
-    check_host_cc "$@" <<EOF && append host_cflags "$@"
+    test_host_cc "$@" <<EOF && append host_cflags "$@"
 int x;
 EOF
 }
 
-check_host_cpp_condition(){
-    log check_host_cpp_condition "$@"
+test_host_cpp_condition(){
+    log test_host_cpp_condition "$@"
     header=$1
     condition=$2
     shift 2
-    check_host_cpp "$@" <<EOF
+    test_host_cpp "$@" <<EOF
 #include <$header>
 #if !($condition)
 #error "unsatisfied condition: $condition"
@@ -3044,7 +3045,7 @@ HOSTEXESUF=$(exesuf $host_os)
 : ${TMPDIR:=$TMP}
 : ${TMPDIR:=/tmp}
 
-if ! check_cmd mktemp -u XXXXXX; then
+if ! test_cmd mktemp -u XXXXXX; then
     # simple replacement for missing mktemp
     # NOT SAFE FOR GENERAL USE
     mktemp(){
@@ -3542,7 +3543,7 @@ elif enabled alpha; then
 elif enabled arm; then
 
     check_arm_arch() {
-        check_cpp_condition stddef.h \
+        test_cpp_condition stddef.h \
             "defined __ARM_ARCH_${1}__ || defined __TARGET_ARCH_${2:-$1}" \
             $cpuflags
     }
@@ -3735,7 +3736,7 @@ if [ "$cpu" != generic ]; then
 fi
 
 # compiler sanity check
-check_exec <<EOF
+test_exec <<EOF
 int main(void){ return 0; }
 EOF
 if test "$?" != 0; then
@@ -3751,7 +3752,7 @@ add_cppflags -D_ISOC99_SOURCE
 
 # some compilers silently accept -std=c11, so we also need to check that the
 # version macro is defined properly
-check_cpp_condition stdlib.h  "__STDC_VERSION__ >= 201112L" -std=c11 &&
+test_cpp_condition stdlib.h  "__STDC_VERSION__ >= 201112L" -std=c11 &&
     add_cflags -std=c11 ||
     check_cflags -std=c99
 
@@ -3767,7 +3768,7 @@ check_64bit(){
     arch32=$1
     arch64=$2
     expr=${3:-'sizeof(void *) > 4'}
-    check_code cc "" "int test[2*($expr) - 1]" &&
+    test_code cc "" "int test[2*($expr) - 1]" &&
         subarch=$arch64 || subarch=$arch32
     enable $subarch
 }
@@ -4023,38 +4024,38 @@ probe_libc(){
     pfx=$1
     pfx_no_=${pfx%_}
     # uclibc defines __GLIBC__, so it needs to be checked before glibc.
-    if check_${pfx}cpp_condition features.h "defined __UCLIBC__"; then
+    if test_${pfx}cpp_condition features.h "defined __UCLIBC__"; then
         eval ${pfx}libc_type=uclibc
         add_${pfx}cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600
-    elif check_${pfx}cpp_condition features.h "defined __GLIBC__"; then
+    elif test_${pfx}cpp_condition features.h "defined __GLIBC__"; then
         eval ${pfx}libc_type=glibc
         add_${pfx}cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600
     # MinGW headers can be installed on Cygwin, so check for newlib first.
-    elif check_${pfx}cpp_condition newlib.h "defined _NEWLIB_VERSION"; then
+    elif test_${pfx}cpp_condition newlib.h "defined _NEWLIB_VERSION"; then
         eval ${pfx}libc_type=newlib
         add_${pfx}cppflags -U__STRICT_ANSI__ -D_XOPEN_SOURCE=600
     # MinGW64 is backwards compatible with MinGW32, so check for it first.
-    elif check_${pfx}cpp_condition _mingw.h "defined __MINGW64_VERSION_MAJOR"; then
+    elif test_${pfx}cpp_condition _mingw.h "defined __MINGW64_VERSION_MAJOR"; then
         eval ${pfx}libc_type=mingw64
         add_${pfx}cppflags -U__STRICT_ANSI__ -D__USE_MINGW_ANSI_STDIO=1
         eval test \$${pfx_no_}cc_type = "gcc" &&
             add_${pfx}cppflags -D__printf__=__gnu_printf__
-    elif check_${pfx}cpp_condition _mingw.h "defined __MINGW_VERSION"  ||
-         check_${pfx}cpp_condition _mingw.h "defined __MINGW32_VERSION"; then
+    elif test_${pfx}cpp_condition _mingw.h "defined __MINGW_VERSION"  ||
+         test_${pfx}cpp_condition _mingw.h "defined __MINGW32_VERSION"; then
         eval ${pfx}libc_type=mingw32
-        check_${pfx}cpp_condition _mingw.h "__MINGW32_MAJOR_VERSION > 3 || \
+        test_${pfx}cpp_condition _mingw.h "__MINGW32_MAJOR_VERSION > 3 || \
             (__MINGW32_MAJOR_VERSION == 3 && __MINGW32_MINOR_VERSION >= 15)" ||
             die "ERROR: MinGW32 runtime version must be >= 3.15."
         add_${pfx}cppflags -U__STRICT_ANSI__ -D__USE_MINGW_ANSI_STDIO=1
-        check_${pfx}cpp_condition _mingw.h "__MSVCRT_VERSION__ < 0x0700" &&
+        test_${pfx}cpp_condition _mingw.h "__MSVCRT_VERSION__ < 0x0700" &&
             add_${pfx}cppflags -D__MSVCRT_VERSION__=0x0700
-        check_${pfx}cpp_condition windows.h "defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0502" &&
+        test_${pfx}cpp_condition windows.h "defined(_WIN32_WINNT) && _WIN32_WINNT < 0x0502" &&
             add_${pfx}cppflags -D_WIN32_WINNT=0x0502
         eval test \$${pfx_no_}cc_type = "gcc" &&
             add_${pfx}cppflags -D__printf__=__gnu_printf__
-    elif check_${pfx}cpp_condition crtversion.h "defined _VC_CRT_MAJOR_VERSION"; then
+    elif test_${pfx}cpp_condition crtversion.h "defined _VC_CRT_MAJOR_VERSION"; then
         eval ${pfx}libc_type=msvcrt
-        if check_${pfx}cpp_condition crtversion.h "_VC_CRT_MAJOR_VERSION < 14"; then
+        if test_${pfx}cpp_condition crtversion.h "_VC_CRT_MAJOR_VERSION < 14"; then
             if [ "$pfx" = host_ ]; then
                 add_host_cppflags -Dsnprintf=_snprintf
             else
@@ -4075,8 +4076,8 @@ probe_libc(){
         # family. For these cases, configure is free to use any functions
         # found in the SDK headers by default. (Alternatively, we could force
         # _WIN32_WINNT to 0x0602 in that case.)
-        check_${pfx}cpp_condition stdlib.h "defined(_WIN32_WINNT)" ||
-            { check_${pfx}cpp <<EOF && add_${pfx}cppflags -D_WIN32_WINNT=0x0502; }
+        test_${pfx}cpp_condition stdlib.h "defined(_WIN32_WINNT)" ||
+            { test_${pfx}cpp <<EOF && add_${pfx}cppflags -D_WIN32_WINNT=0x0502; }
 #ifdef WINAPI_FAMILY
 #include <winapifamily.h>
 #if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
@@ -4087,11 +4088,11 @@ EOF
         if [ "$pfx" = "" ]; then
             check_func strtoll || add_cflags -Dstrtoll=_strtoi64
         fi
-    elif check_${pfx}cpp_condition stddef.h "defined __KLIBC__"; then
+    elif test_${pfx}cpp_condition stddef.h "defined __KLIBC__"; then
         eval ${pfx}libc_type=klibc
-    elif check_${pfx}cpp_condition sys/cdefs.h "defined __BIONIC__"; then
+    elif test_${pfx}cpp_condition sys/cdefs.h "defined __BIONIC__"; then
         eval ${pfx}libc_type=bionic
-    elif check_${pfx}cpp_condition sys/brand.h "defined LABELED_BRAND_NAME"; then
+    elif test_${pfx}cpp_condition sys/brand.h "defined LABELED_BRAND_NAME"; then
         eval ${pfx}libc_type=solaris
         add_${pfx}cppflags -D__EXTENSIONS__ -D_XOPEN_SOURCE=600
     else
@@ -4115,7 +4116,7 @@ esac
 check_compile_assert flt_lim "float.h limits.h" "DBL_MAX == (double)DBL_MAX" ||
     add_cppflags '-I\$(SRC_PATH)/compat/float'
 
-check_cpp_condition stdlib.h "defined(__PIC__) || defined(__pic__) || defined(PIC)" && enable_weak pic
+test_cpp_condition stdlib.h "defined(__PIC__) || defined(__pic__) || defined(PIC)" && enable_weak pic
 
 set_default $PATHS_LIST
 set_default nm
@@ -4138,7 +4139,7 @@ enable_weak_pic() {
 
 enabled pic && enable_weak_pic
 
-check_cc <<EOF || die "Symbol mangling check failed."
+test_cc <<EOF || die "Symbol mangling check failed."
 int ff_extern;
 EOF
 sym=$($nm $TMPO | awk '/ff_extern/{ print substr($0, match($0, /[^ \t]*ff_extern/)) }')
@@ -4147,16 +4148,16 @@ extern_prefix=${sym%%ff_extern*}
 ! disabled inline_asm && check_inline_asm inline_asm '"" ::'
 
 for restrict_keyword in restrict __restrict__ __restrict ""; do
-    check_cc <<EOF && break
+    test_cc <<EOF && break
 void foo(char * $restrict_keyword p);
 EOF
 done
 
-check_cc <<EOF && enable pragma_deprecated
+test_cc <<EOF && enable pragma_deprecated
 void foo(void) { _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"") }
 EOF
 
-check_cc <<EOF || die "endian test failed"
+test_cc <<EOF || die "endian test failed"
 unsigned int endian = 'B' << 24 | 'I' << 16 | 'G' << 8 | 'E';
 EOF
 od -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
@@ -4164,14 +4165,14 @@ od -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
 check_gas() {
     log "check_gas using '$as' as AS"
     # :vararg is used on aarch64, arm and ppc altivec
-    check_as <<EOF || return 1
+    test_as <<EOF || return 1
 .macro m n, y:vararg=0
 \n: .int \y
 .endm
 m x
 EOF
     # .altmacro is only used in arm asm
-    ! enabled arm || check_as <<EOF || return 1
+    ! enabled arm || test_as <<EOF || return 1
 .altmacro
 EOF
     enable gnu_as
@@ -4192,7 +4193,7 @@ if enabled_any arm aarch64 || enabled_all ppc altivec && enabled asm; then
 
     [ $target_os = "darwin" ] && gaspp_as_type="apple-$gaspp_as_type"
 
-    check_cmd gas-preprocessor.pl -arch $arch -as-type $gaspp_as_type -- $as $as_noop &&
+    test_cmd gas-preprocessor.pl -arch $arch -as-type $gaspp_as_type -- $as $as_noop &&
         gas="gas-preprocessor.pl -arch $arch -as-type $gaspp_as_type -- $as"
 
     if ! check_gas ; then
@@ -4201,7 +4202,7 @@ if enabled_any arm aarch64 || enabled_all ppc altivec && enabled asm; then
             $nogas "GNU assembler not found, install/update gas-preprocessor"
     fi
 
-    check_as <<EOF && enable as_func
+    test_as <<EOF && enable as_func
 .func test
 .endfunc
 EOF
@@ -4223,18 +4224,18 @@ elif enabled alpha; then
 
 elif enabled arm; then
 
-    enabled msvc && check_cpp_condition stddef.h "defined _M_ARMT" && enable thumb
-    check_cpp_condition stddef.h "defined __thumb__" && enable_weak thumb
+    enabled msvc && test_cpp_condition stddef.h "defined _M_ARMT" && enable thumb
+    test_cpp_condition stddef.h "defined __thumb__" && enable_weak thumb
     enabled thumb && check_cflags -mthumb || check_cflags -marm
 
-    if     check_cpp_condition stddef.h "defined __ARM_PCS_VFP"; then
+    if test_cpp_condition stddef.h "defined __ARM_PCS_VFP"; then
         enable vfp_args
-    elif check_cpp_condition stddef.h "defined _M_ARM_FP && _M_ARM_FP >= 30"; then
+    elif test_cpp_condition stddef.h "defined _M_ARM_FP && _M_ARM_FP >= 30"; then
         enable vfp_args
-    elif ! check_cpp_condition stddef.h "defined __ARM_PCS || defined __SOFTFP__" && [ $target_os != darwin ]; then
+    elif ! test_cpp_condition stddef.h "defined __ARM_PCS || defined __SOFTFP__" && [ $target_os != darwin ]; then
         case "${cross_prefix:-$cc}" in
             *hardfloat*)         enable vfp_args;   fpabi=vfp ;;
-            *) check_ld <<EOF && enable vfp_args && fpabi=vfp || fpabi=soft ;;
+            *) test_ld <<EOF &&  enable vfp_args && fpabi=vfp || fpabi=soft ;;
 __asm__ (".eabi_attribute 28, 1");
 int main(void) { return 0; }
 EOF
@@ -4255,16 +4256,16 @@ EOF
 
     check_inline_asm asm_mod_q '"add r0, %Q0, %R0" :: "r"((long long)0)'
 
-    check_as <<EOF && enable as_arch_directive
+    test_as <<EOF && enable as_arch_directive
 .arch armv7-a
 EOF
-    check_as <<EOF && enable as_fpu_directive
+    test_as <<EOF && enable as_fpu_directive
 .fpu neon
 EOF
 
     # llvm's integrated assembler supports .object_arch from llvm 3.5
     [ "$objformat" = elf32 ] || [ "$objformat" = elf64 ] &&
-        check_as <<EOF && enable as_object_arch
+        test_as <<EOF && enable as_object_arch
 .object_arch armv4
 EOF
 
@@ -4309,9 +4310,9 @@ elif enabled ppc; then
         check_cflags -maltivec -mabi=altivec
 
         # check if our compiler supports Motorola AltiVec C API
-        check_code cc altivec.h "vector signed int v1 = (vector signed int) { 0 };
-                                 vector signed int v2 = (vector signed int) { 1 };
-                                 v1 = vec_add(v1, v2);" ||
+        test_code cc altivec.h "vector signed int v1 = (vector signed int) { 0 };
+                                vector signed int v2 = (vector signed int) { 1 };
+                                v1 = vec_add(v1, v2);" ||
             disable altivec
 
         enabled altivec || warn "Altivec disabled, possibly missing --cpu flag"
@@ -4319,13 +4320,13 @@ elif enabled ppc; then
 
     if enabled vsx; then
         check_cflags -mvsx &&
-        check_code cc altivec.h "int v[4] = { 0 };
-                                 vector signed int v1 = vec_vsx_ld(0, v);" ||
+        test_code cc altivec.h "int v[4] = { 0 };
+                                vector signed int v1 = vec_vsx_ld(0, v);" ||
             disable vsx
     fi
 
     if enabled power8; then
-        check_cpp_condition "altivec.h" "defined(_ARCH_PWR8)" || disable power8
+        test_cpp_condition "altivec.h" "defined(_ARCH_PWR8)" || disable power8
     fi
 
 elif enabled x86; then
@@ -4358,20 +4359,20 @@ EOF
 
     probe_x86asm(){
         x86asmexe_probe=$1
-        if check_cmd $x86asmexe_probe -v; then
+        if test_cmd $x86asmexe_probe -v; then
             x86asmexe=$x86asmexe_probe
             x86asm_type=nasm
             x86asm_debug="-g -F dwarf"
             X86ASMDEP=
             X86ASM_DEPFLAGS='-MD $(@:.o=.d)'
-        elif check_cmd $x86asmexe_probe --version; then
+        elif test_cmd $x86asmexe_probe --version; then
             x86asmexe=$x86asmexe_probe
             x86asm_type=yasm
             x86asm_debug="-g dwarf2"
             X86ASMDEP='$(DEPX86ASM) $(X86ASMFLAGS) -M $(X86ASM_O) $< > $(@:.o=.d)'
             X86ASM_DEPFLAGS=
         fi
-        check_x86asm "movbe ecx, [5]" && enable x86asm
+        test_x86asm "movbe ecx, [5]" && enable x86asm
     }
 
     if ! disabled_any asm mmx x86asm; then
@@ -4387,11 +4388,11 @@ EOF
             elf*) enabled debug && append X86ASMFLAGS $x86asm_debug ;;
         esac
 
-        check_x86asm "vextracti128 xmm0, ymm0, 0"      || disable avx2_external
-        check_x86asm "vpmacsdd xmm0, xmm1, xmm2, xmm3" || disable xop_external
-        check_x86asm "vfmadd132ps ymm0, ymm1, ymm2"    || disable fma3_external
-        check_x86asm "vfmaddps ymm0, ymm1, ymm2, ymm3" || disable fma4_external
-        check_x86asm "CPU amdnop"                      || disable cpunop
+        test_x86asm "vextracti128 xmm0, ymm0, 0"      || disable avx2_external
+        test_x86asm "vpmacsdd xmm0, xmm1, xmm2, xmm3" || disable xop_external
+        test_x86asm "vfmadd132ps ymm0, ymm1, ymm2"    || disable fma3_external
+        test_x86asm "vfmaddps ymm0, ymm1, ymm2, ymm3" || disable fma4_external
+        test_x86asm "CPU amdnop"                      || disable cpunop
     fi
 
     case "$cpu" in
@@ -4402,7 +4403,7 @@ EOF
 
 fi
 
-check_code cc arm_neon.h "int16x8_t test = vdupq_n_s16(0)" && enable intrinsics_neon
+test_code cc arm_neon.h "int16x8_t test = vdupq_n_s16(0)" && enable intrinsics_neon
 
 check_ldflags -Wl,--as-needed
 
@@ -4465,7 +4466,7 @@ check_func_headers malloc.h _aligned_malloc     && enable aligned_malloc
 check_func  ${malloc_prefix}memalign            && enable memalign
 check_func  ${malloc_prefix}posix_memalign      && enable posix_memalign
 
-check_cpp_condition unistd.h "defined(_POSIX_MONOTONIC_CLOCK)" &&
+test_cpp_condition unistd.h "defined(_POSIX_MONOTONIC_CLOCK)" &&
     { check_lib clock_gettime time.h clock_gettime ||
       check_lib clock_gettime time.h clock_gettime -lrt; }
 
@@ -4646,7 +4647,7 @@ enabled libwavpack        && require libwavpack wavpack/wavpack.h WavpackOpenFil
 enabled libwebp           && require_pkg_config libwebp libwebp webp/encode.h WebPGetEncoderVersion
 enabled libx264           && require_pkg_config libx264 x264 "stdint.h x264.h" x264_encoder_encode &&
                              require_cpp_condition x264.h "X264_BUILD >= 118" &&
-                             { check_cpp_condition x264.h "X264_MPEG2" &&
+                             { test_cpp_condition x264.h "X264_MPEG2" &&
                                enable libx262; }
 enabled libx265           && require_pkg_config libx265 x265 x265.h x265_api_get &&
                              require_cpp_condition x265.h "X265_BUILD >= 57"
@@ -4675,8 +4676,8 @@ enabled openssl           && { { check_pkg_config openssl openssl openssl/ssl.h 
 enabled avplay &&
     test_pkg_config sdl "sdl >= 1.2.1 sdl < 1.3.0" SDL_events.h SDL_PollEvent
 
-! disabled pod2man   && check_cmd pod2man --help     && enable pod2man   || disable pod2man
-! disabled texi2html && check_cmd texi2html -version && enable texi2html || disable texi2html
+! disabled pod2man   && test_cmd pod2man --help     && enable pod2man   || disable pod2man
+! disabled texi2html && test_cmd texi2html -version && enable texi2html || disable texi2html
 
 check_header linux/fb.h
 check_header linux/videodev2.h
@@ -4690,7 +4691,7 @@ check_lib user32 "windows.h winuser.h" GetShellWindow -luser32
 check_lib vfw32 "windows.h vfw.h" capCreateCaptureWindow -lvfw32
 # check that WM_CAP_DRIVER_CONNECT is defined to the proper value
 # w32api 3.12 had it defined wrong
-check_cpp_condition vfw.h "WM_CAP_DRIVER_CONNECT > WM_USER" && enable vfwcap_defines
+test_cpp_condition vfw.h "WM_CAP_DRIVER_CONNECT > WM_USER" && enable vfwcap_defines
 
 # check for ioctl_meteor.h, ioctl_bt848.h and alternatives
 check_header "dev/bktr/ioctl_meteor.h dev/bktr/ioctl_bt848.h"                   ||
@@ -4725,7 +4726,7 @@ fi
 
 # d3d11va requires linking directly to dxgi and d3d11 if not building for
 # the desktop api partition
-check_cpp <<EOF && enable uwp && d3d11va_extralibs="-ldxgi -ld3d11"
+test_cpp <<EOF && enable uwp && d3d11va_extralibs="-ldxgi -ld3d11"
 #ifdef WINAPI_FAMILY
 #include <winapifamily.h>
 #if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
@@ -4741,7 +4742,7 @@ EOF
 enabled vaapi && require vaapi va/va.h vaInitialize -lva
 
 enabled vaapi &&
-    check_code cc "va/va.h" "vaCreateSurfaces(0, 0, 0, 0, 0, 0, 0, 0)" ||
+    test_code cc "va/va.h" "vaCreateSurfaces(0, 0, 0, 0, 0, 0, 0, 0)" ||
     disable vaapi
 
 enabled vaapi &&
@@ -4751,11 +4752,11 @@ enabled vaapi &&
     check_lib vaapi_x11 "va/va.h va/va_x11.h" vaGetDisplay -lva -lva-x11 -lX11
 
 enabled vaapi &&
-    check_cpp_condition "va/va.h" "VA_CHECK_VERSION(1, 0, 0)" &&
+    test_cpp_condition "va/va.h" "VA_CHECK_VERSION(1, 0, 0)" &&
     enable vaapi_1
 
 enabled vdpau &&
-    check_cpp_condition vdpau/vdpau.h "defined VDP_DECODER_PROFILE_MPEG4_PART2_ASP" ||
+    test_cpp_condition vdpau/vdpau.h "defined VDP_DECODER_PROFILE_MPEG4_PART2_ASP" ||
     disable vdpau
 
 enabled vdpau &&
@@ -4801,7 +4802,7 @@ check_disable_warning_headers -Wno-unused-variable
 
 check_objcflags -fobjc-arc && enable objc_arc
 
-check_cc <<EOF && enable blocks_extension
+test_cc <<EOF && enable blocks_extension
 void (^block)(void);
 EOF
 
@@ -4846,7 +4847,7 @@ enabled xmm_clobber_test &&
                   -Wl,--wrap,sws_scale ||
     disable xmm_clobber_test
 
-check_ld <<EOF && enable proper_dce
+test_ld <<EOF && enable proper_dce
 extern const int array[512];
 static inline int func(void) { return array[0]; }
 int main(void) { return 0; }
@@ -4857,11 +4858,11 @@ if enabled proper_dce; then
     if test_ldflags -Wl,${version_script},$TMPV; then
         append SHFLAGS '-Wl,${version_script},\$(SUBDIR)lib\$(NAME).ver'
         quotes='""'
-        check_cc <<EOF && enable symver_asm_label
+        test_cc <<EOF && enable symver_asm_label
 void ff_foo(void) __asm__ ("av_foo@VERSION");
 void ff_foo(void) { ${inline_asm+__asm__($quotes);} }
 EOF
-        check_cc <<EOF && enable symver_gnu_asm
+        test_cc <<EOF && enable symver_gnu_asm
 __asm__(".symver ff_foo,av_foo@VERSION");
 void ff_foo(void) {}
 EOF
@@ -4957,14 +4958,14 @@ elif enabled_any msvc icl; then
     if enabled icl; then
         # -Qansi-alias is basically -fstrict-aliasing, but does not work
         # (correctly) on icl 13.x.
-        check_cpp_condition "windows.h" "__ICL < 1300 || __ICL >= 1400" &&
+        test_cpp_condition "windows.h" "__ICL < 1300 || __ICL >= 1400" &&
             add_cflags -Qansi-alias
         # icl will pass the inline asm tests but inline asm is currently
         # not supported (build will fail)
         disable inline_asm
     fi
     # msvcrt10 x64 incorrectly enables log2, only msvcrt12 (MSVC 2013) onwards actually has log2.
-    check_cpp_condition crtversion.h "_VC_CRT_MAJOR_VERSION >= 12" || disable log2
+    test_cpp_condition crtversion.h "_VC_CRT_MAJOR_VERSION >= 12" || disable log2
     # The CRT headers contain __declspec(restrict) in a few places, but if redefining
     # restrict, this might break. MSVC 2010 and 2012 fail with __declspec(__restrict)
     # (as it ends up if the restrict redefine is done before including stdlib.h), while
@@ -4972,7 +4973,7 @@ elif enabled_any msvc icl; then
     # If this declspec fails, force including stdlib.h before the restrict redefinition
     # happens in config.h.
     if [ $restrict_keyword != restrict ]; then
-        check_cc <<EOF || add_cflags -FIstdlib.h
+        test_cc <<EOF || add_cflags -FIstdlib.h
 __declspec($restrict_keyword) void *foo(int);
 EOF
     fi
@@ -4982,7 +4983,7 @@ for pfx in "" host_; do
     varname=${pfx%_}cc_type
     eval "type=\$$varname"
     if [ "$type" = "msvc" ]; then
-        check_${pfx}cc <<EOF || add_${pfx}cflags -Dinline=__inline
+        test_${pfx}cc <<EOF || add_${pfx}cflags -Dinline=__inline
 static inline int foo(int a) { return a; }
 EOF
     fi
