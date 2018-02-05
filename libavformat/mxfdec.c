@@ -1681,7 +1681,7 @@ static MXFTimecodeComponent* mxf_resolve_timecode_component(MXFContext *mxf, UID
     return NULL;
 }
 
-static MXFPackage* mxf_resolve_source_package(MXFContext *mxf, UID package_uid)
+static MXFPackage* mxf_resolve_source_package(MXFContext *mxf, UID package_ul, UID package_uid)
 {
     MXFPackage *package = NULL;
     int i;
@@ -1691,7 +1691,7 @@ static MXFPackage* mxf_resolve_source_package(MXFContext *mxf, UID package_uid)
         if (!package)
             continue;
 
-        if (!memcmp(package->package_uid, package_uid, 16))
+        if (!memcmp(package->package_ul, package_ul, 16) && !memcmp(package->package_uid, package_uid, 16))
             return package;
     }
     return NULL;
@@ -1740,7 +1740,7 @@ static MXFStructuralComponent* mxf_resolve_essence_group_choice(MXFContext *mxf,
         if (!component)
             continue;
 
-        if (!(package = mxf_resolve_source_package(mxf, component->source_package_uid)))
+        if (!(package = mxf_resolve_source_package(mxf, component->source_package_ul, component->source_package_uid)))
             continue;
 
         descriptor = mxf_resolve_strong_ref(mxf, &package->descriptor_ref, Descriptor);
@@ -1806,7 +1806,7 @@ static int mxf_parse_physical_source_package(MXFContext *mxf, MXFTrack *source_t
         if (!sourceclip)
             continue;
 
-        if (!(physical_package = mxf_resolve_source_package(mxf, sourceclip->source_package_uid)))
+        if (!(physical_package = mxf_resolve_source_package(mxf, sourceclip->source_package_ul, sourceclip->source_package_uid)))
             break;
 
         mxf_add_umid_metadata(&st->metadata, "reel_umid", physical_package);
@@ -1976,7 +1976,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             if (!component)
                 continue;
 
-            source_package = mxf_resolve_source_package(mxf, component->source_package_uid);
+            source_package = mxf_resolve_source_package(mxf, component->source_package_ul, component->source_package_uid);
             if (!source_package) {
                 av_log(mxf->fc, AV_LOG_TRACE, "material track %d: no corresponding source package found\n", material_track->track_id);
                 continue;
