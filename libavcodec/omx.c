@@ -26,8 +26,8 @@
 #endif
 
 #include <dlfcn.h>
-#include <OMX_Core.h>
-#include <OMX_Component.h>
+#include <IL/OMX_Core.h>
+#include <IL/OMX_Component.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
