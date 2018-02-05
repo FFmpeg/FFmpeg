@@ -262,7 +262,7 @@ static int vdpau_h264_init(AVCodecContext *avctx)
     return ff_vdpau_common_init(avctx, profile, level);
 }
 
-AVHWAccel ff_h264_vdpau_hwaccel = {
+const AVHWAccel ff_h264_vdpau_hwaccel = {
     .name           = "h264_vdpau",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H264,

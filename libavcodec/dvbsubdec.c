@@ -96,6 +96,9 @@ typedef struct DVBSubRegion {
     int clut;
     int bgcolor;
 
+    uint8_t computed_clut[4*256];
+    int has_computed_clut;
+
     uint8_t *pbuf;
     int buf_size;
     int dirty;
@@ -647,7 +650,7 @@ static int dvbsub_read_8bit_string(AVCodecContext *avctx,
     return pixels_read;
 }
 
-static void compute_default_clut(AVSubtitleRect *rect, int w, int h)
+static void compute_default_clut(uint8_t *clut, AVSubtitleRect *rect, int w, int h)
 {
     uint8_t list[256] = {0};
     uint8_t list_inv[256];
@@ -703,7 +706,7 @@ static void compute_default_clut(AVSubtitleRect *rect, int w, int h)
     count = FFMAX(i - 1, 1);
     for (i--; i>=0; i--) {
         int v = i*255/count;
-        AV_WN32(rect->data[1] + 4*list_inv[i], RGBA(v/2,v,v/2,v));
+        AV_WN32(clut + 4*list_inv[i], RGBA(v/2,v,v/2,v));
     }
 }
 
@@ -814,8 +817,14 @@ static int save_subtitle_set(AVCodecContext *avctx, AVSubtitle *sub, int *got_ou
 
             memcpy(rect->data[0], region->pbuf, region->buf_size);
 
-            if ((clut == &default_clut && ctx->compute_clut == -1) || ctx->compute_clut == 1)
-                compute_default_clut(rect, rect->w, rect->h);
+            if ((clut == &default_clut && ctx->compute_clut == -1) || ctx->compute_clut == 1) {
+                if (!region->has_computed_clut) {
+                    compute_default_clut(region->computed_clut, rect, rect->w, rect->h);
+                    region->has_computed_clut = 1;
+                }
+
+                memcpy(rect->data[1], region->computed_clut, sizeof(region->computed_clut));
+            }
 
 #if FF_API_AVPICTURE
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -964,6 +973,7 @@ static void dvbsub_parse_pixel_data_block(AVCodecContext *avctx, DVBSubObjectDis
         }
     }
 
+    region->has_computed_clut = 0;
 }
 
 static int dvbsub_parse_object_segment(AVCodecContext *avctx,

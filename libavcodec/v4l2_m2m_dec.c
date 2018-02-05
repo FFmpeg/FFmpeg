@@ -35,7 +35,7 @@
 
 static int v4l2_try_start(AVCodecContext *avctx)
 {
-    V4L2m2mContext *s = avctx->priv_data;
+    V4L2m2mContext *s = ((V4L2m2mPriv*)avctx->priv_data)->context;
     V4L2Context *const capture = &s->capture;
     V4L2Context *const output = &s->output;
     struct v4l2_selection selection;
@@ -127,7 +127,7 @@ static int v4l2_prepare_decoder(V4L2m2mContext *s)
 
 static int v4l2_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 {
-    V4L2m2mContext *s = avctx->priv_data;
+    V4L2m2mContext *s = ((V4L2m2mPriv*)avctx->priv_data)->context;
     V4L2Context *const capture = &s->capture;
     V4L2Context *const output = &s->output;
     AVPacket avpkt = {0};
@@ -159,10 +159,16 @@ dequeue:
 
 static av_cold int v4l2_decode_init(AVCodecContext *avctx)
 {
-    V4L2m2mContext *s = avctx->priv_data;
-    V4L2Context *capture = &s->capture;
-    V4L2Context *output = &s->output;
+    V4L2Context *capture, *output;
+    V4L2m2mContext *s;
     int ret;
+
+    ret = ff_v4l2_m2m_create_context(avctx, &s);
+    if (ret < 0)
+        return ret;
+
+    capture = &s->capture;
+    output = &s->output;
 
     /* if these dimensions are invalid (ie, 0 or too small) an event will be raised
      * by the v4l2 driver; this event will trigger a full pipeline reconfig and
@@ -186,13 +192,13 @@ static av_cold int v4l2_decode_init(AVCodecContext *avctx)
     return v4l2_prepare_decoder(s);
 }
 
-#define OFFSET(x) offsetof(V4L2m2mContext, x)
+#define OFFSET(x) offsetof(V4L2m2mPriv, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
 
 static const AVOption options[] = {
     V4L_M2M_DEFAULT_OPTS,
     { "num_capture_buffers", "Number of buffers in the capture context",
-        OFFSET(capture.num_buffers), AV_OPT_TYPE_INT, {.i64 = 20}, 20, INT_MAX, FLAGS },
+        OFFSET(num_capture_buffers), AV_OPT_TYPE_INT, {.i64 = 20}, 20, INT_MAX, FLAGS },
     { NULL},
 };
 
@@ -209,12 +215,14 @@ AVCodec ff_ ## NAME ## _v4l2m2m_decoder = { \
     .long_name      = NULL_IF_CONFIG_SMALL("V4L2 mem2mem " LONGNAME " decoder wrapper"),\
     .type           = AVMEDIA_TYPE_VIDEO,\
     .id             = CODEC ,\
-    .priv_data_size = sizeof(V4L2m2mContext),\
+    .priv_data_size = sizeof(V4L2m2mPriv),\
     .priv_class     = &v4l2_m2m_ ## NAME ## _dec_class,\
     .init           = v4l2_decode_init,\
     .receive_frame  = v4l2_receive_frame,\
     .close          = ff_v4l2_m2m_codec_end,\
     .bsfs           = bsf_name, \
+    .capabilities   = AV_CODEC_CAP_HARDWARE | AV_CODEC_CAP_DELAY, \
+    .wrapper_name   = "v4l2m2m", \
 };
 
 M2MDEC(h264,  "H.264", AV_CODEC_ID_H264,       "h264_mp4toannexb");

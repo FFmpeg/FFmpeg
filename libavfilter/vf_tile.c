@@ -38,6 +38,7 @@ typedef struct TileContext {
     unsigned margin;
     unsigned padding;
     unsigned overlap;
+    unsigned init_padding;
     unsigned current;
     unsigned nb_frames;
     FFDrawContext draw;
@@ -61,6 +62,8 @@ static const AVOption tile_options[] = {
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1024, FLAGS },
     { "color",   "set the color of the unused area", OFFSET(rgba_color), AV_OPT_TYPE_COLOR, {.str = "black"}, .flags = FLAGS },
     { "overlap", "set how many frames to overlap for each render", OFFSET(overlap),
+        AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, FLAGS },
+    { "init_padding", " set how many frames to initially pad", OFFSET(init_padding),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, FLAGS },
     { NULL }
 };
@@ -97,6 +100,12 @@ static av_cold int init(AVFilterContext *ctx)
     if (tile->overlap >= tile->nb_frames) {
         av_log(ctx, AV_LOG_WARNING, "overlap must be less than %d\n", tile->nb_frames);
         tile->overlap = tile->nb_frames - 1;
+    }
+
+    if (tile->init_padding >= tile->nb_frames) {
+        av_log(ctx, AV_LOG_WARNING, "init_padding must be less than %d\n", tile->nb_frames);
+    } else {
+        tile->current = tile->init_padding;
     }
 
     return 0;
@@ -201,11 +210,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
         tile->out_ref->height = outlink->h;
 
         /* fill surface once for margin/padding */
-        if (tile->margin || tile->padding)
+        if (tile->margin || tile->padding || tile->init_padding)
             ff_fill_rectangle(&tile->draw, &tile->blank,
                               tile->out_ref->data,
                               tile->out_ref->linesize,
                               0, 0, outlink->w, outlink->h);
+        tile->init_padding = 0;
     }
 
     if (tile->prev_out_ref) {

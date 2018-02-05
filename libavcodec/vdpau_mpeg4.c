@@ -110,7 +110,7 @@ static int vdpau_mpeg4_init(AVCodecContext *avctx)
     return ff_vdpau_common_init(avctx, profile, avctx->level);
 }
 
-AVHWAccel ff_mpeg4_vdpau_hwaccel = {
+const AVHWAccel ff_mpeg4_vdpau_hwaccel = {
     .name           = "mpeg4_vdpau",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MPEG4,

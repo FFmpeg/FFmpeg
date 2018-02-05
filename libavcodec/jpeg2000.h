@@ -165,15 +165,15 @@ typedef struct Jpeg2000Cblk {
     uint8_t ninclpasses; // number coding of passes included in codestream
     uint8_t nonzerobits;
     uint16_t length;
-    uint16_t lengthinc[JPEG2000_MAX_PASSES];
+    uint16_t *lengthinc;
     uint8_t nb_lengthinc;
     uint8_t lblock;
-    uint8_t zero;
-    uint8_t data[8192];
+    uint8_t *data;
+    size_t data_allocated;
     int nb_terminations;
     int nb_terminationsinc;
-    int data_start[JPEG2000_MAX_PASSES];
-    Jpeg2000Pass passes[JPEG2000_MAX_PASSES];
+    int *data_start;
+    Jpeg2000Pass *passes;
     int coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
 } Jpeg2000Cblk; // code block
 

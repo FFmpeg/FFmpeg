@@ -318,6 +318,11 @@ void ff_mp4_parse_es_descr(AVIOContext *pb, int *es_id);
 #define MOV_TKHD_FLAG_IN_PREVIEW    0x0004
 #define MOV_TKHD_FLAG_IN_POSTER     0x0008
 
+#define MOV_SAMPLE_DEPENDENCY_UNKNOWN 0x0
+#define MOV_SAMPLE_DEPENDENCY_YES     0x1
+#define MOV_SAMPLE_DEPENDENCY_NO      0x2
+
+
 #define TAG_IS_AVCI(tag)                    \
     ((tag) == MKTAG('a', 'i', '5', 'p') ||  \
      (tag) == MKTAG('a', 'i', '5', 'q') ||  \

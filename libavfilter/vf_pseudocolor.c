@@ -94,7 +94,7 @@ static const AVOption pseudocolor_options[] = {
 };
 
 static const enum AVPixelFormat pix_fmts[] = {
-    AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY16,
+    AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY16,
     AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVA420P,
     AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVA422P,
     AV_PIX_FMT_YUV444P, AV_PIX_FMT_GBRP,
@@ -114,7 +114,10 @@ static const enum AVPixelFormat pix_fmts[] = {
     AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUVA420P16,
     AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUVA422P16,
     AV_PIX_FMT_YUV444P16, AV_PIX_FMT_YUVA444P16,
+    AV_PIX_FMT_GBRP9,
     AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRAP10,
+    AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12,
+    AV_PIX_FMT_GBRP14,
     AV_PIX_FMT_GBRP16, AV_PIX_FMT_GBRAP16,
     AV_PIX_FMT_NONE
 };
@@ -531,11 +534,17 @@ static int config_input(AVFilterLink *inlink)
     case AV_PIX_FMT_YUV444P14:
     case AV_PIX_FMT_YUV444P16:
     case AV_PIX_FMT_YUVA444P16:
+    case AV_PIX_FMT_GBRP9:
     case AV_PIX_FMT_GBRP10:
-    case AV_PIX_FMT_GBRAP10:
+    case AV_PIX_FMT_GBRP12:
+    case AV_PIX_FMT_GBRP14:
     case AV_PIX_FMT_GBRP16:
+    case AV_PIX_FMT_GBRAP10:
+    case AV_PIX_FMT_GBRAP12:
     case AV_PIX_FMT_GBRAP16:
+    case AV_PIX_FMT_GRAY9:
     case AV_PIX_FMT_GRAY10:
+    case AV_PIX_FMT_GRAY12:
     case AV_PIX_FMT_GRAY16:
         s->filter[0] = s->filter[1] = s->filter[2] = s->filter[3] = pseudocolor_filter_16;
         break;

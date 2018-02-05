@@ -24,6 +24,7 @@
 #include <sys/types.h>
 
 #include "libavutil/common.h"
+#include "libavutil/hwcontext_mediacodec.h"
 #include "libavutil/mem.h"
 #include "libavutil/log.h"
 #include "libavutil/pixfmt.h"
@@ -476,7 +477,18 @@ int ff_mediacodec_dec_init(AVCodecContext *avctx, MediaCodecDecContext *s,
     if (pix_fmt == AV_PIX_FMT_MEDIACODEC) {
         AVMediaCodecContext *user_ctx = avctx->hwaccel_context;
 
-        if (user_ctx && user_ctx->surface) {
+        if (avctx->hw_device_ctx) {
+            AVHWDeviceContext *device_ctx = (AVHWDeviceContext*)(avctx->hw_device_ctx->data);
+            if (device_ctx->type == AV_HWDEVICE_TYPE_MEDIACODEC) {
+                if (device_ctx->hwctx) {
+                    AVMediaCodecDeviceContext *mediacodec_ctx = (AVMediaCodecDeviceContext *)device_ctx->hwctx;
+                    s->surface = ff_mediacodec_surface_ref(mediacodec_ctx->surface, avctx);
+                    av_log(avctx, AV_LOG_INFO, "Using surface %p\n", s->surface);
+                }
+            }
+        }
+
+        if (!s->surface && user_ctx && user_ctx->surface) {
             s->surface = ff_mediacodec_surface_ref(user_ctx->surface, avctx);
             av_log(avctx, AV_LOG_INFO, "Using surface %p\n", s->surface);
         }
@@ -757,45 +769,3 @@ int ff_mediacodec_dec_is_flushing(AVCodecContext *avctx, MediaCodecDecContext *s
 {
     return s->flushing;
 }
-
-AVHWAccel ff_h264_mediacodec_hwaccel = {
-    .name    = "mediacodec",
-    .type    = AVMEDIA_TYPE_VIDEO,
-    .id      = AV_CODEC_ID_H264,
-    .pix_fmt = AV_PIX_FMT_MEDIACODEC,
-};
-
-AVHWAccel ff_hevc_mediacodec_hwaccel = {
-    .name    = "mediacodec",
-    .type    = AVMEDIA_TYPE_VIDEO,
-    .id      = AV_CODEC_ID_HEVC,
-    .pix_fmt = AV_PIX_FMT_MEDIACODEC,
-};
-
-AVHWAccel ff_mpeg2_mediacodec_hwaccel = {
-    .name    = "mediacodec",
-    .type    = AVMEDIA_TYPE_VIDEO,
-    .id      = AV_CODEC_ID_MPEG2VIDEO,
-    .pix_fmt = AV_PIX_FMT_MEDIACODEC,
-};
-
-AVHWAccel ff_mpeg4_mediacodec_hwaccel = {
-    .name    = "mediacodec",
-    .type    = AVMEDIA_TYPE_VIDEO,
-    .id      = AV_CODEC_ID_MPEG4,
-    .pix_fmt = AV_PIX_FMT_MEDIACODEC,
-};
-
-AVHWAccel ff_vp8_mediacodec_hwaccel = {
-    .name    = "mediacodec",
-    .type    = AVMEDIA_TYPE_VIDEO,
-    .id      = AV_CODEC_ID_VP8,
-    .pix_fmt = AV_PIX_FMT_MEDIACODEC,
-};
-
-AVHWAccel ff_vp9_mediacodec_hwaccel = {
-    .name    = "mediacodec",
-    .type    = AVMEDIA_TYPE_VIDEO,
-    .id      = AV_CODEC_ID_VP9,
-    .pix_fmt = AV_PIX_FMT_MEDIACODEC,
-};

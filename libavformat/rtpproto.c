@@ -636,12 +636,6 @@ int ff_rtp_get_local_rtp_port(URLContext *h)
  * @return the local port number
  */
 
-int ff_rtp_get_local_rtcp_port(URLContext *h)
-{
-    RTPContext *s = h->priv_data;
-    return ff_udp_get_local_port(s->rtcp_hd);
-}
-
 static int rtp_get_file_handle(URLContext *h)
 {
     RTPContext *s = h->priv_data;

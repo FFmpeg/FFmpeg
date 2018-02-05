@@ -23,7 +23,7 @@
 
 /* Multipart JPEG */
 
-#define BOUNDARY_TAG "ffserver"
+#define BOUNDARY_TAG "ffmpeg"
 
 typedef struct MPJPEGContext {
     AVClass *class;

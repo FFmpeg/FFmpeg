@@ -61,6 +61,7 @@
 #include "libavutil/timestamp.h"
 #include "libavutil/bprint.h"
 #include "libavutil/time.h"
+#include "libavutil/thread.h"
 #include "libavutil/threadmessage.h"
 #include "libavcodec/mathops.h"
 #include "libavformat/os_support.h"
@@ -96,10 +97,6 @@
 #include <termios.h>
 #elif HAVE_KBHIT
 #include <conio.h>
-#endif
-
-#if HAVE_PTHREADS
-#include <pthread.h>
 #endif
 
 #include <time.h>
@@ -161,7 +158,7 @@ static struct termios oldtty;
 static int restore_tty;
 #endif
 
-#if HAVE_PTHREADS
+#if HAVE_THREADS
 static void free_input_threads(void);
 #endif
 
@@ -220,13 +217,18 @@ static void sub2video_push_ref(InputStream *ist, int64_t pts)
 {
     AVFrame *frame = ist->sub2video.frame;
     int i;
+    int ret;
 
     av_assert1(frame->data[0]);
     ist->sub2video.last_pts = frame->pts = pts;
-    for (i = 0; i < ist->nb_filters; i++)
-        av_buffersrc_add_frame_flags(ist->filters[i]->filter, frame,
-                                     AV_BUFFERSRC_FLAG_KEEP_REF |
-                                     AV_BUFFERSRC_FLAG_PUSH);
+    for (i = 0; i < ist->nb_filters; i++) {
+        ret = av_buffersrc_add_frame_flags(ist->filters[i]->filter, frame,
+                                           AV_BUFFERSRC_FLAG_KEEP_REF |
+                                           AV_BUFFERSRC_FLAG_PUSH);
+        if (ret != AVERROR_EOF && ret < 0)
+            av_log(NULL, AV_LOG_WARNING, "Error while add the frame to buffer source(%s).\n",
+                   av_err2str(ret));
+    }
 }
 
 void sub2video_update(InputStream *ist, AVSubtitle *sub)
@@ -295,11 +297,15 @@ static void sub2video_heartbeat(InputStream *ist, int64_t pts)
 static void sub2video_flush(InputStream *ist)
 {
     int i;
+    int ret;
 
     if (ist->sub2video.end_pts < INT64_MAX)
         sub2video_update(ist, NULL);
-    for (i = 0; i < ist->nb_filters; i++)
-        av_buffersrc_add_frame(ist->filters[i]->filter, NULL);
+    for (i = 0; i < ist->nb_filters; i++) {
+        ret = av_buffersrc_add_frame(ist->filters[i]->filter, NULL);
+        if (ret != AVERROR_EOF && ret < 0)
+            av_log(NULL, AV_LOG_WARNING, "Flush the frame error.\n");
+    }
 }
 
 /* end of sub2video hack */
@@ -327,13 +333,14 @@ static int main_return_code = 0;
 static void
 sigterm_handler(int sig)
 {
+    int ret;
     received_sigterm = sig;
     received_nb_signals++;
     term_exit_sigsafe();
     if(received_nb_signals > 3) {
-        write(2/*STDERR_FILENO*/, "Received > 3 system signals, hard exiting\n",
-                           strlen("Received > 3 system signals, hard exiting\n"));
-
+        ret = write(2/*STDERR_FILENO*/, "Received > 3 system signals, hard exiting\n",
+                    strlen("Received > 3 system signals, hard exiting\n"));
+        if (ret < 0) { /* Do nothing */ };
         exit(123);
     }
 }
@@ -398,6 +405,9 @@ void term_init(void)
     signal(SIGTERM, sigterm_handler); /* Termination (ANSI).  */
 #ifdef SIGXCPU
     signal(SIGXCPU, sigterm_handler);
+#endif
+#ifdef SIGPIPE
+    signal(SIGPIPE, SIG_IGN); /* Broken pipe (POSIX). */
 #endif
 #if HAVE_SETCONSOLECTRLHANDLER
     SetConsoleCtrlHandler((PHANDLER_ROUTINE) CtrlHandler, TRUE);
@@ -568,7 +578,7 @@ static void ffmpeg_cleanup(int ret)
 
         av_freep(&output_streams[i]);
     }
-#if HAVE_PTHREADS
+#if HAVE_THREADS
     free_input_threads();
 #endif
     for (i = 0; i < nb_input_files; i++) {
@@ -1553,7 +1563,7 @@ static void print_final_stats(int64_t total_size)
         uint64_t total_packets = 0, total_size = 0;
 
         av_log(NULL, AV_LOG_VERBOSE, "Input file #%d (%s):\n",
-               i, f->ctx->filename);
+               i, f->ctx->url);
 
         for (j = 0; j < f->nb_streams; j++) {
             InputStream *ist = input_streams[f->ist_index + j];
@@ -1587,7 +1597,7 @@ static void print_final_stats(int64_t total_size)
         uint64_t total_packets = 0, total_size = 0;
 
         av_log(NULL, AV_LOG_VERBOSE, "Output file #%d (%s):\n",
-               i, of->ctx->filename);
+               i, of->ctx->url);
 
         for (j = 0; j < of->ctx->nb_streams; j++) {
             OutputStream *ost = output_streams[of->ost_index + j];
@@ -2095,7 +2105,7 @@ static void check_decode_result(InputStream *ist, int *got_output, int ret)
 
     if (exit_on_error && *got_output && ist) {
         if (ist->decoded_frame->decode_error_flags || (ist->decoded_frame->flags & AV_FRAME_FLAG_CORRUPT)) {
-            av_log(NULL, AV_LOG_FATAL, "%s: corrupt decoded frame in stream %d\n", input_files[ist->file_index]->ctx->filename, ist->st->index);
+            av_log(NULL, AV_LOG_FATAL, "%s: corrupt decoded frame in stream %d\n", input_files[ist->file_index]->ctx->url, ist->st->index);
             exit_program(1);
         }
     }
@@ -2782,45 +2792,77 @@ fail:
     av_freep(&avc);
 }
 
-static const HWAccel *get_hwaccel(enum AVPixelFormat pix_fmt, enum HWAccelID selected_hwaccel_id)
-{
-    int i;
-    for (i = 0; hwaccels[i].name; i++)
-        if (hwaccels[i].pix_fmt == pix_fmt &&
-            (!selected_hwaccel_id || selected_hwaccel_id == HWACCEL_AUTO || hwaccels[i].id == selected_hwaccel_id))
-            return &hwaccels[i];
-    return NULL;
-}
-
 static enum AVPixelFormat get_format(AVCodecContext *s, const enum AVPixelFormat *pix_fmts)
 {
     InputStream *ist = s->opaque;
     const enum AVPixelFormat *p;
     int ret;
 
-    for (p = pix_fmts; *p != -1; p++) {
+    for (p = pix_fmts; *p != AV_PIX_FMT_NONE; p++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(*p);
-        const HWAccel *hwaccel;
+        const AVCodecHWConfig  *config = NULL;
+        int i;
 
         if (!(desc->flags & AV_PIX_FMT_FLAG_HWACCEL))
             break;
 
-        hwaccel = get_hwaccel(*p, ist->hwaccel_id);
-        if (!hwaccel ||
-            (ist->active_hwaccel_id && ist->active_hwaccel_id != hwaccel->id) ||
-            (ist->hwaccel_id != HWACCEL_AUTO && ist->hwaccel_id != hwaccel->id))
-            continue;
+        if (ist->hwaccel_id == HWACCEL_GENERIC ||
+            ist->hwaccel_id == HWACCEL_AUTO) {
+            for (i = 0;; i++) {
+                config = avcodec_get_hw_config(s->codec, i);
+                if (!config)
+                    break;
+                if (!(config->methods &
+                      AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX))
+                    continue;
+                if (config->pix_fmt == *p)
+                    break;
+            }
+        }
+        if (config) {
+            if (config->device_type != ist->hwaccel_device_type) {
+                // Different hwaccel offered, ignore.
+                continue;
+            }
 
-        ret = hwaccel->init(s);
-        if (ret < 0) {
-            if (ist->hwaccel_id == hwaccel->id) {
+            ret = hwaccel_decode_init(s);
+            if (ret < 0) {
+                if (ist->hwaccel_id == HWACCEL_GENERIC) {
+                    av_log(NULL, AV_LOG_FATAL,
+                           "%s hwaccel requested for input stream #%d:%d, "
+                           "but cannot be initialized.\n",
+                           av_hwdevice_get_type_name(config->device_type),
+                           ist->file_index, ist->st->index);
+                    return AV_PIX_FMT_NONE;
+                }
+                continue;
+            }
+        } else {
+            const HWAccel *hwaccel = NULL;
+            int i;
+            for (i = 0; hwaccels[i].name; i++) {
+                if (hwaccels[i].pix_fmt == *p) {
+                    hwaccel = &hwaccels[i];
+                    break;
+                }
+            }
+            if (!hwaccel) {
+                // No hwaccel supporting this pixfmt.
+                continue;
+            }
+            if (hwaccel->id != ist->hwaccel_id) {
+                // Does not match requested hwaccel.
+                continue;
+            }
+
+            ret = hwaccel->init(s);
+            if (ret < 0) {
                 av_log(NULL, AV_LOG_FATAL,
                        "%s hwaccel requested for input stream #%d:%d, "
                        "but cannot be initialized.\n", hwaccel->name,
                        ist->file_index, ist->st->index);
                 return AV_PIX_FMT_NONE;
             }
-            continue;
         }
 
         if (ist->hw_frames_ctx) {
@@ -2829,8 +2871,7 @@ static enum AVPixelFormat get_format(AVCodecContext *s, const enum AVPixelFormat
                 return AV_PIX_FMT_NONE;
         }
 
-        ist->active_hwaccel_id = hwaccel->id;
-        ist->hwaccel_pix_fmt   = *p;
+        ist->hwaccel_pix_fmt = *p;
         break;
     }
 
@@ -2877,7 +2918,7 @@ static int init_input_stream(int ist_index, char *error, int error_len)
 
         /* Useful for subtitles retiming by lavf (FIXME), skipping samples in
          * audio, and video decoders such as cuvid or mediacodec */
-        av_codec_set_pkt_timebase(ist->dec_ctx, ist->st->time_base);
+        ist->dec_ctx->pkt_timebase = ist->st->time_base;
 
         if (!av_dict_get(ist->decoder_opts, "threads", NULL, 0))
             av_dict_set(&ist->decoder_opts, "threads", "auto", 0);
@@ -2948,7 +2989,7 @@ static int check_init_output_file(OutputFile *of, int file_index)
     //assert_avoptions(of->opts);
     of->header_written = 1;
 
-    av_dump_format(of->ctx, file_index, of->ctx->filename, 1);
+    av_dump_format(of->ctx, file_index, of->ctx->url, 1);
 
     if (sdp_filename || want_sdp)
         print_sdp();
@@ -3955,7 +3996,7 @@ static int check_keyboard_interaction(int64_t cur_time)
     return 0;
 }
 
-#if HAVE_PTHREADS
+#if HAVE_THREADS
 static void *input_thread(void *arg)
 {
     InputFile *f = arg;
@@ -4065,7 +4106,7 @@ static int get_input_packet(InputFile *f, AVPacket *pkt)
         }
     }
 
-#if HAVE_PTHREADS
+#if HAVE_THREADS
     if (nb_input_files > 1)
         return get_input_packet_mt(f, pkt);
 #endif
@@ -4211,7 +4252,7 @@ static int process_input(int file_index)
     }
     if (ret < 0) {
         if (ret != AVERROR_EOF) {
-            print_error(is->filename, ret);
+            print_error(is->url, ret);
             if (exit_on_error)
                 exit_program(1);
         }
@@ -4260,7 +4301,7 @@ static int process_input(int file_index)
         goto discard_packet;
 
     if (exit_on_error && (pkt.flags & AV_PKT_FLAG_CORRUPT)) {
-        av_log(NULL, AV_LOG_FATAL, "%s: corrupt input packet in stream %d\n", is->filename, pkt.stream_index);
+        av_log(NULL, AV_LOG_FATAL, "%s: corrupt input packet in stream %d\n", is->url, pkt.stream_index);
         exit_program(1);
     }
 
@@ -4574,7 +4615,7 @@ static int transcode(void)
 
     timer_start = av_gettime_relative();
 
-#if HAVE_PTHREADS
+#if HAVE_THREADS
     if ((ret = init_input_threads()) < 0)
         goto fail;
 #endif
@@ -4605,7 +4646,7 @@ static int transcode(void)
         /* dump report by using the output first video and audio streams */
         print_report(0, timer_start, cur_time);
     }
-#if HAVE_PTHREADS
+#if HAVE_THREADS
     free_input_threads();
 #endif
 
@@ -4627,11 +4668,11 @@ static int transcode(void)
             av_log(NULL, AV_LOG_ERROR,
                    "Nothing was written into output file %d (%s), because "
                    "at least one of its streams received no packets.\n",
-                   i, os->filename);
+                   i, os->url);
             continue;
         }
         if ((ret = av_write_trailer(os)) < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Error writing trailer of %s: %s\n", os->filename, av_err2str(ret));
+            av_log(NULL, AV_LOG_ERROR, "Error writing trailer of %s: %s\n", os->url, av_err2str(ret));
             if (exit_on_error)
                 exit_program(1);
         }
@@ -4671,7 +4712,7 @@ static int transcode(void)
     ret = 0;
 
  fail:
-#if HAVE_PTHREADS
+#if HAVE_THREADS
     free_input_threads();
 #endif
 

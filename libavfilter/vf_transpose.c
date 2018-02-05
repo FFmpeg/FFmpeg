@@ -27,6 +27,7 @@
 
 #include <stdio.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
@@ -54,6 +55,7 @@ enum TransposeDir {
 typedef struct TransContext {
     const AVClass *class;
     int hsub, vsub;
+    int planes;
     int pixsteps[4];
 
     int passthrough;    ///< PassthroughType, landscape passthrough mode enabled
@@ -215,6 +217,10 @@ static int config_props_output(AVFilterLink *outlink)
 
     s->hsub = desc_in->log2_chroma_w;
     s->vsub = desc_in->log2_chroma_h;
+    s->planes = av_pix_fmt_count_planes(outlink->format);
+
+    av_assert0(desc_in->nb_components == desc_out->nb_components);
+
 
     av_image_fill_max_pixsteps(s->pixsteps, NULL, desc_out);
 
@@ -272,7 +278,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr,
     AVFrame *in = td->in;
     int plane;
 
-    for (plane = 0; out->data[plane]; plane++) {
+    for (plane = 0; plane < s->planes; plane++) {
         int hsub    = plane == 1 || plane == 2 ? s->hsub : 0;
         int vsub    = plane == 1 || plane == 2 ? s->vsub : 0;
         int pixstep = s->pixsteps[plane];

@@ -64,10 +64,6 @@
 #include <pthread.h>
 #endif
 
-#ifndef HAVE_PTHREAD_CANCEL
-#define HAVE_PTHREAD_CANCEL 0
-#endif
-
 #ifndef IPV6_ADD_MEMBERSHIP
 #define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
 #define IPV6_DROP_MEMBERSHIP IPV6_LEAVE_GROUP

@@ -286,6 +286,9 @@ int ff_framesync_init_dualinput(FFFrameSync *fs, AVFilterContext *parent);
  * @param f0  used to return the main frame
  * @param f1  used to return the second frame, or NULL if disabled
  * @return  >=0 for success or AVERROR code
+ * @note  The frame returned in f0 belongs to the caller (get = 1 in
+ * ff_framesync_get_frame()) while the frame returned in f1 is still owned
+ * by the framesync structure.
  */
 int ff_framesync_dualinput_get(FFFrameSync *fs, AVFrame **f0, AVFrame **f1);
 

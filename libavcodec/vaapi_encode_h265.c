@@ -63,6 +63,8 @@ typedef struct VAAPIEncodeH265Context {
 typedef struct VAAPIEncodeH265Options {
     int qp;
     int aud;
+    int profile;
+    int level;
 } VAAPIEncodeH265Options;
 
 
@@ -880,9 +882,16 @@ static const VAAPIEncodeType vaapi_encode_type_h265 = {
 
 static av_cold int vaapi_encode_h265_init(AVCodecContext *avctx)
 {
-    VAAPIEncodeContext *ctx = avctx->priv_data;
+    VAAPIEncodeContext     *ctx = avctx->priv_data;
+    VAAPIEncodeH265Options *opt =
+        (VAAPIEncodeH265Options*)ctx->codec_options_data;
 
     ctx->codec = &vaapi_encode_type_h265;
+
+    if (avctx->profile == FF_PROFILE_UNKNOWN)
+        avctx->profile = opt->profile;
+    if (avctx->level == FF_LEVEL_UNKNOWN)
+        avctx->level = opt->level;
 
     switch (avctx->profile) {
     case FF_PROFILE_HEVC_MAIN:
@@ -946,12 +955,41 @@ static const AVOption vaapi_encode_h265_options[] = {
     { "aud", "Include AUD",
       OFFSET(aud), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
 
+    { "profile", "Set profile (general_profile_idc)",
+      OFFSET(profile), AV_OPT_TYPE_INT,
+      { .i64 = FF_PROFILE_HEVC_MAIN }, 0x00, 0xff, FLAGS, "profile" },
+
+#define PROFILE(name, value)  name, NULL, 0, AV_OPT_TYPE_CONST, \
+      { .i64 = value }, 0, 0, FLAGS, "profile"
+    { PROFILE("main",               FF_PROFILE_HEVC_MAIN) },
+    { PROFILE("main10",             FF_PROFILE_HEVC_MAIN_10) },
+#undef PROFILE
+
+    { "level", "Set level (general_level_idc)",
+      OFFSET(level), AV_OPT_TYPE_INT,
+      { .i64 = 153 }, 0x00, 0xff, FLAGS, "level" },
+
+#define LEVEL(name, value) name, NULL, 0, AV_OPT_TYPE_CONST, \
+      { .i64 = value }, 0, 0, FLAGS, "level"
+    { LEVEL("1",    30) },
+    { LEVEL("2",    60) },
+    { LEVEL("2.1",  63) },
+    { LEVEL("3",    90) },
+    { LEVEL("3.1",  93) },
+    { LEVEL("4",   120) },
+    { LEVEL("4.1", 123) },
+    { LEVEL("5",   150) },
+    { LEVEL("5.1", 153) },
+    { LEVEL("5.2", 156) },
+    { LEVEL("6",   180) },
+    { LEVEL("6.1", 183) },
+    { LEVEL("6.2", 186) },
+#undef LEVEL
+
     { NULL },
 };
 
 static const AVCodecDefault vaapi_encode_h265_defaults[] = {
-    { "profile",        "1"   },
-    { "level",          "51"  },
     { "b",              "0"   },
     { "bf",             "2"   },
     { "g",              "120" },
@@ -980,10 +1018,11 @@ AVCodec ff_hevc_vaapi_encoder = {
     .encode2        = &ff_vaapi_encode2,
     .close          = &vaapi_encode_h265_close,
     .priv_class     = &vaapi_encode_h265_class,
-    .capabilities   = AV_CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE,
     .defaults       = vaapi_encode_h265_defaults,
     .pix_fmts = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_VAAPI,
         AV_PIX_FMT_NONE,
     },
+    .wrapper_name   = "vaapi",
 };

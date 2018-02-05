@@ -230,7 +230,7 @@ enum AVPixelFormat {
      */
     AV_PIX_FMT_CUDA,
 
-    AV_PIX_FMT_0RGB=0x123+4,///< packed RGB 8:8:8, 32bpp, XRGBXRGB...   X=unused/undefined
+    AV_PIX_FMT_0RGB,        ///< packed RGB 8:8:8, 32bpp, XRGBXRGB...   X=unused/undefined
     AV_PIX_FMT_RGB0,        ///< packed RGB 8:8:8, 32bpp, RGBXRGBX...   X=unused/undefined
     AV_PIX_FMT_0BGR,        ///< packed BGR 8:8:8, 32bpp, XBGRXBGR...   X=unused/undefined
     AV_PIX_FMT_BGR0,        ///< packed BGR 8:8:8, 32bpp, BGRXBGRX...   X=unused/undefined
@@ -322,6 +322,13 @@ enum AVPixelFormat {
      * data[0] points to an AVDRMFrameDescriptor.
      */
     AV_PIX_FMT_DRM_PRIME,
+    /**
+     * Hardware surfaces for OpenCL.
+     *
+     * data[i] contain 2D image objects (typed in C as cl_mem, used
+     * in OpenCL as image2d_t) for each plane of the surface.
+     */
+    AV_PIX_FMT_OPENCL,
 
     AV_PIX_FMT_NB         ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };

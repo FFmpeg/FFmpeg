@@ -291,7 +291,7 @@ Toggle full screen.
 @ifset config-not-all
 @url{ffplay-all.html,ffmpeg-all},
 @end ifset
-@url{ffmpeg.html,ffmpeg}, @url{ffprobe.html,ffprobe}, @url{ffserver.html,ffserver},
+@url{ffmpeg.html,ffmpeg}, @url{ffprobe.html,ffprobe},
 @url{ffmpeg-utils.html,ffmpeg-utils},
 @url{ffmpeg-scaler.html,ffmpeg-scaler},
 @url{ffmpeg-resampler.html,ffmpeg-resampler},
@@ -310,7 +310,7 @@ ffplay(1),
 @ifset config-not-all
 ffplay-all(1),
 @end ifset
-ffmpeg(1), ffprobe(1), ffserver(1),
+ffmpeg(1), ffprobe(1),
 ffmpeg-utils(1), ffmpeg-scaler(1), ffmpeg-resampler(1),
 ffmpeg-codecs(1), ffmpeg-bitstream-filters(1), ffmpeg-formats(1),
 ffmpeg-devices(1), ffmpeg-protocols(1), ffmpeg-filters(1)

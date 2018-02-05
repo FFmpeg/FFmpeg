@@ -822,6 +822,7 @@ static int w64_read_header(AVFormatContext *s)
             samples = avio_rl64(pb);
             if (samples > 0)
                 st->duration = samples;
+            avio_skip(pb, FFALIGN(size, INT64_C(8)) - 32);
         } else if (!memcmp(guid, ff_w64_guid_data, 16)) {
             wav->data_end = avio_tell(pb) + size - 24;
 

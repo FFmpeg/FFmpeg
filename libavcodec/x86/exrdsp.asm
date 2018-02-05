@@ -73,11 +73,7 @@ REORDER_PIXELS
 
 %macro PREDICTOR 0
 cglobal predictor, 2,2,5, src, size
-%if mmsize == 32
-    vbroadcasti128   m0, [pb_80]
-%else
-    mova            xm0, [pb_80]
-%endif
+    mova             m0, [pb_80]
     mova            xm1, [pb_15]
     mova            xm2, xm0
     add            srcq, sizeq

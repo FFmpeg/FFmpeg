@@ -423,7 +423,7 @@ static int vaapi_hevc_decode_slice(AVCodecContext *avctx,
     return 0;
 }
 
-AVHWAccel ff_hevc_vaapi_hwaccel = {
+const AVHWAccel ff_hevc_vaapi_hwaccel = {
     .name                 = "hevc_vaapi",
     .type                 = AVMEDIA_TYPE_VIDEO,
     .id                   = AV_CODEC_ID_HEVC,

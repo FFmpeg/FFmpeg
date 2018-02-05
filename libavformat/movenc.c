@@ -252,6 +252,30 @@ static int mov_write_stss_tag(AVIOContext *pb, MOVTrack *track, uint32_t flag)
     return update_size(pb, pos);
 }
 
+/* Sample dependency atom */
+static int mov_write_sdtp_tag(AVIOContext *pb, MOVTrack *track)
+{
+    int i;
+    uint8_t leading, dependent, reference, redundancy;
+    int64_t pos = avio_tell(pb);
+    avio_wb32(pb, 0); // size
+    ffio_wfourcc(pb, "sdtp");
+    avio_wb32(pb, 0); // version & flags
+    for (i = 0; i < track->entry; i++) {
+        dependent = MOV_SAMPLE_DEPENDENCY_YES;
+        leading = reference = redundancy = MOV_SAMPLE_DEPENDENCY_UNKNOWN;
+        if (track->cluster[i].flags & MOV_DISPOSABLE_SAMPLE) {
+            reference = MOV_SAMPLE_DEPENDENCY_NO;
+        }
+        if (track->cluster[i].flags & MOV_SYNC_SAMPLE) {
+            dependent = MOV_SAMPLE_DEPENDENCY_NO;
+        }
+        avio_w8(pb, (leading << 6)   | (dependent << 4) |
+                    (reference << 2) | redundancy);
+    }
+    return update_size(pb, pos);
+}
+
 static int mov_write_amr_tag(AVIOContext *pb, MOVTrack *track)
 {
     avio_wb32(pb, 0x11); /* size */
@@ -1532,9 +1556,9 @@ static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
     else if (track->mode == MODE_ISM)
         tag = track->par->codec_tag;
     else if (track->mode == MODE_IPOD) {
-        if (!av_match_ext(s->filename, "m4a") &&
-            !av_match_ext(s->filename, "m4v") &&
-            !av_match_ext(s->filename, "m4b"))
+        if (!av_match_ext(s->url, "m4a") &&
+            !av_match_ext(s->url, "m4v") &&
+            !av_match_ext(s->url, "m4b"))
             av_log(s, AV_LOG_WARNING, "Warning, extension is not .m4a nor .m4v "
                    "Quicktime/Ipod might not play the file\n");
         tag = track->par->codec_tag;
@@ -1686,6 +1710,21 @@ static int mov_write_sv3d_tag(AVFormatContext *s, AVIOContext *pb, AVSphericalMa
     return update_size(pb, sv3d_pos);
 }
 
+static int mov_write_clap_tag(AVIOContext *pb, MOVTrack *track)
+{
+    avio_wb32(pb, 40);
+    ffio_wfourcc(pb, "clap");
+    avio_wb32(pb, track->par->width); /* apertureWidth_N */
+    avio_wb32(pb, 1); /* apertureWidth_D (= 1) */
+    avio_wb32(pb, track->height); /* apertureHeight_N */
+    avio_wb32(pb, 1); /* apertureHeight_D (= 1) */
+    avio_wb32(pb, 0); /* horizOff_N (= 0) */
+    avio_wb32(pb, 1); /* horizOff_D (= 1) */
+    avio_wb32(pb, 0); /* vertOff_N (= 0) */
+    avio_wb32(pb, 1); /* vertOff_D (= 1) */
+    return 40;
+}
+
 static int mov_write_pasp_tag(AVIOContext *pb, MOVTrack *track)
 {
     AVRational sar;
@@ -1770,23 +1809,30 @@ static int mov_write_colr_tag(AVIOContext *pb, MOVTrack *track)
         ffio_wfourcc(pb, "nclc");
     switch (track->par->color_primaries) {
     case AVCOL_PRI_BT709:     avio_wb16(pb, 1); break;
+    case AVCOL_PRI_BT470BG:   avio_wb16(pb, 5); break;
     case AVCOL_PRI_SMPTE170M:
     case AVCOL_PRI_SMPTE240M: avio_wb16(pb, 6); break;
-    case AVCOL_PRI_BT470BG:   avio_wb16(pb, 5); break;
+    case AVCOL_PRI_BT2020:    avio_wb16(pb, 9); break;
+    case AVCOL_PRI_SMPTE431:  avio_wb16(pb, 11); break;
+    case AVCOL_PRI_SMPTE432:  avio_wb16(pb, 12); break;
     default:                  avio_wb16(pb, 2);
     }
     switch (track->par->color_trc) {
-    case AVCOL_TRC_BT709:     avio_wb16(pb, 1); break;
-    case AVCOL_TRC_SMPTE170M: avio_wb16(pb, 1); break; // remapped
-    case AVCOL_TRC_SMPTE240M: avio_wb16(pb, 7); break;
-    default:                  avio_wb16(pb, 2);
+    case AVCOL_TRC_BT709:        avio_wb16(pb, 1); break;
+    case AVCOL_TRC_SMPTE170M:    avio_wb16(pb, 1); break; // remapped
+    case AVCOL_TRC_SMPTE240M:    avio_wb16(pb, 7); break;
+    case AVCOL_TRC_SMPTEST2084:  avio_wb16(pb, 16); break;
+    case AVCOL_TRC_SMPTE428:     avio_wb16(pb, 17); break;
+    case AVCOL_TRC_ARIB_STD_B67: avio_wb16(pb, 18); break;
+    default:                     avio_wb16(pb, 2);
     }
     switch (track->par->color_space) {
-    case AVCOL_SPC_BT709:     avio_wb16(pb, 1); break;
+    case AVCOL_SPC_BT709:      avio_wb16(pb, 1); break;
     case AVCOL_SPC_BT470BG:
-    case AVCOL_SPC_SMPTE170M: avio_wb16(pb, 6); break;
-    case AVCOL_SPC_SMPTE240M: avio_wb16(pb, 7); break;
-    default:                  avio_wb16(pb, 2);
+    case AVCOL_SPC_SMPTE170M:  avio_wb16(pb, 6); break;
+    case AVCOL_SPC_SMPTE240M:  avio_wb16(pb, 7); break;
+    case AVCOL_SPC_BT2020_NCL: avio_wb16(pb, 9); break;
+    default:                   avio_wb16(pb, 2);
     }
 
     if (track->mode == MODE_MP4) {
@@ -1832,6 +1878,13 @@ static int mov_write_video_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *tr
     char compressor_name[32] = { 0 };
     int avid = 0;
 
+    int uncompressed_ycbcr = ((track->par->codec_id == AV_CODEC_ID_RAWVIDEO && track->par->format == AV_PIX_FMT_UYVY422)
+                           || (track->par->codec_id == AV_CODEC_ID_RAWVIDEO && track->par->format == AV_PIX_FMT_YUYV422)
+                           ||  track->par->codec_id == AV_CODEC_ID_V308
+                           ||  track->par->codec_id == AV_CODEC_ID_V408
+                           ||  track->par->codec_id == AV_CODEC_ID_V410
+                           ||  track->par->codec_id == AV_CODEC_ID_V210);
+
     avio_wb32(pb, 0); /* size */
     if (mov->encryption_scheme != MOV_ENC_NONE) {
         ffio_wfourcc(pb, "encv");
@@ -1842,11 +1895,15 @@ static int mov_write_video_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *tr
     avio_wb16(pb, 0); /* Reserved */
     avio_wb16(pb, 1); /* Data-reference index */
 
-    avio_wb16(pb, 0); /* Codec stream version */
+    if (uncompressed_ycbcr) {
+        avio_wb16(pb, 2); /* Codec stream version */
+    } else {
+        avio_wb16(pb, 0); /* Codec stream version */
+    }
     avio_wb16(pb, 0); /* Codec stream revision (=0) */
     if (track->mode == MODE_MOV) {
         ffio_wfourcc(pb, "FFMP"); /* Vendor */
-        if (track->par->codec_id == AV_CODEC_ID_RAWVIDEO) {
+        if (track->par->codec_id == AV_CODEC_ID_RAWVIDEO || uncompressed_ycbcr) {
             avio_wb32(pb, 0); /* Temporal Quality */
             avio_wb32(pb, 0x400); /* Spatial Quality = lossless*/
         } else {
@@ -1870,7 +1927,10 @@ static int mov_write_video_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *tr
     avio_w8(pb, strlen(compressor_name));
     avio_write(pb, compressor_name, 31);
 
-    if (track->mode == MODE_MOV && track->par->bits_per_coded_sample)
+    if (track->mode == MODE_MOV &&
+       (track->par->codec_id == AV_CODEC_ID_V410 || track->par->codec_id == AV_CODEC_ID_V210))
+        avio_wb16(pb, 0x18);
+    else if (track->mode == MODE_MOV && track->par->bits_per_coded_sample)
         avio_wb16(pb, track->par->bits_per_coded_sample |
                   (track->par->format == AV_PIX_FMT_GRAY8 ? 0x20 : 0));
     else
@@ -1968,6 +2028,10 @@ static int mov_write_video_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *tr
 
     if (track->par->sample_aspect_ratio.den && track->par->sample_aspect_ratio.num) {
         mov_write_pasp_tag(pb, track);
+    }
+
+    if (uncompressed_ycbcr){
+        mov_write_clap_tag(pb, track);
     }
 
     if (mov->encryption_scheme != MOV_ENC_NONE) {
@@ -2320,6 +2384,8 @@ static int mov_write_stbl_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext
          track->par->codec_tag == MKTAG('r','t','p',' ')) &&
         track->has_keyframes && track->has_keyframes < track->entry)
         mov_write_stss_tag(pb, track, MOV_SYNC_SAMPLE);
+    if (track->par->codec_type == AVMEDIA_TYPE_VIDEO && track->has_disposable)
+        mov_write_sdtp_tag(pb, track);
     if (track->mode == MODE_MOV && track->flags & MOV_TRACK_STPS)
         mov_write_stss_tag(pb, track, MOV_PARTIAL_SYNC_SAMPLE);
     if (track->par->codec_type == AVMEDIA_TYPE_VIDEO &&
@@ -5283,6 +5349,10 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (trk->cluster[trk->entry].flags & MOV_SYNC_SAMPLE)
             trk->has_keyframes++;
     }
+    if (pkt->flags & AV_PKT_FLAG_DISPOSABLE) {
+        trk->cluster[trk->entry].flags |= MOV_DISPOSABLE_SAMPLE;
+        trk->has_disposable++;
+    }
     trk->entry++;
     trk->sample_count += samples_in_chunk;
     mov->mdat_size    += size;
@@ -6330,10 +6400,10 @@ static int shift_data(AVFormatContext *s)
      * writing, so we re-open the same output, but for reading. It also avoids
      * a read/seek/write/seek back and forth. */
     avio_flush(s->pb);
-    ret = s->io_open(s, &read_pb, s->filename, AVIO_FLAG_READ, NULL);
+    ret = s->io_open(s, &read_pb, s->url, AVIO_FLAG_READ, NULL);
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Unable to re-open %s output file for "
-               "the second pass (faststart)\n", s->filename);
+               "the second pass (faststart)\n", s->url);
         goto end;
     }
 
@@ -6513,6 +6583,7 @@ static const AVCodecTag codec_3gp_tags[] = {
 const AVCodecTag codec_mp4_tags[] = {
     { AV_CODEC_ID_MPEG4       , MKTAG('m', 'p', '4', 'v') },
     { AV_CODEC_ID_H264        , MKTAG('a', 'v', 'c', '1') },
+    { AV_CODEC_ID_H264        , MKTAG('a', 'v', 'c', '3') },
     { AV_CODEC_ID_HEVC        , MKTAG('h', 'e', 'v', '1') },
     { AV_CODEC_ID_HEVC        , MKTAG('h', 'v', 'c', '1') },
     { AV_CODEC_ID_MPEG2VIDEO  , MKTAG('m', 'p', '4', 'v') },

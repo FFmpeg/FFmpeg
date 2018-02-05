@@ -186,8 +186,16 @@ int avformat_alloc_output_context2(AVFormatContext **avctx, AVOutputFormat *ofor
     } else
         s->priv_data = NULL;
 
-    if (filename)
+    if (filename) {
+#if FF_API_FORMAT_FILENAME
+FF_DISABLE_DEPRECATION_WARNINGS
         av_strlcpy(s->filename, filename, sizeof(s->filename));
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+        if (!(s->url = av_strdup(filename)))
+            goto nomem;
+
+    }
     *avctx = s;
     return 0;
 nomem:
@@ -250,6 +258,17 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
     if (s->priv_data && s->oformat->priv_class && *(const AVClass**)s->priv_data==s->oformat->priv_class &&
         (ret = av_opt_set_dict2(s->priv_data, &tmp, AV_OPT_SEARCH_CHILDREN)) < 0)
         goto fail;
+
+#if FF_API_FORMAT_FILENAME
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (!s->url && !(s->url = av_strdup(s->filename))) {
+FF_ENABLE_DEPRECATION_WARNINGS
+#else
+    if (!s->url && !(s->url = av_strdup(""))) {
+#endif
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
 
 #if FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -445,6 +464,14 @@ static int init_pts(AVFormatContext *s)
         }
     }
 
+    if (s->avoid_negative_ts < 0) {
+        av_assert2(s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_AUTO);
+        if (s->oformat->flags & (AVFMT_TS_NEGATIVE | AVFMT_NOTIMESTAMPS)) {
+            s->avoid_negative_ts = 0;
+        } else
+            s->avoid_negative_ts = AVFMT_AVOID_NEG_TS_MAKE_NON_NEGATIVE;
+    }
+
     return 0;
 }
 
@@ -456,25 +483,6 @@ static void flush_if_needed(AVFormatContext *s)
         else if (s->flush_packets && !(s->oformat->flags & AVFMT_NOFILE))
             avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_FLUSH_POINT);
     }
-}
-
-static int write_header_internal(AVFormatContext *s)
-{
-    if (!(s->oformat->flags & AVFMT_NOFILE) && s->pb)
-        avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_HEADER);
-    if (s->oformat->write_header) {
-        int ret = s->oformat->write_header(s);
-        if (ret >= 0 && s->pb && s->pb->error < 0)
-            ret = s->pb->error;
-        s->internal->write_header_ret = ret;
-        if (ret < 0)
-            return ret;
-        flush_if_needed(s);
-    }
-    s->internal->header_written = 1;
-    if (!(s->oformat->flags & AVFMT_NOFILE) && s->pb)
-        avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_UNKNOWN);
-    return 0;
 }
 
 int avformat_init_output(AVFormatContext *s, AVDictionary **options)
@@ -490,14 +498,6 @@ int avformat_init_output(AVFormatContext *s, AVDictionary **options)
     if (s->oformat->init && ret) {
         if ((ret = init_pts(s)) < 0)
             return ret;
-
-        if (s->avoid_negative_ts < 0) {
-            av_assert2(s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_AUTO);
-            if (s->oformat->flags & (AVFMT_TS_NEGATIVE | AVFMT_NOTIMESTAMPS)) {
-                s->avoid_negative_ts = 0;
-            } else
-                s->avoid_negative_ts = AVFMT_AVOID_NEG_TS_MAKE_NON_NEGATIVE;
-        }
 
         return AVSTREAM_INIT_IN_INIT_OUTPUT;
     }
@@ -515,23 +515,22 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
         if ((ret = avformat_init_output(s, options)) < 0)
             return ret;
 
-    if (!(s->oformat->check_bitstream && s->flags & AVFMT_FLAG_AUTO_BSF)) {
-        ret = write_header_internal(s);
+    if (!(s->oformat->flags & AVFMT_NOFILE) && s->pb)
+        avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_HEADER);
+    if (s->oformat->write_header) {
+        ret = s->oformat->write_header(s);
+        if (ret >= 0 && s->pb && s->pb->error < 0)
+            ret = s->pb->error;
         if (ret < 0)
             goto fail;
+        flush_if_needed(s);
     }
+    if (!(s->oformat->flags & AVFMT_NOFILE) && s->pb)
+        avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_UNKNOWN);
 
     if (!s->internal->streams_initialized) {
         if ((ret = init_pts(s)) < 0)
             goto fail;
-
-        if (s->avoid_negative_ts < 0) {
-            av_assert2(s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_AUTO);
-            if (s->oformat->flags & (AVFMT_TS_NEGATIVE | AVFMT_NOTIMESTAMPS)) {
-                s->avoid_negative_ts = 0;
-            } else
-                s->avoid_negative_ts = AVFMT_AVOID_NEG_TS_MAKE_NON_NEGATIVE;
-        }
     }
 
     return streams_already_initialized;
@@ -739,12 +738,6 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
-    if (!s->internal->header_written) {
-        ret = s->internal->write_header_ret ? s->internal->write_header_ret : write_header_internal(s);
-        if (ret < 0)
-            goto fail;
-    }
-
     if ((pkt->flags & AV_PKT_FLAG_UNCODED_FRAME)) {
         AVFrame *frame = (AVFrame *)pkt->data;
         av_assert0(pkt->size == UNCODED_FRAME_PACKET_SIZE);
@@ -759,8 +752,6 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         if (s->pb->error < 0)
             ret = s->pb->error;
     }
-
-fail:
 
     if (ret < 0) {
         pkt->pts = pts_backup;
@@ -894,11 +885,6 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
 
     if (!pkt) {
         if (s->oformat->flags & AVFMT_ALLOW_FLUSH) {
-            if (!s->internal->header_written) {
-                ret = s->internal->write_header_ret ? s->internal->write_header_ret : write_header_internal(s);
-                if (ret < 0)
-                    return ret;
-            }
             ret = s->oformat->write_packet(s, NULL);
             flush_if_needed(s);
             if (ret >= 0 && s->pb && s->pb->error < 0)
@@ -1282,14 +1268,8 @@ int av_write_trailer(AVFormatContext *s)
             goto fail;
     }
 
-    if (!s->internal->header_written) {
-        ret = s->internal->write_header_ret ? s->internal->write_header_ret : write_header_internal(s);
-        if (ret < 0)
-            goto fail;
-    }
-
 fail:
-    if (s->internal->header_written && s->oformat->write_trailer) {
+    if (s->oformat->write_trailer) {
         if (!(s->oformat->flags & AVFMT_NOFILE) && s->pb)
             avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_TRAILER);
         if (ret >= 0) {
@@ -1302,7 +1282,6 @@ fail:
     if (s->oformat->deinit)
         s->oformat->deinit(s);
 
-    s->internal->header_written =
     s->internal->initialized =
     s->internal->streams_initialized = 0;
 

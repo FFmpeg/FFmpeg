@@ -95,10 +95,11 @@ static int decode_nal_sei_frame_packing_arrangement(HEVCSEIFramePacking *s, GetB
         s->quincunx_subsampling           = get_bits1(gb);
         s->content_interpretation_type    = get_bits(gb, 6);
 
-        // the following skips spatial_flipping_flag frame0_flipped_flag
-        // field_views_flag current_frame_is_frame0_flag
-        // frame0_self_contained_flag frame1_self_contained_flag
-        skip_bits(gb, 6);
+        // spatial_flipping_flag, frame0_flipped_flag, field_views_flag
+        skip_bits(gb, 3);
+        s->current_frame_is_frame0_flag = get_bits1(gb);
+        // frame0_self_contained_flag, frame1_self_contained_flag
+        skip_bits(gb, 2);
 
         if (!s->quincunx_subsampling && s->arrangement_type != 5)
             skip_bits(gb, 16);  // frame[01]_grid_position_[xy]
@@ -323,11 +324,15 @@ static int decode_nal_sei_message(GetBitContext *gb, void *logctx, HEVCSEI *s,
     av_log(logctx, AV_LOG_DEBUG, "Decoding SEI\n");
 
     while (byte == 0xFF) {
+        if (get_bits_left(gb) < 16 || payload_type > INT_MAX - 255)
+            return AVERROR_INVALIDDATA;
         byte          = get_bits(gb, 8);
         payload_type += byte;
     }
     byte = 0xFF;
     while (byte == 0xFF) {
+        if (get_bits_left(gb) < 8 + 8LL*payload_size)
+            return AVERROR_INVALIDDATA;
         byte          = get_bits(gb, 8);
         payload_size += byte;
     }

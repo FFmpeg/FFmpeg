@@ -165,7 +165,8 @@ static void test_vector_dmul_scalar(const double *src0, const double *src1)
     call_ref(cdst, src0, src1[0], LEN);
     call_new(odst, src0, src1[0], LEN);
     for (i = 0; i < LEN; i++) {
-        if (!double_near_abs_eps(cdst[i], odst[i], DBL_EPSILON)) {
+        double t = fabs(src1[0]) + fabs(src0[i]) + fabs(src1[0] * src0[i]) + 1.0;
+        if (!double_near_abs_eps(cdst[i], odst[i], t * 2 * DBL_EPSILON)) {
             fprintf(stderr, "%d: %- .12f - %- .12f = % .12g\n", i,
                     cdst[i], odst[i], cdst[i] - odst[i]);
             fail();

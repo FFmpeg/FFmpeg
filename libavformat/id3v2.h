@@ -39,6 +39,8 @@
 #define ID3v2_FLAG_ENCRYPTION  0x0004
 #define ID3v2_FLAG_COMPRESSION 0x0008
 
+#define ID3v2_PRIV_METADATA_PREFIX "id3v2_priv."
+
 enum ID3v2Encoding {
     ID3v2_ENCODING_ISO8859  = 0,
     ID3v2_ENCODING_UTF16BOM = 1,
@@ -166,6 +168,19 @@ int ff_id3v2_parse_apic(AVFormatContext *s, ID3v2ExtraMeta **extra_meta);
  * Create chapters for all CHAP tags found in the ID3v2 header.
  */
 int ff_id3v2_parse_chapters(AVFormatContext *s, ID3v2ExtraMeta **extra_meta);
+
+/**
+ * Parse PRIV tags into a dictionary. The PRIV owner is the metadata key. The
+ * PRIV data is the value, with non-printable characters escaped.
+ */
+int ff_id3v2_parse_priv_dict(AVDictionary **d, ID3v2ExtraMeta **extra_meta);
+
+/**
+ * Add metadata for all PRIV tags in the ID3v2 header. The PRIV owner is the
+ * metadata key. The PRIV data is the value, with non-printable characters
+ * escaped.
+ */
+int ff_id3v2_parse_priv(AVFormatContext *s, ID3v2ExtraMeta **extra_meta);
 
 extern const AVMetadataConv ff_id3v2_34_metadata_conv[];
 extern const AVMetadataConv ff_id3v2_4_metadata_conv[];

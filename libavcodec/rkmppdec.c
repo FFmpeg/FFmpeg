@@ -28,6 +28,7 @@
 
 #include "avcodec.h"
 #include "decode.h"
+#include "hwaccel.h"
 #include "internal.h"
 #include "libavutil/buffer.h"
 #include "libavutil/common.h"
@@ -39,13 +40,13 @@
 
 #define RECEIVE_FRAME_TIMEOUT   100
 #define FRAMEGROUP_MAX_FRAMES   16
+#define INPUT_MAX_PACKETS       4
 
 typedef struct {
     MppCtx ctx;
     MppApi *mpi;
     MppBufferGroup frame_group;
 
-    char first_frame;
     char first_packet;
     char eos_reached;
 
@@ -327,28 +328,14 @@ static int rkmpp_retrieve_frame(AVCodecContext *avctx, AVFrame *frame)
     MppBuffer buffer = NULL;
     AVDRMFrameDescriptor *desc = NULL;
     AVDRMLayerDescriptor *layer = NULL;
-    int retrycount = 0;
     int mode;
     MppFrameFormat mppformat;
     uint32_t drmformat;
 
-    // on start of decoding, MPP can return -1, which is supposed to be expected
-    // this is due to some internal MPP init which is not completed, that will
-    // only happen in the first few frames queries, but should not be interpreted
-    // as an error, Therefore we need to retry a couple times when we get -1
-    // in order to let it time to complete it's init, then we sleep a bit between retries.
-retry_get_frame:
     ret = decoder->mpi->decode_get_frame(decoder->ctx, &mppframe);
-    if (ret != MPP_OK && ret != MPP_ERR_TIMEOUT && !decoder->first_frame) {
-        if (retrycount < 5) {
-            av_log(avctx, AV_LOG_DEBUG, "Failed to get a frame, retrying (code = %d, retrycount = %d)\n", ret, retrycount);
-            usleep(10000);
-            retrycount++;
-            goto retry_get_frame;
-        } else {
-            av_log(avctx, AV_LOG_ERROR, "Failed to get a frame from MPP (code = %d)\n", ret);
-            goto fail;
-        }
+    if (ret != MPP_OK && ret != MPP_ERR_TIMEOUT) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to get a frame from MPP (code = %d)\n", ret);
+        goto fail;
     }
 
     if (mppframe) {
@@ -364,7 +351,6 @@ retry_get_frame:
             avctx->height = mpp_frame_get_height(mppframe);
 
             decoder->mpi->control(decoder->ctx, MPP_DEC_SET_INFO_CHANGE_READY, NULL);
-            decoder->first_frame = 1;
 
             av_buffer_unref(&decoder->frames_ref);
 
@@ -478,7 +464,6 @@ retry_get_frame:
                 goto fail;
             }
 
-            decoder->first_frame = 0;
             return 0;
         } else {
             av_log(avctx, AV_LOG_ERROR, "Failed to retrieve the frame buffer, frame is dropped (code = %d)\n", ret);
@@ -514,16 +499,17 @@ static int rkmpp_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     RKMPPDecoder *decoder = (RKMPPDecoder *)rk_context->decoder_ref->data;
     int ret = MPP_NOK;
     AVPacket pkt = {0};
-    RK_S32 freeslots;
+    RK_S32 usedslots, freeslots;
 
     if (!decoder->eos_reached) {
         // we get the available slots in decoder
-        ret = decoder->mpi->control(decoder->ctx, MPP_DEC_GET_FREE_PACKET_SLOT_COUNT, &freeslots);
+        ret = decoder->mpi->control(decoder->ctx, MPP_DEC_GET_STREAM_COUNT, &usedslots);
         if (ret != MPP_OK) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to get decoder free slots (code = %d).\n", ret);
+            av_log(avctx, AV_LOG_ERROR, "Failed to get decoder used slots (code = %d).\n", ret);
             return ret;
         }
 
+        freeslots = INPUT_MAX_PACKETS - usedslots;
         if (freeslots > 0) {
             ret = ff_decode_get_packet(avctx, &pkt);
             if (ret < 0 && ret != AVERROR_EOF) {
@@ -540,7 +526,7 @@ static int rkmpp_receive_frame(AVCodecContext *avctx, AVFrame *frame)
         }
 
         // make sure we keep decoder full
-        if (freeslots > 1 && decoder->first_frame)
+        if (freeslots > 1)
             return AVERROR(EAGAIN);
     }
 
@@ -557,12 +543,15 @@ static void rkmpp_flush(AVCodecContext *avctx)
 
     ret = decoder->mpi->reset(decoder->ctx);
     if (ret == MPP_OK) {
-        decoder->first_frame = 1;
         decoder->first_packet = 1;
     } else
         av_log(avctx, AV_LOG_ERROR, "Failed to reset MPI (code = %d)\n", ret);
 }
 
+static const AVCodecHWConfigInternal *rkmpp_hw_configs[] = {
+    HW_CONFIG_INTERNAL(DRM_PRIME),
+    NULL
+};
 
 #define RKMPP_DEC_CLASS(NAME) \
     static const AVClass rkmpp_##NAME##_dec_class = { \
@@ -583,11 +572,12 @@ static void rkmpp_flush(AVCodecContext *avctx)
         .receive_frame  = rkmpp_receive_frame, \
         .flush          = rkmpp_flush, \
         .priv_class     = &rkmpp_##NAME##_dec_class, \
-        .capabilities   = AV_CODEC_CAP_DELAY, \
-        .caps_internal  = AV_CODEC_CAP_AVOID_PROBING, \
+        .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE, \
         .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_DRM_PRIME, \
                                                          AV_PIX_FMT_NONE}, \
+        .hw_configs     = rkmpp_hw_configs, \
         .bsfs           = BSFS, \
+        .wrapper_name   = "rkmpp", \
     };
 
 RKMPP_DEC(h264,  AV_CODEC_ID_H264,          "h264_mp4toannexb")

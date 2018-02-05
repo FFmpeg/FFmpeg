@@ -25,6 +25,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "error_resilience.h"
+#include "hwaccel.h"
 #include "idctdsp.h"
 #include "internal.h"
 #include "mpegutils.h"
@@ -464,7 +465,7 @@ int ff_mpeg4_decode_video_packet_header(Mpeg4DecContext *ctx)
     }
 
     mb_num = get_bits(&s->gb, mb_num_bits);
-    if (mb_num >= s->mb_num) {
+    if (mb_num >= s->mb_num || !mb_num) {
         av_log(s->avctx, AV_LOG_ERROR,
                "illegal mb_num in video packet (%d %d) \n", mb_num, s->mb_num);
         return -1;
@@ -1255,9 +1256,11 @@ not_coded:
  */
 static int mpeg4_decode_partitioned_mb(MpegEncContext *s, int16_t block[6][64])
 {
-    Mpeg4DecContext *ctx = (Mpeg4DecContext *)s;
+    Mpeg4DecContext *ctx = s->avctx->priv_data;
     int cbp, mb_type;
     const int xy = s->mb_x + s->mb_y * s->mb_stride;
+
+    av_assert2(s == (void*)ctx);
 
     mb_type = s->current_picture.mb_type[xy];
     cbp     = s->cbp_table[xy];
@@ -1340,12 +1343,13 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s, int16_t block[6][64])
 
 static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
 {
-    Mpeg4DecContext *ctx = (Mpeg4DecContext *)s;
+    Mpeg4DecContext *ctx = s->avctx->priv_data;
     int cbpc, cbpy, i, cbp, pred_x, pred_y, mx, my, dquant;
     int16_t *mot_val;
     static const int8_t quant_tab[4] = { -1, -2, 1, 2 };
     const int xy = s->mb_x + s->mb_y * s->mb_stride;
 
+    av_assert2(s ==  (void*)ctx);
     av_assert2(s->h263_pred);
 
     if (s->pict_type == AV_PICTURE_TYPE_P ||
@@ -1753,6 +1757,38 @@ static int mpeg4_decode_profile_level(MpegEncContext *s, GetBitContext *gb)
     return 0;
 }
 
+static int mpeg4_decode_visual_object(MpegEncContext *s, GetBitContext *gb)
+{
+    int visual_object_type;
+    int is_visual_object_identifier = get_bits1(gb);
+
+    if (is_visual_object_identifier) {
+        skip_bits(gb, 4+3);
+    }
+    visual_object_type = get_bits(gb, 4);
+
+    if (visual_object_type == VOT_VIDEO_ID ||
+        visual_object_type == VOT_STILL_TEXTURE_ID) {
+        int video_signal_type = get_bits1(gb);
+        if (video_signal_type) {
+            int video_range, color_description;
+            skip_bits(gb, 3); // video_format
+            video_range = get_bits1(gb);
+            color_description = get_bits1(gb);
+
+            s->avctx->color_range = video_range ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
+
+            if (color_description) {
+                s->avctx->color_primaries = get_bits(gb, 8);
+                s->avctx->color_trc       = get_bits(gb, 8);
+                s->avctx->colorspace      = get_bits(gb, 8);
+            }
+        }
+    }
+
+    return 0;
+}
+
 static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
 {
     MpegEncContext *s = &ctx->m;
@@ -2153,8 +2189,15 @@ static int decode_user_data(Mpeg4DecContext *ctx, GetBitContext *gb)
         e = sscanf(buf, "FFmpeg v%d.%d.%d / libavcodec build: %d", &ver, &ver2, &ver3, &build);
     if (e != 4) {
         e = sscanf(buf, "Lavc%d.%d.%d", &ver, &ver2, &ver3) + 1;
-        if (e > 1)
-            build = (ver << 16) + (ver2 << 8) + ver3;
+        if (e > 1) {
+            if (ver > 0xFFU || ver2 > 0xFFU || ver3 > 0xFFU) {
+                av_log(s->avctx, AV_LOG_WARNING,
+                     "Unknown Lavc version string encountered, %d.%d.%d; "
+                     "clamping sub-version values to 8-bits.\n",
+                     ver, ver2, ver3);
+            }
+            build = ((ver & 0xFF) << 16) + ((ver2 & 0xFF) << 8) + (ver3 & 0xFF);
+        }
     }
     if (e != 4) {
         if (strcmp(buf, "ffmpeg") == 0)
@@ -2676,6 +2719,8 @@ int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb)
             mpeg4_decode_gop_header(s, gb);
         } else if (startcode == VOS_STARTCODE) {
             mpeg4_decode_profile_level(s, gb);
+        } else if (startcode == VISUAL_OBJ_STARTCODE) {
+            mpeg4_decode_visual_object(s, gb);
         } else if (startcode == VOP_STARTCODE) {
             break;
         }
@@ -2848,4 +2893,19 @@ AVCodec ff_mpeg4_decoder = {
     .profiles              = NULL_IF_CONFIG_SMALL(ff_mpeg4_video_profiles),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(mpeg4_update_thread_context),
     .priv_class = &mpeg4_class,
+    .hw_configs            = (const AVCodecHWConfigInternal*[]) {
+#if CONFIG_MPEG4_NVDEC_HWACCEL
+                               HWACCEL_NVDEC(mpeg4),
+#endif
+#if CONFIG_MPEG4_VAAPI_HWACCEL
+                               HWACCEL_VAAPI(mpeg4),
+#endif
+#if CONFIG_MPEG4_VDPAU_HWACCEL
+                               HWACCEL_VDPAU(mpeg4),
+#endif
+#if CONFIG_MPEG4_VIDEOTOOLBOX_HWACCEL
+                               HWACCEL_VIDEOTOOLBOX(mpeg4),
+#endif
+                               NULL
+                           },
 };

@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2015 Arwa Arif <arwaarif1994@gmail.com>
+ * Copyright (c) 2017 Paul B Mahol
  *
  * This file is part of FFmpeg.
  *
@@ -64,6 +65,8 @@ typedef struct FFTFILTContext {
     AVExpr *weight_expr[MAX_PLANES];
     double *weight[MAX_PLANES];
 
+    void (*rdft_horizontal)(struct FFTFILTContext *s, AVFrame *in, int w, int h, int plane);
+    void (*irdft_horizontal)(struct FFTFILTContext *s, AVFrame *out, int w, int h, int plane);
 } FFTFILTContext;
 
 static const char *const var_names[] = {   "X",   "Y",   "W",   "H",   "N", NULL        };
@@ -111,13 +114,30 @@ static void copy_rev (FFTSample *dest, int w, int w2)
 }
 
 /*Horizontal pass - RDFT*/
-static void rdft_horizontal(FFTFILTContext *s, AVFrame *in, int w, int h, int plane)
+static void rdft_horizontal8(FFTFILTContext *s, AVFrame *in, int w, int h, int plane)
 {
     int i, j;
 
     for (i = 0; i < h; i++) {
         for (j = 0; j < w; j++)
             s->rdft_hdata[plane][i * s->rdft_hlen[plane] + j] = *(in->data[plane] + in->linesize[plane] * i + j);
+
+        copy_rev(s->rdft_hdata[plane] + i * s->rdft_hlen[plane], w, s->rdft_hlen[plane]);
+    }
+
+    for (i = 0; i < h; i++)
+        av_rdft_calc(s->hrdft[plane], s->rdft_hdata[plane] + i * s->rdft_hlen[plane]);
+}
+
+static void rdft_horizontal16(FFTFILTContext *s, AVFrame *in, int w, int h, int plane)
+{
+    const uint16_t *src = (const uint16_t *)in->data[plane];
+    int linesize = in->linesize[plane] / 2;
+    int i, j;
+
+    for (i = 0; i < h; i++) {
+        for (j = 0; j < w; j++)
+            s->rdft_hdata[plane][i * s->rdft_hlen[plane] + j] = *(src + linesize * i + j);
 
         copy_rev(s->rdft_hdata[plane] + i * s->rdft_hlen[plane], w, s->rdft_hlen[plane]);
     }
@@ -156,7 +176,7 @@ static void irdft_vertical(FFTFILTContext *s, int h, int plane)
 }
 
 /*Horizontal pass - IRDFT*/
-static void irdft_horizontal(FFTFILTContext *s, AVFrame *out, int w, int h, int plane)
+static void irdft_horizontal8(FFTFILTContext *s, AVFrame *out, int w, int h, int plane)
 {
     int i, j;
 
@@ -169,6 +189,24 @@ static void irdft_horizontal(FFTFILTContext *s, AVFrame *out, int w, int h, int 
                                                                          *s->rdft_hlen[plane] + j] * 4 /
                                                                          (s->rdft_hlen[plane] *
                                                                           s->rdft_vlen[plane]), 0, 255);
+}
+
+static void irdft_horizontal16(FFTFILTContext *s, AVFrame *out, int w, int h, int plane)
+{
+    uint16_t *dst = (uint16_t *)out->data[plane];
+    int linesize = out->linesize[plane] / 2;
+    int max = (1 << s->depth) - 1;
+    int i, j;
+
+    for (i = 0; i < h; i++)
+        av_rdft_calc(s->ihrdft[plane], s->rdft_hdata[plane] + i * s->rdft_hlen[plane]);
+
+    for (i = 0; i < h; i++)
+        for (j = 0; j < w; j++)
+            *(dst + linesize * i + j) = av_clip(s->rdft_hdata[plane][i
+                                                *s->rdft_hlen[plane] + j] * 4 /
+                                                (s->rdft_hlen[plane] *
+                                                s->rdft_vlen[plane]), 0, max);
 }
 
 static av_cold int initialize(AVFilterContext *ctx)
@@ -276,6 +314,16 @@ static int config_props(AVFilterLink *inlink)
         if (s->eval_mode == EVAL_MODE_INIT)
             do_eval(s, inlink, plane);
     }
+
+    if (s->depth <= 8) {
+        s->rdft_horizontal = rdft_horizontal8;
+        s->irdft_horizontal = irdft_horizontal8;
+    } else if (s->depth > 8) {
+        s->rdft_horizontal = rdft_horizontal16;
+        s->irdft_horizontal = irdft_horizontal16;
+    } else {
+        return AVERROR_BUG;
+    }
     return 0;
 }
 
@@ -302,7 +350,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         if (s->eval_mode == EVAL_MODE_FRAME)
             do_eval(s, inlink, plane);
 
-        rdft_horizontal(s, in, w, h, plane);
+        s->rdft_horizontal(s, in, w, h, plane);
         rdft_vertical(s, h, plane);
 
         /*Change user defined parameters*/
@@ -314,7 +362,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         s->rdft_vdata[plane][0] += s->rdft_hlen[plane] * s->rdft_vlen[plane] * s->dc[plane];
 
         irdft_vertical(s, h, plane);
-        irdft_horizontal(s, out, w, h, plane);
+        s->irdft_horizontal(s, out, w, h, plane);
     }
 
     av_frame_free(&in);
@@ -344,6 +392,15 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVJ444P,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVJ420P,
         AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVJ422P,
+        AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV420P10,
+        AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV420P14,
+        AV_PIX_FMT_YUV420P16,
+        AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV422P10,
+        AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV422P14,
+        AV_PIX_FMT_YUV422P16,
+        AV_PIX_FMT_YUV444P9, AV_PIX_FMT_YUV444P10,
+        AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV444P14,
+        AV_PIX_FMT_YUV444P16,
         AV_PIX_FMT_NONE
     };
 

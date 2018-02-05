@@ -67,7 +67,7 @@ int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, unsigned num)
     if (bits[p] > 32)
         return AVERROR_INVALIDDATA;
     for (i = 0; i < bits[p]; ++i)
-        exit_at_level[i+1] = 1 << i;
+        exit_at_level[i+1] = 1u << i;
 
     ++p;
 
@@ -91,7 +91,7 @@ int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, unsigned num)
         exit_at_level[i] = 0;
         // construct code (append 0s to end) and introduce new exits
         for (j = i + 1 ;j <= bits[p]; ++j)
-            exit_at_level[j] = code + (1 << (j - 1));
+            exit_at_level[j] = code + (1u << (j - 1));
         codes[p] = code;
     }
 

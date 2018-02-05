@@ -36,6 +36,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "error_resilience.h"
+#include "hwaccel.h"
 #include "idctdsp.h"
 #include "internal.h"
 #include "mpeg_er.h"
@@ -1130,6 +1131,9 @@ static void quant_matrix_rebuild(uint16_t *matrix, const uint8_t *old_perm,
 }
 
 static const enum AVPixelFormat mpeg1_hwaccel_pixfmt_list_420[] = {
+#if CONFIG_MPEG1_NVDEC_HWACCEL
+    AV_PIX_FMT_CUDA,
+#endif
 #if CONFIG_MPEG1_XVMC_HWACCEL
     AV_PIX_FMT_XVMC,
 #endif
@@ -1141,6 +1145,9 @@ static const enum AVPixelFormat mpeg1_hwaccel_pixfmt_list_420[] = {
 };
 
 static const enum AVPixelFormat mpeg2_hwaccel_pixfmt_list_420[] = {
+#if CONFIG_MPEG2_NVDEC_HWACCEL
+    AV_PIX_FMT_CUDA,
+#endif
 #if CONFIG_MPEG2_XVMC_HWACCEL
     AV_PIX_FMT_XVMC,
 #endif
@@ -2235,8 +2242,52 @@ static int mpeg_decode_a53_cc(AVCodecContext *avctx,
             av_freep(&s1->a53_caption);
             s1->a53_caption_size = cc_count * 3;
             s1->a53_caption      = av_malloc(s1->a53_caption_size);
-            if (s1->a53_caption)
+            if (!s1->a53_caption) {
+                s1->a53_caption_size = 0;
+            } else {
                 memcpy(s1->a53_caption, p + 7, s1->a53_caption_size);
+            }
+            avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
+        }
+        return 1;
+    } else if (buf_size >= 2 &&
+               p[0] == 0x03 && (p[1]&0x7f) == 0x01) {
+        /* extract SCTE-20 CC data */
+        GetBitContext gb;
+        int cc_count = 0;
+        int i;
+
+        init_get_bits(&gb, p + 2, buf_size - 2);
+        cc_count = get_bits(&gb, 5);
+        if (cc_count > 0) {
+            av_freep(&s1->a53_caption);
+            s1->a53_caption_size = cc_count * 3;
+            s1->a53_caption      = av_mallocz(s1->a53_caption_size);
+            if (!s1->a53_caption) {
+                s1->a53_caption_size = 0;
+            } else {
+                uint8_t field, cc1, cc2;
+                uint8_t *cap = s1->a53_caption;
+                for (i = 0; i < cc_count && get_bits_left(&gb) >= 26; i++) {
+                    skip_bits(&gb, 2); // priority
+                    field = get_bits(&gb, 2);
+                    skip_bits(&gb, 5); // line_offset
+                    cc1 = get_bits(&gb, 8);
+                    cc2 = get_bits(&gb, 8);
+                    skip_bits(&gb, 1); // marker
+
+                    if (!field) { // forbidden
+                        cap[0] = cap[1] = cap[2] = 0x00;
+                    } else {
+                        field = (field == 2 ? 1 : 0);
+                        if (!s1->mpeg_enc_ctx.top_field_first) field = !field;
+                        cap[0] = 0x04 | field;
+                        cap[1] = ff_reverse[cc1];
+                        cap[2] = ff_reverse[cc2];
+                    }
+                    cap += 3;
+                }
+            }
             avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
         }
         return 1;
@@ -2278,7 +2329,9 @@ static int mpeg_decode_a53_cc(AVCodecContext *avctx,
             av_freep(&s1->a53_caption);
             s1->a53_caption_size = cc_count * 6;
             s1->a53_caption      = av_malloc(s1->a53_caption_size);
-            if (s1->a53_caption) {
+            if (!s1->a53_caption) {
+                s1->a53_caption_size = 0;
+            } else {
                 uint8_t field1 = !!(p[4] & 0x80);
                 uint8_t *cap = s1->a53_caption;
                 p += 5;
@@ -2838,7 +2891,22 @@ AVCodec ff_mpeg1video_decoder = {
     .caps_internal         = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .flush                 = flush,
     .max_lowres            = 3,
-    .update_thread_context = ONLY_IF_THREADS_ENABLED(mpeg_decode_update_thread_context)
+    .update_thread_context = ONLY_IF_THREADS_ENABLED(mpeg_decode_update_thread_context),
+    .hw_configs            = (const AVCodecHWConfigInternal*[]) {
+#if CONFIG_MPEG1_NVDEC_HWACCEL
+                               HWACCEL_NVDEC(mpeg1),
+#endif
+#if CONFIG_MPEG1_VDPAU_HWACCEL
+                               HWACCEL_VDPAU(mpeg1),
+#endif
+#if CONFIG_MPEG1_VIDEOTOOLBOX_HWACCEL
+                               HWACCEL_VIDEOTOOLBOX(mpeg1),
+#endif
+#if CONFIG_MPEG1_XVMC_HWACCEL
+                               HWACCEL_XVMC(mpeg1),
+#endif
+                               NULL
+                           },
 };
 
 AVCodec ff_mpeg2video_decoder = {
@@ -2857,6 +2925,33 @@ AVCodec ff_mpeg2video_decoder = {
     .flush          = flush,
     .max_lowres     = 3,
     .profiles       = NULL_IF_CONFIG_SMALL(ff_mpeg2_video_profiles),
+    .hw_configs     = (const AVCodecHWConfigInternal*[]) {
+#if CONFIG_MPEG2_DXVA2_HWACCEL
+                        HWACCEL_DXVA2(mpeg2),
+#endif
+#if CONFIG_MPEG2_D3D11VA_HWACCEL
+                        HWACCEL_D3D11VA(mpeg2),
+#endif
+#if CONFIG_MPEG2_D3D11VA2_HWACCEL
+                        HWACCEL_D3D11VA2(mpeg2),
+#endif
+#if CONFIG_MPEG2_NVDEC_HWACCEL
+                        HWACCEL_NVDEC(mpeg2),
+#endif
+#if CONFIG_MPEG2_VAAPI_HWACCEL
+                        HWACCEL_VAAPI(mpeg2),
+#endif
+#if CONFIG_MPEG2_VDPAU_HWACCEL
+                        HWACCEL_VDPAU(mpeg2),
+#endif
+#if CONFIG_MPEG2_VIDEOTOOLBOX_HWACCEL
+                        HWACCEL_VIDEOTOOLBOX(mpeg2),
+#endif
+#if CONFIG_MPEG2_XVMC_HWACCEL
+                        HWACCEL_XVMC(mpeg2),
+#endif
+                        NULL
+                    },
 };
 
 //legacy decoder

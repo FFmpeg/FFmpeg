@@ -41,7 +41,7 @@ static av_cold int audio_read_header(AVFormatContext *s1)
     if (!st)
         return AVERROR(ENOMEM);
 
-    ret = ff_sndio_open(s1, 0, s1->filename);
+    ret = ff_sndio_open(s1, 0, s1->url);
     if (ret < 0)
         return ret;
 

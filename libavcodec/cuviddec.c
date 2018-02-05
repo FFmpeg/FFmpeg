@@ -32,6 +32,7 @@
 
 #include "avcodec.h"
 #include "decode.h"
+#include "hwaccel.h"
 #include "internal.h"
 
 typedef struct CuvidContext
@@ -72,6 +73,8 @@ typedef struct CuvidContext
 
     int internal_error;
     int decoder_flushing;
+
+    int *key_frame;
 
     cudaVideoCodec codec_type;
     cudaVideoChromaFormat chroma_format;
@@ -339,6 +342,8 @@ static int CUDAAPI cuvid_handle_picture_decode(void *opaque, CUVIDPICPARAMS* pic
 
     av_log(avctx, AV_LOG_TRACE, "pfnDecodePicture\n");
 
+    ctx->key_frame[picparams->CurrPicIdx] = picparams->intra_pic_flag;
+
     ctx->internal_error = CHECK_CU(ctx->cvdl->cuvidDecodePicture(ctx->cudecoder, picparams));
     if (ctx->internal_error < 0)
         return 0;
@@ -589,6 +594,7 @@ static int cuvid_output_frame(AVCodecContext *avctx, AVFrame *frame)
             goto error;
         }
 
+        frame->key_frame = ctx->key_frame[parsed_frame.dispinfo.picture_index];
         frame->width = avctx->width;
         frame->height = avctx->height;
         if (avctx->pkt_timebase.num && avctx->pkt_timebase.den)
@@ -691,6 +697,8 @@ static av_cold int cuvid_decode_end(AVCodecContext *avctx)
 
     av_buffer_unref(&ctx->hwframe);
     av_buffer_unref(&ctx->hwdevice);
+
+    av_freep(&ctx->key_frame);
 
     cuvid_free_functions(&ctx->cvdl);
 
@@ -835,7 +843,7 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
         goto error;
     }
 
-    ret = cuvid_load_functions(&ctx->cvdl);
+    ret = cuvid_load_functions(&ctx->cvdl, avctx);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed loading nvcuvid.\n");
         goto error;
@@ -976,6 +984,12 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
                FFMIN(sizeof(ctx->cuparse_ext.raw_seqhdr_data), avctx->extradata_size));
     }
 
+    ctx->key_frame = av_mallocz(ctx->nb_surfaces * sizeof(int));
+    if (!ctx->key_frame) {
+        ret = AVERROR(ENOMEM);
+        goto error;
+    }
+
     ctx->cuparseinfo.ulMaxNumDecodeSurfaces = ctx->nb_surfaces;
     ctx->cuparseinfo.ulMaxDisplayDelay = 4;
     ctx->cuparseinfo.pUserData = avctx;
@@ -1094,19 +1108,25 @@ static const AVOption options[] = {
     { NULL }
 };
 
+static const AVCodecHWConfigInternal *cuvid_hw_configs[] = {
+    &(const AVCodecHWConfigInternal) {
+        .public = {
+            .pix_fmt     = AV_PIX_FMT_CUDA,
+            .methods     = AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX |
+                           AV_CODEC_HW_CONFIG_METHOD_INTERNAL,
+            .device_type = AV_HWDEVICE_TYPE_CUDA
+        },
+        .hwaccel = NULL,
+    },
+    NULL
+};
+
 #define DEFINE_CUVID_CODEC(x, X) \
     static const AVClass x##_cuvid_class = { \
         .class_name = #x "_cuvid", \
         .item_name = av_default_item_name, \
         .option = options, \
         .version = LIBAVUTIL_VERSION_INT, \
-    }; \
-    AVHWAccel ff_##x##_cuvid_hwaccel = { \
-        .name           = #x "_cuvid", \
-        .type           = AVMEDIA_TYPE_VIDEO, \
-        .id             = AV_CODEC_ID_##X, \
-        .pix_fmt        = AV_PIX_FMT_CUDA, \
-        .decoder_class  = &x##_cuvid_class, \
     }; \
     AVCodec ff_##x##_cuvid_decoder = { \
         .name           = #x "_cuvid", \
@@ -1120,13 +1140,14 @@ static const AVOption options[] = {
         .decode         = cuvid_decode_frame, \
         .receive_frame  = cuvid_output_frame, \
         .flush          = cuvid_flush, \
-        .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING, \
-        .caps_internal  = FF_CODEC_CAP_HWACCEL_REQUIRE_CLASS, \
+        .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE, \
         .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_CUDA, \
                                                         AV_PIX_FMT_NV12, \
                                                         AV_PIX_FMT_P010, \
                                                         AV_PIX_FMT_P016, \
                                                         AV_PIX_FMT_NONE }, \
+        .hw_configs     = cuvid_hw_configs, \
+        .wrapper_name   = "cuvid", \
     };
 
 #if CONFIG_HEVC_CUVID_DECODER

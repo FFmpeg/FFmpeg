@@ -524,7 +524,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (tag == MP4DecSpecificDescrTag) {
         av_log(fc, AV_LOG_TRACE, "Specific MPEG-4 header len=%d\n", len);
         if (!len || (uint64_t)len > (1<<30))
-            return -1;
+            return AVERROR_INVALIDDATA;
         av_free(st->codecpar->extradata);
         if ((ret = ff_get_extradata(fc, st->codecpar, pb, len)) < 0)
             return ret;

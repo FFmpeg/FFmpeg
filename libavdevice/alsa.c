@@ -177,8 +177,8 @@ av_cold int ff_alsa_open(AVFormatContext *ctx, snd_pcm_stream_t mode,
     snd_pcm_uframes_t buffer_size, period_size;
     uint64_t layout = ctx->streams[0]->codecpar->channel_layout;
 
-    if (ctx->filename[0] == 0) audio_device = "default";
-    else                       audio_device = ctx->filename;
+    if (ctx->url[0] == 0) audio_device = "default";
+    else                  audio_device = ctx->url;
 
     if (*codec_id == AV_CODEC_ID_NONE)
         *codec_id = DEFAULT_CODEC_ID;

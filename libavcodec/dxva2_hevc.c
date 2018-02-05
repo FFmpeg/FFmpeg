@@ -422,7 +422,7 @@ static int dxva2_hevc_end_frame(AVCodecContext *avctx)
 }
 
 #if CONFIG_HEVC_DXVA2_HWACCEL
-AVHWAccel ff_hevc_dxva2_hwaccel = {
+const AVHWAccel ff_hevc_dxva2_hwaccel = {
     .name           = "hevc_dxva2",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_HEVC,
@@ -439,7 +439,7 @@ AVHWAccel ff_hevc_dxva2_hwaccel = {
 #endif
 
 #if CONFIG_HEVC_D3D11VA_HWACCEL
-AVHWAccel ff_hevc_d3d11va_hwaccel = {
+const AVHWAccel ff_hevc_d3d11va_hwaccel = {
     .name           = "hevc_d3d11va",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_HEVC,
@@ -456,7 +456,7 @@ AVHWAccel ff_hevc_d3d11va_hwaccel = {
 #endif
 
 #if CONFIG_HEVC_D3D11VA2_HWACCEL
-AVHWAccel ff_hevc_d3d11va2_hwaccel = {
+const AVHWAccel ff_hevc_d3d11va2_hwaccel = {
     .name           = "hevc_d3d11va2",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_HEVC,

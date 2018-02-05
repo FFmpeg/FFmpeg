@@ -428,4 +428,5 @@ AVCodec ff_libfdk_aac_encoder = {
     .profiles              = profiles,
     .supported_samplerates = aac_sample_rates,
     .channel_layouts       = aac_channel_layout,
+    .wrapper_name          = "libfdk",
 };

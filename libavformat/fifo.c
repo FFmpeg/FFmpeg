@@ -124,9 +124,9 @@ static int fifo_thread_write_header(FifoThreadContext *ctx)
     if (ret < 0)
         return ret;
 
-    ret = ff_format_output_open(avf2, avf->filename, &format_options);
+    ret = ff_format_output_open(avf2, avf->url, &format_options);
     if (ret < 0) {
-        av_log(avf, AV_LOG_ERROR, "Error opening %s: %s\n", avf->filename,
+        av_log(avf, AV_LOG_ERROR, "Error opening %s: %s\n", avf->url,
                av_err2str(ret));
         goto end;
     }
@@ -500,13 +500,13 @@ static int fifo_init(AVFormatContext *avf)
         }
     }
 
-    oformat = av_guess_format(fifo->format, avf->filename, NULL);
+    oformat = av_guess_format(fifo->format, avf->url, NULL);
     if (!oformat) {
         ret = AVERROR_MUXER_NOT_FOUND;
         return ret;
     }
 
-    ret = fifo_mux_init(avf, oformat, avf->filename);
+    ret = fifo_mux_init(avf, oformat, avf->url);
     if (ret < 0)
         return ret;
 

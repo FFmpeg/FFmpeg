@@ -46,7 +46,6 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "unsharp.h"
-#include "unsharp_opencl.h"
 
 static void apply_unsharp(      uint8_t *dst, int dst_stride,
                           const uint8_t *src, int src_stride,
@@ -134,9 +133,7 @@ static void set_filter_param(UnsharpFilterParam *fp, int msize_x, int msize_y, f
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    int ret = 0;
     UnsharpContext *s = ctx->priv;
-
 
     set_filter_param(&s->luma,   s->lmsize_x, s->lmsize_y, s->lamount);
     set_filter_param(&s->chroma, s->cmsize_x, s->cmsize_y, s->camount);
@@ -146,16 +143,6 @@ static av_cold int init(AVFilterContext *ctx)
         return AVERROR(EINVAL);
     }
     s->apply_unsharp = apply_unsharp_c;
-    if (!CONFIG_OPENCL && s->opencl) {
-        av_log(ctx, AV_LOG_ERROR, "OpenCL support was not enabled in this build, cannot be selected\n");
-        return AVERROR(EINVAL);
-    }
-    if (CONFIG_OPENCL && s->opencl) {
-        s->apply_unsharp = ff_opencl_apply_unsharp;
-        ret = ff_opencl_unsharp_init(ctx);
-        if (ret < 0)
-            return ret;
-    }
     return 0;
 }
 
@@ -227,10 +214,6 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     UnsharpContext *s = ctx->priv;
 
-    if (CONFIG_OPENCL && s->opencl) {
-        ff_opencl_unsharp_uninit(ctx);
-    }
-
     free_filter_param(&s->luma);
     free_filter_param(&s->chroma);
 }
@@ -248,14 +231,9 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         return AVERROR(ENOMEM);
     }
     av_frame_copy_props(out, in);
-    if (CONFIG_OPENCL && s->opencl) {
-        ret = ff_opencl_unsharp_process_inout_buf(link->dst, in, out);
-        if (ret < 0)
-            goto end;
-    }
 
     ret = s->apply_unsharp(link->dst, in, out);
-end:
+
     av_frame_free(&in);
 
     if (ret < 0) {
@@ -282,7 +260,7 @@ static const AVOption unsharp_options[] = {
     { "cy",             "set chroma matrix vertical size",   OFFSET(cmsize_y), AV_OPT_TYPE_INT,   { .i64 = 5 }, MIN_SIZE, MAX_SIZE, FLAGS },
     { "chroma_amount",  "set chroma effect strength",        OFFSET(camount),  AV_OPT_TYPE_FLOAT, { .dbl = 0 },       -2,        5, FLAGS },
     { "ca",             "set chroma effect strength",        OFFSET(camount),  AV_OPT_TYPE_FLOAT, { .dbl = 0 },       -2,        5, FLAGS },
-    { "opencl",         "use OpenCL filtering capabilities", OFFSET(opencl),   AV_OPT_TYPE_BOOL,  { .i64 = 0 },        0,        1, FLAGS },
+    { "opencl",         "ignored",                           OFFSET(opencl),   AV_OPT_TYPE_BOOL,  { .i64 = 0 },        0,        1, FLAGS },
     { NULL }
 };
 

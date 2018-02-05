@@ -31,27 +31,7 @@
 #include "framesync.h"
 #include "internal.h"
 #include "video.h"
-
-typedef struct ThresholdContext {
-    const AVClass *class;
-
-    int planes;
-    int bpc;
-
-    int nb_planes;
-    int width[4], height[4];
-
-    void (*threshold)(const uint8_t *in, const uint8_t *threshold,
-                      const uint8_t *min, const uint8_t *max,
-                      uint8_t *out,
-                      ptrdiff_t ilinesize, ptrdiff_t tlinesize,
-                      ptrdiff_t flinesize, ptrdiff_t slinesize,
-                      ptrdiff_t olinesize,
-                      int w, int h);
-
-    AVFrame *frames[4];
-    FFFrameSync fs;
-} ThresholdContext;
+#include "threshold.h"
 
 #define OFFSET(x) offsetof(ThresholdContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
@@ -155,7 +135,7 @@ static void threshold8(const uint8_t *in, const uint8_t *threshold,
         in        += ilinesize;
         threshold += tlinesize;
         min       += flinesize;
-        max       += flinesize;
+        max       += slinesize;
         out       += olinesize;
     }
 }
@@ -183,7 +163,7 @@ static void threshold16(const uint8_t *iin, const uint8_t *tthreshold,
         in        += ilinesize / 2;
         threshold += tlinesize / 2;
         min       += flinesize / 2;
-        max       += flinesize / 2;
+        max       += slinesize / 2;
         out       += olinesize / 2;
     }
 }
@@ -203,8 +183,16 @@ static int config_input(AVFilterLink *inlink)
     s->height[0] = s->height[3] = inlink->h;
     s->width[1]  = s->width[2]  = AV_CEIL_RSHIFT(inlink->w, hsub);
     s->width[0]  = s->width[3]  = inlink->w;
+    s->depth = desc->comp[0].depth;
 
-    if (desc->comp[0].depth == 8) {
+    ff_threshold_init(s);
+
+    return 0;
+}
+
+void ff_threshold_init(ThresholdContext *s)
+{
+    if (s->depth == 8) {
         s->threshold = threshold8;
         s->bpc = 1;
     } else {
@@ -212,7 +200,8 @@ static int config_input(AVFilterLink *inlink)
         s->bpc = 2;
     }
 
-    return 0;
+    if (ARCH_X86)
+        ff_threshold_init_x86(s);
 }
 
 static int config_output(AVFilterLink *outlink)

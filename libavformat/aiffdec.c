@@ -81,11 +81,10 @@ static void get_meta(AVFormatContext *s, const char *key, int size)
             av_free(str);
             return;
         }
-        size += (size&1)-res;
+        size -= res;
         str[res] = 0;
         av_dict_set(&s->metadata, key, str, AV_DICT_DONT_STRDUP_VAL);
-    }else
-        size+= size&1;
+    }
 
     avio_skip(s->pb, size);
 }
@@ -324,6 +323,16 @@ static int aiff_read_header(AVFormatContext *s)
         case MKTAG('C','H','A','N'):
             if(ff_mov_read_chan(s, pb, st, size) < 0)
                 return AVERROR_INVALIDDATA;
+            break;
+        case MKTAG('A','P','C','M'): /* XA ADPCM compressed sound chunk */
+            st->codecpar->codec_id = AV_CODEC_ID_ADPCM_XA;
+            aiff->data_end = avio_tell(pb) + size;
+            offset = avio_tell(pb) + 8;
+            /* This field is unknown and its data seems to be irrelevant */
+            avio_rb32(pb);
+            st->codecpar->block_align = avio_rb32(pb);
+
+            goto got_sound;
             break;
         case 0:
             if (offset > 0 && st->codecpar->block_align) // COMM && SSND

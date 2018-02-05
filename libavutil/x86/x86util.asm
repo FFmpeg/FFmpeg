@@ -890,6 +890,14 @@
 %endif
 %endmacro
 
+%macro VBROADCASTI128 2 ; dst xmm/ymm, src : 128bits val
+%if mmsize > 16
+    vbroadcasti128 %1, %2
+%else
+    mova           %1, %2
+%endif
+%endmacro
+
 %macro SHUFFLE_MASK_W 8
     %rep 8
         %if %1>=0x80

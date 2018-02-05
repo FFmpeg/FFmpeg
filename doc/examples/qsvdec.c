@@ -210,7 +210,6 @@ int main(int argc, char **argv)
                video_st->codecpar->extradata_size);
         decoder_ctx->extradata_size = video_st->codecpar->extradata_size;
     }
-    decoder_ctx->refcounted_frames = 1;
 
     decoder_ctx->opaque      = &decode;
     decoder_ctx->get_format  = get_format;

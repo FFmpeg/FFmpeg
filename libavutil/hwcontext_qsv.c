@@ -989,7 +989,6 @@ static int qsv_device_derive_from_child(AVHWDeviceContext *ctx,
                                         int flags)
 {
     AVQSVDeviceContext *hwctx = ctx->hwctx;
-    QSVDeviceContext       *s = ctx->internal->priv;
 
     mfxVersion    ver = { { 3, 1 } };
     mfxHDL        handle;
@@ -1035,6 +1034,10 @@ static int qsv_device_derive_from_child(AVHWDeviceContext *ctx,
         ret = AVERROR_UNKNOWN;
         goto fail;
     }
+
+    av_log(ctx, AV_LOG_VERBOSE,
+           "Initialize MFX session: API version is %d.%d, implementation version is %d.%d\n",
+           MFX_VERSION_MAJOR, MFX_VERSION_MINOR, ver.Major, ver.Minor);
 
     MFXClose(hwctx->session);
 

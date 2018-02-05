@@ -198,7 +198,7 @@ int ff_img_read_header(AVFormatContext *s1)
         return AVERROR(EINVAL);
     }
 
-    av_strlcpy(s->path, s1->filename, sizeof(s->path));
+    av_strlcpy(s->path, s1->url, sizeof(s->path));
     s->img_number = 0;
     s->img_count  = 0;
 
@@ -338,7 +338,7 @@ int ff_img_read_header(AVFormatContext *s1)
 
             pd.buf = probe_buffer;
             pd.buf_size = probe_buffer_size;
-            pd.filename = s1->filename;
+            pd.filename = s1->url;
 
             while ((fmt = av_iformat_next(fmt))) {
                 if (fmt->read_header != ff_img_read_header ||

@@ -385,4 +385,5 @@ AVCodec ff_libfdk_aac_decoder = {
     .priv_class     = &fdk_aac_dec_class,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
+    .wrapper_name   = "libfdk",
 };

@@ -183,13 +183,22 @@ static int decode_q_branch(SnowContext *s, int level, int x, int y){
         int my_context= av_log2(2*FFABS(left->my - top->my)) + 0*av_log2(2*FFABS(tr->my - top->my));
 
         type= get_rac(&s->c, &s->block_state[1 + left->type + top->type]) ? BLOCK_INTRA : 0;
-
         if(type){
+            int ld, cbd, crd;
             pred_mv(s, &mx, &my, 0, left, top, tr);
-            l += get_symbol(&s->c, &s->block_state[32], 1);
+            ld = get_symbol(&s->c, &s->block_state[32], 1);
+            if (ld < -255 || ld > 255) {
+                return AVERROR_INVALIDDATA;
+            }
+            l += ld;
             if (s->nb_planes > 2) {
-                cb+= get_symbol(&s->c, &s->block_state[64], 1);
-                cr+= get_symbol(&s->c, &s->block_state[96], 1);
+                cbd = get_symbol(&s->c, &s->block_state[64], 1);
+                crd = get_symbol(&s->c, &s->block_state[96], 1);
+                if (cbd < -255 || cbd > 255 || crd < -255 || crd > 255) {
+                    return AVERROR_INVALIDDATA;
+                }
+                cb += cbd;
+                cr += crd;
             }
         }else{
             if(s->ref_frames > 1)
@@ -354,9 +363,10 @@ static int decode_header(SnowContext *s){
                 int htaps, i, sum=0;
                 Plane *p= &s->plane[plane_index];
                 p->diag_mc= get_rac(&s->c, s->header_state);
-                htaps= get_symbol(&s->c, s->header_state, 0)*2 + 2;
-                if((unsigned)htaps >= HTAPS_MAX || htaps==0)
+                htaps= get_symbol(&s->c, s->header_state, 0);
+                if((unsigned)htaps >= HTAPS_MAX/2 - 1)
                     return AVERROR_INVALIDDATA;
+                htaps = htaps*2 + 2;
                 p->htaps= htaps;
                 for(i= htaps/2; i; i--){
                     p->hcoeff[i]= get_symbol(&s->c, s->header_state, 0) * (1-2*(i&1));
@@ -428,6 +438,8 @@ static int decode_blocks(SnowContext *s){
 
     for(y=0; y<h; y++){
         for(x=0; x<w; x++){
+            if (s->c.bytestream >= s->c.bytestream_end)
+                return AVERROR_INVALIDDATA;
             if ((res = decode_q_branch(s, 0, x, y)) < 0)
                 return res;
         }

@@ -191,4 +191,5 @@ AVCodec ff_libwavpack_encoder = {
     .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SMALL_LAST_FRAME,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S32,
                                                      AV_SAMPLE_FMT_NONE },
+    .wrapper_name   = "libwavpack",
 };

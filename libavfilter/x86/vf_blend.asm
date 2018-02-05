@@ -2,6 +2,8 @@
 ;* x86-optimized functions for blend filter
 ;*
 ;* Copyright (C) 2015 Paul B Mahol
+;* Copyright (C) 2018 Henrik Gramner
+;* Copyright (C) 2018 Jokyo Images
 ;*
 ;* This file is part of FFmpeg.
 ;*
@@ -74,39 +76,36 @@ BLEND_INIT %1, 2
 BLEND_END
 %endmacro
 
-INIT_XMM sse2
-BLEND_SIMPLE xor,      xor
-BLEND_SIMPLE or,       or
-BLEND_SIMPLE and,      and
-BLEND_SIMPLE addition, addusb
-BLEND_SIMPLE subtract, subusb
-BLEND_SIMPLE darken,   minub
-BLEND_SIMPLE lighten,  maxub
-
-BLEND_INIT grainextract, 4
-    pxor       m2, m2
-    mova       m3, [pw_128]
+%macro GRAINEXTRACT 0
+BLEND_INIT grainextract, 6
+    pxor           m4, m4
+    VBROADCASTI128 m5, [pw_128]
 .nextrow:
     mov        xq, widthq
-
     .loop:
-        movh            m0, [topq + xq]
-        movh            m1, [bottomq + xq]
-        punpcklbw       m0, m2
-        punpcklbw       m1, m2
-        paddw           m0, m3
-        psubw           m0, m1
-        packuswb        m0, m0
-        movh   [dstq + xq], m0
-        add             xq, mmsize / 2
+        movu           m1, [topq + xq]
+        movu           m3, [bottomq + xq]
+        punpcklbw      m0, m1, m4
+        punpckhbw      m1, m4
+        punpcklbw      m2, m3, m4
+        punpckhbw      m3, m4
+
+        paddw          m0, m5
+        paddw          m1, m5
+        psubw          m0, m2
+        psubw          m1, m3
+
+        packuswb       m0, m1
+        mova  [dstq + xq], m0
+        add            xq, mmsize
     jl .loop
 BLEND_END
+%endmacro
 
 %macro MULTIPLY 3 ; a, b, pw_1
     pmullw          %1, %2               ; xxxxxxxx  a * b
     paddw           %1, %3
-    mova            %2, %1
-    psrlw           %2, 8
+    psrlw           %2, %1, 8
     paddw           %1, %2
     psrlw           %1, 8                ; 00xx00xx  a * b / 255
 %endmacro
@@ -118,92 +117,112 @@ BLEND_END
     pxor            %1, %4               ; 00xx00xx  255 - x / 255
 %endmacro
 
-BLEND_INIT multiply, 4
-    pxor       m2, m2
-    mova       m3, [pw_1]
+%macro BLEND_MULTIPLY 0
+BLEND_INIT multiply, 6
+    pxor       m4, m4
+    VBROADCASTI128       m5, [pw_1]
 .nextrow:
     mov        xq, widthq
 
     .loop:
-                                             ;     word
-                                             ;     |--|
-        movh            m0, [topq + xq]      ; 0000xxxx
-        movh            m1, [bottomq + xq]
-        punpcklbw       m0, m2               ; 00xx00xx
-        punpcklbw       m1, m2
+        movu           m1, [topq + xq]
+        movu           m3, [bottomq + xq]
+        punpcklbw      m0, m1, m4
+        punpckhbw      m1, m4
+        punpcklbw      m2, m3, m4
+        punpckhbw      m3, m4
 
-        MULTIPLY        m0, m1, m3
+        MULTIPLY        m0, m2, m5
+        MULTIPLY        m1, m3, m5
 
-        packuswb        m0, m0               ; 0000xxxx
-        movh   [dstq + xq], m0
-        add             xq, mmsize / 2
-
+        packuswb       m0, m1
+        mova  [dstq + xq], m0
+        add            xq, mmsize
     jl .loop
 BLEND_END
+%endmacro
 
-BLEND_INIT screen, 5
-    pxor       m2, m2
-    mova       m3, [pw_1]
-    mova       m4, [pw_255]
+%macro BLEND_SCREEN 0
+BLEND_INIT screen, 7
+    pxor       m4, m4
+
+    VBROADCASTI128       m5, [pw_1]
+    VBROADCASTI128       m6, [pw_255]
 .nextrow:
     mov        xq, widthq
 
     .loop:
-        movh            m0, [topq + xq]      ; 0000xxxx
-        movh            m1, [bottomq + xq]
-        punpcklbw       m0, m2               ; 00xx00xx
-        punpcklbw       m1, m2
+        movu           m1, [topq + xq]
+        movu           m3, [bottomq + xq]
+        punpcklbw      m0, m1, m4
+        punpckhbw      m1, m4
+        punpcklbw      m2, m3, m4
+        punpckhbw      m3, m4
 
-        SCREEN          m0, m1, m3, m4
+        SCREEN          m0, m2, m5, m6
+        SCREEN          m1, m3, m5, m6
 
-        packuswb        m0, m0               ; 0000xxxx
-        movh   [dstq + xq], m0
-        add             xq, mmsize / 2
-
+        packuswb       m0, m1
+        mova  [dstq + xq], m0
+        add            xq, mmsize
     jl .loop
 BLEND_END
+%endmacro
 
+%macro AVERAGE 0
 BLEND_INIT average, 3
-    pxor       m2, m2
+    pcmpeqb        m2, m2
+
+.nextrow:
+    mov        xq, widthq
+
+.loop:
+    movu           m0, [topq + xq]
+    movu           m1, [bottomq + xq]
+    pxor           m0, m2
+    pxor           m1, m2
+    pavgb          m0, m1
+    pxor           m0, m2
+    mova  [dstq + xq], m0
+    add            xq, mmsize
+    jl .loop
+BLEND_END
+%endmacro
+
+
+%macro GRAINMERGE 0
+BLEND_INIT grainmerge, 6
+    pxor       m4, m4
+
+    VBROADCASTI128       m5, [pw_128]
 .nextrow:
     mov        xq, widthq
 
     .loop:
-        movh            m0, [topq + xq]
-        movh            m1, [bottomq + xq]
-        punpcklbw       m0, m2
-        punpcklbw       m1, m2
-        paddw           m0, m1
-        psrlw           m0, 1
-        packuswb        m0, m0
-        movh   [dstq + xq], m0
-        add             xq, mmsize / 2
+        movu           m1, [topq + xq]
+        movu           m3, [bottomq + xq]
+        punpcklbw      m0, m1, m4
+        punpckhbw      m1, m4
+        punpcklbw      m2, m3, m4
+        punpckhbw      m3, m4
+
+        paddw           m0, m2
+        paddw           m1, m3
+        psubw           m0, m5
+        psubw           m1, m5
+
+        packuswb       m0, m1
+        mova  [dstq + xq], m0
+        add            xq, mmsize
     jl .loop
 BLEND_END
+%endmacro
 
-BLEND_INIT grainmerge, 4
-    pxor       m2, m2
-    mova       m3, [pw_128]
-.nextrow:
-    mov        xq, widthq
-
-    .loop:
-        movh            m0, [topq + xq]
-        movh            m1, [bottomq + xq]
-        punpcklbw       m0, m2
-        punpcklbw       m1, m2
-        paddw           m0, m1
-        psubw           m0, m3
-        packuswb        m0, m0
-        movh   [dstq + xq], m0
-        add             xq, mmsize / 2
-    jl .loop
-BLEND_END
-
+%macro HARDMIX 0
 BLEND_INIT hardmix, 5
-    mova       m2, [pb_255]
-    mova       m3, [pb_128]
-    mova       m4, [pb_127]
+    VBROADCASTI128       m2, [pb_255]
+    VBROADCASTI128       m3, [pb_128]
+    VBROADCASTI128       m4, [pb_127]
 .nextrow:
     mov        xq, widthq
 
@@ -218,7 +237,9 @@ BLEND_INIT hardmix, 5
         add             xq, mmsize
     jl .loop
 BLEND_END
+%endmacro
 
+%macro DIVIDE 0
 BLEND_INIT divide, 4
     pxor       m2, m2
     mova       m3, [ps_255]
@@ -247,9 +268,11 @@ BLEND_INIT divide, 4
 
     jl .loop
 BLEND_END
+%endmacro
 
+%macro PHOENIX 0
 BLEND_INIT phoenix, 4
-    mova       m3, [pb_255]
+    VBROADCASTI128       m3, [pb_255]
 .nextrow:
     mov        xq, widthq
 
@@ -266,6 +289,7 @@ BLEND_INIT phoenix, 4
         add             xq, mmsize
     jl .loop
 BLEND_END
+%endmacro
 
 %macro BLEND_ABS 0
 BLEND_INIT difference, 5
@@ -291,7 +315,7 @@ BLEND_END
 
 BLEND_INIT extremity, 8
     pxor       m2, m2
-    mova       m4, [pw_255]
+    VBROADCASTI128       m4, [pw_255]
 .nextrow:
     mov        xq, widthq
 
@@ -315,7 +339,7 @@ BLEND_END
 
 BLEND_INIT negation, 8
     pxor       m2, m2
-    mova       m4, [pw_255]
+    VBROADCASTI128       m4, [pw_255]
 .nextrow:
     mov        xq, widthq
 
@@ -341,6 +365,43 @@ BLEND_END
 %endmacro
 
 INIT_XMM sse2
+BLEND_SIMPLE xor,      xor
+BLEND_SIMPLE or,       or
+BLEND_SIMPLE and,      and
+BLEND_SIMPLE addition, addusb
+BLEND_SIMPLE subtract, subusb
+BLEND_SIMPLE darken,   minub
+BLEND_SIMPLE lighten,  maxub
+GRAINEXTRACT
+BLEND_MULTIPLY
+BLEND_SCREEN
+AVERAGE
+GRAINMERGE
+HARDMIX
+PHOENIX
+DIVIDE
+
 BLEND_ABS
+
 INIT_XMM ssse3
 BLEND_ABS
+
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+BLEND_SIMPLE xor,      xor
+BLEND_SIMPLE or,       or
+BLEND_SIMPLE and,      and
+BLEND_SIMPLE addition, addusb
+BLEND_SIMPLE subtract, subusb
+BLEND_SIMPLE darken,   minub
+BLEND_SIMPLE lighten,  maxub
+GRAINEXTRACT
+BLEND_MULTIPLY
+BLEND_SCREEN
+AVERAGE
+GRAINMERGE
+HARDMIX
+PHOENIX
+
+BLEND_ABS
+%endif

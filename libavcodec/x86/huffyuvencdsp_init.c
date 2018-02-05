@@ -32,6 +32,8 @@ void ff_diff_int16_mmx (uint16_t *dst, const uint16_t *src1, const uint16_t *src
                         unsigned mask, int w);
 void ff_diff_int16_sse2(uint16_t *dst, const uint16_t *src1, const uint16_t *src2,
                         unsigned mask, int w);
+void ff_diff_int16_avx2(uint16_t *dst, const uint16_t *src1, const uint16_t *src2,
+                        unsigned mask, int w);
 void ff_sub_hfyu_median_pred_int16_mmxext(uint16_t *dst, const uint16_t *src1, const uint16_t *src2,
                                           unsigned mask, int w, int *left, int *left_top);
 
@@ -50,5 +52,9 @@ av_cold void ff_huffyuvencdsp_init_x86(HuffYUVEncDSPContext *c, AVCodecContext *
 
     if (EXTERNAL_SSE2(cpu_flags)) {
         c->diff_int16 = ff_diff_int16_sse2;
+    }
+
+    if (EXTERNAL_AVX2_FAST(cpu_flags)) {
+        c->diff_int16 = ff_diff_int16_avx2;
     }
 }

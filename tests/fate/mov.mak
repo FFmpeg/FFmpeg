@@ -19,6 +19,9 @@ FATE_MOV_FFPROBE = fate-mov-aac-2048-priming \
                    fate-mov-init-nonkeyframe \
                    fate-mov-displaymatrix \
                    fate-mov-spherical-mono \
+                   fate-mov-guess-delay-1 \
+                   fate-mov-guess-delay-2 \
+                   fate-mov-guess-delay-3 \
 
 FATE_SAMPLES_AVCONV += $(FATE_MOV)
 FATE_SAMPLES_FFPROBE += $(FATE_MOV_FFPROBE)
@@ -52,7 +55,7 @@ fate-mov-elst-ends-betn-b-and-i: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/elst_en
 fate-mov-440hz-10ms: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/440hz-10ms.m4a
 
 # Makes sure that we handle invalid edit list entry count correctly.
-fate-mov-invalid-elst-entry-count: CMD = framemd5 -flags +bitexact -i $(TARGET_SAMPLES)/mov/invalid_elst_entry_count.mov
+fate-mov-invalid-elst-entry-count: CMD = framemd5 -idct simple -flags +bitexact -i $(TARGET_SAMPLES)/mov/invalid_elst_entry_count.mov
 
 # Makes sure that 1st key-frame is picked when,
 #    i) One B-frame between 2 key-frames
@@ -67,7 +70,7 @@ fate-mov-frag-overlap: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/frag_overlap.mp4
 # Makes sure that we pick the right frames according to edit list when there is no keyframe with PTS < edit list start.
 # For example, when video starts on a B-frame, and edit list starts on that B-frame too.
 # GOP structure : B B I in presentation order.
-fate-mov-bbi-elst-starts-b: CMD = framemd5 -flags +bitexact -i $(TARGET_SAMPLES)/h264/twofields_packet.mp4
+fate-mov-bbi-elst-starts-b: CMD = framemd5 -flags +bitexact -acodec aac_fixed -i $(TARGET_SAMPLES)/h264/twofields_packet.mp4
 
 fate-mov-aac-2048-priming: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_packets -print_format compact $(TARGET_SAMPLES)/mov/aac-2048-priming.mov
 
@@ -82,3 +85,7 @@ fate-mov-spherical-mono: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries str
 fate-mov-gpmf-remux: CMD = md5 -i $(TARGET_SAMPLES)/mov/fake-gp-media-with-real-gpmf.mp4 -map 0 -c copy -fflags +bitexact -f mp4
 fate-mov-gpmf-remux: CMP = oneline
 fate-mov-gpmf-remux: REF = 8f48e435ee1f6b7e173ea756141eabf3
+
+fate-mov-guess-delay-1: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream=has_b_frames -select_streams v $(TARGET_SAMPLES)/h264/h264_3bf_nopyramid_nobsrestriction.mp4
+fate-mov-guess-delay-2: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream=has_b_frames -select_streams v $(TARGET_SAMPLES)/h264/h264_3bf_pyramid_nobsrestriction.mp4
+fate-mov-guess-delay-3: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream=has_b_frames -select_streams v $(TARGET_SAMPLES)/h264/h264_4bf_pyramid_nobsrestriction.mp4

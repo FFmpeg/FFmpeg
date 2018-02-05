@@ -372,7 +372,9 @@ static void dump_spherical(void *ctx, AVCodecParameters *par, AVPacketSideData *
         size_t l, t, r, b;
         av_spherical_tile_bounds(spherical, par->width, par->height,
                                  &l, &t, &r, &b);
-        av_log(ctx, AV_LOG_INFO, "[%zu, %zu, %zu, %zu] ", l, t, r, b);
+        av_log(ctx, AV_LOG_INFO,
+               "[%"SIZE_SPECIFIER", %"SIZE_SPECIFIER", %"SIZE_SPECIFIER", %"SIZE_SPECIFIER"] ",
+               l, t, r, b);
     } else if (spherical->projection == AV_SPHERICAL_CUBEMAP) {
         av_log(ctx, AV_LOG_INFO, "[pad %"PRIu32"] ", spherical->padding);
     }

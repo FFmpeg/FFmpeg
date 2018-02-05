@@ -238,54 +238,6 @@ fail:
     return ret;
 }
 
-static int fifo_write_header_err_tst(AVFormatContext *oc, AVDictionary **opts,
-                                     const FailingMuxerPacketData *pkt_data)
-{
-    int ret = 0, i;
-    AVPacket pkt;
-
-    av_init_packet(&pkt);
-
-    ret = avformat_write_header(oc, opts);
-    if (ret) {
-        fprintf(stderr, "Unexpected write_header failure: %s\n",
-                av_err2str(ret));
-        goto fail;
-    }
-
-    for (i = 0; i < MAX_TST_PACKETS; i++ ) {
-        ret = prepare_packet(&pkt, pkt_data, i);
-        if (ret < 0) {
-            fprintf(stderr, "Failed to prepare test packet: %s\n",
-                    av_err2str(ret));
-            goto write_trailer_and_fail;
-        }
-        ret = av_write_frame(oc, &pkt);
-        av_packet_unref(&pkt);
-        if (ret < 0) {
-            break;
-        }
-    }
-
-    if (!ret) {
-        fprintf(stderr, "write_packet not failed when supposed to.\n");
-        goto fail;
-    } else if (ret != -1) {
-        fprintf(stderr, "Unexpected write_packet error: %s\n", av_err2str(ret));
-        goto fail;
-    }
-
-    ret = av_write_trailer(oc);
-    if (ret < 0)
-        fprintf(stderr, "Unexpected write_trailer error: %s\n", av_err2str(ret));
-
-    return ret;
-write_trailer_and_fail:
-    av_write_trailer(oc);
-fail:
-    return ret;
-}
-
 static int fifo_overflow_drop_test(AVFormatContext *oc, AVDictionary **opts,
                                    const FailingMuxerPacketData *data)
 {
@@ -402,10 +354,6 @@ const TestCase tests[] = {
         /* Simple test in packet-non-dropping mode, we expect to get on the output
          * exactly what was on input */
         {fifo_basic_test, "nonfail test", NULL,1, 0, 0, {0, 0, 0}},
-
-        /* Test that we receive delayed write_header error from one of the write_packet
-         * calls. */
-        {fifo_write_header_err_tst, "write header error test", NULL, 0, -1, 0, {0, 0, 0}},
 
         /* Each write_packet will fail 3 times before operation is successful. If recovery
          * Since recovery is on, fifo muxer should not return any errors. */

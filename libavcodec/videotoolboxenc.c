@@ -2599,8 +2599,9 @@ AVCodec ff_hevc_videotoolbox_encoder = {
     .init             = vtenc_init,
     .encode2          = vtenc_frame,
     .close            = vtenc_close,
-    .capabilities     = AV_CODEC_CAP_DELAY,
+    .capabilities     = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE,
     .priv_class       = &hevc_videotoolbox_class,
     .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE |
                         FF_CODEC_CAP_INIT_CLEANUP,
+    .wrapper_name     = "videotoolbox",
 };

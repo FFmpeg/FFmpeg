@@ -934,4 +934,5 @@ AVCodec ff_libxvid_encoder = {
     .priv_class     = &xvid_class,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
+    .wrapper_name   = "libxvid",
 };

@@ -49,7 +49,7 @@ static void RENAME(vertical_compose53iL0)(uint8_t *_b0, uint8_t *_b1, uint8_t *_
     TYPE *b1 = (TYPE *)_b1;
     TYPE *b2 = (TYPE *)_b2;
     for (i = 0; i < width; i++)
-        b1[i] -= (int)(b0[i] + (unsigned)b2[i] + 2) >> 2;
+        b1[i] -= (unsigned)((int)(b0[i] + (unsigned)b2[i] + 2) >> 2);
 }
 
 static av_always_inline void RENAME(interleave)(TYPE *dst, TYPE *src0, TYPE *src1, int w2,

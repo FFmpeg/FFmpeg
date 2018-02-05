@@ -34,6 +34,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/thread.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
@@ -949,6 +950,7 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
         for (cblkno = 0; cblkno < nb_code_blocks; cblkno++) {
             Jpeg2000Cblk *cblk = prec->cblk + cblkno;
             int incl, newpasses, llen;
+            void *tmp;
 
             if (cblk->npasses)
                 incl = get_bits(s, 1);
@@ -988,6 +990,14 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
 
             cblk->nb_lengthinc = 0;
             cblk->nb_terminationsinc = 0;
+            av_free(cblk->lengthinc);
+            cblk->lengthinc  = av_mallocz_array(newpasses    , sizeof(*cblk->lengthinc));
+            if (!cblk->lengthinc)
+                return AVERROR(ENOMEM);
+            tmp = av_realloc_array(cblk->data_start, cblk->nb_terminations + newpasses + 1, sizeof(*cblk->data_start));
+            if (!tmp)
+                return AVERROR(ENOMEM);
+            cblk->data_start = tmp;
             do {
                 int newpasses1 = 0;
 
@@ -1001,10 +1011,18 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
 
                 if ((ret = get_bits(s, av_log2(newpasses1) + cblk->lblock)) < 0)
                     return ret;
-                if (ret > sizeof(cblk->data)) {
+                if (ret > cblk->data_allocated) {
+                    size_t new_size = FFMAX(2*cblk->data_allocated, ret);
+                    void *new = av_realloc(cblk->data, new_size);
+                    if (new) {
+                        cblk->data = new;
+                        cblk->data_allocated = new_size;
+                    }
+                }
+                if (ret > cblk->data_allocated) {
                     avpriv_request_sample(s->avctx,
                                         "Block with lengthinc greater than %"SIZE_SPECIFIER"",
-                                        sizeof(cblk->data));
+                                        cblk->data_allocated);
                     return AVERROR_PATCHWELCOME;
                 }
                 cblk->lengthinc[cblk->nb_lengthinc++] = ret;
@@ -1029,9 +1047,19 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
         nb_code_blocks = prec->nb_codeblocks_height * prec->nb_codeblocks_width;
         for (cblkno = 0; cblkno < nb_code_blocks; cblkno++) {
             Jpeg2000Cblk *cblk = prec->cblk + cblkno;
+            if (!cblk->nb_terminationsinc && !cblk->lengthinc)
+                continue;
             for (cwsno = 0; cwsno < cblk->nb_lengthinc; cwsno ++) {
+                if (cblk->data_allocated < cblk->length + cblk->lengthinc[cwsno] + 4) {
+                    size_t new_size = FFMAX(2*cblk->data_allocated, cblk->length + cblk->lengthinc[cwsno] + 4);
+                    void *new = av_realloc(cblk->data, new_size);
+                    if (new) {
+                        cblk->data = new;
+                        cblk->data_allocated = new_size;
+                    }
+                }
                 if (   bytestream2_get_bytes_left(&s->g) < cblk->lengthinc[cwsno]
-                    || sizeof(cblk->data) < cblk->length + cblk->lengthinc[cwsno] + 4
+                    || cblk->data_allocated < cblk->length + cblk->lengthinc[cwsno] + 4
                 ) {
                     av_log(s->avctx, AV_LOG_ERROR,
                         "Block length %"PRIu16" or lengthinc %d is too large, left %d\n",
@@ -1050,6 +1078,7 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                     cblk->data_start[cblk->nb_terminations] = cblk->length;
                 }
             }
+            av_freep(&cblk->lengthinc);
         }
     }
     return 0;
@@ -1981,7 +2010,16 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
            bytestream2_get_bytes_left(&s->g) >= 8) {
         atom_size = bytestream2_get_be32u(&s->g);
         atom      = bytestream2_get_be32u(&s->g);
-        atom_end  = bytestream2_tell(&s->g) + atom_size - 8;
+        if (atom_size == 1) {
+            if (bytestream2_get_be32u(&s->g)) {
+                avpriv_request_sample(s->avctx, "Huge atom");
+                return 0;
+            }
+            atom_size = bytestream2_get_be32u(&s->g);
+            atom_end  = bytestream2_tell(&s->g) + atom_size - 16;
+        } else {
+            atom_end  = bytestream2_tell(&s->g) + atom_size -  8;
+        }
 
         if (atom == JP2_CODESTREAM)
             return 1;
@@ -2105,10 +2143,18 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
     return 0;
 }
 
+static av_cold void jpeg2000_init_static_data(void)
+{
+    ff_jpeg2000_init_tier1_luts();
+    ff_mqc_init_context_tables();
+}
+
 static av_cold int jpeg2000_decode_init(AVCodecContext *avctx)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
     Jpeg2000DecoderContext *s = avctx->priv_data;
 
+    ff_thread_once(&init_static_once, jpeg2000_init_static_data);
     ff_jpeg2000dsp_init(&s->dsp);
 
     return 0;
@@ -2186,12 +2232,6 @@ end:
     return ret;
 }
 
-static av_cold void jpeg2000_init_static_data(AVCodec *codec)
-{
-    ff_jpeg2000_init_tier1_luts();
-    ff_mqc_init_context_tables();
-}
-
 #define OFFSET(x) offsetof(Jpeg2000DecoderContext, x)
 #define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
 
@@ -2215,7 +2255,6 @@ AVCodec ff_jpeg2000_decoder = {
     .id               = AV_CODEC_ID_JPEG2000,
     .capabilities     = AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_DR1,
     .priv_data_size   = sizeof(Jpeg2000DecoderContext),
-    .init_static_data = jpeg2000_init_static_data,
     .init             = jpeg2000_decode_init,
     .decode           = jpeg2000_decode_frame,
     .priv_class       = &jpeg2000_class,

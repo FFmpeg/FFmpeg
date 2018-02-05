@@ -41,6 +41,7 @@
 #include "hevc_data.h"
 #include "hevc_parse.h"
 #include "hevcdec.h"
+#include "hwaccel.h"
 #include "profiles.h"
 
 const uint8_t ff_hevc_pel_weight[65] = { [2] = 0, [4] = 1, [6] = 2, [8] = 3, [12] = 4, [16] = 5, [24] = 6, [32] = 7, [48] = 8, [64] = 9 };
@@ -2646,6 +2647,13 @@ static int set_side_data(HEVCContext *s)
 
         if (s->sei.frame_packing.content_interpretation_type == 2)
             stereo->flags = AV_STEREO3D_FLAG_INVERT;
+
+        if (s->sei.frame_packing.arrangement_type == 5) {
+            if (s->sei.frame_packing.current_frame_is_frame0_flag)
+                stereo->view = AV_STEREO3D_VIEW_LEFT;
+            else
+                stereo->view = AV_STEREO3D_VIEW_RIGHT;
+        }
     }
 
     if (s->sei.display_orientation.present &&
@@ -2897,6 +2905,13 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
         if (ret < 0)
             return ret;
 
+        if (
+            (s->avctx->skip_frame >= AVDISCARD_BIDIR && s->sh.slice_type == HEVC_SLICE_B) ||
+            (s->avctx->skip_frame >= AVDISCARD_NONINTRA && s->sh.slice_type != HEVC_SLICE_I) ||
+            (s->avctx->skip_frame >= AVDISCARD_NONKEY && !IS_IDR(s))) {
+            break;
+        }
+
         if (s->sh.first_slice_in_pic_flag) {
             if (s->max_ra == INT_MAX) {
                 if (s->nal_unit_type == HEVC_NAL_CRA_NUT || IS_BLA(s)) {
@@ -3020,7 +3035,14 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
 
     /* decode the NAL units */
     for (i = 0; i < s->pkt.nb_nals; i++) {
-        ret = decode_nal_unit(s, &s->pkt.nals[i]);
+        H2645NAL *nal = &s->pkt.nals[i];
+
+        if (s->avctx->skip_frame >= AVDISCARD_ALL ||
+            (s->avctx->skip_frame >= AVDISCARD_NONREF
+            && ff_hevc_nal_is_nonref(nal->type)))
+            continue;
+
+        ret = decode_nal_unit(s, nal);
         if (ret < 0) {
             av_log(s->avctx, AV_LOG_WARNING,
                    "Error parsing NAL unit #%d.\n", i);
@@ -3255,15 +3277,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
         av_frame_free(&s->DPB[i].frame);
     }
 
-    for (i = 0; i < FF_ARRAY_ELEMS(s->ps.vps_list); i++)
-        av_buffer_unref(&s->ps.vps_list[i]);
-    for (i = 0; i < FF_ARRAY_ELEMS(s->ps.sps_list); i++)
-        av_buffer_unref(&s->ps.sps_list[i]);
-    for (i = 0; i < FF_ARRAY_ELEMS(s->ps.pps_list); i++)
-        av_buffer_unref(&s->ps.pps_list[i]);
-    s->ps.sps = NULL;
-    s->ps.pps = NULL;
-    s->ps.vps = NULL;
+    ff_hevc_ps_uninit(&s->ps);
 
     av_freep(&s->sh.entry_point_offset);
     av_freep(&s->sh.offset);
@@ -3510,4 +3524,28 @@ AVCodec ff_hevc_decoder = {
                              AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_EXPORTS_CROPPING,
     .profiles              = NULL_IF_CONFIG_SMALL(ff_hevc_profiles),
+    .hw_configs            = (const AVCodecHWConfigInternal*[]) {
+#if CONFIG_HEVC_DXVA2_HWACCEL
+                               HWACCEL_DXVA2(hevc),
+#endif
+#if CONFIG_HEVC_D3D11VA_HWACCEL
+                               HWACCEL_D3D11VA(hevc),
+#endif
+#if CONFIG_HEVC_D3D11VA2_HWACCEL
+                               HWACCEL_D3D11VA2(hevc),
+#endif
+#if CONFIG_HEVC_NVDEC_HWACCEL
+                               HWACCEL_NVDEC(hevc),
+#endif
+#if CONFIG_HEVC_VAAPI_HWACCEL
+                               HWACCEL_VAAPI(hevc),
+#endif
+#if CONFIG_HEVC_VDPAU_HWACCEL
+                               HWACCEL_VDPAU(hevc),
+#endif
+#if CONFIG_HEVC_VIDEOTOOLBOX_HWACCEL
+                               HWACCEL_VIDEOTOOLBOX(hevc),
+#endif
+                               NULL
+                           },
 };

@@ -244,6 +244,16 @@ file subdir/file-2.wav
 @end example
 @end itemize
 
+@section dash
+
+Dynamic Adaptive Streaming over HTTP demuxer.
+
+This demuxer presents all AVStreams found in the manifest.
+By setting the discard flags on AVStreams the caller can decide
+which streams to actually receive.
+Each stream mirrors the @code{id} and @code{bandwidth} properties from the
+@code{<Representation>} as metadata keys named "id" and "variant_bitrate" respectively.
+
 @section flv, live_flv
 
 Adobe Flash Video Format demuxer.
@@ -316,6 +326,14 @@ segment index to start live streams at (negative values are from the end).
 @item max_reload
 Maximum number of times a insufficient list is attempted to be reloaded.
 Default value is 1000.
+
+@item http_persistent
+Use persistent HTTP connections. Applicable only for HTTP streams.
+Enabled by default.
+
+@item http_multiple
+Use multiple HTTP connections for downloading HTTP segments.
+Enabled by default for HTTP/1.1 servers.
 @end table
 
 @section image2

@@ -12,6 +12,11 @@ gbrp12le            c5a4b89571f7095eb737ad9fd6b1ee08
 gbrp14le            bdfdfd6f36c60497d1cdae791f3cc117
 gbrp16le            df095ef3a20995935cfcaf144afc68b6
 gbrp9le             a8c4e29f4cb627db81ba053e0853e702
+gray                20b14b5e26cd11300ed1249e04082170
+gray10le            8f4140b55e847cc423002b89666db5ea
+gray12le            ea89c02f6b3af49ddaf13364ed33d86d
+gray16le            aa10599924fb2440fa12b76e90f57dcb
+gray9le             7d9cc9ad6118674c547a54281d10cf05
 rgb24               a356171207723a580e7d277078072005
 rgb48le             5c7dd8575836d18c91e09f1915cf9aa9
 rgba                7bc854c2698b78af3e9159a19c2d9d21

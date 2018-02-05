@@ -653,7 +653,7 @@ DV, GXF and AVI timecodes are available in format metadata
 @ifset config-not-all
 @url{ffprobe-all.html,ffprobe-all},
 @end ifset
-@url{ffmpeg.html,ffmpeg}, @url{ffplay.html,ffplay}, @url{ffserver.html,ffserver},
+@url{ffmpeg.html,ffmpeg}, @url{ffplay.html,ffplay},
 @url{ffmpeg-utils.html,ffmpeg-utils},
 @url{ffmpeg-scaler.html,ffmpeg-scaler},
 @url{ffmpeg-resampler.html,ffmpeg-resampler},
@@ -672,7 +672,7 @@ ffprobe(1),
 @ifset config-not-all
 ffprobe-all(1),
 @end ifset
-ffmpeg(1), ffplay(1), ffserver(1),
+ffmpeg(1), ffplay(1),
 ffmpeg-utils(1), ffmpeg-scaler(1), ffmpeg-resampler(1),
 ffmpeg-codecs(1), ffmpeg-bitstream-filters(1), ffmpeg-formats(1),
 ffmpeg-devices(1), ffmpeg-protocols(1), ffmpeg-filters(1)

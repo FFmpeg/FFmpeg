@@ -119,12 +119,13 @@ typedef struct H264SEIBufferingPeriod {
 
 typedef struct H264SEIFramePacking {
     int present;
-    int frame_packing_arrangement_id;
-    int frame_packing_arrangement_cancel_flag;  ///< is previous arrangement canceled, -1 if never received
-    H264_SEI_FpaType frame_packing_arrangement_type;
-    int frame_packing_arrangement_repetition_period;
+    int arrangement_id;
+    int arrangement_cancel_flag;  ///< is previous arrangement canceled, -1 if never received
+    H264_SEI_FpaType arrangement_type;
+    int arrangement_repetition_period;
     int content_interpretation_type;
     int quincunx_sampling_flag;
+    int current_frame_is_frame0_flag;
 } H264SEIFramePacking;
 
 typedef struct H264SEIDisplayOrientation {

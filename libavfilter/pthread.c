@@ -85,10 +85,6 @@ int ff_graph_thread_init(AVFilterGraph *graph)
 {
     int ret;
 
-#if HAVE_W32THREADS
-    w32thread_init();
-#endif
-
     if (graph->nb_threads == 1) {
         graph->thread_type = 0;
         return 0;

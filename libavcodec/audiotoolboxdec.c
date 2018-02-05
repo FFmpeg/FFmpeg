@@ -597,6 +597,7 @@ static av_cold int ffat_close_decoder(AVCodecContext *avctx)
         .bsfs           = bsf_name, \
         .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY, \
         .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP, \
+        .wrapper_name   = "at", \
     };
 
 FFAT_DEC(aac,          AV_CODEC_ID_AAC, "aac_adtstoasc")

@@ -69,7 +69,8 @@ static inline uint64_t v4l2_get_pts(V4L2Buffer *avbuf)
     int64_t v4l2_pts;
 
     /* convert pts back to encoder timebase */
-    v4l2_pts = avbuf->buf.timestamp.tv_sec * USEC_PER_SEC + avbuf->buf.timestamp.tv_usec;
+    v4l2_pts = (int64_t)avbuf->buf.timestamp.tv_sec * USEC_PER_SEC +
+                        avbuf->buf.timestamp.tv_usec;
 
     return av_rescale_q(v4l2_pts, v4l2_timebase, s->avctx->time_base);
 }
@@ -207,20 +208,23 @@ static void v4l2_free_buffer(void *opaque, uint8_t *unused)
     V4L2Buffer* avbuf = opaque;
     V4L2m2mContext *s = buf_to_m2mctx(avbuf);
 
-    atomic_fetch_sub_explicit(&s->refcount, 1, memory_order_acq_rel);
-    if (s->reinit) {
-        if (!atomic_load(&s->refcount))
-            sem_post(&s->refsync);
-        return;
-    }
+    if (atomic_fetch_sub(&avbuf->context_refcount, 1) == 1) {
+        atomic_fetch_sub_explicit(&s->refcount, 1, memory_order_acq_rel);
 
-    if (avbuf->context->streamon) {
-        ff_v4l2_buffer_enqueue(avbuf);
-        return;
-    }
+        if (s->reinit) {
+            if (!atomic_load(&s->refcount))
+                sem_post(&s->refsync);
+        } else {
+            if (s->draining) {
+                /* no need to queue more buffers to the driver */
+                avbuf->status = V4L2BUF_AVAILABLE;
+            }
+            else if (avbuf->context->streamon)
+                ff_v4l2_buffer_enqueue(avbuf);
+        }
 
-    if (!atomic_load(&s->refcount))
-        ff_v4l2_m2m_codec_end(s->avctx);
+        av_buffer_unref(&avbuf->context_ref);
+    }
 }
 
 static int v4l2_buf_to_bufref(V4L2Buffer *in, int plane, AVBufferRef **buf)
@@ -235,6 +239,17 @@ static int v4l2_buf_to_bufref(V4L2Buffer *in, int plane, AVBufferRef **buf)
                             in->plane_info[plane].length, v4l2_free_buffer, in, 0);
     if (!*buf)
         return AVERROR(ENOMEM);
+
+    if (in->context_ref)
+        atomic_fetch_add(&in->context_refcount, 1);
+    else {
+        in->context_ref = av_buffer_ref(s->self_ref);
+        if (!in->context_ref) {
+            av_buffer_unref(buf);
+            return AVERROR(ENOMEM);
+        }
+        in->context_refcount = 1;
+    }
 
     in->status = V4L2BUF_RET_USER;
     atomic_fetch_add_explicit(&s->refcount, 1, memory_order_relaxed);

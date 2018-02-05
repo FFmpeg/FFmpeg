@@ -13,8 +13,32 @@ version <next>:
 - PCE support for extended channel layouts in the AAC encoder
 - native aptX encoder and decoder
 - Raw aptX muxer and demuxer
-- NVIDIA NVDEC-accelerated H.264, HEVC and VP9 hwaccel decoding
+- NVIDIA NVDEC-accelerated H.264, HEVC, MPEG-1/2/4, VC1, VP8/9 hwaccel decoding
 - Intel QSV-accelerated overlay filter
+- mcompand audio filter
+- acontrast audio filter
+- OpenCL overlay filter
+- video mix filter
+- video normalize filter
+- audio lv2 wrapper filter
+- VAAPI VP8 decoding
+- AMD AMF H.264 and HEVC encoders
+- video fillborders filter
+- video setrange filter
+- nsp demuxer
+- support LibreSSL (via libtls)
+- AVX-512/ZMM support added
+- Dropped support for building for Windows XP. The minimum supported Windows
+  version is Windows Vista.
+- deconvolve video filter
+- entropy video filter
+- hilbert audio filter source
+- aiir audio filter
+- aiff: add support for CD-ROM XA ADPCM
+- Removed the ffserver program
+- Removed the ffmenc and ffmdec muxer and demuxer
+- VideoToolbox HEVC encoder and hwaccel
+- VAAPI-accelerated ProcAmp (color balance), denoise and sharpness filters
 
 
 version 3.4:

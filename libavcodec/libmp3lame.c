@@ -349,4 +349,5 @@ AVCodec ff_libmp3lame_encoder = {
                                                   0 },
     .priv_class            = &libmp3lame_class,
     .defaults              = libmp3lame_defaults,
+    .wrapper_name          = "libmp3lame",
 };

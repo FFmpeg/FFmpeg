@@ -490,12 +490,10 @@ static av_cold int init(AVFilterContext *ctx)
     int i, ret;
 
     for (i = 0; i < s->nb_inputs; i++) {
-        char name[32];
         AVFilterPad pad = { 0 };
 
-        snprintf(name, sizeof(name), "input%d", i);
         pad.type           = AVMEDIA_TYPE_AUDIO;
-        pad.name           = av_strdup(name);
+        pad.name           = av_asprintf("input%d", i);
         if (!pad.name)
             return AVERROR(ENOMEM);
 

@@ -61,6 +61,7 @@ typedef struct LIBVMAFContext {
     int ssim;
     int ms_ssim;
     char *pool;
+    int error;
 } LIBVMAFContext;
 
 #define OFFSET(x) offsetof(LIBVMAFContext, x)
@@ -158,48 +159,63 @@ static void compute_vmaf_score(LIBVMAFContext *s)
 
     format = (char *) s->desc->name;
 
-    s->vmaf_score = compute_vmaf(format, s->width, s->height, read_frame, s,
-                                 s->model_path, s->log_path, s->log_fmt, 0, 0,
-                                 s->enable_transform, s->phone_model, s->psnr,
-                                 s->ssim, s->ms_ssim, s->pool);
+    s->error = compute_vmaf(&s->vmaf_score, format, s->width, s->height,
+                            read_frame, s, s->model_path, s->log_path,
+                            s->log_fmt, 0, 0, s->enable_transform,
+                            s->phone_model, s->psnr, s->ssim,
+                            s->ms_ssim, s->pool);
 }
 
 static void *call_vmaf(void *ctx)
 {
     LIBVMAFContext *s = (LIBVMAFContext *) ctx;
     compute_vmaf_score(s);
-    av_log(ctx, AV_LOG_INFO, "VMAF score: %f\n",s->vmaf_score);
+    if (!s->error) {
+        av_log(ctx, AV_LOG_INFO, "VMAF score: %f\n",s->vmaf_score);
+    } else {
+        pthread_mutex_lock(&s->lock);
+        pthread_cond_signal(&s->cond);
+        pthread_mutex_unlock(&s->lock);
+    }
     pthread_exit(NULL);
+    return NULL;
 }
 
 static int do_vmaf(FFFrameSync *fs)
 {
     AVFilterContext *ctx = fs->parent;
     LIBVMAFContext *s = ctx->priv;
-    AVFrame *main, *ref;
+    AVFrame *master, *ref;
     int ret;
 
-    ret = ff_framesync_dualinput_get(fs, &main, &ref);
+    ret = ff_framesync_dualinput_get(fs, &master, &ref);
     if (ret < 0)
         return ret;
     if (!ref)
-        return ff_filter_frame(ctx->outputs[0], main);
+        return ff_filter_frame(ctx->outputs[0], master);
 
     pthread_mutex_lock(&s->lock);
 
-    while (s->frame_set != 0) {
+    while (s->frame_set && !s->error) {
         pthread_cond_wait(&s->cond, &s->lock);
     }
 
+    if (s->error) {
+        av_log(ctx, AV_LOG_ERROR,
+               "libvmaf encountered an error, check log for details\n");
+        pthread_mutex_unlock(&s->lock);
+        return AVERROR(EINVAL);
+    }
+
     av_frame_ref(s->gref, ref);
-    av_frame_ref(s->gmain, main);
+    av_frame_ref(s->gmain, master);
 
     s->frame_set = 1;
 
     pthread_cond_signal(&s->cond);
     pthread_mutex_unlock(&s->lock);
 
-    return ff_filter_frame(ctx->outputs[0], main);
+    return ff_filter_frame(ctx->outputs[0], master);
 }
 
 static av_cold int init(AVFilterContext *ctx)
@@ -208,6 +224,7 @@ static av_cold int init(AVFilterContext *ctx)
 
     s->gref = av_frame_alloc();
     s->gmain = av_frame_alloc();
+    s->error = 0;
 
     pthread_mutex_init(&s->lock, NULL);
     pthread_cond_init (&s->cond, NULL);

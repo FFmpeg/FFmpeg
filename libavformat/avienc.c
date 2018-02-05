@@ -501,8 +501,14 @@ static int avi_write_header(AVFormatContext *s)
             AVRational dar = av_mul_q(st->sample_aspect_ratio,
                                       (AVRational) { par->width,
                                                      par->height });
-            int num, den;
+            int num, den, fields, i;
             av_reduce(&num, &den, dar.num, dar.den, 0xFFFF);
+            if (par->field_order == AV_FIELD_TT || par->field_order == AV_FIELD_BB ||
+                par->field_order == AV_FIELD_TB || par->field_order == AV_FIELD_BT) {
+                fields = 2; // interlaced
+            } else {
+                fields = 1; // progressive
+            }
 
             avio_wl32(pb, 0); // video format   = unknown
             avio_wl32(pb, 0); // video standard = unknown
@@ -514,17 +520,30 @@ static int avi_write_header(AVFormatContext *s)
             avio_wl16(pb, num);
             avio_wl32(pb, par->width);
             avio_wl32(pb, par->height);
-            avio_wl32(pb, 1); // progressive FIXME
+            avio_wl32(pb, fields); // fields per frame
 
-            avio_wl32(pb, par->height);
-            avio_wl32(pb, par->width);
-            avio_wl32(pb, par->height);
-            avio_wl32(pb, par->width);
-            avio_wl32(pb, 0);
-            avio_wl32(pb, 0);
+            for (i = 0; i < fields; i++) {
+                int start_line;
+                // OpenDML v1.02 is not very specific on what value to use for
+                // start_line when frame data is not coming from a capturing device,
+                // so just use 0/1 depending on the field order for interlaced frames
+                if (par->field_order == AV_FIELD_TT || par->field_order == AV_FIELD_TB) {
+                    start_line = (i == 0) ? 0 : 1;
+                } else if (par->field_order == AV_FIELD_BB || par->field_order == AV_FIELD_BT) {
+                    start_line = (i == 0) ? 1 : 0;
+                } else {
+                    start_line = 0;
+                }
 
-            avio_wl32(pb, 0);
-            avio_wl32(pb, 0);
+                avio_wl32(pb, par->height / fields); // compressed bitmap height
+                avio_wl32(pb, par->width);           // compressed bitmap width
+                avio_wl32(pb, par->height / fields); // valid bitmap height
+                avio_wl32(pb, par->width);           // valid bitmap width
+                avio_wl32(pb, 0);                    // valid bitmap X offset
+                avio_wl32(pb, 0);                    // valid bitmap Y offset
+                avio_wl32(pb, 0);                    // valid X offset in T
+                avio_wl32(pb, start_line);           // valid Y start line
+            }
             ff_end_tag(pb, vprp);
         }
 

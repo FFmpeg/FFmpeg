@@ -98,6 +98,7 @@ struct CeltFrame {
     CeltPVQ             *pvq;
     int channels;
     int output_channels;
+    int apply_phase_inv;
 
     enum CeltBlockSize size;
     int start_band;
@@ -156,7 +157,8 @@ static av_always_inline void celt_renormalize_vector(float *X, int N, float gain
         X[i] *= g;
 }
 
-int ff_celt_init(AVCodecContext *avctx, CeltFrame **f, int output_channels);
+int ff_celt_init(AVCodecContext *avctx, CeltFrame **f, int output_channels,
+                 int apply_phase_inv);
 
 void ff_celt_free(CeltFrame **f);
 

@@ -315,51 +315,6 @@ Possible flags for this option are:
 @item k8
 @end table
 @end table
-
-@item -opencl_bench
-This option is used to benchmark all available OpenCL devices and print the
-results. This option is only available when FFmpeg has been compiled with
-@code{--enable-opencl}.
-
-When FFmpeg is configured with @code{--enable-opencl}, the options for the
-global OpenCL context are set via @option{-opencl_options}. See the
-"OpenCL Options" section in the ffmpeg-utils manual for the complete list of
-supported options. Amongst others, these options include the ability to select
-a specific platform and device to run the OpenCL code on. By default, FFmpeg
-will run on the first device of the first platform. While the options for the
-global OpenCL context provide flexibility to the user in selecting the OpenCL
-device of their choice, most users would probably want to select the fastest
-OpenCL device for their system.
-
-This option assists the selection of the most efficient configuration by
-identifying the appropriate device for the user's system. The built-in
-benchmark is run on all the OpenCL devices and the performance is measured for
-each device. The devices in the results list are sorted based on their
-performance with the fastest device listed first. The user can subsequently
-invoke @command{ffmpeg} using the device deemed most appropriate via
-@option{-opencl_options} to obtain the best performance for the OpenCL
-accelerated code.
-
-Typical usage to use the fastest OpenCL device involve the following steps.
-
-Run the command:
-@example
-ffmpeg -opencl_bench
-@end example
-Note down the platform ID (@var{pidx}) and device ID (@var{didx}) of the first
-i.e. fastest device in the list.
-Select the platform and device using the command:
-@example
-ffmpeg -opencl_options platform_idx=@var{pidx}:device_idx=@var{didx} ...
-@end example
-
-@item -opencl_options options (@emph{global})
-Set OpenCL environment options. This option is only available when
-FFmpeg has been compiled with @code{--enable-opencl}.
-
-@var{options} must be a list of @var{key}=@var{value} option pairs
-separated by ':'. See the ``OpenCL Options'' section in the
-ffmpeg-utils manual for the list of supported options.
 @end table
 
 @section AVOptions

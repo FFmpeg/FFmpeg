@@ -128,7 +128,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     nb_samples = rubberband_available(s->rbs);
     if (nb_samples > 0) {
-        out = ff_get_audio_buffer(inlink, nb_samples);
+        out = ff_get_audio_buffer(outlink, nb_samples);
         if (!out) {
             av_frame_free(&in);
             return AVERROR(ENOMEM);
@@ -187,7 +187,7 @@ static int request_frame(AVFilterLink *outlink)
             nb_samples = rubberband_available(s->rbs);
 
             if (nb_samples > 0) {
-                out = ff_get_audio_buffer(inlink, nb_samples);
+                out = ff_get_audio_buffer(outlink, nb_samples);
                 if (!out)
                     return AVERROR(ENOMEM);
                 out->pts = av_rescale_q(s->nb_samples_out,

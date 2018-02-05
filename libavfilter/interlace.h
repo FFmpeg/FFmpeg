@@ -62,6 +62,7 @@ typedef struct InterlaceContext {
                          ptrdiff_t mref, ptrdiff_t pref, int clip_max);
 } InterlaceContext;
 
-void ff_interlace_init_x86(InterlaceContext *interlace);
+void ff_interlace_init(InterlaceContext *interlace, int depth);
+void ff_interlace_init_x86(InterlaceContext *interlace, int depth);
 
 #endif /* AVFILTER_INTERLACE_H */

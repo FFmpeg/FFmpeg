@@ -287,6 +287,12 @@ static int select_rc_mode(AVCodecContext *avctx, QSVEncContext *q)
         return AVERROR(EINVAL);
     }
 
+    if (!want_qscale && avctx->global_quality > 0 && !QSV_HAVE_ICQ){
+        av_log(avctx, AV_LOG_ERROR,
+               "ICQ ratecontrol mode requested, but is not supported by this SDK version\n");
+        return AVERROR(ENOSYS);
+    }
+
     if (want_qscale) {
         rc_mode = MFX_RATECONTROL_CQP;
         rc_desc = "constant quantization parameter (CQP)";
@@ -495,6 +501,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
 #if QSV_HAVE_VCM
     case MFX_RATECONTROL_VCM:
 #endif
+        q->param.mfx.BufferSizeInKB   = avctx->rc_buffer_size / 8000;
         q->param.mfx.InitialDelayInKB = avctx->rc_initial_buffer_occupancy / 1000;
         q->param.mfx.TargetKbps       = avctx->bit_rate / 1000;
         q->param.mfx.MaxKbps          = avctx->rc_max_rate / 1000;
@@ -532,14 +539,6 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     if (avctx->codec_id != AV_CODEC_ID_HEVC) {
         q->extco.Header.BufferId      = MFX_EXTBUFF_CODING_OPTION;
         q->extco.Header.BufferSz      = sizeof(q->extco);
-#if FF_API_CODER_TYPE
-FF_DISABLE_DEPRECATION_WARNINGS
-        if (avctx->coder_type != 0)
-            q->cavlc = avctx->coder_type == FF_CODER_TYPE_VLC;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-        q->extco.CAVLC = q->cavlc ? MFX_CODINGOPTION_ON
-                                  : MFX_CODINGOPTION_UNKNOWN;
 
         q->extco.PicTimingSEI         = q->pic_timing_sei ?
                                         MFX_CODINGOPTION_ON : MFX_CODINGOPTION_UNKNOWN;
@@ -548,6 +547,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
             q->extco.RateDistortionOpt = q->rdo > 0 ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
 
         if (avctx->codec_id == AV_CODEC_ID_H264) {
+#if FF_API_CODER_TYPE
+FF_DISABLE_DEPRECATION_WARNINGS
+            if (avctx->coder_type >= 0)
+                q->cavlc = avctx->coder_type == FF_CODER_TYPE_VLC;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+            q->extco.CAVLC = q->cavlc ? MFX_CODINGOPTION_ON
+                                      : MFX_CODINGOPTION_UNKNOWN;
+
             if (avctx->strict_std_compliance != FF_COMPLIANCE_NORMAL)
                 q->extco.NalHrdConformance = avctx->strict_std_compliance > FF_COMPLIANCE_NORMAL ?
                                              MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
@@ -591,6 +599,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
             q->extco2.Trellis = q->trellis;
 #endif
 
+#if QSV_HAVE_LA_DS
+            q->extco2.LookAheadDS = q->look_ahead_downsampling;
+#endif
+
 #if QSV_HAVE_BREF_TYPE
 #if FF_API_PRIVATE_OPT
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -607,10 +619,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
             q->extparam_internal[q->nb_extparam_internal++] = (mfxExtBuffer *)&q->extco2;
-
-#if QSV_HAVE_LA_DS
-            q->extco2.LookAheadDS           = q->look_ahead_downsampling;
-#endif
         }
 #endif
     }

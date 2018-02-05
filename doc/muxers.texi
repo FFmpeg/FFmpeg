@@ -247,6 +247,13 @@ DASH-templated name to used for the initialization segment. Default is "init-str
 DASH-templated name to used for the media segments. Default is "chunk-stream$RepresentationID$-$Number%05d$.m4s"
 @item -utc_timing_url @var{utc_url}
 URL of the page that will return the UTC timestamp in ISO format. Example: "https://time.akamai.com/?iso"
+@item -http_user_agent @var{user_agent}
+Override User-Agent field in HTTP header. Applicable only for HTTP output.
+@item -http_persistent @var{http_persistent}
+Use persistent HTTP connections. Applicable only for HTTP output.
+@item -hls_playlist @var{hls_playlist}
+Generate HLS playlist files as well. The master playlist is generated with the filename master.m3u8.
+One media playlist file is generated for each stream with filenames media_0.m3u8, media_1.m3u8, etc.
 @item -adaptation_sets @var{adaptation_sets}
 Assign streams to AdaptationSets. Syntax is "id=x,streams=a,b,c id=y,streams=d,e" with x and y being the IDs
 of the adaptation sets and a,b,c,d and e are the indices of the mapped streams.
@@ -570,6 +577,31 @@ Should a relative path be specified, the path of the created segment
 files will be relative to the current working directory.
 When use_localtime_mkdir is set, the whole expanded value of @var{filename} will be written into the m3u8 segment list.
 
+When @code{var_stream_map} is set with two or more variant streams, the
+@var{filename} pattern must contain the string "%v", this string specifies
+the position of variant stream index in the generated segment file names.
+@example
+ffmpeg -i in.ts -b:v:0 1000k -b:v:1 256k -b:a:0 64k -b:a:1 32k \
+  -map 0:v -map 0:a -map 0:v -map 0:a -f hls -var_stream_map "v:0,a:0 v:1,a:1" \
+  -hls_segment_filename 'file_%v_%03d.ts' out_%v.m3u8
+@end example
+This example will produce the playlists segment file sets:
+@file{file_0_000.ts}, @file{file_0_001.ts}, @file{file_0_002.ts}, etc. and
+@file{file_1_000.ts}, @file{file_1_001.ts}, @file{file_1_002.ts}, etc.
+
+The string "%v" may be present in the filename or in the last directory name
+containing the file. If the string is present in the directory name, then
+sub-directories are created after expanding the directory name pattern. This
+enables creation of segments corresponding to different variant streams in
+subdirectories.
+@example
+ffmpeg -i in.ts -b:v:0 1000k -b:v:1 256k -b:a:0 64k -b:a:1 32k \
+  -map 0:v -map 0:a -map 0:v -map 0:a -f hls -var_stream_map "v:0,a:0 v:1,a:1" \
+  -hls_segment_filename 'vs%v/file_%03d.ts' vs%v/out.m3u8
+@end example
+This example will produce the playlists segment file sets:
+@file{vs0/file_000.ts}, @file{vs0/file_001.ts}, @file{vs0/file_002.ts}, etc. and
+@file{vs1/file_000.ts}, @file{vs1/file_001.ts}, @file{vs1/file_002.ts}, etc.
 
 @item use_localtime
 Use strftime() on @var{filename} to expand the segment filename with localtime.
@@ -696,6 +728,15 @@ the fmp4 files is used in hls after version 7.
 @item hls_fmp4_init_filename @var{filename}
 set filename to the fragment files header file, default filename is @file{init.mp4}.
 
+When @code{var_stream_map} is set with two or more variant streams, the
+@var{filename} pattern must contain the string "%v", this string specifies
+the position of variant stream index in the generated init file names.
+The string "%v" may be present in the filename or in the last directory name
+containing the file. If the string is present in the directory name, then
+sub-directories are created after expanding the directory name pattern. This
+enables creation of init files corresponding to different variant streams in
+subdirectories.
+
 @item hls_flags @var{flags}
 Possible values:
 
@@ -734,6 +775,10 @@ Do not append the @code{EXT-X-ENDLIST} tag at the end of the playlist.
 The file specified by @code{hls_key_info_file} will be checked periodically and
 detect updates to the encryption info. Be sure to replace this file atomically,
 including the file containing the AES encryption key.
+
+@item independent_segments
+Add the @code{#EXT-X-INDEPENDENT-SEGMENTS} to playlists that has video segments
+and when all the segments of that playlist are guaranteed to start with a Key frame.
 
 @item split_by_time
 Allow segments to start on frames other than keyframes. This improves
@@ -796,6 +841,125 @@ files.
 
 @item http_user_agent
 Override User-Agent field in HTTP header. Applicable only for HTTP output.
+
+@item var_stream_map
+Map string which specifies how to group the audio, video and subtitle streams
+into different variant streams. The variant stream groups are separated
+by space.
+Expected string format is like this "a:0,v:0 a:1,v:1 ....". Here a:, v:, s: are
+the keys to specify audio, video and subtitle streams respectively.
+Allowed values are 0 to 9 (limited just based on practical usage).
+
+When there are two or more variant streams, the output filename pattern must
+contain the string "%v", this string specifies the position of variant stream
+index in the output media playlist filenames. The string "%v" may be present in
+the filename or in the last directory name containing the file. If the string is
+present in the directory name, then sub-directories are created after expanding
+the directory name pattern. This enables creation of variant streams in
+subdirectories.
+
+@example
+ffmpeg -re -i in.ts -b:v:0 1000k -b:v:1 256k -b:a:0 64k -b:a:1 32k \
+  -map 0:v -map 0:a -map 0:v -map 0:a -f hls -var_stream_map "v:0,a:0 v:1,a:1" \
+  http://example.com/live/out_%v.m3u8
+@end example
+This example creates two hls variant streams. The first variant stream will
+contain video stream of bitrate 1000k and audio stream of bitrate 64k and the
+second variant stream will contain video stream of bitrate 256k and audio
+stream of bitrate 32k. Here, two media playlist with file names out_0.m3u8 and
+out_1.m3u8 will be created.
+@example
+ffmpeg -re -i in.ts -b:v:0 1000k -b:v:1 256k -b:a:0 64k \
+  -map 0:v -map 0:a -map 0:v -f hls -var_stream_map "v:0 a:0 v:1" \
+  http://example.com/live/out_%v.m3u8
+@end example
+This example creates three hls variant streams. The first variant stream will
+be a video only stream with video bitrate 1000k, the second variant stream will
+be an audio only stream with bitrate 64k and the third variant stream will be a
+video only stream with bitrate 256k. Here, three media playlist with file names
+out_0.m3u8, out_1.m3u8 and out_2.m3u8 will be created.
+@example
+ffmpeg -re -i in.ts -b:v:0 1000k -b:v:1 256k -b:a:0 64k -b:a:1 32k \
+  -map 0:v -map 0:a -map 0:v -map 0:a -f hls -var_stream_map "v:0,a:0 v:1,a:1" \
+  http://example.com/live/vs_%v/out.m3u8
+@end example
+This example creates the variant streams in subdirectories. Here, the first
+media playlist is created at @file{http://example.com/live/vs_0/out.m3u8} and
+the second one at @file{http://example.com/live/vs_1/out.m3u8}.
+@example
+ffmpeg -re -i in.ts -b:a:0 32k -b:a:1 64k -b:v:0 1000k -b:v:1 3000k  \
+  -map 0:a -map 0:a -map 0:v -map 0:v -f hls \
+  -var_stream_map "a:0,agroup:aud_low a:1,agroup:aud_high v:0,agroup:aud_low v:1,agroup:aud_high" \
+  -master_pl_name master.m3u8 \
+  http://example.com/live/out_%v.m3u8
+@end example
+This example creates two audio only and two video only variant streams. In
+addition to the #EXT-X-STREAM-INF tag for each variant stream in the master
+playlist, #EXT-X-MEDIA tag is also added for the two audio only variant streams
+and they are mapped to the two video only variant streams with audio group names
+'aud_low' and 'aud_high'.
+
+By default, a single hls variant containing all the encoded streams is created.
+
+@item cc_stream_map
+Map string which specifies different closed captions groups and their
+attributes. The closed captions stream groups are separated by space.
+Expected string format is like this
+"ccgroup:<group name>,instreamid:<INSTREAM-ID>,language:<language code> ....".
+'ccgroup' and 'instreamid' are mandatory attributes. 'language' is an optional
+attribute.
+The closed captions groups configured using this option are mapped to different
+variant streams by providing the same 'ccgroup' name in the
+@code{var_stream_map} string. If @code{var_stream_map} is not set, then the
+first available ccgroup in @code{cc_stream_map} is mapped to the output variant
+stream. The examples for these two use cases are given below.
+
+@example
+ffmpeg -re -i in.ts -b:v 1000k -b:a 64k -a53cc 1 -f hls \
+  -cc_stream_map "ccgroup:cc,instreamid:CC1,language:en" \
+  -master_pl_name master.m3u8 \
+  http://example.com/live/out.m3u8
+@end example
+This example adds @code{#EXT-X-MEDIA} tag with @code{TYPE=CLOSED-CAPTIONS} in
+the master playlist with group name 'cc', langauge 'en' (english) and
+INSTREAM-ID 'CC1'. Also, it adds @code{CLOSED-CAPTIONS} attribute with group
+name 'cc' for the output variant stream.
+@example
+ffmpeg -re -i in.ts -b:v:0 1000k -b:v:1 256k -b:a:0 64k -b:a:1 32k \
+  -a53cc:0 1 -a53cc:1 1\
+  -map 0:v -map 0:a -map 0:v -map 0:a -f hls \
+  -cc_stream_map "ccgroup:cc,instreamid:CC1,language:en ccgroup:cc,instreamid:CC2,language:sp" \
+  -var_stream_map "v:0,a:0,ccgroup:cc v:1,a:1,ccgroup:cc" \
+  -master_pl_name master.m3u8 \
+  http://example.com/live/out_%v.m3u8
+@end example
+This example adds two @code{#EXT-X-MEDIA} tags with @code{TYPE=CLOSED-CAPTIONS} in
+the master playlist for the INSTREAM-IDs 'CC1' and 'CC2'. Also, it adds
+@code{CLOSED-CAPTIONS} attribute with group name 'cc' for the two output variant
+streams.
+
+@item master_pl_name
+Create HLS master playlist with the given name.
+
+@example
+ffmpeg -re -i in.ts -f hls -master_pl_name master.m3u8 http://example.com/live/out.m3u8
+@end example
+This example creates HLS master playlist with name master.m3u8 and it is
+published at http://example.com/live/
+
+@item master_pl_publish_rate
+Publish master play list repeatedly every after specified number of segment intervals.
+
+@example
+ffmpeg -re -i in.ts -f hls -master_pl_name master.m3u8 \
+-hls_time 2 -master_pl_publish_rate 30 http://example.com/live/out.m3u8
+@end example
+
+This example creates HLS master playlist with name master.m3u8 and keep
+publishing it repeatedly every after 30 segments i.e. every after 60s.
+
+@item http_persistent
+Use persistent HTTP connections. Applicable only for HTTP output.
 
 @end table
 
