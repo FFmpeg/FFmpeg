@@ -981,6 +981,11 @@ Other values include 0 for mono and stereo, 1 for surround sound with masking
 and LFE bandwidth optimizations, and 255 for independent streams with an
 unspecified channel layout.
 
+@item apply_phase_inv (N.A.) (requires libopus >= 1.2)
+If set to 0, disables the use of phase inversion for intensity stereo,
+improving the quality of mono downmixes, but slightly reducing normal stereo
+quality. The default is 1 (phase inversion enabled).
+
 @end table
 
 @anchor{libshine}

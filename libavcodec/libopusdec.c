@@ -25,6 +25,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/ffmath.h"
+#include "libavutil/opt.h"
 
 #include "avcodec.h"
 #include "internal.h"
@@ -33,10 +34,14 @@
 #include "libopus.h"
 
 struct libopus_context {
+    AVClass *class;
     OpusMSDecoder *dec;
     int pre_skip;
 #ifndef OPUS_SET_GAIN
     union { int i; double d; } gain;
+#endif
+#ifdef OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST
+    int apply_phase_inv;
 #endif
 };
 
@@ -136,6 +141,15 @@ static av_cold int libopus_decode_init(AVCodecContext *avc)
     }
 #endif
 
+#ifdef OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST
+    ret = opus_multistream_decoder_ctl(opus->dec,
+                                       OPUS_SET_PHASE_INVERSION_DISABLED(!opus->apply_phase_inv));
+    if (ret != OPUS_OK)
+        av_log(avc, AV_LOG_WARNING,
+               "Unable to set phase inversion: %s\n",
+               opus_strerror(ret));
+#endif
+
     /* Decoder delay (in samples) at 48kHz */
     avc->delay = avc->internal->skip_samples = opus->pre_skip;
 
@@ -209,6 +223,24 @@ static void libopus_flush(AVCodecContext *avc)
     avc->internal->skip_samples = opus->pre_skip;
 }
 
+
+#define OFFSET(x) offsetof(struct libopus_context, x)
+#define FLAGS AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM
+static const AVOption libopusdec_options[] = {
+#ifdef OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST
+    { "apply_phase_inv", "Apply intensity stereo phase inversion", OFFSET(apply_phase_inv), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, FLAGS },
+#endif
+    { NULL },
+};
+
+static const AVClass libopusdec_class = {
+    .class_name = "libopusdec",
+    .item_name  = av_default_item_name,
+    .option     = libopusdec_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+
 AVCodec ff_libopus_decoder = {
     .name           = "libopus",
     .long_name      = NULL_IF_CONFIG_SMALL("libopus Opus"),
@@ -223,5 +255,6 @@ AVCodec ff_libopus_decoder = {
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLT,
                                                      AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
+    .priv_class     = &libopusdec_class,
     .wrapper_name   = "libopus",
 };
