@@ -1309,9 +1309,15 @@ static int mxf_get_sorted_table_segments(MXFContext *mxf, int *nb_sorted_segment
              * We want the smallest values for the keys than what we currently have, unless this is the first such entry this time around.
              * If we come across an entry with the same IndexStartPosition but larger IndexDuration, then we'll prefer it over the one we currently have.
              */
-            if ((i == 0     || s->body_sid > last_body_sid || s->index_sid > last_index_sid || s->index_start_position > last_index_start) &&
-                (best == -1 || s->body_sid < best_body_sid || s->index_sid < best_index_sid || s->index_start_position < best_index_start ||
-                (s->index_start_position == best_index_start && s->index_duration > best_index_duration))) {
+            if ((i == 0 ||
+                 s->body_sid >  last_body_sid ||
+                 s->body_sid == last_body_sid && s->index_sid >  last_index_sid ||
+                 s->body_sid == last_body_sid && s->index_sid == last_index_sid && s->index_start_position > last_index_start) &&
+                (best == -1 ||
+                 s->body_sid <  best_body_sid ||
+                 s->body_sid == best_body_sid && s->index_sid <  best_index_sid ||
+                 s->body_sid == best_body_sid && s->index_sid == best_index_sid && s->index_start_position <  best_index_start ||
+                 s->body_sid == best_body_sid && s->index_sid == best_index_sid && s->index_start_position == best_index_start && s->index_duration > best_index_duration)) {
                 best             = j;
                 best_body_sid    = s->body_sid;
                 best_index_sid   = s->index_sid;
