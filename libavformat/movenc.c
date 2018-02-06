@@ -6079,6 +6079,11 @@ static int mov_init(AVFormatContext *s)
                     av_log(s, AV_LOG_ERROR, "VP9 only supported in MP4.\n");
                     return AVERROR(EINVAL);
                 }
+            } else if (track->par->codec_id == AV_CODEC_ID_VP8) {
+                /* altref frames handling is not defined in the spec as of version v1.0,
+                 * so just forbid muxing VP8 streams altogether until a new version does */
+                av_log(s, AV_LOG_ERROR, "VP8 muxing is currently not supported.\n");
+                return AVERROR_PATCHWELCOME;
             }
         } else if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             track->timescale = st->codecpar->sample_rate;
