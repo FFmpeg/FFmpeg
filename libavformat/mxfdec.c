@@ -162,6 +162,8 @@ typedef struct {
     int intra_only;
     uint64_t sample_count;
     int64_t original_duration; /* st->duration in SampleRate/EditRate units */
+    int index_sid;
+    int body_sid;
 } MXFTrack;
 
 typedef struct MXFDescriptor {
@@ -223,6 +225,15 @@ typedef struct MXFPackage {
     int comment_count;
 } MXFPackage;
 
+typedef struct MXFEssenceContainerData {
+    UID uid;
+    enum MXFMetadataSetType type;
+    UID package_uid;
+    UID package_ul;
+    int index_sid;
+    int body_sid;
+} MXFEssenceContainerData;
+
 typedef struct MXFMetadataSet {
     UID uid;
     enum MXFMetadataSetType type;
@@ -247,6 +258,8 @@ typedef struct MXFContext {
     MXFOP op;
     UID *packages_refs;
     int packages_count;
+    UID *essence_container_data_refs;
+    int essence_container_data_count;
     MXFMetadataSet **metadata_sets;
     int metadata_sets_count;
     AVFormatContext *fc;
@@ -385,18 +398,41 @@ static int klv_read_packet(KLVPacket *klv, AVIOContext *pb)
     return klv->length == -1 ? -1 : 0;
 }
 
-static int mxf_get_stream_index(AVFormatContext *s, KLVPacket *klv)
+static int mxf_get_stream_index(AVFormatContext *s, KLVPacket *klv, int body_sid)
 {
     int i;
 
     for (i = 0; i < s->nb_streams; i++) {
         MXFTrack *track = s->streams[i]->priv_data;
         /* SMPTE 379M 7.3 */
-        if (track && !memcmp(klv->key + sizeof(mxf_essence_element_key), track->track_number, sizeof(track->track_number)))
+        if (track && (!body_sid || !track->body_sid || track->body_sid == body_sid) && !memcmp(klv->key + sizeof(mxf_essence_element_key), track->track_number, sizeof(track->track_number)))
             return i;
     }
     /* return 0 if only one stream, for OP Atom files with 0 as track number */
     return s->nb_streams == 1 ? 0 : -1;
+}
+
+static int find_body_sid_by_offset(MXFContext *mxf, int64_t offset)
+{
+    // we look for partition where the offset is placed
+    int a, b, m;
+    int64_t this_partition;
+
+    a = -1;
+    b = mxf->partitions_count;
+
+    while (b - a > 1) {
+        m         = (a + b) >> 1;
+        this_partition = mxf->partitions[m].this_partition;
+        if (this_partition <= offset)
+            a = m;
+        else
+            b = m;
+    }
+
+    if (a == -1)
+        return 0;
+    return mxf->partitions[a].body_sid;
 }
 
 /* XXX: use AVBitStreamFilter */
@@ -440,6 +476,7 @@ static int mxf_decrypt_triplet(AVFormatContext *s, AVPacket *pkt, KLVPacket *klv
     uint8_t ivec[16];
     uint8_t tmpbuf[16];
     int index;
+    int body_sid;
 
     if (!mxf->aesc && s->key && s->keylen == 16) {
         mxf->aesc = av_aes_alloc();
@@ -457,7 +494,9 @@ static int mxf_decrypt_triplet(AVFormatContext *s, AVPacket *pkt, KLVPacket *klv
     avio_read(pb, klv->key, 16);
     if (!IS_KLV_KEY(klv, mxf_essence_element_key))
         return AVERROR_INVALIDDATA;
-    index = mxf_get_stream_index(s, klv);
+
+    body_sid = find_body_sid_by_offset(mxf, klv->offset);
+    index = mxf_get_stream_index(s, klv, body_sid);
     if (index < 0)
         return AVERROR_INVALIDDATA;
     // source size
@@ -757,6 +796,9 @@ static int mxf_read_content_storage(void *arg, AVIOContext *pb, int tag, int siz
             av_log(mxf->fc, AV_LOG_VERBOSE, "Multiple packages_refs\n");
         av_free(mxf->packages_refs);
         return mxf_read_strong_ref_array(pb, &mxf->packages_refs, &mxf->packages_count);
+    case 0x1902:
+        av_free(mxf->essence_container_data_refs);
+        return mxf_read_strong_ref_array(pb, &mxf->essence_container_data_refs, &mxf->essence_container_data_count);
     }
     return 0;
 }
@@ -889,6 +931,25 @@ static int mxf_read_package(void *arg, AVIOContext *pb, int tag, int size, UID u
     case 0x4406:
         return mxf_read_strong_ref_array(pb, &package->comment_refs,
                                              &package->comment_count);
+    }
+    return 0;
+}
+
+static int mxf_read_essence_container_data(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset)
+{
+    MXFEssenceContainerData *essence_data = arg;
+    switch(tag) {
+        case 0x2701:
+            /* linked package umid UMID */
+            avio_read(pb, essence_data->package_ul, 16);
+            avio_read(pb, essence_data->package_uid, 16);
+            break;
+        case 0x3f06:
+            essence_data->index_sid = avio_rb32(pb);
+            break;
+        case 0x3f07:
+            essence_data->body_sid = avio_rb32(pb);
+            break;
     }
     return 0;
 }
@@ -1996,6 +2057,21 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 av_log(mxf->fc, AV_LOG_ERROR, "material track %d: no corresponding source track found\n", material_track->track_id);
                 break;
             }
+
+            for (k = 0; k < mxf->essence_container_data_count; k++) {
+                MXFEssenceContainerData *essence_data;
+
+                if (!(essence_data = mxf_resolve_strong_ref(mxf, &mxf->essence_container_data_refs[k], EssenceContainerData))) {
+                    av_log(mxf, AV_LOG_TRACE, "could not resolve essence container data strong ref\n");
+                    continue;
+                }
+                if (!memcmp(component->source_package_ul, essence_data->package_ul, sizeof(UID)) && !memcmp(component->source_package_uid, essence_data->package_uid, sizeof(UID))) {
+                    source_track->body_sid = essence_data->body_sid;
+                    source_track->index_sid = essence_data->index_sid;
+                    break;
+                }
+            }
+
             if(source_track && component)
                 break;
         }
@@ -2402,6 +2478,7 @@ static const MXFMetadataReadTableEntry mxf_metadata_read_table[] = {
     { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x0c,0x00 }, mxf_read_pulldown_component, sizeof(MXFPulldownComponent), PulldownComponent },
     { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x04,0x01,0x02,0x02,0x00,0x00 }, mxf_read_cryptographic_context, sizeof(MXFCryptoContext), CryptoContext },
     { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x10,0x01,0x00 }, mxf_read_index_table_segment, sizeof(MXFIndexTableSegment), IndexTableSegment },
+    { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x23,0x00 }, mxf_read_essence_container_data, sizeof(MXFEssenceContainerData), EssenceContainerData },
     { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }, NULL, 0, AnyType },
 };
 
@@ -3111,7 +3188,8 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
         if (IS_KLV_KEY(klv.key, mxf_essence_element_key) ||
             IS_KLV_KEY(klv.key, mxf_canopus_essence_element_key) ||
             IS_KLV_KEY(klv.key, mxf_avid_essence_element_key)) {
-            int index = mxf_get_stream_index(s, &klv);
+            int body_sid = find_body_sid_by_offset(mxf, klv.offset);
+            int index = mxf_get_stream_index(s, &klv, body_sid);
             int64_t next_ofs, next_klv;
             AVStream *st;
 
@@ -3237,6 +3315,7 @@ static int mxf_read_close(AVFormatContext *s)
     int i;
 
     av_freep(&mxf->packages_refs);
+    av_freep(&mxf->essence_container_data_refs);
 
     for (i = 0; i < s->nb_streams; i++)
         s->streams[i]->priv_data = NULL;
