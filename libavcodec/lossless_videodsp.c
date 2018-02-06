@@ -98,6 +98,16 @@ static int add_left_pred_int16_c(uint16_t *dst, const uint16_t *src, unsigned ma
     return acc;
 }
 
+static void add_gradient_pred_c(uint8_t *src, const ptrdiff_t stride, const ptrdiff_t width){
+    int A, B, C, i;
+
+    for (i = 0; i < width; i++) {
+        A = src[i - stride];
+        B = src[i - (stride + 1)];
+        C = src[i - 1];
+        src[i] = (A - B + C + src[i]) & 0xFF;
+    }
+}
 
 void ff_llviddsp_init(LLVidDSPContext *c)
 {
@@ -106,6 +116,7 @@ void ff_llviddsp_init(LLVidDSPContext *c)
     c->add_left_pred              = add_left_pred_c;
 
     c->add_left_pred_int16        = add_left_pred_int16_c;
+    c->add_gradient_pred          = add_gradient_pred_c;
 
     if (ARCH_PPC)
         ff_llviddsp_init_ppc(c);

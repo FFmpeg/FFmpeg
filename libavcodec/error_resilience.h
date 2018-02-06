@@ -20,6 +20,7 @@
 #define AVCODEC_ERROR_RESILIENCE_H
 
 #include <stdint.h>
+#include <stdatomic.h>
 
 #include "avcodec.h"
 #include "me_cmp.h"
@@ -60,7 +61,7 @@ typedef struct ERContext {
     ptrdiff_t mb_stride;
     ptrdiff_t b8_stride;
 
-    volatile int error_count;
+    atomic_int error_count;
     int error_occurred;
     uint8_t *error_status_table;
     uint8_t *er_temp_buffer;

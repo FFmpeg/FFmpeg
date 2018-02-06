@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 #include "libavutil/opt.h"
 #include "libavcodec/internal.h"
 #include <chromaprint.h>
@@ -49,9 +50,9 @@ typedef struct ChromaprintMuxContext {
 static void cleanup(ChromaprintMuxContext *cpr)
 {
     if (cpr->ctx) {
-        avpriv_lock_avformat();
+        ff_lock_avformat();
         chromaprint_free(cpr->ctx);
-        avpriv_unlock_avformat();
+        ff_unlock_avformat();
     }
 }
 
@@ -60,9 +61,9 @@ static int write_header(AVFormatContext *s)
     ChromaprintMuxContext *cpr = s->priv_data;
     AVStream *st;
 
-    avpriv_lock_avformat();
+    ff_lock_avformat();
     cpr->ctx = chromaprint_new(cpr->algorithm);
-    avpriv_unlock_avformat();
+    ff_unlock_avformat();
 
     if (!cpr->ctx) {
         av_log(s, AV_LOG_ERROR, "Failed to create chromaprint context.\n");

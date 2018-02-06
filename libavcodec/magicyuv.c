@@ -53,6 +53,7 @@ typedef struct HuffEntry {
 typedef struct MagicYUVContext {
     AVFrame          *p;
     int               max;
+    int               bps;
     int               slice_height;
     int               nb_slices;
     int               planes;         // number of encoded planes in bitstream
@@ -65,7 +66,7 @@ typedef struct MagicYUVContext {
     int               vshift[4];
     Slice            *slices[4];      // slice bitstream positions for each plane
     unsigned int      slices_size[4]; // slice sizes for each plane
-    uint8_t           len[4][1024];   // table of code lengths for each plane
+    uint8_t           len[4][4096];   // table of code lengths for each plane
     VLC               vlc[4];         // VLC for each plane
     int (*huff_build)(VLC *vlc, uint8_t *len);
     int (*magy_decode_slice)(AVCodecContext *avctx, void *tdata,
@@ -85,6 +86,12 @@ static int huff_cmp_len10(const void *a, const void *b)
     return (aa->len - bb->len) * 1024 + aa->sym - bb->sym;
 }
 
+static int huff_cmp_len12(const void *a, const void *b)
+{
+    const HuffEntry *aa = a, *bb = b;
+    return (aa->len - bb->len) * 4096 + aa->sym - bb->sym;
+}
+
 static int huff_build10(VLC *vlc, uint8_t *len)
 {
     HuffEntry he[1024];
@@ -97,7 +104,7 @@ static int huff_build10(VLC *vlc, uint8_t *len)
     for (i = 0; i < 1024; i++) {
         he[i].sym = 1023 - i;
         he[i].len = len[i];
-        if (len[i] == 0)
+        if (len[i] == 0 || len[i] > 32)
             return AVERROR_INVALIDDATA;
     }
     AV_QSORT(he, 1024, HuffEntry, huff_cmp_len10);
@@ -117,6 +124,38 @@ static int huff_build10(VLC *vlc, uint8_t *len)
                               syms,  sizeof(*syms),  sizeof(*syms), 0);
 }
 
+static int huff_build12(VLC *vlc, uint8_t *len)
+{
+    HuffEntry he[4096];
+    uint32_t codes[4096];
+    uint8_t bits[4096];
+    uint16_t syms[4096];
+    uint32_t code;
+    int i;
+
+    for (i = 0; i < 4096; i++) {
+        he[i].sym = 4095 - i;
+        he[i].len = len[i];
+        if (len[i] == 0 || len[i] > 32)
+            return AVERROR_INVALIDDATA;
+    }
+    AV_QSORT(he, 4096, HuffEntry, huff_cmp_len12);
+
+    code = 1;
+    for (i = 4095; i >= 0; i--) {
+        codes[i] = code >> (32 - he[i].len);
+        bits[i]  = he[i].len;
+        syms[i]  = he[i].sym;
+        code += 0x80000000u >> (he[i].len - 1);
+    }
+
+    ff_free_vlc(vlc);
+    return ff_init_vlc_sparse(vlc, FFMIN(he[4095].len, 14), 4096,
+                              bits,  sizeof(*bits),  sizeof(*bits),
+                              codes, sizeof(*codes), sizeof(*codes),
+                              syms,  sizeof(*syms),  sizeof(*syms), 0);
+}
+
 static int huff_build(VLC *vlc, uint8_t *len)
 {
     HuffEntry he[256];
@@ -129,7 +168,7 @@ static int huff_build(VLC *vlc, uint8_t *len)
     for (i = 0; i < 256; i++) {
         he[i].sym = 255 - i;
         he[i].len = len[i];
-        if (len[i] == 0)
+        if (len[i] == 0 || len[i] > 32)
             return AVERROR_INVALIDDATA;
     }
     AV_QSORT(he, 256, HuffEntry, huff_cmp_len);
@@ -149,9 +188,9 @@ static int huff_build(VLC *vlc, uint8_t *len)
                               syms,  sizeof(*syms),  sizeof(*syms), 0);
 }
 
-static void magicyuv_median_pred10(uint16_t *dst, const uint16_t *src1,
+static void magicyuv_median_pred16(uint16_t *dst, const uint16_t *src1,
                                    const uint16_t *diff, intptr_t w,
-                                   int *left, int *left_top)
+                                   int *left, int *left_top, int max)
 {
     int i;
     uint16_t l, lt;
@@ -161,7 +200,7 @@ static void magicyuv_median_pred10(uint16_t *dst, const uint16_t *src1,
 
     for (i = 0; i < w; i++) {
         l      = mid_pred(l, src1[i], (l + src1[i] - lt)) + diff[i];
-        l     &= 0x3FF;
+        l     &= max;
         lt     = src1[i];
         dst[i] = l;
     }
@@ -175,6 +214,8 @@ static int magy_decode_slice10(AVCodecContext *avctx, void *tdata,
 {
     MagicYUVContext *s = avctx->priv_data;
     int interlaced = s->interlaced;
+    const int bps = s->bps;
+    const int max = s->max - 1;
     AVFrame *p = s->p;
     int i, k, x;
     GetBitContext gb;
@@ -201,7 +242,7 @@ static int magy_decode_slice10(AVCodecContext *avctx, void *tdata,
         if (flags & 1) {
             for (k = 0; k < height; k++) {
                 for (x = 0; x < width; x++)
-                    dst[x] = get_bits(&gb, 10);
+                    dst[x] = get_bits(&gb, bps);
 
                 dst += stride;
             }
@@ -216,7 +257,7 @@ static int magy_decode_slice10(AVCodecContext *avctx, void *tdata,
                     if (pix < 0)
                         return AVERROR_INVALIDDATA;
 
-                    dst[x] = 1023 - pix;
+                    dst[x] = max - pix;
                 }
                 dst += stride;
             }
@@ -225,52 +266,49 @@ static int magy_decode_slice10(AVCodecContext *avctx, void *tdata,
         switch (pred) {
         case LEFT:
             dst = (uint16_t *)p->data[i] + j * sheight * stride;
-            s->llviddsp.add_left_pred_int16(dst, dst, 1023, width, 0);
+            s->llviddsp.add_left_pred_int16(dst, dst, max, width, 0);
             dst += stride;
             if (interlaced) {
-                s->llviddsp.add_left_pred_int16(dst, dst, 1023, width, 0);
+                s->llviddsp.add_left_pred_int16(dst, dst, max, width, 0);
                 dst += stride;
             }
             for (k = 1 + interlaced; k < height; k++) {
-                s->llviddsp.add_left_pred_int16(dst, dst, 1023, width, dst[-fake_stride]);
+                s->llviddsp.add_left_pred_int16(dst, dst, max, width, dst[-fake_stride]);
                 dst += stride;
             }
             break;
         case GRADIENT:
             dst = (uint16_t *)p->data[i] + j * sheight * stride;
-            s->llviddsp.add_left_pred_int16(dst, dst, 1023, width, 0);
-            left = lefttop = 0;
+            s->llviddsp.add_left_pred_int16(dst, dst, max, width, 0);
             dst += stride;
             if (interlaced) {
-                s->llviddsp.add_left_pred_int16(dst, dst, 1023, width, 0);
-                left = lefttop = 0;
+                s->llviddsp.add_left_pred_int16(dst, dst, max, width, 0);
                 dst += stride;
             }
             for (k = 1 + interlaced; k < height; k++) {
                 top = dst[-fake_stride];
                 left = top + dst[0];
-                dst[0] = left & 0x3FF;
+                dst[0] = left & max;
                 for (x = 1; x < width; x++) {
                     top = dst[x - fake_stride];
                     lefttop = dst[x - (fake_stride + 1)];
                     left += top - lefttop + dst[x];
-                    dst[x] = left & 0x3FF;
+                    dst[x] = left & max;
                 }
                 dst += stride;
             }
             break;
         case MEDIAN:
             dst = (uint16_t *)p->data[i] + j * sheight * stride;
-            lefttop = left = dst[0];
-            s->llviddsp.add_left_pred_int16(dst, dst, 1023, width, 0);
+            s->llviddsp.add_left_pred_int16(dst, dst, max, width, 0);
             dst += stride;
             if (interlaced) {
-                lefttop = left = dst[0];
-                s->llviddsp.add_left_pred_int16(dst, dst, 1023, width, 0);
+                s->llviddsp.add_left_pred_int16(dst, dst, max, width, 0);
                 dst += stride;
             }
+            lefttop = left = dst[0];
             for (k = 1 + interlaced; k < height; k++) {
-                magicyuv_median_pred10(dst, dst - fake_stride, dst, width, &left, &lefttop);
+                magicyuv_median_pred16(dst, dst - fake_stride, dst, width, &left, &lefttop, max);
                 lefttop = left = dst[0];
                 dst += stride;
             }
@@ -289,8 +327,8 @@ static int magy_decode_slice10(AVCodecContext *avctx, void *tdata,
 
         for (i = 0; i < height; i++) {
             for (k = 0; k < width; k++) {
-                b[k] = (b[k] + g[k]) & 0x3FF;
-                r[k] = (r[k] + g[k]) & 0x3FF;
+                b[k] = (b[k] + g[k]) & max;
+                r[k] = (r[k] + g[k]) & max;
             }
             b += p->linesize[0] / 2;
             g += p->linesize[1] / 2;
@@ -307,7 +345,7 @@ static int magy_decode_slice(AVCodecContext *avctx, void *tdata,
     MagicYUVContext *s = avctx->priv_data;
     int interlaced = s->interlaced;
     AVFrame *p = s->p;
-    int i, k, x;
+    int i, k, x, min_width;
     GetBitContext gb;
     uint8_t *dst;
 
@@ -370,36 +408,36 @@ static int magy_decode_slice(AVCodecContext *avctx, void *tdata,
         case GRADIENT:
             dst = p->data[i] + j * sheight * stride;
             s->llviddsp.add_left_pred(dst, dst, width, 0);
-            left = lefttop = 0;
             dst += stride;
             if (interlaced) {
                 s->llviddsp.add_left_pred(dst, dst, width, 0);
-                left = lefttop = 0;
                 dst += stride;
             }
+            min_width = FFMIN(width, 32);
             for (k = 1 + interlaced; k < height; k++) {
                 top = dst[-fake_stride];
                 left = top + dst[0];
                 dst[0] = left;
-                for (x = 1; x < width; x++) {
+                for (x = 1; x < min_width; x++) { /* dsp need aligned 32 */
                     top = dst[x - fake_stride];
                     lefttop = dst[x - (fake_stride + 1)];
                     left += top - lefttop + dst[x];
                     dst[x] = left;
                 }
+                if (width > 32)
+                    s->llviddsp.add_gradient_pred(dst + 32, fake_stride, width - 32);
                 dst += stride;
             }
             break;
         case MEDIAN:
             dst = p->data[i] + j * sheight * stride;
-            lefttop = left = dst[0];
             s->llviddsp.add_left_pred(dst, dst, width, 0);
             dst += stride;
             if (interlaced) {
-                lefttop = left = dst[0];
                 s->llviddsp.add_left_pred(dst, dst, width, 0);
                 dst += stride;
             }
+            lefttop = left = dst[0];
             for (k = 1 + interlaced; k < height; k++) {
                 s->llviddsp.add_median_pred(dst, dst - fake_stride,
                                              dst, width, &left, &lefttop);
@@ -438,9 +476,9 @@ static int build_huffman(AVCodecContext *avctx, GetBitContext *gbit, int max)
 
     memset(s->len, 0, sizeof(s->len));
     while (get_bits_left(gbit) >= 8) {
-        int b = get_bits(gbit, 4);
-        int x = get_bits(gbit, 4);
-        int l = get_bitsz(gbit, b) + 1;
+        int b = get_bits(gbit, 1);
+        int x = get_bits(gbit, 7);
+        int l = get_bitsz(gbit, b * 8) + 1;
 
         for (k = 0; k < l; k++)
             if (j + k < max)
@@ -458,6 +496,7 @@ static int build_huffman(AVCodecContext *avctx, GetBitContext *gbit, int max)
                 break;
             }
         } else if (j > max) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid Huffman codes\n");
             return AVERROR_INVALIDDATA;
         }
     }
@@ -505,6 +544,7 @@ static int magy_decode_frame(AVCodecContext *avctx, void *data,
     s->vshift[2] = 0;
     s->decorrelate = 0;
     s->max = 256;
+    s->bps = 8;
     s->huff_build = huff_build;
     s->magy_decode_slice = magy_decode_slice;
 
@@ -546,6 +586,7 @@ static int magy_decode_frame(AVCodecContext *avctx, void *data,
         s->max = 1024;
         s->huff_build = huff_build10;
         s->magy_decode_slice = magy_decode_slice10;
+        s->bps = 10;
         break;
     case 0x6d:
         avctx->pix_fmt = AV_PIX_FMT_GBRP10;
@@ -553,6 +594,7 @@ static int magy_decode_frame(AVCodecContext *avctx, void *data,
         s->max = 1024;
         s->huff_build = huff_build10;
         s->magy_decode_slice = magy_decode_slice10;
+        s->bps = 10;
         break;
     case 0x6e:
         avctx->pix_fmt = AV_PIX_FMT_GBRAP10;
@@ -560,12 +602,30 @@ static int magy_decode_frame(AVCodecContext *avctx, void *data,
         s->max = 1024;
         s->huff_build = huff_build10;
         s->magy_decode_slice = magy_decode_slice10;
+        s->bps = 10;
+        break;
+    case 0x6f:
+        avctx->pix_fmt = AV_PIX_FMT_GBRP12;
+        s->decorrelate = 1;
+        s->max = 4096;
+        s->huff_build = huff_build12;
+        s->magy_decode_slice = magy_decode_slice10;
+        s->bps = 12;
+        break;
+    case 0x70:
+        avctx->pix_fmt = AV_PIX_FMT_GBRAP12;
+        s->decorrelate = 1;
+        s->max = 4096;
+        s->huff_build = huff_build12;
+        s->magy_decode_slice = magy_decode_slice10;
+        s->bps = 12;
         break;
     case 0x73:
         avctx->pix_fmt = AV_PIX_FMT_GRAY10;
         s->max = 1024;
         s->huff_build = huff_build10;
         s->magy_decode_slice = magy_decode_slice10;
+        s->bps = 10;
         break;
     default:
         avpriv_request_sample(avctx, "Format 0x%X", format);
@@ -663,7 +723,9 @@ static int magy_decode_frame(AVCodecContext *avctx, void *data,
     if (avctx->pix_fmt == AV_PIX_FMT_GBRP   ||
         avctx->pix_fmt == AV_PIX_FMT_GBRAP  ||
         avctx->pix_fmt == AV_PIX_FMT_GBRP10 ||
-        avctx->pix_fmt == AV_PIX_FMT_GBRAP10) {
+        avctx->pix_fmt == AV_PIX_FMT_GBRAP10||
+        avctx->pix_fmt == AV_PIX_FMT_GBRAP12||
+        avctx->pix_fmt == AV_PIX_FMT_GBRP12) {
         FFSWAP(uint8_t*, p->data[0], p->data[1]);
         FFSWAP(int, p->linesize[0], p->linesize[1]);
     } else {

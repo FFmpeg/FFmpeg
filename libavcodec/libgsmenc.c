@@ -63,7 +63,7 @@ static av_cold int libgsm_encode_init(AVCodecContext *avctx) {
         avctx->bit_rate != 13200 /* Very common */ &&
         avctx->bit_rate != 0 /* Unknown; a.o. mov does not set bitrate when decoding */ ) {
         av_log(avctx, AV_LOG_ERROR, "Bitrate 13000bps required for GSM, got %"PRId64"bps\n",
-               (int64_t)avctx->bit_rate);
+               avctx->bit_rate);
         if (avctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL)
             return -1;
     }
@@ -126,6 +126,7 @@ AVCodec ff_libgsm_encoder = {
     .close          = libgsm_encode_close,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
+    .wrapper_name   = "libgsm",
 };
 #endif
 #if CONFIG_LIBGSM_MS_ENCODER
@@ -139,5 +140,6 @@ AVCodec ff_libgsm_ms_encoder = {
     .close          = libgsm_encode_close,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
+    .wrapper_name   = "libgsm",
 };
 #endif

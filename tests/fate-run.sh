@@ -88,6 +88,10 @@ probefmt(){
     run ffprobe${PROGSUF} -show_entries format=format_name -print_format default=nw=1:nk=1 -v 0 "$@"
 }
 
+probetags(){
+    run ffprobe${PROGSUF} -show_entries format_tags -v 0 "$@"
+}
+
 runlocal(){
     test "${V:-0}" -gt 0 && echo ${base}/"$@" ${base} >&3
     ${base}/"$@" ${base}
@@ -127,15 +131,15 @@ ffmpeg(){
 }
 
 framecrc(){
-    ffmpeg "$@" -flags +bitexact -fflags +bitexact -f framecrc -
+    ffmpeg "$@" -bitexact -f framecrc -
 }
 
 ffmetadata(){
-    ffmpeg "$@" -flags +bitexact -fflags +bitexact -f ffmetadata -
+    ffmpeg "$@" -bitexact -f ffmetadata -
 }
 
 framemd5(){
-    ffmpeg "$@" -flags +bitexact -fflags +bitexact -f framemd5 -
+    ffmpeg "$@" -bitexact -f framemd5 -
 }
 
 crc(){
@@ -160,7 +164,7 @@ pcm(){
 fmtstdout(){
     fmt=$1
     shift 1
-    ffmpeg -flags +bitexact -fflags +bitexact "$@" -f $fmt -
+    ffmpeg -bitexact "$@" -f $fmt -
 }
 
 enc_dec_pcm(){
@@ -173,7 +177,7 @@ enc_dec_pcm(){
     cleanfiles=$encfile
     encfile=$(target_path ${encfile})
     ffmpeg -i $src_file "$@" -f $out_fmt -y ${encfile} || return
-    ffmpeg -flags +bitexact -fflags +bitexact -i ${encfile} -c:a pcm_${pcm_fmt} -fflags +bitexact -f ${dec_fmt} -
+    ffmpeg -bitexact -i ${encfile} -c:a pcm_${pcm_fmt} -fflags +bitexact -f ${dec_fmt} -
 }
 
 FLAGS="-flags +bitexact -sws_flags +accurate_rnd+bitexact -fflags +bitexact"
@@ -234,6 +238,15 @@ lavftest(){
     ${base}/lavf-regression.sh $t lavf tests/vsynth1 "$target_exec" "$target_path" "$threads" "$thread_type" "$cpuflags" "$target_samples"
 }
 
+refcmp_metadata(){
+    refcmp=$1
+    pixfmt=$2
+    fuzz=${3:-0.001}
+    ffmpeg $FLAGS $ENC_OPTS \
+        -lavfi "testsrc2=size=300x200:rate=1:duration=5,format=${pixfmt},split[ref][tmp];[tmp]avgblur=4[enc];[enc][ref]${refcmp},metadata=print:file=-" \
+        -f null /dev/null | awk -v ref=${ref} -v fuzz=${fuzz} -f ${base}/refcmp-metadata.awk -
+}
+
 video_filter(){
     filters=$1
     shift
@@ -285,16 +298,16 @@ gapless(){
     cleanfiles="$cleanfiles $decfile1 $decfile2 $decfile3"
 
     # test packet data
-    ffmpeg $extra_args -i "$sample" -flags +bitexact -fflags +bitexact -c:a copy -f framecrc -y $decfile1
+    ffmpeg $extra_args -i "$sample" -bitexact -c:a copy -f framecrc -y $decfile1
     do_md5sum $decfile1
     # test decoded (and cut) data
-    ffmpeg $extra_args -i "$sample" -flags +bitexact -fflags +bitexact -f wav md5:
+    ffmpeg $extra_args -i "$sample" -bitexact -f wav md5:
     # the same as above again, with seeking to the start
-    ffmpeg $extra_args -ss 0 -seek_timestamp 1 -i "$sample" -flags +bitexact -fflags +bitexact -c:a copy -f framecrc -y $decfile2
+    ffmpeg $extra_args -ss 0 -seek_timestamp 1 -i "$sample" -bitexact -c:a copy -f framecrc -y $decfile2
     do_md5sum $decfile2
-    ffmpeg $extra_args -ss 0 -seek_timestamp 1 -i "$sample" -flags +bitexact -fflags +bitexact -f wav md5:
+    ffmpeg $extra_args -ss 0 -seek_timestamp 1 -i "$sample" -bitexact -f wav md5:
     # test packet data, with seeking to a specific position
-    ffmpeg $extra_args -ss 5 -seek_timestamp 1 -i "$sample" -flags +bitexact -fflags +bitexact -c:a copy -f framecrc -y $decfile3
+    ffmpeg $extra_args -ss 5 -seek_timestamp 1 -i "$sample" -bitexact -c:a copy -f framecrc -y $decfile3
     do_md5sum $decfile3
 }
 
@@ -307,7 +320,7 @@ gaplessenc(){
     cleanfiles="$cleanfiles $file1"
 
     # test data after reencoding
-    ffmpeg -i "$sample" -flags +bitexact -fflags +bitexact -map 0:a -c:a $codec -f $format -y "$file1"
+    ffmpeg -i "$sample" -bitexact -map 0:a -c:a $codec -f $format -y "$file1"
     probegaplessinfo "$file1"
 }
 
@@ -319,7 +332,7 @@ audio_match(){
     decfile="${outdir}/${test}.wav"
     cleanfiles="$cleanfiles $decfile"
 
-    ffmpeg -i "$sample" -flags +bitexact -fflags +bitexact $extra_args -y $decfile
+    ffmpeg -i "$sample" -bitexact $extra_args -y $decfile
     tests/audiomatch $decfile $trefile
 }
 
@@ -343,6 +356,10 @@ concat(){
     fi
 }
 
+null(){
+    :
+}
+
 mkdir -p "$outdir"
 
 # Disable globbing: command arguments may contain globbing characters and
@@ -358,7 +375,7 @@ if [ $err -gt 128 ]; then
     test "${sig}" = "${sig%[!A-Za-z]*}" || unset sig
 fi
 
-if test -e "$ref" || test $cmp = "oneline" || test $cmp = "grep" ; then
+if test -e "$ref" || test $cmp = "oneline" || test $cmp = "null" || test $cmp = "grep" ; then
     case $cmp in
         diff)   diff -u -b "$ref" "$outfile"            >$cmpfile ;;
         rawdiff)diff -u    "$ref" "$outfile"            >$cmpfile ;;

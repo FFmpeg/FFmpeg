@@ -786,8 +786,9 @@ static int crystalhd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
         .receive_frame  = crystalhd_receive_frame, \
         .flush          = flush, \
         .bsfs           = bsf_name, \
-        .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING, \
+        .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE, \
         .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUYV422, AV_PIX_FMT_NONE}, \
+        .wrapper_name   = "crystalhd", \
     };
 
 #if CONFIG_H264_CRYSTALHD_DECODER

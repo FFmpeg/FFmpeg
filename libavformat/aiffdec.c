@@ -81,11 +81,10 @@ static void get_meta(AVFormatContext *s, const char *key, int size)
             av_free(str);
             return;
         }
-        size += (size&1)-res;
+        size -= res;
         str[res] = 0;
         av_dict_set(&s->metadata, key, str, AV_DICT_DONT_STRDUP_VAL);
-    }else
-        size+= size&1;
+    }
 
     avio_skip(s->pb, size);
 }
@@ -258,7 +257,8 @@ static int aiff_read_header(AVFormatContext *s)
             position = avio_tell(pb);
             ff_id3v2_read(s, ID3v2_DEFAULT_MAGIC, &id3v2_extra_meta, size);
             if (id3v2_extra_meta)
-                if ((ret = ff_id3v2_parse_apic(s, &id3v2_extra_meta)) < 0) {
+                if ((ret = ff_id3v2_parse_apic(s, &id3v2_extra_meta)) < 0 ||
+                    (ret = ff_id3v2_parse_chapters(s, &id3v2_extra_meta)) < 0) {
                     ff_id3v2_free_extra_meta(&id3v2_extra_meta);
                     return ret;
                 }
@@ -323,6 +323,16 @@ static int aiff_read_header(AVFormatContext *s)
         case MKTAG('C','H','A','N'):
             if(ff_mov_read_chan(s, pb, st, size) < 0)
                 return AVERROR_INVALIDDATA;
+            break;
+        case MKTAG('A','P','C','M'): /* XA ADPCM compressed sound chunk */
+            st->codecpar->codec_id = AV_CODEC_ID_ADPCM_XA;
+            aiff->data_end = avio_tell(pb) + size;
+            offset = avio_tell(pb) + 8;
+            /* This field is unknown and its data seems to be irrelevant */
+            avio_rb32(pb);
+            st->codecpar->block_align = avio_rb32(pb);
+
+            goto got_sound;
             break;
         case 0:
             if (offset > 0 && st->codecpar->block_align) // COMM && SSND

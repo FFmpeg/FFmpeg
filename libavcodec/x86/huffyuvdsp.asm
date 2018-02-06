@@ -24,77 +24,39 @@
 
 SECTION .text
 
+%include "libavcodec/x86/huffyuvdsp_template.asm"
 
-%macro INT16_LOOP 2 ; %1 = a/u (aligned/unaligned), %2 = add/sub
-    movd    m4, maskd
-    SPLATW  m4, m4
-    add     wd, wd
-    test    wq, 2*mmsize - 1
-    jz %%.tomainloop
-    push  tmpq
-%%.wordloop:
-    sub     wq, 2
-%ifidn %2, add
-    mov   tmpw, [srcq+wq]
-    add   tmpw, [dstq+wq]
-%else
-    mov   tmpw, [src1q+wq]
-    sub   tmpw, [src2q+wq]
-%endif
-    and   tmpw, maskw
-    mov     [dstq+wq], tmpw
-    test    wq, 2*mmsize - 1
-    jnz %%.wordloop
-    pop   tmpq
-%%.tomainloop:
-%ifidn %2, add
-    add     srcq, wq
-%else
-    add     src1q, wq
-    add     src2q, wq
-%endif
-    add     dstq, wq
-    neg     wq
-    jz      %%.end
-%%.loop:
-%ifidn %2, add
-    mov%1   m0, [srcq+wq]
-    mov%1   m1, [dstq+wq]
-    mov%1   m2, [srcq+wq+mmsize]
-    mov%1   m3, [dstq+wq+mmsize]
-%else
-    mov%1   m0, [src1q+wq]
-    mov%1   m1, [src2q+wq]
-    mov%1   m2, [src1q+wq+mmsize]
-    mov%1   m3, [src2q+wq+mmsize]
-%endif
-    p%2w    m0, m1
-    p%2w    m2, m3
-    pand    m0, m4
-    pand    m2, m4
-    mov%1   [dstq+wq]       , m0
-    mov%1   [dstq+wq+mmsize], m2
-    add     wq, 2*mmsize
-    jl %%.loop
-%%.end:
-    RET
-%endmacro
+;------------------------------------------------------------------------------
+; void (*add_int16)(uint16_t *dst, const uint16_t *src, unsigned mask, int w);
+;------------------------------------------------------------------------------
 
-%if ARCH_X86_32
-INIT_MMX mmx
+%macro ADD_INT16 0
 cglobal add_int16, 4,4,5, dst, src, mask, w, tmp
-    INT16_LOOP a, add
-%endif
-
-INIT_XMM sse2
-cglobal add_int16, 4,4,5, dst, src, mask, w, tmp
+%if mmsize > 8
     test srcq, mmsize-1
     jnz .unaligned
     test dstq, mmsize-1
     jnz .unaligned
+%endif
     INT16_LOOP a, add
+%if mmsize > 8
 .unaligned:
     INT16_LOOP u, add
+%endif
+%endmacro
+
+%if ARCH_X86_32
+INIT_MMX mmx
+ADD_INT16
+%endif
+
+INIT_XMM sse2
+ADD_INT16
+
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+ADD_INT16
+%endif
 
 ; void add_hfyu_left_pred_bgr32(uint8_t *dst, const uint8_t *src,
 ;                               intptr_t w, uint8_t *left)

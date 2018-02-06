@@ -348,7 +348,7 @@ static void ff_xvmc_decode_mb(struct MpegEncContext *s)
 }
 
 #if CONFIG_MPEG1_XVMC_HWACCEL
-AVHWAccel ff_mpeg1_xvmc_hwaccel = {
+const AVHWAccel ff_mpeg1_xvmc_hwaccel = {
     .name           = "mpeg1_xvmc",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MPEG1VIDEO,
@@ -362,7 +362,7 @@ AVHWAccel ff_mpeg1_xvmc_hwaccel = {
 #endif
 
 #if CONFIG_MPEG2_XVMC_HWACCEL
-AVHWAccel ff_mpeg2_xvmc_hwaccel = {
+const AVHWAccel ff_mpeg2_xvmc_hwaccel = {
     .name           = "mpeg2_xvmc",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MPEG2VIDEO,

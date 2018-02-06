@@ -88,7 +88,7 @@ static const enum AVPixelFormat levels_in_pix_fmts[] = {
     AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA444P10,
     AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV440P12,
     AV_PIX_FMT_GBRAP,    AV_PIX_FMT_GBRP,
-    AV_PIX_FMT_GBRP9,    AV_PIX_FMT_GBRP10,
+    AV_PIX_FMT_GBRP9,    AV_PIX_FMT_GBRP10,  AV_PIX_FMT_GBRAP10,
     AV_PIX_FMT_GBRP12,   AV_PIX_FMT_GBRAP12,
     AV_PIX_FMT_GRAY8,
     AV_PIX_FMT_NONE
@@ -125,7 +125,7 @@ static const enum AVPixelFormat levels_out_rgb9_pix_fmts[] = {
 };
 
 static const enum AVPixelFormat levels_out_rgb10_pix_fmts[] = {
-    AV_PIX_FMT_GBRP10,
+    AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRAP10,
     AV_PIX_FMT_NONE
 };
 
@@ -200,7 +200,9 @@ static int config_input(AVFilterLink *inlink)
     h->mult = h->histogram_size / 256;
 
     switch (inlink->format) {
+    case AV_PIX_FMT_GBRAP12:
     case AV_PIX_FMT_GBRP12:
+    case AV_PIX_FMT_GBRAP10:
     case AV_PIX_FMT_GBRP10:
     case AV_PIX_FMT_GBRP9:
     case AV_PIX_FMT_GBRAP:

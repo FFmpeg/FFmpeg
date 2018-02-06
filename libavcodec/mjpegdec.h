@@ -39,6 +39,8 @@
 #include "hpeldsp.h"
 #include "idctdsp.h"
 
+#undef near /* This file uses struct member 'near' which in windows.h is defined as empty. */
+
 #define MAX_COMPONENTS 4
 
 typedef struct MJpegDecodeContext {
@@ -98,7 +100,7 @@ typedef struct MJpegDecodeContext {
     int got_picture;                                ///< we found a SOF and picture is valid, too.
     int linesize[MAX_COMPONENTS];                   ///< linesize << interlaced
     int8_t *qscale_table;
-    DECLARE_ALIGNED(16, int16_t, block)[64];
+    DECLARE_ALIGNED(32, int16_t, block)[64];
     int16_t (*blocks[MAX_COMPONENTS])[64]; ///< intermediate sums (progressive mode)
     uint8_t *last_nnz[MAX_COMPONENTS];
     uint64_t coefs_finished[MAX_COMPONENTS]; ///< bitmask of which coefs have been completely decoded (progressive mode)
@@ -130,6 +132,11 @@ typedef struct MJpegDecodeContext {
     AVStereo3D *stereo3d; ///!< stereoscopic information (cached, since it is read before frame allocation)
 
     const AVPixFmtDescriptor *pix_desc;
+
+    uint8_t **iccdata;
+    int *iccdatalens;
+    int iccnum;
+    int iccread;
 } MJpegDecodeContext;
 
 int ff_mjpeg_decode_init(AVCodecContext *avctx);

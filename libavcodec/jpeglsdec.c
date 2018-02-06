@@ -233,6 +233,9 @@ static inline void ls_decode_line(JLSState *state, MJpegDecodeContext *s,
     while (x < w) {
         int err, pred;
 
+        if (get_bits_left(&s->gb) <= 0)
+            return;
+
         /* compute gradients */
         Ra = x ? R(dst, x - stride) : R(last, x);
         Rb = R(last, x);
@@ -441,6 +444,10 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
         }
     } else if (ilv == 2) { /* sample interleaving */
         avpriv_report_missing_feature(s->avctx, "Sample interleaved images");
+        ret = AVERROR_PATCHWELCOME;
+        goto end;
+    } else { /* unknown interleaving */
+        avpriv_report_missing_feature(s->avctx, "Unknown interleaved images");
         ret = AVERROR_PATCHWELCOME;
         goto end;
     }

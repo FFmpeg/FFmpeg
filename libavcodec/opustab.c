@@ -772,11 +772,16 @@ const uint8_t ff_celt_log_freq_range[] = {
     0,  0,  0,  0,  0,  0,  0,  0,  8,  8,  8,  8, 16, 16, 16, 21, 21, 24, 29, 34, 36
 };
 
+/* Positive - increased freqeuency resolution (only possible on transients)
+ * Negative - increased time resolution */
 const int8_t ff_celt_tf_select[4][2][2][2] = {
-    { { { 0, -1 }, { 0, -1 } }, { { 0, -1 }, { 0, -1 } } },
-    { { { 0, -1 }, { 0, -2 } }, { { 1,  0 }, { 1, -1 } } },
-    { { { 0, -2 }, { 0, -3 } }, { { 2,  0 }, { 1, -1 } } },
-    { { { 0, -2 }, { 0, -3 } }, { { 3,  0 }, { 1, -1 } } }
+    /*          OFF                        ON                Transient frame */
+    /*     OFF        ON             OFF        ON           TF select flag  */
+    /*   OFF  ON    OFF  ON        OFF  ON    OFF  ON        TF change flag  */
+    { { { 0, -1 }, { 0, -1 } }, { { 0, -1 }, { 0, -1 } } }, /* 120 */
+    { { { 0, -1 }, { 0, -2 } }, { { 1,  0 }, { 1, -1 } } }, /* 240 */
+    { { { 0, -2 }, { 0, -3 } }, { { 2,  0 }, { 1, -1 } } }, /* 480 */
+    { { { 0, -2 }, { 0, -3 } }, { { 3,  0 }, { 1, -1 } } }  /* 960 */
 };
 
 const float ff_celt_mean_energy[] = {
@@ -791,8 +796,8 @@ const float ff_celt_alpha_coef[] = {
     29440.0f/32768.0f,    26112.0f/32768.0f,    21248.0f/32768.0f,    16384.0f/32768.0f
 };
 
-const float ff_celt_beta_coef[] = { /* TODO: precompute 1 minus this if the code ends up neater */
-    30147.0f/32768.0f,    22282.0f/32768.0f,    12124.0f/32768.0f,     6554.0f/32768.0f
+const float ff_celt_beta_coef[] = {
+    1.0f - (30147.0f/32768.0f), 1.0f - (22282.0f/32768.0f), 1.0f - (12124.0f/32768.0f), 1.0f - (6554.0f/32768.0f),
 };
 
 const uint8_t ff_celt_coarse_energy_dist[4][2][42] = {
@@ -1085,7 +1090,15 @@ const uint32_t ff_celt_pvq_u[1272] = {
     1409933619
 };
 
-DECLARE_ALIGNED(32, const float, ff_celt_window)[120] = {
+const float ff_celt_postfilter_taps[3][3] = {
+    { 0.3066406250f, 0.2170410156f, 0.1296386719f },
+    { 0.4638671875f, 0.2680664062f, 0.0           },
+    { 0.7998046875f, 0.1000976562f, 0.0           }
+};
+
+DECLARE_ALIGNED(32, static const float, ff_celt_window_padded)[136] = {
+    0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f,
+    0.00000000f, 0.00000000f, 0.00000000f, 0.00000000f,
     6.7286966e-05f, 0.00060551348f, 0.0016815970f, 0.0032947962f, 0.0054439943f,
     0.0081276923f, 0.011344001f, 0.015090633f, 0.019364886f, 0.024163635f,
     0.029483315f, 0.035319905f, 0.041668911f, 0.048525347f, 0.055883718f,
@@ -1109,8 +1122,12 @@ DECLARE_ALIGNED(32, const float, ff_celt_window)[120] = {
     0.99499004f, 0.99592297f, 0.99672162f, 0.99739874f, 0.99796667f,
     0.99843728f, 0.99882195f, 0.99913147f, 0.99937606f, 0.99956527f,
     0.99970802f, 0.99981248f, 0.99988613f, 0.99993565f, 0.99996697f,
-    0.99998518f, 0.99999457f, 0.99999859f, 0.99999982f, 1.0000000f,
+    0.99998518f, 0.99999457f, 0.99999859f, 0.99999982f, 1.00000000f,
+    1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f, 1.00000000f,
+    1.00000000f, 1.00000000f, 1.00000000f,
 };
+
+const float *ff_celt_window = &ff_celt_window_padded[8];
 
 /* square of the window, used for the postfilter */
 const float ff_celt_window2[120] = {

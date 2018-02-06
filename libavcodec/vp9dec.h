@@ -26,8 +26,10 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdatomic.h>
 
 #include "libavutil/buffer.h"
+#include "libavutil/thread.h"
 #include "libavutil/internal.h"
 
 #include "vp9.h"
@@ -84,20 +86,23 @@ typedef struct VP9Block {
     enum BlockPartition bp;
 } VP9Block;
 
+typedef struct VP9TileData VP9TileData;
+
 typedef struct VP9Context {
     VP9SharedContext s;
+    VP9TileData *td;
 
     VP9DSPContext dsp;
     VideoDSPContext vdsp;
     GetBitContext gb;
     VP56RangeCoder c;
-    VP56RangeCoder *c_b;
-    unsigned c_b_size;
-    VP9Block *b_base, *b;
-    int pass;
-    int row, row7, col, col7;
-    uint8_t *dst[3];
-    ptrdiff_t y_stride, uv_stride;
+    int pass, active_tile_cols;
+
+#if HAVE_THREADS
+    pthread_mutex_t progress_mutex;
+    pthread_cond_t progress_cond;
+    atomic_int *entries;
+#endif
 
     uint8_t ss_h, ss_v;
     uint8_t last_bpp, bpp_index, bytesperpixel;
@@ -115,7 +120,6 @@ typedef struct VP9Context {
         uint8_t lim_lut[64];
         uint8_t mblim_lut[64];
     } filter_lut;
-    unsigned tile_row_start, tile_row_end, tile_col_start, tile_col_end;
     struct {
         ProbContext p;
         uint8_t coef[4][2][2][6][6][3];
@@ -124,6 +128,44 @@ typedef struct VP9Context {
         ProbContext p;
         uint8_t coef[4][2][2][6][6][11];
     } prob;
+
+    // contextual (above) cache
+    uint8_t *above_partition_ctx;
+    uint8_t *above_mode_ctx;
+    // FIXME maybe merge some of the below in a flags field?
+    uint8_t *above_y_nnz_ctx;
+    uint8_t *above_uv_nnz_ctx[2];
+    uint8_t *above_skip_ctx; // 1bit
+    uint8_t *above_txfm_ctx; // 2bit
+    uint8_t *above_segpred_ctx; // 1bit
+    uint8_t *above_intra_ctx; // 1bit
+    uint8_t *above_comp_ctx; // 1bit
+    uint8_t *above_ref_ctx; // 2bit
+    uint8_t *above_filter_ctx;
+    VP56mv (*above_mv_ctx)[2];
+
+    // whole-frame cache
+    uint8_t *intra_pred_data[3];
+    VP9Filter *lflvl;
+
+    // block reconstruction intermediates
+    int block_alloc_using_2pass;
+    uint16_t mvscale[3][2];
+    uint8_t mvstep[3][2];
+} VP9Context;
+
+struct VP9TileData {
+    //VP9Context should be const, but because of the threading API(generates
+    //a lot of warnings) it's not.
+    VP9Context *s;
+    VP56RangeCoder *c_b;
+    VP56RangeCoder *c;
+    int row, row7, col, col7;
+    uint8_t *dst[3];
+    ptrdiff_t y_stride, uv_stride;
+    VP9Block *b_base, *b;
+    unsigned tile_col_start;
+
     struct {
         unsigned y_mode[4][10];
         unsigned uv_mode[10][10];
@@ -153,7 +195,10 @@ typedef struct VP9Context {
         unsigned eob[4][2][2][6][6][2];
     } counts;
 
-    // contextual (left/above) cache
+    // whole-frame cache
+    DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer)[135 * 144 * 2];
+
+    // contextual (left) cache
     DECLARE_ALIGNED(16, uint8_t, left_y_nnz_ctx)[16];
     DECLARE_ALIGNED(16, uint8_t, left_mode_ctx)[16];
     DECLARE_ALIGNED(16, VP56mv, left_mv_ctx)[16][2];
@@ -166,52 +211,30 @@ typedef struct VP9Context {
     DECLARE_ALIGNED(8, uint8_t, left_comp_ctx)[8];
     DECLARE_ALIGNED(8, uint8_t, left_ref_ctx)[8];
     DECLARE_ALIGNED(8, uint8_t, left_filter_ctx)[8];
-    uint8_t *above_partition_ctx;
-    uint8_t *above_mode_ctx;
-    // FIXME maybe merge some of the below in a flags field?
-    uint8_t *above_y_nnz_ctx;
-    uint8_t *above_uv_nnz_ctx[2];
-    uint8_t *above_skip_ctx; // 1bit
-    uint8_t *above_txfm_ctx; // 2bit
-    uint8_t *above_segpred_ctx; // 1bit
-    uint8_t *above_intra_ctx; // 1bit
-    uint8_t *above_comp_ctx; // 1bit
-    uint8_t *above_ref_ctx; // 2bit
-    uint8_t *above_filter_ctx;
-    VP56mv (*above_mv_ctx)[2];
-
-    // whole-frame cache
-    uint8_t *intra_pred_data[3];
-    VP9Filter *lflvl;
-    DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer)[135 * 144 * 2];
-
     // block reconstruction intermediates
-    int block_alloc_using_2pass;
-    int16_t *block_base, *block, *uvblock_base[2], *uvblock[2];
-    uint8_t *eob_base, *uveob_base[2], *eob, *uveob[2];
-    struct { int x, y; } min_mv, max_mv;
     DECLARE_ALIGNED(32, uint8_t, tmp_y)[64 * 64 * 2];
     DECLARE_ALIGNED(32, uint8_t, tmp_uv)[2][64 * 64 * 2];
-    uint16_t mvscale[3][2];
-    uint8_t mvstep[3][2];
-} VP9Context;
+    struct { int x, y; } min_mv, max_mv;
+    int16_t *block_base, *block, *uvblock_base[2], *uvblock[2];
+    uint8_t *eob_base, *uveob_base[2], *eob, *uveob[2];
+};
 
-void ff_vp9_fill_mv(VP9Context *s, VP56mv *mv, int mode, int sb);
+void ff_vp9_fill_mv(VP9TileData *td, VP56mv *mv, int mode, int sb);
 
 void ff_vp9_adapt_probs(VP9Context *s);
 
-void ff_vp9_decode_block(AVCodecContext *ctx, int row, int col,
+void ff_vp9_decode_block(VP9TileData *td, int row, int col,
                          VP9Filter *lflvl, ptrdiff_t yoff, ptrdiff_t uvoff,
                          enum BlockLevel bl, enum BlockPartition bp);
 
 void ff_vp9_loopfilter_sb(AVCodecContext *avctx, VP9Filter *lflvl,
                           int row, int col, ptrdiff_t yoff, ptrdiff_t uvoff);
 
-void ff_vp9_intra_recon_8bpp(AVCodecContext *avctx,
+void ff_vp9_intra_recon_8bpp(VP9TileData *td,
                              ptrdiff_t y_off, ptrdiff_t uv_off);
-void ff_vp9_intra_recon_16bpp(AVCodecContext *avctx,
+void ff_vp9_intra_recon_16bpp(VP9TileData *td,
                               ptrdiff_t y_off, ptrdiff_t uv_off);
-void ff_vp9_inter_recon_8bpp(AVCodecContext *avctx);
-void ff_vp9_inter_recon_16bpp(AVCodecContext *avctx);
+void ff_vp9_inter_recon_8bpp(VP9TileData *td);
+void ff_vp9_inter_recon_16bpp(VP9TileData *td);
 
 #endif /* AVCODEC_VP9DEC_H */

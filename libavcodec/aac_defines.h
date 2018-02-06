@@ -35,6 +35,7 @@
 #define AAC_RENAME(x)       x ## _fixed
 #define AAC_RENAME_32(x)    x ## _fixed_32
 typedef int                 INTFLOAT;
+typedef unsigned            UINTFLOAT;  ///< Equivalent to INTFLOAT, Used as temporal cast to avoid undefined sign overflow operations.
 typedef int64_t             INT64FLOAT;
 typedef int16_t             SHORTFLOAT;
 typedef SoftFloat           AAC_FLOAT;
@@ -83,6 +84,7 @@ typedef int                 AAC_SIGNE;
 #define AAC_RENAME(x)       x
 #define AAC_RENAME_32(x)    x
 typedef float               INTFLOAT;
+typedef float               UINTFLOAT;
 typedef float               INT64FLOAT;
 typedef float               SHORTFLOAT;
 typedef float               AAC_FLOAT;

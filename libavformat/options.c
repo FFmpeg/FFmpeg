@@ -104,7 +104,7 @@ static int io_open_default(AVFormatContext *s, AVIOContext **pb,
 {
     int loglevel;
 
-    if (!strcmp(url, s->filename) ||
+    if (!strcmp(url, s->url) ||
         s->iformat && !strcmp(s->iformat->name, "image2") ||
         s->oformat && !strcmp(s->oformat->name, "image2")
     ) {

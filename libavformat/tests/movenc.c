@@ -115,6 +115,7 @@ static int io_write_data_type(void *opaque, uint8_t *buf, int size,
     case AVIO_DATA_MARKER_BOUNDARY_POINT: str = "boundary"; break;
     case AVIO_DATA_MARKER_UNKNOWN:        str = "unknown";  break;
     case AVIO_DATA_MARKER_TRAILER:        str = "trailer";  break;
+    default:                              str = "unknown";  break;
     }
     if (time == AV_NOPTS_VALUE)
         snprintf(timebuf, sizeof(timebuf), "nopts");
@@ -344,7 +345,7 @@ static void signal_init_ts(void)
 static void finish(void)
 {
     av_write_trailer(ctx);
-    av_free(ctx->pb);
+    avio_context_free(&ctx->pb);
     avformat_free_context(ctx);
     ctx = NULL;
 }
@@ -766,6 +767,25 @@ int main(int argc, char **argv)
     clear_duration = 0;
     do_interleave = 0;
 
+    // Write a fragmented file with b-frames and audio preroll,
+    // with negative cts values, removing the edit list for the
+    // video track.
+    init_out("delay-moov-elst-neg-cts");
+    av_dict_set(&opts, "movflags", "frag_keyframe+delay_moov+negative_cts_offsets", 0);
+    init(1, 1);
+    mux_gops(2);
+    finish();
+    close_out();
+
+    // Write a fragmented file with b-frames without audio preroll,
+    // with negative cts values, avoiding any edit lists, allowing
+    // to use empty_moov instead of delay_moov.
+    init_out("empty-moov-neg-cts");
+    av_dict_set(&opts, "movflags", "frag_keyframe+empty_moov+negative_cts_offsets", 0);
+    init(1, 0);
+    mux_gops(2);
+    finish();
+    close_out();
 
     av_free(md5);
 

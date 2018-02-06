@@ -42,10 +42,6 @@ const uint8_t ff_dca_channels[16] = {
     1, 2, 2, 2, 2, 3, 3, 4, 4, 5, 6, 6, 6, 7, 8, 8
 };
 
-const uint8_t ff_dca_bits_per_sample[8] = {
-    16, 16, 20, 20, 0, 24, 24, 0
-};
-
 const uint8_t ff_dca_dmix_primary_nch[8] = {
     1, 2, 2, 3, 3, 4, 4, 0
 };

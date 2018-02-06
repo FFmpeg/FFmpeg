@@ -72,6 +72,9 @@ static int subfile_open(URLContext *h, const char *filename, int flags,
     SubfileContext *c = h->priv_data;
     int ret;
 
+    if (!c->end)
+        c->end = INT64_MAX;
+
     if (c->end <= c->start) {
         av_log(h, AV_LOG_ERROR, "end before start\n");
         return AVERROR(EINVAL);

@@ -108,7 +108,7 @@ uint32_t ff_opus_rc_dec_cdf(OpusRangeCoder *rc, const uint16_t *cdf)
 
 void ff_opus_rc_enc_cdf(OpusRangeCoder *rc, int val, const uint16_t *cdf)
 {
-    opus_rc_enc_update(rc, cdf[val], cdf[val + 1], cdf[0], 1);
+    opus_rc_enc_update(rc, (!!val)*cdf[val], cdf[val + 1], cdf[0], 1);
 }
 
 uint32_t ff_opus_rc_dec_log(OpusRangeCoder *rc, uint32_t bits)
@@ -381,18 +381,21 @@ void ff_opus_rc_enc_end(OpusRangeCoder *rc, uint8_t *dst, int size)
         opus_rc_enc_carryout(rc, 0);
 
     rng_bytes = rc->rng_cur - rc->buf;
-    rc->waste = (size - (rc->rb.bytes + rng_bytes)) << 3;
     memcpy(dst, rc->buf, rng_bytes);
-    memset(dst + rng_bytes, 0, FFMAX(rc->waste >> 3, 0) + 1);
+
+    rc->waste = size*8 - (rc->rb.bytes*8 + rc->rb.cachelen) - rng_bytes*8;
 
     /* Put the rawbits part, if any */
     if (rc->rb.bytes || rc->rb.cachelen) {
-        int rawbytes = FFALIGN(rc->rb.bytes*8 + rc->rb.cachelen, 8) >> 3;
-        int dst_loc = FFMAX(size - rawbytes, 0);
-        uint8_t *src = rc->buf + OPUS_MAX_PACKET_SIZE + 12 - rawbytes;
+        int i, lap;
+        uint8_t *rb_src, *rb_dst;
         ff_opus_rc_put_raw(rc, 0, 32 - rc->rb.cachelen);
-        dst[dst_loc] |= *src++;
-        memcpy(&dst[dst_loc + 1], src, rawbytes - 1);
+        rb_src = rc->buf + OPUS_MAX_PACKET_SIZE + 12 - rc->rb.bytes;
+        rb_dst = dst + FFMAX(size - rc->rb.bytes, 0);
+        lap = &dst[rng_bytes] - rb_dst;
+        for (i = 0; i < lap; i++)
+            rb_dst[i] |= rb_src[i];
+        memcpy(&rb_dst[lap], &rb_src[lap], FFMAX(rc->rb.bytes - lap, 0));
     }
 }
 

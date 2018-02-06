@@ -65,11 +65,11 @@ static inline int init_pfa_reindex_tabs(MDCT15Context *s)
     const int inv_1 = l_ptwo << ((4 - b_ptwo) & 3); /* (2^b_ptwo)^-1 mod 15 */
     const int inv_2 = 0xeeeeeeef & ((1U << b_ptwo) - 1); /* 15^-1 mod 2^b_ptwo */
 
-    s->pfa_prereindex = av_malloc(15 * l_ptwo * sizeof(*s->pfa_prereindex));
+    s->pfa_prereindex = av_malloc_array(15 * l_ptwo, sizeof(*s->pfa_prereindex));
     if (!s->pfa_prereindex)
         return 1;
 
-    s->pfa_postreindex = av_malloc(15 * l_ptwo * sizeof(*s->pfa_postreindex));
+    s->pfa_postreindex = av_malloc_array(15 * l_ptwo, sizeof(*s->pfa_postreindex));
     if (!s->pfa_postreindex)
         return 1;
 
@@ -80,7 +80,7 @@ static inline int init_pfa_reindex_tabs(MDCT15Context *s)
             const int q_post = (((j*inv_1)/15) + (i*inv_2)) >> b_ptwo;
             const int k_pre = 15*i + (j - q_pre*15)*(1 << b_ptwo);
             const int k_post = i*inv_2*15 + j*inv_1 - 15*q_post*l_ptwo;
-            s->pfa_prereindex[i*15 + j] = k_pre;
+            s->pfa_prereindex[i*15 + j] = k_pre << 1;
             s->pfa_postreindex[k_post] = l_ptwo*j + i;
         }
     }
@@ -173,16 +173,16 @@ static void mdct15(MDCT15Context *s, float *dst, const float *src, ptrdiff_t str
     /* Folding and pre-reindexing */
     for (i = 0; i < l_ptwo; i++) {
         for (j = 0; j < 15; j++) {
-            float re, im;
             const int k = s->pfa_prereindex[i*15 + j];
-            if (k < len8) {
-                re = -src[2*k+len3] - src[len3-1-2*k];
-                im = -src[len4+2*k] + src[len4-1-2*k];
+            FFTComplex tmp, exp = s->twiddle_exptab[k >> 1];
+            if (k < len4) {
+                tmp.re = -src[ len4 + k] + src[1*len4 - 1 - k];
+                tmp.im = -src[ len3 + k] - src[1*len3 - 1 - k];
             } else {
-                re =  src[2*k-len4] - src[1*len3-1-2*k];
-                im = -src[2*k+len4] - src[5*len4-1-2*k];
+                tmp.re = -src[ len4 + k] - src[5*len4 - 1 - k];
+                tmp.im =  src[-len4 + k] - src[1*len3 - 1 - k];
             }
-            CMUL(fft15in[j].re, fft15in[j].im, re, im, s->twiddle_exptab[k].re, -s->twiddle_exptab[k].im);
+            CMUL(fft15in[j].im, fft15in[j].re, tmp.re, tmp.im, exp.re, exp.im);
         }
         s->fft15(s->tmp + s->ptwo_fft.revtab[i], fft15in, s->exptab, l_ptwo);
     }
@@ -193,21 +193,18 @@ static void mdct15(MDCT15Context *s, float *dst, const float *src, ptrdiff_t str
 
     /* Reindex again, apply twiddles and output */
     for (i = 0; i < len8; i++) {
-        float re0, im0, re1, im1;
         const int i0 = len8 + i, i1 = len8 - i - 1;
         const int s0 = s->pfa_postreindex[i0], s1 = s->pfa_postreindex[i1];
 
-        CMUL(im1, re0, s->tmp[s1].re, s->tmp[s1].im, s->twiddle_exptab[i1].im, s->twiddle_exptab[i1].re);
-        CMUL(im0, re1, s->tmp[s0].re, s->tmp[s0].im, s->twiddle_exptab[i0].im, s->twiddle_exptab[i0].re);
-        dst[2*i1*stride         ] = re0;
-        dst[2*i1*stride + stride] = im0;
-        dst[2*i0*stride         ] = re1;
-        dst[2*i0*stride + stride] = im1;
+        CMUL(dst[2*i1*stride + stride], dst[2*i0*stride], s->tmp[s0].re, s->tmp[s0].im,
+             s->twiddle_exptab[i0].im, s->twiddle_exptab[i0].re);
+        CMUL(dst[2*i0*stride + stride], dst[2*i1*stride], s->tmp[s1].re, s->tmp[s1].im,
+             s->twiddle_exptab[i1].im, s->twiddle_exptab[i1].re);
     }
 }
 
 static void imdct15_half(MDCT15Context *s, float *dst, const float *src,
-                         ptrdiff_t stride, float scale)
+                         ptrdiff_t stride)
 {
     FFTComplex fft15in[15];
     FFTComplex *z = (FFTComplex *)dst;
@@ -218,8 +215,8 @@ static void imdct15_half(MDCT15Context *s, float *dst, const float *src,
     for (i = 0; i < l_ptwo; i++) {
         for (j = 0; j < 15; j++) {
             const int k = s->pfa_prereindex[i*15 + j];
-            FFTComplex tmp = { *(in2 - 2*k*stride), *(in1 + 2*k*stride) };
-            CMUL3(fft15in[j], tmp, s->twiddle_exptab[k]);
+            FFTComplex tmp = { in2[-k*stride], in1[k*stride] };
+            CMUL3(fft15in[j], tmp, s->twiddle_exptab[k >> 1]);
         }
         s->fft15(s->tmp + s->ptwo_fft.revtab[i], fft15in, s->exptab, l_ptwo);
     }
@@ -229,17 +226,21 @@ static void imdct15_half(MDCT15Context *s, float *dst, const float *src,
         s->ptwo_fft.fft_calc(&s->ptwo_fft, s->tmp + l_ptwo*i);
 
     /* Reindex again, apply twiddles and output */
-    for (i = 0; i < len8; i++) {
-        float re0, im0, re1, im1;
-        const int i0 = len8 + i, i1 = len8 - i - 1;
-        const int s0 = s->pfa_postreindex[i0], s1 = s->pfa_postreindex[i1];
+    s->postreindex(z, s->tmp, s->twiddle_exptab, s->pfa_postreindex, len8);
+}
 
-        CMUL(re0, im1, s->tmp[s1].im, s->tmp[s1].re,  s->twiddle_exptab[i1].im, s->twiddle_exptab[i1].re);
-        CMUL(re1, im0, s->tmp[s0].im, s->tmp[s0].re,  s->twiddle_exptab[i0].im, s->twiddle_exptab[i0].re);
-        z[i1].re = scale * re0;
-        z[i1].im = scale * im0;
-        z[i0].re = scale * re1;
-        z[i0].im = scale * im1;
+static void postrotate_c(FFTComplex *out, FFTComplex *in, FFTComplex *exp,
+                         int *lut, ptrdiff_t len8)
+{
+    int i;
+
+    /* Reindex again, apply twiddles and output */
+    for (i = 0; i < len8; i++) {
+        const int i0 = len8 + i, i1 = len8 - i - 1;
+        const int s0 = lut[i0], s1 = lut[i1];
+
+        CMUL(out[i1].re, out[i0].im, in[s1].im, in[s1].re, exp[i1].im, exp[i1].re);
+        CMUL(out[i0].re, out[i1].im, in[s0].im, in[s0].re, exp[i0].im, exp[i0].re);
     }
 }
 
@@ -259,13 +260,14 @@ av_cold int ff_mdct15_init(MDCT15Context **ps, int inverse, int N, double scale)
     if (!s)
         return AVERROR(ENOMEM);
 
-    s->fft_n      = N - 1;
-    s->len4       = len2 / 2;
-    s->len2       = len2;
-    s->inverse    = inverse;
-    s->fft15      = fft15_c;
-    s->mdct       = mdct15;
-    s->imdct_half = imdct15_half;
+    s->fft_n       = N - 1;
+    s->len4        = len2 / 2;
+    s->len2        = len2;
+    s->inverse     = inverse;
+    s->fft15       = fft15_c;
+    s->mdct        = mdct15;
+    s->imdct_half  = imdct15_half;
+    s->postreindex = postrotate_c;
 
     if (ff_fft_init(&s->ptwo_fft, N - 1, s->inverse) < 0)
         goto fail;
@@ -277,7 +279,7 @@ av_cold int ff_mdct15_init(MDCT15Context **ps, int inverse, int N, double scale)
     if (!s->tmp)
         goto fail;
 
-    s->twiddle_exptab  = av_malloc_array(s->len4, sizeof(*s->twiddle_exptab));
+    s->twiddle_exptab = av_malloc_array(s->len4, sizeof(*s->twiddle_exptab));
     if (!s->twiddle_exptab)
         goto fail;
 

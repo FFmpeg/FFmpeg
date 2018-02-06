@@ -504,13 +504,13 @@ static void map_idx_34_to_20(int8_t *par_mapped, const int8_t *par, int full)
 static void map_val_34_to_20(INTFLOAT par[PS_MAX_NR_IIDICC])
 {
 #if USE_FIXED
-    par[ 0] = (int)(((int64_t)(par[ 0] + (par[ 1]>>1)) * 1431655765 + \
+    par[ 0] = (int)(((int64_t)(par[ 0] + (unsigned)(par[ 1]>>1)) * 1431655765 + \
                       0x40000000) >> 31);
-    par[ 1] = (int)(((int64_t)((par[ 1]>>1) + par[ 2]) * 1431655765 + \
+    par[ 1] = (int)(((int64_t)((par[ 1]>>1) + (unsigned)par[ 2]) * 1431655765 + \
                       0x40000000) >> 31);
-    par[ 2] = (int)(((int64_t)(par[ 3] + (par[ 4]>>1)) * 1431655765 + \
+    par[ 2] = (int)(((int64_t)(par[ 3] + (unsigned)(par[ 4]>>1)) * 1431655765 + \
                       0x40000000) >> 31);
-    par[ 3] = (int)(((int64_t)((par[ 4]>>1) + par[ 5]) * 1431655765 + \
+    par[ 3] = (int)(((int64_t)((par[ 4]>>1) + (unsigned)par[ 5]) * 1431655765 + \
                       0x40000000) >> 31);
 #else
     par[ 0] = (2*par[ 0] +   par[ 1]) * 0.33333333f;
@@ -697,26 +697,17 @@ static void decorrelation(PSContext *ps, INTFLOAT (*out)[32][2], const INTFLOAT 
     for (i = 0; i < NR_PAR_BANDS[is34]; i++) {
         for (n = n0; n < nL; n++) {
             int decayed_peak;
-            int denom;
-
             decayed_peak = (int)(((int64_t)peak_decay_factor * \
                                            peak_decay_nrg[i] + 0x40000000) >> 31);
             peak_decay_nrg[i] = FFMAX(decayed_peak, power[i][n]);
-            power_smooth[i] += (power[i][n] - power_smooth[i] + 2) >> 2;
-            peak_decay_diff_smooth[i] += (peak_decay_nrg[i] - power[i][n] - \
-                                          peak_decay_diff_smooth[i] + 2) >> 2;
-            denom = peak_decay_diff_smooth[i] + (peak_decay_diff_smooth[i] >> 1);
-            if (denom > power_smooth[i]) {
-              int p = power_smooth[i];
-              while (denom < 0x40000000) {
-                denom <<= 1;
-                p <<= 1;
-              }
-              transient_gain[i][n] = p / (denom >> 16);
-            }
-            else {
-              transient_gain[i][n] = 1 << 16;
-            }
+            power_smooth[i] += (power[i][n] + 2LL - power_smooth[i]) >> 2;
+            peak_decay_diff_smooth[i] += (peak_decay_nrg[i] + 2LL - power[i][n] - \
+                                          peak_decay_diff_smooth[i]) >> 2;
+
+            if (peak_decay_diff_smooth[i]) {
+                transient_gain[i][n] = FFMIN(power_smooth[i]*43691LL / peak_decay_diff_smooth[i], 1<<16);
+            } else
+                transient_gain[i][n] = 1 << 16;
         }
     }
 #else

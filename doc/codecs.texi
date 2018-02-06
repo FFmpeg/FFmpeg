@@ -44,12 +44,6 @@ Use 1/4 pel motion compensation.
 Use loop filter.
 @item qscale
 Use fixed qscale.
-@item gmc
-Use gmc.
-@item mv0
-Always try a mb with mv=<0,0>.
-@item input_preserved
-
 @item pass1
 Use internal 2pass ratecontrol in first pass mode.
 @item pass2
@@ -62,8 +56,6 @@ Do not draw edges.
 Set error[?] variables during encoding.
 @item truncated
 
-@item naq
-Normalize adaptive quantization.
 @item ildct
 Use interlaced DCT.
 @item low_delay
@@ -506,21 +498,6 @@ threading operations
 skip motion compensation
 @end table
 
-@item vismv @var{integer} (@emph{decoding,video})
-Visualize motion vectors (MVs).
-
-This option is deprecated, see the codecview filter instead.
-
-Possible values:
-@table @samp
-@item pf
-forward predicted MVs of P-frames
-@item bf
-forward predicted MVs of B-frames
-@item bb
-backward predicted MVs of B-frames
-@end table
-
 @item cmp @var{integer} (@emph{encoding,video})
 Set full pel me compare function.
 
@@ -756,8 +733,6 @@ deflate-based coder
 Set context model.
 
 @item slice_flags @var{integer}
-
-@item xvmc_acceleration @var{integer}
 
 @item mbd @var{integer} (@emph{encoding,video})
 Set macroblock decision algorithm (high quality mode).

@@ -139,12 +139,12 @@ int ff_wms_parse_sdp_a_line(AVFormatContext *s, const char *p)
         ret = avformat_open_input(&rt->asf_ctx, "", iformat, &opts);
         av_dict_free(&opts);
         if (ret < 0) {
-            av_free(buf);
+            av_free(pb.buffer);
             return ret;
         }
         av_dict_copy(&s->metadata, rt->asf_ctx->metadata, 0);
         rt->asf_pb_pos = avio_tell(&pb);
-        av_free(buf);
+        av_free(pb.buffer);
         rt->asf_ctx->pb = NULL;
     }
     return ret;

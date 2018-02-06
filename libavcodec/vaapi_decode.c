@@ -21,6 +21,7 @@
 #include "libavutil/pixdesc.h"
 
 #include "avcodec.h"
+#include "decode.h"
 #include "internal.h"
 #include "vaapi_decode.h"
 
@@ -188,14 +189,14 @@ int ff_vaapi_decode_issue(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "Failed to end picture decode "
                "issue: %d (%s).\n", vas, vaErrorStr(vas));
         err = AVERROR(EIO);
-        if (ctx->hwctx->driver_quirks &
+        if (CONFIG_VAAPI_1 || ctx->hwctx->driver_quirks &
             AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS)
             goto fail;
         else
             goto fail_at_end;
     }
 
-    if (ctx->hwctx->driver_quirks &
+    if (CONFIG_VAAPI_1 || ctx->hwctx->driver_quirks &
         AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS)
         ff_vaapi_decode_destroy_buffers(avctx, pic);
 
@@ -246,7 +247,6 @@ static const struct {
     MAP(MPEG4,       MPEG4_MAIN,      MPEG4Main   ),
     MAP(H264,        H264_CONSTRAINED_BASELINE,
                            H264ConstrainedBaseline),
-    MAP(H264,        H264_BASELINE,   H264Baseline),
     MAP(H264,        H264_MAIN,       H264Main    ),
     MAP(H264,        H264_HIGH,       H264High    ),
 #if VA_CHECK_VERSION(0, 37, 0)
@@ -273,18 +273,26 @@ static const struct {
 #undef MAP
 };
 
-static int vaapi_decode_make_config(AVCodecContext *avctx)
+/*
+ * Set *va_config and the frames_ref fields from the current codec parameters
+ * in avctx.
+ */
+static int vaapi_decode_make_config(AVCodecContext *avctx,
+                                    AVBufferRef *device_ref,
+                                    VAConfigID *va_config,
+                                    AVBufferRef *frames_ref)
 {
-    VAAPIDecodeContext *ctx = avctx->internal->hwaccel_priv_data;
-
     AVVAAPIHWConfig       *hwconfig    = NULL;
     AVHWFramesConstraints *constraints = NULL;
     VAStatus vas;
     int err, i, j;
     const AVCodecDescriptor *codec_desc;
-    VAProfile profile, *profile_list = NULL;
-    int profile_count, exact_match, alt_profile;
+    VAProfile *profile_list = NULL, matched_va_profile;
+    int profile_count, exact_match, matched_ff_profile;
     const AVPixFmtDescriptor *sw_desc, *desc;
+
+    AVHWDeviceContext    *device = (AVHWDeviceContext*)device_ref->data;
+    AVVAAPIDeviceContext *hwctx = device->hwctx;
 
     codec_desc = avcodec_descriptor_get(avctx->codec_id);
     if (!codec_desc) {
@@ -292,7 +300,7 @@ static int vaapi_decode_make_config(AVCodecContext *avctx)
         goto fail;
     }
 
-    profile_count = vaMaxNumProfiles(ctx->hwctx->display);
+    profile_count = vaMaxNumProfiles(hwctx->display);
     profile_list  = av_malloc_array(profile_count,
                                     sizeof(VAProfile));
     if (!profile_list) {
@@ -300,7 +308,7 @@ static int vaapi_decode_make_config(AVCodecContext *avctx)
         goto fail;
     }
 
-    vas = vaQueryConfigProfiles(ctx->hwctx->display,
+    vas = vaQueryConfigProfiles(hwctx->display,
                                 profile_list, &profile_count);
     if (vas != VA_STATUS_SUCCESS) {
         av_log(avctx, AV_LOG_ERROR, "Failed to query profiles: "
@@ -309,31 +317,32 @@ static int vaapi_decode_make_config(AVCodecContext *avctx)
         goto fail;
     }
 
-    profile = VAProfileNone;
+    matched_va_profile = VAProfileNone;
     exact_match = 0;
 
     for (i = 0; i < FF_ARRAY_ELEMS(vaapi_profile_map); i++) {
         int profile_match = 0;
         if (avctx->codec_id != vaapi_profile_map[i].codec_id)
             continue;
-        if (avctx->profile == vaapi_profile_map[i].codec_profile)
+        if (avctx->profile == vaapi_profile_map[i].codec_profile ||
+            vaapi_profile_map[i].codec_profile == FF_PROFILE_UNKNOWN)
             profile_match = 1;
-        profile = vaapi_profile_map[i].va_profile;
         for (j = 0; j < profile_count; j++) {
-            if (profile == profile_list[j]) {
+            if (vaapi_profile_map[i].va_profile == profile_list[j]) {
                 exact_match = profile_match;
                 break;
             }
         }
         if (j < profile_count) {
+            matched_va_profile = vaapi_profile_map[i].va_profile;
+            matched_ff_profile = vaapi_profile_map[i].codec_profile;
             if (exact_match)
                 break;
-            alt_profile = vaapi_profile_map[i].codec_profile;
         }
     }
     av_freep(&profile_list);
 
-    if (profile == VAProfileNone) {
+    if (matched_va_profile == VAProfileNone) {
         av_log(avctx, AV_LOG_ERROR, "No support for codec %s "
                "profile %d.\n", codec_desc->name, avctx->profile);
         err = AVERROR(ENOSYS);
@@ -347,7 +356,7 @@ static int vaapi_decode_make_config(AVCodecContext *avctx)
                    codec_desc->name, avctx->profile);
             av_log(avctx, AV_LOG_WARNING, "Using possibly-"
                    "incompatible profile %d instead.\n",
-                   alt_profile);
+                   matched_ff_profile);
         } else {
             av_log(avctx, AV_LOG_VERBOSE, "Codec %s profile %d not "
                    "supported for hardware decode.\n",
@@ -357,12 +366,9 @@ static int vaapi_decode_make_config(AVCodecContext *avctx)
         }
     }
 
-    ctx->va_profile    = profile;
-    ctx->va_entrypoint = VAEntrypointVLD;
-
-    vas = vaCreateConfig(ctx->hwctx->display, ctx->va_profile,
-                         ctx->va_entrypoint, NULL, 0,
-                         &ctx->va_config);
+    vas = vaCreateConfig(hwctx->display, matched_va_profile,
+                         VAEntrypointVLD, NULL, 0,
+                         va_config);
     if (vas != VA_STATUS_SUCCESS) {
         av_log(avctx, AV_LOG_ERROR, "Failed to create decode "
                "configuration: %d (%s).\n", vas, vaErrorStr(vas));
@@ -370,20 +376,15 @@ static int vaapi_decode_make_config(AVCodecContext *avctx)
         goto fail;
     }
 
-    hwconfig = av_hwdevice_hwconfig_alloc(avctx->hw_device_ctx ?
-                                          avctx->hw_device_ctx :
-                                          ctx->frames->device_ref);
+    hwconfig = av_hwdevice_hwconfig_alloc(device_ref);
     if (!hwconfig) {
         err = AVERROR(ENOMEM);
         goto fail;
     }
-    hwconfig->config_id = ctx->va_config;
+    hwconfig->config_id = *va_config;
 
     constraints =
-        av_hwdevice_get_hwframe_constraints(avctx->hw_device_ctx ?
-                                            avctx->hw_device_ctx :
-                                            ctx->frames->device_ref,
-                                            hwconfig);
+        av_hwdevice_get_hwframe_constraints(device_ref, hwconfig);
     if (!constraints) {
         err = AVERROR(ENOMEM);
         goto fail;
@@ -409,48 +410,52 @@ static int vaapi_decode_make_config(AVCodecContext *avctx)
         goto fail;
     }
 
-    // Find the first format in the list which matches the expected
-    // bit depth and subsampling.  If none are found (this can happen
-    // when 10-bit streams are decoded to 8-bit surfaces, for example)
-    // then just take the first format on the list.
-    ctx->surface_format = constraints->valid_sw_formats[0];
-    sw_desc = av_pix_fmt_desc_get(avctx->sw_pix_fmt);
-    for (i = 0; constraints->valid_sw_formats[i] != AV_PIX_FMT_NONE; i++) {
-        desc = av_pix_fmt_desc_get(constraints->valid_sw_formats[i]);
-        if (desc->nb_components != sw_desc->nb_components ||
-            desc->log2_chroma_w != sw_desc->log2_chroma_w ||
-            desc->log2_chroma_h != sw_desc->log2_chroma_h)
-            continue;
-        for (j = 0; j < desc->nb_components; j++) {
-            if (desc->comp[j].depth != sw_desc->comp[j].depth)
-                break;
-        }
-        if (j < desc->nb_components)
-            continue;
-        ctx->surface_format = constraints->valid_sw_formats[i];
-        break;
-    }
+    if (frames_ref) {
+        AVHWFramesContext *frames = (AVHWFramesContext *)frames_ref->data;
 
-    // Start with at least four surfaces.
-    ctx->surface_count = 4;
-    // Add per-codec number of surfaces used for storing reference frames.
-    switch (avctx->codec_id) {
-    case AV_CODEC_ID_H264:
-    case AV_CODEC_ID_HEVC:
-        ctx->surface_count += 16;
-        break;
-    case AV_CODEC_ID_VP9:
-        ctx->surface_count += 8;
-        break;
-    case AV_CODEC_ID_VP8:
-        ctx->surface_count += 3;
-        break;
-    default:
-        ctx->surface_count += 2;
+        frames->format = AV_PIX_FMT_VAAPI;
+        frames->width = avctx->coded_width;
+        frames->height = avctx->coded_height;
+
+        // Find the first format in the list which matches the expected
+        // bit depth and subsampling.  If none are found (this can happen
+        // when 10-bit streams are decoded to 8-bit surfaces, for example)
+        // then just take the first format on the list.
+        frames->sw_format = constraints->valid_sw_formats[0];
+        sw_desc = av_pix_fmt_desc_get(avctx->sw_pix_fmt);
+        for (i = 0; constraints->valid_sw_formats[i] != AV_PIX_FMT_NONE; i++) {
+            desc = av_pix_fmt_desc_get(constraints->valid_sw_formats[i]);
+            if (desc->nb_components != sw_desc->nb_components ||
+                desc->log2_chroma_w != sw_desc->log2_chroma_w ||
+                desc->log2_chroma_h != sw_desc->log2_chroma_h)
+                continue;
+            for (j = 0; j < desc->nb_components; j++) {
+                if (desc->comp[j].depth != sw_desc->comp[j].depth)
+                    break;
+            }
+            if (j < desc->nb_components)
+                continue;
+            frames->sw_format = constraints->valid_sw_formats[i];
+            break;
+        }
+
+        frames->initial_pool_size = 1;
+        // Add per-codec number of surfaces used for storing reference frames.
+        switch (avctx->codec_id) {
+        case AV_CODEC_ID_H264:
+        case AV_CODEC_ID_HEVC:
+            frames->initial_pool_size += 16;
+            break;
+        case AV_CODEC_ID_VP9:
+            frames->initial_pool_size += 8;
+            break;
+        case AV_CODEC_ID_VP8:
+            frames->initial_pool_size += 3;
+            break;
+        default:
+            frames->initial_pool_size += 2;
+        }
     }
-    // Add an additional surface per thread is frame threading is enabled.
-    if (avctx->active_thread_type & FF_THREAD_FRAME)
-        ctx->surface_count += avctx->thread_count;
 
     av_hwframe_constraints_free(&constraints);
     av_freep(&hwconfig);
@@ -460,12 +465,36 @@ static int vaapi_decode_make_config(AVCodecContext *avctx)
 fail:
     av_hwframe_constraints_free(&constraints);
     av_freep(&hwconfig);
-    if (ctx->va_config != VA_INVALID_ID) {
-        vaDestroyConfig(ctx->hwctx->display, ctx->va_config);
-        ctx->va_config = VA_INVALID_ID;
+    if (*va_config != VA_INVALID_ID) {
+        vaDestroyConfig(hwctx->display, *va_config);
+        *va_config = VA_INVALID_ID;
     }
     av_freep(&profile_list);
     return err;
+}
+
+int ff_vaapi_common_frame_params(AVCodecContext *avctx,
+                                 AVBufferRef *hw_frames_ctx)
+{
+    AVHWFramesContext *hw_frames = (AVHWFramesContext *)hw_frames_ctx->data;
+    AVHWDeviceContext *device_ctx = hw_frames->device_ctx;
+    AVVAAPIDeviceContext *hwctx;
+    VAConfigID va_config = VA_INVALID_ID;
+    int err;
+
+    if (device_ctx->type != AV_HWDEVICE_TYPE_VAAPI)
+        return AVERROR(EINVAL);
+    hwctx = device_ctx->hwctx;
+
+    err = vaapi_decode_make_config(avctx, hw_frames->device_ref, &va_config,
+                                   hw_frames_ctx);
+    if (err)
+        return err;
+
+    if (va_config != VA_INVALID_ID)
+        vaDestroyConfig(hwctx->display, va_config);
+
+    return 0;
 }
 
 int ff_vaapi_decode_init(AVCodecContext *avctx)
@@ -504,36 +533,8 @@ int ff_vaapi_decode_init(AVCodecContext *avctx)
         ctx->hwctx->driver_quirks =
             AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS;
 
-    } else
-#endif
-    if (avctx->hw_frames_ctx) {
-        // This structure has a shorter lifetime than the enclosing
-        // AVCodecContext, so we inherit the references from there
-        // and do not need to make separate ones.
-
-        ctx->frames = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
-        ctx->hwfc   = ctx->frames->hwctx;
-        ctx->device = ctx->frames->device_ctx;
-        ctx->hwctx  = ctx->device->hwctx;
-
-    } else if (avctx->hw_device_ctx) {
-        ctx->device = (AVHWDeviceContext*)avctx->hw_device_ctx->data;
-        ctx->hwctx  = ctx->device->hwctx;
-
-        if (ctx->device->type != AV_HWDEVICE_TYPE_VAAPI) {
-            av_log(avctx, AV_LOG_ERROR, "Device supplied for VAAPI "
-                   "decoding must be a VAAPI device (not %d).\n",
-                   ctx->device->type);
-            err = AVERROR(EINVAL);
-            goto fail;
-        }
-
-    } else {
-        av_log(avctx, AV_LOG_ERROR, "A hardware device or frames context "
-               "is required for VAAPI decoding.\n");
-        err = AVERROR(EINVAL);
-        goto fail;
     }
+#endif
 
 #if FF_API_STRUCT_VAAPI_CONTEXT
     if (ctx->have_old_context) {
@@ -545,34 +546,19 @@ int ff_vaapi_decode_init(AVCodecContext *avctx)
     } else {
 #endif
 
-    err = vaapi_decode_make_config(avctx);
-    if (err)
+    err = ff_decode_get_hw_frames_ctx(avctx, AV_HWDEVICE_TYPE_VAAPI);
+    if (err < 0)
         goto fail;
 
-    if (!avctx->hw_frames_ctx) {
-        avctx->hw_frames_ctx = av_hwframe_ctx_alloc(avctx->hw_device_ctx);
-        if (!avctx->hw_frames_ctx) {
-            err = AVERROR(ENOMEM);
-            goto fail;
-        }
-        ctx->frames = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
+    ctx->frames = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
+    ctx->hwfc   = ctx->frames->hwctx;
+    ctx->device = ctx->frames->device_ctx;
+    ctx->hwctx  = ctx->device->hwctx;
 
-        ctx->frames->format = AV_PIX_FMT_VAAPI;
-        ctx->frames->width  = avctx->coded_width;
-        ctx->frames->height = avctx->coded_height;
-
-        ctx->frames->sw_format         = ctx->surface_format;
-        ctx->frames->initial_pool_size = ctx->surface_count;
-
-        err = av_hwframe_ctx_init(avctx->hw_frames_ctx);
-        if (err < 0) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to initialise internal "
-                   "frames context: %d.\n", err);
-            goto fail;
-        }
-
-        ctx->hwfc = ctx->frames->hwctx;
-    }
+    err = vaapi_decode_make_config(avctx, ctx->frames->device_ref,
+                                   &ctx->va_config, avctx->hw_frames_ctx);
+    if (err)
+        goto fail;
 
     vas = vaCreateContext(ctx->hwctx->display, ctx->va_config,
                           avctx->coded_width, avctx->coded_height,

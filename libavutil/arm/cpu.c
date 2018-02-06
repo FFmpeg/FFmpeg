@@ -158,3 +158,13 @@ int ff_get_cpu_flags_arm(void)
 }
 
 #endif
+
+size_t ff_get_cpu_max_align_arm(void)
+{
+    int flags = av_get_cpu_flags();
+
+    if (flags & AV_CPU_FLAG_NEON)
+        return 16;
+
+    return 8;
+}

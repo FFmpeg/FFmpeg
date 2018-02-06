@@ -357,10 +357,8 @@ static int init_prec(Jpeg2000Band *band,
                                  comp->reslevel[reslevelno-1].coord[1][0];
         }
 
-        cblk->zero      = 0;
         cblk->lblock    = 3;
         cblk->length    = 0;
-        memset(cblk->lengthinc, 0, sizeof(cblk->lengthinc));
         cblk->npasses   = 0;
     }
 
@@ -506,6 +504,9 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
         // update precincts size: 2^n value
         reslevel->log2_prec_width  = codsty->log2_prec_widths[reslevelno];
         reslevel->log2_prec_height = codsty->log2_prec_heights[reslevelno];
+        if (!reslevel->log2_prec_width || !reslevel->log2_prec_height) {
+            return AVERROR_INVALIDDATA;
+        }
 
         /* Number of bands for each resolution level */
         if (reslevelno == 0)
@@ -538,6 +539,9 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
 
         reslevel->band = av_mallocz_array(reslevel->nbands, sizeof(*reslevel->band));
         if (!reslevel->band)
+            return AVERROR(ENOMEM);
+
+        if (reslevel->num_precincts_x * (uint64_t)reslevel->num_precincts_y * reslevel->nbands > avctx->max_pixels / sizeof(*reslevel->band->prec))
             return AVERROR(ENOMEM);
 
         for (bandno = 0; bandno < reslevel->nbands; bandno++, gbandno++) {
@@ -595,9 +599,21 @@ void ff_jpeg2000_cleanup(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty)
             for (precno = 0; precno < reslevel->num_precincts_x * reslevel->num_precincts_y; precno++) {
                 if (band->prec) {
                     Jpeg2000Prec *prec = band->prec + precno;
+                    int nb_code_blocks = prec->nb_codeblocks_height * prec->nb_codeblocks_width;
+
                     av_freep(&prec->zerobits);
                     av_freep(&prec->cblkincl);
-                    av_freep(&prec->cblk);
+                    if (prec->cblk) {
+                        int cblkno;
+                        for (cblkno = 0; cblkno < nb_code_blocks; cblkno ++) {
+                            Jpeg2000Cblk *cblk = &prec->cblk[cblkno];
+                            av_freep(&cblk->data);
+                            av_freep(&cblk->passes);
+                            av_freep(&cblk->lengthinc);
+                            av_freep(&cblk->data_start);
+                        }
+                        av_freep(&prec->cblk);
+                    }
                 }
             }
 

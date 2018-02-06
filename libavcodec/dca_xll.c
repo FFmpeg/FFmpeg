@@ -1028,7 +1028,7 @@ static int parse_band_data(DCAXllDecoder *s)
                             return ret;
                         chs_clear_band_data(s, c, band, seg);
                     }
-                    s->gb.index = navi_pos;
+                    skip_bits_long(&s->gb, navi_pos - get_bits_count(&s->gb));
                 }
                 navi_ptr++;
             }

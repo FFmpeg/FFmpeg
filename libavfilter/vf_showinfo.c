@@ -29,12 +29,52 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/spherical.h"
 #include "libavutil/stereo3d.h"
 #include "libavutil/timestamp.h"
 
 #include "avfilter.h"
 #include "internal.h"
 #include "video.h"
+
+static void dump_spherical(AVFilterContext *ctx, AVFrame *frame, AVFrameSideData *sd)
+{
+    AVSphericalMapping *spherical = (AVSphericalMapping *)sd->data;
+    double yaw, pitch, roll;
+
+    av_log(ctx, AV_LOG_INFO, "spherical information: ");
+    if (sd->size < sizeof(*spherical)) {
+        av_log(ctx, AV_LOG_INFO, "invalid data");
+        return;
+    }
+
+    if (spherical->projection == AV_SPHERICAL_EQUIRECTANGULAR)
+        av_log(ctx, AV_LOG_INFO, "equirectangular ");
+    else if (spherical->projection == AV_SPHERICAL_CUBEMAP)
+        av_log(ctx, AV_LOG_INFO, "cubemap ");
+    else if (spherical->projection == AV_SPHERICAL_EQUIRECTANGULAR_TILE)
+        av_log(ctx, AV_LOG_INFO, "tiled equirectangular ");
+    else {
+        av_log(ctx, AV_LOG_WARNING, "unknown");
+        return;
+    }
+
+    yaw = ((double)spherical->yaw) / (1 << 16);
+    pitch = ((double)spherical->pitch) / (1 << 16);
+    roll = ((double)spherical->roll) / (1 << 16);
+    av_log(ctx, AV_LOG_INFO, "(%f/%f/%f) ", yaw, pitch, roll);
+
+    if (spherical->projection == AV_SPHERICAL_EQUIRECTANGULAR_TILE) {
+        size_t l, t, r, b;
+        av_spherical_tile_bounds(spherical, frame->width, frame->height,
+                                 &l, &t, &r, &b);
+        av_log(ctx, AV_LOG_INFO,
+               "[%"SIZE_SPECIFIER", %"SIZE_SPECIFIER", %"SIZE_SPECIFIER", %"SIZE_SPECIFIER"] ",
+               l, t, r, b);
+    } else if (spherical->projection == AV_SPHERICAL_CUBEMAP) {
+        av_log(ctx, AV_LOG_INFO, "[pad %"PRIu32"] ", spherical->padding);
+    }
+}
 
 static void dump_stereo3d(AVFilterContext *ctx, AVFrameSideData *sd)
 {
@@ -48,19 +88,7 @@ static void dump_stereo3d(AVFilterContext *ctx, AVFrameSideData *sd)
 
     stereo = (AVStereo3D *)sd->data;
 
-    av_log(ctx, AV_LOG_INFO, "type - ");
-    switch (stereo->type) {
-    case AV_STEREO3D_2D:                  av_log(ctx, AV_LOG_INFO, "2D");                     break;
-    case AV_STEREO3D_SIDEBYSIDE:          av_log(ctx, AV_LOG_INFO, "side by side");           break;
-    case AV_STEREO3D_TOPBOTTOM:           av_log(ctx, AV_LOG_INFO, "top and bottom");         break;
-    case AV_STEREO3D_FRAMESEQUENCE:       av_log(ctx, AV_LOG_INFO, "frame alternate");        break;
-    case AV_STEREO3D_CHECKERBOARD:        av_log(ctx, AV_LOG_INFO, "checkerboard");           break;
-    case AV_STEREO3D_LINES:               av_log(ctx, AV_LOG_INFO, "interleaved lines");      break;
-    case AV_STEREO3D_COLUMNS:             av_log(ctx, AV_LOG_INFO, "interleaved columns");    break;
-    case AV_STEREO3D_SIDEBYSIDE_QUINCUNX: av_log(ctx, AV_LOG_INFO, "side by side "
-                                                                   "(quincunx subsampling)"); break;
-    default:                              av_log(ctx, AV_LOG_WARNING, "unknown");             break;
-    }
+    av_log(ctx, AV_LOG_INFO, "type - %s", av_stereo3d_type_name(stereo->type));
 
     if (stereo->flags & AV_STEREO3D_FLAG_INVERT)
         av_log(ctx, AV_LOG_INFO, " (inverted)");
@@ -139,6 +167,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             break;
         case AV_FRAME_DATA_A53_CC:
             av_log(ctx, AV_LOG_INFO, "A/53 closed captions (%d bytes)", sd->size);
+            break;
+        case AV_FRAME_DATA_SPHERICAL:
+            dump_spherical(ctx, frame, sd);
             break;
         case AV_FRAME_DATA_STEREO3D:
             dump_stereo3d(ctx, sd);

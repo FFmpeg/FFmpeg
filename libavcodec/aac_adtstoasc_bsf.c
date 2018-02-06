@@ -19,8 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "adts_header.h"
+#include "adts_parser.h"
 #include "avcodec.h"
-#include "aacadtsdec.h"
 #include "bsf.h"
 #include "put_bits.h"
 #include "get_bits.h"
@@ -52,12 +53,12 @@ static int aac_adtstoasc_filter(AVBSFContext *bsfc, AVPacket *out)
     if (bsfc->par_in->extradata && in->size >= 2 && (AV_RB16(in->data) >> 4) != 0xfff)
         goto finish;
 
-    if (in->size < AAC_ADTS_HEADER_SIZE)
+    if (in->size < AV_AAC_ADTS_HEADER_SIZE)
         goto packet_too_small;
 
-    init_get_bits(&gb, in->data, AAC_ADTS_HEADER_SIZE * 8);
+    init_get_bits(&gb, in->data, AV_AAC_ADTS_HEADER_SIZE * 8);
 
-    if (avpriv_aac_parse_header(&gb, &hdr) < 0) {
+    if (ff_adts_header_parse(&gb, &hdr) < 0) {
         av_log(bsfc, AV_LOG_ERROR, "Error parsing ADTS frame header!\n");
         ret = AVERROR_INVALIDDATA;
         goto fail;
@@ -70,10 +71,10 @@ static int aac_adtstoasc_filter(AVBSFContext *bsfc, AVPacket *out)
         goto fail;
     }
 
-    in->size -= AAC_ADTS_HEADER_SIZE + 2 * !hdr.crc_absent;
+    in->size -= AV_AAC_ADTS_HEADER_SIZE + 2 * !hdr.crc_absent;
     if (in->size <= 0)
         goto packet_too_small;
-    in->data += AAC_ADTS_HEADER_SIZE + 2 * !hdr.crc_absent;
+    in->data += AV_AAC_ADTS_HEADER_SIZE + 2 * !hdr.crc_absent;
 
     if (!ctx->first_frame_done) {
         int            pce_size = 0;
@@ -91,7 +92,7 @@ static int aac_adtstoasc_filter(AVBSFContext *bsfc, AVPacket *out)
                 goto fail;
             }
             init_put_bits(&pb, pce_data, MAX_PCE_SIZE);
-            pce_size = avpriv_copy_pce_data(&pb, &gb)/8;
+            pce_size = ff_copy_pce_data(&pb, &gb) / 8;
             flush_put_bits(&pb);
             in->size -= get_bits_count(&gb)/8;
             in->data += get_bits_count(&gb)/8;

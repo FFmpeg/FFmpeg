@@ -630,10 +630,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         s->bits_per_raw_sample = 16;
         s->use32bit = 1;
         s->version = FFMAX(s->version, 1);
-        if (avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
-            av_log(avctx, AV_LOG_ERROR, "16bit RGB is experimental and under development, only use it for experiments\n");
-            return AVERROR_INVALIDDATA;
-        }
         break;
     case AV_PIX_FMT_0RGB32:
         s->colorspace = 1;
@@ -661,10 +657,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         s->chroma_planes = 1;
         if (s->bits_per_raw_sample >= 16) {
             s->use32bit = 1;
-            if (avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
-                av_log(avctx, AV_LOG_ERROR, "16bit RGB is experimental and under development, only use it for experiments\n");
-                return AVERROR_INVALIDDATA;
-            }
         }
         s->version = FFMAX(s->version, 1);
         break;
@@ -754,7 +746,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (!s->chroma_planes && s->version > 3)
         s->plane_count--;
 
-    avcodec_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_h_shift, &s->chroma_v_shift);
+    ret = av_pix_fmt_get_chroma_sub_sample (avctx->pix_fmt, &s->chroma_h_shift, &s->chroma_v_shift);
+    if (ret)
+        return ret;
+
     s->picture_number = 0;
 
     if (avctx->flags & (AV_CODEC_FLAG_PASS1 | AV_CODEC_FLAG_PASS2)) {

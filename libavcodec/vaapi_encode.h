@@ -35,8 +35,6 @@ enum {
     MAX_CONFIG_ATTRIBUTES  = 4,
     MAX_GLOBAL_PARAMS      = 4,
     MAX_PICTURE_REFERENCES = 2,
-    MAX_PICTURE_SLICES     = 112,
-    MAX_PARAM_BUFFERS      = 128,
     MAX_REORDER_DELAY      = 16,
     MAX_PARAM_BUFFER_SIZE  = 1024,
 };
@@ -73,7 +71,7 @@ typedef struct VAAPIEncodePicture {
     VASurfaceID     recon_surface;
 
     int          nb_param_buffers;
-    VABufferID      param_buffers[MAX_PARAM_BUFFERS];
+    VABufferID     *param_buffers;
 
     AVBufferRef    *output_buffer_ref;
     VABufferID      output_buffer;
@@ -85,7 +83,7 @@ typedef struct VAAPIEncodePicture {
     struct VAAPIEncodePicture *refs[MAX_PICTURE_REFERENCES];
 
     int          nb_slices;
-    VAAPIEncodeSlice *slices[MAX_PICTURE_SLICES];
+    VAAPIEncodeSlice *slices;
 } VAAPIEncodePicture;
 
 typedef struct VAAPIEncodeContext {
@@ -159,6 +157,12 @@ typedef struct VAAPIEncodeContext {
         VAEncMiscParameterBuffer misc;
         VAEncMiscParameterFrameRate fr;
     } fr_params;
+#if VA_CHECK_VERSION(0, 36, 0)
+    struct {
+        VAEncMiscParameterBuffer misc;
+        VAEncMiscParameterBufferQualityLevel quality;
+    } quality_params;
+#endif
 
     // Per-sequence parameter structure (VAEncSequenceParameterBuffer*).
     void           *codec_sequence_params;

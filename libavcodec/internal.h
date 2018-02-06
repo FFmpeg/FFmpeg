@@ -64,6 +64,10 @@
  * dimensions to coded rather than display values.
  */
 #define FF_CODEC_CAP_EXPORTS_CROPPING       (1 << 4)
+/**
+ * Codec initializes slice-based threading with a main function
+ */
+#define FF_CODEC_CAP_SLICE_THREAD_HAS_MF    (1 << 5)
 
 #ifdef TRACE
 #   define ff_tlog(ctx, ...) av_log(ctx, AV_LOG_TRACE, __VA_ARGS__)
@@ -72,15 +76,20 @@
 #endif
 
 
-#if !FF_API_QUANT_BIAS
 #define FF_DEFAULT_QUANT_BIAS 999999
-#endif
+
+#define FF_QSCALE_TYPE_MPEG1 0
+#define FF_QSCALE_TYPE_MPEG2 1
+#define FF_QSCALE_TYPE_H264  2
+#define FF_QSCALE_TYPE_VP56  3
 
 #define FF_SANE_NB_CHANNELS 64U
 
 #define FF_SIGNBIT(x) ((x) >> CHAR_BIT * sizeof(x) - 1)
 
-#if HAVE_SIMD_ALIGN_32
+#if HAVE_SIMD_ALIGN_64
+#   define STRIDE_ALIGN 64 /* AVX-512 */
+#elif HAVE_SIMD_ALIGN_32
 #   define STRIDE_ALIGN 32
 #elif HAVE_SIMD_ALIGN_16
 #   define STRIDE_ALIGN 16
@@ -234,13 +243,6 @@ int ff_init_buffer_info(AVCodecContext *s, AVFrame *frame);
 
 void ff_color_frame(AVFrame *frame, const int color[4]);
 
-extern volatile int ff_avcodec_locked;
-int ff_lock_avcodec(AVCodecContext *log_ctx, const AVCodec *codec);
-int ff_unlock_avcodec(const AVCodec *codec);
-
-int avpriv_lock_avformat(void);
-int avpriv_unlock_avformat(void);
-
 /**
  * Maximum size in bytes of extradata.
  * This value was chosen such that every bit of the buffer is
@@ -362,14 +364,16 @@ int ff_set_sar(AVCodecContext *avctx, AVRational sar);
 int ff_side_data_update_matrix_encoding(AVFrame *frame,
                                         enum AVMatrixEncoding matrix_encoding);
 
-#if FF_API_MERGE_SD
-int ff_packet_split_and_drop_side_data(AVPacket *pkt);
-#endif
-
 /**
  * Select the (possibly hardware accelerated) pixel format.
  * This is a wrapper around AVCodecContext.get_format() and should be used
  * instead of calling get_format() directly.
+ *
+ * The list of pixel formats must contain at least one valid entry, and is
+ * terminated with AV_PIX_FMT_NONE.  If it is possible to decode to software,
+ * the last entry in the list must be the most accurate software format.
+ * If it is not possible to decode to software, AVCodecContext.sw_pix_fmt
+ * must be set before calling this function.
  */
 int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt);
 
@@ -405,5 +409,11 @@ int ff_alloc_a53_sei(const AVFrame *frame, size_t prefix_len,
  * bits per pixel.
  */
 int64_t ff_guess_coded_bitrate(AVCodecContext *avctx);
+
+#if defined(_WIN32) && CONFIG_SHARED && !defined(BUILDING_avcodec)
+#    define av_export_avcodec __declspec(dllimport)
+#else
+#    define av_export_avcodec
+#endif
 
 #endif /* AVCODEC_INTERNAL_H */

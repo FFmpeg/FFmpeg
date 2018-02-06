@@ -47,9 +47,9 @@ enum RTMPChannel {
 typedef enum RTMPPacketType {
     RTMP_PT_CHUNK_SIZE   =  1,  ///< chunk size change
     RTMP_PT_BYTES_READ   =  3,  ///< number of bytes read
-    RTMP_PT_PING,               ///< ping
-    RTMP_PT_SERVER_BW,          ///< server bandwidth
-    RTMP_PT_CLIENT_BW,          ///< client bandwidth
+    RTMP_PT_USER_CONTROL,       ///< user control
+    RTMP_PT_WINDOW_ACK_SIZE,    ///< window acknowledgement size
+    RTMP_PT_SET_PEER_BW,        ///< peer bandwidth
     RTMP_PT_AUDIO        =  8,  ///< audio packet
     RTMP_PT_VIDEO,              ///< video packet
     RTMP_PT_FLEX_STREAM  = 15,  ///< Flex shared stream

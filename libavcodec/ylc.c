@@ -69,7 +69,7 @@ static void get_tree_codes(uint32_t *bits, int16_t *lens, uint8_t *xlat,
 
     s = nodes[node].sym;
     if (s != -1) {
-        bits[*pos] = (~pfx) & ((1 << FFMAX(pl, 1)) - 1);
+        bits[*pos] = (~pfx) & ((1ULL << FFMAX(pl, 1)) - 1);
         lens[*pos] = FFMAX(pl, 1);
         xlat[*pos] = s + (pl == 0);
         (*pos)++;

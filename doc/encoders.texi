@@ -64,7 +64,6 @@ to find an optimal combination by adding or subtracting a specific value from
 all quantizers and adjusting some individual quantizer a little.  Will tune
 itself based on whether @option{aac_is}, @option{aac_ms} and @option{aac_pns}
 are enabled.
-This is the default choice for a coder.
 
 @item anmr
 Average noise to mask ratio (ANMR) trellis-based solution.
@@ -77,10 +76,10 @@ Not currently recommended.
 @item fast
 Constant quantizer method.
 
-This method sets a constant quantizer for all bands. This is the fastest of all
-the methods and has no rate control or support for @option{aac_is} or
-@option{aac_pns}.
-Not recommended.
+Uses a cheaper version of twoloop algorithm that doesn't try to do as many
+clever adjustments. Worse with low bitrates (less than 64kbps), but is better
+and much faster at higher bitrates.
+This is the default choice for a coder
 
 @end table
 
@@ -92,12 +91,12 @@ using the value "enable", which is mainly useful for debugging or disabled using
 
 @item aac_is
 Sets intensity stereo coding tool usage. By default, it's enabled and will
-automatically toggle IS for similar pairs of stereo bands if it's benefitial.
+automatically toggle IS for similar pairs of stereo bands if it's beneficial.
 Can be disabled for debugging by setting the value to "disable".
 
 @item aac_pns
 Uses perceptual noise substitution to replace low entropy high frequency bands
-with imperceivable white noise during the decoding process. By default, it's
+with imperceptible white noise during the decoding process. By default, it's
 enabled, but can be disabled for debugging purposes by using "disable".
 
 @item aac_tns
@@ -599,7 +598,7 @@ Channel mode
 @item auto
 The mode is chosen automatically for each frame
 @item indep
-Chanels are independently coded
+Channels are independently coded
 @item left_side
 @item right_side
 @item mid_side
@@ -1681,6 +1680,13 @@ colorspaces:
 @end table
 @item row-mt @var{boolean}
 Enable row based multi-threading.
+@item tune-content
+Set content type: default (0), screen (1), film (2).
+@item corpus-complexity
+Corpus VBR mode is a variant of standard VBR where the complexity distribution
+midpoint is passed in rather than calculated for a specific clip or chunk.
+
+The valid range is [0, 10000]. 0 (default) uses standard VBR.
 @end table
 
 @end table
@@ -1793,7 +1799,7 @@ the documentation of the undocumented generic options, see
 @ref{codec-options,,the Codec Options chapter}.
 
 To get a more accurate and extensive documentation of the libx264
-options, invoke the command @command{x264 --full-help} or consult
+options, invoke the command @command{x264 --fullhelp} or consult
 the libx264 documentation.
 
 @table @option
@@ -2106,7 +2112,7 @@ is kept undocumented for some reason.
 
 For example to specify libx264 encoding options with @command{ffmpeg}:
 @example
-ffmpeg -i foo.mpg -vcodec libx264 -x264opts keyint=123:min-keyint=20 -an out.mkv
+ffmpeg -i foo.mpg -c:v libx264 -x264opts keyint=123:min-keyint=20 -an out.mkv
 @end example
 
 @item a53cc @var{boolean}
@@ -2554,7 +2560,13 @@ The following standard libavcodec options are used:
 @item
 @option{rc_init_occupancy} / @option{rc_initial_buffer_occupancy}
 @item
+@option{compression_level}
+
+Speed / quality tradeoff: higher values are faster / worse quality.
+@item
 @option{q} / @option{global_quality}
+
+Size / quality tradeoff: higher values are smaller / worse quality.
 @item
 @option{qmin}
 (only: @option{qmax} is not supported)
@@ -2570,32 +2582,41 @@ The following standard libavcodec options are used:
 
 @table @option
 
-@item vaapi_h264
+@item h264_vaapi
 @option{profile} sets the value of @emph{profile_idc} and the @emph{constraint_set*_flag}s.
 @option{level} sets the value of @emph{level_idc}.
 
 @table @option
-@item quality
-Set the local encoding quality/speed tradeoff (range 1-8, higher values are faster; not all
-systems implement all levels).
 @item low_power
 Use low-power encoding mode.
+@item coder
+Set entropy encoder (default is @emph{cabac}).  Possible values:
+
+@table @samp
+@item ac
+@item cabac
+Use CABAC.
+
+@item vlc
+@item cavlc
+Use CAVLC.
+@end table
 @end table
 
-@item vaapi_hevc
+@item hevc_vaapi
 @option{profile} and @option{level} set the values of
 @emph{general_profile_idc} and @emph{general_level_idc} respectively.
 
-@item vaapi_mjpeg
+@item mjpeg_vaapi
 Always encodes using the standard quantisation and huffman tables -
 @option{global_quality} scales the standard quantisation table (range 1-100).
 
-@item vaapi_mpeg2
+@item mpeg2_vaapi
 @option{profile} and @option{level} set the value of @emph{profile_and_level_indication}.
 
 No rate control is supported.
 
-@item vaapi_vp8
+@item vp8_vaapi
 B-frames are not supported.
 
 @option{global_quality} sets the @emph{q_idx} used for non-key frames (range 0-127).
@@ -2606,7 +2627,7 @@ B-frames are not supported.
 Manually set the loop filter parameters.
 @end table
 
-@item vaapi_vp9
+@item vp9_vaapi
 @option{global_quality} sets the @emph{q_idx} used for P-frames (range 0-255).
 
 @table @option

@@ -24,7 +24,7 @@
 cextern pw_9
 cextern pw_128
 
-section .text
+SECTION .text
 
 %if HAVE_MMX_INLINE
 

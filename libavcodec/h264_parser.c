@@ -243,6 +243,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                                   const uint8_t * const buf, int buf_size)
 {
     H264ParseContext *p = s->priv_data;
+    H2645RBSP rbsp = { NULL };
     H2645NAL nal = { NULL };
     int buf_index, next_avc;
     unsigned int pps_id;
@@ -258,10 +259,14 @@ static inline int parse_nal_units(AVCodecParserContext *s,
     s->picture_structure = AV_PICTURE_STRUCTURE_UNKNOWN;
 
     ff_h264_sei_uninit(&p->sei);
-    p->sei.frame_packing.frame_packing_arrangement_cancel_flag = -1;
+    p->sei.frame_packing.arrangement_cancel_flag = -1;
 
     if (!buf_size)
         return 0;
+
+    av_fast_padded_malloc(&rbsp.rbsp_buffer, &rbsp.rbsp_buffer_alloc_size, buf_size);
+    if (!rbsp.rbsp_buffer)
+        return AVERROR(ENOMEM);
 
     buf_index     = 0;
     next_avc      = p->is_avc ? 0 : buf_size;
@@ -300,7 +305,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             }
             break;
         }
-        consumed = ff_h2645_extract_rbsp(buf + buf_index, src_length, &nal, 1);
+        consumed = ff_h2645_extract_rbsp(buf + buf_index, src_length, &rbsp, &nal, 1);
         if (consumed < 0)
             break;
 
@@ -473,23 +478,23 @@ static inline int parse_nal_units(AVCodecParserContext *s,
 
             if (sps->pic_struct_present_flag && p->sei.picture_timing.present) {
                 switch (p->sei.picture_timing.pic_struct) {
-                case SEI_PIC_STRUCT_TOP_FIELD:
-                case SEI_PIC_STRUCT_BOTTOM_FIELD:
+                case H264_SEI_PIC_STRUCT_TOP_FIELD:
+                case H264_SEI_PIC_STRUCT_BOTTOM_FIELD:
                     s->repeat_pict = 0;
                     break;
-                case SEI_PIC_STRUCT_FRAME:
-                case SEI_PIC_STRUCT_TOP_BOTTOM:
-                case SEI_PIC_STRUCT_BOTTOM_TOP:
+                case H264_SEI_PIC_STRUCT_FRAME:
+                case H264_SEI_PIC_STRUCT_TOP_BOTTOM:
+                case H264_SEI_PIC_STRUCT_BOTTOM_TOP:
                     s->repeat_pict = 1;
                     break;
-                case SEI_PIC_STRUCT_TOP_BOTTOM_TOP:
-                case SEI_PIC_STRUCT_BOTTOM_TOP_BOTTOM:
+                case H264_SEI_PIC_STRUCT_TOP_BOTTOM_TOP:
+                case H264_SEI_PIC_STRUCT_BOTTOM_TOP_BOTTOM:
                     s->repeat_pict = 2;
                     break;
-                case SEI_PIC_STRUCT_FRAME_DOUBLING:
+                case H264_SEI_PIC_STRUCT_FRAME_DOUBLING:
                     s->repeat_pict = 3;
                     break;
-                case SEI_PIC_STRUCT_FRAME_TRIPLING:
+                case H264_SEI_PIC_STRUCT_FRAME_TRIPLING:
                     s->repeat_pict = 5;
                     break;
                 default:
@@ -504,12 +509,12 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                 s->picture_structure = AV_PICTURE_STRUCTURE_FRAME;
                 if (sps->pic_struct_present_flag && p->sei.picture_timing.present) {
                     switch (p->sei.picture_timing.pic_struct) {
-                    case SEI_PIC_STRUCT_TOP_BOTTOM:
-                    case SEI_PIC_STRUCT_TOP_BOTTOM_TOP:
+                    case H264_SEI_PIC_STRUCT_TOP_BOTTOM:
+                    case H264_SEI_PIC_STRUCT_TOP_BOTTOM_TOP:
                         s->field_order = AV_FIELD_TT;
                         break;
-                    case SEI_PIC_STRUCT_BOTTOM_TOP:
-                    case SEI_PIC_STRUCT_BOTTOM_TOP_BOTTOM:
+                    case H264_SEI_PIC_STRUCT_BOTTOM_TOP:
+                    case H264_SEI_PIC_STRUCT_BOTTOM_TOP_BOTTOM:
                         s->field_order = AV_FIELD_BB;
                         break;
                     default:
@@ -544,18 +549,18 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                 p->last_frame_num = p->poc.frame_num;
             }
 
-            av_freep(&nal.rbsp_buffer);
+            av_freep(&rbsp.rbsp_buffer);
             return 0; /* no need to evaluate the rest */
         }
     }
     if (q264) {
-        av_freep(&nal.rbsp_buffer);
+        av_freep(&rbsp.rbsp_buffer);
         return 0;
     }
     /* didn't find a picture! */
     av_log(avctx, AV_LOG_ERROR, "missing picture in access unit with size %d\n", buf_size);
 fail:
-    av_freep(&nal.rbsp_buffer);
+    av_freep(&rbsp.rbsp_buffer);
     return -1;
 }
 

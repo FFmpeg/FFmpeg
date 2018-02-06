@@ -29,22 +29,23 @@
 
 typedef struct TTAMuxContext {
     AVIOContext *seek_table;
-    AVIOContext *data;
+    AVPacketList *queue, *queue_end;
     uint32_t nb_samples;
     int frame_size;
     int last_frame;
 } TTAMuxContext;
 
-static int tta_write_header(AVFormatContext *s)
+static int tta_init(AVFormatContext *s)
 {
     TTAMuxContext *tta = s->priv_data;
-    AVCodecParameters *par = s->streams[0]->codecpar;
-    int ret;
+    AVCodecParameters *par;
 
     if (s->nb_streams != 1) {
         av_log(s, AV_LOG_ERROR, "Only one stream is supported\n");
         return AVERROR(EINVAL);
     }
+    par = s->streams[0]->codecpar;
+
     if (par->codec_id != AV_CODEC_ID_TTA) {
         av_log(s, AV_LOG_ERROR, "Unsupported codec\n");
         return AVERROR(EINVAL);
@@ -54,22 +55,6 @@ static int tta_write_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    if ((ret = avio_open_dyn_buf(&tta->seek_table)) < 0)
-        return ret;
-    if ((ret = avio_open_dyn_buf(&tta->data)) < 0) {
-        ffio_free_dyn_buf(&tta->seek_table);
-        return ret;
-    }
-
-    /* Ignore most extradata information if present. It can be innacurate
-       if for example remuxing from Matroska */
-    ffio_init_checksum(s->pb, ff_crcEDB88320_update, UINT32_MAX);
-    ffio_init_checksum(tta->seek_table, ff_crcEDB88320_update, UINT32_MAX);
-    avio_write(s->pb, "TTA1", 4);
-    avio_wl16(s->pb, par->extradata ? AV_RL16(par->extradata + 4) : 1);
-    avio_wl16(s->pb, par->channels);
-    avio_wl16(s->pb, par->bits_per_raw_sample);
-    avio_wl32(s->pb, par->sample_rate);
     /* Prevent overflow */
     if (par->sample_rate > 0x7FFFFFu) {
         av_log(s, AV_LOG_ERROR, "Sample rate too large\n");
@@ -81,11 +66,48 @@ static int tta_write_header(AVFormatContext *s)
     return 0;
 }
 
+static int tta_write_header(AVFormatContext *s)
+{
+    TTAMuxContext *tta = s->priv_data;
+    AVCodecParameters *par = s->streams[0]->codecpar;
+    int ret;
+
+    if ((ret = avio_open_dyn_buf(&tta->seek_table)) < 0)
+        return ret;
+
+    /* Ignore most extradata information if present. It can be innacurate
+       if for example remuxing from Matroska */
+    ffio_init_checksum(s->pb, ff_crcEDB88320_update, UINT32_MAX);
+    ffio_init_checksum(tta->seek_table, ff_crcEDB88320_update, UINT32_MAX);
+    avio_write(s->pb, "TTA1", 4);
+    avio_wl16(s->pb, par->extradata ? AV_RL16(par->extradata + 4) : 1);
+    avio_wl16(s->pb, par->channels);
+    avio_wl16(s->pb, par->bits_per_raw_sample);
+    avio_wl32(s->pb, par->sample_rate);
+
+    return 0;
+}
+
 static int tta_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     TTAMuxContext *tta = s->priv_data;
+    AVPacketList *pktl = av_mallocz(sizeof(*pktl));
+    int ret;
 
-    avio_write(tta->data, pkt->data, pkt->size);
+    if (!pktl)
+        return AVERROR(ENOMEM);
+
+    ret = av_packet_ref(&pktl->pkt, pkt);
+    if (ret < 0) {
+        av_free(pktl);
+        return ret;
+    }
+    if (tta->queue_end)
+        tta->queue_end->next = pktl;
+    else
+        tta->queue = pktl;
+    tta->queue_end = pktl;
+
     avio_wl32(tta->seek_table, pkt->size);
     tta->nb_samples += pkt->duration;
 
@@ -104,6 +126,21 @@ static int tta_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     return 0;
+}
+
+static void tta_queue_flush(AVFormatContext *s)
+{
+    TTAMuxContext *tta = s->priv_data;
+    AVPacketList *pktl;
+
+    while (pktl = tta->queue) {
+        AVPacket *pkt = &pktl->pkt;
+        avio_write(s->pb, pkt->data, pkt->size);
+        av_packet_unref(pkt);
+        tta->queue = pktl->next;
+        av_free(pktl);
+    }
+    tta->queue_end = NULL;
 }
 
 static int tta_write_trailer(AVFormatContext *s)
@@ -125,9 +162,7 @@ static int tta_write_trailer(AVFormatContext *s)
     av_free(ptr);
 
     /* Write audio data */
-    size = avio_close_dyn_buf(tta->data, &ptr);
-    avio_write(s->pb, ptr, size);
-    av_free(ptr);
+    tta_queue_flush(s);
 
     ff_ape_write_tag(s);
     avio_flush(s->pb);
@@ -143,6 +178,7 @@ AVOutputFormat ff_tta_muxer = {
     .priv_data_size    = sizeof(TTAMuxContext),
     .audio_codec       = AV_CODEC_ID_TTA,
     .video_codec       = AV_CODEC_ID_NONE,
+    .init              = tta_init,
     .write_header      = tta_write_header,
     .write_packet      = tta_write_packet,
     .write_trailer     = tta_write_trailer,

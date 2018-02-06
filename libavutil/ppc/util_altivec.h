@@ -28,10 +28,6 @@
 
 #include "config.h"
 
-#if HAVE_ALTIVEC_H
-#include <altivec.h>
-#endif
-
 /***********************************************************************
  * Vector types
  **********************************************************************/
@@ -56,6 +52,7 @@
 #define zero_s32v (vec_s32) zerov
 
 #if HAVE_ALTIVEC
+#include <altivec.h>
 
 // used to build registers permutation vectors (vcprm)
 // the 's' are for words in the _s_econd vector

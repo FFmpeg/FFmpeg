@@ -61,8 +61,8 @@ static const AVOption interlace_options[] = {
 AVFILTER_DEFINE_CLASS(interlace);
 
 static void lowpass_line_c(uint8_t *dstp, ptrdiff_t linesize,
-                           const uint8_t *srcp,
-                           ptrdiff_t mref, ptrdiff_t pref)
+                           const uint8_t *srcp, ptrdiff_t mref,
+                           ptrdiff_t pref, int clip_max)
 {
     const uint8_t *srcp_above = srcp + mref;
     const uint8_t *srcp_below = srcp + pref;
@@ -75,30 +75,98 @@ static void lowpass_line_c(uint8_t *dstp, ptrdiff_t linesize,
     }
 }
 
+static void lowpass_line_c_16(uint8_t *dst8, ptrdiff_t linesize,
+                              const uint8_t *src8, ptrdiff_t mref,
+                              ptrdiff_t pref, int clip_max)
+{
+    uint16_t *dstp = (uint16_t *)dst8;
+    const uint16_t *srcp = (const uint16_t *)src8;
+    const uint16_t *srcp_above = srcp + mref / 2;
+    const uint16_t *srcp_below = srcp + pref / 2;
+    int i, src_x;
+    for (i = 0; i < linesize; i++) {
+        // this calculation is an integer representation of
+        // '0.5 * current + 0.25 * above + 0.25 * below'
+        // '1 +' is for rounding.
+        src_x   = av_le2ne16(srcp[i]) << 1;
+        dstp[i] = av_le2ne16((1 + src_x + av_le2ne16(srcp_above[i])
+                             + av_le2ne16(srcp_below[i])) >> 2);
+    }
+}
+
 static void lowpass_line_complex_c(uint8_t *dstp, ptrdiff_t linesize,
-                                   const uint8_t *srcp,
-                                   ptrdiff_t mref, ptrdiff_t pref)
+                                   const uint8_t *srcp, ptrdiff_t mref,
+                                   ptrdiff_t pref, int clip_max)
 {
     const uint8_t *srcp_above = srcp + mref;
     const uint8_t *srcp_below = srcp + pref;
     const uint8_t *srcp_above2 = srcp + mref * 2;
     const uint8_t *srcp_below2 = srcp + pref * 2;
-    int i;
+    int i, src_x, src_ab;
     for (i = 0; i < linesize; i++) {
         // this calculation is an integer representation of
         // '0.75 * current + 0.25 * above + 0.25 * below - 0.125 * above2 - 0.125 * below2'
         // '4 +' is for rounding.
-        dstp[i] = av_clip_uint8((4 + (srcp[i] << 2)
-                  + ((srcp[i] + srcp_above[i] + srcp_below[i]) << 1)
-                  - srcp_above2[i] - srcp_below2[i]) >> 3);
+        src_x   = srcp[i] << 1;
+        src_ab  = srcp_above[i] + srcp_below[i];
+        dstp[i] = av_clip_uint8((4 + ((srcp[i] + src_x + src_ab) << 1)
+                                - srcp_above2[i] - srcp_below2[i]) >> 3);
+        // Prevent over-sharpening:
+        // dst must not exceed src when the average of above and below
+        // is less than src. And the other way around.
+        if (src_ab > src_x) {
+            if (dstp[i] < srcp[i])
+                dstp[i] = srcp[i];
+        } else if (dstp[i] > srcp[i])
+            dstp[i] = srcp[i];
+    }
+}
+
+static void lowpass_line_complex_c_16(uint8_t *dst8, ptrdiff_t linesize,
+                                      const uint8_t *src8, ptrdiff_t mref,
+                                      ptrdiff_t pref, int clip_max)
+{
+    uint16_t *dstp = (uint16_t *)dst8;
+    const uint16_t *srcp = (const uint16_t *)src8;
+    const uint16_t *srcp_above = srcp + mref / 2;
+    const uint16_t *srcp_below = srcp + pref / 2;
+    const uint16_t *srcp_above2 = srcp + mref;
+    const uint16_t *srcp_below2 = srcp + pref;
+    int i, dst_le, src_le, src_x, src_ab;
+    for (i = 0; i < linesize; i++) {
+        // this calculation is an integer representation of
+        // '0.75 * current + 0.25 * above + 0.25 * below - 0.125 * above2 - 0.125 * below2'
+        // '4 +' is for rounding.
+        src_le = av_le2ne16(srcp[i]);
+        src_x  = src_le << 1;
+        src_ab = av_le2ne16(srcp_above[i]) + av_le2ne16(srcp_below[i]);
+        dst_le = av_clip((4 + ((src_le + src_x + src_ab) << 1)
+                         - av_le2ne16(srcp_above2[i])
+                         - av_le2ne16(srcp_below2[i])) >> 3, 0, clip_max);
+        // Prevent over-sharpening:
+        // dst must not exceed src when the average of above and below
+        // is less than src. And the other way around.
+        if (src_ab > src_x) {
+            if (dst_le < src_le)
+                dstp[i] = av_le2ne16(src_le);
+            else
+                dstp[i] = av_le2ne16(dst_le);
+        } else if (dst_le > src_le) {
+            dstp[i] = av_le2ne16(src_le);
+        } else
+            dstp[i] = av_le2ne16(dst_le);
     }
 }
 
 static const enum AVPixelFormat formats_supported[] = {
-    AV_PIX_FMT_YUV420P,  AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV444P,
-    AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV410P,  AV_PIX_FMT_YUVA420P,
-    AV_PIX_FMT_GRAY8,    AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P,
-    AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ440P, AV_PIX_FMT_NONE
+    AV_PIX_FMT_YUV410P,      AV_PIX_FMT_YUV411P,
+    AV_PIX_FMT_YUV420P,      AV_PIX_FMT_YUV422P,      AV_PIX_FMT_YUV444P,
+    AV_PIX_FMT_YUV420P10LE,  AV_PIX_FMT_YUV422P10LE,  AV_PIX_FMT_YUV444P10LE,
+    AV_PIX_FMT_YUV420P12LE,  AV_PIX_FMT_YUV422P12LE,  AV_PIX_FMT_YUV444P12LE,
+    AV_PIX_FMT_YUVA420P,     AV_PIX_FMT_YUVA422P,     AV_PIX_FMT_YUVA444P,
+    AV_PIX_FMT_YUVA420P10LE, AV_PIX_FMT_YUVA422P10LE, AV_PIX_FMT_YUVA444P10LE,
+    AV_PIX_FMT_GRAY8,        AV_PIX_FMT_YUVJ420P,     AV_PIX_FMT_YUVJ422P,
+    AV_PIX_FMT_YUVJ444P,     AV_PIX_FMT_YUVJ440P,     AV_PIX_FMT_NONE
 };
 
 static int query_formats(AVFilterContext *ctx)
@@ -115,6 +183,25 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_frame_free(&s->cur);
     av_frame_free(&s->next);
+}
+
+void ff_interlace_init(InterlaceContext *s, int depth)
+{
+    if (s->lowpass) {
+        if (s->lowpass == VLPF_LIN) {
+            if (depth > 8)
+                s->lowpass_line = lowpass_line_c_16;
+            else
+                s->lowpass_line = lowpass_line_c;
+        } else if (s->lowpass == VLPF_CMP) {
+            if (depth > 8)
+                s->lowpass_line = lowpass_line_complex_c_16;
+            else
+                s->lowpass_line = lowpass_line_complex_c;
+        }
+        if (ARCH_X86)
+            ff_interlace_init_x86(s, depth);
+    }
 }
 
 static int config_out_props(AVFilterLink *outlink)
@@ -141,15 +228,8 @@ static int config_out_props(AVFilterLink *outlink)
     outlink->time_base.num *= 2;
     outlink->frame_rate.den *= 2;
 
-
-    if (s->lowpass) {
-        if (s->lowpass == VLPF_LIN)
-            s->lowpass_line = lowpass_line_c;
-        else if (s->lowpass == VLPF_CMP)
-            s->lowpass_line = lowpass_line_complex_c;
-        if (ARCH_X86)
-            ff_interlace_init_x86(s);
-    }
+    s->csp = av_pix_fmt_desc_get(outlink->format);
+    ff_interlace_init(s, s->csp->comp[0].depth);
 
     av_log(ctx, AV_LOG_VERBOSE, "%s interlacing %s lowpass filter\n",
            s->scan == MODE_TFF ? "tff" : "bff", (s->lowpass) ? "with" : "without");
@@ -172,6 +252,9 @@ static void copy_picture_field(InterlaceContext *s,
         int lines = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(inlink->h, vsub) : inlink->h;
         uint8_t *dstp = dst_frame->data[plane];
         const uint8_t *srcp = src_frame->data[plane];
+        int srcp_linesize = src_frame->linesize[plane] * 2;
+        int dstp_linesize = dst_frame->linesize[plane] * 2;
+        int clip_max = (1 << s->csp->comp[plane].depth) - 1;
 
         av_assert0(cols >= 0 || lines >= 0);
 
@@ -180,38 +263,25 @@ static void copy_picture_field(InterlaceContext *s,
             srcp += src_frame->linesize[plane];
             dstp += dst_frame->linesize[plane];
         }
-        if (lowpass == VLPF_LIN) {
-            int srcp_linesize = src_frame->linesize[plane] * 2;
-            int dstp_linesize = dst_frame->linesize[plane] * 2;
+        if (lowpass) {
+            int x = 0;
+            if (lowpass == VLPF_CMP)
+                x = 1;
             for (j = lines; j > 0; j--) {
                 ptrdiff_t pref = src_frame->linesize[plane];
                 ptrdiff_t mref = -pref;
-                if (j == lines)
-                    mref = 0;    // there is no line above
-                else if (j == 1)
-                    pref = 0;    // there is no line below
-                s->lowpass_line(dstp, cols, srcp, mref, pref);
-                dstp += dstp_linesize;
-                srcp += srcp_linesize;
-            }
-        } else if (lowpass == VLPF_CMP) {
-            int srcp_linesize = src_frame->linesize[plane] * 2;
-            int dstp_linesize = dst_frame->linesize[plane] * 2;
-            for (j = lines; j > 0; j--) {
-                ptrdiff_t pref = src_frame->linesize[plane];
-                ptrdiff_t mref = -pref;
-                if (j >= (lines - 1))
+                if (j >= (lines - x))
                     mref = 0;
-                else if (j <= 2)
+                else if (j <= (1 + x))
                     pref = 0;
-                s->lowpass_line(dstp, cols, srcp, mref, pref);
+                s->lowpass_line(dstp, cols, srcp, mref, pref, clip_max);
                 dstp += dstp_linesize;
                 srcp += srcp_linesize;
             }
         } else {
-            av_image_copy_plane(dstp, dst_frame->linesize[plane] * 2,
-                                srcp, src_frame->linesize[plane] * 2,
-                                cols, lines);
+            if (s->csp->comp[plane].depth > 8)
+                cols *= 2;
+            av_image_copy_plane(dstp, dstp_linesize, srcp, srcp_linesize, cols, lines);
         }
     }
 }

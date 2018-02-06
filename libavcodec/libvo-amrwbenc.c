@@ -46,7 +46,10 @@ static const AVOption options[] = {
 };
 
 static const AVClass amrwb_class = {
-    "libvo_amrwbenc", av_default_item_name, options, LIBAVUTIL_VERSION_INT
+    .class_name = "libvo_amrwbenc",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 static int get_wb_bitrate_mode(int bitrate, void *log_ctx)
@@ -149,4 +152,5 @@ AVCodec ff_libvo_amrwbenc_encoder = {
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
     .priv_class     = &amrwb_class,
+    .wrapper_name   = "libvo_amrwbenc",
 };

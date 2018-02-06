@@ -238,7 +238,7 @@ static const AVOption drawtext_options[]= {
     {"rate",            "set rate (timecode only)",         OFFSET(tc_rate),       AV_OPT_TYPE_RATIONAL, {.dbl=0},           0,  INT_MAX, FLAGS},
     {"reload",     "reload text file for each frame",                       OFFSET(reload),     AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS},
     { "alpha",       "apply alpha while rendering", OFFSET(a_expr),      AV_OPT_TYPE_STRING, { .str = "1"     },          .flags = FLAGS },
-    {"fix_bounds", "check and fix text coords to avoid clipping", OFFSET(fix_bounds), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS},
+    {"fix_bounds", "check and fix text coords to avoid clipping", OFFSET(fix_bounds), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS},
     {"start_number", "start frame number for n/frame_num variable", OFFSET(start_number), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS},
 
 #if CONFIG_LIBFRIBIDI
@@ -1390,6 +1390,7 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame,
 
     s->x = s->var_values[VAR_X] = av_expr_eval(s->x_pexpr, s->var_values, &s->prng);
     s->y = s->var_values[VAR_Y] = av_expr_eval(s->y_pexpr, s->var_values, &s->prng);
+    /* It is necessary if x is expressed from y  */
     s->x = s->var_values[VAR_X] = av_expr_eval(s->x_pexpr, s->var_values, &s->prng);
 
     update_alpha(s);
@@ -1400,6 +1401,32 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame,
 
     box_w = FFMIN(width - 1 , max_text_line_w);
     box_h = FFMIN(height - 1, y + s->max_glyph_h);
+
+    if (s->fix_bounds) {
+
+        /* calculate footprint of text effects */
+        int boxoffset     = s->draw_box ? FFMAX(s->boxborderw, 0) : 0;
+        int borderoffset  = s->borderw  ? FFMAX(s->borderw, 0) : 0;
+
+        int offsetleft = FFMAX3(boxoffset, borderoffset,
+                                (s->shadowx < 0 ? FFABS(s->shadowx) : 0));
+        int offsettop = FFMAX3(boxoffset, borderoffset,
+                                (s->shadowy < 0 ? FFABS(s->shadowy) : 0));
+
+        int offsetright = FFMAX3(boxoffset, borderoffset,
+                                 (s->shadowx > 0 ? s->shadowx : 0));
+        int offsetbottom = FFMAX3(boxoffset, borderoffset,
+                                  (s->shadowy > 0 ? s->shadowy : 0));
+
+
+        if (s->x - offsetleft < 0) s->x = offsetleft;
+        if (s->y - offsettop < 0)  s->y = offsettop;
+
+        if (s->x + box_w + offsetright > width)
+            s->x = FFMAX(width - box_w - offsetright, 0);
+        if (s->y + box_h + offsetbottom > height)
+            s->y = FFMAX(height - box_h - offsetbottom, 0);
+    }
 
     /* draw box */
     if (s->draw_box)

@@ -47,7 +47,7 @@ typedef struct SplitContext {
 static av_cold int split_init(AVFilterContext *ctx)
 {
     SplitContext *s = ctx->priv;
-    int i;
+    int i, ret;
 
     for (i = 0; i < s->nb_outputs; i++) {
         char name[32];
@@ -59,7 +59,10 @@ static av_cold int split_init(AVFilterContext *ctx)
         if (!pad.name)
             return AVERROR(ENOMEM);
 
-        ff_insert_outpad(ctx, i, &pad);
+        if ((ret = ff_insert_outpad(ctx, i, &pad)) < 0) {
+            av_freep(&pad.name);
+            return ret;
+        }
     }
 
     return 0;

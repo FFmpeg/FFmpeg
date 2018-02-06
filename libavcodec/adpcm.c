@@ -1115,6 +1115,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         int16_t *out1 = samples_p[1];
         int samples_per_block = 28 * (3 - avctx->channels) * 4;
         int sample_offset = 0;
+        int bytes_remaining;
         while (bytestream2_get_bytes_left(&gb) >= 128) {
             if ((ret = xa_decode(avctx, out0, out1, buf + bytestream2_tell(&gb),
                                  &c->status[0], &c->status[1],
@@ -1122,6 +1123,12 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
                 return ret;
             bytestream2_skipu(&gb, 128);
             sample_offset += samples_per_block;
+        }
+        /* Less than a full block of data left, e.g. when reading from
+         * 2324 byte per sector XA; the remainder is padding */
+        bytes_remaining = bytestream2_get_bytes_left(&gb);
+        if (bytes_remaining > 0) {
+            bytestream2_skip(&gb, bytes_remaining);
         }
         break;
     }

@@ -715,8 +715,8 @@ static int decode_block(MJpegDecodeContext *s, int16_t *block, int component,
         av_log(s->avctx, AV_LOG_ERROR, "error dc\n");
         return AVERROR_INVALIDDATA;
     }
-    val = val * quant_matrix[0] + s->last_dc[component];
-    val = FFMIN(val, 32767);
+    val = val * (unsigned)quant_matrix[0] + s->last_dc[component];
+    val = av_clip_int16(val);
     s->last_dc[component] = val;
     block[0] = val;
     /* AC coefs */
@@ -1867,7 +1867,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
 
             // read 0th IFD and store the metadata
             // (return values > 0 indicate the presence of subimage metadata)
-            ret = avpriv_exif_decode_ifd(s->avctx, &gbytes, le, 0, &s->exif_metadata);
+            ret = ff_exif_decode_ifd(s->avctx, &gbytes, le, 0, &s->exif_metadata);
             if (ret < 0) {
                 av_log(s->avctx, AV_LOG_ERROR, "mjpeg: error decoding EXIF data\n");
             }
@@ -1899,6 +1899,72 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
             if (s->avctx->debug & FF_DEBUG_PICT_INFO)
                 av_log(s->avctx, AV_LOG_INFO, "mjpeg: Apple MJPEG-A header found\n");
         }
+    }
+
+    if (s->start_code == APP2 && id == AV_RB32("ICC_") && len >= 10) {
+        int id2;
+        unsigned seqno;
+        unsigned nummarkers;
+
+        id   = get_bits_long(&s->gb, 32);
+        id2  = get_bits_long(&s->gb, 24);
+        len -= 7;
+        if (id != AV_RB32("PROF") || id2 != AV_RB24("ILE")) {
+            av_log(s->avctx, AV_LOG_WARNING, "Invalid ICC_PROFILE header in APP2\n");
+            goto out;
+        }
+
+        skip_bits(&s->gb, 8);
+        seqno  = get_bits(&s->gb, 8);
+        len   -= 2;
+        if (seqno == 0) {
+            av_log(s->avctx, AV_LOG_WARNING, "Invalid sequence number in APP2\n");
+            goto out;
+        }
+
+        nummarkers  = get_bits(&s->gb, 8);
+        len        -= 1;
+        if (nummarkers == 0) {
+            av_log(s->avctx, AV_LOG_WARNING, "Invalid number of markers coded in APP2\n");
+            goto out;
+        } else if (s->iccnum != 0 && nummarkers != s->iccnum) {
+            av_log(s->avctx, AV_LOG_WARNING, "Mistmatch in coded number of ICC markers between markers\n");
+            goto out;
+        } else if (seqno > nummarkers) {
+            av_log(s->avctx, AV_LOG_WARNING, "Mismatching sequence number and coded number of ICC markers\n");
+            goto out;
+        }
+
+        /* Allocate if this is the first APP2 we've seen. */
+        if (s->iccnum == 0) {
+            s->iccdata     = av_mallocz(nummarkers * sizeof(*(s->iccdata)));
+            s->iccdatalens = av_mallocz(nummarkers * sizeof(*(s->iccdatalens)));
+            if (!s->iccdata || !s->iccdatalens) {
+                av_log(s->avctx, AV_LOG_ERROR, "Could not allocate ICC data arrays\n");
+                return AVERROR(ENOMEM);
+            }
+            s->iccnum = nummarkers;
+        }
+
+        if (s->iccdata[seqno - 1]) {
+            av_log(s->avctx, AV_LOG_WARNING, "Duplicate ICC sequence number\n");
+            goto out;
+        }
+
+        s->iccdatalens[seqno - 1]  = len;
+        s->iccdata[seqno - 1]      = av_malloc(len);
+        if (!s->iccdata[seqno - 1]) {
+            av_log(s->avctx, AV_LOG_ERROR, "Could not allocate ICC data buffer\n");
+            return AVERROR(ENOMEM);
+        }
+
+        memcpy(s->iccdata[seqno - 1], align_get_bits(&s->gb), len);
+        skip_bits(&s->gb, len << 3);
+        len = 0;
+        s->iccread++;
+
+        if (s->iccread > s->iccnum)
+            av_log(s->avctx, AV_LOG_WARNING, "Read more ICC markers than are supposed to be coded\n");
     }
 
 out:
@@ -2097,6 +2163,20 @@ int ff_mjpeg_find_marker(MJpegDecodeContext *s,
     return start_code;
 }
 
+static void reset_icc_profile(MJpegDecodeContext *s)
+{
+    int i;
+
+    if (s->iccdata)
+        for (i = 0; i < s->iccnum; i++)
+            av_freep(&s->iccdata[i]);
+    av_freep(&s->iccdata);
+    av_freep(&s->iccdatalens);
+
+    s->iccread = 0;
+    s->iccnum  = 0;
+}
+
 int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                           AVPacket *avpkt)
 {
@@ -2116,6 +2196,9 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     av_dict_free(&s->exif_metadata);
     av_freep(&s->stereo3d);
     s->adobe_transform = -1;
+
+    if (s->iccnum != 0)
+        reset_icc_profile(s);
 
     buf_ptr = buf;
     buf_end = buf + buf_size;
@@ -2345,7 +2428,10 @@ the_end:
                    avctx->pix_fmt == AV_PIX_FMT_GBRP     ||
                    avctx->pix_fmt == AV_PIX_FMT_GBRAP
                   );
-        avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &hshift, &vshift);
+        ret = av_pix_fmt_get_chroma_sub_sample(s->avctx->pix_fmt, &hshift, &vshift);
+        if (ret)
+            return ret;
+
         av_assert0(s->nb_components == av_pix_fmt_count_planes(s->picture_ptr->format));
         for (p = 0; p<s->nb_components; p++) {
             uint8_t *line = s->picture_ptr->data[p];
@@ -2404,7 +2490,10 @@ the_end:
                    avctx->pix_fmt == AV_PIX_FMT_GBRP     ||
                    avctx->pix_fmt == AV_PIX_FMT_GBRAP
                    );
-        avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &hshift, &vshift);
+        ret = av_pix_fmt_get_chroma_sub_sample(s->avctx->pix_fmt, &hshift, &vshift);
+        if (ret)
+            return ret;
+
         av_assert0(s->nb_components == av_pix_fmt_count_planes(s->picture_ptr->format));
         for (p = 0; p < s->nb_components; p++) {
             uint8_t *dst;
@@ -2432,7 +2521,10 @@ the_end:
     }
     if (s->flipped && !s->rgb) {
         int j;
-        avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &hshift, &vshift);
+        ret = av_pix_fmt_get_chroma_sub_sample(s->avctx->pix_fmt, &hshift, &vshift);
+        if (ret)
+            return ret;
+
         av_assert0(s->nb_components == av_pix_fmt_count_planes(s->picture_ptr->format));
         for (index=0; index<s->nb_components; index++) {
             uint8_t *dst = s->picture_ptr->data[index];
@@ -2509,6 +2601,29 @@ the_end:
         av_freep(&s->stereo3d);
     }
 
+    if (s->iccnum != 0 && s->iccnum == s->iccread) {
+        AVFrameSideData *sd;
+        size_t offset = 0;
+        int total_size = 0;
+        int i;
+
+        /* Sum size of all parts. */
+        for (i = 0; i < s->iccnum; i++)
+            total_size += s->iccdatalens[i];
+
+        sd = av_frame_new_side_data(data, AV_FRAME_DATA_ICC_PROFILE, total_size);
+        if (!sd) {
+            av_log(s->avctx, AV_LOG_ERROR, "Could not allocate frame side data\n");
+            return AVERROR(ENOMEM);
+        }
+
+        /* Reassemble the parts, which are now in-order. */
+        for (i = 0; i < s->iccnum; i++) {
+            memcpy(sd->data + offset, s->iccdata[i], s->iccdatalens[i]);
+            offset += s->iccdatalens[i];
+        }
+    }
+
     av_dict_copy(&((AVFrame *) data)->metadata, s->exif_metadata, 0);
     av_dict_free(&s->exif_metadata);
 
@@ -2548,6 +2663,9 @@ av_cold int ff_mjpeg_decode_end(AVCodecContext *avctx)
         av_freep(&s->last_nnz[i]);
     }
     av_dict_free(&s->exif_metadata);
+
+    reset_icc_profile(s);
+
     return 0;
 }
 

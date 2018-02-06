@@ -156,6 +156,9 @@ int ff_dxva2_decode_init(AVCodecContext *avctx);
 
 int ff_dxva2_decode_uninit(AVCodecContext *avctx);
 
+int ff_dxva2_common_frame_params(AVCodecContext *avctx,
+                                 AVBufferRef *hw_frames_ctx);
+
 int ff_dxva2_is_d3d11(const AVCodecContext *avctx);
 
 #endif /* AVCODEC_DXVA2_INTERNAL_H */

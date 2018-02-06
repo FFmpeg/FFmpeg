@@ -25,6 +25,9 @@
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/mdct15.h"
 
+void ff_mdct15_postreindex_sse3(FFTComplex *out, FFTComplex *in, FFTComplex *exp, int *lut, ptrdiff_t len8);
+void ff_mdct15_postreindex_avx2(FFTComplex *out, FFTComplex *in, FFTComplex *exp, int *lut, ptrdiff_t len8);
+
 void ff_fft15_avx(FFTComplex *out, FFTComplex *in, FFTComplex *exptab, ptrdiff_t stride);
 
 static void perm_twiddles(MDCT15Context *s)
@@ -85,10 +88,16 @@ av_cold void ff_mdct15_init_x86(MDCT15Context *s)
     int adjust_twiddles = 0;
     int cpu_flags = av_get_cpu_flags();
 
+    if (EXTERNAL_SSE3(cpu_flags))
+        s->postreindex = ff_mdct15_postreindex_sse3;
+
     if (ARCH_X86_64 && EXTERNAL_AVX(cpu_flags)) {
         s->fft15 = ff_fft15_avx;
         adjust_twiddles = 1;
     }
+
+    if (ARCH_X86_64 && EXTERNAL_AVX2_FAST(cpu_flags))
+        s->postreindex = ff_mdct15_postreindex_avx2;
 
     if (adjust_twiddles)
         perm_twiddles(s);

@@ -59,6 +59,7 @@ int ff_neterrno(void);
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <netdb.h>
 
 #define ff_neterrno() AVERROR(errno)
@@ -74,7 +75,6 @@ int ff_neterrno(void);
 
 int ff_socket_nonblock(int socket, int enable);
 
-extern int ff_network_inited_globally;
 int ff_network_init(void);
 void ff_network_close(void);
 
@@ -95,7 +95,14 @@ int ff_network_wait_fd(int fd, int write);
  */
 int ff_network_wait_fd_timeout(int fd, int write, int64_t timeout, AVIOInterruptCB *int_cb);
 
-int ff_inet_aton (const char * str, struct in_addr * add);
+/**
+ * Waits for up to 'timeout' microseconds. If the usert's int_cb is set and
+ * triggered, return before that.
+ * @timeout Timeout in microseconds. Maybe have lower actual precision.
+ * @param int_cb Interrupt callback, is checked regularly.
+ * @return AVERROR(ETIMEDOUT) if timeout expirted, AVERROR_EXIT if interrupted by int_cb
+ */
+int ff_network_sleep_interruptible(int64_t timeout, AVIOInterruptCB *int_cb);
 
 #if !HAVE_STRUCT_SOCKADDR_STORAGE
 struct sockaddr_storage {

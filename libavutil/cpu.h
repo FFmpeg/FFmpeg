@@ -21,6 +21,8 @@
 #ifndef AVUTIL_CPU_H
 #define AVUTIL_CPU_H
 
+#include <stddef.h>
+
 #include "attributes.h"
 
 #define AV_CPU_FLAG_FORCE    0x80000000 /* force usage of selected flags (OR) */
@@ -53,6 +55,7 @@
 #define AV_CPU_FLAG_FMA3        0x10000 ///< Haswell FMA3 functions
 #define AV_CPU_FLAG_BMI1        0x20000 ///< Bit Manipulation Instruction Set 1
 #define AV_CPU_FLAG_BMI2        0x40000 ///< Bit Manipulation Instruction Set 2
+#define AV_CPU_FLAG_AVX512     0x100000 ///< AVX-512 functions: requires OS support even if YMM/ZMM registers aren't used
 
 #define AV_CPU_FLAG_ALTIVEC      0x0001 ///< standard
 #define AV_CPU_FLAG_VSX          0x0002 ///< ISA 2.06
@@ -112,5 +115,16 @@ int av_parse_cpu_caps(unsigned *flags, const char *s);
  * @return the number of logical CPU cores present.
  */
 int av_cpu_count(void);
+
+/**
+ * Get the maximum data alignment that may be required by FFmpeg.
+ *
+ * Note that this is affected by the build configuration and the CPU flags mask,
+ * so e.g. if the CPU supports AVX, but libavutil has been built with
+ * --disable-avx or the AV_CPU_FLAG_AVX flag has been disabled through
+ *  av_set_cpu_flags_mask(), then this function will behave as if AVX is not
+ *  present.
+ */
+size_t av_cpu_max_align(void);
 
 #endif /* AVUTIL_CPU_H */

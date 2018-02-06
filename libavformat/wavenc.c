@@ -74,8 +74,6 @@ typedef struct WAVMuxContext {
     uint32_t peak_num_frames;
     uint32_t peak_outbuf_size;
     uint32_t peak_outbuf_bytes;
-    uint32_t peak_pos_pop;
-    uint16_t peak_pop;
     uint8_t *peak_output;
     int last_duration;
     int write_bext;
@@ -195,7 +193,6 @@ static void peak_write_frame(AVFormatContext *s)
 {
     WAVMuxContext *wav = s->priv_data;
     AVCodecParameters *par = s->streams[0]->codecpar;
-    int peak_of_peaks;
     int c;
 
     if (!wav->peak_output)
@@ -212,12 +209,6 @@ static void peak_write_frame(AVFormatContext *s)
         if (wav->peak_ppv == 1)
             wav->peak_maxpos[c] =
                 FFMAX(wav->peak_maxpos[c], wav->peak_maxneg[c]);
-
-        peak_of_peaks = FFMAX3(wav->peak_maxpos[c], wav->peak_maxneg[c],
-                               wav->peak_pop);
-        if (peak_of_peaks > wav->peak_pop)
-            wav->peak_pos_pop = wav->peak_num_frames;
-        wav->peak_pop = peak_of_peaks;
 
         if (wav->peak_outbuf_size - wav->peak_outbuf_bytes <
             wav->peak_format * wav->peak_ppv) {
@@ -287,7 +278,7 @@ static int peak_write_chunk(AVFormatContext *s)
     avio_wl32(pb, wav->peak_block_size);        /* frames per value */
     avio_wl32(pb, par->channels);               /* number of channels */
     avio_wl32(pb, wav->peak_num_frames);        /* number of peak frames */
-    avio_wl32(pb, wav->peak_pos_pop);           /* audio sample frame index */
+    avio_wl32(pb, -1);                          /* audio sample frame position (not implemented) */
     avio_wl32(pb, 128);                         /* equal to size of header */
     avio_write(pb, timestamp, 28);              /* ASCII time stamp */
     ffio_fill(pb, 0, 60);
@@ -331,7 +322,7 @@ static int wav_write_header(AVFormatContext *s)
         ffio_fill(pb, 0, 28);
     }
 
-    if (wav->write_peak != 2) {
+    if (wav->write_peak != PEAK_ONLY) {
         /* format header */
         fmt = ff_start_tag(pb, "fmt ");
         if (ff_put_wav_header(s, pb, s->streams[0]->codecpar, 0) < 0) {
@@ -363,7 +354,7 @@ static int wav_write_header(AVFormatContext *s)
     wav->maxpts = wav->last_duration = 0;
     wav->minpts = INT64_MAX;
 
-    if (wav->write_peak != 2) {
+    if (wav->write_peak != PEAK_ONLY) {
         /* info header */
         ff_riff_write_info(s);
 
@@ -381,7 +372,7 @@ static int wav_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVIOContext *pb  = s->pb;
     WAVMuxContext    *wav = s->priv_data;
 
-    if (wav->write_peak != 2)
+    if (wav->write_peak != PEAK_ONLY)
         avio_write(pb, pkt->data, pkt->size);
 
     if (wav->write_peak) {
@@ -426,7 +417,7 @@ static int wav_write_trailer(AVFormatContext *s)
     avio_flush(pb);
 
     if (s->pb->seekable & AVIO_SEEKABLE_NORMAL) {
-        if (wav->write_peak != 2 && avio_tell(pb) - wav->data < UINT32_MAX) {
+        if (wav->write_peak != PEAK_ONLY && avio_tell(pb) - wav->data < UINT32_MAX) {
             ff_end_tag(pb, wav->data);
             avio_flush(pb);
         }

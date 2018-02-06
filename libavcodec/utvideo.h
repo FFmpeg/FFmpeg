@@ -72,17 +72,23 @@ typedef struct UtvideoContext {
     LLVidDSPContext llviddsp;
     LLVidEncDSPContext llvidencdsp;
 
-    uint32_t frame_info_size, flags, frame_info;
+    uint32_t frame_info_size, flags, frame_info, offset;
     int      planes;
     int      slices;
     int      compression;
     int      interlaced;
     int      frame_pred;
     int      pro;
+    int      pack;
 
     ptrdiff_t slice_stride;
     uint8_t *slice_bits, *slice_buffer[4];
     int      slice_bits_size;
+
+    const uint8_t *packed_stream[4][256];
+    size_t packed_stream_size[4][256];
+    const uint8_t *control_stream[4][256];
+    size_t control_stream_size[4][256];
 } UtvideoContext;
 
 typedef struct HuffEntry {

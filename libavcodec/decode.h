@@ -21,7 +21,37 @@
 #ifndef AVCODEC_DECODE_H
 #define AVCODEC_DECODE_H
 
+#include "libavutil/buffer.h"
+#include "libavutil/frame.h"
+#include "libavutil/hwcontext.h"
+
 #include "avcodec.h"
+
+/**
+ * This struct stores per-frame lavc-internal data and is attached to it via
+ * private_ref.
+ */
+typedef struct FrameDecodeData {
+    /**
+     * The callback to perform some delayed processing on the frame right
+     * before it is returned to the caller.
+     *
+     * @note This code is called at some unspecified point after the frame is
+     * returned from the decoder's decode/receive_frame call. Therefore it cannot rely
+     * on AVCodecContext being in any specific state, so it does not get to
+     * access AVCodecContext directly at all. All the state it needs must be
+     * stored in the post_process_opaque object.
+     */
+    int (*post_process)(void *logctx, AVFrame *frame);
+    void *post_process_opaque;
+    void (*post_process_opaque_free)(void *opaque);
+
+    /**
+     * Per-frame private data for hwaccels.
+     */
+    void *hwaccel_priv;
+    void (*hwaccel_priv_free)(void *priv);
+} FrameDecodeData;
 
 /**
  * Called by decoders to get the next packet for decoding.
@@ -35,5 +65,15 @@
 int ff_decode_get_packet(AVCodecContext *avctx, AVPacket *pkt);
 
 void ff_decode_bsfs_uninit(AVCodecContext *avctx);
+
+/**
+ * Make sure avctx.hw_frames_ctx is set. If it's not set, the function will
+ * try to allocate it from hw_device_ctx. If that is not possible, an error
+ * message is printed, and an error code is returned.
+ */
+int ff_decode_get_hw_frames_ctx(AVCodecContext *avctx,
+                                enum AVHWDeviceType dev_type);
+
+int ff_attach_decode_data(AVFrame *frame);
 
 #endif /* AVCODEC_DECODE_H */

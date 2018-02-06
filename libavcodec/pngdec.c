@@ -25,6 +25,7 @@
 #include "libavutil/bprint.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/stereo3d.h"
+#include "libavutil/mastering_display_metadata.h"
 
 #include "avcodec.h"
 #include "bytestream.h"
@@ -523,9 +524,9 @@ static int decode_text_chunk(PNGDecContext *s, uint32_t length, int compressed,
         if ((ret = decode_zbuf(&bp, data, data_end)) < 0)
             return ret;
         text_len = bp.len;
-        av_bprint_finalize(&bp, (char **)&text);
-        if (!text)
-            return AVERROR(ENOMEM);
+        ret = av_bprint_finalize(&bp, (char **)&text);
+        if (ret < 0)
+            return ret;
     } else {
         text = (uint8_t *)data;
         text_len = data_end - text;
@@ -661,10 +662,10 @@ static int decode_idat_chunk(AVCodecContext *avctx, PNGDecContext *s,
                 s->color_type == PNG_COLOR_TYPE_GRAY_ALPHA) {
             avctx->pix_fmt = AV_PIX_FMT_YA16BE;
         } else {
-            av_log(avctx, AV_LOG_ERROR, "unsupported bit depth %d "
-                    "and color type %d\n",
-                    s->bit_depth, s->color_type);
-            return AVERROR_INVALIDDATA;
+            avpriv_report_missing_feature(avctx,
+                                          "Bit depth %d color type %d",
+                                          s->bit_depth, s->color_type);
+            return AVERROR_PATCHWELCOME;
         }
 
         if (s->has_trns && s->color_type != PNG_COLOR_TYPE_PALETTE) {
@@ -832,6 +833,51 @@ static int decode_trns_chunk(AVCodecContext *avctx, PNGDecContext *s,
 
     bytestream2_skip(&s->gb, 4); /* crc */
     s->has_trns = 1;
+
+    return 0;
+}
+
+static int decode_iccp_chunk(PNGDecContext *s, int length, AVFrame *f)
+{
+    int ret, cnt = 0;
+    uint8_t *data, profile_name[82];
+    AVBPrint bp;
+    AVFrameSideData *sd;
+
+    while ((profile_name[cnt++] = bytestream2_get_byte(&s->gb)) && cnt < 81);
+    if (cnt > 80) {
+        av_log(s->avctx, AV_LOG_ERROR, "iCCP with invalid name!\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    length = FFMAX(length - cnt, 0);
+
+    if (bytestream2_get_byte(&s->gb) != 0) {
+        av_log(s->avctx, AV_LOG_ERROR, "iCCP with invalid compression!\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    length = FFMAX(length - 1, 0);
+
+    if ((ret = decode_zbuf(&bp, s->gb.buffer, s->gb.buffer + length)) < 0)
+        return ret;
+
+    ret = av_bprint_finalize(&bp, (char **)&data);
+    if (ret < 0)
+        return ret;
+
+    sd = av_frame_new_side_data(f, AV_FRAME_DATA_ICC_PROFILE, bp.len);
+    if (!sd) {
+        av_free(data);
+        return AVERROR(ENOMEM);
+    }
+
+    av_dict_set(&sd->metadata, "name", profile_name, 0);
+    memcpy(sd->data, data, bp.len);
+    av_free(data);
+
+    /* ICC compressed data and CRC */
+    bytestream2_skip(&s->gb, length + 4);
 
     return 0;
 }
@@ -1122,7 +1168,7 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
     AVDictionary **metadatap = NULL;
     uint32_t tag, length;
     int decode_next_dat = 0;
-    int ret;
+    int i, ret;
 
     for (;;) {
         length = bytestream2_get_bytes_left(&s->gb);
@@ -1236,6 +1282,47 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
                  av_log(avctx, AV_LOG_WARNING,
                         "Unknown value in sTER chunk (%d)\n", mode);
             }
+            bytestream2_skip(&s->gb, 4); /* crc */
+            break;
+        }
+        case MKTAG('i', 'C', 'C', 'P'): {
+            if (decode_iccp_chunk(s, length, p) < 0)
+                goto fail;
+            break;
+        }
+        case MKTAG('c', 'H', 'R', 'M'): {
+            AVMasteringDisplayMetadata *mdm = av_mastering_display_metadata_create_side_data(p);
+            if (!mdm) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+
+            mdm->white_point[0] = av_make_q(bytestream2_get_be32(&s->gb), 100000);
+            mdm->white_point[1] = av_make_q(bytestream2_get_be32(&s->gb), 100000);
+
+            /* RGB Primaries */
+            for (i = 0; i < 3; i++) {
+                mdm->display_primaries[i][0] = av_make_q(bytestream2_get_be32(&s->gb), 100000);
+                mdm->display_primaries[i][1] = av_make_q(bytestream2_get_be32(&s->gb), 100000);
+            }
+
+            mdm->has_primaries = 1;
+            bytestream2_skip(&s->gb, 4); /* crc */
+            break;
+        }
+        case MKTAG('g', 'A', 'M', 'A'): {
+            AVBPrint bp;
+            char *gamma_str;
+            int num = bytestream2_get_be32(&s->gb);
+
+            av_bprint_init(&bp, 0, -1);
+            av_bprintf(&bp, "%i/%i", num, 100000);
+            ret = av_bprint_finalize(&bp, &gamma_str);
+            if (ret < 0)
+                return ret;
+
+            av_dict_set(&p->metadata, "gamma", gamma_str, AV_DICT_DONT_STRDUP_VAL);
+
             bytestream2_skip(&s->gb, 4); /* crc */
             break;
         }
@@ -1366,7 +1453,7 @@ static int decode_frame_png(AVCodecContext *avctx,
     }
 
     if ((ret = av_frame_ref(data, s->picture.f)) < 0)
-        return ret;
+        goto the_end;
 
     *got_frame = 1;
 

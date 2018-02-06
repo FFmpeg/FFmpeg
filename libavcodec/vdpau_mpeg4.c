@@ -110,7 +110,7 @@ static int vdpau_mpeg4_init(AVCodecContext *avctx)
     return ff_vdpau_common_init(avctx, profile, avctx->level);
 }
 
-AVHWAccel ff_mpeg4_vdpau_hwaccel = {
+const AVHWAccel ff_mpeg4_vdpau_hwaccel = {
     .name           = "mpeg4_vdpau",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MPEG4,
@@ -121,6 +121,7 @@ AVHWAccel ff_mpeg4_vdpau_hwaccel = {
     .frame_priv_data_size = sizeof(struct vdpau_picture_context),
     .init           = vdpau_mpeg4_init,
     .uninit         = ff_vdpau_common_uninit,
+    .frame_params   = ff_vdpau_common_frame_params,
     .priv_data_size = sizeof(VDPAUContext),
     .caps_internal  = HWACCEL_CAP_ASYNC_SAFE,
 };

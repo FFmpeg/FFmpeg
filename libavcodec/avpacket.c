@@ -247,8 +247,6 @@ failed_alloc:
     av_packet_unref(pkt);
     return AVERROR(ENOMEM);
 }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
 int av_dup_packet(AVPacket *pkt)
 {
@@ -266,6 +264,8 @@ int av_copy_packet(AVPacket *dst, const AVPacket *src)
     *dst = *src;
     return copy_packet_data(dst, src, 0);
 }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
 void av_packet_free_side_data(AVPacket *pkt)
 {
@@ -387,6 +387,7 @@ const char *av_packet_side_data_name(enum AVPacketSideDataType type)
     case AV_PKT_DATA_MASTERING_DISPLAY_METADATA: return "Mastering display metadata";
     case AV_PKT_DATA_CONTENT_LIGHT_LEVEL:        return "Content light level metadata";
     case AV_PKT_DATA_SPHERICAL:                  return "Spherical Mapping";
+    case AV_PKT_DATA_A53_CC:                     return "A53 Closed Captions";
     }
     return NULL;
 }
@@ -472,34 +473,6 @@ int av_packet_split_side_data(AVPacket *pkt){
         }
         pkt->size -= 8;
         pkt->side_data_elems = i+1;
-        return 1;
-    }
-    return 0;
-}
-#endif
-
-#if FF_API_MERGE_SD
-int ff_packet_split_and_drop_side_data(AVPacket *pkt){
-    if (!pkt->side_data_elems && pkt->size >12 && AV_RB64(pkt->data + pkt->size - 8) == FF_MERGE_MARKER){
-        int i;
-        unsigned int size;
-        uint8_t *p;
-
-        p = pkt->data + pkt->size - 8 - 5;
-        for (i=1; ; i++){
-            size = AV_RB32(p);
-            if (size>INT_MAX - 5 || p - pkt->data < size)
-                return 0;
-            if (p[4]&128)
-                break;
-            if (p - pkt->data < size + 5)
-                return 0;
-            p-= size+5;
-            if (i > AV_PKT_DATA_NB)
-                return 0;
-        }
-        pkt->size = p - pkt->data - size;
-        av_assert0(pkt->size >= 0);
         return 1;
     }
     return 0;

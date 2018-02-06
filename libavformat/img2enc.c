@@ -42,6 +42,7 @@ typedef struct VideoMuxData {
     char target[4][1024];
     int update;
     int use_strftime;
+    int frame_pts;
     const char *muxer;
     int use_rename;
 } VideoMuxData;
@@ -52,7 +53,7 @@ static int write_header(AVFormatContext *s)
     AVStream *st = s->streams[0];
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(st->codecpar->format);
 
-    av_strlcpy(img->path, s->filename, sizeof(img->path));
+    av_strlcpy(img->path, s->url, sizeof(img->path));
 
     /* find format */
     if (s->oformat->flags & AVFMT_NOFILE)
@@ -62,6 +63,8 @@ static int write_header(AVFormatContext *s)
 
     if (st->codecpar->codec_id == AV_CODEC_ID_GIF) {
         img->muxer = "gif";
+    } else if (st->codecpar->codec_id == AV_CODEC_ID_FITS) {
+        img->muxer = "fits";
     } else if (st->codecpar->codec_id == AV_CODEC_ID_RAWVIDEO) {
         const char *str = strrchr(img->path, '.');
         img->split_planes =     str
@@ -97,12 +100,17 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
                 av_log(s, AV_LOG_ERROR, "Could not get frame filename with strftime\n");
                 return AVERROR(EINVAL);
             }
+        } else if (img->frame_pts) {
+            if (av_get_frame_filename2(filename, sizeof(filename), img->path, pkt->pts, AV_FRAME_FILENAME_FLAGS_MULTIPLE) < 0) {
+                av_log(s, AV_LOG_ERROR, "Cannot write filename by pts of the frames.");
+                return AVERROR(EINVAL);
+            }
         } else if (av_get_frame_filename2(filename, sizeof(filename), img->path,
                                           img->img_number,
                                           AV_FRAME_FILENAME_FLAGS_MULTIPLE) < 0 &&
                    img->img_number > 1) {
             av_log(s, AV_LOG_ERROR,
-                   "Could not get frame filename number %d from pattern '%s' (either set updatefirst or use a pattern like %%03d within the filename pattern)\n",
+                   "Could not get frame filename number %d from pattern '%s' (either set update or use a pattern like %%03d within the filename pattern)\n",
                    img->img_number, img->path);
             return AVERROR(EINVAL);
         }
@@ -148,7 +156,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 
         av_assert0(!img->split_planes);
 
-        ret = avformat_alloc_output_context2(&fmt, NULL, img->muxer, s->filename);
+        ret = avformat_alloc_output_context2(&fmt, NULL, img->muxer, s->url);
         if (ret < 0)
             return ret;
         st = avformat_new_stream(fmt, NULL);
@@ -159,8 +167,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         st->id = pkt->stream_index;
 
         fmt->pb = pb[0];
-        if ((ret = av_copy_packet(&pkt2, pkt))                            < 0 ||
-            (ret = av_dup_packet(&pkt2))                                  < 0 ||
+        if ((ret = av_packet_ref(&pkt2, pkt))                             < 0 ||
             (ret = avcodec_parameters_copy(st->codecpar, s->streams[0]->codecpar)) < 0 ||
             (ret = avformat_write_header(fmt, NULL))                      < 0 ||
             (ret = av_interleaved_write_frame(fmt, &pkt2))                < 0 ||
@@ -202,10 +209,10 @@ static int query_codec(enum AVCodecID id, int std_compliance)
 #define OFFSET(x) offsetof(VideoMuxData, x)
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption muxoptions[] = {
-    { "updatefirst",  "continuously overwrite one file", OFFSET(update),  AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0,       1, ENC },
     { "update",       "continuously overwrite one file", OFFSET(update),  AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0,       1, ENC },
     { "start_number", "set first number in the sequence", OFFSET(img_number), AV_OPT_TYPE_INT,  { .i64 = 1 }, 0, INT_MAX, ENC },
     { "strftime",     "use strftime for filename", OFFSET(use_strftime),  AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, ENC },
+    { "frame_pts",    "use current frame pts for filename", OFFSET(frame_pts),  AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, ENC },
     { "atomic_writing", "write files atomically (using temporary files and renames)", OFFSET(use_rename), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, ENC },
     { NULL },
 };

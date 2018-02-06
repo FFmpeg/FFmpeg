@@ -30,7 +30,7 @@ static void ps_add_squares_c(INTFLOAT *dst, const INTFLOAT (*src)[2], int n)
 {
     int i;
     for (i = 0; i < n; i++)
-        dst[i] += AAC_MADD28(src[i][0], src[i][0], src[i][1], src[i][1]);
+        dst[i] += (UINTFLOAT)AAC_MADD28(src[i][0], src[i][0], src[i][1], src[i][1]);
 }
 
 static void ps_mul_pair_single_c(INTFLOAT (*dst)[2], INTFLOAT (*src0)[2], INTFLOAT *src1,
@@ -130,12 +130,12 @@ static void ps_decorrelate_c(INTFLOAT (*out)[2], INTFLOAT (*delay)[2],
             INTFLOAT apd_im = in_im;
             in_re = AAC_MSUB30(link_delay_re, fractional_delay_re,
                     link_delay_im, fractional_delay_im);
-            in_re -= a_re;
+            in_re -= (UINTFLOAT)a_re;
             in_im = AAC_MADD30(link_delay_re, fractional_delay_im,
                     link_delay_im, fractional_delay_re);
-            in_im -= a_im;
-            ap_delay[m][n+5][0] = apd_re + AAC_MUL31(ag[m], in_re);
-            ap_delay[m][n+5][1] = apd_im + AAC_MUL31(ag[m], in_im);
+            in_im -= (UINTFLOAT)a_im;
+            ap_delay[m][n+5][0] = apd_re + (UINTFLOAT)AAC_MUL31(ag[m], in_re);
+            ap_delay[m][n+5][1] = apd_im + (UINTFLOAT)AAC_MUL31(ag[m], in_im);
         }
         out[n][0] = AAC_MUL16(transient_gain[n], in_re);
         out[n][1] = AAC_MUL16(transient_gain[n], in_im);

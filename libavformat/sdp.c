@@ -584,6 +584,12 @@ static char *sdp_write_media_attributes(char *buff, int size, AVStream *st, int 
                                          payload_type,
                                          p->sample_rate, p->channels);
             break;
+        case AV_CODEC_ID_PCM_S24BE:
+            if (payload_type >= RTP_PT_PRIVATE)
+                av_strlcatf(buff, size, "a=rtpmap:%d L24/%d/%d\r\n",
+                                         payload_type,
+                                         p->sample_rate, p->channels);
+            break;
         case AV_CODEC_ID_PCM_MULAW:
             if (payload_type >= RTP_PT_PRIVATE)
                 av_strlcatf(buff, size, "a=rtpmap:%d PCMU/%d/%d\r\n",
@@ -674,6 +680,14 @@ static char *sdp_write_media_attributes(char *buff, int size, AVStream *st, int 
             break;
         case AV_CODEC_ID_ADPCM_G726: {
             if (payload_type >= RTP_PT_PRIVATE)
+                av_strlcatf(buff, size, "a=rtpmap:%d AAL2-G726-%d/%d\r\n",
+                                         payload_type,
+                                         p->bits_per_coded_sample*8,
+                                         p->sample_rate);
+            break;
+        }
+        case AV_CODEC_ID_ADPCM_G726LE: {
+            if (payload_type >= RTP_PT_PRIVATE)
                 av_strlcatf(buff, size, "a=rtpmap:%d G726-%d/%d\r\n",
                                          payload_type,
                                          p->bits_per_coded_sample*8,
@@ -748,7 +762,7 @@ void ff_sdp_write_media(char *buff, int size, AVStream *st, int idx,
     av_strlcatf(buff, size, "m=%s %d RTP/AVP %d\r\n", type, port, payload_type);
     sdp_write_address(buff, size, dest_addr, dest_type, ttl);
     if (p->bit_rate) {
-        av_strlcatf(buff, size, "b=AS:%"PRId64"\r\n", (int64_t)p->bit_rate / 1000);
+        av_strlcatf(buff, size, "b=AS:%"PRId64"\r\n", p->bit_rate / 1000);
     }
 
     sdp_write_media_attributes(buff, size, st, payload_type, fmt);
@@ -770,7 +784,7 @@ int av_sdp_create(AVFormatContext *ac[], int n_files, char *buf, int size)
     port = 0;
     ttl = 0;
     if (n_files == 1) {
-        port = sdp_get_address(dst, sizeof(dst), &ttl, ac[0]->filename);
+        port = sdp_get_address(dst, sizeof(dst), &ttl, ac[0]->url ? ac[0]->url : "");
         is_multicast = resolve_destination(dst, sizeof(dst), dst_type,
                                            sizeof(dst_type));
         if (!is_multicast)
@@ -790,7 +804,7 @@ int av_sdp_create(AVFormatContext *ac[], int n_files, char *buf, int size)
     dst[0] = 0;
     for (i = 0; i < n_files; i++) {
         if (n_files != 1) {
-            port = sdp_get_address(dst, sizeof(dst), &ttl, ac[i]->filename);
+            port = sdp_get_address(dst, sizeof(dst), &ttl, ac[i]->url ? ac[i]->url : "");
             is_multicast = resolve_destination(dst, sizeof(dst), dst_type,
                                                sizeof(dst_type));
             if (!is_multicast)

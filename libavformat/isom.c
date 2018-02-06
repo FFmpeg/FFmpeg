@@ -274,6 +274,8 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
     { AV_CODEC_ID_HAP, MKTAG('H', 'a', 'p', '1') },
     { AV_CODEC_ID_HAP, MKTAG('H', 'a', 'p', '5') },
     { AV_CODEC_ID_HAP, MKTAG('H', 'a', 'p', 'Y') },
+    { AV_CODEC_ID_HAP, MKTAG('H', 'a', 'p', 'A') },
+    { AV_CODEC_ID_HAP, MKTAG('H', 'a', 'p', 'M') },
 
     { AV_CODEC_ID_DXV, MKTAG('D', 'X', 'D', '3') },
     { AV_CODEC_ID_DXV, MKTAG('D', 'X', 'D', 'I') },
@@ -289,6 +291,8 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
     { AV_CODEC_ID_MAGICYUV, MKTAG('M', '8', 'Y', '2') },
     { AV_CODEC_ID_MAGICYUV, MKTAG('M', '8', 'Y', '4') },
     { AV_CODEC_ID_MAGICYUV, MKTAG('M', '8', 'Y', 'A') },
+    { AV_CODEC_ID_MAGICYUV, MKTAG('M', '2', 'R', 'A') },
+    { AV_CODEC_ID_MAGICYUV, MKTAG('M', '2', 'R', 'G') },
 
     { AV_CODEC_ID_SHEERVIDEO, MKTAG('S', 'h', 'r', '0') },
     { AV_CODEC_ID_SHEERVIDEO, MKTAG('S', 'h', 'r', '1') },
@@ -520,7 +524,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (tag == MP4DecSpecificDescrTag) {
         av_log(fc, AV_LOG_TRACE, "Specific MPEG-4 header len=%d\n", len);
         if (!len || (uint64_t)len > (1<<30))
-            return -1;
+            return AVERROR_INVALIDDATA;
         av_free(st->codecpar->extradata);
         if ((ret = ff_get_extradata(fc, st->codecpar, pb, len)) < 0)
             return ret;

@@ -31,27 +31,7 @@
 #include "framesync.h"
 #include "internal.h"
 #include "video.h"
-
-typedef struct ThresholdContext {
-    const AVClass *class;
-
-    int planes;
-    int bpc;
-
-    int nb_planes;
-    int width[4], height[4];
-
-    void (*threshold)(const uint8_t *in, const uint8_t *threshold,
-                      const uint8_t *min, const uint8_t *max,
-                      uint8_t *out,
-                      ptrdiff_t ilinesize, ptrdiff_t tlinesize,
-                      ptrdiff_t flinesize, ptrdiff_t slinesize,
-                      ptrdiff_t olinesize,
-                      int w, int h);
-
-    AVFrame *frames[4];
-    FFFrameSync fs;
-} ThresholdContext;
+#include "threshold.h"
 
 #define OFFSET(x) offsetof(ThresholdContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
@@ -79,8 +59,8 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVA420P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA444P16,
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
-        AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRAP16,
-        AV_PIX_FMT_GRAY8,  AV_PIX_FMT_GRAY10,
+        AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GBRAP12 , AV_PIX_FMT_GBRAP16,
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10,
         AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_NONE
     };
@@ -155,7 +135,7 @@ static void threshold8(const uint8_t *in, const uint8_t *threshold,
         in        += ilinesize;
         threshold += tlinesize;
         min       += flinesize;
-        max       += flinesize;
+        max       += slinesize;
         out       += olinesize;
     }
 }
@@ -183,7 +163,7 @@ static void threshold16(const uint8_t *iin, const uint8_t *tthreshold,
         in        += ilinesize / 2;
         threshold += tlinesize / 2;
         min       += flinesize / 2;
-        max       += flinesize / 2;
+        max       += slinesize / 2;
         out       += olinesize / 2;
     }
 }
@@ -203,8 +183,16 @@ static int config_input(AVFilterLink *inlink)
     s->height[0] = s->height[3] = inlink->h;
     s->width[1]  = s->width[2]  = AV_CEIL_RSHIFT(inlink->w, hsub);
     s->width[0]  = s->width[3]  = inlink->w;
+    s->depth = desc->comp[0].depth;
 
-    if (desc->comp[0].depth == 8) {
+    ff_threshold_init(s);
+
+    return 0;
+}
+
+void ff_threshold_init(ThresholdContext *s)
+{
+    if (s->depth == 8) {
         s->threshold = threshold8;
         s->bpc = 1;
     } else {
@@ -212,7 +200,8 @@ static int config_input(AVFilterLink *inlink)
         s->bpc = 2;
     }
 
-    return 0;
+    if (ARCH_X86)
+        ff_threshold_init_x86(s);
 }
 
 static int config_output(AVFilterLink *outlink)
@@ -282,16 +271,10 @@ static int config_output(AVFilterLink *outlink)
     return ff_framesync_configure(&s->fs);
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
+static int activate(AVFilterContext *ctx)
 {
-    ThresholdContext *s = inlink->dst->priv;
-    return ff_framesync_filter_frame(&s->fs, inlink, buf);
-}
-
-static int request_frame(AVFilterLink *outlink)
-{
-    ThresholdContext *s = outlink->src->priv;
-    return ff_framesync_request_frame(&s->fs, outlink);
+    ThresholdContext *s = ctx->priv;
+    return ff_framesync_activate(&s->fs);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -305,23 +288,19 @@ static const AVFilterPad inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
         .config_props = config_input,
     },
     {
         .name         = "threshold",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
     },
     {
         .name         = "min",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
     },
     {
         .name         = "max",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -331,7 +310,6 @@ static const AVFilterPad outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
-        .request_frame = request_frame,
     },
     { NULL }
 };
@@ -343,6 +321,7 @@ AVFilter ff_vf_threshold = {
     .priv_class    = &threshold_class,
     .uninit        = uninit,
     .query_formats = query_formats,
+    .activate      = activate,
     .inputs        = inputs,
     .outputs       = outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,

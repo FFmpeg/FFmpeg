@@ -10,9 +10,7 @@
 
 @contents
 
-@chapter Developers Guide
-
-@section Notes for external developers
+@chapter Notes for external developers
 
 This document is mostly useful for internal FFmpeg developers.
 External developers who need to use the API in their application should
@@ -30,7 +28,7 @@ For more detailed legal information about the use of FFmpeg in
 external programs read the @file{LICENSE} file in the source tree and
 consult @url{https://ffmpeg.org/legal.html}.
 
-@section Contributing
+@chapter Contributing
 
 There are 3 ways by which code gets into FFmpeg.
 @itemize @bullet
@@ -47,9 +45,9 @@ The developer making the commit and the author are responsible for their changes
 and should try to fix issues their commit causes.
 
 @anchor{Coding Rules}
-@section Coding Rules
+@chapter Coding Rules
 
-@subsection Code formatting conventions
+@section Code formatting conventions
 
 There are the following guidelines regarding the indentation in files:
 
@@ -74,7 +72,7 @@ The presentation is one inspired by 'indent -i4 -kr -nut'.
 The main priority in FFmpeg is simplicity and small code size in order to
 minimize the bug count.
 
-@subsection Comments
+@section Comments
 Use the JavaDoc/Doxygen  format (see examples below) so that code documentation
 can be generated automatically. All nontrivial functions should have a comment
 above them explaining what the function does, even if it is just one sentence.
@@ -114,7 +112,7 @@ int myfunc(int my_parameter)
 ...
 @end example
 
-@subsection C language features
+@section C language features
 
 FFmpeg is programmed in the ISO C90 language with a few additional
 features from ISO C99, namely:
@@ -160,7 +158,7 @@ mixing statements and declarations;
 GCC statement expressions (@samp{(x = (@{ int y = 4; y; @})}).
 @end itemize
 
-@subsection Naming conventions
+@section Naming conventions
 All names should be composed with underscores (_), not CamelCase. For example,
 @samp{avfilter_get_video_buffer} is an acceptable function name and
 @samp{AVFilterGetVideo} is not. The exception from this are type names, like
@@ -184,7 +182,7 @@ e.g. @samp{ff_w64_demuxer}.
 @item
 For variables and functions visible outside of file scope, used internally
 across multiple libraries, use @code{avpriv_} as prefix, for example,
-@samp{avpriv_aac_parse_header}.
+@samp{avpriv_report_missing_feature}.
 
 @item
 Each library has its own prefix for public symbols, in addition to the
@@ -204,7 +202,7 @@ letter as they are reserved by the C standard. Names starting with @code{_}
 are reserved at the file level and may not be used for externally visible
 symbols. If in doubt, just avoid names starting with @code{_} altogether.
 
-@subsection Miscellaneous conventions
+@section Miscellaneous conventions
 
 @itemize @bullet
 @item
@@ -216,7 +214,7 @@ Casts should be used only when necessary. Unneeded parentheses
 should also be avoided if they don't make the code easier to understand.
 @end itemize
 
-@subsection Editor configuration
+@section Editor configuration
 In order to configure Vim to follow FFmpeg formatting conventions, paste
 the following snippet into your @file{.vimrc}:
 @example
@@ -249,9 +247,9 @@ For Emacs, add these roughly equivalent lines to your @file{.emacs.d/init.el}:
 (setq c-default-style "ffmpeg")
 @end lisp
 
-@section Development Policy
+@chapter Development Policy
 
-@subsection Patches/Committing
+@section Patches/Committing
 @subheading Licenses for patches must be compatible with FFmpeg.
 Contributions should be licensed under the
 @uref{http://www.gnu.org/licenses/lgpl-2.1.html, LGPL 2.1},
@@ -350,7 +348,7 @@ time-frame (12h for build failures and security fixes, 3 days small changes,
 1 week for big patches) then commit your patch if you think it is OK.
 Also note, the maintainer can simply ask for more time to review!
 
-@subsection Code
+@section Code
 @subheading API/ABI changes should be discussed before they are made.
 Do not change behavior of the programs (renaming options etc) or public
 API or ABI without first discussing it on the ffmpeg-devel mailing list.
@@ -381,12 +379,29 @@ Never write to unallocated memory, never write over the end of arrays,
 always check values read from some untrusted source before using them
 as array index or other risky things.
 
-@subsection Documentation/Other
+@section Documentation/Other
+@subheading Subscribe to the ffmpeg-devel mailing list.
+It is important to be subscribed to the
+@uref{https://lists.ffmpeg.org/mailman/listinfo/ffmpeg-devel, ffmpeg-devel}
+mailing list. Almost any non-trivial patch is to be sent there for review.
+Other developers may have comments about your contribution. We expect you see
+those comments, and to improve it if requested. (N.B. Experienced committers
+have other channels, and may sometimes skip review for trivial fixes.) Also,
+discussion here about bug fixes and FFmpeg improvements by other developers may
+be helpful information for you. Finally, by being a list subscriber, your
+contribution will be posted immediately to the list, without the moderation
+hold which messages from non-subscribers experience.
+
+However, it is more important to the project that we receive your patch than
+that you be subscribed to the ffmpeg-devel list. If you have a patch, and don't
+want to subscribe and discuss the patch, then please do send it to the list
+anyway.
+
 @subheading Subscribe to the ffmpeg-cvslog mailing list.
-It is important to do this as the diffs of all commits are sent there and
-reviewed by all the other developers. Bugs and possible improvements or
-general questions regarding commits are discussed there. We expect you to
-react if problems with your code are uncovered.
+Diffs of all commits are sent to the
+@uref{https://lists.ffmpeg.org/mailman/listinfo/ffmpeg-cvslog, ffmpeg-cvslog}
+mailing list. Some developers read this list to review all code base changes
+from all sources. Subscribing to this list is not mandatory.
 
 @subheading Keep the documentation up to date.
 Update the documentation if you change behavior or add features. If you are
@@ -406,7 +421,7 @@ finding a new maintainer and also don't forget to update the @file{MAINTAINERS} 
 
 We think our rules are not too hard. If you have comments, contact us.
 
-@section Code of conduct
+@chapter Code of conduct
 
 Be friendly and respectful towards others and third parties.
 Treat others the way you yourself want to be treated.
@@ -436,7 +451,7 @@ Finally, keep in mind the immortal words of Bill and Ted,
 "Be excellent to each other."
 
 @anchor{Submitting patches}
-@section Submitting patches
+@chapter Submitting patches
 
 First, read the @ref{Coding Rules} above if you did not yet, in particular
 the rules regarding patch submission.
@@ -485,7 +500,7 @@ Give us a few days to react. But if some time passes without reaction,
 send a reminder by email. Your patch should eventually be dealt with.
 
 
-@section New codecs or formats checklist
+@chapter New codecs or formats checklist
 
 @enumerate
 @item
@@ -537,7 +552,7 @@ Did you make sure it compiles standalone, i.e. with
 @end enumerate
 
 
-@section patch submission checklist
+@chapter Patch submission checklist
 
 @enumerate
 @item
@@ -650,7 +665,7 @@ Test your code with valgrind and or Address Sanitizer to ensure it's free
 of leaks, out of array accesses, etc.
 @end enumerate
 
-@section Patch review process
+@chapter Patch review process
 
 All patches posted to ffmpeg-devel will be reviewed, unless they contain a
 clear note that the patch is not for the git master branch.
@@ -681,7 +696,7 @@ to be reviewed, please consider helping to review other patches, that is a great
 way to get everyone's patches reviewed sooner.
 
 @anchor{Regression tests}
-@section Regression tests
+@chapter Regression tests
 
 Before submitting a patch (or committing to the repository), you should at least
 test that you did not break anything.
@@ -692,7 +707,7 @@ Running 'make fate' accomplishes this, please see @url{fate.html} for details.
 this case, the reference results of the regression tests shall be modified
 accordingly].
 
-@subsection Adding files to the fate-suite dataset
+@section Adding files to the fate-suite dataset
 
 When there is no muxer or encoder available to generate test media for a
 specific test then the media has to be included in the fate-suite.
@@ -703,7 +718,7 @@ Once you have a working fate test and fate sample, provide in the commit
 message or introductory message for the patch series that you post to
 the ffmpeg-devel mailing list, a direct link to download the sample media.
 
-@subsection Visualizing Test Coverage
+@section Visualizing Test Coverage
 
 The FFmpeg build system allows visualizing the test coverage in an easy
 manner with the coverage tools @code{gcov}/@code{lcov}.  This involves
@@ -730,7 +745,7 @@ You can use the command @code{make lcov-reset} to reset the coverage
 measurements. You will need to rerun @code{make lcov} after running a
 new test.
 
-@subsection Using Valgrind
+@section Using Valgrind
 
 The configure script provides a shortcut for using valgrind to spot bugs
 related to memory handling. Just add the option
@@ -744,7 +759,7 @@ In case you need finer control over how valgrind is invoked, use the
 your configure line instead.
 
 @anchor{Release process}
-@section Release process
+@chapter Release process
 
 FFmpeg maintains a set of @strong{release branches}, which are the
 recommended deliverable for system integrators and distributors (such as
@@ -776,7 +791,7 @@ adjustments to the symbol versioning file. Please discuss such changes
 on the @strong{ffmpeg-devel} mailing list in time to allow forward planning.
 
 @anchor{Criteria for Point Releases}
-@subsection Criteria for Point Releases
+@section Criteria for Point Releases
 
 Changes that match the following criteria are valid candidates for
 inclusion into a point release:
@@ -800,7 +815,7 @@ point releases of the same release branch.
 The order for checking the rules is (1 OR 2 OR 3) AND 4.
 
 
-@subsection Release Checklist
+@section Release Checklist
 
 The release process involves the following steps:
 

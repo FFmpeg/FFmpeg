@@ -29,7 +29,7 @@
 #include "libavutil/cpu.h"
 
 typedef struct LLVidDSPContext {
-    void (*add_bytes)(uint8_t *dst /* align 16 */, uint8_t *src /* align 16 */,
+    void (*add_bytes)(uint8_t *dst /* align 32 */, uint8_t *src /* align 32 */,
                       ptrdiff_t w);
     void (*add_median_pred)(uint8_t *dst, const uint8_t *top,
                             const uint8_t *diff, ptrdiff_t w,
@@ -39,6 +39,7 @@ typedef struct LLVidDSPContext {
 
     int  (*add_left_pred_int16)(uint16_t *dst, const uint16_t *src,
                                 unsigned mask, ptrdiff_t w, unsigned left);
+    void (*add_gradient_pred)(uint8_t *src /* align 32 */, const ptrdiff_t stride, const ptrdiff_t width);
 } LLVidDSPContext;
 
 void ff_llviddsp_init(LLVidDSPContext *llviddsp);

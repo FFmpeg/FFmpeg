@@ -388,7 +388,7 @@ static int vaapi_h264_decode_slice(AVCodecContext *avctx,
     return 0;
 }
 
-AVHWAccel ff_h264_vaapi_hwaccel = {
+const AVHWAccel ff_h264_vaapi_hwaccel = {
     .name                 = "h264_vaapi",
     .type                 = AVMEDIA_TYPE_VIDEO,
     .id                   = AV_CODEC_ID_H264,
@@ -399,6 +399,7 @@ AVHWAccel ff_h264_vaapi_hwaccel = {
     .frame_priv_data_size = sizeof(VAAPIDecodePicture),
     .init                 = &ff_vaapi_decode_init,
     .uninit               = &ff_vaapi_decode_uninit,
+    .frame_params         = &ff_vaapi_common_frame_params,
     .priv_data_size       = sizeof(VAAPIDecodeContext),
     .caps_internal        = HWACCEL_CAP_ASYNC_SAFE,
 };

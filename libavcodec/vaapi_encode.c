@@ -27,7 +27,7 @@
 #include "vaapi_encode.h"
 #include "avcodec.h"
 
-static const char *picture_type_name[] = { "IDR", "I", "P", "B" };
+static const char * const picture_type_name[] = { "IDR", "I", "P", "B" };
 
 static int vaapi_encode_make_packed_header(AVCodecContext *avctx,
                                            VAAPIEncodePicture *pic,
@@ -36,13 +36,17 @@ static int vaapi_encode_make_packed_header(AVCodecContext *avctx,
     VAAPIEncodeContext *ctx = avctx->priv_data;
     VAStatus vas;
     VABufferID param_buffer, data_buffer;
+    VABufferID *tmp;
     VAEncPackedHeaderParameterBuffer params = {
         .type = type,
         .bit_length = bit_len,
         .has_emulation_bytes = 1,
     };
 
-    av_assert0(pic->nb_param_buffers + 2 <= MAX_PARAM_BUFFERS);
+    tmp = av_realloc_array(pic->param_buffers, sizeof(*tmp), pic->nb_param_buffers + 2);
+    if (!tmp)
+        return AVERROR(ENOMEM);
+    pic->param_buffers = tmp;
 
     vas = vaCreateBuffer(ctx->hwctx->display, ctx->va_context,
                          VAEncPackedHeaderParameterBufferType,
@@ -77,9 +81,13 @@ static int vaapi_encode_make_param_buffer(AVCodecContext *avctx,
 {
     VAAPIEncodeContext *ctx = avctx->priv_data;
     VAStatus vas;
+    VABufferID *tmp;
     VABufferID buffer;
 
-    av_assert0(pic->nb_param_buffers + 1 <= MAX_PARAM_BUFFERS);
+    tmp = av_realloc_array(pic->param_buffers, sizeof(*tmp), pic->nb_param_buffers + 1);
+    if (!tmp)
+        return AVERROR(ENOMEM);
+    pic->param_buffers = tmp;
 
     vas = vaCreateBuffer(ctx->hwctx->display, ctx->va_context,
                          type, len, 1, data, &buffer);
@@ -313,15 +321,14 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
         }
     }
 
-    av_assert0(pic->nb_slices <= MAX_PICTURE_SLICES);
+    pic->slices = av_mallocz_array(pic->nb_slices, sizeof(*pic->slices));
+    if (!pic->slices) {
+        err = AVERROR(ENOMEM);
+        goto fail;
+    }
     for (i = 0; i < pic->nb_slices; i++) {
-        slice = av_mallocz(sizeof(*slice));
-        if (!slice) {
-            err = AVERROR(ENOMEM);
-            goto fail;
-        }
+        slice = &pic->slices[i];
         slice->index = i;
-        pic->slices[i] = slice;
 
         if (ctx->codec->slice_params_size > 0) {
             slice->codec_slice_params = av_mallocz(ctx->codec->slice_params_size);
@@ -392,14 +399,14 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
         err = AVERROR(EIO);
         // vaRenderPicture() has been called here, so we should not destroy
         // the parameter buffers unless separate destruction is required.
-        if (ctx->hwctx->driver_quirks &
+        if (CONFIG_VAAPI_1 || ctx->hwctx->driver_quirks &
             AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS)
             goto fail;
         else
             goto fail_at_end;
     }
 
-    if (ctx->hwctx->driver_quirks &
+    if (CONFIG_VAAPI_1 || ctx->hwctx->driver_quirks &
         AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS) {
         for (i = 0; i < pic->nb_param_buffers; i++) {
             vas = vaDestroyBuffer(ctx->hwctx->display,
@@ -425,8 +432,16 @@ fail_with_picture:
 fail:
     for(i = 0; i < pic->nb_param_buffers; i++)
         vaDestroyBuffer(ctx->hwctx->display, pic->param_buffers[i]);
+    for (i = 0; i < pic->nb_slices; i++) {
+        if (pic->slices) {
+            av_freep(&pic->slices[i].priv_data);
+            av_freep(&pic->slices[i].codec_slice_params);
+        }
+    }
 fail_at_end:
     av_freep(&pic->codec_picture_params);
+    av_freep(&pic->param_buffers);
+    av_freep(&pic->slices);
     av_frame_free(&pic->recon_image);
     av_buffer_unref(&pic->output_buffer_ref);
     pic->output_buffer = VA_INVALID_ID;
@@ -535,15 +550,18 @@ static int vaapi_encode_free(AVCodecContext *avctx,
         vaapi_encode_discard(avctx, pic);
 
     for (i = 0; i < pic->nb_slices; i++) {
-        av_freep(&pic->slices[i]->priv_data);
-        av_freep(&pic->slices[i]->codec_slice_params);
-        av_freep(&pic->slices[i]);
+        if (pic->slices) {
+            av_freep(&pic->slices[i].priv_data);
+            av_freep(&pic->slices[i].codec_slice_params);
+        }
     }
     av_freep(&pic->codec_picture_params);
 
     av_frame_free(&pic->input_image);
     av_frame_free(&pic->recon_image);
 
+    av_freep(&pic->param_buffers);
+    av_freep(&pic->slices);
     // Output buffer should already be destroyed.
     av_assert0(pic->output_buffer == VA_INVALID_ID);
 
@@ -1018,6 +1036,8 @@ static av_cold int vaapi_encode_config_attributes(AVCodecContext *avctx)
             // Unfortunately we have to treat this as "don't know" and hope
             // for the best, because the Intel MJPEG encoder returns this
             // for all the interesting attributes.
+            av_log(avctx, AV_LOG_DEBUG, "Attribute (%d) is not supported.\n",
+                   attr[i].type);
             continue;
         }
         switch (attr[i].type) {
@@ -1427,6 +1447,41 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
         err = ctx->codec->configure(avctx);
         if (err < 0)
             goto fail;
+    }
+
+    if (avctx->compression_level >= 0) {
+#if VA_CHECK_VERSION(0, 36, 0)
+        VAConfigAttrib attr = { VAConfigAttribEncQualityRange };
+
+        vas = vaGetConfigAttributes(ctx->hwctx->display,
+                                    ctx->va_profile,
+                                    ctx->va_entrypoint,
+                                    &attr, 1);
+        if (vas != VA_STATUS_SUCCESS) {
+            av_log(avctx, AV_LOG_WARNING, "Failed to query quality "
+                   "attribute: will use default compression level.\n");
+        } else {
+            if (avctx->compression_level > attr.value) {
+                av_log(avctx, AV_LOG_WARNING, "Invalid compression "
+                       "level: valid range is 0-%d, using %d.\n",
+                       attr.value, attr.value);
+                avctx->compression_level = attr.value;
+            }
+
+            ctx->quality_params.misc.type =
+                VAEncMiscParameterTypeQualityLevel;
+            ctx->quality_params.quality.quality_level =
+                avctx->compression_level;
+
+            ctx->global_params[ctx->nb_global_params] =
+                &ctx->quality_params.misc;
+            ctx->global_params_size[ctx->nb_global_params++] =
+                sizeof(ctx->quality_params);
+        }
+#else
+        av_log(avctx, AV_LOG_WARNING, "The encode compression level "
+               "option is not supported with this VAAPI version.\n");
+#endif
     }
 
     ctx->input_order  = 0;

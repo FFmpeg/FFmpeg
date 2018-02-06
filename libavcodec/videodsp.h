@@ -83,5 +83,6 @@ void ff_videodsp_init_aarch64(VideoDSPContext *ctx, int bpc);
 void ff_videodsp_init_arm(VideoDSPContext *ctx, int bpc);
 void ff_videodsp_init_ppc(VideoDSPContext *ctx, int bpc);
 void ff_videodsp_init_x86(VideoDSPContext *ctx, int bpc);
+void ff_videodsp_init_mips(VideoDSPContext *ctx, int bpc);
 
 #endif /* AVCODEC_VIDEODSP_H */

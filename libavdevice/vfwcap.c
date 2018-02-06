@@ -256,7 +256,7 @@ static int vfw_read_header(AVFormatContext *s)
     int ret;
     AVRational framerate_q;
 
-    if (!strcmp(s->filename, "list")) {
+    if (!strcmp(s->url, "list")) {
         for (devnum = 0; devnum <= 9; devnum++) {
             char driver_name[256];
             char driver_ver[256];
@@ -279,7 +279,7 @@ static int vfw_read_header(AVFormatContext *s)
     }
 
     /* If atoi fails, devnum==0 and the default device is used */
-    devnum = atoi(s->filename);
+    devnum = atoi(s->url);
 
     ret = SendMessage(ctx->hwnd, WM_CAP_DRIVER_CONNECT, devnum, 0);
     if(!ret) {

@@ -417,7 +417,7 @@ static void skip_scaling_list_data(GetBitContext *gb)
 
 static int parse_rps(GetBitContext *gb, unsigned int rps_idx,
                      unsigned int num_rps,
-                     unsigned int num_delta_pocs[HEVC_MAX_SHORT_TERM_RPS_COUNT])
+                     unsigned int num_delta_pocs[HEVC_MAX_SHORT_TERM_REF_PIC_SETS])
 {
     unsigned int i;
 
@@ -486,7 +486,7 @@ static int hvcc_parse_sps(GetBitContext *gb,
                           HEVCDecoderConfigurationRecord *hvcc)
 {
     unsigned int i, sps_max_sub_layers_minus1, log2_max_pic_order_cnt_lsb_minus4;
-    unsigned int num_short_term_ref_pic_sets, num_delta_pocs[HEVC_MAX_SHORT_TERM_RPS_COUNT];
+    unsigned int num_short_term_ref_pic_sets, num_delta_pocs[HEVC_MAX_SHORT_TERM_REF_PIC_SETS];
 
     skip_bits(gb, 4); // sps_video_parameter_set_id
 
@@ -556,7 +556,7 @@ static int hvcc_parse_sps(GetBitContext *gb,
     }
 
     num_short_term_ref_pic_sets = get_ue_golomb_long(gb);
-    if (num_short_term_ref_pic_sets > HEVC_MAX_SHORT_TERM_RPS_COUNT)
+    if (num_short_term_ref_pic_sets > HEVC_MAX_SHORT_TERM_REF_PIC_SETS)
         return AVERROR_INVALIDDATA;
 
     for (i = 0; i < num_short_term_ref_pic_sets; i++) {

@@ -582,6 +582,8 @@ static int decompress_p(AVCodecContext *avctx,
 
                 for (; by < y * 16 + sy2 && by < avctx->height;) {
                     ret = decode_value(s, s->op_model[ptype], 6, 1000, &ptype);
+                    if (ret < 0)
+                        return ret;
                     if (ptype == 0) {
                         ret = decode_unit(s, &s->pixel_model[0][cx + cx1], 400, &r);
                         if (ret < 0)
@@ -824,8 +826,19 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         if (ret < 0)
             return ret;
 
+        // scale up each sample by 8
         for (y = 0; y < avctx->height; y++) {
-            for (x = 0; x < avctx->width * 4; x++) {
+            // If the image is sufficiently aligned, compute 8 samples at once
+            if (!(((uintptr_t)dst) & 7)) {
+                uint64_t *dst64 = (uint64_t *)dst;
+                int w = avctx->width>>1;
+                for (x = 0; x < w; x++) {
+                    dst64[x] = (dst64[x] << 3) & 0xFCFCFCFCFCFCFCFCULL;
+                }
+                x *= 8;
+            } else
+                x = 0;
+            for (; x < avctx->width * 4; x++) {
                 dst[x] = dst[x] << 3;
             }
             dst += frame->linesize[0];

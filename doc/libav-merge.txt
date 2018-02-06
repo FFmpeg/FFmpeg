@@ -94,10 +94,13 @@ Stuff that didn't reach the codebase:
   - a853388d2 hevc: change the stride of the MC buffer to be in bytes instead of elements
   - 0cef06df0 checkasm: add HEVC MC tests
   - e7078e842 hevcdsp: add x86 SIMD for MC
-- VAAPI VP8 decode hwaccel (currently under review: http://ffmpeg.org/pipermail/ffmpeg-devel/2017-February/thread.html#207348)
-- Removal of the custom atomic API (5cc0057f49, see http://ffmpeg.org/pipermail/ffmpeg-devel/2017-March/209003.html)
+  - 7993ec19a hevc: Add hevc_get_pixel_4/8/12/16/24/32/48/64
 - new bitstream reader (see http://ffmpeg.org/pipermail/ffmpeg-devel/2017-April/209609.html)
-- use of the bsf instead of our parser for vp9 superframes (see fa1749dd34)
+- use av_cpu_max_align() instead of hardcoding alignment requirements (see https://ffmpeg.org/pipermail/ffmpeg-devel/2017-September/215834.html)
+  - f44ec22e0 lavc: use av_cpu_max_align() instead of hardcoding alignment requirements
+  - 4de220d2e frame: allow align=0 (meaning automatic) for av_frame_get_buffer()
+- Support recovery from an already present HLS playlist (see 16cb06bb30)
+- Remove all output devices (see 8e7e042d41, 8d3db95f20, 6ce13070bd, d46cd24986 and https://ffmpeg.org/pipermail/ffmpeg-devel/2017-September/216904.html)
 
 Collateral damage that needs work locally:
 ------------------------------------------
@@ -105,7 +108,6 @@ Collateral damage that needs work locally:
 - Merge proresdec2.c and proresdec_lgpl.c
 - Merge proresenc_anatoliy.c and proresenc_kostya.c
 - Fix MIPS AC3 downmix
-- hlsenc encryption support may need some adjustment (see edc43c571d)
 
 Extra changes needed to be aligned with Libav:
 ----------------------------------------------

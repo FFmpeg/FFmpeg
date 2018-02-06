@@ -424,6 +424,7 @@ typedef struct PixscopeContext {
     const AVClass *class;
 
     float xpos, ypos;
+    float wx, wy;
     int w, h;
     float o;
 
@@ -449,11 +450,13 @@ typedef struct PixscopeContext {
 #define POFFSET(x) offsetof(PixscopeContext, x)
 
 static const AVOption pixscope_options[] = {
-    { "x", "set scope x offset", POFFSET(xpos), AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0,  1, FLAGS },
-    { "y", "set scope y offset", POFFSET(ypos), AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0,  1, FLAGS },
-    { "w", "set scope width",    POFFSET(w),    AV_OPT_TYPE_INT,   {.i64=7},   1, 80, FLAGS },
-    { "h", "set scope height",   POFFSET(h),    AV_OPT_TYPE_INT,   {.i64=7},   1, 80, FLAGS },
-    { "o", "set window opacity", POFFSET(o),    AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0,  1, FLAGS },
+    { "x",  "set scope x offset",  POFFSET(xpos), AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0,  1, FLAGS },
+    { "y",  "set scope y offset",  POFFSET(ypos), AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0,  1, FLAGS },
+    { "w",  "set scope width",     POFFSET(w),    AV_OPT_TYPE_INT,   {.i64=7},   1, 80, FLAGS },
+    { "h",  "set scope height",    POFFSET(h),    AV_OPT_TYPE_INT,   {.i64=7},   1, 80, FLAGS },
+    { "o",  "set window opacity",  POFFSET(o),    AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0,  1, FLAGS },
+    { "wx", "set window x offset", POFFSET(wx),   AV_OPT_TYPE_FLOAT, {.dbl=-1}, -1,  1, FLAGS },
+    { "wy", "set window y offset", POFFSET(wy),   AV_OPT_TYPE_FLOAT, {.dbl=-1}, -1,  1, FLAGS },
     { NULL }
 };
 
@@ -520,6 +523,7 @@ static int pixscope_filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterContext *ctx  = inlink->dst;
     PixscopeContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
+    AVFrame *out = ff_get_video_buffer(outlink, in->width, in->height);
     int max[4] = { 0 }, min[4] = { INT_MAX, INT_MAX, INT_MAX, INT_MAX };
     float average[4] = { 0 };
     double rms[4] = { 0 };
@@ -528,19 +532,43 @@ static int pixscope_filter_frame(AVFilterLink *inlink, AVFrame *in)
     int x, y, X, Y, i, w, h;
     char text[128];
 
+    if (!out) {
+        av_frame_free(&in);
+        return AVERROR(ENOMEM);
+    }
+    av_frame_copy_props(out, in);
+    av_frame_copy(out, in);
+
     w = s->ww / s->w;
     h = s->ww / s->h;
 
-    if (s->x <= s->ww && s->y <= s->wh) {
-        X = in->width - s->ww;
-        Y = in->height - s->wh;
+    if (s->wx >= 0) {
+        X = (in->width - s->ww) * s->wx;
     } else {
-        X = 0;
-        Y = 0;
+        X = (in->width - s->ww) * -s->wx;
+    }
+    if (s->wy >= 0) {
+        Y = (in->height - s->wh) * s->wy;
+    } else {
+        Y = (in->height - s->wh) * -s->wy;
     }
 
-    ff_blend_rectangle(&s->draw, &s->dark, in->data, in->linesize,
-                       in->width, in->height,
+    if (s->wx < 0) {
+        if (s->x + s->w >= X && (s->x + s->w <= X + s->ww) &&
+            s->y + s->h >= Y && (s->y + s->h <= Y + s->wh)) {
+            X = (in->width - s->ww) * (1 + s->wx);
+        }
+    }
+
+    if (s->wy < 0) {
+        if (s->x + s->w >= X && (s->x + s->w <= X + s->ww) &&
+            s->y + s->h >= Y && (s->y + s->h <= Y + s->wh)) {
+            Y = (in->height - s->wh) * (1 + s->wy);
+        }
+    }
+
+    ff_blend_rectangle(&s->draw, &s->dark, out->data, out->linesize,
+                       out->width, out->height,
                        X,
                        Y,
                        s->ww,
@@ -552,7 +580,7 @@ static int pixscope_filter_frame(AVFilterLink *inlink, AVFrame *in)
             int value[4] = { 0 };
 
             s->pick_color(&s->draw, &color, in, x + s->x, y + s->y, value);
-            ff_fill_rectangle(&s->draw, &color, in->data, in->linesize,
+            ff_fill_rectangle(&s->draw, &color, out->data, out->linesize,
                               x * w + (s->ww - 4 - (s->w * w)) / 2 + X, y * h + 2 + Y, w, h);
             for (i = 0; i < 4; i++) {
                 rms[i]     += (double)value[i] * (double)value[i];
@@ -563,36 +591,36 @@ static int pixscope_filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
     }
 
-    ff_blend_rectangle(&s->draw, &s->black, in->data, in->linesize,
-                       in->width, in->height,
+    ff_blend_rectangle(&s->draw, &s->black, out->data, out->linesize,
+                       out->width, out->height,
                        s->x - 2, s->y - 2, s->w + 4, 1);
 
-    ff_blend_rectangle(&s->draw, &s->white, in->data, in->linesize,
-                       in->width, in->height,
+    ff_blend_rectangle(&s->draw, &s->white, out->data, out->linesize,
+                       out->width, out->height,
                        s->x - 1, s->y - 1, s->w + 2, 1);
 
-    ff_blend_rectangle(&s->draw, &s->white, in->data, in->linesize,
-                       in->width, in->height,
+    ff_blend_rectangle(&s->draw, &s->white, out->data, out->linesize,
+                       out->width, out->height,
                        s->x - 1, s->y - 1, 1, s->h + 2);
 
-    ff_blend_rectangle(&s->draw, &s->black, in->data, in->linesize,
-                       in->width, in->height,
+    ff_blend_rectangle(&s->draw, &s->black, out->data, out->linesize,
+                       out->width, out->height,
                        s->x - 2, s->y - 2, 1, s->h + 4);
 
-    ff_blend_rectangle(&s->draw, &s->white, in->data, in->linesize,
-                       in->width, in->height,
+    ff_blend_rectangle(&s->draw, &s->white, out->data, out->linesize,
+                       out->width, out->height,
                        s->x - 1, s->y + 1 + s->h, s->w + 3, 1);
 
-    ff_blend_rectangle(&s->draw, &s->black, in->data, in->linesize,
-                       in->width, in->height,
+    ff_blend_rectangle(&s->draw, &s->black, out->data, out->linesize,
+                       out->width, out->height,
                        s->x - 2, s->y + 2 + s->h, s->w + 4, 1);
 
-    ff_blend_rectangle(&s->draw, &s->white, in->data, in->linesize,
-                       in->width, in->height,
+    ff_blend_rectangle(&s->draw, &s->white, out->data, out->linesize,
+                       out->width, out->height,
                        s->x + 1 + s->w, s->y - 1, 1, s->h + 2);
 
-    ff_blend_rectangle(&s->draw, &s->black, in->data, in->linesize,
-                       in->width, in->height,
+    ff_blend_rectangle(&s->draw, &s->black, out->data, out->linesize,
+                       out->width, out->height,
                        s->x + 2 + s->w, s->y - 2, 1, s->h + 5);
 
     for (i = 0; i < 4; i++) {
@@ -602,15 +630,16 @@ static int pixscope_filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     snprintf(text, sizeof(text), "CH   AVG    MIN    MAX    RMS\n");
-    draw_text(&s->draw, in, &s->white,        X + 28, Y + s->ww + 20,           text, 0);
+    draw_text(&s->draw, out, &s->white,        X + 28, Y + s->ww + 20,           text, 0);
     for (i = 0; i < s->nb_comps; i++) {
         int c = s->rgba_map[i];
 
         snprintf(text, sizeof(text), "%c  %07.1f %05d %05d %07.1f\n", s->is_rgb ? rgba[i] : yuva[i], average[c], min[c], max[c], rms[c]);
-        draw_text(&s->draw, in, s->colors[i], X + 28, Y + s->ww + 20 * (i + 2), text, 0);
+        draw_text(&s->draw, out, s->colors[i], X + 28, Y + s->ww + 20 * (i + 2), text, 0);
     }
 
-    return ff_filter_frame(outlink, in);
+    av_frame_free(&in);
+    return ff_filter_frame(outlink, out);
 }
 
 static const AVFilterPad pixscope_inputs[] = {
@@ -619,7 +648,6 @@ static const AVFilterPad pixscope_inputs[] = {
         .type           = AVMEDIA_TYPE_VIDEO,
         .filter_frame   = pixscope_filter_frame,
         .config_props   = pixscope_config_input,
-        .needs_writable = 1,
     },
     { NULL }
 };
@@ -640,6 +668,7 @@ AVFilter ff_vf_pixscope = {
     .query_formats = query_formats,
     .inputs        = pixscope_inputs,
     .outputs       = pixscope_outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
 
 typedef struct PixelValues {
@@ -1021,4 +1050,5 @@ AVFilter ff_vf_oscilloscope = {
     .uninit        = oscilloscope_uninit,
     .inputs        = oscilloscope_inputs,
     .outputs       = oscilloscope_outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

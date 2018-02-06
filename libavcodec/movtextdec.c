@@ -436,6 +436,7 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
     int text_length, tsmb_type, ret_tsmb;
     uint64_t tsmb_size;
     const uint8_t *tsmb;
+    size_t i;
 
     if (!ptr || avpkt->size < 2)
         return AVERROR_INVALIDDATA;
@@ -495,7 +496,7 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
             if (tsmb_size > avpkt->size - m->tracksize)
                 break;
 
-            for (size_t i = 0; i < box_count; i++) {
+            for (i = 0; i < box_count; i++) {
                 if (tsmb_type == box_types[i].type) {
                     if (m->tracksize + m->size_var + box_types[i].base_size > avpkt->size)
                         break;

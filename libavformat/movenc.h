@@ -53,6 +53,7 @@ typedef struct MOVIentry {
     int          cts;
 #define MOV_SYNC_SAMPLE         0x0001
 #define MOV_PARTIAL_SYNC_SAMPLE 0x0002
+#define MOV_DISPOSABLE_SAMPLE   0x0004
     uint32_t     flags;
 } MOVIentry;
 
@@ -89,6 +90,7 @@ typedef struct MOVTrack {
     long        sample_size;
     long        chunkCount;
     int         has_keyframes;
+    int         has_disposable;
 #define MOV_TRACK_CTTS         0x0001
 #define MOV_TRACK_STPS         0x0002
 #define MOV_TRACK_ENABLED      0x0004
@@ -116,6 +118,7 @@ typedef struct MOVTrack {
     int64_t     start_cts;
     int64_t     end_pts;
     int         end_reliable;
+    int64_t     dts_shift;
 
     int         hint_track;   ///< the track that hints this track, -1 if no hint track is set
     int         src_track;    ///< the track that this hint (or tmcd) track describes
@@ -241,6 +244,7 @@ typedef struct MOVMuxContext {
 #define FF_MOV_FLAG_WRITE_GAMA            (1 << 16)
 #define FF_MOV_FLAG_USE_MDTA              (1 << 17)
 #define FF_MOV_FLAG_SKIP_TRAILER          (1 << 18)
+#define FF_MOV_FLAG_NEGATIVE_CTS_OFFSETS  (1 << 19)
 
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt);
 

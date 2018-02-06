@@ -42,7 +42,7 @@ static int gdv_read_probe(AVProbeData *p)
     return 0;
 }
 
-struct {
+static struct {
     uint16_t id;
     uint16_t width;
     uint16_t height;

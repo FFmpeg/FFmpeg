@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/crc.h"
 #include "libavcodec/ac3_parser.h"
 #include "avformat.h"
@@ -28,8 +29,6 @@ static int ac3_eac3_probe(AVProbeData *p, enum AVCodecID expected_codec_id)
 {
     int max_frames, first_frames = 0, frames;
     const uint8_t *buf, *buf2, *end;
-    AC3HeaderInfo *phdr = NULL;
-    GetBitContext gbc;
     enum AVCodecID codec_id = AV_CODEC_ID_AC3;
 
     max_frames = 0;
@@ -44,39 +43,49 @@ static int ac3_eac3_probe(AVProbeData *p, enum AVCodecID expected_codec_id)
 
         for(frames = 0; buf2 < end; frames++) {
             uint8_t buf3[4096];
-            int i;
-            if(!memcmp(buf2, "\x1\x10\0\0\0\0\0\0", 8))
+            uint8_t bitstream_id;
+            uint16_t frame_size;
+            int i, ret;
+
+            if(!memcmp(buf2, "\x1\x10\0\0\0\0\0\0", 8)) {
+                if (buf2 + 16 > end)
+                    break;
                 buf2+=16;
+            }
             if (buf[0] == 0x77 && buf[1] == 0x0B) {
                 for(i=0; i<8; i+=2) {
                     buf3[i  ] = buf2[i+1];
                     buf3[i+1] = buf2[i  ];
                 }
-                init_get_bits(&gbc, buf3, 54);
+                ret = av_ac3_parse_header(buf3, 8, &bitstream_id,
+                                          &frame_size);
             }else
-                init_get_bits(&gbc, buf2, 54);
-            if(avpriv_ac3_parse_header(&gbc, &phdr) < 0)
+                ret = av_ac3_parse_header(buf2, end - buf2, &bitstream_id,
+                                          &frame_size);
+            if (ret < 0)
                 break;
-            if(buf2 + phdr->frame_size > end)
+            if(buf2 + frame_size > end)
                 break;
             if (buf[0] == 0x77 && buf[1] == 0x0B) {
-                av_assert0(phdr->frame_size <= sizeof(buf3));
-                for(i=8; i<phdr->frame_size; i+=2) {
+                av_assert0(frame_size <= sizeof(buf3));
+                for(i = 8; i < frame_size; i += 2) {
                     buf3[i  ] = buf2[i+1];
                     buf3[i+1] = buf2[i  ];
                 }
+                if (av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, buf3 + 2, frame_size - 2))
+                    break;
+            } else {
+                if (av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, buf2 + 2, frame_size - 2))
+                    break;
             }
-            if(av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, gbc.buffer + 2, phdr->frame_size - 2))
-                break;
-            if (phdr->bitstream_id > 10)
+            if (bitstream_id > 10)
                 codec_id = AV_CODEC_ID_EAC3;
-            buf2 += phdr->frame_size;
+            buf2 += frame_size;
         }
         max_frames = FFMAX(max_frames, frames);
         if(buf == p->buf)
             first_frames = frames;
     }
-    av_freep(&phdr);
     if(codec_id != expected_codec_id) return 0;
     // keep this in sync with mp3 probe, both need to avoid
     // issues with MPEG-files!

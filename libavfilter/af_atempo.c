@@ -914,8 +914,13 @@ static int yae_flush(ATempoContext *atempo,
 
     atempo->state = YAE_FLUSH_OUTPUT;
 
-    if (atempo->position[0] >= frag->position[0] + frag->nsamples &&
-        atempo->position[1] >= frag->position[1] + frag->nsamples) {
+    if (!atempo->nfrag) {
+        // there is nothing to flush:
+        return 0;
+    }
+
+    if (atempo->position[0] == frag->position[0] + frag->nsamples &&
+        atempo->position[1] == frag->position[1] + frag->nsamples) {
         // the current fragment is already flushed:
         return 0;
     }
@@ -1148,6 +1153,8 @@ static int request_frame(AVFilterLink *outlink)
 
             if (n_out) {
                 ret = push_samples(atempo, outlink, n_out);
+                if (ret < 0)
+                    return ret;
             }
         }
 

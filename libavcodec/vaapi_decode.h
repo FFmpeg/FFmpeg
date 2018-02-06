@@ -53,15 +53,15 @@ typedef struct VAAPIDecodePicture {
 } VAAPIDecodePicture;
 
 typedef struct VAAPIDecodeContext {
-    VAProfile             va_profile;
-    VAEntrypoint          va_entrypoint;
     VAConfigID            va_config;
     VAContextID           va_context;
 
 #if FF_API_STRUCT_VAAPI_CONTEXT
+FF_DISABLE_DEPRECATION_WARNINGS
     int                   have_old_context;
     struct vaapi_context *old_context;
     AVBufferRef          *device_ref;
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
     AVHWDeviceContext    *device;
@@ -95,5 +95,8 @@ int ff_vaapi_decode_cancel(AVCodecContext *avctx,
 
 int ff_vaapi_decode_init(AVCodecContext *avctx);
 int ff_vaapi_decode_uninit(AVCodecContext *avctx);
+
+int ff_vaapi_common_frame_params(AVCodecContext *avctx,
+                                 AVBufferRef *hw_frames_ctx);
 
 #endif /* AVCODEC_VAAPI_DECODE_H */

@@ -74,6 +74,19 @@ align 16
     movaps   m1, [src1q+csizeq]
     movaps   m2, [src2q+csizeq]
 
+%if cpuflag(fma4) || cpuflag(fma3)
+%if cpuflag(fma4)
+    fnmaddps  m5, m1, ICT1, m0
+    fmaddps   m4, m2, ICT0, m0
+%else ; fma3
+    movaps    m5, m1
+    movaps    m4, m2
+    fnmaddps  m5, m5, ICT1, m0
+    fmaddps   m4, m4, ICT0, m0
+%endif
+    fmaddps   m0, m1, ICT3, m0
+    fnmaddps  m5, m2, ICT2, m5
+%else ; non FMA
 %if cpuflag(avx)
     mulps    m5, m1, ICT1
     mulps    m4, m2, ICT0
@@ -93,6 +106,7 @@ align 16
     addps    m4, m4, m0
     addps    m0, m0, m1
     subps    m5, m5, m2
+%endif
 
     movaps   [src0q+csizeq], m4
     movaps   [src2q+csizeq], m0
@@ -105,6 +119,12 @@ align 16
 INIT_XMM sse
 ICT_FLOAT 10
 INIT_YMM avx
+ICT_FLOAT 9
+%if HAVE_FMA4_EXTERNAL
+INIT_XMM fma4
+ICT_FLOAT 9
+%endif
+INIT_YMM fma3
 ICT_FLOAT 9
 
 ;***************************************************************************

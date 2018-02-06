@@ -131,7 +131,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                             }
                         }
 
-                        if (!pc->progressive_sequence) {
+                        if (!pc->progressive_sequence && !progressive_frame) {
                             if (top_field_first)
                                 s->field_order = AV_FIELD_TT;
                             else

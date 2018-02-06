@@ -90,6 +90,14 @@ if [ -n "$do_mxf_d10" ]; then
 do_lavf mxf_d10 "-ar 48000 -ac 2" "-r 25 -vf scale=720:576,pad=720:608:0:32 -vcodec mpeg2video -g 0 -flags +ildct+low_delay -dc 10 -non_linear_quant 1 -intra_vlc 1 -qscale 1 -ps 1 -qmin 1 -rc_max_vbv_use 1 -rc_min_vbv_use 1 -pix_fmt yuv422p -minrate 30000k -maxrate 30000k -b 30000k -bufsize 1200000 -top 1 -rc_init_occupancy 1200000 -qmax 12 -f mxf_d10"
 fi
 
+if [ -n "$do_mxf_dv25" ]; then
+do_lavf mxf_dv25 "-ar 48000 -ac 2" "-r 25 -vf scale=720:576,setdar=4/3 -vcodec dvvideo -pix_fmt yuv420p -b 25000k -top 0 -f mxf"
+fi
+
+if [ -n "$do_mxf_dvcpro50" ]; then
+do_lavf mxf_dvcpro50 "-ar 48000 -ac 2" "-r 25 -vf scale=720:576,setdar=16/9 -vcodec dvvideo -pix_fmt yuv422p -b 50000k -top 0 -f mxf"
+fi
+
 if [ -n "$do_mxf_opatom" ]; then
 do_lavf mxf_opatom "" "-s 1920x1080 -vcodec dnxhd -pix_fmt yuv422p -vb 36M -f mxf_opatom -map 0"
 fi
@@ -228,6 +236,15 @@ if [ -n "$do_yuv4mpeg" ] ; then
 file=${outfile}lavf.y4m
 do_avconv $file $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $ENC_OPTS -t 1 -qscale 10
 #do_avconv_crc $file -i $target_path/$file
+fi
+
+if [ -n "$do_fits" ] ; then
+pix_fmts="gray gray16be gbrp gbrap gbrp16be gbrap16be"
+for pix_fmt in $pix_fmts ; do
+    file=${outfile}${pix_fmt}lavf.fits
+    do_avconv $file $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $ENC_OPTS -pix_fmt $pix_fmt
+    do_avconv_crc $file $DEC_OPTS -i $target_path/$file -pix_fmt $pix_fmt
+done
 fi
 
 # image formats

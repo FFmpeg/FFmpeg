@@ -11,6 +11,10 @@ addons:
 compiler:
   - clang
   - gcc
+matrix:
+    exclude:
+        - os: osx
+          compiler: gcc
 cache:
   directories:
     - ffmpeg-samples

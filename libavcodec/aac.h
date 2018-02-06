@@ -327,7 +327,9 @@ struct AACContext {
 #if USE_FIXED
     AVFixedDSPContext *fdsp;
 #else
+    MDCT15Context *mdct120;
     MDCT15Context *mdct480;
+    MDCT15Context *mdct960;
     AVFloatDSPContext *fdsp;
 #endif /* USE_FIXED */
     int random_state;
@@ -353,6 +355,7 @@ struct AACContext {
 
     OutputConfiguration oc[2];
     int warned_num_aac_frames;
+    int warned_960_sbr;
 
     /* aacdec functions pointers */
     void (*imdct_and_windowing)(AACContext *ac, SingleChannelElement *sce);

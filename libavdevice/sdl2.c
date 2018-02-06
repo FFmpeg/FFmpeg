@@ -165,7 +165,7 @@ static int sdl2_write_header(AVFormatContext *s)
     int flags  = 0;
 
     if (!sdl->window_title)
-        sdl->window_title = av_strdup(s->filename);
+        sdl->window_title = av_strdup(s->url);
 
     if (SDL_WasInit(SDL_INIT_VIDEO)) {
         av_log(s, AV_LOG_WARNING,

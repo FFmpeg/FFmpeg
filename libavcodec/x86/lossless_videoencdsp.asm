@@ -25,7 +25,9 @@
 
 %include "libavutil/x86/x86util.asm"
 
-section .text
+cextern pb_80
+
+SECTION .text
 
 ; void ff_diff_bytes(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
 ;                    intptr_t w);
@@ -42,10 +44,11 @@ cglobal diff_bytes, 4,5,2, dst, src1, src2, w
 %define i t0q
 %endmacro
 
-; label to jump to if w < regsize
-%macro DIFF_BYTES_LOOP_PREP 1
+; labels to jump to if w < regsize and w < 0
+%macro DIFF_BYTES_LOOP_PREP 2
     mov                i, wq
     and                i, -2 * regsize
+        js            %2
         jz            %1
     add             dstq, i
     add            src1q, i
@@ -86,8 +89,8 @@ cglobal diff_bytes, 4,5,2, dst, src1, src2, w
         jz     .end_%1%2
 %if mmsize > 16
     ; fall back to narrower xmm
-    %define regsize mmsize / 2
-    DIFF_BYTES_LOOP_PREP .setup_loop_gpr_aa
+    %define regsize (mmsize / 2)
+    DIFF_BYTES_LOOP_PREP .setup_loop_gpr_aa, .end_aa
 .loop2_%1%2:
     DIFF_BYTES_LOOP_CORE %1, %2, xm0, xm1
     add                i, 2 * regsize
@@ -114,7 +117,7 @@ cglobal diff_bytes, 4,5,2, dst, src1, src2, w
 INIT_MMX mmx
 DIFF_BYTES_PROLOGUE
     %define regsize mmsize
-    DIFF_BYTES_LOOP_PREP .skip_main_aa
+    DIFF_BYTES_LOOP_PREP .skip_main_aa, .end_aa
     DIFF_BYTES_BODY    a, a
 %undef i
 %endif
@@ -122,7 +125,7 @@ DIFF_BYTES_PROLOGUE
 INIT_XMM sse2
 DIFF_BYTES_PROLOGUE
     %define regsize mmsize
-    DIFF_BYTES_LOOP_PREP .skip_main_aa
+    DIFF_BYTES_LOOP_PREP .skip_main_aa, .end_aa
     test            dstq, regsize - 1
         jnz     .loop_uu
     test           src1q, regsize - 1
@@ -138,7 +141,7 @@ DIFF_BYTES_PROLOGUE
     %define regsize mmsize
     ; Directly using unaligned SSE2 version is marginally faster than
     ; branching based on arguments.
-    DIFF_BYTES_LOOP_PREP .skip_main_uu
+    DIFF_BYTES_LOOP_PREP .skip_main_uu, .end_uu
     test            dstq, regsize - 1
         jnz     .loop_uu
     test           src1q, regsize - 1
@@ -148,3 +151,44 @@ DIFF_BYTES_PROLOGUE
     DIFF_BYTES_BODY    u, u
 %undef i
 %endif
+
+
+;--------------------------------------------------------------------------------------------------
+;void sub_left_predict(uint8_t *dst, uint8_t *src, ptrdiff_t stride, ptrdiff_t width, int height)
+;--------------------------------------------------------------------------------------------------
+
+INIT_XMM avx
+cglobal sub_left_predict, 5,6,5, dst, src, stride, width, height, x
+    mova             m1, [pb_80] ; prev initial
+    add            dstq, widthq
+    add            srcq, widthq
+    lea              xd, [widthq-1]
+    neg          widthq
+    and              xd, 15
+    pinsrb           m4, m1, xd, 15
+    mov              xq, widthq
+
+    .loop:
+        movu                     m0, [srcq + widthq]
+        palignr                  m2, m0, m1, 15
+        movu                     m1, [srcq + widthq + 16]
+        palignr                  m3, m1, m0, 15
+        psubb                    m2, m0, m2
+        psubb                    m3, m1, m3
+        movu        [dstq + widthq], m2
+        movu   [dstq + widthq + 16], m3
+        add                  widthq, 2 * 16
+        jl .loop
+
+    add   srcq, strideq
+    sub   dstq, xq ; dst + width
+    test    xd, 16
+    jz .mod32
+    mova    m1, m0
+
+.mod32:
+    pshufb    m1, m4
+    mov   widthq, xq
+    dec  heightd
+    jg .loop
+    RET

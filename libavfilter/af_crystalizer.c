@@ -173,7 +173,7 @@ static void filter_dblp(void **d, void **p, const void **s,
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
-    CrystalizerContext *s    = ctx->priv;
+    CrystalizerContext *s = ctx->priv;
 
     switch (inlink->format) {
     case AV_SAMPLE_FMT_FLT:  s->filter = filter_flt;  break;
@@ -203,7 +203,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     if (av_frame_is_writable(in)) {
         out = in;
     } else {
-        out = ff_get_audio_buffer(inlink, in->nb_samples);
+        out = ff_get_audio_buffer(outlink, in->nb_samples);
         if (!out) {
             av_frame_free(&in);
             return AVERROR(ENOMEM);

@@ -80,7 +80,7 @@ static int64_t find_best_filter(const DCAADPCMEncContext *s, const int32_t *in, 
 {
     const premultiplied_coeffs *precalc_data = s->private_data;
     int i, j, k = 0;
-    int vq;
+    int vq = -1;
     int64_t err;
     int64_t min_err = 1ll << 62;
     int64_t corr[15];
@@ -215,6 +215,9 @@ av_cold int ff_dcaadpcm_init(DCAADPCMEncContext *s)
         return -1;
 
     s->private_data = av_malloc(sizeof(premultiplied_coeffs) * DCA_ADPCM_VQCODEBOOK_SZ);
+    if (!s->private_data)
+        return AVERROR(ENOMEM);
+
     precalc(s->private_data);
     return 0;
 }

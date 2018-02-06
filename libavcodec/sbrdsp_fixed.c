@@ -133,7 +133,7 @@ static av_always_inline SoftFloat autocorr_calc(int64_t accu)
 
         round = 1U << (nz-1);
         mant = (int)((accu + round) >> nz);
-        mant = (mant + 0x40)>>7;
+        mant = (mant + 0x40LL)>>7;
         mant *= 64;
         expo = nz + 15;
         return av_int2sf(mant, 30 - expo);
@@ -147,19 +147,19 @@ static av_always_inline void autocorrelate(const int x[40][2], SoftFloat phi[3][
 
     if (lag) {
         for (i = 1; i < 38; i++) {
-            accu_re += (int64_t)x[i][0] * x[i+lag][0];
-            accu_re += (int64_t)x[i][1] * x[i+lag][1];
-            accu_im += (int64_t)x[i][0] * x[i+lag][1];
-            accu_im -= (int64_t)x[i][1] * x[i+lag][0];
+            accu_re += (uint64_t)x[i][0] * x[i+lag][0];
+            accu_re += (uint64_t)x[i][1] * x[i+lag][1];
+            accu_im += (uint64_t)x[i][0] * x[i+lag][1];
+            accu_im -= (uint64_t)x[i][1] * x[i+lag][0];
         }
 
         real_sum = accu_re;
         imag_sum = accu_im;
 
-        accu_re += (int64_t)x[ 0][0] * x[lag][0];
-        accu_re += (int64_t)x[ 0][1] * x[lag][1];
-        accu_im += (int64_t)x[ 0][0] * x[lag][1];
-        accu_im -= (int64_t)x[ 0][1] * x[lag][0];
+        accu_re += (uint64_t)x[ 0][0] * x[lag][0];
+        accu_re += (uint64_t)x[ 0][1] * x[lag][1];
+        accu_im += (uint64_t)x[ 0][0] * x[lag][1];
+        accu_im -= (uint64_t)x[ 0][1] * x[lag][0];
 
         phi[2-lag][1][0] = autocorr_calc(accu_re);
         phi[2-lag][1][1] = autocorr_calc(accu_im);
@@ -167,28 +167,28 @@ static av_always_inline void autocorrelate(const int x[40][2], SoftFloat phi[3][
         if (lag == 1) {
             accu_re = real_sum;
             accu_im = imag_sum;
-            accu_re += (int64_t)x[38][0] * x[39][0];
-            accu_re += (int64_t)x[38][1] * x[39][1];
-            accu_im += (int64_t)x[38][0] * x[39][1];
-            accu_im -= (int64_t)x[38][1] * x[39][0];
+            accu_re += (uint64_t)x[38][0] * x[39][0];
+            accu_re += (uint64_t)x[38][1] * x[39][1];
+            accu_im += (uint64_t)x[38][0] * x[39][1];
+            accu_im -= (uint64_t)x[38][1] * x[39][0];
 
             phi[0][0][0] = autocorr_calc(accu_re);
             phi[0][0][1] = autocorr_calc(accu_im);
         }
     } else {
         for (i = 1; i < 38; i++) {
-            accu_re += (int64_t)x[i][0] * x[i][0];
-            accu_re += (int64_t)x[i][1] * x[i][1];
+            accu_re += (uint64_t)x[i][0] * x[i][0];
+            accu_re += (uint64_t)x[i][1] * x[i][1];
         }
         real_sum = accu_re;
-        accu_re += (int64_t)x[ 0][0] * x[ 0][0];
-        accu_re += (int64_t)x[ 0][1] * x[ 0][1];
+        accu_re += (uint64_t)x[ 0][0] * x[ 0][0];
+        accu_re += (uint64_t)x[ 0][1] * x[ 0][1];
 
         phi[2][1][0] = autocorr_calc(accu_re);
 
         accu_re = real_sum;
-        accu_re += (int64_t)x[38][0] * x[38][0];
-        accu_re += (int64_t)x[38][1] * x[38][1];
+        accu_re += (uint64_t)x[38][0] * x[38][0];
+        accu_re += (uint64_t)x[38][1] * x[38][1];
 
         phi[1][0][0] = autocorr_calc(accu_re);
     }
@@ -244,12 +244,14 @@ static void sbr_hf_g_filt_c(int (*Y)[2], const int (*X_high)[40][2],
     int64_t accu;
 
     for (m = 0; m < m_max; m++) {
-        int64_t r = 1LL << (22-g_filt[m].exp);
-        accu = (int64_t)X_high[m][ixh][0] * ((g_filt[m].mant + 0x40)>>7);
-        Y[m][0] = (int)((accu + r) >> (23-g_filt[m].exp));
+        if (22 - g_filt[m].exp < 61) {
+            int64_t r = 1LL << (22-g_filt[m].exp);
+            accu = (int64_t)X_high[m][ixh][0] * ((g_filt[m].mant + 0x40)>>7);
+            Y[m][0] = (int)((accu + r) >> (23-g_filt[m].exp));
 
-        accu = (int64_t)X_high[m][ixh][1] * ((g_filt[m].mant + 0x40)>>7);
-        Y[m][1] = (int)((accu + r) >> (23-g_filt[m].exp));
+            accu = (int64_t)X_high[m][ixh][1] * ((g_filt[m].mant + 0x40)>>7);
+            Y[m][1] = (int)((accu + r) >> (23-g_filt[m].exp));
+        }
     }
 }
 
@@ -264,8 +266,8 @@ static av_always_inline int sbr_hf_apply_noise(int (*Y)[2],
     int m;
 
     for (m = 0; m < m_max; m++) {
-        int y0 = Y[m][0];
-        int y1 = Y[m][1];
+        unsigned y0 = Y[m][0];
+        unsigned y1 = Y[m][1];
         noise = (noise + 1) & 0x1ff;
         if (s_m[m].mant) {
             int shift, round;

@@ -79,7 +79,10 @@ static const AVOption fdk_aac_dec_options[] = {
 };
 
 static const AVClass fdk_aac_dec_class = {
-    "libfdk-aac decoder", av_default_item_name, fdk_aac_dec_options, LIBAVUTIL_VERSION_INT
+    .class_name = "libfdk-aac decoder",
+    .item_name  = av_default_item_name,
+    .option     = fdk_aac_dec_options,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 static int get_stream_info(AVCodecContext *avctx)
@@ -382,4 +385,5 @@ AVCodec ff_libfdk_aac_decoder = {
     .priv_class     = &fdk_aac_dec_class,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
+    .wrapper_name   = "libfdk",
 };

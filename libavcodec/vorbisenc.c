@@ -1026,6 +1026,7 @@ static int apply_window_and_mdct(vorbis_enc_context *venc)
 static AVFrame *spawn_empty_frame(AVCodecContext *avctx, int channels)
 {
     AVFrame *f = av_frame_alloc();
+    int ch;
 
     if (!f)
         return NULL;
@@ -1039,7 +1040,7 @@ static AVFrame *spawn_empty_frame(AVCodecContext *avctx, int channels)
         return NULL;
     }
 
-    for (int ch = 0; ch < channels; ch++) {
+    for (ch = 0; ch < channels; ch++) {
         size_t bps = av_get_bytes_per_sample(f->format);
         memset(f->extended_data[ch], 0, bps * f->nb_samples);
     }
@@ -1092,9 +1093,13 @@ static int vorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     PutBitContext pb;
 
     if (frame) {
+        AVFrame *clone;
         if ((ret = ff_af_queue_add(&venc->afq, frame)) < 0)
             return ret;
-        ff_bufqueue_add(avctx, &venc->bufqueue, av_frame_clone(frame));
+        clone = av_frame_clone(frame);
+        if (!clone)
+            return AVERROR(ENOMEM);
+        ff_bufqueue_add(avctx, &venc->bufqueue, clone);
     } else
         if (!venc->afq.remaining_samples)
             return 0;
@@ -1108,8 +1113,9 @@ static int vorbis_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     if (!frame) {
         if (venc->bufqueue.available * avctx->frame_size < frame_size) {
             int frames_needed = (frame_size/avctx->frame_size) - venc->bufqueue.available;
+            int i;
 
-            for (int i = 0; i < frames_needed; i++) {
+            for (i = 0; i < frames_needed; i++) {
                AVFrame *empty = spawn_empty_frame(avctx, venc->channels);
                if (!empty)
                    return AVERROR(ENOMEM);

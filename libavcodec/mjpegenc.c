@@ -39,7 +39,6 @@
 #include "mjpeg.h"
 #include "mjpegenc.h"
 
-
 static int alloc_huffman(MpegEncContext *s)
 {
     MJpegContext *m = s->mjpeg_ctx;
@@ -346,11 +345,11 @@ void ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[12][64])
     }
 }
 
+#if CONFIG_AMV_ENCODER
 // maximum over s->mjpeg_vsample[i]
 #define V_MAX 2
 static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
                               const AVFrame *pic_arg, int *got_packet)
-
 {
     MpegEncContext *s = avctx->priv_data;
     AVFrame *pic;
@@ -358,12 +357,6 @@ static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
     int chroma_h_shift, chroma_v_shift;
 
     av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt, &chroma_h_shift, &chroma_v_shift);
-
-#if FF_API_EMU_EDGE
-    //CODEC_FLAG_EMU_EDGE have to be cleared
-    if(s->avctx->flags & CODEC_FLAG_EMU_EDGE)
-        return AVERROR(EINVAL);
-#endif
 
     if ((avctx->height & 15) && avctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
         av_log(avctx, AV_LOG_ERROR,
@@ -387,6 +380,7 @@ static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
     av_frame_free(&pic);
     return ret;
 }
+#endif
 
 #define OFFSET(x) offsetof(MpegEncContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
@@ -403,7 +397,6 @@ FF_MPV_COMMON_OPTS
 };
 
 #if CONFIG_MJPEG_ENCODER
-
 static const AVClass mjpeg_class = {
     .class_name = "mjpeg encoder",
     .item_name  = av_default_item_name,
@@ -421,12 +414,13 @@ AVCodec ff_mjpeg_encoder = {
     .encode2        = ff_mpv_encode_picture,
     .close          = ff_mpv_encode_end,
     .capabilities   = AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_INTRA_ONLY,
-    .pix_fmts       = (const enum AVPixelFormat[]){
+    .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_NONE
     },
     .priv_class     = &mjpeg_class,
 };
 #endif
+
 #if CONFIG_AMV_ENCODER
 static const AVClass amv_class = {
     .class_name = "amv encoder",
@@ -444,7 +438,7 @@ AVCodec ff_amv_encoder = {
     .init           = ff_mpv_encode_init,
     .encode2        = amv_encode_picture,
     .close          = ff_mpv_encode_end,
-    .pix_fmts       = (const enum AVPixelFormat[]){
+    .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_NONE
     },
     .priv_class     = &amv_class,

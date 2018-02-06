@@ -41,6 +41,7 @@ typedef struct TCPContext {
     int listen_timeout;
     int recv_buffer_size;
     int send_buffer_size;
+    int tcp_nodelay;
 } TCPContext;
 
 #define OFFSET(x) offsetof(TCPContext, x)
@@ -52,6 +53,7 @@ static const AVOption options[] = {
     { "listen_timeout",  "Connection awaiting timeout (in milliseconds)",      OFFSET(listen_timeout), AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
     { "send_buffer_size", "Socket send buffer size (in bytes)",                OFFSET(send_buffer_size), AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
     { "recv_buffer_size", "Socket receive buffer size (in bytes)",             OFFSET(recv_buffer_size), AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
+    { "tcp_nodelay", "Use TCP_NODELAY to disable nagle's algorithm",           OFFSET(tcp_nodelay), AV_OPT_TYPE_BOOL, { .i64 = 0 },             0, 1, .flags = D|E },
     { NULL }
 };
 
@@ -148,6 +150,9 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     if (s->send_buffer_size > 0) {
         setsockopt (fd, SOL_SOCKET, SO_SNDBUF, &s->send_buffer_size, sizeof (s->send_buffer_size));
     }
+    if (s->tcp_nodelay > 0) {
+        setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, &s->tcp_nodelay, sizeof (s->tcp_nodelay));
+    }
 
     if (s->listen == 2) {
         // multi-client
@@ -220,6 +225,8 @@ static int tcp_read(URLContext *h, uint8_t *buf, int size)
             return ret;
     }
     ret = recv(s->fd, buf, size, 0);
+    if (ret == 0)
+        return AVERROR_EOF;
     return ret < 0 ? ff_neterrno() : ret;
 }
 
@@ -270,7 +277,7 @@ static int tcp_get_window_size(URLContext *h)
 {
     TCPContext *s = h->priv_data;
     int avail;
-    int avail_len = sizeof(avail);
+    socklen_t avail_len = sizeof(avail);
 
 #if HAVE_WINSOCK2_H
     /* SO_RCVBUF with winsock only reports the actual TCP window size when

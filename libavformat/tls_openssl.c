@@ -66,6 +66,85 @@ static unsigned long openssl_thread_id(void)
 #endif
 #endif
 
+int ff_openssl_init(void)
+{
+    ff_lock_avformat();
+    if (!openssl_init) {
+        SSL_library_init();
+        SSL_load_error_strings();
+#if HAVE_THREADS
+        if (!CRYPTO_get_locking_callback()) {
+            int i;
+            openssl_mutexes = av_malloc_array(sizeof(pthread_mutex_t), CRYPTO_num_locks());
+            if (!openssl_mutexes) {
+                ff_unlock_avformat();
+                return AVERROR(ENOMEM);
+            }
+
+            for (i = 0; i < CRYPTO_num_locks(); i++)
+                pthread_mutex_init(&openssl_mutexes[i], NULL);
+            CRYPTO_set_locking_callback(openssl_lock);
+#if !defined(WIN32) && OPENSSL_VERSION_NUMBER < 0x10000000
+            CRYPTO_set_id_callback(openssl_thread_id);
+#endif
+        }
+#endif
+    }
+    openssl_init++;
+    ff_unlock_avformat();
+
+    return 0;
+}
+
+void ff_openssl_deinit(void)
+{
+    ff_lock_avformat();
+    openssl_init--;
+    if (!openssl_init) {
+#if HAVE_THREADS
+        if (CRYPTO_get_locking_callback() == openssl_lock) {
+            int i;
+            CRYPTO_set_locking_callback(NULL);
+            for (i = 0; i < CRYPTO_num_locks(); i++)
+                pthread_mutex_destroy(&openssl_mutexes[i]);
+            av_free(openssl_mutexes);
+        }
+#endif
+    }
+    ff_unlock_avformat();
+}
+
+static int print_tls_error(URLContext *h, int ret)
+{
+    TLSContext *c = h->priv_data;
+    if (h->flags & AVIO_FLAG_NONBLOCK) {
+        int err = SSL_get_error(c->ssl, ret);
+        if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_READ)
+            return AVERROR(EAGAIN);
+    }
+    av_log(h, AV_LOG_ERROR, "%s\n", ERR_error_string(ERR_get_error(), NULL));
+    return AVERROR(EIO);
+}
+
+static int tls_close(URLContext *h)
+{
+    TLSContext *c = h->priv_data;
+    if (c->ssl) {
+        SSL_shutdown(c->ssl);
+        SSL_free(c->ssl);
+    }
+    if (c->ctx)
+        SSL_CTX_free(c->ctx);
+    if (c->tls_shared.tcp)
+        ffurl_close(c->tls_shared.tcp);
+#if OPENSSL_VERSION_NUMBER >= 0x1010000fL
+    if (c->url_bio_method)
+        BIO_meth_free(c->url_bio_method);
+#endif
+    ff_openssl_deinit();
+    return 0;
+}
+
 static int url_bio_create(BIO *b)
 {
 #if OPENSSL_VERSION_NUMBER >= 0x1010000fL
@@ -98,6 +177,8 @@ static int url_bio_bread(BIO *b, char *buf, int len)
     if (ret >= 0)
         return ret;
     BIO_clear_retry_flags(b);
+    if (ret == AVERROR(EAGAIN))
+        BIO_set_retry_read(b);
     if (ret == AVERROR_EXIT)
         return 0;
     return -1;
@@ -110,6 +191,8 @@ static int url_bio_bwrite(BIO *b, const char *buf, int len)
     if (ret >= 0)
         return ret;
     BIO_clear_retry_flags(b);
+    if (ret == AVERROR(EAGAIN))
+        BIO_set_retry_write(b);
     if (ret == AVERROR_EXIT)
         return 0;
     return -1;
@@ -142,79 +225,6 @@ static BIO_METHOD url_bio_method = {
     .destroy = url_bio_destroy,
 };
 #endif
-
-int ff_openssl_init(void)
-{
-    avpriv_lock_avformat();
-    if (!openssl_init) {
-        SSL_library_init();
-        SSL_load_error_strings();
-#if HAVE_THREADS
-        if (!CRYPTO_get_locking_callback()) {
-            int i;
-            openssl_mutexes = av_malloc_array(sizeof(pthread_mutex_t), CRYPTO_num_locks());
-            if (!openssl_mutexes) {
-                avpriv_unlock_avformat();
-                return AVERROR(ENOMEM);
-            }
-
-            for (i = 0; i < CRYPTO_num_locks(); i++)
-                pthread_mutex_init(&openssl_mutexes[i], NULL);
-            CRYPTO_set_locking_callback(openssl_lock);
-#if !defined(WIN32) && OPENSSL_VERSION_NUMBER < 0x10000000
-            CRYPTO_set_id_callback(openssl_thread_id);
-#endif
-        }
-#endif
-    }
-    openssl_init++;
-    avpriv_unlock_avformat();
-
-    return 0;
-}
-
-void ff_openssl_deinit(void)
-{
-    avpriv_lock_avformat();
-    openssl_init--;
-    if (!openssl_init) {
-#if HAVE_THREADS
-        if (CRYPTO_get_locking_callback() == openssl_lock) {
-            int i;
-            CRYPTO_set_locking_callback(NULL);
-            for (i = 0; i < CRYPTO_num_locks(); i++)
-                pthread_mutex_destroy(&openssl_mutexes[i]);
-            av_free(openssl_mutexes);
-        }
-#endif
-    }
-    avpriv_unlock_avformat();
-}
-
-static int print_tls_error(URLContext *h, int ret)
-{
-    av_log(h, AV_LOG_ERROR, "%s\n", ERR_error_string(ERR_get_error(), NULL));
-    return AVERROR(EIO);
-}
-
-static int tls_close(URLContext *h)
-{
-    TLSContext *c = h->priv_data;
-    if (c->ssl) {
-        SSL_shutdown(c->ssl);
-        SSL_free(c->ssl);
-    }
-    if (c->ctx)
-        SSL_CTX_free(c->ctx);
-    if (c->tls_shared.tcp)
-        ffurl_close(c->tls_shared.tcp);
-#if OPENSSL_VERSION_NUMBER >= 0x1010000fL
-    if (c->url_bio_method)
-        BIO_meth_free(c->url_bio_method);
-#endif
-    ff_openssl_deinit();
-    return 0;
-}
 
 static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **options)
 {
@@ -302,7 +312,11 @@ fail:
 static int tls_read(URLContext *h, uint8_t *buf, int size)
 {
     TLSContext *c = h->priv_data;
-    int ret = SSL_read(c->ssl, buf, size);
+    int ret;
+    // Set or clear the AVIO_FLAG_NONBLOCK on c->tls_shared.tcp
+    c->tls_shared.tcp->flags &= ~AVIO_FLAG_NONBLOCK;
+    c->tls_shared.tcp->flags |= h->flags & AVIO_FLAG_NONBLOCK;
+    ret = SSL_read(c->ssl, buf, size);
     if (ret > 0)
         return ret;
     if (ret == 0)
@@ -313,7 +327,11 @@ static int tls_read(URLContext *h, uint8_t *buf, int size)
 static int tls_write(URLContext *h, const uint8_t *buf, int size)
 {
     TLSContext *c = h->priv_data;
-    int ret = SSL_write(c->ssl, buf, size);
+    int ret;
+    // Set or clear the AVIO_FLAG_NONBLOCK on c->tls_shared.tcp
+    c->tls_shared.tcp->flags &= ~AVIO_FLAG_NONBLOCK;
+    c->tls_shared.tcp->flags |= h->flags & AVIO_FLAG_NONBLOCK;
+    ret = SSL_write(c->ssl, buf, size);
     if (ret > 0)
         return ret;
     if (ret == 0)
@@ -339,7 +357,7 @@ static const AVClass tls_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const URLProtocol ff_tls_openssl_protocol = {
+const URLProtocol ff_tls_protocol = {
     .name           = "tls",
     .url_open2      = tls_open,
     .url_read       = tls_read,

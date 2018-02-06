@@ -378,7 +378,7 @@ static int dxva2_vc1_end_frame(AVCodecContext *avctx)
 }
 
 #if CONFIG_WMV3_DXVA2_HWACCEL
-AVHWAccel ff_wmv3_dxva2_hwaccel = {
+const AVHWAccel ff_wmv3_dxva2_hwaccel = {
     .name           = "wmv3_dxva2",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_WMV3,
@@ -388,13 +388,14 @@ AVHWAccel ff_wmv3_dxva2_hwaccel = {
     .start_frame    = dxva2_vc1_start_frame,
     .decode_slice   = dxva2_vc1_decode_slice,
     .end_frame      = dxva2_vc1_end_frame,
+    .frame_params   = ff_dxva2_common_frame_params,
     .frame_priv_data_size = sizeof(struct dxva2_picture_context),
     .priv_data_size = sizeof(FFDXVASharedContext),
 };
 #endif
 
 #if CONFIG_VC1_DXVA2_HWACCEL
-AVHWAccel ff_vc1_dxva2_hwaccel = {
+const AVHWAccel ff_vc1_dxva2_hwaccel = {
     .name           = "vc1_dxva2",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_VC1,
@@ -404,13 +405,14 @@ AVHWAccel ff_vc1_dxva2_hwaccel = {
     .start_frame    = dxva2_vc1_start_frame,
     .decode_slice   = dxva2_vc1_decode_slice,
     .end_frame      = dxva2_vc1_end_frame,
+    .frame_params   = ff_dxva2_common_frame_params,
     .frame_priv_data_size = sizeof(struct dxva2_picture_context),
     .priv_data_size = sizeof(FFDXVASharedContext),
 };
 #endif
 
 #if CONFIG_WMV3_D3D11VA_HWACCEL
-AVHWAccel ff_wmv3_d3d11va_hwaccel = {
+const AVHWAccel ff_wmv3_d3d11va_hwaccel = {
     .name           = "wmv3_d3d11va",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_WMV3,
@@ -420,13 +422,14 @@ AVHWAccel ff_wmv3_d3d11va_hwaccel = {
     .start_frame    = dxva2_vc1_start_frame,
     .decode_slice   = dxva2_vc1_decode_slice,
     .end_frame      = dxva2_vc1_end_frame,
+    .frame_params   = ff_dxva2_common_frame_params,
     .frame_priv_data_size = sizeof(struct dxva2_picture_context),
     .priv_data_size = sizeof(FFDXVASharedContext),
 };
 #endif
 
 #if CONFIG_WMV3_D3D11VA2_HWACCEL
-AVHWAccel ff_wmv3_d3d11va2_hwaccel = {
+const AVHWAccel ff_wmv3_d3d11va2_hwaccel = {
     .name           = "wmv3_d3d11va2",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_WMV3,
@@ -436,13 +439,14 @@ AVHWAccel ff_wmv3_d3d11va2_hwaccel = {
     .start_frame    = dxva2_vc1_start_frame,
     .decode_slice   = dxva2_vc1_decode_slice,
     .end_frame      = dxva2_vc1_end_frame,
+    .frame_params   = ff_dxva2_common_frame_params,
     .frame_priv_data_size = sizeof(struct dxva2_picture_context),
     .priv_data_size = sizeof(FFDXVASharedContext),
 };
 #endif
 
 #if CONFIG_VC1_D3D11VA_HWACCEL
-AVHWAccel ff_vc1_d3d11va_hwaccel = {
+const AVHWAccel ff_vc1_d3d11va_hwaccel = {
     .name           = "vc1_d3d11va",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_VC1,
@@ -452,13 +456,14 @@ AVHWAccel ff_vc1_d3d11va_hwaccel = {
     .start_frame    = dxva2_vc1_start_frame,
     .decode_slice   = dxva2_vc1_decode_slice,
     .end_frame      = dxva2_vc1_end_frame,
+    .frame_params   = ff_dxva2_common_frame_params,
     .frame_priv_data_size = sizeof(struct dxva2_picture_context),
     .priv_data_size = sizeof(FFDXVASharedContext),
 };
 #endif
 
 #if CONFIG_VC1_D3D11VA2_HWACCEL
-AVHWAccel ff_vc1_d3d11va2_hwaccel = {
+const AVHWAccel ff_vc1_d3d11va2_hwaccel = {
     .name           = "vc1_d3d11va2",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_VC1,

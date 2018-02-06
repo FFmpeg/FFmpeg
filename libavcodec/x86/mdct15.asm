@@ -22,14 +22,21 @@
 
 %include "libavutil/x86/x86util.asm"
 
-%if ARCH_X86_64
+SECTION_RODATA 32
 
-SECTION_RODATA
+perm_neg: dd 2, 5, 3, 4, 6, 1, 7, 0
+perm_pos: dd 0, 7, 1, 6, 4, 3, 5, 2
+sign_adjust_r: times 4 dd 0x80000000, 0x00000000
 
 sign_adjust_5: dd 0x00000000, 0x80000000, 0x80000000, 0x00000000
 
 SECTION .text
 
+%if ARCH_X86_64
+
+;*****************************************************************************************
+;void ff_fft15_avx(FFTComplex *out, FFTComplex *in, FFTComplex *exptab, ptrdiff_t stride);
+;*****************************************************************************************
 %macro FFT5 3 ; %1 - in_offset, %2 - dst1 (64bit used), %3 - dst2
     VBROADCASTSD m0, [inq + %1]         ; in[ 0].re, in[ 0].im, in[ 0].re, in[ 0].im
     movsd   xm1, [inq + 1*16 +  8 + %1] ; in[ 3].re, in[ 3].im,         0,         0
@@ -103,9 +110,6 @@ SECTION .text
     movhps [%2q + strideq*4], xm1
 %endmacro
 
-;*****************************************************************************************
-;void ff_fft15_avx(FFTComplex *out, FFTComplex *in, FFTComplex *exptab, ptrdiff_t stride);
-;*****************************************************************************************
 INIT_YMM avx
 cglobal fft15, 4, 6, 14, out, in, exptab, stride, stride3, stride5
 %define out0q inq
@@ -138,4 +142,83 @@ cglobal fft15, 4, 6, 14, out, in, exptab, stride, stride3, stride5
 
     RET
 
+%endif ; ARCH_X86_64
+
+;*******************************************************************************************************
+;void ff_mdct15_postreindex(FFTComplex *out, FFTComplex *in, FFTComplex *exp, int *lut, ptrdiff_t len8);
+;*******************************************************************************************************
+%macro LUT_LOAD_4D 3
+    mov      r4d, [lutq + %3q*4 +  0]
+    movsd  xmm%1, [inq +  r4q*8]
+    mov      r4d, [lutq + %3q*4 +  4]
+    movhps xmm%1, [inq +  r4q*8]
+%if cpuflag(avx2)
+    mov      r4d, [lutq + %3q*4 +  8]
+    movsd     %2, [inq +  r4q*8]
+    mov      r4d, [lutq + %3q*4 + 12]
+    movhps    %2, [inq +  r4q*8]
+    vinsertf128 %1, %1, %2, 1
+%endif
+%endmacro
+
+%macro POSTROTATE_FN 1
+cglobal mdct15_postreindex, 5, 7, 8 + cpuflag(avx2)*2, out, in, exp, lut, len8, offset_p, offset_n
+
+    xor offset_nq, offset_nq
+    lea offset_pq, [len8q*2 - %1]
+
+    movaps m7,  [sign_adjust_r]
+
+%if cpuflag(avx2)
+    movaps   m8, [perm_pos]
+    movaps   m9, [perm_neg]
+%endif
+
+.loop:
+    movups m0, [expq + offset_pq*8]     ; exp[p0].re, exp[p0].im, exp[p1].re, exp[p1].im, exp[p2].re, exp[p2].im, exp[p3].re, exp[p3].im
+    movups m1, [expq + offset_nq*8]     ; exp[n3].re, exp[n3].im, exp[n2].re, exp[n2].im, exp[n1].re, exp[n1].im, exp[n0].re, exp[n0].im
+
+    LUT_LOAD_4D m3, xm4, offset_p       ; in[p0].re, in[p0].im, in[p1].re, in[p1].im, in[p2].re, in[p2].im, in[p3].re, in[p3].im
+    LUT_LOAD_4D m4, xm5, offset_n       ; in[n3].re, in[n3].im, in[n2].re, in[n2].im, in[n1].re, in[n1].im, in[n0].re, in[n0].im
+
+    mulps  m5, m3, m0                   ; in[p].reim * exp[p].reim
+    mulps  m6, m4, m1                   ; in[n].reim * exp[n].reim
+
+    xorps  m5, m7                       ; in[p].re *= -1, in[p].im *= 1
+    xorps  m6, m7                       ; in[n].re *= -1, in[n].im *= 1
+
+    shufps m3, m3, m3, q2301            ; in[p].imre
+    shufps m4, m4, m4, q2301            ; in[n].imre
+
+    mulps  m3, m0                       ; in[p].imre * exp[p].reim
+    mulps  m4, m1                       ; in[n].imre * exp[n].reim
+
+    haddps m3, m6                       ; out[n0].im, out[n1].im, out[n3].re, out[n2].re, out[n2].im, out[n3].im, out[n1].re, out[n0].re
+    haddps m5, m4                       ; out[p0].re, out[p1].re, out[p3].im, out[p2].im, out[p2].re, out[p3].re, out[p1].im, out[p0].im
+
+%if cpuflag(avx2)
+    vpermps m3, m9, m3                  ; out[n3].im, out[n3].re, out[n2].im, out[n2].re, out[n1].im, out[n1].re, out[n0].im, out[n0].re
+    vpermps m5, m8, m5                  ; out[p0].re, out[p0].im, out[p1].re, out[p1].im, out[p2].re, out[p2].im, out[p3].re, out[p3].im
+%else
+    shufps m3, m3, m3, q0312
+    shufps m5, m5, m5, q2130
+%endif
+
+    movups [outq + offset_nq*8], m3
+    movups [outq + offset_pq*8], m5
+
+    sub offset_pq, %1
+    add offset_nq, %1
+    cmp offset_nq, offset_pq
+    jle .loop
+
+    REP_RET
+%endmacro
+
+INIT_XMM sse3
+POSTROTATE_FN 2
+
+%if ARCH_X86_64 && HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+POSTROTATE_FN 4
 %endif

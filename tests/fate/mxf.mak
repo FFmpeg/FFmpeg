@@ -1,12 +1,12 @@
 
 FATE_MXF += fate-mxf-missing-index-demux
-fate-mxf-missing-index-demux: CMD = crc -i $(TARGET_SAMPLES)/mxf/opatom_missing_index.mxf -acodec copy
+fate-mxf-missing-index-demux: CMD = crc -i $(TARGET_SAMPLES)/mxf/opatom_missing_index.mxf -c:a copy
 
 FATE_MXF += fate-mxf-essencegroup-demux
-fate-mxf-essencegroup-demux: CMD = framecrc -i $(TARGET_SAMPLES)/mxf/opatom_essencegroup_alpha_raw.mxf -vcodec copy
+fate-mxf-essencegroup-demux: CMD = framecrc -i $(TARGET_SAMPLES)/mxf/opatom_essencegroup_alpha_raw.mxf -c:v copy
 
 FATE_MXF += fate-mxf-multiple-components-demux
-fate-mxf-multiple-components-demux: CMD = framecrc -i $(TARGET_SAMPLES)/mxf/multiple_components.mxf -vcodec copy
+fate-mxf-multiple-components-demux: CMD = framecrc -i $(TARGET_SAMPLES)/mxf/multiple_components.mxf -c:v copy
 
 FATE_MXF += fate-mxf-metadata-source-ref1
 fate-mxf-metadata-source-ref1: CMD = fmtstdout ffmetadata -i $(TARGET_SAMPLES)/mxf/track_01_v02.mxf -fflags +bitexact -flags +bitexact -map 0:0 -map 0:2 -map 0:3  -map_metadata:g -1
@@ -33,9 +33,13 @@ FATE_MXF_PROBE-$(call ENCDEC2, DVVIDEO, PCM_S16LE, MXF) += fate-mxf-probe-dv25
 fate-mxf-probe-dv25: SRC = $(TARGET_SAMPLES)/mxf/Avid-00005.mxf
 fate-mxf-probe-dv25: CMD = run $(PROBE_FORMAT_STREAMS_COMMAND) -i "$(SRC)"
 
+FATE_MXF_REEL_NAME-$(call ENCDEC2, MPEG2VIDEO, PCM_S16LE, MXF) += fate-mxf-reel_name
+fate-mxf-reel_name: $(TARGET_SAMPLES)/mxf/Sony-00001.mxf
+fate-mxf-reel_name: CMD = md5 -y -i $(TARGET_SAMPLES)/mxf/Sony-00001.mxf  -c copy -timecode 00:00:00:00 -metadata "reel_name=test_reel" -fflags +bitexact -f mxf
+
 FATE_MXF-$(CONFIG_MXF_DEMUXER) += $(FATE_MXF)
 
-FATE_SAMPLES_AVCONV += $(FATE_MXF-yes)
+FATE_SAMPLES_AVCONV += $(FATE_MXF-yes) $(FATE_MXF_REEL_NAME-yes)
 FATE_SAMPLES_FFPROBE += $(FATE_MXF_PROBE-yes)
 
-fate-mxf: $(FATE_MXF-yes) $(FATE_MXF_PROBE-yes)
+fate-mxf: $(FATE_MXF-yes) $(FATE_MXF_PROBE-yes) $(FATE_MXF_REEL_NAME-yes)
