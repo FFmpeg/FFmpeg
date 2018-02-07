@@ -26,8 +26,9 @@ API changes, most recent first:
   Add av_demuxer_iterate(), and av_muxer_iterate().
 
 2018-xx-xx - xxxxxxx - lavc 58.10.100 - avcodec.h
-  Deprecate use of avcodec_register(), avcodec_register_all(), and
-  av_codec_next(). Add av_codec_iterate().
+  Deprecate use of avcodec_register(), avcodec_register_all(),
+  av_codec_next(), av_register_codec_parser(), and av_parser_next().
+  Add av_codec_iterate() and av_parser_iterate().
 
 2018-02-xx - xxxxxxx - lavf 58.8.100 - avformat.h
   Deprecate the current names of the RTSP "timeout", "stimeout", "user-agent"
