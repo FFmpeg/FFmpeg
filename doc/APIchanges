@@ -22,7 +22,7 @@ API changes, most recent first:
 
 2018-xx-xx - xxxxxxx - lavf 58.9.100 - avformat.h
   Deprecate use of av_register_input_format(), av_register_output_format(),
-  avformat_register_all(), av_iformat_next(), av_oformat_next().
+  av_register_all(), av_iformat_next(), av_oformat_next().
   Add av_demuxer_iterate(), and av_muxer_iterate().
 
 2018-xx-xx - xxxxxxx - lavc 58.10.100 - avcodec.h
