@@ -100,7 +100,8 @@ static int rtmfp_close(URLContext *s)
     LibRTMFPContext *ctx = s->priv_data;
 
     av_log(NULL, AV_LOG_INFO, "Closing RTMFP connection...\n");
-    RTMFP_Close(ctx->id, 1);
+    //RTMFP_Close(ctx->id, 1);
+    RTMFP_Terminate();
     return 0;
 }
 
