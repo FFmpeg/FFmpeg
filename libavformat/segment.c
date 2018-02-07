@@ -1064,6 +1064,7 @@ static const AVOption options[] = {
     { NULL },
 };
 
+#if CONFIG_SEGMENT_MUXER
 static const AVClass seg_class = {
     .class_name = "segment muxer",
     .item_name  = av_default_item_name,
@@ -1084,7 +1085,9 @@ AVOutputFormat ff_segment_muxer = {
     .check_bitstream = seg_check_bitstream,
     .priv_class     = &seg_class,
 };
+#endif
 
+#if CONFIG_STREAM_SEGMENT_MUXER
 static const AVClass sseg_class = {
     .class_name = "stream_segment muxer",
     .item_name  = av_default_item_name,
@@ -1105,3 +1108,4 @@ AVOutputFormat ff_stream_segment_muxer = {
     .check_bitstream = seg_check_bitstream,
     .priv_class     = &sseg_class,
 };
+#endif
