@@ -296,6 +296,9 @@ Use persistent connections if set to 1, default is 0.
 @item post_data
 Set custom HTTP post data.
 
+@item referer
+Set the Referer header. Include 'Referer: URL' header in HTTP request.
+
 @item user_agent
 Override the User-Agent header. If not specified the protocol will use a
 string describing the libavformat build. ("Lavf/<version>")
@@ -320,6 +323,9 @@ Sets the maximum delay in seconds after which to give up reconnecting
 
 @item mime_type
 Export the MIME type.
+
+@item http_version
+Exports the HTTP response version number. Usually "1.0" or "1.1".
 
 @item icy
 If set to 1 request ICY (SHOUTcast) metadata from the server. If the server
@@ -363,7 +369,7 @@ If set to 1 enables experimental HTTP server. This can be used to send data when
 used as an output option, or read data from a client with HTTP POST when used as
 an input option.
 If set to 2 enables experimental multi-client HTTP server. This is not yet implemented
-in ffmpeg.c or ffserver.c and thus must not be used as a command line option.
+in ffmpeg.c and thus must not be used as a command line option.
 @example
 # Server side (sending):
 ffmpeg -i somefile.ogg -c copy -listen 1 -f ogg http://@var{server}:@var{port}
@@ -1186,6 +1192,7 @@ Accepted options:
 Start offset of the extracted segment, in bytes.
 @item end
 End offset of the extracted segment, in bytes.
+If set to 0, extract till end of file.
 @end table
 
 Examples:
@@ -1199,6 +1206,11 @@ subfile,,start,153391104,end,268142592,,:/media/dvd/VIDEO_TS/VTS_08_1.VOB
 Play an AVI file directly from a TAR archive:
 @example
 subfile,,start,183241728,end,366490624,,:archive.tar
+@end example
+
+Play a MPEG-TS file from start offset till end:
+@example
+subfile,,start,32815239,end,0,,:video.ts
 @end example
 
 @section tee
@@ -1242,6 +1254,9 @@ Set receive buffer size, expressed bytes.
 
 @item send_buffer_size=@var{bytes}
 Set send buffer size, expressed bytes.
+
+@item tcp_nodelay=@var{1|0}
+Set TCP_NODELAY to disable Nagle's algorithm. Default value is 0.
 @end table
 
 The following example shows how to setup a listening TCP connection
@@ -1277,7 +1292,7 @@ If enabled, try to verify the peer that we are communicating with.
 Note, if using OpenSSL, this currently only makes sure that the
 peer certificate is signed by one of the root certificates in the CA
 database, but it does not validate that the certificate actually
-matches the host name we are trying to connect to. (With GnuTLS,
+matches the host name we are trying to connect to. (With other backends,
 the host name is validated as well.)
 
 This is disabled by default since it requires a CA database to be

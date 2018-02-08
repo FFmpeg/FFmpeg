@@ -39,6 +39,9 @@ typedef struct LibopusEncOpts {
     int packet_size;
     int max_bandwidth;
     int mapping_family;
+#ifdef OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST
+    int apply_phase_inv;
+#endif
 } LibopusEncOpts;
 
 typedef struct LibopusEncContext {
@@ -154,6 +157,14 @@ static int libopus_configure_encoder(AVCodecContext *avctx, OpusMSEncoder *enc,
                    "Unable to set maximum bandwidth: %s\n", opus_strerror(ret));
     }
 
+#ifdef OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST
+    ret = opus_multistream_encoder_ctl(enc,
+                                       OPUS_SET_PHASE_INVERSION_DISABLED(!opts->apply_phase_inv));
+    if (ret != OPUS_OK)
+        av_log(avctx, AV_LOG_WARNING,
+               "Unable to set phase inversion: %s\n",
+               opus_strerror(ret));
+#endif
     return OPUS_OK;
 }
 
@@ -351,12 +362,12 @@ static av_cold int libopus_encode_init(AVCodecContext *avctx)
         avctx->bit_rate = 64000 * opus->stream_count +
                           32000 * coupled_stream_count;
         av_log(avctx, AV_LOG_WARNING,
-               "No bit rate set. Defaulting to %"PRId64" bps.\n", (int64_t)avctx->bit_rate);
+               "No bit rate set. Defaulting to %"PRId64" bps.\n", avctx->bit_rate);
     }
 
     if (avctx->bit_rate < 500 || avctx->bit_rate > 256000 * avctx->channels) {
         av_log(avctx, AV_LOG_ERROR, "The bit rate %"PRId64" bps is unsupported. "
-               "Please choose a value between 500 and %d.\n", (int64_t)avctx->bit_rate,
+               "Please choose a value between 500 and %d.\n", avctx->bit_rate,
                256000 * avctx->channels);
         ret = AVERROR(EINVAL);
         goto fail;
@@ -368,7 +379,7 @@ static av_cold int libopus_encode_init(AVCodecContext *avctx)
         goto fail;
     }
 
-    /* Header includes channel mapping table if and only if mapping family is 0 */
+    /* Header includes channel mapping table if and only if mapping family is NOT 0 */
     header_size = 19 + (mapping_family == 0 ? 0 : 2 + avctx->channels);
     avctx->extradata = av_malloc(header_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!avctx->extradata) {
@@ -530,6 +541,9 @@ static const AVOption libopus_options[] = {
         { "on",             "Use variable bit rate", 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, 0, 0, FLAGS, "vbr" },
         { "constrained",    "Use constrained VBR",   0, AV_OPT_TYPE_CONST, { .i64 = 2 }, 0, 0, FLAGS, "vbr" },
     { "mapping_family", "Channel Mapping Family",              OFFSET(mapping_family), AV_OPT_TYPE_INT,   { .i64 = -1 },   -1,  255,  FLAGS, "mapping_family" },
+#ifdef OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST
+    { "apply_phase_inv", "Apply intensity stereo phase inversion", OFFSET(apply_phase_inv), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, FLAGS },
+#endif
     { NULL },
 };
 
@@ -566,4 +580,5 @@ AVCodec ff_libopus_encoder = {
     .supported_samplerates = libopus_sample_rates,
     .priv_class      = &libopus_class,
     .defaults        = libopus_defaults,
+    .wrapper_name    = "libopus",
 };

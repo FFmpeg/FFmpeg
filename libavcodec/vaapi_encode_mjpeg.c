@@ -361,7 +361,7 @@ static av_cold int vaapi_encode_mjpeg_configure(AVCodecContext *avctx)
     return 0;
 }
 
-static VAAPIEncodeType vaapi_encode_type_mjpeg = {
+static const VAAPIEncodeType vaapi_encode_type_mjpeg = {
     .priv_data_size        = sizeof(VAAPIEncodeMJPEGContext),
 
     .configure             = &vaapi_encode_mjpeg_configure,
@@ -422,9 +422,11 @@ AVCodec ff_mjpeg_vaapi_encoder = {
     .encode2        = &ff_vaapi_encode2,
     .close          = &ff_vaapi_encode_close,
     .priv_class     = &vaapi_encode_mjpeg_class,
+    .capabilities   = AV_CODEC_CAP_HARDWARE,
     .defaults       = vaapi_encode_mjpeg_defaults,
     .pix_fmts = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_VAAPI,
         AV_PIX_FMT_NONE,
     },
+    .wrapper_name   = "vaapi",
 };

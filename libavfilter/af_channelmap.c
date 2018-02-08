@@ -149,13 +149,6 @@ static av_cold int channelmap_init(AVFilterContext *ctx)
             else
                 mode = MAP_PAIR_STR_STR;
         }
-#if FF_API_OLD_FILTER_OPTS
-        if (strchr(mapping, ',')) {
-            av_log(ctx, AV_LOG_WARNING, "This syntax is deprecated, use "
-                   "'|' to separate the mappings.\n");
-            separator = ',';
-        }
-#endif
     }
 
     if (mode != MAP_NONE) {

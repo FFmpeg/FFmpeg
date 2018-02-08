@@ -152,15 +152,3 @@ int ff_mpa_decode_header(uint32_t head, int *sample_rate, int *channels, int *fr
     *bit_rate = s->bit_rate;
     return s->frame_size;
 }
-
-#if LIBAVCODEC_VERSION_MAJOR < 58
-int avpriv_mpa_decode_header2(uint32_t head, int *sample_rate, int *channels, int *frame_size, int *bit_rate, enum AVCodecID *codec_id)
-{
-    return ff_mpa_decode_header(head, sample_rate, channels, frame_size, bit_rate, codec_id);
-}
-
-int avpriv_mpa_decode_header(AVCodecContext *avctx, uint32_t head, int *sample_rate, int *channels, int *frame_size, int *bit_rate)
-{
-    return ff_mpa_decode_header(head, sample_rate, channels, frame_size, bit_rate, &avctx->codec_id);
-}
-#endif

@@ -279,6 +279,7 @@ av_cold void ff_idctdsp_init(IDCTDSPContext *c, AVCodecContext *avctx)
                 c->perm_type = FF_IDCT_PERM_NONE;
 #endif /* CONFIG_FAANIDCT */
             } else { // accurate/default
+                /* Be sure FF_IDCT_NONE will select this one, since it uses FF_IDCT_PERM_NONE */
                 c->idct_put  = ff_simple_idct_put_8;
                 c->idct_add  = ff_simple_idct_add_8;
                 c->idct      = ff_simple_idct_8;

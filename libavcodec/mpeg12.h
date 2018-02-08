@@ -73,4 +73,8 @@ void ff_mpeg1_encode_mb(MpegEncContext *s, int16_t block[8][64],
 void ff_mpeg1_encode_init(MpegEncContext *s);
 void ff_mpeg1_encode_slice_header(MpegEncContext *s);
 
+void ff_mpeg12_find_best_frame_rate(AVRational frame_rate,
+                                    int *code, int *ext_n, int *ext_d,
+                                    int nonstandard);
+
 #endif /* AVCODEC_MPEG12_H */

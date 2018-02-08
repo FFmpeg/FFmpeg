@@ -393,8 +393,8 @@ void ff_ivi_inverse_haar_4x4(const int32_t *in, int16_t *out, ptrdiff_t pitch,
         if (flags[i]) {
             /* pre-scaling */
             shift = !(i & 2);
-            sp1 = src[0] << shift;
-            sp2 = src[4] << shift;
+            sp1 = src[0] * (1 << shift);
+            sp2 = src[4] * (1 << shift);
             INV_HAAR4(   sp1,    sp2, src[8], src[12],
                       dst[0], dst[4], dst[8], dst[12],
                       t0, t1, t2, t3, t4);

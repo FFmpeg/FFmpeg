@@ -29,7 +29,7 @@
 #include <io.h>
 #endif
 
-#if defined(_WIN32) && !defined(__MINGW32CE__)
+#ifdef _WIN32
 #undef open
 #undef lseek
 #undef stat
@@ -99,8 +99,12 @@ typedef struct FileLogContext {
 } FileLogContext;
 
 static const AVClass file_log_ctx_class = {
-    "TEMPFILE", av_default_item_name, NULL, LIBAVUTIL_VERSION_INT,
-    offsetof(FileLogContext, log_offset), offsetof(FileLogContext, log_ctx)
+    .class_name                = "TEMPFILE",
+    .item_name                 = av_default_item_name,
+    .option                    = NULL,
+    .version                   = LIBAVUTIL_VERSION_INT,
+    .log_level_offset_offset   = offsetof(FileLogContext, log_offset),
+    .parent_log_context_offset = offsetof(FileLogContext, log_ctx),
 };
 
 int avpriv_tempfile(const char *prefix, char **filename, int log_offset, void *log_ctx)

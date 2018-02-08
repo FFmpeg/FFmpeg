@@ -26,7 +26,7 @@ fate-dss-sp: CMD = framecrc -i $(TARGET_SAMPLES)/dss/sp.dss -frames 30
 FATE_SAMPLES_AUDIO-$(call DEMDEC, AVI, IMC) += fate-imc
 fate-imc: CMD = pcm -i $(TARGET_SAMPLES)/imc/imc.avi
 fate-imc: CMP = oneoff
-fate-imc: REF = $(SAMPLES)/imc/imc.pcm
+fate-imc: REF = $(SAMPLES)/imc/imc-201706.pcm
 
 FATE_SAMPLES_AUDIO-$(call DEMDEC, FLV, NELLYMOSER) += fate-nellymoser
 fate-nellymoser: CMD = pcm -i $(TARGET_SAMPLES)/nellymoser/nellymoser.flv

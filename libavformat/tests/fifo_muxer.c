@@ -31,8 +31,6 @@
 #define SLEEPTIME_50_MS 50000
 #define SLEEPTIME_10_MS 10000
 
-/* Implementation of mock muxer to simulate real muxer failures */
-
 /* This is structure of data sent in packets to
  * failing muxer */
 typedef struct FailingMuxerPacketData {
@@ -41,113 +39,7 @@ typedef struct FailingMuxerPacketData {
     unsigned sleep_time; /* sleep for this long in write_packet to simulate long I/O operation */
 } FailingMuxerPacketData;
 
-
-typedef struct FailingMuxerContext {
-    AVClass *class;
-    int write_header_ret;
-    int write_trailer_ret;
-    /* If non-zero, summary of processed packets will be printed in deinit */
-    int print_deinit_summary;
-
-    int flush_count;
-    int pts_written[MAX_TST_PACKETS];
-    int pts_written_nr;
-} FailingMuxerContext;
-
-static int failing_write_header(AVFormatContext *avf)
-{
-    FailingMuxerContext *ctx = avf->priv_data;
-    return ctx->write_header_ret;
-}
-
-static int failing_write_packet(AVFormatContext *avf, AVPacket *pkt)
-{
-    FailingMuxerContext *ctx = avf->priv_data;
-    int ret = 0;
-    if (!pkt) {
-        ctx->flush_count++;
-    } else {
-        FailingMuxerPacketData *data = (FailingMuxerPacketData*) pkt->data;
-
-        if (!data->recover_after) {
-            data->ret = 0;
-        } else {
-            data->recover_after--;
-        }
-
-        ret = data->ret;
-
-        if (data->sleep_time) {
-            int64_t slept = 0;
-            while (slept < data->sleep_time) {
-                if (ff_check_interrupt(&avf->interrupt_callback))
-                    return AVERROR_EXIT;
-                av_usleep(SLEEPTIME_10_MS);
-                slept += SLEEPTIME_10_MS;
-            }
-        }
-
-        if (!ret) {
-            ctx->pts_written[ctx->pts_written_nr++] = pkt->pts;
-            av_packet_unref(pkt);
-        }
-    }
-    return ret;
-}
-
-static int failing_write_trailer(AVFormatContext *avf)
-{
-    FailingMuxerContext *ctx = avf->priv_data;
-    return ctx->write_trailer_ret;
-}
-
-static void failing_deinit(AVFormatContext *avf)
-{
-    int i;
-    FailingMuxerContext *ctx = avf->priv_data;
-
-    if (!ctx->print_deinit_summary)
-        return;
-
-    printf("flush count: %d\n", ctx->flush_count);
-    printf("pts seen nr: %d\n", ctx->pts_written_nr);
-    printf("pts seen: ");
-    for (i = 0; i < ctx->pts_written_nr; ++i ) {
-        printf(i ? ",%d" : "%d", ctx->pts_written[i]);
-    }
-    printf("\n");
-}
-#define OFFSET(x) offsetof(FailingMuxerContext, x)
-static const AVOption options[] = {
-        {"write_header_ret", "write_header() return value", OFFSET(write_header_ret),
-         AV_OPT_TYPE_INT, {.i64 = 0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
-        {"write_trailer_ret", "write_trailer() return value", OFFSET(write_trailer_ret),
-         AV_OPT_TYPE_INT, {.i64 = 0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
-        {"print_deinit_summary", "print summary when deinitializing muxer", OFFSET(print_deinit_summary),
-         AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
-        {NULL}
-    };
-
-static const AVClass failing_muxer_class = {
-    .class_name = "Failing test muxer",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-AVOutputFormat tst_failing_muxer = {
-    .name           = "fail",
-    .long_name      = NULL_IF_CONFIG_SMALL("Failing test muxer"),
-    .priv_data_size = sizeof(FailingMuxerContext),
-    .write_header   = failing_write_header,
-    .write_packet   = failing_write_packet,
-    .write_trailer  = failing_write_trailer,
-    .deinit         = failing_deinit,
-    .priv_class     = &failing_muxer_class,
-    .flags          = AVFMT_NOFILE | AVFMT_ALLOW_FLUSH,
-};
-
-static int prepare_packet(AVPacket *pkt,const FailingMuxerPacketData *pkt_data, int64_t pts)
+static int prepare_packet(AVPacket *pkt, const FailingMuxerPacketData *pkt_data, int64_t pts)
 {
     int ret;
     FailingMuxerPacketData *data = av_malloc(sizeof(*data));
@@ -230,54 +122,6 @@ static int fifo_basic_test(AVFormatContext *oc, AVDictionary **opts,
                 av_err2str(ret));
         goto fail;
     }
-
-    return ret;
-write_trailer_and_fail:
-    av_write_trailer(oc);
-fail:
-    return ret;
-}
-
-static int fifo_write_header_err_tst(AVFormatContext *oc, AVDictionary **opts,
-                                     const FailingMuxerPacketData *pkt_data)
-{
-    int ret = 0, i;
-    AVPacket pkt;
-
-    av_init_packet(&pkt);
-
-    ret = avformat_write_header(oc, opts);
-    if (ret) {
-        fprintf(stderr, "Unexpected write_header failure: %s\n",
-                av_err2str(ret));
-        goto fail;
-    }
-
-    for (i = 0; i < MAX_TST_PACKETS; i++ ) {
-        ret = prepare_packet(&pkt, pkt_data, i);
-        if (ret < 0) {
-            fprintf(stderr, "Failed to prepare test packet: %s\n",
-                    av_err2str(ret));
-            goto write_trailer_and_fail;
-        }
-        ret = av_write_frame(oc, &pkt);
-        av_packet_unref(&pkt);
-        if (ret < 0) {
-            break;
-        }
-    }
-
-    if (!ret) {
-        fprintf(stderr, "write_packet not failed when supposed to.\n");
-        goto fail;
-    } else if (ret != -1) {
-        fprintf(stderr, "Unexpected write_packet error: %s\n", av_err2str(ret));
-        goto fail;
-    }
-
-    ret = av_write_trailer(oc);
-    if (ret < 0)
-        fprintf(stderr, "Unexpected write_trailer error: %s\n", av_err2str(ret));
 
     return ret;
 write_trailer_and_fail:
@@ -381,7 +225,7 @@ static int run_test(const TestCase *test)
              (int)test->print_summary_on_deinit, test->write_header_ret,
              test->write_trailer_ret);
     ret = av_dict_set(&opts, "format_opts", buffer, 0);
-    ret1 = av_dict_set(&opts, "fifo_format", "fail", 0);
+    ret1 = av_dict_set(&opts, "fifo_format", "fifo_test", 0);
     if (ret < 0 || ret1 < 0) {
         fprintf(stderr, "Failed to set options for test muxer: %s\n",
                 av_err2str(ret));
@@ -402,10 +246,6 @@ const TestCase tests[] = {
         /* Simple test in packet-non-dropping mode, we expect to get on the output
          * exactly what was on input */
         {fifo_basic_test, "nonfail test", NULL,1, 0, 0, {0, 0, 0}},
-
-        /* Test that we receive delayed write_header error from one of the write_packet
-         * calls. */
-        {fifo_write_header_err_tst, "write header error test", NULL, 0, -1, 0, {0, 0, 0}},
 
         /* Each write_packet will fail 3 times before operation is successful. If recovery
          * Since recovery is on, fifo muxer should not return any errors. */
@@ -433,9 +273,6 @@ const TestCase tests[] = {
 int main(int argc, char *argv[])
 {
     int i, ret, ret_all = 0;
-
-    av_register_all();
-    av_register_output_format(&tst_failing_muxer);
 
     for (i = 0; tests[i].test_func; i++) {
         ret = run_test(&tests[i]);

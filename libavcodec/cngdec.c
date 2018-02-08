@@ -23,6 +23,7 @@
 
 #include "libavutil/common.h"
 #include "libavutil/ffmath.h"
+#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "celp_filters.h"
 #include "internal.h"
@@ -120,6 +121,11 @@ static int cng_decode_frame(AVCodecContext *avctx, void *data,
         }
     }
 
+    if (avctx->internal->skip_samples > 10 * avctx->frame_size) {
+        avctx->internal->skip_samples = 0;
+        return AVERROR_INVALIDDATA;
+    }
+
     if (p->inited) {
         p->energy = p->energy / 2 + p->target_energy / 2;
         for (i = 0; i < p->order; i++)
@@ -147,7 +153,7 @@ static int cng_decode_frame(AVCodecContext *avctx, void *data,
         return ret;
     buf_out = (int16_t *)frame->data[0];
     for (i = 0; i < avctx->frame_size; i++)
-        buf_out[i] = p->filter_out[i + p->order];
+        buf_out[i] = av_clip_int16(p->filter_out[i + p->order]);
     memcpy(p->filter_out, p->filter_out + avctx->frame_size,
            p->order * sizeof(*p->filter_out));
 

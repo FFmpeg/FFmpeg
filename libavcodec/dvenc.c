@@ -17,6 +17,8 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ *
+ * quant_deadzone code and fixes sponsored by NOA GmbH
  */
 
 /**
@@ -28,6 +30,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/internal.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 
 #include "avcodec.h"
@@ -265,6 +268,8 @@ static av_always_inline int dv_init_enc_block(EncBlockInfo *bi, uint8_t *data,
 #endif
     int max  = classes[0];
     int prev = 0;
+    const unsigned deadzone = s->quant_deadzone;
+    const unsigned threshold = 2 * deadzone;
 
     av_assert2((((int) blk) & 15) == 0);
 
@@ -297,13 +302,15 @@ static av_always_inline int dv_init_enc_block(EncBlockInfo *bi, uint8_t *data,
         for (i = mb_area_start[area]; i < mb_area_start[area + 1]; i++) {
             int level = blk[zigzag_scan[i]];
 
-            if (level + 15 > 30U) {
+            if (level + deadzone > threshold) {
                 bi->sign[i] = (level >> 31) & 1;
                 /* Weight it and shift down into range, adding for rounding.
                  * The extra division by a factor of 2^4 reverses the 8x
                  * expansion of the DCT AND the 2x doubling of the weights. */
                 level     = (FFABS(level) * weight[i] + (1 << (dv_weight_bits + 3))) >>
                             (dv_weight_bits + 4);
+                if (!level)
+                    continue;
                 bi->mb[i] = level;
                 if (level > max)
                     max = level;
@@ -746,6 +753,20 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return 0;
 }
 
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+#define OFFSET(x) offsetof(DVVideoContext, x)
+static const AVOption dv_options[] = {
+    { "quant_deadzone",        "Quantizer dead zone",    OFFSET(quant_deadzone),       AV_OPT_TYPE_INT, { .i64 = 7 }, 0, 1024, VE },
+    { NULL },
+};
+
+static const AVClass dvvideo_encode_class = {
+    .class_name = "dvvideo encoder",
+    .item_name  = av_default_item_name,
+    .option     = dv_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_dvvideo_encoder = {
     .name           = "dvvideo",
     .long_name      = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
@@ -759,4 +780,5 @@ AVCodec ff_dvvideo_encoder = {
         AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV422P,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE
     },
+    .priv_class     = &dvvideo_encode_class,
 };

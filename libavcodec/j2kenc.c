@@ -69,6 +69,7 @@
 #include "bytestream.h"
 #include "jpeg2000.h"
 #include "libavutil/common.h"
+#include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
 
 #define NMSEDEC_BITS 7
@@ -662,7 +663,8 @@ static void encode_cblk(Jpeg2000EncoderContext *s, Jpeg2000T1Context *t1, Jpeg20
         bpno = cblk->nonzerobits - 1;
     }
 
-    ff_mqc_initenc(&t1->mqc, cblk->data);
+    cblk->data[0] = 0;
+    ff_mqc_initenc(&t1->mqc, cblk->data + 1);
 
     for (passno = 0; bpno >= 0; passno++){
         nmsedec=0;
@@ -688,7 +690,8 @@ static void encode_cblk(Jpeg2000EncoderContext *s, Jpeg2000T1Context *t1, Jpeg20
     cblk->npasses = passno;
     cblk->ninclpasses = passno;
 
-    cblk->passes[passno-1].rate = ff_mqc_flush_to(&t1->mqc, cblk->passes[passno-1].flushed, &cblk->passes[passno-1].flushed_len);
+    if (passno)
+        cblk->passes[passno-1].rate = ff_mqc_flush_to(&t1->mqc, cblk->passes[passno-1].flushed, &cblk->passes[passno-1].flushed_len);
 }
 
 /* tier-2 routines: */
@@ -795,7 +798,7 @@ static int encode_packet(Jpeg2000EncoderContext *s, Jpeg2000ResLevel *rlevel, in
                 if (cblk->ninclpasses){
                     if (s->buf_end - s->buf < cblk->passes[cblk->ninclpasses-1].rate)
                         return -1;
-                    bytestream_put_buffer(&s->buf, cblk->data,   cblk->passes[cblk->ninclpasses-1].rate
+                    bytestream_put_buffer(&s->buf, cblk->data + 1,   cblk->passes[cblk->ninclpasses-1].rate
                                                                - cblk->passes[cblk->ninclpasses-1].flushed_len);
                     bytestream_put_buffer(&s->buf, cblk->passes[cblk->ninclpasses-1].flushed,
                                                    cblk->passes[cblk->ninclpasses-1].flushed_len);
@@ -936,6 +939,12 @@ static int encode_tile(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile, int tileno
                                 }
                             }
                         }
+                        if (!prec->cblk[cblkno].data)
+                            prec->cblk[cblkno].data = av_malloc(1 + 8192);
+                        if (!prec->cblk[cblkno].passes)
+                            prec->cblk[cblkno].passes = av_malloc_array(JPEG2000_MAX_PASSES, sizeof (*prec->cblk[cblkno].passes));
+                        if (!prec->cblk[cblkno].data || !prec->cblk[cblkno].passes)
+                            return AVERROR(ENOMEM);
                         encode_cblk(s, &t1, prec->cblk + cblkno, tile, xx1 - xx0, yy1 - yy0,
                                     bandpos, codsty->nreslevels - reslevelno - 1);
                         xx0 = xx1;
@@ -1150,8 +1159,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
     } else{ // planar YUV
         s->planar = 1;
         s->ncomponents = 3;
-        avcodec_get_chroma_sub_sample(avctx->pix_fmt,
-                s->chroma_shift, s->chroma_shift + 1);
+        ret = av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt,
+                                               s->chroma_shift, s->chroma_shift + 1);
+        if (ret)
+            return ret;
     }
 
     ff_jpeg2000_init_tier1_luts();

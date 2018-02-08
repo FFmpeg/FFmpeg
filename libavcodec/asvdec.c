@@ -210,7 +210,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     AVFrame *const p = data;
     int mb_x, mb_y, ret;
 
-    if (buf_size * 8LL < a->mb_height2 * a->mb_width2 * 13LL)
+    if (buf_size * 8LL < a->mb_height * a->mb_width * 13LL)
         return AVERROR_INVALIDDATA;
 
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)

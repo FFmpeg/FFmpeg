@@ -36,7 +36,7 @@
 #include "bswapdsp.h"
 #include "internal.h"
 #include "aac_ac3_parser.h"
-#include "ac3_parser.h"
+#include "ac3_parser_internal.h"
 #include "ac3dec.h"
 #include "ac3dec_data.h"
 #include "kbdwin.h"
@@ -297,10 +297,10 @@ static int ac3_parse_header(AC3DecodeContext *s)
  */
 static int parse_frame_header(AC3DecodeContext *s)
 {
-    AC3HeaderInfo hdr, *phdr=&hdr;
+    AC3HeaderInfo hdr;
     int err;
 
-    err = avpriv_ac3_parse_header(&s->gbc, &phdr);
+    err = ff_ac3_parse_header(&s->gbc, &hdr);
     if (err)
         return err;
 

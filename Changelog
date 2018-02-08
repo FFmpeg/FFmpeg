@@ -2,6 +2,46 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+- Bitstream filters for editing metadata in H.264, HEVC and MPEG-2 streams
+- Dropped support for OpenJPEG versions 2.0 and below. Using OpenJPEG now
+  requires 2.1 (or later) and pkg-config.
+- VDA dropped (use VideoToolbox instead)
+- MagicYUV encoder
+- Raw AMR-NB and AMR-WB demuxers
+- TiVo ty/ty+ demuxer
+- Intel QSV-accelerated MJPEG encoding
+- PCE support for extended channel layouts in the AAC encoder
+- native aptX encoder and decoder
+- Raw aptX muxer and demuxer
+- NVIDIA NVDEC-accelerated H.264, HEVC, MPEG-1/2/4, VC1, VP8/9 hwaccel decoding
+- Intel QSV-accelerated overlay filter
+- mcompand audio filter
+- acontrast audio filter
+- OpenCL overlay filter
+- video mix filter
+- video normalize filter
+- audio lv2 wrapper filter
+- VAAPI VP8 decoding
+- AMD AMF H.264 and HEVC encoders
+- video fillborders filter
+- video setrange filter
+- nsp demuxer
+- support LibreSSL (via libtls)
+- AVX-512/ZMM support added
+- Dropped support for building for Windows XP. The minimum supported Windows
+  version is Windows Vista.
+- deconvolve video filter
+- entropy video filter
+- hilbert audio filter source
+- aiir audio filter
+- aiff: add support for CD-ROM XA ADPCM
+- Removed the ffserver program
+- Removed the ffmenc and ffmdec muxer and demuxer
+- VideoToolbox HEVC encoder and hwaccel
+- VAAPI-accelerated ProcAmp (color balance), denoise and sharpness filters
+
+
+version 3.4:
 - deflicker video filter
 - doubleweave video filter
 - lumakey video filter
@@ -14,6 +54,46 @@ version <next>:
 - librsvg support for svg rasterization
 - crossfeed audio filter
 - spec compliant VP9 muxing support in MP4
+- remove the libnut muxer/demuxer wrappers
+- remove the libschroedinger encoder/decoder wrappers
+- surround audio filter
+- sofalizer filter switched to libmysofa
+- Gremlin Digital Video demuxer and decoder
+- headphone audio filter
+- superequalizer audio filter
+- roberts video filter
+- The x86 assembler default switched from yasm to nasm, pass
+  --x86asmexe=yasm to configure to restore the old behavior.
+- additional frame format support for Interplay MVE movies
+- support for decoding through D3D11VA in ffmpeg
+- limiter video filter
+- libvmaf video filter
+- Dolby E decoder and SMPTE 337M demuxer
+- unpremultiply video filter
+- tlut2 video filter
+- floodfill video filter
+- pseudocolor video filter
+- raw G.726 muxer and demuxer, left- and right-justified
+- NewTek NDI input/output device
+- Some video filters with several inputs now use a common set of options:
+  blend, libvmaf, lut3d, overlay, psnr, ssim.
+  They must always be used by name.
+- FITS demuxer and decoder
+- FITS muxer and encoder
+- add --disable-autodetect build switch
+- drop deprecated qtkit input device (use avfoundation instead)
+- despill video filter
+- haas audio filter
+- SUP/PGS subtitle muxer
+- convolve video filter
+- VP9 tile threading support
+- KMS screen grabber
+- CUDA thumbnail filter
+- V4L2 mem2mem HW assisted codecs
+- Rockchip MPP hardware decoding
+- vmafmotion video filter
+- use MIME type "G726" for little-endian G.726, "AAL2-G726" for big-endian G.726
+
 
 version 3.3:
 - CrystalHD decoder moved to new decode API

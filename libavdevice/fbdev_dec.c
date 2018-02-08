@@ -78,8 +78,8 @@ static av_cold int fbdev_read_header(AVFormatContext *avctx)
     if (avctx->flags & AVFMT_FLAG_NONBLOCK)
         flags |= O_NONBLOCK;
 
-    if (avctx->filename[0])
-        device = avctx->filename;
+    if (avctx->url[0])
+        device = avctx->url;
     else
         device = ff_fbdev_default_device();
 
@@ -140,7 +140,7 @@ static av_cold int fbdev_read_header(AVFormatContext *avctx)
            fbdev->width, fbdev->height, fbdev->varinfo.bits_per_pixel,
            av_get_pix_fmt_name(pix_fmt),
            fbdev->framerate_q.num, fbdev->framerate_q.den,
-           (int64_t)st->codecpar->bit_rate);
+           st->codecpar->bit_rate);
     return 0;
 
 fail:

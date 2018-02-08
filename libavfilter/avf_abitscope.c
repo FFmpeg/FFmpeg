@@ -166,6 +166,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
         memset(outpicref->data[0] + i * outpicref->linesize[0], 0, outlink->w * 4);
 
     outpicref->pts = insamples->pts;
+    outpicref->sample_aspect_ratio = (AVRational){1,1};
+
     switch (insamples->format) {
     case AV_SAMPLE_FMT_S16P:
         for (ch = 0; ch < inlink->channels; ch++) {

@@ -58,6 +58,8 @@ static int parse_palette(AVCodecContext *avctx, GetByteContext *gbc,
             bytestream2_skip(gbc, 6);
             continue;
         }
+        if (avctx->pix_fmt != AV_PIX_FMT_PAL8)
+            return AVERROR_INVALIDDATA;
         r = bytestream2_get_byte(gbc);
         bytestream2_skip(gbc, 1);
         g = bytestream2_get_byte(gbc);
@@ -378,7 +380,9 @@ static int decode_frame(AVCodecContext *avctx,
             if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
                 return ret;
 
-            parse_palette(avctx, &gbc, (uint32_t *)p->data[1], colors);
+            ret = parse_palette(avctx, &gbc, (uint32_t *)p->data[1], colors);
+            if (ret < 0)
+                return ret;
             p->palette_has_changed = 1;
 
             /* jump to image data */
@@ -430,7 +434,7 @@ static int decode_frame(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_DEBUG, "bppcount %d bpp %d\n", bppcnt, bpp);
             if (bppcnt == 3 && bpp == 8) {
                 avctx->pix_fmt = AV_PIX_FMT_RGB24;
-            } else if (bppcnt == 3 && bpp == 5) {
+            } else if (bppcnt == 3 && bpp == 5 || bppcnt == 2 && bpp == 8) {
                 avctx->pix_fmt = AV_PIX_FMT_RGB555;
             } else if (bppcnt == 4 && bpp == 8) {
                 avctx->pix_fmt = AV_PIX_FMT_ARGB;

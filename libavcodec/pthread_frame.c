@@ -107,6 +107,8 @@ typedef struct PerThreadContext {
 
     int hwaccel_serializing;
     int async_serializing;
+
+    atomic_int debug_threads;       ///< Set if the FF_DEBUG_THREADS option is set.
 } PerThreadContext;
 
 /**
@@ -244,7 +246,7 @@ static int update_context_from_thread(AVCodecContext *dst, AVCodecContext *src, 
 {
     int err = 0;
 
-    if (dst != src && (for_user || !(av_codec_get_codec_descriptor(src)->props & AV_CODEC_PROP_INTRA_ONLY))) {
+    if (dst != src && (for_user || !(src->codec_descriptor->props & AV_CODEC_PROP_INTRA_ONLY))) {
         dst->time_base = src->time_base;
         dst->framerate = src->framerate;
         dst->width     = src->width;
@@ -260,11 +262,6 @@ static int update_context_from_thread(AVCodecContext *dst, AVCodecContext *src, 
 
         dst->bits_per_coded_sample = src->bits_per_coded_sample;
         dst->sample_aspect_ratio   = src->sample_aspect_ratio;
-#if FF_API_AFD
-FF_DISABLE_DEPRECATION_WARNINGS
-        dst->dtg_active_format     = src->dtg_active_format;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif /* FF_API_AFD */
 
         dst->profile = src->profile;
         dst->level   = src->level;
@@ -398,6 +395,9 @@ static int submit_packet(PerThreadContext *p, AVCodecContext *user_avctx,
         pthread_mutex_unlock(&p->mutex);
         return ret;
     }
+    atomic_store_explicit(&p->debug_threads,
+                          (p->avctx->debug & FF_DEBUG_THREADS) != 0,
+                          memory_order_relaxed);
 
     release_delayed_buffers(p);
 
@@ -565,10 +565,11 @@ void ff_thread_report_progress(ThreadFrame *f, int n, int field)
 
     p = f->owner[field]->internal->thread_ctx;
 
-    pthread_mutex_lock(&p->progress_mutex);
-    if (f->owner[field]->debug&FF_DEBUG_THREADS)
+    if (atomic_load_explicit(&p->debug_threads, memory_order_relaxed))
         av_log(f->owner[field], AV_LOG_DEBUG,
                "%p finished %d field %d\n", progress, n, field);
+
+    pthread_mutex_lock(&p->progress_mutex);
 
     atomic_store_explicit(&progress[field], n, memory_order_release);
 
@@ -587,10 +588,11 @@ void ff_thread_await_progress(ThreadFrame *f, int n, int field)
 
     p = f->owner[field]->internal->thread_ctx;
 
-    pthread_mutex_lock(&p->progress_mutex);
-    if (f->owner[field]->debug&FF_DEBUG_THREADS)
+    if (atomic_load_explicit(&p->debug_threads, memory_order_relaxed))
         av_log(f->owner[field], AV_LOG_DEBUG,
                "thread awaiting %d field %d from %p\n", n, field, progress);
+
+    pthread_mutex_lock(&p->progress_mutex);
     while (atomic_load_explicit(&progress[field], memory_order_relaxed) < n)
         pthread_cond_wait(&p->progress_cond, &p->progress_mutex);
     pthread_mutex_unlock(&p->progress_mutex);
@@ -726,14 +728,12 @@ int ff_frame_thread_init(AVCodecContext *avctx)
     FrameThreadContext *fctx;
     int i, err = 0;
 
-#if HAVE_W32THREADS
-    w32thread_init();
-#endif
-
     if (!thread_count) {
         int nb_cpus = av_cpu_count();
+#if FF_API_DEBUG_MV
         if ((avctx->debug & (FF_DEBUG_VIS_QP | FF_DEBUG_VIS_MB_TYPE)) || avctx->debug_mv)
             nb_cpus = 1;
+#endif
         // use number of cores + 1 as thread count if there is more than one
         if (nb_cpus > 1)
             thread_count = avctx->thread_count = FFMIN(nb_cpus + 1, MAX_AUTO_THREADS);
@@ -822,6 +822,8 @@ int ff_frame_thread_init(AVCodecContext *avctx)
         }
 
         if (err) goto error;
+
+        atomic_init(&p->debug_threads, (copy->debug & FF_DEBUG_THREADS) != 0);
 
         err = AVERROR(pthread_create(&p->thread, NULL, frame_worker_thread, p));
         p->thread_init= !err;

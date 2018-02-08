@@ -1,0 +1,231 @@
+/*
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+#include "libavutil/attributes.h"
+#include "libavutil/common.h"
+#include "libavutil/eval.h"
+#include "libavutil/imgutils.h"
+#include "libavutil/opt.h"
+#include "libavutil/pixdesc.h"
+#include "avfilter.h"
+#include "formats.h"
+#include "internal.h"
+#include "limiter.h"
+#include "video.h"
+
+typedef struct LimiterContext {
+    const AVClass *class;
+    int min;
+    int max;
+    int planes;
+    int nb_planes;
+    int linesize[4];
+    int width[4];
+    int height[4];
+
+    LimiterDSPContext dsp;
+} LimiterContext;
+
+#define OFFSET(x) offsetof(LimiterContext, x)
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+
+static const AVOption limiter_options[] = {
+    { "min",    "set min value", OFFSET(min),    AV_OPT_TYPE_INT, {.i64=0},     0, 65535, .flags = FLAGS },
+    { "max",    "set max value", OFFSET(max),    AV_OPT_TYPE_INT, {.i64=65535}, 0, 65535, .flags = FLAGS },
+    { "planes", "set planes",    OFFSET(planes), AV_OPT_TYPE_INT, {.i64=15},    0,    15, .flags = FLAGS },
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(limiter);
+
+static av_cold int init(AVFilterContext *ctx)
+{
+    LimiterContext *s = ctx->priv;
+
+    if (s->min > s->max)
+        return AVERROR(EINVAL);
+    return 0;
+}
+
+static int query_formats(AVFilterContext *ctx)
+{
+    static const enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV440P,
+        AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ440P,
+        AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVA420P, AV_PIX_FMT_YUV420P,
+        AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ420P,
+        AV_PIX_FMT_YUVJ411P, AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV410P,
+        AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV444P9,
+        AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
+        AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV440P12,
+        AV_PIX_FMT_YUV420P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV444P14,
+        AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
+        AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA444P9,
+        AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA444P10,
+        AV_PIX_FMT_YUVA420P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA444P16,
+        AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
+        AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
+        AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GBRAP16,
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY16,
+        AV_PIX_FMT_NONE
+    };
+
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
+}
+
+static void limiter8(const uint8_t *src, uint8_t *dst,
+                     ptrdiff_t slinesize, ptrdiff_t dlinesize,
+                     int w, int h, int min, int max)
+{
+    int x, y;
+
+    for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            dst[x] = av_clip(src[x], min, max);
+        }
+
+        dst += dlinesize;
+        src += slinesize;
+    }
+}
+
+static void limiter16(const uint8_t *ssrc, uint8_t *ddst,
+                      ptrdiff_t slinesize, ptrdiff_t dlinesize,
+                      int w, int h, int min, int max)
+{
+    const uint16_t *src = (const uint16_t *)ssrc;
+    uint16_t *dst = (uint16_t *)ddst;
+    int x, y;
+
+    dlinesize /= 2;
+    slinesize /= 2;
+
+    for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            dst[x] = av_clip(src[x], min, max);
+        }
+
+        dst += dlinesize;
+        src += slinesize;
+    }
+}
+
+static int config_props(AVFilterLink *inlink)
+{
+    AVFilterContext *ctx = inlink->dst;
+    LimiterContext *s = ctx->priv;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+    int vsub, hsub, ret;
+
+    s->nb_planes = av_pix_fmt_count_planes(inlink->format);
+
+    if ((ret = av_image_fill_linesizes(s->linesize, inlink->format, inlink->w)) < 0)
+        return ret;
+
+    hsub = desc->log2_chroma_w;
+    vsub = desc->log2_chroma_h;
+    s->height[1] = s->height[2] = AV_CEIL_RSHIFT(inlink->h, vsub);
+    s->height[0] = s->height[3] = inlink->h;
+    s->width[1]  = s->width[2]  = AV_CEIL_RSHIFT(inlink->w, hsub);
+    s->width[0]  = s->width[3]  = inlink->w;
+
+    if (desc->comp[0].depth == 8) {
+        s->dsp.limiter = limiter8;
+        s->max = FFMIN(s->max, 255);
+        s->min = FFMIN(s->min, 255);
+    } else {
+        s->dsp.limiter = limiter16;
+    }
+
+    if (ARCH_X86)
+        ff_limiter_init_x86(&s->dsp, desc->comp[0].depth);
+
+    return 0;
+}
+
+static int filter_frame(AVFilterLink *inlink, AVFrame *in)
+{
+    AVFilterContext *ctx = inlink->dst;
+    LimiterContext *s = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+    AVFrame *out;
+    int p;
+
+    if (av_frame_is_writable(in)) {
+        out = in;
+    } else {
+        out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+        if (!out) {
+            av_frame_free(&in);
+            return AVERROR(ENOMEM);
+        }
+        av_frame_copy_props(out, in);
+    }
+
+    for (p = 0; p < s->nb_planes; p++) {
+        if (!((1 << p) & s->planes)) {
+            if (out != in)
+                av_image_copy_plane(out->data[p], out->linesize[p], in->data[p], in->linesize[p],
+                                    s->linesize[p], s->height[p]);
+            continue;
+        }
+
+        s->dsp.limiter(in->data[p], out->data[p],
+                       in->linesize[p], out->linesize[p],
+                       s->width[p], s->height[p],
+                       s->min, s->max);
+    }
+
+    if (out != in)
+        av_frame_free(&in);
+
+    return ff_filter_frame(outlink, out);
+}
+
+static const AVFilterPad inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
+        .config_props = config_props,
+    },
+    { NULL }
+};
+
+static const AVFilterPad outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
+
+AVFilter ff_vf_limiter = {
+    .name          = "limiter",
+    .description   = NULL_IF_CONFIG_SMALL("Limit pixels components to the specified range."),
+    .priv_size     = sizeof(LimiterContext),
+    .priv_class    = &limiter_class,
+    .init          = init,
+    .query_formats = query_formats,
+    .inputs        = inputs,
+    .outputs       = outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+};

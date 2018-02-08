@@ -51,6 +51,13 @@ enum {
      * so the surface allocation code will not try to use it.
      */
     AV_VAAPI_DRIVER_QUIRK_ATTRIB_MEMTYPE = (1 << 2),
+
+    /**
+     * The driver does not support surface attributes at all.
+     * The surface allocation code will never pass them to surface allocation,
+     * and the results of the vaQuerySurfaceAttributes() call will be faked.
+     */
+    AV_VAAPI_DRIVER_QUIRK_SURFACE_ATTRIBUTES = (1 << 3),
 };
 
 /**

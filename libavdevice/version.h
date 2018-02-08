@@ -27,8 +27,8 @@
 
 #include "libavutil/version.h"
 
-#define LIBAVDEVICE_VERSION_MAJOR  57
-#define LIBAVDEVICE_VERSION_MINOR   7
+#define LIBAVDEVICE_VERSION_MAJOR  58
+#define LIBAVDEVICE_VERSION_MINOR   1
 #define LIBAVDEVICE_VERSION_MICRO 100
 
 #define LIBAVDEVICE_VERSION_INT AV_VERSION_INT(LIBAVDEVICE_VERSION_MAJOR, \
@@ -46,5 +46,9 @@
  * dropped at a future version bump. The defines themselves are not part of
  * the public API and may change, break or disappear at any time.
  */
+
+#ifndef FF_API_NEXT
+#define FF_API_NEXT              (LIBAVDEVICE_VERSION_MAJOR < 59)
+#endif
 
 #endif /* AVDEVICE_VERSION_H */

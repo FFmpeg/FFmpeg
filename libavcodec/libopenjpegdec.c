@@ -34,23 +34,7 @@
 #include "internal.h"
 #include "thread.h"
 
-#if HAVE_OPENJPEG_2_1_OPENJPEG_H
-#  include <openjpeg-2.1/openjpeg.h>
-#elif HAVE_OPENJPEG_2_0_OPENJPEG_H
-#  include <openjpeg-2.0/openjpeg.h>
-#elif HAVE_OPENJPEG_1_5_OPENJPEG_H
-#  include <openjpeg-1.5/openjpeg.h>
-#else
-#  include <openjpeg.h>
-#endif
-
-#if HAVE_OPENJPEG_2_1_OPENJPEG_H || HAVE_OPENJPEG_2_0_OPENJPEG_H
-#  define OPENJPEG_MAJOR_VERSION 2
-#  define OPJ(x) OPJ_##x
-#else
-#  define OPENJPEG_MAJOR_VERSION 1
-#  define OPJ(x) x
-#endif
+#include <openjpeg.h>
 
 #define JP2_SIG_TYPE    0x6A502020
 #define JP2_SIG_VALUE   0x0D0A870A
@@ -93,9 +77,6 @@ static const enum AVPixelFormat libopenjpeg_all_pix_fmts[]  = {
 typedef struct LibOpenJPEGContext {
     AVClass *class;
     opj_dparameters_t dec_params;
-#if OPENJPEG_MAJOR_VERSION == 1
-    opj_event_mgr_t event_mgr;
-#endif // OPENJPEG_MAJOR_VERSION == 1
     int lowqual;
 } LibOpenJPEGContext;
 
@@ -114,7 +95,6 @@ static void info_callback(const char *msg, void *data)
     av_log(data, AV_LOG_DEBUG, "%s", msg);
 }
 
-#if OPENJPEG_MAJOR_VERSION == 2
 typedef struct BufferReader {
     int pos;
     int size;
@@ -172,7 +152,6 @@ static OPJ_BOOL stream_seek(OPJ_OFF_T nb_bytes, void *user_data)
     reader->pos = (int)nb_bytes;
     return OPJ_TRUE;
 }
-#endif // OPENJPEG_MAJOR_VERSION == 2
 
 static inline int libopenjpeg_matches_pix_fmt(const opj_image_t *image, enum AVPixelFormat pix_fmt)
 {
@@ -217,15 +196,15 @@ static inline enum AVPixelFormat libopenjpeg_guess_pix_fmt(const opj_image_t *im
     int possible_fmts_nb = 0;
 
     switch (image->color_space) {
-    case OPJ(CLRSPC_SRGB):
+    case OPJ_CLRSPC_SRGB:
         possible_fmts    = libopenjpeg_rgb_pix_fmts;
         possible_fmts_nb = FF_ARRAY_ELEMS(libopenjpeg_rgb_pix_fmts);
         break;
-    case OPJ(CLRSPC_GRAY):
+    case OPJ_CLRSPC_GRAY:
         possible_fmts    = libopenjpeg_gray_pix_fmts;
         possible_fmts_nb = FF_ARRAY_ELEMS(libopenjpeg_gray_pix_fmts);
         break;
-    case OPJ(CLRSPC_SYCC):
+    case OPJ_CLRSPC_SYCC:
         possible_fmts    = libopenjpeg_yuv_pix_fmts;
         possible_fmts_nb = FF_ARRAY_ELEMS(libopenjpeg_yuv_pix_fmts);
         break;
@@ -352,14 +331,9 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     int ispacked   = 0;
     int i;
     opj_image_t *image = NULL;
-#if OPENJPEG_MAJOR_VERSION == 1
-    opj_dinfo_t *dec = NULL;
-    opj_cio_t *stream = NULL;
-#else // OPENJPEG_MAJOR_VERSION == 2
     BufferReader reader = {0, avpkt->size, avpkt->data};
     opj_codec_t *dec = NULL;
     opj_stream_t *stream = NULL;
-#endif // OPENJPEG_MAJOR_VERSION == 1
 
     *got_frame = 0;
 
@@ -367,13 +341,13 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     if ((AV_RB32(buf) == 12) &&
         (AV_RB32(buf + 4) == JP2_SIG_TYPE) &&
         (AV_RB32(buf + 8) == JP2_SIG_VALUE)) {
-        dec = opj_create_decompress(OPJ(CODEC_JP2));
+        dec = opj_create_decompress(OPJ_CODEC_JP2);
     } else {
         /* If the AVPacket contains a jp2c box, then skip to
          * the starting byte of the codestream. */
         if (AV_RB32(buf + 4) == AV_RB32("jp2c"))
             buf += 8;
-        dec = opj_create_decompress(OPJ(CODEC_J2K));
+        dec = opj_create_decompress(OPJ_CODEC_J2K);
     }
 
     if (!dec) {
@@ -382,15 +356,6 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
         goto done;
     }
 
-#if OPENJPEG_MAJOR_VERSION == 1
-    memset(&ctx->event_mgr, 0, sizeof(ctx->event_mgr));
-    ctx->event_mgr.info_handler    = info_callback;
-    ctx->event_mgr.error_handler   = error_callback;
-    ctx->event_mgr.warning_handler = warning_callback;
-    opj_set_event_mgr((opj_common_ptr) dec, &ctx->event_mgr, avctx);
-    ctx->dec_params.cp_limit_decoding = LIMIT_TO_MAIN_HEADER;
-    ctx->dec_params.cp_layer          = ctx->lowqual;
-#else // OPENJPEG_MAJOR_VERSION == 2
     if (!opj_set_error_handler(dec, error_callback, avctx) ||
         !opj_set_warning_handler(dec, warning_callback, avctx) ||
         !opj_set_info_handler(dec, info_callback, avctx)) {
@@ -401,16 +366,11 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
 
     ctx->dec_params.cp_layer = ctx->lowqual;
     ctx->dec_params.cp_reduce = avctx->lowres;
-#endif // OPENJPEG_MAJOR_VERSION == 1
 
     // Tie decoder with decoding parameters
     opj_setup_decoder(dec, &ctx->dec_params);
 
-#if OPENJPEG_MAJOR_VERSION == 1
-    stream = opj_cio_open((opj_common_ptr) dec, buf, buf_size);
-#else // OPENJPEG_MAJOR_VERSION == 2
     stream = opj_stream_default_create(OPJ_STREAM_READ);
-#endif // OPENJPEG_MAJOR_VERSION == 1
 
     if (!stream) {
         av_log(avctx, AV_LOG_ERROR,
@@ -419,27 +379,13 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
         goto done;
     }
 
-#if OPENJPEG_MAJOR_VERSION == 1
-    // Decode the header only.
-    image = opj_decode_with_info(dec, stream, NULL);
-    opj_cio_close(stream);
-    stream = NULL;
-    ret = !image;
-#else // OPENJPEG_MAJOR_VERSION == 2
     opj_stream_set_read_function(stream, stream_read);
     opj_stream_set_skip_function(stream, stream_skip);
     opj_stream_set_seek_function(stream, stream_seek);
-#if HAVE_OPENJPEG_2_1_OPENJPEG_H
     opj_stream_set_user_data(stream, &reader, NULL);
-#elif HAVE_OPENJPEG_2_0_OPENJPEG_H
-    opj_stream_set_user_data(stream, &reader);
-#else
-#error Missing call to opj_stream_set_user_data
-#endif
     opj_stream_set_user_data_length(stream, avpkt->size);
     // Decode the header only.
     ret = !opj_read_header(stream, dec, &image);
-#endif // OPENJPEG_MAJOR_VERSION == 1
 
     if (ret) {
         av_log(avctx, AV_LOG_ERROR, "Error decoding codestream header.\n");
@@ -473,25 +419,7 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
         goto done;
 
-#if OPENJPEG_MAJOR_VERSION == 1
-    ctx->dec_params.cp_limit_decoding = NO_LIMITATION;
-    ctx->dec_params.cp_reduce = avctx->lowres;
-    // Tie decoder with decoding parameters.
-    opj_setup_decoder(dec, &ctx->dec_params);
-    stream = opj_cio_open((opj_common_ptr) dec, buf, buf_size);
-    if (!stream) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Codestream could not be opened for reading.\n");
-        ret = AVERROR_EXTERNAL;
-        goto done;
-    }
-    opj_image_destroy(image);
-    // Decode the codestream
-    image = opj_decode_with_info(dec, stream, NULL);
-    ret = !image;
-#else // OPENJPEG_MAJOR_VERSION == 2
     ret = !opj_decode(dec, stream, image);
-#endif // OPENJPEG_MAJOR_VERSION == 1
 
     if (ret) {
         av_log(avctx, AV_LOG_ERROR, "Error decoding codestream.\n");
@@ -552,23 +480,9 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
 
 done:
     opj_image_destroy(image);
-#if OPENJPEG_MAJOR_VERSION == 2
     opj_stream_destroy(stream);
     opj_destroy_codec(dec);
-#else
-    opj_cio_close(stream);
-    opj_destroy_decompress(dec);
-#endif
     return ret;
-}
-
-static av_cold void libopenjpeg_static_init(AVCodec *codec)
-{
-    const char *version = opj_version();
-    int major, minor;
-
-    if (sscanf(version, "%d.%d", &major, &minor) == 2 && 1000*major + minor <= 1003)
-        codec->capabilities |= AV_CODEC_CAP_EXPERIMENTAL;
 }
 
 #define OFFSET(x) offsetof(LibOpenJPEGContext, x)
@@ -598,5 +512,5 @@ AVCodec ff_libopenjpeg_decoder = {
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
     .max_lowres     = 31,
     .priv_class     = &openjpeg_class,
-    .init_static_data = libopenjpeg_static_init,
+    .wrapper_name   = "libopenjpeg",
 };

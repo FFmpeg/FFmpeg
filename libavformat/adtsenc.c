@@ -85,7 +85,7 @@ static int adts_decode_extradata(AVFormatContext *s, ADTSContext *adts, const ui
         init_put_bits(&pb, adts->pce_data, MAX_PCE_SIZE);
 
         put_bits(&pb, 3, 5); //ID_PCE
-        adts->pce_size = (avpriv_copy_pce_data(&pb, &gb) + 3) / 8;
+        adts->pce_size = (ff_copy_pce_data(&pb, &gb) + 3) / 8;
         flush_put_bits(&pb);
     }
 
@@ -94,16 +94,28 @@ static int adts_decode_extradata(AVFormatContext *s, ADTSContext *adts, const ui
     return 0;
 }
 
-static int adts_write_header(AVFormatContext *s)
+static int adts_init(AVFormatContext *s)
 {
     ADTSContext *adts = s->priv_data;
     AVCodecParameters *par = s->streams[0]->codecpar;
 
-    if (adts->id3v2tag)
-        ff_id3v2_write_simple(s, 4, ID3v2_DEFAULT_MAGIC);
+    if (par->codec_id != AV_CODEC_ID_AAC) {
+        av_log(s, AV_LOG_ERROR, "Only AAC streams can be muxed by the ADTS muxer\n");
+        return AVERROR(EINVAL);
+    }
     if (par->extradata_size > 0)
         return adts_decode_extradata(s, adts, par->extradata,
                                      par->extradata_size);
+
+    return 0;
+}
+
+static int adts_write_header(AVFormatContext *s)
+{
+    ADTSContext *adts = s->priv_data;
+
+    if (adts->id3v2tag)
+        ff_id3v2_write_simple(s, 4, ID3v2_DEFAULT_MAGIC);
 
     return 0;
 }
@@ -149,11 +161,28 @@ static int adts_write_frame_header(ADTSContext *ctx,
 static int adts_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ADTSContext *adts = s->priv_data;
+    AVCodecParameters *par = s->streams[0]->codecpar;
     AVIOContext *pb = s->pb;
     uint8_t buf[ADTS_HEADER_SIZE];
 
     if (!pkt->size)
         return 0;
+    if (!par->extradata_size) {
+        uint8_t *side_data;
+        int side_data_size = 0, ret;
+
+        side_data = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
+                                            &side_data_size);
+        if (side_data_size) {
+            ret = adts_decode_extradata(s, adts, side_data, side_data_size);
+            if (ret < 0)
+                return ret;
+            ret = ff_alloc_extradata(par, side_data_size);
+            if (ret < 0)
+                return ret;
+            memcpy(par->extradata, side_data, side_data_size);
+        }
+    }
     if (adts->write_adts) {
         int err = adts_write_frame_header(adts, buf, pkt->size,
                                              adts->pce_size);
@@ -203,6 +232,7 @@ AVOutputFormat ff_adts_muxer = {
     .priv_data_size    = sizeof(ADTSContext),
     .audio_codec       = AV_CODEC_ID_AAC,
     .video_codec       = AV_CODEC_ID_NONE,
+    .init              = adts_init,
     .write_header      = adts_write_header,
     .write_packet      = adts_write_packet,
     .write_trailer     = adts_write_trailer,

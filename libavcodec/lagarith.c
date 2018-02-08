@@ -455,10 +455,12 @@ static int lag_decode_arith_plane(LagarithContext *l, uint8_t *dst,
             return -1;
 
         ff_lag_rac_init(&rac, &gb, length - stride);
-
-        for (i = 0; i < height; i++)
+        for (i = 0; i < height; i++) {
+            if (rac.overread > MAX_OVERREAD)
+                return AVERROR_INVALIDDATA;
             read += lag_decode_line(l, &rac, dst + (i * stride), width,
                                     stride, esc_count);
+        }
 
         if (read > length)
             av_log(l->avctx, AV_LOG_WARNING,

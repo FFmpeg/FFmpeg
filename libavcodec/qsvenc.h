@@ -44,9 +44,23 @@
 #define QSV_HAVE_LA     QSV_VERSION_ATLEAST(1, 7)
 #define QSV_HAVE_LA_DS  QSV_VERSION_ATLEAST(1, 8)
 #define QSV_HAVE_LA_HRD QSV_VERSION_ATLEAST(1, 11)
+
+#if defined(_WIN32)
 #define QSV_HAVE_ICQ    QSV_VERSION_ATLEAST(1, 8)
 #define QSV_HAVE_VCM    QSV_VERSION_ATLEAST(1, 8)
 #define QSV_HAVE_QVBR   QSV_VERSION_ATLEAST(1, 11)
+#else
+#define QSV_HAVE_ICQ    0
+#define QSV_HAVE_VCM    0
+#define QSV_HAVE_QVBR   0
+#endif
+
+#if !QSV_HAVE_LA_DS
+#define MFX_LOOKAHEAD_DS_UNKNOWN 0
+#define MFX_LOOKAHEAD_DS_OFF 0
+#define MFX_LOOKAHEAD_DS_2x 0
+#define MFX_LOOKAHEAD_DS_4x 0
+#endif
 
 #define QSV_COMMON_OPTS \
 { "async_depth", "Maximum processing parallelism", OFFSET(qsv.async_depth), AV_OPT_TYPE_INT, { .i64 = ASYNC_DEPTH_DEFAULT }, 0, INT_MAX, VE },                          \
@@ -70,7 +84,6 @@
 { "adaptive_i",     "Adaptive I-frame placement",             OFFSET(qsv.adaptive_i),     AV_OPT_TYPE_INT, { .i64 = -1 }, -1,          1, VE },                         \
 { "adaptive_b",     "Adaptive B-frame placement",             OFFSET(qsv.adaptive_b),     AV_OPT_TYPE_INT, { .i64 = -1 }, -1,          1, VE },                         \
 { "b_strategy",     "Strategy to choose between I/P/B-frames", OFFSET(qsv.b_strategy),    AV_OPT_TYPE_INT, { .i64 = -1 }, -1,          1, VE },                         \
-{ "cavlc",          "Enable CAVLC",                           OFFSET(qsv.cavlc),          AV_OPT_TYPE_INT, { .i64 = 0 },   0,          1, VE },                         \
 
 typedef int SetEncodeCtrlCB (AVCodecContext *avctx,
                              const AVFrame *frame, mfxEncodeCtrl* enc_ctrl);

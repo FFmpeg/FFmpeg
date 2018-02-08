@@ -54,6 +54,7 @@ typedef struct AssContext {
     char *charenc;
     char *force_style;
     int stream_index;
+    int alpha;
     uint8_t rgba_map[4];
     int     pix_step[4];       ///< steps per pixel for each plane of the main output
     int original_w, original_h;
@@ -69,6 +70,7 @@ typedef struct AssContext {
     {"f",              "set the filename of file to read",                         OFFSET(filename),   AV_OPT_TYPE_STRING,     {.str = NULL},  CHAR_MIN, CHAR_MAX, FLAGS }, \
     {"original_size",  "set the size of the original video (used to scale fonts)", OFFSET(original_w), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL},  CHAR_MIN, CHAR_MAX, FLAGS }, \
     {"fontsdir",       "set the directory containing the fonts to read",           OFFSET(fontsdir),   AV_OPT_TYPE_STRING,     {.str = NULL},  CHAR_MIN, CHAR_MAX, FLAGS }, \
+    {"alpha",          "enable processing of alpha channel",                       OFFSET(alpha),      AV_OPT_TYPE_BOOL,       {.i64 = 0   },         0,        1, FLAGS }, \
 
 /* libass supports a log level ranging from 0 to 7 */
 static const int ass_libavfilter_log_level_map[] = {
@@ -140,7 +142,7 @@ static int config_input(AVFilterLink *inlink)
 {
     AssContext *ass = inlink->dst->priv;
 
-    ff_draw_init(&ass->draw, inlink->format, 0);
+    ff_draw_init(&ass->draw, inlink->format, ass->alpha ? FF_DRAW_PROCESS_ALPHA : 0);
 
     ass_set_frame_size  (ass->renderer, inlink->w, inlink->h);
     if (ass->original_w && ass->original_h)
@@ -411,7 +413,7 @@ static av_cold int init_subtitles(AVFilterContext *ctx)
      *
      * That API is old and needs to be reworked to match behaviour with A/V.
      */
-    av_codec_set_pkt_timebase(dec_ctx, st->time_base);
+    dec_ctx->pkt_timebase = st->time_base;
 
     ret = avcodec_open2(dec_ctx, NULL, &codec_opts);
     if (ret < 0)

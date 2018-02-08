@@ -45,7 +45,11 @@ libname=$(mktemp -u "library").lib
 
 trap 'rm -f -- $libname' EXIT
 
-lib -out:${libname} $@ >/dev/null
+if [ -n "$AR" ]; then
+    $AR rcs ${libname} $@ >/dev/null
+else
+    lib -out:${libname} $@ >/dev/null
+fi
 if [ $? != 0 ]; then
     echo "Could not create temporary library." >&2
     exit 1
@@ -54,23 +58,7 @@ fi
 IFS='
 '
 
-# Determine if we're building for x86 or x86_64 and
-# set the symbol prefix accordingly.
-prefix=""
-arch=$(dumpbin -headers ${libname} |
-       tr '\t' ' ' |
-       grep '^ \+.\+machine \+(.\+)' |
-       head -1 |
-       sed -e 's/^ \{1,\}.\{1,\} \{1,\}machine \{1,\}(\(...\)).*/\1/')
-
-if [ "${arch}" = "x86" ]; then
-    prefix="_"
-else
-    if [ "${arch}" != "ARM" ] && [ "${arch}" != "x64" ]; then
-        echo "Unknown machine type." >&2
-        exit 1
-    fi
-fi
+prefix="$EXTERN_PREFIX"
 
 started=0
 regex="none"
@@ -112,7 +100,19 @@ for line in $(cat ${vscript} | tr '\t' ' '); do
 '
 done
 
-dump=$(dumpbin -linkermember:1 ${libname})
+if [ -n "$NM" ]; then
+    # Use eval, since NM="nm -g"
+    dump=$(eval "$NM --defined-only -g ${libname}" |
+              grep -v : |
+              grep -v ^$ |
+              cut -d' ' -f3 |
+              sed -e "s/^${prefix}//")
+else
+    dump=$(dumpbin -linkermember:1 ${libname} |
+              sed -e '/public symbols/,$!d' -e '/^ \{1,\}Summary/,$d' -e "s/ \{1,\}${prefix}/ /" -e 's/ \{1,\}/ /g' |
+              tail -n +2 |
+              cut -d' ' -f3)
+fi
 
 rm ${libname}
 
@@ -121,9 +121,6 @@ list=""
 for exp in ${regex}; do
     list="${list}"'
 '$(echo "${dump}" |
-          sed -e '/public symbols/,$!d' -e '/^ \{1,\}Summary/,$d' -e "s/ \{1,\}${prefix}/ /" -e 's/ \{1,\}/ /g' |
-          tail -n +2 |
-          cut -d' ' -f3 |
           grep "^${exp}" |
           sed -e 's/^/    /')
 done

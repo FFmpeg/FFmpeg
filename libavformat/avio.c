@@ -263,8 +263,6 @@ static const struct URLProtocol *url_find_protocol(const char *filename)
         av_strlcpy(proto_str, filename,
                    FFMIN(proto_len + 1, sizeof(proto_str)));
 
-    if ((ptr = strchr(proto_str, ',')))
-        *ptr = '\0';
     av_strlcpy(proto_nested, proto_str, sizeof(proto_nested));
     if ((ptr = strchr(proto_nested, '+')))
         *ptr = '\0';
@@ -299,7 +297,7 @@ int ffurl_alloc(URLContext **puc, const char *filename, int flags,
        return url_alloc_for_protocol(puc, p, filename, flags, int_cb);
 
     *puc = NULL;
-    if (av_strstart(filename, "https:", NULL))
+    if (av_strstart(filename, "https:", NULL) || av_strstart(filename, "tls:", NULL))
         av_log(NULL, AV_LOG_WARNING, "https protocol not found, recompile FFmpeg with "
                                      "openssl, gnutls "
                                      "or securetransport enabled.\n");
@@ -393,8 +391,10 @@ static inline int retry_transfer_wrapper(URLContext *h, uint8_t *buf,
                 }
                 av_usleep(1000);
             }
-        } else if (ret < 1)
-            return (ret < 0 && ret != AVERROR_EOF) ? ret : len;
+        } else if (ret == AVERROR_EOF)
+            return (len > 0) ? len : AVERROR_EOF;
+        else if (ret < 0)
+            return ret;
         if (ret) {
             fast_retries = FFMAX(fast_retries, 2);
             wait_since = 0;
@@ -625,13 +625,15 @@ int64_t ffurl_size(URLContext *h)
 
 int ffurl_get_file_handle(URLContext *h)
 {
-    if (!h->prot->url_get_file_handle)
+    if (!h || !h->prot || !h->prot->url_get_file_handle)
         return -1;
     return h->prot->url_get_file_handle(h);
 }
 
 int ffurl_get_multi_file_handle(URLContext *h, int **handles, int *numhandles)
 {
+    if (!h || !h->prot)
+        return AVERROR(ENOSYS);
     if (!h->prot->url_get_multi_file_handle) {
         if (!h->prot->url_get_file_handle)
             return AVERROR(ENOSYS);
@@ -647,15 +649,15 @@ int ffurl_get_multi_file_handle(URLContext *h, int **handles, int *numhandles)
 
 int ffurl_get_short_seek(URLContext *h)
 {
-    if (!h->prot->url_get_short_seek)
+    if (!h || !h->prot || !h->prot->url_get_short_seek)
         return AVERROR(ENOSYS);
     return h->prot->url_get_short_seek(h);
 }
 
 int ffurl_shutdown(URLContext *h, int flags)
 {
-    if (!h->prot->url_shutdown)
-        return AVERROR(EINVAL);
+    if (!h || !h->prot || !h->prot->url_shutdown)
+        return AVERROR(ENOSYS);
     return h->prot->url_shutdown(h, flags);
 }
 

@@ -31,8 +31,8 @@
 #include "libavutil/avstring.h"
 #include "avfilter.h"
 #include "drawutils.h"
-#include "dualinput.h"
 #include "formats.h"
+#include "framesync.h"
 #include "internal.h"
 #include "video.h"
 
@@ -70,7 +70,7 @@ typedef struct LUT3DContext {
     int clut_step;
     int clut_is16bit;
     int clut_width;
-    FFDualInputContext dinput;
+    FFFrameSync fs;
 #endif
 } LUT3DContext;
 
@@ -681,24 +681,21 @@ static int config_output(AVFilterLink *outlink)
     LUT3DContext *lut3d = ctx->priv;
     int ret;
 
+    ret = ff_framesync_init_dualinput(&lut3d->fs, ctx);
+    if (ret < 0)
+        return ret;
     outlink->w = ctx->inputs[0]->w;
     outlink->h = ctx->inputs[0]->h;
     outlink->time_base = ctx->inputs[0]->time_base;
-    if ((ret = ff_dualinput_init(ctx, &lut3d->dinput)) < 0)
+    if ((ret = ff_framesync_configure(&lut3d->fs)) < 0)
         return ret;
     return 0;
 }
 
-static int filter_frame_hald(AVFilterLink *inlink, AVFrame *inpicref)
+static int activate(AVFilterContext *ctx)
 {
-    LUT3DContext *s = inlink->dst->priv;
-    return ff_dualinput_filter_frame(&s->dinput, inlink, inpicref);
-}
-
-static int request_frame(AVFilterLink *outlink)
-{
-    LUT3DContext *s = outlink->src->priv;
-    return ff_dualinput_request_frame(&s->dinput, outlink);
+    LUT3DContext *s = ctx->priv;
+    return ff_framesync_activate(&s->fs);
 }
 
 static int config_clut(AVFilterLink *inlink)
@@ -751,45 +748,50 @@ static int config_clut(AVFilterLink *inlink)
     return 0;
 }
 
-static AVFrame *update_apply_clut(AVFilterContext *ctx, AVFrame *main,
-                                  const AVFrame *second)
+static int update_apply_clut(FFFrameSync *fs)
 {
+    AVFilterContext *ctx = fs->parent;
     AVFilterLink *inlink = ctx->inputs[0];
+    AVFrame *master, *second, *out;
+    int ret;
+
+    ret = ff_framesync_dualinput_get(fs, &master, &second);
+    if (ret < 0)
+        return ret;
+    if (!second)
+        return ff_filter_frame(ctx->outputs[0], master);
     update_clut(ctx->priv, second);
-    return apply_lut(inlink, main);
+    out = apply_lut(inlink, master);
+    return ff_filter_frame(ctx->outputs[0], out);
 }
 
 static av_cold int haldclut_init(AVFilterContext *ctx)
 {
     LUT3DContext *lut3d = ctx->priv;
-    lut3d->dinput.process = update_apply_clut;
+    lut3d->fs.on_event = update_apply_clut;
     return 0;
 }
 
 static av_cold void haldclut_uninit(AVFilterContext *ctx)
 {
     LUT3DContext *lut3d = ctx->priv;
-    ff_dualinput_uninit(&lut3d->dinput);
+    ff_framesync_uninit(&lut3d->fs);
 }
 
 static const AVOption haldclut_options[] = {
-    { "shortest",   "force termination when the shortest input terminates", OFFSET(dinput.shortest),   AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
-    { "repeatlast", "continue applying the last clut after eos",            OFFSET(dinput.repeatlast), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, FLAGS },
     COMMON_OPTIONS
 };
 
-AVFILTER_DEFINE_CLASS(haldclut);
+FRAMESYNC_DEFINE_CLASS(haldclut, LUT3DContext, fs);
 
 static const AVFilterPad haldclut_inputs[] = {
     {
         .name         = "main",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame_hald,
         .config_props = config_input,
     },{
         .name         = "clut",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame_hald,
         .config_props = config_clut,
     },
     { NULL }
@@ -799,7 +801,6 @@ static const AVFilterPad haldclut_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .request_frame = request_frame,
         .config_props  = config_output,
     },
     { NULL }
@@ -809,9 +810,11 @@ AVFilter ff_vf_haldclut = {
     .name          = "haldclut",
     .description   = NULL_IF_CONFIG_SMALL("Adjust colors using a Hald CLUT."),
     .priv_size     = sizeof(LUT3DContext),
+    .preinit       = haldclut_framesync_preinit,
     .init          = haldclut_init,
     .uninit        = haldclut_uninit,
     .query_formats = query_formats,
+    .activate      = activate,
     .inputs        = haldclut_inputs,
     .outputs       = haldclut_outputs,
     .priv_class    = &haldclut_class,

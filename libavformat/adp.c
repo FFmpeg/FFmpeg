@@ -27,7 +27,7 @@
 static int adp_probe(AVProbeData *p)
 {
     int i, changes = 0;
-    char last = 0;
+    uint8_t last = 0;
 
     if (p->buf_size < 32)
         return 0;

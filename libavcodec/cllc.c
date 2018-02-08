@@ -429,6 +429,9 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
     coding_type = (AV_RL32(src) >> 8) & 0xFF;
     av_log(avctx, AV_LOG_DEBUG, "Frame coding type: %d\n", coding_type);
 
+    if(get_bits_left(&gb) < avctx->height * avctx->width)
+        return AVERROR_INVALIDDATA;
+
     switch (coding_type) {
     case 0:
         avctx->pix_fmt             = AV_PIX_FMT_YUV422P;

@@ -38,6 +38,13 @@ typedef struct {
 static const char AMR_header[]   = "#!AMR\n";
 static const char AMRWB_header[] = "#!AMR-WB\n";
 
+static const uint8_t amrnb_packed_size[16] = {
+    13, 14, 16, 18, 20, 21, 27, 32, 6, 1, 1, 1, 1, 1, 1, 1
+};
+static const uint8_t amrwb_packed_size[16] = {
+    18, 24, 33, 37, 41, 47, 51, 59, 61, 6, 1, 1, 1, 1, 1, 1
+};
+
 #if CONFIG_AMR_MUXER
 static int amr_write_header(AVFormatContext *s)
 {
@@ -126,17 +133,9 @@ static int amr_read_packet(AVFormatContext *s, AVPacket *pkt)
     mode = (toc >> 3) & 0x0F;
 
     if (par->codec_id == AV_CODEC_ID_AMR_NB) {
-        static const uint8_t packed_size[16] = {
-            12, 13, 15, 17, 19, 20, 26, 31, 5, 0, 0, 0, 0, 0, 0, 0
-        };
-
-        size = packed_size[mode] + 1;
+        size = amrnb_packed_size[mode];
     } else if (par->codec_id == AV_CODEC_ID_AMR_WB) {
-        static const uint8_t packed_size[16] = {
-            18, 24, 33, 37, 41, 47, 51, 59, 61, 6, 6, 0, 0, 0, 1, 1
-        };
-
-        size = packed_size[mode];
+        size = amrwb_packed_size[mode];
     }
 
     if (!size || av_new_packet(pkt, size))
@@ -171,6 +170,118 @@ AVInputFormat ff_amr_demuxer = {
     .priv_data_size = sizeof(AMRContext),
     .read_probe     = amr_probe,
     .read_header    = amr_read_header,
+    .read_packet    = amr_read_packet,
+    .flags          = AVFMT_GENERIC_INDEX,
+};
+#endif
+
+#if CONFIG_AMRNB_DEMUXER
+static int amrnb_probe(AVProbeData *p)
+{
+    int mode, i = 0, valid = 0;
+    const uint8_t *b = p->buf;
+
+    while (i < p->buf_size) {
+        mode = b[i] >> 3 & 0x0F;
+        if (mode < 9 && (b[i] & 0x4) == 0x4) {
+            int last = mode;
+            int size = amrnb_packed_size[mode];
+            while (size--) {
+                if (b[++i] != last)
+                    break;
+                last = b[i];
+            }
+            if (size > 0) {
+                valid++;
+                i += size;
+            }
+        } else {
+            valid = 0;
+            i++;
+        }
+    }
+    if (valid > 100)
+        return AVPROBE_SCORE_EXTENSION / 2 + 1;
+    return 0;
+}
+
+static int amrnb_read_header(AVFormatContext *s)
+{
+    AVStream *st = avformat_new_stream(s, NULL);
+    if (!st)
+        return AVERROR(ENOMEM);
+    st->codecpar->codec_id       = AV_CODEC_ID_AMR_NB;
+    st->codecpar->sample_rate    = 8000;
+    st->codecpar->channels       = 1;
+    st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
+    st->codecpar->codec_type     = AVMEDIA_TYPE_AUDIO;
+    avpriv_set_pts_info(st, 64, 1, 8000);
+
+    return 0;
+}
+
+AVInputFormat ff_amrnb_demuxer = {
+    .name           = "amrnb",
+    .long_name      = NULL_IF_CONFIG_SMALL("raw AMR-NB"),
+    .priv_data_size = sizeof(AMRContext),
+    .read_probe     = amrnb_probe,
+    .read_header    = amrnb_read_header,
+    .read_packet    = amr_read_packet,
+    .flags          = AVFMT_GENERIC_INDEX,
+};
+#endif
+
+#if CONFIG_AMRWB_DEMUXER
+static int amrwb_probe(AVProbeData *p)
+{
+    int mode, i = 0, valid = 0;
+    const uint8_t *b = p->buf;
+
+    while (i < p->buf_size) {
+        mode = b[i] >> 3 & 0x0F;
+        if (mode < 10 && (b[i] & 0x4) == 0x4) {
+            int last = mode;
+            int size = amrwb_packed_size[mode];
+            while (size--) {
+                if (b[++i] != last)
+                    break;
+                last = b[i];
+            }
+            if (size > 0) {
+                valid++;
+                i += size;
+            }
+        } else {
+            valid = 0;
+            i++;
+        }
+    }
+    if (valid > 100)
+        return AVPROBE_SCORE_EXTENSION / 2 - 1;
+    return 0;
+}
+
+static int amrwb_read_header(AVFormatContext *s)
+{
+    AVStream *st = avformat_new_stream(s, NULL);
+    if (!st)
+        return AVERROR(ENOMEM);
+    st->codecpar->codec_id       = AV_CODEC_ID_AMR_WB;
+    st->codecpar->sample_rate    = 16000;
+    st->codecpar->channels       = 1;
+    st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
+    st->codecpar->codec_type     = AVMEDIA_TYPE_AUDIO;
+    avpriv_set_pts_info(st, 64, 1, 16000);
+
+    return 0;
+}
+
+AVInputFormat ff_amrwb_demuxer = {
+    .name           = "amrwb",
+    .long_name      = NULL_IF_CONFIG_SMALL("raw AMR-WB"),
+    .priv_data_size = sizeof(AMRContext),
+    .read_probe     = amrwb_probe,
+    .read_header    = amrwb_read_header,
     .read_packet    = amr_read_packet,
     .flags          = AVFMT_GENERIC_INDEX,
 };

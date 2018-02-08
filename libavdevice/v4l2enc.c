@@ -39,10 +39,10 @@ static av_cold int write_header(AVFormatContext *s1)
     if (s1->flags & AVFMT_FLAG_NONBLOCK)
         flags |= O_NONBLOCK;
 
-    s->fd = open(s1->filename, flags);
+    s->fd = open(s1->url, flags);
     if (s->fd < 0) {
         res = AVERROR(errno);
-        av_log(s1, AV_LOG_ERROR, "Unable to open V4L2 device '%s'\n", s1->filename);
+        av_log(s1, AV_LOG_ERROR, "Unable to open V4L2 device '%s'\n", s1->url);
         return res;
     }
 

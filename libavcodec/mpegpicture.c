@@ -22,6 +22,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
+#include "libavutil/pixdesc.h"
 
 #include "avcodec.h"
 #include "motion_est.h"
@@ -58,11 +59,7 @@ int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
 {
     int alloc_size = FFALIGN(FFABS(linesize) + 64, 32);
 
-    if (avctx->hwaccel
-#if FF_API_CAP_VDPAU
-        || avctx->codec->capabilities & AV_CODEC_CAP_HWACCEL_VDPAU
-#endif
-        )
+    if (avctx->hwaccel)
         return 0;
 
     if (linesize < 24) {
@@ -159,7 +156,8 @@ static int alloc_frame_buffer(AVCodecContext *avctx,  Picture *pic,
         return -1;
     }
 
-    if (pic->f->linesize[1] != pic->f->linesize[2]) {
+    if (av_pix_fmt_count_planes(pic->f->format) > 2 &&
+        pic->f->linesize[1] != pic->f->linesize[2]) {
         av_log(avctx, AV_LOG_ERROR,
                "get_buffer() failed (uv stride mismatch)\n");
         ff_mpeg_unref_picture(avctx, pic);
@@ -202,7 +200,10 @@ static int alloc_picture_tables(AVCodecContext *avctx, Picture *pic, int encodin
             return AVERROR(ENOMEM);
     }
 
-    if (out_format == FMT_H263 || encoding || avctx->debug_mv ||
+    if (out_format == FMT_H263 || encoding ||
+#if FF_API_DEBUG_MV
+        avctx->debug_mv ||
+#endif
         (avctx->flags2 & AV_CODEC_FLAG2_EXPORT_MVS)) {
         int mv_size        = 2 * (b8_array_size + 4) * sizeof(int16_t);
         int ref_index_size = 4 * mb_array_size;
@@ -374,8 +375,10 @@ int ff_mpeg_ref_picture(AVCodecContext *avctx, Picture *dst, Picture *src)
 
     if (src->hwaccel_picture_private) {
         dst->hwaccel_priv_buf = av_buffer_ref(src->hwaccel_priv_buf);
-        if (!dst->hwaccel_priv_buf)
+        if (!dst->hwaccel_priv_buf) {
+            ret = AVERROR(ENOMEM);
             goto fail;
+        }
         dst->hwaccel_picture_private = dst->hwaccel_priv_buf->data;
     }
 

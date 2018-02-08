@@ -91,6 +91,19 @@ AVOutputFormat ff_adx_muxer = {
 };
 #endif
 
+#if CONFIG_APTX_MUXER
+AVOutputFormat ff_aptx_muxer = {
+    .name              = "aptx",
+    .long_name         = NULL_IF_CONFIG_SMALL("raw aptX (Audio Processing Technology for Bluetooth)"),
+    .extensions        = "aptx",
+    .audio_codec       = AV_CODEC_ID_APTX,
+    .video_codec       = AV_CODEC_ID_NONE,
+    .write_header      = force_one_stream,
+    .write_packet      = ff_raw_write_packet,
+    .flags             = AVFMT_NOTIMESTAMPS,
+};
+#endif
+
 #if CONFIG_CAVSVIDEO_MUXER
 AVOutputFormat ff_cavsvideo_muxer = {
     .name              = "cavsvideo",
@@ -189,6 +202,30 @@ AVOutputFormat ff_g723_1_muxer = {
     .mime_type         = "audio/g723",
     .extensions        = "tco,rco",
     .audio_codec       = AV_CODEC_ID_G723_1,
+    .video_codec       = AV_CODEC_ID_NONE,
+    .write_header      = force_one_stream,
+    .write_packet      = ff_raw_write_packet,
+    .flags             = AVFMT_NOTIMESTAMPS,
+};
+#endif
+
+#if CONFIG_G726_MUXER
+AVOutputFormat ff_g726_muxer = {
+    .name              = "g726",
+    .long_name         = NULL_IF_CONFIG_SMALL("raw big-endian G.726 (\"left-justified\")"),
+    .audio_codec       = AV_CODEC_ID_ADPCM_G726,
+    .video_codec       = AV_CODEC_ID_NONE,
+    .write_header      = force_one_stream,
+    .write_packet      = ff_raw_write_packet,
+    .flags             = AVFMT_NOTIMESTAMPS,
+};
+#endif
+
+#if CONFIG_G726LE_MUXER
+AVOutputFormat ff_g726le_muxer = {
+    .name              = "g726le",
+    .long_name         = NULL_IF_CONFIG_SMALL("raw little-endian G.726 (\"right-justified\")"),
+    .audio_codec       = AV_CODEC_ID_ADPCM_G726LE,
     .video_codec       = AV_CODEC_ID_NONE,
     .write_header      = force_one_stream,
     .write_packet      = ff_raw_write_packet,

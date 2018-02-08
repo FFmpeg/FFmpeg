@@ -494,7 +494,7 @@ static int tls_read(URLContext *h, uint8_t *buf, int len)
             ret = AVERROR(EAGAIN);
             goto cleanup;
         } else {
-            av_log(h, AV_LOG_ERROR, "Unable to decrypt message\n");
+            av_log(h, AV_LOG_ERROR, "Unable to decrypt message (error 0x%x)\n", (unsigned)sspi_ret);
             ret = AVERROR(EIO);
             goto cleanup;
         }
@@ -595,7 +595,7 @@ static const AVClass tls_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const URLProtocol ff_tls_schannel_protocol = {
+const URLProtocol ff_tls_protocol = {
     .name           = "tls",
     .url_open2      = tls_open,
     .url_read       = tls_read,

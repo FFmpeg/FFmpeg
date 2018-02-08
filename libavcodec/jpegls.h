@@ -32,6 +32,8 @@
 #include "avcodec.h"
 #include "internal.h"
 
+#undef near /* This file uses struct member 'near' which in windows.h is defined as empty. */
+
 typedef struct JpeglsContext {
     AVCodecContext *avctx;
 } JpeglsContext;

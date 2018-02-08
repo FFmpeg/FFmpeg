@@ -163,7 +163,10 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
 
     ref->poc      = poc;
     ref->sequence = s->seq_decode;
-    ref->window   = s->ps.sps->output_window;
+    ref->frame->crop_left   = s->ps.sps->output_window.left_offset;
+    ref->frame->crop_right  = s->ps.sps->output_window.right_offset;
+    ref->frame->crop_top    = s->ps.sps->output_window.top_offset;
+    ref->frame->crop_bottom = s->ps.sps->output_window.bottom_offset;
 
     return 0;
 }
@@ -204,12 +207,11 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
 
         if (nb_output) {
             HEVCFrame *frame = &s->DPB[min_idx];
-            AVFrame *dst = out;
-            AVFrame *src = frame->frame;
-            const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(src->format);
-            int pixel_shift = !!(desc->comp[0].depth > 8);
 
-            ret = av_frame_ref(out, src);
+            if (frame->frame->format == AV_PIX_FMT_VIDEOTOOLBOX && frame->frame->buf[0]->size == 1)
+                return 0;
+
+            ret = av_frame_ref(out, frame->frame);
             if (frame->flags & HEVC_FRAME_FLAG_BUMPING)
                 ff_hevc_unref_frame(s, frame, HEVC_FRAME_FLAG_OUTPUT | HEVC_FRAME_FLAG_BUMPING);
             else
@@ -217,13 +219,6 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
             if (ret < 0)
                 return ret;
 
-            for (i = 0; i < 3; i++) {
-                int hshift = (i > 0) ? desc->log2_chroma_w : 0;
-                int vshift = (i > 0) ? desc->log2_chroma_h : 0;
-                int off = ((frame->window.left_offset >> hshift) << pixel_shift) +
-                          (frame->window.top_offset   >> vshift) * dst->linesize[i];
-                dst->data[i] += off;
-            }
             av_log(s->avctx, AV_LOG_DEBUG,
                    "Output frame with POC %d.\n", frame->poc);
             return 1;
@@ -439,7 +434,7 @@ static int add_candidate_ref(HEVCContext *s, RefPicList *list,
 {
     HEVCFrame *ref = find_ref_idx(s, poc);
 
-    if (ref == s->ref)
+    if (ref == s->ref || list->nb_refs >= HEVC_MAX_REFS)
         return AVERROR_INVALIDDATA;
 
     if (!ref) {

@@ -319,9 +319,11 @@ static int init_processing_chain(AVFilterContext *ctx, int in_width, int in_heig
         last_stage = i;
     }
 
-    if (last_stage < 0)
-        return 0;
-    ctx->outputs[0]->hw_frames_ctx = av_buffer_ref(s->stages[last_stage].frames_ctx);
+    if (last_stage >= 0)
+        ctx->outputs[0]->hw_frames_ctx = av_buffer_ref(s->stages[last_stage].frames_ctx);
+    else
+        ctx->outputs[0]->hw_frames_ctx = av_buffer_ref(ctx->inputs[0]->hw_frames_ctx);
+
     if (!ctx->outputs[0]->hw_frames_ctx)
         return AVERROR(ENOMEM);
 
@@ -400,7 +402,7 @@ static int nppscale_resize(AVFilterContext *ctx, NPPScaleStageContext *stage,
     NppStatus err;
     int i;
 
-    for (i = 0; i < FF_ARRAY_ELEMS(in->data) && in->data[i]; i++) {
+    for (i = 0; i < FF_ARRAY_ELEMS(stage->planes_in) && i < FF_ARRAY_ELEMS(in->data) && in->data[i]; i++) {
         int iw = stage->planes_in[i].width;
         int ih = stage->planes_in[i].height;
         int ow = stage->planes_out[i].width;

@@ -68,6 +68,7 @@ static int pcm_read_header(AVFormatContext *s)
                 av_log(s, AV_LOG_ERROR,
                        "Invalid sample_rate found in mime_type \"%s\"\n",
                        mime_type);
+                av_freep(&mime_type);
                 return AVERROR_INVALIDDATA;
             }
             st->codecpar->sample_rate = rate;
@@ -75,6 +76,7 @@ static int pcm_read_header(AVFormatContext *s)
                 st->codecpar->channels = channels;
         }
     }
+    av_freep(&mime_type);
 
     st->codecpar->bits_per_coded_sample =
         av_get_bits_per_sample(st->codecpar->codec_id);

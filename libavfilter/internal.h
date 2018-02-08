@@ -26,7 +26,6 @@
 
 #include "libavutil/internal.h"
 #include "avfilter.h"
-#include "avfiltergraph.h"
 #include "formats.h"
 #include "framepool.h"
 #include "framequeue.h"
@@ -34,6 +33,7 @@
 #include "version.h"
 #include "video.h"
 #include "libavcodec/avcodec.h"
+#include "libavcodec/internal.h"
 
 typedef struct AVFilterCommand {
     double time;                ///< time expressed in seconds
@@ -246,14 +246,6 @@ void ff_avfilter_link_set_out_status(AVFilterLink *link, int status, int64_t pts
 void ff_command_queue_pop(AVFilterContext *filter);
 
 /* misc trace functions */
-
-/* #define FF_AVFILTER_TRACE */
-
-#ifdef FF_AVFILTER_TRACE
-#    define ff_tlog(pctx, ...) av_log(pctx, AV_LOG_DEBUG, __VA_ARGS__)
-#else
-#    define ff_tlog(pctx, ...) do { if (0) av_log(pctx, AV_LOG_DEBUG, __VA_ARGS__); } while (0)
-#endif
 
 #define FF_TPRINTF_START(ctx, func) ff_tlog(NULL, "%-16s: ", #func)
 

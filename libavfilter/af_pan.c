@@ -166,6 +166,7 @@ static av_cold int init(AVFilterContext *ctx)
             goto fail;
         }
         /* gains */
+        sign = 1;
         while (1) {
             gain = 1;
             if (sscanf(arg, "%lf%n *%n", &gain, &len, &len))
@@ -383,8 +384,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     AVFrame *outsamples = ff_get_audio_buffer(outlink, n);
     PanContext *pan = inlink->dst->priv;
 
-    if (!outsamples)
+    if (!outsamples) {
+        av_frame_free(&insamples);
         return AVERROR(ENOMEM);
+    }
     swr_convert(pan->swr, outsamples->extended_data, n,
                 (void *)insamples->extended_data, n);
     av_frame_copy_props(outsamples, insamples);

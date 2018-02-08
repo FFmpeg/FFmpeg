@@ -34,9 +34,17 @@
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 
+#define FF_INTERNAL_FIELDS 1
+#include "framequeue.h"
 #include "avfilter.h"
 #include "internal.h"
 #include "video.h"
+
+enum EOFAction {
+    EOF_ACTION_ROUND,
+    EOF_ACTION_PASS,
+    EOF_ACTION_NB
+};
 
 typedef struct FPSContext {
     const AVClass *class;
@@ -50,6 +58,7 @@ typedef struct FPSContext {
 
     AVRational framerate;   ///< target framerate
     int rounding;           ///< AVRounding method for timestamps
+    int eof_action;         ///< action performed for last frame in FIFO
 
     /* statistics */
     int frames_in;             ///< number of frames on input
@@ -63,13 +72,16 @@ typedef struct FPSContext {
 #define F AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption fps_options[] = {
     { "fps", "A string describing desired output framerate", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, { .str = "25" }, 0, INT_MAX, V|F },
-    { "start_time", "Assume the first PTS should be this value.", OFFSET(start_time), AV_OPT_TYPE_DOUBLE, { .dbl = DBL_MAX}, -DBL_MAX, DBL_MAX, V },
+    { "start_time", "Assume the first PTS should be this value.", OFFSET(start_time), AV_OPT_TYPE_DOUBLE, { .dbl = DBL_MAX}, -DBL_MAX, DBL_MAX, V|F },
     { "round", "set rounding method for timestamps", OFFSET(rounding), AV_OPT_TYPE_INT, { .i64 = AV_ROUND_NEAR_INF }, 0, 5, V|F, "round" },
-    { "zero", "round towards 0",      OFFSET(rounding), AV_OPT_TYPE_CONST, { .i64 = AV_ROUND_ZERO     }, 0, 5, V|F, "round" },
-    { "inf",  "round away from 0",    OFFSET(rounding), AV_OPT_TYPE_CONST, { .i64 = AV_ROUND_INF      }, 0, 5, V|F, "round" },
-    { "down", "round towards -infty", OFFSET(rounding), AV_OPT_TYPE_CONST, { .i64 = AV_ROUND_DOWN     }, 0, 5, V|F, "round" },
-    { "up",   "round towards +infty", OFFSET(rounding), AV_OPT_TYPE_CONST, { .i64 = AV_ROUND_UP       }, 0, 5, V|F, "round" },
-    { "near", "round to nearest",     OFFSET(rounding), AV_OPT_TYPE_CONST, { .i64 = AV_ROUND_NEAR_INF }, 0, 5, V|F, "round" },
+        { "zero", "round towards 0",                 0, AV_OPT_TYPE_CONST, { .i64 = AV_ROUND_ZERO     }, 0, 0, V|F, "round" },
+        { "inf",  "round away from 0",               0, AV_OPT_TYPE_CONST, { .i64 = AV_ROUND_INF      }, 0, 0, V|F, "round" },
+        { "down", "round towards -infty",            0, AV_OPT_TYPE_CONST, { .i64 = AV_ROUND_DOWN     }, 0, 0, V|F, "round" },
+        { "up",   "round towards +infty",            0, AV_OPT_TYPE_CONST, { .i64 = AV_ROUND_UP       }, 0, 0, V|F, "round" },
+        { "near", "round to nearest",                0, AV_OPT_TYPE_CONST, { .i64 = AV_ROUND_NEAR_INF }, 0, 0, V|F, "round" },
+    { "eof_action", "action performed for last frame", OFFSET(eof_action), AV_OPT_TYPE_INT, { .i64 = EOF_ACTION_ROUND }, 0, EOF_ACTION_NB-1, V|F, "eof_action" },
+        { "round", "round similar to other frames",  0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_ROUND }, 0, 0, V|F, "eof_action" },
+        { "pass",  "pass through last frame",        0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_PASS  }, 0, 0, V|F, "eof_action" },
     { NULL }
 };
 
@@ -137,13 +149,48 @@ static int request_frame(AVFilterLink *outlink)
             AVFrame *buf;
 
             av_fifo_generic_read(s->fifo, &buf, sizeof(buf), NULL);
-            buf->pts = av_rescale_q(s->first_pts, ctx->inputs[0]->time_base,
-                                    outlink->time_base) + s->frames_out;
+            if (av_fifo_size(s->fifo)) {
+                buf->pts = av_rescale_q(s->first_pts, ctx->inputs[0]->time_base,
+                                        outlink->time_base) + s->frames_out;
 
-            if ((ret = ff_filter_frame(outlink, buf)) < 0)
-                return ret;
+                if ((ret = ff_filter_frame(outlink, buf)) < 0)
+                    return ret;
 
-            s->frames_out++;
+                s->frames_out++;
+            } else {
+                /* This is the last frame, we may have to duplicate it to match
+                 * the last frame duration */
+                int j;
+                int eof_rounding = (s->eof_action == EOF_ACTION_PASS) ? AV_ROUND_UP : s->rounding;
+                int delta = av_rescale_q_rnd(ctx->inputs[0]->current_pts - s->first_pts,
+                                             ctx->inputs[0]->time_base,
+                                             outlink->time_base, eof_rounding) - s->frames_out;
+                av_log(ctx, AV_LOG_DEBUG, "EOF frames_out:%d delta:%d\n", s->frames_out, delta);
+                /* if the delta is equal to 1, it means we just need to output
+                 * the last frame. Greater than 1 means we will need duplicate
+                 * delta-1 frames */
+                if (delta > 0 ) {
+                    for (j = 0; j < delta; j++) {
+                        AVFrame *dup = av_frame_clone(buf);
+
+                        av_log(ctx, AV_LOG_DEBUG, "Duplicating frame.\n");
+                        dup->pts = av_rescale_q(s->first_pts, ctx->inputs[0]->time_base,
+                                                outlink->time_base) + s->frames_out;
+
+                        if ((ret = ff_filter_frame(outlink, dup)) < 0)
+                            return ret;
+
+                        s->frames_out++;
+                        if (j > 0) s->dup++;
+                    }
+                    av_frame_free(&buf);
+                } else {
+                    /* for delta less or equal to 0, we should drop the frame,
+                     * otherwise, we will have one or more extra frames */
+                    av_frame_free(&buf);
+                    s->drop++;
+                }
+            }
         }
         return 0;
     }

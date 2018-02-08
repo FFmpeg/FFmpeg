@@ -44,6 +44,7 @@ typedef struct {
     int64_t file_start_time;
     int64_t file_inpoint;
     int64_t duration;
+    int64_t next_dts;
     ConcatStream *streams;
     int64_t inpoint;
     int64_t outpoint;
@@ -120,15 +121,15 @@ static int add_file(AVFormatContext *avf, char *filename, ConcatFile **rfile,
 
     proto = avio_find_protocol_name(filename);
     proto_len = proto ? strlen(proto) : 0;
-    if (!memcmp(filename, proto, proto_len) &&
+    if (proto && !memcmp(filename, proto, proto_len) &&
         (filename[proto_len] == ':' || filename[proto_len] == ',')) {
         url = filename;
         filename = NULL;
     } else {
-        url_len = strlen(avf->filename) + strlen(filename) + 16;
+        url_len = strlen(avf->url) + strlen(filename) + 16;
         if (!(url = av_malloc(url_len)))
             FAIL(AVERROR(ENOMEM));
-        ff_make_absolute_url(url, url_len, avf->filename, filename);
+        ff_make_absolute_url(url, url_len, avf->url, filename);
         av_freep(&filename);
     }
 
@@ -149,6 +150,7 @@ static int add_file(AVFormatContext *avf, char *filename, ConcatFile **rfile,
     file->url        = url;
     file->start_time = AV_NOPTS_VALUE;
     file->duration   = AV_NOPTS_VALUE;
+    file->next_dts   = AV_NOPTS_VALUE;
     file->inpoint    = AV_NOPTS_VALUE;
     file->outpoint   = AV_NOPTS_VALUE;
 
@@ -183,8 +185,8 @@ static int copy_stream_props(AVStream *st, AVStream *source_st)
         return ret;
     st->r_frame_rate        = source_st->r_frame_rate;
     st->avg_frame_rate      = source_st->avg_frame_rate;
-    st->time_base           = source_st->time_base;
     st->sample_aspect_ratio = source_st->sample_aspect_ratio;
+    avpriv_set_pts_info(st, 64, source_st->time_base.num, source_st->time_base.den);
 
     av_dict_copy(&st->metadata, source_st->metadata, 0);
     return 0;
@@ -509,8 +511,14 @@ static int open_next_file(AVFormatContext *avf)
     ConcatContext *cat = avf->priv_data;
     unsigned fileno = cat->cur_file - cat->files;
 
-    if (cat->cur_file->duration == AV_NOPTS_VALUE)
-        cat->cur_file->duration = cat->avf->duration - (cat->cur_file->file_inpoint - cat->cur_file->file_start_time);
+    if (cat->cur_file->duration == AV_NOPTS_VALUE) {
+        if (cat->avf->duration > 0 || cat->cur_file->next_dts == AV_NOPTS_VALUE) {
+            cat->cur_file->duration = cat->avf->duration;
+        } else {
+            cat->cur_file->duration = cat->cur_file->next_dts;
+        }
+        cat->cur_file->duration -= (cat->cur_file->file_inpoint - cat->cur_file->file_start_time);
+    }
 
     if (++fileno >= cat->nb_files) {
         cat->eof = 1;
@@ -627,6 +635,14 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
         memcpy(metadata, packed_metadata, metadata_len);
         av_freep(&packed_metadata);
     }
+
+    if (cat->cur_file->duration == AV_NOPTS_VALUE && st->cur_dts != AV_NOPTS_VALUE) {
+        int64_t next_dts = av_rescale_q(st->cur_dts, st->time_base, AV_TIME_BASE_Q);
+        if (cat->cur_file->next_dts == AV_NOPTS_VALUE || next_dts > cat->cur_file->next_dts) {
+            cat->cur_file->next_dts = next_dts;
+        }
+    }
+
     return ret;
 }
 

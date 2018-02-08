@@ -195,8 +195,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamplesref)
 
     outsamplesref = ff_get_audio_buffer(outlink, n_out);
 
-    if(!outsamplesref)
+    if(!outsamplesref) {
+        av_frame_free(&insamplesref);
         return AVERROR(ENOMEM);
+    }
 
     av_frame_copy_props(outsamplesref, insamplesref);
     outsamplesref->format                = outlink->format;

@@ -31,7 +31,6 @@
 #include "get_bits.h"
 #include "unary.h"
 #include "mpeg4audio.h"
-#include "bytestream.h"
 #include "bgmc.h"
 #include "bswapdsp.h"
 #include "internal.h"
@@ -705,11 +704,6 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
         } else {
             *bd->opt_order = sconf->max_order;
         }
-        if (*bd->opt_order > bd->block_length) {
-            *bd->opt_order = bd->block_length;
-            av_log(avctx, AV_LOG_ERROR, "Predictor order too large.\n");
-            return AVERROR_INVALIDDATA;
-        }
         opt_order = *bd->opt_order;
 
         if (opt_order) {
@@ -762,7 +756,7 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
             }
 
             for (k = 2; k < opt_order; k++)
-                quant_cof[k] = (quant_cof[k] << 14) + (add_base << 13);
+                quant_cof[k] = (quant_cof[k] * (1 << 14)) + (add_base << 13);
         }
     }
 
@@ -867,7 +861,7 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
                     res >>= 1;
 
                     if (cur_k) {
-                        res <<= cur_k;
+                        res  *= 1 << cur_k;
                         res  |= get_bits_long(gb, cur_k);
                     }
                 }
@@ -926,7 +920,7 @@ static int decode_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
 
     // reconstruct all samples from residuals
     if (bd->ra_block) {
-        for (smp = 0; smp < opt_order; smp++) {
+        for (smp = 0; smp < FFMIN(opt_order, block_length); smp++) {
             y = 1 << 19;
 
             for (sb = 0; sb < smp; sb++)
@@ -1637,7 +1631,7 @@ static int read_frame_data(ALSDecContext *ctx, unsigned int ra_frame)
                     independent_bs = 2;
 
             // if this is the last channel, it has to be decoded independently
-            if (c == avctx->channels - 1)
+            if (c == avctx->channels - 1 || (c & 1))
                 independent_bs = 1;
 
             if (independent_bs) {

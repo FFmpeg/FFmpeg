@@ -277,6 +277,10 @@ static void putstr8(uint8_t **q_ptr, const char *str, int write_len)
         len = strlen(str);
     if (write_len)
         *q++ = len;
+    if (!str) {
+        *q_ptr = q;
+        return;
+    }
     memcpy(q, str, len);
     q     += len;
     *q_ptr = q;
@@ -1008,7 +1012,7 @@ static int mpegts_init(AVFormatContext *s)
            ts->sdt_packet_period, ts->pat_packet_period);
 
     if (ts->m2ts_mode == -1) {
-        if (av_match_ext(s->filename, "m2ts")) {
+        if (av_match_ext(s->url, "m2ts")) {
             ts->m2ts_mode = 1;
         } else {
             ts->m2ts_mode = 0;

@@ -3,6 +3,7 @@ argb                4f575be3cd02799389f581df99c4de38
 bgr24               fa43e3b2abfde8d9e60e157a9acc553d
 bgra                4e2e689897ee7a8e42b16234597bab35
 gbrap               0d1eb2c39e291c53c57302cdc653c2fc
+gbrap10le           fed58af6d557a7069a4a39e6d8f5f4e0
 gbrap12le           43fec231bd1d3dd957cdd8478cab9259
 gbrap16le           22ca3644658ae306541116c31e135074
 gbrp                e572d53183f3f2ed3951aa9940d440a1
@@ -11,6 +12,11 @@ gbrp12le            c5a4b89571f7095eb737ad9fd6b1ee08
 gbrp14le            bdfdfd6f36c60497d1cdae791f3cc117
 gbrp16le            df095ef3a20995935cfcaf144afc68b6
 gbrp9le             a8c4e29f4cb627db81ba053e0853e702
+gray                20b14b5e26cd11300ed1249e04082170
+gray10le            8f4140b55e847cc423002b89666db5ea
+gray12le            ea89c02f6b3af49ddaf13364ed33d86d
+gray16le            aa10599924fb2440fa12b76e90f57dcb
+gray9le             7d9cc9ad6118674c547a54281d10cf05
 rgb24               a356171207723a580e7d277078072005
 rgb48le             5c7dd8575836d18c91e09f1915cf9aa9
 rgba                7bc854c2698b78af3e9159a19c2d9d21

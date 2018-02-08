@@ -122,7 +122,7 @@ typedef struct JPGContext {
 
     VLC        dc_vlc[2], ac_vlc[2];
     int        prev_dc[3];
-    DECLARE_ALIGNED(16, int16_t, block)[6][64];
+    DECLARE_ALIGNED(32, int16_t, block)[6][64];
 
     uint8_t    *buf;
 } JPGContext;

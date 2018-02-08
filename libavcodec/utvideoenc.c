@@ -67,12 +67,12 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
     c->slice_stride    = FFALIGN(avctx->width, 32);
 
     switch (avctx->pix_fmt) {
-    case AV_PIX_FMT_RGB24:
+    case AV_PIX_FMT_GBRP:
         c->planes        = 3;
         avctx->codec_tag = MKTAG('U', 'L', 'R', 'G');
         original_format  = UTVIDEO_RGB;
         break;
-    case AV_PIX_FMT_RGBA:
+    case AV_PIX_FMT_GBRAP:
         c->planes        = 4;
         avctx->codec_tag = MKTAG('U', 'L', 'R', 'A');
         original_format  = UTVIDEO_RGBA;
@@ -243,53 +243,43 @@ FF_ENABLE_DEPRECATION_WARNINGS
 }
 
 static void mangle_rgb_planes(uint8_t *dst[4], ptrdiff_t dst_stride,
-                              uint8_t *src, int step, ptrdiff_t stride,
+                              uint8_t *const src[4], int planes, const int stride[4],
                               int width, int height)
 {
     int i, j;
     int k = 2 * dst_stride;
+    const uint8_t *sg = src[0];
+    const uint8_t *sb = src[1];
+    const uint8_t *sr = src[2];
+    const uint8_t *sa = src[3];
     unsigned int g;
 
     for (j = 0; j < height; j++) {
-        if (step == 3) {
-            for (i = 0; i < width * step; i += step) {
-                g         = src[i + 1];
+        if (planes == 3) {
+            for (i = 0; i < width; i++) {
+                g         = sg[i];
                 dst[0][k] = g;
                 g        += 0x80;
-                dst[1][k] = src[i + 2] - g;
-                dst[2][k] = src[i + 0] - g;
+                dst[1][k] = sb[i] - g;
+                dst[2][k] = sr[i] - g;
                 k++;
             }
         } else {
-            for (i = 0; i < width * step; i += step) {
-                g         = src[i + 1];
+            for (i = 0; i < width; i++) {
+                g         = sg[i];
                 dst[0][k] = g;
                 g        += 0x80;
-                dst[1][k] = src[i + 2] - g;
-                dst[2][k] = src[i + 0] - g;
-                dst[3][k] = src[i + 3];
+                dst[1][k] = sb[i] - g;
+                dst[2][k] = sr[i] - g;
+                dst[3][k] = sa[i];
                 k++;
             }
+            sa += stride[3];
         }
         k += dst_stride - width;
-        src += stride;
-    }
-}
-
-/* Write data to a plane with left prediction */
-static void left_predict(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
-                         int width, int height)
-{
-    int i, j;
-    uint8_t prev;
-
-    prev = 0x80; /* Set the initial value */
-    for (j = 0; j < height; j++) {
-        for (i = 0; i < width; i++) {
-            *dst++ = src[i] - prev;
-            prev   = src[i];
-        }
-        src += stride;
+        sg += stride[0];
+        sb += stride[1];
+        sr += stride[2];
     }
 }
 
@@ -429,8 +419,7 @@ static int encode_plane(AVCodecContext *avctx, uint8_t *src,
         for (i = 0; i < c->slices; i++) {
             sstart = send;
             send   = height * (i + 1) / c->slices & cmask;
-            left_predict(src + sstart * stride, dst + sstart * width,
-                         stride, width, send - sstart);
+            c->llvidencdsp.sub_left_predict(dst + sstart * width, src + sstart * stride, stride, width, send - sstart);
         }
         break;
     case PRED_MEDIAN:
@@ -572,14 +561,14 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     /* In case of RGB, mangle the planes to Ut Video's format */
-    if (avctx->pix_fmt == AV_PIX_FMT_RGBA || avctx->pix_fmt == AV_PIX_FMT_RGB24)
-        mangle_rgb_planes(c->slice_buffer, c->slice_stride, pic->data[0],
-                          c->planes, pic->linesize[0], width, height);
+    if (avctx->pix_fmt == AV_PIX_FMT_GBRAP || avctx->pix_fmt == AV_PIX_FMT_GBRP)
+        mangle_rgb_planes(c->slice_buffer, c->slice_stride, pic->data,
+                          c->planes, pic->linesize, width, height);
 
     /* Deal with the planes */
     switch (avctx->pix_fmt) {
-    case AV_PIX_FMT_RGB24:
-    case AV_PIX_FMT_RGBA:
+    case AV_PIX_FMT_GBRP:
+    case AV_PIX_FMT_GBRAP:
         for (i = 0; i < c->planes; i++) {
             ret = encode_plane(avctx, c->slice_buffer[i] + 2 * c->slice_stride,
                                c->slice_buffer[i], c->slice_stride, i,
@@ -690,7 +679,7 @@ AVCodec ff_utvideo_encoder = {
     .close          = utvideo_encode_close,
     .capabilities   = AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_INTRA_ONLY,
     .pix_fmts       = (const enum AVPixelFormat[]) {
-                          AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA, AV_PIX_FMT_YUV422P,
+                          AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP, AV_PIX_FMT_YUV422P,
                           AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_NONE
                       },
 };

@@ -33,14 +33,21 @@
 #include "libavutil/pixdesc.h"
 #include "internal.h"
 
+static const char *const var_names[] = {   "X",   "Y",   "W",   "H",   "N",   "SW",   "SH",   "T",        NULL };
+enum                                   { VAR_X, VAR_Y, VAR_W, VAR_H, VAR_N, VAR_SW, VAR_SH, VAR_T, VAR_VARS_NB };
+
 typedef struct GEQContext {
     const AVClass *class;
     AVExpr *e[4];               ///< expressions for each plane
     char *expr_str[4+3];        ///< expression strings for each plane
     AVFrame *picref;            ///< current input buffer
+    uint8_t *dst;               ///< reference pointer to the 8bits output
+    uint16_t *dst16;            ///< reference pointer to the 16bits output
+    double values[VAR_VARS_NB]; ///< expression values
     int hsub, vsub;             ///< chroma subsampling
     int planes;                 ///< number of planes
     int is_rgb;
+    int bps;
 } GEQContext;
 
 enum { Y = 0, U, V, A, G, B, R };
@@ -74,7 +81,7 @@ static inline double getpix(void *priv, double x, double y, int plane)
     GEQContext *geq = priv;
     AVFrame *picref = geq->picref;
     const uint8_t *src = picref->data[plane];
-    const int linesize = picref->linesize[plane];
+    int linesize = picref->linesize[plane];
     const int w = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(picref->width,  geq->hsub) : picref->width;
     const int h = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(picref->height, geq->vsub) : picref->height;
 
@@ -87,8 +94,16 @@ static inline double getpix(void *priv, double x, double y, int plane)
     x -= xi;
     y -= yi;
 
-    return (1-y)*((1-x)*src[xi +  yi    * linesize] + x*src[xi + 1 +  yi    * linesize])
-          +   y *((1-x)*src[xi + (yi+1) * linesize] + x*src[xi + 1 + (yi+1) * linesize]);
+    if (geq->bps > 8) {
+        const uint16_t *src16 = (const uint16_t*)src;
+        linesize /= 2;
+
+        return (1-y)*((1-x)*src16[xi +  yi    * linesize] + x*src16[xi + 1 +  yi    * linesize])
+              +   y *((1-x)*src16[xi + (yi+1) * linesize] + x*src16[xi + 1 + (yi+1) * linesize]);
+    } else {
+        return (1-y)*((1-x)*src[xi +  yi    * linesize] + x*src[xi + 1 +  yi    * linesize])
+              +   y *((1-x)*src[xi + (yi+1) * linesize] + x*src[xi + 1 + (yi+1) * linesize]);
+    }
 }
 
 //TODO: cubic interpolate
@@ -97,9 +112,6 @@ static double lum(void *priv, double x, double y) { return getpix(priv, x, y, 0)
 static double  cb(void *priv, double x, double y) { return getpix(priv, x, y, 1); }
 static double  cr(void *priv, double x, double y) { return getpix(priv, x, y, 2); }
 static double alpha(void *priv, double x, double y) { return getpix(priv, x, y, 3); }
-
-static const char *const var_names[] = {   "X",   "Y",   "W",   "H",   "N",   "SW",   "SH",   "T",        NULL };
-enum                                   { VAR_X, VAR_Y, VAR_W, VAR_H, VAR_N, VAR_SW, VAR_SH, VAR_T, VAR_VARS_NB };
 
 static av_cold int geq_init(AVFilterContext *ctx)
 {
@@ -129,8 +141,11 @@ static av_cold int geq_init(AVFilterContext *ctx)
         if (!geq->expr_str[V]) geq->expr_str[V] = av_strdup(geq->expr_str[U]);
     }
 
-    if (!geq->expr_str[A])
-        geq->expr_str[A] = av_strdup("255");
+    if (!geq->expr_str[A]) {
+        char bps_string[8];
+        snprintf(bps_string, sizeof(bps_string), "%d", (1<<geq->bps) - 1);
+        geq->expr_str[A] = av_strdup(bps_string);
+    }
     if (!geq->expr_str[G])
         geq->expr_str[G] = av_strdup("g(X,Y)");
     if (!geq->expr_str[B])
@@ -171,10 +186,27 @@ static int geq_query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV411P,  AV_PIX_FMT_YUV410P,  AV_PIX_FMT_YUV440P,
         AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA420P,
         AV_PIX_FMT_GRAY8,
+        AV_PIX_FMT_YUV444P9,  AV_PIX_FMT_YUV422P9,  AV_PIX_FMT_YUV420P9,
+        AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA420P9,
+        AV_PIX_FMT_YUV444P10,  AV_PIX_FMT_YUV422P10,  AV_PIX_FMT_YUV420P10,
+        AV_PIX_FMT_YUV440P10,
+        AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA420P10,
+        AV_PIX_FMT_GRAY10,
+        AV_PIX_FMT_YUV444P12,  AV_PIX_FMT_YUV422P12,  AV_PIX_FMT_YUV420P12,
+        AV_PIX_FMT_GRAY12,
+        AV_PIX_FMT_YUV444P14,  AV_PIX_FMT_YUV422P14,  AV_PIX_FMT_YUV420P14,
+        AV_PIX_FMT_YUV444P16,  AV_PIX_FMT_YUV422P16,  AV_PIX_FMT_YUV420P16,
+        AV_PIX_FMT_YUVA444P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA420P16,
+        AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_NONE
     };
     static const enum AVPixelFormat rgb_pix_fmts[] = {
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP,
+        AV_PIX_FMT_GBRP9,
+        AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRAP10,
+        AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12,
+        AV_PIX_FMT_GBRP14,
+        AV_PIX_FMT_GBRP16, AV_PIX_FMT_GBRAP16,
         AV_PIX_FMT_NONE
     };
     AVFilterFormats *fmts_list;
@@ -197,20 +229,77 @@ static int geq_config_props(AVFilterLink *inlink)
 
     geq->hsub = desc->log2_chroma_w;
     geq->vsub = desc->log2_chroma_h;
+    geq->bps = desc->comp[0].depth;
     geq->planes = desc->nb_components;
+    return 0;
+}
+
+typedef struct ThreadData {
+    int height;
+    int width;
+    int plane;
+    int linesize;
+} ThreadData;
+
+static int slice_geq_filter(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    GEQContext *geq = ctx->priv;
+    ThreadData *td = arg;
+    const int height = td->height;
+    const int width = td->width;
+    const int plane = td->plane;
+    const int linesize = td->linesize;
+    const int slice_start = (height *  jobnr) / nb_jobs;
+    const int slice_end = (height * (jobnr+1)) / nb_jobs;
+    int x, y;
+    uint8_t *ptr;
+    uint16_t *ptr16;
+
+    double values[VAR_VARS_NB];
+    values[VAR_W] = geq->values[VAR_W];
+    values[VAR_H] = geq->values[VAR_H];
+    values[VAR_N] = geq->values[VAR_N];
+    values[VAR_SW] = geq->values[VAR_SW];
+    values[VAR_SH] = geq->values[VAR_SH];
+    values[VAR_T] = geq->values[VAR_T];
+
+    if (geq->bps == 8) {
+        for (y = slice_start; y < slice_end; y++) {
+            ptr = geq->dst + linesize * y;
+            values[VAR_Y] = y;
+
+            for (x = 0; x < width; x++) {
+                values[VAR_X] = x;
+                ptr[x] = av_expr_eval(geq->e[plane], values, geq);
+            }
+            ptr += linesize;
+        }
+    }
+    else {
+        for (y = slice_start; y < slice_end; y++) {
+            ptr16 = geq->dst16 + (linesize/2) * y;
+            values[VAR_Y] = y;
+            for (x = 0; x < width; x++) {
+                values[VAR_X] = x;
+                ptr16[x] = av_expr_eval(geq->e[plane], values, geq);
+            }
+        }
+    }
+
     return 0;
 }
 
 static int geq_filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     int plane;
-    GEQContext *geq = inlink->dst->priv;
+    AVFilterContext *ctx = inlink->dst;
+    const int nb_threads = ff_filter_get_nb_threads(ctx);
+    GEQContext *geq = ctx->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFrame *out;
-    double values[VAR_VARS_NB] = {
-        [VAR_N] = inlink->frame_count_out,
-        [VAR_T] = in->pts == AV_NOPTS_VALUE ? NAN : in->pts * av_q2d(inlink->time_base),
-    };
+
+    geq->values[VAR_N] = inlink->frame_count_out,
+    geq->values[VAR_T] = in->pts == AV_NOPTS_VALUE ? NAN : in->pts * av_q2d(inlink->time_base),
 
     geq->picref = in;
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
@@ -221,25 +310,25 @@ static int geq_filter_frame(AVFilterLink *inlink, AVFrame *in)
     av_frame_copy_props(out, in);
 
     for (plane = 0; plane < geq->planes && out->data[plane]; plane++) {
-        int x, y;
-        uint8_t *dst = out->data[plane];
+        const int width = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(inlink->w, geq->hsub) : inlink->w;
+        const int height = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(inlink->h, geq->vsub) : inlink->h;
         const int linesize = out->linesize[plane];
-        const int w = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(inlink->w, geq->hsub) : inlink->w;
-        const int h = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(inlink->h, geq->vsub) : inlink->h;
+        ThreadData td;
 
-        values[VAR_W]  = w;
-        values[VAR_H]  = h;
-        values[VAR_SW] = w / (double)inlink->w;
-        values[VAR_SH] = h / (double)inlink->h;
+        geq->dst = out->data[plane];
+        geq->dst16 = (uint16_t*)out->data[plane];
 
-        for (y = 0; y < h; y++) {
-            values[VAR_Y] = y;
-            for (x = 0; x < w; x++) {
-                values[VAR_X] = x;
-                dst[x] = av_expr_eval(geq->e[plane], values, geq);
-            }
-            dst += linesize;
-        }
+        geq->values[VAR_W]  = width;
+        geq->values[VAR_H]  = height;
+        geq->values[VAR_SW] = width / (double)inlink->w;
+        geq->values[VAR_SH] = height / (double)inlink->h;
+
+        td.width = width;
+        td.height = height;
+        td.plane = plane;
+        td.linesize = linesize;
+
+        ctx->internal->execute(ctx, slice_geq_filter, &td, NULL, FFMIN(height, nb_threads));
     }
 
     av_frame_free(&geq->picref);
@@ -283,5 +372,5 @@ AVFilter ff_vf_geq = {
     .inputs        = geq_inputs,
     .outputs       = geq_outputs,
     .priv_class    = &geq_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

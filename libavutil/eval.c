@@ -57,7 +57,14 @@ typedef struct Parser {
     double *var;
 } Parser;
 
-static const AVClass eval_class = { "Eval", av_default_item_name, NULL, LIBAVUTIL_VERSION_INT, offsetof(Parser,log_offset), offsetof(Parser,log_ctx) };
+static const AVClass eval_class = {
+    .class_name                = "Eval",
+    .item_name                 = av_default_item_name,
+    .option                    = NULL,
+    .version                   = LIBAVUTIL_VERSION_INT,
+    .log_level_offset_offset   = offsetof(Parser, log_offset),
+    .parent_log_context_offset = offsetof(Parser, log_ctx),
+};
 
 static const struct {
     double bin_val;
@@ -153,9 +160,9 @@ struct AVExpr {
         e_squish, e_gauss, e_ld, e_isnan, e_isinf,
         e_mod, e_max, e_min, e_eq, e_gt, e_gte, e_lte, e_lt,
         e_pow, e_mul, e_div, e_add,
-        e_last, e_st, e_while, e_taylor, e_root, e_floor, e_ceil, e_trunc,
+        e_last, e_st, e_while, e_taylor, e_root, e_floor, e_ceil, e_trunc, e_round,
         e_sqrt, e_not, e_random, e_hypot, e_gcd,
-        e_if, e_ifnot, e_print, e_bitand, e_bitor, e_between, e_clip, e_atan2
+        e_if, e_ifnot, e_print, e_bitand, e_bitor, e_between, e_clip, e_atan2, e_lerp,
     } type;
     double value; // is sign in other types
     union {
@@ -189,6 +196,7 @@ static double eval_expr(Parser *p, AVExpr *e)
         case e_floor:  return e->value * floor(eval_expr(p, e->param[0]));
         case e_ceil :  return e->value * ceil (eval_expr(p, e->param[0]));
         case e_trunc:  return e->value * trunc(eval_expr(p, e->param[0]));
+        case e_round:  return e->value * round(eval_expr(p, e->param[0]));
         case e_sqrt:   return e->value * sqrt (eval_expr(p, e->param[0]));
         case e_not:    return e->value * (eval_expr(p, e->param[0]) == 0);
         case e_if:     return e->value * (eval_expr(p, e->param[0]) ? eval_expr(p, e->param[1]) :
@@ -206,6 +214,12 @@ static double eval_expr(Parser *p, AVExpr *e)
             double d = eval_expr(p, e->param[0]);
             return e->value * (d >= eval_expr(p, e->param[1]) &&
                                d <= eval_expr(p, e->param[2]));
+        }
+        case e_lerp: {
+            double v0 = eval_expr(p, e->param[0]);
+            double v1 = eval_expr(p, e->param[1]);
+            double f  = eval_expr(p, e->param[2]);
+            return v0 + (v1 - v0) * f;
         }
         case e_print: {
             double x = eval_expr(p, e->param[0]);
@@ -440,6 +454,7 @@ static int parse_primary(AVExpr **e, Parser *p)
     else if (strmatch(next, "floor" )) d->type = e_floor;
     else if (strmatch(next, "ceil"  )) d->type = e_ceil;
     else if (strmatch(next, "trunc" )) d->type = e_trunc;
+    else if (strmatch(next, "round" )) d->type = e_round;
     else if (strmatch(next, "sqrt"  )) d->type = e_sqrt;
     else if (strmatch(next, "not"   )) d->type = e_not;
     else if (strmatch(next, "pow"   )) d->type = e_pow;
@@ -454,6 +469,7 @@ static int parse_primary(AVExpr **e, Parser *p)
     else if (strmatch(next, "between"))d->type = e_between;
     else if (strmatch(next, "clip"  )) d->type = e_clip;
     else if (strmatch(next, "atan2" )) d->type = e_atan2;
+    else if (strmatch(next, "lerp"  )) d->type = e_lerp;
     else {
         for (i=0; p->func1_names && p->func1_names[i]; i++) {
             if (strmatch(next, p->func1_names[i])) {
@@ -637,6 +653,7 @@ static int verify_expr(AVExpr *e)
         case e_floor:
         case e_ceil:
         case e_trunc:
+        case e_round:
         case e_sqrt:
         case e_not:
         case e_random:
@@ -651,6 +668,7 @@ static int verify_expr(AVExpr *e)
                    && (!e->param[2] || verify_expr(e->param[2]));
         case e_between:
         case e_clip:
+        case e_lerp:
             return verify_expr(e->param[0]) &&
                    verify_expr(e->param[1]) &&
                    verify_expr(e->param[2]);

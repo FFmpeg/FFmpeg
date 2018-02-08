@@ -2,12 +2,12 @@
 # common bits used by all libraries
 #
 
-DEFAULT_YASMD=.dbg
+DEFAULT_X86ASMD=.dbg
 
 ifeq ($(DBG),1)
-YASMD=$(DEFAULT_YASMD)
+X86ASMD=$(DEFAULT_X86ASMD)
 else
-YASMD=
+X86ASMD=
 endif
 
 ifndef SUBDIR
@@ -15,8 +15,8 @@ ifndef SUBDIR
 ifndef V
 Q      = @
 ECHO   = printf "$(1)\t%s\n" $(2)
-BRIEF  = CC CXX OBJCC HOSTCC HOSTLD AS YASM AR LD STRIP CP WINDRES NVCC
-SILENT = DEPCC DEPHOSTCC DEPAS DEPYASM RANLIB RM
+BRIEF  = CC CXX OBJCC HOSTCC HOSTLD AS X86ASM AR LD STRIP CP WINDRES NVCC
+SILENT = DEPCC DEPHOSTCC DEPAS DEPX86ASM RANLIB RM
 
 MSG    = $@
 M      = @$(call ECHO,$(TAG),$@);
@@ -37,7 +37,7 @@ OBJCFLAGS  += $(EOBJCFLAGS)
 OBJCCFLAGS  = $(CPPFLAGS) $(CFLAGS) $(OBJCFLAGS)
 ASFLAGS    := $(CPPFLAGS) $(ASFLAGS)
 CXXFLAGS   := $(CPPFLAGS) $(CFLAGS) $(CXXFLAGS)
-YASMFLAGS  += $(IFLAGS:%=%/) -Pconfig.asm
+X86ASMFLAGS += $(IFLAGS:%=%/) -I$(<D)/ -Pconfig.asm
 NVCCFLAGS  += -ptx
 
 HOSTCCFLAGS = $(IFLAGS) $(HOSTCPPFLAGS) $(HOSTCFLAGS)
@@ -52,6 +52,7 @@ COMPILE_C = $(call COMPILE,CC)
 COMPILE_CXX = $(call COMPILE,CXX)
 COMPILE_S = $(call COMPILE,AS)
 COMPILE_M = $(call COMPILE,OBJCC)
+COMPILE_X86ASM = $(call COMPILE,X86ASM)
 COMPILE_HOSTC = $(call COMPILE,HOSTCC)
 COMPILE_NVCC = $(call COMPILE,NVCC)
 
@@ -73,13 +74,12 @@ COMPILE_NVCC = $(call COMPILE,NVCC)
 %_host.o: %.c
 	$(COMPILE_HOSTC)
 
-%$(DEFAULT_YASMD).asm: %.asm
-	$(DEPYASM) $(YASMFLAGS) -I $(<D)/ -M -o $@ $< > $(@:.asm=.d)
-	$(YASM) $(YASMFLAGS) -I $(<D)/ -e $< | sed '/^%/d;/^$$/d;' > $@
+%$(DEFAULT_X86ASMD).asm: %.asm
+	$(DEPX86ASM) $(X86ASMFLAGS) -M -o $@ $< > $(@:.asm=.d)
+	$(X86ASM) $(X86ASMFLAGS) -e $< | sed '/^%/d;/^$$/d;' > $@
 
 %.o: %.asm
-	$(DEPYASM) $(YASMFLAGS) -I $(<D)/ -M -o $@ $< > $(@:.o=.d)
-	$(YASM) $(YASMFLAGS) -I $(<D)/ -o $@ $(patsubst $(SRC_PATH)/%,$(SRC_LINK)/%,$<)
+	$(COMPILE_X86ASM)
 	-$(if $(ASMSTRIPFLAGS), $(STRIP) $(ASMSTRIPFLAGS) $@)
 
 %.o: %.rc
@@ -119,7 +119,7 @@ FFLIBS    := $($(NAME)_FFLIBS) $(FFLIBS-yes) $(FFLIBS)
 TESTPROGS += $(TESTPROGS-yes)
 
 LDLIBS       = $(FFLIBS:%=%$(BUILDSUF))
-FFEXTRALIBS := $(LDLIBS:%=$(LD_LIB)) $(EXTRALIBS)
+FFEXTRALIBS := $(LDLIBS:%=$(LD_LIB)) $(foreach lib,EXTRALIBS-$(NAME) $(FFLIBS:%=EXTRALIBS-%),$($(lib))) $(EXTRALIBS)
 
 OBJS      := $(sort $(OBJS:%=$(SUBDIR)%))
 SLIBOBJS  := $(sort $(SLIBOBJS:%=$(SUBDIR)%))
@@ -163,8 +163,7 @@ $(TOOLOBJS): | tools
 
 OBJDIRS := $(OBJDIRS) $(dir $(OBJS) $(HOBJS) $(HOSTOBJS) $(SLIBOBJS) $(TESTOBJS))
 
-CLEANSUFFIXES     = *.d *.o *~ *.h.c *.gcda *.gcno *.map *.ver *.version *.ho *$(DEFAULT_YASMD).asm *.ptx *.ptx.c
-DISTCLEANSUFFIXES = *.pc
+CLEANSUFFIXES     = *.d *.gcda *.gcno *.h.c *.ho *.map *.o *.pc *.ptx *.ptx.c *.ver *.version *$(DEFAULT_X86ASMD).asm *~
 LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a
 
 define RULES
@@ -174,4 +173,4 @@ endef
 
 $(eval $(RULES))
 
--include $(wildcard $(OBJS:.o=.d) $(HOSTOBJS:.o=.d) $(TESTOBJS:.o=.d) $(HOBJS:.o=.d) $(SLIBOBJS:.o=.d)) $(OBJS:.o=$(DEFAULT_YASMD).d)
+-include $(wildcard $(OBJS:.o=.d) $(HOSTOBJS:.o=.d) $(TESTOBJS:.o=.d) $(HOBJS:.o=.d) $(SLIBOBJS:.o=.d)) $(OBJS:.o=$(DEFAULT_X86ASMD).d)

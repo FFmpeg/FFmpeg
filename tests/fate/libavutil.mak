@@ -1,32 +1,27 @@
 FATE_LIBAVUTIL += fate-adler32
 fate-adler32: libavutil/tests/adler32$(EXESUF)
 fate-adler32: CMD = run libavutil/tests/adler32
-fate-adler32: REF = /dev/null
+fate-adler32: CMP = null
 
 FATE_LIBAVUTIL += fate-aes
 fate-aes: libavutil/tests/aes$(EXESUF)
 fate-aes: CMD = run libavutil/tests/aes
-fate-aes: REF = /dev/null
+fate-aes: CMP = null
 
 FATE_LIBAVUTIL += fate-aes_ctr
 fate-aes_ctr: libavutil/tests/aes_ctr$(EXESUF)
 fate-aes_ctr: CMD = run libavutil/tests/aes_ctr
-fate-aes_ctr: REF = /dev/null
+fate-aes_ctr: CMP = null
 
 FATE_LIBAVUTIL += fate-camellia
 fate-camellia: libavutil/tests/camellia$(EXESUF)
 fate-camellia: CMD = run libavutil/tests/camellia
-fate-camellia: REF = /dev/null
+fate-camellia: CMP = null
 
 FATE_LIBAVUTIL += fate-cast5
 fate-cast5: libavutil/tests/cast5$(EXESUF)
 fate-cast5: CMD = run libavutil/tests/cast5
-fate-cast5: REF = /dev/null
-
-FATE_LIBAVUTIL += fate-atomic
-fate-atomic: libavutil/tests/atomic$(EXESUF)
-fate-atomic: CMD = run libavutil/tests/atomic
-fate-atomic: REF = /dev/null
+fate-cast5: CMP = null
 
 FATE_LIBAVUTIL += fate-audio_fifo
 fate-audio_fifo: libavutil/tests/audio_fifo$(EXESUF)
@@ -51,12 +46,12 @@ fate-bprint: CMD = run libavutil/tests/bprint
 FATE_LIBAVUTIL += fate-cpu
 fate-cpu: libavutil/tests/cpu$(EXESUF)
 fate-cpu: CMD = runecho libavutil/tests/cpu $(CPUFLAGS:%=-c%) $(THREADS:%=-t%)
-fate-cpu: REF = /dev/null
+fate-cpu: CMP = null
 
 FATE_LIBAVUTIL-$(HAVE_THREADS) += fate-cpu_init
 fate-cpu_init: libavutil/tests/cpu_init$(EXESUF)
 fate-cpu_init: CMD = run libavutil/tests/cpu_init
-fate-cpu_init: REF = /dev/null
+fate-cpu_init: CMP = null
 
 FATE_LIBAVUTIL += fate-crc
 fate-crc: libavutil/tests/crc$(EXESUF)
@@ -69,7 +64,7 @@ fate-color_utils: CMD = run libavutil/tests/color_utils
 FATE_LIBAVUTIL += fate-des
 fate-des: libavutil/tests/des$(EXESUF)
 fate-des: CMD = run libavutil/tests/des
-fate-des: REF = /dev/null
+fate-des: CMP = null
 
 FATE_LIBAVUTIL += fate-dict
 fate-dict: libavutil/tests/dict$(EXESUF)
@@ -82,12 +77,6 @@ fate-eval: CMD = run libavutil/tests/eval
 FATE_LIBAVUTIL += fate-fifo
 fate-fifo: libavutil/tests/fifo$(EXESUF)
 fate-fifo: CMD = run libavutil/tests/fifo
-
-FATE_LIBAVUTIL += fate-float-dsp
-fate-float-dsp: libavutil/tests/float_dsp$(EXESUF)
-fate-float-dsp: CMD = run libavutil/tests/float_dsp $(CPUFLAGS:%=-c%)
-fate-float-dsp: CMP = null
-fate-float-dsp: REF = /dev/null
 
 FATE_LIBAVUTIL += fate-hash
 fate-hash: libavutil/tests/hash$(EXESUF)
@@ -121,6 +110,10 @@ FATE_LIBAVUTIL-$(CONFIG_PIXELUTILS) += fate-pixelutils
 fate-pixelutils: libavutil/tests/pixelutils$(EXESUF)
 fate-pixelutils: CMD = run libavutil/tests/pixelutils
 
+FATE_LIBAVUTIL += fate-pixfmt_best
+fate-pixfmt_best: libavutil/tests/pixfmt_best$(EXESUF)
+fate-pixfmt_best: CMD = run libavutil/tests/pixfmt_best
+
 FATE_LIBAVUTIL += fate-display
 fate-display: libavutil/tests/display$(EXESUF)
 fate-display: CMD = run libavutil/tests/display
@@ -144,12 +137,12 @@ fate-sha512: CMD = run libavutil/tests/sha512
 FATE_LIBAVUTIL += fate-tree
 fate-tree: libavutil/tests/tree$(EXESUF)
 fate-tree: CMD = run libavutil/tests/tree
-fate-tree: REF = /dev/null
+fate-tree: CMP = null
 
 FATE_LIBAVUTIL += fate-twofish
 fate-twofish: libavutil/tests/twofish$(EXESUF)
 fate-twofish: CMD = run libavutil/tests/twofish
-fate-twofish: REF = /dev/null
+fate-twofish: CMP = null
 
 FATE_LIBAVUTIL += fate-xtea
 fate-xtea: libavutil/tests/xtea$(EXESUF)

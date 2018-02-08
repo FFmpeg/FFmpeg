@@ -30,6 +30,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/mem.h"
+#include "libavutil/thread.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "get_bits.h"
@@ -310,7 +311,7 @@ static av_cold int decode_vbmtree(GetBitContext *gb, int8_t vbm_tree[25])
     return 0;
 }
 
-static av_cold void wmavoice_init_static_data(AVCodec *codec)
+static av_cold void wmavoice_init_static_data(void)
 {
     static const uint8_t bits[] = {
          2,  2,  2,  4,  4,  4,
@@ -365,8 +366,11 @@ static av_cold void wmavoice_flush(AVCodecContext *ctx)
  */
 static av_cold int wmavoice_decode_init(AVCodecContext *ctx)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
     int n, flags, pitch_range, lsp16_flag;
     WMAVoiceContext *s = ctx->priv_data;
+
+    ff_thread_once(&init_static_once, wmavoice_init_static_data);
 
     /**
      * Extradata layout:
@@ -1756,6 +1760,10 @@ static int synth_superframe(AVCodecContext *ctx, AVFrame *frame,
             stabilize_lsps(lsps[n], s->lsps);
     }
 
+    /* synth_superframe can run multiple times per packet
+     * free potential previous frame */
+    av_frame_unref(frame);
+
     /* get output buffer */
     frame->nb_samples = MAX_SFRAMESIZE;
     if ((res = ff_get_buffer(ctx, frame, 0)) < 0)
@@ -1987,7 +1995,6 @@ AVCodec ff_wmavoice_decoder = {
     .id               = AV_CODEC_ID_WMAVOICE,
     .priv_data_size   = sizeof(WMAVoiceContext),
     .init             = wmavoice_decode_init,
-    .init_static_data = wmavoice_init_static_data,
     .close            = wmavoice_decode_end,
     .decode           = wmavoice_decode_packet,
     .capabilities     = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,

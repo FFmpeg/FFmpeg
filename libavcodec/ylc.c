@@ -69,7 +69,7 @@ static void get_tree_codes(uint32_t *bits, int16_t *lens, uint8_t *xlat,
 
     s = nodes[node].sym;
     if (s != -1) {
-        bits[*pos] = (~pfx) & ((1 << FFMAX(pl, 1)) - 1);
+        bits[*pos] = (~pfx) & ((1ULL << FFMAX(pl, 1)) - 1);
         lens[*pos] = FFMAX(pl, 1);
         xlat[*pos] = s + (pl == 0);
         (*pos)++;
@@ -109,7 +109,7 @@ static int build_vlc(AVCodecContext *avctx, VLC *vlc, const uint32_t *table)
             int new_node = j;
             int first_node = cur_node;
             int second_node = cur_node;
-            int nd, st;
+            unsigned nd, st;
 
             nodes[cur_node].count = -1;
 
@@ -133,6 +133,10 @@ static int build_vlc(AVCodecContext *avctx, VLC *vlc, const uint32_t *table)
             st = nodes[first_node].count;
             nodes[second_node].count = 0;
             nodes[first_node].count  = 0;
+            if (nd >= UINT32_MAX - st) {
+                av_log(avctx, AV_LOG_ERROR, "count overflow\n");
+                return AVERROR_INVALIDDATA;
+            }
             nodes[cur_node].count = nd + st;
             nodes[cur_node].sym = -1;
             nodes[cur_node].n0 = cur_node;

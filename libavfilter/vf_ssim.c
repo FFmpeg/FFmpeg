@@ -38,16 +38,16 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
-#include "dualinput.h"
 #include "drawutils.h"
 #include "formats.h"
+#include "framesync.h"
 #include "internal.h"
 #include "ssim.h"
 #include "video.h"
 
 typedef struct SSIMContext {
     const AVClass *class;
-    FFDualInputContext dinput;
+    FFFrameSync fs;
     FILE *stats_file;
     char *stats_file_str;
     int nb_components;
@@ -78,7 +78,7 @@ static const AVOption ssim_options[] = {
     { NULL }
 };
 
-AVFILTER_DEFINE_CLASS(ssim);
+FRAMESYNC_DEFINE_CLASS(ssim, SSIMContext, fs);
 
 static void set_meta(AVDictionary **metadata, const char *key, char comp, float d)
 {
@@ -109,8 +109,8 @@ static void ssim_4x4xn_16bit(const uint8_t *main8, ptrdiff_t main_stride,
 
         for (y = 0; y < 4; y++) {
             for (x = 0; x < 4; x++) {
-                int a = main16[x + y * main_stride];
-                int b = ref16[x + y * ref_stride];
+                unsigned a = main16[x + y * main_stride];
+                unsigned b = ref16[x + y * ref_stride];
 
                 s1  += a;
                 s2  += b;
@@ -219,6 +219,8 @@ static float ssim_endn_8bit(const int (*sum0)[4], const int (*sum1)[4], int widt
     return ssim;
 }
 
+#define SUM_LEN(w) (((w) >> 2) + 3)
+
 static float ssim_plane_16bit(SSIMDSPContext *dsp,
                               uint8_t *main, int main_stride,
                               uint8_t *ref, int ref_stride,
@@ -228,7 +230,7 @@ static float ssim_plane_16bit(SSIMDSPContext *dsp,
     int z = 0, y;
     float ssim = 0.0;
     int64_t (*sum0)[4] = temp;
-    int64_t (*sum1)[4] = sum0 + (width >> 2) + 3;
+    int64_t (*sum1)[4] = sum0 + SUM_LEN(width);
 
     width >>= 2;
     height >>= 2;
@@ -256,7 +258,7 @@ static float ssim_plane(SSIMDSPContext *dsp,
     int z = 0, y;
     float ssim = 0.0;
     int (*sum0)[4] = temp;
-    int (*sum1)[4] = sum0 + (width >> 2) + 3;
+    int (*sum1)[4] = sum0 + SUM_LEN(width);
 
     width >>= 2;
     height >>= 2;
@@ -280,18 +282,26 @@ static double ssim_db(double ssim, double weight)
     return 10 * log10(weight / (weight - ssim));
 }
 
-static AVFrame *do_ssim(AVFilterContext *ctx, AVFrame *main,
-                        const AVFrame *ref)
+static int do_ssim(FFFrameSync *fs)
 {
-    AVDictionary **metadata = &main->metadata;
+    AVFilterContext *ctx = fs->parent;
     SSIMContext *s = ctx->priv;
+    AVFrame *master, *ref;
+    AVDictionary **metadata;
     float c[4], ssimv = 0.0;
-    int i;
+    int ret, i;
+
+    ret = ff_framesync_dualinput_get(fs, &master, &ref);
+    if (ret < 0)
+        return ret;
+    if (!ref)
+        return ff_filter_frame(ctx->outputs[0], master);
+    metadata = &master->metadata;
 
     s->nb_frames++;
 
     for (i = 0; i < s->nb_components; i++) {
-        c[i] = s->ssim_plane(&s->dsp, main->data[i], main->linesize[i],
+        c[i] = s->ssim_plane(&s->dsp, master->data[i], master->linesize[i],
                              ref->data[i], ref->linesize[i],
                              s->planewidth[i], s->planeheight[i], s->temp,
                              s->max);
@@ -318,7 +328,7 @@ static AVFrame *do_ssim(AVFilterContext *ctx, AVFrame *main,
         fprintf(s->stats_file, "All:%f (%f)\n", ssimv, ssim_db(ssimv, 1.0));
     }
 
-    return main;
+    return ff_filter_frame(ctx->outputs[0], master);
 }
 
 static av_cold int init(AVFilterContext *ctx)
@@ -341,16 +351,14 @@ static av_cold int init(AVFilterContext *ctx)
         }
     }
 
-    s->dinput.process = do_ssim;
-    s->dinput.shortest = 1;
-    s->dinput.repeatlast = 0;
+    s->fs.on_event = do_ssim;
     return 0;
 }
 
 static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY10,
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10,
         AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P,
         AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV410P,
@@ -402,7 +410,7 @@ static int config_input_ref(AVFilterLink *inlink)
     for (i = 0; i < s->nb_components; i++)
         s->coefs[i] = (double) s->planeheight[i] * s->planewidth[i] / sum;
 
-    s->temp = av_malloc_array((2 * inlink->w + 12), sizeof(*s->temp) * (1 + (desc->comp[0].depth > 8)));
+    s->temp = av_mallocz_array(2 * SUM_LEN(inlink->w), (desc->comp[0].depth > 8) ? sizeof(int64_t[4]) : sizeof(int[4]));
     if (!s->temp)
         return AVERROR(ENOMEM);
     s->max = (1 << desc->comp[0].depth) - 1;
@@ -423,28 +431,25 @@ static int config_output(AVFilterLink *outlink)
     AVFilterLink *mainlink = ctx->inputs[0];
     int ret;
 
+    ret = ff_framesync_init_dualinput(&s->fs, ctx);
+    if (ret < 0)
+        return ret;
     outlink->w = mainlink->w;
     outlink->h = mainlink->h;
     outlink->time_base = mainlink->time_base;
     outlink->sample_aspect_ratio = mainlink->sample_aspect_ratio;
     outlink->frame_rate = mainlink->frame_rate;
 
-    if ((ret = ff_dualinput_init(ctx, &s->dinput)) < 0)
+    if ((ret = ff_framesync_configure(&s->fs)) < 0)
         return ret;
 
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
+static int activate(AVFilterContext *ctx)
 {
-    SSIMContext *s = inlink->dst->priv;
-    return ff_dualinput_filter_frame(&s->dinput, inlink, buf);
-}
-
-static int request_frame(AVFilterLink *outlink)
-{
-    SSIMContext *s = outlink->src->priv;
-    return ff_dualinput_request_frame(&s->dinput, outlink);
+    SSIMContext *s = ctx->priv;
+    return ff_framesync_activate(&s->fs);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -464,7 +469,7 @@ static av_cold void uninit(AVFilterContext *ctx)
                s->ssim_total / s->nb_frames, ssim_db(s->ssim_total, s->nb_frames));
     }
 
-    ff_dualinput_uninit(&s->dinput);
+    ff_framesync_uninit(&s->fs);
 
     if (s->stats_file && s->stats_file != stdout)
         fclose(s->stats_file);
@@ -476,11 +481,9 @@ static const AVFilterPad ssim_inputs[] = {
     {
         .name         = "main",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
     },{
         .name         = "reference",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
         .config_props = config_input_ref,
     },
     { NULL }
@@ -491,7 +494,6 @@ static const AVFilterPad ssim_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
-        .request_frame = request_frame,
     },
     { NULL }
 };
@@ -499,9 +501,11 @@ static const AVFilterPad ssim_outputs[] = {
 AVFilter ff_vf_ssim = {
     .name          = "ssim",
     .description   = NULL_IF_CONFIG_SMALL("Calculate the SSIM between two video streams."),
+    .preinit       = ssim_framesync_preinit,
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
+    .activate      = activate,
     .priv_size     = sizeof(SSIMContext),
     .priv_class    = &ssim_class,
     .inputs        = ssim_inputs,

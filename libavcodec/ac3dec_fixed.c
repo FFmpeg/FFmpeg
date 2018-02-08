@@ -64,12 +64,12 @@ static void scale_coefs (
     int dynrng,
     int len)
 {
-    int i, shift, round;
-    int16_t mul;
+    int i, shift;
+    unsigned mul, round;
     int temp, temp1, temp2, temp3, temp4, temp5, temp6, temp7;
 
     mul = (dynrng & 0x1f) + 0x20;
-    shift = 4 - ((dynrng << 23) >> 28);
+    shift = 4 - (sign_extend(dynrng, 9) >> 5);
     if (shift > 0 ) {
       round = 1 << (shift-1);
       for (i=0; i<len; i+=8) {

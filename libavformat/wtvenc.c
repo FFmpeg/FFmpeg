@@ -241,7 +241,7 @@ static void put_videoinfoheader2(AVIOContext *pb, AVStream *st)
     avio_wl32(pb, 0);
     avio_wl32(pb, 0);
 
-    ff_put_bmp_header(pb, st->codecpar, ff_codec_bmp_tags, 0, 1);
+    ff_put_bmp_header(pb, st->codecpar, 0, 1);
 
     if (st->codecpar->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
         int padding = (st->codecpar->extradata_size & 3) ? 4 - (st->codecpar->extradata_size & 3) : 0;
@@ -464,7 +464,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     AVStream    *st   = s->streams[pkt->stream_index];
 
     if (st->codecpar->codec_id == AV_CODEC_ID_MJPEG && !wctx->thumbnail.size) {
-        av_copy_packet(&wctx->thumbnail, pkt);
+        av_packet_ref(&wctx->thumbnail, pkt);
         return 0;
     } else if (st->codecpar->codec_id == AV_CODEC_ID_H264) {
         int ret = ff_check_h264_startcode(s, st, pkt);

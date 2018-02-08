@@ -218,7 +218,7 @@ static int flush_packet(AVFormatContext *format_context, AVPacket *packet)
 
     av_packet_unref(apng->prev_packet);
     if (packet)
-        av_copy_packet(apng->prev_packet, packet);
+        av_packet_ref(apng->prev_packet, packet);
     return 0;
 }
 
@@ -228,11 +228,11 @@ static int apng_write_packet(AVFormatContext *format_context, AVPacket *packet)
     int ret;
 
     if (!apng->prev_packet) {
-        apng->prev_packet = av_malloc(sizeof(*apng->prev_packet));
+        apng->prev_packet = av_packet_alloc();
         if (!apng->prev_packet)
             return AVERROR(ENOMEM);
 
-        av_copy_packet(apng->prev_packet, packet);
+        av_packet_ref(apng->prev_packet, packet);
     } else {
         ret = flush_packet(format_context, packet);
         if (ret < 0)

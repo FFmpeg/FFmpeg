@@ -32,9 +32,10 @@
 #include "rangecoder.h"
 #include "mathops.h"
 
-#define FF_MPV_OFFSET(x) (offsetof(MpegEncContext, x) + offsetof(SnowContext, m))
 #include "mpegvideo.h"
 #include "h264qpel.h"
+
+#define FF_ME_ITER 3
 
 #define MID_STATE 128
 
@@ -540,7 +541,8 @@ static inline int get_symbol(RangeCoder *c, uint8_t *state, int is_signed){
     if(get_rac(c, state+0))
         return 0;
     else{
-        int i, e, a;
+        int i, e;
+        unsigned a;
         e= 0;
         while(get_rac(c, state+1 + FFMIN(e,9))){ //1..10
             e++;

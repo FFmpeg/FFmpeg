@@ -103,11 +103,11 @@ void checkasm_check_blend(void)
         check_blend_func();
 
     check_and_report(addition, BLEND_ADDITION)
-    check_and_report(addition128, BLEND_ADDITION128)
+    check_and_report(grainmerge, BLEND_GRAINMERGE)
     check_and_report(and, BLEND_AND)
     check_and_report(average, BLEND_AVERAGE)
     check_and_report(darken, BLEND_DARKEN)
-    check_and_report(difference128, BLEND_DIFFERENCE128)
+    check_and_report(grainextract, BLEND_GRAINEXTRACT)
     check_and_report(hardmix, BLEND_HARDMIX)
     check_and_report(lighten, BLEND_LIGHTEN)
     check_and_report(multiply, BLEND_MULTIPLY)
@@ -117,6 +117,7 @@ void checkasm_check_blend(void)
     check_and_report(subtract, BLEND_SUBTRACT)
     check_and_report(xor, BLEND_XOR)
     check_and_report(difference, BLEND_DIFFERENCE)
+    check_and_report(extremity, BLEND_EXTREMITY)
     check_and_report(negation, BLEND_NEGATION)
 
     report("8bit");

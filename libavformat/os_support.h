@@ -40,7 +40,7 @@
 #endif
 #endif
 
-#if defined(_WIN32) && !defined(__MINGW32CE__)
+#ifdef _WIN32
 #  include <fcntl.h>
 #  ifdef lseek
 #   undef lseek
@@ -54,7 +54,7 @@
 #   undef fstat
 #  endif
 #  define fstat(f,s) _fstati64((f), (s))
-#endif /* defined(_WIN32) && !defined(__MINGW32CE__) */
+#endif /* defined(_WIN32) */
 
 
 #ifdef __ANDROID__
@@ -139,24 +139,10 @@ int ff_poll(struct pollfd *fds, nfds_t numfds, int timeout);
 #endif /* HAVE_POLL_H */
 #endif /* CONFIG_NETWORK */
 
-#if defined(__MINGW32CE__)
-#define mkdir(a, b) _mkdir(a)
-#elif defined(_WIN32)
+#ifdef _WIN32
 #include <stdio.h>
 #include <windows.h>
 #include "libavutil/wchar_filename.h"
-
-#ifdef WINAPI_FAMILY
-#include <winapifamily.h>
-// If a WINAPI_FAMILY is defined, check that the desktop API subset
-// is enabled
-#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-#define USE_MOVEFILEEXA
-#endif
-#else
-// If no WINAPI_FAMILY is defined, assume the full API subset
-#define USE_MOVEFILEEXA
-#endif
 
 #define DEF_FS_FUNCTION(name, wfunc, afunc)               \
 static inline int win32_##name(const char *filename_utf8) \
@@ -232,7 +218,7 @@ static inline int win32_rename(const char *src_utf8, const char *dest_utf8)
 
 fallback:
     /* filename may be be in CP_ACP */
-#ifdef USE_MOVEFILEEXA
+#if !HAVE_UWP
     ret = MoveFileExA(src_utf8, dest_utf8, MOVEFILE_REPLACE_EXISTING);
     if (ret)
         errno = EPERM;

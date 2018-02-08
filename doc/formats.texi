@@ -182,9 +182,10 @@ Default is 0.
 Correct single timestamp overflows if set to 1. Default is 1.
 
 @item flush_packets @var{integer} (@emph{output})
-Flush the underlying I/O stream after each packet. Default 1 enables it, and
-has the effect of reducing the latency; 0 disables it and may slightly
-increase performance in some cases.
+Flush the underlying I/O stream after each packet. Default is -1 (auto), which
+means that the underlying protocol will decide, 1 enables it, and has the
+effect of reducing the latency, 0 disables it and may increase IO throughput in
+some cases.
 
 @item output_ts_offset @var{offset} (@emph{output})
 Set the output time offset.

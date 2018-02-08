@@ -462,17 +462,17 @@ static void load_states(HEVCContext *s)
     memcpy(s->HEVClc->cabac_state, s->cabac_state, HEVC_CONTEXTS);
 }
 
-static void cabac_reinit(HEVCLocalContext *lc)
+static int cabac_reinit(HEVCLocalContext *lc)
 {
-    skip_bytes(&lc->cc, 0);
+    return skip_bytes(&lc->cc, 0) == NULL ? AVERROR_INVALIDDATA : 0;
 }
 
-static void cabac_init_decoder(HEVCContext *s)
+static int cabac_init_decoder(HEVCContext *s)
 {
     GetBitContext *gb = &s->HEVClc->gb;
     skip_bits(gb, 1);
     align_get_bits(gb);
-    ff_init_cabac_decoder(&s->HEVClc->cc,
+    return ff_init_cabac_decoder(&s->HEVClc->cc,
                           gb->buffer + get_bits_count(gb) / 8,
                           (get_bits_left(gb) + 7) / 8);
 }
@@ -501,10 +501,12 @@ static void cabac_init_state(HEVCContext *s)
         s->HEVClc->stat_coeff[i] = 0;
 }
 
-void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
+int ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
 {
     if (ctb_addr_ts == s->ps.pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs]) {
-        cabac_init_decoder(s);
+        int ret = cabac_init_decoder(s);
+        if (ret < 0)
+            return ret;
         if (s->sh.dependent_slice_segment_flag == 0 ||
             (s->ps.pps->tiles_enabled_flag &&
              s->ps.pps->tile_id[ctb_addr_ts] != s->ps.pps->tile_id[ctb_addr_ts - 1]))
@@ -522,19 +524,27 @@ void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
     } else {
         if (s->ps.pps->tiles_enabled_flag &&
             s->ps.pps->tile_id[ctb_addr_ts] != s->ps.pps->tile_id[ctb_addr_ts - 1]) {
+            int ret;
             if (s->threads_number == 1)
-                cabac_reinit(s->HEVClc);
-            else
-                cabac_init_decoder(s);
+                ret = cabac_reinit(s->HEVClc);
+            else {
+                ret = cabac_init_decoder(s);
+            }
+            if (ret < 0)
+                return ret;
             cabac_init_state(s);
         }
         if (s->ps.pps->entropy_coding_sync_enabled_flag) {
             if (ctb_addr_ts % s->ps.sps->ctb_width == 0) {
+                int ret;
                 get_cabac_terminate(&s->HEVClc->cc);
                 if (s->threads_number == 1)
-                    cabac_reinit(s->HEVClc);
-                else
-                    cabac_init_decoder(s);
+                    ret = cabac_reinit(s->HEVClc);
+                else {
+                    ret = cabac_init_decoder(s);
+                }
+                if (ret < 0)
+                    return ret;
 
                 if (s->ps.sps->ctb_width == 1)
                     cabac_init_state(s);
@@ -543,6 +553,7 @@ void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
             }
         }
     }
+    return 0;
 }
 
 #define GET_CABAC(ctx) get_cabac(&s->HEVClc->cc, &s->HEVClc->cabac_state[ctx])
@@ -635,8 +646,10 @@ int ff_hevc_cu_qp_delta_abs(HEVCContext *s)
             suffix_val += 1 << k;
             k++;
         }
-        if (k == CABAC_MAX_BIN)
+        if (k == CABAC_MAX_BIN) {
             av_log(s->avctx, AV_LOG_ERROR, "CABAC_MAX_BIN : %d\n", k);
+            return AVERROR_INVALIDDATA;
+        }
 
         while (k--)
             suffix_val += get_cabac_bypass(&s->HEVClc->cc) << k;
@@ -977,16 +990,19 @@ static av_always_inline int coeff_abs_level_remaining_decode(HEVCContext *s, int
 
     while (prefix < CABAC_MAX_BIN && get_cabac_bypass(&s->HEVClc->cc))
         prefix++;
-    if (prefix == CABAC_MAX_BIN) {
-        av_log(s->avctx, AV_LOG_ERROR, "CABAC_MAX_BIN : %d\n", prefix);
-        return 0;
-    }
+
     if (prefix < 3) {
         for (i = 0; i < rc_rice_param; i++)
             suffix = (suffix << 1) | get_cabac_bypass(&s->HEVClc->cc);
         last_coeff_abs_level_remaining = (prefix << rc_rice_param) + suffix;
     } else {
         int prefix_minus3 = prefix - 3;
+
+        if (prefix == CABAC_MAX_BIN || prefix_minus3 + rc_rice_param >= 31) {
+            av_log(s->avctx, AV_LOG_ERROR, "CABAC_MAX_BIN : %d\n", prefix);
+            return 0;
+        }
+
         for (i = 0; i < prefix_minus3 + rc_rice_param; i++)
             suffix = (suffix << 1) | get_cabac_bypass(&s->HEVClc->cc);
         last_coeff_abs_level_remaining = (((1 << prefix_minus3) + 3 - 1)

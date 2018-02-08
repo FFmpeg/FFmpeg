@@ -322,9 +322,6 @@ static int cinepak_decode (CinepakContext *s)
     int           y0 = 0;
     int           encoded_buf_size;
 
-    if (s->size < 10)
-        return AVERROR_INVALIDDATA;
-
     frame_flags = s->data[0];
     num_strips  = AV_RB16 (&s->data[8]);
     encoded_buf_size = AV_RB24(&s->data[1]);
@@ -438,6 +435,9 @@ static int cinepak_decode_frame(AVCodecContext *avctx,
 
     s->data = buf;
     s->size = buf_size;
+
+    if (s->size < 10)
+        return AVERROR_INVALIDDATA;
 
     if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
         return ret;

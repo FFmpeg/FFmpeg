@@ -73,6 +73,11 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
+color_range=unknown
+color_space=unknown
+color_primaries=unknown
+color_transfer=unknown
+chroma_location=unspecified
 
 [packets_and_frames.packet.2]
 codec_type=video
@@ -113,6 +118,11 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
+color_range=unknown
+color_space=unknown
+color_primaries=unknown
+color_transfer=unknown
+chroma_location=unspecified
 
 [packets_and_frames.packet.3]
 codec_type=audio
@@ -187,6 +197,11 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
+color_range=unknown
+color_space=unknown
+color_primaries=unknown
+color_transfer=unknown
+chroma_location=unspecified
 
 [packets_and_frames.packet.5]
 codec_type=video
@@ -227,6 +242,11 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
+color_range=unknown
+color_space=unknown
+color_primaries=unknown
+color_transfer=unknown
+chroma_location=unspecified
 
 [packets_and_frames.packet.6]
 codec_type=audio
@@ -335,6 +355,11 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
+color_range=unknown
+color_space=unknown
+color_primaries=unknown
+color_transfer=unknown
+chroma_location=unspecified
 
 [packets_and_frames.packet.9]
 codec_type=video
@@ -375,6 +400,11 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
+color_range=unknown
+color_space=unknown
+color_primaries=unknown
+color_transfer=unknown
+chroma_location=unspecified
 
 [packets_and_frames.packet.10]
 codec_type=audio
@@ -483,6 +513,11 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
+color_range=unknown
+color_space=unknown
+color_primaries=unknown
+color_transfer=unknown
+chroma_location=unspecified
 
 [packets_and_frames.packet.13]
 codec_type=video
@@ -523,6 +558,11 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
+color_range=unknown
+color_space=unknown
+color_primaries=unknown
+color_transfer=unknown
+chroma_location=unspecified
 
 [streams.stream.0]
 index=0
@@ -587,7 +627,7 @@ sample_aspect_ratio=1\:1
 display_aspect_ratio=4\:3
 pix_fmt=rgb24
 level=-99
-color_range=N/A
+color_range=unknown
 color_space=unknown
 color_transfer=unknown
 color_primaries=unknown
@@ -646,7 +686,7 @@ sample_aspect_ratio=1\:1
 display_aspect_ratio=1\:1
 pix_fmt=rgb24
 level=-99
-color_range=N/A
+color_range=unknown
 color_space=unknown
 color_transfer=unknown
 color_primaries=unknown

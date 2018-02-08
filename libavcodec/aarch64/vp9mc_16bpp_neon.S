@@ -275,7 +275,7 @@ function \type\()_8tap_\size\()h
         subs            x9,  x9,  #32
         st1             {v1.8h,  v2.8h},  [x0], #32
         st1             {v24.8h, v25.8h}, [x6], #32
-        beq             3f
+        b.eq            3f
         mov             v5.16b,  v7.16b
         mov             v16.16b, v18.16b
         ld1             {v6.8h,  v7.8h},  [x2], #32

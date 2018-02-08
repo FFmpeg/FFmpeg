@@ -26,9 +26,6 @@
 #include "avfilter.h"
 #include "transform.h"
 #include "libavutil/pixelutils.h"
-#if CONFIG_OPENCL
-#include "libavutil/opencl.h"
-#endif
 
 
 enum SearchMethod {
@@ -52,24 +49,6 @@ typedef struct Transform {
     double angle;         ///< Angle of rotation
     double zoom;          ///< Zoom percentage
 } Transform;
-
-#if CONFIG_OPENCL
-
-typedef struct DeshakeOpenclContext {
-    cl_command_queue command_queue;
-    cl_program program;
-    cl_kernel kernel_luma;
-    cl_kernel kernel_chroma;
-    int in_plane_size[8];
-    int out_plane_size[8];
-    int plane_num;
-    cl_mem cl_inbuf;
-    size_t cl_inbuf_size;
-    cl_mem cl_outbuf;
-    size_t cl_outbuf_size;
-} DeshakeOpenclContext;
-
-#endif
 
 #define MAX_R 64
 
@@ -96,9 +75,6 @@ typedef struct DeshakeContext {
     int cy;
     char *filename;            ///< Motion search detailed log filename
     int opencl;
-#if CONFIG_OPENCL
-    DeshakeOpenclContext opencl_ctx;
-#endif
     int (* transform)(AVFilterContext *ctx, int width, int height, int cw, int ch,
                       const float *matrix_y, const float *matrix_uv, enum InterpolateMethod interpolate,
                       enum FillMethod fill, AVFrame *in, AVFrame *out);

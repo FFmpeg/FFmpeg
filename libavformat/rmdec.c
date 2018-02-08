@@ -950,12 +950,14 @@ ff_rm_parse_packet (AVFormatContext *s, AVIOContext *pb,
             } else
                 return -1;
         } else {
-            if ((ret = av_get_packet(pb, pkt, len)) < 0)
+            ret = av_get_packet(pb, pkt, len);
+            if (ret < 0)
                 return ret;
             rm_ac3_swap_bytes(st, pkt);
         }
     } else {
-        if ((ret = av_get_packet(pb, pkt, len)) < 0)
+        ret = av_get_packet(pb, pkt, len);
+        if (ret < 0)
             return ret;
     }
 
@@ -973,16 +975,17 @@ ff_rm_retrieve_cache (AVFormatContext *s, AVIOContext *pb,
                       AVStream *st, RMStream *ast, AVPacket *pkt)
 {
     RMDemuxContext *rm = s->priv_data;
+    int ret;
 
     av_assert0 (rm->audio_pkt_cnt > 0);
 
     if (ast->deint_id == DEINT_ID_VBRF ||
         ast->deint_id == DEINT_ID_VBRS) {
-        int ret = av_get_packet(pb, pkt, ast->sub_packet_lengths[ast->sub_packet_cnt - rm->audio_pkt_cnt]);
+        ret = av_get_packet(pb, pkt, ast->sub_packet_lengths[ast->sub_packet_cnt - rm->audio_pkt_cnt]);
         if (ret < 0)
             return ret;
     } else {
-        int ret = av_new_packet(pkt, st->codecpar->block_align);
+        ret = av_new_packet(pkt, st->codecpar->block_align);
         if (ret < 0)
             return ret;
         memcpy(pkt->data, ast->pkt.data + st->codecpar->block_align * //FIXME avoid this
@@ -1223,8 +1226,11 @@ static int ivr_read_header(AVFormatContext *s)
             av_log(s, AV_LOG_DEBUG, "%s = '%s'\n", key, val);
         } else if (type == 4) {
             av_log(s, AV_LOG_DEBUG, "%s = '0x", key);
-            for (j = 0; j < len; j++)
+            for (j = 0; j < len; j++) {
+                if (avio_feof(pb))
+                    return AVERROR_INVALIDDATA;
                 av_log(s, AV_LOG_DEBUG, "%X", avio_r8(pb));
+            }
             av_log(s, AV_LOG_DEBUG, "'\n");
         } else if (len == 4 && type == 3 && !strncmp(key, "StreamCount", tlen)) {
             nb_streams = value = avio_rb32(pb);

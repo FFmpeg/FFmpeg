@@ -704,8 +704,8 @@ int ff_h264_decode_mb_cavlc(const H264Context *h, H264SliceContext *sl)
     int mb_xy;
     int partition_count;
     unsigned int mb_type, cbp;
-    int dct8x8_allowed= h->ps.pps->transform_8x8_mode;
-    int decode_chroma = h->ps.sps->chroma_format_idc == 1 || h->ps.sps->chroma_format_idc == 2;
+    int dct8x8_allowed = h->ps.pps->transform_8x8_mode;
+    const int decode_chroma = h->ps.sps->chroma_format_idc == 1 || h->ps.sps->chroma_format_idc == 2;
     const int pixel_shift = h->pixel_shift;
 
     mb_xy = sl->mb_xy = sl->mb_x + sl->mb_y*h->mb_stride;
@@ -1102,14 +1102,6 @@ decode_intra_mb:
         const uint8_t *scan, *scan8x8;
         const int max_qp = 51 + 6 * (h->ps.sps->bit_depth_luma - 8);
 
-        if(IS_INTERLACED(mb_type)){
-            scan8x8 = sl->qscale ? h->field_scan8x8_cavlc : h->field_scan8x8_cavlc_q0;
-            scan    = sl->qscale ? h->field_scan : h->field_scan_q0;
-        }else{
-            scan8x8 = sl->qscale ? h->zigzag_scan8x8_cavlc : h->zigzag_scan8x8_cavlc_q0;
-            scan    = sl->qscale ? h->zigzag_scan : h->zigzag_scan_q0;
-        }
-
         dquant= get_se_golomb(&sl->gb);
 
         sl->qscale += (unsigned)dquant;
@@ -1125,6 +1117,14 @@ decode_intra_mb:
 
         sl->chroma_qp[0] = get_chroma_qp(h->ps.pps, 0, sl->qscale);
         sl->chroma_qp[1] = get_chroma_qp(h->ps.pps, 1, sl->qscale);
+
+        if(IS_INTERLACED(mb_type)){
+            scan8x8 = sl->qscale ? h->field_scan8x8_cavlc : h->field_scan8x8_cavlc_q0;
+            scan    = sl->qscale ? h->field_scan : h->field_scan_q0;
+        }else{
+            scan8x8 = sl->qscale ? h->zigzag_scan8x8_cavlc : h->zigzag_scan8x8_cavlc_q0;
+            scan    = sl->qscale ? h->zigzag_scan : h->zigzag_scan_q0;
+        }
 
         if ((ret = decode_luma_residual(h, sl, gb, scan, scan8x8, pixel_shift, mb_type, cbp, 0)) < 0 ) {
             return -1;

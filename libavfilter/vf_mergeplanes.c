@@ -58,12 +58,6 @@ static const AVOption mergeplanes_options[] = {
 
 AVFILTER_DEFINE_CLASS(mergeplanes);
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *in)
-{
-    MergePlanesContext *s = inlink->dst->priv;
-    return ff_framesync_filter_frame(&s->fs, inlink, in);
-}
-
 static av_cold int init(AVFilterContext *ctx)
 {
     MergePlanesContext *s = ctx->priv;
@@ -101,7 +95,6 @@ static av_cold int init(AVFilterContext *ctx)
         pad.name = av_asprintf("in%d", i);
         if (!pad.name)
             return AVERROR(ENOMEM);
-        pad.filter_frame = filter_frame;
 
         if ((ret = ff_insert_inpad(ctx, i, &pad)) < 0){
             av_freep(&pad.name);
@@ -277,10 +270,10 @@ fail:
     return AVERROR(EINVAL);
 }
 
-static int request_frame(AVFilterLink *outlink)
+static int activate(AVFilterContext *ctx)
 {
-    MergePlanesContext *s = outlink->src->priv;
-    return ff_framesync_request_frame(&s->fs, outlink);
+    MergePlanesContext *s = ctx->priv;
+    return ff_framesync_activate(&s->fs);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -299,7 +292,6 @@ static const AVFilterPad mergeplanes_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
-        .request_frame = request_frame,
     },
     { NULL }
 };
@@ -312,6 +304,7 @@ AVFilter ff_vf_mergeplanes = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
+    .activate      = activate,
     .inputs        = NULL,
     .outputs       = mergeplanes_outputs,
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,

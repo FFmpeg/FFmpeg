@@ -31,34 +31,11 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "internal.h"
-
-#if HAVE_OPENJPEG_2_1_OPENJPEG_H
-#  include <openjpeg-2.1/openjpeg.h>
-#elif HAVE_OPENJPEG_2_0_OPENJPEG_H
-#  include <openjpeg-2.0/openjpeg.h>
-#elif HAVE_OPENJPEG_1_5_OPENJPEG_H
-#  include <openjpeg-1.5/openjpeg.h>
-#else
-#  include <openjpeg.h>
-#endif
-
-#if HAVE_OPENJPEG_2_1_OPENJPEG_H || HAVE_OPENJPEG_2_0_OPENJPEG_H
-#  define OPENJPEG_MAJOR_VERSION 2
-#  define OPJ(x) OPJ_##x
-#else
-#  define OPENJPEG_MAJOR_VERSION 1
-#  define OPJ(x) x
-#endif
+#include <openjpeg.h>
 
 typedef struct LibOpenJPEGContext {
     AVClass *avclass;
-#if OPENJPEG_MAJOR_VERSION == 1
-    opj_image_t *image;
-#endif // OPENJPEG_MAJOR_VERSION == 1
     opj_cparameters_t enc_params;
-#if OPENJPEG_MAJOR_VERSION == 1
-    opj_event_mgr_t event_mgr;
-#endif // OPENJPEG_MAJOR_VERSION == 1
     int format;
     int profile;
     int prog_order;
@@ -84,7 +61,6 @@ static void info_callback(const char *msg, void *data)
     av_log(data, AV_LOG_DEBUG, "%s\n", msg);
 }
 
-#if OPENJPEG_MAJOR_VERSION == 2
 typedef struct PacketWriter {
     int pos;
     AVPacket *packet;
@@ -154,7 +130,6 @@ static OPJ_BOOL stream_seek(OPJ_OFF_T nb_bytes, void *user_data)
     writer->pos = (int)nb_bytes;
     return OPJ_TRUE;
 }
-#endif // OPENJPEG_MAJOR_VERSION == 2
 
 static void cinema_parameters(opj_cparameters_t *p)
 {
@@ -178,7 +153,7 @@ static void cinema_parameters(opj_cparameters_t *p)
     p->csty |= 0x01;
 
     /* The progression order shall be CPRL */
-    p->prog_order = OPJ(CPRL);
+    p->prog_order = OPJ_CPRL;
 
     /* No ROI */
     p->roi_compno = -1;
@@ -202,7 +177,7 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
     int sub_dx[4];
     int sub_dy[4];
     int numcomps;
-    OPJ_COLOR_SPACE color_space = OPJ(CLRSPC_UNKNOWN);
+    OPJ_COLOR_SPACE color_space = OPJ_CLRSPC_UNKNOWN;
 
     sub_dx[0] = sub_dx[3] = 1;
     sub_dy[0] = sub_dy[3] = 1;
@@ -216,7 +191,7 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
     case AV_PIX_FMT_YA8:
     case AV_PIX_FMT_GRAY16:
     case AV_PIX_FMT_YA16:
-        color_space = OPJ(CLRSPC_GRAY);
+        color_space = OPJ_CLRSPC_GRAY;
         break;
     case AV_PIX_FMT_RGB24:
     case AV_PIX_FMT_RGBA:
@@ -229,7 +204,7 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
     case AV_PIX_FMT_GBRP14:
     case AV_PIX_FMT_GBRP16:
     case AV_PIX_FMT_XYZ12:
-        color_space = OPJ(CLRSPC_SRGB);
+        color_space = OPJ_CLRSPC_SRGB;
         break;
     case AV_PIX_FMT_YUV410P:
     case AV_PIX_FMT_YUV411P:
@@ -264,7 +239,7 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
     case AV_PIX_FMT_YUVA420P16:
     case AV_PIX_FMT_YUVA422P16:
     case AV_PIX_FMT_YUVA444P16:
-        color_space = OPJ(CLRSPC_SYCC);
+        color_space = OPJ_CLRSPC_SYCC;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR,
@@ -305,7 +280,6 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
 
     opj_set_default_encoder_parameters(&ctx->enc_params);
 
-#if HAVE_OPENJPEG_2_1_OPENJPEG_H
     switch (ctx->cinema_mode) {
     case OPJ_CINEMA2K_24:
         ctx->enc_params.rsiz = OPJ_PROFILE_CINEMA_2K;
@@ -344,12 +318,8 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
     if (err) {
         av_log(avctx, AV_LOG_ERROR,
                "Invalid parameter pairing: cinema_mode and profile conflict.\n");
-        goto fail;
+        return err;
     }
-#else
-    ctx->enc_params.cp_rsiz = ctx->profile;
-    ctx->enc_params.cp_cinema = ctx->cinema_mode;
-#endif
 
     if (!ctx->numresolution) {
         ctx->numresolution = 6;
@@ -369,23 +339,7 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
         cinema_parameters(&ctx->enc_params);
     }
 
-#if OPENJPEG_MAJOR_VERSION == 1
-    ctx->image = mj2_create_image(avctx, &ctx->enc_params);
-    if (!ctx->image) {
-        av_log(avctx, AV_LOG_ERROR, "Error creating the mj2 image\n");
-        err = AVERROR(EINVAL);
-        goto fail;
-    }
-#endif // OPENJPEG_MAJOR_VERSION == 1
-
     return 0;
-
-fail:
-#if OPENJPEG_MAJOR_VERSION == 1
-    opj_image_destroy(ctx->image);
-    ctx->image = NULL;
-#endif // OPENJPEG_MAJOR_VERSION == 1
-    return err;
 }
 
 static int libopenjpeg_copy_packed8(AVCodecContext *avctx, const AVFrame *frame, opj_image_t *image)
@@ -598,12 +552,6 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int ret;
     AVFrame *gbrframe;
     int cpyresult = 0;
-#if OPENJPEG_MAJOR_VERSION == 1
-    opj_image_t *image      = ctx->image;
-    opj_cinfo_t *compress   = NULL;
-    opj_cio_t *stream       = NULL;
-    int len;
-#else // OPENJPEG_MAJOR_VERSION == 2
     PacketWriter writer     = { 0 };
     opj_codec_t *compress   = NULL;
     opj_stream_t *stream    = NULL;
@@ -613,7 +561,6 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         ret = AVERROR(EINVAL);
         goto done;
     }
-#endif // OPENJPEG_MAJOR_VERSION == 1
 
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_RGB24:
@@ -708,11 +655,9 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         goto done;
     }
 
-#if OPENJPEG_MAJOR_VERSION == 2
     if ((ret = ff_alloc_packet2(avctx, pkt, 1024, 0)) < 0) {
         goto done;
     }
-#endif // OPENJPEG_MAJOR_VERSION == 2
 
     compress = opj_create_compress(ctx->format);
     if (!compress) {
@@ -721,10 +666,6 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         goto done;
     }
 
-#if OPENJPEG_MAJOR_VERSION == 1
-    opj_setup_encoder(compress, &ctx->enc_params, image);
-    stream = opj_cio_open((opj_common_ptr) compress, NULL, 0);
-#else // OPENJPEG_MAJOR_VERSION == 2
     if (!opj_set_error_handler(compress, error_callback, avctx) ||
         !opj_set_warning_handler(compress, warning_callback, avctx) ||
         !opj_set_info_handler(compress, info_callback, avctx)) {
@@ -739,43 +680,18 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         goto done;
     }
     stream = opj_stream_default_create(OPJ_STREAM_WRITE);
-#endif // OPENJPEG_MAJOR_VERSION == 1
 
     if (!stream) {
         av_log(avctx, AV_LOG_ERROR, "Error creating the cio stream\n");
         ret = AVERROR(ENOMEM);
         goto done;
     }
-#if OPENJPEG_MAJOR_VERSION == 1
-    memset(&ctx->event_mgr, 0, sizeof(ctx->event_mgr));
-    ctx->event_mgr.info_handler    = info_callback;
-    ctx->event_mgr.error_handler   = error_callback;
-    ctx->event_mgr.warning_handler = warning_callback;
-    opj_set_event_mgr((opj_common_ptr) compress, &ctx->event_mgr, avctx);
-    if (!opj_encode(compress, stream, image, NULL)) {
-        av_log(avctx, AV_LOG_ERROR, "Error during the opj encode\n");
-        ret = AVERROR_EXTERNAL;
-        goto done;
-    }
 
-    len = cio_tell(stream);
-    if ((ret = ff_alloc_packet2(avctx, pkt, len, 0)) < 0) {
-        goto done;
-    }
-
-    memcpy(pkt->data, stream->buffer, len);
-#else // OPENJPEG_MAJOR_VERSION == 2
     writer.packet = pkt;
     opj_stream_set_write_function(stream, stream_write);
     opj_stream_set_skip_function(stream, stream_skip);
     opj_stream_set_seek_function(stream, stream_seek);
-#if HAVE_OPENJPEG_2_1_OPENJPEG_H
     opj_stream_set_user_data(stream, &writer, NULL);
-#elif HAVE_OPENJPEG_2_0_OPENJPEG_H
-    opj_stream_set_user_data(stream, &writer);
-#else
-#error Missing call to opj_stream_set_user_data
-#endif
 
     if (!opj_start_compress(compress, image, stream) ||
         !opj_encode(compress, stream) ||
@@ -786,56 +702,39 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     av_shrink_packet(pkt, writer.pos);
-#endif // OPENJPEG_MAJOR_VERSION == 1
 
     pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
     ret = 0;
 
 done:
-#if OPENJPEG_MAJOR_VERSION == 2
     opj_stream_destroy(stream);
     opj_destroy_codec(compress);
     opj_image_destroy(image);
-#else
-    opj_cio_close(stream);
-    opj_destroy_compress(compress);
-#endif
     return ret;
-}
-
-static av_cold int libopenjpeg_encode_close(AVCodecContext *avctx)
-{
-#if OPENJPEG_MAJOR_VERSION == 1
-    LibOpenJPEGContext *ctx = avctx->priv_data;
-
-    opj_image_destroy(ctx->image);
-    ctx->image = NULL;
-#endif // OPENJPEG_MAJOR_VERSION == 1
-    return 0;
 }
 
 #define OFFSET(x) offsetof(LibOpenJPEGContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "format",        "Codec Format",      OFFSET(format),        AV_OPT_TYPE_INT,   { .i64 = OPJ(CODEC_JP2)   }, OPJ(CODEC_J2K), OPJ(CODEC_JP2),   VE, "format"      },
-    { "j2k",           NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ(CODEC_J2K)   }, 0,         0,           VE, "format"      },
-    { "jp2",           NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ(CODEC_JP2)   }, 0,         0,           VE, "format"      },
-    { "profile",       NULL,                OFFSET(profile),       AV_OPT_TYPE_INT,   { .i64 = OPJ(STD_RSIZ)    }, OPJ(STD_RSIZ),  OPJ(CINEMA4K),    VE, "profile"     },
-    { "jpeg2000",      NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ(STD_RSIZ)    }, 0,         0,           VE, "profile"     },
-    { "cinema2k",      NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ(CINEMA2K)    }, 0,         0,           VE, "profile"     },
-    { "cinema4k",      NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ(CINEMA4K)    }, 0,         0,           VE, "profile"     },
-    { "cinema_mode",   "Digital Cinema",    OFFSET(cinema_mode),   AV_OPT_TYPE_INT,   { .i64 = OPJ(OFF)         }, OPJ(OFF),       OPJ(CINEMA4K_24), VE, "cinema_mode" },
-    { "off",           NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ(OFF)         }, 0,         0,           VE, "cinema_mode" },
-    { "2k_24",         NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ(CINEMA2K_24) }, 0,         0,           VE, "cinema_mode" },
-    { "2k_48",         NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ(CINEMA2K_48) }, 0,         0,           VE, "cinema_mode" },
-    { "4k_24",         NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ(CINEMA4K_24) }, 0,         0,           VE, "cinema_mode" },
-    { "prog_order",    "Progression Order", OFFSET(prog_order),    AV_OPT_TYPE_INT,   { .i64 = OPJ(LRCP)    }, OPJ(LRCP),  OPJ(CPRL),    VE, "prog_order"  },
-    { "lrcp",          NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ(LRCP)    }, 0,         0,           VE, "prog_order"  },
-    { "rlcp",          NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ(RLCP)    }, 0,         0,           VE, "prog_order"  },
-    { "rpcl",          NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ(RPCL)    }, 0,         0,           VE, "prog_order"  },
-    { "pcrl",          NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ(PCRL)    }, 0,         0,           VE, "prog_order"  },
-    { "cprl",          NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ(CPRL)    }, 0,         0,           VE, "prog_order"  },
+    { "format",        "Codec Format",      OFFSET(format),        AV_OPT_TYPE_INT,   { .i64 = OPJ_CODEC_JP2   }, OPJ_CODEC_J2K, OPJ_CODEC_JP2,   VE, "format"      },
+    { "j2k",           NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ_CODEC_J2K   }, 0,         0,           VE, "format"      },
+    { "jp2",           NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ_CODEC_JP2   }, 0,         0,           VE, "format"      },
+    { "profile",       NULL,                OFFSET(profile),       AV_OPT_TYPE_INT,   { .i64 = OPJ_STD_RSIZ    }, OPJ_STD_RSIZ,  OPJ_CINEMA4K,    VE, "profile"     },
+    { "jpeg2000",      NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ_STD_RSIZ    }, 0,         0,           VE, "profile"     },
+    { "cinema2k",      NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ_CINEMA2K    }, 0,         0,           VE, "profile"     },
+    { "cinema4k",      NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ_CINEMA4K    }, 0,         0,           VE, "profile"     },
+    { "cinema_mode",   "Digital Cinema",    OFFSET(cinema_mode),   AV_OPT_TYPE_INT,   { .i64 = OPJ_OFF         }, OPJ_OFF,       OPJ_CINEMA4K_24, VE, "cinema_mode" },
+    { "off",           NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ_OFF         }, 0,         0,           VE, "cinema_mode" },
+    { "2k_24",         NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ_CINEMA2K_24 }, 0,         0,           VE, "cinema_mode" },
+    { "2k_48",         NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ_CINEMA2K_48 }, 0,         0,           VE, "cinema_mode" },
+    { "4k_24",         NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ_CINEMA4K_24 }, 0,         0,           VE, "cinema_mode" },
+    { "prog_order",    "Progression Order", OFFSET(prog_order),    AV_OPT_TYPE_INT,   { .i64 = OPJ_LRCP    }, OPJ_LRCP,  OPJ_CPRL,    VE, "prog_order"  },
+    { "lrcp",          NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ_LRCP    }, 0,         0,           VE, "prog_order"  },
+    { "rlcp",          NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ_RLCP    }, 0,         0,           VE, "prog_order"  },
+    { "rpcl",          NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ_RPCL    }, 0,         0,           VE, "prog_order"  },
+    { "pcrl",          NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ_PCRL    }, 0,         0,           VE, "prog_order"  },
+    { "cprl",          NULL,                0,                     AV_OPT_TYPE_CONST, { .i64 = OPJ_CPRL    }, 0,         0,           VE, "prog_order"  },
     { "numresolution", NULL,                OFFSET(numresolution), AV_OPT_TYPE_INT,   { .i64 = 6            }, 0,         33,          VE                },
     { "irreversible",  NULL,                OFFSET(irreversible),  AV_OPT_TYPE_INT,   { .i64 = 0            }, 0,         1,           VE                },
     { "disto_alloc",   NULL,                OFFSET(disto_alloc),   AV_OPT_TYPE_INT,   { .i64 = 1            }, 0,         1,           VE                },
@@ -858,7 +757,6 @@ AVCodec ff_libopenjpeg_encoder = {
     .priv_data_size = sizeof(LibOpenJPEGContext),
     .init           = libopenjpeg_encode_init,
     .encode2        = libopenjpeg_encode_frame,
-    .close          = libopenjpeg_encode_close,
     .capabilities   = AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_INTRA_ONLY,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA, AV_PIX_FMT_RGB48,
@@ -880,4 +778,5 @@ AVCodec ff_libopenjpeg_encoder = {
         AV_PIX_FMT_NONE
     },
     .priv_class     = &openjpeg_class,
+    .wrapper_name   = "libopenjpeg",
 };

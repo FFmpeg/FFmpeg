@@ -105,7 +105,7 @@ static int fir_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
 
     if (out) {
         float *ptr = (float *)out->extended_data[ch];
-        s->fdsp->vector_fmul_scalar(ptr, dst, s->gain * s->wet_gain, FFALIGN(out->nb_samples, 4));
+        s->fdsp->vector_fmul_scalar(ptr, dst, s->wet_gain, FFALIGN(out->nb_samples, 4));
         emms_c();
     }
 
@@ -166,7 +166,6 @@ static int convert_coeffs(AVFilterContext *ctx)
 {
     AudioFIRContext *s = ctx->priv;
     int i, ch, n, N;
-    float power = 0;
 
     s->nb_taps = av_audio_fifo_size(s->fifo[1]);
     if (s->nb_taps <= 0)
@@ -217,12 +216,28 @@ static int convert_coeffs(AVFilterContext *ctx)
 
     av_audio_fifo_read(s->fifo[1], (void **)s->in[1]->extended_data, s->nb_taps);
 
+    if (s->again) {
+        float power = 0;
+
+        for (ch = 0; ch < ctx->inputs[1]->channels; ch++) {
+            float *time = (float *)s->in[1]->extended_data[!s->one2many * ch];
+
+            for (i = 0; i < s->nb_taps; i++)
+                power += FFABS(time[i]);
+        }
+
+        s->gain = sqrtf(1.f / (ctx->inputs[1]->channels * power)) / (sqrtf(ctx->inputs[1]->channels));
+        for (ch = 0; ch < ctx->inputs[1]->channels; ch++) {
+            float *time = (float *)s->in[1]->extended_data[!s->one2many * ch];
+
+            s->fdsp->vector_fmul_scalar(time, time, s->gain, FFALIGN(s->nb_taps, 4));
+        }
+    }
+
     for (ch = 0; ch < ctx->inputs[1]->channels; ch++) {
         float *time = (float *)s->in[1]->extended_data[!s->one2many * ch];
         float *block = s->block[ch];
         FFTComplex *coeff = s->coeff[ch];
-
-        power += s->fdsp->scalarproduct_float(time, time, s->nb_taps);
 
         for (i = FFMAX(1, s->length * s->nb_taps); i < s->nb_taps; i++)
             time[i] = 0;
@@ -252,7 +267,6 @@ static int convert_coeffs(AVFilterContext *ctx)
     }
 
     av_frame_free(&s->in[1]);
-    s->gain = s->again ? 1.f / sqrtf(power / ctx->inputs[1]->channels) : 1.f;
     av_log(ctx, AV_LOG_DEBUG, "nb_taps: %d\n", s->nb_taps);
     av_log(ctx, AV_LOG_DEBUG, "nb_partitions: %d\n", s->nb_partitions);
     av_log(ctx, AV_LOG_DEBUG, "partition size: %d\n", s->part_size);
@@ -267,11 +281,13 @@ static int read_ir(AVFilterLink *link, AVFrame *frame)
 {
     AVFilterContext *ctx = link->dst;
     AudioFIRContext *s = ctx->priv;
-    int nb_taps, max_nb_taps;
+    int nb_taps, max_nb_taps, ret;
 
-    av_audio_fifo_write(s->fifo[1], (void **)frame->extended_data,
-                        frame->nb_samples);
+    ret = av_audio_fifo_write(s->fifo[1], (void **)frame->extended_data,
+                             frame->nb_samples);
     av_frame_free(&frame);
+    if (ret < 0)
+        return ret;
 
     nb_taps = av_audio_fifo_size(s->fifo[1]);
     max_nb_taps = MAX_IR_DURATION * ctx->outputs[0]->sample_rate;
@@ -288,14 +304,17 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     AVFilterContext *ctx = link->dst;
     AudioFIRContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    int ret = 0;
+    int ret;
 
-    av_audio_fifo_write(s->fifo[0], (void **)frame->extended_data,
-                        frame->nb_samples);
-    if (s->pts == AV_NOPTS_VALUE)
+    ret = av_audio_fifo_write(s->fifo[0], (void **)frame->extended_data,
+                              frame->nb_samples);
+    if (ret > 0 && s->pts == AV_NOPTS_VALUE)
         s->pts = frame->pts;
 
     av_frame_free(&frame);
+
+    if (ret < 0)
+        return ret;
 
     if (!s->have_coeffs && s->eof_coeffs) {
         ret = convert_coeffs(ctx);
@@ -307,10 +326,10 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
         while (av_audio_fifo_size(s->fifo[0]) >= s->part_size) {
             ret = fir_frame(s, outlink);
             if (ret < 0)
-                break;
+                return ret;
         }
     }
-    return ret;
+    return 0;
 }
 
 static int request_frame(AVFilterLink *outlink)
@@ -334,9 +353,11 @@ static int request_frame(AVFilterLink *outlink)
 
             if (!silence)
                 return AVERROR(ENOMEM);
-            av_audio_fifo_write(s->fifo[0], (void **)silence->extended_data,
-                        silence->nb_samples);
+            ret = av_audio_fifo_write(s->fifo[0], (void **)silence->extended_data,
+                                      silence->nb_samples);
             av_frame_free(&silence);
+            if (ret < 0)
+                return ret;
             s->need_padding = 0;
         }
 

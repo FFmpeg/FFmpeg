@@ -30,7 +30,6 @@
 
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
-#include <libavfilter/avfiltergraph.h>
 #include <libavfilter/buffersink.h>
 #include <libavfilter/buffersrc.h>
 #include <libavutil/opt.h>
@@ -228,8 +227,8 @@ static int init_filter(FilteringContext* fctx, AVCodecContext *dec_ctx,
 {
     char args[512];
     int ret = 0;
-    AVFilter *buffersrc = NULL;
-    AVFilter *buffersink = NULL;
+    const AVFilter *buffersrc = NULL;
+    const AVFilter *buffersink = NULL;
     AVFilterContext *buffersrc_ctx = NULL;
     AVFilterContext *buffersink_ctx = NULL;
     AVFilterInOut *outputs = avfilter_inout_alloc();

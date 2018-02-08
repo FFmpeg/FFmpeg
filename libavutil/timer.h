@@ -26,13 +26,23 @@
 #ifndef AVUTIL_TIMER_H
 #define AVUTIL_TIMER_H
 
+#include "config.h"
+
+#if CONFIG_LINUX_PERF
+# ifndef _GNU_SOURCE
+#  define _GNU_SOURCE
+# endif
+# include <unistd.h> // read(3)
+# include <sys/ioctl.h>
+# include <asm/unistd.h>
+# include <linux/perf_event.h>
+#endif
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <inttypes.h>
 
-#include "config.h"
-
-#if HAVE_MACH_MACH_TIME_H
+#if HAVE_MACH_ABSOLUTE_TIME
 #include <mach/mach_time.h>
 #endif
 
@@ -60,23 +70,17 @@
 #   define FF_TIMER_UNITS "UNITS"
 #endif
 
-#ifdef AV_READ_TIME
-#define START_TIMER                             \
-    uint64_t tend;                              \
-    uint64_t tstart = AV_READ_TIME();           \
-
-#define STOP_TIMER(id)                                                    \
-    tend = AV_READ_TIME();                                                \
+#define TIMER_REPORT(id, tdiff)                                           \
     {                                                                     \
         static uint64_t tsum   = 0;                                       \
         static int tcount      = 0;                                       \
         static int tskip_count = 0;                                       \
         static int thistogram[32] = {0};                                  \
-        thistogram[av_log2(tend - tstart)]++;                             \
-        if (tcount < 2                        ||                          \
-            tend - tstart < 8 * tsum / tcount ||                          \
-            tend - tstart < 2000) {                                       \
-            tsum+= tend - tstart;                                         \
+        thistogram[av_log2(tdiff)]++;                                     \
+        if (tcount < 2                ||                                  \
+            (tdiff) < 8 * tsum / tcount ||                                \
+            (tdiff) < 2000) {                                             \
+            tsum += (tdiff);                                              \
             tcount++;                                                     \
         } else                                                            \
             tskip_count++;                                                \
@@ -90,6 +94,45 @@
             av_log(NULL, AV_LOG_ERROR, "\n");                             \
         }                                                                 \
     }
+
+#if CONFIG_LINUX_PERF
+
+#define START_TIMER                                                         \
+    static int linux_perf_fd;                                               \
+    uint64_t tperf;                                                         \
+    if (!linux_perf_fd) {                                                   \
+        struct perf_event_attr attr = {                                     \
+            .type           = PERF_TYPE_HARDWARE,                           \
+            .size           = sizeof(struct perf_event_attr),               \
+            .config         = PERF_COUNT_HW_CPU_CYCLES,                     \
+            .disabled       = 1,                                            \
+            .exclude_kernel = 1,                                            \
+            .exclude_hv     = 1,                                            \
+        };                                                                  \
+        linux_perf_fd = syscall(__NR_perf_event_open, &attr,                \
+                                0, -1, -1, 0);                              \
+    }                                                                       \
+    if (linux_perf_fd == -1) {                                              \
+        av_log(NULL, AV_LOG_ERROR, "perf_event_open failed: %s\n",          \
+               av_err2str(AVERROR(errno)));                                 \
+    } else {                                                                \
+        ioctl(linux_perf_fd, PERF_EVENT_IOC_RESET, 0);                      \
+        ioctl(linux_perf_fd, PERF_EVENT_IOC_ENABLE, 0);                     \
+    }
+
+#define STOP_TIMER(id)                                                      \
+    ioctl(linux_perf_fd, PERF_EVENT_IOC_DISABLE, 0);                        \
+    read(linux_perf_fd, &tperf, sizeof(tperf));                             \
+    TIMER_REPORT(id, tperf)
+
+#elif defined(AV_READ_TIME)
+#define START_TIMER                             \
+    uint64_t tend;                              \
+    uint64_t tstart = AV_READ_TIME();           \
+
+#define STOP_TIMER(id)                                                    \
+    tend = AV_READ_TIME();                                                \
+    TIMER_REPORT(id, tend - tstart)
 #else
 #define START_TIMER
 #define STOP_TIMER(id) { }

@@ -259,7 +259,7 @@ static void destroy_context(AVFContext* ctx)
 static void parse_device_name(AVFormatContext *s)
 {
     AVFContext *ctx = (AVFContext*)s->priv_data;
-    char *tmp = av_strdup(s->filename);
+    char *tmp = av_strdup(s->url);
     char *save;
 
     if (tmp[0] != ':') {

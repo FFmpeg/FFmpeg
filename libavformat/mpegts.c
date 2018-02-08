@@ -814,7 +814,7 @@ static int mpegts_set_stream_info(AVStream *st, PESContext *pes,
     st->codecpar->codec_tag = pes->stream_type;
 
     mpegts_find_stream_type(st, pes->stream_type, ISO_types);
-    if (pes->stream_type == 4)
+    if (pes->stream_type == 4 || pes->stream_type == 0x0f)
         st->request_probe = 50;
     if ((prog_reg_desc == AV_RL32("HDMV") ||
          prog_reg_desc == AV_RL32("HDPR")) &&
@@ -2296,6 +2296,14 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
         }
     }
 
+    if (packet[1] & 0x80) {
+        av_log(ts->stream, AV_LOG_DEBUG, "Packet had TEI flag set; marking as corrupt\n");
+        if (tss->type == MPEGTS_PES) {
+            PESContext *pc = tss->u.pes_filter.opaque;
+            pc->flags |= AV_PKT_FLAG_CORRUPT;
+        }
+    }
+
     p = packet + 4;
     if (has_adaptation) {
         int64_t pcr_h;
@@ -2615,6 +2623,8 @@ static int mpegts_read_header(AVFormatContext *s)
     uint8_t buf[8 * 1024] = {0};
     int len;
     int64_t pos, probesize = s->probesize;
+
+    s->internal->prefer_codec_framerate = 1;
 
     if (ffio_ensure_seekback(pb, probesize) < 0)
         av_log(s, AV_LOG_WARNING, "Failed to allocate buffers for seekback\n");

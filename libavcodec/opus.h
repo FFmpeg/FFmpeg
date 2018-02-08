@@ -150,7 +150,9 @@ typedef struct ChannelMap {
 } ChannelMap;
 
 typedef struct OpusContext {
+    AVClass *av_class;
     OpusStreamContext *streams;
+    int apply_phase_inv;
 
     /* current output buffers for each streams */
     float **out;
@@ -188,5 +190,11 @@ int ff_silk_decode_superframe(SilkContext *s, OpusRangeCoder *rc,
                               float *output[2],
                               enum OpusBandwidth bandwidth, int coded_channels,
                               int duration_ms);
+
+/* Encode or decode CELT bands */
+void ff_celt_quant_bands(CeltFrame *f, OpusRangeCoder *rc);
+
+/* Encode or decode CELT bitallocation */
+void ff_celt_bitalloc(CeltFrame *f, OpusRangeCoder *rc, int encode);
 
 #endif /* AVCODEC_OPUS_H */

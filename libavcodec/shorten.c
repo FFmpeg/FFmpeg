@@ -445,6 +445,10 @@ static int read_header(ShortenContext *s)
         s->blocksize = blocksize;
 
         maxnlpc  = get_uint(s, LPCQSIZE);
+        if (maxnlpc > 1024U) {
+            av_log(s->avctx, AV_LOG_ERROR, "maxnlpc is: %d\n", maxnlpc);
+            return AVERROR_INVALIDDATA;
+        }
         s->nmean = get_uint(s, 0);
 
         skip_bytes = get_uint(s, NSKIPSIZE);
@@ -457,12 +461,6 @@ static int read_header(ShortenContext *s)
             skip_bits(&s->gb, 8);
     }
     s->nwrap = FFMAX(NWRAP, maxnlpc);
-
-    if ((ret = allocate_buffers(s)) < 0)
-        return ret;
-
-    if ((ret = init_offset(s)) < 0)
-        return ret;
 
     if (s->version > 1)
         s->lpcqoffset = V2LPCQOFFSET;
@@ -500,6 +498,13 @@ static int read_header(ShortenContext *s)
     }
 
 end:
+
+    if ((ret = allocate_buffers(s)) < 0)
+        return ret;
+
+    if ((ret = init_offset(s)) < 0)
+        return ret;
+
     s->cur_chan = 0;
     s->bitshift = 0;
 

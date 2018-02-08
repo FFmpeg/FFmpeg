@@ -1925,8 +1925,8 @@ function vp9_idct_idct_32x32_add_16_neon
 2:
         subs            x1,  x1,  #1
 .rept 4
-        st1             {v16.4s-v19.4s},  [x0], #64
-        st1             {v16.4s-v19.4s},  [x0], #64
+        st1             {v16.4s,v17.4s,v18.4s,v19.4s},  [x0], #64
+        st1             {v16.4s,v17.4s,v18.4s,v19.4s},  [x0], #64
 .endr
         b.ne            2b
 3:
@@ -1991,8 +1991,8 @@ function idct32x32_\size\()_add_16_neon
         movi            v19.4s,  #0
 
 .rept 4
-        st1             {v16.4s-v19.4s},  [x0], #64
-        st1             {v16.4s-v19.4s},  [x0], #64
+        st1             {v16.4s,v17.4s,v18.4s,v19.4s},  [x0], #64
+        st1             {v16.4s,v17.4s,v18.4s,v19.4s},  [x0], #64
 .endr
 
 3:

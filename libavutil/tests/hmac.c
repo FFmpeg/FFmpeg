@@ -70,7 +70,7 @@ int main(void)
     }
 
     /* SHA-2 */
-    for (i = AV_HMAC_SHA224; i <= AV_HMAC_SHA256; i++) {
+    for (i = AV_HMAC_SHA224; i <= AV_HMAC_SHA512; i++) {
         hmac = av_hmac_alloc(i);
         if (!hmac)
             return 1;
@@ -83,17 +83,5 @@ int main(void)
         av_hmac_free(hmac);
     }
 
-    for (i = AV_HMAC_SHA384; i <= AV_HMAC_SHA512; i++) {
-        hmac = av_hmac_alloc(i);
-        if (!hmac)
-            return 1;
-        // RFC 4231 test vectors
-        test(hmac, key1, sizeof(key1), data1, sizeof(data1));
-        test(hmac, key2, sizeof(key2), data2, sizeof(data2));
-        test(hmac, key3, 20, data3, sizeof(data3));
-        test(hmac, key3, sizeof(key3), data4, sizeof(data4));
-        test(hmac, key3, sizeof(key3), data6, sizeof(data6));
-        av_hmac_free(hmac);
-    }
     return 0;
 }

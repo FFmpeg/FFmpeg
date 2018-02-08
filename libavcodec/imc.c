@@ -828,7 +828,7 @@ static void imc_refine_bit_allocation(IMCContext *q, IMCChannel *chctx)
         for (j = band_tab[i]; j < band_tab[i + 1]; j++)
             chctx->sumLenArr[i] += chctx->CWlengthT[j];
         if (chctx->bandFlagsBuf[i])
-            if ((((band_tab[i + 1] - band_tab[i]) * 1.5) > chctx->sumLenArr[i]) && (chctx->sumLenArr[i] > 0))
+            if (((int)((band_tab[i + 1] - band_tab[i]) * 1.5) > chctx->sumLenArr[i]) && (chctx->sumLenArr[i] > 0))
                 chctx->skipFlagRaw[i] = 1;
     }
 

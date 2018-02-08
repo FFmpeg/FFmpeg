@@ -49,7 +49,7 @@ void ff_put_signed_rect_clamped_10_sse4(uint8_t *dst, int dst_stride, const uint
 
 void ff_dequant_subband_32_sse4(uint8_t *src, uint8_t *dst, ptrdiff_t stride, const int qf, const int qs, int tot_v, int tot_h);
 
-#if HAVE_YASM
+#if HAVE_X86ASM
 
 #define HPEL_FILTER(MMSIZE, EXT)                                                             \
     void ff_dirac_hpel_filter_v_ ## EXT(uint8_t *, const uint8_t *, int, int);               \
@@ -138,7 +138,7 @@ void ff_avg_dirac_pixels32_sse2(uint8_t *dst, const uint8_t *src[5], int stride,
     }
 }
 
-#else // HAVE_YASM
+#else // HAVE_X86ASM
 
 #define HPEL_FILTER(MMSIZE, EXT)                                                     \
     void dirac_hpel_filter_ ## EXT(uint8_t *dsth, uint8_t *dstv, uint8_t *dstc,              \
@@ -146,7 +146,7 @@ void ff_avg_dirac_pixels32_sse2(uint8_t *dst, const uint8_t *src[5], int stride,
 
 #define PIXFUNC(PFX, IDX, EXT) do {} while (0)
 
-#endif // HAVE_YASM
+#endif // HAVE_X86ASM
 
 #if !ARCH_X86_64
 HPEL_FILTER(8, mmx)

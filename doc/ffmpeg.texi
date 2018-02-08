@@ -289,8 +289,8 @@ see @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) 
 
 -to and -t are mutually exclusive and -t has priority.
 
-@item -to @var{position} (@emph{output})
-Stop writing the output at @var{position}.
+@item -to @var{position} (@emph{input/output})
+Stop writing the output or reading the input at @var{position}.
 @var{position} must be a time duration specification,
 see @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}.
 
@@ -470,6 +470,7 @@ the encoding process. It is made of "@var{key}=@var{value}" lines. @var{key}
 consists of only alphanumeric characters. The last key of a sequence of
 progress information is always "progress".
 
+@anchor{stdin option}
 @item -stdin
 Enable interaction on standard input. On by default unless standard input is
 used as an input. To explicitly disable interaction you need to specify
@@ -715,6 +716,104 @@ would be more efficient.
 When doing stream copy, copy also non-key frames found at the
 beginning.
 
+@item -init_hw_device @var{type}[=@var{name}][:@var{device}[,@var{key=value}...]]
+Initialise a new hardware device of type @var{type} called @var{name}, using the
+given device parameters.
+If no name is specified it will receive a default name of the form "@var{type}%d".
+
+The meaning of @var{device} and the following arguments depends on the
+device type:
+@table @option
+
+@item cuda
+@var{device} is the number of the CUDA device.
+
+@item dxva2
+@var{device} is the number of the Direct3D 9 display adapter.
+
+@item vaapi
+@var{device} is either an X11 display name or a DRM render node.
+If not specified, it will attempt to open the default X11 display (@emph{$DISPLAY})
+and then the first DRM render node (@emph{/dev/dri/renderD128}).
+
+@item vdpau
+@var{device} is an X11 display name.
+If not specified, it will attempt to open the default X11 display (@emph{$DISPLAY}).
+
+@item qsv
+@var{device} selects a value in @samp{MFX_IMPL_*}. Allowed values are:
+@table @option
+@item auto
+@item sw
+@item hw
+@item auto_any
+@item hw_any
+@item hw2
+@item hw3
+@item hw4
+@end table
+If not specified, @samp{auto_any} is used.
+(Note that it may be easier to achieve the desired result for QSV by creating the
+platform-appropriate subdevice (@samp{dxva2} or @samp{vaapi}) and then deriving a
+QSV device from that.)
+
+@item opencl
+@var{device} selects the platform and device as @emph{platform_index.device_index}.
+
+The set of devices can also be filtered using the key-value pairs to find only
+devices matching particular platform or device strings.
+
+The strings usable as filters are:
+@table @option
+@item platform_profile
+@item platform_version
+@item platform_name
+@item platform_vendor
+@item platform_extensions
+@item device_name
+@item device_vendor
+@item driver_version
+@item device_version
+@item device_profile
+@item device_extensions
+@item device_type
+@end table
+
+The indices and filters must together uniquely select a device.
+
+Examples:
+@table @emph
+@item -init_hw_device opencl:0.1
+Choose the second device on the first platform.
+
+@item -init_hw_device opencl:,device_name=Foo9000
+Choose the device with a name containing the string @emph{Foo9000}.
+
+@item -init_hw_device opencl:1,device_type=gpu,device_extensions=cl_khr_fp16
+Choose the GPU device on the second platform supporting the @emph{cl_khr_fp16}
+extension.
+@end table
+
+@end table
+
+@item -init_hw_device @var{type}[=@var{name}]@@@var{source}
+Initialise a new hardware device of type @var{type} called @var{name},
+deriving it from the existing device with the name @var{source}.
+
+@item -init_hw_device list
+List all hardware device types supported in this build of ffmpeg.
+
+@item -filter_hw_device @var{name}
+Pass the hardware device called @var{name} to all filters in any filter graph.
+This can be used to set the device to upload to with the @code{hwupload} filter,
+or the device to map to with the @code{hwmap} filter.  Other filters may also
+make use of this parameter when they require a hardware device.  Note that this
+is typically only required when the input is not already in hardware frames -
+when it is, filters will derive the device they require from the context of the
+frames they receive as input.
+
+This is a global setting, so all filters will receive the same device.
+
 @item -hwaccel[:@var{stream_specifier}] @var{hwaccel} (@emph{input,per-stream})
 Use hardware acceleration to decode the matching stream(s). The allowed values
 of @var{hwaccel} are:
@@ -725,14 +824,14 @@ Do not use any hardware acceleration (the default).
 @item auto
 Automatically select the hardware acceleration method.
 
-@item vda
-Use Apple VDA hardware acceleration.
-
 @item vdpau
 Use VDPAU (Video Decode and Presentation API for Unix) hardware acceleration.
 
 @item dxva2
 Use DXVA2 (DirectX Video Acceleration) hardware acceleration.
+
+@item vaapi
+Use VAAPI (Video Acceleration API) hardware acceleration.
 
 @item qsv
 Use the Intel QuickSync Video acceleration for video transcoding.
@@ -757,33 +856,11 @@ useful for testing.
 @item -hwaccel_device[:@var{stream_specifier}] @var{hwaccel_device} (@emph{input,per-stream})
 Select a device to use for hardware acceleration.
 
-This option only makes sense when the @option{-hwaccel} option is also
-specified. Its exact meaning depends on the specific hardware acceleration
-method chosen.
-
-@table @option
-@item vdpau
-For VDPAU, this option specifies the X11 display/screen to use. If this option
-is not specified, the value of the @var{DISPLAY} environment variable is used
-
-@item dxva2
-For DXVA2, this option should contain the number of the display adapter to use.
-If this option is not specified, the default adapter is used.
-
-@item qsv
-For QSV, this option corresponds to the values of MFX_IMPL_* . Allowed values
-are:
-@table @option
-@item auto
-@item sw
-@item hw
-@item auto_any
-@item hw_any
-@item hw2
-@item hw3
-@item hw4
-@end table
-@end table
+This option only makes sense when the @option{-hwaccel} option is also specified.
+It can either refer to an existing device created with @option{-init_hw_device}
+by name, or it can create a new device as if
+@samp{-init_hw_device} @var{type}:@var{hwaccel_device}
+were called immediately before.
 
 @item -hwaccels
 List all hardware acceleration methods supported in this build of ffmpeg.
@@ -893,7 +970,7 @@ It disables matching streams from already created mappings.
 A trailing @code{?} after the stream index will allow the map to be
 optional: if the map matches no streams the map will be ignored instead
 of failing. Note the map will still fail if an invalid input file index
-is used; such as if the map refers to a non-existant input.
+is used; such as if the map refers to a non-existent input.
 
 An alternative @var{[linklabel]} form will map outputs from complex filter
 graphs (see the @option{-filter_complex} option) to the output file.
@@ -954,7 +1031,7 @@ such streams is attempted.
 Allow input streams with unknown type to be copied instead of failing if copying
 such streams is attempted.
 
-@item -map_channel [@var{input_file_id}.@var{stream_specifier}.@var{channel_id}|-1][:@var{output_file_id}.@var{stream_specifier}]
+@item -map_channel [@var{input_file_id}.@var{stream_specifier}.@var{channel_id}|-1][?][:@var{output_file_id}.@var{stream_specifier}]
 Map an audio channel from a given input to an output. If
 @var{output_file_id}.@var{stream_specifier} is not set, the audio channel will
 be mapped on all the audio streams.
@@ -962,6 +1039,10 @@ be mapped on all the audio streams.
 Using "-1" instead of
 @var{input_file_id}.@var{stream_specifier}.@var{channel_id} will map a muted
 channel.
+
+A trailing @code{?} will allow the map_channel to be
+optional: if the map_channel matches no channel the map_channel will be ignored instead
+of failing.
 
 For example, assuming @var{INPUT} is a stereo audio file, you can switch the
 two audio channels with the following command:
@@ -1008,6 +1089,13 @@ mono audio streams into one single stereo channel audio stream (and keep the
 video stream), you can use the following command:
 @example
 ffmpeg -i input.mkv -filter_complex "[0:1] [0:2] amerge" -c:a pcm_s16le -c:v copy output.mkv
+@end example
+
+To map the first two audio channels from the first input, and using the
+trailing @code{?}, ignore the audio channel mapping if the first input is
+mono instead of stereo:
+@example
+ffmpeg -i INPUT -map_channel 0.0.0 -map_channel 0.0.1? OUTPUT
 @end example
 
 @item -map_metadata[:@var{metadata_spec_out}] @var{infile}[:@var{metadata_spec_in}] (@emph{output,per-metadata})
@@ -1079,10 +1167,6 @@ loss).
 By default @command{ffmpeg} attempts to read the input(s) as fast as possible.
 This option will slow down the reading of the input(s) to the native frame rate
 of the input(s). It is useful for real-time output (e.g. live streaming).
-@item -loop_input
-Loop over the input stream. Currently it works only for image
-streams. This option is used for automatic FFserver testing.
-This option is deprecated, use -loop 1.
 @item -loop_output @var{number_of_times}
 Repeatedly loop output for formats that support looping such as animated GIF
 (0 will loop the output infinitely).
@@ -1200,6 +1284,8 @@ or as a floating point number (e.g. 0.04166, 2.0833e-5)
 
 Default value is 0.
 
+@item -bitexact (@emph{input/output})
+Enable bitexact mode for (de)muxer and (de/en)coder
 @item -shortest (@emph{output})
 Finish encoding when the shortest input stream ends.
 @item -dts_delta_threshold
@@ -1321,16 +1407,6 @@ This option sets the maximum number of queued packets when reading from the
 file or device. With low latency / high rate live streams, packets may be
 discarded if they are not read in a timely manner; raising this value can
 avoid it.
-
-@item -override_ffserver (@emph{global})
-Overrides the input specifications from @command{ffserver}. Using this
-option you can map any input stream to @command{ffserver} and control
-many aspects of the encoding from @command{ffmpeg}. Without this
-option @command{ffmpeg} will transmit to @command{ffserver} what is
-requested by @command{ffserver}.
-
-The option is intended for cases where features are needed that cannot be
-specified to @command{ffserver} but can be to @command{ffmpeg}.
 
 @item -sdp_file @var{file} (@emph{global})
 Print sdp information for an output stream to @var{file}.
@@ -1686,7 +1762,7 @@ ffmpeg -i src.ext -lmax 21*QP2LAMBDA dst.ext
 @ifset config-not-all
 @url{ffmpeg-all.html,ffmpeg-all},
 @end ifset
-@url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe}, @url{ffserver.html,ffserver},
+@url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe},
 @url{ffmpeg-utils.html,ffmpeg-utils},
 @url{ffmpeg-scaler.html,ffmpeg-scaler},
 @url{ffmpeg-resampler.html,ffmpeg-resampler},
@@ -1705,7 +1781,7 @@ ffmpeg(1),
 @ifset config-not-all
 ffmpeg-all(1),
 @end ifset
-ffplay(1), ffprobe(1), ffserver(1),
+ffplay(1), ffprobe(1),
 ffmpeg-utils(1), ffmpeg-scaler(1), ffmpeg-resampler(1),
 ffmpeg-codecs(1), ffmpeg-bitstream-filters(1), ffmpeg-formats(1),
 ffmpeg-devices(1), ffmpeg-protocols(1), ffmpeg-filters(1)

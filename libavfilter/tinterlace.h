@@ -27,7 +27,10 @@
 #ifndef AVFILTER_TINTERLACE_H
 #define AVFILTER_TINTERLACE_H
 
+#include "libavutil/bswap.h"
 #include "libavutil/opt.h"
+#include "libavutil/pixdesc.h"
+#include "drawutils.h"
 #include "avfilter.h"
 
 #define TINTERLACE_FLAG_VLPF 01
@@ -57,8 +60,11 @@ typedef struct TInterlaceContext {
     AVFrame *next;
     uint8_t *black_data[4];     ///< buffer used to fill padded lines
     int black_linesize[4];
+    FFDrawContext draw;
+    FFDrawColor color;
+    const AVPixFmtDescriptor *csp;
     void (*lowpass_line)(uint8_t *dstp, ptrdiff_t width, const uint8_t *srcp,
-                         ptrdiff_t mref, ptrdiff_t pref);
+                         ptrdiff_t mref, ptrdiff_t pref, int clip_max);
 } TInterlaceContext;
 
 void ff_tinterlace_init_x86(TInterlaceContext *interlace);

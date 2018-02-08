@@ -69,7 +69,7 @@ static const AVOption stereotools_options[] = {
     { "muter",       "mute R",           OFFSET(mute_r),      AV_OPT_TYPE_BOOL,   {.i64=0},   0,          1, A },
     { "phasel",      "phase L",          OFFSET(phase_l),     AV_OPT_TYPE_BOOL,   {.i64=0},   0,          1, A },
     { "phaser",      "phase R",          OFFSET(phase_r),     AV_OPT_TYPE_BOOL,   {.i64=0},   0,          1, A },
-    { "mode",        "set stereo mode",  OFFSET(mode),        AV_OPT_TYPE_INT,    {.i64=0},   0,          6, A, "mode" },
+    { "mode",        "set stereo mode",  OFFSET(mode),        AV_OPT_TYPE_INT,    {.i64=0},   0,          8, A, "mode" },
     {     "lr>lr",   0,                  0,                   AV_OPT_TYPE_CONST,  {.i64=0},   0,          0, A, "mode" },
     {     "lr>ms",   0,                  0,                   AV_OPT_TYPE_CONST,  {.i64=1},   0,          0, A, "mode" },
     {     "ms>lr",   0,                  0,                   AV_OPT_TYPE_CONST,  {.i64=2},   0,          0, A, "mode" },
@@ -77,6 +77,8 @@ static const AVOption stereotools_options[] = {
     {     "lr>rr",   0,                  0,                   AV_OPT_TYPE_CONST,  {.i64=4},   0,          0, A, "mode" },
     {     "lr>l+r",  0,                  0,                   AV_OPT_TYPE_CONST,  {.i64=5},   0,          0, A, "mode" },
     {     "lr>rl",   0,                  0,                   AV_OPT_TYPE_CONST,  {.i64=6},   0,          0, A, "mode" },
+    {     "ms>ll",   0,                  0,                   AV_OPT_TYPE_CONST,  {.i64=7},   0,          0, A, "mode" },
+    {     "ms>rr",   0,                  0,                   AV_OPT_TYPE_CONST,  {.i64=8},   0,          0, A, "mode" },
     { "slev",        "set side level",   OFFSET(slev),        AV_OPT_TYPE_DOUBLE, {.dbl=1},   0.015625,  64, A },
     { "sbal",        "set side balance", OFFSET(sbal),        AV_OPT_TYPE_DOUBLE, {.dbl=0},  -1,          1, A },
     { "mlev",        "set middle level", OFFSET(mlev),        AV_OPT_TYPE_DOUBLE, {.dbl=1},   0.015625,  64, A },
@@ -164,7 +166,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     if (av_frame_is_writable(in)) {
         out = in;
     } else {
-        out = ff_get_audio_buffer(inlink, in->nb_samples);
+        out = ff_get_audio_buffer(outlink, in->nb_samples);
         if (!out) {
             av_frame_free(&in);
             return AVERROR(ENOMEM);
@@ -245,6 +247,16 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             l = m * mlev * FFMIN(1., 2. - mpan) + S * slev * FFMIN(1., 2. - sbal);
             r = m * mlev * FFMIN(1., mpan)      - S * slev * FFMIN(1., sbal);
             L = l;
+            R = r;
+            break;
+        case 7:
+            l = L * mlev * FFMIN(1., 2. - mpan) + R * slev * FFMIN(1., 2. - sbal);
+            L = l;
+            R = l;
+            break;
+        case 8:
+            r = L * mlev * FFMIN(1., mpan)      - R * slev * FFMIN(1., sbal);
+            L = r;
             R = r;
             break;
         }

@@ -95,7 +95,7 @@ static int swf_probe(AVProbeData *p)
     if (p->buf[3] >= 20 || xmax < 16 || ymax < 16)
         return AVPROBE_SCORE_MAX / 4;
 
-    return AVPROBE_SCORE_MAX;
+    return AVPROBE_SCORE_EXTENSION + 1;
 }
 
 #if CONFIG_ZLIB
@@ -531,7 +531,7 @@ static av_cold int swf_read_close(AVFormatContext *avctx)
     inflateEnd(&s->zstream);
     av_freep(&s->zbuf_in);
     av_freep(&s->zbuf_out);
-    av_freep(&s->zpb);
+    avio_context_free(&s->zpb);
     return 0;
 }
 #endif

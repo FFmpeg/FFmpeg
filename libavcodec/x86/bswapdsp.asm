@@ -35,14 +35,18 @@ SECTION .text
     mov      r3d, r2d
     sar      r2d, 3
     jz       .left4_%1
+%if cpuflag(avx2)
+    sar      r2d, 1
+    jz       .left8_%1
+%endif
 .loop8_%1:
     mov%1    m0, [r1 +  0]
-    mov%1    m1, [r1 + 16]
-%if cpuflag(ssse3)
+    mov%1    m1, [r1 + mmsize]
+%if cpuflag(ssse3)||cpuflag(avx2)
     pshufb   m0, m2
     pshufb   m1, m2
     mov%1    [r0 +  0], m0
-    mov%1    [r0 + 16], m1
+    mov%1    [r0 + mmsize], m1
 %else
     pshuflw  m0, m0, 10110001b
     pshuflw  m1, m1, 10110001b
@@ -59,18 +63,29 @@ SECTION .text
     mov%1    [r0 +  0], m2
     mov%1    [r0 + 16], m3
 %endif
-    add      r0, 32
-    add      r1, 32
+    add      r0, mmsize*2
+    add      r1, mmsize*2
     dec      r2d
     jnz      .loop8_%1
+%if cpuflag(avx2)
+.left8_%1:
+    mov      r2d, r3d
+    test     r3d, 8
+    jz       .left4_%1
+    mov%1    m0, [r1]
+    pshufb   m0, m2
+    mov%1    [r0 +  0], m0
+    add r1, mmsize
+    add r0, mmsize
+%endif
 .left4_%1:
     mov      r2d, r3d
     test     r3d, 4
     jz       .left
-    mov%1    m0, [r1]
+    mov%1    xm0, [r1]
 %if cpuflag(ssse3)
-    pshufb   m0, m2
-    mov%1    [r0], m0
+    pshufb   xm0, xm2
+    mov%1    [r0], xm0
 %else
     pshuflw  m0, m0, 10110001b
     pshufhw  m0, m0, 10110001b
@@ -86,16 +101,16 @@ SECTION .text
 
 ; void ff_bswap_buf(uint32_t *dst, const uint32_t *src, int w);
 %macro BSWAP32_BUF 0
-%if cpuflag(ssse3)
+%if cpuflag(ssse3)||cpuflag(avx2)
 cglobal bswap32_buf, 3,4,3
     mov      r3, r1
-    mova     m2, [pb_bswap32]
+    VBROADCASTI128  m2, [pb_bswap32]
 %else
 cglobal bswap32_buf, 3,4,5
     mov      r3, r1
 %endif
     or       r3, r0
-    test     r3, 15
+    test     r3, mmsize - 1
     jz       .start_align
     BSWAP_LOOPS  u
     jmp      .left
@@ -105,9 +120,9 @@ cglobal bswap32_buf, 3,4,5
 %if cpuflag(ssse3)
     test     r2d, 2
     jz       .left1
-    movq     m0, [r1]
-    pshufb   m0, m2
-    movq     [r0], m0
+    movq     xm0, [r1]
+    pshufb   xm0, xm2
+    movq     [r0], xm0
     add      r1, 8
     add      r0, 8
 .left1:
@@ -137,3 +152,8 @@ BSWAP32_BUF
 
 INIT_XMM ssse3
 BSWAP32_BUF
+
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+BSWAP32_BUF
+%endif

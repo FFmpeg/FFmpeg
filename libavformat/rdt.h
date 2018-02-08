@@ -60,11 +60,6 @@ void ff_rdt_calc_response_and_checksum(char response[41], char chksum[9],
                                        const char *challenge);
 
 /**
- * Register RDT-related dynamic payload handlers with our cache.
- */
-void ff_register_rdt_dynamic_payload_handlers(void);
-
-/**
  * Add subscription information to Subscribe parameter string.
  *
  * @param cmd string to write the subscription information into.

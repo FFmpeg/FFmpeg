@@ -104,7 +104,7 @@ The argument must be one of @code{algorithms}, @code{antialiases},
 The following command shows the @command{ffmpeg} output is an
 CACA window, forcing its size to 80x25:
 @example
-ffmpeg -i INPUT -vcodec rawvideo -pix_fmt rgb24 -window_size 80x25 -f caca -
+ffmpeg -i INPUT -c:v rawvideo -pix_fmt rgb24 -window_size 80x25 -f caca -
 @end example
 
 @item
@@ -182,6 +182,51 @@ ffmpeg -i test.avi -f decklink -pix_fmt uyvy422 -s 720x486 -r 24000/1001 'DeckLi
 
 @end itemize
 
+@section libndi_newtek
+
+The libndi_newtek output device provides playback capabilities for using NDI (Network
+Device Interface, standard created by NewTek).
+
+Output filename is a NDI name.
+
+To enable this output device, you need the NDI SDK and you
+need to configure with the appropriate @code{--extra-cflags}
+and @code{--extra-ldflags}.
+
+NDI uses uyvy422 pixel format natively, but also supports bgra, bgr0, rgba and
+rgb0.
+
+@subsection Options
+
+@table @option
+
+@item reference_level
+The audio reference level in dB. This specifies how many dB above the
+reference level (+4dBU) is the full range of 16 bit audio.
+Defaults to @option{0}.
+
+@item clock_video
+These specify whether video "clock" themselves.
+Defaults to @option{false}.
+
+@item clock_audio
+These specify whether audio "clock" themselves.
+Defaults to @option{false}.
+
+@end table
+
+@subsection Examples
+
+@itemize
+
+@item
+Play video clip:
+@example
+ffmpeg -i "udp://@@239.1.1.1:10480?fifo_size=1000000&overrun_nonfatal=1" -vf "scale=720:576,fps=fps=25,setdar=dar=16/9,format=pix_fmts=uyvy422" -f libndi_newtek NEW_NDI1
+@end example
+
+@end itemize
+
 @section fbdev
 
 Linux framebuffer output device.
@@ -206,7 +251,7 @@ Set x/y coordinate of top left corner. Default is 0.
 Play a file on framebuffer device @file{/dev/fb0}.
 Required pixel format depends on current framebuffer settings.
 @example
-ffmpeg -re -i INPUT -vcodec rawvideo -pix_fmt bgra -f fbdev /dev/fb0
+ffmpeg -re -i INPUT -c:v rawvideo -pix_fmt bgra -f fbdev /dev/fb0
 @end example
 
 See also @url{http://linux-fbdev.sourceforge.net/}, and fbset(1).
@@ -368,7 +413,7 @@ Quit the device immediately.
 The following command shows the @command{ffmpeg} output is an
 SDL window, forcing its size to the qcif format:
 @example
-ffmpeg -i INPUT -vcodec rawvideo -pix_fmt yuv420p -window_size qcif -f sdl "SDL output"
+ffmpeg -i INPUT -c:v rawvideo -pix_fmt yuv420p -window_size qcif -f sdl "SDL output"
 @end example
 
 @section sndio

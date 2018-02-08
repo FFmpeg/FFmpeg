@@ -1,4 +1,4 @@
 1365742985b6315f6796c765aa17f39e *tests/data/fate/vsynth1-vc2-420p10.mov
 1417047 tests/data/fate/vsynth1-vc2-420p10.mov
-d3deedfa461a2696f82910890412fa2d *tests/data/fate/vsynth1-vc2-420p10.out.rawvideo
-stddev:    0.60 PSNR: 52.47 MAXDIFF:    1 bytes:  7603200/   760320
+387696707c79cf1a6c9aeff4024226b9 *tests/data/fate/vsynth1-vc2-420p10.out.rawvideo
+stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  7603200/   760320

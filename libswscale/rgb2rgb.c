@@ -391,3 +391,41 @@ void rgb64to48_ ## need_bswap(const uint8_t *src,                       \
 
 DEFINE_RGB64TO48(nobswap, 0)
 DEFINE_RGB64TO48(bswap, 1)
+
+#define DEFINE_RGB48TOBGR64(need_bswap, swap)                           \
+void rgb48tobgr64_ ## need_bswap(const uint8_t *src,                    \
+                                 uint8_t *dst, int src_size)            \
+{                                                                       \
+    uint16_t *d = (uint16_t *)dst;                                      \
+    uint16_t *s = (uint16_t *)src;                                      \
+    int i, num_pixels = src_size / 6;                                   \
+                                                                        \
+    for (i = 0; i < num_pixels; i++) {                                  \
+        d[4 * i    ] = swap ? av_bswap16(s[3 * i + 2]) : s[3 * i + 2];  \
+        d[4 * i + 1] = swap ? av_bswap16(s[3 * i + 1]) : s[3 * i + 1];  \
+        d[4 * i + 2] = swap ? av_bswap16(s[3 * i    ]) : s[3 * i    ];  \
+        d[4 * i + 3] = 0xFFFF;                                          \
+    }                                                                   \
+}
+
+DEFINE_RGB48TOBGR64(nobswap, 0)
+DEFINE_RGB48TOBGR64(bswap, 1)
+
+#define DEFINE_RGB48TO64(need_bswap, swap)                              \
+void rgb48to64_ ## need_bswap(const uint8_t *src,                       \
+                              uint8_t *dst, int src_size)               \
+{                                                                       \
+    uint16_t *d = (uint16_t *)dst;                                      \
+    uint16_t *s = (uint16_t *)src;                                      \
+    int i, num_pixels = src_size / 6;                                   \
+                                                                        \
+    for (i = 0; i < num_pixels; i++) {                                  \
+        d[4 * i    ] = swap ? av_bswap16(s[3 * i    ]) : s[3 * i    ];  \
+        d[4 * i + 1] = swap ? av_bswap16(s[3 * i + 1]) : s[3 * i + 1];  \
+        d[4 * i + 2] = swap ? av_bswap16(s[3 * i + 2]) : s[3 * i + 2];  \
+        d[4 * i + 3] = 0xFFFF;                                          \
+    }                                                                   \
+}
+
+DEFINE_RGB48TO64(nobswap, 0)
+DEFINE_RGB48TO64(bswap, 1)

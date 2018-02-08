@@ -9,7 +9,7 @@ FATE_LAVF-$(call ENCDEC,  BMP,                   IMAGE2)             += bmp
 FATE_LAVF-$(call ENCDEC,  PCM_S16BE,             CAF)                += caf
 FATE_LAVF-$(call ENCDEC,  DPX,                   IMAGE2)             += dpx
 FATE_LAVF-$(call ENCDEC2, DVVIDEO,    PCM_S16LE, AVI)                += dv_fmt
-FATE_LAVF-$(call ENCDEC2, MPEG1VIDEO, MP2,       FFM)                += ffm
+FATE_LAVF-$(call ENCDEC,  FITS,                  FITS)               += fits
 FATE_LAVF-$(call ENCDEC,  RAWVIDEO,              FILMSTRIP)          += flm
 FATE_LAVF-$(call ENCDEC,  FLV,                   FLV)                += flv_fmt
 FATE_LAVF-$(call ENCDEC,  GIF,                   IMAGE2)             += gif
@@ -24,6 +24,8 @@ FATE_LAVF-$(call ENCDEC2, MPEG1VIDEO, MP2,       MPEG1SYSTEM MPEGPS) += mpg
 FATE_LAVF-$(call ENCDEC,  PCM_MULAW,             PCM_MULAW)          += mulaw
 FATE_LAVF-$(call ENCDEC2, MPEG2VIDEO, PCM_S16LE, MXF)                += mxf
 FATE_LAVF-$(call ENCDEC2, MPEG2VIDEO, PCM_S16LE, MXF_D10 MXF)        += mxf_d10
+FATE_LAVF-$(call ENCDEC2, DVVIDEO,    PCM_S16LE, MXF)                += mxf_dv25
+FATE_LAVF-$(call ENCDEC2, DVVIDEO,    PCM_S16LE, MXF)                += mxf_dvcpro50
 FATE_LAVF-$(call ENCDEC2, DNXHD,      PCM_S16LE, MXF_OPATOM MXF)     += mxf_opatom
 FATE_LAVF-$(call ENCDEC2, DNXHD,      PCM_S16LE, MXF_OPATOM MXF)     += mxf_opatom_audio
 FATE_LAVF-$(call ENCDEC2, MPEG4,      MP2,       NUT)                += nut
@@ -93,14 +95,14 @@ tests/data/mp4-to-ts.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 tests/data/adts-to-mkv.m3u8: TAG = GEN
 tests/data/adts-to-mkv.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
-        -i $(TARGET_SAMPLES)/audiomatch/tones_afconvert_16000_mono_aac_lc.adts \
+        -i $(TARGET_SAMPLES)/audiomatch/tones_afconvert_16000_mono_aac_lc.m4a \
         -f segment -segment_time 1 -map 0 -flags +bitexact -codec copy -segment_format_options live=1 \
         -segment_list $(TARGET_PATH)/$@ -y $(TARGET_PATH)/tests/data/adts-to-mkv-%03d.mkv 2>/dev/null
 
 tests/data/adts-to-mkv-header.mkv: TAG = GEN
 tests/data/adts-to-mkv-header.mkv: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
-        -i $(TARGET_SAMPLES)/audiomatch/tones_afconvert_16000_mono_aac_lc.adts \
+        -i $(TARGET_SAMPLES)/audiomatch/tones_afconvert_16000_mono_aac_lc.m4a \
         -f segment -segment_time 1 -map 0 -flags +bitexact -codec copy -segment_format_options live=1 \
         -segment_header_filename $(TARGET_PATH)/tests/data/adts-to-mkv-header.mkv \
         -y $(TARGET_PATH)/tests/data/adts-to-mkv-header-%03d.mkv 2>/dev/null

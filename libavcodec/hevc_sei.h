@@ -23,8 +23,6 @@
 
 #include <stdint.h>
 
-#include "libavutil/md5.h"
-
 #include "get_bits.h"
 
 /**
@@ -56,10 +54,10 @@ typedef enum {
     HEVC_SEI_TYPE_REGION_REFRESH_INFO                  = 134,
     HEVC_SEI_TYPE_MASTERING_DISPLAY_INFO               = 137,
     HEVC_SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO             = 144,
+    HEVC_SEI_TYPE_ALTERNATIVE_TRANSFER_CHARACTERISTICS = 147,
 } HEVC_SEI_Type;
 
 typedef struct HEVCSEIPictureHash {
-    struct AVMD5 *md5_ctx;
     uint8_t       md5[3][16];
     uint8_t is_md5;
 } HEVCSEIPictureHash;
@@ -69,6 +67,7 @@ typedef struct HEVCSEIFramePacking {
     int arrangement_type;
     int content_interpretation_type;
     int quincunx_subsampling;
+    int current_frame_is_frame0_flag;
 } HEVCSEIFramePacking;
 
 typedef struct HEVCSEIDisplayOrientation {
@@ -100,7 +99,12 @@ typedef struct HEVCSEIContentLight {
     uint16_t max_pic_average_light_level;
 } HEVCSEIContentLight;
 
-typedef struct HEVCSEIContext {
+typedef struct HEVCSEIAlternativeTransfer {
+    int present;
+    int preferred_transfer_characteristics;
+} HEVCSEIAlternativeTransfer;
+
+typedef struct HEVCSEI {
     HEVCSEIPictureHash picture_hash;
     HEVCSEIFramePacking frame_packing;
     HEVCSEIDisplayOrientation display_orientation;
@@ -109,11 +113,12 @@ typedef struct HEVCSEIContext {
     HEVCSEIMasteringDisplay mastering_display;
     HEVCSEIContentLight content_light;
     int active_seq_parameter_set_id;
-} HEVCSEIContext;
+    HEVCSEIAlternativeTransfer alternative_transfer;
+} HEVCSEI;
 
 struct HEVCParamSets;
 
-int ff_hevc_decode_nal_sei(GetBitContext *gb, void *logctx, HEVCSEIContext *s,
+int ff_hevc_decode_nal_sei(GetBitContext *gb, void *logctx, HEVCSEI *s,
                            const struct HEVCParamSets *ps, int type);
 
 /**
@@ -123,6 +128,6 @@ int ff_hevc_decode_nal_sei(GetBitContext *gb, void *logctx, HEVCSEIContext *s,
  *
  * @param s HEVCContext.
  */
-void ff_hevc_reset_sei(HEVCSEIContext *s);
+void ff_hevc_reset_sei(HEVCSEI *s);
 
 #endif /* AVCODEC_HEVC_SEI_H */

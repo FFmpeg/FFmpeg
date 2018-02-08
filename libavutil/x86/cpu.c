@@ -28,7 +28,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/cpu_internal.h"
 
-#if HAVE_YASM
+#if HAVE_X86ASM
 
 #define cpuid(index, eax, ebx, ecx, edx)        \
     ff_cpu_cpuid(index, &eax, &ebx, &ecx, &edx)
@@ -66,7 +66,7 @@
 
 #define cpuid_test() 1
 
-#elif HAVE_YASM
+#elif HAVE_X86ASM
 
 #define cpuid_test ff_cpu_cpuid_test
 
@@ -97,6 +97,7 @@ int ff_get_cpu_flags_x86(void)
     int max_std_level, max_ext_level, std_caps = 0, ext_caps = 0;
     int family = 0, model = 0;
     union { int i[3]; char c[12]; } vendor;
+    int xcr0_lo = 0, xcr0_hi = 0;
 
     if (!cpuid_test())
         return 0; /* CPUID not supported */
@@ -132,8 +133,8 @@ int ff_get_cpu_flags_x86(void)
         /* Check OXSAVE and AVX bits */
         if ((ecx & 0x18000000) == 0x18000000) {
             /* Check for OS support */
-            xgetbv(0, eax, edx);
-            if ((eax & 0x6) == 0x6) {
+            xgetbv(0, xcr0_lo, xcr0_hi);
+            if ((xcr0_lo & 0x6) == 0x6) {
                 rval |= AV_CPU_FLAG_AVX;
                 if (ecx & 0x00001000)
                     rval |= AV_CPU_FLAG_FMA3;
@@ -147,6 +148,13 @@ int ff_get_cpu_flags_x86(void)
 #if HAVE_AVX2
         if ((rval & AV_CPU_FLAG_AVX) && (ebx & 0x00000020))
             rval |= AV_CPU_FLAG_AVX2;
+#if HAVE_AVX512 /* F, CD, BW, DQ, VL */
+        if ((xcr0_lo & 0xe0) == 0xe0) { /* OPMASK/ZMM state */
+            if ((rval & AV_CPU_FLAG_AVX2) && (ebx & 0xd0030000) == 0xd0030000)
+                rval |= AV_CPU_FLAG_AVX512;
+
+        }
+#endif /* HAVE_AVX512 */
 #endif /* HAVE_AVX2 */
         /* BMI1/2 don't need OS support */
         if (ebx & 0x00000008) {
@@ -232,4 +240,33 @@ int ff_get_cpu_flags_x86(void)
 #endif /* cpuid */
 
     return rval;
+}
+
+size_t ff_get_cpu_max_align_x86(void)
+{
+    int flags = av_get_cpu_flags();
+
+    if (flags & AV_CPU_FLAG_AVX512)
+        return 64;
+    if (flags & (AV_CPU_FLAG_AVX2      |
+                 AV_CPU_FLAG_AVX       |
+                 AV_CPU_FLAG_XOP       |
+                 AV_CPU_FLAG_FMA4      |
+                 AV_CPU_FLAG_FMA3      |
+                 AV_CPU_FLAG_AVXSLOW))
+        return 32;
+    if (flags & (AV_CPU_FLAG_AESNI     |
+                 AV_CPU_FLAG_SSE42     |
+                 AV_CPU_FLAG_SSE4      |
+                 AV_CPU_FLAG_SSSE3     |
+                 AV_CPU_FLAG_SSE3      |
+                 AV_CPU_FLAG_SSE2      |
+                 AV_CPU_FLAG_SSE       |
+                 AV_CPU_FLAG_ATOM      |
+                 AV_CPU_FLAG_SSSE3SLOW |
+                 AV_CPU_FLAG_SSE3SLOW  |
+                 AV_CPU_FLAG_SSE2SLOW))
+        return 16;
+
+    return 8;
 }

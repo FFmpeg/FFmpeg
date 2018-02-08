@@ -161,10 +161,6 @@ typedef struct H264Picture {
     int recovered;          ///< picture at IDR or recovery point + recovery count
     int invalid_gap;
     int sei_recovery_frame_cnt;
-
-    int crop;
-    int crop_left;
-    int crop_top;
 } H264Picture;
 
 typedef struct H264Ref {
@@ -369,6 +365,7 @@ typedef struct H264Context {
     int context_initialized;
     int flags;
     int workaround_bugs;
+    int x264_build;
     /* Set when slice threading is used and at least one slice uses deblocking
      * mode 1 (i.e. across slice boundaries). Then we disable the loop filter
      * during normal MB decoding and execute it serially at the end.
@@ -379,6 +376,11 @@ typedef struct H264Context {
      * Set to 1 when the current picture is IDR, 0 otherwise.
      */
     int picture_idr;
+
+    int crop_left;
+    int crop_right;
+    int crop_top;
+    int crop_bottom;
 
     int8_t(*intra4x4_pred_mode);
     H264PredContext hpc;
@@ -415,6 +417,7 @@ typedef struct H264Context {
     uint8_t (*mvd_table[2])[2];
     uint8_t *direct_table;
 
+    uint8_t scan_padding[16];
     uint8_t zigzag_scan[16];
     uint8_t zigzag_scan8x8[64];
     uint8_t zigzag_scan8x8_cavlc[64];
@@ -533,6 +536,11 @@ typedef struct H264Context {
     int cur_chroma_format_idc;
     int cur_bit_depth_luma;
     int16_t slice_row[MAX_SLICES]; ///< to detect when MAX_SLICES is too low
+
+    /* original AVCodecContext dimensions, used to handle container
+     * cropping */
+    int width_from_caller;
+    int height_from_caller;
 
     int enable_er;
 

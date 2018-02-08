@@ -62,7 +62,7 @@ SCALARPRODUCT
 ; %1 = number of xmm registers used
 ; %2 = number of inline load/process/store loops per asm loop
 ; %3 = process 4*mmsize (%3=0) or 8*mmsize (%3=1) bytes per loop
-; %4 = CLIPD function takes min/max as float instead of int (CLIPD_SSE2)
+; %4 = CLIPD function takes min/max as float instead of int (SSE2 version)
 ; %5 = suffix
 %macro VECTOR_CLIP_INT32 4-5
 cglobal vector_clip_int32%5, 5,5,%1, dst, src, min, max, len
@@ -118,14 +118,11 @@ cglobal vector_clip_int32%5, 5,5,%1, dst, src, min, max, len
 %endmacro
 
 INIT_MMX mmx
-%define CLIPD CLIPD_MMX
 VECTOR_CLIP_INT32 0, 1, 0, 0
 INIT_XMM sse2
 VECTOR_CLIP_INT32 6, 1, 0, 0, _int
-%define CLIPD CLIPD_SSE2
 VECTOR_CLIP_INT32 6, 2, 0, 1
 INIT_XMM sse4
-%define CLIPD CLIPD_SSE41
 %ifdef m8
 VECTOR_CLIP_INT32 11, 1, 1, 0
 %else

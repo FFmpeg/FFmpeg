@@ -43,7 +43,7 @@ int ff_raw_read_partial_packet(AVFormatContext *s, AVPacket *pkt)
 
     pkt->pos= avio_tell(s->pb);
     pkt->stream_index = 0;
-    ret = ffio_read_partial(s->pb, pkt->data, size);
+    ret = avio_read_partial(s->pb, pkt->data, size);
     if (ret < 0) {
         av_packet_unref(pkt);
         return ret;
@@ -130,7 +130,7 @@ static int mjpeg_probe(AVProbeData *p)
     int nb_invalid = 0;
     int nb_frames = 0;
 
-    for (i=0; i<p->buf_size-2; i++) {
+    for (i = 0; i < p->buf_size - 1; i++) {
         int c;
         if (p->buf[i] != 0xFF)
             continue;

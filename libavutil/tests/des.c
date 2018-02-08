@@ -16,6 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/timer.h"
+
 #include "libavutil/des.c"
 
 #include <stdint.h>
@@ -34,7 +36,7 @@ static uint64_t rand64(void)
 
 static const uint8_t test_key[] = { 0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0 };
 static const DECLARE_ALIGNED(8, uint8_t, plain)[] = { 0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10 };
-static const DECLARE_ALIGNED(8, uint8_t, crypt)[] = { 0x4a, 0xb6, 0x5b, 0x3d, 0x4b, 0x06, 0x15, 0x18 };
+static const DECLARE_ALIGNED(8, uint8_t, crypt_ref)[] = { 0x4a, 0xb6, 0x5b, 0x3d, 0x4b, 0x06, 0x15, 0x18 };
 static DECLARE_ALIGNED(8, uint8_t, tmp)[8];
 static DECLARE_ALIGNED(8, uint8_t, large_buffer)[10002][8];
 static const uint8_t cbc_key[] = {
@@ -82,13 +84,13 @@ int main(void)
     key[0].word = AV_RB64(test_key);
     data.word   = AV_RB64(plain);
     gen_roundkeys(roundkeys, key[0].word);
-    if (des_encdec(data.word, roundkeys, 0) != AV_RB64(crypt)) {
+    if (des_encdec(data.word, roundkeys, 0) != AV_RB64(crypt_ref)) {
         printf("Test 1 failed\n");
         return 1;
     }
     av_des_init(&d, test_key, 64, 0);
     av_des_crypt(&d, tmp, plain, 1, NULL, 0);
-    if (memcmp(tmp, crypt, sizeof(crypt))) {
+    if (memcmp(tmp, crypt_ref, sizeof(crypt_ref))) {
         printf("Public API decryption failed\n");
         return 1;
     }

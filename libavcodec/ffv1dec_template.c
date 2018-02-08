@@ -20,7 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-static av_always_inline void RENAME(decode_line)(FFV1Context *s, int w,
+static av_always_inline int RENAME(decode_line)(FFV1Context *s, int w,
                                                  TYPE *sample[2],
                                                  int plane_index, int bits)
 {
@@ -30,6 +30,9 @@ static av_always_inline void RENAME(decode_line)(FFV1Context *s, int w,
     int run_count = 0;
     int run_mode  = 0;
     int run_index = s->run_index;
+
+    if (is_input_end(s))
+        return AVERROR_INVALIDDATA;
 
     if (s->slice_coding_mode == 1) {
         int i;
@@ -41,7 +44,7 @@ static av_always_inline void RENAME(decode_line)(FFV1Context *s, int w,
             }
             sample[1][x] = v;
         }
-        return;
+        return 0;
     }
 
     for (x = 0; x < w; x++) {
@@ -96,20 +99,22 @@ static av_always_inline void RENAME(decode_line)(FFV1Context *s, int w,
         }
 
         if (sign)
-            diff = -diff;
+            diff = -(unsigned)diff;
 
         sample[1][x] = av_mod_uintp2(RENAME(predict)(sample[1] + x, sample[0] + x) + (SUINT)diff, bits);
     }
     s->run_index = run_index;
+    return 0;
 }
 
-static void RENAME(decode_rgb_frame)(FFV1Context *s, uint8_t *src[3], int w, int h, int stride[3])
+static void RENAME(decode_rgb_frame)(FFV1Context *s, uint8_t *src[4], int w, int h, int stride[4])
 {
     int x, y, p;
     TYPE *sample[4][2];
     int lbd    = s->avctx->bits_per_raw_sample <= 8;
     int bits   = s->avctx->bits_per_raw_sample > 0 ? s->avctx->bits_per_raw_sample : 8;
     int offset = 1 << bits;
+    int transparency = s->transparency;
 
     for (x = 0; x < 4; x++) {
         sample[x][0] = RENAME(s->sample_buffer) +  x * 2      * (w + 6) + 3;
@@ -121,7 +126,7 @@ static void RENAME(decode_rgb_frame)(FFV1Context *s, uint8_t *src[3], int w, int
     memset(RENAME(s->sample_buffer), 0, 8 * (w + 6) * sizeof(*RENAME(s->sample_buffer)));
 
     for (y = 0; y < h; y++) {
-        for (p = 0; p < 3 + s->transparency; p++) {
+        for (p = 0; p < 3 + transparency; p++) {
             TYPE *temp = sample[p][0]; // FIXME: try a normal buffer
 
             sample[p][0] = sample[p][1];
@@ -149,15 +154,19 @@ static void RENAME(decode_rgb_frame)(FFV1Context *s, uint8_t *src[3], int w, int
             }
 
             if (lbd)
-                *((uint32_t*)(src[0] + x*4 + stride[0]*y)) = b + (g<<8) + (r<<16) + (a<<24);
+                *((uint32_t*)(src[0] + x*4 + stride[0]*y)) = b + ((unsigned)g<<8) + ((unsigned)r<<16) + ((unsigned)a<<24);
             else if (sizeof(TYPE) == 4) {
                 *((uint16_t*)(src[0] + x*2 + stride[0]*y)) = g;
                 *((uint16_t*)(src[1] + x*2 + stride[1]*y)) = b;
                 *((uint16_t*)(src[2] + x*2 + stride[2]*y)) = r;
+                if (transparency)
+                    *((uint16_t*)(src[3] + x*2 + stride[3]*y)) = a;
             } else {
                 *((uint16_t*)(src[0] + x*2 + stride[0]*y)) = b;
                 *((uint16_t*)(src[1] + x*2 + stride[1]*y)) = g;
                 *((uint16_t*)(src[2] + x*2 + stride[2]*y)) = r;
+                if (transparency)
+                    *((uint16_t*)(src[3] + x*2 + stride[3]*y)) = a;
             }
         }
     }

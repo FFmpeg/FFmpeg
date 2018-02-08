@@ -172,7 +172,7 @@ static int vaapi_mpeg2_decode_slice(AVCodecContext *avctx, const uint8_t *buffer
     return 0;
 }
 
-AVHWAccel ff_mpeg2_vaapi_hwaccel = {
+const AVHWAccel ff_mpeg2_vaapi_hwaccel = {
     .name                 = "mpeg2_vaapi",
     .type                 = AVMEDIA_TYPE_VIDEO,
     .id                   = AV_CODEC_ID_MPEG2VIDEO,
@@ -183,6 +183,7 @@ AVHWAccel ff_mpeg2_vaapi_hwaccel = {
     .frame_priv_data_size = sizeof(VAAPIDecodePicture),
     .init                 = &ff_vaapi_decode_init,
     .uninit               = &ff_vaapi_decode_uninit,
+    .frame_params         = &ff_vaapi_common_frame_params,
     .priv_data_size       = sizeof(VAAPIDecodeContext),
     .caps_internal        = HWACCEL_CAP_ASYNC_SAFE,
 };

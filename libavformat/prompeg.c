@@ -432,7 +432,7 @@ static int prompeg_write(URLContext *h, const uint8_t *buf, int size) {
 
     // FEC (column) send block-aligned
     if (!s->first && s->packet_idx % s->d == 0) {
-        col_out_idx = s->packet_idx / s->l;
+        col_out_idx = s->packet_idx / s->d;
         if ((ret = prompeg_write_fec(h, s->fec_col[col_out_idx], PROMPEG_FEC_COL)) < 0)
             goto end;
         written += ret;

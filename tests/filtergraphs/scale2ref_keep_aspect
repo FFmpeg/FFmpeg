@@ -1,0 +1,5 @@
+sws_flags=+accurate_rnd+bitexact;
+testsrc=size=320x240 [main];
+testsrc=size=640x360 [ref];
+[main][ref] scale2ref=iw/4:ow/mdar [main][ref];
+[ref] nullsink

@@ -341,7 +341,7 @@ function \type\()_8tap_\size\()h_\idx1\idx2
         subs            x9,  x9,  #16
         st1             {v1.16b},  [x0], #16
         st1             {v24.16b}, [x6], #16
-        beq             3f
+        b.eq            3f
         mov             v4.16b,  v6.16b
         mov             v16.16b, v18.16b
         ld1             {v6.16b},  [x2], #16
@@ -388,10 +388,10 @@ function ff_vp9_\type\()_\filter\()\size\()_h_neon, export=1
         add             x9,  x6,  w5, uxtw #4
         mov             x5,  #\size
 .if \size >= 16
-        bge             \type\()_8tap_16h_34
+        b.ge            \type\()_8tap_16h_34
         b               \type\()_8tap_16h_43
 .else
-        bge             \type\()_8tap_\size\()h_34
+        b.ge            \type\()_8tap_\size\()h_34
         b               \type\()_8tap_\size\()h_43
 .endif
 endfunc

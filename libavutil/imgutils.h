@@ -172,7 +172,11 @@ int av_image_fill_arrays(uint8_t *dst_data[4], int dst_linesize[4],
  * Return the size in bytes of the amount of data required to store an
  * image with the given parameters.
  *
- * @param[in] align the assumed linesize alignment
+ * @param pix_fmt  the pixel format of the image
+ * @param width    the width of the image in pixels
+ * @param height   the height of the image in pixels
+ * @param align    the assumed linesize alignment
+ * @return the buffer size in bytes, a negative error code in case of failure
  */
 int av_image_get_buffer_size(enum AVPixelFormat pix_fmt, int width, int height, int align);
 
@@ -237,6 +241,33 @@ int av_image_check_size2(unsigned int w, unsigned int h, int64_t max_pixels, enu
  * @return 0 if valid, a negative AVERROR code otherwise
  */
 int av_image_check_sar(unsigned int w, unsigned int h, AVRational sar);
+
+/**
+ * Overwrite the image data with black. This is suitable for filling a
+ * sub-rectangle of an image, meaning the padding between the right most pixel
+ * and the left most pixel on the next line will not be overwritten. For some
+ * formats, the image size might be rounded up due to inherent alignment.
+ *
+ * If the pixel format has alpha, the alpha is cleared to opaque.
+ *
+ * This can return an error if the pixel format is not supported. Normally, all
+ * non-hwaccel pixel formats should be supported.
+ *
+ * Passing NULL for dst_data is allowed. Then the function returns whether the
+ * operation would have succeeded. (It can return an error if the pix_fmt is
+ * not supported.)
+ *
+ * @param dst_data      data pointers to destination image
+ * @param dst_linesize  linesizes for the destination image
+ * @param pix_fmt       the pixel format of the image
+ * @param range         the color range of the image (important for colorspaces such as YUV)
+ * @param width         the width of the image in pixels
+ * @param height        the height of the image in pixels
+ * @return 0 if the image data was cleared, a negative AVERROR code otherwise
+ */
+int av_image_fill_black(uint8_t *dst_data[4], const ptrdiff_t dst_linesize[4],
+                        enum AVPixelFormat pix_fmt, enum AVColorRange range,
+                        int width, int height);
 
 /**
  * @}

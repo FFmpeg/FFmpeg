@@ -34,6 +34,7 @@
 #include "internal.h"
 #include "img2.h"
 #include "libavcodec/mjpeg.h"
+#include "subtitles.h"
 
 #if HAVE_GLOB
 /* Locally define as 0 (bitwise-OR no-op) any missing glob options that
@@ -197,7 +198,7 @@ int ff_img_read_header(AVFormatContext *s1)
         return AVERROR(EINVAL);
     }
 
-    av_strlcpy(s->path, s1->filename, sizeof(s->path));
+    av_strlcpy(s->path, s1->url, sizeof(s->path));
     s->img_number = 0;
     s->img_count  = 0;
 
@@ -337,7 +338,7 @@ int ff_img_read_header(AVFormatContext *s1)
 
             pd.buf = probe_buffer;
             pd.buf_size = probe_buffer_size;
-            pd.filename = s1->filename;
+            pd.filename = s1->url;
 
             while ((fmt = av_iformat_next(fmt))) {
                 if (fmt->read_header != ff_img_read_header ||
@@ -875,8 +876,17 @@ static int sunrast_probe(AVProbeData *p)
 
 static int svg_probe(AVProbeData *p)
 {
-    if (av_match_ext(p->filename, "svg") || av_match_ext(p->filename, "svgz"))
-        return AVPROBE_SCORE_EXTENSION + 1;
+    const uint8_t *b = p->buf;
+    const uint8_t *end = p->buf + p->buf_size;
+    if (memcmp(p->buf, "<?xml", 5))
+        return 0;
+    while (b < end) {
+        b += ff_subtitles_next_line(b);
+        if (b >= end - 4)
+            return 0;
+        if (!memcmp(b, "<svg", 4))
+            return AVPROBE_SCORE_EXTENSION + 1;
+    }
     return 0;
 }
 

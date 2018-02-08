@@ -70,7 +70,6 @@ static av_cold int vpx_init(AVCodecContext *avctx,
 static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img,
                        int has_alpha_channel)
 {
-#if VPX_IMAGE_ABI_VERSION >= 3
     static const enum AVColorSpace colorspaces[8] = {
         AVCOL_SPC_UNSPECIFIED, AVCOL_SPC_BT470BG, AVCOL_SPC_BT709, AVCOL_SPC_SMPTE170M,
         AVCOL_SPC_SMPTE240M, AVCOL_SPC_BT2020_NCL, AVCOL_SPC_RESERVED, AVCOL_SPC_RGB,
@@ -82,7 +81,6 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img,
     avctx->color_range = color_ranges[img->range];
 #endif
     avctx->colorspace = colorspaces[img->cs];
-#endif
     if (avctx->codec_id == AV_CODEC_ID_VP8 && img->fmt != VPX_IMG_FMT_I420)
         return AVERROR_INVALIDDATA;
     switch (img->fmt) {
@@ -97,22 +95,15 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img,
         avctx->profile = FF_PROFILE_VP9_1;
         avctx->pix_fmt = AV_PIX_FMT_YUV422P;
         return 0;
-#if VPX_IMAGE_ABI_VERSION >= 3
     case VPX_IMG_FMT_I440:
         avctx->profile = FF_PROFILE_VP9_1;
         avctx->pix_fmt = AV_PIX_FMT_YUV440P;
         return 0;
-#endif
     case VPX_IMG_FMT_I444:
         avctx->profile = FF_PROFILE_VP9_1;
-#if VPX_IMAGE_ABI_VERSION >= 3
         avctx->pix_fmt = avctx->colorspace == AVCOL_SPC_RGB ?
                          AV_PIX_FMT_GBRP : AV_PIX_FMT_YUV444P;
-#else
-        avctx->pix_fmt = AV_PIX_FMT_YUV444P;
-#endif
         return 0;
-#ifdef VPX_IMG_FMT_HIGHBITDEPTH
     case VPX_IMG_FMT_I42016:
         avctx->profile = FF_PROFILE_VP9_2;
         if (img->bit_depth == 10) {
@@ -135,7 +126,6 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img,
         } else {
             return AVERROR_INVALIDDATA;
         }
-#if VPX_IMAGE_ABI_VERSION >= 3
     case VPX_IMG_FMT_I44016:
         avctx->profile = FF_PROFILE_VP9_3;
         if (img->bit_depth == 10) {
@@ -147,29 +137,19 @@ static int set_pix_fmt(AVCodecContext *avctx, struct vpx_image *img,
         } else {
             return AVERROR_INVALIDDATA;
         }
-#endif
     case VPX_IMG_FMT_I44416:
         avctx->profile = FF_PROFILE_VP9_3;
         if (img->bit_depth == 10) {
-#if VPX_IMAGE_ABI_VERSION >= 3
             avctx->pix_fmt = avctx->colorspace == AVCOL_SPC_RGB ?
                              AV_PIX_FMT_GBRP10 : AV_PIX_FMT_YUV444P10;
-#else
-            avctx->pix_fmt = AV_PIX_FMT_YUV444P10;
-#endif
             return 0;
         } else if (img->bit_depth == 12) {
-#if VPX_IMAGE_ABI_VERSION >= 3
             avctx->pix_fmt = avctx->colorspace == AVCOL_SPC_RGB ?
                              AV_PIX_FMT_GBRP12 : AV_PIX_FMT_YUV444P12;
-#else
-            avctx->pix_fmt = AV_PIX_FMT_YUV444P12;
-#endif
             return 0;
         } else {
             return AVERROR_INVALIDDATA;
         }
-#endif
 #endif
     default:
         return AVERROR_INVALIDDATA;
@@ -244,14 +224,16 @@ static int vpx_decode(AVCodecContext *avctx,
          (img_alpha = vpx_codec_get_frame(&ctx->decoder_alpha, &iter_alpha)))) {
         uint8_t *planes[4];
         int linesizes[4];
+
+        if (img->d_w > img->w || img->d_h > img->h) {
+            av_log(avctx, AV_LOG_ERROR, "Display dimensions %dx%d exceed storage %dx%d\n",
+                   img->d_w, img->d_h, img->w, img->h);
+            return AVERROR_EXTERNAL;
+        }
+
         if ((ret = set_pix_fmt(avctx, img, ctx->has_alpha_channel)) < 0) {
-#ifdef VPX_IMG_FMT_HIGHBITDEPTH
             av_log(avctx, AV_LOG_ERROR, "Unsupported output colorspace (%d) / bit_depth (%d)\n",
                    img->fmt, img->bit_depth);
-#else
-            av_log(avctx, AV_LOG_ERROR, "Unsupported output colorspace (%d) / bit_depth (%d)\n",
-                   img->fmt, 8);
-#endif
             return ret;
         }
 
@@ -307,6 +289,7 @@ AVCodec ff_libvpx_vp8_decoder = {
     .close          = vpx_free,
     .decode         = vpx_decode,
     .capabilities   = AV_CODEC_CAP_AUTO_THREADS | AV_CODEC_CAP_DR1,
+    .wrapper_name   = "libvpx",
 };
 #endif /* CONFIG_LIBVPX_VP8_DECODER */
 
@@ -328,5 +311,6 @@ AVCodec ff_libvpx_vp9_decoder = {
     .capabilities   = AV_CODEC_CAP_AUTO_THREADS | AV_CODEC_CAP_DR1,
     .init_static_data = ff_vp9_init_static,
     .profiles       = NULL_IF_CONFIG_SMALL(ff_vp9_profiles),
+    .wrapper_name   = "libvpx",
 };
 #endif /* CONFIG_LIBVPX_VP9_DECODER */

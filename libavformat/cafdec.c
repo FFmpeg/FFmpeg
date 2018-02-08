@@ -166,6 +166,14 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
             }
             avio_skip(pb, size - ALAC_NEW_KUKI);
         }
+    } else if (st->codecpar->codec_id == AV_CODEC_ID_OPUS) {
+        // The data layout for Opus is currently unknown, so we do not export
+        // extradata at all. Multichannel streams are not supported.
+        if (st->codecpar->channels > 2) {
+            avpriv_request_sample(s, "multichannel Opus in CAF");
+            return AVERROR_PATCHWELCOME;
+        }
+        avio_skip(pb, size);
     } else {
         av_freep(&st->codecpar->extradata);
         if (ff_get_extradata(s, st->codecpar, pb, size) < 0)

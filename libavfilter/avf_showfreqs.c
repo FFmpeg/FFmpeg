@@ -218,7 +218,7 @@ static int config_output(AVFilterLink *outlink)
                                       sizeof(*s->window_func_lut));
     if (!s->window_func_lut)
         return AVERROR(ENOMEM);
-    ff_generate_window_func(s->window_func_lut, s->win_size, s->win_func, &overlap);
+    generate_window_func(s->window_func_lut, s->win_size, s->win_func, &overlap);
     if (s->overlap == 1.)
         s->overlap = overlap;
     s->hop_size = (1. - s->overlap) * s->win_size;
@@ -434,6 +434,7 @@ static int plot_freqs(AVFilterLink *inlink, AVFrame *in)
 
     av_free(colors);
     out->pts = in->pts;
+    out->sample_aspect_ratio = (AVRational){1,1};
     return ff_filter_frame(outlink, out);
 }
 

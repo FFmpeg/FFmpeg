@@ -415,21 +415,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
         s->intra_only = 0;
     }
 
-#if FF_API_MOTION_EST
-FF_DISABLE_DEPRECATION_WARNINGS
-    s->me_method = avctx->me_method;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     /* Fixed QSCALE */
     s->fixed_qscale = !!(avctx->flags & AV_CODEC_FLAG_QSCALE);
-
-#if FF_API_MPV_OPT
-    FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->border_masking != 0.0)
-        s->border_masking = avctx->border_masking;
-    FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     s->adaptive_quant = (s->avctx->lumi_masking ||
                          s->avctx->dark_masking ||
@@ -506,7 +493,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         avctx->bit_rate * av_q2d(avctx->time_base) >
             avctx->bit_rate_tolerance) {
         av_log(avctx, AV_LOG_WARNING,
-               "bitrate tolerance %d too small for bitrate %"PRId64", overriding\n", avctx->bit_rate_tolerance, (int64_t)avctx->bit_rate);
+               "bitrate tolerance %d too small for bitrate %"PRId64", overriding\n", avctx->bit_rate_tolerance, avctx->bit_rate);
         avctx->bit_rate_tolerance = 5 * avctx->bit_rate * av_q2d(avctx->time_base);
     }
 
@@ -671,9 +658,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
     if (s->avctx->flags & AV_CODEC_FLAG_LOW_DELAY) {
-        if (s->codec_id != AV_CODEC_ID_MPEG2VIDEO) {
+        if (s->codec_id != AV_CODEC_ID_MPEG2VIDEO &&
+            s->strict_std_compliance >= FF_COMPLIANCE_NORMAL) {
             av_log(avctx, AV_LOG_ERROR,
-                  "low delay forcing is only available for mpeg2\n");
+                   "low delay forcing is only available for mpeg2, "
+                   "set strict_std_compliance to 'unofficial' or lower in order to allow it\n");
             return -1;
         }
         if (s->max_b_frames != 0) {
@@ -757,15 +746,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         av_log(avctx, AV_LOG_ERROR, "qmin and or qmax are invalid, they must be 0 < min <= max\n");
         return AVERROR(EINVAL);
     }
-
-#if FF_API_QUANT_BIAS
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->intra_quant_bias != FF_DEFAULT_QUANT_BIAS)
-        s->intra_quant_bias = avctx->intra_quant_bias;
-    if (avctx->inter_quant_bias != FF_DEFAULT_QUANT_BIAS)
-        s->inter_quant_bias = avctx->inter_quant_bias;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     av_log(avctx, AV_LOG_DEBUG, "intra_quant_bias = %d inter_quant_bias = %d\n",s->intra_quant_bias,s->inter_quant_bias);
 
@@ -1041,19 +1021,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
                           31, 0);
     }
 
-#if FF_API_RC_STRATEGY
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (!s->rc_strategy)
-        s->rc_strategy = s->avctx->rc_strategy;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     if (ff_rate_control_init(s) < 0)
         return -1;
-
-#if FF_API_RC_STRATEGY
-    av_assert0(MPV_RC_STRATEGY_XVID == FF_RC_STRATEGY_XVID);
-#endif
 
     if ((s->avctx->flags & AV_CODEC_FLAG_PASS2) && s->rc_strategy == MPV_RC_STRATEGY_XVID) {
 #if CONFIG_LIBXVID
@@ -1066,53 +1035,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (ret < 0)
             return ret;
     }
-
-#if FF_API_ERROR_RATE
-    FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->error_rate)
-        s->error_rate = avctx->error_rate;
-    FF_ENABLE_DEPRECATION_WARNINGS;
-#endif
-
-#if FF_API_NORMALIZE_AQP
-    FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->flags & CODEC_FLAG_NORMALIZE_AQP)
-        s->mpv_flags |= FF_MPV_FLAG_NAQ;
-    FF_ENABLE_DEPRECATION_WARNINGS;
-#endif
-
-#if FF_API_MV0
-    FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->flags & CODEC_FLAG_MV0)
-        s->mpv_flags |= FF_MPV_FLAG_MV0;
-    FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
-#if FF_API_MPV_OPT
-    FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->rc_qsquish != 0.0)
-        s->rc_qsquish = avctx->rc_qsquish;
-    if (avctx->rc_qmod_amp != 0.0)
-        s->rc_qmod_amp = avctx->rc_qmod_amp;
-    if (avctx->rc_qmod_freq)
-        s->rc_qmod_freq = avctx->rc_qmod_freq;
-    if (avctx->rc_buffer_aggressivity != 1.0)
-        s->rc_buffer_aggressivity = avctx->rc_buffer_aggressivity;
-    if (avctx->rc_initial_cplx != 0.0)
-        s->rc_initial_cplx = avctx->rc_initial_cplx;
-    if (avctx->lmin)
-        s->lmin = avctx->lmin;
-    if (avctx->lmax)
-        s->lmax = avctx->lmax;
-
-    if (avctx->rc_eq) {
-        av_freep(&s->rc_eq);
-        s->rc_eq = av_strdup(avctx->rc_eq);
-        if (!s->rc_eq)
-            return AVERROR(ENOMEM);
-    }
-    FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
 #if FF_API_PRIVATE_OPT
     FF_DISABLE_DEPRECATION_WARNINGS
@@ -2772,7 +2694,7 @@ static inline void encode_mb_hq(MpegEncContext *s, MpegEncContext *backup, MpegE
     }
 
     if(s->avctx->mb_decision == FF_MB_DECISION_RD){
-        ff_mpv_decode_mb(s, s->block);
+        ff_mpv_reconstruct_mb(s, s->block);
 
         score *= s->lambda2;
         score += sse_mb(s) << FF_LAMBDA_SHIFT;
@@ -2791,7 +2713,7 @@ static inline void encode_mb_hq(MpegEncContext *s, MpegEncContext *backup, MpegE
 }
 
 static int sse(MpegEncContext *s, uint8_t *src1, uint8_t *src2, int w, int h, int stride){
-    uint32_t *sq = ff_square_tab + 256;
+    const uint32_t *sq = ff_square_tab + 256;
     int acc=0;
     int x,y;
 
@@ -3477,7 +3399,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 }
 
                 if(s->avctx->mb_decision == FF_MB_DECISION_BITS)
-                    ff_mpv_decode_mb(s, s->block);
+                    ff_mpv_reconstruct_mb(s, s->block);
             } else {
                 int motion_x = 0, motion_y = 0;
                 s->mv_type=MV_TYPE_16X16;
@@ -3596,7 +3518,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                     s->out_format == FMT_H263 && s->pict_type!=AV_PICTURE_TYPE_B)
                     ff_h263_update_motion_val(s);
 
-                ff_mpv_decode_mb(s, s->block);
+                ff_mpv_reconstruct_mb(s, s->block);
             }
 
             /* clean the MV table in IPS frames for direct mode in B-frames */
@@ -4054,8 +3976,8 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
                                   int qscale, int *overflow){
     const int *qmat;
     const uint16_t *matrix;
-    const uint8_t *scantable= s->intra_scantable.scantable;
-    const uint8_t *perm_scantable= s->intra_scantable.permutated;
+    const uint8_t *scantable;
+    const uint8_t *perm_scantable;
     int max=0;
     unsigned int threshold1, threshold2;
     int bias=0;
@@ -4089,6 +4011,8 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
 
     if (s->mb_intra) {
         int q;
+        scantable= s->intra_scantable.scantable;
+        perm_scantable= s->intra_scantable.permutated;
         if (!s->h263_aic) {
             if (n < 4)
                 q = s->y_dc_scale;
@@ -4118,6 +4042,8 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
             last_length= s->intra_ac_vlc_last_length;
         }
     } else {
+        scantable= s->inter_scantable.scantable;
+        perm_scantable= s->inter_scantable.permutated;
         start_i = 0;
         last_non_zero = -1;
         qmat = s->q_inter_matrix[qscale];
@@ -4385,8 +4311,8 @@ static int dct_quantize_refine(MpegEncContext *s, //FIXME breaks denoise?
                         int n, int qscale){
     int16_t rem[64];
     LOCAL_ALIGNED_16(int16_t, d1, [64]);
-    const uint8_t *scantable= s->intra_scantable.scantable;
-    const uint8_t *perm_scantable= s->intra_scantable.permutated;
+    const uint8_t *scantable;
+    const uint8_t *perm_scantable;
 //    unsigned int threshold1, threshold2;
 //    int bias=0;
     int run_tab[65];
@@ -4413,6 +4339,8 @@ static int messed_sign=0;
     qmul= qscale*2;
     qadd= (qscale-1)|1;
     if (s->mb_intra) {
+        scantable= s->intra_scantable.scantable;
+        perm_scantable= s->intra_scantable.permutated;
         if (!s->h263_aic) {
             if (n < 4)
                 q = s->y_dc_scale;
@@ -4438,6 +4366,8 @@ static int messed_sign=0;
             last_length= s->intra_ac_vlc_last_length;
         }
     } else {
+        scantable= s->inter_scantable.scantable;
+        perm_scantable= s->inter_scantable.permutated;
         dc= 0;
         start_i = 0;
         length     = s->inter_ac_vlc_length;
@@ -4802,7 +4732,7 @@ int ff_dct_quantize_c(MpegEncContext *s,
 {
     int i, j, level, last_non_zero, q, start_i;
     const int *qmat;
-    const uint8_t *scantable= s->intra_scantable.scantable;
+    const uint8_t *scantable;
     int bias;
     int max=0;
     unsigned int threshold1, threshold2;
@@ -4813,6 +4743,7 @@ int ff_dct_quantize_c(MpegEncContext *s,
         s->denoise_dct(s, block);
 
     if (s->mb_intra) {
+        scantable= s->intra_scantable.scantable;
         if (!s->h263_aic) {
             if (n < 4)
                 q = s->y_dc_scale;
@@ -4830,6 +4761,7 @@ int ff_dct_quantize_c(MpegEncContext *s,
         qmat = n < 4 ? s->q_intra_matrix[qscale] : s->q_chroma_intra_matrix[qscale];
         bias= s->intra_quant_bias*(1<<(QMAT_SHIFT - QUANT_BIAS_SHIFT));
     } else {
+        scantable= s->inter_scantable.scantable;
         start_i = 0;
         last_non_zero = -1;
         qmat = s->q_inter_matrix[qscale];

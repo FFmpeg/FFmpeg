@@ -29,15 +29,16 @@
 #include "vp9data.h"
 #include "vp9dec.h"
 
-static av_always_inline int check_intra_mode(VP9Context *s, int mode, uint8_t **a,
+static av_always_inline int check_intra_mode(VP9TileData *td, int mode, uint8_t **a,
                                              uint8_t *dst_edge, ptrdiff_t stride_edge,
                                              uint8_t *dst_inner, ptrdiff_t stride_inner,
                                              uint8_t *l, int col, int x, int w,
                                              int row, int y, enum TxfmMode tx,
                                              int p, int ss_h, int ss_v, int bytesperpixel)
 {
+    VP9Context *s = td->s;
     int have_top = row > 0 || y > 0;
-    int have_left = col > s->tile_col_start || x > 0;
+    int have_left = col > td->tile_col_start || x > 0;
     int have_right = x < w - 1;
     int bpp = s->s.h.bpp;
     static const uint8_t mode_conv[10][2 /* have_left */][2 /* have_top */] = {
@@ -214,19 +215,19 @@ static av_always_inline int check_intra_mode(VP9Context *s, int mode, uint8_t **
     return mode;
 }
 
-static av_always_inline void intra_recon(AVCodecContext *avctx, ptrdiff_t y_off,
+static av_always_inline void intra_recon(VP9TileData *td, ptrdiff_t y_off,
                                          ptrdiff_t uv_off, int bytesperpixel)
 {
-    VP9Context *s = avctx->priv_data;
-    VP9Block *b = s->b;
-    int row = s->row, col = s->col;
+    VP9Context *s = td->s;
+    VP9Block *b = td->b;
+    int row = td->row, col = td->col;
     int w4 = ff_vp9_bwh_tab[1][b->bs][0] << 1, step1d = 1 << b->tx, n;
     int h4 = ff_vp9_bwh_tab[1][b->bs][1] << 1, x, y, step = 1 << (b->tx * 2);
     int end_x = FFMIN(2 * (s->cols - col), w4);
     int end_y = FFMIN(2 * (s->rows - row), h4);
     int tx = 4 * s->s.h.lossless + b->tx, uvtx = b->uvtx + 4 * s->s.h.lossless;
     int uvstep1d = 1 << b->uvtx, p;
-    uint8_t *dst = s->dst[0], *dst_r = s->s.frames[CUR_FRAME].tf.f->data[0] + y_off;
+    uint8_t *dst = td->dst[0], *dst_r = s->s.frames[CUR_FRAME].tf.f->data[0] + y_off;
     LOCAL_ALIGNED_32(uint8_t, a_buf, [96]);
     LOCAL_ALIGNED_32(uint8_t, l, [64]);
 
@@ -238,19 +239,19 @@ static av_always_inline void intra_recon(AVCodecContext *avctx, ptrdiff_t y_off,
                                y * 2 + x : 0];
             uint8_t *a = &a_buf[32];
             enum TxfmType txtp = ff_vp9_intra_txfm_type[mode];
-            int eob = b->skip ? 0 : b->tx > TX_8X8 ? AV_RN16A(&s->eob[n]) : s->eob[n];
+            int eob = b->skip ? 0 : b->tx > TX_8X8 ? AV_RN16A(&td->eob[n]) : td->eob[n];
 
-            mode = check_intra_mode(s, mode, &a, ptr_r,
+            mode = check_intra_mode(td, mode, &a, ptr_r,
                                     s->s.frames[CUR_FRAME].tf.f->linesize[0],
-                                    ptr, s->y_stride, l,
+                                    ptr, td->y_stride, l,
                                     col, x, w4, row, y, b->tx, 0, 0, 0, bytesperpixel);
-            s->dsp.intra_pred[b->tx][mode](ptr, s->y_stride, l, a);
+            s->dsp.intra_pred[b->tx][mode](ptr, td->y_stride, l, a);
             if (eob)
-                s->dsp.itxfm_add[tx][txtp](ptr, s->y_stride,
-                                           s->block + 16 * n * bytesperpixel, eob);
+                s->dsp.itxfm_add[tx][txtp](ptr, td->y_stride,
+                                           td->block + 16 * n * bytesperpixel, eob);
         }
         dst_r += 4 * step1d * s->s.frames[CUR_FRAME].tf.f->linesize[0];
-        dst   += 4 * step1d * s->y_stride;
+        dst   += 4 * step1d * td->y_stride;
     }
 
     // U/V
@@ -259,7 +260,7 @@ static av_always_inline void intra_recon(AVCodecContext *avctx, ptrdiff_t y_off,
     end_y >>= s->ss_v;
     step = 1 << (b->uvtx * 2);
     for (p = 0; p < 2; p++) {
-        dst   = s->dst[1 + p];
+        dst   = td->dst[1 + p];
         dst_r = s->s.frames[CUR_FRAME].tf.f->data[1 + p] + uv_off;
         for (n = 0, y = 0; y < end_y; y += uvstep1d) {
             uint8_t *ptr = dst, *ptr_r = dst_r;
@@ -267,40 +268,41 @@ static av_always_inline void intra_recon(AVCodecContext *avctx, ptrdiff_t y_off,
                                    ptr_r += 4 * uvstep1d * bytesperpixel, n += step) {
                 int mode = b->uvmode;
                 uint8_t *a = &a_buf[32];
-                int eob = b->skip ? 0 : b->uvtx > TX_8X8 ? AV_RN16A(&s->uveob[p][n]) : s->uveob[p][n];
+                int eob = b->skip ? 0 : b->uvtx > TX_8X8 ? AV_RN16A(&td->uveob[p][n]) : td->uveob[p][n];
 
-                mode = check_intra_mode(s, mode, &a, ptr_r,
+                mode = check_intra_mode(td, mode, &a, ptr_r,
                                         s->s.frames[CUR_FRAME].tf.f->linesize[1],
-                                        ptr, s->uv_stride, l, col, x, w4, row, y,
+                                        ptr, td->uv_stride, l, col, x, w4, row, y,
                                         b->uvtx, p + 1, s->ss_h, s->ss_v, bytesperpixel);
-                s->dsp.intra_pred[b->uvtx][mode](ptr, s->uv_stride, l, a);
+                s->dsp.intra_pred[b->uvtx][mode](ptr, td->uv_stride, l, a);
                 if (eob)
-                    s->dsp.itxfm_add[uvtx][DCT_DCT](ptr, s->uv_stride,
-                                                    s->uvblock[p] + 16 * n * bytesperpixel, eob);
+                    s->dsp.itxfm_add[uvtx][DCT_DCT](ptr, td->uv_stride,
+                                                    td->uvblock[p] + 16 * n * bytesperpixel, eob);
             }
             dst_r += 4 * uvstep1d * s->s.frames[CUR_FRAME].tf.f->linesize[1];
-            dst   += 4 * uvstep1d * s->uv_stride;
+            dst   += 4 * uvstep1d * td->uv_stride;
         }
     }
 }
 
-void ff_vp9_intra_recon_8bpp(AVCodecContext *avctx, ptrdiff_t y_off, ptrdiff_t uv_off)
+void ff_vp9_intra_recon_8bpp(VP9TileData *td, ptrdiff_t y_off, ptrdiff_t uv_off)
 {
-    intra_recon(avctx, y_off, uv_off, 1);
+    intra_recon(td, y_off, uv_off, 1);
 }
 
-void ff_vp9_intra_recon_16bpp(AVCodecContext *avctx, ptrdiff_t y_off, ptrdiff_t uv_off)
+void ff_vp9_intra_recon_16bpp(VP9TileData *td, ptrdiff_t y_off, ptrdiff_t uv_off)
 {
-    intra_recon(avctx, y_off, uv_off, 2);
+    intra_recon(td, y_off, uv_off, 2);
 }
 
-static av_always_inline void mc_luma_unscaled(VP9Context *s, vp9_mc_func (*mc)[2],
+static av_always_inline void mc_luma_unscaled(VP9TileData *td, vp9_mc_func (*mc)[2],
                                               uint8_t *dst, ptrdiff_t dst_stride,
                                               const uint8_t *ref, ptrdiff_t ref_stride,
                                               ThreadFrame *ref_frame,
                                               ptrdiff_t y, ptrdiff_t x, const VP56mv *mv,
                                               int bw, int bh, int w, int h, int bytesperpixel)
 {
+    VP9Context *s = td->s;
     int mx = mv->x, my = mv->y, th;
 
     y += my >> 3;
@@ -318,18 +320,18 @@ static av_always_inline void mc_luma_unscaled(VP9Context *s, vp9_mc_func (*mc)[2
     // (!!my * 5) than horizontally (!!mx * 4).
     if (x < !!mx * 3 || y < !!my * 3 ||
         x + !!mx * 4 > w - bw || y + !!my * 5 > h - bh) {
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer,
+        s->vdsp.emulated_edge_mc(td->edge_emu_buffer,
                                  ref - !!my * 3 * ref_stride - !!mx * 3 * bytesperpixel,
                                  160, ref_stride,
                                  bw + !!mx * 7, bh + !!my * 7,
                                  x - !!mx * 3, y - !!my * 3, w, h);
-        ref = s->edge_emu_buffer + !!my * 3 * 160 + !!mx * 3 * bytesperpixel;
+        ref = td->edge_emu_buffer + !!my * 3 * 160 + !!mx * 3 * bytesperpixel;
         ref_stride = 160;
     }
     mc[!!mx][!!my](dst, dst_stride, ref, ref_stride, bh, mx << 1, my << 1);
 }
 
-static av_always_inline void mc_chroma_unscaled(VP9Context *s, vp9_mc_func (*mc)[2],
+static av_always_inline void mc_chroma_unscaled(VP9TileData *td, vp9_mc_func (*mc)[2],
                                                 uint8_t *dst_u, uint8_t *dst_v,
                                                 ptrdiff_t dst_stride,
                                                 const uint8_t *ref_u, ptrdiff_t src_stride_u,
@@ -338,6 +340,7 @@ static av_always_inline void mc_chroma_unscaled(VP9Context *s, vp9_mc_func (*mc)
                                                 ptrdiff_t y, ptrdiff_t x, const VP56mv *mv,
                                                 int bw, int bh, int w, int h, int bytesperpixel)
 {
+    VP9Context *s = td->s;
     int mx = mv->x * (1 << !s->ss_h), my = mv->y * (1 << !s->ss_v), th;
 
     y += my >> 4;
@@ -356,20 +359,20 @@ static av_always_inline void mc_chroma_unscaled(VP9Context *s, vp9_mc_func (*mc)
     // (!!my * 5) than horizontally (!!mx * 4).
     if (x < !!mx * 3 || y < !!my * 3 ||
         x + !!mx * 4 > w - bw || y + !!my * 5 > h - bh) {
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer,
+        s->vdsp.emulated_edge_mc(td->edge_emu_buffer,
                                  ref_u - !!my * 3 * src_stride_u - !!mx * 3 * bytesperpixel,
                                  160, src_stride_u,
                                  bw + !!mx * 7, bh + !!my * 7,
                                  x - !!mx * 3, y - !!my * 3, w, h);
-        ref_u = s->edge_emu_buffer + !!my * 3 * 160 + !!mx * 3 * bytesperpixel;
+        ref_u = td->edge_emu_buffer + !!my * 3 * 160 + !!mx * 3 * bytesperpixel;
         mc[!!mx][!!my](dst_u, dst_stride, ref_u, 160, bh, mx, my);
 
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer,
+        s->vdsp.emulated_edge_mc(td->edge_emu_buffer,
                                  ref_v - !!my * 3 * src_stride_v - !!mx * 3 * bytesperpixel,
                                  160, src_stride_v,
                                  bw + !!mx * 7, bh + !!my * 7,
                                  x - !!mx * 3, y - !!my * 3, w, h);
-        ref_v = s->edge_emu_buffer + !!my * 3 * 160 + !!mx * 3 * bytesperpixel;
+        ref_v = td->edge_emu_buffer + !!my * 3 * 160 + !!mx * 3 * bytesperpixel;
         mc[!!mx][!!my](dst_v, dst_stride, ref_v, 160, bh, mx, my);
     } else {
         mc[!!mx][!!my](dst_u, dst_stride, ref_u, src_stride_u, bh, mx, my);
@@ -377,13 +380,13 @@ static av_always_inline void mc_chroma_unscaled(VP9Context *s, vp9_mc_func (*mc)
     }
 }
 
-#define mc_luma_dir(s, mc, dst, dst_ls, src, src_ls, tref, row, col, mv, \
+#define mc_luma_dir(td, mc, dst, dst_ls, src, src_ls, tref, row, col, mv, \
                     px, py, pw, ph, bw, bh, w, h, i) \
-    mc_luma_unscaled(s, s->dsp.mc, dst, dst_ls, src, src_ls, tref, row, col, \
+    mc_luma_unscaled(td, s->dsp.mc, dst, dst_ls, src, src_ls, tref, row, col, \
                      mv, bw, bh, w, h, bytesperpixel)
-#define mc_chroma_dir(s, mc, dstu, dstv, dst_ls, srcu, srcu_ls, srcv, srcv_ls, tref, \
+#define mc_chroma_dir(td, mc, dstu, dstv, dst_ls, srcu, srcu_ls, srcv, srcv_ls, tref, \
                       row, col, mv, px, py, pw, ph, bw, bh, w, h, i) \
-    mc_chroma_unscaled(s, s->dsp.mc, dstu, dstv, dst_ls, srcu, srcu_ls, srcv, srcv_ls, tref, \
+    mc_chroma_unscaled(td, s->dsp.mc, dstu, dstv, dst_ls, srcu, srcu_ls, srcv, srcv_ls, tref, \
                        row, col, mv, bw, bh, w, h, bytesperpixel)
 #define SCALED 0
 #define FN(x) x##_8bpp
@@ -400,7 +403,7 @@ static av_always_inline void mc_chroma_unscaled(VP9Context *s, vp9_mc_func (*mc)
 #undef BYTES_PER_PIXEL
 #undef SCALED
 
-static av_always_inline void mc_luma_scaled(VP9Context *s, vp9_scaled_mc_func smc,
+static av_always_inline void mc_luma_scaled(VP9TileData *td, vp9_scaled_mc_func smc,
                                             vp9_mc_func (*mc)[2],
                                             uint8_t *dst, ptrdiff_t dst_stride,
                                             const uint8_t *ref, ptrdiff_t ref_stride,
@@ -410,9 +413,10 @@ static av_always_inline void mc_luma_scaled(VP9Context *s, vp9_scaled_mc_func sm
                                             int bw, int bh, int w, int h, int bytesperpixel,
                                             const uint16_t *scale, const uint8_t *step)
 {
+    VP9Context *s = td->s;
     if (s->s.frames[CUR_FRAME].tf.f->width == ref_frame->f->width &&
         s->s.frames[CUR_FRAME].tf.f->height == ref_frame->f->height) {
-        mc_luma_unscaled(s, mc, dst, dst_stride, ref, ref_stride, ref_frame,
+        mc_luma_unscaled(td, mc, dst, dst_stride, ref, ref_stride, ref_frame,
                          y, x, in_mv, bw, bh, w, h, bytesperpixel);
     } else {
 #define scale_mv(n, dim) (((int64_t)(n) * scale[dim]) >> 14)
@@ -445,19 +449,19 @@ static av_always_inline void mc_luma_scaled(VP9Context *s, vp9_scaled_mc_func sm
     // needed, so switch to emulated edge one pixel sooner vertically
     // (y + 5 >= h - refbh_m1) than horizontally (x + 4 >= w - refbw_m1).
     if (x < 3 || y < 3 || x + 4 >= w - refbw_m1 || y + 5 >= h - refbh_m1) {
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer,
+        s->vdsp.emulated_edge_mc(td->edge_emu_buffer,
                                  ref - 3 * ref_stride - 3 * bytesperpixel,
                                  288, ref_stride,
                                  refbw_m1 + 8, refbh_m1 + 8,
                                  x - 3, y - 3, w, h);
-        ref = s->edge_emu_buffer + 3 * 288 + 3 * bytesperpixel;
+        ref = td->edge_emu_buffer + 3 * 288 + 3 * bytesperpixel;
         ref_stride = 288;
     }
     smc(dst, dst_stride, ref, ref_stride, bh, mx, my, step[0], step[1]);
     }
 }
 
-static av_always_inline void mc_chroma_scaled(VP9Context *s, vp9_scaled_mc_func smc,
+static av_always_inline void mc_chroma_scaled(VP9TileData *td, vp9_scaled_mc_func smc,
                                               vp9_mc_func (*mc)[2],
                                               uint8_t *dst_u, uint8_t *dst_v,
                                               ptrdiff_t dst_stride,
@@ -469,9 +473,10 @@ static av_always_inline void mc_chroma_scaled(VP9Context *s, vp9_scaled_mc_func 
                                               int bw, int bh, int w, int h, int bytesperpixel,
                                               const uint16_t *scale, const uint8_t *step)
 {
+    VP9Context *s = td->s;
     if (s->s.frames[CUR_FRAME].tf.f->width == ref_frame->f->width &&
         s->s.frames[CUR_FRAME].tf.f->height == ref_frame->f->height) {
-        mc_chroma_unscaled(s, mc, dst_u, dst_v, dst_stride, ref_u, src_stride_u,
+        mc_chroma_unscaled(td, mc, dst_u, dst_v, dst_stride, ref_u, src_stride_u,
                            ref_v, src_stride_v, ref_frame,
                            y, x, in_mv, bw, bh, w, h, bytesperpixel);
     } else {
@@ -514,20 +519,20 @@ static av_always_inline void mc_chroma_scaled(VP9Context *s, vp9_scaled_mc_func 
     // needed, so switch to emulated edge one pixel sooner vertically
     // (y + 5 >= h - refbh_m1) than horizontally (x + 4 >= w - refbw_m1).
     if (x < 3 || y < 3 || x + 4 >= w - refbw_m1 || y + 5 >= h - refbh_m1) {
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer,
+        s->vdsp.emulated_edge_mc(td->edge_emu_buffer,
                                  ref_u - 3 * src_stride_u - 3 * bytesperpixel,
                                  288, src_stride_u,
                                  refbw_m1 + 8, refbh_m1 + 8,
                                  x - 3, y - 3, w, h);
-        ref_u = s->edge_emu_buffer + 3 * 288 + 3 * bytesperpixel;
+        ref_u = td->edge_emu_buffer + 3 * 288 + 3 * bytesperpixel;
         smc(dst_u, dst_stride, ref_u, 288, bh, mx, my, step[0], step[1]);
 
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer,
+        s->vdsp.emulated_edge_mc(td->edge_emu_buffer,
                                  ref_v - 3 * src_stride_v - 3 * bytesperpixel,
                                  288, src_stride_v,
                                  refbw_m1 + 8, refbh_m1 + 8,
                                  x - 3, y - 3, w, h);
-        ref_v = s->edge_emu_buffer + 3 * 288 + 3 * bytesperpixel;
+        ref_v = td->edge_emu_buffer + 3 * 288 + 3 * bytesperpixel;
         smc(dst_v, dst_stride, ref_v, 288, bh, mx, my, step[0], step[1]);
     } else {
         smc(dst_u, dst_stride, ref_u, src_stride_u, bh, mx, my, step[0], step[1]);
@@ -536,14 +541,14 @@ static av_always_inline void mc_chroma_scaled(VP9Context *s, vp9_scaled_mc_func 
     }
 }
 
-#define mc_luma_dir(s, mc, dst, dst_ls, src, src_ls, tref, row, col, mv, \
+#define mc_luma_dir(td, mc, dst, dst_ls, src, src_ls, tref, row, col, mv, \
                     px, py, pw, ph, bw, bh, w, h, i) \
-    mc_luma_scaled(s, s->dsp.s##mc, s->dsp.mc, dst, dst_ls, src, src_ls, tref, row, col, \
+    mc_luma_scaled(td, s->dsp.s##mc, s->dsp.mc, dst, dst_ls, src, src_ls, tref, row, col, \
                    mv, px, py, pw, ph, bw, bh, w, h, bytesperpixel, \
                    s->mvscale[b->ref[i]], s->mvstep[b->ref[i]])
-#define mc_chroma_dir(s, mc, dstu, dstv, dst_ls, srcu, srcu_ls, srcv, srcv_ls, tref, \
+#define mc_chroma_dir(td, mc, dstu, dstv, dst_ls, srcu, srcu_ls, srcv, srcv_ls, tref, \
                       row, col, mv, px, py, pw, ph, bw, bh, w, h, i) \
-    mc_chroma_scaled(s, s->dsp.s##mc, s->dsp.mc, dstu, dstv, dst_ls, srcu, srcu_ls, srcv, srcv_ls, tref, \
+    mc_chroma_scaled(td, s->dsp.s##mc, s->dsp.mc, dstu, dstv, dst_ls, srcu, srcu_ls, srcv, srcv_ls, tref, \
                      row, col, mv, px, py, pw, ph, bw, bh, w, h, bytesperpixel, \
                      s->mvscale[b->ref[i]], s->mvstep[b->ref[i]])
 #define SCALED 1
@@ -561,23 +566,23 @@ static av_always_inline void mc_chroma_scaled(VP9Context *s, vp9_scaled_mc_func 
 #undef BYTES_PER_PIXEL
 #undef SCALED
 
-static av_always_inline void inter_recon(AVCodecContext *avctx, int bytesperpixel)
+static av_always_inline void inter_recon(VP9TileData *td, int bytesperpixel)
 {
-    VP9Context *s = avctx->priv_data;
-    VP9Block *b = s->b;
-    int row = s->row, col = s->col;
+    VP9Context *s = td->s;
+    VP9Block *b = td->b;
+    int row = td->row, col = td->col;
 
     if (s->mvscale[b->ref[0]][0] || (b->comp && s->mvscale[b->ref[1]][0])) {
         if (bytesperpixel == 1) {
-            inter_pred_scaled_8bpp(avctx);
+            inter_pred_scaled_8bpp(td);
         } else {
-            inter_pred_scaled_16bpp(avctx);
+            inter_pred_scaled_16bpp(td);
         }
     } else {
         if (bytesperpixel == 1) {
-            inter_pred_8bpp(avctx);
+            inter_pred_8bpp(td);
         } else {
-            inter_pred_16bpp(avctx);
+            inter_pred_16bpp(td);
         }
     }
 
@@ -590,20 +595,20 @@ static av_always_inline void inter_recon(AVCodecContext *avctx, int bytesperpixe
         int end_y = FFMIN(2 * (s->rows - row), h4);
         int tx = 4 * s->s.h.lossless + b->tx, uvtx = b->uvtx + 4 * s->s.h.lossless;
         int uvstep1d = 1 << b->uvtx, p;
-        uint8_t *dst = s->dst[0];
+        uint8_t *dst = td->dst[0];
 
         // y itxfm add
         for (n = 0, y = 0; y < end_y; y += step1d) {
             uint8_t *ptr = dst;
             for (x = 0; x < end_x; x += step1d,
                  ptr += 4 * step1d * bytesperpixel, n += step) {
-                int eob = b->tx > TX_8X8 ? AV_RN16A(&s->eob[n]) : s->eob[n];
+                int eob = b->tx > TX_8X8 ? AV_RN16A(&td->eob[n]) : td->eob[n];
 
                 if (eob)
-                    s->dsp.itxfm_add[tx][DCT_DCT](ptr, s->y_stride,
-                                                  s->block + 16 * n * bytesperpixel, eob);
+                    s->dsp.itxfm_add[tx][DCT_DCT](ptr, td->y_stride,
+                                                  td->block + 16 * n * bytesperpixel, eob);
             }
-            dst += 4 * s->y_stride * step1d;
+            dst += 4 * td->y_stride * step1d;
         }
 
         // uv itxfm add
@@ -611,29 +616,29 @@ static av_always_inline void inter_recon(AVCodecContext *avctx, int bytesperpixe
         end_y >>= s->ss_v;
         step = 1 << (b->uvtx * 2);
         for (p = 0; p < 2; p++) {
-            dst = s->dst[p + 1];
+            dst = td->dst[p + 1];
             for (n = 0, y = 0; y < end_y; y += uvstep1d) {
                 uint8_t *ptr = dst;
                 for (x = 0; x < end_x; x += uvstep1d,
                      ptr += 4 * uvstep1d * bytesperpixel, n += step) {
-                    int eob = b->uvtx > TX_8X8 ? AV_RN16A(&s->uveob[p][n]) : s->uveob[p][n];
+                    int eob = b->uvtx > TX_8X8 ? AV_RN16A(&td->uveob[p][n]) : td->uveob[p][n];
 
                     if (eob)
-                        s->dsp.itxfm_add[uvtx][DCT_DCT](ptr, s->uv_stride,
-                                                        s->uvblock[p] + 16 * n * bytesperpixel, eob);
+                        s->dsp.itxfm_add[uvtx][DCT_DCT](ptr, td->uv_stride,
+                                                        td->uvblock[p] + 16 * n * bytesperpixel, eob);
                 }
-                dst += 4 * uvstep1d * s->uv_stride;
+                dst += 4 * uvstep1d * td->uv_stride;
             }
         }
     }
 }
 
-void ff_vp9_inter_recon_8bpp(AVCodecContext *avctx)
+void ff_vp9_inter_recon_8bpp(VP9TileData *td)
 {
-    inter_recon(avctx, 1);
+    inter_recon(td, 1);
 }
 
-void ff_vp9_inter_recon_16bpp(AVCodecContext *avctx)
+void ff_vp9_inter_recon_16bpp(VP9TileData *td)
 {
-    inter_recon(avctx, 2);
+    inter_recon(td, 2);
 }

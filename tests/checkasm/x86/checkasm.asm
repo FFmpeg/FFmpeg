@@ -169,15 +169,15 @@ cglobal checked_call%1, 2,15,16,max_args*8+8
     jz .clobber_ok
     report_fail error_message
 .clobber_ok:
-%ifnid %1, _emms
+%ifidn %1, _emms
+    emms
+%elifnidn %1, _float
     fstenv [rsp]
     cmp  word [rsp + 8], 0xffff
     je   .emms_ok
     report_fail error_message_emms
     emms
 .emms_ok:
-%else
-    emms
 %endif
     RET
 %endmacro
@@ -223,15 +223,15 @@ cglobal checked_call%1, 1,7
     jz .clobber_ok
     report_fail error_message
 .clobber_ok:
-%ifnid %1, _emms
+%ifidn %1, _emms
+    emms
+%elifnidn %1, _float
     fstenv [esp]
     cmp  word [esp + 8], 0xffff
     je   .emms_ok
     report_fail error_message_emms
     emms
 .emms_ok:
-%else
-    emms
 %endif
     add  esp, max_args*4
     REP_RET
@@ -241,3 +241,4 @@ cglobal checked_call%1, 1,7
 
 CHECKED_CALL
 CHECKED_CALL _emms
+CHECKED_CALL _float

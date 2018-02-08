@@ -39,11 +39,9 @@
 #include "common.h"
 #include "internal.h"
 #include "log.h"
+#include "thread.h"
 
-#if HAVE_PTHREADS
-#include <pthread.h>
-static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-#endif
+static AVMutex mutex = AV_MUTEX_INITIALIZER;
 
 #define LINE_SZ 1024
 
@@ -57,7 +55,7 @@ static int av_log_level = AV_LOG_INFO;
 static int flags;
 
 #define NB_LEVELS 8
-#if defined(_WIN32) && !defined(__MINGW32CE__) && HAVE_SETCONSOLETEXTATTRIBUTE
+#if defined(_WIN32) && HAVE_SETCONSOLETEXTATTRIBUTE
 #include <windows.h>
 static const uint8_t color[16 + AV_CLASS_CATEGORY_NB] = {
     [AV_LOG_PANIC  /8] = 12,
@@ -124,7 +122,7 @@ static int use_color = -1;
 
 static void check_color_terminal(void)
 {
-#if defined(_WIN32) && !defined(__MINGW32CE__) && HAVE_SETCONSOLETEXTATTRIBUTE
+#if defined(_WIN32) && HAVE_SETCONSOLETEXTATTRIBUTE
     CONSOLE_SCREEN_BUFFER_INFO con_info;
     con = GetStdHandle(STD_ERROR_HANDLE);
     use_color = (con != INVALID_HANDLE_VALUE) && !getenv("NO_COLOR") &&
@@ -159,7 +157,7 @@ static void colored_fputs(int level, int tint, const char *str)
     if (level == AV_LOG_INFO/8) local_use_color = 0;
     else                        local_use_color = use_color;
 
-#if defined(_WIN32) && !defined(__MINGW32CE__) && HAVE_SETCONSOLETEXTATTRIBUTE
+#if defined(_WIN32) && HAVE_SETCONSOLETEXTATTRIBUTE
     if (local_use_color)
         SetConsoleTextAttribute(con, background | color[level]);
     fputs(str, stderr);
@@ -317,9 +315,7 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
 
     if (level > av_log_level)
         return;
-#if HAVE_PTHREADS
-    pthread_mutex_lock(&mutex);
-#endif
+    ff_mutex_lock(&mutex);
 
     format_line(ptr, level, fmt, vl, part, &print_prefix, type);
     snprintf(line, sizeof(line), "%s%s%s%s", part[0].str, part[1].str, part[2].str, part[3].str);
@@ -356,9 +352,7 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
 #endif
 end:
     av_bprint_finalize(part+3, NULL);
-#if HAVE_PTHREADS
-    pthread_mutex_unlock(&mutex);
-#endif
+    ff_mutex_unlock(&mutex);
 }
 
 static void (*av_log_callback)(void*, int, const char*, va_list) =

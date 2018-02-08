@@ -1,6 +1,7 @@
 /*
  * Blackmagic DeckLink input
  * Copyright (c) 2014 Deti Fliegl
+ * Copyright (c) 2017 Akamai Technologies, Inc.
  *
  * This file is part of FFmpeg.
  *
@@ -33,6 +34,12 @@ static const AVOption options[] = {
     { "list_formats", "list supported formats"  , OFFSET(list_formats), AV_OPT_TYPE_INT   , { .i64 = 0   }, 0, 1, DEC },
     { "format_code",  "set format by fourcc"    , OFFSET(format_code),  AV_OPT_TYPE_STRING, { .str = NULL}, 0, 0, DEC },
     { "bm_v210",      "v210 10 bit per channel" , OFFSET(v210),         AV_OPT_TYPE_INT   , { .i64 = 0   }, 0, 1, DEC },
+    { "raw_format",   "pixel format to be returned by the card when capturing" , OFFSET(raw_format),  AV_OPT_TYPE_INT, { .i64 = MKBETAG('2','v','u','y')}, 0, UINT_MAX, DEC, "raw_format" },
+    { "uyvy422",       NULL,   0,  AV_OPT_TYPE_CONST, { .i64 = MKBETAG('2','v','u','y') }, 0, 0, DEC, "raw_format"},
+    { "yuv422p10",     NULL,   0,  AV_OPT_TYPE_CONST, { .i64 = MKBETAG('v','2','1','0') }, 0, 0, DEC, "raw_format"},
+    { "argb",          NULL,   0,  AV_OPT_TYPE_CONST, { .i64 = 32                       }, 0, 0, DEC, "raw_format"},
+    { "bgra",          NULL,   0,  AV_OPT_TYPE_CONST, { .i64 = MKBETAG('B','G','R','A') }, 0, 0, DEC, "raw_format"},
+    { "rgb10",         NULL,   0,  AV_OPT_TYPE_CONST, { .i64 = MKBETAG('r','2','1','0') }, 0, 0, DEC, "raw_format"},
     { "teletext_lines", "teletext lines bitmask", OFFSET(teletext_lines), AV_OPT_TYPE_INT64, { .i64 = 0   }, 0, 0x7ffffffffLL, DEC, "teletext_lines"},
     { "standard",     NULL,                                           0,  AV_OPT_TYPE_CONST, { .i64 = 0x7fff9fffeLL}, 0, 0,    DEC, "teletext_lines"},
     { "all",          NULL,                                           0,  AV_OPT_TYPE_CONST, { .i64 = 0x7ffffffffLL}, 0, 0,    DEC, "teletext_lines"},
@@ -57,13 +64,17 @@ static const AVOption options[] = {
     { "analog_xlr",    NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = 4}, 0, 0,    DEC, "audio_input"},
     { "analog_rca",    NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = 5}, 0, 0,    DEC, "audio_input"},
     { "microphone",    NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = 6}, 0, 0,    DEC, "audio_input"},
-    { "audio_pts",     "audio pts source",   OFFSET(audio_pts_source),    AV_OPT_TYPE_INT,   { .i64 = PTS_SRC_AUDIO    }, 1, 4, DEC, "pts_source"},
-    { "video_pts",     "video pts source",   OFFSET(video_pts_source),    AV_OPT_TYPE_INT,   { .i64 = PTS_SRC_VIDEO    }, 1, 4, DEC, "pts_source"},
+    { "audio_pts",     "audio pts source",   OFFSET(audio_pts_source),    AV_OPT_TYPE_INT,   { .i64 = PTS_SRC_AUDIO    }, 1, PTS_SRC_NB-1, DEC, "pts_source"},
+    { "video_pts",     "video pts source",   OFFSET(video_pts_source),    AV_OPT_TYPE_INT,   { .i64 = PTS_SRC_VIDEO    }, 1, PTS_SRC_NB-1, DEC, "pts_source"},
     { "audio",         NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = PTS_SRC_AUDIO    }, 0, 0, DEC, "pts_source"},
     { "video",         NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = PTS_SRC_VIDEO    }, 0, 0, DEC, "pts_source"},
     { "reference",     NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = PTS_SRC_REFERENCE}, 0, 0, DEC, "pts_source"},
     { "wallclock",     NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = PTS_SRC_WALLCLOCK}, 0, 0, DEC, "pts_source"},
+    { "abs_wallclock", NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = PTS_SRC_ABS_WALLCLOCK}, 0, 0, DEC, "pts_source"},
     { "draw_bars",     "draw bars on signal loss" , OFFSET(draw_bars),    AV_OPT_TYPE_BOOL,  { .i64 = 1}, 0, 1, DEC },
+    { "queue_size",    "input queue buffer size",   OFFSET(queue_size),   AV_OPT_TYPE_INT64, { .i64 = (1024 * 1024 * 1024)}, 0, INT64_MAX, DEC },
+    { "audio_depth",   "audio bitdepth (16 or 32)", OFFSET(audio_depth),  AV_OPT_TYPE_INT,   { .i64 = 16}, 16, 32, DEC },
+    { "decklink_copyts", "copy timestamps, do not remove the initial offset", OFFSET(copyts), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, DEC },
     { NULL },
 };
 
@@ -81,6 +92,7 @@ AVInputFormat ff_decklink_demuxer = {
     .flags          = AVFMT_NOFILE,
     .priv_class     = &decklink_demuxer_class,
     .priv_data_size = sizeof(struct decklink_cctx),
+    .get_device_list = ff_decklink_list_input_devices,
     .read_header   = ff_decklink_read_header,
     .read_packet   = ff_decklink_read_packet,
     .read_close    = ff_decklink_read_close,

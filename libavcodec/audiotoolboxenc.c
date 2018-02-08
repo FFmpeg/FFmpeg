@@ -48,6 +48,8 @@ typedef struct ATDecodeContext {
     AudioFrameQueue afq;
     int eof;
     int frame_size;
+
+    AVFrame* encoding_frame;
 } ATDecodeContext;
 
 static UInt32 ffat_get_format_id(enum AVCodecID codec, int profile)
@@ -442,6 +444,10 @@ static av_cold int ffat_init_encoder(AVCodecContext *avctx)
 
     ff_af_queue_init(avctx, &at->afq);
 
+    at->encoding_frame = av_frame_alloc();
+    if (!at->encoding_frame)
+        return AVERROR(ENOMEM);
+
     return 0;
 }
 
@@ -453,6 +459,7 @@ static OSStatus ffat_encode_callback(AudioConverterRef converter, UInt32 *nb_pac
     AVCodecContext *avctx = inctx;
     ATDecodeContext *at = avctx->priv_data;
     AVFrame *frame;
+    int ret;
 
     if (!at->frame_queue.available) {
         if (at->eof) {
@@ -474,6 +481,13 @@ static OSStatus ffat_encode_callback(AudioConverterRef converter, UInt32 *nb_pac
     data->mBuffers[0].mData           = frame->data[0];
     if (*nb_packets > frame->nb_samples)
         *nb_packets = frame->nb_samples;
+
+    av_frame_unref(at->encoding_frame);
+    ret = av_frame_ref(at->encoding_frame, frame);
+    if (ret < 0) {
+        *nb_packets = 0;
+        return ret;
+    }
 
     ff_bufqueue_add(avctx, &at->used_frame_queue, frame);
 
@@ -565,6 +579,7 @@ static av_cold int ffat_close_encoder(AVCodecContext *avctx)
     ff_bufqueue_discard_all(&at->frame_queue);
     ff_bufqueue_discard_all(&at->used_frame_queue);
     ff_af_queue_close(&at->afq);
+    av_frame_free(&at->encoding_frame);
     return 0;
 }
 
@@ -619,6 +634,7 @@ static const AVOption options[] = {
         }, \
         .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE, \
         .profiles       = PROFILES, \
+        .wrapper_name   = "at", \
     };
 
 static const uint64_t aac_at_channel_layouts[] = {

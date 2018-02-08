@@ -159,10 +159,10 @@ static void put_signed_rect_clamped_ ## PX ## bit_c(uint8_t *_dst, int dst_strid
     int32_t *src = (int32_t *)_src;                                                                     \
     for (y = 0; y < height; y++) {                                                                      \
         for (x = 0; x < width; x+=4) {                                                                  \
-            dst[x  ] = av_clip_uintp2(src[x  ] + (1 << (PX - 1)), PX);                                  \
-            dst[x+1] = av_clip_uintp2(src[x+1] + (1 << (PX - 1)), PX);                                  \
-            dst[x+2] = av_clip_uintp2(src[x+2] + (1 << (PX - 1)), PX);                                  \
-            dst[x+3] = av_clip_uintp2(src[x+3] + (1 << (PX - 1)), PX);                                  \
+            dst[x  ] = av_clip_uintp2(src[x  ] + (1U << (PX - 1)), PX);                                  \
+            dst[x+1] = av_clip_uintp2(src[x+1] + (1U << (PX - 1)), PX);                                  \
+            dst[x+2] = av_clip_uintp2(src[x+2] + (1U << (PX - 1)), PX);                                  \
+            dst[x+3] = av_clip_uintp2(src[x+3] + (1U << (PX - 1)), PX);                                  \
         }                                                                                               \
         dst += dst_stride >> 1;                                                                         \
         src += src_stride >> 2;                                                                         \
@@ -199,7 +199,7 @@ static void dequant_subband_ ## PX ## _c(uint8_t *src, uint8_t *dst, ptrdiff_t s
         for (i = 0; i < tot_h; i++) {                                                      \
             c = *src_r++;                                                                  \
             sign = FFSIGN(c)*(!!c);                                                        \
-            c = (FFABS(c)*qf + qs) >> 2;                                                   \
+            c = (FFABS(c)*(unsigned)qf + qs) >> 2;                                                   \
             *dst_r++ = c*sign;                                                             \
         }                                                                                  \
         src += tot_h << (sizeof(PX) >> 1);                                                 \

@@ -54,7 +54,7 @@ static int print_tls_error(URLContext *h, int ret)
     TLSContext *c = h->priv_data;
     switch (ret) {
     case errSSLWouldBlock:
-        break;
+        return AVERROR(EAGAIN);
     case errSSLXCertChainInvalid:
         av_log(h, AV_LOG_ERROR, "Invalid certificate chain\n");
         return AVERROR(EIO);
@@ -69,6 +69,9 @@ static int print_tls_error(URLContext *h, int ret)
 
 static int import_pem(URLContext *h, char *path, CFArrayRef *array)
 {
+#if !HAVE_SECITEMIMPORT
+    return AVERROR_PATCHWELCOME;
+#else
     AVIOContext *s = NULL;
     CFDataRef data = NULL;
     int64_t ret = 0;
@@ -124,6 +127,7 @@ end:
     if (s)
         avio_close(s);
     return ret;
+#endif
 }
 
 static int load_ca(URLContext *h)
@@ -193,7 +197,8 @@ static OSStatus tls_read_cb(SSLConnectionRef connection, void *data, size_t *dat
 {
     URLContext *h = (URLContext*)connection;
     TLSContext *c = h->priv_data;
-    int read = ffurl_read_complete(c->tls_shared.tcp, data, *dataLength);
+    size_t requested = *dataLength;
+    int read = ffurl_read(c->tls_shared.tcp, data, requested);
     if (read <= 0) {
         *dataLength = 0;
         switch(AVUNERROR(read)) {
@@ -210,7 +215,10 @@ static OSStatus tls_read_cb(SSLConnectionRef connection, void *data, size_t *dat
         }
     } else {
         *dataLength = read;
-        return noErr;
+        if (read < requested)
+            return errSSLWouldBlock;
+        else
+            return noErr;
     }
 }
 
@@ -322,12 +330,13 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
             if (peerTrust)
                 CFRelease(peerTrust);
         }
-        if (status == noErr)
+        if (status == noErr) {
             break;
-
-        av_log(h, AV_LOG_ERROR, "Unable to negotiate TLS/SSL session: %i\n", (int)status);
-        ret = AVERROR(EIO);
-        goto fail;
+        } else if (status != errSSLWouldBlock) {
+            av_log(h, AV_LOG_ERROR, "Unable to negotiate TLS/SSL session: %i\n", (int)status);
+            ret = AVERROR(EIO);
+            goto fail;
+        }
     }
 
     return 0;
@@ -344,6 +353,9 @@ static int map_ssl_error(OSStatus status, size_t processed)
     case errSSLClosedGraceful:
     case errSSLClosedNoNotify:
         return 0;
+    case errSSLWouldBlock:
+        if (processed > 0)
+            return processed;
     default:
         return (int)status;
     }
@@ -352,8 +364,12 @@ static int map_ssl_error(OSStatus status, size_t processed)
 static int tls_read(URLContext *h, uint8_t *buf, int size)
 {
     TLSContext *c = h->priv_data;
-    size_t processed = 0;
-    int ret = SSLRead(c->ssl_context, buf, size, &processed);
+    size_t available = 0, processed = 0;
+    int ret;
+    SSLGetBufferedReadSize(c->ssl_context, &available);
+    if (available)
+        size = FFMIN(available, size);
+    ret = SSLRead(c->ssl_context, buf, size, &processed);
     ret = map_ssl_error(ret, processed);
     if (ret > 0)
         return ret;
@@ -393,7 +409,7 @@ static const AVClass tls_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const URLProtocol ff_tls_securetransport_protocol = {
+const URLProtocol ff_tls_protocol = {
     .name           = "tls",
     .url_open2      = tls_open,
     .url_read       = tls_read,

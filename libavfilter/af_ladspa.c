@@ -318,8 +318,6 @@ static int config_output(AVFilterLink *outlink)
 
         ret = 0;
     } else {
-        LADSPAContext *s = ctx->priv;
-
         outlink->sample_rate = s->sample_rate;
         outlink->time_base   = (AVRational){1, s->sample_rate};
 

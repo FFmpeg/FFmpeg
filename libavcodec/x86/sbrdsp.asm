@@ -38,7 +38,7 @@ SECTION .text
 
 INIT_XMM sse
 cglobal sbr_sum_square, 2, 3, 6
-    mov         r2, r1
+    mov        r2d, r1d
     xorps       m0, m0
     xorps       m1, m1
     sar         r2, 3
@@ -149,19 +149,19 @@ cglobal sbr_hf_gen, 4,4,8, X_high, X_low, alpha0, alpha1, BW, S, E
     ; start and end 6th and 7th args on stack
     mov        r2d, Sm
     mov        r3d, Em
-%define  start r2q
-%define  end   r3q
+    DEFINE_ARGS X_high, X_low, start, end
 %else
 ; BW does not actually occupy a register, so shift by 1
-%define  start BWq
-%define  end   Sq
+    DEFINE_ARGS X_high, X_low, alpha0, alpha1, start, end
+    movsxd  startq, startd
+    movsxd    endq, endd
 %endif
-    sub      start, end          ; neg num of loops
-    lea    X_highq, [X_highq + end*2*4]
-    lea     X_lowq, [X_lowq  + end*2*4 - 2*2*4]
-    shl      start, 3            ; offset from num loops
+    sub     startq, endq         ; neg num of loops
+    lea    X_highq, [X_highq + endq*2*4]
+    lea     X_lowq, [X_lowq  + endq*2*4 - 2*2*4]
+    shl     startq, 3            ; offset from num loops
 
-    mova        m0, [X_lowq + start]
+    mova        m0, [X_lowq + startq]
     shufps      m3, m3, q1111
     shufps      m4, m4, q1111
     xorps       m3, [ps_mask]
@@ -169,7 +169,7 @@ cglobal sbr_hf_gen, 4,4,8, X_high, X_low, alpha0, alpha1, BW, S, E
     shufps      m2, m2, q0000
     xorps       m4, [ps_mask]
 .loop2:
-    movu        m7, [X_lowq + start + 8]        ; BbCc
+    movu        m7, [X_lowq + startq + 8]       ; BbCc
     mova        m6, m0
     mova        m5, m7
     shufps      m0, m0, q2301                   ; aAbB
@@ -179,12 +179,12 @@ cglobal sbr_hf_gen, 4,4,8, X_high, X_low, alpha0, alpha1, BW, S, E
     mulps       m6, m2
     mulps       m5, m1
     addps       m7, m0
-    mova        m0, [X_lowq + start +16]        ; CcDd
+    mova        m0, [X_lowq + startq + 16]      ; CcDd
     addps       m7, m0
     addps       m6, m5
     addps       m7, m6
-    mova  [X_highq + start], m7
-    add     start, 16
+    mova  [X_highq + startq], m7
+    add     startq, 16
     jnz         .loop2
     RET
 
@@ -378,24 +378,24 @@ cglobal sbr_hf_apply_noise_3, 5,5+NREGS+UNIX64,8, Y,s_m,q_filt,noise,kx,m_max
 apply_noise_main:
 %if ARCH_X86_64 == 0 || WIN64
     mov       kxd, m_maxm
-%define count kxq
+    DEFINE_ARGS Y, s_m, q_filt, noise, count
 %else
-%define count m_maxq
+    DEFINE_ARGS Y, s_m, q_filt, noise, kx, count
 %endif
     movsxdifnidn    noiseq, noised
     dec    noiseq
-    shl    count, 2
+    shl    countd, 2
 %ifdef PIC
     lea NOISE_TABLE, [sbr_noise_table]
 %endif
-    lea        Yq, [Yq + 2*count]
-    add      s_mq, count
-    add   q_filtq, count
+    lea        Yq, [Yq + 2*countq]
+    add      s_mq, countq
+    add   q_filtq, countq
     shl    noiseq, 3
     pxor       m5, m5
-    neg    count
+    neg    countq
 .loop:
-    mova       m1, [q_filtq + count]
+    mova       m1, [q_filtq + countq]
     movu       m3, [noiseq + NOISE_TABLE + 1*mmsize]
     movu       m4, [noiseq + NOISE_TABLE + 2*mmsize]
     add    noiseq, 2*mmsize
@@ -404,7 +404,7 @@ apply_noise_main:
     punpckldq  m1, m1
     mulps      m1, m3 ; m2 = q_filt[m] * ff_sbr_noise_table[noise]
     mulps      m2, m4 ; m2 = q_filt[m] * ff_sbr_noise_table[noise]
-    mova       m3, [s_mq + count]
+    mova       m3, [s_mq + countq]
     ; TODO: replace by a vpermd in AVX2
     punpckhdq  m4, m3, m3
     punpckldq  m3, m3
@@ -414,15 +414,15 @@ apply_noise_main:
     mulps      m4, m0 ; s_m[m] * phi_sign
     pand       m1, m6
     pand       m2, m7
-    movu       m6, [Yq + 2*count]
-    movu       m7, [Yq + 2*count + mmsize]
+    movu       m6, [Yq + 2*countq]
+    movu       m7, [Yq + 2*countq + mmsize]
     addps      m3, m1
     addps      m4, m2
     addps      m6, m3
     addps      m7, m4
-    movu    [Yq + 2*count], m6
-    movu    [Yq + 2*count + mmsize], m7
-    add    count, mmsize
+    movu    [Yq + 2*countq], m6
+    movu    [Yq + 2*countq + mmsize], m7
+    add    countq, mmsize
     jl      .loop
     RET
 

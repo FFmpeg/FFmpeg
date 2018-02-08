@@ -119,7 +119,7 @@ uint64_t ff_truehd_layout(int chanmap)
     return layout;
 }
 
-static int ff_mlp_get_major_sync_size(const uint8_t * buf, int bufsize)
+static int mlp_get_major_sync_size(const uint8_t * buf, int bufsize)
 {
     int has_extension, extensions = 0;
     int size = 28;
@@ -149,7 +149,7 @@ int ff_mlp_read_major_sync(void *log, MLPHeaderInfo *mh, GetBitContext *gb)
 
     av_assert1(get_bits_count(gb) == 0);
 
-    header_size = ff_mlp_get_major_sync_size(gb->buffer, gb->size_in_bits >> 3);
+    header_size = mlp_get_major_sync_size(gb->buffer, gb->size_in_bits >> 3);
     if (header_size < 0 || gb->size_in_bits < header_size << 3) {
         av_log(log, AV_LOG_ERROR, "packet too short, unable to read major sync\n");
         return -1;
@@ -256,65 +256,69 @@ static int mlp_parse(AVCodecParserContext *s,
     if (buf_size == 0)
         return 0;
 
-    if (!mp->in_sync) {
-        // Not in sync - find a major sync header
-
-        for (i = 0; i < buf_size; i++) {
-            mp->pc.state = (mp->pc.state << 8) | buf[i];
-            if ((mp->pc.state & 0xfffffffe) == 0xf8726fba &&
-                // ignore if we do not have the data for the start of header
-                mp->pc.index + i >= 7) {
-                mp->in_sync = 1;
-                mp->bytes_left = 0;
-                break;
-            }
-        }
-
+    if (s->flags & PARSER_FLAG_COMPLETE_FRAMES) {
+        next = buf_size;
+    } else {
         if (!mp->in_sync) {
-            if (ff_combine_frame(&mp->pc, END_NOT_FOUND, &buf, &buf_size) != -1)
+            // Not in sync - find a major sync header
+
+            for (i = 0; i < buf_size; i++) {
+                mp->pc.state = (mp->pc.state << 8) | buf[i];
+                if ((mp->pc.state & 0xfffffffe) == 0xf8726fba &&
+                    // ignore if we do not have the data for the start of header
+                    mp->pc.index + i >= 7) {
+                    mp->in_sync = 1;
+                    mp->bytes_left = 0;
+                    break;
+                }
+            }
+
+            if (!mp->in_sync) {
+                if (ff_combine_frame(&mp->pc, END_NOT_FOUND, &buf, &buf_size) != -1)
+                    av_log(avctx, AV_LOG_WARNING, "ff_combine_frame failed\n");
+                return buf_size;
+            }
+
+            if ((ret = ff_combine_frame(&mp->pc, i - 7, &buf, &buf_size)) < 0) {
                 av_log(avctx, AV_LOG_WARNING, "ff_combine_frame failed\n");
+                return ret;
+            }
+
+            return i - 7;
+        }
+
+        if (mp->bytes_left == 0) {
+            // Find length of this packet
+
+            /* Copy overread bytes from last frame into buffer. */
+            for(; mp->pc.overread>0; mp->pc.overread--) {
+                mp->pc.buffer[mp->pc.index++]= mp->pc.buffer[mp->pc.overread_index++];
+            }
+
+            if (mp->pc.index + buf_size < 2) {
+                if (ff_combine_frame(&mp->pc, END_NOT_FOUND, &buf, &buf_size) != -1)
+                    av_log(avctx, AV_LOG_WARNING, "ff_combine_frame failed\n");
+                return buf_size;
+            }
+
+            mp->bytes_left = ((mp->pc.index > 0 ? mp->pc.buffer[0] : buf[0]) << 8)
+                           |  (mp->pc.index > 1 ? mp->pc.buffer[1] : buf[1-mp->pc.index]);
+            mp->bytes_left = (mp->bytes_left & 0xfff) * 2;
+            if (mp->bytes_left <= 0) { // prevent infinite loop
+                goto lost_sync;
+            }
+            mp->bytes_left -= mp->pc.index;
+        }
+
+        next = (mp->bytes_left > buf_size) ? END_NOT_FOUND : mp->bytes_left;
+
+        if (ff_combine_frame(&mp->pc, next, &buf, &buf_size) < 0) {
+            mp->bytes_left -= buf_size;
             return buf_size;
         }
 
-        if ((ret = ff_combine_frame(&mp->pc, i - 7, &buf, &buf_size)) < 0) {
-            av_log(avctx, AV_LOG_WARNING, "ff_combine_frame failed\n");
-            return ret;
-        }
-
-        return i - 7;
+        mp->bytes_left = 0;
     }
-
-    if (mp->bytes_left == 0) {
-        // Find length of this packet
-
-        /* Copy overread bytes from last frame into buffer. */
-        for(; mp->pc.overread>0; mp->pc.overread--) {
-            mp->pc.buffer[mp->pc.index++]= mp->pc.buffer[mp->pc.overread_index++];
-        }
-
-        if (mp->pc.index + buf_size < 2) {
-            if (ff_combine_frame(&mp->pc, END_NOT_FOUND, &buf, &buf_size) != -1)
-                av_log(avctx, AV_LOG_WARNING, "ff_combine_frame failed\n");
-            return buf_size;
-        }
-
-        mp->bytes_left = ((mp->pc.index > 0 ? mp->pc.buffer[0] : buf[0]) << 8)
-                       |  (mp->pc.index > 1 ? mp->pc.buffer[1] : buf[1-mp->pc.index]);
-        mp->bytes_left = (mp->bytes_left & 0xfff) * 2;
-        if (mp->bytes_left <= 0) { // prevent infinite loop
-            goto lost_sync;
-        }
-        mp->bytes_left -= mp->pc.index;
-    }
-
-    next = (mp->bytes_left > buf_size) ? END_NOT_FOUND : mp->bytes_left;
-
-    if (ff_combine_frame(&mp->pc, next, &buf, &buf_size) < 0) {
-        mp->bytes_left -= buf_size;
-        return buf_size;
-    }
-
-    mp->bytes_left = 0;
 
     sync_present = (AV_RB32(buf + 4) & 0xfffffffe) == 0xf8726fba;
 
@@ -357,28 +361,11 @@ static int mlp_parse(AVCodecParserContext *s,
         if(!avctx->channels || !avctx->channel_layout) {
         if (mh.stream_type == 0xbb) {
             /* MLP stream */
-            if (avctx->request_channel_layout &&
-                (avctx->request_channel_layout & AV_CH_LAYOUT_STEREO) ==
-                avctx->request_channel_layout &&
-                mh.num_substreams > 1) {
-                avctx->channels       = 2;
-                avctx->channel_layout = AV_CH_LAYOUT_STEREO;
-            } else {
-                avctx->channels       = mh.channels_mlp;
-                avctx->channel_layout = mh.channel_layout_mlp;
-            }
+            avctx->channels       = mh.channels_mlp;
+            avctx->channel_layout = mh.channel_layout_mlp;
         } else { /* mh.stream_type == 0xba */
             /* TrueHD stream */
-            if (avctx->request_channel_layout &&
-                    (avctx->request_channel_layout & AV_CH_LAYOUT_STEREO) ==
-                    avctx->request_channel_layout &&
-                    mh.num_substreams > 1) {
-                avctx->channels       = 2;
-                avctx->channel_layout = AV_CH_LAYOUT_STEREO;
-            } else if (!mh.channels_thd_stream2 ||
-                       (avctx->request_channel_layout &&
-                        (avctx->request_channel_layout & mh.channel_layout_thd_stream1) ==
-                        avctx->request_channel_layout)) {
+            if (!mh.channels_thd_stream2) {
                 avctx->channels       = mh.channels_thd_stream1;
                 avctx->channel_layout = mh.channel_layout_thd_stream1;
             } else {

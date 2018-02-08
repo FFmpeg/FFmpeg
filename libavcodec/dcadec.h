@@ -88,9 +88,9 @@ static inline int ff_dca_check_crc(AVCodecContext *avctx, GetBitContext *s,
 
 static inline int ff_dca_seek_bits(GetBitContext *s, int p)
 {
-    if (p < s->index || p > s->size_in_bits)
+    if (p < get_bits_count(s) || p > s->size_in_bits)
         return -1;
-    s->index = p;
+    skip_bits_long(s, p - get_bits_count(s));
     return 0;
 }
 

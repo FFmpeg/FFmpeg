@@ -1,4 +1,4 @@
-546c7c1069f9e418aa787f469b693b94 *tests/data/fate/vsynth1-cinepak.mov
-99465 tests/data/fate/vsynth1-cinepak.mov
-bee091c200262be3427a233a2812388c *tests/data/fate/vsynth1-cinepak.out.rawvideo
-stddev:    8.46 PSNR: 29.58 MAXDIFF:  105 bytes:  7603200/   456192
+cd28e47a6ac396240a3fee69f15625d1 *tests/data/fate/vsynth1-cinepak.avi
+408616 tests/data/fate/vsynth1-cinepak.avi
+e74066a028c708f467272884ecd3f7d3 *tests/data/fate/vsynth1-cinepak.out.rawvideo
+stddev:   61.38 PSNR: 12.37 MAXDIFF:  225 bytes:  7603200/   921600

@@ -23,6 +23,7 @@
 #include "parser.h"
 #include "mpegaudiodecheader.h"
 #include "libavutil/common.h"
+#include "libavformat/apetag.h" // for APE tag.
 #include "libavformat/id3v1.h" // for ID3v1_TAG_SIZE
 
 typedef struct MpegAudioParseContext {
@@ -115,6 +116,12 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
     }
 
     if (flush && buf_size >= ID3v1_TAG_SIZE && memcmp(buf, "TAG", 3) == 0) {
+        *poutbuf = NULL;
+        *poutbuf_size = 0;
+        return next;
+    }
+
+    if (flush && buf_size >= APE_TAG_FOOTER_BYTES && memcmp(buf, APE_TAG_PREAMBLE, 8) == 0) {
         *poutbuf = NULL;
         *poutbuf_size = 0;
         return next;

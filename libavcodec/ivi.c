@@ -302,7 +302,7 @@ static av_cold void ivi_free_buffers(IVIPlaneDesc *planes)
     }
 }
 
-av_cold int ff_ivi_init_planes(IVIPlaneDesc *planes, const IVIPicConfig *cfg,
+av_cold int ff_ivi_init_planes(AVCodecContext *avctx, IVIPlaneDesc *planes, const IVIPicConfig *cfg,
                                int is_indeo4)
 {
     int p, b;
@@ -312,7 +312,7 @@ av_cold int ff_ivi_init_planes(IVIPlaneDesc *planes, const IVIPicConfig *cfg,
 
     ivi_free_buffers(planes);
 
-    if (av_image_check_size(cfg->pic_width, cfg->pic_height, 0, NULL) < 0 ||
+    if (av_image_check_size2(cfg->pic_width, cfg->pic_height, avctx->max_pixels, AV_PIX_FMT_YUV410P, 0, avctx) < 0 ||
         cfg->luma_bands < 1 || cfg->chroma_bands < 1)
         return AVERROR_INVALIDDATA;
 

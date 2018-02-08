@@ -75,7 +75,10 @@ static const AVOption options[] = {
 };
 
 static const AVClass class = {
-    "libopenh264enc", av_default_item_name, options, LIBAVUTIL_VERSION_INT
+    .class_name = "libvo_amrwbenc",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 static av_cold int svc_encode_close(AVCodecContext *avctx)
@@ -298,4 +301,5 @@ AVCodec ff_libopenh264_encoder = {
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P,
                                                     AV_PIX_FMT_NONE },
     .priv_class     = &class,
+    .wrapper_name   = "libopenh264",
 };
