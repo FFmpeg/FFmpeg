@@ -91,6 +91,7 @@ typedef struct MXFPartition {
     int64_t index_byte_count;
     int pack_length;
     int64_t pack_ofs;               ///< absolute offset of pack in file, including run-in
+    int64_t body_offset;
 } MXFPartition;
 
 typedef struct MXFCryptoContext {
@@ -612,7 +613,7 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
     partition->header_byte_count = avio_rb64(pb);
     partition->index_byte_count = avio_rb64(pb);
     partition->index_sid = avio_rb32(pb);
-    avio_skip(pb, 8);
+    partition->body_offset = avio_rb64(pb);
     partition->body_sid = avio_rb32(pb);
     if (avio_read(pb, op, sizeof(UID)) != sizeof(UID)) {
         av_log(mxf->fc, AV_LOG_ERROR, "Failed reading UID\n");
@@ -1347,7 +1348,10 @@ static int mxf_get_sorted_table_segments(MXFContext *mxf, int *nb_sorted_segment
 static int mxf_absolute_bodysid_offset(MXFContext *mxf, int body_sid, int64_t offset, int64_t *offset_out)
 {
     int x;
-    int64_t offset_in = offset;     /* for logging */
+    MXFPartition *last_p = NULL;
+
+    if (offset < 0)
+        return AVERROR(EINVAL);
 
     for (x = 0; x < mxf->partitions_count; x++) {
         MXFPartition *p = &mxf->partitions[x];
@@ -1355,17 +1359,20 @@ static int mxf_absolute_bodysid_offset(MXFContext *mxf, int body_sid, int64_t of
         if (p->body_sid != body_sid)
             continue;
 
-        if (offset < p->essence_length || !p->essence_length) {
-            *offset_out = p->essence_offset + offset;
-            return 0;
-        }
+        if (p->body_offset > offset)
+            break;
 
-        offset -= p->essence_length;
+        last_p = p;
+    }
+
+    if (last_p && (!last_p->essence_length || last_p->essence_length > (offset - last_p->body_offset))) {
+        *offset_out = last_p->essence_offset + (offset - last_p->body_offset);
+        return 0;
     }
 
     av_log(mxf->fc, AV_LOG_ERROR,
            "failed to find absolute offset of %"PRIX64" in BodySID %i - partial file?\n",
-           offset_in, body_sid);
+           offset, body_sid);
 
     return AVERROR_INVALIDDATA;
 }
