@@ -1250,11 +1250,19 @@ int show_license(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
+static int is_device(const AVClass *avclass)
+{
+    if (!avclass)
+        return 0;
+    return AV_IS_INPUT_DEVICE(avclass->category) || AV_IS_OUTPUT_DEVICE(avclass->category);
+}
+
 static int show_formats_devices(void *optctx, const char *opt, const char *arg, int device_only, int muxdemuxers)
 {
-    const AVInputFormat *ifmt  = NULL;
-    const AVOutputFormat *ofmt = NULL;
+    AVInputFormat *ifmt  = NULL;
+    AVOutputFormat *ofmt = NULL;
     const char *last_name;
+    int is_dev;
 
     printf("%s\n"
            " D. = Demuxing supported\n"
@@ -1267,24 +1275,34 @@ static int show_formats_devices(void *optctx, const char *opt, const char *arg, 
         const char *name      = NULL;
         const char *long_name = NULL;
 
-#define x(func, type, condition) do {                           \
-        void *i = 0;                                            \
-        if (condition) {                                        \
-            while ((type = func(&i))) {                         \
-                if ((!name || strcmp(type->name, name) < 0) &&  \
-                    strcmp(type->name, last_name) > 0) {        \
-                    name      = type->name;                     \
-                    long_name = type->long_name;                \
-                    encode    = 1;                              \
-                }                                               \
-            }                                                   \
-        } } while(0)
-
-        x(av_muxer_iterate, ofmt, muxdemuxers != SHOW_DEMUXERS && !device_only);
-        x(av_outdev_iterate, ofmt, muxdemuxers != SHOW_DEMUXERS);
-        x(av_demuxer_iterate, ifmt, muxdemuxers != SHOW_MUXERS && !device_only);
-        x(av_indev_iterate, ifmt, muxdemuxers != SHOW_MUXERS);
-#undef x
+        if (muxdemuxers !=SHOW_DEMUXERS) {
+            while ((ofmt = av_oformat_next(ofmt))) {
+                is_dev = is_device(ofmt->priv_class);
+                if (!is_dev && device_only)
+                    continue;
+                if ((!name || strcmp(ofmt->name, name) < 0) &&
+                    strcmp(ofmt->name, last_name) > 0) {
+                    name      = ofmt->name;
+                    long_name = ofmt->long_name;
+                    encode    = 1;
+                }
+            }
+        }
+        if (muxdemuxers != SHOW_MUXERS) {
+            while ((ifmt = av_iformat_next(ifmt))) {
+                is_dev = is_device(ifmt->priv_class);
+                if (!is_dev && device_only)
+                    continue;
+                if ((!name || strcmp(ifmt->name, name) < 0) &&
+                    strcmp(ifmt->name, last_name) > 0) {
+                    name      = ifmt->name;
+                    long_name = ifmt->long_name;
+                    encode    = 0;
+                }
+                if (name && strcmp(ifmt->name, name) == 0)
+                    decode = 1;
+            }
+        }
         if (!name)
             break;
         last_name = name;
@@ -1424,8 +1442,7 @@ static char get_media_type_char(enum AVMediaType type)
 static const AVCodec *next_codec_for_id(enum AVCodecID id, const AVCodec *prev,
                                         int encoder)
 {
-    void *i = 0;
-    while ((prev = av_codec_iterate(&i))) {
+    while ((prev = av_codec_next(prev))) {
         if (prev->id == id &&
             (encoder ? av_codec_is_encoder(prev) : av_codec_is_decoder(prev)))
             return prev;
@@ -2099,7 +2116,7 @@ double get_rotation(AVStream *st)
 }
 
 #if CONFIG_AVDEVICE
-static int print_device_sources(const AVInputFormat *fmt, AVDictionary *opts)
+static int print_device_sources(AVInputFormat *fmt, AVDictionary *opts)
 {
     int ret, i;
     AVDeviceInfoList *device_list = NULL;
@@ -2114,7 +2131,7 @@ static int print_device_sources(const AVInputFormat *fmt, AVDictionary *opts)
         goto fail;
     }
 
-    if ((ret = avdevice_list_input_sources((AVInputFormat*)fmt, NULL, opts, &device_list)) < 0) {
+    if ((ret = avdevice_list_input_sources(fmt, NULL, opts, &device_list)) < 0) {
         printf("Cannot list sources.\n");
         goto fail;
     }
@@ -2129,7 +2146,7 @@ static int print_device_sources(const AVInputFormat *fmt, AVDictionary *opts)
     return ret;
 }
 
-static int print_device_sinks(const AVOutputFormat *fmt, AVDictionary *opts)
+static int print_device_sinks(AVOutputFormat *fmt, AVDictionary *opts)
 {
     int ret, i;
     AVDeviceInfoList *device_list = NULL;
@@ -2144,7 +2161,7 @@ static int print_device_sinks(const AVOutputFormat *fmt, AVDictionary *opts)
         goto fail;
     }
 
-    if ((ret = avdevice_list_output_sinks((AVOutputFormat*)fmt, NULL, opts, &device_list)) < 0) {
+    if ((ret = avdevice_list_output_sinks(fmt, NULL, opts, &device_list)) < 0) {
         printf("Cannot list sinks.\n");
         goto fail;
     }
@@ -2183,8 +2200,7 @@ static int show_sinks_sources_parse_arg(const char *arg, char **dev, AVDictionar
 
 int show_sources(void *optctx, const char *opt, const char *arg)
 {
-    const AVInputFormat *fmt = NULL;
-    void *i = 0;
+    AVInputFormat *fmt = NULL;
     char *dev = NULL;
     AVDictionary *opts = NULL;
     int ret = 0;
@@ -2195,14 +2211,24 @@ int show_sources(void *optctx, const char *opt, const char *arg)
     if ((ret = show_sinks_sources_parse_arg(arg, &dev, &opts)) < 0)
         goto fail;
 
-    while ((fmt = av_indev_iterate(&i))) {
-        if (!strcmp(fmt->name, "lavfi"))
-            continue; //it's pointless to probe lavfi
-        if (dev && !av_match_name(dev, fmt->name))
-            continue;
-        print_device_sources(fmt, opts);
-    }
-
+    do {
+        fmt = av_input_audio_device_next(fmt);
+        if (fmt) {
+            if (!strcmp(fmt->name, "lavfi"))
+                continue; //it's pointless to probe lavfi
+            if (dev && !av_match_name(dev, fmt->name))
+                continue;
+            print_device_sources(fmt, opts);
+        }
+    } while (fmt);
+    do {
+        fmt = av_input_video_device_next(fmt);
+        if (fmt) {
+            if (dev && !av_match_name(dev, fmt->name))
+                continue;
+            print_device_sources(fmt, opts);
+        }
+    } while (fmt);
   fail:
     av_dict_free(&opts);
     av_free(dev);
@@ -2212,8 +2238,7 @@ int show_sources(void *optctx, const char *opt, const char *arg)
 
 int show_sinks(void *optctx, const char *opt, const char *arg)
 {
-    const AVOutputFormat *fmt = NULL;
-    void *i = 0;
+    AVOutputFormat *fmt = NULL;
     char *dev = NULL;
     AVDictionary *opts = NULL;
     int ret = 0;
@@ -2224,11 +2249,22 @@ int show_sinks(void *optctx, const char *opt, const char *arg)
     if ((ret = show_sinks_sources_parse_arg(arg, &dev, &opts)) < 0)
         goto fail;
 
-    while ((fmt = av_outdev_iterate(&i))) {
-        if (dev && !av_match_name(dev, fmt->name))
-            continue;
-        print_device_sinks(fmt, opts);
-    }
+    do {
+        fmt = av_output_audio_device_next(fmt);
+        if (fmt) {
+            if (dev && !av_match_name(dev, fmt->name))
+                continue;
+            print_device_sinks(fmt, opts);
+        }
+    } while (fmt);
+    do {
+        fmt = av_output_video_device_next(fmt);
+        if (fmt) {
+            if (dev && !av_match_name(dev, fmt->name))
+                continue;
+            print_device_sinks(fmt, opts);
+        }
+    } while (fmt);
   fail:
     av_dict_free(&opts);
     av_free(dev);
