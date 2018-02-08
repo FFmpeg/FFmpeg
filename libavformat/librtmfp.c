@@ -63,6 +63,7 @@ typedef struct LibRTMFPContext {
     unsigned int        windowDuration;
     unsigned int        pushLimit;
     char*               fallbackUrl;
+    unsigned int        fallbackTimeout;
     int                 disableRateCtl;
 } LibRTMFPContext;
 
@@ -137,10 +138,9 @@ static int rtmfp_open(URLContext *s, const char *uri, int flags)
         case AV_LOG_TRACE:   level = 8; break;
     }
 
-    if (ctx->socketReceiveSize)
-        RTMFP_SetIntParameter("socketReceiveSize", ctx->socketReceiveSize);
-    if (ctx->socketSendSize)
-        RTMFP_SetIntParameter("socketSendSize", ctx->socketSendSize);
+    RTMFP_SetIntParameter("socketReceiveSize", ctx->socketReceiveSize);
+    RTMFP_SetIntParameter("socketSendSize", ctx->socketSendSize);
+    RTMFP_SetIntParameter("timeoutFallback", ctx->fallbackTimeout);
     RTMFP_SetIntParameter("logLevel", level);
 
     RTMFP_Init(&ctx->rtmfp, &ctx->group, 1);
@@ -265,6 +265,7 @@ static const AVOption options[] = {
     {"netgroup", "Publish/Play the stream into a NetGroup (multicast)", OFFSET(netgroup), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
     {"fallbackUrl", "Try to play a unicast stream url until the NetGroup connection is not ready (can produce undefined behavior if the stream codecs are different)",
         OFFSET(fallbackUrl), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC|ENC},
+    {"fallbackTimeout", "Set the timeout in milliseconds to start fallback to unicast", OFFSET(fallbackTimeout), AV_OPT_TYPE_INT, {.i64 = 8000 }, 0, 120000, DEC|ENC},
     {"disableRateControl", "For Netgroup disable the P2P connection rate control to avoid disconnection", OFFSET(disableRateCtl), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, DEC|ENC},
     {"pushLimit", "Specifies the maximum number (-1) of peers to which we will send push fragments", OFFSET(pushLimit), AV_OPT_TYPE_INT, {.i64 = 4 }, 0, 255, DEC|ENC},
     {"updatePeriod", "Specifies the interval in milliseconds between messages sent to peers informating them that the local node has new p2p multicast media fragments available",
