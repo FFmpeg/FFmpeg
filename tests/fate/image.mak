@@ -284,6 +284,9 @@ fate-exr-y-scanline-zip-half-12x8: CMD = framecrc -i $(TARGET_SAMPLES)/exr/y_sca
 FATE_EXR += fate-exr-rgb-scanline-half-piz-dw-t08
 fate-exr-rgb-scanline-half-piz-dw-t08: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgb_scanline_half_piz_dw_t08.exr -pix_fmt rgb48le
 
+FATE_EXR += fate-exr-rgba-zip16-16x32-flag4
+fate-exr-rgba-zip16-16x32-flag4: CMD = framecrc -i $(TARGET_SAMPLES)/exr/rgba_zip16_16x32_flag4.exr -pix_fmt rgba64le
+
 FATE_EXR-$(call DEMDEC, IMAGE2, EXR) += $(FATE_EXR)
 
 FATE_IMAGE += $(FATE_EXR-yes)
