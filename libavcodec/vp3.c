@@ -978,6 +978,9 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
             if (eob_run_get_bits[token])
                 eob_run += get_bits(gb, eob_run_get_bits[token]);
 
+            if (!eob_run)
+                eob_run = INT_MAX;
+
             // record only the number of blocks ended in this plane,
             // any spill will be recorded in the next plane.
             if (eob_run > num_coeffs - coeff_i) {
