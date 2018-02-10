@@ -53,7 +53,7 @@ struct RDTDemuxContext {
 
 RDTDemuxContext *
 ff_rdt_parse_open(AVFormatContext *ic, int first_stream_of_set_idx,
-                  void *priv_data, RTPDynamicProtocolHandler *handler)
+                  void *priv_data, const RTPDynamicProtocolHandler *handler)
 {
     RDTDemuxContext *s = av_mallocz(sizeof(RDTDemuxContext));
     if (!s)

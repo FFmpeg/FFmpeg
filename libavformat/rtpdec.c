@@ -143,7 +143,7 @@ const RTPDynamicProtocolHandler *ff_rtp_handler_iterate(void **opaque)
     return r;
 }
 
-RTPDynamicProtocolHandler *ff_rtp_handler_find_by_name(const char *name,
+const RTPDynamicProtocolHandler *ff_rtp_handler_find_by_name(const char *name,
                                                        enum AVMediaType codec_type)
 {
     void *i = 0;
@@ -157,7 +157,7 @@ RTPDynamicProtocolHandler *ff_rtp_handler_find_by_name(const char *name,
     return NULL;
 }
 
-RTPDynamicProtocolHandler *ff_rtp_handler_find_by_id(int id,
+const RTPDynamicProtocolHandler *ff_rtp_handler_find_by_id(int id,
                                                      enum AVMediaType codec_type)
 {
     void *i = 0;
@@ -572,7 +572,7 @@ RTPDemuxContext *ff_rtp_parse_open(AVFormatContext *s1, AVStream *st,
 }
 
 void ff_rtp_parse_set_dynamic_protocol(RTPDemuxContext *s, PayloadContext *ctx,
-                                       RTPDynamicProtocolHandler *handler)
+                                       const RTPDynamicProtocolHandler *handler)
 {
     s->dynamic_protocol_context = ctx;
     s->handler                  = handler;

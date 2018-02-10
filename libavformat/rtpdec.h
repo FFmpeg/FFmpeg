@@ -43,7 +43,7 @@ typedef struct RTPDemuxContext RTPDemuxContext;
 RTPDemuxContext *ff_rtp_parse_open(AVFormatContext *s1, AVStream *st,
                                    int payload_type, int queue_size);
 void ff_rtp_parse_set_dynamic_protocol(RTPDemuxContext *s, PayloadContext *ctx,
-                                       RTPDynamicProtocolHandler *handler);
+                                       const RTPDynamicProtocolHandler *handler);
 void ff_rtp_parse_set_crypto(RTPDemuxContext *s, const char *suite,
                              const char *params);
 int ff_rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
@@ -208,7 +208,7 @@ const RTPDynamicProtocolHandler *ff_rtp_handler_iterate(void **opaque);
  * @param name name of the requested rtp dynamic protocol handler
  * @return A rtp dynamic protocol handler if one was found, NULL otherwise.
  */
-RTPDynamicProtocolHandler *ff_rtp_handler_find_by_name(const char *name,
+const RTPDynamicProtocolHandler *ff_rtp_handler_find_by_name(const char *name,
                                                   enum AVMediaType codec_type);
 /**
  * Find a registered rtp dynamic protocol handler with a matching codec ID.
@@ -216,7 +216,7 @@ RTPDynamicProtocolHandler *ff_rtp_handler_find_by_name(const char *name,
  * @param id AVCodecID of the requested rtp dynamic protocol handler.
  * @return A rtp dynamic protocol handler if one was found, NULL otherwise.
  */
-RTPDynamicProtocolHandler *ff_rtp_handler_find_by_id(int id,
+const RTPDynamicProtocolHandler *ff_rtp_handler_find_by_id(int id,
                                                 enum AVMediaType codec_type);
 
 /* from rtsp.c, but used by rtp dynamic protocol handlers. */
