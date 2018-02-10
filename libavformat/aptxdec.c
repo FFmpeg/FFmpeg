@@ -87,7 +87,7 @@ static const AVOption aptx_options[] = {
     { NULL },
 };
 
-#if CONFIG_APTX_MUXER
+#if CONFIG_APTX_DEMUXER
 static const AVClass aptx_demuxer_class = {
     .class_name = "aptx demuxer",
     .item_name  = av_default_item_name,
