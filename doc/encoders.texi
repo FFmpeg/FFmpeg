@@ -2359,6 +2359,11 @@ Never write it.
 @itemx always
 Always write it.
 @end table
+@item video_format @var{integer}
+Specifies the video_format written into the sequence display extension
+indicating the source of the video pictures. The default is @samp{unspecified},
+can be @samp{component}, @samp{pal}, @samp{ntsc}, @samp{secam} or @samp{mac}.
+For maximum compatibility, use @samp{component}.
 @end table
 
 @section png
