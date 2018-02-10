@@ -21,10 +21,8 @@
 
 #include <string.h>
 
-#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/internal.h"
-#include "libavutil/thread.h"
 #include "avcodec.h"
 #include "profiles.h"
 #include "version.h"
@@ -3111,26 +3109,6 @@ static const AVCodecDescriptor codec_descriptors[] = {
     },
 };
 
-#if defined(ASSERT_LEVEL) && ASSERT_LEVEL >= 2
-static void check_validity(void)
-{
-    int i;
-
-    for (i = 0; i < FF_ARRAY_ELEMS(codec_descriptors) - 1; i++) {
-        if (codec_descriptors[i].id >= codec_descriptors[i+1].id) {
-            av_log(NULL, AV_LOG_FATAL, "unsorted codec_id '%s' and '%s'.\n",
-                   codec_descriptors[i].name, codec_descriptors[i+1].name);
-            av_assert0(0);
-        }
-    }
-}
-
-static AVOnce check_validity_once = AV_ONCE_INIT;
-#define CHECK_VALIDITY() ff_thread_once(&check_validity_once, check_validity);
-#else
-#define CHECK_VALIDITY() ((void)0)
-#endif
-
 static int descriptor_compare(const void *key, const void *member)
 {
     enum AVCodecID id = *(const enum AVCodecID *) key;
@@ -3141,8 +3119,6 @@ static int descriptor_compare(const void *key, const void *member)
 
 const AVCodecDescriptor *avcodec_descriptor_get(enum AVCodecID id)
 {
-    CHECK_VALIDITY();
-
     return bsearch(&id, codec_descriptors, FF_ARRAY_ELEMS(codec_descriptors),
                    sizeof(codec_descriptors[0]), descriptor_compare);
 }

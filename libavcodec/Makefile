@@ -1090,6 +1090,7 @@ SKIPHEADERS-$(CONFIG_V4L2_M2M)         += v4l2_buffers.h v4l2_context.h v4l2_m2m
 
 TESTPROGS = avpacket                                                    \
             celp_math                                                   \
+            codec_desc                                                  \
             htmlsubtitles                                               \
             imgconvert                                                  \
             jpeg2000dwt                                                 \
