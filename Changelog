@@ -2,6 +2,17 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 3.4.2:
+- avcodec/vp3: Error out on invalid num_coeffs in unpack_vlcs()
+- avcodec/mpeg4videodec: Ignore multiple VOL headers
+- avcodec/vp3: Check eob_run
+- avcodec/pafvideo: Check allocated frame size
+- avcodec/scpr: Fix reading a pixel before the first
+- avcodec/mpeg2dec: Fix field selection for skipped macroblocks
+- avcodec/huffyuvdec: Check input buffer size
+- avcodec/utvideodec: Fix bytes left check in decode_frame()
+- avcodec/wavpack: Fix integer overflow in FFABS
+- avcodec/aacsbr_fixed: Fix overflows in rounding in sbr_hf_assemble()
+- avcodec/exr: Fix memleaks in decode_header()
 - avcodec/mediacodecdec: use ff_hevc_ps_uninit()
 - avcodec/hevc_parser: use ff_hevc_uninit_parameter_sets()
 - avcodec/hevcdec: use ff_hevc_uninit_parameter_sets()
