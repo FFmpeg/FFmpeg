@@ -62,6 +62,7 @@ typedef struct H264MetadataContext {
     int crop_bottom;
 
     const char *sei_user_data;
+    int sei_first_au;
 } H264MetadataContext;
 
 
@@ -287,13 +288,16 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
         }
     }
 
-    // Only insert the SEI in access units containing SPSs.
-    if (has_sps && ctx->sei_user_data) {
+    // Only insert the SEI in access units containing SPSs, and also
+    // unconditionally in the first access unit we ever see.
+    if (ctx->sei_user_data && (has_sps || !ctx->sei_first_au)) {
         H264RawSEIPayload payload = {
             .payload_type = H264_SEI_TYPE_USER_DATA_UNREGISTERED,
         };
         H264RawSEIUserDataUnregistered *udu =
             &payload.payload.user_data_unregistered;
+
+        ctx->sei_first_au = 1;
 
         for (i = j = 0; j < 32 && ctx->sei_user_data[i]; i++) {
             int c, v;
