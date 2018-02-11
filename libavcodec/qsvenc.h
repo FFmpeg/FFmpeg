@@ -73,8 +73,9 @@
 { "slow",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TARGETUSAGE_BEST_QUALITY  }, INT_MIN, INT_MAX, VE, "preset" },                             \
 { "la_depth", "Number of frames to analyze before encoding.", OFFSET(qsv.la_depth), AV_OPT_TYPE_INT, { .i64 = 9 },   9, 100, VE, "la_depth" },  \
 { "unset", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 9 }, INT_MIN, INT_MAX,                                                       VE, "la_depth" },  \
-{ "la_ds", "Downscaling factor for the frames saved for the lookahead analysis", OFFSET(qsv.la_ds), AV_OPT_TYPE_INT, { .i64 = -1 },   -1, MFX_LOOKAHEAD_DS_4x, VE, "la_ds" }, \
-{ "auto", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = -1 }, INT_MIN, INT_MAX,                                                           VE, "la_ds" }, \
+{ "la_ds", "Downscaling factor for the frames saved for the lookahead analysis", OFFSET(qsv.la_ds), AV_OPT_TYPE_INT,                            \
+                    { .i64 = MFX_LOOKAHEAD_DS_UNKNOWN }, MFX_LOOKAHEAD_DS_UNKNOWN, MFX_LOOKAHEAD_DS_4x, VE, "la_ds" },                          \
+{ "auto", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_LOOKAHEAD_DS_UNKNOWN }, INT_MIN, INT_MAX,                                     VE, "la_ds" }, \
 { "off", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_LOOKAHEAD_DS_OFF }, INT_MIN, INT_MAX,                                          VE, "la_ds" }, \
 { "2x", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_LOOKAHEAD_DS_2x }, INT_MIN, INT_MAX,                                            VE, "la_ds" }, \
 { "4x", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_LOOKAHEAD_DS_4x }, INT_MIN, INT_MAX,                                            VE, "la_ds" }, \
