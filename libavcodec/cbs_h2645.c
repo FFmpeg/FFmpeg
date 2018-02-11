@@ -1393,3 +1393,98 @@ const CodedBitstreamType ff_cbs_type_h265 = {
 
     .close             = &cbs_h265_close,
 };
+
+int ff_cbs_h264_add_sei_message(CodedBitstreamContext *ctx,
+                                CodedBitstreamFragment *au,
+                                const H264RawSEIPayload *payload)
+{
+    H264RawSEI *sei;
+    CodedBitstreamUnit *nal = NULL;
+    int err, i;
+
+    // Find an existing SEI NAL unit to add to.
+    for (i = 0; i < au->nb_units; i++) {
+        if (au->units[i].type == H264_NAL_SEI) {
+            nal = &au->units[i];
+            break;
+        }
+    }
+    if (nal) {
+        sei = nal->content;
+
+    } else {
+        // Need to make a new SEI NAL unit.  Insert it before the first
+        // slice data NAL unit; if no slice data, add at the end.
+        AVBufferRef *sei_ref;
+
+        sei = av_mallocz(sizeof(*sei));
+        if (!sei)
+            return AVERROR(ENOMEM);
+
+        sei->nal_unit_header.nal_unit_type = H264_NAL_SEI;
+        sei->nal_unit_header.nal_ref_idc   = 0;
+
+        sei_ref = av_buffer_create((uint8_t*)sei, sizeof(*sei),
+                                   &cbs_h264_free_sei, ctx, 0);
+        if (!sei_ref) {
+            av_freep(&sei);
+            return AVERROR(ENOMEM);
+        }
+
+        for (i = 0; i < au->nb_units; i++) {
+            if (au->units[i].type == H264_NAL_SLICE ||
+                au->units[i].type == H264_NAL_IDR_SLICE)
+                break;
+        }
+
+        err = ff_cbs_insert_unit_content(ctx, au, i, H264_NAL_SEI,
+                                         sei, sei_ref);
+        av_buffer_unref(&sei_ref);
+        if (err < 0)
+            return err;
+    }
+
+    if (sei->payload_count >= H264_MAX_SEI_PAYLOADS) {
+        av_log(ctx->log_ctx, AV_LOG_ERROR, "Too many payloads in "
+               "SEI NAL unit.\n");
+        return AVERROR(EINVAL);
+    }
+
+    memcpy(&sei->payload[sei->payload_count], payload, sizeof(*payload));
+    ++sei->payload_count;
+
+    return 0;
+}
+
+int ff_cbs_h264_delete_sei_message(CodedBitstreamContext *ctx,
+                                   CodedBitstreamFragment *au,
+                                   CodedBitstreamUnit *nal,
+                                   int position)
+{
+    H264RawSEI *sei = nal->content;
+
+    av_assert0(nal->type == H264_NAL_SEI);
+    av_assert0(position >= 0 && position < sei->payload_count);
+
+    if (position == 0 && sei->payload_count == 1) {
+        // Deleting NAL unit entirely.
+        int i;
+
+        for (i = 0; i < au->nb_units; i++) {
+            if (&au->units[i] == nal)
+                break;
+        }
+        av_assert0(i < au->nb_units && "NAL unit not in access unit.");
+
+        return ff_cbs_delete_unit(ctx, au, i);
+    } else {
+        cbs_h264_free_sei_payload(&sei->payload[position]);
+
+        --sei->payload_count;
+        memmove(sei->payload + position,
+                sei->payload + position + 1,
+                (sei->payload_count - position) * sizeof(*sei->payload));
+
+        return 0;
+    }
+}
