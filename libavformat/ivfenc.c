@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "riff.h"
 #include "libavutil/intreadwrite.h"
 
 static int ivf_write_header(AVFormatContext *s)
@@ -30,14 +31,17 @@ static int ivf_write_header(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
     par = s->streams[0]->codecpar;
-    if (par->codec_type != AVMEDIA_TYPE_VIDEO || par->codec_id != AV_CODEC_ID_VP8) {
-        av_log(s, AV_LOG_ERROR, "Currently only VP8 is supported!\n");
+    if (par->codec_type != AVMEDIA_TYPE_VIDEO ||
+        !(par->codec_id == AV_CODEC_ID_AV1 ||
+          par->codec_id == AV_CODEC_ID_VP8 ||
+          par->codec_id == AV_CODEC_ID_VP9)) {
+        av_log(s, AV_LOG_ERROR, "Currently only AV1, VP8 and VP9 are supported!\n");
         return AVERROR(EINVAL);
     }
     avio_write(pb, "DKIF", 4);
     avio_wl16(pb, 0); // version
     avio_wl16(pb, 32); // header length
-    avio_wl32(pb, par->codec_tag ? par->codec_tag : AV_RL32("VP80"));
+    avio_wl32(pb, par->codec_tag ? par->codec_tag : ff_codec_get_tag(ff_codec_bmp_tags, par->codec_id));
     avio_wl16(pb, par->width);
     avio_wl16(pb, par->height);
     avio_wl32(pb, s->streams[0]->time_base.den);
