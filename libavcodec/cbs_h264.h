@@ -408,6 +408,12 @@ typedef struct H264RawSlice {
     AVBufferRef *data_ref;
 } H264RawSlice;
 
+typedef struct H264RawFiller {
+    H264RawNALUnitHeader nal_unit_header;
+
+    uint32_t filler_size;
+} H264RawFiller;
+
 
 typedef struct CodedBitstreamH264Context {
     // Reader/writer context in common with the H.265 implementation.
