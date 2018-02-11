@@ -289,7 +289,7 @@ static int h265_metadata_filter(AVBSFContext *bsf, AVPacket *out)
             aud->pic_type = pic_type;
 
             err = ff_cbs_insert_unit_content(ctx->cbc, au,
-                                             0, HEVC_NAL_AUD, aud);
+                                             0, HEVC_NAL_AUD, aud, NULL);
             if (err) {
                 av_log(bsf, AV_LOG_ERROR, "Failed to insert AUD.\n");
                 goto fail;

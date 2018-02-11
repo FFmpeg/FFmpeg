@@ -53,9 +53,6 @@ typedef struct CodedBitstreamType {
     int (*assemble_fragment)(CodedBitstreamContext *ctx,
                              CodedBitstreamFragment *frag);
 
-    // Free the content and data of a single unit.
-    void (*free_unit)(CodedBitstreamUnit *unit);
-
     // Free the codec internal state.
     void (*close)(CodedBitstreamContext *ctx);
 } CodedBitstreamType;

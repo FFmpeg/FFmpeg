@@ -92,7 +92,7 @@ static int vaapi_encode_mpeg2_add_header(AVCodecContext *avctx,
     VAAPIEncodeMPEG2Context *priv = ctx->priv_data;
     int err;
 
-    err = ff_cbs_insert_unit_content(priv->cbc, frag, -1, type, header);
+    err = ff_cbs_insert_unit_content(priv->cbc, frag, -1, type, header, NULL);
     if (err < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed to add header: "
                "type = %d.\n", type);

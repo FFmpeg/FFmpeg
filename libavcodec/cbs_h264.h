@@ -266,12 +266,14 @@ typedef struct H264RawSEIUserDataRegistered {
     uint8_t itu_t_t35_country_code_extension_byte;
     uint8_t *data;
     size_t data_length;
+    AVBufferRef *data_ref;
 } H264RawSEIUserDataRegistered;
 
 typedef struct H264RawSEIUserDataUnregistered {
     uint8_t uuid_iso_iec_11578[16];
     uint8_t *data;
     size_t data_length;
+    AVBufferRef *data_ref;
 } H264RawSEIUserDataUnregistered;
 
 typedef struct H264RawSEIRecoveryPoint {
@@ -304,6 +306,7 @@ typedef struct H264RawSEIPayload {
         struct {
             uint8_t *data;
             size_t data_length;
+            AVBufferRef *data_ref;
         } other;
     } payload;
 } H264RawSEIPayload;
@@ -399,6 +402,7 @@ typedef struct H264RawSlice {
     uint8_t *data;
     size_t   data_size;
     int      data_bit_start;
+    AVBufferRef *data_ref;
 } H264RawSlice;
 
 
