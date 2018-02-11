@@ -404,6 +404,9 @@ static int FUNC(pps)(CodedBitstreamContext *ctx, RWContext *rw,
             ue(slice_group_change_rate_minus1, 0, pic_size - 1);
         } else if (current->slice_group_map_type == 6) {
             ue(pic_size_in_map_units_minus1, pic_size - 1, pic_size - 1);
+
+            allocate(current->slice_group_id,
+                     current->pic_size_in_map_units_minus1 + 1);
             for (i = 0; i <= current->pic_size_in_map_units_minus1; i++)
                 u(av_log2(2 * current->num_slice_groups_minus1 + 1),
                   slice_group_id[i], 0, current->num_slice_groups_minus1);

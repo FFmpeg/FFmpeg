@@ -195,7 +195,9 @@ typedef struct H264RawPPS {
     uint8_t slice_group_change_direction_flag;
     uint16_t slice_group_change_rate_minus1;
     uint16_t pic_size_in_map_units_minus1;
-    uint8_t slice_group_id[H264_MAX_MB_PIC_SIZE];
+
+    uint8_t *slice_group_id;
+    AVBufferRef *slice_group_id_ref;
 
     uint8_t num_ref_idx_l0_default_active_minus1;
     uint8_t num_ref_idx_l1_default_active_minus1;
