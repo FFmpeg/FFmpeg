@@ -143,7 +143,9 @@ static int hwmap_config_output(AVFilterLink *outlink)
             frames->sw_format = hwfc->sw_format;
             frames->width     = hwfc->width;
             frames->height    = hwfc->height;
-            frames->initial_pool_size = 64;
+
+            if (avctx->extra_hw_frames >= 0)
+                frames->initial_pool_size = 2 + avctx->extra_hw_frames;
 
             err = av_hwframe_ctx_init(ctx->hwframes_ref);
             if (err < 0) {
@@ -222,6 +224,9 @@ static int hwmap_config_output(AVFilterLink *outlink)
         hwfc->sw_format = inlink->format;
         hwfc->width     = inlink->w;
         hwfc->height    = inlink->h;
+
+        if (avctx->extra_hw_frames >= 0)
+            hwfc->initial_pool_size = 2 + avctx->extra_hw_frames;
 
         err = av_hwframe_ctx_init(ctx->hwframes_ref);
         if (err < 0) {
