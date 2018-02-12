@@ -3795,6 +3795,18 @@ map "die_license_disabled nonfree" $HWACCEL_LIBRARY_NONFREE_LIST
 
 enabled version3 && { enabled gpl && enable gplv3 || enable lgplv3; }
 
+if enabled nonfree; then
+    license="nonfree and unredistributable"
+elif enabled gplv3; then
+    license="GPL version 3 or later"
+elif enabled lgplv3; then
+    license="LGPL version 3 or later"
+elif enabled gpl; then
+    license="GPL version 2 or later"
+else
+    license="LGPL version 2.1 or later"
+fi
+
 enabled_all gnutls openssl &&
     die "GnuTLS and OpenSSL must not be enabled at the same time."
 
@@ -6665,17 +6677,6 @@ expand_deps(){
 postproc_deps="$(filter_out 'gpl' $postproc_deps)"
 
 map 'expand_deps $v' $LIBRARY_LIST
-
-license="LGPL version 2.1 or later"
-if enabled nonfree; then
-    license="nonfree and unredistributable"
-elif enabled gplv3; then
-    license="GPL version 3 or later"
-elif enabled lgplv3; then
-    license="LGPL version 3 or later"
-elif enabled gpl; then
-    license="GPL version 2 or later"
-fi
 
 if test "$quiet" != "yes"; then
 
