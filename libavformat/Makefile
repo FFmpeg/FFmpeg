@@ -555,7 +555,11 @@ OBJS-$(CONFIG_CHROMAPRINT_MUXER)         += chromaprint.o
 OBJS-$(CONFIG_LIBGME_DEMUXER)            += libgme.o
 OBJS-$(CONFIG_LIBMODPLUG_DEMUXER)        += libmodplug.o
 OBJS-$(CONFIG_LIBOPENMPT_DEMUXER)        += libopenmpt.o
-OBJS-$(CONFIG_LIBRTMP)                   += librtmp.o
+OBJS-$(CONFIG_LIBRTMP_PROTOCOL)          += librtmp.o
+OBJS-$(CONFIG_LIBRTMPE_PROTOCOL)         += librtmp.o
+OBJS-$(CONFIG_LIBRTMPS_PROTOCOL)         += librtmp.o
+OBJS-$(CONFIG_LIBRTMPT_PROTOCOL)         += librtmp.o
+OBJS-$(CONFIG_LIBRTMPTE_PROTOCOL)        += librtmp.o
 OBJS-$(CONFIG_LIBSSH_PROTOCOL)           += libssh.o
 OBJS-$(CONFIG_LIBSMBCLIENT_PROTOCOL)     += libsmbclient.o
 
