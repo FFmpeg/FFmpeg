@@ -2,6 +2,13 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 2.8.14:
+- avcodec/vp3: Error out on invalid num_coeffs in unpack_vlcs()
+- avcodec/mpeg4videodec: Ignore multiple VOL headers
+- avcodec/vp3: Check eob_run
+- avcodec/huffyuvdec: Check input buffer size
+- avcodec/wavpack: Fix integer overflow in FFABS
+- avcodec/aacsbr_fixed: Fix overflows in rounding in sbr_hf_assemble()
+- changelog: update with previous commit
 - x264: Support version 153
 - avcodec/indeo5: Do not leave frame_type set to an invalid value
 - avcodec/hevc_ps: Check log2_sao_offset_scale_*
