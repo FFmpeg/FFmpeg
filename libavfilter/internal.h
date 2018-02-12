@@ -411,4 +411,20 @@ static inline int ff_norm_qscale(int qscale, int type)
  */
 int ff_filter_get_nb_threads(AVFilterContext *ctx);
 
+/**
+ * Perform any additional setup required for hardware frames.
+ *
+ * link->hw_frames_ctx must be set before calling this function.
+ * Inside link->hw_frames_ctx, the fields format, sw_format, width and
+ * height must be set.  If dynamically allocated pools are not supported,
+ * then initial_pool_size must also be set, to the minimum hardware frame
+ * pool size necessary for the filter to work (taking into account any
+ * frames which need to stored for use in operations as appropriate).  If
+ * default_pool_size is nonzero, then it will be used as the pool size if
+ * no other modification takes place (this can be used to preserve
+ * compatibility).
+ */
+int ff_filter_init_hw_frames(AVFilterContext *avctx, AVFilterLink *link,
+                             int default_pool_size);
+
 #endif /* AVFILTER_INTERNAL_H */
