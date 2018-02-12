@@ -1650,6 +1650,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     static int64_t last_time = -1;
     static int qp_histogram[52];
     int hours, mins, secs, us;
+    const char *hours_sign;
     int ret;
     float t;
 
@@ -1757,6 +1758,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     secs %= 60;
     hours = mins / 60;
     mins %= 60;
+    hours_sign = (pts < 0) ? "-" : "";
 
     bitrate = pts && total_size >= 0 ? total_size * 8 / (pts / 1000.0) : -1;
     speed = t != 0.0 ? (double)pts / AV_TIME_BASE / t : -1;
@@ -1765,11 +1767,13 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
                                  "size=N/A time=");
     else                snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
                                  "size=%8.0fkB time=", total_size / 1024.0);
-    if (pts < 0)
-        snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "-");
-    snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
-             "%02d:%02d:%02d.%02d ", hours, mins, secs,
-             (100 * us) / AV_TIME_BASE);
+    if (pts == AV_NOPTS_VALUE) {
+        snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "N/A ");
+    } else {
+        snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
+                 "%s%02d:%02d:%02d.%02d ", hours_sign, hours, mins, secs,
+                 (100 * us) / AV_TIME_BASE);
+    }
 
     if (bitrate < 0) {
         snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),"bitrate=N/A");
@@ -1781,9 +1785,14 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
 
     if (total_size < 0) av_bprintf(&buf_script, "total_size=N/A\n");
     else                av_bprintf(&buf_script, "total_size=%"PRId64"\n", total_size);
-    av_bprintf(&buf_script, "out_time_ms=%"PRId64"\n", pts);
-    av_bprintf(&buf_script, "out_time=%02d:%02d:%02d.%06d\n",
-               hours, mins, secs, us);
+    if (pts == AV_NOPTS_VALUE) {
+        av_bprintf(&buf_script, "out_time_ms=N/A\n");
+        av_bprintf(&buf_script, "out_time=N/A\n");
+    } else {
+        av_bprintf(&buf_script, "out_time_ms=%"PRId64"\n", pts);
+        av_bprintf(&buf_script, "out_time=%s%02d:%02d:%02d.%06d\n",
+                   hours_sign, hours, mins, secs, us);
+    }
 
     if (nb_frames_dup || nb_frames_drop)
         snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), " dup=%d drop=%d",
