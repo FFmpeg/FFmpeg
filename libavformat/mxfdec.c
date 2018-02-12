@@ -3303,18 +3303,18 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
                                    av_inv_q(source_track->edit_rate));
 
     if (mxf->nb_index_tables <= 0) {
-    if (!s->bit_rate)
-        return AVERROR_INVALIDDATA;
-    if (sample_time < 0)
-        sample_time = 0;
-    seconds = av_rescale(sample_time, st->time_base.num, st->time_base.den);
+        if (!s->bit_rate)
+            return AVERROR_INVALIDDATA;
+        if (sample_time < 0)
+            sample_time = 0;
+        seconds = av_rescale(sample_time, st->time_base.num, st->time_base.den);
 
-    seekpos = avio_seek(s->pb, (s->bit_rate * seconds) >> 3, SEEK_SET);
-    if (seekpos < 0)
-        return seekpos;
+        seekpos = avio_seek(s->pb, (s->bit_rate * seconds) >> 3, SEEK_SET);
+        if (seekpos < 0)
+            return seekpos;
 
-    ff_update_cur_dts(s, st, sample_time);
-    mxf->current_edit_unit = sample_time;
+        ff_update_cur_dts(s, st, sample_time);
+        mxf->current_edit_unit = sample_time;
     } else {
         t = &mxf->index_tables[0];
 
