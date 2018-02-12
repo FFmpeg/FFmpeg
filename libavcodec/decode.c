@@ -1186,10 +1186,6 @@ int ff_decode_get_hw_frames_ctx(AVCodecContext *avctx,
         // We guarantee 4 base work surfaces. The function above guarantees 1
         // (the absolute minimum), so add the missing count.
         frames_ctx->initial_pool_size += 3;
-
-        // Add an additional surface per thread is frame threading is enabled.
-        if (avctx->active_thread_type & FF_THREAD_FRAME)
-            frames_ctx->initial_pool_size += avctx->thread_count;
     }
 
     ret = av_hwframe_ctx_init(avctx->hw_frames_ctx);
@@ -1236,6 +1232,11 @@ int avcodec_get_hw_frames_parameters(AVCodecContext *avctx,
             // available then add them here.
             if (avctx->extra_hw_frames > 0)
                 frames_ctx->initial_pool_size += avctx->extra_hw_frames;
+
+            // If frame threading is enabled then an extra surface per thread
+            // is also required.
+            if (avctx->active_thread_type & FF_THREAD_FRAME)
+                frames_ctx->initial_pool_size += avctx->thread_count;
         }
 
         *out_frames_ref = frames_ref;
