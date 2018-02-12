@@ -131,7 +131,7 @@ static int dv_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_dv_ctx,
     return 0;
 }
 
-RTPDynamicProtocolHandler ff_dv_dynamic_handler = {
+const RTPDynamicProtocolHandler ff_dv_dynamic_handler = {
     .enc_name         = "DV",
     .codec_type       = AVMEDIA_TYPE_VIDEO,
     .codec_id         = AV_CODEC_ID_DVVIDEO,

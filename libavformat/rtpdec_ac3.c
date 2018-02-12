@@ -122,7 +122,7 @@ static int ac3_handle_packet(AVFormatContext *ctx, PayloadContext *data,
     return 0;
 }
 
-RTPDynamicProtocolHandler ff_ac3_dynamic_handler = {
+const RTPDynamicProtocolHandler ff_ac3_dynamic_handler = {
     .enc_name           = "ac3",
     .codec_type         = AVMEDIA_TYPE_AUDIO,
     .codec_id           = AV_CODEC_ID_AC3,

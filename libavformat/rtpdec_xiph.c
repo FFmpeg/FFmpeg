@@ -365,7 +365,7 @@ static int xiph_parse_sdp_line(AVFormatContext *s, int st_index,
     return 0;
 }
 
-RTPDynamicProtocolHandler ff_theora_dynamic_handler = {
+const RTPDynamicProtocolHandler ff_theora_dynamic_handler = {
     .enc_name         = "theora",
     .codec_type       = AVMEDIA_TYPE_VIDEO,
     .codec_id         = AV_CODEC_ID_THEORA,
@@ -375,7 +375,7 @@ RTPDynamicProtocolHandler ff_theora_dynamic_handler = {
     .parse_packet     = xiph_handle_packet,
 };
 
-RTPDynamicProtocolHandler ff_vorbis_dynamic_handler = {
+const RTPDynamicProtocolHandler ff_vorbis_dynamic_handler = {
     .enc_name         = "vorbis",
     .codec_type       = AVMEDIA_TYPE_AUDIO,
     .codec_id         = AV_CODEC_ID_VORBIS,
