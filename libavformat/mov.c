@@ -2859,7 +2859,7 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     for (i = 0; i < entries && !pb->eof_reached; i++) {
         int sample_duration;
         unsigned int sample_count;
-        unsigned min_entries = FFMIN(FFMAX(i, 1024 * 1024), entries);
+        unsigned int min_entries = FFMIN(FFMAX(i + 1, 1024 * 1024), entries);
         MOVStts *stts_data = av_fast_realloc(sc->stts_data, &alloc_size,
                                              min_entries * sizeof(*sc->stts_data));
         if (!stts_data) {
