@@ -130,7 +130,7 @@ static int extract_packet_props(AVCodecInternal *avci, const AVPacket *pkt)
     if (pkt) {
         ret = av_packet_copy_props(avci->last_pkt_props, pkt);
         if (!ret)
-            avci->last_pkt_props->size = pkt->size; // HACK: Needed for ff_init_buffer_info().
+            avci->last_pkt_props->size = pkt->size; // HACK: Needed for ff_decode_frame_props().
     }
     return ret;
 }
@@ -1661,7 +1661,7 @@ static int add_metadata_from_side_data(const AVPacket *avpkt, AVFrame *frame)
     return av_packet_unpack_dictionary(side_metadata, size, frame_md);
 }
 
-int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
+int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
 {
     const AVPacket *pkt = avctx->internal->last_pkt_props;
     int i;
@@ -1767,11 +1767,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         break;
     }
     return 0;
-}
-
-int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
-{
-    return ff_init_buffer_info(avctx, frame);
 }
 
 static void validate_avframe_allocation(AVCodecContext *avctx, AVFrame *frame)
@@ -1915,8 +1910,6 @@ static int reget_buffer_internal(AVCodecContext *avctx, AVFrame *frame)
                frame->width, frame->height, av_get_pix_fmt_name(frame->format), avctx->width, avctx->height, av_get_pix_fmt_name(avctx->pix_fmt));
         av_frame_unref(frame);
     }
-
-    ff_init_buffer_info(avctx, frame);
 
     if (!frame->data[0])
         return ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF);
