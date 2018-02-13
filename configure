@@ -968,8 +968,8 @@ check_stripflags(){
     test_stripflags "$@" && add_stripflags "$@"
 }
 
-check_header(){
-    log check_header "$@"
+check_headers(){
+    log check_headers "$@"
     headers=$1
     shift
     disable_sanitized $headers
@@ -1178,7 +1178,7 @@ require_cc(){
 require_header(){
     log require_header "$@"
     headers="$1"
-    check_header "$@" || die "ERROR: $headers not found"
+    check_headers "$@" || die "ERROR: $headers not found"
 }
 
 require_cpp_condition(){
@@ -3942,7 +3942,7 @@ case $target_os in
         enabled x86_64 && objformat="macho64" || objformat="macho32"
         enabled_any pic shared ||
             { check_cflags -mdynamic-no-pic && add_asflags -mdynamic-no-pic; }
-        check_header dispatch/dispatch.h &&
+        check_headers dispatch/dispatch.h &&
             add_cppflags '-I\$(SRC_PATH)/compat/dispatch_semaphore'
         if test -n "$sysroot"; then
             is_in -isysroot $cc $CPPFLAGS $CFLAGS || check_cppflags -isysroot $sysroot
@@ -4478,9 +4478,9 @@ if ! disabled network; then
     check_type "sys/types.h sys/socket.h" socklen_t
 
     # Prefer arpa/inet.h over winsock2
-    if check_header arpa/inet.h ; then
+    if check_headers arpa/inet.h ; then
         check_func closesocket
-    elif check_header winsock2.h ; then
+    elif check_headers winsock2.h ; then
         check_func_headers winsock2.h closesocket -lws2 &&
             network_extralibs="-lws2" ||
         { check_func_headers winsock2.h closesocket -lws2_32 &&
@@ -4558,22 +4558,22 @@ check_func_headers windows.h SetConsoleTextAttribute
 check_func_headers windows.h Sleep
 check_func_headers windows.h VirtualAlloc
 
-check_header direct.h
-check_header dxgidebug.h
-check_header dxva.h
-check_header dxva2api.h
-check_header io.h
-check_header malloc.h
-check_header poll.h
-check_header sys/param.h
-check_header sys/resource.h
-check_header sys/select.h
-check_header sys/time.h
-check_header sys/un.h
-check_header unistd.h
-check_header valgrind/valgrind.h
-check_header VideoDecodeAcceleration/VDADecoder.h
-check_header windows.h
+check_headers direct.h
+check_headers dxgidebug.h
+check_headers dxva.h
+check_headers dxva2api.h
+check_headers io.h
+check_headers malloc.h
+check_headers poll.h
+check_headers sys/param.h
+check_headers sys/resource.h
+check_headers sys/select.h
+check_headers sys/time.h
+check_headers sys/un.h
+check_headers unistd.h
+check_headers valgrind/valgrind.h
+check_headers VideoDecodeAcceleration/VDADecoder.h
+check_headers windows.h
 
 # it seems there are versions of clang in some distros that try to use the
 # gcc headers, which explodes for stdatomic
@@ -4649,11 +4649,11 @@ done
 
 # these are off by default, so fail if requested and not available
 enabled amf               && require_cpp_condition amf AMF/core/Version.h "(AMF_VERSION_MAJOR << 48 | AMF_VERSION_MINOR << 32 | AMF_VERSION_RELEASE << 16 | AMF_VERSION_BUILD_NUM) >= 0x0001000400040001"
-enabled avisynth          && require_header avisynth/avisynth_c.h
-enabled avxsynth          && require_header avxsynth/avxsynth_c.h
+enabled avisynth          && require_headers avisynth/avisynth_c.h
+enabled avxsynth          && require_headers avxsynth/avxsynth_c.h
 enabled cuda              && require cuda cuda.h cuInit -lcuda
 enabled cuvid             && require cuvid cuviddec.h cuvidCreateDecoder -lnvcuvid
-enabled frei0r            && require_header frei0r.h
+enabled frei0r            && require_headers frei0r.h
 enabled gnutls            && require_pkg_config gnutls gnutls gnutls/gnutls.h gnutls_global_init &&
                              check_lib gmp gmp.h mpz_export -lgmp
 enabled libaom            && require_pkg_config libaom "aom >= 0.1.0" aom/aom_codec.h aom_codec_version
@@ -4718,9 +4718,9 @@ enabled mmal              && { check_lib mmal interface/mmal/mmal.h mmal_port_co
                                die "ERROR: mmal not found" &&
                                check_func_headers interface/mmal/mmal.h "MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS"; }
 enabled nvenc             && require_cpp_condition nvenc nvEncodeAPI.h "NVENCAPI_MAJOR_VERSION >= 6"
-enabled omx               && require_header OMX_Core.h
-enabled omx_rpi           && { check_header OMX_Core.h ||
-                               { ! enabled cross_compile && add_cflags -isystem/opt/vc/include/IL && check_header OMX_Core.h ; } ||
+enabled omx               && require_headers OMX_Core.h
+enabled omx_rpi           && { check_headers OMX_Core.h ||
+                               { ! enabled cross_compile && add_cflags -isystem/opt/vc/include/IL && check_headers OMX_Core.h ; } ||
                                die "ERROR: OpenMAX IL headers not found"; } && enable omx
 enabled openssl           && { { check_pkg_config openssl openssl openssl/ssl.h OPENSSL_init_ssl ||
                                  check_pkg_config openssl openssl openssl/ssl.h SSL_library_init; } ||
@@ -4733,13 +4733,13 @@ enabled openssl           && { { check_pkg_config openssl openssl openssl/ssl.h 
 enabled avplay &&
     test_pkg_config sdl "sdl >= 1.2.1 sdl < 1.3.0" SDL_events.h SDL_PollEvent
 
-check_header linux/fb.h
-check_header linux/videodev2.h
+check_headers linux/fb.h
+check_headers linux/videodev2.h
 check_struct linux/videodev2.h "struct v4l2_frmivalenum" discrete
 
-check_header AVFoundation/AVFoundation.h
+check_headers AVFoundation/AVFoundation.h
 
-check_header sys/videoio.h
+check_headers sys/videoio.h
 
 check_lib user32 "windows.h winuser.h" GetShellWindow -luser32
 check_lib vfw32 "windows.h vfw.h" capCreateCaptureWindow -lvfw32
@@ -4748,12 +4748,12 @@ check_lib vfw32 "windows.h vfw.h" capCreateCaptureWindow -lvfw32
 check_cpp_condition vfwcap_defines vfw.h "WM_CAP_DRIVER_CONNECT > WM_USER"
 
 # check for ioctl_meteor.h, ioctl_bt848.h and alternatives
-check_header "dev/bktr/ioctl_meteor.h dev/bktr/ioctl_bt848.h"                   ||
-    check_header "machine/ioctl_meteor.h machine/ioctl_bt848.h"                 ||
-    check_header "dev/video/meteor/ioctl_meteor.h dev/video/bktr/ioctl_bt848.h" ||
-    check_header "dev/ic/bt8xx.h"
+check_headers "dev/bktr/ioctl_meteor.h dev/bktr/ioctl_bt848.h"                   ||
+    check_headers "machine/ioctl_meteor.h machine/ioctl_bt848.h"                 ||
+    check_headers "dev/video/meteor/ioctl_meteor.h dev/video/bktr/ioctl_bt848.h" ||
+    check_headers "dev/ic/bt8xx.h"
 
-check_header sys/soundcard.h
+check_headers sys/soundcard.h
 
 enabled alsa_indev &&
     check_lib alsa alsa/asoundlib.h snd_pcm_htimestamp -lasound
