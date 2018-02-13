@@ -188,6 +188,7 @@ Codecs:
   jvdec.c                               Peter Ross
   lcl*.c                                Roberto Togni, Reimar Doeffinger
   libcelt_dec.c                         Nicolas George
+  libcodec2.c                           Tomas Härdin
   libdirac*                             David Conrad
   libgsm.c                              Michel Bardiaux
   libkvazaar.c                          Arttu Ylä-Outinen
@@ -395,6 +396,7 @@ Muxers/Demuxers:
   brstm.c                               Paul B Mahol
   caf*                                  Peter Ross
   cdxl.c                                Paul B Mahol
+  codec2.c                              Tomas Härdin
   crc.c                                 Michael Niedermayer
   dashdec.c                             Steven Liu
   dashenc.c                             Karthick Jeyapal
