@@ -3055,6 +3055,42 @@ fail:
     return ret;
 }
 
+static MXFIndexTable *mxf_find_index_table(MXFContext *mxf, int index_sid)
+{
+    int i;
+    for (i = 0; i < mxf->nb_index_tables; i++)
+        if (mxf->index_tables[i].index_sid == index_sid)
+            return &mxf->index_tables[i];
+    return NULL;
+}
+
+/* Get the edit unit of the next packet from current_offset in a track. The returned edit unit can be original_duration as well! */
+static int mxf_get_next_track_edit_unit(MXFContext *mxf, MXFTrack *track, int64_t current_offset, int64_t *edit_unit_out)
+{
+    int64_t a, b, m, offset;
+    MXFIndexTable *t = mxf_find_index_table(mxf, track->index_sid);
+
+    if (!t || track->original_duration <= 0)
+        return -1;
+
+    a = -1;
+    b = track->original_duration;
+
+    while (b - a > 1) {
+        m = (a + b) >> 1;
+        if (mxf_edit_unit_absolute_offset(mxf, t, m, NULL, &offset, 0) < 0)
+            return -1;
+        if (offset < current_offset)
+            a = m;
+        else
+            b = m;
+    }
+
+    *edit_unit_out = b;
+
+    return 0;
+}
+
 /**
  * Sets mxf->current_edit_unit based on what offset we're currently at.
  * @return next_ofs if OK, <0 on error
@@ -3454,13 +3490,19 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *cur_st = s->streams[i];
         MXFTrack *cur_track = cur_st->priv_data;
-        uint64_t current_sample_count = 0;
         if (cur_st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-            ret = mxf_compute_sample_count(mxf, i, &current_sample_count);
-            if (ret < 0)
-                return ret;
-
-            cur_track->sample_count = current_sample_count;
+            int64_t track_edit_unit;
+            if (st != cur_st && mxf_get_next_track_edit_unit(mxf, cur_track, seekpos, &track_edit_unit) >= 0) {
+                cur_track->sample_count = av_rescale_q(track_edit_unit,
+                                                       av_inv_q(cur_track->edit_rate),
+                                                       cur_st->time_base);
+            } else {
+                uint64_t current_sample_count = 0;
+                ret = mxf_compute_sample_count(mxf, i, &current_sample_count);
+                if (ret < 0)
+                    return ret;
+                cur_track->sample_count = current_sample_count;
+            }
         }
     }
     return 0;
