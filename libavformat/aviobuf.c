@@ -87,6 +87,8 @@ int ffio_init_context(AVIOContext *s,
                   int (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
                   int64_t (*seek)(void *opaque, int64_t offset, int whence))
 {
+    memset(s, 0, sizeof(AVIOContext));
+
     s->buffer      = buffer;
     s->orig_buffer_size =
     s->buffer_size = buffer_size;
@@ -135,7 +137,7 @@ AVIOContext *avio_alloc_context(
                   int (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
                   int64_t (*seek)(void *opaque, int64_t offset, int whence))
 {
-    AVIOContext *s = av_mallocz(sizeof(AVIOContext));
+    AVIOContext *s = av_malloc(sizeof(AVIOContext));
     if (!s)
         return NULL;
     ffio_init_context(s, buffer, buffer_size, write_flag, opaque,
