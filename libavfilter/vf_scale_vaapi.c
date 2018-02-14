@@ -100,13 +100,13 @@ static int scale_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame)
 
     memset(&params, 0, sizeof(params));
 
-    // If there were top/left cropping, it could be taken into
-    // account here.
     input_region = (VARectangle) {
-        .x      = 0,
-        .y      = 0,
-        .width  = input_frame->width,
-        .height = input_frame->height,
+        .x      = input_frame->crop_left,
+        .y      = input_frame->crop_top,
+        .width  = input_frame->width -
+                 (input_frame->crop_left + input_frame->crop_right),
+        .height = input_frame->height -
+                 (input_frame->crop_top + input_frame->crop_bottom),
     };
 
     params.surface = input_surface;
