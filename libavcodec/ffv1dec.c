@@ -688,8 +688,12 @@ static int read_header(FFV1Context *f)
             f->avctx->pix_fmt = AV_PIX_FMT_GBRP9;
         else if (f->avctx->bits_per_raw_sample == 10 && !f->transparency)
             f->avctx->pix_fmt = AV_PIX_FMT_GBRP10;
+        else if (f->avctx->bits_per_raw_sample == 10 && f->transparency)
+            f->avctx->pix_fmt = AV_PIX_FMT_GBRAP10;
         else if (f->avctx->bits_per_raw_sample == 12 && !f->transparency)
             f->avctx->pix_fmt = AV_PIX_FMT_GBRP12;
+        else if (f->avctx->bits_per_raw_sample == 12 && f->transparency)
+            f->avctx->pix_fmt = AV_PIX_FMT_GBRAP12;
         else if (f->avctx->bits_per_raw_sample == 14 && !f->transparency)
             f->avctx->pix_fmt = AV_PIX_FMT_GBRP14;
         else if (f->avctx->bits_per_raw_sample == 16 && !f->transparency) {

@@ -648,9 +648,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (!avctx->bits_per_raw_sample)
             s->bits_per_raw_sample = 9;
     case AV_PIX_FMT_GBRP10:
+    case AV_PIX_FMT_GBRAP10:
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
             s->bits_per_raw_sample = 10;
     case AV_PIX_FMT_GBRP12:
+    case AV_PIX_FMT_GBRAP12:
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
             s->bits_per_raw_sample = 12;
     case AV_PIX_FMT_GBRP14:
@@ -1326,6 +1328,7 @@ AVCodec ff_ffv1_encoder = {
         AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA420P9,
         AV_PIX_FMT_GRAY16,    AV_PIX_FMT_GRAY8,     AV_PIX_FMT_GBRP9,     AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_GBRP12,    AV_PIX_FMT_GBRP14,
+        AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GBRAP12,
         AV_PIX_FMT_YA8,
         AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12,
         AV_PIX_FMT_GBRP16, AV_PIX_FMT_RGB48,
