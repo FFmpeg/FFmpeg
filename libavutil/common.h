@@ -162,7 +162,7 @@ static av_always_inline av_const int64_t av_clip64_c(int64_t a, int64_t amin, in
  */
 static av_always_inline av_const uint8_t av_clip_uint8_c(int a)
 {
-    if (a&(~0xFF)) return (-a)>>31;
+    if (a&(~0xFF)) return (~a)>>31;
     else           return a;
 }
 
@@ -184,7 +184,7 @@ static av_always_inline av_const int8_t av_clip_int8_c(int a)
  */
 static av_always_inline av_const uint16_t av_clip_uint16_c(int a)
 {
-    if (a&(~0xFFFF)) return (-a)>>31;
+    if (a&(~0xFFFF)) return (~a)>>31;
     else             return a;
 }
 
