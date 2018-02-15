@@ -331,7 +331,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             src[1] = -src[1];
 
         if (s->swap)
-            FFSWAP(float, src[0], src[1]);;
+            FFSWAP(float, src[0], src[1]);
 
         if (s->mode == LISSAJOUS) {
             x = ((src[1] - src[0]) * zoom / 2 + 1) * hw;
