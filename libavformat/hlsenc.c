@@ -42,6 +42,7 @@
 typedef struct ListEntry {
     char  name[1024];
     int64_t duration;     // segment duration in AV_TIME_BASE units
+    int discont;
     struct ListEntry *next;
 } ListEntry;
 
@@ -75,6 +76,8 @@ typedef struct HLSContext {
     char *key_url;         // Set by a private option.
     char *iv;              // Set by a private option.
     int iv_len;
+
+    int recovered;
 
     char *key_basename;
 
@@ -214,7 +217,8 @@ static int hls_mux_init(AVFormatContext *s)
     return 0;
 }
 
-static int append_entry(HLSContext *hls, int64_t duration, const char *name)
+static int append_entry(HLSContext *hls, int64_t duration, const char *name,
+                        int discont)
 {
     ListEntry *en = av_malloc(sizeof(*en));
 
@@ -223,6 +227,7 @@ static int append_entry(HLSContext *hls, int64_t duration, const char *name)
 
     av_strlcpy(en->name, name, sizeof(en->name));
 
+    en->discont  = discont;
     en->duration = duration;
     en->next     = NULL;
 
@@ -289,6 +294,10 @@ static int hls_window(AVFormatContext *s, int last)
            sequence);
 
     for (en = hls->list; en; en = en->next) {
+        if (en->discont) {
+            avio_printf(out, "#EXT-X-DISCONTINUITY\n");
+        }
+
         if (hls->encrypt) {
             char *key_url;
 
@@ -383,7 +392,7 @@ static int hls_recover(AVFormatContext *s)
     char line[1024];
     AVIOContext *io;
     const char *ptr;
-    int ret, is_segment = 0;
+    int ret, is_segment = 0, is_discont = 0;
     int64_t duration = 0;
 
     ret = s->io_open(s, &io, s->filename, AVIO_FLAG_READ, NULL);
@@ -410,15 +419,20 @@ static int hls_recover(AVFormatContext *s)
         } else if (av_strstart(line, "#EXTINF:", &ptr)) {
             is_segment = 1;
             duration   = atof(ptr) * AV_TIME_BASE;
+        } else if (av_strstart(line, "#EXT-X-DISCONTINUITY", NULL)) {
+            is_discont = 1;
         } else if (av_strstart(line, "#", NULL)) {
             continue;
         } else if (line[0]) {
             if (is_segment) {
-                append_entry(hls, duration, av_basename(line));
+                append_entry(hls, duration, av_basename(line), is_discont);
                 is_segment = 0;
+                is_discont = 0;
             }
         }
     }
+
+    hls->recovered = 1;
 
     return 0;
 }
@@ -539,7 +553,8 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         hls->duration = pts - hls->end_pts;
 
     if (can_split && pts - hls->start_pts >= end_pts) {
-        ret = append_entry(hls, hls->duration, av_basename(hls->avf->filename));
+        ret = append_entry(hls, hls->duration, av_basename(hls->avf->filename), hls->recovered);
+        hls->recovered = 0;
         if (ret)
             return ret;
 
@@ -574,7 +589,7 @@ static int hls_write_trailer(struct AVFormatContext *s)
     ff_format_io_close(s, &oc->pb);
     avformat_free_context(oc);
     av_free(hls->basename);
-    append_entry(hls, hls->duration, av_basename(hls->avf->filename));
+    append_entry(hls, hls->duration, av_basename(hls->avf->filename), 0);
     hls_window(s, 1);
 
     free_entries(hls);
