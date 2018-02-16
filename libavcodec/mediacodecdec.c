@@ -25,7 +25,6 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
-#include "libavutil/fifo.h"
 #include "libavutil/opt.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/pixfmt.h"
@@ -43,8 +42,6 @@ typedef struct MediaCodecH264DecContext {
 
     MediaCodecDecContext *ctx;
 
-    AVFifoBuffer *fifo;
-
     AVPacket buffered_pkt;
 
 } MediaCodecH264DecContext;
@@ -55,8 +52,6 @@ static av_cold int mediacodec_decode_close(AVCodecContext *avctx)
 
     ff_mediacodec_dec_close(avctx, s->ctx);
     s->ctx = NULL;
-
-    av_fifo_free(s->fifo);
 
     av_packet_unref(&s->buffered_pkt);
 
@@ -400,12 +395,6 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
 
     av_log(avctx, AV_LOG_INFO, "MediaCodec started successfully, ret = %d\n", ret);
 
-    s->fifo = av_fifo_alloc(sizeof(AVPacket));
-    if (!s->fifo) {
-        ret = AVERROR(ENOMEM);
-        goto done;
-    }
-
 done:
     if (format) {
         ff_AMediaFormat_delete(format);
@@ -418,13 +407,33 @@ done:
     return ret;
 }
 
+static int mediacodec_send_receive(AVCodecContext *avctx,
+                                   MediaCodecH264DecContext *s,
+                                   AVFrame *frame, bool wait)
+{
+    int ret;
+
+    /* send any pending data from buffered packet */
+    while (s->buffered_pkt.size) {
+        ret = ff_mediacodec_dec_send(avctx, s->ctx, &s->buffered_pkt);
+        if (ret == AVERROR(EAGAIN))
+            break;
+        else if (ret < 0)
+            return ret;
+        s->buffered_pkt.size -= ret;
+        s->buffered_pkt.data += ret;
+        if (s->buffered_pkt.size <= 0)
+            av_packet_unref(&s->buffered_pkt);
+    }
+
+    /* check for new frame */
+    return ff_mediacodec_dec_receive(avctx, s->ctx, frame, wait);
+}
+
 static int mediacodec_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 {
     MediaCodecH264DecContext *s = avctx->priv_data;
     int ret;
-    int got_frame = 0;
-    int is_eof = 0;
-    AVPacket pkt = { 0 };
 
     /*
      * MediaCodec.flush() discards both input and output buffers, thus we
@@ -452,73 +461,33 @@ static int mediacodec_receive_frame(AVCodecContext *avctx, AVFrame *frame)
         }
     }
 
-    ret = ff_decode_get_packet(avctx, &pkt);
-    if (ret == AVERROR_EOF)
-        is_eof = 1;
-    else if (ret == AVERROR(EAGAIN))
-        ; /* no input packet, but fallthrough to check for pending frames */
+    /* flush buffered packet and check for new frame */
+    ret = mediacodec_send_receive(avctx, s, frame, false);
+    if (ret != AVERROR(EAGAIN))
+        return ret;
+
+    /* skip fetching new packet if we still have one buffered */
+    if (s->buffered_pkt.size > 0)
+        return AVERROR(EAGAIN);
+
+    /* fetch new packet or eof */
+    ret = ff_decode_get_packet(avctx, &s->buffered_pkt);
+    if (ret == AVERROR_EOF) {
+        AVPacket null_pkt = { 0 };
+        ret = ff_mediacodec_dec_send(avctx, s->ctx, &null_pkt);
+        if (ret < 0)
+            return ret;
+    }
     else if (ret < 0)
         return ret;
 
-    /* buffer the input packet */
-    if (pkt.size) {
-        if (av_fifo_space(s->fifo) < sizeof(pkt)) {
-            ret = av_fifo_realloc2(s->fifo,
-                                   av_fifo_size(s->fifo) + sizeof(pkt));
-            if (ret < 0) {
-                av_packet_unref(&pkt);
-                return ret;
-            }
-        }
-        av_fifo_generic_write(s->fifo, &pkt, sizeof(pkt), NULL);
-    }
-
-    /* process buffered data */
-    while (!got_frame) {
-        /* prepare the input data */
-        if (s->buffered_pkt.size <= 0) {
-            av_packet_unref(&s->buffered_pkt);
-
-            /* no more data */
-            if (av_fifo_size(s->fifo) < sizeof(AVPacket)) {
-                AVPacket null_pkt = { 0 };
-                if (is_eof) {
-                    ret = ff_mediacodec_dec_decode(avctx, s->ctx, frame,
-                                                   &got_frame, &null_pkt);
-                    if (ret < 0)
-                        return ret;
-                    else if (got_frame)
-                        return 0;
-                    else
-                        return AVERROR_EOF;
-                }
-                return AVERROR(EAGAIN);
-            }
-
-            av_fifo_generic_read(s->fifo, &s->buffered_pkt, sizeof(s->buffered_pkt), NULL);
-        }
-
-        ret = ff_mediacodec_dec_decode(avctx, s->ctx, frame, &got_frame, &s->buffered_pkt);
-        if (ret < 0)
-            return ret;
-
-        s->buffered_pkt.size -= ret;
-        s->buffered_pkt.data += ret;
-    }
-
-    return 0;
+    /* crank decoder with new packet */
+    return mediacodec_send_receive(avctx, s, frame, true);
 }
 
 static void mediacodec_decode_flush(AVCodecContext *avctx)
 {
     MediaCodecH264DecContext *s = avctx->priv_data;
-
-    while (av_fifo_size(s->fifo)) {
-        AVPacket pkt;
-        av_fifo_generic_read(s->fifo, &pkt, sizeof(pkt), NULL);
-        av_packet_unref(&pkt);
-    }
-    av_fifo_reset(s->fifo);
 
     av_packet_unref(&s->buffered_pkt);
 
