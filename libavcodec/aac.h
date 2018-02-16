@@ -357,6 +357,8 @@ struct AACContext {
     int warned_num_aac_frames;
     int warned_960_sbr;
 
+    int warned_gain_control;
+
     /* aacdec functions pointers */
     void (*imdct_and_windowing)(AACContext *ac, SingleChannelElement *sce);
     void (*apply_ltp)(AACContext *ac, SingleChannelElement *sce);
