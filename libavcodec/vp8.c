@@ -606,6 +606,8 @@ static int vp7_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
             s->fade_present = vp8_rac_get(c);
     }
 
+    if (c->end <= c->buffer && c->bits >= 0)
+        return AVERROR_INVALIDDATA;
     /* E. Fading information for previous frame */
     if (s->fade_present && vp8_rac_get(c)) {
         if ((ret = vp7_fade_frame(s ,c)) < 0)
