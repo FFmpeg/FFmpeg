@@ -305,11 +305,7 @@ static int dxtory_decode_v2(AVCodecContext *avctx, AVFrame *pic,
     }
 
     if (avctx->height - line) {
-        av_log(avctx, AV_LOG_VERBOSE,
-               "Not enough slice data available, "
-               "cropping the frame by %d pixels\n",
-                avctx->height - line);
-        avctx->height = line;
+        avpriv_request_sample(avctx, "Not enough slice data available");
     }
 
     return 0;
