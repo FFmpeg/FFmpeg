@@ -73,7 +73,8 @@ av_cold void ff_blend_init_x86(FilterParams *param, int is_16bit)
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (EXTERNAL_SSE2(cpu_flags) && param->opacity == 1 && !is_16bit) {
+    if (!is_16bit) {
+    if (EXTERNAL_SSE2(cpu_flags) && param->opacity == 1) {
         switch (param->mode) {
         case BLEND_ADDITION: param->blend = ff_blend_addition_sse2; break;
         case BLEND_GRAINMERGE: param->blend = ff_blend_grainmerge_sse2; break;
@@ -95,7 +96,7 @@ av_cold void ff_blend_init_x86(FilterParams *param, int is_16bit)
         case BLEND_NEGATION:   param->blend = ff_blend_negation_sse2;   break;
         }
     }
-    if (EXTERNAL_SSSE3(cpu_flags) && param->opacity == 1 && !is_16bit) {
+    if (EXTERNAL_SSSE3(cpu_flags) && param->opacity == 1) {
         switch (param->mode) {
         case BLEND_DIFFERENCE: param->blend = ff_blend_difference_ssse3; break;
         case BLEND_EXTREMITY:  param->blend = ff_blend_extremity_ssse3;  break;
@@ -103,7 +104,7 @@ av_cold void ff_blend_init_x86(FilterParams *param, int is_16bit)
         }
     }
 
-    if (EXTERNAL_AVX2_FAST(cpu_flags) && param->opacity == 1 && !is_16bit) {
+    if (EXTERNAL_AVX2_FAST(cpu_flags) && param->opacity == 1) {
         switch (param->mode) {
         case BLEND_ADDITION:     param->blend = ff_blend_addition_avx2;     break;
         case BLEND_GRAINMERGE:   param->blend = ff_blend_grainmerge_avx2;   break;
@@ -123,5 +124,6 @@ av_cold void ff_blend_init_x86(FilterParams *param, int is_16bit)
         case BLEND_EXTREMITY:    param->blend = ff_blend_extremity_avx2;    break;
         case BLEND_NEGATION:     param->blend = ff_blend_negation_avx2;     break;
         }
+    }
     }
 }
