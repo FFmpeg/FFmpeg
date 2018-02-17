@@ -285,7 +285,7 @@ static int get_siz(Jpeg2000DecoderContext *s)
         avpriv_request_sample(s->avctx, "Support for image offsets");
         return AVERROR_PATCHWELCOME;
     }
-    if (av_image_check_size(s->width, s->height, 0, s->avctx)) {
+    if (av_image_check_size2(s->width, s->height, s->avctx->max_pixels, AV_PIX_FMT_NONE, 0, s->avctx)) {
         avpriv_request_sample(s->avctx, "Large Dimensions");
         return AVERROR_PATCHWELCOME;
     }
