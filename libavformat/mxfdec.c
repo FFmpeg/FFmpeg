@@ -1564,14 +1564,6 @@ static int mxf_compute_index_tables(MXFContext *mxf)
 {
     int i, j, k, ret, nb_sorted_segments;
     MXFIndexTableSegment **sorted_segments = NULL;
-    AVStream *st = NULL;
-
-    for (i = 0; i < mxf->fc->nb_streams; i++) {
-        if (mxf->fc->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_DATA)
-            continue;
-        st = mxf->fc->streams[i];
-        break;
-    }
 
     if ((ret = mxf_get_sorted_table_segments(mxf, &nb_sorted_segments, &sorted_segments)) ||
         nb_sorted_segments <= 0) {
@@ -1610,6 +1602,7 @@ static int mxf_compute_index_tables(MXFContext *mxf)
 
     for (i = j = 0; j < mxf->nb_index_tables; i += mxf->index_tables[j++].nb_segments) {
         MXFIndexTable *t = &mxf->index_tables[j];
+        MXFTrack *mxf_track = NULL;
 
         t->segments = av_mallocz_array(t->nb_segments,
                                        sizeof(*t->segments));
@@ -1632,6 +1625,14 @@ static int mxf_compute_index_tables(MXFContext *mxf)
         if ((ret = mxf_compute_ptses_fake_index(mxf, t)) < 0)
             goto finish_decoding_index;
 
+        for (k = 0; k < mxf->fc->nb_streams; k++) {
+            MXFTrack *track = mxf->fc->streams[k]->priv_data;
+            if (track && track->index_sid == t->index_sid) {
+                mxf_track = track;
+                break;
+            }
+        }
+
         /* fix zero IndexDurations */
         for (k = 0; k < t->nb_segments; k++) {
             if (t->segments[k]->index_duration)
@@ -1641,7 +1642,7 @@ static int mxf_compute_index_tables(MXFContext *mxf)
                 av_log(mxf->fc, AV_LOG_WARNING, "IndexSID %i segment %i has zero IndexDuration and there's more than one segment\n",
                        t->index_sid, k);
 
-            if (!st) {
+            if (!mxf_track) {
                 av_log(mxf->fc, AV_LOG_WARNING, "no streams?\n");
                 break;
             }
@@ -1649,7 +1650,7 @@ static int mxf_compute_index_tables(MXFContext *mxf)
             /* assume the first stream's duration is reasonable
              * leave index_duration = 0 on further segments in case we have any (unlikely)
              */
-            t->segments[k]->index_duration = st->duration;
+            t->segments[k]->index_duration = mxf_track->original_duration;
             break;
         }
     }
