@@ -3451,6 +3451,20 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
         mxf->current_edit_unit = sample_time;
     } else {
         t = &mxf->index_tables[0];
+        if (t->index_sid != source_track->index_sid) {
+            /* If the first index table does not belong to the stream, then find a stream which does belong to the index table */
+            for (i = 0; i < s->nb_streams; i++) {
+                MXFTrack *new_source_track = s->streams[i]->priv_data;
+                if (new_source_track && new_source_track->index_sid == t->index_sid) {
+                    sample_time = av_rescale_q(sample_time, new_source_track->edit_rate, source_track->edit_rate);
+                    source_track = new_source_track;
+                    st = s->streams[i];
+                    break;
+                }
+            }
+            if (i == s->nb_streams)
+                return AVERROR_INVALIDDATA;
+        }
 
         /* clamp above zero, else ff_index_search_timestamp() returns negative
          * this also means we allow seeking before the start */
