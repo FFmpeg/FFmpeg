@@ -289,7 +289,8 @@ static const uint8_t mxf_header_partition_pack_key[]       = { 0x06,0x0e,0x2b,0x
 static const uint8_t mxf_essence_element_key[]             = { 0x06,0x0e,0x2b,0x34,0x01,0x02,0x01,0x01,0x0d,0x01,0x03,0x01 };
 static const uint8_t mxf_avid_essence_element_key[]        = { 0x06,0x0e,0x2b,0x34,0x01,0x02,0x01,0x01,0x0e,0x04,0x03,0x01 };
 static const uint8_t mxf_canopus_essence_element_key[]     = { 0x06,0x0e,0x2b,0x34,0x01,0x02,0x01,0x0a,0x0e,0x0f,0x03,0x01 };
-static const uint8_t mxf_system_item_key[]                 = { 0x06,0x0e,0x2b,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x03,0x01,0x04 };
+static const uint8_t mxf_system_item_key_cp[]              = { 0x06,0x0e,0x2b,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x03,0x01,0x04 };
+static const uint8_t mxf_system_item_key_gc[]              = { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x03,0x01,0x14 };
 static const uint8_t mxf_klv_key[]                         = { 0x06,0x0e,0x2b,0x34 };
 /* complete keys to match */
 static const uint8_t mxf_crypto_source_container_ul[]      = { 0x06,0x0e,0x2b,0x34,0x01,0x01,0x01,0x09,0x06,0x01,0x01,0x02,0x02,0x00,0x00,0x00 };
@@ -2861,7 +2862,8 @@ static int mxf_read_header(AVFormatContext *s)
         if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key) ||
             IS_KLV_KEY(klv.key, mxf_essence_element_key) ||
             IS_KLV_KEY(klv.key, mxf_avid_essence_element_key) ||
-            IS_KLV_KEY(klv.key, mxf_system_item_key)) {
+            IS_KLV_KEY(klv.key, mxf_system_item_key_cp) ||
+            IS_KLV_KEY(klv.key, mxf_system_item_key_gc)) {
 
             if (!mxf->current_partition) {
                 av_log(mxf->fc, AV_LOG_ERROR, "found essence prior to first PartitionPack\n");
@@ -2888,7 +2890,10 @@ static int mxf_read_header(AVFormatContext *s)
                     mxf->current_partition->essence_length = klv.length;
                 } else {
                     /* NOTE: op1a_essence_offset may be less than to klv.offset (C0023S01.mxf)  */
-                    mxf->current_partition->essence_offset = op1a_essence_offset;
+                    if (IS_KLV_KEY(klv.key, mxf_system_item_key_cp) || IS_KLV_KEY(klv.key, mxf_system_item_key_gc))
+                        mxf->current_partition->essence_offset = klv.offset;
+                    else
+                        mxf->current_partition->essence_offset = op1a_essence_offset;
                 }
             }
 
