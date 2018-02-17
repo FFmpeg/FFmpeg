@@ -123,6 +123,18 @@ void checkasm_check_blend(void)
 
     report("8bit");
 
+    check_and_report(addition_16, BLEND_ADDITION, 2)
+    check_and_report(and_16, BLEND_AND, 2)
+    check_and_report(darken_16, BLEND_DARKEN, 2)
+    check_and_report(difference_16, BLEND_DIFFERENCE, 2)
+    check_and_report(lighten_16, BLEND_LIGHTEN, 2)
+    check_and_report(or_16, BLEND_OR, 2)
+    check_and_report(phoenix_16, BLEND_PHOENIX, 2)
+    check_and_report(subtract_16, BLEND_SUBTRACT, 2)
+    check_and_report(xor_16, BLEND_SUBTRACT, 2)
+
+    report("16bit");
+
     av_freep(&top1);
     av_freep(&top2);
     av_freep(&bot1);
