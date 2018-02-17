@@ -2875,8 +2875,8 @@ static int mxf_read_header(AVFormatContext *s)
                  *       for OPAtom we still need the actual essence_offset though (the KL's length can vary)
                  */
                 int64_t op1a_essence_offset =
-                    round_to_kag(mxf->current_partition->this_partition +
-                                 mxf->current_partition->pack_length,       mxf->current_partition->kag_size) +
+                    mxf->current_partition->this_partition +
+                    round_to_kag(mxf->current_partition->pack_length,       mxf->current_partition->kag_size) +
                     round_to_kag(mxf->current_partition->header_byte_count, mxf->current_partition->kag_size) +
                     round_to_kag(mxf->current_partition->index_byte_count,  mxf->current_partition->kag_size);
 
