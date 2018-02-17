@@ -74,56 +74,56 @@ av_cold void ff_blend_init_x86(FilterParams *param, int is_16bit)
     int cpu_flags = av_get_cpu_flags();
 
     if (!is_16bit) {
-    if (EXTERNAL_SSE2(cpu_flags) && param->opacity == 1) {
-        switch (param->mode) {
-        case BLEND_ADDITION: param->blend = ff_blend_addition_sse2; break;
-        case BLEND_GRAINMERGE: param->blend = ff_blend_grainmerge_sse2; break;
-        case BLEND_AND:      param->blend = ff_blend_and_sse2;      break;
-        case BLEND_AVERAGE:  param->blend = ff_blend_average_sse2;  break;
-        case BLEND_DARKEN:   param->blend = ff_blend_darken_sse2;   break;
-        case BLEND_GRAINEXTRACT: param->blend = ff_blend_grainextract_sse2; break;
-        case BLEND_DIVIDE:   param->blend = ff_blend_divide_sse2;   break;
-        case BLEND_HARDMIX:  param->blend = ff_blend_hardmix_sse2;  break;
-        case BLEND_LIGHTEN:  param->blend = ff_blend_lighten_sse2;  break;
-        case BLEND_MULTIPLY: param->blend = ff_blend_multiply_sse2; break;
-        case BLEND_OR:       param->blend = ff_blend_or_sse2;       break;
-        case BLEND_PHOENIX:  param->blend = ff_blend_phoenix_sse2;  break;
-        case BLEND_SCREEN:   param->blend = ff_blend_screen_sse2;   break;
-        case BLEND_SUBTRACT: param->blend = ff_blend_subtract_sse2; break;
-        case BLEND_XOR:      param->blend = ff_blend_xor_sse2;      break;
-        case BLEND_DIFFERENCE: param->blend = ff_blend_difference_sse2; break;
-        case BLEND_EXTREMITY:  param->blend = ff_blend_extremity_sse2;  break;
-        case BLEND_NEGATION:   param->blend = ff_blend_negation_sse2;   break;
+        if (EXTERNAL_SSE2(cpu_flags) && param->opacity == 1) {
+            switch (param->mode) {
+            case BLEND_ADDITION:     param->blend = ff_blend_addition_sse2;     break;
+            case BLEND_GRAINMERGE:   param->blend = ff_blend_grainmerge_sse2;   break;
+            case BLEND_AND:          param->blend = ff_blend_and_sse2;          break;
+            case BLEND_AVERAGE:      param->blend = ff_blend_average_sse2;      break;
+            case BLEND_DARKEN:       param->blend = ff_blend_darken_sse2;       break;
+            case BLEND_GRAINEXTRACT: param->blend = ff_blend_grainextract_sse2; break;
+            case BLEND_DIVIDE:       param->blend = ff_blend_divide_sse2;       break;
+            case BLEND_HARDMIX:      param->blend = ff_blend_hardmix_sse2;      break;
+            case BLEND_LIGHTEN:      param->blend = ff_blend_lighten_sse2;      break;
+            case BLEND_MULTIPLY:     param->blend = ff_blend_multiply_sse2;     break;
+            case BLEND_OR:           param->blend = ff_blend_or_sse2;           break;
+            case BLEND_PHOENIX:      param->blend = ff_blend_phoenix_sse2;      break;
+            case BLEND_SCREEN:       param->blend = ff_blend_screen_sse2;       break;
+            case BLEND_SUBTRACT:     param->blend = ff_blend_subtract_sse2;     break;
+            case BLEND_XOR:          param->blend = ff_blend_xor_sse2;          break;
+            case BLEND_DIFFERENCE:   param->blend = ff_blend_difference_sse2;   break;
+            case BLEND_EXTREMITY:    param->blend = ff_blend_extremity_sse2;    break;
+            case BLEND_NEGATION:     param->blend = ff_blend_negation_sse2;     break;
+            }
         }
-    }
-    if (EXTERNAL_SSSE3(cpu_flags) && param->opacity == 1) {
-        switch (param->mode) {
-        case BLEND_DIFFERENCE: param->blend = ff_blend_difference_ssse3; break;
-        case BLEND_EXTREMITY:  param->blend = ff_blend_extremity_ssse3;  break;
-        case BLEND_NEGATION:   param->blend = ff_blend_negation_ssse3;   break;
+        if (EXTERNAL_SSSE3(cpu_flags) && param->opacity == 1) {
+            switch (param->mode) {
+            case BLEND_DIFFERENCE: param->blend = ff_blend_difference_ssse3; break;
+            case BLEND_EXTREMITY:  param->blend = ff_blend_extremity_ssse3;  break;
+            case BLEND_NEGATION:   param->blend = ff_blend_negation_ssse3;   break;
+            }
         }
-    }
 
-    if (EXTERNAL_AVX2_FAST(cpu_flags) && param->opacity == 1) {
-        switch (param->mode) {
-        case BLEND_ADDITION:     param->blend = ff_blend_addition_avx2;     break;
-        case BLEND_GRAINMERGE:   param->blend = ff_blend_grainmerge_avx2;   break;
-        case BLEND_AND:          param->blend = ff_blend_and_avx2;          break;
-        case BLEND_AVERAGE:      param->blend = ff_blend_average_avx2;      break;
-        case BLEND_DARKEN:       param->blend = ff_blend_darken_avx2;       break;
-        case BLEND_GRAINEXTRACT: param->blend = ff_blend_grainextract_avx2; break;
-        case BLEND_HARDMIX:      param->blend = ff_blend_hardmix_avx2;      break;
-        case BLEND_LIGHTEN:      param->blend = ff_blend_lighten_avx2;      break;
-        case BLEND_MULTIPLY:     param->blend = ff_blend_multiply_avx2;     break;
-        case BLEND_OR:           param->blend = ff_blend_or_avx2;           break;
-        case BLEND_PHOENIX:      param->blend = ff_blend_phoenix_avx2;      break;
-        case BLEND_SCREEN:       param->blend = ff_blend_screen_avx2;       break;
-        case BLEND_SUBTRACT:     param->blend = ff_blend_subtract_avx2;     break;
-        case BLEND_XOR:          param->blend = ff_blend_xor_avx2;          break;
-        case BLEND_DIFFERENCE:   param->blend = ff_blend_difference_avx2;   break;
-        case BLEND_EXTREMITY:    param->blend = ff_blend_extremity_avx2;    break;
-        case BLEND_NEGATION:     param->blend = ff_blend_negation_avx2;     break;
+        if (EXTERNAL_AVX2_FAST(cpu_flags) && param->opacity == 1) {
+            switch (param->mode) {
+            case BLEND_ADDITION:     param->blend = ff_blend_addition_avx2;     break;
+            case BLEND_GRAINMERGE:   param->blend = ff_blend_grainmerge_avx2;   break;
+            case BLEND_AND:          param->blend = ff_blend_and_avx2;          break;
+            case BLEND_AVERAGE:      param->blend = ff_blend_average_avx2;      break;
+            case BLEND_DARKEN:       param->blend = ff_blend_darken_avx2;       break;
+            case BLEND_GRAINEXTRACT: param->blend = ff_blend_grainextract_avx2; break;
+            case BLEND_HARDMIX:      param->blend = ff_blend_hardmix_avx2;      break;
+            case BLEND_LIGHTEN:      param->blend = ff_blend_lighten_avx2;      break;
+            case BLEND_MULTIPLY:     param->blend = ff_blend_multiply_avx2;     break;
+            case BLEND_OR:           param->blend = ff_blend_or_avx2;           break;
+            case BLEND_PHOENIX:      param->blend = ff_blend_phoenix_avx2;      break;
+            case BLEND_SCREEN:       param->blend = ff_blend_screen_avx2;       break;
+            case BLEND_SUBTRACT:     param->blend = ff_blend_subtract_avx2;     break;
+            case BLEND_XOR:          param->blend = ff_blend_xor_avx2;          break;
+            case BLEND_DIFFERENCE:   param->blend = ff_blend_difference_avx2;   break;
+            case BLEND_EXTREMITY:    param->blend = ff_blend_extremity_avx2;    break;
+            case BLEND_NEGATION:     param->blend = ff_blend_negation_avx2;     break;
+            }
         }
-    }
     }
 }
