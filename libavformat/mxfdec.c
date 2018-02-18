@@ -1347,23 +1347,29 @@ static int mxf_get_sorted_table_segments(MXFContext *mxf, int *nb_sorted_segment
  */
 static int mxf_absolute_bodysid_offset(MXFContext *mxf, int body_sid, int64_t offset, int64_t *offset_out)
 {
-    int x;
     MXFPartition *last_p = NULL;
+    int a, b, m, m0;
 
     if (offset < 0)
         return AVERROR(EINVAL);
 
-    for (x = 0; x < mxf->partitions_count; x++) {
-        MXFPartition *p = &mxf->partitions[x];
+    a = -1;
+    b = mxf->partitions_count;
 
-        if (p->body_sid != body_sid)
-            continue;
+    while (b - a > 1) {
+        m0 = m = (a + b) >> 1;
 
-        if (p->body_offset > offset)
-            break;
+        while (m < b && mxf->partitions[m].body_sid != body_sid)
+            m++;
 
-        last_p = p;
+        if (m < b && mxf->partitions[m].body_offset <= offset)
+            a = m;
+        else
+            b = m0;
     }
+
+    if (a >= 0)
+        last_p = &mxf->partitions[a];
 
     if (last_p && (!last_p->essence_length || last_p->essence_length > (offset - last_p->body_offset))) {
         *offset_out = last_p->essence_offset + (offset - last_p->body_offset);
