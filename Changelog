@@ -13,7 +13,7 @@ version <next>:
 - PCE support for extended channel layouts in the AAC encoder
 - native aptX and aptX HD encoder and decoder
 - Raw aptX and aptX HD muxer and demuxer
-- NVIDIA NVDEC-accelerated H.264, HEVC, MPEG-1/2/4, VC1, VP8/9 hwaccel decoding
+- NVIDIA NVDEC-accelerated H.264, HEVC, MJPEG, MPEG-1/2/4, VC1, VP8/9 hwaccel decoding
 - Intel QSV-accelerated overlay filter
 - mcompand audio filter
 - acontrast audio filter
