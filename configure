@@ -3622,15 +3622,6 @@ for v in "$@"; do
     FFMPEG_CONFIGURATION="${FFMPEG_CONFIGURATION# } ${l}${r}"
 done
 
-find_things(){
-    thing=$1
-    pattern=$2
-    file=$source_path/$3
-    sed -n "s/^[^#]*$pattern.*([^,]*, *\([^,]*\)\(,.*\)*).*/\1_$thing/p" "$file"
-}
-
-FILTER_LIST=$(find_things   filter   FILTER   libavfilter/allfilters.c)
-
 find_things_extern(){
     thing=$1
     pattern=$2
@@ -3639,6 +3630,13 @@ find_things_extern(){
     sed -n "s/^[^#]*extern.*$pattern *ff_\([^ ]*\)_$thing;/\1_$out/p" "$file"
 }
 
+find_filters_extern(){
+    file=$source_path/$1
+    #sed -n "s/^extern AVFilter ff_\([avfsinkrc]\{2,5\}\)_\(\w\+\);/\2_filter/p" $file
+    sed -E -n "s/^extern AVFilter ff_([avfsinkrc]{2,5})_([a-zA-Z0-9_]+);/\2_filter/p" $file
+}
+
+FILTER_LIST=$(find_filters_extern libavfilter/allfilters.c)
 OUTDEV_LIST=$(find_things_extern muxer AVOutputFormat libavdevice/alldevices.c outdev)
 INDEV_LIST=$(find_things_extern demuxer AVInputFormat libavdevice/alldevices.c indev)
 MUXER_LIST=$(find_things_extern muxer AVOutputFormat libavformat/allformats.c)
@@ -7157,6 +7155,10 @@ echo "#endif /* AVUTIL_AVCONFIG_H */" >> $TMPH
 
 cp_if_changed $TMPH libavutil/avconfig.h
 
+full_filter_name(){
+    sed -n "s/^extern AVFilter ff_\([avfsinkrc]\{2,5\}\)_$1;/\1_$1/p" $source_path/libavfilter/allfilters.c
+}
+
 # generate the lists of enabled components
 print_enabled_components(){
     file=$1
@@ -7167,6 +7169,9 @@ print_enabled_components(){
     for c in $*; do
         if enabled $c; then
             case $name in
+                filter_list)
+                    c=$(full_filter_name $(remove_suffix _filter $c))
+                ;;
                 indev_list)
                     c=$(add_suffix _demuxer $(remove_suffix _indev $c))
                 ;;
@@ -7177,10 +7182,16 @@ print_enabled_components(){
             printf "    &ff_%s,\n" $c >> $TMPH
         fi
     done
+    if [ "$name" == "filter_list" ]; then
+        for c in asrc_abuffer vsrc_buffer asink_abuffer vsink_buffer; do
+            printf "    &ff_%s,\n" $c >> $TMPH
+        done
+    fi
     echo "    NULL };" >> $TMPH
     cp_if_changed $TMPH $file
 }
 
+print_enabled_components libavfilter/filter_list.c AVFilter filter_list $FILTER_LIST
 print_enabled_components libavcodec/codec_list.c AVCodec codec_list $CODEC_LIST
 print_enabled_components libavcodec/parser_list.c AVCodecParser parser_list $PARSER_LIST
 print_enabled_components libavcodec/bsf_list.c AVBitStreamFilter bitstream_filters $BSF_LIST

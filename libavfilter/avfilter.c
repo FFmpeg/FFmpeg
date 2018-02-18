@@ -575,51 +575,6 @@ int avfilter_process_command(AVFilterContext *filter, const char *cmd, const cha
     return AVERROR(ENOSYS);
 }
 
-static AVFilter *first_filter;
-static AVFilter **last_filter = &first_filter;
-
-const AVFilter *avfilter_get_by_name(const char *name)
-{
-    const AVFilter *f = NULL;
-
-    if (!name)
-        return NULL;
-
-    while ((f = avfilter_next(f)))
-        if (!strcmp(f->name, name))
-            return (AVFilter *)f;
-
-    return NULL;
-}
-
-static AVMutex filter_register_mutex = AV_MUTEX_INITIALIZER;
-
-int avfilter_register(AVFilter *filter)
-{
-    AVFilter **f;
-
-    /* the filter must select generic or internal exclusively */
-    av_assert0((filter->flags & AVFILTER_FLAG_SUPPORT_TIMELINE) != AVFILTER_FLAG_SUPPORT_TIMELINE);
-
-    ff_mutex_lock(&filter_register_mutex);
-    f = last_filter;
-
-    while (*f)
-        f = &(*f)->next;
-    *f = filter;
-    filter->next = NULL;
-    last_filter = &filter->next;
-
-    ff_mutex_unlock(&filter_register_mutex);
-
-    return 0;
-}
-
-const AVFilter *avfilter_next(const AVFilter *prev)
-{
-    return prev ? prev->next : first_filter;
-}
-
 int avfilter_pad_count(const AVFilterPad *pads)
 {
     int count;
@@ -648,10 +603,11 @@ static void *filter_child_next(void *obj, void *prev)
 
 static const AVClass *filter_child_class_next(const AVClass *prev)
 {
+    void *opaque = NULL;
     const AVFilter *f = NULL;
 
     /* find the filter that corresponds to prev */
-    while (prev && (f = avfilter_next(f)))
+    while (prev && (f = av_filter_iterate(&opaque)))
         if (f->priv_class == prev)
             break;
 
@@ -660,7 +616,7 @@ static const AVClass *filter_child_class_next(const AVClass *prev)
         return NULL;
 
     /* find next filter with specific options */
-    while ((f = avfilter_next(f)))
+    while ((f = av_filter_iterate(&opaque)))
         if (f->priv_class)
             return f->priv_class;
 
