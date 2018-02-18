@@ -11,6 +11,7 @@ EXPORTS
     av_bsf_get_class
     av_bsf_get_null_filter
     av_bsf_init
+    av_bsf_iterate
     av_bsf_list_alloc
     av_bsf_list_append
     av_bsf_list_append2
@@ -29,6 +30,7 @@ EXPORTS
     av_codec_get_seek_preroll
     av_codec_is_decoder
     av_codec_is_encoder
+    av_codec_iterate
     av_codec_next
     av_codec_set_chroma_intra_matrix
     av_codec_set_codec_descriptor
@@ -100,6 +102,7 @@ EXPORTS
     av_parser_change
     av_parser_close
     av_parser_init
+    av_parser_iterate
     av_parser_next
     av_parser_parse2
     av_picture_copy

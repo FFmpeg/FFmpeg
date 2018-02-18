@@ -1,5 +1,5 @@
 /*
- * MSVC unistd.h compatability header.
+ * MSVC unistd.h compatibility header.
  * Copyright (c) 2015 Matthew Oliver
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -28,17 +28,10 @@
 #   include_next <unistd.h>
 #else
 
-#ifndef __STRICT_ANSI__
-
 #include <stdlib.h>
-//#include <io.h>
 #include <process.h>
 #include <direct.h>
 #include <fcntl.h>
-
-#define __UNISTD_GETOPT__
-//#include <getopt.h>
-#undef __UNISTD_GETOPT__
 
 #define R_OK    4       /* Test for read permission.  */
 #define W_OK    2       /* Test for write permission.  */
@@ -65,8 +58,6 @@ typedef int mode_t;
 #include <BaseTsd.h>
 typedef SSIZE_T ssize_t;
 
-#endif /* __STRICT_ANSI__ */
-
 #endif /* _MSC_VER */
 
-#endif /* _SMP_UNISTD_H_ */
+#endif /* SMP_UNISTD_H */

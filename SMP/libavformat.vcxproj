@@ -223,6 +223,7 @@
     <ClCompile Include="..\libavformat\ffmetadec.c" />
     <ClCompile Include="..\libavformat\ffmetaenc.c" />
     <ClCompile Include="..\libavformat\fifo.c" />
+    <ClCompile Include="..\libavformat\fifo_test.c" />
     <ClCompile Include="..\libavformat\filmstripdec.c" />
     <ClCompile Include="..\libavformat\filmstripenc.c" />
     <ClCompile Include="..\libavformat\fitsdec.c" />
@@ -527,7 +528,6 @@
     <ClCompile Include="..\libavformat\udp.c" />
     <ClCompile Include="libavformat\golomb_tab_wrap.c" />
     <ClCompile Include="libavformat\log2_tab_wrap.c" />
-    <ClCompile Include="libavformat\dce_defs.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libavformat\avformat.h" />

@@ -1,7 +1,9 @@
 EXPORTS
     av_fopen_utf8
+    av_indev_iterate
     av_input_audio_device_next
     av_input_video_device_next
+    av_outdev_iterate
     av_output_audio_device_next
     av_output_video_device_next
     avdevice_app_to_dev_control_message

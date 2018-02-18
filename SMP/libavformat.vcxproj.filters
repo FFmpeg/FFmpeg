@@ -493,6 +493,9 @@
     <ClCompile Include="..\libavformat\fifo.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\fifo_test.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\filmstripdec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
@@ -1403,9 +1406,6 @@
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
     <ClCompile Include="libavformat\log2_tab_wrap.c">
-      <Filter>Source Files\libavformat</Filter>
-    </ClCompile>
-    <ClCompile Include="libavformat\dce_defs.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
   </ItemGroup>

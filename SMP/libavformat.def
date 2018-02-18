@@ -5,6 +5,7 @@ EXPORTS
     av_codec_get_id
     av_codec_get_tag
     av_codec_get_tag2
+    av_demuxer_iterate
     av_demuxer_open
     av_dump_format
     av_filename_number_test
@@ -47,6 +48,7 @@ EXPORTS
     av_interleaved_write_frame
     av_interleaved_write_uncoded_frame
     av_match_ext
+    av_muxer_iterate
     av_new_program
     av_oformat_next
     av_pkt_dump2
@@ -169,5 +171,6 @@ EXPORTS
     avpriv_mpegts_parse_open
     avpriv_mpegts_parse_packet
     avpriv_new_chapter
+    avpriv_register_devices
     avpriv_set_pts_info
     av_format_ffversion DATA

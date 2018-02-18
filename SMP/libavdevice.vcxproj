@@ -87,7 +87,6 @@
     <ClCompile Include="..\libavdevice\vfwcap.c" />
     <ClCompile Include="..\libavdevice\libcdio.c" />
     <ClCompile Include="libavdevice\reverse_wrap.c" />
-    <ClCompile Include="libavdevice\dce_defs.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libavdevice\avdevice.h" />

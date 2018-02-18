@@ -21,7 +21,6 @@
 
 #include "config.h"
 
-#include "libavcodec/avcodec.h"
 #include "libavcodec/xvmc_internal.h"
 #include "libavcodec/xvididct.h"
 #include "libavcodec/wmv2dsp.h"
@@ -3602,94 +3601,3 @@ void ff_xvid_idct_init_mips(IDCTDSPContext *c, AVCodecContext *avctx,
                             unsigned high_bit_depth) {return;}
 void ff_xvmc_init_block(MpegEncContext *s) {return;}
 void ff_xvmc_pack_pblocks(MpegEncContext *s, int cbp) {return;}
-const AVCodec ff_aac_at_decoder = {0};
-const AVCodec ff_aac_at_encoder = {0};
-const AVCodec ff_ac3_at_decoder = {0};
-const AVCodec ff_adpcm_ima_qt_at_decoder = {0};
-const AVCodec ff_alac_at_decoder = {0};
-const AVCodec ff_alac_at_encoder = {0};
-const AVCodec ff_amr_nb_at_decoder = {0};
-const AVCodec ff_eac3_at_decoder = {0};
-const AVCodec ff_gsm_ms_at_decoder = {0};
-const AVCodec ff_h263_v4l2m2m_decoder = {0};
-const AVCodec ff_h263_v4l2m2m_encoder = {0};
-const AVCodec ff_h264_amf_encoder = {0};
-const AVCodec ff_h264_crystalhd_decoder = {0};
-const AVCodec ff_h264_mediacodec_decoder = {0};
-const AVCodec ff_h264_mmal_decoder = {0};
-const AVCodec ff_h264_omx_encoder = {0};
-const AVCodec ff_h264_rkmpp_decoder = {0};
-const AVCodec ff_h264_v4l2m2m_decoder = {0};
-const AVCodec ff_h264_v4l2m2m_encoder = {0};
-const AVCodec ff_h264_vaapi_encoder = {0};
-const AVCodec ff_h264_videotoolbox_encoder = {0};
-const AVCodec ff_hap_encoder = {0};
-const AVCodec ff_hevc_amf_encoder = {0};
-const AVCodec ff_hevc_mediacodec_decoder = {0};
-const AVCodec ff_hevc_rkmpp_decoder = {0};
-const AVCodec ff_hevc_v4l2m2m_decoder = {0};
-const AVCodec ff_hevc_v4l2m2m_encoder = {0};
-const AVCodec ff_hevc_vaapi_encoder = {0};
-const AVCodec ff_hevc_videotoolbox_encoder = {0};
-const AVCodec ff_ilbc_at_decoder = {0};
-const AVCodec ff_ilbc_at_encoder = {0};
-const AVCodec ff_libcelt_decoder = {0};
-const AVCodec ff_libfdk_aac_decoder = {0};
-const AVCodec ff_libfdk_aac_encoder = {0};
-const AVCodec ff_libgsm_decoder = {0};
-const AVCodec ff_libgsm_encoder = {0};
-const AVCodec ff_libgsm_ms_decoder = {0};
-const AVCodec ff_libgsm_ms_encoder = {0};
-const AVCodec ff_libkvazaar_encoder = {0};
-const AVCodec ff_libopencore_amrnb_decoder = {0};
-const AVCodec ff_libopencore_amrnb_encoder = {0};
-const AVCodec ff_libopencore_amrwb_decoder = {0};
-const AVCodec ff_libopenh264_decoder = {0};
-const AVCodec ff_libopenh264_encoder = {0};
-const AVCodec ff_libopenjpeg_decoder = {0};
-const AVCodec ff_libopenjpeg_encoder = {0};
-const AVCodec ff_librsvg_decoder = {0};
-const AVCodec ff_libshine_encoder = {0};
-const AVCodec ff_libtwolame_encoder = {0};
-const AVCodec ff_libvo_amrwbenc_encoder = {0};
-const AVCodec ff_libwavpack_encoder = {0};
-const AVCodec ff_libwebp_anim_encoder = {0};
-const AVCodec ff_libwebp_encoder = {0};
-const AVCodec ff_libx262_encoder = {0};
-const AVCodec ff_libxavs_encoder = {0};
-const AVCodec ff_libzvbi_teletext_decoder = {0};
-const AVCodec ff_mjpeg_vaapi_encoder = {0};
-const AVCodec ff_mp1_at_decoder = {0};
-const AVCodec ff_mp2_at_decoder = {0};
-const AVCodec ff_mp3_at_decoder = {0};
-const AVCodec ff_mpeg1_v4l2m2m_decoder = {0};
-const AVCodec ff_mpeg2_crystalhd_decoder = {0};
-const AVCodec ff_mpeg2_mediacodec_decoder = {0};
-const AVCodec ff_mpeg2_mmal_decoder = {0};
-const AVCodec ff_mpeg2_v4l2m2m_decoder = {0};
-const AVCodec ff_mpeg2_vaapi_encoder = {0};
-const AVCodec ff_mpeg4_crystalhd_decoder = {0};
-const AVCodec ff_mpeg4_mediacodec_decoder = {0};
-const AVCodec ff_mpeg4_mmal_decoder = {0};
-const AVCodec ff_mpeg4_v4l2m2m_decoder = {0};
-const AVCodec ff_mpeg4_v4l2m2m_encoder = {0};
-const AVCodec ff_msmpeg4_crystalhd_decoder = {0};
-const AVCodec ff_pcm_alaw_at_decoder = {0};
-const AVCodec ff_pcm_alaw_at_encoder = {0};
-const AVCodec ff_pcm_mulaw_at_decoder = {0};
-const AVCodec ff_pcm_mulaw_at_encoder = {0};
-const AVCodec ff_qdm2_at_decoder = {0};
-const AVCodec ff_qdmc_at_decoder = {0};
-const AVCodec ff_vc1_crystalhd_decoder = {0};
-const AVCodec ff_vc1_mmal_decoder = {0};
-const AVCodec ff_vc1_v4l2m2m_decoder = {0};
-const AVCodec ff_vp8_mediacodec_decoder = {0};
-const AVCodec ff_vp8_rkmpp_decoder = {0};
-const AVCodec ff_vp8_v4l2m2m_decoder = {0};
-const AVCodec ff_vp8_v4l2m2m_encoder = {0};
-const AVCodec ff_vp8_vaapi_encoder = {0};
-const AVCodec ff_vp9_mediacodec_decoder = {0};
-const AVCodec ff_vp9_rkmpp_decoder = {0};
-const AVCodec ff_vp9_v4l2m2m_decoder = {0};
-const AVCodec ff_vp9_vaapi_encoder = {0};
-const AVCodec ff_wmv3_crystalhd_decoder = {0};
