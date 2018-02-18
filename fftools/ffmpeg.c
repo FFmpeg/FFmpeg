@@ -4776,12 +4776,9 @@ int main(int argc, char **argv)
         argv++;
     }
 
-    avcodec_register_all();
 #if CONFIG_AVDEVICE
     avdevice_register_all();
 #endif
-    avfilter_register_all();
-    av_register_all();
     avformat_network_init();
 
     show_banner(argc, argv, options);

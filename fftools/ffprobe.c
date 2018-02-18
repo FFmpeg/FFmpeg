@@ -3567,7 +3567,6 @@ int main(int argc, char **argv)
 
     options = real_options;
     parse_loglevel(argc, argv, options);
-    av_register_all();
     avformat_network_init();
     init_opts();
 #if CONFIG_AVDEVICE

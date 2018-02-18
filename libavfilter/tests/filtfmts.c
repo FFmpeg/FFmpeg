@@ -97,8 +97,6 @@ int main(int argc, char **argv)
     if (!graph_ctx)
         return 1;
 
-    avfilter_register_all();
-
     /* get a corresponding filter and open it */
     if (!(filter = avfilter_get_by_name(filter_name))) {
         fprintf(stderr, "Unrecognized filter with name '%s'\n", filter_name);

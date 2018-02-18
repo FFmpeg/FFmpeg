@@ -289,8 +289,6 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    avfilter_register_all();
-
     /* Allocate the frame we will be using to store the data. */
     frame  = av_frame_alloc();
     if (!frame) {

@@ -124,9 +124,6 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    avcodec_register_all();
-    av_register_all();
-
     av_lfg_init(&state, 0xdeadbeef);
 
     pd.buf = NULL;
