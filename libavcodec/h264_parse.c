@@ -82,8 +82,11 @@ int ff_h264_pred_weight_table(GetBitContext *gb, const SPS *sps,
                         pwt->chroma_weight[i][list][j][0] = get_se_golomb(gb);
                         pwt->chroma_weight[i][list][j][1] = get_se_golomb(gb);
                         if ((int8_t)pwt->chroma_weight[i][list][j][0] != pwt->chroma_weight[i][list][j][0] ||
-                            (int8_t)pwt->chroma_weight[i][list][j][1] != pwt->chroma_weight[i][list][j][1])
+                            (int8_t)pwt->chroma_weight[i][list][j][1] != pwt->chroma_weight[i][list][j][1]) {
+                            pwt->chroma_weight[i][list][j][0] = chroma_def;
+                            pwt->chroma_weight[i][list][j][1] = 0;
                             goto out_range_weight;
+                        }
                         if (pwt->chroma_weight[i][list][j][0] != chroma_def ||
                             pwt->chroma_weight[i][list][j][1] != 0) {
                             pwt->use_weight_chroma        = 1;
