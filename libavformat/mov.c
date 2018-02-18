@@ -2397,6 +2397,7 @@ static int mov_finalize_stsd_codec(MOVContext *c, AVIOContext *pb,
     case AV_CODEC_ID_EAC3:
     case AV_CODEC_ID_MPEG1VIDEO:
     case AV_CODEC_ID_VC1:
+    case AV_CODEC_ID_VP8:
     case AV_CODEC_ID_VP9:
         st->need_parsing = AVSTREAM_PARSE_FULL;
         break;
@@ -3131,7 +3132,7 @@ static int find_prev_closest_index(AVStream *st,
             }
         }
 
-        while (*index >= 0 && (*ctts_index) >= 0) {
+        while (*index >= 0 && (*ctts_index) >= 0 && (*ctts_index) < ctts_count) {
             // Find a "key frame" with PTS <= timestamp_pts (So that we can decode B-frames correctly).
             // No need to add dts_shift to the timestamp here becase timestamp_pts has already been
             // compensated by dts_shift above.

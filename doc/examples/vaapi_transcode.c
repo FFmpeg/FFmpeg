@@ -238,8 +238,6 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    av_register_all();
-
     ret = av_hwdevice_ctx_create(&hw_device_ctx, AV_HWDEVICE_TYPE_VAAPI, NULL, NULL, 0);
     if (ret < 0) {
         fprintf(stderr, "Failed to create a VAAPI device. Error code: %s\n", av_err2str(ret));

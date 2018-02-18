@@ -353,7 +353,8 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
             if (!s->is_mpeg2 &&
                 (st->codecpar->codec_id == AV_CODEC_ID_AC3 ||
                  st->codecpar->codec_id == AV_CODEC_ID_DTS ||
-                 st->codecpar->codec_id == AV_CODEC_ID_PCM_S16BE))
+                 st->codecpar->codec_id == AV_CODEC_ID_PCM_S16BE ||
+                 st->codecpar->codec_id == AV_CODEC_ID_PCM_DVD))
                  av_log(ctx, AV_LOG_WARNING,
                         "%s in MPEG-1 system streams is not widely supported, "
                         "consider using the vob or the dvd muxer "
@@ -363,7 +364,12 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
                 stream->id = ac3_id++;
             } else if (st->codecpar->codec_id == AV_CODEC_ID_DTS) {
                 stream->id = dts_id++;
-            } else if (st->codecpar->codec_id == AV_CODEC_ID_PCM_S16BE) {
+            } else if (st->codecpar->codec_id == AV_CODEC_ID_PCM_S16BE ||
+                       st->codecpar->codec_id == AV_CODEC_ID_PCM_DVD) {
+                if (st->codecpar->bits_per_coded_sample != 16) {
+                    av_log(ctx, AV_LOG_ERROR, "Only 16 bit LPCM streams can be muxed.\n");
+                    goto fail;
+                }
                 stream->id = lpcm_id++;
                 for (j = 0; j < 4; j++) {
                     if (lpcm_freq_tab[j] == st->codecpar->sample_rate)
@@ -1150,6 +1156,19 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
         return AVERROR(ENOMEM);
     pkt_desc->pts            = pts;
     pkt_desc->dts            = dts;
+
+    if (st->codecpar->codec_id == AV_CODEC_ID_PCM_DVD) {
+        if (size < 3) {
+            av_log(ctx, AV_LOG_ERROR, "Invalid packet size %d\n", size);
+            return AVERROR(EINVAL);
+        }
+
+        /* Skip first 3 bytes of packet data, which comprise PCM header
+           and will be written fresh by this muxer. */
+        buf += 3;
+        size -= 3;
+    }
+
     pkt_desc->unwritten_size =
     pkt_desc->size           = size;
     if (!stream->predecode_packet)

@@ -703,4 +703,11 @@ int ff_unlock_avformat(void);
  */
 void ff_format_set_url(AVFormatContext *s, char *url);
 
+#if FF_API_NEXT
+/**
+  * Register devices in deprecated format linked list.
+  */
+void avpriv_register_devices(const AVOutputFormat * const o[], const AVInputFormat * const i[]);
+#endif
+
 #endif /* AVFORMAT_INTERNAL_H */

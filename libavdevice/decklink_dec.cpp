@@ -149,6 +149,17 @@ static void extract_luma_from_v210(uint16_t *dst, const uint8_t *src, int width)
     }
 }
 
+static void unpack_v210(uint16_t *dst, const uint8_t *src, int width)
+{
+    int i;
+    for (i = 0; i < width * 2 / 3; i++) {
+        *dst++ =  src[0]       + ((src[1] & 3)  << 8);
+        *dst++ = (src[1] >> 2) + ((src[2] & 15) << 6);
+        *dst++ = (src[2] >> 4) + ((src[3] & 63) << 4);
+        src += 4;
+    }
+}
+
 static uint8_t calc_parity_and_line_offset(int line)
 {
     uint8_t ret = (line < 313) << 5;
@@ -752,9 +763,15 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
                     for (i = vanc_line_numbers[idx].vanc_start; i <= vanc_line_numbers[idx].vanc_end; i++) {
                         uint8_t *buf;
                         if (vanc->GetBufferForVerticalBlankingLine(i, (void**)&buf) == S_OK) {
-                            uint16_t luma_vanc[MAX_WIDTH_VANC];
-                            extract_luma_from_v210(luma_vanc, buf, videoFrame->GetWidth());
-                            txt_buf = get_metadata(avctx, luma_vanc, videoFrame->GetWidth(),
+                            uint16_t vanc[MAX_WIDTH_VANC];
+                            size_t vanc_size = videoFrame->GetWidth();
+                            if (ctx->bmd_mode == bmdModeNTSC && videoFrame->GetWidth() * 2 <= MAX_WIDTH_VANC) {
+                                vanc_size = vanc_size * 2;
+                                unpack_v210(vanc, buf, videoFrame->GetWidth());
+                            } else {
+                                extract_luma_from_v210(vanc, buf, videoFrame->GetWidth());
+                            }
+                            txt_buf = get_metadata(avctx, vanc, vanc_size,
                                                    txt_buf, sizeof(txt_buf0) - (txt_buf - txt_buf0), &pkt);
                         }
                         if (i == vanc_line_numbers[idx].field0_vanc_end)
@@ -1053,7 +1070,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         break;
     case bmdFormat8BitARGB:
         st->codecpar->codec_id    = AV_CODEC_ID_RAWVIDEO;
-        st->codecpar->codec_tag   = avcodec_pix_fmt_to_codec_tag((enum AVPixelFormat)st->codecpar->format);;
+        st->codecpar->codec_tag   = avcodec_pix_fmt_to_codec_tag((enum AVPixelFormat)st->codecpar->format);
         st->codecpar->format      = AV_PIX_FMT_0RGB;
         st->codecpar->bit_rate    = av_rescale(ctx->bmd_width * ctx->bmd_height * 32, st->time_base.den, st->time_base.num);
         break;

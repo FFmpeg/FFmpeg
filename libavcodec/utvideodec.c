@@ -268,6 +268,9 @@ static int decode_plane(UtvideoContext *c, int plane_no,
             send   = (height * (slice + 1) / c->slices) & cmask;
             dest   = dst + sstart * stride;
 
+            if (3 * ((dst + send * stride - dest + 7)/8) > get_bits_left(&cbit))
+                return AVERROR_INVALIDDATA;
+
             for (p = dest; p < dst + send * stride; p += 8) {
                 int bits = get_bits_le(&cbit, 3);
 
@@ -276,6 +279,9 @@ static int decode_plane(UtvideoContext *c, int plane_no,
                 } else {
                     uint32_t sub = 0x80 >> (8 - (bits + 1)), add;
                     int k;
+
+                    if ((bits + 1) * 8 > get_bits_left(&pbit))
+                        return AVERROR_INVALIDDATA;
 
                     for (k = 0; k < 8; k++) {
 
@@ -639,9 +645,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             for (j = 0; j < c->slices; j++) {
                 c->packed_stream[i][j] = packed_stream;
                 c->packed_stream_size[i][j] = bytestream2_get_le32(&pb);
-                left -= c->packed_stream_size[i][j];
-                if (left < 0)
+                if (c->packed_stream_size[i][j] > left)
                     return AVERROR_INVALIDDATA;
+                left -= c->packed_stream_size[i][j];
                 packed_stream += c->packed_stream_size[i][j];
             }
         }
@@ -652,9 +658,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             for (j = 0; j < c->slices; j++) {
                 c->control_stream[i][j] = control_stream;
                 c->control_stream_size[i][j] = bytestream2_get_le32(&pb);
-                left -= c->control_stream_size[i][j];
-                if (left < 0)
+                if (c->control_stream_size[i][j] > left)
                     return AVERROR_INVALIDDATA;
+                left -= c->control_stream_size[i][j];
                 control_stream += c->control_stream_size[i][j];
             }
         }
@@ -676,7 +682,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             for (j = 0; j < c->slices; j++) {
                 slice_end   = bytestream2_get_le32u(&gb);
                 if (slice_end < 0 || slice_end < slice_start ||
-                    bytestream2_get_bytes_left(&gb) < slice_end) {
+                    bytestream2_get_bytes_left(&gb) < slice_end + 1024LL) {
                     av_log(avctx, AV_LOG_ERROR, "Incorrect slice size\n");
                     return AVERROR_INVALIDDATA;
                 }

@@ -455,6 +455,7 @@ library:
 @item raw AMR-NB                @tab   @tab X
 @item raw AMR-WB                @tab   @tab X
 @item raw aptX                  @tab X @tab X
+@item raw aptX HD               @tab X @tab X
 @item raw Chinese AVS video     @tab X @tab X
 @item raw CRI ADX               @tab X @tab X
 @item raw Dirac                 @tab X @tab X
@@ -1008,6 +1009,8 @@ following image formats are supported:
 @item Apple lossless audio   @tab  X  @tab  X
     @tab QuickTime fourcc 'alac'
 @item aptX                   @tab  X  @tab  X
+    @tab Used in Bluetooth A2DP
+@item aptX HD                @tab  X  @tab  X
     @tab Used in Bluetooth A2DP
 @item ATRAC1                 @tab     @tab  X
 @item ATRAC3                 @tab     @tab  X

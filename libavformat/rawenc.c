@@ -104,6 +104,19 @@ AVOutputFormat ff_aptx_muxer = {
 };
 #endif
 
+#if CONFIG_APTX_HD_MUXER
+AVOutputFormat ff_aptx_hd_muxer = {
+    .name              = "aptx_hd",
+    .long_name         = NULL_IF_CONFIG_SMALL("raw aptX HD (Audio Processing Technology for Bluetooth)"),
+    .extensions        = "aptxhd",
+    .audio_codec       = AV_CODEC_ID_APTX_HD,
+    .video_codec       = AV_CODEC_ID_NONE,
+    .write_header      = force_one_stream,
+    .write_packet      = ff_raw_write_packet,
+    .flags             = AVFMT_NOTIMESTAMPS,
+};
+#endif
+
 #if CONFIG_CAVSVIDEO_MUXER
 AVOutputFormat ff_cavsvideo_muxer = {
     .name              = "cavsvideo",

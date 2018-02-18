@@ -34,65 +34,6 @@
  * @file
  * Format register and lookup
  */
-/** head of registered input format linked list */
-static AVInputFormat *first_iformat = NULL;
-/** head of registered output format linked list */
-static AVOutputFormat *first_oformat = NULL;
-
-static AVInputFormat **last_iformat = &first_iformat;
-static AVOutputFormat **last_oformat = &first_oformat;
-
-AVInputFormat *av_iformat_next(const AVInputFormat *f)
-{
-    if (f)
-        return f->next;
-    else
-        return first_iformat;
-}
-
-AVOutputFormat *av_oformat_next(const AVOutputFormat *f)
-{
-    if (f)
-        return f->next;
-    else
-        return first_oformat;
-}
-
-static AVMutex iformat_register_mutex = AV_MUTEX_INITIALIZER;
-
-void av_register_input_format(AVInputFormat *format)
-{
-    AVInputFormat **p;
-
-    ff_mutex_lock(&iformat_register_mutex);
-    p = last_iformat;
-
-    while (*p)
-        p = &(*p)->next;
-    *p = format;
-    format->next = NULL;
-    last_iformat = &format->next;
-
-    ff_mutex_unlock(&iformat_register_mutex);
-}
-
-static AVMutex oformat_register_mutex = AV_MUTEX_INITIALIZER;
-
-void av_register_output_format(AVOutputFormat *format)
-{
-    AVOutputFormat **p;
-
-    ff_mutex_lock(&oformat_register_mutex);
-    p = last_oformat;
-
-    while (*p)
-        p = &(*p)->next;
-    *p = format;
-    format->next = NULL;
-    last_oformat = &format->next;
-
-    ff_mutex_unlock(&oformat_register_mutex);
-}
 
 int av_match_ext(const char *filename, const char *extensions)
 {
@@ -111,6 +52,9 @@ AVOutputFormat *av_guess_format(const char *short_name, const char *filename,
                                 const char *mime_type)
 {
     AVOutputFormat *fmt = NULL, *fmt_found;
+#if !FF_API_NEXT
+    void *i = 0;
+#endif
     int score_max, score;
 
     /* specific test for image sequences */
@@ -124,7 +68,13 @@ AVOutputFormat *av_guess_format(const char *short_name, const char *filename,
     /* Find the proper file type. */
     fmt_found = NULL;
     score_max = 0;
-    while ((fmt = av_oformat_next(fmt))) {
+#if FF_API_NEXT
+FF_DISABLE_DEPRECATION_WARNINGS
+    while ((fmt = av_oformat_next(fmt)))
+#else
+    while ((fmt = av_muxer_iterate(&i)))
+#endif
+     {
         score = 0;
         if (fmt->name && short_name && av_match_name(short_name, fmt->name))
             score += 100;
@@ -139,6 +89,9 @@ AVOutputFormat *av_guess_format(const char *short_name, const char *filename,
             fmt_found = fmt;
         }
     }
+#if FF_API_NEXT
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     return fmt_found;
 }
 
@@ -176,9 +129,18 @@ enum AVCodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
 AVInputFormat *av_find_input_format(const char *short_name)
 {
     AVInputFormat *fmt = NULL;
+#if FF_API_NEXT
+FF_DISABLE_DEPRECATION_WARNINGS
     while ((fmt = av_iformat_next(fmt)))
         if (av_match_name(short_name, fmt->name))
             return fmt;
+FF_ENABLE_DEPRECATION_WARNINGS
+#else
+    void *i = 0;
+    while ((fmt = av_demuxer_iterate(&i)))
+        if (av_match_name(short_name, fmt->name))
+            return fmt;
+#endif
     return NULL;
 }
 
@@ -188,6 +150,7 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
     AVProbeData lpd = *pd;
     AVInputFormat *fmt1 = NULL, *fmt;
     int score, score_max = 0;
+    void *i = 0;
     const static uint8_t zerobuffer[AVPROBE_PADDING_SIZE];
     enum nodat {
         NO_ID3,
@@ -213,7 +176,7 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
     }
 
     fmt = NULL;
-    while ((fmt1 = av_iformat_next(fmt1))) {
+    while ((fmt1 = av_demuxer_iterate(&i))) {
         if (!is_opened == !(fmt1->flags & AVFMT_NOFILE) && strcmp(fmt1->name, "image2"))
             continue;
         score = 0;

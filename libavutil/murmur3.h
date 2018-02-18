@@ -29,6 +29,8 @@
 
 #include <stdint.h>
 
+#include "version.h"
+
 /**
  * @defgroup lavu_murmur3 Murmur3
  * @ingroup lavu_hash
@@ -97,7 +99,11 @@ void av_murmur3_init(struct AVMurMur3 *c);
  * @param[in]  src  Input data to update hash with
  * @param[in]  len  Number of bytes to read from `src`
  */
+#if FF_API_CRYPTO_SIZE_T
 void av_murmur3_update(struct AVMurMur3 *c, const uint8_t *src, int len);
+#else
+void av_murmur3_update(struct AVMurMur3 *c, const uint8_t *src, size_t len);
+#endif
 
 /**
  * Finish hashing and output digest value.

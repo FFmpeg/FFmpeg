@@ -28,8 +28,8 @@
 #include "libavutil/version.h"
 
 #define LIBAVCODEC_VERSION_MAJOR  58
-#define LIBAVCODEC_VERSION_MINOR   9
-#define LIBAVCODEC_VERSION_MICRO 100
+#define LIBAVCODEC_VERSION_MINOR  11
+#define LIBAVCODEC_VERSION_MICRO 101
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
                                                LIBAVCODEC_VERSION_MINOR, \
@@ -128,6 +128,9 @@
 #endif
 #ifndef FF_API_LOCKMGR
 #define FF_API_LOCKMGR (LIBAVCODEC_VERSION_MAJOR < 59)
+#endif
+#ifndef FF_API_NEXT
+#define FF_API_NEXT              (LIBAVCODEC_VERSION_MAJOR < 59)
 #endif
 
 

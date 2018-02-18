@@ -211,7 +211,7 @@ static int get_sockaddr(AVFormatContext *s,
 }
 
 #if CONFIG_RTPDEC
-static void init_rtp_handler(RTPDynamicProtocolHandler *handler,
+static void init_rtp_handler(const RTPDynamicProtocolHandler *handler,
                              RTSPStream *rtsp_st, AVStream *st)
 {
     AVCodecParameters *par = st ? st->codecpar : NULL;
@@ -271,7 +271,7 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
     }
 
     if (par->codec_id == AV_CODEC_ID_NONE) {
-        RTPDynamicProtocolHandler *handler =
+        const RTPDynamicProtocolHandler *handler =
             ff_rtp_handler_find_by_name(buf, par->codec_type);
         init_rtp_handler(handler, rtsp_st, st);
         /* If no dynamic handler was found, check with the list of standard
@@ -495,7 +495,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                 if (CONFIG_RTPDEC && !rt->ts)
                     rt->ts = avpriv_mpegts_parse_open(s);
             } else {
-                RTPDynamicProtocolHandler *handler;
+                const RTPDynamicProtocolHandler *handler;
                 handler = ff_rtp_handler_find_by_id(
                               rtsp_st->sdp_payload_type, AVMEDIA_TYPE_DATA);
                 init_rtp_handler(handler, rtsp_st, NULL);
@@ -513,7 +513,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             rtsp_st->stream_index = st->index;
             st->codecpar->codec_type = codec_type;
             if (rtsp_st->sdp_payload_type < RTP_PT_PRIVATE) {
-                RTPDynamicProtocolHandler *handler;
+                const RTPDynamicProtocolHandler *handler;
                 /* if standard payload type, we can find the codec right now */
                 ff_rtp_get_codec_info(st->codecpar, rtsp_st->sdp_payload_type);
                 if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&

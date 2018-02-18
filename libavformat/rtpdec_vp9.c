@@ -330,7 +330,7 @@ static void vp9_close_context(PayloadContext *vp9)
     ffio_free_dyn_buf(&vp9->buf);
 }
 
-RTPDynamicProtocolHandler ff_vp9_dynamic_handler = {
+const RTPDynamicProtocolHandler ff_vp9_dynamic_handler = {
     .enc_name         = "VP9",
     .codec_type       = AVMEDIA_TYPE_VIDEO,
     .codec_id         = AV_CODEC_ID_VP9,

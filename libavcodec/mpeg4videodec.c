@@ -2707,8 +2707,8 @@ int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb)
 
         if (startcode >= 0x120 && startcode <= 0x12F) {
             if (vol) {
-                av_log(s->avctx, AV_LOG_ERROR, "Multiple VOL headers");
-                return AVERROR_INVALIDDATA;
+                av_log(s->avctx, AV_LOG_WARNING, "Ignoring multiple VOL headers\n");
+                continue;
             }
             vol++;
             if ((ret = decode_vol_header(ctx, gb)) < 0)

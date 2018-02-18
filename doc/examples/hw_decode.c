@@ -163,8 +163,6 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    av_register_all();
-
     type = av_hwdevice_find_type_by_name(argv[1]);
     if (type == AV_HWDEVICE_TYPE_NONE) {
         fprintf(stderr, "Device type %s is not supported.\n", argv[1]);

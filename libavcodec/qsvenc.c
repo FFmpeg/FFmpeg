@@ -85,7 +85,9 @@ static const struct {
     { MFX_RATECONTROL_CBR,     "CBR" },
     { MFX_RATECONTROL_VBR,     "VBR" },
     { MFX_RATECONTROL_CQP,     "CQP" },
+#if QSV_HAVE_AVBR
     { MFX_RATECONTROL_AVBR,    "AVBR" },
+#endif
 #if QSV_HAVE_LA
     { MFX_RATECONTROL_LA,      "LA" },
 #endif
@@ -161,11 +163,14 @@ static void dump_video_param(AVCodecContext *avctx, QSVEncContext *q,
     } else if (info->RateControlMethod == MFX_RATECONTROL_CQP) {
         av_log(avctx, AV_LOG_VERBOSE, "QPI: %"PRIu16"; QPP: %"PRIu16"; QPB: %"PRIu16"\n",
                info->QPI, info->QPP, info->QPB);
-    } else if (info->RateControlMethod == MFX_RATECONTROL_AVBR) {
+    }
+#if QSV_HAVE_AVBR
+    else if (info->RateControlMethod == MFX_RATECONTROL_AVBR) {
         av_log(avctx, AV_LOG_VERBOSE,
                "TargetKbps: %"PRIu16"; Accuracy: %"PRIu16"; Convergence: %"PRIu16"\n",
                info->TargetKbps, info->Accuracy, info->Convergence);
     }
+#endif
 #if QSV_HAVE_LA
     else if (info->RateControlMethod == MFX_RATECONTROL_LA
 #if QSV_HAVE_LA_HRD
@@ -325,10 +330,14 @@ static int select_rc_mode(AVCodecContext *avctx, QSVEncContext *q)
     else if (avctx->rc_max_rate == avctx->bit_rate) {
         rc_mode = MFX_RATECONTROL_CBR;
         rc_desc = "constant bitrate (CBR)";
-    } else if (!avctx->rc_max_rate) {
+    }
+#if QSV_HAVE_AVBR
+    else if (!avctx->rc_max_rate) {
         rc_mode = MFX_RATECONTROL_AVBR;
         rc_desc = "average variable bitrate (AVBR)";
-    } else {
+    }
+#endif
+    else {
         rc_mode = MFX_RATECONTROL_VBR;
         rc_desc = "variable bitrate (VBR)";
     }
@@ -514,11 +523,13 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         q->param.mfx.QPB = av_clip(quant * fabs(avctx->b_quant_factor) + avctx->b_quant_offset, 0, 51);
 
         break;
+#if QSV_HAVE_AVBR
     case MFX_RATECONTROL_AVBR:
         q->param.mfx.TargetKbps  = avctx->bit_rate / 1000;
         q->param.mfx.Convergence = q->avbr_convergence;
         q->param.mfx.Accuracy    = q->avbr_accuracy;
         break;
+#endif
 #if QSV_HAVE_LA
     case MFX_RATECONTROL_LA:
         q->param.mfx.TargetKbps  = avctx->bit_rate / 1000;

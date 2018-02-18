@@ -34,9 +34,9 @@ const AVBitStreamFilter *av_bitstream_filter_next(const AVBitStreamFilter *f)
     void *opaque = NULL;
 
     while (filter != f)
-        filter = av_bsf_next(&opaque);
+        filter = av_bsf_iterate(&opaque);
 
-    return av_bsf_next(&opaque);
+    return av_bsf_iterate(&opaque);
 }
 
 void av_register_bitstream_filter(AVBitStreamFilter *bsf)

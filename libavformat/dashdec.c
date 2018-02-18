@@ -801,6 +801,7 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
                                          xmlNodePtr mpd_baseurl_node,
                                          xmlNodePtr period_baseurl_node,
                                          xmlNodePtr period_segmenttemplate_node,
+                                         xmlNodePtr period_segmentlist_node,
                                          xmlNodePtr fragment_template_node,
                                          xmlNodePtr content_component_node,
                                          xmlNodePtr adaptionset_baseurl_node,
@@ -817,7 +818,7 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
     xmlNodePtr representation_segmentlist_node = NULL;
     xmlNodePtr segmentlists_tab[2];
     xmlNodePtr fragment_timeline_node = NULL;
-    xmlNodePtr fragment_templates_tab[4];
+    xmlNodePtr fragment_templates_tab[5];
     char *duration_val = NULL;
     char *presentation_timeoffset_val = NULL;
     char *startnumber_val = NULL;
@@ -869,6 +870,7 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
             fragment_templates_tab[1] = adaptionset_segmentlist_node;
             fragment_templates_tab[2] = fragment_template_node;
             fragment_templates_tab[3] = period_segmenttemplate_node;
+            fragment_templates_tab[4] = period_segmentlist_node;
 
             presentation_timeoffset_val = get_val_from_nodes_tab(fragment_templates_tab, 4, "presentationTimeOffset");
             duration_val = get_val_from_nodes_tab(fragment_templates_tab, 4, "duration");
@@ -925,6 +927,8 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
                 fragment_timeline_node = find_child_node_by_name(fragment_template_node, "SegmentTimeline");
             if (!fragment_timeline_node)
                 fragment_timeline_node = find_child_node_by_name(adaptionset_segmentlist_node, "SegmentTimeline");
+            if (!fragment_timeline_node)
+                fragment_timeline_node = find_child_node_by_name(period_segmentlist_node, "SegmentTimeline");
             if (fragment_timeline_node) {
                 fragment_timeline_node = xmlFirstElementChild(fragment_timeline_node);
                 while (fragment_timeline_node) {
@@ -984,6 +988,8 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
                 fragment_timeline_node = find_child_node_by_name(fragment_template_node, "SegmentTimeline");
             if (!fragment_timeline_node)
                 fragment_timeline_node = find_child_node_by_name(adaptionset_segmentlist_node, "SegmentTimeline");
+            if (!fragment_timeline_node)
+                fragment_timeline_node = find_child_node_by_name(period_segmentlist_node, "SegmentTimeline");
             if (fragment_timeline_node) {
                 fragment_timeline_node = xmlFirstElementChild(fragment_timeline_node);
                 while (fragment_timeline_node) {
@@ -1040,7 +1046,8 @@ static int parse_manifest_adaptationset(AVFormatContext *s, const char *url,
                                         xmlNodePtr adaptionset_node,
                                         xmlNodePtr mpd_baseurl_node,
                                         xmlNodePtr period_baseurl_node,
-                                        xmlNodePtr period_segmenttemplate_node)
+                                        xmlNodePtr period_segmenttemplate_node,
+                                        xmlNodePtr period_segmentlist_node)
 {
     int ret = 0;
     xmlNodePtr fragment_template_node = NULL;
@@ -1065,6 +1072,7 @@ static int parse_manifest_adaptationset(AVFormatContext *s, const char *url,
                                                 mpd_baseurl_node,
                                                 period_baseurl_node,
                                                 period_segmenttemplate_node,
+                                                period_segmentlist_node,
                                                 fragment_template_node,
                                                 content_component_node,
                                                 adaptionset_baseurl_node,
@@ -1094,6 +1102,7 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
     xmlNodePtr mpd_baseurl_node = NULL;
     xmlNodePtr period_baseurl_node = NULL;
     xmlNodePtr period_segmenttemplate_node = NULL;
+    xmlNodePtr period_segmentlist_node = NULL;
     xmlNodePtr adaptionset_node = NULL;
     xmlAttrPtr attr = NULL;
     char *val  = NULL;
@@ -1228,8 +1237,10 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
                 period_baseurl_node = adaptionset_node;
             } else if (!av_strcasecmp(adaptionset_node->name, (const char *)"SegmentTemplate")) {
                 period_segmenttemplate_node = adaptionset_node;
+            } else if (!av_strcasecmp(adaptionset_node->name, (const char *)"SegmentList")) {
+                period_segmentlist_node = adaptionset_node;
             } else if (!av_strcasecmp(adaptionset_node->name, (const char *)"AdaptationSet")) {
-                parse_manifest_adaptationset(s, url, adaptionset_node, mpd_baseurl_node, period_baseurl_node, period_segmenttemplate_node);
+                parse_manifest_adaptationset(s, url, adaptionset_node, mpd_baseurl_node, period_baseurl_node, period_segmenttemplate_node, period_segmentlist_node);
             }
             adaptionset_node = xmlNextElementSibling(adaptionset_node);
         }

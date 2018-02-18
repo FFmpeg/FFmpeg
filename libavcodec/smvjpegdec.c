@@ -193,7 +193,6 @@ static int smvjpeg_decode_frame(AVCodecContext *avctx, void *data, int *data_siz
         s->picture[1]->width         = avctx->width;
         s->picture[1]->height        = avctx->height;
         s->picture[1]->format        = avctx->pix_fmt;
-        /* ff_init_buffer_info(avctx, &s->picture[1]); */
         smv_img_pnt(s->picture[1]->data, mjpeg_data->data, mjpeg_data->linesize,
                     avctx->pix_fmt, avctx->width, avctx->height, cur_frame);
         for (i = 0; i < AV_NUM_DATA_POINTERS; i++)

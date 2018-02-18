@@ -21,7 +21,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/pixdesc.h"
 #include "formats.h"
-
+#include "internal.h"
 #include "vaapi_vpp.h"
 
 int ff_vaapi_vpp_query_formats(AVFilterContext *avctx)
@@ -63,7 +63,6 @@ void ff_vaapi_vpp_pipeline_uninit(AVFilterContext *avctx)
         ctx->va_config = VA_INVALID_ID;
     }
 
-    av_buffer_unref(&ctx->output_frames_ref);
     av_buffer_unref(&ctx->device_ref);
     ctx->hwctx = NULL;
 }
@@ -99,6 +98,7 @@ int ff_vaapi_vpp_config_output(AVFilterLink *outlink)
     VAAPIVPPContext *ctx   = avctx->priv;
     AVVAAPIHWConfig *hwconfig = NULL;
     AVHWFramesConstraints *constraints = NULL;
+    AVHWFramesContext *output_frames;
     AVVAAPIFramesContext *va_frames;
     VAStatus vas;
     int err, i;
@@ -172,34 +172,35 @@ int ff_vaapi_vpp_config_output(AVFilterLink *outlink)
         goto fail;
     }
 
-    ctx->output_frames_ref = av_hwframe_ctx_alloc(ctx->device_ref);
-    if (!ctx->output_frames_ref) {
+    outlink->hw_frames_ctx = av_hwframe_ctx_alloc(ctx->device_ref);
+    if (!outlink->hw_frames_ctx) {
         av_log(avctx, AV_LOG_ERROR, "Failed to create HW frame context "
                "for output.\n");
         err = AVERROR(ENOMEM);
         goto fail;
     }
 
-    ctx->output_frames = (AVHWFramesContext*)ctx->output_frames_ref->data;
+    output_frames = (AVHWFramesContext*)outlink->hw_frames_ctx->data;
 
-    ctx->output_frames->format    = AV_PIX_FMT_VAAPI;
-    ctx->output_frames->sw_format = ctx->output_format;
-    ctx->output_frames->width     = ctx->output_width;
-    ctx->output_frames->height    = ctx->output_height;
+    output_frames->format    = AV_PIX_FMT_VAAPI;
+    output_frames->sw_format = ctx->output_format;
+    output_frames->width     = ctx->output_width;
+    output_frames->height    = ctx->output_height;
 
-    // The number of output frames we need is determined by what follows
-    // the filter.  If it's an encoder with complex frame reference
-    // structures then this could be very high.
-    ctx->output_frames->initial_pool_size = 10;
+    output_frames->initial_pool_size = 4;
 
-    err = av_hwframe_ctx_init(ctx->output_frames_ref);
+    err = ff_filter_init_hw_frames(avctx, outlink, 10);
+    if (err < 0)
+        goto fail;
+
+    err = av_hwframe_ctx_init(outlink->hw_frames_ctx);
     if (err < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed to initialise VAAPI frame "
                "context for output: %d\n", err);
         goto fail;
     }
 
-    va_frames = ctx->output_frames->hwctx;
+    va_frames = output_frames->hwctx;
 
     av_assert0(ctx->va_context == VA_INVALID_ID);
     vas = vaCreateContext(ctx->hwctx->display, ctx->va_config,
@@ -222,18 +223,12 @@ int ff_vaapi_vpp_config_output(AVFilterLink *outlink)
             goto fail;
     }
 
-    outlink->hw_frames_ctx = av_buffer_ref(ctx->output_frames_ref);
-    if (!outlink->hw_frames_ctx) {
-        err = AVERROR(ENOMEM);
-        goto fail;
-    }
-
     av_freep(&hwconfig);
     av_hwframe_constraints_free(&constraints);
     return 0;
 
 fail:
-    av_buffer_unref(&ctx->output_frames_ref);
+    av_buffer_unref(&outlink->hw_frames_ctx);
     av_freep(&hwconfig);
     av_hwframe_constraints_free(&constraints);
     return err;
@@ -374,6 +369,5 @@ void ff_vaapi_vpp_ctx_uninit(AVFilterContext *avctx)
         ctx->pipeline_uninit(avctx);
 
     av_buffer_unref(&ctx->input_frames_ref);
-    av_buffer_unref(&ctx->output_frames_ref);
     av_buffer_unref(&ctx->device_ref);
 }

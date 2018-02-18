@@ -150,8 +150,6 @@ int main(int argc, char **argv)
 
     int ret, i;
 
-    av_register_all();
-
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <input file> <output file>\n", argv[0]);
         return 1;

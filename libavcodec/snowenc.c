@@ -179,7 +179,7 @@ static int pix_sum(uint8_t * pix, int line_size, int w, int h)
 static int pix_norm1(uint8_t * pix, int line_size, int w)
 {
     int s, i, j;
-    uint32_t *sq = ff_square_tab + 256;
+    const uint32_t *sq = ff_square_tab + 256;
 
     s = 0;
     for (i = 0; i < w; i++) {

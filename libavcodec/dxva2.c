@@ -614,10 +614,6 @@ int ff_dxva2_common_frame_params(AVCodecContext *avctx,
     else
         num_surfaces += 2;
 
-    /* add extra surfaces for frame threading */
-    if (avctx->active_thread_type & FF_THREAD_FRAME)
-        num_surfaces += avctx->thread_count;
-
     frames_ctx->sw_format = avctx->sw_pix_fmt == AV_PIX_FMT_YUV420P10 ?
                             AV_PIX_FMT_P010 : AV_PIX_FMT_NV12;
     frames_ctx->width = FFALIGN(avctx->coded_width, surface_alignment);

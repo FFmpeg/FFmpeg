@@ -190,6 +190,8 @@ OBJS-$(CONFIG_ANSI_DECODER)            += ansi.o cga_data.o
 OBJS-$(CONFIG_APE_DECODER)             += apedec.o
 OBJS-$(CONFIG_APTX_DECODER)            += aptx.o
 OBJS-$(CONFIG_APTX_ENCODER)            += aptx.o
+OBJS-$(CONFIG_APTX_HD_DECODER)         += aptx.o
+OBJS-$(CONFIG_APTX_HD_ENCODER)         += aptx.o
 OBJS-$(CONFIG_APNG_DECODER)            += png.o pngdec.o pngdsp.o
 OBJS-$(CONFIG_APNG_ENCODER)            += png.o pngenc.o
 OBJS-$(CONFIG_SSA_DECODER)             += assdec.o ass.o
@@ -1088,6 +1090,7 @@ SKIPHEADERS-$(CONFIG_V4L2_M2M)         += v4l2_buffers.h v4l2_context.h v4l2_m2m
 
 TESTPROGS = avpacket                                                    \
             celp_math                                                   \
+            codec_desc                                                  \
             htmlsubtitles                                               \
             imgconvert                                                  \
             jpeg2000dwt                                                 \

@@ -753,8 +753,6 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    /* Register all codecs and formats so that they can be used. */
-    av_register_all();
     /* Open the input file for reading. */
     if (open_input_file(argv[1], &input_format_context,
                         &input_codec_context))

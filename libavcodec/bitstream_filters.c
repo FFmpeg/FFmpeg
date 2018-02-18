@@ -52,7 +52,7 @@ extern const AVBitStreamFilter ff_vp9_superframe_split_bsf;
 
 #include "libavcodec/bsf_list.c"
 
-const AVBitStreamFilter *av_bsf_next(void **opaque)
+const AVBitStreamFilter *av_bsf_iterate(void **opaque)
 {
     uintptr_t i = (uintptr_t)*opaque;
     const AVBitStreamFilter *f = bitstream_filters[i];
@@ -63,12 +63,18 @@ const AVBitStreamFilter *av_bsf_next(void **opaque)
     return f;
 }
 
+#if FF_API_NEXT
+const AVBitStreamFilter *av_bsf_next(void **opaque) {
+    return av_bsf_iterate(opaque);
+}
+#endif
+
 const AVBitStreamFilter *av_bsf_get_by_name(const char *name)
 {
-    int i;
+    const AVBitStreamFilter *f = NULL;
+    void *i = 0;
 
-    for (i = 0; bitstream_filters[i]; i++) {
-        const AVBitStreamFilter *f = bitstream_filters[i];
+    while ((f = av_bsf_iterate(&i))) {
         if (!strcmp(f->name, name))
             return f;
     }
@@ -78,19 +84,20 @@ const AVBitStreamFilter *av_bsf_get_by_name(const char *name)
 
 const AVClass *ff_bsf_child_class_next(const AVClass *prev)
 {
-    int i;
+    const AVBitStreamFilter *f = NULL;
+    void *i = 0;
 
     /* find the filter that corresponds to prev */
-    for (i = 0; prev && bitstream_filters[i]; i++) {
-        if (bitstream_filters[i]->priv_class == prev) {
-            i++;
+    while (prev && (f = av_bsf_iterate(&i))) {
+        if (f->priv_class == prev) {
             break;
         }
     }
 
     /* find next filter with priv options */
-    for (; bitstream_filters[i]; i++)
-        if (bitstream_filters[i]->priv_class)
-            return bitstream_filters[i]->priv_class;
+    while ((f = av_bsf_iterate(&i))) {
+        if (f->priv_class)
+            return f->priv_class;
+    }
     return NULL;
 }

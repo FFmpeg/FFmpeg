@@ -568,6 +568,12 @@ add_suffix(){
     for v; do echo ${v}${suffix}; done
 }
 
+remove_suffix(){
+    suffix=$1
+    shift
+    for v; do echo ${v%$suffix}; done
+}
+
 set_all(){
     value=$1
     shift
@@ -2455,6 +2461,8 @@ apng_encoder_deps="zlib"
 apng_encoder_select="llvidencdsp"
 aptx_decoder_select="audio_frame_queue"
 aptx_encoder_select="audio_frame_queue"
+aptx_hd_decoder_select="audio_frame_queue"
+aptx_hd_encoder_select="audio_frame_queue"
 asv1_decoder_select="blockdsp bswapdsp idctdsp"
 asv1_encoder_select="bswapdsp fdctdsp pixblockdsp"
 asv2_decoder_select="blockdsp bswapdsp idctdsp"
@@ -3525,22 +3533,27 @@ find_things(){
     sed -n "s/^[^#]*$pattern.*([^,]*, *\([^,]*\)\(,.*\)*).*/\1_$thing/p" "$file"
 }
 
-ENCODER_LIST=$(find_things  encoder  ENC      libavcodec/allcodecs.c)
-DECODER_LIST=$(find_things  decoder  DEC      libavcodec/allcodecs.c)
-PARSER_LIST=$(find_things   parser   PARSER   libavcodec/allcodecs.c)
-MUXER_LIST=$(find_things    muxer    _MUX     libavformat/allformats.c)
-DEMUXER_LIST=$(find_things  demuxer  DEMUX    libavformat/allformats.c)
-OUTDEV_LIST=$(find_things   outdev   OUTDEV   libavdevice/alldevices.c)
-INDEV_LIST=$(find_things    indev    _IN      libavdevice/alldevices.c)
 FILTER_LIST=$(find_things   filter   FILTER   libavfilter/allfilters.c)
 
 find_things_extern(){
     thing=$1
     pattern=$2
     file=$source_path/$3
-    sed -n "s/^[^#]*extern.*$pattern *ff_\([^ ]*\)_$thing;/\1_$thing/p" "$file"
+    out=${4:-$thing}
+    sed -n "s/^[^#]*extern.*$pattern *ff_\([^ ]*\)_$thing;/\1_$out/p" "$file"
 }
 
+OUTDEV_LIST=$(find_things_extern muxer AVOutputFormat libavdevice/alldevices.c outdev)
+INDEV_LIST=$(find_things_extern demuxer AVInputFormat libavdevice/alldevices.c indev)
+MUXER_LIST=$(find_things_extern muxer AVOutputFormat libavformat/allformats.c)
+DEMUXER_LIST=$(find_things_extern demuxer AVInputFormat libavformat/allformats.c)
+ENCODER_LIST=$(find_things_extern encoder AVCodec libavcodec/allcodecs.c)
+DECODER_LIST=$(find_things_extern decoder AVCodec libavcodec/allcodecs.c)
+CODEC_LIST="
+    $ENCODER_LIST
+    $DECODER_LIST
+"
+PARSER_LIST=$(find_things_extern parser AVCodecParser libavcodec/parser.c)
 BSF_LIST=$(find_things_extern bsf AVBitStreamFilter libavcodec/bitstream_filters.c)
 HWACCEL_LIST=$(find_things_extern hwaccel AVHWAccel libavcodec/hwaccels.h)
 PROTOCOL_LIST=$(find_things_extern protocol URLProtocol libavformat/protocols.c)
@@ -3781,6 +3794,18 @@ enabled gpl && map "die_license_disabled_gpl nonfree" $EXTERNAL_LIBRARY_NONFREE_
 map "die_license_disabled nonfree" $HWACCEL_LIBRARY_NONFREE_LIST
 
 enabled version3 && { enabled gpl && enable gplv3 || enable lgplv3; }
+
+if enabled nonfree; then
+    license="nonfree and unredistributable"
+elif enabled gplv3; then
+    license="GPL version 3 or later"
+elif enabled lgplv3; then
+    license="LGPL version 3 or later"
+elif enabled gpl; then
+    license="GPL version 2 or later"
+else
+    license="LGPL version 2.1 or later"
+fi
 
 enabled_all gnutls openssl &&
     die "GnuTLS and OpenSSL must not be enabled at the same time."
@@ -4839,7 +4864,7 @@ check_host_cflags $host_cflags_speed
 check_64bit(){
     arch32=$1
     arch64=$2
-    expr=$3
+    expr=${3:-'sizeof(void *) > 4'}
     check_code cc "" "int test[2*($expr) - 1]" &&
         subarch=$arch64 || subarch=$arch32
     enable $subarch
@@ -4854,23 +4879,23 @@ case "$arch" in
         enabled shared && enable_weak pic
     ;;
     parisc)
-        check_64bit parisc parisc64 'sizeof(void *) > 4'
+        check_64bit parisc parisc64
         enabled shared && enable_weak pic
     ;;
     ppc)
-        check_64bit ppc ppc64 'sizeof(void *) > 4'
+        check_64bit ppc ppc64
         enabled shared && enable_weak pic
     ;;
     s390)
-        check_64bit s390 s390x 'sizeof(void *) > 4'
+        check_64bit s390 s390x
         enabled shared && enable_weak pic
     ;;
     sparc)
-        check_64bit sparc sparc64 'sizeof(void *) > 4'
+        check_64bit sparc sparc64
         enabled shared && enable_weak pic
     ;;
     x86)
-        check_64bit x86_32 x86_64 'sizeof(void *) > 4'
+        check_64bit x86_32 x86_64
         # Treat x32 as x64 for now. Note it also needs pic if shared
         test "$subarch" = "x86_32" && check_cpp_condition stddef.h 'defined(__x86_64__)' &&
             subarch=x86_64 && enable x86_64 && disable x86_32
@@ -5282,9 +5307,8 @@ extern_prefix=${sym%%ff_extern*}
 
 ! disabled inline_asm && check_inline_asm inline_asm '"" ::'
 
-_restrict=
-for restrict_keyword in restrict __restrict__ __restrict; do
-    check_cc <<EOF && _restrict=$restrict_keyword && break
+for restrict_keyword in restrict __restrict__ __restrict ""; do
+    check_cc <<EOF && break
 void foo(char * $restrict_keyword p);
 EOF
 done
@@ -6470,9 +6494,9 @@ elif enabled_any msvc icl; then
     # MSVC 2013 and newer can handle it fine.
     # If this declspec fails, force including stdlib.h before the restrict redefinition
     # happens in config.h.
-    if [ $_restrict != restrict ]; then
+    if [ $restrict_keyword != restrict ]; then
         check_cc <<EOF || add_cflags -FIstdlib.h
-__declspec($_restrict) void* foo(int);
+__declspec($restrict_keyword) void *foo(int);
 EOF
     fi
     # the new SSA optimzer in VS2015 U3 is mis-optimizing some parts of the code
@@ -6652,17 +6676,6 @@ expand_deps(){
 postproc_deps="$(filter_out 'gpl' $postproc_deps)"
 
 map 'expand_deps $v' $LIBRARY_LIST
-
-license="LGPL version 2.1 or later"
-if enabled nonfree; then
-    license="nonfree and unredistributable"
-elif enabled gplv3; then
-    license="GPL version 3 or later"
-elif enabled lgplv3; then
-    license="LGPL version 3 or later"
-elif enabled gpl; then
-    license="GPL version 2 or later"
-fi
 
 if test "$quiet" != "yes"; then
 
@@ -6958,7 +6971,7 @@ cat > $TMPH <<EOF
 #define FFMPEG_DATADIR "$(eval c_escape $datadir)"
 #define AVCONV_DATADIR "$(eval c_escape $datadir)"
 #define CC_IDENT "$(c_escape ${cc_ident:-Unknown compiler})"
-#define av_restrict $_restrict
+#define av_restrict $restrict_keyword
 #define EXTERN_PREFIX "${extern_prefix}"
 #define EXTERN_ASM ${extern_prefix}
 #define BUILDSUF "$build_suffix"
@@ -7023,13 +7036,29 @@ print_enabled_components(){
     shift 3
     echo "static const $struct_name * const $name[] = {" > $TMPH
     for c in $*; do
-        enabled $c && printf "    &ff_%s,\n" $c >> $TMPH
+        if enabled $c; then
+            case $name in
+                indev_list)
+                    c=$(add_suffix _demuxer $(remove_suffix _indev $c))
+                ;;
+                outdev_list)
+                    c=$(add_suffix _muxer $(remove_suffix _outdev $c))
+                ;;
+            esac
+            printf "    &ff_%s,\n" $c >> $TMPH
+        fi
     done
     echo "    NULL };" >> $TMPH
     cp_if_changed $TMPH $file
 }
 
+print_enabled_components libavcodec/codec_list.c AVCodec codec_list $CODEC_LIST
+print_enabled_components libavcodec/parser_list.c AVCodecParser parser_list $PARSER_LIST
 print_enabled_components libavcodec/bsf_list.c AVBitStreamFilter bitstream_filters $BSF_LIST
+print_enabled_components libavdevice/indev_list.c AVInputFormat indev_list $INDEV_LIST
+print_enabled_components libavdevice/outdev_list.c AVOutputFormat outdev_list $OUTDEV_LIST
+print_enabled_components libavformat/demuxer_list.c AVInputFormat demuxer_list $DEMUXER_LIST
+print_enabled_components libavformat/muxer_list.c AVOutputFormat muxer_list $MUXER_LIST
 print_enabled_components libavformat/protocol_list.c URLProtocol url_protocols $PROTOCOL_LIST
 
 # Settings for pkg-config files

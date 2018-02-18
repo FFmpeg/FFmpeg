@@ -15,6 +15,31 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2018-02-xx - xxxxxxx
+  Change av_ripemd_update(), av_murmur3_update() and av_hash_update() length
+  parameter type to size_t at next major bump.
+
+2018-02-xx - xxxxxxx - lavfi 7.12.100 - avfilter.h
+  Add AVFilterContext.extra_hw_frames.
+
+2018-02-xx - xxxxxxx - lavc 58.11.100 - avcodec.h
+  Add AVCodecContext.extra_hw_frames.
+
+2018-02-06 - 0fd475704e - lavd 58.1.100 - avdevice.h
+  Deprecate use of av_input_audio_device_next(), av_input_video_device_next(),
+  av_output_audio_device_next(), av_output_video_device_next().
+  Add av_indev_iterate(), and av_outdev_iterate().
+
+2018-xx-xx - xxxxxxx - lavf 58.9.100 - avformat.h
+  Deprecate use of av_register_input_format(), av_register_output_format(),
+  av_register_all(), av_iformat_next(), av_oformat_next().
+  Add av_demuxer_iterate(), and av_muxer_iterate().
+
+2018-xx-xx - xxxxxxx - lavc 58.10.100 - avcodec.h
+  Deprecate use of avcodec_register(), avcodec_register_all(),
+  av_codec_next(), av_register_codec_parser(), and av_parser_next().
+  Add av_codec_iterate() and av_parser_iterate().
+
 2018-02-xx - xxxxxxx - lavf 58.8.100 - avformat.h
   Deprecate the current names of the RTSP "timeout", "stimeout", "user-agent"
   options. Introduce "listen_timeout" as replacement for the current "timeout"
@@ -89,14 +114,14 @@ API changes, most recent first:
 2017-11-xx - xxxxxxx - lavc 58.4.100 - avcodec.h
   Add AVCodecHWConfig and avcodec_get_hw_config().
 
-2017-11-22 - 3650cb2dfa - lavu 55.3.100 - opencl.h
+2017-11-22 - 3650cb2dfa - lavu 56.3.100 - opencl.h
   Remove experimental OpenCL API (av_opencl_*).
 
-2017-11-22 - b25d8ef0a7 - lavu 55.2.100 - hwcontext.h hwcontext_opencl.h
+2017-11-22 - b25d8ef0a7 - lavu 56.2.100 - hwcontext.h hwcontext_opencl.h
   Add AV_HWDEVICE_TYPE_OPENCL and a new installed header with
   OpenCL-specific hwcontext definitions.
 
-2017-11-22 - a050f56c09 - lavu 55.1.100 - pixfmt.h
+2017-11-22 - a050f56c09 - lavu 56.1.100 - pixfmt.h
   Add AV_PIX_FMT_OPENCL.
 
 2017-11-11 - 48e4eda11d - lavc 58.3.100 - avcodec.h
