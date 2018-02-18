@@ -2,6 +2,11 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 2.8.14:
+- avcodec/vp8: Check for bitstream end before vp7_fade_frame()
+- avcodec/exr: Check remaining bits in last get code loop
+- avutil/common: Fix integer overflow in av_clip_uint8_c() and av_clip_uint16_c()
+- avcodec/h264_cabac: Tighten allowed coeff_abs range
+- avcodec/h264_cavlc: Set valid qscale value in ff_h264_decode_mb_cavlc()
 - avcodec/vp3: Error out on invalid num_coeffs in unpack_vlcs()
 - avcodec/mpeg4videodec: Ignore multiple VOL headers
 - avcodec/vp3: Check eob_run
