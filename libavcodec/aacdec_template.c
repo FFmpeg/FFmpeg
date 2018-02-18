@@ -2561,7 +2561,7 @@ static void apply_ltp(AACContext *ac, SingleChannelElement *sce)
         for (sfb = 0; sfb < FFMIN(sce->ics.max_sfb, MAX_LTP_LONG_SFB); sfb++)
             if (ltp->used[sfb])
                 for (i = offsets[sfb]; i < offsets[sfb + 1]; i++)
-                    sce->coeffs[i] += predFreq[i];
+                    sce->coeffs[i] += (UINTFLOAT)predFreq[i];
     }
 }
 
