@@ -275,7 +275,7 @@ typedef struct MXFContext {
     int parsing_backward;
     int64_t last_forward_tell;
     int last_forward_partition;
-    int current_edit_unit;
+    int64_t current_edit_unit;
     int nb_index_tables;
     MXFIndexTable *index_tables;
     int edit_units_per_packet;      ///< how many edit units to read at a time (PCM, OPAtom)
@@ -2786,6 +2786,7 @@ static AVStream* mxf_get_opatom_stream(MXFContext *mxf)
 static void mxf_handle_small_eubc(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
+    MXFTrack *track;
 
     /* assuming non-OPAtom == frame wrapped
      * no sane writer would wrap 2 byte PCM packets with 20 byte headers.. */
@@ -2805,7 +2806,8 @@ static void mxf_handle_small_eubc(AVFormatContext *s)
     /* TODO: We could compute this from the ratio between the audio
      *       and video edit rates for 48 kHz NTSC we could use the
      *       1802-1802-1802-1802-1801 pattern. */
-    mxf->edit_units_per_packet = 1920;
+    track = st->priv_data;
+    mxf->edit_units_per_packet = FFMAX(1, track->edit_rate.num / track->edit_rate.den / 25);
 }
 
 /**
@@ -3263,7 +3265,7 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
                  * truncate the packet since it's probably very large (>2 GiB is common) */
                 avpriv_request_sample(s,
                                       "OPAtom misinterpreted as OP1a? "
-                                      "KLV for edit unit %i extending into "
+                                      "KLV for edit unit %"PRId64" extending into "
                                       "next edit unit",
                                       mxf->current_edit_unit);
                 klv.length = next_ofs - avio_tell(s->pb);
@@ -3307,6 +3309,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t ret64, pos, next_pos;
     AVStream *st;
     MXFIndexTable *t;
+    MXFTrack *track;
     int edit_units;
 
     if (mxf->op != OPAtom)
@@ -3317,14 +3320,16 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (!st)
         return AVERROR_EOF;
 
+    track = st->priv_data;
+
     /* OPAtom - clip wrapped demuxing */
     /* NOTE: mxf_read_header() makes sure nb_index_tables > 0 for OPAtom */
     t = &mxf->index_tables[0];
 
-    if (mxf->current_edit_unit >= st->duration)
+    if (mxf->current_edit_unit >= track->original_duration)
         return AVERROR_EOF;
 
-    edit_units = FFMIN(mxf->edit_units_per_packet, st->duration - mxf->current_edit_unit);
+    edit_units = FFMIN(mxf->edit_units_per_packet, track->original_duration - mxf->current_edit_unit);
 
     if ((ret = mxf_edit_unit_absolute_offset(mxf, t, mxf->current_edit_unit, NULL, &pos, 1)) < 0)
         return ret;
