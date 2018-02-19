@@ -37,6 +37,7 @@ typedef struct SilenceDetectContext {
     double noise;               ///< noise amplitude ratio
     double duration;            ///< minimum duration of silence until notification
     int mono;                   ///< mono mode : check each channel separately (default = check when ALL channels are silent)
+    int channels;               ///< number of channels
     int independant_channels;   ///< number of entries in following arrays (always 1 in mono mode)
     int64_t *nb_null_samples;   ///< (array) current number of continuous zero samples
     int64_t *start;             ///< (array) if silence is detected, this value contains the time of the first zero sample (default/unset = INT64_MIN)
@@ -79,7 +80,8 @@ static av_always_inline void update(SilenceDetectContext *s, AVFrame *insamples,
         if (s->start[channel] == INT64_MIN) {
             s->nb_null_samples[channel]++;
             if (s->nb_null_samples[channel] >= nb_samples_notify) {
-                s->start[channel] = insamples->pts - (int64_t)(s->duration / av_q2d(time_base) + .5);
+                s->start[channel] = insamples->pts + av_rescale_q(current_sample / s->channels + 1 - nb_samples_notify * s->independant_channels / s->channels,
+                        (AVRational){ 1, s->last_sample_rate }, time_base);
                 set_meta(insamples, s->mono ? channel + 1 : 0, "silence_start",
                         av_ts2timestr(s->start[channel], &time_base));
                 if (s->mono)
@@ -132,7 +134,8 @@ static int config_input(AVFilterLink *inlink)
     SilenceDetectContext *s = ctx->priv;
     int c;
 
-    s->independant_channels = s->mono ? inlink->channels : 1;
+    s->channels = inlink->channels;
+    s->independant_channels = s->mono ? s->channels : 1;
     s->nb_null_samples = av_mallocz_array(sizeof(*s->nb_null_samples), s->independant_channels);
     if (!s->nb_null_samples)
         return AVERROR(ENOMEM);
