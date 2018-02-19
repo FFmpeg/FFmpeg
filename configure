@@ -4997,6 +4997,10 @@ case $target_os in
         LIBTARGET=i386
         if enabled x86_64; then
             LIBTARGET="i386:x86-64"
+        elif enabled arm; then
+            LIBTARGET="arm"
+        elif enabled aarch64; then
+            LIBTARGET="arm64"
         fi
         if enabled shared; then
             # Cannot build both shared and static libs when using dllimport.
