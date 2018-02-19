@@ -13721,6 +13721,19 @@ keeping the same aspect ratio as the input:
 @example
 scale=w='min(500\, iw*3/2):h=-1'
 @end example
+
+@item
+Make pixels square by combining scale and setsar:
+@example
+scale='trunc(ih*dar):ih',setsar=1/1
+@end example
+
+@item
+Make pixels square by combining scale and setsar,
+making sure the resulting resolution is even (required by some codecs):
+@example
+scale='trunc(ih*dar/2)*2:trunc(ih/2)*2',setsar=1/1
+@end example
 @end itemize
 
 @subsection Commands
