@@ -81,6 +81,7 @@ typedef struct OutputStream {
     char bandwidth_str[64];
 
     char codec_str[100];
+    int written_len;
     char filename[1024];
     char full_path[1024];
     char temp_path[1024];
@@ -114,6 +115,7 @@ typedef struct DASHContext {
     int master_playlist_created;
     AVIOContext *mpd_out;
     AVIOContext *m3u8_out;
+    int streaming;
 } DASHContext;
 
 static struct codec_string {
@@ -250,7 +252,8 @@ static int flush_dynbuf(OutputStream *os, int *range_length)
     // write out to file
     *range_length = avio_close_dyn_buf(os->ctx->pb, &buffer);
     os->ctx->pb = NULL;
-    avio_write(os->out, buffer, *range_length);
+    avio_write(os->out, buffer + os->written_len, *range_length - os->written_len);
+    os->written_len = 0;
     av_free(buffer);
 
     // re-open buffer
@@ -960,7 +963,10 @@ static int dash_init(AVFormatContext *s)
         os->init_start_pos = 0;
 
         if (!strcmp(os->format_name, "mp4")) {
-            av_dict_set(&opts, "movflags", "frag_custom+dash+delay_moov", 0);
+            if (c->streaming)
+                av_dict_set(&opts, "movflags", "frag_every_frame+dash+delay_moov", 0);
+            else
+                av_dict_set(&opts, "movflags", "frag_custom+dash+delay_moov", 0);
         } else {
             av_dict_set_int(&opts, "cluster_time_limit", c->min_seg_duration / 1000, 0);
             av_dict_set_int(&opts, "cluster_size_limit", 5 * 1024 * 1024, 0); // set a large cluster size limit
@@ -1155,7 +1161,7 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
         }
 
         if (!c->single_file) {
-            if (!strcmp(os->format_name, "mp4"))
+            if (!strcmp(os->format_name, "mp4") && !os->written_len)
                 write_styp(os->ctx->pb);
         } else {
             snprintf(os->full_path, sizeof(os->full_path), "%s%s", c->dirname, os->initfile);
@@ -1318,6 +1324,19 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
         av_dict_free(&opts);
     }
 
+    //write out the data immediately in streaming mode
+    if (c->streaming && !strcmp(os->format_name, "mp4")) {
+        int len = 0;
+        uint8_t *buf = NULL;
+        if (!os->written_len)
+            write_styp(os->ctx->pb);
+        avio_flush(os->ctx->pb);
+        len = avio_get_dyn_buf (os->ctx->pb, &buf);
+        avio_write(os->out, buf + os->written_len, len - os->written_len);
+        os->written_len = len;
+        avio_flush(os->out);
+    }
+
     return ret;
 }
 
@@ -1394,6 +1413,7 @@ static const AVOption options[] = {
     { "http_user_agent", "override User-Agent field in HTTP header", OFFSET(user_agent), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, E},
     { "http_persistent", "Use persistent HTTP connections", OFFSET(http_persistent), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, E },
     { "hls_playlist", "Generate HLS playlist files(master.m3u8, media_%d.m3u8)", OFFSET(hls_playlist), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
+    { "streaming", "Enable/Disable streaming mode of output. Each frame will be moof fragment", OFFSET(streaming), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
     { NULL },
 };
 
