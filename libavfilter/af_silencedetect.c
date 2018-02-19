@@ -41,7 +41,9 @@ typedef struct SilenceDetectContext {
     int independant_channels;   ///< number of entries in following arrays (always 1 in mono mode)
     int64_t *nb_null_samples;   ///< (array) current number of continuous zero samples
     int64_t *start;             ///< (array) if silence is detected, this value contains the time of the first zero sample (default/unset = INT64_MIN)
+    int64_t frame_end;          ///< pts of the end of the current frame (used to compute duration of silence at EOS)
     int last_sample_rate;       ///< last sample rate to check for sample rate changes
+    AVRational time_base;       ///< time_base
 
     void (*silencedetect)(struct SilenceDetectContext *s, AVFrame *insamples,
                           int nb_samples, int64_t nb_samples_notify,
@@ -92,13 +94,16 @@ static av_always_inline void update(SilenceDetectContext *s, AVFrame *insamples,
         }
     } else {
         if (s->start[channel] > INT64_MIN) {
-            int64_t end_pts = insamples->pts + av_rescale_q(current_sample / s->channels,
-                    (AVRational){ 1, s->last_sample_rate }, time_base);
+            int64_t end_pts = insamples ? insamples->pts + av_rescale_q(current_sample / s->channels,
+                    (AVRational){ 1, s->last_sample_rate }, time_base)
+                    : s->frame_end;
             int64_t duration_ts = end_pts - s->start[channel];
-            set_meta(insamples, s->mono ? channel + 1 : 0, "silence_end",
-                    av_ts2timestr(end_pts, &time_base));
-            set_meta(insamples, s->mono ? channel + 1 : 0, "silence_duration",
-                    av_ts2timestr(duration_ts, &time_base));
+            if (insamples) {
+                set_meta(insamples, s->mono ? channel + 1 : 0, "silence_end",
+                        av_ts2timestr(end_pts, &time_base));
+                set_meta(insamples, s->mono ? channel + 1 : 0, "silence_duration",
+                        av_ts2timestr(duration_ts, &time_base));
+            }
             if (s->mono)
                 av_log(s, AV_LOG_INFO, "channel: %d | ", channel);
             av_log(s, AV_LOG_INFO, "silence_end: %s | silence_duration: %s\n",
@@ -177,6 +182,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             s->nb_null_samples[c] = srate * s->nb_null_samples[c] / s->last_sample_rate;
         }
     s->last_sample_rate = srate;
+    s->time_base = inlink->time_base;
+    s->frame_end = insamples->pts + av_rescale_q(insamples->nb_samples,
+            (AVRational){ 1, s->last_sample_rate }, inlink->time_base);
 
     // TODO: document metadata
     s->silencedetect(s, insamples, nb_samples, nb_samples_notify,
@@ -218,6 +226,18 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_samplerates(ctx, formats);
 }
 
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    SilenceDetectContext *s = ctx->priv;
+    int c;
+
+    for (c = 0; c < s->independant_channels; c++)
+        if (s->start[c] > INT64_MIN)
+            update(s, NULL, 0, c, 0, s->time_base);
+    av_freep(&s->nb_null_samples);
+    av_freep(&s->start);
+}
+
 static const AVFilterPad silencedetect_inputs[] = {
     {
         .name         = "default",
@@ -241,6 +261,7 @@ AVFilter ff_af_silencedetect = {
     .description   = NULL_IF_CONFIG_SMALL("Detect silence."),
     .priv_size     = sizeof(SilenceDetectContext),
     .query_formats = query_formats,
+    .uninit        = uninit,
     .inputs        = silencedetect_inputs,
     .outputs       = silencedetect_outputs,
     .priv_class    = &silencedetect_class,
