@@ -475,9 +475,9 @@ static int vaapi_frames_init(AVHWFramesContext *hwfc)
             int need_memory_type = !(hwctx->driver_quirks & AV_VAAPI_DRIVER_QUIRK_ATTRIB_MEMTYPE);
             int need_pixel_format = 1;
             for (i = 0; i < avfc->nb_attributes; i++) {
-                if (ctx->attributes[i].type == VASurfaceAttribMemoryType)
+                if (avfc->attributes[i].type == VASurfaceAttribMemoryType)
                     need_memory_type  = 0;
-                if (ctx->attributes[i].type == VASurfaceAttribPixelFormat)
+                if (avfc->attributes[i].type == VASurfaceAttribPixelFormat)
                     need_pixel_format = 0;
             }
             ctx->nb_attributes =
