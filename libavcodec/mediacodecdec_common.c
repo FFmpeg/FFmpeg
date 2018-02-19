@@ -415,7 +415,6 @@ fail:
     return ret;
 }
 
-
 static int mediacodec_dec_flush_codec(AVCodecContext *avctx, MediaCodecDecContext *s)
 {
     FFAMediaCodec *codec = s->codec;
