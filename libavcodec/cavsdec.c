@@ -1067,6 +1067,11 @@ static int decode_pic(AVSContext *h)
     if (!h->loop_filter_disable && get_bits1(&h->gb)) {
         h->alpha_offset        = get_se_golomb(&h->gb);
         h->beta_offset         = get_se_golomb(&h->gb);
+        if (   h->alpha_offset < -64 || h->alpha_offset > 64
+            || h-> beta_offset < -64 || h-> beta_offset > 64) {
+            h->alpha_offset = h->beta_offset  = 0;
+            return AVERROR_INVALIDDATA;
+        }
     } else {
         h->alpha_offset = h->beta_offset  = 0;
     }
