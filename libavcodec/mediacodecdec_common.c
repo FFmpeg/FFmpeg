@@ -386,7 +386,7 @@ static int mediacodec_dec_parse_format(AVCodecContext *avctx, MediaCodecDecConte
     }
 
     AMEDIAFORMAT_GET_INT32(s->color_format, "color-format", 1);
-    s->pix_fmt = avctx->pix_fmt = mcdec_map_color_format(avctx, s, s->color_format);
+    avctx->pix_fmt = mcdec_map_color_format(avctx, s, s->color_format);
     if (avctx->pix_fmt == AV_PIX_FMT_NONE) {
         av_log(avctx, AV_LOG_ERROR, "Output color format is not supported\n");
         ret = AVERROR(EINVAL);
