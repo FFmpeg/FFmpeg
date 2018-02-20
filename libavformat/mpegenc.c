@@ -375,10 +375,19 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
                     if (lpcm_freq_tab[j] == st->codecpar->sample_rate)
                         break;
                 }
-                if (j == 4)
+                if (j == 4) {
+                    int sr;
+                    av_log(ctx, AV_LOG_ERROR, "Invalid sampling rate for PCM stream.\n");
+                    av_log(ctx, AV_LOG_INFO, "Allowed sampling rates:");
+                    for (sr = 0; sr < 4; sr++)
+                         av_log(ctx, AV_LOG_INFO, " %d", lpcm_freq_tab[sr]);
+                    av_log(ctx, AV_LOG_INFO, "\n");
                     goto fail;
-                if (st->codecpar->channels > 8)
-                    return -1;
+                }
+                if (st->codecpar->channels > 8) {
+                    av_log(ctx, AV_LOG_ERROR, "At most 8 channels allowed for LPCM streams.\n");
+                    goto fail;
+                }
                 stream->lpcm_header[0] = 0x0c;
                 stream->lpcm_header[1] = (st->codecpar->channels - 1) | (j << 4);
                 stream->lpcm_header[2] = 0x80;
