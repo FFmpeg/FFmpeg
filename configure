@@ -3081,6 +3081,8 @@ xmv_demuxer_select="riffdec"
 xwma_demuxer_select="riffdec"
 
 # indevs / outdevs
+android_camera_indev_deps="android camera2ndk mediandk pthreads"
+android_camera_indev_extralibs="-landroid -lcamera2ndk -lmediandk"
 alsa_indev_deps="alsa"
 alsa_outdev_deps="alsa"
 avfoundation_indev_deps="avfoundation corevideo coremedia pthreads"
@@ -5755,6 +5757,10 @@ check_lib ole32    "windows.h"            CoTaskMemFree        -lole32
 check_lib shell32  "windows.h shellapi.h" CommandLineToArgvW   -lshell32
 check_lib wincrypt "windows.h wincrypt.h" CryptGenRandom       -ladvapi32
 check_lib psapi    "windows.h psapi.h"    GetProcessMemoryInfo -lpsapi
+
+check_lib android android/native_window.h ANativeWindow_acquire -landroid
+check_lib mediandk "stdint.h media/NdkImage.h" AImage_delete -lmediandk
+check_lib camera2ndk "stdbool.h stdint.h camera/NdkCameraManager.h" ACameraManager_create -lcamera2ndk
 
 enabled appkit       && check_apple_framework AppKit
 enabled audiotoolbox && check_apple_framework AudioToolbox

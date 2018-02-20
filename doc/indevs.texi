@@ -63,6 +63,46 @@ Set the number of channels. Default is 2.
 
 @end table
 
+@section android_camera
+
+Android camera input device.
+
+This input devices uses the Android Camera2 NDK API which is
+available on devices with API level 24+. The availability of
+android_camera is autodetected during configuration.
+
+This device allows capturing from all cameras on an Android device,
+which are integrated into the Camera2 NDK API.
+
+The available cameras are enumerated internally and can be selected
+with the @var{camera_index} parameter. The input file string is
+discarded.
+
+Generally the back facing camera has index 0 while the front facing
+camera has index 1.
+
+@subsection Options
+
+@table @option
+
+@item video_size
+Set the video size given as a string such as 640x480 or hd720.
+Falls back to the first available configuration reported by
+Android if requested video size is not available or by default.
+
+@item framerate
+Set the video framerate.
+Falls back to the first available configuration reported by
+Android if requested framerate is not available or by default (-1).
+
+@item camera_index
+Set the index of the camera to use. Default is 0.
+
+@item input_queue_size
+Set the maximum number of frames to buffer. Default is 5.
+
+@end table
+
 @section avfoundation
 
 AVFoundation input device.

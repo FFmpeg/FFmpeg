@@ -281,6 +281,7 @@ libavdevice
 
 
   avfoundation.m                        Thilo Borgmann
+  android_camera.c                      Felix Matouschek
   decklink*                             Marton Balint
   dshow.c                               Roger Pack (CC rogerdpack@gmail.com)
   fbdev_enc.c                           Lukasz Marek
