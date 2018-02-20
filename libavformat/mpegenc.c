@@ -407,6 +407,16 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
                 stream->lpcm_header[2] = 0x80;
                 stream->id = lpcm_id++;
                 stream->lpcm_align = st->codecpar->channels * st->codecpar->bits_per_coded_sample / 8;
+            } else if (st->codecpar->codec_id == AV_CODEC_ID_MLP ||
+                       st->codecpar->codec_id == AV_CODEC_ID_TRUEHD) {
+                       av_log(ctx, AV_LOG_ERROR, "Support for muxing audio codec %s not implemented.\n",
+                              avcodec_get_name(st->codecpar->codec_id));
+                       return AVERROR_PATCHWELCOME;
+            } else if (st->codecpar->codec_id != AV_CODEC_ID_MP1 &&
+                       st->codecpar->codec_id != AV_CODEC_ID_MP2 &&
+                       st->codecpar->codec_id != AV_CODEC_ID_MP3) {
+                       av_log(ctx, AV_LOG_ERROR, "Unsupported audio codec. Must be one of mp1, mp2, mp3, 16-bit pcm_dvd, pcm_s16be, ac3 or dts.\n");
+                       goto fail;
             } else {
                 stream->id = mpa_id++;
             }
