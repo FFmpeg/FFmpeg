@@ -3111,7 +3111,7 @@ static int matroska_parse_webvtt(MatroskaDemuxContext *matroska,
     err = av_new_packet(pkt, text_len);
     if (err < 0) {
         av_free(pkt);
-        return AVERROR(err);
+        return err;
     }
 
     memcpy(pkt->data, text, text_len);
