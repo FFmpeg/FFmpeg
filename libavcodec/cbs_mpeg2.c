@@ -102,6 +102,21 @@
 #undef nextbits
 
 
+static void cbs_mpeg2_free_user_data(void *unit, uint8_t *content)
+{
+    MPEG2RawUserData *user = (MPEG2RawUserData*)content;
+    av_buffer_unref(&user->user_data_ref);
+    av_freep(&content);
+}
+
+static void cbs_mpeg2_free_slice(void *unit, uint8_t *content)
+{
+    MPEG2RawSlice *slice = (MPEG2RawSlice*)content;
+    av_buffer_unref(&slice->header.extra_information_ref);
+    av_buffer_unref(&slice->data_ref);
+    av_freep(&content);
+}
+
 static int cbs_mpeg2_split_fragment(CodedBitstreamContext *ctx,
                                     CodedBitstreamFragment *frag,
                                     int header)
@@ -138,7 +153,7 @@ static int cbs_mpeg2_split_fragment(CodedBitstreamContext *ctx,
         memset(unit_data + unit_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
         err = ff_cbs_insert_unit_data(ctx, frag, i, unit_type,
-                                      unit_data, unit_size);
+                                      unit_data, unit_size, NULL);
         if (err < 0) {
             av_freep(&unit_data);
             return err;
@@ -168,25 +183,25 @@ static int cbs_mpeg2_read_unit(CodedBitstreamContext *ctx,
         MPEG2RawSlice *slice;
         int pos, len;
 
-        slice = av_mallocz(sizeof(*slice));
-        if (!slice)
-            return AVERROR(ENOMEM);
-        err = cbs_mpeg2_read_slice_header(ctx, &gbc, &slice->header);
-        if (err < 0) {
-            av_free(slice);
+        err = ff_cbs_alloc_unit_content(ctx, unit, sizeof(*slice),
+                                        &cbs_mpeg2_free_slice);
+        if (err < 0)
             return err;
-        }
+        slice = unit->content;
+
+        err = cbs_mpeg2_read_slice_header(ctx, &gbc, &slice->header);
+        if (err < 0)
+            return err;
 
         pos = get_bits_count(&gbc);
         len = unit->data_size;
 
         slice->data_size = len - pos / 8;
-        slice->data = av_malloc(slice->data_size +
-                                AV_INPUT_BUFFER_PADDING_SIZE);
-        if (!slice->data) {
-            av_free(slice);
+        slice->data_ref  = av_buffer_alloc(slice->data_size +
+                                           AV_INPUT_BUFFER_PADDING_SIZE);
+        if (!slice->data_ref)
             return AVERROR(ENOMEM);
-        }
+        slice->data = slice->data_ref->data;
 
         memcpy(slice->data,
                unit->data + pos / 8, slice->data_size);
@@ -194,30 +209,29 @@ static int cbs_mpeg2_read_unit(CodedBitstreamContext *ctx,
                AV_INPUT_BUFFER_PADDING_SIZE);
         slice->data_bit_start = pos % 8;
 
-        unit->content = slice;
-
     } else {
         switch (unit->type) {
-#define START(start_code, type, func) \
+#define START(start_code, type, read_func, free_func) \
         case start_code: \
             { \
                 type *header; \
-                header = av_mallocz(sizeof(*header)); \
-                if (!header) \
-                    return AVERROR(ENOMEM); \
-                err = cbs_mpeg2_read_ ## func(ctx, &gbc, header); \
-                if (err < 0) { \
-                    av_free(header); \
+                err = ff_cbs_alloc_unit_content(ctx, unit, \
+                                                sizeof(*header), free_func); \
+                if (err < 0) \
                     return err; \
-                } \
-                unit->content = header; \
+                header = unit->content; \
+                err = cbs_mpeg2_read_ ## read_func(ctx, &gbc, header); \
+                if (err < 0) \
+                    return err; \
             } \
             break;
-            START(0x00, MPEG2RawPictureHeader,  picture_header);
-            START(0xb2, MPEG2RawUserData,       user_data);
-            START(0xb3, MPEG2RawSequenceHeader, sequence_header);
-            START(0xb5, MPEG2RawExtensionData,  extension_data);
-            START(0xb8, MPEG2RawGroupOfPicturesHeader, group_of_pictures_header);
+            START(0x00, MPEG2RawPictureHeader,  picture_header,  NULL);
+            START(0xb2, MPEG2RawUserData,       user_data,
+                                            &cbs_mpeg2_free_user_data);
+            START(0xb3, MPEG2RawSequenceHeader, sequence_header, NULL);
+            START(0xb5, MPEG2RawExtensionData,  extension_data,  NULL);
+            START(0xb8, MPEG2RawGroupOfPicturesHeader,
+                                       group_of_pictures_header, NULL);
 #undef START
         default:
             av_log(ctx->log_ctx, AV_LOG_ERROR, "Unknown start code %02"PRIx32".\n",
@@ -335,7 +349,7 @@ static int cbs_mpeg2_write_unit(CodedBitstreamContext *ctx,
     unit->data_size = (put_bits_count(&pbc) + 7) / 8;
     flush_put_bits(&pbc);
 
-    err = av_reallocp(&unit->data, unit->data_size);
+    err = ff_cbs_alloc_unit_data(ctx, unit, unit->data_size);
     if (err < 0)
         return err;
 
@@ -355,9 +369,10 @@ static int cbs_mpeg2_assemble_fragment(CodedBitstreamContext *ctx,
     for (i = 0; i < frag->nb_units; i++)
         size += 3 + frag->units[i].data_size;
 
-    data = av_malloc(size);
-    if (!data)
+    frag->data_ref = av_buffer_alloc(size);
+    if (!frag->data_ref)
         return AVERROR(ENOMEM);
+    data = frag->data_ref->data;
 
     dp = 0;
     for (i = 0; i < frag->nb_units; i++) {
@@ -379,19 +394,6 @@ static int cbs_mpeg2_assemble_fragment(CodedBitstreamContext *ctx,
     return 0;
 }
 
-static void cbs_mpeg2_free_unit(CodedBitstreamUnit *unit)
-{
-    if (MPEG2_START_IS_SLICE(unit->type)) {
-        MPEG2RawSlice *slice = unit->content;
-        av_freep(&slice->data);
-        av_freep(&slice->header.extra_information);
-    } else if (unit->type == MPEG2_START_USER_DATA) {
-        MPEG2RawUserData *user = unit->content;
-        av_freep(&user->user_data);
-    }
-    av_freep(&unit->content);
-}
-
 static void cbs_mpeg2_close(CodedBitstreamContext *ctx)
 {
     CodedBitstreamMPEG2Context *priv = ctx->priv_data;
@@ -409,6 +411,5 @@ const CodedBitstreamType ff_cbs_type_mpeg2 = {
     .write_unit        = &cbs_mpeg2_write_unit,
     .assemble_fragment = &cbs_mpeg2_assemble_fragment,
 
-    .free_unit         = &cbs_mpeg2_free_unit,
     .close             = &cbs_mpeg2_close,
 };

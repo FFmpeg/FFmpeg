@@ -22,6 +22,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "libavutil/buffer.h"
+
 
 enum {
     MPEG2_START_PICTURE         = 0x00,
@@ -76,6 +78,7 @@ typedef struct MPEG2RawUserData {
 
     uint8_t *user_data;
     size_t user_data_length;
+    AVBufferRef *user_data_ref;
 } MPEG2RawUserData;
 
 typedef struct MPEG2RawSequenceExtension {
@@ -195,6 +198,7 @@ typedef struct MPEG2RawSliceHeader {
 
     size_t extra_information_length;
     uint8_t *extra_information;
+    AVBufferRef *extra_information_ref;
 } MPEG2RawSliceHeader;
 
 typedef struct MPEG2RawSlice {
@@ -203,6 +207,7 @@ typedef struct MPEG2RawSlice {
     uint8_t *data;
     size_t   data_size;
     int      data_bit_start;
+    AVBufferRef *data_ref;
 } MPEG2RawSlice;
 
 

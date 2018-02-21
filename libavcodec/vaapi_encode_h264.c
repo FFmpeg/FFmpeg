@@ -135,7 +135,7 @@ static int vaapi_encode_h264_add_nal(AVCodecContext *avctx,
     int err;
 
     err = ff_cbs_insert_unit_content(priv->cbc, au, -1,
-                                     header->nal_unit_type, nal_unit);
+                                     header->nal_unit_type, nal_unit, NULL);
     if (err < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed to add NAL unit: "
                "type = %d.\n", header->nal_unit_type);

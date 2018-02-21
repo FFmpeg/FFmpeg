@@ -271,7 +271,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
             aud->primary_pic_type = j;
 
             err = ff_cbs_insert_unit_content(ctx->cbc, au,
-                                             0, H264_NAL_AUD, aud);
+                                             0, H264_NAL_AUD, aud, NULL);
             if (err < 0) {
                 av_log(bsf, AV_LOG_ERROR, "Failed to insert AUD.\n");
                 goto fail;
@@ -318,8 +318,8 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
 
             sei->nal_unit_header.nal_unit_type = H264_NAL_SEI;
 
-            err = ff_cbs_insert_unit_content(ctx->cbc, au,
-                                             sei_pos, H264_NAL_SEI, sei);
+            err = ff_cbs_insert_unit_content(ctx->cbc, au, sei_pos,
+                                             H264_NAL_SEI, sei, NULL);
             if (err < 0) {
                 av_log(bsf, AV_LOG_ERROR, "Failed to insert SEI.\n");
                 goto fail;
