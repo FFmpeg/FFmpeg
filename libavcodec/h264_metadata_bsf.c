@@ -288,7 +288,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
         }
     }
 
-    // Insert the SEI in access units containing SPSs, and also
+    // Only insert the SEI in access units containing SPSs, and also
     // unconditionally in the first access unit we ever see.
     if (ctx->sei_user_data && (has_sps || !ctx->sei_first_au)) {
         H264RawSEIPayload payload = {
