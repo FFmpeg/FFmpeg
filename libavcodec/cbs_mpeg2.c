@@ -220,7 +220,7 @@ static int cbs_mpeg2_read_unit(CodedBitstreamContext *ctx,
             START(0xb8, MPEG2RawGroupOfPicturesHeader, group_of_pictures_header);
 #undef START
         default:
-            av_log(ctx->log_ctx, AV_LOG_ERROR, "Unknown start code %"PRIx32".\n",
+            av_log(ctx->log_ctx, AV_LOG_ERROR, "Unknown start code %02"PRIx32".\n",
                    unit->type);
             return AVERROR_INVALIDDATA;
         }
@@ -248,7 +248,7 @@ static int cbs_mpeg2_write_header(CodedBitstreamContext *ctx,
 #undef START
     default:
         av_log(ctx->log_ctx, AV_LOG_ERROR, "Write unimplemented for start "
-               "code %02"PRIu32".\n", unit->type);
+               "code %02"PRIx32".\n", unit->type);
         return AVERROR_PATCHWELCOME;
     }
 
