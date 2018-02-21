@@ -209,7 +209,6 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
     AVPacket *in = NULL;
     CodedBitstreamFragment *au = &ctx->access_unit;
     int err, i, j, has_sps;
-    char *sei_udu_string = NULL;
 
     err = ff_bsf_get_packet(bsf, &in);
     if (err < 0)
@@ -292,44 +291,13 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
     // Insert the SEI in access units containing SPSs, and also
     // unconditionally in the first access unit we ever see.
     if (ctx->sei_user_data && (has_sps || !ctx->sei_first_au)) {
-        H264RawSEI *sei;
-        H264RawSEIPayload *payload;
-        H264RawSEIUserDataUnregistered *udu;
-        int sei_pos, sei_new;
+        H264RawSEIPayload payload = {
+            .payload_type = H264_SEI_TYPE_USER_DATA_UNREGISTERED,
+        };
+        H264RawSEIUserDataUnregistered *udu =
+            &payload.payload.user_data_unregistered;
 
         ctx->sei_first_au = 1;
-
-        for (i = 0; i < au->nb_units; i++) {
-            if (au->units[i].type == H264_NAL_SEI ||
-                au->units[i].type == H264_NAL_SLICE ||
-                au->units[i].type == H264_NAL_IDR_SLICE)
-                break;
-        }
-        sei_pos = i;
-
-        if (sei_pos < au->nb_units &&
-            au->units[sei_pos].type == H264_NAL_SEI) {
-            sei_new = 0;
-            sei = au->units[sei_pos].content;
-        } else {
-            sei_new = 1;
-            sei = &ctx->sei_nal;
-            memset(sei, 0, sizeof(*sei));
-
-            sei->nal_unit_header.nal_unit_type = H264_NAL_SEI;
-
-            err = ff_cbs_insert_unit_content(ctx->cbc, au, sei_pos,
-                                             H264_NAL_SEI, sei, NULL);
-            if (err < 0) {
-                av_log(bsf, AV_LOG_ERROR, "Failed to insert SEI.\n");
-                goto fail;
-            }
-        }
-
-        payload = &sei->payload[sei->payload_count];
-
-        payload->payload_type = H264_SEI_TYPE_USER_DATA_UNREGISTERED;
-        udu = &payload->payload.user_data_unregistered;
 
         for (i = j = 0; j < 32 && ctx->sei_user_data[i]; i++) {
             int c, v;
@@ -349,21 +317,25 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
             ++j;
         }
         if (j == 32 && ctx->sei_user_data[i] == '+') {
-            sei_udu_string = av_strdup(ctx->sei_user_data + i + 1);
-            if (!sei_udu_string) {
+            size_t len = strlen(ctx->sei_user_data + i + 1);
+
+            udu->data_ref = av_buffer_alloc(len + 1);
+            if (!udu->data_ref) {
                 err = AVERROR(ENOMEM);
-                goto sei_fail;
+                goto fail;
             }
 
-            udu->data = sei_udu_string;
-            udu->data_length = strlen(sei_udu_string);
+            udu->data        = udu->data_ref->data;
+            udu->data_length = len + 1;
+            memcpy(udu->data, ctx->sei_user_data + i + 1, len + 1);
 
-            payload->payload_size = 16 + udu->data_length;
+            payload.payload_size = 16 + udu->data_length;
 
-            if (!sei_new) {
-                // This will be freed by the existing internal
-                // reference in fragment_uninit().
-                sei_udu_string = NULL;
+            err = ff_cbs_h264_add_sei_message(ctx->cbc, au, &payload);
+            if (err < 0) {
+                av_log(bsf, AV_LOG_ERROR, "Failed to add user data SEI "
+                       "message to access unit.\n");
+                goto fail;
             }
 
         } else {
@@ -371,12 +343,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
             av_log(bsf, AV_LOG_ERROR, "Invalid user data: "
                    "must be \"UUID+string\".\n");
             err = AVERROR(EINVAL);
-        sei_fail:
-            memset(payload, 0, sizeof(*payload));
-            goto fail;
         }
-
-        ++sei->payload_count;
     }
 
     err = ff_cbs_write_packet(ctx->cbc, out, au);
@@ -392,7 +359,6 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
     err = 0;
 fail:
     ff_cbs_fragment_uninit(ctx->cbc, au);
-    av_freep(&sei_udu_string);
 
     av_packet_free(&in);
 
