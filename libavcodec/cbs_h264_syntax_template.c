@@ -1247,3 +1247,32 @@ static int FUNC(slice_header)(CodedBitstreamContext *ctx, RWContext *rw,
 
     return 0;
 }
+
+static int FUNC(filler)(CodedBitstreamContext *ctx, RWContext *rw,
+                        H264RawFiller *current)
+{
+    av_unused int ff_byte = 0xff;
+    int err;
+
+    HEADER("Filler Data");
+
+    CHECK(FUNC(nal_unit_header)(ctx, rw, &current->nal_unit_header,
+                                1 << H264_NAL_FILLER_DATA));
+
+#ifdef READ
+    while (show_bits(rw, 8) == 0xff) {
+        xu(8, ff_byte, ff_byte, 0xff, 0xff);
+        ++current->filler_size;
+    }
+#else
+    {
+        uint32_t i;
+        for (i = 0; i < current->filler_size; i++)
+            xu(8, ff_byte, ff_byte, 0xff, 0xff);
+    }
+#endif
+
+    CHECK(FUNC(rbsp_trailing_bits)(ctx, rw));
+
+    return 0;
+}
