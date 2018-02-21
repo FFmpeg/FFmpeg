@@ -394,6 +394,13 @@ static int cbs_h2645_read_more_rbsp_data(GetBitContext *gbc)
 #undef allocate
 
 
+static void cbs_h264_free_pps(void *unit, uint8_t *content)
+{
+    H264RawPPS *pps = (H264RawPPS*)content;
+    av_buffer_unref(&pps->slice_group_id_ref);
+    av_freep(&content);
+}
+
 static void cbs_h264_free_sei_payload(H264RawSEIPayload *payload)
 {
     switch (payload->payload_type) {
@@ -725,7 +732,8 @@ static int cbs_h264_read_nal_unit(CodedBitstreamContext *ctx,
         {
             H264RawPPS *pps;
 
-            err = ff_cbs_alloc_unit_content(ctx, unit, sizeof(*pps), NULL);
+            err = ff_cbs_alloc_unit_content(ctx, unit, sizeof(*pps),
+                                            &cbs_h264_free_pps);
             if (err < 0)
                 return err;
             pps = unit->content;
