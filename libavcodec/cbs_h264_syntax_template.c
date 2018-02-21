@@ -561,6 +561,22 @@ static int FUNC(sei_pic_timing)(CodedBitstreamContext *ctx, RWContext *rw,
 
     sps = h264->active_sps;
     if (!sps) {
+        // If there is exactly one possible SPS but it is not yet active
+        // then just assume that it should be the active one.
+        int i, k = -1;
+        for (i = 0; i < H264_MAX_SPS_COUNT; i++) {
+            if (h264->sps[i]) {
+                if (k >= 0) {
+                    k = -1;
+                    break;
+                }
+                k = i;
+            }
+        }
+        if (k >= 0)
+            sps = h264->sps[k];
+    }
+    if (!sps) {
         av_log(ctx->log_ctx, AV_LOG_ERROR,
                "No active SPS for pic_timing.\n");
         return AVERROR_INVALIDDATA;
