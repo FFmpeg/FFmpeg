@@ -321,10 +321,12 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
         }
     }
 
-    pic->slices = av_mallocz_array(pic->nb_slices, sizeof(*pic->slices));
-    if (!pic->slices) {
-        err = AVERROR(ENOMEM);
-        goto fail;
+    if (pic->nb_slices > 0) {
+        pic->slices = av_mallocz_array(pic->nb_slices, sizeof(*pic->slices));
+        if (!pic->slices) {
+            err = AVERROR(ENOMEM);
+            goto fail;
+        }
     }
     for (i = 0; i < pic->nb_slices; i++) {
         slice = &pic->slices[i];
