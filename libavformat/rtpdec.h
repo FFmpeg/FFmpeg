@@ -24,6 +24,7 @@
 #define AVFORMAT_RTPDEC_H
 
 #include "libavcodec/avcodec.h"
+#include "libavutil/smpte2110.h"
 #include "avformat.h"
 #include "rtp.h"
 #include "url.h"
@@ -51,6 +52,7 @@ int ff_rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
 void ff_rtp_parse_close(RTPDemuxContext *s);
 int64_t ff_rtp_queued_packet_time(RTPDemuxContext *s);
 void ff_rtp_reset_packet_queue(RTPDemuxContext *s);
+int ff_rtp_enable_smpte2110_timestamp(RTPDemuxContext *s);
 
 /**
  * Send a dummy packet on both port pairs to set up the connection
@@ -193,6 +195,8 @@ struct RTPDemuxContext {
 
     /* packet loss tracking */
     uint64_t rtp_packets_missed;
+
+    struct smpte2110_timestamp *smpte2110_ts;
 };
 
 /**

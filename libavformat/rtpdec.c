@@ -596,6 +596,13 @@ static void finalize_packet(RTPDemuxContext *s, AVPacket *pkt, uint32_t timestam
     if (timestamp == RTP_NOTS_VALUE)
         return;
 
+    if (s->smpte2110_ts) {
+        pkt->pts = smpte2110_compute_pts(s->ic, s->smpte2110_ts, timestamp,
+                                         s->st->time_base);
+        if (pkt->pts != AV_NOPTS_VALUE)
+            return;
+    }
+
     if (s->last_rtcp_ntp_time != AV_NOPTS_VALUE && s->ic->nb_streams > 1) {
         int64_t addend;
         int delta_timestamp;
@@ -718,6 +725,15 @@ void ff_rtp_reset_packet_queue(RTPDemuxContext *s)
     s->seq       = 0;
     s->queue_len = 0;
     s->prev_ret  = 0;
+}
+
+int ff_rtp_enable_smpte2110_timestamp(RTPDemuxContext *s)
+{
+    s->smpte2110_ts = smpte2110_alloc();
+    if (!s->smpte2110_ts)
+        return AVERROR(ENOMEM);
+
+    return 0;
 }
 
 static int enqueue_packet(RTPDemuxContext *s, uint8_t *buf, int len)

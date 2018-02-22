@@ -409,6 +409,11 @@ typedef struct RTSPState {
 
     char default_lang[4];
     int buffer_size;
+
+    /**
+     * Derive PTS from the RTP timestamp, according to spec SMPTE2110
+     */
+    int compute_smpte2110_timestamp;
 } RTSPState;
 
 #define RTSP_FLAG_FILTER_SRC  0x1    /**< Filter incoming UDP packets -
