@@ -147,16 +147,14 @@ static av_cold void uninit(AVFilterContext *ctx)
            "%d frames duplicated.\n", s->frames_in, s->frames_out, s->drop, s->dup);
 }
 
-static int config_props(AVFilterLink* link)
+static int config_props(AVFilterLink* outlink)
 {
-    AVFilterContext *ctx = link->src;
-    AVFilterLink *inlink = ctx->inputs[0];
-    FPSContext   *s = ctx->priv;
+    AVFilterContext *ctx    = outlink->src;
+    AVFilterLink    *inlink = ctx->inputs[0];
+    FPSContext      *s      = ctx->priv;
 
-    link->time_base = av_inv_q(s->framerate);
-    link->frame_rate= s->framerate;
-    link->w         = link->src->inputs[0]->w;
-    link->h         = link->src->inputs[0]->h;
+    outlink->time_base  = av_inv_q(s->framerate);
+    outlink->frame_rate = s->framerate;
 
     /* Calculate the input and output pts offsets for start_time */
     if (s->start_time != DBL_MAX && s->start_time != AV_NOPTS_VALUE) {
@@ -168,7 +166,7 @@ static int config_props(AVFilterLink* link)
         }
         s->in_pts_off  = av_rescale_q_rnd(first_pts, AV_TIME_BASE_Q, inlink->time_base,
                                           s->rounding | AV_ROUND_PASS_MINMAX);
-        s->out_pts_off = av_rescale_q_rnd(first_pts, AV_TIME_BASE_Q, link->time_base,
+        s->out_pts_off = av_rescale_q_rnd(first_pts, AV_TIME_BASE_Q, outlink->time_base,
                                           s->rounding | AV_ROUND_PASS_MINMAX);
         s->next_pts = s->out_pts_off;
         av_log(ctx, AV_LOG_VERBOSE, "Set first pts to (in:%"PRId64" out:%"PRId64") from start time %f\n",
