@@ -52,6 +52,14 @@ enum TransposeDir {
     TRANSPOSE_CLOCK_FLIP,
 };
 
+typedef struct TransVtable {
+    void (*transpose_8x8)(uint8_t *src, ptrdiff_t src_linesize,
+                          uint8_t *dst, ptrdiff_t dst_linesize);
+    void (*transpose_block)(uint8_t *src, ptrdiff_t src_linesize,
+                            uint8_t *dst, ptrdiff_t dst_linesize,
+                            int w, int h);
+} TransVtable;
+
 typedef struct TransContext {
     const AVClass *class;
     int hsub, vsub;
@@ -61,11 +69,7 @@ typedef struct TransContext {
     int passthrough;    ///< PassthroughType, landscape passthrough mode enabled
     int dir;            ///< TransposeDir
 
-    void (*transpose_8x8)(uint8_t *src, ptrdiff_t src_linesize,
-                          uint8_t *dst, ptrdiff_t dst_linesize);
-    void (*transpose_block)(uint8_t *src, ptrdiff_t src_linesize,
-                            uint8_t *dst, ptrdiff_t dst_linesize,
-                            int w, int h);
+    TransVtable vtables[4];
 } TransContext;
 
 static int query_formats(AVFilterContext *ctx)
@@ -233,19 +237,22 @@ static int config_props_output(AVFilterLink *outlink)
     else
         outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
 
-    switch (s->pixsteps[0]) {
-    case 1: s->transpose_block = transpose_block_8_c;
-            s->transpose_8x8   = transpose_8x8_8_c;  break;
-    case 2: s->transpose_block = transpose_block_16_c;
-            s->transpose_8x8   = transpose_8x8_16_c; break;
-    case 3: s->transpose_block = transpose_block_24_c;
-            s->transpose_8x8   = transpose_8x8_24_c; break;
-    case 4: s->transpose_block = transpose_block_32_c;
-            s->transpose_8x8   = transpose_8x8_32_c; break;
-    case 6: s->transpose_block = transpose_block_48_c;
-            s->transpose_8x8   = transpose_8x8_48_c; break;
-    case 8: s->transpose_block = transpose_block_64_c;
-            s->transpose_8x8   = transpose_8x8_64_c; break;
+    for (int i = 0; i < 4; i++) {
+        TransVtable *v = &s->vtables[i];
+        switch (s->pixsteps[i]) {
+        case 1: v->transpose_block = transpose_block_8_c;
+                v->transpose_8x8   = transpose_8x8_8_c;  break;
+        case 2: v->transpose_block = transpose_block_16_c;
+                v->transpose_8x8   = transpose_8x8_16_c; break;
+        case 3: v->transpose_block = transpose_block_24_c;
+                v->transpose_8x8   = transpose_8x8_24_c; break;
+        case 4: v->transpose_block = transpose_block_32_c;
+                v->transpose_8x8   = transpose_8x8_32_c; break;
+        case 6: v->transpose_block = transpose_block_48_c;
+                v->transpose_8x8   = transpose_8x8_48_c; break;
+        case 8: v->transpose_block = transpose_block_64_c;
+                v->transpose_8x8   = transpose_8x8_64_c; break;
+        }
     }
 
     av_log(ctx, AV_LOG_VERBOSE,
@@ -290,6 +297,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr,
         uint8_t *dst, *src;
         int dstlinesize, srclinesize;
         int x, y;
+        TransVtable *v = &s->vtables[plane];
 
         dstlinesize = out->linesize[plane];
         dst         = out->data[plane] + start * dstlinesize;
@@ -308,20 +316,20 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr,
 
         for (y = start; y < end - 7; y += 8) {
             for (x = 0; x < outw - 7; x += 8) {
-                s->transpose_8x8(src + x * srclinesize + y * pixstep,
+                v->transpose_8x8(src + x * srclinesize + y * pixstep,
                                  srclinesize,
                                  dst + (y - start) * dstlinesize + x * pixstep,
                                  dstlinesize);
             }
             if (outw - x > 0 && end - y > 0)
-                s->transpose_block(src + x * srclinesize + y * pixstep,
+                v->transpose_block(src + x * srclinesize + y * pixstep,
                                    srclinesize,
                                    dst + (y - start) * dstlinesize + x * pixstep,
                                    dstlinesize, outw - x, end - y);
         }
 
         if (end - y > 0)
-            s->transpose_block(src + 0 * srclinesize + y * pixstep,
+            v->transpose_block(src + 0 * srclinesize + y * pixstep,
                                srclinesize,
                                dst + (y - start) * dstlinesize + 0 * pixstep,
                                dstlinesize, outw, end - y);
