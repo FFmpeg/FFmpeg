@@ -1611,7 +1611,7 @@ The filter accepts the syntax
 [@var{sample_rate}:]@var{resampler_options}, where @var{sample_rate}
 expresses a sample rate and @var{resampler_options} is a list of
 @var{key}=@var{value} pairs, separated by ":". See the
-@ref{Resampler Options,,the "Resampler Options" section in the
+@ref{Resampler Options,,"Resampler Options" section in the
 ffmpeg-resampler(1) manual,ffmpeg-resampler}
 for the complete list of supported options.
 
@@ -7449,7 +7449,7 @@ the input width and height. It defaults to 0.
 
 @item color, c
 Specify the color of the box to write. For the general syntax of this option,
-check the "Color" section in the ffmpeg-utils manual. If the special
+check the @ref{color syntax,,"Color" section in the ffmpeg-utils manual,ffmpeg-utils}. If the special
 value @code{invert} is used, the box edge color is the same as the
 video with inverted luma.
 
@@ -7552,7 +7552,7 @@ framed. Default to 0.
 
 @item color, c
 Specify the color of the grid. For the general syntax of this option,
-check the "Color" section in the ffmpeg-utils manual. If the special
+check the @ref{color syntax,,"Color" section in the ffmpeg-utils manual,ffmpeg-utils}. If the special
 value @code{invert} is used, the grid color is the same as the
 video with inverted luma.
 
@@ -7648,7 +7648,7 @@ The default value of @var{boxborderw} is 0.
 
 @item boxcolor
 The color to be used for drawing box around text. For the syntax of this
-option, check the "Color" section in the ffmpeg-utils manual.
+option, check the @ref{color syntax,,"Color" section in the ffmpeg-utils manual,ffmpeg-utils}.
 
 The default value of @var{boxcolor} is "white".
 
@@ -7662,7 +7662,7 @@ The default value of @var{borderw} is 0.
 
 @item bordercolor
 Set the color to be used for drawing border around text. For the syntax of this
-option, check the "Color" section in the ffmpeg-utils manual.
+option, check the @ref{color syntax,,"Color" section in the ffmpeg-utils manual,ffmpeg-utils}.
 
 The default value of @var{bordercolor} is "black".
 
@@ -7683,7 +7683,7 @@ If true, check and fix text coords to avoid clipping.
 
 @item fontcolor
 The color to be used for drawing fonts. For the syntax of this option, check
-the "Color" section in the ffmpeg-utils manual.
+the @ref{color syntax,,"Color" section in the ffmpeg-utils manual,ffmpeg-utils}.
 
 The default value of @var{fontcolor} is "black".
 
@@ -7746,7 +7746,8 @@ libfreetype flags.
 
 @item shadowcolor
 The color to be used for drawing a shadow behind the drawn text. For the
-syntax of this option, check the "Color" section in the ffmpeg-utils manual.
+syntax of this option, check the @ref{color syntax,,"Color" section in the
+ffmpeg-utils manual,ffmpeg-utils}.
 
 The default value of @var{shadowcolor} is "black".
 
@@ -9322,8 +9323,9 @@ A '|'-separated list of parameters to pass to the frei0r effect.
 A frei0r effect parameter can be a boolean (its value is either
 "y" or "n"), a double, a color (specified as
 @var{R}/@var{G}/@var{B}, where @var{R}, @var{G}, and @var{B} are floating point
-numbers between 0.0 and 1.0, inclusive) or by a color description specified in the "Color"
-section in the ffmpeg-utils manual), a position (specified as @var{X}/@var{Y}, where
+numbers between 0.0 and 1.0, inclusive) or a color description as specified in the
+@ref{color syntax,,"Color" section in the ffmpeg-utils manual,ffmpeg-utils},
+a position (specified as @var{X}/@var{Y}, where
 @var{X} and @var{Y} are floating point numbers) and/or a string.
 
 The number and types of parameters depend on the loaded effect. If an
@@ -11881,7 +11883,8 @@ so the input image is centered on the padded area.
 
 @item color
 Specify the color of the padded area. For the syntax of this option,
-check the "Color" section in the ffmpeg-utils manual.
+check the @ref{color syntax,,"Color" section in the ffmpeg-utils
+manual,ffmpeg-utils}.
 
 The default value of @var{color} is "black".
 
@@ -13273,8 +13276,9 @@ it. Default value is 1.
 
 @item fillcolor, c
 Set the color used to fill the output area not covered by the rotated
-image. For the general syntax of this option, check the "Color" section in the
-ffmpeg-utils manual. If the special value "none" is selected then no
+image. For the general syntax of this option, check the
+@ref{color syntax,,"Color" section in the ffmpeg-utils manual,ffmpeg-utils}.
+If the special value "none" is selected then no
 background is printed (useful for example if the background is never shown).
 
 Default value is "black".
@@ -15156,8 +15160,8 @@ refer to the pad video filter.
 
 @item color
 Specify the color of the unused area. For the syntax of this option, check the
-"Color" section in the ffmpeg-utils manual. The default value of @var{color}
-is "black".
+@ref{color syntax,,"Color" section in the ffmpeg-utils manual,ffmpeg-utils}.
+The default value of @var{color} is "black".
 
 @item overlap
 Set the number of frames to overlap when tiling several successive frames together.
@@ -17298,8 +17302,8 @@ Set frame rate, expressed as number of frames per second. Default
 value is "25".
 
 @item size, s
-Set frame size. For the syntax of this option, check the "Video
-size" section in the ffmpeg-utils manual. Default value is "640x480".
+Set frame size. For the syntax of this option, check the @ref{video size syntax,,"Video
+size" section in the ffmpeg-utils manual,ffmpeg-utils}. Default value is "640x480".
 
 @item start_scale
 Set the initial scale value. Default value is 3.0.
@@ -17498,8 +17502,8 @@ used to represent a dead cell.
 @item mold_color
 Set mold color, for definitely dead and moldy cells.
 
-For the syntax of these 3 color options, check the "Color" section in the
-ffmpeg-utils manual.
+For the syntax of these 3 color options, check the @ref{color syntax,,"Color" section in the
+ffmpeg-utils manual,ffmpeg-utils}.
 @end table
 
 @subsection Examples
@@ -17590,8 +17594,8 @@ coded on a @code{1/(N*N)} scale.
 
 @item color, c
 Specify the color of the source, only available in the @code{color}
-source. For the syntax of this option, check the "Color" section in the
-ffmpeg-utils manual.
+source. For the syntax of this option, check the
+@ref{color syntax,,"Color" section in the ffmpeg-utils manual,ffmpeg-utils}.
 
 @item size, s
 Specify the size of the sourced video. For the syntax of this option, check the
@@ -20288,8 +20292,8 @@ postfix. The default value is "0".
 @item streams, s
 Specifies the streams to read. Several streams can be specified,
 separated by "+". The source will then have as many outputs, in the
-same order. The syntax is explained in the ``Stream specifiers''
-section in the ffmpeg manual. Two special names, "dv" and "da" specify
+same order. The syntax is explained in the @ref{Stream specifiers,,"Stream specifiers"
+section in the ffmpeg manual,ffmpeg}. Two special names, "dv" and "da" specify
 respectively the default (best suited) video and audio stream. Default
 is "dv", or "da" if the filter is called as "amovie".
 
