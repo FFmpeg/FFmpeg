@@ -669,6 +669,8 @@ static uint8_t *nal_unit_extract_rbsp(const uint8_t *src, uint32_t src_len,
     while (i < src_len)
         dst[len++] = src[i++];
 
+    memset(dst + len, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+
     *dst_len = len;
     return dst;
 }
