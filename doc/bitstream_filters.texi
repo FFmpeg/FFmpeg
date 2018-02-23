@@ -50,21 +50,22 @@ DTS-HD.
 
 Add extradata to the beginning of the filtered packets.
 
+@table @option
+@item freq
 The additional argument specifies which packets should be filtered.
 It accepts the values:
 @table @samp
-@item a
-add extradata to all key packets, but only if @var{local_header} is
-set in the @option{flags2} codec context field
-
 @item k
+@item keyframe
 add extradata to all key packets
 
 @item e
+@item all
 add extradata to all packets
 @end table
+@end table
 
-If not specified it is assumed @samp{k}.
+If not specified it is assumed @samp{e}.
 
 For example the following @command{ffmpeg} command forces a global
 header (thus disabling individual packet headers) in the H.264 packets
