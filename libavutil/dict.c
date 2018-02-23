@@ -42,7 +42,7 @@ AVDictionaryEntry *av_dict_get(const AVDictionary *m, const char *key,
 {
     unsigned int i, j;
 
-    if (!m)
+    if (!m || !key)
         return NULL;
 
     if (prev)
