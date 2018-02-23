@@ -489,6 +489,9 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
 
         if ((ret = ff_listen_connect(fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
                                      s->open_timeout / 1000, h, !!cur_ai->ai_next)) < 0) {
+            if (ret == AVERROR(ETIMEDOUT)) {
+                ret = AVERROR_TCP_CONNECT_TIMEOUT;
+            }
             if (av_application_on_tcp_did_open(s->app_ctx, ret, fd, &control))
                 goto fail1;
             if (ret == AVERROR_EXIT)
@@ -754,8 +757,12 @@ static int tcp_read(URLContext *h, uint8_t *buf, int size)
 
     if (!(h->flags & AVIO_FLAG_NONBLOCK)) {
         ret = ff_network_wait_fd_timeout(s->fd, 0, h->rw_timeout, &h->interrupt_callback);
-        if (ret)
+        if (ret) {
+            if (ret == AVERROR(ETIMEDOUT)) {
+                ret = AVERROR_TCP_READ_TIMEOUT;
+            }
             return ret;
+        }
     }
     ret = recv(s->fd, buf, size, 0);
     if (ret == 0)
@@ -772,8 +779,12 @@ static int tcp_write(URLContext *h, const uint8_t *buf, int size)
 
     if (!(h->flags & AVIO_FLAG_NONBLOCK)) {
         ret = ff_network_wait_fd_timeout(s->fd, 1, h->rw_timeout, &h->interrupt_callback);
-        if (ret)
+        if (ret) {
+            if (ret == AVERROR(ETIMEDOUT)) {
+                ret = AVERROR_TCP_WRITE_TIMEOUT;
+            }
             return ret;
+        }
     }
 
     if (s->fastopen && !s->tcp_connected && av_stristart(buf, "GET", NULL)) {
