@@ -549,6 +549,8 @@ static void dump_stream_format(AVFormatContext *ic, int i,
         av_log(NULL, AV_LOG_INFO, " (clean effects)");
     if (st->disposition & AV_DISPOSITION_DESCRIPTIONS)
         av_log(NULL, AV_LOG_INFO, " (descriptions)");
+    if (st->disposition & AV_DISPOSITION_DEPENDENT)
+        av_log(NULL, AV_LOG_INFO, " (dependent)");
     av_log(NULL, AV_LOG_INFO, "\n");
 
     dump_metadata(NULL, st->metadata, "    ");

@@ -1904,6 +1904,9 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
                 return AVERROR_INVALIDDATA;
             flags = get8(pp, desc_end);
 
+            if ((flags & 0x80) == 0) /* mix_type */
+                st->disposition |= AV_DISPOSITION_DEPENDENT;
+
             switch ((flags >> 2) & 0x1F) { /* editorial_classification */
             case 0x01:
                 st->disposition |= AV_DISPOSITION_VISUAL_IMPAIRED;
