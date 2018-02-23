@@ -109,6 +109,7 @@ typedef struct DASHContext {
     const char *init_seg_name;
     const char *media_seg_name;
     const char *utc_timing_url;
+    const char *method;
     const char *user_agent;
     int hls_playlist;
     int http_persistent;
@@ -262,6 +263,8 @@ static int flush_dynbuf(OutputStream *os, int *range_length)
 
 static void set_http_options(AVDictionary **options, DASHContext *c)
 {
+    if (c->method)
+        av_dict_set(options, "method", c->method, 0);
     if (c->user_agent)
         av_dict_set(options, "user_agent", c->user_agent, 0);
     if (c->http_persistent)
@@ -1410,6 +1413,7 @@ static const AVOption options[] = {
     { "init_seg_name", "DASH-templated name to used for the initialization segment", OFFSET(init_seg_name), AV_OPT_TYPE_STRING, {.str = "init-stream$RepresentationID$.m4s"}, 0, 0, E },
     { "media_seg_name", "DASH-templated name to used for the media segments", OFFSET(media_seg_name), AV_OPT_TYPE_STRING, {.str = "chunk-stream$RepresentationID$-$Number%05d$.m4s"}, 0, 0, E },
     { "utc_timing_url", "URL of the page that will return the UTC timestamp in ISO format", OFFSET(utc_timing_url), AV_OPT_TYPE_STRING, { 0 }, 0, 0, E },
+    { "method", "set the HTTP method", OFFSET(method), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, E },
     { "http_user_agent", "override User-Agent field in HTTP header", OFFSET(user_agent), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, E},
     { "http_persistent", "Use persistent HTTP connections", OFFSET(http_persistent), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, E },
     { "hls_playlist", "Generate HLS playlist files(master.m3u8, media_%d.m3u8)", OFFSET(hls_playlist), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
