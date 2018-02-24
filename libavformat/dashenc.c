@@ -1310,7 +1310,7 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
     //open the output context when the first frame of a segment is ready
     if (!c->single_file && !os->out) {
         AVDictionary *opts = NULL;
-        const char *proto = avio_find_protocol_name(s->filename);
+        const char *proto = avio_find_protocol_name(s->url);
         int use_rename = proto && !strcmp(proto, "file");
         os->filename[0] = os->full_path[0] = os->temp_path[0] = '\0';
         ff_dash_fill_tmpl_params(os->filename, sizeof(os->filename),
