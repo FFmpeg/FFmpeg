@@ -4596,6 +4596,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     int64_t prev_dts = AV_NOPTS_VALUE;
     int next_frag_index = -1, index_entry_pos;
     size_t requested_size;
+    size_t old_ctts_allocated_size;
     AVIndexEntry *new_entries;
     MOVFragmentStreamInfo * frag_stream_info;
 
@@ -4688,6 +4689,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     st->index_entries= new_entries;
 
     requested_size = (st->nb_index_entries + entries) * sizeof(*sc->ctts_data);
+    old_ctts_allocated_size = sc->ctts_allocated_size;
     ctts_data = av_fast_realloc(sc->ctts_data, &sc->ctts_allocated_size,
                                 requested_size);
     if (!ctts_data)
@@ -4697,8 +4699,8 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     // In case there were samples without ctts entries, ensure they get
     // zero valued entries. This ensures clips which mix boxes with and
     // without ctts entries don't pickup uninitialized data.
-    memset(sc->ctts_data + sc->ctts_count, 0,
-           (st->nb_index_entries - sc->ctts_count) * sizeof(*sc->ctts_data));
+    memset((uint8_t*)(sc->ctts_data) + old_ctts_allocated_size, 0,
+           sc->ctts_allocated_size - old_ctts_allocated_size);
 
     if (index_entry_pos < st->nb_index_entries) {
         // Make hole in index_entries and ctts_data for new samples
