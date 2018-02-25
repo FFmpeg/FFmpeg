@@ -997,6 +997,7 @@ static int decode_audio_specific_config_gb(AACContext *ac,
     switch (m4ac->object_type) {
     case AOT_AAC_MAIN:
     case AOT_AAC_LC:
+    case AOT_AAC_SSR:
     case AOT_AAC_LTP:
     case AOT_ER_AAC_LC:
     case AOT_ER_AAC_LD:
@@ -1967,6 +1968,33 @@ static void apply_prediction(AACContext *ac, SingleChannelElement *sce)
         reset_all_predictors(sce->predictor_state);
 }
 
+static void decode_gain_control(SingleChannelElement * sce, GetBitContext * gb)
+{
+    // wd_num, wd_test, aloc_size
+    static const uint8_t gain_mode[4][3] = {
+        {1, 0, 5},  // ONLY_LONG_SEQUENCE = 0,
+        {2, 1, 2},  // LONG_START_SEQUENCE,
+        {8, 0, 2},  // EIGHT_SHORT_SEQUENCE,
+        {2, 1, 5},  // LONG_STOP_SEQUENCE
+    };
+
+    const int mode = sce->ics.window_sequence[0];
+    uint8_t bd, wd, ad;
+
+    // FIXME: Store the gain control data on |sce| and do something with it.
+    uint8_t max_band = get_bits(gb, 2);
+    for (bd = 0; bd < max_band; bd++) {
+        for (wd = 0; wd < gain_mode[mode][0]; wd++) {
+            uint8_t adjust_num = get_bits(gb, 3);
+            for (ad = 0; ad < adjust_num; ad++) {
+                skip_bits(gb, 4 + ((wd == 0 && gain_mode[mode][1])
+                                     ? 4
+                                     : gain_mode[mode][2]));
+            }
+        }
+    }
+}
+
 /**
  * Decode an individual_channel_stream payload; reference: table 4.44.
  *
@@ -2034,9 +2062,11 @@ static int decode_ics(AACContext *ac, SingleChannelElement *sce,
                 goto fail;
         }
         if (!eld_syntax && get_bits1(gb)) {
-            avpriv_request_sample(ac->avctx, "SSR");
-            ret = AVERROR_PATCHWELCOME;
-            goto fail;
+            decode_gain_control(sce, gb);
+            if (!ac->warned_gain_control) {
+                avpriv_report_missing_feature(ac->avctx, "Gain control");
+                ac->warned_gain_control = 1;
+            }
         }
         // I see no textual basis in the spec for this occurring after SSR gain
         // control, but this is what both reference and real implmentations do
@@ -2561,7 +2591,7 @@ static void apply_ltp(AACContext *ac, SingleChannelElement *sce)
         for (sfb = 0; sfb < FFMIN(sce->ics.max_sfb, MAX_LTP_LONG_SFB); sfb++)
             if (ltp->used[sfb])
                 for (i = offsets[sfb]; i < offsets[sfb + 1]; i++)
-                    sce->coeffs[i] += predFreq[i];
+                    sce->coeffs[i] += (UINTFLOAT)predFreq[i];
     }
 }
 

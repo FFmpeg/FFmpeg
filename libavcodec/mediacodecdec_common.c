@@ -555,23 +555,17 @@ fail:
     return ret;
 }
 
-int ff_mediacodec_dec_decode(AVCodecContext *avctx, MediaCodecDecContext *s,
-                             AVFrame *frame, int *got_frame,
-                             AVPacket *pkt)
+int ff_mediacodec_dec_send(AVCodecContext *avctx, MediaCodecDecContext *s,
+                           AVPacket *pkt)
 {
-    int ret;
     int offset = 0;
     int need_draining = 0;
     uint8_t *data;
     ssize_t index;
     size_t size;
     FFAMediaCodec *codec = s->codec;
-    FFAMediaCodecBufferInfo info = { 0 };
-
     int status;
-
     int64_t input_dequeue_timeout_us = INPUT_DEQUEUE_TIMEOUT_US;
-    int64_t output_dequeue_timeout_us = OUTPUT_DEQUEUE_TIMEOUT_US;
 
     if (s->flushing) {
         av_log(avctx, AV_LOG_ERROR, "Decoder is flushing and cannot accept new buffer "
@@ -584,13 +578,14 @@ int ff_mediacodec_dec_decode(AVCodecContext *avctx, MediaCodecDecContext *s,
     }
 
     if (s->draining && s->eos) {
-        return 0;
+        return AVERROR_EOF;
     }
 
     while (offset < pkt->size || (need_draining && !s->draining)) {
 
         index = ff_AMediaCodec_dequeueInputBuffer(codec, input_dequeue_timeout_us);
         if (ff_AMediaCodec_infoTryAgainLater(codec, index)) {
+            av_log(avctx, AV_LOG_TRACE, "Failed to dequeue input buffer, try again later..\n");
             break;
         }
 
@@ -621,13 +616,15 @@ int ff_mediacodec_dec_decode(AVCodecContext *avctx, MediaCodecDecContext *s,
                 return AVERROR_EXTERNAL;
             }
 
+            av_log(avctx, AV_LOG_TRACE, "Queued input buffer %zd"
+                    " size=%zd ts=%" PRIi64 "\n", index, size, pts);
+
             s->draining = 1;
             break;
         } else {
             int64_t pts = pkt->pts;
 
             size = FFMIN(pkt->size - offset, size);
-
             memcpy(data, pkt->data + offset, size);
             offset += size;
 
@@ -643,11 +640,32 @@ int ff_mediacodec_dec_decode(AVCodecContext *avctx, MediaCodecDecContext *s,
         }
     }
 
-    if (need_draining || s->draining) {
+    if (offset == 0)
+        return AVERROR(EAGAIN);
+    return offset;
+}
+
+int ff_mediacodec_dec_receive(AVCodecContext *avctx, MediaCodecDecContext *s,
+                              AVFrame *frame, bool wait)
+{
+    int ret;
+    uint8_t *data;
+    ssize_t index;
+    size_t size;
+    FFAMediaCodec *codec = s->codec;
+    FFAMediaCodecBufferInfo info = { 0 };
+    int status;
+    int64_t output_dequeue_timeout_us = OUTPUT_DEQUEUE_TIMEOUT_US;
+
+    if (s->draining && s->eos) {
+        return AVERROR_EOF;
+    }
+
+    if (s->draining) {
         /* If the codec is flushing or need to be flushed, block for a fair
          * amount of time to ensure we got a frame */
         output_dequeue_timeout_us = OUTPUT_DEQUEUE_BLOCK_TIMEOUT_US;
-    } else if (s->output_buffer_count == 0) {
+    } else if (s->output_buffer_count == 0 || !wait) {
         /* If the codec hasn't produced any frames, do not block so we
          * can push data to it as fast as possible, and get the first
          * frame */
@@ -656,9 +674,7 @@ int ff_mediacodec_dec_decode(AVCodecContext *avctx, MediaCodecDecContext *s,
 
     index = ff_AMediaCodec_dequeueOutputBuffer(codec, &info, output_dequeue_timeout_us);
     if (index >= 0) {
-        int ret;
-
-        av_log(avctx, AV_LOG_DEBUG, "Got output buffer %zd"
+        av_log(avctx, AV_LOG_TRACE, "Got output buffer %zd"
                 " offset=%" PRIi32 " size=%" PRIi32 " ts=%" PRIi64
                 " flags=%" PRIu32 "\n", index, info.offset, info.size,
                 info.presentationTimeUs, info.flags);
@@ -686,8 +702,8 @@ int ff_mediacodec_dec_decode(AVCodecContext *avctx, MediaCodecDecContext *s,
                 }
             }
 
-            *got_frame = 1;
             s->output_buffer_count++;
+            return 0;
         } else {
             status = ff_AMediaCodec_releaseOutputBuffer(codec, index, 0);
             if (status < 0) {
@@ -737,7 +753,7 @@ int ff_mediacodec_dec_decode(AVCodecContext *avctx, MediaCodecDecContext *s,
         return AVERROR_EXTERNAL;
     }
 
-    return offset;
+    return AVERROR(EAGAIN);
 }
 
 int ff_mediacodec_dec_flush(AVCodecContext *avctx, MediaCodecDecContext *s)

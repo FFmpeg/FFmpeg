@@ -1607,8 +1607,10 @@ static int h264_field_start(H264Context *h, const H264SliceContext *sl,
             (h->mb_height * h->mb_stride - 1) * sizeof(*h->slice_table));
     }
 
-    ff_h264_init_poc(h->cur_pic_ptr->field_poc, &h->cur_pic_ptr->poc,
+    ret = ff_h264_init_poc(h->cur_pic_ptr->field_poc, &h->cur_pic_ptr->poc,
                      h->ps.sps, &h->poc, h->picture_structure, nal->ref_idc);
+    if (ret < 0)
+        return ret;
 
     memcpy(h->mmco, sl->mmco, sl->nb_mmco * sizeof(*h->mmco));
     h->nb_mmco = sl->nb_mmco;

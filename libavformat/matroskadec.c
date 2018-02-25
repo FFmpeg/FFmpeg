@@ -2397,6 +2397,10 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 return ret;
         } else if (codec_id == AV_CODEC_ID_PRORES && track->codec_priv.size == 4) {
             fourcc = AV_RL32(track->codec_priv.data);
+        } else if (codec_id == AV_CODEC_ID_VP9 && track->codec_priv.size) {
+            /* we don't need any value stored in CodecPrivate.
+               make sure that it's not exported as extradata. */
+            track->codec_priv.size = 0;
         }
         track->codec_priv.size -= extradata_offset;
 
@@ -3107,7 +3111,7 @@ static int matroska_parse_webvtt(MatroskaDemuxContext *matroska,
     err = av_new_packet(pkt, text_len);
     if (err < 0) {
         av_free(pkt);
-        return AVERROR(err);
+        return err;
     }
 
     memcpy(pkt->data, text, text_len);
@@ -3117,6 +3121,7 @@ static int matroska_parse_webvtt(MatroskaDemuxContext *matroska,
                                       AV_PKT_DATA_WEBVTT_IDENTIFIER,
                                       id_len);
         if (!buf) {
+            av_packet_unref(pkt);
             av_free(pkt);
             return AVERROR(ENOMEM);
         }
@@ -3128,6 +3133,7 @@ static int matroska_parse_webvtt(MatroskaDemuxContext *matroska,
                                       AV_PKT_DATA_WEBVTT_SETTINGS,
                                       settings_len);
         if (!buf) {
+            av_packet_unref(pkt);
             av_free(pkt);
             return AVERROR(ENOMEM);
         }

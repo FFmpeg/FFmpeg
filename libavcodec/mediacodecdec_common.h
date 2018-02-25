@@ -25,6 +25,7 @@
 
 #include <stdint.h>
 #include <stdatomic.h>
+#include <stdbool.h>
 #include <sys/types.h>
 
 #include "libavutil/frame.h"
@@ -69,11 +70,14 @@ int ff_mediacodec_dec_init(AVCodecContext *avctx,
                            const char *mime,
                            FFAMediaFormat *format);
 
-int ff_mediacodec_dec_decode(AVCodecContext *avctx,
-                             MediaCodecDecContext *s,
-                             AVFrame *frame,
-                             int *got_frame,
-                             AVPacket *pkt);
+int ff_mediacodec_dec_send(AVCodecContext *avctx,
+                           MediaCodecDecContext *s,
+                           AVPacket *pkt);
+
+int ff_mediacodec_dec_receive(AVCodecContext *avctx,
+                              MediaCodecDecContext *s,
+                              AVFrame *frame,
+                              bool wait);
 
 int ff_mediacodec_dec_flush(AVCodecContext *avctx,
                             MediaCodecDecContext *s);

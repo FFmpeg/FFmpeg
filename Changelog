@@ -13,7 +13,7 @@ version <next>:
 - PCE support for extended channel layouts in the AAC encoder
 - native aptX and aptX HD encoder and decoder
 - Raw aptX and aptX HD muxer and demuxer
-- NVIDIA NVDEC-accelerated H.264, HEVC, MPEG-1/2/4, VC1, VP8/9 hwaccel decoding
+- NVIDIA NVDEC-accelerated H.264, HEVC, MJPEG, MPEG-1/2/4, VC1, VP8/9 hwaccel decoding
 - Intel QSV-accelerated overlay filter
 - mcompand audio filter
 - acontrast audio filter
@@ -21,7 +21,7 @@ version <next>:
 - video mix filter
 - video normalize filter
 - audio lv2 wrapper filter
-- VAAPI VP8 decoding
+- VAAPI MJPEG and VP8 decoding
 - AMD AMF H.264 and HEVC encoders
 - video fillborders filter
 - video setrange filter
@@ -39,6 +39,9 @@ version <next>:
 - Removed the ffmenc and ffmdec muxer and demuxer
 - VideoToolbox HEVC encoder and hwaccel
 - VAAPI-accelerated ProcAmp (color balance), denoise and sharpness filters
+- Add android_camera indev
+- codec2 en/decoding via libcodec2
+- muxer/demuxer for raw codec2 files and .c2 files
 
 
 version 3.4:

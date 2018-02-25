@@ -153,6 +153,9 @@ possibly separated by hyphens, and the string can be anything.
 For example, @samp{086f3693-b7b3-4f2c-9653-21492feee5b8+hello} will
 insert the string ``hello'' associated with the given UUID.
 
+@item delete_filler
+Deletes both filler NAL units and filler SEI messages.
+
 @end table
 
 @section h264_mp4toannexb

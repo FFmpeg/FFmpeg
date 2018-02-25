@@ -108,7 +108,6 @@ FATE_FILTER-$(call ALLYES, AVDEVICE TESTSRC_FILTER FORMAT_FILTER CONCAT_FILTER S
 fate-filter-lavd-scalenorm: tests/data/filtergraphs/scalenorm
 fate-filter-lavd-scalenorm: CMD = framecrc -f lavfi -graph_file $(TARGET_PATH)/tests/data/filtergraphs/scalenorm -i dummy
 
-
 FATE_FILTER-$(call ALLYES, FRAMERATE_FILTER TESTSRC2_FILTER) += fate-filter-framerate-up fate-filter-framerate-down
 fate-filter-framerate-up: CMD = framecrc -lavfi testsrc2=r=2:d=10,framerate=fps=10 -t 1
 fate-filter-framerate-down: CMD = framecrc -lavfi testsrc2=r=2:d=10,framerate=fps=1 -t 1
@@ -425,6 +424,17 @@ fate-filter-concat: CMD = framecrc -filter_complex_script $(TARGET_PATH)/tests/d
 
 FATE_FILTER-$(call ALLYES, TESTSRC2_FILTER FPS_FILTER MPDECIMATE_FILTER) += fate-filter-mpdecimate
 fate-filter-mpdecimate: CMD = framecrc -lavfi testsrc2=r=2:d=10,fps=3,mpdecimate -r 3 -pix_fmt yuv420p
+
+FATE_FILTER-$(call ALLYES, FPS_FILTER TESTSRC2_FILTER) += fate-filter-fps-up fate-filter-fps-up-round-down fate-filter-fps-up-round-up fate-filter-fps-down fate-filter-fps-down-round-down fate-filter-fps-down-round-up fate-filter-fps-down-eof-pass fate-filter-fps-start-drop fate-filter-fps-start-fill
+fate-filter-fps-up: CMD = framecrc -lavfi testsrc2=r=3:d=2,fps=7
+fate-filter-fps-up-round-down: CMD = framecrc -lavfi testsrc2=r=3:d=2,fps=7:round=down
+fate-filter-fps-up-round-up: CMD = framecrc -lavfi testsrc2=r=3:d=2,fps=7:round=up
+fate-filter-fps-down: CMD = framecrc -lavfi testsrc2=r=7:d=3.5,fps=3
+fate-filter-fps-down-round-down: CMD = framecrc -lavfi testsrc2=r=7:d=3.5,fps=3:round=down
+fate-filter-fps-down-round-up: CMD = framecrc -lavfi testsrc2=r=7:d=3.5,fps=3:round=up
+fate-filter-fps-down-eof-pass: CMD = framecrc -lavfi testsrc2=r=7:d=3.5,fps=3:eof_action=pass
+fate-filter-fps-start-drop: CMD = framecrc -lavfi testsrc2=r=7:d=3.5,fps=3:start_time=1.5
+fate-filter-fps-start-fill: CMD = framecrc -lavfi testsrc2=r=7:d=1.5,setpts=PTS+14,fps=3:start_time=1.5
 
 FATE_FILTER_SAMPLES-$(call ALLYES, MOV_DEMUXER FPS_FILTER QTRLE_DECODER) += fate-filter-fps-cfr fate-filter-fps fate-filter-fps-r
 fate-filter-fps-cfr: CMD = framecrc -i $(TARGET_SAMPLES)/qtrle/apple-animation-variable-fps-bug.mov -r 30 -vsync cfr -pix_fmt yuv420p

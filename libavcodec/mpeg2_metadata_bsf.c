@@ -167,7 +167,8 @@ static int mpeg2_metadata_update_fragment(AVBSFContext *bsf,
 
         err = ff_cbs_insert_unit_content(ctx->cbc, frag, se_pos + 1,
                                          MPEG2_START_EXTENSION,
-                                         &ctx->sequence_display_extension);
+                                         &ctx->sequence_display_extension,
+                                         NULL);
         if (err < 0) {
             av_log(bsf, AV_LOG_ERROR, "Failed to insert new sequence "
                    "display extension.\n");

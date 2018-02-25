@@ -110,6 +110,9 @@ static const struct {
     MAP(422H, YUV422,  YUV422P),
     MAP(UYVY, YUV422,  UYVY422),
     MAP(YUY2, YUV422,  YUYV422),
+    MAP(411P, YUV411,  YUV411P),
+    MAP(422V, YUV422,  YUV440P),
+    MAP(444P, YUV444,  YUV444P),
     MAP(Y800, YUV400,  GRAY8),
 #ifdef VA_FOURCC_P010
     MAP(P010, YUV420_10BPP, P010),
@@ -472,9 +475,9 @@ static int vaapi_frames_init(AVHWFramesContext *hwfc)
             int need_memory_type = !(hwctx->driver_quirks & AV_VAAPI_DRIVER_QUIRK_ATTRIB_MEMTYPE);
             int need_pixel_format = 1;
             for (i = 0; i < avfc->nb_attributes; i++) {
-                if (ctx->attributes[i].type == VASurfaceAttribMemoryType)
+                if (avfc->attributes[i].type == VASurfaceAttribMemoryType)
                     need_memory_type  = 0;
-                if (ctx->attributes[i].type == VASurfaceAttribPixelFormat)
+                if (avfc->attributes[i].type == VASurfaceAttribPixelFormat)
                     need_pixel_format = 0;
             }
             ctx->nb_attributes =

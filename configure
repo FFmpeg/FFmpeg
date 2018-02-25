@@ -224,6 +224,7 @@ External library support:
   --enable-libcaca         enable textual display using libcaca [no]
   --enable-libcelt         enable CELT decoding via libcelt [no]
   --enable-libcdio         enable audio CD grabbing with libcdio [no]
+  --enable-libcodec2       enable codec2 en/decoding using libcodec2 [no]
   --enable-libdc1394       enable IIDC-1394 grabbing using libdc1394
                            and libraw1394 [no]
   --enable-libfdk-aac      enable AAC de/encoding via libfdk-aac [no]
@@ -1603,6 +1604,7 @@ EXTERNAL_LIBRARY_LIST="
     libbs2b
     libcaca
     libcelt
+    libcodec2
     libdc1394
     libdrm
     libflite
@@ -2714,6 +2716,10 @@ hevc_vdpau_hwaccel_deps="vdpau VdpPictureInfoHEVC"
 hevc_vdpau_hwaccel_select="hevc_decoder"
 hevc_videotoolbox_hwaccel_deps="videotoolbox"
 hevc_videotoolbox_hwaccel_select="hevc_decoder"
+mjpeg_nvdec_hwaccel_deps="nvdec"
+mjpeg_nvdec_hwaccel_select="mjpeg_decoder"
+mjpeg_vaapi_hwaccel_deps="vaapi"
+mjpeg_vaapi_hwaccel_select="mjpeg_decoder"
 mpeg_xvmc_hwaccel_deps="xvmc"
 mpeg_xvmc_hwaccel_select="mpeg2video_decoder"
 mpeg1_nvdec_hwaccel_deps="nvdec"
@@ -2940,6 +2946,8 @@ h264_videotoolbox_encoder_select="videotoolbox_encoder"
 hevc_videotoolbox_encoder_deps="pthreads"
 hevc_videotoolbox_encoder_select="videotoolbox_encoder"
 libcelt_decoder_deps="libcelt"
+libcodec2_decoder_deps="libcodec2"
+libcodec2_encoder_deps="libcodec2"
 libfdk_aac_decoder_deps="libfdk_aac"
 libfdk_aac_encoder_deps="libfdk_aac"
 libfdk_aac_encoder_select="audio_frame_queue"
@@ -3081,6 +3089,8 @@ xmv_demuxer_select="riffdec"
 xwma_demuxer_select="riffdec"
 
 # indevs / outdevs
+android_camera_indev_deps="android camera2ndk mediandk pthreads"
+android_camera_indev_extralibs="-landroid -lcamera2ndk -lmediandk"
 alsa_indev_deps="alsa"
 alsa_outdev_deps="alsa"
 avfoundation_indev_deps="avfoundation corevideo coremedia pthreads"
@@ -4994,6 +5004,14 @@ case $target_os in
         ;;
     mingw32*|mingw64*)
         target_os=mingw32
+        LIBTARGET=i386
+        if enabled x86_64; then
+            LIBTARGET="i386:x86-64"
+        elif enabled arm; then
+            LIBTARGET="arm"
+        elif enabled aarch64; then
+            LIBTARGET="arm64"
+        fi
         if enabled shared; then
             # Cannot build both shared and static libs when using dllimport.
             disable static
@@ -5005,7 +5023,14 @@ case $target_os in
         SLIBSUF=".dll"
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME)-$(LIBVERSION)$(SLIBSUF)'
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME)-$(LIBMAJOR)$(SLIBSUF)'
-        SLIB_EXTRA_CMD='cp $(SUBDIR)lib$(SLIBNAME:$(SLIBSUF)=.dll.a) $(SUBDIR)$(SLIBNAME:$(SLIBSUF)=.lib)'
+        if check_cmd lib.exe -list; then
+            SLIB_EXTRA_CMD=-'lib.exe -nologo -machine:$(LIBTARGET) -def:$$(@:$(SLIBSUF)=.def) -out:$(SUBDIR)$(SLIBNAME:$(SLIBSUF)=.lib)'
+            if enabled x86_64; then
+                LIBTARGET=x64
+            fi
+        else
+            SLIB_EXTRA_CMD=-'$(DLLTOOL) -m $(LIBTARGET) -d $$(@:$(SLIBSUF)=.def) -l $(SUBDIR)$(SLIBNAME:$(SLIBSUF)=.lib) -D $(SLIBNAME_WITH_MAJOR)'
+        fi
         SLIB_INSTALL_NAME='$(SLIBNAME_WITH_MAJOR)'
         SLIB_INSTALL_LINKS=
         SLIB_INSTALL_EXTRA_SHLIB='$(SLIBNAME:$(SLIBSUF)=.lib)'
@@ -5013,6 +5038,7 @@ case $target_os in
         SLIB_CREATE_DEF_CMD='EXTERN_PREFIX="$(EXTERN_PREFIX)" AR="$(AR_CMD)" NM="$(NM_CMD)" $(SRC_PATH)/compat/windows/makedef $(SUBDIR)lib$(NAME).ver $(OBJS) > $$(@:$(SLIBSUF)=.def)'
         SHFLAGS='-shared -Wl,--out-implib,$(SUBDIR)lib$(SLIBNAME:$(SLIBSUF)=.dll.a) -Wl,--disable-auto-image-base $$(@:$(SLIBSUF)=.def)'
         enabled x86_64 && objformat="win64" || objformat="win32"
+        dlltool="${cross_prefix}dlltool"
         ranlib=:
         enable dos_paths
         check_ldflags -Wl,--nxcompat,--dynamicbase
@@ -5740,6 +5766,10 @@ check_lib shell32  "windows.h shellapi.h" CommandLineToArgvW   -lshell32
 check_lib wincrypt "windows.h wincrypt.h" CryptGenRandom       -ladvapi32
 check_lib psapi    "windows.h psapi.h"    GetProcessMemoryInfo -lpsapi
 
+check_lib android android/native_window.h ANativeWindow_acquire -landroid
+check_lib mediandk "stdint.h media/NdkImage.h" AImage_delete -lmediandk
+check_lib camera2ndk "stdbool.h stdint.h camera/NdkCameraManager.h" ACameraManager_create -lcamera2ndk
+
 enabled appkit       && check_apple_framework AppKit
 enabled audiotoolbox && check_apple_framework AudioToolbox
 enabled avfoundation && check_apple_framework AVFoundation
@@ -5865,6 +5895,7 @@ enabled libcelt           && require libcelt celt/celt.h celt_decode -lcelt0 &&
                              { check_lib libcelt celt/celt.h celt_decoder_create_custom -lcelt0 ||
                                die "ERROR: libcelt must be installed and version must be >= 0.11.0."; }
 enabled libcaca           && require_pkg_config libcaca caca caca.h caca_create_canvas
+enabled libcodec2         && require libcodec2 codec2/codec2.h codec2_create -lcodec2
 enabled libdc1394         && require_pkg_config libdc1394 libdc1394-2 dc1394/dc1394.h dc1394_new
 enabled libdrm            && require_pkg_config libdrm libdrm xf86drm.h drmGetVersion
 enabled libfdk_aac        && { check_pkg_config libfdk_aac fdk-aac "fdk-aac/aacenc_lib.h" aacEncOpen ||
@@ -6886,6 +6917,7 @@ LD_O=$LD_O
 X86ASM_O=$X86ASM_O
 LD_LIB=$LD_LIB
 LD_PATH=$LD_PATH
+DLLTOOL=$dlltool
 WINDRES=$windres
 DEPWINDRES=$dep_cc
 DOXYGEN=$doxygen
@@ -6939,6 +6971,7 @@ LIB_INSTALL_EXTRA_CMD=$LIB_INSTALL_EXTRA_CMD
 EXTRALIBS=$extralibs
 COMPAT_OBJS=$compat_objs
 INSTALL=$install
+LIBTARGET=${LIBTARGET}
 SLIBNAME=${SLIBNAME}
 SLIBNAME_WITH_VERSION=${SLIBNAME_WITH_VERSION}
 SLIBNAME_WITH_MAJOR=${SLIBNAME_WITH_MAJOR}

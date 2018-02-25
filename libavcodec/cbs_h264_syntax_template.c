@@ -404,6 +404,9 @@ static int FUNC(pps)(CodedBitstreamContext *ctx, RWContext *rw,
             ue(slice_group_change_rate_minus1, 0, pic_size - 1);
         } else if (current->slice_group_map_type == 6) {
             ue(pic_size_in_map_units_minus1, pic_size - 1, pic_size - 1);
+
+            allocate(current->slice_group_id,
+                     current->pic_size_in_map_units_minus1 + 1);
             for (i = 0; i <= current->pic_size_in_map_units_minus1; i++)
                 u(av_log2(2 * current->num_slice_groups_minus1 + 1),
                   slice_group_id[i], 0, current->num_slice_groups_minus1);
@@ -560,6 +563,22 @@ static int FUNC(sei_pic_timing)(CodedBitstreamContext *ctx, RWContext *rw,
     int err;
 
     sps = h264->active_sps;
+    if (!sps) {
+        // If there is exactly one possible SPS but it is not yet active
+        // then just assume that it should be the active one.
+        int i, k = -1;
+        for (i = 0; i < H264_MAX_SPS_COUNT; i++) {
+            if (h264->sps[i]) {
+                if (k >= 0) {
+                    k = -1;
+                    break;
+                }
+                k = i;
+            }
+        }
+        if (k >= 0)
+            sps = h264->sps[k];
+    }
     if (!sps) {
         av_log(ctx->log_ctx, AV_LOG_ERROR,
                "No active SPS for pic_timing.\n");
@@ -1225,6 +1244,35 @@ static int FUNC(slice_header)(CodedBitstreamContext *ctx, RWContext *rw,
         while (byte_alignment(rw))
             xu(1, cabac_alignment_one_bit, one, 1, 1);
     }
+
+    return 0;
+}
+
+static int FUNC(filler)(CodedBitstreamContext *ctx, RWContext *rw,
+                        H264RawFiller *current)
+{
+    av_unused int ff_byte = 0xff;
+    int err;
+
+    HEADER("Filler Data");
+
+    CHECK(FUNC(nal_unit_header)(ctx, rw, &current->nal_unit_header,
+                                1 << H264_NAL_FILLER_DATA));
+
+#ifdef READ
+    while (show_bits(rw, 8) == 0xff) {
+        xu(8, ff_byte, ff_byte, 0xff, 0xff);
+        ++current->filler_size;
+    }
+#else
+    {
+        uint32_t i;
+        for (i = 0; i < current->filler_size; i++)
+            xu(8, ff_byte, ff_byte, 0xff, 0xff);
+    }
+#endif
+
+    CHECK(FUNC(rbsp_trailing_bits)(ctx, rw));
 
     return 0;
 }

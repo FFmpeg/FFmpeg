@@ -154,6 +154,7 @@ typedef struct H265RawVUI {
 typedef struct H265RawPSExtensionData {
     uint8_t *data;
     size_t bit_length;
+    AVBufferRef *data_ref;
 } H265RawPSExtensionData;
 
 typedef struct H265RawVPS {
@@ -512,6 +513,7 @@ typedef struct H265RawSlice {
     uint8_t *data;
     size_t   data_size;
     int      data_bit_start;
+    AVBufferRef *data_ref;
 } H265RawSlice;
 
 

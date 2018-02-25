@@ -2168,12 +2168,8 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (vs->packets_written && can_split && av_compare_ts(pkt->pts - vs->start_pts, st->time_base,
                                    end_pts, AV_TIME_BASE_Q) >= 0) {
         int64_t new_start_pos;
-        char *old_filename = av_strdup(vs->avf->url);
+        char *old_filename = NULL;
         int byterange_mode = (hls->flags & HLS_SINGLE_FILE) || (hls->max_seg_size > 0);
-
-        if (!old_filename) {
-            return AVERROR(ENOMEM);
-        }
 
         av_write_frame(vs->avf, NULL); /* Flush any buffered data */
 
@@ -2215,17 +2211,21 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
             if (ret < 0) {
                 av_log(NULL, AV_LOG_ERROR, "Failed to open file '%s'\n",
                     vs->avf->url);
-                av_free(old_filename);
                 return ret;
             }
             write_styp(vs->out);
             ret = flush_dynbuf(vs, &range_length);
             if (ret < 0) {
-                av_free(old_filename);
                 return ret;
             }
             ff_format_io_close(s, &vs->out);
         }
+
+        old_filename = av_strdup(vs->avf->url);
+        if (!old_filename) {
+            return AVERROR(ENOMEM);
+        }
+
         ret = hls_append_segment(s, hls, vs, vs->duration, vs->start_pos, vs->size);
         vs->start_pos = new_start_pos;
         if (ret < 0) {
@@ -2316,6 +2316,12 @@ failed:
 
         if ((hls->flags & HLS_TEMP_FILE) && oc->url[0]) {
             hls_rename_temp_file(s, oc);
+            av_free(old_filename);
+            old_filename = av_strdup(vs->avf->url);
+
+            if (!old_filename) {
+                return AVERROR(ENOMEM);
+            }
         }
 
         /* after av_write_trailer, then duration + 1 duration per packet */

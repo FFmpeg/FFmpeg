@@ -254,6 +254,9 @@ Use persistent HTTP connections. Applicable only for HTTP output.
 @item -hls_playlist @var{hls_playlist}
 Generate HLS playlist files as well. The master playlist is generated with the filename master.m3u8.
 One media playlist file is generated for each stream with filenames media_0.m3u8, media_1.m3u8, etc.
+@item -streaming @var{streaming}
+Enable (1) or disable (0) chunk streaming mode of output. In chunk streaming
+mode, each frame will be a moof fragment which forms a chunk.
 @item -adaptation_sets @var{adaptation_sets}
 Assign streams to AdaptationSets. Syntax is "id=x,streams=a,b,c id=y,streams=d,e" with x and y being the IDs
 of the adaptation sets and a,b,c,d and e are the indices of the mapped streams.

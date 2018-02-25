@@ -449,8 +449,10 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             /* Decode POC of this picture.
              * The prev_ values needed for decoding POC of the next picture are not set here. */
             field_poc[0] = field_poc[1] = INT_MAX;
-            ff_h264_init_poc(field_poc, &s->output_picture_number, sps,
+            ret = ff_h264_init_poc(field_poc, &s->output_picture_number, sps,
                              &p->poc, p->picture_structure, nal.ref_idc);
+            if (ret < 0)
+                goto fail;
 
             /* Continue parsing to check if MMCO_RESET is present.
              * FIXME: MMCO_RESET could appear in non-first slice.

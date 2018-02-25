@@ -413,6 +413,10 @@ they do not conflict with the standard, as in:
 ffmpeg -i myfile.avi -target vcd -bf 2 /tmp/vcd.mpg
 @end example
 
+@item -dn (@emph{output})
+Disable data recording. For full manual control see the @code{-map}
+option.
+
 @item -dframes @var{number} (@emph{output})
 Set the number of data frames to output. This is an obsolete alias for
 @code{-frames:d}, which you should use instead.
@@ -571,7 +575,8 @@ stored at container level, but not the aspect ratio stored in encoded
 frames, if it exists.
 
 @item -vn (@emph{output})
-Disable video recording.
+Disable video recording. For full manual control see the @code{-map}
+option.
 
 @item -vcodec @var{codec} (@emph{output})
 Set the video codec. This is an alias for @code{-codec:v}.
@@ -886,7 +891,8 @@ default to the number of input audio channels. For input streams
 this option only makes sense for audio grabbing devices and raw demuxers
 and is mapped to the corresponding demuxer options.
 @item -an (@emph{output})
-Disable audio recording.
+Disable audio recording. For full manual control see the @code{-map}
+option.
 @item -acodec @var{codec} (@emph{input/output})
 Set the audio codec. This is an alias for @code{-codec:a}.
 @item -sample_fmt[:@var{stream_specifier}] @var{sample_fmt} (@emph{output,per-stream})
@@ -921,7 +927,8 @@ stereo but not 6 channels as 5.1. The default is to always try to guess. Use
 @item -scodec @var{codec} (@emph{input/output})
 Set the subtitle codec. This is an alias for @code{-codec:s}.
 @item -sn (@emph{output})
-Disable subtitle recording.
+Disable subtitle recording. For full manual control see the @code{-map}
+option.
 @item -sbsf @var{bitstream_filter}
 Deprecated, see -bsf
 @end table

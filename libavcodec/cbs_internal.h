@@ -32,9 +32,9 @@ typedef struct CodedBitstreamType {
 
     // Split frag->data into coded bitstream units, creating the
     // frag->units array.  Fill data but not content on each unit.
-    // header is set if the fragment came from a header block, which
-    // may require different parsing for some codecs (e.g. the AVCC
-    // header in H.264).
+    // The header argument should be set if the fragment came from
+    // a header block, which may require different parsing for some
+    // codecs (e.g. the AVCC header in H.264).
     int (*split_fragment)(CodedBitstreamContext *ctx,
                           CodedBitstreamFragment *frag,
                           int header);
@@ -52,9 +52,6 @@ typedef struct CodedBitstreamType {
     // a bitstream for the whole fragment.
     int (*assemble_fragment)(CodedBitstreamContext *ctx,
                              CodedBitstreamFragment *frag);
-
-    // Free the content and data of a single unit.
-    void (*free_unit)(CodedBitstreamUnit *unit);
 
     // Free the codec internal state.
     void (*close)(CodedBitstreamContext *ctx);
