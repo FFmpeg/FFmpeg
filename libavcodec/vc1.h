@@ -296,6 +296,7 @@ typedef struct VC1Context{
     uint8_t (*curr_luty)[256]  ,(*curr_lutuv)[256];
     int last_use_ic, *curr_use_ic, next_use_ic, aux_use_ic;
     int rnd;                        ///< rounding control
+    int cbptab;
 
     /** Frame decoding info for S/M profiles only */
     //@{
@@ -367,6 +368,11 @@ typedef struct VC1Context{
     int frfd, brfd;         ///< reference frame distance (forward or backward)
     int first_pic_header_flag;
     int pic_header_flag;
+    int mbmodetab;
+    int icbptab;
+    int imvtab;
+    int twomvbptab;
+    int fourmvbptab;
 
     /** Frame decoding info for sprite modes */
     //@{
