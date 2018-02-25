@@ -418,6 +418,19 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&cat->in);
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    int ret = AVERROR(ENOSYS);
+
+    if (!strcmp(cmd, "next")) {
+        av_log(ctx, AV_LOG_VERBOSE, "Command received: next\n");
+        return flush_segment(ctx);
+    }
+
+    return ret;
+}
+
 AVFilter ff_avf_concat = {
     .name          = "concat",
     .description   = NULL_IF_CONFIG_SMALL("Concatenate audio and video streams."),
@@ -429,4 +442,5 @@ AVFilter ff_avf_concat = {
     .outputs       = NULL,
     .priv_class    = &concat_class,
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_DYNAMIC_OUTPUTS,
+    .process_command = process_command,
 };
