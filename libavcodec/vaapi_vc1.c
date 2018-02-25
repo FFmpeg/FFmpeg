@@ -383,7 +383,7 @@ static int vaapi_vc1_start_frame(AVCodecContext *avctx, av_unused const uint8_t 
     if (err)
         goto fail;
 
-    if (pic_param.bitplane_present.value) {
+    if (pic_param.bitplane_present.value & 0x7f) {
         uint8_t *bitplane;
         const uint8_t *ff_bp[3];
         int x, y, n;
