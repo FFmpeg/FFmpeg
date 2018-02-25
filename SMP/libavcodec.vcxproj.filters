@@ -2364,6 +2364,9 @@
     <ClCompile Include="..\libavcodec\nvdec_hevc.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavcodec\nvdec_mjpeg.c">
+      <Filter>Source Files\libavcodec</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavcodec\nvdec_mpeg12.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>

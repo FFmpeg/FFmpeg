@@ -847,6 +847,7 @@
     <ClCompile Include="..\libavcodec\nvdec_h264.c" />
     <ClCompile Include="..\libavcodec\dxva2_hevc.c" />
     <ClCompile Include="..\libavcodec\nvdec_hevc.c" />
+    <ClCompile Include="..\libavcodec\nvdec_mjpeg.c" />
     <ClCompile Include="..\libavcodec\nvdec_mpeg12.c" />
     <ClCompile Include="..\libavcodec\dxva2_mpeg2.c" />
     <ClCompile Include="..\libavcodec\nvdec_mpeg4.c" />

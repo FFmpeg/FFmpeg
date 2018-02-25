@@ -131,9 +131,9 @@ ECHO %REPONAME%: Getting latest release...
 SET UPSTREAMAPIURL=%UPSTREAMURL:github.com=api.github.com/repos%
 REM Check if secure OAuth is available
 IF "%GITHUBTOKEN%" == "" (
-    powershell -nologo -noprofile -command "try { Invoke-RestMethod -Uri %UPSTREAMAPIURL%/%REPONAME%/releases/latest > latest.json } catch {exit 1}"
+    powershell -nologo -noprofile -command "$currentMaxTls = [Math]::Max([Net.ServicePointManager]::SecurityProtocol.value__,[Net.SecurityProtocolType]::Tls.value__);$newTlsTypes = [enum]::GetValues('Net.SecurityProtocolType') | ?{ $_ -gt $currentMaxTls };ForEach ($newTls in $newTlsTypes) { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor $newTls };try { Invoke-RestMethod -Uri %UPSTREAMAPIURL%/%REPONAME%/releases/latest > latest.json } catch {exit 1}"
 ) ELSE (
-    powershell -nologo -noprofile -command "try { Invoke-RestMethod -Uri %UPSTREAMAPIURL%/%REPONAME%/releases/latest -Headers @{'Authorization' = 'token %GITHUBTOKEN%'} > latest.json } catch {exit 1}"
+    powershell -nologo -noprofile -command "$currentMaxTls = [Math]::Max([Net.ServicePointManager]::SecurityProtocol.value__,[Net.SecurityProtocolType]::Tls.value__);$newTlsTypes = [enum]::GetValues('Net.SecurityProtocolType') | ?{ $_ -gt $currentMaxTls };ForEach ($newTls in $newTlsTypes) { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor $newTls };try { Invoke-RestMethod -Uri %UPSTREAMAPIURL%/%REPONAME%/releases/latest -Headers @{'Authorization' = 'token %GITHUBTOKEN%'} > latest.json } catch {exit 1}"
 )
 IF ERRORLEVEL 1 ( ECHO Failed getting latest %REPONAME% release & EXIT /B 1 )
 REM Get tag for latest release
@@ -156,7 +156,7 @@ REM Download a pre-built archive and extract
 ECHO %REPONAME%: Downloading %LIBNAME%_%TAG%_msvc%MSVC_VER%.zip...
 SET PREBUILTDIR=prebuilt
 MKDIR %PREBUILTDIR% >NUL 2>&1
-powershell -nologo -noprofile -command "try { (New-Object Net.WebClient).DownloadFile('%DLURL%', '%PREBUILTDIR%\temp.zip') } catch {exit 1}"
+powershell -nologo -noprofile -command "$currentMaxTls = [Math]::Max([Net.ServicePointManager]::SecurityProtocol.value__,[Net.SecurityProtocolType]::Tls.value__);$newTlsTypes = [enum]::GetValues('Net.SecurityProtocolType') | ?{ $_ -gt $currentMaxTls };ForEach ($newTls in $newTlsTypes) { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor $newTls };try { (New-Object Net.WebClient).DownloadFile('%DLURL%', '%PREBUILTDIR%\temp.zip') } catch {exit 1}"
 IF ERRORLEVEL 1 ( ECHO Failed downloading %DLURL% & EXIT /B 1 )
 powershell -nologo -noprofile -command "Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip=[System.IO.Compression.ZipFile]::OpenRead('%PREBUILTDIR%\temp.zip'); foreach ($item in $zip.Entries) { try {$file=(Join-Path -Path .\%PREBUILTDIR% -ChildPath $item.FullName); $null=[System.IO.Directory]::CreateDirectory((Split-Path -Path $file)); [System.IO.Compression.ZipFileExtensions]::ExtractToFile($item,$file,$true)} catch {exit 1} }"
 IF ERRORLEVEL 1 ( ECHO Failed extracting downloaded archive & EXIT /B 1 )

@@ -38,6 +38,8 @@ static const AVOutputFormat *muxer_list[] = {
     &ff_bit_muxer,
     &ff_caf_muxer,
     &ff_cavsvideo_muxer,
+    &ff_codec2_muxer,
+    &ff_codec2raw_muxer,
     &ff_crc_muxer,
     &ff_dash_muxer,
     &ff_data_muxer,

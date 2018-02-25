@@ -195,6 +195,8 @@
     <ClCompile Include="..\libavformat\cdg.c" />
     <ClCompile Include="..\libavformat\cdxl.c" />
     <ClCompile Include="..\libavformat\cinedec.c" />
+    <ClCompile Include="..\libavcodec\codec2utils.c" />
+    <ClCompile Include="..\libavformat\codec2.c" />
     <ClCompile Include="..\libavformat\concatdec.c" />
     <ClCompile Include="..\libavformat\crcenc.c" />
     <ClCompile Include="..\libavformat\dash.c" />
