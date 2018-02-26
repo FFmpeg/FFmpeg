@@ -28,7 +28,7 @@
 typedef void ID3D11Device;
 #endif
 
-#include "compat/nvenc/nvEncodeAPI.h"
+#include <ffnvcodec/nvEncodeAPI.h>
 
 #include "compat/cuda/dynlink_loader.h"
 #include "libavutil/fifo.h"

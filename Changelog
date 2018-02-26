@@ -42,6 +42,8 @@ version <next>:
 - Add android_camera indev
 - codec2 en/decoding via libcodec2
 - muxer/demuxer for raw codec2 files and .c2 files
+- Moved nvidia codec headers into an external repository.
+  They can be found at http://git.videolan.org/?p=ffmpeg/nv-codec-headers.git
 
 
 version 3.4:
