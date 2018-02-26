@@ -869,9 +869,9 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         if (!pkt->buf) {
             AVPacket tmp = { 0 };
-            ret = av_packet_ref(&tmp, pkt);
-            if (ret < 0)
-                return ret;
+            err = av_packet_ref(&tmp, pkt);
+            if (err < 0)
+                return err;
             *pkt = tmp;
         }
 
