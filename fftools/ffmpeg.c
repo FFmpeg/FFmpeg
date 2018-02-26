@@ -1637,8 +1637,7 @@ static void print_final_stats(int64_t total_size)
 
 static void print_report(int is_last_report, int64_t timer_start, int64_t cur_time)
 {
-    char buf[1024];
-    AVBPrint buf_script;
+    AVBPrint buf, buf_script;
     OutputStream *ost;
     AVFormatContext *oc;
     int64_t total_size;
@@ -1676,8 +1675,8 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     if (total_size <= 0) // FIXME improve avio_size() so it works with non seekable output too
         total_size = avio_tell(oc->pb);
 
-    buf[0] = '\0';
     vid = 0;
+    av_bprint_init(&buf, 0, AV_BPRINT_SIZE_AUTOMATIC);
     av_bprint_init(&buf_script, 0, 1);
     for (i = 0; i < nb_output_streams; i++) {
         float q = -1;
@@ -1687,7 +1686,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
             q = ost->quality / (float) FF_QP2LAMBDA;
 
         if (vid && enc->codec_type == AVMEDIA_TYPE_VIDEO) {
-            snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "q=%2.1f ", q);
+            av_bprintf(&buf, "q=%2.1f ", q);
             av_bprintf(&buf_script, "stream_%d_%d_q=%.1f\n",
                        ost->file_index, ost->index, q);
         }
@@ -1696,21 +1695,21 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
 
             frame_number = ost->frame_number;
             fps = t > 1 ? frame_number / t : 0;
-            snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "frame=%5d fps=%3.*f q=%3.1f ",
+            av_bprintf(&buf, "frame=%5d fps=%3.*f q=%3.1f ",
                      frame_number, fps < 9.95, fps, q);
             av_bprintf(&buf_script, "frame=%d\n", frame_number);
             av_bprintf(&buf_script, "fps=%.1f\n", fps);
             av_bprintf(&buf_script, "stream_%d_%d_q=%.1f\n",
                        ost->file_index, ost->index, q);
             if (is_last_report)
-                snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "L");
+                av_bprintf(&buf, "L");
             if (qp_hist) {
                 int j;
                 int qp = lrintf(q);
                 if (qp >= 0 && qp < FF_ARRAY_ELEMS(qp_histogram))
                     qp_histogram[qp]++;
                 for (j = 0; j < 32; j++)
-                    snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%X", av_log2(qp_histogram[j] + 1));
+                    av_bprintf(&buf, "%X", av_log2(qp_histogram[j] + 1));
             }
 
             if ((enc->flags & AV_CODEC_FLAG_PSNR) && (ost->pict_type != AV_PICTURE_TYPE_NONE || is_last_report)) {
@@ -1719,7 +1718,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
                 double scale, scale_sum = 0;
                 double p;
                 char type[3] = { 'Y','U','V' };
-                snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "PSNR=");
+                av_bprintf(&buf, "PSNR=");
                 for (j = 0; j < 3; j++) {
                     if (is_last_report) {
                         error = enc->error[j];
@@ -1733,12 +1732,12 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
                     error_sum += error;
                     scale_sum += scale;
                     p = psnr(error / scale);
-                    snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%c:%2.2f ", type[j], p);
+                    av_bprintf(&buf, "%c:%2.2f ", type[j], p);
                     av_bprintf(&buf_script, "stream_%d_%d_psnr_%c=%2.2f\n",
                                ost->file_index, ost->index, type[j] | 32, p);
                 }
                 p = psnr(error_sum / scale_sum);
-                snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "*:%2.2f ", psnr(error_sum / scale_sum));
+                av_bprintf(&buf, "*:%2.2f ", psnr(error_sum / scale_sum));
                 av_bprintf(&buf_script, "stream_%d_%d_psnr_all=%2.2f\n",
                            ost->file_index, ost->index, p);
             }
@@ -1763,23 +1762,20 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     bitrate = pts && total_size >= 0 ? total_size * 8 / (pts / 1000.0) : -1;
     speed = t != 0.0 ? (double)pts / AV_TIME_BASE / t : -1;
 
-    if (total_size < 0) snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
-                                 "size=N/A time=");
-    else                snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
-                                 "size=%8.0fkB time=", total_size / 1024.0);
+    if (total_size < 0) av_bprintf(&buf, "size=N/A time=");
+    else                av_bprintf(&buf, "size=%8.0fkB time=", total_size / 1024.0);
     if (pts == AV_NOPTS_VALUE) {
-        snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "N/A ");
+        av_bprintf(&buf, "N/A ");
     } else {
-        snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
-                 "%s%02d:%02d:%02d.%02d ", hours_sign, hours, mins, secs,
-                 (100 * us) / AV_TIME_BASE);
+        av_bprintf(&buf, "%s%02d:%02d:%02d.%02d ",
+                   hours_sign, hours, mins, secs, (100 * us) / AV_TIME_BASE);
     }
 
     if (bitrate < 0) {
-        snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),"bitrate=N/A");
+        av_bprintf(&buf, "bitrate=N/A");
         av_bprintf(&buf_script, "bitrate=N/A\n");
     }else{
-        snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),"bitrate=%6.1fkbits/s", bitrate);
+        av_bprintf(&buf, "bitrate=%6.1fkbits/s", bitrate);
         av_bprintf(&buf_script, "bitrate=%6.1fkbits/s\n", bitrate);
     }
 
@@ -1795,28 +1791,28 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     }
 
     if (nb_frames_dup || nb_frames_drop)
-        snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), " dup=%d drop=%d",
-                nb_frames_dup, nb_frames_drop);
+        av_bprintf(&buf, " dup=%d drop=%d", nb_frames_dup, nb_frames_drop);
     av_bprintf(&buf_script, "dup_frames=%d\n", nb_frames_dup);
     av_bprintf(&buf_script, "drop_frames=%d\n", nb_frames_drop);
 
     if (speed < 0) {
-        snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf)," speed=N/A");
+        av_bprintf(&buf, " speed=N/A");
         av_bprintf(&buf_script, "speed=N/A\n");
     } else {
-        snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf)," speed=%4.3gx", speed);
+        av_bprintf(&buf, " speed=%4.3gx", speed);
         av_bprintf(&buf_script, "speed=%4.3gx\n", speed);
     }
 
     if (print_stats || is_last_report) {
         const char end = is_last_report ? '\n' : '\r';
         if (print_stats==1 && AV_LOG_INFO > av_log_get_level()) {
-            fprintf(stderr, "%s    %c", buf, end);
+            fprintf(stderr, "%s    %c", buf.str, end);
         } else
-            av_log(NULL, AV_LOG_INFO, "%s    %c", buf, end);
+            av_log(NULL, AV_LOG_INFO, "%s    %c", buf.str, end);
 
     fflush(stderr);
     }
+    av_bprint_finalize(&buf, NULL);
 
     if (progress_avio) {
         av_bprintf(&buf_script, "progress=%s\n",
