@@ -30,6 +30,7 @@
 #define UNCHECKED_BITSTREAM_READER 1
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "bswapdsp.h"
 #include "bytestream.h"
@@ -912,6 +913,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     UtvideoContext * const c = avctx->priv_data;
+    int h_shift, v_shift;
 
     c->avctx = avctx;
 
@@ -1010,6 +1012,13 @@ static av_cold int decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Unknown Ut Video FOURCC provided (%08X)\n",
                avctx->codec_tag);
         return AVERROR_INVALIDDATA;
+    }
+
+    av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt, &h_shift, &v_shift);
+    if ((avctx->width  & ((1<<h_shift)-1)) ||
+        (avctx->height & ((1<<v_shift)-1))) {
+        avpriv_request_sample(avctx, "Odd dimensions");
+        return AVERROR_PATCHWELCOME;
     }
 
     if (c->pack && avctx->extradata_size >= 16) {
