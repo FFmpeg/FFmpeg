@@ -1131,6 +1131,28 @@ static int update_stream_extradata(AVFormatContext *s, OutputStream *os,
     return 0;
 }
 
+static void dashenc_delete_file(AVFormatContext *s, char *filename) {
+    DASHContext *c = s->priv_data;
+    int http_base_proto = ff_is_http_proto(filename);
+
+    if (http_base_proto) {
+        AVIOContext *out = NULL;
+        AVDictionary *http_opts = NULL;
+
+        set_http_options(&http_opts, c);
+        av_dict_set(&http_opts, "method", "DELETE", 0);
+
+        if (dashenc_io_open(s, &out, filename, &http_opts) < 0) {
+            av_log(s, AV_LOG_ERROR, "failed to delete %s\n", filename);
+        }
+
+        av_dict_free(&http_opts);
+        dashenc_io_close(s, &out, filename);
+    } else if (unlink(filename) < 0) {
+        av_log(s, AV_LOG_ERROR, "failed to delete %s: %s\n", filename, strerror(errno));
+    }
+}
+
 static int dash_flush(AVFormatContext *s, int final, int stream)
 {
     DASHContext *c = s->priv_data;
@@ -1215,7 +1237,7 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
                 for (j = 0; j < remove; j++) {
                     char filename[1024];
                     snprintf(filename, sizeof(filename), "%s%s", c->dirname, os->segments[j]->file);
-                    unlink(filename);
+                    dashenc_delete_file(s, filename);
                     av_free(os->segments[j]);
                 }
                 os->nb_segments -= remove;
@@ -1367,9 +1389,9 @@ static int dash_write_trailer(AVFormatContext *s)
         for (i = 0; i < s->nb_streams; i++) {
             OutputStream *os = &c->streams[i];
             snprintf(filename, sizeof(filename), "%s%s", c->dirname, os->initfile);
-            unlink(filename);
+            dashenc_delete_file(s, filename);
         }
-        unlink(s->url);
+        dashenc_delete_file(s, s->url);
     }
 
     return 0;
