@@ -199,6 +199,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     case NUV_RTJPEG_IN_LZO:
     case NUV_RTJPEG:
         keyframe = !buf[2];
+        if (c->width < 16 || c->height < 16) {
+            return AVERROR_INVALIDDATA;
+        }
         break;
     case NUV_COPY_LAST:
         keyframe = 0;
