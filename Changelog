@@ -2,6 +2,17 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 3.0.11
+- avcodec/bintext: sanity check dimensions
+- avcodec/utvideodec: Check subsample factors
+- avcodec/smc: Check input packet size
+- avcodec/cavsdec: Check alpha/beta offset
+- avcodec/diracdec: Fix integer overflow in mv computation
+- avcodec/aacdec_templat: Fix integer overflow in apply_ltp()
+- avcodec/jpeg2000dwt: Fix integer overflows in sr_1d53()
+- avcodec/diracdec: Use int64 in global mv to prevent overflow
+- avcodec/dxtory: Remove code that corrupts dimensions
+- avformat/hvcc: zero initialize the nal buffers past the last written byte
+- swresample/rematrix: fix update of channel matrix if input or output layout is undefined
 - avcodec/dirac_dwt_template: Fix Integer overflow in horizontal_compose_dd137i()
 - avcodec/vp8: Check for bitstream end before vp7_fade_frame()
 - avcodec/exr: Check remaining bits in last get code loop
