@@ -169,11 +169,14 @@ static int mxg_read_packet(AVFormatContext *s, AVPacket *pkt)
                     continue;
                 }
 
+                size = mxg->buffer_ptr - mxg->soi_ptr;
+                ret = av_new_packet(pkt, size);
+                if (ret < 0)
+                    return ret;
+                memcpy(pkt->data, mxg->soi_ptr, size);
+
                 pkt->pts = pkt->dts = mxg->dts;
                 pkt->stream_index = 0;
-                pkt->buf  = NULL;
-                pkt->size = mxg->buffer_ptr - mxg->soi_ptr;
-                pkt->data = mxg->soi_ptr;
 
                 if (mxg->soi_ptr - mxg->buffer > mxg->cache_size) {
                     if (mxg->cache_size > 0) {
@@ -206,12 +209,14 @@ static int mxg_read_packet(AVFormatContext *s, AVPacket *pkt)
                 mxg->buffer_ptr += size;
 
                 if (marker == APP13 && size >= 16) { /* audio data */
+                    ret = av_new_packet(pkt, size - 14);
+                    if (ret < 0)
+                        return ret;
+                    memcpy(pkt->data, startmarker_ptr + 16, size - 14);
+
                     /* time (GMT) of first sample in usec since 1970, little-endian */
                     pkt->pts = pkt->dts = AV_RL64(startmarker_ptr + 8);
                     pkt->stream_index = 1;
-                    pkt->buf  = NULL;
-                    pkt->size = size - 14;
-                    pkt->data = startmarker_ptr + 16;
 
                     if (startmarker_ptr - mxg->buffer > mxg->cache_size) {
                         if (mxg->cache_size > 0) {
