@@ -46,6 +46,8 @@
 #include <dlfcn.h>
 #endif
 
+#define LIBAV_AMF_WRITER_ID L"libav_log"
+
 #define PTS_PROP L"PtsProp"
 
 const enum AVPixelFormat ff_amf_pix_fmts[] = {
@@ -171,8 +173,8 @@ static int amf_init_context(AVCodecContext *avctx)
     // connect AMF logger to av_log
     ctx->tracer.vtbl = &tracer_vtbl;
     ctx->tracer.avctx = avctx;
-    ctx->trace->pVtbl->RegisterWriter(ctx->trace, ctx->writer_id, (AMFTraceWriter*)&ctx->tracer, 1);
-    ctx->trace->pVtbl->SetWriterLevel(ctx->trace, ctx->writer_id, AMF_TRACE_TRACE);
+    ctx->trace->pVtbl->RegisterWriter(ctx->trace, LIBAV_AMF_WRITER_ID,(AMFTraceWriter *)&ctx->tracer, 1);
+    ctx->trace->pVtbl->SetWriterLevel(ctx->trace, LIBAV_AMF_WRITER_ID, AMF_TRACE_TRACE);
 
     res = ctx->factory->pVtbl->CreateContext(ctx->factory, &ctx->context);
     AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "CreateContext() failed with error %d\n", res);
@@ -283,7 +285,7 @@ int av_cold ff_amf_encode_close(AVCodecContext *avctx)
     av_buffer_unref(&ctx->hw_frames_ctx);
 
     if (ctx->trace) {
-        ctx->trace->pVtbl->UnregisterWriter(ctx->trace, ctx->writer_id);
+        ctx->trace->pVtbl->UnregisterWriter(ctx->trace, LIBAV_AMF_WRITER_ID);
     }
     if (ctx->library) {
         dlclose(ctx->library);
