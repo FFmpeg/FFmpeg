@@ -46,8 +46,17 @@ MAKE_ACCESSORS(AVFrame, frame, enum AVColorRange, color_range)
                av_get_channel_layout_nb_channels((frame)->channel_layout))
 
 #if FF_API_FRAME_QP
+struct qp_properties {
+    int stride;
+    int type;
+};
+
 int av_frame_set_qp_table(AVFrame *f, AVBufferRef *buf, int stride, int qp_type)
 {
+    struct qp_properties *p;
+    AVFrameSideData *sd;
+    AVBufferRef *ref;
+
 FF_DISABLE_DEPRECATION_WARNINGS
     av_buffer_unref(&f->qp_table_buf);
 
@@ -57,20 +66,56 @@ FF_DISABLE_DEPRECATION_WARNINGS
     f->qscale_type  = qp_type;
 FF_ENABLE_DEPRECATION_WARNINGS
 
+    av_frame_remove_side_data(f, AV_FRAME_DATA_QP_TABLE_PROPERTIES);
+    av_frame_remove_side_data(f, AV_FRAME_DATA_QP_TABLE_DATA);
+
+    ref = av_buffer_ref(buf);
+    if (!av_frame_new_side_data_from_buf(f, AV_FRAME_DATA_QP_TABLE_DATA, ref)) {
+        av_buffer_unref(&ref);
+        return AVERROR(ENOMEM);
+    }
+
+    sd = av_frame_new_side_data(f, AV_FRAME_DATA_QP_TABLE_PROPERTIES,
+                                sizeof(struct qp_properties));
+    if (!sd)
+        return AVERROR(ENOMEM);
+
+    p = (struct qp_properties *)sd->data;
+    p->stride = stride;
+    p->type = qp_type;
+
     return 0;
 }
 
 int8_t *av_frame_get_qp_table(AVFrame *f, int *stride, int *type)
 {
+    AVBufferRef *buf = NULL;
+
+    *stride = 0;
+    *type   = 0;
+
 FF_DISABLE_DEPRECATION_WARNINGS
-    *stride = f->qstride;
-    *type   = f->qscale_type;
-
-    if (!f->qp_table_buf)
-        return NULL;
-
-    return f->qp_table_buf->data;
+    if (f->qp_table_buf) {
+        *stride = f->qstride;
+        *type   = f->qscale_type;
+        buf     = f->qp_table_buf;
 FF_ENABLE_DEPRECATION_WARNINGS
+    } else {
+        AVFrameSideData *sd;
+        struct qp_properties *p;
+        sd = av_frame_get_side_data(f, AV_FRAME_DATA_QP_TABLE_PROPERTIES);
+        if (!sd)
+            return NULL;
+        p = (struct qp_properties *)sd->data;
+        sd = av_frame_get_side_data(f, AV_FRAME_DATA_QP_TABLE_DATA);
+        if (!sd)
+            return NULL;
+        *stride = p->stride;
+        *type   = p->type;
+        buf     = sd->buf;
+    }
+
+    return buf ? buf->data : NULL;
 }
 #endif
 
@@ -787,6 +832,8 @@ const char *av_frame_side_data_name(enum AVFrameSideDataType type)
     case AV_FRAME_DATA_CONTENT_LIGHT_LEVEL:         return "Content light level metadata";
     case AV_FRAME_DATA_GOP_TIMECODE:                return "GOP timecode";
     case AV_FRAME_DATA_ICC_PROFILE:                 return "ICC profile";
+    case AV_FRAME_DATA_QP_TABLE_PROPERTIES:         return "QP table properties";
+    case AV_FRAME_DATA_QP_TABLE_DATA:               return "QP table data";
     }
     return NULL;
 }
