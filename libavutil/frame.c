@@ -48,11 +48,10 @@ MAKE_ACCESSORS(AVFrame, frame, enum AVColorRange, color_range)
 #if FF_API_FRAME_QP
 int av_frame_set_qp_table(AVFrame *f, AVBufferRef *buf, int stride, int qp_type)
 {
+FF_DISABLE_DEPRECATION_WARNINGS
     av_buffer_unref(&f->qp_table_buf);
 
     f->qp_table_buf = buf;
-
-FF_DISABLE_DEPRECATION_WARNINGS
     f->qscale_table = buf->data;
     f->qstride      = stride;
     f->qscale_type  = qp_type;
@@ -66,12 +65,12 @@ int8_t *av_frame_get_qp_table(AVFrame *f, int *stride, int *type)
 FF_DISABLE_DEPRECATION_WARNINGS
     *stride = f->qstride;
     *type   = f->qscale_type;
-FF_ENABLE_DEPRECATION_WARNINGS
 
     if (!f->qp_table_buf)
         return NULL;
 
     return f->qp_table_buf->data;
+FF_ENABLE_DEPRECATION_WARNINGS
 }
 #endif
 
@@ -520,7 +519,9 @@ void av_frame_unref(AVFrame *frame)
     av_freep(&frame->extended_buf);
     av_dict_free(&frame->metadata);
 #if FF_API_FRAME_QP
+FF_DISABLE_DEPRECATION_WARNINGS
     av_buffer_unref(&frame->qp_table_buf);
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
     av_buffer_unref(&frame->hw_frames_ctx);

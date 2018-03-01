@@ -529,6 +529,7 @@ typedef struct AVFrame {
     attribute_deprecated
     int qscale_type;
 
+    attribute_deprecated
     AVBufferRef *qp_table_buf;
 #endif
     /**
