@@ -590,7 +590,7 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
     int64_t t, now64;
     time_t now;
     struct tm dt = { 0 }, tmbuf;
-    int today = 0, negative = 0, microseconds = 0;
+    int today = 0, negative = 0, microseconds = 0, suffix = 1000000;
     int i;
     static const char * const date_fmt[] = {
         "%Y - %m - %d",
@@ -689,6 +689,17 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
 
     if (duration) {
         t = dt.tm_hour * 3600 + dt.tm_min * 60 + dt.tm_sec;
+        if (*q == 'm') {
+            suffix = 1000;
+            microseconds /= 1000;
+            q++;
+        } else if (*q == 'u') {
+            suffix = 1;
+            microseconds = 0;
+            q++;
+        }
+        if (*q == 's')
+            q++;
     } else {
         int is_utc = *q == 'Z' || *q == 'z';
         int tzoffset = 0;
@@ -724,7 +735,7 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
     if (*q)
         return AVERROR(EINVAL);
 
-    t *= 1000000;
+    t *= suffix;
     t += microseconds;
     *timeval = negative ? -t : t;
     return 0;
