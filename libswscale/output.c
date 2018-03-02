@@ -180,6 +180,34 @@ yuv2planeX_16_c_template(const int16_t *filter, int filterSize,
     }
 }
 
+static void yuv2p016cX_c(SwsContext *c, const int16_t *chrFilter, int chrFilterSize,
+                         const int16_t **chrUSrc, const int16_t **chrVSrc,
+                         uint8_t *dest8, int chrDstW)
+{
+    uint16_t *dest = (uint16_t*)dest8;
+    const int32_t **uSrc = (const int32_t **)chrUSrc;
+    const int32_t **vSrc = (const int32_t **)chrVSrc;
+    int shift = 15;
+    int big_endian = c->dstFormat == AV_PIX_FMT_P016BE;
+    int i, j;
+
+    for (i = 0; i < chrDstW; i++) {
+        int u = 1 << (shift - 1);
+        int v = 1 << (shift - 1);
+
+        /* See yuv2planeX_16_c_template for details. */
+        u -= 0x40000000;
+        v -= 0x40000000;
+        for (j = 0; j < chrFilterSize; j++) {
+            u += uSrc[j][i] * (unsigned)chrFilter[j];
+            v += vSrc[j][i] * (unsigned)chrFilter[j];
+        }
+
+        output_pixel(&dest[2*i]  , u, 0x8000, int);
+        output_pixel(&dest[2*i+1], v, 0x8000, int);
+    }
+}
+
 #undef output_pixel
 
 #define output_pixel(pos, val) \
@@ -2257,6 +2285,9 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
     } else if (is16BPS(dstFormat)) {
         *yuv2planeX = isBE(dstFormat) ? yuv2planeX_16BE_c  : yuv2planeX_16LE_c;
         *yuv2plane1 = isBE(dstFormat) ? yuv2plane1_16BE_c  : yuv2plane1_16LE_c;
+        if (dstFormat == AV_PIX_FMT_P016LE || dstFormat == AV_PIX_FMT_P016BE) {
+          *yuv2nv12cX = yuv2p016cX_c;
+        }
     } else if (isNBPS(dstFormat)) {
         if (desc->comp[0].depth == 9) {
             *yuv2planeX = isBE(dstFormat) ? yuv2planeX_9BE_c  : yuv2planeX_9LE_c;

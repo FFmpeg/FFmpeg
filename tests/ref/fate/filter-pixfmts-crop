@@ -49,6 +49,8 @@ nv12                92cda427f794374731ec0321ee00caac
 nv21                1bcfc197f4fb95de85ba58182d8d2f69
 p010be              8b2de2eb6b099bbf355bfc55a0694ddc
 p010le              373b50c766dfd0a8e79c9a73246d803a
+p016be              8b2de2eb6b099bbf355bfc55a0694ddc
+p016le              373b50c766dfd0a8e79c9a73246d803a
 pal8                1f2cdc8e718f95c875dbc1034a688bfb
 rgb0                736646b70dd9a0be22b8da8041e35035
 rgb24               c5fbbf816bb2000f4d2914e335698ef5
