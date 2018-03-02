@@ -1,0 +1,26 @@
+{
+  "name": "ffmpeg",
+  "version": "0.0.1",
+  "description": "Libffmeg node bindings",
+  "main": "index.js",
+  "directories": {
+    "doc": "doc",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FFmpeg/FFmpeg.git"
+  },
+  "author": "Avaer Kazmer <a@modules.io>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/FFmpeg/FFmpeg/issues"
+  },
+  "homepage": "https://github.com/FFmpeg/FFmpeg#readme",
+  "dependencies": {
+    "nan": "^2.9.2"
+  }
+}
