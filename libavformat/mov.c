@@ -3747,6 +3747,9 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 av_free(ctts_data_old);
                 return;
             }
+
+            memset((uint8_t*)(sc->ctts_data), 0, sc->ctts_allocated_size);
+
             for (i = 0; i < ctts_count_old &&
                         sc->ctts_count < sc->sample_count; i++)
                 for (j = 0; j < ctts_data_old[i].count &&
