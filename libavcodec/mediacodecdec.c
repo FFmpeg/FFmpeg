@@ -264,34 +264,11 @@ done:
 }
 #endif
 
-#if CONFIG_MPEG2_MEDIACODEC_DECODER
-static int mpeg2_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
-{
-    int ret = 0;
-
-    if (avctx->extradata) {
-        ff_AMediaFormat_setBuffer(format, "csd-0", avctx->extradata, avctx->extradata_size);
-    }
-
-    return ret;
-}
-#endif
-
-#if CONFIG_MPEG4_MEDIACODEC_DECODER
-static int mpeg4_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
-{
-    int ret = 0;
-
-    if (avctx->extradata) {
-        ff_AMediaFormat_setBuffer(format, "csd-0", avctx->extradata, avctx->extradata_size);
-    }
-
-    return ret;
-}
-#endif
-
-#if CONFIG_VP8_MEDIACODEC_DECODER || CONFIG_VP9_MEDIACODEC_DECODER
-static int vpx_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
+#if CONFIG_MPEG2_MEDIACODEC_DECODER || \
+    CONFIG_MPEG4_MEDIACODEC_DECODER || \
+    CONFIG_VP8_MEDIACODEC_DECODER   || \
+    CONFIG_VP9_MEDIACODEC_DECODER
+static int common_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
 {
     int ret = 0;
 
@@ -342,7 +319,7 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
     case AV_CODEC_ID_MPEG2VIDEO:
         codec_mime = "video/mpeg2";
 
-        ret = mpeg2_set_extradata(avctx, format);
+        ret = common_set_extradata(avctx, format);
         if (ret < 0)
             goto done;
         break;
@@ -351,7 +328,7 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
     case AV_CODEC_ID_MPEG4:
         codec_mime = "video/mp4v-es",
 
-        ret = mpeg4_set_extradata(avctx, format);
+        ret = common_set_extradata(avctx, format);
         if (ret < 0)
             goto done;
         break;
@@ -360,7 +337,7 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
     case AV_CODEC_ID_VP8:
         codec_mime = "video/x-vnd.on2.vp8";
 
-        ret = vpx_set_extradata(avctx, format);
+        ret = common_set_extradata(avctx, format);
         if (ret < 0)
             goto done;
         break;
@@ -369,7 +346,7 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
     case AV_CODEC_ID_VP9:
         codec_mime = "video/x-vnd.on2.vp9";
 
-        ret = vpx_set_extradata(avctx, format);
+        ret = common_set_extradata(avctx, format);
         if (ret < 0)
             goto done;
         break;
