@@ -1308,7 +1308,7 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
         flush_init_segment(s, os);
 
     //open the output context when the first frame of a segment is ready
-    if (!c->single_file && !os->out) {
+    if (!c->single_file && os->packets_written == 1) {
         AVDictionary *opts = NULL;
         const char *proto = avio_find_protocol_name(s->url);
         int use_rename = proto && !strcmp(proto, "file");
