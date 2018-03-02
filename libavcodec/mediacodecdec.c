@@ -485,112 +485,44 @@ static const AVCodecHWConfigInternal *mediacodec_hw_configs[] = {
     NULL
 };
 
+#define DECLARE_MEDIACODEC_VDEC(short_name, full_name, codec_id, bsf)                          \
+AVCodec ff_##short_name##_mediacodec_decoder = {                                               \
+    .name           = #short_name "_mediacodec",                                               \
+    .long_name      = NULL_IF_CONFIG_SMALL(full_name " Android MediaCodec decoder"),           \
+    .type           = AVMEDIA_TYPE_VIDEO,                                                      \
+    .id             = codec_id,                                                                \
+    .priv_data_size = sizeof(MediaCodecH264DecContext),                                        \
+    .init           = mediacodec_decode_init,                                                  \
+    .receive_frame  = mediacodec_receive_frame,                                                \
+    .flush          = mediacodec_decode_flush,                                                 \
+    .close          = mediacodec_decode_close,                                                 \
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE, \
+    .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,                                               \
+    .bsfs           = bsf,                                                                     \
+    .hw_configs     = mediacodec_hw_configs,                                                   \
+    .wrapper_name   = "mediacodec",                                                            \
+};                                                                                             \
+
 #if CONFIG_H264_MEDIACODEC_DECODER
-AVCodec ff_h264_mediacodec_decoder = {
-    .name           = "h264_mediacodec",
-    .long_name      = NULL_IF_CONFIG_SMALL("H.264 Android MediaCodec decoder"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_H264,
-    .priv_data_size = sizeof(MediaCodecH264DecContext),
-    .init           = mediacodec_decode_init,
-    .receive_frame  = mediacodec_receive_frame,
-    .flush          = mediacodec_decode_flush,
-    .close          = mediacodec_decode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE,
-    .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
-    .bsfs           = "h264_mp4toannexb",
-    .hw_configs     = mediacodec_hw_configs,
-    .wrapper_name   = "mediacodec",
-};
+DECLARE_MEDIACODEC_VDEC(h264, "H.264", AV_CODEC_ID_H264, "h264_mp4toannexb")
 #endif
 
 #if CONFIG_HEVC_MEDIACODEC_DECODER
-AVCodec ff_hevc_mediacodec_decoder = {
-    .name           = "hevc_mediacodec",
-    .long_name      = NULL_IF_CONFIG_SMALL("H.265 Android MediaCodec decoder"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_HEVC,
-    .priv_data_size = sizeof(MediaCodecH264DecContext),
-    .init           = mediacodec_decode_init,
-    .receive_frame  = mediacodec_receive_frame,
-    .flush          = mediacodec_decode_flush,
-    .close          = mediacodec_decode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE,
-    .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
-    .bsfs           = "hevc_mp4toannexb",
-    .hw_configs     = mediacodec_hw_configs,
-    .wrapper_name   = "mediacodec",
-};
+DECLARE_MEDIACODEC_VDEC(hevc, "H.265", AV_CODEC_ID_HEVC, "hevc_mp4toannexb")
 #endif
 
 #if CONFIG_MPEG2_MEDIACODEC_DECODER
-AVCodec ff_mpeg2_mediacodec_decoder = {
-    .name           = "mpeg2_mediacodec",
-    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-2 Android MediaCodec decoder"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MPEG2VIDEO,
-    .priv_data_size = sizeof(MediaCodecH264DecContext),
-    .init           = mediacodec_decode_init,
-    .receive_frame  = mediacodec_receive_frame,
-    .flush          = mediacodec_decode_flush,
-    .close          = mediacodec_decode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE,
-    .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
-    .hw_configs     = mediacodec_hw_configs,
-    .wrapper_name   = "mediacodec",
-};
+DECLARE_MEDIACODEC_VDEC(mpeg2, "MPEG-2", AV_CODEC_ID_MPEG2VIDEO, NULL)
 #endif
 
 #if CONFIG_MPEG4_MEDIACODEC_DECODER
-AVCodec ff_mpeg4_mediacodec_decoder = {
-    .name           = "mpeg4_mediacodec",
-    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-4 Android MediaCodec decoder"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MPEG4,
-    .priv_data_size = sizeof(MediaCodecH264DecContext),
-    .init           = mediacodec_decode_init,
-    .receive_frame  = mediacodec_receive_frame,
-    .flush          = mediacodec_decode_flush,
-    .close          = mediacodec_decode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE,
-    .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
-    .hw_configs     = mediacodec_hw_configs,
-    .wrapper_name   = "mediacodec",
-};
+DECLARE_MEDIACODEC_VDEC(mpeg4, "MPEG-4", AV_CODEC_ID_MPEG4, NULL)
 #endif
 
 #if CONFIG_VP8_MEDIACODEC_DECODER
-AVCodec ff_vp8_mediacodec_decoder = {
-    .name           = "vp8_mediacodec",
-    .long_name      = NULL_IF_CONFIG_SMALL("VP8 Android MediaCodec decoder"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_VP8,
-    .priv_data_size = sizeof(MediaCodecH264DecContext),
-    .init           = mediacodec_decode_init,
-    .receive_frame  = mediacodec_receive_frame,
-    .flush          = mediacodec_decode_flush,
-    .close          = mediacodec_decode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE,
-    .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
-    .hw_configs     = mediacodec_hw_configs,
-    .wrapper_name   = "mediacodec",
-};
+DECLARE_MEDIACODEC_VDEC(vp8, "VP8", AV_CODEC_ID_VP8, NULL)
 #endif
 
 #if CONFIG_VP9_MEDIACODEC_DECODER
-AVCodec ff_vp9_mediacodec_decoder = {
-    .name           = "vp9_mediacodec",
-    .long_name      = NULL_IF_CONFIG_SMALL("VP9 Android MediaCodec decoder"),
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_VP9,
-    .priv_data_size = sizeof(MediaCodecH264DecContext),
-    .init           = mediacodec_decode_init,
-    .receive_frame  = mediacodec_receive_frame,
-    .flush          = mediacodec_decode_flush,
-    .close          = mediacodec_decode_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HARDWARE,
-    .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS,
-    .hw_configs     = mediacodec_hw_configs,
-    .wrapper_name   = "mediacodec",
-};
+DECLARE_MEDIACODEC_VDEC(vp9, "VP9", AV_CODEC_ID_VP9, NULL)
 #endif
