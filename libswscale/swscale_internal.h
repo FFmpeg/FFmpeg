@@ -676,6 +676,17 @@ static av_always_inline int isPlanarYUV(enum AVPixelFormat pix_fmt)
     return ((desc->flags & AV_PIX_FMT_FLAG_PLANAR) && isYUV(pix_fmt));
 }
 
+/*
+ * Identity semi-planar YUV formats. Specifically, those are YUV formats
+ * where the second and third components (U & V) are on the same plane.
+ */
+static av_always_inline int isSemiPlanarYUV(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return (isPlanarYUV(pix_fmt) && desc->comp[1].plane == desc->comp[2].plane);
+}
+
 static av_always_inline int isRGB(enum AVPixelFormat pix_fmt)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
