@@ -28,6 +28,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/pixfmt.h"
+#include "libavutil/internal.h"
 
 #include "avcodec.h"
 #include "decode.h"
