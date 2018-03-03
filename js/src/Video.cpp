@@ -314,13 +314,13 @@ bool Video::advanceToFrameAt(double timestamp) {
       
         sws_scale(data.conv_ctx, data.av_frame->data, data.av_frame->linesize, 0, data.codec_ctx->height, data.gl_frame->data, data.gl_frame->linesize);
 
-        int max = 0;
+        /* int max = 0;
         for (size_t i = 0; i < data.codec_ctx->width * data.codec_ctx->height * 4; i++) {
           if ((i % 4) == 3) {
             continue;
           }
           max = std::max((int)data.gl_frame->data[0][i], max);
-        }
+        } */
 
         double timeBase = (double)data.video_stream->time_base.num / (double)data.video_stream->time_base.den;
         std::cout <<
@@ -328,7 +328,7 @@ bool Video::advanceToFrameAt(double timestamp) {
           data.codec_ctx->width << "," << data.codec_ctx->height << "," << data.av_frame->linesize <<
           // (timeBase * (double)data.av_frame->pkt_pts) << " : " <<
           // (timeBase * (double)data.av_frame->pkt_dts) << " : " <<
-          "(" << (int)data.gl_frame->data[0][data.codec_ctx->width * data.codec_ctx->height * 4 / 2] << " " << (int)data.gl_frame->data[0][data.codec_ctx->width * data.codec_ctx->height * 4 / 2 + 1] << " " << (int)data.gl_frame->data[0][data.codec_ctx->width * data.codec_ctx->height * 4 / 2 + 2] << " " << (int)data.gl_frame->data[0][data.codec_ctx->width * data.codec_ctx->height * 4 / 2 + 3] << ")[" << max << "] " <<
+          "(" << (int)data.gl_frame->data[0][data.codec_ctx->width * data.codec_ctx->height * 4 / 2] << " " << (int)data.gl_frame->data[0][data.codec_ctx->width * data.codec_ctx->height * 4 / 2 + 1] << " " << (int)data.gl_frame->data[0][data.codec_ctx->width * data.codec_ctx->height * 4 / 2 + 2] << " " << (int)data.gl_frame->data[0][data.codec_ctx->width * data.codec_ctx->height * 4 / 2 + 3] << ") " <<
           (int)data.packet->stream_index << "/" << data.stream_idx <<
           "\n";
           
