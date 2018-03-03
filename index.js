@@ -24,7 +24,7 @@ setTimeout(() => {
 }, 1000);
 
 const interval = setInterval(() => {
-  v.update();
+  Video.updateAll();
 }, 1000 / 90);
 
 module.exports = ffmpeg;

@@ -74,6 +74,7 @@ protected:
   static NAN_GETTER(CurrentTimeGetter);
   static NAN_SETTER(CurrentTimeSetter);
   static NAN_GETTER(DurationGetter);
+  static NAN_METHOD(UpdateAll);
   double getTimeBase();
   double getRequiredCurrentTime();
   double getRequiredCurrentTimeS();
@@ -91,7 +92,9 @@ protected:
     int64_t startTime;
     Nan::Persistent<Uint8ClampedArray> dataArray;
     bool dataDirty;
-  };
+};
+
+extern std::vector<Video *> videos;
 
 }
 

@@ -13,6 +13,7 @@ AppData::AppData() :
   fmt_ctx(nullptr), io_ctx(nullptr), stream_idx(-1), video_stream(nullptr), codec_ctx(nullptr), decoder(nullptr), packet(nullptr), packetValid(false), av_frame(nullptr), gl_frame(nullptr), conv_ctx(nullptr) {}
 AppData::~AppData() {
   AppData *data = this;
+  av_free(data->buffer_);
   if (data->av_frame) av_free(data->av_frame);
   if (data->gl_frame) av_free(data->gl_frame);
   if (data->packet) av_free_packet(data->packet);
@@ -26,9 +27,13 @@ void AppData::set(unsigned char *data, size_t dataLength) {
   this->dataLength = dataLength;
 }
 
-Video::Video() : playing(false), startTime(0), dataDirty(true) {}
+Video::Video() : playing(false), startTime(0), dataDirty(true) {
+  videos.push_back(this);
+}
 
-Video::~Video() {}
+Video::~Video() {
+  videos.erase(std::find(videos.begin(), videos.end(), this));
+}
 
 Handle<Object> Video::Initialize(Isolate *isolate) {
   Nan::EscapableHandleScope scope;
@@ -51,6 +56,8 @@ Handle<Object> Video::Initialize(Isolate *isolate) {
   Nan::SetAccessor(proto, JS_STR("duration"), DurationGetter);
   
   Local<Function> ctorFn = ctor->GetFunction();
+
+  ctorFn->Set(JS_STR("updateAll"), Nan::New<Function>(UpdateAll));
 
   return scope.Escape(ctorFn);
 }
@@ -259,6 +266,12 @@ NAN_GETTER(Video::DurationGetter) {
   info.GetReturnValue().Set(JS_NUM(duration));
 }
 
+NAN_METHOD(Video::UpdateAll) {
+  for (auto i : videos) {
+    i->Update();
+  }
+}
+
 double Video::getTimeBase() {
   return (double)data.video_stream->time_base.num / (double)data.video_stream->time_base.den;
 }
@@ -370,5 +383,7 @@ int64_t Video::bufferSeek(void *opaque, int64_t offset, int whence) {
     return newPos;
   }
 }
+
+std::vector<Video *> videos;
 
 }
