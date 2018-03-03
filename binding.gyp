@@ -18,6 +18,7 @@
         '<(module_root_dir)/libavformat',
         '<(module_root_dir)/libavutil',
         '<(module_root_dir)/libswscale',
+        '<(module_root_dir)/libswresample',
       ],
       'libraries': [
         '-lavcodec',
@@ -25,6 +26,13 @@
         '-lavformat',
         '-lavutil',
         '-lswscale',
+        '-lswresample',
+        '-Wl,-rpath,./libavcodec',
+        '-Wl,-rpath,./libavfilter',
+        '-Wl,-rpath,./libavformat',
+        '-Wl,-rpath,./libavutil',
+        '-Wl,-rpath,./libswscale',
+        '-Wl,-rpath,./libswresample',
       ],
       'ldflags': [
         '-Wl,-Bsymbolic',
