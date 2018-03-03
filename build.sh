@@ -1,6 +1,6 @@
 #!/bin/bash
 
-./configure --enable-pic --extra-ldexeflags=-pie
+./configure --enable-shared
 make clean
 make -j4
 npm install
