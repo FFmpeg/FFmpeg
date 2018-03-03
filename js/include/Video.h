@@ -62,15 +62,19 @@ class Video : public ObjectWrap {
 public:
   static Handle<Object> Initialize(Isolate *isolate);
   void Load(uint8_t *bufferValue, size_t bufferLength);
+  void Update();
+  void ForceUpdate();
   void Play();
   void Pause();
 
 protected:
   static NAN_METHOD(New);
   static NAN_METHOD(Load);
+  static NAN_METHOD(Update);
   static NAN_METHOD(Play);
   static NAN_METHOD(Pause);
   static NAN_GETTER(CurrentTimeGetter);
+  static NAN_SETTER(CurrentTimeSetter);
   static NAN_GETTER(DurationGetter);
   double getTimeBase();
   double getRequiredCurrentTime();

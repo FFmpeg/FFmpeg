@@ -41,9 +41,10 @@ Handle<Object> Video::Initialize(Isolate *isolate) {
   // prototype
   Local<ObjectTemplate> proto = ctor->PrototypeTemplate();
   Nan::SetMethod(proto, "load", Load);
+  Nan::SetMethod(proto, "update", Update);
   Nan::SetMethod(proto, "play", Play);
   Nan::SetMethod(proto, "pause", Pause);
-  Nan::SetAccessor(proto, JS_STR("currentTime"), CurrentTimeGetter);
+  Nan::SetAccessor(proto, JS_STR("currentTime"), CurrentTimeGetter, CurrentTimeSetter);
   Nan::SetAccessor(proto, JS_STR("duration"), DurationGetter);
   
   Local<Function> ctorFn = ctor->GetFunction();
@@ -133,7 +134,17 @@ void Video::Load(unsigned char *bufferValue, size_t bufferLength) {
   /* while (readFrame(&data)) {
     drawFrame(&data);
   } */
-  advanceToFrameAt(5);
+  advanceToFrameAt(0);
+}
+
+void Video::Update() {
+  if (playing) {
+    ForceUpdate();
+  }
+}
+
+void Video::ForceUpdate() {
+  advanceToFrameAt(getRequiredCurrentTimeS());
 }
 
 void Video::Play() {
@@ -147,15 +158,20 @@ void Video::Pause() {
 
 NAN_METHOD(Video::Load) {
   if (info[0]->IsTypedArray()) {
-    Video *audio = ObjectWrap::Unwrap<Video>(info.This());
+    Video *video = ObjectWrap::Unwrap<Video>(info.This());
 
     Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(info[0]);
     Local<ArrayBuffer> arrayBuffer = arrayBufferView->Buffer();
     
-    audio->Load((uint8_t *)arrayBuffer->GetContents().Data() + arrayBufferView->ByteOffset(), arrayBufferView->ByteLength());
+    video->Load((uint8_t *)arrayBuffer->GetContents().Data() + arrayBufferView->ByteOffset(), arrayBufferView->ByteLength());
   } else {
     Nan::ThrowError("invalid arguments");
   }
+}
+
+NAN_METHOD(Video::Update) {
+  Video *video = ObjectWrap::Unwrap<Video>(info.This());
+  video->Update();
 }
 
 NAN_METHOD(Video::Play) {
@@ -177,6 +193,21 @@ NAN_GETTER(Video::CurrentTimeGetter) {
   info.GetReturnValue().Set(JS_NUM(currentTime));
 }
 
+NAN_SETTER(Video::CurrentTimeSetter) {
+  Nan::HandleScope scope;
+
+  if (value->IsNumber()) {
+    Video *video = ObjectWrap::Unwrap<Video>(info.This());
+    double newValueS = (double)value->Uint32Value() * 1000;
+
+    video->startTime = ((double)av_gettime() / 1e-6) - newValueS;
+    av_seek_frame(video->data.fmt_ctx, video->data.stream_idx, (int64_t )(newValueS / video->getTimeBase()), AVSEEK_FLAG_FRAME | AVSEEK_FLAG_ANY);
+    video->ForceUpdate();
+  } else {
+    Nan::ThrowError("value: invalid arguments");
+  }
+}
+
 NAN_GETTER(Video::DurationGetter) {
   Nan::HandleScope scope;
   
@@ -192,9 +223,9 @@ double Video::getTimeBase() {
 
 double Video::getRequiredCurrentTimeS() {
   if (playing) {
-    double now = av_gettime();
+    double now = (double)av_gettime() / 1e-6;
     double timeDiff = (now - startTime);
-    double timeDiffS = timeDiff / 1e-6;
+    double timeDiffS = timeDiff;
     return timeDiffS;
   } else {
     return getFrameCurrentTimeS();
@@ -274,7 +305,8 @@ bool Video::advanceToFrameAt(double timestamp) {
     bool packetOk = false;
     bool packetValid = false;
     while (!packetValid || !(packetOk = data.packet->stream_index == data.stream_idx && ((double)data.packet->pts * timeBase) >= timestamp)) {
-      // std::cout << "check ts " << ((double)data.packet->pts * timeBase) << "\n";c
+      // std::cout << "check ts " << ((double)data.packet->pts * timeBase) << "\n";
+
       if (packetValid) {
         av_free_packet(data.packet);
         packetValid = false;
