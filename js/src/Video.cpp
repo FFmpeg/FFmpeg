@@ -35,6 +35,10 @@ Video::~Video() {
 }
 
 Handle<Object> Video::Initialize(Isolate *isolate) {
+  // initialize libav
+  av_register_all();
+  avformat_network_init();
+
   Nan::EscapableHandleScope scope;
   
   // constructor
@@ -72,10 +76,6 @@ NAN_METHOD(Video::New) {
 }
 
 void Video::Load(unsigned char *bufferValue, size_t bufferLength) {
-  // initialize libav
-  av_register_all();
-  avformat_network_init();
-  
   // initialize custom data structure
   std::vector<unsigned char> bufferData(bufferLength);
   memcpy(bufferData.data(), bufferValue, bufferLength);
