@@ -91,10 +91,16 @@ void clearAppData(AppData *data) {
 // read a video frame
 bool readFrame(AppData *data) {	
 	do {
-		if (av_read_frame(data->fmt_ctx, data->packet) < 0) {
+    int ret = av_read_frame(data->fmt_ctx, data->packet);
+		if (ret == AVERROR_EOF) {
 			av_free_packet(data->packet);
 			return false;
-		}
+		} else if (ret < 0) {
+      std::cout << "Unknown error " << ret << "\n";
+
+      av_free_packet(data->packet);
+			return false;
+    }
 	
 		if (data->packet->stream_index == data->stream_idx) {
 			int frame_finished = 0;
@@ -107,16 +113,32 @@ bool readFrame(AppData *data) {
 		
 			if (frame_finished) {
 				if (!data->conv_ctx) {
-					data->conv_ctx = sws_getContext(data->codec_ctx->width, 
-						data->codec_ctx->height, data->codec_ctx->pix_fmt, 
-						data->codec_ctx->width, data->codec_ctx->height, AV_PIX_FMT_RGB24,
+					data->conv_ctx = sws_getContext(
+            data->codec_ctx->width, data->codec_ctx->height, data->codec_ctx->pix_fmt,
+						data->codec_ctx->width, data->codec_ctx->height, AV_PIX_FMT_RGBA,
 						SWS_BICUBIC, NULL, NULL, NULL);
 				}
 			
 				sws_scale(data->conv_ctx, data->av_frame->data, data->av_frame->linesize, 0, 
 					data->codec_ctx->height, data->gl_frame->data, data->gl_frame->linesize);
 
-        std::cout << "data " << (int)data->gl_frame->data[0][0] << (int)data->gl_frame->data[0][1] << (int)data->gl_frame->data[0][2] << (int)data->gl_frame->data[0][3] << "\n";
+        int max = 0;
+        for (size_t i = 0; i < data->codec_ctx->width * data->codec_ctx->height * 4; i++) {
+          if ((i % 4) == 3) {
+            continue;
+          }
+          max = std::max((int)data->gl_frame->data[0][i], max);
+        }
+
+        double timeBase = (double)data->video_stream->time_base.num / (double)data->video_stream->time_base.den;
+        std::cout <<
+          (timeBase * (double)data->av_frame->pts) << " : " <<
+          data->codec_ctx->width << "," << data->codec_ctx->height << "," << data->av_frame->linesize <<
+          // (timeBase * (double)data->av_frame->pkt_pts) << " : " <<
+          // (timeBase * (double)data->av_frame->pkt_dts) << " : " <<
+          "(" << (int)data->gl_frame->data[0][data->codec_ctx->width * data->codec_ctx->height * 4 / 2] << " " << (int)data->gl_frame->data[0][data->codec_ctx->width * data->codec_ctx->height * 4 / 2 + 1] << " " << (int)data->gl_frame->data[0][data->codec_ctx->width * data->codec_ctx->height * 4 / 2 + 2] << " " << (int)data->gl_frame->data[0][data->codec_ctx->width * data->codec_ctx->height * 4 / 2 + 3] << ")[" << max << "] " <<
+          (int)data->packet->stream_index << "/" << data->stream_idx <<
+          "\n";
 					
 				/* glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, data->codec_ctx->width, 
 					data->codec_ctx->height, GL_RGB, GL_UNSIGNED_BYTE, 
@@ -155,7 +177,7 @@ int bufferRead(void *opaque, unsigned char *buf, int buf_size) {
     bufferContext->dataPos += readLength;
     return readLength;
   } else {
-    return -1;
+    return AVERROR_EOF;
   }
 }
 int64_t bufferSeek(void *opaque, int64_t offset, int whence) {
@@ -163,7 +185,17 @@ int64_t bufferSeek(void *opaque, int64_t offset, int whence) {
   if (whence == AVSEEK_SIZE) {
     return bufferContext->dataLength;
   } else {
-    int64_t newPos = std::min<int64_t>(std::max<int64_t>(offset, 0), bufferContext->dataLength - bufferContext->dataPos);
+    int64_t newPos;
+    if (whence == SEEK_SET) {
+      newPos = offset;
+    } else if (whence == SEEK_CUR) {
+      newPos = bufferContext->dataPos + offset;
+    } else if (whence == SEEK_END) {
+      newPos = bufferContext->dataLength + offset;
+    } else {
+      newPos = offset;
+    }
+    newPos = std::min<int64_t>(std::max<int64_t>(newPos, 0), bufferContext->dataLength - bufferContext->dataPos);
     // std::cout << "seek " << newPos << "\n";
     bufferContext->dataPos = newPos;
     return newPos;
@@ -253,10 +285,10 @@ NAN_METHOD(LoadVideo) {
     // allocate the video frames
       data.av_frame = av_frame_alloc();
       data.gl_frame = av_frame_alloc();
-      int size = avpicture_get_size(AV_PIX_FMT_RGB24, data.codec_ctx->width, 
+      int size = avpicture_get_size(AV_PIX_FMT_RGBA, data.codec_ctx->width, 
         data.codec_ctx->height);
       uint8_t *internal_buffer = (uint8_t *)av_malloc(size * sizeof(uint8_t));
-      avpicture_fill((AVPicture *)data.gl_frame, internal_buffer, AV_PIX_FMT_RGB24, 
+      avpicture_fill((AVPicture *)data.gl_frame, internal_buffer, AV_PIX_FMT_RGBA,
         data.codec_ctx->width, data.codec_ctx->height);
     data.packet = (AVPacket *)av_malloc(sizeof(AVPacket));
 
