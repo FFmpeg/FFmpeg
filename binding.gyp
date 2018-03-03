@@ -4,10 +4,13 @@
       'target_name': 'ffmpeg',
       'sources': [
         'main.cpp',
+        'js/src/Video.cpp',
+        # "<!@(node -p \"require('fs').readdirSync('./js/src').map(f=>'js/src/'+f).join(' ')\")",
       ],
       'include_dirs': [
         "<!(node -e \"require('nan')\")",
         '<(module_root_dir)',
+        '<(module_root_dir)/js/include',
       ],
       'library_dirs': [
         '<(module_root_dir)/libavcodec',
