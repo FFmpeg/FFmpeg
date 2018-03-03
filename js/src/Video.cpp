@@ -5,6 +5,8 @@ using namespace v8;
 namespace ffmpeg {
 
 const int kBufferSize = 4 * 1024;
+const AVPixelFormat kPixelFormat = AV_PIX_FMT_RGBA;
+
 AppData::AppData() :
   data(nullptr), dataLength(0), dataPos(0),
   buffer_((unsigned char *)av_malloc(kBufferSize)), buffer_size_(kBufferSize),
@@ -122,11 +124,9 @@ void Video::Load(unsigned char *bufferValue, size_t bufferLength) {
   // allocate the video frames
     data.av_frame = av_frame_alloc();
     data.gl_frame = av_frame_alloc();
-    int size = avpicture_get_size(AV_PIX_FMT_RGBA, data.codec_ctx->width, 
-      data.codec_ctx->height);
+    int size = avpicture_get_size(kPixelFormat, data.codec_ctx->width, data.codec_ctx->height);
     uint8_t *internal_buffer = (uint8_t *)av_malloc(size * sizeof(uint8_t));
-    avpicture_fill((AVPicture *)data.gl_frame, internal_buffer, AV_PIX_FMT_RGBA,
-      data.codec_ctx->width, data.codec_ctx->height);
+    avpicture_fill((AVPicture *)data.gl_frame, internal_buffer, kPixelFormat, data.codec_ctx->width, data.codec_ctx->height);
   data.packet = (AVPacket *)av_malloc(sizeof(AVPacket));
 
   // run the application mainloop
@@ -134,7 +134,6 @@ void Video::Load(unsigned char *bufferValue, size_t bufferLength) {
     drawFrame(&data);
   } */
   advanceToFrameAt(5);
-  drawFrame();
 }
 
 void Video::Play() {
@@ -217,7 +216,7 @@ bool Video::readFrame() {
 				if (!data.conv_ctx) {
 					data.conv_ctx = sws_getContext(
             data.codec_ctx->width, data.codec_ctx->height, data.codec_ctx->pix_fmt,
-						data.codec_ctx->width, data.codec_ctx->height, AV_PIX_FMT_RGBA,
+						data.codec_ctx->width, data.codec_ctx->height, kPixelFormat,
 						SWS_BICUBIC, NULL, NULL, NULL);
 				}
 			
@@ -294,7 +293,7 @@ bool Video::advanceToFrameAt(double timestamp) {
         if (!data.conv_ctx) {
           data.conv_ctx = sws_getContext(
             data.codec_ctx->width, data.codec_ctx->height, data.codec_ctx->pix_fmt,
-            data.codec_ctx->width, data.codec_ctx->height, AV_PIX_FMT_RGBA,
+            data.codec_ctx->width, data.codec_ctx->height, kPixelFormat,
             SWS_BICUBIC, NULL, NULL, NULL);
         }
       
