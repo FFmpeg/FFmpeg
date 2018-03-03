@@ -342,6 +342,8 @@ bool Video::advanceToFrameAt(double timestamp) {
 
         return true;
       } else {
+        av_free_packet(data.packet);
+
         continue;
       }
     } else {
