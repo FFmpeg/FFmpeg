@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CFLAGS=-fPIC CXXFLAGS=-fPIC ./configure --enable-pic --extra-ldexeflags=-pie --arch=x86_64
+./configure --enable-pic --extra-ldexeflags=-pie
 make clean
 make -j4
 npm install
