@@ -1,25 +1,6 @@
-#include <string.h>
-#include <cstring>
-#include <stdlib.h>
-#include <stdio.h>
-
 #include <v8.h>
 #include <node.h>
 #include <nan.h>
-
-extern "C" {
-#include <libavformat/avformat.h>
-#include <libavcodec/avcodec.h>
-#include <libavfilter/avfilter.h>
-#include <libavdevice/avdevice.h>
-#include <libswresample/swresample.h>
-#include <libswscale/swscale.h>
-#include <libavutil/avutil.h>
-}
-#include <sys/time.h>
-#include <iostream>
-#include <fstream>
-#include <string>
 
 #include <defines.h>
 #include <Video.h>
