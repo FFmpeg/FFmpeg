@@ -6,4 +6,6 @@ const v = new Video();
 const d = fs.readFileSync('./sample.mpeg');
 v.load(d);
 
+console.log(v.currentTime, v.duration);
+
 module.exports = ffmpeg;

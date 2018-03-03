@@ -173,7 +173,7 @@ NAN_GETTER(Video::CurrentTimeGetter) {
   
   Video *video = ObjectWrap::Unwrap<Video>(info.This());
 
-  double currentTime = (video->getTimeBase() * (double)video->data.av_frame->pts) * 1000;
+  double currentTime = video->getFrameCurrentTimeS();
   info.GetReturnValue().Set(JS_NUM(currentTime));
 }
 
@@ -188,6 +188,21 @@ NAN_GETTER(Video::DurationGetter) {
 
 double Video::getTimeBase() {
   return (double)data.video_stream->time_base.num / (double)data.video_stream->time_base.den;
+}
+
+double Video::getRequiredCurrentTimeS() {
+  if (playing) {
+    double now = av_gettime();
+    double timeDiff = (now - startTime);
+    double timeDiffS = timeDiff / 1e-6;
+    return timeDiffS;
+  } else {
+    return getFrameCurrentTimeS();
+  }
+}
+
+double Video::getFrameCurrentTimeS() {
+  return (getTimeBase() * (double)data.av_frame->pts);
 }
 
 // read a video frame

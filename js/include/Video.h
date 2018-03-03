@@ -73,7 +73,10 @@ protected:
   static NAN_GETTER(CurrentTimeGetter);
   static NAN_GETTER(DurationGetter);
   double getTimeBase();
+  double getRequiredCurrentTime();
   bool readFrame();
+  double getRequiredCurrentTimeS();
+  double getFrameCurrentTimeS();
   bool advanceToFrameAt(double timestamp);
   void drawFrame();
   static int bufferRead(void *opaque, unsigned char *buf, int buf_size);
