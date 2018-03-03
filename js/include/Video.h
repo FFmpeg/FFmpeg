@@ -65,6 +65,8 @@ public:
   void Update();
   void Play();
   void Pause();
+  uint32_t GetWidth();
+  uint32_t GetHeight();
 
 protected:
   static NAN_METHOD(New);
@@ -72,16 +74,17 @@ protected:
   static NAN_METHOD(Update);
   static NAN_METHOD(Play);
   static NAN_METHOD(Pause);
+  static NAN_GETTER(WidthGetter);
+  static NAN_GETTER(HeightGetter);
+  static NAN_GETTER(DataGetter);
   static NAN_GETTER(CurrentTimeGetter);
   static NAN_SETTER(CurrentTimeSetter);
   static NAN_GETTER(DurationGetter);
   double getTimeBase();
   double getRequiredCurrentTime();
-  bool readFrame();
   double getRequiredCurrentTimeS();
   double getFrameCurrentTimeS();
   bool advanceToFrameAt(double timestamp);
-  void drawFrame();
   static int bufferRead(void *opaque, unsigned char *buf, int buf_size);
   static int64_t bufferSeek(void *opaque, int64_t offset, int whence);
   
@@ -91,7 +94,9 @@ protected:
   private:
     AppData data;
     bool playing;
-    int64_t  startTime;
+    int64_t startTime;
+    Nan::Persistent<Uint8ClampedArray> dataArray;
+    bool dataDirty;
   };
 
 }

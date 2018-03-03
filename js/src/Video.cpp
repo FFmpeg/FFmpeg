@@ -26,7 +26,7 @@ void AppData::set(unsigned char *data, size_t dataLength) {
   this->dataLength = dataLength;
 }
 
-Video::Video() : playing(false), startTime(0) {}
+Video::Video() : playing(false), startTime(0), dataDirty(true) {}
 
 Video::~Video() {}
 
@@ -44,6 +44,9 @@ Handle<Object> Video::Initialize(Isolate *isolate) {
   Nan::SetMethod(proto, "update", Update);
   Nan::SetMethod(proto, "play", Play);
   Nan::SetMethod(proto, "pause", Pause);
+  Nan::SetAccessor(proto, JS_STR("width"), WidthGetter);
+  Nan::SetAccessor(proto, JS_STR("height"), HeightGetter);
+  Nan::SetAccessor(proto, JS_STR("data"), DataGetter);
   Nan::SetAccessor(proto, JS_STR("currentTime"), CurrentTimeGetter, CurrentTimeSetter);
   Nan::SetAccessor(proto, JS_STR("duration"), DurationGetter);
   
@@ -88,46 +91,43 @@ void Video::Load(unsigned char *bufferValue, size_t bufferLength) {
   // dump debug info
   // av_dump_format(data.fmt_ctx, 0, argv[1], 0);
   
-  // find the video stream
-    for (unsigned int i = 0; i < data.fmt_ctx->nb_streams; ++i)
-    {
-        if (data.fmt_ctx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO)
-        {
-            data.stream_idx = i;
-            break;
-        }
-    }
+   // find the video stream
+  for (unsigned int i = 0; i < data.fmt_ctx->nb_streams; ++i)
+  {
+      if (data.fmt_ctx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+      {
+          data.stream_idx = i;
+          break;
+      }
+  }
 
-    if (data.stream_idx == -1)
-    {
+  if (data.stream_idx == -1) {
     std::cout << "failed to find video stream" << std::endl;
     return;
-    }
+  }
 
-    data.video_stream = data.fmt_ctx->streams[data.stream_idx];
-    data.codec_ctx = data.video_stream->codec;
+  data.video_stream = data.fmt_ctx->streams[data.stream_idx];
+  data.codec_ctx = data.video_stream->codec;
 
   // find the decoder
-    data.decoder = avcodec_find_decoder(data.codec_ctx->codec_id);
-    if (data.decoder == NULL)
-    {
+  data.decoder = avcodec_find_decoder(data.codec_ctx->codec_id);
+  if (data.decoder == NULL) {
     std::cout << "failed to find decoder" << std::endl;
     return;
-    }
+  }
 
   // open the decoder
-    if (avcodec_open2(data.codec_ctx, data.decoder, NULL) < 0)
-    {
-      std::cout << "failed to open codec" << std::endl;
-        return;
-    }
+  if (avcodec_open2(data.codec_ctx, data.decoder, NULL) < 0) {
+    std::cout << "failed to open codec" << std::endl;
+    return;
+  }
 
   // allocate the video frames
-    data.av_frame = av_frame_alloc();
-    data.gl_frame = av_frame_alloc();
-    int size = avpicture_get_size(kPixelFormat, data.codec_ctx->width, data.codec_ctx->height);
-    uint8_t *internal_buffer = (uint8_t *)av_malloc(size * sizeof(uint8_t));
-    avpicture_fill((AVPicture *)data.gl_frame, internal_buffer, kPixelFormat, data.codec_ctx->width, data.codec_ctx->height);
+  data.av_frame = av_frame_alloc();
+  data.gl_frame = av_frame_alloc();
+  int size = avpicture_get_size(kPixelFormat, data.codec_ctx->width, data.codec_ctx->height);
+  uint8_t *internal_buffer = (uint8_t *)av_malloc(size * sizeof(uint8_t));
+  avpicture_fill((AVPicture *)data.gl_frame, internal_buffer, kPixelFormat, data.codec_ctx->width, data.codec_ctx->height);
   data.packet = (AVPacket *)av_malloc(sizeof(AVPacket));
 
   // run the application mainloop
@@ -150,6 +150,14 @@ void Video::Play() {
 
 void Video::Pause() {
   playing = false;
+}
+
+uint32_t Video::GetWidth() {
+  return data.codec_ctx->width;
+}
+
+uint32_t Video::GetHeight() {
+  return data.codec_ctx->height;
 }
 
 NAN_METHOD(Video::Load) {
@@ -178,6 +186,44 @@ NAN_METHOD(Video::Play) {
 NAN_METHOD(Video::Pause) {
   Video *video = ObjectWrap::Unwrap<Video>(info.This());
   video->Pause();
+}
+
+NAN_GETTER(Video::WidthGetter) {
+  Nan::HandleScope scope;
+
+  Video *video = ObjectWrap::Unwrap<Video>(info.This());
+  info.GetReturnValue().Set(JS_INT(video->GetWidth()));
+}
+
+NAN_GETTER(Video::HeightGetter) {
+  Nan::HandleScope scope;
+
+  Video *video = ObjectWrap::Unwrap<Video>(info.This());
+  info.GetReturnValue().Set(JS_INT(video->GetHeight()));
+}
+
+NAN_GETTER(Video::DataGetter) {
+  Nan::HandleScope scope;
+
+  Video *video = ObjectWrap::Unwrap<Video>(info.This());
+
+  unsigned int width = video->GetWidth();
+  unsigned int height = video->GetHeight();
+  unsigned int dataSize = width * height * 4;
+  if (video->dataArray.IsEmpty()) {
+    Local<ArrayBuffer> arrayBuffer = ArrayBuffer::New(Isolate::GetCurrent(), dataSize);
+    Local<Uint8ClampedArray> uint8ClampedArray = Uint8ClampedArray::New(arrayBuffer, 0, arrayBuffer->ByteLength());
+    video->dataArray.Reset(uint8ClampedArray);
+  }
+
+  Local<Uint8ClampedArray> uint8ClampedArray = Nan::New(video->dataArray);
+  if (video->dataDirty) {
+    Local<ArrayBuffer> arrayBuffer = uint8ClampedArray->Buffer();
+    memcpy(arrayBuffer->GetContents().Data() + uint8ClampedArray->ByteOffset(), video->data.gl_frame->data[0], dataSize);
+    video->dataDirty = false;
+  }
+
+  info.GetReturnValue().Set(uint8ClampedArray);
 }
 
 NAN_GETTER(Video::CurrentTimeGetter) {
@@ -232,7 +278,7 @@ double Video::getFrameCurrentTimeS() {
   return (getTimeBase() * (double)data.av_frame->pts);
 }
 
-// read a video frame
+/* // read a video frame
 bool Video::readFrame() {	
 	do {
     int ret = av_read_frame(data.fmt_ctx, data.packet);
@@ -263,28 +309,6 @@ bool Video::readFrame() {
 				}
 			
 				sws_scale(data.conv_ctx, data.av_frame->data, data.av_frame->linesize, 0, data.codec_ctx->height, data.gl_frame->data, data.gl_frame->linesize);
-
-        int max = 0;
-        for (size_t i = 0; i < data.codec_ctx->width * data.codec_ctx->height * 4; i++) {
-          if ((i % 4) == 3) {
-            continue;
-          }
-          max = std::max((int)data.gl_frame->data[0][i], max);
-        }
-
-        /* double timeBase = getTimeBase();
-        std::cout <<
-          (timeBase * (double)data.av_frame->pts) << " : " <<
-          data.codec_ctx->width << "," << data.codec_ctx->height << "," << data.av_frame->linesize <<
-          // (timeBase * (double)data.av_frame->pkt_pts) << " : " <<
-          // (timeBase * (double)data.av_frame->pkt_dts) << " : " <<
-          "(" << (int)data.gl_frame->data[0][data.codec_ctx->width * data.codec_ctx->height * 4 / 2] << " " << (int)data.gl_frame->data[0][data.codec_ctx->width * data.codec_ctx->height * 4 / 2 + 1] << " " << (int)data.gl_frame->data[0][data.codec_ctx->width * data.codec_ctx->height * 4 / 2 + 2] << " " << (int)data.gl_frame->data[0][data.codec_ctx->width * data.codec_ctx->height * 4 / 2 + 3] << ")[" << max << "] " <<
-          (int)data.packet->stream_index << "/" << data.stream_idx <<
-          "\n"; */
-					
-				/* glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, data.codec_ctx->width, 
-					data.codec_ctx->height, GL_RGB, GL_UNSIGNED_BYTE, 
-					data.gl_frame->data[0]); */
 			}
 		}
 		
@@ -292,7 +316,7 @@ bool Video::readFrame() {
 	} while (data.packet->stream_index != data.stream_idx);
 	
 	return true;
-}
+} */
 
 bool Video::advanceToFrameAt(double timestamp) {	
   double timeBase = getTimeBase();
@@ -323,7 +347,6 @@ bool Video::advanceToFrameAt(double timestamp) {
       }
     }
     // we have a valid packet at this point
-    // std::cout << "packet ok " << packetOk << "\n";
     if (packetOk) {
       int frame_finished = 0;
     
@@ -366,6 +389,8 @@ bool Video::advanceToFrameAt(double timestamp) {
 
         av_free_packet(data.packet);
 
+        dataDirty = true;
+
         return true;
       } else {
         continue;
@@ -381,15 +406,15 @@ bool Video::advanceToFrameAt(double timestamp) {
   }
 }
 
-// draw frame in opengl context
+/* // draw frame in opengl context
 void Video::drawFrame() {
-	/* glClear(GL_COLOR_BUFFER_BIT);	
+	glClear(GL_COLOR_BUFFER_BIT);	
 	glBindTexture(GL_TEXTURE_2D, data.frame_tex);
 	glBindVertexArray(data.vao);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, BUFFER_OFFSET(0));
 	glBindVertexArray(0);
-	glfwSwapBuffers(); */
-}
+	glfwSwapBuffers();
+} */
 
 int Video::bufferRead(void *opaque, unsigned char *buf, int buf_size) {
   AppData *appData = (AppData *)opaque;
