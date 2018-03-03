@@ -31,12 +31,12 @@ namespace ffmpeg {
 class AppData {
 public:
   AppData(unsigned char *data, size_t dataLength) : data(data), dataLength(dataLength), dataPos(0), 
-  fmt_ctx(nullptr), io_ctx(nullptr), stream_idx(-1), video_stream(nullptr), codec_ctx(nullptr), decoder(nullptr), packet(nullptr), av_frame(nullptr), gl_frame(nullptr), conv_ctx(nullptr) {}
+  fmt_ctx(nullptr), io_ctx(nullptr), stream_idx(-1), video_stream(nullptr), codec_ctx(nullptr), decoder(nullptr), packet(nullptr), packetValid(false), av_frame(nullptr), gl_frame(nullptr), conv_ctx(nullptr) {}
   ~AppData() {
     AppData *data = this;
     if (data->av_frame) av_free(data->av_frame);
     if (data->gl_frame) av_free(data->gl_frame);
-    if (data->packet) av_free(data->packet);
+    if (data->packet) av_free_packet(data->packet);
     if (data->codec_ctx) avcodec_close(data->codec_ctx);
     if (data->fmt_ctx) avformat_free_context(data->fmt_ctx);
     if (data->io_ctx) av_free(data->io_ctx);
@@ -54,6 +54,7 @@ public:
 	AVCodecContext *codec_ctx;
 	AVCodec *decoder;
 	AVPacket *packet;
+	bool packetValid;
 	AVFrame *av_frame;
 	AVFrame *gl_frame;
 	struct SwsContext *conv_ctx;
@@ -121,6 +122,93 @@ bool readFrame(AppData *data) {
 	} while (data->packet->stream_index != data->stream_idx);
 	
 	return true;
+}
+
+bool advanceToFrameAt(AppData *data, double timestamp) {	
+  double timeBase = (double)data->video_stream->time_base.num / (double)data->video_stream->time_base.den;
+
+  for (;;) {
+    bool packetOk = false;
+    bool packetValid = false;
+    while (!packetValid || !(packetOk = data->packet->stream_index == data->stream_idx && ((double)data->packet->pts * timeBase) >= timestamp)) {
+      // std::cout << "check ts " << ((double)data->packet->pts * timeBase) << "\n";c
+      if (packetValid) {
+        av_free_packet(data->packet);
+        packetValid = false;
+      }
+
+      int ret = av_read_frame(data->fmt_ctx, data->packet);
+      packetValid = true;
+      if (ret == AVERROR_EOF) {
+        break;
+        // av_free_packet(data->packet);
+        // return false;
+      } else if (ret < 0) {
+        std::cout << "Unknown error " << ret << "\n";
+        av_free_packet(data->packet);
+        return false;
+      } else {
+        continue;
+      }
+    }
+    // we have a valid packet at this point
+    // std::cout << "packet ok " << packetOk << "\n";
+    if (packetOk) {
+      int frame_finished = 0;
+    
+      if (avcodec_decode_video2(data->codec_ctx, data->av_frame, &frame_finished, data->packet) < 0) {
+        av_free_packet(data->packet);
+        return false;
+      }
+    
+      if (frame_finished) {
+        if (!data->conv_ctx) {
+          data->conv_ctx = sws_getContext(
+            data->codec_ctx->width, data->codec_ctx->height, data->codec_ctx->pix_fmt,
+            data->codec_ctx->width, data->codec_ctx->height, AV_PIX_FMT_RGBA,
+            SWS_BICUBIC, NULL, NULL, NULL);
+        }
+      
+        sws_scale(data->conv_ctx, data->av_frame->data, data->av_frame->linesize, 0, 
+          data->codec_ctx->height, data->gl_frame->data, data->gl_frame->linesize);
+
+        int max = 0;
+        for (size_t i = 0; i < data->codec_ctx->width * data->codec_ctx->height * 4; i++) {
+          if ((i % 4) == 3) {
+            continue;
+          }
+          max = std::max((int)data->gl_frame->data[0][i], max);
+        }
+
+        double timeBase = (double)data->video_stream->time_base.num / (double)data->video_stream->time_base.den;
+        std::cout <<
+          (timeBase * (double)data->av_frame->pts) << " : " <<
+          data->codec_ctx->width << "," << data->codec_ctx->height << "," << data->av_frame->linesize <<
+          // (timeBase * (double)data->av_frame->pkt_pts) << " : " <<
+          // (timeBase * (double)data->av_frame->pkt_dts) << " : " <<
+          "(" << (int)data->gl_frame->data[0][data->codec_ctx->width * data->codec_ctx->height * 4 / 2] << " " << (int)data->gl_frame->data[0][data->codec_ctx->width * data->codec_ctx->height * 4 / 2 + 1] << " " << (int)data->gl_frame->data[0][data->codec_ctx->width * data->codec_ctx->height * 4 / 2 + 2] << " " << (int)data->gl_frame->data[0][data->codec_ctx->width * data->codec_ctx->height * 4 / 2 + 3] << ")[" << max << "] " <<
+          (int)data->packet->stream_index << "/" << data->stream_idx <<
+          "\n";
+          
+        /* glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, data->codec_ctx->width, 
+          data->codec_ctx->height, GL_RGB, GL_UNSIGNED_BYTE, 
+          data->gl_frame->data[0]); */
+
+        av_free_packet(data->packet);
+
+        return true;
+      } else {
+        continue;
+        /* std::cout << "Failed to decode frame" << "\n";
+        av_free_packet(data->packet);
+        return false; */
+      }
+    } else {
+      std::cout << "Do not have packet up to " << timestamp << "\n";
+      av_free_packet(data->packet);
+      return false;
+    }
+  }
 }
 
 // draw frame in opengl context
@@ -246,9 +334,11 @@ NAN_METHOD(LoadVideo) {
     data.packet = (AVPacket *)av_malloc(sizeof(AVPacket));
 
     // run the application mainloop
-    while (readFrame(&data)) {
+    /* while (readFrame(&data)) {
       drawFrame(&data);
-    }
+    } */
+    advanceToFrameAt(&data, 5);
+    drawFrame(&data);
   } else {
     Nan::ThrowError("Invalid arguments");
   }
