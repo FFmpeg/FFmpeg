@@ -78,13 +78,13 @@ void Video::Load(unsigned char *bufferValue, size_t bufferLength) {
   data.io_ctx = avio_alloc_context(data.buffer_, data.buffer_size_, 0, &data, bufferRead, NULL, bufferSeek); 
   data.fmt_ctx->pb = data.io_ctx;
   if (avformat_open_input(&data.fmt_ctx, "memory input", NULL, NULL) < 0) {
-    std::cout << "failed to open input" << std::endl;
+    // std::cout << "failed to open input" << std::endl;
     return;
   }
   
   // find stream info
   if (avformat_find_stream_info(data.fmt_ctx, NULL) < 0) {
-    std::cout << "failed to get stream info" << std::endl;
+    // std::cout << "failed to get stream info" << std::endl;
     return;
   }
   
@@ -102,7 +102,7 @@ void Video::Load(unsigned char *bufferValue, size_t bufferLength) {
   }
 
   if (data.stream_idx == -1) {
-    std::cout << "failed to find video stream" << std::endl;
+    // std::cout << "failed to find video stream" << std::endl;
     return;
   }
 
@@ -112,13 +112,13 @@ void Video::Load(unsigned char *bufferValue, size_t bufferLength) {
   // find the decoder
   data.decoder = avcodec_find_decoder(data.codec_ctx->codec_id);
   if (data.decoder == NULL) {
-    std::cout << "failed to find decoder" << std::endl;
+    // std::cout << "failed to find decoder" << std::endl;
     return;
   }
 
   // open the decoder
   if (avcodec_open2(data.codec_ctx, data.decoder, NULL) < 0) {
-    std::cout << "failed to open codec" << std::endl;
+    // std::cout << "failed to open codec" << std::endl;
     return;
   }
 
@@ -297,7 +297,7 @@ bool Video::advanceToFrameAt(double timestamp) {
         // av_free_packet(data.packet);
         // return false;
       } else if (ret < 0) {
-        std::cout << "Unknown error " << ret << "\n";
+        // std::cout << "Unknown error " << ret << "\n";
         av_free_packet(data.packet);
         return false;
       } else {
@@ -332,7 +332,7 @@ bool Video::advanceToFrameAt(double timestamp) {
         continue;
       }
     } else {
-      std::cout << "Do not have packet up to " << timestamp << "\n";
+      // std::cout << "Do not have packet up to " << timestamp << "\n";
       av_free_packet(data.packet);
       return false;
     }
