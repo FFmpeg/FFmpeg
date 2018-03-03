@@ -15,12 +15,6 @@ extern "C" {
 #include <libavutil/avutil.h>
 #include <libavutil/time.h>
 }
-#include <sys/time.h>
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <memory>
-#include <algorithm>
 
 #include <defines.h>
 

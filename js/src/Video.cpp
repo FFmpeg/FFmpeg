@@ -278,46 +278,6 @@ double Video::getFrameCurrentTimeS() {
   return (getTimeBase() * (double)data.av_frame->pts);
 }
 
-/* // read a video frame
-bool Video::readFrame() {	
-	do {
-    int ret = av_read_frame(data.fmt_ctx, data.packet);
-		if (ret == AVERROR_EOF) {
-			av_free_packet(data.packet);
-			return false;
-		} else if (ret < 0) {
-      std::cout << "Unknown error " << ret << "\n";
-
-      av_free_packet(data.packet);
-			return false;
-    }
-	
-		if (data.packet->stream_index == data.stream_idx) {
-			int frame_finished = 0;
-		
-			if (avcodec_decode_video2(data.codec_ctx, data.av_frame, &frame_finished, data.packet) < 0) {
-				av_free_packet(data.packet);
-				return false;
-			}
-		
-			if (frame_finished) {
-				if (!data.conv_ctx) {
-					data.conv_ctx = sws_getContext(
-            data.codec_ctx->width, data.codec_ctx->height, data.codec_ctx->pix_fmt,
-						data.codec_ctx->width, data.codec_ctx->height, kPixelFormat,
-						SWS_BICUBIC, NULL, NULL, NULL);
-				}
-			
-				sws_scale(data.conv_ctx, data.av_frame->data, data.av_frame->linesize, 0, data.codec_ctx->height, data.gl_frame->data, data.gl_frame->linesize);
-			}
-		}
-		
-		av_free_packet(data.packet);
-	} while (data.packet->stream_index != data.stream_idx);
-	
-	return true;
-} */
-
 bool Video::advanceToFrameAt(double timestamp) {	
   double timeBase = getTimeBase();
 
@@ -325,8 +285,6 @@ bool Video::advanceToFrameAt(double timestamp) {
     bool packetOk = false;
     bool packetValid = false;
     while (!packetValid || !(packetOk = data.packet->stream_index == data.stream_idx && ((double)data.packet->pts * timeBase) >= timestamp)) {
-      // std::cout << "check ts " << ((double)data.packet->pts * timeBase) << "\n";
-
       if (packetValid) {
         av_free_packet(data.packet);
         packetValid = false;
@@ -365,28 +323,6 @@ bool Video::advanceToFrameAt(double timestamp) {
       
         sws_scale(data.conv_ctx, data.av_frame->data, data.av_frame->linesize, 0, data.codec_ctx->height, data.gl_frame->data, data.gl_frame->linesize);
 
-        /* int max = 0;
-        for (size_t i = 0; i < data.codec_ctx->width * data.codec_ctx->height * 4; i++) {
-          if ((i % 4) == 3) {
-            continue;
-          }
-          max = std::max((int)data.gl_frame->data[0][i], max);
-        } */
-
-        /* double timeBase = (double)data.video_stream->time_base.num / (double)data.video_stream->time_base.den;
-        std::cout <<
-          (timeBase * (double)data.av_frame->pts) << " : " <<
-          data.codec_ctx->width << "," << data.codec_ctx->height << "," << data.av_frame->linesize <<
-          // (timeBase * (double)data.av_frame->pkt_pts) << " : " <<
-          // (timeBase * (double)data.av_frame->pkt_dts) << " : " <<
-          "(" << (int)data.gl_frame->data[0][data.codec_ctx->width * data.codec_ctx->height * 4 / 2] << " " << (int)data.gl_frame->data[0][data.codec_ctx->width * data.codec_ctx->height * 4 / 2 + 1] << " " << (int)data.gl_frame->data[0][data.codec_ctx->width * data.codec_ctx->height * 4 / 2 + 2] << " " << (int)data.gl_frame->data[0][data.codec_ctx->width * data.codec_ctx->height * 4 / 2 + 3] << ") " <<
-          (int)data.packet->stream_index << "/" << data.stream_idx <<
-          "\n"; */
-          
-        /* glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, data.codec_ctx->width, 
-          data.codec_ctx->height, GL_RGB, GL_UNSIGNED_BYTE, 
-          data.gl_frame->data[0]); */
-
         av_free_packet(data.packet);
 
         dataDirty = true;
@@ -394,9 +330,6 @@ bool Video::advanceToFrameAt(double timestamp) {
         return true;
       } else {
         continue;
-        /* std::cout << "Failed to decode frame" << "\n";
-        av_free_packet(data.packet);
-        return false; */
       }
     } else {
       std::cout << "Do not have packet up to " << timestamp << "\n";
@@ -406,20 +339,9 @@ bool Video::advanceToFrameAt(double timestamp) {
   }
 }
 
-/* // draw frame in opengl context
-void Video::drawFrame() {
-	glClear(GL_COLOR_BUFFER_BIT);	
-	glBindTexture(GL_TEXTURE_2D, data.frame_tex);
-	glBindVertexArray(data.vao);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, BUFFER_OFFSET(0));
-	glBindVertexArray(0);
-	glfwSwapBuffers();
-} */
-
 int Video::bufferRead(void *opaque, unsigned char *buf, int buf_size) {
   AppData *appData = (AppData *)opaque;
   int64_t readLength = std::min<int64_t>(buf_size, appData->dataLength - appData->dataPos);
-  // std::cout << "read " << appData->dataPos << " " << readLength << "\n";
   if (readLength > 0) {
     memcpy(buf, appData->data + appData->dataPos, readLength);
     appData->dataPos += readLength;
@@ -444,7 +366,6 @@ int64_t Video::bufferSeek(void *opaque, int64_t offset, int whence) {
       newPos = offset;
     }
     newPos = std::min<int64_t>(std::max<int64_t>(newPos, 0), appData->dataLength - appData->dataPos);
-    // std::cout << "seek " << newPos << "\n";
     appData->dataPos = newPos;
     return newPos;
   }
