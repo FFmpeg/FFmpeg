@@ -25,22 +25,28 @@ using namespace v8;
 
 namespace ffmpeg {
 
-#define BUFFER_OFFSET(i) ((char *)NULL + (i))
-
-// attribute indices
-enum {
-	VERTICES = 0,
-	TEX_COORDS	
-};
-
-// uniform indices
-enum {
-	MVP_MATRIX = 0,
-	FRAME_TEX
-};
+// #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
 // app data structure
-typedef struct {
+class AppData {
+public:
+  AppData(unsigned char *data, size_t dataLength) : data(data), dataLength(dataLength), dataPos(0), 
+  fmt_ctx(nullptr), io_ctx(nullptr), stream_idx(-1), video_stream(nullptr), codec_ctx(nullptr), decoder(nullptr), packet(nullptr), av_frame(nullptr), gl_frame(nullptr), conv_ctx(nullptr) {}
+  ~AppData() {
+    AppData *data = this;
+    if (data->av_frame) av_free(data->av_frame);
+    if (data->gl_frame) av_free(data->gl_frame);
+    if (data->packet) av_free(data->packet);
+    if (data->codec_ctx) avcodec_close(data->codec_ctx);
+    if (data->fmt_ctx) avformat_free_context(data->fmt_ctx);
+    if (data->io_ctx) av_free(data->io_ctx);
+  }
+
+public:
+  unsigned char *data;
+  int64_t dataLength;
+  int64_t dataPos;
+
 	AVFormatContext *fmt_ctx;
 	AVIOContext *io_ctx;
 	int stream_idx;
@@ -51,42 +57,7 @@ typedef struct {
 	AVFrame *av_frame;
 	AVFrame *gl_frame;
 	struct SwsContext *conv_ctx;
-	/* GLuint vao;
-	GLuint vert_buf;
-	GLuint elem_buf;
-	GLuint frame_tex;
-	GLuint program;
-	GLuint attribs[2];
-	GLuint uniforms[2]; */
-} AppData;
-
-// initialize the app data structure
-void initializeAppData(AppData *data) {
-	data->fmt_ctx = NULL;
-  data->io_ctx = NULL;
-	data->stream_idx = -1;
-	data->video_stream = NULL;
-	data->codec_ctx = NULL;
-	data->decoder = NULL;
-	data->av_frame = NULL;
-	data->gl_frame = NULL;
-	data->conv_ctx = NULL;
-}
-
-// clean up the app data structure
-void clearAppData(AppData *data) {
-	if (data->av_frame) av_free(data->av_frame);
-	if (data->gl_frame) av_free(data->gl_frame);
-	if (data->packet) av_free(data->packet);
-	if (data->codec_ctx) avcodec_close(data->codec_ctx);
-	if (data->fmt_ctx) avformat_free_context(data->fmt_ctx);
-	if (data->io_ctx) av_free(data->io_ctx);
-	/* glDeleteVertexArrays(1, &data->vao);
-	glDeleteBuffers(1, &data->vert_buf);
-	glDeleteBuffers(1, &data->elem_buf);
-	glDeleteTextures(1, &data->frame_tex); */
-	initializeAppData(data);
-}
+};
 
 // read a video frame
 bool readFrame(AppData *data) {	
@@ -162,42 +133,36 @@ void drawFrame(AppData *data) {
 	glfwSwapBuffers(); */
 }
 
-struct BufferContext {
-  unsigned char *data;
-  int64_t dataLength;
-  int64_t dataPos;
-};
-
 int bufferRead(void *opaque, unsigned char *buf, int buf_size) {
-  BufferContext *bufferContext = (BufferContext *)opaque;
-  int64_t readLength = std::min<int64_t>(buf_size, bufferContext->dataLength - bufferContext->dataPos);
-  // std::cout << "read " << bufferContext->dataPos << " " << readLength << "\n";
+  AppData *appData = (AppData *)opaque;
+  int64_t readLength = std::min<int64_t>(buf_size, appData->dataLength - appData->dataPos);
+  // std::cout << "read " << appData->dataPos << " " << readLength << "\n";
   if (readLength > 0) {
-    memcpy(buf, bufferContext->data + bufferContext->dataPos, readLength);
-    bufferContext->dataPos += readLength;
+    memcpy(buf, appData->data + appData->dataPos, readLength);
+    appData->dataPos += readLength;
     return readLength;
   } else {
     return AVERROR_EOF;
   }
 }
 int64_t bufferSeek(void *opaque, int64_t offset, int whence) {
-  BufferContext *bufferContext = (BufferContext *)opaque;
+  AppData *appData = (AppData *)opaque;
   if (whence == AVSEEK_SIZE) {
-    return bufferContext->dataLength;
+    return appData->dataLength;
   } else {
     int64_t newPos;
     if (whence == SEEK_SET) {
       newPos = offset;
     } else if (whence == SEEK_CUR) {
-      newPos = bufferContext->dataPos + offset;
+      newPos = appData->dataPos + offset;
     } else if (whence == SEEK_END) {
-      newPos = bufferContext->dataLength + offset;
+      newPos = appData->dataLength + offset;
     } else {
       newPos = offset;
     }
-    newPos = std::min<int64_t>(std::max<int64_t>(newPos, 0), bufferContext->dataLength - bufferContext->dataPos);
+    newPos = std::min<int64_t>(std::max<int64_t>(newPos, 0), appData->dataLength - appData->dataPos);
     // std::cout << "seek " << newPos << "\n";
-    bufferContext->dataPos = newPos;
+    appData->dataPos = newPos;
     return newPos;
   }
 }
@@ -211,34 +176,25 @@ NAN_METHOD(LoadVideo) {
     size_t buffer_size_ = kBufferSize;
     unsigned char *buffer_ = (unsigned char *)av_malloc(buffer_size_);
 
-    BufferContext bufferContext = {
-      (unsigned char *)arrayBuffer->GetContents().Data() + arrayBufferView->ByteOffset(),
-      arrayBufferView->ByteLength(),
-      0,
-    };
-
     // initialize libav
     av_register_all();
     avformat_network_init();
     
     // initialize custom data structure
-    AppData data;
-    initializeAppData(&data);
+    AppData data((unsigned char *)arrayBuffer->GetContents().Data() + arrayBufferView->ByteOffset(), arrayBufferView->ByteLength());
     
     // open video
     data.fmt_ctx = avformat_alloc_context();
-    data.io_ctx = avio_alloc_context(buffer_, buffer_size_, 0, &bufferContext, bufferRead, NULL, bufferSeek); 
+    data.io_ctx = avio_alloc_context(buffer_, buffer_size_, 0, &data, bufferRead, NULL, bufferSeek); 
     data.fmt_ctx->pb = data.io_ctx;
     if (avformat_open_input(&data.fmt_ctx, "memory input", NULL, NULL) < 0) {
       std::cout << "failed to open input" << std::endl;
-      clearAppData(&data);
       return;
     }
     
     // find stream info
     if (avformat_find_stream_info(data.fmt_ctx, NULL) < 0) {
       std::cout << "failed to get stream info" << std::endl;
-      clearAppData(&data);
       return;
     }
     
@@ -258,7 +214,6 @@ NAN_METHOD(LoadVideo) {
       if (data.stream_idx == -1)
       {
       std::cout << "failed to find video stream" << std::endl;
-      clearAppData(&data);
       return;
       }
 
@@ -270,7 +225,6 @@ NAN_METHOD(LoadVideo) {
       if (data.decoder == NULL)
       {
       std::cout << "failed to find decoder" << std::endl;
-      clearAppData(&data);
       return;
       }
 
@@ -278,7 +232,6 @@ NAN_METHOD(LoadVideo) {
       if (avcodec_open2(data.codec_ctx, data.decoder, NULL) < 0)
       {
         std::cout << "failed to open codec" << std::endl;
-          clearAppData(&data);
           return;
       }
 
@@ -296,8 +249,6 @@ NAN_METHOD(LoadVideo) {
     while (readFrame(&data)) {
       drawFrame(&data);
     }
-
-    clearAppData(&data);
   } else {
     Nan::ThrowError("Invalid arguments");
   }
