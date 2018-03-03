@@ -63,7 +63,6 @@ public:
   static Handle<Object> Initialize(Isolate *isolate);
   void Load(uint8_t *bufferValue, size_t bufferLength);
   void Update();
-  void ForceUpdate();
   void Play();
   void Pause();
 

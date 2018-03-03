@@ -9,7 +9,6 @@ v.load(d);
 console.log(v.currentTime, v.duration);
 
 v.currentTime = 5;
-v.update();
 
 console.log(v.currentTime, v.duration);
 

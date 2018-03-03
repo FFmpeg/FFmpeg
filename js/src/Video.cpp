@@ -139,17 +139,13 @@ void Video::Load(unsigned char *bufferValue, size_t bufferLength) {
 
 void Video::Update() {
   if (playing) {
-    ForceUpdate();
+    advanceToFrameAt(getRequiredCurrentTimeS());
   }
-}
-
-void Video::ForceUpdate() {
-  advanceToFrameAt(getRequiredCurrentTimeS());
 }
 
 void Video::Play() {
   playing = true;
-  startTime = av_gettime();
+  startTime = (double)av_gettime() / 1e-6;
 }
 
 void Video::Pause() {
@@ -198,11 +194,11 @@ NAN_SETTER(Video::CurrentTimeSetter) {
 
   if (value->IsNumber()) {
     Video *video = ObjectWrap::Unwrap<Video>(info.This());
-    double newValueS = (double)value->Uint32Value() * 1000;
+    double newValueS = value->NumberValue();
 
     video->startTime = ((double)av_gettime() / 1e-6) - newValueS;
     av_seek_frame(video->data.fmt_ctx, video->data.stream_idx, (int64_t )(newValueS / video->getTimeBase()), AVSEEK_FLAG_FRAME | AVSEEK_FLAG_ANY);
-    video->ForceUpdate();
+    video->advanceToFrameAt(newValueS);
   } else {
     Nan::ThrowError("value: invalid arguments");
   }
@@ -276,7 +272,7 @@ bool Video::readFrame() {
           max = std::max((int)data.gl_frame->data[0][i], max);
         }
 
-        double timeBase = getTimeBase();
+        /* double timeBase = getTimeBase();
         std::cout <<
           (timeBase * (double)data.av_frame->pts) << " : " <<
           data.codec_ctx->width << "," << data.codec_ctx->height << "," << data.av_frame->linesize <<
@@ -284,7 +280,7 @@ bool Video::readFrame() {
           // (timeBase * (double)data.av_frame->pkt_dts) << " : " <<
           "(" << (int)data.gl_frame->data[0][data.codec_ctx->width * data.codec_ctx->height * 4 / 2] << " " << (int)data.gl_frame->data[0][data.codec_ctx->width * data.codec_ctx->height * 4 / 2 + 1] << " " << (int)data.gl_frame->data[0][data.codec_ctx->width * data.codec_ctx->height * 4 / 2 + 2] << " " << (int)data.gl_frame->data[0][data.codec_ctx->width * data.codec_ctx->height * 4 / 2 + 3] << ")[" << max << "] " <<
           (int)data.packet->stream_index << "/" << data.stream_idx <<
-          "\n";
+          "\n"; */
 					
 				/* glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, data.codec_ctx->width, 
 					data.codec_ctx->height, GL_RGB, GL_UNSIGNED_BYTE, 
@@ -354,7 +350,7 @@ bool Video::advanceToFrameAt(double timestamp) {
           max = std::max((int)data.gl_frame->data[0][i], max);
         } */
 
-        double timeBase = (double)data.video_stream->time_base.num / (double)data.video_stream->time_base.den;
+        /* double timeBase = (double)data.video_stream->time_base.num / (double)data.video_stream->time_base.den;
         std::cout <<
           (timeBase * (double)data.av_frame->pts) << " : " <<
           data.codec_ctx->width << "," << data.codec_ctx->height << "," << data.av_frame->linesize <<
@@ -362,7 +358,7 @@ bool Video::advanceToFrameAt(double timestamp) {
           // (timeBase * (double)data.av_frame->pkt_dts) << " : " <<
           "(" << (int)data.gl_frame->data[0][data.codec_ctx->width * data.codec_ctx->height * 4 / 2] << " " << (int)data.gl_frame->data[0][data.codec_ctx->width * data.codec_ctx->height * 4 / 2 + 1] << " " << (int)data.gl_frame->data[0][data.codec_ctx->width * data.codec_ctx->height * 4 / 2 + 2] << " " << (int)data.gl_frame->data[0][data.codec_ctx->width * data.codec_ctx->height * 4 / 2 + 3] << ") " <<
           (int)data.packet->stream_index << "/" << data.stream_idx <<
-          "\n";
+          "\n"; */
           
         /* glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, data.codec_ctx->width, 
           data.codec_ctx->height, GL_RGB, GL_UNSIGNED_BYTE, 
