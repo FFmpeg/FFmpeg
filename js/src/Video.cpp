@@ -209,7 +209,7 @@ NAN_GETTER(Video::DurationGetter) {
   
   Video *video = ObjectWrap::Unwrap<Video>(info.This());
 
-  double duration = (video->getTimeBase() * (double)video->data.fmt_ctx->duration) * 1000;
+  double duration = (double)video->data.fmt_ctx->duration / (double)AV_TIME_BASE;
   info.GetReturnValue().Set(JS_NUM(duration));
 }
 
