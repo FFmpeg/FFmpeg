@@ -36,3 +36,5 @@
 /lcov/
 /src
 /mapfile
+/node_modules
+/build
