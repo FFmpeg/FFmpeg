@@ -29,11 +29,10 @@ public:
   AppData();
   ~AppData();
 
-  void set(unsigned char *data, size_t dataLength);
+  void set(std::vector<unsigned char> &data);
 
 public:
-  unsigned char *data;
-  int64_t dataLength;
+  std::vector<unsigned char> data;
   int64_t dataPos;
 
   size_t buffer_size_;

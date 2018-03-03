@@ -8,7 +8,7 @@ const int kBufferSize = 4 * 1024;
 const AVPixelFormat kPixelFormat = AV_PIX_FMT_RGBA;
 
 AppData::AppData() :
-  data(nullptr), dataLength(0), dataPos(0),
+  dataPos(0),
   buffer_((unsigned char *)av_malloc(kBufferSize)), buffer_size_(kBufferSize),
   fmt_ctx(nullptr), io_ctx(nullptr), stream_idx(-1), video_stream(nullptr), codec_ctx(nullptr), decoder(nullptr), packet(nullptr), packetValid(false), av_frame(nullptr), gl_frame(nullptr), conv_ctx(nullptr) {}
 AppData::~AppData() {
@@ -22,9 +22,8 @@ AppData::~AppData() {
   if (data->io_ctx) av_free(data->io_ctx);
 }
 
-void AppData::set(unsigned char *data, size_t dataLength) {
-  this->data = data;
-  this->dataLength = dataLength;
+void AppData::set(vector<unsigned char> &data) {
+  this->data = std::move(data);
 }
 
 Video::Video() : playing(false), startTime(0), dataDirty(true) {
@@ -78,7 +77,9 @@ void Video::Load(unsigned char *bufferValue, size_t bufferLength) {
   avformat_network_init();
   
   // initialize custom data structure
-  data.set(bufferValue, bufferLength);
+  std::vector<unsigned char> bufferData(bufferLength);
+  memcpy(bufferData.data(), bufferValue, bufferLength);
+  data.set(bufferData); // takes ownership of bufferData
   
   // open video
   data.fmt_ctx = avformat_alloc_context();
@@ -356,9 +357,9 @@ bool Video::advanceToFrameAt(double timestamp) {
 
 int Video::bufferRead(void *opaque, unsigned char *buf, int buf_size) {
   AppData *appData = (AppData *)opaque;
-  int64_t readLength = std::min<int64_t>(buf_size, appData->dataLength - appData->dataPos);
+  int64_t readLength = std::min<int64_t>(buf_size, appData->data.size() - appData->dataPos);
   if (readLength > 0) {
-    memcpy(buf, appData->data + appData->dataPos, readLength);
+    memcpy(buf, appData->data.data() + appData->dataPos, readLength);
     appData->dataPos += readLength;
     return readLength;
   } else {
@@ -368,7 +369,7 @@ int Video::bufferRead(void *opaque, unsigned char *buf, int buf_size) {
 int64_t Video::bufferSeek(void *opaque, int64_t offset, int whence) {
   AppData *appData = (AppData *)opaque;
   if (whence == AVSEEK_SIZE) {
-    return appData->dataLength;
+    return appData->data.size();
   } else {
     int64_t newPos;
     if (whence == SEEK_SET) {
@@ -376,11 +377,11 @@ int64_t Video::bufferSeek(void *opaque, int64_t offset, int whence) {
     } else if (whence == SEEK_CUR) {
       newPos = appData->dataPos + offset;
     } else if (whence == SEEK_END) {
-      newPos = appData->dataLength + offset;
+      newPos = appData->data.size() + offset;
     } else {
       newPos = offset;
     }
-    newPos = std::min<int64_t>(std::max<int64_t>(newPos, 0), appData->dataLength - appData->dataPos);
+    newPos = std::min<int64_t>(std::max<int64_t>(newPos, 0), appData->data.size() - appData->dataPos);
     appData->dataPos = newPos;
     return newPos;
   }
