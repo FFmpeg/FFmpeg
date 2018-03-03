@@ -145,7 +145,7 @@ void Video::Update() {
 
 void Video::Play() {
   playing = true;
-  startTime = (double)av_gettime() / 1e-6;
+  startTime = av_gettime();
 }
 
 void Video::Pause() {
@@ -242,7 +242,7 @@ NAN_SETTER(Video::CurrentTimeSetter) {
     Video *video = ObjectWrap::Unwrap<Video>(info.This());
     double newValueS = value->NumberValue();
 
-    video->startTime = ((double)av_gettime() / 1e-6) - newValueS;
+    video->startTime = av_gettime() - (int64_t)(newValueS * 1e6);
     av_seek_frame(video->data.fmt_ctx, video->data.stream_idx, (int64_t )(newValueS / video->getTimeBase()), AVSEEK_FLAG_FRAME | AVSEEK_FLAG_ANY);
     video->advanceToFrameAt(newValueS);
   } else {
@@ -265,9 +265,9 @@ double Video::getTimeBase() {
 
 double Video::getRequiredCurrentTimeS() {
   if (playing) {
-    double now = (double)av_gettime() / 1e-6;
-    double timeDiff = (now - startTime);
-    double timeDiffS = timeDiff;
+    int64_t now = av_gettime();
+    int64_t timeDiff = now - startTime;
+    double timeDiffS = (double)timeDiff / 1e6;
     return timeDiffS;
   } else {
     return getFrameCurrentTimeS();

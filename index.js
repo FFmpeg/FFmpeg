@@ -12,7 +12,19 @@ console.log(v.currentTime, v.duration);
 v.currentTime = 10;
 
 console.log(v.currentTime, v.duration);
-
 console.log(v.data.slice(v.data.length / 2, v.data.length / 2 + 4));
+
+v.play();
+setTimeout(() => {
+  console.log(v.data.slice(v.data.length / 2, v.data.length / 2 + 4));
+
+  v.pause();
+
+  clearInterval(interval);
+}, 1000);
+
+const interval = setInterval(() => {
+  v.update();
+}, 1000 / 90);
 
 module.exports = ffmpeg;
