@@ -689,10 +689,10 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
 
     if (duration) {
         t = dt.tm_hour * 3600 + dt.tm_min * 60 + dt.tm_sec;
-        if (*q == 'm') {
+        if (q[0] == 'm' && q[1] == 's') {
             suffix = 1000;
             microseconds /= 1000;
-            q++;
+            q += 2;
         } else if (*q == 'u') {
             suffix = 1;
             microseconds = 0;
