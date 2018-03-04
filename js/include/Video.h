@@ -38,8 +38,7 @@ public:
   std::vector<unsigned char> data;
   int64_t dataPos;
 
-  size_t buffer_size_;
-  unsigned char *buffer_;
+  unsigned char *buffer;
 
 	AVFormatContext *fmt_ctx;
 	AVIOContext *io_ctx;

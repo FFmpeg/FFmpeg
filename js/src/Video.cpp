@@ -9,11 +9,11 @@ const AVPixelFormat kPixelFormat = AV_PIX_FMT_RGBA;
 
 AppData::AppData() :
   dataPos(0),
-  buffer_((unsigned char *)av_malloc(kBufferSize)), buffer_size_(kBufferSize),
+  buffer((unsigned char *)av_malloc(kBufferSize)),
   fmt_ctx(nullptr), io_ctx(nullptr), stream_idx(-1), video_stream(nullptr), codec_ctx(nullptr), decoder(nullptr), packet(nullptr), packetValid(false), av_frame(nullptr), gl_frame(nullptr), conv_ctx(nullptr) {}
 AppData::~AppData() {
   resetState();
-  av_free(buffer_);
+  av_free(buffer);
 }
 
 void AppData::resetState() {
@@ -49,7 +49,7 @@ bool AppData::set(vector<unsigned char> &memory) {
 
   // open video
   fmt_ctx = avformat_alloc_context();
-  io_ctx = avio_alloc_context(buffer_, buffer_size_, 0, this, bufferRead, NULL, bufferSeek);
+  io_ctx = avio_alloc_context(buffer, kBufferSize, 0, this, bufferRead, NULL, bufferSeek);
   fmt_ctx->pb = io_ctx;
   if (avformat_open_input(&fmt_ctx, "memory input", NULL, NULL) < 0) {
     // std::cout << "failed to open input" << std::endl;
