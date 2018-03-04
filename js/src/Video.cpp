@@ -12,18 +12,131 @@ AppData::AppData() :
   buffer_((unsigned char *)av_malloc(kBufferSize)), buffer_size_(kBufferSize),
   fmt_ctx(nullptr), io_ctx(nullptr), stream_idx(-1), video_stream(nullptr), codec_ctx(nullptr), decoder(nullptr), packet(nullptr), packetValid(false), av_frame(nullptr), gl_frame(nullptr), conv_ctx(nullptr) {}
 AppData::~AppData() {
-  AppData *data = this;
-  av_free(data->buffer_);
-  if (data->av_frame) av_free(data->av_frame);
-  if (data->gl_frame) av_free(data->gl_frame);
-  if (data->packet) av_free_packet(data->packet);
-  if (data->codec_ctx) avcodec_close(data->codec_ctx);
-  if (data->fmt_ctx) avformat_free_context(data->fmt_ctx);
-  if (data->io_ctx) av_free(data->io_ctx);
+  resetState();
+  av_free(buffer_);
 }
 
-void AppData::set(vector<unsigned char> &data) {
-  this->data = std::move(data);
+void AppData::resetState() {
+  if (av_frame) {
+    av_free(av_frame);
+    av_frame = nullptr;
+  }
+  if (gl_frame) {
+    av_free(gl_frame);
+    gl_frame = nullptr;
+  }
+  if (packet) {
+    av_free_packet(packet);
+    packet = nullptr;
+  }
+  if (codec_ctx) {
+    avcodec_close(codec_ctx);
+    codec_ctx = nullptr;
+  }
+  if (fmt_ctx) {
+    avformat_free_context(fmt_ctx);
+    fmt_ctx = nullptr;
+  }
+  if (io_ctx) {
+    av_free(io_ctx);
+    io_ctx = nullptr;
+  }
+}
+
+bool AppData::set(vector<unsigned char> &memory) {
+  data = std::move(memory);
+  resetState();
+
+  // open video
+  fmt_ctx = avformat_alloc_context();
+  io_ctx = avio_alloc_context(buffer_, buffer_size_, 0, this, bufferRead, NULL, bufferSeek);
+  fmt_ctx->pb = io_ctx;
+  if (avformat_open_input(&fmt_ctx, "memory input", NULL, NULL) < 0) {
+    // std::cout << "failed to open input" << std::endl;
+    return false;
+  }
+
+  // find stream info
+  if (avformat_find_stream_info(fmt_ctx, NULL) < 0) {
+    // std::cout << "failed to get stream info" << std::endl;
+    return false;
+  }
+
+  // dump debug info
+  // av_dump_format(fmt_ctx, 0, argv[1], 0);
+
+   // find the video stream
+  for (unsigned int i = 0; i < fmt_ctx->nb_streams; ++i)
+  {
+      if (fmt_ctx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+      {
+          stream_idx = i;
+          break;
+      }
+  }
+
+  if (stream_idx == -1) {
+    // std::cout << "failed to find video stream" << std::endl;
+    return false;
+  }
+
+  video_stream = fmt_ctx->streams[stream_idx];
+  codec_ctx = video_stream->codec;
+
+  // find the decoder
+  decoder = avcodec_find_decoder(codec_ctx->codec_id);
+  if (decoder == NULL) {
+    // std::cout << "failed to find decoder" << std::endl;
+    return false;
+  }
+
+  // open the decoder
+  if (avcodec_open2(codec_ctx, decoder, NULL) < 0) {
+    // std::cout << "failed to open codec" << std::endl;
+    return false;
+  }
+
+  // allocate the video frames
+  av_frame = av_frame_alloc();
+  gl_frame = av_frame_alloc();
+  int size = avpicture_get_size(kPixelFormat, codec_ctx->width, codec_ctx->height);
+  uint8_t *internal_buffer = (uint8_t *)av_malloc(size * sizeof(uint8_t));
+  avpicture_fill((AVPicture *)gl_frame, internal_buffer, kPixelFormat, codec_ctx->width, codec_ctx->height);
+  packet = (AVPacket *)av_malloc(sizeof(AVPacket));
+
+  return true;
+}
+
+int AppData::bufferRead(void *opaque, unsigned char *buf, int buf_size) {
+  AppData *appData = (AppData *)opaque;
+  int64_t readLength = std::min<int64_t>(buf_size, appData->data.size() - appData->dataPos);
+  if (readLength > 0) {
+    memcpy(buf, appData->data.data() + appData->dataPos, readLength);
+    appData->dataPos += readLength;
+    return readLength;
+  } else {
+    return AVERROR_EOF;
+  }
+}
+int64_t AppData::bufferSeek(void *opaque, int64_t offset, int whence) {
+  AppData *appData = (AppData *)opaque;
+  if (whence == AVSEEK_SIZE) {
+    return appData->data.size();
+  } else {
+    int64_t newPos;
+    if (whence == SEEK_SET) {
+      newPos = offset;
+    } else if (whence == SEEK_CUR) {
+      newPos = appData->dataPos + offset;
+    } else if (whence == SEEK_END) {
+      newPos = appData->data.size() + offset;
+    } else {
+      newPos = offset;
+    }
+    newPos = std::min<int64_t>(std::max<int64_t>(newPos, 0), appData->data.size() - appData->dataPos);
+    appData->dataPos = newPos;
+    return newPos;
+  }
 }
 
 Video::Video() : loaded(false), playing(false), startTime(0), dataDirty(true) {
@@ -84,74 +197,16 @@ bool Video::Load(unsigned char *bufferValue, size_t bufferLength) {
   // initialize custom data structure
   std::vector<unsigned char> bufferData(bufferLength);
   memcpy(bufferData.data(), bufferValue, bufferLength);
-  data.set(bufferData); // takes ownership of bufferData
-  
-  // open video
-  data.fmt_ctx = avformat_alloc_context();
-  data.io_ctx = avio_alloc_context(data.buffer_, data.buffer_size_, 0, &data, bufferRead, NULL, bufferSeek); 
-  data.fmt_ctx->pb = data.io_ctx;
-  if (avformat_open_input(&data.fmt_ctx, "memory input", NULL, NULL) < 0) {
-    // std::cout << "failed to open input" << std::endl;
+  if (data.set(bufferData)) { // takes ownership of bufferData
+    // scan to the first frame
+    advanceToFrameAt(0);
+
+    loaded = true;
+
+    return true;
+  } else {
     return false;
   }
-  
-  // find stream info
-  if (avformat_find_stream_info(data.fmt_ctx, NULL) < 0) {
-    // std::cout << "failed to get stream info" << std::endl;
-    return false;
-  }
-  
-  // dump debug info
-  // av_dump_format(data.fmt_ctx, 0, argv[1], 0);
-  
-   // find the video stream
-  for (unsigned int i = 0; i < data.fmt_ctx->nb_streams; ++i)
-  {
-      if (data.fmt_ctx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO)
-      {
-          data.stream_idx = i;
-          break;
-      }
-  }
-
-  if (data.stream_idx == -1) {
-    // std::cout << "failed to find video stream" << std::endl;
-    return false;
-  }
-
-  data.video_stream = data.fmt_ctx->streams[data.stream_idx];
-  data.codec_ctx = data.video_stream->codec;
-
-  // find the decoder
-  data.decoder = avcodec_find_decoder(data.codec_ctx->codec_id);
-  if (data.decoder == NULL) {
-    // std::cout << "failed to find decoder" << std::endl;
-    return false;
-  }
-
-  // open the decoder
-  if (avcodec_open2(data.codec_ctx, data.decoder, NULL) < 0) {
-    // std::cout << "failed to open codec" << std::endl;
-    return false;
-  }
-
-  // allocate the video frames
-  data.av_frame = av_frame_alloc();
-  data.gl_frame = av_frame_alloc();
-  int size = avpicture_get_size(kPixelFormat, data.codec_ctx->width, data.codec_ctx->height);
-  uint8_t *internal_buffer = (uint8_t *)av_malloc(size * sizeof(uint8_t));
-  avpicture_fill((AVPicture *)data.gl_frame, internal_buffer, kPixelFormat, data.codec_ctx->width, data.codec_ctx->height);
-  data.packet = (AVPacket *)av_malloc(sizeof(AVPacket));
-
-  // run the application mainloop
-  /* while (readFrame(&data)) {
-    drawFrame(&data);
-  } */
-  advanceToFrameAt(0);
-
-  loaded = true;
-
-  return true;
 }
 
 void Video::Update() {
@@ -374,38 +429,6 @@ bool Video::advanceToFrameAt(double timestamp) {
       av_free_packet(data.packet);
       return false;
     }
-  }
-}
-
-int Video::bufferRead(void *opaque, unsigned char *buf, int buf_size) {
-  AppData *appData = (AppData *)opaque;
-  int64_t readLength = std::min<int64_t>(buf_size, appData->data.size() - appData->dataPos);
-  if (readLength > 0) {
-    memcpy(buf, appData->data.data() + appData->dataPos, readLength);
-    appData->dataPos += readLength;
-    return readLength;
-  } else {
-    return AVERROR_EOF;
-  }
-}
-int64_t Video::bufferSeek(void *opaque, int64_t offset, int whence) {
-  AppData *appData = (AppData *)opaque;
-  if (whence == AVSEEK_SIZE) {
-    return appData->data.size();
-  } else {
-    int64_t newPos;
-    if (whence == SEEK_SET) {
-      newPos = offset;
-    } else if (whence == SEEK_CUR) {
-      newPos = appData->dataPos + offset;
-    } else if (whence == SEEK_END) {
-      newPos = appData->data.size() + offset;
-    } else {
-      newPos = offset;
-    }
-    newPos = std::min<int64_t>(std::max<int64_t>(newPos, 0), appData->data.size() - appData->dataPos);
-    appData->dataPos = newPos;
-    return newPos;
   }
 }
 

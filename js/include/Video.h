@@ -29,7 +29,10 @@ public:
   AppData();
   ~AppData();
 
-  void set(std::vector<unsigned char> &data);
+  void resetState();
+  bool set(vector<unsigned char> &memory);
+  static int bufferRead(void *opaque, unsigned char *buf, int buf_size);
+  static int64_t bufferSeek(void *opaque, int64_t offset, int whence);
 
 public:
   std::vector<unsigned char> data;
@@ -79,8 +82,6 @@ protected:
   double getRequiredCurrentTimeS();
   double getFrameCurrentTimeS();
   bool advanceToFrameAt(double timestamp);
-  static int bufferRead(void *opaque, unsigned char *buf, int buf_size);
-  static int64_t bufferSeek(void *opaque, int64_t offset, int whence);
   
   Video();
   ~Video();
