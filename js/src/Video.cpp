@@ -75,7 +75,7 @@ NAN_METHOD(Video::New) {
   info.GetReturnValue().Set(videoObj);
 }
 
-void Video::Load(unsigned char *bufferValue, size_t bufferLength) {
+bool Video::Load(unsigned char *bufferValue, size_t bufferLength) {
   // reset state
   loaded = false;
   dataArray.Reset();
@@ -92,13 +92,13 @@ void Video::Load(unsigned char *bufferValue, size_t bufferLength) {
   data.fmt_ctx->pb = data.io_ctx;
   if (avformat_open_input(&data.fmt_ctx, "memory input", NULL, NULL) < 0) {
     // std::cout << "failed to open input" << std::endl;
-    return;
+    return false;
   }
   
   // find stream info
   if (avformat_find_stream_info(data.fmt_ctx, NULL) < 0) {
     // std::cout << "failed to get stream info" << std::endl;
-    return;
+    return false;
   }
   
   // dump debug info
@@ -116,7 +116,7 @@ void Video::Load(unsigned char *bufferValue, size_t bufferLength) {
 
   if (data.stream_idx == -1) {
     // std::cout << "failed to find video stream" << std::endl;
-    return;
+    return false;
   }
 
   data.video_stream = data.fmt_ctx->streams[data.stream_idx];
@@ -126,13 +126,13 @@ void Video::Load(unsigned char *bufferValue, size_t bufferLength) {
   data.decoder = avcodec_find_decoder(data.codec_ctx->codec_id);
   if (data.decoder == NULL) {
     // std::cout << "failed to find decoder" << std::endl;
-    return;
+    return false;
   }
 
   // open the decoder
   if (avcodec_open2(data.codec_ctx, data.decoder, NULL) < 0) {
     // std::cout << "failed to open codec" << std::endl;
-    return;
+    return false;
   }
 
   // allocate the video frames
@@ -194,7 +194,8 @@ NAN_METHOD(Video::Load) {
     Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(info[0]);
     Local<ArrayBuffer> arrayBuffer = arrayBufferView->Buffer();
     
-    video->Load((uint8_t *)arrayBuffer->GetContents().Data() + arrayBufferView->ByteOffset(), arrayBufferView->ByteLength());
+    bool ok = video->Load((uint8_t *)arrayBuffer->GetContents().Data() + arrayBufferView->ByteOffset(), arrayBufferView->ByteLength());
+    info.GetReturnValue().Set(JS_BOOL(ok));
   } else {
     Nan::ThrowError("invalid arguments");
   }

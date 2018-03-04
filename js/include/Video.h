@@ -54,7 +54,7 @@ public:
 class Video : public ObjectWrap {
 public:
   static Handle<Object> Initialize(Isolate *isolate);
-  void Load(uint8_t *bufferValue, size_t bufferLength);
+  bool Load(uint8_t *bufferValue, size_t bufferLength);
   void Update();
   void Play();
   void Pause();
