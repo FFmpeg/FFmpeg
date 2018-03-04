@@ -1,6 +1,13 @@
 #!/bin/bash
 
-./configure --arch=x86_64 --target-os=mingw64 --cross-prefix=i686-w64-mingw32- --disable-everything --disable-all --disable-doc --disable-static --enable-avcodec --enable-avformat --enable-avutil --enable-fft --enable-rdft --enable-avfilter --enable-swscale --enable-swresample --enable-shared --disable-bzlib --disable-error-resilience --disable-iconv --disable-lzo --disable-network --disable-symver --disable-xlib --disable-zlib --disable-dxva2 --disable-vaapi --disable-vdpau --enable-decoder='theora,vorbis,vp8' --enable-decoder='pcm_u8,pcm_s16le,pcm_s24le,pcm_f32le' --enable-decoder='pcm_s16be,pcm_s24be,pcm_mulaw,pcm_alaw' --enable-demuxer='ogg,matroska,wav' --enable-parser='opus,vp3,vorbis,vp8' --optflags='\"-O2\"'  --enable-decoder='aac,h264,mp3' --enable-demuxer='aac,mp3,mov' --enable-parser='aac,h264,mpegaudio' # https://chromium.googlesource.com/chromium/third_party/ffmpeg/+/branch-m40/chromium/config/Chrome/win/x64/config.h
+pushd ./deps/opus
+./autogen.sh
+CC=x86_64-w64-mingw32-gcc ./configure --host=x86_64-w64-mingw32 --disable-shared
+CC=x86_64-w64-mingw32-gcc make clean
+CC=x86_64-w64-mingw32-gcc make -j4
+popd
+# https://chromium.googlesource.com/chromium/third_party/ffmpeg/+/master/chromium/config/Chrome/linux/x64/config.h
+./configure --arch=x86_64 --target-os=mingw32 --cross-prefix=x86_64-w64-mingw32- --disable-everything --disable-all --enable-avfilter --enable-swscale --extra-libs=-lopus --extra-cflags="-I./deps/opus/include" --extra-ldflags="-L./deps/opus/.libs" --disable-doc --disable-htmlpages --disable-manpages --disable-podpages --disable-txtpages --disable-static --enable-avcodec --enable-avformat --enable-avutil --enable-fft --enable-rdft --enable-static --enable-libopus --disable-bzlib --disable-error-resilience --disable-iconv --disable-lzo --disable-network --disable-schannel --disable-sdl2 --disable-symver --disable-xlib --disable-zlib --disable-securetransport --disable-faan --disable-alsa --disable-autodetect --enable-decoder='vorbis,libopus,flac' --enable-decoder='pcm_u8,pcm_s16le,pcm_s24le,pcm_s32le,pcm_f32le,mp3' --enable-decoder='pcm_s16be,pcm_s24be,pcm_mulaw,pcm_alaw' --enable-demuxer='ogg,matroska,wav,flac,mp3,mov' --enable-parser='opus,vorbis,flac,mpegaudio' --disable-linux-perf --optflags='\"-O2\"' --enable-decoder='theora,vp8' --enable-parser='vp3,vp8' --enable-lto --enable-pic --enable-decoder='aac,h264' --enable-demuxer=aac --enable-parser='aac,h264'
 make clean
 make -j4
-npm install
+# npm install
