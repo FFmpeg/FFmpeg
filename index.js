@@ -4,27 +4,29 @@ const {Video} = ffmpeg
 
 const v = new Video();
 const encodedData = fs.readFileSync('./sample.mpeg');
-v.load(encodedData);
+if (v.load(encodedData)) {
+  console.log(v.width, v.height);
+  console.log(v.currentTime, v.duration);
 
-console.log(v.width, v.height);
-console.log(v.currentTime, v.duration);
+  v.currentTime = 10;
 
-v.currentTime = 10;
-
-console.log(v.currentTime, v.duration);
-console.log(v.data.slice(v.data.length / 2, v.data.length / 2 + 4));
-
-v.play();
-setTimeout(() => {
+  console.log(v.currentTime, v.duration);
   console.log(v.data.slice(v.data.length / 2, v.data.length / 2 + 4));
 
-  v.pause();
+  v.play();
+  setTimeout(() => {
+    console.log(v.data.slice(v.data.length / 2, v.data.length / 2 + 4));
 
-  clearInterval(interval);
-}, 1000);
+    v.pause();
 
-const interval = setInterval(() => {
-  Video.updateAll();
-}, 1000 / 90);
+    clearInterval(interval);
+  }, 1000);
+
+  const interval = setInterval(() => {
+    Video.updateAll();
+  }, 1000 / 90);
+} else {
+  throw new Error('failed to load');
+}
 
 module.exports = ffmpeg;
