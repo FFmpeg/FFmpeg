@@ -87,6 +87,7 @@ protected:
 
   private:
     AppData data;
+    bool loaded;
     bool playing;
     int64_t startTime;
     Nan::Persistent<Uint8ClampedArray> dataArray;

@@ -26,7 +26,7 @@ void AppData::set(vector<unsigned char> &data) {
   this->data = std::move(data);
 }
 
-Video::Video() : playing(false), startTime(0), dataDirty(true) {
+Video::Video() : loaded(false), playing(false), startTime(0), dataDirty(true) {
   videos.push_back(this);
 }
 
@@ -76,7 +76,8 @@ NAN_METHOD(Video::New) {
 }
 
 void Video::Load(unsigned char *bufferValue, size_t bufferLength) {
-  // clean up old data buffer
+  // reset state
+  loaded = false;
   dataArray.Reset();
   dataDirty = true;
 
@@ -147,29 +148,43 @@ void Video::Load(unsigned char *bufferValue, size_t bufferLength) {
     drawFrame(&data);
   } */
   advanceToFrameAt(0);
+
+  loaded = true;
 }
 
 void Video::Update() {
-  if (playing) {
+  if (loaded && playing) {
     advanceToFrameAt(getRequiredCurrentTimeS());
   }
 }
 
 void Video::Play() {
-  playing = true;
-  startTime = av_gettime();
+  if (loaded) {
+    playing = true;
+    startTime = av_gettime();
+  }
 }
 
 void Video::Pause() {
-  playing = false;
+  if (loaded) {
+    playing = false;
+  }
 }
 
 uint32_t Video::GetWidth() {
-  return data.codec_ctx->width;
+  if (loaded) {
+    return data.codec_ctx->width;
+  } else {
+    return 0;
+  }
 }
 
 uint32_t Video::GetHeight() {
-  return data.codec_ctx->height;
+  if (loaded) {
+    return data.codec_ctx->height;
+  } else {
+    return 0;
+  }
 }
 
 NAN_METHOD(Video::Load) {
