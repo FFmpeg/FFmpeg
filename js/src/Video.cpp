@@ -150,6 +150,8 @@ bool Video::Load(unsigned char *bufferValue, size_t bufferLength) {
   advanceToFrameAt(0);
 
   loaded = true;
+
+  return true;
 }
 
 void Video::Update() {
