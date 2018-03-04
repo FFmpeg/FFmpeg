@@ -76,6 +76,10 @@ NAN_METHOD(Video::New) {
 }
 
 void Video::Load(unsigned char *bufferValue, size_t bufferLength) {
+  // clean up old data buffer
+  dataArray.Reset();
+  dataDirty = true;
+
   // initialize custom data structure
   std::vector<unsigned char> bufferData(bufferLength);
   memcpy(bufferData.data(), bufferValue, bufferLength);
