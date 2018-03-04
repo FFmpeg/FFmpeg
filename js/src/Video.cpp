@@ -247,7 +247,7 @@ NAN_GETTER(Video::DataGetter) {
   Local<Uint8ClampedArray> uint8ClampedArray = Nan::New(video->dataArray);
   if (video->dataDirty) {
     Local<ArrayBuffer> arrayBuffer = uint8ClampedArray->Buffer();
-    memcpy(arrayBuffer->GetContents().Data() + uint8ClampedArray->ByteOffset(), video->data.gl_frame->data[0], dataSize);
+    memcpy((unsigned char *)arrayBuffer->GetContents().Data() + uint8ClampedArray->ByteOffset(), video->data.gl_frame->data[0], dataSize);
     video->dataDirty = false;
   }
 
