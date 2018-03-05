@@ -214,7 +214,7 @@ static av_cold int procamp_vaapi_init(AVFilterContext *avctx)
 }
 
 #define OFFSET(x) offsetof(ProcampVAAPIContext, x)
-#define FLAGS (AV_OPT_FLAG_VIDEO_PARAM)
+#define FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM)
 static const AVOption procamp_vaapi_options[] = {
     { "b", "Output video brightness",
       OFFSET(bright),  AV_OPT_TYPE_FLOAT, { .dbl = BRIGHTNESS_DEFAULT }, BRIGHTNESS_MIN, BRIGHTNESS_MAX, .flags = FLAGS },

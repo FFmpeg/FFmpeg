@@ -226,7 +226,7 @@ static av_cold int sharpness_vaapi_init(AVFilterContext *avctx)
 }
 
 #define DOFFSET(x) offsetof(DenoiseVAAPIContext, x)
-#define FLAGS (AV_OPT_FLAG_VIDEO_PARAM)
+#define FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM)
 static const AVOption denoise_vaapi_options[] = {
     { "denoise", "denoise level",
       DOFFSET(denoise), AV_OPT_TYPE_INT, { .i64 = DENOISE_DEFAULT }, DENOISE_MIN, DENOISE_MAX, .flags = FLAGS },
