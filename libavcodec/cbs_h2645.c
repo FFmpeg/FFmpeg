@@ -1298,7 +1298,7 @@ static int cbs_h2645_assemble_fragment(CodedBitstreamContext *ctx,
         max_size += 3 + frag->units[i].data_size * 3 / 2;
     }
 
-    data = av_malloc(max_size);
+    data = av_malloc(max_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!data)
         return AVERROR(ENOMEM);
 
@@ -1349,11 +1349,13 @@ static int cbs_h2645_assemble_fragment(CodedBitstreamContext *ctx,
     }
 
     av_assert0(dp <= max_size);
-    err = av_reallocp(&data, dp);
+    err = av_reallocp(&data, dp + AV_INPUT_BUFFER_PADDING_SIZE);
     if (err)
         return err;
+    memset(data + dp, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
-    frag->data_ref = av_buffer_create(data, dp, NULL, NULL, 0);
+    frag->data_ref = av_buffer_create(data, dp + AV_INPUT_BUFFER_PADDING_SIZE,
+                                      NULL, NULL, 0);
     if (!frag->data_ref) {
         av_freep(&data);
         return AVERROR(ENOMEM);

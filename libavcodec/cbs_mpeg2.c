@@ -369,7 +369,7 @@ static int cbs_mpeg2_assemble_fragment(CodedBitstreamContext *ctx,
     for (i = 0; i < frag->nb_units; i++)
         size += 3 + frag->units[i].data_size;
 
-    frag->data_ref = av_buffer_alloc(size);
+    frag->data_ref = av_buffer_alloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!frag->data_ref)
         return AVERROR(ENOMEM);
     data = frag->data_ref->data;
@@ -388,6 +388,7 @@ static int cbs_mpeg2_assemble_fragment(CodedBitstreamContext *ctx,
 
     av_assert0(dp == size);
 
+    memset(data + size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
     frag->data      = data;
     frag->data_size = size;
 

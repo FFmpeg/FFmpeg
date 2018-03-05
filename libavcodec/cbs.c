@@ -308,17 +308,21 @@ int ff_cbs_write_packet(CodedBitstreamContext *ctx,
                         AVPacket *pkt,
                         CodedBitstreamFragment *frag)
 {
+    AVBufferRef *buf;
     int err;
 
     err = ff_cbs_write_fragment_data(ctx, frag);
     if (err < 0)
         return err;
 
-    err = av_new_packet(pkt, frag->data_size);
-    if (err < 0)
-        return err;
+    av_assert0(frag->data_ref);
+    buf = av_buffer_ref(frag->data_ref);
+    if (!buf)
+        return AVERROR(ENOMEM);
 
-    memcpy(pkt->data, frag->data, frag->data_size);
+    av_init_packet(pkt);
+    pkt->buf  = buf;
+    pkt->data = frag->data;
     pkt->size = frag->data_size;
 
     return 0;
