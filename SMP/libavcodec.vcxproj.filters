@@ -618,9 +618,6 @@
     <ClCompile Include="..\libavcodec\mss34dsp.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\nvenc.c">
-      <Filter>Source Files\libavcodec</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\qsv.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -1371,12 +1368,6 @@
     <ClCompile Include="..\libavcodec\h264data.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\cuviddec.c">
-      <Filter>Source Files\libavcodec</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\nvenc_h264.c">
-      <Filter>Source Files\libavcodec</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\qsvdec_h2645.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
@@ -1408,9 +1399,6 @@
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\hevc_filter.c">
-      <Filter>Source Files\libavcodec</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\nvenc_hevc.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\qsvenc_hevc.c">
@@ -2349,43 +2337,16 @@
     <ClCompile Include="..\libavcodec\dxva2.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\nvdec.c">
-      <Filter>Source Files\libavcodec</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\dxva2_h264.c">
-      <Filter>Source Files\libavcodec</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\nvdec_h264.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\dxva2_hevc.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\nvdec_hevc.c">
-      <Filter>Source Files\libavcodec</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\nvdec_mjpeg.c">
-      <Filter>Source Files\libavcodec</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\nvdec_mpeg12.c">
-      <Filter>Source Files\libavcodec</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\dxva2_mpeg2.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavcodec\nvdec_mpeg4.c">
-      <Filter>Source Files\libavcodec</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavcodec\dxva2_vc1.c">
-      <Filter>Source Files\libavcodec</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\nvdec_vc1.c">
-      <Filter>Source Files\libavcodec</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\nvdec_vp8.c">
-      <Filter>Source Files\libavcodec</Filter>
-    </ClCompile>
-    <ClCompile Include="..\libavcodec\nvdec_vp9.c">
       <Filter>Source Files\libavcodec</Filter>
     </ClCompile>
     <ClCompile Include="..\libavcodec\libilbc.c">

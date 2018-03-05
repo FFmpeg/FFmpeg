@@ -185,6 +185,7 @@ const AVFilter ff_vf_coreimage = {0};
 const AVFilter ff_vf_deinterlace_vaapi = {0};
 const AVFilter ff_vf_denoise_vaapi = {0};
 const AVFilter ff_vf_frei0r = {0};
+const AVFilter ff_vf_hwupload_cuda = {0};
 const AVFilter ff_vf_libvmaf = {0};
 const AVFilter ff_vf_ocr = {0};
 const AVFilter ff_vf_ocv = {0};

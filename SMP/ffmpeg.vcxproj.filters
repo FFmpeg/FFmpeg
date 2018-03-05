@@ -30,9 +30,6 @@
     <ClCompile Include="..\fftools\ffmpeg_hw.c">
       <Filter>Source Files\fftools</Filter>
     </ClCompile>
-    <ClCompile Include="..\fftools\ffmpeg_cuvid.c">
-      <Filter>Source Files\fftools</Filter>
-    </ClCompile>
     <ClCompile Include="..\fftools\ffmpeg_qsv.c">
       <Filter>Source Files\fftools</Filter>
     </ClCompile>

@@ -246,9 +246,6 @@
     <ClCompile Include="..\libavutil\tea.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>
-    <ClCompile Include="..\libavutil\hwcontext_cuda.c">
-      <Filter>Source Files\libavutil</Filter>
-    </ClCompile>
     <ClCompile Include="..\libavutil\hwcontext_dxva2.c">
       <Filter>Source Files\libavutil</Filter>
     </ClCompile>

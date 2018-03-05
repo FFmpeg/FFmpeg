@@ -173,6 +173,7 @@ EXPORTS
     av_frame_make_writable
     av_frame_move_ref
     av_frame_new_side_data
+    av_frame_new_side_data_from_buf
     av_frame_ref
     av_frame_remove_side_data
     av_frame_set_best_effort_timestamp

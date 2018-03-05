@@ -265,7 +265,6 @@
     <ClCompile Include="..\libavcodec\motion_est.c" />
     <ClCompile Include="..\libavcodec\ratecontrol.c" />
     <ClCompile Include="..\libavcodec\mss34dsp.c" />
-    <ClCompile Include="..\libavcodec\nvenc.c" />
     <ClCompile Include="..\libavcodec\qsv.c" />
     <ClCompile Include="..\libavcodec\qsvdec.c" />
     <ClCompile Include="..\libavcodec\qsvenc.c" />
@@ -516,8 +515,6 @@
     <ClCompile Include="..\libavcodec\h264_sei.c" />
     <ClCompile Include="..\libavcodec\h264_slice.c" />
     <ClCompile Include="..\libavcodec\h264data.c" />
-    <ClCompile Include="..\libavcodec\cuviddec.c" />
-    <ClCompile Include="..\libavcodec\nvenc_h264.c" />
     <ClCompile Include="..\libavcodec\qsvdec_h2645.c" />
     <ClCompile Include="..\libavcodec\qsvenc_h264.c" />
     <ClCompile Include="..\libavcodec\hapdec.c" />
@@ -529,7 +526,6 @@
     <ClCompile Include="..\libavcodec\hevcpred.c" />
     <ClCompile Include="..\libavcodec\hevcdsp.c" />
     <ClCompile Include="..\libavcodec\hevc_filter.c" />
-    <ClCompile Include="..\libavcodec\nvenc_hevc.c" />
     <ClCompile Include="..\libavcodec\qsvenc_hevc.c" />
     <ClCompile Include="..\libavcodec\hevc_ps_enc.c" />
     <ClCompile Include="..\libavcodec\hnm4video.c" />
@@ -842,19 +838,10 @@
     <ClCompile Include="..\libavcodec\adpcmenc.c" />
     <ClCompile Include="..\libavcodec\vima.c" />
     <ClCompile Include="..\libavcodec\dxva2.c" />
-    <ClCompile Include="..\libavcodec\nvdec.c" />
     <ClCompile Include="..\libavcodec\dxva2_h264.c" />
-    <ClCompile Include="..\libavcodec\nvdec_h264.c" />
     <ClCompile Include="..\libavcodec\dxva2_hevc.c" />
-    <ClCompile Include="..\libavcodec\nvdec_hevc.c" />
-    <ClCompile Include="..\libavcodec\nvdec_mjpeg.c" />
-    <ClCompile Include="..\libavcodec\nvdec_mpeg12.c" />
     <ClCompile Include="..\libavcodec\dxva2_mpeg2.c" />
-    <ClCompile Include="..\libavcodec\nvdec_mpeg4.c" />
     <ClCompile Include="..\libavcodec\dxva2_vc1.c" />
-    <ClCompile Include="..\libavcodec\nvdec_vc1.c" />
-    <ClCompile Include="..\libavcodec\nvdec_vp8.c" />
-    <ClCompile Include="..\libavcodec\nvdec_vp9.c" />
     <ClCompile Include="..\libavcodec\libilbc.c" />
     <ClCompile Include="..\libavcodec\libmp3lame.c" />
     <ClCompile Include="..\libavcodec\libopusdec.c" />
