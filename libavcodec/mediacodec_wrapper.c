@@ -111,6 +111,8 @@ struct JNIAMediaFormatFields {
 
     jmethodID init_id;
 
+    jmethodID contains_key_id;
+
     jmethodID get_integer_id;
     jmethodID get_long_id;
     jmethodID get_float_id;
@@ -131,6 +133,8 @@ static const struct FFJniField jni_amediaformat_mapping[] = {
     { "android/media/MediaFormat", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaFormatFields, mediaformat_class), 1 },
 
         { "android/media/MediaFormat", "<init>", "()V", FF_JNI_METHOD, offsetof(struct JNIAMediaFormatFields, init_id), 1 },
+
+        { "android/media/MediaFormat", "containsKey", "(Ljava/lang/String;)Z", FF_JNI_METHOD,offsetof(struct JNIAMediaFormatFields, contains_key_id), 1 },
 
         { "android/media/MediaFormat", "getInteger", "(Ljava/lang/String;)I", FF_JNI_METHOD, offsetof(struct JNIAMediaFormatFields, get_integer_id), 1 },
         { "android/media/MediaFormat", "getLong", "(Ljava/lang/String;)J", FF_JNI_METHOD, offsetof(struct JNIAMediaFormatFields, get_long_id), 1 },
@@ -738,6 +742,7 @@ int ff_AMediaFormat_getInt32(FFAMediaFormat* format, const char *name, int32_t *
 
     JNIEnv *env = NULL;
     jstring key = NULL;
+    jboolean contains_key;
 
     av_assert0(format != NULL);
 
@@ -745,6 +750,12 @@ int ff_AMediaFormat_getInt32(FFAMediaFormat* format, const char *name, int32_t *
 
     key = ff_jni_utf_chars_to_jstring(env, name, format);
     if (!key) {
+        ret = 0;
+        goto fail;
+    }
+
+    contains_key = (*env)->CallBooleanMethod(env, format->object, format->jfields.contains_key_id, key);
+    if (!contains_key || (ret = ff_jni_exception_check(env, 1, format)) < 0) {
         ret = 0;
         goto fail;
     }
@@ -770,6 +781,7 @@ int ff_AMediaFormat_getInt64(FFAMediaFormat* format, const char *name, int64_t *
 
     JNIEnv *env = NULL;
     jstring key = NULL;
+    jboolean contains_key;
 
     av_assert0(format != NULL);
 
@@ -777,6 +789,12 @@ int ff_AMediaFormat_getInt64(FFAMediaFormat* format, const char *name, int64_t *
 
     key = ff_jni_utf_chars_to_jstring(env, name, format);
     if (!key) {
+        ret = 0;
+        goto fail;
+    }
+
+    contains_key = (*env)->CallBooleanMethod(env, format->object, format->jfields.contains_key_id, key);
+    if (!contains_key || (ret = ff_jni_exception_check(env, 1, format)) < 0) {
         ret = 0;
         goto fail;
     }
@@ -802,6 +820,7 @@ int ff_AMediaFormat_getFloat(FFAMediaFormat* format, const char *name, float *ou
 
     JNIEnv *env = NULL;
     jstring key = NULL;
+    jboolean contains_key;
 
     av_assert0(format != NULL);
 
@@ -809,6 +828,12 @@ int ff_AMediaFormat_getFloat(FFAMediaFormat* format, const char *name, float *ou
 
     key = ff_jni_utf_chars_to_jstring(env, name, format);
     if (!key) {
+        ret = 0;
+        goto fail;
+    }
+
+    contains_key = (*env)->CallBooleanMethod(env, format->object, format->jfields.contains_key_id, key);
+    if (!contains_key || (ret = ff_jni_exception_check(env, 1, format)) < 0) {
         ret = 0;
         goto fail;
     }
@@ -834,6 +859,7 @@ int ff_AMediaFormat_getBuffer(FFAMediaFormat* format, const char *name, void** d
 
     JNIEnv *env = NULL;
     jstring key = NULL;
+    jboolean contains_key;
     jobject result = NULL;
 
     av_assert0(format != NULL);
@@ -842,6 +868,12 @@ int ff_AMediaFormat_getBuffer(FFAMediaFormat* format, const char *name, void** d
 
     key = ff_jni_utf_chars_to_jstring(env, name, format);
     if (!key) {
+        ret = 0;
+        goto fail;
+    }
+
+    contains_key = (*env)->CallBooleanMethod(env, format->object, format->jfields.contains_key_id, key);
+    if (!contains_key || (ret = ff_jni_exception_check(env, 1, format)) < 0) {
         ret = 0;
         goto fail;
     }
@@ -885,6 +917,7 @@ int ff_AMediaFormat_getString(FFAMediaFormat* format, const char *name, const ch
 
     JNIEnv *env = NULL;
     jstring key = NULL;
+    jboolean contains_key;
     jstring result = NULL;
 
     av_assert0(format != NULL);
@@ -893,6 +926,12 @@ int ff_AMediaFormat_getString(FFAMediaFormat* format, const char *name, const ch
 
     key = ff_jni_utf_chars_to_jstring(env, name, format);
     if (!key) {
+        ret = 0;
+        goto fail;
+    }
+
+    contains_key = (*env)->CallBooleanMethod(env, format->object, format->jfields.contains_key_id, key);
+    if (!contains_key || (ret = ff_jni_exception_check(env, 1, format)) < 0) {
         ret = 0;
         goto fail;
     }

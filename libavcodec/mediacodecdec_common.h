@@ -55,7 +55,6 @@ typedef struct MediaCodecDecContext {
     int stride;
     int slice_height;
     int color_format;
-    enum AVPixelFormat pix_fmt;
     int crop_top;
     int crop_bottom;
     int crop_left;

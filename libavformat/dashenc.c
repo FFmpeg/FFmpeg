@@ -109,6 +109,7 @@ typedef struct DASHContext {
     const char *init_seg_name;
     const char *media_seg_name;
     const char *utc_timing_url;
+    const char *method;
     const char *user_agent;
     int hls_playlist;
     int http_persistent;
@@ -262,6 +263,8 @@ static int flush_dynbuf(OutputStream *os, int *range_length)
 
 static void set_http_options(AVDictionary **options, DASHContext *c)
 {
+    if (c->method)
+        av_dict_set(options, "method", c->method, 0);
     if (c->user_agent)
         av_dict_set(options, "user_agent", c->user_agent, 0);
     if (c->http_persistent)
@@ -1128,6 +1131,28 @@ static int update_stream_extradata(AVFormatContext *s, OutputStream *os,
     return 0;
 }
 
+static void dashenc_delete_file(AVFormatContext *s, char *filename) {
+    DASHContext *c = s->priv_data;
+    int http_base_proto = ff_is_http_proto(filename);
+
+    if (http_base_proto) {
+        AVIOContext *out = NULL;
+        AVDictionary *http_opts = NULL;
+
+        set_http_options(&http_opts, c);
+        av_dict_set(&http_opts, "method", "DELETE", 0);
+
+        if (dashenc_io_open(s, &out, filename, &http_opts) < 0) {
+            av_log(s, AV_LOG_ERROR, "failed to delete %s\n", filename);
+        }
+
+        av_dict_free(&http_opts);
+        dashenc_io_close(s, &out, filename);
+    } else if (unlink(filename) < 0) {
+        av_log(s, AV_LOG_ERROR, "failed to delete %s: %s\n", filename, strerror(errno));
+    }
+}
+
 static int dash_flush(AVFormatContext *s, int final, int stream)
 {
     DASHContext *c = s->priv_data;
@@ -1212,7 +1237,7 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
                 for (j = 0; j < remove; j++) {
                     char filename[1024];
                     snprintf(filename, sizeof(filename), "%s%s", c->dirname, os->segments[j]->file);
-                    unlink(filename);
+                    dashenc_delete_file(s, filename);
                     av_free(os->segments[j]);
                 }
                 os->nb_segments -= remove;
@@ -1305,9 +1330,9 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
         flush_init_segment(s, os);
 
     //open the output context when the first frame of a segment is ready
-    if (!c->single_file && !os->out) {
+    if (!c->single_file && os->packets_written == 1) {
         AVDictionary *opts = NULL;
-        const char *proto = avio_find_protocol_name(s->filename);
+        const char *proto = avio_find_protocol_name(s->url);
         int use_rename = proto && !strcmp(proto, "file");
         os->filename[0] = os->full_path[0] = os->temp_path[0] = '\0';
         ff_dash_fill_tmpl_params(os->filename, sizeof(os->filename),
@@ -1364,9 +1389,9 @@ static int dash_write_trailer(AVFormatContext *s)
         for (i = 0; i < s->nb_streams; i++) {
             OutputStream *os = &c->streams[i];
             snprintf(filename, sizeof(filename), "%s%s", c->dirname, os->initfile);
-            unlink(filename);
+            dashenc_delete_file(s, filename);
         }
-        unlink(s->url);
+        dashenc_delete_file(s, s->url);
     }
 
     return 0;
@@ -1410,6 +1435,7 @@ static const AVOption options[] = {
     { "init_seg_name", "DASH-templated name to used for the initialization segment", OFFSET(init_seg_name), AV_OPT_TYPE_STRING, {.str = "init-stream$RepresentationID$.m4s"}, 0, 0, E },
     { "media_seg_name", "DASH-templated name to used for the media segments", OFFSET(media_seg_name), AV_OPT_TYPE_STRING, {.str = "chunk-stream$RepresentationID$-$Number%05d$.m4s"}, 0, 0, E },
     { "utc_timing_url", "URL of the page that will return the UTC timestamp in ISO format", OFFSET(utc_timing_url), AV_OPT_TYPE_STRING, { 0 }, 0, 0, E },
+    { "method", "set the HTTP method", OFFSET(method), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, E },
     { "http_user_agent", "override User-Agent field in HTTP header", OFFSET(user_agent), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, E},
     { "http_persistent", "Use persistent HTTP connections", OFFSET(http_persistent), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, E },
     { "hls_playlist", "Generate HLS playlist files(master.m3u8, media_%d.m3u8)", OFFSET(hls_playlist), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },

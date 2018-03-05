@@ -26,11 +26,6 @@
 #include "mem.h"
 #include "samplefmt.h"
 
-
-static AVFrameSideData *frame_new_side_data(AVFrame *frame,
-                                            enum AVFrameSideDataType type,
-                                            AVBufferRef *buf);
-
 #if FF_API_FRAME_GET_SET
 MAKE_ACCESSORS(AVFrame, frame, int64_t, best_effort_timestamp)
 MAKE_ACCESSORS(AVFrame, frame, int64_t, pkt_duration)
@@ -356,8 +351,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
             }
             memcpy(sd_dst->data, sd_src->data, sd_src->size);
         } else {
-            sd_dst = frame_new_side_data(dst, sd_src->type, av_buffer_ref(sd_src->buf));
+            AVBufferRef *ref = av_buffer_ref(sd_src->buf);
+            sd_dst = av_frame_new_side_data_from_buf(dst, sd_src->type, ref);
             if (!sd_dst) {
+                av_buffer_unref(&ref);
                 wipe_side_data(dst);
                 return AVERROR(ENOMEM);
             }
@@ -642,9 +639,9 @@ AVBufferRef *av_frame_get_plane_buffer(AVFrame *frame, int plane)
     return NULL;
 }
 
-static AVFrameSideData *frame_new_side_data(AVFrame *frame,
-                                            enum AVFrameSideDataType type,
-                                            AVBufferRef *buf)
+AVFrameSideData *av_frame_new_side_data_from_buf(AVFrame *frame,
+                                                 enum AVFrameSideDataType type,
+                                                 AVBufferRef *buf)
 {
     AVFrameSideData *ret, **tmp;
 
@@ -652,17 +649,17 @@ static AVFrameSideData *frame_new_side_data(AVFrame *frame,
         return NULL;
 
     if (frame->nb_side_data > INT_MAX / sizeof(*frame->side_data) - 1)
-        goto fail;
+        return NULL;
 
     tmp = av_realloc(frame->side_data,
                      (frame->nb_side_data + 1) * sizeof(*frame->side_data));
     if (!tmp)
-        goto fail;
+        return NULL;
     frame->side_data = tmp;
 
     ret = av_mallocz(sizeof(*ret));
     if (!ret)
-        goto fail;
+        return NULL;
 
     ret->buf = buf;
     ret->data = ret->buf->data;
@@ -672,17 +669,18 @@ static AVFrameSideData *frame_new_side_data(AVFrame *frame,
     frame->side_data[frame->nb_side_data++] = ret;
 
     return ret;
-fail:
-    av_buffer_unref(&buf);
-    return NULL;
 }
 
 AVFrameSideData *av_frame_new_side_data(AVFrame *frame,
                                         enum AVFrameSideDataType type,
                                         int size)
 {
-
-    return frame_new_side_data(frame, type, av_buffer_alloc(size));
+    AVFrameSideData *ret;
+    AVBufferRef *buf = av_buffer_alloc(size);
+    ret = av_frame_new_side_data_from_buf(frame, type, buf);
+    if (!ret)
+        av_buffer_unref(&buf);
+    return ret;
 }
 
 AVFrameSideData *av_frame_get_side_data(const AVFrame *frame,

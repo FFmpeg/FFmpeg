@@ -2642,7 +2642,7 @@ vble_decoder_select="llviddsp"
 vc1_decoder_select="blockdsp h263_decoder h264qpel intrax8 mpegvideo vc1dsp"
 vc1image_decoder_select="vc1_decoder"
 vorbis_decoder_select="mdct"
-vorbis_encoder_select="mdct"
+vorbis_encoder_select="audio_frame_queue mdct"
 vp3_decoder_select="hpeldsp vp3dsp videodsp"
 vp5_decoder_select="h264chroma hpeldsp videodsp vp3dsp vp56dsp"
 vp6_decoder_select="h264chroma hpeldsp huffman videodsp vp3dsp vp56dsp"
@@ -5811,6 +5811,9 @@ check_type "va/va.h va/va_enc_vp9.h"  "VAEncPictureParameterBufferVP9"
 
 check_type "vdpau/vdpau.h" "VdpPictureInfoHEVC"
 
+check_pkg_config cuda "ffnvcodec >= 8.0.14.1" \
+    "ffnvcodec/nvEncodeAPI.h ffnvcodec/dynlink_cuda.h ffnvcodec/dynlink_cuviddec.h ffnvcodec/dynlink_nvcuvid.h" ""
+
 check_cpp_condition windows.h "!WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)" && enable winrt || disable winrt
 
 if ! disabled w32threads && ! enabled pthreads; then
@@ -6263,7 +6266,7 @@ fi
 
 enabled nvenc &&
     check_cc -I$source_path <<EOF || disable nvenc
-#include "compat/nvenc/nvEncodeAPI.h"
+#include <ffnvcodec/nvEncodeAPI.h>
 NV_ENCODE_API_FUNCTION_LIST flist;
 void f(void) { struct { const GUID guid; } s[] = { { NV_ENC_PRESET_HQ_GUID } }; }
 int main(void) { return 0; }

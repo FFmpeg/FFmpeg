@@ -129,6 +129,7 @@ typedef struct VariantStream {
     int nb_entries;
     int discontinuity_set;
     int discontinuity;
+    int reference_stream_index;
 
     HLSSegment *segments;
     HLSSegment *last_segment;
@@ -2141,7 +2142,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (vs->has_video) {
         can_split = st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
                     ((pkt->flags & AV_PKT_FLAG_KEY) || (hls->flags & HLS_SPLIT_BY_TIME));
-        is_ref_pkt = st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO;
+        is_ref_pkt = (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) && (pkt->stream_index == vs->reference_stream_index);
     }
     if (pkt->pts == AV_NOPTS_VALUE)
         is_ref_pkt = can_split = 0;
@@ -2497,6 +2498,11 @@ static int hls_init(AVFormatContext *s)
 
         for (j = 0; j < vs->nb_streams; j++) {
             vs->has_video += vs->streams[j]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO;
+            /* Get one video stream to reference for split segments
+             * so use the first video stream index. */
+            if ((vs->has_video == 1) && (vs->streams[j]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)) {
+                vs->reference_stream_index = j;
+            }
             vs->has_subtitle += vs->streams[j]->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE;
         }
 

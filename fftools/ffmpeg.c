@@ -2175,10 +2175,7 @@ static int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame)
 
         ret = reap_filters(1);
         if (ret < 0 && ret != AVERROR_EOF) {
-            char errbuf[128];
-            av_strerror(ret, errbuf, sizeof(errbuf));
-
-            av_log(NULL, AV_LOG_ERROR, "Error while filtering: %s\n", errbuf);
+            av_log(NULL, AV_LOG_ERROR, "Error while filtering: %s\n", av_err2str(ret));
             return ret;
         }
 
@@ -4638,10 +4635,7 @@ static int transcode(void)
 
         ret = transcode_step();
         if (ret < 0 && ret != AVERROR_EOF) {
-            char errbuf[128];
-            av_strerror(ret, errbuf, sizeof(errbuf));
-
-            av_log(NULL, AV_LOG_ERROR, "Error while filtering: %s\n", errbuf);
+            av_log(NULL, AV_LOG_ERROR, "Error while filtering: %s\n", av_err2str(ret));
             break;
         }
 

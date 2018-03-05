@@ -18153,6 +18153,14 @@ do not have exactly the same duration in the first file.
 
 @end itemize
 
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item next
+Close the current segment and step to the next one
+@end table
+
 @section drawgraph, adrawgraph
 
 Draw a graph using input video or audio metadata.

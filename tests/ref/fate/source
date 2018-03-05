@@ -23,12 +23,8 @@ compat/avisynth/avs/types.h
 compat/avisynth/avxsynth_c.h
 compat/avisynth/windowsPorts/basicDataTypeConversions.h
 compat/avisynth/windowsPorts/windows2linux.h
-compat/cuda/dynlink_cuda.h
-compat/cuda/dynlink_cuviddec.h
 compat/cuda/dynlink_loader.h
-compat/cuda/dynlink_nvcuvid.h
 compat/float/float.h
 compat/float/limits.h
-compat/nvenc/nvEncodeAPI.h
 Use of av_clip() where av_clip_uintp2() could be used:
 Use of av_clip() where av_clip_intp2() could be used:

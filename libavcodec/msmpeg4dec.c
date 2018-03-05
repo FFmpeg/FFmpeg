@@ -208,6 +208,9 @@ static int msmpeg4v34_decode_mb(MpegEncContext *s, int16_t block[6][64])
     uint8_t *coded_val;
     uint32_t * const mb_type_ptr = &s->current_picture.mb_type[s->mb_x + s->mb_y*s->mb_stride];
 
+    if (get_bits_left(&s->gb) <= 0)
+        return AVERROR_INVALIDDATA;
+
     if (s->pict_type == AV_PICTURE_TYPE_P) {
         if (s->use_skip_mb_code) {
             if (get_bits1(&s->gb)) {
