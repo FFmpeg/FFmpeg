@@ -264,6 +264,8 @@ of the adaptation sets and a,b,c,d and e are the indices of the mapped streams.
 To map all video (or audio) streams to an AdaptationSet, "v" (or "a") can be used as stream identifier instead of IDs.
 
 When no assignment is defined, this defaults to an AdaptationSet for each stream.
+@item -timeout @var{timeout}
+Set timeout for socket I/O operations. Applicable only for HTTP output.
 @end table
 
 @anchor{framecrc}
