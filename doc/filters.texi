@@ -2538,6 +2538,21 @@ Optional. It should have a value much less than 1 (e.g. 0.05 or 0.02) and is
 used to prevent clipping.
 @end table
 
+@section drmeter
+Measure audio dynamic range.
+
+DR values of 14 and higher is found in very dynamic material. DR of 8 to 13
+is found in transition material. And anything less that 8 have very poor dynamics
+and is very compressed.
+
+The filter accepts the following options:
+
+@table @option
+@item length
+Set window length in seconds used to split audio into segments of equal length.
+Default is 3 seconds.
+@end table
+
 @section dynaudnorm
 Dynamic Audio Normalizer.
 

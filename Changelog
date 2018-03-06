@@ -45,6 +45,7 @@ version <next>:
 - Moved nvidia codec headers into an external repository.
   They can be found at http://git.videolan.org/?p=ffmpeg/nv-codec-headers.git
 - native SBC encoder and decoder
+- drmeter audio filter
 
 
 version 3.4:
