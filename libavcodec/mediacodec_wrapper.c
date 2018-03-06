@@ -469,7 +469,12 @@ char *ff_AMediaCodecList_getCodecNameByType(const char *mime, int profile, int e
                     goto done;
                 }
 
-                if (strstr(name, "OMX.google")) {
+                /* Skip software decoders */
+                if (
+                    strstr(name, "OMX.google") ||
+                    strstr(name, "OMX.ffmpeg") ||
+                    strstr(name, "OMX.SEC") ||
+                    !strcmp(name, "OMX.qcom.video.decoder.hevcswvdec")) {
                     av_freep(&name);
                     goto done_with_type;
                 }
