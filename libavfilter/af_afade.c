@@ -460,7 +460,7 @@ static int activate(AVFilterContext *ctx)
         return ff_filter_frame(outlink, in);
     }
 
-    if (ff_framequeue_queued_samples(&ctx->inputs[0]->fifo) > s->nb_samples) {
+    if (in && (ff_framequeue_queued_samples(&ctx->inputs[0]->fifo) > s->nb_samples)) {
         nb_samples = ff_framequeue_queued_samples(&ctx->inputs[0]->fifo) - s->nb_samples;
         if (nb_samples > 0) {
             ret = ff_inlink_consume_samples(ctx->inputs[0], nb_samples, nb_samples, &in);
