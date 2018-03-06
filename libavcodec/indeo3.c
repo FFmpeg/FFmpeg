@@ -657,7 +657,6 @@ static int decode_cell(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
             ref_block[x] = requant_tab[vq_index & 7][ref_block[x] & 127];
     }
 
-    error = IV3_NOERR;
 
     switch (mode) {
     case 0: /*------------------ MODES 0 & 1 (4x4 block processing) --------------------*/
