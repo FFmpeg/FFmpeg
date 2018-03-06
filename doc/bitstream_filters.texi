@@ -93,6 +93,35 @@ When this option is enabled, the long-term headers are removed from the
 bitstream after extraction.
 @end table
 
+@section filter_units
+
+Remove units with types in or not in a given set from the stream.
+
+@table @option
+@item pass_types
+List of unit types or ranges of unit types to pass through while removing
+all others.  This is specified as a '|'-separated list of unit type values
+or ranges of values with '-'.
+
+@item remove_types
+Identical to @option{pass_types}, except the units in the given set
+removed and all others passed through.
+@end table
+
+Extradata is unchanged by this transformation, but note that if the stream
+contains inline parameter sets then the output may be unusable if they are
+removed.
+
+For example, to remove all non-VCL NAL units from an H.264 stream:
+@example
+ffmpeg -i INPUT -c:v copy -bsf:v 'filter_units=pass_types=1-5' OUTPUT
+@end example
+
+To remove all AUDs, SEI and filler from an H.265 stream:
+@example
+ffmpeg -i INPUT -c:v copy -bsf:v 'filter_units=remove_types=35|38-40' OUTPUT
+@end example
+
 @section hapqa_extract
 
 Extract Rgb or Alpha part of an HAPQA file, without recompression, in order to create an HAPQ or an HAPAlphaOnly file.
