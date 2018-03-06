@@ -297,7 +297,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     frame->pkt_dts = AV_NOPTS_VALUE;
 
-    av_log(avctx, AV_LOG_DEBUG,
+    av_log(avctx, AV_LOG_TRACE,
             "Frame: width=%d stride=%d height=%d slice-height=%d "
             "crop-top=%d crop-bottom=%d crop-left=%d crop-right=%d encoder=%s\n"
             "destination linesizes=%d,%d,%d\n" ,
