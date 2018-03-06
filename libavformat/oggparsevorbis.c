@@ -230,6 +230,10 @@ static int fixup_vorbis_headers(AVFormatContext *as,
 
     len = priv->len[0] + priv->len[1] + priv->len[2];
     buf_len = len + len / 255 + 64;
+
+    if (*buf)
+        return AVERROR_INVALIDDATA;
+
     ptr = *buf = av_realloc(NULL, buf_len);
     if (!ptr)
         return AVERROR(ENOMEM);
