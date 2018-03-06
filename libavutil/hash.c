@@ -214,7 +214,7 @@ void av_hash_final_bin(struct AVHashContext *ctx, uint8_t *dst, int size)
 
 void av_hash_final_hex(struct AVHashContext *ctx, uint8_t *dst, int size)
 {
-    uint8_t buf[AV_HASH_MAX_SIZE];
+    uint8_t buf[AV_HASH_MAX_SIZE] = {0};
     unsigned rsize = av_hash_get_size(ctx), i;
 
     av_hash_final(ctx, buf);
