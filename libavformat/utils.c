@@ -3245,6 +3245,7 @@ int ff_alloc_extradata(AVCodecParameters *par, int size)
 {
     int ret;
 
+    av_freep(&par->extradata);
     if (size < 0 || size >= INT32_MAX - AV_INPUT_BUFFER_PADDING_SIZE) {
         par->extradata = NULL;
         par->extradata_size = 0;
