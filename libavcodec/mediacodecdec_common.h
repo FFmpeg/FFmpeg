@@ -36,6 +36,7 @@
 
 typedef struct MediaCodecDecContext {
 
+    AVCodecContext *avctx;
     atomic_int refcount;
 
     char *codec_name;

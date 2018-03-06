@@ -452,6 +452,7 @@ int ff_mediacodec_dec_init(AVCodecContext *avctx, MediaCodecDecContext *s,
         AV_PIX_FMT_NONE,
     };
 
+    s->avctx = avctx;
     atomic_init(&s->refcount, 1);
     atomic_init(&s->serial, 1);
 
@@ -598,8 +599,8 @@ int ff_mediacodec_dec_send(AVCodecContext *avctx, MediaCodecDecContext *s,
                 return AVERROR_EXTERNAL;
             }
 
-            av_log(avctx, AV_LOG_TRACE, "Queued input buffer %zd"
-                    " size=%zd ts=%" PRIi64 "\n", index, size, pts);
+            av_log(avctx, AV_LOG_TRACE,
+                   "Queued input buffer %zd size=%zd ts=%"PRIi64"\n", index, size, pts);
 
             s->draining = 1;
             break;
@@ -619,6 +620,9 @@ int ff_mediacodec_dec_send(AVCodecContext *avctx, MediaCodecDecContext *s,
                 av_log(avctx, AV_LOG_ERROR, "Failed to queue input buffer (status = %d)\n", status);
                 return AVERROR_EXTERNAL;
             }
+
+            av_log(avctx, AV_LOG_TRACE,
+                   "Queued input buffer %zd size=%zd ts=%"PRIi64"\n", index, size, pts);
         }
     }
 
