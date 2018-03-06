@@ -128,7 +128,10 @@ static int ogg_restore(AVFormatContext *s)
     ogg->state = ost->next;
 
         for (i = 0; i < ogg->nstreams; i++) {
-            av_freep(&ogg->streams[i].buf);
+            struct ogg_stream *stream = &ogg->streams[i];
+            av_freep(&stream->buf);
+            av_freep(&stream->new_metadata);
+
             if (i >= ost->nstreams || !ost->streams[i].private) {
                 free_stream(s, i);
             }
