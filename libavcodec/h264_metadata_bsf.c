@@ -344,7 +344,6 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
         invalid_user_data:
             av_log(bsf, AV_LOG_ERROR, "Invalid user data: "
                    "must be \"UUID+string\".\n");
-            err = AVERROR(EINVAL);
         }
     }
 
