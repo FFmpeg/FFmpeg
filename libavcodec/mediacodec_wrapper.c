@@ -473,7 +473,7 @@ char *ff_AMediaCodecList_getCodecNameByType(const char *mime, int profile, int e
                 if (
                     strstr(name, "OMX.google") ||
                     strstr(name, "OMX.ffmpeg") ||
-                    strstr(name, "OMX.SEC") ||
+                    (strstr(name, "OMX.SEC") && strstr(name, ".sw.")) ||
                     !strcmp(name, "OMX.qcom.video.decoder.hevcswvdec")) {
                     av_freep(&name);
                     goto done_with_type;
