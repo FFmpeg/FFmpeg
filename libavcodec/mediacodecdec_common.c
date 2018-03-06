@@ -178,11 +178,12 @@ static void mediacodec_buffer_release(void *opaque, uint8_t *data)
     MediaCodecDecContext *ctx = buffer->ctx;
     int released = atomic_load(&buffer->released);
 
-    if (!released) {
+    if (!released && (ctx->delay_flush || buffer->serial == atomic_load(&ctx->serial))) {
         ff_AMediaCodec_releaseOutputBuffer(ctx->codec, buffer->index, 0);
     }
 
-    ff_mediacodec_dec_unref(ctx);
+    if (ctx->delay_flush)
+        ff_mediacodec_dec_unref(ctx);
     av_freep(&buffer);
 }
 
@@ -236,7 +237,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
     buffer->ctx = s;
-    ff_mediacodec_dec_ref(s);
+    buffer->serial = atomic_load(&s->serial);
+    if (s->delay_flush)
+        ff_mediacodec_dec_ref(s);
 
     buffer->index = index;
     buffer->pts = info->presentationTimeUs;
@@ -425,6 +428,7 @@ static int mediacodec_dec_flush_codec(AVCodecContext *avctx, MediaCodecDecContex
     s->draining = 0;
     s->flushing = 0;
     s->eos = 0;
+    atomic_fetch_add(&s->serial, 1);
 
     status = ff_AMediaCodec_flush(codec);
     if (status < 0) {
@@ -449,6 +453,7 @@ int ff_mediacodec_dec_init(AVCodecContext *avctx, MediaCodecDecContext *s,
     };
 
     atomic_init(&s->refcount, 1);
+    atomic_init(&s->serial, 1);
 
     pix_fmt = ff_get_format(avctx, pix_fmts);
     if (pix_fmt == AV_PIX_FMT_MEDIACODEC) {

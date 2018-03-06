@@ -62,6 +62,9 @@ typedef struct MediaCodecDecContext {
 
     uint64_t output_buffer_count;
 
+    bool delay_flush;
+    atomic_int serial;
+
 } MediaCodecDecContext;
 
 int ff_mediacodec_dec_init(AVCodecContext *avctx,
@@ -93,6 +96,7 @@ typedef struct MediaCodecBuffer {
     ssize_t index;
     int64_t pts;
     atomic_int released;
+    int serial;
 
 } MediaCodecBuffer;
 

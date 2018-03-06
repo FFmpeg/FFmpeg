@@ -41,9 +41,13 @@
 
 typedef struct MediaCodecH264DecContext {
 
+    AVClass *avclass;
+
     MediaCodecDecContext *ctx;
 
     AVPacket buffered_pkt;
+
+    int delay_flush;
 
 } MediaCodecH264DecContext;
 
@@ -366,6 +370,8 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
         goto done;
     }
 
+    s->ctx->delay_flush = s->delay_flush;
+
     if ((ret = ff_mediacodec_dec_init(avctx, s->ctx, codec_mime, format)) < 0) {
         s->ctx = NULL;
         goto done;
@@ -485,12 +491,30 @@ static const AVCodecHWConfigInternal *mediacodec_hw_configs[] = {
     NULL
 };
 
+#define OFFSET(x) offsetof(MediaCodecH264DecContext, x)
+#define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
+static const AVOption ff_mediacodec_vdec_options[] = {
+    { "delay_flush", "Delay flush until hw output buffers are returned to the decoder",
+                     OFFSET(delay_flush), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, VD },
+    { NULL }
+};
+
+#define DECLARE_MEDIACODEC_VCLASS(short_name)                   \
+static const AVClass ff_##short_name##_mediacodec_dec_class = { \
+    .class_name = #short_name "_mediacodec",                    \
+    .item_name  = av_default_item_name,                         \
+    .option     = ff_mediacodec_vdec_options,                   \
+    .version    = LIBAVUTIL_VERSION_INT,                        \
+};
+
 #define DECLARE_MEDIACODEC_VDEC(short_name, full_name, codec_id, bsf)                          \
+DECLARE_MEDIACODEC_VCLASS(short_name)                                                          \
 AVCodec ff_##short_name##_mediacodec_decoder = {                                               \
     .name           = #short_name "_mediacodec",                                               \
     .long_name      = NULL_IF_CONFIG_SMALL(full_name " Android MediaCodec decoder"),           \
     .type           = AVMEDIA_TYPE_VIDEO,                                                      \
     .id             = codec_id,                                                                \
+    .priv_class     = &ff_##short_name##_mediacodec_dec_class,                                 \
     .priv_data_size = sizeof(MediaCodecH264DecContext),                                        \
     .init           = mediacodec_decode_init,                                                  \
     .receive_frame  = mediacodec_receive_frame,                                                \

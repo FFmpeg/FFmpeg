@@ -15,6 +15,11 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2018-03-xx - xxxxxxx - lavc 58.14.100 - mediacodec.h
+  Change the default behavior of avcodec_flush() on mediacodec
+  video decoders. To restore the previous behavior, use the new
+  delay_flush=1 option.
+
 2018-03-xx - xxxxxxx - lavu 56.8.100 - frame.h
   Add av_frame_new_side_data_from_buf().
 
