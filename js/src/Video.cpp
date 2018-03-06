@@ -5,15 +5,13 @@ using namespace v8;
 namespace ffmpeg {
 
 const int kBufferSize = 4 * 1024;
-const AVPixelFormat kPixelFormat = AV_PIX_FMT_RGBA;
+const AVPixelFormat kPixelFormat = AV_PIX_FMT_RGB32;
 
 AppData::AppData() :
   dataPos(0),
-  buffer((unsigned char *)av_malloc(kBufferSize)),
-  fmt_ctx(nullptr), io_ctx(nullptr), stream_idx(-1), video_stream(nullptr), codec_ctx(nullptr), decoder(nullptr), packet(nullptr), packetValid(false), av_frame(nullptr), gl_frame(nullptr), conv_ctx(nullptr) {}
+  fmt_ctx(nullptr), io_ctx(nullptr), stream_idx(-1), video_stream(nullptr), codec_ctx(nullptr), decoder(nullptr), packet(nullptr), av_frame(nullptr), gl_frame(nullptr), conv_ctx(nullptr) {}
 AppData::~AppData() {
   resetState();
-  av_free(buffer);
 }
 
 void AppData::resetState() {
@@ -38,27 +36,32 @@ void AppData::resetState() {
     fmt_ctx = nullptr;
   }
   if (io_ctx) {
+    av_free(io_ctx->buffer);
     av_free(io_ctx);
     io_ctx = nullptr;
   }
 }
 
-bool AppData::set(vector<unsigned char> &memory) {
+bool AppData::set(vector<unsigned char> &memory, string *error) {
   data = std::move(memory);
   resetState();
 
   // open video
   fmt_ctx = avformat_alloc_context();
-  io_ctx = avio_alloc_context(buffer, kBufferSize, 0, this, bufferRead, NULL, bufferSeek);
+  io_ctx = avio_alloc_context((unsigned char *)av_malloc(kBufferSize), kBufferSize, 0, this, bufferRead, NULL, bufferSeek);
   fmt_ctx->pb = io_ctx;
   if (avformat_open_input(&fmt_ctx, "memory input", NULL, NULL) < 0) {
-    // std::cout << "failed to open input" << std::endl;
+    if (error) {
+      *error = "failed to open input";
+    }
     return false;
   }
 
   // find stream info
   if (avformat_find_stream_info(fmt_ctx, NULL) < 0) {
-    // std::cout << "failed to get stream info" << std::endl;
+    if (error) {
+      *error = "failed to get stream info";
+    }
     return false;
   }
 
@@ -76,7 +79,9 @@ bool AppData::set(vector<unsigned char> &memory) {
   }
 
   if (stream_idx == -1) {
-    // std::cout << "failed to find video stream" << std::endl;
+    if (error) {
+      *error = "failed to find video stream";
+    }
     return false;
   }
 
@@ -86,13 +91,17 @@ bool AppData::set(vector<unsigned char> &memory) {
   // find the decoder
   decoder = avcodec_find_decoder(codec_ctx->codec_id);
   if (decoder == NULL) {
-    // std::cout << "failed to find decoder" << std::endl;
+    if (error) {
+      *error = "failed to find decoder";
+    }
     return false;
   }
 
   // open the decoder
   if (avcodec_open2(codec_ctx, decoder, NULL) < 0) {
-    // std::cout << "failed to open codec" << std::endl;
+    if (error) {
+      *error = "failed to open codec";
+    }
     return false;
   }
 
@@ -136,6 +145,73 @@ int64_t AppData::bufferSeek(void *opaque, int64_t offset, int whence) {
     newPos = std::min<int64_t>(std::max<int64_t>(newPos, 0), appData->data.size() - appData->dataPos);
     appData->dataPos = newPos;
     return newPos;
+  }
+}
+
+bool AppData::advanceToFrameAt(double timestamp) {
+  double timeBase = getTimeBase();
+
+  for (;;) {
+    bool packetOk = false;
+    bool packetValid = false;
+    while (!packetValid || !(packetOk = packet->stream_index == stream_idx && ((double)packet->pts * timeBase) >= timestamp)) {
+      if (packetValid) {
+        av_free_packet(packet);
+        packetValid = false;
+      }
+
+      int ret = av_read_frame(fmt_ctx, packet);
+      packetValid = true;
+      if (ret == AVERROR_EOF) {
+        break;
+      } else if (ret < 0) {
+        // std::cout << "Unknown error " << ret << "\n";
+        av_free_packet(packet);
+        return false;
+      } else {
+        continue;
+      }
+    }
+    // we have a valid packet at this point
+    if (packetOk) {
+      int frame_finished = 0;
+
+      if (avcodec_decode_video2(codec_ctx, av_frame, &frame_finished, packet) < 0) {
+        av_free_packet(packet);
+        return false;
+      }
+
+      if (frame_finished) {
+        if (!conv_ctx) {
+          conv_ctx = sws_getContext(
+            codec_ctx->width, codec_ctx->height, codec_ctx->pix_fmt,
+            codec_ctx->width, codec_ctx->height, kPixelFormat,
+            SWS_BICUBIC, NULL, NULL, NULL);
+        }
+
+        sws_scale(conv_ctx, av_frame->data, av_frame->linesize, 0, codec_ctx->height, gl_frame->data, gl_frame->linesize);
+
+        av_free_packet(packet);
+
+        return true;
+      } else {
+        av_free_packet(packet);
+
+        continue;
+      }
+    } else {
+      // std::cout << "Do not have packet up to " << timestamp << "\n";
+      av_free_packet(packet);
+      return false;
+    }
+  }
+}
+
+double AppData::getTimeBase() {
+  if (video_stream) {
+    return (double)video_stream->time_base.num / (double)video_stream->time_base.den;
+  } else {
+    return 1;
   }
 }
 
@@ -188,7 +264,7 @@ NAN_METHOD(Video::New) {
   info.GetReturnValue().Set(videoObj);
 }
 
-bool Video::Load(unsigned char *bufferValue, size_t bufferLength) {
+bool Video::Load(unsigned char *bufferValue, size_t bufferLength, string *error) {
   // reset state
   loaded = false;
   dataArray.Reset();
@@ -197,7 +273,8 @@ bool Video::Load(unsigned char *bufferValue, size_t bufferLength) {
   // initialize custom data structure
   std::vector<unsigned char> bufferData(bufferLength);
   memcpy(bufferData.data(), bufferValue, bufferLength);
-  if (data.set(bufferData)) { // takes ownership of bufferData
+
+  if (data.set(bufferData, error)) { // takes ownership of bufferData
     // scan to the first frame
     advanceToFrameAt(0);
 
@@ -245,14 +322,29 @@ uint32_t Video::GetHeight() {
 }
 
 NAN_METHOD(Video::Load) {
-  if (info[0]->IsTypedArray()) {
+  if (info[0]->IsArrayBuffer()) {
+    Video *video = ObjectWrap::Unwrap<Video>(info.This());
+
+    Local<ArrayBuffer> arrayBuffer = Local<ArrayBuffer>::Cast(info[0]);
+
+    string error;
+    if (video->Load((uint8_t *)arrayBuffer->GetContents().Data(), arrayBuffer->ByteLength(), &error)) {
+      // nothing
+    } else {
+      Nan::ThrowError(error.c_str());
+    }
+  } else if (info[0]->IsTypedArray()) {
     Video *video = ObjectWrap::Unwrap<Video>(info.This());
 
     Local<ArrayBufferView> arrayBufferView = Local<ArrayBufferView>::Cast(info[0]);
     Local<ArrayBuffer> arrayBuffer = arrayBufferView->Buffer();
-    
-    bool ok = video->Load((uint8_t *)arrayBuffer->GetContents().Data() + arrayBufferView->ByteOffset(), arrayBufferView->ByteLength());
-    info.GetReturnValue().Set(JS_BOOL(ok));
+
+    string error;
+    if (video->Load((unsigned char *)arrayBuffer->GetContents().Data() + arrayBufferView->ByteOffset(), arrayBufferView->ByteLength())) {
+      // nothing
+    } else {
+      Nan::ThrowError(error.c_str());
+    }
   } else {
     Nan::ThrowError("invalid arguments");
   }
@@ -328,8 +420,8 @@ NAN_SETTER(Video::CurrentTimeSetter) {
     double newValueS = value->NumberValue();
 
     video->startTime = av_gettime() - (int64_t)(newValueS * 1e6);
-    av_seek_frame(video->data.fmt_ctx, video->data.stream_idx, (int64_t )(newValueS / video->getTimeBase()), AVSEEK_FLAG_FRAME | AVSEEK_FLAG_ANY);
-    video->advanceToFrameAt(newValueS);
+    av_seek_frame(video->data.fmt_ctx, video->data.stream_idx, (int64_t )(newValueS / video->data.getTimeBase()), AVSEEK_FLAG_FRAME | AVSEEK_FLAG_ANY);
+    video->data.advanceToFrameAt(newValueS);
   } else {
     Nan::ThrowError("value: invalid arguments");
   }
@@ -340,7 +432,7 @@ NAN_GETTER(Video::DurationGetter) {
   
   Video *video = ObjectWrap::Unwrap<Video>(info.This());
 
-  double duration = (double)video->data.fmt_ctx->duration / (double)AV_TIME_BASE;
+  double duration = video->data.fmt_ctx ? ((double)video->data.fmt_ctx->duration / (double)AV_TIME_BASE) : 1;
   info.GetReturnValue().Set(JS_NUM(duration));
 }
 
@@ -348,10 +440,6 @@ NAN_METHOD(Video::UpdateAll) {
   for (auto i : videos) {
     i->Update();
   }
-}
-
-double Video::getTimeBase() {
-  return (double)data.video_stream->time_base.num / (double)data.video_stream->time_base.den;
 }
 
 double Video::getRequiredCurrentTimeS() {
@@ -366,69 +454,18 @@ double Video::getRequiredCurrentTimeS() {
 }
 
 double Video::getFrameCurrentTimeS() {
-  return (getTimeBase() * (double)data.av_frame->pts);
+  double pts = data.av_frame ? (double)data.av_frame->pts : 0;
+  double timeBase = data.getTimeBase();
+  return pts * timeBase;
 }
 
 bool Video::advanceToFrameAt(double timestamp) {	
-  double timeBase = getTimeBase();
+  if (data.advanceToFrameAt(timestamp)) {
+    dataDirty = true;
 
-  for (;;) {
-    bool packetOk = false;
-    bool packetValid = false;
-    while (!packetValid || !(packetOk = data.packet->stream_index == data.stream_idx && ((double)data.packet->pts * timeBase) >= timestamp)) {
-      if (packetValid) {
-        av_free_packet(data.packet);
-        packetValid = false;
-      }
-
-      int ret = av_read_frame(data.fmt_ctx, data.packet);
-      packetValid = true;
-      if (ret == AVERROR_EOF) {
-        break;
-        // av_free_packet(data.packet);
-        // return false;
-      } else if (ret < 0) {
-        // std::cout << "Unknown error " << ret << "\n";
-        av_free_packet(data.packet);
-        return false;
-      } else {
-        continue;
-      }
-    }
-    // we have a valid packet at this point
-    if (packetOk) {
-      int frame_finished = 0;
-    
-      if (avcodec_decode_video2(data.codec_ctx, data.av_frame, &frame_finished, data.packet) < 0) {
-        av_free_packet(data.packet);
-        return false;
-      }
-    
-      if (frame_finished) {
-        if (!data.conv_ctx) {
-          data.conv_ctx = sws_getContext(
-            data.codec_ctx->width, data.codec_ctx->height, data.codec_ctx->pix_fmt,
-            data.codec_ctx->width, data.codec_ctx->height, kPixelFormat,
-            SWS_BICUBIC, NULL, NULL, NULL);
-        }
-      
-        sws_scale(data.conv_ctx, data.av_frame->data, data.av_frame->linesize, 0, data.codec_ctx->height, data.gl_frame->data, data.gl_frame->linesize);
-
-        av_free_packet(data.packet);
-
-        dataDirty = true;
-
-        return true;
-      } else {
-        av_free_packet(data.packet);
-
-        continue;
-      }
-    } else {
-      // std::cout << "Do not have packet up to " << timestamp << "\n";
-      av_free_packet(data.packet);
-      return false;
-    }
+    return true;
+  } else {
+    return false;
   }
 }
 

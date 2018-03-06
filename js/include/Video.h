@@ -8,7 +8,6 @@
 extern "C" {
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
-#include <libavfilter/avfilter.h>
 #include <libswscale/swscale.h>
 #include <libavutil/avutil.h>
 #include <libavutil/time.h>
@@ -28,15 +27,15 @@ public:
   ~AppData();
 
   void resetState();
-  bool set(vector<unsigned char> &memory);
+  bool set(vector<unsigned char> &memory, string *error = nullptr);
   static int bufferRead(void *opaque, unsigned char *buf, int buf_size);
   static int64_t bufferSeek(void *opaque, int64_t offset, int whence);
+  double getTimeBase();
+  bool advanceToFrameAt(double timestamp);
 
 public:
   std::vector<unsigned char> data;
   int64_t dataPos;
-
-  unsigned char *buffer;
 
 	AVFormatContext *fmt_ctx;
 	AVIOContext *io_ctx;
@@ -45,7 +44,6 @@ public:
 	AVCodecContext *codec_ctx;
 	AVCodec *decoder;
 	AVPacket *packet;
-	bool packetValid;
 	AVFrame *av_frame;
 	AVFrame *gl_frame;
 	struct SwsContext *conv_ctx;
@@ -54,7 +52,7 @@ public:
 class Video : public ObjectWrap {
 public:
   static Handle<Object> Initialize(Isolate *isolate);
-  bool Load(uint8_t *bufferValue, size_t bufferLength);
+  bool Load(uint8_t *bufferValue, size_t bufferLength, string *error = nullptr);
   void Update();
   void Play();
   void Pause();
@@ -74,7 +72,6 @@ protected:
   static NAN_SETTER(CurrentTimeSetter);
   static NAN_GETTER(DurationGetter);
   static NAN_METHOD(UpdateAll);
-  double getTimeBase();
   double getRequiredCurrentTime();
   double getRequiredCurrentTimeS();
   double getFrameCurrentTimeS();
