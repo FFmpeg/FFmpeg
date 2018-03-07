@@ -685,9 +685,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
             s->ac = AC_RANGE_CUSTOM_TAB;
         }
     }
-    if (s->transparency) {
-        av_log(avctx, AV_LOG_WARNING, "Storing alpha plane, this will require a recent FFV1 decoder to playback!\n");
-    }
 #if FF_API_PRIVATE_OPT
 FF_DISABLE_DEPRECATION_WARNINGS
     if (avctx->context_model)
