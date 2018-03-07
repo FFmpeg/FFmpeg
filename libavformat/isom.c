@@ -526,7 +526,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         av_log(fc, AV_LOG_TRACE, "Specific MPEG-4 header len=%d\n", len);
         if (!len || (uint64_t)len > (1<<30))
             return AVERROR_INVALIDDATA;
-        av_free(st->codecpar->extradata);
         if ((ret = ff_get_extradata(fc, st->codecpar, pb, len)) < 0)
             return ret;
         if (st->codecpar->codec_id == AV_CODEC_ID_AAC) {
