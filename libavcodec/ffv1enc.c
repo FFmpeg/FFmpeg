@@ -558,6 +558,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     s->plane_count = 3;
     switch(avctx->pix_fmt) {
+    case AV_PIX_FMT_GRAY9:
     case AV_PIX_FMT_YUV444P9:
     case AV_PIX_FMT_YUV422P9:
     case AV_PIX_FMT_YUV420P9:
@@ -568,6 +569,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             s->bits_per_raw_sample = 9;
     case AV_PIX_FMT_GRAY10:
     case AV_PIX_FMT_YUV444P10:
+    case AV_PIX_FMT_YUV440P10:
     case AV_PIX_FMT_YUV420P10:
     case AV_PIX_FMT_YUV422P10:
     case AV_PIX_FMT_YUVA444P10:
@@ -577,11 +579,17 @@ FF_ENABLE_DEPRECATION_WARNINGS
             s->bits_per_raw_sample = 10;
     case AV_PIX_FMT_GRAY12:
     case AV_PIX_FMT_YUV444P12:
+    case AV_PIX_FMT_YUV440P12:
     case AV_PIX_FMT_YUV420P12:
     case AV_PIX_FMT_YUV422P12:
-        s->packed_at_lsb = 1;
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
             s->bits_per_raw_sample = 12;
+    case AV_PIX_FMT_YUV444P14:
+    case AV_PIX_FMT_YUV420P14:
+    case AV_PIX_FMT_YUV422P14:
+        if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
+            s->bits_per_raw_sample = 14;
+        s->packed_at_lsb = 1;
     case AV_PIX_FMT_GRAY16:
     case AV_PIX_FMT_YUV444P16:
     case AV_PIX_FMT_YUV422P16:
@@ -1330,6 +1338,9 @@ AVCodec ff_ffv1_encoder = {
         AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12,
         AV_PIX_FMT_GBRP16, AV_PIX_FMT_RGB48,
         AV_PIX_FMT_GBRAP16, AV_PIX_FMT_RGBA64,
+        AV_PIX_FMT_GRAY9,
+        AV_PIX_FMT_YUV420P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV444P14,
+        AV_PIX_FMT_YUV440P10, AV_PIX_FMT_YUV440P12,
         AV_PIX_FMT_NONE
 
     },

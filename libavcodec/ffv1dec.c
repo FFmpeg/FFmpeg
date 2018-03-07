@@ -591,7 +591,10 @@ static int read_header(FFV1Context *f)
         if (!f->transparency && !f->chroma_planes) {
             if (f->avctx->bits_per_raw_sample <= 8)
                 f->avctx->pix_fmt = AV_PIX_FMT_GRAY8;
-            else if (f->avctx->bits_per_raw_sample == 10) {
+            else if (f->avctx->bits_per_raw_sample == 9) {
+                f->packed_at_lsb = 1;
+                f->avctx->pix_fmt = AV_PIX_FMT_GRAY9;
+            } else if (f->avctx->bits_per_raw_sample == 10) {
                 f->packed_at_lsb = 1;
                 f->avctx->pix_fmt = AV_PIX_FMT_GRAY10;
             } else if (f->avctx->bits_per_raw_sample == 12) {
@@ -642,6 +645,7 @@ static int read_header(FFV1Context *f)
             f->packed_at_lsb = 1;
             switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
             case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUV444P10; break;
+            case 0x01: f->avctx->pix_fmt = AV_PIX_FMT_YUV440P10; break;
             case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUV422P10; break;
             case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUV420P10; break;
             }
@@ -656,8 +660,16 @@ static int read_header(FFV1Context *f)
             f->packed_at_lsb = 1;
             switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
             case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUV444P12; break;
+            case 0x01: f->avctx->pix_fmt = AV_PIX_FMT_YUV440P12; break;
             case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUV422P12; break;
             case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUV420P12; break;
+            }
+        } else if (f->avctx->bits_per_raw_sample == 14 && !f->transparency) {
+            f->packed_at_lsb = 1;
+            switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
+            case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUV444P14; break;
+            case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUV422P14; break;
+            case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUV420P14; break;
             }
         } else if (f->avctx->bits_per_raw_sample == 16 && !f->transparency){
             f->packed_at_lsb = 1;
