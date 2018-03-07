@@ -4598,11 +4598,7 @@ for func in $MATH_FUNCS; do
 done
 
 # these are off by default, so fail if requested and not available
-
-enabled amf &&
-    check_cpp_condition "AMF/core/Version.h" \
-        "(AMF_VERSION_MAJOR << 48 | AMF_VERSION_MINOR << 32 | AMF_VERSION_RELEASE << 16 | AMF_VERSION_BUILD_NUM) >= 0x0001000400040001" ||
-    disable amf
+enabled amf               && require_cpp_condition AMF/core/Version.h "(AMF_VERSION_MAJOR << 48 | AMF_VERSION_MINOR << 32 | AMF_VERSION_RELEASE << 16 | AMF_VERSION_BUILD_NUM) >= 0x0001000400040001"
 enabled avisynth          && require_header avisynth/avisynth_c.h
 enabled avxsynth          && require_header avxsynth/avxsynth_c.h
 enabled cuda              && require cuda cuda.h cuInit -lcuda
