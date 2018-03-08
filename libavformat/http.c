@@ -802,7 +802,7 @@ static int parse_cookie(HTTPContext *s, const char *p, AVDictionary **cookies)
             // if the cookie has already expired ignore it
             if (av_timegm(&new_tm) < av_gettime() / 1000000) {
                 av_dict_free(&new_params);
-                return -1;
+                return 0;
             }
 
             // only replace an older cookie with the same name
