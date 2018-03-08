@@ -287,6 +287,7 @@ typedef struct AVOption {
  * This flag only makes sense when AV_OPT_FLAG_EXPORT is also set.
  */
 #define AV_OPT_FLAG_READONLY        128
+#define AV_OPT_FLAG_BSF_PARAM       (1<<8) ///< a generic parameter which can be set by the user for bit stream filtering
 #define AV_OPT_FLAG_FILTERING_PARAM (1<<16) ///< a generic parameter which can be set by the user for filtering
 //FIXME think about enc-audio, ... style flags
 
