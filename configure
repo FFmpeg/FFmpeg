@@ -4211,7 +4211,10 @@ done
 
 check_cc pragma_deprecated "" '_Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")'
 
-require_cc "endian test" "" "unsigned int endian = 'B' << 24 | 'I' << 16 | 'G' << 8 | 'E'"
+# The global variable ensures the bits appear unchanged in the object file.
+test_cc <<EOF || die "endian test failed"
+unsigned int endian = 'B' << 24 | 'I' << 16 | 'G' << 8 | 'E';
+EOF
 od -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
 
 check_gas() {
