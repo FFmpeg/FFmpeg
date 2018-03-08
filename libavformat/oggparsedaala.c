@@ -218,6 +218,7 @@ static int daala_packet(AVFormatContext *s, int idx)
     int seg, duration = 1;
     struct ogg *ogg = s->priv_data;
     struct ogg_stream *os = ogg->streams + idx;
+    int64_t pts;
 
     /*
      * first packet handling: here we parse the duration of each packet in the
@@ -230,7 +231,10 @@ static int daala_packet(AVFormatContext *s, int idx)
             if (os->segments[seg] < 255)
                 duration++;
 
-        os->lastpts = os->lastdts = daala_gptopts(s, idx, os->granule, NULL) - duration;
+        pts = daala_gptopts(s, idx, os->granule, NULL);
+        if (pts != AV_NOPTS_VALUE)
+            pts -= duration;
+        os->lastpts = os->lastdts = pts;
         if(s->streams[idx]->start_time == AV_NOPTS_VALUE) {
             s->streams[idx]->start_time = os->lastpts;
             if (s->streams[idx]->duration != AV_NOPTS_VALUE)
