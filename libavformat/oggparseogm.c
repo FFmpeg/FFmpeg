@@ -180,7 +180,7 @@ ogm_packet(AVFormatContext *s, int idx)
     os->psize -= lb + 1;
 
     while (lb--)
-        os->pduration += p[lb+1] << (lb*8);
+        os->pduration += (uint64_t)p[lb+1] << (lb*8);
 
     return 0;
 }
