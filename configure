@@ -4240,12 +4240,11 @@ od -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
 check_gas() {
     log "check_gas using '$as' as AS"
     # :vararg is used on aarch64, arm and ppc altivec
-    test_as <<EOF || return 1
+    check_as vararg "
 .macro m n, y:vararg=0
 \n: .int \y
 .endm
-m x
-EOF
+m x" || return 1
     # .altmacro is only used in arm asm
     ! enabled arm || check_as gnu_as ".altmacro"
 }
