@@ -322,9 +322,10 @@ static const enum AVCodecID codec_ids[] = {
 };
 
 #define OFFSET(x) offsetof(ExtractExtradataContext, x)
+#define FLAGS (AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_BSF_PARAM)
 static const AVOption options[] = {
     { "remove", "remove the extradata from the bitstream", OFFSET(remove), AV_OPT_TYPE_INT,
-        { .i64 = 0 }, 0, 1 },
+        { .i64 = 0 }, 0, 1, FLAGS },
     { NULL },
 };
 
