@@ -760,6 +760,8 @@ static int parse_set_cookie(const char *set_cookie, AVDictionary **dict)
     back = &cstr[strlen(cstr)-1];
     while (strchr(WHITESPACES, *back)) {
         *back='\0';
+        if (back == cstr)
+            break;
         back--;
     }
 
