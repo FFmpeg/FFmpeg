@@ -750,6 +750,9 @@ static int parse_set_cookie(const char *set_cookie, AVDictionary **dict)
 {
     char *param, *next_param, *cstr, *back;
 
+    if (!set_cookie[0])
+        return 0;
+
     if (!(cstr = av_strdup(set_cookie)))
         return AVERROR(EINVAL);
 
