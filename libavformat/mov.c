@@ -3378,7 +3378,6 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
     int64_t edit_list_start_ctts_sample = 0;
     int64_t curr_cts;
     int64_t curr_ctts = 0;
-    int64_t min_corrected_pts = -1;
     int64_t empty_edits_sum_duration = 0;
     int64_t edit_list_index = 0;
     int64_t index;
@@ -3418,6 +3417,9 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
     msc->ctts_index = 0;
     msc->ctts_sample = 0;
     msc->ctts_allocated_size = 0;
+
+    // Reinitialize min_corrected_pts so that it can be computed again.
+    msc->min_corrected_pts = -1;
 
     // If the dts_shift is positive (in case of negative ctts values in mov),
     // then negate the DTS by dts_shift
@@ -3563,10 +3565,10 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
                     }
                 }
             } else {
-                if (min_corrected_pts < 0) {
-                    min_corrected_pts = edit_list_dts_counter + curr_ctts + msc->dts_shift;
+                if (msc->min_corrected_pts < 0) {
+                    msc->min_corrected_pts = edit_list_dts_counter + curr_ctts + msc->dts_shift;
                 } else {
-                    min_corrected_pts = FFMIN(min_corrected_pts, edit_list_dts_counter + curr_ctts + msc->dts_shift);
+                    msc->min_corrected_pts = FFMIN(msc->min_corrected_pts, edit_list_dts_counter + curr_ctts + msc->dts_shift);
                 }
                 if (edit_list_start_encountered == 0) {
                     edit_list_start_encountered = 1;
@@ -3625,16 +3627,16 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
             }
         }
     }
-    // If there are empty edits, then min_corrected_pts might be positive intentionally. So we subtract the
-    // sum duration of emtpy edits here.
-    min_corrected_pts -= empty_edits_sum_duration;
+    // If there are empty edits, then msc->min_corrected_pts might be positive
+    // intentionally. So we subtract the sum duration of emtpy edits here.
+    msc->min_corrected_pts -= empty_edits_sum_duration;
 
     // If the minimum pts turns out to be greater than zero after fixing the index, then we subtract the
     // dts by that amount to make the first pts zero.
-    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && min_corrected_pts > 0) {
-        av_log(mov->fc, AV_LOG_DEBUG, "Offset DTS by %"PRId64" to make first pts zero.\n", min_corrected_pts);
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && msc->min_corrected_pts > 0) {
+        av_log(mov->fc, AV_LOG_DEBUG, "Offset DTS by %"PRId64" to make first pts zero.\n", msc->min_corrected_pts);
         for (i = 0; i < st->nb_index_entries; ++i) {
-            st->index_entries[i].timestamp -= min_corrected_pts;
+            st->index_entries[i].timestamp -= msc->min_corrected_pts;
         }
     }
 
@@ -3697,6 +3699,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
             if (empty_duration)
                 empty_duration = av_rescale(empty_duration, sc->time_scale, mov->time_scale);
             sc->time_offset = start_time - empty_duration;
+            sc->min_corrected_pts = start_time;
             if (!mov->advanced_editlist)
                 current_dts = -sc->time_offset;
         }
@@ -7158,7 +7161,9 @@ static int mov_seek_stream(AVFormatContext *s, AVStream *st, int64_t timestamp, 
     int sample, time_sample, ret;
     unsigned int i;
 
-    timestamp -= sc->time_offset;
+    // Here we consider timestamp to be PTS, hence try to offset it so that we
+    // can search over the DTS timeline.
+    timestamp -= (sc->min_corrected_pts + sc->dts_shift);
 
     ret = mov_seek_fragment(s, st, timestamp);
     if (ret < 0)
