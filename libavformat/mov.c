@@ -5454,7 +5454,7 @@ static int mov_read_sv3d(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             projection = AV_SPHERICAL_EQUIRECTANGULAR;
         break;
     default:
-        av_log(c->fc, AV_LOG_ERROR, "Unknown projection type\n");
+        av_log(c->fc, AV_LOG_ERROR, "Unknown projection type: %s\n", av_fourcc2str(tag));
         return 0;
     }
 
