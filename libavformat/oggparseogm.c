@@ -177,6 +177,9 @@ ogm_packet(AVFormatContext *s, int idx)
         os->pflags |= AV_PKT_FLAG_KEY;
 
     lb = ((*p & 2) << 1) | ((*p >> 6) & 3);
+    if (os->psize < lb + 1)
+        return AVERROR_INVALIDDATA;
+
     os->pstart += lb + 1;
     os->psize -= lb + 1;
 
