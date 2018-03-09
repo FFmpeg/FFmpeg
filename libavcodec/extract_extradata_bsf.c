@@ -114,6 +114,7 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
             ret = AVERROR(ENOMEM);
             goto fail;
         }
+        memset(extradata + extradata_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
         *data = extradata;
         *size = extradata_size;
@@ -137,6 +138,8 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
             pkt->buf  = filtered_buf;
             pkt->data = filtered_buf->data;
             pkt->size = filtered_data - filtered_buf->data;
+
+            memset(pkt->data + pkt->size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
         }
     }
 
@@ -169,6 +172,7 @@ static int extract_extradata_vc1(AVBSFContext *ctx, AVPacket *pkt,
             return AVERROR(ENOMEM);
 
         memcpy(*data, pkt->data, extradata_size);
+        memset(*data + extradata_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
         *size = extradata_size;
 
         if (s->remove) {
@@ -199,6 +203,7 @@ static int extract_extradata_mpeg12(AVBSFContext *ctx, AVPacket *pkt,
                     return AVERROR(ENOMEM);
 
                 memcpy(*data, pkt->data, *size);
+                memset(*data + *size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
                 if (s->remove) {
                     pkt->data += *size;
@@ -228,6 +233,7 @@ static int extract_extradata_mpeg4(AVBSFContext *ctx, AVPacket *pkt,
                     return AVERROR(ENOMEM);
 
                 memcpy(*data, pkt->data, *size);
+                memset(*data + *size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
                 if (s->remove) {
                     pkt->data += *size;
