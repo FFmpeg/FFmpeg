@@ -260,6 +260,10 @@ Toolchain options:
   --target-path=DIR        path to view of build directory on target
   --target-samples=DIR     path to samples directory on target
   --toolchain=NAME         set tool defaults according to NAME
+                           (gcc-asan, clang-asan, gcc-msan, clang-msan,
+                           gcc-tsan, clang-tsan, gcc-usan, clang-usan,
+                           valgrind-massif, valgrind-memcheck,
+                           msvc, icl, gcov, llvm-cov, hardened)
   --nm=NM                  use nm tool
   --ar=AR                  use archive tool AR [$ar_default]
   --as=AS                  use assembler AS [$as_default]
