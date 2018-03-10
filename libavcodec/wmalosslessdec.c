@@ -1148,6 +1148,7 @@ static void save_bits(WmallDecodeCtx *s, GetBitContext* gb, int len,
     if (len <= 0 || buflen > s->max_frame_size) {
         avpriv_request_sample(s->avctx, "Too small input buffer");
         s->packet_loss = 1;
+        s->num_saved_bits = 0;
         return;
     }
 
