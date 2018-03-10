@@ -36,6 +36,9 @@ typedef struct ExtractExtradataContext {
     int (*extract)(AVBSFContext *ctx, AVPacket *pkt,
                    uint8_t **data, int *size);
 
+    /* H264/HEVC specifc fields */
+    H2645Packet h2645_pkt;
+
     /* AVOptions */
     int remove;
 } ExtractExtradataContext;
@@ -61,7 +64,6 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
 
     ExtractExtradataContext *s = ctx->priv_data;
 
-    H2645Packet h2645_pkt = { 0 };
     int extradata_size = 0, filtered_size = 0;
     const int *extradata_nal_types;
     int nb_extradata_nal_types;
@@ -75,13 +77,13 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
         nb_extradata_nal_types = FF_ARRAY_ELEMS(extradata_nal_types_h264);
     }
 
-    ret = ff_h2645_packet_split(&h2645_pkt, pkt->data, pkt->size,
+    ret = ff_h2645_packet_split(&s->h2645_pkt, pkt->data, pkt->size,
                                 ctx, 0, 0, ctx->par_in->codec_id, 1);
     if (ret < 0)
-        goto fail;
+        return ret;
 
-    for (i = 0; i < h2645_pkt.nb_nals; i++) {
-        H2645NAL *nal = &h2645_pkt.nals[i];
+    for (i = 0; i < s->h2645_pkt.nb_nals; i++) {
+        H2645NAL *nal = &s->h2645_pkt.nals[i];
         if (val_in_array(extradata_nal_types, nb_extradata_nal_types, nal->type)) {
             extradata_size += nal->raw_size + 3;
             if (ctx->par_in->codec_id == AV_CODEC_ID_HEVC) {
@@ -104,8 +106,7 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
         if (s->remove) {
             filtered_buf = av_buffer_alloc(filtered_size + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!filtered_buf) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
+                return AVERROR(ENOMEM);
             }
             memset(filtered_buf->data + filtered_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
@@ -115,16 +116,15 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
         extradata = av_malloc(extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!extradata) {
             av_buffer_unref(&filtered_buf);
-            ret = AVERROR(ENOMEM);
-            goto fail;
+            return AVERROR(ENOMEM);
         }
         memset(extradata + extradata_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
         *data = extradata;
         *size = extradata_size;
 
-        for (i = 0; i < h2645_pkt.nb_nals; i++) {
-            H2645NAL *nal = &h2645_pkt.nals[i];
+        for (i = 0; i < s->h2645_pkt.nb_nals; i++) {
+            H2645NAL *nal = &s->h2645_pkt.nals[i];
             if (val_in_array(extradata_nal_types, nb_extradata_nal_types,
                              nal->type)) {
                 AV_WB24(extradata, 1); // startcode
@@ -145,9 +145,7 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
         }
     }
 
-fail:
-    ff_h2645_packet_uninit(&h2645_pkt);
-    return ret;
+    return 0;
 }
 
 static int extract_extradata_vc1(AVBSFContext *ctx, AVPacket *pkt,
@@ -310,6 +308,12 @@ fail:
     return ret;
 }
 
+static void extract_extradata_close(AVBSFContext *ctx)
+{
+    ExtractExtradataContext *s = ctx->priv_data;
+    ff_h2645_packet_uninit(&s->h2645_pkt);
+}
+
 static const enum AVCodecID codec_ids[] = {
     AV_CODEC_ID_CAVS,
     AV_CODEC_ID_H264,
@@ -343,4 +347,5 @@ const AVBitStreamFilter ff_extract_extradata_bsf = {
     .priv_class     = &extract_extradata_class,
     .init           = extract_extradata_init,
     .filter         = extract_extradata_filter,
+    .close          = extract_extradata_close,
 };
