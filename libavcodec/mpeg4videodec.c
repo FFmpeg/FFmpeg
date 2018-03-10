@@ -448,7 +448,7 @@ int ff_mpeg4_decode_video_packet_header(Mpeg4DecContext *ctx)
 
     /* is there enough space left for a video packet + header */
     if (get_bits_count(&s->gb) > s->gb.size_in_bits - 20)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     for (len = 0; len < 32; len++)
         if (get_bits1(&s->gb))
@@ -456,7 +456,7 @@ int ff_mpeg4_decode_video_packet_header(Mpeg4DecContext *ctx)
 
     if (len != ff_mpeg4_get_video_packet_prefix_length(s)) {
         av_log(s->avctx, AV_LOG_ERROR, "marker does not match f_code\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (ctx->shape != RECT_SHAPE) {
@@ -468,7 +468,7 @@ int ff_mpeg4_decode_video_packet_header(Mpeg4DecContext *ctx)
     if (mb_num >= s->mb_num || !mb_num) {
         av_log(s->avctx, AV_LOG_ERROR,
                "illegal mb_num in video packet (%d %d) \n", mb_num, s->mb_num);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     s->mb_x = mb_num % s->mb_width;
@@ -597,7 +597,7 @@ static inline int mpeg4_decode_dc(MpegEncContext *s, int n, int *dir_ptr)
 
     if (code < 0 || code > 9 /* && s->nbit < 9 */) {
         av_log(s->avctx, AV_LOG_ERROR, "illegal dc vlc\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (code == 0) {
@@ -620,7 +620,7 @@ static inline int mpeg4_decode_dc(MpegEncContext *s, int n, int *dir_ptr)
             if (get_bits1(&s->gb) == 0) { /* marker */
                 if (s->avctx->err_recognition & (AV_EF_BITSTREAM|AV_EF_COMPLIANT)) {
                     av_log(s->avctx, AV_LOG_ERROR, "dc marker bit missing\n");
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
             }
         }
@@ -664,7 +664,7 @@ static int mpeg4_decode_partition_a(Mpeg4DecContext *ctx)
                     if (cbpc < 0) {
                         av_log(s->avctx, AV_LOG_ERROR,
                                "mcbpc corrupted at %d %d\n", s->mb_x, s->mb_y);
-                        return -1;
+                        return AVERROR_INVALIDDATA;
                     }
                 } while (cbpc == 8);
 
@@ -684,7 +684,7 @@ static int mpeg4_decode_partition_a(Mpeg4DecContext *ctx)
                     if (dc < 0) {
                         av_log(s->avctx, AV_LOG_ERROR,
                                "DC corrupted at %d %d\n", s->mb_x, s->mb_y);
-                        return -1;
+                        return dc;
                     }
                     dir <<= 1;
                     if (dc_pred_dir)
@@ -736,7 +736,7 @@ try_again:
                 if (cbpc < 0) {
                     av_log(s->avctx, AV_LOG_ERROR,
                            "mcbpc corrupted at %d %d\n", s->mb_x, s->mb_y);
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
                 if (cbpc == 20)
                     goto try_again;
@@ -774,11 +774,11 @@ try_again:
                         if (!s->mcsel) {
                             mx = ff_h263_decode_motion(s, pred_x, s->f_code);
                             if (mx >= 0xffff)
-                                return -1;
+                                return AVERROR_INVALIDDATA;
 
                             my = ff_h263_decode_motion(s, pred_y, s->f_code);
                             if (my >= 0xffff)
-                                return -1;
+                                return AVERROR_INVALIDDATA;
                             s->current_picture.mb_type[xy] = MB_TYPE_16x16 |
                                                              MB_TYPE_L0;
                         } else {
@@ -805,11 +805,11 @@ try_again:
                             int16_t *mot_val = ff_h263_pred_motion(s, i, 0, &pred_x, &pred_y);
                             mx = ff_h263_decode_motion(s, pred_x, s->f_code);
                             if (mx >= 0xffff)
-                                return -1;
+                                return AVERROR_INVALIDDATA;
 
                             my = ff_h263_decode_motion(s, pred_y, s->f_code);
                             if (my >= 0xffff)
-                                return -1;
+                                return AVERROR_INVALIDDATA;
                             mot_val[0] = mx;
                             mot_val[1] = my;
                         }
@@ -850,7 +850,7 @@ static int mpeg4_decode_partition_b(MpegEncContext *s, int mb_count)
                 if (cbpy < 0) {
                     av_log(s->avctx, AV_LOG_ERROR,
                            "cbpy corrupted at %d %d\n", s->mb_x, s->mb_y);
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
 
                 s->cbp_table[xy]               |= cbpy << 2;
@@ -865,7 +865,7 @@ static int mpeg4_decode_partition_b(MpegEncContext *s, int mb_count)
                     if (cbpy < 0) {
                         av_log(s->avctx, AV_LOG_ERROR,
                                "I cbpy corrupted at %d %d\n", s->mb_x, s->mb_y);
-                        return -1;
+                        return AVERROR_INVALIDDATA;
                     }
 
                     if (s->cbp_table[xy] & 8)
@@ -878,7 +878,7 @@ static int mpeg4_decode_partition_b(MpegEncContext *s, int mb_count)
                         if (dc < 0) {
                             av_log(s->avctx, AV_LOG_ERROR,
                                    "DC corrupted at %d %d\n", s->mb_x, s->mb_y);
-                            return -1;
+                            return dc;
                         }
                         dir <<= 1;
                         if (dc_pred_dir)
@@ -897,7 +897,7 @@ static int mpeg4_decode_partition_b(MpegEncContext *s, int mb_count)
                     if (cbpy < 0) {
                         av_log(s->avctx, AV_LOG_ERROR,
                                "P cbpy corrupted at %d %d\n", s->mb_x, s->mb_y);
-                        return -1;
+                        return AVERROR_INVALIDDATA;
                     }
 
                     if (s->cbp_table[xy] & 8)
@@ -924,6 +924,7 @@ int ff_mpeg4_decode_partitions(Mpeg4DecContext *ctx)
 {
     MpegEncContext *s = &ctx->m;
     int mb_num;
+    int ret;
     const int part_a_error = s->pict_type == AV_PICTURE_TYPE_I ? (ER_DC_ERROR | ER_MV_ERROR) : ER_MV_ERROR;
     const int part_a_end   = s->pict_type == AV_PICTURE_TYPE_I ? (ER_DC_END   | ER_MV_END)   : ER_MV_END;
 
@@ -931,14 +932,14 @@ int ff_mpeg4_decode_partitions(Mpeg4DecContext *ctx)
     if (mb_num <= 0) {
         ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y,
                         s->mb_x, s->mb_y, part_a_error);
-        return -1;
+        return mb_num ? mb_num : AVERROR_INVALIDDATA;
     }
 
     if (s->resync_mb_x + s->resync_mb_y * s->mb_width + mb_num > s->mb_num) {
         av_log(s->avctx, AV_LOG_ERROR, "slice below monitor ...\n");
         ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y,
                         s->mb_x, s->mb_y, part_a_error);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     s->mb_num_left = mb_num;
@@ -950,7 +951,7 @@ int ff_mpeg4_decode_partitions(Mpeg4DecContext *ctx)
             av_log(s->avctx, AV_LOG_ERROR,
                    "marker missing after first I partition at %d %d\n",
                    s->mb_x, s->mb_y);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
     } else {
         while (show_bits(&s->gb, 10) == 1)
@@ -959,17 +960,18 @@ int ff_mpeg4_decode_partitions(Mpeg4DecContext *ctx)
             av_log(s->avctx, AV_LOG_ERROR,
                    "marker missing after first P partition at %d %d\n",
                    s->mb_x, s->mb_y);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
     }
     ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y,
                     s->mb_x - 1, s->mb_y, part_a_end);
 
-    if (mpeg4_decode_partition_b(s, mb_num) < 0) {
+    ret = mpeg4_decode_partition_b(s, mb_num);
+    if (ret < 0) {
         if (s->pict_type == AV_PICTURE_TYPE_P)
             ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y,
                             s->mb_x, s->mb_y, ER_DC_ERROR);
-        return -1;
+        return ret;
     } else {
         if (s->pict_type == AV_PICTURE_TYPE_P)
             ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y,
@@ -1008,7 +1010,7 @@ static inline int mpeg4_decode_block(Mpeg4DecContext *ctx, int16_t *block,
             } else {
                 level = mpeg4_decode_dc(s, n, &dc_pred_dir);
                 if (level < 0)
-                    return -1;
+                    return level;
             }
             block[0] = level;
             i        = 0;
@@ -1076,7 +1078,7 @@ static inline int mpeg4_decode_block(Mpeg4DecContext *ctx, int16_t *block,
                     if (SHOW_UBITS(re, &s->gb, 1) == 0) {
                         av_log(s->avctx, AV_LOG_ERROR,
                                "1. marker bit missing in rvlc esc\n");
-                        return -1;
+                        return AVERROR_INVALIDDATA;
                     }
                     SKIP_CACHE(re, &s->gb, 1);
 
@@ -1089,7 +1091,7 @@ static inline int mpeg4_decode_block(Mpeg4DecContext *ctx, int16_t *block,
                     if (SHOW_UBITS(re, &s->gb, 1) == 0) {
                         av_log(s->avctx, AV_LOG_ERROR,
                                "2. marker bit missing in rvlc esc\n");
-                        return -1;
+                        return AVERROR_INVALIDDATA;
                     }
                     SKIP_CACHE(re, &s->gb, 1);
 
@@ -1098,7 +1100,7 @@ static inline int mpeg4_decode_block(Mpeg4DecContext *ctx, int16_t *block,
 
                     if (SHOW_UBITS(re, &s->gb, 5) != 0x10) {
                         av_log(s->avctx, AV_LOG_ERROR, "reverse esc missing\n");
-                        return -1;
+                        return AVERROR_INVALIDDATA;
                     }
                     SKIP_CACHE(re, &s->gb, 5);
 
@@ -1134,7 +1136,7 @@ static inline int mpeg4_decode_block(Mpeg4DecContext *ctx, int16_t *block,
                                     av_log(s->avctx, AV_LOG_ERROR,
                                            "1. marker bit missing in 3. esc\n");
                                     if (!(s->avctx->err_recognition & AV_EF_IGNORE_ERR))
-                                        return -1;
+                                        return AVERROR_INVALIDDATA;
                                 }
                                 SKIP_CACHE(re, &s->gb, 1);
 
@@ -1145,7 +1147,7 @@ static inline int mpeg4_decode_block(Mpeg4DecContext *ctx, int16_t *block,
                                     av_log(s->avctx, AV_LOG_ERROR,
                                            "2. marker bit missing in 3. esc\n");
                                     if (!(s->avctx->err_recognition & AV_EF_IGNORE_ERR))
-                                        return -1;
+                                        return AVERROR_INVALIDDATA;
                                 }
 
                                 SKIP_COUNTER(re, &s->gb, 1 + 12 + 1);
@@ -1158,16 +1160,16 @@ static inline int mpeg4_decode_block(Mpeg4DecContext *ctx, int16_t *block,
                                     const int run1= run - rl->max_run[last][abs_level] - 1;
                                     if (abs_level <= rl->max_level[last][run]) {
                                         av_log(s->avctx, AV_LOG_ERROR, "illegal 3. esc, vlc encoding possible\n");
-                                        return -1;
+                                        return AVERROR_INVALIDDATA;
                                     }
                                     if (s->error_recognition > FF_ER_COMPLIANT) {
                                         if (abs_level <= rl->max_level[last][run]*2) {
                                             av_log(s->avctx, AV_LOG_ERROR, "illegal 3. esc, esc 1 encoding possible\n");
-                                            return -1;
+                                            return AVERROR_INVALIDDATA;
                                         }
                                         if (run1 >= 0 && abs_level <= rl->max_level[last][run1]) {
                                             av_log(s->avctx, AV_LOG_ERROR, "illegal 3. esc, esc 2 encoding possible\n");
-                                            return -1;
+                                            return AVERROR_INVALIDDATA;
                                         }
                                     }
                                 }
@@ -1184,7 +1186,7 @@ static inline int mpeg4_decode_block(Mpeg4DecContext *ctx, int16_t *block,
                                         av_log(s->avctx, AV_LOG_ERROR,
                                                "|level| overflow in 3. esc, qp=%d\n",
                                                s->qscale);
-                                        return -1;
+                                        return AVERROR_INVALIDDATA;
                                     }
                                 }
                                 level = level < 0 ? -2048 : 2047;
@@ -1222,7 +1224,7 @@ static inline int mpeg4_decode_block(Mpeg4DecContext *ctx, int16_t *block,
                 if (i & (~63)) {
                     av_log(s->avctx, AV_LOG_ERROR,
                            "ac-tex damaged at %d %d\n", s->mb_x, s->mb_y);
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
 
                 block[scan_table[i]] = level;
@@ -1319,7 +1321,7 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s, int16_t block[6][64])
                 av_log(s->avctx, AV_LOG_ERROR,
                        "texture corrupted at %d %d %d\n",
                        s->mb_x, s->mb_y, s->mb_intra);
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             cbp += cbp;
         }
@@ -1387,7 +1389,7 @@ static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
             if (cbpc < 0) {
                 av_log(s->avctx, AV_LOG_ERROR,
                        "mcbpc damaged at %d %d\n", s->mb_x, s->mb_y);
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
         } while (cbpc == 20);
 
@@ -1443,11 +1445,11 @@ static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
                 for (i = 0; i < 2; i++) {
                     mx = ff_h263_decode_motion(s, pred_x, s->f_code);
                     if (mx >= 0xffff)
-                        return -1;
+                        return AVERROR_INVALIDDATA;
 
                     my = ff_h263_decode_motion(s, pred_y / 2, s->f_code);
                     if (my >= 0xffff)
-                        return -1;
+                        return AVERROR_INVALIDDATA;
 
                     s->mv[0][i][0] = mx;
                     s->mv[0][i][1] = my;
@@ -1460,12 +1462,12 @@ static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
                 mx = ff_h263_decode_motion(s, pred_x, s->f_code);
 
                 if (mx >= 0xffff)
-                    return -1;
+                    return AVERROR_INVALIDDATA;
 
                 my = ff_h263_decode_motion(s, pred_y, s->f_code);
 
                 if (my >= 0xffff)
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 s->mv[0][0][0] = mx;
                 s->mv[0][0][1] = my;
             }
@@ -1476,11 +1478,11 @@ static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
                 mot_val = ff_h263_pred_motion(s, i, 0, &pred_x, &pred_y);
                 mx      = ff_h263_decode_motion(s, pred_x, s->f_code);
                 if (mx >= 0xffff)
-                    return -1;
+                    return AVERROR_INVALIDDATA;
 
                 my = ff_h263_decode_motion(s, pred_y, s->f_code);
                 if (my >= 0xffff)
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 s->mv[0][i][0] = mx;
                 s->mv[0][i][1] = my;
                 mot_val[0]     = mx;
@@ -1536,7 +1538,7 @@ static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
             mb_type = get_vlc2(&s->gb, mb_type_b_vlc.table, MB_TYPE_B_VLC_BITS, 1);
             if (mb_type < 0) {
                 av_log(s->avctx, AV_LOG_ERROR, "illegal MB_type\n");
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             mb_type = mb_type_b_map[mb_type];
             if (modb2) {
@@ -1647,7 +1649,7 @@ static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
             if (cbpc < 0) {
                 av_log(s->avctx, AV_LOG_ERROR,
                        "I cbpc damaged at %d %d\n", s->mb_x, s->mb_y);
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
         } while (cbpc == 8);
 
@@ -1665,7 +1667,7 @@ intra:
         if (cbpy < 0) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "I cbpy damaged at %d %d\n", s->mb_x, s->mb_y);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         cbp = (cbpc & 3) | (cbpy << 2);
 
@@ -1681,7 +1683,7 @@ intra:
         /* decode each block */
         for (i = 0; i < 6; i++) {
             if (mpeg4_decode_block(ctx, block[i], i, cbp & 32, 1, 0) < 0)
-                return -1;
+                return AVERROR_INVALIDDATA;
             cbp += cbp;
         }
         goto end;
@@ -1690,7 +1692,7 @@ intra:
     /* decode each block */
     for (i = 0; i < 6; i++) {
         if (mpeg4_decode_block(ctx, block[i], i, cbp & 32, 0, 0) < 0)
-            return -1;
+            return AVERROR_INVALIDDATA;
         cbp += cbp;
     }
 
@@ -1700,7 +1702,7 @@ end:
         int next = mpeg4_is_resync(ctx);
         if (next) {
             if        (s->mb_x + s->mb_y*s->mb_width + 1 >  next && (s->avctx->err_recognition & AV_EF_AGGRESSIVE)) {
-                return -1;
+                return AVERROR_INVALIDDATA;
             } else if (s->mb_x + s->mb_y*s->mb_width + 1 >= next)
                 return SLICE_END;
 
@@ -1727,7 +1729,7 @@ static int mpeg4_decode_gop_header(MpegEncContext *s, GetBitContext *gb)
 
     if (!show_bits(gb, 23)) {
         av_log(s->avctx, AV_LOG_WARNING, "GOP header invalid\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     hours   = get_bits(gb, 5);
@@ -2636,7 +2638,7 @@ int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                 av_log(s->avctx, AV_LOG_VERBOSE, "frame skip %d\n", gb->size_in_bits);
                 return FRAME_SKIPPED;  // divx bug
             } else
-                return -1;  // end of stream
+                return AVERROR_INVALIDDATA;  // end of stream
         }
 
         /* use the bits after the test */
