@@ -279,24 +279,23 @@ static int extract_extradata_init(AVBSFContext *ctx)
     return 0;
 }
 
-static int extract_extradata_filter(AVBSFContext *ctx, AVPacket *out)
+static int extract_extradata_filter(AVBSFContext *ctx, AVPacket *pkt)
 {
     ExtractExtradataContext *s = ctx->priv_data;
-    AVPacket *in;
     uint8_t *extradata = NULL;
     int extradata_size;
     int ret = 0;
 
-    ret = ff_bsf_get_packet(ctx, &in);
+    ret = ff_bsf_get_packet_ref(ctx, pkt);
     if (ret < 0)
         return ret;
 
-    ret = s->extract(ctx, in, &extradata, &extradata_size);
+    ret = s->extract(ctx, pkt, &extradata, &extradata_size);
     if (ret < 0)
         goto fail;
 
     if (extradata) {
-        ret = av_packet_add_side_data(in, AV_PKT_DATA_NEW_EXTRADATA,
+        ret = av_packet_add_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
                                       extradata, extradata_size);
         if (ret < 0) {
             av_freep(&extradata);
@@ -304,10 +303,10 @@ static int extract_extradata_filter(AVBSFContext *ctx, AVPacket *out)
         }
     }
 
-    av_packet_move_ref(out, in);
+    return 0;
 
 fail:
-    av_packet_free(&in);
+    av_packet_unref(pkt);
     return ret;
 }
 
