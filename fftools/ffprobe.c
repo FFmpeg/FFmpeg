@@ -2275,7 +2275,8 @@ static av_always_inline int process_frame(WriterContext *w,
             break;
 
         case AVMEDIA_TYPE_SUBTITLE:
-            ret = avcodec_decode_subtitle2(dec_ctx, &sub, &got_frame, pkt);
+            if (*packet_new)
+                ret = avcodec_decode_subtitle2(dec_ctx, &sub, &got_frame, pkt);
             *packet_new = 0;
             break;
         default:
