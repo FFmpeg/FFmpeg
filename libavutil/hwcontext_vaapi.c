@@ -1324,7 +1324,7 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
 static int vaapi_device_derive(AVHWDeviceContext *ctx,
                                AVHWDeviceContext *src_ctx, int flags)
 {
-#if CONFIG_LIBDRM
+#if HAVE_VAAPI_DRM
     if (src_ctx->type == AV_HWDEVICE_TYPE_DRM) {
         AVDRMDeviceContext *src_hwctx = src_ctx->hwctx;
         VADisplay *display;
