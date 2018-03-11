@@ -27,3 +27,41 @@ fate-hap-alpha-only-snappy-127x71: CMD = framecrc -i $(TARGET_SAMPLES)/hap/HapAl
 
 FATE_SAMPLES_AVCONV-$(call DEMDEC, MOV, HAP) += $(FATE_HAP)
 fate-hap: $(FATE_HAP)
+
+
+fate-hapenc%: CMD = framemd5 -f image2 -c:v pgmyuv -i $(TARGET_PATH)/tests/vsynth1/%02d.pgm -sws_flags +accurate_rnd+bitexact -vframes 5 -c:v hap ${OPTS}
+
+FATE_HAPENC += fate-hapenc-hap-none
+fate-hapenc-hap-none: OPTS = -pix_fmt rgba -format hap -compressor none
+
+FATE_HAPENC += fate-hapenc-hap-snappy1
+fate-hapenc-hap-snappy1: OPTS = -pix_fmt rgba -format hap -compressor snappy -chunks 1
+
+FATE_HAPENC += fate-hapenc-hap-snappy16
+fate-hapenc-hap-snappy16: OPTS = -pix_fmt rgba -format hap -compressor snappy -chunks 16
+
+
+FATE_HAPENC += fate-hapenc-hapa-none
+fate-hapenc-hapa-none: OPTS = -pix_fmt rgba -format hap_alpha -compressor none
+
+FATE_HAPENC += fate-hapenc-hapa-snappy1
+fate-hapenc-hapa-snappy1: OPTS = -pix_fmt rgba -format hap_alpha -compressor snappy -chunks 1
+
+FATE_HAPENC += fate-hapenc-hapa-snappy16
+fate-hapenc-hapa-snappy16: OPTS = -pix_fmt rgba -format hap_alpha -compressor snappy -chunks 16
+
+
+FATE_HAPENC += fate-hapenc-hapq-none
+fate-hapenc-hapq-none: OPTS = -pix_fmt rgba -format hap_q -compressor none
+
+FATE_HAPENC += fate-hapenc-hapq-snappy1
+fate-hapenc-hapq-snappy1: OPTS = -pix_fmt rgba -format hap_q -compressor snappy -chunks 1
+
+FATE_HAPENC += fate-hapenc-hapq-snappy16
+fate-hapenc-hapq-snappy16: OPTS = -pix_fmt rgba -format hap_q -compressor snappy -chunks 16
+
+
+$(FATE_HAPENC): $(VREF)
+
+FATE_AVCONV-$(call ENCMUX, HAP, MOV) += $(FATE_HAPENC)
+fate-hapenc: $(FATE_HAPENC)

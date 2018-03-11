@@ -1,0 +1,14 @@
+#format: frame checksums
+#version: 2
+#hash: MD5
+#tb 0: 1/25
+#media_type 0: video
+#codec_id 0: hap
+#dimensions 0: 352x288
+#sar 0: 0/1
+#stream#, dts,        pts, duration,     size, hash
+0,          0,          0,        1,   101384, 7bd1e603a54fb468242c9e00b0a90359
+0,          1,          1,        1,   101384, 09bf0e48db9bf465f3d89a192ddfda2d
+0,          2,          2,        1,   101384, 4993a96ed5f5d2bc0f0ff2080622eed2
+0,          3,          3,        1,   101384, 5cdbd0f763ba40366816588160ec73c2
+0,          4,          4,        1,   101384, 9202fe8358efde2c92c75210ed93c118
