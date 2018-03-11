@@ -307,11 +307,11 @@ External library support:
   The following libraries provide various hardware acceleration features:
   --disable-amf            disable AMF video encoding code [autodetect]
   --disable-audiotoolbox   disable Apple AudioToolbox code [autodetect]
-  --disable-cuda           disable dynamically linked Nvidia CUDA code [autodetect]
   --enable-cuda-sdk        enable CUDA features that require the CUDA SDK [no]
   --disable-cuvid          disable Nvidia CUVID support [autodetect]
   --disable-d3d11va        disable Microsoft Direct3D 11 video acceleration code [autodetect]
   --disable-dxva2          disable Microsoft DirectX 9 video acceleration code [autodetect]
+  --disable-ffnvcodec      disable dynamically linked Nvidia code [autodetect]
   --enable-libdrm          enable DRM code (Linux) [no]
   --enable-libmfx          enable Intel MediaSDK (AKA Quick Sync Video) code via libmfx [no]
   --enable-libnpp          enable Nvidia Performance Primitives-based code [no]
@@ -1660,6 +1660,7 @@ HWACCEL_AUTODETECT_LIBRARY_LIST="
     cuvid
     d3d11va
     dxva2
+    ffnvcodec
     nvdec
     nvenc
     vaapi
@@ -2675,11 +2676,12 @@ zmbv_encoder_deps="zlib"
 
 # hardware accelerators
 crystalhd_deps="libcrystalhd_libcrystalhd_if_h"
-cuda_deps_any="libdl LoadLibrary"
-cuvid_deps="cuda"
+cuda_deps="ffnvcodec"
+cuvid_deps="ffnvcodec"
 d3d11va_deps="dxva_h ID3D11VideoDecoder ID3D11VideoContext"
 dxva2_deps="dxva2api_h DXVA2_ConfigPictureDecode ole32 user32"
-nvdec_deps="cuda"
+ffnvcodec_deps_any="libdl LoadLibrary"
+nvdec_deps="ffnvcodec"
 videotoolbox_hwaccel_deps="videotoolbox pthreads"
 videotoolbox_hwaccel_extralibs="-framework QuartzCore"
 xvmc_deps="X11_extensions_XvMClib_h"
@@ -2797,13 +2799,13 @@ qsvvpp_select="qsv"
 vaapi_encode_deps="vaapi"
 v4l2_m2m_deps_any="linux_videodev2_h"
 
-hwupload_cuda_filter_deps="cuda"
-scale_npp_filter_deps="cuda libnpp"
+hwupload_cuda_filter_deps="ffnvcodec"
+scale_npp_filter_deps="ffnvcodec libnpp"
 scale_cuda_filter_deps="cuda_sdk"
 thumbnail_cuda_filter_deps="cuda_sdk"
 
 amf_deps_any="libdl LoadLibrary"
-nvenc_deps="cuda"
+nvenc_deps="ffnvcodec"
 nvenc_deps_any="libdl LoadLibrary"
 nvenc_encoder_deps="nvenc"
 
@@ -3357,7 +3359,7 @@ avformat_deps="avcodec avutil"
 avformat_suggest="libm network zlib"
 avresample_deps="avutil"
 avresample_suggest="libm"
-avutil_suggest="clock_gettime cuda libm libdrm libmfx opencl user32 vaapi videotoolbox corefoundation corevideo coremedia wincrypt"
+avutil_suggest="clock_gettime ffnvcodec libm libdrm libmfx opencl user32 vaapi videotoolbox corefoundation corevideo coremedia wincrypt"
 postproc_deps="avutil gpl"
 postproc_suggest="libm"
 swresample_deps="avutil"
@@ -5811,8 +5813,10 @@ check_type "va/va.h va/va_enc_vp9.h"  "VAEncPictureParameterBufferVP9"
 
 check_type "vdpau/vdpau.h" "VdpPictureInfoHEVC"
 
-check_pkg_config cuda "ffnvcodec >= 8.0.14.1" \
-    "ffnvcodec/nvEncodeAPI.h ffnvcodec/dynlink_cuda.h ffnvcodec/dynlink_cuviddec.h ffnvcodec/dynlink_nvcuvid.h" ""
+if ! disabled ffnvcodec; then
+    check_pkg_config ffnvcodec "ffnvcodec >= 8.0.14.1" \
+        "ffnvcodec/nvEncodeAPI.h ffnvcodec/dynlink_cuda.h ffnvcodec/dynlink_cuviddec.h ffnvcodec/dynlink_nvcuvid.h" ""
+fi
 
 check_cpp_condition windows.h "!WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)" && enable winrt || disable winrt
 
@@ -6257,12 +6261,14 @@ if enabled x86; then
         mingw32*|mingw64*|win32|win64|linux|cygwin*)
             ;;
         *)
-            disable cuda cuvid nvdec nvenc
+            disable ffnvcodec cuvid nvdec nvenc
             ;;
     esac
 else
-    disable cuda cuvid nvdec nvenc
+    disable ffnvcodec cuvid nvdec nvenc
 fi
+
+enabled ffnvcodec && enable cuda
 
 enabled nvenc &&
     check_cc -I$source_path <<EOF || disable nvenc

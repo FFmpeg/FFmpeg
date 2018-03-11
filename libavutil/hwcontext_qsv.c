@@ -313,6 +313,7 @@ static int qsv_init_surface(AVHWFramesContext *ctx, mfxFrameSurface1 *surf)
     surf->Info.CropH          = ctx->height;
     surf->Info.FrameRateExtN  = 25;
     surf->Info.FrameRateExtD  = 1;
+    surf->Info.PicStruct      = MFX_PICSTRUCT_PROGRESSIVE;
 
     return 0;
 }

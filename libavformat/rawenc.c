@@ -452,6 +452,19 @@ AVOutputFormat ff_rawvideo_muxer = {
 };
 #endif
 
+#if CONFIG_SBC_MUXER
+AVOutputFormat ff_sbc_muxer = {
+    .name              = "sbc",
+    .long_name         = NULL_IF_CONFIG_SMALL("raw SBC"),
+    .mime_type         = "audio/x-sbc",
+    .extensions        = "sbc,msbc",
+    .audio_codec       = AV_CODEC_ID_SBC,
+    .write_header      = force_one_stream,
+    .write_packet      = ff_raw_write_packet,
+    .flags             = AVFMT_NOTIMESTAMPS,
+};
+#endif
+
 #if CONFIG_TRUEHD_MUXER
 AVOutputFormat ff_truehd_muxer = {
     .name              = "truehd",

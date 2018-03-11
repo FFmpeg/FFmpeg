@@ -580,6 +580,8 @@ static inline int ff_rename(const char *oldpath, const char *newpath, void *logc
  * Allocate extradata with additional AV_INPUT_BUFFER_PADDING_SIZE at end
  * which is always set to 0.
  *
+ * Previously allocated extradata in par will be freed.
+ *
  * @param size size of extradata
  * @return 0 if OK, AVERROR_xxx on error
  */

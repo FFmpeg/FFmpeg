@@ -46,7 +46,6 @@ typedef struct VTContext {
 
 int ff_videotoolbox_alloc_frame(AVCodecContext *avctx, AVFrame *frame);
 int ff_videotoolbox_uninit(AVCodecContext *avctx);
-int ff_videotoolbox_buffer_create(VTContext *vtctx, AVFrame *frame);
 int ff_videotoolbox_h264_start_frame(AVCodecContext *avctx,
                                      const uint8_t *buffer,
                                      uint32_t size);

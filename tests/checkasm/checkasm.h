@@ -57,6 +57,7 @@ void checkasm_check_h264pred(void);
 void checkasm_check_h264qpel(void);
 void checkasm_check_hevc_add_res(void);
 void checkasm_check_hevc_idct(void);
+void checkasm_check_hevc_sao(void);
 void checkasm_check_huffyuvdsp(void);
 void checkasm_check_jpeg2000dsp(void);
 void checkasm_check_llviddsp(void);

@@ -689,16 +689,15 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
 
     if (duration) {
         t = dt.tm_hour * 3600 + dt.tm_min * 60 + dt.tm_sec;
-        if (*q == 'm') {
+        if (q[0] == 'm' && q[1] == 's') {
             suffix = 1000;
             microseconds /= 1000;
-            q++;
-        } else if (*q == 'u') {
+            q += 2;
+        } else if (q[0] == 'u' && q[1] == 's') {
             suffix = 1;
             microseconds = 0;
-            q++;
-        }
-        if (*q == 's')
+            q += 2;
+        } else if (*q == 's')
             q++;
     } else {
         int is_utc = *q == 'Z' || *q == 'z';

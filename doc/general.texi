@@ -501,6 +501,7 @@ library:
 @item raw NULL                  @tab X @tab
 @item raw video                 @tab X @tab X
 @item raw id RoQ                @tab X @tab
+@item raw SBC                   @tab X @tab X
 @item raw Shorten               @tab   @tab X
 @item raw TAK                   @tab   @tab X
 @item raw TrueHD                @tab X @tab X
@@ -1141,6 +1142,8 @@ following image formats are supported:
     @tab Real low bitrate AC-3 codec
 @item RealAudio Lossless     @tab     @tab  X
 @item RealAudio SIPR / ACELP.NET @tab     @tab  X
+@item SBC (low-complexity subband codec) @tab  X  @tab  X
+    @tab Used in Bluetooth A2DP
 @item Shorten                @tab     @tab  X
 @item Sierra VMD audio       @tab     @tab  X
     @tab Used in Sierra VMD files.

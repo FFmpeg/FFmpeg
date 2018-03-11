@@ -636,6 +636,7 @@ enum AVCodecID {
     AV_CODEC_ID_DOLBY_E,
     AV_CODEC_ID_APTX,
     AV_CODEC_ID_APTX_HD,
+    AV_CODEC_ID_SBC,
 
     /* subtitle codecs */
     AV_CODEC_ID_FIRST_SUBTITLE = 0x17000,          ///< A dummy ID pointing at the start of subtitle codecs.
@@ -2924,6 +2925,8 @@ typedef struct AVCodecContext {
 #define FF_PROFILE_MJPEG_HUFFMAN_PROGRESSIVE_DCT         0xc2
 #define FF_PROFILE_MJPEG_HUFFMAN_LOSSLESS                0xc3
 #define FF_PROFILE_MJPEG_JPEG_LS                         0xf7
+
+#define FF_PROFILE_SBC_MSBC                         1
 
     /**
      * level

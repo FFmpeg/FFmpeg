@@ -168,6 +168,7 @@ typedef struct MOVStreamContext {
     int *keyframes;
     int time_scale;
     int64_t time_offset;  ///< time offset of the edit list entries
+    int64_t min_corrected_pts;  ///< minimum Composition time shown by the edits excluding empty edits.
     int current_sample;
     int64_t current_index;
     MOVIndexRange* index_ranges;

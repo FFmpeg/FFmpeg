@@ -91,7 +91,10 @@ int av_mediacodec_release_buffer(AVMediaCodecBuffer *buffer, int render)
     MediaCodecDecContext *ctx = buffer->ctx;
     int released = atomic_fetch_add(&buffer->released, 1);
 
-    if (!released) {
+    if (!released && (ctx->delay_flush || buffer->serial == atomic_load(&ctx->serial))) {
+        av_log(ctx->avctx, AV_LOG_TRACE,
+               "Releasing output buffer %zd ts=%"PRId64" render=%d\n",
+               buffer->index, buffer->pts, render);
         return ff_AMediaCodec_releaseOutputBuffer(ctx->codec, buffer->index, render);
     }
 

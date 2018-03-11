@@ -1096,10 +1096,10 @@ static av_cold int vaapi_encode_config_attributes(AVCodecContext *avctx)
                 goto fail;
             }
             if (avctx->max_b_frames > 0 && ref_l1 < 1) {
-                av_log(avctx, AV_LOG_ERROR, "B frames are not "
-                       "supported (%#x).\n", attr[i].value);
-                err = AVERROR(EINVAL);
-                goto fail;
+                av_log(avctx, AV_LOG_WARNING, "B frames are not "
+                       "supported (%#x) by the underlying driver.\n",
+                       attr[i].value);
+                avctx->max_b_frames = 0;
             }
         }
         break;
