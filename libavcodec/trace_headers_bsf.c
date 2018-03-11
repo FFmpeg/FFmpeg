@@ -67,44 +67,42 @@ static void trace_headers_close(AVBSFContext *bsf)
     ff_cbs_close(&ctx->cbc);
 }
 
-static int trace_headers(AVBSFContext *bsf, AVPacket *out)
+static int trace_headers(AVBSFContext *bsf, AVPacket *pkt)
 {
     TraceHeadersContext *ctx = bsf->priv_data;
     CodedBitstreamFragment au;
-    AVPacket *in;
     char tmp[256] = { 0 };
     int err;
 
-    err = ff_bsf_get_packet(bsf, &in);
+    err = ff_bsf_get_packet_ref(bsf, pkt);
     if (err < 0)
         return err;
 
-    if (in->flags & AV_PKT_FLAG_KEY)
+    if (pkt->flags & AV_PKT_FLAG_KEY)
         av_strlcat(tmp, ", key frame", sizeof(tmp));
-    if (in->flags & AV_PKT_FLAG_CORRUPT)
+    if (pkt->flags & AV_PKT_FLAG_CORRUPT)
         av_strlcat(tmp, ", corrupt", sizeof(tmp));
 
-    if (in->pts != AV_NOPTS_VALUE)
-        av_strlcatf(tmp, sizeof(tmp), ", pts %"PRId64, in->pts);
+    if (pkt->pts != AV_NOPTS_VALUE)
+        av_strlcatf(tmp, sizeof(tmp), ", pts %"PRId64, pkt->pts);
     else
         av_strlcat(tmp, ", no pts", sizeof(tmp));
-    if (in->dts != AV_NOPTS_VALUE)
-        av_strlcatf(tmp, sizeof(tmp), ", dts %"PRId64, in->dts);
+    if (pkt->dts != AV_NOPTS_VALUE)
+        av_strlcatf(tmp, sizeof(tmp), ", dts %"PRId64, pkt->dts);
     else
         av_strlcat(tmp, ", no dts", sizeof(tmp));
-    if (in->duration > 0)
-        av_strlcatf(tmp, sizeof(tmp), ", duration %"PRId64, in->duration);
+    if (pkt->duration > 0)
+        av_strlcatf(tmp, sizeof(tmp), ", duration %"PRId64, pkt->duration);
 
-    av_log(bsf, AV_LOG_INFO, "Packet: %d bytes%s.\n", in->size, tmp);
+    av_log(bsf, AV_LOG_INFO, "Packet: %d bytes%s.\n", pkt->size, tmp);
 
-    err = ff_cbs_read_packet(ctx->cbc, &au, in);
-    if (err < 0)
+    err = ff_cbs_read_packet(ctx->cbc, &au, pkt);
+    if (err < 0) {
+        av_packet_unref(pkt);
         return err;
+    }
 
     ff_cbs_fragment_uninit(ctx->cbc, &au);
-
-    av_packet_move_ref(out, in);
-    av_packet_free(&in);
 
     return 0;
 }
