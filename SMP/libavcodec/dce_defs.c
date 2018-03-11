@@ -40,6 +40,7 @@
 #include "libavcodec/x86/simple_idct.h"
 #endif
 #include "libavcodec/sbrdsp.h"
+#include "libavcodec/sbcdsp.h"
 #include "libavcodec/rv34dsp.h"
 #include "libavcodec/rdft.h"
 #include "libavcodec/qpeldsp.h"
@@ -3506,6 +3507,7 @@ void ff_rv34_idct_dc_add_mmx(uint8_t *dst, ptrdiff_t stride, int dc) {return;}
 void ff_rv34dsp_init_arm(RV34DSPContext *c) {return;}
 void ff_rv40dsp_init_aarch64(RV34DSPContext *c) {return;}
 void ff_rv40dsp_init_arm(RV34DSPContext *c) {return;}
+void ff_sbcdsp_init_arm(SBCDSPContext *s) {return;}
 void ff_sbrdsp_init_aarch64(SBRDSPContext *s) {return;}
 void ff_sbrdsp_init_arm(SBRDSPContext *s) {return;}
 void ff_sbrdsp_init_mips(SBRDSPContext *s) {return;}

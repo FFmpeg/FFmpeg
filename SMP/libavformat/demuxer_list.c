@@ -217,6 +217,7 @@ static const AVInputFormat *demuxer_list[] = {
     &ff_s337m_demuxer,
     &ff_sami_demuxer,
     &ff_sap_demuxer,
+    &ff_sbc_demuxer,
     &ff_sbg_demuxer,
     &ff_scc_demuxer,
     &ff_sdp_demuxer,

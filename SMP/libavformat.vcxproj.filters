@@ -1066,6 +1066,9 @@
     <ClCompile Include="..\libavformat\sapenc.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>
+    <ClCompile Include="..\libavformat\sbcdec.c">
+      <Filter>Source Files\libavformat</Filter>
+    </ClCompile>
     <ClCompile Include="..\libavformat\sbgdec.c">
       <Filter>Source Files\libavformat</Filter>
     </ClCompile>

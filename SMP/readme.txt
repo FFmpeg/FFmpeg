@@ -56,7 +56,13 @@ Many of the possible FFmpeg dependencies (and there dependencies) are available 
 However the following is a list of extra dependency options that require external downloads:
     1) opengl (requires glext)
 		a) Download glext.h and wglext.h from opengl.org.
-		b) Save the header files into OutputDir/include/gl/*.
+		b) Save the header files into "OutputDir/include/gl/*".
+    2) ffnvcodec (requires nv-codec-headers)
+        a) Download the nv-codec-headers repository from https://github.com/FFmpeg/nv-codec-headers
+        b) Save the contents of the nv-codec-headers repositories "include" folder into "OutputDir/include/*".
+    3) AMF (requires Advanced Media Framework (AMF) SDK headers)
+        a) Download the AMF repository from https://github.com/GPUOpen-LibrariesAndSDKs/AMF
+        b) Save the contents of the AMF repositories "amf/public/include" into "OutputDir/include/AMF/*".
 			
 *OutputDir is the "Output Directory" specified in the project properties. 
 The default value of OutputDir is "..\..\msvc" relative to the FFmpeg source directory. An example of the expected 

@@ -145,6 +145,7 @@ static const AVOutputFormat *muxer_list[] = {
     &ff_rtp_mpegts_muxer,
     &ff_rtsp_muxer,
     &ff_sap_muxer,
+    &ff_sbc_muxer,
     &ff_scc_muxer,
     &ff_segment_muxer,
     &ff_stream_segment_muxer,

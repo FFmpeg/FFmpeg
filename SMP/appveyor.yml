@@ -124,6 +124,22 @@ before_build:
 - ps: (New-Object Net.WebClient).DownloadFile('http://www.opengl.org/registry/api/GL/glext.h', "$env:APPVEYOR_BUILD_FOLDER\..\prebuilt\include\gl\glext.h")
 - ps: (New-Object Net.WebClient).DownloadFile('http://www.opengl.org/registry/api/GL/wglext.h', "$env:APPVEYOR_BUILD_FOLDER\..\prebuilt\include\gl\wglext.h")
 
+# Download required ffnvcodec headers
+- ps: (New-Object Net.WebClient).DownloadFile('https://github.com/FFmpeg/nv-codec-headers/archive/master.zip', "$pwd\ffnvcodec.zip")
+- ps: Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory("$pwd\ffnvcodec.zip", "$pwd\TempffnvcodecUnpack")
+- cmd: mkdir "%APPVEYOR_BUILD_FOLDER%\..\prebuilt\include\ffnvcodec" >NUL 2>&1
+- cmd: copy ".\TempffnvcodecUnpack\nv-codec-headers-master\include\ffnvcodec\*.h" "%APPVEYOR_BUILD_FOLDER%\..\prebuilt\include\ffnvcodec\"
+
+# Download required AMF headers
+- ps: Invoke-RestMethod -Uri https://api.github.com/repos/GPUOpen-LibrariesAndSDKs/AMF/releases/latest > latest.json
+- cmd: for /f "tokens=* USEBACKQ" %%F in (`TYPE latest.json ^| FINDSTR /B "tag_name"`) do set TAG=%%F
+- cmd: for /f "tokens=2 delims={{':'}} " %%F in ("%TAG%") do set TAG=%%F
+- ps: (New-Object Net.WebClient).DownloadFile("https://github.com/GPUOpen-LibrariesAndSDKs/AMF/archive/$env:TAG.zip", "$pwd\AMF.zip")
+- ps: Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory("$pwd\AMF.zip", "$pwd\TempAMFUnpack")
+- cmd: for /f "tokens=*" %%G IN ('dir amf /ad /s /b') do set FOLDER=%%G
+- cmd: mkdir "%APPVEYOR_BUILD_FOLDER%\..\prebuilt\include\AMF" >NUL 2>&1
+- cmd: xcopy /s /y /q "%FOLDER%\public\include" "%APPVEYOR_BUILD_FOLDER%\..\prebuilt\include\AMF"
+
 build:
   project: build.vcxproj
   parallel: true
