@@ -40,6 +40,19 @@ static const CodedBitstreamType *cbs_type_table[] = {
 #endif
 };
 
+const enum AVCodecID ff_cbs_all_codec_ids[] = {
+#if CONFIG_CBS_H264
+    AV_CODEC_ID_H264,
+#endif
+#if CONFIG_CBS_H265
+    AV_CODEC_ID_H265,
+#endif
+#if CONFIG_CBS_MPEG2
+    AV_CODEC_ID_MPEG2VIDEO,
+#endif
+    AV_CODEC_ID_NONE
+};
+
 int ff_cbs_init(CodedBitstreamContext **ctx_ptr,
                 enum AVCodecID codec_id, void *log_ctx)
 {

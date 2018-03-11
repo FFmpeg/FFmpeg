@@ -107,18 +107,11 @@ static int trace_headers(AVBSFContext *bsf, AVPacket *pkt)
     return 0;
 }
 
-static const enum AVCodecID trace_headers_codec_ids[] = {
-    AV_CODEC_ID_H264,
-    AV_CODEC_ID_HEVC,
-    AV_CODEC_ID_MPEG2VIDEO,
-    AV_CODEC_ID_NONE,
-};
-
 const AVBitStreamFilter ff_trace_headers_bsf = {
     .name           = "trace_headers",
     .priv_data_size = sizeof(TraceHeadersContext),
     .init           = &trace_headers_init,
     .close          = &trace_headers_close,
     .filter         = &trace_headers,
-    .codec_ids      = trace_headers_codec_ids,
+    .codec_ids      = ff_cbs_all_codec_ids,
 };

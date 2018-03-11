@@ -202,6 +202,14 @@ typedef struct CodedBitstreamContext {
 
 
 /**
+ * Table of all supported codec IDs.
+ *
+ * Terminated by AV_CODEC_ID_NONE.
+ */
+extern const enum AVCodecID ff_cbs_all_codec_ids[];
+
+
+/**
  * Create and initialise a new context for the given codec.
  */
 int ff_cbs_init(CodedBitstreamContext **ctx,
