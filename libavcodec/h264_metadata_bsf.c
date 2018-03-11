@@ -47,9 +47,6 @@ typedef struct H264MetadataContext {
 
     int done_first_au;
 
-    H264RawAUD aud_nal;
-    H264RawSEI sei_nal;
-
     int aud;
 
     AVRational sample_aspect_ratio;
@@ -259,7 +256,9 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
                 0x3ff, // 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
             };
             int primary_pic_type_mask = 0xff;
-            H264RawAUD *aud = &ctx->aud_nal;
+            H264RawAUD aud = {
+                .nal_unit_header.nal_unit_type = H264_NAL_AUD,
+            };
 
             for (i = 0; i < au->nb_units; i++) {
                 if (au->units[i].type == H264_NAL_SLICE ||
@@ -282,11 +281,10 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
                 goto fail;
             }
 
-            aud->nal_unit_header.nal_unit_type = H264_NAL_AUD;
-            aud->primary_pic_type = j;
+            aud.primary_pic_type = j;
 
             err = ff_cbs_insert_unit_content(ctx->cbc, au,
-                                             0, H264_NAL_AUD, aud, NULL);
+                                             0, H264_NAL_AUD, &aud, NULL);
             if (err < 0) {
                 av_log(bsf, AV_LOG_ERROR, "Failed to insert AUD.\n");
                 goto fail;
