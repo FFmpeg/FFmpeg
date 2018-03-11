@@ -28,6 +28,9 @@
 #if CONFIG_LIBDRM
 #   include <va/va_drmcommon.h>
 #   include <drm_fourcc.h>
+#   ifndef DRM_FORMAT_MOD_INVALID
+#       define DRM_FORMAT_MOD_INVALID ((1ULL << 56) - 1)
+#   endif
 #endif
 
 #include <fcntl.h>
@@ -1071,8 +1074,9 @@ static int vaapi_map_from_drm(AVHWFramesContext *src_fc, AVFrame *dst,
     return 0;
 }
 
-static void vaapi_unmap_to_drm(AVHWFramesContext *dst_fc,
-                               HWMapDescriptor *hwmap)
+#if VA_CHECK_VERSION(1, 1, 0)
+static void vaapi_unmap_to_drm_esh(AVHWFramesContext *hwfc,
+                                   HWMapDescriptor *hwmap)
 {
     AVDRMFrameDescriptor *drm_desc = hwmap->priv;
     int i;
@@ -1083,10 +1087,9 @@ static void vaapi_unmap_to_drm(AVHWFramesContext *dst_fc,
     av_freep(&drm_desc);
 }
 
-static int vaapi_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
-                            const AVFrame *src, int flags)
+static int vaapi_map_to_drm_esh(AVHWFramesContext *hwfc, AVFrame *dst,
+                                const AVFrame *src, int flags)
 {
-#if VA_CHECK_VERSION(1, 1, 0)
     AVVAAPIDeviceContext *hwctx = hwfc->device_ctx->hwctx;
     VASurfaceID surface_id;
     VAStatus vas;
@@ -1138,7 +1141,7 @@ static int vaapi_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
     }
 
     err = ff_hwframe_map_create(src->hw_frames_ctx, dst, src,
-                                &vaapi_unmap_to_drm, drm_desc);
+                                &vaapi_unmap_to_drm_esh, drm_desc);
     if (err < 0)
         goto fail;
 
@@ -1153,15 +1156,182 @@ fail:
         close(va_desc.objects[i].fd);
     av_freep(&drm_desc);
     return err;
-#else
-    // Older versions without vaExportSurfaceHandle() are not supported -
-    // in theory this is possible with a combination of vaDeriveImage()
-    // and vaAcquireBufferHandle(), but it doesn't carry enough metadata
-    // to actually use the result in a generic way.
-    return AVERROR(ENOSYS);
-#endif
 }
 #endif
+
+typedef struct VAAPIDRMImageBufferMapping {
+    VAImage      image;
+    VABufferInfo buffer_info;
+
+    AVDRMFrameDescriptor drm_desc;
+} VAAPIDRMImageBufferMapping;
+
+static void vaapi_unmap_to_drm_abh(AVHWFramesContext *hwfc,
+                                  HWMapDescriptor *hwmap)
+{
+    AVVAAPIDeviceContext *hwctx = hwfc->device_ctx->hwctx;
+    VAAPIDRMImageBufferMapping *mapping = hwmap->priv;
+    VASurfaceID surface_id;
+    VAStatus vas;
+
+    surface_id = (VASurfaceID)(uintptr_t)hwmap->source->data[3];
+    av_log(hwfc, AV_LOG_DEBUG, "Unmap VAAPI surface %#x from DRM.\n",
+           surface_id);
+
+    // DRM PRIME file descriptors are closed by vaReleaseBufferHandle(),
+    // so we shouldn't close them separately.
+
+    vas = vaReleaseBufferHandle(hwctx->display, mapping->image.buf);
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(hwfc, AV_LOG_ERROR, "Failed to release buffer "
+               "handle of image %#x (derived from surface %#x): "
+               "%d (%s).\n", mapping->image.buf, surface_id,
+               vas, vaErrorStr(vas));
+    }
+
+    vas = vaDestroyImage(hwctx->display, mapping->image.image_id);
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(hwfc, AV_LOG_ERROR, "Failed to destroy image "
+               "derived from surface %#x: %d (%s).\n",
+               surface_id, vas, vaErrorStr(vas));
+    }
+
+    av_free(mapping);
+}
+
+static int vaapi_map_to_drm_abh(AVHWFramesContext *hwfc, AVFrame *dst,
+                                const AVFrame *src, int flags)
+{
+    AVVAAPIDeviceContext *hwctx = hwfc->device_ctx->hwctx;
+    VAAPIDRMImageBufferMapping *mapping = NULL;
+    VASurfaceID surface_id;
+    VAStatus vas;
+    int err, i, p;
+
+    surface_id = (VASurfaceID)(uintptr_t)src->data[3];
+    av_log(hwfc, AV_LOG_DEBUG, "Map VAAPI surface %#x to DRM.\n",
+           surface_id);
+
+    mapping = av_mallocz(sizeof(*mapping));
+    if (!mapping)
+        return AVERROR(ENOMEM);
+
+    vas = vaDeriveImage(hwctx->display, surface_id,
+                        &mapping->image);
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(hwfc, AV_LOG_ERROR, "Failed to derive image from "
+               "surface %#x: %d (%s).\n",
+               surface_id, vas, vaErrorStr(vas));
+        err = AVERROR(EIO);
+        goto fail;
+    }
+
+    for (i = 0; i < FF_ARRAY_ELEMS(vaapi_drm_format_map); i++) {
+        if (vaapi_drm_format_map[i].va_fourcc ==
+            mapping->image.format.fourcc)
+            break;
+    }
+    if (i >= FF_ARRAY_ELEMS(vaapi_drm_format_map)) {
+        av_log(hwfc, AV_LOG_ERROR, "No matching DRM format for "
+               "VAAPI format %#x.\n", mapping->image.format.fourcc);
+        err = AVERROR(EINVAL);
+        goto fail_derived;
+    }
+
+    mapping->buffer_info.mem_type =
+        VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME;
+
+    mapping->drm_desc.nb_layers =
+        vaapi_drm_format_map[i].nb_layer_formats;
+    if (mapping->drm_desc.nb_layers > 1) {
+        if (mapping->drm_desc.nb_layers != mapping->image.num_planes) {
+            av_log(hwfc, AV_LOG_ERROR, "Image properties do not match "
+                   "expected format: got %d planes, but expected %d.\n",
+                   mapping->image.num_planes, mapping->drm_desc.nb_layers);
+            err = AVERROR(EINVAL);
+            goto fail_derived;
+        }
+
+        for(p = 0; p < mapping->drm_desc.nb_layers; p++) {
+            mapping->drm_desc.layers[p] = (AVDRMLayerDescriptor) {
+                .format    = vaapi_drm_format_map[i].layer_formats[p],
+                .nb_planes = 1,
+                .planes[0] = {
+                    .object_index = 0,
+                    .offset       = mapping->image.offsets[p],
+                    .pitch        = mapping->image.pitches[p],
+                },
+            };
+        }
+    } else {
+        mapping->drm_desc.layers[0].format =
+            vaapi_drm_format_map[i].layer_formats[0];
+        mapping->drm_desc.layers[0].nb_planes = mapping->image.num_planes;
+        for (p = 0; p < mapping->image.num_planes; p++) {
+            mapping->drm_desc.layers[0].planes[p] = (AVDRMPlaneDescriptor) {
+                .object_index = 0,
+                .offset       = mapping->image.offsets[p],
+                .pitch        = mapping->image.pitches[p],
+            };
+        }
+    }
+
+    vas = vaAcquireBufferHandle(hwctx->display, mapping->image.buf,
+                                &mapping->buffer_info);
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(hwfc, AV_LOG_ERROR, "Failed to get buffer "
+               "handle from image %#x (derived from surface %#x): "
+               "%d (%s).\n", mapping->image.buf, surface_id,
+               vas, vaErrorStr(vas));
+        err = AVERROR(EIO);
+        goto fail_derived;
+    }
+
+    av_log(hwfc, AV_LOG_DEBUG, "DRM PRIME fd is %ld.\n",
+           mapping->buffer_info.handle);
+
+    mapping->drm_desc.nb_objects = 1;
+    mapping->drm_desc.objects[0] = (AVDRMObjectDescriptor) {
+        .fd   = mapping->buffer_info.handle,
+        .size = mapping->image.data_size,
+        // There is no way to get the format modifier with this API.
+        .format_modifier = DRM_FORMAT_MOD_INVALID,
+    };
+
+    err = ff_hwframe_map_create(src->hw_frames_ctx,
+                                dst, src, &vaapi_unmap_to_drm_abh,
+                                mapping);
+    if (err < 0)
+        goto fail_mapped;
+
+    dst->data[0] = (uint8_t*)&mapping->drm_desc;
+    dst->width   = src->width;
+    dst->height  = src->height;
+
+    return 0;
+
+fail_mapped:
+    vaReleaseBufferHandle(hwctx->display, mapping->image.buf);
+fail_derived:
+    vaDestroyImage(hwctx->display, mapping->image.image_id);
+fail:
+    av_freep(&mapping);
+    return err;
+}
+
+static int vaapi_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
+                            const AVFrame *src, int flags)
+{
+#if VA_CHECK_VERSION(1, 1, 0)
+    int err;
+    err = vaapi_map_to_drm_esh(hwfc, dst, src, flags);
+    if (err != AVERROR(ENOSYS))
+        return err;
+#endif
+    return vaapi_map_to_drm_abh(hwfc, dst, src, flags);
+}
+
+#endif /* CONFIG_LIBDRM */
 
 static int vaapi_map_to(AVHWFramesContext *hwfc, AVFrame *dst,
                         const AVFrame *src, int flags)
