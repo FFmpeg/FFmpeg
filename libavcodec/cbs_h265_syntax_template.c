@@ -665,7 +665,7 @@ static int FUNC(sps_scc_extension)(CodedBitstreamContext *ctx, RWContext *rw,
                                           : current->bit_depth_chroma_minus8 + 8;
                 for (i = 0; i <= current->sps_num_palette_predictor_initializer_minus1; i++)
                     u(bit_depth, sps_palette_predictor_initializers[comp][i],
-                      0, (1 << bit_depth) - 1);
+                      0, MAX_UINT_BITS(bit_depth));
             }
         }
     }
@@ -827,7 +827,7 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
         for (i = 0; i < current->num_long_term_ref_pics_sps; i++) {
             u(current->log2_max_pic_order_cnt_lsb_minus4 + 4,
               lt_ref_pic_poc_lsb_sps[i],
-              0, (1 << (current->log2_max_pic_order_cnt_lsb_minus4 + 4)) - 1);
+              0, MAX_UINT_BITS(current->log2_max_pic_order_cnt_lsb_minus4 + 4));
             flag(used_by_curr_pic_lt_sps_flag[i]);
         }
     }
@@ -845,7 +845,7 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
         flag(sps_multilayer_extension_flag);
         flag(sps_3d_extension_flag);
         flag(sps_scc_extension_flag);
-        u(4, sps_extension_4bits, 0, (1 << 4) - 1);
+        u(4, sps_extension_4bits, 0, MAX_UINT_BITS(4));
     }
 
     if (current->sps_range_extension_flag)
@@ -925,7 +925,7 @@ static int FUNC(pps_scc_extension)(CodedBitstreamContext *ctx, RWContext *rw,
                                           : current->chroma_bit_depth_entry_minus8 + 8;
                 for (i = 0; i < current->pps_num_palette_predictor_initializer; i++)
                     u(bit_depth, pps_palette_predictor_initializers[comp][i],
-                      0, (1 << bit_depth) - 1);
+                      0, MAX_UINT_BITS(bit_depth));
             }
         }
     }
@@ -1038,7 +1038,7 @@ static int FUNC(pps)(CodedBitstreamContext *ctx, RWContext *rw,
         flag(pps_multilayer_extension_flag);
         flag(pps_3d_extension_flag);
         flag(pps_scc_extension_flag);
-        u(4, pps_extension_4bits, 0, (1 << 4) - 1);
+        u(4, pps_extension_4bits, 0, MAX_UINT_BITS(4));
     }
     if (current->pps_range_extension_flag)
         CHECK(FUNC(pps_range_extension)(ctx, rw, current));
@@ -1274,7 +1274,7 @@ static int FUNC(slice_segment_header)(CodedBitstreamContext *ctx, RWContext *rw,
             const H265RawSTRefPicSet *rps;
 
             u(sps->log2_max_pic_order_cnt_lsb_minus4 + 4, slice_pic_order_cnt_lsb,
-              0, (1 << (sps->log2_max_pic_order_cnt_lsb_minus4 + 4)) - 1);
+              0, MAX_UINT_BITS(sps->log2_max_pic_order_cnt_lsb_minus4 + 4));
 
             flag(short_term_ref_pic_set_sps_flag);
             if (!current->short_term_ref_pic_set_sps_flag) {
@@ -1321,7 +1321,7 @@ static int FUNC(slice_segment_header)(CodedBitstreamContext *ctx, RWContext *rw,
                             ++num_pic_total_curr;
                     } else {
                         u(sps->log2_max_pic_order_cnt_lsb_minus4 + 4, poc_lsb_lt[i],
-                          0, (1 << (sps->log2_max_pic_order_cnt_lsb_minus4 + 4)) - 1);
+                          0, MAX_UINT_BITS(sps->log2_max_pic_order_cnt_lsb_minus4 + 4));
                         flag(used_by_curr_pic_lt_flag[i]);
                         if (current->used_by_curr_pic_lt_flag[i])
                             ++num_pic_total_curr;
@@ -1487,7 +1487,7 @@ static int FUNC(slice_segment_header)(CodedBitstreamContext *ctx, RWContext *rw,
             ue(offset_len_minus1, 0, 31);
             for (i = 0; i < current->num_entry_point_offsets; i++)
                 u(current->offset_len_minus1 + 1, entry_point_offset_minus1[i],
-                  0, (1 << (current->offset_len_minus1 + 1)) - 1);
+                  0, MAX_UINT_BITS(current->offset_len_minus1 + 1));
         }
     }
 
