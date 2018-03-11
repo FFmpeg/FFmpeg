@@ -93,6 +93,31 @@ When this option is enabled, the long-term headers are removed from the
 bitstream after extraction.
 @end table
 
+@section hapqa_extract
+
+Extract Rgb or Alpha part of an HAPQA file, without recompression, in order to create an HAPQ or an HAPAlphaOnly file.
+
+@table @option
+@item texture
+Specifies the texture to keep.
+
+@table @option
+@item color
+@item alpha
+@end table
+
+@end table
+
+Convert HAPQA to HAPQ
+@example
+ffmpeg -i hapqa_inputfile.mov -c copy -bsf:v hapqa_extract=texture=color -tag:v HapY -metadata:s:v:0 encoder="HAPQ" hapq_file.mov
+@end example
+
+Convert HAPQA to HAPAlphaOnly
+@example
+ffmpeg -i hapqa_inputfile.mov -c copy -bsf:v hapqa_extract=texture=alpha -tag:v HapA -metadata:s:v:0 encoder="HAPAlpha Only" hapalphaonly_file.mov
+@end example
+
 @section h264_metadata
 
 Modify metadata embedded in an H.264 stream.
