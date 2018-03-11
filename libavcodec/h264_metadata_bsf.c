@@ -17,6 +17,7 @@
  */
 
 #include "libavutil/avstring.h"
+#include "libavutil/display.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
 
@@ -30,6 +31,12 @@ enum {
     PASS,
     INSERT,
     REMOVE,
+    EXTRACT,
+};
+
+enum {
+    FLIP_HORIZONTAL = 1,
+    FLIP_VERTICAL   = 2,
 };
 
 typedef struct H264MetadataContext {
@@ -37,6 +44,8 @@ typedef struct H264MetadataContext {
 
     CodedBitstreamContext *cbc;
     CodedBitstreamFragment access_unit;
+
+    int done_first_au;
 
     H264RawAUD aud_nal;
     H264RawSEI sei_nal;
@@ -62,9 +71,12 @@ typedef struct H264MetadataContext {
     int crop_bottom;
 
     const char *sei_user_data;
-    int sei_first_au;
 
     int delete_filler;
+
+    int display_orientation;
+    double rotate;
+    int flip;
 } H264MetadataContext;
 
 
@@ -211,6 +223,8 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
     AVPacket *in = NULL;
     CodedBitstreamFragment *au = &ctx->access_unit;
     int err, i, j, has_sps;
+    uint8_t *displaymatrix_side_data = NULL;
+    size_t displaymatrix_side_data_size = 0;
 
     err = ff_bsf_get_packet(bsf, &in);
     if (err < 0)
@@ -292,14 +306,12 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
 
     // Only insert the SEI in access units containing SPSs, and also
     // unconditionally in the first access unit we ever see.
-    if (ctx->sei_user_data && (has_sps || !ctx->sei_first_au)) {
+    if (ctx->sei_user_data && (has_sps || !ctx->done_first_au)) {
         H264RawSEIPayload payload = {
             .payload_type = H264_SEI_TYPE_USER_DATA_UNREGISTERED,
         };
         H264RawSEIUserDataUnregistered *udu =
             &payload.payload.user_data_unregistered;
-
-        ctx->sei_first_au = 1;
 
         for (i = j = 0; j < 32 && ctx->sei_user_data[i]; i++) {
             int c, v;
@@ -387,6 +399,121 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
         }
     }
 
+    if (ctx->display_orientation != PASS) {
+        for (i = 0; i < au->nb_units; i++) {
+            H264RawSEI *sei;
+            if (au->units[i].type != H264_NAL_SEI)
+                continue;
+            sei = au->units[i].content;
+
+            for (j = 0; j < sei->payload_count; j++) {
+                H264RawSEIDisplayOrientation *disp;
+                int32_t *matrix;
+
+                if (sei->payload[j].payload_type !=
+                    H264_SEI_TYPE_DISPLAY_ORIENTATION)
+                    continue;
+                disp = &sei->payload[j].payload.display_orientation;
+
+                if (ctx->display_orientation == REMOVE ||
+                    ctx->display_orientation == INSERT) {
+                    err = ff_cbs_h264_delete_sei_message(ctx->cbc, au,
+                                                         &au->units[i], j);
+                    if (err < 0) {
+                        av_log(bsf, AV_LOG_ERROR, "Failed to delete "
+                               "display orientation SEI message.\n");
+                        goto fail;
+                    }
+                    --i;
+                    break;
+                }
+
+                matrix = av_mallocz(9 * sizeof(int32_t));
+                if (!matrix) {
+                    err = AVERROR(ENOMEM);
+                    goto fail;
+                }
+
+                av_display_rotation_set(matrix,
+                                        disp->anticlockwise_rotation *
+                                        180.0 / 65536.0);
+                av_display_matrix_flip(matrix, disp->hor_flip, disp->ver_flip);
+
+                displaymatrix_side_data      = (uint8_t*)matrix;
+                displaymatrix_side_data_size = 9 * sizeof(int32_t);
+            }
+        }
+    }
+    if (ctx->display_orientation == INSERT) {
+        H264RawSEIPayload payload = {
+            .payload_type = H264_SEI_TYPE_DISPLAY_ORIENTATION,
+        };
+        H264RawSEIDisplayOrientation *disp =
+            &payload.payload.display_orientation;
+        uint8_t *data;
+        int size;
+        int write = 0;
+
+        data = av_packet_get_side_data(in, AV_PKT_DATA_DISPLAYMATRIX, &size);
+        if (data && size >= 9 * sizeof(int32_t)) {
+            int32_t matrix[9];
+            int hflip, vflip;
+            double angle;
+
+            memcpy(matrix, data, sizeof(matrix));
+
+            hflip = vflip = 0;
+            if (matrix[0] < 0 && matrix[4] > 0)
+                hflip = 1;
+            else if (matrix[0] > 0 && matrix[4] < 0)
+                vflip = 1;
+            av_display_matrix_flip(matrix, hflip, vflip);
+
+            angle = av_display_rotation_get(matrix);
+
+            if (!(angle >= -180.0 && angle <= 180.0 /* also excludes NaN */) ||
+                matrix[2] != 0 || matrix[5] != 0 ||
+                matrix[6] != 0 || matrix[7] != 0) {
+                av_log(bsf, AV_LOG_WARNING, "Input display matrix is not "
+                       "representable in H.264 parameters.\n");
+            } else {
+                disp->hor_flip = hflip;
+                disp->ver_flip = vflip;
+                disp->anticlockwise_rotation =
+                    (uint16_t)rint((angle >= 0.0 ? angle
+                                                 : angle + 360.0) *
+                                   65536.0 / 360.0);
+                write = 1;
+            }
+        }
+
+        if (has_sps || !ctx->done_first_au) {
+            if (!isnan(ctx->rotate)) {
+                disp->anticlockwise_rotation =
+                    (uint16_t)rint((ctx->rotate >= 0.0 ? ctx->rotate
+                                                       : ctx->rotate + 360.0) *
+                                   65536.0 / 360.0);
+                write = 1;
+            }
+            if (ctx->flip) {
+                disp->hor_flip = !!(ctx->flip & FLIP_HORIZONTAL);
+                disp->ver_flip = !!(ctx->flip & FLIP_VERTICAL);
+                write = 1;
+            }
+        }
+
+        if (write) {
+            disp->display_orientation_repetition_period = 1;
+
+            err = ff_cbs_h264_add_sei_message(ctx->cbc, au, &payload);
+            if (err < 0) {
+                av_log(bsf, AV_LOG_ERROR, "Failed to add display orientation "
+                       "SEI message to access unit.\n");
+                goto fail;
+            }
+        }
+    }
+
     err = ff_cbs_write_packet(ctx->cbc, out, au);
     if (err < 0) {
         av_log(bsf, AV_LOG_ERROR, "Failed to write packet.\n");
@@ -397,9 +524,24 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
     if (err < 0)
         goto fail;
 
+    if (displaymatrix_side_data) {
+        err = av_packet_add_side_data(out, AV_PKT_DATA_DISPLAYMATRIX,
+                                      displaymatrix_side_data,
+                                      displaymatrix_side_data_size);
+        if (err) {
+            av_log(bsf, AV_LOG_ERROR, "Failed to attach extracted "
+                   "displaymatrix side data to packet.\n");
+            goto fail;
+        }
+        displaymatrix_side_data = NULL;
+    }
+
+    ctx->done_first_au = 1;
+
     err = 0;
 fail:
     ff_cbs_fragment_uninit(ctx->cbc, au);
+    av_freep(&displaymatrix_side_data);
 
     av_packet_free(&in);
 
@@ -508,6 +650,25 @@ static const AVOption h264_metadata_options[] = {
 
     { "delete_filler", "Delete all filler (both NAL and SEI)",
         OFFSET(delete_filler), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1 },
+
+    { "display_orientation", "Display orientation SEI",
+        OFFSET(display_orientation), AV_OPT_TYPE_INT,
+        { .i64 = PASS }, PASS, EXTRACT, 0, "disp_or" },
+    { "pass",    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PASS    }, .unit = "disp_or" },
+    { "insert",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = INSERT  }, .unit = "disp_or" },
+    { "remove",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = REMOVE  }, .unit = "disp_or" },
+    { "extract", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = EXTRACT }, .unit = "disp_or" },
+
+    { "rotate", "Set rotation in display orientation SEI (anticlockwise angle in degrees)",
+        OFFSET(rotate), AV_OPT_TYPE_DOUBLE,
+        { .dbl = NAN }, -360.0, +360.0 },
+    { "flip", "Set flip in display orientation SEI",
+        OFFSET(flip), AV_OPT_TYPE_FLAGS,
+        { .i64 = 0 }, 0, FLIP_HORIZONTAL | FLIP_VERTICAL, .unit ="flip" },
+    { "horizontal", "Set hor_flip",
+        0, AV_OPT_TYPE_CONST, { .i64 = FLIP_HORIZONTAL }, .unit ="flip" },
+    { "vertical",   "Set ver_flip",
+        0, AV_OPT_TYPE_CONST, { .i64 = FLIP_VERTICAL },   .unit ="flip" },
 
     { NULL }
 };
