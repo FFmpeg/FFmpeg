@@ -342,8 +342,8 @@ static int FUNC(sps_extension)(CodedBitstreamContext *ctx, RWContext *rw,
         flag(alpha_incr_flag);
 
         bits = current->bit_depth_aux_minus8 + 9;
-        u(bits, alpha_opaque_value,      0, (1 << bits) - 1);
-        u(bits, alpha_transparent_value, 0, (1 << bits) - 1);
+        u(bits, alpha_opaque_value,      0, MAX_UINT_BITS(bits));
+        u(bits, alpha_transparent_value, 0, MAX_UINT_BITS(bits));
     }
 
     flag(additional_extension_flag);
@@ -483,10 +483,10 @@ static int FUNC(sei_buffering_period)(CodedBitstreamContext *ctx, RWContext *rw,
             length = sps->vui.nal_hrd_parameters.initial_cpb_removal_delay_length_minus1 + 1;
             xu(length, initial_cpb_removal_delay[SchedSelIdx],
                current->nal.initial_cpb_removal_delay[i],
-               0, (1 << (uint64_t)length) - 1);
+               1, MAX_UINT_BITS(length));
             xu(length, initial_cpb_removal_delay_offset[SchedSelIdx],
                current->nal.initial_cpb_removal_delay_offset[i],
-               0, (1 << (uint64_t)length) - 1);
+               0, MAX_UINT_BITS(length));
         }
     }
 
@@ -495,10 +495,10 @@ static int FUNC(sei_buffering_period)(CodedBitstreamContext *ctx, RWContext *rw,
             length = sps->vui.vcl_hrd_parameters.initial_cpb_removal_delay_length_minus1 + 1;
             xu(length, initial_cpb_removal_delay[SchedSelIdx],
                current->vcl.initial_cpb_removal_delay[i],
-               0, (1 << (uint64_t)length) - 1);
+               1, MAX_UINT_BITS(length));
             xu(length, initial_cpb_removal_delay_offset[SchedSelIdx],
                current->vcl.initial_cpb_removal_delay_offset[i],
-               0, (1 << (uint64_t)length) - 1);
+               0, MAX_UINT_BITS(length));
         }
     }
 
@@ -548,7 +548,7 @@ static int FUNC(sei_pic_timestamp)(CodedBitstreamContext *ctx, RWContext *rw,
 
     if (time_offset_length > 0)
         u(time_offset_length, time_offset,
-          0, (1 << (uint64_t)time_offset_length) - 1);
+          0, MAX_UINT_BITS(time_offset_length));
     else
         infer(time_offset, 0);
 
@@ -600,9 +600,9 @@ static int FUNC(sei_pic_timing)(CodedBitstreamContext *ctx, RWContext *rw,
         }
 
         u(hrd->cpb_removal_delay_length_minus1 + 1, cpb_removal_delay,
-          0, (1 << (uint64_t)hrd->cpb_removal_delay_length_minus1) + 1);
+          0, MAX_UINT_BITS(hrd->cpb_removal_delay_length_minus1 + 1));
         u(hrd->dpb_output_delay_length_minus1 + 1, dpb_output_delay,
-          0, (1 << (uint64_t)hrd->dpb_output_delay_length_minus1) + 1);
+          0, MAX_UINT_BITS(hrd->dpb_output_delay_length_minus1 + 1));
     }
 
     if (sps->vui.pic_struct_present_flag) {
@@ -1123,7 +1123,7 @@ static int FUNC(slice_header)(CodedBitstreamContext *ctx, RWContext *rw,
         u(2, colour_plane_id, 0, 2);
 
     u(sps->log2_max_frame_num_minus4 + 4, frame_num,
-      0, (1 << (sps->log2_max_frame_num_minus4 + 4)) - 1);
+      0, MAX_UINT_BITS(sps->log2_max_frame_num_minus4 + 4));
 
     if (!sps->frame_mbs_only_flag) {
         flag(field_pic_flag);
@@ -1141,7 +1141,7 @@ static int FUNC(slice_header)(CodedBitstreamContext *ctx, RWContext *rw,
 
     if (sps->pic_order_cnt_type == 0) {
         u(sps->log2_max_pic_order_cnt_lsb_minus4 + 4, pic_order_cnt_lsb,
-          0, (1 << (sps->log2_max_pic_order_cnt_lsb_minus4 + 4)) - 1);
+          0, MAX_UINT_BITS(sps->log2_max_pic_order_cnt_lsb_minus4 + 4));
         if (pps->bottom_field_pic_order_in_frame_present_flag &&
             !current->field_pic_flag)
             se(delta_pic_order_cnt_bottom, INT32_MIN + 1, INT32_MAX);

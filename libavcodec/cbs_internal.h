@@ -79,6 +79,10 @@ int ff_cbs_write_unsigned(CodedBitstreamContext *ctx, PutBitContext *pbc,
                           int width, const char *name, uint32_t value,
                           uint32_t range_min, uint32_t range_max);
 
+// The largest value representable in N bits, suitable for use as
+// range_max in the above functions.
+#define MAX_UINT_BITS(length) ((UINT64_C(1) << (length)) - 1)
+
 
 extern const CodedBitstreamType ff_cbs_type_h264;
 extern const CodedBitstreamType ff_cbs_type_h265;
