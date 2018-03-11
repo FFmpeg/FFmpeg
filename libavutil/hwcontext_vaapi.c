@@ -1095,15 +1095,20 @@ static int vaapi_map_to_drm_esh(AVHWFramesContext *hwfc, AVFrame *dst,
     VAStatus vas;
     VADRMPRIMESurfaceDescriptor va_desc;
     AVDRMFrameDescriptor *drm_desc = NULL;
+    uint32_t export_flags;
     int err, i, j;
 
     surface_id = (VASurfaceID)(uintptr_t)src->data[3];
 
+    export_flags = VA_EXPORT_SURFACE_SEPARATE_LAYERS;
+    if (flags & AV_HWFRAME_MAP_READ)
+        export_flags |= VA_EXPORT_SURFACE_READ_ONLY;
+    if (flags & AV_HWFRAME_MAP_WRITE)
+        export_flags |= VA_EXPORT_SURFACE_WRITE_ONLY;
+
     vas = vaExportSurfaceHandle(hwctx->display, surface_id,
                                 VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
-                                VA_EXPORT_SURFACE_READ_ONLY |
-                                VA_EXPORT_SURFACE_SEPARATE_LAYERS,
-                                &va_desc);
+                                export_flags, &va_desc);
     if (vas != VA_STATUS_SUCCESS) {
         if (vas == VA_STATUS_ERROR_UNIMPLEMENTED)
             return AVERROR(ENOSYS);
