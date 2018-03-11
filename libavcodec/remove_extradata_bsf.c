@@ -38,29 +38,25 @@ typedef struct RemoveExtradataContext {
     AVCodecContext *avctx;
 } RemoveExtradataContext;
 
-static int remove_extradata(AVBSFContext *ctx, AVPacket *out)
+static int remove_extradata(AVBSFContext *ctx, AVPacket *pkt)
 {
     RemoveExtradataContext *s = ctx->priv_data;
 
-    AVPacket *in;
     int ret;
 
-    ret = ff_bsf_get_packet(ctx, &in);
+    ret = ff_bsf_get_packet_ref(ctx, pkt);
     if (ret < 0)
         return ret;
 
     if (s->parser && s->parser->parser->split) {
         if (s->freq == REMOVE_FREQ_ALL ||
-            (s->freq == REMOVE_FREQ_NONKEYFRAME && !(in->flags & AV_PKT_FLAG_KEY)) ||
-            (s->freq == REMOVE_FREQ_KEYFRAME && in->flags & AV_PKT_FLAG_KEY)) {
-            int i = s->parser->parser->split(s->avctx, in->data, in->size);
-            in->data += i;
-            in->size -= i;
+            (s->freq == REMOVE_FREQ_NONKEYFRAME && !(pkt->flags & AV_PKT_FLAG_KEY)) ||
+            (s->freq == REMOVE_FREQ_KEYFRAME && pkt->flags & AV_PKT_FLAG_KEY)) {
+            int i = s->parser->parser->split(s->avctx, pkt->data, pkt->size);
+            pkt->data += i;
+            pkt->size -= i;
         }
     }
-
-    av_packet_move_ref(out, in);
-    av_packet_free(&in);
 
     return 0;
 }
