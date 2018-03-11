@@ -62,35 +62,23 @@ const AVBitStreamFilter ff_text2movsub_bsf = {
     .filter = text2movsub,
 };
 
-static int mov2textsub(AVBSFContext *ctx, AVPacket *out)
+static int mov2textsub(AVBSFContext *ctx, AVPacket *pkt)
 {
-    AVPacket *in;
     int ret = 0;
 
-    ret = ff_bsf_get_packet(ctx, &in);
+    ret = ff_bsf_get_packet_ref(ctx, pkt);
     if (ret < 0)
         return ret;
 
-    if (in->size < 2) {
-       ret = AVERROR_INVALIDDATA;
-       goto fail;
+    if (pkt->size < 2) {
+       av_packet_unref(pkt);
+       return AVERROR_INVALIDDATA;
     }
 
-    ret = av_new_packet(out, FFMIN(in->size - 2, AV_RB16(in->data)));
-    if (ret < 0)
-        goto fail;
+    pkt->data += 2;
+    pkt->size  = FFMIN(pkt->size - 2, AV_RB16(pkt->data));
 
-    ret = av_packet_copy_props(out, in);
-    if (ret < 0)
-        goto fail;
-
-    memcpy(out->data, in->data + 2, out->size);
-
-fail:
-    if (ret < 0)
-        av_packet_unref(out);
-    av_packet_free(&in);
-    return ret;
+    return 0;
 }
 
 const AVBitStreamFilter ff_mov2textsub_bsf = {
