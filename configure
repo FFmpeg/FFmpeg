@@ -2156,6 +2156,7 @@ HAVE_LIST="
     makeinfo_html
     opencl_d3d11
     opencl_drm_arm
+    opencl_drm_beignet
     opencl_dxva2
     opencl_vaapi_beignet
     opencl_vaapi_intel_media
@@ -6241,9 +6242,15 @@ enabled vaapi &&
 enabled vaapi &&
     check_cpp_condition vaapi_1 "va/va.h" "VA_CHECK_VERSION(1, 0, 0)"
 
-if enabled_all opencl vaapi ; then
+if enabled_all opencl libdrm ; then
     check_type "CL/cl_intel.h" "clCreateImageFromFdINTEL_fn" &&
-        enable opencl_vaapi_beignet
+        enable opencl_drm_beignet
+    check_func_headers "CL/cl_ext.h" clImportMemoryARM &&
+        enable opencl_drm_arm
+fi
+
+if enabled_all opencl vaapi ; then
+    enabled opencl_drm_beignet && enable opencl_vaapi_beignet
     if enabled libmfx ; then
         check_type "CL/cl.h CL/va_ext.h" "clCreateFromVA_APIMediaSurfaceINTEL_fn" &&
             enable opencl_vaapi_intel_media
@@ -6258,11 +6265,6 @@ fi
 if enabled_all opencl d3d11va ; then
     check_type "CL/cl_d3d11.h" clGetDeviceIDsFromD3D11KHR_fn &&
         enable opencl_d3d11
-fi
-
-if enabled_all opencl libdrm ; then
-    check_func_headers "CL/cl_ext.h" clImportMemoryARM &&
-        enable opencl_drm_arm
 fi
 
 enabled vdpau &&
