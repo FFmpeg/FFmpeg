@@ -179,6 +179,10 @@ static void mediacodec_buffer_release(void *opaque, uint8_t *data)
     int released = atomic_load(&buffer->released);
 
     if (!released && (ctx->delay_flush || buffer->serial == atomic_load(&ctx->serial))) {
+        atomic_fetch_sub(&ctx->hw_buffer_count, 1);
+        av_log(ctx->avctx, AV_LOG_DEBUG,
+               "Releasing output buffer %zd (%p) ts=%"PRId64" on free() [%d pending]\n",
+               buffer->index, buffer, buffer->pts, atomic_load(&ctx->hw_buffer_count));
         ff_AMediaCodec_releaseOutputBuffer(ctx->codec, buffer->index, 0);
     }
 
@@ -245,6 +249,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
     buffer->pts = info->presentationTimeUs;
 
     frame->data[3] = (uint8_t *)buffer;
+
+    atomic_fetch_add(&s->hw_buffer_count, 1);
+    av_log(avctx, AV_LOG_DEBUG,
+            "Wrapping output buffer %zd (%p) ts=%"PRId64" [%d pending]\n",
+            buffer->index, buffer, buffer->pts, atomic_load(&s->hw_buffer_count));
 
     return 0;
 fail:
@@ -429,6 +438,7 @@ static int mediacodec_dec_flush_codec(AVCodecContext *avctx, MediaCodecDecContex
     s->flushing = 0;
     s->eos = 0;
     atomic_fetch_add(&s->serial, 1);
+    atomic_init(&s->hw_buffer_count, 0);
 
     status = ff_AMediaCodec_flush(codec);
     if (status < 0) {
@@ -454,6 +464,7 @@ int ff_mediacodec_dec_init(AVCodecContext *avctx, MediaCodecDecContext *s,
 
     s->avctx = avctx;
     atomic_init(&s->refcount, 1);
+    atomic_init(&s->hw_buffer_count, 0);
     atomic_init(&s->serial, 1);
 
     pix_fmt = ff_get_format(avctx, pix_fmts);
