@@ -2501,7 +2501,7 @@ static int hls_init(AVFormatContext *s)
             /* Get one video stream to reference for split segments
              * so use the first video stream index. */
             if ((vs->has_video == 1) && (vs->streams[j]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)) {
-                vs->reference_stream_index = j;
+                vs->reference_stream_index = vs->streams[j]->index;
             }
             vs->has_subtitle += vs->streams[j]->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE;
         }
