@@ -579,7 +579,7 @@ int ff_mediacodec_dec_send(AVCodecContext *avctx, MediaCodecDecContext *s,
 
         index = ff_AMediaCodec_dequeueInputBuffer(codec, input_dequeue_timeout_us);
         if (ff_AMediaCodec_infoTryAgainLater(codec, index)) {
-            av_log(avctx, AV_LOG_TRACE, "Failed to dequeue input buffer, try again later..\n");
+            av_log(avctx, AV_LOG_TRACE, "No input buffer available, try again later\n");
             break;
         }
 
@@ -743,7 +743,7 @@ int ff_mediacodec_dec_receive(AVCodecContext *avctx, MediaCodecDecContext *s,
                                         "while draining remaining frames, output will probably lack frames\n",
                                         output_dequeue_timeout_us / 1000);
         } else {
-            av_log(avctx, AV_LOG_DEBUG, "No output buffer available, try again later\n");
+            av_log(avctx, AV_LOG_TRACE, "No output buffer available, try again later\n");
         }
     } else {
         av_log(avctx, AV_LOG_ERROR, "Failed to dequeue output buffer (status=%zd)\n", index);
