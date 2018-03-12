@@ -1163,14 +1163,14 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
         goto alloc_fail;
 
     for (i = 0; i < 116; i++) {
-        const uint32_t qf = ff_dirac_qscale_tab[i];
-        const int m = av_log2(qf);
-        const uint32_t t = (1UL << (m + 32)) / qf;
-        const uint32_t r = (t*qf + qf) & ((1UL << 32) - 1);
+        const uint64_t qf = ff_dirac_qscale_tab[i];
+        const uint32_t m = av_log2(qf);
+        const uint32_t t = (1ULL << (m + 32)) / qf;
+        const uint32_t r = (t*qf + qf) & UINT32_MAX;
         if (!(qf & (qf - 1))) {
             s->qmagic_lut[i][0] = 0xFFFFFFFF;
             s->qmagic_lut[i][1] = 0xFFFFFFFF;
-        } else if (r <= 1UL << m) {
+        } else if (r <= 1 << m) {
             s->qmagic_lut[i][0] = t + 1;
             s->qmagic_lut[i][1] = 0;
         } else {
