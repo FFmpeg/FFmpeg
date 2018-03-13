@@ -452,7 +452,7 @@ static int mediacodec_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 
     /* skip fetching new packet if we still have one buffered */
     if (s->buffered_pkt.size > 0)
-        return AVERROR(EAGAIN);
+        return mediacodec_send_receive(avctx, s, frame, true);
 
     /* fetch new packet or eof */
     ret = ff_decode_get_packet(avctx, &s->buffered_pkt);
