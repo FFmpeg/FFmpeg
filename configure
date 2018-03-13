@@ -1042,19 +1042,6 @@ check_cpp_condition(){
     test_cpp_condition "$@" && enable $name
 }
 
-test_cflags_cpp(){
-    log test_cflags_cpp "$@"
-    flags=$1
-    condition=$2
-    shift 2
-    set -- $($cflags_filter "$flags")
-    test_cpp "$@" <<EOF
-#if !($condition)
-#error "unsatisfied condition: $condition"
-#endif
-EOF
-}
-
 check_lib(){
     log check_lib "$@"
     name="$1"
