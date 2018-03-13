@@ -45,7 +45,7 @@ static int check_texture(HapqaExtractContext *ctx, int section_type) {
     }
 }
 
-static int hapqa_extract(AVBSFContext *bsf, AVPacket *out)
+static int hapqa_extract(AVBSFContext *bsf, AVPacket *pkt)
 {
     HapqaExtractContext *ctx = bsf->priv_data;
     GetByteContext gbc;
@@ -53,14 +53,13 @@ static int hapqa_extract(AVBSFContext *bsf, AVPacket *out)
     enum HapSectionType section_type;
     int start_section_size;
     int target_packet_size = 0;
-    AVPacket *in;
     int ret = 0;
 
-    ret = ff_bsf_get_packet(bsf, &in);
+    ret = ff_bsf_get_packet_ref(bsf, pkt);
     if (ret < 0)
         return ret;
 
-    bytestream2_init(&gbc, in->data, in->size);
+    bytestream2_init(&gbc, pkt->data, pkt->size);
     ret = ff_hap_parse_section_header(&gbc, &section_size, &section_type);
     if (ret != 0)
         goto fail;
@@ -95,14 +94,12 @@ static int hapqa_extract(AVBSFContext *bsf, AVPacket *out)
         }
     }
 
-    av_packet_move_ref(out, in);
-    out->data += start_section_size;
-    out->size = target_packet_size;
+    pkt->data += start_section_size;
+    pkt->size = target_packet_size;
 
 fail:
     if (ret < 0)
-        av_packet_unref(out);
-    av_packet_free(&in);
+        av_packet_unref(pkt);
     return ret;
 }
 
