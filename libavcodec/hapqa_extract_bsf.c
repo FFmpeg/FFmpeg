@@ -66,6 +66,7 @@ static int hapqa_extract(AVBSFContext *bsf, AVPacket *pkt)
 
     if ((section_type & 0x0F) != 0x0D) {
         av_log(bsf, AV_LOG_ERROR, "Invalid section type for HAPQA %#04x.\n", section_type & 0x0F);
+        ret = AVERROR_INVALIDDATA;
         goto fail;
     }
 
@@ -90,6 +91,7 @@ static int hapqa_extract(AVBSFContext *bsf, AVPacket *pkt)
 
         if (check_texture(ctx, section_type) == 0){ /* the second texture is not the one to keep */
             av_log(bsf, AV_LOG_ERROR, "No valid texture found.\n");
+            ret = AVERROR_INVALIDDATA;
             goto fail;
         }
     }
