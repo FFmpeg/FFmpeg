@@ -4369,13 +4369,13 @@ static int process_input(int file_index)
 		if (pkt.pts != AV_NOPTS_VALUE) {
 			pkt.pts += ist->playon_timestamp_monotonicity_offset;
 			if (ist->next_pts != AV_NOPTS_VALUE) {
-				playon_pts_error = pkt.pts - ist->next_pts;
+				playon_pts_error = ist->next_pts - pkt.pts ;
 			}
 		}
 		if (pkt.dts != AV_NOPTS_VALUE) {
 			pkt.dts += ist->playon_timestamp_monotonicity_offset;
 			if (ist->next_dts != AV_NOPTS_VALUE) {
-				playon_dts_error = pkt.dts - ist->next_dts;
+				playon_dts_error = ist->next_dts - pkt.dts;
 			}
 		} 
 
@@ -4388,7 +4388,7 @@ static int process_input(int file_index)
 
 			ist->playon_timestamp_monotonicity_offset += monotonicity_adjustment;
 
-			av_log(is, AV_LOG_INFO, "Incoming stream timestamp went backwards by %"PRId64", offsetting subsequent timestamps by %"PRId64" to correct\n", monotonicity_adjustment, ist->playon_timestamp_monotonicity_offset);
+			av_log(is, AV_LOG_INFO, "Incoming stream timestamp error %"PRId64", offsetting subsequent timestamps by %"PRId64" to correct\n", monotonicity_adjustment, ist->playon_timestamp_monotonicity_offset);
 
 			// Go ahead and re-adjust the values for this iteration, for which ist->playon_timestamp_monotonicity_offset had not yet included the new delta
 			if (pkt.pts != AV_NOPTS_VALUE) {
