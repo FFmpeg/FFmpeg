@@ -1,0 +1,97 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{2f2c4a75-f563-4eda-81a8-99f05e978394}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{9dcb9da6-1c85-40b9-b875-9bdf9575be2d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{e05e69ea-955c-4c2c-83f8-ff30c0007387}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\libavdevice">
+      <UniqueIdentifier>{cac6df1e-4a60-495c-8daa-5707dc1216ff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\libavdevice">
+      <UniqueIdentifier>{9fee14b2-1b77-463a-bd6b-60efdcf8850f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\libavdevice">
+      <UniqueIdentifier>{bf017c32-250d-47da-b7e6-d5a5091cb1e6}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".\libavdevice.def">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\libavdevice\avdeviceres.rc">
+      <Filter>Resource Files\libavdevice</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\libavdevice\alldevices.c">
+      <Filter>Source Files\libavdevice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavdevice\avdevice.c">
+      <Filter>Source Files\libavdevice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavdevice\utils.c">
+      <Filter>Source Files\libavdevice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavdevice\file_open.c">
+      <Filter>Source Files\libavdevice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavdevice\dshow_crossbar.c">
+      <Filter>Source Files\libavdevice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavdevice\dshow.c">
+      <Filter>Source Files\libavdevice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavdevice\dshow_enummediatypes.c">
+      <Filter>Source Files\libavdevice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavdevice\dshow_enumpins.c">
+      <Filter>Source Files\libavdevice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavdevice\dshow_filter.c">
+      <Filter>Source Files\libavdevice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavdevice\dshow_pin.c">
+      <Filter>Source Files\libavdevice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavdevice\dshow_common.c">
+      <Filter>Source Files\libavdevice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavdevice\gdigrab.c">
+      <Filter>Source Files\libavdevice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavdevice\lavfi.c">
+      <Filter>Source Files\libavdevice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavdevice\opengl_enc.c">
+      <Filter>Source Files\libavdevice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavdevice\sdl2.c">
+      <Filter>Source Files\libavdevice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavdevice\vfwcap.c">
+      <Filter>Source Files\libavdevice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libavdevice\libcdio.c">
+      <Filter>Source Files\libavdevice</Filter>
+    </ClCompile>
+    <ClCompile Include="libavdevice\reverse_wrap.c">
+      <Filter>Source Files\libavdevice</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\libavdevice\avdevice.h">
+      <Filter>Header Files\libavdevice</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libavdevice\version.h">
+      <Filter>Header Files\libavdevice</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

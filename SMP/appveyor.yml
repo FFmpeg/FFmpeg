@@ -1,0 +1,175 @@
+version: '{build}'
+
+branches:
+  only:
+  - master
+skip_non_tags: true
+clone_depth: 10
+
+configuration: Release+ReleaseDLLStaticDeps
+
+platform: x86+x64
+
+environment:
+  GITHUBTOKEN:
+    secure: aiTcAD/YitqgwuiBdC3ImXiUlHfIIDD7ayjCs3Y3aAO5vEm1gA7flCZpUZ60a5am
+  matrix:
+  - MSVC_VER: 12
+    APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
+  - MSVC_VER: 14
+    APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+  - MSVC_VER: 15
+    APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+
+install:
+# Install GitLink
+- cmd: nuget install gitlink -Version 2.4.0
+- cmd: for /f "tokens=*" %%f in ('dir /s /b gitlink.exe') do copy /b %%f .\
+
+before_build:
+    
+# Backup platform so it is not affected by vcvars
+- cmd: SET PLATFORMBACK=%PLATFORM%
+    
+# Setup msvc environment for required compiler version (specified by MSVC_VER)
+- ps: >-
+    if ($env:MSVC_VER -eq 15) {
+        $env:VCVARS="C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat"
+    } else {
+        $env:VSCOMNTOOLS=(Get-Content ("env:VS" + "$env:MSVC_VER" + "0COMNTOOLS"))
+        $env:VCVARS="%VSCOMNTOOLS%\..\..\VC\vcvarsall.bat"
+    }
+
+- cmd: call "%VCVARS%" amd64
+
+# Detect latest available windows sdk version
+- ps: >-
+    if ($env:MSVC_VER -eq 12) {
+        $env:WindowsSDKVersion=8.1
+    } else {
+        $env:WindowsSDKVersion=$env:WindowsSDKVersion.TrimEnd('\')
+    }
+
+# Reset platform
+- cmd: SET PLATFORM=%PLATFORMBACK%
+
+# Create build project to compile all configurations and platforms at once
+- ps: >-
+    $script = @'
+
+    <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="GitLink" ToolsVersion="APPVEYOR_MSVC_VER.0">
+      <ItemGroup>
+        <ConfigurationList Condition="'@(ConfigurationList)' == '' and $(Configuration) != ''" Include="$(Configuration.Split('+'))" />
+        <ConfigurationList Condition="'@(ConfigurationList)' == ''" Include="Release" />
+        <PlatformList Condition="'@(PlatformList)' == '' and $(Platform) != ''" Include="$(Platform.Split('+'))" />
+        <PlatformList Condition="'@(PlatformList)' == ''" Include="x64;x86" />
+      </ItemGroup>
+      <Target Name="List" Outputs="%(PlatformList.Identity)">
+        <PropertyGroup>
+          <CurrentPlatform>%(PlatformList.Identity)</CurrentPlatform>
+        </PropertyGroup>
+        <ItemGroup>
+          <ProjectToBuild Include="SMP/APPVEYOR_PROJECT_NAME.sln">
+            <Properties>Configuration=%(ConfigurationList.Identity);Platform=$(CurrentPlatform);OutDir=$(MSBuildThisFileDirectory)build_out\;WindowsTargetPlatformVersion=SDK_VER</Properties>
+          </ProjectToBuild>
+        </ItemGroup>
+      </Target>
+      <Target Name="Build" DependsOnTargets="List">
+        <MSBuild Projects="@(ProjectToBuild)" BuildInParallel="true" />
+      </Target>
+      <Target Name="GitLink" DependsOnTargets="Build" Outputs="%(PlatformList.Identity)">
+        <PropertyGroup>
+          <CurrentPlatform>%(PlatformList.Identity)</CurrentPlatform>
+        </PropertyGroup>
+        <Exec Command="GitLink . -f SMP/APPVEYOR_PROJECT_NAME.sln -c %(ConfigurationList.Identity) -p $(CurrentPlatform) -d $(MSBuildThisFileDirectory)build_out\lib\$(CurrentPlatform) -u https://github.com/APPVEYOR_REPO_NAME.git -s APPVEYOR_REPO_COMMIT -errorsaswarnings"/>
+      </Target>
+    </Project>
+
+    '@
+
+
+    $script = $script -replace "APPVEYOR_PROJECT_NAME", "$env:APPVEYOR_PROJECT_NAME"
+
+    $script = $script -replace "APPVEYOR_REPO_NAME", "$env:APPVEYOR_REPO_NAME"
+
+    $script = $script -replace "APPVEYOR_REPO_COMMIT", "$env:APPVEYOR_REPO_COMMIT"
+
+    $script = $script -replace "APPVEYOR_MSVC_VER", "$env:MSVC_VER"
+
+    $script = $script -replace "SDK_VER", "$env:WindowsSDKVersion"
+
+    $script | Out-File build.vcxproj
+
+# Set Targets path so that gitlink works correctly
+- ps: $env:MSBUILDDIR=((Get-Command msbuild.exe).Path | Split-Path -parent)
+- ps: >-
+    if ($env:MSVC_VER -eq 15) {
+        $env:VCTargetsPath="$env:MSBUILDDIR\..\..\..\Common7\IDE\VC\VCTargets"
+    } else {
+        $env:VCTargetsPath="$env:MSBUILDDIR\..\..\..\Microsoft.Cpp\v4.0\V${env:MSVC_VER}0"
+    }
+
+# Download and install nasm integration
+- ps: (New-Object Net.WebClient).DownloadFile('https://github.com/ShiftMediaProject/VSNASM/releases/download/0.3/VSNASM.zip', "$pwd\nasm.zip")
+- ps: Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory("$pwd\nasm.zip", "$pwd\TempNASMUnpack")
+- cmd: call ".\TempNASMUnpack\install_script.bat"
+# Additional nasm location in order to fix gitlink error
+- ps: if ($env:MSVC_VER -ne 15) { Copy-Item -Force "TempNASMUnpack\*.*" "$env:VCTargetsPath\..\BuildCustomizations" }
+
+# Use project supplied script to download all required dependency libraries
+- cmd: call "%APPVEYOR_BUILD_FOLDER%\SMP\project_get_dependencies.bat"
+
+# Download required glext headers
+- cmd: mkdir %APPVEYOR_BUILD_FOLDER%\..\prebuilt\include\gl >NUL 2>&1
+- ps: (New-Object Net.WebClient).DownloadFile('http://www.opengl.org/registry/api/GL/glext.h', "$env:APPVEYOR_BUILD_FOLDER\..\prebuilt\include\gl\glext.h")
+- ps: (New-Object Net.WebClient).DownloadFile('http://www.opengl.org/registry/api/GL/wglext.h', "$env:APPVEYOR_BUILD_FOLDER\..\prebuilt\include\gl\wglext.h")
+
+# Download required ffnvcodec headers
+- ps: (New-Object Net.WebClient).DownloadFile('https://github.com/FFmpeg/nv-codec-headers/archive/master.zip', "$pwd\ffnvcodec.zip")
+- ps: Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory("$pwd\ffnvcodec.zip", "$pwd\TempffnvcodecUnpack")
+- cmd: mkdir "%APPVEYOR_BUILD_FOLDER%\..\prebuilt\include\ffnvcodec" >NUL 2>&1
+- cmd: copy ".\TempffnvcodecUnpack\nv-codec-headers-master\include\ffnvcodec\*.h" "%APPVEYOR_BUILD_FOLDER%\..\prebuilt\include\ffnvcodec\"
+
+# Download required AMF headers
+- ps: Invoke-RestMethod -Uri https://api.github.com/repos/GPUOpen-LibrariesAndSDKs/AMF/releases/latest > latest.json
+- cmd: for /f "tokens=* USEBACKQ" %%F in (`TYPE latest.json ^| FINDSTR /B "tag_name"`) do set TAG=%%F
+- cmd: for /f "tokens=2 delims={{':'}} " %%F in ("%TAG%") do set TAG=%%F
+- ps: (New-Object Net.WebClient).DownloadFile("https://github.com/GPUOpen-LibrariesAndSDKs/AMF/archive/$env:TAG.zip", "$pwd\AMF.zip")
+- ps: Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory("$pwd\AMF.zip", "$pwd\TempAMFUnpack")
+- cmd: for /f "tokens=*" %%G IN ('dir amf /ad /s /b') do set FOLDER=%%G
+- cmd: mkdir "%APPVEYOR_BUILD_FOLDER%\..\prebuilt\include\AMF" >NUL 2>&1
+- cmd: xcopy /s /y /q "%FOLDER%\public\include" "%APPVEYOR_BUILD_FOLDER%\..\prebuilt\include\AMF"
+
+build:
+  project: build.vcxproj
+  parallel: true
+  verbosity: minimal
+
+after_build:
+# Copy licenses for dependencies
+- cmd: copy /y %APPVEYOR_BUILD_FOLDER%\..\prebuilt\licenses\*.* %APPVEYOR_BUILD_FOLDER%\build_out\licenses\
+
+# Copy binary files to separate artifact folder
+- cmd: mkdir %APPVEYOR_BUILD_FOLDER%\build_bin\x86 >NUL 2>&1
+- cmd: copy /y %APPVEYOR_BUILD_FOLDER%\build_out\bin\x86\*.exe %APPVEYOR_BUILD_FOLDER%\build_bin\x86
+- cmd: mkdir %APPVEYOR_BUILD_FOLDER%\build_bin\x64 >NUL 2>&1
+- cmd: copy /y %APPVEYOR_BUILD_FOLDER%\build_out\bin\x64\*.exe %APPVEYOR_BUILD_FOLDER%\build_bin\x64
+- cmd: mkdir %APPVEYOR_BUILD_FOLDER%\build_bin\licenses >NUL 2>&1
+- cmd: copy /y %APPVEYOR_BUILD_FOLDER%\build_out\licenses\ %APPVEYOR_BUILD_FOLDER%\build_bin\licenses\
+
+artifacts:
+- path: build_out
+  name: lib$(APPVEYOR_PROJECT_NAME)_$(APPVEYOR_REPO_TAG_NAME)_msvc$(MSVC_VER)
+  type: zip
+- path: build_bin
+  name: $(APPVEYOR_PROJECT_NAME)_$(APPVEYOR_REPO_TAG_NAME)
+  type: zip
+
+deploy:
+- provider: GitHub
+  tag: $(APPVEYOR_REPO_TAG_NAME)
+  description: Pre-built static and shared libraries in 32b and 64b for $(APPVEYOR_PROJECT_NAME) $(APPVEYOR_REPO_TAG_NAME)
+  auth_token:
+    secure: aiTcAD/YitqgwuiBdC3ImXiUlHfIIDD7ayjCs3Y3aAO5vEm1gA7flCZpUZ60a5am
+  artifact: lib$(APPVEYOR_PROJECT_NAME)_$(APPVEYOR_REPO_TAG_NAME)_msvc$(MSVC_VER), $(APPVEYOR_PROJECT_NAME)_$(APPVEYOR_REPO_TAG_NAME)
+  force_update: true
