@@ -724,6 +724,8 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
         ist->min_pts = INT64_MAX;
         ist->max_pts = INT64_MIN;
 
+		ist->playon_timestamp_monotonicity_offset = 0;
+
         ist->ts_scale = 1.0;
         MATCH_PER_STREAM_OPT(ts_scale, dbl, ist->ts_scale, ic, st);
 

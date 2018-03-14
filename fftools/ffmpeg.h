@@ -327,7 +327,7 @@ typedef struct InputStream {
 
 
 	// A value added to inbound timestamps to prevent them from going "backward" in cases such as HLS discontinuities
-	int64_t playon_timestamp_monotonicity_offset = 0;
+	int64_t playon_timestamp_monotonicity_offset;
 
 
     int64_t nb_samples; /* number of samples in the last decoded audio frame before looping */
