@@ -4356,6 +4356,13 @@ static int process_input(int file_index)
         }
     }
 
+
+
+
+
+
+
+
     /* add the stream-global side data to the first packet */
     if (ist->nb_packets == 1) {
         for (i = 0; i < ist->st->nb_side_data; i++) {
@@ -4449,6 +4456,51 @@ static int process_input(int file_index)
             }
         }
     }
+
+
+
+#define PLAYON_MONOTONIC_ENABLED 1
+#define PLAYON_MONOTONIC_THRESHOLD 9000
+
+	if (PLAYON_MONOTONIC_ENABLED && !(pkt.pts == AV_NOPTS_VALUE && pkt.dts == AV_NOPTS_VALUE)) {
+		int64_t playon_pts_error = 0;
+		int64_t playon_dts_error = 0;
+
+		// adjust the incoming packet by the accumulated monoticity error
+		if (pkt.pts != AV_NOPTS_VALUE) {
+			pkt.pts += ifile->playon_timestamp_monotonicity_offset;
+			if (ist->next_pts != AV_NOPTS_VALUE) {
+				playon_pts_error = av_rescale_q(ist->next_pts, AV_TIME_BASE_Q, ist->st->time_base) - pkt.pts;
+			}
+		}
+		if (pkt.dts != AV_NOPTS_VALUE) {
+			pkt.dts += ifile->playon_timestamp_monotonicity_offset;
+			if (ist->next_dts != AV_NOPTS_VALUE) {
+				playon_dts_error = av_rescale_q(ist->next_dts, AV_TIME_BASE_Q, ist->st->time_base) - pkt.dts;
+			}
+		}
+
+		if (FFABS(playon_pts_error) > PLAYON_MONOTONIC_THRESHOLD || FFABS(playon_dts_error) > PLAYON_MONOTONIC_THRESHOLD) {
+			int64_t monotonicity_adjustment =
+				playon_dts_error < 0 || playon_pts_error < 0
+				? FFMIN(playon_pts_error, playon_dts_error)
+				: FFMAX(playon_pts_error, playon_dts_error)
+				;
+
+			ifile->playon_timestamp_monotonicity_offset += monotonicity_adjustment;
+
+			av_log(is, AV_LOG_INFO, "Incoming stream timestamp error %"PRId64", offsetting subsequent timestamps by %"PRId64" to correct\n", monotonicity_adjustment, ifile->playon_timestamp_monotonicity_offset);
+
+			// Go ahead and re-adjust the values for this iteration, for which ifile->playon_timestamp_monotonicity_offset had not yet included the new delta
+			if (pkt.pts != AV_NOPTS_VALUE) {
+				pkt.pts += monotonicity_adjustment;
+			}
+
+			if (pkt.dts != AV_NOPTS_VALUE) {
+				pkt.dts += monotonicity_adjustment;
+			}
+		}
+	}
 
     if (pkt.dts != AV_NOPTS_VALUE)
         ifile->last_ts = av_rescale_q(pkt.dts, ist->st->time_base, AV_TIME_BASE_Q);

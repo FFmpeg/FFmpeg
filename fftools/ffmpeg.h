@@ -325,6 +325,8 @@ typedef struct InputStream {
     // this contains the pts that will be given to the next decoded frame
     int64_t cfr_next_pts;
 
+
+
     int64_t nb_samples; /* number of samples in the last decoded audio frame before looping */
 
     double ts_scale;
@@ -419,6 +421,10 @@ typedef struct InputFile {
     int joined;                 /* the thread has been joined */
     int thread_queue_size;      /* maximum number of queued packets */
 #endif
+
+	// A value added to inbound timestamps to prevent them from going "backward" in cases such as HLS discontinuities
+	int64_t playon_timestamp_monotonicity_offset;
+
 } InputFile;
 
 enum forced_keyframes_const {
