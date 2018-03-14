@@ -4460,7 +4460,7 @@ static int process_input(int file_index)
 
 
 #define PLAYON_MONOTONIC_ENABLED 1
-#define PLAYON_MONOTONIC_THRESHOLD 0
+#define PLAYON_MONOTONIC_THRESHOLD 9000
 
 	if (PLAYON_MONOTONIC_ENABLED && !(pkt.pts == AV_NOPTS_VALUE && pkt.dts == AV_NOPTS_VALUE)) {
 		int64_t playon_pts_error = 0;
