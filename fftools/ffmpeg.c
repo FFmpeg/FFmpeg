@@ -4368,27 +4368,35 @@ static int process_input(int file_index)
 		// adjust the incoming packet by the accumulated monoticity error
 		if (pkt.pts != AV_NOPTS_VALUE) {
 			pkt.pts += ist->playon_timestamp_monotonicity_offset;
-			playon_pts_error = ist->next_pts - pkt.pts;
+			if (ist->next_pts != AV_NOPTS_VALUE) {
+				playon_pts_error = pkt.pts - ist->next_pts;
+			}
 		}
 		if (pkt.dts != AV_NOPTS_VALUE) {
 			pkt.dts += ist->playon_timestamp_monotonicity_offset;
-			playon_dts_error = ist->next_dts - pkt.dts;
-		}
+			if (ist->next_dts != AV_NOPTS_VALUE) {
+				playon_dts_error = pkt.dts - ist->next_dts;
+			}
+		} 
 
-		int64_t playon_max_ts_error = FFMAX(playon_pts_error, playon_dts_error);
+		if (FFABS(playon_pts_error) > PLAYON_MONOTONIC_THRESHOLD || FFABS(playon_dts_error) > PLAYON_MONOTONIC_THRESHOLD) {
+			int64_t monotonicity_adjustment = 
+				playon_dts_error < 0 || playon_pts_error < 0
+					? FFMIN(playon_pts_error, playon_dts_error)
+					: FFMAX(playon_pts_error, playon_dts_error)
+				;
 
-		if (playon_max_ts_error > PLAYON_MONOTONIC_THRESHOLD) {
-			ist->playon_timestamp_monotonicity_offset += playon_max_ts_error;
+			ist->playon_timestamp_monotonicity_offset += monotonicity_adjustment;
 
-			av_log(is, AV_LOG_INFO, "Incoming stream timestamp went backwards by %"PRId64", offsetting subsequent timestamps by %"PRId64" to correct\n", playon_max_ts_error, ist->playon_timestamp_monotonicity_offset);
+			av_log(is, AV_LOG_INFO, "Incoming stream timestamp went backwards by %"PRId64", offsetting subsequent timestamps by %"PRId64" to correct\n", monotonicity_adjustment, ist->playon_timestamp_monotonicity_offset);
 
 			// Go ahead and re-adjust the values for this iteration, for which ist->playon_timestamp_monotonicity_offset had not yet included the new delta
 			if (pkt.pts != AV_NOPTS_VALUE) {
-				pkt.pts += playon_max_ts_error;
+				pkt.pts += monotonicity_adjustment;
 			}
 
 			if (pkt.dts != AV_NOPTS_VALUE) {
-				pkt.dts += playon_max_ts_error;
+				pkt.dts += monotonicity_adjustment;
 			}
 		}
 	}
