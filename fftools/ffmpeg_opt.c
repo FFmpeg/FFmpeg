@@ -724,7 +724,6 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
         ist->min_pts = INT64_MAX;
         ist->max_pts = INT64_MIN;
 
-		ist->playon_timestamp_monotonicity_offset = 0;
 
         ist->ts_scale = 1.0;
         MATCH_PER_STREAM_OPT(ts_scale, dbl, ist->ts_scale, ic, st);
@@ -1156,6 +1155,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
     f->recording_time = o->recording_time;
     f->input_ts_offset = o->input_ts_offset;
     f->ts_offset  = o->input_ts_offset - (copy_ts ? (start_at_zero && ic->start_time != AV_NOPTS_VALUE ? ic->start_time : 0) : timestamp);
+	f->playon_timestamp_monotonicity_offset = 0;
     f->nb_streams = ic->nb_streams;
     f->rate_emu   = o->rate_emu;
     f->accurate_seek = o->accurate_seek;
