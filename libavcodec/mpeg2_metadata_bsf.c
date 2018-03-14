@@ -266,27 +266,28 @@ static void mpeg2_metadata_close(AVBSFContext *bsf)
 }
 
 #define OFFSET(x) offsetof(MPEG2MetadataContext, x)
+#define FLAGS (AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_BSF_PARAM)
 static const AVOption mpeg2_metadata_options[] = {
     { "display_aspect_ratio", "Set display aspect ratio (table 6-3)",
         OFFSET(display_aspect_ratio), AV_OPT_TYPE_RATIONAL,
-        { .dbl = 0.0 }, 0, 65535 },
+        { .dbl = 0.0 }, 0, 65535, FLAGS },
 
     { "frame_rate", "Set frame rate",
         OFFSET(frame_rate), AV_OPT_TYPE_RATIONAL,
-        { .dbl = 0.0 }, 0, UINT_MAX },
+        { .dbl = 0.0 }, 0, UINT_MAX, FLAGS },
 
     { "video_format", "Set video format (table 6-6)",
         OFFSET(video_format), AV_OPT_TYPE_INT,
-        { .i64 = -1 }, -1, 7 },
+        { .i64 = -1 }, -1, 7, FLAGS },
     { "colour_primaries", "Set colour primaries (table 6-7)",
         OFFSET(colour_primaries), AV_OPT_TYPE_INT,
-        { .i64 = -1 }, -1, 255 },
+        { .i64 = -1 }, -1, 255, FLAGS },
     { "transfer_characteristics", "Set transfer characteristics (table 6-8)",
         OFFSET(transfer_characteristics), AV_OPT_TYPE_INT,
-        { .i64 = -1 }, -1, 255 },
+        { .i64 = -1 }, -1, 255, FLAGS },
     { "matrix_coefficients", "Set matrix coefficients (table 6-9)",
         OFFSET(matrix_coefficients), AV_OPT_TYPE_INT,
-        { .i64 = -1 }, -1, 255 },
+        { .i64 = -1 }, -1, 255, FLAGS },
 
     { NULL }
 };
