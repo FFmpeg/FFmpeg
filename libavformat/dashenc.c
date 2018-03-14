@@ -1033,10 +1033,8 @@ static int dash_write_header(AVFormatContext *s)
     int i, ret;
     for (i = 0; i < s->nb_streams; i++) {
         OutputStream *os = &c->streams[i];
-        if ((ret = avformat_write_header(os->ctx, NULL)) < 0) {
-            dash_free(s);
+        if ((ret = avformat_write_header(os->ctx, NULL)) < 0)
             return ret;
-        }
     }
     ret = write_manifest(s, 0);
     if (!ret)
