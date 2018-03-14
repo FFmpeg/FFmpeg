@@ -4369,13 +4369,13 @@ static int process_input(int file_index)
 		if (pkt.pts != AV_NOPTS_VALUE) {
 			pkt.pts += ist->playon_timestamp_monotonicity_offset;
 			if (ist->next_pts != AV_NOPTS_VALUE) {
-				playon_pts_error = ist->next_pts - pkt.pts ;
+				playon_pts_error = av_rescale_q(ist->next_pts, AV_TIME_BASE_Q, ist->st->time_base) - pkt.pts ;
 			}
 		}
 		if (pkt.dts != AV_NOPTS_VALUE) {
 			pkt.dts += ist->playon_timestamp_monotonicity_offset;
 			if (ist->next_dts != AV_NOPTS_VALUE) {
-				playon_dts_error = ist->next_dts - pkt.dts;
+				playon_dts_error = av_rescale_q(ist->next_dts, AV_TIME_BASE_Q, ist->st->time_base) - pkt.dts;
 			}
 		} 
 
