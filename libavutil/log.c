@@ -266,10 +266,10 @@ static void format_line(void *avcl, int level, const char *fmt, va_list vl,
         av_bprintf(part+1, "[%s @ %p] ",
                  avc->item_name(avcl), avcl);
         if(type) type[1] = get_category(avcl);
-
-        if (flags & AV_LOG_PRINT_LEVEL)
-            av_bprintf(part+2, "[%s] ", get_level_str(level));
     }
+
+    if (*print_prefix && (level > AV_LOG_QUIET) && (flags & AV_LOG_PRINT_LEVEL))
+        av_bprintf(part+2, "[%s] ", get_level_str(level));
 
     av_vbprintf(part+3, fmt, vl);
 
