@@ -491,10 +491,7 @@ concatenate:
         if (info->num_blocks != 6)
             goto end;
         av_packet_unref(pkt);
-        ret = av_packet_ref(pkt, &info->pkt);
-        if (ret < 0)
-            goto end;
-        av_packet_unref(&info->pkt);
+        av_packet_move_ref(pkt, &info->pkt);
         info->num_blocks = 0;
     }
     ret = pkt->size;
