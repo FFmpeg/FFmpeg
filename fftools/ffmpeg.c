@@ -4489,7 +4489,7 @@ static int process_input(int file_index)
 
 			ifile->playon_timestamp_monotonicity_offset += monotonicity_adjustment;
 
-			av_log(is, AV_LOG_INFO, "Incoming stream timestamp error %"PRId64", offsetting subsequent timestamps by %"PRId64" to correct\n", monotonicity_adjustment, ist->playon_timestamp_monotonicity_offset);
+			av_log(is, AV_LOG_INFO, "Incoming stream timestamp error %"PRId64", offsetting subsequent timestamps by %"PRId64" to correct\n", monotonicity_adjustment, ifile->playon_timestamp_monotonicity_offset);
 
 			// Go ahead and re-adjust the values for this iteration, for which ifile->playon_timestamp_monotonicity_offset had not yet included the new delta
 			if (pkt.pts != AV_NOPTS_VALUE) {
