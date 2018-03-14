@@ -4356,6 +4356,48 @@ static int process_input(int file_index)
         }
     }
 
+
+
+#define PLAYON_MONOTONIC_ENABLED 1
+#define PLAYON_MONOTONIC_THRESHOLD 0
+
+	if (PLAYON_MONOTONIC_ENABLED && !(pkt.pts == AV_NOPTS_VALUE && pkt.dts == AV_NOPTS_VALUE)) {
+		int64_t playon_pts_error = 0;
+		int64_t playon_dts_error = 0;
+
+		// adjust the incoming packet by the accumulated monoticity error
+		if (pkt.pts != AV_NOPTS_VALUE) {
+			pkt.pts += ist->playon_timestamp_monotonicity_offset;
+			playon_pts_error = ist->next_pts - pkt.pts;
+		}
+		if (pkt.dts != AV_NOPTS_VALUE) {
+			pkt.dts += ist->playon_timestamp_monotonicity_offset;
+			playon_dts_error = ist->next_dts - pkt.dts;
+		}
+
+		int64_t playon_max_ts_error = FFMAX(playon_pts_error, playon_dts_error);
+
+		if (playon_max_ts_error > PLAYON_MONOTONIC_THRESHOLD) {
+			ist->playon_timestamp_monotonicity_offset += playon_max_ts_error;
+
+			av_log(is, AV_LOG_INFO, "Incoming stream timestamp went backwards by %"PRId64", offsetting subsequent timestamps by %"PRId64" to correct\n", playon_max_ts_error, ist->playon_timestamp_monotonicity_offset);
+
+			// Go ahead and re-adjust the values for this iteration, for which ist->playon_timestamp_monotonicity_offset had not yet included the new delta
+			if (pkt.pts != AV_NOPTS_VALUE) {
+				pkt.pts += playon_max_ts_error;
+			}
+
+			if (pkt.dts != AV_NOPTS_VALUE) {
+				pkt.dts += playon_max_ts_error;
+			}
+		}
+	}
+
+
+
+
+
+
     /* add the stream-global side data to the first packet */
     if (ist->nb_packets == 1) {
         for (i = 0; i < ist->st->nb_side_data; i++) {
