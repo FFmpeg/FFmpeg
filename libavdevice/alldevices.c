@@ -126,16 +126,13 @@ static void *device_next(void *prev, int output,
 
     ff_thread_once(&av_device_next_init, av_device_init_next);
 
-    if (!prev && !(prev = (output ? (void*)outdev_list[0] : (void*)indev_list[0])))
-        return NULL;
-
     do {
         if (output) {
-            if (!(prev = ((AVOutputFormat *)prev)->next))
+            if (!(prev = prev ? ((AVOutputFormat *)prev)->next : (void*)outdev_list[0]))
                 break;
             pc = ((AVOutputFormat *)prev)->priv_class;
         } else {
-            if (!(prev = ((AVInputFormat *)prev)->next))
+            if (!(prev = prev ? ((AVInputFormat *)prev)->next : (void*)indev_list[0]))
                 break;
             pc = ((AVInputFormat *)prev)->priv_class;
         }
