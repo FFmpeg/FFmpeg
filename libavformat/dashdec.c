@@ -1106,8 +1106,8 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
     xmlNodePtr adaptionset_node = NULL;
     xmlAttrPtr attr = NULL;
     char *val  = NULL;
-    uint32_t perdiod_duration_sec = 0;
-    uint32_t perdiod_start_sec = 0;
+    uint32_t period_duration_sec = 0;
+    uint32_t period_start_sec = 0;
 
     if (!in) {
         close_in = 1;
@@ -1202,23 +1202,23 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
         node = xmlFirstElementChild(node);
         while (node) {
             if (!av_strcasecmp(node->name, (const char *)"Period")) {
-                perdiod_duration_sec = 0;
-                perdiod_start_sec = 0;
+                period_duration_sec = 0;
+                period_start_sec = 0;
                 attr = node->properties;
                 while (attr) {
                     val = xmlGetProp(node, attr->name);
                     if (!av_strcasecmp(attr->name, (const char *)"duration")) {
-                        perdiod_duration_sec = get_duration_insec(s, (const char *)val);
+                        period_duration_sec = get_duration_insec(s, (const char *)val);
                     } else if (!av_strcasecmp(attr->name, (const char *)"start")) {
-                        perdiod_start_sec = get_duration_insec(s, (const char *)val);
+                        period_start_sec = get_duration_insec(s, (const char *)val);
                     }
                     attr = attr->next;
                     xmlFree(val);
                 }
-                if ((perdiod_duration_sec) >= (c->period_duration)) {
+                if ((period_duration_sec) >= (c->period_duration)) {
                     period_node = node;
-                    c->period_duration = perdiod_duration_sec;
-                    c->period_start = perdiod_start_sec;
+                    c->period_duration = period_duration_sec;
+                    c->period_start = period_start_sec;
                     if (c->period_start > 0)
                         c->media_presentation_duration = c->period_duration;
                 }
