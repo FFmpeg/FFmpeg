@@ -4170,12 +4170,6 @@ static int seek_to_start(InputFile *ifile, AVFormatContext *is)
         ist   = input_streams[ifile->ist_index + i];
         avctx = ist->dec_ctx;
 
-        // flush decoders
-        if (ist->decoding_needed) {
-            process_input_packet(ist, NULL, 1);
-            avcodec_flush_buffers(avctx);
-        }
-
         /* duration is the length of the last frame in a stream
          * when audio stream is present we don't care about
          * last video frame length because it's not defined exactly */
@@ -4244,6 +4238,17 @@ static int process_input(int file_index)
         return ret;
     }
     if (ret < 0 && ifile->loop) {
+        AVCodecContext *avctx;
+        for (i = 0; i < ifile->nb_streams; i++) {
+            ist = input_streams[ifile->ist_index + i];
+            avctx = ist->dec_ctx;
+            if (ist->decoding_needed) {
+                ret = process_input_packet(ist, NULL, 1);
+                if (ret>0)
+                    return 0;
+                avcodec_flush_buffers(avctx);
+            }
+        }
         ret = seek_to_start(ifile, is);
         if (ret < 0)
             av_log(NULL, AV_LOG_WARNING, "Seek to start failed.\n");
