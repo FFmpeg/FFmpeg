@@ -999,7 +999,7 @@ EOF
 
 check_insn(){
     log check_insn "$@"
-    check_inline_asm ${1}_inline "\"$2\""
+    check_inline_asm ${1}_inline "$2"
     echo "$2" | check_as && enable ${1}_external || disable ${1}_external
 }
 
@@ -1386,10 +1386,8 @@ require(){
     log require "$@"
     name_version="$1"
     name="${1%% *}"
-    headers="$2"
-    func="$3"
-    shift 3
-    check_lib $name "$headers" $func "$@" || die "ERROR: $name_version not found"
+    shift
+    check_lib $name "$@" || die "ERROR: $name_version not found"
 }
 
 require_cpp(){
@@ -1403,16 +1401,13 @@ require_cpp(){
 require_header(){
     log require_header "$@"
     headers="$1"
-    shift
-    check_header "$headers" "$@" || die "ERROR: $headers not found"
+    check_header "$@" || die "ERROR: $headers not found"
 }
 
 require_cpp_condition(){
     log require_cpp_condition "$@"
-    header="$1"
     condition="$2"
-    shift 2
-    check_cpp_condition "$header" "$condition" "$@" || die "ERROR: $condition not satisfied"
+    check_cpp_condition "$@" || die "ERROR: $condition not satisfied"
 }
 
 require_pkg_config(){
