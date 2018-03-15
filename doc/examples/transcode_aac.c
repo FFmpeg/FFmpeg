@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2017 Andreas Unterweger
+ * Copyright (c) 2013-2018 Andreas Unterweger
  *
  * This file is part of FFmpeg.
  *
@@ -387,24 +387,39 @@ static int decode_audio_frame(AVFrame *frame,
         }
     }
 
-    /* Decode the audio frame stored in the temporary packet.
-     * The input audio stream decoder is used to do this.
-     * If we are at the end of the file, pass an empty packet to the decoder
-     * to flush it. */
-    if ((error = avcodec_decode_audio4(input_codec_context, frame,
-                                       data_present, &input_packet)) < 0) {
-        fprintf(stderr, "Could not decode frame (error '%s')\n",
+    /* Send the audio frame stored in the temporary packet to the decoder.
+     * The input audio stream decoder is used to do this. */
+    if ((error = avcodec_send_packet(input_codec_context, &input_packet)) < 0) {
+        fprintf(stderr, "Could not send packet for decoding (error '%s')\n",
                 av_err2str(error));
-        av_packet_unref(&input_packet);
         return error;
     }
 
-    /* If the decoder has not been flushed completely, we are not finished,
-     * so that this function has to be called again. */
-    if (*finished && *data_present)
-        *finished = 0;
+    /* Receive one frame from the decoder. */
+    error = avcodec_receive_frame(input_codec_context, frame);
+    /* If the decoder asks for more data to be able to decode a frame,
+     * return indicating that no data is present. */
+    if (error == AVERROR(EAGAIN)) {
+        error = 0;
+        goto cleanup;
+    /* If the end of the input file is reached, stop decoding. */
+    } else if (error == AVERROR_EOF) {
+        *finished = 1;
+        error = 0;
+        goto cleanup;
+    } else if (error < 0) {
+        fprintf(stderr, "Could not decode frame (error '%s')\n",
+                av_err2str(error));
+        goto cleanup;
+    /* Default case: Return decoded data. */
+    } else {
+        *data_present = 1;
+        goto cleanup;
+    }
+
+cleanup:
     av_packet_unref(&input_packet);
-    return 0;
+    return error;
 }
 
 /**
@@ -538,7 +553,7 @@ static int read_decode_convert_and_store(AVAudioFifo *fifo,
     AVFrame *input_frame = NULL;
     /* Temporary storage for the converted input samples. */
     uint8_t **converted_input_samples = NULL;
-    int data_present;
+    int data_present = 0;
     int ret = AVERROR_EXIT;
 
     /* Initialize temporary storage for one input frame. */
@@ -551,7 +566,7 @@ static int read_decode_convert_and_store(AVAudioFifo *fifo,
     /* If we are at the end of the file and there are no more samples
      * in the decoder which are delayed, we are actually finished.
      * This must not be treated as an error. */
-    if (*finished && !data_present) {
+    if (*finished) {
         ret = 0;
         goto cleanup;
     }
@@ -637,7 +652,7 @@ static int64_t pts = 0;
  * @param      output_format_context Format context of the output file
  * @param      output_codec_context  Codec context of the output file
  * @param[out] data_present          Indicates whether data has been
- *                                   decoded
+ *                                   encoded
  * @return Error code (0 if successful)
  */
 static int encode_audio_frame(AVFrame *frame,
@@ -656,29 +671,50 @@ static int encode_audio_frame(AVFrame *frame,
         pts += frame->nb_samples;
     }
 
-    /* Encode the audio frame and store it in the temporary packet.
+    /* Send the audio frame stored in the temporary packet to the encoder.
      * The output audio stream encoder is used to do this. */
-    if ((error = avcodec_encode_audio2(output_codec_context, &output_packet,
-                                       frame, data_present)) < 0) {
-        fprintf(stderr, "Could not encode frame (error '%s')\n",
+    error = avcodec_send_frame(output_codec_context, frame);
+    /* The encoder signals that it has nothing more to encode. */
+    if (error == AVERROR_EOF) {
+        error = 0;
+        goto cleanup;
+    } else if (error < 0) {
+        fprintf(stderr, "Could not send packet for encoding (error '%s')\n",
                 av_err2str(error));
-        av_packet_unref(&output_packet);
         return error;
     }
 
-    /* Write one audio frame from the temporary packet to the output file. */
-    if (*data_present) {
-        if ((error = av_write_frame(output_format_context, &output_packet)) < 0) {
-            fprintf(stderr, "Could not write frame (error '%s')\n",
-                    av_err2str(error));
-            av_packet_unref(&output_packet);
-            return error;
-        }
-
-        av_packet_unref(&output_packet);
+    /* Receive one encoded frame from the encoder. */
+    error = avcodec_receive_packet(output_codec_context, &output_packet);
+    /* If the encoder asks for more data to be able to provide an
+     * encoded frame, return indicating that no data is present. */
+    if (error == AVERROR(EAGAIN)) {
+        error = 0;
+        goto cleanup;
+    /* If the last frame has been encoded, stop encoding. */
+    } else if (error == AVERROR_EOF) {
+        error = 0;
+        goto cleanup;
+    } else if (error < 0) {
+        fprintf(stderr, "Could not encode frame (error '%s')\n",
+                av_err2str(error));
+        goto cleanup;
+    /* Default case: Return encoded data. */
+    } else {
+        *data_present = 1;
     }
 
-    return 0;
+    /* Write one audio frame from the temporary packet to the output file. */
+    if (*data_present &&
+        (error = av_write_frame(output_format_context, &output_packet)) < 0) {
+        fprintf(stderr, "Could not write frame (error '%s')\n",
+                av_err2str(error));
+        goto cleanup;
+    }
+
+cleanup:
+    av_packet_unref(&output_packet);
+    return error;
 }
 
 /**
@@ -816,6 +852,7 @@ int main(int argc, char **argv)
             int data_written;
             /* Flush the encoder as it may have delayed frames. */
             do {
+                data_written = 0;
                 if (encode_audio_frame(NULL, output_format_context,
                                        output_codec_context, &data_written))
                     goto cleanup;
