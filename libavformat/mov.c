@@ -2412,6 +2412,21 @@ static int mov_read_stsc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
 
     sc->stsc_count = i;
+    for (i = sc->stsc_count - 1; i < UINT_MAX; i--) {
+        if ((i+1 < sc->stsc_count && sc->stsc_data[i].first >= sc->stsc_data[i+1].first) ||
+            (i > 0 && sc->stsc_data[i].first <= sc->stsc_data[i-1].first) ||
+            sc->stsc_data[i].first < 1 ||
+            sc->stsc_data[i].count < 1 ||
+            sc->stsc_data[i].id < 1) {
+            av_log(c->fc, AV_LOG_WARNING, "STSC entry %d is invalid (first=%d count=%d id=%d)\n", i, sc->stsc_data[i].first, sc->stsc_data[i].count, sc->stsc_data[i].id);
+            if (i+1 >= sc->stsc_count || sc->stsc_data[i+1].first < 2)
+                return AVERROR_INVALIDDATA;
+            // We replace this entry by the next valid
+            sc->stsc_data[i].first = sc->stsc_data[i+1].first - 1;
+            sc->stsc_data[i].count = sc->stsc_data[i+1].count;
+            sc->stsc_data[i].id    = sc->stsc_data[i+1].id;
+        }
+    }
 
     if (pb->eof_reached)
         return AVERROR_EOF;
@@ -3605,6 +3620,11 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         av_log(c->fc, AV_LOG_ERROR, "stream %d, missing mandatory atoms, broken header\n",
                st->index);
         return 0;
+    }
+    if (sc->stsc_count && sc->stsc_data[ sc->stsc_count - 1 ].first > sc->chunk_count) {
+        av_log(c->fc, AV_LOG_ERROR, "stream %d, contradictionary STSC and STCO\n",
+               st->index);
+        return AVERROR_INVALIDDATA;
     }
 
     fix_timescale(c, sc);
