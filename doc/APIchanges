@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2018-03-15 - e0e72539cf - lavu 56.10.100 - opt.h
+  Add AV_OPT_FLAG_BSF_PARAM
+
 2018-03-07 - xxxxxxx - lavu 56.9.100 - crc.h
   Add AV_CRC_8_EBU crc variant.
 
