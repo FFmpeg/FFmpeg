@@ -1909,7 +1909,6 @@ static void show_help_bsf(const char *name)
     printf("Bit stream filter %s\n", bsf->name);
     if (bsf->priv_class)
         show_help_children(bsf->priv_class, AV_OPT_FLAG_BSF_PARAM);
-    printf("\n");
 }
 
 int show_help(void *optctx, const char *opt, const char *arg)
