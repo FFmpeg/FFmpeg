@@ -322,21 +322,14 @@ int ff_decklink_list_devices(AVFormatContext *avctx,
                 ret = AVERROR(ENOMEM);
                 goto next;
             }
+
             new_device->device_name = av_strdup(displayName);
-            if (!new_device->device_name) {
-                ret = AVERROR(ENOMEM);
-                goto next;
-            }
-
             new_device->device_description = av_strdup(displayName);
-            if (!new_device->device_description) {
-                av_freep(&new_device->device_name);
-                ret = AVERROR(ENOMEM);
-                goto next;
-            }
 
-            if ((ret = av_dynarray_add_nofree(&device_list->devices,
-                                              &device_list->nb_devices, new_device)) < 0) {
+            if (!new_device->device_name ||
+                !new_device->device_description ||
+                av_dynarray_add_nofree(&device_list->devices, &device_list->nb_devices, new_device) < 0) {
+                ret = AVERROR(ENOMEM);
                 av_freep(&new_device->device_name);
                 av_freep(&new_device->device_description);
                 av_freep(&new_device);
