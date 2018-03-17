@@ -1131,6 +1131,7 @@ static void mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID ke
 {
     MXFStreamContext *sc = st->priv_data;
     AVIOContext *pb = s->pb;
+    int stored_width  = (st->codecpar->width +15)/16*16;
     int stored_height = (st->codecpar->height+15)/16*16;
     int display_height;
     int f1, f2;
@@ -1143,7 +1144,7 @@ static void mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID ke
     mxf_write_generic_desc(s, st, key, desc_size);
 
     mxf_write_local_tag(pb, 4, 0x3203);
-    avio_wb32(pb, st->codecpar->width);
+    avio_wb32(pb, stored_width);
 
     mxf_write_local_tag(pb, 4, 0x3202);
     avio_wb32(pb, stored_height>>sc->interlaced);
