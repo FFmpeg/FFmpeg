@@ -967,6 +967,14 @@ test_as(){
     test_cmd $as $CPPFLAGS $ASFLAGS "$@" $AS_C $(as_o $TMPO) $TMPS
 }
 
+check_cmd(){
+    log check_cmd "$@"
+    cmd=$1
+    disabled $cmd && return
+    disable $cmd
+    test_cmd $@ && enable $cmd
+}
+
 check_inline_asm(){
     log check_inline_asm "$@"
     name="$1"
