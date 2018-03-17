@@ -272,7 +272,7 @@ static void unpremultiply8offset(const uint8_t *msrc, const uint8_t *asrc,
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
             if (asrc[x] > 0 && asrc[x] < 255)
-                dst[x] = FFMIN((msrc[x] - offset) * 255 / asrc[x] + offset, 255);
+                dst[x] = FFMIN(FFMAX(msrc[x] - offset, 0) * 255 / asrc[x] + offset, 255);
             else
                 dst[x] = msrc[x];
         }
@@ -350,7 +350,7 @@ static void unpremultiply16offset(const uint8_t *mmsrc, const uint8_t *aasrc,
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
             if (asrc[x] > 0 && asrc[x] < max)
-                dst[x] = FFMAX(FFMIN((msrc[x] - offset) * (unsigned)max / asrc[x] + offset, max), 0);
+                dst[x] = FFMAX(FFMIN(FFMAX(msrc[x] - offset, 0) * (unsigned)max / asrc[x] + offset, max), 0);
             else
                 dst[x] = msrc[x];
         }
