@@ -1253,6 +1253,14 @@ test_cpp_condition(){
 EOF
 }
 
+check_cpp_condition(){
+    log check_cpp_condition "$@"
+    name=$1
+    shift 1
+    disable $name
+    test_cpp_condition "$@" && enable $name
+}
+
 test_cflags_cc(){
     log test_cflags_cc "$@"
     flags=$1
@@ -1472,6 +1480,14 @@ test_host_cpp_condition(){
 #error "unsatisfied condition: $condition"
 #endif
 EOF
+}
+
+check_host_cpp_condition(){
+    log check_host_cpp_condition "$@"
+    name=$1
+    shift 1
+    disable $name
+    test_host_cpp_condition "$@" && enable $name
 }
 
 cp_if_changed(){
@@ -5427,18 +5443,16 @@ elif enabled alpha; then
 
 elif enabled arm; then
 
-    enabled msvc && test_cpp_condition stddef.h "defined _M_ARMT" && enable thumb
-
+    enabled msvc && check_cpp_condition thumb stddef.h "defined _M_ARMT"
     test_cpp_condition stddef.h "defined __thumb__" && test_cc <<EOF && enable_weak thumb
 float func(float a, float b){ return a+b; }
 EOF
-
     enabled thumb && check_cflags -mthumb || check_cflags -marm
 
-    if     test_cpp_condition stddef.h "defined __ARM_PCS_VFP"; then
-        enable vfp_args
-    elif test_cpp_condition stddef.h "defined _M_ARM_FP && _M_ARM_FP >= 30"; then
-        enable vfp_args
+    if check_cpp_condition vfp_args stddef.h "defined __ARM_PCS_VFP"; then
+        :
+    elif check_cpp_condition vfp_args stddef.h "defined _M_ARM_FP && _M_ARM_FP >= 30"; then
+        :
     elif ! test_cpp_condition stddef.h "defined __ARM_PCS || defined __SOFTFP__" && [ $target_os != darwin ]; then
         case "${cross_prefix:-$cc}" in
             *hardfloat*)         enable vfp_args;   fpabi=vfp ;;
@@ -5545,7 +5559,7 @@ elif enabled ppc; then
     fi
 
     if enabled power8; then
-        test_cpp_condition "altivec.h" "defined(_ARCH_PWR8)" || disable power8
+        check_cpp_condition power8 "altivec.h" "defined(_ARCH_PWR8)"
     fi
 
 elif enabled x86; then
@@ -5821,7 +5835,7 @@ if ! disabled ffnvcodec; then
         "ffnvcodec/nvEncodeAPI.h ffnvcodec/dynlink_cuda.h ffnvcodec/dynlink_cuviddec.h ffnvcodec/dynlink_nvcuvid.h" ""
 fi
 
-test_cpp_condition windows.h "!WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)" && enable winrt || disable winrt
+check_cpp_condition winrt windows.h "!WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)"
 
 if ! disabled w32threads && ! enabled pthreads; then
     check_func_headers "windows.h process.h" _beginthreadex &&
@@ -6012,8 +6026,7 @@ enabled libx264           && { check_pkg_config libx264 x264 "stdint.h x264.h" x
                                { require libx264 "stdint.h x264.h" x264_encoder_encode "-lx264 $pthreads_extralibs $libm_extralibs" &&
                                  warn "using libx264 without pkg-config"; } } &&
                              require_cpp_condition x264.h "X264_BUILD >= 118" &&
-                             { test_cpp_condition x264.h "X264_MPEG2" &&
-                               enable libx262; }
+                             check_cpp_condition libx262 x264.h "X264_MPEG2"
 enabled libx265           && require_pkg_config libx265 x265 x265.h x265_api_get &&
                              require_cpp_condition x265.h "X265_BUILD >= 68"
 enabled libxavs           && require libxavs "stdint.h xavs.h" xavs_encoder_encode "-lxavs $pthreads_extralibs $libm_extralibs"
@@ -6113,9 +6126,7 @@ enabled securetransport &&
 
 enabled schannel &&
     check_func_headers "windows.h security.h" InitializeSecurityContext -DSECURITY_WIN32 -lsecur32 &&
-    test_cpp_condition winerror.h "defined(SEC_I_CONTEXT_EXPIRED)" &&
-    schannel_extralibs="-lsecur32" ||
-        disable schannel
+    check_cpp_condition schannel winerror.h "defined(SEC_I_CONTEXT_EXPIRED)" && schannel_extralibs="-lsecur32"
 
 makeinfo --version > /dev/null 2>&1 && enable makeinfo  || disable makeinfo
 enabled makeinfo \
@@ -6148,7 +6159,7 @@ check_lib user32 "windows.h winuser.h" GetShellWindow -luser32
 check_lib vfw32 "windows.h vfw.h" capCreateCaptureWindow -lvfw32
 # check that WM_CAP_DRIVER_CONNECT is defined to the proper value
 # w32api 3.12 had it defined wrong
-test_cpp_condition vfw.h "WM_CAP_DRIVER_CONNECT > WM_USER" && enable vfwcap_defines
+check_cpp_condition vfwcap_defines vfw.h "WM_CAP_DRIVER_CONNECT > WM_USER"
 
 check_type "dshow.h" IBaseFilter
 
@@ -6223,8 +6234,7 @@ enabled vaapi &&
     check_lib vaapi_x11 "va/va.h va/va_x11.h" vaGetDisplay -lva -lva-x11 -lX11
 
 enabled vaapi &&
-    test_cpp_condition "va/va.h" "VA_CHECK_VERSION(1, 0, 0)" &&
-    enable vaapi_1
+    check_cpp_condition vaapi_1 "va/va.h" "VA_CHECK_VERSION(1, 0, 0)"
 
 if enabled_all opencl vaapi ; then
     check_type "CL/cl_intel.h" "clCreateImageFromFdINTEL_fn" &&
@@ -6251,8 +6261,7 @@ if enabled_all opencl libdrm ; then
 fi
 
 enabled vdpau &&
-    test_cpp_condition vdpau/vdpau.h "defined VDP_DECODER_PROFILE_MPEG4_PART2_ASP" ||
-    disable vdpau
+    check_cpp_condition vdpau vdpau/vdpau.h "defined VDP_DECODER_PROFILE_MPEG4_PART2_ASP"
 
 enabled vdpau &&
     check_lib vdpau_x11 "vdpau/vdpau.h vdpau/vdpau_x11.h" vdp_device_create_x11 -lvdpau -lX11
@@ -6282,9 +6291,8 @@ int main(void) { return 0; }
 EOF
 
 enabled amf &&
-    test_cpp_condition "AMF/core/Version.h" \
-        "(AMF_VERSION_MAJOR << 48 | AMF_VERSION_MINOR << 32 | AMF_VERSION_RELEASE << 16 | AMF_VERSION_BUILD_NUM) >= 0x0001000400040001" ||
-    disable amf
+    check_cpp_condition amf "AMF/core/Version.h" \
+        "(AMF_VERSION_MAJOR << 48 | AMF_VERSION_MINOR << 32 | AMF_VERSION_RELEASE << 16 | AMF_VERSION_BUILD_NUM) >= 0x0001000400040001"
 
 # Funny iconv installations are not unusual, so check it after all flags have been set
 if enabled libc_iconv; then
@@ -6530,7 +6538,7 @@ elif enabled_any msvc icl; then
         fi
     fi
     # msvcrt10 x64 incorrectly enables log2, only msvcrt12 (MSVC 2013) onwards actually has log2.
-    test_cpp_condition crtversion.h "_VC_CRT_MAJOR_VERSION >= 12" || disable log2
+    check_cpp_condition log2 crtversion.h "_VC_CRT_MAJOR_VERSION >= 12"
     # The CRT headers contain __declspec(restrict) in a few places, but if redefining
     # restrict, this might break. MSVC 2010 and 2012 fail with __declspec(__restrict)
     # (as it ends up if the restrict redefine is done before including stdlib.h), while
