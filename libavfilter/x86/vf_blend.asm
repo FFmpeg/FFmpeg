@@ -295,8 +295,9 @@ BLEND_INIT %1, 4, %3
 BLEND_END
 %endmacro
 
-%macro DIFFERENCE 1-2
-BLEND_INIT %1, 5, %2
+; %1 name , %2 src (b or w), %3 inter (w or d), %4 (1 if 16bit, not set if 8 bit)
+%macro DIFFERENCE 3-4
+BLEND_INIT %1, 5, %4
     pxor       m2, m2
 .nextrow:
     mov        xq, widthq
@@ -304,26 +305,19 @@ BLEND_INIT %1, 5, %2
     .loop:
         movu            m0, [topq + xq]
         movu            m1, [bottomq + xq]
-%if %0 == 2 ; 16 bit
-        punpckhwd       m3, m0, m2
-        punpcklwd       m0, m2
-        punpckhwd       m4, m1, m2
-        punpcklwd       m1, m2
-        psubd           m0, m1
-        psubd           m3, m4
+        punpckh%2%3     m3, m0, m2
+        punpckl%2%3     m0, m2
+        punpckh%2%3     m4, m1, m2
+        punpckl%2%3     m1, m2
+        psub%3          m0, m1
+        psub%3          m3, m4
+%if %0 == 4; 16 bit
         pabsd           m0, m0
         pabsd           m3, m3
-        packusdw        m0, m3
 %else
-        punpckhbw       m3, m0, m2
-        punpcklbw       m0, m2
-        punpckhbw       m4, m1, m2
-        punpcklbw       m1, m2
-        psubw           m0, m1
-        psubw           m3, m4
         ABS2            m0, m3, m1, m4
-        packuswb        m0, m3
 %endif
+        packus%3%2      m0, m3
         mova   [dstq + xq], m0
         add             xq, mmsize
     jl .loop
@@ -397,7 +391,7 @@ AVERAGE
 GRAINMERGE
 HARDMIX
 PHOENIX phoenix, b
-DIFFERENCE difference
+DIFFERENCE difference, b, w
 DIVIDE
 
 BLEND_ABS
@@ -411,7 +405,7 @@ BLEND_SIMPLE xor_16,      xor,    1
 %endif
 
 INIT_XMM ssse3
-DIFFERENCE difference
+DIFFERENCE difference, b, w
 BLEND_ABS
 
 INIT_XMM sse4
@@ -419,7 +413,7 @@ INIT_XMM sse4
 BLEND_SIMPLE darken_16,   minuw, 1
 BLEND_SIMPLE lighten_16,  maxuw, 1
 PHOENIX      phoenix_16,      w, 1
-DIFFERENCE   difference_16,      1
+DIFFERENCE   difference_16, w, d, 1
 %endif
 
 %if HAVE_AVX2_EXTERNAL
@@ -439,7 +433,7 @@ GRAINMERGE
 HARDMIX
 PHOENIX phoenix, b
 
-DIFFERENCE difference
+DIFFERENCE difference, b, w
 BLEND_ABS
 
 %if ARCH_X86_64
@@ -451,6 +445,6 @@ BLEND_SIMPLE or_16,       or,     1
 BLEND_SIMPLE subtract_16, subusw, 1
 BLEND_SIMPLE xor_16,      xor,    1
 PHOENIX      phoenix_16,       w, 1
-DIFFERENCE   difference_16,       1
+DIFFERENCE   difference_16, w, d, 1
 %endif
 %endif
