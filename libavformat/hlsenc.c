@@ -2583,32 +2583,32 @@ static int hls_init(AVFormatContext *s)
             }
             av_strlcpy(vs->fmp4_init_filename, hls->fmp4_init_filename,
                        fmp4_init_filename_len);
-                if (hls->nb_varstreams > 1) {
-                    ret = append_postfix(vs->fmp4_init_filename, fmp4_init_filename_len, i);
-                    if (ret < 0)
-                         goto fail;
-                }
-
-                fmp4_init_filename_len = strlen(vs->m3u8_name) +
-                    strlen(vs->fmp4_init_filename) + 1;
-
-                vs->base_output_dirname = av_malloc(fmp4_init_filename_len);
-                if (!vs->base_output_dirname) {
-                    ret = AVERROR(ENOMEM);
+            if (hls->nb_varstreams > 1) {
+                ret = append_postfix(vs->fmp4_init_filename, fmp4_init_filename_len, i);
+                if (ret < 0)
                     goto fail;
-                }
+            }
 
-                av_strlcpy(vs->base_output_dirname, vs->m3u8_name,
+            fmp4_init_filename_len = strlen(vs->m3u8_name) +
+                strlen(vs->fmp4_init_filename) + 1;
+
+            vs->base_output_dirname = av_malloc(fmp4_init_filename_len);
+            if (!vs->base_output_dirname) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+
+            av_strlcpy(vs->base_output_dirname, vs->m3u8_name,
+                       fmp4_init_filename_len);
+            p = strrchr(vs->base_output_dirname, '/');
+            if (p) {
+                *(p + 1) = '\0';
+                av_strlcat(vs->base_output_dirname, vs->fmp4_init_filename,
                            fmp4_init_filename_len);
-                p = strrchr(vs->base_output_dirname, '/');
-                if (p) {
-                    *(p + 1) = '\0';
-                    av_strlcat(vs->base_output_dirname, vs->fmp4_init_filename,
-                               fmp4_init_filename_len);
-                } else {
-                    av_strlcpy(vs->base_output_dirname, vs->fmp4_init_filename,
-                               fmp4_init_filename_len);
-                }
+            } else {
+                av_strlcpy(vs->base_output_dirname, vs->fmp4_init_filename,
+                           fmp4_init_filename_len);
+            }
         }
 
         if (!hls->use_localtime) {
