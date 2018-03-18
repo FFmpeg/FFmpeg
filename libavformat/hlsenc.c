@@ -2576,6 +2576,13 @@ static int hls_init(AVFormatContext *s)
         if (hls->segment_type == SEGMENT_TYPE_FMP4) {
             if (hls->nb_varstreams > 1)
                 fmp4_init_filename_len += strlen(POSTFIX_PATTERN);
+            if (hls->flags & HLS_SINGLE_FILE) {
+                vs->fmp4_init_filename  = av_strdup(vs->basename);
+                if (!vs->fmp4_init_filename) {
+                    ret = AVERROR(ENOMEM);
+                    goto fail;
+                }
+            } else {
             vs->fmp4_init_filename = av_malloc(fmp4_init_filename_len);
             if (!vs->fmp4_init_filename ) {
                 ret = AVERROR(ENOMEM);
@@ -2608,6 +2615,7 @@ static int hls_init(AVFormatContext *s)
             } else {
                 av_strlcpy(vs->base_output_dirname, vs->fmp4_init_filename,
                            fmp4_init_filename_len);
+            }
             }
         }
 
@@ -2663,13 +2671,6 @@ static int hls_init(AVFormatContext *s)
             }
         }
 
-        if ((hls->flags & HLS_SINGLE_FILE) && (hls->segment_type == SEGMENT_TYPE_FMP4)) {
-            vs->fmp4_init_filename  = av_strdup(vs->basename);
-            if (!vs->fmp4_init_filename) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
-        }
         if ((ret = hls_mux_init(s, vs)) < 0)
             goto fail;
 
