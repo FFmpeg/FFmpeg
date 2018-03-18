@@ -2188,7 +2188,7 @@ static int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame)
 
 static int ifilter_send_eof(InputFilter *ifilter, int64_t pts)
 {
-    int i, j, ret;
+    int ret;
 
     ifilter->eof = 1;
 
@@ -2204,16 +2204,6 @@ static int ifilter_send_eof(InputFilter *ifilter, int64_t pts)
         if (ifilter->format < 0 && (ifilter->type == AVMEDIA_TYPE_AUDIO || ifilter->type == AVMEDIA_TYPE_VIDEO)) {
             av_log(NULL, AV_LOG_ERROR, "Cannot determine format of input stream %d:%d after EOF\n", ifilter->ist->file_index, ifilter->ist->st->index);
             return AVERROR_INVALIDDATA;
-        }
-        for (i = 0; i < fg->nb_inputs; i++)
-            if (!fg->inputs[i]->eof)
-                break;
-        if (i == fg->nb_inputs) {
-            // All the input streams have finished without the filtergraph
-            // ever being configured.
-            // Mark the output streams as finished.
-            for (j = 0; j < fg->nb_outputs; j++)
-                finish_output_stream(fg->outputs[j]->ost);
         }
     }
 
