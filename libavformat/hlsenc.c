@@ -2583,21 +2583,6 @@ static int hls_init(AVFormatContext *s)
             }
             av_strlcpy(vs->fmp4_init_filename, hls->fmp4_init_filename,
                        fmp4_init_filename_len);
-
-            if (av_strcasecmp(hls->fmp4_init_filename, "init.mp4")) {
-                ret = format_name(vs->fmp4_init_filename, fmp4_init_filename_len, i);
-                if (ret < 0)
-                    goto fail;
-
-                fmp4_init_filename_len = strlen(vs->fmp4_init_filename) + 1;
-                vs->base_output_dirname = av_malloc(fmp4_init_filename_len);
-                if (!vs->base_output_dirname) {
-                    ret = AVERROR(ENOMEM);
-                    goto fail;
-                }
-                av_strlcpy(vs->base_output_dirname, vs->fmp4_init_filename,
-                           fmp4_init_filename_len);
-            } else {
                 if (hls->nb_varstreams > 1) {
                     ret = append_postfix(vs->fmp4_init_filename, fmp4_init_filename_len, i);
                     if (ret < 0)
@@ -2624,7 +2609,6 @@ static int hls_init(AVFormatContext *s)
                     av_strlcpy(vs->base_output_dirname, vs->fmp4_init_filename,
                                fmp4_init_filename_len);
                 }
-            }
         }
 
         if (!hls->use_localtime) {
