@@ -40,15 +40,13 @@
 #include "buffer.h"
 #include "common.h"
 #include "hwcontext.h"
+#include "hwcontext_drm.h"
 #include "hwcontext_internal.h"
 #include "hwcontext_vaapi.h"
 #include "mem.h"
 #include "pixdesc.h"
 #include "pixfmt.h"
 
-#if CONFIG_LIBDRM
-#   include "hwcontext_drm.h"
-#endif
 
 typedef struct VAAPIDevicePriv {
 #if HAVE_VAAPI_X11
