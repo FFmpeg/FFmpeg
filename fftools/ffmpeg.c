@@ -1829,6 +1829,19 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
         print_final_stats(total_size);
 }
 
+static void ifilter_parameters_from_codecpar(InputFilter *ifilter, AVCodecParameters *par)
+{
+    // We never got any input. Set a fake format, which will
+    // come from libavformat.
+    ifilter->format                 = par->format;
+    ifilter->sample_rate            = par->sample_rate;
+    ifilter->channels               = par->channels;
+    ifilter->channel_layout         = par->channel_layout;
+    ifilter->width                  = par->width;
+    ifilter->height                 = par->height;
+    ifilter->sample_aspect_ratio    = par->sample_aspect_ratio;
+}
+
 static void flush_encoders(void)
 {
     int i, ret;
@@ -1855,18 +1868,8 @@ static void flush_encoders(void)
                 int x;
                 for (x = 0; x < fg->nb_inputs; x++) {
                     InputFilter *ifilter = fg->inputs[x];
-                    if (ifilter->format < 0) {
-                        AVCodecParameters *par = ifilter->ist->st->codecpar;
-                        // We never got any input. Set a fake format, which will
-                        // come from libavformat.
-                        ifilter->format                 = par->format;
-                        ifilter->sample_rate            = par->sample_rate;
-                        ifilter->channels               = par->channels;
-                        ifilter->channel_layout         = par->channel_layout;
-                        ifilter->width                  = par->width;
-                        ifilter->height                 = par->height;
-                        ifilter->sample_aspect_ratio    = par->sample_aspect_ratio;
-                    }
+                    if (ifilter->format < 0)
+                        ifilter_parameters_from_codecpar(ifilter, ifilter->ist->st->codecpar);
                 }
 
                 if (!ifilter_has_all_input_formats(fg))
@@ -2196,6 +2199,12 @@ static int ifilter_send_eof(InputFilter *ifilter, int64_t pts)
     } else {
         // the filtergraph was never configured
         FilterGraph *fg = ifilter->graph;
+        if (ifilter->format < 0)
+            ifilter_parameters_from_codecpar(ifilter, ifilter->ist->st->codecpar);
+        if (ifilter->format < 0 && (ifilter->type == AVMEDIA_TYPE_AUDIO || ifilter->type == AVMEDIA_TYPE_VIDEO)) {
+            av_log(NULL, AV_LOG_ERROR, "Cannot determine format of input stream %d:%d after EOF\n", ifilter->ist->file_index, ifilter->ist->st->index);
+            return AVERROR_INVALIDDATA;
+        }
         for (i = 0; i < fg->nb_inputs; i++)
             if (!fg->inputs[i]->eof)
                 break;
