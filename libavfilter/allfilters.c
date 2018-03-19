@@ -149,6 +149,7 @@ static void register_all(void)
     REGISTER_FILTER(ASS,            ass,            vf);
     REGISTER_FILTER(ATADENOISE,     atadenoise,     vf);
     REGISTER_FILTER(AVGBLUR,        avgblur,        vf);
+    REGISTER_FILTER(AVGBLUR_OPENCL, avgblur_opencl, vf);
     REGISTER_FILTER(BBOX,           bbox,           vf);
     REGISTER_FILTER(BENCH,          bench,          vf);
     REGISTER_FILTER(BITPLANENOISE,  bitplanenoise,  vf);
