@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2018-03-21 - xxxxxxx - lavc 58.15.100 - avcodec.h
+  Add av_packet_make_writable().
+
 2018-03-18 - xxxxxxx - lavu 56.11.100 - frame.h
   Add AV_FRAME_DATA_QP_TABLE_PROPERTIES and AV_FRAME_DATA_QP_TABLE_DATA.
 

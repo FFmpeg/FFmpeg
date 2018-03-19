@@ -4519,6 +4519,17 @@ void av_packet_move_ref(AVPacket *dst, AVPacket *src);
 int av_packet_copy_props(AVPacket *dst, const AVPacket *src);
 
 /**
+ * Create a writable reference for the data described by a given packet,
+ * avoiding data copy if possible.
+ *
+ * @param pkt Packet whose data should be made writable.
+ *
+ * @return 0 on success, a negative AVERROR on failure. On failure, the
+ *         packet is unchanged.
+ */
+int av_packet_make_writable(AVPacket *pkt);
+
+/**
  * Convert valid timing fields (timestamps / durations) in a packet from one
  * timebase to another. Timestamps with unknown values (AV_NOPTS_VALUE) will be
  * ignored.
