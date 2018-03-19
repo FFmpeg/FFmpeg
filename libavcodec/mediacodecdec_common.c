@@ -205,6 +205,7 @@ static int mediacodec_wrap_hw_buffer(AVCodecContext *avctx,
     frame->width = avctx->width;
     frame->height = avctx->height;
     frame->format = avctx->pix_fmt;
+    frame->sample_aspect_ratio = avctx->sample_aspect_ratio;
 
     if (avctx->pkt_timebase.num && avctx->pkt_timebase.den) {
         frame->pts = av_rescale_q(info->presentationTimeUs,
@@ -413,6 +414,16 @@ static int mediacodec_dec_parse_format(AVCodecContext *avctx, MediaCodecDecConte
 
     width = s->crop_right + 1 - s->crop_left;
     height = s->crop_bottom + 1 - s->crop_top;
+
+    AMEDIAFORMAT_GET_INT32(s->display_width,  "display-width",  0);
+    AMEDIAFORMAT_GET_INT32(s->display_height, "display-height", 0);
+
+    if (s->display_width && s->display_height) {
+        AVRational sar = av_div_q(
+            (AVRational){ s->display_width, s->display_height },
+            (AVRational){ width, height });
+        ff_set_sar(avctx, sar);
+    }
 
     av_log(avctx, AV_LOG_INFO,
         "Output crop parameters top=%d bottom=%d left=%d right=%d, "
