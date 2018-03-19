@@ -19,6 +19,12 @@
 #ifndef AVFILTER_OPENCL_H
 #define AVFILTER_OPENCL_H
 
+// The intended target is OpenCL 1.2, so disable warnings for APIs
+// deprecated after that.  This primarily applies to clCreateCommandQueue(),
+// we can't use the replacement clCreateCommandQueueWithProperties() because
+// it was introduced in OpenCL 2.0.
+#define CL_USE_DEPRECATED_OPENCL_1_2_APIS
+
 #include "libavutil/buffer.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_opencl.h"

@@ -17,14 +17,10 @@
  */
 
 #include "libavutil/avstring.h"
-#include "libavutil/buffer.h"
-#include "libavutil/common.h"
-#include "libavutil/hwcontext.h"
-#include "libavutil/hwcontext_opencl.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
-#include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
+#include "libavutil/pixdesc.h"
 
 #include "avfilter.h"
 #include "framesync.h"
