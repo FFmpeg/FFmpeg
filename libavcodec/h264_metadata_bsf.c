@@ -437,6 +437,10 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
                                         180.0 / 65536.0);
                 av_display_matrix_flip(matrix, disp->hor_flip, disp->ver_flip);
 
+                // If there are multiple display orientation messages in an
+                // access unit then ignore all but the last one.
+                av_freep(&displaymatrix_side_data);
+
                 displaymatrix_side_data      = (uint8_t*)matrix;
                 displaymatrix_side_data_size = 9 * sizeof(int32_t);
             }
