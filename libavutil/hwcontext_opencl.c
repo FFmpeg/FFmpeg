@@ -16,6 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#define CL_USE_DEPRECATED_OPENCL_1_2_APIS
+
 #include <string.h>
 
 #include "config.h"
