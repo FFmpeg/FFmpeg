@@ -3024,7 +3024,7 @@ static int mov_write_track_udta_tag(AVIOContext *pb, MOVMuxContext *mov,
     if (ret < 0)
         return ret;
 
-    if (mov->mode & MODE_MP4)
+    if (mov->mode & (MODE_MP4|MODE_MOV))
         mov_write_track_metadata(pb_buf, st, "name", "title");
 
     if ((size = avio_close_dyn_buf(pb_buf, &buf)) > 0) {
