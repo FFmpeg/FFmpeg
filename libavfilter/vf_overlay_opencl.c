@@ -216,8 +216,10 @@ static int overlay_opencl_blend(FFFrameSync *fs)
                 goto fail_kernel_arg;
         }
 
-        global_work[0] = output->width;
-        global_work[1] = output->height;
+        err = ff_opencl_filter_work_size_from_image(avctx, global_work,
+                                                    output, plane, 0);
+        if (err < 0)
+            goto fail;
 
         cle = clEnqueueNDRangeKernel(ctx->command_queue, ctx->kernel, 2, NULL,
                                      global_work, NULL, 0, NULL, NULL);

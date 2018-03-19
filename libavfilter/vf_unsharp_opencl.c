@@ -320,15 +320,13 @@ static int unsharp_opencl_filter_frame(AVFilterLink *inlink, AVFrame *input)
             }
         }
 
-        if (ctx->global) {
-            global_work[0] = output->width;
-            global_work[1] = output->height;
-        } else {
-            global_work[0] = FFALIGN(output->width,  16);
-            global_work[1] = FFALIGN(output->height, 16);
-            local_work[0]  = 16;
-            local_work[1]  = 16;
-        }
+        err = ff_opencl_filter_work_size_from_image(avctx, global_work, output, p,
+                                                    ctx->global ? 0 : 16);
+        if (err < 0)
+            goto fail;
+
+        local_work[0]  = 16;
+        local_work[1]  = 16;
 
         av_log(avctx, AV_LOG_DEBUG, "Run kernel on plane %d "
                "(%"SIZE_SPECIFIER"x%"SIZE_SPECIFIER").\n",
