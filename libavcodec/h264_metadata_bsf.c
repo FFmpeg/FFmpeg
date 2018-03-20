@@ -225,7 +225,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
 
     err = ff_bsf_get_packet(bsf, &in);
     if (err < 0)
-        goto fail;
+        return err;
 
     err = ff_cbs_read_packet(ctx->cbc, au, in);
     if (err < 0) {
@@ -545,6 +545,8 @@ fail:
     ff_cbs_fragment_uninit(ctx->cbc, au);
     av_freep(&displaymatrix_side_data);
 
+    if (err < 0)
+        av_packet_unref(out);
     av_packet_free(&in);
 
     return err;
