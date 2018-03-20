@@ -2208,8 +2208,17 @@ It accepts the following parameters:
 @table @option
 @item channel_layout
 The channel layout of the input stream. The default is "stereo".
+@item channels
+A channel layout describing the channels to be extracted as separate output streams
+or "all" to extract each input channel as a separate stream. The default is "all".
+
+Choosing channels not present in channel layout in the input will result in an error.
 @end table
 
+@subsection Examples
+
+@itemize
+@item
 For example, assuming a stereo input MP3 file,
 @example
 ffmpeg -i in.mp3 -filter_complex channelsplit out.mkv
@@ -2217,6 +2226,7 @@ ffmpeg -i in.mp3 -filter_complex channelsplit out.mkv
 will create an output Matroska file with two audio streams, one containing only
 the left channel and the other the right channel.
 
+@item
 Split a 5.1 WAV file into per-channel files:
 @example
 ffmpeg -i in.wav -filter_complex
@@ -2225,6 +2235,14 @@ ffmpeg -i in.wav -filter_complex
 front_center.wav -map '[LFE]' lfe.wav -map '[SL]' side_left.wav -map '[SR]'
 side_right.wav
 @end example
+
+@item
+Extract only LFE from a 5.1 WAV file:
+@example
+ffmpeg -i in.wav -filter_complex 'channelsplit=channel_layout=5.1:channels=LFE[LFE]'
+-map '[LFE]' lfe.wav
+@end example
+@end itemize
 
 @section chorus
 Add a chorus effect to the audio.
