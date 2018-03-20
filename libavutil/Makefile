@@ -204,6 +204,7 @@ TESTPROGS = adler32                                                     \
             fifo                                                        \
             hash                                                        \
             hmac                                                        \
+            integer                                                     \
             imgutils                                                    \
             lfg                                                         \
             lls                                                         \
