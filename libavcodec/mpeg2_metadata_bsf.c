@@ -188,7 +188,7 @@ static int mpeg2_metadata_filter(AVBSFContext *bsf, AVPacket *out)
 
     err = ff_bsf_get_packet(bsf, &in);
     if (err < 0)
-        goto fail;
+        return err;
 
     err = ff_cbs_read_packet(ctx->cbc, frag, in);
     if (err < 0) {
@@ -209,15 +209,15 @@ static int mpeg2_metadata_filter(AVBSFContext *bsf, AVPacket *out)
     }
 
     err = av_packet_copy_props(out, in);
-    if (err < 0) {
-        av_packet_unref(out);
+    if (err < 0)
         goto fail;
-    }
 
     err = 0;
 fail:
     ff_cbs_fragment_uninit(ctx->cbc, frag);
 
+    if (err < 0)
+        av_packet_unref(out);
     av_packet_free(&in);
 
     return err;
