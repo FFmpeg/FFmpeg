@@ -88,6 +88,7 @@ typedef struct MXFStreamContext {
     int color_siting;
     int signal_standard;
     int h_chroma_sub_sample;
+    int v_chroma_sub_sample;
     int temporal_reordering;
     AVRational aspect_ratio; ///< display aspect ratio
     int closed_gop;          ///< gop is closed, used in mpeg-2 frame parsing
@@ -490,6 +491,7 @@ static const MXFLocalTagPair mxf_local_tag_batch[] = {
     // CDCI Picture Essence Descriptor
     { 0x3301, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x04,0x01,0x05,0x03,0x0A,0x00,0x00,0x00}}, /* Component Depth */
     { 0x3302, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x01,0x05,0x01,0x05,0x00,0x00,0x00}}, /* Horizontal Subsampling */
+    { 0x3308, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x04,0x01,0x05,0x01,0x10,0x00,0x00,0x00}}, /* Vertical Subsampling */
     { 0x3303, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x01,0x05,0x01,0x06,0x00,0x00,0x00}}, /* Color Siting */
     // Generic Sound Essence Descriptor
     { 0x3D02, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x04,0x04,0x02,0x03,0x01,0x04,0x00,0x00,0x00}}, /* Locked/Unlocked */
@@ -1140,6 +1142,8 @@ static void mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID ke
         desc_size += 5;
     if (sc->signal_standard)
         desc_size += 5;
+    if (sc->v_chroma_sub_sample)
+        desc_size += 8;
 
     mxf_write_generic_desc(s, st, key, desc_size);
 
@@ -1173,6 +1177,12 @@ static void mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID ke
     // horizontal subsampling
     mxf_write_local_tag(pb, 4, 0x3302);
     avio_wb32(pb, sc->h_chroma_sub_sample);
+
+    // vertical subsampling
+    if (sc->v_chroma_sub_sample) {
+        mxf_write_local_tag(pb, 4, 0x3308);
+        avio_wb32(pb, sc->v_chroma_sub_sample);
+    }
 
     // color siting
     mxf_write_local_tag(pb, 1, 0x3303);
@@ -2238,6 +2248,7 @@ static int mxf_write_header(AVFormatContext *s)
             if (pix_desc) {
                 sc->component_depth     = pix_desc->comp[0].depth;
                 sc->h_chroma_sub_sample = 1 << pix_desc->log2_chroma_w;
+                sc->v_chroma_sub_sample = 1 << pix_desc->log2_chroma_h;
             }
             switch (ff_choose_chroma_location(s, st)) {
             case AVCHROMA_LOC_TOPLEFT: sc->color_siting = 0; break;
