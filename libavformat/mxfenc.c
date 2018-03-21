@@ -95,6 +95,10 @@ typedef struct MXFStreamContext {
     int video_bit_rate;
     int slice_offset;
     int frame_size;          ///< frame size in bytes
+    int seq_closed_gop;      ///< all gops in sequence are closed, used in mpeg-2 descriptor
+    int max_gop;             ///< maximum gop size, used by mpeg-2 descriptor
+    int b_picture_count;     ///< maximum number of consecutive b pictures, used in mpeg-2 descriptor
+    int low_delay;           ///< low delay, used in mpeg-2 descriptor
 } MXFStreamContext;
 
 typedef struct MXFContainerEssenceEntry {
@@ -558,7 +562,11 @@ static const MXFLocalTagPair mxf_local_tag_batch[] = {
     { 0x3F0A, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x04,0x04,0x02,0x05,0x00,0x00,0x00}}, /* Index Entry Array */
     // MPEG video Descriptor
     { 0x8000, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x01,0x06,0x02,0x01,0x0B,0x00,0x00}}, /* BitRate */
+    { 0x8003, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x01,0x06,0x02,0x01,0x05,0x00,0x00}}, /* LowDelay */
+    { 0x8004, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x01,0x06,0x02,0x01,0x06,0x00,0x00}}, /* ClosedGOP */
+    { 0x8006, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x01,0x06,0x02,0x01,0x08,0x00,0x00}}, /* MaxGOP */
     { 0x8007, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x01,0x06,0x02,0x01,0x0A,0x00,0x00}}, /* ProfileAndLevel */
+    { 0x8008, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x01,0x06,0x02,0x01,0x09,0x00,0x00}}, /* BPictureCount */
     // Wave Audio Essence Descriptor
     { 0x3D09, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x02,0x03,0x03,0x05,0x00,0x00,0x00}}, /* Average Bytes Per Second */
     { 0x3D0A, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x02,0x03,0x02,0x01,0x00,0x00,0x00}}, /* Block Align */
@@ -1294,10 +1302,8 @@ static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID
     avio_wb32(pb, sc->h_chroma_sub_sample);
 
     // vertical subsampling
-    if (sc->v_chroma_sub_sample) {
-        mxf_write_local_tag(pb, 4, 0x3308);
-        avio_wb32(pb, sc->v_chroma_sub_sample);
-    }
+    mxf_write_local_tag(pb, 4, 0x3308);
+    avio_wb32(pb, sc->v_chroma_sub_sample);
 
     // color siting
     mxf_write_local_tag(pb, 1, 0x3303);
@@ -1409,6 +1415,22 @@ static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
         if (!st->codecpar->profile)
             profile_and_level |= 0x80; // escape bit
         avio_w8(pb, profile_and_level);
+
+        // low delay
+        mxf_write_local_tag(pb, 1, 0x8003);
+        avio_w8(pb, sc->low_delay);
+
+        // closed gop
+        mxf_write_local_tag(pb, 1, 0x8004);
+        avio_w8(pb, sc->seq_closed_gop);
+
+        // max gop
+        mxf_write_local_tag(pb, 2, 0x8006);
+        avio_wb16(pb, sc->max_gop);
+
+        // b picture count
+        mxf_write_local_tag(pb, 2, 0x8008);
+        avio_wb16(pb, sc->b_picture_count);
     }
 
     mxf_update_klv_size(pb, pos);
@@ -1729,6 +1751,7 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     int i, j, temporal_reordering = 0;
     int key_index = mxf->last_key_index;
+    int prev_non_b_picture = 0;
     int64_t pos;
 
     av_log(s, AV_LOG_DEBUG, "edit units count %d\n", mxf->edit_units_count);
@@ -1807,6 +1830,7 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
     }
 
     if (!mxf->edit_unit_byte_count) {
+        MXFStreamContext *sc = s->streams[0]->priv_data;
         mxf_write_local_tag(pb, 8 + mxf->edit_units_count*15, 0x3F0A);
         avio_wb32(pb, mxf->edit_units_count);  // num of entries
         avio_wb32(pb, 15);  // size of one entry
@@ -1815,6 +1839,7 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
             int temporal_offset = 0;
 
             if (!(mxf->index_entries[i].flags & 0x33)) { // I-frame
+                sc->max_gop = FFMAX(sc->max_gop, i - mxf->last_key_index);
                 mxf->last_key_index = key_index;
                 key_index = i;
             }
@@ -1834,11 +1859,13 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
             avio_w8(pb, temporal_offset);
 
             if ((mxf->index_entries[i].flags & 0x30) == 0x30) { // back and forward prediction
+                sc->b_picture_count = FFMAX(sc->b_picture_count, i - prev_non_b_picture);
                 avio_w8(pb, mxf->last_key_index - i);
             } else {
                 avio_w8(pb, key_index - i); // key frame offset
                 if ((mxf->index_entries[i].flags & 0x20) == 0x20) // only forward
                     mxf->last_key_index = key_index;
+                prev_non_b_picture = i;
             }
 
             if (!(mxf->index_entries[i].flags & 0x33) && // I-frame
@@ -2285,6 +2312,7 @@ static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st,
             if ((pkt->data[i+1] & 0xf0) == 0x10) { // seq ext
                 st->codecpar->profile = pkt->data[i+1] & 0x07;
                 st->codecpar->level   = pkt->data[i+2] >> 4;
+                sc->low_delay = pkt->data[i+6] >> 7;
             } else if (i + 5 < pkt->size && (pkt->data[i+1] & 0xf0) == 0x80) { // pict coding ext
                 sc->interlaced = !(pkt->data[i+5] & 0x80); // progressive frame
                 if (sc->interlaced)
@@ -2293,9 +2321,14 @@ static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st,
             }
         } else if (c == 0x1b8) { // gop
             if (pkt->data[i+4]>>6 & 0x01) { // closed
+                if (sc->seq_closed_gop == -1)
+                    sc->seq_closed_gop = 1;
                 sc->closed_gop = 1;
                 if (e->flags & 0x40) // sequence header present
                     e->flags |= 0x80; // random access
+            } else {
+                sc->seq_closed_gop = 0;
+                sc->closed_gop = 0;
             }
         } else if (c == 0x1b3) { // seq
             e->flags |= 0x40;
@@ -2407,6 +2440,7 @@ static int mxf_write_header(AVFormatContext *s)
             // Default component depth to 8
             sc->component_depth = 8;
             sc->h_chroma_sub_sample = 2;
+            sc->v_chroma_sub_sample = 2;
             sc->color_siting = 0xFF;
 
             if (pix_desc) {
@@ -2433,6 +2467,10 @@ static int mxf_write_header(AVFormatContext *s)
             avpriv_set_pts_info(st, 64, mxf->time_base.num, mxf->time_base.den);
             if((ret = mxf_init_timecode(s, st, rate)) < 0)
                 return ret;
+
+            if (st->codecpar->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
+                sc->seq_closed_gop = -1; // unknown yet
+            }
 
             sc->video_bit_rate = st->codecpar->bit_rate;
 
