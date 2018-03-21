@@ -126,6 +126,8 @@ static int vp9_superframe_split_filter(AVBSFContext *ctx, AVPacket *out)
 
     return 0;
 fail:
+    if (ret < 0)
+        av_packet_unref(out);
     av_packet_unref(&s->buffer_pkt);
     return ret;
 }
