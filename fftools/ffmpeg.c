@@ -2049,6 +2049,11 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
 
     opkt.flags    = pkt->flags;
 
+    if (pkt->buf) {
+        opkt.buf = av_buffer_ref(pkt->buf);
+        if (!opkt.buf)
+            exit_program(1);
+    }
     opkt.data = pkt->data;
     opkt.size = pkt->size;
 
