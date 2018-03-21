@@ -90,6 +90,7 @@ typedef struct WaveformContext {
     int            max;
     int            size;
     int            scale;
+    uint8_t        grat_yuva_color[4];
     int            shift_w[4], shift_h[4];
     GraticuleLines *glines;
     int            nb_glines;
@@ -137,10 +138,11 @@ static const AVOption waveform_options[] = {
         { "color",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=COLOR},   0, 0, FLAGS, "filter" },
         { "acolor",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=ACOLOR},  0, 0, FLAGS, "filter" },
         { "xflat",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=XFLAT},   0, 0, FLAGS, "filter" },
-    { "graticule", "set graticule", OFFSET(graticule), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "graticule" },
-    { "g",         "set graticule", OFFSET(graticule), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "graticule" },
-        { "none",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "graticule" },
-        { "green", NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "graticule" },
+    { "graticule", "set graticule", OFFSET(graticule), AV_OPT_TYPE_INT, {.i64=0}, 0, 2, FLAGS, "graticule" },
+    { "g",         "set graticule", OFFSET(graticule), AV_OPT_TYPE_INT, {.i64=0}, 0, 2, FLAGS, "graticule" },
+        { "none",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "graticule" },
+        { "green",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "graticule" },
+        { "orange", NULL, 0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "graticule" },
     { "opacity", "set graticule opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 1, FLAGS },
     { "o",       "set graticule opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 1, FLAGS },
     { "flags", "set graticule flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=1}, 0, 3, FLAGS, "flags" },
@@ -1878,7 +1880,6 @@ static av_always_inline void acolor(WaveformContext *s,
 }
 
 static const uint8_t black_yuva_color[4] = { 0, 127, 127, 255 };
-static const uint8_t green_yuva_color[4] = { 255, 0, 0, 255 };
 static const uint8_t black_gbrp_color[4] = { 0, 0, 0, 255 };
 
 static const GraticuleLines aflat_digital8[] = {
@@ -2339,7 +2340,7 @@ static void graticule_none(WaveformContext *s, AVFrame *out)
 {
 }
 
-static void graticule_green_row(WaveformContext *s, AVFrame *out)
+static void graticule_row(WaveformContext *s, AVFrame *out)
 {
     const int step = (s->flags & 2) + 1;
     const float o1 = s->opacity;
@@ -2353,7 +2354,7 @@ static void graticule_green_row(WaveformContext *s, AVFrame *out)
 
         k++;
         for (p = 0; p < s->ncomp; p++) {
-            const int v = green_yuva_color[p];
+            const int v = s->grat_yuva_color[p];
             for (l = 0; l < s->nb_glines; l++) {
                 const uint16_t pos = s->glines[l].line[c].pos;
                 int x = offset_x + (s->mirror ? s->size - 1 - pos : pos);
@@ -2371,7 +2372,7 @@ static void graticule_green_row(WaveformContext *s, AVFrame *out)
             if (x < 0)
                 x = 4;
 
-            draw_vtext(out, x, offset_y + 2, o1, o2, name, green_yuva_color);
+            draw_vtext(out, x, offset_y + 2, o1, o2, name, s->grat_yuva_color);
         }
 
         offset_x += s->size * (s->display == STACK);
@@ -2379,12 +2380,12 @@ static void graticule_green_row(WaveformContext *s, AVFrame *out)
     }
 }
 
-static void graticule16_green_row(WaveformContext *s, AVFrame *out)
+static void graticule16_row(WaveformContext *s, AVFrame *out)
 {
     const int step = (s->flags & 2) + 1;
     const float o1 = s->opacity;
     const float o2 = 1. - o1;
-    const int mult = s->size / 256;
+    const int mult = s->max / 256;
     const int height = s->display == PARADE ? out->height / s->acomp : out->height;
     int k = 0, c, p, l, offset_x = 0, offset_y = 0;
 
@@ -2394,7 +2395,7 @@ static void graticule16_green_row(WaveformContext *s, AVFrame *out)
 
         k++;
         for (p = 0; p < s->ncomp; p++) {
-            const int v = green_yuva_color[p] * mult;
+            const int v = s->grat_yuva_color[p] * mult;
             for (l = 0; l < s->nb_glines ; l++) {
                 const uint16_t pos = s->glines[l].line[c].pos;
                 int x = offset_x + (s->mirror ? s->size - 1 - pos : pos);
@@ -2412,7 +2413,7 @@ static void graticule16_green_row(WaveformContext *s, AVFrame *out)
             if (x < 0)
                 x = 4;
 
-            draw_vtext16(out, x, offset_y + 2, mult, o1, o2, name, green_yuva_color);
+            draw_vtext16(out, x, offset_y + 2, mult, o1, o2, name, s->grat_yuva_color);
         }
 
         offset_x += s->size * (s->display == STACK);
@@ -2420,7 +2421,7 @@ static void graticule16_green_row(WaveformContext *s, AVFrame *out)
     }
 }
 
-static void graticule_green_column(WaveformContext *s, AVFrame *out)
+static void graticule_column(WaveformContext *s, AVFrame *out)
 {
     const int step = (s->flags & 2) + 1;
     const float o1 = s->opacity;
@@ -2434,7 +2435,7 @@ static void graticule_green_column(WaveformContext *s, AVFrame *out)
 
         k++;
         for (p = 0; p < s->ncomp; p++) {
-            const int v = green_yuva_color[p];
+            const int v = s->grat_yuva_color[p];
             for (l = 0; l < s->nb_glines ; l++) {
                 const uint16_t pos = s->glines[l].line[c].pos;
                 int y = offset_y + (s->mirror ? s->size - 1 - pos : pos);
@@ -2452,7 +2453,7 @@ static void graticule_green_column(WaveformContext *s, AVFrame *out)
             if (y < 0)
                 y = 4;
 
-            draw_htext(out, 2 + offset_x, y, o1, o2, name, green_yuva_color);
+            draw_htext(out, 2 + offset_x, y, o1, o2, name, s->grat_yuva_color);
         }
 
         offset_y += s->size * (s->display == STACK);
@@ -2460,12 +2461,12 @@ static void graticule_green_column(WaveformContext *s, AVFrame *out)
     }
 }
 
-static void graticule16_green_column(WaveformContext *s, AVFrame *out)
+static void graticule16_column(WaveformContext *s, AVFrame *out)
 {
     const int step = (s->flags & 2) + 1;
     const float o1 = s->opacity;
     const float o2 = 1. - o1;
-    const int mult = s->size / 256;
+    const int mult = s->max / 256;
     const int width = s->display == PARADE ? out->width / s->acomp : out->width;
     int k = 0, c, p, l, offset_x = 0, offset_y = 0;
 
@@ -2475,7 +2476,7 @@ static void graticule16_green_column(WaveformContext *s, AVFrame *out)
 
         k++;
         for (p = 0; p < s->ncomp; p++) {
-            const int v = green_yuva_color[p] * mult;
+            const int v = s->grat_yuva_color[p] * mult;
             for (l = 0; l < s->nb_glines ; l++) {
                 const uint16_t pos = s->glines[l].line[c].pos;
                 int y = offset_y + (s->mirror ? s->size - 1 - pos : pos);
@@ -2493,7 +2494,7 @@ static void graticule16_green_column(WaveformContext *s, AVFrame *out)
             if (y < 0)
                 y = 4;
 
-            draw_htext16(out, 2 + offset_x, y, mult, o1, o2, name, green_yuva_color);
+            draw_htext16(out, 2 + offset_x, y, mult, o1, o2, name, s->grat_yuva_color);
         }
 
         offset_y += s->size * (s->display == STACK);
@@ -2586,6 +2587,10 @@ static int config_input(AVFilterLink *inlink)
     case 0x0016: s->waveform = xflat16_row;           break;
     }
 
+    s->grat_yuva_color[0] = 255;
+    s->grat_yuva_color[2] = s->graticule == 2 ? 255 : 0;
+    s->grat_yuva_color[3] = 255;
+
     switch (s->filter) {
     case LOWPASS:
     case COLOR:
@@ -2595,9 +2600,9 @@ static int config_input(AVFilterLink *inlink)
     case XFLAT:
     case FLAT:
         if (s->graticule && s->mode == 1)
-            s->graticulef = s->bits > 8 ? graticule16_green_column : graticule_green_column;
+            s->graticulef = s->bits > 8 ? graticule16_column : graticule_column;
         else if (s->graticule && s->mode == 0)
-            s->graticulef = s->bits > 8 ? graticule16_green_row : graticule_green_row;
+            s->graticulef = s->bits > 8 ? graticule16_row : graticule_row;
         break;
     }
 
