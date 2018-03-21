@@ -551,9 +551,6 @@ static void ffmpeg_cleanup(int ret)
         av_frame_free(&ost->last_frame);
         av_dict_free(&ost->encoder_opts);
 
-        av_parser_close(ost->parser);
-        avcodec_free_context(&ost->parser_avctx);
-
         av_freep(&ost->forced_keyframes);
         av_expr_free(ost->forced_keyframes_pexpr);
         av_freep(&ost->avfilter);
@@ -2051,30 +2048,10 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     opkt.duration = av_rescale_q(pkt->duration, ist->st->time_base, ost->mux_timebase);
 
     opkt.flags    = pkt->flags;
-    // FIXME remove the following 2 lines they shall be replaced by the bitstream filters
-    if (  ost->st->codecpar->codec_id != AV_CODEC_ID_H264
-       && ost->st->codecpar->codec_id != AV_CODEC_ID_MPEG1VIDEO
-       && ost->st->codecpar->codec_id != AV_CODEC_ID_MPEG2VIDEO
-       && ost->st->codecpar->codec_id != AV_CODEC_ID_VC1
-       ) {
-        int ret = av_parser_change(ost->parser, ost->parser_avctx,
-                             &opkt.data, &opkt.size,
-                             pkt->data, pkt->size,
-                             pkt->flags & AV_PKT_FLAG_KEY);
-        if (ret < 0) {
-            av_log(NULL, AV_LOG_FATAL, "av_parser_change failed: %s\n",
-                   av_err2str(ret));
-            exit_program(1);
-        }
-        if (ret) {
-            opkt.buf = av_buffer_create(opkt.data, opkt.size, av_buffer_default_free, NULL, 0);
-            if (!opkt.buf)
-                exit_program(1);
-        }
-    } else {
-        opkt.data = pkt->data;
-        opkt.size = pkt->size;
-    }
+
+    opkt.data = pkt->data;
+    opkt.size = pkt->size;
+
     av_copy_packet_side_data(&opkt, pkt);
 
     output_packet(of, &opkt, ost, 0);
@@ -3124,11 +3101,6 @@ static int init_output_stream_streamcopy(OutputStream *ost)
             av_display_rotation_set((int32_t *)sd, -ost->rotate_override_value);
     }
 
-    ost->parser = av_parser_init(par_dst->codec_id);
-    ost->parser_avctx = avcodec_alloc_context3(NULL);
-    if (!ost->parser_avctx)
-        return AVERROR(ENOMEM);
-
     switch (par_dst->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
         if (audio_volume != 256) {
@@ -3567,14 +3539,6 @@ static int init_output_stream(OutputStream *ost, char *error, int error_len)
         ost->st->codec->codec= ost->enc_ctx->codec;
     } else if (ost->stream_copy) {
         ret = init_output_stream_streamcopy(ost);
-        if (ret < 0)
-            return ret;
-
-        /*
-         * FIXME: will the codec context used by the parser during streamcopy
-         * This should go away with the new parser API.
-         */
-        ret = avcodec_parameters_to_context(ost->parser_avctx, ost->st->codecpar);
         if (ret < 0)
             return ret;
     }
