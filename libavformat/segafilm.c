@@ -239,7 +239,7 @@ static int film_read_header(AVFormatContext *s)
         } else {
             film->sample_table[i].stream = film->video_stream_index;
             film->sample_table[i].pts = AV_RB32(&scratch[8]) & 0x7FFFFFFF;
-            film->sample_table[i].keyframe = (scratch[8] & 0x80) ? 0 : 1;
+            film->sample_table[i].keyframe = (scratch[8] & 0x80) ? AVINDEX_KEYFRAME : 0;
             video_frame_counter++;
             if (film->video_type)
                 av_add_index_entry(s->streams[film->video_stream_index],
@@ -286,6 +286,7 @@ static int film_read_packet(AVFormatContext *s,
 
     pkt->stream_index = sample->stream;
     pkt->pts = sample->pts;
+    pkt->flags |= sample->keyframe ? AV_PKT_FLAG_KEY : 0;
 
     film->current_sample++;
 
