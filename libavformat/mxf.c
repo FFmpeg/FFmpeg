@@ -171,3 +171,20 @@ const MXFSamplesPerFrame *ff_mxf_get_samples_per_frame(AVFormatContext *s,
 
     return &mxf_spf[idx];
 }
+
+static const int mxf_content_package_rates[] = {
+    3, 2, 7, 13, 4, 10, 12,
+};
+
+int ff_mxf_get_content_package_rate(AVRational time_base)
+{
+    int idx = av_find_nearest_q_idx(time_base, mxf_time_base);
+    AVRational diff = av_sub_q(time_base, mxf_time_base[idx]);
+
+    diff.num = FFABS(diff.num);
+
+    if (av_cmp_q(diff, (AVRational){1, 1000}) >= 0)
+        return -1;
+
+    return mxf_content_package_rates[idx];
+}

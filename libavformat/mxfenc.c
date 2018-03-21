@@ -416,6 +416,7 @@ typedef struct MXFContext {
     AVStream *timecode_track;
     int timecode_base;       ///< rounded time code base (25 or 30)
     int edit_unit_byte_count; ///< fixed edit unit byte count
+    int content_package_rate; ///< content package rate in system element, see SMPTE 326M
     uint64_t body_offset;
     uint32_t instance_number;
     uint8_t umid[16];        ///< unique material identifier
@@ -2462,6 +2463,7 @@ static int mxf_write_header(AVFormatContext *s)
                        tbc.den, tbc.num);
                 return AVERROR(EINVAL);
             }
+            mxf->content_package_rate = ff_mxf_get_content_package_rate(tbc);
             mxf->time_base = spf->time_base;
             rate = av_inv_q(mxf->time_base);
             avpriv_set_pts_info(st, 64, mxf->time_base.num, mxf->time_base.den);
@@ -2630,7 +2632,7 @@ static void mxf_write_system_item(AVFormatContext *s)
     avio_write(pb, system_metadata_pack_key, 16);
     klv_encode_ber4_length(pb, 57);
     avio_w8(pb, 0x5c); // UL, user date/time stamp, picture and sound item present
-    avio_w8(pb, 0x04); // content package rate
+    avio_w8(pb, mxf->content_package_rate); // content package rate
     avio_w8(pb, 0x00); // content package type
     avio_wb16(pb, 0x00); // channel handle
     avio_wb16(pb, (mxf->tc.start + frame) & 0xFFFF); // continuity count, supposed to overflow
