@@ -1938,7 +1938,7 @@ static int mxf_write_partition(AVFormatContext *s, int bodysid,
     else
         avio_write(pb, body_partition_key, 16);
 
-    klv_encode_ber_length(pb, 88 + 16LL * DESCRIPTOR_COUNT(mxf->essence_container_count));
+    klv_encode_ber4_length(pb, 88 + 16LL * DESCRIPTOR_COUNT(mxf->essence_container_count));
 
     // write partition value
     avio_wb16(pb, 1); // majorVersion
@@ -2905,7 +2905,7 @@ static int mxf_write_footer(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
     AVIOContext *pb = s->pb;
-    int err = 0;
+    int i, err = 0;
 
     if (!mxf->header_written ||
         (s->oformat == &ff_mxf_opatom_muxer && !mxf->body_partition_offset)) {
@@ -2948,6 +2948,11 @@ static int mxf_write_footer(AVFormatContext *s)
         } else {
             if ((err = mxf_write_partition(s, 0, 0, header_closed_partition_key, 1)) < 0)
                 goto end;
+        }
+        // update footer partition offset
+        for (i = 0; i < mxf->body_partitions_count; i++) {
+            avio_seek(pb, mxf->body_partition_offset[i]+44, SEEK_SET);
+            avio_wb64(pb, mxf->footer_partition_offset);
         }
     }
 
