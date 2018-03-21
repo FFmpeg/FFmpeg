@@ -16491,6 +16491,9 @@ Luma and chroma combined together.
 @item aflat
 Similar as above, but shows difference between blue and red chroma.
 
+@item xflat
+Similar as above, but use different colors.
+
 @item chroma
 Displays only chroma.
 
