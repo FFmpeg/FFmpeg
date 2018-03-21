@@ -24,8 +24,7 @@
 #include "mpeg4video.h"
 
 typedef struct UnpackBFramesBSFContext {
-    uint8_t *b_frame_buf;
-    int      b_frame_buf_size;
+    AVPacket *b_frame;
 } UnpackBFramesBSFContext;
 
 /* search next start code */
@@ -71,18 +70,6 @@ static void scan_buffer(const uint8_t *buf, int buf_size,
     }
 }
 
-/* allocate new buffer and copy size bytes from src */
-static uint8_t *create_new_buffer(const uint8_t *src, int size) {
-    uint8_t *dst = av_malloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
-
-    if (dst) {
-        memcpy(dst, src, size);
-        memset(dst + size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
-    }
-
-    return dst;
-}
-
 static int mpeg4_unpack_bframes_filter(AVBSFContext *ctx, AVPacket *out)
 {
     UnpackBFramesBSFContext *s = ctx->priv_data;
@@ -97,20 +84,18 @@ static int mpeg4_unpack_bframes_filter(AVBSFContext *ctx, AVPacket *out)
     av_log(ctx, AV_LOG_DEBUG, "Found %d VOP startcode(s) in this packet.\n", nb_vop);
 
     if (pos_vop2 >= 0) {
-        if (s->b_frame_buf) {
+        if (s->b_frame->data) {
             av_log(ctx, AV_LOG_WARNING,
                    "Missing one N-VOP packet, discarding one B-frame.\n");
-            av_freep(&s->b_frame_buf);
-            s->b_frame_buf_size = 0;
+            av_packet_unref(s->b_frame);
         }
         /* store the packed B-frame in the BSFContext */
-        s->b_frame_buf_size = in->size - pos_vop2;
-        s->b_frame_buf      = create_new_buffer(in->data + pos_vop2, s->b_frame_buf_size);
-        if (!s->b_frame_buf) {
-            s->b_frame_buf_size = 0;
-            ret = AVERROR(ENOMEM);
+        ret = av_packet_ref(s->b_frame, in);
+        if (ret < 0) {
             goto fail;
         }
+        s->b_frame->size -= pos_vop2;
+        s->b_frame->data += pos_vop2;
     }
 
     if (nb_vop > 2) {
@@ -118,31 +103,22 @@ static int mpeg4_unpack_bframes_filter(AVBSFContext *ctx, AVPacket *out)
        "Found %d VOP headers in one packet, only unpacking one.\n", nb_vop);
     }
 
-    if (nb_vop == 1 && s->b_frame_buf) {
+    if (nb_vop == 1 && s->b_frame->data) {
         /* use frame from BSFContext */
+        av_packet_move_ref(out, s->b_frame);
+
+        /* use properties from current input packet */
         ret = av_packet_copy_props(out, in);
         if (ret < 0) {
             goto fail;
         }
 
-        ret = av_packet_from_data(out, s->b_frame_buf, s->b_frame_buf_size);
-        if (ret < 0) {
-            goto fail;
-        }
         if (in->size <= MAX_NVOP_SIZE) {
             /* N-VOP */
             av_log(ctx, AV_LOG_DEBUG, "Skipping N-VOP.\n");
-            s->b_frame_buf      = NULL;
-            s->b_frame_buf_size = 0;
         } else {
             /* copy packet into BSFContext */
-            s->b_frame_buf_size = in->size;
-            s->b_frame_buf      = create_new_buffer(in->data, in->size);
-            if (!s->b_frame_buf) {
-                s->b_frame_buf_size = 0;
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
+            av_packet_move_ref(s->b_frame, in);
         }
     } else if (nb_vop >= 2) {
         /* use first frame of the packet */
@@ -171,6 +147,12 @@ fail:
 
 static int mpeg4_unpack_bframes_init(AVBSFContext *ctx)
 {
+    UnpackBFramesBSFContext *s = ctx->priv_data;
+
+    s->b_frame = av_packet_alloc();
+    if (!s->b_frame)
+        return AVERROR(ENOMEM);
+
     if (ctx->par_in->extradata) {
         int pos_p_ext = -1;
         scan_buffer(ctx->par_in->extradata, ctx->par_in->extradata_size, &pos_p_ext, NULL, NULL);
@@ -187,7 +169,7 @@ static int mpeg4_unpack_bframes_init(AVBSFContext *ctx)
 static void mpeg4_unpack_bframes_close(AVBSFContext *bsfc)
 {
     UnpackBFramesBSFContext *ctx = bsfc->priv_data;
-    av_freep(&ctx->b_frame_buf);
+    av_packet_free(&ctx->b_frame);
 }
 
 static const enum AVCodecID codec_ids[] = {
