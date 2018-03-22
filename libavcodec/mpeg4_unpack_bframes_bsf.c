@@ -149,6 +149,9 @@ static int mpeg4_unpack_bframes_filter(AVBSFContext *ctx, AVPacket *out)
         av_packet_move_ref(out, in);
         out->size = pos_vop2;
     } else if (pos_p >= 0) {
+        ret = av_packet_make_writable(in);
+        if (ret < 0)
+            goto fail;
         av_log(ctx, AV_LOG_DEBUG, "Updating DivX userdata (remove trailing 'p').\n");
         av_packet_move_ref(out, in);
         /* remove 'p' (packed) from the end of the (DivX) userdata string */
