@@ -47,6 +47,7 @@ version <next>:
 - native SBC encoder and decoder
 - drmeter audio filter
 - hapqa_extract bitstream filter
+- filter_units bitstream filter
 
 
 version 3.4:
