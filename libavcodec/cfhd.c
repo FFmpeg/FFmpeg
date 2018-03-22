@@ -37,6 +37,9 @@
 #include "thread.h"
 #include "cfhd.h"
 
+#define ALPHA_COMPAND_DC_OFFSET 256
+#define ALPHA_COMPAND_GAIN 9400
+
 enum CFHDParam {
     ChannelCount     =  12,
     SubbandCount     =  14,
@@ -92,6 +95,20 @@ static inline int dequant_and_decompand(int level, int quantisation)
     int64_t abslevel = abs(level);
     return (abslevel + ((768 * abslevel * abslevel * abslevel) / (255 * 255 * 255))) *
            FFSIGN(level) * quantisation;
+}
+
+static inline void process_alpha(int16_t *alpha, int width)
+{
+    int i, channel;
+    for (i = 0; i < width; i++) {
+        channel   = alpha[i];
+        channel  -= ALPHA_COMPAND_DC_OFFSET;
+        channel <<= 3;
+        channel  *= ALPHA_COMPAND_GAIN;
+        channel >>= 16;
+        channel   = av_clip_uintp2(channel, 12);
+        alpha[i]  = channel;
+    }
 }
 
 static inline void filter(int16_t *output, ptrdiff_t out_stride,
@@ -792,6 +809,8 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
         high = s->plane[plane].l_h[7];
         for (i = 0; i < lowpass_height * 2; i++) {
             horiz_filter_clip(dst, low, high, lowpass_width, s->bpc);
+            if (act_plane == 3)
+                process_alpha(dst, lowpass_width * 2);
             low  += lowpass_width;
             high += lowpass_width;
             dst  += pic->linesize[act_plane] / 2;
