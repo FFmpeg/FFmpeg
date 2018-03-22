@@ -43,6 +43,7 @@ typedef struct ShowVolumeContext {
     char *color;
     int orientation;
     int step;
+    float bgopacity;
 
     AVFrame *out;
     AVExpr *c_expr;
@@ -69,6 +70,7 @@ static const AVOption showvolume_options[] = {
     {   "h", "horizontal", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "orientation" },
     {   "v", "vertical",   0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "orientation" },
     { "s", "set step size", OFFSET(step), AV_OPT_TYPE_INT, {.i64=0}, 0, 5, FLAGS },
+    { "p", "set background opacity", OFFSET(bgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0}, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -224,18 +226,25 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             return AVERROR(ENOMEM);
         }
 
-        for (i = 0; i < outlink->h; i++)
-            memset(s->out->data[0] + i * s->out->linesize[0], 0, outlink->w * 4);
+        for (i = 0; i < outlink->h; i++) {
+            uint32_t *dst = (uint32_t *)(s->out->data[0] + i * s->out->linesize[0]);
+            const uint32_t bg = (uint32_t)(s->bgopacity * 255) << 24;
+
+            for (j = 0; j < outlink->w; j++)
+                AV_WN32A(dst + j, bg);
+        }
     }
     s->out->pts = insamples->pts;
 
     for (j = 0; j < outlink->h; j++) {
         uint8_t *dst = s->out->data[0] + j * s->out->linesize[0];
+        const uint32_t alpha = s->bgopacity * 255;
+
         for (k = 0; k < outlink->w; k++) {
             dst[k * 4 + 0] = FFMAX(dst[k * 4 + 0] * s->f, 0);
             dst[k * 4 + 1] = FFMAX(dst[k * 4 + 1] * s->f, 0);
             dst[k * 4 + 2] = FFMAX(dst[k * 4 + 2] * s->f, 0);
-            dst[k * 4 + 3] = FFMAX(dst[k * 4 + 3] * s->f, 0);
+            dst[k * 4 + 3] = FFMAX(dst[k * 4 + 3] * s->f, alpha);
         }
     }
 
