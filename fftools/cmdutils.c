@@ -1907,6 +1907,8 @@ static void show_help_bsf(const char *name)
     }
 
     printf("Bit stream filter %s\n", bsf->name);
+    PRINT_CODEC_SUPPORTED(bsf, codec_ids, enum AVCodecID, "codecs",
+                          AV_CODEC_ID_NONE, GET_CODEC_NAME);
     if (bsf->priv_class)
         show_help_children(bsf->priv_class, AV_OPT_FLAG_BSF_PARAM);
 }
