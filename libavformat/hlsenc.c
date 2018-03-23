@@ -1174,6 +1174,21 @@ static int get_relative_url(const char *master_url, const char *media_url,
     return 0;
 }
 
+static int64_t get_stream_bit_rate(AVStream *stream) {
+    AVCPBProperties *props = (AVCPBProperties*)av_stream_get_side_data(
+        stream,
+        AV_PKT_DATA_CPB_PROPERTIES,
+        NULL
+    );
+
+    if (stream->codecpar->bit_rate)
+        return stream->codecpar->bit_rate;
+    else if (props)
+        return props->max_bitrate;
+
+    return 0;
+}
+
 static int create_master_playlist(AVFormatContext *s,
                                   VariantStream * const input_vs)
 {
@@ -1300,9 +1315,9 @@ static int create_master_playlist(AVFormatContext *s,
 
         bandwidth = 0;
         if (vid_st)
-            bandwidth += vid_st->codecpar->bit_rate;
+            bandwidth += get_stream_bit_rate(vid_st);
         if (aud_st)
-            bandwidth += aud_st->codecpar->bit_rate;
+            bandwidth += get_stream_bit_rate(aud_st);
         bandwidth += bandwidth / 10;
 
         ccgroup = NULL;
