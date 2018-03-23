@@ -997,6 +997,9 @@ static av_cold int init(AVFilterContext *ctx)
             } else {
                 return AVERROR(EINVAL);
             }
+
+            if (s->copy[i] && (s->rdiv[i] != 1. || s->bias[i] != 0.))
+                s->copy[i] = 0;
         }
     } else if (!strcmp(ctx->filter->name, "prewitt")) {
         for (i = 0; i < 4; i++) {
