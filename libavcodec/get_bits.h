@@ -202,6 +202,13 @@ static inline int get_bits_count(const GetBitContext *s)
     return s->index;
 }
 
+/**
+ * Skips the specified number of bits.
+ * @param n the number of bits to skip,
+ *          For the UNCHECKED_BITSTREAM_READER this must not cause the distance
+ *          from the start to overflow int32_t. Staying within the bitstream + padding
+ *          is sufficient, too.
+ */
 static inline void skip_bits_long(GetBitContext *s, int n)
 {
 #if UNCHECKED_BITSTREAM_READER
