@@ -484,23 +484,44 @@ extern AVInputFormat  ff_libopenmpt_demuxer;
 #include "libavformat/muxer_list.c"
 #include "libavformat/demuxer_list.c"
 
+static const AVInputFormat * const *indev_list = NULL;
+static const AVOutputFormat * const *outdev_list = NULL;
+
 const AVOutputFormat *av_muxer_iterate(void **opaque)
 {
+    static const uintptr_t size = sizeof(muxer_list)/sizeof(muxer_list[0]) - 1;
     uintptr_t i = (uintptr_t)*opaque;
-    const AVOutputFormat *f = muxer_list[i];
+    const AVOutputFormat *f = NULL;
+
+    if (i < size - 1) {
+        f = muxer_list[i];
+    } else if (indev_list) {
+        f = outdev_list[i - size];
+    }
+
     if (f)
         *opaque = (void*)(i + 1);
     return f;
 }
 
-const AVInputFormat *av_demuxer_iterate(void **opaque){
+const AVInputFormat *av_demuxer_iterate(void **opaque)
+{
+    static const uintptr_t size = sizeof(demuxer_list)/sizeof(demuxer_list[0]) - 1;
     uintptr_t i = (uintptr_t)*opaque;
-    const AVInputFormat *f = demuxer_list[i];
+    const AVInputFormat *f = NULL;
+
+    if (i < size) {
+        f = demuxer_list[i];
+    } else if (outdev_list) {
+        f = indev_list[i - size];
+    }
 
     if (f)
         *opaque = (void*)(i + 1);
     return f;
 }
+
+static AVMutex avpriv_register_devices_mutex = AV_MUTEX_INITIALIZER;
 
 #if FF_API_NEXT
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -510,38 +531,62 @@ static void av_format_init_next(void)
 {
     AVOutputFormat *prevout = NULL, *out;
     AVInputFormat *previn = NULL, *in;
-    void *i = 0;
 
-    while ((out = (AVOutputFormat*)av_muxer_iterate(&i))) {
+    ff_mutex_lock(&avpriv_register_devices_mutex);
+
+    for (int i = 0; (out = (AVOutputFormat*)muxer_list[i]); i++) {
         if (prevout)
             prevout->next = out;
         prevout = out;
     }
 
-    i = 0;
-    while ((in = (AVInputFormat*)av_demuxer_iterate(&i))) {
+    if (outdev_list) {
+        for (int i = 0; (out = (AVOutputFormat*)outdev_list[i]); i++) {
+            if (prevout)
+                prevout->next = out;
+            prevout = out;
+        }
+    }
+
+    for (int i = 0; (in = (AVInputFormat*)demuxer_list[i]); i++) {
         if (previn)
             previn->next = in;
         previn = in;
     }
+
+    if (indev_list) {
+        for (int i = 0; (in = (AVInputFormat*)indev_list[i]); i++) {
+            if (previn)
+                previn->next = in;
+            previn = in;
+        }
+    }
+
+    ff_mutex_unlock(&avpriv_register_devices_mutex);
 }
 
 AVInputFormat *av_iformat_next(const AVInputFormat *f)
 {
     ff_thread_once(&av_format_next_init, av_format_init_next);
+
     if (f)
         return f->next;
-    else
-        return demuxer_list[0];
+    else {
+        void *opaque = NULL;
+        return (AVInputFormat *)av_demuxer_iterate(&opaque);
+    }
 }
 
 AVOutputFormat *av_oformat_next(const AVOutputFormat *f)
 {
     ff_thread_once(&av_format_next_init, av_format_init_next);
+
     if (f)
         return f->next;
-    else
-        return muxer_list[0];
+    else {
+        void *opaque = NULL;
+        return (AVOutputFormat *)av_muxer_iterate(&opaque);
+    }
 }
 
 void av_register_all(void)
@@ -560,3 +605,14 @@ void av_register_output_format(AVOutputFormat *format)
 }
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
+
+void avpriv_register_devices(const AVOutputFormat * const o[], const AVInputFormat * const i[])
+{
+    ff_mutex_lock(&avpriv_register_devices_mutex);
+    outdev_list = o;
+    indev_list = i;
+    ff_mutex_unlock(&avpriv_register_devices_mutex);
+#if FF_API_NEXT
+    av_format_init_next();
+#endif
+}

@@ -3060,6 +3060,8 @@ int avformat_transfer_internal_stream_timing_info(const AVOutputFormat *ofmt,
  */
 AVRational av_stream_get_codec_timebase(const AVStream *st);
 
+
+void avpriv_register_devices(const AVOutputFormat * const o[], const AVInputFormat * const i[]);
 /**
  * @}
  */
