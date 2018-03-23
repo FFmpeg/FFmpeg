@@ -44,6 +44,7 @@ typedef struct ShowVolumeContext {
     int orientation;
     int step;
     float bgopacity;
+    int mode;
 
     AVFrame *out;
     AVExpr *c_expr;
@@ -51,6 +52,10 @@ typedef struct ShowVolumeContext {
     int draw_volume;
     double *values;
     uint32_t *color_lut;
+    float *max;
+    float rms_factor;
+
+    void (*meter)(float *src, int nb_samples, float *max, float factor);
 } ShowVolumeContext;
 
 #define OFFSET(x) offsetof(ShowVolumeContext, x)
@@ -71,6 +76,9 @@ static const AVOption showvolume_options[] = {
     {   "v", "vertical",   0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "orientation" },
     { "s", "set step size", OFFSET(step), AV_OPT_TYPE_INT, {.i64=0}, 0, 5, FLAGS },
     { "p", "set background opacity", OFFSET(bgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0}, 0, 1, FLAGS },
+    { "m", "set mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "mode" },
+    {   "p", "peak", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "mode" },
+    {   "r", "rms",  0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "mode" },
     { NULL }
 };
 
@@ -120,6 +128,23 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
+static void find_peak(float *src, int nb_samples, float *peak, float factor)
+{
+    int i;
+
+    *peak = 0;
+    for (i = 0; i < nb_samples; i++)
+        *peak = FFMAX(*peak, FFABS(src[i]));
+}
+
+static void find_rms(float *src, int nb_samples, float *rms, float factor)
+{
+    int i;
+
+    for (i = 0; i < nb_samples; i++)
+        *rms += factor * (src[i] * src[i] - *rms);
+}
+
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -137,6 +162,18 @@ static int config_input(AVFilterLink *inlink)
     s->color_lut = av_calloc(s->w, sizeof(*s->color_lut) * inlink->channels);
     if (!s->color_lut)
         return AVERROR(ENOMEM);
+
+    s->max = av_calloc(inlink->channels, sizeof(*s->max));
+    if (!s->max)
+        return AVERROR(ENOMEM);
+
+    s->rms_factor = 10000. / inlink->sample_rate;
+
+    switch (s->mode) {
+    case 0: s->meter = find_peak; break;
+    case 1: s->meter = find_rms;  break;
+    default: return AVERROR_BUG;
+    }
 
     return 0;
 }
@@ -252,10 +289,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
         for (c = 0; c < inlink->channels; c++) {
             float *src = (float *)insamples->extended_data[c];
             uint32_t *lut = s->color_lut + s->w * c;
-            float max = 0;
+            float max;
 
-            for (i = 0; i < insamples->nb_samples; i++)
-                max = FFMAX(max, src[i]);
+            s->meter(src, insamples->nb_samples, &s->max[c], s->rms_factor);
+            max = s->max[c];
 
             s->values[c * VAR_VARS_NB + VAR_VOLUME] = 20.0 * log10(max);
             max = av_clipf(max, 0, 1);
@@ -280,10 +317,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
         for (c = 0; c < inlink->channels; c++) {
             float *src = (float *)insamples->extended_data[c];
             uint32_t *lut = s->color_lut + s->w * c;
-            float max = 0;
+            float max;
 
-            for (i = 0; i < insamples->nb_samples; i++)
-                max = FFMAX(max, src[i]);
+            s->meter(src, insamples->nb_samples, &s->max[c], s->rms_factor);
+            max = s->max[c];
 
             s->values[c * VAR_VARS_NB + VAR_VOLUME] = 20.0 * log10(max);
             max = av_clipf(max, 0, 1);
@@ -339,6 +376,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_expr_free(s->c_expr);
     av_freep(&s->values);
     av_freep(&s->color_lut);
+    av_freep(&s->max);
 }
 
 static const AVFilterPad showvolume_inputs[] = {
