@@ -168,6 +168,7 @@ static void register_all(void)
     REGISTER_FILTER(COLORMATRIX,    colormatrix,    vf);
     REGISTER_FILTER(COLORSPACE,     colorspace,     vf);
     REGISTER_FILTER(CONVOLUTION,    convolution,    vf);
+    REGISTER_FILTER(CONVOLUTION_OPENCL, convolution_opencl, vf);
     REGISTER_FILTER(CONVOLVE,       convolve,       vf);
     REGISTER_FILTER(COPY,           copy,           vf);
     REGISTER_FILTER(COREIMAGE,      coreimage,      vf);
