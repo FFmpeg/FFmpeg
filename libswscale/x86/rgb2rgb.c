@@ -144,11 +144,14 @@ DECLARE_ALIGNED(8, extern const uint64_t, ff_bgr2UVOffset);
 
 #endif /* HAVE_INLINE_ASM */
 
+void ff_shuffle_bytes_2103_ssse3(const uint8_t *src, uint8_t *dst, int src_size);
+void ff_shuffle_bytes_0321_ssse3(const uint8_t *src, uint8_t *dst, int src_size);
+
 av_cold void rgb2rgb_init_x86(void)
 {
-#if HAVE_INLINE_ASM
     int cpu_flags = av_get_cpu_flags();
 
+#if HAVE_INLINE_ASM
     if (INLINE_MMX(cpu_flags))
         rgb2rgb_init_mmx();
     if (INLINE_AMD3DNOW(cpu_flags))
@@ -160,4 +163,9 @@ av_cold void rgb2rgb_init_x86(void)
     if (INLINE_AVX(cpu_flags))
         rgb2rgb_init_avx();
 #endif /* HAVE_INLINE_ASM */
+
+    if (EXTERNAL_SSSE3(cpu_flags)) {
+        shuffle_bytes_0321 = ff_shuffle_bytes_0321_ssse3;
+        shuffle_bytes_2103 = ff_shuffle_bytes_2103_ssse3;
+    }
 }
