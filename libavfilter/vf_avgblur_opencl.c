@@ -170,8 +170,10 @@ static int avgblur_opencl_filter_frame(AVFilterLink *inlink, AVFrame *input)
             goto fail;
         }
 
-        global_work[0] = output->width;
-        global_work[1] = output->height;
+        err = ff_opencl_filter_work_size_from_image(avctx, global_work,
+                                                    intermediate, p, 0);
+        if (err < 0)
+            goto fail;
 
         av_log(avctx, AV_LOG_DEBUG, "Run kernel on plane %d "
                "(%"SIZE_SPECIFIER"x%"SIZE_SPECIFIER").\n",
@@ -206,8 +208,10 @@ static int avgblur_opencl_filter_frame(AVFilterLink *inlink, AVFrame *input)
             goto fail;
         }
 
-        global_work[0] = output->width;
-        global_work[1] = output->height;
+        err = ff_opencl_filter_work_size_from_image(avctx, global_work,
+                                                    output, p, 0);
+        if (err < 0)
+            goto fail;
 
         av_log(avctx, AV_LOG_DEBUG, "Run kernel on plane %d "
                "(%"SIZE_SPECIFIER"x%"SIZE_SPECIFIER").\n",
