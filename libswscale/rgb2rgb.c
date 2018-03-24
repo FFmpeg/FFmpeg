@@ -53,6 +53,10 @@ void (*rgb15to32)(const uint8_t *src, uint8_t *dst, int src_size);
 
 void (*shuffle_bytes_0321)(const uint8_t *src, uint8_t *dst, int src_size);
 void (*shuffle_bytes_2103)(const uint8_t *src, uint8_t *dst, int src_size);
+void (*shuffle_bytes_1230)(const uint8_t *src, uint8_t *dst, int src_size);
+void (*shuffle_bytes_3012)(const uint8_t *src, uint8_t *dst, int src_size);
+void (*shuffle_bytes_3210)(const uint8_t *src, uint8_t *dst, int src_size);
+
 
 void (*yv12toyuy2)(const uint8_t *ysrc, const uint8_t *usrc,
                    const uint8_t *vsrc, uint8_t *dst,
@@ -318,25 +322,6 @@ void rgb12tobgr12(const uint8_t *src, uint8_t *dst, int src_size)
         d[i]         = (rgb << 8 | rgb & 0xF0 | rgb >> 8) & 0xFFF;
     }
 }
-
-
-#define DEFINE_SHUFFLE_BYTES(a, b, c, d)                                \
-void shuffle_bytes_ ## a ## b ## c ## d(const uint8_t *src,             \
-                                        uint8_t *dst, int src_size)     \
-{                                                                       \
-    int i;                                                              \
-                                                                        \
-    for (i = 0; i < src_size; i += 4) {                                 \
-        dst[i + 0] = src[i + a];                                        \
-        dst[i + 1] = src[i + b];                                        \
-        dst[i + 2] = src[i + c];                                        \
-        dst[i + 3] = src[i + d];                                        \
-    }                                                                   \
-}
-
-DEFINE_SHUFFLE_BYTES(1, 2, 3, 0)
-DEFINE_SHUFFLE_BYTES(3, 0, 1, 2)
-DEFINE_SHUFFLE_BYTES(3, 2, 1, 0)
 
 #define DEFINE_RGB48TOBGR48(need_bswap, swap)                           \
 void rgb48tobgr48_ ## need_bswap(const uint8_t *src,                    \
