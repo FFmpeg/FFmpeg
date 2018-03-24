@@ -26,6 +26,9 @@ SECTION_RODATA
 
 pb_shuffle2103: db 2, 1, 0, 3, 6, 5, 4, 7, 10, 9, 8, 11, 14, 13, 12, 15
 pb_shuffle0321: db 0, 3, 2, 1, 4, 7, 6, 5, 8, 11, 10, 9, 12, 15, 14, 13
+pb_shuffle1230: db 1, 2, 3, 0, 5, 6, 7, 4, 9, 10, 11, 8, 13, 14, 15, 12
+pb_shuffle3012: db 3, 0, 1, 2, 7, 4, 5, 6, 11, 8, 9, 10, 15, 12, 13, 14
+pb_shuffle3210: db 3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12
 
 SECTION .text
 
@@ -78,3 +81,6 @@ jge .end
 INIT_XMM ssse3
 SHUFFLE_BYTES 2, 1, 0, 3
 SHUFFLE_BYTES 0, 3, 2, 1
+SHUFFLE_BYTES 1, 2, 3, 0
+SHUFFLE_BYTES 3, 0, 1, 2
+SHUFFLE_BYTES 3, 2, 1, 0
