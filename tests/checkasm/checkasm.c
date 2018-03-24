@@ -163,6 +163,9 @@ static const struct {
         { "vf_threshold", checkasm_check_vf_threshold },
     #endif
 #endif
+#if CONFIG_SWSCALE
+    { "sw_rgb", checkasm_check_sw_rgb },
+#endif
 #if CONFIG_AVUTIL
         { "fixed_dsp", checkasm_check_fixed_dsp },
         { "float_dsp", checkasm_check_float_dsp },

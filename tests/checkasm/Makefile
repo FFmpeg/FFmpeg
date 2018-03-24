@@ -38,6 +38,12 @@ AVFILTEROBJS-$(CONFIG_THRESHOLD_FILTER)  += vf_threshold.o
 
 CHECKASMOBJS-$(CONFIG_AVFILTER) += $(AVFILTEROBJS-yes)
 
+# swscale tests
+SWSCALEOBJS                             += sw_rgb.o
+
+CHECKASMOBJS-$(CONFIG_SWSCALE)  += $(SWSCALEOBJS)
+
+# libavutil tests
 AVUTILOBJS                              += fixed_dsp.o
 AVUTILOBJS                              += float_dsp.o
 

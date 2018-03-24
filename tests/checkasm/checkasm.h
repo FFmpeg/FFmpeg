@@ -65,6 +65,7 @@ void checkasm_check_llviddspenc(void);
 void checkasm_check_pixblockdsp(void);
 void checkasm_check_sbrdsp(void);
 void checkasm_check_synth_filter(void);
+void checkasm_check_sw_rgb(void);
 void checkasm_check_utvideodsp(void);
 void checkasm_check_v210enc(void);
 void checkasm_check_vf_hflip(void);
