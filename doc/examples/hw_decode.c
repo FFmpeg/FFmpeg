@@ -86,7 +86,7 @@ static int decode_write(AVCodecContext *avctx, AVPacket *packet)
         return ret;
     }
 
-    while (ret >= 0) {
+    while (1) {
         if (!(frame = av_frame_alloc()) || !(sw_frame = av_frame_alloc())) {
             fprintf(stderr, "Can not alloc frame\n");
             ret = AVERROR(ENOMEM);
@@ -142,8 +142,6 @@ static int decode_write(AVCodecContext *avctx, AVPacket *packet)
         if (ret < 0)
             return ret;
     }
-
-    return 0;
 }
 
 int main(int argc, char *argv[])
