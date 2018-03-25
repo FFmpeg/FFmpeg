@@ -867,13 +867,9 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
             continue;
         }
 
-        if (!pkt->buf) {
-            AVPacket tmp = { 0 };
-            err = av_packet_ref(&tmp, pkt);
-            if (err < 0)
-                return err;
-            *pkt = tmp;
-        }
+        err = av_packet_make_refcounted(pkt);
+        if (err < 0)
+            return err;
 
         if ((s->flags & AVFMT_FLAG_DISCARD_CORRUPT) &&
             (pkt->flags & AV_PKT_FLAG_CORRUPT)) {
