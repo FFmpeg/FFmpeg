@@ -509,7 +509,7 @@ An Anti-Aliasing setting is able to produce "softer" crushing sounds.
 Another feature of this filter is the logarithmic mode.
 This setting switches from linear distances between bits to logarithmic ones.
 The result is a much more "natural" sounding crusher which doesn't gate low
-signals for example. The human ear has a logarithmic perception, too
+signals for example. The human ear has a logarithmic perception,
 so this kind of crushing is much more pleasant.
 Logarithmic crushing is also able to get anti-aliased.
 
@@ -3606,7 +3606,7 @@ lv2=p=http\\\\://calf.sourceforge.net/plugins/BassEnhancer:c=amount=2
 @end example
 
 @item
-Apply bass vinyl plugin from Calf:
+Apply vinyl plugin from Calf:
 @example
 lv2=p=http\\\\://calf.sourceforge.net/plugins/Vinyl:c=drone=0.2|aging=0.5
 @end example
@@ -20056,7 +20056,7 @@ Scale pixel values for each drawn sample.
 Draw every sample directly.
 @end table
 
-Default vlaue is @code{scale}.
+Default value is @code{scale}.
 @end table
 
 @subsection Examples
