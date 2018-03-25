@@ -130,6 +130,8 @@ FRAMESYNC_DEFINE_CLASS(libvmaf, LIBVMAFContext, fs);
     \
     ret = !s->frame_set;                                                        \
     \
+    av_frame_unref(s->gref);                                                    \
+    av_frame_unref(s->gmain);                                                   \
     s->frame_set = 0;                                                           \
     \
     pthread_cond_signal(&s->cond);                                              \
