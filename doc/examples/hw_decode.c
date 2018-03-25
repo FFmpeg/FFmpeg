@@ -138,8 +138,7 @@ static int decode_write(AVCodecContext *avctx, AVPacket *packet)
     fail:
         av_frame_free(&frame);
         av_frame_free(&sw_frame);
-        if (buffer)
-            av_freep(&buffer);
+        av_freep(&buffer);
         if (ret < 0)
             return ret;
     }
