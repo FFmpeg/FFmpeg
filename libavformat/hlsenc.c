@@ -1888,7 +1888,8 @@ static int parse_cc_stream_mapstring(AVFormatContext *s)
 {
     HLSContext *hls = s->priv_data;
     int nb_ccstreams;
-    char *p, *q, *saveptr1, *saveptr2, *ccstr, *keyval;
+    char *p, *q, *ccstr, *keyval;
+    char *saveptr1 = NULL, *saveptr2 = NULL;
     const char *val;
     ClosedCaptionsStream *ccs;
 
