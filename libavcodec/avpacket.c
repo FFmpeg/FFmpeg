@@ -660,9 +660,6 @@ int av_packet_make_writable(AVPacket *pkt)
     if (pkt->buf && av_buffer_is_writable(pkt->buf))
         return 0;
 
-    if (!pkt->data)
-        return AVERROR(EINVAL);
-
     ret = packet_alloc(&buf, pkt->size);
     if (ret < 0)
         return ret;
