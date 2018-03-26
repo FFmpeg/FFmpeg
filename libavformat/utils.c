@@ -1416,12 +1416,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 void ff_packet_list_free(AVPacketList **pkt_buf, AVPacketList **pkt_buf_end)
 {
-    while (*pkt_buf) {
-        AVPacketList *pktl = *pkt_buf;
-        *pkt_buf = pktl->next;
+    AVPacketList *tmp = *pkt_buf;
+
+    while (tmp) {
+        AVPacketList *pktl = tmp;
+        tmp = pktl->next;
         av_packet_unref(&pktl->pkt);
         av_freep(&pktl);
     }
+    *pkt_buf     = NULL;
     *pkt_buf_end = NULL;
 }
 
