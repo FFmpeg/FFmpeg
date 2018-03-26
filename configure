@@ -213,6 +213,7 @@ External library support:
   --enable-libschroedinger   Dirac video encoding/decoding
   --enable-libsnappy         snappy compression
   --enable-libspeex          Speex audio encoding/decoding
+  --enable-libsrt            Haivision SRT protocol
   --enable-libtheora         Theora video encoding/decoding
   --enable-libtwolame        MP2 audio encoding
   --enable-libvo-aacenc      AAC audio encoding
@@ -1374,6 +1375,7 @@ EXTERNAL_LIBRARY_LIST="
     libschroedinger
     libsnappy
     libspeex
+    libsrt
     libtheora
     libtwolame
     libvorbis
@@ -2525,6 +2527,8 @@ librtmpt_protocol_deps="librtmp"
 librtmpte_protocol_deps="librtmp"
 mmsh_protocol_select="http_protocol"
 mmst_protocol_select="network"
+libsrt_protocol_deps="libsrt"
+libsrt_protocol_select="network"
 rtmp_protocol_conflict="librtmp_protocol"
 rtmp_protocol_select="tcp_protocol"
 rtmp_protocol_suggest="zlib"
@@ -4674,6 +4678,7 @@ enabled librtmp           && require_pkg_config librtmp librtmp librtmp/rtmp.h R
 enabled libschroedinger   && require_pkg_config libschroedinger schroedinger-1.0 schroedinger/schro.h schro_init
 enabled libsnappy         && require libsnappy snappy-c.h snappy_compress -lsnappy
 enabled libspeex          && require_pkg_config libspeex speex speex/speex.h speex_decoder_init
+enabled libsrt            && require_pkg_config libsrt "srt >= 1.2.0" srt/srt.h srt_socket
 enabled libtheora         && require libtheora theora/theoraenc.h th_info_init -ltheoraenc -ltheoradec -logg
 enabled libtwolame        && require libtwolame twolame.h twolame_init -ltwolame
 enabled libvo_aacenc      && require libvo_aacenc vo-aacenc/voAAC.h voGetAACEncAPI -lvo-aacenc

@@ -414,6 +414,9 @@ OBJS-$(CONFIG_TLS_PROTOCOL)              += tls.o $(TLS-OBJS-yes)
 OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
 OBJS-$(CONFIG_UNIX_PROTOCOL)             += unix.o
 
+# external libraries
+OBJS-$(CONFIG_LIBSRT_PROTOCOL)           += libsrt.o
+
 SKIPHEADERS-$(CONFIG_FFRTMPCRYPT_PROTOCOL) += rtmpdh.h
 SKIPHEADERS-$(CONFIG_NETWORK)            += network.h rtsp.h
 

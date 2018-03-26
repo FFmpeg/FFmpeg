@@ -21,6 +21,7 @@ version <next>:
 - NVIDIA CUVID-accelerated H.264 and HEVC decoding
 - Intel QSV-accelerated overlay filter
 - AV1 Support through libaom
+- Haivision SRT protocol via libsrt
 
 
 version 12:
