@@ -49,6 +49,7 @@ version <next>:
 - hapqa_extract bitstream filter
 - filter_units bitstream filter
 - AV1 Support through libaom
+- E-AC-3 dependent frames support
 
 
 version 3.4:

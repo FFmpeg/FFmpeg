@@ -86,13 +86,16 @@ get_next:
            the frame). */
         if (avctx->codec_id != AV_CODEC_ID_AAC) {
             avctx->sample_rate = s->sample_rate;
-            avctx->channels = s->channels;
-            avctx->channel_layout = s->channel_layout;
+            if (avctx->codec_id != AV_CODEC_ID_EAC3) {
+                avctx->channels = s->channels;
+                avctx->channel_layout = s->channel_layout;
+            }
             s1->duration = s->samples;
             avctx->audio_service_type = s->service_type;
         }
 
-        avctx->bit_rate = s->bit_rate;
+        if (avctx->codec_id != AV_CODEC_ID_EAC3)
+            avctx->bit_rate = s->bit_rate;
     }
 
     return i;
