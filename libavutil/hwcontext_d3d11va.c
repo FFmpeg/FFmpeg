@@ -556,8 +556,6 @@ static int d3d11va_device_create(AVHWDeviceContext *ctx, const char *device,
         }
     }
 
-    hr = mD3D11CreateDevice(pAdapter, pAdapter ? D3D_DRIVER_TYPE_UNKNOWN : D3D_DRIVER_TYPE_HARDWARE, NULL, creationFlags, NULL, 0,
-                   D3D11_SDK_VERSION, &device_hwctx->device, NULL, NULL);
     if (pAdapter) {
         DXGI_ADAPTER_DESC2 desc;
         hr = IDXGIAdapter2_GetDesc(pAdapter, &desc);
@@ -565,8 +563,12 @@ static int d3d11va_device_create(AVHWDeviceContext *ctx, const char *device,
             av_log(ctx, AV_LOG_INFO, "Using device %04x:%04x (%ls).\n",
                    desc.VendorId, desc.DeviceId, desc.Description);
         }
-        IDXGIAdapter_Release(pAdapter);
     }
+
+    hr = mD3D11CreateDevice(pAdapter, pAdapter ? D3D_DRIVER_TYPE_UNKNOWN : D3D_DRIVER_TYPE_HARDWARE, NULL, creationFlags, NULL, 0,
+                   D3D11_SDK_VERSION, &device_hwctx->device, NULL, NULL);
+    if (pAdapter)
+        IDXGIAdapter_Release(pAdapter);
     if (FAILED(hr)) {
         av_log(ctx, AV_LOG_ERROR, "Failed to create Direct3D device (%lx)\n", (long)hr);
         return AVERROR_UNKNOWN;
