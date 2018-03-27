@@ -50,6 +50,7 @@ version <next>:
 - filter_units bitstream filter
 - AV1 Support through libaom
 - E-AC-3 dependent frames support
+- bitstream filter for extracting E-AC-3 core
 
 
 version 3.4:
