@@ -213,13 +213,14 @@ static int alloc_buffers(AVCodecContext *avctx)
         int width  = i ? avctx->width  >> chroma_x_shift : avctx->width;
         int height = i ? avctx->height >> chroma_y_shift : avctx->height;
         ptrdiff_t stride = FFALIGN(width  / 8, 8) * 8;
-        height           = FFALIGN(height / 8, 2) * 8;
+        if (chroma_y_shift)
+            height = FFALIGN(height / 8, 2) * 8;
         s->plane[i].width  = width;
         s->plane[i].height = height;
         s->plane[i].stride = stride;
 
         w8 = FFALIGN(s->plane[i].width  / 8, 8);
-        h8 = FFALIGN(s->plane[i].height / 8, 2);
+        h8 = height / 8;
         w4 = w8 * 2;
         h4 = h8 * 2;
         w2 = w4 * 2;
