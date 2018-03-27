@@ -444,8 +444,9 @@ static int init_input(AVFormatContext *s, const char *filename,
                                  s, 0, s->format_probesize);
 }
 
-static int add_to_pktbuf(AVPacketList **packet_buffer, AVPacket *pkt,
-                         AVPacketList **plast_pktl, int ref)
+int ff_packet_list_put(AVPacketList **packet_buffer,
+                       AVPacketList **plast_pktl,
+                       AVPacket      *pkt, int flags)
 {
     AVPacketList *pktl = av_mallocz(sizeof(AVPacketList));
     int ret;
@@ -453,12 +454,15 @@ static int add_to_pktbuf(AVPacketList **packet_buffer, AVPacket *pkt,
     if (!pktl)
         return AVERROR(ENOMEM);
 
-    if (ref) {
+    if (flags & FF_PACKETLIST_FLAG_REF_PACKET) {
         if ((ret = av_packet_ref(&pktl->pkt, pkt)) < 0) {
             av_free(pktl);
             return ret;
         }
     } else {
+        // TODO: Adapt callers in this file so the line below can use
+        //       av_packet_move_ref() to effectively move the reference
+        //       to the list.
         pktl->pkt = *pkt;
     }
 
@@ -485,9 +489,10 @@ int avformat_queue_attached_pictures(AVFormatContext *s)
                 continue;
             }
 
-            ret = add_to_pktbuf(&s->internal->raw_packet_buffer,
-                                &s->streams[i]->attached_pic,
-                                &s->internal->raw_packet_buffer_end, 1);
+            ret = ff_packet_list_put(&s->internal->raw_packet_buffer,
+                                     &s->internal->raw_packet_buffer_end,
+                                     &s->streams[i]->attached_pic,
+                                     FF_PACKETLIST_FLAG_REF_PACKET);
             if (ret < 0)
                 return ret;
         }
@@ -909,8 +914,9 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (!pktl && st->request_probe <= 0)
             return ret;
 
-        err = add_to_pktbuf(&s->internal->raw_packet_buffer, pkt,
-                            &s->internal->raw_packet_buffer_end, 0);
+        err = ff_packet_list_put(&s->internal->raw_packet_buffer,
+                                 &s->internal->raw_packet_buffer_end,
+                                 pkt, 0);
         if (err)
             return err;
         s->internal->raw_packet_buffer_remaining_size -= pkt->size;
@@ -1408,7 +1414,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 }
 
-static void free_packet_buffer(AVPacketList **pkt_buf, AVPacketList **pkt_buf_end)
+void ff_packet_list_free(AVPacketList **pkt_buf, AVPacketList **pkt_buf_end)
 {
     while (*pkt_buf) {
         AVPacketList *pktl = *pkt_buf;
@@ -1500,8 +1506,9 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
 
         compute_pkt_fields(s, st, st->parser, &out_pkt, next_dts, next_pts);
 
-        ret = add_to_pktbuf(&s->internal->parse_queue, &out_pkt,
-                            &s->internal->parse_queue_end, 1);
+        ret = ff_packet_list_put(&s->internal->parse_queue,
+                                 &s->internal->parse_queue_end,
+                                 &out_pkt, FF_PACKETLIST_FLAG_REF_PACKET);
         av_packet_unref(&out_pkt);
         if (ret < 0)
             goto fail;
@@ -1518,9 +1525,9 @@ fail:
     return ret;
 }
 
-static int read_from_packet_buffer(AVPacketList **pkt_buffer,
-                                   AVPacketList **pkt_buffer_end,
-                                   AVPacket      *pkt)
+int ff_packet_list_get(AVPacketList **pkt_buffer,
+                       AVPacketList **pkt_buffer_end,
+                       AVPacket      *pkt)
 {
     AVPacketList *pktl;
     av_assert0(*pkt_buffer);
@@ -1666,7 +1673,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
     if (!got_packet && s->internal->parse_queue)
-        ret = read_from_packet_buffer(&s->internal->parse_queue, &s->internal->parse_queue_end, pkt);
+        ret = ff_packet_list_get(&s->internal->parse_queue, &s->internal->parse_queue_end, pkt);
 
     if (ret >= 0) {
         AVStream *st = s->streams[pkt->stream_index];
@@ -1745,7 +1752,7 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
 
     if (!genpts) {
         ret = s->internal->packet_buffer
-              ? read_from_packet_buffer(&s->internal->packet_buffer,
+              ? ff_packet_list_get(&s->internal->packet_buffer,
                                         &s->internal->packet_buffer_end, pkt)
               : read_frame_internal(s, pkt);
         if (ret < 0)
@@ -1794,7 +1801,7 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
             st = s->streams[next_pkt->stream_index];
             if (!(next_pkt->pts == AV_NOPTS_VALUE && st->discard < AVDISCARD_ALL &&
                   next_pkt->dts != AV_NOPTS_VALUE && !eof)) {
-                ret = read_from_packet_buffer(&s->internal->packet_buffer,
+                ret = ff_packet_list_get(&s->internal->packet_buffer,
                                                &s->internal->packet_buffer_end, pkt);
                 goto return_packet;
             }
@@ -1809,8 +1816,9 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
                 return ret;
         }
 
-        ret = add_to_pktbuf(&s->internal->packet_buffer, pkt,
-                            &s->internal->packet_buffer_end, 1);
+        ret = ff_packet_list_put(&s->internal->packet_buffer,
+                                 &s->internal->packet_buffer_end,
+                                 pkt, FF_PACKETLIST_FLAG_REF_PACKET);
         av_packet_unref(pkt);
         if (ret < 0)
             return ret;
@@ -1837,9 +1845,9 @@ static void flush_packet_queue(AVFormatContext *s)
 {
     if (!s->internal)
         return;
-    free_packet_buffer(&s->internal->parse_queue,       &s->internal->parse_queue_end);
-    free_packet_buffer(&s->internal->packet_buffer,     &s->internal->packet_buffer_end);
-    free_packet_buffer(&s->internal->raw_packet_buffer, &s->internal->raw_packet_buffer_end);
+    ff_packet_list_free(&s->internal->parse_queue,       &s->internal->parse_queue_end);
+    ff_packet_list_free(&s->internal->packet_buffer,     &s->internal->packet_buffer_end);
+    ff_packet_list_free(&s->internal->raw_packet_buffer, &s->internal->raw_packet_buffer_end);
 
     s->internal->raw_packet_buffer_remaining_size = RAW_PACKET_BUFFER_SIZE;
 }
@@ -3739,8 +3747,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
         pkt = &pkt1;
 
         if (!(ic->flags & AVFMT_FLAG_NOBUFFER)) {
-            ret = add_to_pktbuf(&ic->internal->packet_buffer, pkt,
-                                &ic->internal->packet_buffer_end, 0);
+            ret = ff_packet_list_put(&ic->internal->packet_buffer,
+                                     &ic->internal->packet_buffer_end,
+                                     pkt, 0);
             if (ret < 0)
                 goto find_stream_info_err;
         }

@@ -731,5 +731,44 @@ int ff_unlock_avformat(void);
  */
 void ff_format_set_url(AVFormatContext *s, char *url);
 
+#define FF_PACKETLIST_FLAG_REF_PACKET (1 << 0) /**< Create a new reference for the packet instead of
+                                                    transferring the ownership of the existing one to the
+                                                    list. */
+
+/**
+ * Append an AVPacket to the list.
+ *
+ * @param head  List head element
+ * @param tail  List tail element
+ * @param pkt   The packet being appended
+ * @param flags Any combination of FF_PACKETLIST_FLAG_* flags
+ * @return 0 on success, negative AVERROR value on failure. On failure,
+           the list is unchanged
+ */
+int ff_packet_list_put(AVPacketList **head, AVPacketList **tail,
+                       AVPacket *pkt, int flags);
+
+/**
+ * Remove the oldest AVPacket in the list and return it.
+ *
+ * @note The pkt will be overwritten completely. The caller owns the
+ *       packet and must unref it by itself.
+ *
+ * @param head List head element
+ * @param tail List tail element
+ * @param pkt  Pointer to an initialized AVPacket struct
+ */
+int ff_packet_list_get(AVPacketList **head, AVPacketList **tail,
+                       AVPacket *pkt);
+
+/**
+ * Wipe the list and unref all the packets in it.
+ *
+ * @param head List head element
+ * @param tail List tail element
+ */
+void ff_packet_list_free(AVPacketList **head, AVPacketList **tail);
+
 void avpriv_register_devices(const AVOutputFormat * const o[], const AVInputFormat * const i[]);
+
 #endif /* AVFORMAT_INTERNAL_H */
