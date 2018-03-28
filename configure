@@ -975,6 +975,17 @@ check_cmd(){
     test_cmd $@ && enable $cmd
 }
 
+check_as(){
+    log check_as "$@"
+    name=$1
+    code=$2
+    shift 2
+    disable $name
+    test_as $@ <<EOF && enable $name
+$code
+EOF
+}
+
 check_inline_asm(){
     log check_inline_asm "$@"
     name="$1"
@@ -1008,7 +1019,7 @@ EOF
 check_insn(){
     log check_insn "$@"
     check_inline_asm ${1}_inline "$2"
-    echo "$2" | test_as && enable ${1}_external || disable ${1}_external
+    check_as ${1}_external "$2"
 }
 
 test_x86asm(){
@@ -5410,11 +5421,7 @@ check_gas() {
 m x
 EOF
     # .altmacro is only used in arm asm
-    ! enabled arm || test_as <<EOF || return 1
-.altmacro
-EOF
-    enable gnu_as
-    return 0
+    ! enabled arm || check_as gnu_as ".altmacro"
 }
 
 if enabled_any arm aarch64 || enabled_all ppc altivec && enabled asm; then
@@ -5441,10 +5448,8 @@ if enabled_any arm aarch64 || enabled_all ppc altivec && enabled asm; then
             $nogas "GNU assembler not found, install/update gas-preprocessor"
     fi
 
-    test_as <<EOF && enable as_func
-.func test
-.endfunc
-EOF
+    check_as as_func ".func test
+                      .endfunc"
 fi
 
 check_inline_asm inline_asm_labels '"1:\n"'
@@ -5500,18 +5505,12 @@ EOF
 
     check_inline_asm asm_mod_q '"add r0, %Q0, %R0" :: "r"((long long)0)'
 
-    test_as <<EOF && enable as_arch_directive
-.arch armv7-a
-EOF
-    test_as <<EOF && enable as_fpu_directive
-.fpu neon
-EOF
+    check_as as_arch_directive ".arch armv7-a"
+    check_as as_fpu_directive  ".fpu neon"
 
     # llvm's integrated assembler supports .object_arch from llvm 3.5
     [ "$objformat" = elf32 ] || [ "$objformat" = elf64 ] &&
-        test_as <<EOF && enable as_object_arch
-.object_arch armv4
-EOF
+        check_as as_object_arch ".object_arch armv4"
 
     # MS armasm fails to assemble our PIC constructs
     [ $target_os != win32 ] && enabled_all armv6t2 shared !pic && enable_weak_pic
