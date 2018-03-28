@@ -1398,12 +1398,27 @@ check_compile_assert(){
     test_code cc "$headers" "char c[2 * !!($condition) - 1]" "$@" && enable "$name"
 }
 
+check_cc(){
+    log check_cc "$@"
+    name=$1
+    shift
+    disable "$name"
+    test_code cc "$@" && enable "$name"
+}
+
 require(){
     log require "$@"
     name_version="$1"
     name="${1%% *}"
     shift
     check_lib $name "$@" || die "ERROR: $name_version not found"
+}
+
+require_cc(){
+    log require_cc "$@"
+    name="$1"
+    shift
+    test_code cc "$@" || die "ERROR: $name failed"
 }
 
 require_cpp(){
@@ -5360,24 +5375,17 @@ extern_prefix=${sym%%ff_extern*}
 ! disabled inline_asm && check_inline_asm inline_asm '"" ::'
 
 for restrict_keyword in restrict __restrict__ __restrict ""; do
-    test_cc <<EOF && break
-void foo(char * $restrict_keyword p);
-EOF
+    test_code cc "" "char * $restrict_keyword p" && break
 done
 
-test_cc <<EOF && enable pragma_deprecated
-void foo(void) { _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"") }
-EOF
+check_cc pragma_deprecated "" '_Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")'
 
 test_cc <<EOF || die "endian test failed"
 unsigned int endian = 'B' << 24 | 'I' << 16 | 'G' << 8 | 'E';
 EOF
 od -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
 
-test_cc <<EOF && enable const_nan
-#include <math.h>
-void foo(void) { struct { double d; } static const bar[] = { { NAN } }; }
-EOF
+check_cc const_nan math.h "struct { double d; } static const bar[] = { { NAN } }"
 
 if ! enabled ppc64 || enabled bigendian; then
     disable vsx
@@ -5548,19 +5556,17 @@ elif enabled ppc; then
         check_cflags -maltivec -mabi=altivec
 
         # check if our compiler supports Motorola AltiVec C API
-        test_code cc altivec.h "vector signed int v1 = (vector signed int) { 0 };
-                                 vector signed int v2 = (vector signed int) { 1 };
-                                 v1 = vec_add(v1, v2);" ||
-            disable altivec
+        check_cc altivec altivec.h "vector signed int v1 = (vector signed int) { 0 };
+                                    vector signed int v2 = (vector signed int) { 1 };
+                                    v1 = vec_add(v1, v2);"
 
         enabled altivec || warn "Altivec disabled, possibly missing --cpu flag"
     fi
 
     if enabled vsx; then
         check_cflags -mvsx &&
-        test_code cc altivec.h "int v[4] = { 0 };
-                                 vector signed int v1 = vec_vsx_ld(0, v);" ||
-            disable vsx
+        check_cc vsx altivec.h "int v[4] = { 0 };
+                                vector signed int v1 = vec_vsx_ld(0, v);"
     fi
 
     if enabled power8; then
@@ -5644,7 +5650,7 @@ EOF
 
 fi
 
-test_code cc arm_neon.h "int16x8_t test = vdupq_n_s16(0)" && enable intrinsics_neon
+check_cc intrinsics_neon arm_neon.h "int16x8_t test = vdupq_n_s16(0)"
 
 check_ldflags -Wl,--as-needed
 check_ldflags -Wl,-z,noexecstack
@@ -5873,7 +5879,7 @@ if ! disabled pthreads && ! enabled w32threads && ! enabled os2threads; then
     elif check_func pthread_join && check_func pthread_create; then
         enable pthreads
     fi
-    test_code cc "pthread.h" "static pthread_mutex_t atomic_lock = PTHREAD_MUTEX_INITIALIZER" || disable pthreads
+    check_cc pthreads "pthread.h" "static pthread_mutex_t atomic_lock = PTHREAD_MUTEX_INITIALIZER"
 
     if enabled pthreads; then
         check_builtin sem_timedwait semaphore.h "sem_t *s; sem_init(s,0,0); sem_timedwait(s,0); sem_destroy(s)" $pthreads_extralibs
@@ -6148,16 +6154,16 @@ rsync --help 2> /dev/null | grep -q 'contimeout' && enable rsync_contimeout || d
 check_header linux/fb.h
 check_header linux/videodev2.h
 test_code cc linux/videodev2.h "struct v4l2_frmsizeenum vfse; vfse.discrete.width = 0;" && enable_sanitized struct_v4l2_frmivalenum_discrete
-test_code cc linux/videodev2.h "int i = V4L2_CAP_VIDEO_M2M_MPLANE | V4L2_CAP_VIDEO_M2M | V4L2_BUF_FLAG_LAST;" || disable v4l2_m2m
-test_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_VC1_ANNEX_G;" && enable vc1_v4l2_m2m
-test_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_MPEG1;" && enable mpeg1_v4l2_m2m
-test_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_MPEG2;" && enable mpeg2_v4l2_m2m
-test_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_MPEG4;" && enable mpeg4_v4l2_m2m
-test_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_HEVC;" && enable hevc_v4l2_m2m
-test_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_H263;" && enable h263_v4l2_m2m
-test_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_H264;" && enable h264_v4l2_m2m
-test_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_VP8;" && enable vp8_v4l2_m2m
-test_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_VP9;" && enable vp9_v4l2_m2m
+check_cc v4l2_m2m linux/videodev2.h "int i = V4L2_CAP_VIDEO_M2M_MPLANE | V4L2_CAP_VIDEO_M2M | V4L2_BUF_FLAG_LAST;"
+check_cc vc1_v4l2_m2m linux/videodev2.h "int i = V4L2_PIX_FMT_VC1_ANNEX_G;"
+check_cc mpeg1_v4l2_m2m linux/videodev2.h "int i = V4L2_PIX_FMT_MPEG1;"
+check_cc mpeg2_v4l2_m2m linux/videodev2.h "int i = V4L2_PIX_FMT_MPEG2;"
+check_cc mpeg4_v4l2_m2m linux/videodev2.h "int i = V4L2_PIX_FMT_MPEG4;"
+check_cc hevc_v4l2_m2m linux/videodev2.h "int i = V4L2_PIX_FMT_HEVC;"
+check_cc h263_v4l2_m2m linux/videodev2.h "int i = V4L2_PIX_FMT_H263;"
+check_cc h264_v4l2_m2m linux/videodev2.h "int i = V4L2_PIX_FMT_H264;"
+check_cc vp8_v4l2_m2m linux/videodev2.h "int i = V4L2_PIX_FMT_VP8;"
+check_cc vp9_v4l2_m2m linux/videodev2.h "int i = V4L2_PIX_FMT_VP9;"
 
 check_header sys/videoio.h
 test_code cc sys/videoio.h "struct v4l2_frmsizeenum vfse; vfse.discrete.width = 0;" && enable_sanitized struct_v4l2_frmivalenum_discrete
@@ -6231,14 +6237,12 @@ enabled vaapi &&
     check_lib vaapi va/va.h vaInitialize -lva
 
 enabled vaapi &&
-    test_code cc "va/va.h" "vaCreateSurfaces(0, 0, 0, 0, 0, 0, 0, 0)" ||
-    disable vaapi
+    check_cc vaapi "va/va.h" "vaCreateSurfaces(0, 0, 0, 0, 0, 0, 0, 0)"
 
-enabled vaapi &&
+if enabled vaapi; then
     check_lib vaapi_drm "va/va.h va/va_drm.h" vaGetDisplayDRM -lva -lva-drm
-
-enabled vaapi &&
     check_lib vaapi_x11 "va/va.h va/va_x11.h" vaGetDisplay -lva -lva-x11 -lX11
+fi
 
 enabled vaapi &&
     check_cpp_condition vaapi_1 "va/va.h" "VA_CHECK_VERSION(1, 0, 0)"
