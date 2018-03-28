@@ -1172,8 +1172,7 @@ require(){
 require_cc(){
     log require_cc "$@"
     name="$1"
-    shift
-    test_code cc "$@" || die "ERROR: $name failed"
+    check_cc "$@" || die "ERROR: $name failed"
 }
 
 require_header(){
@@ -1185,7 +1184,7 @@ require_header(){
 require_cpp_condition(){
     log require_cpp_condition "$@"
     condition="$2"
-    test_cpp_condition "$@" || die "ERROR: $condition not satisfied"
+    check_cpp_condition "$@" || die "ERROR: $condition not satisfied"
 }
 
 require_pkg_config(){
@@ -4649,7 +4648,7 @@ for func in $MATH_FUNCS; do
 done
 
 # these are off by default, so fail if requested and not available
-enabled amf               && require_cpp_condition AMF/core/Version.h "(AMF_VERSION_MAJOR << 48 | AMF_VERSION_MINOR << 32 | AMF_VERSION_RELEASE << 16 | AMF_VERSION_BUILD_NUM) >= 0x0001000400040001"
+enabled amf               && require_cpp_condition amf AMF/core/Version.h "(AMF_VERSION_MAJOR << 48 | AMF_VERSION_MINOR << 32 | AMF_VERSION_RELEASE << 16 | AMF_VERSION_BUILD_NUM) >= 0x0001000400040001"
 enabled avisynth          && require_header avisynth/avisynth_c.h
 enabled avxsynth          && require_header avxsynth/avxsynth_c.h
 enabled cuda              && require cuda cuda.h cuInit -lcuda
@@ -4705,10 +4704,10 @@ enabled libvpx            && require_pkg_config libvpx "vpx >= 1.3.0" vpx/vpx_co
 enabled libwavpack        && require libwavpack wavpack/wavpack.h WavpackOpenFileOutput  -lwavpack
 enabled libwebp           && require_pkg_config libwebp libwebp webp/encode.h WebPGetEncoderVersion
 enabled libx264           && require_pkg_config libx264 x264 "stdint.h x264.h" x264_encoder_encode &&
-                             require_cpp_condition x264.h "X264_BUILD >= 118" &&
+                             require_cpp_condition libx264 x264.h "X264_BUILD >= 118" &&
                              check_cpp_condition libx262 x264.h "X264_MPEG2"
 enabled libx265           && require_pkg_config libx265 x265 x265.h x265_api_get &&
-                             require_cpp_condition x265.h "X265_BUILD >= 57"
+                             require_cpp_condition libx265 x265.h "X265_BUILD >= 57"
 enabled libxavs           && require libxavs "stdint.h xavs.h" xavs_encoder_encode -lxavs
 enabled libxvid           && require libxvid xvid.h xvid_global -lxvidcore
 enabled mmal              && { check_lib mmal interface/mmal/mmal.h mmal_port_connect -lmmal_core -lmmal_util -lmmal_vc_client -lbcm_host ||
@@ -4718,7 +4717,7 @@ enabled mmal              && { check_lib mmal interface/mmal/mmal.h mmal_port_co
                                  check_lib mmal interface/mmal/mmal.h mmal_port_connect -lmmal_core -lmmal_util -lmmal_vc_client -lbcm_host; } ||
                                die "ERROR: mmal not found" &&
                                check_func_headers interface/mmal/mmal.h "MMAL_PARAMETER_VIDEO_MAX_NUM_CALLBACKS"; }
-enabled nvenc             && require_cpp_condition nvEncodeAPI.h "NVENCAPI_MAJOR_VERSION >= 6"
+enabled nvenc             && require_cpp_condition nvenc nvEncodeAPI.h "NVENCAPI_MAJOR_VERSION >= 6"
 enabled omx               && require_header OMX_Core.h
 enabled omx_rpi           && { check_header OMX_Core.h ||
                                { ! enabled cross_compile && add_cflags -isystem/opt/vc/include/IL && check_header OMX_Core.h ; } ||
