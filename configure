@@ -5400,6 +5400,7 @@ done
 
 check_cc pragma_deprecated "" '_Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")'
 
+# The global variable ensures the bits appear unchanged in the object file.
 test_cc <<EOF || die "endian test failed"
 unsigned int endian = 'B' << 24 | 'I' << 16 | 'G' << 8 | 'E';
 EOF
