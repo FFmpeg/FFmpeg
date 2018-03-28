@@ -48,6 +48,7 @@ version <next>:
 - drmeter audio filter
 - hapqa_extract bitstream filter
 - filter_units bitstream filter
+- AV1 Support through libaom
 
 
 version 3.4:
