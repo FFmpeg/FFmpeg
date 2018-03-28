@@ -805,7 +805,8 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
                                          xmlNodePtr fragment_template_node,
                                          xmlNodePtr content_component_node,
                                          xmlNodePtr adaptionset_baseurl_node,
-                                         xmlNodePtr adaptionset_segmentlist_node)
+                                         xmlNodePtr adaptionset_segmentlist_node,
+                                         xmlNodePtr adaptionset_supplementalproperty_node)
 {
     int32_t ret = 0;
     int32_t audio_rep_idx = 0;
@@ -825,6 +826,7 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
     char *timescale_val = NULL;
     char *initialization_val = NULL;
     char *media_val = NULL;
+    char *val = NULL;
     xmlNodePtr baseurl_nodes[4];
     xmlNodePtr representation_node = node;
     char *rep_id_val = xmlGetProp(representation_node, "id");
@@ -919,6 +921,17 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
             if (startnumber_val) {
                 rep->first_seq_no = (int64_t) strtoll(startnumber_val, NULL, 10);
                 xmlFree(startnumber_val);
+            }
+            if (adaptionset_supplementalproperty_node) {
+                if (!av_strcasecmp(xmlGetProp(adaptionset_supplementalproperty_node,"schemeIdUri"), "http://dashif.org/guidelines/last-segment-number")) {
+                    val = xmlGetProp(adaptionset_supplementalproperty_node,"value");
+                    if (!val) {
+                        av_log(s, AV_LOG_ERROR, "Missing value attribute in adaptionset_supplementalproperty_node\n");
+                    } else {
+                        rep->last_seq_no =(int64_t) strtoll(val, NULL, 10) - 1;
+                        xmlFree(val);
+                    }
+                 }
             }
 
             fragment_timeline_node = find_child_node_by_name(representation_segmenttemplate_node, "SegmentTimeline");
@@ -1054,6 +1067,7 @@ static int parse_manifest_adaptationset(AVFormatContext *s, const char *url,
     xmlNodePtr content_component_node = NULL;
     xmlNodePtr adaptionset_baseurl_node = NULL;
     xmlNodePtr adaptionset_segmentlist_node = NULL;
+    xmlNodePtr adaptionset_supplementalproperty_node = NULL;
     xmlNodePtr node = NULL;
 
     node = xmlFirstElementChild(adaptionset_node);
@@ -1066,6 +1080,8 @@ static int parse_manifest_adaptationset(AVFormatContext *s, const char *url,
             adaptionset_baseurl_node = node;
         } else if (!av_strcasecmp(node->name, (const char *)"SegmentList")) {
             adaptionset_segmentlist_node = node;
+        } else if (!av_strcasecmp(node->name, (const char *)"SupplementalProperty")) {
+            adaptionset_supplementalproperty_node = node;
         } else if (!av_strcasecmp(node->name, (const char *)"Representation")) {
             ret = parse_manifest_representation(s, url, node,
                                                 adaptionset_node,
@@ -1076,7 +1092,8 @@ static int parse_manifest_adaptationset(AVFormatContext *s, const char *url,
                                                 fragment_template_node,
                                                 content_component_node,
                                                 adaptionset_baseurl_node,
-                                                adaptionset_segmentlist_node);
+                                                adaptionset_segmentlist_node,
+                                                adaptionset_supplementalproperty_node);
             if (ret < 0) {
                 return ret;
             }
@@ -1819,7 +1836,10 @@ static int open_demux_for_component(AVFormatContext *s, struct representation *p
 
     pls->parent = s;
     pls->cur_seq_no  = calc_cur_seg_no(s, pls);
-    pls->last_seq_no = calc_max_seg_no(pls, s->priv_data);
+
+    if (!pls->last_seq_no) {
+        pls->last_seq_no = calc_max_seg_no(pls, s->priv_data);
+    }
 
     ret = reopen_demux_for_component(s, pls);
     if (ret < 0) {
