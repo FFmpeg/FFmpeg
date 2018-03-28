@@ -1035,6 +1035,15 @@ test_ld(){
     test_cmd $ld $LDFLAGS $LDEXEFLAGS $flags $(ld_o $TMPE) $TMPO $libs $extralibs
 }
 
+check_ld(){
+    log check_ld "$@"
+    type=$1
+    name=$2
+    shift 2
+    disable $name
+    test_ld $type $@ && enable $name
+}
+
 print_include(){
     hdr=$1
     test "${hdr%.h}" = "${hdr}" &&
@@ -5468,8 +5477,8 @@ EOF
         :
     elif ! test_cpp_condition stddef.h "defined __ARM_PCS || defined __SOFTFP__" && [ $target_os != darwin ]; then
         case "${cross_prefix:-$cc}" in
-            *hardfloat*)         enable vfp_args;   fpabi=vfp ;;
-            *) test_ld "cc" <<EOF && enable vfp_args && fpabi=vfp || fpabi=soft ;;
+            *hardfloat*) enable vfp_args; fpabi=vfp ;;
+            *) check_ld "cc" vfp_args <<EOF && fpabi=vfp || fpabi=soft ;;
 __asm__ (".eabi_attribute 28, 1");
 int main(void) { return 0; }
 EOF
@@ -6406,7 +6415,7 @@ enabled xmm_clobber_test &&
                   -Wl,--wrap,sws_scale ||
     disable xmm_clobber_test
 
-test_ld "cc" <<EOF && enable proper_dce
+check_ld "cc" proper_dce <<EOF
 extern const int array[512];
 static inline int func(void) { return array[0]; }
 int main(void) { return 0; }
