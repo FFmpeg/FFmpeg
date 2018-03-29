@@ -6522,16 +6522,35 @@ elif enabled gcc; then
     check_cflags -Wformat
     check_cflags -fdiagnostics-color=auto
     enabled extra_warnings || check_disable_warning -Wno-maybe-uninitialized
+    if enabled x86_32; then
+        case $target_os in
+        *bsd*)
+            # BSDs don't guarantee a 16 byte aligned stack, but we can
+            # request GCC to try to maintain 16 byte alignment throughout
+            # function calls. Library entry points that might call assembly
+            # functions align the stack. (The parameter means 2^4 bytes.)
+            check_cflags -mpreferred-stack-boundary=4
+            ;;
+        esac
+    fi
 elif enabled llvm_gcc; then
     check_cflags -mllvm -stack-alignment=16
 elif enabled clang; then
-    if [ "$target_os" = "mingw32" -o "$target_os" = "win32" ] && enabled x86_32; then
+    if enabled x86_32; then
         # Clang doesn't support maintaining alignment without assuming the
         # same alignment in every function. If 16 byte alignment would be
         # enabled, one would also have to either add attribute_align_arg on
         # every single entry point into the libraries or enable -mstackrealign
         # (doing stack realignment in every single function).
-        disable aligned_stack
+        case $target_os in
+        mingw32|win32|*bsd*)
+            disable aligned_stack
+            ;;
+        *)
+            check_cflags -mllvm -stack-alignment=16
+            check_cflags -mstack-alignment=16
+            ;;
+        esac
     else
         check_cflags -mllvm -stack-alignment=16
         check_cflags -mstack-alignment=16
