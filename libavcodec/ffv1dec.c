@@ -950,7 +950,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
 
             }
             if (desc->flags & AV_PIX_FMT_FLAG_PAL ||
-                desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL) {
+                desc->flags & FF_PSEUDOPAL) {
                 dst[1] = p->data[1];
                 src[1] = f->last_picture.f->data[1];
             }

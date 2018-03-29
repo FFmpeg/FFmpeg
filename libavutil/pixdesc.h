@@ -154,6 +154,14 @@ typedef struct AVPixFmtDescriptor {
  * in some cases be simpler. Or the data can be interpreted purely based on
  * the pixel format without using the palette.
  * An example of a pseudo-paletted format is AV_PIX_FMT_GRAY8
+ *
+ * @deprecated This flag is deprecated, and will be removed. When it is removed,
+ * the extra palette allocation in AVFrame.data[1] is removed as well. Only
+ * actual paletted formats (as indicated by AV_PIX_FMT_FLAG_PAL) will have a
+ * palette. Starting with FFmpeg versions which have this flag deprecated, the
+ * extra "pseudo" palette is already ignored, and API users are not required to
+ * allocate a palette for AV_PIX_FMT_FLAG_PSEUDOPAL formats (it was required
+ * before the deprecation, though).
  */
 #define AV_PIX_FMT_FLAG_PSEUDOPAL    (1 << 6)
 
