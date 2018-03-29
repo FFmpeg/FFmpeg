@@ -3587,7 +3587,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
                     flags |= AVINDEX_DISCARD_FRAME;
                     av_log(mov->fc, AV_LOG_DEBUG, "drop a frame at curr_cts: %"PRId64" @ %"PRId64"\n", curr_cts, index);
 
-                    if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && edit_list_start_encountered == 0) {
+                    if (edit_list_start_encountered == 0) {
                         num_discarded_begin++;
                         frame_duration_buffer = av_realloc(frame_duration_buffer,
                                                            num_discarded_begin * sizeof(int64_t));
@@ -3598,7 +3598,8 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
                         frame_duration_buffer[num_discarded_begin - 1] = frame_duration;
 
                         // Increment skip_samples for the first non-zero audio edit list
-                        if (first_non_zero_audio_edit > 0 && st->codecpar->codec_id != AV_CODEC_ID_VORBIS) {
+                        if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
+                            first_non_zero_audio_edit > 0 && st->codecpar->codec_id != AV_CODEC_ID_VORBIS) {
                             st->skip_samples += frame_duration;
                         }
                     }
@@ -3611,9 +3612,9 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
                 }
                 if (edit_list_start_encountered == 0) {
                     edit_list_start_encountered = 1;
-                    // Make timestamps strictly monotonically increasing for audio, by rewriting timestamps for
+                    // Make timestamps strictly monotonically increasing by rewriting timestamps for
                     // discarded packets.
-                    if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && frame_duration_buffer) {
+                    if (frame_duration_buffer) {
                         fix_index_entry_timestamps(st, st->nb_index_entries, edit_list_dts_counter,
                                                    frame_duration_buffer, num_discarded_begin);
                         av_freep(&frame_duration_buffer);
