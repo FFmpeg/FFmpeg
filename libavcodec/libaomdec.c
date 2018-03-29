@@ -102,9 +102,6 @@ static int set_pix_fmt(AVCodecContext *avctx, struct aom_image *img)
     case AOM_IMG_FMT_I422:
         avctx->pix_fmt = AV_PIX_FMT_YUV422P;
         return 0;
-    case AOM_IMG_FMT_I440:
-        avctx->pix_fmt = AV_PIX_FMT_YUV440P;
-        return 0;
     case AOM_IMG_FMT_I444:
         avctx->pix_fmt = avctx->colorspace == AVCOL_SPC_RGB ?
                          AV_PIX_FMT_GBRP : AV_PIX_FMT_YUV444P;
@@ -131,19 +128,6 @@ static int set_pix_fmt(AVCodecContext *avctx, struct aom_image *img)
             return 0;
         } else if (img->bit_depth == 12) {
             avctx->pix_fmt = AV_PIX_FMT_YUV422P12;
-            return 0;
-        } else {
-            return AVERROR_INVALIDDATA;
-        }
-    case AOM_IMG_FMT_I44016:
-        if (img->bit_depth == 8) {
-            avctx->pix_fmt = AV_PIX_FMT_YUV440P;
-            return 0;
-        } else if (img->bit_depth == 10) {
-            avctx->pix_fmt = AV_PIX_FMT_YUV440P10;
-            return 0;
-        } else if (img->bit_depth == 12) {
-            avctx->pix_fmt = AV_PIX_FMT_YUV440P12;
             return 0;
         } else {
             return AVERROR_INVALIDDATA;
