@@ -326,11 +326,8 @@ static int videotoolbox_set_frame(AVCodecContext *avctx, AVFrame *frame)
 
     CVPixelBufferRef *ref = (CVPixelBufferRef *)frame->buf[0]->data;
 
-    if (*ref) {
-        av_log(avctx, AV_LOG_ERROR, "videotoolbox: frame already set?\n");
-        av_frame_unref(frame);
-        return AVERROR_EXTERNAL;
-    }
+    if (*ref)
+        CVPixelBufferRelease(*ref);
 
     *ref = vtctx->frame;
     vtctx->frame = NULL;
