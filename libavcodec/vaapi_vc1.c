@@ -138,8 +138,9 @@ static int vc1_get_FPTYPE(const VC1Context *v)
 /** Reconstruct bitstream MVMODE (7.1.1.32) */
 static inline VAMvModeVC1 vc1_get_MVMODE(const VC1Context *v)
 {
-    if ((v->s.pict_type == AV_PICTURE_TYPE_P && !v->p_frame_skipped) ||
-        (v->s.pict_type == AV_PICTURE_TYPE_B && !v->bi_type))
+    if ((v->fcm == PROGRESSIVE || v->fcm == ILACE_FIELD) &&
+        ((v->s.pict_type == AV_PICTURE_TYPE_P && !v->p_frame_skipped) ||
+         (v->s.pict_type == AV_PICTURE_TYPE_B && !v->bi_type)))
         return get_VAMvModeVC1(v->mv_mode);
     return 0;
 }
@@ -147,7 +148,8 @@ static inline VAMvModeVC1 vc1_get_MVMODE(const VC1Context *v)
 /** Reconstruct bitstream MVMODE2 (7.1.1.33) */
 static inline VAMvModeVC1 vc1_get_MVMODE2(const VC1Context *v)
 {
-    if ((v->s.pict_type == AV_PICTURE_TYPE_P && !v->p_frame_skipped) &&
+    if ((v->fcm == PROGRESSIVE || v->fcm == ILACE_FIELD) &&
+        (v->s.pict_type == AV_PICTURE_TYPE_P && !v->p_frame_skipped) &&
         v->mv_mode == MV_PMODE_INTENSITY_COMP)
         return get_VAMvModeVC1(v->mv_mode2);
     return 0;
