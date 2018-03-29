@@ -35,6 +35,7 @@
 
 #include "avcodec.h"
 #include "internal.h"
+#include "profiles.h"
 
 /*
  * Portion of struct aom_codec_cx_pkt from aom_encoder.h.
@@ -735,6 +736,7 @@ AVCodec ff_libaom_av1_encoder = {
     .encode2        = aom_encode,
     .close          = aom_free,
     .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS | AV_CODEC_CAP_EXPERIMENTAL,
+    .profiles       = NULL_IF_CONFIG_SMALL(ff_av1_profiles),
     .priv_class     = &class_aom,
     .defaults       = defaults,
     .init_static_data = av1_init_static,
