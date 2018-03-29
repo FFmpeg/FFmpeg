@@ -89,7 +89,9 @@ static int set_pix_fmt(AVCodecContext *avctx, struct aom_image *img)
         AVCOL_RANGE_MPEG, AVCOL_RANGE_JPEG
     };
     avctx->color_range = color_ranges[img->range];
+    avctx->color_primaries = img->cp;
     avctx->colorspace  = img->mc;
+    avctx->color_trc   = img->tc;
 
     switch (img->fmt) {
     case AOM_IMG_FMT_I420:
