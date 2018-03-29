@@ -1350,6 +1350,9 @@ The duration of the first input.
 The transition time, in seconds, for volume renormalization when an input
 stream ends. The default value is 2 seconds.
 
+@item weights
+Specify weight of each input audio stream as sequence.
+Each weight is separated by space. By default all inputs have same weight.
 @end table
 
 @section anequalizer
