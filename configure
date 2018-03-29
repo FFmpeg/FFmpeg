@@ -4846,7 +4846,9 @@ check_disable_warning_headers -Wno-unused-variable
 
 check_objcflags -fobjc-arc && enable objc_arc
 
-check_cc blocks_extension "" "void (^block)(void)"
+test_cc <<EOF && enable blocks_extension
+void (^block)(void);
+EOF
 
 # add some linker flags
 check_ldflags -Wl,--warn-common
@@ -4900,10 +4902,14 @@ if enabled proper_dce; then
     if test_ldflags -Wl,${version_script},$TMPV; then
         append SHFLAGS '-Wl,${version_script},\$(SUBDIR)lib\$(NAME).ver'
         quotes='""'
-        check_cc symver_asm_label "" "void ff_foo(void) __asm__ ("av_foo@VERSION");
-                                      void ff_foo(void) { ${inline_asm+__asm__($quotes);} }"
-        check_cc symver_gnu_asm   "" "__asm__(".symver ff_foo,av_foo@VERSION");
-                                      void ff_foo(void) {}"
+        test_cc <<EOF && enable symver_asm_label
+void ff_foo(void) __asm__ ("av_foo@VERSION");
+void ff_foo(void) { ${inline_asm+__asm__($quotes);} }
+EOF
+        test_cc <<EOF && enable symver_gnu_asm
+__asm__(".symver ff_foo,av_foo@VERSION");
+void ff_foo(void) {}
+EOF
     fi
 fi
 
