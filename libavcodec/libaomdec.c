@@ -85,16 +85,11 @@ static void image_copy_16_to_8(AVFrame *pic, struct aom_image *img)
 // returns 0 on success, AVERROR_INVALIDDATA otherwise
 static int set_pix_fmt(AVCodecContext *avctx, struct aom_image *img)
 {
-    static const enum AVColorSpace colorspaces[10] = {
-        AVCOL_SPC_UNSPECIFIED, AVCOL_SPC_BT470BG, AVCOL_SPC_BT709, AVCOL_SPC_SMPTE170M,
-        AVCOL_SPC_SMPTE240M, AVCOL_SPC_BT2020_NCL, AVCOL_SPC_BT2020_CL, AVCOL_SPC_RGB,
-        AVCOL_SPC_ICTCP, AVCOL_SPC_RESERVED
-    };
     static const enum AVColorRange color_ranges[] = {
         AVCOL_RANGE_MPEG, AVCOL_RANGE_JPEG
     };
     avctx->color_range = color_ranges[img->range];
-    avctx->colorspace = colorspaces[img->cs];
+    avctx->colorspace  = img->mc;
 
     switch (img->fmt) {
     case AOM_IMG_FMT_I420:
