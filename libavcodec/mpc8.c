@@ -419,10 +419,10 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
     c->last_bits_used = get_bits_count(gb);
     if(c->cur_frame >= c->frames)
         c->cur_frame = 0;
-    if(c->cur_frame == 0 && get_bits_left(gb) < 8) {// we have only padding left
-        c->last_bits_used = buf_size << 3;
-    } else if (get_bits_left(gb) < 0) {
+    if (get_bits_left(gb) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Overread %d\n", -get_bits_left(gb));
+        c->last_bits_used = buf_size << 3;
+    } else if (c->cur_frame == 0 && get_bits_left(gb) < 8) {// we have only padding left
         c->last_bits_used = buf_size << 3;
     }
 
