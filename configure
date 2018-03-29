@@ -6525,8 +6525,17 @@ elif enabled gcc; then
 elif enabled llvm_gcc; then
     check_cflags -mllvm -stack-alignment=16
 elif enabled clang; then
-    check_cflags -mllvm -stack-alignment=16
-    check_cflags -mstack-alignment=16
+    if [ "$target_os" = "mingw32" -o "$target_os" = "win32" ] && enabled x86_32; then
+        # Clang doesn't support maintaining alignment without assuming the
+        # same alignment in every function. If 16 byte alignment would be
+        # enabled, one would also have to either add attribute_align_arg on
+        # every single entry point into the libraries or enable -mstackrealign
+        # (doing stack realignment in every single function).
+        disable aligned_stack
+    else
+        check_cflags -mllvm -stack-alignment=16
+        check_cflags -mstack-alignment=16
+    fi
     check_cflags -Qunused-arguments
     check_cflags -Werror=implicit-function-declaration
     check_cflags -Werror=missing-prototypes
