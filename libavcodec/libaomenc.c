@@ -301,14 +301,14 @@ static av_cold int aom_init(AVCodecContext *avctx)
      * quality. */
     if (avctx->profile != FF_PROFILE_UNKNOWN)
         enccfg.g_profile = avctx->profile;
-    else if (avctx->pix_fmt == AV_PIX_FMT_YUV420P)
+    else if (avctx->pix_fmt == AV_PIX_FMT_YUV420P ||
+             avctx->pix_fmt == AV_PIX_FMT_YUV420P10)
         avctx->profile = enccfg.g_profile = FF_PROFILE_AV1_MAIN;
+    else if (avctx->pix_fmt == AV_PIX_FMT_YUV444P ||
+             avctx->pix_fmt == AV_PIX_FMT_YUV444P10)
+        avctx->profile = enccfg.g_profile = FF_PROFILE_AV1_HIGH;
     else {
-        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
-        if (desc->comp[0].depth < 12)
-            avctx->profile = enccfg.g_profile = FF_PROFILE_AV1_HIGH;
-        else
-            avctx->profile = enccfg.g_profile = FF_PROFILE_AV1_PROFESSIONAL;
+        avctx->profile = enccfg.g_profile = FF_PROFILE_AV1_PROFESSIONAL;
     }
 
 
