@@ -17,7 +17,7 @@ for more formats. None of them are used by default, their use has to be
 explicitly requested by passing the appropriate flags to
 @command{./configure}.
 
-+@section Alliance for Open Media libaom
+@section Alliance for Open Media libaom
 
 FFmpeg can make use of the libaom library for AV1 decoding.
 
