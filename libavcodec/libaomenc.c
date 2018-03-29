@@ -344,8 +344,7 @@ static av_cold int aom_init(AVCodecContext *avctx,
     if (avctx->bit_rate) {
         enccfg.rc_target_bitrate = av_rescale_rnd(avctx->bit_rate, 1, 1000,
                                                   AV_ROUND_NEAR_INF);
-    } else if (enccfg.rc_end_usage == AOM_Q) {
-    } else {
+    } else if (enccfg.rc_end_usage != AOM_Q) {
         if (enccfg.rc_end_usage == AOM_CQ) {
             enccfg.rc_target_bitrate = 1000000;
         } else {
@@ -361,8 +360,7 @@ static av_cold int aom_init(AVCodecContext *avctx,
     if (avctx->qmax >= 0)
         enccfg.rc_max_quantizer = avctx->qmax;
 
-    if (enccfg.rc_end_usage == AOM_CQ || enccfg.rc_end_usage == AOM_Q
-       ) {
+    if (enccfg.rc_end_usage == AOM_CQ || enccfg.rc_end_usage == AOM_Q) {
         if (ctx->crf < enccfg.rc_min_quantizer || ctx->crf > enccfg.rc_max_quantizer) {
             av_log(avctx, AV_LOG_ERROR,
                    "CQ level %d must be between minimum and maximum quantizer value (%d-%d)\n",
