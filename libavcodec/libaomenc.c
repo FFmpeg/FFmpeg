@@ -74,6 +74,9 @@ static const char *const ctlidstr[] = {
     [AOME_SET_ENABLEAUTOALTREF] = "AOME_SET_ENABLEAUTOALTREF",
     [AOME_SET_STATIC_THRESHOLD] = "AOME_SET_STATIC_THRESHOLD",
     [AV1E_SET_COLOR_RANGE]      = "AV1E_SET_COLOR_RANGE",
+    [AV1E_SET_COLOR_PRIMARIES]  = "AV1E_SET_COLOR_PRIMARIES",
+    [AV1E_SET_MATRIX_COEFFICIENTS] = "AV1E_SET_MATRIX_COEFFICIENTS",
+    [AV1E_SET_TRANSFER_CHARACTERISTICS] = "AV1E_SET_TRANSFER_CHARACTERISTICS",
 };
 
 static av_cold void log_encoder_error(AVCodecContext *avctx, const char *desc)
@@ -449,6 +452,9 @@ static av_cold int aom_init(AVCodecContext *avctx,
     if (ctx->crf >= 0)
         codecctl_int(avctx, AOME_SET_CQ_LEVEL,          ctx->crf);
 
+    codecctl_int(avctx, AV1E_SET_COLOR_PRIMARIES, avctx->color_primaries);
+    codecctl_int(avctx, AV1E_SET_MATRIX_COEFFICIENTS, avctx->colorspace);
+    codecctl_int(avctx, AV1E_SET_TRANSFER_CHARACTERISTICS, avctx->color_trc);
     set_color_range(avctx);
 
     // provide dummy value to initialize wrapper, values will be updated each _encode()
