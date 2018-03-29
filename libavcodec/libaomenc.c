@@ -110,7 +110,7 @@ static av_cold void dump_enc_cfg(AVCodecContext *avctx,
            width, "g_pass:",            cfg->g_pass,
            width, "g_lag_in_frames:",   cfg->g_lag_in_frames);
     av_log(avctx, level, "rate control settings\n"
-                         "  %*s%u\n  %*s%d\n  %*s%p("SIZE_SPECIFIER")\n  %*s%u\n",
+                         "  %*s%u\n  %*s%d\n  %*s%p(%"SIZE_SPECIFIER")\n  %*s%u\n",
            width, "rc_dropframe_thresh:", cfg->rc_dropframe_thresh,
            width, "rc_end_usage:",        cfg->rc_end_usage,
            width, "rc_twopass_stats_in:", cfg->rc_twopass_stats_in.buf, cfg->rc_twopass_stats_in.sz,
