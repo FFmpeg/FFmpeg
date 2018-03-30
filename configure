@@ -1029,10 +1029,10 @@ check_insn(){
 
 test_x86asm(){
     log test_x86asm "$@"
-    echo "$1" > $TMPS
-    log_file $TMPS
+    echo "$1" > $TMPASM
+    log_file $TMPASM
     shift 1
-    test_cmd $x86asmexe $X86ASMFLAGS -Werror "$@" -o $TMPO $TMPS
+    test_cmd $x86asmexe $X86ASMFLAGS -Werror "$@" -o $TMPO $TMPASM
 }
 
 ld_o(){
