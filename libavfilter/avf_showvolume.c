@@ -274,17 +274,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     s->out->pts = insamples->pts;
 
     if (s->f < 1.) {
-    for (j = 0; j < outlink->h; j++) {
-        uint8_t *dst = s->out->data[0] + j * s->out->linesize[0];
-        const uint32_t alpha = s->bgopacity * 255;
+        for (j = 0; j < outlink->h; j++) {
+            uint8_t *dst = s->out->data[0] + j * s->out->linesize[0];
+            const uint32_t alpha = s->bgopacity * 255;
 
-        for (k = 0; k < outlink->w; k++) {
-            dst[k * 4 + 0] = FFMAX(dst[k * 4 + 0] * s->f, 0);
-            dst[k * 4 + 1] = FFMAX(dst[k * 4 + 1] * s->f, 0);
-            dst[k * 4 + 2] = FFMAX(dst[k * 4 + 2] * s->f, 0);
-            dst[k * 4 + 3] = FFMAX(dst[k * 4 + 3] * s->f, alpha);
+            for (k = 0; k < outlink->w; k++) {
+                dst[k * 4 + 0] = FFMAX(dst[k * 4 + 0] * s->f, 0);
+                dst[k * 4 + 1] = FFMAX(dst[k * 4 + 1] * s->f, 0);
+                dst[k * 4 + 2] = FFMAX(dst[k * 4 + 2] * s->f, 0);
+                dst[k * 4 + 3] = FFMAX(dst[k * 4 + 3] * s->f, alpha);
+            }
         }
-    }
     }
 
     if (s->orientation) { /* vertical */
