@@ -60,6 +60,10 @@ FATE_EAC3 += fate-eac3-4
 fate-eac3-4: CMD = pcm -i $(TARGET_SAMPLES)/eac3/serenity_english_5.1_1536_small.eac3
 fate-eac3-4: REF = $(SAMPLES)/eac3/serenity_english_5.1_1536_small_v2.pcm
 
+FATE_EAC3 += fate-eac3-5
+fate-eac3-5: CMD = pcm -i $(TARGET_SAMPLES)/eac3/the_great_wall_7.1.eac3
+fate-eac3-5: REF = $(SAMPLES)/eac3/the_great_wall_7.1.pcm
+
 $(FATE_AC3) $(FATE_EAC3): CMP = oneoff
 
 FATE_AC3-$(call  DEMDEC, AC3,  AC3)  += $(FATE_AC3)
