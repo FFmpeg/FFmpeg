@@ -273,6 +273,11 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
         if(maxband > 32) maxband -= 33;
     }
 
+    if (get_bits_left(gb) < 0) {
+        *got_frame_ptr = 0;
+        return buf_size;
+    }
+
     if(maxband > c->maxbands + 1) {
         av_log(avctx, AV_LOG_ERROR, "maxband %d too large\n",maxband);
         return AVERROR_INVALIDDATA;
