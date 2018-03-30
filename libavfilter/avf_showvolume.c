@@ -222,7 +222,7 @@ static void drawtext(AVFrame *pic, int x, int y, const char *txt, int o)
     for (i = 0; txt[i]; i++) {
         int char_y, mask;
 
-        if (o) {
+        if (o) { /* vertical orientation */
             for (char_y = font_height - 1; char_y >= 0; char_y--) {
                 uint8_t *p = pic->data[0] + (y + i * 10) * pic->linesize[0] + x * 4;
                 for (mask = 0x80; mask; mask >>= 1) {
@@ -231,7 +231,7 @@ static void drawtext(AVFrame *pic, int x, int y, const char *txt, int o)
                     p += pic->linesize[0];
                 }
             }
-        } else {
+        } else { /* horizontal orientation */
             uint8_t *p = pic->data[0] + y * pic->linesize[0] + (x + i * 8) * 4;
             for (char_y = 0; char_y < font_height; char_y++) {
                 for (mask = 0x80; mask; mask >>= 1) {
@@ -285,7 +285,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
         }
     }
 
-    if (s->orientation) {
+    if (s->orientation) { /* vertical */
         for (c = 0; c < inlink->channels; c++) {
             float *src = (float *)insamples->extended_data[c];
             uint32_t *lut = s->color_lut + s->w * c;
@@ -313,7 +313,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 drawtext(s->out, c * (s->h + s->b) + (s->h - 10) / 2, outlink->h - 35, channel_name, 1);
             }
         }
-    } else {
+    } else { /* horizontal */
         for (c = 0; c < inlink->channels; c++) {
             float *src = (float *)insamples->extended_data[c];
             uint32_t *lut = s->color_lut + s->w * c;
