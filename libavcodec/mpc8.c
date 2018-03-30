@@ -250,11 +250,6 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
     int maxband, keyframe;
     int last[2];
 
-    /* get output buffer */
-    frame->nb_samples = MPC_FRAME_SIZE;
-    if ((res = ff_get_buffer(avctx, frame, 0)) < 0)
-        return res;
-
     keyframe = c->cur_frame == 0;
 
     if(keyframe){
@@ -414,6 +409,10 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
             }
         }
     }
+
+    frame->nb_samples = MPC_FRAME_SIZE;
+    if ((res = ff_get_buffer(avctx, frame, 0)) < 0)
+        return res;
 
     ff_mpc_dequantize_and_synth(c, maxband - 1,
                                 (int16_t **)frame->extended_data,
