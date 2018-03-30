@@ -19961,8 +19961,8 @@ If set, displays channel names. Default is enabled.
 If set, displays volume values. Default is enabled.
 
 @item o
-Set orientation, can be @code{horizontal} or @code{vertical},
-default is @code{horizontal}.
+Set orientation, can be horizontal: @code{h} or vertical: @code{v},
+default is @code{h}.
 
 @item s
 Set step size, allowed range is [0, 5]. Default is 0, which means
