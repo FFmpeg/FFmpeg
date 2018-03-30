@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "mpeg.h"
 
@@ -128,6 +129,7 @@ typedef struct MpegDemuxContext {
     int sofdec;
     int dvd;
     int imkh_cctv;
+    int raw_ac3;
 #if CONFIG_VOBSUB_DEMUXER
     AVFormatContext *sub_ctx;
     FFDemuxSubtitlesQueue q[32];
@@ -442,8 +444,21 @@ redo:
     }
 
     if (startcode == PRIVATE_STREAM_1) {
+        int ret = ffio_ensure_seekback(s->pb, 2);
+
+        if (ret < 0)
+            return ret;
+
         startcode = avio_r8(s->pb);
-        len--;
+        if (startcode == 0x0b && avio_r8(s->pb) == 0x77) {
+            startcode = 0x80;
+            m->raw_ac3 = 1;
+            avio_skip(s->pb, -2);
+        } else {
+            m->raw_ac3 = 0;
+            avio_skip(s->pb, -1);
+            len--;
+        }
     }
     if (len < 0)
         goto error_redo;
@@ -486,14 +501,16 @@ redo:
         if (len < 4)
             goto skip;
 
-        /* audio: skip header */
-        avio_r8(s->pb);
-        lpcm_header_len = avio_rb16(s->pb);
-        len -= 3;
-        if (startcode >= 0xb0 && startcode <= 0xbf) {
-            /* MLP/TrueHD audio has a 4-byte header */
+        if (!m->raw_ac3) {
+            /* audio: skip header */
             avio_r8(s->pb);
-            len--;
+            lpcm_header_len = avio_rb16(s->pb);
+            len -= 3;
+            if (startcode >= 0xb0 && startcode <= 0xbf) {
+                /* MLP/TrueHD audio has a 4-byte header */
+                avio_r8(s->pb);
+                len--;
+            }
         }
     }
 
