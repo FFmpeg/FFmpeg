@@ -273,6 +273,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     }
     s->out->pts = insamples->pts;
 
+    if (s->f < 1.) {
     for (j = 0; j < outlink->h; j++) {
         uint8_t *dst = s->out->data[0] + j * s->out->linesize[0];
         const uint32_t alpha = s->bgopacity * 255;
@@ -283,6 +284,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             dst[k * 4 + 2] = FFMAX(dst[k * 4 + 2] * s->f, 0);
             dst[k * 4 + 3] = FFMAX(dst[k * 4 + 3] * s->f, alpha);
         }
+    }
     }
 
     if (s->orientation) { /* vertical */
