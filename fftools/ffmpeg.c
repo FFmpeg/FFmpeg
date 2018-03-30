@@ -2198,7 +2198,6 @@ static int ifilter_send_eof(InputFilter *ifilter, int64_t pts)
             return ret;
     } else {
         // the filtergraph was never configured
-        FilterGraph *fg = ifilter->graph;
         if (ifilter->format < 0)
             ifilter_parameters_from_codecpar(ifilter, ifilter->ist->st->codecpar);
         if (ifilter->format < 0 && (ifilter->type == AVMEDIA_TYPE_AUDIO || ifilter->type == AVMEDIA_TYPE_VIDEO)) {
