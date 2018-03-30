@@ -1027,12 +1027,16 @@ check_insn(){
     check_as ${1}_external "$2"
 }
 
+x86asm_o(){
+    eval printf '%s\\n' $X86ASM_O
+}
+
 test_x86asm(){
     log test_x86asm "$@"
     echo "$1" > $TMPASM
     log_file $TMPASM
     shift 1
-    test_cmd $x86asmexe $X86ASMFLAGS -Werror "$@" -o $TMPO $TMPASM
+    test_cmd $x86asmexe $X86ASMFLAGS -Werror "$@" $(x86asm_o $TMPO) $TMPASM
 }
 
 ld_o(){
