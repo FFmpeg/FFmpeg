@@ -308,6 +308,8 @@ static int aic_decode_slice(AICContext *ctx, int mb_x, int mb_y,
     GetBitContext gb;
     int ret, i, mb, blk;
     int slice_width = FFMIN(ctx->slice_width, ctx->mb_width - mb_x);
+    int last_row = mb_y && mb_y == ctx->mb_height - 1;
+    int y_pos, c_pos;
     uint8_t *Y, *C[2];
     uint8_t *dst;
     int16_t *base_y = ctx->data_ptr[COEFF_LUMA];
@@ -316,10 +318,18 @@ static int aic_decode_slice(AICContext *ctx, int mb_x, int mb_y,
     int16_t *ext_c  = ctx->data_ptr[COEFF_CHROMA_EXT];
     const int ystride = ctx->frame->linesize[0];
 
-    Y = ctx->frame->data[0] + mb_x * 16 + mb_y * 16 * ystride;
+    if (last_row) {
+        y_pos = (ctx->avctx->height - 16);
+        c_pos = ((ctx->avctx->height+1)/2 - 8);
+    } else {
+        y_pos = mb_y * 16;
+        c_pos = mb_y * 8;
+    }
+
+    Y = ctx->frame->data[0] + mb_x * 16 + y_pos * ystride;
     for (i = 0; i < 2; i++)
         C[i] = ctx->frame->data[i + 1] + mb_x * 8
-               + mb_y * 8 * ctx->frame->linesize[i + 1];
+               + c_pos * ctx->frame->linesize[i + 1];
     init_get_bits(&gb, src, src_size * 8);
 
     memset(ctx->slice_data, 0,
