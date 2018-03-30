@@ -576,7 +576,8 @@ static int export(AVFilterContext *ctx, StreamContext *sc, int input)
         /* error already handled */
         av_assert0(av_get_frame_filename(filename, sizeof(filename), sic->filename, input) == 0);
     } else {
-        strcpy(filename, sic->filename);
+        if (av_strlcpy(filename, sic->filename, sizeof(filename)) >= sizeof(filename))
+            return AVERROR(EINVAL);
     }
     if (sic->format == FORMAT_XML) {
         return xml_export(ctx, sc, filename);
