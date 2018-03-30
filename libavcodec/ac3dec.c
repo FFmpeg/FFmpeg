@@ -1488,7 +1488,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
     int blk, ch, err, offset, ret;
     int got_independent_frame = 0;
     const uint8_t *channel_map;
-    uint8_t extended_channel_map[AC3_MAX_CHANNELS * 2];
+    uint8_t extended_channel_map[EAC3_MAX_CHANNELS];
     const SHORTFLOAT *output[AC3_MAX_CHANNELS];
     enum AVMatrixEncoding matrix_encoding;
     AVDownmixInfo *downmix_info;
@@ -1685,7 +1685,7 @@ dependent_frame:
         avctx->bit_rate    = s->bit_rate + s->prev_bit_rate;
     }
 
-    for (ch = 0; ch < 16; ch++)
+    for (ch = 0; ch < EAC3_MAX_CHANNELS; ch++)
         extended_channel_map[ch] = ch;
 
     if (s->frame_type == EAC3_FRAME_TYPE_DEPENDENT) {
@@ -1698,7 +1698,7 @@ dependent_frame:
 
         channel_layout = ich_layout;
         for (ch = 0; ch < 16; ch++) {
-            if (s->channel_map & (1 << (15 - ch))) {
+            if (s->channel_map & (1 << (EAC3_MAX_CHANNELS - ch - 1))) {
                 channel_layout |= custom_channel_map_locations[ch][1];
             }
         }
@@ -1706,8 +1706,8 @@ dependent_frame:
         avctx->channel_layout = channel_layout;
         avctx->channels = av_get_channel_layout_nb_channels(channel_layout);
 
-        for (ch = 0; ch < 16; ch++) {
-            if (s->channel_map & (1 << (15 - ch))) {
+        for (ch = 0; ch < EAC3_MAX_CHANNELS; ch++) {
+            if (s->channel_map & (1 << (EAC3_MAX_CHANNELS - ch - 1))) {
                 if (custom_channel_map_locations[ch][0]) {
                     int index = av_get_channel_layout_channel_index(channel_layout,
                                                                     custom_channel_map_locations[ch][1]);
