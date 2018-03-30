@@ -342,6 +342,10 @@ Toolchain options:
   --target-samples=DIR     path to samples directory on target
   --tempprefix=PATH        force fixed dir/prefix instead of mktemp for checks
   --toolchain=NAME         set tool defaults according to NAME
+                           (gcc-asan, clang-asan, gcc-msan, clang-msan,
+                           gcc-tsan, clang-tsan, gcc-usan, clang-usan,
+                           valgrind-massif, valgrind-memcheck,
+                           msvc, icl, gcov, llvm-cov, hardened)
   --nm=NM                  use nm tool NM [$nm_default]
   --ar=AR                  use archive tool AR [$ar_default]
   --as=AS                  use assembler AS [$as_default]
