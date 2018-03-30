@@ -972,6 +972,18 @@ test_as(){
     test_cmd $as $CPPFLAGS $ASFLAGS "$@" $AS_C $(as_o $TMPO) $TMPS
 }
 
+x86asm_o(){
+    eval printf '%s\\n' $X86ASM_O
+}
+
+test_x86asm(){
+    log test_x86asm "$@"
+    echo "$1" > $TMPASM
+    log_file $TMPASM
+    shift
+    test_cmd $x86asmexe $X86ASMFLAGS -Werror "$@" $(x86asm_o $TMPO) $TMPASM
+}
+
 check_cmd(){
     log check_cmd "$@"
     cmd=$1
@@ -1027,16 +1039,12 @@ check_insn(){
     check_as ${1}_external "$2"
 }
 
-x86asm_o(){
-    eval printf '%s\\n' $X86ASM_O
-}
-
-test_x86asm(){
-    log test_x86asm "$@"
-    echo "$1" > $TMPASM
-    log_file $TMPASM
-    shift 1
-    test_cmd $x86asmexe $X86ASMFLAGS -Werror "$@" $(x86asm_o $TMPO) $TMPASM
+check_x86asm(){
+    log check_x86asm "$@"
+    name=$1
+    shift
+    disable $name
+    test_x86asm "$@" && enable $name
 }
 
 ld_o(){
@@ -5640,7 +5648,7 @@ EOF
             X86ASMDEP='$(DEPX86ASM) $(X86ASMFLAGS) -M $(X86ASM_O) $< > $(@:.o=.d)'
             X86ASM_DEPFLAGS=
         fi
-        test_x86asm "movbe ecx, [5]" && enable x86asm
+        check_x86asm x86asm "movbe ecx, [5]"
     }
 
     if ! disabled_any asm mmx x86asm; then
@@ -5656,11 +5664,11 @@ EOF
             elf*) enabled debug && append X86ASMFLAGS $x86asm_debug ;;
         esac
 
-        test_x86asm "vmovdqa32 [eax]{k1}{z}, zmm0"    || disable avx512_external
-        test_x86asm "vextracti128 xmm0, ymm0, 0"      || disable avx2_external
-        test_x86asm "vpmacsdd xmm0, xmm1, xmm2, xmm3" || disable xop_external
-        test_x86asm "vfmaddps ymm0, ymm1, ymm2, ymm3" || disable fma4_external
-        test_x86asm "CPU amdnop" || disable cpunop
+        check_x86asm avx512_external "vmovdqa32 [eax]{k1}{z}, zmm0"
+        check_x86asm avx2_external   "vextracti128 xmm0, ymm0, 0"
+        check_x86asm xop_external    "vpmacsdd xmm0, xmm1, xmm2, xmm3"
+        check_x86asm fma4_external   "vfmaddps ymm0, ymm1, ymm2, ymm3"
+        check_x86asm cpunop          "CPU amdnop"
     fi
 
     case "$cpu" in
