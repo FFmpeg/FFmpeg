@@ -257,6 +257,7 @@ External library support:
   --enable-libsnappy       enable Snappy compression, needed for hap encoding [no]
   --enable-libsoxr         enable Include libsoxr resampling [no]
   --enable-libspeex        enable Speex de/encoding via libspeex [no]
+  --enable-libsrt          enable Haivision SRT protocol via libsrt [no]
   --enable-libssh          enable SFTP protocol via libssh [no]
   --enable-libtesseract    enable Tesseract, needed for ocr filter [no]
   --enable-libtheora       enable Theora encoding via libtheora [no]
@@ -1705,6 +1706,7 @@ EXTERNAL_LIBRARY_LIST="
     libsnappy
     libsoxr
     libspeex
+    libsrt
     libssh
     libtesseract
     libtheora
@@ -3246,6 +3248,8 @@ libssh_protocol_deps="libssh"
 libtls_conflict="openssl gnutls"
 mmsh_protocol_select="http_protocol"
 mmst_protocol_select="network"
+libsrt_protocol_deps="libsrt"
+libsrt_protocol_select="network"
 rtmp_protocol_conflict="librtmp_protocol"
 rtmp_protocol_select="tcp_protocol"
 rtmp_protocol_suggest="zlib"
@@ -6021,6 +6025,7 @@ enabled libsnappy         && require libsnappy snappy-c.h snappy_compress -lsnap
 enabled libsoxr           && require libsoxr soxr.h soxr_create -lsoxr
 enabled libssh            && require_pkg_config libssh libssh libssh/sftp.h sftp_init
 enabled libspeex          && require_pkg_config libspeex speex speex/speex.h speex_decoder_init
+enabled libsrt            && require_pkg_config libsrt "srt >= 1.2.0" srt/srt.h srt_socket
 enabled libtesseract      && require_pkg_config libtesseract tesseract tesseract/capi.h TessBaseAPICreate
 enabled libtheora         && require libtheora theora/theoraenc.h th_info_init -ltheoraenc -ltheoradec -logg
 enabled libtls            && require_pkg_config libtls libtls tls.h tls_configure

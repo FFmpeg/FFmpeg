@@ -1155,6 +1155,146 @@ If set to any value, listen for an incoming connection. Outgoing connection is d
 Set the maximum number of streams. By default no limit is set.
 @end table
 
+@section srt
+
+Haivision Secure Reliable Transport Protocol via libsrt.
+
+The supported syntax for a SRT URL is:
+@example
+srt://@var{hostname}:@var{port}[?@var{options}]
+@end example
+
+@var{options} contains a list of &-separated options of the form
+@var{key}=@var{val}.
+
+or
+
+@example
+@var{options} srt://@var{hostname}:@var{port}
+@end example
+
+@var{options} contains a list of '-@var{key} @var{val}'
+options.
+
+This protocol accepts the following options.
+
+@table @option
+@item connect_timeout
+Connection timeout; SRT cannot connect for RTT > 1500 msec
+(2 handshake exchanges) with the default connect timeout of
+3 seconds. This option applies to the caller and rendezvous
+connection modes. The connect timeout is 10 times the value
+set for the rendezvous mode (which can be used as a
+workaround for this connection problem with earlier versions).
+
+@item ffs=@var{bytes}
+Flight Flag Size (Window Size), in bytes. FFS is actually an
+internal parameter and you should set it to not less than
+@option{recv_buffer_size} and @option{mss}. The default value
+is relatively large, therefore unless you set a very large receiver buffer,
+you do not need to change this option. Default value is 25600.
+
+@item inputbw=@var{bytes/seconds}
+Sender nominal input rate, in bytes per seconds. Used along with
+@option{oheadbw}, when @option{maxbw} is set to relative (0), to
+calculate maximum sending rate when recovery packets are sent
+along with the main media stream:
+@option{inputbw} * (100 + @option{oheadbw}) / 100
+if @option{inputbw} is not set while @option{maxbw} is set to
+relative (0), the actual input rate is evaluated inside
+the library. Default value is 0.
+
+@item iptos=@var{tos}
+IP Type of Service. Applies to sender only. Default value is 0xB8.
+
+@item ipttl=@var{ttl}
+IP Time To Live. Applies to sender only. Default value is 64.
+
+@item listen_timeout
+Set socket listen timeout.
+
+@item maxbw=@var{bytes/seconds}
+Maximum sending bandwidth, in bytes per seconds.
+-1 infinite (CSRTCC limit is 30mbps)
+0 relative to input rate (see @option{inputbw})
+>0 absolute limit value
+Default value is 0 (relative)
+
+@item mode=@var{caller|listener|rendezvous}
+Connection mode.
+@option{caller} opens client connection.
+@option{listener} starts server to listen for incoming connections.
+@option{rendezvous} use Rendez-Vous connection mode.
+Default value is caller.
+
+@item mss=@var{bytes}
+Maximum Segment Size, in bytes. Used for buffer allocation
+and rate calculation using a packet counter assuming fully
+filled packets. The smallest MSS between the peers is
+used. This is 1500 by default in the overall internet.
+This is the maximum size of the UDP packet and can be
+only decreased, unless you have some unusual dedicated
+network settings. Default value is 1500.
+
+@item nakreport=@var{1|0}
+If set to 1, Receiver will send `UMSG_LOSSREPORT` messages
+periodically until a lost packet is retransmitted or
+intentionally dropped. Default value is 1.
+
+@item oheadbw=@var{percents}
+Recovery bandwidth overhead above input rate, in percents.
+See @option{inputbw}. Default value is 25%.
+
+@item passphrase=@var{string}
+HaiCrypt Encryption/Decryption Passphrase string, length
+from 10 to 79 characters. The passphrase is the shared
+secret between the sender and the receiver. It is used
+to generate the Key Encrypting Key using PBKDF2
+(Password-Based Key Derivation Function). It is used
+only if @option{pbkeylen} is non-zero. It is used on
+the receiver only if the received data is encrypted.
+The configured passphrase cannot be recovered (write-only).
+
+@item pbkeylen=@var{bytes}
+Sender encryption key length, in bytes.
+Only can be set to 0, 16, 24 and 32.
+Enable sender encryption if not 0.
+Not required on receiver (set to 0),
+key size obtained from sender in HaiCrypt handshake.
+Default value is 0.
+
+@item recv_buffer_size=@var{bytes}
+Set receive buffer size, expressed in bytes.
+
+@item send_buffer_size=@var{bytes}
+Set send buffer size, expressed in bytes.
+
+@item rw_timeout
+Set raise error timeout for read/write optations.
+
+This option is only relevant in read mode:
+if no data arrived in more than this time
+interval, raise error.
+
+@item tlpktdrop=@var{1|0}
+Too-late Packet Drop. When enabled on receiver, it skips
+missing packets that have not been delivered in time and
+delivers the following packets to the application when
+their time-to-play has come. It also sends a fake ACK to
+the sender. When enabled on sender and enabled on the
+receiving peer, the sender drops the older packets that
+have no chance of being delivered in time. It was
+automatically enabled in the sender if the receiver
+supports it.
+
+@item tsbpddelay
+Timestamp-based Packet Delivery Delay.
+Used to absorb burst of missed packet retransmission.
+
+@end table
+
+For more information see: @url{https://github.com/Haivision/srt}.
+
 @section srtp
 
 Secure Real-time Transport Protocol.
