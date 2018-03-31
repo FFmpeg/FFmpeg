@@ -19936,7 +19936,7 @@ Set channel width, allowed range is [80, 8192]. Default is 400.
 Set channel height, allowed range is [1, 900]. Default is 20.
 
 @item f
-Set fade, allowed range is [0.001, 1]. Default is 0.95.
+Set fade, allowed range is [0, 1]. Default is 0.95.
 
 @item c
 Set volume color expression.
