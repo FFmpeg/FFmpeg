@@ -731,4 +731,5 @@ int ff_unlock_avformat(void);
  */
 void ff_format_set_url(AVFormatContext *s, char *url);
 
+void avpriv_register_devices(const AVOutputFormat * const o[], const AVInputFormat * const i[]);
 #endif /* AVFORMAT_INTERNAL_H */

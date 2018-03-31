@@ -20,6 +20,7 @@
 
 #include "config.h"
 #include "libavutil/thread.h"
+#include "libavformat/internal.h"
 #include "avdevice.h"
 
 /* devices */

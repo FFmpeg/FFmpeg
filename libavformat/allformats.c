@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/thread.h"
+#include "libavformat/internal.h"
 #include "avformat.h"
 #include "rtp.h"
 #include "rdt.h"
