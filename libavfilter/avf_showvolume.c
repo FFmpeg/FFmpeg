@@ -358,18 +358,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
         return AVERROR(ENOMEM);
     av_frame_make_writable(out);
 
-    for (c = 0; c < inlink->channels && s->draw_volume; c++) {
+    for (c = 0; c < inlink->channels && s->h >= 8 && s->draw_volume; c++) {
         char buf[16];
         if (s->orientation) {
-            if (s->h >= 8) {
                 snprintf(buf, sizeof(buf), "%.2f", s->values[c * VAR_VARS_NB + VAR_VOLUME]);
                 drawtext(out, c * (s->h + s->b) + (s->h - 8) / 2, 2, buf, 1);
-            }
         } else {
-            if (s->h >= 8) {
+
                 snprintf(buf, sizeof(buf), "%.2f", s->values[c * VAR_VARS_NB + VAR_VOLUME]);
                 drawtext(out, FFMAX(0, s->w - 8 * (int)strlen(buf)), c * (s->h + s->b) + (s->h - 8) / 2, buf, 0);
-            }
         }
     }
 
