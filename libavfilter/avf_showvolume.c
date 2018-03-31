@@ -245,13 +245,24 @@ static void drawtext(AVFrame *pic, int x, int y, const char *txt, int o)
     }
 }
 
+static void clear_picture(ShowVolumeContext *s, AVFilterLink *outlink) {
+    int i, j;
+    const uint32_t bg = (uint32_t)(s->bgopacity * 255) << 24;
+
+    for (i = 0; i < outlink->h; i++) {
+        uint32_t *dst = (uint32_t *)(s->out->data[0] + i * s->out->linesize[0]);
+        for (j = 0; j < outlink->w; j++)
+            AV_WN32A(dst + j, bg);
+    }
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     ShowVolumeContext *s = ctx->priv;
     const int step = s->step;
-    int c, i, j, k;
+    int c, j, k;
     AVFrame *out;
 
     if (!s->out || s->out->width  != outlink->w ||
@@ -262,18 +273,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             av_frame_free(&insamples);
             return AVERROR(ENOMEM);
         }
-
-        for (i = 0; i < outlink->h; i++) {
-            uint32_t *dst = (uint32_t *)(s->out->data[0] + i * s->out->linesize[0]);
-            const uint32_t bg = (uint32_t)(s->bgopacity * 255) << 24;
-
-            for (j = 0; j < outlink->w; j++)
-                AV_WN32A(dst + j, bg);
-        }
+        clear_picture(s, outlink);
     }
     s->out->pts = insamples->pts;
 
-    if (s->f < 1.) {
+    if ((s->f < 1.) && (s->f > 0.)) {
         for (j = 0; j < outlink->h; j++) {
             uint8_t *dst = s->out->data[0] + j * s->out->linesize[0];
             const uint32_t alpha = s->bgopacity * 255;
@@ -285,6 +289,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 dst[k * 4 + 3] = FFMAX(dst[k * 4 + 3] * s->f, alpha);
             }
         }
+    } else if (s->f == 0.) {
+        clear_picture(s, outlink);
     }
 
     if (s->orientation) { /* vertical */
