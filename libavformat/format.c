@@ -51,10 +51,9 @@ int av_match_ext(const char *filename, const char *extensions)
 AVOutputFormat *av_guess_format(const char *short_name, const char *filename,
                                 const char *mime_type)
 {
-    AVOutputFormat *fmt = NULL, *fmt_found;
-#if !FF_API_NEXT
+    const AVOutputFormat *fmt = NULL;
+    AVOutputFormat *fmt_found = NULL;
     void *i = 0;
-#endif
     int score_max, score;
 
     /* specific test for image sequences */
@@ -66,15 +65,8 @@ AVOutputFormat *av_guess_format(const char *short_name, const char *filename,
     }
 #endif
     /* Find the proper file type. */
-    fmt_found = NULL;
     score_max = 0;
-#if FF_API_NEXT
-FF_DISABLE_DEPRECATION_WARNINGS
-    while ((fmt = av_oformat_next(fmt)))
-#else
-    while ((fmt = av_muxer_iterate(&i)))
-#endif
-     {
+    while ((fmt = av_muxer_iterate(&i))) {
         score = 0;
         if (fmt->name && short_name && av_match_name(short_name, fmt->name))
             score += 100;
@@ -86,12 +78,9 @@ FF_DISABLE_DEPRECATION_WARNINGS
         }
         if (score > score_max) {
             score_max = score;
-            fmt_found = fmt;
+            fmt_found = (AVOutputFormat*)fmt;
         }
     }
-#if FF_API_NEXT
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     return fmt_found;
 }
 
