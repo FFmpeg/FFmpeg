@@ -23,6 +23,7 @@
 #include "libswscale/swscale_internal.h"
 #include "libavutil/arm/cpu.h"
 
+#if HAVE_AS_DN_DIRECTIVE
 extern void rgbx_to_nv12_neon_32(const uint8_t *src, uint8_t *y, uint8_t *chroma,
                 int width, int height,
                 int y_stride, int c_stride, int src_stride,
@@ -178,3 +179,8 @@ void ff_get_unscaled_swscale_arm(SwsContext *c)
     if (have_neon(cpu_flags))
         get_unscaled_swscale_neon(c);
 }
+#else
+void ff_get_unscaled_swscale_arm(SwsContext *c)
+{
+}
+#endif

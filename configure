@@ -2149,6 +2149,7 @@ SYSTEM_LIBRARIES="
 
 TOOLCHAIN_FEATURES="
     as_arch_directive
+    as_dn_directive
     as_fpu_directive
     as_func
     as_object_arch
@@ -5530,6 +5531,7 @@ EOF
     check_inline_asm asm_mod_q '"add r0, %Q0, %R0" :: "r"((long long)0)'
 
     check_as as_arch_directive ".arch armv7-a"
+    check_as as_dn_directive   "ra .dn d0.i16"
     check_as as_fpu_directive  ".fpu neon"
 
     # llvm's integrated assembler supports .object_arch from llvm 3.5
