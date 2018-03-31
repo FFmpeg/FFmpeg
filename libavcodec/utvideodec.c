@@ -727,37 +727,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     ff_bswapdsp_init(&c->bdsp);
 
-    if (avctx->extradata_size >= 16) {
-        av_log(avctx, AV_LOG_DEBUG, "Encoder version %d.%d.%d.%d\n",
-               avctx->extradata[3], avctx->extradata[2],
-               avctx->extradata[1], avctx->extradata[0]);
-        av_log(avctx, AV_LOG_DEBUG, "Original format %"PRIX32"\n",
-               AV_RB32(avctx->extradata + 4));
-        c->frame_info_size = AV_RL32(avctx->extradata + 8);
-        c->flags           = AV_RL32(avctx->extradata + 12);
-
-        if (c->frame_info_size != 4)
-            avpriv_request_sample(avctx, "Frame info not 4 bytes");
-        av_log(avctx, AV_LOG_DEBUG, "Encoding parameters %08"PRIX32"\n", c->flags);
-        c->slices      = (c->flags >> 24) + 1;
-        c->compression = c->flags & 1;
-        c->interlaced  = c->flags & 0x800;
-    } else if (avctx->extradata_size == 8) {
-        av_log(avctx, AV_LOG_DEBUG, "Encoder version %d.%d.%d.%d\n",
-               avctx->extradata[3], avctx->extradata[2],
-               avctx->extradata[1], avctx->extradata[0]);
-        av_log(avctx, AV_LOG_DEBUG, "Original format %"PRIX32"\n",
-               AV_RB32(avctx->extradata + 4));
-        c->interlaced  = 0;
-        c->pro         = 1;
-        c->frame_info_size = 4;
-    } else {
-        av_log(avctx, AV_LOG_ERROR,
-               "Insufficient extradata size %d, should be at least 16\n",
-               avctx->extradata_size);
-        return AVERROR_INVALIDDATA;
-    }
-
     c->slice_bits_size = 0;
 
     switch (avctx->codec_tag) {
@@ -786,14 +755,17 @@ static av_cold int decode_init(AVCodecContext *avctx)
         break;
     case MKTAG('U', 'Q', 'Y', '2'):
         c->planes      = 3;
+        c->pro         = 1;
         avctx->pix_fmt = AV_PIX_FMT_YUV422P10;
         break;
     case MKTAG('U', 'Q', 'R', 'G'):
         c->planes      = 3;
+        c->pro         = 1;
         avctx->pix_fmt = AV_PIX_FMT_GBRP10;
         break;
     case MKTAG('U', 'Q', 'R', 'A'):
         c->planes      = 4;
+        c->pro         = 1;
         avctx->pix_fmt = AV_PIX_FMT_GBRAP10;
         break;
     case MKTAG('U', 'L', 'H', '0'):
@@ -822,6 +794,36 @@ static av_cold int decode_init(AVCodecContext *avctx)
         (avctx->height & ((1<<v_shift)-1))) {
         avpriv_request_sample(avctx, "Odd dimensions");
         return AVERROR_PATCHWELCOME;
+    }
+
+    if (!c->pro && avctx->extradata_size >= 16) {
+        av_log(avctx, AV_LOG_DEBUG, "Encoder version %d.%d.%d.%d\n",
+               avctx->extradata[3], avctx->extradata[2],
+               avctx->extradata[1], avctx->extradata[0]);
+        av_log(avctx, AV_LOG_DEBUG, "Original format %"PRIX32"\n",
+               AV_RB32(avctx->extradata + 4));
+        c->frame_info_size = AV_RL32(avctx->extradata + 8);
+        c->flags           = AV_RL32(avctx->extradata + 12);
+
+        if (c->frame_info_size != 4)
+            avpriv_request_sample(avctx, "Frame info not 4 bytes");
+        av_log(avctx, AV_LOG_DEBUG, "Encoding parameters %08"PRIX32"\n", c->flags);
+        c->slices      = (c->flags >> 24) + 1;
+        c->compression = c->flags & 1;
+        c->interlaced  = c->flags & 0x800;
+    } else if (c->pro && avctx->extradata_size == 8) {
+        av_log(avctx, AV_LOG_DEBUG, "Encoder version %d.%d.%d.%d\n",
+               avctx->extradata[3], avctx->extradata[2],
+               avctx->extradata[1], avctx->extradata[0]);
+        av_log(avctx, AV_LOG_DEBUG, "Original format %"PRIX32"\n",
+               AV_RB32(avctx->extradata + 4));
+        c->interlaced  = 0;
+        c->frame_info_size = 4;
+    } else {
+        av_log(avctx, AV_LOG_ERROR,
+               "Insufficient extradata size %d, should be at least 16\n",
+               avctx->extradata_size);
+        return AVERROR_INVALIDDATA;
     }
 
     return 0;
