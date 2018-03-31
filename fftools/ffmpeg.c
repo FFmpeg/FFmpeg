@@ -285,7 +285,8 @@ static void sub2video_heartbeat(InputStream *ist, int64_t pts)
         /* do not send the heartbeat frame if the subtitle is already ahead */
         if (pts2 <= ist2->sub2video.last_pts)
             continue;
-        if (pts2 >= ist2->sub2video.end_pts || !ist2->sub2video.frame->data[0])
+        if (pts2 >= ist2->sub2video.end_pts ||
+            (!ist2->sub2video.frame->data[0] && ist2->sub2video.end_pts < INT64_MAX))
             sub2video_update(ist2, NULL);
         for (j = 0, nb_reqs = 0; j < ist2->nb_filters; j++)
             nb_reqs += av_buffersrc_get_nb_failed_requests(ist2->filters[j]->filter);
