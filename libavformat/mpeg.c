@@ -450,13 +450,14 @@ redo:
             return ret;
 
         startcode = avio_r8(s->pb);
-        if (startcode == 0x0b && avio_r8(s->pb) == 0x77) {
-            startcode = 0x80;
-            m->raw_ac3 = 1;
-            avio_skip(s->pb, -2);
+        m->raw_ac3 = 0;
+        if (startcode == 0x0b) {
+            if (avio_r8(s->pb) == 0x77) {
+                startcode = 0x80;
+                m->raw_ac3 = 1;
+                avio_skip(s->pb, -2);
+            }
         } else {
-            m->raw_ac3 = 0;
-            avio_skip(s->pb, -1);
             len--;
         }
     }
