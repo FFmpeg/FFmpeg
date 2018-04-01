@@ -20,15 +20,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "dxva2_internal.h"
 #include "h264dec.h"
 #include "h264data.h"
 #include "h264_ps.h"
 #include "mpegutils.h"
-
-// The headers above may include w32threads.h, which uses the original
-// _WIN32_WINNT define, while dxva2_internal.h redefines it to target a
-// potentially newer version.
-#include "dxva2_internal.h"
 
 struct dxva2_picture_context {
     DXVA_PicParams_H264   pp;
