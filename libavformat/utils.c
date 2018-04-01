@@ -5070,11 +5070,66 @@ FF_ENABLE_DEPRECATION_WARNINGS
             if (s->programs[i]->id != prog_id)
                 continue;
 
-            if (*endptr++ == ':') {
-                int stream_idx = strtol(endptr, NULL, 0);
-                return stream_idx >= 0 &&
-                    stream_idx < s->programs[i]->nb_stream_indexes &&
-                    st->index == s->programs[i]->stream_index[stream_idx];
+            if (*endptr++ == ':') {  // p:<id>:....
+                if ( *endptr == 'a' || *endptr == 'v' ||
+                     *endptr == 's' || *endptr == 'd') {  // p:<id>:<st_type>[:<index>]
+                    enum AVMediaType type;
+
+                    switch (*endptr++) {
+                    case 'v': type = AVMEDIA_TYPE_VIDEO;      break;
+                    case 'a': type = AVMEDIA_TYPE_AUDIO;      break;
+                    case 's': type = AVMEDIA_TYPE_SUBTITLE;   break;
+                    case 'd': type = AVMEDIA_TYPE_DATA;       break;
+                    default:  av_assert0(0);
+                    }
+                    if (*endptr++ == ':') {  // p:<id>:<st_type>:<index>
+                        int stream_idx = strtol(endptr, NULL, 0), type_counter = 0;
+                        for (j = 0; j < s->programs[i]->nb_stream_indexes; j++) {
+                            int stream_index = s->programs[i]->stream_index[j];
+                            if (st->index == s->programs[i]->stream_index[j]) {
+#if FF_API_LAVF_AVCTX
+FF_DISABLE_DEPRECATION_WARNINGS
+                                return type_counter == stream_idx &&
+                                       (type == st->codecpar->codec_type ||
+                                        type == st->codec->codec_type);
+FF_ENABLE_DEPRECATION_WARNINGS
+#else
+                                return type_counter == stream_idx &&
+                                       type == st->codecpar->codec_type;
+#endif
+                             }
+#if FF_API_LAVF_AVCTX
+FF_DISABLE_DEPRECATION_WARNINGS
+                            if (type == s->streams[stream_index]->codecpar->codec_type ||
+                                type == s->streams[stream_index]->codec->codec_type)
+                                type_counter++;
+FF_ENABLE_DEPRECATION_WARNINGS
+#else
+                            if (type == s->streams[stream_index]->codecpar->codec_type)
+                                type_counter++;
+#endif
+                        }
+                        return 0;
+                    } else {  // p:<id>:<st_type>
+                        for (j = 0; j < s->programs[i]->nb_stream_indexes; j++)
+                            if (st->index == s->programs[i]->stream_index[j]) {
+#if FF_API_LAVF_AVCTX
+FF_DISABLE_DEPRECATION_WARNINGS
+                                 return type == st->codecpar->codec_type ||
+                                        type == st->codec->codec_type;
+FF_ENABLE_DEPRECATION_WARNINGS
+#else
+                                 return type == st->codecpar->codec_type;
+#endif
+                            }
+                        return 0;
+                    }
+                } else {  // p:<id>:<index>
+                    int stream_idx = strtol(endptr, NULL, 0);
+                    return stream_idx >= 0 &&
+                           stream_idx < s->programs[i]->nb_stream_indexes &&
+                           st->index == s->programs[i]->stream_index[stream_idx];
+                }
             }
 
             for (j = 0; j < s->programs[i]->nb_stream_indexes; j++)

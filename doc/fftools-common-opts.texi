@@ -42,10 +42,14 @@ streams, 'V' only matches video streams which are not attached pictures, video
 thumbnails or cover arts.  If @var{stream_index} is given, then it matches
 stream number @var{stream_index} of this type. Otherwise, it matches all
 streams of this type.
-@item p:@var{program_id}[:@var{stream_index}]
-If @var{stream_index} is given, then it matches the stream with number @var{stream_index}
+@item p:@var{program_id}[:@var{stream_index}] or p:@var{program_id}[:@var{stream_type}[:@var{stream_index}]]
+In first version, if @var{stream_index} is given, then it matches the stream with number @var{stream_index}
 in the program with the id @var{program_id}. Otherwise, it matches all streams in the
-program.
+program. In the latter version, @var{stream_type} is one of following: 'v' for video, 'a' for audio, 's'
+for subtitle, 'd' for data. If @var{stream_index} is also given, then it matches
+stream number @var{stream_index} of this type in the program with the id @var{program_id}.
+Otherwise, if only @var{stream_type} is given, it matches all
+streams of this type in the program with the id @var{program_id}.
 @item #@var{stream_id} or i:@var{stream_id}
 Match the stream by stream id (e.g. PID in MPEG-TS container).
 @item m:@var{key}[:@var{value}]
