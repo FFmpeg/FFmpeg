@@ -494,7 +494,7 @@ const AVOutputFormat *av_muxer_iterate(void **opaque)
     uintptr_t i = (uintptr_t)*opaque;
     const AVOutputFormat *f = NULL;
 
-    if (i < size - 1) {
+    if (i < size) {
         f = muxer_list[i];
     } else if (indev_list) {
         f = outdev_list[i - size];
