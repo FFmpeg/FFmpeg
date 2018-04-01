@@ -456,6 +456,8 @@ redo:
                 startcode = 0x80;
                 m->raw_ac3 = 1;
                 avio_skip(s->pb, -2);
+            } else {
+                avio_skip(s->pb, -1);
             }
         } else {
             len--;
