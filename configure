@@ -7182,7 +7182,7 @@ print_enabled_components(){
             printf "    &ff_%s,\n" $c >> $TMPH
         fi
     done
-    if [ "$name" == "filter_list" ]; then
+    if [ "$name" = "filter_list" ]; then
         for c in asrc_abuffer vsrc_buffer asink_abuffer vsink_buffer; do
             printf "    &ff_%s,\n" $c >> $TMPH
         done
