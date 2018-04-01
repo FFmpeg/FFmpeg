@@ -1184,8 +1184,8 @@ require_cc(){
     check_cc "$@" || die "ERROR: $name failed"
 }
 
-require_header(){
-    log require_header "$@"
+require_headers(){
+    log require_headers "$@"
     headers="$1"
     check_headers "$@" || die "ERROR: $headers not found"
 }
