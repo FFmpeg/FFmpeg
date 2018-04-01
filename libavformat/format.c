@@ -117,11 +117,11 @@ enum AVCodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
 
 AVInputFormat *av_find_input_format(const char *short_name)
 {
-    AVInputFormat *fmt = NULL;
+    const AVInputFormat *fmt = NULL;
     void *i = 0;
     while ((fmt = av_demuxer_iterate(&i)))
         if (av_match_name(short_name, fmt->name))
-            return fmt;
+            return (AVInputFormat*)fmt;
     return NULL;
 }
 
@@ -129,7 +129,8 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
                                       int *score_ret)
 {
     AVProbeData lpd = *pd;
-    AVInputFormat *fmt1 = NULL, *fmt;
+    const AVInputFormat *fmt1 = NULL;
+    AVInputFormat *fmt = NULL;
     int score, score_max = 0;
     void *i = 0;
     const static uint8_t zerobuffer[AVPROBE_PADDING_SIZE];
@@ -156,7 +157,6 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
             nodat = ID3_GREATER_PROBE;
     }
 
-    fmt = NULL;
     while ((fmt1 = av_demuxer_iterate(&i))) {
         if (!is_opened == !(fmt1->flags & AVFMT_NOFILE) && strcmp(fmt1->name, "image2"))
             continue;
@@ -191,7 +191,7 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
         }
         if (score > score_max) {
             score_max = score;
-            fmt       = fmt1;
+            fmt       = (AVInputFormat*)fmt1;
         } else if (score == score_max)
             fmt = NULL;
     }
