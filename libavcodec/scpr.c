@@ -446,13 +446,13 @@ static int decompress_i(AVCodecContext *avctx, uint32_t *dst, int linesize)
                 }
 
                 r = odst[(ly * linesize + lx) * 4] +
-                    odst[((y * linesize + x) + off - z) * 4 + 4] -
+                    odst[((y * linesize + x) + off) * 4 + 4] -
                     odst[((y * linesize + x) + off - z) * 4];
                 g = odst[(ly * linesize + lx) * 4 + 1] +
-                    odst[((y * linesize + x) + off - z) * 4 + 5] -
+                    odst[((y * linesize + x) + off) * 4 + 5] -
                     odst[((y * linesize + x) + off - z) * 4 + 1];
                 b = odst[(ly * linesize + lx) * 4 + 2] +
-                    odst[((y * linesize + x) + off - z) * 4 + 6] -
+                    odst[((y * linesize + x) + off) * 4 + 6] -
                     odst[((y * linesize + x) + off - z) * 4 + 2];
                 clr = ((b & 0xFF) << 16) + ((g & 0xFF) << 8) + (r & 0xFF);
                 dst[y * linesize + x] = clr;
