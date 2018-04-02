@@ -362,6 +362,7 @@ extern AVInputFormat  ff_sdr2_demuxer;
 extern AVInputFormat  ff_sds_demuxer;
 extern AVInputFormat  ff_sdx_demuxer;
 extern AVInputFormat  ff_segafilm_demuxer;
+extern AVOutputFormat ff_segafilm_muxer;
 extern AVOutputFormat ff_segment_muxer;
 extern AVOutputFormat ff_stream_segment_muxer;
 extern AVInputFormat  ff_shorten_demuxer;
