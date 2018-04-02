@@ -211,6 +211,10 @@ static int decode_value(SCPRContext *s, unsigned *cnt, unsigned maxc, unsigned s
             break;
         c++;
     }
+
+    if (c >= maxc)
+        return AVERROR_INVALIDDATA;
+
     if ((ret = s->decode(gb, rc, cumfr, cnt_c, totfr)) < 0)
         return ret;
 
