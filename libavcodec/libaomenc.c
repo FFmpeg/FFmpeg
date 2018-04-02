@@ -220,7 +220,6 @@ static int set_pix_fmt(AVCodecContext *avctx, aom_codec_caps_t codec_caps,
         enccfg->g_profile = FF_PROFILE_AV1_PROFESSIONAL;
         *img_fmt = AOM_IMG_FMT_I422;
         return 0;
-    case AV_PIX_FMT_GBRP:
     case AV_PIX_FMT_YUV444P:
         enccfg->g_profile = FF_PROFILE_AV1_HIGH;
         *img_fmt = AOM_IMG_FMT_I444;
@@ -248,14 +247,11 @@ static int set_pix_fmt(AVCodecContext *avctx, aom_codec_caps_t codec_caps,
             return 0;
         }
         break;
-    case AV_PIX_FMT_GBRP10:
-    case AV_PIX_FMT_GBRP12:
     case AV_PIX_FMT_YUV444P10:
     case AV_PIX_FMT_YUV444P12:
         if (codec_caps & AOM_CODEC_CAP_HIGHBITDEPTH) {
             enccfg->g_bit_depth = enccfg->g_input_bit_depth =
-                avctx->pix_fmt == AV_PIX_FMT_YUV444P10 ||
-                avctx->pix_fmt == AV_PIX_FMT_GBRP10 ? 10 : 12;
+                avctx->pix_fmt == AV_PIX_FMT_YUV444P10 ? 10 : 12;
             enccfg->g_profile =
                 enccfg->g_bit_depth == 10 ? FF_PROFILE_AV1_HIGH : FF_PROFILE_AV1_PROFESSIONAL;
             *img_fmt = AOM_IMG_FMT_I44416;
@@ -661,7 +657,6 @@ static const enum AVPixelFormat av1_pix_fmts[] = {
     AV_PIX_FMT_YUV420P,
     AV_PIX_FMT_YUV422P,
     AV_PIX_FMT_YUV444P,
-    AV_PIX_FMT_GBRP,
     AV_PIX_FMT_NONE
 };
 
@@ -675,9 +670,6 @@ static const enum AVPixelFormat av1_pix_fmts_highbd[] = {
     AV_PIX_FMT_YUV420P12,
     AV_PIX_FMT_YUV422P12,
     AV_PIX_FMT_YUV444P12,
-    AV_PIX_FMT_GBRP,
-    AV_PIX_FMT_GBRP10,
-    AV_PIX_FMT_GBRP12,
     AV_PIX_FMT_NONE
 };
 
