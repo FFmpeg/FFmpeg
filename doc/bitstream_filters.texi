@@ -507,6 +507,32 @@ This can be useful for debugging low-level stream issues.
 
 Supports H.264, H.265, MPEG-2 and VP9.
 
+@section vp9_metadata
+
+Modify metadata embedded in a VP9 stream.
+
+@table @option
+@item color_space
+Set the color space value in the frame header.
+@table @samp
+@item unknown
+@item bt601
+@item bt709
+@item smpte170
+@item smpte240
+@item bt2020
+@item rgb
+@end table
+
+@item color_range
+Set the color range value in the frame header.  Note that this cannot
+be set in RGB streams.
+@table @samp
+@item tv
+@item pc
+@end table
+@end table
+
 @section vp9_superframe
 
 Merge VP9 invisible (alt-ref) frames back into VP9 superframes. This

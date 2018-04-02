@@ -2989,6 +2989,7 @@ hevc_metadata_bsf_select="cbs_h265"
 mjpeg2jpeg_bsf_select="jpegtables"
 mpeg2_metadata_bsf_select="cbs_mpeg2"
 trace_headers_bsf_select="cbs"
+vp9_metadata_bsf_select="cbs_vp9"
 
 # external libraries
 aac_at_decoder_deps="audiotoolbox"
