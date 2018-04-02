@@ -31,6 +31,14 @@
 #define FF_INLINK_IDX(link)  ((int)((link)->dstpad - (link)->dst->input_pads))
 #define FF_OUTLINK_IDX(link) ((int)((link)->srcpad - (link)->src->output_pads))
 
+#define QSV_VERSION_ATLEAST(MAJOR, MINOR)   \
+    (MFX_VERSION_MAJOR > (MAJOR) ||         \
+     MFX_VERSION_MAJOR == (MAJOR) && MFX_VERSION_MINOR >= (MINOR))
+
+#define QSV_RUNTIME_VERSION_ATLEAST(MFX_VERSION, MAJOR, MINOR) \
+    (MFX_VERSION.Major > (MAJOR)) ||                           \
+    (MFX_VERSION.Major == (MAJOR) && MFX_VERSION.Minor >= (MINOR))
+
 typedef struct QSVVPPContext QSVVPPContext;
 
 typedef struct QSVVPPCrop {
