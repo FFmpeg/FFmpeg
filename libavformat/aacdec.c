@@ -154,11 +154,15 @@ static int adts_aac_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, fsize;
 
-    ret = av_get_packet(s->pb, pkt, FFMAX(ID3v2_HEADER_SIZE, ADTS_HEADER_SIZE));
-
-    if (ret >= ID3v2_HEADER_SIZE && ff_id3v2_match(pkt->data, ID3v2_DEFAULT_MAGIC)) {
-        if ((ret = handle_id3(s, pkt)) >= 0)
-            ret = av_get_packet(s->pb, pkt, ADTS_HEADER_SIZE);
+    // Parse all the ID3 headers between frames
+    while (1) {
+        ret = av_get_packet(s->pb, pkt, FFMAX(ID3v2_HEADER_SIZE, ADTS_HEADER_SIZE));
+        if (ret >= ID3v2_HEADER_SIZE && ff_id3v2_match(pkt->data, ID3v2_DEFAULT_MAGIC)) {
+            if ((ret = handle_id3(s, pkt)) >= 0) {
+                continue;
+            }
+        }
+        break;
     }
 
     if (ret < 0)
