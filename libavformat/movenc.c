@@ -140,6 +140,13 @@ static int co64_required(const MOVTrack *track)
     return 0;
 }
 
+static int rtp_hinting_needed(const AVStream *st)
+{
+    /* Add hint tracks for each audio and video stream */
+    return st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ||
+           st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO;
+}
+
 /* Chunk offset atom */
 static int mov_write_stco_tag(AVIOContext *pb, MOVTrack *track)
 {
@@ -5941,14 +5948,9 @@ static int mov_init(AVFormatContext *s)
         mov->chapter_track = mov->nb_streams++;
 
     if (mov->flags & FF_MOV_FLAG_RTP_HINT) {
-        /* Add hint tracks for each audio and video stream */
-        for (i = 0; i < s->nb_streams; i++) {
-            AVStream *st = s->streams[i];
-            if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ||
-                st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+        for (i = 0; i < s->nb_streams; i++)
+            if (rtp_hinting_needed(s->streams[i]))
                 mov->nb_streams++;
-            }
-        }
     }
 
     if (   mov->write_tmcd == -1 && (mov->mode == MODE_MOV || mov->mode == MODE_MP4)
@@ -6171,15 +6173,10 @@ static int mov_write_header(AVFormatContext *s)
         nb_tracks++;
 
     if (mov->flags & FF_MOV_FLAG_RTP_HINT) {
-        /* Add hint tracks for each audio and video stream */
         hint_track = nb_tracks;
-        for (i = 0; i < s->nb_streams; i++) {
-            AVStream *st = s->streams[i];
-            if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ||
-                st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+        for (i = 0; i < s->nb_streams; i++)
+            if (rtp_hinting_needed(s->streams[i]))
                 nb_tracks++;
-            }
-        }
     }
 
     if (mov->mode == MODE_MOV || mov->mode == MODE_MP4)
@@ -6257,11 +6254,8 @@ static int mov_write_header(AVFormatContext *s)
             return ret;
 
     if (mov->flags & FF_MOV_FLAG_RTP_HINT) {
-        /* Initialize the hint tracks for each audio and video stream */
         for (i = 0; i < s->nb_streams; i++) {
-            AVStream *st = s->streams[i];
-            if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO ||
-                st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+            if (rtp_hinting_needed(s->streams[i])) {
                 if ((ret = ff_mov_init_hinting(s, hint_track, i)) < 0)
                     return ret;
                 hint_track++;
