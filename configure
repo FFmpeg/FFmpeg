@@ -2142,10 +2142,10 @@ SYSTEM_FUNCS="
 "
 
 SYSTEM_LIBRARIES="
+    bcrypt
     vaapi_drm
     vaapi_x11
     vdpau_x11
-    wincrypt
 "
 
 TOOLCHAIN_FEATURES="
@@ -3445,7 +3445,7 @@ avformat_deps="avcodec avutil"
 avformat_suggest="libm network zlib"
 avresample_deps="avutil"
 avresample_suggest="libm"
-avutil_suggest="clock_gettime ffnvcodec libm libdrm libmfx opencl user32 vaapi videotoolbox corefoundation corevideo coremedia wincrypt"
+avutil_suggest="clock_gettime ffnvcodec libm libdrm libmfx opencl user32 vaapi videotoolbox corefoundation corevideo coremedia bcrypt"
 postproc_deps="avutil gpl"
 postproc_suggest="libm"
 swresample_deps="avutil"
@@ -5828,9 +5828,9 @@ check_header asm/types.h
 check_builtin stdatomic stdatomic.h "atomic_int foo, bar = ATOMIC_VAR_INIT(-1); atomic_store(&foo, 0); foo += bar"
 
 check_lib advapi32 "windows.h"            RegCloseKey          -ladvapi32
+check_lib bcrypt   "windows.h bcrypt.h"   BCryptGenRandom      -lbcrypt
 check_lib ole32    "windows.h"            CoTaskMemFree        -lole32
 check_lib shell32  "windows.h shellapi.h" CommandLineToArgvW   -lshell32
-check_lib wincrypt "windows.h wincrypt.h" CryptGenRandom       -ladvapi32
 check_lib psapi    "windows.h psapi.h"    GetProcessMemoryInfo -lpsapi
 
 check_lib android android/native_window.h ANativeWindow_acquire -landroid
