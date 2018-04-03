@@ -231,6 +231,11 @@ static int vivo_read_header(AVFormatContext *s)
         ast->codecpar->bits_per_coded_sample = 8;
         ast->codecpar->block_align = 24;
         ast->codecpar->bit_rate = 6400;
+    } else {
+        ast->codecpar->codec_id = AV_CODEC_ID_SIREN;
+        ast->codecpar->bits_per_coded_sample = 16;
+        ast->codecpar->block_align = 40;
+        ast->codecpar->bit_rate = 6400;
     }
 
     ast->start_time        = 0;

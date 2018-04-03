@@ -474,6 +474,7 @@ extern AVCodec ff_sbc_encoder;
 extern AVCodec ff_sbc_decoder;
 extern AVCodec ff_shorten_decoder;
 extern AVCodec ff_sipr_decoder;
+extern AVCodec ff_siren_decoder;
 extern AVCodec ff_smackaud_decoder;
 extern AVCodec ff_sonic_encoder;
 extern AVCodec ff_sonic_decoder;

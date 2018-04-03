@@ -37,6 +37,7 @@ version <next>:
 - afirsrc audio filter source
 - pad_opencl filter
 - CDToons video decoder
+- siren audio decoder
 
 
 version 4.2:
