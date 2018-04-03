@@ -296,7 +296,7 @@ static QSVFrame *submit_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *p
             av_log(ctx, AV_LOG_ERROR, "QSVVPP gets a wrong frame.\n");
             return NULL;
         }
-        qsv_frame->frame   = picref;
+        qsv_frame->frame   = av_frame_clone(picref);
         qsv_frame->surface = (mfxFrameSurface1 *)qsv_frame->frame->data[3];
     } else {
         /* make a copy if the input is not padded as libmfx requires */
@@ -318,7 +318,7 @@ static QSVFrame *submit_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *p
             av_frame_copy_props(qsv_frame->frame, picref);
             av_frame_free(&picref);
         } else
-            qsv_frame->frame = picref;
+            qsv_frame->frame = av_frame_clone(picref);
 
         if (map_frame_to_surface(qsv_frame->frame,
                                 &qsv_frame->surface_internal) < 0) {

@@ -341,9 +341,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
     VPPContext       *vpp = inlink->dst->priv;
     AVFilterLink     *outlink = ctx->outputs[0];
 
-    if (vpp->qsv)
+    if (vpp->qsv) {
         ret = ff_qsvvpp_filter_frame(vpp->qsv, inlink, picref);
-    else {
+        av_frame_free(&picref);
+    } else {
         if (picref->pts != AV_NOPTS_VALUE)
             picref->pts = av_rescale_q(picref->pts, inlink->time_base, outlink->time_base);
         ret = ff_filter_frame(outlink, picref);
