@@ -1703,12 +1703,12 @@ SYSTEM_FUNCS="
 "
 
 SYSTEM_LIBRARIES="
+    bcrypt
     sdl
     vaapi_1
     vaapi_drm
     vaapi_x11
     vdpau_x11
-    wincrypt
 "
 
 TOOLCHAIN_FEATURES="
@@ -2610,7 +2610,7 @@ avdevice_extralibs="libm_extralibs"
 avformat_extralibs="libm_extralibs"
 avfilter_extralibs="pthreads_extralibs libm_extralibs"
 avresample_extralibs="libm_extralibs"
-avutil_extralibs="clock_gettime_extralibs cuda_extralibs cuvid_extralibs d3d11va_extralibs libm_extralibs libmfx_extralibs nanosleep_extralibs pthreads_extralibs user32_extralibs vaapi_extralibs vaapi_drm_extralibs vaapi_x11_extralibs vdpau_x11_extralibs wincrypt_extralibs"
+avutil_extralibs="bcrypt_extralibs clock_gettime_extralibs cuda_extralibs cuvid_extralibs d3d11va_extralibs libm_extralibs libmfx_extralibs nanosleep_extralibs pthreads_extralibs user32_extralibs vaapi_extralibs vaapi_drm_extralibs vaapi_x11_extralibs vdpau_x11_extralibs"
 swscale_extralibs="libm_extralibs"
 
 # programs
@@ -4579,9 +4579,10 @@ check_header windows.h
 # so we also check that atomics actually work here
 check_builtin stdatomic stdatomic.h "atomic_int foo; atomic_store(&foo, 0)"
 
+check_lib bcrypt   "windows.h bcrypt.h"   BCryptGenRandom      -lbcrypt &&
+    check_cpp_condition bcrypt bcrypt.h "defined BCRYPT_RNG_ALGORITHM"
 check_lib ole32    "windows.h"            CoTaskMemFree        -lole32
 check_lib shell32  "windows.h shellapi.h" CommandLineToArgvW   -lshell32
-check_lib wincrypt "windows.h wincrypt.h" CryptGenRandom       -ladvapi32
 check_lib psapi    "windows.h psapi.h"    GetProcessMemoryInfo -lpsapi
 
 check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
