@@ -61,9 +61,10 @@ static av_cold int aom_init(AVCodecContext *avctx,
 
 static void image_copy_16_to_8(AVFrame *pic, struct aom_image *img)
 {
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pic->format);
     int i;
 
-    for (i = 0; i < 3; i++) {
+    for (i = 0; i < desc->nb_components; i++) {
         int w = img->d_w;
         int h = img->d_h;
         int x, y;
@@ -97,7 +98,8 @@ static int set_pix_fmt(AVCodecContext *avctx, struct aom_image *img)
     case AOM_IMG_FMT_I420:
     case AOM_IMG_FMT_I42016:
         if (img->bit_depth == 8) {
-            avctx->pix_fmt = AV_PIX_FMT_YUV420P;
+            avctx->pix_fmt = img->monochrome ?
+                             AV_PIX_FMT_GRAY8 : AV_PIX_FMT_YUV420P;
             avctx->profile = FF_PROFILE_AV1_MAIN;
             return 0;
         } else if (img->bit_depth == 10) {
@@ -114,7 +116,8 @@ static int set_pix_fmt(AVCodecContext *avctx, struct aom_image *img)
     case AOM_IMG_FMT_I422:
     case AOM_IMG_FMT_I42216:
         if (img->bit_depth == 8) {
-            avctx->pix_fmt = AV_PIX_FMT_YUV422P;
+            avctx->pix_fmt = img->monochrome ?
+                             AV_PIX_FMT_GRAY10 : AV_PIX_FMT_YUV420P10;
             avctx->profile = FF_PROFILE_AV1_PROFESSIONAL;
             return 0;
         } else if (img->bit_depth == 10) {
@@ -131,7 +134,8 @@ static int set_pix_fmt(AVCodecContext *avctx, struct aom_image *img)
     case AOM_IMG_FMT_I444:
     case AOM_IMG_FMT_I44416:
         if (img->bit_depth == 8) {
-            avctx->pix_fmt = AV_PIX_FMT_YUV444P;
+            avctx->pix_fmt = img->monochrome ?
+                             AV_PIX_FMT_GRAY12 : AV_PIX_FMT_YUV420P12;
             avctx->profile = FF_PROFILE_AV1_HIGH;
             return 0;
         } else if (img->bit_depth == 10) {
