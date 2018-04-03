@@ -881,28 +881,54 @@ int opt_loglevel(void *optctx, const char *opt, const char *arg)
         { "debug"  , AV_LOG_DEBUG   },
         { "trace"  , AV_LOG_TRACE   },
     };
+    const char *token;
     char *tail;
-    int level;
-    int flags;
-    int i;
+    int flags = av_log_get_flags();
+    int level = av_log_get_level();
+    int cmd, i = 0;
 
-    flags = av_log_get_flags();
-    tail = strstr(arg, "repeat");
-    if (tail)
-        flags &= ~AV_LOG_SKIP_REPEATED;
-    else
-        flags |= AV_LOG_SKIP_REPEATED;
-
-    av_log_set_flags(flags);
-    if (tail == arg)
-        arg += 6 + (arg[6]=='+');
-    if(tail && !*arg)
-        return 0;
+    av_assert0(arg);
+    while (*arg) {
+        token = arg;
+        if (*token == '+' || *token == '-') {
+            cmd = *token++;
+        } else {
+            cmd = 0;
+        }
+        if (!i && !cmd) {
+            flags = 0;  /* missing relative prefix, build absolute value */
+        }
+        if (!strncmp(token, "repeat", 6)) {
+            if (cmd == '-') {
+                flags |= AV_LOG_SKIP_REPEATED;
+            } else {
+                flags &= ~AV_LOG_SKIP_REPEATED;
+            }
+            arg = token + 6;
+        } else if (!strncmp(token, "level", 5)) {
+            if (cmd == '-') {
+                flags &= ~AV_LOG_PRINT_LEVEL;
+            } else {
+                flags |= AV_LOG_PRINT_LEVEL;
+            }
+            arg = token + 5;
+        } else {
+            break;
+        }
+        i++;
+    }
+    if (!*arg) {
+        goto end;
+    } else if (*arg == '+') {
+        arg++;
+    } else if (!i) {
+        flags = av_log_get_flags();  /* level value without prefix, reset flags */
+    }
 
     for (i = 0; i < FF_ARRAY_ELEMS(log_levels); i++) {
         if (!strcmp(log_levels[i].name, arg)) {
-            av_log_set_level(log_levels[i].level);
-            return 0;
+            level = log_levels[i].level;
+            goto end;
         }
     }
 
@@ -914,6 +940,9 @@ int opt_loglevel(void *optctx, const char *opt, const char *arg)
             av_log(NULL, AV_LOG_FATAL, "\"%s\"\n", log_levels[i].name);
         exit_program(1);
     }
+
+end:
+    av_log_set_flags(flags);
     av_log_set_level(level);
     return 0;
 }
