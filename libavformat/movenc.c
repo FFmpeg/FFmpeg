@@ -3439,7 +3439,7 @@ static int mov_write_ilst_tag(AVIOContext *pb, MOVMuxContext *mov,
     }
     mov_write_string_metadata(s, pb, "\251cmt", "comment"  , 1);
     mov_write_string_metadata(s, pb, "\251gen", "genre"    , 1);
-    mov_write_string_metadata(s, pb, "\251cpy", "copyright", 1);
+    mov_write_string_metadata(s, pb, "cprt",    "copyright", 1);
     mov_write_string_metadata(s, pb, "\251grp", "grouping" , 1);
     mov_write_string_metadata(s, pb, "\251lyr", "lyrics"   , 1);
     mov_write_string_metadata(s, pb, "desc",    "description",1);
