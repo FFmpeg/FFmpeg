@@ -36,6 +36,7 @@
 #include "formats.h"
 #include "video.h"
 
+#include "framesync.h"
 #include "qsvvpp.h"
 
 #define MAIN    0
@@ -56,14 +57,10 @@ enum var_name {
     VAR_VARS_NB
 };
 
-enum EOFAction {
-    EOF_ACTION_REPEAT,
-    EOF_ACTION_ENDALL
-};
-
 typedef struct QSVOverlayContext {
     const AVClass      *class;
 
+    FFFrameSync fs;
     QSVVPPContext      *qsv;
     QSVVPPParam        qsv_param;
     mfxExtVPPComposite comp_conf;
@@ -72,10 +69,6 @@ typedef struct QSVOverlayContext {
     char     *overlay_ox, *overlay_oy, *overlay_ow, *overlay_oh;
     uint16_t  overlay_alpha, overlay_pixel_alpha;
 
-    enum EOFAction eof_action;  /* action to take on EOF from source */
-
-    AVFrame *main;
-    AVFrame *over_prev, *over_next;
 } QSVOverlayContext;
 
 static const char *const var_names[] = {
@@ -90,19 +83,24 @@ static const char *const var_names[] = {
     NULL
 };
 
-static const AVOption options[] = {
+static const AVOption overlay_qsv_options[] = {
     { "x", "Overlay x position", OFFSET(overlay_ox), AV_OPT_TYPE_STRING, { .str="0"}, 0, 255, .flags = FLAGS},
     { "y", "Overlay y position", OFFSET(overlay_oy), AV_OPT_TYPE_STRING, { .str="0"}, 0, 255, .flags = FLAGS},
     { "w", "Overlay width",      OFFSET(overlay_ow), AV_OPT_TYPE_STRING, { .str="overlay_iw"}, 0, 255, .flags = FLAGS},
     { "h", "Overlay height",     OFFSET(overlay_oh), AV_OPT_TYPE_STRING, { .str="overlay_ih*w/overlay_iw"}, 0, 255, .flags = FLAGS},
     { "alpha", "Overlay global alpha", OFFSET(overlay_alpha), AV_OPT_TYPE_INT, { .i64 = 255}, 0, 255, .flags = FLAGS},
     { "eof_action", "Action to take when encountering EOF from secondary input ",
-        OFFSET(eof_action), AV_OPT_TYPE_INT, { .i64 = EOF_ACTION_REPEAT },
-        EOF_ACTION_REPEAT, EOF_ACTION_ENDALL, .flags = FLAGS, "eof_action" },
-        { "repeat", "Repeat the previous frame.", 0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_REPEAT }, .flags = FLAGS, "eof_action" },
-        { "endall", "End both streams.",          0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_ENDALL }, .flags = FLAGS, "eof_action" },
+        OFFSET(fs.opt_eof_action), AV_OPT_TYPE_INT, { .i64 = EOF_ACTION_REPEAT },
+        EOF_ACTION_REPEAT, EOF_ACTION_PASS, .flags = FLAGS, "eof_action" },
+        { "repeat", "Repeat the previous frame.",   0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_REPEAT }, .flags = FLAGS, "eof_action" },
+        { "endall", "End both streams.",            0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_ENDALL }, .flags = FLAGS, "eof_action" },
+        { "pass",   "Pass through the main input.", 0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_PASS },   .flags = FLAGS, "eof_action" },
+    { "shortest", "force termination when the shortest input terminates", OFFSET(fs.opt_shortest), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
+    { "repeatlast", "repeat overlay of the last overlay frame", OFFSET(fs.opt_repeatlast), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
     { NULL }
 };
+
+FRAMESYNC_DEFINE_CLASS(overlay_qsv, QSVOverlayContext, fs);
 
 static int eval_expr(AVFilterContext *ctx)
 {
@@ -230,12 +228,53 @@ static int config_overlay_input(AVFilterLink *inlink)
     return 0;
 }
 
+static int process_frame(FFFrameSync *fs)
+{
+    AVFilterContext  *ctx = fs->parent;
+    QSVOverlayContext  *s = fs->opaque;
+    AVFrame        *frame = NULL;
+    int               ret = 0, i;
+
+    for (i = 0; i < ctx->nb_inputs; i++) {
+        ret = ff_framesync_get_frame(fs, i, &frame, 0);
+        if (ret == 0)
+            ret = ff_qsvvpp_filter_frame(s->qsv, ctx->inputs[i], frame);
+        if (ret < 0 && ret != AVERROR(EAGAIN))
+            break;
+    }
+
+    return ret;
+}
+
+static int init_framesync(AVFilterContext *ctx)
+{
+    QSVOverlayContext *s = ctx->priv;
+    int ret, i;
+
+    s->fs.on_event = process_frame;
+    s->fs.opaque   = s;
+    ret = ff_framesync_init(&s->fs, ctx, ctx->nb_inputs);
+    if (ret < 0)
+        return ret;
+
+    for (i = 0; i < ctx->nb_inputs; i++) {
+        FFFrameSyncIn *in = &s->fs.in[i];
+        in->before    = EXT_STOP;
+        in->after     = EXT_INFINITY;
+        in->sync      = i ? 1 : 2;
+        in->time_base = ctx->inputs[i]->time_base;
+    }
+
+    return ff_framesync_configure(&s->fs);
+}
+
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext   *ctx = outlink->src;
     QSVOverlayContext *vpp = ctx->priv;
     AVFilterLink      *in0 = ctx->inputs[0];
     AVFilterLink      *in1 = ctx->inputs[1];
+    int ret;
 
     av_log(ctx, AV_LOG_DEBUG, "Output is of %s.\n", av_get_pix_fmt_name(outlink->format));
     if ((in0->format == AV_PIX_FMT_QSV && in1->format != AV_PIX_FMT_QSV) ||
@@ -257,121 +296,27 @@ static int config_output(AVFilterLink *outlink)
     outlink->frame_rate = in0->frame_rate;
     outlink->time_base  = av_inv_q(outlink->frame_rate);
 
+    ret = init_framesync(ctx);
+    if (ret < 0)
+        return ret;
+
     return ff_qsvvpp_create(ctx, &vpp->qsv, &vpp->qsv_param);
 }
 
-static int blend_frame(AVFilterContext *ctx, AVFrame *mpic, AVFrame *opic)
+/*
+ * Callback for qsvvpp
+ * @Note: qsvvpp composition does not generate PTS for result frame.
+ *        so we assign the PTS from framesync to the output frame.
+ */
+
+static int filter_callback(AVFilterLink *outlink, AVFrame *frame)
 {
-    int                ret = 0;
-    QSVOverlayContext *vpp = ctx->priv;
-    AVFrame     *opic_copy = NULL;
-
-    ret = ff_qsvvpp_filter_frame(vpp->qsv, ctx->inputs[0], mpic);
-    if (ret == 0 || ret == AVERROR(EAGAIN)) {
-        /* Reference the overlay frame. Because:
-         * 1. ff_qsvvpp_filter_frame will take control of the given frame
-         * 2. We need to repeat the overlay frame when 2nd input goes into EOF
-         */
-        opic_copy = av_frame_clone(opic);
-        if (!opic_copy)
-            return AVERROR(ENOMEM);
-
-        ret = ff_qsvvpp_filter_frame(vpp->qsv, ctx->inputs[1], opic_copy);
-    }
-
-    return ret;
+    QSVOverlayContext *s = outlink->src->priv;
+    frame->pts = av_rescale_q(s->fs.pts,
+                              s->fs.time_base, outlink->time_base);
+    return ff_filter_frame(outlink, frame);
 }
 
-static int handle_overlay_eof(AVFilterContext *ctx)
-{
-    int              ret = 0;
-    QSVOverlayContext *s = ctx->priv;
-    /* Repeat previous frame on secondary input */
-    if (s->over_prev && s->eof_action == EOF_ACTION_REPEAT)
-        ret = blend_frame(ctx, s->main, s->over_prev);
-    /* End both streams */
-    else if (s->eof_action == EOF_ACTION_ENDALL)
-        return AVERROR_EOF;
-
-    s->main = NULL;
-
-    return ret;
-}
-
-static int request_frame(AVFilterLink *outlink)
-{
-    AVFilterContext *ctx = outlink->src;
-    QSVOverlayContext *s = ctx->priv;
-    AVRational   tb_main = ctx->inputs[MAIN]->time_base;
-    AVRational   tb_over = ctx->inputs[OVERLAY]->time_base;
-    int              ret = 0;
-
-    /* get a frame on the main input */
-    if (!s->main) {
-        ret = ff_request_frame(ctx->inputs[MAIN]);
-        if (ret < 0)
-            return ret;
-    }
-
-    /* get a new frame on the overlay input, on EOF check setting 'eof_action' */
-    if (!s->over_next) {
-        ret = ff_request_frame(ctx->inputs[OVERLAY]);
-        if (ret == AVERROR_EOF)
-            return handle_overlay_eof(ctx);
-        else if (ret < 0)
-            return ret;
-    }
-
-    while (s->main->pts != AV_NOPTS_VALUE &&
-           s->over_next->pts != AV_NOPTS_VALUE &&
-           av_compare_ts(s->over_next->pts, tb_over, s->main->pts, tb_main) < 0) {
-        av_frame_free(&s->over_prev);
-        FFSWAP(AVFrame*, s->over_prev, s->over_next);
-
-        ret = ff_request_frame(ctx->inputs[OVERLAY]);
-        if (ret == AVERROR_EOF)
-            return handle_overlay_eof(ctx);
-        else if (ret < 0)
-            return ret;
-    }
-
-    if (s->main->pts == AV_NOPTS_VALUE ||
-        s->over_next->pts == AV_NOPTS_VALUE ||
-        !av_compare_ts(s->over_next->pts, tb_over, s->main->pts, tb_main)) {
-        ret = blend_frame(ctx, s->main, s->over_next);
-        av_frame_free(&s->over_prev);
-        FFSWAP(AVFrame*, s->over_prev, s->over_next);
-    } else if (s->over_prev) {
-        ret = blend_frame(ctx, s->main, s->over_prev);
-    } else {
-        av_frame_free(&s->main);
-        ret = AVERROR(EAGAIN);
-    }
-
-    s->main = NULL;
-
-    return ret;
-}
-
-static int filter_frame_main(AVFilterLink *inlink, AVFrame *frame)
-{
-    QSVOverlayContext *s = inlink->dst->priv;
-
-    av_assert0(!s->main);
-    s->main = frame;
-
-    return 0;
-}
-
-static int filter_frame_overlay(AVFilterLink *inlink, AVFrame *frame)
-{
-    QSVOverlayContext *s = inlink->dst->priv;
-
-    av_assert0(!s->over_next);
-    s->over_next = frame;
-
-    return 0;
-}
 
 static int overlay_qsv_init(AVFilterContext *ctx)
 {
@@ -387,7 +332,7 @@ static int overlay_qsv_init(AVFilterContext *ctx)
         return AVERROR(ENOMEM);
 
     /* initialize QSVVPP params */
-    vpp->qsv_param.filter_frame = NULL;
+    vpp->qsv_param.filter_frame = filter_callback;
     vpp->qsv_param.ext_buf      = av_mallocz(sizeof(*vpp->qsv_param.ext_buf));
     if (!vpp->qsv_param.ext_buf)
         return AVERROR(ENOMEM);
@@ -404,12 +349,16 @@ static void overlay_qsv_uninit(AVFilterContext *ctx)
 {
     QSVOverlayContext *vpp = ctx->priv;
 
-    av_frame_free(&vpp->main);
-    av_frame_free(&vpp->over_prev);
-    av_frame_free(&vpp->over_next);
     ff_qsvvpp_free(&vpp->qsv);
+    ff_framesync_uninit(&vpp->fs);
     av_freep(&vpp->comp_conf.InputStream);
     av_freep(&vpp->qsv_param.ext_buf);
+}
+
+static int activate(AVFilterContext *ctx)
+{
+    QSVOverlayContext *s = ctx->priv;
+    return ff_framesync_activate(&s->fs);
 }
 
 static int overlay_qsv_query_formats(AVFilterContext *ctx)
@@ -444,25 +393,16 @@ static int overlay_qsv_query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static const AVClass overlay_qsv_class = {
-    .class_name = "overlay_qsv",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
 static const AVFilterPad overlay_qsv_inputs[] = {
     {
         .name          = "main",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .filter_frame  = filter_frame_main,
         .config_props  = config_main_input,
         .needs_fifo    = 1,
     },
     {
         .name          = "overlay",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .filter_frame  = filter_frame_overlay,
         .config_props  = config_overlay_input,
         .needs_fifo    = 1,
     },
@@ -474,7 +414,6 @@ static const AVFilterPad overlay_qsv_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
-        .request_frame = request_frame,
     },
     { NULL }
 };
@@ -484,8 +423,10 @@ AVFilter ff_vf_overlay_qsv = {
     .description    = NULL_IF_CONFIG_SMALL("Quick Sync Video overlay."),
     .priv_size      = sizeof(QSVOverlayContext),
     .query_formats  = overlay_qsv_query_formats,
+    .preinit        = overlay_qsv_framesync_preinit,
     .init           = overlay_qsv_init,
     .uninit         = overlay_qsv_uninit,
+    .activate       = activate,
     .inputs         = overlay_qsv_inputs,
     .outputs        = overlay_qsv_outputs,
     .priv_class     = &overlay_qsv_class,
