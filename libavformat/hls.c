@@ -743,7 +743,6 @@ static int parse_playlist(HLSContext *c, const char *url,
     }
 
     if (!in) {
-#if 1
         AVDictionary *opts = NULL;
         /* Some HLS servers don't like being sent the range header */
         av_dict_set(&opts, "seekable", "0", 0);
@@ -766,12 +765,6 @@ static int parse_playlist(HLSContext *c, const char *url,
             c->playlist_pb = in;
         else
             close_in = 1;
-#else
-        ret = open_in(c, &in, url);
-        if (ret < 0)
-            return ret;
-        close_in = 1;
-#endif
     }
 
     if (av_opt_get(in, "location", AV_OPT_SEARCH_CHILDREN, &new_url) >= 0)
