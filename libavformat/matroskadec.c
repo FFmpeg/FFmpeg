@@ -3152,7 +3152,7 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
     MatroskaTrackEncoding *encodings = track->encodings.elem;
     uint8_t *pkt_data = data;
     int offset = 0, res;
-    AVPacket *pkt;
+    AVPacket pktl, *pkt = &pktl;
 
     if (encodings && !encodings->type && encodings->scope & 1) {
         res = matroska_decode_buffer(&pkt_data, &pkt_size, track);
@@ -3177,15 +3177,8 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
         AV_RB32(&data[4]) != MKBETAG('i', 'c', 'p', 'f'))
         offset = 8;
 
-    pkt = av_mallocz(sizeof(AVPacket));
-    if (!pkt) {
-        if (pkt_data != data)
-            av_freep(&pkt_data);
-        return AVERROR(ENOMEM);
-    }
     /* XXX: prevent data copy... */
     if (av_new_packet(pkt, pkt_size + offset) < 0) {
-        av_free(pkt);
         res = AVERROR(ENOMEM);
         goto fail;
     }
@@ -3210,7 +3203,6 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
                                                      additional_size + 8);
         if (!side_data) {
             av_packet_unref(pkt);
-            av_free(pkt);
             return AVERROR(ENOMEM);
         }
         AV_WB64(side_data, additional_id);
@@ -3223,7 +3215,6 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
                                                      10);
         if (!side_data) {
             av_packet_unref(pkt);
-            av_free(pkt);
             return AVERROR(ENOMEM);
         }
         discard_padding = av_rescale_q(discard_padding,
@@ -3253,7 +3244,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     res = ff_packet_list_put(&matroska->queue, &matroska->queue_end, pkt, 0);
     if (res < 0) {
-        av_packet_free(&pkt);
+        av_packet_unref(pkt);
         return AVERROR(ENOMEM);
     }
 
