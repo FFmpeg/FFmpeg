@@ -111,11 +111,17 @@ FUNC    .func   \name
 ELF     .size   \name, . - \name
         .purgem endconst
     .endm
-.if HAVE_SECTION_DATA_REL_RO && \relocate
+#if HAVE_SECTION_DATA_REL_RO
+.if \relocate
         .section        .data.rel.ro
 .else
         .section        .rodata
 .endif
+#elif !defined(__MACH__)
+        .section        .rodata
+#else
+        .const_data
+#endif
         .align          \align
 \name:
 .endm

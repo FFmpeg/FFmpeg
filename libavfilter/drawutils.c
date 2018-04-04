@@ -184,7 +184,7 @@ int ff_draw_init(FFDrawContext *draw, enum AVPixelFormat format, unsigned flags)
 
     if (!desc || !desc->name)
         return AVERROR(EINVAL);
-    if (desc->flags & ~(AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_RGB | AV_PIX_FMT_FLAG_PSEUDOPAL | AV_PIX_FMT_FLAG_ALPHA))
+    if (desc->flags & ~(AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_RGB | FF_PSEUDOPAL | AV_PIX_FMT_FLAG_ALPHA))
         return AVERROR(ENOSYS);
     if (format == AV_PIX_FMT_P010LE || format == AV_PIX_FMT_P010BE || format == AV_PIX_FMT_P016LE || format == AV_PIX_FMT_P016BE)
         return AVERROR(ENOSYS);

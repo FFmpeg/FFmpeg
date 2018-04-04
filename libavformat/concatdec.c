@@ -603,7 +603,6 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
             av_packet_unref(pkt);
             continue;
         }
-        pkt->stream_index = cs->out_stream_index;
         break;
     }
     if ((ret = filter_packet(avf, cs, pkt)))
@@ -646,6 +645,7 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
         }
     }
 
+    pkt->stream_index = cs->out_stream_index;
     return ret;
 }
 

@@ -70,16 +70,10 @@ static int rm_read_close(AVFormatContext *s);
 
 static inline void get_strl(AVIOContext *pb, char *buf, int buf_size, int len)
 {
-    int i;
-    char *q, r;
+    int read = avio_get_str(pb, len, buf, buf_size);
 
-    q = buf;
-    for(i=0;i<len;i++) {
-        r = avio_r8(pb);
-        if (i < buf_size - 1)
-            *q++ = r;
-    }
-    if (buf_size > 0) *q = '\0';
+    if (read > 0)
+        avio_skip(pb, len - read);
 }
 
 static void get_str8(AVIOContext *pb, char *buf, int buf_size)
@@ -105,8 +99,10 @@ static void rm_read_metadata(AVFormatContext *s, AVIOContext *pb, int wide)
 
     for (i=0; i<FF_ARRAY_ELEMS(ff_rm_metadata); i++) {
         int len = wide ? avio_rb16(pb) : avio_r8(pb);
-        get_strl(pb, buf, sizeof(buf), len);
-        av_dict_set(&s->metadata, ff_rm_metadata[i], buf, 0);
+        if (len > 0) {
+            get_strl(pb, buf, sizeof(buf), len);
+            av_dict_set(&s->metadata, ff_rm_metadata[i], buf, 0);
+        }
     }
 }
 

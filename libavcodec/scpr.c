@@ -211,6 +211,10 @@ static int decode_value(SCPRContext *s, unsigned *cnt, unsigned maxc, unsigned s
             break;
         c++;
     }
+
+    if (c >= maxc)
+        return AVERROR_INVALIDDATA;
+
     if ((ret = s->decode(gb, rc, cumfr, cnt_c, totfr)) < 0)
         return ret;
 
@@ -442,13 +446,13 @@ static int decompress_i(AVCodecContext *avctx, uint32_t *dst, int linesize)
                 }
 
                 r = odst[(ly * linesize + lx) * 4] +
-                    odst[((y * linesize + x) + off - z) * 4 + 4] -
+                    odst[((y * linesize + x) + off) * 4 + 4] -
                     odst[((y * linesize + x) + off - z) * 4];
                 g = odst[(ly * linesize + lx) * 4 + 1] +
-                    odst[((y * linesize + x) + off - z) * 4 + 5] -
+                    odst[((y * linesize + x) + off) * 4 + 5] -
                     odst[((y * linesize + x) + off - z) * 4 + 1];
                 b = odst[(ly * linesize + lx) * 4 + 2] +
-                    odst[((y * linesize + x) + off - z) * 4 + 6] -
+                    odst[((y * linesize + x) + off) * 4 + 6] -
                     odst[((y * linesize + x) + off - z) * 4 + 2];
                 clr = ((b & 0xFF) << 16) + ((g & 0xFF) << 8) + (r & 0xFF);
                 dst[y * linesize + x] = clr;

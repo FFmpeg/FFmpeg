@@ -2159,6 +2159,12 @@ Set the x265 preset.
 @item tune
 Set the x265 tune parameter.
 
+@item profile
+Set profile restrictions.
+
+@item crf
+Set the quality for constant quality mode.
+
 @item forced-idr
 Normally, when forcing a I-frame type, the encoder can select any type
 of I-frame. This option forces it to choose an IDR-frame.

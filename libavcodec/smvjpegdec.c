@@ -71,7 +71,7 @@ static inline void smv_img_pnt(uint8_t *dst_data[4], uint8_t *src_data[4],
             src_linesizes[i], h, nlines);
     }
     if (desc->flags & AV_PIX_FMT_FLAG_PAL ||
-        desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL)
+        desc->flags & FF_PSEUDOPAL)
         dst_data[1] = src_data[1];
 }
 

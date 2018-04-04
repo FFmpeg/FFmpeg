@@ -939,6 +939,8 @@ OBJS-$(CONFIG_ALAC_AT_ENCODER)            += audiotoolboxenc.o
 OBJS-$(CONFIG_ILBC_AT_ENCODER)            += audiotoolboxenc.o
 OBJS-$(CONFIG_PCM_ALAW_AT_ENCODER)        += audiotoolboxenc.o
 OBJS-$(CONFIG_PCM_MULAW_AT_ENCODER)       += audiotoolboxenc.o
+OBJS-$(CONFIG_LIBAOM_AV1_DECODER)         += libaomdec.o
+OBJS-$(CONFIG_LIBAOM_AV1_ENCODER)         += libaomenc.o
 OBJS-$(CONFIG_LIBCELT_DECODER)            += libcelt_dec.o
 OBJS-$(CONFIG_LIBCODEC2_DECODER)          += libcodec2.o codec2utils.o
 OBJS-$(CONFIG_LIBCODEC2_ENCODER)          += libcodec2.o codec2utils.o
@@ -1041,6 +1043,7 @@ OBJS-$(CONFIG_AAC_ADTSTOASC_BSF)          += aac_adtstoasc_bsf.o mpeg4audio.o
 OBJS-$(CONFIG_CHOMP_BSF)                  += chomp_bsf.o
 OBJS-$(CONFIG_DUMP_EXTRADATA_BSF)         += dump_extradata_bsf.o
 OBJS-$(CONFIG_DCA_CORE_BSF)               += dca_core_bsf.o
+OBJS-$(CONFIG_EAC3_CORE_BSF)              += eac3_core_bsf.o
 OBJS-$(CONFIG_EXTRACT_EXTRADATA_BSF)      += extract_extradata_bsf.o    \
                                              h2645_parse.o
 OBJS-$(CONFIG_FILTER_UNITS_BSF)           += filter_units_bsf.o

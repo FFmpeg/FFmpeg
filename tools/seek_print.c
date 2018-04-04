@@ -65,7 +65,6 @@ int main(int argc, char **argv)
     argv++;
     argc--;
 
-    av_register_all();
     if ((ret = avformat_open_input(&avf, filename, NULL, NULL)) < 0) {
         fprintf(stderr, "%s: %s\n", filename, av_err2str(ret));
         return 1;

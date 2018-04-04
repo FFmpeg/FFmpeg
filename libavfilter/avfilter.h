@@ -697,7 +697,20 @@ int avfilter_config_links(AVFilterContext *filter);
  */
 int avfilter_process_command(AVFilterContext *filter, const char *cmd, const char *arg, char *res, int res_len, int flags);
 
+/**
+ * Iterate over all registered filters.
+ *
+ * @param opaque a pointer where libavfilter will store the iteration state. Must
+ *               point to NULL to start the iteration.
+ *
+ * @return the next registered filter or NULL when the iteration is
+ *         finished
+ */
+const AVFilter *av_filter_iterate(void **opaque);
+
+#if FF_API_NEXT
 /** Initialize the filter system. Register all builtin filters. */
+attribute_deprecated
 void avfilter_register_all(void);
 
 /**
@@ -710,7 +723,17 @@ void avfilter_register_all(void);
  * @return 0 if the registration was successful, a negative value
  * otherwise
  */
+attribute_deprecated
 int avfilter_register(AVFilter *filter);
+
+/**
+ * Iterate over all registered filters.
+ * @return If prev is non-NULL, next registered filter after prev or NULL if
+ * prev is the last filter. If prev is NULL, return the first registered filter.
+ */
+attribute_deprecated
+const AVFilter *avfilter_next(const AVFilter *prev);
+#endif
 
 /**
  * Get a filter definition matching the given name.
@@ -721,12 +744,6 @@ int avfilter_register(AVFilter *filter);
  */
 const AVFilter *avfilter_get_by_name(const char *name);
 
-/**
- * Iterate over all registered filters.
- * @return If prev is non-NULL, next registered filter after prev or NULL if
- * prev is the last filter. If prev is NULL, return the first registered filter.
- */
-const AVFilter *avfilter_next(const AVFilter *prev);
 
 /**
  * Initialize a filter with the supplied parameters.

@@ -30,7 +30,7 @@
 #include "libavutil/version.h"
 
 #define LIBAVFILTER_VERSION_MAJOR   7
-#define LIBAVFILTER_VERSION_MINOR  13
+#define LIBAVFILTER_VERSION_MINOR  14
 #define LIBAVFILTER_VERSION_MICRO 100
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -57,6 +57,9 @@
 #endif
 #ifndef FF_API_FILTER_GET_SET
 #define FF_API_FILTER_GET_SET               (LIBAVFILTER_VERSION_MAJOR < 8)
+#endif
+#ifndef FF_API_NEXT
+#define FF_API_NEXT                         (LIBAVFILTER_VERSION_MAJOR < 8)
 #endif
 
 #endif /* AVFILTER_VERSION_H */

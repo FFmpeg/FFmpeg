@@ -48,6 +48,10 @@ version <next>:
 - drmeter audio filter
 - hapqa_extract bitstream filter
 - filter_units bitstream filter
+- AV1 Support through libaom
+- E-AC-3 dependent frames support
+- bitstream filter for extracting E-AC-3 core
+- Haivision SRT protocol via libsrt
 
 
 version 3.4:

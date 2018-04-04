@@ -138,6 +138,8 @@ typedef struct QSVEncContext {
     int max_frame_size;
     int max_slice_size;
 
+    int aud;
+
     int single_sei_nal_unit;
     int max_dec_frame_buffering;
     int trellis;

@@ -1602,6 +1602,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "av1",
         .long_name = NULL_IF_CONFIG_SMALL("Alliance for Open Media AV1"),
         .props     = AV_CODEC_PROP_LOSSY,
+        .profiles  = NULL_IF_CONFIG_SMALL(ff_av1_profiles),
     },
     {
         .id        = AV_CODEC_ID_BITPACKED,

@@ -217,6 +217,7 @@ External library support:
   --disable-iconv          disable iconv [autodetect]
   --enable-jni             enable JNI support [no]
   --enable-ladspa          enable LADSPA audio filtering [no]
+  --enable-libaom          enable AV1 video encoding/decoding via libaom [no]
   --enable-libass          enable libass subtitles rendering,
                            needed for subtitles and ass filter [no]
   --enable-libbluray       enable BluRay reading using libbluray [no]
@@ -256,6 +257,7 @@ External library support:
   --enable-libsnappy       enable Snappy compression, needed for hap encoding [no]
   --enable-libsoxr         enable Include libsoxr resampling [no]
   --enable-libspeex        enable Speex de/encoding via libspeex [no]
+  --enable-libsrt          enable Haivision SRT protocol via libsrt [no]
   --enable-libssh          enable SFTP protocol via libssh [no]
   --enable-libtesseract    enable Tesseract, needed for ocr filter [no]
   --enable-libtheora       enable Theora encoding via libtheora [no]
@@ -341,6 +343,10 @@ Toolchain options:
   --target-samples=DIR     path to samples directory on target
   --tempprefix=PATH        force fixed dir/prefix instead of mktemp for checks
   --toolchain=NAME         set tool defaults according to NAME
+                           (gcc-asan, clang-asan, gcc-msan, clang-msan,
+                           gcc-tsan, clang-tsan, gcc-usan, clang-usan,
+                           valgrind-massif, valgrind-memcheck,
+                           msvc, icl, gcov, llvm-cov, hardened)
   --nm=NM                  use nm tool NM [$nm_default]
   --ar=AR                  use archive tool AR [$ar_default]
   --as=AS                  use assembler AS [$as_default]
@@ -967,12 +973,35 @@ test_as(){
     test_cmd $as $CPPFLAGS $ASFLAGS "$@" $AS_C $(as_o $TMPO) $TMPS
 }
 
+x86asm_o(){
+    eval printf '%s\\n' $X86ASM_O
+}
+
+test_x86asm(){
+    log test_x86asm "$@"
+    echo "$1" > $TMPASM
+    log_file $TMPASM
+    shift
+    test_cmd $x86asmexe $X86ASMFLAGS -Werror "$@" $(x86asm_o $TMPO) $TMPASM
+}
+
 check_cmd(){
     log check_cmd "$@"
     cmd=$1
     disabled $cmd && return
     disable $cmd
     test_cmd $@ && enable $cmd
+}
+
+check_as(){
+    log check_as "$@"
+    name=$1
+    code=$2
+    shift 2
+    disable $name
+    test_as $@ <<EOF && enable $name
+$code
+EOF
 }
 
 check_inline_asm(){
@@ -1008,15 +1037,15 @@ EOF
 check_insn(){
     log check_insn "$@"
     check_inline_asm ${1}_inline "$2"
-    echo "$2" | test_as && enable ${1}_external || disable ${1}_external
+    check_as ${1}_external "$2"
 }
 
-test_x86asm(){
-    log test_x86asm "$@"
-    echo "$1" > $TMPS
-    log_file $TMPS
-    shift 1
-    test_cmd $x86asmexe $X86ASMFLAGS -Werror "$@" -o $TMPO $TMPS
+check_x86asm(){
+    log check_x86asm "$@"
+    name=$1
+    shift
+    disable $name
+    test_x86asm "$@" && enable $name
 }
 
 ld_o(){
@@ -1033,6 +1062,15 @@ test_ld(){
     flags=$($ldflags_filter $flags)
     libs=$($ldflags_filter $libs)
     test_cmd $ld $LDFLAGS $LDEXEFLAGS $flags $(ld_o $TMPE) $TMPO $libs $extralibs
+}
+
+check_ld(){
+    log check_ld "$@"
+    type=$1
+    name=$2
+    shift 2
+    disable $name
+    test_ld $type $@ && enable $name
 }
 
 print_include(){
@@ -1398,12 +1436,27 @@ check_compile_assert(){
     test_code cc "$headers" "char c[2 * !!($condition) - 1]" "$@" && enable "$name"
 }
 
+check_cc(){
+    log check_cc "$@"
+    name=$1
+    shift
+    disable "$name"
+    test_code cc "$@" && enable "$name"
+}
+
 require(){
     log require "$@"
     name_version="$1"
     name="${1%% *}"
     shift
     check_lib $name "$@" || die "ERROR: $name_version not found"
+}
+
+require_cc(){
+    log require_cc "$@"
+    name="$1"
+    shift
+    test_code cc "$@" || die "ERROR: $name failed"
 }
 
 require_cpp(){
@@ -1618,6 +1671,7 @@ EXTERNAL_LIBRARY_LIST="
     gnutls
     jni
     ladspa
+    libaom
     libass
     libbluray
     libbs2b
@@ -1652,6 +1706,7 @@ EXTERNAL_LIBRARY_LIST="
     libsnappy
     libsoxr
     libspeex
+    libsrt
     libssh
     libtesseract
     libtheora
@@ -2094,6 +2149,7 @@ SYSTEM_LIBRARIES="
 
 TOOLCHAIN_FEATURES="
     as_arch_directive
+    as_dn_directive
     as_fpu_directive
     as_func
     as_object_arch
@@ -2969,6 +3025,8 @@ h264_videotoolbox_encoder_deps="pthreads"
 h264_videotoolbox_encoder_select="videotoolbox_encoder"
 hevc_videotoolbox_encoder_deps="pthreads"
 hevc_videotoolbox_encoder_select="videotoolbox_encoder"
+libaom_av1_decoder_deps="libaom"
+libaom_av1_encoder_deps="libaom"
 libcelt_decoder_deps="libcelt"
 libcodec2_decoder_deps="libcodec2"
 libcodec2_encoder_deps="libcodec2"
@@ -3191,6 +3249,8 @@ libssh_protocol_deps="libssh"
 libtls_conflict="openssl gnutls"
 mmsh_protocol_select="http_protocol"
 mmst_protocol_select="network"
+libsrt_protocol_deps="libsrt"
+libsrt_protocol_select="network"
 rtmp_protocol_conflict="librtmp_protocol"
 rtmp_protocol_select="tcp_protocol"
 rtmp_protocol_suggest="zlib"
@@ -3562,15 +3622,6 @@ for v in "$@"; do
     FFMPEG_CONFIGURATION="${FFMPEG_CONFIGURATION# } ${l}${r}"
 done
 
-find_things(){
-    thing=$1
-    pattern=$2
-    file=$source_path/$3
-    sed -n "s/^[^#]*$pattern.*([^,]*, *\([^,]*\)\(,.*\)*).*/\1_$thing/p" "$file"
-}
-
-FILTER_LIST=$(find_things   filter   FILTER   libavfilter/allfilters.c)
-
 find_things_extern(){
     thing=$1
     pattern=$2
@@ -3579,6 +3630,13 @@ find_things_extern(){
     sed -n "s/^[^#]*extern.*$pattern *ff_\([^ ]*\)_$thing;/\1_$out/p" "$file"
 }
 
+find_filters_extern(){
+    file=$source_path/$1
+    #sed -n "s/^extern AVFilter ff_\([avfsinkrc]\{2,5\}\)_\(\w\+\);/\2_filter/p" $file
+    sed -E -n "s/^extern AVFilter ff_([avfsinkrc]{2,5})_([a-zA-Z0-9_]+);/\2_filter/p" $file
+}
+
+FILTER_LIST=$(find_filters_extern libavfilter/allfilters.c)
 OUTDEV_LIST=$(find_things_extern muxer AVOutputFormat libavdevice/alldevices.c outdev)
 INDEV_LIST=$(find_things_extern demuxer AVInputFormat libavdevice/alldevices.c indev)
 MUXER_LIST=$(find_things_extern muxer AVOutputFormat libavformat/allformats.c)
@@ -5360,24 +5418,18 @@ extern_prefix=${sym%%ff_extern*}
 ! disabled inline_asm && check_inline_asm inline_asm '"" ::'
 
 for restrict_keyword in restrict __restrict__ __restrict ""; do
-    test_cc <<EOF && break
-void foo(char * $restrict_keyword p);
-EOF
+    test_code cc "" "char * $restrict_keyword p" && break
 done
 
-test_cc <<EOF && enable pragma_deprecated
-void foo(void) { _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"") }
-EOF
+check_cc pragma_deprecated "" '_Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")'
 
+# The global variable ensures the bits appear unchanged in the object file.
 test_cc <<EOF || die "endian test failed"
 unsigned int endian = 'B' << 24 | 'I' << 16 | 'G' << 8 | 'E';
 EOF
 od -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
 
-test_cc <<EOF && enable const_nan
-#include <math.h>
-void foo(void) { struct { double d; } static const bar[] = { { NAN } }; }
-EOF
+check_cc const_nan math.h "struct { double d; } static const bar[] = { { NAN } }"
 
 if ! enabled ppc64 || enabled bigendian; then
     disable vsx
@@ -5386,18 +5438,13 @@ fi
 check_gas() {
     log "check_gas using '$as' as AS"
     # :vararg is used on aarch64, arm and ppc altivec
-    test_as <<EOF || return 1
+    check_as vararg "
 .macro m n, y:vararg=0
 \n: .int \y
 .endm
-m x
-EOF
+m x" || return 1
     # .altmacro is only used in arm asm
-    ! enabled arm || test_as <<EOF || return 1
-.altmacro
-EOF
-    enable gnu_as
-    return 0
+    ! enabled arm || check_as gnu_as ".altmacro"
 }
 
 if enabled_any arm aarch64 || enabled_all ppc altivec && enabled asm; then
@@ -5424,10 +5471,8 @@ if enabled_any arm aarch64 || enabled_all ppc altivec && enabled asm; then
             $nogas "GNU assembler not found, install/update gas-preprocessor"
     fi
 
-    test_as <<EOF && enable as_func
-.func test
-.endfunc
-EOF
+    check_as as_func ".func test
+                      .endfunc"
 fi
 
 check_inline_asm inline_asm_labels '"1:\n"'
@@ -5460,8 +5505,8 @@ EOF
         :
     elif ! test_cpp_condition stddef.h "defined __ARM_PCS || defined __SOFTFP__" && [ $target_os != darwin ]; then
         case "${cross_prefix:-$cc}" in
-            *hardfloat*)         enable vfp_args;   fpabi=vfp ;;
-            *) test_ld "cc" <<EOF && enable vfp_args && fpabi=vfp || fpabi=soft ;;
+            *hardfloat*) enable vfp_args; fpabi=vfp ;;
+            *) check_ld "cc" vfp_args <<EOF && fpabi=vfp || fpabi=soft ;;
 __asm__ (".eabi_attribute 28, 1");
 int main(void) { return 0; }
 EOF
@@ -5483,18 +5528,13 @@ EOF
 
     check_inline_asm asm_mod_q '"add r0, %Q0, %R0" :: "r"((long long)0)'
 
-    test_as <<EOF && enable as_arch_directive
-.arch armv7-a
-EOF
-    test_as <<EOF && enable as_fpu_directive
-.fpu neon
-EOF
+    check_as as_arch_directive ".arch armv7-a"
+    check_as as_dn_directive   "ra .dn d0.i16"
+    check_as as_fpu_directive  ".fpu neon"
 
     # llvm's integrated assembler supports .object_arch from llvm 3.5
     [ "$objformat" = elf32 ] || [ "$objformat" = elf64 ] &&
-        test_as <<EOF && enable as_object_arch
-.object_arch armv4
-EOF
+        check_as as_object_arch ".object_arch armv4"
 
     # MS armasm fails to assemble our PIC constructs
     [ $target_os != win32 ] && enabled_all armv6t2 shared !pic && enable_weak_pic
@@ -5548,19 +5588,17 @@ elif enabled ppc; then
         check_cflags -maltivec -mabi=altivec
 
         # check if our compiler supports Motorola AltiVec C API
-        test_code cc altivec.h "vector signed int v1 = (vector signed int) { 0 };
-                                 vector signed int v2 = (vector signed int) { 1 };
-                                 v1 = vec_add(v1, v2);" ||
-            disable altivec
+        check_cc altivec altivec.h "vector signed int v1 = (vector signed int) { 0 };
+                                    vector signed int v2 = (vector signed int) { 1 };
+                                    v1 = vec_add(v1, v2);"
 
         enabled altivec || warn "Altivec disabled, possibly missing --cpu flag"
     fi
 
     if enabled vsx; then
         check_cflags -mvsx &&
-        test_code cc altivec.h "int v[4] = { 0 };
-                                 vector signed int v1 = vec_vsx_ld(0, v);" ||
-            disable vsx
+        check_cc vsx altivec.h "int v[4] = { 0 };
+                                vector signed int v1 = vec_vsx_ld(0, v);"
     fi
 
     if enabled power8; then
@@ -5613,7 +5651,7 @@ EOF
             X86ASMDEP='$(DEPX86ASM) $(X86ASMFLAGS) -M $(X86ASM_O) $< > $(@:.o=.d)'
             X86ASM_DEPFLAGS=
         fi
-        test_x86asm "movbe ecx, [5]" && enable x86asm
+        check_x86asm x86asm "movbe ecx, [5]"
     }
 
     if ! disabled_any asm mmx x86asm; then
@@ -5629,11 +5667,11 @@ EOF
             elf*) enabled debug && append X86ASMFLAGS $x86asm_debug ;;
         esac
 
-        test_x86asm "vmovdqa32 [eax]{k1}{z}, zmm0"    || disable avx512_external
-        test_x86asm "vextracti128 xmm0, ymm0, 0"      || disable avx2_external
-        test_x86asm "vpmacsdd xmm0, xmm1, xmm2, xmm3" || disable xop_external
-        test_x86asm "vfmaddps ymm0, ymm1, ymm2, ymm3" || disable fma4_external
-        test_x86asm "CPU amdnop" || disable cpunop
+        check_x86asm avx512_external "vmovdqa32 [eax]{k1}{z}, zmm0"
+        check_x86asm avx2_external   "vextracti128 xmm0, ymm0, 0"
+        check_x86asm xop_external    "vpmacsdd xmm0, xmm1, xmm2, xmm3"
+        check_x86asm fma4_external   "vfmaddps ymm0, ymm1, ymm2, ymm3"
+        check_x86asm cpunop          "CPU amdnop"
     fi
 
     case "$cpu" in
@@ -5644,7 +5682,7 @@ EOF
 
 fi
 
-test_code cc arm_neon.h "int16x8_t test = vdupq_n_s16(0)" && enable intrinsics_neon
+check_cc intrinsics_neon arm_neon.h "int16x8_t test = vdupq_n_s16(0)"
 
 check_ldflags -Wl,--as-needed
 check_ldflags -Wl,-z,noexecstack
@@ -5873,7 +5911,7 @@ if ! disabled pthreads && ! enabled w32threads && ! enabled os2threads; then
     elif check_func pthread_join && check_func pthread_create; then
         enable pthreads
     fi
-    test_code cc "pthread.h" "static pthread_mutex_t atomic_lock = PTHREAD_MUTEX_INITIALIZER" || disable pthreads
+    check_cc pthreads "pthread.h" "static pthread_mutex_t atomic_lock = PTHREAD_MUTEX_INITIALIZER"
 
     if enabled pthreads; then
         check_builtin sem_timedwait semaphore.h "sem_t *s; sem_init(s,0,0); sem_timedwait(s,0); sem_destroy(s)" $pthreads_extralibs
@@ -5915,6 +5953,7 @@ enabled gmp               && require gmp gmp.h mpz_export -lgmp
 enabled gnutls            && require_pkg_config gnutls gnutls gnutls/gnutls.h gnutls_global_init
 enabled jni               && { [ $target_os = "android" ] && check_header jni.h && enabled pthreads || die "ERROR: jni not found"; }
 enabled ladspa            && require_header ladspa.h
+enabled libaom            && require_pkg_config libaom "aom >= 0.1.0" aom/aom_codec.h aom_codec_version
 enabled lv2               && require_pkg_config lv2 lilv-0 "lilv-0/lilv/lilv.h" lilv_world_new
 enabled libiec61883       && require libiec61883 libiec61883/iec61883.h iec61883_cmp_connect -lraw1394 -lavc1394 -lrom1394 -liec61883
 enabled libass            && require_pkg_config libass libass ass/ass.h ass_library_init
@@ -5986,6 +6025,7 @@ enabled libsnappy         && require libsnappy snappy-c.h snappy_compress -lsnap
 enabled libsoxr           && require libsoxr soxr.h soxr_create -lsoxr
 enabled libssh            && require_pkg_config libssh libssh libssh/sftp.h sftp_init
 enabled libspeex          && require_pkg_config libspeex speex speex/speex.h speex_decoder_init
+enabled libsrt            && require_pkg_config libsrt "srt >= 1.2.0" srt/srt.h srt_socket
 enabled libtesseract      && require_pkg_config libtesseract tesseract tesseract/capi.h TessBaseAPICreate
 enabled libtheora         && require libtheora theora/theoraenc.h th_info_init -ltheoraenc -ltheoradec -logg
 enabled libtls            && require_pkg_config libtls libtls tls.h tls_configure
@@ -6148,16 +6188,16 @@ rsync --help 2> /dev/null | grep -q 'contimeout' && enable rsync_contimeout || d
 check_header linux/fb.h
 check_header linux/videodev2.h
 test_code cc linux/videodev2.h "struct v4l2_frmsizeenum vfse; vfse.discrete.width = 0;" && enable_sanitized struct_v4l2_frmivalenum_discrete
-test_code cc linux/videodev2.h "int i = V4L2_CAP_VIDEO_M2M_MPLANE | V4L2_CAP_VIDEO_M2M | V4L2_BUF_FLAG_LAST;" || disable v4l2_m2m
-test_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_VC1_ANNEX_G;" && enable vc1_v4l2_m2m
-test_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_MPEG1;" && enable mpeg1_v4l2_m2m
-test_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_MPEG2;" && enable mpeg2_v4l2_m2m
-test_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_MPEG4;" && enable mpeg4_v4l2_m2m
-test_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_HEVC;" && enable hevc_v4l2_m2m
-test_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_H263;" && enable h263_v4l2_m2m
-test_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_H264;" && enable h264_v4l2_m2m
-test_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_VP8;" && enable vp8_v4l2_m2m
-test_code cc linux/videodev2.h "int i = V4L2_PIX_FMT_VP9;" && enable vp9_v4l2_m2m
+check_cc v4l2_m2m linux/videodev2.h "int i = V4L2_CAP_VIDEO_M2M_MPLANE | V4L2_CAP_VIDEO_M2M | V4L2_BUF_FLAG_LAST;"
+check_cc vc1_v4l2_m2m linux/videodev2.h "int i = V4L2_PIX_FMT_VC1_ANNEX_G;"
+check_cc mpeg1_v4l2_m2m linux/videodev2.h "int i = V4L2_PIX_FMT_MPEG1;"
+check_cc mpeg2_v4l2_m2m linux/videodev2.h "int i = V4L2_PIX_FMT_MPEG2;"
+check_cc mpeg4_v4l2_m2m linux/videodev2.h "int i = V4L2_PIX_FMT_MPEG4;"
+check_cc hevc_v4l2_m2m linux/videodev2.h "int i = V4L2_PIX_FMT_HEVC;"
+check_cc h263_v4l2_m2m linux/videodev2.h "int i = V4L2_PIX_FMT_H263;"
+check_cc h264_v4l2_m2m linux/videodev2.h "int i = V4L2_PIX_FMT_H264;"
+check_cc vp8_v4l2_m2m linux/videodev2.h "int i = V4L2_PIX_FMT_VP8;"
+check_cc vp9_v4l2_m2m linux/videodev2.h "int i = V4L2_PIX_FMT_VP9;"
 
 check_header sys/videoio.h
 test_code cc sys/videoio.h "struct v4l2_frmsizeenum vfse; vfse.discrete.width = 0;" && enable_sanitized struct_v4l2_frmivalenum_discrete
@@ -6231,14 +6271,12 @@ enabled vaapi &&
     check_lib vaapi va/va.h vaInitialize -lva
 
 enabled vaapi &&
-    test_code cc "va/va.h" "vaCreateSurfaces(0, 0, 0, 0, 0, 0, 0, 0)" ||
-    disable vaapi
+    check_cc vaapi "va/va.h" "vaCreateSurfaces(0, 0, 0, 0, 0, 0, 0, 0)"
 
-enabled vaapi &&
+if enabled vaapi; then
     check_lib vaapi_drm "va/va.h va/va_drm.h" vaGetDisplayDRM -lva -lva-drm
-
-enabled vaapi &&
     check_lib vaapi_x11 "va/va.h va/va_x11.h" vaGetDisplay -lva -lva-x11 -lX11
+fi
 
 enabled vaapi &&
     check_cpp_condition vaapi_1 "va/va.h" "VA_CHECK_VERSION(1, 0, 0)"
@@ -6402,7 +6440,7 @@ enabled xmm_clobber_test &&
                   -Wl,--wrap,sws_scale ||
     disable xmm_clobber_test
 
-test_ld "cc" <<EOF && enable proper_dce
+check_ld "cc" proper_dce <<EOF
 extern const int array[512];
 static inline int func(void) { return array[0]; }
 int main(void) { return 0; }
@@ -6504,11 +6542,39 @@ elif enabled gcc; then
     check_cflags -Wformat
     check_cflags -fdiagnostics-color=auto
     enabled extra_warnings || check_disable_warning -Wno-maybe-uninitialized
+    if enabled x86_32; then
+        case $target_os in
+        *bsd*)
+            # BSDs don't guarantee a 16 byte aligned stack, but we can
+            # request GCC to try to maintain 16 byte alignment throughout
+            # function calls. Library entry points that might call assembly
+            # functions align the stack. (The parameter means 2^4 bytes.)
+            check_cflags -mpreferred-stack-boundary=4
+            ;;
+        esac
+    fi
 elif enabled llvm_gcc; then
     check_cflags -mllvm -stack-alignment=16
 elif enabled clang; then
-    check_cflags -mllvm -stack-alignment=16
-    check_cflags -mstack-alignment=16
+    if enabled x86_32; then
+        # Clang doesn't support maintaining alignment without assuming the
+        # same alignment in every function. If 16 byte alignment would be
+        # enabled, one would also have to either add attribute_align_arg on
+        # every single entry point into the libraries or enable -mstackrealign
+        # (doing stack realignment in every single function).
+        case $target_os in
+        mingw32|win32|*bsd*)
+            disable aligned_stack
+            ;;
+        *)
+            check_cflags -mllvm -stack-alignment=16
+            check_cflags -mstack-alignment=16
+            ;;
+        esac
+    else
+        check_cflags -mllvm -stack-alignment=16
+        check_cflags -mstack-alignment=16
+    fi
     check_cflags -Qunused-arguments
     check_cflags -Werror=implicit-function-declaration
     check_cflags -Werror=missing-prototypes
@@ -7089,6 +7155,10 @@ echo "#endif /* AVUTIL_AVCONFIG_H */" >> $TMPH
 
 cp_if_changed $TMPH libavutil/avconfig.h
 
+full_filter_name(){
+    sed -n "s/^extern AVFilter ff_\([avfsinkrc]\{2,5\}\)_$1;/\1_$1/p" $source_path/libavfilter/allfilters.c
+}
+
 # generate the lists of enabled components
 print_enabled_components(){
     file=$1
@@ -7099,6 +7169,9 @@ print_enabled_components(){
     for c in $*; do
         if enabled $c; then
             case $name in
+                filter_list)
+                    c=$(full_filter_name $(remove_suffix _filter $c))
+                ;;
                 indev_list)
                     c=$(add_suffix _demuxer $(remove_suffix _indev $c))
                 ;;
@@ -7109,17 +7182,23 @@ print_enabled_components(){
             printf "    &ff_%s,\n" $c >> $TMPH
         fi
     done
+    if [ "$name" = "filter_list" ]; then
+        for c in asrc_abuffer vsrc_buffer asink_abuffer vsink_buffer; do
+            printf "    &ff_%s,\n" $c >> $TMPH
+        done
+    fi
     echo "    NULL };" >> $TMPH
     cp_if_changed $TMPH $file
 }
 
+print_enabled_components libavfilter/filter_list.c AVFilter filter_list $FILTER_LIST
 print_enabled_components libavcodec/codec_list.c AVCodec codec_list $CODEC_LIST
 print_enabled_components libavcodec/parser_list.c AVCodecParser parser_list $PARSER_LIST
 print_enabled_components libavcodec/bsf_list.c AVBitStreamFilter bitstream_filters $BSF_LIST
-print_enabled_components libavdevice/indev_list.c AVInputFormat indev_list $INDEV_LIST
-print_enabled_components libavdevice/outdev_list.c AVOutputFormat outdev_list $OUTDEV_LIST
 print_enabled_components libavformat/demuxer_list.c AVInputFormat demuxer_list $DEMUXER_LIST
 print_enabled_components libavformat/muxer_list.c AVOutputFormat muxer_list $MUXER_LIST
+print_enabled_components libavdevice/indev_list.c AVInputFormat indev_list $INDEV_LIST
+print_enabled_components libavdevice/outdev_list.c AVOutputFormat outdev_list $OUTDEV_LIST
 print_enabled_components libavformat/protocol_list.c URLProtocol url_protocols $PROTOCOL_LIST
 
 # Settings for pkg-config files

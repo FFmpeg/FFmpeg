@@ -412,7 +412,11 @@ retry:
                 int ret = mov_read_covr(c, pb, data_type, str_size);
                 if (ret < 0) {
                     av_log(c->fc, AV_LOG_ERROR, "Error parsing cover art.\n");
+                    return ret;
                 }
+                atom.size -= str_size;
+                if (atom.size > 8)
+                    goto retry;
                 return ret;
             } else if (!key && c->found_hdlr_mdta && c->meta_keys) {
                 uint32_t index = AV_RB32(&atom.type);

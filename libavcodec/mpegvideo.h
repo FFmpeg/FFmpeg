@@ -45,6 +45,7 @@
 #include "mpegpicture.h"
 #include "mpegvideodsp.h"
 #include "mpegvideoencdsp.h"
+#include "mpegvideodata.h"
 #include "pixblockdsp.h"
 #include "put_bits.h"
 #include "ratecontrol.h"
@@ -71,6 +72,8 @@
 #define SLICE_MAX_START_CODE    0x000001af
 #define EXT_START_CODE          0x000001b5
 #define USER_START_CODE         0x000001b2
+#define SLICE_START_CODE        0x000001b7
+
 
 /**
  * MpegEncContext.
@@ -378,6 +381,8 @@ typedef struct MpegEncContext {
     int custom_pcf;
 
     /* MPEG-4 specific */
+    int studio_profile;
+    int dct_precision;
     ///< number of bits to represent the fractional part of time (encoder only)
     int time_increment_bits;
     int last_time_base;
@@ -501,7 +506,10 @@ typedef struct MpegEncContext {
 
     int16_t (*block)[64]; ///< points to one of the following blocks
     int16_t (*blocks)[12][64]; // for HQ mode we need to keep the best block
-    int (*decode_mb)(struct MpegEncContext *s, int16_t block[6][64]); // used by some codecs to avoid a switch()
+    int (*decode_mb)(struct MpegEncContext *s, int16_t block[12][64]); // used by some codecs to avoid a switch()
+
+    int32_t (*block32)[12][64];
+
 #define SLICE_OK         0
 #define SLICE_ERROR     -1
 #define SLICE_END       -2 ///<end marker found
@@ -729,7 +737,8 @@ void ff_mpv_motion(MpegEncContext *s,
                    qpel_mc_func (*qpix_op)[16]);
 
 static inline void ff_update_block_index(MpegEncContext *s){
-    const int block_size= 8 >> s->avctx->lowres;
+    const int bytes_per_pixel = 1 + (s->avctx->bits_per_raw_sample > 8);
+    const int block_size= (8*bytes_per_pixel) >> s->avctx->lowres;
 
     s->block_index[0]+=2;
     s->block_index[1]+=2;
@@ -738,8 +747,8 @@ static inline void ff_update_block_index(MpegEncContext *s){
     s->block_index[4]++;
     s->block_index[5]++;
     s->dest[0]+= 2*block_size;
-    s->dest[1]+= block_size;
-    s->dest[2]+= block_size;
+    s->dest[1]+= (2 >> s->chroma_x_shift) * block_size;
+    s->dest[2]+= (2 >> s->chroma_x_shift) * block_size;
 }
 
 static inline int get_bits_diff(MpegEncContext *s){
@@ -749,6 +758,15 @@ static inline int get_bits_diff(MpegEncContext *s){
     s->last_bits = bits;
 
     return bits - last;
+}
+
+static inline int mpeg_get_qscale(MpegEncContext *s)
+{
+    int qscale = get_bits(&s->gb, 5);
+    if (s->q_scale_type)
+        return ff_mpeg2_non_linear_qscale[qscale];
+    else
+        return qscale << 1;
 }
 
 #endif /* AVCODEC_MPEGVIDEO_H */

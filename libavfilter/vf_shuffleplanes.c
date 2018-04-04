@@ -69,7 +69,7 @@ static av_cold int shuffleplanes_config_input(AVFilterLink *inlink)
         }
 
         if ((desc->flags & AV_PIX_FMT_FLAG_PAL ||
-             desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL) &&
+             desc->flags & FF_PSEUDOPAL) &&
             (i == 1) != (s->map[i] == 1)) {
             av_log(ctx, AV_LOG_ERROR,
                    "Cannot map between a palette plane and a data plane.\n");

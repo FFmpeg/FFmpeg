@@ -366,7 +366,7 @@ static int check_enc_param(AVCodecContext *avctx, QSVEncContext *q)
             av_log(avctx, AV_LOG_ERROR, "Selected ratecontrol mode is unsupported\n");
         if (UNMATCH(LowPower))
               av_log(avctx, AV_LOG_ERROR, "Low power mode is unsupported\n");
-        if (UNMATCH(FrameInfo.FrameRateExtN) || UNMATCH(FrameInfo.FrameRateExtN))
+        if (UNMATCH(FrameInfo.FrameRateExtN) || UNMATCH(FrameInfo.FrameRateExtD))
               av_log(avctx, AV_LOG_ERROR, "Current frame rate is unsupported\n");
         if (UNMATCH(FrameInfo.PicStruct))
               av_log(avctx, AV_LOG_ERROR, "Current picture structure is unsupported\n");
@@ -595,6 +595,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             if (q->recovery_point_sei >= 0)
                 q->extco.RecoveryPointSEI = q->recovery_point_sei ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
             q->extco.MaxDecFrameBuffering = q->max_dec_frame_buffering;
+            q->extco.AUDelimiter          = q->aud ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
         }
 
         q->extparam_internal[q->nb_extparam_internal++] = (mfxExtBuffer *)&q->extco;

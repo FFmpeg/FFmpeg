@@ -36,9 +36,14 @@ typedef struct SilenceDetectContext {
     const AVClass *class;
     double noise;               ///< noise amplitude ratio
     double duration;            ///< minimum duration of silence until notification
-    int64_t nb_null_samples;    ///< current number of continuous zero samples
-    int64_t start;              ///< if silence is detected, this value contains the time of the first zero sample
+    int mono;                   ///< mono mode : check each channel separately (default = check when ALL channels are silent)
+    int channels;               ///< number of channels
+    int independant_channels;   ///< number of entries in following arrays (always 1 in mono mode)
+    int64_t *nb_null_samples;   ///< (array) current number of continuous zero samples
+    int64_t *start;             ///< (array) if silence is detected, this value contains the time of the first zero sample (default/unset = INT64_MIN)
+    int64_t frame_end;          ///< pts of the end of the current frame (used to compute duration of silence at EOS)
     int last_sample_rate;       ///< last sample rate to check for sample rate changes
+    AVRational time_base;       ///< time_base
 
     void (*silencedetect)(struct SilenceDetectContext *s, AVFrame *insamples,
                           int nb_samples, int64_t nb_samples_notify,
@@ -52,44 +57,61 @@ static const AVOption silencedetect_options[] = {
     { "noise",     "set noise tolerance",              OFFSET(noise),     AV_OPT_TYPE_DOUBLE, {.dbl=0.001},          0, DBL_MAX,  FLAGS },
     { "d",         "set minimum duration in seconds",  OFFSET(duration),  AV_OPT_TYPE_DOUBLE, {.dbl=2.},             0, 24*60*60, FLAGS },
     { "duration",  "set minimum duration in seconds",  OFFSET(duration),  AV_OPT_TYPE_DOUBLE, {.dbl=2.},             0, 24*60*60, FLAGS },
+    { "mono",      "check each channel separately",    OFFSET(mono),      AV_OPT_TYPE_BOOL,   {.i64=0.},             0, 1, FLAGS },
     { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(silencedetect);
 
-static char *get_metadata_val(AVFrame *insamples, const char *key)
+static void set_meta(AVFrame *insamples, int channel, const char *key, char *value)
 {
-    AVDictionaryEntry *e = av_dict_get(insamples->metadata, key, NULL, 0);
-    return e && e->value ? e->value : NULL;
-}
+    char key2[128];
 
+    if (channel)
+        snprintf(key2, sizeof(key2), "lavfi.%s.%d", key, channel);
+    else
+        snprintf(key2, sizeof(key2), "lavfi.%s", key);
+    av_dict_set(&insamples->metadata, key2, value, 0);
+}
 static av_always_inline void update(SilenceDetectContext *s, AVFrame *insamples,
-                                    int is_silence, int64_t nb_samples_notify,
+                                    int is_silence, int current_sample, int64_t nb_samples_notify,
                                     AVRational time_base)
 {
+    int channel = current_sample % s->independant_channels;
     if (is_silence) {
-        if (!s->start) {
-            s->nb_null_samples++;
-            if (s->nb_null_samples >= nb_samples_notify) {
-                s->start = insamples->pts - (int64_t)(s->duration / av_q2d(time_base) + .5);
-                av_dict_set(&insamples->metadata, "lavfi.silence_start",
-                            av_ts2timestr(s->start, &time_base), 0);
+        if (s->start[channel] == INT64_MIN) {
+            s->nb_null_samples[channel]++;
+            if (s->nb_null_samples[channel] >= nb_samples_notify) {
+                s->start[channel] = insamples->pts + av_rescale_q(current_sample / s->channels + 1 - nb_samples_notify * s->independant_channels / s->channels,
+                        (AVRational){ 1, s->last_sample_rate }, time_base);
+                set_meta(insamples, s->mono ? channel + 1 : 0, "silence_start",
+                        av_ts2timestr(s->start[channel], &time_base));
+                if (s->mono)
+                    av_log(s, AV_LOG_INFO, "channel: %d | ", channel);
                 av_log(s, AV_LOG_INFO, "silence_start: %s\n",
-                       get_metadata_val(insamples, "lavfi.silence_start"));
+                        av_ts2timestr(s->start[channel], &time_base));
             }
         }
     } else {
-        if (s->start) {
-            av_dict_set(&insamples->metadata, "lavfi.silence_end",
-                        av_ts2timestr(insamples->pts, &time_base), 0);
-            av_dict_set(&insamples->metadata, "lavfi.silence_duration",
-                        av_ts2timestr(insamples->pts - s->start, &time_base), 0);
-            av_log(s, AV_LOG_INFO,
-                   "silence_end: %s | silence_duration: %s\n",
-                   get_metadata_val(insamples, "lavfi.silence_end"),
-                   get_metadata_val(insamples, "lavfi.silence_duration"));
+        if (s->start[channel] > INT64_MIN) {
+            int64_t end_pts = insamples ? insamples->pts + av_rescale_q(current_sample / s->channels,
+                    (AVRational){ 1, s->last_sample_rate }, time_base)
+                    : s->frame_end;
+            int64_t duration_ts = end_pts - s->start[channel];
+            if (insamples) {
+                set_meta(insamples, s->mono ? channel + 1 : 0, "silence_end",
+                        av_ts2timestr(end_pts, &time_base));
+                set_meta(insamples, s->mono ? channel + 1 : 0, "silence_duration",
+                        av_ts2timestr(duration_ts, &time_base));
+            }
+            if (s->mono)
+                av_log(s, AV_LOG_INFO, "channel: %d | ", channel);
+            av_log(s, AV_LOG_INFO, "silence_end: %s | silence_duration: %s\n",
+                    av_ts2timestr(end_pts, &time_base),
+                    av_ts2timestr(duration_ts, &time_base));
         }
-        s->nb_null_samples = s->start = 0;
+        s->nb_null_samples[channel] = 0;
+        s->start[channel] = INT64_MIN;
     }
 }
 
@@ -103,7 +125,7 @@ static void silencedetect_##name(SilenceDetectContext *s, AVFrame *insamples,   
     int i;                                                                       \
                                                                                  \
     for (i = 0; i < nb_samples; i++, p++)                                        \
-        update(s, insamples, *p < noise && *p > -noise,                          \
+        update(s, insamples, *p < noise && *p > -noise, i,                       \
                nb_samples_notify, time_base);                                    \
 }
 
@@ -116,6 +138,18 @@ static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     SilenceDetectContext *s = ctx->priv;
+    int c;
+
+    s->channels = inlink->channels;
+    s->independant_channels = s->mono ? s->channels : 1;
+    s->nb_null_samples = av_mallocz_array(sizeof(*s->nb_null_samples), s->independant_channels);
+    if (!s->nb_null_samples)
+        return AVERROR(ENOMEM);
+    s->start = av_malloc_array(sizeof(*s->start), s->independant_channels);
+    if (!s->start)
+        return AVERROR(ENOMEM);
+    for (c = 0; c < s->independant_channels; c++)
+        s->start[c] = INT64_MIN;
 
     switch (inlink->format) {
     case AV_SAMPLE_FMT_DBL: s->silencedetect = silencedetect_dbl; break;
@@ -139,12 +173,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     const int nb_channels           = inlink->channels;
     const int srate                 = inlink->sample_rate;
     const int nb_samples            = insamples->nb_samples     * nb_channels;
-    const int64_t nb_samples_notify = srate * s->duration * nb_channels;
+    const int64_t nb_samples_notify = srate * s->duration * (s->mono ? 1 : nb_channels);
+    int c;
 
     // scale number of null samples to the new sample rate
     if (s->last_sample_rate && s->last_sample_rate != srate)
-        s->nb_null_samples = srate * s->nb_null_samples / s->last_sample_rate;
+        for (c = 0; c < s->independant_channels; c++) {
+            s->nb_null_samples[c] = srate * s->nb_null_samples[c] / s->last_sample_rate;
+        }
     s->last_sample_rate = srate;
+    s->time_base = inlink->time_base;
+    s->frame_end = insamples->pts + av_rescale_q(insamples->nb_samples,
+            (AVRational){ 1, s->last_sample_rate }, inlink->time_base);
 
     // TODO: document metadata
     s->silencedetect(s, insamples, nb_samples, nb_samples_notify,
@@ -186,6 +226,18 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_samplerates(ctx, formats);
 }
 
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    SilenceDetectContext *s = ctx->priv;
+    int c;
+
+    for (c = 0; c < s->independant_channels; c++)
+        if (s->start[c] > INT64_MIN)
+            update(s, NULL, 0, c, 0, s->time_base);
+    av_freep(&s->nb_null_samples);
+    av_freep(&s->start);
+}
+
 static const AVFilterPad silencedetect_inputs[] = {
     {
         .name         = "default",
@@ -209,6 +261,7 @@ AVFilter ff_af_silencedetect = {
     .description   = NULL_IF_CONFIG_SMALL("Detect silence."),
     .priv_size     = sizeof(SilenceDetectContext),
     .query_formats = query_formats,
+    .uninit        = uninit,
     .inputs        = silencedetect_inputs,
     .outputs       = silencedetect_outputs,
     .priv_class    = &silencedetect_class,

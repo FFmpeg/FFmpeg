@@ -806,9 +806,17 @@ static av_always_inline int isPlanarRGB(enum AVPixelFormat pix_fmt)
 
 static av_always_inline int usePal(enum AVPixelFormat pix_fmt)
 {
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
-    av_assert0(desc);
-    return (desc->flags & AV_PIX_FMT_FLAG_PAL) || (desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL);
+    switch (pix_fmt) {
+    case AV_PIX_FMT_PAL8:
+    case AV_PIX_FMT_BGR4_BYTE:
+    case AV_PIX_FMT_BGR8:
+    case AV_PIX_FMT_GRAY8:
+    case AV_PIX_FMT_RGB4_BYTE:
+    case AV_PIX_FMT_RGB8:
+        return 1;
+    default:
+        return 0;
+    }
 }
 
 extern const uint64_t ff_dither4[2];

@@ -247,7 +247,7 @@ static int get_video_buffer(AVFrame *frame, int align)
 
         frame->data[i] = frame->buf[i]->data;
     }
-    if (desc->flags & AV_PIX_FMT_FLAG_PAL || desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL) {
+    if (desc->flags & AV_PIX_FMT_FLAG_PAL || desc->flags & FF_PSEUDOPAL) {
         av_buffer_unref(&frame->buf[1]);
         frame->buf[1] = av_buffer_alloc(AVPALETTE_SIZE);
         if (!frame->buf[1])
@@ -848,7 +848,7 @@ static int calc_cropping_offsets(size_t offsets[4], const AVFrame *frame,
         int shift_x = (i == 1 || i == 2) ? desc->log2_chroma_w : 0;
         int shift_y = (i == 1 || i == 2) ? desc->log2_chroma_h : 0;
 
-        if (desc->flags & (AV_PIX_FMT_FLAG_PAL | AV_PIX_FMT_FLAG_PSEUDOPAL) && i == 1) {
+        if (desc->flags & (AV_PIX_FMT_FLAG_PAL | FF_PSEUDOPAL) && i == 1) {
             offsets[i] = 0;
             break;
         }

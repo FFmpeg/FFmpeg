@@ -338,9 +338,8 @@ typedef struct MatroskaDemuxContext {
     int64_t segment_start;
 
     /* the packet queue */
-    AVPacket **packets;
-    int num_packets;
-    AVPacket *prev_pkt;
+    AVPacketList *queue;
+    AVPacketList *queue_end;
 
     int done;
 
@@ -2722,11 +2721,11 @@ fail:
 static int matroska_deliver_packet(MatroskaDemuxContext *matroska,
                                    AVPacket *pkt)
 {
-    if (matroska->num_packets > 0) {
+    if (matroska->queue) {
         MatroskaTrack *tracks = matroska->tracks.elem;
         MatroskaTrack *track;
-        memcpy(pkt, matroska->packets[0], sizeof(AVPacket));
-        av_freep(&matroska->packets[0]);
+
+        ff_packet_list_get(&matroska->queue, &matroska->queue_end, pkt);
         track = &tracks[pkt->stream_index];
         if (track->has_palette) {
             uint8_t *pal = av_packet_new_side_data(pkt, AV_PKT_DATA_PALETTE, AVPALETTE_SIZE);
@@ -2737,20 +2736,6 @@ static int matroska_deliver_packet(MatroskaDemuxContext *matroska,
             }
             track->has_palette = 0;
         }
-        if (matroska->num_packets > 1) {
-            void *newpackets;
-            memmove(&matroska->packets[0], &matroska->packets[1],
-                    (matroska->num_packets - 1) * sizeof(AVPacket *));
-            newpackets = av_realloc(matroska->packets,
-                                    (matroska->num_packets - 1) *
-                                    sizeof(AVPacket *));
-            if (newpackets)
-                matroska->packets = newpackets;
-        } else {
-            av_freep(&matroska->packets);
-            matroska->prev_pkt = NULL;
-        }
-        matroska->num_packets--;
         return 0;
     }
 
@@ -2762,16 +2747,7 @@ static int matroska_deliver_packet(MatroskaDemuxContext *matroska,
  */
 static void matroska_clear_queue(MatroskaDemuxContext *matroska)
 {
-    matroska->prev_pkt = NULL;
-    if (matroska->packets) {
-        int n;
-        for (n = 0; n < matroska->num_packets; n++) {
-            av_packet_unref(matroska->packets[n]);
-            av_freep(&matroska->packets[n]);
-        }
-        av_freep(&matroska->packets);
-        matroska->num_packets = 0;
-    }
+    ff_packet_list_free(&matroska->queue, &matroska->queue_end);
 }
 
 static int matroska_parse_laces(MatroskaDemuxContext *matroska, uint8_t **buf,
@@ -2953,7 +2929,11 @@ static int matroska_parse_rm_audio(MatroskaDemuxContext *matroska,
         track->audio.buf_timecode = AV_NOPTS_VALUE;
         pkt->pos                  = pos;
         pkt->stream_index         = st->index;
-        dynarray_add(&matroska->packets, &matroska->num_packets, pkt);
+        ret = ff_packet_list_put(&matroska->queue, &matroska->queue_end, pkt, 0);
+        if (ret < 0) {
+            av_packet_free(&pkt);
+            return AVERROR(ENOMEM);
+        }
     }
 
     return 0;
@@ -3152,8 +3132,11 @@ static int matroska_parse_webvtt(MatroskaDemuxContext *matroska,
     pkt->duration = duration;
     pkt->pos = pos;
 
-    dynarray_add(&matroska->packets, &matroska->num_packets, pkt);
-    matroska->prev_pkt = pkt;
+    err = ff_packet_list_put(&matroska->queue, &matroska->queue_end, pkt, 0);
+    if (err < 0) {
+        av_packet_free(&pkt);
+        return AVERROR(ENOMEM);
+    }
 
     return 0;
 }
@@ -3169,7 +3152,7 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
     MatroskaTrackEncoding *encodings = track->encodings.elem;
     uint8_t *pkt_data = data;
     int offset = 0, res;
-    AVPacket *pkt;
+    AVPacket pktl, *pkt = &pktl;
 
     if (encodings && !encodings->type && encodings->scope & 1) {
         res = matroska_decode_buffer(&pkt_data, &pkt_size, track);
@@ -3194,15 +3177,8 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
         AV_RB32(&data[4]) != MKBETAG('i', 'c', 'p', 'f'))
         offset = 8;
 
-    pkt = av_mallocz(sizeof(AVPacket));
-    if (!pkt) {
-        if (pkt_data != data)
-            av_freep(&pkt_data);
-        return AVERROR(ENOMEM);
-    }
     /* XXX: prevent data copy... */
     if (av_new_packet(pkt, pkt_size + offset) < 0) {
-        av_free(pkt);
         res = AVERROR(ENOMEM);
         goto fail;
     }
@@ -3227,7 +3203,6 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
                                                      additional_size + 8);
         if (!side_data) {
             av_packet_unref(pkt);
-            av_free(pkt);
             return AVERROR(ENOMEM);
         }
         AV_WB64(side_data, additional_id);
@@ -3240,7 +3215,6 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
                                                      10);
         if (!side_data) {
             av_packet_unref(pkt);
-            av_free(pkt);
             return AVERROR(ENOMEM);
         }
         discard_padding = av_rescale_q(discard_padding,
@@ -3268,8 +3242,11 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    dynarray_add(&matroska->packets, &matroska->num_packets, pkt);
-    matroska->prev_pkt = pkt;
+    res = ff_packet_list_put(&matroska->queue, &matroska->queue_end, pkt, 0);
+    if (res < 0) {
+        av_packet_unref(pkt);
+        return AVERROR(ENOMEM);
+    }
 
     return 0;
 
@@ -3433,7 +3410,6 @@ static int matroska_parse_cluster_incremental(MatroskaDemuxContext *matroska)
         memset(&matroska->current_cluster, 0, sizeof(MatroskaCluster));
         matroska->current_cluster_num_blocks = 0;
         matroska->current_cluster_pos        = avio_tell(matroska->ctx->pb);
-        matroska->prev_pkt                   = NULL;
         /* sizeof the ID which was already read */
         if (matroska->current_id)
             matroska->current_cluster_pos -= 4;
@@ -3486,7 +3462,6 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
     if (!matroska->contains_ssa)
         return matroska_parse_cluster_incremental(matroska);
     pos = avio_tell(matroska->ctx->pb);
-    matroska->prev_pkt = NULL;
     if (matroska->current_id)
         pos -= 4;  /* sizeof the ID which was already read */
     res         = ebml_parse(matroska, matroska_clusters, &cluster);
@@ -3671,10 +3646,10 @@ static int webm_clusters_start_with_keyframe(AVFormatContext *s)
         matroska->current_id = 0;
         matroska_clear_queue(matroska);
         if (matroska_parse_cluster(matroska) < 0 ||
-            matroska->num_packets <= 0) {
+            !matroska->queue) {
             break;
         }
-        pkt = matroska->packets[0];
+        pkt = &matroska->queue->pkt;
         cluster_pos += cluster_length + 12; // 12 is the offset of the cluster id and length.
         if (!(pkt->flags & AV_PKT_FLAG_KEY)) {
             rv = 0;

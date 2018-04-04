@@ -755,7 +755,7 @@ static int quant_psnr8x8_c(MpegEncContext *s, uint8_t *src1,
     s->block_last_index[0 /* FIXME */] =
         s->fast_dct_quantize(s, temp, 0 /* FIXME */, s->qscale, &i);
     s->dct_unquantize_inter(s, temp, 0, s->qscale);
-    ff_simple_idct_8(temp); // FIXME
+    ff_simple_idct_int16_8bit(temp); // FIXME
 
     for (i = 0; i < 64; i++)
         sum += (temp[i] - bak[i]) * (temp[i] - bak[i]);

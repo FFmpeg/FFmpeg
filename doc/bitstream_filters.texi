@@ -75,6 +75,10 @@ the header stored in extradata to the key packets:
 ffmpeg -i INPUT -map 0 -flags:v +global_header -c:v libx264 -bsf:v dump_extra out.ts
 @end example
 
+@section eac3_core
+
+Extract the core from a E-AC-3 stream, dropping extra channels.
+
 @section extract_extradata
 
 Extract the in-band extradata.

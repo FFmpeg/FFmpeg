@@ -3118,7 +3118,9 @@ static void ffprobe_show_pixel_formats(WriterContext *w)
             PRINT_PIX_FMT_FLAG(HWACCEL,   "hwaccel");
             PRINT_PIX_FMT_FLAG(PLANAR,    "planar");
             PRINT_PIX_FMT_FLAG(RGB,       "rgb");
+#if FF_API_PSEUDOPAL
             PRINT_PIX_FMT_FLAG(PSEUDOPAL, "pseudopal");
+#endif
             PRINT_PIX_FMT_FLAG(ALPHA,     "alpha");
             writer_print_section_footer(w);
         }
@@ -3567,7 +3569,6 @@ int main(int argc, char **argv)
 
     options = real_options;
     parse_loglevel(argc, argv, options);
-    av_register_all();
     avformat_network_init();
     init_opts();
 #if CONFIG_AVDEVICE

@@ -130,8 +130,6 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
     if (!pix_fmts)
         FAIL(AVERROR(ENOMEM));
 
-    avfilter_register_all();
-
     buffersink = avfilter_get_by_name("buffersink");
     abuffersink = avfilter_get_by_name("abuffersink");
 

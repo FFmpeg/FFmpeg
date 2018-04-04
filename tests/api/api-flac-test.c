@@ -245,8 +245,6 @@ int main(void)
     int sample_rates[] = {8000, 44100, 48000, 192000};
     int cl, sr;
 
-    avcodec_register_all();
-
     enc = avcodec_find_encoder(AV_CODEC_ID_FLAC);
     if (!enc) {
         av_log(NULL, AV_LOG_ERROR, "Can't find encoder\n");

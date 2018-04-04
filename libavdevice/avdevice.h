@@ -66,29 +66,6 @@ const char *avdevice_configuration(void);
 const char *avdevice_license(void);
 
 /**
- * Iterate over all registered output devices.
- *
- * @param opaque a pointer where libavdevice will store the iteration state. Must
- *               point to NULL to start the iteration.
- *
- * @return the next registered output device or NULL when the iteration is
- *         finished
- */
-const AVOutputFormat *av_outdev_iterate(void **opaque);
-
-/**
- * Iterate over all registered input devices.
- *
- * @param opaque a pointer where libavdevice will store the iteration state. Must
- *               point to NULL to start the iteration.
- *
- * @return the next registered input device or NULL when the iteration is
- *         finished
- */
-const AVInputFormat *av_indev_iterate(void **opaque);
-
-#if FF_API_NEXT
-/**
  * Initialize libavdevice and register all the input and output devices.
  */
 void avdevice_register_all(void);
@@ -100,7 +77,6 @@ void avdevice_register_all(void);
  * if d is non-NULL, returns the next registered input audio/video device after d
  * or NULL if d is the last one.
  */
-attribute_deprecated
 AVInputFormat *av_input_audio_device_next(AVInputFormat  *d);
 
 /**
@@ -110,7 +86,6 @@ AVInputFormat *av_input_audio_device_next(AVInputFormat  *d);
  * if d is non-NULL, returns the next registered input audio/video device after d
  * or NULL if d is the last one.
  */
-attribute_deprecated
 AVInputFormat *av_input_video_device_next(AVInputFormat  *d);
 
 /**
@@ -120,7 +95,6 @@ AVInputFormat *av_input_video_device_next(AVInputFormat  *d);
  * if d is non-NULL, returns the next registered output audio/video device after d
  * or NULL if d is the last one.
  */
-attribute_deprecated
 AVOutputFormat *av_output_audio_device_next(AVOutputFormat *d);
 
 /**
@@ -130,9 +104,7 @@ AVOutputFormat *av_output_audio_device_next(AVOutputFormat *d);
  * if d is non-NULL, returns the next registered output audio/video device after d
  * or NULL if d is the last one.
  */
-attribute_deprecated
 AVOutputFormat *av_output_video_device_next(AVOutputFormat *d);
-#endif
 
 typedef struct AVDeviceRect {
     int x;      /**< x coordinate of top left corner */

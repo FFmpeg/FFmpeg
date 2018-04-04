@@ -72,6 +72,7 @@ typedef struct {
     uint8_t style_fontsize;
     uint32_t style_color;
     uint16_t text_pos;
+    uint16_t byte_count;
 } MovTextContext;
 
 typedef struct {
@@ -304,11 +305,34 @@ static void mov_text_color_cb(void *priv, unsigned int color, unsigned int color
      */
 }
 
+static uint16_t utf8_strlen(const char *text, int len)
+{
+    uint16_t i = 0, ret = 0;
+    while (i < len) {
+        char c = text[i];
+        if ((c & 0x80) == 0)
+            i += 1;
+        else if ((c & 0xE0) == 0xC0)
+            i += 2;
+        else if ((c & 0xF0) == 0xE0)
+            i += 3;
+        else if ((c & 0xF8) == 0xF0)
+            i += 4;
+        else
+            return 0;
+        ret++;
+    }
+    return ret;
+}
+
 static void mov_text_text_cb(void *priv, const char *text, int len)
 {
+    uint16_t utf8_len = utf8_strlen(text, len);
     MovTextContext *s = priv;
     av_bprint_append_data(&s->buffer, text, len);
-    s->text_pos += len;
+    // If it's not utf-8, just use the byte length
+    s->text_pos += utf8_len ? utf8_len : len;
+    s->byte_count += len;
 }
 
 static void mov_text_new_line_cb(void *priv, int forced)
@@ -316,6 +340,7 @@ static void mov_text_new_line_cb(void *priv, int forced)
     MovTextContext *s = priv;
     av_bprint_append_data(&s->buffer, "\n", 1);
     s->text_pos += 1;
+    s->byte_count += 1;
 }
 
 static const ASSCodesCallbacks mov_text_callbacks = {
@@ -333,6 +358,7 @@ static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
     int i, length;
     size_t j;
 
+    s->byte_count = 0;
     s->text_pos = 0;
     s->count = 0;
     s->box_flags = 0;
@@ -368,7 +394,7 @@ static int mov_text_encode_frame(AVCodecContext *avctx, unsigned char *buf,
         }
     }
 
-    AV_WB16(buf, s->text_pos);
+    AV_WB16(buf, s->byte_count);
     buf += 2;
 
     if (!av_bprint_is_complete(&s->buffer)) {
