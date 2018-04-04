@@ -38,28 +38,6 @@ case AOM_IMG_FMT_I ## fmt ## 16:             \
 enum AVPixelFormat ff_aom_imgfmt_to_pixfmt(aom_img_fmt_t img, int depth)
 {
     switch (img) {
-    case AOM_IMG_FMT_RGB24:
-        return AV_PIX_FMT_RGB24;
-    case AOM_IMG_FMT_RGB565:
-        return AV_PIX_FMT_RGB565BE;
-    case AOM_IMG_FMT_RGB555:
-        return AV_PIX_FMT_RGB555BE;
-    case AOM_IMG_FMT_UYVY:
-        return AV_PIX_FMT_UYVY422;
-    case AOM_IMG_FMT_YUY2:
-        return AV_PIX_FMT_YUYV422;
-    case AOM_IMG_FMT_YVYU:
-        return AV_PIX_FMT_YVYU422;
-    case AOM_IMG_FMT_BGR24:
-        return AV_PIX_FMT_BGR24;
-    case AOM_IMG_FMT_ARGB:
-        return AV_PIX_FMT_ARGB;
-    case AOM_IMG_FMT_ARGB_LE:
-        return AV_PIX_FMT_BGRA;
-    case AOM_IMG_FMT_RGB565_LE:
-        return AV_PIX_FMT_RGB565LE;
-    case AOM_IMG_FMT_RGB555_LE:
-        return AV_PIX_FMT_RGB555LE;
     case AOM_IMG_FMT_I420:
         return AV_PIX_FMT_YUV420P;
     case AOM_IMG_FMT_I422:
@@ -81,28 +59,6 @@ enum AVPixelFormat ff_aom_imgfmt_to_pixfmt(aom_img_fmt_t img, int depth)
 aom_img_fmt_t ff_aom_pixfmt_to_imgfmt(enum AVPixelFormat pix)
 {
     switch (pix) {
-    case AV_PIX_FMT_RGB24:
-        return AOM_IMG_FMT_RGB24;
-    case AV_PIX_FMT_RGB565BE:
-        return AOM_IMG_FMT_RGB565;
-    case AV_PIX_FMT_RGB555BE:
-        return AOM_IMG_FMT_RGB555;
-    case AV_PIX_FMT_UYVY422:
-        return AOM_IMG_FMT_UYVY;
-    case AV_PIX_FMT_YUYV422:
-        return AOM_IMG_FMT_YUY2;
-    case AV_PIX_FMT_YVYU422:
-        return AOM_IMG_FMT_YVYU;
-    case AV_PIX_FMT_BGR24:
-        return AOM_IMG_FMT_BGR24;
-    case AV_PIX_FMT_ARGB:
-        return AOM_IMG_FMT_ARGB;
-    case AV_PIX_FMT_BGRA:
-        return AOM_IMG_FMT_ARGB_LE;
-    case AV_PIX_FMT_RGB565LE:
-        return AOM_IMG_FMT_RGB565_LE;
-    case AV_PIX_FMT_RGB555LE:
-        return AOM_IMG_FMT_RGB555_LE;
     case AV_PIX_FMT_YUV420P:
         return AOM_IMG_FMT_I420;
     case AV_PIX_FMT_YUV422P:
