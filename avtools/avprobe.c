@@ -235,10 +235,14 @@ static void ini_print_integer(const char *key, int64_t value)
 
 static void ini_print_string(const char *key, const char *value)
 {
-    ini_escape_print(key);
-    avio_printf(probe_out, "=");
-    ini_escape_print(value);
-    avio_w8(probe_out, '\n');
+    if (key) {
+        ini_escape_print(key);
+        avio_printf(probe_out, "=%s\n", value);
+    } else {
+        if (octx.prefix[octx.level -1].nb_elems)
+            avio_printf(probe_out, ",");
+        avio_printf(probe_out, "%s", value);
+    }
 }
 
 /*
@@ -329,14 +333,24 @@ static void json_escape_print(const char *s)
 
 static void json_print_string(const char *key, const char *value)
 {
-    if (octx.prefix[octx.level -1].nb_elems)
-        avio_printf(probe_out, ",\n");
-    AVP_INDENT();
-    avio_w8(probe_out, '\"');
-    json_escape_print(key);
-    avio_printf(probe_out, "\" : \"");
-    json_escape_print(value);
-    avio_w8(probe_out, '\"');
+    if (key) {
+        if (octx.prefix[octx.level -1].nb_elems)
+            avio_printf(probe_out, ",\n");
+        AVP_INDENT();
+        avio_w8(probe_out, '\"');
+        json_escape_print(key);
+        avio_printf(probe_out, "\" : \"");
+        json_escape_print(value);
+        avio_w8(probe_out, '\"');
+    } else {
+        if (octx.prefix[octx.level -1].nb_elems)
+            avio_printf(probe_out, ", ");
+        else
+            AVP_INDENT();
+        avio_w8(probe_out, '\"');
+        json_escape_print(value);
+        avio_w8(probe_out, '\"');
+    }
 }
 
 /*
