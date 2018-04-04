@@ -2913,13 +2913,10 @@ static int matroska_parse_rm_audio(MatroskaDemuxContext *matroska,
 
     while (track->audio.pkt_cnt) {
         int ret;
-        AVPacket *pkt = av_mallocz(sizeof(AVPacket));
-        if (!pkt)
-            return AVERROR(ENOMEM);
+        AVPacket pktl, *pkt = &pktl;
 
         ret = av_new_packet(pkt, a);
         if (ret < 0) {
-            av_free(pkt);
             return ret;
         }
         memcpy(pkt->data,
@@ -2931,7 +2928,7 @@ static int matroska_parse_rm_audio(MatroskaDemuxContext *matroska,
         pkt->stream_index         = st->index;
         ret = ff_packet_list_put(&matroska->queue, &matroska->queue_end, pkt, 0);
         if (ret < 0) {
-            av_packet_free(&pkt);
+            av_packet_unref(pkt);
             return AVERROR(ENOMEM);
         }
     }
@@ -3028,7 +3025,7 @@ static int matroska_parse_webvtt(MatroskaDemuxContext *matroska,
                                  uint64_t duration,
                                  int64_t pos)
 {
-    AVPacket *pkt;
+    AVPacket pktl, *pkt = &pktl;
     uint8_t *id, *settings, *text, *buf;
     int id_len, settings_len, text_len;
     uint8_t *p, *q;
@@ -3085,12 +3082,8 @@ static int matroska_parse_webvtt(MatroskaDemuxContext *matroska,
     if (text_len <= 0)
         return AVERROR_INVALIDDATA;
 
-    pkt = av_mallocz(sizeof(*pkt));
-    if (!pkt)
-        return AVERROR(ENOMEM);
     err = av_new_packet(pkt, text_len);
     if (err < 0) {
-        av_free(pkt);
         return err;
     }
 
@@ -3102,7 +3095,6 @@ static int matroska_parse_webvtt(MatroskaDemuxContext *matroska,
                                       id_len);
         if (!buf) {
             av_packet_unref(pkt);
-            av_free(pkt);
             return AVERROR(ENOMEM);
         }
         memcpy(buf, id, id_len);
@@ -3114,7 +3106,6 @@ static int matroska_parse_webvtt(MatroskaDemuxContext *matroska,
                                       settings_len);
         if (!buf) {
             av_packet_unref(pkt);
-            av_free(pkt);
             return AVERROR(ENOMEM);
         }
         memcpy(buf, settings, settings_len);
@@ -3134,7 +3125,7 @@ static int matroska_parse_webvtt(MatroskaDemuxContext *matroska,
 
     err = ff_packet_list_put(&matroska->queue, &matroska->queue_end, pkt, 0);
     if (err < 0) {
-        av_packet_free(&pkt);
+        av_packet_unref(pkt);
         return AVERROR(ENOMEM);
     }
 
