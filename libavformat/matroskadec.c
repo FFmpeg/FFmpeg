@@ -104,6 +104,7 @@ typedef struct EbmlList {
 
 typedef struct EbmlBin {
     int      size;
+    AVBufferRef *buf;
     uint8_t *data;
     int64_t  pos;
 } EbmlBin;
@@ -962,14 +963,19 @@ static int ebml_read_ascii(AVIOContext *pb, int size, char **str)
  */
 static int ebml_read_binary(AVIOContext *pb, int length, EbmlBin *bin)
 {
-    av_fast_padded_malloc(&bin->data, &bin->size, length);
-    if (!bin->data)
-        return AVERROR(ENOMEM);
+    int ret;
 
+    ret = av_buffer_realloc(&bin->buf, length + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (ret < 0)
+        return ret;
+    memset(bin->buf->data + length, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+
+    bin->data = bin->buf->data;
     bin->size = length;
     bin->pos  = avio_tell(pb);
     if (avio_read(pb, bin->data, length) != length) {
-        av_freep(&bin->data);
+        av_buffer_unref(&bin->buf);
+        bin->data = NULL;
         bin->size = 0;
         return AVERROR(EIO);
     }
@@ -1252,7 +1258,7 @@ static void ebml_free(EbmlSyntax *syntax, void *data)
             av_freep(data_off);
             break;
         case EBML_BIN:
-            av_freep(&((EbmlBin *) data_off)->data);
+            av_buffer_unref(&((EbmlBin *) data_off)->buf);
             break;
         case EBML_LEVEL1:
         case EBML_NEST:
@@ -2036,12 +2042,13 @@ static int get_qt_codec(MatroskaTrack *track, uint32_t *fourcc, enum AVCodecID *
      * by expanding/shifting the data by 4 bytes and storing the data
      * size at the start. */
     if (ff_codec_get_id(codec_tags, AV_RL32(track->codec_priv.data))) {
-        uint8_t *p = av_realloc(track->codec_priv.data,
-                                track->codec_priv.size + 4);
-        if (!p)
-            return AVERROR(ENOMEM);
-        memmove(p + 4, p, track->codec_priv.size);
-        track->codec_priv.data = p;
+        int ret = av_buffer_realloc(&track->codec_priv.buf,
+                                    track->codec_priv.size + 4 + AV_INPUT_BUFFER_PADDING_SIZE);
+        if (ret < 0)
+            return ret;
+
+        track->codec_priv.data = track->codec_priv.buf->data;
+        memmove(track->codec_priv.data + 4, track->codec_priv.data, track->codec_priv.size);
         track->codec_priv.size += 4;
         AV_WB32(track->codec_priv.data, track->codec_priv.size);
     }
@@ -2162,8 +2169,19 @@ static int matroska_parse_tracks(AVFormatContext *s)
                            "Failed to decode codec private data\n");
                 }
 
-                if (codec_priv != track->codec_priv.data)
-                    av_free(codec_priv);
+                if (codec_priv != track->codec_priv.data) {
+                    av_buffer_unref(&track->codec_priv.buf);
+                    if (track->codec_priv.data) {
+                        track->codec_priv.buf = av_buffer_create(track->codec_priv.data,
+                                                                 track->codec_priv.size + AV_INPUT_BUFFER_PADDING_SIZE,
+                                                                 NULL, NULL, 0);
+                        if (!track->codec_priv.buf) {
+                            av_freep(&track->codec_priv.data);
+                            track->codec_priv.size = 0;
+                            return AVERROR(ENOMEM);
+                        }
+                    }
+                }
             }
         }
 
