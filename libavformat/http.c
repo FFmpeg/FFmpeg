@@ -1623,6 +1623,18 @@ static int http_shutdown(URLContext *h, int flags)
         ((flags & AVIO_FLAG_READ) && s->chunked_post && s->listen)) {
         ret = ffurl_write(s->hd, footer, sizeof(footer) - 1);
         ret = ret > 0 ? 0 : ret;
+        /* flush the receive buffer when it is write only mode */
+        if (!(flags & AVIO_FLAG_READ)) {
+            char buf[1024];
+            int read_ret;
+            s->hd->flags |= AVIO_FLAG_NONBLOCK;
+            read_ret = ffurl_read(s->hd, buf, sizeof(buf));
+            s->hd->flags &= ~AVIO_FLAG_NONBLOCK;
+            if (read_ret < 0 && read_ret != AVERROR(EAGAIN)) {
+                av_log(h, AV_LOG_ERROR, "URL read error:  %d\n", read_ret);
+                ret = read_ret;
+            }
+        }
         s->end_chunked_post = 1;
     }
 
