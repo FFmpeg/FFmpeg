@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVCODEC_CLEARVIDEODATA_H
+#define AVCODEC_CLEARVIDEODATA_H
+
 #include "libavutil/common.h"
 
 #define NUM_DC_CODES 127
@@ -1826,4 +1829,4 @@ static const uint16_t clv_biasv_2_syms[] = {
     0x004C, 0x0050, 0x0054, 0x0100,
 };
 
-
+#endif /* AVCODEC_CLEARVIDEODATA_H */
