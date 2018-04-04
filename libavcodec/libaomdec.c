@@ -103,11 +103,13 @@ static int set_pix_fmt(AVCodecContext *avctx, struct aom_image *img)
             avctx->profile = FF_PROFILE_AV1_MAIN;
             return 0;
         } else if (img->bit_depth == 10) {
-            avctx->pix_fmt = AV_PIX_FMT_YUV420P10;
+            avctx->pix_fmt = img->monochrome ?
+                             AV_PIX_FMT_GRAY10 : AV_PIX_FMT_YUV420P10;
             avctx->profile = FF_PROFILE_AV1_MAIN;
             return 0;
         } else if (img->bit_depth == 12) {
-            avctx->pix_fmt = AV_PIX_FMT_YUV420P12;
+            avctx->pix_fmt = img->monochrome ?
+                             AV_PIX_FMT_GRAY12 : AV_PIX_FMT_YUV420P12;
             avctx->profile = FF_PROFILE_AV1_PROFESSIONAL;
             return 0;
         } else {
@@ -116,8 +118,7 @@ static int set_pix_fmt(AVCodecContext *avctx, struct aom_image *img)
     case AOM_IMG_FMT_I422:
     case AOM_IMG_FMT_I42216:
         if (img->bit_depth == 8) {
-            avctx->pix_fmt = img->monochrome ?
-                             AV_PIX_FMT_GRAY10 : AV_PIX_FMT_YUV420P10;
+            avctx->pix_fmt = AV_PIX_FMT_YUV422P;
             avctx->profile = FF_PROFILE_AV1_PROFESSIONAL;
             return 0;
         } else if (img->bit_depth == 10) {
@@ -134,8 +135,7 @@ static int set_pix_fmt(AVCodecContext *avctx, struct aom_image *img)
     case AOM_IMG_FMT_I444:
     case AOM_IMG_FMT_I44416:
         if (img->bit_depth == 8) {
-            avctx->pix_fmt = img->monochrome ?
-                             AV_PIX_FMT_GRAY12 : AV_PIX_FMT_YUV420P12;
+            avctx->pix_fmt = AV_PIX_FMT_YUV444P;
             avctx->profile = FF_PROFILE_AV1_HIGH;
             return 0;
         } else if (img->bit_depth == 10) {
