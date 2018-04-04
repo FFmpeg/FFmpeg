@@ -3035,6 +3035,29 @@ fail:
     return ret;
 }
 
+static int matroska_parse_prores(MatroskaTrack *track, uint8_t *src,
+                                 uint8_t **pdst, int *size)
+{
+    uint8_t *dst = src;
+    int dstlen = *size;
+
+    if (AV_RB32(&src[4]) != MKBETAG('i', 'c', 'p', 'f')) {
+        dst = av_malloc(dstlen + 8);
+        if (!dst)
+            return AVERROR(ENOMEM);
+
+        AV_WB32(dst, dstlen);
+        AV_WB32(dst + 4, MKBETAG('i', 'c', 'p', 'f'));
+        memcpy(dst + 8, src, dstlen);
+        dstlen += 8;
+    }
+
+    *pdst = dst;
+    *size = dstlen;
+
+    return 0;
+}
+
 static int matroska_parse_webvtt(MatroskaDemuxContext *matroska,
                                  MatroskaTrack *track,
                                  AVStream *st,
@@ -3160,7 +3183,7 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
 {
     MatroskaTrackEncoding *encodings = track->encodings.elem;
     uint8_t *pkt_data = data;
-    int offset = 0, res;
+    int res;
     AVPacket pktl, *pkt = &pktl;
 
     if (encodings && !encodings->type && encodings->scope & 1) {
@@ -3182,23 +3205,26 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
         pkt_data = wv_data;
     }
 
-    if (st->codecpar->codec_id == AV_CODEC_ID_PRORES &&
-        AV_RB32(&data[4]) != MKBETAG('i', 'c', 'p', 'f'))
-        offset = 8;
+    if (st->codecpar->codec_id == AV_CODEC_ID_PRORES) {
+        uint8_t *pr_data;
+        res = matroska_parse_prores(track, pkt_data, &pr_data, &pkt_size);
+        if (res < 0) {
+            av_log(matroska->ctx, AV_LOG_ERROR,
+                   "Error parsing a prores block.\n");
+            goto fail;
+        }
+        if (pkt_data != data)
+            av_freep(&pkt_data);
+        pkt_data = pr_data;
+    }
 
     /* XXX: prevent data copy... */
-    if (av_new_packet(pkt, pkt_size + offset) < 0) {
+    if (av_new_packet(pkt, pkt_size) < 0) {
         res = AVERROR(ENOMEM);
         goto fail;
     }
 
-    if (st->codecpar->codec_id == AV_CODEC_ID_PRORES && offset == 8) {
-        uint8_t *buf = pkt->data;
-        bytestream_put_be32(&buf, pkt_size);
-        bytestream_put_be32(&buf, MKBETAG('i', 'c', 'p', 'f'));
-    }
-
-    memcpy(pkt->data + offset, pkt_data, pkt_size);
+    memcpy(pkt->data, pkt_data, pkt_size);
 
     if (pkt_data != data)
         av_freep(&pkt_data);
