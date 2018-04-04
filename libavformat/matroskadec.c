@@ -1367,7 +1367,7 @@ static int matroska_decode_buffer(uint8_t **buf, int *buf_size,
             return 0;
 
         pkt_size = isize + header_size;
-        pkt_data = av_malloc(pkt_size);
+        pkt_data = av_malloc(pkt_size + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!pkt_data)
             return AVERROR(ENOMEM);
 
@@ -1379,7 +1379,8 @@ static int matroska_decode_buffer(uint8_t **buf, int *buf_size,
     case MATROSKA_TRACK_ENCODING_COMP_LZO:
         do {
             olen       = pkt_size *= 3;
-            newpktdata = av_realloc(pkt_data, pkt_size + AV_LZO_OUTPUT_PADDING);
+            newpktdata = av_realloc(pkt_data, pkt_size + AV_LZO_OUTPUT_PADDING
+                                                       + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!newpktdata) {
                 result = AVERROR(ENOMEM);
                 goto failed;
@@ -1404,7 +1405,7 @@ static int matroska_decode_buffer(uint8_t **buf, int *buf_size,
         zstream.avail_in = isize;
         do {
             pkt_size  *= 3;
-            newpktdata = av_realloc(pkt_data, pkt_size);
+            newpktdata = av_realloc(pkt_data, pkt_size + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!newpktdata) {
                 inflateEnd(&zstream);
                 result = AVERROR(ENOMEM);
@@ -1437,7 +1438,7 @@ static int matroska_decode_buffer(uint8_t **buf, int *buf_size,
         bzstream.avail_in = isize;
         do {
             pkt_size  *= 3;
-            newpktdata = av_realloc(pkt_data, pkt_size);
+            newpktdata = av_realloc(pkt_data, pkt_size + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!newpktdata) {
                 BZ2_bzDecompressEnd(&bzstream);
                 result = AVERROR(ENOMEM);
@@ -1463,6 +1464,8 @@ static int matroska_decode_buffer(uint8_t **buf, int *buf_size,
     default:
         return AVERROR_INVALIDDATA;
     }
+
+    memset(pkt_data + pkt_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     *buf      = pkt_data;
     *buf_size = pkt_size;
@@ -3001,7 +3004,7 @@ static int matroska_parse_wavpack(MatroskaTrack *track, uint8_t *src,
             goto fail;
         }
 
-        tmp = av_realloc(dst, dstlen + blocksize + 32);
+        tmp = av_realloc(dst, dstlen + blocksize + 32 + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!tmp) {
             ret = AVERROR(ENOMEM);
             goto fail;
@@ -3025,6 +3028,8 @@ static int matroska_parse_wavpack(MatroskaTrack *track, uint8_t *src,
         offset += blocksize + 32;
     }
 
+    memset(dst + dstlen, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+
     *pdst = dst;
     *size = dstlen;
 
@@ -3042,13 +3047,14 @@ static int matroska_parse_prores(MatroskaTrack *track, uint8_t *src,
     int dstlen = *size;
 
     if (AV_RB32(&src[4]) != MKBETAG('i', 'c', 'p', 'f')) {
-        dst = av_malloc(dstlen + 8);
+        dst = av_malloc(dstlen + 8 + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!dst)
             return AVERROR(ENOMEM);
 
         AV_WB32(dst, dstlen);
         AV_WB32(dst + 4, MKBETAG('i', 'c', 'p', 'f'));
         memcpy(dst + 8, src, dstlen);
+        memset(dst + 8 + dstlen, 0, AV_INPUT_BUFFER_PADDING_SIZE);
         dstlen += 8;
     }
 
@@ -3175,7 +3181,7 @@ static int matroska_parse_webvtt(MatroskaDemuxContext *matroska,
 
 static int matroska_parse_frame(MatroskaDemuxContext *matroska,
                                 MatroskaTrack *track, AVStream *st,
-                                uint8_t *data, int pkt_size,
+                                AVBufferRef *buf, uint8_t *data, int pkt_size,
                                 uint64_t timecode, uint64_t lace_duration,
                                 int64_t pos, int is_keyframe,
                                 uint8_t *additional, uint64_t additional_id, int additional_size,
@@ -3218,17 +3224,20 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
         pkt_data = pr_data;
     }
 
-    /* XXX: prevent data copy... */
-    if (av_new_packet(pkt, pkt_size) < 0) {
+    av_init_packet(pkt);
+    if (pkt_data != data)
+        pkt->buf = av_buffer_create(pkt_data, pkt_size + AV_INPUT_BUFFER_PADDING_SIZE,
+                                    NULL, NULL, 0);
+    else
+        pkt->buf = av_buffer_ref(buf);
+
+    if (!pkt->buf) {
         res = AVERROR(ENOMEM);
         goto fail;
     }
 
-    memcpy(pkt->data, pkt_data, pkt_size);
-
-    if (pkt_data != data)
-        av_freep(&pkt_data);
-
+    pkt->data         = pkt_data;
+    pkt->size         = pkt_size;
     pkt->flags        = is_keyframe;
     pkt->stream_index = st->index;
 
@@ -3291,7 +3300,7 @@ fail:
     return res;
 }
 
-static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
+static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf, uint8_t *data,
                                 int size, int64_t pos, uint64_t cluster_time,
                                 uint64_t block_duration, int is_keyframe,
                                 uint8_t *additional, uint64_t additional_id, int additional_size,
@@ -3409,7 +3418,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
             if (res)
                 goto end;
         } else {
-            res = matroska_parse_frame(matroska, track, st, data, lace_size[n],
+            res = matroska_parse_frame(matroska, track, st, buf, data, lace_size[n],
                                        timecode, lace_duration, pos,
                                        !n ? is_keyframe : 0,
                                        additional, additional_id, additional_size,
@@ -3472,7 +3481,7 @@ static int matroska_parse_cluster_incremental(MatroskaDemuxContext *matroska)
                                     blocks[i].additional.data : NULL;
             if (!blocks[i].non_simple)
                 blocks[i].duration = 0;
-            res = matroska_parse_block(matroska, blocks[i].bin.data,
+            res = matroska_parse_block(matroska, blocks[i].bin.buf, blocks[i].bin.data,
                                        blocks[i].bin.size, blocks[i].bin.pos,
                                        matroska->current_cluster.timecode,
                                        blocks[i].duration, is_keyframe,
@@ -3505,7 +3514,7 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
     for (i = 0; i < blocks_list->nb_elem; i++)
         if (blocks[i].bin.size > 0 && blocks[i].bin.data) {
             int is_keyframe = blocks[i].non_simple ? blocks[i].reference == INT64_MIN : -1;
-            res = matroska_parse_block(matroska, blocks[i].bin.data,
+            res = matroska_parse_block(matroska, blocks[i].bin.buf, blocks[i].bin.data,
                                        blocks[i].bin.size, blocks[i].bin.pos,
                                        cluster.timecode, blocks[i].duration,
                                        is_keyframe, NULL, 0, 0, pos,
