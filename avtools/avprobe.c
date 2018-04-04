@@ -131,6 +131,7 @@ typedef struct PrintContext {
 static AVIOContext *probe_out = NULL;
 static PrintContext octx;
 #define AVP_INDENT() avio_printf(probe_out, "%*c", octx.level * 2, ' ')
+#define CONV_FP(x,fp) ((double) (x)) / (1 << fp)
 
 /*
  * Default format, INI
@@ -816,6 +817,15 @@ static void show_stream(InputFile *ifile, InputStream *ist)
                 for (j = 0; j < 9; j++)
                     probe_int(NULL, ((int32_t *)sd->data)[j]);
                 probe_array_footer("matrix", 1);
+                probe_array_header("matrix_str", 1);
+                for (j = 0; j < 9; j++) {
+                    char buf[32];
+                    int fp = (j == 2 || j == 5 || j == 8) ? 30 : 16;
+                    int32_t val = ((int32_t *)sd->data)[j];
+                    value_string(buf, sizeof(buf), CONV_FP(val, fp), "");
+                    probe_str(NULL, buf);
+                }
+                probe_array_footer("matrix_str", 1);
                 probe_int("rotation",
                           av_display_rotation_get((int32_t *)sd->data));
                 probe_object_footer("displaymatrix");
