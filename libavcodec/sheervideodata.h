@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVCODEC_SHEERVIDEODATA_H
+#define AVCODEC_SHEERVIDEODATA_H
+
 #include <libavutil/common.h>
 
 static const uint8_t l_r_rgb[256] = {
@@ -1091,3 +1094,4 @@ static const uint8_t l_g_rgbxi[1024] = {
      9,  8,  8,  8,  8,  7,  7,  7,  7,  7,  7,  6,  6,  4,  4,  3,
 };
 
+#endif /* AVCODEC_SHEERVIDEODATA_H */
