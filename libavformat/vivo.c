@@ -36,6 +36,7 @@ typedef struct VivoContext {
     int type;
     int sequence;
     int length;
+    int duration;
 
     uint8_t  text[1024 + 1];
 } VivoContext;
@@ -237,6 +238,7 @@ static int vivo_read_header(AVFormatContext *s)
         ast->codecpar->bits_per_coded_sample = 16;
         ast->codecpar->block_align = 40;
         ast->codecpar->bit_rate = 6400;
+        vivo->duration = 320;
     }
 
     ast->start_time        = 0;
@@ -252,7 +254,7 @@ static int vivo_read_packet(AVFormatContext *s, AVPacket *pkt)
     VivoContext *vivo = s->priv_data;
     AVIOContext *pb = s->pb;
     unsigned old_sequence = vivo->sequence, old_type = vivo->type;
-    int stream_index, ret = 0;
+    int stream_index, duration, ret = 0;
 
 restart:
 
@@ -268,10 +270,12 @@ restart:
     case 1:
     case 2: // video
         stream_index = 0;
+        duration = 1;
         break;
     case 3:
     case 4: // audio
         stream_index = 1;
+        duration = vivo->duration;
         break;
     default:
         av_log(s, AV_LOG_ERROR, "unknown packet type %d\n", vivo->type);
@@ -300,6 +304,7 @@ restart:
     }
 
     pkt->stream_index = stream_index;
+    pkt->duration = duration;
 
     return ret;
 }
