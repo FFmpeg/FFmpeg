@@ -59,9 +59,10 @@ static int vivo_probe(const AVProbeData *p)
     if (c & 0x80 || length > 1024 || length < 21)
         return 0;
 
-    if (memcmp(buf, "\r\nVersion:Vivo/", 15))
+    buf += 2;
+    if (memcmp(buf, "Version:Vivo/", 13))
         return 0;
-    buf += 15;
+    buf += 13;
 
     if (*buf < '0' || *buf > '2')
         return 0;
