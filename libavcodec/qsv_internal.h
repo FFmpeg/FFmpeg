@@ -48,6 +48,8 @@ typedef struct QSVMid {
 typedef struct QSVFrame {
     AVFrame *frame;
     mfxFrameSurface1 surface;
+    mfxExtDecodedFrameInfo dec_info;
+    mfxExtBuffer *ext_param;
 
     int queued;
     int used;
@@ -83,6 +85,7 @@ int ff_qsv_codec_id_to_mfx(enum AVCodecID codec_id);
 int ff_qsv_profile_to_mfx(enum AVCodecID codec_id, int profile);
 
 int ff_qsv_map_pixfmt(enum AVPixelFormat format, uint32_t *fourcc);
+enum AVPictureType ff_qsv_map_pictype(int mfx_pic_type);
 
 int ff_qsv_init_internal_session(AVCodecContext *avctx, mfxSession *session,
                                  const char *load_plugins);

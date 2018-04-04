@@ -232,6 +232,11 @@ static int alloc_frame(AVCodecContext *avctx, QSVContext *q, QSVFrame *frame)
 
         frame->surface.Data.MemId = &q->frames_ctx.mids[ret];
     }
+    frame->surface.Data.ExtParam    = &frame->ext_param;
+    frame->surface.Data.NumExtParam = 1;
+    frame->ext_param                = (mfxExtBuffer*)&frame->dec_info;
+    frame->dec_info.Header.BufferId = MFX_EXTBUFF_DECODED_FRAME_INFO;
+    frame->dec_info.Header.BufferSz = sizeof(frame->dec_info);
 
     frame->used = 1;
 
@@ -416,6 +421,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
             outsurf->Info.PicStruct & MFX_PICSTRUCT_FIELD_TFF;
         frame->interlaced_frame =
             !(outsurf->Info.PicStruct & MFX_PICSTRUCT_PROGRESSIVE);
+        frame->pict_type = ff_qsv_map_pictype(out_frame->dec_info.FrameType);
+        //Key frame is IDR frame is only suitable for H264. For HEVC, IRAPs are key frames.
+        if (avctx->codec_id == AV_CODEC_ID_H264)
+            frame->key_frame = !!(out_frame->dec_info.FrameType & MFX_FRAMETYPE_IDR);
 
         /* update the surface properties */
         if (avctx->pix_fmt == AV_PIX_FMT_QSV)
