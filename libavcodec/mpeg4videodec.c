@@ -3375,6 +3375,20 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
+static av_cold int decode_end(AVCodecContext *avctx)
+{
+    Mpeg4DecContext *ctx = avctx->priv_data;
+    int i;
+
+    for (i = 0; i < 12; i++)
+        ff_free_vlc(&ctx->studio_intra_tab[i]);
+
+    ff_free_vlc(&ctx->studio_luma_dc);
+    ff_free_vlc(&ctx->studio_chroma_dc);
+
+    return ff_h263_decode_end(avctx);
+}
+
 static const AVOption mpeg4_options[] = {
     {"quarter_sample", "1/4 subpel MC", offsetof(MpegEncContext, quarter_sample), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, 0},
     {"divx_packed", "divx style packed b frames", offsetof(MpegEncContext, divx_packed), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, 0},
@@ -3395,7 +3409,7 @@ AVCodec ff_mpeg4_decoder = {
     .id                    = AV_CODEC_ID_MPEG4,
     .priv_data_size        = sizeof(Mpeg4DecContext),
     .init                  = decode_init,
-    .close                 = ff_h263_decode_end,
+    .close                 = decode_end,
     .decode                = ff_h263_decode_frame,
     .capabilities          = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 |
                              AV_CODEC_CAP_TRUNCATED | AV_CODEC_CAP_DELAY |
