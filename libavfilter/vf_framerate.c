@@ -33,13 +33,13 @@
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
-#include "libavutil/pixelutils.h"
 
 #include "avfilter.h"
 #include "internal.h"
 #include "video.h"
 #include "filters.h"
 #include "framerate.h"
+#include "scene_sad.h"
 
 #define OFFSET(x) offsetof(FrameRateContext, x)
 #define V AV_OPT_FLAG_VIDEO_PARAM
@@ -62,52 +62,6 @@ static const AVOption framerate_options[] = {
 
 AVFILTER_DEFINE_CLASS(framerate);
 
-static av_always_inline int64_t sad_8x8_16(const uint16_t *src1, ptrdiff_t stride1,
-                                           const uint16_t *src2, ptrdiff_t stride2)
-{
-    int sum = 0;
-    int x, y;
-
-    for (y = 0; y < 8; y++) {
-        for (x = 0; x < 8; x++)
-            sum += FFABS(src1[x] - src2[x]);
-        src1 += stride1;
-        src2 += stride2;
-    }
-    return sum;
-}
-
-static int64_t scene_sad16(FrameRateContext *s, const uint16_t *p1, int p1_linesize, const uint16_t* p2, int p2_linesize, const int width, const int height)
-{
-    int64_t sad;
-    int x, y;
-    for (sad = y = 0; y < height - 7; y += 8) {
-        for (x = 0; x < width - 7; x += 8) {
-            sad += sad_8x8_16(p1 + y * p1_linesize + x,
-                              p1_linesize,
-                              p2 + y * p2_linesize + x,
-                              p2_linesize);
-        }
-    }
-    return sad;
-}
-
-static int64_t scene_sad8(FrameRateContext *s, uint8_t *p1, int p1_linesize, uint8_t* p2, int p2_linesize, const int width, const int height)
-{
-    int64_t sad;
-    int x, y;
-    for (sad = y = 0; y < height - 7; y += 8) {
-        for (x = 0; x < width - 7; x += 8) {
-            sad += s->sad(p1 + y * p1_linesize + x,
-                          p1_linesize,
-                          p2 + y * p2_linesize + x,
-                          p2_linesize);
-        }
-    }
-    emms_c();
-    return sad;
-}
-
 static double get_scene_score(AVFilterContext *ctx, AVFrame *crnt, AVFrame *next)
 {
     FrameRateContext *s = ctx->priv;
@@ -117,16 +71,13 @@ static double get_scene_score(AVFilterContext *ctx, AVFrame *crnt, AVFrame *next
 
     if (crnt->height == next->height &&
         crnt->width  == next->width) {
-        int64_t sad;
+        uint64_t sad;
         double mafd, diff;
 
         ff_dlog(ctx, "get_scene_score() process\n");
-        if (s->bitdepth == 8)
-            sad = scene_sad8(s, crnt->data[0], crnt->linesize[0], next->data[0], next->linesize[0], crnt->width, crnt->height);
-        else
-            sad = scene_sad16(s, (const uint16_t*)crnt->data[0], crnt->linesize[0] / 2, (const uint16_t*)next->data[0], next->linesize[0] / 2, crnt->width, crnt->height);
-
-        mafd = (double)sad * 100.0 / FFMAX(1, (crnt->height & ~7) * (crnt->width & ~7)) / (1 << s->bitdepth);
+        s->sad(crnt->data[0], crnt->linesize[0], next->data[0], next->linesize[0], crnt->width, crnt->height, &sad);
+        emms_c();
+        mafd = (double)sad * 100.0 / (crnt->width * crnt->height) / (1 << s->bitdepth);
         diff = fabs(mafd - s->prev_mafd);
         ret  = av_clipf(FFMIN(mafd, diff), 0, 100.0);
         s->prev_mafd = mafd;
@@ -350,7 +301,7 @@ static int config_input(AVFilterLink *inlink)
     s->bitdepth = pix_desc->comp[0].depth;
     s->vsub = pix_desc->log2_chroma_h;
 
-    s->sad = av_pixelutils_get_sad_fn(3, 3, 2, s); // 8x8 both sources aligned
+    s->sad = ff_scene_sad_get_fn(s->bitdepth == 8 ? 8 : 16);
     if (!s->sad)
         return AVERROR(EINVAL);
 

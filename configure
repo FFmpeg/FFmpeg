@@ -2337,6 +2337,7 @@ CONFIG_EXTRA="
     rtpdec
     rtpenc_chain
     rv34dsp
+    scene_sad
     sinewin
     snappy
     srtp
@@ -3400,7 +3401,7 @@ find_rect_filter_deps="avcodec avformat gpl"
 firequalizer_filter_deps="avcodec"
 firequalizer_filter_select="rdft"
 flite_filter_deps="libflite"
-framerate_filter_select="pixelutils"
+framerate_filter_select="scene_sad"
 frei0r_filter_deps="frei0r libdl"
 frei0r_src_filter_deps="frei0r libdl"
 fspp_filter_deps="gpl"
