@@ -296,6 +296,7 @@ static int copyadd_block(AVCodecContext *avctx, AVFrame *dst, AVFrame *src,
 static MV mvi_predict(MVInfo *mvi, int mb_x, int mb_y, MV diff)
 {
     MV res, pred_mv;
+    int left_mv, right_mv, top_mv, bot_mv;
 
     if (mvi->top) {
         if (mb_x > 0) {
@@ -315,16 +316,16 @@ static MV mvi_predict(MVInfo *mvi, int mb_x, int mb_y, MV diff)
 
     res = pred_mv;
 
-    int left_mv = -((mb_x * mvi->mb_size));
-    int right_mv = ((mvi->mb_w - mb_x - 1) * mvi->mb_size);
+    left_mv = -((mb_x * mvi->mb_size));
+    right_mv = ((mvi->mb_w - mb_x - 1) * mvi->mb_size);
     if (res.x < left_mv) {
         res.x = left_mv;
     }
     if (res.x > right_mv) {
         res.x = right_mv;
     }
-    int top_mv = -((mb_y * mvi->mb_size));
-    int bot_mv = ((mvi->mb_h - mb_y - 1) * mvi->mb_size);
+    top_mv = -((mb_y * mvi->mb_size));
+    bot_mv = ((mvi->mb_h - mb_y - 1) * mvi->mb_size);
     if (res.y < top_mv) {
         res.y = top_mv;
     }
