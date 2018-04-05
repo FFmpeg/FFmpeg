@@ -60,6 +60,9 @@ get_next:
                     s->remaining_size += i;
                     goto get_next;
                 }
+                else if (i < 0) {
+                    s->remaining_size += i;
+                }
             }
         }
     }
