@@ -2592,6 +2592,12 @@ static int mov_read_stsd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     return mov_finalize_stsd_codec(c, pb, st, sc);
 fail:
+    if (sc->extradata) {
+        int j;
+        for (j = 0; j < sc->stsd_count; j++)
+            av_freep(&sc->extradata[j]);
+    }
+
     av_freep(&sc->extradata);
     av_freep(&sc->extradata_size);
     return ret;
