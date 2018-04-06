@@ -2440,6 +2440,7 @@ static int mxf_write_header(AVFormatContext *s)
                 mxf->edit_unit_byte_count += klv_fill_size(mxf->edit_unit_byte_count);
 
                 sc->signal_standard = 1;
+                sc->color_siting = 0;
             }
             if (mxf->signal_standard >= 0)
                 sc->signal_standard = mxf->signal_standard;
