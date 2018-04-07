@@ -652,6 +652,8 @@ static av_cold int clv_decode_init(AVCodecContext *avctx)
         c->tile_size = AV_RL32(&avctx->extradata[94]);
     } else if (avctx->extradata_size == 150) {
         c->tile_size = AV_RB32(&avctx->extradata[134]);
+    } else if (!avctx->extradata_size) {
+        c->tile_size = 16;
     } else {
         av_log(avctx, AV_LOG_ERROR, "Unsupported extradata size: %d\n", avctx->extradata_size);
         return AVERROR_INVALIDDATA;
