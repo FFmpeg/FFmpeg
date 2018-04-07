@@ -5048,6 +5048,7 @@ case $target_os in
         ;;
     openbsd|bitrig)
         disable symver
+        striptype=""
         SHFLAGS='-shared'
         SLIB_INSTALL_NAME='$(SLIBNAME).$(LIBMAJOR).$(LIBMINOR)'
         SLIB_INSTALL_LINKS=
