@@ -2016,6 +2016,7 @@ HEADERS_LIST="
     ES2_gl_h
     gsm_h
     io_h
+    linux_perf_event_h
     machine_ioctl_bt848_h
     machine_ioctl_meteor_h
     malloc_h
@@ -2478,6 +2479,7 @@ simd_align_32_if_any="avx"
 simd_align_64_if_any="avx512"
 
 # system capabilities
+linux_perf_deps="linux_perf_event_h"
 symver_if_any="symver_asm_label symver_gnu_asm"
 valgrind_backtrace_conflict="optimizations"
 valgrind_backtrace_deps="valgrind_valgrind_h"
@@ -5800,6 +5802,7 @@ check_header dxgidebug.h
 check_header dxva.h
 check_header dxva2api.h -D_WIN32_WINNT=0x0600
 check_header io.h
+check_header linux/perf_event.h
 check_header libcrystalhd/libcrystalhd_if.h
 check_header malloc.h
 check_header net/udplite.h
