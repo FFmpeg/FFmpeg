@@ -250,14 +250,6 @@ int av_probe_input_buffer2(AVIOContext *pb, AVInputFormat **fmt,
             *semi = '\0';
         }
     }
-#if 0
-    if (!*fmt && pb->av_class && av_opt_get(pb, "mime_type", AV_OPT_SEARCH_CHILDREN, &mime_type) >= 0 && mime_type) {
-        if (!av_strcasecmp(mime_type, "audio/aacp")) {
-            *fmt = av_find_input_format("aac");
-        }
-        av_freep(&mime_type);
-    }
-#endif
 
     for (probe_size = PROBE_BUF_MIN; probe_size <= max_probe_size && !*fmt;
          probe_size = FFMIN(probe_size << 1,
