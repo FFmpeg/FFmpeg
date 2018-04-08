@@ -299,6 +299,14 @@ static int decode_styl(const uint8_t *tsmb, MovTextContext *m, AVPacket *avpkt)
         m->s_temp->style_start = AV_RB16(tsmb);
         tsmb += 2;
         m->s_temp->style_end = AV_RB16(tsmb);
+
+        if (   m->s_temp->style_end < m->s_temp->style_start
+            || (m->count_s && m->s_temp->style_start < m->s[m->count_s - 1]->style_end)) {
+            av_freep(&m->s_temp);
+            mov_text_cleanup(m);
+            return AVERROR(ENOMEM);
+        }
+
         tsmb += 2;
         m->s_temp->style_fontID = AV_RB16(tsmb);
         tsmb += 2;
