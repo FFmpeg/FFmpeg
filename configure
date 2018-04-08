@@ -5886,6 +5886,7 @@ check_cpp_condition winrt windows.h "!WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_D
 if ! disabled w32threads && ! enabled pthreads; then
     check_func_headers "windows.h process.h" _beginthreadex &&
         check_type "windows.h" CONDITION_VARIABLE &&
+        check_type "windows.h" INIT_ONCE &&
         enable w32threads || disable w32threads
     if ! enabled w32threads && enabled winrt; then
         check_func_headers "windows.h" CreateThread &&
