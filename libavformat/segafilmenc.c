@@ -121,12 +121,12 @@ static int film_write_packet(AVFormatContext *format_context, AVPacket *pkt)
         if (encoded_buf_size != pkt->size && (pkt->size % encoded_buf_size) != 0) {
             avio_write(pb, pkt->data, pkt->size);
         } else {
+            uint8_t padding[2] = {0, 0};
             /* In Sega Cinepak, the reported size in the Cinepak header is
              * 8 bytes too short. However, the size in the STAB section of the header
              * is correct, taking into account the extra two bytes. */
             AV_WB24(&pkt->data[1], pkt->size - 8 + 2);
             metadata->size += 2;
-            uint8_t padding[2] = {0, 0};
 
             avio_write(pb, pkt->data, 10);
             avio_write(pb, padding, 2);
@@ -158,6 +158,7 @@ static int get_audio_codec_id(enum AVCodecID codec_id)
 
 static int film_init(AVFormatContext *format_context)
 {
+    AVStream *audio = NULL;
     FILMOutputContext *film = format_context->priv_data;
     film->audio_index = -1;
     film->video_index = -1;
@@ -165,7 +166,6 @@ static int film_init(AVFormatContext *format_context)
     film->packet_count = 0;
     film->start = NULL;
     film->last = NULL;
-    AVStream *audio = NULL;
 
     for (int i = 0; i < format_context->nb_streams; i++) {
         AVStream *st = format_context->streams[i];
