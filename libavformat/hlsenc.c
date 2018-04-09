@@ -696,14 +696,6 @@ static int hls_encryption_start(AVFormatContext *s)
     return 0;
 }
 
-static int read_chomp_line(AVIOContext *s, char *buf, int maxlen)
-{
-    int len = ff_get_line(s, buf, maxlen);
-    while (len > 0 && av_isspace(buf[len - 1]))
-        buf[--len] = '\0';
-    return len;
-}
-
 static int hls_mux_init(AVFormatContext *s, VariantStream *vs)
 {
     AVDictionary *options = NULL;
@@ -1072,7 +1064,7 @@ static int parse_playlist(AVFormatContext *s, const char *url, VariantStream *vs
                                    s->protocol_whitelist, s->protocol_blacklist)) < 0)
         return ret;
 
-    read_chomp_line(in, line, sizeof(line));
+    ff_get_chomp_line(in, line, sizeof(line));
     if (strcmp(line, "#EXTM3U")) {
         ret = AVERROR_INVALIDDATA;
         goto fail;
@@ -1080,7 +1072,7 @@ static int parse_playlist(AVFormatContext *s, const char *url, VariantStream *vs
 
     vs->discontinuity = 0;
     while (!avio_feof(in)) {
-        read_chomp_line(in, line, sizeof(line));
+        ff_get_chomp_line(in, line, sizeof(line));
         if (av_strstart(line, "#EXT-X-MEDIA-SEQUENCE:", &ptr)) {
             int64_t tmp_sequence = strtoll(ptr, NULL, 10);
             if (tmp_sequence < vs->sequence)
