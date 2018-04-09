@@ -300,6 +300,16 @@ void ff_put_v(AVIOContext *bc, uint64_t val);
 int ff_get_line(AVIOContext *s, char *buf, int maxlen);
 
 /**
+ * Same as ff_get_line but strip the white-space characters in the text tail
+ *
+ * @param s the read-only AVIOContext
+ * @param buf buffer to store the read line
+ * @param maxlen size of the buffer
+ * @return the length of the string written in the buffer
+ */
+int ff_get_chomp_line(AVIOContext *s, char *buf, int maxlen);
+
+/**
  * Read a whole line of text from AVIOContext to an AVBPrint buffer. Stop
  * reading after reaching a \\r, a \\n, a \\r\\n, a \\0 or EOF.  The line
  * ending characters are NOT included in the buffer, but they are skipped on
