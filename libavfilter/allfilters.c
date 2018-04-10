@@ -322,6 +322,7 @@ extern AVFilter ff_vf_smartblur;
 extern AVFilter ff_vf_sobel;
 extern AVFilter ff_vf_split;
 extern AVFilter ff_vf_spp;
+extern AVFilter ff_vf_srcnn;
 extern AVFilter ff_vf_ssim;
 extern AVFilter ff_vf_stereo3d;
 extern AVFilter ff_vf_streamselect;
