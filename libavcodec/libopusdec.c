@@ -126,7 +126,10 @@ static av_cold int libopus_decode_close(AVCodecContext *avc)
 {
     struct libopus_context *opus = avc->priv_data;
 
-    opus_multistream_decoder_destroy(opus->dec);
+    if (opus->dec) {
+        opus_multistream_decoder_destroy(opus->dec);
+        opus->dec = NULL;
+    }
     return 0;
 }
 
@@ -200,6 +203,7 @@ AVCodec ff_libopus_decoder = {
     .decode         = libopus_decode,
     .flush          = libopus_flush,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLT,
                                                      AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
