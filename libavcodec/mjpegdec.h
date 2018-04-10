@@ -45,6 +45,7 @@ typedef struct MJpegDecodeContext {
     AVClass *class;
     AVCodecContext *avctx;
     GetBitContext gb;
+    int buf_size;
 
     int start_code; /* current start code */
     int buffer_size;
