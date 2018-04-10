@@ -1779,6 +1779,8 @@ static void validate_avframe_allocation(AVCodecContext *avctx, AVFrame *frame)
         int flags = desc ? desc->flags : 0;
         if (num_planes == 1 && (flags & AV_PIX_FMT_FLAG_PAL))
             num_planes = 2;
+        if ((flags & FF_PSEUDOPAL) && frame->data[1])
+            num_planes = 2;
         for (i = 0; i < num_planes; i++) {
             av_assert0(frame->data[i]);
         }

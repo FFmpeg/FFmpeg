@@ -712,10 +712,9 @@ static int est_alpha_diff(int cur, int prev, int abits)
         return dbits + 1;
 }
 
-static int estimate_alpha_plane(ProresContext *ctx, int *error,
+static int estimate_alpha_plane(ProresContext *ctx,
                                 const uint16_t *src, ptrdiff_t linesize,
-                                int mbs_per_slice, int quant,
-                                int16_t *blocks)
+                                int mbs_per_slice, int16_t *blocks)
 {
     const int abits = ctx->alpha_bits;
     const int mask  = (1 << abits) - 1;
@@ -725,7 +724,6 @@ static int estimate_alpha_plane(ProresContext *ctx, int *error,
     int run = 0;
     int bits;
 
-    *error = 0;
     cur = blocks[idx++];
     bits = est_alpha_diff(cur, prev, abits);
     prev = cur;
@@ -774,6 +772,7 @@ static int find_slice_quant(AVCodecContext *avctx,
     int overquant;
     uint16_t *qmat;
     int linesize[4], line_add;
+    int alpha_bits = 0;
 
     if (ctx->pictures_per_frame == 1)
         line_add = 0;
@@ -819,9 +818,12 @@ static int find_slice_quant(AVCodecContext *avctx,
         td->nodes[trellis_node + q].quant     = q;
     }
 
+    if (ctx->alpha_bits)
+        alpha_bits = estimate_alpha_plane(ctx, src, linesize[3],
+                                          mbs_per_slice, td->blocks[3]);
     // todo: maybe perform coarser quantising to fit into frame size when needed
     for (q = min_quant; q <= max_quant; q++) {
-        bits  = 0;
+        bits  = alpha_bits;
         error = 0;
         for (i = 0; i < ctx->num_planes - !!ctx->alpha_bits; i++) {
             bits += estimate_slice_plane(ctx, &error, i,
@@ -830,9 +832,6 @@ static int find_slice_quant(AVCodecContext *avctx,
                                          num_cblocks[i], plane_factor[i],
                                          ctx->quants[q], td);
         }
-        if (ctx->alpha_bits)
-            bits += estimate_alpha_plane(ctx, &error, src, linesize[3],
-                                         mbs_per_slice, q, td->blocks[3]);
         if (bits > 65000 * 8)
             error = SCORE_LIMIT;
 
@@ -845,7 +844,7 @@ static int find_slice_quant(AVCodecContext *avctx,
         overquant = max_quant;
     } else {
         for (q = max_quant + 1; q < 128; q++) {
-            bits  = 0;
+            bits  = alpha_bits;
             error = 0;
             if (q < MAX_STORED_Q) {
                 qmat = ctx->quants[q];
@@ -861,9 +860,6 @@ static int find_slice_quant(AVCodecContext *avctx,
                                              num_cblocks[i], plane_factor[i],
                                              qmat, td);
             }
-            if (ctx->alpha_bits)
-                bits += estimate_alpha_plane(ctx, &error, src, linesize[3],
-                                             mbs_per_slice, q, td->blocks[3]);
             if (bits <= ctx->bits_per_mb * mbs_per_slice)
                 break;
         }

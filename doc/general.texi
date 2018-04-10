@@ -559,7 +559,7 @@ library:
 @item SAP                       @tab X @tab X
 @item SBG                       @tab   @tab X
 @item SDP                       @tab   @tab X
-@item Sega FILM/CPK             @tab   @tab X
+@item Sega FILM/CPK             @tab X @tab X
     @tab Used in many Sega Saturn console games.
 @item Silicon Graphics Movie    @tab   @tab X
 @item Sierra SOL                @tab   @tab X

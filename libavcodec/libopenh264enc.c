@@ -246,6 +246,10 @@ static int svc_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     sp.iPicWidth  = avctx->width;
     sp.iPicHeight = avctx->height;
 
+    if (frame->pict_type == AV_PICTURE_TYPE_I) {
+        (*s->encoder)->ForceIntraFrame(s->encoder, true);
+    }
+
     encoded = (*s->encoder)->EncodeFrame(s->encoder, &sp, &fbi);
     if (encoded != cmResultSuccess) {
         av_log(avctx, AV_LOG_ERROR, "EncodeFrame failed\n");
