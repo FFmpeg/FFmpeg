@@ -44,6 +44,7 @@ DEFINE_GUID(ff_DXVA2_ModeVC1_D2010,      0x1b81beA4, 0xa0c7,0x11d3,0xb9,0x84,0x0
 DEFINE_GUID(ff_DXVA2_ModeHEVC_VLD_Main,  0x5b11d51b, 0x2f4c,0x4452,0xbc,0xc3,0x09,0xf2,0xa1,0x16,0x0c,0xc0);
 DEFINE_GUID(ff_DXVA2_ModeHEVC_VLD_Main10,0x107af0e0, 0xef1a,0x4d19,0xab,0xa8,0x67,0xa1,0x63,0x07,0x3d,0x13);
 DEFINE_GUID(ff_DXVA2_ModeVP9_VLD_Profile0,0x463707f8,0xa1d0,0x4585,0x87,0x6d,0x83,0xaa,0x6d,0x60,0xb8,0x9e);
+DEFINE_GUID(ff_DXVA2_ModeVP9_VLD_10bit_Profile2,0xa4c749ef,0x6ecf,0x48aa,0x84,0x48,0x50,0xa7,0xa1,0x16,0x5f,0xf7);
 DEFINE_GUID(ff_DXVA2_NoEncrypt,          0x1b81beD0, 0xa0c7,0x11d3,0xb9,0x84,0x00,0xc0,0x4f,0x2e,0x73,0xc5);
 DEFINE_GUID(ff_GUID_NULL,                0x00000000, 0x0000,0x0000,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00);
 DEFINE_GUID(ff_IID_IDirectXVideoDecoderService, 0xfc51a551,0xd5e7,0x11d9,0xaf,0x55,0x00,0x05,0x4e,0x43,0xff,0x02);
@@ -66,6 +67,10 @@ static const int prof_h264_high[]    = {FF_PROFILE_H264_CONSTRAINED_BASELINE,
 static const int prof_hevc_main[]    = {FF_PROFILE_HEVC_MAIN,
                                         FF_PROFILE_UNKNOWN};
 static const int prof_hevc_main10[]  = {FF_PROFILE_HEVC_MAIN_10,
+                                        FF_PROFILE_UNKNOWN};
+static const int prof_vp9_profile0[] = {FF_PROFILE_VP9_0,
+                                        FF_PROFILE_UNKNOWN};
+static const int prof_vp9_profile2[] = {FF_PROFILE_VP9_2,
                                         FF_PROFILE_UNKNOWN};
 
 static const dxva_mode dxva_modes[] = {
@@ -90,7 +95,8 @@ static const dxva_mode dxva_modes[] = {
     { &ff_DXVA2_ModeHEVC_VLD_Main,   AV_CODEC_ID_HEVC, prof_hevc_main },
 
     /* VP8/9 */
-    { &ff_DXVA2_ModeVP9_VLD_Profile0,AV_CODEC_ID_VP9 },
+    { &ff_DXVA2_ModeVP9_VLD_Profile0,       AV_CODEC_ID_VP9, prof_vp9_profile0 },
+    { &ff_DXVA2_ModeVP9_VLD_10bit_Profile2, AV_CODEC_ID_VP9, prof_vp9_profile2 },
 
     { NULL,                          0 },
 };
