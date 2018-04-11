@@ -289,6 +289,7 @@ typedef struct HEVCSPS {
     int implicit_rdpcm_enabled_flag;
     int explicit_rdpcm_enabled_flag;
     int intra_smoothing_disabled_flag;
+    int high_precision_offsets_enabled_flag;
     int persistent_rice_adaptation_enabled_flag;
 
     ///< coded frame dimension in various units
