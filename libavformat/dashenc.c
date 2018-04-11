@@ -743,9 +743,6 @@ static int write_manifest(AVFormatContext *s, int final)
             update_period = 500;
         avio_printf(out, "\tminimumUpdatePeriod=\"PT%"PRId64"S\"\n", update_period);
         avio_printf(out, "\tsuggestedPresentationDelay=\"PT%"PRId64"S\"\n", c->last_duration / AV_TIME_BASE);
-        if (!c->availability_start_time[0] && s->nb_streams > 0 && c->streams[0].nb_segments > 0) {
-            format_date_now(c->availability_start_time, sizeof(c->availability_start_time));
-        }
         if (c->availability_start_time[0])
             avio_printf(out, "\tavailabilityStartTime=\"%s\"\n", c->availability_start_time);
         format_date_now(now_str, sizeof(now_str));
@@ -1291,6 +1288,10 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (os->first_pts == AV_NOPTS_VALUE)
         os->first_pts = pkt->pts;
+
+    if (!c->availability_start_time[0])
+        format_date_now(c->availability_start_time,
+                        sizeof(c->availability_start_time));
 
     if (c->use_template && !c->use_timeline) {
         elapsed_duration = pkt->pts - os->first_pts;
