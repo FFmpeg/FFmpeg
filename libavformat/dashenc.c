@@ -555,7 +555,7 @@ static int write_adaptation_set(AVFormatContext *s, AVIOContext *out, int as_ind
 
         if (os->bit_rate > 0)
             snprintf(bandwidth_str, sizeof(bandwidth_str), " bandwidth=\"%d\"",
-                     os->bit_rate);
+                     os->bit_rate + os->muxer_overhead);
 
         if (as->media_type == AVMEDIA_TYPE_VIDEO) {
             AVStream *st = s->streams[i];
