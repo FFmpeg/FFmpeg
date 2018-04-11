@@ -76,7 +76,7 @@ typedef struct OutputStream {
     int nb_segments, segments_size, segment_index;
     Segment **segments;
     int64_t first_pts, start_pts, max_pts;
-    int64_t last_dts;
+    int64_t last_dts, last_pts;
     int bit_rate;
 
     char codec_str[100];
@@ -123,6 +123,7 @@ typedef struct DASHContext {
     AVIOContext *m3u8_out;
     int streaming;
     int64_t timeout;
+    int index_correction;
 } DASHContext;
 
 static struct codec_string {
@@ -1060,7 +1061,7 @@ static int dash_write_header(AVFormatContext *s)
 static int add_segment(OutputStream *os, const char *file,
                        int64_t time, int duration,
                        int64_t start_pos, int64_t range_length,
-                       int64_t index_length)
+                       int64_t index_length, int next_exp_index)
 {
     int err;
     Segment *seg;
@@ -1088,6 +1089,12 @@ static int add_segment(OutputStream *os, const char *file,
     seg->index_length = index_length;
     os->segments[os->nb_segments++] = seg;
     os->segment_index++;
+    //correcting the segment index if it has fallen behind the expected value
+    if (os->segment_index < next_exp_index) {
+        av_log(NULL, AV_LOG_WARNING, "Correcting the segment index after file %s: current=%d corrected=%d\n",
+               file, os->segment_index, next_exp_index);
+        os->segment_index = next_exp_index;
+    }
     return 0;
 }
 
@@ -1177,9 +1184,21 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
     const char *proto = avio_find_protocol_name(s->url);
     int use_rename = proto && !strcmp(proto, "file");
 
-    int cur_flush_segment_index = 0;
-    if (stream >= 0)
+    int cur_flush_segment_index = 0, next_exp_index = -1;
+    if (stream >= 0) {
         cur_flush_segment_index = c->streams[stream].segment_index;
+
+        //finding the next segment's expected index, based on the current pts value
+        if (c->use_template && !c->use_timeline && c->index_correction &&
+            c->streams[stream].last_pts != AV_NOPTS_VALUE &&
+            c->streams[stream].first_pts != AV_NOPTS_VALUE) {
+            int64_t pts_diff = av_rescale_q(c->streams[stream].last_pts -
+                                            c->streams[stream].first_pts,
+                                            s->streams[stream]->time_base,
+                                            AV_TIME_BASE_Q);
+            next_exp_index = (pts_diff / c->seg_duration) + 1;
+        }
+    }
 
     for (i = 0; i < s->nb_streams; i++) {
         OutputStream *os = &c->streams[i];
@@ -1240,7 +1259,7 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
             if (bitrate >= 0)
                 os->bit_rate = bitrate;
         }
-        add_segment(os, os->filename, os->start_pts, os->max_pts - os->start_pts, os->pos, range_length, index_length);
+        add_segment(os, os->filename, os->start_pts, os->max_pts - os->start_pts, os->pos, range_length, index_length, next_exp_index);
         av_log(s, AV_LOG_VERBOSE, "Representation %d media segment %d written to: %s\n", i, os->segment_index, os->full_path);
 
         os->pos += range_length;
@@ -1303,6 +1322,7 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (os->first_pts == AV_NOPTS_VALUE)
         os->first_pts = pkt->pts;
+    os->last_pts = pkt->pts;
 
     if (!c->availability_start_time[0])
         format_date_now(c->availability_start_time,
@@ -1485,6 +1505,7 @@ static const AVOption options[] = {
     { "hls_playlist", "Generate HLS playlist files(master.m3u8, media_%d.m3u8)", OFFSET(hls_playlist), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
     { "streaming", "Enable/Disable streaming mode of output. Each frame will be moof fragment", OFFSET(streaming), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
     { "timeout", "set timeout for socket I/O operations", OFFSET(timeout), AV_OPT_TYPE_DURATION, { .i64 = -1 }, -1, INT_MAX, .flags = E },
+    { "index_correction", "Enable/Disable segment index correction logic", OFFSET(index_correction), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
     { NULL },
 };
 

@@ -271,6 +271,17 @@ To map all video (or audio) streams to an AdaptationSet, "v" (or "a") can be use
 When no assignment is defined, this defaults to an AdaptationSet for each stream.
 @item -timeout @var{timeout}
 Set timeout for socket I/O operations. Applicable only for HTTP output.
+@item -index_correction @var{index_correction}
+Enable (1) or Disable (0) segment index correction logic. Applicable only when
+@var{use_template} is enabled and @var{use_timeline} is disabled.
+
+When enabled, the logic monitors the flow of segment indexes. If a streams's
+segment index value is not at the expected real time position, then the logic
+corrects that index value.
+
+Typically this logic is needed in live streaming use cases. The network bandwidth
+fluctuations are common during long run streaming. Each fluctuation can cause
+the segment indexes fall behind the expected real time position.
 @end table
 
 @anchor{framecrc}
