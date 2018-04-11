@@ -827,20 +827,23 @@ static int write_manifest(AVFormatContext *s, int final)
         for (i = 0; i < s->nb_streams; i++) {
             char playlist_file[64];
             AVStream *st = s->streams[i];
+            OutputStream *os = &c->streams[i];
             if (st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO)
                 continue;
             get_hls_playlist_name(playlist_file, sizeof(playlist_file), NULL, i);
             ff_hls_write_audio_rendition(out, (char *)audio_group,
                                          playlist_file, i, is_default);
-            max_audio_bitrate = FFMAX(st->codecpar->bit_rate, max_audio_bitrate);
+            max_audio_bitrate = FFMAX(st->codecpar->bit_rate +
+                                      os->muxer_overhead, max_audio_bitrate);
             is_default = 0;
         }
 
         for (i = 0; i < s->nb_streams; i++) {
             char playlist_file[64];
             AVStream *st = s->streams[i];
+            OutputStream *os = &c->streams[i];
             char *agroup = NULL;
-            int stream_bitrate = st->codecpar->bit_rate;
+            int stream_bitrate = st->codecpar->bit_rate + os->muxer_overhead;
             if ((st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) && max_audio_bitrate) {
                 agroup = (char *)audio_group;
                 stream_bitrate += max_audio_bitrate;
