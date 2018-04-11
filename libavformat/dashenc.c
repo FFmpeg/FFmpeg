@@ -85,6 +85,7 @@ typedef struct OutputStream {
     char filename[1024];
     char full_path[1024];
     char temp_path[1024];
+    double availability_time_offset;
 } OutputStream;
 
 typedef struct DASHContext {
@@ -346,8 +347,12 @@ static void output_segment_list(OutputStream *os, AVIOContext *out, AVFormatCont
     if (c->use_template) {
         int timescale = c->use_timeline ? os->ctx->streams[0]->time_base.den : AV_TIME_BASE;
         avio_printf(out, "\t\t\t\t<SegmentTemplate timescale=\"%d\" ", timescale);
-        if (!c->use_timeline)
+        if (!c->use_timeline) {
             avio_printf(out, "duration=\"%"PRId64"\" ", c->seg_duration);
+            if (c->streaming && os->availability_time_offset)
+                avio_printf(out, "availabilityTimeOffset=\"%.3f\" ",
+                            os->availability_time_offset);
+        }
         avio_printf(out, "initialization=\"%s\" media=\"%s\" startNumber=\"%d\">\n", c->init_seg_name, c->media_seg_name, c->use_timeline ? start_number : 1);
         if (c->use_timeline) {
             int64_t cur_time = 0;
@@ -1292,6 +1297,13 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (!c->availability_start_time[0])
         format_date_now(c->availability_start_time,
                         sizeof(c->availability_start_time));
+
+    if (!os->availability_time_offset && pkt->duration) {
+        int64_t frame_duration = av_rescale_q(pkt->duration, st->time_base,
+                                              AV_TIME_BASE_Q);
+         os->availability_time_offset = ((double) c->seg_duration -
+                                         frame_duration) / AV_TIME_BASE;
+    }
 
     if (c->use_template && !c->use_timeline) {
         elapsed_duration = pkt->pts - os->first_pts;
