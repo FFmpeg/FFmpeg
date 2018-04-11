@@ -75,6 +75,7 @@ typedef struct HLSSegment {
     int discont;
     int64_t pos;
     int64_t size;
+    unsigned var_stream_idx;
 
     char key_uri[LINE_BUFFER_SIZE + 1];
     char iv_string[KEYSIZE*2 + 1];
@@ -106,6 +107,7 @@ typedef enum {
 } SegmentType;
 
 typedef struct VariantStream {
+    unsigned var_stream_idx;
     unsigned number;
     int64_t sequence;
     AVOutputFormat *oformat;
@@ -478,9 +480,23 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
         }
         p = (char *)av_basename(dirname);
         *p = '\0';
+
     }
 
     while (segment) {
+        char * r_dirname = dirname;
+
+        /* if %v is present in the file's directory */
+        if (av_stristr(dirname, "%v")) {
+
+            if (replace_int_data_in_filename(&r_dirname, dirname, 'v', segment->var_stream_idx) < 1) {
+                ret = AVERROR(EINVAL);
+                goto fail;
+            }
+            av_free(dirname);
+            dirname = r_dirname;
+        }
+
         av_log(hls, AV_LOG_DEBUG, "deleting old segment %s\n",
                                   segment->filename);
         path_size =  (hls->use_localtime_mkdir ? 0 : strlen(dirname)) + strlen(segment->filename) + 1;
@@ -965,6 +981,7 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls,
     if (!en)
         return AVERROR(ENOMEM);
 
+    en->var_stream_idx = vs->var_stream_idx;
     ret = sls_flags_filename_process(s, hls, vs, en, duration, pos, size);
     if (ret < 0) {
         return ret;
@@ -1824,9 +1841,11 @@ static int parse_variant_stream_mapstring(AVFormatContext *s)
     while (varstr = av_strtok(p, " \t", &saveptr1)) {
         p = NULL;
 
-        if (nb_varstreams < hls->nb_varstreams)
-            vs = &(hls->var_streams[nb_varstreams++]);
-        else
+        if (nb_varstreams < hls->nb_varstreams) {
+            vs = &(hls->var_streams[nb_varstreams]);
+            vs->var_stream_idx = nb_varstreams;
+            nb_varstreams++;
+        } else
             return AVERROR(EINVAL);
 
         q = varstr;
@@ -1984,6 +2003,7 @@ static int update_variant_stream_info(AVFormatContext *s) {
         if (!hls->var_streams)
             return AVERROR(ENOMEM);
 
+        hls->var_streams[0].var_stream_idx = 0;
         hls->var_streams[0].nb_streams = s->nb_streams;
         hls->var_streams[0].streams = av_mallocz(sizeof(AVStream *) *
                                             hls->var_streams[0].nb_streams);
