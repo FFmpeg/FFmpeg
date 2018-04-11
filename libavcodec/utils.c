@@ -419,7 +419,10 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
 
     *width  = FFALIGN(*width, w_align);
     *height = FFALIGN(*height, h_align);
-    if (s->codec_id == AV_CODEC_ID_H264 || s->lowres) {
+    if (s->codec_id == AV_CODEC_ID_H264 || s->lowres ||
+        s->codec_id == AV_CODEC_ID_VP5  || s->codec_id == AV_CODEC_ID_VP6 ||
+        s->codec_id == AV_CODEC_ID_VP6F || s->codec_id == AV_CODEC_ID_VP6A
+    ) {
         // some of the optimized chroma MC reads one line too much
         // which is also done in mpeg decoders with lowres > 0
         *height += 2;
