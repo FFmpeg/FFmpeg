@@ -40,6 +40,12 @@ typedef void ID3D11Device;
 #define RC_MODE_DEPRECATED 0x800000
 #define RCD(rc_mode) ((rc_mode) | RC_MODE_DEPRECATED)
 
+// SDK 8.1 compile time feature checks
+#if NVENCAPI_VERSION >= 0x01000008
+#define NVENC_HAVE_BFRAME_REF_MODE
+#define NVENC_HAVE_QP_MAP_MODE
+#endif
+
 typedef struct NvencSurface
 {
     NV_ENC_INPUT_PTR input_surface;
@@ -174,6 +180,7 @@ typedef struct NvencContext
     int cqp;
     int weighted_pred;
     int coder;
+    int b_ref_mode;
 } NvencContext;
 
 int ff_nvenc_encode_init(AVCodecContext *avctx);

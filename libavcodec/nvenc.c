@@ -370,6 +370,22 @@ static int nvenc_check_capabilities(AVCodecContext *avctx)
         return AVERROR(ENOSYS);
     }
 
+#ifdef NVENC_HAVE_BFRAME_REF_MODE
+    ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_BFRAME_REF_MODE);
+    if (ctx->b_ref_mode == NV_ENC_BFRAME_REF_MODE_EACH && ret != 1) {
+        av_log(avctx, AV_LOG_VERBOSE, "Each B frame as reference is not supported\n");
+        return AVERROR(ENOSYS);
+    } else if (ctx->b_ref_mode != NV_ENC_BFRAME_REF_MODE_DISABLED && ret == 0) {
+        av_log(avctx, AV_LOG_VERBOSE, "B frames as references are not supported\n");
+        return AVERROR(ENOSYS);
+    }
+#else
+    if (ctx->b_ref_mode != 0) {
+        av_log(avctx, AV_LOG_VERBOSE, "B frames as references need SDK 8.1 at build time\n");
+        return AVERROR(ENOSYS);
+    }
+#endif
+
     return 0;
 }
 
@@ -987,6 +1003,10 @@ static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
 
     if (ctx->coder >= 0)
         h264->entropyCodingMode = ctx->coder;
+
+#ifdef NVENC_HAVE_BFRAME_REF_MODE
+    h264->useBFramesAsRef = ctx->b_ref_mode;
+#endif
 
     return 0;
 }
