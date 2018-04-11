@@ -228,7 +228,10 @@ ffmpeg -re -i <input> -map 0 -map 0 -c:a libfdk_aac -c:v libx264
 @item -min_seg_duration @var{microseconds}
 This is a deprecated option to set the segment length in microseconds, use @var{seg_duration} instead.
 @item -seg_duration @var{duration}
-Set the segment length in seconds (fractional value can be set).
+Set the segment length in seconds (fractional value can be set). The value is
+treated as average segment duration when @var{use_template} is enabled and
+@var{use_timeline} is disabled and as minimum segment duration for all the other
+use cases.
 @item -window_size @var{size}
 Set the maximum number of segments kept in the manifest.
 @item -extra_window_size @var{size}
