@@ -385,10 +385,10 @@ static int mediacodec_dec_parse_format(AVCodecContext *avctx, MediaCodecDecConte
     AMEDIAFORMAT_GET_INT32(s->width,  "width", 1);
     AMEDIAFORMAT_GET_INT32(s->height, "height", 1);
 
-    AMEDIAFORMAT_GET_INT32(s->stride, "stride", 1);
+    AMEDIAFORMAT_GET_INT32(s->stride, "stride", 0);
     s->stride = s->stride > 0 ? s->stride : s->width;
 
-    AMEDIAFORMAT_GET_INT32(s->slice_height, "slice-height", 1);
+    AMEDIAFORMAT_GET_INT32(s->slice_height, "slice-height", 0);
     s->slice_height = s->slice_height > 0 ? s->slice_height : s->height;
 
     if (strstr(s->codec_name, "OMX.Nvidia.")) {
