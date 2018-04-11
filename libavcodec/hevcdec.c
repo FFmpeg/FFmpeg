@@ -348,6 +348,15 @@ static void export_stream_params(HEVCContext *s, const HEVCSPS *sps)
         avctx->colorspace      = AVCOL_SPC_UNSPECIFIED;
     }
 
+    avctx->chroma_sample_location = AVCHROMA_LOC_UNSPECIFIED;
+    if (sps->chroma_format_idc == 1) {
+        if (sps->vui.chroma_loc_info_present_flag) {
+            if (sps->vui.chroma_sample_loc_type_top_field <= 5)
+                avctx->chroma_sample_location = sps->vui.chroma_sample_loc_type_top_field + 1;
+        } else
+            avctx->chroma_sample_location = AVCHROMA_LOC_LEFT;
+    }
+
     if (vps->vps_timing_info_present_flag) {
         num = vps->vps_num_units_in_tick;
         den = vps->vps_time_scale;
