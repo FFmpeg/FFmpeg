@@ -119,10 +119,18 @@ static int nvenc_print_error(void *log_ctx, NVENCSTATUS err,
 
 static void nvenc_print_driver_requirement(AVCodecContext *avctx, int level)
 {
-#if defined(_WIN32) || defined(__CYGWIN__)
-    const char *minver = "378.66";
+#if NVENCAPI_VERSION >= 0x01000008
+# if defined(_WIN32) || defined(__CYGWIN__)
+    const char *minver = "390.77";
+# else
+    const char *minver = "390.25";
+# endif
 #else
+# if defined(_WIN32) || defined(__CYGWIN__)
+    const char *minver = "378.66";
+# else
     const char *minver = "378.13";
+# endif
 #endif
     av_log(avctx, level, "The minimum required Nvidia driver for nvenc is %s or newer\n", minver);
 }
