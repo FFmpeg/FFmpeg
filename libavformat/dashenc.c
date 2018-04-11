@@ -86,6 +86,8 @@ typedef struct OutputStream {
     char full_path[1024];
     char temp_path[1024];
     double availability_time_offset;
+    int total_pkt_size;
+    int muxer_overhead;
 } OutputStream;
 
 typedef struct DASHContext {
@@ -1219,6 +1221,13 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
             }
         }
 
+        if (!os->muxer_overhead)
+            os->muxer_overhead = ((int64_t) (range_length - os->total_pkt_size) *
+                                  8 * AV_TIME_BASE) /
+                                 av_rescale_q(os->max_pts - os->start_pts,
+                                              st->time_base, AV_TIME_BASE_Q);
+        os->total_pkt_size = 0;
+
         if (!os->bit_rate) {
             // calculate average bitrate of first segment
             int64_t bitrate = (int64_t) range_length * 8 * AV_TIME_BASE / av_rescale_q(os->max_pts - os->start_pts,
@@ -1353,6 +1362,7 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
     else
         os->max_pts = FFMAX(os->max_pts, pkt->pts + pkt->duration);
     os->packets_written++;
+    os->total_pkt_size += pkt->size;
     if ((ret = ff_write_chained(os->ctx, 0, pkt, s, 0)) < 0)
         return ret;
 
