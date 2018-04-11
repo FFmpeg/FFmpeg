@@ -1046,9 +1046,6 @@ static int dash_write_header(AVFormatContext *s)
         if ((ret = avformat_write_header(os->ctx, NULL)) < 0)
             return ret;
     }
-    ret = write_manifest(s, 0);
-    if (!ret)
-        av_log(s, AV_LOG_VERBOSE, "Manifest written to: %s\n", s->url);
     return ret;
 }
 
