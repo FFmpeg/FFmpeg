@@ -1472,6 +1472,22 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
         if (!out_pkt.size)
             continue;
 
+        if (pkt->buf && out_pkt.data == pkt->data) {
+            /* reference pkt->buf only when out_pkt.data is guaranteed to point
+             * to data in it and not in the parser's internal buffer. */
+            /* XXX: Ensure this is the case with all parsers when st->parser->flags
+             * is PARSER_FLAG_COMPLETE_FRAMES and check for that instead? */
+            out_pkt.buf = av_buffer_ref(pkt->buf);
+            if (!out_pkt.buf) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+        } else {
+            ret = av_packet_make_refcounted(&out_pkt);
+            if (ret < 0)
+                goto fail;
+        }
+
         if (pkt->side_data) {
             out_pkt.side_data       = pkt->side_data;
             out_pkt.side_data_elems = pkt->side_data_elems;
@@ -1512,10 +1528,11 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
 
         ret = ff_packet_list_put(&s->internal->parse_queue,
                                  &s->internal->parse_queue_end,
-                                 &out_pkt, FF_PACKETLIST_FLAG_REF_PACKET);
-        av_packet_unref(&out_pkt);
-        if (ret < 0)
+                                 &out_pkt, 0);
+        if (ret < 0) {
+            av_packet_unref(&out_pkt);
             goto fail;
+        }
     }
 
     /* end of the stream => close and free the parser */
