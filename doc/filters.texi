@@ -10373,15 +10373,17 @@ The filter accepts the following options:
 @item cx
 Relative x-coordinate of the focal point of the image, and thereby the center of the
 distortion. This value has a range [0,1] and is expressed as fractions of the image
-width.
+width. Default is 0.5.
 @item cy
 Relative y-coordinate of the focal point of the image, and thereby the center of the
 distortion. This value has a range [0,1] and is expressed as fractions of the image
-height.
+height. Default is 0.5.
 @item k1
-Coefficient of the quadratic correction term. 0.5 means no correction.
+Coefficient of the quadratic correction term. This value has a range [-1,1]. 0 means
+no correction. Default is 0.
 @item k2
-Coefficient of the double quadratic correction term. 0.5 means no correction.
+Coefficient of the double quadratic correction term. This value has a range [-1,1].
+0 means no correction. Default is 0.
 @end table
 
 The formula that generates the correction is:
