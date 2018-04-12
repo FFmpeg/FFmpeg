@@ -162,6 +162,9 @@ static int amf_init_context(AVCodecContext *avctx)
     AmfContext         *ctx = avctx->priv_data;
     AMF_RESULT          res = AMF_OK;
 
+    ctx->hwsurfaces_in_queue = 0;
+    ctx->hwsurfaces_in_queue_max = 16;
+
     // configure AMF logger
     // the return of these functions indicates old state and do not affect behaviour
     ctx->trace->pVtbl->EnableWriter(ctx->trace, AMF_TRACE_WRITER_DEBUG_OUTPUT, ctx->log_to_dbg != 0 );
@@ -192,6 +195,8 @@ static int amf_init_context(AVCodecContext *avctx)
                         if (!ctx->hw_frames_ctx) {
                             return AVERROR(ENOMEM);
                         }
+                        if (device_ctx->initial_pool_size > 0)
+                            ctx->hwsurfaces_in_queue_max = device_ctx->initial_pool_size - 1;
                     } else {
                         if(res == AMF_NOT_SUPPORTED)
                             av_log(avctx, AV_LOG_INFO, "avctx->hw_frames_ctx has D3D11 device which doesn't have D3D11VA interface, switching to default\n");
@@ -447,6 +452,75 @@ int ff_amf_encode_init(AVCodecContext *avctx)
     return ret;
 }
 
+static AMF_RESULT amf_set_property_buffer(AMFSurface *object, const wchar_t *name, AMFBuffer *val)
+{
+    AMF_RESULT res;
+    AMFVariantStruct var;
+    res = AMFVariantInit(&var);
+    if (res == AMF_OK) {
+        AMFGuid guid_AMFInterface = IID_AMFInterface();
+        AMFInterface *amf_interface;
+        res = val->pVtbl->QueryInterface(val, &guid_AMFInterface, (void**)&amf_interface);
+
+        if (res == AMF_OK) {
+            res = AMFVariantAssignInterface(&var, amf_interface);
+            amf_interface->pVtbl->Release(amf_interface);
+        }
+        if (res == AMF_OK) {
+            res = object->pVtbl->SetProperty(object, name, var);
+        }
+        AMFVariantClear(&var);
+    }
+    return res;
+}
+
+static AMF_RESULT amf_get_property_buffer(AMFData *object, const wchar_t *name, AMFBuffer **val)
+{
+    AMF_RESULT res;
+    AMFVariantStruct var;
+    res = AMFVariantInit(&var);
+    if (res == AMF_OK) {
+        res = object->pVtbl->GetProperty(object, name, &var);
+        if (res == AMF_OK) {
+            if (var.type == AMF_VARIANT_INTERFACE) {
+                AMFGuid guid_AMFBuffer = IID_AMFBuffer();
+                AMFInterface *amf_interface = AMFVariantInterface(&var);
+                res = amf_interface->pVtbl->QueryInterface(amf_interface, &guid_AMFBuffer, (void**)val);
+            } else {
+                res = AMF_INVALID_DATA_TYPE;
+            }
+        }
+        AMFVariantClear(&var);
+    }
+    return res;
+}
+
+static AMFBuffer *amf_create_buffer_with_frame_ref(const AVFrame *frame, AMFContext *context)
+{
+    AVFrame *frame_ref;
+    AMFBuffer *frame_ref_storage_buffer = NULL;
+    AMF_RESULT res;
+
+    res = context->pVtbl->AllocBuffer(context, AMF_MEMORY_HOST, sizeof(frame_ref), &frame_ref_storage_buffer);
+    if (res == AMF_OK) {
+        frame_ref = av_frame_clone(frame);
+        if (frame_ref) {
+            memcpy(frame_ref_storage_buffer->pVtbl->GetNative(frame_ref_storage_buffer), &frame_ref, sizeof(frame_ref));
+        } else {
+            frame_ref_storage_buffer->pVtbl->Release(frame_ref_storage_buffer);
+            frame_ref_storage_buffer = NULL;
+        }
+    }
+    return frame_ref_storage_buffer;
+}
+
+static void amf_release_buffer_with_frame_ref(AMFBuffer *frame_ref_storage_buffer)
+{
+    AVFrame *av_frame_ref;
+    memcpy(&av_frame_ref, frame_ref_storage_buffer->pVtbl->GetNative(frame_ref_storage_buffer), sizeof(av_frame_ref));
+    av_frame_free(&av_frame_ref);
+    frame_ref_storage_buffer->pVtbl->Release(frame_ref_storage_buffer);
+}
 
 int ff_amf_send_frame(AVCodecContext *avctx, const AVFrame *frame)
 {
@@ -488,6 +562,8 @@ int ff_amf_send_frame(AVCodecContext *avctx, const AVFrame *frame)
             (ctx->hw_device_ctx && ((AVHWFramesContext*)frame->hw_frames_ctx->data)->device_ctx ==
             (AVHWDeviceContext*)ctx->hw_device_ctx->data)
         )) {
+            AMFBuffer *frame_ref_storage_buffer;
+
 #if CONFIG_D3D11VA
             static const GUID AMFTextureArrayIndexGUID = { 0x28115527, 0xe7c3, 0x4b66, { 0x99, 0xd3, 0x4f, 0x2a, 0xe6, 0xb4, 0x7f, 0xaf } };
             ID3D11Texture2D *texture = (ID3D11Texture2D*)frame->data[0]; // actual texture
@@ -500,6 +576,14 @@ int ff_amf_send_frame(AVCodecContext *avctx, const AVFrame *frame)
             // input HW surfaces can be vertically aligned by 16; tell AMF the real size
             surface->pVtbl->SetCrop(surface, 0, 0, frame->width, frame->height);
 #endif
+
+            frame_ref_storage_buffer = amf_create_buffer_with_frame_ref(frame, ctx->context);
+            AMF_RETURN_IF_FALSE(ctx, frame_ref_storage_buffer != NULL, AVERROR(ENOMEM), "create_buffer_with_frame_ref() returned NULL\n");
+
+            res = amf_set_property_buffer(surface, L"av_frame_ref", frame_ref_storage_buffer);
+            AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "SetProperty failed for \"av_frame_ref\" with error %d\n", res);
+            ctx->hwsurfaces_in_queue++;
+            frame_ref_storage_buffer->pVtbl->Release(frame_ref_storage_buffer);
         } else {
             res = ctx->context->pVtbl->AllocSurface(ctx->context, AMF_MEMORY_HOST, ctx->format, avctx->width, avctx->height, &surface);
             AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "AllocSurface() failed  with error %d\n", res);
@@ -564,6 +648,15 @@ int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
             ret = amf_copy_buffer(avctx, avpkt, buffer);
 
             buffer->pVtbl->Release(buffer);
+
+            if (data->pVtbl->HasProperty(data, L"av_frame_ref")) {
+                AMFBuffer *frame_ref_storage_buffer;
+                res = amf_get_property_buffer(data, L"av_frame_ref", &frame_ref_storage_buffer);
+                AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "GetProperty failed for \"av_frame_ref\" with error %d\n", res);
+                amf_release_buffer_with_frame_ref(frame_ref_storage_buffer);
+                ctx->hwsurfaces_in_queue--;
+            }
+
             data->pVtbl->Release(data);
 
             AMF_RETURN_IF_FALSE(ctx, ret >= 0, ret, "amf_copy_buffer() failed with error %d\n", ret);
@@ -593,7 +686,7 @@ int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
                     av_log(avctx, AV_LOG_WARNING, "Data acquired but delayed drain submission got AMF_INPUT_FULL- should not happen\n");
                 }
             }
-        } else if (ctx->delayed_surface != NULL || ctx->delayed_drain || (ctx->eof && res_query != AMF_EOF)) {
+        } else if (ctx->delayed_surface != NULL || ctx->delayed_drain || (ctx->eof && res_query != AMF_EOF) || (ctx->hwsurfaces_in_queue >= ctx->hwsurfaces_in_queue_max)) {
             block_and_wait = 1;
             av_usleep(1000); // wait and poll again
         }
