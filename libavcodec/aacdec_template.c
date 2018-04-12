@@ -3324,20 +3324,14 @@ static int aac_decode_frame(AVCodecContext *avctx, void *data,
                                        AV_PKT_DATA_JP_DUALMONO,
                                        &jp_dualmono_size);
 
-    if (new_extradata && 0) {
-        av_free(avctx->extradata);
-        avctx->extradata = av_mallocz(new_extradata_size +
-                                      AV_INPUT_BUFFER_PADDING_SIZE);
-        if (!avctx->extradata)
-            return AVERROR(ENOMEM);
-        avctx->extradata_size = new_extradata_size;
-        memcpy(avctx->extradata, new_extradata, new_extradata_size);
-        push_output_configuration(ac);
-        if (decode_audio_specific_config(ac, ac->avctx, &ac->oc[1].m4ac,
-                                         avctx->extradata,
-                                         avctx->extradata_size*8LL, 1) < 0) {
-            pop_output_configuration(ac);
-            return AVERROR_INVALIDDATA;
+    if (new_extradata) {
+        /* discard previous configuration */
+        ac->oc[1].status = OC_NONE;
+        err = decode_audio_specific_config(ac, ac->avctx, &ac->oc[1].m4ac,
+                                           new_extradata,
+                                           new_extradata_size * 8LL, 1);
+        if (err < 0) {
+            return err;
         }
     }
 
