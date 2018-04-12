@@ -3157,7 +3157,9 @@ void show_help_default(const char *opt, const char *arg)
 #if CONFIG_SWSCALE
         show_help_children(sws_get_class(), flags);
 #endif
+#if CONFIG_SWRESAMPLE
         show_help_children(swr_get_class(), AV_OPT_FLAG_AUDIO_PARAM);
+#endif
         show_help_children(avfilter_get_class(), AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_FILTERING_PARAM);
         show_help_children(av_bsf_get_class(), AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_BSF_PARAM);
     }

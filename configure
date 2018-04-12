@@ -3459,7 +3459,7 @@ avfilter_extralibs="pthreads_extralibs"
 avutil_extralibs="d3d11va_extralibs nanosleep_extralibs pthreads_extralibs vaapi_drm_extralibs vaapi_x11_extralibs vdpau_x11_extralibs"
 
 # programs
-ffmpeg_deps="avcodec avfilter avformat swresample"
+ffmpeg_deps="avcodec avfilter avformat"
 ffmpeg_select="aformat_filter anull_filter atrim_filter format_filter
                null_filter
                trim_filter"
