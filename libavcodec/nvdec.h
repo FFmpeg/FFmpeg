@@ -32,6 +32,15 @@
 
 #include "avcodec.h"
 
+#if defined(NVDECAPI_MAJOR_VERSION) && defined(NVDECAPI_MINOR_VERSION)
+# define NVDECAPI_CHECK_VERSION(major, minor) \
+    ((major) < NVDECAPI_MAJOR_VERSION || ((major) == NVDECAPI_MAJOR_VERSION && (minor) <= NVDECAPI_MINOR_VERSION))
+#else
+/* version macros were added in SDK 8.1 ffnvcodec */
+# define NVDECAPI_CHECK_VERSION(major, minor) \
+    ((major) < 8 || ((major) == 8 && (minor) <= 0))
+#endif
+
 typedef struct NVDECFrame {
     unsigned int idx;
     AVBufferRef *idx_ref;

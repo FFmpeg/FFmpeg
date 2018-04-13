@@ -40,8 +40,11 @@ typedef void ID3D11Device;
 #define RC_MODE_DEPRECATED 0x800000
 #define RCD(rc_mode) ((rc_mode) | RC_MODE_DEPRECATED)
 
+#define NVENCAPI_CHECK_VERSION(major, minor) \
+    ((major) < NVENCAPI_MAJOR_VERSION || ((major) == NVENCAPI_MAJOR_VERSION && (minor) <= NVENCAPI_MINOR_VERSION))
+
 // SDK 8.1 compile time feature checks
-#if NVENCAPI_VERSION >= 0x01000008
+#if NVENCAPI_CHECK_VERSION(8, 1)
 #define NVENC_HAVE_BFRAME_REF_MODE
 #define NVENC_HAVE_QP_MAP_MODE
 #endif
