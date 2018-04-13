@@ -1103,6 +1103,7 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path,
             snprintf(*cookies, str_size, "%s; %s=%s", tmp, cookie_entry->key, cookie_entry->value);
             av_free(tmp);
         }
+        av_dict_free(&cookie_params);
     }
 
     av_free(set_cookies);
