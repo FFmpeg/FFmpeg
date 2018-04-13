@@ -93,7 +93,7 @@ static int nvdec_hevc_start_frame(AVCodecContext *avctx,
         .FrameHeightInMbs  = sps->height / 16,
         .CurrPicIdx        = cf->idx,
         .ref_pic_flag      = 1,
-        .intra_pic_flag    = 0,
+        .intra_pic_flag    = IS_IRAP(s),
 
         .CodecSpecific.hevc = {
             .pic_width_in_luma_samples                    = sps->width,
