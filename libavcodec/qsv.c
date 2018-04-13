@@ -617,10 +617,12 @@ int ff_qsv_init_session_device(AVCodecContext *avctx, mfxSession *psession,
                                       "Error setting a HW handle");
     }
 
-    err = MFXJoinSession(parent_session, session);
-    if (err != MFX_ERR_NONE)
-        return ff_qsv_print_error(avctx, err,
-                                  "Error joining session");
+    if (QSV_RUNTIME_VERSION_ATLEAST(ver, 1, 25)) {
+        err = MFXJoinSession(parent_session, session);
+        if (err != MFX_ERR_NONE)
+            return ff_qsv_print_error(avctx, err,
+                                      "Error joining session");
+    }
 
     ret = qsv_load_plugins(session, load_plugins, avctx);
     if (ret < 0) {

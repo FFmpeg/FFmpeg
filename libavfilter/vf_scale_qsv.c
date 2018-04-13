@@ -36,6 +36,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/time.h"
+#include "libavfilter/qsvvpp.h"
 
 #include "avfilter.h"
 #include "formats.h"
@@ -313,6 +314,12 @@ static int init_out_session(AVFilterContext *ctx)
         err = MFXVideoCORE_SetHandle(s->session, handle_type, handle);
         if (err != MFX_ERR_NONE)
             return AVERROR_UNKNOWN;
+    }
+
+    if (QSV_RUNTIME_VERSION_ATLEAST(ver, 1, 25)) {
+        err = MFXJoinSession(device_hwctx->session, s->session);
+            if (err != MFX_ERR_NONE)
+                return AVERROR_UNKNOWN;
     }
 
     memset(&par, 0, sizeof(par));

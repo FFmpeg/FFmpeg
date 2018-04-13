@@ -652,6 +652,20 @@ FF_ENABLE_DEPRECATION_WARNINGS
             q->extparam_internal[q->nb_extparam_internal++] = (mfxExtBuffer *)&q->extco2;
         }
 #endif
+#if QSV_HAVE_MF
+        if (avctx->codec_id == AV_CODEC_ID_H264) {
+            mfxVersion    ver;
+            ret = MFXQueryVersion(q->session,&ver);
+            if (ret >= MFX_ERR_NONE && QSV_RUNTIME_VERSION_ATLEAST(ver, 1, 25)) {
+                q->extmfp.Header.BufferId     = MFX_EXTBUFF_MULTI_FRAME_PARAM;
+                q->extmfp.Header.BufferSz     = sizeof(q->extmfp);
+
+                q->extmfp.MFMode = q->mfmode;
+                av_log(avctx,AV_LOG_VERBOSE,"MFMode:%d\n", q->extmfp.MFMode);
+                q->extparam_internal[q->nb_extparam_internal++] = (mfxExtBuffer *)&q->extmfp;
+            }
+        }
+#endif
     }
 
     if (!check_enc_param(avctx,q)) {

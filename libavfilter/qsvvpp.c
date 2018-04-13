@@ -515,9 +515,12 @@ static int init_vpp_session(AVFilterContext *avctx, QSVVPPContext *s)
         if (ret != MFX_ERR_NONE)
             return AVERROR_UNKNOWN;
     }
-    ret = MFXJoinSession(device_hwctx->session, s->session);
-    if (ret != MFX_ERR_NONE)
-        return AVERROR_UNKNOWN;
+
+    if (QSV_RUNTIME_VERSION_ATLEAST(ver, 1, 25)) {
+        ret = MFXJoinSession(device_hwctx->session, s->session);
+        if (ret != MFX_ERR_NONE)
+            return AVERROR_UNKNOWN;
+    }
 
     if (IS_OPAQUE_MEMORY(s->in_mem_mode) || IS_OPAQUE_MEMORY(s->out_mem_mode)) {
         s->opaque_alloc.In.Surfaces   = s->surface_ptrs_in;
