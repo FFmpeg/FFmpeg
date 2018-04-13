@@ -173,6 +173,7 @@ typedef struct HLSContext {
     float time;            // Set by a private option.
     float init_time;       // Set by a private option.
     int max_nb_segments;   // Set by a private option.
+    int hls_delete_threshold; // Set by a private option.
 #if FF_API_HLS_WRAP
     int  wrap;             // Set by a private option.
 #endif
@@ -445,6 +446,7 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
     HLSSegment *segment, *previous_segment = NULL;
     float playlist_duration = 0.0f;
     int ret = 0, path_size, sub_path_size;
+    int segment_cnt = 0;
     char *dirname = NULL, *p, *sub_path;
     char *path = NULL;
     AVDictionary *options = NULL;
@@ -458,11 +460,17 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
     }
 
     segment = vs->old_segments;
+    segment_cnt = 0;
     while (segment) {
         playlist_duration -= segment->duration;
         previous_segment = segment;
         segment = previous_segment->next;
+        segment_cnt++;
         if (playlist_duration <= -previous_segment->duration) {
+            previous_segment->next = NULL;
+            break;
+        }
+        if (segment_cnt >= hls->hls_delete_threshold) {
             previous_segment->next = NULL;
             break;
         }
@@ -2791,6 +2799,7 @@ static const AVOption options[] = {
     {"hls_time",      "set segment length in seconds",           OFFSET(time),    AV_OPT_TYPE_FLOAT,  {.dbl = 2},     0, FLT_MAX, E},
     {"hls_init_time", "set segment length in seconds at init list",           OFFSET(init_time),    AV_OPT_TYPE_FLOAT,  {.dbl = 0},     0, FLT_MAX, E},
     {"hls_list_size", "set maximum number of playlist entries",  OFFSET(max_nb_segments),    AV_OPT_TYPE_INT,    {.i64 = 5},     0, INT_MAX, E},
+    {"hls_delete_threshold", "set number of unreferenced segments to keep before deleting",  OFFSET(hls_delete_threshold),    AV_OPT_TYPE_INT,    {.i64 = 1},     1, INT_MAX, E},
     {"hls_ts_options","set hls mpegts list of options for the container format used for hls", OFFSET(format_options_str), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
     {"hls_vtt_options","set hls vtt list of options for the container format used for hls", OFFSET(vtt_format_options_str), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
 #if FF_API_HLS_WRAP

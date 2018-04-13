@@ -513,6 +513,12 @@ Segment will be cut on the next key frame after this time has passed.
 Set the maximum number of playlist entries. If set to 0 the list file
 will contain all the segments. Default value is 5.
 
+@item hls_delete_threshold @var{size}
+Set the number of unreferenced segments to keep on disk before @code{hls_flags delete_segments}
+deletes them. Increase this to allow continue clients to download segments which
+were recently referenced in the playlist. Default value is 1, meaning segments older than
+@code{hls_list_size+1} will be deleted.
+
 @item hls_ts_options @var{options_list}
 Set output format options using a :-separated list of key=value
 parameters. Values containing @code{:} special characters must be
