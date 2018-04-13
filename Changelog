@@ -2,6 +2,10 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 3.3.7:
+- avformat/utils: Check cur_dts in update_initial_timestamps() more
+- avcodec/utils: Enforce minimum width also for VP5/6
+- avcodec/truemotion2: Propagate out of bounds error from GET_TOK()
+- avformat/utils: Fix integer overflow in end time calculation in update_stream_timings()
 - avformat/utils: fix mixed declarations and code
 - avcodec/mjpegdec: Check input buffer size.
 - avcodec/h264_slice: Fix integer overflow with last_poc
