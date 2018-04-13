@@ -20,16 +20,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "dxva2_internal.h"
 #include "mpegutils.h"
 #include "vc1.h"
 #include "vc1data.h"
 
-// The headers above may include w32threads.h, which uses the original
-// _WIN32_WINNT define, while dxva2_internal.h redefines it to target a
-// potentially newer version.
-#include "dxva2_internal.h"
-
 #define MAX_SLICES 1024
+
 struct dxva2_picture_context {
     DXVA_PictureParameters pp;
     unsigned               slice_count;

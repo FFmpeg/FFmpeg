@@ -20,14 +20,6 @@
 
 #include <windows.h>
 
-// Include thread.h before redefining _WIN32_WINNT, to get
-// the right implementation for AVOnce
-#include "thread.h"
-
-#if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0600
-#undef _WIN32_WINNT
-#define _WIN32_WINNT 0x0600
-#endif
 #define COBJMACROS
 
 #include <initguid.h>
@@ -46,6 +38,7 @@
 #include "imgutils.h"
 #include "pixdesc.h"
 #include "pixfmt.h"
+#include "thread.h"
 
 typedef HRESULT(WINAPI *PFN_CREATE_DXGI_FACTORY)(REFIID riid, void **ppFactory);
 
