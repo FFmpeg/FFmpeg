@@ -195,6 +195,30 @@ int ff_qsv_find_surface_idx(QSVFramesContext *ctx, QSVFrame *frame)
     return AVERROR_BUG;
 }
 
+enum AVPictureType ff_qsv_map_pictype(int mfx_pic_type)
+{
+    enum AVPictureType type;
+    switch (mfx_pic_type & 0x7) {
+    case MFX_FRAMETYPE_I:
+        if (mfx_pic_type & MFX_FRAMETYPE_S)
+            type = AV_PICTURE_TYPE_SI;
+        else
+            type = AV_PICTURE_TYPE_I;
+        break;
+    case MFX_FRAMETYPE_B:
+        type = AV_PICTURE_TYPE_B;
+        break;
+    case MFX_FRAMETYPE_P:
+        if (mfx_pic_type & MFX_FRAMETYPE_S)
+            type = AV_PICTURE_TYPE_SP;
+        else
+            type = AV_PICTURE_TYPE_P;
+        break;
+    }
+
+    return type;
+}
+
 static int qsv_load_plugins(mfxSession session, const char *load_plugins,
                             void *logctx)
 {
