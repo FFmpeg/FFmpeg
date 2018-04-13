@@ -5124,6 +5124,34 @@ FF_ENABLE_DEPRECATION_WARNINGS
                             }
                         return 0;
                     }
+
+                } else if ( *endptr == 'm') { // p:<id>:m:<metadata_spec>
+                    AVDictionaryEntry *tag;
+                    char *key, *val;
+                    int ret = 0;
+
+                    if (*(++endptr) != ':') {
+                        av_log(s, AV_LOG_ERROR, "Invalid stream specifier syntax, missing ':' sign after :m.\n");
+                        return AVERROR(EINVAL);
+                    }
+
+                    val = strchr(++endptr, ':');
+                    key = val ? av_strndup(endptr, val - endptr) : av_strdup(endptr);
+                    if (!key)
+                        return AVERROR(ENOMEM);
+
+                    for (j = 0; j < s->programs[i]->nb_stream_indexes; j++)
+                        if (st->index == s->programs[i]->stream_index[j]) {
+                            tag = av_dict_get(st->metadata, key, NULL, 0);
+                            if (tag && (!val || !strcmp(tag->value, val + 1)))
+                                ret = 1;
+
+                            break;
+                        }
+
+                    av_freep(&key);
+                    return ret;
+
                 } else {  // p:<id>:<index>
                     int stream_idx = strtol(endptr, NULL, 0);
                     return stream_idx >= 0 &&
