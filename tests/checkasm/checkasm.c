@@ -294,8 +294,12 @@ int float_near_ulp_array(const float *a, const float *b, unsigned max_ulp,
 int float_near_abs_eps(float a, float b, float eps)
 {
     float abs_diff = fabsf(a - b);
+    if (abs_diff < eps)
+        return 1;
 
-    return abs_diff < eps;
+    fprintf(stderr, "test failed comparing %g with %g (abs diff=%g with EPS=%g)\n", a, b, abs_diff, eps);
+
+    return 0;
 }
 
 int float_near_abs_eps_array(const float *a, const float *b, float eps,
