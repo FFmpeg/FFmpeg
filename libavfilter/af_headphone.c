@@ -349,7 +349,7 @@ static int read_ir(AVFilterLink *inlink, AVFrame *frame)
     return 0;
 }
 
-static int headphone_frame(HeadphoneContext *s, AVFilterLink *outlink)
+static int headphone_frame(HeadphoneContext *s, AVFilterLink *outlink, int max_nb_samples)
 {
     AVFilterContext *ctx = outlink->src;
     AVFrame *in = s->in[0].frame;
@@ -383,6 +383,7 @@ static int headphone_frame(HeadphoneContext *s, AVFilterLink *outlink)
                n_clippings[0] + n_clippings[1], out->nb_samples * 2);
     }
 
+    out->nb_samples = max_nb_samples;
     return ff_filter_frame(outlink, out);
 }
 
@@ -593,7 +594,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     if (s->have_hrirs) {
         while (av_audio_fifo_size(s->in[0].fifo) >= s->size) {
-            ret = headphone_frame(s, outlink);
+            ret = headphone_frame(s, outlink, s->size);
             if (ret < 0)
                 return ret;
         }
@@ -745,13 +746,20 @@ static int request_frame(AVFilterLink *outlink)
 
     ret = ff_request_frame(ctx->inputs[0]);
     if (ret == AVERROR_EOF && av_audio_fifo_size(s->in[0].fifo) > 0 && s->have_hrirs) {
-        AVFrame *in = ff_get_audio_buffer(outlink, s->size);
+        int nb_samples = av_audio_fifo_size(s->in[0].fifo);
+        AVFrame *in = ff_get_audio_buffer(outlink, s->size - nb_samples);
+
+        av_samples_set_silence(in->extended_data, 0,
+                               in->nb_samples,
+                               outlink->channels,
+                               outlink->format);
 
         ret = av_audio_fifo_write(s->in[0].fifo, (void **)in->extended_data,
                                   in->nb_samples);
         if (ret < 0)
             return ret;
-        ret = headphone_frame(s, outlink);
+        ret = headphone_frame(s, outlink, nb_samples);
+
         av_audio_fifo_drain(s->in[0].fifo, av_audio_fifo_size(s->in[0].fifo));
     }
 
