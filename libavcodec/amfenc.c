@@ -152,10 +152,30 @@ static int amf_load_library(AVCodecContext *avctx)
     return 0;
 }
 
+#if CONFIG_D3D11VA
+static int amf_init_from_d3d11_device(AVCodecContext *avctx, AVD3D11VADeviceContext *hwctx)
+{
+    AmfContext *ctx = avctx->priv_data;
+    AMF_RESULT res;
+
+    res = ctx->context->pVtbl->InitDX11(ctx->context, hwctx->device, AMF_DX11_1);
+    if (res != AMF_OK) {
+        if (res == AMF_NOT_SUPPORTED)
+            av_log(avctx, AV_LOG_ERROR, "AMF via D3D11 is not supported on the given device.\n");
+        else
+            av_log(avctx, AV_LOG_ERROR, "AMF failed to initialise on the given D3D11 device: %d.\n", res);
+        return AVERROR(ENODEV);
+    }
+
+    return 0;
+}
+#endif
+
 static int amf_init_context(AVCodecContext *avctx)
 {
-    AmfContext         *ctx = avctx->priv_data;
-    AMF_RESULT          res = AMF_OK;
+    AmfContext *ctx = avctx->priv_data;
+    AMF_RESULT  res;
+    av_unused int ret;
 
     ctx->hwsurfaces_in_queue = 0;
     ctx->hwsurfaces_in_queue_max = 16;
@@ -176,59 +196,71 @@ static int amf_init_context(AVCodecContext *avctx)
 
     res = ctx->factory->pVtbl->CreateContext(ctx->factory, &ctx->context);
     AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "CreateContext() failed with error %d\n", res);
-    // try to reuse existing DX device
-#if CONFIG_D3D11VA
+
+    // If a device was passed to the encoder, try to initialise from that.
     if (avctx->hw_frames_ctx) {
-        AVHWFramesContext *device_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
-        if (device_ctx->device_ctx->type == AV_HWDEVICE_TYPE_D3D11VA) {
-            if (amf_av_to_amf_format(device_ctx->sw_format) != AMF_SURFACE_UNKNOWN) {
-                if (device_ctx->device_ctx->hwctx) {
-                    AVD3D11VADeviceContext *device_d3d11 = (AVD3D11VADeviceContext *)device_ctx->device_ctx->hwctx;
-                    res = ctx->context->pVtbl->InitDX11(ctx->context, device_d3d11->device, AMF_DX11_1);
-                    if (res == AMF_OK) {
-                        ctx->hw_frames_ctx = av_buffer_ref(avctx->hw_frames_ctx);
-                        if (!ctx->hw_frames_ctx) {
-                            return AVERROR(ENOMEM);
-                        }
-                        if (device_ctx->initial_pool_size > 0)
-                            ctx->hwsurfaces_in_queue_max = device_ctx->initial_pool_size - 1;
-                    } else {
-                        if(res == AMF_NOT_SUPPORTED)
-                            av_log(avctx, AV_LOG_INFO, "avctx->hw_frames_ctx has D3D11 device which doesn't have D3D11VA interface, switching to default\n");
-                        else
-                            av_log(avctx, AV_LOG_INFO, "avctx->hw_frames_ctx has non-AMD device, switching to default\n");
-                    }
-                }
-            } else {
-                av_log(avctx, AV_LOG_INFO, "avctx->hw_frames_ctx has format not uspported by AMF, switching to default\n");
-            }
+        AVHWFramesContext *frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
+
+        if (amf_av_to_amf_format(frames_ctx->sw_format) == AMF_SURFACE_UNKNOWN) {
+            av_log(avctx, AV_LOG_ERROR, "Format of input frames context (%s) is not supported by AMF.\n",
+                   av_get_pix_fmt_name(frames_ctx->sw_format));
+            return AVERROR(EINVAL);
         }
-    } else if (avctx->hw_device_ctx) {
-        AVHWDeviceContext *device_ctx = (AVHWDeviceContext*)(avctx->hw_device_ctx->data);
-        if (device_ctx->type == AV_HWDEVICE_TYPE_D3D11VA) {
-            if (device_ctx->hwctx) {
-                AVD3D11VADeviceContext *device_d3d11 = (AVD3D11VADeviceContext *)device_ctx->hwctx;
-                res = ctx->context->pVtbl->InitDX11(ctx->context, device_d3d11->device, AMF_DX11_1);
-                if (res == AMF_OK) {
-                    ctx->hw_device_ctx = av_buffer_ref(avctx->hw_device_ctx);
-                    if (!ctx->hw_device_ctx) {
-                        return AVERROR(ENOMEM);
-                    }
-                } else {
-                    if (res == AMF_NOT_SUPPORTED)
-                        av_log(avctx, AV_LOG_INFO, "avctx->hw_device_ctx has D3D11 device which doesn't have D3D11VA interface, switching to default\n");
-                    else
-                        av_log(avctx, AV_LOG_INFO, "avctx->hw_device_ctx has non-AMD device, switching to default\n");
-                }
-            }
-        }
-    }
+
+        switch (frames_ctx->device_ctx->type) {
+#if CONFIG_D3D11VA
+        case AV_HWDEVICE_TYPE_D3D11VA:
+            ret = amf_init_from_d3d11_device(avctx, frames_ctx->device_ctx->hwctx);
+            if (ret < 0)
+                return ret;
+            break;
 #endif
-    if (!ctx->hw_frames_ctx && !ctx->hw_device_ctx) {
+        default:
+            av_log(avctx, AV_LOG_ERROR, "AMF initialisation from a %s frames context is not supported.\n",
+                   av_hwdevice_get_type_name(frames_ctx->device_ctx->type));
+            return AVERROR(ENOSYS);
+        }
+
+        ctx->hw_frames_ctx = av_buffer_ref(avctx->hw_frames_ctx);
+        if (!ctx->hw_frames_ctx)
+            return AVERROR(ENOMEM);
+
+        if (frames_ctx->initial_pool_size > 0)
+            ctx->hwsurfaces_in_queue_max = frames_ctx->initial_pool_size - 1;
+
+    } else if (avctx->hw_device_ctx) {
+        AVHWDeviceContext *device_ctx = (AVHWDeviceContext*)avctx->hw_device_ctx->data;
+
+        switch (device_ctx->type) {
+#if CONFIG_D3D11VA
+        case AV_HWDEVICE_TYPE_D3D11VA:
+            ret = amf_init_from_d3d11_device(avctx, device_ctx->hwctx);
+            if (ret < 0)
+                return ret;
+            break;
+#endif
+        default:
+            av_log(avctx, AV_LOG_ERROR, "AMF initialisation from a %s device is not supported.\n",
+                   av_hwdevice_get_type_name(device_ctx->type));
+            return AVERROR(ENOSYS);
+        }
+
+        ctx->hw_device_ctx = av_buffer_ref(avctx->hw_device_ctx);
+        if (!ctx->hw_device_ctx)
+            return AVERROR(ENOMEM);
+
+    } else {
         res = ctx->context->pVtbl->InitDX11(ctx->context, NULL, AMF_DX11_1);
-        if (res != AMF_OK) {
+        if (res == AMF_OK) {
+            av_log(avctx, AV_LOG_VERBOSE, "AMF initialisation succeeded via D3D11.\n");
+        } else {
             res = ctx->context->pVtbl->InitDX9(ctx->context, NULL);
-            AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "InitDX9() failed with error %d\n", res);
+            if (res == AMF_OK) {
+                av_log(avctx, AV_LOG_VERBOSE, "AMF initialisation succeeded via D3D9.\n");
+            } else {
+                av_log(avctx, AV_LOG_ERROR, "AMF initialisation failed via D3D9: error %d.\n", res);
+                return AVERROR(ENOSYS);
+            }
         }
     }
     return 0;
