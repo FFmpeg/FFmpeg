@@ -24,6 +24,10 @@
 #if CONFIG_D3D11VA
 #include "libavutil/hwcontext_d3d11va.h"
 #endif
+#if CONFIG_DXVA2
+#define COBJMACROS
+#include "libavutil/hwcontext_dxva2.h"
+#endif
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/time.h"
@@ -50,6 +54,9 @@ const enum AVPixelFormat ff_amf_pix_fmts[] = {
     AV_PIX_FMT_YUV420P,
 #if CONFIG_D3D11VA
     AV_PIX_FMT_D3D11,
+#endif
+#if CONFIG_DXVA2
+    AV_PIX_FMT_DXVA2_VLD,
 #endif
     AV_PIX_FMT_NONE
 };
@@ -162,6 +169,52 @@ static int amf_init_from_d3d11_device(AVCodecContext *avctx, AVD3D11VADeviceCont
 }
 #endif
 
+#if CONFIG_DXVA2
+static int amf_init_from_dxva2_device(AVCodecContext *avctx, AVDXVA2DeviceContext *hwctx)
+{
+    AmfContext *ctx = avctx->priv_data;
+    HANDLE device_handle;
+    IDirect3DDevice9 *device;
+    HRESULT hr;
+    AMF_RESULT res;
+    int ret;
+
+    hr = IDirect3DDeviceManager9_OpenDeviceHandle(hwctx->devmgr, &device_handle);
+    if (FAILED(hr)) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to open device handle for Direct3D9 device: %lx.\n", (unsigned long)hr);
+        return AVERROR_EXTERNAL;
+    }
+
+    hr = IDirect3DDeviceManager9_LockDevice(hwctx->devmgr, device_handle, &device, FALSE);
+    if (SUCCEEDED(hr)) {
+        IDirect3DDeviceManager9_UnlockDevice(hwctx->devmgr, device_handle, FALSE);
+        ret = 0;
+    } else {
+        av_log(avctx, AV_LOG_ERROR, "Failed to lock device handle for Direct3D9 device: %lx.\n", (unsigned long)hr);
+        ret = AVERROR_EXTERNAL;
+    }
+
+    IDirect3DDeviceManager9_CloseDeviceHandle(hwctx->devmgr, device_handle);
+
+    if (ret < 0)
+        return ret;
+
+    res = ctx->context->pVtbl->InitDX9(ctx->context, device);
+
+    IDirect3DDevice9_Release(device);
+
+    if (res != AMF_OK) {
+        if (res == AMF_NOT_SUPPORTED)
+            av_log(avctx, AV_LOG_ERROR, "AMF via D3D9 is not supported on the given device.\n");
+        else
+            av_log(avctx, AV_LOG_ERROR, "AMF failed to initialise on given D3D9 device: %d.\n", res);
+        return AVERROR(ENODEV);
+    }
+
+    return 0;
+}
+#endif
+
 static int amf_init_context(AVCodecContext *avctx)
 {
     AmfContext *ctx = avctx->priv_data;
@@ -206,6 +259,13 @@ static int amf_init_context(AVCodecContext *avctx)
                 return ret;
             break;
 #endif
+#if CONFIG_DXVA2
+        case AV_HWDEVICE_TYPE_DXVA2:
+            ret = amf_init_from_dxva2_device(avctx, frames_ctx->device_ctx->hwctx);
+            if (ret < 0)
+                return ret;
+            break;
+#endif
         default:
             av_log(avctx, AV_LOG_ERROR, "AMF initialisation from a %s frames context is not supported.\n",
                    av_hwdevice_get_type_name(frames_ctx->device_ctx->type));
@@ -226,6 +286,13 @@ static int amf_init_context(AVCodecContext *avctx)
 #if CONFIG_D3D11VA
         case AV_HWDEVICE_TYPE_D3D11VA:
             ret = amf_init_from_d3d11_device(avctx, device_ctx->hwctx);
+            if (ret < 0)
+                return ret;
+            break;
+#endif
+#if CONFIG_DXVA2
+        case AV_HWDEVICE_TYPE_DXVA2:
+            ret = amf_init_from_dxva2_device(avctx, device_ctx->hwctx);
             if (ret < 0)
                 return ret;
             break;
@@ -576,6 +643,18 @@ int ff_amf_send_frame(AVCodecContext *avctx, const AVFrame *frame)
 
                 res = ctx->context->pVtbl->CreateSurfaceFromDX11Native(ctx->context, texture, &surface, NULL); // wrap to AMF surface
                 AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "CreateSurfaceFromDX11Native() failed  with error %d\n", res);
+
+                hw_surface = 1;
+            }
+            break;
+#endif
+#if CONFIG_DXVA2
+        case AV_PIX_FMT_DXVA2_VLD:
+            {
+                IDirect3DSurface9 *texture = (IDirect3DSurface9 *)frame->data[3]; // actual texture
+
+                res = ctx->context->pVtbl->CreateSurfaceFromDX9Native(ctx->context, texture, &surface, NULL); // wrap to AMF surface
+                AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "CreateSurfaceFromDX9Native() failed  with error %d\n", res);
 
                 hw_surface = 1;
             }
