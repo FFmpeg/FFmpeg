@@ -107,16 +107,11 @@ static AMFTraceWriterVtbl tracer_vtbl =
 
 static int amf_load_library(AVCodecContext *avctx)
 {
-    AmfContext             *ctx = avctx->priv_data;
-    AMFInit_Fn              init_fun = NULL;
-    AMFQueryVersion_Fn      version_fun = NULL;
-    AMF_RESULT              res = AMF_OK;
+    AmfContext        *ctx = avctx->priv_data;
+    AMFInit_Fn         init_fun;
+    AMFQueryVersion_Fn version_fun;
+    AMF_RESULT         res;
 
-    ctx->eof = 0;
-    ctx->delayed_drain = 0;
-    ctx->hw_frames_ctx = NULL;
-    ctx->hw_device_ctx = NULL;
-    ctx->delayed_surface = NULL;
     ctx->delayed_frame = av_frame_alloc();
     if (!ctx->delayed_frame) {
         return AVERROR(ENOMEM);
@@ -326,10 +321,10 @@ static int amf_init_context(AVCodecContext *avctx)
 
 static int amf_init_encoder(AVCodecContext *avctx)
 {
-    AmfContext          *ctx = avctx->priv_data;
-    const wchar_t       *codec_id = NULL;
-    AMF_RESULT           res = AMF_OK;
-    enum AVPixelFormat   pix_fmt;
+    AmfContext        *ctx = avctx->priv_data;
+    const wchar_t     *codec_id = NULL;
+    AMF_RESULT         res;
+    enum AVPixelFormat pix_fmt;
 
     switch (avctx->codec->id) {
         case AV_CODEC_ID_H264:
@@ -360,9 +355,9 @@ static int amf_init_encoder(AVCodecContext *avctx)
 
 int av_cold ff_amf_encode_close(AVCodecContext *avctx)
 {
-    AmfContext      *ctx = avctx->priv_data;
-    if (ctx->delayed_surface)
-    {
+    AmfContext *ctx = avctx->priv_data;
+
+    if (ctx->delayed_surface) {
         ctx->delayed_surface->pVtbl->Release(ctx->delayed_surface);
         ctx->delayed_surface = NULL;
     }
@@ -402,11 +397,11 @@ int av_cold ff_amf_encode_close(AVCodecContext *avctx)
 static int amf_copy_surface(AVCodecContext *avctx, const AVFrame *frame,
     AMFSurface* surface)
 {
-    AMFPlane       *plane = NULL;
-    uint8_t        *dst_data[4];
-    int             dst_linesize[4];
-    int             planes;
-    int             i;
+    AMFPlane *plane;
+    uint8_t  *dst_data[4];
+    int       dst_linesize[4];
+    int       planes;
+    int       i;
 
     planes = surface->pVtbl->GetPlanesCount(surface);
     av_assert0(planes < FF_ARRAY_ELEMS(dst_data));
@@ -437,11 +432,11 @@ static inline int timestamp_queue_enqueue(AVCodecContext *avctx, int64_t timesta
 
 static int amf_copy_buffer(AVCodecContext *avctx, AVPacket *pkt, AMFBuffer *buffer)
 {
-    AmfContext             *ctx = avctx->priv_data;
-    int                     ret;
-    AMFVariantStruct        var = {0};
-    int64_t                 timestamp = AV_NOPTS_VALUE;
-    int64_t                 size = buffer->pVtbl->GetSize(buffer);
+    AmfContext      *ctx = avctx->priv_data;
+    int              ret;
+    AMFVariantStruct var = {0};
+    int64_t          timestamp = AV_NOPTS_VALUE;
+    int64_t          size = buffer->pVtbl->GetSize(buffer);
 
     if ((ret = ff_alloc_packet2(avctx, pkt, size, 0)) < 0) {
         return ret;
@@ -497,20 +492,7 @@ static int amf_copy_buffer(AVCodecContext *avctx, AVPacket *pkt, AMFBuffer *buff
 // amfenc API implementation
 int ff_amf_encode_init(AVCodecContext *avctx)
 {
-    AmfContext     *ctx = avctx->priv_data;
-    int             ret;
-
-    ctx->factory = NULL;
-    ctx->debug = NULL;
-    ctx->trace = NULL;
-    ctx->context = NULL;
-    ctx->encoder = NULL;
-    ctx->library = NULL;
-    ctx->version = 0;
-    ctx->eof = 0;
-    ctx->format = 0;
-    ctx->tracer.vtbl = NULL;
-    ctx->tracer.avctx = NULL;
+    int ret;
 
     if ((ret = amf_load_library(avctx)) == 0) {
         if ((ret = amf_init_context(avctx)) == 0) {
@@ -587,18 +569,18 @@ static AMFBuffer *amf_create_buffer_with_frame_ref(const AVFrame *frame, AMFCont
 
 static void amf_release_buffer_with_frame_ref(AMFBuffer *frame_ref_storage_buffer)
 {
-    AVFrame *av_frame_ref;
-    memcpy(&av_frame_ref, frame_ref_storage_buffer->pVtbl->GetNative(frame_ref_storage_buffer), sizeof(av_frame_ref));
-    av_frame_free(&av_frame_ref);
+    AVFrame *frame_ref;
+    memcpy(&frame_ref, frame_ref_storage_buffer->pVtbl->GetNative(frame_ref_storage_buffer), sizeof(frame_ref));
+    av_frame_free(&frame_ref);
     frame_ref_storage_buffer->pVtbl->Release(frame_ref_storage_buffer);
 }
 
 int ff_amf_send_frame(AVCodecContext *avctx, const AVFrame *frame)
 {
-    AMF_RESULT      res = AMF_OK;
-    AmfContext     *ctx = avctx->priv_data;
-    AMFSurface     *surface = NULL;
-    int             ret;
+    AmfContext *ctx = avctx->priv_data;
+    AMFSurface *surface;
+    AMF_RESULT  res;
+    int         ret;
 
     if (!ctx->encoder)
         return AVERROR(EINVAL);
