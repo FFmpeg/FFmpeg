@@ -3175,6 +3175,10 @@ Default is @var{freq}.
 
 @item lfe
 Set custom gain for LFE channels. Value is in dB. Default is 0.
+
+@item size
+Set size of frame in number of samples which will be processed at once.
+Default value is @var{1024}. Allowed range is from 1024 to 96000.
 @end table
 
 @subsection Examples

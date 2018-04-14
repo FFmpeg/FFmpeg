@@ -404,7 +404,7 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
     int i, j;
 
     s->buffer_length = 1 << (32 - ff_clz(s->ir_len));
-    s->n_fft = n_fft = 1 << (32 - ff_clz(s->ir_len + inlink->sample_rate));
+    s->n_fft = n_fft = 1 << (32 - ff_clz(s->ir_len + s->size));
 
     if (s->type == FREQUENCY_DOMAIN) {
         fft_in_l = av_calloc(n_fft, sizeof(*fft_in_l));
@@ -650,12 +650,6 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     HeadphoneContext *s = ctx->priv;
 
-    if (s->type == FREQUENCY_DOMAIN) {
-        inlink->partial_buf_size =
-        inlink->min_samples =
-        inlink->max_samples = inlink->sample_rate;
-    }
-
     if (s->nb_irs < inlink->channels) {
         av_log(ctx, AV_LOG_ERROR, "Number of inputs must be >= %d.\n", inlink->channels + 1);
         return AVERROR(EINVAL);
@@ -718,11 +712,6 @@ static int config_output(AVFilterLink *outlink)
     HeadphoneContext *s = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
     int i;
-
-    if (s->type == TIME_DOMAIN)
-        s->size = 1024;
-    else
-        s->size = inlink->sample_rate;
 
     for (i = 0; i < s->nb_inputs; i++) {
         s->in[i].fifo = av_audio_fifo_alloc(ctx->inputs[i]->format, ctx->inputs[i]->channels, 1024);
@@ -798,6 +787,7 @@ static const AVOption headphone_options[] = {
     { "type",      "set processing",                     OFFSET(type),     AV_OPT_TYPE_INT,    {.i64=1},       0,   1, .flags = FLAGS, "type" },
     { "time",      "time domain",                        0,                AV_OPT_TYPE_CONST,  {.i64=0},       0,   0, .flags = FLAGS, "type" },
     { "freq",      "frequency domain",                   0,                AV_OPT_TYPE_CONST,  {.i64=1},       0,   0, .flags = FLAGS, "type" },
+    { "size",      "set frame size",                     OFFSET(size),     AV_OPT_TYPE_INT,    {.i64=1024},1024,96000, .flags = FLAGS },
     { NULL }
 };
 
