@@ -742,7 +742,20 @@ static int request_frame(AVFilterLink *outlink)
                 s->eof_hrirs = 1;
         }
     }
-    return ff_request_frame(ctx->inputs[0]);
+
+    ret = ff_request_frame(ctx->inputs[0]);
+    if (ret == AVERROR_EOF && av_audio_fifo_size(s->in[0].fifo) > 0 && s->have_hrirs) {
+        AVFrame *in = ff_get_audio_buffer(outlink, s->size);
+
+        ret = av_audio_fifo_write(s->in[0].fifo, (void **)in->extended_data,
+                                  in->nb_samples);
+        if (ret < 0)
+            return ret;
+        ret = headphone_frame(s, outlink);
+        av_audio_fifo_drain(s->in[0].fifo, av_audio_fifo_size(s->in[0].fifo));
+    }
+
+    return ret;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
