@@ -68,7 +68,6 @@ static const FormatMap format_map[] =
     { AV_PIX_FMT_GRAY8,      AMF_SURFACE_GRAY8 },
     { AV_PIX_FMT_YUV420P,    AMF_SURFACE_YUV420P },
     { AV_PIX_FMT_YUYV422,    AMF_SURFACE_YUY2 },
-    { AV_PIX_FMT_D3D11,      AMF_SURFACE_NV12 },
 };
 
 static enum AMF_SURFACE_FORMAT amf_av_to_amf_format(enum AVPixelFormat fmt)
@@ -263,6 +262,7 @@ static int amf_init_encoder(AVCodecContext *avctx)
     AmfContext          *ctx = avctx->priv_data;
     const wchar_t       *codec_id = NULL;
     AMF_RESULT           res = AMF_OK;
+    enum AVPixelFormat   pix_fmt;
 
     switch (avctx->codec->id) {
         case AV_CODEC_ID_H264:
@@ -276,8 +276,14 @@ static int amf_init_encoder(AVCodecContext *avctx)
     }
     AMF_RETURN_IF_FALSE(ctx, codec_id != NULL, AVERROR(EINVAL), "Codec %d is not supported\n", avctx->codec->id);
 
-    ctx->format = amf_av_to_amf_format(avctx->pix_fmt);
-    AMF_RETURN_IF_FALSE(ctx, ctx->format != AMF_SURFACE_UNKNOWN, AVERROR(EINVAL), "Format %d is not supported\n", avctx->pix_fmt);
+    if (ctx->hw_frames_ctx)
+        pix_fmt = ((AVHWFramesContext*)ctx->hw_frames_ctx->data)->sw_format;
+    else
+        pix_fmt = avctx->pix_fmt;
+
+    ctx->format = amf_av_to_amf_format(pix_fmt);
+    AMF_RETURN_IF_FALSE(ctx, ctx->format != AMF_SURFACE_UNKNOWN, AVERROR(EINVAL),
+                        "Format %s is not supported\n", av_get_pix_fmt_name(pix_fmt));
 
     res = ctx->factory->pVtbl->CreateComponent(ctx->factory, ctx->context, codec_id, &ctx->encoder);
     AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_ENCODER_NOT_FOUND, "CreateComponent(%ls) failed with error %d\n", codec_id, res);
