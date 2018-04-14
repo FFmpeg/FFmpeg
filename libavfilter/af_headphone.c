@@ -747,15 +747,19 @@ static int request_frame(AVFilterLink *outlink)
     ret = ff_request_frame(ctx->inputs[0]);
     if (ret == AVERROR_EOF && av_audio_fifo_size(s->in[0].fifo) > 0 && s->have_hrirs) {
         int nb_samples = av_audio_fifo_size(s->in[0].fifo);
-        AVFrame *in = ff_get_audio_buffer(outlink, s->size - nb_samples);
+        AVFrame *in = ff_get_audio_buffer(ctx->inputs[0], s->size - nb_samples);
+
+        if (!in)
+            return AVERROR(ENOMEM);
 
         av_samples_set_silence(in->extended_data, 0,
                                in->nb_samples,
-                               outlink->channels,
-                               outlink->format);
+                               in->channels,
+                               in->format);
 
         ret = av_audio_fifo_write(s->in[0].fifo, (void **)in->extended_data,
                                   in->nb_samples);
+        av_frame_free(&in);
         if (ret < 0)
             return ret;
         ret = headphone_frame(s, outlink, nb_samples);
