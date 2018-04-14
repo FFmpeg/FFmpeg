@@ -71,14 +71,6 @@ static const FormatMap format_map[] =
     { AV_PIX_FMT_D3D11,      AMF_SURFACE_NV12 },
 };
 
-
-static int is_hwaccel_pix_fmt(enum AVPixelFormat pix_fmt)
-{
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
-    return desc->flags & AV_PIX_FMT_FLAG_HWACCEL;
-}
-
-
 static enum AMF_SURFACE_FORMAT amf_av_to_amf_format(enum AVPixelFormat fmt)
 {
     int i;
@@ -337,32 +329,14 @@ int av_cold ff_amf_encode_close(AVCodecContext *avctx)
 static int amf_copy_surface(AVCodecContext *avctx, const AVFrame *frame,
     AMFSurface* surface)
 {
-    AVFrame        *sw_frame = NULL;
     AMFPlane       *plane = NULL;
     uint8_t        *dst_data[4];
     int             dst_linesize[4];
-    int             ret = 0;
     int             planes;
     int             i;
 
-    if (frame->hw_frames_ctx && is_hwaccel_pix_fmt(frame->format)) {
-        if (!(sw_frame = av_frame_alloc())) {
-            av_log(avctx, AV_LOG_ERROR, "Can not alloc frame\n");
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
-        if ((ret = av_hwframe_transfer_data(sw_frame, frame, 0)) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "Error transferring the data to system memory\n");
-            goto fail;
-        }
-        frame = sw_frame;
-    }
-    planes = (int)surface->pVtbl->GetPlanesCount(surface);
-    if (planes > amf_countof(dst_data)) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid number of planes %d in surface\n", planes);
-        ret = AVERROR(EINVAL);
-        goto fail;
-    }
+    planes = surface->pVtbl->GetPlanesCount(surface);
+    av_assert0(planes < FF_ARRAY_ELEMS(dst_data));
 
     for (i = 0; i < planes; i++) {
         plane = surface->pVtbl->GetPlaneAt(surface, i);
@@ -373,11 +347,7 @@ static int amf_copy_surface(AVCodecContext *avctx, const AVFrame *frame,
         (const uint8_t**)frame->data, frame->linesize, frame->format,
         avctx->width, avctx->height);
 
-fail:
-    if (sw_frame) {
-        av_frame_free(&sw_frame);
-    }
-    return ret;
+    return 0;
 }
 
 static inline int timestamp_queue_enqueue(AVCodecContext *avctx, int64_t timestamp)
@@ -579,31 +549,46 @@ int ff_amf_send_frame(AVCodecContext *avctx, const AVFrame *frame)
             return AVERROR_EOF;
         }
     } else { // submit frame
+        int hw_surface = 0;
+
         if (ctx->delayed_surface != NULL) {
             return AVERROR(EAGAIN); // should not happen when called from ffmpeg, other clients may resubmit
         }
         // prepare surface from frame
-        if (frame->hw_frames_ctx && ( // HW frame detected
-            // check if the same hw_frames_ctx as used in initialization
-            (ctx->hw_frames_ctx && frame->hw_frames_ctx->data == ctx->hw_frames_ctx->data) ||
-            // check if the same hw_device_ctx as used in initialization
-            (ctx->hw_device_ctx && ((AVHWFramesContext*)frame->hw_frames_ctx->data)->device_ctx ==
-            (AVHWDeviceContext*)ctx->hw_device_ctx->data)
-        )) {
-            AMFBuffer *frame_ref_storage_buffer;
-
+        switch (frame->format) {
 #if CONFIG_D3D11VA
-            static const GUID AMFTextureArrayIndexGUID = { 0x28115527, 0xe7c3, 0x4b66, { 0x99, 0xd3, 0x4f, 0x2a, 0xe6, 0xb4, 0x7f, 0xaf } };
-            ID3D11Texture2D *texture = (ID3D11Texture2D*)frame->data[0]; // actual texture
-            int index = (int)(size_t)frame->data[1]; // index is a slice in texture array is - set to tell AMF which slice to use
-            texture->lpVtbl->SetPrivateData(texture, &AMFTextureArrayIndexGUID, sizeof(index), &index);
+        case AV_PIX_FMT_D3D11:
+            {
+                static const GUID AMFTextureArrayIndexGUID = { 0x28115527, 0xe7c3, 0x4b66, { 0x99, 0xd3, 0x4f, 0x2a, 0xe6, 0xb4, 0x7f, 0xaf } };
+                ID3D11Texture2D *texture = (ID3D11Texture2D*)frame->data[0]; // actual texture
+                int index = (intptr_t)frame->data[1]; // index is a slice in texture array is - set to tell AMF which slice to use
 
-            res = ctx->context->pVtbl->CreateSurfaceFromDX11Native(ctx->context, texture, &surface, NULL); // wrap to AMF surface
-            AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "CreateSurfaceFromDX11Native() failed  with error %d\n", res);
+                av_assert0(frame->hw_frames_ctx       && ctx->hw_frames_ctx &&
+                           frame->hw_frames_ctx->data == ctx->hw_frames_ctx->data);
+
+                texture->lpVtbl->SetPrivateData(texture, &AMFTextureArrayIndexGUID, sizeof(index), &index);
+
+                res = ctx->context->pVtbl->CreateSurfaceFromDX11Native(ctx->context, texture, &surface, NULL); // wrap to AMF surface
+                AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "CreateSurfaceFromDX11Native() failed  with error %d\n", res);
+
+                hw_surface = 1;
+            }
+            break;
+#endif
+        default:
+            {
+                res = ctx->context->pVtbl->AllocSurface(ctx->context, AMF_MEMORY_HOST, ctx->format, avctx->width, avctx->height, &surface);
+                AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "AllocSurface() failed  with error %d\n", res);
+                amf_copy_surface(avctx, frame, surface);
+            }
+            break;
+        }
+
+        if (hw_surface) {
+            AMFBuffer *frame_ref_storage_buffer;
 
             // input HW surfaces can be vertically aligned by 16; tell AMF the real size
             surface->pVtbl->SetCrop(surface, 0, 0, frame->width, frame->height);
-#endif
 
             frame_ref_storage_buffer = amf_create_buffer_with_frame_ref(frame, ctx->context);
             AMF_RETURN_IF_FALSE(ctx, frame_ref_storage_buffer != NULL, AVERROR(ENOMEM), "create_buffer_with_frame_ref() returned NULL\n");
@@ -612,11 +597,8 @@ int ff_amf_send_frame(AVCodecContext *avctx, const AVFrame *frame)
             AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR_UNKNOWN, "SetProperty failed for \"av_frame_ref\" with error %d\n", res);
             ctx->hwsurfaces_in_queue++;
             frame_ref_storage_buffer->pVtbl->Release(frame_ref_storage_buffer);
-        } else {
-            res = ctx->context->pVtbl->AllocSurface(ctx->context, AMF_MEMORY_HOST, ctx->format, avctx->width, avctx->height, &surface);
-            AMF_RETURN_IF_FALSE(ctx, res == AMF_OK, AVERROR(ENOMEM), "AllocSurface() failed  with error %d\n", res);
-            amf_copy_surface(avctx, frame, surface);
         }
+
         surface->pVtbl->SetPts(surface, frame->pts);
         AMF_ASSIGN_PROPERTY_INT64(res, surface, PTS_PROP, frame->pts);
 
