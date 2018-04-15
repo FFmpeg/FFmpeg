@@ -3179,6 +3179,17 @@ Set custom gain for LFE channels. Value is in dB. Default is 0.
 @item size
 Set size of frame in number of samples which will be processed at once.
 Default value is @var{1024}. Allowed range is from 1024 to 96000.
+
+@item hrir
+Set format of hrir stream.
+Default value is @var{stereo}. Alternative value is @var{multich}.
+If value is set to @var{stereo}, number of additional streams should
+be greater or equal to number of input channels in first input stream.
+Also each additional stream should have stereo number of channels.
+If value is set to @var{multich}, number of additional streams should
+be exactly one. Also number of input channels of additional stream
+should be equal or greater than twice number of channels of first input
+stream.
 @end table
 
 @subsection Examples
@@ -3190,6 +3201,14 @@ each amovie filter use stereo file with IR coefficients as input.
 The files give coefficients for each position of virtual loudspeaker:
 @example
 ffmpeg -i input.wav -lavfi-complex "amovie=azi_270_ele_0_DFC.wav[sr],amovie=azi_90_ele_0_DFC.wav[sl],amovie=azi_225_ele_0_DFC.wav[br],amovie=azi_135_ele_0_DFC.wav[bl],amovie=azi_0_ele_0_DFC.wav,asplit[fc][lfe],amovie=azi_35_ele_0_DFC.wav[fl],amovie=azi_325_ele_0_DFC.wav[fr],[a:0][fl][fr][fc][lfe][bl][br][sl][sr]headphone=FL|FR|FC|LFE|BL|BR|SL|SR"
+output.wav
+@end example
+
+@item
+Full example using wav files as coefficients with amovie filters for 7.1 downmix,
+but now in @var{multich} @var{hrir} format.
+@example
+ffmpeg -i input.wav -lavfi-complex "amovie=minp.wav[hrirs],[a:0][hrirs]headphone=map=FL|FR|FC|LFE|BL|BR|SL|SR:hrir=multich"
 output.wav
 @end example
 @end itemize
