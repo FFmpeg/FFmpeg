@@ -1591,9 +1591,14 @@ static int hls_start(AVFormatContext *s, VariantStream *vs)
     }
 
     if (c->key_info_file || c->encrypt) {
+        if (c->segment_type == SEGMENT_TYPE_FMP4) {
+            av_log(s, AV_LOG_ERROR, "Encrypted fmp4 not yet supported\n");
+            return AVERROR_PATCHWELCOME;
+        }
+
         if (c->key_info_file && c->encrypt) {
             av_log(s, AV_LOG_WARNING, "Cannot use both -hls_key_info_file and -hls_enc,"
-                  " will use -hls_key_info_file priority\n");
+                  " ignoring -hls_enc\n");
         }
 
         if (!c->encrypt_started || (c->flags & HLS_PERIODIC_REKEY)) {
