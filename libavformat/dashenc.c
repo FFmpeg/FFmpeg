@@ -94,7 +94,10 @@ typedef struct DASHContext {
     int nb_as;
     int window_size;
     int extra_window_size;
+#if FF_API_DASH_MIN_SEG_DURATION
     int min_seg_duration;
+#endif
+    int64_t seg_duration;
     int remove_at_exit;
     int use_template;
     int use_timeline;
@@ -871,6 +874,13 @@ static int dash_init(AVFormatContext *s)
     if (c->single_file)
         c->use_template = 0;
 
+#if FF_API_DASH_MIN_SEG_DURATION
+    if (c->min_seg_duration != 5000000) {
+        av_log(s, AV_LOG_WARNING, "The min_seg_duration option is deprecated and will be removed. Please use the -seg_duration\n");
+        c->seg_duration = c->min_seg_duration;
+    }
+#endif
+
     av_strlcpy(c->dirname, s->url, sizeof(c->dirname));
     ptr = strrchr(c->dirname, '/');
     if (ptr) {
@@ -974,7 +984,7 @@ static int dash_init(AVFormatContext *s)
             else
                 av_dict_set(&opts, "movflags", "frag_custom+dash+delay_moov", 0);
         } else {
-            av_dict_set_int(&opts, "cluster_time_limit", c->min_seg_duration / 1000, 0);
+            av_dict_set_int(&opts, "cluster_time_limit", c->seg_duration / 1000, 0);
             av_dict_set_int(&opts, "cluster_size_limit", 5 * 1024 * 1024, 0); // set a large cluster size limit
             av_dict_set_int(&opts, "dash", 1, 0);
             av_dict_set_int(&opts, "dash_track_number", i + 1, 0);
@@ -1020,8 +1030,8 @@ static int dash_init(AVFormatContext *s)
         os->segment_index = 1;
     }
 
-    if (!c->has_video && c->min_seg_duration <= 0) {
-        av_log(s, AV_LOG_WARNING, "no video stream and no min seg duration set\n");
+    if (!c->has_video && c->seg_duration <= 0) {
+        av_log(s, AV_LOG_WARNING, "no video stream and no seg duration set\n");
         return AVERROR(EINVAL);
     }
     return 0;
@@ -1287,7 +1297,7 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
     if ((!c->has_video || st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) &&
         pkt->flags & AV_PKT_FLAG_KEY && os->packets_written &&
         av_compare_ts(pkt->pts - os->start_pts, st->time_base,
-                      c->min_seg_duration, AV_TIME_BASE_Q) >= 0) {
+                      c->seg_duration, AV_TIME_BASE_Q) >= 0) {
         int64_t prev_duration = c->last_duration;
 
         c->last_duration = av_rescale_q(pkt->pts - os->start_pts,
@@ -1427,7 +1437,10 @@ static const AVOption options[] = {
     { "adaptation_sets", "Adaptation sets. Syntax: id=0,streams=0,1,2 id=1,streams=3,4 and so on", OFFSET(adaptation_sets), AV_OPT_TYPE_STRING, { 0 }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
     { "window_size", "number of segments kept in the manifest", OFFSET(window_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, E },
     { "extra_window_size", "number of segments kept outside of the manifest before removing from disk", OFFSET(extra_window_size), AV_OPT_TYPE_INT, { .i64 = 5 }, 0, INT_MAX, E },
-    { "min_seg_duration", "minimum segment duration (in microseconds)", OFFSET(min_seg_duration), AV_OPT_TYPE_INT, { .i64 = 5000000 }, 0, INT_MAX, E },
+#if FF_API_DASH_MIN_SEG_DURATION
+    { "min_seg_duration", "minimum segment duration (in microseconds) (will be deprecated)", OFFSET(min_seg_duration), AV_OPT_TYPE_INT, { .i64 = 5000000 }, 0, INT_MAX, E },
+#endif
+    { "seg_duration", "segment duration (in seconds, fractional value can be set)", OFFSET(seg_duration), AV_OPT_TYPE_DURATION, { .i64 = 5000000 }, 0, INT_MAX, E },
     { "remove_at_exit", "remove all segments when finished", OFFSET(remove_at_exit), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
     { "use_template", "Use SegmentTemplate instead of SegmentList", OFFSET(use_template), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, E },
     { "use_timeline", "Use SegmentTimeline in SegmentTemplate", OFFSET(use_timeline), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, E },

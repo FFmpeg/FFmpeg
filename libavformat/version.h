@@ -94,6 +94,9 @@
 #ifndef FF_API_NEXT
 #define FF_API_NEXT                     (LIBAVFORMAT_VERSION_MAJOR < 59)
 #endif
+#ifndef FF_API_DASH_MIN_SEG_DURATION
+#define FF_API_DASH_MIN_SEG_DURATION    (LIBAVFORMAT_VERSION_MAJOR < 59)
+#endif
 
 
 #ifndef FF_API_R_FRAME_RATE
