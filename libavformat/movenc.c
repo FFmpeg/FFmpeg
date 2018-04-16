@@ -6081,6 +6081,10 @@ static int mov_init(AVFormatContext *s)
                     av_log(s, AV_LOG_ERROR, "VP9 only supported in MP4.\n");
                     return AVERROR(EINVAL);
                 }
+            } else if (track->par->codec_id == AV_CODEC_ID_AV1) {
+                /* spec is not finished, so forbid for now */
+                av_log(s, AV_LOG_ERROR, "AV1 muxing is currently not supported.\n");
+                return AVERROR_PATCHWELCOME;
             } else if (track->par->codec_id == AV_CODEC_ID_VP8) {
                 /* altref frames handling is not defined in the spec as of version v1.0,
                  * so just forbid muxing VP8 streams altogether until a new version does */
