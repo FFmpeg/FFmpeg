@@ -959,6 +959,10 @@ Set Impulse Response filter length. Default is 1, which means whole IR is proces
 
 @item again
 Enable applying gain measured from power of IR.
+
+@item maxir
+Set max allowed Impulse Response filter duration in seconds. Default is 30 seconds.
+Allowed range is 0.1 to 60 seconds.
 @end table
 
 @subsection Examples

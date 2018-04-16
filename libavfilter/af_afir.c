@@ -290,7 +290,7 @@ static int read_ir(AVFilterLink *link, AVFrame *frame)
         return ret;
 
     nb_taps = av_audio_fifo_size(s->fifo[1]);
-    max_nb_taps = MAX_IR_DURATION * ctx->outputs[0]->sample_rate;
+    max_nb_taps = s->max_ir_len * ctx->outputs[0]->sample_rate;
     if (nb_taps > max_nb_taps) {
         av_log(ctx, AV_LOG_ERROR, "Too big number of coefficients: %d > %d.\n", nb_taps, max_nb_taps);
         return AVERROR(EINVAL);
@@ -533,10 +533,11 @@ static const AVFilterPad afir_outputs[] = {
 #define OFFSET(x) offsetof(AudioFIRContext, x)
 
 static const AVOption afir_options[] = {
-    { "dry",    "set dry gain",     OFFSET(dry_gain), AV_OPT_TYPE_FLOAT, {.dbl=1}, 0, 1, AF },
-    { "wet",    "set wet gain",     OFFSET(wet_gain), AV_OPT_TYPE_FLOAT, {.dbl=1}, 0, 1, AF },
-    { "length", "set IR length",    OFFSET(length),   AV_OPT_TYPE_FLOAT, {.dbl=1}, 0, 1, AF },
-    { "again",  "enable auto gain", OFFSET(again),    AV_OPT_TYPE_BOOL,  {.i64=1}, 0, 1, AF },
+    { "dry",    "set dry gain",      OFFSET(dry_gain),   AV_OPT_TYPE_FLOAT, {.dbl=1},    0, 10, AF },
+    { "wet",    "set wet gain",      OFFSET(wet_gain),   AV_OPT_TYPE_FLOAT, {.dbl=1},    0, 10, AF },
+    { "length", "set IR length",     OFFSET(length),     AV_OPT_TYPE_FLOAT, {.dbl=1},    0,  1, AF },
+    { "again",  "enable auto gain",  OFFSET(again),      AV_OPT_TYPE_BOOL,  {.i64=1},    0,  1, AF },
+    { "maxir",  "set max ir length", OFFSET(max_ir_len), AV_OPT_TYPE_FLOAT, {.dbl=30}, 0.1, 60, AF },
     { NULL }
 };
 
