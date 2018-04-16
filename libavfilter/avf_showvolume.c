@@ -33,6 +33,7 @@
 
 static const char *const var_names[] = {   "VOLUME",   "CHANNEL",   "PEAK",        NULL };
 enum                                   { VAR_VOLUME, VAR_CHANNEL, VAR_PEAK, VAR_VARS_NB };
+enum DisplayScale   { LINEAR, LOG, NB_DISPLAY_SCALE };
 
 typedef struct ShowVolumeContext {
     const AVClass *class;
@@ -54,6 +55,7 @@ typedef struct ShowVolumeContext {
     uint32_t *color_lut;
     float *max;
     float rms_factor;
+    int display_scale;
 
     void (*meter)(float *src, int nb_samples, float *max, float factor);
 } ShowVolumeContext;
@@ -79,6 +81,9 @@ static const AVOption showvolume_options[] = {
     { "m", "set mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "mode" },
     {   "p", "peak", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "mode" },
     {   "r", "rms",  0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "mode" },
+    { "ds", "set display scale", OFFSET(display_scale), AV_OPT_TYPE_INT, {.i64=LINEAR}, LINEAR, NB_DISPLAY_SCALE - 1, FLAGS, "display_scale" },
+    {   "lin", "linear", 0, AV_OPT_TYPE_CONST, {.i64=LINEAR}, 0, 0, FLAGS, "display_scale" },
+    {   "log", "log",  0, AV_OPT_TYPE_CONST, {.i64=LOG}, 0, 0, FLAGS, "display_scale" },
     { NULL }
 };
 
@@ -256,13 +261,28 @@ static void clear_picture(ShowVolumeContext *s, AVFilterLink *outlink) {
     }
 }
 
+static inline int calc_max_draw(ShowVolumeContext *s, AVFilterLink *outlink, float max)
+{
+    float max_val;
+    if (s->display_scale == LINEAR) {
+        max_val = max;
+    } else { /* log */
+        max_val = av_clipf(0.21 * log10(max) + 1, 0, 1);
+    }
+    if (s->orientation) { /* vertical */
+        return outlink->h - outlink->h * max_val;
+    } else { /* horizontal */
+        return s->w * max_val;
+    }
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     ShowVolumeContext *s = ctx->priv;
     const int step = s->step;
-    int c, j, k;
+    int c, j, k, max_draw;
     AVFrame *out;
 
     if (!s->out || s->out->width  != outlink->w ||
@@ -304,8 +324,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 
             s->values[c * VAR_VARS_NB + VAR_VOLUME] = 20.0 * log10(max);
             max = av_clipf(max, 0, 1);
+            max_draw = calc_max_draw(s, outlink, max);
 
-            for (j = outlink->h - outlink->h * max; j < s->w; j++) {
+            for (j = max_draw; j < s->w; j++) {
                 uint8_t *dst = s->out->data[0] + j * s->out->linesize[0] + c * (s->b + s->h) * 4;
                 for (k = 0; k < s->h; k++) {
                     AV_WN32A(&dst[k * 4], lut[s->w - j - 1]);
@@ -332,11 +353,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 
             s->values[c * VAR_VARS_NB + VAR_VOLUME] = 20.0 * log10(max);
             max = av_clipf(max, 0, 1);
+            max_draw = calc_max_draw(s, outlink, max);
 
             for (j = 0; j < s->h; j++) {
                 uint8_t *dst = s->out->data[0] + (c * s->h + c * s->b + j) * s->out->linesize[0];
 
-                for (k = 0; k < s->w * max; k++) {
+                for (k = 0; k < max_draw; k++) {
                     AV_WN32A(dst + k * 4, lut[k]);
                     if (k & step)
                         k += step;
