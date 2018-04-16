@@ -15,98 +15,98 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
-2018-04-03 - xxxxxxx - lavu 56.13.100 - pixdesc.h
+2018-04-03 - d6fc031caf - lavu 56.13.100 - pixdesc.h
   Deprecate AV_PIX_FMT_FLAG_PSEUDOPAL and make allocating a pseudo palette
   optional for API users (see AV_PIX_FMT_FLAG_PSEUDOPAL doxygen for details).
 
-2018-04-01 - xxxxxxx - lavc 58.17.100 - avcodec.h
+2018-04-01 - 860086ee16 - lavc 58.17.100 - avcodec.h
   Add av_packet_make_refcounted().
 
-2018-xx-xx - xxxxxxx - lavfi 7.14.100 - avfilter.h
+2018-04-01 - f1805d160d - lavfi 7.14.100 - avfilter.h
   Deprecate use of avfilter_register(), avfilter_register_all(),
   avfilter_next(). Add av_filter_iterate().
 
-2018-03-xx - xxxxxxx - lavc 58.16.100 - avcodec.h
+2018-03-25 - b7d0d912ef - lavc 58.16.100 - avcodec.h
   Add FF_SUB_CHARENC_MODE_IGNORE.
 
-2018-03-23 - xxxxxxx - lavu 56.12.100 - encryption_info.h
+2018-03-23 - db2a7c947e - lavu 56.12.100 - encryption_info.h
   Add AVEncryptionInitInfo and AVEncryptionInfo structures to hold new side-data
   for encryption info.
 
-2018-03-21 - xxxxxxx - lavc 58.15.100 - avcodec.h
+2018-03-21 - f14ca60001 - lavc 58.15.100 - avcodec.h
   Add av_packet_make_writable().
 
-2018-03-18 - xxxxxxx - lavu 56.11.100 - frame.h
+2018-03-18 - 4b86ac27a0 - lavu 56.11.100 - frame.h
   Add AV_FRAME_DATA_QP_TABLE_PROPERTIES and AV_FRAME_DATA_QP_TABLE_DATA.
 
 2018-03-15 - e0e72539cf - lavu 56.10.100 - opt.h
   Add AV_OPT_FLAG_BSF_PARAM
 
-2018-03-07 - xxxxxxx - lavu 56.9.100 - crc.h
+2018-03-07 - 950170bd3b - lavu 56.9.100 - crc.h
   Add AV_CRC_8_EBU crc variant.
 
-2018-03-xx - xxxxxxx - lavc 58.14.100 - mediacodec.h
+2018-03-07 - 2a0eb86857 - lavc 58.14.100 - mediacodec.h
   Change the default behavior of avcodec_flush() on mediacodec
   video decoders. To restore the previous behavior, use the new
   delay_flush=1 option.
 
-2018-03-xx - xxxxxxx - lavu 56.8.100 - frame.h
+2018-03-01 - 6731f60598 - lavu 56.8.100 - frame.h
   Add av_frame_new_side_data_from_buf().
 
-2018-02-xx - xxxxxxx
+2018-02-15 - 8a8d0b319a
   Change av_ripemd_update(), av_murmur3_update() and av_hash_update() length
   parameter type to size_t at next major bump.
 
-2018-02-xx - xxxxxxx - lavfi 7.12.100 - avfilter.h
+2018-02-12 - bcab11a1a2 - lavfi 7.12.100 - avfilter.h
   Add AVFilterContext.extra_hw_frames.
 
-2018-02-xx - xxxxxxx - lavc 58.11.100 - avcodec.h
+2018-02-12 - d23fff0d8a - lavc 58.11.100 - avcodec.h
   Add AVCodecContext.extra_hw_frames.
 
-2018-xx-xx - xxxxxxx - lavf 58.9.100 - avformat.h
+2018-02-06 - 0694d87024 - lavf 58.9.100 - avformat.h
   Deprecate use of av_register_input_format(), av_register_output_format(),
   av_register_all(), av_iformat_next(), av_oformat_next().
   Add av_demuxer_iterate(), and av_muxer_iterate().
 
-2018-xx-xx - xxxxxxx - lavc 58.10.100 - avcodec.h
+2018-02-06 - 36c85d6e77 - lavc 58.10.100 - avcodec.h
   Deprecate use of avcodec_register(), avcodec_register_all(),
   av_codec_next(), av_register_codec_parser(), and av_parser_next().
   Add av_codec_iterate() and av_parser_iterate().
 
-2018-02-xx - xxxxxxx - lavf 58.8.100 - avformat.h
+2018-02-04 - ff46124b0d - lavf 58.8.100 - avformat.h
   Deprecate the current names of the RTSP "timeout", "stimeout", "user-agent"
   options. Introduce "listen_timeout" as replacement for the current "timeout"
   option, and "user_agent" as replacement for "user-agent". Once the deprecation
   is over, the old "timeout" option will be removed, and "stimeout" will be
   renamed to "stimeout" (the "timeout" option will essentially change semantics).
 
-2018-01-xx - xxxxxxx - lavf 58.7.100 - avformat.h
+2018-01-28 - ea3672b7d6 - lavf 58.7.100 - avformat.h
   Deprecate AVFormatContext filename field which had limited length, use the
   new dynamically allocated url field instead.
 
-2018-01-xx - xxxxxxx - lavf 58.7.100 - avformat.h
+2018-01-28 - ea3672b7d6 - lavf 58.7.100 - avformat.h
   Add url field to AVFormatContext and add ff_format_set_url helper function.
 
-2018-01-xx - xxxxxxx - lavf 58.6.100 - avformat.h
+2018-01-27 - 6194d7e564 - lavf 58.6.100 - avformat.h
   Add AVFMTCTX_UNSEEKABLE (for HLS demuxer).
 
-2018-xx-xx - xxxxxxx - lavu 56.9.100 - aes_ctr.h
+2018-01-23 - 9f07cf7c00 - lavu 56.9.100 - aes_ctr.h
   Add method to set the 16-byte IV.
 
-2018-01-xx - xxxxxxx - lavf 58.5.100 - avformat.h
+2018-01-16 - 631c56a8e4 - lavf 58.5.100 - avformat.h
   Explicitly make avformat_network_init() and avformat_network_deinit() optional.
   If these are not called, network initialization and deinitialization is
   automatic, and unlike in older versions, fully supported, unless libavformat
   is linked to ancient GnuTLS and OpenSSL.
 
-2018-01-xx - xxxxxxx - lavf 58.4.100 - avformat.h
+2018-01-16 - 6512ff72f9 - lavf 58.4.100 - avformat.h
   Deprecate AVStream.recommended_encoder_configuration. It was useful only for
   FFserver, which has been removed.
 
-2018-01-xx - xxxxxxx - lavfi 7.11.101 - avfilter.h
+2018-01-05 - 798dcf2432 - lavfi 7.11.101 - avfilter.h
   Deprecate avfilter_link_get_channels(). Use av_buffersink_get_channels().
 
-2017-xx-xx - xxxxxxx - lavr 4.0.0 - avresample.h
+2017-01-04 - c29038f304 - lavr 4.0.0 - avresample.h
   Deprecate the entire library. Merged years ago to provide compatibility
   with Libav, it remained unmaintained by the FFmpeg project and duplicated
   functionality provided by libswresample.
@@ -115,36 +115,36 @@ API changes, most recent first:
   Users of this library are asked to migrate to libswresample, which, as well as
   providing more functionality, is faster and has higher accuracy.
 
-2017-xx-xx - xxxxxxx - lavc 58.9.100 - avcodec.h
+2017-12-26 - a04c2c707d - lavc 58.9.100 - avcodec.h
   Deprecate av_lockmgr_register(). You need to build FFmpeg with threading
   support enabled to get basic thread-safety (which is the default build
   configuration).
 
-2017-12-xx - xxxxxxx - lavu 56.7.100 - cpu.h
+2017-12-24 - 8b81eabe57 - lavu 56.7.100 - cpu.h
   AVX-512 flags added.
 
-2017-xx-xx - xxxxxxx - lavc 58.8.100 - avcodec.h
+2017-12-16 - 8bf4e6d3ce - lavc 58.8.100 - avcodec.h
   The MediaCodec decoders now support AVCodecContext.hw_device_ctx.
 
-2017-xx-xx - xxxxxxx - lavu 56.6.100 - hwcontext.h hwcontext_mediacodec.h
+2017-12-16 - e4d9f05ca7 - lavu 56.6.100 - hwcontext.h hwcontext_mediacodec.h
   Add AV_HWDEVICE_TYPE_MEDIACODEC and a new installed header with
   MediaCodec-specific hwcontext definitions.
 
-2017-xx-xx - xxxxxxc - lavc 58.7.100 - avcodec.h
+2017-12-14 - b945fed629 - lavc 58.7.100 - avcodec.h
   Add AV_CODEC_CAP_HARDWARE, AV_CODEC_CAP_HYBRID, and AVCodec.wrapper_name,
   and mark all AVCodecs accordingly.
 
-2017-xx-xx - xxxxxxx - lavu 56.4.100 / 56.7.0 - stereo3d.h
+2017-11-29 - d268094f88 - lavu 56.4.100 / 56.7.0 - stereo3d.h
   Add view field to AVStereo3D structure and AVStereo3DView enum.
 
-2017-xx-xx - xxxxxxx - lavc 58.6.100 - avcodec.h
+2017-11-26 - 3a71bcc213 - lavc 58.6.100 - avcodec.h
   Add const to AVCodecContext.hwaccel.
 
-2017-11-xx - xxxxxxx - lavc 58.5.100 - avcodec.h
+2017-11-26 - 3536a3efb9 - lavc 58.5.100 - avcodec.h
   Deprecate user visibility of the AVHWAccel structure and the functions
   av_register_hwaccel() and av_hwaccel_next().
 
-2017-11-xx - xxxxxxx - lavc 58.4.100 - avcodec.h
+2017-11-26 - 24cc0a53e9 - lavc 58.4.100 - avcodec.h
   Add AVCodecHWConfig and avcodec_get_hw_config().
 
 2017-11-22 - 3650cb2dfa - lavu 56.3.100 - opencl.h
