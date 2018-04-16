@@ -57,6 +57,12 @@ typedef struct ShowVolumeContext {
     float rms_factor;
     int display_scale;
 
+    double draw_persistent_duration; /* in second */
+    uint8_t persistant_max_rgba[4];
+    int persistent_max_frames; /* number of frames to check max value */
+    float *max_persistent; /* max value for draw_persistent_max for each channel */
+    int *nb_frames_max_display; /* number of frame for each channel, for displaying the max value */
+
     void (*meter)(float *src, int nb_samples, float *max, float factor);
 } ShowVolumeContext;
 
@@ -73,6 +79,8 @@ static const AVOption showvolume_options[] = {
     { "c", "set volume color expression", OFFSET(color), AV_OPT_TYPE_STRING, {.str="PEAK*255+floor((1-PEAK)*255)*256+0xff000000"}, 0, 0, FLAGS },
     { "t", "display channel names", OFFSET(draw_text), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
     { "v", "display volume value", OFFSET(draw_volume), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
+    { "dm", "duration for max value display", OFFSET(draw_persistent_duration), AV_OPT_TYPE_DOUBLE, {.dbl=0.}, 0, 9000, FLAGS},
+    { "dmc","set color of the max value line", OFFSET(persistant_max_rgba), AV_OPT_TYPE_COLOR, {.str = "orange"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "o", "set orientation", OFFSET(orientation), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "orientation" },
     {   "h", "horizontal", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "orientation" },
     {   "v", "vertical",   0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "orientation" },
@@ -180,6 +188,11 @@ static int config_input(AVFilterLink *inlink)
     default: return AVERROR_BUG;
     }
 
+    if (s->draw_persistent_duration > 0.) {
+        s->persistent_max_frames = (int) FFMAX(av_q2d(s->frame_rate) * s->draw_persistent_duration, 1.);
+        s->max_persistent = av_calloc(inlink->channels * s->persistent_max_frames, sizeof(*s->max_persistent));
+        s->nb_frames_max_display = av_calloc(inlink->channels * s->persistent_max_frames, sizeof(*s->nb_frames_max_display));
+    }
     return 0;
 }
 
@@ -276,6 +289,33 @@ static inline int calc_max_draw(ShowVolumeContext *s, AVFilterLink *outlink, flo
     }
 }
 
+static inline void calc_persistent_max(ShowVolumeContext *s, float max, int channel)
+{
+    /* update max value for persistent max display */
+    if ((max >= s->max_persistent[channel]) || (s->nb_frames_max_display[channel] >= s->persistent_max_frames)) { /* update max value for display */
+        s->max_persistent[channel] = max;
+        s->nb_frames_max_display[channel] = 0;
+    } else {
+        s->nb_frames_max_display[channel] += 1; /* incremente display frame count */
+    }
+}
+
+static inline void draw_max_line(ShowVolumeContext *s, int max_draw, int channel)
+{
+    int k;
+    if (s->orientation) { /* vertical */
+        uint8_t *dst = s->out->data[0] + max_draw * s->out->linesize[0] + channel * (s->b + s->h) * 4;
+        for (k = 0; k < s->h; k++) {
+            memcpy(dst + k * 4, s->persistant_max_rgba, sizeof(s->persistant_max_rgba));
+        }
+    } else { /* horizontal */
+        for (k = 0; k < s->h; k++) {
+            uint8_t *dst = s->out->data[0] + (channel * s->h + channel * s->b + k) * s->out->linesize[0];
+            memcpy(dst + max_draw * 4, s->persistant_max_rgba, sizeof(s->persistant_max_rgba));
+        }
+    }
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -341,6 +381,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                     continue;
                 drawtext(s->out, c * (s->h + s->b) + (s->h - 10) / 2, outlink->h - 35, channel_name, 1);
             }
+
+            if (s->draw_persistent_duration > 0.) {
+                calc_persistent_max(s, max, c);
+                max_draw = FFMAX(0, calc_max_draw(s, outlink, s->max_persistent[c]) - 1);
+                draw_max_line(s, max_draw, c);
+            }
         }
     } else { /* horizontal */
         for (c = 0; c < inlink->channels; c++) {
@@ -370,6 +416,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 if (!channel_name)
                     continue;
                 drawtext(s->out, 2, c * (s->h + s->b) + (s->h - 8) / 2, channel_name, 0);
+            }
+
+            if (s->draw_persistent_duration > 0.) {
+                calc_persistent_max(s, max, c);
+                max_draw = FFMAX(0, calc_max_draw(s, outlink, s->max_persistent[c]) - 1);
+                draw_max_line(s, max_draw, c);
             }
         }
     }

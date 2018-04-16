@@ -20018,6 +20018,16 @@ default is @code{p}.
 @item ds
 Set display scale, can be linear: @code{lin} or log: @code{log},
 default is @code{lin}.
+
+@item dm
+In second.
+If set to > 0., display a line for the max level
+in the previous seconds.
+default is disabled: @code{0.}
+
+@item dmc
+The color of the max line. Use when @code{dm} option is set to > 0.
+default is: @code{orange}
 @end table
 
 @section showwaves
