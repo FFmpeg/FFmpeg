@@ -199,11 +199,11 @@ static int flac_finish_header(struct AVFormatContext *s)
     return 0;
 }
 
-static int flac_write_header(struct AVFormatContext *s)
+static int flac_init(struct AVFormatContext *s)
 {
     AVCodecParameters *par;
     FlacMuxerContext *c = s->priv_data;
-    int ret, i;
+    int i;
 
     c->audio_stream_idx = -1;
     for (i = 0; i < s->nb_streams; i++) {
@@ -238,14 +238,6 @@ static int flac_write_header(struct AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
-    if (!c->write_header)
-        return 0;
-
-    ret = ff_flac_write_header(s->pb, par->extradata,
-                               par->extradata_size, 0);
-    if (ret)
-        return ret;
-
     /* add the channel layout tag */
     if (par->channel_layout &&
         !(par->channel_layout & ~0x3ffffULL) &&
@@ -262,6 +254,23 @@ static int flac_write_header(struct AVFormatContext *s)
             av_dict_set(&s->metadata, "WAVEFORMATEXTENSIBLE_CHANNEL_MASK", buf, 0);
         }
     }
+
+    return 0;
+}
+
+static int flac_write_header(struct AVFormatContext *s)
+{
+    FlacMuxerContext *c = s->priv_data;
+    AVCodecParameters *par = s->streams[c->audio_stream_idx]->codecpar;
+    int ret;
+
+    if (!c->write_header)
+        return 0;
+
+    ret = ff_flac_write_header(s->pb, par->extradata,
+                               par->extradata_size, 0);
+    if (ret < 0)
+        return ret;
 
     if (!c->waiting_pics)
         ret = flac_finish_header(s);
@@ -412,6 +421,7 @@ AVOutputFormat ff_flac_muxer = {
     .extensions        = "flac",
     .audio_codec       = AV_CODEC_ID_FLAC,
     .video_codec       = AV_CODEC_ID_PNG,
+    .init              = flac_init,
     .write_header      = flac_write_header,
     .write_packet      = flac_write_packet,
     .write_trailer     = flac_write_trailer,
