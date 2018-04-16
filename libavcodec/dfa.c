@@ -41,7 +41,7 @@ static av_cold int dfa_decode_init(AVCodecContext *avctx)
 
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
-    if (!avctx->width || !avctx->height)
+    if (!avctx->width || !avctx->height || FFMAX(avctx->width, avctx->height) >= (1<<16))
         return AVERROR_INVALIDDATA;
 
     av_assert0(av_image_check_size(avctx->width, avctx->height, 0, avctx) >= 0);
