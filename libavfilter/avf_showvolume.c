@@ -263,7 +263,8 @@ static void drawtext(AVFrame *pic, int x, int y, const char *txt, int o)
     }
 }
 
-static void clear_picture(ShowVolumeContext *s, AVFilterLink *outlink) {
+static void clear_picture(ShowVolumeContext *s, AVFilterLink *outlink)
+{
     int i, j;
     const uint32_t bg = (uint32_t)(s->bgopacity * 255) << 24;
 
