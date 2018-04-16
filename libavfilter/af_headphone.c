@@ -567,8 +567,8 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
                 if (s->type == TIME_DOMAIN) {
                     offset = idx * FFALIGN(len, 16);
                     for (j = 0; j < len; j++) {
-                        data_ir_l[offset + j] = ptr[len * 2 - j * 2 - 2] * gain_lin;
-                        data_ir_r[offset + j] = ptr[len * 2 - j * 2 - 1] * gain_lin;
+                        data_ir_l[offset + j] = ptr[len * N - j * N - N + I    ] * gain_lin;
+                        data_ir_r[offset + j] = ptr[len * N - j * N - N + I + 1] * gain_lin;
                     }
                 } else {
                     memset(fft_in_l, 0, n_fft * sizeof(*fft_in_l));
