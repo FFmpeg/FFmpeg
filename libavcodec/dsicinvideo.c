@@ -158,6 +158,9 @@ static int cin_decode_lzss(const unsigned char *src, int src_size,
         }
     }
 
+    if (dst_end - dst > dst_size - dst_size/10)
+        return AVERROR_INVALIDDATA;
+
     return 0;
 }
 
@@ -184,6 +187,10 @@ static int cin_decode_rle(const unsigned char *src, int src_size,
         }
         dst += len;
     }
+
+    if (dst_end - dst > dst_size - dst_size/10)
+        return AVERROR_INVALIDDATA;
+
     return 0;
 }
 
