@@ -742,7 +742,7 @@ API changes, most recent first:
   Add av_opt_get_dict_val/set_dict_val with AV_OPT_TYPE_DICT to support
   dictionary types being set as options.
 
-2014-08-13 - afbd4b8 - lavf 56.01.0 - avformat.h
+2014-08-13 - afbd4b7e09 - lavf 56.01.0 - avformat.h
   Add AVFormatContext.event_flags and AVStream.event_flags for signaling to
   the user when events happen in the file/stream.
 
@@ -759,7 +759,7 @@ API changes, most recent first:
 2014-08-08 - 5c3c671 - lavf 55.53.100 - avio.h
   Add avio_feof() and deprecate url_feof().
 
-2014-08-07 - bb78903 - lsws 2.1.3 - swscale.h
+2014-08-07 - bb789016d4 - lsws 2.1.3 - swscale.h
   sws_getContext is not going to be removed in the future.
 
 2014-08-07 - a561662 / ad1ee5f - lavc 55.73.101 / 55.57.3 - avcodec.h
