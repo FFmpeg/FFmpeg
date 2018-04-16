@@ -2277,6 +2277,7 @@ CMDLINE_SET="
     malloc_prefix
     nm
     optflags
+    nvcc
     nvccflags
     pkg_config
     pkg_config_flags
