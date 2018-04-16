@@ -226,27 +226,35 @@ static int cinvideo_decode_frame(AVCodecContext *avctx,
      * surface.width = surface.pitch */
     switch (bitmap_frame_type) {
     case 9:
-        cin_decode_rle(buf, bitmap_frame_size,
+        res =  cin_decode_rle(buf, bitmap_frame_size,
                        cin->bitmap_table[CIN_CUR_BMP], cin->bitmap_size);
+        if (res < 0)
+            return res;
         break;
     case 34:
-        cin_decode_rle(buf, bitmap_frame_size,
+        res =  cin_decode_rle(buf, bitmap_frame_size,
                        cin->bitmap_table[CIN_CUR_BMP], cin->bitmap_size);
+        if (res < 0)
+            return res;
         cin_apply_delta_data(cin->bitmap_table[CIN_PRE_BMP],
                              cin->bitmap_table[CIN_CUR_BMP], cin->bitmap_size);
         break;
     case 35:
         bitmap_frame_size = cin_decode_huffman(buf, bitmap_frame_size,
                            cin->bitmap_table[CIN_INT_BMP], cin->bitmap_size);
-        cin_decode_rle(cin->bitmap_table[CIN_INT_BMP], bitmap_frame_size,
+        res =  cin_decode_rle(cin->bitmap_table[CIN_INT_BMP], bitmap_frame_size,
                        cin->bitmap_table[CIN_CUR_BMP], cin->bitmap_size);
+        if (res < 0)
+            return res;
         break;
     case 36:
         bitmap_frame_size = cin_decode_huffman(buf, bitmap_frame_size,
                                                cin->bitmap_table[CIN_INT_BMP],
                                                cin->bitmap_size);
-        cin_decode_rle(cin->bitmap_table[CIN_INT_BMP], bitmap_frame_size,
+        res = cin_decode_rle(cin->bitmap_table[CIN_INT_BMP], bitmap_frame_size,
                        cin->bitmap_table[CIN_CUR_BMP], cin->bitmap_size);
+        if (res < 0)
+            return res;
         cin_apply_delta_data(cin->bitmap_table[CIN_PRE_BMP],
                              cin->bitmap_table[CIN_CUR_BMP], cin->bitmap_size);
         break;
