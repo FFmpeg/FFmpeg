@@ -165,6 +165,7 @@ extern AVFilter ff_vf_curves;
 extern AVFilter ff_vf_datascope;
 extern AVFilter ff_vf_dctdnoiz;
 extern AVFilter ff_vf_deband;
+extern AVFilter ff_vf_deblock;
 extern AVFilter ff_vf_decimate;
 extern AVFilter ff_vf_deconvolve;
 extern AVFilter ff_vf_deflate;

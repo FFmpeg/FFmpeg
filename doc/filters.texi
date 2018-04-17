@@ -7078,6 +7078,65 @@ e.g. banding detection threshold is triggered for all color components.
 The default is disabled.
 @end table
 
+@section deblock
+
+Remove blocking artifacts from input video.
+
+The filter accepts the following options:
+
+@table @option
+@item filter
+Set filter type, can be @var{weak} or @var{strong}. Default is @var{strong}.
+This controls what kind of deblocking is applied.
+
+@item block
+Set size of block, allowed range is from 4 to 512. Default is @var{8}.
+
+@item alpha
+@item beta
+@item gamma
+@item delta
+Set blocking detection thresholds. Allowed range is 0 to 1.
+Defaults are: @var{0.098} for @var{alpha} and @var{0.05} for the rest.
+Using higher threshold gives more deblocking strength.
+Setting @var{alpha} controls threshold detection at exact edge of block.
+Remaining options controls threshold detection near the edge. Each one for
+below/above or left/right. Setting any of those to @var{0} disables
+deblocking.
+
+@item planes
+Set planes to filter. Default is to filter all available planes.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Deblock using weak filter and block size of 4 pixels.
+@example
+deblock=filter=weak:block=4
+@end example
+
+@item
+Deblock using strong filter, block size of 4 pixels and custom thresholds for
+deblocking more edges.
+@example
+deblock=filter=strong:block=4:alpha=0.12:beta=0.07:gamma=0.06:delta=0.05
+@end example
+
+@item
+Similar as above, but filter only first plane.
+@example
+deblock=filter=strong:block=4:alpha=0.12:beta=0.07:gamma=0.06:delta=0.05:planes=1
+@end example
+
+@item
+Similar as above, but filter only second and third plane.
+@example
+deblock=filter=strong:block=4:alpha=0.12:beta=0.07:gamma=0.06:delta=0.05:planes=6
+@end example
+@end itemize
+
 @anchor{decimate}
 @section decimate
 
