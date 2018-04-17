@@ -721,6 +721,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     int frame_hdr_size, pic_num, pic_data_size;
+    int ret;
 
     ctx->frame            = data;
     ctx->frame->pict_type = AV_PICTURE_TYPE_I;
@@ -741,16 +742,16 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     MOVE_DATA_PTR(frame_hdr_size);
 
-    if (ff_get_buffer(avctx, ctx->frame, 0) < 0)
-        return -1;
+    if ((ret = ff_get_buffer(avctx, ctx->frame, 0)) < 0)
+        return ret;
 
     for (pic_num = 0; ctx->frame->interlaced_frame - pic_num + 1; pic_num++) {
         pic_data_size = decode_picture_header(ctx, buf, buf_size, avctx);
         if (pic_data_size < 0)
             return AVERROR_INVALIDDATA;
 
-        if (decode_picture(ctx, pic_num, avctx))
-            return -1;
+        if ((ret = decode_picture(ctx, pic_num, avctx)) < 0)
+            return ret;
 
         MOVE_DATA_PTR(pic_data_size);
     }
