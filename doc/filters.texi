@@ -2057,7 +2057,7 @@ Change bandreject width.
 Syntax for the command is : "@var{width}"
 @end table
 
-@section bass
+@section bass, lowshelf
 
 Boost or cut the bass (lower) frequencies of the audio using a two-pole
 shelving filter with a response similar to that of a standard
@@ -4432,7 +4432,7 @@ Set LFE input volume. By default, this is @var{1}.
 Set LFE output volume. By default, this is @var{1}.
 @end table
 
-@section treble
+@section treble, highshelf
 
 Boost or cut treble (upper) frequencies of the audio using a two-pole
 shelving filter with a response similar to that of a standard

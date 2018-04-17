@@ -78,6 +78,8 @@ enum FilterType {
     allpass,
     highpass,
     lowpass,
+    lowshelf,
+    highshelf,
 };
 
 enum WidthType {
@@ -245,7 +247,7 @@ static int config_filter(AVFilterLink *outlink, int reset)
     AVFilterLink *inlink    = ctx->inputs[0];
     double A = exp(s->gain / 40 * log(10.));
     double w0 = 2 * M_PI * s->frequency / inlink->sample_rate;
-    double alpha;
+    double alpha, beta;
 
     if (w0 > M_PI) {
         av_log(ctx, AV_LOG_ERROR,
@@ -277,6 +279,8 @@ static int config_filter(AVFilterLink *outlink, int reset)
         av_assert0(0);
     }
 
+    beta = 2 * sqrt(A);
+
     switch (s->filter_type) {
     case biquad:
         break;
@@ -289,20 +293,24 @@ static int config_filter(AVFilterLink *outlink, int reset)
         s->b2 =   1 - alpha * A;
         break;
     case bass:
-        s->a0 =          (A + 1) + (A - 1) * cos(w0) + 2 * sqrt(A) * alpha;
+        beta = sqrt((A * A + 1) - (A - 1) * (A - 1));
+    case lowshelf:
+        s->a0 =          (A + 1) + (A - 1) * cos(w0) + beta * alpha;
         s->a1 =    -2 * ((A - 1) + (A + 1) * cos(w0));
-        s->a2 =          (A + 1) + (A - 1) * cos(w0) - 2 * sqrt(A) * alpha;
-        s->b0 =     A * ((A + 1) - (A - 1) * cos(w0) + 2 * sqrt(A) * alpha);
+        s->a2 =          (A + 1) + (A - 1) * cos(w0) - beta * alpha;
+        s->b0 =     A * ((A + 1) - (A - 1) * cos(w0) + beta * alpha);
         s->b1 = 2 * A * ((A - 1) - (A + 1) * cos(w0));
-        s->b2 =     A * ((A + 1) - (A - 1) * cos(w0) - 2 * sqrt(A) * alpha);
+        s->b2 =     A * ((A + 1) - (A - 1) * cos(w0) - beta * alpha);
         break;
     case treble:
-        s->a0 =          (A + 1) - (A - 1) * cos(w0) + 2 * sqrt(A) * alpha;
+        beta = sqrt((A * A + 1) - (A - 1) * (A - 1));
+    case highshelf:
+        s->a0 =          (A + 1) - (A - 1) * cos(w0) + beta * alpha;
         s->a1 =     2 * ((A - 1) - (A + 1) * cos(w0));
-        s->a2 =          (A + 1) - (A - 1) * cos(w0) - 2 * sqrt(A) * alpha;
-        s->b0 =     A * ((A + 1) + (A - 1) * cos(w0) + 2 * sqrt(A) * alpha);
+        s->a2 =          (A + 1) - (A - 1) * cos(w0) - beta * alpha;
+        s->b0 =     A * ((A + 1) + (A - 1) * cos(w0) + beta * alpha);
         s->b1 =-2 * A * ((A - 1) + (A + 1) * cos(w0));
-        s->b2 =     A * ((A + 1) + (A - 1) * cos(w0) - 2 * sqrt(A) * alpha);
+        s->b2 =     A * ((A + 1) + (A - 1) * cos(w0) - beta * alpha);
         break;
     case bandpass:
         if (s->csg) {
@@ -459,6 +467,8 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
 
     if ((!strcmp(cmd, "frequency") || !strcmp(cmd, "f")) &&
         (s->filter_type == equalizer ||
+         s->filter_type == lowshelf  ||
+         s->filter_type == highshelf ||
          s->filter_type == bass      ||
          s->filter_type == treble    ||
          s->filter_type == bandpass  ||
@@ -476,6 +486,8 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
         s->frequency = freq;
     } else if ((!strcmp(cmd, "gain") || !strcmp(cmd, "g")) &&
         (s->filter_type == equalizer ||
+         s->filter_type == lowshelf  ||
+         s->filter_type == highshelf ||
          s->filter_type == bass      ||
          s->filter_type == treble)) {
         double gain;
@@ -488,6 +500,8 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
         s->gain = gain;
     } else if ((!strcmp(cmd, "width") || !strcmp(cmd, "w")) &&
         (s->filter_type == equalizer ||
+         s->filter_type == lowshelf  ||
+         s->filter_type == highshelf ||
          s->filter_type == bass      ||
          s->filter_type == treble    ||
          s->filter_type == bandpass  ||
@@ -505,6 +519,8 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
         s->width = width;
     } else if ((!strcmp(cmd, "width_type") || !strcmp(cmd, "t")) &&
         (s->filter_type == equalizer ||
+         s->filter_type == lowshelf  ||
+         s->filter_type == highshelf ||
          s->filter_type == bass      ||
          s->filter_type == treble    ||
          s->filter_type == bandpass  ||
@@ -784,6 +800,50 @@ static const AVOption allpass_options[] = {
 
 DEFINE_BIQUAD_FILTER(allpass, "Apply a two-pole all-pass filter.");
 #endif  /* CONFIG_ALLPASS_FILTER */
+#if CONFIG_LOWSHELF_FILTER
+static const AVOption lowshelf_options[] = {
+    {"frequency", "set central frequency", OFFSET(frequency), AV_OPT_TYPE_DOUBLE, {.dbl=100}, 0, 999999, FLAGS},
+    {"f",         "set central frequency", OFFSET(frequency), AV_OPT_TYPE_DOUBLE, {.dbl=100}, 0, 999999, FLAGS},
+    {"width_type", "set filter-width type", OFFSET(width_type), AV_OPT_TYPE_INT, {.i64=QFACTOR}, HERTZ, NB_WTYPE-1, FLAGS, "width_type"},
+    {"t",          "set filter-width type", OFFSET(width_type), AV_OPT_TYPE_INT, {.i64=QFACTOR}, HERTZ, NB_WTYPE-1, FLAGS, "width_type"},
+    {"h", "Hz", 0, AV_OPT_TYPE_CONST, {.i64=HERTZ}, 0, 0, FLAGS, "width_type"},
+    {"q", "Q-Factor", 0, AV_OPT_TYPE_CONST, {.i64=QFACTOR}, 0, 0, FLAGS, "width_type"},
+    {"o", "octave", 0, AV_OPT_TYPE_CONST, {.i64=OCTAVE}, 0, 0, FLAGS, "width_type"},
+    {"s", "slope", 0, AV_OPT_TYPE_CONST, {.i64=SLOPE}, 0, 0, FLAGS, "width_type"},
+    {"k", "kHz", 0, AV_OPT_TYPE_CONST, {.i64=KHERTZ}, 0, 0, FLAGS, "width_type"},
+    {"width", "set shelf transition steep", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 99999, FLAGS},
+    {"w",     "set shelf transition steep", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 99999, FLAGS},
+    {"gain", "set gain", OFFSET(gain), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, FLAGS},
+    {"g",    "set gain", OFFSET(gain), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, FLAGS},
+    {"channels", "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
+    {"c",        "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
+    {NULL}
+};
+
+DEFINE_BIQUAD_FILTER(lowshelf, "Apply a low shelf filter.");
+#endif  /* CONFIG_LOWSHELF_FILTER */
+#if CONFIG_HIGHSHELF_FILTER
+static const AVOption highshelf_options[] = {
+    {"frequency", "set central frequency", OFFSET(frequency), AV_OPT_TYPE_DOUBLE, {.dbl=3000}, 0, 999999, FLAGS},
+    {"f",         "set central frequency", OFFSET(frequency), AV_OPT_TYPE_DOUBLE, {.dbl=3000}, 0, 999999, FLAGS},
+    {"width_type", "set filter-width type", OFFSET(width_type), AV_OPT_TYPE_INT, {.i64=QFACTOR}, HERTZ, NB_WTYPE-1, FLAGS, "width_type"},
+    {"t",          "set filter-width type", OFFSET(width_type), AV_OPT_TYPE_INT, {.i64=QFACTOR}, HERTZ, NB_WTYPE-1, FLAGS, "width_type"},
+    {"h", "Hz", 0, AV_OPT_TYPE_CONST, {.i64=HERTZ}, 0, 0, FLAGS, "width_type"},
+    {"q", "Q-Factor", 0, AV_OPT_TYPE_CONST, {.i64=QFACTOR}, 0, 0, FLAGS, "width_type"},
+    {"o", "octave", 0, AV_OPT_TYPE_CONST, {.i64=OCTAVE}, 0, 0, FLAGS, "width_type"},
+    {"s", "slope", 0, AV_OPT_TYPE_CONST, {.i64=SLOPE}, 0, 0, FLAGS, "width_type"},
+    {"k", "kHz", 0, AV_OPT_TYPE_CONST, {.i64=KHERTZ}, 0, 0, FLAGS, "width_type"},
+    {"width", "set shelf transition steep", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 99999, FLAGS},
+    {"w",     "set shelf transition steep", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 99999, FLAGS},
+    {"gain", "set gain", OFFSET(gain), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, FLAGS},
+    {"g",    "set gain", OFFSET(gain), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, FLAGS},
+    {"channels", "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
+    {"c",        "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
+    {NULL}
+};
+
+DEFINE_BIQUAD_FILTER(highshelf, "Apply a high shelf filter.");
+#endif  /* CONFIG_HIGHSHELF_FILTER */
 #if CONFIG_BIQUAD_FILTER
 static const AVOption biquad_options[] = {
     {"a0", NULL, OFFSET(a0), AV_OPT_TYPE_DOUBLE, {.dbl=1}, INT32_MIN, INT32_MAX, FLAGS},
