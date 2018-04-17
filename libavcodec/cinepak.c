@@ -315,14 +315,11 @@ static int cinepak_decode_strip (CinepakContext *s,
     return AVERROR_INVALIDDATA;
 }
 
-static int cinepak_decode (CinepakContext *s)
+static int cinepak_predecode_check (CinepakContext *s)
 {
-    const uint8_t  *eod = (s->data + s->size);
-    int           i, result, strip_size, frame_flags, num_strips;
-    int           y0 = 0;
+    int           num_strips;
     int           encoded_buf_size;
 
-    frame_flags = s->data[0];
     num_strips  = AV_RB16 (&s->data[8]);
     encoded_buf_size = AV_RB24(&s->data[1]);
 
@@ -352,6 +349,21 @@ static int cinepak_decode (CinepakContext *s)
         } else
             s->sega_film_skip_bytes = 0;
     }
+
+    if (s->size < 10 + s->sega_film_skip_bytes + num_strips * 12)
+        return AVERROR_INVALIDDATA;
+
+    return 0;
+}
+
+static int cinepak_decode (CinepakContext *s)
+{
+    const uint8_t  *eod = (s->data + s->size);
+    int           i, result, strip_size, frame_flags, num_strips;
+    int           y0 = 0;
+
+    frame_flags = s->data[0];
+    num_strips  = AV_RB16 (&s->data[8]);
 
     s->data += 10 + s->sega_film_skip_bytes;
 
@@ -438,6 +450,11 @@ static int cinepak_decode_frame(AVCodecContext *avctx,
 
     if (s->size < 10)
         return AVERROR_INVALIDDATA;
+
+    if ((ret = cinepak_predecode_check(s)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "cinepak_predecode_check failed\n");
+        return ret;
+    }
 
     if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
         return ret;
