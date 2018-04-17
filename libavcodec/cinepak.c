@@ -444,12 +444,19 @@ static int cinepak_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int ret = 0, buf_size = avpkt->size;
     CinepakContext *s = avctx->priv_data;
+    int num_strips;
 
     s->data = buf;
     s->size = buf_size;
 
     if (s->size < 10)
         return AVERROR_INVALIDDATA;
+
+    num_strips = AV_RB16 (&s->data[8]);
+
+    //Empty frame, do not waste time
+    if (!num_strips && (!s->palette_video || !av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL)))
+        return buf_size;
 
     if ((ret = cinepak_predecode_check(s)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "cinepak_predecode_check failed\n");
