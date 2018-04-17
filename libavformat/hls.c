@@ -202,11 +202,6 @@ typedef struct HLSContext {
     int64_t first_timestamp;
     int64_t cur_timestamp;
     AVIOInterruptCB *interrupt_callback;
-    char *referer;                       ///< holds HTTP referer set as an AVOption to the HTTP protocol context
-    char *user_agent;                    ///< holds HTTP user agent set as an AVOption to the HTTP protocol context
-    char *cookies;                       ///< holds HTTP cookie values set in either the initial response or as an AVOption to the HTTP protocol context
-    char *headers;                       ///< holds HTTP headers set as an AVOption to the HTTP protocol context
-    char *http_proxy;                    ///< holds the address of the HTTP proxy server
     AVDictionary *avio_opts;
     int strict_std_compliance;
     char *allowed_extensions;
@@ -267,10 +262,6 @@ static void free_playlist_list(HLSContext *c)
         av_free(pls);
     }
     av_freep(&c->playlists);
-    av_freep(&c->cookies);
-    av_freep(&c->user_agent);
-    av_freep(&c->headers);
-    av_freep(&c->http_proxy);
     c->n_playlists = 0;
 }
 
@@ -593,14 +584,6 @@ static int ensure_playlist(HLSContext *c, struct playlist **pls, const char *url
     return 0;
 }
 
-static void update_options(char **dest, const char *name, void *src)
-{
-    av_freep(dest);
-    av_opt_get(src, name, AV_OPT_SEARCH_CHILDREN, (uint8_t**)dest);
-    if (*dest && !strlen(*dest))
-        av_freep(dest);
-}
-
 static int open_url_keepalive(AVFormatContext *s, AVIOContext **pb,
                               const char *url)
 {
@@ -684,12 +667,8 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
         if (!(s->flags & AVFMT_FLAG_CUSTOM_IO))
             av_opt_get(*pb, "cookies", AV_OPT_SEARCH_CHILDREN, (uint8_t**)&new_cookies);
 
-        if (new_cookies) {
-            av_free(c->cookies);
-            c->cookies = new_cookies;
-        }
-
-        av_dict_set(&opts, "cookies", c->cookies, 0);
+        if (new_cookies)
+            av_dict_set(&opts, "cookies", new_cookies, AV_DICT_DONT_STRDUP_VAL);
     }
 
     av_dict_free(&tmp);
@@ -736,14 +715,7 @@ static int parse_playlist(HLSContext *c, const char *url,
 
     if (!in) {
         AVDictionary *opts = NULL;
-        /* Some HLS servers don't like being sent the range header */
-        av_dict_set(&opts, "seekable", "0", 0);
-
-        // broker prior HTTP options that should be consistent across requests
-        av_dict_set(&opts, "user_agent", c->user_agent, 0);
-        av_dict_set(&opts, "cookies", c->cookies, 0);
-        av_dict_set(&opts, "headers", c->headers, 0);
-        av_dict_set(&opts, "http_proxy", c->http_proxy, 0);
+        av_dict_copy(&opts, c->avio_opts, 0);
 
         if (c->http_persistent)
             av_dict_set(&opts, "multiple_requests", "1", 0);
@@ -1160,14 +1132,6 @@ static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg, 
     int ret;
     int is_http = 0;
 
-    // broker prior HTTP options that should be consistent across requests
-    av_dict_set(&opts, "user_agent", c->user_agent, 0);
-    av_dict_set(&opts, "referer", c->referer, 0);
-    av_dict_set(&opts, "cookies", c->cookies, 0);
-    av_dict_set(&opts, "headers", c->headers, 0);
-    av_dict_set(&opts, "http_proxy", c->http_proxy, 0);
-    av_dict_set(&opts, "seekable", "0", 0);
-
     if (c->http_persistent)
         av_dict_set(&opts, "multiple_requests", "1", 0);
 
@@ -1184,7 +1148,6 @@ static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg, 
     if (seg->key_type == KEY_NONE) {
         ret = open_url(pls->parent, in, seg->url, c->avio_opts, opts, &is_http);
     } else if (seg->key_type == KEY_AES_128) {
-        AVDictionary *opts2 = NULL;
         char iv[33], key[33], url[MAX_URL_SIZE];
         if (strcmp(seg->key, pls->key_url)) {
             AVIOContext *pb = NULL;
@@ -1209,14 +1172,10 @@ static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg, 
         else
             snprintf(url, sizeof(url), "crypto:%s", seg->url);
 
-        av_dict_copy(&opts2, c->avio_opts, 0);
-        av_dict_set(&opts2, "key", key, 0);
-        av_dict_set(&opts2, "iv", iv, 0);
+        av_dict_set(&opts, "key", key, 0);
+        av_dict_set(&opts, "iv", iv, 0);
 
-        ret = open_url(pls->parent, in, url, opts2, opts, &is_http);
-
-        av_dict_free(&opts2);
-
+        ret = open_url(pls->parent, in, url, c->avio_opts, opts, &is_http);
         if (ret < 0) {
             goto cleanup;
         }
@@ -1772,7 +1731,6 @@ static int hls_close(AVFormatContext *s)
 
 static int hls_read_header(AVFormatContext *s)
 {
-    void *u = (s->flags & AVFMT_FLAG_CUSTOM_IO) ? NULL : s->pb;
     HLSContext *c = s->priv_data;
     int ret = 0, i;
     int highest_cur_seq_no = 0;
@@ -1785,28 +1743,14 @@ static int hls_read_header(AVFormatContext *s)
     c->first_timestamp = AV_NOPTS_VALUE;
     c->cur_timestamp = AV_NOPTS_VALUE;
 
-    if (u) {
-        // get the previous user agent & set back to null if string size is zero
-        update_options(&c->user_agent, "user_agent", u);
-
-        // get the previous cookies & set back to null if string size is zero
-        update_options(&c->cookies, "cookies", u);
-
-        // get the previous headers & set back to null if string size is zero
-        update_options(&c->headers, "headers", u);
-
-        // get the previous http proxt & set back to null if string size is zero
-        update_options(&c->http_proxy, "http_proxy", u);
-    }
-
-    if ((ret = parse_playlist(c, s->url, NULL, s->pb)) < 0)
-        goto fail;
-
     if ((ret = save_avio_options(s)) < 0)
         goto fail;
 
     /* Some HLS servers don't like being sent the range header */
     av_dict_set(&c->avio_opts, "seekable", "0", 0);
+
+    if ((ret = parse_playlist(c, s->url, NULL, s->pb)) < 0)
+        goto fail;
 
     if (c->n_variants == 0) {
         av_log(NULL, AV_LOG_WARNING, "Empty playlist\n");
