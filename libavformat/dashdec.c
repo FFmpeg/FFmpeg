@@ -1897,7 +1897,7 @@ static int init_section_compare_audio(DASHContext *c)
 
 static void copy_init_section(struct representation *rep_dest, struct representation *rep_src)
 {
-    memcpy(rep_dest->init_section, rep_src->init_section, sizeof(rep_src->init_section));
+    *rep_dest->init_section = *rep_src->init_section;
     rep_dest->init_sec_buf = av_mallocz(rep_src->init_sec_buf_size);
     memcpy(rep_dest->init_sec_buf, rep_src->init_sec_buf, rep_src->init_sec_data_len);
     rep_dest->init_sec_buf_size = rep_src->init_sec_buf_size;
