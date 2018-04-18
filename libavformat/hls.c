@@ -919,9 +919,6 @@ static int read_from_url(struct playlist *pls, struct segment *seg,
         buf_size = FFMIN(buf_size, seg->size - pls->cur_seg_offset);
 
     ret = avio_read(pls->input, buf, buf_size);
-    if (ret != buf_size)
-        av_log(NULL, AV_LOG_ERROR, "Could not read complete segment.\n");
-
     if (ret > 0)
         pls->cur_seg_offset += ret;
 
