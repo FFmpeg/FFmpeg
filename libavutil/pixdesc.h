@@ -167,12 +167,8 @@ typedef struct AVPixFmtDescriptor {
 
 /**
  * The pixel format has an alpha channel. This is set on all formats that
- * support alpha in some way. The exception is AV_PIX_FMT_PAL8, which can
- * carry alpha as part of the palette. Details are explained in the
- * AVPixelFormat enum, and are also encoded in the corresponding
- * AVPixFmtDescriptor.
- *
- * The alpha is always straight, never pre-multiplied.
+ * support alpha in some way, including AV_PIX_FMT_PAL8. The alpha is always
+ * straight, never pre-multiplied.
  *
  * If a codec or a filter does not support alpha, it should set all alpha to
  * opaque, or use the equivalent pixel formats without alpha component, e.g.

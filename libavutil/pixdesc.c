@@ -288,7 +288,7 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .comp = {
             { 0, 1, 0, 0, 8, 0, 7, 1 },
         },
-        .flags = AV_PIX_FMT_FLAG_PAL,
+        .flags = AV_PIX_FMT_FLAG_PAL | AV_PIX_FMT_FLAG_ALPHA,
     },
     [AV_PIX_FMT_YUVJ420P] = {
         .name = "yuvj420p",
@@ -2432,7 +2432,6 @@ void ff_check_pixfmt_descriptors(void){
         av_assert0(d->log2_chroma_h <= 3);
         av_assert0(d->nb_components <= 4);
         av_assert0(d->name && d->name[0]);
-        av_assert0((d->nb_components==4 || d->nb_components==2) == !!(d->flags & AV_PIX_FMT_FLAG_ALPHA));
         av_assert2(av_get_pix_fmt(d->name) == i);
 
         for (j=0; j<FF_ARRAY_ELEMS(d->comp); j++) {
