@@ -22,7 +22,7 @@
 #ifndef AVCODEC_SHEERVIDEODATA_H
 #define AVCODEC_SHEERVIDEODATA_H
 
-#include <libavutil/common.h>
+#include "libavutil/common.h"
 
 static const uint8_t l_r_rgb[256] = {
      3,  3,  4,  4,  5,  5,  5,  6,  6,  6,  7,  7,  7,  7,  7,  8,
