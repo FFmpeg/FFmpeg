@@ -855,7 +855,7 @@ static const AVClass android_camera_class = {
     .class_name = "android_camera indev",
     .item_name  = av_default_item_name,
     .option     = options,
-    .version    = LIBAVDEVICE_VERSION_INT,
+    .version    = LIBAVUTIL_VERSION_INT,
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT,
 };
 
