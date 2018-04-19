@@ -2482,7 +2482,7 @@ enum AVPixelFormat av_pix_fmt_swap_endianness(enum AVPixelFormat pix_fmt)
 #define FF_COLOR_XYZ      4
 
 #define pixdesc_has_alpha(pixdesc) \
-    ((pixdesc)->nb_components == 2 || (pixdesc)->nb_components == 4 || (pixdesc)->flags & AV_PIX_FMT_FLAG_PAL)
+    ((pixdesc)->flags & AV_PIX_FMT_FLAG_ALPHA)
 
 
 static int get_color_type(const AVPixFmtDescriptor *desc) {

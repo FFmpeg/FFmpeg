@@ -65,6 +65,7 @@ enum AVPixelFormat choose_pixel_fmt(AVStream *st, AVCodecContext *enc_ctx, AVCod
     if (codec && codec->pix_fmts) {
         const enum AVPixelFormat *p = codec->pix_fmts;
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(target);
+        //FIXME: This should check for AV_PIX_FMT_FLAG_ALPHA after PAL8 pixel format without alpha is implemented
         int has_alpha = desc ? desc->nb_components % 2 == 0 : 0;
         enum AVPixelFormat best= AV_PIX_FMT_NONE;
 
