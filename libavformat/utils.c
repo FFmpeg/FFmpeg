@@ -2620,7 +2620,6 @@ static void update_stream_timings(AVFormatContext *ic)
     int64_t start_time, start_time1, start_time_text, end_time, end_time1, end_time_text;
     int64_t duration, duration1, duration_text, filesize;
     int i;
-    AVStream *st;
     AVProgram *p;
 
     start_time = INT64_MAX;
@@ -2631,21 +2630,22 @@ static void update_stream_timings(AVFormatContext *ic)
     duration_text = INT64_MIN;
 
     for (i = 0; i < ic->nb_streams; i++) {
-        st = ic->streams[i];
+        AVStream *st = ic->streams[i];
+        int is_text = st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE ||
+                      st->codecpar->codec_type == AVMEDIA_TYPE_DATA;
         if (st->start_time != AV_NOPTS_VALUE && st->time_base.den) {
             start_time1 = av_rescale_q(st->start_time, st->time_base,
                                        AV_TIME_BASE_Q);
-            if (st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE || st->codecpar->codec_type == AVMEDIA_TYPE_DATA) {
-                if (start_time1 < start_time_text)
-                    start_time_text = start_time1;
-            } else
+            if (is_text)
+                start_time_text = FFMIN(start_time_text, start_time1);
+            else
                 start_time = FFMIN(start_time, start_time1);
             end_time1 = av_rescale_q_rnd(st->duration, st->time_base,
                                          AV_TIME_BASE_Q,
                                          AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
             if (end_time1 != AV_NOPTS_VALUE && (end_time1 > 0 ? start_time1 <= INT64_MAX - end_time1 : start_time1 >= INT64_MIN - end_time1)) {
                 end_time1 += start_time1;
-                if (st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE || st->codecpar->codec_type == AVMEDIA_TYPE_DATA)
+                if (is_text)
                     end_time_text = FFMAX(end_time_text, end_time1);
                 else
                     end_time = FFMAX(end_time, end_time1);
@@ -2660,7 +2660,7 @@ static void update_stream_timings(AVFormatContext *ic)
         if (st->duration != AV_NOPTS_VALUE) {
             duration1 = av_rescale_q(st->duration, st->time_base,
                                      AV_TIME_BASE_Q);
-            if (st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE || st->codecpar->codec_type == AVMEDIA_TYPE_DATA)
+            if (is_text)
                 duration_text = FFMAX(duration_text, duration1);
             else
                 duration = FFMAX(duration, duration1);
@@ -2671,11 +2671,10 @@ static void update_stream_timings(AVFormatContext *ic)
     else if (start_time > start_time_text)
         av_log(ic, AV_LOG_VERBOSE, "Ignoring outlier non primary stream starttime %f\n", start_time_text / (float)AV_TIME_BASE);
 
-    if (end_time == INT64_MIN || (end_time < end_time_text && end_time_text - (uint64_t)end_time < AV_TIME_BASE)) {
+    if (end_time == INT64_MIN || (end_time < end_time_text && end_time_text - (uint64_t)end_time < AV_TIME_BASE))
         end_time = end_time_text;
-    } else if (end_time < end_time_text) {
+    else if (end_time < end_time_text)
         av_log(ic, AV_LOG_VERBOSE, "Ignoring outlier non primary stream endtime %f\n", end_time_text / (float)AV_TIME_BASE);
-    }
 
      if (duration == INT64_MIN || (duration < duration_text && duration_text - duration < AV_TIME_BASE))
          duration = duration_text;
