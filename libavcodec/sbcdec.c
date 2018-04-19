@@ -147,7 +147,7 @@ static int sbc_unpack_frame(const uint8_t *data, struct sbc_frame *frame,
         }
     }
 
-    if (data[3] != sbc_crc8(frame->crc_ctx, crc_header, crc_pos))
+    if (data[3] != ff_sbc_crc8(frame->crc_ctx, crc_header, crc_pos))
         return -3;
 
     ff_sbc_calculate_bits(frame, bits);

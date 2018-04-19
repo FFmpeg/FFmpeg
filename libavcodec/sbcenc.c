@@ -156,7 +156,7 @@ static size_t sbc_pack_frame(AVPacket *avpkt, struct sbc_frame *frame,
     if (crc_pos % 8)
         crc_header[crc_pos >> 3] <<= 8 - (crc_pos % 8);
 
-    avpkt->data[3] = sbc_crc8(frame->crc_ctx, crc_header, crc_pos);
+    avpkt->data[3] = ff_sbc_crc8(frame->crc_ctx, crc_header, crc_pos);
 
     ff_sbc_calculate_bits(frame, bits);
 

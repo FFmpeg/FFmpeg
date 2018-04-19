@@ -52,7 +52,7 @@ static const int sbc_offset8[4][8] = {
 /*
  * Calculates the CRC-8 of the first len bits in data
  */
-uint8_t sbc_crc8(const AVCRC *ctx, const uint8_t *data, size_t len)
+uint8_t ff_sbc_crc8(const AVCRC *ctx, const uint8_t *data, size_t len)
 {
     size_t byte_length = len >> 3;
     int bit_length = len & 7;
