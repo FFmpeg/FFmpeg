@@ -112,7 +112,7 @@ struct sbc_frame {
     const AVCRC *crc_ctx;
 };
 
-uint8_t sbc_crc8(const AVCRC *crc_ctx, const uint8_t *data, size_t len);
+uint8_t ff_sbc_crc8(const AVCRC *crc_ctx, const uint8_t *data, size_t len);
 void ff_sbc_calculate_bits(const struct sbc_frame *frame, int (*bits)[8]);
 
 #endif /* AVCODEC_SBC_H */
