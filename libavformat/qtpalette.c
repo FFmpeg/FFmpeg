@@ -49,7 +49,7 @@ int ff_get_qtpalette(int codec_id, AVIOContext *pb, uint32_t *palette)
     /* If the depth is 1, 2, 4, or 8 bpp, file is palettized. */
     if ((bit_depth == 1 || bit_depth == 2 || bit_depth == 4 || bit_depth == 8)) {
         uint32_t color_count, color_start, color_end;
-        uint32_t a, r, g, b;
+        uint32_t r, g, b;
 
         /* Ignore the greyscale bit for 1-bit video and sample
          * descriptions containing a color table. */
@@ -94,17 +94,17 @@ int ff_get_qtpalette(int codec_id, AVIOContext *pb, uint32_t *palette)
             color_end = avio_rb16(pb);
             if ((color_start <= 255) && (color_end <= 255)) {
                 for (i = color_start; i <= color_end; i++) {
-                    /* each A, R, G, or B component is 16 bits;
-                     * only use the top 8 bits */
-                    a = avio_r8(pb);
-                    avio_r8(pb);
+                    /* Each color is made of four unsigned 16 bit integers. The
+                     * first integer is 0, the remaining integers are the red,
+                     * the green and the blue values. We only use the top 8 bit. */
+                    avio_skip(pb, 2);
                     r = avio_r8(pb);
                     avio_r8(pb);
                     g = avio_r8(pb);
                     avio_r8(pb);
                     b = avio_r8(pb);
                     avio_r8(pb);
-                    palette[i] = (a << 24 ) | (r << 16) | (g << 8) | (b);
+                    palette[i] = (0xFFU << 24) | (r << 16) | (g << 8) | (b);
                 }
             }
         }
