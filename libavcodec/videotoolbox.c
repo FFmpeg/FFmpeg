@@ -36,6 +36,9 @@
 #ifndef kVTVideoDecoderSpecification_RequireHardwareAcceleratedVideoDecoder
 #  define kVTVideoDecoderSpecification_RequireHardwareAcceleratedVideoDecoder CFSTR("RequireHardwareAcceleratedVideoDecoder")
 #endif
+#ifndef kVTVideoDecoderSpecification_EnableHardwareAcceleratedVideoDecoder
+#  define kVTVideoDecoderSpecification_EnableHardwareAcceleratedVideoDecoder CFSTR("EnableHardwareAcceleratedVideoDecoder")
+#endif
 
 #if !HAVE_KCMVIDEOCODECTYPE_HEVC
 enum { kCMVideoCodecType_HEVC = 'hvc1' };
@@ -709,7 +712,9 @@ static CFDictionaryRef videotoolbox_decoder_config_create(CMVideoCodecType codec
                                                                    &kCFTypeDictionaryValueCallBacks);
 
     CFDictionarySetValue(config_info,
-                         kVTVideoDecoderSpecification_RequireHardwareAcceleratedVideoDecoder,
+                         codec_type == kCMVideoCodecType_HEVC ?
+                            kVTVideoDecoderSpecification_EnableHardwareAcceleratedVideoDecoder :
+                            kVTVideoDecoderSpecification_RequireHardwareAcceleratedVideoDecoder,
                          kCFBooleanTrue);
 
     CFMutableDictionaryRef avc_info;
