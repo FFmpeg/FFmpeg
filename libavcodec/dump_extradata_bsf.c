@@ -93,7 +93,7 @@ static const AVClass dump_extradata_class = {
     .class_name = "dump_extradata bsf",
     .item_name  = av_default_item_name,
     .option     = options,
-    .version    = LIBAVUTIL_VERSION_MAJOR,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 const AVBitStreamFilter ff_dump_extradata_bsf = {
