@@ -5833,6 +5833,7 @@ static int mov_read_sample_encryption_info(MOVContext *c, AVIOContext *pb, MOVSt
 
     if (use_subsamples) {
         subsample_count = avio_rb16(pb);
+        av_free((*sample)->subsamples);
         (*sample)->subsamples = av_mallocz_array(subsample_count, sizeof(*subsamples));
         if (!(*sample)->subsamples) {
             av_encryption_info_free(*sample);
