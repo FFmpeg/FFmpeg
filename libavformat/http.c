@@ -1015,7 +1015,8 @@ static int process_line(URLContext *h, char *line, int line_count,
 /**
  * Create a string containing cookie values for use as a HTTP cookie header
  * field value for a particular path and domain from the cookie values stored in
- * the HTTP protocol context. The cookie string is stored in *cookies.
+ * the HTTP protocol context. The cookie string is stored in *cookies, and may
+ * be NULL if there are no valid cookies.
  *
  * @return a negative value if an error condition occurred, 0 otherwise
  */
@@ -1025,15 +1026,20 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path,
     // cookie strings will look like Set-Cookie header field values.  Multiple
     // Set-Cookie fields will result in multiple values delimited by a newline
     int ret = 0;
-    char *cookie, *set_cookies = av_strdup(s->cookies), *next = set_cookies;
-
-    if (!set_cookies) return AVERROR(EINVAL);
+    char *cookie, *set_cookies, *next;
 
     // destroy any cookies in the dictionary.
     av_dict_free(&s->cookie_dict);
 
+    if (!s->cookies)
+        return 0;
+
+    next = set_cookies = av_strdup(s->cookies);
+    if (!next)
+        return AVERROR(ENOMEM);
+
     *cookies = NULL;
-    while ((cookie = av_strtok(next, "\n", &next))) {
+    while ((cookie = av_strtok(next, "\n", &next)) && !ret) {
         AVDictionary *cookie_params = NULL;
         AVDictionaryEntry *cookie_entry, *e;
 
@@ -1043,23 +1049,19 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path,
 
         // continue on to the next cookie if this one cannot be parsed
         if (parse_set_cookie(cookie, &cookie_params))
-            continue;
+            goto skip_cookie;
 
         // if the cookie has no value, skip it
         cookie_entry = av_dict_get(cookie_params, "", NULL, AV_DICT_IGNORE_SUFFIX);
-        if (!cookie_entry || !cookie_entry->value) {
-            av_dict_free(&cookie_params);
-            continue;
-        }
+        if (!cookie_entry || !cookie_entry->value)
+            goto skip_cookie;
 
         // if the cookie has expired, don't add it
         if ((e = av_dict_get(cookie_params, "expires", NULL, 0)) && e->value) {
             struct tm tm_buf = {0};
             if (!parse_set_cookie_expiry_time(e->value, &tm_buf)) {
-                if (av_timegm(&tm_buf) < av_gettime() / 1000000) {
-                    av_dict_free(&cookie_params);
-                    continue;
-                }
+                if (av_timegm(&tm_buf) < av_gettime() / 1000000)
+                    goto skip_cookie;
             }
         }
 
@@ -1067,42 +1069,31 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path,
         if ((e = av_dict_get(cookie_params, "domain", NULL, 0)) && e->value) {
             // find the offset comparison is on the min domain (b.com, not a.b.com)
             int domain_offset = strlen(domain) - strlen(e->value);
-            if (domain_offset < 0) {
-                av_dict_free(&cookie_params);
-                continue;
-            }
+            if (domain_offset < 0)
+                goto skip_cookie;
 
             // match the cookie domain
-            if (av_strcasecmp(&domain[domain_offset], e->value)) {
-                av_dict_free(&cookie_params);
-                continue;
-            }
+            if (av_strcasecmp(&domain[domain_offset], e->value))
+                goto skip_cookie;
         }
 
         // ensure this cookie matches the path
         e = av_dict_get(cookie_params, "path", NULL, 0);
-        if (!e || av_strncasecmp(path, e->value, strlen(e->value))) {
-            av_dict_free(&cookie_params);
-            continue;
-        }
+        if (!e || av_strncasecmp(path, e->value, strlen(e->value)))
+            goto skip_cookie;
 
         // cookie parameters match, so copy the value
         if (!*cookies) {
-            if (!(*cookies = av_asprintf("%s=%s", cookie_entry->key, cookie_entry->value))) {
-                ret = AVERROR(ENOMEM);
-                break;
-            }
+            *cookies = av_asprintf("%s=%s", cookie_entry->key, cookie_entry->value);
         } else {
             char *tmp = *cookies;
-            size_t str_size = strlen(cookie_entry->key) + strlen(cookie_entry->value) + strlen(*cookies) + 4;
-            if (!(*cookies = av_malloc(str_size))) {
-                ret = AVERROR(ENOMEM);
-                av_free(tmp);
-                break;
-            }
-            snprintf(*cookies, str_size, "%s; %s=%s", tmp, cookie_entry->key, cookie_entry->value);
+            *cookies = av_asprintf("%s; %s=%s", tmp, cookie_entry->key, cookie_entry->value);
             av_free(tmp);
         }
+        if (!*cookies)
+            ret = AVERROR(ENOMEM);
+
+    skip_cookie:
         av_dict_free(&cookie_params);
     }
 
