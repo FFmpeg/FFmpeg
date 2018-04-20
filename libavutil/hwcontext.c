@@ -870,3 +870,10 @@ fail:
     av_buffer_unref(&dst_ref);
     return ret;
 }
+
+int ff_hwframe_map_replace(AVFrame *dst, const AVFrame *src)
+{
+    HWMapDescriptor *hwmap = (HWMapDescriptor*)dst->buf[0]->data;
+    av_frame_unref(hwmap->source);
+    return av_frame_ref(hwmap->source, src);
+}
