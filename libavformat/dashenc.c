@@ -827,7 +827,7 @@ static int write_manifest(AVFormatContext *s, int final)
         }
         av_dict_free(&opts);
 
-        ff_hls_write_playlist_version(out, 6);
+        ff_hls_write_playlist_version(out, 7);
 
         for (i = 0; i < s->nb_streams; i++) {
             char playlist_file[64];
