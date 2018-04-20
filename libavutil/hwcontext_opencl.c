@@ -2172,10 +2172,7 @@ static int opencl_map_from_vaapi(AVHWFramesContext *dst_fc,
     if (err < 0)
         goto fail;
 
-    // Adjust the map descriptor so that unmap works correctly.
-    hwmap = (HWMapDescriptor*)dst->buf[0]->data;
-    av_frame_unref(hwmap->source);
-    err = av_frame_ref(hwmap->source, src);
+    err = ff_hwframe_map_replace(dst, src);
 
 fail:
     av_frame_free(&tmp);
