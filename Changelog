@@ -24,6 +24,7 @@ version <next>:
 - Haivision SRT protocol via libsrt
 - Dropped support for building for Windows XP. The minimum supported Windows
   version is Windows Vista.
+- support mbedTLS-based TLS
 
 
 version 12:

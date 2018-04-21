@@ -229,6 +229,7 @@ External library support:
   --enable-libxcb-shm        X11 shm communication [auto]
   --enable-libxcb-xfixes     X11 mouse rendering [auto]
   --enable-libxvid           MPEG-4 ASP video encoding
+  --enable-mbedtls           crypto
   --enable-openssl           crypto
   --enable-zlib              compression [autodetect]
 
@@ -1343,6 +1344,7 @@ EXTERNAL_LIBRARY_VERSION3_LIST="
     libopencore_amrwb
     libvo_aacenc
     libvo_amrwbenc
+    mbedtls
 "
 
 EXTERNAL_LIBRARY_LIST="
@@ -2506,7 +2508,7 @@ xcbgrab_indev_suggest="libxcb_shm libxcb_xfixes"
 
 # protocols
 ffrtmpcrypt_protocol_conflict="librtmp_protocol"
-ffrtmpcrypt_protocol_deps_any="gmp openssl"
+ffrtmpcrypt_protocol_deps_any="gmp mbedtls openssl"
 ffrtmpcrypt_protocol_select="tcp_protocol"
 ffrtmphttp_protocol_conflict="librtmp_protocol"
 ffrtmphttp_protocol_select="http_protocol"
@@ -2539,7 +2541,7 @@ sctp_protocol_deps="struct_sctp_event_subscribe"
 sctp_protocol_select="network"
 srtp_protocol_select="rtp_protocol srtp"
 tcp_protocol_select="network"
-tls_protocol_deps_any="gnutls openssl"
+tls_protocol_deps_any="gnutls mbedtls openssl"
 tls_protocol_select="tcp_protocol"
 udp_protocol_select="network"
 unix_protocol_deps="sys_un_h"
@@ -2958,6 +2960,12 @@ fi
 
 enabled_all gnutls openssl &&
     die "GnuTLS and OpenSSL must not be enabled at the same time."
+
+enabled_all gnutls mbedtls &&
+    die "GnuTLS and mbedTLS must not be enabled at the same time."
+
+enabled_all openssl mbedtls &&
+    die "OpenSSL and mbedTLS must not be enabled at the same time."
 
 # Disable all the library-specific components if the library itself
 # is disabled, see AVCODEC_LIST and following _LIST variables.
@@ -4710,6 +4718,7 @@ enabled libx265           && require_pkg_config libx265 x265 x265.h x265_api_get
                              require_cpp_condition libx265 x265.h "X265_BUILD >= 57"
 enabled libxavs           && require libxavs "stdint.h xavs.h" xavs_encoder_encode -lxavs
 enabled libxvid           && require libxvid xvid.h xvid_global -lxvidcore
+enabled mbedtls           && require mbedtls mbedtls/ssl.h mbedtls_ssl_init -lmbedtls -lmbedcrypto -lmbedx509
 enabled mmal              && { check_lib mmal interface/mmal/mmal.h mmal_port_connect -lmmal_core -lmmal_util -lmmal_vc_client -lbcm_host ||
                                { ! enabled cross_compile &&
                                  add_cflags -isystem/opt/vc/include/ -isystem/opt/vc/include/interface/vmcs_host/linux -isystem/opt/vc/include/interface/vcos/pthreads -fgnu89-inline &&

@@ -35,6 +35,12 @@ typedef mpz_ptr FFBigNum;
 #include <openssl/dh.h>
 
 typedef BIGNUM *FFBigNum;
+#elif CONFIG_MBEDTLS
+#include <mbedtls/bignum.h>
+#include <mbedtls/ctr_drbg.h>
+#include <mbedtls/entropy.h>
+
+typedef mbedtls_mpi *FFBigNum;
 #endif
 
 typedef struct FF_DH {

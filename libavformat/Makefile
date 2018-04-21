@@ -408,6 +408,7 @@ OBJS-$(CONFIG_SCTP_PROTOCOL)             += sctp.o
 OBJS-$(CONFIG_SRTP_PROTOCOL)             += srtpproto.o srtp.o
 OBJS-$(CONFIG_TCP_PROTOCOL)              += tcp.o
 TLS-OBJS-$(CONFIG_GNUTLS)                += tls_gnutls.o
+TLS-OBJS-$(CONFIG_MBEDTLS)               += tls_mbedtls.o
 TLS-OBJS-$(CONFIG_OPENSSL)               += tls_openssl.o
 OBJS-$(CONFIG_TLS_PROTOCOL)              += tls.o $(TLS-OBJS-yes)
 OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
