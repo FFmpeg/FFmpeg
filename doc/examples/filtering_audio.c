@@ -74,7 +74,6 @@ static int open_input_file(const char *filename)
     if (!dec_ctx)
         return AVERROR(ENOMEM);
     avcodec_parameters_to_context(dec_ctx, fmt_ctx->streams[audio_stream_index]->codecpar);
-    av_opt_set_int(dec_ctx, "refcounted_frames", 1, 0);
 
     /* init the audio decoder */
     if ((ret = avcodec_open2(dec_ctx, dec, NULL)) < 0) {
