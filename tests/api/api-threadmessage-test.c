@@ -130,7 +130,9 @@ static void *receiver_thread(void *arg)
 
     for (i = 0; i < rd->workload; i++) {
         if (rand() % rd->workload < rd->workload / 10) {
-            av_log(NULL, AV_LOG_INFO, "receiver #%d: flushing the queue\n", rd->id);
+            av_log(NULL, AV_LOG_INFO, "receiver #%d: flushing the queue, "
+                   "discarding %d message(s)\n", rd->id,
+                   av_thread_message_queue_nb_elems(rd->queue));
             av_thread_message_flush(rd->queue);
         } else {
             struct message msg;
