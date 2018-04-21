@@ -211,7 +211,6 @@ int main(int argc, char *argv[])
         return -1;
 
     decoder_ctx->get_format  = get_hw_format;
-    av_opt_set_int(decoder_ctx, "refcounted_frames", 1, 0);
 
     if (hw_decoder_init(decoder_ctx, type) < 0)
         return -1;
