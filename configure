@@ -213,7 +213,7 @@ External library support:
   --enable-gmp             enable gmp, needed for rtmp(t)e support
                            if openssl or librtmp is not used [no]
   --enable-gnutls          enable gnutls, needed for https support
-                           if openssl or libtls is not used [no]
+                           if openssl, libtls or mbedtls is not used [no]
   --disable-iconv          disable iconv [autodetect]
   --enable-jni             enable JNI support [no]
   --enable-ladspa          enable LADSPA audio filtering [no]
@@ -262,7 +262,7 @@ External library support:
   --enable-libtesseract    enable Tesseract, needed for ocr filter [no]
   --enable-libtheora       enable Theora encoding via libtheora [no]
   --enable-libtls          enable LibreSSL (via libtls), needed for https support
-                           if openssl or gnutls is not used [no]
+                           if openssl, gnutls or mbedtls is not used [no]
   --enable-libtwolame      enable MP2 encoding via libtwolame [no]
   --enable-libv4l2         enable libv4l2/v4l-utils [no]
   --enable-libvidstab      enable video stabilization using vid.stab [no]
@@ -290,13 +290,15 @@ External library support:
   --disable-lzma           disable lzma [autodetect]
   --enable-decklink        enable Blackmagic DeckLink I/O support [no]
   --enable-libndi_newtek   enable Newteck NDI I/O support [no]
+  --enable-mbedtls         enable mbedTLS, needed for https support
+                           if openssl, gnutls or libtls is not used [no]
   --enable-mediacodec      enable Android MediaCodec support [no]
   --enable-libmysofa       enable libmysofa, needed for sofalizer filter [no]
   --enable-openal          enable OpenAL 1.1 capture support [no]
   --enable-opencl          enable OpenCL processing [no]
   --enable-opengl          enable OpenGL rendering [no]
   --enable-openssl         enable openssl, needed for https support
-                           if gnutls or libtls is not used [no]
+                           if gnutls, libtls or mbedtls is not used [no]
   --disable-sndio          disable sndio support [autodetect]
   --disable-schannel       disable SChannel SSP, needed for TLS support on
                            Windows if openssl and gnutls are not used [autodetect]
@@ -1654,6 +1656,7 @@ EXTERNAL_LIBRARY_VERSION3_LIST="
     libopencore_amrwb
     libvmaf
     libvo_amrwbenc
+    mbedtls
     rkmpp
 "
 
@@ -3117,7 +3120,7 @@ fifo_muxer_deps="threads"
 flac_demuxer_select="flac_parser"
 hds_muxer_select="flv_muxer"
 hls_muxer_select="mpegts_muxer"
-hls_muxer_suggest="gcrypt openssl"
+hls_muxer_suggest="gcrypt openssl mbedtls"
 image2_alias_pix_demuxer_select="image2_demuxer"
 image2_brender_pix_demuxer_select="image2_demuxer"
 ipod_muxer_select="mov_muxer"
@@ -3229,7 +3232,7 @@ xv_outdev_extralibs="-lXv -lX11 -lXext"
 async_protocol_deps="threads"
 bluray_protocol_deps="libbluray"
 ffrtmpcrypt_protocol_conflict="librtmp_protocol"
-ffrtmpcrypt_protocol_deps_any="gcrypt gmp openssl"
+ffrtmpcrypt_protocol_deps_any="gcrypt gmp openssl mbedtls"
 ffrtmpcrypt_protocol_select="tcp_protocol"
 ffrtmphttp_protocol_conflict="librtmp_protocol"
 ffrtmphttp_protocol_select="http_protocol"
@@ -3249,7 +3252,7 @@ librtmpt_protocol_deps="librtmp"
 librtmpte_protocol_deps="librtmp"
 libsmbclient_protocol_deps="libsmbclient gplv3"
 libssh_protocol_deps="libssh"
-libtls_conflict="openssl gnutls"
+libtls_conflict="openssl gnutls mbedtls"
 mmsh_protocol_select="http_protocol"
 mmst_protocol_select="network"
 libsrt_protocol_deps="libsrt"
@@ -3269,13 +3272,13 @@ rtmpte_protocol_suggest="zlib"
 rtmpts_protocol_select="ffrtmphttp_protocol https_protocol"
 rtmpts_protocol_suggest="zlib"
 rtp_protocol_select="udp_protocol"
-schannel_conflict="openssl gnutls libtls"
+schannel_conflict="openssl gnutls libtls mbedtls"
 sctp_protocol_deps="struct_sctp_event_subscribe struct_msghdr_msg_flags"
 sctp_protocol_select="network"
-securetransport_conflict="openssl gnutls libtls"
+securetransport_conflict="openssl gnutls libtls mbedtls"
 srtp_protocol_select="rtp_protocol srtp"
 tcp_protocol_select="network"
-tls_protocol_deps_any="gnutls openssl schannel securetransport libtls"
+tls_protocol_deps_any="gnutls openssl schannel securetransport libtls mbedtls"
 tls_protocol_select="tcp_protocol"
 udp_protocol_select="network"
 udplite_protocol_select="network"
@@ -3906,6 +3909,12 @@ fi
 
 enabled_all gnutls openssl &&
     die "GnuTLS and OpenSSL must not be enabled at the same time."
+
+enabled_all gnutls mbedtls &&
+    die "GnuTLS and mbedTLS must not be enabled at the same time."
+
+enabled_all openssl mbedtls &&
+    die "OpenSSL and mbedTLS must not be enabled at the same time."
 
 # Disable all the library-specific components if the library itself
 # is disabled, see AVCODEC_LIST and following _LIST variables.
@@ -6090,6 +6099,10 @@ enabled libzvbi           && require_pkg_config libzvbi zvbi-0.2 libzvbi.h vbi_d
                              { test_cpp_condition libzvbi.h "VBI_VERSION_MAJOR > 0 || VBI_VERSION_MINOR > 2 || VBI_VERSION_MINOR == 2 && VBI_VERSION_MICRO >= 28" ||
                                enabled gpl || die "ERROR: libzvbi requires version 0.2.28 or --enable-gpl."; }
 enabled libxml2           && require_pkg_config libxml2 libxml-2.0 libxml2/libxml/xmlversion.h xmlCheckVersion
+enabled mbedtls           && { check_pkg_config mbedtls mbedtls mbedtls/x509_crt.h mbedtls_x509_crt_init ||
+                               check_pkg_config mbedtls mbedtls mbedtls/ssl.h mbedtls_ssl_init ||
+                               check_lib mbedtls mbedtls/ssl.h mbedtls_ssl_init -lmbedtls ||
+                               die "ERROR: mbedTLS not found"; }
 enabled mediacodec        && { enabled jni || die "ERROR: mediacodec requires --enable-jni"; }
 enabled mmal              && { check_lib mmal interface/mmal/mmal.h mmal_port_connect -lmmal_core -lmmal_util -lmmal_vc_client -lbcm_host ||
                                { ! enabled cross_compile &&

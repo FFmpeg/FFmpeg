@@ -3,6 +3,7 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 - deblock filter
+- support mbedTLS based TLS
 
 
 version 4.0:
