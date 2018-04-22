@@ -141,7 +141,7 @@ static const AVOption options[] = {
     { "user_agent", "override User-Agent header", OFFSET(user_agent), AV_OPT_TYPE_STRING, { .str = DEFAULT_USER_AGENT }, 0, 0, D },
     { "referer", "override referer header", OFFSET(referer), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D },
 #if FF_API_HTTP_USER_AGENT
-    { "user-agent", "override User-Agent header", OFFSET(user_agent_deprecated), AV_OPT_TYPE_STRING, { .str = DEFAULT_USER_AGENT }, 0, 0, D },
+    { "user-agent", "use the \"user_agent\" option instead", OFFSET(user_agent_deprecated), AV_OPT_TYPE_STRING, { .str = DEFAULT_USER_AGENT }, 0, 0, D|AV_OPT_FLAG_DEPRECATED },
 #endif
     { "multiple_requests", "use persistent connections", OFFSET(multiple_requests), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, D | E },
     { "post_data", "set custom HTTP post data", OFFSET(post_data), AV_OPT_TYPE_BINARY, .flags = D | E },
@@ -1193,7 +1193,6 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
 
 #if FF_API_HTTP_USER_AGENT
     if (strcmp(s->user_agent_deprecated, DEFAULT_USER_AGENT)) {
-        av_log(s, AV_LOG_WARNING, "the user-agent option is deprecated, please use user_agent option\n");
         s->user_agent = av_strdup(s->user_agent_deprecated);
     }
 #endif
