@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2018-04-xx - xxxxxxxxxx - lavu 56.17.100 - opt.h
+  Add AV_OPT_FLAG_DEPRECATED.
+
 2018-04-xx - xxxxxxxxxx - lavu 56.16.100 - threadmessage.h
   Add av_thread_message_queue_nb_elems().
 

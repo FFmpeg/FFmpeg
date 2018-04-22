@@ -463,6 +463,9 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
     if (o->flags & AV_OPT_FLAG_READONLY)
         return AVERROR(EINVAL);
 
+    if (o->flags & AV_OPT_FLAG_DEPRECATED)
+        av_log(obj, AV_LOG_WARNING, "The \"%s\" option is deprecated: %s\n", name, o->help);
+
     dst = ((uint8_t *)target_obj) + o->offset;
     switch (o->type) {
     case AV_OPT_TYPE_BOOL:
@@ -758,6 +761,9 @@ int av_opt_get(void *obj, const char *name, int search_flags, uint8_t **out_val)
 
     if (!o || !target_obj || (o->offset<=0 && o->type != AV_OPT_TYPE_CONST))
         return AVERROR_OPTION_NOT_FOUND;
+
+    if (o->flags & AV_OPT_FLAG_DEPRECATED)
+        av_log(obj, AV_LOG_WARNING, "The \"%s\" option is deprecated: %s\n", name, o->help);
 
     dst = (uint8_t *)target_obj + o->offset;
 
