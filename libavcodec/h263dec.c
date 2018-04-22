@@ -637,7 +637,7 @@ retry:
     slice_ret = decode_slice(s);
     while (s->mb_y < s->mb_height) {
         if (s->msmpeg4_version) {
-            if (s->slice_height == 0 || s->mb_x != 0 ||
+            if (s->slice_height == 0 || s->mb_x != 0 || slice_ret < 0 ||
                 (s->mb_y % s->slice_height) != 0 || get_bits_left(&s->gb) < 0)
                 break;
         } else {
