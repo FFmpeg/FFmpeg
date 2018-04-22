@@ -98,6 +98,14 @@ static VANCLineNumber vanc_line_numbers[] = {
     {bmdModeUnknown, 0, -1, -1, -1}
 };
 
+extern "C" {
+static void decklink_object_free(void *opaque, uint8_t *data)
+{
+    IUnknown *obj = (class IUnknown *)opaque;
+    obj->Release();
+}
+}
+
 static int get_vanc_line_idx(BMDDisplayMode mode)
 {
     unsigned int i;
@@ -796,6 +804,10 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
                 }
             }
         }
+
+        pkt.buf = av_buffer_create(pkt.data, pkt.size, decklink_object_free, videoFrame, 0);
+        if (pkt.buf)
+            videoFrame->AddRef();
 
         if (avpacket_queue_put(&ctx->queue, &pkt) < 0) {
             ++ctx->dropped;
