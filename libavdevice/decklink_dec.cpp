@@ -467,16 +467,19 @@ static int avpacket_queue_put(AVPacketQueue *q, AVPacket *pkt)
 
     // Drop Packet if queue size is > maximum queue size
     if (avpacket_queue_size(q) > (uint64_t)q->max_q_size) {
+        av_packet_unref(pkt);
         av_log(q->avctx, AV_LOG_WARNING,  "Decklink input buffer overrun!\n");
         return -1;
     }
     /* ensure the packet is reference counted */
     if (av_packet_make_refcounted(pkt) < 0) {
+        av_packet_unref(pkt);
         return -1;
     }
 
     pkt1 = (AVPacketList *)av_malloc(sizeof(AVPacketList));
     if (!pkt1) {
+        av_packet_unref(pkt);
         return -1;
     }
     av_packet_move_ref(&pkt1->pkt, pkt);
