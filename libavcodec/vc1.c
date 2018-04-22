@@ -1055,6 +1055,8 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
                     v->last_use_ic = 1;
                 }
                 status = bitplane_decoding(v->s.mbskip_table, &v->skip_is_raw, v);
+                if (status < 0)
+                    return -1;
                 av_log(v->s.avctx, AV_LOG_DEBUG, "SKIPMB plane encoding: "
                        "Imode: %i, Invert: %i\n", status>>1, status&1);
                 v->mbmodetab = get_bits(gb, 2);
