@@ -137,8 +137,8 @@ static int dsf_read_header(AVFormatContext *s)
     dsf->data_end = avio_tell(pb);
     if (avio_rl32(pb) != MKTAG('d', 'a', 't', 'a'))
         return AVERROR_INVALIDDATA;
-    dsf->data_size = avio_rl64(pb);
-    dsf->data_end += dsf->data_size;
+    dsf->data_size = avio_rl64(pb) - 12;
+    dsf->data_end += dsf->data_size + 12;
     s->internal->data_offset = avio_tell(pb);
 
     return 0;
