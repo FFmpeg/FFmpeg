@@ -1476,19 +1476,21 @@ av_cold int ff_nvenc_encode_init(AVCodecContext *avctx)
     int ret;
 
     if (avctx->pix_fmt == AV_PIX_FMT_CUDA || avctx->pix_fmt == AV_PIX_FMT_D3D11) {
-        AVHWFramesContext *frames_ctx;
-        if (!avctx->hw_frames_ctx) {
+        if (avctx->hw_frames_ctx) {
+            AVHWFramesContext *frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
+            if (frames_ctx->format != avctx->pix_fmt) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "hw_frames_ctx must match the GPU frame type\n");
+                return AVERROR(EINVAL);
+            }
+            ctx->data_pix_fmt = frames_ctx->sw_format;
+        } else if (avctx->sw_pix_fmt && avctx->sw_pix_fmt != AV_PIX_FMT_NONE) {
+            ctx->data_pix_fmt = avctx->sw_pix_fmt;
+        } else {
             av_log(avctx, AV_LOG_ERROR,
-                   "hw_frames_ctx must be set when using GPU frames as input\n");
+                   "either hw_frames_ctx or sw_pix_fmt is required for hw frame input\n");
             return AVERROR(EINVAL);
         }
-        frames_ctx = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
-        if (frames_ctx->format != avctx->pix_fmt) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "hw_frames_ctx must match the GPU frame type\n");
-            return AVERROR(EINVAL);
-        }
-        ctx->data_pix_fmt = frames_ctx->sw_format;
     } else {
         ctx->data_pix_fmt = avctx->pix_fmt;
     }
@@ -1591,9 +1593,14 @@ static int nvenc_register_frame(AVCodecContext *avctx, const AVFrame *frame)
     NvencDynLoadFunctions *dl_fn = &ctx->nvenc_dload_funcs;
     NV_ENCODE_API_FUNCTION_LIST *p_nvenc = &dl_fn->nvenc_funcs;
 
-    AVHWFramesContext *frames_ctx = (AVHWFramesContext*)frame->hw_frames_ctx->data;
+    enum AVPixelFormat sw_format = ctx->data_pix_fmt;
     NV_ENC_REGISTER_RESOURCE reg;
     int i, idx, ret;
+
+    if (frame->hw_frames_ctx) {
+        AVHWFramesContext *frames_ctx = (AVHWFramesContext*)frame->hw_frames_ctx->data;
+        sw_format = frames_ctx->sw_format;
+    }
 
     for (i = 0; i < ctx->nb_registered_frames; i++) {
         if (avctx->pix_fmt == AV_PIX_FMT_CUDA && ctx->registered_frames[i].ptr == frame->data[0])
@@ -1607,8 +1614,8 @@ static int nvenc_register_frame(AVCodecContext *avctx, const AVFrame *frame)
         return idx;
 
     reg.version            = NV_ENC_REGISTER_RESOURCE_VER;
-    reg.width              = frames_ctx->width;
-    reg.height             = frames_ctx->height;
+    reg.width              = frame->width;
+    reg.height             = frame->height;
     reg.pitch              = frame->linesize[0];
     reg.resourceToRegister = frame->data[0];
 
@@ -1620,10 +1627,10 @@ static int nvenc_register_frame(AVCodecContext *avctx, const AVFrame *frame)
         reg.subResourceIndex = (intptr_t)frame->data[1];
     }
 
-    reg.bufferFormat       = nvenc_map_buffer_format(frames_ctx->sw_format);
+    reg.bufferFormat       = nvenc_map_buffer_format(sw_format);
     if (reg.bufferFormat == NV_ENC_BUFFER_FORMAT_UNDEFINED) {
         av_log(avctx, AV_LOG_FATAL, "Invalid input pixel format: %s\n",
-               av_get_pix_fmt_name(frames_ctx->sw_format));
+               av_get_pix_fmt_name(sw_format));
         return AVERROR(EINVAL);
     }
 
