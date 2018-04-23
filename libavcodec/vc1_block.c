@@ -1595,6 +1595,7 @@ static int vc1_decode_p_mb_intfr(VC1Context *v)
                                                   s->dest[dst_idx] + off,
                                                   stride_y);
                 //TODO: loop filter
+                block_cbp |= 0xf << (i << 2);
             }
 
         } else { // inter MB
@@ -1690,9 +1691,11 @@ static int vc1_decode_p_mb_intfr(VC1Context *v)
         v->blk_mv_type[s->block_index[3]] = 0;
         ff_vc1_pred_mv_intfr(v, 0, 0, 0, 1, v->range_x, v->range_y, v->mb_type[0], 0);
         ff_vc1_mc_1mv(v, 0);
+        v->fieldtx_plane[mb_pos] = 0;
     }
-    if (s->mb_x == s->mb_width - 1)
-        memmove(v->is_intra_base, v->is_intra, sizeof(v->is_intra_base[0])*s->mb_stride);
+    v->cbp[s->mb_x]      = block_cbp;
+    v->ttblk[s->mb_x]    = block_tt;
+
     return 0;
 }
 
@@ -1756,6 +1759,7 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
                                               (i & 4) ? s->uvlinesize
                                                       : s->linesize);
             // TODO: loop filter
+            block_cbp |= 0xf << (i << 2);
         }
     } else {
         s->mb_intra = v->is_intra[s->mb_x] = 0;
@@ -1810,8 +1814,9 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
             }
         }
     }
-    if (s->mb_x == s->mb_width - 1)
-        memmove(v->is_intra_base, v->is_intra, sizeof(v->is_intra_base[0]) * s->mb_stride);
+    v->cbp[s->mb_x]      = block_cbp;
+    v->ttblk[s->mb_x]    = block_tt;
+
     return 0;
 }
 
@@ -1988,6 +1993,7 @@ static void vc1_decode_b_mb_intfi(VC1Context *v)
     int fwd;
     int dmv_x[2], dmv_y[2], pred_flag[2];
     int bmvtype = BMV_TYPE_BACKWARD;
+    int block_cbp = 0, pat, block_tt = 0;
     int idx_mbmode;
 
     mquant      = v->pq; /* Lossy initialization */
@@ -2118,16 +2124,19 @@ static void vc1_decode_b_mb_intfi(VC1Context *v)
             val = ((cbp >> (5 - i)) & 1);
             off = (i & 4) ? 0 : (i & 1) * 8 + (i & 2) * 4 * s->linesize;
             if (val) {
-                vc1_decode_p_block(v, s->block[i], i, mquant, ttmb,
-                                   first_block, s->dest[dst_idx] + off,
-                                   (i & 4) ? s->uvlinesize : s->linesize,
-                                   CONFIG_GRAY && (i & 4) && (s->avctx->flags & AV_CODEC_FLAG_GRAY), NULL);
+                pat = vc1_decode_p_block(v, s->block[i], i, mquant, ttmb,
+                                         first_block, s->dest[dst_idx] + off,
+                                         (i & 4) ? s->uvlinesize : s->linesize,
+                                         CONFIG_GRAY && (i & 4) && (s->avctx->flags & AV_CODEC_FLAG_GRAY), &block_tt);
+                block_cbp |= pat << (i << 2);
                 if (!v->ttmbf && ttmb < 8)
                     ttmb = -1;
                 first_block = 0;
             }
         }
     }
+    v->cbp[s->mb_x]      = block_cbp;
+    v->ttblk[s->mb_x]    = block_tt;
 }
 
 /** Decode one B-frame MB (in interlaced frame B picture)
@@ -2468,12 +2477,12 @@ static int vc1_decode_b_mb_intfr(VC1Context *v)
             if (direct || bmvtype == BMV_TYPE_INTERPOLATED) {
                 ff_vc1_interp_mc(v);
             }
+            v->fieldtx_plane[mb_pos] = 0;
         }
     }
-    if (s->mb_x == s->mb_width - 1)
-        memmove(v->is_intra_base, v->is_intra, sizeof(v->is_intra_base[0]) * s->mb_stride);
     v->cbp[s->mb_x]      = block_cbp;
     v->ttblk[s->mb_x]    = block_tt;
+
     return 0;
 }
 
@@ -2703,6 +2712,8 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
             s->c_dc_scale = s->c_dc_scale_table[mquant];
 
             for (k = 0; k < 6; k++) {
+                v->mb_type[0][s->block_index[k]] = 1;
+
                 val = ((cbp >> (5 - k)) & 1);
 
                 if (k < 4) {
@@ -2799,7 +2810,7 @@ static void vc1_decode_p_blocks(VC1Context *v)
     apply_loop_filter   = s->loop_filter && !(s->avctx->skip_loop_filter >= AVDISCARD_NONKEY) &&
                           v->fcm == PROGRESSIVE;
     s->first_slice_line = 1;
-    memset(v->cbp_base, 0, sizeof(v->cbp_base[0])*2*s->mb_stride);
+    memset(v->cbp_base, 0, sizeof(v->cbp_base[0]) * 3 * s->mb_stride);
     for (s->mb_y = s->start_mb_y; s->mb_y < s->end_mb_y; s->mb_y++) {
         s->mb_x = 0;
         init_block_index(v);
@@ -2825,10 +2836,18 @@ static void vc1_decode_p_blocks(VC1Context *v)
             inc_blk_idx(v->left_blk_idx);
             inc_blk_idx(v->cur_blk_idx);
         }
-        memmove(v->cbp_base,      v->cbp,      sizeof(v->cbp_base[0])      * s->mb_stride);
-        memmove(v->ttblk_base,    v->ttblk,    sizeof(v->ttblk_base[0])    * s->mb_stride);
-        memmove(v->is_intra_base, v->is_intra, sizeof(v->is_intra_base[0]) * s->mb_stride);
-        memmove(v->luma_mv_base,  v->luma_mv,  sizeof(v->luma_mv_base[0])  * s->mb_stride);
+        memmove(v->cbp_base,
+                v->cbp - s->mb_stride,
+                sizeof(v->cbp_base[0]) * 2 * s->mb_stride);
+        memmove(v->ttblk_base,
+                v->ttblk - s->mb_stride,
+                sizeof(v->ttblk_base[0]) * 2 * s->mb_stride);
+        memmove(v->is_intra_base,
+                v->is_intra - s->mb_stride,
+                sizeof(v->is_intra_base[0]) * 2 * s->mb_stride);
+        memmove(v->luma_mv_base,
+                v->luma_mv - s->mb_stride,
+                sizeof(v->luma_mv_base[0]) * 2 * s->mb_stride);
         if (s->mb_y != s->start_mb_y)
             ff_mpeg_draw_horiz_band(s, (s->mb_y - 1) * 16, 16);
         s->first_slice_line = 0;
@@ -2899,6 +2918,15 @@ static void vc1_decode_b_blocks(VC1Context *v)
             if (v->s.loop_filter)
                 ff_vc1_loop_filter_iblk(v, v->pq);
         }
+        memmove(v->cbp_base,
+                v->cbp - s->mb_stride,
+                sizeof(v->cbp_base[0]) * 2 * s->mb_stride);
+        memmove(v->ttblk_base,
+                v->ttblk - s->mb_stride,
+                sizeof(v->ttblk_base[0]) * 2 * s->mb_stride);
+        memmove(v->is_intra_base,
+                v->is_intra - s->mb_stride,
+                sizeof(v->is_intra_base[0]) * 2 * s->mb_stride);
         if (!v->s.loop_filter)
             ff_mpeg_draw_horiz_band(s, s->mb_y * 16, 16);
         else if (s->mb_y)
