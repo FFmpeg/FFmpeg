@@ -344,6 +344,10 @@ void ff_vc1_mc_1mv(VC1Context *v, int dir)
         v->vc1dsp.put_no_rnd_vc1_chroma_pixels_tab[0](s->dest[1], srcU, s->uvlinesize, 8, uvmx, uvmy);
         v->vc1dsp.put_no_rnd_vc1_chroma_pixels_tab[0](s->dest[2], srcV, s->uvlinesize, 8, uvmx, uvmy);
     }
+    if (v->field_mode) {
+        v->mv_f[dir][s->block_index[4] + v->mb_off] = v->cur_field_type != v->ref_field_type[dir];
+        v->mv_f[dir][s->block_index[5] + v->mb_off] = v->cur_field_type != v->ref_field_type[dir];
+    }
 }
 
 /** Do motion compensation for 4-MV macroblock - luminance block
@@ -635,6 +639,10 @@ void ff_vc1_mc_4mv_chroma(VC1Context *v, int dir)
     } else {
         v->vc1dsp.put_no_rnd_vc1_chroma_pixels_tab[0](s->dest[1], srcU, s->uvlinesize, 8, uvmx, uvmy);
         v->vc1dsp.put_no_rnd_vc1_chroma_pixels_tab[0](s->dest[2], srcV, s->uvlinesize, 8, uvmx, uvmy);
+    }
+    if (v->field_mode) {
+        v->mv_f[dir][s->block_index[4] + v->mb_off] = v->cur_field_type != chroma_ref_type;
+        v->mv_f[dir][s->block_index[5] + v->mb_off] = v->cur_field_type != chroma_ref_type;
     }
 }
 
