@@ -53,6 +53,6 @@ int ff_isom_write_vpcc(AVFormatContext *s, AVIOContext *pb,
                        AVCodecParameters *par);
 
 int ff_isom_get_vpcc_features(AVFormatContext *s, AVCodecParameters *par,
-                              VPCC *vpcc);
+                              AVRational *frame_rate, VPCC *vpcc);
 
 #endif /* AVFORMAT_VPCC_H */
