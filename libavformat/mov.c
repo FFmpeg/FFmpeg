@@ -2932,7 +2932,7 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     st->nb_frames= total_sample_count;
     if (duration)
-        st->duration= duration;
+        st->duration= FFMIN(st->duration, duration);
     sc->track_end = duration;
     return 0;
 }
@@ -3671,8 +3671,8 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
         }
     }
 
-    // Update av stream length
-    st->duration = edit_list_dts_entry_end - start_dts;
+    // Update av stream length, if it ends up shorter than the track's media duration
+    st->duration = FFMIN(st->duration, edit_list_dts_entry_end - start_dts);
     msc->start_pad = st->skip_samples;
 
     // Free the old index and the old CTTS structures
