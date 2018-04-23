@@ -959,11 +959,10 @@ static int dash_init(AVFormatContext *s)
         if (!ctx)
             return AVERROR(ENOMEM);
 
-        // choose muxer based on codec: webm for VP8/9 and opus, mp4 otherwise
+        // choose muxer based on codec: webm for VP8 and opus, mp4 otherwise
         // note: os->format_name is also used as part of the mimetype of the
         //       representation, e.g. video/<format_name>
         if (s->streams[i]->codecpar->codec_id == AV_CODEC_ID_VP8 ||
-            s->streams[i]->codecpar->codec_id == AV_CODEC_ID_VP9 ||
             s->streams[i]->codecpar->codec_id == AV_CODEC_ID_OPUS ||
             s->streams[i]->codecpar->codec_id == AV_CODEC_ID_VORBIS) {
             snprintf(os->format_name, sizeof(os->format_name), "webm");
