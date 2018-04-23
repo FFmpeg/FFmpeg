@@ -45,6 +45,7 @@
 #include "isom.h"
 #include "os_support.h"
 #include "url.h"
+#include "vpcc.h"
 #include "dash.h"
 
 typedef struct Segment {
@@ -170,8 +171,23 @@ static void dashenc_io_close(AVFormatContext *s, AVIOContext **pb, char *filenam
     }
 }
 
+static void set_vp9_codec_str(AVFormatContext *s, AVCodecParameters *par,
+                              AVRational *frame_rate, char *str, int size) {
+    VPCC vpcc;
+    int ret = ff_isom_get_vpcc_features(s, par, frame_rate, &vpcc);
+    if (ret == 0) {
+        av_strlcatf(str, size, "vp09.%02x.%02x.%02x",
+                    vpcc.profile, vpcc.level, vpcc.bitdepth);
+    } else {
+        // Default to just vp9 in case of error while finding out profile or level
+        av_log(s, AV_LOG_WARNING, "Could not find VP9 profile and/or level\n");
+        av_strlcpy(str, "vp9", size);
+    }
+    return;
+}
+
 static void set_codec_str(AVFormatContext *s, AVCodecParameters *par,
-                          char *str, int size)
+                          AVRational *frame_rate, char *str, int size)
 {
     const AVCodecTag *tags[2] = { NULL, NULL };
     uint32_t tag;
@@ -180,7 +196,11 @@ static void set_codec_str(AVFormatContext *s, AVCodecParameters *par,
     // common Webm codecs are not part of RFC 6381
     for (i = 0; codecs[i].id; i++)
         if (codecs[i].id == par->codec_id) {
-            av_strlcpy(str, codecs[i].str, size);
+            if (codecs[i].id == AV_CODEC_ID_VP9) {
+                set_vp9_codec_str(s, par, frame_rate, str, size);
+            } else {
+                av_strlcpy(str, codecs[i].str, size);
+            }
             return;
         }
 
@@ -1032,7 +1052,8 @@ static int dash_init(AVFormatContext *s)
             c->has_video = 1;
         }
 
-        set_codec_str(s, st->codecpar, os->codec_str, sizeof(os->codec_str));
+        set_codec_str(s, st->codecpar, &st->avg_frame_rate, os->codec_str,
+                      sizeof(os->codec_str));
         os->first_pts = AV_NOPTS_VALUE;
         os->max_pts = AV_NOPTS_VALUE;
         os->last_dts = AV_NOPTS_VALUE;
@@ -1132,7 +1153,8 @@ static void find_index_range(AVFormatContext *s, const char *full_path,
 }
 
 static int update_stream_extradata(AVFormatContext *s, OutputStream *os,
-                                   AVCodecParameters *par)
+                                   AVCodecParameters *par,
+                                   AVRational *frame_rate)
 {
     uint8_t *extradata;
 
@@ -1149,7 +1171,7 @@ static int update_stream_extradata(AVFormatContext *s, OutputStream *os,
     os->ctx->streams[0]->codecpar->extradata = extradata;
     os->ctx->streams[0]->codecpar->extradata_size = par->extradata_size;
 
-    set_codec_str(s, par, os->codec_str, sizeof(os->codec_str));
+    set_codec_str(s, par, frame_rate, os->codec_str, sizeof(os->codec_str));
 
     return 0;
 }
@@ -1298,7 +1320,7 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t seg_end_duration, elapsed_duration;
     int ret;
 
-    ret = update_stream_extradata(s, os, st->codecpar);
+    ret = update_stream_extradata(s, os, st->codecpar, &st->avg_frame_rate);
     if (ret < 0)
         return ret;
 
