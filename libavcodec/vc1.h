@@ -428,6 +428,10 @@ void ff_vc1_smooth_overlap_filter_iblk(VC1Context *v);
 void ff_vc1_i_overlap_filter(VC1Context *v);
 void ff_vc1_p_overlap_filter(VC1Context *v);
 void ff_vc1_apply_p_loop_filter(VC1Context *v);
+void ff_vc1_i_loop_filter(VC1Context *v);
+void ff_vc1_p_loop_filter(VC1Context *v);
+void ff_vc1_p_intfr_loop_filter(VC1Context *v);
+void ff_vc1_b_intfi_loop_filter(VC1Context *v);
 
 void ff_vc1_mc_1mv(VC1Context *v, int dir);
 void ff_vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg);
