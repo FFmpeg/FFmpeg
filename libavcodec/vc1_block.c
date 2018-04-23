@@ -944,7 +944,7 @@ static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
     ac_val = s->ac_val[0][s->block_index[n]];
     ac_val2 = ac_val;
 
-    scale = mquant * 2 + v->halfpq;
+    scale = mquant * 2 + ((mquant == v->pq) ? v->halfpq : 0);
 
     if (dc_pred_dir) //left
         ac_val -= 16;
