@@ -254,7 +254,7 @@ void ff_vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
             v->luma_mv[s->mb_x][0] = v->luma_mv[s->mb_x][1] = 0;
             s->current_picture.motion_val[1][xy + 1 + v->blocks_off][0]        = 0;
             s->current_picture.motion_val[1][xy + 1 + v->blocks_off][1]        = 0;
-            s->current_picture.motion_val[1][xy + wrap][0]                     = 0;
+            s->current_picture.motion_val[1][xy + wrap + v->blocks_off][0]     = 0;
             s->current_picture.motion_val[1][xy + wrap + v->blocks_off][1]     = 0;
             s->current_picture.motion_val[1][xy + wrap + 1 + v->blocks_off][0] = 0;
             s->current_picture.motion_val[1][xy + wrap + 1 + v->blocks_off][1] = 0;
