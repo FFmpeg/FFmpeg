@@ -69,70 +69,70 @@ static inline void init_block_index(VC1Context *v)
 static void vc1_put_signed_blocks_clamped(VC1Context *v)
 {
     MpegEncContext *s = &v->s;
-    int topleft_mb_pos, top_mb_pos;
-    int stride_y, fieldtx = 0;
-    int v_dist;
+    uint8_t *dest;
+    int block_count = CONFIG_GRAY && (s->avctx->flags & AV_CODEC_FLAG_GRAY) ? 4 : 6;
+    int fieldtx = 0;
+    int i;
 
-    /* The put pixels loop is always one MB row behind the decoding loop,
-     * because we can only put pixels when overlap filtering is done, and
-     * for filtering of the bottom edge of a MB, we need the next MB row
-     * present as well.
-     * Within the row, the put pixels loop is also one MB col behind the
-     * decoding loop. The reason for this is again, because for filtering
-     * of the right MB edge, we need the next MB present. */
-    if (!s->first_slice_line) {
+    /* The put pixels loop is one MB row and one MB column behind the decoding
+     * loop because we can only put pixels when overlap filtering is done. For
+     * interlaced frame pictures, however, the put pixels loop is only one
+     * column behind the decoding loop as interlaced frame pictures only need
+     * horizontal overlap filtering. */
+    if (!s->first_slice_line && v->fcm != ILACE_FRAME) {
         if (s->mb_x) {
-            topleft_mb_pos = (s->mb_y - 1) * s->mb_stride + s->mb_x - 1;
-            if (v->fcm == ILACE_FRAME)
-                fieldtx = v->fieldtx_plane[topleft_mb_pos];
-            stride_y       = s->linesize << fieldtx;
-            v_dist         = (16 - fieldtx) >> (fieldtx == 0);
-            s->idsp.put_signed_pixels_clamped(v->block[v->topleft_blk_idx][0],
-                                              s->dest[0] - 16 * s->linesize - 16,
-                                              stride_y);
-            s->idsp.put_signed_pixels_clamped(v->block[v->topleft_blk_idx][1],
-                                              s->dest[0] - 16 * s->linesize - 8,
-                                              stride_y);
-            s->idsp.put_signed_pixels_clamped(v->block[v->topleft_blk_idx][2],
-                                              s->dest[0] - v_dist * s->linesize - 16,
-                                              stride_y);
-            s->idsp.put_signed_pixels_clamped(v->block[v->topleft_blk_idx][3],
-                                              s->dest[0] - v_dist * s->linesize - 8,
-                                              stride_y);
-            if (!CONFIG_GRAY || !(s->avctx->flags & AV_CODEC_FLAG_GRAY)) {
-            s->idsp.put_signed_pixels_clamped(v->block[v->topleft_blk_idx][4],
-                                              s->dest[1] - 8 * s->uvlinesize - 8,
-                                              s->uvlinesize);
-            s->idsp.put_signed_pixels_clamped(v->block[v->topleft_blk_idx][5],
-                                              s->dest[2] - 8 * s->uvlinesize - 8,
-                                              s->uvlinesize);
+            for (i = 0; i < block_count; i++) {
+                if (i > 3 ? v->mb_type[0][s->block_index[i] - s->block_wrap[i] - 1] :
+                            v->mb_type[0][s->block_index[i] - 2 * s->block_wrap[i] - 2]) {
+                    dest = s->dest[0] + ((i & 2) - 4) * 4 * s->linesize + ((i & 1) - 2) * 8;
+                    s->idsp.put_signed_pixels_clamped(v->block[v->topleft_blk_idx][i],
+                                                      i > 3 ? s->dest[i - 3] - 8 * s->uvlinesize - 8 : dest,
+                                                      i > 3 ? s->uvlinesize : s->linesize);
+                }
             }
         }
         if (s->mb_x == s->mb_width - 1) {
-            top_mb_pos = (s->mb_y - 1) * s->mb_stride + s->mb_x;
+            for (i = 0; i < block_count; i++) {
+                if (i > 3 ? v->mb_type[0][s->block_index[i] - s->block_wrap[i]] :
+                            v->mb_type[0][s->block_index[i] - 2 * s->block_wrap[i]]) {
+                    dest = s->dest[0] + ((i & 2) - 4) * 4 * s->linesize + (i & 1) * 8;
+                    s->idsp.put_signed_pixels_clamped(v->block[v->top_blk_idx][i],
+                                                      i > 3 ? s->dest[i - 3] - 8 * s->uvlinesize : dest,
+                                                      i > 3 ? s->uvlinesize : s->linesize);
+                }
+            }
+        }
+    }
+    if (s->mb_y == s->end_mb_y - 1 || v->fcm == ILACE_FRAME) {
+        if (s->mb_x) {
             if (v->fcm == ILACE_FRAME)
-                fieldtx = v->fieldtx_plane[top_mb_pos];
-            stride_y   = s->linesize << fieldtx;
-            v_dist     = fieldtx ? 15 : 8;
-            s->idsp.put_signed_pixels_clamped(v->block[v->top_blk_idx][0],
-                                              s->dest[0] - 16 * s->linesize,
-                                              stride_y);
-            s->idsp.put_signed_pixels_clamped(v->block[v->top_blk_idx][1],
-                                              s->dest[0] - 16 * s->linesize + 8,
-                                              stride_y);
-            s->idsp.put_signed_pixels_clamped(v->block[v->top_blk_idx][2],
-                                              s->dest[0] - v_dist * s->linesize,
-                                              stride_y);
-            s->idsp.put_signed_pixels_clamped(v->block[v->top_blk_idx][3],
-                                              s->dest[0] - v_dist * s->linesize + 8,
-                                              stride_y);
-            if (!CONFIG_GRAY || !(s->avctx->flags & AV_CODEC_FLAG_GRAY)) {
-            s->idsp.put_signed_pixels_clamped(v->block[v->top_blk_idx][4],
-                                              s->dest[1] - 8 * s->uvlinesize,
-                                              s->uvlinesize);
-            s->idsp.put_signed_pixels_clamped(v->block[v->top_blk_idx][5],
-                                              s->dest[2] - 8 * s->uvlinesize,
-                                              s->uvlinesize);
+                fieldtx = v->fieldtx_plane[s->mb_y * s->mb_stride + s->mb_x - 1];
+            for (i = 0; i < block_count; i++) {
+                if (i > 3 ? v->mb_type[0][s->block_index[i] - 1] :
+                            v->mb_type[0][s->block_index[i] - 2]) {
+                    if (fieldtx)
+                        dest = s->dest[0] + ((i & 2) >> 1) * s->linesize + ((i & 1) - 2) * 8;
+                    else
+                        dest = s->dest[0] + (i & 2) * 4 * s->linesize + ((i & 1) - 2) * 8;
+                    s->idsp.put_signed_pixels_clamped(v->block[v->left_blk_idx][i],
+                                                      i > 3 ? s->dest[i - 3] - 8 : dest,
+                                                      i > 3 ? s->uvlinesize : s->linesize << fieldtx);
+                }
+            }
+        }
+        if (s->mb_x == s->mb_width - 1) {
+            if (v->fcm == ILACE_FRAME)
+                fieldtx = v->fieldtx_plane[s->mb_y * s->mb_stride + s->mb_x];
+            for (i = 0; i < block_count; i++) {
+                if (v->mb_type[0][s->block_index[i]]) {
+                    if (fieldtx)
+                        dest = s->dest[0] + ((i & 2) >> 1) * s->linesize + (i & 1) * 8;
+                    else
+                        dest = s->dest[0] + (i & 2) * 4 * s->linesize + (i & 1) * 8;
+                    s->idsp.put_signed_pixels_clamped(v->block[v->cur_blk_idx][i],
+                                                      i > 3 ? s->dest[i - 3] : dest,
+                                                      i > 3 ? s->uvlinesize : s->linesize << fieldtx);
+                }
             }
         }
     }
