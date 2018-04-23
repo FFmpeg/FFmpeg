@@ -425,6 +425,8 @@ void ff_vc1_decode_blocks(VC1Context *v);
 void ff_vc1_loop_filter_iblk(VC1Context *v, int pq);
 void ff_vc1_loop_filter_iblk_delayed(VC1Context *v, int pq);
 void ff_vc1_smooth_overlap_filter_iblk(VC1Context *v);
+void ff_vc1_i_overlap_filter(VC1Context *v);
+void ff_vc1_p_overlap_filter(VC1Context *v);
 void ff_vc1_apply_p_loop_filter(VC1Context *v);
 
 void ff_vc1_mc_1mv(VC1Context *v, int dir);
