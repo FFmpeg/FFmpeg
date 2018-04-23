@@ -594,7 +594,7 @@ static int vc1_decode_i_block(VC1Context *v, int16_t block[64], int n,
         scale = s->c_dc_scale;
     block[0] = dcdiff * scale;
 
-    ac_val  = s->ac_val[0][0] + s->block_index[n] * 16;
+    ac_val  = s->ac_val[0][s->block_index[n]];
     ac_val2 = ac_val;
     if (dc_pred_dir) // left
         ac_val -= 16;
@@ -745,7 +745,7 @@ static int vc1_decode_i_block_adv(VC1Context *v, int16_t block[64], int n,
 
     scale = mquant * 2 + ((mquant == v->pq) ? v->halfpq : 0);
 
-    ac_val  = s->ac_val[0][0] + s->block_index[n] * 16;
+    ac_val  = s->ac_val[0][s->block_index[n]];
     ac_val2 = ac_val;
     if (dc_pred_dir) // left
         ac_val -= 16;
@@ -946,7 +946,7 @@ static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
     if (!a_avail) dc_pred_dir = 1;
     if (!c_avail) dc_pred_dir = 0;
     if (!a_avail && !c_avail) use_pred = 0;
-    ac_val = s->ac_val[0][0] + s->block_index[n] * 16;
+    ac_val = s->ac_val[0][s->block_index[n]];
     ac_val2 = ac_val;
 
     scale = mquant * 2 + v->halfpq;
