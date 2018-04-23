@@ -61,7 +61,7 @@ const uint8_t ff_vc1_mbmode_intfrp[2][15][4] = {
         { MV_PMODE_INTFR_1MV      , 1, 0, 1 },
         { MV_PMODE_INTFR_2MV_FIELD, 0, 0, 1 },
         { MV_PMODE_INTFR_2MV_FIELD, 1, 0, 1 },
-        { MV_PMODE_INTFR_2MV_FIELD, 0, 0, 0 },
+        { MV_PMODE_INTFR_2MV_FIELD, 1, 0, 0 },
         { MV_PMODE_INTFR_INTRA    , 0, 0, 0 }
     },
     {
@@ -73,13 +73,13 @@ const uint8_t ff_vc1_mbmode_intfrp[2][15][4] = {
         { MV_PMODE_INTFR_1MV      , 1, 0, 1 },
         { MV_PMODE_INTFR_2MV_FIELD, 0, 0, 1 },
         { MV_PMODE_INTFR_2MV_FIELD, 1, 0, 1 },
-        { MV_PMODE_INTFR_2MV_FIELD, 0, 0, 0 },
+        { MV_PMODE_INTFR_2MV_FIELD, 1, 0, 0 },
         { MV_PMODE_INTFR_4MV      , 0, 0, 1 },
         { MV_PMODE_INTFR_4MV      , 1, 0, 1 },
         { MV_PMODE_INTFR_4MV      , 0, 0, 0 },
         { MV_PMODE_INTFR_4MV_FIELD, 0, 0, 1 },
         { MV_PMODE_INTFR_4MV_FIELD, 1, 0, 1 },
-        { MV_PMODE_INTFR_4MV_FIELD, 0, 0, 0 },
+        { MV_PMODE_INTFR_4MV_FIELD, 1, 0, 0 },
         { MV_PMODE_INTFR_INTRA    , 0, 0, 0 }
     }
 };
