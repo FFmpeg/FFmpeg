@@ -115,6 +115,11 @@ typedef struct AVEncryptionInitInfo {
      */
     uint8_t* data;
     uint32_t data_size;
+
+    /**
+     * An optional pointer to the next initialization info in the list.
+     */
+    struct AVEncryptionInitInfo *next;
 } AVEncryptionInitInfo;
 
 /**
