@@ -1226,7 +1226,7 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
             v->mv_mode          = ff_vc1_mv_pmode_table2[lowquant][mvmode];
             v->qs_last          = v->s.quarter_sample;
             v->s.quarter_sample = (v->mv_mode == MV_PMODE_1MV || v->mv_mode == MV_PMODE_MIXED_MV);
-            v->s.mspel          = !(v->mv_mode == MV_PMODE_1MV_HPEL_BILIN || v->mv_mode == MV_PMODE_1MV_HPEL);
+            v->s.mspel          = (v->mv_mode != MV_PMODE_1MV_HPEL_BILIN);
             status = bitplane_decoding(v->forward_mb_plane, &v->fmb_is_raw, v);
             if (status < 0)
                 return -1;
