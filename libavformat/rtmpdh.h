@@ -40,11 +40,6 @@ typedef gcry_mpi_t FFBigNum;
 #include <openssl/dh.h>
 
 typedef BIGNUM *FFBigNum;
-#elif CONFIG_MBEDTLS
-#include <mbedtls/bignum.h>
-
-typedef mbedtls_mpi *FFBigNum;
-
 #endif
 
 typedef struct FF_DH {
