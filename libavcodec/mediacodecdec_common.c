@@ -764,6 +764,18 @@ int ff_mediacodec_dec_receive(AVCodecContext *avctx, MediaCodecDecContext *s,
     return AVERROR(EAGAIN);
 }
 
+/*
+* ff_mediacodec_dec_flush returns 0 if the flush cannot be performed on
+* the codec (because the user retains frames). The codec stays in the
+* flushing state.
+*
+* ff_mediacodec_dec_flush returns 1 if the flush can actually be
+* performed on the codec. The codec leaves the flushing state and can
+* process again packets.
+*
+* ff_mediacodec_dec_flush returns a negative value if an error has
+* occurred.
+*/
 int ff_mediacodec_dec_flush(AVCodecContext *avctx, MediaCodecDecContext *s)
 {
     if (!s->surface || atomic_load(&s->refcount) == 1) {
