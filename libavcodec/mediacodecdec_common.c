@@ -209,7 +209,7 @@ static int mediacodec_wrap_hw_buffer(AVCodecContext *avctx,
 
     if (avctx->pkt_timebase.num && avctx->pkt_timebase.den) {
         frame->pts = av_rescale_q(info->presentationTimeUs,
-                                      av_make_q(1, 1000000),
+                                      AV_TIME_BASE_Q,
                                       avctx->pkt_timebase);
     } else {
         frame->pts = info->presentationTimeUs;
@@ -298,7 +298,7 @@ static int mediacodec_wrap_sw_buffer(AVCodecContext *avctx,
      *   * 0-sized avpackets are pushed to flush remaining frames at EOS */
     if (avctx->pkt_timebase.num && avctx->pkt_timebase.den) {
         frame->pts = av_rescale_q(info->presentationTimeUs,
-                                      av_make_q(1, 1000000),
+                                      AV_TIME_BASE_Q,
                                       avctx->pkt_timebase);
     } else {
         frame->pts = info->presentationTimeUs;
@@ -610,7 +610,7 @@ int ff_mediacodec_dec_send(AVCodecContext *avctx, MediaCodecDecContext *s,
             uint32_t flags = ff_AMediaCodec_getBufferFlagEndOfStream(codec);
 
             if (s->surface) {
-                pts = av_rescale_q(pts, avctx->pkt_timebase, av_make_q(1, 1000000));
+                pts = av_rescale_q(pts, avctx->pkt_timebase, AV_TIME_BASE_Q);
             }
 
             av_log(avctx, AV_LOG_DEBUG, "Sending End Of Stream signal\n");
@@ -634,7 +634,7 @@ int ff_mediacodec_dec_send(AVCodecContext *avctx, MediaCodecDecContext *s,
             offset += size;
 
             if (avctx->pkt_timebase.num && avctx->pkt_timebase.den) {
-                pts = av_rescale_q(pts, avctx->pkt_timebase, av_make_q(1, 1000000));
+                pts = av_rescale_q(pts, avctx->pkt_timebase, AV_TIME_BASE_Q);
             }
 
             status = ff_AMediaCodec_queueInputBuffer(codec, index, 0, size, pts, 0);
