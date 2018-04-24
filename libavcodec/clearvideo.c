@@ -637,6 +637,9 @@ static int clv_decode_frame(AVCodecContext *avctx, void *data,
 
     *got_frame = 1;
 
+    if (get_bits_left(&c->gb) < 0)
+        av_log(c->avctx, AV_LOG_WARNING, "overread %d\n", -get_bits_left(&c->gb));
+
     return mb_ret < 0 ? mb_ret : buf_size;
 }
 
