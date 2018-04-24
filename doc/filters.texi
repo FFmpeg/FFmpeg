@@ -11154,6 +11154,11 @@ The number of inputs. If unspecified, it defaults to 2.
 Specify weight of each input video stream as sequence.
 Each weight is separated by space.
 
+@item scale
+Specify scale, if it is set it will be multiplied with sum
+of each weight multiplied with pixel values to give final destination
+pixel value. By default @var{scale} is auto scaled to sum of weights.
+
 @item duration
 Specify how end of stream is determined.
 @table @samp
@@ -15574,6 +15579,11 @@ The number of successive frames to mix. If unspecified, it defaults to 3.
 @item weights
 Specify weight of each input video frame.
 Each weight is separated by space.
+
+@item scale
+Specify scale, if it is set it will be multiplied with sum
+of each weight multiplied with pixel values to give final destination
+pixel value. By default @var{scale} is auto scaled to sum of weights.
 @end table
 
 @section tonemap

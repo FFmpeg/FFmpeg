@@ -37,6 +37,7 @@ typedef struct MixContext {
     int nb_inputs;
     int duration;
     float *weights;
+    float scale;
     float wfactor;
 
     int tmix;
@@ -109,7 +110,11 @@ static av_cold int init(AVFilterContext *ctx)
         sscanf(arg, "%f", &s->weights[i]);
         s->wfactor += s->weights[i];
     }
-    s->wfactor = 1 / s->wfactor;
+    if (s->scale == 0) {
+        s->wfactor = 1 / s->wfactor;
+    } else {
+        s->wfactor = s->scale;
+    }
 
     return 0;
 }
@@ -275,6 +280,7 @@ static int activate(AVFilterContext *ctx)
 static const AVOption mix_options[] = {
     { "inputs", "set number of inputs", OFFSET(nb_inputs), AV_OPT_TYPE_INT, {.i64=2}, 2, INT_MAX, .flags = FLAGS },
     { "weights", "set weight for each input", OFFSET(weights_str), AV_OPT_TYPE_STRING, {.str="1 1"}, 0, 0, .flags = FLAGS },
+    { "scale", "set scale", OFFSET(scale), AV_OPT_TYPE_FLOAT, {.dbl=0}, 0, INT16_MAX, .flags = FLAGS },
     { "duration", "how to determine end of stream", OFFSET(duration), AV_OPT_TYPE_INT, {.i64=0}, 0, 2, .flags = FLAGS, "duration" },
         { "longest",  "Duration of longest input",  0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "duration" },
         { "shortest", "Duration of shortest input", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "duration" },
@@ -340,6 +346,7 @@ static int tmix_filter_frame(AVFilterLink *inlink, AVFrame *in)
 static const AVOption tmix_options[] = {
     { "frames", "set number of successive frames to mix", OFFSET(nb_inputs), AV_OPT_TYPE_INT, {.i64=3}, 2, 128, .flags = FLAGS },
     { "weights", "set weight for each frame", OFFSET(weights_str), AV_OPT_TYPE_STRING, {.str="1 1 1"}, 0, 0, .flags = FLAGS },
+    { "scale", "set scale", OFFSET(scale), AV_OPT_TYPE_FLOAT, {.dbl=0}, 0, INT16_MAX, .flags = FLAGS },
     { NULL },
 };
 
