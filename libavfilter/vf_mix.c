@@ -39,6 +39,9 @@ typedef struct MixContext {
     float *weights;
     float wfactor;
 
+    int tmix;
+    int nb_frames;
+
     int depth;
     int nb_planes;
     int linesize[4];
@@ -71,6 +74,8 @@ static av_cold int init(AVFilterContext *ctx)
     char *p, *arg, *saveptr = NULL;
     int i, ret;
 
+    s->tmix = !strcmp(ctx->filter->name, "tmix");
+
     s->frames = av_calloc(s->nb_inputs, sizeof(*s->frames));
     if (!s->frames)
         return AVERROR(ENOMEM);
@@ -79,17 +84,19 @@ static av_cold int init(AVFilterContext *ctx)
     if (!s->weights)
         return AVERROR(ENOMEM);
 
-    for (i = 0; i < s->nb_inputs; i++) {
-        AVFilterPad pad = { 0 };
+    if (!s->tmix) {
+        for (i = 0; i < s->nb_inputs; i++) {
+            AVFilterPad pad = { 0 };
 
-        pad.type = AVMEDIA_TYPE_VIDEO;
-        pad.name = av_asprintf("input%d", i);
-        if (!pad.name)
-            return AVERROR(ENOMEM);
+            pad.type = AVMEDIA_TYPE_VIDEO;
+            pad.name = av_asprintf("input%d", i);
+            if (!pad.name)
+                return AVERROR(ENOMEM);
 
-        if ((ret = ff_insert_inpad(ctx, i, &pad)) < 0) {
-            av_freep(&pad.name);
-            return ret;
+            if ((ret = ff_insert_inpad(ctx, i, &pad)) < 0) {
+                av_freep(&pad.name);
+                return ret;
+            }
         }
     }
 
@@ -107,24 +114,9 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
-static int process_frame(FFFrameSync *fs)
+static void mix_frames(MixContext *s, AVFrame **in, AVFrame *out)
 {
-    AVFilterContext *ctx = fs->parent;
-    AVFilterLink *outlink = ctx->outputs[0];
-    MixContext *s = fs->opaque;
-    AVFrame **in = s->frames;
-    AVFrame *out;
-    int i, p, ret, x, y;
-
-    for (i = 0; i < s->nb_inputs; i++) {
-        if ((ret = ff_framesync_get_frame(&s->fs, i, &in[i], 0)) < 0)
-            return ret;
-    }
-
-    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    if (!out)
-        return AVERROR(ENOMEM);
-    out->pts = av_rescale_q(s->fs.pts, s->fs.time_base, outlink->time_base);
+    int i, p, x, y;
 
     if (s->depth <= 8) {
         for (p = 0; p < s->nb_planes; p++) {
@@ -167,6 +159,28 @@ static int process_frame(FFFrameSync *fs)
             }
         }
     }
+}
+
+static int process_frame(FFFrameSync *fs)
+{
+    AVFilterContext *ctx = fs->parent;
+    AVFilterLink *outlink = ctx->outputs[0];
+    MixContext *s = fs->opaque;
+    AVFrame **in = s->frames;
+    AVFrame *out;
+    int i, ret;
+
+    for (i = 0; i < s->nb_inputs; i++) {
+        if ((ret = ff_framesync_get_frame(&s->fs, i, &in[i], 0)) < 0)
+            return ret;
+    }
+
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+    if (!out)
+        return AVERROR(ENOMEM);
+    out->pts = av_rescale_q(s->fs.pts, s->fs.time_base, outlink->time_base);
+
+    mix_frames(s, in, out);
 
     return ff_filter_frame(outlink, out);
 }
@@ -183,10 +197,12 @@ static int config_output(AVFilterLink *outlink)
     FFFrameSyncIn *in;
     int i, ret;
 
-    for (i = 1; i < s->nb_inputs; i++) {
-        if (ctx->inputs[i]->h != height || ctx->inputs[i]->w != width) {
-            av_log(ctx, AV_LOG_ERROR, "Input %d size (%dx%d) does not match input %d size (%dx%d).\n", i, ctx->inputs[i]->w, ctx->inputs[i]->h, 0, width, height);
-            return AVERROR(EINVAL);
+    if (!s->tmix) {
+        for (i = 1; i < s->nb_inputs; i++) {
+            if (ctx->inputs[i]->h != height || ctx->inputs[i]->w != width) {
+                av_log(ctx, AV_LOG_ERROR, "Input %d size (%dx%d) does not match input %d size (%dx%d).\n", i, ctx->inputs[i]->w, ctx->inputs[i]->h, 0, width, height);
+                return AVERROR(EINVAL);
+            }
         }
     }
 
@@ -195,6 +211,15 @@ static int config_output(AVFilterLink *outlink)
         return AVERROR_BUG;
     s->nb_planes = av_pix_fmt_count_planes(outlink->format);
     s->depth = s->desc->comp[0].depth;
+
+    if ((ret = av_image_fill_linesizes(s->linesize, inlink->format, inlink->w)) < 0)
+        return ret;
+
+    s->height[1] = s->height[2] = AV_CEIL_RSHIFT(inlink->h, s->desc->log2_chroma_h);
+    s->height[0] = s->height[3] = inlink->h;
+
+    if (s->tmix)
+        return 0;
 
     outlink->w          = width;
     outlink->h          = height;
@@ -207,12 +232,6 @@ static int config_output(AVFilterLink *outlink)
     in = s->fs.in;
     s->fs.opaque = s;
     s->fs.on_event = process_frame;
-
-    if ((ret = av_image_fill_linesizes(s->linesize, inlink->format, inlink->w)) < 0)
-        return ret;
-
-    s->height[1] = s->height[2] = AV_CEIL_RSHIFT(inlink->h, s->desc->log2_chroma_h);
-    s->height[0] = s->height[3] = inlink->h;
 
     for (i = 0; i < s->nb_inputs; i++) {
         AVFilterLink *inlink = ctx->inputs[i];
@@ -232,11 +251,16 @@ static av_cold void uninit(AVFilterContext *ctx)
     int i;
 
     ff_framesync_uninit(&s->fs);
-    av_freep(&s->frames);
     av_freep(&s->weights);
 
-    for (i = 0; i < ctx->nb_inputs; i++)
-        av_freep(&ctx->input_pads[i].name);
+    if (!s->tmix) {
+        for (i = 0; i < ctx->nb_inputs; i++)
+            av_freep(&ctx->input_pads[i].name);
+    } else {
+        for (i = 0; i < s->nb_frames; i++)
+            av_frame_free(&s->frames[i]);
+    }
+    av_freep(&s->frames);
 }
 
 static int activate(AVFilterContext *ctx)
@@ -267,6 +291,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
+#if CONFIG_MIX_FILTER
 AVFILTER_DEFINE_CLASS(mix);
 
 AVFilter ff_vf_mix = {
@@ -281,3 +306,64 @@ AVFilter ff_vf_mix = {
     .activate      = activate,
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };
+
+#endif /* CONFIG_MIX_FILTER */
+
+#if CONFIG_TMIX_FILTER
+static int tmix_filter_frame(AVFilterLink *inlink, AVFrame *in)
+{
+    AVFilterContext *ctx = inlink->dst;
+    AVFilterLink *outlink = ctx->outputs[0];
+    MixContext *s = ctx->priv;
+    AVFrame *out;
+
+    if (s->nb_frames < s->nb_inputs) {
+        s->frames[s->nb_frames] = in;
+        s->nb_frames++;
+        return 0;
+    } else {
+        av_frame_free(&s->frames[0]);
+        memmove(&s->frames[0], &s->frames[1], sizeof(*s->frames) * (s->nb_inputs - 1));
+        s->frames[s->nb_inputs - 1] = in;
+    }
+
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+    if (!out)
+        return AVERROR(ENOMEM);
+    out->pts = s->frames[0]->pts;
+
+    mix_frames(s, s->frames, out);
+
+    return ff_filter_frame(outlink, out);
+}
+
+static const AVOption tmix_options[] = {
+    { "frames", "set number of successive frames to mix", OFFSET(nb_inputs), AV_OPT_TYPE_INT, {.i64=3}, 2, 128, .flags = FLAGS },
+    { "weights", "set weight for each frame", OFFSET(weights_str), AV_OPT_TYPE_STRING, {.str="1 1 1"}, 0, 0, .flags = FLAGS },
+    { NULL },
+};
+
+static const AVFilterPad inputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .filter_frame  = tmix_filter_frame,
+    },
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(tmix);
+
+AVFilter ff_vf_tmix = {
+    .name          = "tmix",
+    .description   = NULL_IF_CONFIG_SMALL("Mix successive video frames."),
+    .priv_size     = sizeof(MixContext),
+    .priv_class    = &tmix_class,
+    .query_formats = query_formats,
+    .outputs       = outputs,
+    .inputs        = inputs,
+    .init          = init,
+    .uninit        = uninit,
+};
+
+#endif /* CONFIG_TMIX_FILTER */

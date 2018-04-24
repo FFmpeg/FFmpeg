@@ -3,6 +3,7 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 - deblock filter
+- tmix filter
 
 
 version 4.0:

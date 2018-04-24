@@ -15561,6 +15561,21 @@ Vertical low-pass filtering can only be enabled for @option{mode}
 
 @end table
 
+@section tmix
+
+Mix successive video frames.
+
+A description of the accepted options follows.
+
+@table @option
+@item frames
+The number of successive frames to mix. If unspecified, it defaults to 3.
+
+@item weights
+Specify weight of each input video frame.
+Each weight is separated by space.
+@end table
+
 @section tonemap
 Tone map colors from different dynamic ranges.
 
