@@ -271,7 +271,7 @@ void ff_els_decoder_init(ElsDecCtx *ctx, const uint8_t *in, size_t data_size)
 
 void ff_els_decoder_uninit(ElsUnsignedRung *rung)
 {
-    av_free(rung->rem_rung_list);
+    av_freep(&rung->rem_rung_list);
 }
 
 static int els_import_byte(ElsDecCtx *ctx)
@@ -391,12 +391,10 @@ unsigned ff_els_decode_unsigned(ElsDecCtx *ctx, ElsUnsignedRung *ur)
                 if (ur->rung_list_size <= (ur->avail_index + 2) * sizeof(ElsRungNode)) {
                     // remember rung_node position
                     ptrdiff_t pos     = rung_node - ur->rem_rung_list;
-                    ur->rem_rung_list = av_realloc(ur->rem_rung_list,
+                    ctx->err = av_reallocp(&ur->rem_rung_list,
                                                    ur->rung_list_size +
                                                    RUNG_SPACE);
-                    if (!ur->rem_rung_list) {
-                        av_free(ur->rem_rung_list);
-                        ctx->err = AVERROR(ENOMEM);
+                    if (ctx->err < 0) {
                         return 0;
                     }
                     memset((uint8_t *) ur->rem_rung_list + ur->rung_list_size, 0,
