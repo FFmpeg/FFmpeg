@@ -571,6 +571,7 @@ int ff_mediacodec_dec_send(AVCodecContext *avctx, MediaCodecDecContext *s,
     FFAMediaCodec *codec = s->codec;
     int status;
     int64_t input_dequeue_timeout_us = INPUT_DEQUEUE_TIMEOUT_US;
+    int64_t pts;
 
     if (s->flushing) {
         av_log(avctx, AV_LOG_ERROR, "Decoder is flushing and cannot accept new buffer "
@@ -605,13 +606,13 @@ int ff_mediacodec_dec_send(AVCodecContext *avctx, MediaCodecDecContext *s,
             return AVERROR_EXTERNAL;
         }
 
-        if (need_draining) {
-            int64_t pts = pkt->pts;
-            uint32_t flags = ff_AMediaCodec_getBufferFlagEndOfStream(codec);
+        pts = pkt->pts;
+        if (pts != AV_NOPTS_VALUE && avctx->pkt_timebase.num && avctx->pkt_timebase.den) {
+            pts = av_rescale_q(pts, avctx->pkt_timebase, AV_TIME_BASE_Q);
+        }
 
-            if (s->surface) {
-                pts = av_rescale_q(pts, avctx->pkt_timebase, AV_TIME_BASE_Q);
-            }
+        if (need_draining) {
+            uint32_t flags = ff_AMediaCodec_getBufferFlagEndOfStream(codec);
 
             av_log(avctx, AV_LOG_DEBUG, "Sending End Of Stream signal\n");
 
@@ -627,15 +628,9 @@ int ff_mediacodec_dec_send(AVCodecContext *avctx, MediaCodecDecContext *s,
             s->draining = 1;
             break;
         } else {
-            int64_t pts = pkt->pts;
-
             size = FFMIN(pkt->size - offset, size);
             memcpy(data, pkt->data + offset, size);
             offset += size;
-
-            if (avctx->pkt_timebase.num && avctx->pkt_timebase.den) {
-                pts = av_rescale_q(pts, avctx->pkt_timebase, AV_TIME_BASE_Q);
-            }
 
             status = ff_AMediaCodec_queueInputBuffer(codec, index, 0, size, pts, 0);
             if (status < 0) {
