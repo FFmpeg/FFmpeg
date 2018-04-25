@@ -64,7 +64,6 @@ typedef struct MediaCodecDecContext {
     int display_width;
     int display_height;
 
-    uint64_t output_buffer_count;
     ssize_t current_input_buffer;
 
     bool delay_flush;
