@@ -160,13 +160,13 @@ static void vc1_put_signed_blocks_clamped(VC1Context *v)
         int edges = 0;                                         \
         if (v->dqprofile == DQPROFILE_ALL_MBS) {               \
             if (v->dqbilevel) {                                \
-                mquant = (get_bits1(gb)) ? v->altpq : v->pq;   \
+                mquant = (get_bits1(gb)) ? -v->altpq : v->pq;  \
             } else {                                           \
                 mqdiff = get_bits(gb, 3);                      \
                 if (mqdiff != 7)                               \
-                    mquant = v->pq + mqdiff;                   \
+                    mquant = -v->pq - mqdiff;                  \
                 else                                           \
-                    mquant = get_bits(gb, 5);                  \
+                    mquant = -get_bits(gb, 5);                 \
             }                                                  \
         }                                                      \
         if (v->dqprofile == DQPROFILE_SINGLE_EDGE)             \
@@ -176,13 +176,13 @@ static void vc1_put_signed_blocks_clamped(VC1Context *v)
         else if (v->dqprofile == DQPROFILE_FOUR_EDGES)         \
             edges = 15;                                        \
         if ((edges&1) && !s->mb_x)                             \
-            mquant = v->altpq;                                 \
+            mquant = -v->altpq;                                \
         if ((edges&2) && s->first_slice_line)                  \
-            mquant = v->altpq;                                 \
+            mquant = -v->altpq;                                \
         if ((edges&4) && s->mb_x == (s->mb_width - 1))         \
-            mquant = v->altpq;                                 \
+            mquant = -v->altpq;                                \
         if ((edges&8) && s->mb_y == (s->mb_height - 1))        \
-            mquant = v->altpq;                                 \
+            mquant = -v->altpq;                                \
         if (!mquant || mquant > 31) {                          \
             av_log(v->s.avctx, AV_LOG_ERROR,                   \
                    "Overriding invalid mquant %d\n", mquant);  \
@@ -388,7 +388,7 @@ static inline int ff_vc1_pred_dc(MpegEncContext *s, int overlap, int pq, int n,
     int dqscale_index;
 
     /* scale predictors if needed */
-    q1 = s->current_picture.qscale_table[mb_pos];
+    q1 = FFABS(s->current_picture.qscale_table[mb_pos]);
     dqscale_index = s->y_dc_scale_table[q1] - 1;
     if (dqscale_index < 0)
         return 0;
@@ -404,12 +404,12 @@ static inline int ff_vc1_pred_dc(MpegEncContext *s, int overlap, int pq, int n,
     a = dc_val[ - wrap];
 
     if (c_avail && (n != 1 && n != 3)) {
-        q2 = s->current_picture.qscale_table[mb_pos - 1];
+        q2 = FFABS(s->current_picture.qscale_table[mb_pos - 1]);
         if (q2 && q2 != q1)
             c = (c * s->y_dc_scale_table[q2] * ff_vc1_dqscale[dqscale_index] + 0x20000) >> 18;
     }
     if (a_avail && (n != 2 && n != 3)) {
-        q2 = s->current_picture.qscale_table[mb_pos - s->mb_stride];
+        q2 = FFABS(s->current_picture.qscale_table[mb_pos - s->mb_stride]);
         if (q2 && q2 != q1)
             a = (a * s->y_dc_scale_table[q2] * ff_vc1_dqscale[dqscale_index] + 0x20000) >> 18;
     }
@@ -419,7 +419,7 @@ static inline int ff_vc1_pred_dc(MpegEncContext *s, int overlap, int pq, int n,
             off--;
         if (n != 2)
             off -= s->mb_stride;
-        q2 = s->current_picture.qscale_table[off];
+        q2 = FFABS(s->current_picture.qscale_table[off]);
         if (q2 && q2 != q1)
             b = (b * s->y_dc_scale_table[q2] * ff_vc1_dqscale[dqscale_index] + 0x20000) >> 18;
     }
@@ -700,6 +700,7 @@ static int vc1_decode_i_block_adv(VC1Context *v, int16_t block[64], int n,
     int scale;
     int q1, q2 = 0;
     int mb_pos = s->mb_x + s->mb_y * s->mb_stride;
+    int quant = FFABS(mquant);
 
     /* Get DC differential */
     if (n < 4) {
@@ -712,7 +713,7 @@ static int vc1_decode_i_block_adv(VC1Context *v, int16_t block[64], int n,
         return -1;
     }
     if (dcdiff) {
-        const int m = (mquant == 1 || mquant == 2) ? 3 - mquant : 0;
+        const int m = (quant == 1 || quant == 2) ? 3 - quant : 0;
         if (dcdiff == 119 /* ESC index value */) {
             dcdiff = get_bits(gb, 8 + m);
         } else {
@@ -724,7 +725,7 @@ static int vc1_decode_i_block_adv(VC1Context *v, int16_t block[64], int n,
     }
 
     /* Prediction */
-    dcdiff += ff_vc1_pred_dc(&v->s, v->overlap, mquant, n, v->a_avail, v->c_avail, &dc_val, &dc_pred_dir);
+    dcdiff += ff_vc1_pred_dc(&v->s, v->overlap, quant, n, v->a_avail, v->c_avail, &dc_val, &dc_pred_dir);
     *dc_val = dcdiff;
 
     /* Store the quantized DC coeff, used for prediction */
@@ -738,7 +739,7 @@ static int vc1_decode_i_block_adv(VC1Context *v, int16_t block[64], int n,
     if (!a_avail && !c_avail)
         use_pred = 0;
 
-    scale = mquant * 2 + ((mquant == v->pq) ? v->halfpq : 0);
+    scale = quant * 2 + ((mquant < 0) ? 0 : v->halfpq);
 
     ac_val  = s->ac_val[0][s->block_index[n]];
     ac_val2 = ac_val;
@@ -804,11 +805,12 @@ static int vc1_decode_i_block_adv(VC1Context *v, int16_t block[64], int n,
                 ac_val += 8;
             }
             /* scale predictors if needed*/
+            q1 = FFABS(q1) * 2 + ((q1 < 0) ? 0 : v->halfpq) - 1;
+            if (q1 < 1)
+                return AVERROR_INVALIDDATA;
+            if (q2)
+                q2 = FFABS(q2) * 2 + ((q2 < 0) ? 0 : v->halfpq) - 1;
             if (q2 && q1 != q2) {
-                q1 = q1 * 2 + ((q1 == v->pq) ? v->halfpq : 0) - 1;
-                if (q1 < 1)
-                    return AVERROR_INVALIDDATA;
-                q2 = q2 * 2 + ((q2 == v->pq) ? v->halfpq : 0) - 1;
                 for (k = 1; k < 8; k++)
                     block[k << sh] += (ac_val[k] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
             } else {
@@ -827,7 +829,7 @@ static int vc1_decode_i_block_adv(VC1Context *v, int16_t block[64], int n,
             if (block[k]) {
                 block[k] *= scale;
                 if (!v->pquantizer)
-                    block[k] += (block[k] < 0) ? -mquant : mquant;
+                    block[k] += (block[k] < 0) ? -quant : quant;
             }
 
     } else { // no AC coeffs
@@ -846,18 +848,19 @@ static int vc1_decode_i_block_adv(VC1Context *v, int16_t block[64], int n,
                 ac_val2 += 8;
             }
             memcpy(ac_val2, ac_val, 8 * 2);
+            q1 = FFABS(q1) * 2 + ((q1 < 0) ? 0 : v->halfpq) - 1;
+            if (q1 < 1)
+                return AVERROR_INVALIDDATA;
+            if (q2)
+                q2 = FFABS(q2) * 2 + ((q2 < 0) ? 0 : v->halfpq) - 1;
             if (q2 && q1 != q2) {
-                q1 = q1 * 2 + ((q1 == v->pq) ? v->halfpq : 0) - 1;
-                q2 = q2 * 2 + ((q2 == v->pq) ? v->halfpq : 0) - 1;
-                if (q1 < 1)
-                    return AVERROR_INVALIDDATA;
                 for (k = 1; k < 8; k++)
                     ac_val2[k] = (ac_val2[k] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
             }
             for (k = 1; k < 8; k++) {
                 block[k << sh] = ac_val2[k] * scale;
                 if (!v->pquantizer && block[k << sh])
-                    block[k << sh] += (block[k << sh] < 0) ? -mquant : mquant;
+                    block[k << sh] += (block[k << sh] < 0) ? -quant : quant;
             }
         }
     }
@@ -890,15 +893,16 @@ static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
     int use_pred = s->ac_pred;
     int scale;
     int q1, q2 = 0;
+    int quant = FFABS(mquant);
 
     s->bdsp.clear_block(block);
 
     /* XXX: Guard against dumb values of mquant */
-    mquant = av_clip_uintp2(mquant, 5);
+    quant = av_clip_uintp2(quant, 5);
 
     /* Set DC scale - y and c use the same */
-    s->y_dc_scale = s->y_dc_scale_table[mquant];
-    s->c_dc_scale = s->c_dc_scale_table[mquant];
+    s->y_dc_scale = s->y_dc_scale_table[quant];
+    s->c_dc_scale = s->c_dc_scale_table[quant];
 
     /* Get DC differential */
     if (n < 4) {
@@ -911,7 +915,7 @@ static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
         return -1;
     }
     if (dcdiff) {
-        const int m = (mquant == 1 || mquant == 2) ? 3 - mquant : 0;
+        const int m = (quant == 1 || quant == 2) ? 3 - quant : 0;
         if (dcdiff == 119 /* ESC index value */) {
             dcdiff = get_bits(gb, 8 + m);
         } else {
@@ -923,7 +927,7 @@ static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
     }
 
     /* Prediction */
-    dcdiff += ff_vc1_pred_dc(&v->s, v->overlap, mquant, n, a_avail, c_avail, &dc_val, &dc_pred_dir);
+    dcdiff += ff_vc1_pred_dc(&v->s, v->overlap, quant, n, a_avail, c_avail, &dc_val, &dc_pred_dir);
     *dc_val = dcdiff;
 
     /* Store the quantized DC coeff, used for prediction */
@@ -944,7 +948,7 @@ static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
     ac_val = s->ac_val[0][s->block_index[n]];
     ac_val2 = ac_val;
 
-    scale = mquant * 2 + ((mquant == v->pq) ? v->halfpq : 0);
+    scale = quant * 2 + ((mquant < 0) ? 0 : v->halfpq);
 
     if (dc_pred_dir) //left
         ac_val -= 16;
@@ -988,12 +992,12 @@ static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
         /* apply AC prediction if needed */
         if (use_pred) {
             /* scale predictors if needed*/
+            q1 = FFABS(q1) * 2 + ((q1 < 0) ? 0 : v->halfpq) - 1;
+            if (q1 < 1)
+                return AVERROR_INVALIDDATA;
+            if (q2)
+                q2 = FFABS(q2) * 2 + ((q2 < 0) ? 0 : v->halfpq) - 1;
             if (q2 && q1 != q2) {
-                q1 = q1 * 2 + ((q1 == v->pq) ? v->halfpq : 0) - 1;
-                q2 = q2 * 2 + ((q2 == v->pq) ? v->halfpq : 0) - 1;
-
-                if (q1 < 1)
-                    return AVERROR_INVALIDDATA;
                 if (dc_pred_dir) { // left
                     for (k = 1; k < 8; k++)
                         block[k << v->left_blk_sh] += (ac_val[k] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
@@ -1022,7 +1026,7 @@ static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
             if (block[k]) {
                 block[k] *= scale;
                 if (!v->pquantizer)
-                    block[k] += (block[k] < 0) ? -mquant : mquant;
+                    block[k] += (block[k] < 0) ? -quant : quant;
             }
 
         if (use_pred) i = 63;
@@ -1033,11 +1037,12 @@ static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
         if (dc_pred_dir) { // left
             if (use_pred) {
                 memcpy(ac_val2, ac_val, 8 * 2);
+                q1 = FFABS(q1) * 2 + ((q1 < 0) ? 0 : v->halfpq) - 1;
+                if (q1 < 1)
+                    return AVERROR_INVALIDDATA;
+                if (q2)
+                    q2 = FFABS(q2) * 2 + ((q2 < 0) ? 0 : v->halfpq) - 1;
                 if (q2 && q1 != q2) {
-                    q1 = q1 * 2 + ((q1 == v->pq) ? v->halfpq : 0) - 1;
-                    q2 = q2 * 2 + ((q2 == v->pq) ? v->halfpq : 0) - 1;
-                    if (q1 < 1)
-                        return AVERROR_INVALIDDATA;
                     for (k = 1; k < 8; k++)
                         ac_val2[k] = (ac_val2[k] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
                 }
@@ -1045,11 +1050,12 @@ static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
         } else { // top
             if (use_pred) {
                 memcpy(ac_val2 + 8, ac_val + 8, 8 * 2);
+                q1 = FFABS(q1) * 2 + ((q1 < 0) ? 0 : v->halfpq) - 1;
+                if (q1 < 1)
+                    return AVERROR_INVALIDDATA;
+                if (q2)
+                    q2 = FFABS(q2) * 2 + ((q2 < 0) ? 0 : v->halfpq) - 1;
                 if (q2 && q1 != q2) {
-                    q1 = q1 * 2 + ((q1 == v->pq) ? v->halfpq : 0) - 1;
-                    q2 = q2 * 2 + ((q2 == v->pq) ? v->halfpq : 0) - 1;
-                    if (q1 < 1)
-                        return AVERROR_INVALIDDATA;
                     for (k = 1; k < 8; k++)
                         ac_val2[k + 8] = (ac_val2[k + 8] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
                 }
@@ -1062,13 +1068,13 @@ static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
                 for (k = 1; k < 8; k++) {
                     block[k << v->left_blk_sh] = ac_val2[k] * scale;
                     if (!v->pquantizer && block[k << v->left_blk_sh])
-                        block[k << v->left_blk_sh] += (block[k << v->left_blk_sh] < 0) ? -mquant : mquant;
+                        block[k << v->left_blk_sh] += (block[k << v->left_blk_sh] < 0) ? -quant : quant;
                 }
             } else { // top
                 for (k = 1; k < 8; k++) {
                     block[k << v->top_blk_sh] = ac_val2[k + 8] * scale;
                     if (!v->pquantizer && block[k << v->top_blk_sh])
-                        block[k << v->top_blk_sh] += (block[k << v->top_blk_sh] < 0) ? -mquant : mquant;
+                        block[k << v->top_blk_sh] += (block[k << v->top_blk_sh] < 0) ? -quant : quant;
                 }
             }
             i = 63;
@@ -1093,6 +1099,7 @@ static int vc1_decode_p_block(VC1Context *v, int16_t block[64], int n,
     int scale, off, idx, last, skip, value;
     int ttblk = ttmb & 7;
     int pat = 0;
+    int quant = FFABS(mquant);
 
     s->bdsp.clear_block(block);
 
@@ -1113,7 +1120,7 @@ static int vc1_decode_p_block(VC1Context *v, int16_t block[64], int n,
         if (ttblk == TT_4X8_RIGHT || ttblk == TT_4X8_LEFT)
             ttblk = TT_4X8;
     }
-    scale = 2 * mquant + ((v->pq == mquant) ? v->halfpq : 0);
+    scale = quant * 2 + ((mquant < 0) ? 0 : v->halfpq);
 
     // convert transforms like 8X4_TOP to generic TT and SUBBLKPAT
     if (ttblk == TT_8X4_TOP || ttblk == TT_8X4_BOTTOM) {
@@ -1140,7 +1147,7 @@ static int vc1_decode_p_block(VC1Context *v, int16_t block[64], int n,
                 idx = v->zzi_8x8[i++];
             block[idx] = value * scale;
             if (!v->pquantizer)
-                block[idx] += (block[idx] < 0) ? -mquant : mquant;
+                block[idx] += (block[idx] < 0) ? -quant : quant;
         }
         if (!skip_block) {
             if (i == 1)
@@ -1168,7 +1175,7 @@ static int vc1_decode_p_block(VC1Context *v, int16_t block[64], int n,
                     idx = ff_vc1_adv_interlaced_4x4_zz[i++];
                 block[idx + off] = value * scale;
                 if (!v->pquantizer)
-                    block[idx + off] += (block[idx + off] < 0) ? -mquant : mquant;
+                    block[idx + off] += (block[idx + off] < 0) ? -quant : quant;
             }
             if (!(subblkpat & (1 << (3 - j))) && !skip_block) {
                 if (i == 1)
@@ -1195,7 +1202,7 @@ static int vc1_decode_p_block(VC1Context *v, int16_t block[64], int n,
                     idx = ff_vc1_adv_interlaced_8x4_zz[i++] + off;
                 block[idx] = value * scale;
                 if (!v->pquantizer)
-                    block[idx] += (block[idx] < 0) ? -mquant : mquant;
+                    block[idx] += (block[idx] < 0) ? -quant : quant;
             }
             if (!(subblkpat & (1 << (1 - j))) && !skip_block) {
                 if (i == 1)
@@ -1222,7 +1229,7 @@ static int vc1_decode_p_block(VC1Context *v, int16_t block[64], int n,
                     idx = ff_vc1_adv_interlaced_4x8_zz[i++] + off;
                 block[idx] = value * scale;
                 if (!v->pquantizer)
-                    block[idx] += (block[idx] < 0) ? -mquant : mquant;
+                    block[idx] += (block[idx] < 0) ? -quant : quant;
             }
             if (!(subblkpat & (1 << (1 - j))) && !skip_block) {
                 if (i == 1)
@@ -1549,8 +1556,8 @@ static int vc1_decode_p_mb_intfr(VC1Context *v)
             GET_MQUANT();
             s->current_picture.qscale_table[mb_pos] = mquant;
             /* Set DC scale - y and c use the same (not sure if necessary here) */
-            s->y_dc_scale = s->y_dc_scale_table[mquant];
-            s->c_dc_scale = s->c_dc_scale_table[mquant];
+            s->y_dc_scale = s->y_dc_scale_table[FFABS(mquant)];
+            s->c_dc_scale = s->c_dc_scale_table[FFABS(mquant)];
             dst_idx = 0;
             for (i = 0; i < 6; i++) {
                 v->a_avail = v->c_avail          = 0;
@@ -1711,8 +1718,8 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
         GET_MQUANT();
         s->current_picture.qscale_table[mb_pos] = mquant;
         /* Set DC scale - y and c use the same (not sure if necessary here) */
-        s->y_dc_scale = s->y_dc_scale_table[mquant];
-        s->c_dc_scale = s->c_dc_scale_table[mquant];
+        s->y_dc_scale = s->y_dc_scale_table[FFABS(mquant)];
+        s->c_dc_scale = s->c_dc_scale_table[FFABS(mquant)];
         v->s.ac_pred  = v->acpred_plane[mb_pos] = get_bits1(gb);
         mb_has_coeffs = idx_mbmode & 1;
         if (mb_has_coeffs)
@@ -1989,8 +1996,8 @@ static void vc1_decode_b_mb_intfi(VC1Context *v)
         GET_MQUANT();
         s->current_picture.qscale_table[mb_pos] = mquant;
         /* Set DC scale - y and c use the same (not sure if necessary here) */
-        s->y_dc_scale = s->y_dc_scale_table[mquant];
-        s->c_dc_scale = s->c_dc_scale_table[mquant];
+        s->y_dc_scale = s->y_dc_scale_table[FFABS(mquant)];
+        s->c_dc_scale = s->c_dc_scale_table[FFABS(mquant)];
         v->s.ac_pred  = v->acpred_plane[mb_pos] = get_bits1(gb);
         mb_has_coeffs = idx_mbmode & 1;
         if (mb_has_coeffs)
@@ -2218,8 +2225,8 @@ static int vc1_decode_b_mb_intfr(VC1Context *v)
         GET_MQUANT();
         s->current_picture.qscale_table[mb_pos] = mquant;
         /* Set DC scale - y and c use the same (not sure if necessary here) */
-        s->y_dc_scale = s->y_dc_scale_table[mquant];
-        s->c_dc_scale = s->c_dc_scale_table[mquant];
+        s->y_dc_scale = s->y_dc_scale_table[FFABS(mquant)];
+        s->c_dc_scale = s->c_dc_scale_table[FFABS(mquant)];
         dst_idx = 0;
         for (i = 0; i < 6; i++) {
             v->a_avail = v->c_avail          = 0;
@@ -2687,8 +2694,8 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
 
             s->current_picture.qscale_table[mb_pos] = mquant;
             /* Set DC scale - y and c use the same */
-            s->y_dc_scale = s->y_dc_scale_table[mquant];
-            s->c_dc_scale = s->c_dc_scale_table[mquant];
+            s->y_dc_scale = s->y_dc_scale_table[FFABS(mquant)];
+            s->c_dc_scale = s->c_dc_scale_table[FFABS(mquant)];
 
             for (k = 0; k < 6; k++) {
                 v->mb_type[0][s->block_index[k]] = 1;

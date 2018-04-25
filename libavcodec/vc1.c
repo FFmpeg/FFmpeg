@@ -991,6 +991,7 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         v->pquantizer = 1;
         break;
     }
+    v->dquantfrm = 0;
     if (v->postprocflag)
         v->postproc = get_bits(gb, 2);
 
