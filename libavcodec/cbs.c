@@ -167,27 +167,6 @@ static int cbs_read_fragment_content(CodedBitstreamContext *ctx,
     return 0;
 }
 
-int ff_cbs_read_extradata(CodedBitstreamContext *ctx,
-                          CodedBitstreamFragment *frag,
-                          const AVCodecParameters *par)
-{
-    int err;
-
-    memset(frag, 0, sizeof(*frag));
-
-    frag->data      = par->extradata;
-    frag->data_size = par->extradata_size;
-
-    err = ctx->codec->split_fragment(ctx, frag, 1);
-    if (err < 0)
-        return err;
-
-    frag->data      = NULL;
-    frag->data_size = 0;
-
-    return cbs_read_fragment_content(ctx, frag);
-}
-
 static int cbs_fill_fragment_data(CodedBitstreamContext *ctx,
                                   CodedBitstreamFragment *frag,
                                   const uint8_t *data, size_t size)
@@ -207,6 +186,26 @@ static int cbs_fill_fragment_data(CodedBitstreamContext *ctx,
            AV_INPUT_BUFFER_PADDING_SIZE);
 
     return 0;
+}
+
+int ff_cbs_read_extradata(CodedBitstreamContext *ctx,
+                          CodedBitstreamFragment *frag,
+                          const AVCodecParameters *par)
+{
+    int err;
+
+    memset(frag, 0, sizeof(*frag));
+
+    err = cbs_fill_fragment_data(ctx, frag, par->extradata,
+                                 par->extradata_size);
+    if (err < 0)
+        return err;
+
+    err = ctx->codec->split_fragment(ctx, frag, 1);
+    if (err < 0)
+        return err;
+
+    return cbs_read_fragment_content(ctx, frag);
 }
 
 int ff_cbs_read_packet(CodedBitstreamContext *ctx,
