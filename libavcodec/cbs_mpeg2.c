@@ -146,18 +146,12 @@ static int cbs_mpeg2_split_fragment(CodedBitstreamContext *ctx,
             unit_size = (end - 4) - (start - 1);
         }
 
-        unit_data = av_malloc(unit_size + AV_INPUT_BUFFER_PADDING_SIZE);
-        if (!unit_data)
-            return AVERROR(ENOMEM);
-        memcpy(unit_data, start - 1, unit_size);
-        memset(unit_data + unit_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+        unit_data = (uint8_t *)start - 1;
 
         err = ff_cbs_insert_unit_data(ctx, frag, i, unit_type,
-                                      unit_data, unit_size, NULL);
-        if (err < 0) {
-            av_freep(&unit_data);
+                                      unit_data, unit_size, frag->data_ref);
+        if (err < 0)
             return err;
-        }
 
         if (end == frag->data + frag->data_size)
             break;
