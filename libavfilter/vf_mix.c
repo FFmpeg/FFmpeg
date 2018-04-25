@@ -151,7 +151,7 @@ static int process_frame(FFFrameSync *fs)
             uint16_t *dst = (uint16_t *)out->data[p];
 
             for (y = 0; y < s->height[p]; y++) {
-                for (x = 0; x < s->linesize[p]; x++) {
+                for (x = 0; x < s->linesize[p] / 2; x++) {
                     int val = 0;
 
                     for (i = 0; i < s->nb_inputs; i++) {
