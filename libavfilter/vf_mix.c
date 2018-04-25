@@ -44,6 +44,7 @@ typedef struct MixContext {
     int nb_frames;
 
     int depth;
+    int max;
     int nb_planes;
     int linesize[4];
     int height[4];
@@ -137,7 +138,7 @@ static void mix_frames(MixContext *s, AVFrame **in, AVFrame *out)
                         val += src * s->weights[i];
                     }
 
-                    dst[x] = val * s->wfactor;
+                    dst[x] = av_clip_uint8(val * s->wfactor);
                 }
 
                 dst += out->linesize[p];
@@ -157,7 +158,7 @@ static void mix_frames(MixContext *s, AVFrame **in, AVFrame *out)
                         val += src * s->weights[i];
                     }
 
-                    dst[x] = val * s->wfactor;
+                    dst[x] = av_clip(val * s->wfactor, 0, s->max);
                 }
 
                 dst += out->linesize[p] / 2;
@@ -216,6 +217,7 @@ static int config_output(AVFilterLink *outlink)
         return AVERROR_BUG;
     s->nb_planes = av_pix_fmt_count_planes(outlink->format);
     s->depth = s->desc->comp[0].depth;
+    s->max = (1 << s->depth) - 1;
 
     if ((ret = av_image_fill_linesizes(s->linesize, inlink->format, inlink->w)) < 0)
         return ret;
