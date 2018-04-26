@@ -1687,3 +1687,18 @@ int ff_AMediaCodec_cleanOutputBuffers(FFAMediaCodec *codec)
 fail:
     return ret;
 }
+
+int ff_Build_SDK_INT(AVCodecContext *avctx)
+{
+    int ret = -1;
+    JNIEnv *env = NULL;
+    jclass versionClass;
+    jfieldID sdkIntFieldID;
+    JNI_GET_ENV_OR_RETURN(env, avctx, -1);
+
+    versionClass = (*env)->FindClass(env, "android/os/Build$VERSION");
+    sdkIntFieldID = (*env)->GetStaticFieldID(env, versionClass, "SDK_INT", "I");
+    ret = (*env)->GetStaticIntField(env, versionClass, sdkIntFieldID);
+    (*env)->DeleteLocalRef(env, versionClass);
+    return ret;
+}
