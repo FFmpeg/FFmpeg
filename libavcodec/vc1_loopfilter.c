@@ -110,19 +110,19 @@ void ff_vc1_i_overlap_filter(VC1Context *v)
      * we run the put_pixels loop, i.e. delayed by one row and one column. */
     for (i = 0; i < block_count; i++)
         if (v->pq >= 9 || v->condover == CONDOVER_ALL ||
-            (v->over_flags_plane[mb_pos] && ((i & 5) == 1 || v->over_flags_plane[mb_pos - 1])))
+            (v->over_flags_plane[mb_pos] && ((i & 5) == 1 || (s->mb_x && v->over_flags_plane[mb_pos - 1]))))
             vc1_h_overlap_filter(v, s->mb_x ? left_blk : cur_blk, cur_blk, i);
 
     if (v->fcm != ILACE_FRAME)
         for (i = 0; i < block_count; i++) {
             if (s->mb_x && (v->pq >= 9 || v->condover == CONDOVER_ALL ||
                 (v->over_flags_plane[mb_pos - 1] &&
-                 ((i & 2) || v->over_flags_plane[mb_pos - 1 - s->mb_stride]))))
+                 ((i & 2) || (!s->first_slice_line && v->over_flags_plane[mb_pos - 1 - s->mb_stride])))))
                 vc1_v_overlap_filter(v, s->first_slice_line ? left_blk : topleft_blk, left_blk, i);
             if (s->mb_x == s->mb_width - 1)
                 if (v->pq >= 9 || v->condover == CONDOVER_ALL ||
                     (v->over_flags_plane[mb_pos] &&
-                     ((i & 2) || v->over_flags_plane[mb_pos - s->mb_stride])))
+                     ((i & 2) || (!s->first_slice_line && v->over_flags_plane[mb_pos - s->mb_stride]))))
                     vc1_v_overlap_filter(v, s->first_slice_line ? cur_blk : top_blk, cur_blk, i);
         }
 }
