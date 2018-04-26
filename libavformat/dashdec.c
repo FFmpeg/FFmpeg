@@ -1403,7 +1403,7 @@ static int refresh_manifest(AVFormatContext *s)
     c->videos = NULL;
     c->n_audios = 0;
     c->audios = NULL;
-    ret = parse_manifest(s, s->filename, NULL);
+    ret = parse_manifest(s, s->url, NULL);
     if (ret)
         goto finish;
 
@@ -1759,7 +1759,7 @@ static int nested_io_open(AVFormatContext *s, AVIOContext **pb, const char *url,
     av_log(s, AV_LOG_ERROR,
            "A DASH playlist item '%s' referred to an external file '%s'. "
            "Opening this file was forbidden for security reasons\n",
-           s->filename, url);
+           s->url, url);
     return AVERROR(EPERM);
 }
 
@@ -1930,7 +1930,7 @@ static int dash_read_header(AVFormatContext *s)
         update_options(&c->headers, "headers", u);
     }
 
-    if ((ret = parse_manifest(s, s->filename, s->pb)) < 0)
+    if ((ret = parse_manifest(s, s->url, s->pb)) < 0)
         goto fail;
 
     if ((ret = save_avio_options(s)) < 0)
