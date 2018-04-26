@@ -3389,6 +3389,12 @@ static int init_output_stream_encode(OutputStream *ost)
             enc_ctx->bits_per_raw_sample = frame_bits_per_raw_sample;
         }
 
+        if (ost->top_field_first == 0) {
+            enc_ctx->field_order = AV_FIELD_BB;
+        } else if (ost->top_field_first == 1) {
+            enc_ctx->field_order = AV_FIELD_TT;
+        }
+
         if (ost->forced_keyframes) {
             if (!strncmp(ost->forced_keyframes, "expr:", 5)) {
                 ret = av_expr_parse(&ost->forced_keyframes_pexpr, ost->forced_keyframes+5,
