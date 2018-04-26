@@ -48,6 +48,7 @@ typedef struct MediaCodecH264DecContext {
     AVPacket buffered_pkt;
 
     int delay_flush;
+    int amlogic_mpeg2_api23_workaround;
 
 } MediaCodecH264DecContext;
 
@@ -287,6 +288,7 @@ static int common_set_extradata(AVCodecContext *avctx, FFAMediaFormat *format)
 static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
 {
     int ret;
+    int sdk_int;
 
     const char *codec_mime = NULL;
 
@@ -377,7 +379,17 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
         goto done;
     }
 
-    av_log(avctx, AV_LOG_INFO, "MediaCodec started successfully, ret = %d\n", ret);
+    av_log(avctx, AV_LOG_INFO,
+           "MediaCodec started successfully: codec = %s, ret = %d\n",
+           s->ctx->codec_name, ret);
+
+    sdk_int = ff_Build_SDK_INT(avctx);
+    if (sdk_int <= 23 &&
+        strcmp(s->ctx->codec_name, "OMX.amlogic.mpeg2.decoder.awesome") == 0) {
+        av_log(avctx, AV_LOG_INFO, "Enabling workaround for %s on API=%d\n",
+               s->ctx->codec_name, sdk_int);
+        s->amlogic_mpeg2_api23_workaround = 1;
+    }
 
 done:
     if (format) {
@@ -434,8 +446,12 @@ static int mediacodec_receive_frame(AVCodecContext *avctx, AVFrame *frame)
                 return ret;
             }
 
-            /* poll for space again */
-            continue;
+            if (s->amlogic_mpeg2_api23_workaround && s->buffered_pkt.size <= 0) {
+                /* fallthrough to fetch next packet regardless of input buffer space */
+            } else {
+                /* poll for space again */
+                continue;
+            }
         }
 
         /* fetch new packet or eof */
