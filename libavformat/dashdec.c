@@ -706,6 +706,7 @@ static int resolve_content_path(AVFormatContext *s, const char *url, int *max_ur
     char *baseurl = NULL;
     char *root_url = NULL;
     char *text = NULL;
+    char *tmp = NULL;
 
     int isRootHttp = 0;
     char token ='/';
@@ -735,9 +736,11 @@ static int resolve_content_path(AVFormatContext *s, const char *url, int *max_ur
         goto end;
     }
     av_strlcpy(text, url, strlen(url)+1);
-    while (mpdName = av_strtok(text, "/", &text))  {
+    tmp = text;
+    while (mpdName = av_strtok(tmp, "/", &tmp))  {
         size = strlen(mpdName);
     }
+    av_free(text);
 
     path = av_mallocz(tmp_max_url_size);
     tmp_str = av_mallocz(tmp_max_url_size);
@@ -796,6 +799,7 @@ end:
     }
     av_free(path);
     av_free(tmp_str);
+    xmlFree(baseurl);
     return updated;
 
 }
@@ -1121,6 +1125,7 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
     xmlNodePtr root_element = NULL;
     xmlNodePtr node = NULL;
     xmlNodePtr period_node = NULL;
+    xmlNodePtr tmp_node = NULL;
     xmlNodePtr mpd_baseurl_node = NULL;
     xmlNodePtr period_baseurl_node = NULL;
     xmlNodePtr period_segmenttemplate_node = NULL;
@@ -1215,8 +1220,10 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
             xmlFree(val);
         }
 
-        mpd_baseurl_node = find_child_node_by_name(node, "BaseURL");
-        if (!mpd_baseurl_node) {
+        tmp_node = find_child_node_by_name(node, "BaseURL");
+        if (tmp_node) {
+            mpd_baseurl_node = xmlCopyNode(tmp_node,1);
+        } else {
             mpd_baseurl_node = xmlNewNode(NULL, "BaseURL");
         }
 
@@ -1270,6 +1277,7 @@ cleanup:
         /*free the document */
         xmlFreeDoc(doc);
         xmlCleanupParser();
+        xmlFreeNode(mpd_baseurl_node);
     }
 
     av_free(new_url);
