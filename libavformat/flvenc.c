@@ -485,7 +485,7 @@ static int unsupported_codec(AVFormatContext *s,
     return AVERROR(ENOSYS);
 }
 
-static void flv_write_codec_header(AVFormatContext* s, AVCodecParameters* par) {
+static void flv_write_codec_header(AVFormatContext* s, AVCodecParameters* par, int64_t ts) {
     int64_t data_size;
     AVIOContext *pb = s->pb;
     FLVContext *flv = s->priv_data;
@@ -497,7 +497,7 @@ static void flv_write_codec_header(AVFormatContext* s, AVCodecParameters* par) {
                 par->codec_type == AVMEDIA_TYPE_VIDEO ?
                         FLV_TAG_TYPE_VIDEO : FLV_TAG_TYPE_AUDIO);
         avio_wb24(pb, 0); // size patched later
-        put_timestamp(pb, 0);
+        put_timestamp(pb, ts);
         avio_wb24(pb, 0); // streamid
         pos = avio_tell(pb);
         if (par->codec_id == AV_CODEC_ID_AAC) {
@@ -760,7 +760,7 @@ static int flv_write_header(AVFormatContext *s)
     }
 
     for (i = 0; i < s->nb_streams; i++) {
-        flv_write_codec_header(s, s->streams[i]->codecpar);
+        flv_write_codec_header(s, s->streams[i]->codecpar, 0);
     }
 
     flv->datastart_offset = avio_tell(pb);
@@ -904,7 +904,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
             }
             memcpy(par->extradata, side, side_size);
             par->extradata_size = side_size;
-            flv_write_codec_header(s, par);
+            flv_write_codec_header(s, par, pkt->dts);
         }
     }
 
