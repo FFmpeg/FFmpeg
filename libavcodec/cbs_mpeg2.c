@@ -191,16 +191,11 @@ static int cbs_mpeg2_read_unit(CodedBitstreamContext *ctx,
         len = unit->data_size;
 
         slice->data_size = len - pos / 8;
-        slice->data_ref  = av_buffer_alloc(slice->data_size +
-                                           AV_INPUT_BUFFER_PADDING_SIZE);
+        slice->data_ref  = av_buffer_ref(unit->data_ref);
         if (!slice->data_ref)
             return AVERROR(ENOMEM);
-        slice->data = slice->data_ref->data;
+        slice->data = unit->data + pos / 8;
 
-        memcpy(slice->data,
-               unit->data + pos / 8, slice->data_size);
-        memset(slice->data + slice->data_size, 0,
-               AV_INPUT_BUFFER_PADDING_SIZE);
         slice->data_bit_start = pos % 8;
 
     } else {
