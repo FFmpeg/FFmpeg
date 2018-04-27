@@ -983,10 +983,11 @@ static int dash_init(AVFormatContext *s)
         if (!ctx->oformat)
             return AVERROR_MUXER_NOT_FOUND;
         os->ctx = ctx;
-        ctx->interrupt_callback = s->interrupt_callback;
-        ctx->opaque             = s->opaque;
-        ctx->io_close           = s->io_close;
-        ctx->io_open            = s->io_open;
+        ctx->interrupt_callback    = s->interrupt_callback;
+        ctx->opaque                = s->opaque;
+        ctx->io_close              = s->io_close;
+        ctx->io_open               = s->io_open;
+        ctx->strict_std_compliance = s->strict_std_compliance;
 
         if (!(st = avformat_new_stream(ctx, NULL)))
             return AVERROR(ENOMEM);
