@@ -556,7 +556,7 @@ static uint32_t epic_decode_pixel_pred(ePICContext *dc, int x, int y,
         B     = ((pred >> B_shift) & 0xFF) - TOSIGNED(delta);
     }
 
-    if (R<0 || G<0 || B<0) {
+    if (R<0 || G<0 || B<0 || R > 255 || G > 255 || B > 255) {
         av_log(NULL, AV_LOG_ERROR, "RGB %d %d %d is out of range\n", R, G, B);
         return 0;
     }
