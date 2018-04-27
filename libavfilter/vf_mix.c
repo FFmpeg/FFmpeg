@@ -143,7 +143,7 @@ static int mix_frames(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                     int val = 0;
 
                     for (i = 0; i < s->nb_inputs; i++) {
-                        uint8_t src = in[i]->data[p][y * s->linesize[p] + x];
+                        uint8_t src = in[i]->data[p][y * in[i]->linesize[p] + x];
 
                         val += src * s->weights[i];
                     }
@@ -165,7 +165,7 @@ static int mix_frames(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                     int val = 0;
 
                     for (i = 0; i < s->nb_inputs; i++) {
-                        uint16_t src = AV_RN16(in[i]->data[p] + y * s->linesize[p] + x * 2);
+                        uint16_t src = AV_RN16(in[i]->data[p] + y * in[i]->linesize[p] + x * 2);
 
                         val += src * s->weights[i];
                     }
