@@ -482,6 +482,7 @@ extern AVOutputFormat ff_chromaprint_muxer;
 extern AVInputFormat  ff_libgme_demuxer;
 extern AVInputFormat  ff_libmodplug_demuxer;
 extern AVInputFormat  ff_libopenmpt_demuxer;
+extern AVInputFormat  ff_vapoursynth_demuxer;
 
 #include "libavformat/muxer_list.c"
 #include "libavformat/demuxer_list.c"
