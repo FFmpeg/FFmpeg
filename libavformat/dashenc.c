@@ -1026,13 +1026,6 @@ static int dash_init(AVFormatContext *s)
 
         av_log(s, AV_LOG_VERBOSE, "Representation %d init segment will be written to: %s\n", i, filename);
 
-        // Flush init segment
-        // except for mp4, since delay_moov is set and the init segment
-        // is then flushed after the first packets
-        if (strcmp(os->format_name, "mp4")) {
-            flush_init_segment(s, os);
-        }
-
         s->streams[i]->time_base = st->time_base;
         // If the muxer wants to shift timestamps, request to have them shifted
         // already before being handed to this muxer, so we don't have mismatches
@@ -1073,6 +1066,13 @@ static int dash_write_header(AVFormatContext *s)
     for (i = 0; i < s->nb_streams; i++) {
         OutputStream *os = &c->streams[i];
         if ((ret = avformat_write_header(os->ctx, NULL)) < 0)
+            return ret;
+
+        // Flush init segment
+        // Only for WebM segment, since for mp4 delay_moov is set and
+        // the init segment is thus flushed after the first packets.
+        if (strcmp(os->format_name, "mp4") &&
+            (ret = flush_init_segment(s, os)) < 0)
             return ret;
     }
     return ret;
