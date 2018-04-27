@@ -120,15 +120,25 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
-static void mix_frames(MixContext *s, AVFrame **in, AVFrame *out)
+typedef struct ThreadData {
+    AVFrame **in, *out;
+} ThreadData;
+
+static int mix_frames(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
+    MixContext *s = ctx->priv;
+    ThreadData *td = arg;
+    AVFrame **in = td->in;
+    AVFrame *out = td->out;
     int i, p, x, y;
 
     if (s->depth <= 8) {
         for (p = 0; p < s->nb_planes; p++) {
-            uint8_t *dst = out->data[p];
+            const int slice_start = (s->height[p] * jobnr) / nb_jobs;
+            const int slice_end = (s->height[p] * (jobnr+1)) / nb_jobs;
+            uint8_t *dst = out->data[p] + slice_start * out->linesize[p];
 
-            for (y = 0; y < s->height[p]; y++) {
+            for (y = slice_start; y < slice_end; y++) {
                 for (x = 0; x < s->linesize[p]; x++) {
                     int val = 0;
 
@@ -146,9 +156,11 @@ static void mix_frames(MixContext *s, AVFrame **in, AVFrame *out)
         }
     } else {
         for (p = 0; p < s->nb_planes; p++) {
-            uint16_t *dst = (uint16_t *)out->data[p];
+            const int slice_start = (s->height[p] * jobnr) / nb_jobs;
+            const int slice_end = (s->height[p] * (jobnr+1)) / nb_jobs;
+            uint16_t *dst = (uint16_t *)(out->data[p] + slice_start * out->linesize[p]);
 
-            for (y = 0; y < s->height[p]; y++) {
+            for (y = slice_start; y < slice_end; y++) {
                 for (x = 0; x < s->linesize[p] / 2; x++) {
                     int val = 0;
 
@@ -165,6 +177,8 @@ static void mix_frames(MixContext *s, AVFrame **in, AVFrame *out)
             }
         }
     }
+
+    return 0;
 }
 
 static int process_frame(FFFrameSync *fs)
@@ -174,6 +188,7 @@ static int process_frame(FFFrameSync *fs)
     MixContext *s = fs->opaque;
     AVFrame **in = s->frames;
     AVFrame *out;
+    ThreadData td;
     int i, ret;
 
     for (i = 0; i < s->nb_inputs; i++) {
@@ -186,7 +201,9 @@ static int process_frame(FFFrameSync *fs)
         return AVERROR(ENOMEM);
     out->pts = av_rescale_q(s->fs.pts, s->fs.time_base, outlink->time_base);
 
-    mix_frames(s, in, out);
+    td.in = in;
+    td.out = out;
+    ctx->internal->execute(ctx, mix_frames, &td, NULL, FFMIN(s->height[0], ff_filter_get_nb_threads(ctx)));
 
     return ff_filter_frame(outlink, out);
 }
@@ -312,7 +329,7 @@ AVFilter ff_vf_mix = {
     .init          = init,
     .uninit        = uninit,
     .activate      = activate,
-    .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,
+    .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_SLICE_THREADS,
 };
 
 #endif /* CONFIG_MIX_FILTER */
@@ -323,6 +340,7 @@ static int tmix_filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     MixContext *s = ctx->priv;
+    ThreadData td;
     AVFrame *out;
 
     if (s->nb_frames < s->nb_inputs) {
@@ -340,7 +358,9 @@ static int tmix_filter_frame(AVFilterLink *inlink, AVFrame *in)
         return AVERROR(ENOMEM);
     out->pts = s->frames[0]->pts;
 
-    mix_frames(s, s->frames, out);
+    td.out = out;
+    td.in = s->frames;
+    ctx->internal->execute(ctx, mix_frames, &td, NULL, FFMIN(s->height[0], ff_filter_get_nb_threads(ctx)));
 
     return ff_filter_frame(outlink, out);
 }
@@ -373,6 +393,7 @@ AVFilter ff_vf_tmix = {
     .inputs        = inputs,
     .init          = init,
     .uninit        = uninit,
+    .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };
 
 #endif /* CONFIG_TMIX_FILTER */
