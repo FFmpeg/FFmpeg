@@ -196,7 +196,7 @@ static int maskedclamp16(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
         int x, y;
 
         if (!((1 << p) & s->planes)) {
-            av_image_copy_plane(dst, dlinesize, bsrc, blinesize,
+            av_image_copy_plane((uint8_t *)dst, dlinesize, (const uint8_t *)bsrc, blinesize,
                                 s->linesize[p], slice_end - slice_start);
             continue;
         }
