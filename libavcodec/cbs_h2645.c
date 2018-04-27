@@ -776,15 +776,10 @@ static int cbs_h264_read_nal_unit(CodedBitstreamContext *ctx,
             }
 
             slice->data_size = len - pos / 8;
-            slice->data_ref  = av_buffer_alloc(slice->data_size +
-                                               AV_INPUT_BUFFER_PADDING_SIZE);
+            slice->data_ref  = av_buffer_ref(unit->data_ref);
             if (!slice->data_ref)
                 return AVERROR(ENOMEM);
-            slice->data = slice->data_ref->data;
-            memcpy(slice->data,
-                   unit->data + pos / 8, slice->data_size);
-            memset(slice->data + slice->data_size, 0,
-                   AV_INPUT_BUFFER_PADDING_SIZE);
+            slice->data = unit->data + pos / 8;
             slice->data_bit_start = pos % 8;
         }
         break;
@@ -946,15 +941,10 @@ static int cbs_h265_read_nal_unit(CodedBitstreamContext *ctx,
             }
 
             slice->data_size = len - pos / 8;
-            slice->data_ref  = av_buffer_alloc(slice->data_size +
-                                               AV_INPUT_BUFFER_PADDING_SIZE);
+            slice->data_ref  = av_buffer_ref(unit->data_ref);
             if (!slice->data_ref)
                 return AVERROR(ENOMEM);
-            slice->data = slice->data_ref->data;
-            memcpy(slice->data,
-                   unit->data + pos / 8, slice->data_size);
-            memset(slice->data + slice->data_size, 0,
-                   AV_INPUT_BUFFER_PADDING_SIZE);
+            slice->data = unit->data + pos / 8;
             slice->data_bit_start = pos % 8;
         }
         break;
