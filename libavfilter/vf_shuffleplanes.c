@@ -158,10 +158,9 @@ static const AVFilterPad shuffleplanes_outputs[] = {
 AVFilter ff_vf_shuffleplanes = {
     .name         = "shuffleplanes",
     .description  = NULL_IF_CONFIG_SMALL("Shuffle video planes."),
-
     .priv_size    = sizeof(ShufflePlanesContext),
     .priv_class   = &shuffleplanes_class,
-
     .inputs       = shuffleplanes_inputs,
     .outputs      = shuffleplanes_outputs,
+    .flags        = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
