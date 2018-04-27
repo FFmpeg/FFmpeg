@@ -966,6 +966,16 @@ static int dash_init(AVFormatContext *s)
             s->streams[i]->codecpar->codec_id == AV_CODEC_ID_OPUS ||
             s->streams[i]->codecpar->codec_id == AV_CODEC_ID_VORBIS) {
             snprintf(os->format_name, sizeof(os->format_name), "webm");
+
+            if (s->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+                av_log(s, AV_LOG_ERROR,
+                       "WebM support in dashenc is experimental and has not "
+                       "been validated. For testing purposes, make sure "
+                       "to add -strict experimental and override "
+                       "-init_seg_name and -media_seg_name to end with "
+                       "the extension 'webm'.\n");
+                return AVERROR(EINVAL);
+            }
         } else {
             snprintf(os->format_name, sizeof(os->format_name), "mp4");
         }
