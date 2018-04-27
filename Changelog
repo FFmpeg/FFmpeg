@@ -4,6 +4,7 @@ releases are sorted from youngest to oldest.
 version <next>:
 - deblock filter
 - tmix filter
+- amplify filter
 
 
 version 4.0:

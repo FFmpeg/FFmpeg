@@ -5187,6 +5187,30 @@ input reaches end of stream. This will cause problems if your encoding
 pipeline drops frames. If you're trying to apply an image as an
 overlay to a video stream, consider the @var{overlay} filter instead.
 
+@section amplify
+
+Amplify differences between current pixel and pixels of adjacent frames in
+same pixel location.
+
+This filter accepts the following options:
+
+@table @option
+@item radius
+Set frame radius. Default is 2. Allowed range is from 1 to 63.
+For example radius of 3 will instruct filter to calculate average of 7 frames.
+
+@item factor
+Set factor to amplify difference. Default is 2. Allowed range is from 0 to 65535.
+
+@item threshold
+Set threshold for difference amplification. Any differrence greater or equal to
+this value will not alter source pixel. Default is 10.
+Allowed range is from 0 to 65535.
+
+@item planes
+Set which planes to filter. Default is all. Allowed range is from 0 to 15.
+@end table
+
 @section ass
 
 Same as the @ref{subtitles} filter, except that it doesn't require libavcodec

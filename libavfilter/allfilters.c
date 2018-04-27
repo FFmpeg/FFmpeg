@@ -132,6 +132,7 @@ extern AVFilter ff_asink_anullsink;
 
 extern AVFilter ff_vf_alphaextract;
 extern AVFilter ff_vf_alphamerge;
+extern AVFilter ff_vf_amplify;
 extern AVFilter ff_vf_ass;
 extern AVFilter ff_vf_atadenoise;
 extern AVFilter ff_vf_avgblur;
