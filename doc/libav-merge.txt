@@ -105,7 +105,6 @@ Stuff that didn't reach the codebase:
 Collateral damage that needs work locally:
 ------------------------------------------
 
-- Merge proresdec2.c and proresdec_lgpl.c
 - Merge proresenc_anatoliy.c and proresenc_kostya.c
 - Fix MIPS AC3 downmix
 
