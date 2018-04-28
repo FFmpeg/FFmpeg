@@ -6401,6 +6401,7 @@ Matrix is sequence of 9, 25 or 49 signed integers.
 @item 2rdiv
 @item 3rdiv
 Set multiplier for calculated value for each plane.
+If unset or 0, it will be sum of all matrix elements.
 
 @item 0bias
 @item 1bias

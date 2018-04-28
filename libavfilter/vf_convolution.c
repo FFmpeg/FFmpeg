@@ -63,10 +63,10 @@ static const AVOption convolution_options[] = {
     { "1m", "set matrix for 2nd plane", OFFSET(matrix_str[1]), AV_OPT_TYPE_STRING, {.str="0 0 0 0 1 0 0 0 0"}, 0, 0, FLAGS },
     { "2m", "set matrix for 3rd plane", OFFSET(matrix_str[2]), AV_OPT_TYPE_STRING, {.str="0 0 0 0 1 0 0 0 0"}, 0, 0, FLAGS },
     { "3m", "set matrix for 4th plane", OFFSET(matrix_str[3]), AV_OPT_TYPE_STRING, {.str="0 0 0 0 1 0 0 0 0"}, 0, 0, FLAGS },
-    { "0rdiv", "set rdiv for 1st plane", OFFSET(rdiv[0]), AV_OPT_TYPE_FLOAT, {.dbl=1.0}, 0.0, INT_MAX, FLAGS},
-    { "1rdiv", "set rdiv for 2nd plane", OFFSET(rdiv[1]), AV_OPT_TYPE_FLOAT, {.dbl=1.0}, 0.0, INT_MAX, FLAGS},
-    { "2rdiv", "set rdiv for 3rd plane", OFFSET(rdiv[2]), AV_OPT_TYPE_FLOAT, {.dbl=1.0}, 0.0, INT_MAX, FLAGS},
-    { "3rdiv", "set rdiv for 4th plane", OFFSET(rdiv[3]), AV_OPT_TYPE_FLOAT, {.dbl=1.0}, 0.0, INT_MAX, FLAGS},
+    { "0rdiv", "set rdiv for 1st plane", OFFSET(rdiv[0]), AV_OPT_TYPE_FLOAT, {.dbl=0.0}, 0.0, INT_MAX, FLAGS},
+    { "1rdiv", "set rdiv for 2nd plane", OFFSET(rdiv[1]), AV_OPT_TYPE_FLOAT, {.dbl=0.0}, 0.0, INT_MAX, FLAGS},
+    { "2rdiv", "set rdiv for 3rd plane", OFFSET(rdiv[2]), AV_OPT_TYPE_FLOAT, {.dbl=0.0}, 0.0, INT_MAX, FLAGS},
+    { "3rdiv", "set rdiv for 4th plane", OFFSET(rdiv[3]), AV_OPT_TYPE_FLOAT, {.dbl=0.0}, 0.0, INT_MAX, FLAGS},
     { "0bias", "set bias for 1st plane", OFFSET(bias[0]), AV_OPT_TYPE_FLOAT, {.dbl=0.0}, 0.0, INT_MAX, FLAGS},
     { "1bias", "set bias for 2nd plane", OFFSET(bias[1]), AV_OPT_TYPE_FLOAT, {.dbl=0.0}, 0.0, INT_MAX, FLAGS},
     { "2bias", "set bias for 3rd plane", OFFSET(bias[2]), AV_OPT_TYPE_FLOAT, {.dbl=0.0}, 0.0, INT_MAX, FLAGS},
@@ -965,6 +965,7 @@ static av_cold int init(AVFilterContext *ctx)
         for (i = 0; i < 4; i++) {
             int *matrix = (int *)s->matrix[i];
             char *p, *arg, *saveptr = NULL;
+            float sum = 0;
 
             p = s->matrix_str[i];
             while (s->matrix_length[i] < 49) {
@@ -973,6 +974,7 @@ static av_cold int init(AVFilterContext *ctx)
 
                 p = NULL;
                 sscanf(arg, "%d", &matrix[s->matrix_length[i]]);
+                sum += matrix[s->matrix_length[i]];
                 s->matrix_length[i]++;
             }
 
@@ -997,6 +999,11 @@ static av_cold int init(AVFilterContext *ctx)
             } else {
                 return AVERROR(EINVAL);
             }
+
+            if (sum == 0)
+                sum = 1;
+            if (s->rdiv[i] == 0)
+                s->rdiv[i] = 1. / sum;
 
             if (s->copy[i] && (s->rdiv[i] != 1. || s->bias[i] != 0.))
                 s->copy[i] = 0;
