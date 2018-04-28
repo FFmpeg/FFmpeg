@@ -80,6 +80,7 @@ typedef struct FieldMatchContext {
     AVFrame *prv2, *src2, *nxt2;    ///< sliding window of the optional second stream
     int got_frame[2];               ///< frame request flag for each input stream
     int hsub, vsub;                 ///< chroma subsampling values
+    int bpc;                        ///< bytes per component
     uint32_t eof;                   ///< bitmask for end of stream
     int64_t lastscdiff;
     int64_t lastn;
@@ -614,7 +615,7 @@ static void copy_fields(const FieldMatchContext *fm, AVFrame *dst,
         const int nb_copy_fields = (plane_h >> 1) + (field ? 0 : (plane_h & 1));
         av_image_copy_plane(dst->data[plane] + field*dst->linesize[plane], dst->linesize[plane] << 1,
                             src->data[plane] + field*src->linesize[plane], src->linesize[plane] << 1,
-                            get_width(fm, src, plane), nb_copy_fields);
+                            get_width(fm, src, plane) * fm->bpc, nb_copy_fields);
     }
 }
 
@@ -872,16 +873,48 @@ static int activate(AVFilterContext *ctx)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    // TODO: second input source can support >8bit depth
+    FieldMatchContext *fm = ctx->priv;
+
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV420P,
         AV_PIX_FMT_YUV411P,  AV_PIX_FMT_YUV410P,
         AV_PIX_FMT_NONE
     };
+    static const enum AVPixelFormat unproc_pix_fmts[] = {
+        AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P,
+        AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV444P,
+        AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P,
+        AV_PIX_FMT_YUVJ440P, AV_PIX_FMT_YUVJ444P,
+        AV_PIX_FMT_YUVJ411P,
+        AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV444P9,
+        AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
+        AV_PIX_FMT_YUV440P10,
+        AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV420P12,
+        AV_PIX_FMT_YUV440P12,
+        AV_PIX_FMT_YUV444P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV420P14,
+        AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
+        AV_PIX_FMT_NONE
+    };
+    int ret;
+
     AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
     if (!fmts_list)
         return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    if (!fm->ppsrc) {
+        return ff_set_common_formats(ctx, fmts_list);
+    }
+
+    if ((ret = ff_formats_ref(fmts_list, &ctx->inputs[INPUT_MAIN]->out_formats)) < 0)
+        return ret;
+    fmts_list = ff_make_format_list(unproc_pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    if ((ret = ff_formats_ref(fmts_list, &ctx->outputs[0]->in_formats)) < 0)
+        return ret;
+    if ((ret = ff_formats_ref(fmts_list, &ctx->inputs[INPUT_CLEANSRC]->out_formats)) < 0)
+        return ret;
+    return 0;
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -966,7 +999,12 @@ static av_cold void fieldmatch_uninit(AVFilterContext *ctx)
         av_frame_free(&fm->prv);
     if (fm->nxt != fm->src)
         av_frame_free(&fm->nxt);
+    if (fm->prv2 != fm->src2)
+        av_frame_free(&fm->prv2);
+    if (fm->nxt2 != fm->src2)
+        av_frame_free(&fm->nxt2);
     av_frame_free(&fm->src);
+    av_frame_free(&fm->src2);
     av_freep(&fm->map_data[0]);
     av_freep(&fm->cmask_data[0]);
     av_freep(&fm->tbuffer);
@@ -978,10 +1016,12 @@ static av_cold void fieldmatch_uninit(AVFilterContext *ctx)
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx  = outlink->src;
-    const FieldMatchContext *fm = ctx->priv;
+    FieldMatchContext *fm = ctx->priv;
     const AVFilterLink *inlink =
         ctx->inputs[fm->ppsrc ? INPUT_CLEANSRC : INPUT_MAIN];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
+    fm->bpc = (desc->comp[0].depth + 7) / 8;
     outlink->time_base = inlink->time_base;
     outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
     outlink->frame_rate = inlink->frame_rate;
