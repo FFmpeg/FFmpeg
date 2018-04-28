@@ -248,8 +248,9 @@ configuration. You need to explicitly configure the build with
 
 @table @option
 @item txt_page
-List of teletext page numbers to decode. You may use the special * string to
-match all pages. Pages that do not match the specified list are dropped.
+List of teletext page numbers to decode. Pages that do not match the specified
+list are dropped. You may use the special @code{*} string to match all pages,
+or @code{subtitle} to match all subtitle pages.
 Default value is *.
 @item txt_chop_top
 Discards the top teletext line. Default value is 1.
