@@ -177,7 +177,7 @@ static void vc1_put_signed_blocks_clamped(VC1Context *v)
             edges = 15;                                        \
         if ((edges&1) && !s->mb_x)                             \
             mquant = -v->altpq;                                \
-        if ((edges&2) && s->first_slice_line)                  \
+        if ((edges&2) && !s->mb_y)                             \
             mquant = -v->altpq;                                \
         if ((edges&4) && s->mb_x == (s->mb_width - 1))         \
             mquant = -v->altpq;                                \
@@ -2626,7 +2626,7 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
     int cbp, val;
     uint8_t *coded_val;
     int mb_pos;
-    int mquant = v->pq;
+    int mquant;
     int mqdiff;
     GetBitContext *gb = &s->gb;
 
@@ -2671,6 +2671,7 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
         init_block_index(v);
         for (;s->mb_x < s->mb_width; s->mb_x++) {
             int16_t (*block)[64] = v->block[v->cur_blk_idx];
+            mquant = v->pq;
             ff_update_block_index(s);
             s->bdsp.clear_blocks(block[0]);
             mb_pos = s->mb_x + s->mb_y * s->mb_stride;
