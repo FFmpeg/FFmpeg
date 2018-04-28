@@ -503,9 +503,9 @@ static int compare_fields(FieldMatchContext *fm, int match1, int match2, int fie
         int prvf_linesize, nxtf_linesize;
         const int width  = get_width (fm, src, plane);
         const int height = get_height(fm, src, plane);
-        const int y0a = fm->y0 >> (plane != 0);
-        const int y1a = fm->y1 >> (plane != 0);
-        const int startx = (plane == 0 ? 8 : 4);
+        const int y0a = fm->y0 >> (plane ? fm->vsub : 0);
+        const int y1a = fm->y1 >> (plane ? fm->vsub : 0);
+        const int startx = (plane == 0 ? 8 : 8 >> fm->hsub);
         const int stopx  = width - startx;
         const uint8_t *srcpf, *srcf, *srcnf;
         const uint8_t *prvpf, *prvnf, *nxtpf, *nxtnf;
