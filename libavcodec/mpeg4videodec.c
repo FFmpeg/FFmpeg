@@ -3217,9 +3217,13 @@ end:
         s->low_delay = 1;
     s->avctx->has_b_frames = !s->low_delay;
 
-    if (s->studio_profile)
+    if (s->studio_profile) {
+        if (!s->avctx->bits_per_raw_sample) {
+            av_log(s->avctx, AV_LOG_ERROR, "Missing VOL header\n");
+            return AVERROR_INVALIDDATA;
+        }
         return decode_studio_vop_header(ctx, gb);
-    else
+    } else
         return decode_vop_header(ctx, gb);
 }
 
