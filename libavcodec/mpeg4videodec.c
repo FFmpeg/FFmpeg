@@ -46,6 +46,8 @@
 #define MB_TYPE_B_VLC_BITS 4
 #define STUDIO_INTRA_BITS 9
 
+static int decode_studio_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb);
+
 static VLC dc_lum, dc_chrom;
 static VLC sprite_trajectory;
 static VLC mb_type_b_vlc;
@@ -2049,6 +2051,23 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     /* vol header */
     skip_bits(gb, 1);                   /* random access */
     s->vo_type = get_bits(gb, 8);
+
+    /* If we are in studio profile (per vo_type), check if its all consistent
+     * and if so continue pass control to decode_studio_vol_header().
+     * elIf something is inconsistent, error out
+     * else continue with (non studio) vol header decpoding.
+     */
+    if (s->vo_type == CORE_STUDIO_VO_TYPE ||
+        s->vo_type == SIMPLE_STUDIO_VO_TYPE) {
+        if (s->avctx->profile != FF_PROFILE_UNKNOWN && s->avctx->profile != FF_PROFILE_MPEG4_SIMPLE_STUDIO)
+            return AVERROR_INVALIDDATA;
+        s->studio_profile = 1;
+        s->avctx->profile = FF_PROFILE_MPEG4_SIMPLE_STUDIO;
+        return decode_studio_vol_header(ctx, gb);
+    } else if (s->studio_profile) {
+        return AVERROR_PATCHWELCOME;
+    }
+
     if (get_bits1(gb) != 0) {           /* is_ol_id */
         vo_ver_id = get_bits(gb, 4);    /* vo_ver_id */
         skip_bits(gb, 3);               /* vo_priority */
@@ -3001,8 +3020,8 @@ static int decode_studio_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     int width, height;
     int bits_per_raw_sample;
 
-            skip_bits1(gb); /* random_accessible_vol */
-            skip_bits(gb, 8); /* video_object_type_indication */
+            // random_accessible_vol and video_object_type_indication have already
+            // been read by the caller decode_vol_header()
             skip_bits(gb, 4); /* video_object_layer_verid */
             ctx->shape = get_bits(gb, 2); /* video_object_layer_shape */
             skip_bits(gb, 4); /* video_object_layer_shape_extension */
@@ -3179,13 +3198,8 @@ int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                 continue;
             }
             vol++;
-            if (s->studio_profile) {
-                if ((ret = decode_studio_vol_header(ctx, gb)) < 0)
-                    return ret;
-            } else {
-                if ((ret = decode_vol_header(ctx, gb)) < 0)
-                    return ret;
-            }
+            if ((ret = decode_vol_header(ctx, gb)) < 0)
+                return ret;
         } else if (startcode == USER_DATA_STARTCODE) {
             decode_user_data(ctx, gb);
         } else if (startcode == GOP_STARTCODE) {
