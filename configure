@@ -2876,7 +2876,7 @@ qsvdec_select="qsv"
 qsvenc_select="qsv"
 qsvvpp_select="qsv"
 vaapi_encode_deps="vaapi"
-v4l2_m2m_deps_any="linux_videodev2_h"
+v4l2_m2m_deps="linux_videodev2_h sem_timedwait"
 
 hwupload_cuda_filter_deps="ffnvcodec"
 scale_npp_filter_deps="ffnvcodec libnpp"
