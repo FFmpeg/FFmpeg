@@ -2931,9 +2931,6 @@ static int decode_studio_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     if (get_bits_left(gb) <= 32)
         return 0;
 
-    if (get_bits_long(gb, 32) != VOP_STARTCODE)
-        return AVERROR_INVALIDDATA;
-
     s->decode_mb = mpeg4_decode_studio_mb;
 
     decode_smpte_tc(ctx, gb);
@@ -3183,7 +3180,6 @@ int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb)
             if (s->studio_profile) {
                 if ((ret = decode_studio_vol_header(ctx, gb)) < 0)
                     return ret;
-                break;
             } else {
                 if ((ret = decode_vol_header(ctx, gb)) < 0)
                     return ret;
