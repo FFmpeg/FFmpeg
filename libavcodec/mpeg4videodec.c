@@ -2982,14 +2982,9 @@ static int decode_studio_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
 
 static int decode_studiovisualobject(Mpeg4DecContext *ctx, GetBitContext *gb)
 {
-    uint32_t startcode;
     MpegEncContext *s = &ctx->m;
     int visual_object_type, width, height;
 
-    startcode = get_bits_long(gb, 32);
-
-    /* StudioVisualObject() */
-    if (startcode == VISUAL_OBJ_STARTCODE) {
         skip_bits(gb, 4); /* visual_object_verid */
         visual_object_type = get_bits(gb, 4);
 
@@ -3069,7 +3064,6 @@ static int decode_studiovisualobject(Mpeg4DecContext *ctx, GetBitContext *gb)
             next_start_code_studio(gb);
             extension_and_user_data(s, gb, 2);
         }
-    }
 
     return 0;
 }
@@ -3192,13 +3186,14 @@ int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                 s->studio_profile = 1;
                 next_start_code_studio(gb);
                 extension_and_user_data(s, gb, 0);
-
+            }
+        } else if (startcode == VISUAL_OBJ_STARTCODE) {
+            if (s->studio_profile) {
                 if ((ret = decode_studiovisualobject(ctx, gb)) < 0)
                     return ret;
                 break;
-            }
-        } else if (startcode == VISUAL_OBJ_STARTCODE) {
-            mpeg4_decode_visual_object(s, gb);
+            } else
+                mpeg4_decode_visual_object(s, gb);
         } else if (startcode == VOP_STARTCODE) {
             break;
         }
