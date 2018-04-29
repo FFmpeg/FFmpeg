@@ -11177,7 +11177,9 @@ The number of inputs. If unspecified, it defaults to 2.
 
 @item weights
 Specify weight of each input video stream as sequence.
-Each weight is separated by space.
+Each weight is separated by space. If number of weights
+is smaller than number of @var{frames} last specified
+weight will be used for all remaining unset weights.
 
 @item scale
 Specify scale, if it is set it will be multiplied with sum
@@ -15603,7 +15605,9 @@ The number of successive frames to mix. If unspecified, it defaults to 3.
 
 @item weights
 Specify weight of each input video frame.
-Each weight is separated by space.
+Each weight is separated by space. If number of weights is smaller than
+number of @var{frames} last specified weight will be used for all remaining
+unset weights.
 
 @item scale
 Specify scale, if it is set it will be multiplied with sum

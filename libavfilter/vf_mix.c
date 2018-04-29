@@ -74,7 +74,7 @@ static av_cold int init(AVFilterContext *ctx)
 {
     MixContext *s = ctx->priv;
     char *p, *arg, *saveptr = NULL;
-    int i, ret;
+    int i, ret, last;
 
     s->tmix = !strcmp(ctx->filter->name, "tmix");
 
@@ -109,6 +109,11 @@ static av_cold int init(AVFilterContext *ctx)
 
         p = NULL;
         sscanf(arg, "%f", &s->weights[i]);
+        s->wfactor += s->weights[i];
+        last = i;
+    }
+    for (; i < s->nb_inputs; i++) {
+        s->weights[i] = s->weights[last];
         s->wfactor += s->weights[i];
     }
     if (s->scale == 0) {
