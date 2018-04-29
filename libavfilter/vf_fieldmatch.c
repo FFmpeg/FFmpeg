@@ -37,6 +37,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/timestamp.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 
 #define INPUT_MAIN     0
@@ -697,9 +698,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_assert0(prv && src && nxt);                          \
 } while (0)
     if (FF_INLINK_IDX(inlink) == INPUT_MAIN) {
+        av_assert0(fm->got_frame[INPUT_MAIN] == 0);
         SLIDING_FRAME_WINDOW(fm->prv, fm->src, fm->nxt);
         fm->got_frame[INPUT_MAIN] = 1;
     } else {
+        av_assert0(fm->got_frame[INPUT_CLEANSRC] == 0);
         SLIDING_FRAME_WINDOW(fm->prv2, fm->src2, fm->nxt2);
         fm->got_frame[INPUT_CLEANSRC] = 1;
     }
@@ -818,36 +821,53 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, dst);
 }
 
-static int request_inlink(AVFilterContext *ctx, int lid)
+static int activate(AVFilterContext *ctx)
 {
-    int ret = 0;
     FieldMatchContext *fm = ctx->priv;
+    AVFrame *frame = NULL;
+    int ret = 0, status;
+    int64_t pts;
 
-    if (!fm->got_frame[lid]) {
-        AVFilterLink *inlink = ctx->inputs[lid];
-        ret = ff_request_frame(inlink);
-        if (ret == AVERROR_EOF) { // flushing
-            fm->eof |= 1 << lid;
-            ret = filter_frame(inlink, NULL);
-        }
+    if ((fm->got_frame[INPUT_MAIN] == 0) &&
+        (ret = ff_inlink_consume_frame(ctx->inputs[INPUT_MAIN], &frame)) > 0) {
+        ret = filter_frame(ctx->inputs[INPUT_MAIN], frame);
+        if (ret < 0)
+            return ret;
     }
-    return ret;
-}
-
-static int request_frame(AVFilterLink *outlink)
-{
-    int ret;
-    AVFilterContext *ctx = outlink->src;
-    FieldMatchContext *fm = ctx->priv;
-    const uint32_t eof_mask = 1<<INPUT_MAIN | fm->ppsrc<<INPUT_CLEANSRC;
-
-    if ((fm->eof & eof_mask) == eof_mask) // flush done?
-        return AVERROR_EOF;
-    if ((ret = request_inlink(ctx, INPUT_MAIN)) < 0)
+    if (ret < 0)
         return ret;
-    if (fm->ppsrc && (ret = request_inlink(ctx, INPUT_CLEANSRC)) < 0)
+    if (fm->ppsrc &&
+        (fm->got_frame[INPUT_CLEANSRC] == 0) &&
+        (ret = ff_inlink_consume_frame(ctx->inputs[INPUT_CLEANSRC], &frame)) > 0) {
+        ret = filter_frame(ctx->inputs[INPUT_CLEANSRC], frame);
+        if (ret < 0)
+            return ret;
+    }
+    if (ret < 0) {
         return ret;
-    return 0;
+    } else if (ff_inlink_acknowledge_status(ctx->inputs[INPUT_MAIN], &status, &pts)) {
+        if (status == AVERROR_EOF) { // flushing
+            fm->eof |= 1 << INPUT_MAIN;
+            ret = filter_frame(ctx->inputs[INPUT_MAIN], NULL);
+        }
+        ff_outlink_set_status(ctx->outputs[0], status, pts);
+        return ret;
+    } else if (fm->ppsrc && ff_inlink_acknowledge_status(ctx->inputs[INPUT_CLEANSRC], &status, &pts)) {
+        if (status == AVERROR_EOF) { // flushing
+            fm->eof |= 1 << INPUT_CLEANSRC;
+            ret = filter_frame(ctx->inputs[INPUT_CLEANSRC], NULL);
+        }
+        ff_outlink_set_status(ctx->outputs[0], status, pts);
+        return ret;
+    } else {
+        if (ff_outlink_frame_wanted(ctx->outputs[0])) {
+            if (fm->got_frame[INPUT_MAIN] == 0)
+                ff_inlink_request_frame(ctx->inputs[INPUT_MAIN]);
+            if (fm->ppsrc && (fm->got_frame[INPUT_CLEANSRC] == 0))
+                ff_inlink_request_frame(ctx->inputs[INPUT_CLEANSRC]);
+        }
+        return 0;
+    }
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -901,7 +921,6 @@ static av_cold int fieldmatch_init(AVFilterContext *ctx)
     AVFilterPad pad = {
         .name         = av_strdup("main"),
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
         .config_props = config_input,
     };
     int ret;
@@ -975,7 +994,6 @@ static const AVFilterPad fieldmatch_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .request_frame = request_frame,
         .config_props  = config_output,
     },
     { NULL }
@@ -987,6 +1005,7 @@ AVFilter ff_vf_fieldmatch = {
     .query_formats  = query_formats,
     .priv_size      = sizeof(FieldMatchContext),
     .init           = fieldmatch_init,
+    .activate       = activate,
     .uninit         = fieldmatch_uninit,
     .inputs         = NULL,
     .outputs        = fieldmatch_outputs,
