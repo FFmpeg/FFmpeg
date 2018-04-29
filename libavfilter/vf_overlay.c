@@ -611,7 +611,7 @@ static inline void alpha_composite(const AVFrame *src, const AVFrame *dst,
     sa = src->data[3] + (i + slice_start) * src->linesize[3];
     da = dst->data[3] + (y + i + slice_start) * dst->linesize[3];
 
-    for (i = i + slice_start; i < imax; i++) {
+    for (i = i + slice_start; i < slice_end; i++) {
         j = FFMAX(-x, 0);
         s = sa + j;
         d = da + x+j;
