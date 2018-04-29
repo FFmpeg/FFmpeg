@@ -15615,6 +15615,28 @@ of each weight multiplied with pixel values to give final destination
 pixel value. By default @var{scale} is auto scaled to sum of weights.
 @end table
 
+@subsection Examples
+
+@itemize
+@item
+Average 7 successive frames:
+@example
+tmix=frames=7:weights="1 1 1 1 1 1 1"
+@end example
+
+@item
+Apply simple temporal convolution:
+@example
+tmix=frames=3:weights="-1 3 -1"
+@end example
+
+@item
+Similar as above but only showing temporal differences:
+@example
+tmix=frames=3:weights="-1 2 -1":scale=1
+@end example
+@end itemize
+
 @section tonemap
 Tone map colors from different dynamic ranges.
 
