@@ -261,12 +261,18 @@ Default value is *.
 @item txt_chop_top
 Discards the top teletext line. Default value is 1.
 @item txt_format
-Specifies the format of the decoded subtitles. The teletext decoder is capable
-of decoding the teletext pages to bitmaps or to simple text, you should use
-"bitmap" for teletext pages, because certain graphics and colors cannot be
-expressed in simple text. You might use "text" for teletext based subtitles if
-your application can handle simple text based subtitles. Default value is
-bitmap.
+Specifies the format of the decoded subtitles.
+@table @option
+@item bitmap
+The default format, you should use this for teletext pages, because certain
+graphics and colors cannot be expressed in simple text or even ASS.
+@item text
+Simple text based output without formatting.
+@item ass
+Formatted ASS output, subtitle pages and teletext pages are returned in
+different styles, subtitle pages are stripped down to text, but an effort is
+made to keep the text alignment and the formatting.
+@end table
 @item txt_left
 X offset of generated bitmaps, default is 0.
 @item txt_top
