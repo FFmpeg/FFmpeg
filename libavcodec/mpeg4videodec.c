@@ -2999,6 +2999,7 @@ static int decode_studio_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
 {
     MpegEncContext *s = &ctx->m;
     int width, height;
+    int bits_per_raw_sample;
 
             skip_bits1(gb); /* random_accessible_vol */
             skip_bits(gb, 8); /* video_object_type_indication */
@@ -3014,8 +3015,8 @@ static int decode_studio_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                     return AVERROR_INVALIDDATA;
                 }
 
-                s->avctx->bits_per_raw_sample = get_bits(gb, 4); /* bit_depth */
-                if (s->avctx->bits_per_raw_sample == 10) {
+                bits_per_raw_sample = get_bits(gb, 4); /* bit_depth */
+                if (bits_per_raw_sample == 10) {
                     if (ctx->rgb) {
                         s->avctx->pix_fmt = AV_PIX_FMT_GBRP10;
                     }
@@ -3024,9 +3025,10 @@ static int decode_studio_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                     }
                 }
                 else {
-                    avpriv_request_sample(s->avctx, "MPEG-4 Studio profile bit-depth %u", s->avctx->bits_per_raw_sample);
+                    avpriv_request_sample(s->avctx, "MPEG-4 Studio profile bit-depth %u", bits_per_raw_sample);
                     return AVERROR_PATCHWELCOME;
                 }
+                s->avctx->bits_per_raw_sample = bits_per_raw_sample;
             }
             if (ctx->shape == RECT_SHAPE) {
                 check_marker(s->avctx, gb, "before video_object_layer_width");
