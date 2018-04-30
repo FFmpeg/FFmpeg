@@ -46,7 +46,7 @@ int ff_mpeg4_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size)
     if (!vop_found) {
         for (i = 0; i < buf_size; i++) {
             state = (state << 8) | buf[i];
-            if (state == 0x1B6) {
+            if (state == VOP_STARTCODE) {
                 i++;
                 vop_found = 1;
                 break;
