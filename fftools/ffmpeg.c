@@ -4727,8 +4727,7 @@ static int transcode(void)
 
 static BenchmarkTimeStamps get_benchmark_time_stamps(void)
 {
-    BenchmarkTimeStamps time_stamps;
-    time_stamps.real_usec = av_gettime_relative();
+    BenchmarkTimeStamps time_stamps = { av_gettime_relative() };
 #if HAVE_GETRUSAGE
     struct rusage rusage;
 
@@ -4833,10 +4832,11 @@ int main(int argc, char **argv)
     if (transcode() < 0)
         exit_program(1);
     if (do_benchmark) {
+        int64_t utime, stime, rtime;
         current_time = get_benchmark_time_stamps();
-        int64_t utime = current_time.user_usec - ti.user_usec;
-        int64_t stime = current_time.sys_usec - ti.sys_usec;
-        int64_t rtime = current_time.real_usec - ti.real_usec;
+        utime = current_time.user_usec - ti.user_usec;
+        stime = current_time.sys_usec  - ti.sys_usec;
+        rtime = current_time.real_usec - ti.real_usec;
         av_log(NULL, AV_LOG_INFO,
                "bench: utime=%0.3fs stime=%0.3fs rtime=%0.3fs\n",
                utime / 1000000.0, stime / 1000000.0, rtime / 1000000.0);
