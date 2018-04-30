@@ -239,6 +239,11 @@ static int cbs_write_se_golomb(CodedBitstreamContext *ctx, PutBitContext *pbc,
 #define FUNC_H264(rw, name) FUNC_NAME(rw, h264, name)
 #define FUNC_H265(rw, name) FUNC_NAME(rw, h265, name)
 
+#define fixed(width, name, value) do { \
+        av_unused uint32_t fixed_value = value; \
+        xu(width, name, fixed_value, value, value); \
+    } while (0)
+
 
 #define READ
 #define READWRITE read

@@ -19,10 +19,10 @@
 static int FUNC(rbsp_trailing_bits)(CodedBitstreamContext *ctx, RWContext *rw)
 {
     int err;
-    av_unused int one = 1, zero = 0;
-    xu(1, rbsp_stop_one_bit, one, 1, 1);
+
+    fixed(1, rbsp_stop_one_bit, 1);
     while (byte_alignment(rw) != 0)
-        xu(1, rbsp_alignment_zero_bit, zero, 0, 0);
+        fixed(1, rbsp_alignment_zero_bit, 0);
 
     return 0;
 }
@@ -50,10 +50,10 @@ static int FUNC(nal_unit_header)(CodedBitstreamContext *ctx, RWContext *rw,
 static int FUNC(byte_alignment)(CodedBitstreamContext *ctx, RWContext *rw)
 {
     int err;
-    av_unused int one = 1, zero = 0;
-    xu(1, alignment_bit_equal_to_one, one, 1, 1);
+
+    fixed(1, alignment_bit_equal_to_one, 1);
     while (byte_alignment(rw) != 0)
-        xu(1, alignment_bit_equal_to_zero, zero, 0, 0);
+        fixed(1, alignment_bit_equal_to_zero, 0);
 
     return 0;
 }
@@ -90,7 +90,6 @@ static int FUNC(profile_tier_level)(CodedBitstreamContext *ctx, RWContext *rw,
                                     int profile_present_flag,
                                     int max_num_sub_layers_minus1)
 {
-    av_unused unsigned int zero = 0;
     int err, i, j;
 
     if (profile_present_flag) {
@@ -125,15 +124,15 @@ static int FUNC(profile_tier_level)(CodedBitstreamContext *ctx, RWContext *rw,
             if (profile_compatible(5) || profile_compatible(9) ||
                 profile_compatible(10)) {
                 flag(general_max_14bit_constraint_flag);
-                xu(24, general_reserved_zero_33bits, zero, 0, 0);
-                xu(9, general_reserved_zero_33bits, zero, 0, 0);
+                fixed(24, general_reserved_zero_33bits, 0);
+                fixed( 9, general_reserved_zero_33bits, 0);
             } else {
-                xu(24, general_reserved_zero_34bits, zero, 0, 0);
-                xu(10, general_reserved_zero_34bits, zero, 0, 0);
+                fixed(24, general_reserved_zero_34bits, 0);
+                fixed(10, general_reserved_zero_34bits, 0);
             }
         } else {
-            xu(24, general_reserved_zero_43bits, zero, 0, 0);
-            xu(19, general_reserved_zero_43bits, zero, 0, 0);
+            fixed(24, general_reserved_zero_43bits, 0);
+            fixed(19, general_reserved_zero_43bits, 0);
         }
 
         if (profile_compatible(1) || profile_compatible(2) ||
@@ -141,7 +140,7 @@ static int FUNC(profile_tier_level)(CodedBitstreamContext *ctx, RWContext *rw,
             profile_compatible(5) || profile_compatible(9)) {
             flag(general_inbld_flag);
         } else {
-            xu(1, general_reserved_zero_bit, zero, 0, 0);
+            fixed(1, general_reserved_zero_bit, 0);
         }
 #undef profile_compatible
     }
@@ -154,10 +153,8 @@ static int FUNC(profile_tier_level)(CodedBitstreamContext *ctx, RWContext *rw,
     }
 
     if (max_num_sub_layers_minus1 > 0) {
-        for (i = max_num_sub_layers_minus1; i < 8; i++) {
-            av_unused int zero = 0;
-            xu(2, reserved_zero_2bits, zero, 0, 0);
-        }
+        for (i = max_num_sub_layers_minus1; i < 8; i++)
+            fixed(2, reserved_zero_2bits, 0);
     }
 
     for (i = 0; i < max_num_sub_layers_minus1; i++) {
@@ -386,10 +383,7 @@ static int FUNC(vps)(CodedBitstreamContext *ctx, RWContext *rw,
         return AVERROR_INVALIDDATA;
     }
 
-    {
-        av_unused uint16_t ffff = 0xffff;
-        xu(16, vps_reserved_0xffff_16bits, ffff, 0xffff, 0xffff);
-    }
+    fixed(16, vps_reserved_0xffff_16bits, 0xffff);
 
     CHECK(FUNC(profile_tier_level)(ctx, rw, &current->profile_tier_level,
                                    1, current->vps_max_sub_layers_minus1));

@@ -19,10 +19,10 @@
 static int FUNC(rbsp_trailing_bits)(CodedBitstreamContext *ctx, RWContext *rw)
 {
     int err;
-    av_unused int one = 1, zero = 0;
-    xu(1, rbsp_stop_one_bit, one, 1, 1);
+
+    fixed(1, rbsp_stop_one_bit, 1);
     while (byte_alignment(rw) != 0)
-        xu(1, rbsp_alignment_zero_bit, zero, 0, 0);
+        fixed(1, rbsp_alignment_zero_bit, 0);
 
     return 0;
 }
@@ -740,9 +740,8 @@ static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
         break;
     case H264_SEI_TYPE_FILLER_PAYLOAD:
         {
-            av_unused int ff_byte = 0xff;
             for (i = 0; i  < current->payload_size; i++)
-                xu(8, ff_byte, ff_byte, 0xff, 0xff);
+                fixed(8, ff_byte, 0xff);
         }
         break;
     case H264_SEI_TYPE_USER_DATA_REGISTERED:
@@ -770,10 +769,9 @@ static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
     }
 
     if (byte_alignment(rw)) {
-        av_unused int one = 1, zero = 0;
-        xu(1, bit_equal_to_one, one, 1, 1);
+        fixed(1, bit_equal_to_one, 1);
         while (byte_alignment(rw))
-            xu(1, bit_equal_to_zero, zero, 0, 0);
+            fixed(1, bit_equal_to_zero, 0);
     }
 
 #ifdef READ
@@ -810,14 +808,14 @@ static int FUNC(sei)(CodedBitstreamContext *ctx, RWContext *rw,
         uint32_t tmp;
 
         while (show_bits(rw, 8) == 0xff) {
-            xu(8, ff_byte, tmp, 0xff, 0xff);
+            fixed(8, ff_byte, 0xff);
             payload_type += 255;
         }
         xu(8, last_payload_type_byte, tmp, 0, 254);
         payload_type += tmp;
 
         while (show_bits(rw, 8) == 0xff) {
-            xu(8, ff_byte, tmp, 0xff, 0xff);
+            fixed(8, ff_byte, 0xff);
             payload_size += 255;
         }
         xu(8, last_payload_size_byte, tmp, 0, 254);
@@ -853,14 +851,14 @@ static int FUNC(sei)(CodedBitstreamContext *ctx, RWContext *rw,
 
             tmp = current->payload[k].payload_type;
             while (tmp >= 255) {
-                xu(8, ff_byte, 0xff, 0xff, 0xff);
+                fixed(8, ff_byte, 0xff);
                 tmp -= 255;
             }
             xu(8, last_payload_type_byte, tmp, 0, 254);
 
             tmp = current->payload[k].payload_size;
             while (tmp >= 255) {
-                xu(8, ff_byte, 0xff, 0xff, 0xff);
+                fixed(8, ff_byte, 0xff);
                 tmp -= 255;
             }
             xu(8, last_payload_size_byte, tmp, 0, 254);
@@ -1240,9 +1238,8 @@ static int FUNC(slice_header)(CodedBitstreamContext *ctx, RWContext *rw,
     }
 
     if (pps->entropy_coding_mode_flag) {
-        av_unused int one = 1;
         while (byte_alignment(rw))
-            xu(1, cabac_alignment_one_bit, one, 1, 1);
+            fixed(1, cabac_alignment_one_bit, 1);
     }
 
     return 0;
@@ -1251,7 +1248,6 @@ static int FUNC(slice_header)(CodedBitstreamContext *ctx, RWContext *rw,
 static int FUNC(filler)(CodedBitstreamContext *ctx, RWContext *rw,
                         H264RawFiller *current)
 {
-    av_unused int ff_byte = 0xff;
     int err;
 
     HEADER("Filler Data");
@@ -1261,14 +1257,14 @@ static int FUNC(filler)(CodedBitstreamContext *ctx, RWContext *rw,
 
 #ifdef READ
     while (show_bits(rw, 8) == 0xff) {
-        xu(8, ff_byte, ff_byte, 0xff, 0xff);
+        fixed(8, ff_byte, 0xff);
         ++current->filler_size;
     }
 #else
     {
         uint32_t i;
         for (i = 0; i < current->filler_size; i++)
-            xu(8, ff_byte, ff_byte, 0xff, 0xff);
+            fixed(8, ff_byte, 0xff);
     }
 #endif
 
