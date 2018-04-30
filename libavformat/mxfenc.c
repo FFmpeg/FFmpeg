@@ -1757,6 +1757,7 @@ static int mxf_write_partition(AVFormatContext *s, int bodysid,
         mxf_write_klv_fill(s);
         start = avio_tell(s->pb);
         mxf_write_primer_pack(s);
+        mxf_write_klv_fill(s);
         mxf_write_header_metadata_sets(s);
         pos = avio_tell(s->pb);
         header_byte_count = pos - start + klv_fill_size(pos);
