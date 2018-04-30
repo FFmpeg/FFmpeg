@@ -356,16 +356,42 @@ void ff_cbs_trace_header(CodedBitstreamContext *ctx,
 }
 
 void ff_cbs_trace_syntax_element(CodedBitstreamContext *ctx, int position,
-                                 const char *name, const char *bits,
-                                 int64_t value)
+                                 const char *str, const int *subscripts,
+                                 const char *bits, int64_t value)
 {
+    char name[256];
     size_t name_len, bits_len;
-    int pad;
+    int pad, subs, i, j, k, n;
 
     if (!ctx->trace_enable)
         return;
 
     av_assert0(value >= INT_MIN && value <= UINT32_MAX);
+
+    subs = subscripts ? subscripts[0] : 0;
+    n = 0;
+    for (i = j = 0; str[i];) {
+        if (str[i] == '[') {
+            if (n < subs) {
+                ++n;
+                k = snprintf(name + j, sizeof(name) - j, "[%d", subscripts[n]);
+                av_assert0(k > 0 && j + k < sizeof(name));
+                j += k;
+                for (++i; str[i] && str[i] != ']'; i++);
+                av_assert0(str[i] == ']');
+            } else {
+                while (str[i] && str[i] != ']')
+                    name[j++] = str[i++];
+                av_assert0(str[i] == ']');
+            }
+        } else {
+            av_assert0(j + 1 < sizeof(name));
+            name[j++] = str[i++];
+        }
+    }
+    av_assert0(j + 1 < sizeof(name));
+    name[j] = 0;
+    av_assert0(n == subs);
 
     name_len = strlen(name);
     bits_len = strlen(bits);
@@ -380,7 +406,8 @@ void ff_cbs_trace_syntax_element(CodedBitstreamContext *ctx, int position,
 }
 
 int ff_cbs_read_unsigned(CodedBitstreamContext *ctx, GetBitContext *gbc,
-                         int width, const char *name, uint32_t *write_to,
+                         int width, const char *name,
+                         const int *subscripts, uint32_t *write_to,
                          uint32_t range_min, uint32_t range_max)
 {
     uint32_t value;
@@ -406,7 +433,8 @@ int ff_cbs_read_unsigned(CodedBitstreamContext *ctx, GetBitContext *gbc,
             bits[i] = value >> (width - i - 1) & 1 ? '1' : '0';
         bits[i] = 0;
 
-        ff_cbs_trace_syntax_element(ctx, position, name, bits, value);
+        ff_cbs_trace_syntax_element(ctx, position, name, subscripts,
+                                    bits, value);
     }
 
     if (value < range_min || value > range_max) {
@@ -421,7 +449,8 @@ int ff_cbs_read_unsigned(CodedBitstreamContext *ctx, GetBitContext *gbc,
 }
 
 int ff_cbs_write_unsigned(CodedBitstreamContext *ctx, PutBitContext *pbc,
-                          int width, const char *name, uint32_t value,
+                          int width, const char *name,
+                          const int *subscripts, uint32_t value,
                           uint32_t range_min, uint32_t range_max)
 {
     av_assert0(width > 0 && width <= 32);
@@ -443,7 +472,8 @@ int ff_cbs_write_unsigned(CodedBitstreamContext *ctx, PutBitContext *pbc,
             bits[i] = value >> (width - i - 1) & 1 ? '1' : '0';
         bits[i] = 0;
 
-        ff_cbs_trace_syntax_element(ctx, put_bits_count(pbc), name, bits, value);
+        ff_cbs_trace_syntax_element(ctx, put_bits_count(pbc),
+                                    name, subscripts, bits, value);
     }
 
     if (width < 32)

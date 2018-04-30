@@ -32,7 +32,8 @@
 
 
 static int cbs_read_ue_golomb(CodedBitstreamContext *ctx, GetBitContext *gbc,
-                              const char *name, uint32_t *write_to,
+                              const char *name, const int *subscripts,
+                              uint32_t *write_to,
                               uint32_t range_min, uint32_t range_max)
 {
     uint32_t value;
@@ -68,7 +69,8 @@ static int cbs_read_ue_golomb(CodedBitstreamContext *ctx, GetBitContext *gbc,
     --value;
 
     if (ctx->trace_enable)
-        ff_cbs_trace_syntax_element(ctx, position, name, bits, value);
+        ff_cbs_trace_syntax_element(ctx, position, name, subscripts,
+                                    bits, value);
 
     if (value < range_min || value > range_max) {
         av_log(ctx->log_ctx, AV_LOG_ERROR, "%s out of range: "
@@ -82,7 +84,8 @@ static int cbs_read_ue_golomb(CodedBitstreamContext *ctx, GetBitContext *gbc,
 }
 
 static int cbs_read_se_golomb(CodedBitstreamContext *ctx, GetBitContext *gbc,
-                              const char *name, int32_t *write_to,
+                              const char *name, const int *subscripts,
+                              int32_t *write_to,
                               int32_t range_min, int32_t range_max)
 {
     int32_t value;
@@ -122,7 +125,8 @@ static int cbs_read_se_golomb(CodedBitstreamContext *ctx, GetBitContext *gbc,
         value = v / 2;
 
     if (ctx->trace_enable)
-        ff_cbs_trace_syntax_element(ctx, position, name, bits, value);
+        ff_cbs_trace_syntax_element(ctx, position, name, subscripts,
+                                    bits, value);
 
     if (value < range_min || value > range_max) {
         av_log(ctx->log_ctx, AV_LOG_ERROR, "%s out of range: "
@@ -136,7 +140,8 @@ static int cbs_read_se_golomb(CodedBitstreamContext *ctx, GetBitContext *gbc,
 }
 
 static int cbs_write_ue_golomb(CodedBitstreamContext *ctx, PutBitContext *pbc,
-                               const char *name, uint32_t value,
+                               const char *name, const int *subscripts,
+                               uint32_t value,
                                uint32_t range_min, uint32_t range_max)
 {
     int len;
@@ -164,7 +169,8 @@ static int cbs_write_ue_golomb(CodedBitstreamContext *ctx, PutBitContext *pbc,
             bits[len + i + 1] = (value + 1) >> (len - i - 1) & 1 ? '1' : '0';
         bits[len + len + 1] = 0;
 
-        ff_cbs_trace_syntax_element(ctx, put_bits_count(pbc), name, bits, value);
+        ff_cbs_trace_syntax_element(ctx, put_bits_count(pbc),
+                                    name, subscripts, bits, value);
     }
 
     put_bits(pbc, len, 0);
@@ -177,7 +183,8 @@ static int cbs_write_ue_golomb(CodedBitstreamContext *ctx, PutBitContext *pbc,
 }
 
 static int cbs_write_se_golomb(CodedBitstreamContext *ctx, PutBitContext *pbc,
-                               const char *name, int32_t value,
+                               const char *name, const int *subscripts,
+                               int32_t value,
                                int32_t range_min, int32_t range_max)
 {
     int len;
@@ -213,7 +220,8 @@ static int cbs_write_se_golomb(CodedBitstreamContext *ctx, PutBitContext *pbc,
             bits[len + i + 1] = (uvalue + 1) >> (len - i - 1) & 1 ? '1' : '0';
         bits[len + len + 1] = 0;
 
-        ff_cbs_trace_syntax_element(ctx, put_bits_count(pbc), name, bits, value);
+        ff_cbs_trace_syntax_element(ctx, put_bits_count(pbc),
+                                    name, subscripts, bits, value);
     }
 
     put_bits(pbc, len, 0);
@@ -239,9 +247,28 @@ static int cbs_write_se_golomb(CodedBitstreamContext *ctx, PutBitContext *pbc,
 #define FUNC_H264(rw, name) FUNC_NAME(rw, h264, name)
 #define FUNC_H265(rw, name) FUNC_NAME(rw, h265, name)
 
+#define SUBSCRIPTS(subs, ...) (subs > 0 ? ((int[subs + 1]){ subs, __VA_ARGS__ }) : NULL)
+
+#define u(width, name, range_min, range_max) \
+        xu(width, name, current->name, range_min, range_max, 0)
+#define flag(name) u(1, name, 0, 1)
+#define ue(name, range_min, range_max) \
+        xue(name, current->name, range_min, range_max, 0)
+#define se(name, range_min, range_max) \
+        xse(name, current->name, range_min, range_max, 0)
+
+#define us(width, name, range_min, range_max, subs, ...) \
+        xu(width, name, current->name, range_min, range_max, subs, __VA_ARGS__)
+#define flags(name, subs, ...) \
+        xu(1, name, current->name, 0, 1, subs, __VA_ARGS__)
+#define ues(name, range_min, range_max, subs, ...) \
+        xue(name, current->name, range_min, range_max, subs, __VA_ARGS__)
+#define ses(name, range_min, range_max, subs, ...) \
+        xse(name, current->name, range_min, range_max, subs, __VA_ARGS__)
+
 #define fixed(width, name, value) do { \
         av_unused uint32_t fixed_value = value; \
-        xu(width, name, fixed_value, value, value); \
+        xu(width, name, fixed_value, value, value, 0); \
     } while (0)
 
 
@@ -249,33 +276,28 @@ static int cbs_write_se_golomb(CodedBitstreamContext *ctx, PutBitContext *pbc,
 #define READWRITE read
 #define RWContext GetBitContext
 
-#define xu(width, name, var, range_min, range_max) do { \
+#define xu(width, name, var, range_min, range_max, subs, ...) do { \
         uint32_t value = range_min; \
         CHECK(ff_cbs_read_unsigned(ctx, rw, width, #name, \
+                                   SUBSCRIPTS(subs, __VA_ARGS__), \
                                    &value, range_min, range_max)); \
         var = value; \
     } while (0)
-#define xue(name, var, range_min, range_max) do { \
+#define xue(name, var, range_min, range_max, subs, ...) do { \
         uint32_t value = range_min; \
         CHECK(cbs_read_ue_golomb(ctx, rw, #name, \
+                                 SUBSCRIPTS(subs, __VA_ARGS__), \
                                  &value, range_min, range_max)); \
         var = value; \
     } while (0)
-#define xse(name, var, range_min, range_max) do { \
+#define xse(name, var, range_min, range_max, subs, ...) do { \
         int32_t value = range_min; \
         CHECK(cbs_read_se_golomb(ctx, rw, #name, \
+                                 SUBSCRIPTS(subs, __VA_ARGS__), \
                                  &value, range_min, range_max)); \
         var = value; \
     } while (0)
 
-
-#define u(width, name, range_min, range_max) \
-        xu(width, name, current->name, range_min, range_max)
-#define flag(name) u(1, name, 0, 1)
-#define ue(name, range_min, range_max) \
-        xue(name, current->name, range_min, range_max)
-#define se(name, range_min, range_max) \
-        xse(name, current->name, range_min, range_max)
 
 #define infer(name, value) do { \
         current->name = value; \
@@ -316,10 +338,6 @@ static int cbs_h2645_read_more_rbsp_data(GetBitContext *gbc)
 #undef xu
 #undef xue
 #undef xse
-#undef u
-#undef flag
-#undef ue
-#undef se
 #undef infer
 #undef more_rbsp_data
 #undef byte_alignment
@@ -330,29 +348,24 @@ static int cbs_h2645_read_more_rbsp_data(GetBitContext *gbc)
 #define READWRITE write
 #define RWContext PutBitContext
 
-#define xu(width, name, var, range_min, range_max) do { \
+#define xu(width, name, var, range_min, range_max, subs, ...) do { \
         uint32_t value = var; \
         CHECK(ff_cbs_write_unsigned(ctx, rw, width, #name, \
+                                    SUBSCRIPTS(subs, __VA_ARGS__), \
                                     value, range_min, range_max)); \
     } while (0)
-#define xue(name, var, range_min, range_max) do { \
+#define xue(name, var, range_min, range_max, subs, ...) do { \
         uint32_t value = var; \
         CHECK(cbs_write_ue_golomb(ctx, rw, #name, \
+                                  SUBSCRIPTS(subs, __VA_ARGS__), \
                                   value, range_min, range_max)); \
     } while (0)
-#define xse(name, var, range_min, range_max) do { \
+#define xse(name, var, range_min, range_max, subs, ...) do { \
         int32_t value = var; \
         CHECK(cbs_write_se_golomb(ctx, rw, #name, \
+                                  SUBSCRIPTS(subs, __VA_ARGS__), \
                                   value, range_min, range_max)); \
     } while (0)
-
-#define u(width, name, range_min, range_max) \
-        xu(width, name, current->name, range_min, range_max)
-#define flag(name) u(1, name, 0, 1)
-#define ue(name, range_min, range_max) \
-        xue(name, current->name, range_min, range_max)
-#define se(name, range_min, range_max) \
-        xse(name, current->name, range_min, range_max)
 
 #define infer(name, value) do { \
         if (current->name != (value)) { \

@@ -38,24 +38,29 @@
 #define FUNC_MPEG2(rw, name) FUNC_NAME(rw, mpeg2, name)
 #define FUNC(name) FUNC_MPEG2(READWRITE, name)
 
+#define SUBSCRIPTS(subs, ...) (subs > 0 ? ((int[subs + 1]){ subs, __VA_ARGS__ }) : NULL)
+
+#define ui(width, name) \
+        xui(width, name, current->name, 0)
+#define uis(width, name, subs, ...) \
+        xui(width, name, current->name, subs, __VA_ARGS__)
+
 
 #define READ
 #define READWRITE read
 #define RWContext GetBitContext
 
-#define xui(width, name, var) do { \
+#define xui(width, name, var, subs, ...) do { \
         uint32_t value = 0; \
         CHECK(ff_cbs_read_unsigned(ctx, rw, width, #name, \
+                                   SUBSCRIPTS(subs, __VA_ARGS__), \
                                    &value, 0, (1 << width) - 1)); \
         var = value; \
     } while (0)
 
-#define ui(width, name) \
-        xui(width, name, current->name)
-
 #define marker_bit() do { \
         av_unused uint32_t one; \
-        CHECK(ff_cbs_read_unsigned(ctx, rw, 1, "marker_bit", &one, 1, 1)); \
+        CHECK(ff_cbs_read_unsigned(ctx, rw, 1, "marker_bit", NULL, &one, 1, 1)); \
     } while (0)
 
 #define nextbits(width, compare, var) \
@@ -68,7 +73,6 @@
 #undef READWRITE
 #undef RWContext
 #undef xui
-#undef ui
 #undef marker_bit
 #undef nextbits
 
@@ -77,16 +81,14 @@
 #define READWRITE write
 #define RWContext PutBitContext
 
-#define xui(width, name, var) do { \
+#define xui(width, name, var, subs, ...) do { \
         CHECK(ff_cbs_write_unsigned(ctx, rw, width, #name, \
+                                    SUBSCRIPTS(subs, __VA_ARGS__), \
                                     var, 0, (1 << width) - 1)); \
     } while (0)
 
-#define ui(width, name) \
-        xui(width, name, current->name)
-
 #define marker_bit() do { \
-        CHECK(ff_cbs_write_unsigned(ctx, rw, 1, "marker_bit", 1, 1, 1)); \
+        CHECK(ff_cbs_write_unsigned(ctx, rw, 1, "marker_bit", NULL, 1, 1, 1)); \
     } while (0)
 
 #define nextbits(width, compare, var) (var)
@@ -97,7 +99,6 @@
 #undef READWRITE
 #undef RWContext
 #undef xui
-#undef ui
 #undef marker_bit
 #undef nextbits
 

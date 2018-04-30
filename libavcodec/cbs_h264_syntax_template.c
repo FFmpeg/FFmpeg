@@ -76,7 +76,7 @@ static int FUNC(scaling_list)(CodedBitstreamContext *ctx, RWContext *rw,
 
     scale = 8;
     for (i = 0; i < size_of_scaling_list; i++) {
-        xse(delta_scale, current->delta_scale[i], -128, +127);
+        ses(delta_scale[i], -128, +127, 1, i);
         scale = (scale + current->delta_scale[i] + 256) % 256;
         if (scale == 0)
             break;
@@ -95,9 +95,9 @@ static int FUNC(hrd_parameters)(CodedBitstreamContext *ctx, RWContext *rw,
     u(4, cpb_size_scale, 0, 15);
 
     for (i = 0; i <= current->cpb_cnt_minus1; i++) {
-        ue(bit_rate_value_minus1[i], 0, UINT32_MAX - 1);
-        ue(cpb_size_value_minus1[i], 0, UINT32_MAX - 1);
-        flag(cbr_flag[i]);
+        ues(bit_rate_value_minus1[i], 0, UINT32_MAX - 1, 1, i);
+        ues(cpb_size_value_minus1[i], 0, UINT32_MAX - 1, 1, i);
+        flags(cbr_flag[i], 1, i);
     }
 
     u(5, initial_cpb_removal_delay_length_minus1, 0, 31);
@@ -256,7 +256,7 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
         flag(seq_scaling_matrix_present_flag);
         if (current->seq_scaling_matrix_present_flag) {
             for (i = 0; i < ((current->chroma_format_idc != 3) ? 8 : 12); i++) {
-                flag(seq_scaling_list_present_flag[i]);
+                flags(seq_scaling_list_present_flag[i], 1, i);
                 if (current->seq_scaling_list_present_flag[i]) {
                     if (i < 6)
                         CHECK(FUNC(scaling_list)(ctx, rw,
@@ -289,7 +289,7 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
         ue(num_ref_frames_in_pic_order_cnt_cycle, 0, 255);
 
         for (i = 0; i < current->num_ref_frames_in_pic_order_cnt_cycle; i++)
-            se(offset_for_ref_frame[i], INT32_MIN + 1, INT32_MAX);
+            ses(offset_for_ref_frame[i], INT32_MIN + 1, INT32_MAX, 1, i);
     }
 
     ue(max_num_ref_frames, 0, H264_MAX_DPB_FRAMES);
@@ -390,12 +390,13 @@ static int FUNC(pps)(CodedBitstreamContext *ctx, RWContext *rw,
 
         if (current->slice_group_map_type == 0) {
             for (iGroup = 0; iGroup <= current->num_slice_groups_minus1; iGroup++)
-                ue(run_length_minus1[iGroup], 0, pic_size - 1);
+                ues(run_length_minus1[iGroup], 0, pic_size - 1, 1, iGroup);
 
         } else if (current->slice_group_map_type == 2) {
             for (iGroup = 0; iGroup < current->num_slice_groups_minus1; iGroup++) {
-                ue(top_left[iGroup],     0,                         pic_size - 1);
-                ue(bottom_right[iGroup], current->top_left[iGroup], pic_size - 1);
+                ues(top_left[iGroup],       0, pic_size - 1, 1, iGroup);
+                ues(bottom_right[iGroup],
+                    current->top_left[iGroup], pic_size - 1, 1, iGroup);
             }
         } else if (current->slice_group_map_type == 3 ||
                    current->slice_group_map_type == 4 ||
@@ -408,8 +409,8 @@ static int FUNC(pps)(CodedBitstreamContext *ctx, RWContext *rw,
             allocate(current->slice_group_id,
                      current->pic_size_in_map_units_minus1 + 1);
             for (i = 0; i <= current->pic_size_in_map_units_minus1; i++)
-                u(av_log2(2 * current->num_slice_groups_minus1 + 1),
-                  slice_group_id[i], 0, current->num_slice_groups_minus1);
+                us(av_log2(2 * current->num_slice_groups_minus1 + 1),
+                   slice_group_id[i], 0, current->num_slice_groups_minus1, 1, i);
         }
     }
 
@@ -435,7 +436,7 @@ static int FUNC(pps)(CodedBitstreamContext *ctx, RWContext *rw,
         if (current->pic_scaling_matrix_present_flag) {
             for (i = 0; i < 6 + (((sps->chroma_format_idc != 3) ? 2 : 6) *
                                  current->transform_8x8_mode_flag); i++) {
-                flag(pic_scaling_list_present_flag[i]);
+                flags(pic_scaling_list_present_flag[i], 1, i);
                 if (current->pic_scaling_list_present_flag[i]) {
                     if (i < 6)
                         CHECK(FUNC(scaling_list)(ctx, rw,
@@ -483,10 +484,10 @@ static int FUNC(sei_buffering_period)(CodedBitstreamContext *ctx, RWContext *rw,
             length = sps->vui.nal_hrd_parameters.initial_cpb_removal_delay_length_minus1 + 1;
             xu(length, initial_cpb_removal_delay[SchedSelIdx],
                current->nal.initial_cpb_removal_delay[i],
-               1, MAX_UINT_BITS(length));
+               1, MAX_UINT_BITS(length), 1, i);
             xu(length, initial_cpb_removal_delay_offset[SchedSelIdx],
                current->nal.initial_cpb_removal_delay_offset[i],
-               0, MAX_UINT_BITS(length));
+               0, MAX_UINT_BITS(length), 1, i);
         }
     }
 
@@ -495,10 +496,10 @@ static int FUNC(sei_buffering_period)(CodedBitstreamContext *ctx, RWContext *rw,
             length = sps->vui.vcl_hrd_parameters.initial_cpb_removal_delay_length_minus1 + 1;
             xu(length, initial_cpb_removal_delay[SchedSelIdx],
                current->vcl.initial_cpb_removal_delay[i],
-               1, MAX_UINT_BITS(length));
+               1, MAX_UINT_BITS(length), 1, i);
             xu(length, initial_cpb_removal_delay_offset[SchedSelIdx],
                current->vcl.initial_cpb_removal_delay_offset[i],
-               0, MAX_UINT_BITS(length));
+               0, MAX_UINT_BITS(length), 1, i);
         }
     }
 
@@ -616,7 +617,7 @@ static int FUNC(sei_pic_timing)(CodedBitstreamContext *ctx, RWContext *rw,
             return AVERROR_INVALIDDATA;
 
         for (i = 0; i < num_clock_ts[current->pic_struct]; i++) {
-            flag(clock_timestamp_flag[i]);
+            flags(clock_timestamp_flag[i], 1, i);
             if (current->clock_timestamp_flag[i])
                 CHECK(FUNC(sei_pic_timestamp)(ctx, rw, &current->timestamp[i]));
         }
@@ -652,7 +653,7 @@ static int FUNC(sei_user_data_registered)(CodedBitstreamContext *ctx, RWContext 
 
     allocate(current->data, current->data_length);
     for (j = 0; j < current->data_length; j++)
-        xu(8, itu_t_t35_payload_byte, current->data[j], 0x00, 0xff);
+        xu(8, itu_t_t35_payload_byte[i], current->data[j], 0x00, 0xff, 1, i + j);
 
     return 0;
 }
@@ -674,15 +675,13 @@ static int FUNC(sei_user_data_unregistered)(CodedBitstreamContext *ctx, RWContex
     *payload_size = 16 + current->data_length;
 #endif
 
-    for (i = 0; i < 16; i++) {
-        xu(8, uuid_iso_iec_11578,
-           current->uuid_iso_iec_11578[i], 0x00, 0xff);
-    }
+    for (i = 0; i < 16; i++)
+        us(8, uuid_iso_iec_11578[i], 0x00, 0xff, 1, i);
 
     allocate(current->data, current->data_length);
 
     for (i = 0; i < current->data_length; i++)
-        xu(8, user_data_payload_byte, current->data[i], 0x00, 0xff);
+        xu(8, user_data_payload_byte[i], current->data[i], 0x00, 0xff, 1, i);
 
     return 0;
 }
@@ -764,7 +763,7 @@ static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
         {
             allocate(current->payload.other.data, current->payload_size);
             for (i = 0; i < current->payload_size; i++)
-                xu(8, payload_byte, current->payload.other.data[i], 0, 255);
+                xu(8, payload_byte, current->payload.other.data[i], 0, 255, 1, i);
         }
     }
 
@@ -811,14 +810,14 @@ static int FUNC(sei)(CodedBitstreamContext *ctx, RWContext *rw,
             fixed(8, ff_byte, 0xff);
             payload_type += 255;
         }
-        xu(8, last_payload_type_byte, tmp, 0, 254);
+        xu(8, last_payload_type_byte, tmp, 0, 254, 0);
         payload_type += tmp;
 
         while (show_bits(rw, 8) == 0xff) {
             fixed(8, ff_byte, 0xff);
             payload_size += 255;
         }
-        xu(8, last_payload_size_byte, tmp, 0, 254);
+        xu(8, last_payload_size_byte, tmp, 0, 254, 0);
         payload_size += tmp;
 
         current->payload[k].payload_type = payload_type;
@@ -854,14 +853,14 @@ static int FUNC(sei)(CodedBitstreamContext *ctx, RWContext *rw,
                 fixed(8, ff_byte, 0xff);
                 tmp -= 255;
             }
-            xu(8, last_payload_type_byte, tmp, 0, 254);
+            xu(8, last_payload_type_byte, tmp, 0, 254, 0);
 
             tmp = current->payload[k].payload_size;
             while (tmp >= 255) {
                 fixed(8, ff_byte, 0xff);
                 tmp -= 255;
             }
-            xu(8, last_payload_size_byte, tmp, 0, 254);
+            xu(8, last_payload_size_byte, tmp, 0, 254, 0);
 
             CHECK(FUNC(sei_payload)(ctx, rw, &current->payload[k]));
         }
@@ -903,7 +902,7 @@ static int FUNC(ref_pic_list_modification)(CodedBitstreamContext *ctx, RWContext
         if (current->ref_pic_list_modification_flag_l0) {
             for (i = 0; i < H264_MAX_RPLM_COUNT; i++) {
                 xue(modification_of_pic_nums_idc,
-                    current->rplm_l0[i].modification_of_pic_nums_idc, 0, 3);
+                    current->rplm_l0[i].modification_of_pic_nums_idc, 0, 3, 0);
 
                 mopn = current->rplm_l0[i].modification_of_pic_nums_idc;
                 if (mopn == 3)
@@ -913,11 +912,11 @@ static int FUNC(ref_pic_list_modification)(CodedBitstreamContext *ctx, RWContext
                     xue(abs_diff_pic_num_minus1,
                         current->rplm_l0[i].abs_diff_pic_num_minus1,
                         0, (1 + current->field_pic_flag) *
-                        (1 << (sps->log2_max_frame_num_minus4 + 4)));
+                        (1 << (sps->log2_max_frame_num_minus4 + 4)), 0);
                 else if (mopn == 2)
                     xue(long_term_pic_num,
                         current->rplm_l0[i].long_term_pic_num,
-                        0, sps->max_num_ref_frames - 1);
+                        0, sps->max_num_ref_frames - 1, 0);
             }
         }
     }
@@ -927,7 +926,7 @@ static int FUNC(ref_pic_list_modification)(CodedBitstreamContext *ctx, RWContext
         if (current->ref_pic_list_modification_flag_l1) {
             for (i = 0; i < H264_MAX_RPLM_COUNT; i++) {
                 xue(modification_of_pic_nums_idc,
-                    current->rplm_l1[i].modification_of_pic_nums_idc, 0, 3);
+                    current->rplm_l1[i].modification_of_pic_nums_idc, 0, 3, 0);
 
                 mopn = current->rplm_l1[i].modification_of_pic_nums_idc;
                 if (mopn == 3)
@@ -937,11 +936,11 @@ static int FUNC(ref_pic_list_modification)(CodedBitstreamContext *ctx, RWContext
                     xue(abs_diff_pic_num_minus1,
                         current->rplm_l1[i].abs_diff_pic_num_minus1,
                         0, (1 + current->field_pic_flag) *
-                        (1 << (sps->log2_max_frame_num_minus4 + 4)));
+                        (1 << (sps->log2_max_frame_num_minus4 + 4)), 0);
                 else if (mopn == 2)
                     xue(long_term_pic_num,
                         current->rplm_l1[i].long_term_pic_num,
-                        0, sps->max_num_ref_frames - 1);
+                        0, sps->max_num_ref_frames - 1, 0);
             }
         }
     }
@@ -964,17 +963,17 @@ static int FUNC(pred_weight_table)(CodedBitstreamContext *ctx, RWContext *rw,
         ue(chroma_log2_weight_denom, 0, 7);
 
     for (i = 0; i <= current->num_ref_idx_l0_active_minus1; i++) {
-        flag(luma_weight_l0_flag[i]);
+        flags(luma_weight_l0_flag[i], 1, i);
         if (current->luma_weight_l0_flag[i]) {
-            se(luma_weight_l0[i], -128, +127);
-            se(luma_offset_l0[i], -128, +127);
+            ses(luma_weight_l0[i], -128, +127, 1, i);
+            ses(luma_offset_l0[i], -128, +127, 1, i);
         }
         if (chroma) {
-            flag(chroma_weight_l0_flag[i]);
+            flags(chroma_weight_l0_flag[i], 1, i);
             if (current->chroma_weight_l0_flag[i]) {
                 for (j = 0; j < 2; j++) {
-                    se(chroma_weight_l0[i][j], -128, +127);
-                    se(chroma_offset_l0[i][j], -128, +127);
+                    ses(chroma_weight_l0[i][j], -128, +127, 2, i, j);
+                    ses(chroma_offset_l0[i][j], -128, +127, 2, i, j);
                 }
             }
         }
@@ -982,17 +981,17 @@ static int FUNC(pred_weight_table)(CodedBitstreamContext *ctx, RWContext *rw,
 
     if (current->slice_type % 5 == 1) {
         for (i = 0; i <= current->num_ref_idx_l1_active_minus1; i++) {
-            flag(luma_weight_l1_flag[i]);
+            flags(luma_weight_l1_flag[i], 1, i);
             if (current->luma_weight_l1_flag[i]) {
-                se(luma_weight_l1[i], -128, +127);
-                se(luma_offset_l1[i], -128, +127);
+                ses(luma_weight_l1[i], -128, +127, 1, i);
+                ses(luma_offset_l1[i], -128, +127, 1, i);
             }
             if (chroma) {
-                flag(chroma_weight_l1_flag[i]);
+                flags(chroma_weight_l1_flag[i], 1, i);
                 if (current->chroma_weight_l1_flag[i]) {
                     for (j = 0; j < 2; j++) {
-                        se(chroma_weight_l1[i][j], -128, +127);
-                        se(chroma_offset_l1[i][j], -128, +127);
+                        ses(chroma_weight_l1[i][j], -128, +127, 2, i, j);
+                        ses(chroma_offset_l1[i][j], -128, +127, 2, i, j);
                     }
                 }
             }
@@ -1019,7 +1018,7 @@ static int FUNC(dec_ref_pic_marking)(CodedBitstreamContext *ctx, RWContext *rw,
             for (i = 0; i < H264_MAX_MMCO_COUNT; i++) {
                 xue(memory_management_control_operation,
                     current->mmco[i].memory_management_control_operation,
-                    0, 6);
+                    0, 6, 0);
 
                 mmco = current->mmco[i].memory_management_control_operation;
                 if (mmco == 0)
@@ -1028,19 +1027,19 @@ static int FUNC(dec_ref_pic_marking)(CodedBitstreamContext *ctx, RWContext *rw,
                 if (mmco == 1 || mmco == 3)
                     xue(difference_of_pic_nums_minus1,
                         current->mmco[i].difference_of_pic_nums_minus1,
-                        0, INT32_MAX);
+                        0, INT32_MAX, 0);
                 if (mmco == 2)
                     xue(long_term_pic_num,
                         current->mmco[i].long_term_pic_num,
-                        0, sps->max_num_ref_frames - 1);
+                        0, sps->max_num_ref_frames - 1, 0);
                 if (mmco == 3 || mmco == 6)
                     xue(long_term_frame_idx,
                         current->mmco[i].long_term_frame_idx,
-                        0, sps->max_num_ref_frames - 1);
+                        0, sps->max_num_ref_frames - 1, 0);
                 if (mmco == 4)
                     xue(max_long_term_frame_idx_plus1,
                         current->mmco[i].max_long_term_frame_idx_plus1,
-                        0, sps->max_num_ref_frames);
+                        0, sps->max_num_ref_frames, 0);
             }
             if (i == H264_MAX_MMCO_COUNT) {
                 av_log(ctx->log_ctx, AV_LOG_ERROR, "Too many "
