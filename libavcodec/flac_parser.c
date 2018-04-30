@@ -686,10 +686,15 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     }
 
     for (curr = fpc->headers; curr; curr = curr->next) {
-        if (curr->max_score > 0 &&
-            (!fpc->best_header || curr->max_score > fpc->best_header->max_score)) {
+        if (!fpc->best_header || curr->max_score > fpc->best_header->max_score) {
             fpc->best_header = curr;
         }
+    }
+
+    if (fpc->best_header && fpc->best_header->max_score <= 0) {
+        // Only accept a bad header if there is no other option to continue
+        if (!buf_size || !buf || read_end != buf || fpc->nb_headers_buffered < FLAC_MIN_HEADERS)
+            fpc->best_header = NULL;
     }
 
     if (fpc->best_header) {
