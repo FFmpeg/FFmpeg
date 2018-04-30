@@ -74,7 +74,7 @@ static av_cold int init(AVFilterContext *ctx)
 {
     MixContext *s = ctx->priv;
     char *p, *arg, *saveptr = NULL;
-    int i, ret, last;
+    int i, ret, last = 0;
 
     s->tmix = !strcmp(ctx->filter->name, "tmix");
 
