@@ -140,26 +140,30 @@ static int cbs_read_fragment_content(CodedBitstreamContext *ctx,
     int err, i, j;
 
     for (i = 0; i < frag->nb_units; i++) {
+        CodedBitstreamUnit *unit = &frag->units[i];
+
         if (ctx->decompose_unit_types) {
             for (j = 0; j < ctx->nb_decompose_unit_types; j++) {
-                if (ctx->decompose_unit_types[j] == frag->units[i].type)
+                if (ctx->decompose_unit_types[j] == unit->type)
                     break;
             }
             if (j >= ctx->nb_decompose_unit_types)
                 continue;
         }
 
-        av_buffer_unref(&frag->units[i].content_ref);
-        frag->units[i].content = NULL;
+        av_buffer_unref(&unit->content_ref);
+        unit->content = NULL;
 
-        err = ctx->codec->read_unit(ctx, &frag->units[i]);
+        av_assert0(unit->data && unit->data_ref);
+
+        err = ctx->codec->read_unit(ctx, unit);
         if (err == AVERROR(ENOSYS)) {
             av_log(ctx->log_ctx, AV_LOG_VERBOSE,
                    "Decomposition unimplemented for unit %d "
-                   "(type %"PRIu32").\n", i, frag->units[i].type);
+                   "(type %"PRIu32").\n", i, unit->type);
         } else if (err < 0) {
             av_log(ctx->log_ctx, AV_LOG_ERROR, "Failed to read unit %d "
-                   "(type %"PRIu32").\n", i, frag->units[i].type);
+                   "(type %"PRIu32").\n", i, unit->type);
             return err;
         }
     }
@@ -277,6 +281,7 @@ int ff_cbs_write_fragment_data(CodedBitstreamContext *ctx,
                    "(type %"PRIu32").\n", i, unit->type);
             return err;
         }
+        av_assert0(unit->data && unit->data_ref);
     }
 
     av_buffer_unref(&frag->data_ref);
@@ -287,6 +292,7 @@ int ff_cbs_write_fragment_data(CodedBitstreamContext *ctx,
         av_log(ctx->log_ctx, AV_LOG_ERROR, "Failed to assemble fragment.\n");
         return err;
     }
+    av_assert0(frag->data && frag->data_ref);
 
     return 0;
 }
@@ -327,7 +333,6 @@ int ff_cbs_write_packet(CodedBitstreamContext *ctx,
     if (err < 0)
         return err;
 
-    av_assert0(frag->data_ref);
     buf = av_buffer_ref(frag->data_ref);
     if (!buf)
         return AVERROR(ENOMEM);
