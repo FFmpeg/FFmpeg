@@ -22,8 +22,11 @@
 #include "avformat.h"
 #include "rawdec.h"
 
-#define VISUAL_OBJECT_START_CODE       0x000001b5
-#define VOP_START_CODE                 0x000001b6
+#define VOS_STARTCODE        0x1B0
+#define USER_DATA_STARTCODE  0x1B2
+#define GOP_STARTCODE        0x1B3
+#define VISUAL_OBJ_STARTCODE 0x1B5
+#define VOP_STARTCODE        0x1B6
 #define SLICE_STARTCODE      0x1B7
 #define EXT_STARTCODE        0x1B8
 
@@ -41,9 +44,9 @@ static int mpeg4video_probe(AVProbeData *probe_packet)
         if (temp_buffer < 2)
             continue;
 
-        if (temp_buffer == VOP_START_CODE)
+        if (temp_buffer == VOP_STARTCODE)
             VOP++;
-        else if (temp_buffer == VISUAL_OBJECT_START_CODE)
+        else if (temp_buffer == VISUAL_OBJ_STARTCODE)
             VISO++;
         else if (temp_buffer >= 0x100 && temp_buffer < 0x120)
             VO++;
