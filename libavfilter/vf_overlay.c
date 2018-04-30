@@ -39,6 +39,7 @@
 #include "drawutils.h"
 #include "framesync.h"
 #include "video.h"
+#include "vf_overlay.h"
 
 typedef struct ThreadData {
     AVFrame *dst, *src;
@@ -59,21 +60,6 @@ static const char *const var_names[] = {
     NULL
 };
 
-enum var_name {
-    VAR_MAIN_W,    VAR_MW,
-    VAR_MAIN_H,    VAR_MH,
-    VAR_OVERLAY_W, VAR_OW,
-    VAR_OVERLAY_H, VAR_OH,
-    VAR_HSUB,
-    VAR_VSUB,
-    VAR_X,
-    VAR_Y,
-    VAR_N,
-    VAR_POS,
-    VAR_T,
-    VAR_VARS_NB
-};
-
 #define MAIN    0
 #define OVERLAY 1
 
@@ -91,45 +77,6 @@ enum EvalMode {
     EVAL_MODE_FRAME,
     EVAL_MODE_NB
 };
-
-enum OverlayFormat {
-    OVERLAY_FORMAT_YUV420,
-    OVERLAY_FORMAT_YUV422,
-    OVERLAY_FORMAT_YUV444,
-    OVERLAY_FORMAT_RGB,
-    OVERLAY_FORMAT_GBRP,
-    OVERLAY_FORMAT_AUTO,
-    OVERLAY_FORMAT_NB
-};
-
-typedef struct OverlayContext {
-    const AVClass *class;
-    int x, y;                   ///< position of overlaid picture
-
-    uint8_t main_is_packed_rgb;
-    uint8_t main_rgba_map[4];
-    uint8_t main_has_alpha;
-    uint8_t overlay_is_packed_rgb;
-    uint8_t overlay_rgba_map[4];
-    uint8_t overlay_has_alpha;
-    int format;                 ///< OverlayFormat
-    int alpha_format;
-    int eval_mode;              ///< EvalMode
-
-    FFFrameSync fs;
-
-    int main_pix_step[4];       ///< steps per pixel for each plane of the main output
-    int overlay_pix_step[4];    ///< steps per pixel for each plane of the overlay
-    int hsub, vsub;             ///< chroma subsampling values
-    const AVPixFmtDescriptor *main_desc; ///< format descriptor for main input
-
-    double var_values[VAR_VARS_NB];
-    char *x_expr, *y_expr;
-
-    AVExpr *x_pexpr, *y_pexpr;
-
-    int (*blend_slice)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
-} OverlayContext;
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
@@ -509,6 +456,7 @@ static av_always_inline void blend_plane(AVFilterContext *ctx,
                                          int jobnr,
                                          int nb_jobs)
 {
+    OverlayContext *octx = ctx->priv;
     int src_wp = AV_CEIL_RSHIFT(src_w, hsub);
     int src_hp = AV_CEIL_RSHIFT(src_h, vsub);
     int dst_wp = AV_CEIL_RSHIFT(dst_w, hsub);
@@ -538,8 +486,18 @@ static av_always_inline void blend_plane(AVFilterContext *ctx,
         s = sp + k;
         a = ap + (k<<hsub);
         da = dap + ((xp+k) << hsub);
+        kmax = FFMIN(-xp + dst_wp, src_wp);
 
-        for (kmax = FFMIN(-xp + dst_wp, src_wp); k < kmax; k++) {
+        if (((vsub && j+1 < src_hp) || !vsub) && octx->blend_row[i]) {
+            int c = octx->blend_row[i](d, da, s, a, kmax - k, src->linesize[3]);
+
+            s += c;
+            d += dst_step * c;
+            da += (1 << hsub) * c;
+            a += (1 << hsub) * c;
+            k += c;
+        }
+        for (; k < kmax; k++) {
             int alpha_v, alpha_h, alpha;
 
             // average alpha for color components, improve quality
@@ -916,7 +874,7 @@ static int config_input_main(AVFilterLink *inlink)
     }
 
     if (!s->alpha_format)
-        return 0;
+        goto end;
 
     switch (s->format) {
     case OVERLAY_FORMAT_YUV420:
@@ -960,6 +918,11 @@ static int config_input_main(AVFilterLink *inlink)
         }
         break;
     }
+
+end:
+    if (ARCH_X86)
+        ff_overlay_init_x86(s, s->format, s->alpha_format, s->main_has_alpha);
+
     return 0;
 }
 
