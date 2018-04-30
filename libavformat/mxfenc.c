@@ -2914,6 +2914,9 @@ static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, AVPacket
             while (pktl) {
                 if (!stream_count || pktl->pkt.stream_index == 0)
                     break;
+                // update last packet in packet buffer
+                if (s->streams[pktl->pkt.stream_index]->last_in_packet_buffer != pktl)
+                    s->streams[pktl->pkt.stream_index]->last_in_packet_buffer = pktl;
                 last = pktl;
                 pktl = pktl->next;
                 stream_count--;
@@ -2921,9 +2924,6 @@ static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, AVPacket
             // purge packet queue
             while (pktl) {
                 AVPacketList *next = pktl->next;
-
-                if(s->streams[pktl->pkt.stream_index]->last_in_packet_buffer == pktl)
-                    s->streams[pktl->pkt.stream_index]->last_in_packet_buffer= NULL;
                 av_packet_unref(&pktl->pkt);
                 av_freep(&pktl);
                 pktl = next;
