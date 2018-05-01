@@ -416,19 +416,50 @@ static int config_output(AVFilterLink *outlink)
     return config_filter(outlink, 1);
 }
 
+typedef struct ThreadData {
+    AVFrame *in, *out;
+} ThreadData;
+
+static int filter_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    AVFilterLink *inlink = ctx->inputs[0];
+    ThreadData *td = arg;
+    AVFrame *buf = td->in;
+    AVFrame *out_buf = td->out;
+    BiquadsContext *s = ctx->priv;
+    const int start = (buf->channels * jobnr) / nb_jobs;
+    const int end = (buf->channels * (jobnr+1)) / nb_jobs;
+    int ch;
+
+    for (ch = start; ch < end; ch++) {
+        if (!((av_channel_layout_extract_channel(inlink->channel_layout, ch) & s->channels))) {
+            if (buf != out_buf)
+                memcpy(out_buf->extended_data[ch], buf->extended_data[ch],
+                       buf->nb_samples * s->block_align);
+            continue;
+        }
+
+        s->filter(s, buf->extended_data[ch], out_buf->extended_data[ch], buf->nb_samples,
+                  &s->cache[ch].i1, &s->cache[ch].i2, &s->cache[ch].o1, &s->cache[ch].o2,
+                  s->b0, s->b1, s->b2, s->a1, s->a2, &s->cache[ch].clippings);
+    }
+
+    return 0;
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 {
     AVFilterContext  *ctx = inlink->dst;
     BiquadsContext *s     = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out_buf;
-    int nb_samples = buf->nb_samples;
+    ThreadData td;
     int ch;
 
     if (av_frame_is_writable(buf)) {
         out_buf = buf;
     } else {
-        out_buf = ff_get_audio_buffer(outlink, nb_samples);
+        out_buf = ff_get_audio_buffer(outlink, buf->nb_samples);
         if (!out_buf) {
             av_frame_free(&buf);
             return AVERROR(ENOMEM);
@@ -436,19 +467,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         av_frame_copy_props(out_buf, buf);
     }
 
-    for (ch = 0; ch < buf->channels; ch++) {
-        if (!((av_channel_layout_extract_channel(inlink->channel_layout, ch) & s->channels))) {
-            if (buf != out_buf)
-                memcpy(out_buf->extended_data[ch], buf->extended_data[ch], nb_samples * s->block_align);
-            continue;
-        }
-        s->filter(s, buf->extended_data[ch],
-                  out_buf->extended_data[ch], nb_samples,
-                  &s->cache[ch].i1, &s->cache[ch].i2,
-                  &s->cache[ch].o1, &s->cache[ch].o2,
-                  s->b0, s->b1, s->b2, s->a1, s->a2,
-                  &s->cache[ch].clippings);
-    }
+    td.in = buf;
+    td.out = out_buf;
+    ctx->internal->execute(ctx, filter_channel, &td, NULL, FFMIN(outlink->channels, ff_filter_get_nb_threads(ctx)));
 
     for (ch = 0; ch < outlink->channels; ch++) {
         if (s->cache[ch].clippings > 0)
@@ -631,6 +652,7 @@ AVFilter ff_af_##name_ = {                         \
     .outputs       = outputs,                            \
     .priv_class    = &name_##_class,                     \
     .process_command = process_command,                  \
+    .flags         = AVFILTER_FLAG_SLICE_THREADS,        \
 }
 
 #if CONFIG_EQUALIZER_FILTER
