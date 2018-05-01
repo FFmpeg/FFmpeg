@@ -165,41 +165,39 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     for (plane = 0; plane < s->nb_planes; plane++) {
         const int threshold = s->threshold[plane];
+        const int stride = in->linesize[plane];
+        const int dstride = out->linesize[plane];
+        const uint8_t *src = in->data[plane];
+        uint8_t *dst = out->data[plane];
+        const int height = s->planeheight[plane];
+        const int width  = s->planewidth[plane];
 
-        if (threshold) {
-            const int stride = in->linesize[plane];
-            const int dstride = out->linesize[plane];
-            const uint8_t *src = in->data[plane];
-            uint8_t *dst = out->data[plane];
-            const int height = s->planeheight[plane];
-            const int width  = s->planewidth[plane];
+        if (!threshold) {
+            av_image_copy_plane(dst, dstride, src, stride, width, height);
+            continue;
+        }
 
-            for (y = 0; y < height; y++) {
-                const int nh = y > 0;
-                const int ph = y < height - 1;
-                const uint8_t *coordinates[] = { src - nh * stride, src + 1 - nh * stride, src + 2 - nh * stride,
-                                                 src,                                      src + 2,
-                                                 src + ph * stride, src + 1 + ph * stride, src + 2 + ph * stride};
+        for (y = 0; y < height; y++) {
+            const int nh = y > 0;
+            const int ph = y < height - 1;
+            const uint8_t *coordinates[] = { src - nh * stride, src + 1 - nh * stride, src + 2 - nh * stride,
+                                             src,                                      src + 2,
+                                             src + ph * stride, src + 1 + ph * stride, src + 2 + ph * stride};
 
-                const uint8_t *coordinateslb[] = { src - nh * stride, src - nh * stride, src + 1 - nh * stride,
-                                                   src,                                  src + 1,
-                                                   src + ph * stride, src + ph * stride, src + 1 + ph * stride};
+            const uint8_t *coordinateslb[] = { src - nh * stride, src - nh * stride, src + 1 - nh * stride,
+                                               src,                                  src + 1,
+                                               src + ph * stride, src + ph * stride, src + 1 + ph * stride};
 
-                const uint8_t *coordinatesrb[] = { src + width - 2 - nh * stride, src + width - 1 - nh * stride, src + width - 1 - nh * stride,
-                                                   src + width - 2,                                              src + width - 1,
-                                                   src + width - 2 + ph * stride, src + width - 1 + ph * stride, src + width - 1 + ph * stride};
+            const uint8_t *coordinatesrb[] = { src + width - 2 - nh * stride, src + width - 1 - nh * stride, src + width - 1 - nh * stride,
+                                               src + width - 2,                                              src + width - 1,
+                                               src + width - 2 + ph * stride, src + width - 1 + ph * stride, src + width - 1 + ph * stride};
 
-                s->filter(dst,             src,             1,         threshold, coordinateslb, s->coordinates);
-                s->filter(dst         + 1, src         + 1, width - 2, threshold, coordinates,   s->coordinates);
-                s->filter(dst + width - 1, src + width - 1, 1,         threshold, coordinatesrb, s->coordinates);
+            s->filter(dst,             src,             1,         threshold, coordinateslb, s->coordinates);
+            s->filter(dst         + 1, src         + 1, width - 2, threshold, coordinates,   s->coordinates);
+            s->filter(dst + width - 1, src + width - 1, 1,         threshold, coordinatesrb, s->coordinates);
 
-                src += stride;
-                dst += dstride;
-            }
-        } else {
-            av_image_copy_plane(out->data[plane], out->linesize[plane],
-                                in->data[plane], in->linesize[plane],
-                                s->planewidth[plane], s->planeheight[plane]);
+            src += stride;
+            dst += dstride;
         }
     }
 
