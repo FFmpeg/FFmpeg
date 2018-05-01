@@ -34,7 +34,6 @@ typedef struct NContext {
     int nb_planes;
     int threshold[4];
     int coordinates;
-    uint8_t *buffer;
 
     void (*filter)(uint8_t *dst, const uint8_t *p1, int width,
                    int threshold, const uint8_t *coordinates[], int coord);
@@ -50,25 +49,6 @@ static int query_formats(AVFilterContext *ctx)
     };
 
     return ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-}
-
-static av_cold void uninit(AVFilterContext *ctx)
-{
-    NContext *s = ctx->priv;
-
-    av_freep(&s->buffer);
-}
-
-static inline void line_copy8(uint8_t *line, const uint8_t *srcp, int width, int mergin)
-{
-    int i;
-
-    memcpy(line, srcp, width);
-
-    for (i = mergin; i > 0; i--) {
-        line[-i] = line[i];
-        line[width - 1 + i] = line[width - 1 - i];
-    }
 }
 
 static void erosion(uint8_t *dst, const uint8_t *p1, int width,
@@ -155,9 +135,6 @@ static int config_input(AVFilterLink *inlink)
     s->planeheight[0] = s->planeheight[3] = inlink->h;
 
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
-    s->buffer = av_malloc(3 * (s->planewidth[0] + 32));
-    if (!s->buffer)
-        return AVERROR(ENOMEM);
 
     if (!strcmp(ctx->filter->name, "erosion"))
         s->filter = erosion;
@@ -190,32 +167,34 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         const int threshold = s->threshold[plane];
 
         if (threshold) {
+            const int stride = in->linesize[plane];
+            const int dstride = out->linesize[plane];
             const uint8_t *src = in->data[plane];
             uint8_t *dst = out->data[plane];
-            int stride = in->linesize[plane];
-            int height = s->planeheight[plane];
-            int width  = s->planewidth[plane];
-            uint8_t *p0 = s->buffer + 16;
-            uint8_t *p1 = p0 + s->planewidth[0];
-            uint8_t *p2 = p1 + s->planewidth[0];
-            uint8_t *orig = p0, *end = p2;
-
-            line_copy8(p0, src + stride, width, 1);
-            line_copy8(p1, src, width, 1);
+            const int height = s->planeheight[plane];
+            const int width  = s->planewidth[plane];
 
             for (y = 0; y < height; y++) {
-                const uint8_t *coordinates[] = { p0 - 1, p0, p0 + 1,
-                                                 p1 - 1,     p1 + 1,
-                                                 p2 - 1, p2, p2 + 1};
-                src += stride * (y < height - 1 ? 1 : -1);
-                line_copy8(p2, src, width, 1);
+                const int nh = y > 0;
+                const int ph = y < height - 1;
+                const uint8_t *coordinates[] = { src - nh * stride, src + 1 - nh * stride, src + 2 - nh * stride,
+                                                 src,                                      src + 2,
+                                                 src + ph * stride, src + 1 + ph * stride, src + 2 + ph * stride};
 
-                s->filter(dst, p1, width, threshold, coordinates, s->coordinates);
+                const uint8_t *coordinateslb[] = { src - nh * stride, src - nh * stride, src + 1 - nh * stride,
+                                                   src,                                  src + 1,
+                                                   src + ph * stride, src + ph * stride, src + 1 + ph * stride};
 
-                p0 = p1;
-                p1 = p2;
-                p2 = (p2 == end) ? orig: p2 + s->planewidth[0];
-                dst += out->linesize[plane];
+                const uint8_t *coordinatesrb[] = { src + width - 2 - nh * stride, src + width - 1 - nh * stride, src + width - 1 - nh * stride,
+                                                   src + width - 2,                                              src + width - 1,
+                                                   src + width - 2 + ph * stride, src + width - 1 + ph * stride, src + width - 1 + ph * stride};
+
+                s->filter(dst,             src,             1,         threshold, coordinateslb, s->coordinates);
+                s->filter(dst         + 1, src         + 1, width - 2, threshold, coordinates,   s->coordinates);
+                s->filter(dst + width - 1, src + width - 1, 1,         threshold, coordinatesrb, s->coordinates);
+
+                src += stride;
+                dst += dstride;
             }
         } else {
             av_image_copy_plane(out->data[plane], out->linesize[plane],
@@ -257,7 +236,6 @@ AVFilter ff_vf_##name_ = {                                   \
     .description   = NULL_IF_CONFIG_SMALL(description_),     \
     .priv_size     = sizeof(NContext),                       \
     .priv_class    = &name_##_class,                         \
-    .uninit        = uninit,                                 \
     .query_formats = query_formats,                          \
     .inputs        = neighbor_inputs,                        \
     .outputs       = neighbor_outputs,                       \
