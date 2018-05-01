@@ -95,6 +95,7 @@ enum WidthType {
 typedef struct ChanCache {
     double i1, i2;
     double o1, o2;
+    int clippings;
 } ChanCache;
 
 typedef struct BiquadsContext {
@@ -114,12 +115,11 @@ typedef struct BiquadsContext {
     double b0, b1, b2;
 
     ChanCache *cache;
-    int clippings;
     int block_align;
 
     void (*filter)(struct BiquadsContext *s, const void *ibuf, void *obuf, int len,
                    double *i1, double *i2, double *o1, double *o2,
-                   double b0, double b1, double b2, double a1, double a2);
+                   double b0, double b1, double b2, double a1, double a2, int *clippings);
 } BiquadsContext;
 
 static av_cold int init(AVFilterContext *ctx)
@@ -176,7 +176,7 @@ static void biquad_## name (BiquadsContext *s,                                \
                             double *in1, double *in2,                         \
                             double *out1, double *out2,                       \
                             double b0, double b1, double b2,                  \
-                            double a1, double a2)                             \
+                            double a1, double a2, int *clippings)             \
 {                                                                             \
     const type *ibuf = input;                                                 \
     type *obuf = output;                                                      \
@@ -192,10 +192,10 @@ static void biquad_## name (BiquadsContext *s,                                \
         o2 = i2 * b2 + i1 * b1 + ibuf[i] * b0 + o2 * a2 + o1 * a1;            \
         i2 = ibuf[i];                                                         \
         if (need_clipping && o2 < min) {                                      \
-            s->clippings++;                                                   \
+            (*clippings)++;                                                   \
             obuf[i] = min;                                                    \
         } else if (need_clipping && o2 > max) {                               \
-            s->clippings++;                                                   \
+            (*clippings)++;                                                   \
             obuf[i] = max;                                                    \
         } else {                                                              \
             obuf[i] = o2;                                                     \
@@ -204,10 +204,10 @@ static void biquad_## name (BiquadsContext *s,                                \
         o1 = i1 * b2 + i2 * b1 + ibuf[i] * b0 + o1 * a2 + o2 * a1;            \
         i1 = ibuf[i];                                                         \
         if (need_clipping && o1 < min) {                                      \
-            s->clippings++;                                                   \
+            (*clippings)++;                                                   \
             obuf[i] = min;                                                    \
         } else if (need_clipping && o1 > max) {                               \
-            s->clippings++;                                                   \
+            (*clippings)++;                                                   \
             obuf[i] = max;                                                    \
         } else {                                                              \
             obuf[i] = o1;                                                     \
@@ -220,10 +220,10 @@ static void biquad_## name (BiquadsContext *s,                                \
         o2 = o1;                                                              \
         o1 = o0;                                                              \
         if (need_clipping && o0 < min) {                                      \
-            s->clippings++;                                                   \
+            (*clippings)++;                                                   \
             obuf[i] = min;                                                    \
         } else if (need_clipping && o0 > max) {                               \
-            s->clippings++;                                                   \
+            (*clippings)++;                                                   \
             obuf[i] = max;                                                    \
         } else {                                                              \
             obuf[i] = o0;                                                     \
@@ -446,12 +446,16 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
                   out_buf->extended_data[ch], nb_samples,
                   &s->cache[ch].i1, &s->cache[ch].i2,
                   &s->cache[ch].o1, &s->cache[ch].o2,
-                  s->b0, s->b1, s->b2, s->a1, s->a2);
+                  s->b0, s->b1, s->b2, s->a1, s->a2,
+                  &s->cache[ch].clippings);
     }
 
-    if (s->clippings > 0)
-        av_log(ctx, AV_LOG_WARNING, "clipping %d times. Please reduce gain.\n", s->clippings);
-    s->clippings = 0;
+    for (ch = 0; ch < outlink->channels; ch++) {
+        if (s->cache[ch].clippings > 0)
+            av_log(ctx, AV_LOG_WARNING, "Channel %d clipping %d times. Please reduce gain.\n",
+                   ch, s->cache[ch].clippings);
+        s->cache[ch].clippings = 0;
+    }
 
     if (buf != out_buf)
         av_frame_free(&buf);
