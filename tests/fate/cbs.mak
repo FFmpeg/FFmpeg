@@ -9,7 +9,7 @@ FATE_CBS_DEPS = $(call ALLYES, $(1)_DEMUXER $(2)_PARSER $(3)_METADATA_BSF $(4)_D
 define FATE_CBS_TEST
 # (codec, test_name, sample_file, output_format)
 FATE_CBS_$(1) += fate-cbs-$(1)-$(2)
-fate-cbs-$(1)-$(2): CMD = md5 -i $(TARGET_SAMPLES)/$(3) -c:v copy -bsf:v $(1)_metadata -f $(4)
+fate-cbs-$(1)-$(2): CMD = md5 -i $(TARGET_SAMPLES)/$(3) -c:v copy -y -bsf:v $(1)_metadata -f $(4)
 endef
 
 # H.264 read/write
