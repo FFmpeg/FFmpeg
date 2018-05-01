@@ -27,6 +27,10 @@
 #include "internal.h"
 #include "video.h"
 
+typedef struct ThreadData {
+    AVFrame *in, *out;
+} ThreadData;
+
 typedef struct NContext {
     const AVClass *class;
     int planeheight[4];
@@ -148,36 +152,31 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *in)
+static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    AVFilterContext *ctx = inlink->dst;
-    AVFilterLink *outlink = ctx->outputs[0];
     NContext *s = ctx->priv;
-    AVFrame *out;
+    ThreadData *td = arg;
+    AVFrame *out = td->out;
+    AVFrame *in = td->in;
     int plane, y;
-
-    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    if (!out) {
-        av_frame_free(&in);
-        return AVERROR(ENOMEM);
-    }
-    av_frame_copy_props(out, in);
 
     for (plane = 0; plane < s->nb_planes; plane++) {
         const int threshold = s->threshold[plane];
         const int stride = in->linesize[plane];
         const int dstride = out->linesize[plane];
-        const uint8_t *src = in->data[plane];
-        uint8_t *dst = out->data[plane];
         const int height = s->planeheight[plane];
         const int width  = s->planewidth[plane];
+        const int slice_start = (height * jobnr) / nb_jobs;
+        const int slice_end = (height * (jobnr+1)) / nb_jobs;
+        const uint8_t *src = (const uint8_t *)in->data[plane] + slice_start * stride;
+        uint8_t *dst = out->data[plane] + slice_start * dstride;
 
         if (!threshold) {
-            av_image_copy_plane(dst, dstride, src, stride, width, height);
+            av_image_copy_plane(dst, dstride, src, stride, width, slice_end - slice_start);
             continue;
         }
 
-        for (y = 0; y < height; y++) {
+        for (y = slice_start; y < slice_end; y++) {
             const int nh = y > 0;
             const int ph = y < height - 1;
             const uint8_t *coordinates[] = { src - nh * stride, src + 1 - nh * stride, src + 2 - nh * stride,
@@ -200,6 +199,28 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             dst += dstride;
         }
     }
+
+    return 0;
+}
+
+static int filter_frame(AVFilterLink *inlink, AVFrame *in)
+{
+    AVFilterContext *ctx = inlink->dst;
+    AVFilterLink *outlink = ctx->outputs[0];
+    NContext *s = ctx->priv;
+    ThreadData td;
+    AVFrame *out;
+
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+    if (!out) {
+        av_frame_free(&in);
+        return AVERROR(ENOMEM);
+    }
+    av_frame_copy_props(out, in);
+
+    td.in = in;
+    td.out = out;
+    ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(s->planeheight[1], ff_filter_get_nb_threads(ctx)));
 
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);
@@ -237,7 +258,8 @@ AVFilter ff_vf_##name_ = {                                   \
     .query_formats = query_formats,                          \
     .inputs        = neighbor_inputs,                        \
     .outputs       = neighbor_outputs,                       \
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC, \
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC| \
+                     AVFILTER_FLAG_SLICE_THREADS,            \
 }
 
 #if CONFIG_EROSION_FILTER
