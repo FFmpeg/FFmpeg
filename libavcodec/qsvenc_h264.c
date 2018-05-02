@@ -114,7 +114,7 @@ static const AVOption options[] = {
 #endif
 #if QSV_HAVE_LA_DS
     { "look_ahead_downsampling", "Downscaling factor for the frames saved for the lookahead analysis", OFFSET(qsv.look_ahead_downsampling),
-                                          AV_OPT_TYPE_INT,   { .i64 = MFX_LOOKAHEAD_DS_UNKNOWN }, MFX_LOOKAHEAD_DS_UNKNOWN, MFX_LOOKAHEAD_DS_2x, VE, "look_ahead_downsampling" },
+                                          AV_OPT_TYPE_INT,   { .i64 = MFX_LOOKAHEAD_DS_UNKNOWN }, MFX_LOOKAHEAD_DS_UNKNOWN, MFX_LOOKAHEAD_DS_4x, VE, "look_ahead_downsampling" },
     { "unknown"                , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_LOOKAHEAD_DS_UNKNOWN }, INT_MIN, INT_MAX,     VE, "look_ahead_downsampling" },
     { "auto"                   , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_LOOKAHEAD_DS_UNKNOWN }, INT_MIN, INT_MAX,     VE, "look_ahead_downsampling" },
     { "off"                    , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_LOOKAHEAD_DS_OFF     }, INT_MIN, INT_MAX,     VE, "look_ahead_downsampling" },
