@@ -165,8 +165,8 @@ static void filter16_roberts(uint8_t *dstp, const uint8_t *src, int width,
     int x;
 
     for (x = 0; x < width; x++) {
-        int suma = AV_RN16A(&c[0][2 * x]) *  1 + AV_RN16A(&c[4][2 * x]) * -1;
-        int sumb = AV_RN16A(&c[1][2 * x]) *  1 + AV_RN16A(&c[3][2 * x]) * -1;
+        int suma = AV_RN16A(&c[0][2 * x]) *  1 + AV_RN16A(&c[1][2 * x]) * -1;
+        int sumb = AV_RN16A(&c[4][2 * x]) *  1 + AV_RN16A(&c[3][2 * x]) * -1;
 
         dst[x] = av_clip(sqrt(suma*suma + sumb*sumb) * scale + delta, 0, peak);
     }
@@ -215,8 +215,8 @@ static void filter_roberts(uint8_t *dst, const uint8_t *src, int width,
     int x;
 
     for (x = 0; x < width; x++) {
-        int suma = c[0][x - 1] *  1 + c[4][x    ] * -1;
-        int sumb = c[1][x    ] *  1 + c[3][x - 1] * -1;
+        int suma = c[0][x] *  1 + c[1][x] * -1;
+        int sumb = c[4][x] *  1 + c[3][x] * -1;
 
         dst[x] = av_clip_uint8(sqrt(suma*suma + sumb*sumb) * scale + delta);
     }
