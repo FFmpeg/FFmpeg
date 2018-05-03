@@ -394,6 +394,8 @@ static int nvenc_check_capabilities(AVCodecContext *avctx)
     }
 #endif
 
+    ctx->support_dyn_bitrate = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_DYN_BITRATE_CHANGE);
+
     return 0;
 }
 
@@ -873,7 +875,7 @@ static av_cold void nvenc_setup_rate_control(AVCodecContext *avctx)
     if (avctx->rc_buffer_size > 0) {
         ctx->encode_config.rcParams.vbvBufferSize = avctx->rc_buffer_size;
     } else if (ctx->encode_config.rcParams.averageBitRate > 0) {
-        ctx->encode_config.rcParams.vbvBufferSize = 2 * ctx->encode_config.rcParams.averageBitRate;
+        avctx->rc_buffer_size = ctx->encode_config.rcParams.vbvBufferSize = 2 * ctx->encode_config.rcParams.averageBitRate;
     }
 
     if (ctx->aq) {
@@ -1944,6 +1946,7 @@ static int reconfig_encoder(AVCodecContext *avctx, const AVFrame *frame)
     NV_ENC_RECONFIGURE_PARAMS params = { 0 };
     int needs_reconfig = 0;
     int needs_encode_config = 0;
+    int reconfig_bitrate = 0, reconfig_dar = 0;
     int dw, dh;
 
     params.version = NV_ENC_RECONFIGURE_PARAMS_VER;
@@ -1960,6 +1963,47 @@ static int reconfig_encoder(AVCodecContext *avctx, const AVFrame *frame)
         params.reInitEncodeParams.darWidth = dw;
 
         needs_reconfig = 1;
+        reconfig_dar = 1;
+    }
+
+    if (ctx->rc != NV_ENC_PARAMS_RC_CONSTQP && ctx->support_dyn_bitrate) {
+        if (avctx->bit_rate > 0 && params.reInitEncodeParams.encodeConfig->rcParams.averageBitRate != avctx->bit_rate) {
+            av_log(avctx, AV_LOG_VERBOSE,
+                   "avg bitrate change: %d -> %d\n",
+                   params.reInitEncodeParams.encodeConfig->rcParams.averageBitRate,
+                   (uint32_t)avctx->bit_rate);
+
+            params.reInitEncodeParams.encodeConfig->rcParams.averageBitRate = avctx->bit_rate;
+            reconfig_bitrate = 1;
+        }
+
+        if (avctx->rc_max_rate > 0 && ctx->encode_config.rcParams.maxBitRate != avctx->rc_max_rate) {
+            av_log(avctx, AV_LOG_VERBOSE,
+                   "max bitrate change: %d -> %d\n",
+                   params.reInitEncodeParams.encodeConfig->rcParams.maxBitRate,
+                   (uint32_t)avctx->rc_max_rate);
+
+            params.reInitEncodeParams.encodeConfig->rcParams.maxBitRate = avctx->rc_max_rate;
+            reconfig_bitrate = 1;
+        }
+
+        if (avctx->rc_buffer_size > 0 && ctx->encode_config.rcParams.vbvBufferSize != avctx->rc_buffer_size) {
+            av_log(avctx, AV_LOG_VERBOSE,
+                   "vbv buffer size change: %d -> %d\n",
+                   params.reInitEncodeParams.encodeConfig->rcParams.vbvBufferSize,
+                   avctx->rc_buffer_size);
+
+            params.reInitEncodeParams.encodeConfig->rcParams.vbvBufferSize = avctx->rc_buffer_size;
+            reconfig_bitrate = 1;
+        }
+
+        if (reconfig_bitrate) {
+            params.resetEncoder = 1;
+            params.forceIDR = 1;
+
+            needs_encode_config = 1;
+            needs_reconfig = 1;
+        }
     }
 
     if (!needs_encode_config)
@@ -1970,8 +2014,17 @@ static int reconfig_encoder(AVCodecContext *avctx, const AVFrame *frame)
         if (ret != NV_ENC_SUCCESS) {
             nvenc_print_error(avctx, ret, "failed to reconfigure nvenc");
         } else {
-            ctx->init_encode_params.darHeight = dh;
-            ctx->init_encode_params.darWidth = dw;
+            if (reconfig_dar) {
+                ctx->init_encode_params.darHeight = dh;
+                ctx->init_encode_params.darWidth = dw;
+            }
+
+            if (reconfig_bitrate) {
+                ctx->encode_config.rcParams.averageBitRate = params.reInitEncodeParams.encodeConfig->rcParams.averageBitRate;
+                ctx->encode_config.rcParams.maxBitRate = params.reInitEncodeParams.encodeConfig->rcParams.maxBitRate;
+                ctx->encode_config.rcParams.vbvBufferSize = params.reInitEncodeParams.encodeConfig->rcParams.vbvBufferSize;
+            }
+
         }
     }
 
