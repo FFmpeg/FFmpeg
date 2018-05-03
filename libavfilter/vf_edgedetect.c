@@ -35,6 +35,7 @@
 enum FilterMode {
     MODE_WIRES,
     MODE_COLORMIX,
+    MODE_CANNY,
     NB_MODE
 };
 
@@ -61,6 +62,7 @@ static const AVOption edgedetect_options[] = {
     { "mode", "set mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=MODE_WIRES}, 0, NB_MODE-1, FLAGS, "mode" },
         { "wires",    "white/gray wires on black",  0, AV_OPT_TYPE_CONST, {.i64=MODE_WIRES},    INT_MIN, INT_MAX, FLAGS, "mode" },
         { "colormix", "mix colors",                 0, AV_OPT_TYPE_CONST, {.i64=MODE_COLORMIX}, INT_MIN, INT_MAX, FLAGS, "mode" },
+        { "canny",    "detect edges on planes",     0, AV_OPT_TYPE_CONST, {.i64=MODE_CANNY},    INT_MIN, INT_MAX, FLAGS, "mode" },
     { NULL }
 };
 
@@ -79,6 +81,7 @@ static int query_formats(AVFilterContext *ctx)
 {
     const EdgeDetectContext *edgedetect = ctx->priv;
     static const enum AVPixelFormat wires_pix_fmts[] = {AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE};
+    static const enum AVPixelFormat canny_pix_fmts[] = {AV_PIX_FMT_YUV444P, AV_PIX_FMT_GBRP, AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE};
     static const enum AVPixelFormat colormix_pix_fmts[] = {AV_PIX_FMT_GBRP, AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE};
     AVFilterFormats *fmts_list;
     const enum AVPixelFormat *pix_fmts = NULL;
@@ -87,6 +90,8 @@ static int query_formats(AVFilterContext *ctx)
         pix_fmts = wires_pix_fmts;
     } else if (edgedetect->mode == MODE_COLORMIX) {
         pix_fmts = colormix_pix_fmts;
+    } else if (edgedetect->mode == MODE_CANNY) {
+        pix_fmts = canny_pix_fmts;
     } else {
         av_assert0(0);
     }

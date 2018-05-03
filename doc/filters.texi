@@ -8276,6 +8276,9 @@ Draw white/gray wires on black background.
 
 @item colormix
 Mix the colors to create a paint/cartoon effect.
+
+@item canny
+Apply Canny edge detector on all selected planes.
 @end table
 
 Default value is @var{wires}.
