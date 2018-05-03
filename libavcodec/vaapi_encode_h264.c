@@ -208,7 +208,6 @@ static int vaapi_encode_h264_write_extra_header(AVCodecContext *avctx,
 {
     VAAPIEncodeContext      *ctx = avctx->priv_data;
     VAAPIEncodeH264Context *priv = ctx->priv_data;
-    VAAPIEncodeH264Options  *opt = ctx->codec_options;
     CodedBitstreamFragment   *au = &priv->current_access_unit;
     int err, i;
 
@@ -224,12 +223,12 @@ static int vaapi_encode_h264_write_extra_header(AVCodecContext *avctx,
         priv->sei.nal_unit_header.nal_unit_type = H264_NAL_SEI;
 
         i = 0;
-        if (pic->encode_order == 0 && opt->sei & SEI_IDENTIFIER) {
+        if (priv->sei_needed & SEI_IDENTIFIER) {
             priv->sei.payload[i].payload_type = H264_SEI_TYPE_USER_DATA_UNREGISTERED;
             priv->sei.payload[i].payload.user_data_unregistered = priv->identifier;
             ++i;
         }
-        if (opt->sei & SEI_TIMING) {
+        if (priv->sei_needed & SEI_TIMING) {
             if (pic->type == PICTURE_TYPE_IDR) {
                 priv->sei.payload[i].payload_type = H264_SEI_TYPE_BUFFERING_PERIOD;
                 priv->sei.payload[i].payload.buffering_period = priv->buffering_period;
@@ -239,7 +238,7 @@ static int vaapi_encode_h264_write_extra_header(AVCodecContext *avctx,
             priv->sei.payload[i].payload.pic_timing = priv->pic_timing;
             ++i;
         }
-        if (opt->sei & SEI_RECOVERY_POINT && pic->type == PICTURE_TYPE_I) {
+        if (priv->sei_needed & SEI_RECOVERY_POINT) {
             priv->sei.payload[i].payload_type = H264_SEI_TYPE_RECOVERY_POINT;
             priv->sei.payload[i].payload.recovery_point = priv->recovery_point;
             ++i;
@@ -628,8 +627,10 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
         priv->aud_needed = 0;
     }
 
+    priv->sei_needed = 0;
+
     if (opt->sei & SEI_IDENTIFIER && pic->encode_order == 0)
-        priv->sei_needed = 1;
+        priv->sei_needed |= SEI_IDENTIFIER;
 #if !CONFIG_VAAPI_1
     if (ctx->va_rc_mode == VA_RC_CBR)
         priv->sei_cbr_workaround_needed = 1;
@@ -641,7 +642,7 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
         priv->pic_timing.cpb_removal_delay = 2 * priv->cpb_delay;
         priv->pic_timing.dpb_output_delay  = 2 * priv->dpb_delay;
 
-        priv->sei_needed = 1;
+        priv->sei_needed |= SEI_TIMING;
     }
 
     if (opt->sei & SEI_RECOVERY_POINT && pic->type == PICTURE_TYPE_I) {
@@ -649,7 +650,7 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
         priv->recovery_point.exact_match_flag   = 1;
         priv->recovery_point.broken_link_flag   = ctx->b_per_p > 0;
 
-        priv->sei_needed = 1;
+        priv->sei_needed |= SEI_RECOVERY_POINT;
     }
 
     vpic->CurrPic = (VAPictureH264) {
