@@ -6408,7 +6408,7 @@ colorspace=smpte240m
 
 @section convolution
 
-Apply convolution 3x3, 5x5 or 7x7 filter.
+Apply convolution of 3x3, 5x5, 7x7 or horizontal up to 49 elements.
 
 The filter accepts the following options:
 
@@ -6418,7 +6418,8 @@ The filter accepts the following options:
 @item 2m
 @item 3m
 Set matrix for each plane.
-Matrix is sequence of 9, 25 or 49 signed integers.
+Matrix is sequence of 9, 25 or 49 signed integers in @var{square} mode,
+and from 1 to 49 odd number of signed integers in @var{row} mode.
 
 @item 0rdiv
 @item 1rdiv
@@ -6433,6 +6434,13 @@ If unset or 0, it will be sum of all matrix elements.
 @item 3bias
 Set bias for each plane. This value is added to the result of the multiplication.
 Useful for making the overall image brighter or darker. Default is 0.0.
+
+@item 0mode
+@item 1mode
+@item 2mode
+@item 3mode
+Set matrix mode for each plane. Can be @var{square} or @var{row}.
+Default is @var{square}.
 @end table
 
 @subsection Examples
