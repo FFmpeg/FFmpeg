@@ -26,11 +26,20 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
+
+#define PLANE_R 0x4
+#define PLANE_G 0x1
+#define PLANE_B 0x2
+#define PLANE_Y 0x1
+#define PLANE_U 0x2
+#define PLANE_V 0x4
+#define PLANE_A 0x8
 
 enum FilterMode {
     MODE_WIRES,
@@ -48,6 +57,7 @@ struct plane_info {
 typedef struct EdgeDetectContext {
     const AVClass *class;
     struct plane_info planes[3];
+    int filter_planes;
     int nb_planes;
     double   low, high;
     uint8_t  low_u8, high_u8;
@@ -63,6 +73,13 @@ static const AVOption edgedetect_options[] = {
         { "wires",    "white/gray wires on black",  0, AV_OPT_TYPE_CONST, {.i64=MODE_WIRES},    INT_MIN, INT_MAX, FLAGS, "mode" },
         { "colormix", "mix colors",                 0, AV_OPT_TYPE_CONST, {.i64=MODE_COLORMIX}, INT_MIN, INT_MAX, FLAGS, "mode" },
         { "canny",    "detect edges on planes",     0, AV_OPT_TYPE_CONST, {.i64=MODE_CANNY},    INT_MIN, INT_MAX, FLAGS, "mode" },
+    { "planes", "set planes to filter",  OFFSET(filter_planes), AV_OPT_TYPE_FLAGS, {.i64=7}, 1, 0x7, FLAGS, "flags" },
+        { "y", "filter luma plane",  0, AV_OPT_TYPE_CONST, {.i64=PLANE_Y}, 0, 0, FLAGS, "flags" },
+        { "u", "filter u plane",     0, AV_OPT_TYPE_CONST, {.i64=PLANE_U}, 0, 0, FLAGS, "flags" },
+        { "v", "filter v plane",     0, AV_OPT_TYPE_CONST, {.i64=PLANE_V}, 0, 0, FLAGS, "flags" },
+        { "r", "filter red plane",   0, AV_OPT_TYPE_CONST, {.i64=PLANE_R}, 0, 0, FLAGS, "flags" },
+        { "g", "filter green plane", 0, AV_OPT_TYPE_CONST, {.i64=PLANE_G}, 0, 0, FLAGS, "flags" },
+        { "b", "filter blue plane",  0, AV_OPT_TYPE_CONST, {.i64=PLANE_B}, 0, 0, FLAGS, "flags" },
     { NULL }
 };
 
@@ -321,6 +338,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         uint8_t  *tmpbuf     = plane->tmpbuf;
         uint16_t *gradients  = plane->gradients;
         int8_t   *directions = plane->directions;
+
+        if (!((1 << p) & edgedetect->filter_planes)) {
+            if (!direct)
+                av_image_copy_plane(out->data[p], out->linesize[p],
+                                    in->data[p], in->linesize[p],
+                                    inlink->w, inlink->h);
+            continue;
+        }
 
         /* gaussian filter to reduce noise  */
         gaussian_blur(ctx, inlink->w, inlink->h,
