@@ -1948,7 +1948,7 @@ static int output_ready(AVCodecContext *avctx, int flush)
     return (nb_ready > 0) && (nb_ready + nb_pending >= ctx->async_depth);
 }
 
-static int reconfig_encoder(AVCodecContext *avctx, const AVFrame *frame)
+static void reconfig_encoder(AVCodecContext *avctx, const AVFrame *frame)
 {
     NvencContext *ctx = avctx->priv_data;
     NV_ENCODE_API_FUNCTION_LIST *p_nvenc = &ctx->nvenc_dload_funcs.nvenc_funcs;
@@ -2038,8 +2038,6 @@ static int reconfig_encoder(AVCodecContext *avctx, const AVFrame *frame)
 
         }
     }
-
-    return 0;
 }
 
 int ff_nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
@@ -2064,8 +2062,6 @@ int ff_nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
         return AVERROR_EOF;
 
     if (frame) {
-        reconfig_encoder(avctx, frame);
-
         in_surf = get_free_frame(ctx);
         if (!in_surf)
             return AVERROR(EAGAIN);
@@ -2073,6 +2069,8 @@ int ff_nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
         res = nvenc_push_context(avctx);
         if (res < 0)
             return res;
+
+        reconfig_encoder(avctx, frame);
 
         res = nvenc_upload_frame(avctx, frame, in_surf);
 
