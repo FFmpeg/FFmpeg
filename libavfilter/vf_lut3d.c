@@ -212,7 +212,7 @@ static int interp_##nbits##_##name##_p##depth(AVFilterContext *ctx, void *arg, i
     uint8_t *grow = out->data[0] + slice_start * out->linesize[0];                                     \
     uint8_t *brow = out->data[1] + slice_start * out->linesize[1];                                     \
     uint8_t *rrow = out->data[2] + slice_start * out->linesize[2];                                     \
-    uint8_t *arow = out->data[2] + slice_start * out->linesize[2];                                     \
+    uint8_t *arow = out->data[3] + slice_start * out->linesize[3];                                     \
     const uint8_t *srcgrow = in->data[0] + slice_start * in->linesize[0];                              \
     const uint8_t *srcbrow = in->data[1] + slice_start * in->linesize[1];                              \
     const uint8_t *srcrrow = in->data[2] + slice_start * in->linesize[2];                              \
