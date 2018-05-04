@@ -6416,7 +6416,7 @@ colorspace=smpte240m
 
 @section convolution
 
-Apply convolution of 3x3, 5x5, 7x7 or horizontal up to 49 elements.
+Apply convolution of 3x3, 5x5, 7x7 or horizontal/vertical up to 49 elements.
 
 The filter accepts the following options:
 
@@ -6447,7 +6447,7 @@ Useful for making the overall image brighter or darker. Default is 0.0.
 @item 1mode
 @item 2mode
 @item 3mode
-Set matrix mode for each plane. Can be @var{square} or @var{row}.
+Set matrix mode for each plane. Can be @var{square}, @var{row} or @var{column}.
 Default is @var{square}.
 @end table
 
