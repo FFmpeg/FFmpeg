@@ -1355,14 +1355,16 @@ static void g2m_paint_cursor(G2MContext *c, uint8_t *dst, int stride)
     } else {
         dst    +=  x * 3;
     }
-    if (y < 0) {
+
+    if (y < 0)
         h      +=  y;
+    if (w < 0 || h < 0)
+        return;
+    if (y < 0) {
         cursor += -y * c->cursor_stride;
     } else {
         dst    +=  y * stride;
     }
-    if (w < 0 || h < 0)
-        return;
 
     for (j = 0; j < h; j++) {
         for (i = 0; i < w; i++) {
