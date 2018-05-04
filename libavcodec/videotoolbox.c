@@ -46,10 +46,16 @@ enum { kCMVideoCodecType_HEVC = 'hvc1' };
 
 #define VIDEOTOOLBOX_ESDS_EXTRADATA_PADDING  12
 
+typedef struct VTHWFrame {
+    CVPixelBufferRef pixbuf;
+    AVBufferRef *hw_frames_ctx;
+} VTHWFrame;
+
 static void videotoolbox_buffer_release(void *opaque, uint8_t *data)
 {
-    CVPixelBufferRef cv_buffer = *(CVPixelBufferRef *)data;
-    CVPixelBufferRelease(cv_buffer);
+    VTHWFrame *ref = (VTHWFrame *)data;
+    av_buffer_unref(&ref->hw_frames_ctx);
+    CVPixelBufferRelease(ref->pixbuf);
 
     av_free(data);
 }
@@ -76,22 +82,29 @@ static int videotoolbox_buffer_copy(VTContext *vtctx,
 
 static int videotoolbox_postproc_frame(void *avctx, AVFrame *frame)
 {
-    CVPixelBufferRef ref = *(CVPixelBufferRef *)frame->buf[0]->data;
+    VTHWFrame *ref = (VTHWFrame *)frame->buf[0]->data;
 
-    if (!ref) {
+    if (!ref->pixbuf) {
         av_log(avctx, AV_LOG_ERROR, "No frame decoded?\n");
         av_frame_unref(frame);
         return AVERROR_EXTERNAL;
     }
 
-    frame->data[3] = (uint8_t*)ref;
+    frame->data[3] = (uint8_t*)ref->pixbuf;
+
+    if (ref->hw_frames_ctx) {
+        av_buffer_unref(&frame->hw_frames_ctx);
+        frame->hw_frames_ctx = av_buffer_ref(ref->hw_frames_ctx);
+        if (!frame->hw_frames_ctx)
+            return AVERROR(ENOMEM);
+    }
 
     return 0;
 }
 
 int ff_videotoolbox_alloc_frame(AVCodecContext *avctx, AVFrame *frame)
 {
-    size_t      size = sizeof(CVPixelBufferRef);
+    size_t      size = sizeof(VTHWFrame);
     uint8_t    *data = NULL;
     AVBufferRef *buf = NULL;
     int ret = ff_attach_decode_data(frame);
@@ -318,26 +331,6 @@ CFDataRef ff_videotoolbox_hvcc_extradata_create(AVCodecContext *avctx)
     return data;
 }
 
-static int videotoolbox_set_frame(AVCodecContext *avctx, AVFrame *frame)
-{
-    VTContext *vtctx = avctx->internal->hwaccel_priv_data;
-    if (!frame->buf[0] || frame->data[3]) {
-        av_log(avctx, AV_LOG_ERROR, "videotoolbox: invalid state\n");
-        av_frame_unref(frame);
-        return AVERROR_EXTERNAL;
-    }
-
-    CVPixelBufferRef *ref = (CVPixelBufferRef *)frame->buf[0]->data;
-
-    if (*ref)
-        CVPixelBufferRelease(*ref);
-
-    *ref = vtctx->frame;
-    vtctx->frame = NULL;
-
-    return 0;
-}
-
 int ff_videotoolbox_h264_start_frame(AVCodecContext *avctx,
                                      const uint8_t *buffer,
                                      uint32_t size)
@@ -446,11 +439,21 @@ static int videotoolbox_buffer_create(AVCodecContext *avctx, AVFrame *frame)
     int width = CVPixelBufferGetWidth(pixbuf);
     int height = CVPixelBufferGetHeight(pixbuf);
     AVHWFramesContext *cached_frames;
+    VTHWFrame *ref;
     int ret;
 
-    ret = videotoolbox_set_frame(avctx, frame);
-    if (ret < 0)
-        return ret;
+    if (!frame->buf[0] || frame->data[3]) {
+        av_log(avctx, AV_LOG_ERROR, "videotoolbox: invalid state\n");
+        av_frame_unref(frame);
+        return AVERROR_EXTERNAL;
+    }
+
+    ref = (VTHWFrame *)frame->buf[0]->data;
+
+    if (ref->pixbuf)
+        CVPixelBufferRelease(ref->pixbuf);
+    ref->pixbuf = vtctx->frame;
+    vtctx->frame = NULL;
 
     // Old API code path.
     if (!vtctx->cached_hw_frames_ctx)
@@ -482,9 +485,9 @@ static int videotoolbox_buffer_create(AVCodecContext *avctx, AVFrame *frame)
         vtctx->cached_hw_frames_ctx = hw_frames_ctx;
     }
 
-    av_buffer_unref(&frame->hw_frames_ctx);
-    frame->hw_frames_ctx = av_buffer_ref(vtctx->cached_hw_frames_ctx);
-    if (!frame->hw_frames_ctx)
+    av_buffer_unref(&ref->hw_frames_ctx);
+    ref->hw_frames_ctx = av_buffer_ref(vtctx->cached_hw_frames_ctx);
+    if (!ref->hw_frames_ctx)
         return AVERROR(ENOMEM);
 
     return 0;
