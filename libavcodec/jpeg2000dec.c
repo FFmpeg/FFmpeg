@@ -82,7 +82,7 @@ typedef struct Jpeg2000Tile {
     Jpeg2000CodingStyle codsty[4];
     Jpeg2000QuantStyle  qntsty[4];
     Jpeg2000POC         poc;
-    Jpeg2000TilePart    tile_part[256];
+    Jpeg2000TilePart    tile_part[32];
     uint16_t tp_idx;                    // Tile-part index
     int coord[2][2];                    // border coordinates {{x0, x1}, {y0, y1}}
 } Jpeg2000Tile;
@@ -761,7 +761,10 @@ static int get_sot(Jpeg2000DecoderContext *s, int n)
         return AVERROR_INVALIDDATA;
     }
 
-    av_assert0(TPsot < FF_ARRAY_ELEMS(s->tile[Isot].tile_part));
+    if (TPsot >= FF_ARRAY_ELEMS(s->tile[Isot].tile_part)) {
+        avpriv_request_sample(s->avctx, "Too many tile parts");
+        return AVERROR_PATCHWELCOME;
+    }
 
     s->tile[Isot].tp_idx = TPsot;
     tp             = s->tile[Isot].tile_part + TPsot;
