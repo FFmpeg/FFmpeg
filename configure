@@ -5933,7 +5933,8 @@ if ! disabled pthreads && ! enabled w32threads && ! enabled os2threads; then
     fi
 fi
 
-enabled  zlib && check_lib zlib   zlib.h      zlibVersion    -lz
+enabled  zlib && { check_pkg_config zlib zlib "zlib.h" zlibVersion ||
+                   check_lib zlib   zlib.h      zlibVersion    -lz; }
 enabled bzlib && check_lib bzlib bzlib.h BZ2_bzlibVersion    -lbz2
 enabled  lzma && check_lib lzma   lzma.h lzma_version_number -llzma
 
