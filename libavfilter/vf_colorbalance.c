@@ -79,12 +79,84 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_RGB0,  AV_PIX_FMT_BGR0,
         AV_PIX_FMT_RGB48,  AV_PIX_FMT_BGR48,
         AV_PIX_FMT_RGBA64, AV_PIX_FMT_BGRA64,
+        AV_PIX_FMT_GBRP,   AV_PIX_FMT_GBRAP,
+        AV_PIX_FMT_GBRP9,
+        AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRAP10,
+        AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12,
+        AV_PIX_FMT_GBRP14,
+        AV_PIX_FMT_GBRP16, AV_PIX_FMT_GBRAP16,
         AV_PIX_FMT_NONE
     };
     AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
     if (!fmts_list)
         return AVERROR(ENOMEM);
     return ff_set_common_formats(ctx, fmts_list);
+}
+
+static void apply_lut8_p(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
+{
+    ColorBalanceContext *s = ctx->priv;
+    const uint8_t *srcg = in->data[0];
+    const uint8_t *srcb = in->data[1];
+    const uint8_t *srcr = in->data[2];
+    const uint8_t *srca = in->data[3];
+    uint8_t *dstg = out->data[0];
+    uint8_t *dstb = out->data[1];
+    uint8_t *dstr = out->data[2];
+    uint8_t *dsta = out->data[3];
+    int i, j;
+
+    for (i = 0; i < out->height; i++) {
+        for (j = 0; j < out->width; j++) {
+            dstg[j] = s->lut[G][srcg[j]];
+            dstb[j] = s->lut[B][srcb[j]];
+            dstr[j] = s->lut[R][srcr[j]];
+            if (in != out && out->linesize[3])
+                dsta[j] = srca[j];
+        }
+
+        srcg += in->linesize[0];
+        srcb += in->linesize[1];
+        srcr += in->linesize[2];
+        srca += in->linesize[3];
+        dstg += out->linesize[0];
+        dstb += out->linesize[1];
+        dstr += out->linesize[2];
+        dsta += out->linesize[3];
+    }
+}
+
+static void apply_lut16_p(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
+{
+    ColorBalanceContext *s = ctx->priv;
+    const uint16_t *srcg = (const uint16_t *)in->data[0];
+    const uint16_t *srcb = (const uint16_t *)in->data[1];
+    const uint16_t *srcr = (const uint16_t *)in->data[2];
+    const uint16_t *srca = (const uint16_t *)in->data[3];
+    uint16_t *dstg = (uint16_t *)out->data[0];
+    uint16_t *dstb = (uint16_t *)out->data[1];
+    uint16_t *dstr = (uint16_t *)out->data[2];
+    uint16_t *dsta = (uint16_t *)out->data[3];
+    int i, j;
+
+    for (i = 0; i < out->height; i++) {
+        for (j = 0; j < out->width; j++) {
+            dstg[j] = s->lut[G][srcg[j]];
+            dstb[j] = s->lut[B][srcb[j]];
+            dstr[j] = s->lut[R][srcr[j]];
+            if (in != out && out->linesize[3])
+                dsta[j] = srca[j];
+        }
+
+        srcg += in->linesize[0] / 2;
+        srcb += in->linesize[1] / 2;
+        srcr += in->linesize[2] / 2;
+        srca += in->linesize[3] / 2;
+        dstg += out->linesize[0] / 2;
+        dstb += out->linesize[1] / 2;
+        dstr += out->linesize[2] / 2;
+        dsta += out->linesize[3] / 2;
+    }
 }
 
 static void apply_lut8(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
@@ -156,10 +228,15 @@ static int config_output(AVFilterLink *outlink)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(outlink->format);
     const int depth = desc->comp[0].depth;
     const int max = 1 << depth;
+    const int planar = av_pix_fmt_count_planes(outlink->format) > 1;
     double *shadows, *midtones, *highlights, *buffer;
     int i, r, g, b;
 
-    if (max == 256) {
+    if (max == 256 && planar) {
+        s->apply_lut = apply_lut8_p;
+    } else if (planar) {
+        s->apply_lut = apply_lut16_p;
+    } else if (max == 256) {
         s->apply_lut = apply_lut8;
     } else {
         s->apply_lut = apply_lut16;
