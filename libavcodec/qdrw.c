@@ -45,14 +45,14 @@ enum QuickdrawOpcodes {
 };
 
 static int parse_palette(AVCodecContext *avctx, GetByteContext *gbc,
-                         uint32_t *pal, int colors)
+                         uint32_t *pal, int colors, int pixmap)
 {
     int i;
 
     for (i = 0; i <= colors; i++) {
         uint8_t r, g, b;
         unsigned int idx = bytestream2_get_be16(gbc); /* color index */
-        if (idx > 255) {
+        if (idx > 255 && !pixmap) {
             av_log(avctx, AV_LOG_WARNING,
                    "Palette index out of range: %u\n", idx);
             bytestream2_skip(gbc, 6);
@@ -66,7 +66,7 @@ static int parse_palette(AVCodecContext *avctx, GetByteContext *gbc,
         bytestream2_skip(gbc, 1);
         b = bytestream2_get_byte(gbc);
         bytestream2_skip(gbc, 1);
-        pal[idx] = (0xFFU << 24) | (r << 16) | (g << 8) | b;
+        pal[pixmap ? i : idx] = (0xFFU << 24) | (r << 16) | (g << 8) | b;
     }
     return 0;
 }
@@ -335,6 +335,7 @@ static int decode_frame(AVCodecContext *avctx,
     while (bytestream2_get_bytes_left(&gbc) >= 4) {
         int bppcnt, bpp;
         int rowbytes, pack_type;
+        int flags;
         int opcode = bytestream2_get_be16(&gbc);
 
         switch(opcode) {
@@ -345,7 +346,8 @@ static int decode_frame(AVCodecContext *avctx,
         case PACKBITSRGN:
             av_log(avctx, AV_LOG_DEBUG, "Parsing Packbit opcode\n");
 
-            bytestream2_skip(&gbc, 30);
+            flags = bytestream2_get_be16(&gbc) & 0xC000;
+            bytestream2_skip(&gbc, 28);
             bppcnt = bytestream2_get_be16(&gbc); /* cmpCount */
             bpp    = bytestream2_get_be16(&gbc); /* cmpSize */
 
@@ -380,7 +382,7 @@ static int decode_frame(AVCodecContext *avctx,
             if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
                 return ret;
 
-            ret = parse_palette(avctx, &gbc, (uint32_t *)p->data[1], colors);
+            ret = parse_palette(avctx, &gbc, (uint32_t *)p->data[1], colors, flags & 0x8000);
             if (ret < 0)
                 return ret;
             p->palette_has_changed = 1;
