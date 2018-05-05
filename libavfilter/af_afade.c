@@ -441,6 +441,8 @@ static int activate(AVFilterContext *ctx)
     int ret = 0, nb_samples, status;
     int64_t pts;
 
+    FF_FILTER_FORWARD_STATUS_BACK_ALL(outlink, ctx);
+
     if (s->crossfade_is_over) {
         ret = ff_inlink_consume_frame(ctx->inputs[1], &in);
         if (ret < 0) {
