@@ -541,7 +541,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
         const float rdiv = s->rdiv[plane];
         const float bias = s->bias[plane];
         const uint8_t *src = in->data[plane];
-        const int dst_pos = slice_start * (mode == MATRIX_COLUMN ? bpc : out->linesize[plane]);
+        const int dst_pos = slice_start * (mode == MATRIX_COLUMN ? bpc : dstride);
         uint8_t *dst = out->data[plane] + dst_pos;
         const int *matrix = s->matrix[plane];
         const uint8_t *c[49];
