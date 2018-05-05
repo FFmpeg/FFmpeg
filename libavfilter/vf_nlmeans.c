@@ -368,7 +368,6 @@ static int nlmeans_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     int x, y;
     NLMeansContext *s = ctx->priv;
     const struct thread_data *td = arg;
-    const uint8_t *src = td->src;
     const int src_linesize = td->src_linesize;
     const int process_h = td->endy - td->starty;
     const int slice_start = (process_h *  jobnr   ) / nb_jobs;
@@ -377,14 +376,15 @@ static int nlmeans_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     const int endy   = td->starty + slice_end;
 
     for (y = starty; y < endy; y++) {
+        const uint8_t *src = td->src + y*src_linesize;
+        struct weighted_avg *wa = s->wa + y*s->wa_linesize;
         for (x = td->startx; x < td->endx; x++) {
             const int patch_diff_sq = get_integral_patch_value(td->ii_start, s->ii_lz_32, x, y, td->p);
             if (patch_diff_sq < s->max_meaningful_diff) {
-                struct weighted_avg *wa = &s->wa[y*s->wa_linesize + x];
                 const int weight_lut_idx = patch_diff_sq * s->pdiff_lut_scale;
                 const double weight = s->weight_lut[weight_lut_idx]; // exp(-patch_diff_sq * s->pdiff_scale)
-                wa->total_weight += weight;
-                wa->sum += weight * src[y*src_linesize + x];
+                wa[x].total_weight += weight;
+                wa[x].sum += weight * src[x];
             }
         }
     }
