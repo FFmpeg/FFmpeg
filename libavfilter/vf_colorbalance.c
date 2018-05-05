@@ -31,6 +31,10 @@
 #define B 2
 #define A 3
 
+typedef struct ThreadData {
+    AVFrame *in, *out;
+} ThreadData;
+
 typedef struct Range {
     double shadows;
     double midtones;
@@ -48,8 +52,7 @@ typedef struct ColorBalanceContext {
     uint8_t rgba_map[4];
     int step;
 
-    int (*clip)(int x);
-    void (*apply_lut)(AVFilterContext *ctx, AVFrame *in, AVFrame *out);
+    int (*apply_lut)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } ColorBalanceContext;
 
 #define OFFSET(x) offsetof(ColorBalanceContext, x)
@@ -93,20 +96,25 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, fmts_list);
 }
 
-static void apply_lut8_p(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
+static int apply_lut8_p(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     ColorBalanceContext *s = ctx->priv;
-    const uint8_t *srcg = in->data[0];
-    const uint8_t *srcb = in->data[1];
-    const uint8_t *srcr = in->data[2];
-    const uint8_t *srca = in->data[3];
-    uint8_t *dstg = out->data[0];
-    uint8_t *dstb = out->data[1];
-    uint8_t *dstr = out->data[2];
-    uint8_t *dsta = out->data[3];
+    ThreadData *td = arg;
+    AVFrame *in = td->in;
+    AVFrame *out = td->out;
+    const int slice_start = (out->height * jobnr) / nb_jobs;
+    const int slice_end = (out->height * (jobnr+1)) / nb_jobs;
+    const uint8_t *srcg = in->data[0] + slice_start * in->linesize[0];
+    const uint8_t *srcb = in->data[1] + slice_start * in->linesize[1];
+    const uint8_t *srcr = in->data[2] + slice_start * in->linesize[2];
+    const uint8_t *srca = in->data[3] + slice_start * in->linesize[3];
+    uint8_t *dstg = out->data[0] + slice_start * out->linesize[0];
+    uint8_t *dstb = out->data[1] + slice_start * out->linesize[1];
+    uint8_t *dstr = out->data[2] + slice_start * out->linesize[2];
+    uint8_t *dsta = out->data[3] + slice_start * out->linesize[3];
     int i, j;
 
-    for (i = 0; i < out->height; i++) {
+    for (i = slice_start; i < slice_end; i++) {
         for (j = 0; j < out->width; j++) {
             dstg[j] = s->lut[G][srcg[j]];
             dstb[j] = s->lut[B][srcb[j]];
@@ -124,22 +132,29 @@ static void apply_lut8_p(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
         dstr += out->linesize[2];
         dsta += out->linesize[3];
     }
+
+    return 0;
 }
 
-static void apply_lut16_p(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
+static int apply_lut16_p(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     ColorBalanceContext *s = ctx->priv;
-    const uint16_t *srcg = (const uint16_t *)in->data[0];
-    const uint16_t *srcb = (const uint16_t *)in->data[1];
-    const uint16_t *srcr = (const uint16_t *)in->data[2];
-    const uint16_t *srca = (const uint16_t *)in->data[3];
-    uint16_t *dstg = (uint16_t *)out->data[0];
-    uint16_t *dstb = (uint16_t *)out->data[1];
-    uint16_t *dstr = (uint16_t *)out->data[2];
-    uint16_t *dsta = (uint16_t *)out->data[3];
+    ThreadData *td = arg;
+    AVFrame *in = td->in;
+    AVFrame *out = td->out;
+    const int slice_start = (out->height * jobnr) / nb_jobs;
+    const int slice_end = (out->height * (jobnr+1)) / nb_jobs;
+    const uint16_t *srcg = (const uint16_t *)in->data[0] + slice_start * in->linesize[0] / 2;
+    const uint16_t *srcb = (const uint16_t *)in->data[1] + slice_start * in->linesize[1] / 2;
+    const uint16_t *srcr = (const uint16_t *)in->data[2] + slice_start * in->linesize[2] / 2;
+    const uint16_t *srca = (const uint16_t *)in->data[3] + slice_start * in->linesize[3] / 2;
+    uint16_t *dstg = (uint16_t *)out->data[0] + slice_start * out->linesize[0] / 2;
+    uint16_t *dstb = (uint16_t *)out->data[1] + slice_start * out->linesize[1] / 2;
+    uint16_t *dstr = (uint16_t *)out->data[2] + slice_start * out->linesize[2] / 2;
+    uint16_t *dsta = (uint16_t *)out->data[3] + slice_start * out->linesize[3] / 2;
     int i, j;
 
-    for (i = 0; i < out->height; i++) {
+    for (i = slice_start; i < slice_end; i++) {
         for (j = 0; j < out->width; j++) {
             dstg[j] = s->lut[G][srcg[j]];
             dstb[j] = s->lut[B][srcb[j]];
@@ -157,13 +172,20 @@ static void apply_lut16_p(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
         dstr += out->linesize[2] / 2;
         dsta += out->linesize[3] / 2;
     }
+
+    return 0;
 }
 
-static void apply_lut8(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
+static int apply_lut8(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     ColorBalanceContext *s = ctx->priv;
+    ThreadData *td = arg;
+    AVFrame *in = td->in;
+    AVFrame *out = td->out;
     AVFilterLink *outlink = ctx->outputs[0];
-    const uint8_t *srcrow = in->data[0];
+    const int slice_start = (out->height * jobnr) / nb_jobs;
+    const int slice_end = (out->height * (jobnr+1)) / nb_jobs;
+    const uint8_t *srcrow = in->data[0] + slice_start * in->linesize[0];
     const uint8_t roffset = s->rgba_map[R];
     const uint8_t goffset = s->rgba_map[G];
     const uint8_t boffset = s->rgba_map[B];
@@ -172,8 +194,8 @@ static void apply_lut8(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
     uint8_t *dstrow;
     int i, j;
 
-    dstrow = out->data[0];
-    for (i = 0; i < outlink->h; i++) {
+    dstrow = out->data[0] + slice_start * out->linesize[0];
+    for (i = slice_start; i < slice_end; i++) {
         const uint8_t *src = srcrow;
         uint8_t *dst = dstrow;
 
@@ -188,13 +210,20 @@ static void apply_lut8(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
         srcrow += in->linesize[0];
         dstrow += out->linesize[0];
     }
+
+    return 0;
 }
 
-static void apply_lut16(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
+static int apply_lut16(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     ColorBalanceContext *s = ctx->priv;
+    ThreadData *td = arg;
+    AVFrame *in = td->in;
+    AVFrame *out = td->out;
     AVFilterLink *outlink = ctx->outputs[0];
-    const uint16_t *srcrow = (const uint16_t *)in->data[0];
+    const int slice_start = (out->height * jobnr) / nb_jobs;
+    const int slice_end = (out->height * (jobnr+1)) / nb_jobs;
+    const uint16_t *srcrow = (const uint16_t *)in->data[0] + slice_start * in->linesize[0] / 2;
     const uint8_t roffset = s->rgba_map[R];
     const uint8_t goffset = s->rgba_map[G];
     const uint8_t boffset = s->rgba_map[B];
@@ -203,8 +232,8 @@ static void apply_lut16(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
     uint16_t *dstrow;
     int i, j;
 
-    dstrow = (uint16_t *)out->data[0];
-    for (i = 0; i < outlink->h; i++) {
+    dstrow = (uint16_t *)out->data[0] + slice_start * out->linesize[0] / 2;
+    for (i = slice_start; i < slice_end; i++) {
         const uint16_t *src = srcrow;
         uint16_t *dst = dstrow;
 
@@ -219,6 +248,8 @@ static void apply_lut16(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
         srcrow += in->linesize[0] / 2;
         dstrow += out->linesize[0] / 2;
     }
+
+    return 0;
 }
 
 static int config_output(AVFilterLink *outlink)
@@ -296,6 +327,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterContext *ctx = inlink->dst;
     ColorBalanceContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
+    ThreadData td;
     AVFrame *out;
 
     if (av_frame_is_writable(in)) {
@@ -309,7 +341,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_frame_copy_props(out, in);
     }
 
-    s->apply_lut(ctx, in, out);
+    td.in = in;
+    td.out = out;
+    ctx->internal->execute(ctx, s->apply_lut, &td, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
 
     if (in != out)
         av_frame_free(&in);
@@ -342,5 +376,5 @@ AVFilter ff_vf_colorbalance = {
     .query_formats = query_formats,
     .inputs        = colorbalance_inputs,
     .outputs       = colorbalance_outputs,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };
