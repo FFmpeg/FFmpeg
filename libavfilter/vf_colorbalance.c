@@ -291,7 +291,7 @@ static int config_output(AVFilterLink *outlink)
 
         shadows[i] = low;
         midtones[i] = mid;
-        highlights[max - i] = low;
+        highlights[max - i - 1] = low;
     }
 
     for (i = 0; i < max; i++) {
