@@ -333,6 +333,10 @@ static int fic_decode_frame(AVCodecContext *avctx, void *data,
         skip_cursor = 1;
     }
 
+    if (!skip_cursor && avpkt->size < CURSOR_OFFSET + sizeof(ctx->cursor_buf)) {
+        skip_cursor = 1;
+    }
+
     /* Slice height for all but the last slice. */
     ctx->slice_h = 16 * (ctx->aligned_height >> 4) / nslices;
     if (ctx->slice_h % 16)
