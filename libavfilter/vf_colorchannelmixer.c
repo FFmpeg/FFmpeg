@@ -93,7 +93,60 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, fmts_list);
 }
 
-static int filter_slice_rgba64(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+static av_always_inline int filter_slice_rgba_packed(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs,
+                                                     int have_alpha, int step)
+{
+    ColorChannelMixerContext *s = ctx->priv;
+    ThreadData *td = arg;
+    AVFrame *in = td->in;
+    AVFrame *out = td->out;
+    const int slice_start = (out->height * jobnr) / nb_jobs;
+    const int slice_end = (out->height * (jobnr+1)) / nb_jobs;
+    const uint8_t roffset = s->rgba_map[R];
+    const uint8_t goffset = s->rgba_map[G];
+    const uint8_t boffset = s->rgba_map[B];
+    const uint8_t aoffset = s->rgba_map[A];
+    const uint8_t *srcrow = in->data[0] + slice_start * in->linesize[0];
+    uint8_t *dstrow = out->data[0] + slice_start * out->linesize[0];
+    int i, j;
+
+    for (i = slice_start; i < slice_end; i++) {
+        const uint8_t *src = srcrow;
+        uint8_t *dst = dstrow;
+
+        for (j = 0; j < out->width * step; j += step) {
+            const uint8_t rin = src[j + roffset];
+            const uint8_t gin = src[j + goffset];
+            const uint8_t bin = src[j + boffset];
+            const uint8_t ain = src[j + aoffset];
+
+            dst[j + roffset] = av_clip_uint8(s->lut[R][R][rin] +
+                                             s->lut[R][G][gin] +
+                                             s->lut[R][B][bin]);
+            dst[j + goffset] = av_clip_uint8(s->lut[G][R][rin] +
+                                             s->lut[G][G][gin] +
+                                             s->lut[G][B][bin]);
+            dst[j + boffset] = av_clip_uint8(s->lut[B][R][rin] +
+                                             s->lut[B][G][gin] +
+                                             s->lut[B][B][bin]);
+            if (have_alpha == 1) {
+                dst[j + aoffset] = av_clip_uint8(s->lut[A][R][rin] +
+                                                 s->lut[A][G][gin] +
+                                                 s->lut[A][B][bin] +
+                                                 s->lut[A][A][ain]);
+            } else if (have_alpha == -1 && in != out)
+                dst[j + aoffset] = 0;
+        }
+
+        srcrow += in->linesize[0];
+        dstrow += out->linesize[0];
+    }
+
+    return 0;
+}
+
+static av_always_inline int filter_slice_rgba16_packed(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs,
+                                                       int have_alpha, int step)
 {
     ColorChannelMixerContext *s = ctx->priv;
     ThreadData *td = arg;
@@ -113,60 +166,11 @@ static int filter_slice_rgba64(AVFilterContext *ctx, void *arg, int jobnr, int n
         const uint16_t *src = (const uint16_t *)srcrow;
         uint16_t *dst = (uint16_t *)dstrow;
 
-        for (j = 0; j < out->width * 4; j += 4) {
+        for (j = 0; j < out->width * step; j += step) {
             const uint16_t rin = src[j + roffset];
             const uint16_t gin = src[j + goffset];
             const uint16_t bin = src[j + boffset];
             const uint16_t ain = src[j + aoffset];
-
-            dst[j + roffset] = av_clip_uint16(s->lut[R][R][rin] +
-                                              s->lut[R][G][gin] +
-                                              s->lut[R][B][bin] +
-                                              s->lut[R][A][ain]);
-            dst[j + goffset] = av_clip_uint16(s->lut[G][R][rin] +
-                                              s->lut[G][G][gin] +
-                                              s->lut[G][B][bin] +
-                                              s->lut[G][A][ain]);
-            dst[j + boffset] = av_clip_uint16(s->lut[B][R][rin] +
-                                              s->lut[B][G][gin] +
-                                              s->lut[B][B][bin] +
-                                              s->lut[B][A][ain]);
-            dst[j + aoffset] = av_clip_uint16(s->lut[A][R][rin] +
-                                              s->lut[A][G][gin] +
-                                              s->lut[A][B][bin] +
-                                              s->lut[A][A][ain]);
-        }
-
-        srcrow += in->linesize[0];
-        dstrow += out->linesize[0];
-    }
-
-    return 0;
-}
-
-static int filter_slice_rgb48(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    ColorChannelMixerContext *s = ctx->priv;
-    ThreadData *td = arg;
-    AVFrame *in = td->in;
-    AVFrame *out = td->out;
-    const int slice_start = (out->height * jobnr) / nb_jobs;
-    const int slice_end = (out->height * (jobnr+1)) / nb_jobs;
-    const uint8_t roffset = s->rgba_map[R];
-    const uint8_t goffset = s->rgba_map[G];
-    const uint8_t boffset = s->rgba_map[B];
-    const uint8_t *srcrow = in->data[0] + slice_start * in->linesize[0];
-    uint8_t *dstrow = out->data[0] + slice_start * out->linesize[0];
-    int i, j;
-
-    for (i = slice_start; i < slice_end; i++) {
-        const uint16_t *src = (const uint16_t *)srcrow;
-        uint16_t *dst = (uint16_t *)dstrow;
-
-        for (j = 0; j < out->width * 3; j += 3) {
-            const uint16_t rin = src[j + roffset];
-            const uint16_t gin = src[j + goffset];
-            const uint16_t bin = src[j + boffset];
 
             dst[j + roffset] = av_clip_uint16(s->lut[R][R][rin] +
                                               s->lut[R][G][gin] +
@@ -177,143 +181,12 @@ static int filter_slice_rgb48(AVFilterContext *ctx, void *arg, int jobnr, int nb
             dst[j + boffset] = av_clip_uint16(s->lut[B][R][rin] +
                                               s->lut[B][G][gin] +
                                               s->lut[B][B][bin]);
-        }
-
-        srcrow += in->linesize[0];
-        dstrow += out->linesize[0];
-    }
-
-    return 0;
-}
-
-static int filter_slice_rgba(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    ColorChannelMixerContext *s = ctx->priv;
-    ThreadData *td = arg;
-    AVFrame *in = td->in;
-    AVFrame *out = td->out;
-    const int slice_start = (out->height * jobnr) / nb_jobs;
-    const int slice_end = (out->height * (jobnr+1)) / nb_jobs;
-    const uint8_t roffset = s->rgba_map[R];
-    const uint8_t goffset = s->rgba_map[G];
-    const uint8_t boffset = s->rgba_map[B];
-    const uint8_t aoffset = s->rgba_map[A];
-    const uint8_t *srcrow = in->data[0] + slice_start * in->linesize[0];
-    uint8_t *dstrow = out->data[0] + slice_start * out->linesize[0];
-    int i, j;
-
-    for (i = slice_start; i < slice_end; i++) {
-        const uint8_t *src = srcrow;
-        uint8_t *dst = dstrow;
-
-        for (j = 0; j < out->width * 4; j += 4) {
-            const uint8_t rin = src[j + roffset];
-            const uint8_t gin = src[j + goffset];
-            const uint8_t bin = src[j + boffset];
-            const uint8_t ain = src[j + aoffset];
-
-            dst[j + roffset] = av_clip_uint8(s->lut[R][R][rin] +
-                                             s->lut[R][G][gin] +
-                                             s->lut[R][B][bin] +
-                                             s->lut[R][A][ain]);
-            dst[j + goffset] = av_clip_uint8(s->lut[G][R][rin] +
-                                             s->lut[G][G][gin] +
-                                             s->lut[G][B][bin] +
-                                             s->lut[G][A][ain]);
-            dst[j + boffset] = av_clip_uint8(s->lut[B][R][rin] +
-                                             s->lut[B][G][gin] +
-                                             s->lut[B][B][bin] +
-                                             s->lut[B][A][ain]);
-            dst[j + aoffset] = av_clip_uint8(s->lut[A][R][rin] +
-                                             s->lut[A][G][gin] +
-                                             s->lut[A][B][bin] +
-                                             s->lut[A][A][ain]);
-        }
-
-        srcrow += in->linesize[0];
-        dstrow += out->linesize[0];
-    }
-
-    return 0;
-}
-
-static int filter_slice_rgb24(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    ColorChannelMixerContext *s = ctx->priv;
-    ThreadData *td = arg;
-    AVFrame *in = td->in;
-    AVFrame *out = td->out;
-    const int slice_start = (out->height * jobnr) / nb_jobs;
-    const int slice_end = (out->height * (jobnr+1)) / nb_jobs;
-    const uint8_t roffset = s->rgba_map[R];
-    const uint8_t goffset = s->rgba_map[G];
-    const uint8_t boffset = s->rgba_map[B];
-    const uint8_t *srcrow = in->data[0] + slice_start * in->linesize[0];
-    uint8_t *dstrow = out->data[0] + slice_start * out->linesize[0];
-    int i, j;
-
-    for (i = slice_start; i < slice_end; i++) {
-        const uint8_t *src = srcrow;
-        uint8_t *dst = dstrow;
-
-        for (j = 0; j < out->width * 3; j += 3) {
-            const uint8_t rin = src[j + roffset];
-            const uint8_t gin = src[j + goffset];
-            const uint8_t bin = src[j + boffset];
-
-            dst[j + roffset] = av_clip_uint8(s->lut[R][R][rin] +
-                                             s->lut[R][G][gin] +
-                                             s->lut[R][B][bin]);
-            dst[j + goffset] = av_clip_uint8(s->lut[G][R][rin] +
-                                             s->lut[G][G][gin] +
-                                             s->lut[G][B][bin]);
-            dst[j + boffset] = av_clip_uint8(s->lut[B][R][rin] +
-                                             s->lut[B][G][gin] +
-                                             s->lut[B][B][bin]);
-        }
-
-        srcrow += in->linesize[0];
-        dstrow += out->linesize[0];
-    }
-
-    return 0;
-}
-
-static int filter_slice_rgb0(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    ColorChannelMixerContext *s = ctx->priv;
-    ThreadData *td = arg;
-    AVFrame *in = td->in;
-    AVFrame *out = td->out;
-    const int slice_start = (out->height * jobnr) / nb_jobs;
-    const int slice_end = (out->height * (jobnr+1)) / nb_jobs;
-    const uint8_t roffset = s->rgba_map[R];
-    const uint8_t goffset = s->rgba_map[G];
-    const uint8_t boffset = s->rgba_map[B];
-    const uint8_t aoffset = s->rgba_map[A];
-    const uint8_t *srcrow = in->data[0] + slice_start * in->linesize[0];
-    uint8_t *dstrow = out->data[0] + slice_start * out->linesize[0];
-    int i, j;
-
-    for (i = slice_start; i < slice_end; i++) {
-        const uint8_t *src = srcrow;
-        uint8_t *dst = dstrow;
-
-        for (j = 0; j < out->width * 4; j += 4) {
-            const uint8_t rin = src[j + roffset];
-            const uint8_t gin = src[j + goffset];
-            const uint8_t bin = src[j + boffset];
-
-            dst[j + roffset] = av_clip_uint8(s->lut[R][R][rin] +
-                                             s->lut[R][G][gin] +
-                                             s->lut[R][B][bin]);
-            dst[j + goffset] = av_clip_uint8(s->lut[G][R][rin] +
-                                             s->lut[G][G][gin] +
-                                             s->lut[G][B][bin]);
-            dst[j + boffset] = av_clip_uint8(s->lut[B][R][rin] +
-                                             s->lut[B][G][gin] +
-                                             s->lut[B][B][bin]);
-            if (in != out)
+            if (have_alpha == 1) {
+                dst[j + aoffset] = av_clip_uint16(s->lut[A][R][rin] +
+                                                  s->lut[A][G][gin] +
+                                                  s->lut[A][B][bin] +
+                                                  s->lut[A][A][ain]);
+            } else if (have_alpha == -1 && in != out)
                 dst[j + aoffset] = 0;
         }
 
@@ -322,6 +195,31 @@ static int filter_slice_rgb0(AVFilterContext *ctx, void *arg, int jobnr, int nb_
     }
 
     return 0;
+}
+
+static int filter_slice_rgba64(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    return filter_slice_rgba16_packed(ctx, arg, jobnr, nb_jobs, 1, 4);
+}
+
+static int filter_slice_rgb48(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    return filter_slice_rgba16_packed(ctx, arg, jobnr, nb_jobs, 0, 3);
+}
+
+static int filter_slice_rgba(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    return filter_slice_rgba_packed(ctx, arg, jobnr, nb_jobs, 1, 4);
+}
+
+static int filter_slice_rgb24(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    return filter_slice_rgba_packed(ctx, arg, jobnr, nb_jobs, 0, 3);
+}
+
+static int filter_slice_rgb0(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    return filter_slice_rgba_packed(ctx, arg, jobnr, nb_jobs, -1, 4);
 }
 
 static int config_output(AVFilterLink *outlink)
