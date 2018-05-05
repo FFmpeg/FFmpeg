@@ -833,6 +833,9 @@ static int videotoolbox_start(AVCodecContext *avctx)
     case kVTVideoDecoderUnsupportedDataFormatErr:
         av_log(avctx, AV_LOG_VERBOSE, "VideoToolbox does not support this format.\n");
         return AVERROR(ENOSYS);
+    case kVTCouldNotFindVideoDecoderErr:
+        av_log(avctx, AV_LOG_VERBOSE, "VideoToolbox decoder for this format not found.\n");
+        return AVERROR(ENOSYS);
     case kVTVideoDecoderMalfunctionErr:
         av_log(avctx, AV_LOG_VERBOSE, "VideoToolbox malfunction.\n");
         return AVERROR(EINVAL);
@@ -842,7 +845,7 @@ static int videotoolbox_start(AVCodecContext *avctx)
     case 0:
         return 0;
     default:
-        av_log(avctx, AV_LOG_VERBOSE, "Unknown VideoToolbox session creation error %u\n", (unsigned)status);
+        av_log(avctx, AV_LOG_VERBOSE, "Unknown VideoToolbox session creation error %d\n", (int)status);
         return AVERROR_UNKNOWN;
     }
 }
