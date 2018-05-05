@@ -28,7 +28,9 @@
 #include "formats.h"
 #include "internal.h"
 #include "libavutil/opt.h"
-#include "unistd.h"
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 #include "vf_srcnn.h"
 #include "libavformat/avio.h"
 
