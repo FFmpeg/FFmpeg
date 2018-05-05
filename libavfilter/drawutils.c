@@ -271,7 +271,8 @@ void ff_draw_color(FFDrawContext *draw, FFDrawColor *color, const uint8_t rgba[4
                draw->format == AV_PIX_FMT_GRAY16LE || draw->format == AV_PIX_FMT_YA16LE ||
                draw->format == AV_PIX_FMT_GRAY9LE  ||
                draw->format == AV_PIX_FMT_GRAY10LE ||
-               draw->format == AV_PIX_FMT_GRAY12LE) {
+               draw->format == AV_PIX_FMT_GRAY12LE ||
+               draw->format == AV_PIX_FMT_GRAY14LE) {
         const AVPixFmtDescriptor *desc = draw->desc;
         color->comp[0].u8[0] = RGB_TO_Y_CCIR(rgba[0], rgba[1], rgba[2]);
         EXPAND(0);
