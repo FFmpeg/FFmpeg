@@ -20,7 +20,6 @@
 
 /**
  * @todo
- * - SIMD for final weighted averaging
  * - better automatic defaults? see "Parameters" @ http://www.ipol.im/pub/art/2011/bcm_nlm/
  * - temporal support (probably doesn't need any displacement according to
  *   "Denoising image sequences does not require motion estimation")
@@ -411,11 +410,30 @@ static int nlmeans_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     return 0;
 }
 
+static void weight_averages(uint8_t *dst, ptrdiff_t dst_linesize,
+                            const uint8_t *src, ptrdiff_t src_linesize,
+                            struct weighted_avg *wa, ptrdiff_t wa_linesize,
+                            int w, int h)
+{
+    int x, y;
+
+    for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            // Also weight the centered pixel
+            wa[x].total_weight += 1.f;
+            wa[x].sum += 1.f * src[x];
+            dst[x] = av_clip_uint8(wa[x].sum / wa[x].total_weight);
+        }
+        dst += dst_linesize;
+        src += src_linesize;
+        wa += wa_linesize;
+    }
+}
+
 static int nlmeans_plane(AVFilterContext *ctx, int w, int h, int p, int r,
                          uint8_t *dst, ptrdiff_t dst_linesize,
                          const uint8_t *src, ptrdiff_t src_linesize)
 {
-    int x, y;
     int offx, offy;
     NLMeansContext *s = ctx->priv;
     /* patches center points cover the whole research window so the patches
@@ -448,17 +466,10 @@ static int nlmeans_plane(AVFilterContext *ctx, int w, int h, int p, int r,
             }
         }
     }
-    for (y = 0; y < h; y++) {
-        for (x = 0; x < w; x++) {
-            struct weighted_avg *wa = &s->wa[y*s->wa_linesize + x];
 
-            // Also weight the centered pixel
-            wa->total_weight += 1.f;
-            wa->sum += 1.f * src[y*src_linesize + x];
+    weight_averages(dst, dst_linesize, src, src_linesize,
+                    s->wa, s->wa_linesize, w, h);
 
-            dst[y*dst_linesize + x] = av_clip_uint8(wa->sum / wa->total_weight);
-        }
-    }
     return 0;
 }
 
