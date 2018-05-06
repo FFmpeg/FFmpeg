@@ -146,10 +146,6 @@ static inline int get_integral_patch_value(const uint32_t *ii, int ii_lz_32, int
  * function, we do not need any clipping here.
  *
  * The line above dst and the column to its left are always readable.
- *
- * This C version computes the SSD integral image using a scalar accumulator,
- * while for SIMD implementation it is likely more interesting to use the
- * two-loops algorithm variant.
  */
 static void compute_safe_ssd_integral_image_c(uint32_t *dst, ptrdiff_t dst_linesize_32,
                                               const uint8_t *s1, ptrdiff_t linesize1,
@@ -157,21 +153,32 @@ static void compute_safe_ssd_integral_image_c(uint32_t *dst, ptrdiff_t dst_lines
                                               int w, int h)
 {
     int x, y;
+    const uint32_t *dst_top = dst - dst_linesize_32;
 
     /* SIMD-friendly assumptions allowed here */
     av_assert2(!(w & 0xf) && w >= 16 && h >= 1);
 
     for (y = 0; y < h; y++) {
-        uint32_t acc = dst[-1] - dst[-dst_linesize_32 - 1];
+        for (x = 0; x < w; x += 4) {
+            const int d0 = s1[x    ] - s2[x    ];
+            const int d1 = s1[x + 1] - s2[x + 1];
+            const int d2 = s1[x + 2] - s2[x + 2];
+            const int d3 = s1[x + 3] - s2[x + 3];
 
-        for (x = 0; x < w; x++) {
-            const int d  = s1[x] - s2[x];
-            acc += d * d;
-            dst[x] = dst[-dst_linesize_32 + x] + acc;
+            dst[x    ] = dst_top[x    ] - dst_top[x - 1] + d0*d0;
+            dst[x + 1] = dst_top[x + 1] - dst_top[x    ] + d1*d1;
+            dst[x + 2] = dst_top[x + 2] - dst_top[x + 1] + d2*d2;
+            dst[x + 3] = dst_top[x + 3] - dst_top[x + 2] + d3*d3;
+
+            dst[x    ] += dst[x - 1];
+            dst[x + 1] += dst[x    ];
+            dst[x + 2] += dst[x + 1];
+            dst[x + 3] += dst[x + 2];
         }
         s1  += linesize1;
         s2  += linesize2;
         dst += dst_linesize_32;
+        dst_top += dst_linesize_32;
     }
 }
 
