@@ -157,6 +157,9 @@ static void compute_safe_ssd_integral_image_c(uint32_t *dst, int dst_linesize_32
 {
     int x, y;
 
+    /* SIMD-friendly assumptions allowed here */
+    av_assert2(!(w & 0xf) && w >= 16 && h >= 1);
+
     for (y = 0; y < h; y++) {
         uint32_t acc = dst[-1] - dst[-dst_linesize_32 - 1];
 
@@ -257,8 +260,15 @@ static void compute_ssd_integral_image(uint32_t *ii, int ii_linesize_32,
     // to compare the 2 sources pixels
     const int startx_safe = FFMAX(s1x, s2x);
     const int starty_safe = FFMAX(s1y, s2y);
-    const int endx_safe   = FFMIN(s1x + w, s2x + w);
+    const int u_endx_safe = FFMIN(s1x + w, s2x + w); // unaligned
     const int endy_safe   = FFMIN(s1y + h, s2y + h);
+
+    // deduce the safe area width and height
+    const int safe_pw = (u_endx_safe - startx_safe) & ~0xf;
+    const int safe_ph = endy_safe - starty_safe;
+
+    // adjusted end x position of the safe area after width of the safe area gets aligned
+    const int endx_safe = startx_safe + safe_pw;
 
     // top part where only one of s1 and s2 is still readable, or none at all
     compute_unsafe_ssd_integral_image(ii, ii_linesize_32,
@@ -273,24 +283,25 @@ static void compute_ssd_integral_image(uint32_t *ii, int ii_linesize_32,
                                       0, starty_safe,
                                       src, linesize,
                                       offx, offy, e, w, h,
-                                      startx_safe, endy_safe - starty_safe);
+                                      startx_safe, safe_ph);
 
     // main and safe part of the integral
     av_assert1(startx_safe - s1x >= 0); av_assert1(startx_safe - s1x < w);
     av_assert1(starty_safe - s1y >= 0); av_assert1(starty_safe - s1y < h);
     av_assert1(startx_safe - s2x >= 0); av_assert1(startx_safe - s2x < w);
     av_assert1(starty_safe - s2y >= 0); av_assert1(starty_safe - s2y < h);
-    compute_safe_ssd_integral_image_c(ii + starty_safe*ii_linesize_32 + startx_safe, ii_linesize_32,
-                                      src + (starty_safe - s1y) * linesize + (startx_safe - s1x), linesize,
-                                      src + (starty_safe - s2y) * linesize + (startx_safe - s2x), linesize,
-                                      endx_safe - startx_safe, endy_safe - starty_safe);
+    if (safe_pw && safe_ph)
+        compute_safe_ssd_integral_image_c(ii + starty_safe*ii_linesize_32 + startx_safe, ii_linesize_32,
+                                          src + (starty_safe - s1y) * linesize + (startx_safe - s1x), linesize,
+                                          src + (starty_safe - s2y) * linesize + (startx_safe - s2x), linesize,
+                                          safe_pw, safe_ph);
 
     // right part of the integral
     compute_unsafe_ssd_integral_image(ii, ii_linesize_32,
                                       endx_safe, starty_safe,
                                       src, linesize,
                                       offx, offy, e, w, h,
-                                      ii_w - endx_safe, endy_safe - starty_safe);
+                                      ii_w - endx_safe, safe_ph);
 
     // bottom part where only one of s1 and s2 is still readable, or none at all
     compute_unsafe_ssd_integral_image(ii, ii_linesize_32,
