@@ -42,6 +42,9 @@ typedef struct TCPContext {
     int recv_buffer_size;
     int send_buffer_size;
     int tcp_nodelay;
+#if !HAVE_WINSOCK2_H
+    int tcp_mss;
+#endif /* !HAVE_WINSOCK2_H */
 } TCPContext;
 
 #define OFFSET(x) offsetof(TCPContext, x)
@@ -54,6 +57,9 @@ static const AVOption options[] = {
     { "send_buffer_size", "Socket send buffer size (in bytes)",                OFFSET(send_buffer_size), AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
     { "recv_buffer_size", "Socket receive buffer size (in bytes)",             OFFSET(recv_buffer_size), AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
     { "tcp_nodelay", "Use TCP_NODELAY to disable nagle's algorithm",           OFFSET(tcp_nodelay), AV_OPT_TYPE_BOOL, { .i64 = 0 },             0, 1, .flags = D|E },
+#if !HAVE_WINSOCK2_H
+    { "tcp_mss",     "Maximum segment size for outgoing TCP packets",          OFFSET(tcp_mss),     AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
+#endif /* !HAVE_WINSOCK2_H */
     { NULL }
 };
 
@@ -153,6 +159,11 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     if (s->tcp_nodelay > 0) {
         setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, &s->tcp_nodelay, sizeof (s->tcp_nodelay));
     }
+#if !HAVE_WINSOCK2_H
+    if (s->tcp_mss > 0) {
+        setsockopt (fd, IPPROTO_TCP, TCP_MAXSEG, &s->tcp_mss, sizeof (s->tcp_mss));
+    }
+#endif /* !HAVE_WINSOCK2_H */
 
     if (s->listen == 2) {
         // multi-client
