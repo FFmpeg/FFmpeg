@@ -3228,8 +3228,7 @@ v4l2_outdev_suggest="libv4l2"
 vfwcap_indev_deps="vfw32 vfwcap_defines"
 xcbgrab_indev_deps="libxcb"
 xcbgrab_indev_suggest="libxcb_shm libxcb_shape libxcb_xfixes"
-xv_outdev_deps="X11_extensions_Xvlib_h XvGetPortAttribute"
-xv_outdev_extralibs="-lXv -lX11 -lXext"
+xv_outdev_deps="xlib"
 
 # protocols
 async_protocol_deps="threads"
@@ -5804,7 +5803,7 @@ check_func_headers windows.h Sleep
 check_func_headers windows.h VirtualAlloc
 check_func_headers glob.h glob
 enabled xlib &&
-    check_func_headers "X11/Xlib.h X11/extensions/Xvlib.h" XvGetPortAttribute -lXv -lX11 -lXext
+    check_lib xlib "X11/Xlib.h X11/extensions/Xvlib.h" XvGetPortAttribute -lXv -lX11 -lXext
 
 check_header direct.h
 check_header dirent.h
