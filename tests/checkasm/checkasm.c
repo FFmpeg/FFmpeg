@@ -159,6 +159,9 @@ static const struct {
     #if CONFIG_HFLIP_FILTER
         { "vf_hflip", checkasm_check_vf_hflip },
     #endif
+    #if CONFIG_NLMEANS_FILTER
+        { "vf_nlmeans", checkasm_check_nlmeans },
+    #endif
     #if CONFIG_THRESHOLD_FILTER
         { "vf_threshold", checkasm_check_vf_threshold },
     #endif
