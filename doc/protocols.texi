@@ -1397,6 +1397,9 @@ Set send buffer size, expressed bytes.
 
 @item tcp_nodelay=@var{1|0}
 Set TCP_NODELAY to disable Nagle's algorithm. Default value is 0.
+
+@item tcp_mss=@var{bytes}
+Set maximum segment size for outgoing TCP packets, expressed in bytes.
 @end table
 
 The following example shows how to setup a listening TCP connection
