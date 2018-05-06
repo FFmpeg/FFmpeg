@@ -86,8 +86,8 @@ static int v4l2_try_start(AVCodecContext *avctx)
     if (!capture->buffers) {
         ret = ff_v4l2_context_init(capture);
         if (ret) {
-            av_log(avctx, AV_LOG_DEBUG, "can't request output buffers\n");
-            return ret;
+            av_log(avctx, AV_LOG_ERROR, "can't request capture buffers\n");
+            return AVERROR(ENOMEM);
         }
     }
 
@@ -151,6 +151,11 @@ static int v4l2_receive_frame(AVCodecContext *avctx, AVFrame *frame)
         ret = v4l2_try_start(avctx);
         if (ret) {
             av_packet_unref(&avpkt);
+
+            /* cant recover */
+            if (ret == AVERROR(ENOMEM))
+                return ret;
+
             return 0;
         }
     }

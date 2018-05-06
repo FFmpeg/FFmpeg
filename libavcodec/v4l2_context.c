@@ -267,6 +267,12 @@ static V4L2Buffer* v4l2_dequeue_v4l2buf(V4L2Context *ctx, int timeout)
     /* if we are draining and there are no more capture buffers queued in the driver we are done */
     if (!V4L2_TYPE_IS_OUTPUT(ctx->type) && ctx_to_m2mctx(ctx)->draining) {
         for (i = 0; i < ctx->num_buffers; i++) {
+            /* capture buffer initialization happens during decode hence
+             * detection happens at runtime
+             */
+            if (!ctx->buffers)
+                break;
+
             if (ctx->buffers[i].status == V4L2BUF_IN_DRIVER)
                 goto start;
         }
@@ -698,9 +704,8 @@ int ff_v4l2_context_init(V4L2Context* ctx)
         ctx->buffers[i].context = ctx;
         ret = ff_v4l2_buffer_initialize(&ctx->buffers[i], i);
         if (ret < 0) {
-            av_log(logger(ctx), AV_LOG_ERROR, "%s buffer initialization (%s)\n", ctx->name, av_err2str(ret));
-            av_free(ctx->buffers);
-            return ret;
+            av_log(logger(ctx), AV_LOG_ERROR, "%s buffer[%d] initialization (%s)\n", ctx->name, i, av_err2str(ret));
+            goto error;
         }
     }
 
@@ -713,4 +718,12 @@ int ff_v4l2_context_init(V4L2Context* ctx)
         V4L2_TYPE_IS_MULTIPLANAR(ctx->type) ? ctx->format.fmt.pix_mp.plane_fmt[0].bytesperline : ctx->format.fmt.pix.bytesperline);
 
     return 0;
+
+error:
+    v4l2_release_buffers(ctx);
+
+    av_free(ctx->buffers);
+    ctx->buffers = NULL;
+
+    return ret;
 }
