@@ -1324,6 +1324,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     ost->file_index = nb_output_files - 1;
     ost->index      = idx;
     ost->st         = st;
+    ost->forced_kf_ref_pts = AV_NOPTS_VALUE;
     st->codecpar->codec_type = type;
 
     ret = choose_encoder(o, oc, ost);
