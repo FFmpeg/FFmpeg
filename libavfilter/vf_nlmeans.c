@@ -131,10 +131,10 @@ static int query_formats(AVFilterContext *ctx)
  */
 static inline int get_integral_patch_value(const uint32_t *ii, int ii_lz_32, int x, int y, int p)
 {
-    const int e = ii[(y + p    ) * ii_lz_32 + (x + p    )];
-    const int d = ii[(y + p    ) * ii_lz_32 + (x - p - 1)];
-    const int b = ii[(y - p - 1) * ii_lz_32 + (x + p    )];
     const int a = ii[(y - p - 1) * ii_lz_32 + (x - p - 1)];
+    const int b = ii[(y - p - 1) * ii_lz_32 + (x + p    )];
+    const int d = ii[(y + p    ) * ii_lz_32 + (x - p - 1)];
+    const int e = ii[(y + p    ) * ii_lz_32 + (x + p    )];
     return e - d - b + a;
 }
 
