@@ -60,9 +60,9 @@ typedef struct NLMeansContext {
     uint32_t *ii_orig;                          // integral image
     uint32_t *ii;                               // integral image starting after the 0-line and 0-column
     int ii_w, ii_h;                             // width and height of the integral image
-    int ii_lz_32;                               // linesize in 32-bit units of the integral image
+    ptrdiff_t ii_lz_32;                         // linesize in 32-bit units of the integral image
     struct weighted_avg *wa;                    // weighted average of every pixel
-    int wa_linesize;                            // linesize for wa in struct size unit
+    ptrdiff_t wa_linesize;                      // linesize for wa in struct size unit
     double weight_lut[WEIGHT_LUT_SIZE];         // lookup table mapping (scaled) patch differences to their associated weights
     double pdiff_lut_scale;                     // scale factor for patch differences before looking into the LUT
     int max_meaningful_diff;                    // maximum difference considered (if the patch difference is too high we ignore the pixel)
@@ -150,9 +150,9 @@ static inline int get_integral_patch_value(const uint32_t *ii, int ii_lz_32, int
  * while for SIMD implementation it is likely more interesting to use the
  * two-loops algorithm variant.
  */
-static void compute_safe_ssd_integral_image_c(uint32_t *dst, int dst_linesize_32,
-                                              const uint8_t *s1, int linesize1,
-                                              const uint8_t *s2, int linesize2,
+static void compute_safe_ssd_integral_image_c(uint32_t *dst, ptrdiff_t dst_linesize_32,
+                                              const uint8_t *s1, ptrdiff_t linesize1,
+                                              const uint8_t *s2, ptrdiff_t linesize2,
                                               int w, int h)
 {
     int x, y;
@@ -198,9 +198,9 @@ static void compute_safe_ssd_integral_image_c(uint32_t *dst, int dst_linesize_32
  * @param w                 width to compute
  * @param h                 height to compute
  */
-static inline void compute_unsafe_ssd_integral_image(uint32_t *dst, int dst_linesize_32,
+static inline void compute_unsafe_ssd_integral_image(uint32_t *dst, ptrdiff_t dst_linesize_32,
                                                      int startx, int starty,
-                                                     const uint8_t *src, int linesize,
+                                                     const uint8_t *src, ptrdiff_t linesize,
                                                      int offx, int offy, int r, int sw, int sh,
                                                      int w, int h)
 {
@@ -240,8 +240,8 @@ static inline void compute_unsafe_ssd_integral_image(uint32_t *dst, int dst_line
  * @param h                 source height
  * @param e                 research padding edge
  */
-static void compute_ssd_integral_image(uint32_t *ii, int ii_linesize_32,
-                                       const uint8_t *src, int linesize, int offx, int offy,
+static void compute_ssd_integral_image(uint32_t *ii, ptrdiff_t ii_linesize_32,
+                                       const uint8_t *src, ptrdiff_t linesize, int offx, int offy,
                                        int e, int w, int h)
 {
     // ii has a surrounding padding of thickness "e"
@@ -367,7 +367,7 @@ static int config_input(AVFilterLink *inlink)
 
 struct thread_data {
     const uint8_t *src;
-    int src_linesize;
+    ptrdiff_t src_linesize;
     int startx, starty;
     int endx, endy;
     const uint32_t *ii_start;
@@ -379,7 +379,7 @@ static int nlmeans_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     int x, y;
     NLMeansContext *s = ctx->priv;
     const struct thread_data *td = arg;
-    const int src_linesize = td->src_linesize;
+    const ptrdiff_t src_linesize = td->src_linesize;
     const int process_h = td->endy - td->starty;
     const int slice_start = (process_h *  jobnr   ) / nb_jobs;
     const int slice_end   = (process_h * (jobnr+1)) / nb_jobs;
@@ -403,8 +403,8 @@ static int nlmeans_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
 }
 
 static int nlmeans_plane(AVFilterContext *ctx, int w, int h, int p, int r,
-                         uint8_t *dst, int dst_linesize,
-                         const uint8_t *src, int src_linesize)
+                         uint8_t *dst, ptrdiff_t dst_linesize,
+                         const uint8_t *src, ptrdiff_t src_linesize)
 {
     int x, y;
     int offx, offy;
