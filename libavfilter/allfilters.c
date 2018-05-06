@@ -193,6 +193,7 @@ extern AVFilter ff_vf_eq;
 extern AVFilter ff_vf_erosion;
 extern AVFilter ff_vf_extractplanes;
 extern AVFilter ff_vf_fade;
+extern AVFilter ff_vf_fftdnoiz;
 extern AVFilter ff_vf_fftfilt;
 extern AVFilter ff_vf_field;
 extern AVFilter ff_vf_fieldhint;

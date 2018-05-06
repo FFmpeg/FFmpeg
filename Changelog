@@ -5,6 +5,7 @@ version <next>:
 - deblock filter
 - tmix filter
 - amplify filter
+- fftdnoiz filter
 
 
 version 4.0:
