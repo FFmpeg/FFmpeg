@@ -20,7 +20,6 @@
 
 /**
  * @todo
- * - SIMD for compute_safe_ssd_integral_image
  * - SIMD for final weighted averaging
  * - better automatic defaults? see "Parameters" @ http://www.ipol.im/pub/art/2011/bcm_nlm/
  * - temporal support (probably doesn't need any displacement according to
@@ -37,6 +36,7 @@
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
+#include "vf_nlmeans.h"
 #include "video.h"
 
 struct weighted_avg {
@@ -66,6 +66,7 @@ typedef struct NLMeansContext {
     double weight_lut[WEIGHT_LUT_SIZE];         // lookup table mapping (scaled) patch differences to their associated weights
     double pdiff_lut_scale;                     // scale factor for patch differences before looking into the LUT
     int max_meaningful_diff;                    // maximum difference considered (if the patch difference is too high we ignore the pixel)
+    NLMeansDSPContext dsp;
 } NLMeansContext;
 
 #define OFFSET(x) offsetof(NLMeansContext, x)
@@ -240,7 +241,8 @@ static inline void compute_unsafe_ssd_integral_image(uint32_t *dst, ptrdiff_t ds
  * @param h                 source height
  * @param e                 research padding edge
  */
-static void compute_ssd_integral_image(uint32_t *ii, ptrdiff_t ii_linesize_32,
+static void compute_ssd_integral_image(const NLMeansDSPContext *dsp,
+                                       uint32_t *ii, ptrdiff_t ii_linesize_32,
                                        const uint8_t *src, ptrdiff_t linesize, int offx, int offy,
                                        int e, int w, int h)
 {
@@ -291,10 +293,10 @@ static void compute_ssd_integral_image(uint32_t *ii, ptrdiff_t ii_linesize_32,
     av_assert1(startx_safe - s2x >= 0); av_assert1(startx_safe - s2x < w);
     av_assert1(starty_safe - s2y >= 0); av_assert1(starty_safe - s2y < h);
     if (safe_pw && safe_ph)
-        compute_safe_ssd_integral_image_c(ii + starty_safe*ii_linesize_32 + startx_safe, ii_linesize_32,
-                                          src + (starty_safe - s1y) * linesize + (startx_safe - s1x), linesize,
-                                          src + (starty_safe - s2y) * linesize + (startx_safe - s2x), linesize,
-                                          safe_pw, safe_ph);
+        dsp->compute_safe_ssd_integral_image(ii + starty_safe*ii_linesize_32 + startx_safe, ii_linesize_32,
+                                             src + (starty_safe - s1y) * linesize + (startx_safe - s1x), linesize,
+                                             src + (starty_safe - s2y) * linesize + (startx_safe - s2x), linesize,
+                                             safe_pw, safe_ph);
 
     // right part of the integral
     compute_unsafe_ssd_integral_image(ii, ii_linesize_32,
@@ -431,7 +433,7 @@ static int nlmeans_plane(AVFilterContext *ctx, int w, int h, int p, int r,
                     .p            = p,
                 };
 
-                compute_ssd_integral_image(s->ii, s->ii_lz_32,
+                compute_ssd_integral_image(&s->dsp, s->ii, s->ii_lz_32,
                                            src, src_linesize,
                                            offx, offy, e, w, h);
                 ctx->internal->execute(ctx, nlmeans_slice, &td, NULL,
@@ -489,6 +491,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }                                                           \
 } while (0)
 
+void ff_nlmeans_init(NLMeansDSPContext *dsp)
+{
+    dsp->compute_safe_ssd_integral_image = compute_safe_ssd_integral_image_c;
+
+    if (ARCH_AARCH64)
+        ff_nlmeans_init_aarch64(dsp);
+}
+
 static av_cold int init(AVFilterContext *ctx)
 {
     int i;
@@ -519,6 +529,8 @@ static av_cold int init(AVFilterContext *ctx)
     av_log(ctx, AV_LOG_INFO, "Research window: %dx%d / %dx%d, patch size: %dx%d / %dx%d\n",
            s->research_size, s->research_size, s->research_size_uv, s->research_size_uv,
            s->patch_size,    s->patch_size,    s->patch_size_uv,    s->patch_size_uv);
+
+    ff_nlmeans_init(&s->dsp);
 
     return 0;
 }
