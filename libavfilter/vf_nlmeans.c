@@ -40,8 +40,8 @@
 #include "video.h"
 
 struct weighted_avg {
-    double total_weight;
-    double sum;
+    float total_weight;
+    float sum;
 };
 
 #define WEIGHT_LUT_NBITS 9
@@ -63,8 +63,8 @@ typedef struct NLMeansContext {
     ptrdiff_t ii_lz_32;                         // linesize in 32-bit units of the integral image
     struct weighted_avg *wa;                    // weighted average of every pixel
     ptrdiff_t wa_linesize;                      // linesize for wa in struct size unit
-    double weight_lut[WEIGHT_LUT_SIZE];         // lookup table mapping (scaled) patch differences to their associated weights
-    double pdiff_lut_scale;                     // scale factor for patch differences before looking into the LUT
+    float weight_lut[WEIGHT_LUT_SIZE];          // lookup table mapping (scaled) patch differences to their associated weights
+    float pdiff_lut_scale;                      // scale factor for patch differences before looking into the LUT
     int max_meaningful_diff;                    // maximum difference considered (if the patch difference is too high we ignore the pixel)
     NLMeansDSPContext dsp;
 } NLMeansContext;
@@ -402,7 +402,7 @@ static int nlmeans_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
             const int patch_diff_sq = get_integral_patch_value(td->ii_start, s->ii_lz_32, x, y, td->p);
             if (patch_diff_sq < s->max_meaningful_diff) {
                 const int weight_lut_idx = patch_diff_sq * s->pdiff_lut_scale;
-                const double weight = s->weight_lut[weight_lut_idx]; // exp(-patch_diff_sq * s->pdiff_scale)
+                const float weight = s->weight_lut[weight_lut_idx]; // exp(-patch_diff_sq * s->pdiff_scale)
                 wa[x].total_weight += weight;
                 wa[x].sum += weight * src[x];
             }
@@ -453,8 +453,8 @@ static int nlmeans_plane(AVFilterContext *ctx, int w, int h, int p, int r,
             struct weighted_avg *wa = &s->wa[y*s->wa_linesize + x];
 
             // Also weight the centered pixel
-            wa->total_weight += 1.0;
-            wa->sum += 1.0 * src[y*src_linesize + x];
+            wa->total_weight += 1.f;
+            wa->sum += 1.f * src[y*src_linesize + x];
 
             dst[y*dst_linesize + x] = av_clip_uint8(wa->sum / wa->total_weight);
         }
