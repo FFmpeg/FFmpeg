@@ -740,6 +740,25 @@ static int FUNC(sei_display_orientation)(CodedBitstreamContext *ctx, RWContext *
     return 0;
 }
 
+static int FUNC(sei_mastering_display_colour_volume)(CodedBitstreamContext *ctx, RWContext *rw,
+                                                     H264RawSEIMasteringDisplayColourVolume *current)
+{
+    int err, c;
+
+    for (c = 0; c < 3; c++) {
+        us(16, display_primaries_x[c], 0, 50000, 1, c);
+        us(16, display_primaries_y[c], 0, 50000, 1, c);
+    }
+
+    u(16, white_point_x, 0, 50000);
+    u(16, white_point_y, 0, 50000);
+
+    u(32, max_display_mastering_luminance, 1, MAX_UINT_BITS(32));
+    u(32, min_display_mastering_luminance, 0, current->max_display_mastering_luminance - 1);
+
+    return 0;
+}
+
 static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
                              H264RawSEIPayload *current)
 {
@@ -786,6 +805,10 @@ static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
     case H264_SEI_TYPE_DISPLAY_ORIENTATION:
         CHECK(FUNC(sei_display_orientation)
               (ctx, rw, &current->payload.display_orientation));
+        break;
+    case H264_SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME:
+        CHECK(FUNC(sei_mastering_display_colour_volume)
+              (ctx, rw, &current->payload.mastering_display_colour_volume));
         break;
     default:
         {

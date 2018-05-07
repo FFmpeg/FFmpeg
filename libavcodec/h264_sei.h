@@ -35,6 +35,7 @@ typedef enum {
     H264_SEI_TYPE_FRAME_PACKING          = 45,  ///< frame packing arrangement
     H264_SEI_TYPE_DISPLAY_ORIENTATION    = 47,  ///< display orientation
     H264_SEI_TYPE_GREEN_METADATA         = 56,  ///< GreenMPEG information
+    H264_SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME = 137,  ///< mastering display properties
     H264_SEI_TYPE_ALTERNATIVE_TRANSFER   = 147, ///< alternative transfer
 } H264_SEI_Type;
 

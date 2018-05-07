@@ -306,6 +306,15 @@ typedef struct H264RawSEIDisplayOrientation {
     uint8_t display_orientation_extension_flag;
 } H264RawSEIDisplayOrientation;
 
+typedef struct H264RawSEIMasteringDisplayColourVolume {
+    uint16_t display_primaries_x[3];
+    uint16_t display_primaries_y[3];
+    uint16_t white_point_x;
+    uint16_t white_point_y;
+    uint32_t max_display_mastering_luminance;
+    uint32_t min_display_mastering_luminance;
+} H264RawSEIMasteringDisplayColourVolume;
+
 typedef struct H264RawSEIPayload {
     uint32_t payload_type;
     uint32_t payload_size;
@@ -318,6 +327,7 @@ typedef struct H264RawSEIPayload {
         H264RawSEIUserDataUnregistered user_data_unregistered;
         H264RawSEIRecoveryPoint recovery_point;
         H264RawSEIDisplayOrientation display_orientation;
+        H264RawSEIMasteringDisplayColourVolume mastering_display_colour_volume;
         struct {
             uint8_t *data;
             size_t data_length;
