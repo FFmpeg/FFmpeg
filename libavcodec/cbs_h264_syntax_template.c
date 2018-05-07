@@ -626,6 +626,30 @@ static int FUNC(sei_pic_timing)(CodedBitstreamContext *ctx, RWContext *rw,
     return 0;
 }
 
+static int FUNC(sei_pan_scan_rect)(CodedBitstreamContext *ctx, RWContext *rw,
+                                   H264RawSEIPanScanRect *current)
+{
+    int err, i;
+
+    ue(pan_scan_rect_id, 0, UINT32_MAX - 1);
+    flag(pan_scan_rect_cancel_flag);
+
+    if (!current->pan_scan_rect_cancel_flag) {
+        ue(pan_scan_cnt_minus1, 0, 2);
+
+        for (i = 0; i <= current->pan_scan_cnt_minus1; i++) {
+            ses(pan_scan_rect_left_offset[i],   INT32_MIN + 1, INT32_MAX, 1, i);
+            ses(pan_scan_rect_right_offset[i],  INT32_MIN + 1, INT32_MAX, 1, i);
+            ses(pan_scan_rect_top_offset[i],    INT32_MIN + 1, INT32_MAX, 1, i);
+            ses(pan_scan_rect_bottom_offset[i], INT32_MIN + 1, INT32_MAX, 1, i);
+        }
+
+        ue(pan_scan_rect_repetition_period, 0, 16384);
+    }
+
+    return 0;
+}
+
 static int FUNC(sei_user_data_registered)(CodedBitstreamContext *ctx, RWContext *rw,
                                           H264RawSEIUserDataRegistered *current,
                                           uint32_t *payload_size)
@@ -736,6 +760,10 @@ static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
     case H264_SEI_TYPE_PIC_TIMING:
         CHECK(FUNC(sei_pic_timing)
               (ctx, rw, &current->payload.pic_timing));
+        break;
+    case H264_SEI_TYPE_PAN_SCAN_RECT:
+        CHECK(FUNC(sei_pan_scan_rect)
+              (ctx, rw, &current->payload.pan_scan_rect));
         break;
     case H264_SEI_TYPE_FILLER_PAYLOAD:
         {

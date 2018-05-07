@@ -27,6 +27,7 @@
 typedef enum {
     H264_SEI_TYPE_BUFFERING_PERIOD       = 0,   ///< buffering period (H.264, D.1.1)
     H264_SEI_TYPE_PIC_TIMING             = 1,   ///< picture timing
+    H264_SEI_TYPE_PAN_SCAN_RECT          = 2,   ///< pan-scan rectangle
     H264_SEI_TYPE_FILLER_PAYLOAD         = 3,   ///< filler data
     H264_SEI_TYPE_USER_DATA_REGISTERED   = 4,   ///< registered user data as specified by Rec. ITU-T T.35
     H264_SEI_TYPE_USER_DATA_UNREGISTERED = 5,   ///< unregistered user data
