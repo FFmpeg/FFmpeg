@@ -341,8 +341,6 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
             udu->data_length = len + 1;
             memcpy(udu->data, ctx->sei_user_data + i + 1, len + 1);
 
-            payload.payload_size = 16 + udu->data_length;
-
             err = ff_cbs_h264_add_sei_message(ctx->cbc, au, &payload);
             if (err < 0) {
                 av_log(bsf, AV_LOG_ERROR, "Failed to add user data SEI "
