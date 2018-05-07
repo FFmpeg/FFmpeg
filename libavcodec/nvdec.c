@@ -39,6 +39,7 @@ typedef struct NVDECDecoder {
 
     AVBufferRef *hw_device_ref;
     CUcontext    cuda_ctx;
+    CUstream     stream;
 
     CudaFunctions *cudl;
     CuvidFunctions *cvdl;
@@ -189,6 +190,7 @@ static int nvdec_decoder_create(AVBufferRef **out, AVBufferRef *hw_device_ref,
     }
     decoder->cuda_ctx = device_hwctx->cuda_ctx;
     decoder->cudl = device_hwctx->internal->cuda_dl;
+    decoder->stream = device_hwctx->stream;
 
     ret = cuvid_load_functions(&decoder->cvdl, logctx);
     if (ret < 0) {
@@ -386,7 +388,7 @@ static int nvdec_retrieve_data(void *logctx, AVFrame *frame)
     NVDECFrame        *cf = (NVDECFrame*)fdd->hwaccel_priv;
     NVDECDecoder *decoder = (NVDECDecoder*)cf->decoder_ref->data;
 
-    CUVIDPROCPARAMS vpp = { .progressive_frame = 1 };
+    CUVIDPROCPARAMS vpp = { 0 };
     NVDECFrame *unmap_data = NULL;
 
     CUresult err;
@@ -396,6 +398,9 @@ static int nvdec_retrieve_data(void *logctx, AVFrame *frame)
     unsigned int pitch, i;
     unsigned int offset = 0;
     int ret = 0;
+
+    vpp.progressive_frame = 1;
+    vpp.output_stream = decoder->stream;
 
     err = decoder->cudl->cuCtxPushCurrent(decoder->cuda_ctx);
     if (err != CUDA_SUCCESS)
