@@ -4644,6 +4644,28 @@ uint64_t ff_ntp_time(void)
     return (av_gettime() / 1000) * 1000 + NTP_OFFSET_US;
 }
 
+uint64_t ff_get_formatted_ntp_time(uint64_t ntp_time_us)
+{
+    uint64_t ntp_ts, frac_part, sec;
+    uint32_t usec;
+
+    //current ntp time in seconds and micro seconds
+    sec = ntp_time_us / 1000000;
+    usec = ntp_time_us % 1000000;
+
+    //encoding in ntp timestamp format
+    frac_part = usec * 0xFFFFFFFFULL;
+    frac_part /= 1000000;
+
+    if (sec > 0xFFFFFFFFULL)
+        av_log(NULL, AV_LOG_WARNING, "NTP time format roll over detected\n");
+
+    ntp_ts = sec << 32;
+    ntp_ts |= frac_part;
+
+    return ntp_ts;
+}
+
 int av_get_frame_filename2(char *buf, int buf_size, const char *path, int number, int flags)
 {
     const char *p;

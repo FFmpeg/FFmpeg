@@ -240,6 +240,14 @@ void ff_read_frame_flush(AVFormatContext *s);
 uint64_t ff_ntp_time(void);
 
 /**
+ * Get the NTP time stamp formatted as per the RFC-5905.
+ *
+ * @param ntp_time NTP time in micro seconds (since NTP epoch)
+ * @return the formatted NTP time stamp
+ */
+uint64_t ff_get_formatted_ntp_time(uint64_t ntp_time_us);
+
+/**
  * Append the media-specific SDP fragment for the media stream c
  * to the buffer buff.
  *
