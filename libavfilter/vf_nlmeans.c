@@ -64,7 +64,7 @@ typedef struct NLMeansContext {
     ptrdiff_t wa_linesize;                      // linesize for wa in struct size unit
     float weight_lut[WEIGHT_LUT_SIZE];          // lookup table mapping (scaled) patch differences to their associated weights
     float pdiff_lut_scale;                      // scale factor for patch differences before looking into the LUT
-    int max_meaningful_diff;                    // maximum difference considered (if the patch difference is too high we ignore the pixel)
+    uint32_t max_meaningful_diff;               // maximum difference considered (if the patch difference is too high we ignore the pixel)
     NLMeansDSPContext dsp;
 } NLMeansContext;
 
@@ -129,12 +129,12 @@ static int query_formats(AVFilterContext *ctx)
  * contains the sum of the squared difference of every corresponding pixels of
  * two input planes of the same size as M.
  */
-static inline int get_integral_patch_value(const uint32_t *ii, int ii_lz_32, int x, int y, int p)
+static inline uint32_t get_integral_patch_value(const uint32_t *ii, int ii_lz_32, int x, int y, int p)
 {
-    const int a = ii[(y - p - 1) * ii_lz_32 + (x - p - 1)];
-    const int b = ii[(y - p - 1) * ii_lz_32 + (x + p    )];
-    const int d = ii[(y + p    ) * ii_lz_32 + (x - p - 1)];
-    const int e = ii[(y + p    ) * ii_lz_32 + (x + p    )];
+    const uint32_t a = ii[(y - p - 1) * ii_lz_32 + (x - p - 1)];
+    const uint32_t b = ii[(y - p - 1) * ii_lz_32 + (x + p    )];
+    const uint32_t d = ii[(y + p    ) * ii_lz_32 + (x - p - 1)];
+    const uint32_t e = ii[(y + p    ) * ii_lz_32 + (x + p    )];
     return e - d - b + a;
 }
 
@@ -398,9 +398,9 @@ static int nlmeans_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
         const uint8_t *src = td->src + y*src_linesize;
         struct weighted_avg *wa = s->wa + y*s->wa_linesize;
         for (x = td->startx; x < td->endx; x++) {
-            const int patch_diff_sq = get_integral_patch_value(td->ii_start, s->ii_lz_32, x, y, td->p);
+            const uint32_t patch_diff_sq = get_integral_patch_value(td->ii_start, s->ii_lz_32, x, y, td->p);
             if (patch_diff_sq < s->max_meaningful_diff) {
-                const int weight_lut_idx = patch_diff_sq * s->pdiff_lut_scale;
+                const unsigned weight_lut_idx = patch_diff_sq * s->pdiff_lut_scale;
                 const float weight = s->weight_lut[weight_lut_idx]; // exp(-patch_diff_sq * s->pdiff_scale)
                 wa[x].total_weight += weight;
                 wa[x].sum += weight * src[x];
