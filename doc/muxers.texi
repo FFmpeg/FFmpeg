@@ -284,6 +284,10 @@ corrects that index value.
 Typically this logic is needed in live streaming use cases. The network bandwidth
 fluctuations are common during long run streaming. Each fluctuation can cause
 the segment indexes fall behind the expected real time position.
+@item -format_options @var{options_list}
+Set container format (mp4/webm) options using a @code{:} separated list of
+key=value parameters. Values containing @code{:} special characters must be
+escaped.
 @end table
 
 @anchor{framecrc}
