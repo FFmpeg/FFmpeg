@@ -386,6 +386,9 @@ static int cuda_device_create(AVHWDeviceContext *ctx, const char *device,
         goto error;
     }
 
+    // Setting stream to NULL will make functions automatically use the default CUstream
+    hwctx->stream = NULL;
+
     cu->cuCtxPopCurrent(&dummy);
 
     hwctx->internal->is_allocated = 1;
