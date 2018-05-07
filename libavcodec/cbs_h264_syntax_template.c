@@ -761,8 +761,11 @@ static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
         break;
     default:
         {
-            allocate(current->payload.other.data, current->payload_size);
-            for (i = 0; i < current->payload_size; i++)
+#ifdef READ
+            current->payload.other.data_length = current->payload_size;
+#endif
+            allocate(current->payload.other.data, current->payload.other.data_length);
+            for (i = 0; i < current->payload.other.data_length; i++)
                 xu(8, payload_byte[i], current->payload.other.data[i], 0, 255, 1, i);
         }
     }
