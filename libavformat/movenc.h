@@ -46,6 +46,7 @@
 typedef struct MOVIentry {
     uint64_t     pos;
     int64_t      dts;
+    int64_t      pts;
     unsigned int size;
     unsigned int samples_in_chunk;
     unsigned int chunkNum;              ///< Chunk number if the current entry is a chunk start otherwise 0
@@ -169,6 +170,13 @@ typedef enum {
     MOV_ENC_CENC_AES_CTR,
 } MOVEncryptionScheme;
 
+typedef enum {
+    MOV_PRFT_NONE = 0,
+    MOV_PRFT_SRC_WALLCLOCK,
+    MOV_PRFT_SRC_PTS,
+    MOV_PRFT_NB
+} MOVPrftBox;
+
 typedef struct MOVMuxContext {
     const AVClass *av_class;
     int     mode;
@@ -224,6 +232,7 @@ typedef struct MOVMuxContext {
     int use_stream_ids_as_track_ids;
     int track_ids_ok;
     int write_tmcd;
+    MOVPrftBox write_prft;
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT              (1 <<  0)
