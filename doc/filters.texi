@@ -8257,6 +8257,10 @@ local time zone time.
 
 The second argument is an offset added to the timestamp.
 
+If the format is set to @code{hms}, a third argument @code{24HH} may be
+supplied to present the hour part of the formatted timestamp in 24h format
+(00-23).
+
 If the format is set to @code{localtime} or @code{gmtime},
 a third argument may be supplied: a strftime() format string.
 By default, @var{YYYY-MM-DD HH:MM:SS} format will be used.
