@@ -100,44 +100,6 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, fmts_list);
 }
 
-/*
- * M is a discrete map where every entry contains the sum of all the entries
- * in the rectangle from the top-left origin of M to its coordinate. In the
- * following schema, "i" contains the sum of the whole map:
- *
- * M = +----------+-----------------+----+
- *     |          |                 |    |
- *     |          |                 |    |
- *     |         a|                b|   c|
- *     +----------+-----------------+----+
- *     |          |                 |    |
- *     |          |                 |    |
- *     |          |        X        |    |
- *     |          |                 |    |
- *     |         d|                e|   f|
- *     +----------+-----------------+----+
- *     |          |                 |    |
- *     |         g|                h|   i|
- *     +----------+-----------------+----+
- *
- * The sum of the X box can be calculated with:
- *    X = e-d-b+a
- *
- * See https://en.wikipedia.org/wiki/Summed_area_table
- *
- * The compute*_ssd functions compute the integral image M where every entry
- * contains the sum of the squared difference of every corresponding pixels of
- * two input planes of the same size as M.
- */
-static inline uint32_t get_integral_patch_value(const uint32_t *ii, int ii_lz_32, int x, int y, int p)
-{
-    const uint32_t a = ii[(y - p - 1) * ii_lz_32 + (x - p - 1)];
-    const uint32_t b = ii[(y - p - 1) * ii_lz_32 + (x + p    )];
-    const uint32_t d = ii[(y + p    ) * ii_lz_32 + (x - p - 1)];
-    const uint32_t e = ii[(y + p    ) * ii_lz_32 + (x + p    )];
-    return e - d - b + a;
-}
-
 /**
  * Compute squared difference of the safe area (the zone where s1 and s2
  * overlap). It is likely the largest integral zone, so it is interesting to do
@@ -393,12 +355,51 @@ static int nlmeans_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     const int slice_end   = (process_h * (jobnr+1)) / nb_jobs;
     const int starty = td->starty + slice_start;
     const int endy   = td->starty + slice_end;
+    const int p = td->p;
+    const uint32_t *ii = td->ii_start + (starty - p - 1) * s->ii_lz_32 - p - 1;
+    const int dist_b = 2*p + 1;
+    const int dist_d = dist_b * s->ii_lz_32;
+    const int dist_e = dist_d + dist_b;
 
     for (y = starty; y < endy; y++) {
         const uint8_t *src = td->src + y*src_linesize;
         struct weighted_avg *wa = s->wa + y*s->wa_linesize;
         for (x = td->startx; x < td->endx; x++) {
-            const uint32_t patch_diff_sq = get_integral_patch_value(td->ii_start, s->ii_lz_32, x, y, td->p);
+            /*
+             * M is a discrete map where every entry contains the sum of all the entries
+             * in the rectangle from the top-left origin of M to its coordinate. In the
+             * following schema, "i" contains the sum of the whole map:
+             *
+             * M = +----------+-----------------+----+
+             *     |          |                 |    |
+             *     |          |                 |    |
+             *     |         a|                b|   c|
+             *     +----------+-----------------+----+
+             *     |          |                 |    |
+             *     |          |                 |    |
+             *     |          |        X        |    |
+             *     |          |                 |    |
+             *     |         d|                e|   f|
+             *     +----------+-----------------+----+
+             *     |          |                 |    |
+             *     |         g|                h|   i|
+             *     +----------+-----------------+----+
+             *
+             * The sum of the X box can be calculated with:
+             *    X = e-d-b+a
+             *
+             * See https://en.wikipedia.org/wiki/Summed_area_table
+             *
+             * The compute*_ssd functions compute the integral image M where every entry
+             * contains the sum of the squared difference of every corresponding pixels of
+             * two input planes of the same size as M.
+             */
+            const uint32_t a = ii[x];
+            const uint32_t b = ii[x + dist_b];
+            const uint32_t d = ii[x + dist_d];
+            const uint32_t e = ii[x + dist_e];
+            const uint32_t patch_diff_sq = e - d - b + a;
+
             if (patch_diff_sq < s->max_meaningful_diff) {
                 const unsigned weight_lut_idx = patch_diff_sq * s->pdiff_lut_scale;
                 const float weight = s->weight_lut[weight_lut_idx]; // exp(-patch_diff_sq * s->pdiff_scale)
@@ -406,6 +407,7 @@ static int nlmeans_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
                 wa[x].sum += weight * src[x];
             }
         }
+        ii += s->ii_lz_32;
     }
     return 0;
 }
