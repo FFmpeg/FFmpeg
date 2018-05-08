@@ -206,9 +206,7 @@ static int sdl2_write_header(AVFormatContext *s)
         }
     }
 
-    sdl->window_width = sdl->texture_rect.w = codecpar->width;
-    sdl->window_height = sdl->texture_rect.h = codecpar->height;
-    sdl->texture_rect.x = sdl->texture_rect.y = 0;
+    compute_texture_rect(s);
 
     if (SDL_CreateWindowAndRenderer(sdl->window_width, sdl->window_height,
                                     flags, &sdl->window, &sdl->renderer) != 0){
@@ -219,7 +217,7 @@ static int sdl2_write_header(AVFormatContext *s)
     SDL_SetWindowTitle(sdl->window, sdl->window_title);
 
     sdl->texture = SDL_CreateTexture(sdl->renderer, sdl->texture_fmt, SDL_TEXTUREACCESS_STREAMING,
-                                     sdl->window_width, sdl->window_height);
+                                     codecpar->width, codecpar->height);
 
     if (!sdl->texture) {
         av_log(sdl, AV_LOG_ERROR, "Unable to set create mode: %s\n", SDL_GetError());
