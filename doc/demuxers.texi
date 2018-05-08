@@ -538,6 +538,9 @@ This demuxer accepts the following options:
 Set size limit for looking up a new synchronization. Default value is
 65536.
 
+@item skip_unknown_pmt
+Skip PMTs for programs not defined in the PAT. Default value is 0.
+
 @item fix_teletext_pts
 Override teletext packet PTS and DTS values with the timestamps calculated
 from the PCR of the first program which the teletext stream is part of and is
