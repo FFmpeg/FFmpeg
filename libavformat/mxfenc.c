@@ -691,7 +691,7 @@ static void mxf_write_preface(AVFormatContext *s)
 
     // write version
     mxf_write_local_tag(pb, 2, 0x3B05);
-    avio_wb16(pb, 258); // v1.2
+    avio_wb16(pb, 259); // v1.3
 
     // write identification_refs
     mxf_write_local_tag(pb, 16 + 8, 0x3B06);
@@ -1710,7 +1710,7 @@ static int mxf_write_partition(AVFormatContext *s, int bodysid,
 
     // write partition value
     avio_wb16(pb, 1); // majorVersion
-    avio_wb16(pb, 2); // minorVersion
+    avio_wb16(pb, 3); // minorVersion
     avio_wb32(pb, KAG_SIZE); // KAGSize
 
     avio_wb64(pb, partition_offset); // ThisPartition
