@@ -70,20 +70,3 @@ FATE_SAMPLES_FFMPEG-$(call ALLYES, MOV_DEMUXER HAPQA_EXTRACT_BSF MOV_MUXER) += $
 FATE_SAMPLES_FFPROBE += $(FATE_HAPQA_EXTRACT_BSF_FFPROBE)
 
 fate-hapqa-extract-bsf: $(FATE_HAPQA_EXTRACT_BSF) $(FATE_HAPQA_EXTRACT_BSF_FFPROBE)
-
-
-fate-hapenc%: CMD = framemd5 -f image2 -c:v pgmyuv -i $(TARGET_PATH)/tests/vsynth1/%02d.pgm -sws_flags +accurate_rnd+bitexact -vframes 5 -c:v hap ${OPTS}
-
-FATE_HAPENC += fate-hapenc-hap-none
-fate-hapenc-hap-none: OPTS = -pix_fmt rgba -format hap -compressor none
-
-FATE_HAPENC += fate-hapenc-hapa-none
-fate-hapenc-hapa-none: OPTS = -pix_fmt rgba -format hap_alpha -compressor none
-
-FATE_HAPENC += fate-hapenc-hapq-none
-fate-hapenc-hapq-none: OPTS = -pix_fmt rgba -format hap_q -compressor none
-
-$(FATE_HAPENC): $(VREF)
-
-FATE_AVCONV-$(call ENCMUX, HAP, MOV) += $(FATE_HAPENC)
-fate-hapenc: $(FATE_HAPENC)
