@@ -555,6 +555,10 @@ Show the detected raw packet size, cannot be set by the user.
 Scan and combine all PMTs. The value is an integer with value from -1
 to 1 (-1 means automatic setting, 1 means enabled, 0 means
 disabled). Default value is -1.
+
+@item merge_pmt_versions
+Re-use existing streams when a PMT's version is updated and elementary
+streams move to different PIDs. Default value is 0.
 @end table
 
 @section mpjpeg
