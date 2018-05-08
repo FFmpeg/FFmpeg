@@ -42,6 +42,7 @@ typedef struct {
     int window_width, window_height;  /**< size of the window */
     int window_fullscreen;
     int window_borderless;
+    int enable_quit_action;
 
     SDL_Texture *texture;
     int texture_fmt;
@@ -277,7 +278,7 @@ static int sdl2_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
-    if (quit) {
+    if (quit && sdl->enable_quit_action) {
         sdl2_write_trailer(s);
         return AVERROR(EIO);
     }
@@ -338,6 +339,7 @@ static const AVOption options[] = {
     { "window_size",       "set SDL window forced size", OFFSET(window_width), AV_OPT_TYPE_IMAGE_SIZE, { .str = NULL }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
     { "window_fullscreen", "set SDL window fullscreen",  OFFSET(window_fullscreen), AV_OPT_TYPE_BOOL,  { .i64 = 0 },    0, 1, AV_OPT_FLAG_ENCODING_PARAM },
     { "window_borderless", "set SDL window border off",  OFFSET(window_borderless), AV_OPT_TYPE_BOOL,  { .i64 = 0 },    0, 1, AV_OPT_FLAG_ENCODING_PARAM },
+    { "window_enable_quit", "set if quit action is available", OFFSET(enable_quit_action), AV_OPT_TYPE_INT, {.i64=1},   0, 1, AV_OPT_FLAG_ENCODING_PARAM },
     { NULL },
 };
 
