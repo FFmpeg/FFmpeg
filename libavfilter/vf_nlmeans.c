@@ -289,8 +289,8 @@ static int config_input(AVFilterLink *inlink)
     const int e = FFMAX(s->research_hsize, s->research_hsize_uv)
                 + FFMAX(s->patch_hsize,    s->patch_hsize_uv);
 
-    s->chroma_w = FF_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
-    s->chroma_h = FF_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
+    s->chroma_w = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
+    s->chroma_h = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
     /* Allocate the integral image with extra edges of thickness "e"
