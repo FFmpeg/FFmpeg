@@ -1390,6 +1390,27 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return 0;
 }
 
+static int request_frame(AVFilterLink *outlink)
+{
+    AVFilterContext *ctx = outlink->src;
+    AudioSurroundContext *s = ctx->priv;
+    int ret = 0;
+
+    ret = ff_request_frame(ctx->inputs[0]);
+
+    if (ret == AVERROR_EOF && av_audio_fifo_size(s->fifo) > 0 && av_audio_fifo_size(s->fifo) < s->buf_size) {
+        AVFrame *in;
+
+        in = ff_get_audio_buffer(outlink, s->buf_size - av_audio_fifo_size(s->fifo));
+        if (!in)
+            return AVERROR(ENOMEM);
+        ret = filter_frame(ctx->inputs[0], in);
+        av_audio_fifo_drain(s->fifo, s->buf_size);
+    }
+
+    return ret;
+}
+
 static av_cold void uninit(AVFilterContext *ctx)
 {
     AudioSurroundContext *s = ctx->priv;
@@ -1445,9 +1466,10 @@ static const AVFilterPad inputs[] = {
 
 static const AVFilterPad outputs[] = {
     {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_AUDIO,
-        .config_props = config_output,
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_AUDIO,
+        .request_frame = request_frame,
+        .config_props  = config_output,
     },
     { NULL }
 };

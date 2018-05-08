@@ -250,11 +250,6 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
     int maxband, keyframe;
     int last[2];
 
-    /* get output buffer */
-    frame->nb_samples = MPC_FRAME_SIZE;
-    if ((res = ff_get_buffer(avctx, frame, 0)) < 0)
-        return res;
-
     keyframe = c->cur_frame == 0;
 
     if(keyframe){
@@ -271,6 +266,11 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
     else{
         maxband = c->last_max_band + get_vlc2(gb, band_vlc.table, MPC8_BANDS_BITS, 2);
         if(maxband > 32) maxband -= 33;
+    }
+
+    if (get_bits_left(gb) < 0) {
+        *got_frame_ptr = 0;
+        return buf_size;
     }
 
     if(maxband > c->maxbands + 1) {
@@ -410,6 +410,10 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
         }
     }
 
+    frame->nb_samples = MPC_FRAME_SIZE;
+    if ((res = ff_get_buffer(avctx, frame, 0)) < 0)
+        return res;
+
     ff_mpc_dequantize_and_synth(c, maxband - 1,
                                 (int16_t **)frame->extended_data,
                                 avctx->channels);
@@ -419,10 +423,10 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
     c->last_bits_used = get_bits_count(gb);
     if(c->cur_frame >= c->frames)
         c->cur_frame = 0;
-    if(c->cur_frame == 0 && get_bits_left(gb) < 8) {// we have only padding left
-        c->last_bits_used = buf_size << 3;
-    } else if (get_bits_left(gb) < 0) {
+    if (get_bits_left(gb) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Overread %d\n", -get_bits_left(gb));
+        c->last_bits_used = buf_size << 3;
+    } else if (c->cur_frame == 0 && get_bits_left(gb) < 8) {// we have only padding left
         c->last_bits_used = buf_size << 3;
     }
 

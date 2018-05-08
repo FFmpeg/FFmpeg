@@ -16,16 +16,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/avassert.h"
-#include "libavutil/buffer.h"
-#include "libavutil/common.h"
-#include "libavutil/hwcontext.h"
-#include "libavutil/hwcontext_opencl.h"
 #include "libavutil/log.h"
-#include "libavutil/mathematics.h"
 #include "libavutil/mem.h"
-#include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
+#include "libavutil/pixdesc.h"
 
 #include "avfilter.h"
 #include "framesync.h"
@@ -216,8 +210,10 @@ static int overlay_opencl_blend(FFFrameSync *fs)
                 goto fail_kernel_arg;
         }
 
-        global_work[0] = output->width;
-        global_work[1] = output->height;
+        err = ff_opencl_filter_work_size_from_image(avctx, global_work,
+                                                    output, plane, 0);
+        if (err < 0)
+            goto fail;
 
         cle = clEnqueueNDRangeKernel(ctx->command_queue, ctx->kernel, 2, NULL,
                                      global_work, NULL, 0, NULL, NULL);

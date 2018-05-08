@@ -254,7 +254,7 @@ void ff_vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
             v->luma_mv[s->mb_x][0] = v->luma_mv[s->mb_x][1] = 0;
             s->current_picture.motion_val[1][xy + 1 + v->blocks_off][0]        = 0;
             s->current_picture.motion_val[1][xy + 1 + v->blocks_off][1]        = 0;
-            s->current_picture.motion_val[1][xy + wrap][0]                     = 0;
+            s->current_picture.motion_val[1][xy + wrap + v->blocks_off][0]     = 0;
             s->current_picture.motion_val[1][xy + wrap + v->blocks_off][1]     = 0;
             s->current_picture.motion_val[1][xy + wrap + 1 + v->blocks_off][0] = 0;
             s->current_picture.motion_val[1][xy + wrap + 1 + v->blocks_off][1] = 0;
@@ -341,6 +341,8 @@ void ff_vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
     } else
         opposite = 0;
     if (opposite) {
+        v->mv_f[dir][xy + v->blocks_off] = 1;
+        v->ref_field_type[dir] = !v->cur_field_type;
         if (a_valid && !a_f) {
             field_predA[0] = scaleforopp(v, field_predA[0], 0, dir);
             field_predA[1] = scaleforopp(v, field_predA[1], 1, dir);
@@ -353,9 +355,9 @@ void ff_vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
             field_predC[0] = scaleforopp(v, field_predC[0], 0, dir);
             field_predC[1] = scaleforopp(v, field_predC[1], 1, dir);
         }
-        v->mv_f[dir][xy + v->blocks_off] = 1;
-        v->ref_field_type[dir] = !v->cur_field_type;
     } else {
+        v->mv_f[dir][xy + v->blocks_off] = 0;
+        v->ref_field_type[dir] = v->cur_field_type;
         if (a_valid && a_f) {
             field_predA[0] = scaleforsame(v, n, field_predA[0], 0, dir);
             field_predA[1] = scaleforsame(v, n, field_predA[1], 1, dir);
@@ -368,8 +370,6 @@ void ff_vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
             field_predC[0] = scaleforsame(v, n, field_predC[0], 0, dir);
             field_predC[1] = scaleforsame(v, n, field_predC[1], 1, dir);
         }
-        v->mv_f[dir][xy + v->blocks_off] = 0;
-        v->ref_field_type[dir] = v->cur_field_type;
     }
 
     if (a_valid) {

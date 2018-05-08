@@ -89,6 +89,8 @@ typedef struct {
 } Channel;
 
 typedef struct {
+    int hd;
+    int block_size;
     int32_t sync_idx;
     Channel channels[NB_CHANNELS];
     AudioFrameQueue afq;
@@ -182,41 +184,268 @@ static const int16_t quantize_factor_select_offset_HF[5] = {
     0, -8, 33, 95, 262,
 };
 
+
+static const int32_t hd_quantize_intervals_LF[257] = {
+      -2436,    2436,    7308,   12180,   17054,   21930,   26806,   31686,
+      36566,   41450,   46338,   51230,   56124,   61024,   65928,   70836,
+      75750,   80670,   85598,   90530,   95470,  100418,  105372,  110336,
+     115308,  120288,  125278,  130276,  135286,  140304,  145334,  150374,
+     155426,  160490,  165566,  170654,  175756,  180870,  185998,  191138,
+     196294,  201466,  206650,  211850,  217068,  222300,  227548,  232814,
+     238096,  243396,  248714,  254050,  259406,  264778,  270172,  275584,
+     281018,  286470,  291944,  297440,  302956,  308496,  314056,  319640,
+     325248,  330878,  336532,  342212,  347916,  353644,  359398,  365178,
+     370986,  376820,  382680,  388568,  394486,  400430,  406404,  412408,
+     418442,  424506,  430600,  436726,  442884,  449074,  455298,  461554,
+     467844,  474168,  480528,  486922,  493354,  499820,  506324,  512866,
+     519446,  526064,  532722,  539420,  546160,  552940,  559760,  566624,
+     573532,  580482,  587478,  594520,  601606,  608740,  615920,  623148,
+     630426,  637754,  645132,  652560,  660042,  667576,  675164,  682808,
+     690506,  698262,  706074,  713946,  721876,  729868,  737920,  746036,
+     754216,  762460,  770770,  779148,  787594,  796108,  804694,  813354,
+     822086,  830892,  839774,  848736,  857776,  866896,  876100,  885386,
+     894758,  904218,  913766,  923406,  933138,  942964,  952886,  962908,
+     973030,  983254,  993582, 1004020, 1014566, 1025224, 1035996, 1046886,
+    1057894, 1069026, 1080284, 1091670, 1103186, 1114838, 1126628, 1138558,
+    1150634, 1162858, 1175236, 1187768, 1200462, 1213320, 1226346, 1239548,
+    1252928, 1266490, 1280242, 1294188, 1308334, 1322688, 1337252, 1352034,
+    1367044, 1382284, 1397766, 1413494, 1429478, 1445728, 1462252, 1479058,
+    1496158, 1513562, 1531280, 1549326, 1567710, 1586446, 1605550, 1625034,
+    1644914, 1665208, 1685932, 1707108, 1728754, 1750890, 1773542, 1796732,
+    1820488, 1844840, 1869816, 1895452, 1921780, 1948842, 1976680, 2005338,
+    2034868, 2065322, 2096766, 2129260, 2162880, 2197708, 2233832, 2271352,
+    2310384, 2351050, 2393498, 2437886, 2484404, 2533262, 2584710, 2639036,
+    2696578, 2757738, 2822998, 2892940, 2968278, 3049896, 3138912, 3236760,
+    3345312, 3467068, 3605434, 3765154, 3952904, 4177962, 4452178, 4787134,
+    5187290, 5647128, 6159120, 6720518, 7332904, 8000032, 8726664, 9518152,
+    10380372,
+};
+static const int32_t hd_invert_quantize_dither_factors_LF[257] = {
+      2436,   2436,   2436,   2436,   2438,   2438,   2438,   2440,
+      2442,   2442,   2444,   2446,   2448,   2450,   2454,   2456,
+      2458,   2462,   2464,   2468,   2472,   2476,   2480,   2484,
+      2488,   2492,   2498,   2502,   2506,   2512,   2518,   2524,
+      2528,   2534,   2540,   2548,   2554,   2560,   2568,   2574,
+      2582,   2588,   2596,   2604,   2612,   2620,   2628,   2636,
+      2646,   2654,   2664,   2672,   2682,   2692,   2702,   2712,
+      2722,   2732,   2742,   2752,   2764,   2774,   2786,   2798,
+      2810,   2822,   2834,   2846,   2858,   2870,   2884,   2896,
+      2910,   2924,   2938,   2952,   2966,   2980,   2994,   3010,
+      3024,   3040,   3056,   3070,   3086,   3104,   3120,   3136,
+      3154,   3170,   3188,   3206,   3224,   3242,   3262,   3280,
+      3300,   3320,   3338,   3360,   3380,   3400,   3422,   3442,
+      3464,   3486,   3508,   3532,   3554,   3578,   3602,   3626,
+      3652,   3676,   3702,   3728,   3754,   3780,   3808,   3836,
+      3864,   3892,   3920,   3950,   3980,   4010,   4042,   4074,
+      4106,   4138,   4172,   4206,   4240,   4276,   4312,   4348,
+      4384,   4422,   4460,   4500,   4540,   4580,   4622,   4664,
+      4708,   4752,   4796,   4842,   4890,   4938,   4986,   5036,
+      5086,   5138,   5192,   5246,   5300,   5358,   5416,   5474,
+      5534,   5596,   5660,   5726,   5792,   5860,   5930,   6002,
+      6074,   6150,   6226,   6306,   6388,   6470,   6556,   6644,
+      6736,   6828,   6924,   7022,   7124,   7228,   7336,   7448,
+      7562,   7680,   7802,   7928,   8058,   8192,   8332,   8476,
+      8624,   8780,   8940,   9106,   9278,   9458,   9644,   9840,
+     10042,  10252,  10472,  10702,  10942,  11194,  11458,  11734,
+     12024,  12328,  12648,  12986,  13342,  13720,  14118,  14540,
+     14990,  15466,  15976,  16520,  17102,  17726,  18398,  19124,
+     19908,  20760,  21688,  22702,  23816,  25044,  26404,  27922,
+     29622,  31540,  33720,  36222,  39116,  42502,  46514,  51334,
+     57218,  64536,  73830,  85890, 101860, 123198, 151020, 183936,
+    216220, 243618, 268374, 293022, 319362, 347768, 378864, 412626, 449596,
+};
+static const int32_t hd_quantize_dither_factors_LF[256] = {
+       0,    0,    0,    1,    0,    0,    1,    1,
+       0,    1,    1,    1,    1,    1,    1,    1,
+       1,    1,    1,    1,    1,    1,    1,    1,
+       1,    2,    1,    1,    2,    2,    2,    1,
+       2,    2,    2,    2,    2,    2,    2,    2,
+       2,    2,    2,    2,    2,    2,    2,    3,
+       2,    3,    2,    3,    3,    3,    3,    3,
+       3,    3,    3,    3,    3,    3,    3,    3,
+       3,    3,    3,    3,    3,    4,    3,    4,
+       4,    4,    4,    4,    4,    4,    4,    4,
+       4,    4,    4,    4,    5,    4,    4,    5,
+       4,    5,    5,    5,    5,    5,    5,    5,
+       5,    5,    6,    5,    5,    6,    5,    6,
+       6,    6,    6,    6,    6,    6,    6,    7,
+       6,    7,    7,    7,    7,    7,    7,    7,
+       7,    7,    8,    8,    8,    8,    8,    8,
+       8,    9,    9,    9,    9,    9,    9,    9,
+      10,   10,   10,   10,   10,   11,   11,   11,
+      11,   11,   12,   12,   12,   12,   13,   13,
+      13,   14,   14,   14,   15,   15,   15,   15,
+      16,   16,   17,   17,   17,   18,   18,   18,
+      19,   19,   20,   21,   21,   22,   22,   23,
+      23,   24,   25,   26,   26,   27,   28,   29,
+      30,   31,   32,   33,   34,   35,   36,   37,
+      39,   40,   42,   43,   45,   47,   49,   51,
+      53,   55,   58,   60,   63,   66,   69,   73,
+      76,   80,   85,   89,   95,  100,  106,  113,
+     119,  128,  136,  146,  156,  168,  182,  196,
+     213,  232,  254,  279,  307,  340,  380,  425,
+     480,  545,  626,  724,  847, 1003, 1205, 1471,
+    1830, 2324, 3015, 3993, 5335, 6956, 8229, 8071,
+    6850, 6189, 6162, 6585, 7102, 7774, 8441, 9243,
+};
+static const int16_t hd_quantize_factor_select_offset_LF[257] = {
+      0, -22, -21, -21, -20, -20, -19, -19,
+    -18, -18, -17, -17, -16, -16, -15, -14,
+    -14, -13, -13, -12, -12, -11, -11, -10,
+    -10,  -9,  -9,  -8,  -7,  -7,  -6,  -6,
+     -5,  -5,  -4,  -4,  -3,  -3,  -2,  -1,
+     -1,   0,   0,   1,   1,   2,   2,   3,
+      4,   4,   5,   5,   6,   6,   7,   8,
+      8,   9,   9,  10,  11,  11,  12,  12,
+     13,  14,  14,  15,  15,  16,  17,  17,
+     18,  19,  19,  20,  20,  21,  22,  22,
+     23,  24,  24,  25,  26,  26,  27,  28,
+     28,  29,  30,  30,  31,  32,  33,  33,
+     34,  35,  35,  36,  37,  38,  38,  39,
+     40,  41,  41,  42,  43,  44,  44,  45,
+     46,  47,  48,  48,  49,  50,  51,  52,
+     52,  53,  54,  55,  56,  57,  58,  58,
+     59,  60,  61,  62,  63,  64,  65,  66,
+     67,  68,  69,  69,  70,  71,  72,  73,
+     74,  75,  77,  78,  79,  80,  81,  82,
+     83,  84,  85,  86,  87,  89,  90,  91,
+     92,  93,  94,  96,  97,  98,  99, 101,
+    102, 103, 105, 106, 107, 109, 110, 112,
+    113, 115, 116, 118, 119, 121, 122, 124,
+    125, 127, 129, 130, 132, 134, 136, 137,
+    139, 141, 143, 145, 147, 149, 151, 153,
+    155, 158, 160, 162, 164, 167, 169, 172,
+    174, 177, 180, 182, 185, 188, 191, 194,
+    197, 201, 204, 208, 211, 215, 219, 223,
+    227, 232, 236, 241, 246, 251, 257, 263,
+    269, 275, 283, 290, 298, 307, 317, 327,
+    339, 352, 367, 384, 404, 429, 458, 494,
+    522, 522, 522, 522, 522, 522, 522, 522, 522,
+};
+
+
+static const int32_t hd_quantize_intervals_MLF[33] = {
+      -21236,   21236,   63830,  106798,  150386,  194832,  240376,  287258,
+      335726,  386034,  438460,  493308,  550924,  611696,  676082,  744626,
+      817986,  896968,  982580, 1076118, 1179278, 1294344, 1424504, 1574386,
+     1751090, 1966260, 2240868, 2617662, 3196432, 4176450, 5658260, 7671068,
+    10380372,
+};
+static const int32_t hd_invert_quantize_dither_factors_MLF[33] = {
+    21236,  21236,  21360,  21608,  21978,  22468,  23076,   23806,
+    24660,  25648,  26778,  28070,  29544,  31228,  33158,   35386,
+    37974,  41008,  44606,  48934,  54226,  60840,  69320,   80564,
+    96140, 119032, 155576, 221218, 357552, 622468, 859344, 1153464, 1555840,
+};
+static const int32_t hd_quantize_dither_factors_MLF[32] = {
+       0,   31,    62,    93,   123,   152,   183,    214,
+     247,  283,   323,   369,   421,   483,   557,    647,
+     759,  900,  1082,  1323,  1654,  2120,  2811,   3894,
+    5723, 9136, 16411, 34084, 66229, 59219, 73530, 100594,
+};
+static const int16_t hd_quantize_factor_select_offset_MLF[33] = {
+      0, -21, -16, -12,  -7,  -2,   3,   8,
+     13,  19,  24,  30,  36,  43,  50,  57,
+     65,  74,  83,  93, 104, 117, 131, 147,
+    166, 189, 219, 259, 322, 427, 521, 521, 521,
+};
+
+
+static const int32_t hd_quantize_intervals_MHF[9] = {
+    -95044, 95044, 295844, 528780, 821332, 1226438, 1890540, 3344850, 6450664,
+};
+static const int32_t hd_invert_quantize_dither_factors_MHF[9] = {
+    95044, 95044, 105754, 127180, 165372, 39736, 424366, 1029946, 2075866,
+};
+static const int32_t hd_quantize_dither_factors_MHF[8] = {
+    0, 2678, 5357, 9548, -31409, 96158, 151395, 261480,
+};
+static const int16_t hd_quantize_factor_select_offset_MHF[9] = {
+    0, -17, 5, 30, 62, 105, 177, 334, 518,
+};
+
+
+static const int32_t hd_quantize_intervals_HF[17] = {
+     -45754,   45754,  138496,  234896,  337336,  448310,  570738,  708380,
+     866534, 1053262, 1281958, 1577438, 1993050, 2665984, 3900982, 5902844,
+    8897462,
+};
+static const int32_t hd_invert_quantize_dither_factors_HF[17] = {
+    45754,  45754,  46988,  49412,  53026,  57950,  64478,   73164,
+    84988, 101740, 126958, 168522, 247092, 425842, 809154, 1192708, 1801910,
+};
+static const int32_t hd_quantize_dither_factors_HF[16] = {
+       0,  309,   606,   904,  1231,  1632,  2172,   2956,
+    4188, 6305, 10391, 19643, 44688, 95828, 95889, 152301,
+};
+static const int16_t hd_quantize_factor_select_offset_HF[17] = {
+     0, -18,  -8,   2,  13,  25,  38,  53,
+    70,  90, 115, 147, 192, 264, 398, 521, 521,
+};
+
 typedef const struct {
     const int32_t *quantize_intervals;
     const int32_t *invert_quantize_dither_factors;
     const int32_t *quantize_dither_factors;
     const int16_t *quantize_factor_select_offset;
     int tables_size;
-    int32_t quantized_bits;
+    int32_t factor_max;
     int32_t prediction_order;
 } ConstTables;
 
-static ConstTables tables[NB_SUBBANDS] = {
-    [LF]  = { quantize_intervals_LF,
-              invert_quantize_dither_factors_LF,
-              quantize_dither_factors_LF,
-              quantize_factor_select_offset_LF,
-              FF_ARRAY_ELEMS(quantize_intervals_LF),
-              7, 24 },
-    [MLF] = { quantize_intervals_MLF,
-              invert_quantize_dither_factors_MLF,
-              quantize_dither_factors_MLF,
-              quantize_factor_select_offset_MLF,
-              FF_ARRAY_ELEMS(quantize_intervals_MLF),
-              4, 12 },
-    [MHF] = { quantize_intervals_MHF,
-              invert_quantize_dither_factors_MHF,
-              quantize_dither_factors_MHF,
-              quantize_factor_select_offset_MHF,
-              FF_ARRAY_ELEMS(quantize_intervals_MHF),
-              2, 6 },
-    [HF]  = { quantize_intervals_HF,
-              invert_quantize_dither_factors_HF,
-              quantize_dither_factors_HF,
-              quantize_factor_select_offset_HF,
-              FF_ARRAY_ELEMS(quantize_intervals_HF),
-              3, 12 },
+static ConstTables tables[2][NB_SUBBANDS] = {
+    {
+        [LF]  = { quantize_intervals_LF,
+                  invert_quantize_dither_factors_LF,
+                  quantize_dither_factors_LF,
+                  quantize_factor_select_offset_LF,
+                  FF_ARRAY_ELEMS(quantize_intervals_LF),
+                  0x11FF, 24 },
+        [MLF] = { quantize_intervals_MLF,
+                  invert_quantize_dither_factors_MLF,
+                  quantize_dither_factors_MLF,
+                  quantize_factor_select_offset_MLF,
+                  FF_ARRAY_ELEMS(quantize_intervals_MLF),
+                  0x14FF, 12 },
+        [MHF] = { quantize_intervals_MHF,
+                  invert_quantize_dither_factors_MHF,
+                  quantize_dither_factors_MHF,
+                  quantize_factor_select_offset_MHF,
+                  FF_ARRAY_ELEMS(quantize_intervals_MHF),
+                  0x16FF, 6 },
+        [HF]  = { quantize_intervals_HF,
+                  invert_quantize_dither_factors_HF,
+                  quantize_dither_factors_HF,
+                  quantize_factor_select_offset_HF,
+                  FF_ARRAY_ELEMS(quantize_intervals_HF),
+                  0x15FF, 12 },
+    },
+    {
+        [LF]  = { hd_quantize_intervals_LF,
+                  hd_invert_quantize_dither_factors_LF,
+                  hd_quantize_dither_factors_LF,
+                  hd_quantize_factor_select_offset_LF,
+                  FF_ARRAY_ELEMS(hd_quantize_intervals_LF),
+                  0x11FF, 24 },
+        [MLF] = { hd_quantize_intervals_MLF,
+                  hd_invert_quantize_dither_factors_MLF,
+                  hd_quantize_dither_factors_MLF,
+                  hd_quantize_factor_select_offset_MLF,
+                  FF_ARRAY_ELEMS(hd_quantize_intervals_MLF),
+                  0x14FF, 12 },
+        [MHF] = { hd_quantize_intervals_MHF,
+                  hd_invert_quantize_dither_factors_MHF,
+                  hd_quantize_dither_factors_MHF,
+                  hd_quantize_factor_select_offset_MHF,
+                  FF_ARRAY_ELEMS(hd_quantize_intervals_MHF),
+                  0x16FF, 6 },
+        [HF]  = { hd_quantize_intervals_HF,
+                  hd_invert_quantize_dither_factors_HF,
+                  hd_quantize_dither_factors_HF,
+                  hd_quantize_factor_select_offset_HF,
+                  FF_ARRAY_ELEMS(hd_quantize_intervals_HF),
+                  0x15FF, 12 },
+    }
 };
 
 static const int16_t quantization_factors[32] = {
@@ -462,10 +691,13 @@ static void aptx_quantize_difference(Quantize *quantize,
 {
     const int32_t *intervals = tables->quantize_intervals;
     int32_t quantized_sample, dithered_sample, parity_change;
-    int32_t d, mean, interval, inv;
+    int32_t d, mean, interval, inv, sample_difference_abs;
     int64_t error;
 
-    quantized_sample = aptx_bin_search(FFABS(sample_difference) >> 4,
+    sample_difference_abs = FFABS(sample_difference);
+    sample_difference_abs = FFMIN(sample_difference_abs, (1 << 23) - 1);
+
+    quantized_sample = aptx_bin_search(sample_difference_abs >> 4,
                                        quantization_factor,
                                        intervals, tables->tables_size);
 
@@ -476,8 +708,8 @@ static void aptx_quantize_difference(Quantize *quantize,
     mean = (intervals[1] + intervals[0]) / 2;
     interval = (intervals[1] - intervals[0]) * (-(sample_difference < 0) | 1);
 
-    dithered_sample = rshift64_clip24(MUL64(dither, interval) + ((int64_t)(mean + d) << 32), 32);
-    error = ((int64_t)FFABS(sample_difference) << 20) - MUL64(dithered_sample, quantization_factor);
+    dithered_sample = rshift64_clip24(MUL64(dither, interval) + ((int64_t)av_clip_intp2(mean + d, 23) << 32), 32);
+    error = ((int64_t)sample_difference_abs << 20) - MUL64(dithered_sample, quantization_factor);
     quantize->error = FFABS(rshift64(error, 23));
 
     parity_change = quantized_sample;
@@ -491,7 +723,7 @@ static void aptx_quantize_difference(Quantize *quantize,
     quantize->quantized_sample_parity_change = parity_change    ^ inv;
 }
 
-static void aptx_encode_channel(Channel *channel, int32_t samples[4])
+static void aptx_encode_channel(Channel *channel, int32_t samples[4], int hd)
 {
     int32_t subband_samples[4];
     int subband;
@@ -502,7 +734,7 @@ static void aptx_encode_channel(Channel *channel, int32_t samples[4])
         aptx_quantize_difference(&channel->quantize[subband], diff,
                                  channel->dither[subband],
                                  channel->invert_quantize[subband].quantization_factor,
-                                 &tables[subband]);
+                                 &tables[hd][subband]);
     }
 }
 
@@ -530,16 +762,14 @@ static void aptx_invert_quantization(InvertQuantize *invert_quantize,
     qr = rshift64_clip24(((int64_t)qr<<32) + MUL64(dither, tables->invert_quantize_dither_factors[idx]), 32);
     invert_quantize->reconstructed_difference = MUL64(invert_quantize->quantization_factor, qr) >> 19;
 
-    shift = 24 - tables->quantized_bits;
-
     /* update factor_select */
     factor_select = 32620 * invert_quantize->factor_select;
     factor_select = rshift32(factor_select + (tables->quantize_factor_select_offset[idx] << 15), 15);
-    invert_quantize->factor_select = av_clip(factor_select, 0, (shift << 8) | 0xFF);
+    invert_quantize->factor_select = av_clip(factor_select, 0, tables->factor_max);
 
     /* update quantization factor */
     idx = (invert_quantize->factor_select & 0xFF) >> 3;
-    shift -= invert_quantize->factor_select >> 8;
+    shift = (tables->factor_max - invert_quantize->factor_select) >> 8;
     invert_quantize->quantization_factor = (quantization_factors[idx] << 11) >> shift;
 }
 
@@ -615,7 +845,7 @@ static void aptx_process_subband(InvertQuantize *invert_quantize,
                               tables->prediction_order);
 }
 
-static void aptx_invert_quantize_and_prediction(Channel *channel)
+static void aptx_invert_quantize_and_prediction(Channel *channel, int hd)
 {
     int subband;
     for (subband = 0; subband < NB_SUBBANDS; subband++)
@@ -623,7 +853,7 @@ static void aptx_invert_quantize_and_prediction(Channel *channel)
                              &channel->prediction[subband],
                              channel->quantize[subband].quantized_sample,
                              channel->dither[subband],
-                             &tables[subband]);
+                             &tables[hd][subband]);
 }
 
 static int32_t aptx_quantized_parity(Channel *channel)
@@ -677,6 +907,15 @@ static uint16_t aptx_pack_codeword(Channel *channel)
          | (((channel->quantize[0].quantized_sample & 0x7F)         ) <<  0);
 }
 
+static uint32_t aptxhd_pack_codeword(Channel *channel)
+{
+    int32_t parity = aptx_quantized_parity(channel);
+    return (((channel->quantize[3].quantized_sample & 0x01E) | parity) << 19)
+         | (((channel->quantize[2].quantized_sample & 0x00F)         ) << 15)
+         | (((channel->quantize[1].quantized_sample & 0x03F)         ) <<  9)
+         | (((channel->quantize[0].quantized_sample & 0x1FF)         ) <<  0);
+}
+
 static void aptx_unpack_codeword(Channel *channel, uint16_t codeword)
 {
     channel->quantize[0].quantized_sample = sign_extend(codeword >>  0, 7);
@@ -687,35 +926,53 @@ static void aptx_unpack_codeword(Channel *channel, uint16_t codeword)
                                           | aptx_quantized_parity(channel);
 }
 
+static void aptxhd_unpack_codeword(Channel *channel, uint32_t codeword)
+{
+    channel->quantize[0].quantized_sample = sign_extend(codeword >>  0, 9);
+    channel->quantize[1].quantized_sample = sign_extend(codeword >>  9, 6);
+    channel->quantize[2].quantized_sample = sign_extend(codeword >> 15, 4);
+    channel->quantize[3].quantized_sample = sign_extend(codeword >> 19, 5);
+    channel->quantize[3].quantized_sample = (channel->quantize[3].quantized_sample & ~1)
+                                          | aptx_quantized_parity(channel);
+}
+
 static void aptx_encode_samples(AptXContext *ctx,
                                 int32_t samples[NB_CHANNELS][4],
-                                uint8_t output[2*NB_CHANNELS])
+                                uint8_t *output)
 {
     int channel;
     for (channel = 0; channel < NB_CHANNELS; channel++)
-        aptx_encode_channel(&ctx->channels[channel], samples[channel]);
+        aptx_encode_channel(&ctx->channels[channel], samples[channel], ctx->hd);
 
     aptx_insert_sync(ctx->channels, &ctx->sync_idx);
 
     for (channel = 0; channel < NB_CHANNELS; channel++) {
-        aptx_invert_quantize_and_prediction(&ctx->channels[channel]);
-        AV_WB16(output + 2*channel, aptx_pack_codeword(&ctx->channels[channel]));
+        aptx_invert_quantize_and_prediction(&ctx->channels[channel], ctx->hd);
+        if (ctx->hd)
+            AV_WB24(output + 3*channel,
+                    aptxhd_pack_codeword(&ctx->channels[channel]));
+        else
+            AV_WB16(output + 2*channel,
+                    aptx_pack_codeword(&ctx->channels[channel]));
     }
 }
 
 static int aptx_decode_samples(AptXContext *ctx,
-                                const uint8_t input[2*NB_CHANNELS],
+                                const uint8_t *input,
                                 int32_t samples[NB_CHANNELS][4])
 {
     int channel, ret;
 
     for (channel = 0; channel < NB_CHANNELS; channel++) {
-        uint16_t codeword;
         aptx_generate_dither(&ctx->channels[channel]);
 
-        codeword = AV_RB16(input + 2*channel);
-        aptx_unpack_codeword(&ctx->channels[channel], codeword);
-        aptx_invert_quantize_and_prediction(&ctx->channels[channel]);
+        if (ctx->hd)
+            aptxhd_unpack_codeword(&ctx->channels[channel],
+                                   AV_RB24(input + 3*channel));
+        else
+            aptx_unpack_codeword(&ctx->channels[channel],
+                                 AV_RB16(input + 2*channel));
+        aptx_invert_quantize_and_prediction(&ctx->channels[channel], ctx->hd);
     }
 
     ret = aptx_check_parity(ctx->channels, &ctx->sync_idx);
@@ -732,11 +989,15 @@ static av_cold int aptx_init(AVCodecContext *avctx)
     AptXContext *s = avctx->priv_data;
     int chan, subband;
 
-    if (avctx->frame_size == 0)
-        avctx->frame_size = 1024;
+    s->hd = avctx->codec->id == AV_CODEC_ID_APTX_HD;
+    s->block_size = s->hd ? 6 : 4;
 
-    if (avctx->frame_size & 3) {
-        av_log(avctx, AV_LOG_ERROR, "Frame size must be a multiple of 4 samples\n");
+    if (avctx->frame_size == 0)
+        avctx->frame_size = 256 * s->block_size;
+
+    if (avctx->frame_size % s->block_size) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Frame size must be a multiple of %d samples\n", s->block_size);
         return AVERROR(EINVAL);
     }
 
@@ -758,9 +1019,9 @@ static int aptx_decode_frame(AVCodecContext *avctx, void *data,
 {
     AptXContext *s = avctx->priv_data;
     AVFrame *frame = data;
-    int pos, channel, sample, ret;
+    int pos, opos, channel, sample, ret;
 
-    if (avpkt->size < 4) {
+    if (avpkt->size < s->block_size) {
         av_log(avctx, AV_LOG_ERROR, "Packet is too small\n");
         return AVERROR_INVALIDDATA;
     }
@@ -768,11 +1029,11 @@ static int aptx_decode_frame(AVCodecContext *avctx, void *data,
     /* get output buffer */
     frame->channels = NB_CHANNELS;
     frame->format = AV_SAMPLE_FMT_S32P;
-    frame->nb_samples = avpkt->size & ~3;
+    frame->nb_samples = 4 * avpkt->size / s->block_size;
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
-    for (pos = 0; pos < frame->nb_samples; pos += 4) {
+    for (pos = 0, opos = 0; opos < frame->nb_samples; pos += s->block_size, opos += 4) {
         int32_t samples[NB_CHANNELS][4];
 
         if (aptx_decode_samples(s, &avpkt->data[pos], samples)) {
@@ -782,32 +1043,33 @@ static int aptx_decode_frame(AVCodecContext *avctx, void *data,
 
         for (channel = 0; channel < NB_CHANNELS; channel++)
             for (sample = 0; sample < 4; sample++)
-                AV_WN32A(&frame->data[channel][4*(sample+pos)],
+                AV_WN32A(&frame->data[channel][4*(opos+sample)],
                          samples[channel][sample] << 8);
     }
 
     *got_frame_ptr = 1;
-    return frame->nb_samples;
+    return s->block_size * frame->nb_samples / 4;
 }
 
 static int aptx_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                              const AVFrame *frame, int *got_packet_ptr)
 {
     AptXContext *s = avctx->priv_data;
-    int pos, channel, sample, ret;
+    int pos, ipos, channel, sample, output_size, ret;
 
     if ((ret = ff_af_queue_add(&s->afq, frame)) < 0)
         return ret;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, frame->nb_samples, 0)) < 0)
+    output_size = s->block_size * frame->nb_samples/4;
+    if ((ret = ff_alloc_packet2(avctx, avpkt, output_size, 0)) < 0)
         return ret;
 
-    for (pos = 0; pos < frame->nb_samples; pos += 4) {
+    for (pos = 0, ipos = 0; pos < output_size; pos += s->block_size, ipos += 4) {
         int32_t samples[NB_CHANNELS][4];
 
         for (channel = 0; channel < NB_CHANNELS; channel++)
             for (sample = 0; sample < 4; sample++)
-                samples[channel][sample] = (int32_t)AV_RN32A(&frame->data[channel][4*(sample+pos)]) >> 8;
+                samples[channel][sample] = (int32_t)AV_RN32A(&frame->data[channel][4*(ipos+sample)]) >> 8;
 
         aptx_encode_samples(s, samples, avpkt->data + pos);
     }
@@ -843,12 +1105,49 @@ AVCodec ff_aptx_decoder = {
 };
 #endif
 
+#if CONFIG_APTX_HD_DECODER
+AVCodec ff_aptx_hd_decoder = {
+    .name                  = "aptx_hd",
+    .long_name             = NULL_IF_CONFIG_SMALL("aptX HD (Audio Processing Technology for Bluetooth)"),
+    .type                  = AVMEDIA_TYPE_AUDIO,
+    .id                    = AV_CODEC_ID_APTX_HD,
+    .priv_data_size        = sizeof(AptXContext),
+    .init                  = aptx_init,
+    .decode                = aptx_decode_frame,
+    .close                 = aptx_close,
+    .capabilities          = AV_CODEC_CAP_DR1,
+    .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE,
+    .channel_layouts       = (const uint64_t[]) { AV_CH_LAYOUT_STEREO, 0},
+    .sample_fmts           = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S32P,
+                                                             AV_SAMPLE_FMT_NONE },
+};
+#endif
+
 #if CONFIG_APTX_ENCODER
 AVCodec ff_aptx_encoder = {
     .name                  = "aptx",
     .long_name             = NULL_IF_CONFIG_SMALL("aptX (Audio Processing Technology for Bluetooth)"),
     .type                  = AVMEDIA_TYPE_AUDIO,
     .id                    = AV_CODEC_ID_APTX,
+    .priv_data_size        = sizeof(AptXContext),
+    .init                  = aptx_init,
+    .encode2               = aptx_encode_frame,
+    .close                 = aptx_close,
+    .capabilities          = AV_CODEC_CAP_SMALL_LAST_FRAME,
+    .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE,
+    .channel_layouts       = (const uint64_t[]) { AV_CH_LAYOUT_STEREO, 0},
+    .sample_fmts           = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S32P,
+                                                             AV_SAMPLE_FMT_NONE },
+    .supported_samplerates = (const int[]) {8000, 16000, 24000, 32000, 44100, 48000, 0},
+};
+#endif
+
+#if CONFIG_APTX_HD_ENCODER
+AVCodec ff_aptx_hd_encoder = {
+    .name                  = "aptx_hd",
+    .long_name             = NULL_IF_CONFIG_SMALL("aptX HD (Audio Processing Technology for Bluetooth)"),
+    .type                  = AVMEDIA_TYPE_AUDIO,
+    .id                    = AV_CODEC_ID_APTX_HD,
     .priv_data_size        = sizeof(AptXContext),
     .init                  = aptx_init,
     .encode2               = aptx_encode_frame,

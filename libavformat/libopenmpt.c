@@ -218,6 +218,62 @@ static int read_seek_openmpt(AVFormatContext *s, int stream_idx, int64_t ts, int
     return 0;
 }
 
+static int probe_openmpt_extension(AVProbeData *p)
+{
+    const char *ext;
+    if (p->filename) {
+        ext = strrchr(p->filename, '.');
+        if (ext && strlen(ext + 1) > 0) {
+            ext++;  /* skip '.' */
+            if (openmpt_is_extension_supported(ext) == 1)
+                return AVPROBE_SCORE_EXTENSION;
+        }
+    }
+    return 0;
+}
+
+static int read_probe_openmpt(AVProbeData *p)
+{
+#if OPENMPT_API_VERSION_AT_LEAST(0,3,0)
+    int probe_result;
+    if (p->buf && p->buf_size > 0) {
+        probe_result = openmpt_probe_file_header_without_filesize(
+                           OPENMPT_PROBE_FILE_HEADER_FLAGS_DEFAULT,
+                           p->buf, p->buf_size,
+                           &openmpt_logfunc, NULL, NULL, NULL, NULL, NULL);
+        if (probe_result == OPENMPT_PROBE_FILE_HEADER_RESULT_SUCCESS) {
+            /* As probing here relies on code external to FFmpeg, do not return
+             * AVPROBE_SCORE_MAX in order to reduce the impact in the rare
+             * cases of false positives.
+             */
+            return AVPROBE_SCORE_MIME + 1;
+        } else if (probe_result == OPENMPT_PROBE_FILE_HEADER_RESULT_WANTMOREDATA) {
+            if (probe_openmpt_extension(p) > 0) {
+                return AVPROBE_SCORE_RETRY;
+            } else {
+                if (p->buf_size >= openmpt_probe_file_header_get_recommended_size()) {
+                    /* We have already received the recommended amount of data
+                     * and still cannot decide. Return a rather low score.
+                     */
+                    return AVPROBE_SCORE_RETRY / 2;
+                } else {
+                    /* The file extension is unknown and we have very few data
+                     * bytes available. libopenmpt cannot decide anything here,
+                     * and returning any score > 0 would result in successfull
+                     * probing of random data.
+                     */
+                    return 0;
+                }
+            }
+        } else if (probe_result == OPENMPT_PROBE_FILE_HEADER_RESULT_FAILURE) {
+            return 0;
+        }
+    }
+#endif
+    /* for older libopenmpt, fall back to file extension probing */
+    return probe_openmpt_extension(p);
+}
+
 static const AVClass class_openmpt = {
     .class_name = "libopenmpt",
     .item_name  = av_default_item_name,
@@ -229,10 +285,15 @@ AVInputFormat ff_libopenmpt_demuxer = {
     .name           = "libopenmpt",
     .long_name      = NULL_IF_CONFIG_SMALL("Tracker formats (libopenmpt)"),
     .priv_data_size = sizeof(OpenMPTContext),
+    .read_probe     = read_probe_openmpt,
     .read_header    = read_header_openmpt,
     .read_packet    = read_packet_openmpt,
     .read_close     = read_close_openmpt,
     .read_seek      = read_seek_openmpt,
     .priv_class     = &class_openmpt,
-    .extensions     = "669,amf,ams,dbm,digi,dmf,dsm,far,gdm,imf,it,j2b,m15,mdl,med,mmcmp,mms,mo3,mod,mptm,mt2,mtm,nst,okt,plm,ppm,psm,pt36,ptm,s3m,sfx,sfx2,stk,stm,ult,umx,wow,xm,xpk",
+#if OPENMPT_API_VERSION_AT_LEAST(0,3,0)
+    .extensions     = "669,amf,ams,dbm,digi,dmf,dsm,dtm,far,gdm,ice,imf,it,j2b,m15,mdl,med,mmcmp,mms,mo3,mod,mptm,mt2,mtm,nst,okt,plm,ppm,psm,pt36,ptm,s3m,sfx,sfx2,st26,stk,stm,stp,ult,umx,wow,xm,xpk",
+#else
+    .extensions     = "669,amf,ams,dbm,digi,dmf,dsm,far,gdm,ice,imf,it,j2b,m15,mdl,med,mmcmp,mms,mo3,mod,mptm,mt2,mtm,nst,okt,plm,ppm,psm,pt36,ptm,s3m,sfx,sfx2,st26,stk,stm,ult,umx,wow,xm,xpk",
+#endif
 };

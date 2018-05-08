@@ -116,6 +116,9 @@ static int truemotion2rt_decode_frame(AVCodecContext *avctx, void *data,
     if (ret < 0)
         return ret;
 
+    if (avctx->width / s->hscale * avctx->height * s->delta_size > avpkt->size * 8LL * 4)
+        return AVERROR_INVALIDDATA;
+
     ret = init_get_bits8(gb, avpkt->data + ret, avpkt->size - ret);
     if (ret < 0)
         return ret;

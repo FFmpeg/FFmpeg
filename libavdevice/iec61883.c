@@ -118,7 +118,7 @@ static int iec61883_callback(unsigned char *data, int length,
         goto exit;
     }
 
-    packet->buf = av_malloc(length);
+    packet->buf = av_malloc(length + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!packet->buf) {
         av_free(packet);
         ret = -1;
@@ -127,6 +127,7 @@ static int iec61883_callback(unsigned char *data, int length,
     packet->len = length;
 
     memcpy(packet->buf, data, length);
+    memset(packet->buf + length, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     if (dv->queue_first) {
         dv->queue_last->next = packet;
@@ -200,13 +201,21 @@ static int iec61883_parse_queue_dv(struct iec61883_data *dv, AVPacket *pkt)
     size = avpriv_dv_produce_packet(dv->dv_demux, pkt,
                                     packet->buf, packet->len, -1);
     dv->queue_first = packet->next;
+    if (size < 0)
+        av_free(packet->buf);
     av_free(packet);
     dv->packets--;
 
-    if (size > 0)
-        return size;
+    if (size < 0)
+        return -1;
 
-    return -1;
+    if (av_packet_from_data(pkt, pkt->data, pkt->size) < 0) {
+        av_freep(&pkt->data);
+        av_packet_unref(pkt);
+        return -1;
+    }
+
+    return size;
 }
 
 static int iec61883_parse_queue_hdv(struct iec61883_data *dv, AVPacket *pkt)
@@ -454,6 +463,7 @@ static int iec61883_close(AVFormatContext *context)
     } else {
         iec61883_dv_fb_stop(dv->iec61883_dv);
         iec61883_dv_fb_close(dv->iec61883_dv);
+        av_freep(&dv->dv_demux);
     }
     while (dv->queue_first) {
         DVPacket *packet = dv->queue_first;

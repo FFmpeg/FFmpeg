@@ -125,8 +125,6 @@ int main(int argc, char *argv[])
         goto close;
     }
 
-    avcodec_register_all();
-
     err = av_hwdevice_ctx_create(&hw_device_ctx, AV_HWDEVICE_TYPE_VAAPI,
                                  NULL, NULL, 0);
     if (err < 0) {

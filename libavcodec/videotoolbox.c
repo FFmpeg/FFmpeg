@@ -36,6 +36,9 @@
 #ifndef kVTVideoDecoderSpecification_RequireHardwareAcceleratedVideoDecoder
 #  define kVTVideoDecoderSpecification_RequireHardwareAcceleratedVideoDecoder CFSTR("RequireHardwareAcceleratedVideoDecoder")
 #endif
+#ifndef kVTVideoDecoderSpecification_EnableHardwareAcceleratedVideoDecoder
+#  define kVTVideoDecoderSpecification_EnableHardwareAcceleratedVideoDecoder CFSTR("EnableHardwareAcceleratedVideoDecoder")
+#endif
 
 #if !HAVE_KCMVIDEOCODECTYPE_HEVC
 enum { kCMVideoCodecType_HEVC = 'hvc1' };
@@ -45,8 +48,10 @@ enum { kCMVideoCodecType_HEVC = 'hvc1' };
 
 static void videotoolbox_buffer_release(void *opaque, uint8_t *data)
 {
-    CVPixelBufferRef cv_buffer = (CVImageBufferRef)data;
+    CVPixelBufferRef cv_buffer = *(CVPixelBufferRef *)data;
     CVPixelBufferRelease(cv_buffer);
+
+    av_free(data);
 }
 
 static int videotoolbox_buffer_copy(VTContext *vtctx,
@@ -69,19 +74,47 @@ static int videotoolbox_buffer_copy(VTContext *vtctx,
     return 0;
 }
 
+static int videotoolbox_postproc_frame(void *avctx, AVFrame *frame)
+{
+    CVPixelBufferRef ref = *(CVPixelBufferRef *)frame->buf[0]->data;
+
+    if (!ref) {
+        av_log(avctx, AV_LOG_ERROR, "No frame decoded?\n");
+        av_frame_unref(frame);
+        return AVERROR_EXTERNAL;
+    }
+
+    frame->data[3] = (uint8_t*)ref;
+
+    return 0;
+}
+
 int ff_videotoolbox_alloc_frame(AVCodecContext *avctx, AVFrame *frame)
 {
+    size_t      size = sizeof(CVPixelBufferRef);
+    uint8_t    *data = NULL;
+    AVBufferRef *buf = NULL;
     int ret = ff_attach_decode_data(frame);
+    FrameDecodeData *fdd;
     if (ret < 0)
         return ret;
+
+    data = av_mallocz(size);
+    if (!data)
+        return AVERROR(ENOMEM);
+    buf = av_buffer_create(data, size, videotoolbox_buffer_release, NULL, 0);
+    if (!buf) {
+        av_freep(&data);
+        return AVERROR(ENOMEM);
+    }
+    frame->buf[0] = buf;
+
+    fdd = (FrameDecodeData*)frame->private_ref->data;
+    fdd->post_process = videotoolbox_postproc_frame;
 
     frame->width  = avctx->width;
     frame->height = avctx->height;
     frame->format = avctx->pix_fmt;
-    frame->buf[0] = av_buffer_alloc(1);
-
-    if (!frame->buf[0])
-        return AVERROR(ENOMEM);
 
     return 0;
 }
@@ -285,20 +318,21 @@ CFDataRef ff_videotoolbox_hvcc_extradata_create(AVCodecContext *avctx)
     return data;
 }
 
-int ff_videotoolbox_buffer_create(VTContext *vtctx, AVFrame *frame)
+static int videotoolbox_set_frame(AVCodecContext *avctx, AVFrame *frame)
 {
-    av_buffer_unref(&frame->buf[0]);
-
-    frame->buf[0] = av_buffer_create((uint8_t*)vtctx->frame,
-                                     sizeof(vtctx->frame),
-                                     videotoolbox_buffer_release,
-                                     NULL,
-                                     AV_BUFFER_FLAG_READONLY);
-    if (!frame->buf[0]) {
-        return AVERROR(ENOMEM);
+    VTContext *vtctx = avctx->internal->hwaccel_priv_data;
+    if (!frame->buf[0] || frame->data[3]) {
+        av_log(avctx, AV_LOG_ERROR, "videotoolbox: invalid state\n");
+        av_frame_unref(frame);
+        return AVERROR_EXTERNAL;
     }
 
-    frame->data[3] = (uint8_t*)vtctx->frame;
+    CVPixelBufferRef *ref = (CVPixelBufferRef *)frame->buf[0]->data;
+
+    if (*ref)
+        CVPixelBufferRelease(*ref);
+
+    *ref = vtctx->frame;
     vtctx->frame = NULL;
 
     return 0;
@@ -406,7 +440,7 @@ static int videotoolbox_buffer_create(AVCodecContext *avctx, AVFrame *frame)
     AVHWFramesContext *cached_frames;
     int ret;
 
-    ret = ff_videotoolbox_buffer_create(vtctx, frame);
+    ret = videotoolbox_set_frame(avctx, frame);
     if (ret < 0)
         return ret;
 
@@ -678,7 +712,9 @@ static CFDictionaryRef videotoolbox_decoder_config_create(CMVideoCodecType codec
                                                                    &kCFTypeDictionaryValueCallBacks);
 
     CFDictionarySetValue(config_info,
-                         kVTVideoDecoderSpecification_RequireHardwareAcceleratedVideoDecoder,
+                         codec_type == kCMVideoCodecType_HEVC ?
+                            kVTVideoDecoderSpecification_EnableHardwareAcceleratedVideoDecoder :
+                            kVTVideoDecoderSpecification_RequireHardwareAcceleratedVideoDecoder,
                          kCFBooleanTrue);
 
     CFMutableDictionaryRef avc_info;
@@ -802,6 +838,9 @@ static int videotoolbox_start(AVCodecContext *avctx)
     case kVTVideoDecoderUnsupportedDataFormatErr:
         av_log(avctx, AV_LOG_VERBOSE, "VideoToolbox does not support this format.\n");
         return AVERROR(ENOSYS);
+    case kVTCouldNotFindVideoDecoderErr:
+        av_log(avctx, AV_LOG_VERBOSE, "VideoToolbox decoder for this format not found.\n");
+        return AVERROR(ENOSYS);
     case kVTVideoDecoderMalfunctionErr:
         av_log(avctx, AV_LOG_VERBOSE, "VideoToolbox malfunction.\n");
         return AVERROR(EINVAL);
@@ -811,7 +850,7 @@ static int videotoolbox_start(AVCodecContext *avctx)
     case 0:
         return 0;
     default:
-        av_log(avctx, AV_LOG_VERBOSE, "Unknown VideoToolbox session creation error %u\n", (unsigned)status);
+        av_log(avctx, AV_LOG_VERBOSE, "Unknown VideoToolbox session creation error %d\n", (int)status);
         return AVERROR_UNKNOWN;
     }
 }

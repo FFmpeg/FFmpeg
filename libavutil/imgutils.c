@@ -125,7 +125,7 @@ int av_image_fill_pointers(uint8_t *data[4], enum AVPixelFormat pix_fmt, int hei
     size[0] = linesizes[0] * height;
 
     if (desc->flags & AV_PIX_FMT_FLAG_PAL ||
-        desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL) {
+        desc->flags & FF_PSEUDOPAL) {
         data[1] = ptr + size[0]; /* palette is stored here as 256 32 bits words */
         return size[0] + 256 * 4;
     }
@@ -216,7 +216,7 @@ int av_image_alloc(uint8_t *pointers[4], int linesizes[4],
         av_free(buf);
         return ret;
     }
-    if (desc->flags & AV_PIX_FMT_FLAG_PAL || desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL) {
+    if (desc->flags & AV_PIX_FMT_FLAG_PAL || (desc->flags & FF_PSEUDOPAL && pointers[1])) {
         avpriv_set_systematic_pal2((uint32_t*)pointers[1], pix_fmt);
         if (align < 4) {
             av_log(NULL, AV_LOG_ERROR, "Formats with a palette require a minimum alignment of 4\n");
@@ -225,7 +225,7 @@ int av_image_alloc(uint8_t *pointers[4], int linesizes[4],
     }
 
     if ((desc->flags & AV_PIX_FMT_FLAG_PAL ||
-         desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL) &&
+         desc->flags & FF_PSEUDOPAL) && pointers[1] &&
         pointers[1] - pointers[0] > linesizes[0] * h) {
         /* zero-initialize the padding before the palette */
         memset(pointers[0] + linesizes[0] * h, 0,
@@ -354,12 +354,13 @@ static void image_copy(uint8_t *dst_data[4], const ptrdiff_t dst_linesizes[4],
         return;
 
     if (desc->flags & AV_PIX_FMT_FLAG_PAL ||
-        desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL) {
+        desc->flags & FF_PSEUDOPAL) {
         copy_plane(dst_data[0], dst_linesizes[0],
                    src_data[0], src_linesizes[0],
                    width, height);
         /* copy the palette */
-        memcpy(dst_data[1], src_data[1], 4*256);
+        if ((desc->flags & AV_PIX_FMT_FLAG_PAL) || (dst_data[1] && src_data[1]))
+            memcpy(dst_data[1], src_data[1], 4*256);
     } else {
         int i, planes_nb = 0;
 
@@ -442,7 +443,7 @@ int av_image_get_buffer_size(enum AVPixelFormat pix_fmt,
         return ret;
 
     // do not include palette for these pseudo-paletted formats
-    if (desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL)
+    if (desc->flags & FF_PSEUDOPAL)
         return FFALIGN(width, align) * height;
 
     return av_image_fill_arrays(data, linesize, NULL, pix_fmt,

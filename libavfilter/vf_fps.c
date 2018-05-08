@@ -2,6 +2,7 @@
  * Copyright 2007 Bobby Bingham
  * Copyright 2012 Robert Nagy <ronag89 gmail com>
  * Copyright 2012 Anton Khirnov <anton khirnov net>
+ * Copyright 2018 Calvin Walton <calvin.walton@kepstin.ca>
  *
  * This file is part of FFmpeg.
  *
@@ -28,17 +29,12 @@
 #include <float.h>
 #include <stdint.h>
 
-#include "libavutil/common.h"
-#include "libavutil/fifo.h"
+#include "libavutil/avassert.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
-#include "libavutil/parseutils.h"
-
-#define FF_INTERNAL_FIELDS 1
-#include "framequeue.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
-#include "video.h"
 
 enum EOFAction {
     EOF_ACTION_ROUND,
@@ -49,18 +45,27 @@ enum EOFAction {
 typedef struct FPSContext {
     const AVClass *class;
 
-    AVFifoBuffer *fifo;     ///< store frames until we get two successive timestamps
-
-    /* timestamps in input timebase */
-    int64_t first_pts;      ///< pts of the first frame that arrived on this filter
-
     double start_time;      ///< pts, in seconds, of the expected first frame
 
     AVRational framerate;   ///< target framerate
     int rounding;           ///< AVRounding method for timestamps
     int eof_action;         ///< action performed for last frame in FIFO
 
+    /* Set during outlink configuration */
+    int64_t  in_pts_off;    ///< input frame pts offset for start_time handling
+    int64_t  out_pts_off;   ///< output frame pts offset for start_time handling
+
+    /* Runtime state */
+    int      status;        ///< buffered input status
+    int64_t  status_pts;    ///< buffered input status timestamp
+
+    AVFrame *frames[2];     ///< buffered frames
+    int      frames_count;  ///< number of buffered frames
+
+    int64_t  next_pts;      ///< pts of the next frame to output
+
     /* statistics */
+    int cur_frame_out;         ///< number of times current frame has been output
     int frames_in;             ///< number of frames on input
     int frames_out;            ///< number of frames on output
     int dup;                   ///< number of frames duplicated
@@ -91,231 +96,238 @@ static av_cold int init(AVFilterContext *ctx)
 {
     FPSContext *s = ctx->priv;
 
-    if (!(s->fifo = av_fifo_alloc_array(2, sizeof(AVFrame*))))
-        return AVERROR(ENOMEM);
-
-    s->first_pts    = AV_NOPTS_VALUE;
+    s->status_pts   = AV_NOPTS_VALUE;
+    s->next_pts     = AV_NOPTS_VALUE;
 
     av_log(ctx, AV_LOG_VERBOSE, "fps=%d/%d\n", s->framerate.num, s->framerate.den);
     return 0;
 }
 
-static void flush_fifo(AVFifoBuffer *fifo)
+/* Remove the first frame from the buffer, returning it */
+static AVFrame *shift_frame(AVFilterContext *ctx, FPSContext *s)
 {
-    while (av_fifo_size(fifo)) {
-        AVFrame *tmp;
-        av_fifo_generic_read(fifo, &tmp, sizeof(tmp), NULL);
-        av_frame_free(&tmp);
+    AVFrame *frame;
+
+    /* Must only be called when there are frames in the buffer */
+    av_assert1(s->frames_count > 0);
+
+    frame = s->frames[0];
+    s->frames[0] = s->frames[1];
+    s->frames[1] = NULL;
+    s->frames_count--;
+
+    /* Update statistics counters */
+    s->frames_out += s->cur_frame_out;
+    if (s->cur_frame_out > 1) {
+        av_log(ctx, AV_LOG_DEBUG, "Duplicated frame with pts %"PRId64" %d times\n",
+               frame->pts, s->cur_frame_out - 1);
+        s->dup += s->cur_frame_out - 1;
+    } else if (s->cur_frame_out == 0) {
+        av_log(ctx, AV_LOG_DEBUG, "Dropping frame with pts %"PRId64"\n",
+               frame->pts);
+        s->drop++;
     }
+    s->cur_frame_out = 0;
+
+    return frame;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
     FPSContext *s = ctx->priv;
-    if (s->fifo) {
-        s->drop += av_fifo_size(s->fifo) / sizeof(AVFrame*);
-        flush_fifo(s->fifo);
-        av_fifo_freep(&s->fifo);
+
+    AVFrame *frame;
+
+    while (s->frames_count > 0) {
+        frame = shift_frame(ctx, s);
+        av_frame_free(&frame);
     }
 
     av_log(ctx, AV_LOG_VERBOSE, "%d frames in, %d frames out; %d frames dropped, "
            "%d frames duplicated.\n", s->frames_in, s->frames_out, s->drop, s->dup);
 }
 
-static int config_props(AVFilterLink* link)
+static int config_props(AVFilterLink* outlink)
 {
-    FPSContext   *s = link->src->priv;
+    AVFilterContext *ctx    = outlink->src;
+    AVFilterLink    *inlink = ctx->inputs[0];
+    FPSContext      *s      = ctx->priv;
 
-    link->time_base = av_inv_q(s->framerate);
-    link->frame_rate= s->framerate;
-    link->w         = link->src->inputs[0]->w;
-    link->h         = link->src->inputs[0]->h;
+    outlink->time_base  = av_inv_q(s->framerate);
+    outlink->frame_rate = s->framerate;
 
-    return 0;
-}
-
-static int request_frame(AVFilterLink *outlink)
-{
-    AVFilterContext *ctx = outlink->src;
-    FPSContext        *s = ctx->priv;
-    int ret;
-
-    ret = ff_request_frame(ctx->inputs[0]);
-
-    /* flush the fifo */
-    if (ret == AVERROR_EOF && av_fifo_size(s->fifo)) {
-        int i;
-        for (i = 0; av_fifo_size(s->fifo); i++) {
-            AVFrame *buf;
-
-            av_fifo_generic_read(s->fifo, &buf, sizeof(buf), NULL);
-            if (av_fifo_size(s->fifo)) {
-                buf->pts = av_rescale_q(s->first_pts, ctx->inputs[0]->time_base,
-                                        outlink->time_base) + s->frames_out;
-
-                if ((ret = ff_filter_frame(outlink, buf)) < 0)
-                    return ret;
-
-                s->frames_out++;
-            } else {
-                /* This is the last frame, we may have to duplicate it to match
-                 * the last frame duration */
-                int j;
-                int eof_rounding = (s->eof_action == EOF_ACTION_PASS) ? AV_ROUND_UP : s->rounding;
-                int delta = av_rescale_q_rnd(ctx->inputs[0]->current_pts - s->first_pts,
-                                             ctx->inputs[0]->time_base,
-                                             outlink->time_base, eof_rounding) - s->frames_out;
-                av_log(ctx, AV_LOG_DEBUG, "EOF frames_out:%d delta:%d\n", s->frames_out, delta);
-                /* if the delta is equal to 1, it means we just need to output
-                 * the last frame. Greater than 1 means we will need duplicate
-                 * delta-1 frames */
-                if (delta > 0 ) {
-                    for (j = 0; j < delta; j++) {
-                        AVFrame *dup = av_frame_clone(buf);
-
-                        av_log(ctx, AV_LOG_DEBUG, "Duplicating frame.\n");
-                        dup->pts = av_rescale_q(s->first_pts, ctx->inputs[0]->time_base,
-                                                outlink->time_base) + s->frames_out;
-
-                        if ((ret = ff_filter_frame(outlink, dup)) < 0)
-                            return ret;
-
-                        s->frames_out++;
-                        if (j > 0) s->dup++;
-                    }
-                    av_frame_free(&buf);
-                } else {
-                    /* for delta less or equal to 0, we should drop the frame,
-                     * otherwise, we will have one or more extra frames */
-                    av_frame_free(&buf);
-                    s->drop++;
-                }
-            }
+    /* Calculate the input and output pts offsets for start_time */
+    if (s->start_time != DBL_MAX && s->start_time != AV_NOPTS_VALUE) {
+        double first_pts = s->start_time * AV_TIME_BASE;
+        if (first_pts < INT64_MIN || first_pts > INT64_MAX) {
+            av_log(ctx, AV_LOG_ERROR, "Start time %f cannot be represented in internal time base\n",
+                   s->start_time);
+            return AVERROR(EINVAL);
         }
-        return 0;
+        s->in_pts_off  = av_rescale_q_rnd(first_pts, AV_TIME_BASE_Q, inlink->time_base,
+                                          s->rounding | AV_ROUND_PASS_MINMAX);
+        s->out_pts_off = av_rescale_q_rnd(first_pts, AV_TIME_BASE_Q, outlink->time_base,
+                                          s->rounding | AV_ROUND_PASS_MINMAX);
+        s->next_pts = s->out_pts_off;
+        av_log(ctx, AV_LOG_VERBOSE, "Set first pts to (in:%"PRId64" out:%"PRId64") from start time %f\n",
+               s->in_pts_off, s->out_pts_off, s->start_time);
     }
 
-    return ret;
-}
-
-static int write_to_fifo(AVFifoBuffer *fifo, AVFrame *buf)
-{
-    int ret;
-
-    if (!av_fifo_space(fifo) &&
-        (ret = av_fifo_realloc2(fifo, 2*av_fifo_size(fifo)))) {
-        av_frame_free(&buf);
-        return ret;
-    }
-
-    av_fifo_generic_write(fifo, &buf, sizeof(buf), NULL);
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
+/* Read a frame from the input and save it in the buffer */
+static int read_frame(AVFilterContext *ctx, FPSContext *s, AVFilterLink *inlink, AVFilterLink *outlink)
 {
-    AVFilterContext    *ctx = inlink->dst;
-    FPSContext           *s = ctx->priv;
-    AVFilterLink   *outlink = ctx->outputs[0];
-    int64_t delta;
-    int i, ret;
+    AVFrame *frame;
+    int ret;
+    int64_t in_pts;
 
+    /* Must only be called when we have buffer room available */
+    av_assert1(s->frames_count < 2);
+
+    ret = ff_inlink_consume_frame(inlink, &frame);
+    /* Caller must have run ff_inlink_check_available_frame first */
+    av_assert1(ret);
+    if (ret < 0)
+        return ret;
+
+    /* Convert frame pts to output timebase.
+     * The dance with offsets is required to match the rounding behaviour of the
+     * previous version of the fps filter when using the start_time option. */
+    in_pts = frame->pts;
+    frame->pts = s->out_pts_off + av_rescale_q_rnd(in_pts - s->in_pts_off,
+                                                   inlink->time_base, outlink->time_base,
+                                                   s->rounding | AV_ROUND_PASS_MINMAX);
+
+    av_log(ctx, AV_LOG_DEBUG, "Read frame with in pts %"PRId64", out pts %"PRId64"\n",
+           in_pts, frame->pts);
+
+    s->frames[s->frames_count++] = frame;
     s->frames_in++;
-    /* discard frames until we get the first timestamp */
-    if (s->first_pts == AV_NOPTS_VALUE) {
-        if (buf->pts != AV_NOPTS_VALUE) {
-            ret = write_to_fifo(s->fifo, buf);
-            if (ret < 0)
-                return ret;
 
-            if (s->start_time != DBL_MAX && s->start_time != AV_NOPTS_VALUE) {
-                double first_pts = s->start_time * AV_TIME_BASE;
-                first_pts = FFMIN(FFMAX(first_pts, INT64_MIN), INT64_MAX);
-                s->first_pts = av_rescale_q(first_pts, AV_TIME_BASE_Q,
-                                                     inlink->time_base);
-                av_log(ctx, AV_LOG_VERBOSE, "Set first pts to (in:%"PRId64" out:%"PRId64")\n",
-                       s->first_pts, av_rescale_q(first_pts, AV_TIME_BASE_Q,
-                                                  outlink->time_base));
-            } else {
-                s->first_pts = buf->pts;
-            }
+    return 1;
+}
+
+/* Write a frame to the output */
+static int write_frame(AVFilterContext *ctx, FPSContext *s, AVFilterLink *outlink, int *again)
+{
+    AVFrame *frame;
+
+    av_assert1(s->frames_count == 2 || (s->status && s->frames_count == 1));
+
+    /* We haven't yet determined the pts of the first frame */
+    if (s->next_pts == AV_NOPTS_VALUE) {
+        if (s->frames[0]->pts != AV_NOPTS_VALUE) {
+            s->next_pts = s->frames[0]->pts;
+            av_log(ctx, AV_LOG_VERBOSE, "Set first pts to %"PRId64"\n", s->next_pts);
         } else {
             av_log(ctx, AV_LOG_WARNING, "Discarding initial frame(s) with no "
                    "timestamp.\n");
-            av_frame_free(&buf);
-            s->drop++;
+            frame = shift_frame(ctx, s);
+            av_frame_free(&frame);
+            *again = 1;
+            return 0;
         }
+    }
+
+    /* There are two conditions where we want to drop a frame:
+     * - If we have two buffered frames and the second frame is acceptable
+     *   as the next output frame, then drop the first buffered frame.
+     * - If we have status (EOF) set, drop frames when we hit the
+     *   status timestamp. */
+    if ((s->frames_count == 2 && s->frames[1]->pts <= s->next_pts) ||
+        (s->status            && s->status_pts     <= s->next_pts)) {
+
+        frame = shift_frame(ctx, s);
+        av_frame_free(&frame);
+        *again = 1;
         return 0;
+
+    /* Output a copy of the first buffered frame */
+    } else {
+        frame = av_frame_clone(s->frames[0]);
+        if (!frame)
+            return AVERROR(ENOMEM);
+        frame->pts = s->next_pts++;
+
+        av_log(ctx, AV_LOG_DEBUG, "Writing frame with pts %"PRId64" to pts %"PRId64"\n",
+               s->frames[0]->pts, frame->pts);
+        s->cur_frame_out++;
+
+        return ff_filter_frame(outlink, frame);
+    }
+}
+
+/* Convert status_pts to outlink timebase */
+static void update_eof_pts(AVFilterContext *ctx, FPSContext *s, AVFilterLink *inlink, AVFilterLink *outlink, int64_t status_pts)
+{
+    int eof_rounding = (s->eof_action == EOF_ACTION_PASS) ? AV_ROUND_UP : s->rounding;
+    s->status_pts = av_rescale_q_rnd(status_pts, inlink->time_base, outlink->time_base,
+                                     eof_rounding | AV_ROUND_PASS_MINMAX);
+
+    av_log(ctx, AV_LOG_DEBUG, "EOF is at pts %"PRId64"\n", s->status_pts);
+}
+
+static int activate(AVFilterContext *ctx)
+{
+    FPSContext   *s       = ctx->priv;
+    AVFilterLink *inlink  = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
+
+    int ret;
+    int again = 0;
+    int64_t status_pts;
+
+    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
+
+    /* No buffered status: normal operation */
+    if (!s->status) {
+
+        /* Read available input frames if we have room */
+        while (s->frames_count < 2 && ff_inlink_check_available_frame(inlink)) {
+            ret = read_frame(ctx, s, inlink, outlink);
+            if (ret < 0)
+                return ret;
+        }
+
+        /* We do not yet have enough frames to produce output */
+        if (s->frames_count < 2) {
+            /* Check if we've hit EOF (or otherwise that an error status is set) */
+            ret = ff_inlink_acknowledge_status(inlink, &s->status, &status_pts);
+            if (ret > 0)
+                update_eof_pts(ctx, s, inlink, outlink, status_pts);
+
+            if (!ret) {
+                /* If someone wants us to output, we'd better ask for more input */
+                FF_FILTER_FORWARD_WANTED(outlink, inlink);
+                return 0;
+            }
+        }
     }
 
-    /* now wait for the next timestamp */
-    if (buf->pts == AV_NOPTS_VALUE || av_fifo_size(s->fifo) <= 0) {
-        return write_to_fifo(s->fifo, buf);
-    }
-
-    /* number of output frames */
-    delta = av_rescale_q_rnd(buf->pts - s->first_pts, inlink->time_base,
-                             outlink->time_base, s->rounding) - s->frames_out ;
-
-    if (delta < 1) {
-        /* drop everything buffered except the last */
-        int drop = av_fifo_size(s->fifo)/sizeof(AVFrame*);
-
-        av_log(ctx, AV_LOG_DEBUG, "Dropping %d frame(s).\n", drop);
-        s->drop += drop;
-
-        flush_fifo(s->fifo);
-        ret = write_to_fifo(s->fifo, buf);
-
+    /* Buffered frames are available, so generate an output frame */
+    if (s->frames_count > 0) {
+        ret = write_frame(ctx, s, outlink, &again);
+        /* Couldn't generate a frame, so schedule us to perform another step */
+        if (again)
+            ff_filter_set_ready(ctx, 100);
         return ret;
     }
 
-    /* can output >= 1 frames */
-    for (i = 0; i < delta; i++) {
-        AVFrame *buf_out;
-        av_fifo_generic_read(s->fifo, &buf_out, sizeof(buf_out), NULL);
-
-        /* duplicate the frame if needed */
-        if (!av_fifo_size(s->fifo) && i < delta - 1) {
-            AVFrame *dup = av_frame_clone(buf_out);
-
-            av_log(ctx, AV_LOG_DEBUG, "Duplicating frame.\n");
-            if (dup)
-                ret = write_to_fifo(s->fifo, dup);
-            else
-                ret = AVERROR(ENOMEM);
-
-            if (ret < 0) {
-                av_frame_free(&buf_out);
-                av_frame_free(&buf);
-                return ret;
-            }
-
-            s->dup++;
-        }
-
-        buf_out->pts = av_rescale_q(s->first_pts, inlink->time_base,
-                                    outlink->time_base) + s->frames_out;
-
-        if ((ret = ff_filter_frame(outlink, buf_out)) < 0) {
-            av_frame_free(&buf);
-            return ret;
-        }
-
-        s->frames_out++;
+    /* No frames left, so forward the status */
+    if (s->status && s->frames_count == 0) {
+        ff_outlink_set_status(outlink, s->status, s->next_pts);
+        return 0;
     }
-    flush_fifo(s->fifo);
 
-    ret = write_to_fifo(s->fifo, buf);
-
-    return ret;
+    return FFERROR_NOT_READY;
 }
 
 static const AVFilterPad avfilter_vf_fps_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -324,8 +336,7 @@ static const AVFilterPad avfilter_vf_fps_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .request_frame = request_frame,
-        .config_props  = config_props
+        .config_props  = config_props,
     },
     { NULL }
 };
@@ -337,6 +348,7 @@ AVFilter ff_vf_fps = {
     .uninit      = uninit,
     .priv_size   = sizeof(FPSContext),
     .priv_class  = &fps_class,
+    .activate    = activate,
     .inputs      = avfilter_vf_fps_inputs,
     .outputs     = avfilter_vf_fps_outputs,
 };

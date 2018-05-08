@@ -35,6 +35,7 @@
 #define av_freep(p) while(0)
 #define AVCODEC_AVCODEC_H
 #define AVCODEC_INTERNAL_H
+#define AV_INPUT_BUFFER_PADDING_SIZE 64 // the value does not matter for this
 #include "tableprint.h"
 #include "get_bits.h"
 #include "mathtables.c"

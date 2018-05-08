@@ -50,21 +50,22 @@ DTS-HD.
 
 Add extradata to the beginning of the filtered packets.
 
+@table @option
+@item freq
 The additional argument specifies which packets should be filtered.
 It accepts the values:
 @table @samp
-@item a
-add extradata to all key packets, but only if @var{local_header} is
-set in the @option{flags2} codec context field
-
 @item k
+@item keyframe
 add extradata to all key packets
 
 @item e
+@item all
 add extradata to all packets
 @end table
+@end table
 
-If not specified it is assumed @samp{k}.
+If not specified it is assumed @samp{e}.
 
 For example the following @command{ffmpeg} command forces a global
 header (thus disabling individual packet headers) in the H.264 packets
@@ -73,6 +74,10 @@ the header stored in extradata to the key packets:
 @example
 ffmpeg -i INPUT -map 0 -flags:v +global_header -c:v libx264 -bsf:v dump_extra out.ts
 @end example
+
+@section eac3_core
+
+Extract the core from a E-AC-3 stream, dropping extra channels.
 
 @section extract_extradata
 
@@ -91,6 +96,60 @@ extradata.
 When this option is enabled, the long-term headers are removed from the
 bitstream after extraction.
 @end table
+
+@section filter_units
+
+Remove units with types in or not in a given set from the stream.
+
+@table @option
+@item pass_types
+List of unit types or ranges of unit types to pass through while removing
+all others.  This is specified as a '|'-separated list of unit type values
+or ranges of values with '-'.
+
+@item remove_types
+Identical to @option{pass_types}, except the units in the given set
+removed and all others passed through.
+@end table
+
+Extradata is unchanged by this transformation, but note that if the stream
+contains inline parameter sets then the output may be unusable if they are
+removed.
+
+For example, to remove all non-VCL NAL units from an H.264 stream:
+@example
+ffmpeg -i INPUT -c:v copy -bsf:v 'filter_units=pass_types=1-5' OUTPUT
+@end example
+
+To remove all AUDs, SEI and filler from an H.265 stream:
+@example
+ffmpeg -i INPUT -c:v copy -bsf:v 'filter_units=remove_types=35|38-40' OUTPUT
+@end example
+
+@section hapqa_extract
+
+Extract Rgb or Alpha part of an HAPQA file, without recompression, in order to create an HAPQ or an HAPAlphaOnly file.
+
+@table @option
+@item texture
+Specifies the texture to keep.
+
+@table @option
+@item color
+@item alpha
+@end table
+
+@end table
+
+Convert HAPQA to HAPQ
+@example
+ffmpeg -i hapqa_inputfile.mov -c copy -bsf:v hapqa_extract=texture=color -tag:v HapY -metadata:s:v:0 encoder="HAPQ" hapq_file.mov
+@end example
+
+Convert HAPQA to HAPAlphaOnly
+@example
+ffmpeg -i hapqa_inputfile.mov -c copy -bsf:v hapqa_extract=texture=alpha -tag:v HapA -metadata:s:v:0 encoder="HAPAlpha Only" hapalphaonly_file.mov
+@end example
 
 @section h264_metadata
 
@@ -152,6 +211,9 @@ possibly separated by hyphens, and the string can be anything.
 
 For example, @samp{086f3693-b7b3-4f2c-9653-21492feee5b8+hello} will
 insert the string ``hello'' associated with the given UUID.
+
+@item delete_filler
+Deletes both filler NAL units and filler SEI messages.
 
 @end table
 
@@ -443,7 +505,33 @@ Log trace output containing all syntax elements in the coded stream
 headers (everything above the level of individual coded blocks).
 This can be useful for debugging low-level stream issues.
 
-Supports H.264, H.265 and MPEG-2.
+Supports H.264, H.265, MPEG-2 and VP9.
+
+@section vp9_metadata
+
+Modify metadata embedded in a VP9 stream.
+
+@table @option
+@item color_space
+Set the color space value in the frame header.
+@table @samp
+@item unknown
+@item bt601
+@item bt709
+@item smpte170
+@item smpte240
+@item bt2020
+@item rgb
+@end table
+
+@item color_range
+Set the color range value in the frame header.  Note that this cannot
+be set in RGB streams.
+@table @samp
+@item tv
+@item pc
+@end table
+@end table
 
 @section vp9_superframe
 

@@ -91,9 +91,6 @@ int main(int argc, char **argv)
     av_dict_set(&format_opts, "channels", "1", 0);
     av_dict_set(&format_opts, "sample_rate", "22050", 0);
 
-    /* initialize libavcodec, and register all codecs and formats */
-    av_register_all();
-
     if (argc < 2) {
         printf("usage: %s input_file\n"
                "\n", argv[0]);

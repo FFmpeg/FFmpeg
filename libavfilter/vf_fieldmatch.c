@@ -37,6 +37,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/timestamp.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 
 #define INPUT_MAIN     0
@@ -79,6 +80,7 @@ typedef struct FieldMatchContext {
     AVFrame *prv2, *src2, *nxt2;    ///< sliding window of the optional second stream
     int got_frame[2];               ///< frame request flag for each input stream
     int hsub, vsub;                 ///< chroma subsampling values
+    int bpc;                        ///< bytes per component
     uint32_t eof;                   ///< bitmask for end of stream
     int64_t lastscdiff;
     int64_t lastn;
@@ -503,9 +505,9 @@ static int compare_fields(FieldMatchContext *fm, int match1, int match2, int fie
         int prvf_linesize, nxtf_linesize;
         const int width  = get_width (fm, src, plane);
         const int height = get_height(fm, src, plane);
-        const int y0a = fm->y0 >> (plane != 0);
-        const int y1a = fm->y1 >> (plane != 0);
-        const int startx = (plane == 0 ? 8 : 4);
+        const int y0a = fm->y0 >> (plane ? fm->vsub : 0);
+        const int y1a = fm->y1 >> (plane ? fm->vsub : 0);
+        const int startx = (plane == 0 ? 8 : 8 >> fm->hsub);
         const int stopx  = width - startx;
         const uint8_t *srcpf, *srcf, *srcnf;
         const uint8_t *prvpf, *prvnf, *nxtpf, *nxtnf;
@@ -613,7 +615,7 @@ static void copy_fields(const FieldMatchContext *fm, AVFrame *dst,
         const int nb_copy_fields = (plane_h >> 1) + (field ? 0 : (plane_h & 1));
         av_image_copy_plane(dst->data[plane] + field*dst->linesize[plane], dst->linesize[plane] << 1,
                             src->data[plane] + field*src->linesize[plane], src->linesize[plane] << 1,
-                            get_width(fm, src, plane), nb_copy_fields);
+                            get_width(fm, src, plane) * fm->bpc, nb_copy_fields);
     }
 }
 
@@ -697,9 +699,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_assert0(prv && src && nxt);                          \
 } while (0)
     if (FF_INLINK_IDX(inlink) == INPUT_MAIN) {
+        av_assert0(fm->got_frame[INPUT_MAIN] == 0);
         SLIDING_FRAME_WINDOW(fm->prv, fm->src, fm->nxt);
         fm->got_frame[INPUT_MAIN] = 1;
     } else {
+        av_assert0(fm->got_frame[INPUT_CLEANSRC] == 0);
         SLIDING_FRAME_WINDOW(fm->prv2, fm->src2, fm->nxt2);
         fm->got_frame[INPUT_CLEANSRC] = 1;
     }
@@ -818,50 +822,99 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, dst);
 }
 
-static int request_inlink(AVFilterContext *ctx, int lid)
+static int activate(AVFilterContext *ctx)
 {
-    int ret = 0;
     FieldMatchContext *fm = ctx->priv;
+    AVFrame *frame = NULL;
+    int ret = 0, status;
+    int64_t pts;
 
-    if (!fm->got_frame[lid]) {
-        AVFilterLink *inlink = ctx->inputs[lid];
-        ret = ff_request_frame(inlink);
-        if (ret == AVERROR_EOF) { // flushing
-            fm->eof |= 1 << lid;
-            ret = filter_frame(inlink, NULL);
-        }
+    if ((fm->got_frame[INPUT_MAIN] == 0) &&
+        (ret = ff_inlink_consume_frame(ctx->inputs[INPUT_MAIN], &frame)) > 0) {
+        ret = filter_frame(ctx->inputs[INPUT_MAIN], frame);
+        if (ret < 0)
+            return ret;
     }
-    return ret;
-}
-
-static int request_frame(AVFilterLink *outlink)
-{
-    int ret;
-    AVFilterContext *ctx = outlink->src;
-    FieldMatchContext *fm = ctx->priv;
-    const uint32_t eof_mask = 1<<INPUT_MAIN | fm->ppsrc<<INPUT_CLEANSRC;
-
-    if ((fm->eof & eof_mask) == eof_mask) // flush done?
-        return AVERROR_EOF;
-    if ((ret = request_inlink(ctx, INPUT_MAIN)) < 0)
+    if (ret < 0)
         return ret;
-    if (fm->ppsrc && (ret = request_inlink(ctx, INPUT_CLEANSRC)) < 0)
+    if (fm->ppsrc &&
+        (fm->got_frame[INPUT_CLEANSRC] == 0) &&
+        (ret = ff_inlink_consume_frame(ctx->inputs[INPUT_CLEANSRC], &frame)) > 0) {
+        ret = filter_frame(ctx->inputs[INPUT_CLEANSRC], frame);
+        if (ret < 0)
+            return ret;
+    }
+    if (ret < 0) {
         return ret;
-    return 0;
+    } else if (ff_inlink_acknowledge_status(ctx->inputs[INPUT_MAIN], &status, &pts)) {
+        if (status == AVERROR_EOF) { // flushing
+            fm->eof |= 1 << INPUT_MAIN;
+            ret = filter_frame(ctx->inputs[INPUT_MAIN], NULL);
+        }
+        ff_outlink_set_status(ctx->outputs[0], status, pts);
+        return ret;
+    } else if (fm->ppsrc && ff_inlink_acknowledge_status(ctx->inputs[INPUT_CLEANSRC], &status, &pts)) {
+        if (status == AVERROR_EOF) { // flushing
+            fm->eof |= 1 << INPUT_CLEANSRC;
+            ret = filter_frame(ctx->inputs[INPUT_CLEANSRC], NULL);
+        }
+        ff_outlink_set_status(ctx->outputs[0], status, pts);
+        return ret;
+    } else {
+        if (ff_outlink_frame_wanted(ctx->outputs[0])) {
+            if (fm->got_frame[INPUT_MAIN] == 0)
+                ff_inlink_request_frame(ctx->inputs[INPUT_MAIN]);
+            if (fm->ppsrc && (fm->got_frame[INPUT_CLEANSRC] == 0))
+                ff_inlink_request_frame(ctx->inputs[INPUT_CLEANSRC]);
+        }
+        return 0;
+    }
 }
 
 static int query_formats(AVFilterContext *ctx)
 {
-    // TODO: second input source can support >8bit depth
+    FieldMatchContext *fm = ctx->priv;
+
     static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV420P,
         AV_PIX_FMT_YUV411P,  AV_PIX_FMT_YUV410P,
         AV_PIX_FMT_NONE
     };
+    static const enum AVPixelFormat unproc_pix_fmts[] = {
+        AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P,
+        AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV444P,
+        AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P,
+        AV_PIX_FMT_YUVJ440P, AV_PIX_FMT_YUVJ444P,
+        AV_PIX_FMT_YUVJ411P,
+        AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV444P9,
+        AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
+        AV_PIX_FMT_YUV440P10,
+        AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV420P12,
+        AV_PIX_FMT_YUV440P12,
+        AV_PIX_FMT_YUV444P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV420P14,
+        AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
+        AV_PIX_FMT_NONE
+    };
+    int ret;
+
     AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
     if (!fmts_list)
         return AVERROR(ENOMEM);
-    return ff_set_common_formats(ctx, fmts_list);
+    if (!fm->ppsrc) {
+        return ff_set_common_formats(ctx, fmts_list);
+    }
+
+    if ((ret = ff_formats_ref(fmts_list, &ctx->inputs[INPUT_MAIN]->out_formats)) < 0)
+        return ret;
+    fmts_list = ff_make_format_list(unproc_pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    if ((ret = ff_formats_ref(fmts_list, &ctx->outputs[0]->in_formats)) < 0)
+        return ret;
+    if ((ret = ff_formats_ref(fmts_list, &ctx->inputs[INPUT_CLEANSRC]->out_formats)) < 0)
+        return ret;
+    return 0;
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -901,7 +954,6 @@ static av_cold int fieldmatch_init(AVFilterContext *ctx)
     AVFilterPad pad = {
         .name         = av_strdup("main"),
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
         .config_props = config_input,
     };
     int ret;
@@ -947,7 +999,12 @@ static av_cold void fieldmatch_uninit(AVFilterContext *ctx)
         av_frame_free(&fm->prv);
     if (fm->nxt != fm->src)
         av_frame_free(&fm->nxt);
+    if (fm->prv2 != fm->src2)
+        av_frame_free(&fm->prv2);
+    if (fm->nxt2 != fm->src2)
+        av_frame_free(&fm->nxt2);
     av_frame_free(&fm->src);
+    av_frame_free(&fm->src2);
     av_freep(&fm->map_data[0]);
     av_freep(&fm->cmask_data[0]);
     av_freep(&fm->tbuffer);
@@ -959,10 +1016,12 @@ static av_cold void fieldmatch_uninit(AVFilterContext *ctx)
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx  = outlink->src;
-    const FieldMatchContext *fm = ctx->priv;
+    FieldMatchContext *fm = ctx->priv;
     const AVFilterLink *inlink =
         ctx->inputs[fm->ppsrc ? INPUT_CLEANSRC : INPUT_MAIN];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
+    fm->bpc = (desc->comp[0].depth + 7) / 8;
     outlink->time_base = inlink->time_base;
     outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
     outlink->frame_rate = inlink->frame_rate;
@@ -975,7 +1034,6 @@ static const AVFilterPad fieldmatch_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .request_frame = request_frame,
         .config_props  = config_output,
     },
     { NULL }
@@ -987,6 +1045,7 @@ AVFilter ff_vf_fieldmatch = {
     .query_formats  = query_formats,
     .priv_size      = sizeof(FieldMatchContext),
     .init           = fieldmatch_init,
+    .activate       = activate,
     .uninit         = fieldmatch_uninit,
     .inputs         = NULL,
     .outputs        = fieldmatch_outputs,

@@ -567,7 +567,7 @@ static void sbr_hf_assemble(int Y1[38][64][2],
                 int idx = indexsine&1;
                 int A = (1-((indexsine+(kx & 1))&2));
                 int B = (A^(-idx)) + idx;
-                int *out = &Y1[i][kx][idx];
+                unsigned *out = &Y1[i][kx][idx];
                 int shift;
                 unsigned round;
 

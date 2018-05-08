@@ -16,6 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#define CL_USE_DEPRECATED_OPENCL_1_2_APIS
+
 #include <string.h>
 
 #include "config.h"
@@ -35,6 +37,12 @@
 #include <va/va_drmcommon.h>
 #include <CL/cl_intel.h>
 #include "hwcontext_vaapi.h"
+#endif
+
+#if HAVE_OPENCL_DRM_BEIGNET
+#include <unistd.h>
+#include <CL/cl_intel.h>
+#include "hwcontext_drm.h"
 #endif
 
 #if HAVE_OPENCL_VAAPI_INTEL_MEDIA
@@ -74,9 +82,9 @@ typedef struct OpenCLDeviceContext {
     cl_platform_id platform_id;
 
     // Platform/device-specific functions.
-#if HAVE_OPENCL_VAAPI_BEIGNET
-    int vaapi_mapping_usable;
-    clCreateImageFromFdINTEL_fn  clCreateImageFromFdINTEL;
+#if HAVE_OPENCL_DRM_BEIGNET
+    int beignet_drm_mapping_usable;
+    clCreateImageFromFdINTEL_fn clCreateImageFromFdINTEL;
 #endif
 
 #if HAVE_OPENCL_VAAPI_INTEL_MEDIA
@@ -685,19 +693,19 @@ static int opencl_device_init(AVHWDeviceContext *hwdev)
         }                                                       \
     } while (0)
 
-#if HAVE_OPENCL_VAAPI_BEIGNET
+#if HAVE_OPENCL_DRM_BEIGNET
     {
         int fail = 0;
 
         CL_FUNC(clCreateImageFromFdINTEL,
-                "Intel DRM to OpenCL image mapping");
+                "Beignet DRM to OpenCL image mapping");
 
         if (fail) {
-            av_log(hwdev, AV_LOG_WARNING, "VAAPI to OpenCL mapping "
-                   "not usable.\n");
-            priv->vaapi_mapping_usable = 0;
+            av_log(hwdev, AV_LOG_WARNING, "Beignet DRM to OpenCL "
+                   "mapping not usable.\n");
+            priv->beignet_drm_mapping_usable = 0;
         } else {
-            priv->vaapi_mapping_usable = 1;
+            priv->beignet_drm_mapping_usable = 1;
         }
     }
 #endif
@@ -1187,7 +1195,8 @@ static int opencl_device_derive(AVHWDeviceContext *hwdev,
     int err;
     switch (src_ctx->type) {
 
-#if HAVE_OPENCL_VAAPI_BEIGNET
+#if HAVE_OPENCL_DRM_BEIGNET
+    case AV_HWDEVICE_TYPE_DRM:
     case AV_HWDEVICE_TYPE_VAAPI:
         {
             // Surface mapping works via DRM PRIME fds with no special
@@ -2028,175 +2037,152 @@ fail:
     return err;
 }
 
-#if HAVE_OPENCL_VAAPI_BEIGNET
+#if HAVE_OPENCL_DRM_BEIGNET
 
-typedef struct VAAPItoOpenCLMapping {
-    VAImage      va_image;
-    VABufferInfo va_buffer_info;
+typedef struct DRMBeignetToOpenCLMapping {
+    AVFrame              *drm_frame;
+    AVDRMFrameDescriptor *drm_desc;
 
     AVOpenCLFrameDescriptor frame;
-} VAAPItoOpenCLMapping;
+} DRMBeignetToOpenCLMapping;
 
-static void opencl_unmap_from_vaapi(AVHWFramesContext *src_fc,
-                                    HWMapDescriptor *hwmap)
+static void opencl_unmap_from_drm_beignet(AVHWFramesContext *dst_fc,
+                                          HWMapDescriptor *hwmap)
 {
-    VAAPItoOpenCLMapping *mapping = hwmap->priv;
-    AVVAAPIDeviceContext *src_dev = src_fc->device_ctx->hwctx;
-    VASurfaceID surface_id;
-    VAStatus vas;
+    DRMBeignetToOpenCLMapping *mapping = hwmap->priv;
     cl_int cle;
     int i;
-
-    surface_id = (VASurfaceID)(uintptr_t)hwmap->source->data[3];
-    av_log(src_fc, AV_LOG_DEBUG, "Unmap VAAPI surface %#x from OpenCL.\n",
-           surface_id);
 
     for (i = 0; i < mapping->frame.nb_planes; i++) {
         cle = clReleaseMemObject(mapping->frame.planes[i]);
         if (cle != CL_SUCCESS) {
-            av_log(src_fc, AV_LOG_ERROR, "Failed to release CL "
-                   "buffer of plane %d of VA image %#x (derived "
-                   "from surface %#x): %d.\n", i,
-                   mapping->va_image.buf, surface_id, cle);
+            av_log(dst_fc, AV_LOG_ERROR, "Failed to release CL image "
+                   "of plane %d of DRM frame: %d.\n", i, cle);
         }
-    }
-
-    vas = vaReleaseBufferHandle(src_dev->display,
-                                mapping->va_image.buf);
-    if (vas != VA_STATUS_SUCCESS) {
-        av_log(src_fc, AV_LOG_ERROR, "Failed to release buffer "
-               "handle of image %#x (derived from surface %#x): "
-               "%d (%s).\n", mapping->va_image.buf, surface_id,
-               vas, vaErrorStr(vas));
-    }
-
-    vas = vaDestroyImage(src_dev->display,
-                         mapping->va_image.image_id);
-    if (vas != VA_STATUS_SUCCESS) {
-        av_log(src_fc, AV_LOG_ERROR, "Failed to destroy image "
-               "derived from surface %#x: %d (%s).\n",
-               surface_id, vas, vaErrorStr(vas));
     }
 
     av_free(mapping);
 }
 
-static int opencl_map_from_vaapi(AVHWFramesContext *dst_fc, AVFrame *dst,
-                                 const AVFrame *src, int flags)
+static int opencl_map_from_drm_beignet(AVHWFramesContext *dst_fc,
+                                       AVFrame *dst, const AVFrame *src,
+                                       int flags)
 {
-    AVHWFramesContext      *src_fc =
-        (AVHWFramesContext*)src->hw_frames_ctx->data;
-    AVVAAPIDeviceContext  *src_dev = src_fc->device_ctx->hwctx;
-    AVOpenCLDeviceContext *dst_dev = dst_fc->device_ctx->hwctx;
-    OpenCLDeviceContext      *priv = dst_fc->device_ctx->internal->priv;
-    VAAPItoOpenCLMapping  *mapping = NULL;
-    VASurfaceID surface_id;
-    VAStatus vas;
+    AVOpenCLDeviceContext *hwctx = dst_fc->device_ctx->hwctx;
+    OpenCLDeviceContext    *priv = dst_fc->device_ctx->internal->priv;
+    DRMBeignetToOpenCLMapping *mapping;
+    const AVDRMFrameDescriptor *desc;
     cl_int cle;
-    int err, p;
+    int err, i, j, p;
 
-    surface_id = (VASurfaceID)(uintptr_t)src->data[3];
-    av_log(src_fc, AV_LOG_DEBUG, "Map VAAPI surface %#x to OpenCL.\n",
-           surface_id);
+    desc = (const AVDRMFrameDescriptor*)src->data[0];
 
     mapping = av_mallocz(sizeof(*mapping));
     if (!mapping)
         return AVERROR(ENOMEM);
 
-    vas = vaDeriveImage(src_dev->display, surface_id,
-                        &mapping->va_image);
-    if (vas != VA_STATUS_SUCCESS) {
-        av_log(src_fc, AV_LOG_ERROR, "Failed to derive image from "
-               "surface %#x: %d (%s).\n",
-               surface_id, vas, vaErrorStr(vas));
-        err = AVERROR(EIO);
-        goto fail;
-    }
+    p = 0;
+    for (i = 0; i < desc->nb_layers; i++) {
+        const AVDRMLayerDescriptor *layer = &desc->layers[i];
+        for (j = 0; j < layer->nb_planes; j++) {
+            const AVDRMPlaneDescriptor *plane = &layer->planes[j];
+            const AVDRMObjectDescriptor *object =
+                &desc->objects[plane->object_index];
 
-    mapping->va_buffer_info.mem_type =
-        VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME;
+            cl_import_image_info_intel image_info = {
+                .fd        = object->fd,
+                .size      = object->size,
+                .type      = CL_MEM_OBJECT_IMAGE2D,
+                .offset    = plane->offset,
+                .row_pitch = plane->pitch,
+            };
+            cl_image_desc image_desc;
 
-    vas = vaAcquireBufferHandle(src_dev->display,
-                                mapping->va_image.buf,
-                                &mapping->va_buffer_info);
-    if (vas != VA_STATUS_SUCCESS) {
-        av_log(src_fc, AV_LOG_ERROR, "Failed to get buffer "
-               "handle from image %#x (derived from surface %#x): "
-               "%d (%s).\n", mapping->va_image.buf, surface_id,
-               vas, vaErrorStr(vas));
-        vaDestroyImage(src_dev->display, mapping->va_image.buf);
-        err = AVERROR(EIO);
-        goto fail_derived;
-    }
+            err = opencl_get_plane_format(dst_fc->sw_format, p,
+                                          src->width, src->height,
+                                          &image_info.fmt,
+                                          &image_desc);
+            if (err < 0) {
+                av_log(dst_fc, AV_LOG_ERROR, "DRM frame layer %d "
+                       "plane %d is not representable in OpenCL: %d.\n",
+                       i, j, err);
+                goto fail;
+            }
+            image_info.width  = image_desc.image_width;
+            image_info.height = image_desc.image_height;
 
-    av_log(dst_fc, AV_LOG_DEBUG, "DRM PRIME fd is %ld.\n",
-           mapping->va_buffer_info.handle);
+            mapping->frame.planes[p] =
+                priv->clCreateImageFromFdINTEL(hwctx->context,
+                                               &image_info, &cle);
+            if (!mapping->frame.planes[p]) {
+                av_log(dst_fc, AV_LOG_ERROR, "Failed to create CL image "
+                       "from layer %d plane %d of DRM frame: %d.\n",
+                       i, j, cle);
+                err = AVERROR(EIO);
+                goto fail;
+            }
 
-    mapping->frame.nb_planes = mapping->va_image.num_planes;
-    for (p = 0; p < mapping->frame.nb_planes; p++) {
-        cl_import_image_info_intel image_info = {
-            .fd   = mapping->va_buffer_info.handle,
-            .size = mapping->va_buffer_info.mem_size,
-            .type = CL_MEM_OBJECT_IMAGE2D,
-            .offset    = mapping->va_image.offsets[p],
-            .row_pitch = mapping->va_image.pitches[p],
-        };
-        cl_image_desc image_desc;
-
-        err = opencl_get_plane_format(src_fc->sw_format, p,
-                                      mapping->va_image.width,
-                                      mapping->va_image.height,
-                                      &image_info.fmt,
-                                      &image_desc);
-        if (err < 0) {
-            av_log(dst_fc, AV_LOG_ERROR, "VA %#x (derived from "
-                   "surface %#x) has invalid parameters: %d.\n",
-                   mapping->va_image.buf, surface_id, err);
-            goto fail_mapped;
+            dst->data[p] = (uint8_t*)mapping->frame.planes[p];
+            mapping->frame.nb_planes = ++p;
         }
-        image_info.width  = image_desc.image_width;
-        image_info.height = image_desc.image_height;
-
-        mapping->frame.planes[p] =
-            priv->clCreateImageFromFdINTEL(dst_dev->context,
-                                           &image_info, &cle);
-        if (!mapping->frame.planes[p]) {
-            av_log(dst_fc, AV_LOG_ERROR, "Failed to create CL image "
-                   "from plane %d of VA image %#x (derived from "
-                   "surface %#x): %d.\n", p,
-                   mapping->va_image.buf, surface_id, cle);
-            err = AVERROR(EIO);
-            goto fail_mapped;
-        }
-
-        dst->data[p] = (uint8_t*)mapping->frame.planes[p];
     }
 
-    err = ff_hwframe_map_create(src->hw_frames_ctx,
-                                dst, src, &opencl_unmap_from_vaapi,
+    err = ff_hwframe_map_create(dst->hw_frames_ctx, dst, src,
+                                &opencl_unmap_from_drm_beignet,
                                 mapping);
     if (err < 0)
-        goto fail_mapped;
+        goto fail;
 
     dst->width  = src->width;
     dst->height = src->height;
 
     return 0;
 
-fail_mapped:
+fail:
     for (p = 0; p < mapping->frame.nb_planes; p++) {
         if (mapping->frame.planes[p])
             clReleaseMemObject(mapping->frame.planes[p]);
     }
-    vaReleaseBufferHandle(src_dev->display, mapping->va_image.buf);
-fail_derived:
-    vaDestroyImage(src_dev->display, mapping->va_image.image_id);
-fail:
-    av_freep(&mapping);
+    av_free(mapping);
     return err;
 }
 
-#endif
+#if HAVE_OPENCL_VAAPI_BEIGNET
+
+static int opencl_map_from_vaapi(AVHWFramesContext *dst_fc,
+                                 AVFrame *dst, const AVFrame *src,
+                                 int flags)
+{
+    HWMapDescriptor *hwmap;
+    AVFrame *tmp;
+    int err;
+
+    tmp = av_frame_alloc();
+    if (!tmp)
+        return AVERROR(ENOMEM);
+
+    tmp->format = AV_PIX_FMT_DRM_PRIME;
+
+    err = av_hwframe_map(tmp, src, flags);
+    if (err < 0)
+        goto fail;
+
+    err = opencl_map_from_drm_beignet(dst_fc, dst, tmp, flags);
+    if (err < 0)
+        goto fail;
+
+    // Adjust the map descriptor so that unmap works correctly.
+    hwmap = (HWMapDescriptor*)dst->buf[0]->data;
+    av_frame_unref(hwmap->source);
+    err = av_frame_ref(hwmap->source, src);
+
+fail:
+    av_frame_free(&tmp);
+    return err;
+}
+
+#endif /* HAVE_OPENCL_VAAPI_BEIGNET */
+#endif /* HAVE_OPENCL_DRM_BEIGNET */
 
 static inline cl_mem_flags opencl_mem_flags_for_mapping(int map_flags)
 {
@@ -2826,9 +2812,14 @@ static int opencl_map_to(AVHWFramesContext *hwfc, AVFrame *dst,
     OpenCLDeviceContext *priv = hwfc->device_ctx->internal->priv;
     av_assert0(dst->format == AV_PIX_FMT_OPENCL);
     switch (src->format) {
+#if HAVE_OPENCL_DRM_BEIGNET
+    case AV_PIX_FMT_DRM_PRIME:
+        if (priv->beignet_drm_mapping_usable)
+            return opencl_map_from_drm_beignet(hwfc, dst, src, flags);
+#endif
 #if HAVE_OPENCL_VAAPI_BEIGNET
     case AV_PIX_FMT_VAAPI:
-        if (priv->vaapi_mapping_usable)
+        if (priv->beignet_drm_mapping_usable)
             return opencl_map_from_vaapi(hwfc, dst, src, flags);
 #endif
 #if HAVE_OPENCL_VAAPI_INTEL_MEDIA
@@ -2861,9 +2852,15 @@ static int opencl_frames_derive_to(AVHWFramesContext *dst_fc,
 {
     OpenCLDeviceContext *priv = dst_fc->device_ctx->internal->priv;
     switch (src_fc->device_ctx->type) {
+#if HAVE_OPENCL_DRM_BEIGNET
+    case AV_HWDEVICE_TYPE_DRM:
+        if (!priv->beignet_drm_mapping_usable)
+            return AVERROR(ENOSYS);
+        break;
+#endif
 #if HAVE_OPENCL_VAAPI_BEIGNET
     case AV_HWDEVICE_TYPE_VAAPI:
-        if (!priv->vaapi_mapping_usable)
+        if (!priv->beignet_drm_mapping_usable)
             return AVERROR(ENOSYS);
         break;
 #endif

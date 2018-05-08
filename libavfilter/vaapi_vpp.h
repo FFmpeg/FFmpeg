@@ -40,9 +40,6 @@ typedef struct VAAPIVPPContext {
     AVBufferRef       *input_frames_ref;
     AVHWFramesContext *input_frames;
 
-    AVBufferRef       *output_frames_ref;
-    AVHWFramesContext *output_frames;
-
     enum AVPixelFormat output_format;
     int output_width;   // computed width
     int output_height;  // computed height

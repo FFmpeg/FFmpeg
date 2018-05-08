@@ -117,6 +117,11 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
         avctx->pix_fmt = (buf[12] & 0xC0) == 0xC0 ? AV_PIX_FMT_YUV444P10 : AV_PIX_FMT_YUV422P10;
     }
 
+    avctx->color_primaries = buf[14];
+    avctx->color_trc       = buf[15];
+    avctx->colorspace      = buf[16];
+    avctx->color_range     = AVCOL_RANGE_MPEG;
+
     ptr   = buf + 20;
     flags = buf[19];
     ff_dlog(avctx, "flags %x\n", flags);
@@ -703,7 +708,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
 
 AVCodec ff_prores_decoder = {
     .name           = "prores",
-    .long_name      = NULL_IF_CONFIG_SMALL("ProRes"),
+    .long_name      = NULL_IF_CONFIG_SMALL("ProRes (iCodec Pro)"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_PRORES,
     .priv_data_size = sizeof(ProresContext),

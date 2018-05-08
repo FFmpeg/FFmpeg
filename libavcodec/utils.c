@@ -46,7 +46,6 @@
 #include "decode.h"
 #include "hwaccel.h"
 #include "libavutil/opt.h"
-#include "me_cmp.h"
 #include "mpegvideo.h"
 #include "thread.h"
 #include "frame_thread_encoder.h"
@@ -92,30 +91,6 @@ void av_fast_padded_mallocz(void *ptr, unsigned int *size, size_t min_size)
         memset(*p, 0, min_size + AV_INPUT_BUFFER_PADDING_SIZE);
 }
 
-/* encoder management */
-static AVCodec *first_avcodec = NULL;
-static AVCodec **last_avcodec = &first_avcodec;
-
-AVCodec *av_codec_next(const AVCodec *c)
-{
-    if (c)
-        return c->next;
-    else
-        return first_avcodec;
-}
-
-static av_cold void avcodec_init(void)
-{
-    static int initialized = 0;
-
-    if (initialized != 0)
-        return;
-    initialized = 1;
-
-    if (CONFIG_ME_CMP)
-        ff_me_cmp_init_static();
-}
-
 int av_codec_is_encoder(const AVCodec *codec)
 {
     return codec && (codec->encode_sub || codec->encode2 ||codec->send_frame);
@@ -124,28 +99,6 @@ int av_codec_is_encoder(const AVCodec *codec)
 int av_codec_is_decoder(const AVCodec *codec)
 {
     return codec && (codec->decode || codec->receive_frame);
-}
-
-static AVMutex codec_register_mutex = AV_MUTEX_INITIALIZER;
-
-av_cold void avcodec_register(AVCodec *codec)
-{
-    AVCodec **p;
-    avcodec_init();
-
-    ff_mutex_lock(&codec_register_mutex);
-    p = last_avcodec;
-
-    while (*p)
-        p = &(*p)->next;
-    *p          = codec;
-    codec->next = NULL;
-    last_avcodec = &codec->next;
-
-    ff_mutex_unlock(&codec_register_mutex);
-
-    if (codec->init_static_data)
-        codec->init_static_data(codec);
 }
 
 int ff_set_dimensions(AVCodecContext *s, int width, int height)
@@ -359,7 +312,10 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
 
     *width  = FFALIGN(*width, w_align);
     *height = FFALIGN(*height, h_align);
-    if (s->codec_id == AV_CODEC_ID_H264 || s->lowres) {
+    if (s->codec_id == AV_CODEC_ID_H264 || s->lowres ||
+        s->codec_id == AV_CODEC_ID_VP5  || s->codec_id == AV_CODEC_ID_VP6 ||
+        s->codec_id == AV_CODEC_ID_VP6F || s->codec_id == AV_CODEC_ID_VP6A
+    ) {
         // some of the optimized chroma MC reads one line too much
         // which is also done in mpeg decoders with lowres > 0
         *height += 2;
@@ -1166,71 +1122,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     avctx->active_thread_type = 0;
 
     return 0;
-}
-
-static enum AVCodecID remap_deprecated_codec_id(enum AVCodecID id)
-{
-    switch(id){
-        //This is for future deprecatec codec ids, its empty since
-        //last major bump but will fill up again over time, please don't remove it
-        default                                         : return id;
-    }
-}
-
-static AVCodec *find_encdec(enum AVCodecID id, int encoder)
-{
-    AVCodec *p, *experimental = NULL;
-    p = first_avcodec;
-    id= remap_deprecated_codec_id(id);
-    while (p) {
-        if ((encoder ? av_codec_is_encoder(p) : av_codec_is_decoder(p)) &&
-            p->id == id) {
-            if (p->capabilities & AV_CODEC_CAP_EXPERIMENTAL && !experimental) {
-                experimental = p;
-            } else
-                return p;
-        }
-        p = p->next;
-    }
-    return experimental;
-}
-
-AVCodec *avcodec_find_encoder(enum AVCodecID id)
-{
-    return find_encdec(id, 1);
-}
-
-AVCodec *avcodec_find_encoder_by_name(const char *name)
-{
-    AVCodec *p;
-    if (!name)
-        return NULL;
-    p = first_avcodec;
-    while (p) {
-        if (av_codec_is_encoder(p) && strcmp(name, p->name) == 0)
-            return p;
-        p = p->next;
-    }
-    return NULL;
-}
-
-AVCodec *avcodec_find_decoder(enum AVCodecID id)
-{
-    return find_encdec(id, 0);
-}
-
-AVCodec *avcodec_find_decoder_by_name(const char *name)
-{
-    AVCodec *p;
-    if (!name)
-        return NULL;
-    p = first_avcodec;
-    while (p) {
-        if (av_codec_is_decoder(p) && strcmp(name, p->name) == 0)
-            return p;
-        p = p->next;
-    }
-    return NULL;
 }
 
 const char *avcodec_get_name(enum AVCodecID id)

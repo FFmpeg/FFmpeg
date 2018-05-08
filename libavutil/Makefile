@@ -24,6 +24,7 @@ HEADERS = adler32.h                                                     \
           dict.h                                                        \
           display.h                                                     \
           downmix_info.h                                                \
+          encryption_info.h                                             \
           error.h                                                       \
           eval.h                                                        \
           fifo.h                                                        \
@@ -107,6 +108,7 @@ OBJS = adler32.o                                                        \
        dict.o                                                           \
        display.o                                                        \
        downmix_info.o                                                   \
+       encryption_info.o                                                \
        error.o                                                          \
        eval.o                                                           \
        fifo.o                                                           \
@@ -204,6 +206,7 @@ TESTPROGS = adler32                                                     \
             fifo                                                        \
             hash                                                        \
             hmac                                                        \
+            integer                                                     \
             imgutils                                                    \
             lfg                                                         \
             lls                                                         \

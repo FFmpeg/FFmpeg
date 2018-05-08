@@ -39,21 +39,21 @@ typedef struct H264BSFContext {
 
 static int alloc_and_copy(AVPacket *out,
                           const uint8_t *sps_pps, uint32_t sps_pps_size,
-                          const uint8_t *in, uint32_t in_size)
+                          const uint8_t *in, uint32_t in_size, int ps)
 {
     uint32_t offset         = out->size;
-    uint8_t nal_header_size = offset ? 3 : 4;
+    uint8_t start_code_size = offset == 0 || ps ? 4 : 3;
     int err;
 
-    err = av_grow_packet(out, sps_pps_size + in_size + nal_header_size);
+    err = av_grow_packet(out, sps_pps_size + in_size + start_code_size);
     if (err < 0)
         return err;
 
     if (sps_pps)
         memcpy(out->data + offset, sps_pps, sps_pps_size);
-    memcpy(out->data + sps_pps_size + nal_header_size + offset, in, in_size);
-    if (!offset) {
-        AV_WB32(out->data + sps_pps_size, 1);
+    memcpy(out->data + sps_pps_size + start_code_size + offset, in, in_size);
+    if (start_code_size == 4) {
+        AV_WB32(out->data + offset + sps_pps_size, 1);
     } else {
         (out->data + offset + sps_pps_size)[0] =
         (out->data + offset + sps_pps_size)[1] = 0;
@@ -221,7 +221,7 @@ static int h264_mp4toannexb_filter(AVBSFContext *ctx, AVPacket *out)
                     if ((ret = alloc_and_copy(out,
                                          ctx->par_out->extradata + s->sps_offset,
                                          s->pps_offset != -1 ? s->pps_offset : ctx->par_out->extradata_size - s->sps_offset,
-                                         buf, nal_size)) < 0)
+                                         buf, nal_size, 1)) < 0)
                         goto fail;
                     s->idr_sps_seen = 1;
                     goto next_nal;
@@ -239,21 +239,21 @@ static int h264_mp4toannexb_filter(AVBSFContext *ctx, AVPacket *out)
         if (s->new_idr && unit_type == 5 && !s->idr_sps_seen && !s->idr_pps_seen) {
             if ((ret=alloc_and_copy(out,
                                ctx->par_out->extradata, ctx->par_out->extradata_size,
-                               buf, nal_size)) < 0)
+                               buf, nal_size, 1)) < 0)
                 goto fail;
             s->new_idr = 0;
         /* if only SPS has been seen, also insert PPS */
         } else if (s->new_idr && unit_type == 5 && s->idr_sps_seen && !s->idr_pps_seen) {
             if (s->pps_offset == -1) {
                 av_log(ctx, AV_LOG_WARNING, "PPS not present in the stream, nor in AVCC, stream may be unreadable\n");
-                if ((ret = alloc_and_copy(out, NULL, 0, buf, nal_size)) < 0)
+                if ((ret = alloc_and_copy(out, NULL, 0, buf, nal_size, 0)) < 0)
                     goto fail;
             } else if ((ret = alloc_and_copy(out,
                                         ctx->par_out->extradata + s->pps_offset, ctx->par_out->extradata_size - s->pps_offset,
-                                        buf, nal_size)) < 0)
+                                        buf, nal_size, 1)) < 0)
                 goto fail;
         } else {
-            if ((ret=alloc_and_copy(out, NULL, 0, buf, nal_size)) < 0)
+            if ((ret=alloc_and_copy(out, NULL, 0, buf, nal_size, unit_type == 7 || unit_type == 8)) < 0)
                 goto fail;
             if (!s->new_idr && unit_type == 1) {
                 s->new_idr = 1;

@@ -131,6 +131,9 @@ static int hwupload_config_output(AVFilterLink *outlink)
     ctx->hwframes->width     = inlink->w;
     ctx->hwframes->height    = inlink->h;
 
+    if (avctx->extra_hw_frames >= 0)
+        ctx->hwframes->initial_pool_size = 2 + avctx->extra_hw_frames;
+
     err = av_hwframe_ctx_init(ctx->hwframes_ref);
     if (err < 0)
         goto fail;

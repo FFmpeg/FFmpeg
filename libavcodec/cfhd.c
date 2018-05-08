@@ -37,6 +37,9 @@
 #include "thread.h"
 #include "cfhd.h"
 
+#define ALPHA_COMPAND_DC_OFFSET 256
+#define ALPHA_COMPAND_GAIN 9400
+
 enum CFHDParam {
     ChannelCount     =  12,
     SubbandCount     =  14,
@@ -92,6 +95,20 @@ static inline int dequant_and_decompand(int level, int quantisation)
     int64_t abslevel = abs(level);
     return (abslevel + ((768 * abslevel * abslevel * abslevel) / (255 * 255 * 255))) *
            FFSIGN(level) * quantisation;
+}
+
+static inline void process_alpha(int16_t *alpha, int width)
+{
+    int i, channel;
+    for (i = 0; i < width; i++) {
+        channel   = alpha[i];
+        channel  -= ALPHA_COMPAND_DC_OFFSET;
+        channel <<= 3;
+        channel  *= ALPHA_COMPAND_GAIN;
+        channel >>= 16;
+        channel   = av_clip_uintp2(channel, 12);
+        alpha[i]  = channel;
+    }
 }
 
 static inline void filter(int16_t *output, ptrdiff_t out_stride,
@@ -196,13 +213,14 @@ static int alloc_buffers(AVCodecContext *avctx)
         int width  = i ? avctx->width  >> chroma_x_shift : avctx->width;
         int height = i ? avctx->height >> chroma_y_shift : avctx->height;
         ptrdiff_t stride = FFALIGN(width  / 8, 8) * 8;
-        height           = FFALIGN(height / 8, 2) * 8;
+        if (chroma_y_shift)
+            height = FFALIGN(height / 8, 2) * 8;
         s->plane[i].width  = width;
         s->plane[i].height = height;
         s->plane[i].stride = stride;
 
         w8 = FFALIGN(s->plane[i].width  / 8, 8);
-        h8 = FFALIGN(s->plane[i].height / 8, 2);
+        h8 = height / 8;
         w4 = w8 * 2;
         h4 = h8 * 2;
         w2 = w4 * 2;
@@ -792,6 +810,8 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
         high = s->plane[plane].l_h[7];
         for (i = 0; i < lowpass_height * 2; i++) {
             horiz_filter_clip(dst, low, high, lowpass_width, s->bpc);
+            if (act_plane == 3)
+                process_alpha(dst, lowpass_width * 2);
             low  += lowpass_width;
             high += lowpass_width;
             dst  += pic->linesize[act_plane] / 2;

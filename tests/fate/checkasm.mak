@@ -14,12 +14,14 @@ FATE_CHECKASM = fate-checkasm-aacpsdsp                                  \
                 fate-checkasm-h264qpel                                  \
                 fate-checkasm-hevc_add_res                              \
                 fate-checkasm-hevc_idct                                 \
+                fate-checkasm-hevc_sao                                  \
                 fate-checkasm-jpeg2000dsp                               \
                 fate-checkasm-llviddsp                                  \
                 fate-checkasm-llviddspenc                               \
                 fate-checkasm-pixblockdsp                               \
                 fate-checkasm-sbrdsp                                    \
                 fate-checkasm-synth_filter                              \
+                fate-checkasm-sw_rgb                                    \
                 fate-checkasm-v210enc                                   \
                 fate-checkasm-vf_blend                                  \
                 fate-checkasm-vf_colorspace                             \

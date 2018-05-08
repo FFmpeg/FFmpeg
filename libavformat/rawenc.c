@@ -104,6 +104,19 @@ AVOutputFormat ff_aptx_muxer = {
 };
 #endif
 
+#if CONFIG_APTX_HD_MUXER
+AVOutputFormat ff_aptx_hd_muxer = {
+    .name              = "aptx_hd",
+    .long_name         = NULL_IF_CONFIG_SMALL("raw aptX HD (Audio Processing Technology for Bluetooth)"),
+    .extensions        = "aptxhd",
+    .audio_codec       = AV_CODEC_ID_APTX_HD,
+    .video_codec       = AV_CODEC_ID_NONE,
+    .write_header      = force_one_stream,
+    .write_packet      = ff_raw_write_packet,
+    .flags             = AVFMT_NOTIMESTAMPS,
+};
+#endif
+
 #if CONFIG_CAVSVIDEO_MUXER
 AVOutputFormat ff_cavsvideo_muxer = {
     .name              = "cavsvideo",
@@ -116,6 +129,19 @@ AVOutputFormat ff_cavsvideo_muxer = {
     .flags             = AVFMT_NOTIMESTAMPS,
 };
 #endif
+
+#if CONFIG_CODEC2RAW_MUXER
+AVOutputFormat ff_codec2raw_muxer = {
+    .name              = "codec2raw",
+    .long_name         = NULL_IF_CONFIG_SMALL("raw codec2 muxer"),
+    .audio_codec       = AV_CODEC_ID_CODEC2,
+    .video_codec       = AV_CODEC_ID_NONE,
+    .write_header      = force_one_stream,
+    .write_packet      = ff_raw_write_packet,
+    .flags             = AVFMT_NOTIMESTAMPS,
+};
+#endif
+
 
 #if CONFIG_DATA_MUXER
 AVOutputFormat ff_data_muxer = {
@@ -421,6 +447,19 @@ AVOutputFormat ff_rawvideo_muxer = {
     .extensions        = "yuv,rgb",
     .audio_codec       = AV_CODEC_ID_NONE,
     .video_codec       = AV_CODEC_ID_RAWVIDEO,
+    .write_packet      = ff_raw_write_packet,
+    .flags             = AVFMT_NOTIMESTAMPS,
+};
+#endif
+
+#if CONFIG_SBC_MUXER
+AVOutputFormat ff_sbc_muxer = {
+    .name              = "sbc",
+    .long_name         = NULL_IF_CONFIG_SMALL("raw SBC"),
+    .mime_type         = "audio/x-sbc",
+    .extensions        = "sbc,msbc",
+    .audio_codec       = AV_CODEC_ID_SBC,
+    .write_header      = force_one_stream,
     .write_packet      = ff_raw_write_packet,
     .flags             = AVFMT_NOTIMESTAMPS,
 };

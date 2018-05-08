@@ -558,7 +558,7 @@ static int huf_decode(const uint64_t *hcode, const HufDec *hdecod,
     while (lc > 0) {
         const HufDec pl = hdecod[(c << (HUF_DECBITS - lc)) & HUF_DECMASK];
 
-        if (pl.len) {
+        if (pl.len && lc >= pl.len) {
             lc -= pl.len;
             get_code(pl.lit, rlc, c, lc, gb, out, oe, outb);
         } else {
@@ -899,7 +899,7 @@ static int pxr24_uncompress(EXRContext *s, const uint8_t *src,
 
 static void unpack_14(const uint8_t b[14], uint16_t s[16])
 {
-    unsigned short shift = (b[ 2] >> 2);
+    unsigned short shift = (b[ 2] >> 2) & 15;
     unsigned short bias = (0x20 << shift);
     int i;
 
@@ -1350,12 +1350,14 @@ static int decode_header(EXRContext *s, AVFrame *frame)
 
     flags = bytestream2_get_le24(&s->gb);
 
-    if (flags == 0x00)
-        s->is_tile = 0;
-    else if (flags & 0x02)
+    if (flags & 0x02)
         s->is_tile = 1;
-    else{
-        avpriv_report_missing_feature(s->avctx, "flags %d", flags);
+    if (flags & 0x08) {
+        avpriv_report_missing_feature(s->avctx, "deep data");
+        return AVERROR_PATCHWELCOME;
+    }
+    if (flags & 0x10) {
+        avpriv_report_missing_feature(s->avctx, "multipart");
         return AVERROR_PATCHWELCOME;
     }
 

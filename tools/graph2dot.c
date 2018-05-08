@@ -189,8 +189,6 @@ int main(int argc, char **argv)
         *p = '\0';
     }
 
-    avfilter_register_all();
-
     if (avfilter_graph_parse(graph, graph_string, NULL, NULL, NULL) < 0) {
         fprintf(stderr, "Failed to parse the graph description\n");
         return 1;

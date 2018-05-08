@@ -82,8 +82,11 @@ int ff_h264_pred_weight_table(GetBitContext *gb, const SPS *sps,
                         pwt->chroma_weight[i][list][j][0] = get_se_golomb(gb);
                         pwt->chroma_weight[i][list][j][1] = get_se_golomb(gb);
                         if ((int8_t)pwt->chroma_weight[i][list][j][0] != pwt->chroma_weight[i][list][j][0] ||
-                            (int8_t)pwt->chroma_weight[i][list][j][1] != pwt->chroma_weight[i][list][j][1])
+                            (int8_t)pwt->chroma_weight[i][list][j][1] != pwt->chroma_weight[i][list][j][1]) {
+                            pwt->chroma_weight[i][list][j][0] = chroma_def;
+                            pwt->chroma_weight[i][list][j][1] = 0;
                             goto out_range_weight;
+                        }
                         if (pwt->chroma_weight[i][list][j][0] != chroma_def ||
                             pwt->chroma_weight[i][list][j][1] != 0) {
                             pwt->use_weight_chroma        = 1;
@@ -271,7 +274,7 @@ int ff_h264_init_poc(int pic_field_poc[2], int *pic_poc,
                      int picture_structure, int nal_ref_idc)
 {
     const int max_frame_num = 1 << sps->log2_max_frame_num;
-    int field_poc[2];
+    int64_t field_poc[2];
 
     pc->frame_num_offset = pc->prev_frame_num_offset;
     if (pc->frame_num < pc->prev_frame_num)
@@ -336,6 +339,10 @@ int ff_h264_init_poc(int pic_field_poc[2], int *pic_poc,
         field_poc[0] = poc;
         field_poc[1] = poc;
     }
+
+    if (   field_poc[0] != (int)field_poc[0]
+        || field_poc[1] != (int)field_poc[1])
+        return AVERROR_INVALIDDATA;
 
     if (picture_structure != PICT_BOTTOM_FIELD)
         pic_field_poc[0] = field_poc[0];

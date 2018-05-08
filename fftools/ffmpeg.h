@@ -526,9 +526,6 @@ typedef struct OutputStream {
 
     int keep_pix_fmt;
 
-    AVCodecParserContext *parser;
-    AVCodecContext       *parser_avctx;
-
     /* stats */
     // combined size of all the packets written
     uint64_t data_size;

@@ -53,8 +53,8 @@ int ff_h2645_extract_rbsp(const uint8_t *src, int length,
             i++
 #if HAVE_FAST_64BIT
     for (i = 0; i + 1 < length; i += 9) {
-        if (!((~AV_RN64A(src + i) &
-               (AV_RN64A(src + i) - 0x0100010001000101ULL)) &
+        if (!((~AV_RN64(src + i) &
+               (AV_RN64(src + i) - 0x0100010001000101ULL)) &
               0x8000800080008080ULL))
             continue;
         FIND_FIRST_ZERO;
@@ -63,8 +63,8 @@ int ff_h2645_extract_rbsp(const uint8_t *src, int length,
     }
 #else
     for (i = 0; i + 1 < length; i += 5) {
-        if (!((~AV_RN32A(src + i) &
-               (AV_RN32A(src + i) - 0x01000101U)) &
+        if (!((~AV_RN32(src + i) &
+               (AV_RN32(src + i) - 0x01000101U)) &
               0x80008080U))
             continue;
         FIND_FIRST_ZERO;

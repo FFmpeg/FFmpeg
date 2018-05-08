@@ -53,25 +53,29 @@ extern "C" {
 
 #include "decklink_common.h"
 
-#ifdef _WIN32
-IDeckLinkIterator *CreateDeckLinkIteratorInstance(void)
+static IDeckLinkIterator *decklink_create_iterator(AVFormatContext *avctx)
 {
     IDeckLinkIterator *iter;
 
+#ifdef _WIN32
     if (CoInitialize(NULL) < 0) {
-        av_log(NULL, AV_LOG_ERROR, "COM initialization failed.\n");
+        av_log(avctx, AV_LOG_ERROR, "COM initialization failed.\n");
         return NULL;
     }
 
     if (CoCreateInstance(CLSID_CDeckLinkIterator, NULL, CLSCTX_ALL,
                          IID_IDeckLinkIterator, (void**) &iter) != S_OK) {
-        av_log(NULL, AV_LOG_ERROR, "DeckLink drivers not installed.\n");
-        return NULL;
+        iter = NULL;
     }
+#else
+    iter = CreateDeckLinkIteratorInstance();
+#endif
+    if (!iter)
+        av_log(avctx, AV_LOG_ERROR, "Could not create DeckLink iterator. "
+                                    "Make sure you have DeckLink drivers " BLACKMAGIC_DECKLINK_API_VERSION_STRING " or newer installed.\n");
 
     return iter;
 }
-#endif
 
 #ifdef _WIN32
 static char *dup_wchar_to_utf8(wchar_t *w)
@@ -285,13 +289,11 @@ int ff_decklink_list_devices(AVFormatContext *avctx,
                              int show_inputs, int show_outputs)
 {
     IDeckLink *dl = NULL;
-    IDeckLinkIterator *iter = CreateDeckLinkIteratorInstance();
+    IDeckLinkIterator *iter = decklink_create_iterator(avctx);
     int ret = 0;
 
-    if (!iter) {
-        av_log(avctx, AV_LOG_ERROR, "Could not create DeckLink iterator\n");
+    if (!iter)
         return AVERROR(EIO);
-    }
 
     while (ret == 0 && iter->Next(&dl) == S_OK) {
         IDeckLinkOutput *output_config;
@@ -322,21 +324,14 @@ int ff_decklink_list_devices(AVFormatContext *avctx,
                 ret = AVERROR(ENOMEM);
                 goto next;
             }
+
             new_device->device_name = av_strdup(displayName);
-            if (!new_device->device_name) {
-                ret = AVERROR(ENOMEM);
-                goto next;
-            }
-
             new_device->device_description = av_strdup(displayName);
-            if (!new_device->device_description) {
-                av_freep(&new_device->device_name);
-                ret = AVERROR(ENOMEM);
-                goto next;
-            }
 
-            if ((ret = av_dynarray_add_nofree(&device_list->devices,
-                                              &device_list->nb_devices, new_device)) < 0) {
+            if (!new_device->device_name ||
+                !new_device->device_description ||
+                av_dynarray_add_nofree(&device_list->devices, &device_list->nb_devices, new_device) < 0) {
+                ret = AVERROR(ENOMEM);
                 av_freep(&new_device->device_name);
                 av_freep(&new_device->device_description);
                 av_freep(&new_device);
@@ -449,11 +444,9 @@ int ff_decklink_init_device(AVFormatContext *avctx, const char* name)
     struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
     struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
     IDeckLink *dl = NULL;
-    IDeckLinkIterator *iter = CreateDeckLinkIteratorInstance();
-    if (!iter) {
-        av_log(avctx, AV_LOG_ERROR, "Could not create DeckLink iterator\n");
+    IDeckLinkIterator *iter = decklink_create_iterator(avctx);
+    if (!iter)
         return AVERROR_EXTERNAL;
-    }
 
     while (iter->Next(&dl) == S_OK) {
         const char *displayName;

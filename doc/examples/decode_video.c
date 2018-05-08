@@ -101,8 +101,6 @@ int main(int argc, char **argv)
     filename    = argv[1];
     outfilename = argv[2];
 
-    avcodec_register_all();
-
     pkt = av_packet_alloc();
     if (!pkt)
         exit(1);

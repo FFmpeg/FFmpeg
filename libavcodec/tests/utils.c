@@ -21,7 +21,6 @@
 int main(void){
     AVCodec *codec = NULL;
     int ret = 0;
-    avcodec_register_all();
 
     while (codec = av_codec_next(codec)) {
         if (av_codec_is_encoder(codec)) {

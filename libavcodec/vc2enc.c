@@ -29,10 +29,6 @@
 #include "vc2enc_dwt.h"
 #include "diractab.h"
 
-/* Total range is -COEF_LUT_TAB to +COEFF_LUT_TAB, but total tab size is half
- * (COEF_LUT_TAB*DIRAC_MAX_QUANT_INDEX), as the sign is appended during encoding */
-#define COEF_LUT_TAB 2048
-
 /* The limited size resolution of each slice forces us to do this */
 #define SSIZE_ROUND(b) (FFALIGN((b), s->size_scaler) + 4 + s->prefix_bytes)
 
@@ -152,9 +148,8 @@ typedef struct VC2EncContext {
     uint8_t quant[MAX_DWT_LEVELS][4];
     int custom_quant_matrix;
 
-    /* Coefficient LUT */
-    uint32_t *coef_lut_val;
-    uint8_t  *coef_lut_len;
+    /* Division LUT */
+    uint32_t qmagic_lut[116][2];
 
     int num_x; /* #slices horizontally */
     int num_y; /* #slices vertically */
@@ -227,37 +222,6 @@ static av_always_inline int count_vc2_ue_uint(uint32_t val)
     }
 
     return ff_log2(topbit)*2 + 1;
-}
-
-static av_always_inline void get_vc2_ue_uint(int val, uint8_t *nbits,
-                                             uint32_t *eval)
-{
-    int i;
-    int pbits = 0, bits = 0, topbit = 1, maxval = 1;
-
-    if (!val++) {
-        *nbits = 1;
-        *eval = 1;
-        return;
-    }
-
-    while (val > maxval) {
-        topbit <<= 1;
-        maxval <<= 1;
-        maxval |=  1;
-    }
-
-    bits = ff_log2(topbit);
-
-    for (i = 0; i < bits; i++) {
-        topbit >>= 1;
-        pbits <<= 2;
-        if (val & topbit)
-            pbits |= 0x1;
-    }
-
-    *nbits = bits*2 + 1;
-    *eval = (pbits << 1) | 1;
 }
 
 /* VC-2 10.4 - parse_info() */
@@ -557,7 +521,7 @@ static void encode_picture_start(VC2EncContext *s)
     encode_wavelet_transform(s);
 }
 
-#define QUANT(c, qf) (((c) << 2)/(qf))
+#define QUANT(c, mul, add, shift) (((mul) * (c) + (add)) >> (shift))
 
 /* VC-2 13.5.5.2 - slice_band() */
 static void encode_subband(VC2EncContext *s, PutBitContext *pb, int sx, int sy,
@@ -570,24 +534,17 @@ static void encode_subband(VC2EncContext *s, PutBitContext *pb, int sx, int sy,
     const int top    = b->height * (sy+0) / s->num_y;
     const int bottom = b->height * (sy+1) / s->num_y;
 
-    const int qfactor = ff_dirac_qscale_tab[quant];
-    const uint8_t  *len_lut = &s->coef_lut_len[quant*COEF_LUT_TAB];
-    const uint32_t *val_lut = &s->coef_lut_val[quant*COEF_LUT_TAB];
-
     dwtcoef *coeff = b->buf + top * b->stride;
+    const uint64_t q_m = ((uint64_t)(s->qmagic_lut[quant][0])) << 2;
+    const uint64_t q_a = s->qmagic_lut[quant][1];
+    const int q_s = av_log2(ff_dirac_qscale_tab[quant]) + 32;
 
     for (y = top; y < bottom; y++) {
         for (x = left; x < right; x++) {
-            const int neg = coeff[x] < 0;
-            uint32_t c_abs = FFABS(coeff[x]);
-            if (c_abs < COEF_LUT_TAB) {
-                put_bits(pb, len_lut[c_abs], val_lut[c_abs] | neg);
-            } else {
-                c_abs = QUANT(c_abs, qfactor);
-                put_vc2_ue_uint(pb, c_abs);
-                if (c_abs)
-                    put_bits(pb, 1, neg);
-            }
+            uint32_t c_abs = QUANT(FFABS(coeff[x]), q_m, q_a, q_s);
+            put_vc2_ue_uint(pb, c_abs);
+            if (c_abs)
+                put_bits(pb, 1, coeff[x] < 0);
         }
         coeff += b->stride;
     }
@@ -619,8 +576,9 @@ static int count_hq_slice(SliceArgs *slice, int quant_idx)
                 SubBand *b = &s->plane[p].band[level][orientation];
 
                 const int q_idx = quants[level][orientation];
-                const uint8_t *len_lut = &s->coef_lut_len[q_idx*COEF_LUT_TAB];
-                const int qfactor = ff_dirac_qscale_tab[q_idx];
+                const uint64_t q_m = ((uint64_t)s->qmagic_lut[q_idx][0]) << 2;
+                const uint64_t q_a = s->qmagic_lut[q_idx][1];
+                const int q_s = av_log2(ff_dirac_qscale_tab[q_idx]) + 32;
 
                 const int left   = b->width  * slice->x    / s->num_x;
                 const int right  = b->width  *(slice->x+1) / s->num_x;
@@ -631,14 +589,9 @@ static int count_hq_slice(SliceArgs *slice, int quant_idx)
 
                 for (y = top; y < bottom; y++) {
                     for (x = left; x < right; x++) {
-                        uint32_t c_abs = FFABS(buf[x]);
-                        if (c_abs < COEF_LUT_TAB) {
-                            bits += len_lut[c_abs];
-                        } else {
-                            c_abs = QUANT(c_abs, qfactor);
-                            bits += count_vc2_ue_uint(c_abs);
-                            bits += !!c_abs;
-                        }
+                        uint32_t c_abs = QUANT(FFABS(buf[x]), q_m, q_a, q_s);
+                        bits += count_vc2_ue_uint(c_abs);
+                        bits += !!c_abs;
                     }
                     buf += b->stride;
                 }
@@ -1059,8 +1012,6 @@ static av_cold int vc2_encode_end(AVCodecContext *avctx)
     }
 
     av_freep(&s->slice_args);
-    av_freep(&s->coef_lut_len);
-    av_freep(&s->coef_lut_val);
 
     return 0;
 }
@@ -1069,7 +1020,7 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
 {
     Plane *p;
     SubBand *b;
-    int i, j, level, o, shift, ret;
+    int i, level, o, shift, ret;
     const AVPixFmtDescriptor *fmt = av_pix_fmt_desc_get(avctx->pix_fmt);
     const int depth = fmt->comp[0].depth;
     VC2EncContext *s = avctx->priv_data;
@@ -1211,27 +1162,20 @@ static av_cold int vc2_encode_init(AVCodecContext *avctx)
     if (!s->slice_args)
         goto alloc_fail;
 
-    /* Lookup tables */
-    s->coef_lut_len = av_malloc(COEF_LUT_TAB*(s->q_ceil+1)*sizeof(*s->coef_lut_len));
-    if (!s->coef_lut_len)
-        goto alloc_fail;
-
-    s->coef_lut_val = av_malloc(COEF_LUT_TAB*(s->q_ceil+1)*sizeof(*s->coef_lut_val));
-    if (!s->coef_lut_val)
-        goto alloc_fail;
-
-    for (i = 0; i < s->q_ceil; i++) {
-        uint8_t  *len_lut = &s->coef_lut_len[i*COEF_LUT_TAB];
-        uint32_t *val_lut = &s->coef_lut_val[i*COEF_LUT_TAB];
-        for (j = 0; j < COEF_LUT_TAB; j++) {
-            get_vc2_ue_uint(QUANT(j, ff_dirac_qscale_tab[i]),
-                            &len_lut[j], &val_lut[j]);
-            if (len_lut[j] != 1) {
-                len_lut[j] += 1;
-                val_lut[j] <<= 1;
-            } else {
-                val_lut[j] = 1;
-            }
+    for (i = 0; i < 116; i++) {
+        const uint64_t qf = ff_dirac_qscale_tab[i];
+        const uint32_t m = av_log2(qf);
+        const uint32_t t = (1ULL << (m + 32)) / qf;
+        const uint32_t r = (t*qf + qf) & UINT32_MAX;
+        if (!(qf & (qf - 1))) {
+            s->qmagic_lut[i][0] = 0xFFFFFFFF;
+            s->qmagic_lut[i][1] = 0xFFFFFFFF;
+        } else if (r <= 1 << m) {
+            s->qmagic_lut[i][0] = t + 1;
+            s->qmagic_lut[i][1] = 0;
+        } else {
+            s->qmagic_lut[i][0] = t;
+            s->qmagic_lut[i][1] = t;
         }
     }
 

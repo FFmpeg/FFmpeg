@@ -1144,7 +1144,11 @@ IDCT_DC_DEQUANT 0
 INIT_MMX sse2
 IDCT_DC_DEQUANT 7
 
-; %unmacro STORE_DIFFx2 8 ; remove macro from x86util.asm but yasm doesn't have this yet
+%ifdef __NASM_VER__
+%if __NASM_MAJOR__ >= 2 && __NASM_MINOR__ >= 4
+%unmacro STORE_DIFFx2 8 ; remove macro from x86util.asm but yasm doesn't have this yet
+%endif
+%endif
 %macro STORE_DIFFx2 8 ; add1, add2, reg1, reg2, zero, shift, source, stride
     movd       %3, [%7]
     movd       %4, [%7+%8]

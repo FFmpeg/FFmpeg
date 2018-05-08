@@ -123,6 +123,7 @@ av_cold void ff_idctdsp_init_x86(IDCTDSPContext *c, AVCodecContext *avctx,
         }
 
         if (avctx->bits_per_raw_sample == 10 &&
+            avctx->codec_id != AV_CODEC_ID_MPEG4 &&
             (avctx->idct_algo == FF_IDCT_AUTO ||
              avctx->idct_algo == FF_IDCT_SIMPLEAUTO ||
              avctx->idct_algo == FF_IDCT_SIMPLE)) {

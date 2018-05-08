@@ -129,8 +129,6 @@ int main(int argc, char **argv)
     }
     src_filename = argv[1];
 
-    av_register_all();
-
     if (avformat_open_input(&fmt_ctx, src_filename, NULL, NULL) < 0) {
         fprintf(stderr, "Could not open source file %s\n", src_filename);
         exit(1);

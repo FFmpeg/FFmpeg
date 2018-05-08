@@ -321,10 +321,12 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
         }
     }
 
-    pic->slices = av_mallocz_array(pic->nb_slices, sizeof(*pic->slices));
-    if (!pic->slices) {
-        err = AVERROR(ENOMEM);
-        goto fail;
+    if (pic->nb_slices > 0) {
+        pic->slices = av_mallocz_array(pic->nb_slices, sizeof(*pic->slices));
+        if (!pic->slices) {
+            err = AVERROR(ENOMEM);
+            goto fail;
+        }
     }
     for (i = 0; i < pic->nb_slices; i++) {
         slice = &pic->slices[i];
@@ -1094,10 +1096,10 @@ static av_cold int vaapi_encode_config_attributes(AVCodecContext *avctx)
                 goto fail;
             }
             if (avctx->max_b_frames > 0 && ref_l1 < 1) {
-                av_log(avctx, AV_LOG_ERROR, "B frames are not "
-                       "supported (%#x).\n", attr[i].value);
-                err = AVERROR(EINVAL);
-                goto fail;
+                av_log(avctx, AV_LOG_WARNING, "B frames are not "
+                       "supported (%#x) by the underlying driver.\n",
+                       attr[i].value);
+                avctx->max_b_frames = 0;
             }
         }
         break;
@@ -1562,6 +1564,8 @@ av_cold int ff_vaapi_encode_close(AVCodecContext *avctx)
         vaapi_encode_free(avctx, pic);
     }
 
+    av_buffer_pool_uninit(&ctx->output_buffer_pool);
+
     if (ctx->va_context != VA_INVALID_ID) {
         vaDestroyContext(ctx->hwctx->display, ctx->va_context);
         ctx->va_context = VA_INVALID_ID;
@@ -1571,8 +1575,6 @@ av_cold int ff_vaapi_encode_close(AVCodecContext *avctx)
         vaDestroyConfig(ctx->hwctx->display, ctx->va_config);
         ctx->va_config = VA_INVALID_ID;
     }
-
-    av_buffer_pool_uninit(&ctx->output_buffer_pool);
 
     av_freep(&ctx->codec_sequence_params);
     av_freep(&ctx->codec_picture_params);

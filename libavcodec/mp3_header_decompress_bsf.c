@@ -87,7 +87,7 @@ static int mp3_header_decompress(AVBSFContext *ctx, AVPacket *out)
         goto fail;
     ret = av_packet_copy_props(out, in);
     if (ret < 0) {
-        av_packet_free(&out);
+        av_packet_unref(out);
         goto fail;
     }
     memcpy(out->data + frame_size - buf_size, buf, buf_size + AV_INPUT_BUFFER_PADDING_SIZE);

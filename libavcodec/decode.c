@@ -130,7 +130,7 @@ static int extract_packet_props(AVCodecInternal *avci, const AVPacket *pkt)
     if (pkt) {
         ret = av_packet_copy_props(avci->last_pkt_props, pkt);
         if (!ret)
-            avci->last_pkt_props->size = pkt->size; // HACK: Needed for ff_init_buffer_info().
+            avci->last_pkt_props->size = pkt->size; // HACK: Needed for ff_decode_frame_props().
     }
     return ret;
 }
@@ -1057,7 +1057,8 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
                 sub->format = 1;
 
             for (i = 0; i < sub->num_rects; i++) {
-                if (sub->rects[i]->ass && !utf8_check(sub->rects[i]->ass)) {
+                if (avctx->sub_charenc_mode != FF_SUB_CHARENC_MODE_IGNORE &&
+                    sub->rects[i]->ass && !utf8_check(sub->rects[i]->ass)) {
                     av_log(avctx, AV_LOG_ERROR,
                            "Invalid UTF-8 in decoded subtitles text; "
                            "maybe missing -sub_charenc option\n");
@@ -1186,10 +1187,6 @@ int ff_decode_get_hw_frames_ctx(AVCodecContext *avctx,
         // We guarantee 4 base work surfaces. The function above guarantees 1
         // (the absolute minimum), so add the missing count.
         frames_ctx->initial_pool_size += 3;
-
-        // Add an additional surface per thread is frame threading is enabled.
-        if (avctx->active_thread_type & FF_THREAD_FRAME)
-            frames_ctx->initial_pool_size += avctx->thread_count;
     }
 
     ret = av_hwframe_ctx_init(avctx->hw_frames_ctx);
@@ -1229,6 +1226,20 @@ int avcodec_get_hw_frames_parameters(AVCodecContext *avctx,
 
     ret = hwa->frame_params(avctx, frames_ref);
     if (ret >= 0) {
+        AVHWFramesContext *frames_ctx = (AVHWFramesContext*)frames_ref->data;
+
+        if (frames_ctx->initial_pool_size) {
+            // If the user has requested that extra output surfaces be
+            // available then add them here.
+            if (avctx->extra_hw_frames > 0)
+                frames_ctx->initial_pool_size += avctx->extra_hw_frames;
+
+            // If frame threading is enabled then an extra surface per thread
+            // is also required.
+            if (avctx->active_thread_type & FF_THREAD_FRAME)
+                frames_ctx->initial_pool_size += avctx->thread_count;
+        }
+
         *out_frames_ref = frames_ref;
     } else {
         av_buffer_unref(&frames_ref);
@@ -1603,7 +1614,7 @@ static int video_get_buffer(AVCodecContext *s, AVFrame *pic)
         pic->linesize[i] = 0;
     }
     if (desc->flags & AV_PIX_FMT_FLAG_PAL ||
-        desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL)
+        ((desc->flags & FF_PSEUDOPAL) && pic->data[1]))
         avpriv_set_systematic_pal2((uint32_t *)pic->data[1], pic->format);
 
     if (s->debug & FF_DEBUG_BUFFERS)
@@ -1651,7 +1662,7 @@ static int add_metadata_from_side_data(const AVPacket *avpkt, AVFrame *frame)
     return av_packet_unpack_dictionary(side_metadata, size, frame_md);
 }
 
-int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
+int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
 {
     const AVPacket *pkt = avctx->internal->last_pkt_props;
     int i;
@@ -1759,11 +1770,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return 0;
 }
 
-int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
-{
-    return ff_init_buffer_info(avctx, frame);
-}
-
 static void validate_avframe_allocation(AVCodecContext *avctx, AVFrame *frame)
 {
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -1773,12 +1779,11 @@ static void validate_avframe_allocation(AVCodecContext *avctx, AVFrame *frame)
         int flags = desc ? desc->flags : 0;
         if (num_planes == 1 && (flags & AV_PIX_FMT_FLAG_PAL))
             num_planes = 2;
+        if ((flags & FF_PSEUDOPAL) && frame->data[1])
+            num_planes = 2;
         for (i = 0; i < num_planes; i++) {
             av_assert0(frame->data[i]);
         }
-        // For now do not enforce anything for palette of pseudopal formats
-        if (num_planes == 1 && (flags & AV_PIX_FMT_FLAG_PSEUDOPAL))
-            num_planes = 2;
         // For formats without data like hwaccel allow unused pointers to be non-NULL.
         for (i = num_planes; num_planes > 0 && i < FF_ARRAY_ELEMS(frame->data); i++) {
             if (frame->data[i])
@@ -1905,8 +1910,6 @@ static int reget_buffer_internal(AVCodecContext *avctx, AVFrame *frame)
                frame->width, frame->height, av_get_pix_fmt_name(frame->format), avctx->width, avctx->height, av_get_pix_fmt_name(avctx->pix_fmt));
         av_frame_unref(frame);
     }
-
-    ff_init_buffer_info(avctx, frame);
 
     if (!frame->data[0])
         return ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF);

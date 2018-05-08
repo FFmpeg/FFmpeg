@@ -50,6 +50,12 @@ enum ShowWavesScale {
     SCALE_NB,
 };
 
+enum ShowWavesDrawMode {
+    DRAW_SCALE,
+    DRAW_FULL,
+    DRAW_NB,
+};
+
 struct frame_node {
     AVFrame *frame;
     struct frame_node *next;
@@ -68,6 +74,7 @@ typedef struct ShowWavesContext {
     int sample_count_mod;
     int mode;                   ///< ShowWavesMode
     int scale;                  ///< ShowWavesScale
+    int draw_mode;              ///< ShowWavesDrawMode
     int split_channels;
     uint8_t *fg;
 
@@ -104,6 +111,9 @@ static const AVOption showwaves_options[] = {
         { "log", "logarithmic",    0, AV_OPT_TYPE_CONST, {.i64=SCALE_LOG}, .flags=FLAGS, .unit="scale"},
         { "sqrt", "square root",   0, AV_OPT_TYPE_CONST, {.i64=SCALE_SQRT}, .flags=FLAGS, .unit="scale"},
         { "cbrt", "cubic root",    0, AV_OPT_TYPE_CONST, {.i64=SCALE_CBRT}, .flags=FLAGS, .unit="scale"},
+    { "draw", "set draw mode", OFFSET(draw_mode), AV_OPT_TYPE_INT, {.i64 = DRAW_SCALE}, 0, DRAW_NB-1, FLAGS, .unit="draw" },
+        { "scale", "scale pixel values for each drawn sample", 0, AV_OPT_TYPE_CONST, {.i64=DRAW_SCALE}, .flags=FLAGS, .unit="draw"},
+        { "full",  "draw every pixel for sample directly",     0, AV_OPT_TYPE_CONST, {.i64=DRAW_FULL},  .flags=FLAGS, .unit="draw"},
     { NULL }
 };
 
@@ -202,9 +212,9 @@ static int get_cbrt_h2(int16_t sample, int height)
     return cbrt(FFABS(sample)) * height / cbrt(INT16_MAX);
 }
 
-static void draw_sample_point_rgba(uint8_t *buf, int height, int linesize,
-                                   int16_t *prev_y,
-                                   const uint8_t color[4], int h)
+static void draw_sample_point_rgba_scale(uint8_t *buf, int height, int linesize,
+                                         int16_t *prev_y,
+                                         const uint8_t color[4], int h)
 {
     if (h >= 0 && h < height) {
         buf[h * linesize + 0] += color[0];
@@ -214,9 +224,21 @@ static void draw_sample_point_rgba(uint8_t *buf, int height, int linesize,
     }
 }
 
-static void draw_sample_line_rgba(uint8_t *buf, int height, int linesize,
-                                  int16_t *prev_y,
-                                  const uint8_t color[4], int h)
+static void draw_sample_point_rgba_full(uint8_t *buf, int height, int linesize,
+                                   int16_t *prev_y,
+                                   const uint8_t color[4], int h)
+{
+    if (h >= 0 && h < height) {
+        buf[h * linesize + 0] = color[0];
+        buf[h * linesize + 1] = color[1];
+        buf[h * linesize + 2] = color[2];
+        buf[h * linesize + 3] = color[3];
+    }
+}
+
+static void draw_sample_line_rgba_scale(uint8_t *buf, int height, int linesize,
+                                        int16_t *prev_y,
+                                        const uint8_t color[4], int h)
 {
     int k;
     int start   = height/2;
@@ -231,9 +253,26 @@ static void draw_sample_line_rgba(uint8_t *buf, int height, int linesize,
     }
 }
 
-static void draw_sample_p2p_rgba(uint8_t *buf, int height, int linesize,
-                                 int16_t *prev_y,
-                                 const uint8_t color[4], int h)
+static void draw_sample_line_rgba_full(uint8_t *buf, int height, int linesize,
+                                       int16_t *prev_y,
+                                       const uint8_t color[4], int h)
+{
+    int k;
+    int start   = height/2;
+    int end     = av_clip(h, 0, height-1);
+    if (start > end)
+        FFSWAP(int16_t, start, end);
+    for (k = start; k < end; k++) {
+        buf[k * linesize + 0] = color[0];
+        buf[k * linesize + 1] = color[1];
+        buf[k * linesize + 2] = color[2];
+        buf[k * linesize + 3] = color[3];
+    }
+}
+
+static void draw_sample_p2p_rgba_scale(uint8_t *buf, int height, int linesize,
+                                       int16_t *prev_y,
+                                       const uint8_t color[4], int h)
 {
     int k;
     if (h >= 0 && h < height) {
@@ -257,9 +296,35 @@ static void draw_sample_p2p_rgba(uint8_t *buf, int height, int linesize,
     *prev_y = h;
 }
 
-static void draw_sample_cline_rgba(uint8_t *buf, int height, int linesize,
-                                   int16_t *prev_y,
-                                   const uint8_t color[4], int h)
+static void draw_sample_p2p_rgba_full(uint8_t *buf, int height, int linesize,
+                                      int16_t *prev_y,
+                                      const uint8_t color[4], int h)
+{
+    int k;
+    if (h >= 0 && h < height) {
+        buf[h * linesize + 0] = color[0];
+        buf[h * linesize + 1] = color[1];
+        buf[h * linesize + 2] = color[2];
+        buf[h * linesize + 3] = color[3];
+        if (*prev_y && h != *prev_y) {
+            int start = *prev_y;
+            int end = av_clip(h, 0, height-1);
+            if (start > end)
+                FFSWAP(int16_t, start, end);
+            for (k = start + 1; k < end; k++) {
+                buf[k * linesize + 0] = color[0];
+                buf[k * linesize + 1] = color[1];
+                buf[k * linesize + 2] = color[2];
+                buf[k * linesize + 3] = color[3];
+            }
+        }
+    }
+    *prev_y = h;
+}
+
+static void draw_sample_cline_rgba_scale(uint8_t *buf, int height, int linesize,
+                                         int16_t *prev_y,
+                                         const uint8_t color[4], int h)
 {
     int k;
     const int start = (height - h) / 2;
@@ -269,6 +334,20 @@ static void draw_sample_cline_rgba(uint8_t *buf, int height, int linesize,
         buf[k * linesize + 1] += color[1];
         buf[k * linesize + 2] += color[2];
         buf[k * linesize + 3] += color[3];
+    }
+}
+ static void draw_sample_cline_rgba_full(uint8_t *buf, int height, int linesize,
+                                         int16_t *prev_y,
+                                         const uint8_t color[4], int h)
+{
+    int k;
+    const int start = (height - h) / 2;
+    const int end   = start + h;
+    for (k = start; k < end; k++) {
+        buf[k * linesize + 0] = color[0];
+        buf[k * linesize + 1] = color[1];
+        buf[k * linesize + 2] = color[2];
+        buf[k * linesize + 3] = color[3];
     }
 }
 
@@ -368,10 +447,10 @@ static int config_output(AVFilterLink *outlink)
         break;
     case AV_PIX_FMT_RGBA:
         switch (showwaves->mode) {
-        case MODE_POINT:         showwaves->draw_sample = draw_sample_point_rgba; break;
-        case MODE_LINE:          showwaves->draw_sample = draw_sample_line_rgba;  break;
-        case MODE_P2P:           showwaves->draw_sample = draw_sample_p2p_rgba;   break;
-        case MODE_CENTERED_LINE: showwaves->draw_sample = draw_sample_cline_rgba; break;
+        case MODE_POINT:         showwaves->draw_sample = showwaves->draw_mode == DRAW_SCALE ? draw_sample_point_rgba_scale : draw_sample_point_rgba_full; break;
+        case MODE_LINE:          showwaves->draw_sample = showwaves->draw_mode == DRAW_SCALE ? draw_sample_line_rgba_scale  : draw_sample_line_rgba_full;  break;
+        case MODE_P2P:           showwaves->draw_sample = showwaves->draw_mode == DRAW_SCALE ? draw_sample_p2p_rgba_scale   : draw_sample_p2p_rgba_full;   break;
+        case MODE_CENTERED_LINE: showwaves->draw_sample = showwaves->draw_mode == DRAW_SCALE ? draw_sample_cline_rgba_scale : draw_sample_cline_rgba_full; break;
         default:
             return AVERROR_BUG;
         }
@@ -430,8 +509,12 @@ static int config_output(AVFilterLink *outlink)
     if (!colors)
         return AVERROR(ENOMEM);
 
-    /* multiplication factor, pre-computed to avoid in-loop divisions */
-    x = 255 / ((showwaves->split_channels ? 1 : nb_channels) * showwaves->n);
+    if (showwaves->draw_mode == DRAW_SCALE) {
+        /* multiplication factor, pre-computed to avoid in-loop divisions */
+        x = 255 / ((showwaves->split_channels ? 1 : nb_channels) * showwaves->n);
+    } else {
+        x = 255;
+    }
     if (outlink->format == AV_PIX_FMT_RGBA) {
         uint8_t fg[4] = { 0xff, 0xff, 0xff, 0xff };
 

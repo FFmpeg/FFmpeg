@@ -149,9 +149,6 @@ static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q)
             else if (frames_hwctx->frame_type & MFX_MEMTYPE_VIDEO_MEMORY_DECODER_TARGET)
                 iopattern = MFX_IOPATTERN_OUT_VIDEO_MEMORY;
         }
-
-        frame_width  = frames_hwctx->surfaces[0].Info.Width;
-        frame_height = frames_hwctx->surfaces[0].Info.Height;
     }
 
     if (!iopattern)
@@ -235,6 +232,11 @@ static int alloc_frame(AVCodecContext *avctx, QSVContext *q, QSVFrame *frame)
 
         frame->surface.Data.MemId = &q->frames_ctx.mids[ret];
     }
+    frame->surface.Data.ExtParam    = &frame->ext_param;
+    frame->surface.Data.NumExtParam = 1;
+    frame->ext_param                = (mfxExtBuffer*)&frame->dec_info;
+    frame->dec_info.Header.BufferId = MFX_EXTBUFF_DECODED_FRAME_INFO;
+    frame->dec_info.Header.BufferSz = sizeof(frame->dec_info);
 
     frame->used = 1;
 
@@ -321,6 +323,8 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
         bs.DataLength = avpkt->size;
         bs.MaxLength  = bs.DataLength;
         bs.TimeStamp  = avpkt->pts;
+        if (avctx->field_order == AV_FIELD_PROGRESSIVE)
+            bs.DataFlag   |= MFX_BITSTREAM_COMPLETE_FRAME;
     }
 
     sync = av_mallocz(sizeof(*sync));
@@ -419,6 +423,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
             outsurf->Info.PicStruct & MFX_PICSTRUCT_FIELD_TFF;
         frame->interlaced_frame =
             !(outsurf->Info.PicStruct & MFX_PICSTRUCT_PROGRESSIVE);
+        frame->pict_type = ff_qsv_map_pictype(out_frame->dec_info.FrameType);
+        //Key frame is IDR frame is only suitable for H264. For HEVC, IRAPs are key frames.
+        if (avctx->codec_id == AV_CODEC_ID_H264)
+            frame->key_frame = !!(out_frame->dec_info.FrameType & MFX_FRAMETYPE_IDR);
 
         /* update the surface properties */
         if (avctx->pix_fmt == AV_PIX_FMT_QSV)
@@ -500,6 +508,7 @@ int ff_qsv_process_data(AVCodecContext *avctx, QSVContext *q,
                      pkt->data, pkt->size, pkt->pts, pkt->dts,
                      pkt->pos);
 
+    avctx->field_order  = q->parser->field_order;
     /* TODO: flush delayed frames on reinit */
     if (q->parser->format       != q->orig_pix_fmt    ||
         FFALIGN(q->parser->coded_width, 16)  != FFALIGN(avctx->coded_width, 16) ||
@@ -524,7 +533,6 @@ int ff_qsv_process_data(AVCodecContext *avctx, QSVContext *q,
         avctx->height       = q->parser->height;
         avctx->coded_width  = FFALIGN(q->parser->coded_width, 16);
         avctx->coded_height = FFALIGN(q->parser->coded_height, 16);
-        avctx->field_order  = q->parser->field_order;
         avctx->level        = q->avctx_internal->level;
         avctx->profile      = q->avctx_internal->profile;
 

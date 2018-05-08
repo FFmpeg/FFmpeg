@@ -101,7 +101,7 @@ int ff_rtp_chain_mux_open(AVFormatContext **out, AVFormatContext *s,
     return 0;
 
 fail:
-    av_free(rtpctx);
+    avformat_free_context(rtpctx);
     if (handle)
         ffurl_close(handle);
     return ret;

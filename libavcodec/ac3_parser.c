@@ -218,8 +218,8 @@ static int ac3_sync(uint64_t state, AACAC3ParseContext *hdr_info,
     else if (hdr_info->codec_id == AV_CODEC_ID_NONE)
         hdr_info->codec_id = AV_CODEC_ID_AC3;
 
-    *need_next_header = (hdr.frame_type != EAC3_FRAME_TYPE_AC3_CONVERT);
     *new_frame_start  = (hdr.frame_type != EAC3_FRAME_TYPE_DEPENDENT);
+    *need_next_header = *new_frame_start || (hdr.frame_type != EAC3_FRAME_TYPE_AC3_CONVERT);
     return hdr.frame_size;
 }
 

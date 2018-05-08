@@ -174,6 +174,8 @@ int av_bsf_init(AVBSFContext *ctx)
 
 int av_bsf_send_packet(AVBSFContext *ctx, AVPacket *pkt)
 {
+    int ret;
+
     if (!pkt || (!pkt->data && !pkt->side_data_elems)) {
         ctx->internal->eof = 1;
         return 0;
@@ -188,6 +190,9 @@ int av_bsf_send_packet(AVBSFContext *ctx, AVPacket *pkt)
         ctx->internal->buffer_pkt->side_data_elems)
         return AVERROR(EAGAIN);
 
+    ret = av_packet_make_refcounted(pkt);
+    if (ret < 0)
+        return ret;
     av_packet_move_ref(ctx->internal->buffer_pkt, pkt);
 
     return 0;

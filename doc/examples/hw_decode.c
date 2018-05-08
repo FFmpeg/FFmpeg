@@ -86,7 +86,7 @@ static int decode_write(AVCodecContext *avctx, AVPacket *packet)
         return ret;
     }
 
-    while (ret >= 0) {
+    while (1) {
         if (!(frame = av_frame_alloc()) || !(sw_frame = av_frame_alloc())) {
             fprintf(stderr, "Can not alloc frame\n");
             ret = AVERROR(ENOMEM);
@@ -138,13 +138,10 @@ static int decode_write(AVCodecContext *avctx, AVPacket *packet)
     fail:
         av_frame_free(&frame);
         av_frame_free(&sw_frame);
-        if (buffer)
-            av_freep(&buffer);
+        av_freep(&buffer);
         if (ret < 0)
             return ret;
     }
-
-    return 0;
 }
 
 int main(int argc, char *argv[])
@@ -162,8 +159,6 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Usage: %s <device type> <input file> <output file>\n", argv[0]);
         return -1;
     }
-
-    av_register_all();
 
     type = av_hwdevice_find_type_by_name(argv[1]);
     if (type == AV_HWDEVICE_TYPE_NONE) {
@@ -216,7 +211,6 @@ int main(int argc, char *argv[])
         return -1;
 
     decoder_ctx->get_format  = get_hw_format;
-    av_opt_set_int(decoder_ctx, "refcounted_frames", 1, 0);
 
     if (hw_decoder_init(decoder_ctx, type) < 0)
         return -1;

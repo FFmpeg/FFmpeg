@@ -105,7 +105,7 @@ static int vaapi_encode_h265_add_nal(AVCodecContext *avctx,
     int err;
 
     err = ff_cbs_insert_unit_content(priv->cbc, au, -1,
-                                     header->nal_unit_type, nal_unit);
+                                     header->nal_unit_type, nal_unit, NULL);
     if (err < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed to add NAL unit: "
                "type = %d.\n", header->nal_unit_type);
@@ -767,8 +767,6 @@ static int vaapi_encode_h265_init_slice_params(AVCodecContext *avctx,
 
         .num_ref_idx_l0_active_minus1 = sh->num_ref_idx_l0_active_minus1,
         .num_ref_idx_l1_active_minus1 = sh->num_ref_idx_l1_active_minus1,
-        .ref_pic_list0[0]             = vpic->reference_frames[0],
-        .ref_pic_list1[0]             = vpic->reference_frames[1],
 
         .luma_log2_weight_denom         = sh->luma_log2_weight_denom,
         .delta_chroma_log2_weight_denom = sh->delta_chroma_log2_weight_denom,
@@ -802,6 +800,25 @@ static int vaapi_encode_h265_init_slice_params(AVCodecContext *avctx,
         },
     };
 
+    for (i = 0; i < FF_ARRAY_ELEMS(vslice->ref_pic_list0); i++) {
+        vslice->ref_pic_list0[i].picture_id = VA_INVALID_ID;
+        vslice->ref_pic_list0[i].flags      = VA_PICTURE_HEVC_INVALID;
+        vslice->ref_pic_list1[i].picture_id = VA_INVALID_ID;
+        vslice->ref_pic_list1[i].flags      = VA_PICTURE_HEVC_INVALID;
+    }
+
+    av_assert0(pic->nb_refs <= 2);
+    if (pic->nb_refs >= 1) {
+        // Backward reference for P- or B-frame.
+        av_assert0(pic->type == PICTURE_TYPE_P ||
+                   pic->type == PICTURE_TYPE_B);
+        vslice->ref_pic_list0[0] = vpic->reference_frames[0];
+    }
+    if (pic->nb_refs >= 2) {
+        // Forward reference for B-frame.
+        av_assert0(pic->type == PICTURE_TYPE_B);
+        vslice->ref_pic_list1[0] = vpic->reference_frames[1];
+    }
 
     return 0;
 }

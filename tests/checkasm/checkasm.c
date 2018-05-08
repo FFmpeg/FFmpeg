@@ -116,6 +116,7 @@ static const struct {
     #if CONFIG_HEVC_DECODER
         { "hevc_add_res", checkasm_check_hevc_add_res },
         { "hevc_idct", checkasm_check_hevc_idct },
+        { "hevc_sao", checkasm_check_hevc_sao },
     #endif
     #if CONFIG_HUFFYUV_DECODER
         { "huffyuvdsp", checkasm_check_huffyuvdsp },
@@ -161,6 +162,9 @@ static const struct {
     #if CONFIG_THRESHOLD_FILTER
         { "vf_threshold", checkasm_check_vf_threshold },
     #endif
+#endif
+#if CONFIG_SWSCALE
+    { "sw_rgb", checkasm_check_sw_rgb },
 #endif
 #if CONFIG_AVUTIL
         { "fixed_dsp", checkasm_check_fixed_dsp },
@@ -290,8 +294,12 @@ int float_near_ulp_array(const float *a, const float *b, unsigned max_ulp,
 int float_near_abs_eps(float a, float b, float eps)
 {
     float abs_diff = fabsf(a - b);
+    if (abs_diff < eps)
+        return 1;
 
-    return abs_diff < eps;
+    fprintf(stderr, "test failed comparing %g with %g (abs diff=%g with EPS=%g)\n", a, b, abs_diff, eps);
+
+    return 0;
 }
 
 int float_near_abs_eps_array(const float *a, const float *b, float eps,

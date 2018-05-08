@@ -886,8 +886,6 @@ static int thread_get_buffer_internal(AVCodecContext *avctx, ThreadFrame *f, int
 
     f->owner[0] = f->owner[1] = avctx;
 
-    ff_init_buffer_info(avctx, f->f);
-
     if (!(avctx->active_thread_type & FF_THREAD_FRAME))
         return ff_get_buffer(avctx, f->f, flags);
 

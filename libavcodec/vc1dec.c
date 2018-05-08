@@ -340,22 +340,22 @@ av_cold int ff_vc1_decode_init_alloc_tables(VC1Context *v)
 
     v->n_allocated_blks = s->mb_width + 2;
     v->block            = av_malloc(sizeof(*v->block) * v->n_allocated_blks);
-    v->cbp_base         = av_malloc(sizeof(v->cbp_base[0]) * 2 * s->mb_stride);
+    v->cbp_base         = av_malloc(sizeof(v->cbp_base[0]) * 3 * s->mb_stride);
     if (!v->block || !v->cbp_base)
         goto error;
-    v->cbp              = v->cbp_base + s->mb_stride;
-    v->ttblk_base       = av_malloc(sizeof(v->ttblk_base[0]) * 2 * s->mb_stride);
+    v->cbp              = v->cbp_base + 2 * s->mb_stride;
+    v->ttblk_base       = av_malloc(sizeof(v->ttblk_base[0]) * 3 * s->mb_stride);
     if (!v->ttblk_base)
         goto error;
-    v->ttblk            = v->ttblk_base + s->mb_stride;
-    v->is_intra_base    = av_mallocz(sizeof(v->is_intra_base[0]) * 2 * s->mb_stride);
+    v->ttblk            = v->ttblk_base + 2 * s->mb_stride;
+    v->is_intra_base    = av_mallocz(sizeof(v->is_intra_base[0]) * 3 * s->mb_stride);
     if (!v->is_intra_base)
         goto error;
-    v->is_intra         = v->is_intra_base + s->mb_stride;
-    v->luma_mv_base     = av_mallocz(sizeof(v->luma_mv_base[0]) * 2 * s->mb_stride);
+    v->is_intra         = v->is_intra_base + 2 * s->mb_stride;
+    v->luma_mv_base     = av_mallocz(sizeof(v->luma_mv_base[0]) * 3 * s->mb_stride);
     if (!v->luma_mv_base)
         goto error;
-    v->luma_mv          = v->luma_mv_base + s->mb_stride;
+    v->luma_mv          = v->luma_mv_base + 2 * s->mb_stride;
 
     /* allocate block type info in that way so it could be used with s->block_index[] */
     v->mb_type_base = av_malloc(s->b8_stride * (mb_height * 2 + 1) + s->mb_stride * (mb_height + 1) * 2);

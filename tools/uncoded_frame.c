@@ -62,9 +62,7 @@ int main(int argc, char **argv)
     out_dev_name = argv + 2;
     nb_out_dev = argc - 2;
 
-    av_register_all();
     avdevice_register_all();
-    avfilter_register_all();
 
     /* Create input graph */
     if (!(in_graph = avfilter_graph_alloc())) {

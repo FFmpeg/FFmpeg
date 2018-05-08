@@ -36,6 +36,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/time.h"
+#include "libavfilter/qsvvpp.h"
 
 #include "avfilter.h"
 #include "formats.h"
@@ -71,7 +72,6 @@ enum var_name {
 typedef struct QSVScaleContext {
     const AVClass *class;
 
-    AVBufferRef *out_frames_ref;
     /* a clone of the main session, used internally for scaling */
     mfxSession   session;
 
@@ -134,7 +134,6 @@ static void qsvscale_uninit(AVFilterContext *ctx)
         MFXClose(s->session);
         s->session = NULL;
     }
-    av_buffer_unref(&s->out_frames_ref);
 
     av_freep(&s->mem_ids_in);
     av_freep(&s->mem_ids_out);
@@ -165,6 +164,7 @@ static int init_out_pool(AVFilterContext *ctx,
                          int out_width, int out_height)
 {
     QSVScaleContext *s = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
 
     AVHWFramesContext *in_frames_ctx;
     AVHWFramesContext *out_frames_ctx;
@@ -185,21 +185,25 @@ static int init_out_pool(AVFilterContext *ctx,
     in_format     = in_frames_ctx->sw_format;
     out_format    = (s->format == AV_PIX_FMT_NONE) ? in_format : s->format;
 
-    s->out_frames_ref = av_hwframe_ctx_alloc(in_frames_ctx->device_ref);
-    if (!s->out_frames_ref)
+    outlink->hw_frames_ctx = av_hwframe_ctx_alloc(in_frames_ctx->device_ref);
+    if (!outlink->hw_frames_ctx)
         return AVERROR(ENOMEM);
-    out_frames_ctx   = (AVHWFramesContext*)s->out_frames_ref->data;
+    out_frames_ctx   = (AVHWFramesContext*)outlink->hw_frames_ctx->data;
     out_frames_hwctx = out_frames_ctx->hwctx;
 
     out_frames_ctx->format            = AV_PIX_FMT_QSV;
     out_frames_ctx->width             = FFALIGN(out_width,  32);
     out_frames_ctx->height            = FFALIGN(out_height, 32);
     out_frames_ctx->sw_format         = out_format;
-    out_frames_ctx->initial_pool_size = 32;
+    out_frames_ctx->initial_pool_size = 4;
 
     out_frames_hwctx->frame_type = in_frames_hwctx->frame_type;
 
-    ret = av_hwframe_ctx_init(s->out_frames_ref);
+    ret = ff_filter_init_hw_frames(ctx, outlink, 32);
+    if (ret < 0)
+        return ret;
+
+    ret = av_hwframe_ctx_init(outlink->hw_frames_ctx);
     if (ret < 0)
         return ret;
 
@@ -266,7 +270,7 @@ static int init_out_session(AVFilterContext *ctx)
 
     QSVScaleContext                   *s = ctx->priv;
     AVHWFramesContext     *in_frames_ctx = (AVHWFramesContext*)ctx->inputs[0]->hw_frames_ctx->data;
-    AVHWFramesContext    *out_frames_ctx = (AVHWFramesContext*)s->out_frames_ref->data;
+    AVHWFramesContext    *out_frames_ctx = (AVHWFramesContext*)ctx->outputs[0]->hw_frames_ctx->data;
     AVQSVFramesContext  *in_frames_hwctx = in_frames_ctx->hwctx;
     AVQSVFramesContext *out_frames_hwctx = out_frames_ctx->hwctx;
     AVQSVDeviceContext     *device_hwctx = in_frames_ctx->device_ctx->hwctx;
@@ -310,6 +314,12 @@ static int init_out_session(AVFilterContext *ctx)
         err = MFXVideoCORE_SetHandle(s->session, handle_type, handle);
         if (err != MFX_ERR_NONE)
             return AVERROR_UNKNOWN;
+    }
+
+    if (QSV_RUNTIME_VERSION_ATLEAST(ver, 1, 25)) {
+        err = MFXJoinSession(device_hwctx->session, s->session);
+            if (err != MFX_ERR_NONE)
+                return AVERROR_UNKNOWN;
     }
 
     memset(&par, 0, sizeof(par));
@@ -407,8 +417,6 @@ static int init_out_session(AVFilterContext *ctx)
 static int init_scale_session(AVFilterContext *ctx, int in_width, int in_height,
                               int out_width, int out_height)
 {
-    QSVScaleContext *s = ctx->priv;
-
     int ret;
 
     qsvscale_uninit(ctx);
@@ -420,11 +428,6 @@ static int init_scale_session(AVFilterContext *ctx, int in_width, int in_height,
     ret = init_out_session(ctx);
     if (ret < 0)
         return ret;
-
-    av_buffer_unref(&ctx->outputs[0]->hw_frames_ctx);
-    ctx->outputs[0]->hw_frames_ctx = av_buffer_ref(s->out_frames_ref);
-    if (!ctx->outputs[0]->hw_frames_ctx)
-        return AVERROR(ENOMEM);
 
     return 0;
 }

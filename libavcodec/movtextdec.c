@@ -299,6 +299,14 @@ static int decode_styl(const uint8_t *tsmb, MovTextContext *m, AVPacket *avpkt)
         m->s_temp->style_start = AV_RB16(tsmb);
         tsmb += 2;
         m->s_temp->style_end = AV_RB16(tsmb);
+
+        if (   m->s_temp->style_end < m->s_temp->style_start
+            || (m->count_s && m->s_temp->style_start < m->s[m->count_s - 1]->style_end)) {
+            av_freep(&m->s_temp);
+            mov_text_cleanup(m);
+            return AVERROR(ENOMEM);
+        }
+
         tsmb += 2;
         m->s_temp->style_fontID = AV_RB16(tsmb);
         tsmb += 2;
@@ -326,9 +334,24 @@ static const Box box_types[] = {
 
 const static size_t box_count = FF_ARRAY_ELEMS(box_types);
 
-static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
-                        MovTextContext *m)
+// Return byte length of the UTF-8 sequence starting at text[0]. 0 on error.
+static int get_utf8_length_at(const char *text, const char *text_end)
 {
+    const char *start = text;
+    int err = 0;
+    uint32_t c;
+    GET_UTF8(c, text < text_end ? (uint8_t)*text++ : (err = 1, 0), goto error;);
+    if (err)
+        goto error;
+    return text - start;
+error:
+    return 0;
+}
+
+static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
+                       AVCodecContext *avctx)
+{
+    MovTextContext *m = avctx->priv_data;
     int i = 0;
     int j = 0;
     int text_pos = 0;
@@ -342,6 +365,8 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
     }
 
     while (text < text_end) {
+        int len;
+
         if (m->box_flags & STYL_BOX) {
             for (i = 0; i < m->style_entries; i++) {
                 if (m->s[i]->style_flag && text_pos == m->s[i]->style_end) {
@@ -388,17 +413,24 @@ static int text_to_ass(AVBPrint *buf, const char *text, const char *text_end,
             }
         }
 
-        switch (*text) {
-        case '\r':
-            break;
-        case '\n':
-            av_bprintf(buf, "\\N");
-            break;
-        default:
-            av_bprint_chars(buf, *text, 1);
-            break;
+        len = get_utf8_length_at(text, text_end);
+        if (len < 1) {
+            av_log(avctx, AV_LOG_ERROR, "invalid UTF-8 byte in subtitle\n");
+            len = 1;
         }
-        text++;
+        for (i = 0; i < len; i++) {
+            switch (*text) {
+            case '\r':
+                break;
+            case '\n':
+                av_bprintf(buf, "\\N");
+                break;
+            default:
+                av_bprint_chars(buf, *text, 1);
+                break;
+            }
+            text++;
+        }
         text_pos++;
     }
 
@@ -507,10 +539,10 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
             }
             m->tracksize = m->tracksize + tsmb_size;
         }
-        text_to_ass(&buf, ptr, end, m);
+        text_to_ass(&buf, ptr, end, avctx);
         mov_text_cleanup(m);
     } else
-        text_to_ass(&buf, ptr, end, m);
+        text_to_ass(&buf, ptr, end, avctx);
 
     ret = ff_ass_add_rect(sub, buf.str, m->readorder++, 0, NULL, NULL);
     av_bprint_finalize(&buf, NULL);

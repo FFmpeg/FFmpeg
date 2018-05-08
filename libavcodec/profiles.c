@@ -140,4 +140,16 @@ const AVProfile ff_vp9_profiles[] = {
     { FF_PROFILE_UNKNOWN },
 };
 
+const AVProfile ff_av1_profiles[] = {
+    { FF_PROFILE_AV1_MAIN,         "Main" },
+    { FF_PROFILE_AV1_HIGH,         "High" },
+    { FF_PROFILE_AV1_PROFESSIONAL, "Professional" },
+    { FF_PROFILE_UNKNOWN },
+};
+
+const AVProfile ff_sbc_profiles[] = {
+    { FF_PROFILE_SBC_MSBC, "mSBC" },
+    { FF_PROFILE_UNKNOWN },
+};
+
 #endif /* !CONFIG_SMALL */

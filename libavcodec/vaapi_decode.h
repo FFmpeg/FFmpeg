@@ -72,6 +72,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     enum AVPixelFormat    surface_format;
     int                   surface_count;
+
+    VASurfaceAttrib       pixel_format_attribute;
 } VAAPIDecodeContext;
 
 

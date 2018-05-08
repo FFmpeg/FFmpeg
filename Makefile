@@ -142,7 +142,9 @@ distclean:: clean
 	$(RM) .version avversion.h config.asm config.h mapfile  \
 		ffbuild/.config ffbuild/config.* libavutil/avconfig.h \
 		version.h libavutil/ffversion.h libavcodec/codec_names.h \
-		libavcodec/bsf_list.c libavformat/protocol_list.c
+		libavcodec/bsf_list.c libavformat/protocol_list.c \
+		libavcodec/codec_list.c libavcodec/parser_list.c \
+		libavformat/muxer_list.c libavformat/demuxer_list.c
 ifeq ($(SRC_LINK),src)
 	$(RM) src
 endif

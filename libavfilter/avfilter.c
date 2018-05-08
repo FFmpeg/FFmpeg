@@ -575,51 +575,6 @@ int avfilter_process_command(AVFilterContext *filter, const char *cmd, const cha
     return AVERROR(ENOSYS);
 }
 
-static AVFilter *first_filter;
-static AVFilter **last_filter = &first_filter;
-
-const AVFilter *avfilter_get_by_name(const char *name)
-{
-    const AVFilter *f = NULL;
-
-    if (!name)
-        return NULL;
-
-    while ((f = avfilter_next(f)))
-        if (!strcmp(f->name, name))
-            return (AVFilter *)f;
-
-    return NULL;
-}
-
-static AVMutex filter_register_mutex = AV_MUTEX_INITIALIZER;
-
-int avfilter_register(AVFilter *filter)
-{
-    AVFilter **f;
-
-    /* the filter must select generic or internal exclusively */
-    av_assert0((filter->flags & AVFILTER_FLAG_SUPPORT_TIMELINE) != AVFILTER_FLAG_SUPPORT_TIMELINE);
-
-    ff_mutex_lock(&filter_register_mutex);
-    f = last_filter;
-
-    while (*f)
-        f = &(*f)->next;
-    *f = filter;
-    filter->next = NULL;
-    last_filter = &filter->next;
-
-    ff_mutex_unlock(&filter_register_mutex);
-
-    return 0;
-}
-
-const AVFilter *avfilter_next(const AVFilter *prev)
-{
-    return prev ? prev->next : first_filter;
-}
-
 int avfilter_pad_count(const AVFilterPad *pads)
 {
     int count;
@@ -648,10 +603,11 @@ static void *filter_child_next(void *obj, void *prev)
 
 static const AVClass *filter_child_class_next(const AVClass *prev)
 {
+    void *opaque = NULL;
     const AVFilter *f = NULL;
 
     /* find the filter that corresponds to prev */
-    while (prev && (f = avfilter_next(f)))
+    while (prev && (f = av_filter_iterate(&opaque)))
         if (f->priv_class == prev)
             break;
 
@@ -660,7 +616,7 @@ static const AVClass *filter_child_class_next(const AVClass *prev)
         return NULL;
 
     /* find next filter with specific options */
-    while ((f = avfilter_next(f)))
+    while ((f = av_filter_iterate(&opaque)))
         if (f->priv_class)
             return f->priv_class;
 
@@ -676,6 +632,8 @@ static const AVOption avfilter_options[] = {
     { "enable", "set enable expression", OFFSET(enable_str), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
     { "threads", "Allowed number of threads", OFFSET(nb_threads), AV_OPT_TYPE_INT,
         { .i64 = 0 }, 0, INT_MAX, FLAGS },
+    { "extra_hw_frames", "Number of extra hardware frames to allocate for the user",
+        OFFSET(extra_hw_frames), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, INT_MAX, FLAGS },
     { NULL },
 };
 
@@ -1662,4 +1620,25 @@ int ff_outlink_get_status(AVFilterLink *link)
 const AVClass *avfilter_get_class(void)
 {
     return &avfilter_class;
+}
+
+int ff_filter_init_hw_frames(AVFilterContext *avctx, AVFilterLink *link,
+                             int default_pool_size)
+{
+    AVHWFramesContext *frames;
+
+    // Must already be set by caller.
+    av_assert0(link->hw_frames_ctx);
+
+    frames = (AVHWFramesContext*)link->hw_frames_ctx->data;
+
+    if (frames->initial_pool_size == 0) {
+        // Dynamic allocation is necessarily supported.
+    } else if (avctx->extra_hw_frames >= 0) {
+        frames->initial_pool_size += avctx->extra_hw_frames;
+    } else {
+        frames->initial_pool_size = default_pool_size;
+    }
+
+    return 0;
 }

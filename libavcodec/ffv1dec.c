@@ -336,14 +336,16 @@ static int decode_slice(AVCodecContext *c, void *arg)
          decode_plane(fs, p->data[0] + ps*x + y*p->linesize[0]    , width, height, p->linesize[0], 0, 2);
          decode_plane(fs, p->data[0] + ps*x + y*p->linesize[0] + 1, width, height, p->linesize[0], 1, 2);
     } else if (f->use32bit) {
-        uint8_t *planes[3] = { p->data[0] + ps * x + y * p->linesize[0],
+        uint8_t *planes[4] = { p->data[0] + ps * x + y * p->linesize[0],
                                p->data[1] + ps * x + y * p->linesize[1],
-                               p->data[2] + ps * x + y * p->linesize[2] };
+                               p->data[2] + ps * x + y * p->linesize[2],
+                               p->data[3] + ps * x + y * p->linesize[3] };
         decode_rgb_frame32(fs, planes, width, height, p->linesize);
     } else {
-        uint8_t *planes[3] = { p->data[0] + ps * x + y * p->linesize[0],
+        uint8_t *planes[4] = { p->data[0] + ps * x + y * p->linesize[0],
                                p->data[1] + ps * x + y * p->linesize[1],
-                               p->data[2] + ps * x + y * p->linesize[2] };
+                               p->data[2] + ps * x + y * p->linesize[2],
+                               p->data[3] + ps * x + y * p->linesize[3] };
         decode_rgb_frame(fs, planes, width, height, p->linesize);
     }
     if (fs->ac != AC_GOLOMB_RICE && f->version > 2) {
@@ -589,7 +591,10 @@ static int read_header(FFV1Context *f)
         if (!f->transparency && !f->chroma_planes) {
             if (f->avctx->bits_per_raw_sample <= 8)
                 f->avctx->pix_fmt = AV_PIX_FMT_GRAY8;
-            else if (f->avctx->bits_per_raw_sample == 10) {
+            else if (f->avctx->bits_per_raw_sample == 9) {
+                f->packed_at_lsb = 1;
+                f->avctx->pix_fmt = AV_PIX_FMT_GRAY9;
+            } else if (f->avctx->bits_per_raw_sample == 10) {
                 f->packed_at_lsb = 1;
                 f->avctx->pix_fmt = AV_PIX_FMT_GRAY10;
             } else if (f->avctx->bits_per_raw_sample == 12) {
@@ -640,6 +645,7 @@ static int read_header(FFV1Context *f)
             f->packed_at_lsb = 1;
             switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
             case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUV444P10; break;
+            case 0x01: f->avctx->pix_fmt = AV_PIX_FMT_YUV440P10; break;
             case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUV422P10; break;
             case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUV420P10; break;
             }
@@ -654,8 +660,16 @@ static int read_header(FFV1Context *f)
             f->packed_at_lsb = 1;
             switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
             case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUV444P12; break;
+            case 0x01: f->avctx->pix_fmt = AV_PIX_FMT_YUV440P12; break;
             case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUV422P12; break;
             case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUV420P12; break;
+            }
+        } else if (f->avctx->bits_per_raw_sample == 14 && !f->transparency) {
+            f->packed_at_lsb = 1;
+            switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
+            case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUV444P14; break;
+            case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUV422P14; break;
+            case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUV420P14; break;
             }
         } else if (f->avctx->bits_per_raw_sample == 16 && !f->transparency){
             f->packed_at_lsb = 1;
@@ -686,12 +700,20 @@ static int read_header(FFV1Context *f)
             f->avctx->pix_fmt = AV_PIX_FMT_GBRP9;
         else if (f->avctx->bits_per_raw_sample == 10 && !f->transparency)
             f->avctx->pix_fmt = AV_PIX_FMT_GBRP10;
+        else if (f->avctx->bits_per_raw_sample == 10 && f->transparency)
+            f->avctx->pix_fmt = AV_PIX_FMT_GBRAP10;
         else if (f->avctx->bits_per_raw_sample == 12 && !f->transparency)
             f->avctx->pix_fmt = AV_PIX_FMT_GBRP12;
+        else if (f->avctx->bits_per_raw_sample == 12 && f->transparency)
+            f->avctx->pix_fmt = AV_PIX_FMT_GBRAP12;
         else if (f->avctx->bits_per_raw_sample == 14 && !f->transparency)
             f->avctx->pix_fmt = AV_PIX_FMT_GBRP14;
         else if (f->avctx->bits_per_raw_sample == 16 && !f->transparency) {
             f->avctx->pix_fmt = AV_PIX_FMT_GBRP16;
+            f->use32bit = 1;
+        }
+        else if (f->avctx->bits_per_raw_sample == 16 && f->transparency) {
+            f->avctx->pix_fmt = AV_PIX_FMT_GBRAP16;
             f->use32bit = 1;
         }
     } else {
@@ -928,7 +950,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
 
             }
             if (desc->flags & AV_PIX_FMT_FLAG_PAL ||
-                desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL) {
+                desc->flags & FF_PSEUDOPAL) {
                 dst[1] = p->data[1];
                 src[1] = f->last_picture.f->data[1];
             }

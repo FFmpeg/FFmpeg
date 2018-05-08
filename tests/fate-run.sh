@@ -226,6 +226,22 @@ transcode(){
         -f framecrc - || return
 }
 
+stream_remux(){
+    src_fmt=$1
+    srcfile=$2
+    enc_fmt=$3
+    stream_maps=$4
+    final_decode=$5
+    encfile="${outdir}/${test}.${enc_fmt}"
+    test "$7" = -keep || cleanfiles="$cleanfiles $encfile"
+    tsrcfile=$(target_path $srcfile)
+    tencfile=$(target_path $encfile)
+    ffmpeg -f $src_fmt -i $tsrcfile $stream_maps -codec copy $FLAGS \
+        -f $enc_fmt -y $tencfile || return
+    ffmpeg $DEC_OPTS -i $encfile $ENC_OPTS $FLAGS $final_decode \
+        -f framecrc - || return
+}
+
 lavffatetest(){
     t="${test#lavf-fate-}"
     ref=${base}/ref/lavf-fate/$t

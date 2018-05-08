@@ -26,11 +26,6 @@
 #include "mem.h"
 #include "samplefmt.h"
 
-
-static AVFrameSideData *frame_new_side_data(AVFrame *frame,
-                                            enum AVFrameSideDataType type,
-                                            AVBufferRef *buf);
-
 #if FF_API_FRAME_GET_SET
 MAKE_ACCESSORS(AVFrame, frame, int64_t, best_effort_timestamp)
 MAKE_ACCESSORS(AVFrame, frame, int64_t, pkt_duration)
@@ -51,32 +46,76 @@ MAKE_ACCESSORS(AVFrame, frame, enum AVColorRange, color_range)
                av_get_channel_layout_nb_channels((frame)->channel_layout))
 
 #if FF_API_FRAME_QP
+struct qp_properties {
+    int stride;
+    int type;
+};
+
 int av_frame_set_qp_table(AVFrame *f, AVBufferRef *buf, int stride, int qp_type)
 {
+    struct qp_properties *p;
+    AVFrameSideData *sd;
+    AVBufferRef *ref;
+
+FF_DISABLE_DEPRECATION_WARNINGS
     av_buffer_unref(&f->qp_table_buf);
 
     f->qp_table_buf = buf;
-
-FF_DISABLE_DEPRECATION_WARNINGS
     f->qscale_table = buf->data;
     f->qstride      = stride;
     f->qscale_type  = qp_type;
 FF_ENABLE_DEPRECATION_WARNINGS
+
+    av_frame_remove_side_data(f, AV_FRAME_DATA_QP_TABLE_PROPERTIES);
+    av_frame_remove_side_data(f, AV_FRAME_DATA_QP_TABLE_DATA);
+
+    ref = av_buffer_ref(buf);
+    if (!av_frame_new_side_data_from_buf(f, AV_FRAME_DATA_QP_TABLE_DATA, ref)) {
+        av_buffer_unref(&ref);
+        return AVERROR(ENOMEM);
+    }
+
+    sd = av_frame_new_side_data(f, AV_FRAME_DATA_QP_TABLE_PROPERTIES,
+                                sizeof(struct qp_properties));
+    if (!sd)
+        return AVERROR(ENOMEM);
+
+    p = (struct qp_properties *)sd->data;
+    p->stride = stride;
+    p->type = qp_type;
 
     return 0;
 }
 
 int8_t *av_frame_get_qp_table(AVFrame *f, int *stride, int *type)
 {
+    AVBufferRef *buf = NULL;
+
+    *stride = 0;
+    *type   = 0;
+
 FF_DISABLE_DEPRECATION_WARNINGS
-    *stride = f->qstride;
-    *type   = f->qscale_type;
+    if (f->qp_table_buf) {
+        *stride = f->qstride;
+        *type   = f->qscale_type;
+        buf     = f->qp_table_buf;
 FF_ENABLE_DEPRECATION_WARNINGS
+    } else {
+        AVFrameSideData *sd;
+        struct qp_properties *p;
+        sd = av_frame_get_side_data(f, AV_FRAME_DATA_QP_TABLE_PROPERTIES);
+        if (!sd)
+            return NULL;
+        p = (struct qp_properties *)sd->data;
+        sd = av_frame_get_side_data(f, AV_FRAME_DATA_QP_TABLE_DATA);
+        if (!sd)
+            return NULL;
+        *stride = p->stride;
+        *type   = p->type;
+        buf     = sd->buf;
+    }
 
-    if (!f->qp_table_buf)
-        return NULL;
-
-    return f->qp_table_buf->data;
+    return buf ? buf->data : NULL;
 }
 #endif
 
@@ -208,7 +247,7 @@ static int get_video_buffer(AVFrame *frame, int align)
 
         frame->data[i] = frame->buf[i]->data;
     }
-    if (desc->flags & AV_PIX_FMT_FLAG_PAL || desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL) {
+    if (desc->flags & AV_PIX_FMT_FLAG_PAL || desc->flags & FF_PSEUDOPAL) {
         av_buffer_unref(&frame->buf[1]);
         frame->buf[1] = av_buffer_alloc(AVPALETTE_SIZE);
         if (!frame->buf[1])
@@ -356,8 +395,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
             }
             memcpy(sd_dst->data, sd_src->data, sd_src->size);
         } else {
-            sd_dst = frame_new_side_data(dst, sd_src->type, av_buffer_ref(sd_src->buf));
+            AVBufferRef *ref = av_buffer_ref(sd_src->buf);
+            sd_dst = av_frame_new_side_data_from_buf(dst, sd_src->type, ref);
             if (!sd_dst) {
+                av_buffer_unref(&ref);
                 wipe_side_data(dst);
                 return AVERROR(ENOMEM);
             }
@@ -523,7 +564,9 @@ void av_frame_unref(AVFrame *frame)
     av_freep(&frame->extended_buf);
     av_dict_free(&frame->metadata);
 #if FF_API_FRAME_QP
+FF_DISABLE_DEPRECATION_WARNINGS
     av_buffer_unref(&frame->qp_table_buf);
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
     av_buffer_unref(&frame->hw_frames_ctx);
@@ -642,9 +685,9 @@ AVBufferRef *av_frame_get_plane_buffer(AVFrame *frame, int plane)
     return NULL;
 }
 
-static AVFrameSideData *frame_new_side_data(AVFrame *frame,
-                                            enum AVFrameSideDataType type,
-                                            AVBufferRef *buf)
+AVFrameSideData *av_frame_new_side_data_from_buf(AVFrame *frame,
+                                                 enum AVFrameSideDataType type,
+                                                 AVBufferRef *buf)
 {
     AVFrameSideData *ret, **tmp;
 
@@ -652,17 +695,17 @@ static AVFrameSideData *frame_new_side_data(AVFrame *frame,
         return NULL;
 
     if (frame->nb_side_data > INT_MAX / sizeof(*frame->side_data) - 1)
-        goto fail;
+        return NULL;
 
     tmp = av_realloc(frame->side_data,
                      (frame->nb_side_data + 1) * sizeof(*frame->side_data));
     if (!tmp)
-        goto fail;
+        return NULL;
     frame->side_data = tmp;
 
     ret = av_mallocz(sizeof(*ret));
     if (!ret)
-        goto fail;
+        return NULL;
 
     ret->buf = buf;
     ret->data = ret->buf->data;
@@ -672,17 +715,18 @@ static AVFrameSideData *frame_new_side_data(AVFrame *frame,
     frame->side_data[frame->nb_side_data++] = ret;
 
     return ret;
-fail:
-    av_buffer_unref(&buf);
-    return NULL;
 }
 
 AVFrameSideData *av_frame_new_side_data(AVFrame *frame,
                                         enum AVFrameSideDataType type,
                                         int size)
 {
-
-    return frame_new_side_data(frame, type, av_buffer_alloc(size));
+    AVFrameSideData *ret;
+    AVBufferRef *buf = av_buffer_alloc(size);
+    ret = av_frame_new_side_data_from_buf(frame, type, buf);
+    if (!ret)
+        av_buffer_unref(&buf);
+    return ret;
 }
 
 AVFrameSideData *av_frame_get_side_data(const AVFrame *frame,
@@ -788,6 +832,8 @@ const char *av_frame_side_data_name(enum AVFrameSideDataType type)
     case AV_FRAME_DATA_CONTENT_LIGHT_LEVEL:         return "Content light level metadata";
     case AV_FRAME_DATA_GOP_TIMECODE:                return "GOP timecode";
     case AV_FRAME_DATA_ICC_PROFILE:                 return "ICC profile";
+    case AV_FRAME_DATA_QP_TABLE_PROPERTIES:         return "QP table properties";
+    case AV_FRAME_DATA_QP_TABLE_DATA:               return "QP table data";
     }
     return NULL;
 }
@@ -802,7 +848,7 @@ static int calc_cropping_offsets(size_t offsets[4], const AVFrame *frame,
         int shift_x = (i == 1 || i == 2) ? desc->log2_chroma_w : 0;
         int shift_y = (i == 1 || i == 2) ? desc->log2_chroma_h : 0;
 
-        if (desc->flags & (AV_PIX_FMT_FLAG_PAL | AV_PIX_FMT_FLAG_PSEUDOPAL) && i == 1) {
+        if (desc->flags & (AV_PIX_FMT_FLAG_PAL | FF_PSEUDOPAL) && i == 1) {
             offsets[i] = 0;
             break;
         }

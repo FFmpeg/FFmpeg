@@ -226,7 +226,12 @@ ffmpeg -re -i <input> -map 0 -map 0 -c:a libfdk_aac -c:v libx264
 
 @table @option
 @item -min_seg_duration @var{microseconds}
-Set the segment length in microseconds.
+This is a deprecated option to set the segment length in microseconds, use @var{seg_duration} instead.
+@item -seg_duration @var{duration}
+Set the segment length in seconds (fractional value can be set). The value is
+treated as average segment duration when @var{use_template} is enabled and
+@var{use_timeline} is disabled and as minimum segment duration for all the other
+use cases.
 @item -window_size @var{size}
 Set the maximum number of segments kept in the manifest.
 @item -extra_window_size @var{size}
@@ -254,6 +259,9 @@ Use persistent HTTP connections. Applicable only for HTTP output.
 @item -hls_playlist @var{hls_playlist}
 Generate HLS playlist files as well. The master playlist is generated with the filename master.m3u8.
 One media playlist file is generated for each stream with filenames media_0.m3u8, media_1.m3u8, etc.
+@item -streaming @var{streaming}
+Enable (1) or disable (0) chunk streaming mode of output. In chunk streaming
+mode, each frame will be a moof fragment which forms a chunk.
 @item -adaptation_sets @var{adaptation_sets}
 Assign streams to AdaptationSets. Syntax is "id=x,streams=a,b,c id=y,streams=d,e" with x and y being the IDs
 of the adaptation sets and a,b,c,d and e are the indices of the mapped streams.
@@ -261,6 +269,19 @@ of the adaptation sets and a,b,c,d and e are the indices of the mapped streams.
 To map all video (or audio) streams to an AdaptationSet, "v" (or "a") can be used as stream identifier instead of IDs.
 
 When no assignment is defined, this defaults to an AdaptationSet for each stream.
+@item -timeout @var{timeout}
+Set timeout for socket I/O operations. Applicable only for HTTP output.
+@item -index_correction @var{index_correction}
+Enable (1) or Disable (0) segment index correction logic. Applicable only when
+@var{use_template} is enabled and @var{use_timeline} is disabled.
+
+When enabled, the logic monitors the flow of segment indexes. If a streams's
+segment index value is not at the expected real time position, then the logic
+corrects that index value.
+
+Typically this logic is needed in live streaming use cases. The network bandwidth
+fluctuations are common during long run streaming. Each fluctuation can cause
+the segment indexes fall behind the expected real time position.
 @end table
 
 @anchor{framecrc}
@@ -507,6 +528,12 @@ Segment will be cut on the next key frame after this time has passed.
 @item hls_list_size @var{size}
 Set the maximum number of playlist entries. If set to 0 the list file
 will contain all the segments. Default value is 5.
+
+@item hls_delete_threshold @var{size}
+Set the number of unreferenced segments to keep on disk before @code{hls_flags delete_segments}
+deletes them. Increase this to allow continue clients to download segments which
+were recently referenced in the playlist. Default value is 1, meaning segments older than
+@code{hls_list_size+1} will be deleted.
 
 @item hls_ts_options @var{options_list}
 Set output format options using a :-separated list of key=value
@@ -960,6 +987,9 @@ publishing it repeatedly every after 30 segments i.e. every after 60s.
 
 @item http_persistent
 Use persistent HTTP connections. Applicable only for HTTP output.
+
+@item timeout
+Set timeout for socket I/O operations. Applicable only for HTTP output.
 
 @end table
 
@@ -2007,20 +2037,35 @@ ffmpeg -re -i ... -c:v libx264 -c:a aac -f fifo -fifo_format flv -map 0:v -map 0
 @anchor{tee}
 @section tee
 
-The tee muxer can be used to write the same data to several files or any
-other kind of muxer. It can be used, for example, to both stream a video to
-the network and save it to disk at the same time.
+The tee muxer can be used to write the same data to several outputs, such as files or streams.
+It can be used, for example, to stream a video over a network and save it to disk at the same time.
 
 It is different from specifying several outputs to the @command{ffmpeg}
-command-line tool because the audio and video data will be encoded only once
-with the tee muxer; encoding can be a very expensive process. It is not
-useful when using the libavformat API directly because it is then possible
-to feed the same packets to several muxers directly.
+command-line tool. With the tee muxer, the audio and video data will be encoded only once.
+With conventional multiple outputs, multiple encoding operations in parallel are initiated,
+which can be a very expensive process. The tee muxer is not useful when using the libavformat API
+directly because it is then possible to feed the same packets to several muxers directly.
+
+Since the tee muxer does not represent any particular output format, ffmpeg cannot auto-select
+output streams. So all streams intended for output must be specified using @code{-map}. See
+the examples below.
+
+Some encoders may need different options depending on the output format;
+the auto-detection of this can not work with the tee muxer, so they need to be explicitly specified.
+The main example is the @option{global_header} flag.
+
+The slave outputs are specified in the file name given to the muxer,
+separated by '|'. If any of the slave name contains the '|' separator,
+leading or trailing spaces or any special character, those must be
+escaped (see @ref{quoting_and_escaping,,the "Quoting and escaping"
+section in the ffmpeg-utils(1) manual,ffmpeg-utils}).
+
+@subsection Options
 
 @table @option
 
 @item use_fifo @var{bool}
-If set to 1, slave outputs will be processed in separate thread using @ref{fifo}
+If set to 1, slave outputs will be processed in separate threads using the @ref{fifo}
 muxer. This allows to compensate for different speed/latency/reliability of
 outputs and setup transparent recovery. By default this feature is turned off.
 
@@ -2028,12 +2073,6 @@ outputs and setup transparent recovery. By default this feature is turned off.
 Options to pass to fifo pseudo-muxer instances. See @ref{fifo}.
 
 @end table
-
-The slave outputs are specified in the file name given to the muxer,
-separated by '|'. If any of the slave name contains the '|' separator,
-leading or trailing spaces or any special character, it must be
-escaped (see @ref{quoting_and_escaping,,the "Quoting and escaping"
-section in the ffmpeg-utils(1) manual,ffmpeg-utils}).
 
 Muxer options can be specified for each slave by prepending them as a list of
 @var{key}=@var{value} pairs separated by ':', between square brackets. If
@@ -2043,12 +2082,26 @@ must be escaped; note that this is a second level escaping.
 The following special options are also recognized:
 @table @option
 @item f
-Specify the format name. Useful if it cannot be guessed from the
-output name suffix.
+Specify the format name. Required if it cannot be guessed from the
+output URL.
 
 @item bsfs[/@var{spec}]
 Specify a list of bitstream filters to apply to the specified
 output.
+
+It is possible to specify to which streams a given bitstream filter
+applies, by appending a stream specifier to the option separated by
+@code{/}. @var{spec} must be a stream specifier (see @ref{Format
+stream specifiers}).
+
+If the stream specifier is not specified, the bitstream filters will be
+applied to all streams in the output. This will cause that output operation
+to fail if the output contains streams to which the bitstream filter cannot
+be applied e.g. @code{h264_mp4toannexb} being applied to an output containing an audio stream.
+
+Options for a bitstream filter must be specified in the form of @code{opt=value}.
+
+Several bitstream filters can be specified, separated by ",".
 
 @item use_fifo @var{bool}
 This allows to override tee muxer use_fifo option for individual slave muxer.
@@ -2057,19 +2110,13 @@ This allows to override tee muxer use_fifo option for individual slave muxer.
 This allows to override tee muxer fifo_options for individual slave muxer.
 See @ref{fifo}.
 
-It is possible to specify to which streams a given bitstream filter
-applies, by appending a stream specifier to the option separated by
-@code{/}. @var{spec} must be a stream specifier (see @ref{Format
-stream specifiers}).  If the stream specifier is not specified, the
-bitstream filters will be applied to all streams in the output.
-
-Several bitstream filters can be specified, separated by ",".
-
 @item select
 Select the streams that should be mapped to the slave output,
 specified by a stream specifier. If not specified, this defaults to
-all the input streams. You may use multiple stream specifiers
-separated by commas (@code{,}) e.g.: @code{a:0,v}
+all the mapped streams. This will cause that output operation to fail
+if the output format does not accept all mapped streams.
+
+You may use multiple stream specifiers separated by commas (@code{,}) e.g.: @code{a:0,v}
 
 @item onfail
 Specify behaviour on output failure. This can be set to either @code{abort} (which is
@@ -2083,7 +2130,7 @@ will continue without being affected.
 @itemize
 @item
 Encode something and both archive it in a WebM file and stream it
-as MPEG-TS over UDP (the streams need to be explicitly mapped):
+as MPEG-TS over UDP:
 @example
 ffmpeg -i ... -c:v libx264 -c:a mp2 -f tee -map 0:v -map 0:a
   "archive-20121107.mkv|[f=mpegts]udp://10.0.1.255:1234/"
@@ -2106,22 +2153,18 @@ option is applied to @file{out.aac} in order to make it contain only
 audio packets.
 @example
 ffmpeg -i ... -map 0 -flags +global_header -c:v libx264 -c:a aac
-       -f tee "[bsfs/v=dump_extra]out.ts|[movflags=+faststart]out.mp4|[select=a]out.aac"
+       -f tee "[bsfs/v=dump_extra=freq=keyframe]out.ts|[movflags=+faststart]out.mp4|[select=a]out.aac"
 @end example
 
 @item
-As below, but select only stream @code{a:1} for the audio output. Note
+As above, but select only stream @code{a:1} for the audio output. Note
 that a second level escaping must be performed, as ":" is a special
 character used to separate options.
 @example
 ffmpeg -i ... -map 0 -flags +global_header -c:v libx264 -c:a aac
-       -f tee "[bsfs/v=dump_extra]out.ts|[movflags=+faststart]out.mp4|[select=\'a:1\']out.aac"
+       -f tee "[bsfs/v=dump_extra=freq=keyframe]out.ts|[movflags=+faststart]out.mp4|[select=\'a:1\']out.aac"
 @end example
 @end itemize
-
-Note: some codecs may need different options depending on the output format;
-the auto-detection of this can not work with the tee muxer. The main example
-is the @option{global_header} flag.
 
 @section webm_dash_manifest
 

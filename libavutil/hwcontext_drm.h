@@ -58,6 +58,9 @@ typedef struct AVDRMObjectDescriptor {
     size_t size;
     /**
      * Format modifier applied to the object (DRM_FORMAT_MOD_*).
+     *
+     * If the format modifier is unknown then this should be set to
+     * DRM_FORMAT_MOD_INVALID.
      */
     uint64_t format_modifier;
 } AVDRMObjectDescriptor;

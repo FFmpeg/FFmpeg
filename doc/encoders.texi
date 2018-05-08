@@ -981,6 +981,11 @@ Other values include 0 for mono and stereo, 1 for surround sound with masking
 and LFE bandwidth optimizations, and 255 for independent streams with an
 unspecified channel layout.
 
+@item apply_phase_inv (N.A.) (requires libopus >= 1.2)
+If set to 0, disables the use of phase inversion for intensity stereo,
+improving the quality of mono downmixes, but slightly reducing normal stereo
+quality. The default is 1 (phase inversion enabled).
+
 @end table
 
 @anchor{libshine}
@@ -2154,6 +2159,12 @@ Set the x265 preset.
 @item tune
 Set the x265 tune parameter.
 
+@item profile
+Set profile restrictions.
+
+@item crf
+Set the quality for constant quality mode.
+
 @item forced-idr
 Normally, when forcing a I-frame type, the encoder can select any type
 of I-frame. This option forces it to choose an IDR-frame.
@@ -2354,6 +2365,11 @@ Never write it.
 @itemx always
 Always write it.
 @end table
+@item video_format @var{integer}
+Specifies the video_format written into the sequence display extension
+indicating the source of the video pictures. The default is @samp{unspecified},
+can be @samp{component}, @samp{pal}, @samp{ntsc}, @samp{secam} or @samp{mac}.
+For maximum compatibility, use @samp{component}.
 @end table
 
 @section png

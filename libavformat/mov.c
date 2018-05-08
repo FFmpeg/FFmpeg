@@ -336,6 +336,8 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     case MKTAG( 'l','d','e','s'): key = "synopsis";  break;
     case MKTAG( 'l','o','c','i'):
         return mov_metadata_loci(c, pb, atom.size);
+    case MKTAG( 'm','a','n','u'): key = "make"; break;
+    case MKTAG( 'm','o','d','l'): key = "model"; break;
     case MKTAG( 'p','c','s','t'): key = "podcast";
         parse = mov_metadata_int8_no_padding; break;
     case MKTAG( 'p','g','a','p'): key = "gapless_playback";
@@ -410,7 +412,11 @@ retry:
                 int ret = mov_read_covr(c, pb, data_type, str_size);
                 if (ret < 0) {
                     av_log(c->fc, AV_LOG_ERROR, "Error parsing cover art.\n");
+                    return ret;
                 }
+                atom.size -= str_size;
+                if (atom.size > 8)
+                    goto retry;
                 return ret;
             } else if (!key && c->found_hdlr_mdta && c->meta_keys) {
                 uint32_t index = AV_RB32(&atom.type);
@@ -1324,6 +1330,7 @@ static int update_frag_index(MOVContext *c, int64_t offset)
         frag_stream_info[i].tfdt_dts = AV_NOPTS_VALUE;
         frag_stream_info[i].first_tfra_pts = AV_NOPTS_VALUE;
         frag_stream_info[i].index_entry = -1;
+        frag_stream_info[i].encryption_index = NULL;
     }
 
     if (index < c->frag_index.nb_items)
@@ -2397,6 +2404,7 @@ static int mov_finalize_stsd_codec(MOVContext *c, AVIOContext *pb,
     case AV_CODEC_ID_EAC3:
     case AV_CODEC_ID_MPEG1VIDEO:
     case AV_CODEC_ID_VC1:
+    case AV_CODEC_ID_VP8:
     case AV_CODEC_ID_VP9:
         st->need_parsing = AVSTREAM_PARSE_FULL;
         break;
@@ -2585,6 +2593,12 @@ static int mov_read_stsd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     return mov_finalize_stsd_codec(c, pb, st, sc);
 fail:
+    if (sc->extradata) {
+        int j;
+        for (j = 0; j < sc->stsd_count; j++)
+            av_freep(&sc->extradata[j]);
+    }
+
     av_freep(&sc->extradata);
     av_freep(&sc->extradata_size);
     return ret;
@@ -2627,6 +2641,21 @@ static int mov_read_stsc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
 
     sc->stsc_count = i;
+    for (i = sc->stsc_count - 1; i < UINT_MAX; i--) {
+        if ((i+1 < sc->stsc_count && sc->stsc_data[i].first >= sc->stsc_data[i+1].first) ||
+            (i > 0 && sc->stsc_data[i].first <= sc->stsc_data[i-1].first) ||
+            sc->stsc_data[i].first < 1 ||
+            sc->stsc_data[i].count < 1 ||
+            sc->stsc_data[i].id < 1) {
+            av_log(c->fc, AV_LOG_WARNING, "STSC entry %d is invalid (first=%d count=%d id=%d)\n", i, sc->stsc_data[i].first, sc->stsc_data[i].count, sc->stsc_data[i].id);
+            if (i+1 >= sc->stsc_count || sc->stsc_data[i+1].first < 2)
+                return AVERROR_INVALIDDATA;
+            // We replace this entry by the next valid
+            sc->stsc_data[i].first = sc->stsc_data[i+1].first - 1;
+            sc->stsc_data[i].count = sc->stsc_data[i+1].count;
+            sc->stsc_data[i].id    = sc->stsc_data[i+1].id;
+        }
+    }
 
     if (pb->eof_reached) {
         av_log(c->fc, AV_LOG_WARNING, "reached eof, corrupted STSC atom\n");
@@ -2642,7 +2671,7 @@ static inline int mov_stsc_index_valid(unsigned int index, unsigned int count)
 }
 
 /* Compute the samples value for the stsc entry at the given index. */
-static inline int mov_get_stsc_samples(MOVStreamContext *sc, unsigned int index)
+static inline int64_t mov_get_stsc_samples(MOVStreamContext *sc, unsigned int index)
 {
     int chunk_count;
 
@@ -2651,7 +2680,7 @@ static inline int mov_get_stsc_samples(MOVStreamContext *sc, unsigned int index)
     else
         chunk_count = sc->chunk_count - (sc->stsc_data[index].first - 1);
 
-    return sc->stsc_data[index].count * chunk_count;
+    return sc->stsc_data[index].count * (int64_t)chunk_count;
 }
 
 static int mov_read_stps(MOVContext *c, AVIOContext *pb, MOVAtom atom)
@@ -2856,7 +2885,7 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     for (i = 0; i < entries && !pb->eof_reached; i++) {
         int sample_duration;
         unsigned int sample_count;
-        unsigned min_entries = FFMIN(FFMAX(i, 1024 * 1024), entries);
+        unsigned int min_entries = FFMIN(FFMAX(i + 1, 1024 * 1024), entries);
         MOVStts *stts_data = av_fast_realloc(sc->stts_data, &alloc_size,
                                              min_entries * sizeof(*sc->stts_data));
         if (!stts_data) {
@@ -2882,14 +2911,19 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             && total_sample_count > 100
             && sample_duration/10 > duration / total_sample_count)
             sample_duration = duration / total_sample_count;
-        duration+=(int64_t)sample_duration*sample_count;
+        duration+=(int64_t)sample_duration*(uint64_t)sample_count;
         total_sample_count+=sample_count;
     }
 
     sc->stts_count = i;
 
-    sc->duration_for_fps  += duration;
-    sc->nb_frames_for_fps += total_sample_count;
+    if (duration > 0 &&
+        duration <= INT64_MAX - sc->duration_for_fps &&
+        total_sample_count <= INT64_MAX - sc->nb_frames_for_fps
+    ) {
+        sc->duration_for_fps  += duration;
+        sc->nb_frames_for_fps += total_sample_count;
+    }
 
     if (pb->eof_reached) {
         av_log(c->fc, AV_LOG_WARNING, "reached eof, corrupted STTS atom\n");
@@ -2898,7 +2932,7 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     st->nb_frames= total_sample_count;
     if (duration)
-        st->duration= duration;
+        st->duration= FFMIN(st->duration, duration);
     sc->track_end = duration;
     return 0;
 }
@@ -3131,7 +3165,7 @@ static int find_prev_closest_index(AVStream *st,
             }
         }
 
-        while (*index >= 0 && (*ctts_index) >= 0) {
+        while (*index >= 0 && (*ctts_index) >= 0 && (*ctts_index) < ctts_count) {
             // Find a "key frame" with PTS <= timestamp_pts (So that we can decode B-frames correctly).
             // No need to add dts_shift to the timestamp here becase timestamp_pts has already been
             // compensated by dts_shift above.
@@ -3233,7 +3267,7 @@ static int64_t add_ctts_entry(MOVStts** ctts_data, unsigned int* ctts_count, uns
         FFMAX(min_size_needed, 2 * (*allocated_size)) :
         min_size_needed;
 
-    if((unsigned)(*ctts_count) + 1 >= UINT_MAX / sizeof(MOVStts))
+    if((unsigned)(*ctts_count) >= UINT_MAX / sizeof(MOVStts) - 1)
         return -1;
 
     ctts_buf_new = av_fast_realloc(*ctts_data, allocated_size, requested_size);
@@ -3375,7 +3409,6 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
     int64_t edit_list_start_ctts_sample = 0;
     int64_t curr_cts;
     int64_t curr_ctts = 0;
-    int64_t min_corrected_pts = -1;
     int64_t empty_edits_sum_duration = 0;
     int64_t edit_list_index = 0;
     int64_t index;
@@ -3415,6 +3448,9 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
     msc->ctts_index = 0;
     msc->ctts_sample = 0;
     msc->ctts_allocated_size = 0;
+
+    // Reinitialize min_corrected_pts so that it can be computed again.
+    msc->min_corrected_pts = -1;
 
     // If the dts_shift is positive (in case of negative ctts values in mov),
     // then negate the DTS by dts_shift
@@ -3560,10 +3596,10 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
                     }
                 }
             } else {
-                if (min_corrected_pts < 0) {
-                    min_corrected_pts = edit_list_dts_counter + curr_ctts + msc->dts_shift;
+                if (msc->min_corrected_pts < 0) {
+                    msc->min_corrected_pts = edit_list_dts_counter + curr_ctts + msc->dts_shift;
                 } else {
-                    min_corrected_pts = FFMIN(min_corrected_pts, edit_list_dts_counter + curr_ctts + msc->dts_shift);
+                    msc->min_corrected_pts = FFMIN(msc->min_corrected_pts, edit_list_dts_counter + curr_ctts + msc->dts_shift);
                 }
                 if (edit_list_start_encountered == 0) {
                     edit_list_start_encountered = 1;
@@ -3622,21 +3658,21 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
             }
         }
     }
-    // If there are empty edits, then min_corrected_pts might be positive intentionally. So we subtract the
-    // sum duration of emtpy edits here.
-    min_corrected_pts -= empty_edits_sum_duration;
+    // If there are empty edits, then msc->min_corrected_pts might be positive
+    // intentionally. So we subtract the sum duration of emtpy edits here.
+    msc->min_corrected_pts -= empty_edits_sum_duration;
 
     // If the minimum pts turns out to be greater than zero after fixing the index, then we subtract the
     // dts by that amount to make the first pts zero.
-    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && min_corrected_pts > 0) {
-        av_log(mov->fc, AV_LOG_DEBUG, "Offset DTS by %"PRId64" to make first pts zero.\n", min_corrected_pts);
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && msc->min_corrected_pts > 0) {
+        av_log(mov->fc, AV_LOG_DEBUG, "Offset DTS by %"PRId64" to make first pts zero.\n", msc->min_corrected_pts);
         for (i = 0; i < st->nb_index_entries; ++i) {
-            st->index_entries[i].timestamp -= min_corrected_pts;
+            st->index_entries[i].timestamp -= msc->min_corrected_pts;
         }
     }
 
-    // Update av stream length
-    st->duration = edit_list_dts_entry_end - start_dts;
+    // Update av stream length, if it ends up shorter than the track's media duration
+    st->duration = FFMIN(st->duration, edit_list_dts_entry_end - start_dts);
     msc->start_pad = st->skip_samples;
 
     // Free the old index and the old CTTS structures
@@ -3694,6 +3730,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
             if (empty_duration)
                 empty_duration = av_rescale(empty_duration, sc->time_scale, mov->time_scale);
             sc->time_offset = start_time - empty_duration;
+            sc->min_corrected_pts = start_time;
             if (!mov->advanced_editlist)
                 current_dts = -sc->time_offset;
         }
@@ -3744,6 +3781,9 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 av_free(ctts_data_old);
                 return;
             }
+
+            memset((uint8_t*)(sc->ctts_data), 0, sc->ctts_allocated_size);
+
             for (i = 0; i < ctts_count_old &&
                         sc->ctts_count < sc->sample_count; i++)
                 for (j = 0; j < ctts_data_old[i].count &&
@@ -4104,6 +4144,11 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         av_log(c->fc, AV_LOG_ERROR, "stream %d, missing mandatory atoms, broken header\n",
                st->index);
         return 0;
+    }
+    if (sc->stsc_count && sc->stsc_data[ sc->stsc_count - 1 ].first > sc->chunk_count) {
+        av_log(c->fc, AV_LOG_ERROR, "stream %d, contradictionary STSC and STCO\n",
+               st->index);
+        return AVERROR_INVALIDDATA;
     }
 
     fix_timescale(c, sc);
@@ -4563,7 +4608,7 @@ static int mov_read_tfdt(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR_INVALIDDATA;
     }
     sc = st->priv_data;
-    if (sc->pseudo_stream_id + 1 != frag->stsd_id)
+    if (sc->pseudo_stream_id + 1 != frag->stsd_id && sc->pseudo_stream_id != -1)
         return 0;
     version = avio_r8(pb);
     avio_rb24(pb); /* flags */
@@ -4595,6 +4640,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     int64_t prev_dts = AV_NOPTS_VALUE;
     int next_frag_index = -1, index_entry_pos;
     size_t requested_size;
+    size_t old_ctts_allocated_size;
     AVIndexEntry *new_entries;
     MOVFragmentStreamInfo * frag_stream_info;
 
@@ -4687,6 +4733,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     st->index_entries= new_entries;
 
     requested_size = (st->nb_index_entries + entries) * sizeof(*sc->ctts_data);
+    old_ctts_allocated_size = sc->ctts_allocated_size;
     ctts_data = av_fast_realloc(sc->ctts_data, &sc->ctts_allocated_size,
                                 requested_size);
     if (!ctts_data)
@@ -4696,8 +4743,8 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     // In case there were samples without ctts entries, ensure they get
     // zero valued entries. This ensures clips which mix boxes with and
     // without ctts entries don't pickup uninitialized data.
-    memset(sc->ctts_data + sc->ctts_count, 0,
-           (st->nb_index_entries - sc->ctts_count) * sizeof(*sc->ctts_data));
+    memset((uint8_t*)(sc->ctts_data) + old_ctts_allocated_size, 0,
+           sc->ctts_allocated_size - old_ctts_allocated_size);
 
     if (index_entry_pos < st->nb_index_entries) {
         // Make hole in index_entries and ctts_data for new samples
@@ -4787,8 +4834,13 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         dts += sample_duration;
         offset += sample_size;
         sc->data_size += sample_size;
-        sc->duration_for_fps += sample_duration;
-        sc->nb_frames_for_fps ++;
+
+        if (sample_duration <= INT64_MAX - sc->duration_for_fps &&
+            1 <= INT64_MAX - sc->nb_frames_for_fps
+        ) {
+            sc->duration_for_fps += sample_duration;
+            sc->nb_frames_for_fps ++;
+        }
     }
     if (i < entries) {
         // EOF found before reading all entries.  Fix the hole this would
@@ -5446,7 +5498,7 @@ static int mov_read_sv3d(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             projection = AV_SPHERICAL_EQUIRECTANGULAR;
         break;
     default:
-        av_log(c->fc, AV_LOG_ERROR, "Unknown projection type\n");
+        av_log(c->fc, AV_LOG_ERROR, "Unknown projection type: %s\n", av_fourcc2str(tag));
         return 0;
     }
 
@@ -5710,115 +5762,470 @@ static int mov_read_frma(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+/**
+ * Gets the current encryption info and associated current stream context.  If
+ * we are parsing a track fragment, this will return the specific encryption
+ * info for this fragment; otherwise this will return the global encryption
+ * info for the current stream.
+ */
+static int get_current_encryption_info(MOVContext *c, MOVEncryptionIndex **encryption_index, MOVStreamContext **sc)
+{
+    MOVFragmentStreamInfo *frag_stream_info;
+    AVStream *st;
+    int i;
+
+    frag_stream_info = get_current_frag_stream_info(&c->frag_index);
+    if (frag_stream_info) {
+        for (i = 0; i < c->fc->nb_streams; i++) {
+            if (c->fc->streams[i]->id == frag_stream_info->id) {
+              st = c->fc->streams[i];
+              break;
+            }
+        }
+        if (i == c->fc->nb_streams)
+            return 0;
+        *sc = st->priv_data;
+
+        if (!frag_stream_info->encryption_index) {
+            frag_stream_info->encryption_index = av_mallocz(sizeof(*frag_stream_info->encryption_index));
+            if (!frag_stream_info->encryption_index)
+                return AVERROR(ENOMEM);
+        }
+        *encryption_index = frag_stream_info->encryption_index;
+        return 1;
+    } else {
+        // No current track fragment, using stream level encryption info.
+
+        if (c->fc->nb_streams < 1)
+            return 0;
+        st = c->fc->streams[c->fc->nb_streams - 1];
+        *sc = st->priv_data;
+
+        if (!(*sc)->cenc.encryption_index) {
+            (*sc)->cenc.encryption_index = av_mallocz(sizeof(*frag_stream_info->encryption_index));
+            if (!(*sc)->cenc.encryption_index)
+                return AVERROR(ENOMEM);
+        }
+
+        *encryption_index = (*sc)->cenc.encryption_index;
+        return 1;
+    }
+}
+
+static int mov_read_sample_encryption_info(MOVContext *c, AVIOContext *pb, MOVStreamContext *sc, AVEncryptionInfo **sample, int use_subsamples)
+{
+    int i;
+    unsigned int subsample_count;
+    AVSubsampleEncryptionInfo *subsamples;
+
+    *sample = av_encryption_info_clone(sc->cenc.default_encrypted_sample);
+    if (!*sample)
+        return AVERROR(ENOMEM);
+
+    if (sc->cenc.per_sample_iv_size != 0) {
+        if (avio_read(pb, (*sample)->iv, sc->cenc.per_sample_iv_size) != sc->cenc.per_sample_iv_size) {
+            av_log(c->fc, AV_LOG_ERROR, "failed to read the initialization vector\n");
+            av_encryption_info_free(*sample);
+            *sample = NULL;
+            return AVERROR_INVALIDDATA;
+        }
+    }
+
+    if (use_subsamples) {
+        subsample_count = avio_rb16(pb);
+        av_free((*sample)->subsamples);
+        (*sample)->subsamples = av_mallocz_array(subsample_count, sizeof(*subsamples));
+        if (!(*sample)->subsamples) {
+            av_encryption_info_free(*sample);
+            *sample = NULL;
+            return AVERROR(ENOMEM);
+        }
+
+        for (i = 0; i < subsample_count && !pb->eof_reached; i++) {
+            (*sample)->subsamples[i].bytes_of_clear_data = avio_rb16(pb);
+            (*sample)->subsamples[i].bytes_of_protected_data = avio_rb32(pb);
+        }
+
+        if (pb->eof_reached) {
+            av_log(c->fc, AV_LOG_ERROR, "hit EOF while reading sub-sample encryption info\n");
+            av_encryption_info_free(*sample);
+            *sample = NULL;
+            return AVERROR_INVALIDDATA;
+        }
+        (*sample)->subsample_count = subsample_count;
+    }
+
+    return 0;
+}
+
 static int mov_read_senc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
-    AVStream *st;
+    AVEncryptionInfo **encrypted_samples;
+    MOVEncryptionIndex *encryption_index;
     MOVStreamContext *sc;
-    size_t auxiliary_info_size;
+    int use_subsamples, ret;
+    unsigned int sample_count, i, alloc_size = 0;
 
-    if (c->decryption_key_len == 0 || c->fc->nb_streams < 1)
+    ret = get_current_encryption_info(c, &encryption_index, &sc);
+    if (ret != 1)
+        return ret;
+
+    if (encryption_index->nb_encrypted_samples) {
+        // This can happen if we have both saio/saiz and senc atoms.
+        av_log(c->fc, AV_LOG_DEBUG, "Ignoring duplicate encryption info in senc\n");
         return 0;
-
-    st = c->fc->streams[c->fc->nb_streams - 1];
-    sc = st->priv_data;
-
-    if (sc->cenc.aes_ctr) {
-        av_log(c->fc, AV_LOG_ERROR, "duplicate senc atom\n");
-        return AVERROR_INVALIDDATA;
     }
 
     avio_r8(pb); /* version */
-    sc->cenc.use_subsamples = avio_rb24(pb) & 0x02; /* flags */
+    use_subsamples = avio_rb24(pb) & 0x02; /* flags */
 
-    avio_rb32(pb);        /* entries */
-
-    if (atom.size < 8 || atom.size > FFMIN(INT_MAX, SIZE_MAX)) {
-        av_log(c->fc, AV_LOG_ERROR, "senc atom size %"PRId64" invalid\n", atom.size);
-        return AVERROR_INVALIDDATA;
-    }
-
-    /* save the auxiliary info as is */
-    auxiliary_info_size = atom.size - 8;
-
-    sc->cenc.auxiliary_info = av_malloc(auxiliary_info_size);
-    if (!sc->cenc.auxiliary_info) {
+    sample_count = avio_rb32(pb);
+    if (sample_count >= INT_MAX / sizeof(*encrypted_samples))
         return AVERROR(ENOMEM);
+
+    for (i = 0; i < sample_count; i++) {
+        unsigned int min_samples = FFMIN(FFMAX(i, 1024 * 1024), sample_count);
+        encrypted_samples = av_fast_realloc(encryption_index->encrypted_samples, &alloc_size,
+                                            min_samples * sizeof(*encrypted_samples));
+        if (encrypted_samples) {
+            encryption_index->encrypted_samples = encrypted_samples;
+
+            ret = mov_read_sample_encryption_info(
+                c, pb, sc, &encryption_index->encrypted_samples[i], use_subsamples);
+        } else {
+            ret = AVERROR(ENOMEM);
+        }
+        if (pb->eof_reached) {
+            av_log(c->fc, AV_LOG_ERROR, "Hit EOF while reading senc\n");
+            ret = AVERROR_INVALIDDATA;
+        }
+
+        if (ret < 0) {
+            for (; i > 0; i--)
+                av_encryption_info_free(encryption_index->encrypted_samples[i - 1]);
+            av_freep(&encryption_index->encrypted_samples);
+            return ret;
+        }
     }
+    encryption_index->nb_encrypted_samples = sample_count;
 
-    sc->cenc.auxiliary_info_end = sc->cenc.auxiliary_info + auxiliary_info_size;
-    sc->cenc.auxiliary_info_pos = sc->cenc.auxiliary_info;
-    sc->cenc.auxiliary_info_index = 0;
+    return 0;
+}
 
-    if (avio_read(pb, sc->cenc.auxiliary_info, auxiliary_info_size) != auxiliary_info_size) {
-        av_log(c->fc, AV_LOG_ERROR, "failed to read the auxiliary info");
-        return AVERROR_INVALIDDATA;
+static int mov_parse_auxiliary_info(MOVContext *c, MOVStreamContext *sc, AVIOContext *pb, MOVEncryptionIndex *encryption_index)
+{
+    AVEncryptionInfo **sample, **encrypted_samples;
+    int64_t prev_pos;
+    size_t sample_count, sample_info_size, i;
+    int ret = 0;
+    unsigned int alloc_size = 0;
+
+    if (encryption_index->nb_encrypted_samples)
+        return 0;
+    sample_count = encryption_index->auxiliary_info_sample_count;
+    if (encryption_index->auxiliary_offsets_count != 1) {
+        av_log(c->fc, AV_LOG_ERROR, "Multiple auxiliary info chunks are not supported\n");
+        return AVERROR_PATCHWELCOME;
     }
-
-    /* initialize the cipher */
-    sc->cenc.aes_ctr = av_aes_ctr_alloc();
-    if (!sc->cenc.aes_ctr) {
+    if (sample_count >= INT_MAX / sizeof(*encrypted_samples))
         return AVERROR(ENOMEM);
+
+    prev_pos = avio_tell(pb);
+    if (!(pb->seekable & AVIO_SEEKABLE_NORMAL) ||
+        avio_seek(pb, encryption_index->auxiliary_offsets[0], SEEK_SET) != encryption_index->auxiliary_offsets[0]) {
+        av_log(c->fc, AV_LOG_INFO, "Failed to seek for auxiliary info, will only parse senc atoms for encryption info\n");
+        goto finish;
     }
 
-    return av_aes_ctr_init(sc->cenc.aes_ctr, c->decryption_key);
+    for (i = 0; i < sample_count && !pb->eof_reached; i++) {
+        unsigned int min_samples = FFMIN(FFMAX(i, 1024 * 1024), sample_count);
+        encrypted_samples = av_fast_realloc(encryption_index->encrypted_samples, &alloc_size,
+                                            min_samples * sizeof(*encrypted_samples));
+        if (!encrypted_samples) {
+            ret = AVERROR(ENOMEM);
+            goto finish;
+        }
+        encryption_index->encrypted_samples = encrypted_samples;
+
+        sample = &encryption_index->encrypted_samples[i];
+        sample_info_size = encryption_index->auxiliary_info_default_size
+                               ? encryption_index->auxiliary_info_default_size
+                               : encryption_index->auxiliary_info_sizes[i];
+
+        ret = mov_read_sample_encryption_info(c, pb, sc, sample, sample_info_size > sc->cenc.per_sample_iv_size);
+        if (ret < 0)
+            goto finish;
+    }
+    if (pb->eof_reached) {
+        av_log(c->fc, AV_LOG_ERROR, "Hit EOF while reading auxiliary info\n");
+        ret = AVERROR_INVALIDDATA;
+    } else {
+        encryption_index->nb_encrypted_samples = sample_count;
+    }
+
+finish:
+    avio_seek(pb, prev_pos, SEEK_SET);
+    if (ret < 0) {
+        for (; i > 0; i--) {
+            av_encryption_info_free(encryption_index->encrypted_samples[i - 1]);
+        }
+        av_freep(&encryption_index->encrypted_samples);
+    }
+    return ret;
+}
+
+/**
+ * Tries to read the given number of bytes from the stream and puts it in a
+ * newly allocated buffer.  This reads in small chunks to avoid allocating large
+ * memory if the file contains an invalid/malicious size value.
+ */
+static int mov_try_read_block(AVIOContext *pb, size_t size, uint8_t **data)
+{
+    const unsigned int block_size = 1024 * 1024;
+    uint8_t *buffer = NULL;
+    unsigned int alloc_size = 0, offset = 0;
+    while (offset < size) {
+        unsigned int new_size =
+            alloc_size >= INT_MAX - block_size ? INT_MAX : alloc_size + block_size;
+        uint8_t *new_buffer = av_fast_realloc(buffer, &alloc_size, new_size);
+        unsigned int to_read = FFMIN(size, alloc_size) - offset;
+        if (!new_buffer) {
+            av_free(buffer);
+            return AVERROR(ENOMEM);
+        }
+        buffer = new_buffer;
+
+        if (avio_read(pb, buffer + offset, to_read) != to_read) {
+            av_free(buffer);
+            return AVERROR_INVALIDDATA;
+        }
+        offset += to_read;
+    }
+
+    *data = buffer;
+    return 0;
 }
 
 static int mov_read_saiz(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
-    AVStream *st;
+    MOVEncryptionIndex *encryption_index;
     MOVStreamContext *sc;
-    size_t data_size;
-    int atom_header_size;
-    int flags;
+    int ret;
+    unsigned int sample_count;
 
-    if (c->decryption_key_len == 0 || c->fc->nb_streams < 1)
+    ret = get_current_encryption_info(c, &encryption_index, &sc);
+    if (ret != 1)
+        return ret;
+
+    if (encryption_index->nb_encrypted_samples) {
+        // This can happen if we have both saio/saiz and senc atoms.
+        av_log(c->fc, AV_LOG_DEBUG, "Ignoring duplicate encryption info in saiz\n");
         return 0;
-
-    st = c->fc->streams[c->fc->nb_streams - 1];
-    sc = st->priv_data;
-
-    if (sc->cenc.auxiliary_info_sizes || sc->cenc.auxiliary_info_default_size) {
-        av_log(c->fc, AV_LOG_ERROR, "duplicate saiz atom\n");
-        return AVERROR_INVALIDDATA;
     }
 
-    atom_header_size = 9;
+    if (encryption_index->auxiliary_info_sample_count) {
+        av_log(c->fc, AV_LOG_ERROR, "Duplicate saiz atom\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     avio_r8(pb); /* version */
-    flags = avio_rb24(pb);
-
-    if ((flags & 0x01) != 0) {
-        atom_header_size += 8;
-
-        avio_rb32(pb);    /* info type */
-        avio_rb32(pb);    /* info type param */
+    if (avio_rb24(pb) & 0x01) {  /* flags */
+        if (avio_rb32(pb) != sc->cenc.default_encrypted_sample->scheme) {
+            av_log(c->fc, AV_LOG_DEBUG, "Ignoring saiz box with non-zero aux_info_type\n");
+            return 0;
+        }
+        if (avio_rb32(pb) != 0) {
+            av_log(c->fc, AV_LOG_DEBUG, "Ignoring saiz box with non-zero aux_info_type_parameter\n");
+            return 0;
+        }
     }
 
-    sc->cenc.auxiliary_info_default_size = avio_r8(pb);
-    avio_rb32(pb);    /* entries */
+    encryption_index->auxiliary_info_default_size = avio_r8(pb);
+    sample_count = avio_rb32(pb);
+    encryption_index->auxiliary_info_sample_count = sample_count;
 
-    if (atom.size <= atom_header_size) {
+    if (encryption_index->auxiliary_info_default_size == 0) {
+        ret = mov_try_read_block(pb, sample_count, &encryption_index->auxiliary_info_sizes);
+        if (ret < 0) {
+            av_log(c->fc, AV_LOG_ERROR, "Failed to read the auxiliary info\n");
+            return ret;
+        }
+    }
+
+    if (encryption_index->auxiliary_offsets_count) {
+        return mov_parse_auxiliary_info(c, sc, pb, encryption_index);
+    }
+
+    return 0;
+}
+
+static int mov_read_saio(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    uint64_t *auxiliary_offsets;
+    MOVEncryptionIndex *encryption_index;
+    MOVStreamContext *sc;
+    int i, ret;
+    unsigned int version, entry_count, alloc_size = 0;
+
+    ret = get_current_encryption_info(c, &encryption_index, &sc);
+    if (ret != 1)
+        return ret;
+
+    if (encryption_index->nb_encrypted_samples) {
+        // This can happen if we have both saio/saiz and senc atoms.
+        av_log(c->fc, AV_LOG_DEBUG, "Ignoring duplicate encryption info in saio\n");
         return 0;
     }
 
-    if (atom.size > FFMIN(INT_MAX, SIZE_MAX)) {
-        av_log(c->fc, AV_LOG_ERROR, "saiz atom auxiliary_info_sizes size %"PRId64" invalid\n", atom.size);
+    if (encryption_index->auxiliary_offsets_count) {
+        av_log(c->fc, AV_LOG_ERROR, "Duplicate saio atom\n");
         return AVERROR_INVALIDDATA;
     }
 
-    /* save the auxiliary info sizes as is */
-    data_size = atom.size - atom_header_size;
+    version = avio_r8(pb); /* version */
+    if (avio_rb24(pb) & 0x01) {  /* flags */
+        if (avio_rb32(pb) != sc->cenc.default_encrypted_sample->scheme) {
+            av_log(c->fc, AV_LOG_DEBUG, "Ignoring saio box with non-zero aux_info_type\n");
+            return 0;
+        }
+        if (avio_rb32(pb) != 0) {
+            av_log(c->fc, AV_LOG_DEBUG, "Ignoring saio box with non-zero aux_info_type_parameter\n");
+            return 0;
+        }
+    }
 
-    sc->cenc.auxiliary_info_sizes = av_malloc(data_size);
-    if (!sc->cenc.auxiliary_info_sizes) {
+    entry_count = avio_rb32(pb);
+    if (entry_count >= INT_MAX / sizeof(*auxiliary_offsets))
         return AVERROR(ENOMEM);
+
+    for (i = 0; i < entry_count && !pb->eof_reached; i++) {
+        unsigned int min_offsets = FFMIN(FFMAX(i, 1024), entry_count);
+        auxiliary_offsets = av_fast_realloc(
+            encryption_index->auxiliary_offsets, &alloc_size,
+            min_offsets * sizeof(*auxiliary_offsets));
+        if (!auxiliary_offsets) {
+            av_freep(&encryption_index->auxiliary_offsets);
+            return AVERROR(ENOMEM);
+        }
+        encryption_index->auxiliary_offsets = auxiliary_offsets;
+
+        if (version == 0) {
+            encryption_index->auxiliary_offsets[i] = avio_rb32(pb);
+        } else {
+            encryption_index->auxiliary_offsets[i] = avio_rb64(pb);
+        }
+        if (c->frag_index.current >= 0) {
+            encryption_index->auxiliary_offsets[i] += c->fragment.base_data_offset;
+        }
     }
 
-    sc->cenc.auxiliary_info_sizes_count = data_size;
-
-    if (avio_read(pb, sc->cenc.auxiliary_info_sizes, data_size) != data_size) {
-        av_log(c->fc, AV_LOG_ERROR, "failed to read the auxiliary info sizes");
+    if (pb->eof_reached) {
+        av_log(c->fc, AV_LOG_ERROR, "Hit EOF while reading saio\n");
+        av_freep(&encryption_index->auxiliary_offsets);
         return AVERROR_INVALIDDATA;
+    }
+
+    encryption_index->auxiliary_offsets_count = entry_count;
+
+    if (encryption_index->auxiliary_info_sample_count) {
+        return mov_parse_auxiliary_info(c, sc, pb, encryption_index);
+    }
+
+    return 0;
+}
+
+static int mov_read_schm(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    AVStream *st;
+    MOVStreamContext *sc;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+    st = c->fc->streams[c->fc->nb_streams-1];
+    sc = st->priv_data;
+
+    if (sc->pseudo_stream_id != 0) {
+        av_log(c->fc, AV_LOG_ERROR, "schm boxes are only supported in first sample descriptor\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
+    if (atom.size < 8)
+        return AVERROR_INVALIDDATA;
+
+    avio_rb32(pb); /* version and flags */
+
+    if (!sc->cenc.default_encrypted_sample) {
+        sc->cenc.default_encrypted_sample = av_encryption_info_alloc(0, 16, 16);
+        if (!sc->cenc.default_encrypted_sample) {
+            return AVERROR(ENOMEM);
+        }
+    }
+
+    sc->cenc.default_encrypted_sample->scheme = avio_rb32(pb);
+    return 0;
+}
+
+static int mov_read_tenc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    AVStream *st;
+    MOVStreamContext *sc;
+    unsigned int version, pattern, is_protected, iv_size;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+    st = c->fc->streams[c->fc->nb_streams-1];
+    sc = st->priv_data;
+
+    if (sc->pseudo_stream_id != 0) {
+        av_log(c->fc, AV_LOG_ERROR, "tenc atom are only supported in first sample descriptor\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
+    if (!sc->cenc.default_encrypted_sample) {
+        sc->cenc.default_encrypted_sample = av_encryption_info_alloc(0, 16, 16);
+        if (!sc->cenc.default_encrypted_sample) {
+            return AVERROR(ENOMEM);
+        }
+    }
+
+    if (atom.size < 20)
+        return AVERROR_INVALIDDATA;
+
+    version = avio_r8(pb); /* version */
+    avio_rb24(pb); /* flags */
+
+    avio_r8(pb); /* reserved */
+    pattern = avio_r8(pb);
+
+    if (version > 0) {
+        sc->cenc.default_encrypted_sample->crypt_byte_block = pattern >> 4;
+        sc->cenc.default_encrypted_sample->skip_byte_block = pattern & 0xf;
+    }
+
+    is_protected = avio_r8(pb);
+    if (is_protected && !sc->cenc.encryption_index) {
+        // The whole stream should be by-default encrypted.
+        sc->cenc.encryption_index = av_mallocz(sizeof(MOVEncryptionIndex));
+        if (!sc->cenc.encryption_index)
+            return AVERROR(ENOMEM);
+    }
+    sc->cenc.per_sample_iv_size = avio_r8(pb);
+    if (avio_read(pb, sc->cenc.default_encrypted_sample->key_id, 16) != 16) {
+        av_log(c->fc, AV_LOG_ERROR, "failed to read the default key ID");
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (is_protected && !sc->cenc.per_sample_iv_size) {
+        iv_size = avio_r8(pb);
+        if (iv_size != 8 && iv_size != 16) {
+            av_log(c->fc, AV_LOG_ERROR, "invalid default_constant_IV_size in tenc atom\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        if (avio_read(pb, sc->cenc.default_encrypted_sample->iv, iv_size) != iv_size) {
+            av_log(c->fc, AV_LOG_ERROR, "failed to read the default IV");
+            return AVERROR_INVALIDDATA;
+        }
     }
 
     return 0;
@@ -5861,108 +6268,114 @@ static int mov_read_dfla(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_seek_auxiliary_info(MOVContext *c, MOVStreamContext *sc, int64_t index)
+static int cenc_decrypt(MOVContext *c, MOVStreamContext *sc, AVEncryptionInfo *sample, uint8_t *input, int size)
 {
-    size_t auxiliary_info_seek_offset = 0;
-    int i;
+    int i, ret;
 
-    if (sc->cenc.auxiliary_info_default_size) {
-        auxiliary_info_seek_offset = (size_t)sc->cenc.auxiliary_info_default_size * index;
-    } else if (sc->cenc.auxiliary_info_sizes) {
-        if (index > sc->cenc.auxiliary_info_sizes_count) {
-            av_log(c, AV_LOG_ERROR, "current sample %"PRId64" greater than the number of auxiliary info sample sizes %"SIZE_SPECIFIER"\n",
-                index, sc->cenc.auxiliary_info_sizes_count);
-            return AVERROR_INVALIDDATA;
-        }
-
-        for (i = 0; i < index; i++) {
-            auxiliary_info_seek_offset += sc->cenc.auxiliary_info_sizes[i];
-        }
+    if (sample->scheme != MKBETAG('c','e','n','c') || sample->crypt_byte_block != 0 || sample->skip_byte_block != 0) {
+        av_log(c->fc, AV_LOG_ERROR, "Only the 'cenc' encryption scheme is supported\n");
+        return AVERROR_PATCHWELCOME;
     }
 
-    if (auxiliary_info_seek_offset > sc->cenc.auxiliary_info_end - sc->cenc.auxiliary_info) {
-        av_log(c, AV_LOG_ERROR, "auxiliary info offset %"SIZE_SPECIFIER" greater than auxiliary info size %"SIZE_SPECIFIER"\n",
-            auxiliary_info_seek_offset, (size_t)(sc->cenc.auxiliary_info_end - sc->cenc.auxiliary_info));
-        return AVERROR_INVALIDDATA;
-    }
+    if (!sc->cenc.aes_ctr) {
+        /* initialize the cipher */
+        sc->cenc.aes_ctr = av_aes_ctr_alloc();
+        if (!sc->cenc.aes_ctr) {
+            return AVERROR(ENOMEM);
+        }
 
-    sc->cenc.auxiliary_info_pos = sc->cenc.auxiliary_info + auxiliary_info_seek_offset;
-    sc->cenc.auxiliary_info_index = index;
-    return 0;
-}
-
-static int cenc_filter(MOVContext *c, MOVStreamContext *sc, int64_t index, uint8_t *input, int size)
-{
-    uint32_t encrypted_bytes;
-    uint16_t subsample_count;
-    uint16_t clear_bytes;
-    uint8_t* input_end = input + size;
-    int ret;
-
-    if (index != sc->cenc.auxiliary_info_index) {
-        ret = mov_seek_auxiliary_info(c, sc, index);
+        ret = av_aes_ctr_init(sc->cenc.aes_ctr, c->decryption_key);
         if (ret < 0) {
             return ret;
         }
     }
 
-    /* read the iv */
-    if (AES_CTR_IV_SIZE > sc->cenc.auxiliary_info_end - sc->cenc.auxiliary_info_pos) {
-        av_log(c->fc, AV_LOG_ERROR, "failed to read iv from the auxiliary info\n");
-        return AVERROR_INVALIDDATA;
-    }
+    av_aes_ctr_set_full_iv(sc->cenc.aes_ctr, sample->iv);
 
-    av_aes_ctr_set_iv(sc->cenc.aes_ctr, sc->cenc.auxiliary_info_pos);
-    sc->cenc.auxiliary_info_pos += AES_CTR_IV_SIZE;
-
-    if (!sc->cenc.use_subsamples)
+    if (!sample->subsample_count)
     {
         /* decrypt the whole packet */
         av_aes_ctr_crypt(sc->cenc.aes_ctr, input, input, size);
         return 0;
     }
 
-    /* read the subsample count */
-    if (sizeof(uint16_t) > sc->cenc.auxiliary_info_end - sc->cenc.auxiliary_info_pos) {
-        av_log(c->fc, AV_LOG_ERROR, "failed to read subsample count from the auxiliary info\n");
-        return AVERROR_INVALIDDATA;
-    }
-
-    subsample_count = AV_RB16(sc->cenc.auxiliary_info_pos);
-    sc->cenc.auxiliary_info_pos += sizeof(uint16_t);
-
-    for (; subsample_count > 0; subsample_count--)
+    for (i = 0; i < sample->subsample_count; i++)
     {
-        if (6 > sc->cenc.auxiliary_info_end - sc->cenc.auxiliary_info_pos) {
-            av_log(c->fc, AV_LOG_ERROR, "failed to read subsample from the auxiliary info\n");
-            return AVERROR_INVALIDDATA;
-        }
-
-        /* read the number of clear / encrypted bytes */
-        clear_bytes = AV_RB16(sc->cenc.auxiliary_info_pos);
-        sc->cenc.auxiliary_info_pos += sizeof(uint16_t);
-        encrypted_bytes = AV_RB32(sc->cenc.auxiliary_info_pos);
-        sc->cenc.auxiliary_info_pos += sizeof(uint32_t);
-
-        if ((uint64_t)clear_bytes + encrypted_bytes > input_end - input) {
+        if (sample->subsamples[i].bytes_of_clear_data + sample->subsamples[i].bytes_of_protected_data > size) {
             av_log(c->fc, AV_LOG_ERROR, "subsample size exceeds the packet size left\n");
             return AVERROR_INVALIDDATA;
         }
 
         /* skip the clear bytes */
-        input += clear_bytes;
+        input += sample->subsamples[i].bytes_of_clear_data;
+        size -= sample->subsamples[i].bytes_of_clear_data;
 
         /* decrypt the encrypted bytes */
-        av_aes_ctr_crypt(sc->cenc.aes_ctr, input, input, encrypted_bytes);
-        input += encrypted_bytes;
+        av_aes_ctr_crypt(sc->cenc.aes_ctr, input, input, sample->subsamples[i].bytes_of_protected_data);
+        input += sample->subsamples[i].bytes_of_protected_data;
+        size -= sample->subsamples[i].bytes_of_protected_data;
     }
 
-    if (input < input_end) {
+    if (size > 0) {
         av_log(c->fc, AV_LOG_ERROR, "leftover packet bytes after subsample processing\n");
         return AVERROR_INVALIDDATA;
     }
 
-    sc->cenc.auxiliary_info_index++;
+    return 0;
+}
+
+static int cenc_filter(MOVContext *mov, MOVStreamContext *sc, AVPacket *pkt, int current_index)
+{
+    MOVFragmentStreamInfo *frag_stream_info;
+    MOVEncryptionIndex *encryption_index;
+    AVEncryptionInfo *encrypted_sample;
+    int encrypted_index;
+
+    frag_stream_info = get_current_frag_stream_info(&mov->frag_index);
+    encrypted_index = current_index;
+    encryption_index = NULL;
+    if (frag_stream_info) {
+        // Note this only supports encryption info in the first sample descriptor.
+        if (mov->fragment.stsd_id == 1) {
+            if (frag_stream_info->encryption_index) {
+                encrypted_index = current_index - frag_stream_info->index_entry;
+                encryption_index = frag_stream_info->encryption_index;
+            } else {
+                encryption_index = sc->cenc.encryption_index;
+            }
+        }
+    } else {
+        encryption_index = sc->cenc.encryption_index;
+    }
+
+    if (encryption_index) {
+        if (encryption_index->auxiliary_info_sample_count &&
+            !encryption_index->nb_encrypted_samples) {
+            av_log(mov->fc, AV_LOG_ERROR, "saiz atom found without saio\n");
+            return AVERROR_INVALIDDATA;
+        }
+        if (encryption_index->auxiliary_offsets_count &&
+            !encryption_index->nb_encrypted_samples) {
+            av_log(mov->fc, AV_LOG_ERROR, "saio atom found without saiz\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        if (!encryption_index->nb_encrypted_samples) {
+            // Full-sample encryption with default settings.
+            encrypted_sample = sc->cenc.default_encrypted_sample;
+        } else if (encrypted_index >= 0 && encrypted_index < encryption_index->nb_encrypted_samples) {
+            // Per-sample setting override.
+            encrypted_sample = encryption_index->encrypted_samples[encrypted_index];
+        } else {
+            av_log(mov->fc, AV_LOG_ERROR, "Incorrect number of samples in encryption info\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        if (mov->decryption_key) {
+            return cenc_decrypt(mov, sc, encrypted_sample, pkt->data, pkt->size);
+        }
+    }
+
     return 0;
 }
 
@@ -6092,6 +6505,10 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('f','r','m','a'), mov_read_frma },
 { MKTAG('s','e','n','c'), mov_read_senc },
 { MKTAG('s','a','i','z'), mov_read_saiz },
+{ MKTAG('s','a','i','o'), mov_read_saio },
+{ MKTAG('s','c','h','m'), mov_read_schm },
+{ MKTAG('s','c','h','i'), mov_read_default },
+{ MKTAG('t','e','n','c'), mov_read_tenc },
 { MKTAG('d','f','L','a'), mov_read_dfla },
 { MKTAG('s','t','3','d'), mov_read_st3d }, /* stereoscopic 3D video box */
 { MKTAG('s','v','3','d'), mov_read_sv3d }, /* spherical video box */
@@ -6477,6 +6894,18 @@ static int mov_read_timecode_track(AVFormatContext *s, AVStream *st)
     return 0;
 }
 
+static void mov_free_encryption_index(MOVEncryptionIndex **index) {
+    int i;
+    if (!index || !*index) return;
+    for (i = 0; i < (*index)->nb_encrypted_samples; i++) {
+        av_encryption_info_free((*index)->encrypted_samples[i]);
+    }
+    av_freep(&(*index)->encrypted_samples);
+    av_freep(&(*index)->auxiliary_info_sizes);
+    av_freep(&(*index)->auxiliary_offsets);
+    av_freep(index);
+}
+
 static int mov_read_close(AVFormatContext *s)
 {
     MOVContext *mov = s->priv_data;
@@ -6519,8 +6948,8 @@ static int mov_read_close(AVFormatContext *s)
         av_freep(&sc->extradata);
         av_freep(&sc->extradata_size);
 
-        av_freep(&sc->cenc.auxiliary_info);
-        av_freep(&sc->cenc.auxiliary_info_sizes);
+        mov_free_encryption_index(&sc->cenc.encryption_index);
+        av_encryption_info_free(sc->cenc.default_encrypted_sample);
         av_aes_ctr_free(sc->cenc.aes_ctr);
 
         av_freep(&sc->stereo3d);
@@ -6545,6 +6974,10 @@ static int mov_read_close(AVFormatContext *s)
     av_freep(&mov->bitrates);
 
     for (i = 0; i < mov->frag_index.nb_items; i++) {
+        MOVFragmentStreamInfo *frag = mov->frag_index.item[i].stream_info;
+        for (j = 0; j < mov->frag_index.item[i].nb_stream_info; j++) {
+            mov_free_encryption_index(&frag[j].encryption_index);
+        }
         av_freep(&mov->frag_index.item[i].stream_info);
     }
     av_freep(&mov->frag_index.item);
@@ -7115,12 +7548,9 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (mov->aax_mode)
         aax_filter(pkt->data, pkt->size, mov);
 
-    if (sc->cenc.aes_ctr) {
-        ret = cenc_filter(mov, sc, current_index, pkt->data, pkt->size);
-        if (ret) {
-            return ret;
-        }
-    }
+    ret = cenc_filter(mov, sc, pkt, current_index);
+    if (ret < 0)
+        return ret;
 
     return 0;
 }
@@ -7150,7 +7580,9 @@ static int mov_seek_stream(AVFormatContext *s, AVStream *st, int64_t timestamp, 
     int sample, time_sample, ret;
     unsigned int i;
 
-    timestamp -= sc->time_offset;
+    // Here we consider timestamp to be PTS, hence try to offset it so that we
+    // can search over the DTS timeline.
+    timestamp -= (sc->min_corrected_pts + sc->dts_shift);
 
     ret = mov_seek_fragment(s, st, timestamp);
     if (ret < 0)
@@ -7181,12 +7613,13 @@ static int mov_seek_stream(AVFormatContext *s, AVStream *st, int64_t timestamp, 
     /* adjust stsd index */
     time_sample = 0;
     for (i = 0; i < sc->stsc_count; i++) {
-        int next = time_sample + mov_get_stsc_samples(sc, i);
+        int64_t next = time_sample + mov_get_stsc_samples(sc, i);
         if (next > sc->current_sample) {
             sc->stsc_index = i;
             sc->stsc_sample = sc->current_sample - time_sample;
             break;
         }
+        av_assert0(next == (int)next);
         time_sample = next;
     }
 

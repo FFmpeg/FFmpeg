@@ -1835,12 +1835,15 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
                 break;
             case 0x03:
                 st->disposition |= AV_DISPOSITION_VISUAL_IMPAIRED;
+                st->disposition |= AV_DISPOSITION_DESCRIPTIONS;
                 break;
             }
         }
         if (i && language[0]) {
             language[i - 1] = 0;
-            av_dict_set(&st->metadata, "language", language, 0);
+            /* don't overwrite language, as it may already have been set by
+             * another, more specific descriptor (e.g. supplementary audio) */
+            av_dict_set(&st->metadata, "language", language, AV_DICT_DONT_OVERWRITE);
         }
         break;
     case 0x05: /* registration descriptor */
@@ -1893,6 +1896,71 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
                 }
                 st->need_parsing = AVSTREAM_PARSE_FULL;
                 st->internal->need_context_update = 1;
+            }
+        }
+        if (ext_desc_tag == 0x06) { /* supplementary audio descriptor */
+            int flags;
+
+            if (desc_len < 1)
+                return AVERROR_INVALIDDATA;
+            flags = get8(pp, desc_end);
+
+            if ((flags & 0x80) == 0) /* mix_type */
+                st->disposition |= AV_DISPOSITION_DEPENDENT;
+
+            switch ((flags >> 2) & 0x1F) { /* editorial_classification */
+            case 0x01:
+                st->disposition |= AV_DISPOSITION_VISUAL_IMPAIRED;
+                st->disposition |= AV_DISPOSITION_DESCRIPTIONS;
+                break;
+            case 0x02:
+                st->disposition |= AV_DISPOSITION_HEARING_IMPAIRED;
+                break;
+            case 0x03:
+                st->disposition |= AV_DISPOSITION_VISUAL_IMPAIRED;
+                break;
+            }
+
+            if (flags & 0x01) { /* language_code_present */
+                if (desc_len < 4)
+                    return AVERROR_INVALIDDATA;
+                language[0] = get8(pp, desc_end);
+                language[1] = get8(pp, desc_end);
+                language[2] = get8(pp, desc_end);
+                language[3] = 0;
+
+                /* This language always has to override a possible
+                 * ISO 639 language descriptor language */
+                if (language[0])
+                    av_dict_set(&st->metadata, "language", language, 0);
+            }
+        }
+        break;
+    case 0x6a: /* ac-3_descriptor */
+        {
+            int component_type_flag = get8(pp, desc_end) & (1 << 7);
+            if (component_type_flag) {
+                int component_type = get8(pp, desc_end);
+                int service_type_mask = 0x38;  // 0b00111000
+                int service_type = ((component_type & service_type_mask) >> 3);
+                if (service_type == 0x02 /* 0b010 */) {
+                    st->disposition |= AV_DISPOSITION_DESCRIPTIONS;
+                    av_log(ts->stream, AV_LOG_DEBUG, "New track disposition for id %u: %u\n", st->id, st->disposition);
+                }
+            }
+        }
+        break;
+    case 0x7a: /* enhanced_ac-3_descriptor */
+        {
+            int component_type_flag = get8(pp, desc_end) & (1 << 7);
+            if (component_type_flag) {
+                int component_type = get8(pp, desc_end);
+                int service_type_mask = 0x38;  // 0b00111000
+                int service_type = ((component_type & service_type_mask) >> 3);
+                if (service_type == 0x02 /* 0b010 */) {
+                    st->disposition |= AV_DISPOSITION_DESCRIPTIONS;
+                    av_log(ts->stream, AV_LOG_DEBUG, "New track disposition for id %u: %u\n", st->id, st->disposition);
+                }
             }
         }
         break;

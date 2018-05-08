@@ -115,6 +115,17 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
     ctx->params->sourceHeight    = avctx->height;
     ctx->params->bEnablePsnr     = !!(avctx->flags & AV_CODEC_FLAG_PSNR);
 
+    /* Tune the CTU size based on input resolution. */
+    if (ctx->params->sourceWidth < 64 || ctx->params->sourceHeight < 64)
+        ctx->params->maxCUSize = 32;
+    if (ctx->params->sourceWidth < 32 || ctx->params->sourceHeight < 32)
+        ctx->params->maxCUSize = 16;
+    if (ctx->params->sourceWidth < 16 || ctx->params->sourceHeight < 16) {
+        av_log(avctx, AV_LOG_ERROR, "Image size is too small (%dx%d).\n",
+               ctx->params->sourceWidth, ctx->params->sourceHeight);
+        return AVERROR(EINVAL);
+    }
+
     if ((avctx->color_primaries <= AVCOL_PRI_SMPTE432 &&
          avctx->color_primaries != AVCOL_PRI_UNSPECIFIED) ||
         (avctx->color_trc <= AVCOL_TRC_ARIB_STD_B67 &&

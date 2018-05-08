@@ -178,7 +178,7 @@ AVInputFormat ff_amr_demuxer = {
 #if CONFIG_AMRNB_DEMUXER
 static int amrnb_probe(AVProbeData *p)
 {
-    int mode, i = 0, valid = 0;
+    int mode, i = 0, valid = 0, invalid = 0;
     const uint8_t *b = p->buf;
 
     while (i < p->buf_size) {
@@ -197,10 +197,11 @@ static int amrnb_probe(AVProbeData *p)
             }
         } else {
             valid = 0;
+            invalid++;
             i++;
         }
     }
-    if (valid > 100)
+    if (valid > 100 && valid > invalid)
         return AVPROBE_SCORE_EXTENSION / 2 + 1;
     return 0;
 }
@@ -234,7 +235,7 @@ AVInputFormat ff_amrnb_demuxer = {
 #if CONFIG_AMRWB_DEMUXER
 static int amrwb_probe(AVProbeData *p)
 {
-    int mode, i = 0, valid = 0;
+    int mode, i = 0, valid = 0, invalid = 0;
     const uint8_t *b = p->buf;
 
     while (i < p->buf_size) {
@@ -253,10 +254,11 @@ static int amrwb_probe(AVProbeData *p)
             }
         } else {
             valid = 0;
+            invalid++;
             i++;
         }
     }
-    if (valid > 100)
+    if (valid > 100 && valid > invalid)
         return AVPROBE_SCORE_EXTENSION / 2 - 1;
     return 0;
 }

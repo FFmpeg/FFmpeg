@@ -90,6 +90,11 @@ FATE_LIBAVUTIL += fate-imgutils
 fate-imgutils: libavutil/tests/imgutils$(EXESUF)
 fate-imgutils: CMD = run libavutil/tests/imgutils
 
+FATE_LIBAVUTIL += fate-integer
+fate-integer: libavutil/tests/integer$(EXESUF)
+fate-integer: CMD = run libavutil/tests/integer
+fate-integer: CMP = null
+
 FATE_LIBAVUTIL += fate-lfg
 fate-lfg: libavutil/tests/lfg$(EXESUF)
 fate-lfg: CMD = run libavutil/tests/lfg

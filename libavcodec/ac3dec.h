@@ -76,6 +76,7 @@ typedef struct AC3DecodeContext {
 ///@{
     int frame_type;                         ///< frame type                             (strmtyp)
     int substreamid;                        ///< substream identification
+    int superframe_size;                    ///< current superframe size, in bytes
     int frame_size;                         ///< current frame size, in bytes
     int bit_rate;                           ///< stream bit rate, in bits-per-second
     int sample_rate;                        ///< sample frequency, in Hz
@@ -87,7 +88,7 @@ typedef struct AC3DecodeContext {
     int dialog_normalization[2];            ///< dialog level in dBFS                   (dialnorm)
     int compression_exists[2];              ///< compression field is valid for frame   (compre)
     int compression_gain[2];                ///< gain to apply for heavy compression    (compr)
-    int channel_map;                        ///< custom channel map
+    int channel_map;                        ///< custom channel map                     (chanmap)
     int preferred_downmix;                  ///< Preferred 2-channel downmix mode       (dmixmod)
     int center_mix_level;                   ///< Center mix level index
     int center_mix_level_ltrt;              ///< Center mix level index for Lt/Rt       (ltrtcmixlev)
@@ -164,7 +165,9 @@ typedef struct AC3DecodeContext {
     SHORTFLOAT *downmix_coeffs[2];              ///< stereo downmix coefficients
     int downmixed;                              ///< indicates if coeffs are currently downmixed
     int output_mode;                            ///< output channel configuration
+    int prev_output_mode;                       ///< output channel configuration for previous frame
     int out_channels;                           ///< number of output channels
+    int prev_bit_rate;                          ///< stream bit rate, in bits-per-second for previous frame
 ///@}
 
 ///@name Dynamic range
@@ -239,11 +242,12 @@ typedef struct AC3DecodeContext {
 ///@name Aligned arrays
     DECLARE_ALIGNED(16, int,   fixed_coeffs)[AC3_MAX_CHANNELS][AC3_MAX_COEFS];       ///< fixed-point transform coefficients
     DECLARE_ALIGNED(32, INTFLOAT, transform_coeffs)[AC3_MAX_CHANNELS][AC3_MAX_COEFS];   ///< transform coefficients
-    DECLARE_ALIGNED(32, INTFLOAT, delay)[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE];             ///< delay - added to the next block
+    DECLARE_ALIGNED(32, INTFLOAT, delay)[EAC3_MAX_CHANNELS][AC3_BLOCK_SIZE];         ///< delay - added to the next block
     DECLARE_ALIGNED(32, INTFLOAT, window)[AC3_BLOCK_SIZE];                              ///< window coefficients
     DECLARE_ALIGNED(32, INTFLOAT, tmp_output)[AC3_BLOCK_SIZE];                          ///< temporary storage for output before windowing
-    DECLARE_ALIGNED(32, SHORTFLOAT, output)[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE];            ///< output after imdct transform and windowing
+    DECLARE_ALIGNED(32, SHORTFLOAT, output)[EAC3_MAX_CHANNELS][AC3_BLOCK_SIZE];            ///< output after imdct transform and windowing
     DECLARE_ALIGNED(32, uint8_t, input_buffer)[AC3_FRAME_BUFFER_SIZE + AV_INPUT_BUFFER_PADDING_SIZE]; ///< temp buffer to prevent overread
+    DECLARE_ALIGNED(32, SHORTFLOAT, output_buffer)[EAC3_MAX_CHANNELS][AC3_BLOCK_SIZE * 6];  ///< final output buffer
 ///@}
 } AC3DecodeContext;
 

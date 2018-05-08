@@ -70,9 +70,6 @@ typedef struct TeletextContext
     int             handler_ret;
 
     vbi_decoder *   vbi;
-#ifdef DEBUG
-    vbi_export *    ex;
-#endif
     vbi_sliced      sliced[MAX_SLICES];
 
     int             readorder;
@@ -306,15 +303,6 @@ static void handler(vbi_event *ev, void *user_data)
     if (!res)
         return;
 
-#ifdef DEBUG
-    fprintf(stderr, "\nSaving res=%d dy0=%d dy1=%d...\n",
-            res, page.dirty.y0, page.dirty.y1);
-    fflush(stderr);
-
-    if (!vbi_export_stdio(ctx->ex, stderr, &page))
-        fprintf(stderr, "failed: %s\n", vbi_export_errstr(ctx->ex));
-#endif
-
     vpt = vbi_classify_page(ctx->vbi, ev->ev.ttx_page.pgno, &subno, &lang);
     chop_top = ctx->chop_top ||
         ((page.rows > 1) && (vpt == VBI_SUBTITLE_PAGE));
@@ -421,13 +409,6 @@ static int teletext_decode_frame(AVCodecContext *avctx, void *data, int *data_si
             ff_dlog(avctx, "ctx=%p buf_size=%d lines=%u pkt_pts=%7.3f\n",
                     ctx, pkt->size, lines, (double)pkt->pts/90000.0);
             if (lines > 0) {
-#ifdef DEBUG
-                int i;
-                av_log(avctx, AV_LOG_DEBUG, "line numbers:");
-                for(i = 0; i < lines; i++)
-                    av_log(avctx, AV_LOG_DEBUG, " %d", ctx->sliced[i].line);
-                av_log(avctx, AV_LOG_DEBUG, "\n");
-#endif
                 vbi_decode(ctx->vbi, ctx->sliced, lines, 0.0);
                 ctx->lines_processed += lines;
             }
@@ -505,12 +486,6 @@ static int teletext_init_decoder(AVCodecContext *avctx)
     if (ctx->opacity == -1)
         ctx->opacity = ctx->transparent_bg ? 0 : 255;
 
-#ifdef DEBUG
-    {
-        char *t;
-        ctx->ex = vbi_export_new("text", &t);
-    }
-#endif
     av_log(avctx, AV_LOG_VERBOSE, "page filter: %s\n", ctx->pgno);
     return (ctx->format_id == 1) ? ff_ass_subtitle_header_default(avctx) : 0;
 }
@@ -548,7 +523,7 @@ static const AVOption options[] = {
     {"txt_left",        "x offset of generated bitmaps",                     OFFSET(x_offset),       AV_OPT_TYPE_INT,    {.i64 = 0},        0, 65535,    SD},
     {"txt_top",         "y offset of generated bitmaps",                     OFFSET(y_offset),       AV_OPT_TYPE_INT,    {.i64 = 0},        0, 65535,    SD},
     {"txt_chop_spaces", "chops leading and trailing spaces from text",       OFFSET(chop_spaces),    AV_OPT_TYPE_INT,    {.i64 = 1},        0, 1,        SD},
-    {"txt_duration",    "display duration of teletext pages in msecs",       OFFSET(sub_duration),   AV_OPT_TYPE_INT,    {.i64 = 30000},    0, 86400000, SD},
+    {"txt_duration",    "display duration of teletext pages in msecs",       OFFSET(sub_duration),   AV_OPT_TYPE_INT,    {.i64 = -1},      -1, 86400000, SD},
     {"txt_transparent", "force transparent background of the teletext",      OFFSET(transparent_bg), AV_OPT_TYPE_INT,    {.i64 = 0},        0, 1,        SD},
     {"txt_opacity",     "set opacity of the transparent background",         OFFSET(opacity),        AV_OPT_TYPE_INT,    {.i64 = -1},      -1, 255,      SD},
     { NULL },

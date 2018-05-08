@@ -28,7 +28,7 @@
 typedef void ID3D11Device;
 #endif
 
-#include "compat/nvenc/nvEncodeAPI.h"
+#include <ffnvcodec/nvEncodeAPI.h>
 
 #include "compat/cuda/dynlink_loader.h"
 #include "libavutil/fifo.h"
@@ -39,6 +39,15 @@ typedef void ID3D11Device;
 #define MAX_REGISTERED_FRAMES 64
 #define RC_MODE_DEPRECATED 0x800000
 #define RCD(rc_mode) ((rc_mode) | RC_MODE_DEPRECATED)
+
+#define NVENCAPI_CHECK_VERSION(major, minor) \
+    ((major) < NVENCAPI_MAJOR_VERSION || ((major) == NVENCAPI_MAJOR_VERSION && (minor) <= NVENCAPI_MINOR_VERSION))
+
+// SDK 8.1 compile time feature checks
+#if NVENCAPI_CHECK_VERSION(8, 1)
+#define NVENC_HAVE_BFRAME_REF_MODE
+#define NVENC_HAVE_QP_MAP_MODE
+#endif
 
 typedef struct NvencSurface
 {
@@ -143,6 +152,8 @@ typedef struct NvencContext
     int64_t initial_pts[2];
     int first_packet_output;
 
+    int support_dyn_bitrate;
+
     void *nvencoder;
 
     int preset;
@@ -174,6 +185,7 @@ typedef struct NvencContext
     int cqp;
     int weighted_pred;
     int coder;
+    int b_ref_mode;
 } NvencContext;
 
 int ff_nvenc_encode_init(AVCodecContext *avctx);

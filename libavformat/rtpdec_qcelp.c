@@ -209,7 +209,7 @@ static int qcelp_parse_packet(AVFormatContext *ctx, PayloadContext *data,
         return return_stored_frame(ctx, data, st, pkt, timestamp, buf, len);
 }
 
-RTPDynamicProtocolHandler ff_qcelp_dynamic_handler = {
+const RTPDynamicProtocolHandler ff_qcelp_dynamic_handler = {
     .enc_name           = "x-Purevoice",
     .codec_type         = AVMEDIA_TYPE_AUDIO,
     .codec_id           = AV_CODEC_ID_QCELP,

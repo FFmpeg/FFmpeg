@@ -141,7 +141,7 @@ static const AVOption options[] = {
     { "user_agent", "override User-Agent header", OFFSET(user_agent), AV_OPT_TYPE_STRING, { .str = DEFAULT_USER_AGENT }, 0, 0, D },
     { "referer", "override referer header", OFFSET(referer), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D },
 #if FF_API_HTTP_USER_AGENT
-    { "user-agent", "override User-Agent header", OFFSET(user_agent_deprecated), AV_OPT_TYPE_STRING, { .str = DEFAULT_USER_AGENT }, 0, 0, D },
+    { "user-agent", "use the \"user_agent\" option instead", OFFSET(user_agent_deprecated), AV_OPT_TYPE_STRING, { .str = DEFAULT_USER_AGENT }, 0, 0, D|AV_OPT_FLAG_DEPRECATED },
 #endif
     { "multiple_requests", "use persistent connections", OFFSET(multiple_requests), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, D | E },
     { "post_data", "set custom HTTP post data", OFFSET(post_data), AV_OPT_TYPE_BINARY, .flags = D | E },
@@ -576,7 +576,11 @@ static int http_accept(URLContext *s, URLContext **c)
         goto fail;
     cc->hd = cl;
     cc->is_multi_client = 1;
+    return 0;
 fail:
+    if (c) {
+        ffurl_closep(c);
+    }
     return ret;
 }
 
@@ -750,6 +754,9 @@ static int parse_set_cookie(const char *set_cookie, AVDictionary **dict)
 {
     char *param, *next_param, *cstr, *back;
 
+    if (!set_cookie[0])
+        return 0;
+
     if (!(cstr = av_strdup(set_cookie)))
         return AVERROR(EINVAL);
 
@@ -757,6 +764,8 @@ static int parse_set_cookie(const char *set_cookie, AVDictionary **dict)
     back = &cstr[strlen(cstr)-1];
     while (strchr(WHITESPACES, *back)) {
         *back='\0';
+        if (back == cstr)
+            break;
         back--;
     }
 
@@ -802,7 +811,7 @@ static int parse_cookie(HTTPContext *s, const char *p, AVDictionary **cookies)
             // if the cookie has already expired ignore it
             if (av_timegm(&new_tm) < av_gettime() / 1000000) {
                 av_dict_free(&new_params);
-                return -1;
+                return 0;
             }
 
             // only replace an older cookie with the same name
@@ -1010,7 +1019,8 @@ static int process_line(URLContext *h, char *line, int line_count,
 /**
  * Create a string containing cookie values for use as a HTTP cookie header
  * field value for a particular path and domain from the cookie values stored in
- * the HTTP protocol context. The cookie string is stored in *cookies.
+ * the HTTP protocol context. The cookie string is stored in *cookies, and may
+ * be NULL if there are no valid cookies.
  *
  * @return a negative value if an error condition occurred, 0 otherwise
  */
@@ -1020,15 +1030,20 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path,
     // cookie strings will look like Set-Cookie header field values.  Multiple
     // Set-Cookie fields will result in multiple values delimited by a newline
     int ret = 0;
-    char *cookie, *set_cookies = av_strdup(s->cookies), *next = set_cookies;
-
-    if (!set_cookies) return AVERROR(EINVAL);
+    char *cookie, *set_cookies, *next;
 
     // destroy any cookies in the dictionary.
     av_dict_free(&s->cookie_dict);
 
+    if (!s->cookies)
+        return 0;
+
+    next = set_cookies = av_strdup(s->cookies);
+    if (!next)
+        return AVERROR(ENOMEM);
+
     *cookies = NULL;
-    while ((cookie = av_strtok(next, "\n", &next))) {
+    while ((cookie = av_strtok(next, "\n", &next)) && !ret) {
         AVDictionary *cookie_params = NULL;
         AVDictionaryEntry *cookie_entry, *e;
 
@@ -1038,23 +1053,19 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path,
 
         // continue on to the next cookie if this one cannot be parsed
         if (parse_set_cookie(cookie, &cookie_params))
-            continue;
+            goto skip_cookie;
 
         // if the cookie has no value, skip it
         cookie_entry = av_dict_get(cookie_params, "", NULL, AV_DICT_IGNORE_SUFFIX);
-        if (!cookie_entry || !cookie_entry->value) {
-            av_dict_free(&cookie_params);
-            continue;
-        }
+        if (!cookie_entry || !cookie_entry->value)
+            goto skip_cookie;
 
         // if the cookie has expired, don't add it
         if ((e = av_dict_get(cookie_params, "expires", NULL, 0)) && e->value) {
             struct tm tm_buf = {0};
             if (!parse_set_cookie_expiry_time(e->value, &tm_buf)) {
-                if (av_timegm(&tm_buf) < av_gettime() / 1000000) {
-                    av_dict_free(&cookie_params);
-                    continue;
-                }
+                if (av_timegm(&tm_buf) < av_gettime() / 1000000)
+                    goto skip_cookie;
             }
         }
 
@@ -1062,42 +1073,32 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path,
         if ((e = av_dict_get(cookie_params, "domain", NULL, 0)) && e->value) {
             // find the offset comparison is on the min domain (b.com, not a.b.com)
             int domain_offset = strlen(domain) - strlen(e->value);
-            if (domain_offset < 0) {
-                av_dict_free(&cookie_params);
-                continue;
-            }
+            if (domain_offset < 0)
+                goto skip_cookie;
 
             // match the cookie domain
-            if (av_strcasecmp(&domain[domain_offset], e->value)) {
-                av_dict_free(&cookie_params);
-                continue;
-            }
+            if (av_strcasecmp(&domain[domain_offset], e->value))
+                goto skip_cookie;
         }
 
         // ensure this cookie matches the path
         e = av_dict_get(cookie_params, "path", NULL, 0);
-        if (!e || av_strncasecmp(path, e->value, strlen(e->value))) {
-            av_dict_free(&cookie_params);
-            continue;
-        }
+        if (!e || av_strncasecmp(path, e->value, strlen(e->value)))
+            goto skip_cookie;
 
         // cookie parameters match, so copy the value
         if (!*cookies) {
-            if (!(*cookies = av_asprintf("%s=%s", cookie_entry->key, cookie_entry->value))) {
-                ret = AVERROR(ENOMEM);
-                break;
-            }
+            *cookies = av_asprintf("%s=%s", cookie_entry->key, cookie_entry->value);
         } else {
             char *tmp = *cookies;
-            size_t str_size = strlen(cookie_entry->key) + strlen(cookie_entry->value) + strlen(*cookies) + 4;
-            if (!(*cookies = av_malloc(str_size))) {
-                ret = AVERROR(ENOMEM);
-                av_free(tmp);
-                break;
-            }
-            snprintf(*cookies, str_size, "%s; %s=%s", tmp, cookie_entry->key, cookie_entry->value);
+            *cookies = av_asprintf("%s; %s=%s", tmp, cookie_entry->key, cookie_entry->value);
             av_free(tmp);
         }
+        if (!*cookies)
+            ret = AVERROR(ENOMEM);
+
+    skip_cookie:
+        av_dict_free(&cookie_params);
     }
 
     av_free(set_cookies);
@@ -1192,7 +1193,6 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
 
 #if FF_API_HTTP_USER_AGENT
     if (strcmp(s->user_agent_deprecated, DEFAULT_USER_AGENT)) {
-        av_log(s, AV_LOG_WARNING, "the user-agent option is deprecated, please use user_agent option\n");
         s->user_agent = av_strdup(s->user_agent_deprecated);
     }
 #endif
@@ -1622,6 +1622,18 @@ static int http_shutdown(URLContext *h, int flags)
         ((flags & AVIO_FLAG_READ) && s->chunked_post && s->listen)) {
         ret = ffurl_write(s->hd, footer, sizeof(footer) - 1);
         ret = ret > 0 ? 0 : ret;
+        /* flush the receive buffer when it is write only mode */
+        if (!(flags & AVIO_FLAG_READ)) {
+            char buf[1024];
+            int read_ret;
+            s->hd->flags |= AVIO_FLAG_NONBLOCK;
+            read_ret = ffurl_read(s->hd, buf, sizeof(buf));
+            s->hd->flags &= ~AVIO_FLAG_NONBLOCK;
+            if (read_ret < 0 && read_ret != AVERROR(EAGAIN)) {
+                av_log(h, AV_LOG_ERROR, "URL read error:  %d\n", read_ret);
+                ret = read_ret;
+            }
+        }
         s->end_chunked_post = 1;
     }
 

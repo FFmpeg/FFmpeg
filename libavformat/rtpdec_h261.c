@@ -162,7 +162,7 @@ static int h261_handle_packet(AVFormatContext *ctx, PayloadContext *rtp_h261_ctx
     return 0;
 }
 
-RTPDynamicProtocolHandler ff_h261_dynamic_handler = {
+const RTPDynamicProtocolHandler ff_h261_dynamic_handler = {
     .enc_name          = "H261",
     .codec_type        = AVMEDIA_TYPE_VIDEO,
     .codec_id          = AV_CODEC_ID_H261,

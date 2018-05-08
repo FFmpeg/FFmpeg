@@ -44,13 +44,13 @@ static int FUNC(sequence_header)(CodedBitstreamContext *ctx, RWContext *rw,
     ui(1, load_intra_quantiser_matrix);
     if (current->load_intra_quantiser_matrix) {
         for (i = 0; i < 64; i++)
-            ui(8, intra_quantiser_matrix[i]);
+            uis(8, intra_quantiser_matrix[i], 1, i);
     }
 
     ui(1, load_non_intra_quantiser_matrix);
     if (current->load_non_intra_quantiser_matrix) {
         for (i = 0; i < 64; i++)
-            ui(8, non_intra_quantiser_matrix[i]);
+            uis(8, non_intra_quantiser_matrix[i], 1, i);
     }
 
     return 0;
@@ -71,14 +71,15 @@ static int FUNC(user_data)(CodedBitstreamContext *ctx, RWContext *rw,
     av_assert0(k % 8 == 0);
     current->user_data_length = k /= 8;
     if (k > 0) {
-        current->user_data = av_malloc(k);
-        if (!current->user_data)
+        current->user_data_ref = av_buffer_alloc(k);
+        if (!current->user_data_ref)
             return AVERROR(ENOMEM);
+        current->user_data = current->user_data_ref->data;
     }
 #endif
 
     for (k = 0; k < current->user_data_length; k++)
-        xui(8, user_data, current->user_data[k]);
+        xui(8, user_data, current->user_data[k], 0);
 
     return 0;
 }
@@ -249,25 +250,25 @@ static int FUNC(quant_matrix_extension)(CodedBitstreamContext *ctx, RWContext *r
     ui(1, load_intra_quantiser_matrix);
     if (current->load_intra_quantiser_matrix) {
         for (i = 0; i < 64; i++)
-            ui(8, intra_quantiser_matrix[i]);
+            uis(8, intra_quantiser_matrix[i], 1, i);
     }
 
     ui(1, load_non_intra_quantiser_matrix);
     if (current->load_non_intra_quantiser_matrix) {
         for (i = 0; i < 64; i++)
-            ui(8, non_intra_quantiser_matrix[i]);
+            uis(8, non_intra_quantiser_matrix[i], 1, i);
     }
 
     ui(1, load_chroma_intra_quantiser_matrix);
     if (current->load_chroma_intra_quantiser_matrix) {
         for (i = 0; i < 64; i++)
-            ui(8, intra_quantiser_matrix[i]);
+            uis(8, intra_quantiser_matrix[i], 1, i);
     }
 
     ui(1, load_chroma_non_intra_quantiser_matrix);
     if (current->load_chroma_non_intra_quantiser_matrix) {
         for (i = 0; i < 64; i++)
-            ui(8, chroma_non_intra_quantiser_matrix[i]);
+            uis(8, chroma_non_intra_quantiser_matrix[i], 1, i);
     }
 
     return 0;
@@ -365,15 +366,16 @@ static int FUNC(slice_header)(CodedBitstreamContext *ctx, RWContext *rw,
                 if (!current->extra_information)
                     return AVERROR(ENOMEM);
                 for (k = 0; k < current->extra_information_length; k++) {
-                    xui(1, extra_bit_slice, bit);
-                    xui(8, extra_information_slice,
-                        current->extra_information[k]);
+                    xui(1, extra_bit_slice, bit, 0);
+                    xui(8, extra_information_slice[k],
+                        current->extra_information[k], 1, k);
                 }
             }
 #else
             for (k = 0; k < current->extra_information_length; k++) {
-                xui(1, extra_bit_slice, 1);
-                xui(8, extra_information_slice, current->extra_information[k]);
+                xui(1, extra_bit_slice, 1, 0);
+                xui(8, extra_information_slice[k],
+                    current->extra_information[k], 1, k);
             }
 #endif
         }

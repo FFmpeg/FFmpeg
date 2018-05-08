@@ -147,9 +147,7 @@ static int vp9_superframe_filter(AVBSFContext *ctx, AVPacket *out)
         goto done;
     }
 
-    res = av_packet_ref(s->cache[s->n_cache++], in);
-    if (res < 0)
-        goto done;
+    av_packet_move_ref(s->cache[s->n_cache++], in);
 
     if (invisible) {
         res = AVERROR(EAGAIN);

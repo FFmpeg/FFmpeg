@@ -1304,8 +1304,6 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
         if(   st->avg_frame_rate.num > 0 && st->avg_frame_rate.den > 0
            && av_cmp_q(av_inv_q(st->avg_frame_rate), st->time_base) > 0)
             put_ebml_uint(pb, MATROSKA_ID_TRACKDEFAULTDURATION, 1000000000LL * st->avg_frame_rate.den / st->avg_frame_rate.num);
-        else
-            put_ebml_uint(pb, MATROSKA_ID_TRACKDEFAULTDURATION, 1000000000LL * st->time_base.num / st->time_base.den);
 
         if (!native_id &&
             ff_codec_get_tag(ff_codec_movvideo_tags, par->codec_id) &&
@@ -2001,6 +1999,8 @@ static int mkv_write_header(AVFormatContext *s)
     }
     if ((pb->seekable & AVIO_SEEKABLE_NORMAL) && mkv->reserve_cues_space) {
         mkv->cues_pos = avio_tell(pb);
+        if (mkv->reserve_cues_space == 1)
+            mkv->reserve_cues_space++;
         put_ebml_void(pb, mkv->reserve_cues_space);
     }
 

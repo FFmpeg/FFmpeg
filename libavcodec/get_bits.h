@@ -32,6 +32,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "libavutil/avassert.h"
+#include "avcodec.h"
 #include "mathops.h"
 #include "vlc.h"
 
@@ -201,6 +202,13 @@ static inline int get_bits_count(const GetBitContext *s)
     return s->index;
 }
 
+/**
+ * Skips the specified number of bits.
+ * @param n the number of bits to skip,
+ *          For the UNCHECKED_BITSTREAM_READER this must not cause the distance
+ *          from the start to overflow int32_t. Staying within the bitstream + padding
+ *          is sufficient, too.
+ */
 static inline void skip_bits_long(GetBitContext *s, int n)
 {
 #if UNCHECKED_BITSTREAM_READER
@@ -428,7 +436,7 @@ static inline int init_get_bits(GetBitContext *s, const uint8_t *buffer,
     int buffer_size;
     int ret = 0;
 
-    if (bit_size >= INT_MAX - 7 || bit_size < 0 || !buffer) {
+    if (bit_size >= INT_MAX - FFMAX(7, AV_INPUT_BUFFER_PADDING_SIZE*8) || bit_size < 0 || !buffer) {
         bit_size    = 0;
         buffer      = NULL;
         ret         = AVERROR_INVALIDDATA;

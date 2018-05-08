@@ -379,8 +379,6 @@ int main(int argc, char **argv)
         }
     }
 
-    av_register_all();
-
     md5 = av_md5_alloc();
     if (!md5)
         return 1;

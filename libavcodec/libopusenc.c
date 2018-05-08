@@ -39,6 +39,9 @@ typedef struct LibopusEncOpts {
     int packet_size;
     int max_bandwidth;
     int mapping_family;
+#ifdef OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST
+    int apply_phase_inv;
+#endif
 } LibopusEncOpts;
 
 typedef struct LibopusEncContext {
@@ -154,6 +157,14 @@ static int libopus_configure_encoder(AVCodecContext *avctx, OpusMSEncoder *enc,
                    "Unable to set maximum bandwidth: %s\n", opus_strerror(ret));
     }
 
+#ifdef OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST
+    ret = opus_multistream_encoder_ctl(enc,
+                                       OPUS_SET_PHASE_INVERSION_DISABLED(!opts->apply_phase_inv));
+    if (ret != OPUS_OK)
+        av_log(avctx, AV_LOG_WARNING,
+               "Unable to set phase inversion: %s\n",
+               opus_strerror(ret));
+#endif
     return OPUS_OK;
 }
 
@@ -530,6 +541,9 @@ static const AVOption libopus_options[] = {
         { "on",             "Use variable bit rate", 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, 0, 0, FLAGS, "vbr" },
         { "constrained",    "Use constrained VBR",   0, AV_OPT_TYPE_CONST, { .i64 = 2 }, 0, 0, FLAGS, "vbr" },
     { "mapping_family", "Channel Mapping Family",              OFFSET(mapping_family), AV_OPT_TYPE_INT,   { .i64 = -1 },   -1,  255,  FLAGS, "mapping_family" },
+#ifdef OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST
+    { "apply_phase_inv", "Apply intensity stereo phase inversion", OFFSET(apply_phase_inv), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, FLAGS },
+#endif
     { NULL },
 };
 

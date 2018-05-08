@@ -1585,7 +1585,7 @@ int ff_rv34_decode_update_thread_context(AVCodecContext *dst, const AVCodecConte
 
     // Do no call ff_mpeg_update_thread_context on a partially initialized
     // decoder context.
-    if (!s1->linesize)
+    if (!s1->context_initialized)
         return 0;
 
     return ff_mpeg_update_thread_context(dst, src);
@@ -1733,6 +1733,8 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
             if ((err = rv34_decoder_realloc(r)) < 0)
                 return err;
         }
+        if (faulty_b)
+            return AVERROR_INVALIDDATA;
         s->pict_type = si.type ? si.type : AV_PICTURE_TYPE_I;
         if (ff_mpv_frame_start(s, s->avctx) < 0)
             return -1;
@@ -1786,8 +1788,6 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
                "multithreading mode (start MB is %d).\n", si.start);
         return AVERROR_INVALIDDATA;
     }
-    if (faulty_b)
-        return AVERROR_INVALIDDATA;
 
     for(i = 0; i < slice_count; i++){
         int offset  = get_slice_offset(avctx, slices_hdr, i  , slice_count, buf_size);

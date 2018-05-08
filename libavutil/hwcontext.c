@@ -483,8 +483,10 @@ int av_hwframe_get_buffer(AVBufferRef *hwframe_ref, AVFrame *frame, int flags)
 
         ret = av_hwframe_get_buffer(ctx->internal->source_frames,
                                     src_frame, 0);
-        if (ret < 0)
+        if (ret < 0) {
+            av_frame_free(&src_frame);
             return ret;
+        }
 
         ret = av_hwframe_map(frame, src_frame,
                              ctx->internal->source_allocation_map_flags);

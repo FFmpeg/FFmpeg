@@ -98,6 +98,14 @@ static VANCLineNumber vanc_line_numbers[] = {
     {bmdModeUnknown, 0, -1, -1, -1}
 };
 
+extern "C" {
+static void decklink_object_free(void *opaque, uint8_t *data)
+{
+    IUnknown *obj = (class IUnknown *)opaque;
+    obj->Release();
+}
+}
+
 static int get_vanc_line_idx(BMDDisplayMode mode)
 {
     unsigned int i;
@@ -146,6 +154,17 @@ static void extract_luma_from_v210(uint16_t *dst, const uint8_t *src, int width)
         *dst++ =  src[4]       + ((src[5] &  3) << 8);
         *dst++ = (src[6] >> 4) + ((src[7] & 63) << 4);
         src += 8;
+    }
+}
+
+static void unpack_v210(uint16_t *dst, const uint8_t *src, int width)
+{
+    int i;
+    for (i = 0; i < width * 2 / 3; i++) {
+        *dst++ =  src[0]       + ((src[1] & 3)  << 8);
+        *dst++ = (src[1] >> 2) + ((src[2] & 15) << 6);
+        *dst++ = (src[2] >> 4) + ((src[3] & 63) << 4);
+        src += 4;
     }
 }
 
@@ -453,24 +472,25 @@ static unsigned long long avpacket_queue_size(AVPacketQueue *q)
 static int avpacket_queue_put(AVPacketQueue *q, AVPacket *pkt)
 {
     AVPacketList *pkt1;
-    int ret;
 
     // Drop Packet if queue size is > maximum queue size
     if (avpacket_queue_size(q) > (uint64_t)q->max_q_size) {
+        av_packet_unref(pkt);
         av_log(q->avctx, AV_LOG_WARNING,  "Decklink input buffer overrun!\n");
         return -1;
     }
+    /* ensure the packet is reference counted */
+    if (av_packet_make_refcounted(pkt) < 0) {
+        av_packet_unref(pkt);
+        return -1;
+    }
 
-    pkt1 = (AVPacketList *)av_mallocz(sizeof(AVPacketList));
+    pkt1 = (AVPacketList *)av_malloc(sizeof(AVPacketList));
     if (!pkt1) {
+        av_packet_unref(pkt);
         return -1;
     }
-    ret = av_packet_ref(&pkt1->pkt, pkt);
-    av_packet_unref(pkt);
-    if (ret < 0) {
-        av_free(pkt1);
-        return -1;
-    }
+    av_packet_move_ref(&pkt1->pkt, pkt);
     pkt1->next = NULL;
 
     pthread_mutex_lock(&q->mutex);
@@ -752,9 +772,15 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
                     for (i = vanc_line_numbers[idx].vanc_start; i <= vanc_line_numbers[idx].vanc_end; i++) {
                         uint8_t *buf;
                         if (vanc->GetBufferForVerticalBlankingLine(i, (void**)&buf) == S_OK) {
-                            uint16_t luma_vanc[MAX_WIDTH_VANC];
-                            extract_luma_from_v210(luma_vanc, buf, videoFrame->GetWidth());
-                            txt_buf = get_metadata(avctx, luma_vanc, videoFrame->GetWidth(),
+                            uint16_t vanc[MAX_WIDTH_VANC];
+                            size_t vanc_size = videoFrame->GetWidth();
+                            if (ctx->bmd_mode == bmdModeNTSC && videoFrame->GetWidth() * 2 <= MAX_WIDTH_VANC) {
+                                vanc_size = vanc_size * 2;
+                                unpack_v210(vanc, buf, videoFrame->GetWidth());
+                            } else {
+                                extract_luma_from_v210(vanc, buf, videoFrame->GetWidth());
+                            }
+                            txt_buf = get_metadata(avctx, vanc, vanc_size,
                                                    txt_buf, sizeof(txt_buf0) - (txt_buf - txt_buf0), &pkt);
                         }
                         if (i == vanc_line_numbers[idx].field0_vanc_end)
@@ -781,6 +807,10 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
                 }
             }
         }
+
+        pkt.buf = av_buffer_create(pkt.data, pkt.size, decklink_object_free, videoFrame, 0);
+        if (pkt.buf)
+            videoFrame->AddRef();
 
         if (avpacket_queue_put(&ctx->queue, &pkt) < 0) {
             ++ctx->dropped;
@@ -1053,7 +1083,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         break;
     case bmdFormat8BitARGB:
         st->codecpar->codec_id    = AV_CODEC_ID_RAWVIDEO;
-        st->codecpar->codec_tag   = avcodec_pix_fmt_to_codec_tag((enum AVPixelFormat)st->codecpar->format);;
+        st->codecpar->codec_tag   = avcodec_pix_fmt_to_codec_tag((enum AVPixelFormat)st->codecpar->format);
         st->codecpar->format      = AV_PIX_FMT_0RGB;
         st->codecpar->bit_rate    = av_rescale(ctx->bmd_width * ctx->bmd_height * 32, st->time_base.den, st->time_base.num);
         break;

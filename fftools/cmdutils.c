@@ -881,28 +881,54 @@ int opt_loglevel(void *optctx, const char *opt, const char *arg)
         { "debug"  , AV_LOG_DEBUG   },
         { "trace"  , AV_LOG_TRACE   },
     };
+    const char *token;
     char *tail;
-    int level;
-    int flags;
-    int i;
+    int flags = av_log_get_flags();
+    int level = av_log_get_level();
+    int cmd, i = 0;
 
-    flags = av_log_get_flags();
-    tail = strstr(arg, "repeat");
-    if (tail)
-        flags &= ~AV_LOG_SKIP_REPEATED;
-    else
-        flags |= AV_LOG_SKIP_REPEATED;
-
-    av_log_set_flags(flags);
-    if (tail == arg)
-        arg += 6 + (arg[6]=='+');
-    if(tail && !*arg)
-        return 0;
+    av_assert0(arg);
+    while (*arg) {
+        token = arg;
+        if (*token == '+' || *token == '-') {
+            cmd = *token++;
+        } else {
+            cmd = 0;
+        }
+        if (!i && !cmd) {
+            flags = 0;  /* missing relative prefix, build absolute value */
+        }
+        if (!strncmp(token, "repeat", 6)) {
+            if (cmd == '-') {
+                flags |= AV_LOG_SKIP_REPEATED;
+            } else {
+                flags &= ~AV_LOG_SKIP_REPEATED;
+            }
+            arg = token + 6;
+        } else if (!strncmp(token, "level", 5)) {
+            if (cmd == '-') {
+                flags &= ~AV_LOG_PRINT_LEVEL;
+            } else {
+                flags |= AV_LOG_PRINT_LEVEL;
+            }
+            arg = token + 5;
+        } else {
+            break;
+        }
+        i++;
+    }
+    if (!*arg) {
+        goto end;
+    } else if (*arg == '+') {
+        arg++;
+    } else if (!i) {
+        flags = av_log_get_flags();  /* level value without prefix, reset flags */
+    }
 
     for (i = 0; i < FF_ARRAY_ELEMS(log_levels); i++) {
         if (!strcmp(log_levels[i].name, arg)) {
-            av_log_set_level(log_levels[i].level);
-            return 0;
+            level = log_levels[i].level;
+            goto end;
         }
     }
 
@@ -914,6 +940,9 @@ int opt_loglevel(void *optctx, const char *opt, const char *arg)
             av_log(NULL, AV_LOG_FATAL, "\"%s\"\n", log_levels[i].name);
         exit_program(1);
     }
+
+end:
+    av_log_set_flags(flags);
     av_log_set_level(level);
     return 0;
 }
@@ -1259,8 +1288,10 @@ static int is_device(const AVClass *avclass)
 
 static int show_formats_devices(void *optctx, const char *opt, const char *arg, int device_only, int muxdemuxers)
 {
-    AVInputFormat *ifmt  = NULL;
-    AVOutputFormat *ofmt = NULL;
+    void *ifmt_opaque = NULL;
+    const AVInputFormat *ifmt  = NULL;
+    void *ofmt_opaque = NULL;
+    const AVOutputFormat *ofmt = NULL;
     const char *last_name;
     int is_dev;
 
@@ -1276,7 +1307,8 @@ static int show_formats_devices(void *optctx, const char *opt, const char *arg, 
         const char *long_name = NULL;
 
         if (muxdemuxers !=SHOW_DEMUXERS) {
-            while ((ofmt = av_oformat_next(ofmt))) {
+            ofmt_opaque = NULL;
+            while ((ofmt = av_muxer_iterate(&ofmt_opaque))) {
                 is_dev = is_device(ofmt->priv_class);
                 if (!is_dev && device_only)
                     continue;
@@ -1289,7 +1321,8 @@ static int show_formats_devices(void *optctx, const char *opt, const char *arg, 
             }
         }
         if (muxdemuxers != SHOW_MUXERS) {
-            while ((ifmt = av_iformat_next(ifmt))) {
+            ifmt_opaque = NULL;
+            while ((ifmt = av_demuxer_iterate(&ifmt_opaque))) {
                 is_dev = is_device(ifmt->priv_class);
                 if (!is_dev && device_only)
                     continue;
@@ -1603,7 +1636,7 @@ int show_bsfs(void *optctx, const char *opt, const char *arg)
     void *opaque = NULL;
 
     printf("Bitstream filters:\n");
-    while ((bsf = av_bsf_next(&opaque)))
+    while ((bsf = av_bsf_iterate(&opaque)))
         printf("%s\n", bsf->name);
     printf("\n");
     return 0;
@@ -1629,6 +1662,7 @@ int show_filters(void *optctx, const char *opt, const char *arg)
 #if CONFIG_AVFILTER
     const AVFilter *filter = NULL;
     char descr[64], *descr_cur;
+    void *opaque = NULL;
     int i, j;
     const AVFilterPad *pad;
 
@@ -1640,7 +1674,7 @@ int show_filters(void *optctx, const char *opt, const char *arg)
            "  V = Video input/output\n"
            "  N = Dynamic number and/or type of input/output\n"
            "  | = Source or sink filter\n");
-    while ((filter = avfilter_next(filter))) {
+    while ((filter = av_filter_iterate(&opaque))) {
         descr_cur = descr;
         for (i = 0; i < 2; i++) {
             if (i) {
@@ -1897,6 +1931,22 @@ static void show_help_filter(const char *name)
 }
 #endif
 
+static void show_help_bsf(const char *name)
+{
+    const AVBitStreamFilter *bsf = av_bsf_get_by_name(name);
+
+    if (!bsf) {
+        av_log(NULL, AV_LOG_ERROR, "Unknown bit stream filter '%s'.\n", name);
+        return;
+    }
+
+    printf("Bit stream filter %s\n", bsf->name);
+    PRINT_CODEC_SUPPORTED(bsf, codec_ids, enum AVCodecID, "codecs",
+                          AV_CODEC_ID_NONE, GET_CODEC_NAME);
+    if (bsf->priv_class)
+        show_help_children(bsf->priv_class, AV_OPT_FLAG_BSF_PARAM);
+}
+
 int show_help(void *optctx, const char *opt, const char *arg)
 {
     char *topic, *par;
@@ -1923,6 +1973,8 @@ int show_help(void *optctx, const char *opt, const char *arg)
     } else if (!strcmp(topic, "filter")) {
         show_help_filter(par);
 #endif
+    } else if (!strcmp(topic, "bsf")) {
+        show_help_bsf(par);
     } else {
         show_help_default(topic, par);
     }

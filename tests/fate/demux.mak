@@ -1,9 +1,11 @@
 FATE_SAMPLES_DEMUX-$(call DEMDEC, AVI, FRAPS) += fate-avio-direct
 fate-avio-direct: CMD = framecrc -avioflags direct -i $(TARGET_SAMPLES)/fraps/fraps-v5-bouncing-balls-partial.avi -avioflags direct
 
-FATE_SAMPLES_DEMUX-$(call DEMDEC, AAC, AAC) += fate-adts-demux fate-adts-id3v1-demux
+FATE_SAMPLES_DEMUX-$(call DEMDEC, AAC, AAC) += fate-adts-demux fate-adts-id3v1-demux fate-adts-id3v2-demux fate-adts-id3v2-two-tags-demux
 fate-adts-demux: CMD = crc -i $(TARGET_SAMPLES)/aac/ct_faac-adts.aac -c:a copy
 fate-adts-id3v1-demux: CMD = framecrc -f aac -i $(TARGET_SAMPLES)/aac/id3v1.aac -c:a copy
+fate-adts-id3v2-demux: CMD = framecrc -f aac -i $(TARGET_SAMPLES)/aac/id3v2.aac -c:a copy
+fate-adts-id3v2-two-tags-demux: CMD = framecrc -i $(TARGET_SAMPLES)/aac/id3v2_two_tags.aac -c:a copy
 
 FATE_SAMPLES_DEMUX-$(CONFIG_AEA_DEMUXER) += fate-aea-demux
 fate-aea-demux: CMD = crc -i $(TARGET_SAMPLES)/aea/chirp.aea -c:a copy
