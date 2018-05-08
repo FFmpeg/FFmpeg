@@ -7,6 +7,7 @@ version <next>:
 - amplify filter
 - fftdnoiz filter
 - aderivative and aintegral audio filters
+- pal75bars and pal100bars video filter sources
 
 
 version 4.0:
