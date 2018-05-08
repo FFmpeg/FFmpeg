@@ -2000,14 +2000,14 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     p = section;
     if (parse_section_header(h, &p, p_end) < 0)
         return;
+    if (h->tid != PMT_TID)
+        return;
     if (skip_identical(h, tssf))
         return;
 
     av_log(ts->stream, AV_LOG_TRACE, "sid=0x%x sec_num=%d/%d version=%d tid=%d\n",
             h->id, h->sec_num, h->last_sec_num, h->version, h->tid);
 
-    if (h->tid != PMT_TID)
-        return;
     if (!ts->scan_all_pmts && ts->skip_changes)
         return;
 
