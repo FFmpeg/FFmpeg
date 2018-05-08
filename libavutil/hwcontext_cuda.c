@@ -258,11 +258,17 @@ static int cuda_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
             .Height        = src->height >> (i ? priv->shift_height : 0),
         };
 
-        err = cu->cuMemcpy2D(&cpy);
+        err = cu->cuMemcpy2DAsync(&cpy, device_hwctx->stream);
         if (err != CUDA_SUCCESS) {
             av_log(ctx, AV_LOG_ERROR, "Error transferring the data from the CUDA frame\n");
             return AVERROR_UNKNOWN;
         }
+    }
+
+    err = cu->cuStreamSynchronize(device_hwctx->stream);
+    if (err != CUDA_SUCCESS) {
+        av_log(ctx, AV_LOG_ERROR, "Error synchronizing CUDA stream\n");
+        return AVERROR_UNKNOWN;
     }
 
     cu->cuCtxPopCurrent(&dummy);
@@ -297,11 +303,17 @@ static int cuda_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
             .Height        = src->height >> (i ? priv->shift_height : 0),
         };
 
-        err = cu->cuMemcpy2D(&cpy);
+        err = cu->cuMemcpy2DAsync(&cpy, device_hwctx->stream);
         if (err != CUDA_SUCCESS) {
-            av_log(ctx, AV_LOG_ERROR, "Error transferring the data from the CUDA frame\n");
+            av_log(ctx, AV_LOG_ERROR, "Error transferring the data to the CUDA frame\n");
             return AVERROR_UNKNOWN;
         }
+    }
+
+    err = cu->cuStreamSynchronize(device_hwctx->stream);
+    if (err != CUDA_SUCCESS) {
+        av_log(ctx, AV_LOG_ERROR, "Error synchronizing CUDA stream\n");
+        return AVERROR_UNKNOWN;
     }
 
     cu->cuCtxPopCurrent(&dummy);
