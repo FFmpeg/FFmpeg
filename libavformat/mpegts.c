@@ -401,7 +401,7 @@ static void write_section_data(MpegTSContext *ts, MpegTSFilter *tss1,
     } else {
         if (tss->end_of_section_reached)
             return;
-        len = 4096 - tss->section_index;
+        len = MAX_SECTION_SIZE - tss->section_index;
         if (buf_size < len)
             len = buf_size;
         memcpy(tss->section_buf + tss->section_index, buf, len);
@@ -411,7 +411,7 @@ static void write_section_data(MpegTSContext *ts, MpegTSFilter *tss1,
     /* compute section length if possible */
     if (tss->section_h_size == -1 && tss->section_index >= 3) {
         len = (AV_RB16(tss->section_buf + 1) & 0xfff) + 3;
-        if (len > 4096)
+        if (len > MAX_SECTION_SIZE)
             return;
         tss->section_h_size = len;
     }
