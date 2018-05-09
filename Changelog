@@ -28,6 +28,7 @@ version <next>:
 - transpose_npp filter
 - AVS2 video encoder via libxavs2
 - amultiply filter
+- Block-Matching 3d (bm3d) denoising filter
 
 
 version 4.0:

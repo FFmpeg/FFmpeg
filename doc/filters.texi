@@ -5729,6 +5729,91 @@ tblend=all_mode=grainextract
 @end example
 @end itemize
 
+@section bm3d
+
+Denoise frames using Block-Matching 3D algorithm.
+
+The filter accepts the following options.
+
+@table @option
+@item sigma
+Set denoising strength. Default value is 1.
+Allowed range is from 0 to 999.9.
+The denoising algorith is very sensitive to sigma, so adjust it
+according to the source.
+
+@item block
+Set local patch size. This sets dimensions in 2D.
+
+@item bstep
+Set sliding step for processing blocks. Default value is 4.
+Allowed range is from 1 to 64.
+Smaller values allows processing more reference blocks and is slower.
+
+@item group
+Set maximal number of similar blocks for 3rd dimension. Default value is 1.
+When set to 1, no block matching is done. Larger values allows more blocks
+in single group.
+Allowed range is from 1 to 256.
+
+@item range
+Set radius for search block matching. Default is 9.
+Allowed range is from 1 to INT32_MAX.
+
+@item mstep
+Set step between two search locations for block matching. Default is 1.
+Allowed range is from 1 to 64. Smaller is slower.
+
+@item thmse
+Set threshold of mean square error for block matching. Valid range is 0 to
+INT32_MAX.
+
+@item hdthr
+Set thresholding parameter for hard thresholding in 3D transformed domain.
+Larger values results in stronger hard-thresholding filtering in frequency
+domain.
+
+@item estim
+Set filtering estimation mode. Can be @code{basic} or @code{final}.
+Default is @code{basic}.
+
+@item ref
+If enabled, filter will use 2nd stream for block matching.
+Default is disabled for @code{basic} value of @var{estim} option,
+and always enabled if value of @var{estim} is @code{final}.
+
+@item planes
+Set planes to filter. Default is all available except alpha.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Basic filtering with bm3d:
+@example
+bm3d=sigma=3:block=4:bstep=2:group=1:estim=basic
+@end example
+
+@item
+Same as above, but filtering only luma:
+@example
+bm3d=sigma=3:block=4:bstep=2:group=1:estim=basic:planes=1
+@end example
+
+@item
+Same as above, but with both estimation modes:
+@example
+split[a][b],[a]bm3d=sigma=3:block=4:bstep=2:group=1:estim=basic[a],[b][a]bm3d=sigma=3:block=4:bstep=2:group=16:estim=final:ref=1
+@end example
+
+@item
+Same as above, but prefilter with @ref{nlmeans} filter instead:
+@example
+split[a][b],[a]nlmeans=s=3:r=7:p=3[a],[b][a]bm3d=sigma=3:block=4:bstep=2:group=16:estim=final:ref=1
+@end example
+@end itemize
+
 @section boxblur
 
 Apply a boxblur algorithm to the input video.
@@ -11691,6 +11776,7 @@ It accepts the following option:
 With value 1, it negates the alpha component, if present. Default value is 0.
 @end table
 
+@anchor{nlmeans}
 @section nlmeans
 
 Denoise frames using Non-Local Means algorithm.
