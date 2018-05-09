@@ -2213,8 +2213,8 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     }
 
-    if (vs->packets_written && can_split && av_compare_ts(pkt->pts - vs->start_pts, st->time_base,
-                                                          end_pts, AV_TIME_BASE_Q) >= 0) {
+    if (vs->packets_written && (vs->fmp4_init_mode || can_split && av_compare_ts(pkt->pts - vs->start_pts, st->time_base,
+                                                                                  end_pts, AV_TIME_BASE_Q) >= 0)) {
         int64_t new_start_pos;
         char *old_filename = NULL;
         int byterange_mode = (hls->flags & HLS_SINGLE_FILE) || (hls->max_seg_size > 0);
