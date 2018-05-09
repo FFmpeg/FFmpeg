@@ -314,14 +314,11 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
 static int yuv4_read_seek(AVFormatContext *s, int stream_index,
                           int64_t pts, int flags)
 {
-    AVStream *st = s->streams[0];
     int64_t pos;
 
-    pos = av_rescale_rnd(pts * s->packet_size,
-                         st->time_base.num,
-                         st->time_base.den * s->packet_size,
-                         (flags & AVSEEK_FLAG_BACKWARD) ? AV_ROUND_DOWN : AV_ROUND_UP);
-    pos *= s->packet_size;
+    if (flags & AVSEEK_FLAG_BACKWARD)
+        pts = FFMAX(0, pts - 1);
+    pos = pts * s->packet_size;
 
     if (avio_seek(s->pb, pos + s->internal->data_offset, SEEK_SET) < 0)
         return -1;

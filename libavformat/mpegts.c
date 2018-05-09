@@ -170,8 +170,8 @@ static const AVOption options[] = {
      {.i64 = 1}, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
     {"ts_packetsize", "output option carrying the raw packet size", offsetof(MpegTSContext, raw_packet_size), AV_OPT_TYPE_INT,
      {.i64 = 0}, 0, 0, AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_EXPORT | AV_OPT_FLAG_READONLY },
-    {"scan_all_pmts",   "scan and combine all PMTs", offsetof(MpegTSContext, scan_all_pmts), AV_OPT_TYPE_BOOL,
-     { .i64 =  -1}, -1, 1,  AV_OPT_FLAG_DECODING_PARAM },
+    {"scan_all_pmts", "scan and combine all PMTs", offsetof(MpegTSContext, scan_all_pmts), AV_OPT_TYPE_BOOL,
+     {.i64 = -1}, -1, 1, AV_OPT_FLAG_DECODING_PARAM },
     {"skip_changes", "skip changing / adding streams / programs", offsetof(MpegTSContext, skip_changes), AV_OPT_TYPE_BOOL,
      {.i64 = 0}, 0, 1, 0 },
     {"skip_clear", "skip clearing programs", offsetof(MpegTSContext, skip_clear), AV_OPT_TYPE_BOOL,
@@ -401,7 +401,7 @@ static void write_section_data(MpegTSContext *ts, MpegTSFilter *tss1,
     } else {
         if (tss->end_of_section_reached)
             return;
-        len = 4096 - tss->section_index;
+        len = MAX_SECTION_SIZE - tss->section_index;
         if (buf_size < len)
             len = buf_size;
         memcpy(tss->section_buf + tss->section_index, buf, len);
@@ -411,7 +411,7 @@ static void write_section_data(MpegTSContext *ts, MpegTSFilter *tss1,
     /* compute section length if possible */
     if (tss->section_h_size == -1 && tss->section_index >= 3) {
         len = (AV_RB16(tss->section_buf + 1) & 0xfff) + 3;
-        if (len > 4096)
+        if (len > MAX_SECTION_SIZE)
             return;
         tss->section_h_size = len;
     }
@@ -2000,14 +2000,14 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     p = section;
     if (parse_section_header(h, &p, p_end) < 0)
         return;
+    if (h->tid != PMT_TID)
+        return;
     if (skip_identical(h, tssf))
         return;
 
     av_log(ts->stream, AV_LOG_TRACE, "sid=0x%x sec_num=%d/%d version=%d tid=%d\n",
             h->id, h->sec_num, h->last_sec_num, h->version, h->tid);
 
-    if (h->tid != PMT_TID)
-        return;
     if (!ts->scan_all_pmts && ts->skip_changes)
         return;
 

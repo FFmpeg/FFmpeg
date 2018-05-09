@@ -677,9 +677,10 @@ static int cbs_h2645_split_fragment(CodedBitstreamContext *ctx,
 
 #define cbs_h2645_replace_ps(h26n, ps_name, ps_var, id_element) \
 static int cbs_h26 ## h26n ## _replace_ ## ps_var(CodedBitstreamContext *ctx, \
-                                                  const H26 ## h26n ## Raw ## ps_name *ps_var)  \
+                                                  CodedBitstreamUnit *unit)  \
 { \
     CodedBitstreamH26 ## h26n ## Context *priv = ctx->priv_data; \
+    H26 ## h26n ## Raw ## ps_name *ps_var = unit->content; \
     unsigned int id = ps_var->id_element; \
     if (id > FF_ARRAY_ELEMS(priv->ps_var)) { \
         av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid " #ps_name \
@@ -688,11 +689,16 @@ static int cbs_h26 ## h26n ## _replace_ ## ps_var(CodedBitstreamContext *ctx, \
     } \
     if (priv->ps_var[id] == priv->active_ ## ps_var) \
         priv->active_ ## ps_var = NULL ; \
-    av_freep(&priv->ps_var[id]); \
-    priv->ps_var[id] = av_malloc(sizeof(*ps_var)); \
-    if (!priv->ps_var[id]) \
+    av_buffer_unref(&priv->ps_var ## _ref[id]); \
+    if (unit->content_ref) \
+        priv->ps_var ## _ref[id] = av_buffer_ref(unit->content_ref); \
+    else \
+        priv->ps_var ## _ref[id] = av_buffer_alloc(sizeof(*ps_var)); \
+    if (!priv->ps_var ## _ref[id]) \
         return AVERROR(ENOMEM); \
-    memcpy(priv->ps_var[id], ps_var, sizeof(*ps_var)); \
+    priv->ps_var[id] = (H26 ## h26n ## Raw ## ps_name *)priv->ps_var ## _ref[id]->data; \
+    if (!unit->content_ref) \
+        memcpy(priv->ps_var[id], ps_var, sizeof(*ps_var)); \
     return 0; \
 }
 
@@ -726,7 +732,7 @@ static int cbs_h264_read_nal_unit(CodedBitstreamContext *ctx,
             if (err < 0)
                 return err;
 
-            err = cbs_h264_replace_sps(ctx, sps);
+            err = cbs_h264_replace_sps(ctx, unit);
             if (err < 0)
                 return err;
         }
@@ -760,7 +766,7 @@ static int cbs_h264_read_nal_unit(CodedBitstreamContext *ctx,
             if (err < 0)
                 return err;
 
-            err = cbs_h264_replace_pps(ctx, pps);
+            err = cbs_h264_replace_pps(ctx, unit);
             if (err < 0)
                 return err;
         }
@@ -873,7 +879,7 @@ static int cbs_h265_read_nal_unit(CodedBitstreamContext *ctx,
             if (err < 0)
                 return err;
 
-            err = cbs_h265_replace_vps(ctx, vps);
+            err = cbs_h265_replace_vps(ctx, unit);
             if (err < 0)
                 return err;
         }
@@ -892,7 +898,7 @@ static int cbs_h265_read_nal_unit(CodedBitstreamContext *ctx,
             if (err < 0)
                 return err;
 
-            err = cbs_h265_replace_sps(ctx, sps);
+            err = cbs_h265_replace_sps(ctx, unit);
             if (err < 0)
                 return err;
         }
@@ -912,7 +918,7 @@ static int cbs_h265_read_nal_unit(CodedBitstreamContext *ctx,
             if (err < 0)
                 return err;
 
-            err = cbs_h265_replace_pps(ctx, pps);
+            err = cbs_h265_replace_pps(ctx, unit);
             if (err < 0)
                 return err;
         }
@@ -1002,7 +1008,7 @@ static int cbs_h264_write_nal_unit(CodedBitstreamContext *ctx,
             if (err < 0)
                 return err;
 
-            err = cbs_h264_replace_sps(ctx, sps);
+            err = cbs_h264_replace_sps(ctx, unit);
             if (err < 0)
                 return err;
         }
@@ -1026,7 +1032,7 @@ static int cbs_h264_write_nal_unit(CodedBitstreamContext *ctx,
             if (err < 0)
                 return err;
 
-            err = cbs_h264_replace_pps(ctx, pps);
+            err = cbs_h264_replace_pps(ctx, unit);
             if (err < 0)
                 return err;
         }
@@ -1123,7 +1129,7 @@ static int cbs_h265_write_nal_unit(CodedBitstreamContext *ctx,
             if (err < 0)
                 return err;
 
-            err = cbs_h265_replace_vps(ctx, vps);
+            err = cbs_h265_replace_vps(ctx, unit);
             if (err < 0)
                 return err;
         }
@@ -1137,7 +1143,7 @@ static int cbs_h265_write_nal_unit(CodedBitstreamContext *ctx,
             if (err < 0)
                 return err;
 
-            err = cbs_h265_replace_sps(ctx, sps);
+            err = cbs_h265_replace_sps(ctx, unit);
             if (err < 0)
                 return err;
         }
@@ -1151,7 +1157,7 @@ static int cbs_h265_write_nal_unit(CodedBitstreamContext *ctx,
             if (err < 0)
                 return err;
 
-            err = cbs_h265_replace_pps(ctx, pps);
+            err = cbs_h265_replace_pps(ctx, unit);
             if (err < 0)
                 return err;
         }
@@ -1385,9 +1391,9 @@ static void cbs_h264_close(CodedBitstreamContext *ctx)
     av_freep(&h264->common.write_buffer);
 
     for (i = 0; i < FF_ARRAY_ELEMS(h264->sps); i++)
-        av_freep(&h264->sps[i]);
+        av_buffer_unref(&h264->sps_ref[i]);
     for (i = 0; i < FF_ARRAY_ELEMS(h264->pps); i++)
-        av_freep(&h264->pps[i]);
+        av_buffer_unref(&h264->pps_ref[i]);
 }
 
 static void cbs_h265_close(CodedBitstreamContext *ctx)
@@ -1400,11 +1406,11 @@ static void cbs_h265_close(CodedBitstreamContext *ctx)
     av_freep(&h265->common.write_buffer);
 
     for (i = 0; i < FF_ARRAY_ELEMS(h265->vps); i++)
-        av_freep(&h265->vps[i]);
+        av_buffer_unref(&h265->vps_ref[i]);
     for (i = 0; i < FF_ARRAY_ELEMS(h265->sps); i++)
-        av_freep(&h265->sps[i]);
+        av_buffer_unref(&h265->sps_ref[i]);
     for (i = 0; i < FF_ARRAY_ELEMS(h265->pps); i++)
-        av_freep(&h265->pps[i]);
+        av_buffer_unref(&h265->pps_ref[i]);
 }
 
 const CodedBitstreamType ff_cbs_type_h264 = {

@@ -198,6 +198,83 @@ static inline struct rgbvec interp_tetrahedral(const LUT3DContext *lut3d,
     return c;
 }
 
+#define DEFINE_INTERP_FUNC_PLANAR(name, nbits, depth)                                                  \
+static int interp_##nbits##_##name##_p##depth(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs) \
+{                                                                                                      \
+    int x, y;                                                                                          \
+    const LUT3DContext *lut3d = ctx->priv;                                                             \
+    const ThreadData *td = arg;                                                                        \
+    const AVFrame *in  = td->in;                                                                       \
+    const AVFrame *out = td->out;                                                                      \
+    const int direct = out == in;                                                                      \
+    const int slice_start = (in->height *  jobnr   ) / nb_jobs;                                        \
+    const int slice_end   = (in->height * (jobnr+1)) / nb_jobs;                                        \
+    uint8_t *grow = out->data[0] + slice_start * out->linesize[0];                                     \
+    uint8_t *brow = out->data[1] + slice_start * out->linesize[1];                                     \
+    uint8_t *rrow = out->data[2] + slice_start * out->linesize[2];                                     \
+    uint8_t *arow = out->data[3] + slice_start * out->linesize[3];                                     \
+    const uint8_t *srcgrow = in->data[0] + slice_start * in->linesize[0];                              \
+    const uint8_t *srcbrow = in->data[1] + slice_start * in->linesize[1];                              \
+    const uint8_t *srcrrow = in->data[2] + slice_start * in->linesize[2];                              \
+    const uint8_t *srcarow = in->data[3] + slice_start * in->linesize[3];                              \
+    const float scale = (1. / ((1<<depth) - 1)) * (lut3d->lutsize - 1);                                \
+                                                                                                       \
+    for (y = slice_start; y < slice_end; y++) {                                                        \
+        uint##nbits##_t *dstg = (uint##nbits##_t *)grow;                                               \
+        uint##nbits##_t *dstb = (uint##nbits##_t *)brow;                                               \
+        uint##nbits##_t *dstr = (uint##nbits##_t *)rrow;                                               \
+        uint##nbits##_t *dsta = (uint##nbits##_t *)arow;                                               \
+        const uint##nbits##_t *srcg = (const uint##nbits##_t *)srcgrow;                                \
+        const uint##nbits##_t *srcb = (const uint##nbits##_t *)srcbrow;                                \
+        const uint##nbits##_t *srcr = (const uint##nbits##_t *)srcrrow;                                \
+        const uint##nbits##_t *srca = (const uint##nbits##_t *)srcarow;                                \
+        for (x = 0; x < in->width; x++) {                                                              \
+            const struct rgbvec scaled_rgb = {srcr[x] * scale,                                         \
+                                              srcg[x] * scale,                                         \
+                                              srcb[x] * scale};                                        \
+            struct rgbvec vec = interp_##name(lut3d, &scaled_rgb);                                     \
+            dstr[x] = av_clip_uintp2(vec.r * (float)((1<<depth) - 1), depth);                          \
+            dstg[x] = av_clip_uintp2(vec.g * (float)((1<<depth) - 1), depth);                          \
+            dstb[x] = av_clip_uintp2(vec.b * (float)((1<<depth) - 1), depth);                          \
+            if (!direct && in->linesize[3])                                                            \
+                dsta[x] = srca[x];                                                                     \
+        }                                                                                              \
+        grow += out->linesize[0];                                                                      \
+        brow += out->linesize[1];                                                                      \
+        rrow += out->linesize[2];                                                                      \
+        arow += out->linesize[3];                                                                      \
+        srcgrow += in->linesize[0];                                                                    \
+        srcbrow += in->linesize[1];                                                                    \
+        srcrrow += in->linesize[2];                                                                    \
+        srcarow += in->linesize[3];                                                                    \
+    }                                                                                                  \
+    return 0;                                                                                          \
+}
+
+DEFINE_INTERP_FUNC_PLANAR(nearest,     8, 8)
+DEFINE_INTERP_FUNC_PLANAR(trilinear,   8, 8)
+DEFINE_INTERP_FUNC_PLANAR(tetrahedral, 8, 8)
+
+DEFINE_INTERP_FUNC_PLANAR(nearest,     16, 9)
+DEFINE_INTERP_FUNC_PLANAR(trilinear,   16, 9)
+DEFINE_INTERP_FUNC_PLANAR(tetrahedral, 16, 9)
+
+DEFINE_INTERP_FUNC_PLANAR(nearest,     16, 10)
+DEFINE_INTERP_FUNC_PLANAR(trilinear,   16, 10)
+DEFINE_INTERP_FUNC_PLANAR(tetrahedral, 16, 10)
+
+DEFINE_INTERP_FUNC_PLANAR(nearest,     16, 12)
+DEFINE_INTERP_FUNC_PLANAR(trilinear,   16, 12)
+DEFINE_INTERP_FUNC_PLANAR(tetrahedral, 16, 12)
+
+DEFINE_INTERP_FUNC_PLANAR(nearest,     16, 14)
+DEFINE_INTERP_FUNC_PLANAR(trilinear,   16, 14)
+DEFINE_INTERP_FUNC_PLANAR(tetrahedral, 16, 14)
+
+DEFINE_INTERP_FUNC_PLANAR(nearest,     16, 16)
+DEFINE_INTERP_FUNC_PLANAR(trilinear,   16, 16)
+DEFINE_INTERP_FUNC_PLANAR(tetrahedral, 16, 16)
+
 #define DEFINE_INTERP_FUNC(name, nbits)                                                             \
 static int interp_##nbits##_##name(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)         \
 {                                                                                                   \
@@ -470,6 +547,12 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_RGB0,   AV_PIX_FMT_BGR0,
         AV_PIX_FMT_RGB48,  AV_PIX_FMT_BGR48,
         AV_PIX_FMT_RGBA64, AV_PIX_FMT_BGRA64,
+        AV_PIX_FMT_GBRP,   AV_PIX_FMT_GBRAP,
+        AV_PIX_FMT_GBRP9,
+        AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRAP10,
+        AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12,
+        AV_PIX_FMT_GBRP14,
+        AV_PIX_FMT_GBRP16, AV_PIX_FMT_GBRAP16,
         AV_PIX_FMT_NONE
     };
     AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
@@ -480,9 +563,11 @@ static int query_formats(AVFilterContext *ctx)
 
 static int config_input(AVFilterLink *inlink)
 {
-    int is16bit = 0;
+    int depth, is16bit = 0, planar = 0;
     LUT3DContext *lut3d = inlink->dst->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+
+    depth = desc->comp[0].depth;
 
     switch (inlink->format) {
     case AV_PIX_FMT_RGB48:
@@ -490,14 +575,37 @@ static int config_input(AVFilterLink *inlink)
     case AV_PIX_FMT_RGBA64:
     case AV_PIX_FMT_BGRA64:
         is16bit = 1;
+        break;
+    case AV_PIX_FMT_GBRP9:
+    case AV_PIX_FMT_GBRP10:
+    case AV_PIX_FMT_GBRP12:
+    case AV_PIX_FMT_GBRP14:
+    case AV_PIX_FMT_GBRP16:
+    case AV_PIX_FMT_GBRAP10:
+    case AV_PIX_FMT_GBRAP12:
+    case AV_PIX_FMT_GBRAP16:
+        is16bit = 1;
+    case AV_PIX_FMT_GBRP:
+    case AV_PIX_FMT_GBRAP:
+        planar = 1;
+        break;
     }
 
     ff_fill_rgba_map(lut3d->rgba_map, inlink->format);
     lut3d->step = av_get_padded_bits_per_pixel(desc) >> (3 + is16bit);
 
-#define SET_FUNC(name) do {                             \
-    if (is16bit) lut3d->interp = interp_16_##name;      \
-    else         lut3d->interp = interp_8_##name;       \
+#define SET_FUNC(name) do {                                     \
+    if (planar) {                                               \
+        switch (depth) {                                        \
+        case  8: lut3d->interp = interp_8_##name##_p8;   break; \
+        case  9: lut3d->interp = interp_16_##name##_p9;  break; \
+        case 10: lut3d->interp = interp_16_##name##_p10; break; \
+        case 12: lut3d->interp = interp_16_##name##_p12; break; \
+        case 14: lut3d->interp = interp_16_##name##_p14; break; \
+        case 16: lut3d->interp = interp_16_##name##_p16; break; \
+        }                                                       \
+    } else if (is16bit) { lut3d->interp = interp_16_##name;     \
+    } else {       lut3d->interp = interp_8_##name; }           \
 } while (0)
 
     switch (lut3d->interpolation) {

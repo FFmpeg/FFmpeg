@@ -2982,24 +2982,27 @@ static int decode_studio_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
 
 static int decode_studiovisualobject(Mpeg4DecContext *ctx, GetBitContext *gb)
 {
-    uint32_t startcode;
     MpegEncContext *s = &ctx->m;
-    int visual_object_type, width, height;
+    int visual_object_type;
 
-    startcode = get_bits_long(gb, 32);
-
-    /* StudioVisualObject() */
-    if (startcode == VISUAL_OBJ_STARTCODE) {
         skip_bits(gb, 4); /* visual_object_verid */
         visual_object_type = get_bits(gb, 4);
+        if (visual_object_type != VOT_VIDEO_ID) {
+            avpriv_request_sample(s->avctx, "VO type %u", visual_object_type);
+            return AVERROR_PATCHWELCOME;
+        }
 
         next_start_code_studio(gb);
         extension_and_user_data(s, gb, 1);
 
-        if (visual_object_type == VOT_VIDEO_ID) {
-            /* StudioVideoObjectLayer */
-            skip_bits_long(gb, 32); /* video_object_start_code */
-            skip_bits_long(gb, 32); /* video_object_layer_start_code */
+    return 0;
+}
+
+static int decode_studio_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
+{
+    MpegEncContext *s = &ctx->m;
+    int width, height;
+
             skip_bits1(gb); /* random_accessible_vol */
             skip_bits(gb, 8); /* video_object_type_indication */
             skip_bits(gb, 4); /* video_object_layer_verid */
@@ -3068,8 +3071,6 @@ static int decode_studiovisualobject(Mpeg4DecContext *ctx, GetBitContext *gb)
 
             next_start_code_studio(gb);
             extension_and_user_data(s, gb, 2);
-        }
-    }
 
     return 0;
 }
@@ -3179,8 +3180,14 @@ int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                 continue;
             }
             vol++;
-            if ((ret = decode_vol_header(ctx, gb)) < 0)
-                return ret;
+            if (s->studio_profile) {
+                if ((ret = decode_studio_vol_header(ctx, gb)) < 0)
+                    return ret;
+                break;
+            } else {
+                if ((ret = decode_vol_header(ctx, gb)) < 0)
+                    return ret;
+            }
         } else if (startcode == USER_DATA_STARTCODE) {
             decode_user_data(ctx, gb);
         } else if (startcode == GOP_STARTCODE) {
@@ -3192,13 +3199,13 @@ int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb)
                 s->studio_profile = 1;
                 next_start_code_studio(gb);
                 extension_and_user_data(s, gb, 0);
-
-                if ((ret = decode_studiovisualobject(ctx, gb)) < 0)
-                    return ret;
-                break;
             }
         } else if (startcode == VISUAL_OBJ_STARTCODE) {
-            mpeg4_decode_visual_object(s, gb);
+            if (s->studio_profile) {
+                if ((ret = decode_studiovisualobject(ctx, gb)) < 0)
+                    return ret;
+            } else
+                mpeg4_decode_visual_object(s, gb);
         } else if (startcode == VOP_STARTCODE) {
             break;
         }

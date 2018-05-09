@@ -36,11 +36,12 @@ typedef struct AmplifyContext {
     float threshold;
     int planes;
 
+    int llimit;
+    int hlimit;
     int nb_inputs;
     int nb_frames;
 
     int depth;
-    int max;
     int nb_planes;
     int linesize[4];
     int height[4];
@@ -104,6 +105,9 @@ static int amplify_frame(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     const int nb_inputs = s->nb_inputs;
     const float threshold = s->threshold;
     const float factor = s->factor;
+    const int llimit = s->llimit;
+    const int hlimit = s->hlimit;
+    const int depth = s->depth;
     int i, p, x, y;
 
     if (s->depth <= 8) {
@@ -132,10 +136,17 @@ static int amplify_frame(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
 
                     avg = sum / (float)nb_inputs;
                     diff = src - avg;
-                    if (fabsf(diff) < threshold)
-                        dst[x] = av_clip_uint8(src + diff * factor);
-                    else
+                    if (fabsf(diff) < threshold) {
+                        int amp;
+                        if (diff < 0) {
+                            amp = -FFMIN(FFABS(diff * factor), llimit);
+                        } else {
+                            amp = FFMIN(FFABS(diff * factor), hlimit);
+                        }
+                        dst[x] = av_clip_uint8(src + amp);
+                    } else {
                         dst[x] = src;
+                    }
                 }
 
                 dst += out->linesize[p];
@@ -168,10 +179,17 @@ static int amplify_frame(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
                     avg = sum / (float)nb_inputs;
                     diff = src - avg;
 
-                    if (fabsf(diff) < threshold)
-                        dst[x] = av_clip(src + (src - avg) * factor, 0, s->max);
-                    else
+                    if (fabsf(diff) < threshold) {
+                        int amp;
+                        if (diff < 0) {
+                            amp = -FFMIN(FFABS(diff * factor), llimit);
+                        } else {
+                            amp = FFMIN(FFABS(diff * factor), hlimit);
+                        }
+                        dst[x] = av_clip_uintp2(src + amp, depth);
+                    } else {
                         dst[x] = src;
+                    }
                 }
 
                 dst += out->linesize[p] / 2;
@@ -194,7 +212,6 @@ static int config_output(AVFilterLink *outlink)
         return AVERROR_BUG;
     s->nb_planes = av_pix_fmt_count_planes(outlink->format);
     s->depth = s->desc->comp[0].depth;
-    s->max = (1 << s->depth) - 1;
 
     if ((ret = av_image_fill_linesizes(s->linesize, inlink->format, inlink->w)) < 0)
         return ret;
@@ -252,6 +269,8 @@ static const AVOption amplify_options[] = {
     { "radius", "set radius", OFFSET(radius), AV_OPT_TYPE_INT, {.i64=2}, 1, 63, .flags = FLAGS },
     { "factor", "set factor", OFFSET(factor), AV_OPT_TYPE_FLOAT, {.dbl=2}, 0, UINT16_MAX, .flags = FLAGS },
     { "threshold", "set threshold", OFFSET(threshold), AV_OPT_TYPE_FLOAT, {.dbl=10}, 0, UINT16_MAX, .flags = FLAGS },
+    { "low", "set low limit for amplification", OFFSET(llimit), AV_OPT_TYPE_INT, {.i64=UINT16_MAX}, 0, UINT16_MAX, .flags = FLAGS },
+    { "high", "set high limit for amplification", OFFSET(hlimit), AV_OPT_TYPE_INT, {.i64=UINT16_MAX}, 0, UINT16_MAX, .flags = FLAGS },
     { "planes", "set what planes to filter", OFFSET(planes), AV_OPT_TYPE_FLAGS, {.i64=7},    0, 15,  FLAGS },
     { NULL },
 };

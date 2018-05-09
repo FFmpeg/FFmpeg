@@ -143,6 +143,8 @@ static int vaapi_encode_vp8_write_quant_table(AVCodecContext *avctx,
     *type     = VAQMatrixBufferType;
     *data_len = sizeof(quant);
 
+    memset(&quant, 0, sizeof(quant));
+
     if (pic->type == PICTURE_TYPE_P)
         q = priv->q_index_p;
     else

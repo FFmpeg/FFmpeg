@@ -165,6 +165,8 @@ static int query_formats(AVFilterContext *ctx)
     static const enum AVPixelFormat out10be_pixfmts[] = { AV_PIX_FMT_GRAY10BE, AV_PIX_FMT_NONE };
     static const enum AVPixelFormat out12le_pixfmts[] = { AV_PIX_FMT_GRAY12LE, AV_PIX_FMT_NONE };
     static const enum AVPixelFormat out12be_pixfmts[] = { AV_PIX_FMT_GRAY12BE, AV_PIX_FMT_NONE };
+    static const enum AVPixelFormat out14le_pixfmts[] = { AV_PIX_FMT_GRAY14LE, AV_PIX_FMT_NONE };
+    static const enum AVPixelFormat out14be_pixfmts[] = { AV_PIX_FMT_GRAY14BE, AV_PIX_FMT_NONE };
     static const enum AVPixelFormat out16le_pixfmts[] = { AV_PIX_FMT_GRAY16LE, AV_PIX_FMT_NONE };
     static const enum AVPixelFormat out16be_pixfmts[] = { AV_PIX_FMT_GRAY16BE, AV_PIX_FMT_NONE };
     const enum AVPixelFormat *out_pixfmts, *in_pixfmts;
@@ -212,6 +214,10 @@ static int query_formats(AVFilterContext *ctx)
         out_pixfmts = out12le_pixfmts;
     else if (be && depth == 12)
         out_pixfmts = out12be_pixfmts;
+    else if (!be && depth == 14)
+        out_pixfmts = out14le_pixfmts;
+    else if (be && depth == 14)
+        out_pixfmts = out14be_pixfmts;
     else if (be)
         out_pixfmts = out16be_pixfmts;
     else

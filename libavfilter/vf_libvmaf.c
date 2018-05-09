@@ -43,6 +43,7 @@ typedef struct LIBVMAFContext {
     int width;
     int height;
     double vmaf_score;
+    int vmaf_thread_created;
     pthread_t vmaf_thread;
     pthread_mutex_t lock;
     pthread_cond_t cond;
@@ -228,6 +229,7 @@ static av_cold int init(AVFilterContext *ctx)
     s->gmain = av_frame_alloc();
     s->error = 0;
 
+    s->vmaf_thread_created = 0;
     pthread_mutex_init(&s->lock, NULL);
     pthread_cond_init (&s->cond, NULL);
 
@@ -275,6 +277,7 @@ static int config_input_ref(AVFilterLink *inlink)
         av_log(ctx, AV_LOG_ERROR, "Thread creation failed.\n");
         return AVERROR(EINVAL);
     }
+    s->vmaf_thread_created = 1;
 
     return 0;
 }
@@ -317,7 +320,11 @@ static av_cold void uninit(AVFilterContext *ctx)
     pthread_cond_signal(&s->cond);
     pthread_mutex_unlock(&s->lock);
 
-    pthread_join(s->vmaf_thread, NULL);
+    if (s->vmaf_thread_created)
+    {
+        pthread_join(s->vmaf_thread, NULL);
+        s->vmaf_thread_created = 0;
+    }
 
     av_frame_free(&s->gref);
     av_frame_free(&s->gmain);

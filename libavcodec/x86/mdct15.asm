@@ -76,7 +76,7 @@ SECTION .text
     addps       m%3,  m%3,  m0          ; Finally offset with DCs
 %endmacro
 
-%macro BUTTERFLIES_DC 2 ; %1 - exptab_offset, %2 - out
+%macro BUTTERFLIES_DC 1 ; %1 - exptab_offset
     mulps xm0,  xm9, [exptabq + %1 + 16*0]
     mulps xm1, xm10, [exptabq + %1 + 16*1]
 
@@ -86,10 +86,10 @@ SECTION .text
     addps   xm0,  xm1
     addps   xm0,  xm8
 
-    movsd [%2q], xm0
+    movsd [outq], xm0
 %endmacro
 
-%macro BUTTERFLIES_AC 2 ; exptab, exptab_offset, src1, src2, src3, out (uses m0-m3)
+%macro BUTTERFLIES_AC 1 ; %1 - exptab_offset
     mulps  m0, m12, [exptabq + 64*0 + 0*mmsize + %1]
     mulps  m1, m12, [exptabq + 64*0 + 1*mmsize + %1]
     mulps  m2, m13, [exptabq + 64*1 + 0*mmsize + %1]
@@ -104,15 +104,14 @@ SECTION .text
 
     vextractf128 xm1, m0, 1
 
-    movlps [%2q + strideq*1], xm0
-    movhps [%2q + strideq*2], xm0
-    movlps [%2q +  stride3q], xm1
-    movhps [%2q + strideq*4], xm1
+    movlps [outq + strideq*1], xm0
+    movhps [outq + strideq*2], xm0
+    movlps [outq +  stride3q], xm1
+    movhps [outq + strideq*4], xm1
 %endmacro
 
 INIT_YMM avx
-cglobal fft15, 4, 6, 14, out, in, exptab, stride, stride3, stride5
-%define out0q inq
+cglobal fft15, 4, 5, 14, out, in, exptab, stride, stride5
     shl strideq, 3
 
     movaps xm5, [exptabq + 480 + 16*0]
@@ -123,22 +122,20 @@ cglobal fft15, 4, 6, 14, out, in, exptab, stride, stride3, stride5
     FFT5  8,  xm9, 12
     FFT5 16, xm10, 13
 
+%define stride3q inq
     lea stride3q, [strideq + strideq*2]
     lea stride5q, [strideq + strideq*4]
 
-    mov out0q, outq
+    BUTTERFLIES_DC (8*6 + 4*0)*2*4
+    BUTTERFLIES_AC (8*0 + 0*0)*2*4
 
-    BUTTERFLIES_DC (8*6 + 4*0)*2*4, out0
-    lea outq, [out0q + stride5q*1]
-    BUTTERFLIES_DC (8*6 + 4*1)*2*4, out
-    lea outq, [out0q + stride5q*2]
-    BUTTERFLIES_DC (8*6 + 4*2)*2*4, out
+    add outq, stride5q
+    BUTTERFLIES_DC (8*6 + 4*1)*2*4
+    BUTTERFLIES_AC (8*2 + 0*0)*2*4
 
-    BUTTERFLIES_AC (8*0)*2*4, out0
-    lea outq, [out0q + stride5q*1]
-    BUTTERFLIES_AC (8*2)*2*4, out
-    lea outq, [out0q + stride5q*2]
-    BUTTERFLIES_AC (8*4)*2*4, out
+    add outq, stride5q
+    BUTTERFLIES_DC (8*6 + 4*2)*2*4
+    BUTTERFLIES_AC (8*4 + 0*0)*2*4
 
     RET
 

@@ -60,6 +60,7 @@ version 4.0:
 - Haivision SRT protocol via libsrt
 - segafilm muxer
 - vfrdet filter
+- SRCNN filter
 
 
 version 3.4:

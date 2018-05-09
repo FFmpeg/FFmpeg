@@ -421,6 +421,8 @@ typedef struct CodedBitstreamH264Context {
 
     // All currently available parameter sets.  These are updated when
     // any parameter set NAL unit is read/written with this context.
+    AVBufferRef *sps_ref[H264_MAX_SPS_COUNT];
+    AVBufferRef *pps_ref[H264_MAX_PPS_COUNT];
     H264RawSPS *sps[H264_MAX_SPS_COUNT];
     H264RawPPS *pps[H264_MAX_PPS_COUNT];
 

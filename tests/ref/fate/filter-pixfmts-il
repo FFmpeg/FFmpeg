@@ -41,6 +41,8 @@ gray10be            8400dec0eefb172849b785d35fc55674
 gray10le            b7d6e49e8d1291f2b0a57d55e9478ef1
 gray12be            c62bc3def5ea217dfb68433905cb9d64
 gray12le            5bd0fef836928e1e19a315782a8c1302
+gray14be            5b3a15c182e2daed65dc39c33fd62735
+gray14le            3573d6870b14256f01800066d36ad862
 gray16be            92c3b09f371b610cc1b6a9776034f4d0
 gray16le            1db278d23a554e01910cedacc6c02521
 gray9be             ed7db5bb2ddc09bc26068c8b858db204

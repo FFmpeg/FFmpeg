@@ -763,7 +763,7 @@ static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
         {
             allocate(current->payload.other.data, current->payload_size);
             for (i = 0; i < current->payload_size; i++)
-                xu(8, payload_byte, current->payload.other.data[i], 0, 255, 1, i);
+                xu(8, payload_byte[i], current->payload.other.data[i], 0, 255, 1, i);
         }
     }
 

@@ -181,6 +181,7 @@ int ff_draw_init(FFDrawContext *draw, enum AVPixelFormat format, unsigned flags)
     const AVComponentDescriptor *c;
     unsigned i, nb_planes = 0;
     int pixelstep[MAX_PLANES] = { 0 };
+    int full_range = 0;
 
     if (!desc || !desc->name)
         return AVERROR(EINVAL);
@@ -188,6 +189,9 @@ int ff_draw_init(FFDrawContext *draw, enum AVPixelFormat format, unsigned flags)
         return AVERROR(ENOSYS);
     if (format == AV_PIX_FMT_P010LE || format == AV_PIX_FMT_P010BE || format == AV_PIX_FMT_P016LE || format == AV_PIX_FMT_P016BE)
         return AVERROR(ENOSYS);
+    if (format == AV_PIX_FMT_YUVJ420P || format == AV_PIX_FMT_YUVJ422P || format == AV_PIX_FMT_YUVJ444P ||
+        format == AV_PIX_FMT_YUVJ411P || format == AV_PIX_FMT_YUVJ440P)
+        full_range = 1;
     for (i = 0; i < desc->nb_components; i++) {
         c = &desc->comp[i];
         /* for now, only 8-16 bits formats */
@@ -214,6 +218,7 @@ int ff_draw_init(FFDrawContext *draw, enum AVPixelFormat format, unsigned flags)
     draw->format    = format;
     draw->nb_planes = nb_planes;
     draw->flags     = flags;
+    draw->full_range = full_range;
     memcpy(draw->pixelstep, pixelstep, sizeof(draw->pixelstep));
     draw->hsub[1] = draw->hsub[2] = draw->hsub_max = desc->log2_chroma_w;
     draw->vsub[1] = draw->vsub[2] = draw->vsub_max = desc->log2_chroma_h;
@@ -249,9 +254,9 @@ void ff_draw_color(FFDrawContext *draw, FFDrawColor *color, const uint8_t rgba[4
     } else if (draw->nb_planes >= 2) {
         /* assume YUV */
         const AVPixFmtDescriptor *desc = draw->desc;
-        color->comp[desc->comp[0].plane].u8[desc->comp[0].offset] = RGB_TO_Y_CCIR(rgba[0], rgba[1], rgba[2]);
-        color->comp[desc->comp[1].plane].u8[desc->comp[1].offset] = RGB_TO_U_CCIR(rgba[0], rgba[1], rgba[2], 0);
-        color->comp[desc->comp[2].plane].u8[desc->comp[2].offset] = RGB_TO_V_CCIR(rgba[0], rgba[1], rgba[2], 0);
+        color->comp[desc->comp[0].plane].u8[desc->comp[0].offset] = draw->full_range ? RGB_TO_Y_JPEG(rgba[0], rgba[1], rgba[2]) : RGB_TO_Y_CCIR(rgba[0], rgba[1], rgba[2]);
+        color->comp[desc->comp[1].plane].u8[desc->comp[1].offset] = draw->full_range ? RGB_TO_U_JPEG(rgba[0], rgba[1], rgba[2]) : RGB_TO_U_CCIR(rgba[0], rgba[1], rgba[2], 0);
+        color->comp[desc->comp[2].plane].u8[desc->comp[2].offset] = draw->full_range ? RGB_TO_V_JPEG(rgba[0], rgba[1], rgba[2]) : RGB_TO_V_CCIR(rgba[0], rgba[1], rgba[2], 0);
         color->comp[3].u8[0] = rgba[3];
 #define EXPAND(compn) \
         if (desc->comp[compn].depth > 8) \
@@ -266,7 +271,8 @@ void ff_draw_color(FFDrawContext *draw, FFDrawColor *color, const uint8_t rgba[4
                draw->format == AV_PIX_FMT_GRAY16LE || draw->format == AV_PIX_FMT_YA16LE ||
                draw->format == AV_PIX_FMT_GRAY9LE  ||
                draw->format == AV_PIX_FMT_GRAY10LE ||
-               draw->format == AV_PIX_FMT_GRAY12LE) {
+               draw->format == AV_PIX_FMT_GRAY12LE ||
+               draw->format == AV_PIX_FMT_GRAY14LE) {
         const AVPixFmtDescriptor *desc = draw->desc;
         color->comp[0].u8[0] = RGB_TO_Y_CCIR(rgba[0], rgba[1], rgba[2]);
         EXPAND(0);
